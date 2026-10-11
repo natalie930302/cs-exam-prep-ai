@@ -1,0 +1,545 @@
+{
+ "video": "cWRbSpzu3DE",
+ "label": "黃婷婷教授計算機結構_第11A講 Computer Arithmetic",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習：各種加法器",
+   "scene": "nuB-11a-recap",
+   "points": [
+    {
+     "t": 17,
+     "text": "ripple carry adder 硬體最少但慢；carry lookahead 用空間換時間，但 c31 的項太大不能直接做。"
+    },
+    {
+     "t": 96,
+     "text": "改進：cascaded（塊間 ripple）與 multi-level（depth log n），還有 carry select；今天介紹乘法器。"
+    }
+   ],
+   "cues": [
+    16.8,
+    34.01,
+    56.76,
+    95.89,
+    103.27,
+    122.33
+   ],
+   "explain": [
+    "先複習加法器。最簡單的 ripple carry adder：硬體最少，但 carry 要一級一級傳，花很多時間。",
+    "carry lookahead adder：把式子攤平（flatten），每個 carry 各算各的、不共用，用空間換時間。",
+    "可是算到 c31 時，那個 OR 的項會非常非常大，所以不能直接 implement。",
+    "改進一：切成一塊一塊，塊與塊之間用 ripple，叫 cascaded carry lookahead adder。",
+    "改進二：真正的 multi-level：carry 往上算再往下算，depth 是 log n（n 是 bit 數）。",
+    "另外還有 carry select adder。加法介紹完了，今天開始介紹乘法器。"
+   ]
+  },
+  {
+   "title": "MIPS 的乘法指令：mult、Hi、Lo、mfhi、mflo",
+   "scene": "nuB-11a-inst",
+   "points": [
+    {
+     "t": 139,
+     "text": "CPU 裡除了 ALU 和 register file，還有 multiply／divide 單元與兩個特別的 32-bit register：Hi、Lo。"
+    },
+    {
+     "t": 204,
+     "text": "mult t1, t2：32 × 32 bits = 64 bits，結果放在 Hi（高 32）與 Lo（低 32）。"
+    },
+    {
+     "t": 277,
+     "text": "用 mfhi、mflo 把結果搬到一般 register；mul rd, rs, rt 則直接把低 32 bits 放進 rd。"
+    }
+   ],
+   "trap": "一般 register 只有 32 bits，所以 mult 的 64-bit 結果放在 Hi、Lo，要用 mfhi／mflo 才拿得到。",
+   "cues": [
+    139.37,
+    156.67,
+    171.69,
+    179.85,
+    204.33,
+    212.01,
+    237.53,
+    256.57,
+    276.76,
+    317.44,
+    333.06,
+    349.42
+   ],
+   "explain": [
+    "先看整台電腦的 organization：外面有 memory；CPU 裡還有 coprocessor（做 floating point，後面會介紹）。",
+    "前面介紹的是 ALU（加、and、or…都合在一起），還有 32 個 general purpose register 的 register file。",
+    "今天的主角是旁邊這塊：multiply 和 divide 的硬體。",
+    "它多了兩個很特別的 register：Hi 和 Lo，各 32 bits，不屬於那 32 個一般 register。",
+    "指令長這樣：mult $t1, $t2——只給兩個 register，沒有寫結果放哪。為什麼？",
+    "因為 32 bits × 32 bits，乘出來最多 64 bits，沒有一個 register 放得下 64 bits。示意：100000 × 300000。",
+    "所以結果放在那兩個特別的 register：高 32 bits 放 Hi，低 32 bits 放 Lo。",
+    "所以乘法基本上是三個步驟的 process：先乘，再把結果搬出來。",
+    "用特別的指令 move from high（mfhi）把 Hi 搬到 $t3，move from low（mflo）把 Lo 搬到 $t4。",
+    "如果只想要 32 bits 的結果，前面那 32 bits（Hi）其實就是 overflow 的部分，看你要不要。",
+    "也可以寫 mul $rd, $rs, $rt：有給 destination，就直接把低 32 bits（Lo 那部分）放進 rd。",
+    "否則寫 mult rs, rt，結果自動放在 Hi、Lo，需要哪個再用 mflo／mfhi 搬出來。這就是 MIPS 的做法。"
+   ]
+  },
+  {
+   "title": "紙筆乘法：看乘數的每一個 bit",
+   "scene": "nuB-11a-paper",
+   "points": [
+    {
+     "t": 373,
+     "text": "乘法器怎麼設計？先複習紙筆乘法；分 unsigned 與 signed（two's complement）兩部分。"
+    },
+    {
+     "t": 440,
+     "text": "被乘數 multiplicand、乘數 multiplier；二進位乘數只有 0、1：1 就抄被乘數，0 就是 0。"
+    },
+    {
+     "t": 494,
+     "text": "每個 iteration 被乘數往左 shift 一位；逐次加進 partial product。"
+    }
+   ],
+   "cues": [
+    373.26,
+    398.72,
+    412.9,
+    440.22,
+    461.96,
+    494.39,
+    520.9,
+    537.48,
+    563.26
+   ],
+   "explain": [
+    "乘法器到底要怎麼設計？就像加法器一樣，要做一個硬體零件幫我們做乘。",
+    "先複習我們用紙和筆怎麼乘；第一版硬體就是把紙筆的做法直接搬過去。",
+    "分兩部分：unsigned（沒有正負號，當正數乘），以及 signed（用 two's complement 表示的數相乘）。",
+    "上面的叫 multiplicand（被乘數），下面的叫 multiplier（乘數）。課本例：1000 × 1001。",
+    "二進位的乘數每一位只有 0 或 1，很簡單：是 1 就把被乘數抄下來，是 0 就寫 0000。",
+    "注意每往下一個 iteration，被乘數就往左 shift 一位（就是紙上往左錯開一格）。",
+    "最後把這些列加起來就是乘積：1000 × 1001 = 100 1000（8 × 9 = 72）。",
+    "硬體不會一次全部加：每個 iteration 把新的一列加進「目前為止的和」，這個暫時的和叫 partial product（部分積）。",
+    "整個流程：看乘數的這一個 bit，是 1 就把（已 shift 好的）被乘數加進 partial product，是 0 就不動；再把被乘數往左移一位，換下一個 bit。"
+   ]
+  },
+  {
+   "title": "第一版乘法器硬體與 2 × 3 例子",
+   "scene": "nuB-11a-v1",
+   "points": [
+    {
+     "t": 596,
+     "text": "第一版：64-bit Multiplicand register（起初放右半）、64-bit ALU、64-bit Product、32-bit Multiplier（右移）。"
+    },
+    {
+     "t": 676,
+     "text": "演算法：Multiplier0 = 1 → Product += Multiplicand；Multiplicand 左移；Multiplier 右移；做 32 次。"
+    },
+    {
+     "t": 730,
+     "text": "例子 0010 × 0011：Product 依序 0000 0010 → 0000 0110 → 不變 → 不變 = 6。"
+    }
+   ],
+   "trap": "乘數 bit 是 0 的那一輪不做加法，但兩個 shift 還是要做。",
+   "cues": [
+    596.4,
+    615.62,
+    624.3,
+    632.24,
+    649.58,
+    668.32,
+    683.54,
+    730.54,
+    738.72,
+    747.36,
+    764.62,
+    781.84,
+    791.28,
+    800.54,
+    816.2
+   ],
+   "explain": [
+    "第一版硬體：multiplicand 一開始 32 bits，放在一個 64-bit register 的最右邊。（例子用 4 bits，所以畫成 8-bit register。）",
+    "乘數放在 Multiplier register，每次看它最右邊的 bit，決定這一輪要不要加。",
+    "要加的話，就把 multiplicand 加到 Product 裡，再寫回 Product，那就是 partial product。",
+    "這個版本需要 64-bit 的 multiplicand register、64-bit 的加法器、64-bit 的 Product。",
+    "處理完一個 bit，multiplier 就 right shift，把下一個 bit 移到最右邊。",
+    "乘數 32 bits 就做 32 個 iteration。",
+    "流程圖：1. 看 Multiplier0；是 1 就 Product = Product + Multiplicand。2. Multiplicand 左移一位。3. Multiplier 右移一位。重複 32 次。",
+    "看例子：multiplicand = 0010（2），multiplier = 0011（3）。",
+    "一開始 Product 全部是 0；multiplier 0011 放在 Multiplier register；multiplicand 還沒 shift，在最右邊。",
+    "第 1 輪：multiplier 最右邊是 1，所以把 0000 0010 加進 Product → 0000 0010。",
+    "然後 multiplicand 左移一位（0000 0100），multiplier 右移一位（0001），準備下一輪。",
+    "第 2 輪：最右邊又是 1，把 0000 0100 加進去：0000 0010 + 0000 0100 = 0000 0110。",
+    "一樣 shift：multiplier 右移（0000）、multiplicand 左移（0000 1000）。",
+    "第 3 輪：bit 是 0，不做加法——但為了下一輪，兩個 shift 還是要做。",
+    "第 4 輪：又是 0，等於加 0；shift 完四個 bit 全部做完，Product = 0000 0110 = 6。"
+   ]
+  },
+  {
+   "title": "第一版的浪費：一半的 bit 永遠是 0",
+   "scene": "nuB-11a-waste",
+   "points": [
+    {
+     "t": 830,
+     "text": "第一版直接照紙筆算；每個 iteration 都是一次 64-bit 加法，乘法比加法慢很多（約 5:1～100:1）。"
+    },
+    {
+     "t": 928,
+     "text": "multiplicand 64 bits 中只有 32 bits 有效，其他都是 0。"
+    },
+    {
+     "t": 977,
+     "text": "partial product 最右邊已經加完的 bits 之後不會再變，不需要 64-bit 加法器。"
+    }
+   ],
+   "cues": [
+    830.68,
+    848.08,
+    873.46,
+    888.9,
+    920.5,
+    943.22,
+    970.32,
+    977.34,
+    1031.15,
+    1057.36
+   ],
+   "explain": [
+    "第一版就是把紙筆算法直接搬到硬體上。它有一些可以改進的缺點。",
+    "它做很多個 iteration，而且每一個 iteration 都要做一次 64-bit 的加法。",
+    "要做幾次加法要看乘數有幾個 1：0 不用加，1 就要加。",
+    "所以乘法比加法花時間：一次乘法可能等於很多次 64-bit 加法。老師說乘與加的時間比大約 5:1 到 100:1，看設計。",
+    "怎麼改進？先看 multiplicand：register 有 64 bits，但真正有效的 bits 只有 32 個（例子是 4 個）。",
+    "它一直往左移，有效的那 32 bits 在中間跑來跑去，左右兩邊永遠是 0。",
+    "multiplicand register 有一半的 bits 永遠是 0，用 64 bits 很浪費。",
+    "再看更重要的一點：multiplicand 往左移時右邊都是 0，加到 partial product 後，Product 最右邊的 bits 不會再改變。",
+    "拿剛才的例子驗證：每一輪加法時，比這一輪更低的 bits 都沒有變。",
+    "紙筆算也一樣：第一列產生後，第二列加進來時最右邊那位不變，只有中間在變；越往後不變的越多。"
+   ]
+  },
+  {
+   "title": "改良版的想法：不動 multiplicand，改把 Product 右移",
+   "scene": "nuB-11a-v2idea",
+   "points": [
+    {
+     "t": 1089,
+     "text": "改良：multiplicand 不往左移，改成 partial product 往右移，加到正確的位置。"
+    },
+    {
+     "t": 1269,
+     "text": "multiplicand 只要 32 bits；partial product 從 32 bits 開始，每 iteration 多 1 bit 並右移。"
+    },
+    {
+     "t": 1338,
+     "text": "Product 右半空著，multiplier 放進去：multiplier 每用掉一個 bit 就空出一位給 product。"
+    },
+    {
+     "t": 1392,
+     "text": "結果：Multiplier register 省掉、ALU 只要 32 bits。"
+    }
+   ],
+   "trap": "multiplicand 不動時，是 Product 往右移（不是往左）——相對位置一樣。",
+   "cues": [
+    1097.74,
+    1131.08,
+    1138.52,
+    1161.86,
+    1210.46,
+    1245.16,
+    1269.6,
+    1279.5,
+    1337.8,
+    1345.54,
+    1392.48,
+    1409.52,
+    1480.21
+   ],
+   "explain": [
+    "改進：與其把 multiplicand 往左移（shift multiplicand to left），不如把 product 往右移（shift product to right）。",
+    "multiplicand 不動，那要加到 partial product 的正確位置——那就讓 product 往右移，對準它。",
+    "另外，multiplier 每次只用一個 bit，用完就 shift 走了，它的空間可以跟 partial product share（等一下講）。",
+    "再用剛才的例子看：框框（multiplicand 的位置）固定不動。",
+    "第一次加在框框的位置；第二次本來要加在左邊一位——現在框框不動，等於 partial product 先往右 shift 一位再加。",
+    "第三個 iteration 要加到更左邊——相當於 partial product 往右 shift 兩位。",
+    "得到的改進：multiplicand 只要 32 bits，因為它根本不動。",
+    "partial product 一開始只需要 32 bits（加在左半），每做一個 iteration 就往右 shift 一位、多用一個 bit。",
+    "那一開始 Product 右半有 32 bits 是空的——為什麼不把 multiplier 放在那裡？",
+    "multiplier 也是 right shift：每次看最右邊的 bit，用掉一個就移出去，剩 31 bits、30 bits……正好空出位置給 partial product 往右長。",
+    "改良後：multiplier 不用自己的 register（併進 Product），又省 32 bits；更重要的是 ALU 只要 32 bits。",
+    "因為右邊不會變的 bits 直接留在 Product 裡、最左邊都是 0 也不用算，32 位元加法就夠了。",
+    "核心觀念再講一次：紙筆算是 multiplicand 往左移；現在 multiplicand 不動，所以 partial product 往右移，加的相對位置一樣。"
+   ]
+  },
+  {
+   "title": "改良版例子：0010 × 0011",
+   "scene": "nuB-11a-v2ex",
+   "points": [
+    {
+     "t": 1573,
+     "text": "例子：multiplicand 0010 不動；Product 右半先放 multiplier 0011。"
+    },
+    {
+     "t": 1687,
+     "text": "第 1 輪 bit 1：左半 + 0010 → 0010 0011，右移 → 0001 0001；第 2 輪 bit 1：0011 0001 → 0001 1000。"
+    },
+    {
+     "t": 1737,
+     "text": "第 3、4 輪 bit 0 只右移：0000 1100 → 0000 0110 = 6。"
+    }
+   ],
+   "cues": [
+    1573.72,
+    1597.33,
+    1646.5,
+    1671.44,
+    1687.22,
+    1695.52,
+    1712.38,
+    1728.46,
+    1737.5
+   ],
+   "explain": [
+    "用這個版本再做一次 0010 × 0011：multiplicand 不動，所以只要 4 bits。",
+    "Product 的右半（綠色那塊）一開始空著，因為 partial product 要三次 iteration 後才會擺滿。空出來要給誰？",
+    "給 multiplier 放！Product 右半就是 0011。",
+    "一開始 partial product 和 multiplier 共用這個 register；每用掉 multiplier 右邊一個 bit，空出來的位置就給 partial product。",
+    "第 1 輪：multiplier bit 是 1，把 multiplicand 加到 Product 左半：0010 0011。",
+    "加完右移一位：0001 0001。剛用掉的那個 bit 被移出去了。",
+    "第 2 輪：下一個 bit 又是 1，再加一次：0001 + 0010 = 0011 → 0011 0001。",
+    "最右邊的 bits 一旦移出去就不會再變。再右移一位：0001 1000。",
+    "第 3、4 輪的 bit 都是 0：不用加，只右移兩次：0000 1100 → 0000 0110。"
+   ]
+  },
+  {
+   "title": "有號乘法：先當 unsigned 乘，再補正負號",
+   "scene": "nuB-11a-signed",
+   "points": [
+    {
+     "t": 1748,
+     "text": "改良版：multiplier 與 partial product 合在一起一起 shift；結果放 Hi、Lo（unsigned 指令）。"
+    },
+    {
+     "t": 1843,
+     "text": "有號乘法方法一：兩數都變正數，用 unsigned 乘，再看兩個 sign bit：同號為正、異號為負，負的就取 two's complement。"
+    },
+    {
+     "t": 1919,
+     "text": "方法二：直接用 two's complement 乘；再進一步可用 Booth's algorithm 加速。"
+    }
+   ],
+   "cues": [
+    1747.96,
+    1763.5,
+    1774.4,
+    1843.45,
+    1863.28,
+    1874.76,
+    1893.08,
+    1919.28,
+    1943.55
+   ],
+   "explain": [
+    "改良版裡 multiplier 和 partial product 合在同一個 register，shift 時一起做。",
+    "結果放在 Hi、Lo。這是 unsigned 的乘法，要用 unsigned 的指令（multu）。",
+    "那 signed（有正負號）的乘法怎麼辦？",
+    "小學生都會的方法：先把兩個數都變成正數，用已經做好的 unsigned 乘法器乘。示意 (−3) × 2：先算 3 × 2 = 6。",
+    "正負號看最左邊的 sign bit：0 是正、1 是負。",
+    "0 和 0 → 正；1 和 1 → 也是正；一個 0 一個 1 → 負。也就是兩個 sign bit 做 XOR。",
+    "如果結果應該是負的，就把 unsigned 乘出來的結果取 two's complement 變成負數。",
+    "第二種方法：不去掉 sign，直接用 two's complement 的數去乘。",
+    "再進一步，可以設計 Booth's algorithm 來加速有號乘法——這是今天後面要介紹的重點。"
+   ]
+  },
+  {
+   "title": "Two's complement 乘法：sign extension 與最後一位要減",
+   "scene": "nuB-11a-tc",
+   "points": [
+    {
+     "t": 2019,
+     "text": "規則一：multiplicand 加進 partial product 前要做 sign extension。"
+    },
+    {
+     "t": 2049,
+     "text": "規則二：乘數的 sign bit（最後一個 iteration）是 1 時，要減掉 multiplicand（不是加）。"
+    },
+    {
+     "t": 2056,
+     "text": "例：−7 × −7，−7 = 1001：加 1111 1001，中間兩位 0，最後 sign bit 1 → 減 1100 1000，得 0011 0001 = 49。"
+    }
+   ],
+   "trap": "最後一個 bit 是 sign bit，代表 −2³，所以那一輪是「減」multiplicand（左移 3 位），不是加。",
+   "cues": [
+    2018.76,
+    2026.3,
+    2048.77,
+    2056.1,
+    2072.9,
+    2087.94,
+    2111.84,
+    2120.6,
+    2144.76,
+    2256.62,
+    2264.18
+   ],
+   "explain": [
+    "直接用 two's complement 乘，投影片給了兩條規則的提示。",
+    "規則一：multiplicand 要做 sign extension（符號延伸）——延長位數時，正數前面補 0，負數前面補 1，值才不變。",
+    "規則二：最後要 subtract（減）。先記住，等一下用例子看。",
+    "例子：−7 × −7。−7 的 4-bit two's complement 是 1001。",
+    "跟前面一樣看乘數的 bit：最右邊是 1，就把 multiplicand 加進 partial product。",
+    "partial product 是 8 bits，所以 1001 要先 sign extension 成 1111 1001 再加（因為是負數，前面補 1）。",
+    "接下來兩個 bit 是 0，乘進去還是 0。",
+    "最後這個 bit 是 sign bit，意義不一樣：它代表的是 −2³，不是 +2³。",
+    "sign bit 是 0 就照常；是 1 就要「減」multiplicand（左移 3 位，sign-extend 後是 1100 1000）。",
+    "計算：1111 1001 − 1100 1000 = 0011 0001 = 49。你可以 check：(−7) × (−7) = 49。",
+    "整理兩條規則：multiplicand 要 sign extension；乘數 bit 是 1 時一般是加，但 sign bit 那一位是乘以 −1，要做減。"
+   ]
+  },
+  {
+   "title": "為什麼最後一位要減：two's complement 的值",
+   "scene": "nuB-11a-why",
+   "points": [
+    {
+     "t": 2310,
+     "text": "A × B：B 寫成每一位乘以 2 的次方，A × B = 每一位 × A 的和。"
+    },
+    {
+     "t": 2387,
+     "text": "two's complement 的 sign bit 代表 −2ⁿ⁻¹：B = −b₃·2³ + b₂·2² + b₁·2¹ + b₀·2⁰。"
+    },
+    {
+     "t": 2448,
+     "text": "所以 A 乘到 sign bit 那一項就是 A × (−2³)：做減法。"
+    }
+   ],
+   "cues": [
+    2310.5,
+    2330.88,
+    2353.2,
+    2387.34,
+    2420.42,
+    2448.16,
+    2529.07
+   ],
+   "explain": [
+    "為什麼要這樣做？把乘法寫成 A × B（A 是 multiplicand，B 是 multiplier）。",
+    "乘的意思是：B 的第一個 bit 乘 A、第二個 bit 乘 A、第三個、第四個……分別錯開位置再加。",
+    "也就是說 B 可以寫成這種多項式：B = b₀·2⁰ + b₁·2¹ + b₂·2² + b₃·2³（unsigned 時）。",
+    "但 two's complement 的 sign bit 意義不同：它代表 −2³。所以 B = −b₃·2³ + b₂·2² + b₁·2¹ + b₀·2⁰。右下把 16 種 4-bit pattern 全部驗算。",
+    "sign bit 是 0，這一項就沒了（正數）；是 1，就要減掉 8——這跟「反相再加 1」求負數是同一件事。示意 1001 = −8 + 1 = −7。",
+    "所以 A × B 就是 A 乘以每一項：前三項照常加，乘到 sign bit 那一項就是 A × (−2³)，也就是減掉 A 左移 3 位。",
+    "這就是邏輯設計學過的：負數的大小是「complement 再加 1」，代數上就是減掉 2³ 那一項。two's complement 的乘法就是這樣。"
+   ]
+  },
+  {
+   "title": "Booth 的想法：一串 1 只要一減一加",
+   "scene": "nuB-11a-booth",
+   "points": [
+    {
+     "t": 2563,
+     "text": "Booth multiplication：乘數有一串連續的 1 時，每個 1 都要加一次。"
+    },
+    {
+     "t": 2596,
+     "text": "一串 1 可以改寫成兩項相減，只要一次減、一次加；加減在 ALU 裡速度一樣。"
+    },
+    {
+     "t": 2743,
+     "text": "從右往左看：碰到第一個 1 做減、中間的 1 不做事、1 結束後做加——這就是 Booth 的精神。"
+    }
+   ],
+   "cues": [
+    2563.29,
+    2578.31,
+    2595.85,
+    2630.45,
+    2638.21,
+    2647.73,
+    2697.59,
+    2742.97,
+    2799.94,
+    2809.76,
+    2818.66
+   ],
+   "explain": [
+    "有了 two's complement 乘法，再介紹 Booth multiplication（Booth 演算法）。",
+    "乘數有很多個 1 時，每碰到一個 1 就要做一次加。示意：乘數 0011 1110 有五個 1，就要加五次。",
+    "但這個數字也可以寫成兩個數相減：0011 1110 = 0100 0000 − 0000 0010（62 = 64 − 2）。",
+    "所以 A × 這個數 = A × 64 − A × 2。",
+    "原本要做五次，現在只有兩個位置有 1：一次減、一次加。",
+    "減和加對 ALU 來說一樣快：減法就是 b 取 complement 再加，所以速度一樣。",
+    "怎麼變的？重點是「連續的 1」：一串 1 的起點做減、終點的下一位做加，就跟原來一模一樣。",
+    "從右邊開始看乘數：碰到這一串的第一個 1，要做減。",
+    "中間的 1 都不做任何動作。",
+    "走到這串 1 結束（下一位是 0）時，做加。",
+    "不需要先把乘數化簡：只要從右邊掃過去，看到第一個 1 就減、一串結束就加，邊看邊決定——這就是 Booth multiply 的精神，下次再詳細做。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "MIPS 執行 mult $t1, $t2 後，乘積在哪裡？",
+   "opts": [
+    "Hi（高 32 bits）與 Lo（低 32 bits）",
+    "$t1",
+    "$t2 與 $t3",
+    "只有 Lo"
+   ],
+   "ans": "Hi（高 32 bits）與 Lo（低 32 bits）",
+   "why": "32 × 32 = 64 bits，一般 register 放不下，要用 mfhi／mflo 搬出來。"
+  },
+  {
+   "q": "第一版乘法器每一輪做什麼？",
+   "opts": [
+    "Multiplier0 = 1 就 Product += Multiplicand；Multiplicand 左移、Multiplier 右移",
+    "Product 右移、Multiplicand 不動",
+    "看兩個 bit 決定加或減",
+    "Multiplicand 右移、Multiplier 左移"
+   ],
+   "ans": "Multiplier0 = 1 就 Product += Multiplicand；Multiplicand 左移、Multiplier 右移",
+   "why": "這是照紙筆算法直接搬過去的版本，需要 64-bit 的 Multiplicand 與 ALU。"
+  },
+  {
+   "q": "改良版乘法器的關鍵改變是？",
+   "opts": [
+    "Multiplicand 不動、Product 右移，multiplier 放進 Product 右半",
+    "Multiplicand 改成 128 bits",
+    "每次看兩個 bit",
+    "把 ALU 改成 64 bits"
+   ],
+   "ans": "Multiplicand 不動、Product 右移，multiplier 放進 Product 右半",
+   "why": "相對位置不變；Multiplicand、ALU 都只要 32 bits，multiplier register 也省掉。"
+  },
+  {
+   "q": "4-bit two's complement 乘法 −7 × −7，乘數 sign bit 那一輪要？",
+   "opts": [
+    "減掉 multiplicand（左移 3 位）",
+    "加上 multiplicand",
+    "什麼都不做",
+    "把結果反相"
+   ],
+   "ans": "減掉 multiplicand（左移 3 位）",
+   "why": "sign bit 代表 −2³；1111 1001 − 1100 1000 = 0011 0001 = 49。"
+  },
+  {
+   "q": "有號乘法方法一：兩數取絕對值相乘後，結果的正負號怎麼決定？",
+   "opts": [
+    "兩個 sign bit 做 XOR",
+    "兩個 sign bit 做 AND",
+    "看被乘數的 sign bit",
+    "看乘數的 sign bit"
+   ],
+   "ans": "兩個 sign bit 做 XOR",
+   "why": "同號為正（0）、異號為負（1），負的就把結果取 two's complement。"
+  },
+  {
+   "q": "Booth 的想法：乘數 0011 1110 可以改寫成？",
+   "opts": [
+    "0100 0000 − 0000 0010",
+    "0100 0000 + 0000 0010",
+    "0011 1111 − 0000 0001",
+    "0100 0000 − 0000 0001"
+   ],
+   "ans": "0100 0000 − 0000 0010",
+   "why": "62 = 64 − 2：一串 1 的起點做減、結束後一位做加，五次加變成一減一加。"
+  }
+ ]
+}

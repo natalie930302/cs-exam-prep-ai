@@ -1,0 +1,555 @@
+{
+ "video": "kWCUI2x7iSQ",
+ "label": "黃婷婷教授計算機結構_第10A講 Computer Arithmetic",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習：ALU 由 MUX 選出結果，funct 當 control",
+   "scene": "nuB-10a-recap",
+   "points": [
+    {
+     "t": 0,
+     "text": "ISA 定好後要找出 organization：從 component 建起，再組成能執行指令的硬體。"
+    },
+    {
+     "t": 46,
+     "text": "ALU 能做 and、or、slt、nor、add；用 MUX 選輸出，select 就是由 funct 來的 control signal。"
+    }
+   ],
+   "cues": [
+    0,
+    5.81,
+    46.48,
+    56.06
+   ],
+   "explain": [
+    "上一講開始「蓋硬體」：ISA（指令集）已經定好，現在要找出它的 organization，也就是內部怎麼組成。做法是先做小零件（component）再組合。",
+    "第一個零件就是 ALU。",
+    "ALU 可以做 and、or、set on less than、nor 和加法；全部同時算好，再透過一個 MUX 決定輸出哪一個。",
+    "MUX 的 select input 就是 instruction 的 control signal，來源是 R-type 指令的 funct 欄位。"
+   ]
+  },
+  {
+   "title": "Ripple carry adder 的問題：carry 一級一級等",
+   "scene": "nuB-10a-ripple",
+   "points": [
+    {
+     "t": 63,
+     "text": "前面的加法器是 ripple carry adder：1-bit full adder 重複接起來。"
+    },
+    {
+     "t": 95,
+     "text": "full adder：三個 input（x、y、carry in），兩個 output（sum、carry out）。"
+    },
+    {
+     "t": 188,
+     "text": "carry out = 任兩個 input 為 1：三個 AND + 一個 OR，2 gate delays。"
+    },
+    {
+     "t": 218,
+     "text": "32 bits 要等 32 級的 delay 才拿到最後的 carry out，太慢。"
+    }
+   ],
+   "cues": [
+    63.4,
+    80.16,
+    87.3,
+    94.98,
+    111.16,
+    134.96,
+    156.21,
+    187.93,
+    203.45,
+    218.29,
+    237.65,
+    254.15,
+    262.54
+   ],
+   "explain": [
+    "先回到加法：前面介紹的加法器叫 ripple carry adder（漣漪進位加法器）。",
+    "做法是：一個 bit 設計好，然後重複這個 bit slice。",
+    "這樣的設計有什麼問題？先看每一片 full adder（全加器）。",
+    "full adder 有三個 input：x、y，還有 carry in。",
+    "三個 input 會產生兩個 output。",
+    "一個是 sum（這一位的結果），一個是 carry out（進位）。",
+    "carry out 要給下一階當 carry in；下一階又要等它進來，才算得出自己的 sum 和 carry out。",
+    "carry out 的邏輯：三個 input 裡任何兩個是 1 就有進位，也就是 xy + x·cin + y·cin：三個 AND 閘加一個 OR 閘。右邊把 8 種組合都驗算。",
+    "所以每一級要經過一個 AND 再一個 OR，叫 two gate delay（兩個閘的延遲）才產生 carry out。",
+    "最壞情況是 carry 要一路傳到最左邊。示意：1111 + 0001，每一級都要等右邊的 carry，delay 一直累加。",
+    "sum 也會晚一點，但最晚出來的就是最後一級的 carry out，要經過很多 stage。",
+    "高效能處理器的 clock cycle 會被這段 delay 拖長，沒辦法接受。",
+    "所以要改進 carry：一定要經過這麼多 stage 才拿得到 carry 嗎？下面介紹 carry lookahead adder。"
+   ]
+  },
+  {
+   "title": "Carry lookahead 的想法：把 c1 代進 c2",
+   "scene": "nuB-10a-subst",
+   "points": [
+    {
+     "t": 271,
+     "text": "看 bit 0、bit 1：c1 = b0c0 + a0c0 + a0b0，c2 = b1c1 + a1c1 + a1b1 要等 c1。"
+    },
+    {
+     "t": 422,
+     "text": "把 c1 的式子代入 c2 展開：只用到一開始就有的 a、b、c0，仍是 two-level。"
+    },
+    {
+     "t": 518,
+     "text": "用更多（三輸入）的 gate 換時間：這就是 carry lookahead 的概念。"
+    }
+   ],
+   "cues": [
+    271.55,
+    294.33,
+    326.89,
+    348.61,
+    368.21,
+    381.33,
+    406.47,
+    422.73,
+    457.13,
+    466.15,
+    517.75,
+    536.77
+   ],
+   "explain": [
+    "只看最低的兩個 bit：bit 0 和 bit 1。",
+    "記號：bit 0 的 carry out 就是 bit 1 的 carry in，叫 c1，是同一個東西。",
+    "c1 怎麼算：a0、b0、c0 任兩個是 1 就進位，c1 = b0c0 + a0c0 + a0b0。",
+    "c2 也一樣：c2 = b1c1 + a1c1 + a1b1。",
+    "但 c2 的式子裡用到了 c1，c1 要等 bit 0 算完才有，不能馬上拿到。",
+    "單看式子其實很快：它是 sum of products，所有 AND 同時做，再一個 OR，只要兩個 gate delay（two-level）。",
+    "問題是 c1 還是要等前一級算完——這就是 ripple carry 的 delay 問題。",
+    "解法：用空間換時間（duplicate）。既然 c1 有式子，就把 c1 的式子直接代進 c2。",
+    "展開以後 c2 = a1a0b0 + a1a0c0 + a1b0c0 + b1a0b0 + b1a0c0 + b1b0c0 + a1b1。右下把 a0、b0、a1、b1、c0 的 32 種組合都驗算過。",
+    "這又是一個 sum of products，而且每一項只用到 a1、a0、b0、b1、c0——一開始就有的值，不必等任何人。",
+    "代價是 gate 變多了：六個三輸入 AND（加一個兩輸入的），比原來多很多。就是用 hardware 換取時間。",
+    "「我不等你了，大家一起做」——這就是 carry lookahead adder 的基本概念。"
+   ]
+  },
+  {
+   "title": "Generate 與 Propagate",
+   "scene": "nuB-10a-gp",
+   "points": [
+    {
+     "t": 552,
+     "text": "一直代換太笨，要看結構：每個 bit 什麼時候會產生 carry。"
+    },
+    {
+     "t": 598,
+     "text": "每個 bit 定義 generate term gi = ai·bi 與 propagate term pi（老師寫 ai ⊕ bi；課本用 ai + bi）。"
+    },
+    {
+     "t": 683,
+     "text": "generate：ai = bi = 1，不管 carry in 都有 carry out。"
+    },
+    {
+     "t": 767,
+     "text": "propagate：ai、bi 恰有一個 1，carry in 是 1 就 carry out，是 0 就沒有。"
+    }
+   ],
+   "trap": "pi 用 XOR（老師）或 OR（課本）都能得到同樣的 carry：兩者只在 ai = bi = 1 時不同，而那時 gi = 1 已經保證進位。",
+   "cues": [
+    552.19,
+    597.77,
+    634.11,
+    658,
+    690.75,
+    742.05,
+    767.57,
+    808.65,
+    853.31,
+    880.09
+   ],
+   "explain": [
+    "一直代換式子太笨，要換個角度：看每一個 bit 在什麼情況下會產生 carry。",
+    "每個 bit 定義兩個量：generate term g 和 propagate term p。",
+    "這兩個名字不是亂取的：G 來自 generate（產生），P 來自 propagate（傳遞）。",
+    "什麼叫 generate？就是這個 bit 自己就能產生 carry，不靠別人。",
+    "答案：ai = 1 而且 bi = 1。1 + 1 已經等於 10，不管 carry in 是 0 還是 1，一定有 carry out。",
+    "所以 gi = ai AND bi。這是最簡單也最重要的一個，懂了它後面都會。",
+    "什麼叫 propagate（傳遞）？carry in 是 1，carry out 就是 1；carry in 是 0，carry out 就是 0——把進來的 carry 原封不動傳出去。",
+    "條件是 ai、bi 剛好一個是 1：這時 carry in = 1 加起來 = 10，有進位；carry in = 0 加起來 = 1，沒進位。",
+    "所以 ai = 1、bi = 0，或 ai = 0、bi = 1 時，pi = 1，這一位擔任 propagate 的角色。",
+    "每個 bit 的 gi、pi 只用到自己的 ai、bi，輸入一進來馬上就能算出來。"
+   ]
+  },
+  {
+   "title": "Carry 方程式：c1、c2、c4",
+   "scene": "nuB-10a-eq",
+   "points": [
+    {
+     "t": 896,
+     "text": "最低位：自己 generate，或者 propagate 進來的 c0：c1 = g0 + p0c0。"
+    },
+    {
+     "t": 967,
+     "text": "c2 = g1 + p1g0 + p1p0c0。"
+    },
+    {
+     "t": 1058,
+     "text": "c4 = g3 + p3g2 + p3p2g1 + p3p2p1g0 + p3p2p1p0c0。"
+    },
+    {
+     "t": 1156,
+     "text": "每個 carry 都是 product 再 OR：two-level，理論上可以一路做到 c16。"
+    }
+   ],
+   "cues": [
+    896.11,
+    938.17,
+    971.05,
+    992.43,
+    1010.39,
+    1069.29,
+    1085.8,
+    1140.46,
+    1155.92,
+    1188.94
+   ],
+   "explain": [
+    "先看最低位（bit 0）什麼時候有 carry out。只有兩種情況：自己 generate，或者把進來的 c0 propagate 出去。",
+    "寫成式子：c1 = g0 + p0·c0（老師口頭把 bit 0 的 carry out 叫 C0，課本記作 c1）。",
+    "再來是 bit 1 的 carry out（c2），一個條件一個條件慢慢來。第一種：bit 1 自己 generate（g1）。",
+    "第二種：bit 1 不 generate，但 bit 0 generate，而且 bit 1 幫它 propagate：p1·g0。",
+    "第三種：兩個都不 generate，從最開始的 c0 進來，兩位都要 propagate：p1·p0·c0。",
+    "換成 c4（bit 3 的 carry out），老師請同學上台寫：",
+    "g3（自己 generate）、或 g2 而且 p3、或 g1 而且 p2、p3、或 g0 而且 p1、p2、p3、或 c0 而且四個 p 全部 propagate。",
+    "規律：某一位 generate，而它左邊（更高）的每一位都幫忙 propagate。依此類推可以寫出所有 carry。示意 1011 + 0110 驗算：",
+    "不管寫多複雜，每一項都是一個 AND（product），最後全部 OR 起來：sum of products，只有兩級 gate。",
+    "理論上 c16 也可以這樣寫出來，一樣是 two-level。"
+   ]
+  },
+  {
+   "title": "水管比喻：每個 bit 同時算出 p、g",
+   "scene": "nuB-10a-pipe",
+   "points": [
+    {
+     "t": 1204,
+     "text": "水管比喻：有水 = 有 carry；自己出水 = generate，閥門打開讓上游的水過來 = propagate。"
+    },
+    {
+     "t": 1278,
+     "text": "ai、bi 一進來每個 bit 同時算出 pi、gi，再用 two-level 式子算 carry，不必等前一位。"
+    }
+   ],
+   "cues": [
+    1211.5,
+    1228.82,
+    1236.72,
+    1244.27,
+    1278.5,
+    1306.04,
+    1317.02,
+    1341.68
+   ],
+   "explain": [
+    "用水管來想：每一節水管出口有沒有水，代表那裡有沒有 carry。",
+    "generate：這一節自己就有水龍頭，直接灌水出來，當然有水。",
+    "propagate：自己沒水，但閥門是開的（p = 1），就能把上游的水（c0）倒過來。",
+    "c2 也是一樣：bit 1 自己出水；或 bit 0 出水、bit 1 閥門開；或 c0 的水穿過兩個打開的閥門。",
+    "實際電路：每一個 bit 都直接拿到自己的 ai、bi。",
+    "pi 是 XOR、gi 是 AND，四個 bit 同時一起算，一個 gate 的時間就好。",
+    "再用剛才的 two-level 式子，c1～c4 同時算出來；這一位不必等那一位。",
+    "因為每個人的 pi、gi 都算好直接送過去，所以能一起算：這就是用硬體換速度。"
+   ]
+  },
+  {
+   "title": "問題：bit 數一多，gate 的 input 太多",
+   "scene": "nuB-10a-fanin",
+   "points": [
+    {
+     "t": 1357,
+     "text": "問題：最後一項是 c0·p0p1p2p3；到 16 bits 時 AND 要 17 個 input、OR 要 17 項。"
+    },
+    {
+     "t": 1436,
+     "text": "真實的 gate 沒辦法有那麼多 input（fan-in），理論可行、實際做不到 → 要改進。"
+    }
+   ],
+   "cues": [
+    1357.54,
+    1374.73,
+    1383.22,
+    1393.06,
+    1418.82,
+    1435.96,
+    1462.02
+   ],
+   "explain": [
+    "那問題在哪裡？看剛才同學寫的 c4。",
+    "最後一項是 c0 AND p0、p1、p2、p3——已經要一個 5 個 input 的 AND。",
+    "如果到第 16 個 bit，最後那一項就要 16 個 p 加 c0 AND 在一起。",
+    "雖然還是 two-level，但 AND gate 和 OR gate 都變得太大，input 太多。",
+    "算算看：c(n) 的式子有 n + 1 項，最長的 AND 有 n + 1 個 input。右邊用程式數一數。",
+    "實際的 gate 不可能有這麼多 input（fan-in），就算能做，delay 也會更大。",
+    "所以理論上 OK，實際上電路太大，不能直接做 32 bits 的 carry lookahead，要改進。"
+   ]
+  },
+  {
+   "title": "Cascaded carry lookahead adder",
+   "scene": "nuB-10a-casc",
+   "points": [
+    {
+     "t": 1479,
+     "text": "改進一：cascaded carry lookahead adder。"
+    },
+    {
+     "t": 1494,
+     "text": "切成 8 bits 一塊，塊內用 carry lookahead（最多 8 項）；塊與塊之間像 ripple 一樣傳 C8、C16、C24。"
+    },
+    {
+     "t": 1527,
+     "text": "32 bits 只剩 4 個 stage 的 delay，比 32 個 stage 快。"
+    }
+   ],
+   "cues": [
+    1478.82,
+    1493.94,
+    1511.92,
+    1519,
+    1536.12,
+    1616.94,
+    1635.48,
+    1642.58
+   ],
+   "explain": [
+    "改進有兩種：cascaded（串接式）carry lookahead adder，和 multiple-level（多層）carry lookahead adder。先看簡單的。",
+    "項數太多，那就切開：32 bits 切成四塊，每塊 8 bits；塊內用 carry lookahead，項數最多 8 個。",
+    "第一塊做完就產生 C8，交給下一塊。",
+    "整體看起來像 ripple carry adder，只是一級是一整塊：一共 4 個 stage 的 delay。",
+    "至少比 16 個或 32 個 stage 好很多；每個 stage 裡面用快速的 carry lookahead。",
+    "看動畫：一個 carry lookahead 單位有 c in，很快就產生 g、p 和它的 carry out。",
+    "第一個 stage 的 8 個 bit 用 carry lookahead 很快算出 carry out。",
+    "接著第二、第三、第四個 stage。這就是 cascaded carry lookahead adder。"
+   ]
+  },
+  {
+   "title": "Multi-level carry lookahead：block 的大 P、大 G",
+   "scene": "nuB-10a-ml",
+   "points": [
+    {
+     "t": 1666,
+     "text": "希望 delay 只有 log n：multiple-level carry lookahead。"
+    },
+    {
+     "t": 1731,
+     "text": "cascaded 的問題是 C8、C16、C24 要等；若能先拿到，各塊就能同時算。"
+    },
+    {
+     "t": 1786,
+     "text": "把一塊當成一個大 bit：block 的大 P = 每一位都 propagate；大 G = 某位 generate 且其上都 propagate。"
+    },
+    {
+     "t": 1999,
+     "text": "先算每塊的 P、G → 第二層算各塊的 carry in → 塊內再算；位數更多就再加一層，像 tree，delay ∝ log n。"
+    }
+   ],
+   "cues": [
+    1666.54,
+    1690.98,
+    1731.38,
+    1750,
+    1786.36,
+    1819.34,
+    1851.08,
+    1867.22,
+    1899.48,
+    1941.06,
+    1999.5,
+    2050.14,
+    2143.96,
+    2177.7
+   ],
+   "explain": [
+    "cascaded 還是嫌慢：切成 4 塊，delay 還是跟 n 成比例。希望 32 bits 的 delay 只有 log n。",
+    "multiple-level carry lookahead：一樣切塊，但把每一塊當作一個「大 bit」來看。",
+    "問題出在哪？C8、C16、C24 來得太慢，要等前一塊做完——跟 carry ripple 很像。",
+    "如果能先用別的方法拿到 C8、C16、C24，四塊就可以同時一起算，不用等。",
+    "把每塊當一個大 bit，概念完全一樣：什麼時候有 C8？這塊自己 generate，或者這塊 propagate 進來的 C0。",
+    "C16：第 1 塊自己 generate；或第 0 塊 generate、第 1 塊 propagate；或 C0 進來兩塊都 propagate。",
+    "只要定義好什麼叫「一塊的 generate」和「一塊的 propagate」就好。",
+    "大 P：塊裡每個 bit 都 propagate，整塊才算 propagate，所以 P = p0·p1·…（全部 AND）。",
+    "大 G：塊裡某一位 generate，而它上面的每一位都 propagate，整塊就 generate（以 4 bits 一塊為例）。",
+    "有了每塊的 P、G，就能先算出各塊的 carry in，然後各塊同時做。",
+    "結構：4 bits 一塊，每塊先產生自己的大 P、大 G；第二層的 carry lookahead 用它們算出每塊的 carry in；塊內再用 lookahead 算。示意 16 bits 驗算：",
+    "如果是 64 bits，就再往上加一層，結構像一棵 tree。",
+    "delay：p、g 先一路往上傳，算出 carry 再一路往下，tree 的高度就是 log n。",
+    "size 越大越有利：最多只要 log n 的 delay，這是最快的加法器。"
+   ]
+  },
+  {
+   "title": "Carry select adder",
+   "scene": "nuB-10a-csel",
+   "points": [
+    {
+     "t": 2196,
+     "text": "carry select adder：2n bits 的 ripple adder delay 2n。"
+    },
+    {
+     "t": 2245,
+     "text": "切一半，進到上半部的 carry 只有 0 或 1 兩種：兩種都先算。"
+    },
+    {
+     "t": 2329,
+     "text": "下半部算完知道 carry，用 2-to-1 MUX 選對的那一份：delay 變 n；切越多、複製越多、越快。"
+    }
+   ],
+   "cues": [
+    2196.2,
+    2212.46,
+    2245.6,
+    2277.68,
+    2286.14,
+    2304.04,
+    2329.5,
+    2354.44
+   ],
+   "explain": [
+    "另一種有趣的加法器：carry select adder。",
+    "假設是 2n bits 的 ripple carry adder，carry 從頭 ripple 到尾，delay 大約 2n。",
+    "從中間切一半：進到上半部的 carry 有幾種可能？",
+    "carry 只有一個 bit，所以只有兩種：0 或 1。",
+    "那就把上半部做兩份：一份假設 carry = 0，一份假設 carry = 1，兩種都先算。",
+    "三個加法器同時一起算，delay 從 2n 變成大約 n。示意 8 bits：1011 0110 + 0101 1100。",
+    "下半部算完就知道真正的 carry：有 carry 選 c = 1 那份，沒有選 c = 0 那份，用一個 2-to-1 MUX。",
+    "切越多段，要複製的硬體越多，但速度越快。"
+   ]
+  },
+  {
+   "title": "SIMD 分割加法器與 saturation",
+   "scene": "nuB-10a-simd",
+   "points": [
+    {
+     "t": 2372,
+     "text": "加法器加速整理：carry lookahead、cascaded、multi-level（log n）、carry select。"
+    },
+    {
+     "t": 2411,
+     "text": "多媒體資料是 8 或 16 bits：把 64-bit adder partition 成 8 個 8-bit 或 4 個 16-bit，一個指令同時加多筆資料（SIMD）。"
+    },
+    {
+     "t": 2479,
+     "text": "saturation：overflow 時直接取能表示的最大值。"
+    },
+    {
+     "t": 2563,
+     "text": "理由：pixel 的數字代表顏色深淺，超過最大值也只能是最深（聲音同理）。"
+    }
+   ],
+   "cues": [
+    2371.98,
+    2403.08,
+    2411.42,
+    2427.9,
+    2453.26,
+    2462,
+    2479.14,
+    2563.66,
+    2572.74,
+    2597.22
+   ],
+   "explain": [
+    "整理一下加法器的加速方法：carry lookahead、cascaded、multi-level（最快，log n），還有 carry select。",
+    "現在多媒體應用很多，加法器還有一些變形。",
+    "多媒體資料像 pixel 都是 8 bits（或 16 bits），不需要用 32 位元去算。",
+    "所以把 64-bit 的加法器 partition（分割）成 8 個 8-bit，或 4 個 16-bit：在分割處把 carry 切斷。示意兩個 8-bit 區段：",
+    "同一個指令，同時對很多筆資料做加法，叫 SIMD（single instruction, multiple data）。",
+    "多媒體還常用到一種運算。除了大家聽過的 overflow、truncation、rounding 之外……",
+    "……還有 saturation（飽和）：如果 overflow，就直接取能表示的最大值，也不必通知誰。",
+    "為什麼要這樣？pixel 的數字代表顏色深淺，數字越大越黑（或越亮）。",
+    "8 bits 最大是 255；算出 257、258 也沒有意義，就用最深的那個值。示意 200 + 100：一般加法會繞回 44，saturation 停在 255。",
+    "主要用在 audio、video：聲音、畫面能表達的範圍有限，超過就停在最大值。"
+   ]
+  },
+  {
+   "title": "下一講預告：乘法",
+   "scene": null,
+   "points": [
+    {
+     "t": 2612,
+     "text": "ALU 的加法就到這裡；下次介紹乘法的指令與硬體。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "ripple carry adder 慢的主要原因是？",
+   "opts": [
+    "每一位都要等前一位的 carry out",
+    "sum 要經過很多 gate",
+    "full adder 有三個 input",
+    "要先做 two's complement"
+   ],
+   "ans": "每一位都要等前一位的 carry out",
+   "why": "每級 2 gate delays，32 bits 要等 32 級。"
+  },
+  {
+   "q": "generate term gi 的定義是？",
+   "opts": [
+    "ai · bi",
+    "ai ⊕ bi",
+    "ai + bi",
+    "ai · bi · ci"
+   ],
+   "ans": "ai · bi",
+   "why": "ai = bi = 1 時不管 carry in 都一定進位。"
+  },
+  {
+   "q": "c2 用 g、p 展開是？",
+   "opts": [
+    "g1 + p1·g0 + p1·p0·c0",
+    "g1 + g0 + c0",
+    "p1·p0·c0",
+    "g1 · p1 + g0 · p0"
+   ],
+   "ans": "g1 + p1·g0 + p1·p0·c0",
+   "why": "bit 1 自己 generate，或 bit 0 generate 且 bit 1 propagate，或 c0 被兩位 propagate。"
+  },
+  {
+   "q": "carry lookahead 不能直接做到 32 bits 的原因？",
+   "opts": [
+    "高位 carry 的 AND／OR gate input 太多（fan-in）",
+    "需要 3 級 gate",
+    "gi、pi 算不出來",
+    "sum 不能平行算"
+   ],
+   "ans": "高位 carry 的 AND／OR gate input 太多（fan-in）",
+   "why": "c16 的最後一項要 17 個 input 的 AND，OR 也要 17 項。"
+  },
+  {
+   "q": "multi-level carry lookahead 的 delay 大約與什麼成正比？",
+   "opts": [
+    "log n",
+    "n",
+    "n / 8",
+    "常數"
+   ],
+   "ans": "log n",
+   "why": "P、G 往上傳、carry 往下算，像 tree，高度是 log n。"
+  },
+  {
+   "q": "carry select adder 的做法是？",
+   "opts": [
+    "上半部假設 carry = 0 與 1 各算一次，再用 MUX 選",
+    "把 carry 存起來下一個 cycle 再加",
+    "只用一個 full adder",
+    "用大 P、大 G 算 carry"
+   ],
+   "ans": "上半部假設 carry = 0 與 1 各算一次，再用 MUX 選",
+   "why": "用 duplicate 的硬體換時間，delay 由 2n 變 n。"
+  },
+  {
+   "q": "8-bit saturating 加法：200 + 100 = ?",
+   "opts": [
+    "255",
+    "44",
+    "300",
+    "−56"
+   ],
+   "ans": "255",
+   "why": "saturation：overflow 時取能表示的最大值；一般加法會繞回 44。"
+  }
+ ]
+}

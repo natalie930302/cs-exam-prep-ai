@@ -1,0 +1,630 @@
+{
+ "video": "gBaVGirWTlU",
+ "label": "黃婷婷教授計算機結構_第12B講 Computer Arithmetic",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "改良版除法演算法",
+   "scene": "nuB-12b-algo",
+   "points": [
+    {
+     "t": 20,
+     "text": "被除數放進 Remainder；先左移一位（第一個商 bit 一定 overflow，不做）。"
+    },
+    {
+     "t": 48,
+     "text": "左半 − Divisor 寫回左半：≥ 0 → 左移、右邊補 1；< 0 → restore（加回去）、左移、補 0。"
+    },
+    {
+     "t": 91,
+     "text": "做 n 次後，因為一開始先左移，最後要把左半右移一位才是正確的 remainder。"
+    }
+   ],
+   "trap": "最後一步只把 Remainder 的「左半」右移一位；右半是商，不動。",
+   "cues": [
+    19.8,
+    33.24,
+    40.9,
+    48.53,
+    57.3,
+    66.4,
+    82.12,
+    91.6,
+    99.48
+   ],
+   "explain": [
+    "改良版除法器的演算法：先把 dividend（被除數）放進 Remainder register。示意用 4 bits：Remainder 8 bits、Divisor 4 bits。",
+    "然後先做一個 bit 的 shift（左移）。",
+    "因為第一個商 bit 就算是 1 也用不到（會超過範圍、overflow），乾脆不做。接著開始減：Remainder 左半減掉 Divisor。",
+    "減完之後，把結果放回 Remainder 的左半。",
+    "如果結果 ≥ 0，表示夠減：把 Remainder 往左 shift，右邊空出的位置放一個 1。",
+    "因為 quotient 跟 Remainder 共用同一個 register：用完的 bit 移出去，商的 bit 就放在最右邊。",
+    "如果結果 < 0 表示不夠減：把剛才減掉的 Divisor 加回來（restore），再 shift，新的 bit 設成 0。",
+    "就這樣一直做，32 bits 做 32 個 iteration（例子 4 bits 做 4 次）。",
+    "最後不要忘記：一開始先左移了一次，所以最後要把左半往右 shift 一位補回來，才是正確的 remainder。"
+   ]
+  },
+  {
+   "title": "改良版除法例子：7 ÷ 2",
+   "scene": "nuB-12b-ex",
+   "points": [
+    {
+     "t": 119,
+     "text": "Divisor 0010，Remainder 先放 0000 0111，左移成 0000 1110。"
+    },
+    {
+     "t": 127,
+     "text": "第 1、2 輪不夠減：restore、補 0；第 3、4 輪夠減：補 1。"
+    },
+    {
+     "t": 208,
+     "text": "最後左半右移一位：remainder 0001、quotient 0011（7 ÷ 2 = 3 餘 1）。"
+    }
+   ],
+   "cues": [
+    118.8,
+    127.68,
+    141.4,
+    151.62,
+    162.16,
+    187.56,
+    197.38,
+    208.4
+   ],
+   "explain": [
+    "例子：7 ÷ 2。Divisor 放 0010；被除數 7 放在 Remainder 的右邊：0000 0111。",
+    "先左移：0000 1110。第 1 輪：左半 0000 − 0010……不夠減。",
+    "是負數，所以 restore 回去，再左移、補 0：0001 1100。",
+    "第 2 輪：左半 0001 − 0010 還是不夠減（1 − 2）。",
+    "所以又 restore 回去、左移、補 0：0011 1000。",
+    "第 3 輪：左半 0011 − 0010 = 0001，夠減！左移、補 1：0011 0001。",
+    "第 4 輪：0011 − 0010 = 0001，又夠減，再補一個 1：0010 0011。",
+    "最後不要忘記把左半 right shift 一位：0001 0011。左半 0001 是餘數 1，右半 0011 是商 3。"
+   ]
+  },
+  {
+   "title": "有號除法：餘數跟被除數同號",
+   "scene": "nuB-12b-sign",
+   "points": [
+    {
+     "t": 226,
+     "text": "有號除法：先用 unsigned 除，再補正負號。"
+    },
+    {
+     "t": 242,
+     "text": "規則一：remainder 與 dividend 同號；規則二：divisor 與 dividend 同號商為正，異號為負。"
+    },
+    {
+     "t": 275,
+     "text": "−7 ÷ 2 = −3 餘 −1；−7 ÷ −2 = 3 餘 −1；都要滿足 quotient × divisor + remainder = dividend。"
+    },
+    {
+     "t": 377,
+     "text": "不檢查 overflow 與 divide by zero。"
+    }
+   ],
+   "cues": [
+    225.97,
+    233.75,
+    242.07,
+    258.95,
+    275.07,
+    283.03,
+    294.11,
+    308.85,
+    315.99,
+    325.19,
+    369.02,
+    377.5
+   ],
+   "explain": [
+    "剛才是 unsigned 的除法。有號（signed）怎麼辦？有一條規則。",
+    "一樣先當 unsigned 來除（取絕對值），除完之後再給正負號。",
+    "規則一：dividend（被除數）和 remainder（餘數）一定要同號。",
+    "規則二：商的正負看 divisor 和 dividend：同號就是正，不同號就是負。",
+    "例子：−7 ÷ 2。負號要怎麼擺？",
+    "先用 unsigned 看：7 ÷ 2 = 3 餘 1。",
+    "餘數要跟被除數（−7）同號，所以是 −1；−7 和 2 不同號，商是 −3。",
+    "第二個例子：−7 ÷ −2。",
+    "unsigned 一樣是 3 餘 1；餘數跟被除數同號 → −1；被除數和除數同號 → 商是 +3。",
+    "為什麼要這樣定？因為不管正負號怎麼給，一定要滿足：quotient × divisor + remainder = dividend。",
+    "照這兩條規則，一定能滿足這個式子。（如果商只靠一條規則亂給，等式就會不成立。）",
+    "商也有可能太大（overflow），但 MIPS 不檢查 overflow，也不檢查 divide by zero，照除就對了。"
+   ]
+  },
+  {
+   "title": "乘法器與除法器共用同一套硬體",
+   "scene": "nuB-12b-share",
+   "points": [
+    {
+     "t": 395,
+     "text": "乘法器與除法器可以合併：MIPS 的 multiply／divide 在一起，共用 Hi、Lo。"
+    },
+    {
+     "t": 420,
+     "text": "同一個 ALU（乘做加、除做減），同一個 64-bit register（乘放 partial product 右移、除放 remainder 左移）。"
+    },
+    {
+     "t": 527,
+     "text": "control 告訴硬體做乘還是除，決定 shift right／left 與加／減。"
+    }
+   ],
+   "cues": [
+    395.66,
+    411.57,
+    420.3,
+    428.08,
+    455.4,
+    478.52,
+    503.08,
+    526.89,
+    551.16
+   ],
+   "explain": [
+    "乘法器和除法器雖然分開介紹，其實可以合在一起、共用同一套硬體。",
+    "一開始就說過：MIPS 的 multiply 和 divide 在同一個 component，Hi、Lo 也共用。",
+    "同樣一個 ALU：做乘的時候做加，做除的時候做減。",
+    "64-bit 的 register：乘法放 partial product、往右 shift；除法放 dividend（remainder）、往左 shift。",
+    "整理成這張圖：Multiplicand／Divisor 放在不動的 32-bit register；會變的是 Product（乘）或 Remainder（除）；ALU 只要 32 bits。",
+    "乘法：一開始右半擺滿 multiplier；隨著乘，multiplier 一直被消耗，partial product 一直長大，一起往右 shift。",
+    "除法剛好相反：一開始全部是 remainder，一直往左移，每空出一個位置就把 quotient bit 放進去。",
+    "所以只要 control 告訴它現在做乘還是做除，就知道要 shift right 還是 shift left、ALU 要加還是減。",
+    "同一個 hardware 就可以做乘和除——這張圖很重要，要記起來。"
+   ]
+  },
+  {
+   "title": "（轉場：開始浮點數）",
+   "scene": null,
+   "points": [
+    {
+     "t": 559,
+     "text": "乘除介紹完畢，準備進入 floating point（投影片切換）。"
+    }
+   ]
+  },
+  {
+   "title": "為什麼需要 floating point",
+   "scene": "nuB-12b-why",
+   "points": [
+    {
+     "t": 605,
+     "text": "先介紹浮點數怎麼表示，再依表示法設計加減乘除的硬體。"
+    },
+    {
+     "t": 630,
+     "text": "n bits 的整數表示法：unsigned 0 ～ 2ⁿ − 1、two's complement −2ⁿ⁻¹ ～ 2ⁿ⁻¹ − 1，還有 1's complement、excess；都表示不了很大或很小的數。"
+    },
+    {
+     "t": 698,
+     "text": "用科學記號：significand（mantissa）× 2^exponent。"
+    },
+    {
+     "t": 761,
+     "text": "floating：整數的小數點固定在最右邊，浮點數的 binary point 位置會變。"
+    }
+   ],
+   "cues": [
+    605.64,
+    630.04,
+    648.98,
+    665.42,
+    673.68,
+    682.12,
+    698.09,
+    716.44,
+    746.78,
+    761.24,
+    803.38,
+    830.72
+   ],
+   "explain": [
+    "乘除介紹完，開始 floating point（浮點數）。跟整數一樣：先決定怎麼「表示」，才能依表示法設計加、減、乘、除的硬體。",
+    "回憶邏輯設計：同樣 n bits，看你怎麼解釋。示意 8 bits：當 unsigned 是 0 ～ 2ⁿ − 1 = 255。",
+    "同樣 n bits 用 two's complement：有正有負，−2ⁿ⁻¹ ～ 2ⁿ⁻¹ − 1，也就是 −128 ～ 127（正的少一個，因為有 0）。",
+    "用 1's complement、excess（偏移）表示，又各有自己的範圍。",
+    "同一個 bit pattern 有不同的解釋方法，但這些都是「整數」的表示法。",
+    "如果要表示很大很大的數，或很小很小的數，整數表示法就沒辦法了。",
+    "所以設計新的方法：floating point。想法來自科學記號——很大或很小的數，我們不會寫出一長串 0。",
+    "科學記號包括：前面的 significand（也叫 mantissa），乘以 base 的 exponent 次方。電腦是二進位，所以 base 是 2。",
+    "這樣就能表示很大或很小的數。中間那個點叫 binary point（二進位的小數點）。",
+    "為什麼叫 floating（浮動）？整數的小數點永遠固定在最右邊：3、4、5 的點都在最右邊，不會動。",
+    "浮點數的點會跑來跑去：2.3468、27.5……點在哪要看整數部分和分數部分各有多少。",
+    "小數點（binary point）的位置不固定，所以叫 floating point。"
+   ]
+  },
+  {
+   "title": "Normalize：第一位一定是 1；要存 sign、exponent、significand",
+   "scene": "nuB-12b-norm",
+   "points": [
+    {
+     "t": 838,
+     "text": "為了一致性要 normalize：去掉 leading zeros，第一位非 0；二進位裡就一定是 1。"
+    },
+    {
+     "t": 911,
+     "text": "normalized 形式 1.xxxx × 2^yyyy：1 和 2 都不變，只要記 x（significand）與 y（exponent），還有正負號。"
+    },
+    {
+     "t": 1067,
+     "text": "欄位排列：sign、exponent、significand（為什麼這樣排，後面解釋）。"
+    }
+   ],
+   "cues": [
+    838.06,
+    853.08,
+    861.07,
+    878.86,
+    903.82,
+    919.02,
+    936.12,
+    963.68,
+    989.18,
+    1035.08,
+    1051.72,
+    1067.42
+   ],
+   "explain": [
+    "同一個數用科學記號可以有很多種寫法；為了一致性，要把它 normalize（正規化）。",
+    "規則：把前面的 0（leading zeros）全部去掉，第一個位置一定要是非 0。",
+    "二進位只有 0 和 1，非 0 就只有 1——所以 normalized 的第一位一定是 1。",
+    "例子：1.0 × 2⁻⁹ 是 normalized；0.1 × 2⁻⁸ 雖然值一樣，但不是 normalized。我們只要一種寫法。",
+    "所以 normalized 的科學記號一定長這樣：1.xxxx × 2^yyyy。",
+    "那個 1 不會動，2 也不會變。",
+    "所以只要把 x 和 y 記錄下來，就能合成這個數。",
+    "要不要把 base 2 記下來？不用——大家都是 2，不必浪費力氣。",
+    "除了 x、y，還要記什麼？（老師讓同學搶答）",
+    "正負號！significand 和 exponent 只代表大小（量），還要記 sign。",
+    "所以要記三樣東西：sign bit、x、y，知道這三個就能合成這個數。",
+    "排列是：sign 在最前面，然後 exponent，significand 放最後。為什麼不是別的順序？待會解答。"
+   ]
+  },
+  {
+   "title": "IEEE 754：single 1 + 8 + 23、double 1 + 11 + 52",
+   "scene": "nuB-12b-ieee",
+   "points": [
+    {
+     "t": 1098,
+     "text": "exponent、significand 各給幾個 bits 決定 range 與 precision；IEEE 754 single precision：1 + 8 + 23 = 32 bits。"
+    },
+    {
+     "t": 1132,
+     "text": "double precision：64 bits，1 + 11 + 52，主要增加 significand。"
+    },
+    {
+     "t": 1198,
+     "text": "增加 exponent bits → range 變大；增加 significand bits → 更精準。"
+    }
+   ],
+   "cues": [
+    1098.25,
+    1115.64,
+    1132.22,
+    1150.4,
+    1173.82,
+    1188.96,
+    1197.84,
+    1216.94
+   ],
+   "explain": [
+    "exponent 給幾個 bits、significand 給幾個 bits？給法不同，能表示的 range（範圍）和 precision（精準度）就不同，所以需要一個標準。",
+    "IEEE 754 標準：sign 1 bit、exponent 8 bits、significand 23 bits，叫 single precision，總共 32 bits。",
+    "想要更精確、範圍更大，就用 64 bits 表示一個數：double precision。",
+    "sign 在最前面（跟 two's complement 一樣），exponent 在前，significand 在最後——為什麼這兩個不對調，等一下解釋。",
+    "double precision：sign 1 bit、exponent 11 bits、significand 52 bits。",
+    "比起 single，exponent 只多 3 bits，主要增加的是 significand（23 → 52）。",
+    "增加 exponent 的 bits 是增加什麼？range（能表示的大小範圍）。",
+    "增加 significand 的 bits 是增加 precision（精準度），能表示更精確的數。"
+   ]
+  },
+  {
+   "title": "Sign bit 與 hidden 1；0 要另外表示",
+   "scene": "nuB-12b-hidden",
+   "points": [
+    {
+     "t": 1235,
+     "text": "sign bit：1 負、0 正。"
+    },
+    {
+     "t": 1269,
+     "text": "normalized 的 leading 1 一定是 1，不必存：hidden one；23 bits + hidden 1 = 24 bits 的 significand（double 53）。"
+    },
+    {
+     "t": 1332,
+     "text": "因為永遠有 hidden 1，fraction 全 0 讀出來是 1.000…，0 沒辦法用一般方式表示，要特別表示（後面介紹）。"
+    }
+   ],
+   "trap": "讀 significand 時前面一定要補回 1（1.F）；全 0 的 fraction 代表 1.0，不是 0。",
+   "cues": [
+    1235.46,
+    1243.4,
+    1260.56,
+    1286.5,
+    1302.11,
+    1324.86,
+    1332.08,
+    1379.04,
+    1406.38,
+    1438.58
+   ],
+   "explain": [
+    "IEEE 754 single precision（double 很類似）的三個部分一個一個看。",
+    "第一個 bit 是 sign bit：1 代表負，0 代表正。",
+    "再來是 significand。因為是 normalized form，leading 的那個 bit 一定是 1。",
+    "那還需要花一個 bit 存那個 1 嗎？不需要！它藏在裡面，叫 hidden one（implicit leading 1）。",
+    "所以 23 bits 加上 hidden 1，其實可以表示 24 bits 的 significand；double 一樣多一個 bit（52 + 1 = 53）。示意 1.101₂：只存 101 0…0。",
+    "扣掉 hidden 1 之後，存的 fraction 介於 0 和 1 之間。",
+    "問題來了：既然永遠有一個 hidden 1，那 0 要怎麼表示？",
+    "就算 significand 全擺 0，真正讀出來前面還有個 1，是 1.000…，不是 0。1.000… 和 0 分不出來。",
+    "所以 0 不能用一般的方法表示，要另外特別表示（後面會介紹）。",
+    "要記住：永遠有一個 hidden one。把 significand 拿出來時前面一定要加 1，變成 1.xxxx。"
+   ]
+  },
+  {
+   "title": "為什麼 exponent 擺中間、不用 two's complement",
+   "scene": "nuB-12b-cmp",
+   "points": [
+    {
+     "t": 1455,
+     "text": "比較兩個浮點數：先比 sign，同號再比 exponent，最後才比 significand → exponent 放在第二。"
+    },
+    {
+     "t": 1564,
+     "text": "exponent 有正有負；若用 two's complement，要做減法才能比大小。"
+    },
+    {
+     "t": 1604,
+     "text": "comparator 從最高位比，一分出高下就停，比減法快；所以 exponent 改用 biased notation。"
+    }
+   ],
+   "cues": [
+    1455.14,
+    1480.76,
+    1515.2,
+    1531.6,
+    1547.66,
+    1564.6,
+    1587.32,
+    1603.92,
+    1624.12,
+    1648.02,
+    1665.14,
+    1681.41,
+    1711.16
+   ],
+   "explain": [
+    "介紹了 sign、significand，再來是 exponent：它怎麼表示？又為什麼擺在中間？",
+    "想一想：比較兩個浮點數誰大，要從哪裡開始比？不用一次全比，慢慢比。",
+    "先比 sign：一個 0（正）一個 1（負），正的一定比較大，後面不用再比了。",
+    "如果兩個 sign 一樣，下一個要比誰？exponent。",
+    "exponent 一樣，才比 significand。所以 exponent 放在第二位：sign 比完馬上比 exponent。",
+    "既然要做比較，exponent 用什麼表示最容易比？exponent 有正有負，需要一種整數表示法。",
+    "可以用 1's complement 或 two's complement。但用 two's complement，要比大小就得做減法，看結果是正還是負。",
+    "如果能用 comparator（比較器）：從第一個 bit 開始比，誰先大就是誰大，後面不用比，非常快。",
+    "減法要等 carry 傳完才知道答案；comparator 很快就完成。",
+    "例子：½ 的 exponent 是 −1，2 的 exponent 是 +1。用 two's complement：−1 = 1111 1111，+1 = 0000 0001。",
+    "直接用 comparator 比 bit pattern：1111 1111 看起來比 0000 0001 大——錯了！−1 應該比 1 小。",
+    "為了讓 exponent 能直接比大小，不用 1's complement，也不用 two's complement，改用 biased notation（excess notation）。",
+    "目標：看到一個 bit pattern 就能馬上比大小，小的 pattern 就代表小的數，大的就代表大的數。"
+   ]
+  },
+  {
+   "title": "Biased notation：pattern 的 unsigned 值減掉 bias",
+   "scene": "nuB-12b-bias",
+   "points": [
+    {
+     "t": 1737,
+     "text": "bias 7：0000 是最負的 −7，依序往上排，1111 是 +8；值 = unsigned 值 − 7。"
+    },
+    {
+     "t": 1800,
+     "text": "例：1011 的 unsigned 值 11，代表 11 − 7 = 4。"
+    },
+    {
+     "t": 1927,
+     "text": "bias 8 就減 8、bias 127 就減 127；000…0 最負、111…1 最正，comparator 直接比。"
+    },
+    {
+     "t": 1973,
+     "text": "IEEE 754：single bias 127、double bias 1023；例 −1 → 0111 1110、+1 → 1000 0000。"
+    }
+   ],
+   "cues": [
+    1736.94,
+    1745.6,
+    1767.64,
+    1775.72,
+    1784.4,
+    1799.88,
+    1897.26,
+    1926.98,
+    1934,
+    1958,
+    1972.82,
+    2000.14,
+    2008.78,
+    2026.9
+   ],
+   "explain": [
+    "biased notation 是什麼？以 bias 7 為例：把 4-bit pattern 從 0000 依序排下來。",
+    "0000 就是最負的數 −7，然後 −6、−5、…一路往上排。",
+    "等於把數字整個 shift 了 7 個位置：這就是 bias 7。",
+    "這樣排，第一個最小、第二個次小……兩個 pattern 一比就知道誰大誰小。",
+    "怎麼算 bias 7 的值？先把 pattern 當 unsigned 算出來，再減 7。",
+    "例：1011 當 unsigned 是 8 + 2 + 1 = 11，減 7 得 4。",
+    "再講一次：從 0 開始排，我排在第 11 位；但前 7 位要讓給負數用，所以大家往前推 7 個位置——減 7，就是 4。",
+    "bias 8 的意思：前 8 個位置給負數，從 −8 開始排；算出 unsigned 值要減 8。",
+    "bias 127 就是前面要讓 127 個位置給負數，算出的位置要減掉 127。",
+    "這樣 000…0 是最負的數、111…1 是最正的數，比大小只要直接用 comparator 比 exponent 就好。",
+    "IEEE 754 的 bias：single precision 用 127，double precision 用 1023。",
+    "例子：exponent −1 表示成 −1 + 127 = 126 = 0111 1110；+1 表示成 128 = 1000 0000。",
+    "比對很快：看第一個 bit，0 比 1 小，馬上知道 +1 比較大，不用再比下去。",
+    "所以比較浮點數：先比 sign；同號再比 exponent（bias 讓 comparator 直接比）；一分出高下就停，不用像減法全部做完。"
+   ]
+  },
+  {
+   "title": "浮點數 → 十進位",
+   "scene": "nuB-12b-f2d",
+   "points": [
+    {
+     "t": 2063,
+     "text": "值 = (−1)^S × (1 + significand) × 2^(exponent − 127)；hidden 1 與 base 2 都是隱含的。"
+    },
+    {
+     "t": 2117,
+     "text": "例：0 0110 1000 101 0101 0100 0011 0100 0010：S = 0 正；E = 104 → −23；significand = 1 + 2⁻¹ + 2⁻³ + 2⁻⁵ + …"
+    },
+    {
+     "t": 2166,
+     "text": "結果約 1.666 × 2⁻²³ ≈ 1.986 × 10⁻⁷。"
+    }
+   ],
+   "cues": [
+    2063.56,
+    2078.84,
+    2086.7,
+    2100.88,
+    2116.86,
+    2124.66,
+    2132.17,
+    2141.1,
+    2158.5,
+    2166.4
+   ],
+   "explain": [
+    "整理 single precision 代表的值：sign bit 0 就是 +，1 就是 −，也就是 (−1)^S。",
+    "significand：不要忘記前面有 hidden 1，把存的 fraction 抄到小數點後面：1 + F。",
+    "exponent：把那 8 bits 當 unsigned 算出來，再減掉 127，才是真正代表的指數。",
+    "base 2 和 hidden 1 都是隱含的，不要忘記。",
+    "例子：這 32 bits 代表哪個十進位數？0 0110 1000 101 0101 0100 0011 0100 0010。",
+    "一個一個看：sign bit = 0 → 正數（positive）。",
+    "exponent 0110 1000 當 unsigned 算是 104。它真的代表 104 嗎？不是，要減 127。",
+    "104 − 127 = −23，所以 exponent 是 −23。",
+    "significand：不要忘記前面的 hidden 1。fraction 的第 1、3、5…位是 1，所以是 1 + 2⁻¹ + 2⁻³ + 2⁻⁵ + …",
+    "所以這個數 ≈ 1.666 × 2⁻²³ ≈ 1.986 × 10⁻⁷。右邊用 Float32 直接解碼對照。"
+   ]
+  },
+  {
+   "title": "（問答：exponent 與比大小）",
+   "scene": null,
+   "points": [
+    {
+     "t": 2183,
+     "text": "課堂問答：two's complement 要用減法比大小（例如 −8 與 −7 不能直接看 bit 比）；exponent 減 127 是因為前 127 個位置留給負數。"
+    }
+   ]
+  },
+  {
+   "title": "十進位 → 浮點數：整數用除、分數用乘",
+   "scene": "nuB-12b-d2f",
+   "points": [
+    {
+     "t": 2426,
+     "text": "十進位轉浮點數：先轉成二進位的科學記號。"
+    },
+    {
+     "t": 2451,
+     "text": "整數部分：一直除以 2（取餘數）；分數部分：一直乘以 2（取整數位）。"
+    },
+    {
+     "t": 2514,
+     "text": "例：0.75 → 0.11₂ × 2⁰。"
+    }
+   ],
+   "cues": [
+    2426.3,
+    2433.92,
+    2451.72,
+    2481.17,
+    2513.99,
+    2534.95
+   ],
+   "explain": [
+    "反過來：十進位要變成浮點數，第一步先把它表示成（二進位的）科學記號，再填進格式。",
+    "如果是分數，第一步要先把十進位的分數變成二進位。",
+    "先講整數：十進位整數要變二進位，就一直除以 2（輾轉相除），把餘數倒過來讀。示意 13：",
+    "那分數呢？分數變二進位要用「乘」：一直乘以 2，每次取出整數位。",
+    "例：0.75。0.75 × 2 = 1.5 → 取 1；剩 0.5 × 2 = 1.0 → 取 1，剩 0 就結束。所以 0.75 = 0.11₂。",
+    "回家自己練習看看；下次再把它填進 IEEE 754 的格式。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "老師的改良版除法器做 7 ÷ 2（4 bits），最後 Remainder register 是？",
+   "opts": [
+    "0001 0011",
+    "0011 0001",
+    "0010 0011",
+    "0000 0111"
+   ],
+   "ans": "0001 0011",
+   "why": "4 輪後是 0010 0011，最後左半右移一位得 0001 0011：餘數 1、商 3。"
+  },
+  {
+   "q": "−7 ÷ 2 的商與餘數是？",
+   "opts": [
+    "商 −3、餘數 −1",
+    "商 −4、餘數 +1",
+    "商 −3、餘數 +1",
+    "商 3、餘數 −1"
+   ],
+   "ans": "商 −3、餘數 −1",
+   "why": "餘數與被除數同號；被除數與除數異號，商為負；(−3)×2 + (−1) = −7。"
+  },
+  {
+   "q": "IEEE 754 single precision 各欄位的 bits 數？",
+   "opts": [
+    "sign 1、exponent 8、fraction 23",
+    "sign 1、exponent 11、fraction 52",
+    "sign 1、exponent 7、fraction 24",
+    "sign 2、exponent 8、fraction 22"
+   ],
+   "ans": "sign 1、exponent 8、fraction 23",
+   "why": "double 才是 1、11、52；加上 hidden 1，single 的 significand 有 24 bits。"
+  },
+  {
+   "q": "為什麼 exponent 用 biased notation 而不是 two's complement？",
+   "opts": [
+    "可以直接用 comparator 比大小",
+    "可以表示更多數字",
+    "可以省掉 sign bit",
+    "可以表示 0"
+   ],
+   "ans": "可以直接用 comparator 比大小",
+   "why": "bias 讓 000…0 最負、111…1 最正，pattern 大小順序就是值的順序，不必用減法比。"
+  },
+  {
+   "q": "bias 7 的 4-bit pattern 1011 代表多少？",
+   "opts": [
+    "4",
+    "11",
+    "−5",
+    "−3"
+   ],
+   "ans": "4",
+   "why": "unsigned 值 11，減掉 bias 7 = 4。"
+  },
+  {
+   "q": "0 01101000 101 0101 0100 0011 0100 0010 的 exponent（真正的指數）是？",
+   "opts": [
+    "−23",
+    "104",
+    "−24",
+    "23"
+   ],
+   "ans": "−23",
+   "why": "0110 1000 = 104，104 − 127 = −23。"
+  },
+  {
+   "q": "十進位小數 0.75 轉成二進位要怎麼做？",
+   "opts": [
+    "一直乘以 2 取整數位，得 0.11",
+    "一直除以 2 取餘數，得 0.11",
+    "一直除以 2，得 0.101",
+    "乘以 10，得 0.75"
+   ],
+   "ans": "一直乘以 2 取整數位，得 0.11",
+   "why": "0.75×2 = 1.5 → 1，0.5×2 = 1.0 → 1，所以 0.11₂；整數部分才用除。"
+  }
+ ]
+}

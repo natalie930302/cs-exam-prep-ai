@@ -233,6 +233,12 @@
   "quiz": 5,
   "cued": true
  },
+ "2srq4qFEhu8": {
+  "label": "黃婷婷教授計算機結構_第9B講 Instruction Set Architecture / Computer Arithmetic",
+  "points": 40,
+  "quiz": 6,
+  "cued": true
+ },
  "2YeJ-5UAke8": {
   "label": "MIT 6.006 L12：Square Roots, Newton's Method",
   "points": 92,
@@ -851,6 +857,12 @@
   "quiz": 6,
   "cued": true
  },
+ "cWRbSpzu3DE": {
+  "label": "黃婷婷教授計算機結構_第11A講 Computer Arithmetic",
+  "points": 33,
+  "quiz": 6,
+  "cued": true
+ },
  "cxbabnqtWsk": {
   "label": "台大林軒田 DSA Sorting / Summary",
   "points": 366,
@@ -1175,6 +1187,12 @@
   "quiz": 5,
   "cued": true
  },
+ "gBaVGirWTlU": {
+  "label": "黃婷婷教授計算機結構_第12B講 Computer Arithmetic",
+  "points": 41,
+  "quiz": 7,
+  "cued": true
+ },
  "gF8PA6FVLp0": {
   "label": "清大OCW 趙啟超《離散數學》第24B講 Trees",
   "points": 16,
@@ -1191,6 +1209,12 @@
   "label": "清大OCW 趙啟超《離散數學》第7B講 Relations",
   "points": 11,
   "quiz": 5,
+  "cued": true
+ },
+ "gnPwCZLD04c": {
+  "label": "黃婷婷教授計算機結構_第13A講 Computer Arithmetic",
+  "points": 33,
+  "quiz": 7,
   "cued": true
  },
  "Go2aLo7ZOlU": {
@@ -1214,6 +1238,12 @@
  "Greva74E0ZU": {
   "label": "清大OCW 趙啟超《離散數學》第27C講 Shortest-Path Problem and Minimal Spanning Trees",
   "points": 18,
+  "quiz": 6,
+  "cued": true
+ },
+ "GZ8L2afnZFU": {
+  "label": "黃婷婷教授計算機結構_第12A講 Computer Arithmetic",
+  "points": 32,
   "quiz": 6,
   "cued": true
  },
@@ -1551,6 +1581,12 @@
   "label": "清大周志遠 第2B講 Computer-System Architecture",
   "points": 24,
   "quiz": 5,
+  "cued": true
+ },
+ "kWCUI2x7iSQ": {
+  "label": "黃婷婷教授計算機結構_第10A講 Computer Arithmetic",
+  "points": 36,
+  "quiz": 7,
   "cued": true
  },
  "kxIQ86qMtfk": {

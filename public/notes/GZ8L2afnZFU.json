@@ -1,0 +1,535 @@
+{
+ "video": "GZ8L2afnZFU",
+ "label": "黃婷婷教授計算機結構_第12A講 Computer Arithmetic",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Booth's algorithm：看目前的 bit 和右邊的 bit",
+   "scene": "nuB-12a-rule",
+   "points": [
+    {
+     "t": 17,
+     "text": "Booth multiply 的概念：一串連續的 1 改寫成一減一加，5 次加變 2 次。"
+    },
+    {
+     "t": 128,
+     "text": "從右往左：一串 1 的第一個 1 做減，最後一個 1 看完後做加。"
+    },
+    {
+     "t": 178,
+     "text": "要看兩個 bit：current bit 與右邊的 bit：10 減（開始）、11 不動（中間）、01 加（結束）、00 不動。"
+    },
+    {
+     "t": 407,
+     "text": "shift 時要做 sign extension（算術右移）；Booth 只是加速，結果不變。"
+    }
+   ],
+   "trap": "Booth 的 pair 是（目前的 bit, 右邊的 bit）：10 是一串 1 的開始 → 減；01 是結束 → 加。",
+   "cues": [
+    16.8,
+    41.53,
+    56.01,
+    65.69,
+    88.95,
+    128.57,
+    145.61,
+    178.53,
+    187.35,
+    211.29,
+    259.94,
+    275.12,
+    342.52,
+    407.38,
+    441.3
+   ],
+   "explain": [
+    "複習：乘法器先介紹 unsigned，再介紹 signed，還有一種加快速度的方法叫 Booth multiply。",
+    "它利用這個關係：A 乘以一串連續的 1，這五個 1 可以改寫成兩項（示意：0011 1110 = 0100 0000 − 0000 0010）。",
+    "原本要做幾次 shift and add？0 不用做；五個 1 要做五次加。",
+    "改寫後意思一樣，但只有兩個位置要做事：一個加、一個減。",
+    "在這個位置做加，在那個位置做減，才會 equivalent；五次加變成兩次運算，速度就快了。",
+    "結論（basic idea）：取代一串 1——從右邊開始看，第一次看到 1 的時候做減。",
+    "之後看到的 1 都不理它，一直到最後一個 1 看完了，才做一個加。",
+    "我怎麼知道自己是第一個 1 還是 1 已經結束？要看左右的狀況。",
+    "所以要看兩個 bit：現在這個 bit（current bit）和它右邊的 bit。",
+    "current 是 1、右邊是 0：這是一串 1 的開始（beginning of run）→ 做減，把 multiplicand 減掉。",
+    "另一個關鍵：current 是 0、右邊是 1——表示 1 已經全部結束 → 做加。",
+    "四種組合：10 減（開始）、11 在中間不動、01 加（結束）、00 也在中間（一串 0）不動。",
+    "為了偵測這件事，要記錄 current bit 以及它右邊那個 bit。",
+    "除了加減，還有 shift。Booth 是 signed 乘法，所以 shift 時不要忘記做 sign extension（算術右移，左邊補 sign bit）。",
+    "Booth 只是把加法的次數變少、加快速度，乘出來的結果完全一樣。"
+   ]
+  },
+  {
+   "title": "Booth 例子：2 × 7",
+   "scene": "nuB-12a-b27",
+   "points": [
+    {
+     "t": 455,
+     "text": "例子 2 × 7：multiplicand 0010 不動；乘數 0111 放在 Product 右半；多一個 bit 記右邊那位（一開始 0）。"
+    },
+    {
+     "t": 632,
+     "text": "第 1 輪 10 → 減（加上 two's complement 1110），右移（sign extension）。"
+    },
+    {
+     "t": 697,
+     "text": "第 2、3 輪 11 → 不動只右移；第 4 輪 01 → 加 0010，右移 → 0000 1110 = 14。"
+    }
+   ],
+   "cues": [
+    455.56,
+    485.8,
+    541.09,
+    556.49,
+    574.01,
+    598.39,
+    631.91,
+    641.19,
+    648.89,
+    673.11,
+    697.43,
+    712.03,
+    734.34,
+    750.16,
+    765.9,
+    773.8
+   ],
+   "explain": [
+    "來看例子：2 × 7。",
+    "改良版乘法器：multiplicand 只要 32 bits（例子 4 bits），Product 64 bits（例子 8 bits）。",
+    "0010 是被乘數（multiplicand），不動。",
+    "0111 是乘數（multiplier），放在 Product 的最右邊；每次看最右邊的 bit 決定要不要加。",
+    "partial product 隨 iteration 往右 shift；乘數用完的 bit 就 shift 出去，位置空出來給 partial product。",
+    "Booth 要看兩個 bit，所以多一個 1-bit register 存「右邊那一位」，一開始是 0。",
+    "開始做：現在的 bit 是 1、右邊是 0——beginning of run。",
+    "所以要做減：減掉 multiplicand。",
+    "減法就是加上它的 two's complement：0010 的負數是 1110，加到左半：0000 + 1110 = 1110。",
+    "做完要 shift，而且不要忘記 sign extension：右移一位，左邊補 1（sign bit）→ 1111 0011，右邊那一位變成 1。",
+    "第 2 輪：現在的 bit 是 1，右邊（previous bit）也是 1 → no operation。",
+    "不做加減，但還是要 shift：1111 1001。",
+    "第 3 輪：又是 1、1，不做任何動作，再右移：1111 1100。",
+    "第 4 輪：現在的 bit 是 0，右邊是 1——一串 1 結束了（end of string）。",
+    "所以要加：把 0010 加回去，1111 + 0010 = 0001 → 0001 1100。",
+    "再 shift 一位就做完了：0000 1110 = 14 = 2 × 7。"
+   ]
+  },
+  {
+   "title": "Booth 例子：2 × (−3)",
+   "scene": "nuB-12a-b23",
+   "points": [
+    {
+     "t": 790,
+     "text": "2 × (−3)：−3 = 1101，Booth 對負數用完全一樣的做法。"
+    },
+    {
+     "t": 846,
+     "text": "10 減 → 01 加 → 10 減 → 11 不動；每輪都右移（sign extension）。"
+    },
+    {
+     "t": 975,
+     "text": "結果 1111 1010 = −6。"
+    }
+   ],
+   "cues": [
+    790.7,
+    800.8,
+    845.93,
+    854.87,
+    871.59,
+    879.33,
+    892.89,
+    917.37,
+    949.66,
+    967.92,
+    975.18
+   ],
+   "explain": [
+    "再看一個負數：2 × (−3)。2 一樣在上面。",
+    "−3 是 1101。Booth 的好處：負數也是完全一樣的做法。",
+    "一開始看到 10（current 1、右邊 0），所以要做減法。（老師點名同學回答）",
+    "減法用 two's complement：把 −0010 = 1110 加進左半 → 1110 1101；再右移（補 sign bit）→ 1111 0110。",
+    "下一步看到的是 01。",
+    "現在的 bit 是 0，previous bit 是 1——一串 1 結束，所以要做加。",
+    "加 0010：1111 + 0010 = 0001 → 0001 0110；再右移 → 0000 1011。（1 和 0 交錯時 Booth 反而動作比較多。）",
+    "又碰到 beginning of the run（10）。",
+    "10 → 做減：加上 1110 → 1110 1011；再 shift → 1111 0101。",
+    "最後一輪是 11：不用做任何動作，再 shift 一次就結束。",
+    "結果 1111 1010 = −6 = 2 × (−3)。這就是 Booth 乘法的完整例子。"
+   ]
+  },
+  {
+   "title": "Sequential 與 combinational 乘法器",
+   "scene": "nuB-12a-comb",
+   "points": [
+    {
+     "t": 987,
+     "text": "前面的乘法器（含 Booth）都是 sequential：一個 iteration 一個 bit，結果存回 partial product，下一個 cycle 再做。"
+    },
+    {
+     "t": 1097,
+     "text": "combinational：用 AND gate 同時產生所有 partial product（例 1000、0000、0000、1000），一起加。"
+    },
+    {
+     "t": 1219,
+     "text": "sequential 只需要一個加法器重複用；combinational 一個 cycle 做完、不能共用，4 個 partial product 至少要 3 個加法器。"
+    },
+    {
+     "t": 1385,
+     "text": "從輸入到輸出的路徑很長，之後可以加 pipeline。"
+    }
+   ],
+   "cues": [
+    987.62,
+    1004.9,
+    1043.66,
+    1088.6,
+    1097.06,
+    1121.4,
+    1168.88,
+    1194.6,
+    1219.64,
+    1244.68,
+    1268.26,
+    1322.76,
+    1385.24
+   ],
+   "explain": [
+    "不管是 Booth 還是前面的 unsigned／signed 方法，都可以叫 sequential multiplier。",
+    "sequential（循序）和 combinational（組合）電路差在哪？sequential 做完一次要把東西存起來，下一個 cycle 再做；combinational 在一個 cycle 內全部做完。",
+    "前面的乘法器都是一個 iteration 一個 iteration 做：每次處理乘數一個 bit，加完 shift、存回 partial product，再下一個 cycle。",
+    "乘數有很多 bits，就要很多個 cycle 才做完。這叫 sequential multiplier。",
+    "能不能更快？用空間換時間：同一個時間把每一列都做出來，一起加。",
+    "以 1000 × 1001 為例，四個 partial product（1000、0000、0000、1000）一開始就能知道嗎？",
+    "可以！看乘數的 bit：每個 partial product 其實就是「乘數 bit AND 被乘數」——用四組 AND gate 同時產生。",
+    "四個 partial product 同時產生，接著四個一起加就好，何必一個 cycle 一個 cycle 加？這就是 combinational multiplier。",
+    "sequential 只有一個加法器：這個 cycle 用完，下個 cycle 還能再用。",
+    "要在同一時間把 1、2、3、4 一起加，就不能只有一個加法器：combinational 不能 share。",
+    "最簡單的做法：1、2 先加，3、4 也加，再把兩個結果相加——至少要三個加法器。",
+    "一般化：所有用 AND 做出的 partial product，兩兩相加一路往下，形成一個加法器的結構；從輸入到輸出沒有 flip-flop，一個 clock cycle 做完。",
+    "代價是要很多加法器，而且從頭到尾的 critical path 很長，之後可以在中間加 pipeline（後面章節會講）。"
+   ]
+  },
+  {
+   "title": "Sequential adder 的類比",
+   "scene": "nuB-12a-seqadd",
+   "points": [
+    {
+     "t": 1413,
+     "text": "加法也一樣：16 bits 可以用 16 個 full adder 一起做（combinational），也可以只用一個 full adder，每個 cycle 做一位、carry 與 sum 存在 flip-flop，做 16 個 iteration（sequential）。"
+    }
+   ],
+   "cues": [
+    1413.4,
+    1438.04,
+    1445.9,
+    1468.66,
+    1478.38
+   ],
+   "explain": [
+    "加法其實也一樣有 sequential 和 combinational 兩種，概念相同。（邏輯設計學過）",
+    "16 bits 的加法可以用 16 個 full adder 一起做——這是 combinational。",
+    "也可以只用一個 full adder：一個 clock cycle 只做一個 bit，把 carry 和 sum 存在 flip-flop／register 裡，下一個 cycle 再做下一位。示意 0101 + 0011：",
+    "16 bits 就要 16 個 iteration，這就叫 sequential adder。",
+    "乘法同理：一個 bit 一個 bit 做、結果存回 partial product，是 sequential；全部同時加起來，是 combinational。"
+   ]
+  },
+  {
+   "title": "Carry save adder 與 Wallace tree",
+   "scene": "nuB-12a-csa",
+   "points": [
+    {
+     "t": 1502,
+     "text": "直接的 combinational 結構中，每個加法器若用 ripple 很慢、用 carry lookahead 面積很大。"
+    },
+    {
+     "t": 1611,
+     "text": "carry save adder：每一位一個 full adder，三個 input 產生 sum（同一位）與 carry（往左一位），carry 不往下傳。"
+    },
+    {
+     "t": 1899,
+     "text": "沒有 carry propagation：每層只有一個 full adder 的 delay；3 變 2 一層層做成 tree（Wallace tree）。"
+    },
+    {
+     "t": 1966,
+     "text": "最後剩兩個數，最後一層要用一般的加法器（要 propagation）。"
+    }
+   ],
+   "trap": "carry save adder 不是「不產生 carry」，而是把 carry 存成另一個數（往左一位），不傳給下一位。",
+   "cues": [
+    1502.6,
+    1518.18,
+    1550.58,
+    1567.22,
+    1618.12,
+    1643.32,
+    1651.64,
+    1683,
+    1708.3,
+    1734.14,
+    1861.94,
+    1876.92,
+    1899.5,
+    1914.74,
+    1930.98,
+    1948.08,
+    1965.96,
+    2011.5
+   ],
+   "explain": [
+    "直接做出來是一個一層一層的加法結構，但還可以改進「加」的部分。",
+    "這個結構的高度就是 delay。如果每個加法器是 ripple carry，32 bits 每一層都要等 32 位一路 ripple 下去，很慢。",
+    "用 carry lookahead 會快一點，可是要好多個加法器，面積很大、代價太高。",
+    "有趣的改進：讓每一層只有「一個 full adder」的 delay！只是最後一層才知道真正的結果。",
+    "這個新加法器叫 carry save adder（CSA）。",
+    "名字的意思：carry 沒有加進下一位，而是先「存」起來。",
+    "一個 full adder 有三個 input（x、y、carry in——其實三個角色一樣，就叫 x、y、z），兩個 output：sum 和 carry。",
+    "sum 跟 x、y、z 在同一個位置；carry 是進位，屬於左邊（高一位）的位置。",
+    "例子（示意）：三個 4-bit 數，每一位各自用一個 full adder：例如那一位 0、1、1 加起來是 10（sum 0、carry 1）。",
+    "每一位都只自己加自己的三個 input，不看前一位、不等它算完——沒有 propagation，所以只有一個 full adder 的 delay。",
+    "產生的兩個 output 只是 carry 那個錯開一位，它們還是兩個數；加的時候位置對好就行。驗算 S + C = X + Y + Z：",
+    "要再加更多數，就再拿三個數變兩個數，一直 3 變 2。",
+    "整個過程都沒有 carry propagation，每一層的 delay 就是一個 full adder。",
+    "三個變兩個、三個變兩個，再 group 一下……整個結構像一棵 tree，高度大約 log n。示意 8 個 partial product：",
+    "每一層的 delay 是多少？就是一個 full adder——雖然是 32 bits 相加，一層也只要一個 full adder 的時間。",
+    "用 carry save adder 做成的這種乘法器叫 Wallace tree multiplier。",
+    "但最後一層剩兩個數，最終結果只能有一個數，所以最後一個 stage 要用一般的加法器，做一次 carry propagation。",
+    "真正的快速乘法器就是這樣：中間每一層只有一個 full adder 的 delay，用 hardware 換時間，省很多。"
+   ]
+  },
+  {
+   "title": "除法的指令：div、Lo = 商、Hi = 餘數",
+   "scene": "nuB-12a-divi",
+   "points": [
+    {
+     "t": 2035,
+     "text": "乘法介紹完畢；除法是 shift and subtract，跟乘法用同一個 component，也用 Hi、Lo。"
+    },
+    {
+     "t": 2101,
+     "text": "div t1, t2：Lo = quotient（商）、Hi = remainder（餘數），再用 mflo、mfhi 取出；divu 是 unsigned。"
+    },
+    {
+     "t": 2164,
+     "text": "MIPS 硬體不檢查 overflow 和 divide by 0，要 software 自己檢查（設計上的 trade-off）。"
+    }
+   ],
+   "trap": "除法的 Lo 放商、Hi 放餘數；不要和乘法的 Hi（高 32 bits）搞混。",
+   "cues": [
+    2035.34,
+    2058.26,
+    2075.74,
+    2100.78,
+    2118.88,
+    2137.12,
+    2163.8,
+    2173.32,
+    2181.5
+   ],
+   "explain": [
+    "乘法介紹完畢，接下來是除法。",
+    "乘和除是一體兩面：乘法是 shift and add，除法就是 shift and subtract。",
+    "所以乘和除可以在同一個 component 完成，也一樣用 Hi、Lo 兩個 register 存結果。",
+    "指令：div $t1, $t2，把 t1 除以 t2。示意：7 ÷ 2。",
+    "結果：Lo 放 quotient（商），Hi 放 remainder（餘數）。7 ÷ 2：Lo = 3、Hi = 1。",
+    "要用的話，就用 move from low（mflo）、move from high（mfhi）搬到一般 register，跟乘法很像。",
+    "unsigned 的除法指令不一樣（divu），但做法一樣，當 unsigned 來除。",
+    "要注意：MIPS 硬體不會幫你檢查 overflow 和 divide by 0，照除不誤，結果可能是錯的。",
+    "所以 software 要自己檢查。誰該做檢查——hardware 做簡單但要付成本，software 做可能比較慢——是設計上的 trade-off。"
+   ]
+  },
+  {
+   "title": "紙筆除法：夠減寫 1，不夠寫 0",
+   "scene": "nuB-12a-paperdiv",
+   "points": [
+    {
+     "t": 2228,
+     "text": "紙筆除法：dividend（被除數）、divisor（除數）、quotient（商）。"
+    },
+    {
+     "t": 2244,
+     "text": "每一步把 divisor 放下面減：夠減商寫 1，不夠減就不減（restore）、商寫 0。"
+    },
+    {
+     "t": 2260,
+     "text": "把下一位放下來，相當於 divisor 往右移一位。"
+    }
+   ],
+   "cues": [
+    2228.12,
+    2244.06,
+    2252.64,
+    2259.84,
+    2294.74,
+    2310.34
+   ],
+   "explain": [
+    "先看紙筆怎麼除。名詞：dividend 是被除數，divisor 是除數，結果 quotient 是商。示意 0111 ÷ 10（7 ÷ 2）。",
+    "每一次把 divisor 放在下面減一減，看夠不夠減。",
+    "夠減（減出來是正數或 0），商就寫 1；不夠減就寫 0、不減。逐位做：0、01 不夠 → 0；011 − 10 = 1 → 1。",
+    "下一步把下一位「放下來」——這相當於 divisor 往右移一位，去減下一個位置。",
+    "最後一位：11 − 10 = 1，夠 → 1。商 0011 = 3，餘數 1。",
+    "整理：每個 iteration 用 divisor 減；正的商就是 1，負的就恢復原狀（restore）、商是 0；然後 divisor 往右移，繼續減。"
+   ]
+  },
+  {
+   "title": "第一版除法器硬體",
+   "scene": "nuB-12a-div1",
+   "points": [
+    {
+     "t": 2353,
+     "text": "跟乘法器一樣：Divisor 一開始放在 64-bit register 最左邊，每 iteration 右移。"
+    },
+    {
+     "t": 2388,
+     "text": "每次 Remainder − Divisor：≥ 0 商補 1；< 0 restore（加回去）、商補 0；quotient 往左 shift。"
+    },
+    {
+     "t": 2536,
+     "text": "Divisor 64 bits、ALU 64 bits、Remainder 64 bits、Quotient 32 bits，跟第一版乘法器很像。"
+    }
+   ],
+   "trap": "第一版除法器 n bits 要做 n + 1 輪：Divisor 一開始在最左邊，第一輪一定不夠減。",
+   "cues": [
+    2353.12,
+    2370.26,
+    2388.56,
+    2405.58,
+    2421.58,
+    2445.24,
+    2536.41
+   ],
+   "explain": [
+    "除法器硬體跟乘法器一樣的思路：需要一個 Divisor register，一開始放在最左邊（64-bit register 的左半）。示意 7 ÷ 2，4 bits。",
+    "每個 iteration Divisor 往右 shift（就像紙上把下一位放下來）。",
+    "每次拿 Remainder 去減 Divisor。第 1 輪：0000 0111 − 0010 0000 是負的（不夠減）。",
+    "減出來是正的，quotient 就補 1；是負的就要 restore（剛才減錯了，加回去），quotient 補 0。這一輪是 restore、補 0。",
+    "quotient 一位一位產生，每產生一位就往左 shift；Divisor 則往右 shift。",
+    "為什麼 Divisor 放左邊？回到紙筆：把下一位放下來，就是要減下一個位置——等於 Divisor 一直往右移。",
+    "把剩下的 iteration 跑完：Divisor 往右、減、看正負、restore 或補 1。結果 Quotient 0011 = 3、Remainder 0001 = 1。"
+   ]
+  },
+  {
+   "title": "改良版除法器：Remainder 往左移、跟 Quotient 合併",
+   "scene": "nuB-12a-div2",
+   "points": [
+    {
+     "t": 2577,
+     "text": "第一版的浪費：Divisor 64 bits 只有 32 bits 有用，減法也只減中間那段。"
+    },
+    {
+     "t": 2610,
+     "text": "改良：Divisor 不動（32 bits），改成 Remainder 往左移；ALU 32 bits。"
+    },
+    {
+     "t": 2656,
+     "text": "Remainder 左移空出的右邊位置放 quotient bits：兩個 register 合併；第一個 quotient bit 一定會 overflow，先 shift 省一輪。"
+    }
+   ],
+   "cues": [
+    2576.78,
+    2593.48,
+    2610.38,
+    2646.48,
+    2656.26,
+    2682.36,
+    2698.9,
+    2728.68,
+    2744.18,
+    2761.48,
+    2779.42
+   ],
+   "explain": [
+    "除法器跟乘法器一樣有浪費的地方：Divisor 從最左邊一直往右移，真正有用的只有中間 32 bits。",
+    "前面跟後面都是 0；減的時候也只減到中間那一塊——跟乘法器一樣是浪費。",
+    "改進：Divisor 變成 32 bits、不要動。它原本往右，那 Remainder 就反過來往左動。",
+    "這樣只要 32-bit 的 ALU 去減。",
+    "Remainder 每往左移一位，右邊就空出一個位置；quotient 每次也產生一個 bit 往左長——剛好放進去，兩個 register 合在一起（combine）。",
+    "（還有一個笨的中間版本，老師說回家自己看就好；我們要用的是快的版本。）",
+    "再整理一次：Divisor 有一半 bits 永遠是 0，64-bit 加法是浪費的；Divisor 不動、Remainder 往左移，就省下 32 bits 的 Divisor 和 ALU。",
+    "另外，第一個 quotient bit 如果產生 1，一定超過 32 bits（overflow），反正不要了——所以先做 shift，可以省掉一個 iteration。",
+    "quotient register 和 remainder register 都是 shift left，所以合併。",
+    "新的除法硬體：Divisor 32 bits、ALU 32 bits、Remainder 64 bits；每個 iteration 往左 shift，空出的位置放 quotient bit。",
+    "quotient 放 0 還是 1，看減出來的結果：正的放 1；負的放 0，而且放 0 之前不要忘記先 restore（加回去）。"
+   ]
+  },
+  {
+   "title": "（下課休息）",
+   "scene": null,
+   "points": [
+    {
+     "t": 2798,
+     "text": "下一節再仔細看聰明版除法器怎麼做。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Booth's algorithm 中，（目前 bit, 右邊 bit）= (1, 0) 要做什麼？",
+   "opts": [
+    "減 multiplicand（一串 1 的開始）",
+    "加 multiplicand",
+    "不動",
+    "左移"
+   ],
+   "ans": "減 multiplicand（一串 1 的開始）",
+   "why": "10 是 beginning of run → 減；01 是 end of run → 加；00、11 不動。"
+  },
+  {
+   "q": "Booth 算 2 × 7（0010 × 0111）時，會做幾次加或減？",
+   "opts": [
+    "2 次（一減一加）",
+    "3 次",
+    "4 次",
+    "1 次"
+   ],
+   "ans": "2 次（一減一加）",
+   "why": "0111 的配對依序是 10、11、11、01：只有第 1 輪減、第 4 輪加。"
+  },
+  {
+   "q": "Booth 每輪的 shift 要注意什麼？",
+   "opts": [
+    "算術右移，左邊補 sign bit",
+    "邏輯右移，左邊補 0",
+    "左移",
+    "不用 shift"
+   ],
+   "ans": "算術右移，左邊補 sign bit",
+   "why": "Booth 處理 signed 數，shift 時要做 sign extension。"
+  },
+  {
+   "q": "carry save adder 的特點是？",
+   "opts": [
+    "三個數進、兩個數出，只有一個 full adder 的 delay",
+    "把 carry 一路傳到最高位",
+    "需要 log n 層的 carry lookahead",
+    "只能加兩個數"
+   ],
+   "ans": "三個數進、兩個數出，只有一個 full adder 的 delay",
+   "why": "每一位獨立做 full adder，carry 存成往左一位的另一個數，沒有 propagation；最後一層才用一般加法器。"
+  },
+  {
+   "q": "MIPS 的 div $t1, $t2 之後，餘數在哪裡？",
+   "opts": [
+    "Hi",
+    "Lo",
+    "$t1",
+    "$t2"
+   ],
+   "ans": "Hi",
+   "why": "Lo 放 quotient、Hi 放 remainder，用 mfhi 取出。"
+  },
+  {
+   "q": "改良版除法器相較第一版的改變？",
+   "opts": [
+    "Divisor 不動（32 bits），Remainder 往左移，Quotient 放進 Remainder 右邊",
+    "Divisor 改成往左移",
+    "ALU 改成 128 bits",
+    "取消 restore"
+   ],
+   "ans": "Divisor 不動（32 bits），Remainder 往左移，Quotient 放進 Remainder 右邊",
+   "why": "和改良版乘法器同一招：相對移動、共用 register，ALU 只要 32 bits。"
+  }
+ ]
+}

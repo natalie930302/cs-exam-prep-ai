@@ -1,0 +1,562 @@
+{
+ "video": "gnPwCZLD04c",
+ "label": "黃婷婷教授計算機結構_第13A講 Computer Arithmetic",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習：sign、exponent（bias 127）、significand（hidden 1）",
+   "scene": "nuB-13a-rev",
+   "points": [
+    {
+     "t": 17,
+     "text": "上次介紹浮點數表示法：single 與 double precision。"
+    },
+    {
+     "t": 52,
+     "text": "sign：0 正、1 負；exponent 用 bias notation（為了比較），single 是 bias 127：unsigned 值 − 127。"
+    },
+    {
+     "t": 151,
+     "text": "significand：normalized 第一位一定是 1，不存（hidden one），值 = 1.F。"
+    }
+   ],
+   "cues": [
+    16.8,
+    52.23,
+    59.59,
+    66.77,
+    119.8,
+    151.04,
+    183.68,
+    200.2
+   ],
+   "explain": [
+    "上次介紹了浮點數的表示法，有 single precision 和 double precision。先複習 single。",
+    "三個部分：sign（S）、exponent、significand。",
+    "sign：0 是正數，1 是負數。",
+    "exponent 有正有負，用哪一種表示法？1's complement？two's complement？都不是——用 bias notation，為了比較大小容易。",
+    "single precision 的 bias 是 127：把 exponent 當 unsigned 算出來，再減 127，才是真正代表的指數（前 127 個位置留給負的）。",
+    "significand：寫成科學記號後，第一位一定要非 0；二進位裡非 0 只有 1。",
+    "既然一定是 1，就不用多花一個 bit 存它：implicitly 存在，叫 hidden one。",
+    "所以一個數就表示成：(−1)^S × 1.F × 2^(E − 127)。"
+   ]
+  },
+  {
+   "title": "（請同學往前坐）",
+   "scene": null,
+   "points": [
+    {
+     "t": 208,
+     "text": "請同學往前坐，沒有新內容。"
+    }
+   ]
+  },
+  {
+   "title": "十進位 → 浮點數：−0.75、43.57、1/3",
+   "scene": "nuB-13a-d2f",
+   "points": [
+    {
+     "t": 248,
+     "text": "十進位先轉成二進位的科學記號：整數用除（divide），分數用乘（multiply）。"
+    },
+    {
+     "t": 387,
+     "text": "−0.75 = −0.11₂ = −1.1 × 2⁻¹：S = 1、E = −1 + 127 = 126、F = 1000…。"
+    },
+    {
+     "t": 459,
+     "text": "43.57 這種整數、分數都有的：分開處理，整數用除、分數用乘。"
+    },
+    {
+     "t": 501,
+     "text": "1/3 = 0.0101…₂ = 1.0101… × 2⁻²：S = 0、E = 125、F = 0101…。"
+    }
+   ],
+   "cues": [
+    248.56,
+    263.95,
+    272,
+    341.15,
+    370.31,
+    386.77,
+    396.11,
+    407.71,
+    427.11,
+    441.59,
+    459.65,
+    478.85,
+    501.68,
+    509.38,
+    524.54,
+    534.02,
+    550.46
+   ],
+   "explain": [
+    "上次第二個例子講到一半：十進位要先變成二進位的科學記號。",
+    "整數部分：用除（一直除以 2）。",
+    "那分數呢？（老師點名、用英文再問一次）",
+    "分數一定要用 multiply：一直乘以 2。",
+    "先轉成二進位，才能寫成二進位的科學記號，再表示出來。",
+    "例：0.75 用乘的：0.75 × 2 = 1.5 → 1，0.5 × 2 = 1.0 → 1，得 0.11₂ × 2⁰；normalize 成 1.1 × 2⁻¹。",
+    "這個例子是負數（−0.75），所以 sign bit 是 1。",
+    "exponent 是 −1，要轉成 unsigned 表示：反過來加 127，存 126 = 0111 1110。",
+    "1.1 的第一個 1 是 hidden one 不用存，fraction 只要存 1，後面全是 0。",
+    "分數一定要先用乘法轉成 binary，再套用表示法。",
+    "如果像 43.57 這樣整數、分數都有呢？",
+    "分開：整數部分用除，分數部分用乘，再合起來表示成二進位。43 = 101011₂；0.57 乘下去是 0.100100…（不會剛好結束）。",
+    "下一個例子 1/3：十進位是 0.3333…一直下去。",
+    "用同樣的乘法轉成二進位：0.010101…（01 一直重複）。",
+    "normalize：1.0101… × 2⁻²。",
+    "是正數，sign bit 是 0；exponent −2 加 127 得 125。",
+    "hidden one 不用存，fraction 存 0101 0101…（最後一位依 rounding 進位）。"
+   ]
+  },
+  {
+   "title": "Range 與 precision",
+   "scene": "nuB-13a-range",
+   "points": [
+    {
+     "t": 561,
+     "text": "range 由 exponent 決定；exponent 0000 0000 與 1111 1111 保留不用（特殊值）。"
+    },
+    {
+     "t": 614,
+     "text": "最小 exponent 0000 0001 → 1 − 127 = −126，最小 normalized ≈ 1.0 × 2⁻¹²⁶；最大 exponent 1111 1110 = 254 → 127，significand 全 1 → ≈ 2.0 × 2¹²⁷。"
+    },
+    {
+     "t": 740,
+     "text": "precision 由 significand 決定：single 23 bits ≈ 6 位十進位，double 52 bits ≈ 16 位。"
+    }
+   ],
+   "cues": [
+    561.2,
+    568.3,
+    578.06,
+    613.98,
+    623.14,
+    641.4,
+    651.14,
+    668.82,
+    686.4,
+    721.72,
+    740.2,
+    764.56,
+    771.8,
+    806.8,
+    824.16
+   ],
+   "explain": [
+    "用這個格式能表示多大範圍（range）、多精確（precision）？",
+    "range 跟 exponent 有關係。",
+    "exponent 全 0（0000 0000）和全 1（1111 1111）不用，保留下來——例如到現在還不知道 0 怎麼表示，這兩個 pattern 等一下會用來表示特殊值。",
+    "所以 exponent 最小可以用 0000 0001。",
+    "最大可以用 1111 1110。",
+    "最小的 exponent 是 1，減 127 得 −126。",
+    "最小的數：fraction 全 0，但有 hidden one，所以是 1.0 × 2⁻¹²⁶（有正有負）。",
+    "最大：exponent 1111 1110 = 254，減 127 得 +127。",
+    "significand 全部擺 1 才最大：1.111…1，離 2.0 只差 2⁻²³，所以大約是 2.0 × 2¹²⁷。",
+    "double precision 的 exponent 有更多 bits，算法完全一樣。",
+    "再看 precision（精確度）：跟 sign、exponent、significand 哪一個有關？",
+    "跟 significand 有關：significand 的 bits 越多，表示越精確。",
+    "single precision 的 significand 有 23 bits，double 有 52 bits——這是格式給定的。",
+    "換算成十進位（乘上 log₁₀2 ≈ 0.3）：23 bits 大約 6 位十進位數字（23 × 0.3 ≈ 6.9，老師和課本都說約 6 位），52 bits 大約 16 位。",
+    "所以給你一個浮點格式（exponent 幾 bits、significand 幾 bits），你要能算出它的 range（最大最小）和 precision。"
+   ]
+  },
+  {
+   "title": "特殊值：exponent 全 0 與全 1；0 怎麼表示",
+   "scene": "nuB-13a-zero",
+   "points": [
+    {
+     "t": 853,
+     "text": "保留的 exponent 000…0 與 111…1，各搭配 fraction = 0 或 ≠ 0，共四種特殊情況。"
+    },
+    {
+     "t": 906,
+     "text": "exponent 分三類：0、1～254（正常數，用 bias 與 hidden 1）、255。"
+    },
+    {
+     "t": 1080,
+     "text": "E = 0、F = 0 → 0（沒有 hidden 1、不要減 127）；sign bit 不同 → +0、−0。"
+    }
+   ],
+   "trap": "看到 exponent 全 0 或全 1 時，不能照一般方式（減 127、補 hidden 1）去解釋。",
+   "cues": [
+    853.46,
+    863.88,
+    881.14,
+    888.58,
+    906.18,
+    956.16,
+    983.24,
+    1072.18,
+    1080.58,
+    1095.66,
+    1135.06,
+    1178.6,
+    1196.06
+   ],
+   "explain": [
+    "接下來看 0 和一些特殊的數怎麼表示。",
+    "剛才說 exponent 的 0000 0000 和 1111 1111 是保留的。",
+    "exponent 是 0 的時候，significand 可以是 0，也可以是非 0。",
+    "exponent 全 1（=255）的時候，significand 也可以是 0 或非 0，一共四種組合。",
+    "換個角度：先不管 sign，exponent 分成三大類：全 0、1 ～ 254、全 1（255）。",
+    "中間 1 ～ 254 是正常的部分：搭配 significand，就是前面講的那一大堆（bias、hidden 1）。",
+    "保留的兩個 pattern（0 和 255）各配 significand 0／非 0，就是這四種紅色的特殊情況。",
+    "把這四種的意思一一解釋完，所有的 combination 就都說明清楚了。",
+    "第一種：exponent 是 0、significand 也是 0，全部都是 0——就代表 0！",
+    "這裡就沒有 hidden one 了，因為 exponent = 0 是特別的表示法。",
+    "不要傻傻地把它當 1.0 × 2^(0 − 127) 去算——看到這個 pattern 就直接知道是 0。",
+    "sign bit 還在：0 和 1 → 有 +0 和 −0 兩種，比較時可以用，但意思都是 0。",
+    "所以看到 exponent 0、significand 0，馬上就知道是 0，不用 hidden one、不用 bias。"
+   ]
+  },
+  {
+   "title": "Denormalized number：gradual underflow",
+   "scene": "nuB-13a-denorm",
+   "points": [
+    {
+     "t": 1220,
+     "text": "E = 0、F ≠ 0：不能照正常方式解釋。"
+    },
+    {
+     "t": 1235,
+     "text": "bit 有限，太小就 underflow；IEEE 用這個 pattern 多表示一些更小的數：gradual underflow。"
+    },
+    {
+     "t": 1289,
+     "text": "值 = 0.F × 2⁻¹²⁶：exponent 固定 −126，沒有 hidden 1——叫 denormalized number。"
+    }
+   ],
+   "trap": "denormalized 的指數是 −126（不是 0 − 127 = −127），而且沒有 hidden 1。",
+   "cues": [
+    1219.96,
+    1234.84,
+    1257.96,
+    1289.6,
+    1308.86,
+    1333.34,
+    1358.18,
+    1402.5,
+    1456.61,
+    1481.1,
+    1498.38
+   ],
+   "explain": [
+    "再來第二種：exponent 是 0、significand 不是 0。看到 exponent 是 0，就要特別解釋，不能減 127。",
+    "因為 bits 有限，significand、exponent 都有限，能表示的數也有限；超出範圍不是 overflow 就是 underflow。",
+    "發生 underflow 時，IEEE 稍微「偷吃步」：用這個 pattern 嘗試表示本來已經 underflow 的數，叫 gradual underflow。",
+    "exponent 全 0 時，指數當作 2⁻¹²⁶（最小的指數）。",
+    "significand 裡擺什麼就是什麼，前面沒有 hidden one 了：值 = 0.F × 2⁻¹²⁶。",
+    "正常（normalized）數最小是 1.0 × 2⁻¹²⁶；比它還小的，就用 denormalized number 表示。示意最小的 denormalized：",
+    "怎麼知道有沒有 hidden one？看 exponent：exponent 是 0000 0000，就是不正常的數，沒有 hidden one。",
+    "整理：exponent 全 0 → 沒有 hidden 1；指數不用 bias 演算法算，直接給 −126。",
+    "所以 exponent 全 0、significand 非 0 是什麼數？沒有 hidden one 的數——denormalized number。",
+    "它表示的其實已經是 underflow 的數，偷吃步表示出來：直接把 significand 放進來就對了。",
+    "這兩個 pattern 結束了：E = 0 配 F = 0 是 0，配 F ≠ 0 是 denormalized（gradual underflow）。"
+   ]
+  },
+  {
+   "title": "±∞ 與 NaN",
+   "scene": "nuB-13a-inf",
+   "points": [
+    {
+     "t": 1516,
+     "text": "E 全 1、F = 0 → ±∞（例如除以 0）。"
+    },
+    {
+     "t": 1575,
+     "text": "E 全 1、F ≠ 0 → NaN（not a number），例如 0/0、√−4。"
+    },
+    {
+     "t": 1615,
+     "text": "四種特殊情況加上正常數，所有組合都解釋完。"
+    }
+   ],
+   "cues": [
+    1515.86,
+    1525.4,
+    1542,
+    1557.39,
+    1575.42,
+    1599.68,
+    1615.1,
+    1630.76
+   ],
+   "explain": [
+    "再看 exponent 全部是 1 的時候，一樣分 significand 是 0 或非 0。",
+    "exponent 全 1、significand 0：表示成正無限大（sign 0）和負無限大（sign 1）。",
+    "浮點數有時候會除出這種東西，例如除以 0：結果就表示成無限大。",
+    "pattern 就是：exponent 全 1、significand 全 0。",
+    "最後一種：exponent 全 1、significand 非 0。既然正負無限大都有了，就把它定義成 NaN（not a number）。",
+    "例如 0 ÷ 0、√−4：結果不是一個數，就用這個 pattern 表示（debug 很有用）。",
+    "所有情況都結束了：正常數，加上 exponent 000 和 255 的特殊情況——這些不能用正常方式（bias 127、hidden 1）解釋。",
+    "所以如果給你 exponent 000、significand 有數字的 pattern，它代表的是 denormalized（gradual underflow）的數。"
+   ]
+  },
+  {
+   "title": "浮點加法演算法：對齊、相加、正規化、捨入",
+   "scene": "nuB-13a-fpalg",
+   "points": [
+    {
+     "t": 1664,
+     "text": "浮點數的 bit pattern 解釋方式不同，不能直接用整數的 full adder 相加，要設計新的加法器。"
+    },
+    {
+     "t": 1749,
+     "text": "1.3 × 2⁵ 與 1.3 × 2⁻⁵ 不能直接加 mantissa：先讓 exponent 一樣（指數小的往右 shift）。"
+    },
+    {
+     "t": 1866,
+     "text": "對齊後 mantissa 相加；再 normalize（並檢查 overflow／underflow）；位數固定要 rounding；rounding 進位又要再 normalize。"
+    }
+   ],
+   "trap": "對齊時是把「指數小」的那個數往右 shift（不是把大的往左移），以免丟掉高位。",
+   "cues": [
+    1664.4,
+    1680.1,
+    1696.1,
+    1712.6,
+    1749.14,
+    1770.77,
+    1786.1,
+    1827.1,
+    1865.93,
+    1876.03,
+    1901.18,
+    1996.78,
+    2029.06
+   ],
+   "explain": [
+    "表示法講完，接下來要看浮點數怎麼加、怎麼乘——依照表示法設計加法器、乘法器。",
+    "如果是 two's complement 整數很簡單：用 full adder 兜一兜就好（ripple、carry lookahead…）。",
+    "但浮點數同樣 32 bits，解釋方法不一樣：sign、exponent、significand，不能直接用 full adder 加。",
+    "所以要自己設計加法器。先想 algorithm，再把 hardware 設計出來。",
+    "例：1.3 × 2⁵ 加 1.3 × 2⁻⁵，可以直接把 mantissa 相加嗎？不行！",
+    "要先把兩個 exponent 變成一樣，也就是讓小數點對在同一個位置。",
+    "要移哪一個？用十進位想：要把小的那個變成 0.34 這種（往右移），再去跟大的相加。",
+    "兩個 exponent 不一樣（例如 2⁵ 和 2⁻³），就把指數小的那個數右移到 2⁵ 的位置——right shift。",
+    "小數點對齊之後，就可以把 mantissa 相加。",
+    "加完就結束了嗎？不行，結果可能不是 normalized form，要再 normalize（並且檢查 overflow／underflow）。",
+    "normalize 時 shift 來 shift 去，significand 可能變很長，但格式固定只有 23 bits：放不下怎麼辦？直接截掉（truncation）或四捨五入——rounding。",
+    "rounding 之後可能又進位，又不是 normalized form，就要回到第 3 步再 normalize；沒事就完成。",
+    "整數加法只要 full adder 串起來；浮點加法卻是四個步驟的複雜 algorithm——但硬體還是做得出來。"
+   ]
+  },
+  {
+   "title": "浮點加法例子：0.5 + (−0.4375)",
+   "scene": "nuB-13a-fpex",
+   "points": [
+    {
+     "t": 2070,
+     "text": "4 位二進位的例子：1.000 × 2⁻¹ + (−1.110 × 2⁻²)。"
+    },
+    {
+     "t": 2106,
+     "text": "對齊：指數小的右移一位 → −0.111 × 2⁻¹；相加：0.001 × 2⁻¹。"
+    },
+    {
+     "t": 2147,
+     "text": "normalize：左移 3 位 → 1.000 × 2⁻⁴（= 0.0625）。"
+    },
+    {
+     "t": 2195,
+     "text": "注意：書上說的 right／left shift 是指「數」往右／左移，不是小數點移動。"
+    }
+   ],
+   "trap": "right shift 指的是數字往右移（等於小數點往左），不是小數點往右。",
+   "cues": [
+    2079.72,
+    2088.1,
+    2106.06,
+    2130.44,
+    2146.88,
+    2155.12,
+    2194.94,
+    2244.4
+   ],
+   "explain": [
+    "用一個簡單的數走一遍：align、加 mantissa、normalize、rounding 四步。",
+    "4 位二進位的例子：1.000 × 2⁻¹（= 0.5）加上 −1.110 × 2⁻²（= −0.4375）。exponent 不一樣。",
+    "第 1 步 align：把指數比較小的那個（2⁻²）right shift 一位，變成 −0.111 × 2⁻¹。",
+    "第 2 步：exponent 一樣了，mantissa 相加：1.000 + (−0.111) = 0.001，exponent 維持 2⁻¹。",
+    "加完不是 normalized form，要做 normalization：把這個數 left shift。",
+    "left shift 一位、兩位、三位，exponent 就減 3：1.000 × 2⁻⁴。",
+    "注意：書上說 right shift、left shift，是指「這個數」往右或往左移，不是小數點往右或往左（兩者方向相反）。",
+    "回家測試例子時記得這點，不然會覺得跟自己想的不一樣。"
+   ]
+  },
+  {
+   "title": "浮點加法器的硬體",
+   "scene": "nuB-13a-fphw",
+   "points": [
+    {
+     "t": 2270,
+     "text": "浮點加法器很複雜（x86 早期用 coprocessor）；把 algorithm 的每一步對應到硬體。"
+    },
+    {
+     "t": 2399,
+     "text": "step 1：small ALU 把兩個 exponent 相減，決定誰較小、右移幾位；兩個 2-to-1 MUX 選「要 shift 的」與「不 shift 的」significand。"
+    },
+    {
+     "t": 2636,
+     "text": "big ALU 相加；MUX（正常選 0）→ normalize（左右移、exponent 加減）→ rounding；rounding 後又不 normalized 就經 MUX 的 1 再做一次。"
+    },
+    {
+     "t": 2826,
+     "text": "exponent 也有一個 2-to-1 MUX：選比較大的 exponent。"
+    }
+   ],
+   "cues": [
+    2270.5,
+    2285.3,
+    2303.54,
+    2317.82,
+    2343.72,
+    2384.98,
+    2399.58,
+    2415.84,
+    2433.1,
+    2482.84,
+    2527.18,
+    2584.46,
+    2627.36,
+    2636.3,
+    2651.82,
+    2718.8,
+    2727.78,
+    2794.3,
+    2826.26,
+    2861.04
+   ],
+   "explain": [
+    "這就是浮點加法器的硬體，看起來很複雜。",
+    "浮點運算很晚才進到處理器裡：像 x86 一開始沒有浮點加、乘，要另外接一個 coprocessor，因為太複雜。",
+    "跟整數加法器（full adder 兜一兜）比，它要好多個 ALU，還要 shift 來 shift 去。",
+    "做 IC 設計就是這件事：給你一個 algorithm，把它的每一步變成 hardware。",
+    "對應剛才的四個步驟：第 1 步對齊、第 2 步相加、第 3 步 normalize、第 4 步 rounding。",
+    "後面幾步比較直覺：相加交給 ALU；normalize 就是看要 shift left 還是 right，並把 exponent 加或減；rounding 有 rounding hardware。",
+    "第 1 步比較不直覺：怎麼知道哪個 exponent 小、要 shift 哪一個？先把兩個 exponent 拿出來比較（用 small ALU 相減）。",
+    "比較小的那個就要做 right shift。",
+    "關鍵在這：要被 shift 的可能是 A 的 significand，也可能是 B 的——所以 shifter 前面有一個 2-to-1 MUX 來選。",
+    "另一個不 shift 的 significand 也可能是 A 或 B，所以 big ALU 的另一個 operand 前面也要一個 2-to-1 MUX。",
+    "MUX 的 select 由 control logic 決定；control 怎麼知道？把兩個 exponent 相減，就知道誰小。",
+    "示意：左邊（A）的 exponent 比較小 → 左邊的 MUX 選 0（把 A 送去 shift），右邊的 MUX 選 1（B 不 shift）。用剛才的例子：A = −1.110 × 2⁻²、B = 1.000 × 2⁻¹。",
+    "要 shift 幾位？control 也告訴 shifter：就是 exponent 的差（exponent difference）。這裡 −1 − (−2) = 1 位。",
+    "shift 完就送進 big ALU 相加（叫 big 是因為對齊後的 mantissa 比原本精度還寬）：1.000 + (−0.111) = 0.001。",
+    "big ALU 後面又有一個 2-to-1 MUX：一個 input 從 ALU 來，一個從後面繞回來。第一次做時（正常狀況）選 0，用 ALU 的結果。",
+    "依結果做 shift left 或 shift right，直到 normalized：0.001 左移 3 位 → 1.000，exponent −1 → −4。",
+    "再做 rounding：結果可能直接出去；如果 rounding 又進位、不是 normalized form，就繞回去——這時 MUX 選 1，再 normalize 一次。",
+    "用這些 MUX 控制不同的路徑：software 寫的 algorithm，step 1、2、3 都可以對應到 hardware。",
+    "還有一個地方：exponent 那邊也有一個 2-to-1 MUX。它在選什麼？",
+    "選 exponent：兩個 exponent 不一樣，小的那個被移過去了，所以保留的是大的那個 exponent（這裡是 −1，再交給 normalize 去調整）。"
+   ]
+  },
+  {
+   "title": "浮點加法太複雜：一個 cycle 做不完 → pipeline",
+   "scene": "nuB-13a-pipe",
+   "points": [
+    {
+     "t": 2893,
+     "text": "浮點加法比整數加法複雜太多，一個 cycle 可能做不完；若硬要一個 cycle，clock period 會拉得很長。"
+    },
+    {
+     "t": 2931,
+     "text": "解法：pipeline，切成幾個 stage 一段一段做（之後的章節介紹）；乘法下次再講。"
+    }
+   ],
+   "cues": [
+    2908.76,
+    2916.34,
+    2931.5,
+    2947.66
+   ],
+   "explain": [
+    "浮點加法比整數加法複雜非常多，花很多時間設計。",
+    "從頭做一次可能沒辦法在一個 cycle 內做完；如果硬要一個 cycle 做完，clock period 就要拉得很長。",
+    "解決方法常常是 pipeline：把它切成幾個 stage，一個 stage 一個 stage 做（後面會教）。",
+    "因為硬體要做這麼多事，浮點加法花的時間比 full adder 長很多，通常就 pipeline 它。乘法下次再講。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "−0.75 的 IEEE 754 single precision 是？",
+   "opts": [
+    "1 01111110 1000…0",
+    "1 01111111 1100…0",
+    "0 01111110 1000…0",
+    "1 10000000 1000…0"
+   ],
+   "ans": "1 01111110 1000…0",
+   "why": "−0.75 = −1.1₂ × 2⁻¹：S = 1，E = −1 + 127 = 126，F = 1000…（hidden 1 不存）。"
+  },
+  {
+   "q": "single precision 最小的 normalized 正數是？",
+   "opts": [
+    "1.0 × 2⁻¹²⁶",
+    "1.0 × 2⁻¹²⁷",
+    "2⁻¹⁴⁹",
+    "0.1 × 2⁻¹²⁶"
+   ],
+   "ans": "1.0 × 2⁻¹²⁶",
+   "why": "exponent 最小可用 0000 0001 → 1 − 127 = −126；fraction 全 0 加 hidden 1。2⁻¹⁴⁹ 是最小的 denormalized。"
+  },
+  {
+   "q": "exponent 全 0、fraction 不是 0，代表？",
+   "opts": [
+    "denormalized number：0.F × 2⁻¹²⁶",
+    "±0",
+    "NaN",
+    "1.F × 2⁻¹²⁷"
+   ],
+   "ans": "denormalized number：0.F × 2⁻¹²⁶",
+   "why": "沒有 hidden 1、指數固定 −126（gradual underflow）。"
+  },
+  {
+   "q": "exponent 全 1、fraction 不是 0，代表？",
+   "opts": [
+    "NaN",
+    "±∞",
+    "最大的數",
+    "denormalized number"
+   ],
+   "ans": "NaN",
+   "why": "E = 255、F = 0 是 ±∞；F ≠ 0 是 NaN，例如 0/0、√−4。"
+  },
+  {
+   "q": "浮點加法的第一步要做什麼？",
+   "opts": [
+    "把指數小的數 right shift 對齊",
+    "把指數大的數 left shift",
+    "直接把 significand 相加",
+    "先 rounding"
+   ],
+   "ans": "把指數小的數 right shift 對齊",
+   "why": "小數點對齊後才能加 mantissa；之後 normalize、rounding。"
+  },
+  {
+   "q": "1.000 × 2⁻¹ + (−1.110 × 2⁻²)（4 位）結果是？",
+   "opts": [
+    "1.000 × 2⁻⁴",
+    "0.001 × 2⁻¹（不用再處理）",
+    "1.000 × 2⁻³",
+    "1.110 × 2⁻¹"
+   ],
+   "ans": "1.000 × 2⁻⁴",
+   "why": "對齊 −0.111 × 2⁻¹，相加 0.001 × 2⁻¹，normalize 左移 3 位 → 1.000 × 2⁻⁴ = 0.0625。"
+  },
+  {
+   "q": "浮點加法器中 exponent 那個 2-to-1 MUX 選的是？",
+   "opts": [
+    "兩個 exponent 中較大的",
+    "兩個 exponent 中較小的",
+    "兩個 exponent 的差",
+    "固定選 A 的"
+   ],
+   "ans": "兩個 exponent 中較大的",
+   "why": "較小的那個數已右移對齊到大的 exponent，結果先用大的 exponent，再由 normalize 調整。"
+  }
+ ]
+}

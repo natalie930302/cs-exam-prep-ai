@@ -1,0 +1,602 @@
+{
+ "video": "2srq4qFEhu8",
+ "label": "黃婷婷教授計算機結構_第9B講 Instruction Set Architecture / Computer Arithmetic",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "從 ISA 到硬體：ALU 要做哪些運算",
+   "scene": "nuB-9b-ops",
+   "points": [
+    {
+     "t": 18,
+     "text": "ISA 定好之後開始建硬體：一個 component 一個 component 做，再組合起來。"
+    },
+    {
+     "t": 52,
+     "text": "先做 computer arithmetic：加、減，再把它們建進 ALU。"
+    },
+    {
+     "t": 89,
+     "text": "跟 ALU 有關的是 R-type 指令：add、sub、and、or、nor、slt。"
+    },
+    {
+     "t": 167,
+     "text": "MIPS 沒有 NOT 指令，用 NOR 來做 NOT。"
+    }
+   ],
+   "cues": [
+    17.72,
+    30.34,
+    38.58,
+    51.76,
+    75.54,
+    88.97,
+    100.66,
+    120.3,
+    146.58,
+    167.34,
+    175.72
+   ],
+   "explain": [
+    "前面已經把 MIPS 的指令集（ISA，instruction set architecture，也就是「電腦聽得懂哪些指令」的規格書）訂好了。接下來要反過來問：要做出這些指令，硬體要怎麼蓋？",
+    "方法是一塊一塊來：先把一個個小零件（component）做好，再把它們接在一起，變成能執行每一條指令的電路。",
+    "第一個要做的零件跟「運算」有關，這一整塊叫 computer arithmetic（電腦算術）。所有運算集中交給一個叫 ALU 的單元來做。",
+    "ALU 是 arithmetic logic unit（算術邏輯單元），CPU 裡真正動手做加減和邏輯運算的地方。這一講先從加法、減法開始，再把它們組進 ALU。",
+    "老師先問：MIPS 只有三種指令格式（R、I、J），哪一種最需要 ALU？",
+    "答案是 R-type：add、sub 這種「兩個 register 運算、結果寫回 register」的指令。它們都要靠 ALU 算。",
+    "除了加減，R-type 還有 and、or 這類邏輯運算（老師也提到 shift）。所以要做一個可以被「控制」的 ALU，叫它做哪一種就做哪一種。",
+    "減法不另外做一個減法器，而是用 two's complement（2 的補數）的表示法，把減法變成加法來做。資料怎麼「表示」，決定硬體怎麼「設計」。",
+    "這次要做的 ALU 功能清單：and、or、add、sub、set on less than（slt）、nor，一共六種。",
+    "為什麼是 nor 而不是 not？因為 MIPS 沒有 NOT 指令：a NOR 0 = NOT a，用 nor 就能做出 not。右邊用 a = 0、1 兩種情況驗算。",
+    "先把這六種做出來；會了這六種，其他運算也是用同樣的方法一個一個加上去。"
+   ]
+  },
+  {
+   "title": "ALU control：4 個 bit 決定做哪一種運算",
+   "scene": "nuB-9b-ctrl",
+   "points": [
+    {
+     "t": 183,
+     "text": "ALU 有 4 bits 的 ALU control；兩個 32 位元運算元進、32 位元結果出，另外輸出 Overflow 與 Zero。"
+    },
+    {
+     "t": 217,
+     "text": "ALU control：0000 AND、0001 OR、0010 add…"
+    },
+    {
+     "t": 253,
+     "text": "R-type 的 opcode 都是 0，靠最後的 funct 欄位決定做哪一種運算；funct 會轉成 ALU control。"
+    }
+   ],
+   "cues": [
+    183.06,
+    190.98,
+    201.3,
+    209.68,
+    216.84,
+    225.06,
+    242.18,
+    253.09,
+    263.08,
+    270.6,
+    278.44
+   ],
+   "explain": [
+    "先看 ALU 這個方塊的「外觀」。它上方有一組控制線叫 ALU control，總共 4 個 bit，用來告訴 ALU 這次要做哪一種運算。",
+    "資料是 32 bits：兩個 32-bit 的運算元 a、b 從左邊進來，32-bit 的結果從右邊出去。",
+    "ALU 還會多給兩個小訊號：Overflow（結果太大、放不下了嗎）和 Zero（結果是不是 0，給 beq 判斷相等用）。",
+    "要做的運算就是剛才那六種：and、or、add、sub、set on less than、nor。",
+    "control 的意思是：如果送進來的 4 個 bit 是 0000，就做 AND；0001 就做 OR。",
+    "0010 就做加法。後面的 sub、slt、nor 也各有自己的 code，等一下會看到這些 code 其實不是亂編的。",
+    "那這 4 個 bit 從哪裡來？從指令本身：R-type 指令最後面那一段 bit pattern。",
+    "R-type 指令有六個欄位：op（6 bits）、rs、rt、rd、shamt（各 5 bits）、funct（6 bits），加起來 32 bits。",
+    "所有 R-type 的 op 欄位都一樣是 000000，所以光看 op 分不出是加還是減。",
+    "真正決定「加、減還是 and…」的是最後的 funct 欄位。",
+    "funct 經過一點轉換，就變成剛才的 ALU control code。所以 control 訊號其實是從指令裡「拉出來」的。"
+   ]
+  },
+  {
+   "title": "1-bit slice：一個 bit 做好再接起來",
+   "scene": "nuB-9b-slice",
+   "points": [
+    {
+     "t": 303,
+     "text": "32 bits 一次做很難，先做 one-bit slice：divide and conquer，每個 bit 的工作都一樣。"
+    },
+    {
+     "t": 338,
+     "text": "1-bit ALU：同一對 a、b 同時送進 AND、OR、full adder。"
+    },
+    {
+     "t": 365,
+     "text": "要依 control 選其中一個結果 → 後面接一個 MUX。"
+    }
+   ],
+   "cues": [
+    303.3,
+    311.54,
+    319.74,
+    329.52,
+    338,
+    364.86
+   ],
+   "explain": [
+    "32 個 bit 一次設計很難，所以老師說：先只做一個 bit，叫 one-bit slice（一片）。",
+    "這是 divide and conquer（分而治之）：把大問題切成很多個小問題。這裡把 32-bit ALU 切成 32 片 1-bit ALU。",
+    "每一個 bit 做的事都一樣，所以只要把一片做對，再複製、黏起來就好。",
+    "做完基本版，再「extension」：一步一步加功能，變成更複雜的 ALU。",
+    "1-bit ALU 長這樣：同一對 a、b 同時送進三個零件：AND 閘、OR 閘、還有做加法的 full adder（全加器）。",
+    "三個零件同時都有結果，但每次只想要其中一個（依 control 決定），所以後面接一個 multiplexer（MUX，多工器）來「選」。"
+   ]
+  },
+  {
+   "title": "Multiplexer：select input 決定誰出去",
+   "scene": "nuB-9b-mux",
+   "points": [
+    {
+     "t": 372,
+     "text": "什麼是 MUX（課堂點名問答）。"
+    },
+    {
+     "t": 425,
+     "text": "2-to-1 MUX：兩個 input、一個 output、1 bit 的 select。"
+    },
+    {
+     "t": 465,
+     "text": "4-to-1 MUX：select 要 2 bits（00、01、10、11）。"
+    },
+    {
+     "t": 514,
+     "text": "ALU 的 AND、OR、add 接到 MUX；Operation 00 → AND、01 → OR、10 → add。"
+    }
+   ],
+   "cues": [
+    371.88,
+    425.11,
+    439.65,
+    446.89,
+    455.69,
+    465.01,
+    499.04,
+    514.06,
+    521.7,
+    542.72,
+    602.28,
+    617.32,
+    633.22
+   ],
+   "explain": [
+    "剛才那個「選擇器」就是 MUX。老師先點名問學生：還記得邏輯設計教的 MUX 嗎？",
+    "2-to-1 MUX：有兩個 input（A、B），但 output 只有一個——兩個裡面只能挑一個出去。",
+    "要選哪一個？靠 select input。只有兩個可以選，所以 select 只要 1 個 bit。",
+    "select = 0 時，A 的值走到 output。",
+    "select = 1 時，換 B 走到 output。這就是 2-to-1 MUX。",
+    "那 4-to-1 MUX 呢？四個 input，output 還是只有一個。",
+    "四個要選一個，select 就要 2 bits：00、01、10、11 各選一個 input。",
+    "回到 ALU：AND、OR、一位元加法的結果各接到 MUX 的一個 input。",
+    "只有三個 input，所以是 3-to-1 的 MUX；圖上叫 Operation 的線就是它的 select input。",
+    "三個要選一個，select 還是要 2 bits（會多出一個組合沒用到）。",
+    "Operation = 00 時，AND 的結果被選出去。",
+    "Operation = 01 時是 OR，10 時是加法（full adder 的 sum）。",
+    "所以用一個 control signal 控制一個 MUX，同一塊電路就能做三種 operation。"
+   ]
+  },
+  {
+   "title": "把 1-bit ALU 串成 4 bits、32 bits",
+   "scene": "nuB-9b-chain",
+   "points": [
+    {
+     "t": 649,
+     "text": "1-bit slice 做好後重複：每一片的 carry out 接到下一片的 carry in。"
+    },
+    {
+     "t": 681,
+     "text": "4 bits → 16 → 32 bits；Operation 同時送給每一片。"
+    }
+   ],
+   "cues": [
+    649.32,
+    666.22,
+    674.28,
+    681.52,
+    690.44
+   ],
+   "explain": [
+    "一個 bit 會做了，四個 bit 就是把同一片重複四次。右邊是 bit 0（最低位），左邊是 bit 3。",
+    "不一樣的只有 carry：每片做加法會產生 carry out，它就接到左邊那片的 carry in。示意：0101 + 0011。",
+    "結果 1000 = 8，跟 5 + 3 相同，進位一路從右傳到左。",
+    "四片會了，十六片、三十二片也一樣，一路接下去就是 32-bit ALU。",
+    "注意：Operation（做哪一種運算）要同時送給每一片，大家一起做同一種運算。"
+   ]
+  },
+  {
+   "title": "減法：A − B = A + (−B)，Binvert + CarryIn = 1",
+   "scene": "nuB-9b-sub",
+   "points": [
+    {
+     "t": 697,
+     "text": "減法不做新的硬體：A − B = A + (−B)。"
+    },
+    {
+     "t": 849,
+     "text": "two's complement 取負數：每個 bit 反相（0 變 1、1 變 0）再加 1。"
+    },
+    {
+     "t": 884,
+     "text": "硬體：b 前面加 2-to-1 MUX 選 b 或 b 反相（Binvert）；加 1 就是把最低位的 CarryIn 設成 1。"
+    }
+   ],
+   "trap": "只做 Binvert 得到的是 1's complement，還要讓 bit 0 的 CarryIn = 1 才是 −B。",
+   "cues": [
+    697.64,
+    722.9,
+    734.1,
+    754.42,
+    848.98,
+    859.22,
+    884.42,
+    900.5,
+    909.02,
+    916.5,
+    940.88,
+    957.67,
+    989.83
+   ],
+   "explain": [
+    "現在會加、and、or，那減法呢？",
+    "想法：不要另外做減法器，還是用加法器。",
+    "把 B 變成 −B，A − B 就等於 A + (−B)，加法器照用。",
+    "問題變成：−B 怎麼來？在 two's complement 裡怎麼求一個數的負數？（老師點同學回答）",
+    "第一步：每個 bit 反相（invert），0 變 1、1 變 0。示意 B = 0110 → 1001。",
+    "第二步：再在最低位（least significant bit）加 1：1001 + 1 = 1010，就是 −6。",
+    "硬體怎麼做？在每一片的 b 前面放一個 2-to-1 MUX：一個 input 是 b，一個是 b 反相（經過 inverter）。",
+    "控制它的是一個 bit，叫 Binvert：Binvert = 0，b 照原樣進去。",
+    "Binvert = 1，進去的就變成 b 反相（invert）。這樣只完成了「反相」，還差加 1。",
+    "那個「+1」要加在哪裡？老師請同學想：其實硬體裡早就有一個現成的地方。",
+    "每一片都是 full adder，它有三個 input：x、y，還有 carry in。",
+    "所以只要把最低位（bit 0）那一片的 CarryIn 設成 1，就等於 x + y + 1。",
+    "Binvert = 1 加上 CarryIn = 1，加法器做的就是 a + b̄ + 1 = a − b。示意：0111 − 0110 = 0111 + 1001 + 1。"
+   ]
+  },
+  {
+   "title": "ALU control code 的意義：Bnegate 與 MUX select",
+   "scene": "nuB-9b-code",
+   "points": [
+    {
+     "t": 1005,
+     "text": "control code 不是亂編的：最後兩 bits 是 MUX 的 select（00 AND、01 OR、10 add）。"
+    },
+    {
+     "t": 1064,
+     "text": "從右數第三個 bit 是 Bnegate；add 與 sub 都是 10，差在 Bnegate。"
+    },
+    {
+     "t": 1114,
+     "text": "這 4 bits 來自指令（funct），分配到各個 control signal。"
+    }
+   ],
+   "cues": [
+    1004.75,
+    1012.81,
+    1025.47,
+    1041.07,
+    1064.4,
+    1090.92,
+    1114.59,
+    1155.23
+   ],
+   "explain": [
+    "回頭看 control code：0000 AND、0001 OR、0010 add、0110 sub。老師說這些 code 都有意義。",
+    "先看最後兩個 bit：AND 是 00、OR 是 01、add 是 10。",
+    "sub 的最後兩 bit 也是 10（因為減法就是加法），它多了一個 1：那個 bit 代表「b 要不要 negate（取負）」。",
+    "所以最後兩個 bit 就是接到 MUX 的 select input（Operation）。",
+    "從右邊數過來第三個 bit 是 Bnegate：要 negate 就是 1，不要就是 0。",
+    "對照 add（0010）和 sub（0110）：MUX 都選 10（加法器），差別只在 Bnegate。Bnegate 同時控制 Binvert 與 bit 0 的 CarryIn。",
+    "這 4 個 bit 由指令決定：拿到一條 R-type 指令，就從 funct 轉出這組 control code，分給各個 control 線。",
+    "「control」聽起來很抽象，其實就是這些 MUX 的 select 和要不要 invert 的訊號。"
+   ]
+  },
+  {
+   "title": "NOR：De Morgan → Ainvert、Binvert 再 AND",
+   "scene": "nuB-9b-nor",
+   "points": [
+    {
+     "t": 1179,
+     "text": "NOR = NOT(a OR b) = (NOT a) AND (NOT b)（De Morgan）。"
+    },
+    {
+     "t": 1203,
+     "text": "實作：a 前面也加 invert（Ainvert），a、b 都反相後選 AND（00）。"
+    },
+    {
+     "t": 1263,
+     "text": "control 4 bits = Ainvert、Bnegate、Operation(2) → NOR = 1100。"
+    }
+   ],
+   "cues": [
+    1179.07,
+    1186.53,
+    1202.85,
+    1210.31,
+    1218.08,
+    1262.87,
+    1279.05
+   ],
+   "explain": [
+    "再來做 NOR。先把 1-bit ALU 畫出來，這次 a 前面也多一個 invert 的 MUX（Ainvert）。",
+    "De Morgan 定律：NOT(a OR b) = (NOT a) AND (NOT b)。右上把 a、b 四種組合都算一遍確認。",
+    "所以做法是：把 a 反相、把 b 反相。",
+    "再讓 MUX 選 AND 的結果，也就是 select = 00。",
+    "那 NOR 的 4-bit control code 應該是多少？老師請同學猜。",
+    "第一個 bit 控制 a 要不要反相、第二個控制 b 要不要反相、後兩個是 MUX select：1、1、00 → 1100。",
+    "所以每個 code 都不是亂給的：它們就是各個 control 線的值，決定 ALU 做哪個運算。"
+   ]
+  },
+  {
+   "title": "Set on less than：a − b 的 sign bit 送到 bit 0",
+   "scene": "nuB-9b-slt",
+   "points": [
+    {
+     "t": 1287,
+     "text": "slt：比較 a < b，不做比較器，直接算 a − b，看是不是負數。"
+    },
+    {
+     "t": 1348,
+     "text": "結果只有 bit 0 是 1（成立）或 0，其餘 bit 全是 0。"
+    },
+    {
+     "t": 1422,
+     "text": "bit 1～30（及 MSB 本身）：MUX 的第 4 個 input「Less」接 0。"
+    },
+    {
+     "t": 1486,
+     "text": "MSB 那片的加法器早就算好 a − b 的 sign bit（Set），把它拉到 bit 0 的 Less。"
+    },
+    {
+     "t": 2039,
+     "text": "MUX 的概念：每個單元都同時算好，只是沒被選到；slt control = 0111。"
+    }
+   ],
+   "trap": "slt 不是把 sign bit 放在 bit 31，而是放到 bit 0；其他 bit（包含 bit 31）都輸出 0。",
+   "cues": [
+    1288.13,
+    1303.55,
+    1323.63,
+    1332.15,
+    1348.65,
+    1356.15,
+    1382.01,
+    1421.95,
+    1429.87,
+    1485.8,
+    1519.93,
+    1608.57,
+    1626.95,
+    1634.95,
+    1938.75,
+    1956.37,
+    2039.61,
+    2087.97,
+    2112.65,
+    2150.97
+   ],
+   "explain": [
+    "slt rd, rs, rt：如果 rs < rt，rd 設成 1，否則設成 0。這要怎麼用 ALU 做？",
+    "兩個 register a、b 比大小：看 a 有沒有小於 b。",
+    "要另外做一個比較器嗎？太麻煩了——ALU 裡已經有加法和減法。",
+    "只要算 a − b：如果結果是負的，就代表 a < b，條件成立。示意 3 − 5 = 1110（−2），sign bit 是 1。",
+    "做完 a − b 之後，destination register 只需要設一個 bit。",
+    "rd 的 bit 0（最右邊）設成 1 代表「小於」，其他 31 個 bit 都是 0。",
+    "所以 slt 的硬體分三部分處理：最高位的 sign bit、中間 bit 1～30、還有 bit 0。",
+    "先做簡單的：bit 1～30 的結果一律是 0。",
+    "每片 MUX 本來只用到 00、01、10，第 4 個 input（11）還空著。把它叫 Less，選 11 時就輸出 Less；中間這些片的 Less 接 0。",
+    "再來是 sign bit。剛才說要算 a − b，其實只要設成減法，最高位那片的加法器就已經算出答案了。",
+    "把 MSB 那片加法器的輸出（a − b 的 sign bit）另外拉一條線出來，叫 Set。",
+    "如果 a < b，a − b 是負數，sign bit 就是 1。示意 3 − 5：sign bit = 1。",
+    "把這個 1 接到 bit 0 那片的 Less：選 11 時 bit 0 輸出 1，就是「set」。",
+    "但 MSB 那片自己的 Less 還是接 0，所以 MSB 的輸出是 0。整個結果只有 bit 0 可能是 1。",
+    "（同學問了問題後老師再整理）slt 的規格：成立時 destination 放 000…001，不成立就全部 0，硬體照這個規格實作。",
+    "slt 的 control：MUX 選 11（Less），而且 b 要 negate（做減法才算得出 sign bit），所以是 0111。",
+    "這裡有個重要觀念：選 11 時，加法器有沒有在做減法？有！MUX 前面的 AND、OR、加法每一刻都在算。",
+    "只是沒被選中的結果不會出去而已。slt 雖然沒有選加法的輸出，卻可以用它算出的 sign bit。",
+    "這叫 parallel data flow：input 一來，每個單元的 output 一定跟著變，MUX 只負責挑。",
+    "總整理：00 選 AND、01 選 OR、10 選加法；sub 是 10 + b negate；slt 是 11 + b negate；nor 是 a、b 都 negate 再選 AND。"
+   ]
+  },
+  {
+   "title": "Overflow：4 bits 能表示的範圍",
+   "scene": "nuB-9b-range",
+   "points": [
+    {
+     "t": 2192,
+     "text": "還要考慮 overflow；4-bit two's complement 可表示 −8 ～ 7（16 種組合）。"
+    }
+   ],
+   "cues": [
+    2191.67,
+    2199.31,
+    2218.53
+   ],
+   "explain": [
+    "ALU 還要處理一件事：overflow（溢位），也就是答案大到（或小到）放不進固定的 bit 數。",
+    "先看表示法：4 bits 的 two's complement，正數 0000～0111 是 0～7，負數 1000～1111 是 −8～−1。",
+    "16 種組合剛好表示 −8 到 7。最大 7、最小 −8，超出這個範圍就放不下。"
+   ]
+  },
+  {
+   "title": "（點名）",
+   "scene": null,
+   "points": [
+    {
+     "t": 2235,
+     "text": "課堂點名，沒有新內容。"
+    }
+   ]
+  },
+  {
+   "title": "Overflow 什麼時候發生、怎麼偵測",
+   "scene": "nuB-9b-ovf",
+   "points": [
+    {
+     "t": 2298,
+     "text": "4 bits：7 + 3 = 10 超過 7，−4 + (−5) = −9 小於 −8 → overflow。"
+    },
+    {
+     "t": 2340,
+     "text": "結果變號：正 + 正得 −6，負 + 負得 +7。"
+    },
+    {
+     "t": 2381,
+     "text": "一正一負相加永遠不會 overflow；同號相加結果變號才是 overflow。"
+    },
+    {
+     "t": 2476,
+     "text": "偵測：MSB 的 carry in ≠ carry out 就是 overflow，用一個 XOR gate。"
+    }
+   ],
+   "trap": "判斷 overflow 不是看 carry out 有沒有 1，而是 MSB 的 carry in 與 carry out 是否不同。",
+   "cues": [
+    2298.13,
+    2305.47,
+    2313.05,
+    2330.77,
+    2340.67,
+    2381.6,
+    2399.1,
+    2441.43,
+    2467.47,
+    2476.33,
+    2500.41,
+    2519.03,
+    2536.47,
+    2586.75
+   ],
+   "explain": [
+    "運算結果要用同一種表示法解讀，4 bits 只能到 7 和 −8。",
+    "老師的例子：7 + 3。0111 + 0011，從右往左一位一位加。",
+    "答案應該是 10，但 4 bits 最大只到 7——超出範圍，這就叫 overflow。",
+    "同樣地，−4 + (−5) 應該是 −9，比 −8 還小，也是 overflow。1100 + 1011：",
+    "看結果變成什麼：兩個正數加出 1010 = −6；兩個負數加出 0111 = +7。符號整個錯了。",
+    "一正一負相加會不會 overflow？永遠不會：正負會互相抵消，結果一定落在兩者之間。",
+    "只有兩個同號（都正或都負）時才有可能 overflow。",
+    "兩個正數相加應該永遠是正數，兩個負數相加應該永遠是負數。",
+    "所以條件是：正 + 正 → 負，或 負 + 負 → 正，也就是 sign bit 不對了。",
+    "把這個條件化簡，結論是：只要看最高位（sign bit）那一位的 carry in 和 carry out 一不一樣。",
+    "第一個例子（7 + 3）：MSB 有 carry in（1），但沒有 carry out（0）→ 不一樣 → overflow。",
+    "第二個例子（−4 + −5）：MSB 沒有 carry in（0），卻有 carry out（1）→ 也是 overflow。",
+    "道理：兩個正數的 sign bit 都是 0，進來一個 carry 就把 sign bit 變成 1（變負）卻沒推出去；兩個負數的 1 + 1 被推出去、又沒 carry 進來，就變成 0（變正）。",
+    "偵測硬體很簡單：把 sign bit 的 carry in、carry out 接到一個 XOR 閘，輸出 1 就是 overflow。"
+   ]
+  },
+  {
+   "title": "Overflow 之後怎麼辦；Zero 偵測",
+   "scene": "nuB-9b-after",
+   "points": [
+    {
+     "t": 2645,
+     "text": "overflow 之後怎麼處理看程式語言的定義：需要處理就用有號指令（add），發生 overflow 跳到 exception handler。"
+    },
+    {
+     "t": 2677,
+     "text": "不在乎 overflow 就用 unsigned 指令（addu），不會觸發 exception。"
+    },
+    {
+     "t": 2685,
+     "text": "Zero：把所有 Result bit 做 NOR，全為 0 時輸出 1。"
+    }
+   ],
+   "cues": [
+    2645.13,
+    2653.89,
+    2661.09,
+    2677.49,
+    2691.79
+   ],
+   "explain": [
+    "偵測到 overflow 之後會怎樣？",
+    "這要看程式語言怎麼定義：有的語言覺得 overflow 就 overflow，沒關係。",
+    "如果需要特別處理，就用會檢查的有號指令（例如 add、sub）：一 overflow 就跳到 exception handler（例外處理程式，後面章節會介紹）。",
+    "不在乎的話，就用 unsigned 指令（例如 addu），它不會因為 overflow 觸發例外。",
+    "最後是 Zero 訊號：把所有 Result bit 一起做 NOR，全部都是 0 時 NOR 才輸出 1。示意兩個 4-bit 結果驗算。"
+   ]
+  },
+  {
+   "title": "下一講預告：讓 ALU 跑得更快",
+   "scene": null,
+   "points": [
+    {
+     "t": 2702,
+     "text": "以上是 ALU；下次介紹怎麼改進、讓它跑得更快。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "依本講的 ALU control 編碼，sub（減法）是哪一組？",
+   "opts": [
+    "0110",
+    "0010",
+    "0111",
+    "1100"
+   ],
+   "ans": "0110",
+   "why": "最後兩 bits 10 選加法器，第三個 bit（Bnegate）= 1 讓 b 反相並使 CarryIn₀ = 1。"
+  },
+  {
+   "q": "NOR 的 ALU control 為什麼是 1100？",
+   "opts": [
+    "Ainvert、Bnegate 都是 1，再選 AND（00）",
+    "選 OR 再整個反相",
+    "Bnegate = 1 再選加法",
+    "選 Less 輸入（11）"
+   ],
+   "ans": "Ainvert、Bnegate 都是 1，再選 AND（00）",
+   "why": "De Morgan：NOT(a OR b) = (NOT a) AND (NOT b)。"
+  },
+  {
+   "q": "用加法器做 A − B，除了讓 Binvert = 1 之外還要？",
+   "opts": [
+    "把 bit 0 的 CarryIn 設成 1",
+    "把 MSB 的 CarryOut 設成 1",
+    "把結果再反相",
+    "把 A 也反相"
+   ],
+   "ans": "把 bit 0 的 CarryIn 設成 1",
+   "why": "−B = B 反相 + 1；那個 +1 就由最低位的 CarryIn 提供。"
+  },
+  {
+   "q": "4-bit two's complement 算 7 + 3，結果的 bits 讀起來是？",
+   "opts": [
+    "−6（overflow）",
+    "10",
+    "−7（overflow）",
+    "2"
+   ],
+   "ans": "−6（overflow）",
+   "why": "0111 + 0011 = 1010 = −6；正 + 正得負，MSB 的 carry in 1 ≠ carry out 0。"
+  },
+  {
+   "q": "ALU 怎麼偵測 overflow？",
+   "opts": [
+    "MSB 的 carry in XOR carry out",
+    "看 MSB 有沒有 carry out",
+    "看結果的 sign bit 是不是 1",
+    "所有 bit 做 NOR"
+   ],
+   "ans": "MSB 的 carry in XOR carry out",
+   "why": "兩者不同才是 overflow；所有 bit 做 NOR 是 Zero 偵測。"
+  },
+  {
+   "q": "slt 時，bit 0 那一片 MUX 的 Less 輸入接到哪裡？",
+   "opts": [
+    "MSB 那片加法器算出的 a − b 的 sign bit（Set）",
+    "固定接 0",
+    "MSB 的 CarryOut",
+    "bit 0 自己的 sum"
+   ],
+   "ans": "MSB 那片加法器算出的 a − b 的 sign bit（Set）",
+   "why": "a < b ⇔ a − b 為負 ⇔ sign bit = 1；其他片的 Less 接 0。"
+  }
+ ]
+}
