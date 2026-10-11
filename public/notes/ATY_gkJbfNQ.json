@@ -1,0 +1,317 @@
+{
+ "video": "ATY_gkJbfNQ",
+ "label": "清大OCW 趙啟超《離散數學》第21A講 Euler Trails and Circuits and Planar Graphs",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習：Euler circuit 定理與演算法",
+   "scene": "g8a-recap",
+   "points": [
+    {
+     "t": 4,
+     "text": "定理：G 有 Euler circuit ⇔ G connected 且每個 vertex degree 都是偶數。"
+    },
+    {
+     "t": 34,
+     "text": "充分條件用 constructive proof（一個 algorithm）證明；今天看例子。"
+    }
+   ],
+   "cues": [
+    4.3,
+    5.4,
+    9.2,
+    43.4
+   ],
+   "explain": [
+    "上一講講到 Euler trail 和 Euler circuit。",
+    "重點定理：G 有 [[Euler circuit]]，若且唯若 G 是 connected，而且每個 vertex 的 [[degree]] 都是偶數。",
+    "證明充分條件時，我們用的是 constructive proof：直接給一個 algorithm，把 Euler circuit 找出來。",
+    "今天就拿一個例子，實際照這個 algorithm 跑一遍。"
+   ]
+  },
+  {
+   "title": "例子：用 adjacency matrix 描述的圖",
+   "scene": "g8a-ex-matrix",
+   "points": [
+    {
+     "t": 110,
+     "text": "4 個 vertices A、B、C、D 的 undirected multigraph，用對稱的 adjacency matrix 描述。"
+    },
+    {
+     "t": 129,
+     "text": "A–B 2、A–C 1、A–D 1、B–D 2、C–D 3（共 9 條邊）。"
+    },
+    {
+     "t": 153,
+     "text": "用上次的 algorithm 找 Euler circuit。"
+    }
+   ],
+   "cues": [
+    110.0,
+    119.5,
+    129.0,
+    135.5,
+    141.3,
+    144.8,
+    146.8,
+    153.8
+   ],
+   "explain": [
+    "例子有四個 vertices：A、B、C、D，是一個 [[undirected graph]]（邊沒有方向）。",
+    "老師用 [[adjacency matrix]]（相鄰矩陣）來描述它：第 i 列第 j 行寫「i 和 j 之間有幾條邊」。因為邊沒有方向，A 到 B 和 B 到 A 一樣，所以矩陣左右對稱。",
+    "A 到 B 有兩條 edges，所以 A–B 那格是 2，B–A 那格也是 2。右邊同步畫出兩條邊。",
+    "A 到 C 有一條、A 到 D 有一條，那些格子都是 1。",
+    "B 到 D 有兩條 edges，格子是 2；B 和 C 之間沒有邊，是 0。",
+    "C 到 D 有三條 edges，格子是 3。",
+    "最後一列 D：到 A 一條、到 B 兩條、到 C 三條。圖就長這樣。數一下 degree：A 4、B 4、C 4、D 6，全都是偶數，所以一定有 Euler circuit。",
+    "接下來就用上次證明裡的 algorithm，來找這張圖的 Euler circuit。"
+   ]
+  },
+  {
+   "title": "從 A 出發照字母順序走，第一次 break out",
+   "scene": "g8a-ex-run1",
+   "points": [
+    {
+     "t": 174,
+     "text": "直接在 adjacency matrix 上走；起點 A，可選時照字母順序。每用一條邊，對應格子減 1。"
+    },
+    {
+     "t": 218,
+     "text": "A→B→A→C→D→A，A 的邊用完 → get stuck。"
+    },
+    {
+     "t": 321,
+     "text": "break out：A 沒有沒用的邊、B 有 → 改寫成 B A C D A B。"
+    }
+   ],
+   "cues": [
+    174.5,
+    191.1,
+    218.3,
+    231.5,
+    254.3,
+    270.3,
+    286.0,
+    307.7,
+    321.7,
+    334.5,
+    350.0
+   ],
+   "explain": [
+    "因為矩陣已經完整描述了這張圖，所以可以直接在矩陣上走：用掉一條邊，就把那一格減 1。",
+    "老師的規則：每次都從 A 開始；如果有好幾條邊可以選，就照 A、B、C、D 的字母順序（alphabetical order）挑。",
+    "A 可以到 B、C、D，照順序先選 B。A 走到 B，用掉一條 A–B 邊，矩陣 A–B 從 2 變 1。",
+    "在 B：B 可以到 A 或 D，照字母順序先選 A。B 走到 A，A–B 變成 0。",
+    "回到 A：A–B 已經用完，還沒用的是到 C 的邊，所以 A 走到 C。",
+    "在 C：C–A 用掉了，C 可以到 D，C 走到 D，C–D 從 3 變 2。",
+    "在 D：照順序先看 A，D–A 還有 1 條，所以 D 走到 A。",
+    "路線是 A → B → A → C → D → A。現在 A 那一列全是 0，A 已經沒有邊可以走了，get stuck。",
+    "卡住了就要 break out：檢查走過的端點上，有沒有還沒用過的 edge。",
+    "A 已經沒有了；B 還有（B–D 那格還是 2）。所以在 B break out。",
+    "把剛剛那個 circuit 改從 B 開始寫：B A C D A B。圈還是同一個圈，只是換了起點，等一下回到 B 就能繼續往外走。"
+   ]
+  },
+  {
+   "title": "再 break out 一次，得到 Euler circuit",
+   "scene": "g8a-ex-run2",
+   "points": [
+    {
+     "t": 370,
+     "text": "從 B 出去：B→D→B，又 get stuck，circuit 變成 B A C D A B D B。"
+    },
+    {
+     "t": 503,
+     "text": "C 還有沒用的邊 → 在 C break out，改寫成 C D A B D B A C，再走 C→D→C。"
+    },
+    {
+     "t": 593,
+     "text": "所有點都沒有沒用的邊 → 不能 break out → Euler circuit：C D A B D B A C D C。"
+    },
+    {
+     "t": 705,
+     "text": "整個過程只要在 adjacency matrix 上進行。"
+    }
+   ],
+   "cues": [
+    370.6,
+    391.4,
+    408.3,
+    494.1,
+    503.1,
+    517.9,
+    565.8,
+    576.4,
+    593.2,
+    611.7,
+    653.1,
+    705.2
+   ],
+   "explain": [
+    "現在從 B break out，往外走。目前的 circuit 是 B A C D A B。",
+    "B 還有沒用的邊：B 可以到 D，所以 B 走到 D，B–D 從 2 變 1。",
+    "在 D：D–A 已經是 0，照順序下一個是 B，D–B 還有 1 條，所以 D 走到 B，B–D 變 0。",
+    "回到 B，B 的邊全部用完，又 get stuck 了。（中間老師寫錯重抄了一次，這裡直接用正確的結果。）",
+    "再檢查現在這個 circuit 上的點：B、A 都用完了，C 還有沒用的邊（C–D 還有 2）。",
+    "所以在 C break out：把 circuit B A C D A B D B 改成從 C 開始寫，變成 C D A B D B A C。",
+    "從 C 出去：C 可以到 D，C 走到 D，C–D 從 2 變 1。",
+    "在 D：A、B 都已經是 0，還能到 C，所以 D 走到 C，C–D 變 0。",
+    "C 已經沒有邊了，get stuck。再檢查：A、B、C、D 全都沒有沒用的邊。",
+    "沒辦法 break out，根據上一講的證明，現在這個 circuit 就是 Euler circuit：C D A B D B A C D C。數一下正好 9 條邊，每條都只走一次。",
+    "回顧整個過程：從某點出發，照字母順序挑邊一直走；get stuck 就在 circuit 上找還有邊的點 break out；直到沒辦法 break out。",
+    "而且整個過程只要在 adjacency matrix 上操作就好：每用一條邊，對稱的兩格各減 1，很適合寫成程式。"
+   ]
+  },
+  {
+   "title": "Euler trail：恰兩個 degree 奇數的點",
+   "scene": "g8a-trail",
+   "points": [
+    {
+     "t": 729,
+     "text": "Euler trail：open walk，起點 ≠ 終點，每條邊恰一次。"
+    },
+    {
+     "t": 793,
+     "text": "條件一樣要 connected。"
+    },
+    {
+     "t": 831,
+     "text": "起點第一次只出去、終點最後只進來 → 這兩點 degree 奇數，其餘偶數。"
+    },
+    {
+     "t": 880,
+     "text": "G 有 Euler trail ⇔ G connected 且恰好兩個 vertices 的 degree 是奇數。"
+    }
+   ],
+   "cues": [
+    729.9,
+    752.4,
+    784.6,
+    793.3,
+    807.1,
+    831.6,
+    843.4,
+    880.0,
+    905.3,
+    914.4
+   ],
+   "explain": [
+    "剛剛的例子是 Euler circuit，接下來講 Euler trail。",
+    "差別在於：Euler circuit 要回到出發點；Euler trail 是 open walk，起點和終點不一樣，但每條邊一樣要 exactly once。右邊示意圖從 s 走到 r。",
+    "Euler trail 的若且唯若條件，只要把 Euler circuit 的條件稍微修正一下。",
+    "第一個條件不變：G 還是要 connected。",
+    "原本「每個點 degree 偶數」是因為經過每個點都是一進一出；起點和終點是同一點，出去一次、最後回來一次，也是成對。",
+    "現在起點和終點不同：起點一開始只「出去」一次，之後如果再回來又出去，都是成對的，所以起點的 degree 是奇數。",
+    "終點也一樣：最後一次只進來、沒有出去，所以終點的 degree 也是奇數。其他點仍然一進一出，degree 是偶數。",
+    "所以條件從「全部偶數」變成：恰好（exactly）兩個 vertices 的 degree 是奇數，其他都是偶數。這張圖 s、r 是 3，其餘是 2。",
+    "換句話說，那兩個 degree 奇數的點，一個就是起點、一個就是終點。",
+    "必要條件的證明跟以前幾乎一樣：connected 的部分完全一樣，degree 只是起點和終點這兩點要改成奇數。"
+   ]
+  },
+  {
+   "title": "充分條件：加一條想像的邊",
+   "scene": "g8a-trail-proof",
+   "points": [
+    {
+     "t": 1021,
+     "text": "在兩個奇數 degree 的點之間加一條 imaginary edge，所有 degree 變偶數。"
+    },
+    {
+     "t": 1100,
+     "text": "用前面的 algorithm 找 Euler circuit，並把新邊當成第一條邊。"
+    },
+    {
+     "t": 1203,
+     "text": "刪掉 imaginary edge → 得到 Euler trail（從一個奇點到另一個奇點）；是前面定理的 corollary。"
+    },
+    {
+     "t": 1259,
+     "text": "總結：circuit：connected＋全偶；trail：connected＋恰兩奇。"
+    }
+   ],
+   "trap": "Euler trail 要求「恰好」兩個奇數 degree 的點；0 個奇點時有的是 Euler circuit。",
+   "cues": [
+    1021.4,
+    1041.2,
+    1078.2,
+    1088.1,
+    1100.2,
+    1128.5,
+    1166.1,
+    1203.3,
+    1227.7,
+    1244.9,
+    1259.3
+   ],
+   "explain": [
+    "充分條件：如果 G connected、恰兩個點 degree 是奇數，就一定有 Euler trail。證明可以借用前面 Euler circuit 的結果。",
+    "技巧是：先在圖上加一條 imaginary edge（想像的邊），假裝它存在。",
+    "加在哪裡？加在那兩個 degree 是奇數的點之間，也就是 s 和 r（紫色半透明那條）。",
+    "加了之後，s 和 r 的 degree 各多 1，從 3 變成 4，現在每個端點的 degree 都是偶數了。",
+    "新圖 connected 又全部偶數，所以用前面的 algorithm 一定能找到 Euler circuit。",
+    "circuit 是繞一整圈，所以從圈上哪個地方開始算都可以。我們就把新加的那條邊當作第一條邊。",
+    "於是這個 Euler circuit 一開始就是想像的邊 r → s，接著 s p q r s t r 回到 r。",
+    "最後把想像的那條邊刪掉，剩下 s p q r s t r，這就是一條 Euler trail！",
+    "因為其他所有的邊都恰好走過一次，而且路線從一個奇數 degree 的點 s，走到另一個奇數 degree 的點 r。",
+    "這樣就證完了。因為它可以直接從前面的定理推出來，所以叫做 corollary（系理）。",
+    "總結：有 Euler circuit ⇔ connected 而且每點 degree 偶數；有 Euler trail ⇔ connected 而且恰好兩點 degree 奇數（其餘偶數）。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "老師的例子（A–B 2、A–C 1、A–D 1、B–D 2、C–D 3），D 的 degree 是多少？",
+   "opts": [
+    "3",
+    "4",
+    "6",
+    "5"
+   ],
+   "ans": "6",
+   "why": "D 連到 A 一條、B 兩條、C 三條，共 6。"
+  },
+  {
+   "q": "照字母順序從 A 出發，第一次 get stuck 時走出的 circuit 是？",
+   "opts": [
+    "A B D C A",
+    "A B A C D A",
+    "A C D B A",
+    "A D C A"
+   ],
+   "ans": "A B A C D A",
+   "why": "A→B，B→A（A 優先），A→C，C→D，D→A，A 的邊用完。"
+  },
+  {
+   "q": "最後得到的 Euler circuit 是？",
+   "opts": [
+    "C D A B D B A C D C",
+    "A B C D A",
+    "B D B A C D A B",
+    "C D C A B"
+   ],
+   "ans": "C D A B D B A C D C",
+   "why": "經過兩次 break out（在 B、在 C）後得到，共 9 條邊各一次。"
+  },
+  {
+   "q": "connected graph 有 Euler trail（非 circuit）的條件是？",
+   "opts": [
+    "每點 degree 偶數",
+    "恰好兩個 vertices 的 degree 是奇數",
+    "至少一個點 degree 奇數",
+    "所有點 degree 奇數"
+   ],
+   "ans": "恰好兩個 vertices 的 degree 是奇數",
+   "why": "起點先出去、終點最後只進來，所以這兩點是奇數。"
+  },
+  {
+   "q": "證明 Euler trail 的充分條件時，用了什麼技巧？",
+   "opts": [
+    "刪掉一個奇點",
+    "在兩個奇點之間加一條 imaginary edge，找 Euler circuit 後再刪掉",
+    "對邊數做歸納",
+    "把圖變成 directed graph"
+   ],
+   "ans": "在兩個奇點之間加一條 imaginary edge，找 Euler circuit 後再刪掉",
+   "why": "加邊後全偶，有 Euler circuit；以新邊為第一條，刪掉後就是 trail。"
+  }
+ ]
+}

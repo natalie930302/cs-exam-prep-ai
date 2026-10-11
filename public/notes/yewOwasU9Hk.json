@@ -1,0 +1,335 @@
+{
+ "video": "yewOwasU9Hk",
+ "label": "清大OCW 趙啟超《離散數學》第22B講 Planar Graphs",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "用不等式證明 K3,3 不是 planar",
+   "scene": "g8a-k33-proof",
+   "points": [
+    {
+     "t": 15,
+     "text": "K₃,₃：v = 6、e = 9、girth = 4。"
+    },
+    {
+     "t": 58,
+     "text": "上界 4/(4−2) × (6−2) = 8 < 9 ⇒ non-planar。"
+    },
+    {
+     "t": 109,
+     "text": "不等式只是必要條件；接著講若且唯若的條件。"
+    }
+   ],
+   "cues": [
+    15.2,
+    17.1,
+    18.9,
+    19.9,
+    58.7,
+    79.9,
+    98.9,
+    109.8,
+    124.3
+   ],
+   "explain": [
+    "上一講用 edge–vertex inequality 證了 K₅ non-planar，現在用同一招證 K₃,₃。",
+    "K₃,₃ 是 [[bipartite graph]]：左邊 3 個點、右邊 3 個點，所以 v = 6。",
+    "它是 complete bipartite：左邊每點連右邊每點，e = 3 × 3 = 9。",
+    "girth：bipartite graph 的 cycle 長度一定是偶數，又沒有長度 2 的 cycle，而且有長度 4 的（綠色），所以 g = 4。",
+    "代進必要條件右邊：g/(g − 2) × (v − 2) = 4/2 × 4 = 8。",
+    "也就是說，如果 K₃,₃ 是 planar，它的邊數不能超過 8。可是它有 9 條邊。",
+    "9 > 8，不等式不成立，所以 K₃,₃ 是 non-planar。原因一樣是 edge 太多。",
+    "再提醒一次：這只是必要條件。代進去滿足，只能說「有可能」是 planar；不滿足就一定不是。",
+    "K₅ 和 K₃,₃ 兩個 case 都可以用這個不等式證。最後要講一個 planar／non-planar 的若且唯若條件，結果很漂亮，雖然有時不一定好用。"
+   ]
+  },
+  {
+   "title": "Elementary subdivision：在邊上多點一個點",
+   "scene": "g8a-subdiv",
+   "points": [
+    {
+     "t": 147,
+     "text": "準備名詞：G 為 undirected simple graph，E ≠ ∅。"
+    },
+    {
+     "t": 215,
+     "text": "elementary subdivision：把邊 vw 換成 vz、zw（z 為新 vertex），也就是在邊上多加一個點。"
+    },
+    {
+     "t": 365,
+     "text": "subdivision 不改變 planar／non-planar。"
+    }
+   ],
+   "cues": [
+    147.7,
+    181.7,
+    194.6,
+    215.0,
+    288.8,
+    293.9,
+    300.7,
+    365.3,
+    395.9
+   ],
+   "explain": [
+    "講最後的定理之前，要先定義一些名詞。",
+    "G = (V, E) 是 undirected simple graph，而且 edge set 不是空集合（至少一條邊）。",
+    "這些定義都只是為了把後面的定理講清楚，本身不難。",
+    "第一個名詞：elementary subdivision of G。",
+    "假設 G 原本有一條邊 vw，兩個端點是 v 和 w（紅色）。",
+    "把 vw 這條邊拿掉，換成兩條邊 vz 和 zw，其中 z 是一個新加的 vertex。",
+    "看起來寫得很麻煩，其實簡單講就是：在某一條邊上，多點一個點上去。這就叫 elementary subdivision。",
+    "這樣做有什麼用？原本 non-planar 的圖，加了點還是 non-planar；原本 planar 的圖（例如下面這個正方形），加了點也還是 planar。完全不影響是不是 planar。",
+    "做好幾次 elementary subdivision 也一樣：可以畫在平面上的還是可以，畫不了的還是畫不了。"
+   ]
+  },
+  {
+   "title": "Homeomorphic",
+   "scene": "g8a-homeo",
+   "points": [
+    {
+     "t": 416,
+     "text": "G₁、G₂ homeomorphic：兩者 isomorphic，或都能從同一個圖經過一系列 elementary subdivision 得到。"
+    },
+    {
+     "t": 646,
+     "text": "homeomorphic 的圖同為 planar 或同為 non-planar。"
+    },
+    {
+     "t": 668,
+     "text": "例：G₂、G₃、G₄ 都由 G₁ 做 1、2、3 次 subdivision 得到 → 兩兩 homeomorphic。"
+    }
+   ],
+   "cues": [
+    416.2,
+    451.6,
+    483.6,
+    523.2,
+    562.5,
+    625.0,
+    646.0,
+    668.3,
+    720.0,
+    729.0,
+    732.5,
+    738.6,
+    743.2
+   ],
+   "explain": [
+    "再定義一個名稱：homeomorphic（同胚）。",
+    "有兩個 undirected simple graphs：G₁ = (V₁, E₁)、G₂ = (V₂, E₂)。",
+    "什麼叫 homeomorphic？第一種情況：它們是 [[isomorphic]]（同構）。同構的圖數學性質都一樣，一個 non-planar，另一個一定也是。",
+    "再放寬一點：如果兩個圖都可以從「同一個圖」經過 elementary subdivision 得到，也算。例如同一個圖，在這條邊點一點得到 G₁，在那條邊點一點得到 G₂。",
+    "所以 homeomorphic 的意思是：要嘛 isomorphic，要嘛都能從同一個 undirected simple graph 經過 subdivision 得到。",
+    "而且是「一系列」的 elementary subdivision：做一次、兩次、好幾次都可以。",
+    "定義它是為了講 planar：planar 的圖不管做幾次 subdivision 還是 planar；non-planar 的做幾次還是 non-planar。所以 homeomorphic 的圖，planar 與否一定相同。",
+    "舉個例子：這裡有四個圖 G₁、G₂、G₃、G₄（示意）。",
+    "它們都可以從 G₁ 經過 elementary subdivision 得到。G₁ 就是它自己（做零次）。",
+    "G₂：在其中一條邊上多一個點，做一次。",
+    "G₃：左右兩條邊各多一個點，做兩次。",
+    "G₄：上面和左右兩條邊各多一個點，做三次。",
+    "因為都從同一個 G₁ 得到，這四個圖兩兩都是 homeomorphic。如果其中一個 non-planar，其他全都 non-planar；一個 planar，全都 planar。"
+   ]
+  },
+  {
+   "title": "Subgraph",
+   "scene": "g8a-subgraph",
+   "points": [
+    {
+     "t": 822,
+     "text": "G₁ = (V₁, E₁) 是 G = (V, E) 的 subgraph：V₁ ⊆ V、E₁ ⊆ E，且 G₁ 本身是 graph。"
+    },
+    {
+     "t": 905,
+     "text": "有一個 non-planar 的 subgraph ⇒ 整個圖 non-planar。"
+    }
+   ],
+   "cues": [
+    822.1,
+    826.7,
+    836.4,
+    863.0,
+    893.8,
+    905.2
+   ],
+   "explain": [
+    "最後一個名字：[[subgraph]]（子圖）。",
+    "原來有一個圖 G，vertex set 是 V、edge set 是 E；另一個圖 G₁，vertex set 是 V₁、edge set 是 E₁。",
+    "如果 V₁ 是 V 的部分集合、E₁ 是 E 的部分集合，G₁ 就是 G 的一部分，叫 G 的 subgraph。綠色部分就是一個 subgraph。",
+    "但 G₁ 本身必須是一個 graph：每條邊的兩個端點都要在 V₁ 裡。如果只拿了邊 c–d，卻沒拿端點 c，那就不是 graph，更談不上 subgraph。",
+    "這只是一個名字，概念跟 subspace、subgroup 這些「子結構」類似。",
+    "為什麼要講 subgraph？因為只要一個圖裡有某一部分（某個 subgraph）是 non-planar，光那部分就畫不到平面上，整個圖當然更畫不了，所以整個圖是 non-planar。"
+   ]
+  },
+  {
+   "title": "Kuratowski's Theorem",
+   "scene": "g8a-kura",
+   "points": [
+    {
+     "t": 932,
+     "text": "Kuratowski's Theorem（1930）：G non-planar ⇔ G 有一個 subgraph homeomorphic to K₅ 或 K₃,₃。"
+    },
+    {
+     "t": 1122,
+     "text": "充分方向容易；必要方向證明複雜，課堂不證（C. L. Liu 書中約 9 頁）。"
+    },
+    {
+     "t": 1360,
+     "text": "結果漂亮，但實際上不一定好找那個 subgraph。"
+    }
+   ],
+   "cues": [
+    932.1,
+    954.9,
+    975.5,
+    1013.6,
+    1036.1,
+    1057.1,
+    1086.5,
+    1122.1,
+    1218.2,
+    1277.1,
+    1310.8,
+    1360.6
+   ],
+   "explain": [
+    "名詞準備好了，可以講最後的定理。",
+    "這個定理叫 Kuratowski's Theorem。Kuratowski 是波蘭數學家，這個刻畫 planar graph 的結果是 1930 年提出的。",
+    "它很漂亮，因為它是 non-planar 的若且唯若條件：不只是充分、也不只是必要，而是兩個方向都成立。",
+    "內容：一個 graph G 是 non-planar，若且唯若 G 有一個 subgraph……",
+    "……這個 subgraph 是 homeomorphic to（也就是 isomorphic，或可以由下面的圖經過 elementary subdivision 得到）……",
+    "……K₅ 或 K₃,₃。只要 check 這兩個圖就好！",
+    "這就是為什麼說 K₅ 和 K₃,₃ 在 non-planar graph 裡扮演很重要的角色：所有 non-planar graph，裡面一定有一部分就是這兩個之一，只是邊上多了一些點。",
+    "充分條件（⇐）很容易：如果 G 有個 subgraph homeomorphic to K₅ 或 K₃,₃，那一部分本身就 non-planar，整個圖當然也畫不到平面上。",
+    "比較麻煩的是必要條件（⇒）：如果 G non-planar，就一定能在裡面找到 K₅ 或 K₃,₃ 的 subdivision。",
+    "這個方向（converse）的證明複雜得多，所以課堂上不講。",
+    "這是本課少數沒給證明的地方之一。有興趣可以看參考書：C. L. Liu（劉炯朗）的《Introduction to Combinatorial Mathematics》，證明大約九頁，不難只是長。",
+    "結果很漂亮：所有 non-planar graph 都只跟 K₅、K₃,₃ 有關。不過真正要用時，去圖裡找出那個 subgraph 有時不容易。"
+   ]
+  },
+  {
+   "title": "Petersen graph 不是 planar",
+   "scene": "g8a-petersen",
+   "points": [
+    {
+     "t": 1379,
+     "text": "Petersen graph：10 點、15 邊、3-regular。"
+    },
+    {
+     "t": 1519,
+     "text": "換一種畫法，拿掉 A–B、D–I 後是 K₃,₃（{C,F,J} 對 {E,G,H}）的 subdivision，多出 A、B、D、I 四點 → Kuratowski ⇒ non-planar。"
+    },
+    {
+     "t": 1687,
+     "text": "用不等式：g = 5，上界 5/3 × 8 = 40/3 ≈ 13.3 < 15 ⇒ non-planar。"
+    }
+   ],
+   "cues": [
+    1379.3,
+    1412.1,
+    1424.2,
+    1433.4,
+    1472.9,
+    1483.9,
+    1519.6,
+    1537.0,
+    1572.3,
+    1584.7,
+    1606.0,
+    1621.0,
+    1687.4,
+    1707.9,
+    1724.2,
+    1739.0,
+    1757.3
+   ],
+   "explain": [
+    "看一個例子。",
+    "這是 Petersen graph，我們常常碰到它。它很漂亮，有很多數學性質。",
+    "它有 10 個端點、15 條邊。它是不是 planar？",
+    "它其實跟 K₃,₃ 有關。",
+    "Petersen graph 是 3-regular graph：每個 vertex 都剛好連三條邊。原來的 K₃,₃ 也是每點三條邊。",
+    "可是它有 10 個點，K₃,₃ 只有 6 個。另外 4 個點在哪裡？（綠色的 A、B、D、I）",
+    "把它換一種畫法：同一張圖，只是點的位置移一下（連法完全不變）。",
+    "對一下有沒有畫錯：10 個端點，每點 degree 都還是 3；H 連到 C、F、J，G 連到 B、J、I，跟原圖一模一樣。",
+    "畫成這樣，就看得出 K₃,₃ 的樣子跑出來了：左邊 C、F、J（藍），右邊 H、G、E（粉紅）。",
+    "不要看 A–B 和 D–I 這兩條邊（變淡）。剩下的圖就是 K₃,₃ 經過 elementary subdivision：在四條邊上各多了一個點 A、B、D、I。例如 C–B–G 原本就是 K₃,₃ 的邊 C–G。",
+    "K₃,₃ 本身是 non-planar，跟它 homeomorphic 的圖也都是 non-planar。",
+    "所以 Petersen graph 有一個 subgraph homeomorphic to K₃,₃。根據 Kuratowski 定理，Petersen graph 是 non-planar。",
+    "另外也可以用前面的 edge–vertex inequality 檢查。它只是必要條件：成立不見得是 planar，但不成立就一定 non-planar。",
+    "Petersen graph 有 10 個端點、15 條邊，girth 上次算過是 5（最短 cycle 是五邊形）。",
+    "代進去：g/(g − 2) × (v − 2) = 5/3 × 8 = 40/3，大約 13.3。",
+    "邊數 15 > 13.3，邊太多了，所以用不等式也看得出 Petersen graph 是 non-planar。",
+    "比較兩個工具：不等式不成立就一定 non-planar，但成立時不能下結論；Kuratowski 是充分必要條件，non-planar 就一定跟 K₅ 或 K₃,₃ 有關。planar graph 的部分就講到這裡。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "用 edge–vertex inequality 檢查 K₃,₃，上界是？",
+   "opts": [
+    "8",
+    "9",
+    "12",
+    "6"
+   ],
+   "ans": "8",
+   "why": "g = 4：4/(4−2) × (6−2) = 8 < 9。"
+  },
+  {
+   "q": "elementary subdivision 是？",
+   "opts": [
+    "刪掉一個點",
+    "把一條邊 vw 換成 vz、zw（z 為新點）",
+    "合併兩個點",
+    "加一條新邊"
+   ],
+   "ans": "把一條邊 vw 換成 vz、zw（z 為新點）",
+   "why": "就是在邊上多點一個點。"
+  },
+  {
+   "q": "Kuratowski's Theorem 說 G non-planar 若且唯若？",
+   "opts": [
+    "G 的邊數 > 3v − 6",
+    "G 有一個 subgraph homeomorphic to K₅ 或 K₃,₃",
+    "G 含有三角形",
+    "G 不是 bipartite"
+   ],
+   "ans": "G 有一個 subgraph homeomorphic to K₅ 或 K₃,₃",
+   "why": "充分必要條件。"
+  },
+  {
+   "q": "Petersen graph 的 girth 和 edge–vertex inequality 上界是？",
+   "opts": [
+    "g = 3，上界 24",
+    "g = 5，上界 40/3 ≈ 13.3",
+    "g = 4，上界 16",
+    "g = 5，上界 15"
+   ],
+   "ans": "g = 5，上界 40/3 ≈ 13.3",
+   "why": "5/3 × (10 − 2) = 40/3 < 15。"
+  },
+  {
+   "q": "Petersen graph 裡藏著哪個圖的 subdivision？",
+   "opts": [
+    "K₄",
+    "K₃,₃",
+    "K₂,₃",
+    "C₅"
+   ],
+   "ans": "K₃,₃",
+   "why": "拿掉兩條邊後，剩下 K₃,₃ 加四個 subdivision 點。"
+  },
+  {
+   "q": "如果一個圖滿足 edge–vertex inequality，能確定它是 planar 嗎？",
+   "opts": [
+    "能",
+    "不能，那只是必要條件",
+    "只有 bipartite 時能",
+    "只有 g = 3 時能"
+   ],
+   "ans": "不能，那只是必要條件",
+   "why": "要確定需要充要條件（如 Kuratowski）。"
+  }
+ ]
+}

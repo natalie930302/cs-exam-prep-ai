@@ -1,0 +1,285 @@
+{
+ "video": "otP5yRAYc9w",
+ "label": "清大OCW 趙啟超《離散數學》第21C講 Euler Trails and Circuits and Planar Graphs",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Embedding 把平面切成 regions",
+   "scene": "g8a-regions",
+   "points": [
+    {
+     "t": 4,
+     "text": "planar graph 的 embedding 把平面分成好幾個 regions（外面無限大的那塊也算）。"
+    },
+    {
+     "t": 44,
+     "text": "K₄ 的 embedding：4 點、6 邊、4 regions。"
+    },
+    {
+     "t": 139,
+     "text": "另一例：7 點、11 邊、6 regions。"
+    },
+    {
+     "t": 184,
+     "text": "兩例都滿足 v − e + r = 2。"
+    }
+   ],
+   "trap": "外面那一塊無限大的區域也是一個 region，別漏數。",
+   "cues": [
+    4.5,
+    8.4,
+    44.9,
+    57.5,
+    78.2,
+    93.4,
+    128.9,
+    139.0,
+    167.8,
+    184.5,
+    209.2
+   ],
+   "explain": [
+    "繼續講 planar graph 的性質。先把一個 planar graph 畫在平面上，也就是取它的一個 embedding（邊都不交叉的畫法）。",
+    "畫好之後，這些邊會把整個平面切成好幾個區域，叫做 regions（也有書叫 faces）。",
+    "看例子：左邊是 [[complete graph]] K₄ 的一個 planar embedding，邊都不交叉。",
+    "它把平面分成四塊：裡面的 R1、R2、R3，再加上外面無限大的那一整塊 R4。外面那塊也算一個 region！",
+    "右邊是另一個 planar embedding（黑板上的圖看不到，這裡畫一個符合老師數字的示意圖）：裡面有 5 塊，加上外面 1 塊，共 6 個 regions。",
+    "來數數看左邊的 K₄：有 4 個端點、6 條邊、4 個 regions。",
+    "vertex 和 edge 以前就會數了，現在多了 region。注意：一定要是 planar embedding 才數得出 region；如果邊有交叉，交叉那邊根本不知道怎麼算。",
+    "右邊這個圖：數一數有 7 個 vertices、11 條 edges、6 個 regions。",
+    "4、6、4 和 7、11、6，這兩組數字之間有什麼關係？加一加、減一減看看。",
+    "vertex 數加 region 數，總是比 edge 數多 2：4 − 6 + 4 = 2，7 − 11 + 6 = 2。也就是 v − e + r = 2。",
+    "你自己多畫幾個 planar graph 試試看，會發現 always 都是 2。這就是接下來的定理。"
+   ]
+  },
+  {
+   "title": "Euler 公式：v − e + r = 2",
+   "scene": "g8a-euler-thm",
+   "points": [
+    {
+     "t": 242,
+     "text": "G 為 connected planar graph（不連通就每個 component 分開看）。"
+    },
+    {
+     "t": 286,
+     "text": "Euler's Theorem for Planar Graphs：v − e + r = 2。"
+    },
+    {
+     "t": 342,
+     "text": "證明：對 edges 的個數做數學歸納法。"
+    }
+   ],
+   "cues": [
+    242.0,
+    261.7,
+    286.2,
+    310.8,
+    336.3,
+    342.9,
+    350.8
+   ],
+   "explain": [
+    "先假設 G 是 connected。如果不 connected，有好幾個 component，就每個 component 個別算。",
+    "對一個 connected planar graph：vertex 數叫 v，edge 數叫 e，region 數叫 r。",
+    "這幾個數之間的關係，叫做 Euler Theorem for Planar Graphs（也就是 [[Euler's formula]]）。",
+    "定理就是剛才看到的：v − e + r = 2。",
+    "這是對 planar graph 的 embedding 說的，因為一定要有 planar embedding，才能把 region 分出來。",
+    "怎麼證明？用 [[數學歸納法]]。",
+    "有 v、e、r 三個數，要挑一個來做歸納。老師選的是 edge 的個數。"
+   ]
+  },
+  {
+   "title": "歸納基底：0 條邊、1 條邊",
+   "scene": "g8a-base",
+   "points": [
+    {
+     "t": 378,
+     "text": "initial condition：e = 0 與 e = 1（允許 multigraph，所以有 loop）。"
+    },
+    {
+     "t": 439,
+     "text": "三種情況：單一點；一點一個 loop；兩點一邊。"
+    },
+    {
+     "t": 511,
+     "text": "分別是 1−0+1、1−1+2、2−1+1，都等於 2。"
+    }
+   ],
+   "cues": [
+    378.1,
+    397.7,
+    409.5,
+    439.3,
+    465.1,
+    480.4,
+    511.4,
+    519.7,
+    531.9,
+    546.6,
+    561.5
+   ],
+   "explain": [
+    "數學歸納法先要 check initial condition。老師檢查 0 條邊和 1 條邊這兩個 case。",
+    "這裡的 graph 可以是 simple graph，也可以是 multigraph，沒有要求一定 simple，所以 loop（自己連自己的邊）是允許的。",
+    "0 條邊、1 條邊的情況很少，可以把所有情況都列出來，一個一個 check。",
+    "沒有邊：因為要 connected，只能有一個點；如果有兩個點又沒有邊，就不 connected 了。這是情況 (A)。",
+    "一條邊的第一種情況：因為允許 multigraph，這條邊可以是 loop，一個端點自己繞一圈。這是 (B)。",
+    "第二種：兩個不同的端點，中間一條邊。再多加點就不 connected 了，所以一條邊只有這兩種。這是 (C)。",
+    "現在 check 這三種情況，看 v − e + r 是不是都等於 2。",
+    "(A) 一個點、沒有邊，只有一個 region（整個平面）：1 − 0 + 1 = 2。",
+    "(B) loop 把平面分成「圈的裡面」和「圈的外面」兩個 regions：1 − 1 + 2 = 2。",
+    "(C) 兩個點、一條邊，沒有圍出任何區域，只有一個 region：2 − 1 + 1 = 2。",
+    "三種都滿足 v − e + r = 2，所以 initial condition 檢查完畢。"
+   ]
+  },
+  {
+   "title": "歸納步驟：拿掉一條邊",
+   "scene": "g8a-indstep",
+   "points": [
+    {
+     "t": 576,
+     "text": "歸納假設：邊數 0～k 的 connected planar graph 都滿足 v − e + r = 2。"
+    },
+    {
+     "t": 665,
+     "text": "G 有 k+1 條邊；任取一條邊 ab 拿掉，得到 H（k 條邊）。"
+    },
+    {
+     "t": 892,
+     "text": "拿掉後可能不 connected → 分兩個 case。"
+    },
+    {
+     "t": 934,
+     "text": "Case 1（H connected）：(D) 拿掉 loop；(E) 非 loop、影響內部 region；(F) 非 loop、影響外部 region。"
+    }
+   ],
+   "cues": [
+    576.9,
+    665.5,
+    722.5,
+    766.1,
+    809.8,
+    820.2,
+    892.5,
+    934.7,
+    965.4,
+    998.2,
+    1032.2,
+    1066.2
+   ],
+   "explain": [
+    "歸納假設（這裡是 strong induction）：所有 edge 數從 0 到 k 的 connected planar graph，都滿足 v − e + r = 2。",
+    "induction step：現在 G 是一個 connected planar graph，有 v 個 vertices、r 個 regions，edge 數是 k+1。（示意圖）",
+    "要證明 G 也成立。我們有 k 條邊以下的假設可以用，那就從 G 拿掉一條邊，讓它變成 k 條。",
+    "任取一條邊，叫它 ab（a、b 是它的兩個端點）。",
+    "把 ab 拿掉，剩下的圖叫 H。H 的 edge 數比 G 少 1，只剩 k 條。",
+    "拿掉一條邊之後，vertex、edge、region 的個數怎麼變，我們都掌握得到，就可以代進歸納假設。",
+    "但要小心：原來的結果只對 connected graph 成立。G 是 connected，拿掉一條邊之後，H 可能就不 connected 了。所以要分兩個 case。",
+    "Case 1：拿掉之後，H 還是 connected。",
+    "第一種情況 (D)：拿掉的那條邊是 loop，也就是 a = b，同一個端點。",
+    "第二種 (E)：拿掉的邊不是 loop，而且它影響的是裡面的 region（兩側都是內部區域）。",
+    "第三種 (F)：拿掉的邊不是 loop，它影響的是外面那個 region（一側是外面無限大的那塊）。",
+    "這三種情況，拿掉邊以後都還是 connected。至於拿掉後不 connected 的情況，放到 case 2 討論。"
+   ]
+  },
+  {
+   "title": "Case 1：v − (k+1) + r = 2",
+   "scene": "g8a-case1",
+   "points": [
+    {
+     "t": 1133,
+     "text": "Case 1 的三種情況：vertices 不變、edges 少 1、regions 少 1。"
+    },
+    {
+     "t": 1187,
+     "text": "H 有 k 條邊 → v − k + (r − 1) = 2 → v − (k+1) + r = 2，G 成立。"
+    },
+    {
+     "t": 1336,
+     "text": "若拿掉後不 connected，變兩個 component → Case 2。"
+    }
+   ],
+   "cues": [
+    1133.7,
+    1145.1,
+    1158.9,
+    1171.1,
+    1187.1,
+    1222.2,
+    1247.8,
+    1283.3,
+    1311.1,
+    1336.9
+   ],
+   "explain": [
+    "來看 D、E、F 三種情況，點、邊、region 的個數怎麼變化。右邊用情況 (E) 當示意。",
+    "拿掉的是邊，端點並沒有拿掉，所以 vertex 數還是 v。",
+    "edge 原本 k+1 條，拿掉一條剩 k 條。",
+    "region 都少一個：原本被這條邊隔開的兩塊（藍、粉紅），邊一拿掉就合成一塊。所以 region 數變 r − 1。",
+    "H 只有 k 條邊，而且是 connected planar graph，所以歸納假設可以用在 H 上。",
+    "把 H 的數字代進 v − e + r = 2：v − k + (r − 1) = 2。",
+    "整理一下，把 −1 和 −k 合在一起：v − (k+1) + r = 2。",
+    "k+1 正好就是原來 G 的 edge 數，所以 G 也滿足 v − e + r = 2，這個 case 的 induction step 成立。",
+    "整理一下思路：G 有 v、k+1、r；拿掉一條邊後的 H 有 v、k、r−1。H 滿足假設，稍微移項就得到 G 也滿足。",
+    "如果拿掉邊之後不 connected，圖會變成兩個 component，兩個 component 要分別用歸納假設，那就是下一段的 case 2。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "K₄ 的 planar embedding 有幾個 regions？",
+   "opts": [
+    "3",
+    "4",
+    "6",
+    "2"
+   ],
+   "ans": "4",
+   "why": "裡面 3 塊加外面 1 塊；4 − 6 + 4 = 2。"
+  },
+  {
+   "q": "一個 connected planar graph 有 7 個 vertices、11 條 edges，它的 embedding 有幾個 regions？",
+   "opts": [
+    "4",
+    "5",
+    "6",
+    "18"
+   ],
+   "ans": "6",
+   "why": "r = 2 − v + e = 2 − 7 + 11 = 6。"
+  },
+  {
+   "q": "Euler's formula 的證明是對什麼做數學歸納？",
+   "opts": [
+    "vertices 數",
+    "edges 數",
+    "regions 數",
+    "degree"
+   ],
+   "ans": "edges 數",
+   "why": "老師對 edge 個數做 induction，基底是 0 和 1 條邊。"
+  },
+  {
+   "q": "只有一個點和一個 loop 的圖，v − e + r 是？",
+   "opts": [
+    "1",
+    "2",
+    "3",
+    "0"
+   ],
+   "ans": "2",
+   "why": "v=1、e=1、r=2（loop 裡、外），1 − 1 + 2 = 2。"
+  },
+  {
+   "q": "Case 1 中拿掉一條（非橋）邊後，region 數怎麼變？",
+   "opts": [
+    "不變",
+    "少 1",
+    "多 1",
+    "少 2"
+   ],
+   "ans": "少 1",
+   "why": "邊兩側的兩個 region 合併成一個。"
+  }
+ ]
+}

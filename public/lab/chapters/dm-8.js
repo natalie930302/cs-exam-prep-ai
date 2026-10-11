@@ -1303,6 +1303,1821 @@ export default function (ctx) {
   // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
   const K = kit(ctx);
   const FRAG = [];
+  // ═══ g8a.js ═══
+  {
+const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
+// (kit has no beat: short waits use ctx.beat)
+// ─── 離散數學 第 8 章（清大 趙啟超 第20A–22B講：Euler trail/circuit、Königsberg、planar graph、
+//     Euler 公式 v − e + r = 2、region degree、girth、edge–vertex inequality、Kuratowski、Petersen）— cued scenes ───
+// 每個 scene 是一串 steps；每一步等老師講到那一句（notes 的 cues）才動一下。不重播、不循環。
+// 老師的例子照用（七橋、adjacency matrix 例、K4/K5/K2,3/K3,3/Petersen）；老師黑板上的圖看不到、自己補的一律標「示意」。
+const wt = (tok, ms) => ctx.beat(tok, ms);
+const cap = (a, b = '') => say(a, b);
+const cls = (l, c) => { if (l && l.element) l.element.className = 'lab-label ' + c; };
+const T = (t, c, x, z, y = 0.4) => tag(t, c, x, y, z);
+const LL = (t, c, x, z, y = 0.4) => { const l = tag(t, c, x, y, z); if (l.center) l.center.set(0, 0.5); return l; };
+const settxt = (l, t) => { if (l && l.element) l.element.textContent = t; };
+const GC = { v: '#cdbfa6', e: '#9c8b70', hot: '#d64545', ok: '#2fc092', blue: '#4b9ee2', gold: '#c08a1f', pink: '#e55a9b', purple: '#9b7ef4', orange: '#dd8238', dim: '#e2d8c6', water: '#9fd3f0', land: '#e8dcc0', bridge: '#e9c53a' };
+const CAM = [[0, 12.5, 7.8], [0, 0, 0.6]];
+function scene(id, title, steps, cam = CAM) {
+  FRAG.push([id, title, async (tok) => {
+    fresh(cam[0], cam[1]);
+    const S = {};
+    for (const f of steps) { await step(tok); await f(tok, S); }
+  }]);
+}
+// a board lying on the floor: lines appear one under another; the newest line is lit
+function board(x, z0, dz = 0.62) {
+  const ls = []; let last = null;
+  return {
+    ls,
+    add(t, c = 'note', dx = 0) {
+      if (last && last.userData.hot) { cls(last, 'say'); last.userData.hot = false; }
+      const l = LL(t, c, x + dx, z0 + ls.length * dz); ls.push(l); l.userData.hot = c === 'note'; last = l; return l;
+    },
+    set(i, c) { cls(ls[i < 0 ? ls.length + i : i], c); },
+    clear() { ls.forEach((l) => kill(l)); ls.length = 0; last = null; },
+  };
+}
+// a graph whose vertices/edges can appear one by one; edges are tubes along (curved) paths
+function graph(o = {}) {
+  const s = o.s ?? 1, ox = o.ox ?? 0, oz = o.oz ?? 0, Y = 0.3, vs = o.vs ?? 0.56;
+  const g = { V: {}, E: [], P: {}, s, ox, oz };
+  g.at = (x, z, y = Y) => V3(ox + x * s, y, oz + z * s);
+  g.pos = (n) => g.V[n].position.clone();
+  g.v = (n, x, z, opt = {}) => {
+    const m = lab.box(opt.c || GC.v, [vs, 0.4, vs]);
+    if (!opt.noName && !o.noName) { m.userData.lbl = lab.label(opt.name ?? n, 'val'); m.add(m.userData.lbl); }
+    m.position.copy(g.at(x, z)); m.visible = opt.show !== false; lab.world.add(m); g.V[n] = m; g.P[n] = [x, z]; return m;
+  };
+  g.vc = (n, c, em) => { const m = g.V[n]; m.material.color.set(c); m.material.emissive = new THREE.Color(em || '#000000'); };
+  g.move = (n, x, z) => { g.V[n].position.copy(g.at(x, z)); g.P[n] = [x, z]; };
+  g.e = (a, b, opt = {}) => {
+    const pa = g.pos(a), pb = g.pos(b);
+    let curve;
+    if (opt.via) curve = new THREE.CatmullRomCurve3([pa, ...opt.via.map(([x, z]) => g.at(x, z)), pb]);
+    else {
+      const mid = pa.clone().add(pb).multiplyScalar(0.5);
+      const d = pb.clone().sub(pa); const perp = V3(-d.z, 0, d.x).normalize();
+      curve = new THREE.QuadraticBezierCurve3(pa, mid.addScaledVector(perp, (opt.bend || 0) * s), pb);
+    }
+    const mat = new THREE.MeshStandardMaterial({ color: opt.c || GC.e, roughness: 0.6, transparent: !!opt.ghost, opacity: opt.ghost ? 0.45 : 1 });
+    const m = new THREE.Mesh(new THREE.TubeGeometry(curve, 40, opt.r ?? 0.06, 6, false), mat);
+    m.visible = opt.show !== false; lab.world.add(m);
+    const e = { a, b, m, mat, curve, id: opt.id };
+    e.paint = (c, em) => { mat.color.set(c); mat.emissive = new THREE.Color(em || '#000000'); };
+    e.show = (on = true) => { m.visible = on; };
+    e.pt = (u, from) => curve.getPoint(from === b && a !== b ? 1 - u : u);
+    e.kill = () => { lab.world.remove(m); };
+    g.E.push(e); return e;
+  };
+  g.find = (a, b, k = 0) => g.E.filter((e) => (e.a === a && e.b === b) || (e.a === b && e.b === a))[k];
+  g.deg = (n) => g.E.reduce((t, e) => t + (e.a === n ? 1 : 0) + (e.b === n ? 1 : 0), 0);
+  // filled region bounded by a list of [edge, fromVertex] (edges walked in order)
+  g.region = (walk, color, op = 0.3) => {
+    const pts = [];
+    walk.forEach(([e, from]) => { for (let i = 0; i < 16; i++) { const p = e.pt(i / 16, from); pts.push(new THREE.Vector2(p.x, -p.z)); } });
+    const m = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(pts)), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, depthWrite: false, side: THREE.DoubleSide }));
+    m.rotation.x = -Math.PI / 2; m.position.y = 0.05; lab.world.add(m); return m;
+  };
+  g.kill = () => { Object.values(g.V).forEach((m) => kill(m)); g.E.forEach((e) => e.kill()); };
+  return g;
+}
+// a walker (red ball) that travels along an edge
+function walker(p, c = GC.hot) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 12), new THREE.MeshStandardMaterial({ color: c, roughness: 0.4 }));
+  m.position.set(p.x, 0.75, p.z); lab.world.add(m); return m;
+}
+async function go(tok, w, e, from, ms = 650, c = GC.hot) {
+  await anim(tok, ms, (u) => { const p = e.pt(u, from); w.position.set(p.x, 0.75, p.z); });
+  if (c) e.paint(c);
+}
+function face(pts, color, op = 0.28) {
+  const sh = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z)));
+  const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, depthWrite: false, side: THREE.DoubleSide }));
+  m.rotation.x = -Math.PI / 2; m.position.y = 0.04; lab.world.add(m); return m;
+}
+function slab(color, x, z, w, d, h = 0.12, y = 0.06) { const m = lab.box(color, [w, h, d]); m.position.set(x, y, z); lab.world.add(m); return m; }
+// build a whole graph at once from 'a-b a-c' (optional bends 'a-b~0.4')
+function quick(o, pos, estr, show = true) {
+  const g = graph(o);
+  Object.entries(pos).forEach(([n, [x, z]]) => g.v(n, x, z, { show }));
+  estr.trim().split(/\s+/).filter(Boolean).forEach((tk) => { const [pr, bd] = tk.split('~'); const [a, b] = pr.split('-'); g.e(a, b, { bend: bd ? Number(bd) : 0, show }); });
+  return g;
+}
+const showAll = (g, on = true) => { Object.values(g.V).forEach((m) => { m.visible = on; }); g.E.forEach((e) => e.show(on)); };
+
+// ════════ ZYtvLbCdn1s（第20A講：Euler trails and circuits、Königsberg 七橋） ════════
+// 七橋的地形是示意（河道形狀簡化），但橋與陸地的連法照老師說的：C–A 兩座、A–B 兩座、A–D、C–D、B–D 各一座。
+const KB_LAND = { C: [0, -3.2, 12, 2.2], B: [0, 3.2, 12, 2.2], A: [-1.8, 0, 3.2, 1.6], D: [3.4, 0, 4.4, 2.0] };
+const KB_BR = [ // [x, z, along-x?, from, to]
+  [-2.6, -1.45, false, 'A', 'C'], [-1.0, -1.45, false, 'A', 'C'], [-2.6, 1.45, false, 'A', 'B'], [-1.0, 1.45, false, 'A', 'B'],
+  [0.5, 0, true, 'A', 'D'], [3.4, -1.55, false, 'C', 'D'], [3.4, 1.55, false, 'B', 'D'],
+];
+const KB_NODE = { A: [-1.8, 0], B: [0.6, 3.3], C: [0.6, -3.3], D: [3.6, 0] };
+function kbMap(o = {}) {
+  const M = { land: {}, br: [], num: [] };
+  M.water = slab(GC.water, 0, 0, 13.4, 9.6, 0.04, 0.0);
+  Object.entries(KB_LAND).forEach(([n, [x, z, w, d]]) => { M.land[n] = slab(GC.land, x, z, w, d, 0.16, 0.1); M.land[n].visible = o.land !== false; });
+  KB_BR.forEach(([x, z, h], i) => {
+    const b = lab.box(GC.bridge, h ? [1.5, 0.24, 0.5] : [0.5, 0.24, 1.35]); b.position.set(x, 0.14, z); b.visible = o.br !== false; lab.world.add(b); M.br.push(b);
+    const l = T(String(i + 1), 'idx', x + (h ? 0 : 0.45), z + (h ? 0.45 : 0), 0.45); l.visible = o.br !== false; M.num.push(l);
+  });
+  M.showBr = (i) => { M.br[i].visible = true; M.num[i].visible = true; };
+  M.names = () => Object.entries(KB_NODE).forEach(([n, [x, z]]) => { M[n] = T(n, 'ptr', x + (n === 'A' ? -0.9 : n === 'D' ? 1.2 : -2.2), z, 0.6); });
+  return M;
+}
+// the bridge-graph drawn over the map: edge i goes through bridge i
+function kbGraph(show = true) {
+  const g = graph();
+  Object.entries(KB_NODE).forEach(([n, [x, z]]) => g.v(n, x, z, { show }));
+  KB_BR.forEach(([x, z, h, a, b], i) => g.e(a, b, { via: [[x, z]], show, id: i }));
+  return g;
+}
+
+scene('g8a-names', 'Euler trail 與 Euler circuit：名詞', [
+  async (tok, S) => {
+    S.B = board(-7, -4.4);
+    S.B.add('今天：Euler trails and circuits');
+    cap('第 20 講：Euler trail 和 Euler circuit', '先複習 trail、circuit 是什麼');
+  },
+  async (tok, S) => {
+    S.B.add('trail / circuit = 邊不能重複的 walk');
+    S.g = quick({ ox: 3, oz: 0.2, s: 1.3 }, { p: [-1.2, -1], q: [1.2, -1], r: [1.2, 1.2], s: [-1.2, 1.2], t: [2.6, 0.1] }, 'p-q q-r r-s s-p q-t t-r');
+    T('示意', 'idx', 5.6, -2.6);
+    cap('walk：沿著邊一步一步走', 'trail、circuit：走的時候邊不能重複');
+  },
+  async (tok, S) => {
+    S.w = walker(S.g.pos('s'));
+    for (const [a, b] of [['s', 'p'], ['p', 'q'], ['q', 'r']]) await go(tok, S.w, S.g.find(a, b), a, 450, GC.blue);
+    S.B.add('open（起點 ≠ 終點）→ trail', 'note');
+    cap('s → p → q → r：起點和終點不同', '這種 open 的叫 trail');
+  },
+  async (tok, S) => {
+    S.g.E.forEach((e) => e.paint(GC.e));
+    S.w.position.copy(S.g.pos('p')); S.w.position.y = 0.75;
+    for (const [a, b] of [['p', 'q'], ['q', 'r'], ['r', 's'], ['s', 'p']]) await go(tok, S.w, S.g.find(a, b), a, 400, GC.ok);
+    S.B.add('closed（回到起點）→ circuit', 'good');
+    cap('p → q → r → s → p：繞回起點', '這種 closed 的叫 circuit');
+  },
+  async (tok, S) => {
+    S.B.add('有些書較不嚴格：叫 Euler path / Euler cycle', 'say');
+    cap('名字不統一', '有些書把它叫 Euler path、Euler cycle');
+  },
+]);
+
+scene('g8a-konig-map', 'Königsberg 七橋問題', [
+  async (tok, S) => {
+    S.B = board(-7, -5.2, 0.55);
+    S.B.add('Seven Bridges of Königsberg');
+    cap('一個很久以前、很有名的問題', 'Königsberg 七橋問題');
+  },
+  async (tok, S) => {
+    S.M = kbMap({ land: false, br: false });
+    T('Pregel 河（示意）', 'say', -5.2, 0, 0.3);
+    cap('Königsberg 是普魯士的一個城市', '城裡有一條河：Pregel 河');
+  },
+  async (tok, S) => {
+    S.B.add('現在屬於俄羅斯（Kaliningrad，波羅的海旁）', 'say');
+    cap('這個地方現在在俄羅斯', '叫 Kaliningrad，在波羅的海旁邊');
+  },
+  async (tok, S) => {
+    Object.values(S.M.land).forEach((m) => { m.visible = true; });
+    cap('藍色是河，米色是陸地', '河把陸地切成好幾塊');
+  },
+  async (tok, S) => {
+    for (let i = 0; i < 7; i++) { S.M.showBr(i); await wt(tok, 200); }
+    cap('黃色是橋：1、2、3、4、5、6、7', '一共七座橋');
+  },
+  async (tok, S) => {
+    S.bd = buddy('遊客', '', GC.pink, 4.6, 0.16, -3.4, 0.6);
+    cap('外地人來玩，本地人帶他參觀', '希望每座橋都看到，但不要重複走（浪費時間）');
+  },
+  async (tok, S) => {
+    S.B.add('每座橋都要過、每座只能過一次、回到出發點');
+    cap('規則：每座橋恰好經過一次', '最後要回到出發的地方');
+  },
+  async (tok, S) => {
+    Object.values(S.M.land).forEach((m) => { m.material.color.set('#f0c98a'); });
+    cap('四塊區域：北岸、南岸、島、東邊那塊', '從任何一塊出發都可以');
+  },
+  async (tok, S) => { // try 1 from C (示意)
+    Object.values(S.M.land).forEach((m) => { m.material.color.set(GC.land); });
+    S.g = kbGraph(false);
+    S.w = walker(S.g.pos('C'));
+    const path = [[0, 'C'], [2, 'A'], [3, 'B'], [1, 'A'], [5, 'C'], [4, 'D']];
+    for (const [i, from] of path) { await go(tok, S.w, S.g.E[i], from, 380, null); S.M.br[i].material.color.set(GC.hot); }
+    S.x1 = T('卡在 A：橋 7 沒走到 ✗（示意）', 'bad', -1.8, -0.9, 1.2);
+    cap('試走一次：走了 6 座橋就回不去了', '還剩一座橋沒走到');
+  },
+  async (tok, S) => { // try 2 from D
+    kill(S.x1); S.M.br.forEach((b) => b.material.color.set(GC.bridge));
+    S.w.position.copy(S.g.pos('D')); S.w.position.y = 0.75;
+    const path = [[5, 'D'], [0, 'C'], [2, 'A'], [6, 'B'], [4, 'D'], [1, 'A']];
+    for (const [i, from] of path) { await go(tok, S.w, S.g.E[i], from, 380, null); S.M.br[i].material.color.set(GC.hot); }
+    S.x2 = T('卡在北岸：橋 4 沒走到 ✗（示意）', 'bad', 0.6, -2.4, 1.2);
+    cap('換個起點再試：又卡住了', '怎麼試都試不出來');
+  },
+  async (tok, S) => {
+    S.B.add('試不出來 ≠ 證明不可能', 'bad');
+    cap('試不出來，不代表不可能', '可能只是還沒試到；要的是證明');
+  },
+  async (tok, S) => {
+    S.B.add('電腦試完所有走法：可以，但不是好的證明', 'say');
+    cap('問題很小，電腦可以全部試完', '但「全部試過都不行」不是好的證明');
+  },
+]);
+
+scene('g8a-konig-parity', '為什麼不可能：看島 A 的橋數', [
+  async (tok, S) => {
+    S.M = kbMap(); S.g = kbGraph(false);
+    S.B = board(-7, -5.2, 0.55);
+    S.B.add('答案：不行。為什麼？');
+    cap('答案是不行', '關鍵：只看一塊陸地就夠了');
+  },
+  async (tok, S) => {
+    S.M.names();
+    cap('四塊區域叫 A、B、C、D', 'A 是中間的島');
+  },
+  async (tok, S) => {
+    S.w = walker(S.g.pos('C'));
+    await go(tok, S.w, S.g.E[0], 'C', 600, null); S.M.br[0].material.color.set(GC.blue);
+    S.in1 = T('進', 'good', -2.6, -1.45, 1.0);
+    cap('假設不是從 A 出發：要到 A，得先「進來」', '進來用掉一座橋');
+  },
+  async (tok, S) => {
+    await go(tok, S.w, S.g.E[2], 'A', 600, null); S.M.br[2].material.color.set(GC.orange);
+    S.out1 = T('出', 'bad', -2.6, 1.45, 1.0);
+    cap('最後要回到出發點，所以進來後一定要「離開」', '離開又用掉一座橋');
+  },
+  async (tok, S) => {
+    await go(tok, S.w, S.g.E[3], 'B', 600, null); S.M.br[3].material.color.set(GC.blue);
+    await go(tok, S.w, S.g.E[1], 'A', 600, null); S.M.br[1].material.color.set(GC.orange);
+    T('進', 'good', -1.0, 1.45, 1.0); T('出', 'bad', -1.0, -1.45, 1.0);
+    cap('再到 A：再進來、再出去', '每到 A 一次，就是一進一出');
+  },
+  async (tok, S) => {
+    S.cnt = T('到 A 1 次 → 2 座橋', 'ptr alt', -1.8, 0.0, 1.4);
+    cap('到 A 一次：經過 2 座橋', '');
+  },
+  async (tok, S) => { settxt(S.cnt, '到 A 2 次 → 4 座橋'); cap('到 A 兩次：經過 4 座橋', ''); },
+  async (tok, S) => { settxt(S.cnt, '到 A 3 次 → 6 座橋'); cap('到 A 三次：經過 6 座橋', '每次都 +2'); },
+  async (tok, S) => {
+    S.B.add('每座橋都要過 → 連到 A 的橋數必須是偶數');
+    cap('橋又不能重複、又都要經過', '所以連到 A 的橋數一定是偶數');
+  },
+  async (tok, S) => {
+    S.M.br[4].material.color.set(GC.hot);
+    settxt(S.cnt, 'A 連了 5 座橋：奇數！');
+    S.B.add('A 連 5 座橋（1、2、3、4、5）→ 奇數 ✗', 'bad');
+    cap('A 連了 1、2、3、4、5 共 5 座橋', '配完兩對進出，第 5 座落單');
+  },
+  async (tok, S) => {
+    S.B.add('從 A 出發也一樣：先出去…最後回到 A → 仍是偶數', 'say');
+    cap('如果從 A 出發呢？', '先出去，中間回來再出去，最後回到 A：出、進成對，還是偶數');
+  },
+  async (tok, S) => {
+    S.B.add('所以 A 只有 5 座橋 → 不可能', 'bad');
+    cap('不管從哪裡出發，A 都需要偶數座橋', '5 是奇數 → 不可能');
+  },
+  async (tok, S) => {
+    S.B.add('可行的話：A 要有 even number of bridges', 'good');
+    cap('結論：每拜訪一次耗掉兩座橋', '所以 A 連的橋數必須是偶數');
+  },
+]);
+
+scene('g8a-history', 'Euler 1736：圖論的第一個定理', [
+  async (tok, S) => {
+    S.B = board(-5.5, -3.6, 0.8);
+    S.B.add('Leonhard Euler（尤拉），1736 年的論文');
+    S.b = buddy('Euler', '1736', GC.purple, 4, 0, 0.5, 1.1);
+    cap('這個問題是尤拉在 1736 年解的', '他寫了一篇論文');
+  },
+  async (tok, S) => {
+    S.B.add('把一般情況全部解決（若且唯若的條件）');
+    S.B.add('充分條件的完整證明是後人補的', 'say');
+    cap('不只解七橋，連一般的情況都解決了', '條件是他說的；充分那半的完整證明是後來的人給的');
+  },
+  async (tok, S) => {
+    S.B.add('奠定了 Graph Theory 的發展：第一個定理', 'good');
+    cap('通常被當成圖論的第一個定理', '1736 年之後，圖論就開始了');
+  },
+  async (tok, S) => {
+    S.B.add('vertex、edge 這些概念就是為了這個問題定義的');
+    S.b.mood('happy');
+    cap('為了解釋這個問題，尤拉定義了 vertex、edge', '我們前面學的頂點、邊，都從這裡開始');
+  },
+]);
+
+scene('g8a-konig-graph', '把七橋變成一張圖', [
+  async (tok, S) => {
+    S.M = kbMap(); S.M.names();
+    cap('怎麼把這個問題變成 graph？', '');
+  },
+  async (tok, S) => {
+    S.g = kbGraph(false);
+    Object.values(S.g.V).forEach((m) => { m.visible = true; });
+    cap('每一塊區域變成一個端點（vertex）', '四塊區域 → 四個端點');
+  },
+  async (tok, S) => { cap('每一座橋變成一條邊（edge）', '橋連哪兩塊，邊就連哪兩個端點'); },
+  async (tok, S) => { S.g.E[0].show(); S.g.E[1].show(); cap('C 到 A 有兩座橋', '→ 兩條 edge'); },
+  async (tok, S) => { S.g.E[5].show(); cap('C 到 D 有一座橋', '→ 一條 edge'); },
+  async (tok, S) => { S.g.E[4].show(); cap('A 到 D 有一座橋', '→ 一條 edge'); },
+  async (tok, S) => { S.g.E[2].show(); S.g.E[3].show(); cap('A 到 B 有兩座橋', '→ 兩條 edge'); },
+  async (tok, S) => { S.g.E[6].show(); cap('B 到 D 有一座橋', '→ 一條 edge'); },
+  async (tok, S) => {
+    Object.values(S.M.land).forEach((m) => { m.visible = false; }); S.M.br.forEach((b) => { b.visible = false; }); S.M.num.forEach((l) => { l.visible = false; }); S.M.water.visible = false;
+    S.g.E.forEach((e) => e.paint(GC.gold));
+    cap('地圖拿掉，就剩下一張 graph', '兩點之間有兩條邊 → 這是 multigraph');
+  },
+  async (tok, S) => {
+    S.B = board(-7, -4.6);
+    S.B.add('4 個 vertices、7 個 edges');
+    cap('這個 graph 有 4 個 vertices、7 個 edges', '');
+  },
+  async (tok, S) => {
+    S.B.add('問題：找一個 circuit（邊不重複、回到原點）');
+    cap('從任何一點出發、邊不能重複、最後回到原點', '就是要找一個 circuit');
+  },
+  async (tok, S) => {
+    S.B.add('而且每條邊都要走過 → 這就是 Euler circuit', 'good');
+    cap('例如從 A 出發，每條邊都走、只走一次，回到 A', '這樣的 circuit 叫 Euler circuit');
+  },
+]);
+
+scene('g8a-def', '定義：Euler circuit 與 Euler trail', [
+  async (tok, S) => {
+    S.B = board(-7, -4.6, 0.6);
+    S.B.add('定義 Euler circuit');
+    cap('定義 Euler circuit', '');
+  },
+  async (tok, S) => {
+    S.B.add('G：undirected graph（simple 或 multigraph 都可以）', 'say');
+    cap('圖是 undirected', 'simple graph 或 multigraph 都可以');
+  },
+  async (tok, S) => {
+    S.B.add('simple：兩點間最多一條邊、沒有 loop', 'say');
+    cap('七橋是 multigraph', 'simple graph：任兩個不同端點最多一條邊，而且沒有 loop');
+  },
+  async (tok, S) => {
+    S.B.add('它是一個 circuit：closed walk、邊不重複');
+    S.g = quick({ ox: 3.2, oz: 0.4, s: 1.1 }, { a: [-2.2, -1.4], b: [-2.2, 1.4], c: [0, 0], d: [2.2, -1.4], e: [2.2, 1.4] }, 'a-b b-c c-a c-d d-e e-c');
+    T('示意', 'idx', 6, -2.2);
+    cap('先是一個 circuit', '繞一圈回來的 walk，邊不能重複');
+  },
+  async (tok, S) => {
+    S.w = walker(S.g.pos('a'));
+    for (const [a, b] of [['a', 'b'], ['b', 'c'], ['c', 'd'], ['d', 'e'], ['e', 'c'], ['c', 'a']]) await go(tok, S.w, S.g.find(a, b), a, 330, GC.ok);
+    S.B.add('traverses every edge exactly once');
+    cap('而且每條邊都經過、剛好一次', 'a b c d e c a：6 條邊各走一次');
+  },
+  async (tok, S) => {
+    S.B.add('→ 叫做 Euler circuit（closed）', 'good');
+    cap('這樣的 circuit 叫 Euler circuit', '');
+  },
+  async (tok, S) => {
+    S.g.kill(); kill(S.w);
+    S.h = quick({ ox: 3.2, oz: 0.6, s: 1.1 }, { p: [-1.4, 1.6], q: [1.4, 1.6], r: [1.4, -0.8], s: [-1.4, -0.8], t: [0, -2.4] }, 'p-q q-r r-s s-p s-t t-r');
+    S.w = walker(S.h.pos('s'));
+    for (const [a, b] of [['s', 'p'], ['p', 'q'], ['q', 'r'], ['r', 's'], ['s', 't'], ['t', 'r']]) await go(tok, S.w, S.h.find(a, b), a, 330, GC.blue);
+    S.B.add('若是 open：Euler trail', 'note');
+    cap('如果是 open 的', '每條邊恰走一次、但沒回到起點 → Euler trail');
+  },
+  async (tok, S) => {
+    S.B.add('circuit：從哪裡出發就回到哪裡', 'say');
+    cap('Euler circuit 是 closed：從哪出發就回到哪', '');
+  },
+  async (tok, S) => {
+    S.h.vc('s', GC.ok); S.h.vc('r', GC.hot);
+    S.B.add('trail：起點 ≠ 終點（例：s 出發、r 結束）', 'say');
+    cap('Euler trail：出發點和結束點不一樣', '這裡 s 出發、r 結束');
+  },
+  async (tok, S) => {
+    S.B.add('trail = A 集合、B 解散；circuit = 同地集合解散', 'good');
+    cap('帶團比喻：trail 在 A 集合、B 解散', 'circuit 在同一個地方集合、解散');
+  },
+]);
+
+scene('g8a-thm', '定理：Euler circuit ⇔ connected 且每點 degree 偶數', [
+  async (tok, S) => {
+    S.B = board(-7, -4.8, 0.6);
+    S.B.add('定理（Euler circuit 的條件）');
+    cap('下面這個定理', '');
+  },
+  async (tok, S) => {
+    S.B.add('G undirected（simple 或 multi）有 Euler circuit', 'say');
+    cap('G 是 undirected graph', '它有 Euler circuit 的條件');
+  },
+  async (tok, S) => {
+    S.B.add('⇔（if and only if，若且唯若＝充要條件）');
+    cap('條件是 if and only if', '充分而且必要');
+  },
+  async (tok, S) => {
+    S.B.add('條件一：G connected');
+    cap('第一個條件很簡單：要 connected', '');
+  },
+  async (tok, S) => {
+    S.g = quick({ ox: 3, oz: 0.2 }, { a: [-2.4, -1.2], b: [-0.8, -1.2], c: [-1.6, 0.4], x: [1.2, -0.4], y: [2.6, -0.4], z: [1.9, 1.0] }, 'a-b b-c c-a x-y y-z z-x');
+    T('示意：兩塊', 'idx', 3, -2.4);
+    S.x = T('這邊出發永遠到不了那邊 ✗', 'bad', 3, 2.2);
+    cap('如果圖分成兩塊', '從這塊出發，永遠走不到那塊的邊');
+  },
+  async (tok, S) => {
+    kill(S.x);
+    S.B.add('connected：只有一個 component＝任兩點間有 path', 'say');
+    cap('connected：只有一個 component', '也就是任兩個端點之間都有一條 path');
+  },
+  async (tok, S) => {
+    S.B.add('補一個假設：G 沒有 isolated vertices');
+    cap('老師補了一個前提', 'G 不能有 isolated vertices');
+  },
+  async (tok, S) => {
+    S.g.kill();
+    S.g = quick({ ox: 3, oz: 0.2 }, { a: [-2, -1.2], b: [0, -1.2], c: [-1, 0.6], d: [1.2, 0.6] }, 'a-b b-c c-a b-d c-d');
+    S.iso = S.g.v('i', 2.6, -1.4, { c: GC.hot });
+    S.il = T('isolated vertex：一條邊都沒有', 'bad', 5.6, -2.4);
+    cap('isolated vertex：孤零零、沒有任何邊的點', '');
+  },
+  async (tok, S) => {
+    S.iso.visible = false; kill(S.il);
+    S.B.add('有的話就丟掉：它沒有邊，根本不會走到', 'say');
+    cap('它沒有邊，本來就不用走到它', '直接拿掉，只看有邊的部分，條件比較好寫');
+  },
+  async (tok, S) => {
+    S.g.kill();
+    S.g = quick({ ox: 3, oz: 0.4 }, { v: [0, 0], n1: [-2, -1.4], n2: [2, -1.4], n3: [-2, 1.4], n4: [2, 1.4] }, 'v-n1 v-n2 v-n3 v-n4');
+    S.w = walker(S.g.pos('n1'));
+    await go(tok, S.w, S.g.find('v', 'n1'), 'n1', 450, GC.blue); await go(tok, S.w, S.g.find('v', 'n2'), 'v', 450, GC.orange);
+    S.B.add('條件二：每經過一點：進去＋出來 → +2');
+    cap('第二個條件：經過一個點就是進去、出來', '每次用掉 2 條邊');
+  },
+  async (tok, S) => {
+    S.w.position.copy(S.g.pos('n3')); S.w.position.y = 0.75;
+    await go(tok, S.w, S.g.find('v', 'n3'), 'n3', 450, GC.blue); await go(tok, S.w, S.g.find('v', 'n4'), 'v', 450, GC.orange);
+    T('deg(v) = 4', 'ptr alt', 3, -0.9);
+    S.B.add('每個 vertex 的 degree（連的邊數）要 even');
+    cap('所以每個端點的 degree（連到它的邊數）都要是偶數', '出發點也一樣：先出去、最後回來');
+  },
+  async (tok, S) => {
+    S.B.add('G 有 Euler circuit ⇔ G connected 且每點 degree 偶數', 'good');
+    cap('定理：有 Euler circuit', '⇔ connected，而且每個端點 degree 都是偶數');
+  },
+]);
+
+scene('g8a-nec', '證明必要條件：connected', [
+  async (tok, S) => {
+    S.B = board(-7, -4.8, 0.6);
+    S.B.add('證明 ⇒（必要條件）：有 Euler circuit ⇒ 兩個條件');
+    cap('先證必要條件', '從前面推到後面：若 P 則 Q');
+  },
+  async (tok, S) => {
+    S.B.add('第一：connected ⇐ 任兩點間都有 path');
+    cap('要證 connected', '用「任兩點之間都有 path」來證');
+  },
+  async (tok, S) => {
+    S.g = quick({ ox: 3.2, oz: 0.4, s: 1.05 }, { x: [-2.6, -1.4], a: [-2.6, 1.0], c: [0, 0], p: [-0.9, -2.4], q: [0.9, -2.4], b: [2.6, 1.0], y: [2.6, -1.4] }, 'x-a a-c c-x c-p p-q q-c c-b b-y y-c');
+    T('示意', 'idx', 6.2, -2.8);
+    S.g.vc('x', GC.blue); S.g.vc('y', GC.blue);
+    cap('任取兩個端點 x、y', '');
+  },
+  async (tok, S) => {
+    S.B.add('Euler circuit 經過每條邊 → 經過每個點（含 x、y）', 'say');
+    cap('Euler circuit 經過每一條邊', '沒有 isolated vertex，所以每個點都在 circuit 上，x、y 也在');
+  },
+  async (tok, S) => {
+    S.w = walker(S.g.pos('x'));
+    for (const [a, b] of [['x', 'a'], ['a', 'c'], ['c', 'p'], ['p', 'q'], ['q', 'c'], ['c', 'b'], ['b', 'y']]) await go(tok, S.w, S.g.find(a, b), a, 330, GC.gold);
+    cap('沿著 circuit 從 x 走到 y', 'x a c p q c b y：c 出現了兩次');
+  },
+  async (tok, S) => {
+    ['c-p', 'p-q', 'q-c'].forEach((k) => S.g.find(...k.split('-')).paint(GC.dim));
+    S.B.add('重複的端點：把繞回來的那段剪掉 → path', 'say');
+    cap('path 不能有重複端點', '把 c → p → q → c 這圈剪掉，剩 x a c b y 就是 path');
+  },
+  async (tok, S) => {
+    S.B.add('⇒ 任兩點有 path ⇒ G connected', 'good');
+    cap('所以任兩點之間都有 path', 'G 一定是 connected');
+  },
+  async (tok, S) => {
+    S.B.add('第二：degree 偶數（進去、出來，每次 +2）');
+    cap('第二點：degree 要偶數', '證明就是剛剛說的：進去出來，成對出現');
+  },
+]);
+
+// ════════ 0kzn9J950-I（第20B講：必要條件收尾、充分條件的 constructive proof：走到卡住、break out） ════════
+// 示意圖（老師在黑板上講的例子）：circuit A B C D E A，C 還有一條沒用的邊連到 X；這裡把 C–X–Y 補成三角形，讓每點 degree 都是偶數。
+const PENT = { A: [-2.2, -1.6], B: [0, -2.8], C: [2.2, -1.2], D: [1.4, 1.6], E: [-1.6, 1.6], X: [4.2, -2.4], Y: [4.2, 0.3] };
+const PENT_E = 'A-B B-C C-D D-E E-A C-X X-Y Y-C';
+const pent = (o = {}) => quick(Object.assign({ ox: 1.4, oz: 0.5, s: 1 }, o), PENT, PENT_E);
+const paintPath = (g, seq, c) => { for (let i = 0; i + 1 < seq.length; i++) g.find(seq[i], seq[i + 1]).paint(c); };
+
+scene('g8a-nec-deg', '必要條件收尾：degree 為偶數', [
+  async (tok, S) => {
+    S.g = quick({ ox: 2.2, oz: 0.4, s: 1.1 }, { v: [0, 0], p: [-2.4, -1.6], q: [2.4, -1.6], r: [-2.4, 1.6], t: [2.4, 1.6] }, 'v-p v-q v-r v-t');
+    S.w = walker(S.g.pos('p'));
+    await go(tok, S.w, S.g.find('v', 'p'), 'p', 500, GC.blue); T('進（arriving）', 'good', 0.4, -1.4);
+    await go(tok, S.w, S.g.find('v', 'q'), 'v', 500, GC.orange); T('出（departing）', 'bad', 4.2, -1.4);
+    S.B = board(-7, -4.4, 0.62);
+    S.B.add('每經過 v 一次：一條進來、一條離開');
+    cap('每次經過一個端點 v', '一定用掉兩條連到 v 的邊：一條進來、一條離開');
+  },
+  async (tok, S) => {
+    S.w.position.copy(S.g.pos('r')); S.w.position.y = 0.75;
+    await go(tok, S.w, S.g.find('v', 'r'), 'r', 500, GC.blue); await go(tok, S.w, S.g.find('v', 't'), 'v', 500, GC.orange);
+    S.B.add('連到 v 的每條邊都要經過', 'say');
+    cap('連到 v 的每一條邊都要經過', '每條都被配進某一次「進＋出」');
+  },
+  async (tok, S) => {
+    S.B.add('deg(v) = 2 ×（離開的邊數）→ 偶數', 'good');
+    T('deg(v) = 4 = 2 × 2', 'ptr alt', 2.2, -0.9);
+    cap('所以 deg(v) = 2 × 離開的邊數', '一定是偶數');
+  },
+  async (tok, S) => {
+    S.B.add('必要條件：connected 很直覺；偶數 = 進出成對', 'say');
+    cap('必要條件就證完了', 'connected 很直覺；degree 偶數就是「進去、出來」成對');
+  },
+  async (tok, S) => {
+    S.B.add('接著證充分條件：兩條件成立 ⇒ 一定有 Euler circuit');
+    cap('再來證充分條件', '如果滿足後面兩個條件，就一定有 Euler circuit');
+  },
+]);
+
+scene('g8a-suff-intro', '充分條件：用 constructive proof', [
+  async (tok, S) => {
+    S.B = board(-6.6, -4.2, 0.7);
+    S.B.add('要證：G connected、無 isolated vertex、每點 degree 偶數');
+    S.B.add('⇒ 存在一個 Euler circuit', 'good');
+    cap('要證的方向', '連通、每點偶數 ⇒ 一定有 Euler circuit');
+  },
+  async (tok, S) => {
+    S.B.add('Euler circuit 不見得唯一：只要證「存在」', 'say');
+    cap('Euler circuit 不一定只有一個', '我們只要證明「有」就好（existence）');
+  },
+  async (tok, S) => {
+    S.B.add('證明存在的方法很多；這裡用 constructive proof（建設性證明）');
+    cap('證明「存在」有很多種方法', '這裡用建設性證明');
+  },
+  async (tok, S) => {
+    S.B.add('不只說「有」，還給方法去找 → 一個 algorithm', 'note');
+    S.b = buddy('', '?', GC.blue, 4.2, 0, 2.2, 0.8);
+    cap('建設性證明：不只證明存在', '還告訴你怎麼找，並說明為什麼一定找得到');
+  },
+  async (tok, S) => {
+    S.B.add('滿足兩個條件 → 這個 algorithm 一定找得到', 'good');
+    S.b.set('!'); S.b.mood('happy');
+    cap('下面給一個 algorithm', '只要 connected、每點 degree 偶數，就一定能找到 Euler circuit');
+  },
+]);
+
+scene('g8a-walk', '演算法第一步：一直走，直到 get stuck', [
+  async (tok, S) => {
+    S.g = pent(); T('示意', 'idx', 6.2, -3.2);
+    S.B = board(-7, -4.6, 0.6);
+    S.g.vc('A', GC.ok);
+    S.B.add('1. 從任何一個 vertex 開始（這裡選 A）');
+    cap('第一步：從任何一個端點開始都可以', '這裡選 A');
+  },
+  async (tok, S) => {
+    S.g.find('A', 'B').paint(GC.gold); S.g.find('A', 'E').paint(GC.gold);
+    cap('A 連著好幾條邊', '從哪一條開始都可以，隨便挑');
+  },
+  async (tok, S) => {
+    S.g.find('A', 'E').paint(GC.e);
+    S.w = walker(S.g.pos('A'));
+    await go(tok, S.w, S.g.find('A', 'B'), 'A', 600, GC.hot);
+    cap('開始走：A → B', '走過的邊變紅色');
+  },
+  async (tok, S) => {
+    await go(tok, S.w, S.g.find('B', 'C'), 'B', 600, GC.hot);
+    S.B.add('2. 走到下一點，挑一條「還沒走過」的邊', 'say');
+    cap('到下一個端點，它又連著一些邊', '規則只有一個：走過的不能再走');
+  },
+  async (tok, S) => {
+    ['C-D', 'C-X', 'C-Y'].forEach((k) => S.g.find(...k.split('-')).paint(GC.gold));
+    await wt(tok, 700);
+    ['C-X', 'C-Y'].forEach((k) => S.g.find(...k.split('-')).paint(GC.e));
+    await go(tok, S.w, S.g.find('C', 'D'), 'C', 600, GC.hot);
+    cap('C 還剩三條邊沒走', '隨便挑一條：這次挑 C → D');
+  },
+  async (tok, S) => {
+    await go(tok, S.w, S.g.find('D', 'E'), 'D', 500, GC.hot);
+    await go(tok, S.w, S.g.find('E', 'A'), 'E', 500, GC.hot);
+    S.B.add('never repeating an edge：有邊可以走就走', 'say');
+    cap('never repeating an edge', '有邊可以走就一直走：D → E → A');
+  },
+  async (tok, S) => {
+    S.g.vc('A', GC.hot, '#5a0000');
+    S.B.add('3. 直到 get stuck：走到某點，沒有邊可以出去', 'bad');
+    cap('回到 A：A 的兩條邊都用掉了', '沒有邊可以走 → get stuck');
+  },
+  async (tok, S) => {
+    ['C-X', 'X-Y', 'Y-C'].forEach((k) => S.g.find(...k.split('-')).paint(GC.ok));
+    T('還沒走到的邊', 'good', 4.6, 1.8);
+    cap('卡住了，可是 C–X、X–Y、Y–C 還沒走到', '如果這時邊都走完了，就已經找到 Euler circuit');
+  },
+  async (tok, S) => {
+    S.B.add('接下來：get stuck 時會是什麼狀況？怎麼辦？');
+    cap('接下來要討論', 'get stuck 時會碰到什麼狀況，以及要怎麼辦');
+  },
+]);
+
+scene('g8a-stuck', '卡住的點一定是出發點', [
+  async (tok, S) => {
+    S.g = pent(); T('示意', 'idx', 6.2, -3.2);
+    paintPath(S.g, ['A', 'B', 'C', 'D', 'E', 'A'], GC.hot);
+    S.g.vc('A', GC.hot, '#5a0000');
+    S.B = board(-7, -4.6, 0.6);
+    S.B.add('走到某點，邊都用掉了，但還有邊沒走');
+    cap('走到某個端點，它的邊全部用掉了', '但整張圖還有一些邊沒走過');
+  },
+  async (tok, S) => {
+    S.B.add('這時走過的路一定是一個 circuit');
+    cap('這時候，剛剛走過的路一定構成一個 circuit', '');
+  },
+  async (tok, S) => {
+    S.g.vc('A', GC.ok, '#0a4a2a');
+    S.B.add('也就是：get stuck 的點一定是出發點', 'note');
+    cap('意思是：卡住的那點一定是出發點', '中間可以走出去再繞回來，沒關係');
+  },
+  async (tok, S) => {
+    S.B.add('原因：每點 degree 都是偶數', 'say');
+    cap('為什麼？要用到假設', '每個端點的 degree 都是偶數');
+  },
+  async (tok, S) => {
+    S.g.vc('A', GC.v); S.g.E.forEach((e) => e.paint(GC.e));
+    paintPath(S.g, ['A', 'B', 'C', 'D'], GC.hot);
+    S.g.vc('D', GC.orange);
+    S.dl = T('假設卡在 D？', 'bad', 2.8, 2.6);
+    cap('假如走一走，卡在別的點，例如 D', '這可能嗎？');
+  },
+  async (tok, S) => {
+    settxt(S.dl, 'D：進來 1 條（奇數）→ 還剩 1 條可出去');
+    S.g.find('D', 'E').paint(GC.gold);
+    cap('不可能：中間點每次都是「進去、出來」', '只進來沒出去時，D 用掉的邊數是奇數；但 deg(D) 是偶數，一定還有一條可以出去');
+  },
+  async (tok, S) => {
+    S.g.vc('A', GC.ok);
+    S.B.add('別的點：用掉奇數條時一定還有路 → 卡不住', 'say');
+    S.B.add('出發點：一開始只出去（奇），回到這裡才變偶 → 只可能卡在這', 'say');
+    cap('所以不會卡在別的點', '出發點一開始只出去（用掉奇數條），回到它時才變偶數，才可能沒路');
+  },
+  async (tok, S) => {
+    kill(S.dl); S.g.vc('D', GC.v);
+    paintPath(S.g, ['D', 'E', 'A'], GC.hot);
+    S.g.vc('A', GC.ok, '#0a4a2a');
+    S.B.add('卡住的點 = 出發點 → 整條是 circuit', 'good');
+    cap('卡住的點一定是出發點', '所以走過的整條路是一個 circuit');
+  },
+  async (tok, S) => {
+    S.B.add('circuit：端點可以重複，邊不能重複', 'say');
+    cap('circuit 的端點可以重複', '只要每次走的邊不一樣就好');
+  },
+  async (tok, S) => {
+    S.B.add('get stuck = 到了某點，沒有邊可以出去', 'bad');
+    cap('再說一次 get stuck 的意思', '走到那點，沒有任何沒用過的邊可以出去');
+  },
+]);
+
+scene('g8a-breakout', 'Break out：換個起點繼續走', [
+  async (tok, S) => {
+    S.B = board(-7, -4.8, 0.56);
+    S.B.add('卡住了，但還有邊沒走 → 要想辦法繼續');
+    cap('get stuck 了，但還沒達到要求', '得想辦法繼續走下去');
+  },
+  async (tok, S) => {
+    S.g = pent(); T('示意', 'idx', 6.2, -3.2);
+    paintPath(S.g, ['A', 'B', 'C', 'D', 'E', 'A'], GC.hot);
+    cap('現在有一個 circuit（紅色）', '還有一些沒用到的邊');
+  },
+  async (tok, S) => {
+    S.B.add('circuit 上一定有某點還有沒用的邊 → 從那裡 break out');
+    cap('這個 circuit 上一定有端點還有邊沒用到', '那就從那裡 break out（衝出去）');
+  },
+  async (tok, S) => {
+    S.q = T('沒用的邊會不會都離 circuit 遠遠的？', 'bad', 3.6, 3.4);
+    cap('為什麼一定在 circuit 上？', '會不會沒用的邊都在別處，跟 circuit 碰不到？');
+  },
+  async (tok, S) => {
+    settxt(S.q, 'G connected → 一定有路連到 circuit');
+    cls(S.q, 'good');
+    S.B.add('不可能：G connected，沒用的邊一定連得到 circuit', 'say');
+    cap('不可能：G 是 connected', '那些邊一定有路連到 circuit，接上的那個點就有沒用的邊');
+  },
+  async (tok, S) => {
+    kill(S.q);
+    S.B.add('先處理能 break out 的情形；不能 break out 後面再說', 'say');
+    cap('先假設 circuit 上有點有沒用的邊 → break out', '如果沒辦法 break out，後面會說明那就是答案');
+  },
+  async (tok, S) => {
+    S.g.find('A', 'B').paint(GC.hot);
+    cap('舉個例子說明 break out', '這是剛剛走出來的 circuit');
+  },
+  async (tok, S) => {
+    ['C-X', 'X-Y', 'Y-C'].forEach((k) => S.g.find(...k.split('-')).paint(GC.ok));
+    S.g.vc('C', GC.ok);
+    cap('C 上面有一條沒用到的邊連到 X', '綠色的邊都還沒用');
+  },
+  async (tok, S) => {
+    S.w = walker(S.g.pos('A'));
+    for (const [a, b] of [['A', 'B'], ['B', 'C'], ['C', 'D'], ['D', 'E'], ['E', 'A']]) await go(tok, S.w, S.g.find(a, b), a, 300, null);
+    S.B.add('原來的 circuit：A B C D E A（回到 A 卡住）');
+    cap('原來的 circuit 是 A, B, C, D, E, A', '繞回 A，A 只有兩條邊，get stuck');
+  },
+  async (tok, S) => {
+    S.w.position.copy(S.g.pos('C')); S.w.position.y = 0.75;
+    S.B.add('break out：把起點改成 C', 'note');
+    cap('break out：把起始點改一下', '改成從 C 開始算');
+  },
+  async (tok, S) => {
+    for (const [a, b] of [['C', 'D'], ['D', 'E'], ['E', 'A'], ['A', 'B'], ['B', 'C']]) await go(tok, S.w, S.g.find(a, b), a, 260, null);
+    await go(tok, S.w, S.g.find('C', 'X'), 'C', 500, GC.hot);
+    S.B.add('C D E A B C → X：衝出去了！', 'good');
+    cap('同一個 circuit 寫成 C, D, E, A, B, C', '回到 C 時不停，沿綠色的邊走到 X：break out！');
+  },
+  async (tok, S) => {
+    S.B.add('circuit 上任何點有沒用的邊 → 一定能 break out', 'say');
+    cap('只要 circuit 上任何一個點還有沒用的邊', '把出發點換成它，就一定能 break out');
+  },
+  async (tok, S) => {
+    await go(tok, S.w, S.g.find('X', 'Y'), 'X', 500, GC.hot);
+    await go(tok, S.w, S.g.find('Y', 'C'), 'Y', 500, GC.hot);
+    cap('出去以後照原來的方法：有邊就走', 'X → Y → C，又 get stuck');
+  },
+  async (tok, S) => {
+    S.B.add('又形成 circuit → 再找有沒用邊的點 → 再 break out', 'say');
+    cap('又構成一個 circuit', '再去找這個 circuit 上有沒有點還有沒用的邊，再 break out');
+  },
+  async (tok, S) => {
+    S.B.add('forming circuits and breaking out as long as possible', 'good');
+    cap('一直做', '直到沒辦法 break out 為止（這個例子已經全部走完）');
+  },
+]);
+
+scene('g8a-final', '不能 break out ⇒ 就是 Euler circuit', [
+  async (tok, S) => {
+    S.B = board(-7, -4.8, 0.56);
+    S.B.add('break out 不可能 ⇒ 找到 Euler circuit');
+    cap('break out 不可能的時候', '我們就找到 Euler circuit 了');
+  },
+  async (tok, S) => {
+    S.g = quick({ ox: 2.4, oz: 0.4 }, { A: [-1.6, -1.2], c1: [0.6, -2.6], c2: [2.8, -1.4], c3: [1.4, 0.4], A1: [-3.2, 0.6], A2: [-2.0, 2.4], v: [0.4, 2.4], w: [2.8, 2.2] },
+      'A-c1 c1-c2 c2-c3 c3-A A-A1 A1-A2 A2-v v-w');
+    T('示意', 'idx', 6.2, -3.2);
+    paintPath(S.g, ['A', 'c1', 'c2', 'c3', 'A'], GC.hot);
+    S.B.add('不能 break out = circuit 上每個點的邊都用完', 'say');
+    cap('紅色是目前的 circuit', '不能 break out：circuit 上每個端點的邊都已經用完');
+  },
+  async (tok, S) => {
+    S.B.add('要證：每一條邊都在這個 circuit 裡');
+    cap('要證明的事', '圖裡每一條邊都在這個 circuit 裡');
+  },
+  async (tok, S) => {
+    S.g.find('v', 'w').paint(GC.purple);
+    T('任一條邊 e = vw', 'ptr alt', 4.2, 3.2);
+    cap('任取一條邊 e', '它的兩個端點叫 v、w');
+  },
+  async (tok, S) => {
+    ['A-A1', 'A1-A2', 'A2-v'].forEach((k) => S.g.find(...k.split('-')).paint(GC.blue));
+    S.B.add('G connected → 從 circuit 的起點 A 到 v 有 path：A, A1, A2, …, v', 'say');
+    cap('G 是 connected', '所以從 circuit 的起點 A 到 v 有一條 path：A, A1, A2, …, v');
+  },
+  async (tok, S) => {
+    S.g.find('A', 'A1').paint(GC.hot);
+    S.B.add('邊 A–A1 若不在 circuit：A 有沒用的邊 → 可在 A break out，矛盾', 'bad');
+    cap('看第一條邊 A–A1', '如果它不在 circuit 裡，A 就有沒用的邊，可以在 A break out，矛盾；所以它在 circuit 裡');
+  },
+  async (tok, S) => {
+    S.g.find('A1', 'A2').paint(GC.hot);
+    cap('所以 A1 也在 circuit 上', '同理 A1–A2 一定在 circuit，不然可以在 A1 break out');
+  },
+  async (tok, S) => {
+    S.g.find('A2', 'v').paint(GC.hot);
+    S.B.add('以此類推：path 上所有邊、點都在 circuit → v 在 circuit', 'say');
+    cap('一個一個推過去', 'path 上所有的邊和點都在 circuit 裡，所以 v 也在');
+  },
+  async (tok, S) => {
+    S.g.find('v', 'w').paint(GC.hot);
+    S.B.add('v 在 circuit → 連到 v 的邊都在 → vw 在 circuit', 'good');
+    cap('v 在 circuit 上，又不能在 v break out', '所以連到 v 的每條邊都在 circuit 裡，vw 也是');
+  },
+  async (tok, S) => {
+    S.B.add('e 是任意一條邊 → 所有邊都在 → Euler circuit', 'good');
+    cap('e 是隨便取的一條邊', '所以每一條邊都在這個 circuit 裡：它就是 Euler circuit');
+  },
+  async (tok, S) => {
+    S.B.add('演算法：任選起點走 → 卡住成 circuit → break out → 直到不能', 'note');
+    cap('整理演算法', '任意起點、任意沒用過的邊一直走；卡住就 break out；直到不能 break out');
+  },
+  async (tok, S) => {
+    S.B.add('degree 偶數：保證卡在起點；connected：保證邊都收進來', 'say');
+    cap('兩個條件都有用到', 'degree 偶數用在「卡住點 = 起點」，connected 用在「所有邊都在 circuit」');
+  },
+  async (tok, S) => {
+    S.B.add('不只證存在，還是 constructive proof；下次用例子跑一次', 'say');
+    cap('這不只證明 Euler circuit 存在', '還給了找它的 algorithm；下次用一個例子試試看');
+  },
+]);
+
+// ════════ ATY_gkJbfNQ（第21A講：用 adjacency matrix 的例子跑演算法、Euler trail） ════════
+// 老師的例子：A–B 兩條、A–C 一條、A–D 一條、B–D 兩條、C–D 三條（degree：A 4、B 4、C 4、D 6）。每次照字母順序挑邊。
+const EXP = { A: [-1.8, -1.6], B: [1.8, -1.6], C: [-1.8, 1.6], D: [1.8, 1.6] };
+const EXE = [['A', 'B', 0.5], ['A', 'B', -0.5], ['A', 'C', 0], ['A', 'D', 0], ['B', 'D', 0.5], ['B', 'D', -0.5], ['C', 'D', 0], ['C', 'D', 0.75], ['C', 'D', -0.75]];
+const EXN = ['A', 'B', 'C', 'D'];
+function exSetup(S, o = {}) {
+  S.g = graph({ ox: 3.4, oz: 0.2, s: 1.0 });
+  EXN.forEach((n) => S.g.v(n, ...EXP[n]));
+  EXE.forEach(([a, b, bd]) => S.g.e(a, b, { bend: bd, show: o.edges !== false }));
+  S.used = new Set(); S.cnt = {};
+  EXE.forEach(([a, b]) => { const k = [a, b].sort().join(''); S.cnt[k] = (S.cnt[k] || 0) + 1; });
+  const x0 = -6.6, z0 = -3.6, dx = 0.75, dz = 0.62;
+  S.cell = {};
+  EXN.forEach((n, j) => { T(n, 'ptr', x0 + (j + 1) * dx, z0); T(n, 'ptr', x0, z0 + (j + 1) * dz); });
+  EXN.forEach((r, i) => EXN.forEach((c, j) => { S.cell[r + c] = T(o.matrix === false ? '' : String(r === c ? 0 : S.cnt[[r, c].sort().join('')] || 0), 'say', x0 + (j + 1) * dx, z0 + (i + 1) * dz); }));
+  S.circ = LL('', 'note', -6.9, 0.6);
+}
+const exK = (a, b) => [a, b].sort().join('');
+function exUse(S, a, b, paint = true) {
+  const i = EXE.findIndex(([u, v], k) => !S.used.has(k) && exK(u, v) === exK(a, b));
+  S.used.add(i); S.cnt[exK(a, b)]--;
+  const val = String(S.cnt[exK(a, b)]);
+  settxt(S.cell[a + b], val); settxt(S.cell[b + a], val);
+  Object.values(S.cell).forEach((l) => cls(l, 'say'));
+  cls(S.cell[a + b], 'ptr alt'); cls(S.cell[b + a], 'ptr alt');
+  if (paint) S.g.E[i].paint(GC.hot);
+  return S.g.E[i];
+}
+async function exGo(tok, S, a, b) { const e = exUse(S, a, b, false); await go(tok, S.w, e, a, 550, GC.hot); }
+
+scene('g8a-recap', '複習：Euler circuit 定理與演算法', [
+  async (tok, S) => { S.B = board(-6, -3.6, 0.8); S.B.add('上次：Euler trail 與 Euler circuit'); cap('上次講到 Euler trail 和 Euler circuit', ''); },
+  async (tok, S) => { S.B.add('G 有 Euler circuit ⇔ connected 且每點 degree 偶數', 'good'); cap('定理：G 有 Euler circuit', '⇔ G connected，而且每個 vertex 的 degree 都是偶數'); },
+  async (tok, S) => { S.B.add('充分條件：constructive proof，給了一個 algorithm', 'say'); cap('證充分條件時用了 constructive proof', '給了一個 algorithm 去找 Euler circuit'); },
+  async (tok, S) => { S.B.add('今天：看一個例子實際跑一次'); cap('今天用一個例子試試看', ''); },
+]);
+
+scene('g8a-ex-matrix', '例子：用 adjacency matrix 描述的圖', [
+  async (tok, S) => {
+    exSetup(S, { edges: false, matrix: false });
+    cap('四個 vertices：A、B、C、D', 'undirected graph');
+  },
+  async (tok, S) => {
+    T('adjacency matrix', 'idx', -4.6, -4.3);
+    EXN.forEach((n) => settxt(S.cell[n + n], '0'));
+    cap('用 adjacency matrix 描述它（老師寫在右邊，這裡放左邊）', 'undirected → 矩陣是對稱的');
+  },
+  async (tok, S) => { S.g.E[0].show(); S.g.E[1].show(); settxt(S.cell.AB, '2'); settxt(S.cell.BA, '2'); cap('A 到 B 有兩條 edges', 'A–B 格是 2，B–A 格也是 2'); },
+  async (tok, S) => { S.g.E[2].show(); S.g.E[3].show(); ['AC', 'CA', 'AD', 'DA'].forEach((k) => settxt(S.cell[k], '1')); cap('A 到 C 一條、A 到 D 一條', '那些格子是 1'); },
+  async (tok, S) => { S.g.E[4].show(); S.g.E[5].show(); settxt(S.cell.BD, '2'); settxt(S.cell.DB, '2'); settxt(S.cell.BC, '0'); settxt(S.cell.CB, '0'); cap('B 到 D 有兩條 edges', ''); },
+  async (tok, S) => { S.g.E[6].show(); S.g.E[7].show(); S.g.E[8].show(); settxt(S.cell.CD, '3'); settxt(S.cell.DC, '3'); cap('C 到 D 有三條 edges', ''); },
+  async (tok, S) => {
+    EXN.forEach((n) => { const p = S.g.pos(n); T('deg ' + S.g.deg(n), 'ptr alt', p.x + (p.x > 3.4 ? 1.0 : -1.0), p.z, 0.6); });
+    cap('D 那一列：A 1、B 2、C 3', '圖就長這樣；每點 degree：4、4、4、6，都是偶數');
+  },
+  async (tok, S) => { S.B = board(-6.9, 1.4); S.B.add('用上次的 algorithm 找 Euler circuit', 'good'); cap('用上次證明裡的 algorithm', '來找這張圖的 Euler circuit'); },
+]);
+
+scene('g8a-ex-run1', '從 A 出發照字母順序走，第一次 break out', [
+  async (tok, S) => { exSetup(S); cap('直接在 adjacency matrix 上走', '矩陣就完整描述了這張圖'); },
+  async (tok, S) => {
+    S.B = board(-6.9, 2.2, 0.55); S.B.add('起點 A；可選時照 alphabetical order', 'say');
+    S.w = walker(S.g.pos('A')); settxt(S.circ, 'A');
+    cap('每次都從 A 開始', '有好幾條邊可選時，照 A、B、C、D 的字母順序');
+  },
+  async (tok, S) => { await exGo(tok, S, 'A', 'B'); settxt(S.circ, 'A B'); cap('A 可以到 B → A 走到 B', '用掉一條邊，矩陣 A–B 減 1'); },
+  async (tok, S) => { await exGo(tok, S, 'B', 'A'); settxt(S.circ, 'A B A'); cap('從 B：照字母順序先看 A → B 走到 A', 'A–B 又減 1，變 0'); },
+  async (tok, S) => { await exGo(tok, S, 'A', 'C'); settxt(S.circ, 'A B A C'); cap('回到 A：還沒用的邊是到 C', 'A 走到 C'); },
+  async (tok, S) => { await exGo(tok, S, 'C', 'D'); settxt(S.circ, 'A B A C D'); cap('C 可以到 D', 'C–D 從 3 變 2'); },
+  async (tok, S) => { await exGo(tok, S, 'D', 'A'); settxt(S.circ, 'A B A C D A'); cap('D 可以到 A', 'D 走到 A'); },
+  async (tok, S) => {
+    S.g.vc('A', GC.hot, '#5a0000');
+    S.B.add('A 那一列全是 0 → get stuck', 'bad');
+    cap('A → B → A → C → D → A', 'A 的邊全用完了 → get stuck');
+  },
+  async (tok, S) => { S.B.add('break out：走過的點上有沒有還沒用的邊？'); cap('get stuck 就 break out', '看走過的端點上，還有沒有沒用過的 edge'); },
+  async (tok, S) => {
+    S.g.vc('A', GC.v); S.g.vc('B', GC.ok); cls(S.cell.BD, 'good'); cls(S.cell.DB, 'good');
+    S.B.add('A 沒有；B 有（B–D 還有 2）→ 在 B break out', 'good');
+    cap('A 沒有了；B 還有（B–D 是 2）', '所以在 B break out');
+  },
+  async (tok, S) => {
+    S.w.position.copy(S.g.pos('B')); S.w.position.y = 0.75;
+    settxt(S.circ, 'B A C D A B');
+    cap('同一個 circuit 改從 B 開始寫', 'B A C D A B');
+  },
+]);
+
+scene('g8a-ex-run2', '再 break out 一次，得到 Euler circuit', [
+  async (tok, S) => {
+    exSetup(S);
+    [['A', 'B'], ['B', 'A'], ['A', 'C'], ['C', 'D'], ['D', 'A']].forEach(([a, b]) => exUse(S, a, b));
+    Object.values(S.cell).forEach((l) => cls(l, 'say'));
+    S.w = walker(S.g.pos('B')); settxt(S.circ, 'B A C D A B');
+    S.B = board(-6.9, 2.2, 0.55);
+    cap('從 B break out，走出去', '目前的 circuit：B A C D A B');
+  },
+  async (tok, S) => { await exGo(tok, S, 'B', 'D'); settxt(S.circ, 'B A C D A B D'); cap('B 還有沒用的邊：B 走到 D', 'B–D 從 2 變 1'); },
+  async (tok, S) => { await exGo(tok, S, 'D', 'B'); settxt(S.circ, 'B A C D A B D B'); cap('從 D：A 已經 0，照順序是 B → D 走到 B', 'B–D 變 0'); },
+  async (tok, S) => { S.g.vc('B', GC.hot, '#5a0000'); S.B.add('B 全部用完 → 又 get stuck', 'bad'); cap('B 的邊全用完了', '又 get stuck'); },
+  async (tok, S) => {
+    S.g.vc('B', GC.v); S.g.vc('C', GC.ok); cls(S.cell.CD, 'good'); cls(S.cell.DC, 'good');
+    S.B.add('B、A 用完了；C 還有（C–D 剩 2）', 'say');
+    cap('看 circuit 上的點：B、A 都用完了', 'C 還有沒用的邊（C–D 還有 2）');
+  },
+  async (tok, S) => {
+    S.w.position.copy(S.g.pos('C')); S.w.position.y = 0.75;
+    settxt(S.circ, 'C D A B D B A C');
+    S.B.add('在 C break out：改寫成從 C 開始', 'note');
+    cap('在 C break out', '把 circuit 改寫成 C D A B D B A C');
+  },
+  async (tok, S) => { await exGo(tok, S, 'C', 'D'); settxt(S.circ, 'C D A B D B A C D'); cap('C 走到 D', 'C–D 從 2 變 1'); },
+  async (tok, S) => { await exGo(tok, S, 'D', 'C'); settxt(S.circ, 'C D A B D B A C D C'); cap('D 還能到 C → D 走到 C', 'C–D 變 0'); },
+  async (tok, S) => {
+    S.B.add('C 沒邊了 → get stuck；A、B、C、D 都沒有沒用的邊', 'bad');
+    cap('C 沒有邊可走 → get stuck', '再看：A、B、C、D 全都沒有沒用的邊');
+  },
+  async (tok, S) => {
+    S.g.E.forEach((e) => e.paint(GC.ok)); cls(S.circ, 'good');
+    S.B.add('不能 break out → Euler circuit：C D A B D B A C D C', 'good');
+    cap('沒辦法 break out → 這就是 Euler circuit', 'C D A B D B A C D C：9 條邊各一次');
+  },
+  async (tok, S) => { S.B.add('步驟：照字母順序走 → 卡住就 break out → 直到不能', 'say'); cap('回顧：每次照字母順序挑邊', 'get stuck 就在 circuit 上找還有邊的點 break out'); },
+  async (tok, S) => { S.B.add('只要在 adjacency matrix 上 run 就好', 'say'); cap('整個過程只要在 adjacency matrix 上做', '每用一條邊就把對應的格子減 1'); },
+]);
+
+// house graph（示意）：deg s = deg r = 3，其餘偶數
+const HOUSE = { p: [-1.4, 1.6], q: [1.4, 1.6], r: [1.4, -0.8], s: [-1.4, -0.8], t: [0, -2.4] };
+const HOUSE_E = 'p-q q-r r-s s-p s-t t-r';
+scene('g8a-trail', 'Euler trail：恰兩個 degree 奇數的點', [
+  async (tok, S) => { S.B = board(-7, -4.6, 0.6); S.B.add('接下來：Euler trail'); cap('剛剛的例子是 Euler circuit', '接下來講 Euler trail'); },
+  async (tok, S) => {
+    S.g = quick({ ox: 3.4, oz: 0.6, s: 1.1 }, HOUSE, HOUSE_E); T('示意', 'idx', 6.2, -2.4);
+    S.w = walker(S.g.pos('s'));
+    for (const [a, b] of [['s', 'p'], ['p', 'q'], ['q', 'r'], ['r', 's'], ['s', 't'], ['t', 'r']]) await go(tok, S.w, S.g.find(a, b), a, 300, GC.blue);
+    S.B.add('trail 是 open walk：起點 ≠ 終點，每條邊恰一次', 'say');
+    cap('Euler trail：從一個 vertex 出發，到另一個 vertex 結束', '每條邊都 exactly once');
+  },
+  async (tok, S) => { S.B.add('條件：把 circuit 的條件稍微修正'); cap('它的若且唯若條件', '只要把 Euler circuit 的條件稍微修改'); },
+  async (tok, S) => { S.B.add('第一個條件一樣：G connected', 'say'); cap('第一個條件一樣', 'G 要 connected'); },
+  async (tok, S) => {
+    ['p', 'q', 't'].forEach((n) => S.g.vc(n, GC.ok));
+    S.B.add('原本：一進一出 → 每點 degree 偶數', 'say');
+    cap('原本每點 degree 偶數，是因為一進一出', '起點和終點同一點，也是出去、回來成對');
+  },
+  async (tok, S) => {
+    S.g.vc('s', GC.hot); T('起點：先出去 1 次 → 奇數', 'bad', 1.2, -1.9);
+    cap('現在起點 ≠ 終點', '起點第一次只出去（1 次），之後進出成對 → degree 奇數');
+  },
+  async (tok, S) => {
+    S.g.vc('r', GC.hot); T('終點：最後只進來 → 奇數', 'bad', 5.6, -1.9);
+    cap('終點最後只進來、不出去 → 也是奇數', '其他點還是一進一出 → 偶數');
+  },
+  async (tok, S) => {
+    ['p', 'q', 'r', 's', 't'].forEach((n) => { const p = S.g.pos(n); T('deg ' + S.g.deg(n), 'ptr alt', p.x + 0.9, p.z + 0.5, 0.6); });
+    S.B.add('條件：exactly 兩個 vertices 的 degree 是奇數', 'good');
+    cap('條件變成：恰好兩個端點 degree 是奇數', '其他都是偶數（這裡 s、r 是 3）');
+  },
+  async (tok, S) => { S.B.add('奇數的兩點就是起點和終點', 'say'); cap('那兩個奇數 degree 的點', '一個是起點、一個是終點'); },
+  async (tok, S) => { S.B.add('必要條件證明幾乎一樣：只差起點、終點', 'say'); cap('必要條件的證明跟以前幾乎一樣', 'connected 一樣；degree 只差起點、終點那兩個是奇數'); },
+]);
+
+scene('g8a-trail-proof', '充分條件：加一條想像的邊', [
+  async (tok, S) => {
+    S.g = quick({ ox: 3.4, oz: 0.6, s: 1.1 }, HOUSE, HOUSE_E); T('示意', 'idx', 6.2, -2.4);
+    S.g.vc('s', GC.hot); S.g.vc('r', GC.hot);
+    S.B = board(-7, -4.6, 0.6); S.B.add('充分條件：借用前面的證明');
+    cap('充分條件', '可以借用前面 Euler circuit 的證明');
+  },
+  async (tok, S) => { S.B.add('先加一條 imaginary edge（想像的邊）'); cap('先在圖上加一條想像的邊', 'imaginary edge'); },
+  async (tok, S) => {
+    S.im = S.g.e('r', 's', { bend: -1.1, ghost: true, c: GC.purple });
+    cap('連在哪？連在兩個 degree 奇數的點之間', '剛好有兩個：s 和 r');
+  },
+  async (tok, S) => {
+    S.g.vc('s', GC.ok); S.g.vc('r', GC.ok);
+    S.B.add('兩點 degree 各 +1 → 全部變偶數', 'good');
+    cap('s、r 的 degree 各多 1（3 → 4）', '現在每個端點的 degree 都是偶數');
+  },
+  async (tok, S) => {
+    S.w = walker(S.g.pos('r'));
+    await go(tok, S.w, S.im, 'r', 400, GC.purple);
+    for (const [a, b] of [['s', 'p'], ['p', 'q'], ['q', 'r'], ['r', 's'], ['s', 't'], ['t', 'r']]) await go(tok, S.w, S.g.find(a, b), a, 280, GC.blue);
+    S.B.add('用前面的 algorithm 找到 Euler circuit', 'say');
+    cap('用前面的 algorithm', '新圖一定找得到 Euler circuit');
+  },
+  async (tok, S) => { S.B.add('circuit 繞一圈：從哪裡算起都可以', 'say'); cap('circuit 是繞一圈', '從任何地方當起點都可以；把新加的邊當第一條'); },
+  async (tok, S) => {
+    S.circ = LL('r →(想像) s p q r s t r', 'note', -6.9, -1.0);
+    cap('這個 circuit 第一條就是想像的邊', 'r → s，接著 s p q r s t r');
+  },
+  async (tok, S) => {
+    S.im.show(false); settxt(S.circ, 's p q r s t r');
+    S.B.add('把 imaginary edge 刪掉 → Euler trail', 'good');
+    cap('把那條想像的邊刪掉', '剩下的就是 Euler trail：s p q r s t r');
+  },
+  async (tok, S) => { S.B.add('其他邊都走過，從一個奇點走到另一個奇點', 'say'); cap('其他所有邊都恰好走過一次', '從 s（奇）走到 r（奇）'); },
+  async (tok, S) => { S.B.add('所以這是前面定理的 corollary（系理）', 'say'); cap('它可以從前面的定理直接推出來', '叫做 corollary（系理）'); },
+  async (tok, S) => {
+    S.B.add('circuit：connected＋全偶；trail：connected＋恰 2 奇', 'good');
+    cap('總結', 'Euler circuit：connected、每點偶數；Euler trail：connected、恰兩點奇數');
+  },
+]);
+
+// ════════ UteTnjk0BAk（第21B講：planar graph、K1–K5、bipartite、K_{m,n}、K2,3 planar、K3,3 畫不出來） ════════
+// where two drawn edges come closest (their crossing point, if they cross)
+function crossPt(e1, e2) {
+  const A = e1.curve.getPoints(80), B = e2.curve.getPoints(80); let best = 1e9, pt = null;
+  for (let i = 4; i < A.length - 4; i++) for (let j = 4; j < B.length - 4; j++) { const d = A[i].distanceTo(B[j]); if (d < best) { best = d; pt = A[i].clone().add(B[j]).multiplyScalar(0.5); } }
+  return pt;
+}
+const xmark = (e1, e2, t = '✗') => { const p = crossPt(e1, e2); return T(t, 'bad', p.x, p.z, 0.9); };
+
+scene('g8a-planar-def', 'Planar graph：可以畫在平面上、邊不交叉', [
+  async (tok, S) => { S.B = board(-7, -4.6, 0.62); S.B.add('新主題：planar graph（平面圖）'); cap('下一個主題：planar graph', ''); },
+  async (tok, S) => {
+    S.pl = slab('#f4ecdc', 2.8, 0.4, 7.2, 6.4, 0.04, 0.0);
+    S.B.add('planar：plane（平面）的形容詞', 'say');
+    cap('planar 來自 plane：平面', '簡單講：這個 graph 可以畫在一個平面上');
+  },
+  async (tok, S) => { S.B.add('定義：G（simple 或 multi）可以畫在平面上…'); cap('定義：一個 graph G 叫 planar', '如果它可以畫在一個平面上'); },
+  async (tok, S) => {
+    S.B.add('…而且 without any edge crossing', 'note');
+    S.g = quick({ ox: 2.8, oz: 0.4, s: 1.1 }, { a: [-1.8, -1.8], b: [1.8, -1.8], c: [1.8, 1.8], d: [-1.8, 1.8] }, 'a-b b-c c-d d-a a-c b-d');
+    T('示意', 'idx', 5.8, -2.4);
+    cap('而且任兩條邊都不能交叉', '');
+  },
+  async (tok, S) => {
+    S.g.vc('a', GC.ok); S.g.find('a', 'b').paint(GC.ok); S.g.find('a', 'd').paint(GC.ok);
+    S.ok = T('交在端點上：OK', 'good', 0.6, -2.6);
+    cap('邊只能交在端點上', '兩條邊在 a 碰在一起，沒問題');
+  },
+  async (tok, S) => {
+    kill(S.ok); S.g.vc('a', GC.v); S.g.find('a', 'b').paint(GC.e); S.g.find('a', 'd').paint(GC.e);
+    S.g.find('a', 'c').paint(GC.hot); S.g.find('b', 'd').paint(GC.hot);
+    S.x = xmark(S.g.find('a', 'c'), S.g.find('b', 'd'), '✗ 中間沒有端點卻交叉');
+    cap('但兩條邊在「沒有端點」的地方交叉', '這樣不行');
+  },
+  async (tok, S) => {
+    kill(S.x); const e = S.g.find('b', 'd'); e.kill(); S.g.E.splice(S.g.E.indexOf(e), 1);
+    S.g.e('b', 'd', { via: [[3.2, -0.4], [2.6, 3.0], [-0.4, 3.2]], c: GC.ok }); S.g.find('a', 'c').paint(GC.e);
+    S.B.add('畫法有交叉沒關係：只要「有一種」畫法不交叉', 'good');
+    cap('有時候是畫法讓邊相交', '換一種畫法（b–d 繞外面）就不交叉了 → 它是 planar');
+  },
+  async (tok, S) => { S.B.add('一個圖有很多種畫法；看起來不像，可能其實是', 'say'); cap('一個圖通常有很多種畫法', '看起來不是 planar，可能只是畫的方式不對'); },
+]);
+
+scene('g8a-planar-use', 'Planar graph 的用途與 embedding', [
+  async (tok, S) => { S.B = board(-7, -4.6, 0.62); S.B.add('planar graph 有什麼用？'); cap('planar graph 有什麼用途？', ''); },
+  async (tok, S) => {
+    S.g = quick({ ox: 3.0, oz: -1.6, s: 0.7, noName: true }, { a: [-2, -1], b: [0, -1.8], c: [2, -1], d: [-1, 1], e: [1, 1], f: [3, 0.8] }, 'a-b b-c a-d b-d b-e c-e e-f c-f d-e');
+    T('network visualization', 'say', 3.0, -3.3);
+    S.B.add('Network Visualization：把網路畫出來看相連關係', 'say');
+    cap('Network Visualization', '把網路畫出來看相連關係；常希望畫成不交叉');
+  },
+  async (tok, S) => {
+    S.pcb = slab('#2e7d4f', 3.0, 2.4, 5.6, 2.6, 0.1, 0.05);
+    [-1.6, 0, 1.6].forEach((dx, i) => { slab('#d9b45a', 3.0 + dx, 2.4 - 0.6 + i * 0.6, 2.4, 0.08, 0.04, 0.13); });
+    T('電路 layout（EDA）', 'say', 3.0, 3.9);
+    S.B.add('EDA（Electronic Design Automation）：電路 layout', 'say');
+    cap('EDA：電路設計自動化', '電路 layout 的線不希望交叉，看成圖就希望它 planar');
+  },
+  async (tok, S) => { S.B.add('把 planar graph 畫在平面上的畫法 → embedding'); cap('把它畫在平面上（不交叉）的那個畫法', '叫做 embedding'); },
+  async (tok, S) => { S.B.add('a planar embedding（平面上的一個 embedding）', 'good'); S.g.E.forEach((e) => e.paint(GC.ok)); cap('它在平面上的一個 embedding', '名字而已'); },
+]);
+
+scene('g8a-kn', 'Complete graph：K1、K2、K3、K4 都是 planar', [
+  async (tok, S) => { S.B = board(-7, -4.6, 0.6); S.B.add('例子：complete graph Kₙ'); cap('看幾個例子', '先看 complete graph'); },
+  async (tok, S) => { S.B.add('Kₙ：simple graph，任兩個不同點之間恰一條 edge', 'say'); cap('Kₙ 是 simple graph', '任兩個不一樣的 vertices 之間，exactly 一條 edge'); },
+  async (tok, S) => { S.k1 = quick({ ox: -5.6, oz: 1.6, noName: true }, { a: [0, 0] }, ''); T('K₁', 'ptr', -5.6, 0.6); cap('K₁：一個端點', ''); },
+  async (tok, S) => { S.k2 = quick({ ox: -3.6, oz: 1.6, noName: true }, { a: [-0.6, 0], b: [0.6, 0] }, 'a-b'); T('K₂', 'ptr', -3.6, 0.6); cap('K₂：兩個端點、一條邊', ''); },
+  async (tok, S) => { S.k3 = quick({ ox: -1.2, oz: 1.6, noName: true }, { a: [0, -0.8], b: [-0.9, 0.7], c: [0.9, 0.7] }, 'a-b b-c c-a'); T('K₃', 'ptr', -1.2, 0.4); cap('K₃：三個端點', '任兩點之間 exactly 一條邊'); },
+  async (tok, S) => { [S.k2, S.k3].forEach((g) => g.E.forEach((e) => e.paint(GC.ok))); S.B.add('K₁、K₂、K₃ 都是 planar：沒有邊相交', 'good'); cap('K₁、K₂、K₃ 都是 planar', '畫出來本身就是 embedding，沒有邊相交'); },
+  async (tok, S) => {
+    S.k4 = quick({ ox: 3.6, oz: 0.6, s: 1.0 }, { a: [-1.6, -1.6], b: [1.6, -1.6], c: [1.6, 1.6], d: [-1.6, 1.6] }, 'a-b b-c c-d d-a a-c b-d');
+    T('K₄', 'ptr', 3.6, -1.8);
+    S.B.add('K₄：4 個端點、C(4,2) = 6 條邊');
+    cap('K₄：四個端點的 complete graph', '邊數 C(4,2) = 6');
+  },
+  async (tok, S) => {
+    S.k4.find('a', 'c').paint(GC.hot); S.k4.find('b', 'd').paint(GC.hot);
+    S.x = xmark(S.k4.find('a', 'c'), S.k4.find('b', 'd'));
+    cap('通常畫成這樣：兩條對角線交叉', '看起來好像不是 planar');
+  },
+  async (tok, S) => {
+    kill(S.x); const e = S.k4.find('b', 'd'); e.kill(); S.k4.E.splice(S.k4.E.indexOf(e), 1);
+    const n = S.k4.e('b', 'd', { show: false, via: [[3.0, -0.6], [2.6, 3.0], [-0.6, 3.0]] });
+    await wt(tok, 300); n.show(); n.paint(GC.ok); S.k4.find('a', 'c').paint(GC.e);
+    cap('其實是畫法的關係', '把 b–d 改從外面繞過去，就不相交了');
+  },
+  async (tok, S) => { S.B.add('K₄ 是 planar：有一種畫法不交叉就算', 'good'); cap('所以 K₄ 是 planar', '只要有一種畫法邊不相交，就是 planar'); },
+]);
+
+// K5 attempt（老師的畫法順序：外框 → A 的邊 → C 的邊 → E–B → B–D 放不下）
+const K5P = { A: [0, -2.3], B: [2.2, -0.7], C: [1.35, 1.9], D: [-1.35, 1.9], E: [-2.2, -0.7] };
+scene('g8a-k5-try', 'K5：試著畫成平面圖（畫不出來）', [
+  async (tok, S) => { S.B = board(-7, -4.8, 0.58); S.B.add('再看 K₅'); cap('再來看 K₅', ''); },
+  async (tok, S) => { S.B.add('直覺：邊太多 → 不得已一定會交叉', 'say'); cap('直覺：邊少比較不會相交', '邊太多就不得已一定會 crossing'); },
+  async (tok, S) => {
+    S.g = quick({ ox: 3.0, oz: 0.5, s: 1.0 }, K5P, 'A-B A-C A-D A-E B-C B-D B-E C-D C-E D-E');
+    S.B.add('K₅：5 個端點、C(5,2) = 10 條邊');
+    cap('K₅ 通常畫成這樣', '五個端點、C(5,2) = 10 條邊，裡面很多邊相交');
+  },
+  async (tok, S) => {
+    S.g.kill();
+    S.g = graph({ ox: 3.0, oz: 0.5, s: 1.0 }); Object.entries(K5P).forEach(([n, [x, z]]) => S.g.v(n, x, z));
+    ['A-B', 'B-C', 'C-D', 'D-E', 'E-A'].forEach((k) => S.g.e(...k.split('-')));
+    S.B.add('重畫：先畫外框 A B C D E', 'say');
+    cap('試著重畫成不相交', '先畫外面這一框');
+  },
+  async (tok, S) => { S.g.e('A', 'C'); S.g.e('A', 'D'); cap('A 還要連 C、D', '先畫在裡面'); },
+  async (tok, S) => {
+    Object.keys(K5P).forEach((n) => { const p = S.g.pos(n); T('deg 4', 'idx', p.x + 0.7, p.z - 0.4, 0.6); });
+    cap('K₅ 是 4-regular graph', '每個端點的 degree 都是 4');
+  },
+  async (tok, S) => {
+    S.ce = S.g.e('C', 'E', { via: [[0.2, 3.1], [-2.5, 3.0], [-3.3, 1.0]] });
+    cap('C 還要連 E：走裡面會跟 A–D 相交', '所以 C–E 從外面繞過 D');
+  },
+  async (tok, S) => {
+    S.g.e('E', 'B', { via: [[-3.0, -2.3], [0, -3.6], [3.0, -2.3]] });
+    cap('E 到 B 也走外面', '從 A 的上方繞過去');
+  },
+  async (tok, S) => { S.g.vc('B', GC.orange); S.g.vc('D', GC.orange); cap('B 有連 A、C、E 了', '還差 B–D'); },
+  async (tok, S) => {
+    const t1 = S.g.e('B', 'D', { c: GC.hot }); const x1 = xmark(t1, S.g.find('A', 'C'));
+    await wt(tok, 900); t1.kill(); kill(x1);
+    const t2 = S.g.e('B', 'D', { c: GC.hot, via: [[3.3, 1.3], [2.2, 3.6], [-0.4, 3.9], [-1.6, 3.0]] }); const x2 = xmark(t2, S.ce);
+    await wt(tok, 900); t2.kill(); kill(x2);
+    const t3 = S.g.e('B', 'D', { c: GC.hot, via: [[3.6, -2.6], [0, -4.4], [-3.9, -1.0], [-3.7, 2.4], [-2.0, 3.4]] }); const x3 = xmark(t3, S.ce);
+    await wt(tok, 900); t3.kill(); kill(x3);
+    cap('B–D 走裡面：跟 A–C 相交', '走右邊外面、走左邊外面：都會跟 C–E 相交');
+  },
+  async (tok, S) => { T('B–D 放不下！', 'bad', 3.0, 0.5); S.B.add('這樣畫不 work：B–D 不知道放哪', 'bad'); cap('這條邊不知道放哪裡', '這樣畫不行'); },
+  async (tok, S) => { S.B.add('但這不是證明：你畫不出來 ≠ 別人畫不出來', 'say'); cap('但這不是證明', '我這樣畫不出來，不代表沒有別的畫法'); },
+  async (tok, S) => { S.B.add('後面會證明：K₅ 真的 non-planar', 'good'); cap('後面會用數學證明 K₅ 不是 planar', '不管怎麼畫，邊一定會相交'); },
+]);
+
+scene('g8a-k5-more', '方向無關；K5 之後更不是', [
+  async (tok, S) => { S.B = board(-6, -3.6, 0.8); S.B.add('planar 的定義沒說 directed 或 undirected'); cap('planar 的定義', '沒有說是 directed 還是 undirected graph'); },
+  async (tok, S) => {
+    S.B.add('directed：planar 畫法上加箭頭還是 planar → 只討論 undirected', 'say');
+    S.d = quick({ ox: 3.4, oz: 1.6, s: 0.9, noName: true }, { a: [-1.4, -1], b: [1.4, -1], c: [0, 1.2] }, 'a-b b-c c-a');
+    [['a', 'b'], ['b', 'c'], ['c', 'a']].forEach(([u, v]) => { const p = S.d.find(u, v).curve.getPoint(0.62), q = S.d.find(u, v).curve.getPoint(0.7); arrow(V3(p.x, 0.35, p.z), V3(q.x, 0.35, q.z), 0x6e5f49); });
+    cap('邊有沒有方向跟能不能畫在平面上無關', '所以只要討論 undirected graph');
+  },
+  async (tok, S) => { S.B.add('第一個 case：K₅ non-planar', 'bad'); cap('目前碰到的第一個例子', 'K₅ 是 non-planar'); },
+  async (tok, S) => { S.B.add('K₆、K₇…邊更多 → 也不是', 'say'); cap('K₆ 以後邊更多', '當然也不是 planar'); },
+]);
+
+scene('g8a-bip', 'Bipartite graph 與 complete bipartite K_{m,n}', [
+  async (tok, S) => { S.B = board(-7, -4.8, 0.56); S.B.add('另一類圖：bipartite graph'); cap('再介紹另一類圖', 'bipartite graph'); },
+  async (tok, S) => {
+    S.g = quick({ ox: 3.0, oz: 0.4 }, { a: [-1.8, -2], b: [-1.8, 0], c: [-1.8, 2], x: [1.8, -2], y: [1.8, 0], z: [1.8, 2] }, 'a-x a-y b-y b-z c-x c-z');
+    T('示意', 'idx', 5.6, -3);
+    S.B.add('bipartition：分成兩部分', 'say');
+    cap('bipartite 來自 bipartition', '把東西分成兩部分');
+  },
+  async (tok, S) => { S.B.add('分的是 vertex set（端點的集合）', 'say'); cap('分成兩部分的是 vertex set', '所有端點構成的集合'); },
+  async (tok, S) => {
+    S.z1 = zone('V₁', 1.2, 0.02, 0.4, 1.4, 5.6, '#dcebf7'); S.z2 = zone('V₂', 4.8, 0.02, 0.4, 1.4, 5.6, '#f7e0ea');
+    ['a', 'b', 'c'].forEach((n) => S.g.vc(n, GC.blue)); ['x', 'y', 'z'].forEach((n) => S.g.vc(n, GC.pink));
+    S.B.add('V = V₁ ∪ V₂，V₁ ∩ V₂ = ∅（partition）', 'say');
+    cap('分成兩個 disjoint 的子集合 V₁、V₂', '交集是空集合，聯集是全部端點');
+  },
+  async (tok, S) => { S.g.E.forEach((e) => e.paint(GC.ok)); S.B.add('每條邊：一端在 V₁、一端在 V₂', 'note'); cap('每條邊的一個端點在 V₁', '另一個端點在 V₂'); },
+  async (tok, S) => {
+    const b1 = S.g.e('a', 'b', { c: GC.hot, bend: 0.4 }); const b2 = S.g.e('x', 'z', { c: GC.hot, bend: -0.6 });
+    S.no = T('✗ 同一邊之間不能有邊', 'bad', 3.0, 3.2); await wt(tok, 1200); b1.kill(); b2.kill(); S.g.E.splice(-2, 2);
+    S.B.add('V₁ 內部沒有邊、V₂ 內部也沒有邊', 'say');
+    cap('V₁ 的端點之間沒有邊', 'V₂ 的端點之間也沒有');
+  },
+  async (tok, S) => { kill(S.no); S.B.add('這叫 bipartition；matching 時還會再看到', 'say'); cap('這樣的分法叫 bipartition', '後面講 matching problem 還會用到'); },
+  async (tok, S) => { S.B.add('Complete bipartite graph K_{m,n}'); cap('接著介紹 complete bipartite graph', 'K_{m,n}'); },
+  async (tok, S) => { S.B.add('V₁ 有 m 個端點、V₂ 有 n 個端點', 'say'); cap('一邊有 m 個端點，一邊有 n 個', '這裡 m = n = 3'); },
+  async (tok, S) => {
+    [['a', 'z'], ['b', 'x'], ['c', 'y']].forEach(([u, v]) => S.g.e(u, v, { c: GC.gold }));
+    S.B.add('V₁ 每點和 V₂ 每點恰一條 edge（simple）→ K₃,₃', 'good');
+    cap('V₁ 每個端點和 V₂ 每個端點都恰有一條邊', '補齊後就是 K₃,₃（9 條邊）');
+  },
+]);
+
+scene('g8a-kmn', 'K1,1、K1,2、K2,1、K2,2、K2,3 都是 planar', [
+  async (tok, S) => { S.a = quick({ ox: -6.0, oz: -2.6, s: 0.6, noName: true }, { l: [-0.9, 0], r: [0.9, 0] }, 'l-r'); T('K₁,₁', 'ptr', -6.0, -3.6); cap('K₁,₁：兩邊各一個端點', '連一條邊'); },
+  async (tok, S) => { S.b = quick({ ox: -3.6, oz: -2.6, s: 0.6, noName: true }, { l: [-0.9, 0], r1: [0.9, -0.8], r2: [0.9, 0.8] }, 'l-r1 l-r2'); T('K₁,₂', 'ptr', -3.6, -3.6); cap('K₁,₂：一邊一個、一邊兩個', '左邊的點連到右邊每個點'); },
+  async (tok, S) => { S.c = quick({ ox: -1.2, oz: -2.6, s: 0.6, noName: true }, { l1: [-0.9, -0.8], l2: [-0.9, 0.8], r: [0.9, 0] }, 'l1-r l2-r'); T('K₂,₁', 'ptr', -1.2, -3.6); cap('K₂,₁：把 K₁,₂ 反過來', ''); },
+  async (tok, S) => {
+    S.d = quick({ ox: 3.6, oz: -1.8, s: 0.8, noName: true }, { l1: [-1.4, -1], l2: [-1.4, 1], r1: [1.4, -1], r2: [1.4, 1] }, 'l1-r1 l1-r2 l2-r1 l2-r2');
+    T('K₂,₂', 'ptr', 3.6, -3.2);
+    S.x = xmark(S.d.find('l1', 'r2'), S.d.find('l2', 'r1'));
+    cap('K₂,₂：左右各兩個端點', '左邊每點都連到右邊每點');
+  },
+  async (tok, S) => {
+    kill(S.x); const e = S.d.find('l1', 'r2'); e.kill(); S.d.E.splice(S.d.E.indexOf(e), 1);
+    S.d.e('l1', 'r2', { via: [[0, -2.2], [2.7, -1.6], [2.7, 0.6]], c: GC.ok });
+    cap('這樣畫好像不是 planar', '把那條邊改從外面繞，就沒交叉 → K₂,₂ 也是 planar');
+  },
+  async (tok, S) => {
+    S.e = quick({ ox: -1.0, oz: 2.0, s: 0.75 }, { L1: [-1.6, -0.8], L2: [-1.6, 0.8], R1: [1.6, -1.6], R2: [1.6, 0], R3: [1.6, 1.6] }, 'L1-R1 L1-R2 L1-R3 L2-R1 L2-R2 L2-R3');
+    T('K₂,₃', 'ptr', -1.0, 0.4);
+    cap('K₂,₃：左邊兩個、右邊三個', '左邊任一點和右邊任一點都有一條邊');
+  },
+  async (tok, S) => {
+    S.xs = [xmark(S.e.find('L1', 'R3'), S.e.find('L2', 'R2')), xmark(S.e.find('L1', 'R2'), S.e.find('L2', 'R1'))];
+    await wt(tok, 900);
+    S.xs.forEach(kill);
+    ['L2-R1', 'L2-R2'].forEach((k) => { const e = S.e.find(...k.split('-')); e.kill(); S.e.E.splice(S.e.E.indexOf(e), 1); });
+    cap('這樣畫有 edge crossing', '試著重畫：L1 的三條先畫好，L2–R3 直接連');
+  },
+  async (tok, S) => {
+    S.e.e('L2', 'R2', { via: [[-0.4, 2.6], [2.6, 2.4], [2.7, 0.2]], c: GC.ok });
+    S.e.e('L2', 'R1', { via: [[-2.8, 0.6], [-2.6, -2.4], [0.4, -2.8]], c: GC.ok });
+    cap('剩下兩條直接畫會交叉', '那就繞到外面：一條繞下面、一條繞上面');
+  },
+  async (tok, S) => { T('K₂,₃、K₃,₂：planar', 'good', -1.0, 4.4); cap('所以 K₂,₃ 是 planar', 'K₃,₂ 只是把它翻過來，也是 planar'); },
+  async (tok, S) => {
+    [S.a, S.b, S.c, S.d, S.e].forEach((g) => g.E.forEach((e) => e.paint(GC.ok)));
+    T('K₁,₁ K₁,₂ K₂,₁ K₂,₂ K₂,₃ K₃,₂ 都是 planar', 'good', 3.6, 1.2);
+    cap('小結', 'K₁,₁、K₁,₂、K₂,₁、K₂,₂、K₂,₃、K₃,₂ 都可以畫在平面上');
+  },
+]);
+
+// K3,3 attempt（左 A B C、右 D E F；A、C 的邊先畫成 K2,3 的樣子；B–E 放不下）
+scene('g8a-k33-try', 'K3,3：畫不出來（還不是證明）', [
+  async (tok, S) => { S.B = board(-7, -4.8, 0.58); S.B.add('下一個：K₃,₃'); cap('再來是 K₃,₃', ''); },
+  async (tok, S) => {
+    S.g = graph({ ox: 2.8, oz: 0.6, s: 0.85 });
+    const P0 = { A: [-3, 0], C: [3, 0], D: [0, -1.6], E: [0, 0], F: [0, 1.6], B: [0, -3.4] };
+    Object.entries(P0).forEach(([n, [x, z]]) => S.g.v(n, x, z, { c: 'ABC'.includes(n) ? GC.blue : GC.pink }));
+    S.B.add('六個端點：左 A B C、右 D E F；共 3 × 3 = 9 條邊', 'say');
+    cap('左邊三點 A、B、C，右邊三點 D、E、F', '左邊每一點都要連到右邊每一點：9 條邊');
+  },
+  async (tok, S) => {
+    ['A-D', 'A-E', 'A-F', 'C-D', 'C-E', 'C-F'].forEach((k) => S.g.e(...k.split('-')));
+    S.B.add('A、C 的邊先畫好（像 K₂,₃ 的畫法）', 'say');
+    cap('先畫 A 的三條邊', 'C 照剛才 K₂,₃ 的方式畫，沒有交叉');
+  },
+  async (tok, S) => {
+    S.g.e('B', 'D');
+    S.bf = S.g.e('B', 'F', { via: [[3.8, -2.8], [4.5, 0], [3.6, 2.7], [1.0, 2.9]] });
+    cap('B–D 直接連', 'B–F 繞外面過去');
+  },
+  async (tok, S) => {
+    S.g.vc('B', GC.orange); S.g.vc('E', GC.orange);
+    S.B.add('問題：B–E 不知道放哪裡', 'bad');
+    cap('剩下 B–E', 'E 被 A、C 的邊圍在中間');
+  },
+  async (tok, S) => {
+    const tries = [[[-1.3, -1.6]], [[1.3, -1.6]], [[-4.2, -1.6], [-3.6, 2.6], [-1.2, 1.2]]];
+    const hit = [['A', 'D'], ['C', 'D'], ['A', 'F']];
+    for (let i = 0; i < 3; i++) { const t = S.g.e('B', 'E', { c: GC.hot, via: tries[i] }); const x = xmark(t, S.g.find(...hit[i])); await wt(tok, 900); t.kill(); kill(x); }
+    cap('B–E 走裡面會 cross，走外面還是會 cross', '三種走法都會跟別的邊相交');
+  },
+  async (tok, S) => { S.B.add('這樣畫不 work：找不到 planar embedding', 'bad'); cap('這樣畫沒辦法把 B–E 放上去又不交叉', '找不到 K₃,₃ 的 planar embedding'); },
+  async (tok, S) => { S.B.add('但一樣不是證明；後面給數學證明', 'say'); cap('一樣：我畫不出來不是證明', '後面會給數學證明說它不是 planar'); },
+  async (tok, S) => { S.B.add('證明會用到邊數、頂點數等性質', 'say'); cap('證明跟邊的個數、vertex 個數有關', 'planar graph 會滿足一些性質，K₃,₃ 不滿足'); },
+  async (tok, S) => { S.B.add('K₃,₄ 更不是：它含有 K₃,₃', 'say'); cap('K₃,₄ 更不是', '它裡面有一部分就是 K₃,₃；一部分畫不了，整個更畫不了'); },
+  async (tok, S) => { S.B.add('K₅、K₃,₃ non-planar；Kuratowski 定理的主角', 'good'); cap('目前兩個 case：K₅、K₃,₃ 都不是 planar', '後面的 Kuratowski 定理裡，它們扮演很重要的角色'); },
+]);
+
+// ════════ otP5yRAYc9w（第21C講：regions、Euler 公式 v − e + r = 2、對邊數歸納：基底與 case 1） ════════
+// 老師的兩個例子：K4（4 點、6 邊、4 regions）與一個 7 點、11 邊、6 regions 的圖（黑板圖看不到，這裡用六邊形＋5 條輻條示意）。
+const RG = ['#4b9ee2', '#e55a9b', '#2fc092', '#dd8238', '#9b7ef4', '#31aab0'];
+function k4emb(ox, oz, s = 0.85) {
+  const g = quick({ ox, oz, s }, { a: [0, -2.4], b: [-2.2, 1.4], c: [2.2, 1.4], d: [0, 0.1] }, 'a-b b-c c-a a-d b-d c-d');
+  g.faces = [['a', 'b', 'd'], ['b', 'c', 'd'], ['c', 'a', 'd']];
+  return g;
+}
+function hexg(ox, oz, s = 0.85) {
+  const g = quick({ ox, oz, s }, { a: [-1.8, -1.5], b: [0, -2.4], c: [1.8, -1.5], d: [1.8, 1.2], e: [0, 2.1], f: [-1.8, 1.2], g: [0, 0] }, 'a-b b-c c-d d-e e-f f-a g-a g-b g-c g-d g-e');
+  g.faces = [['g', 'a', 'b'], ['g', 'b', 'c'], ['g', 'c', 'd'], ['g', 'd', 'e'], ['g', 'e', 'f', 'a']];
+  return g;
+}
+function fillFaces(g, lbl0 = 1) {
+  return g.faces.map((cyc, i) => {
+    const walk = cyc.map((n, k) => [g.find(n, cyc[(k + 1) % cyc.length]), n]);
+    const m = g.region(walk, RG[i % RG.length]);
+    const c = cyc.reduce((s, n) => [s[0] + g.pos(n).x / cyc.length, s[1] + g.pos(n).z / cyc.length], [0, 0]);
+    const l = T('R' + (lbl0 + i), 'ptr', c[0], c[1], 0.5);
+    return { m, l };
+  });
+}
+
+scene('g8a-regions', 'Embedding 把平面切成 regions', [
+  async (tok, S) => { S.B = board(-7, -4.8, 0.56); S.B.add('planar graph 畫在平面上（embedding）以後…'); cap('planar graph 的性質', '把它畫在平面上（一個 embedding）以後'); },
+  async (tok, S) => { S.B.add('…平面被切成好幾個 regions', 'note'); cap('平面被切成好幾個 regions', 'an embedding splits the plane into regions'); },
+  async (tok, S) => { S.L = k4emb(-3.4, 0.9); T('K₄ 的 planar embedding', 'say', -3.4, -1.8); cap('例子：K₄ 的 planar embedding', '畫在平面上，邊都不交叉'); },
+  async (tok, S) => {
+    fillFaces(S.L); T('R4（外面整塊）', 'ptr alt', -3.4, 3.4);
+    cap('它把平面分成四塊：R1、R2、R3', '加上外面無限大的那塊 R4，一共 4 個 regions');
+  },
+  async (tok, S) => {
+    S.R = hexg(3.4, 0.9); fillFaces(S.R); T('R6（外面）', 'ptr alt', 3.4, 3.4); T('示意', 'idx', 6, -1.6);
+    cap('再一個例子', '裡面 5 塊、外面 1 塊，一共 6 個 regions');
+  },
+  async (tok, S) => { S.cL = T('v = 4、e = 6、r = 4', 'note', -3.4, 4.2); cap('左邊 K₄：4 個端點、6 條邊', '還有 4 個 regions'); },
+  async (tok, S) => { S.B.add('region 要有 planar embedding 才數得出來', 'say'); cap('vertex、edge 以前就會數，現在多一個 region', '必須是 planar embedding；有交叉的話，交叉那裡不知道怎麼算'); },
+  async (tok, S) => { S.cR = T('v = 7、e = 11、r = 6', 'note', 3.4, 4.2); cap('右邊：7 個 vertices、11 條 edges', '6 個 regions'); },
+  async (tok, S) => { S.B.add('4、6、4 和 7、11、6 有什麼關係？'); cap('這幾個數字之間有什麼關係？', '加一加、減一減看看'); },
+  async (tok, S) => {
+    settxt(S.cL, '4 − 6 + 4 = 2'); settxt(S.cR, '7 − 11 + 6 = 2'); cls(S.cL, 'good'); cls(S.cR, 'good');
+    S.B.add('v + r 比 e 多 2：v − e + r = 2', 'good');
+    cap('vertex 加 region 比 edge 多 2', '4 − 6 + 4 = 2，7 − 11 + 6 = 2');
+  },
+  async (tok, S) => { S.B.add('多試幾個：always 是 2', 'say'); cap('多試幾個圖就會發現', 'planar graph 的這幾個數字 always 有這個關係'); },
+]);
+
+scene('g8a-euler-thm', 'Euler 公式：v − e + r = 2', [
+  async (tok, S) => { S.B = board(-7, -4.4, 0.66); S.B.add('假設 G connected（不連通就每個 component 分開）', 'say'); S.R = hexg(3.4, 0.6); cap('先假設 G 是 connected', '如果有好幾個 component，就每個分開算'); },
+  async (tok, S) => { S.B.add('connected planar graph：v 個點、e 條邊、r 個 regions'); fillFaces(S.R); cap('connected planar graph', 'vertex 數 v、edge 數 e、region 數 r'); },
+  async (tok, S) => { S.B.add('Euler’s Theorem for Planar Graphs'); cap('這個關係叫做', 'Euler Theorem for planar graphs'); },
+  async (tok, S) => { S.B.add('v − e + r = 2', 'good'); T('7 − 11 + 6 = 2', 'good', 3.4, 3.6); cap('v − e + r = 2', '自己多畫幾個試試看，都會是 2'); },
+  async (tok, S) => { S.B.add('要有 planar embedding 才能分出 regions', 'say'); cap('這是對 planar graph 的 embedding 說的', '這樣才能把 region 分出來'); },
+  async (tok, S) => { S.B.add('證明：數學歸納法'); cap('怎麼證？用數學歸納法', ''); },
+  async (tok, S) => { S.B.add('對誰歸納？對 edges 的個數 e', 'note'); cap('有 v、e、r 三個數，要選一個做歸納', '選 edge 的個數'); },
+]);
+
+scene('g8a-base', '歸納基底：0 條邊、1 條邊', [
+  async (tok, S) => { S.B = board(-7, -4.8, 0.6); S.B.add('initial condition：e = 0 和 e = 1'); cap('先 check initial condition', '0 條邊和 1 條邊這兩個 case'); },
+  async (tok, S) => { S.B.add('simple 或 multigraph 都可以（可以有 loop）', 'say'); cap('這裡沒有要求 simple graph', 'multigraph 也 OK，所以可以有 loop'); },
+  async (tok, S) => { S.B.add('把所有可能的情況都舉出來 check', 'say'); cap('0 條邊、1 條邊的情況很少', '全部列出來 check 就好'); },
+  async (tok, S) => {
+    S.a = quick({ ox: -4.6, oz: 1.6, noName: true }, { v: [0, 0] }, ''); T('(A) 0 條邊', 'ptr', -4.6, 0.3);
+    cap('沒有邊：只有一個點', '兩個點就不 connected 了');
+  },
+  async (tok, S) => {
+    S.b = graph({ ox: 0, oz: 1.6, noName: true }); S.b.v('v', -0.6, 0);
+    S.lp = S.b.e('v', 'v', { via: [[0.2, -1.1], [1.3, 0], [0.2, 1.1]] }); T('(B) 1 條邊：loop', 'ptr', 0, 0.3);
+    cap('一條邊：可以是 loop', '一個端點繞一圈（multigraph 允許）');
+  },
+  async (tok, S) => { S.c = quick({ ox: 4.4, oz: 1.6, noName: true }, { u: [-1, 0], v: [1, 0] }, 'u-v'); T('(C) 1 條邊：兩個端點', 'ptr', 4.4, 0.3); cap('或是兩個不同的端點、一條邊', '再多加點就不 connected，所以只有這三種'); },
+  async (tok, S) => { S.B.add('check 三種：v − e + r 是否都 = 2'); cap('check 這三種', 'v − e + r 是不是都等於 2'); },
+  async (tok, S) => { T('1 − 0 + 1 = 2', 'good', -4.6, 3.2); cap('一個點：v = 1、e = 0、r = 1', '1 − 0 + 1 = 2'); },
+  async (tok, S) => { S.b.region([[S.lp, 'v']], GC.blue); T('裡', 'ptr alt', 0, 1.6, 0.5); T('1 − 1 + 2 = 2', 'good', 0, 3.2); cap('loop：一個點、一條邊', '裡面、外面兩個 regions：1 − 1 + 2 = 2'); },
+  async (tok, S) => { T('2 − 1 + 1 = 2', 'good', 4.4, 3.2); cap('兩點一邊：只有一個 region', '2 − 1 + 1 = 2'); },
+  async (tok, S) => { S.B.add('三種都滿足 → initial condition OK', 'good'); cap('三種都滿足 v − e + r = 2', 'initial condition 檢查完畢'); },
+]);
+
+// case D / E / F（拿掉一條邊後仍 connected）
+function caseG(kind, ox, oz) {
+  const g = graph({ ox, oz, s: 0.7, noName: true });
+  if (kind === 'D') { g.v('a', -1, 0.8); g.v('b', 1, 0.8); g.v('c', 0, -0.9); ['a-b', 'b-c', 'c-a'].forEach((k) => g.e(...k.split('-'))); g.rm = g.e('c', 'c', { via: [[-0.9, -1.8], [0, -2.6], [0.9, -1.8]], c: GC.hot }); }
+  else {
+    g.v('a', -1.1, -1.1); g.v('b', 1.1, -1.1); g.v('c', 1.1, 1.1); g.v('d', -1.1, 1.1);
+    ['a-b', 'b-c', 'c-d', 'd-a', 'a-c'].forEach((k) => g.e(...k.split('-')));
+    g.rm = kind === 'E' ? g.find('a', 'c') : g.find('a', 'b'); g.rm.paint(GC.hot);
+  }
+  return g;
+}
+scene('g8a-indstep', '歸納步驟：拿掉一條邊', [
+  async (tok, S) => { S.B = board(-7, -4.8, 0.56); S.B.add('歸納假設：0～k 條邊的 connected planar graph 都滿足'); cap('induction hypothesis', 'edge 數從 0 到 k 的 connected planar graph，都滿足 v − e + r = 2'); },
+  async (tok, S) => { S.G = hexg(3.4, -0.6, 0.75); T('G：v 點、k+1 邊、r 個 regions', 'say', 3.4, -3.1); S.B.add('induction step：G 有 k+1 條邊'); cap('induction step', 'G 有 v 個 vertices、k+1 條 edges、r 個 regions'); },
+  async (tok, S) => { S.B.add('想用假設 → 拿掉一條邊，變成 k 條', 'say'); cap('要證 G 也成立', '怎麼用到「k 條邊」的假設？拿掉一條邊就好'); },
+  async (tok, S) => { S.ab = S.G.find('g', 'c'); S.ab.paint(GC.hot); T('任取一條邊 ab', 'bad', 5.6, -0.6); cap('任取一條邊，叫 ab', 'a、b 都在 vertex set 裡'); },
+  async (tok, S) => { S.ab.show(false); S.B.add('拿掉 ab，剩下的圖叫 H：邊少 1', 'say'); cap('把 ab 拿掉，剩下的圖叫 H', 'H 只有 k 條邊'); },
+  async (tok, S) => { S.B.add('點、邊、region 的變化都掌握得到 → 代進假設', 'say'); cap('拿掉之後，點、邊、region 個數怎麼變', '都看得出來，就能代進歸納假設'); },
+  async (tok, S) => { S.B.add('但定理只對 connected 成立；拿掉後可能不 connected', 'bad'); cap('小心：定理只對 connected graph', '拿掉一條邊可能就不 connected 了，要分兩個 case'); },
+  async (tok, S) => { S.B.add('Case 1：H 還是 connected', 'note'); cap('Case 1：拿掉之後 H 還是 connected', ''); },
+  async (tok, S) => { S.d = caseG('D', -5.2, 2.6); T('(D) 拿掉 loop', 'ptr', -5.2, 3.9); cap('第一種：拿掉的邊是 loop', 'a = b，同一個端點'); },
+  async (tok, S) => { S.e = caseG('E', -1.4, 2.6); T('(E) 不是 loop，在裡面', 'ptr', -1.4, 3.9); cap('不是 loop：影響的是裡面的 region', ''); },
+  async (tok, S) => { S.f = caseG('F', 2.4, 2.6); T('(F) 不是 loop，在外圍', 'ptr', 2.4, 3.9); cap('不是 loop：影響的是外面的 region', ''); },
+  async (tok, S) => { [S.d, S.e, S.f].forEach((g) => g.rm.show(false)); cap('D、E、F 三種：拿掉以後還是 connected', '不 connected 的放到 case 2'); },
+]);
+
+scene('g8a-case1', 'Case 1：v − (k+1) + r = 2', [
+  async (tok, S) => {
+    S.g = graph({ ox: 3.4, oz: 0.4, s: 1.1 }); [['a', -1.8, -1.8], ['b', 1.8, -1.8], ['c', 1.8, 1.8], ['d', -1.8, 1.8]].forEach(([n, x, z]) => S.g.v(n, x, z));
+    ['a-b', 'b-c', 'c-d', 'd-a', 'a-c'].forEach((k) => S.g.e(...k.split('-'))); S.rm = S.g.find('a', 'c'); S.rm.paint(GC.hot);
+    S.f1 = S.g.region([[S.g.find('a', 'b'), 'a'], [S.g.find('b', 'c'), 'b'], [S.rm, 'c']], RG[0]);
+    S.f2 = S.g.region([[S.rm, 'a'], [S.g.find('c', 'd'), 'c'], [S.g.find('d', 'a'), 'd']], RG[1]);
+    T('示意（case E）', 'idx', 6.0, -2.6);
+    S.B = board(-7, -4.6, 0.62); S.B.add('看拿掉一條邊時，數字怎麼變');
+    cap('看看 D、E、F 三種情況', '點、邊、region 個數怎麼變');
+  },
+  async (tok, S) => { S.B.add('vertices：沒變，還是 v', 'say'); cap('拿掉邊，端點沒有拿掉', 'vertex 數還是 v'); },
+  async (tok, S) => { S.rm.show(false); S.B.add('edges：k+1 → k', 'say'); cap('edge 從 k+1 條變 k 條', ''); },
+  async (tok, S) => { S.f1.material.color.set(RG[2]); S.f2.material.color.set(RG[2]); S.B.add('regions：少一個（兩塊合成一塊）→ r − 1', 'say'); cap('region 都少一個', '原本被這條邊隔開的兩塊，合成一塊'); },
+  async (tok, S) => { S.B.add('H 只有 k 條邊 → 歸納假設可以用'); cap('H 只有 k 條邊，又是 connected planar', '所以 induction hypothesis 可以用在 H'); },
+  async (tok, S) => { S.B.add('v − k + (r − 1) = 2', 'note'); cap('代進去', 'v − k + (r − 1) = 2'); },
+  async (tok, S) => { S.B.add('移項：v − (k+1) + r = 2', 'good'); cap('把 1 移一下', 'v − (k+1) + r = 2'); },
+  async (tok, S) => { S.B.add('k+1 正是 G 的邊數 → G 成立', 'good'); cap('k+1 就是原來 G 的 edge 數', '所以 G 也滿足：induction step 成立'); },
+  async (tok, S) => { S.B.add('G：v、k+1、r　→　H：v、k、r − 1', 'say'); cap('整理：G 有 v、k+1、r', '拿掉一條邊後 H 有 v、k、r−1，代入假設再整理就得到 G'); },
+  async (tok, S) => { S.B.add('若不 connected：變兩個 component → Case 2', 'bad'); cap('如果拿掉後不 connected', '會變成兩個 component，要分別用假設：下一段的 case 2'); },
+]);
+
+// ════════ ogk1m2TvR0I（第21D講：case 2 兩個 component、證明回顧、girth） ════════
+scene('g8a-case2', 'Case 2：拿掉後變兩個 component', [
+  async (tok, S) => {
+    S.g = quick({ ox: 3.0, oz: -0.6, s: 1.0 }, { p: [-3.2, -1.2], q: [-3.2, 1.2], a: [-1.2, 0], b: [1.2, 0], r: [3.2, -1.2], s: [3.2, 1.2] }, 'a-p p-q q-a b-r r-s s-b a-b');
+    T('示意', 'idx', 6.2, -2.4);
+    S.ab = S.g.find('a', 'b'); S.ab.paint(GC.hot);
+    await wt(tok, 600); S.ab.show(false);
+    S.B = board(-7, -4.8, 0.52);
+    S.B.add('Case 2：拿掉 ab 後變兩個 component');
+    cap('拿掉 ab 這條邊', '圖斷成兩個 component');
+  },
+  async (tok, S) => { T('(G) 這個 case', 'ptr', 3.0, -2.6); cap('這種情況叫 case (G)', '兩邊不會再有邊連過來，不然就還是 connected'); },
+  async (tok, S) => {
+    zone('H₁', 0.8, 0.02, -0.6, 3.6, 3.6, '#dcebf7'); zone('H₂', 5.2, 0.02, -0.6, 3.6, 3.6, '#f7e0ea');
+    S.B.add('H 有兩個 component：H₁、H₂', 'say');
+    cap('H 有兩個 component', 'H₁ 和 H₂');
+  },
+  async (tok, S) => { S.B.add('G planar → 拿掉邊還是 planar；H₁、H₂ 各自 connected planar', 'say'); cap('G 是 planar，拿掉一條邊還是 planar', '兩個 component 各自是 connected planar graph'); },
+  async (tok, S) => { S.B.add('邊數都 ≤ k → 各自滿足 Euler 定理', 'say'); cap('原本 k+1 條邊，拿掉一條', '兩個 component 的邊數都不超過 k，都滿足歸納假設'); },
+  async (tok, S) => {
+    S.l1 = T('v₁=3 e₁=3 r₁=2', 'note', 0.8, 1.9); S.l2 = T('v₂=3 e₂=3 r₂=2', 'note', 5.2, 1.9);
+    S.B.add('Hᵢ：vᵢ 個點、eᵢ 條邊、rᵢ 個 regions（i = 1, 2）', 'say');
+    cap('H₁ 有 v₁ 點、e₁ 邊、r₁ regions', 'H₂ 有 v₂、e₂、r₂（數字是示意圖的）');
+  },
+  async (tok, S) => { S.B.add('v₁ + v₂ = v（端點沒變）', 'good'); cap('端點都沒變', 'v₁ + v₂ = v（3 + 3 = 6）'); },
+  async (tok, S) => { S.B.add('e₁ + e₂ = (k+1) − 1 = k', 'good'); cap('只拿掉一條邊', 'e₁ + e₂ = k（3 + 3 = 7 − 1）'); },
+  async (tok, S) => {
+    S.ab.show(true); S.ab.paint(GC.purple); S.out = T('ab 兩側都是外面那塊', 'bad', 3.0, 1.0);
+    cap('被拿掉的 ab，兩側都是外面那個 region', '如果它在裡面，拿掉就不會斷開');
+  },
+  async (tok, S) => {
+    S.ab.show(false); kill(S.out);
+    S.B.add('分開算時外面那塊算了兩次：r₁ + r₂ = r + 1', 'good');
+    cap('region 總數其實沒變', '但分開算時，外面那塊在 H₁、H₂ 各算一次：r₁ + r₂ = r + 1（2 + 2 = 3 + 1）');
+  },
+  async (tok, S) => { S.B.add('v₁ − e₁ + r₁ = 2，v₂ − e₂ + r₂ = 2', 'note'); cap('兩個 component 各自用歸納假設', 'v₁ − e₁ + r₁ = 2，v₂ − e₂ + r₂ = 2'); },
+  async (tok, S) => { S.B.add('相加：(v₁+v₂) − (e₁+e₂) + (r₁+r₂) = 4', 'say'); cap('把兩個式子加起來', '等於 4'); },
+  async (tok, S) => { S.B.add('代入：v − k + (r + 1) = 4', 'say'); cap('代入剛剛的關係', 'v − k + (r + 1) = 4'); },
+  async (tok, S) => { S.B.add('⇒ v − (k+1) + r = 2：G 成立', 'good'); cap('整理', 'v − (k+1) + r = 2，所以 G 也滿足 Euler 定理'); },
+  async (tok, S) => { S.B.add('兩個 case 都成立 → 證完', 'good'); cap('兩個 case 都證完了', 'v − e + r = 2 對所有 connected planar graph 成立'); },
+]);
+
+scene('g8a-proof-recap', '證明回顧，以及「把 r 消掉」的想法', [
+  async (tok, S) => { S.B = board(-6.4, -4.6, 0.62); S.B.add('證明：對邊數做 induction'); cap('簡單講：用 induction', '對邊的數目做'); },
+  async (tok, S) => { S.B.add('0、1 先 check：拿掉一條邊後可能變成 0 或 1', 'say'); cap('0 和 1 條邊先 check', '因為切下去可能變成 0 或 1 條邊'); },
+  async (tok, S) => { S.B.add('induction step：≤ k 都成立 ⇒ k+1 成立', 'say'); cap('induction step', '假設邊數不超過 k 都成立，證 k+1 也成立'); },
+  async (tok, S) => { S.B.add('拿掉一條邊：connected 直接用；兩個 component 分別用', 'say'); cap('拿掉一條邊再用假設', '還 connected 就直接用；斷成兩個 component 就分別用'); },
+  async (tok, S) => {
+    S.g = hexg(3.6, 1.4, 0.7); fillFaces(S.g);
+    S.B.add('定理對 planar graph：要有 embedding 才算得出 r', 'note');
+    cap('這個定理是對 planar graph', '要先有 embedding 畫在平面上，才能分 region、數 r');
+  },
+  async (tok, S) => { S.B.add('想判斷「是不是 planar」：畫不出 embedding → 數不了 r', 'bad'); cap('但如果要判斷一個圖是不是 planar', '它根本可能畫不出 embedding，就沒辦法數 region'); },
+  async (tok, S) => { S.B.add('所以要把 r 消掉：換成不等式', 'note'); cap('所以要想辦法把 r 弄掉', '用一個不等式把它換掉'); },
+  async (tok, S) => { S.B.add('得到 e 和 v 的不等式：planar 的必要條件', 'good'); cap('就會得到 edge、vertex 之間的一個不等式', '它是 planar graph 的必要條件'); },
+  async (tok, S) => { S.B.add('不等式不成立 → 一定不是 planar', 'bad'); cap('如果不等式不成立', '那就一定不是 planar'); },
+]);
+
+scene('g8a-girth-def', 'Girth：最短 cycle 的長度', [
+  async (tok, S) => { S.B = board(-7, -4.8, 0.58); S.B.add('還需要另一個量'); cap('要得到那個不等式', '除了 edge、vertex 個數，還需要另一個量'); },
+  async (tok, S) => { S.B.add('girth（圍長）', 'note'); cap('這個量叫做 girth', ''); },
+  async (tok, S) => { S.B.add('undirected graph 的 girth = 最短 cycle 的長度'); cap('undirected graph 的 girth', '就是圖裡最短的 cycle 的長度'); },
+  async (tok, S) => {
+    S.g = quick({ ox: 3.2, oz: -0.6, s: 1.0 }, { a: [-1.6, -1.2], b: [0, -2.2], c: [1.6, -1.2], d: [1.6, 0.8], e: [0, 1.8], f: [-1.6, 0.8] }, 'a-b b-c c-d d-e e-f f-a');
+    T('示意', 'idx', 5.8, -2.8);
+    S.w = walker(S.g.pos('a'));
+    for (const [x, y] of [['a', 'b'], ['b', 'c'], ['c', 'd'], ['d', 'e'], ['e', 'f'], ['f', 'a']]) await go(tok, S.w, S.g.find(x, y), x, 250, GC.ok);
+    S.B.add('cycle：繞一圈回來，點、邊都不重複（頭尾除外）', 'say');
+    cap('cycle：走一圈回到起點', '邊不能重複，端點也不能重複（除了頭尾同一點）');
+  },
+  async (tok, S) => { T('長度 6', 'ptr alt', 3.2, -0.6); cap('最短的那個 cycle 的長度', '就叫這個圖的 girth'); },
+  async (tok, S) => { kill(S.w); S.g.kill(); S.B.add('沒有 cycle：定義成全部 edges 的個數', 'note'); cap('如果圖根本沒有 cycle 呢？', '這裡把 girth 定義成全部 edge 的個數'); },
+  async (tok, S) => { S.B.add('（為了後面的不等式；別的書不見得這樣定義）', 'say'); cap('這是為了後面那個不等式也能用', '別的地方通常只說最短 cycle，沒定義沒有 cycle 的情況'); },
+  async (tok, S) => {
+    S.t = quick({ ox: 3.2, oz: -1.8, s: 0.9, noName: true }, { a: [-2.4, 0], b: [-1.2, -0.8], c: [0, 0], d: [1.2, -0.8], e: [2.4, 0], f: [0, 1.2] }, 'a-b b-c c-d d-e c-f');
+    T('6 點、5 邊、沒有 cycle → girth = 5', 'good', 3.2, -0.2);
+    cap('例子：6 個 vertices、5 條邊', '繞不回來，沒有 cycle → girth 就是全部邊數 5');
+  },
+  async (tok, S) => {
+    S.u = quick({ ox: 3.2, oz: 2.4, s: 0.9, noName: true }, { a: [-2, -0.8], b: [0, -0.8], c: [2, -0.8], d: [-2, 0.8], e: [0, 0.8], f: [2, 0.8] }, 'a-b b-c d-e e-f a-d b-e c-f');
+    ['a-b', 'b-e', 'e-d', 'd-a'].forEach((k) => S.u.find(...k.split('-')).paint(GC.ok));
+    T('最短 cycle 長 4 → girth = 4（示意）', 'good', 3.2, 3.9);
+    cap('另一個例子：沒有三角形', '最短的 cycle 是四邊形，所以 girth = 4');
+  },
+]);
+
+scene('g8a-girth-ex', 'K5 的 girth = 3、K3,3 的 girth = 4', [
+  async (tok, S) => {
+    S.k5 = quick({ ox: -3.0, oz: 0.8, s: 0.85 }, K5P, 'A-B A-C A-D A-E B-C B-D B-E C-D C-E D-E'); T('K₅', 'ptr', -3.0, -1.8);
+    ['A-B', 'B-C', 'C-D', 'D-A'].forEach((k) => S.k5.find(...k.split('-')).paint(GC.blue));
+    S.k5l = T('A B C D A：長度 4', 'say', -3.0, 3.2);
+    cap('K₅：最短的 cycle 是多少？', '這樣繞是 4，還可以更短');
+  },
+  async (tok, S) => {
+    S.k5.E.forEach((e) => e.paint(GC.e)); ['A-B', 'B-C', 'C-A'].forEach((k) => S.k5.find(...k.split('-')).paint(GC.ok));
+    settxt(S.k5l, 'A B C A：長度 3；2 不可能');
+    cap('A B C A 長度 3', '長度 2 要去又回來，兩點間就要兩條邊；simple graph 不會有');
+  },
+  async (tok, S) => { settxt(S.k5l, 'girth(K₅) = 3'); cls(S.k5l, 'good'); cap('所以 K₅ 的 girth = 3', '最短的 cycle 有很多個，都是三角形'); },
+  async (tok, S) => {
+    S.k = graph({ ox: 3.6, oz: 0.8, s: 0.9 });
+    [['a', -1.6, -2], ['b', -1.6, 0], ['c', -1.6, 2], ['x', 1.6, -2], ['y', 1.6, 0], ['z', 1.6, 2]].forEach(([n, x, z]) => S.k.v(n, x, z, { c: 'abc'.includes(n) ? GC.blue : GC.pink }));
+    'abc'.split('').forEach((l) => 'xyz'.split('').forEach((r) => S.k.e(l, r)));
+    T('K₃,₃：3 × 3 = 9 條邊', 'ptr', 3.6, -1.6);
+    cap('K₃,₃：左邊三點、右邊三點', '左邊任一點連到右邊任一點：3 × 3 = 9 條邊');
+  },
+  async (tok, S) => {
+    S.kl = T('bipartite：cycle 去、回、去、回 → 長度偶數', 'say', 3.6, 3.4);
+    cap('它是 bipartite graph', 'cycle 一定是左右去、回、去、回，長度一定是偶數：沒有 1、3、5');
+  },
+  async (tok, S) => { settxt(S.kl, '長度 2？兩點間只有一條邊 → 沒有'); cap('長度 2 呢？', '要去又回來，兩點間要兩條邊；complete bipartite 是 simple，不會有'); },
+  async (tok, S) => {
+    ['a-x', 'x-b', 'b-y', 'y-a'].forEach((k) => S.k.find(...k.split('-')).paint(GC.ok));
+    settxt(S.kl, 'a x b y a：長度 4 → girth(K₃,₃) = 4'); cls(S.kl, 'good');
+    cap('所以至少 4，而且隨便就找得到長度 4 的 cycle', 'K₃,₃ 的 girth = 4');
+  },
+  async (tok, S) => { S.B = board(-7, -4.8, 0.6); S.B.add('沒 cycle → 邊數；有 cycle → 最短 cycle；從小找上去', 'say'); cap('小結 girth', '沒有 cycle 就是邊數；有 cycle 就從 3、4… 慢慢找最短的'); },
+  async (tok, S) => { S.B.add('下面：connected planar graph 的 e、v、girth 滿足一個不等式', 'note'); cap('接下來', 'connected planar graph 的 girth、edge 數、vertex 數會滿足一個不等式（必要條件）'); },
+]);
+
+// ════════ B0UDSm9Jiqs（第22A講：region degree、Σdeg(R) = 2e、edge–vertex inequality、K5 non-planar） ════════
+// 老師的兩個例子：上圖 9 邊、4 regions，deg = 5、3、3、7（外圍有一條伸出去的邊要走兩次）；下圖 9 邊、4 regions，deg = 4、3、5、6。
+// 黑板圖看不到，這裡依這些數字重建（示意）。v − e + r = 2 需要 7 個頂點（老師口頭數成 6 個）。
+function regTop(ox, oz, s = 0.95) {
+  const g = quick({ ox, oz, s }, { a: [-1.6, -1.2], b: [0, -2.2], c: [1.6, -1.2], d: [1.0, 1.2], e: [-1.0, 1.2], x: [0, -0.6], f: [2.0, 2.4] }, 'a-b b-c c-d d-e e-a x-a x-b x-c d-f');
+  g.F = { R1: ['x', 'c', 'd', 'e', 'a'], R2: ['x', 'a', 'b'], R3: ['x', 'b', 'c'] };
+  g.outer = ['a', 'b', 'c', 'd', 'f', 'd', 'e', 'a'];
+  return g;
+}
+function regBot(ox, oz, s = 0.95) {
+  const g = quick({ ox, oz, s }, { a: [-2, 0], b: [-1, -1.6], c: [1, -1.6], d: [2, 0], e: [1, 1.6], f: [-1, 1.6], g: [-0.8, 0.05] }, 'a-b b-c c-d d-e e-f f-a a-c c-f a-g');
+  g.F = { R5: ['c', 'd', 'e', 'f'], R6: ['a', 'b', 'c'], R7: ['a', 'c', 'f'] };
+  g.outer = ['a', 'b', 'c', 'd', 'e', 'f', 'a'];
+  return g;
+}
+function regFill(g, name, color) {
+  const cyc = g.F[name];
+  const m = g.region(cyc.map((n, k) => [g.find(n, cyc[(k + 1) % cyc.length]), n]), color);
+  const c = cyc.reduce((s, n) => [s[0] + g.pos(n).x / cyc.length, s[1] + g.pos(n).z / cyc.length], [0, 0]);
+  const l = T(name, 'ptr', c[0], c[1], 0.5);
+  return { m, l, c };
+}
+async function walkSeq(tok, g, w, seq, ms = 260, c = GC.hot) { w.position.copy(g.pos(seq[0])); w.position.y = 0.75; for (let i = 0; i + 1 < seq.length; i++) await go(tok, w, g.find(seq[i], seq[i + 1]), seq[i], ms, c); }
+
+scene('g8a-ineq-goal', '回顧 Euler 定理；接下來要判斷 planar', [
+  async (tok, S) => { S.B = board(-6, -3.6, 0.8); S.B.add('Euler 定理：有 embedding 時，r、v、e 有關係'); cap('前面講的 Euler theorem for planar graphs', '有 embedding 時，region 數和 vertex、edge 數有關係'); },
+  async (tok, S) => { S.B.add('但要先畫出 planar embedding 才能數 region', 'say'); cap('不過那是已經畫好 planar embedding', '之後才能去數 region'); },
+  async (tok, S) => { S.B.add('接下來：用什麼條件判斷一個圖是不是 planar？', 'note'); cap('接下來要看', '有什麼條件可以判斷一個 graph 是不是 planar'); },
+  async (tok, S) => { S.B.add('先一個必要條件；最後一個充要條件的定理', 'good'); cap('先講一個必要條件', '最後再講一個充分必要條件的定理'); },
+]);
+
+scene('g8a-regdeg-def', 'Region 的 degree', [
+  async (tok, S) => { S.B = board(-7, -4.6, 0.62); S.B.add('有一個 planar graph 的 planar embedding'); S.g = regTop(3.0, 0.4, 1.1); T('示意', 'idx', 6.0, -2.4); cap('假設有一個 planar graph 的 planar embedding', '也就是畫在平面上、不交叉的畫法'); },
+  async (tok, S) => { S.B.add('simple、multigraph 都可以；有 embedding 就分得出 regions', 'say'); S.f = regFill(S.g, 'R1', RG[0]); cap('simple graph 或 multigraph 都可以', '有了 embedding，就能分出 regions'); },
+  async (tok, S) => { S.B.add('region R 的 degree：deg(R)', 'note'); cap('定義 region R 的 degree', '寫成 deg(R)'); },
+  async (tok, S) => {
+    S.w = walker(S.g.pos('x')); await walkSeq(tok, S.g, S.w, ['x', 'c', 'd', 'e', 'a', 'x'], 300, GC.gold);
+    S.B.add('= 沿 R 的 boundary 繞一圈的最短 closed walk 的邊數', 'say');
+    cap('沿著 R 的邊界繞一圈：最短的 closed walk', '上面有幾條邊，就是 deg(R)；這塊是 5');
+  },
+  async (tok, S) => { S.B.add('對照：vertex degree = 連到它的邊數', 'say'); cap('以前有 vertex degree：連到那個 vertex 的邊數', '現在 region 也有 degree：它外圍邊界上的邊數'); },
+]);
+
+scene('g8a-regdeg-ex', '例子：數 region 的 degree', [
+  async (tok, S) => { S.t = regTop(-3.0, 0.4); S.u = regBot(3.4, 0.4); T('上面的圖（示意）', 'say', -3.0, -2.6); T('下面的圖（示意）', 'say', 3.4, -2.6); cap('兩個 graph', '先看第一個（老師黑板上方那個）'); },
+  async (tok, S) => {
+    S.tR = ['R1', 'R2', 'R3'].map((n, i) => regFill(S.t, n, RG[i])); T('R4（外面）', 'ptr alt', -5.6, 2.8);
+    S.tc = T('7 個 vertices、9 條 edges、4 個 regions', 'note', -3.0, 3.8);
+    cap('9 條邊、4 個 regions：R1、R2、R3，外面 R4', '頂點是 7 個（老師口頭數成 6；用 v − e + r = 2 檢查應是 7）');
+  },
+  async (tok, S) => { S.w = walker(S.t.pos('x')); await walkSeq(tok, S.t, S.w, ['x', 'c', 'd', 'e', 'a', 'x'], 280, GC.gold); settxt(S.tR[0].l, 'R1:5'); cap('R1：沿邊界繞一圈', '1、2、3、4、5 → deg(R1) = 5'); },
+  async (tok, S) => { await walkSeq(tok, S.t, S.w, ['x', 'a', 'b', 'x'], 280, GC.gold); settxt(S.tR[1].l, 'R2:3'); cap('R2：三條邊', 'deg(R2) = 3'); },
+  async (tok, S) => { await walkSeq(tok, S.t, S.w, ['x', 'b', 'c', 'x'], 280, GC.gold); settxt(S.tR[2].l, 'R3:3'); cap('R3：也是三條', 'deg(R3) = 3'); },
+  async (tok, S) => { S.t.E.forEach((e) => e.paint(GC.e)); S.t.find('d', 'f').paint(GC.hot); cap('R4 是外面那塊，要稍微小心', '有一條邊（d–f）伸到外面'); },
+  async (tok, S) => {
+    await walkSeq(tok, S.t, S.w, S.t.outer, 280, GC.gold);
+    T('R4:7（d–f 走兩次）', 'ptr alt', -1.0, 3.0);
+    cap('closed walk 要回到原點：d–f 走出去還得走回來', '這條邊算兩次：1、2、3、4、5、6、7 → deg(R4) = 7');
+  },
+  async (tok, S) => { kill(S.w); S.uR = ['R5', 'R6', 'R7'].map((n, i) => regFill(S.u, n, RG[i + 3])); T('R8（外面）', 'ptr alt', 5.6, 2.8); T('7 點、9 邊、4 regions', 'note', 3.4, 3.8); cap('第二個圖：也有四個 regions', 'R5、R6、R7、R8'); },
+  async (tok, S) => { S.w = walker(S.u.pos('c')); await walkSeq(tok, S.u, S.w, ['c', 'd', 'e', 'f', 'c'], 280, GC.gold); settxt(S.uR[0].l, 'R5:4'); cap('R5：1、2、3、4', 'deg(R5) = 4'); },
+  async (tok, S) => { await walkSeq(tok, S.u, S.w, ['a', 'b', 'c', 'a'], 280, GC.gold); settxt(S.uR[1].l, 'R6:3'); cap('R6：三條邊', 'deg(R6) = 3'); },
+  async (tok, S) => {
+    S.u.find('a', 'g').paint(GC.hot);
+    await walkSeq(tok, S.u, S.w, ['a', 'g', 'a', 'c', 'f', 'a'], 280, GC.gold); settxt(S.uR[2].l, 'R7:5');
+    cap('R7：裡面有一條伸進來的邊 a–g（示意）', 'closed walk 走進去又走出來：3 + 2 = 5');
+  },
+  async (tok, S) => { await walkSeq(tok, S.u, S.w, S.u.outer, 240, GC.gold); T('R8:6', 'ptr alt', 5.6, 3.2); cap('R8 是外面那塊', '1、2、3、4、5、6 → deg(R8) = 6'); },
+]);
+
+scene('g8a-regdeg-sum', '所有 region 的 degree 加起來 = 2e', [
+  async (tok, S) => {
+    S.t = regTop(-3.0, 0.0); S.u = regBot(3.4, 0.0);
+    [['R1', 5], ['R2', 3], ['R3', 3]].forEach(([n, d], i) => { const f = regFill(S.t, n, RG[i]); settxt(f.l, n + ':' + d); });
+    [['R5', 4], ['R6', 3], ['R7', 5]].forEach(([n, d], i) => { const f = regFill(S.u, n, RG[i + 3]); settxt(f.l, n + ':' + d); });
+    T('R4:7', 'ptr alt', -5.6, 2.4); T('R8:6', 'ptr alt', 5.6, 2.4);
+    S.B = board(-7, -4.8, 0.56);
+    S.B.add('定義 region degree 做什麼？看一個性質');
+    cap('定義 region 的 degree 有什麼用？', '先看一個性質');
+  },
+  async (tok, S) => { S.B.add('回想：所有 vertex degree 加起來 = 2 × edges', 'say'); cap('以前學過：所有 vertex 的 degree 加起來', '等於 edge 個數的兩倍'); },
+  async (tok, S) => { S.B.add('因為每條邊有兩個端點，各算一次', 'say'); cap('因為每條 edge 有兩個端點', '算 degree 時兩端各算一次'); },
+  async (tok, S) => { S.s1 = T('5 + 3 + 3 + 7 = 18', 'note', -3.0, 3.4); cap('把上面那個圖的 region degree 加起來', '5 + 3 + 3 + 7 = 18'); },
+  async (tok, S) => { settxt(S.s1, '18 = 2 × 9 條邊'); cls(S.s1, 'good'); cap('它有 9 條邊', '18 剛好是 2 × 9'); },
+  async (tok, S) => { T('4 + 3 + 5 + 6 = 18 = 2 × 9', 'good', 3.4, 3.4); cap('下面的圖：4 + 3 + 5 + 6 = 18', '它也有 9 條邊：又是兩倍'); },
+  async (tok, S) => { S.B.add('region degree 加起來也 = 2 × edges', 'note'); cap('跟 vertex 的性質很像', 'region degree 加起來也是 edge 數的兩倍'); },
+  async (tok, S) => { S.B.add('為什麼？對任何 planar embedding 都成立', 'say'); cap('為什麼？', '這對任何 planar graph 的 planar embedding 都成立'); },
+  async (tok, S) => { S.e = S.u.find('c', 'f'); S.e.paint(GC.hot); cap('看一條邊：它有兩側', ''); },
+  async (tok, S) => { S.x1 = T('算 R5 時 +1', 'pkt', 4.6, -0.6); S.x2 = T('算 R7 時 +1', 'pkt', 2.4, 1.2); cap('數 R5 的 degree 時這條邊算一次', '數 R7 的 degree 時又算一次'); },
+  async (tok, S) => { S.B.add('每條邊隔開兩側 → 各貢獻 1，共貢獻 2', 'say'); cap('每條邊都剛好隔開兩側', '兩側各貢獻 1（兩側同一塊時，那塊就算它兩次）'); },
+  async (tok, S) => { S.B.add('Σ deg(R) = 2e', 'good'); cap('所以所有 region 的 degree 加起來', '= 2 × edge 個數'); },
+]);
+
+scene('g8a-evi', 'Edge–Vertex Inequality', [
+  async (tok, S) => { S.B = board(-6.6, -4.4, 0.7); S.B.add('用 Σdeg(R) = 2e 推一個必要條件'); cap('用剛剛這個式子', '推出下面這個必要條件'); },
+  async (tok, S) => { S.B.add('Edge–Vertex Inequality', 'note'); cap('叫做 Edge–Vertex Inequality', ''); },
+  async (tok, S) => { S.B.add('對任何 connected planar simple graph', 'say'); cap('對任何 connected planar graph', '而且多一個假設：simple graph'); },
+  async (tok, S) => { S.B.add('girth g ≥ 3', 'say'); cap('另外假設它的 girth 至少 3', 'girth：最短 cycle 長度；沒有 cycle 時是全部邊數'); },
+  async (tok, S) => { S.B.add('（推導時需要 g > 2）', 'say'); cap('為什麼要 3？', '推導時需要 g 大於 2'); },
+  async (tok, S) => { S.B.add('e ≤ g/(g−2) · (v − 2)', 'good'); cap('結論：edge 個數 e 要滿足', 'e ≤ g/(g−2) × (v − 2)'); },
+  async (tok, S) => { S.B.add('邊不能太多：太多就 non-planar', 'say'); cap('edge 不能太多', 'non-planar 往往就是因為邊太多'); },
+  async (tok, S) => { S.B.add('g > 2 → g − 2 > 0（否則上界變負）', 'say'); cap('g 要大於 2', '不然 g − 2 是 0 或負的，上界沒意義'); },
+  async (tok, S) => { S.B.add('用法：數 e、v、g，代進去', 'note'); cap('用法很簡單', '數一數 edge 數、vertex 數、girth，代進去'); },
+  async (tok, S) => { S.B.add('滿足 → 才「可能」planar；不滿足 → 一定不是', 'bad'); cap('它是必要條件', '滿足才有可能是 planar（不一定是）；不滿足就一定不是'); },
+  async (tok, S) => { S.B.add('通常的問題：edge 太多 → 一定會 crossing', 'say'); cap('通常問題都是邊太多', '邊太多就一定會交叉'); },
+]);
+
+scene('g8a-evi-proof', '推導 e ≤ g(v−2)/(g−2)', [
+  async (tok, S) => { S.B = board(-7, -4.8, 0.6); S.B.add('推導這個不等式'); cap('先把這個不等式推導出來', '後面再拿來用'); },
+  async (tok, S) => { S.B.add('它是 Euler 定理的 corollary（系理）', 'say'); cap('它可以看成', 'Euler theorem for planar graphs 的 corollary'); },
+  async (tok, S) => { S.B.add('v − e + r = 2：用 Σdeg(R) = 2e 把 r 消掉', 'say'); cap('從 v − e + r = 2 出發', '用「region degree 總和 = 2e」把 r 消掉'); },
+  async (tok, S) => { S.t = regTop(3.6, 1.2, 0.8); ['R1', 'R2', 'R3'].forEach((n, i) => { const f = regFill(S.t, n, RG[i]); settxt(f.l, n + ':' + [5, 3, 3][i]); }); T('示意：g = 3', 'idx', 3.6, -1.4); cap('看每個 region 的 degree', '例如 5、3、3'); },
+  async (tok, S) => { S.B.add('每個 region 的 boundary 至少 g 條邊', 'note'); cap('每個 region 的邊界', '至少有 g 條邊（g 是 girth）'); },
+  async (tok, S) => { S.B.add('沒有 cycle 時 g = 全部邊數，也成立', 'say'); cap('沒有 cycle 的時候', 'g 定義成全部邊數，唯一的 region 也至少這麼多（伸出去的邊算兩次）'); },
+  async (tok, S) => { S.B.add('cycle 不重複；closed walk 可重複只會更多 → deg(R) ≥ g', 'say'); cap('girth 是最短 cycle', 'region 的邊界 closed walk 還可能重複算，只會更長：deg(R) ≥ g'); },
+  async (tok, S) => { S.B.add('2e = Σ deg(R)', 'note'); cap('前面的性質', '2e = 所有 region degree 的和'); },
+  async (tok, S) => { S.B.add('r 個 region、每個 ≥ g → 2e ≥ g·r'); cap('有 r 個 region，每個 degree 至少 g', '所以 2e ≥ g × r'); },
+  async (tok, S) => { S.B.add('Euler：r = 2 − v + e，代進去', 'say'); cap('把 r 換掉', '由 v − e + r = 2 得 r = 2 − v + e'); },
+  async (tok, S) => { S.B.add('2e ≥ g(2 − v + e)', 'note'); cap('得到一個沒有 r 的不等式', '2e ≥ g(2 − v + e)'); },
+  async (tok, S) => { S.B.add('移項：(g − 2)e ≤ g(v − 2)', 'note'); cap('把有 e 的都移到同一邊', 'ge − 2e ≤ gv − 2g，也就是 (g − 2)e ≤ g(v − 2)'); },
+  async (tok, S) => { S.B.add('g ≥ 3 → g − 2 > 0：兩邊除掉，不等號不變', 'say'); cap('假設 g ≥ 3，所以 g − 2 > 0', '兩邊同除 g − 2，不等號方向不變'); },
+  async (tok, S) => { S.B.add('e ≤ g(v − 2)/(g − 2)', 'good'); cap('得到 Edge–Vertex Inequality', 'e ≤ g(v − 2)/(g − 2)'); },
+]);
+
+scene('g8a-k5-proof', '用不等式證明 K5 不是 planar', [
+  async (tok, S) => { S.B = board(-7, -4.4, 0.7); S.B.add('拿來用：它是必要條件'); cap('拿來用一下', '它是必要條件'); },
+  async (tok, S) => { S.k = quick({ ox: 3.4, oz: 0.6, s: 1.0 }, K5P, 'A-B A-C A-D A-E B-C B-D B-E C-D C-E D-E'); S.B.add('K₅：以前畫不出來，現在證明', 'say'); cap('K₅：之前畫不出來', '現在用數學證明它不是 planar'); },
+  async (tok, S) => { Object.keys(K5P).forEach((n) => S.k.vc(n, GC.blue)); S.B.add('v = 5'); cap('數一數：5 個 vertices', ''); },
+  async (tok, S) => { S.k.E.forEach((e) => e.paint(GC.gold)); S.B.add('e = C(5,2) = 10'); cap('complete graph 有 C(n,2) 條邊', 'C(5,2) = 10'); },
+  async (tok, S) => { S.k.E.forEach((e) => e.paint(GC.e)); ['A-B', 'B-C', 'C-A'].forEach((k) => S.k.find(...k.split('-')).paint(GC.ok)); S.B.add('g = 3（三角形）'); cap('girth 上次算過', 'g = 3'); },
+  async (tok, S) => { S.B.add('若 planar：要 e ≤ g(v−2)/(g−2)', 'say'); cap('如果 K₅ 是 planar', '這三個數就要滿足不等式'); },
+  async (tok, S) => { S.B.add('3/(3−2) × (5−2) = 3 × 3 = 9', 'note'); cap('右邊：3 ÷ (3 − 2) = 3', '再乘 (5 − 2) = 3 → 9'); },
+  async (tok, S) => { S.B.add('e 要 ≤ 9，但 e = 10 > 9 ✗', 'bad'); cap('planar 的話，邊數不能超過 9', '但 K₅ 有 10 條邊'); },
+  async (tok, S) => { S.k.E.forEach((e) => e.paint(GC.hot)); S.B.add('⇒ K₅ non-planar（edge 太多）', 'good'); cap('所以 K₅ 一定 non-planar', 'edge 太多了；數一數代進去就證出來'); },
+]);
+
+// ════════ yewOwasU9Hk（第22B講：K3,3 non-planar、elementary subdivision、homeomorphic、subgraph、Kuratowski、Petersen） ════════
+// Petersen：外圈 a b c d e、輻條 a–f b–g c–h d–i e–j、內星 f–h h–j j–g g–i i–f（h 連 c f j、g 連 b j i，與老師核對的一致）。
+// 拿掉 a–b、d–i 後，剩下的是 K3,3（{c,f,j} 對 {e,g,h}）的 subdivision，多出來的 4 點是 a、b、d、i。
+const K33P = { a: [-1.8, -2], b: [-1.8, 0], c: [-1.8, 2], x: [1.8, -2], y: [1.8, 0], z: [1.8, 2] };
+const k33 = (o) => { const g = graph(o); Object.entries(K33P).forEach(([n, [x, zz]]) => g.v(n, x, zz, { c: 'abc'.includes(n) ? GC.blue : GC.pink })); 'abc'.split('').forEach((l) => 'xyz'.split('').forEach((r) => g.e(l, r))); return g; };
+
+scene('g8a-k33-proof', '用不等式證明 K3,3 不是 planar', [
+  async (tok, S) => { S.B = board(-7, -4.6, 0.62); S.k = k33({ ox: 3.4, oz: 0.4, s: 1.0 }); S.B.add('K₃,₃：一樣用 edge–vertex inequality'); cap('K₃,₃ 也來證明它 non-planar', '一樣用 edge–vertex inequality'); },
+  async (tok, S) => { S.B.add('bipartite，左 3 右 3：v = 6'); cap('它是 bipartite graph：左邊 3、右邊 3', 'vertex 數 v = 6'); },
+  async (tok, S) => { S.k.E.forEach((e) => e.paint(GC.gold)); S.B.add('complete：e = 3 × 3 = 9'); cap('complete bipartite', 'e = 3 × 3 = 9'); },
+  async (tok, S) => { S.k.E.forEach((e) => e.paint(GC.e)); ['a-x', 'x-b', 'b-y', 'y-a'].forEach((k) => S.k.find(...k.split('-')).paint(GC.ok)); S.B.add('cycle 長度偶數、沒有 2 → g = 4'); cap('bipartite 的 cycle 長度一定偶數，又沒有 2', '所以 girth g = 4'); },
+  async (tok, S) => { S.B.add('上界：4/(4−2) × (6−2) = 2 × 4 = 8', 'note'); cap('代進必要條件', 'g/(g−2) × (v−2) = 4/2 × 4 = 8'); },
+  async (tok, S) => { S.B.add('e 要 ≤ 8，但 e = 9 ✗', 'bad'); cap('如果是 planar，邊數不能超過 8', '但 K₃,₃ 有 9 條邊'); },
+  async (tok, S) => { S.k.E.forEach((e) => e.paint(GC.hot)); S.B.add('⇒ K₃,₃ non-planar（edge 太多）', 'good'); cap('所以 K₃,₃ 是 non-planar', '一樣是 edge 太多'); },
+  async (tok, S) => { S.B.add('只是必要條件：滿足不一定是；不滿足一定不是', 'say'); cap('提醒：這只是必要條件', '代進去滿足，只能說「可能是」；不滿足就一定不是'); },
+  async (tok, S) => { S.B.add('最後：planar 的若且唯若條件（很漂亮）', 'note'); cap('最後要講 non-planar 的若且唯若條件', '結果很漂亮，但不一定好用'); },
+]);
+
+scene('g8a-subdiv', 'Elementary subdivision：在邊上多點一個點', [
+  async (tok, S) => { S.B = board(-7, -4.6, 0.62); S.B.add('先定義幾個名詞'); cap('講那個定理之前', '要先定義一些東西'); },
+  async (tok, S) => { S.B.add('G = (V, E)：undirected simple graph，E ≠ ∅', 'say'); cap('G 是 undirected simple graph', 'edge set 不是空集合：至少有一條邊'); },
+  async (tok, S) => { S.B.add('這些名詞只是為了說明後面的定理', 'say'); cap('下面這些都只是名字', '定義清楚，後面的定理比較好講'); },
+  async (tok, S) => { S.B.add('Elementary subdivision of G', 'note'); cap('第一個：elementary subdivision', ''); },
+  async (tok, S) => { S.g = quick({ ox: 3.0, oz: -0.4, s: 1.2 }, { v: [-2, 0], w: [2, 0] }, 'v-w'); S.g.find('v', 'w').paint(GC.hot); cap('原來的圖 G 有一條邊 vw', '兩個端點 v、w'); },
+  async (tok, S) => {
+    S.g.find('v', 'w').show(false); S.g.v('z', 0, 0, { c: GC.ok }); S.g.e('v', 'z', { c: GC.ok }); S.g.e('z', 'w', { c: GC.ok });
+    S.B.add('拿掉 vw，加上 vz、zw；z 是新 vertex', 'say');
+    cap('把 vw 拿掉，加兩條邊 vz、zw', 'z 是新加的 vertex');
+  },
+  async (tok, S) => { S.B.add('簡單講：在一條邊上多點一個點', 'good'); cap('簡單講就是在邊上多加一個點', '這叫 elementary subdivision'); },
+  async (tok, S) => {
+    S.h = quick({ ox: 3.0, oz: 2.4, s: 0.7, noName: true }, { a: [-1.4, -1], b: [1.4, -1], c: [1.4, 1], d: [-1.4, 1] }, 'a-b b-c c-d d-a');
+    S.B.add('planar 加點還是 planar；non-planar 加點還是 non-planar', 'note');
+    cap('原來是 non-planar，加了點還是 non-planar', '原來是 planar，加了點還是 planar：不影響是不是 planar');
+  },
+  async (tok, S) => {
+    ['a-b', 'c-d'].forEach((k) => { const [u, v] = k.split('-'); const e = S.h.find(u, v); e.show(false); const m = 'm' + u; const p = e.curve.getPoint(0.5); S.h.v(m, (p.x - 3.0) / 0.7, (p.z - 2.4) / 0.7, { c: GC.ok }); S.h.e(u, m, { c: GC.ok }); S.h.e(m, v, { c: GC.ok }); });
+    S.B.add('做好幾次也一樣', 'say');
+    cap('做好幾次 elementary subdivision', '是 planar 的還是 planar，不是的還是不是');
+  },
+]);
+
+const TRI = { p: [-0.9, -0.6], q: [0.9, -0.6], r: [0, 0.9] };
+function triSub(ox, subs) {
+  const g = graph({ ox, oz: 1.6, s: 1.0, noName: true }); Object.entries(TRI).forEach(([n, [x, z]]) => g.v(n, x, z));
+  [['p', 'q', 'top'], ['p', 'r', 'left'], ['q', 'r', 'right']].forEach(([u, v, side]) => {
+    if (subs.includes(side)) { const x = (TRI[u][0] + TRI[v][0]) / 2, z = (TRI[u][1] + TRI[v][1]) / 2; g.v(side, x, z, { c: GC.ok }); g.e(u, side); g.e(side, v); } else g.e(u, v);
+  });
+  return g;
+}
+scene('g8a-homeo', 'Homeomorphic', [
+  async (tok, S) => { S.B = board(-7, -4.8, 0.58); S.B.add('再一個名稱：homeomorphic'); cap('再定義一個名稱', 'homeomorphic'); },
+  async (tok, S) => { S.B.add('G₁ = (V₁, E₁)、G₂ = (V₂, E₂)：undirected simple graphs', 'say'); cap('兩個 undirected simple graphs', 'G₁ 和 G₂'); },
+  async (tok, S) => { S.B.add('第一種：G₁、G₂ isomorphic', 'say'); cap('什麼叫 homeomorphic？第一種情況', '它們是 isomorphic：數學性質一樣，一個 non-planar 另一個也是'); },
+  async (tok, S) => { S.B.add('放寬：可以從同一個圖做 elementary subdivision 得到', 'note'); cap('再放寬一點', '兩個圖可以從同一個圖做 elementary subdivision 得到'); },
+  async (tok, S) => { S.B.add('either isomorphic，或 同一個圖 → subdivision 得到', 'say'); cap('所以 homeomorphic：', '要嘛 isomorphic，要嘛都能從同一個 undirected simple graph 經過 subdivision 得到'); },
+  async (tok, S) => { S.B.add('「一系列」：可以做不只一次', 'say'); cap('經過一系列的 elementary subdivision', '做一次、兩次、好幾次都可以'); },
+  async (tok, S) => { S.B.add('planar 做幾次還是 planar；non-planar 也是', 'say'); cap('目的：講「是不是 planar」這件事', 'planar 的怎麼做還是 planar，non-planar 的也還是 non-planar'); },
+  async (tok, S) => {
+    S.g1 = triSub(-5.4, []); S.g2 = triSub(-1.8, ['top']); S.g3 = triSub(1.8, ['left', 'right']); S.g4 = triSub(5.4, ['top', 'left', 'right']);
+    ['G₁', 'G₂', 'G₃', 'G₄'].forEach((n, i) => T(n, 'ptr', -5.4 + 3.6 * i, 3.4));
+    T('示意', 'idx', 6.4, 0.2);
+    cap('舉例：四個圖 G₁、G₂、G₃、G₄', '');
+  },
+  async (tok, S) => { S.g1.E.forEach((e) => e.paint(GC.blue)); cap('它們都可以從 G₁ 經過 subdivision 得到', 'G₁ 就是它自己'); },
+  async (tok, S) => { S.g2.E.forEach((e) => e.paint(GC.blue)); cap('G₂：在一條邊上多一個點', '做一次'); },
+  async (tok, S) => { S.g3.E.forEach((e) => e.paint(GC.blue)); cap('G₃：左右兩條邊各多一個點', '做兩次'); },
+  async (tok, S) => { S.g4.E.forEach((e) => e.paint(GC.blue)); cap('G₄：上面和左右各多一個點', '做三次'); },
+  async (tok, S) => { S.B.add('G₁～G₄ 兩兩 homeomorphic', 'good'); cap('所以這四個兩兩都是 homeomorphic', '一個 non-planar 全都 non-planar；一個 planar 全都 planar'); },
+]);
+
+scene('g8a-subgraph', 'Subgraph', [
+  async (tok, S) => { S.B = board(-7, -4.6, 0.66); S.B.add('最後一個名字：subgraph'); cap('最後一個名字', 'subgraph（子圖）'); },
+  async (tok, S) => {
+    S.g = quick({ ox: 3.2, oz: 0.4, s: 0.9 }, { a: [-2, -1.6], b: [0, -2.4], c: [2, -1.6], d: [2, 0.8], e: [0, 1.8], f: [-2, 0.8] }, 'a-b b-c c-d d-e e-f f-a a-d b-e');
+    S.B.add('G = (V, E)；G₁ = (V₁, E₁)', 'say');
+    cap('原來的圖 G，vertex set V、edge set E', '另一個圖 G₁，vertex set V₁、edge set E₁');
+  },
+  async (tok, S) => { ['a', 'b', 'd', 'e'].forEach((n) => S.g.vc(n, GC.ok)); ['a-b', 'b-e', 'e-d', 'a-d'].forEach((k) => S.g.find(...k.split('-')).paint(GC.ok)); S.B.add('V₁ ⊆ V、E₁ ⊆ E → G₁ 是 G 的 subgraph', 'note'); cap('V₁ 是 V 的部分集合，E₁ 是 E 的部分集合', 'G₁ 就是 G 的一部分：subgraph'); },
+  async (tok, S) => {
+    const e = S.g.find('c', 'd'); e.paint(GC.hot); S.x = T('✗ c 不在 V₁：不是 graph', 'bad', 5.6, -1.6);
+    S.B.add('G₁ 本身要是 graph：邊的兩端都要在 V₁', 'say');
+    cap('G₁ 自己必須是一個 graph', '每條邊的兩個端點都要在 V₁ 裡；隨便取一部分不一定是 graph');
+  },
+  async (tok, S) => { kill(S.x); S.g.find('c', 'd').paint(GC.e); S.B.add('只是名字；就像 subspace、subgroup', 'say'); cap('這只是名字', '跟 subspace、subgroup 類似'); },
+  async (tok, S) => { S.B.add('有一個 subgraph non-planar ⇒ 整個圖 non-planar', 'good'); cap('為什麼要講 subgraph？', '只要裡面有一部分 non-planar，那一部分都畫不了，整個圖當然也畫不了'); },
+]);
+
+scene('g8a-kura', "Kuratowski's Theorem", [
+  async (tok, S) => { S.B = board(-7, -4.8, 0.6); S.B.add('準備好了：最後的定理'); cap('名詞都定義好了', '可以講最後的定理'); },
+  async (tok, S) => { S.B.add("Kuratowski's Theorem（波蘭數學家，1930）", 'note'); cap("Kuratowski's Theorem", 'Kuratowski 是波蘭數學家，1930 年提出（刻畫 planar graph）'); },
+  async (tok, S) => { S.B.add('non-planar 的若且唯若條件', 'say'); cap('結果很漂亮', '因為它是 non-planar 的若且唯若條件：充分而且必要'); },
+  async (tok, S) => { S.B.add('G non-planar ⇔ G 有一個 subgraph…'); cap('G 是 non-planar', '若且唯若 G 有一個 subgraph……'); },
+  async (tok, S) => { S.B.add('…homeomorphic to', 'say'); cap('……這個 subgraph 是 homeomorphic to', '（isomorphic，或由下面的圖做 elementary subdivision 得到）'); },
+  async (tok, S) => {
+    S.k5 = quick({ ox: 1.8, oz: 1.6, s: 0.7, noName: true }, K5P, 'A-B A-C A-D A-E B-C B-D B-E C-D C-E D-E'); T('K₅', 'ptr', 1.8, -0.6);
+    S.k3 = k33({ ox: 5.2, oz: 1.6, s: 0.65, noName: true }); T('K₃,₃', 'ptr', 5.2, -0.6);
+    S.B.add('K₅ 或 K₃,₃', 'good');
+    cap('K₅ 或 K₃,₃', '只要 check 這兩個');
+  },
+  async (tok, S) => { S.B.add('所有 non-planar graph 都跟這兩個有關', 'say'); cap('K₅ 和 K₃,₃ 扮演很重要的角色', '所有 non-planar graph，裡面一定有一部分是它們（多加一些點而已）'); },
+  async (tok, S) => { [S.k5, S.k3].forEach((g) => g.E.forEach((e) => e.paint(GC.hot))); S.B.add('⇐（充分）容易：那部分畫不了 → 整個畫不了', 'say'); cap('充分條件很容易', '有這樣的 subgraph：它本身 non-planar，整個圖更畫不到平面上'); },
+  async (tok, S) => { S.B.add('⇒（必要）比較麻煩', 'bad'); cap('比較麻煩的是另一個方向', 'non-planar ⇒ 裡面一定找得到 K₅ 或 K₃,₃ 的 subdivision'); },
+  async (tok, S) => { S.B.add('converse much more complicated to prove：不講證明', 'say'); cap('這個方向的證明複雜得多', '這門課不講'); },
+  async (tok, S) => { S.B.add('課本少數沒證明的地方；C. L. Liu 書中約 9 頁', 'say'); cap('本課少數沒給證明的地方', '有興趣可看參考書 C. L. Liu《Introduction to Combinatorial Mathematics》，約九頁'); },
+  async (tok, S) => { S.B.add('結果漂亮（只有 K₅、K₃,₃），但不一定好找', 'note'); cap('結果很漂亮：只跟 K₅、K₃,₃ 有關', '但實際用時，要找出那個 subgraph 不一定容易'); },
+]);
+
+const PET0 = (() => { const P = {}; 'abcde'.split('').forEach((n, k) => { const t = -Math.PI / 2 + k * 2 * Math.PI / 5; P[n] = [2.7 * Math.cos(t), 2.7 * Math.sin(t)]; }); 'fghij'.split('').forEach((n, k) => { const t = -Math.PI / 2 + k * 2 * Math.PI / 5; P[n] = [1.25 * Math.cos(t), 1.25 * Math.sin(t)]; }); return P; })();
+const PET_E = ['a-b', 'b-c', 'c-d', 'd-e', 'e-a', 'a-f', 'b-g', 'c-h', 'd-i', 'e-j', 'f-h', 'h-j', 'j-g', 'g-i', 'i-f'];
+const lerpP = (A, B, u) => [A[0] + (B[0] - A[0]) * u, A[1] + (B[1] - A[1]) * u];
+const PET1 = { c: [-2.4, -2.2], f: [-2.4, 0], j: [-2.4, 2.2], h: [2.4, -2.2], g: [2.4, 0], e: [2.4, 2.2] };
+PET1.b = lerpP(PET1.c, PET1.g, 1 / 3); PET1.d = lerpP(PET1.c, PET1.e, 2 / 3); PET1.i = lerpP(PET1.f, PET1.g, 1 / 3); PET1.a = lerpP(PET1.f, PET1.e, 2 / 3);
+function petDraw(S, P) {
+  if (S.p) S.p.kill();
+  S.p = graph({ ox: 3.0, oz: 0.5, s: 1.0 });
+  Object.entries(P).forEach(([n, [x, z]]) => S.p.v(n.toUpperCase(), x, z));
+  PET_E.forEach((k) => { const [u, v] = k.toUpperCase().split('-'); S.p.e(u, v); });
+}
+scene('g8a-petersen', 'Petersen graph 不是 planar', [
+  async (tok, S) => { S.B = board(-7, -4.8, 0.56); S.B.add('例子'); cap('看一個例子', ''); },
+  async (tok, S) => { petDraw(S, PET0); S.B.add('Petersen graph：很漂亮、很多數學性質', 'note'); cap('Petersen graph', '常常碰到，很漂亮，有很多數學性質'); },
+  async (tok, S) => { S.B.add('10 個端點、15 條邊：planar 嗎？', 'say'); cap('10 個端點、15 條邊', '它是不是 planar？'); },
+  async (tok, S) => { S.B.add('它跟 K₃,₃ 有關', 'say'); cap('它事實上跟 K₃,₃ 有關', ''); },
+  async (tok, S) => { S.d3 = Object.keys(S.p.V).map((n) => { const p = S.p.pos(n); return T('3', 'idx', p.x + 0.45, p.z - 0.35, 0.6); }); S.B.add('3-regular：每點 3 條邊；K₃,₃ 也是', 'say'); cap('它是 3-regular graph：每個 vertex 三條邊', '原來的 K₃,₃ 也是每點三條邊'); },
+  async (tok, S) => {
+    ['C', 'F', 'J', 'E', 'G', 'H'].forEach((n) => S.p.vc(n, 'CFJ'.includes(n) ? GC.blue : GC.pink));
+    ['A', 'B', 'D', 'I'].forEach((n) => S.p.vc(n, GC.ok));
+    cap('它有 10 個點，K₃,₃ 只有 6 個', '另外 4 個（綠色）在哪？');
+  },
+  async (tok, S) => {
+    S.p.E.forEach((e) => e.show(false)); S.d3.forEach(kill);
+    const ks = Object.keys(PET0);
+    await anim(tok, 1500, (u) => ks.forEach((n) => { const [x, z] = lerpP(PET0[n], PET1[n], u); S.p.move(n.toUpperCase(), x, z); }));
+    petDraw(S, PET1);
+    ['C', 'F', 'J', 'E', 'G', 'H'].forEach((n) => S.p.vc(n, 'CFJ'.includes(n) ? GC.blue : GC.pink)); ['A', 'B', 'D', 'I'].forEach((n) => S.p.vc(n, GC.ok));
+    cap('換一種畫法', '同一張圖，點的位置換一下');
+  },
+  async (tok, S) => {
+    ['H-C', 'H-F', 'H-J', 'G-B', 'G-J', 'G-I'].forEach((k) => S.p.find(...k.split('-')).paint(GC.gold));
+    S.B.add('每點 degree 仍是 3；H 連 C、F、J；G 連 B、J、I', 'say');
+    cap('對一下：10 個端點，每點 degree 都是 3', 'H 連到 C、F、J；G 連到 B、J、I：一模一樣');
+  },
+  async (tok, S) => { S.p.E.forEach((e) => e.paint(GC.e)); cap('畫成這樣', 'K₃,₃ 的樣子就跑出來了：左 C、F、J，右 H、G、E'); },
+  async (tok, S) => {
+    ['A-B', 'D-I'].forEach((k) => { const e = S.p.find(...k.split('-')); e.paint(GC.dim); e.mat.transparent = true; e.mat.opacity = 0.35; });
+    S.B.add('不看 A–B、D–I 兩條邊 → 剩下 K₃,₃ 的 subdivision', 'note');
+    cap('不看 A–B、D–I 這兩條邊', '剩下的就是 K₃,₃ 經過 elementary subdivision：多了 A、B、D、I 四個點');
+  },
+  async (tok, S) => { S.p.E.forEach((e) => { if (e.mat.opacity === 1) e.paint(GC.hot); }); S.B.add('K₃,₃ non-planar → homeomorphic 的也是', 'say'); cap('K₃,₃ 是 non-planar', '跟它 homeomorphic 的圖也都是 non-planar'); },
+  async (tok, S) => { S.B.add('Kuratowski ⇒ Petersen graph non-planar', 'good'); cap('根據 Kuratowski 定理', 'Petersen 有一個 subgraph homeomorphic to K₃,₃ → non-planar'); },
+  async (tok, S) => { S.B.add('也可以用 edge–vertex inequality（必要條件）', 'say'); cap('也可以用前面的 edge–vertex inequality 看', '它只是必要條件：不成立就一定 non-planar'); },
+  async (tok, S) => { S.B.add('v = 10、e = 15、girth g = 5', 'say'); cap('10 個端點、15 條邊', 'girth 上次算過是 5'); },
+  async (tok, S) => { S.B.add('上界：5/(5−2) × (10−2) = 40/3 ≈ 13.3', 'note'); cap('代進去：5/3 × 8', '= 40/3，大約 13.3'); },
+  async (tok, S) => { S.B.add('e = 15 > 13.3 ✗ → non-planar', 'bad'); cap('邊數 15 超過 13.3', 'edge 太多：用不等式也看得出 Petersen non-planar'); },
+  async (tok, S) => { S.B.add('不等式：只是必要；Kuratowski：充分必要', 'good'); cap('不等式不成立就一定 non-planar，成立不一定', 'Kuratowski 是充要條件：non-planar 一定跟 K₅ 或 K₃,₃ 有關'); },
+]);
+  }
+
   // ═══ g8b.js ═══
   {
 const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;

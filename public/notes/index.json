@@ -71,6 +71,12 @@
   "quiz": 8,
   "cued": true
  },
+ "0kzn9J950-I": {
+  "label": "清大OCW 趙啟超《離散數學》第20B講 Euler Trails and Circuits",
+  "points": 21,
+  "quiz": 5,
+  "cued": true
+ },
  "0MtwqhIwdrI": {
   "label": "MIT 18.06 L17：Orthogonal Matrices and Gram-Schmidt",
   "points": 42,
@@ -575,6 +581,12 @@
   "quiz": 5,
   "cued": true
  },
+ "ATY_gkJbfNQ": {
+  "label": "清大OCW 趙啟超《離散數學》第21A講 Euler Trails and Circuits and Planar Graphs",
+  "points": 20,
+  "quiz": 5,
+  "cued": true
+ },
  "Ax1OL2mikJo": {
   "label": "交大彭文志 Lec19 Graph (2/4)",
   "points": 81,
@@ -615,6 +627,12 @@
   "label": "MIT 6.006 Rec11：Principles of Algorithm Design",
   "points": 81,
   "quiz": 7,
+  "cued": true
+ },
+ "B0UDSm9Jiqs": {
+  "label": "清大OCW 趙啟超《離散數學》第22A講 Planar Graphs",
+  "points": 15,
+  "quiz": 5,
   "cued": true
  },
  "B0ywTK-Lklw": {
@@ -1583,6 +1601,12 @@
   "quiz": 7,
   "cued": true
  },
+ "ogk1m2TvR0I": {
+  "label": "清大OCW 趙啟超《離散數學》第21D講 Euler Trails and Circuits and Planar Graphs",
+  "points": 14,
+  "quiz": 5,
+  "cued": true
+ },
  "oiB5Oalb8A8": {
   "label": "清大周志遠 第8D講 Processes Concept",
   "points": 27,
@@ -1617,6 +1641,12 @@
   "label": "MIT 6.006 Rec16：Rubik's Cube, StarCraft Zero（圖搜尋應用，補充）",
   "points": 31,
   "quiz": 7,
+  "cued": true
+ },
+ "otP5yRAYc9w": {
+  "label": "清大OCW 趙啟超《離散數學》第21C講 Euler Trails and Circuits and Planar Graphs",
+  "points": 17,
+  "quiz": 5,
   "cued": true
  },
  "oTTzNMHM05I": {
@@ -2105,6 +2135,12 @@
   "quiz": 8,
   "cued": true
  },
+ "UteTnjk0BAk": {
+  "label": "清大OCW 趙啟超《離散數學》第21B講 Euler Trails and Circuits and Planar Graphs",
+  "points": 24,
+  "quiz": 6,
+  "cued": true
+ },
  "U_tNDdEooJU": {
   "label": "交大彭文志 Lec09 Lists (2/4)",
   "points": 171,
@@ -2345,6 +2381,12 @@
   "quiz": 7,
   "cued": true
  },
+ "yewOwasU9Hk": {
+  "label": "清大OCW 趙啟超《離散數學》第22B講 Planar Graphs",
+  "points": 17,
+  "quiz": 6,
+  "cued": true
+ },
  "ygK0YON10sQ": {
   "label": "Abdul Bari：Recursion and Stack",
   "points": 28,
@@ -2468,6 +2510,12 @@
  "zyiBuJs8gm4": {
   "label": "清大OCW 趙啟超《離散數學》第14B講 Generating Functions",
   "points": 12,
+  "quiz": 5,
+  "cued": true
+ },
+ "ZYtvLbCdn1s": {
+  "label": "清大OCW 趙啟超《離散數學》第20A講 Euler Trails and Circuits",
+  "points": 27,
   "quiz": 5,
   "cued": true
  },

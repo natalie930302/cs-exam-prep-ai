@@ -1,0 +1,323 @@
+{
+ "video": "0kzn9J950-I",
+ "label": "清大OCW 趙啟超《離散數學》第20B講 Euler Trails and Circuits",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "必要條件收尾：degree 為偶數",
+   "scene": "g8a-nec-deg",
+   "points": [
+    {
+     "t": 4,
+     "text": "每經過 v 一次用掉兩條邊：一條 arriving（進來）、一條 departing（離開）。"
+    },
+    {
+     "t": 8,
+     "text": "deg(v) = 2 ×（離開 v 的邊數）→ 偶數。"
+    },
+    {
+     "t": 51,
+     "text": "必要條件證完；接著證充分條件。"
+    }
+   ],
+   "cues": [
+    4.0,
+    7.0,
+    8.4,
+    51.0,
+    63.6
+   ],
+   "explain": [
+    "接著上一講：每次經過一個端點 v，一定會用掉兩條連到 v 的邊：一條是進來的（arriving），一條是離開的（departing）。",
+    "連到 v 的每一條邊都要經過，所以每條邊都會被配進某一次「進來＋離開」。小球第二次經過 v，又用掉一對。",
+    "因為邊都是一對一對地用掉，所以 v 的 [[degree]] 等於「離開的邊數」的兩倍，一定是偶數。這裡 deg(v) = 4 = 2 × 2。",
+    "必要條件就證完了：connected 很直覺，degree 是偶數則是因為進去、出來每次成對出現。",
+    "接下來要證另一個方向：充分條件。也就是只要滿足那兩個條件，就一定存在 Euler circuit。"
+   ]
+  },
+  {
+   "title": "充分條件：constructive proof",
+   "scene": "g8a-suff-intro",
+   "points": [
+    {
+     "t": 76,
+     "text": "要證：G connected、無 isolated vertices、每點 degree 偶數 ⇒ 存在 Euler circuit。"
+    },
+    {
+     "t": 118,
+     "text": "Euler circuit 不見得唯一，只要證存在。"
+    },
+    {
+     "t": 139,
+     "text": "用 constructive proof：給一個 algorithm 找出 Euler circuit。"
+    }
+   ],
+   "cues": [
+    76.3,
+    118.1,
+    132.0,
+    146.0,
+    191.0
+   ],
+   "explain": [
+    "要證明的是：如果 G 是 connected、沒有 isolated vertices、每個端點的 degree 都是偶數，那 G 一定有一個 Euler circuit。",
+    "Euler circuit 不一定只有一個，可能有很多種走法。但我們只需要證明「至少有一個存在」就夠了。",
+    "證明「存在」有很多種方法。這裡用的是 constructive proof（建設性證明）。",
+    "建設性證明的意思是：不只說「有」，還直接告訴你「怎麼找」，並說明為什麼這樣一定找得到。所以老師要給一個 algorithm（演算法）。",
+    "這個 algorithm 保證：只要圖是 connected、每點 degree 都是偶數，照著做就一定能找出一個 Euler circuit。"
+   ]
+  },
+  {
+   "title": "演算法：一直走，直到 get stuck",
+   "scene": "g8a-walk",
+   "points": [
+    {
+     "t": 215,
+     "text": "從任一 vertex、任一條邊開始走。"
+    },
+    {
+     "t": 290,
+     "text": "規則：走過的邊不能再走；有多條可選就隨便挑。"
+    },
+    {
+     "t": 351,
+     "text": "一直走直到 get stuck（到某點沒有邊可走）。"
+    },
+    {
+     "t": 367,
+     "text": "若此時還有邊沒走到，就要處理。"
+    }
+   ],
+   "cues": [
+    215.0,
+    233.6,
+    248.0,
+    281.3,
+    300.6,
+    322.5,
+    351.0,
+    367.2,
+    379.4
+   ],
+   "explain": [
+    "演算法第一步：從任何一個端點開始都可以。這裡用一張示意圖，從 A 開始。",
+    "A 連著幾條邊，要先走哪一條？隨便挑，從哪條開始都可以。",
+    "開始走：A → B。走過的邊塗成紅色，代表已經用掉了。",
+    "走到下一個端點後，它又連著一些邊。唯一的規則是：走過的邊不能再走，因為 Euler circuit 不能重複邊。B → C。",
+    "C 還剩三條沒走過的邊（黃色），隨便挑一條就行，這次挑 C → D。",
+    "就這樣 never repeating an edge：有邊可以走就一直走下去。D → E → A。",
+    "一直走到 get stuck 為止：走到某個點，它的邊全用完了，沒有路可以出去。現在回到 A，A 的兩條邊都用掉了。",
+    "卡住了，但綠色的 C–X、X–Y、Y–C 還沒走到。如果卡住時所有邊都走完了，那就已經找到 Euler circuit；可惜這次還沒。",
+    "所以接下來要討論兩件事：get stuck 的時候會是什麼狀況？以及該怎麼辦？"
+   ]
+  },
+  {
+   "title": "卡住的點一定是出發點",
+   "scene": "g8a-stuck",
+   "points": [
+    {
+     "t": 405,
+     "text": "get stuck 時，走過的路一定是一個 circuit：卡住的點一定是出發點。"
+    },
+    {
+     "t": 525,
+     "text": "若卡在中間點：用掉的邊數是奇數，但 degree 偶數 → 一定還有邊可出去，矛盾。"
+    },
+    {
+     "t": 600,
+     "text": "所以只可能卡在出發點；circuit 可以重複端點、不能重複邊。"
+    }
+   ],
+   "cues": [
+    405.5,
+    422.0,
+    452.7,
+    461.0,
+    525.1,
+    538.1,
+    565.0,
+    600.0,
+    648.7,
+    662.0
+   ],
+   "explain": [
+    "情況是這樣：走到某個點，它的邊都用光了，可是整張圖還有邊沒走過。",
+    "老師說：這時候走過的路，一定構成一個 circuit。",
+    "換句話說，get stuck 的那一點，一定就是出發點 A。中間就算走出去又繞回來也沒關係，最後一定卡在出發點。",
+    "為什麼？關鍵是假設「每個端點的 degree 都是偶數」。",
+    "用反證：假設我們走 A → B → C → D，然後卡在 D 這個中間點，有可能嗎？",
+    "不可能。中間點每次被經過都是「進去、出來」用掉 2 條；最後這次只進來還沒出去，D 用掉的邊數就是奇數。但 deg(D) 是偶數，奇數 < 偶數，所以 D 一定還剩一條邊可以出去，不會卡住。",
+    "所以不會卡在別的點。出發點不一樣：一開始只「出去」一次，用掉奇數條；要等回到它，用掉的數量才變成偶數，才有可能沒路。所以只可能卡在出發點。",
+    "卡住的點就是出發點，所以從 A 出發、回到 A，走過的整條路就是一個 circuit。",
+    "提醒：circuit 裡端點可以重複（同一個點經過好幾次沒關係），但邊不能重複。",
+    "再確認一次定義：get stuck 就是走到某點，已經沒有任何沒用過的邊可以出去了。"
+   ]
+  },
+  {
+   "title": "Break out：換個起點繼續走",
+   "scene": "g8a-breakout",
+   "points": [
+    {
+     "t": 684,
+     "text": "卡住時若還有邊沒用：circuit 上一定有點還有沒用的邊（因為 G connected）。"
+    },
+    {
+     "t": 883,
+     "text": "break out：把 circuit 的起點改成那一點，回到它時沿沒用的邊走出去。"
+    },
+    {
+     "t": 925,
+     "text": "例：A B C D E A 卡住，C 還有邊到 X → 改寫成 C D E A B C 再走到 X。"
+    },
+    {
+     "t": 1037,
+     "text": "出去後照原法走到再卡住，再 break out，直到不能 break out 為止。"
+    }
+   ],
+   "trap": "break out 不是把剛走的路丟掉，而是把同一個 circuit 換個起點寫，再接著往外走。",
+   "cues": [
+    684.0,
+    715.5,
+    763.6,
+    781.0,
+    807.1,
+    864.6,
+    890.2,
+    908.0,
+    925.0,
+    953.1,
+    976.2,
+    1000.3,
+    1037.1,
+    1053.7,
+    1063.0
+   ],
+   "explain": [
+    "卡住了，但還有邊沒用到，還沒達到 Euler circuit 的要求。要想辦法繼續走下去。",
+    "現在手上有一個 circuit（紅色），還有一些沒用到的邊。",
+    "老師說：這個 circuit 上，一定有某個端點還有沒用的邊。那就從那個點 break out（衝出去）。",
+    "為什麼一定在 circuit 上？會不會沒用的邊全都在別的地方，跟 circuit 一點都不相連？",
+    "不可能，因為 G 是 [[connected]]。那些沒用的邊一定有路連到 circuit，路接到 circuit 的那個點，就會有沒用的邊。",
+    "所以先處理「可以 break out」的情形。至於「沒辦法 break out」的情形，後面會證明那時候就已經是答案了。",
+    "老師畫個例子來解釋 break out。紅色是剛剛走出來的 circuit。",
+    "C 上面有一條沒用到的邊，連到 X（綠色），還有 X–Y、Y–C 也沒用。",
+    "原來的 circuit 是 A, B, C, D, E, A。繞回 A，A 只有兩條邊，就 get stuck 了。",
+    "break out 的作法：把起始點改一下。circuit 是一個圈，從圈上哪一點開始算都可以，所以改成從 C 開始。",
+    "同一個 circuit 寫成 C, D, E, A, B, C。這次走回 C 時不用停，因為 C 還有綠色的邊，就沿著它走到 X，衝出去了！",
+    "所以只要 circuit 上任何一個點還有沒用的邊，把出發點換成它，就一定能 break out。",
+    "出去以後就照原來的方法：到了 X，有沒用的邊就繼續走，X → Y → C，直到又 get stuck。",
+    "又卡住時，根據前面的道理，又構成一個 circuit。再找這個新 circuit 上有沒有點還有沒用的邊，再 break out。",
+    "就這樣反覆：forming circuits and breaking out as long as possible，一直做到沒辦法 break out 為止。這個例子現在已經全部走完。"
+   ]
+  },
+  {
+   "title": "不能 break out ⇒ 就是 Euler circuit",
+   "scene": "g8a-final",
+   "points": [
+    {
+     "t": 1121,
+     "text": "break out 不可能 = circuit 上每個點的邊都用完；此時這個 circuit 就是 Euler circuit。"
+    },
+    {
+     "t": 1176,
+     "text": "證明：任取邊 vw；G connected ⇒ 從 circuit 起點 A 到 v 有 path A, A1, A2, …, v。"
+    },
+    {
+     "t": 1312,
+     "text": "逐邊推：A–A1 必在 circuit（否則可在 A break out），A1 在 circuit…⇒ v 在 circuit ⇒ vw 在 circuit。"
+    },
+    {
+     "t": 1550,
+     "text": "總結演算法；degree 偶數與 connected 兩個條件都用到。"
+    }
+   ],
+   "cues": [
+    1121.5,
+    1147.5,
+    1166.0,
+    1176.4,
+    1211.0,
+    1312.3,
+    1375.6,
+    1388.0,
+    1463.6,
+    1533.6,
+    1550.2,
+    1583.3,
+    1604.3
+   ],
+   "explain": [
+    "最後一種情形：如果沒辦法 break out，那我們就已經找到 Euler circuit 了。接下來要證明這件事。",
+    "「break out 不可能」的意思是：目前這個 circuit（紅色）上，每一個端點的邊都已經用完了。右邊是示意圖。",
+    "要證明的是：圖裡每一條邊都在這個 circuit 裡。",
+    "任取一條邊 e（紫色），它的兩個端點叫 v 和 w。",
+    "因為 G 是 connected，從 circuit 的起點 A 到 v 一定有一條 path，經過的端點是 A, A1, A2, …, v（藍色）。",
+    "看第一條邊 A–A1。A 在 circuit 上；如果 A–A1 不在 circuit 裡，A 就還有沒用的邊，就能在 A break out，這和「不能 break out」矛盾。所以 A–A1 一定在 circuit 裡（變紅）。",
+    "A–A1 在 circuit 裡，所以 A1 也在 circuit 上。同樣的道理，A1–A2 也一定在 circuit 裡，否則可以在 A1 break out。",
+    "以此類推，一條一條推過去：path 上所有的邊、所有的點都在 circuit 裡，所以 v 也在 circuit 上。",
+    "v 在 circuit 上，又不能在 v break out，所以連到 v 的每一條邊都在 circuit 裡，包括 vw。",
+    "e 是隨便挑的一條邊，所以每一條邊都在這個 circuit 裡。它經過每條邊恰一次，就是 Euler circuit！",
+    "整理演算法：從任一點出發、挑任一條沒用過的邊一直走；get stuck 就形成一個 circuit；circuit 上有點還有沒用的邊就 break out；一直做到不能 break out 為止。",
+    "兩個條件都用到了：degree 偶數保證「卡住的點就是起點」（形成 circuit）；connected 保證「能 break out」和「最後所有邊都收進來」。",
+    "所以這不只證明了 Euler circuit 存在，還是一個 constructive proof，給了找它的 algorithm。下一講老師用一個例子實際跑一次。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "在充分條件的演算法中，為什麼 get stuck 的點一定是出發點？",
+   "opts": [
+    "因為 G 是 simple graph",
+    "因為每點 degree 偶數：中間點用掉奇數條時一定還有邊可出去",
+    "因為邊數是偶數",
+    "因為 G 沒有 loop"
+   ],
+   "ans": "因為每點 degree 偶數：中間點用掉奇數條時一定還有邊可出去",
+   "why": "中間點每次進出用 2 條，只進不出時用掉奇數條 < 偶數 degree，所以不會卡住。"
+  },
+  {
+   "q": "circuit A,B,C,D,E,A 卡在 A，但 C 還有一條沒用的邊連到 X。break out 怎麼做？",
+   "opts": [
+    "丟掉這個 circuit 從 X 重新走",
+    "把 circuit 改寫成 C,D,E,A,B,C，再從 C 走到 X",
+    "把 C–X 刪掉",
+    "回頭走 A→E"
+   ],
+   "ans": "把 circuit 改寫成 C,D,E,A,B,C，再從 C 走到 X",
+   "why": "換起點不改變 circuit，回到 C 時沿沒用的邊衝出去。"
+  },
+  {
+   "q": "為什麼卡住時，若還有邊沒用，circuit 上一定有點有沒用的邊？",
+   "opts": [
+    "因為 G connected",
+    "因為 G 是 bipartite",
+    "因為 degree 都是奇數",
+    "因為邊數有限"
+   ],
+   "ans": "因為 G connected",
+   "why": "沒用的邊一定有路連到 circuit，接觸點就有沒用的邊。"
+  },
+  {
+   "q": "這個證明屬於哪一種？",
+   "opts": [
+    "反證法但不給方法",
+    "constructive proof：給出找 Euler circuit 的 algorithm",
+    "窮舉法",
+    "數學歸納法對頂點數"
+   ],
+   "ans": "constructive proof：給出找 Euler circuit 的 algorithm",
+   "why": "老師強調不只證存在，還給方法並說明為何一定找得到。"
+  },
+  {
+   "q": "deg(v) 為什麼等於 2 × 離開 v 的邊數（v 不是出發點時）？",
+   "opts": [
+    "每經過 v 一次恰用掉一條進來、一條離開的邊",
+    "因為 v 有 loop",
+    "因為 G 是 complete graph",
+    "因為邊都有方向"
+   ],
+   "ans": "每經過 v 一次恰用掉一條進來、一條離開的邊",
+   "why": "進、出成對，所以總數是離開數的兩倍。"
+  }
+ ]
+}

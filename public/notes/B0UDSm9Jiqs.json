@@ -1,0 +1,330 @@
+{
+ "video": "B0UDSm9Jiqs",
+ "label": "清大OCW 趙啟超《離散數學》第22A講 Planar Graphs",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "回顧 Euler 定理；接下來要判斷 planar",
+   "scene": "g8a-ineq-goal",
+   "points": [
+    {
+     "t": 4,
+     "text": "Euler 定理要在畫好 planar embedding 後才能數 region。"
+    },
+    {
+     "t": 34,
+     "text": "接下來：判斷 planar 的必要條件，以及一個充要條件的定理。"
+    }
+   ],
+   "cues": [
+    4.0,
+    9.5,
+    34.1,
+    42.8
+   ],
+   "explain": [
+    "前面講了 Euler theorem for planar graphs：當圖畫成 planar embedding 時，region 數、vertex 數、edge 數之間有一個關係。",
+    "不過那是在已經畫好 planar embedding 之後，才能去數 region。",
+    "接下來要看：有什麼條件可以用來判斷一個 graph 是不是 planar？",
+    "會先講一個必要條件（不等式），最後再講一個充分必要條件的定理（Kuratowski）。"
+   ]
+  },
+  {
+   "title": "Region 的 degree",
+   "scene": "g8a-regdeg-def",
+   "points": [
+    {
+     "t": 148,
+     "text": "在 planar embedding 上，region R 的 degree deg(R) = 繞 R 的 boundary 一圈的最短 closed walk 的邊數。"
+    }
+   ],
+   "cues": [
+    148.7,
+    158.0,
+    169.0,
+    175.8,
+    204.3
+   ],
+   "explain": [
+    "假設手上有一個 planar graph 的 planar embedding，也就是一種畫在平面上、邊不交叉的畫法（右邊示意）。",
+    "圖可以是 simple graph 或 multigraph。因為已經有 embedding，所以可以分出各個 region。",
+    "現在定義 region R 的 degree，寫成 deg(R)。",
+    "deg(R) 就是：沿著 R 的邊界（boundary）繞一圈，最短的 closed walk 上有幾條邊。小球繞這塊一圈走了 5 條邊，所以它的 degree 是 5。",
+    "對照以前的 vertex degree：是連到那個 vertex 的邊數。現在 region 也有 degree：是圍住它的邊界上的邊數。看例子就清楚了。"
+   ]
+  },
+  {
+   "title": "例子：數 region 的 degree",
+   "scene": "g8a-regdeg-ex",
+   "points": [
+    {
+     "t": 287,
+     "text": "上圖：9 條邊、4 個 regions，deg = 5、3、3、7（外圍有一條伸出去的邊要算兩次）。"
+    },
+    {
+     "t": 413,
+     "text": "下圖：9 條邊、4 個 regions，deg = 4、3、5、6。"
+    }
+   ],
+   "trap": "closed walk 會把「伸進 region 的邊」走兩次，degree 要算兩次。",
+   "cues": [
+    287.4,
+    291.2,
+    313.1,
+    330.3,
+    340.0,
+    358.6,
+    372.8,
+    413.9,
+    422.5,
+    439.6,
+    443.4,
+    468.2
+   ],
+   "explain": [
+    "老師畫了兩個 graph。黑板上的圖看不到，這裡依老師說的數字重建（示意）。先看第一個。",
+    "它有 9 條邊、4 個 regions：裡面的 R1、R2、R3，加上外面的 R4。頂點應該是 7 個：老師口頭數成 6，但用 v − e + r = 2 檢查，9 條邊、4 個 regions 需要 7 個頂點。",
+    "R1 這塊：沿邊界繞一圈的最短 closed walk 走了 1、2、3、4、5 條邊，所以 deg(R1) = 5。",
+    "R2 是三角形，deg(R2) = 3。",
+    "R3 也是三條邊，deg(R3) = 3。",
+    "R4 是外面那塊，要稍微小心：有一條邊 d–f 伸到外面去。",
+    "closed walk 最後要回到起點，所以走到 f 之後還得沿同一條邊走回 d。這條邊被走了兩次，要算兩次：1、2、3、4、5、6、7，deg(R4) = 7。（walk 本來就允許邊、點重複。）",
+    "再看第二個圖，也有 4 個 regions：R5、R6、R7、R8。",
+    "R5：1、2、3、4，deg(R5) = 4。",
+    "R6：三條邊，deg(R6) = 3。",
+    "R7：裡面有一條伸進來的邊 a–g（示意）。closed walk 要走進去再走出來，所以三角形的 3 條再加 2，deg(R7) = 5。",
+    "R8 是外面那塊：1、2、3、4、5、6，deg(R8) = 6。"
+   ]
+  },
+  {
+   "title": "所有 region 的 degree 加起來 = 2e",
+   "scene": "g8a-regdeg-sum",
+   "points": [
+    {
+     "t": 483,
+     "text": "類似 Σ deg(v) = 2e：Σ deg(R) = 2e。"
+    },
+    {
+     "t": 527,
+     "text": "上圖 5+3+3+7 = 18 = 2×9；下圖 4+3+5+6 = 18 = 2×9。"
+    },
+    {
+     "t": 651,
+     "text": "理由：每條邊有兩側，各對一個 region 貢獻 1，共貢獻 2。"
+    }
+   ],
+   "cues": [
+    483.6,
+    490.6,
+    500.2,
+    527.4,
+    548.6,
+    577.1,
+    598.0,
+    614.0,
+    651.5,
+    662.6,
+    675.2,
+    729.7
+   ],
+   "explain": [
+    "定義 region degree 有什麼用？來看一個性質。",
+    "先回想 vertex 的性質：所有 vertex 的 [[degree]] 加起來，等於 edge 個數的兩倍。",
+    "因為每條邊有兩個端點，算 degree 的時候兩端各算一次，所以每條邊被算兩次。",
+    "把第一個圖四個 region 的 degree 加起來：5 + 3 + 3 + 7 = 18。",
+    "它有 9 條邊，18 正好是 2 × 9。",
+    "第二個圖：4 + 3 + 5 + 6 = 18，它也是 9 條邊，又剛好是兩倍。",
+    "所以 region degree 加起來也是 edge 數的兩倍，跟 vertex 的性質很像。",
+    "為什麼？這對任何 planar graph 的 planar embedding 都成立。",
+    "看任何一條邊（紅色 c–f），它有兩側（兩面）。",
+    "數 R5 的 degree 時，這條邊算一次；數 R7 的 degree 時，又算一次。",
+    "每條邊都剛好隔開兩側，對兩側的 region 各貢獻 1，所以總共貢獻 2。就算兩側是同一個 region（像伸出去的邊），那塊也會把它算兩次，一樣是 2。",
+    "所以：所有 region 的 degree 加起來 = 2 × edge 個數，也就是 Σ deg(R) = 2e。"
+   ]
+  },
+  {
+   "title": "Edge–Vertex Inequality",
+   "scene": "g8a-evi",
+   "points": [
+    {
+     "t": 752,
+     "text": "Edge–Vertex Inequality：connected planar simple graph，girth g ≥ 3 ⇒ e ≤ g(v − 2)/(g − 2)。"
+    },
+    {
+     "t": 922,
+     "text": "用法：數 e、v、g 代入；不滿足就一定 non-planar（必要條件，滿足不保證 planar）。"
+    }
+   ],
+   "trap": "這只是必要條件：滿足不等式不代表一定是 planar。",
+   "cues": [
+    752.4,
+    779.4,
+    800.3,
+    821.8,
+    849.4,
+    861.2,
+    876.5,
+    892.1,
+    922.6,
+    932.2,
+    944.2
+   ],
+   "explain": [
+    "利用剛剛的式子 Σ deg(R) = 2e，可以推出一個必要條件。",
+    "它叫做 Edge–Vertex Inequality。",
+    "適用對象：任何 connected planar graph，而且多加一個假設：是 [[simple graph]]（不考慮 multigraph）。",
+    "另外假設 girth g ≥ 3。girth 是最短 cycle 的長度；沒有 cycle 時，就是全部邊數。",
+    "為什麼要至少 3？因為推導裡有一步需要 g > 2。",
+    "結論是：edge 數 e ≤ g/(g − 2) × (v − 2)。",
+    "意思是：邊不能太多。一個圖會 non-planar，往往就是因為邊太多，不得已一定交叉。",
+    "注意 g 要大於 2：g − 2 才會是正的。如果 g 是 2 或更小，上界會變成沒意義（除以 0 或負數）。",
+    "用法很簡單：數一數 edge 數、vertex 數、girth，代進去算。",
+    "它是必要條件：滿足的話「才有可能」是 planar（不保證是）；不滿足就一定不是 planar。",
+    "通常的情況就是 edge 太多，超過上界，所以一定會交叉。"
+   ]
+  },
+  {
+   "title": "推導 e ≤ g(v−2)/(g−2)",
+   "scene": "g8a-evi-proof",
+   "points": [
+    {
+     "t": 953,
+     "text": "是 Euler 定理的 corollary：用 Σdeg(R) = 2e 把 r 消掉。"
+    },
+    {
+     "t": 1084,
+     "text": "每個 region 的 degree ≥ g ⇒ 2e ≥ g·r。"
+    },
+    {
+     "t": 1197,
+     "text": "代入 r = 2 − v + e：2e ≥ g(2 − v + e) ⇒ (g−2)e ≤ g(v−2) ⇒ e ≤ g(v−2)/(g−2)。"
+    }
+   ],
+   "cues": [
+    953.9,
+    959.5,
+    977.6,
+    1003.8,
+    1084.1,
+    1088.0,
+    1107.6,
+    1146.7,
+    1171.3,
+    1197.5,
+    1257.2,
+    1270.3,
+    1313.5,
+    1341.8
+   ],
+   "explain": [
+    "先把這個不等式推導出來，等一下再拿來應用。",
+    "它可以看成 Euler theorem for planar graphs 的一個 corollary（系理）。",
+    "想法：從 v − e + r = 2 出發，再用「所有 region degree 加起來 = 2e」把 r 消掉。",
+    "先看每個 region 的 degree，例如示意圖裡的 5、3、3（這個圖 girth g = 3）。",
+    "關鍵觀察：每個 region 的邊界至少有 g 條邊。",
+    "沒有 cycle 的時候，g 定義成全部邊數；唯一的 region 繞一圈會把每條邊走兩次，degree 是 2e，還是 ≥ g，所以那個定義也 OK。",
+    "有 cycle 時：girth 是最短 cycle 的長度，cycle 不准重複；region 的邊界 closed walk 還可能重複走，只會更長。所以 deg(R) ≥ g。",
+    "再用前面的性質：2e = 所有 region degree 的和。",
+    "總共有 r 個 region，每個 degree 至少 g，加起來至少 g × r。所以 2e ≥ g · r。",
+    "現在把 r 換掉：由 Euler 定理 v − e + r = 2，得到 r = 2 − v + e。",
+    "代進去，得到一個完全沒有 r 的不等式：2e ≥ g(2 − v + e)。",
+    "展開：2e ≥ 2g − gv + ge。把有 e 的移到一邊：ge − 2e ≤ gv − 2g，也就是 (g − 2)e ≤ g(v − 2)。",
+    "因為假設 g ≥ 3，所以 g − 2 > 0。兩邊同除以一個正數，不等號方向不會改變。",
+    "得到 Edge–Vertex Inequality：e ≤ g(v − 2)/(g − 2)。只要數 e、v、g 就能檢查。"
+   ]
+  },
+  {
+   "title": "用不等式證明 K5 不是 planar",
+   "scene": "g8a-k5-proof",
+   "points": [
+    {
+     "t": 1369,
+     "text": "K₅：v = 5、e = 10、g = 3。"
+    },
+    {
+     "t": 1434,
+     "text": "上界 3/(3−2) × (5−2) = 9 < 10 ⇒ K₅ non-planar。"
+    }
+   ],
+   "cues": [
+    1369.3,
+    1372.2,
+    1403.1,
+    1411.5,
+    1421.0,
+    1423.4,
+    1434.5,
+    1468.4,
+    1483.7
+   ],
+   "explain": [
+    "拿這個必要條件來用。",
+    "之前我們畫不出 K₅ 的平面畫法，但說過要給證明。現在就來證。",
+    "數一數：K₅ 有 5 個 vertices，v = 5。",
+    "complete graph Kₙ 有 C(n,2) 條邊，所以 K₅ 有 C(5,2) = 10 條邊，e = 10。",
+    "K₅ 的 girth 上次算過，是 3（有三角形）。",
+    "如果 K₅ 是 planar，這三個數就必須滿足 e ≤ g(v − 2)/(g − 2)。",
+    "算右邊：g/(g − 2) = 3/(3 − 2) = 3，再乘 (v − 2) = 5 − 2 = 3，得到 9。",
+    "也就是說，如果是 planar，邊數不能超過 9。但 K₅ 有 10 條邊，10 > 9。",
+    "不等式不成立，所以 K₅ 一定是 non-planar：edge 太多了。只要數一數、代進去就證出來。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "region 的 degree 怎麼數？",
+   "opts": [
+    "region 裡面的頂點數",
+    "繞 region 邊界一圈的最短 closed walk 的邊數",
+    "region 的面積",
+    "邊界上的頂點數，重複的不算"
+   ],
+   "ans": "繞 region 邊界一圈的最短 closed walk 的邊數",
+   "why": "伸進 region 的邊會被走兩次，要算兩次。"
+  },
+  {
+   "q": "一個 planar embedding 有 9 條邊，所有 region 的 degree 總和是？",
+   "opts": [
+    "9",
+    "18",
+    "27",
+    "不一定"
+   ],
+   "ans": "18",
+   "why": "Σ deg(R) = 2e = 18。"
+  },
+  {
+   "q": "Edge–Vertex Inequality 是？",
+   "opts": [
+    "e ≥ g(v−2)/(g−2)",
+    "e ≤ g(v−2)/(g−2)",
+    "v − e + r = 2",
+    "e ≤ 2v"
+   ],
+   "ans": "e ≤ g(v−2)/(g−2)",
+   "why": "適用 connected planar simple graph、g ≥ 3。"
+  },
+  {
+   "q": "用不等式檢查 K₅ 時，上界是多少？",
+   "opts": [
+    "8",
+    "9",
+    "10",
+    "12"
+   ],
+   "ans": "9",
+   "why": "3/(3−2) × (5−2) = 9 < 10。"
+  },
+  {
+   "q": "一個圖滿足 Edge–Vertex Inequality，可以推出什麼？",
+   "opts": [
+    "它一定是 planar",
+    "它一定不是 planar",
+    "它可能是 planar，但不能確定",
+    "它沒有 cycle"
+   ],
+   "ans": "它可能是 planar，但不能確定",
+   "why": "這只是必要條件。"
+  }
+ ]
+}
