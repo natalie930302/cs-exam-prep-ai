@@ -1,0 +1,342 @@
+{
+ "video": "gF8PA6FVLp0",
+ "label": "清大OCW 趙啟超《離散數學》第24B講 Trees",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "balanced 且 complete：h = ⌈log_m l⌉",
+   "points": [
+    {
+     "t": 4,
+     "text": "再加條件：complete（internal 都剛好 m 個 children）且 balanced（葉子在 h 或 h − 1）→ h 剛好等於 lower bound。"
+    },
+    {
+     "t": 120,
+     "text": "height 是 h → 至少一個葉子在 level h；level h − 1 不一定有葉子。"
+    },
+    {
+     "t": 245,
+     "text": "complete 且 balanced → level h − 1 以上長滿，l > m^(h−1)；又 l ≤ mʰ。"
+    },
+    {
+     "t": 350,
+     "text": "取 log：h − 1 < log_m l ≤ h，所以 h = ⌈log_m l⌉（例：3.5 → 4、4 → 4）。"
+    },
+    {
+     "t": 534,
+     "text": "應用：decision tree 常是 binary tree，height = 最多要做幾次 decision。"
+    }
+   ],
+   "trap": "h = ⌈log_m l⌉ 需要 complete 和 balanced 兩個條件。",
+   "scene": "g8b-exact",
+   "cues": [
+    4.6,
+    43,
+    54.5,
+    120.3,
+    196.1,
+    245.5,
+    309,
+    350,
+    384,
+    451.4,
+    534.8
+   ],
+   "explain": [
+    "上次證了 h ≥ ⌈log_m l⌉。現在再加兩個條件：balanced 而且 complete。",
+    "complete：每個 internal vertex 都剛好 m 個 children；balanced：每個葉子的 level 不是 h 就是 h − 1。（示意 m = 2）",
+    "這時 height 就剛好等於那個 lower bound：h = ⌈log_m l⌉。",
+    "height 是 h，表示至少有一個葉子在 level h；不然最深只到 h − 1，height 就不會是 h。",
+    "level h − 1 不一定有葉子：balanced 只說葉子在 h 或 h − 1，全部都在 h 也可以。",
+    "因為 complete 而且 balanced，level h − 1 以上都長滿了（例子 level 2 有 4 = 2² 個點），再往下至少還有一層葉子，所以 l > m^(h−1)。例子 5 > 4。",
+    "height 是 h，前面證過 l ≤ mʰ。例子 5 ≤ 8。",
+    "兩邊取 log_m（遞增函數）：h − 1 < log_m l ≤ h。",
+    "h 是整數，又夾在中間，所以 h 就是 log_m l 取 ceiling。例子 ⌈log₂ 5⌉ = 3 = h。老師的例子：算出 3.5，h 就是 4；剛好算出 4，h 就是 4。",
+    "complete 和 balanced 兩個都用到了：少了 balanced，有些葉子可能很淺，height 就不對。程式列出小樹檢查：complete 又 balanced 的全部成立，只有 complete 的就有很多反例。",
+    "這些數量關係有實際用途，例如 decision tree（決策樹）常是 binary tree，它的 height 就是最多要做幾次決定。"
+   ]
+  },
+  {
+   "title": "Tree traversal：preorder、postorder、inorder",
+   "points": [
+    {
+     "t": 555,
+     "text": "tree traversal：有系統地 visit 每個 vertex 一次（例如找最大、最小）。"
+    },
+    {
+     "t": 670,
+     "text": "root r，subtrees T1…Tm；三種方法差在什麼時候 visit root。"
+    },
+    {
+     "t": 726,
+     "text": "preorder：r，再依序 preorder T1…Tm；postorder：T1…Tm，最後 r。"
+    },
+    {
+     "t": 934,
+     "text": "inorder：binary 是左、r、右；一般 m-ary 是 T1、r、T2…Tm（root 放第二個）。"
+    }
+   ],
+   "trap": "inorder 對一般 m-ary tree 的約定是 T1、r、T2…Tm；binary 時就是左、root、右。",
+   "scene": "g8b-travdef",
+   "cues": [
+    555.2,
+    573.1,
+    606.1,
+    670.5,
+    701.8,
+    726.1,
+    745.1,
+    832.8,
+    934,
+    957.8,
+    1014
+   ],
+   "explain": [
+    "再來考慮 rooted tree，要把每一個 vertex 都走過一次。",
+    "這件事叫 tree traversal（traverse 是動詞「走過」，traversal 是名詞）。",
+    "為什麼要這樣？很多 algorithm 要在每個點算一些量、找最大或最小，就得有系統地把每個點都走到。",
+    "把樹看成：root 是 r，下面有 m 個 subtree，叫 T1 到 Tm（以 level 1 的點為 root）。",
+    "主要有三種方法，差別只在「什麼時候 visit root」。",
+    "第一種 preorder（前序）：一開始就先 visit root。",
+    "接著用 preorder 去走 T1，做完回來再走 T2……一直到 Tm。走 subtree 時又是同一套規則，程式裡就是自己呼叫自己（recursive）。",
+    "第二種 postorder（後序）：先依序走 T1 到 Tm（每個也用 postorder），最後才 visit root。",
+    "第三種 inorder（中序）：root 放在中間處理。",
+    "如果是 binary tree：先走左 subtree，再 visit root，最後走右 subtree。",
+    "不只兩個 subtree 時，這裡的約定是把 root 放第二個：T1、r、T2、……、Tm。"
+   ]
+  },
+  {
+   "title": "Preorder 例子",
+   "points": [
+    {
+     "t": 1056,
+     "text": "例子（Grimaldi 的 binary tree）。preorder：先 root，再左 subtree，再右 subtree。"
+    },
+    {
+     "t": 1114,
+     "text": "r a c f j p q g k d b e h m s i n t u。"
+    }
+   ],
+   "scene": "g8b-pre",
+   "cues": [
+    1056.5,
+    1073.2,
+    1114.3,
+    1125.6,
+    1132.2,
+    1136.1,
+    1140.3,
+    1142,
+    1154,
+    1161.8,
+    1168.4,
+    1174.4,
+    1182.6,
+    1188.5,
+    1194.6,
+    1196.9,
+    1200.7,
+    1204.2,
+    1220.1
+   ],
+   "explain": [
+    "舉一個例子就比較好懂。這是老師用的 binary tree（Grimaldi 課本的例子），有 19 個點。",
+    "先看 preorder：每到一棵 subtree，都是先處理它的 root，再左、再右。",
+    "整棵樹的 root 是 r，所以第一個 visit r。",
+    "接著走左 subtree，它的 root 是 a，visit a。",
+    "再往左：這棵 subtree 的 root 是 c。",
+    "再往左：root 是 f。",
+    "再往左：root 是 j。",
+    "j 的左邊只有一個葉子 p，visit p。",
+    "j 的右邊是 q。j 這棵做完，f 右邊沒有東西，回到 c。",
+    "c 的右 subtree，root 是 g。",
+    "g 下面只有 k。c 這棵做完，回到 a。",
+    "a 的右邊是 d。左半邊全部做完，回到 r。",
+    "走 r 的右 subtree，root 是 b。",
+    "b 左邊沒有，走右邊，root 是 e。",
+    "e 的左 subtree，root 是 h。",
+    "h 左邊沒有，右邊 root 是 m。",
+    "m 下面是 s。h 這棵做完，回到 e。",
+    "e 的右 subtree：先 i，再它下面的 n，然後 n 的左右 t、u。",
+    "全部做完：r a c f j p q g k d b e h m s i n t u。程式用遞迴算出來的順序跟老師完全一樣，就像寫 recursive code。"
+   ]
+  },
+  {
+   "title": "Postorder 例子",
+   "points": [
+    {
+     "t": 1246,
+     "text": "postorder：先左 subtree、再右 subtree，root 最後。"
+    },
+    {
+     "t": 1280,
+     "text": "p q j f k g c d a s m h t u n i e b r。"
+    }
+   ],
+   "scene": "g8b-post",
+   "cues": [
+    1246.4,
+    1269.2,
+    1280.5,
+    1286,
+    1288.8,
+    1294,
+    1300,
+    1302.3,
+    1322.2,
+    1331.5,
+    1341.1,
+    1344.4,
+    1399.7
+   ],
+   "explain": [
+    "再看 postorder：root 放在最後。",
+    "所以一開始先處理左邊的 subtree，左邊的左邊……一路往左下走到底。",
+    "最左下的是 p，第一個 visit p。",
+    "p 做完，處理右邊的 q。",
+    "兩邊都做完，才回頭 visit 它們的 root j。",
+    "j 做完，f 右邊沒有，visit f。",
+    "往上回到 c，處理 c 的右 subtree：先 k。",
+    "然後 g（k 的 parent）、c、再走 a 的右邊 d，最後 a。",
+    "左半邊做完。整棵的 root 要最後，所以先處理右邊的 subtree。",
+    "右邊同樣先左再右：最深的 s，然後 m、h。",
+    "接著處理 e 的右邊，最左下的是 t。",
+    "然後 u，回來 n、i、e、b，最後才是整棵樹的 root r。",
+    "全部是 p q j f k g c d a s m h t u n i e b r。老師說自己跑一次就懂了；程式算的順序跟老師一致。"
+   ]
+  },
+  {
+   "title": "Inorder 例子",
+   "points": [
+    {
+     "t": 1403,
+     "text": "inorder：先左 subtree、再 root、再右 subtree。"
+    },
+    {
+     "t": 1428,
+     "text": "p j q f c k g a d r b h s m e i t n u。"
+    }
+   ],
+   "trap": "inorder 不是「由左到右逐層」；h 沒有左 subtree 時要先 visit h 本身。",
+   "scene": "g8b-in",
+   "cues": [
+    1403,
+    1415.7,
+    1428.8,
+    1431.1,
+    1432.5,
+    1434.1,
+    1436.6,
+    1476,
+    1481.8,
+    1490.4,
+    1492.2,
+    1501.4,
+    1510.3,
+    1525.6
+   ],
+   "explain": [
+    "最後是 inorder：先左 subtree，再 root，再右 subtree。",
+    "一樣先處理左邊的左邊的左邊……",
+    "最左下是 p，visit p。",
+    "再來是它的 root j，然後右邊的 q：p、j、q。",
+    "j 這棵做完，visit 它的 parent f；f 右邊沒有，所以接著是 c。",
+    "c 的右 subtree：左邊的 k，再 root g。",
+    "c 這棵做完，回到 a，再處理右邊的 d。",
+    "左半邊全部做完，才 visit 整棵樹的 root r。",
+    "右 subtree：b 左邊沒有，所以 root b 先。",
+    "再來 e 的左 subtree：h 左邊沒有，所以 h 先。",
+    "h 的右 subtree：左邊的 s，再 m。",
+    "回到 e。",
+    "e 的右 subtree：i 左邊沒有所以 i 先，再 t、n、u。",
+    "全部是 p j q f c k g a d r b h s m e i t n u。程式算出來跟老師說的一樣。"
+   ]
+  },
+  {
+   "title": "整理三種 traversal",
+   "points": [
+    {
+     "t": 1540,
+     "text": "三種 traversal 的差別：visit root 的時機在前（pre）、後（post）、中間（in）。"
+    }
+   ],
+   "scene": "g8b-travsum",
+   "cues": [
+    1540.1,
+    1571
+   ],
+   "explain": [
+    "建議自己用 preorder、postorder、inorder 各跑一次這個例子；畫面列出三種順序讓你對答案。",
+    "三種的差別只在什麼時候 visit root：最前面是 preorder、最後面是 postorder、中間是 inorder。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "complete binary tree 而且 balanced，有 l = 9 個 leaves，height 是多少？",
+   "opts": [
+    "4",
+    "3",
+    "9",
+    "5"
+   ],
+   "ans": "4",
+   "why": "h = ⌈log₂ 9⌉ = ⌈3.17…⌉ = 4。"
+  },
+  {
+   "q": "證明 l > m^(h−1) 用到了哪些條件？",
+   "opts": [
+    "complete 且 balanced",
+    "只要 complete",
+    "只要 balanced",
+    "都不需要"
+   ],
+   "ans": "complete 且 balanced",
+   "why": "balanced 保證 level h − 1 以上沒有缺葉子的地方、complete 保證那幾層都長滿，再多至少一個 level h 的葉子。"
+  },
+  {
+   "q": "老師例子的 preorder 前五個是？",
+   "opts": [
+    "r a c f j",
+    "p j q f c",
+    "p q j f k",
+    "r a b c d"
+   ],
+   "ans": "r a c f j",
+   "why": "preorder 先 root 再一路往左：r、a、c、f、j。"
+  },
+  {
+   "q": "老師例子的 postorder 最後一個是？",
+   "opts": [
+    "r",
+    "u",
+    "b",
+    "p"
+   ],
+   "ans": "r",
+   "why": "postorder 最後才 visit root，整棵樹的 root 是 r。"
+  },
+  {
+   "q": "binary tree 的 inorder 順序是？",
+   "opts": [
+    "左 subtree → root → 右 subtree",
+    "root → 左 → 右",
+    "左 → 右 → root",
+    "逐層由左到右"
+   ],
+   "ans": "左 subtree → root → 右 subtree",
+   "why": "inorder 把 root 放在中間處理。"
+  },
+  {
+   "q": "老師例子的 inorder 中，r 排在第幾個？",
+   "opts": [
+    "第 10 個",
+    "第 1 個",
+    "第 19 個",
+    "第 9 個"
+   ],
+   "ans": "第 10 個",
+   "why": "左 subtree 有 9 個點（p j q f c k g a d），所以 r 是第 10 個。"
+  }
+ ]
+}

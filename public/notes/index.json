@@ -641,6 +641,12 @@
   "quiz": 7,
   "cued": true
  },
+ "BlAe2OrCgTw": {
+  "label": "清大OCW 趙啟超《離散數學》第23C講 Trees",
+  "points": 18,
+  "quiz": 5,
+  "cued": true
+ },
  "BRO7mVIFt08": {
   "label": "MIT 6.006 L9：Table Doubling, Karp-Rabin",
   "points": 62,
@@ -1001,6 +1007,12 @@
   "quiz": 7,
   "cued": false
  },
+ "FxZGkU0MvfY": {
+  "label": "清大OCW 趙啟超《離散數學》第24A講 Trees",
+  "points": 19,
+  "quiz": 6,
+  "cued": true
+ },
  "f_Vw45CmKXs": {
   "label": "清大OCW 趙啟超《離散數學》第2A講 Set Theory",
   "points": 44,
@@ -1017,6 +1029,12 @@
   "label": "清大周志遠 第17B講 Special Scheduling Issues",
   "points": 13,
   "quiz": 5,
+  "cued": true
+ },
+ "gF8PA6FVLp0": {
+  "label": "清大OCW 趙啟超《離散數學》第24B講 Trees",
+  "points": 16,
+  "quiz": 6,
   "cued": true
  },
  "ghXHy5y3EuE": {
@@ -1125,6 +1143,12 @@
   "label": "交大江蕙如 Lec10 Greedy Algorithms (1/5)",
   "points": 110,
   "quiz": 6,
+  "cued": true
+ },
+ "I0AdyRXvHY4": {
+  "label": "清大OCW 趙啟超《離散數學》第23A講 Trees",
+  "points": 20,
+  "quiz": 5,
   "cued": true
  },
  "I9tMLP4KeEY": {
@@ -1377,6 +1401,12 @@
   "label": "Abdul Bari：7.1 Job Sequencing with Deadline - Branch and Bound",
   "points": 16,
   "quiz": 5,
+  "cued": true
+ },
+ "m7RjwmS8c7U": {
+  "label": "清大OCW 趙啟超《離散數學》第23D講 Trees",
+  "points": 15,
+  "quiz": 6,
   "cued": true
  },
  "mB5HXBb_HY8": {
@@ -2091,6 +2121,12 @@
   "label": "清大周志遠 第2C講 Computer-System Architecture(續)",
   "points": 26,
   "quiz": 6,
+  "cued": true
+ },
+ "VHsNFDXGV-0": {
+  "label": "清大OCW 趙啟超《離散數學》第23B講 Trees",
+  "points": 14,
+  "quiz": 5,
   "cued": true
  },
  "vLS-zRCHo-Y": {

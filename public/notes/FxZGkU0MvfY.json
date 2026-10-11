@@ -1,0 +1,330 @@
+{
+ "video": "FxZGkU0MvfY",
+ "label": "清大OCW 趙啟超《離散數學》第24A講 Trees",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習 rooted tree",
+   "points": [
+    {
+     "t": 4,
+     "text": "rooted tree：一個特別的 vertex 叫 root，畫在最上面，其他往下畫。"
+    }
+   ],
+   "scene": "g8b-recap",
+   "cues": [
+    4.3,
+    15.7,
+    29.3
+   ],
+   "explain": [
+    "先複習：rooted tree 是一棵 tree，其中有一個特別的 vertex 叫 root。",
+    "root 畫在最上面，其他 vertex 都往下畫。（示意）",
+    "今天要看 m-ary tree，以及樹裡各種數量之間的關係。"
+   ]
+  },
+  {
+   "title": "m-ary tree 與 complete m-ary tree",
+   "points": [
+    {
+     "t": 39,
+     "text": "m-ary tree：每個 internal vertex 最多 m 個 children。vertex 分 internal（有 children）與 leaf（沒有）。"
+    },
+    {
+     "t": 104,
+     "text": "complete m-ary tree：每個 internal vertex 剛好 m 個 children。"
+    },
+    {
+     "t": 133,
+     "text": "m = 2 binary、m = 3 ternary、m = 4 quaternary。"
+    },
+    {
+     "t": 208,
+     "text": "例：complete binary tree，每個 internal vertex 剛好 2 個 children（示意圖）。"
+    }
+   ],
+   "trap": "complete 的意思是「有 children 就剛好 m 個」，不是「每一層都排滿」。",
+   "scene": "g8b-mary",
+   "cues": [
+    39,
+    61.2,
+    69.3,
+    104.7,
+    133.2,
+    154.5,
+    176.1,
+    208.3,
+    242,
+    261
+   ],
+   "explain": [
+    "第一個名詞：m-ary tree。",
+    "定義：每個 internal vertex 的 children 不超過 m 個。",
+    "tree 裡的 vertex 分兩種：有 children 的叫 internal vertex（橘色），沒有 children 的叫 leaf 葉子（綠色）。",
+    "如果每個 internal vertex 的 children「剛好」是 m 個，就叫 complete m-ary tree。重點是：有小孩就一定剛好 m 個。",
+    "m = 2 的時候叫 binary tree（二元樹）。",
+    "m = 3 叫 ternary tree。",
+    "m = 4 叫 quaternary tree。m 更大時就直接把數字寫出來。",
+    "來看一個 complete binary tree 的例子（示意）。",
+    "它的每個 internal vertex，往下分出去都剛好兩個 children。程式逐一檢查過。",
+    "很多應用最後都可以化成 binary tree 的樣子，所以它很常見。"
+   ]
+  },
+  {
+   "title": "complete m-ary tree 的數量關係",
+   "points": [
+    {
+     "t": 291,
+     "text": "n 個 vertices、l 個 leaves、i 個 internal vertices；n = l + i。"
+    },
+    {
+     "t": 335,
+     "text": "① n = mi + 1　② l = (m − 1)i + 1　③ i = (l − 1)/(m − 1) = (n − 1)/m。"
+    },
+    {
+     "t": 397,
+     "text": "除了 root，每個 vertex 都是唯一某個 internal vertex 的 child；i 個 internal 各剛好 m 個 children → mi = n − 1。"
+    },
+    {
+     "t": 689,
+     "text": "② 由 l = n − i 代入 ①；③ 由 ①② 解出 i。只要懂 ① 就好，不要硬背。"
+    }
+   ],
+   "trap": "三個式子只對 complete m-ary tree 成立。",
+   "scene": "g8b-count",
+   "cues": [
+    291,
+    308.8,
+    335.1,
+    380,
+    397.6,
+    448.3,
+    489.3,
+    531.7,
+    550.4,
+    606.5,
+    668,
+    689.3,
+    745,
+    784.5
+   ],
+   "explain": [
+    "考慮一棵 complete m-ary tree：全部有 n 個 vertices，其中 l 個 leaves、i 個 internal vertices。示意圖 m = 2：n = 9、l = 5、i = 4。",
+    "vertex 不是 leaf 就是 internal，所以 n = l + i。m、n、l、i 四個數之間有關係。",
+    "三個式子：① n = mi + 1；② l = (m − 1)i + 1；③ i = (l − 1)/(m − 1) = (n − 1)/m。",
+    "主要懂第一式怎麼來就夠了，後面兩個都能推出來，不用硬記。",
+    "第一式的關鍵：除了 root 以外，每個 vertex 都是某一個 internal vertex 的 child。",
+    "畫面上同色的邊代表同一個 parent 的 children：這是它的 child、那兩個葉子是它的 child……每個非 root 的點都被數到。",
+    "complete 的定義：每個 internal vertex 都剛好 m 個 children。",
+    "有 i 個 internal vertex，每個剛好 m 個 children，合起來是 mi 個。",
+    "這 mi 個剛好數到 root 以外的全部 vertex，而且不會重複，因為每個 vertex 的 parent 是唯一的。例子：2 × 4 = 8 = n − 1。",
+    "再把 root 加回去，就得到 n = mi + 1。",
+    "注意要 complete 才成立；不 complete 的話，internal vertex 的 children 不一定剛好 m 個。",
+    "第二式：l = n − i，把 n = mi + 1 代進去，得到 l = (m − 1)i + 1。例子 5 = 4 + 1。",
+    "第三式：用前兩式把 i 解出來：i = (l − 1)/(m − 1)，也 = (n − 1)/m。例子 4 = 4/1 = 8/2。",
+    "老師提醒：理解第一式就好，硬背很容易記錯。程式也列出所有小的 complete binary 和 ternary tree 檢查，三式都對。"
+   ]
+  },
+  {
+   "title": "Balanced：葉子的 level 是 h 或 h − 1",
+   "points": [
+    {
+     "t": 833,
+     "text": "高度 h 的 rooted tree，若每個 leaf 的 level 都是 h 或 h − 1，叫 balanced。"
+    },
+    {
+     "t": 900,
+     "text": "例：5 個 leaves，3 個在 level 2、2 個在 level 3，h = 3 → balanced；一個葉子在 level 1、其他在 level 3 → 不 balanced。"
+    }
+   ],
+   "scene": "g8b-balance",
+   "cues": [
+    833.3,
+    864.2,
+    891.6,
+    900,
+    927.1
+   ],
+   "explain": [
+    "另一個名詞叫 balanced（平衡），跟 tree 的 height 有關。",
+    "先分 level：root 是 level 0，往下 1、2、3。這棵最高到 level 3，所以 height 是 3。",
+    "balanced 的定義：每個 leaf 的 level 都是 h 或 h − 1，也就是葉子的深度最多只差 1。",
+    "這個例子有 5 個 leaves：3 個在 level 2、2 個在 level 3，不是 2 就是 3，所以是 balanced，看起來很均衡。",
+    "右邊這棵：一個葉子在 level 1，其他葉子在 level 3，差了 2，所以不 balanced。"
+   ]
+  },
+  {
+   "title": "l ≤ mʰ、h ≥ ⌈log_m l⌉；ceiling 與 floor",
+   "points": [
+    {
+     "t": 960,
+     "text": "高度 h、l 個 leaves 的 m-ary tree：l ≤ mʰ；取 log 得 h ≥ ⌈log_m l⌉。"
+    },
+    {
+     "t": 1001,
+     "text": "⌈x⌉ ceiling：≥ x 的最小整數（⌈3.5⌉ = 4、⌈4⌉ = 4）；⌊x⌋ floor：≤ x 的最大整數（⌊3.5⌋ = 3、⌊4⌋ = 4）。"
+    },
+    {
+     "t": 1128,
+     "text": "直觀：整棵長滿也只有 mʰ 個葉子。"
+    }
+   ],
+   "scene": "g8b-bound",
+   "cues": [
+    960.7,
+    986,
+    1001.7,
+    1043.2,
+    1057,
+    1091.5,
+    1128.2
+   ],
+   "explain": [
+    "下一個性質講 height 跟葉子數的關係：高度 h、有 l 個葉子的 m-ary tree，l ≤ mʰ。",
+    "兩邊取以 m 為底的 log，就得到 h ≥ ⌈log_m l⌉。",
+    "上面這個符號叫 ceiling（天花板）：⌈x⌉ 是「大於等於 x 的最小整數」，往上取整。",
+    "例如 ⌈3.5⌉ = 4；4 本來就是整數，⌈4⌉ 還是 4。",
+    "相對的叫 floor（地板）：⌊x⌋ 是「小於等於 x 的最大整數」，往下取整。",
+    "例如 ⌊3.5⌋ = 3，⌊4⌋ = 4。看符號的橫線在上面還是下面就知道是哪一個。",
+    "直觀理解 l ≤ mʰ：高度 h 的 m-ary tree，就算每一層都長滿，最底下也只有 mʰ 個葉子。程式也檢查了一百多棵小樹。"
+   ]
+  },
+  {
+   "title": "對 height 做歸納法證 l ≤ mʰ",
+   "points": [
+    {
+     "t": 1138,
+     "text": "basis h = 1：葉子都是 root 的 children，最多 m 個。"
+    },
+    {
+     "t": 1220,
+     "text": "hypothesis：height < h 都成立。step：level 1 的 vertices 各為一個 subtree 的 root，最多 m 個 subtree，每個 height ≤ h − 1。"
+    },
+    {
+     "t": 1408,
+     "text": "每個 subtree 葉子 ≤ m^(h−1)，全部 ≤ m · m^(h−1) = mʰ。"
+    }
+   ],
+   "scene": "g8b-boundind",
+   "cues": [
+    1138.2,
+    1166.3,
+    1220,
+    1267,
+    1296,
+    1343.2,
+    1378,
+    1408.2,
+    1445.4,
+    1498.5
+   ],
+   "explain": [
+    "寫下正式證明：對 height h 做數學歸納法。",
+    "起點 h = 1：樹只有 root 和下一層，所有葉子都是 root 的 children，m-ary 所以最多 m 個，l ≤ m¹ 成立。（示意 m = 3）",
+    "歸納假設：所有 height 小於 h 的 m-ary tree 都滿足 l ≤ m^(它的高度)。",
+    "現在看 height 為 h 的樹，考慮 level 1 的那些 vertices。",
+    "以它們各自為 root，往下就是一棵棵 subtree：T1、T2、T3……",
+    "因為是 m-ary tree，root 最多 m 個 children，所以最多 m 個 subtree。",
+    "每個 subtree 少了最上面 root 那一層，height 不超過 h − 1。",
+    "所以可以用歸納假設：每個 subtree 的葉子最多 m^(h−1) 個。",
+    "整棵樹的葉子就是所有 subtree 的葉子加起來：最多 m 個 subtree × m^(h−1) = mʰ。",
+    "由數學歸納法，證完。"
+   ]
+  },
+  {
+   "title": "h ≥ ⌈log_m l⌉ 只是 lower bound",
+   "points": [
+    {
+     "t": 1527,
+     "text": "l ≤ mʰ 取 log（遞增）得 log_m l ≤ h；h 是整數 → h ≥ ⌈log_m l⌉。"
+    },
+    {
+     "t": 1642,
+     "text": "這只是下界：不 balanced 時（一邊拉很長），h 可能比 ⌈log_m l⌉ 大很多。"
+    }
+   ],
+   "trap": "h ≥ ⌈log_m l⌉ 是下界，不是等式；等號要 complete 且 balanced（下一講）。",
+   "scene": "g8b-lower",
+   "cues": [
+    1527,
+    1558.5,
+    1590.5,
+    1642
+   ],
+   "explain": [
+    "回顧：直觀上葉子最多的情況就是整棵長滿，也就是 mʰ 個。",
+    "兩邊取 log_m；log 是遞增函數，所以不等式方向不變，得到 log_m l ≤ h。",
+    "h 是整數，所以可以取 ceiling：h ≥ ⌈log_m l⌉。例如算出 3.5，h 至少是 4。",
+    "但這只是 lower bound（下界）。像這棵示意的 binary tree 一路往一邊拉長：l = 5，⌈log₂ 5⌉ = 3，可是 height 是 4。不 balanced 時 height 可能大很多。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "complete m-ary tree 有 i 個 internal vertices，總共有幾個 vertices？",
+   "opts": [
+    "mi + 1",
+    "mi",
+    "(m − 1)i + 1",
+    "mi − 1"
+   ],
+   "ans": "mi + 1",
+   "why": "除 root 外每個 vertex 都是某 internal vertex 的 child，共 mi 個，再加 root。"
+  },
+  {
+   "q": "complete ternary tree（m = 3）有 10 個 internal vertices，leaves 有幾個？",
+   "opts": [
+    "21",
+    "31",
+    "20",
+    "30"
+   ],
+   "ans": "21",
+   "why": "l = (m − 1)i + 1 = 2·10 + 1 = 21（n = 31，l = n − i = 21）。"
+  },
+  {
+   "q": "complete binary tree 有 9 個 leaves，internal vertices 有幾個？",
+   "opts": [
+    "8",
+    "9",
+    "4",
+    "17"
+   ],
+   "ans": "8",
+   "why": "i = (l − 1)/(m − 1) = 8/1 = 8。"
+  },
+  {
+   "q": "balanced 的定義是？",
+   "opts": [
+    "每個 leaf 的 level 都是 h 或 h − 1",
+    "每個 internal vertex 剛好 m 個 children",
+    "左右 subtree 一樣大",
+    "所有 leaves 都在 level h"
+   ],
+   "ans": "每個 leaf 的 level 都是 h 或 h − 1",
+   "why": "老師（Grimaldi）的定義：葉子的 level 只能是 h 或 h − 1。"
+  },
+  {
+   "q": "⌈3.5⌉ 與 ⌊3.5⌋ 分別是？",
+   "opts": [
+    "4、3",
+    "3、4",
+    "4、4",
+    "3、3"
+   ],
+   "ans": "4、3",
+   "why": "ceiling 往上取到 ≥ x 的最小整數；floor 往下取到 ≤ x 的最大整數。"
+  },
+  {
+   "q": "高度 h 的 m-ary tree 有 l 個葉子，一定成立的是？",
+   "opts": [
+    "l ≤ mʰ",
+    "l = mʰ",
+    "l ≥ mʰ",
+    "h = ⌈log_m l⌉"
+   ],
+   "ans": "l ≤ mʰ",
+   "why": "長滿也只有 mʰ 個葉子；h = ⌈log_m l⌉ 要 complete 且 balanced 才保證。"
+  }
+ ]
+}

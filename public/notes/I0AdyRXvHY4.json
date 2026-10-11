@@ -1,0 +1,301 @@
+{
+ "video": "I0AdyRXvHY4",
+ "label": "清大OCW 趙啟超《離散數學》第23A講 Trees",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Tree 的定義：connected 而且沒有 cycle",
+   "points": [
+    {
+     "t": 4,
+     "text": "tree（樹狀圖）先是一個 undirected simple graph：邊沒有方向、沒有 loop、任兩點之間最多一條 edge。"
+    },
+    {
+     "t": 74,
+     "text": "條件一：connected——只有一個 component，任兩點之間都有 path。"
+    },
+    {
+     "t": 82,
+     "text": "條件二：沒有 cycle。Tree = connected graph with no cycles。"
+    }
+   ],
+   "trap": "定義前提是 undirected simple graph；「connected」和「沒有 cycle」兩個條件缺一不可。",
+   "scene": "g8b-def",
+   "cues": [
+    4,
+    5.5,
+    7.2,
+    8,
+    9.6,
+    74.7,
+    80.4,
+    82.4,
+    86.6
+   ],
+   "explain": [
+    "今天開始講 tree，中文叫「樹狀圖」。它其實就是一種長得像樹枝分岔的圖。",
+    "tree 首先是 undirected graph（無向圖）：邊只表示「兩點相連」，沒有箭頭、沒有方向。",
+    "還要是 simple graph（簡單圖）：不能有 loop，也就是自己連到自己的那種邊。",
+    "simple 的另一個條件：任兩個端點之間最多只能有一條 edge，不能有重複的邊。",
+    "這樣的圖要滿足兩個條件才叫 tree。我們一個一個看。",
+    "條件一是 connected（連通）：整張圖只有一個 component（連通塊），不會分成好幾塊。",
+    "換個說法：任挑兩個點，都能沿著邊走過去，也就是兩點之間一定有 path（路徑）。",
+    "條件二是沒有 cycle（環）：從某點出發沿著不重複的邊走，不可能繞回原點。畫面上這張圖算出來確實沒有。",
+    "兩個條件合起來就是定義：tree 是「connected、而且沒有 cycle」的圖。"
+   ]
+  },
+  {
+   "title": "例子：G1 是 tree、G2 有 cycle、G3 是 forest",
+   "points": [
+    {
+     "t": 94,
+     "text": "三個 undirected simple graph（板書圖形看不清，畫面為示意）。"
+    },
+    {
+     "t": 147,
+     "text": "G1：connected、沒有 cycle → tree。"
+    },
+    {
+     "t": 167,
+     "text": "G2：connected，但有 cycle → 不是 tree。"
+    },
+    {
+     "t": 195,
+     "text": "G3：有兩個 component，不 connected → 不是 tree；但每個 component 本身都是 tree。"
+    },
+    {
+     "t": 270,
+     "text": "不一定 connected、但每個 component 都是 tree 的圖叫 forest（森林）。"
+    }
+   ],
+   "trap": "G3 不是 tree（不 connected），但它是 forest；不要把「每塊都是 tree」誤以為整張圖是 tree。",
+   "scene": "g8b-examples",
+   "cues": [
+    94.8,
+    137.6,
+    147,
+    153,
+    167.6,
+    172.1,
+    176,
+    195,
+    205,
+    210.4,
+    237.5,
+    270.4,
+    296
+   ],
+   "explain": [
+    "來看三個例子。老師黑板上的圖我們看不清楚，畫面上的形狀是示意，但判斷方式完全一樣。",
+    "三個都是 undirected simple graph，所以只要檢查 tree 的兩個條件。",
+    "先看 G1：它連成一整塊，程式算出只有 1 個 component，所以 connected。",
+    "G1 也找不到任何 cycle，兩個條件都滿足，所以 G1 是 tree。",
+    "再看 G2：它也只有一個 component，是 connected。",
+    "但是 G2 裡有一圈可以繞回來（紅色那圈），也就是有 cycle。",
+    "有 cycle 就違反條件二，所以 G2 不是 tree。",
+    "最後看 G3。",
+    "G3 分成兩塊，有 2 個 component，所以它不是 connected。",
+    "不 connected，第一個條件就不成立，所以 G3 不是 tree。",
+    "不過仔細看，G3 的兩塊各自都連通、也沒有 cycle，所以每一塊本身都是一棵 tree。",
+    "像這種「每個 component 都是 tree」的圖，有個名字叫 forest。",
+    "forest 就是森林——好多棵樹放在一起，名字就是這樣來的。"
+   ]
+  },
+  {
+   "title": "Tree 的三個性質",
+   "points": [
+    {
+     "t": 318,
+     "text": "之後用 T 表示 tree（一般 graph 用 G）。"
+    },
+    {
+     "t": 399,
+     "text": "性質 1：|V| ≥ 2 時，任兩個不同端點之間有唯一（unique）的 path。"
+    },
+    {
+     "t": 497,
+     "text": "性質 2：拿掉任何一條 edge，剩下的圖剛好兩個 component，而且每個都是 tree。"
+    },
+    {
+     "t": 547,
+     "text": "性質 3：|V| = |E| + 1（端點比邊多一個）。"
+    }
+   ],
+   "trap": "性質 1 的重點是「唯一」；只是「有 path」那是 connected 而已。",
+   "scene": "g8b-props",
+   "cues": [
+    318,
+    338,
+    399.4,
+    423.1,
+    497,
+    515.4,
+    547,
+    563.6
+   ],
+   "explain": [
+    "接下來這部分主要在討論 tree 有哪些性質。",
+    "之後講到 tree 都用 T 來表示（一般的圖用 G）。畫面上這棵 9 個點的樹是示意例子。",
+    "性質一：只要至少有兩個端點，任兩個不同的端點之間，都有「唯一」一條 path。例如 e 到 h 只有藍色這條。",
+    "重點在 unique（唯一）：connected 只保證兩點之間「有」路；tree 更強，保證「只有一條」。程式把 e 到 h 的所有路徑都列出來，真的只有 1 條。",
+    "性質二：把 tree 的任何一條 edge 拿掉，例如 {a,b}。",
+    "拿掉之後剛好斷成兩個 component，而且每一塊都還是 tree（變成兩棵樹的 forest）。程式把 8 條邊一條一條拿掉試過，每次都是這樣。",
+    "性質三：端點個數剛好比邊的個數多一，也就是 |V| = |E| + 1。這棵是 9 個點、8 條邊。",
+    "老師說這三個性質都要證明；看懂證明，對 tree 的特性會更了解。"
+   ]
+  },
+  {
+   "title": "證明性質 1：任兩點之間的 path 唯一",
+   "points": [
+    {
+     "t": 576,
+     "text": "T 是 connected，所以任兩個不同端點 a、b 之間至少有一條 path。"
+    },
+    {
+     "t": 672,
+     "text": "用反證：假設 a、b 之間不只一條 path。"
+    },
+    {
+     "t": 746,
+     "text": "兩條不同的 path，其中某些 edges 一定會構成 cycle → 違反 tree 沒有 cycle。"
+    },
+    {
+     "t": 831,
+     "text": "所以 path 唯一。"
+    }
+   ],
+   "trap": "兩條 path 可能有重疊的部分，cycle 是由「其中某部分的 edges」構成，不一定是整條。",
+   "scene": "g8b-pf1",
+   "cues": [
+    576,
+    646.4,
+    658,
+    672,
+    700.7,
+    715.2,
+    719.1,
+    746,
+    805,
+    831.3
+   ],
+   "explain": [
+    "來證性質一：tree 裡任兩個不同端點之間只有一條 path。",
+    "假設 a、b 是 T 裡兩個不同的端點。",
+    "tree 一定是 connected，所以 a 和 b 之間「至少」有一條 path。接下來只要證明「只有一條」。",
+    "怎麼證只有一條？用反證法：要證「若 P 則 Q」，改成假設 Q 不成立，然後推出矛盾。",
+    "所以先假設：a 到 b 不只一條 path。",
+    "隨便畫出其中一條 path（金色）。這是示意圖。",
+    "再畫另一條不一樣的 path（紫色），它開頭跟第一條共用了一段。",
+    "只要有兩條不同的 path，不管它們怎麼交錯、哪裡重疊，總能從裡面找到一圈 cycle（紅色）。",
+    "可是 tree 的定義就是沒有 cycle，這就矛盾了。",
+    "所以假設錯誤：任兩個不同端點之間只有唯一一條 path。"
+   ]
+  },
+  {
+   "title": "證明性質 2（上）：拿掉 {a,b} 後一定不 connected",
+   "points": [
+    {
+     "t": 850,
+     "text": "要證兩件事：拿掉任一條 edge 後剛好兩個 component；兩個都是 tree。"
+    },
+    {
+     "t": 932,
+     "text": "設 {a,b} 是 T 的任一條 edge；拿掉它（端點留著），剩下 T′ = (V, E − {{a,b}})。"
+    },
+    {
+     "t": 996,
+     "text": "先證 T′ 不 connected：若 T′ 仍 connected，a、b 之間在 T′ 還有一條 path。"
+    },
+    {
+     "t": 1089,
+     "text": "那原來 T 裡 a、b 之間就有兩條 path（加上 {a,b} 本身），跟性質 1 矛盾 → T′ disconnected。"
+    }
+   ],
+   "trap": "拿掉邊時端點仍保留：T′ 的 vertex set 跟 T 一樣，只少一條 edge。",
+   "scene": "g8b-pf2a",
+   "cues": [
+    850,
+    865.6,
+    932.2,
+    941,
+    953,
+    996.7,
+    1011.5,
+    1071.5,
+    1089.4,
+    1114,
+    1199.4
+   ],
+   "explain": [
+    "接著證性質二：拿掉任何一條 edge 以後，剛好剩下兩個 component，而且每個都是 tree。",
+    "所以要證兩件事：第一，剛好兩個 component；第二，這兩個都是 tree。",
+    "設 {a,b} 是這棵 tree 裡任意一條邊（金色），兩端分別是 a 和 b。",
+    "把這條 edge 拿掉，但兩個端點 a、b 還留在圖裡，只是它們之間的邊不見了。",
+    "剩下的圖叫 T′：端點集合還是原來的 V，邊的集合少了 {a,b} 這一條。",
+    "第一步先說明：T′ 一定不是 connected。",
+    "用反證：假設拿掉之後 T′ 還是 connected。",
+    "那表示在 T′ 裡，a 和 b 之間還有一條 path（紅色虛線，是假想的）。",
+    "可是原來 T 裡，a、b 之間本來就有 {a,b} 這條邊，再加上這條路就有兩條 path，跟性質一「唯一 path」矛盾。",
+    "所以拿掉 {a,b} 之後，T′ 一定是 disconnected。畫面上這張圖也算出變成 2 個 component。",
+    "下一步要證明：不只是斷開，而且剛好斷成兩個 component。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "下列哪一個是 tree 的定義？",
+   "opts": [
+    "connected 且沒有 cycle 的 undirected simple graph",
+    "connected 的 undirected simple graph",
+    "沒有 cycle 的 undirected simple graph",
+    "每個 component 都沒有 cycle 的 graph"
+   ],
+   "ans": "connected 且沒有 cycle 的 undirected simple graph",
+   "why": "tree 要同時 connected 和沒有 cycle；只有沒有 cycle（每個 component 是 tree）的是 forest。"
+  },
+  {
+   "q": "一個圖有兩個 component，每個 component 都是 tree，它叫做？",
+   "opts": [
+    "forest",
+    "tree",
+    "cycle",
+    "complete graph"
+   ],
+   "ans": "forest",
+   "why": "不 connected 所以不是 tree；每個 component 都是 tree 的圖叫 forest（森林）。"
+  },
+  {
+   "q": "tree 中（|V| ≥ 2）任兩個不同端點之間的 path 有幾條？",
+   "opts": [
+    "恰好一條",
+    "至少一條、可能很多條",
+    "最多一條、可能沒有",
+    "剛好兩條"
+   ],
+   "ans": "恰好一條",
+   "why": "connected 保證至少一條；若有兩條就會構成 cycle，與 tree 沒有 cycle 矛盾。"
+  },
+  {
+   "q": "從一棵 tree 拿掉任意一條 edge 後，剩下的圖有幾個 component？",
+   "opts": [
+    "剛好 2 個，而且都是 tree",
+    "還是 1 個",
+    "可能 2 個或更多",
+    "剛好 2 個，但可能有 cycle"
+   ],
+   "ans": "剛好 2 個，而且都是 tree",
+   "why": "性質 2：拿掉一條邊一定斷開（否則兩點間有兩條 path），剛好兩組，且拿掉邊不會產生新 cycle。"
+  },
+  {
+   "q": "一棵 tree 有 9 個端點，它有幾條邊？",
+   "opts": [
+    "8",
+    "9",
+    "10",
+    "不一定"
+   ],
+   "ans": "8",
+   "why": "性質 3：|V| = |E| + 1，所以 |E| = 9 − 1 = 8。"
+  }
+ ]
+}

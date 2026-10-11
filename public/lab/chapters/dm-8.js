@@ -7,6 +7,8 @@
 // DFS 例子的「回邊」位置影片看不到，這裡自己補了 4 條（都連到祖先，符合 back edge 定義）。
 // 著色影片（Discrete Math II 10.8.1）的地圖：A–B、A–C、B–C、B–E、C–D、C–E、D–E。影片用 greedy 塗出 4 色、
 // 並寫 P(G,λ) = λ(λ−1)(λ−2)(λ−1)(λ−3)；但照它列的相鄰關係 3 色就夠，正確的是 λ(λ−1)(λ−2)³ —— 場景兩者都演、標出錯在哪。
+import kit from './_kit.js';
+
 export default function (ctx) {
   const { THREE, lab, sleep, $, log, clearLog, setState, controls, on, say, beat } = ctx;
   let timer = null;
@@ -1297,6 +1299,1228 @@ export default function (ctx) {
     'max-flow': { title: '（課本）最大流與最小割', play: scMaxFlow },
   };
 
+
+  // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
+  const K = kit(ctx);
+  const FRAG = [];
+  // ═══ g8b.js ═══
+  {
+const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
+const { txt } = P;
+// (kit has no beat: short waits use ctx.beat)
+// ─── 離散數學 第 8 章（清大 趙啟超 第23A–24B講 Trees）— cued scenes ───
+// tree 的定義與例子、三個性質（唯一 path、拿掉一邊剛好兩棵 tree、|V| = |E| + 1）與證明、
+// 四個等價敘述 (a)(b)(c)(d)、rooted tree 與名詞、m-ary / complete / balanced、n = mi + 1、l ≤ mʰ、
+// preorder / postorder / inorder。每個 scene 是一串 step；每個 step 等老師說到那句話（notes 的 cues）才動一下。
+// 老師黑板上的圖看不到的地方（G1–G3、證明用的樹、K/L/N 掛哪裡）標「示意」；
+// 所有個數（component 數、cycle 數、|V|、|E|、level、height、葉子數、走訪順序）都由程式在畫面上的圖算出來，
+// 另外用暴力列舉（n ≤ 5 的所有圖、i 不大的所有 complete m-ary tree）檢查定理，顯示 ✓／✘。
+const wt = (tok, ms) => ctx.beat(tok, ms);
+const cap = (a, b = '') => say(a, b);
+const hd = (t, x, y, z = 0) => tag(t, 'ptr', x, y, z);
+const hot = (t, x, y, z = 0) => tag(t, 'ptr alt', x, y, z);
+const sm = (t, x, y, z = 0) => tag(t, 'idx', x, y, z);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const pl = (t, x, y, z = 0) => tag(t, '', x, y, z);
+const ok = (b, x, y, t) => (b ? good(t, x, y) : bad(t.replace(/✓/g, '✘'), x, y));
+const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (typeof o.all === 'function') return gone(o.all()); if (o.element) remove(o); else kill(o); });
+function scene(id, title, steps, cam) {
+  FRAG.push([id, title, async (tok) => {
+    const c = cam || CAM; fresh(c[0], c[1]);
+    const S = {};
+    for (const f of steps) { await step(tok); await f(tok, S); }
+  }]);
+}
+const CAM = [[0, 3.6, 15], [0, 3.1, 0]];
+const TC = { node: '#cdbfa6', edge: '#9c8b70', a: '#4b9ee2', b: '#e55a9b', hot: '#d64545', gold: '#c08a1f', green: '#2fc092', yel: '#e9c53a', purple: '#9b7ef4', orange: '#dd8238', teal: '#31aab0', dim: '#e9e1d3' };
+const HL = '#6a4a00';
+const range = (n) => Array.from({ length: n }, (_, i) => i);
+
+// ── 3D 小零件：節點（球）、邊（圓柱）、虛線、三角形（subtree） ──
+const NG = new THREE.SphereGeometry(0.3, 18, 12);
+const CG = new THREE.CylinderGeometry(1, 1, 1, 8);
+const CONE = new THREE.ConeGeometry(0.14, 0.32, 12);
+function seg(x1, y1, x2, y2, c = TC.edge, r = 0.05, z = -0.03) {
+  const dx = x2 - x1, dy = y2 - y1, L = Math.max(0.02, Math.hypot(dx, dy));
+  const m = new THREE.Mesh(CG, new THREE.MeshStandardMaterial({ color: c, roughness: 0.6 }));
+  m.scale.set(r, L, r); m.position.set((x1 + x2) / 2, (y1 + y2) / 2, z); m.rotation.z = Math.atan2(dy, dx) - Math.PI / 2;
+  lab.world.add(m); return m;
+}
+function dash(pts, c = TC.hot, r = 0.045) {
+  const out = [];
+  for (let i = 0; i + 1 < pts.length; i++) {
+    const [x1, y1] = pts[i], [x2, y2] = pts[i + 1]; const L = Math.hypot(x2 - x1, y2 - y1), k = Math.max(2, Math.round(L / 0.25));
+    for (let j = 0; j < k; j += 2) { const a = j / k, b = Math.min(1, (j + 1) / k); out.push(seg(x1 + (x2 - x1) * a, y1 + (y2 - y1) * a, x1 + (x2 - x1) * b, y1 + (y2 - y1) * b, c, r, 0.02)); }
+  }
+  return out;
+}
+function tri(x, yTop, w, h, c, label) {
+  const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(-w / 2, -h); sh.lineTo(w / 2, -h); sh.lineTo(0, 0);
+  const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false }));
+  m.position.set(x, yTop, -0.1); lab.world.add(m);
+  if (label) { const l = lab.label(label, 'val'); l.position.set(0, -h * 0.62, 0.1); m.add(l); m.userData.lbl = l; }
+  return m;
+}
+// a drawable graph in the picture plane (x right, y up)
+function mkGraph(s = 1) {
+  const g = { V: {}, P: {}, E: {}, s };
+  const key = (a, b) => (a < b ? a + '|' + b : b + '|' + a);
+  g.v = (n, x, y, c = TC.node, name = n) => {
+    const m = new THREE.Mesh(NG, new THREE.MeshStandardMaterial({ color: c, roughness: 0.5 }));
+    m.scale.setScalar(s); m.position.set(x, y, 0); lab.world.add(m);
+    if (name !== '' && name != null) { const l = lab.label(String(name), 'val'); m.add(l); }
+    g.V[n] = m; g.P[n] = [x, y]; return m;
+  };
+  g.e = (a, b, c = TC.edge, dir = false) => {
+    const [x1, y1] = g.P[a], [x2, y2] = g.P[b];
+    const grp = new THREE.Group(); const L = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / L, uy = (y2 - y1) / L;
+    const end = dir ? 0.3 * s + 0.3 : 0; const ex = x2 - ux * end, ey = y2 - uy * end;
+    const cyl = seg(x1, y1, ex, ey, c); lab.world.remove(cyl); grp.add(cyl);
+    if (dir) { const cone = new THREE.Mesh(CONE, cyl.material); cone.position.set(ex + ux * 0.14, ey + uy * 0.14, -0.03); cone.rotation.z = cyl.rotation.z; grp.add(cone); grp.userData.cone = cone; }
+    grp.userData.cyl = cyl; lab.world.add(grp); g.E[key(a, b)] = grp; return grp;
+  };
+  g.ecol = (a, b, c, thick) => { const e = g.E[key(a, b)]; if (!e) return; e.userData.cyl.material.color.set(c); const r = thick ? 0.1 : 0.05; e.userData.cyl.scale.x = r; e.userData.cyl.scale.z = r; };
+  g.vcol = (n, c, gl) => { g.V[n].material.color.set(c); glow(g.V[n], gl); };
+  g.cut = (a, b) => { const e = g.E[key(a, b)]; if (e) { kill(e); delete g.E[key(a, b)]; } };
+  g.edges = () => Object.keys(g.E).map((k) => k.split('|'));
+  g.names = () => Object.keys(g.V);
+  g.all = () => [...Object.values(g.V), ...Object.values(g.E)];
+  return g;
+}
+// nodes appear one by one (with the edges to nodes already there)
+async function grow(tok, g, Pm, E, o = {}) {
+  const order = o.order || Object.keys(Pm); const ms = o.ms || Math.min(200, 2200 / order.length);
+  for (const n of order) {
+    const m = g.v(n, Pm[n][0], Pm[n][1], o.c || TC.node, o.names ? (n in o.names ? o.names[n] : n) : n); m.scale.setScalar(0.01);
+    for (const [u, v] of E) if ((u === n && g.V[v]) || (v === n && g.V[u])) g.e(u, v, TC.edge, !!o.dir && (o.dir === true ? true : o.dir(u, v)));
+    await anim(tok, ms, (t) => m.scale.setScalar(Math.max(0.01, g.s * t)));
+  }
+}
+const shift = (Pm, dx, dy, k = 1) => Object.fromEntries(Object.entries(Pm).map(([n, [x, y]]) => [n, [x * k + dx, y * k + dy]]));
+
+// ── 圖的計算（全部在畫面上的那張圖上算） ──
+function adj(names, edges) { const A = {}; names.forEach((n) => (A[n] = [])); edges.forEach(([u, v]) => { A[u].push(v); A[v].push(u); }); return A; }
+function comps(names, edges) {
+  const A = adj(names, edges), seen = new Set(), out = [];
+  for (const s0 of names) { if (seen.has(s0)) continue; const c = [s0]; seen.add(s0); for (let i = 0; i < c.length; i++) for (const w of A[c[i]]) if (!seen.has(w)) { seen.add(w); c.push(w); } out.push(c); }
+  return out;
+}
+function acyclic(names, edges) { const p = {}; names.forEach((n) => (p[n] = n)); const f = (x) => (p[x] === x ? x : (p[x] = f(p[x]))); for (const [u, v] of edges) { const a = f(u), b = f(v); if (a === b) return false; p[a] = b; } return true; }
+const isTree = (names, edges) => comps(names, edges).length === 1 && acyclic(names, edges);
+function paths(names, edges, a, b) { const A = adj(names, edges), out = []; const go = (v, pth) => { if (v === b) { out.push(pth.slice()); return; } for (const w of A[v]) if (!pth.includes(w)) { pth.push(w); go(w, pth); pth.pop(); } }; go(a, [a]); return out; }
+// every simple cycle = a connected edge subset where each vertex has degree 2
+function cycleSets(edges) {
+  const out = [], m = edges.length;
+  for (let mask = 1; mask < (1 << m); mask++) {
+    const sub = edges.filter((_, i) => mask & (1 << i)); const deg = {};
+    sub.forEach(([u, v]) => { deg[u] = (deg[u] || 0) + 1; deg[v] = (deg[v] || 0) + 1; });
+    const vs = Object.keys(deg); if (vs.some((x) => deg[x] !== 2)) continue;
+    if (comps(vs, sub).length === 1) out.push(sub);
+  }
+  return out;
+}
+function allGraphs(n) {
+  const names = range(n).map((i) => 'v' + i), pairs = [];
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) pairs.push([names[i], names[j]]);
+  return range(1 << pairs.length).map((m) => ({ names, edges: pairs.filter((_, k) => m & (1 << k)), non: pairs.filter((_, k) => !(m & (1 << k))) }));
+}
+// rooted trees from a parent list
+function kids(par) { const K2 = {}; Object.keys(par).forEach((v) => (K2[v] = K2[v] || [])); Object.entries(par).forEach(([v, p]) => { if (p) (K2[p] = K2[p] || []).push(v); }); return K2; }
+function levels(par) { const L = {}; const f = (v) => (v in L ? L[v] : (L[v] = par[v] ? f(par[v]) + 1 : 0)); Object.keys(par).forEach(f); return L; }
+const parEdges = (par) => Object.entries(par).filter(([, p]) => p).map(([v, p]) => [p, v]);
+// complete m-ary trees as nested arrays (null = leaf, array of m subtrees = internal)
+function complete(m, i) {
+  if (i === 0) return [null];
+  const comb = (k, left) => { if (k === m) return left === 0 ? [[]] : []; const r = []; for (let a = 0; a <= left; a++) for (const t of complete(m, a)) for (const rest of comb(k + 1, left - a)) r.push([t, ...rest]); return r; };
+  return comb(0, i - 1);
+}
+const tN = (t) => (t ? 1 + t.reduce((s, c) => s + tN(c), 0) : 1);
+const tL = (t) => (t ? t.reduce((s, c) => s + tL(c), 0) : 1);
+const tI = (t) => (t ? 1 + t.reduce((s, c) => s + tI(c), 0) : 0);
+const tH = (t) => (t ? 1 + Math.max(...t.map(tH)) : 0);
+function leafLv(t, d = 0, acc = []) { if (!t) acc.push(d); else t.forEach((c) => leafLv(c, d + 1, acc)); return acc; }
+const tBal = (t) => { const h = tH(t); return leafLv(t).every((l) => l === h || l === h - 1); };
+const ceilLog = (m, l) => { let h = 0, p = 1; while (p < l) { p *= m; h++; } return h; };   // smallest h with mʰ ≥ l = ⌈log_m l⌉
+
+// ── 共用的示意樹 T9（9 個端點、8 條邊） ──
+const T9P = { a: [0, 5.9], b: [-2.4, 4.7], c: [0.2, 4.7], d: [2.6, 4.7], e: [-3.4, 3.5], f: [-1.4, 3.5], g: [1.6, 3.5], h: [3.6, 3.5], i: [-1.4, 2.3] };
+const T9E = [['a', 'b'], ['a', 'c'], ['a', 'd'], ['b', 'e'], ['b', 'f'], ['d', 'g'], ['d', 'h'], ['f', 'i']];
+const T9V = Object.keys(T9P);
+const minus = (E, a, b) => E.filter(([u, v]) => !((u === a && v === b) || (u === b && v === a)));
+function paintPath(g, pth, c) { for (let k = 0; k + 1 < pth.length; k++) g.ecol(pth[k], pth[k + 1], c, true); pth.forEach((n) => g.vcol(n, c)); }
+
+// ════════ I0AdyRXvHY4（趙啟超 23A：tree 的定義、例子、三個性質、性質 1 與性質 2 前半的證明） ════════
+scene('g8b-def', '23A：Tree 的定義——connected、沒有 cycle', [
+  async (tok, S) => { // @4.0
+    hot('Trees（樹狀圖）', 0, 7.0); cap('開始講 trees', 'tree 中文叫樹狀圖');
+  },
+  async (tok, S) => { // @5.5
+    hd('tree 首先是 undirected simple graph', 0, 6.3);
+    S.g = mkGraph(0.9); S.P = { p: [-4.4, 5.0], q: [-3.4, 3.9], r: [-4.6, 2.7], s: [-2.2, 2.8] };
+    await grow(tok, S.g, S.P, [['p', 'q'], ['q', 'r'], ['q', 's']]);
+    sm('undirected：邊沒有方向', -3.4, 1.9); cap('undirected：邊沒有方向', '');
+  },
+  async (tok, S) => { // @7.2
+    const g = mkGraph(0.9); g.v('x', -0.3, 3.3); g.v('y', 1.0, 3.3); g.e('x', 'y');
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.045, 8, 28), new THREE.MeshStandardMaterial({ color: TC.hot })); ring.position.set(-0.3, 3.95, 0); lab.world.add(ring);
+    bad('loop ✘', 0.35, 4.75); sm('simple：沒有 loop', 0.35, 2.4); cap('simple graph：沒有 loop', '自己連到自己的邊不行');
+  },
+  async (tok, S) => { // @8.0
+    const g = mkGraph(0.9); g.v('u', 2.6, 3.3); g.v('w', 4.6, 3.3);
+    seg(2.6, 3.42, 4.6, 3.42, TC.hot); seg(2.6, 3.18, 4.6, 3.18, TC.hot);
+    bad('兩條 edge ✘', 3.6, 4.2); sm('任兩點之間最多一條 edge', 3.6, 2.4); cap('任兩個端點之間最多一條 edge', '不能有重複的邊');
+  },
+  async (tok, S) => { // @9.6
+    S.q = bub('這樣的 graph 要滿足什麼條件才叫 tree？兩個條件', 0, 1.2); cap('tree 要滿足兩個條件', '');
+  },
+  async (tok, S) => { // @74.7
+    gone(S.q); const c = comps(Object.keys(S.P), S.g.edges());
+    S.c1 = ok(c.length === 1, -3.4, 0.9, '條件 1：connected（只有 ' + c.length + ' 個 component）✓'); cap('條件一：connected graph', '只有一個 component');
+  },
+  async (tok, S) => { // @80.4
+    const pth = paths(Object.keys(S.P), S.g.edges(), 'p', 's')[0]; paintPath(S.g, pth, TC.a);
+    sm('任兩點都有 path：例 ' + pth.join('–'), -3.4, 0.35); cap('任何兩點之間都有 path 相連', '');
+  },
+  async (tok, S) => { // @82.4
+    const ac = acyclic(Object.keys(S.P), S.g.edges());
+    ok(ac, 2.4, 0.9, '條件 2：沒有 cycle ✓'); cap('條件二：沒有 cycle', '繞不回原點');
+  },
+  async (tok, S) => { // @86.6
+    good('Tree = connected graph with no cycles', 0, -0.3); cap('tree：connected、沒有 cycle', '兩個都要');
+  },
+]);
+
+// G1 tree、G2 有 cycle、G3 兩個 component（形狀是示意）
+const G1 = { P: { 1: [0, 1.3], 2: [-0.9, 0.4], 3: [0.9, 0.4], 4: [-1.4, -0.6], 5: [-0.4, -0.6], 6: [0.9, -0.6] }, E: [['1', '2'], ['1', '3'], ['2', '4'], ['2', '5'], ['3', '6']] };
+const G2 = { P: G1.P, E: [['1', '2'], ['1', '3'], ['2', '4'], ['2', '5'], ['3', '6'], ['5', '6']] };
+const G3 = { P: { 1: [-0.8, 1.3], 2: [-1.4, 0.3], 3: [-0.3, 0.3], 4: [-0.3, -0.7], 5: [1.0, 1.1], 6: [1.0, 0.1], 7: [1.4, -0.8] }, E: [['1', '2'], ['1', '3'], ['3', '4'], ['5', '6'], ['6', '7']] };
+const GX = [-4.3, 0, 4.3];
+scene('g8b-examples', '23A：例子——G1 是 tree、G2 有 cycle、G3 是 forest', [
+  async (tok, S) => { // @94.8
+    hd('看例子：G1、G2、G3', 0, 7.0); note('圖形為示意', 4.6, 7.0); cap('看幾個例子', '');
+  },
+  async (tok, S) => { // @137.6
+    S.g = [G1, G2, G3].map((G, k) => { const g = mkGraph(0.8); g.P0 = shift(G.P, GX[k], 4.4); g.E0 = G.E; return g; });
+    S.nm = [0, 1, 2].map((k) => pl('G' + (k + 1), GX[k], 6.2));
+    for (const g of S.g) await grow(tok, g, g.P0, g.E0, { ms: 110 });
+    sm('三個都是 undirected simple graph', 0, 2.8); cap('三個 graph', '都是 undirected simple graph');
+  },
+  async (tok, S) => { // @147.0
+    const g = S.g[0]; const c = comps(g.names(), g.edges()).length;
+    ok(c === 1, GX[0], 2.1, 'connected ✓'); cap('G1 是不是 tree？', '先看 connected：是');
+  },
+  async (tok, S) => { // @153.0
+    const g = S.g[0]; const ac = acyclic(g.names(), g.edges()); g.names().forEach((n) => g.vcol(n, TC.green));
+    ok(ac, GX[0], 1.5, '沒有 cycle ✓'); good(isTree(g.names(), g.edges()) ? 'G1 是 tree' : '?', GX[0], 0.8); cap('G1 沒有 cycle', '所以 G1 是 tree');
+  },
+  async (tok, S) => { // @167.6
+    const g = S.g[1]; const c = comps(g.names(), g.edges()).length;
+    ok(c === 1, GX[1], 2.1, 'connected（' + c + ' 個 component）✓'); cap('G2 是 connected', '只有一個 component');
+  },
+  async (tok, S) => { // @172.1
+    const g = S.g[1]; const cs = cycleSets(g.edges()); S.cyc = cs[0];
+    cs[0].forEach(([u, v]) => g.ecol(u, v, TC.hot, true));
+    bad('有 cycle：' + cs.length + ' 個 ✘', GX[1], 1.5); cap('但 G2 有 cycle', '紅色這圈');
+  },
+  async (tok, S) => { // @176.0
+    bad('G2 不是 tree', GX[1], 0.8); cap('所以 G2 不是 tree', '因為有 cycle');
+  },
+  async (tok, S) => { // @195.0
+    glow(S.g[2].V['1'], HL); cap('再看 G3', '');
+  },
+  async (tok, S) => { // @205.0
+    const g = S.g[2]; glow(g.V['1'], null); S.c3 = comps(g.names(), g.edges());
+    bad('connected？不是：' + S.c3.length + ' 個 component ✘', GX[2], 2.1); cap('條件一 connected？', 'G3 有兩個 component');
+  },
+  async (tok, S) => { // @210.4
+    bad('G3 不是 tree', GX[2], 1.5); cap('不是 connected', '所以 G3 不是 tree');
+  },
+  async (tok, S) => { // @237.5
+    const g = S.g[2]; const col = [TC.a, TC.b];
+    const each = S.c3.map((c, k) => { c.forEach((n) => g.vcol(n, col[k])); const E = g.edges().filter(([u]) => c.includes(u)); return isTree(c, E); });
+    ok(each.every(Boolean), GX[2], 0.8, '兩個 component 各自都是 tree ✓'); cap('但兩個 component', '本身都是 tree');
+  },
+  async (tok, S) => { // @270.4
+    hot('每個 component 都是 tree → forest', 0, 0.0); cap('每個 component 都是 tree', '這種圖叫 forest');
+  },
+  async (tok, S) => { // @296.0
+    sm('forest = 森林：好多棵樹（tree 本身也是只有一棵樹的 forest）', 0, -0.6); cap('forest 中文是森林', '好多棵樹');
+  },
+]);
+
+scene('g8b-props', '23A：Tree 的三個性質', [
+  async (tok, S) => { // @318.0
+    hd('Tree 的性質', 0, 7.0); cap('tree 有一些性質', '後面都在討論這些');
+  },
+  async (tok, S) => { // @338.0
+    S.g = mkGraph(0.9); await grow(tok, S.g, T9P, T9E); note('T（示意）', 4.6, 5.9);
+    sm('一般 graph 叫 G；是 tree 時用 T', 0, 1.5); cap('tree 用 T 表示', '一般 graph 用 G');
+  },
+  async (tok, S) => { // @399.4
+    const ps = paths(T9V, T9E, 'e', 'h'); S.ps = ps; paintPath(S.g, ps[0], TC.a);
+    S.t1 = pl('性質 1：|V| ≥ 2 時，任兩個不同端點之間有 unique path', 0, 1.1); cap('性質一：任兩點之間', '有唯一的一條 path');
+  },
+  async (tok, S) => { // @423.1
+    ok(S.ps.length === 1, 0, 0.45, 'e 到 h 的 path 一共 ' + S.ps.length + ' 條：' + S.ps[0].join('–') + ' ✓');
+    sm('connected 只保證「有」path；tree 保證「只有一條」', 0, -0.15); cap('重點是 unique', '不只有路，而且只有一條');
+  },
+  async (tok, S) => { // @497.0
+    gone(S.t1); S.g.names().forEach((n) => S.g.vcol(n, TC.node)); T9E.forEach(([u, v]) => S.g.ecol(u, v, TC.edge));
+    S.g.cut('a', 'b'); S.cut = dash([T9P.a, T9P.b], TC.hot);
+    S.t2 = pl('性質 2：拿掉任何一條 edge（例：{a,b}）', 0, 1.1); cap('性質二：拿掉任何一條 edge', '');
+  },
+  async (tok, S) => { // @515.4
+    const cs = comps(T9V, minus(T9E, 'a', 'b')); cs.forEach((c, k) => c.forEach((n) => S.g.vcol(n, [TC.a, TC.b][k])));
+    let all = true; for (const [u, v] of T9E) { const E2 = minus(T9E, u, v); const c2 = comps(T9V, E2); if (c2.length !== 2 || !c2.every((c) => isTree(c, E2.filter(([x]) => c.includes(x))))) all = false; }
+    ok(cs.length === 2 && all, 0, 0.45, '剛好 ' + cs.length + ' 個 component、每個都是 tree；8 條邊逐一試都一樣 ✓'); cap('剩下 exactly 兩個 component', '每個都是 tree');
+  },
+  async (tok, S) => { // @547.0
+    gone(S.cut, S.t2); S.g.e('a', 'b'); T9V.forEach((n) => S.g.vcol(n, TC.node));
+    const nv = S.g.names().length, ne = S.g.edges().length;
+    ok(nv === ne + 1, 0, -0.75, '性質 3：|V| = |E| + 1　這棵：' + nv + ' = ' + ne + ' + 1 ✓'); cap('性質三：端點個數比邊多一', '每個 tree 都是');
+  },
+  async (tok, S) => { // @563.6
+    bub('三個性質都來證明一下', 0, -1.35); cap('三個都證明', '證明過程能更了解 tree');
+  },
+]);
+
+// 證明性質 1：兩條 path → cycle（示意）
+const PF1P = { a: [-4.6, 3.6], x: [-3.0, 3.6], p1: [-1.2, 5.2], p2: [1.4, 5.2], b: [3.6, 3.6], q1: [-1.4, 2.1], q2: [0.4, 1.9], q3: [2.2, 2.2] };
+scene('g8b-pf1', '23A：證明性質 1——兩點之間的 path 唯一', [
+  async (tok, S) => { // @576.0
+    hd('證明性質 1：任兩個不同端點之間只有一條 path', 0, 7.0); cap('來證第一個性質', '');
+  },
+  async (tok, S) => { // @646.4
+    S.g = mkGraph(0.9); S.g.v('a', ...PF1P.a, TC.a); S.g.v('b', ...PF1P.b, TC.b); note('示意', 5.2, 6.2);
+    cap('T 裡兩個不同端點 a、b', '');
+  },
+  async (tok, S) => { // @658.0
+    S.t = pl('T 是 connected → a、b 之間至少一條 path', 0, 0.8); cap('T connected', '所以至少有一條 path');
+  },
+  async (tok, S) => { // @672.0
+    sm('要證「只有一條」：用反證——假設不只一條，推出矛盾', 0, 0.2); cap('證只有一條：反證法', '若非 Q 則非 P');
+  },
+  async (tok, S) => { // @700.7
+    S.q = bub('假設：a、b 之間不只一條 path', 0, -0.5); cap('假設有不只一條 path', '');
+  },
+  async (tok, S) => { // @715.2
+    const g = S.g; for (const n of ['x', 'p1', 'p2']) { g.v(n, ...PF1P[n], TC.node, ''); }
+    [['a', 'x'], ['x', 'p1'], ['p1', 'p2'], ['p2', 'b']].forEach(([u, v]) => g.e(u, v, TC.gold)); sm('path 1', 0.1, 5.8);
+    cap('一條 path', '隨便畫的');
+  },
+  async (tok, S) => { // @719.1
+    const g = S.g; for (const n of ['q1', 'q2', 'q3']) g.v(n, ...PF1P[n], TC.node, '');
+    [['x', 'q1'], ['q1', 'q2'], ['q2', 'q3'], ['q3', 'b']].forEach(([u, v]) => g.e(u, v, TC.purple)); sm('path 2（前面一段跟 path 1 共用）', 0.4, 1.3);
+    cap('還有另外一條 path', '也是隨便畫的');
+  },
+  async (tok, S) => { // @746.0
+    const cs = cycleSets(S.g.edges()); S.cs = cs; cs[0].forEach(([u, v]) => S.g.ecol(u, v, TC.hot, true));
+    bad('出現 cycle（' + cs.length + ' 個）', 4.6, 4.6); cap('就一定會有 cycle', '不管兩條 path 怎麼交');
+  },
+  async (tok, S) => { // @805.0
+    gone(S.q); bad('兩條 path 的某些 edges 構成 cycle → 違反「tree 沒有 cycle」✘', 0, -0.5); cap('某部分的 edges 構成 cycle', '跟 tree 沒有 cycle 矛盾');
+  },
+  async (tok, S) => { // @831.3
+    good('所以任兩個不同端點之間只有唯一一條 path ✓', 0, -1.2); cap('所以只有唯一一條 path', '');
+  },
+]);
+
+scene('g8b-pf2a', '23A：證明性質 2（上）——拿掉 {a,b} 後一定不 connected', [
+  async (tok, S) => { // @850.0
+    hd('證明性質 2：拿掉任一條 edge → 剛好 2 個 component、每個都是 tree', 0, 7.0); cap('再來證第二個性質', '');
+  },
+  async (tok, S) => { // @865.6
+    S.l = sm('要證兩件事：① 剛好兩個 component　② 兩個都是 tree', 0, 6.5); cap('要證兩點', '剛好兩個 component；每個都是 tree');
+  },
+  async (tok, S) => { // @932.2
+    S.g = mkGraph(0.9); await grow(tok, S.g, T9P, T9E); note('示意', 4.6, 5.9); S.g.ecol('a', 'b', TC.gold, true);
+    cap('{a,b} 是 T 的任一條 edge', '');
+  },
+  async (tok, S) => { // @941.0
+    S.g.cut('a', 'b'); S.d = dash([T9P.a, T9P.b], TC.gold); S.g.vcol('a', TC.a); S.g.vcol('b', TC.b);
+    sm('只拿掉 edge，端點 a、b 還在', 0, 1.6); cap('把這條 edge 拿掉', '端點還在');
+  },
+  async (tok, S) => { // @953.0
+    hot("T' = (V, E − {{a,b}})", 0, 1.0); cap("剩下的圖叫 T'", 'vertex set 不變，少一條 edge');
+  },
+  async (tok, S) => { // @996.7
+    S.t = pl("第一步：先說明 T' 一定不是 connected", 0, 0.35); cap("先說明 T' 不是 connected", '再說明剛好兩個 component');
+  },
+  async (tok, S) => { // @1011.5
+    S.q = bub("反證：假設 T' 還是 connected", 0, -0.3); cap("用反證：假設 T' connected", '');
+  },
+  async (tok, S) => { // @1071.5
+    S.fake = dash([T9P.b, [-4.9, 5.2], [-4.9, 6.5], [0, 6.5], T9P.a], TC.hot); bad("假想：T' 裡 a 到 b 還有一條 path", -3.3, 6.0);
+    cap("那 a 跟 b 在 T' 還有一條 path", '');
+  },
+  async (tok, S) => { // @1089.4
+    bad('那原來 T 裡 a、b 之間就有兩條 path（還有 {a,b}）→ 跟性質 1 矛盾 ✘', 0, -0.95); cap('原來 T 裡 a、b 就有兩條 path', '跟性質一矛盾');
+  },
+  async (tok, S) => { // @1114.0
+    gone(S.fake, S.q); const c = comps(T9V, minus(T9E, 'a', 'b')).length;
+    ok(c > 1, 0, -1.6, "所以 T' 一定 disconnected（這張圖算出 " + c + ' 個 component）✓'); cap("拿掉 {a,b} 後 T' 一定 disconnected", '');
+  },
+  async (tok, S) => { // @1199.4
+    bub('下一步：證明剛好兩個 component', 4.0, 1.6); cap('再來：證明剛好兩個 component', '');
+  },
+]);
+
+// ════════ VHsNFDXGV-0（趙啟超 23B：性質 2 後半、性質 3 與數學歸納法） ════════
+scene('g8b-pf2b', "23B：證明性質 2（下）——T' 剛好兩個 component、都是 tree", [
+  async (tok, S) => { // @4.4
+    hd("T' 不 connected：把端點分成兩組", 0, 7.0);
+    S.g = mkGraph(0.9); await grow(tok, S.g, T9P, minus(T9E, 'a', 'b')); S.d = dash([T9P.a, T9P.b], TC.gold); note('示意', 4.6, 5.9);
+    S.E = minus(T9E, 'a', 'b'); S.cs = comps(T9V, S.E); cap("T' 是 disconnected", '把端點分成兩個 subset');
+  },
+  async (tok, S) => { // @6.6
+    const A = S.cs.find((c) => c.includes('a')); A.forEach((n) => S.g.vcol(n, TC.a));
+    pl('第一組：a 和能經過 path 連到 a 的端點 ' + A.sort().join(' '), 0, 1.5); cap('第一組：a', '和能連到 a 的端點');
+  },
+  async (tok, S) => { // @41.7
+    const B = S.cs.find((c) => c.includes('b')); B.forEach((n) => S.g.vcol(n, TC.b));
+    pl('第二組：b 和能連到 b 的端點 ' + B.sort().join(' '), 0, 0.95); cap('第二組：b', '和能連到 b 的端點');
+  },
+  async (tok, S) => { // @60.5
+    S.q = bub('為什麼剛好兩組？原來在 T 裡，每個端點都有唯一 path 連到 a', 0, 0.3); cap('為什麼剛好兩組？', '原來每個端點都有 path 到 a');
+  },
+  async (tok, S) => { // @68.0
+    const p = paths(T9V, T9E, 'h', 'a')[0]; p.slice(0, -1).forEach((n, k) => S.g.ecol(n, p[k + 1], TC.a, true));
+    pl('例 h：' + p.join('–') + '，沒經過 {a,b} → 拿掉後還連到 a（第一組）', 0, -0.3); cap('path 沒經過 {a,b}', '拿掉後還連到 a');
+  },
+  async (tok, S) => { // @84.6
+    const p = paths(T9V, T9E, 'i', 'a')[0]; p.slice(0, -1).forEach((n, k) => { if (S.g.E[[n, p[k + 1]].sort().join('|')]) S.g.ecol(n, p[k + 1], TC.b, true); });
+    pl('例 i：' + p.join('–') + '，經過 {a,b} → 拿掉後只連到 b（第二組）', 0, -0.85); cap('path 經過 {a,b}', '拿掉後只連到 b');
+  },
+  async (tok, S) => { // @109.7
+    gone(S.q); ok(S.cs.length === 2, 0, -1.45, '不是經過就是沒經過 → 剛好 ' + S.cs.length + ' 個 component ✓'); cap('只有兩種情況', '所以剛好兩個 component');
+  },
+  async (tok, S) => { // @145.2
+    S.q2 = bub('兩個 component 都是 tree？如果某個有 cycle，原來的 T 就有 cycle', 0, 6.3); cap('兩個 component 都是 tree 嗎？', '有 cycle 的話原來 T 就有');
+  },
+  async (tok, S) => { // @161.7
+    const allT = S.cs.every((c) => acyclic(c, S.E.filter(([u]) => c.includes(u))));
+    ok(allT, 4.0, 2.3, '拿掉邊不會製造新 cycle → 兩個都是 tree ✓'); cap('拿掉一條邊不會產生新的 cycle', '兩個都是 tree');
+  },
+  async (tok, S) => { // @223.3
+    gone(S.q2); good('整理：① 不 connected（否則 a、b 有兩條 path）② 剛好兩組 ③ 都沒 cycle → 性質 2 證完', 0, 6.3); cap('整理一下性質二的證明', '');
+  },
+]);
+
+scene('g8b-p3small', '23B：性質 3——畫幾棵小 tree 看 |V| = |E| + 1', [
+  async (tok, S) => { // @321.2
+    hd('性質 3：|V| = |E| + 1（端點比邊多一個）', 0, 7.0); cap('第三個性質', '端點比邊多一');
+  },
+  async (tok, S) => { // @341.6
+    S.T = []; const g = mkGraph(0.8); g.v('1', -5.2, 5.0); S.T.push(g); cap('一個端點的 tree', '');
+  },
+  async (tok, S) => { // @344.8
+    const g = mkGraph(0.8); await grow(tok, g, { 1: [-3.6, 5.6], 2: [-3.6, 4.2] }, [['1', '2']]); S.T.push(g); cap('兩個端點的 tree', '');
+  },
+  async (tok, S) => { // @348.8
+    const g = mkGraph(0.8); await grow(tok, g, { 1: [-1.6, 5.6], 2: [-2.2, 4.4], 3: [-1.0, 4.4] }, [['1', '2'], ['1', '3']]); S.T.push(g); cap('三個端點的 tree', '');
+  },
+  async (tok, S) => { // @352.4
+    const g = mkGraph(0.8); await grow(tok, g, { 1: [0.8, 6.0], 2: [0.8, 5.0], 3: [0.8, 4.0], 4: [0.8, 3.0] }, [['1', '2'], ['2', '3'], ['3', '4']]); S.T.push(g); cap('四個端點：有很多樣子', '隨便畫一個');
+  },
+  async (tok, S) => { // @361.0
+    const g = mkGraph(0.8); await grow(tok, g, { 1: [3.6, 5.0], 2: [2.6, 4.0], 3: [3.6, 3.8], 4: [4.6, 4.0] }, [['1', '2'], ['1', '3'], ['1', '4']]); S.T.push(g);
+    sm('四個端點的另一種', 3.6, 2.9); cap('當然還有別種', '');
+  },
+  async (tok, S) => { // @366.2
+    const xs = [-5.2, -3.6, -1.6, 0.8, 3.6];
+    S.T.forEach((g, k) => { const nv = g.names().length, ne = g.edges().length; ok(isTree(g.names(), g.edges()) && nv === ne + 1, xs[k], 1.9, nv + ' 點 ' + ne + ' 邊 ✓'); });
+    cap('1→0、2→1、3→2、4→3', '端點總比邊多一');
+  },
+]);
+
+scene('g8b-p3ind', '23B：用數學歸納法證 |V| = |E| + 1', [
+  async (tok, S) => { // @384.6
+    hd('證明：對端點個數做數學歸納法（induction on |V|）', 0, 7.0); cap('用數學歸納法', 'induction on number of vertices');
+  },
+  async (tok, S) => { // @409.1
+    S.l1 = pl('basis：最少的 case 是 1 個端點', -3.4, 6.2); const g = mkGraph(0.8); g.v('v', -5.6, 5.4); S.g0 = g; cap('induction basis', '最少只有一個端點');
+  },
+  async (tok, S) => { // @430.6
+    ok(S.g0.edges().length === 0, -3.0, 5.4, '沒有邊：|E| = 0 = 1 − 1 ✓'); cap('一個端點沒有邊', '|E| = 0，成立');
+  },
+  async (tok, S) => { // @478.6
+    pl('hypothesis：所有端點個數 ≤ k 的 tree 都成立（k ≥ 1）', 0, 4.6); cap('induction hypothesis', '1 到 k 個端點都成立');
+  },
+  async (tok, S) => { // @508.2
+    hot('induction step：證 k + 1 個端點也成立', 0, 3.9); cap('induction step', '');
+  },
+  async (tok, S) => { // @537.1
+    gone(S.l1, S.g0); S.T = shift(T9P, 0, -3.3, 0.8);
+    S.g = mkGraph(0.75); await grow(tok, S.g, S.T, T9E, { names: {} }); note('示意：k + 1 = 9', 4.4, 2.0);
+    cap('考慮 k + 1 個端點的 tree T', '');
+  },
+  async (tok, S) => { // @568.0
+    S.g.cut('a', 'b'); S.d = dash([S.T.a, S.T.b], TC.gold); cap('拿掉一條 edge', '為了能用 hypothesis');
+  },
+  async (tok, S) => { // @594.0
+    S.cs = comps(T9V, minus(T9E, 'a', 'b')); S.cs.forEach((c, k) => c.forEach((n) => S.g.vcol(n, [TC.a, TC.b][k])));
+    cap('由性質二：變成兩個 tree', 'T1、T2');
+  },
+  async (tok, S) => { // @651.0
+    const E2 = minus(T9E, 'a', 'b'); S.n = S.cs.map((c) => [c.length, E2.filter(([u]) => c.includes(u)).length]);
+    pl('T1：|V1| = ' + S.n[0][0] + '、|E1| = ' + S.n[0][1], 3.2, 3.3); pl('T2：|V2| = ' + S.n[1][0] + '、|E2| = ' + S.n[1][1], -3.6, 3.3);
+    S.g.vcol('a', TC.a); cap('T1 有 V1、E1；T2 有 V2、E2', '');
+  },
+  async (tok, S) => { // @693.0
+    ok(S.n[0][0] + S.n[1][0] === 9, 0, 0.5, '|V1| + |V2| = |V| = k + 1（端點沒少）　例：' + S.n[0][0] + ' + ' + S.n[1][0] + ' = 9 ✓'); cap('端點總數不變', '|V1| + |V2| = k + 1');
+  },
+  async (tok, S) => { // @716.5
+    ok(S.n[0][1] + S.n[1][1] === 8 - 1, 0, -0.1, '|E1| + |E2| = |E| − 1（少一條邊）　例：' + S.n[0][1] + ' + ' + S.n[1][1] + ' = 8 − 1 ✓'); cap('邊少了一條', '|E1| + |E2| = |E| − 1');
+  },
+  async (tok, S) => { // @741.4
+    pl('兩棵各至少有 1 個端點（a 一邊、b 一邊）→ 兩棵都 ≤ k 個端點', 0, -0.7); cap('兩棵都至少一個端點', '所以都不超過 k');
+  },
+  async (tok, S) => { // @848.1
+    ok(S.n.every(([v, e]) => v === e + 1), 0, -1.3, 'hypothesis 可用：|V1| = |E1| + 1、|V2| = |E2| + 1 ✓'); cap('套用 induction hypothesis', '兩棵都端點比邊多一');
+  },
+  async (tok, S) => { // @876.6
+    S.eq = hot('|V| = |V1| + |V2| = (|E1| + 1) + (|E2| + 1) = (|E| − 1) + 2', 0, -1.95); cap('代進去', '');
+  },
+  async (tok, S) => { // @926.5
+    gone(S.eq); good('|V| = (|E| − 1) + 2 = |E| + 1　induction step 完成 ✓', 0, -1.95); cap('= |E| + 1', 'induction step 完成');
+  },
+  async (tok, S) => { // @934.0
+    let okAll = true, cnt = 0;
+    for (let n = 1; n <= 5; n++) for (const G of allGraphs(n)) if (isTree(G.names, G.edges)) { cnt++; if (G.edges.length !== n - 1) okAll = false; }
+    ok(okAll, 0, 6.2, '數學歸納法 → 所有 tree 都成立；電腦檢查 n ≤ 5 的全部 ' + cnt + ' 棵（有標號的）tree ✓'); cap('由數學歸納法', '對所有 tree 都成立');
+  },
+  async (tok, S) => { // @965.7
+    sm('流程：basis → hypothesis（≤ k）→ 拿掉一條邊變兩棵 → 套 hypothesis → 加起來', 0, 5.6); cap('再講一次證明流程', '');
+  },
+]);
+
+// ════════ BlAe2OrCgTw（趙啟超 23C：四個等價敘述與證明 a⇒b⇒c⇒d） ════════
+scene('g8b-equiv', '23C：定理——四個等價敘述 (a)(b)(c)(d)', [
+  async (tok, S) => { // @4.0
+    hd('定理：undirected simple graph T（|V|、|E|）的四個敘述互相等價', 0, 7.0); cap('一個定理有四個 statement', '四個都 equivalent');
+  },
+  async (tok, S) => { // @8.1
+    sm('所以 (b)(c)(d) 都可以拿來當 tree 的定義', 0, 6.4); cap('剩下三個', '都可以當 tree 的定義');
+  },
+  async (tok, S) => { // @39.6
+    pl('(a) T 是 tree', -3.2, 5.6); cap('(a) T 是 tree', '');
+  },
+  async (tok, S) => { // @57.8
+    pl('(b) T 沒有 cycle，且 |V| = |E| + 1', -3.2, 5.0); cap('(b) 沒有 cycle', '且 |V| = |E| + 1');
+  },
+  async (tok, S) => { // @63.1
+    pl('(c) T connected，且 |V| = |E| + 1', -3.2, 4.4); cap('(c) connected', '且 |V| = |E| + 1');
+  },
+  async (tok, S) => { // @87.0
+    const C = [['connected', 2.6, 5.6, TC.a], ['沒有 cycle', 5.0, 5.6, TC.green], ['|V| = |E| + 1', 3.8, 4.3, TC.orange]];
+    C.forEach(([t, x, y, c]) => cube(t, c, [2.1, 0.55, 0.4], x, y, 0, 0.6));
+    let bad3 = 0, tot = 0;
+    for (let n = 1; n <= 5; n++) for (const G of allGraphs(n)) { tot++; const c = comps(G.names, G.edges).length === 1, a = acyclic(G.names, G.edges), q = n === G.edges.length + 1; if ((c && a && !q) || (a && q && !c) || (c && q && !a)) bad3++; }
+    ok(bad3 === 0, 3.8, 3.4, '任兩個成立 ⇒ 第三個成立（電腦查 n ≤ 5 全部 ' + tot + ' 個圖）✓'); cap('三個條件任兩個成立', '第三個就自動成立');
+  },
+  async (tok, S) => { // @141.4
+    pl('(d) T 沒有 cycle，且對不相鄰的端點 a、b，加上 {a,b} 就剛好產生一個 cycle', 0, 2.5); cap('(d) 沒有 cycle', '加一條原本沒有的邊 → 剛好一個 cycle');
+  },
+  async (tok, S) => { // @192.5
+    let bad4 = 0;
+    for (let n = 1; n <= 5; n++) for (const G of allGraphs(n)) { const a = acyclic(G.names, G.edges); const d = a && G.non.every((e) => cycleSets([...G.edges, e]).length === 1); if (d !== isTree(G.names, G.edges)) bad4++; }
+    ok(bad4 === 0, 0, 1.8, '(d) ⇔ tree：n ≤ 5 全部檢查 ✓'); cap('(d) 也跟 tree 等價', '');
+  },
+  async (tok, S) => { // @201.3
+    hot('證法：(a) ⇒ (b) ⇒ (c) ⇒ (d) ⇒ (a)，繞一圈就任兩個互推', 0, 1.0); cap('證法：繞一圈', 'a⇒b⇒c⇒d⇒a');
+  },
+]);
+
+scene('g8b-ab', '23C：(a) ⇒ (b)', [
+  async (tok, S) => { // @237.7
+    hd('(a) ⇒ (b)：假設 T 是 tree', 0, 7.0); S.g = mkGraph(0.85); await grow(tok, S.g, T9P, T9E); note('示意', 4.6, 5.9); cap('假設 T 是 tree', '');
+  },
+  async (tok, S) => { // @257.0
+    ok(acyclic(T9V, T9E), 0, 1.5, 'tree 的定義：connected、沒有 cycle → 當然沒有 cycle ✓'); cap('tree 的定義就沒有 cycle', '');
+  },
+  async (tok, S) => { // @273.3
+    ok(T9V.length === T9E.length + 1, 0, 0.9, '前面性質 3：|V| = |E| + 1（這棵 ' + T9V.length + ' = ' + T9E.length + ' + 1）✓'); cap('前面證過的性質', '|V| = |E| + 1');
+  },
+  async (tok, S) => { // @321.6
+    good('(a) ⇒ (b) 完成：四個證明裡最簡單的一個', 0, 0.2); cap('a ⇒ b 最簡單', '直接套前面的性質');
+  },
+]);
+
+const FOR = { P: { x1: [-4.6, 5.4], x2: [-5.2, 4.2], x3: [-4.0, 4.2], y1: [-1.0, 5.4], y2: [-1.0, 4.2], z1: [3.5, 5.4], z2: [2.6, 4.2], z3: [4.4, 4.2], z4: [4.4, 3.0] }, E: [['x1', 'x2'], ['x1', 'x3'], ['y1', 'y2'], ['z1', 'z2'], ['z1', 'z3'], ['z3', 'z4']] };
+scene('g8b-bc', '23C：(b) ⇒ (c)——數 component', [
+  async (tok, S) => { // @331.7
+    hd('(b) ⇒ (c)：已知沒有 cycle、|V| = |E| + 1', 0, 7.0); cap('b 推到 c', '');
+  },
+  async (tok, S) => { // @361.3
+    S.t = pl('|V| = |E| + 1 已經有了 → 只要證 T 是 connected', 0, 6.4); cap('只要證 connected 就好', '');
+  },
+  async (tok, S) => { // @373.4
+    S.g = mkGraph(0.8); await grow(tok, S.g, FOR.P, FOR.E, { names: {} }); note('示意：r = 3', 5.4, 6.0);
+    S.cs = comps(Object.keys(FOR.P), FOR.E); S.cs.forEach((c, k) => c.forEach((n) => S.g.vcol(n, [TC.a, TC.b, TC.green][k])));
+    ['T1', 'T2', 'T3'].forEach((t, k) => sm(t, [-4.6, -1.0, 3.5][k], 2.4));
+    cap('先不假設 connected', '設 T 有 r 個 component');
+  },
+  async (tok, S) => { // @463.5
+    pl('Ti 有 |Vi| 個端點、|Ei| 條邊；Σ|Vi| = |V|、Σ|Ei| = |E|', 0, 1.6); cap('第 i 個 component：|Vi|、|Ei|', '加起來就是全部');
+  },
+  async (tok, S) => { // @486.2
+    const each = S.cs.map((c) => isTree(c, FOR.E.filter(([u]) => c.includes(u))));
+    ok(each.every(Boolean), 0, 1.0, '每個 component：connected（component 的定義）＋ 沒有 cycle（(b)）→ 都是 tree ✓'); cap('每個 component 都是 tree', 'connected 又沒有 cycle');
+  },
+  async (tok, S) => { // @576.0
+    const nn = S.cs.map((c) => [c.length, FOR.E.filter(([u]) => c.includes(u)).length]); S.nn = nn;
+    ok(nn.every(([v, e]) => v === e + 1), 0, 0.4, '所以每個都 |Vi| = |Ei| + 1：' + nn.map(([v, e]) => v + ' = ' + e + ' + 1').join('、') + ' ✓'); cap('每個 component 端點比邊多一', '');
+  },
+  async (tok, S) => { // @685.2
+    const V = Object.keys(FOR.P).length, E = FOR.E.length;
+    ok(V === E + S.cs.length, 0, -0.2, '|V| = Σ(|Ei| + 1) = |E| + r　這張：' + V + ' = ' + E + ' + ' + S.cs.length + ' ✓'); cap('全部加起來', '|V| = |E| + r');
+  },
+  async (tok, S) => { // @717.1
+    hot('但 (b) 說 |V| = |E| + 1 → r = 1', 0, -0.8); bad('（示意圖 r = 3，不滿足 (b)）', 0, -1.4); cap('(b) 假設 |V| = |E| + 1', '所以 r 只能是 1');
+  },
+  async (tok, S) => { // @744.6
+    good('只有一個 component → T connected ✓', 0, -2.0); cap('只有一個 component', '所以 connected');
+  },
+  async (tok, S) => { // @775.3
+    sm('直觀：兩個 component 各多 1，就多 2 了，不對', 0, 6.4); gone(S.t); cap('直觀：每個 component 多一', '多個 component 數目就對不上');
+  },
+]);
+
+const HEX = Object.fromEntries(range(6).map((k) => ['c' + (k + 1), [-1.6 + 1.5 * Math.cos(Math.PI / 2 - k * Math.PI / 3), 4.2 + 1.5 * Math.sin(Math.PI / 2 - k * Math.PI / 3)]]));
+const HEXE = range(6).map((k) => ['c' + (k + 1), 'c' + (((k + 1) % 6) + 1)]);
+scene('g8b-cd1', '23C：(c) ⇒ (d) 第一部分——T 沒有 cycle', [
+  async (tok, S) => { // @823.7
+    hd('(c) ⇒ (d)：已知 connected、|V| = |E| + 1', 0, 7.0); S.t = sm('要證：① 沒有 cycle　② 加一條沒有的邊 → 剛好一個 cycle', 0, 6.4); cap('c 推到 d', '要證兩部分');
+  },
+  async (tok, S) => { // @868.0
+    S.q = bub('先證 ① 沒有 cycle：反證，假設 T 有 cycle C', 3.0, 1.6); cap('先證沒有 cycle', '假設有 cycle，推出矛盾');
+  },
+  async (tok, S) => { // @913.7
+    S.g = mkGraph(0.8); await grow(tok, S.g, HEX, HEXE, { names: Object.fromEntries(range(6).map((k) => ['c' + (k + 1), String(k + 1)])) });
+    HEXE.forEach(([u, v]) => S.g.ecol(u, v, TC.hot, true)); note('示意', -4.2, 6.0); sm('cycle C', -1.6, 4.2);
+    cap('畫一個 cycle C', '一、二、三、四、五、六');
+  },
+  async (tok, S) => { // @937.5
+    S.cnt = pl('cycle 上：' + S.g.names().length + ' 個端點、' + S.g.edges().length + ' 條邊 → 一樣多', 0, 0.9); cap('單看 cycle', '邊數 = 端點數');
+  },
+  async (tok, S) => { // @979.2
+    gone(S.q); S.g.v('x', 1.6, 5.2, TC.a); S.g.e('x', 'c2', TC.a);
+    txt(S.cnt, '加上 x：' + S.g.names().length + ' 個端點、' + S.g.edges().length + ' 條邊'); cap('不在 cycle 上的端點', 'connected → 一定有路連到 cycle');
+  },
+  async (tok, S) => { // @1037.6
+    sm('每多考慮一個端點，至少多一條新的邊', 3.4, 4.2); cap('每多一個端點', '至少多一條新的邊');
+  },
+  async (tok, S) => { // @1061.1
+    S.g.v('y', 3.4, 5.8, TC.b); S.g.e('y', 'x', TC.b); sm('y 不一定直接連到 cycle（經過 x）', 3.8, 6.4);
+    txt(S.cnt, '加上 y：' + S.g.names().length + ' 個端點、' + S.g.edges().length + ' 條邊'); cap('不見得直接連到 cycle', '但還是多一條新的邊');
+  },
+  async (tok, S) => { // @1105.0
+    const V = S.g.names().length, E = S.g.edges().length;
+    ok(E >= V, 0, 0.3, '所以 |E| ≥ |V|（這裡 ' + E + ' ≥ ' + V + '）✓'); cap('邊數不會小於端點數', '|E| ≥ |V|');
+  },
+  async (tok, S) => { // @1213.2
+    bad('但 (c) 說 |V| = |E| + 1（|E| < |V|）→ 矛盾 ✘', 0, -0.35); cap('跟 (c) 的假設矛盾', '|V| 應該比 |E| 多一');
+  },
+  async (tok, S) => { // @1242.3
+    gone(S.t); good('① T 沒有 cycle；又 connected → T 是 tree ✓', 0, -1.0); cap('所以 T 沒有 cycle', '加上 connected：T 是 tree');
+  },
+]);
+
+const CD2N = Object.fromEntries(T9V.map((n) => [n, n === 'i' ? 'a' : n === 'c' ? 'b' : '']));
+scene('g8b-cd2', '23C：(c) ⇒ (d) 第二部分——加一條邊剛好一個 cycle', [
+  async (tok, S) => { // @1277.0
+    hd('② tree 加一條原本沒有的邊 {a,b} → 剛好一個 cycle', 0, 7.0);
+    S.g = mkGraph(0.85); await grow(tok, S.g, T9P, T9E, { names: CD2N }); note('示意', 4.6, 5.9); S.g.vcol('i', TC.a); S.g.vcol('c', TC.b);
+    cap('T 已經是 tree 了', '證第二部分');
+  },
+  async (tok, S) => { // @1324.0
+    sm('會用到：tree 任兩個不同端點之間有唯一 path', 0, 6.4); cap('要用性質一', '唯一 path');
+  },
+  async (tok, S) => { // @1347.7
+    S.g.e('i', 'c', TC.yel); S.g.ecol('i', 'c', TC.yel, true); S.E2 = [...T9E, ['i', 'c']];
+    pl("加上黃色的 {a,b}，新圖叫 T'", 0, 1.5); cap('把 {a,b} 加上去', "新圖叫 T'");
+  },
+  async (tok, S) => { // @1392.4
+    S.p = paths(T9V, T9E, 'i', 'c')[0]; S.p.slice(0, -1).forEach((n, k) => S.g.ecol(n, S.p[k + 1], TC.purple, true));
+    pl('T 裡 a 到 b 有唯一 path P（紫色）', 0, 0.9); cap('原來 T 裡 a 到 b 有唯一 path P', '');
+  },
+  async (tok, S) => { // @1446.6
+    ok(S.p.length - 1 >= 2, 0, 0.3, 'P + {a,b} 是 cycle；P 長度 = ' + (S.p.length - 1) + ' ≥ 2（{a,b} 原本不存在）✓'); cap('P 加上 {a,b} 就是 cycle', 'P 長度至少 2');
+  },
+  async (tok, S) => { // @1471.5
+    S.q = bub("還要證只有這一個：假設還有另一個 cycle C'", 0, -0.35); cap('還要證只有這一個 cycle', "假設有另一個 C'");
+  },
+  async (tok, S) => { // @1515.5
+    sm("原來 T 沒有 cycle → C' 一定含 {a,b}", 0, -0.95); cap("C' 是加了 {a,b} 才有的", '所以一定含 {a,b}');
+  },
+  async (tok, S) => { // @1606.0
+    S.fake = dash([T9P.i, [-4.8, 2.0], [-4.8, 6.4], [-0.6, 6.4], T9P.c], TC.hot); bad("假想：C' 拿掉 {a,b} 剩 P'，P' ≠ P", -3.0, 6.0);
+    cap("C' 拿掉 {a,b} 剩下 P'", "P' 在原來的 T 裡，而且 ≠ P");
+  },
+  async (tok, S) => { // @1679.2
+    bad('T 裡 a、b 之間就有兩條 path → 跟唯一 path 矛盾 ✘', 0, -1.55); cap('a、b 之間兩條 path', '矛盾');
+  },
+  async (tok, S) => { // @1740.0
+    gone(S.fake, S.q); const n1 = cycleSets(S.E2).length;
+    let all = true, cnt = 0; for (let x = 0; x < T9V.length; x++) for (let y = x + 1; y < T9V.length; y++) { const u = T9V[x], v = T9V[y]; if (T9E.some(([p, q]) => (p === u && q === v) || (p === v && q === u))) continue; cnt++; if (cycleSets([...T9E, [u, v]]).length !== 1) all = false; }
+    ok(n1 === 1 && all, 0, -2.15, '只有一個 cycle ✓（這棵 tree 的 ' + cnt + ' 條非邊逐一加上，每次都剛好 1 個 cycle）'); cap('所以只有一個 cycle', '');
+  },
+  async (tok, S) => { // @1857.1
+    good('tree + 一條 edge = 剛好一個 cycle', 4.0, 1.6); cap('一個 tree 加一條 edge', '就製造唯一一個 cycle');
+  },
+]);
+
+const TWO = { P: { p1: [-4.0, 5.2], p2: [-4.8, 4.0], p3: [-3.2, 4.0], p4: [-3.2, 2.8], q1: [3.4, 5.2], q2: [2.6, 4.0], q3: [4.2, 4.0] }, E: [['p1', 'p2'], ['p1', 'p3'], ['p3', 'p4'], ['q1', 'q2'], ['q1', 'q3']] };
+scene('g8b-da1', '23C：(d) ⇒ (a)——只要證 connected', [
+  async (tok, S) => { // @1882.0
+    hd('最後：(d) ⇒ (a)', 0, 7.0); cap('最後一個', 'd 推到 a');
+  },
+  async (tok, S) => { // @1888.0
+    pl('(d)：沒有 cycle，且加任何原本沒有的邊 → 剛好一個 cycle', 0, 6.2); cap('(d) 的假設', '');
+  },
+  async (tok, S) => { // @1905.6
+    pl('已經沒有 cycle → 只要證 connected', 0, 5.4); cap('只要證 connected', '');
+  },
+  async (tok, S) => { // @1914.4
+    bub('反證：假設不 connected，就會跟 (d) 矛盾', 0, 4.4); cap('反證', '假設不 connected');
+  },
+]);
+
+// ════════ m7RjwmS8c7U（趙啟超 23D：(d)⇒(a)、rooted tree 與名詞、level、height） ════════
+scene('g8b-da2', '23D：(d) ⇒ (a) 的證明', [
+  async (tok, S) => { // @4.3
+    hd('(d) ⇒ (a)：假設 T 不 connected → 至少兩個 component', 0, 7.0); cap('假設 T 不是 connected', '至少兩個 component');
+  },
+  async (tok, S) => { // @8.0
+    S.g = mkGraph(0.85); await grow(tok, S.g, TWO.P, TWO.E, { names: {} }); note('示意', 0, 6.2);
+    comps(Object.keys(TWO.P), TWO.E).forEach((c, k) => c.forEach((n) => S.g.vcol(n, [TC.a, TC.b][k])));
+    sm('T1（V1, E1）', -4.0, 2.0); sm('T2（V2, E2）', 3.4, 2.0); cap('挑兩個 component', 'T1、T2');
+  },
+  async (tok, S) => { // @10.1
+    S.g.vcol('p3', TC.a, HL); S.g.vcol('q2', TC.b, HL); cap('兩個 component 各挑一個端點', '');
+  },
+  async (tok, S) => { // @86.1
+    pl('a', -3.2, 4.65); pl('b', 2.6, 4.65); cap('a 在 T1，b 在 T2', '');
+  },
+  async (tok, S) => { // @89.3
+    sm('(d)：加任何原本沒有的邊 → 剛好一個 cycle', 0, 1.3); cap('(d) 說加任何邊', '都剛好產生一個 cycle');
+  },
+  async (tok, S) => { // @107.2
+    S.g.e('p3', 'q2', TC.yel); S.g.ecol('p3', 'q2', TC.yel, true); cap('就加 {a,b} 這條', '');
+  },
+  async (tok, S) => { // @114.0
+    const n = cycleSets([...TWO.E, ['p3', 'q2']]).length; S.n = n;
+    pl('加上 {a,b} 後的 cycle 個數：' + n, 0, 0.7); cap('a、b 在不同 component', '加上去不會有 cycle');
+  },
+  async (tok, S) => { // @121.0
+    sm('若有 cycle，一定含 {a,b} → 表示 a、b 原來就連在一起；但它們在不同 component', 0, 0.15); cap('有 cycle 就表示原來連在一起', '但它們不相連');
+  },
+  async (tok, S) => { // @203.0
+    ok(S.n !== 1, 0, -0.45, '0 個 cycle ≠ 1 → 跟 (d) 的假設矛盾 ✓'); cap('跟 (d) 的假設矛盾', '');
+  },
+  async (tok, S) => { // @214.6
+    good('所以不會有兩個 component → T connected', 0, -1.05); cap('只有一個 component', '所以 connected');
+  },
+  async (tok, S) => { // @298.0
+    good('connected ＋（(d) 本來就）沒有 cycle → T 是 tree ✓', 0, -1.65); cap('又沒有 cycle', '所以 T 是 tree');
+  },
+  async (tok, S) => { // @360.2
+    hot('(a) ⇒ (b) ⇒ (c) ⇒ (d) ⇒ (a)：四個敘述全部等價', 0, 6.3); cap('四部分都證完', '全部 equivalent');
+  },
+  async (tok, S) => { // @378.4
+    sm('(b)(c)(d) 都可當定義；但我們的定義仍是 connected、沒有 cycle', 0, 5.7); cap('後三個都能當定義', '但定義還是用 connected 沒有 cycle');
+  },
+]);
+
+const RT = { A: [0, 0], B: [-1.4, -1.2], C: [1.4, -1.2], D: [-2.1, -2.4], E: [-0.7, -2.4] };
+const RTE = [['A', 'B'], ['A', 'C'], ['B', 'D'], ['B', 'E']];
+scene('g8b-rooted', '23D：Rooted tree 的定義', [
+  async (tok, S) => { // @420.3
+    hd('Rooted tree：有一個端點特別，叫 root（根）', 0, 7.0); cap('rooted tree', '有一個 root');
+  },
+  async (tok, S) => { // @447.7
+    sm('定義要先講 directed tree', 0, 6.4); cap('先定義 directed tree', '');
+  },
+  async (tok, S) => { // @471.3
+    const Pm = shift(RT, -3.6, 5.6); const mixed = new Set(['B>A', 'A>C', 'D>B', 'B>E']);
+    S.g1 = mkGraph(0.8);
+    const order = Object.keys(Pm);
+    for (const n of order) S.g1.v(n, Pm[n][0], Pm[n][1]);
+    for (const [u, v] of RTE) { if (mixed.has(u + '>' + v)) S.g1.e(u, v, TC.edge, true); else S.g1.e(v, u, TC.edge, true); }
+    ok(isTree(Object.keys(RT), RTE), -3.6, 2.4, '拿掉方向是 tree → directed tree ✓'); note('示意', -5.6, 6.0);
+    cap('directed graph 拿掉方向後是 tree', '就叫 directed tree');
+  },
+  async (tok, S) => { // @517.1
+    S.P2 = shift(RT, 3.4, 5.6); S.g2 = mkGraph(0.8); for (const n of Object.keys(S.P2)) S.g2.v(n, ...S.P2[n]); S.g2.vcol('A', TC.gold, HL);
+    sm('A = root', 4.8, 5.6); cap('rooted tree：有一個端點是 root', '');
+  },
+  async (tok, S) => { // @534.6
+    for (const [u, v] of RTE) S.g2.e(u, v, TC.green, true);
+    pl('每條邊都 directed away from the root', 3.4, 2.4); cap('每條邊的方向', '都從 root 往外');
+  },
+  async (tok, S) => { // @571.0
+    good('A 是 root、全部往外 → rooted tree', 3.4, 1.8); cap('例子：A 是 root', '所有方向都往外');
+  },
+  async (tok, S) => { // @606.0
+    Object.values(S.g2.E).forEach((e) => { if (e.userData.cone) e.userData.cone.visible = false; });
+    sm('方向都知道是往下 → 平常不畫箭頭', 3.4, 1.2); cap('平常畫 rooted tree', '不畫方向');
+  },
+  async (tok, S) => { // @675.0
+    gone(S.g2); S.g2 = mkGraph(0.8); S.up = shift(Object.fromEntries(Object.entries(RT).map(([n, [x, y]]) => [n, [x, -y]])), 3.4, 1.4);
+    for (const n of Object.keys(S.up)) S.g2.v(n, ...S.up[n], n === 'A' ? TC.gold : TC.node); for (const [u, v] of RTE) S.g2.e(u, v);
+    sm('真的樹：根在下面、往上長', 5.6, 0.6); cap('跟平常的樹相反', '樹是根在下往上長');
+  },
+  async (tok, S) => { // @691.2
+    const from = S.up, to = S.P2; const g = S.g2;
+    await anim(tok, 1600, (u) => {
+      for (const n of Object.keys(from)) { const x = from[n][0] + (to[n][0] - from[n][0]) * u, y = from[n][1] + (to[n][1] - from[n][1]) * u; g.V[n].position.set(x, y, 0); g.P[n] = [x, y]; }
+      for (const [a, b] of RTE) { g.cut(a, b); g.e(a, b); }
+    });
+    sm('抓著 root 提起來，其他都垂下去', 3.4, 0.6); cap('抓著根提起來', '其他端點都垂到下面');
+  },
+]);
+
+// 老師的例子：A root；B F G；C（B 下）、H I J（G 下）；D E（C 下）、K L N（H、J 下，掛法示意）
+const AT = { A: null, B: 'A', F: 'A', G: 'A', C: 'B', H: 'G', I: 'G', J: 'G', D: 'C', E: 'C', K: 'H', L: 'J', N: 'J' };
+const ATP = { A: [0, 6.3], B: [-3.6, 5.0], F: [-0.6, 5.0], G: [2.8, 5.0], C: [-3.6, 3.7], H: [1.4, 3.7], I: [2.8, 3.7], J: [4.2, 3.7], D: [-4.4, 2.4], E: [-2.8, 2.4], K: [1.4, 2.4], L: [3.6, 2.4], N: [4.8, 2.4] };
+const ATK = kids(AT), ATL = levels(AT);
+const anc = (v) => (AT[v] ? [AT[v], ...anc(AT[v])] : []);
+const desc = (v) => ATK[v].flatMap((c) => [c, ...desc(c)]);
+scene('g8b-terms', '23D：名詞——parent、child、sibling、ancestor、descendant、leaf', [
+  async (tok, S) => { // @743.0
+    hd('幾個名詞（像族譜，但沒有性別）', 0, 7.1);
+    S.g = mkGraph(0.75); const order = Object.keys(AT).sort((x, y) => ATL[x] - ATL[y]);
+    await grow(tok, S.g, ATP, parEdges(AT), { order }); note('K、L、N 掛法示意', -4.6, 6.4); cap('介紹幾個名詞', '');
+  },
+  async (tok, S) => { // @755.5
+    S.g.vcol('A', TC.gold, HL); hot('root', 1.0, 6.6); cap('A 是 root', '只有一個，畫在最上面');
+  },
+  async (tok, S) => { // @770.0
+    glow(S.g.V.A, null); S.g.ecol('B', 'C', TC.a, true); cap('C 在 B 的下面', '方向都往下');
+  },
+  async (tok, S) => { // @783.5
+    S.g.vcol('B', TC.a); pl('B 是 C 的 parent', -5.0, 4.4); cap('B 是 C 的 parent', '父母，但沒有性別');
+  },
+  async (tok, S) => { // @801.6
+    S.g.vcol('C', TC.b); pl('C 是 B 的 child', -5.0, 3.1); cap('C 是 B 的 child', '小孩');
+  },
+  async (tok, S) => { // @837.6
+    const sib = ATK.G; sib.forEach((n) => S.g.vcol(n, TC.green));
+    pl('siblings：' + sib.join(' ') + '（都是 G 的 child）', 3.0, 1.5); cap('同一個 parent 的', 'sibling 兄弟姐妹（手足）');
+  },
+  async (tok, S) => { // @888.2
+    const an = anc('E'); S.g.vcol('E', TC.orange); an.forEach((n) => glow(S.g.V[n], HL));
+    pl('E 的 ancestor（祖先）：' + an.join(' '), -3.0, 0.95); cap('上面的叫 ancestor', 'E 的祖先是 C、B、A');
+  },
+  async (tok, S) => { // @911.0
+    an0(S); const ds = desc('B'); ds.forEach((n) => S.g.vcol(n, TC.purple));
+    pl('B 的 descendant（後代）：' + ds.join(' '), -3.0, 0.4); cap('B 的後代 descendant', 'C、D、E');
+  },
+  async (tok, S) => { // @967.0
+    Object.keys(AT).forEach((n) => { S.g.vcol(n, TC.node); glow(S.g.V[n], null); });
+    S.leaves = Object.keys(AT).filter((n) => !ATK[n].length); S.leaves.forEach((n) => S.g.vcol(n, TC.green));
+    ok(S.leaves.slice().sort().join('') === 'DEFIKLN', 2.4, 0.95, 'leaves（葉子）：' + S.leaves.join(' ') + ' ✓'); cap('端點分兩類', '一類叫葉子 leaves');
+  },
+  async (tok, S) => { // @1013.3
+    sm('葉子 = 沒有 children 的端點', 2.4, 0.4); cap('沒有後代的叫葉子', '');
+  },
+  async (tok, S) => { // @1044.0
+    const inn = Object.keys(AT).filter((n) => ATK[n].length); inn.forEach((n) => S.g.vcol(n, TC.orange));
+    ok(inn.slice().sort().join('') === 'ABCGHJ', 0, -0.2, 'internal vertices：' + inn.join(' ') + '（含 root）✓'); cap('不是葉子的', '叫 internal vertices');
+  },
+  async (tok, S) => { // @1098.0
+    const sub = ['G', ...desc('G')]; Object.keys(AT).forEach((n) => { if (!sub.includes(n)) S.g.vcol(n, TC.dim); });
+    sub.forEach((n) => { S.g.V[n].position.y += 0.5; }); Object.keys(S.g.E).forEach((k) => { const [u, v] = k.split('|'); S.g.cut(u, v); });
+    const Pn = Object.fromEntries(Object.keys(AT).map((n) => [n, [S.g.V[n].position.x, S.g.V[n].position.y]])); Object.assign(S.g.P, Pn);
+    parEdges(AT).forEach(([u, v]) => S.g.e(u, v, sub.includes(u) && sub.includes(v) ? TC.gold : TC.dim));
+    hot('以 G 為 root 的 subtree', 3.0, 6.3); cap('把 G 下面這塊拿起來', 'G 就是這個 subtree 的 root');
+  },
+]);
+function an0(S) { Object.keys(AT).forEach((n) => { S.g.vcol(n, TC.node); glow(S.g.V[n], null); }); }
+
+scene('g8b-level', '23D：Level 與 height', [
+  async (tok, S) => { // @1160.2
+    hd('Level 與 height', 0, 7.1); S.g = mkGraph(0.75); for (const n of Object.keys(AT)) S.g.v(n, ...ATP[n]); parEdges(AT).forEach(([u, v]) => S.g.e(u, v));
+    S.g.vcol('A', TC.gold); seg(-6.0, 6.3, 6.0, 6.3, TC.dim, 0.02, -0.3); sm('level 0', -5.6, 6.6); cap('分 level', 'root 是 level 0');
+  },
+  async (tok, S) => { // @1175.1
+    [1, 2, 3].forEach((l) => { const y = 6.3 - 1.3 * l; seg(-6.0, y, 6.0, y, TC.dim, 0.02, -0.3); sm('level ' + l, -5.6, y + 0.3); });
+    cap('level 1、2、3', '依此類推');
+  },
+  async (tok, S) => { // @1178.0
+    const byL = [1, 2, 3].map((l) => Object.keys(AT).filter((n) => ATL[n] === l));
+    byL.forEach((ns, k) => ns.forEach((n) => S.g.vcol(n, [TC.a, TC.green, TC.purple][k])));
+    ok(byL.map((x) => x.join('')).join(',') === 'BFG,CHIJ,DEKLN', 0, 1.4, 'level 1：' + byL[0].join(' ') + '　level 2：' + byL[1].join(' ') + '　level 3：' + byL[2].join(' ') + ' ✓');
+    cap('B F G 在 level 1', 'C H I J 在 level 2；D E K L N 在 level 3');
+  },
+  async (tok, S) => { // @1187.0
+    const path = [...anc('K').reverse(), 'K'];
+    path.slice(0, -1).forEach((n, k) => S.g.ecol(n, path[k + 1], TC.hot, true));
+    pl('level = root 到它的唯一 path 的邊數：K 是 ' + ATL.K + '（' + path.join('–') + '）', 0, 0.8); cap('level 怎麼定義', 'root 到它唯一 path 的邊數');
+  },
+  async (tok, S) => { // @1212.9
+    const h = Math.max(...Object.values(ATL)); good('height = 最大的 level = ' + h, 0, 0.2); cap('tree 的高度 height', '最大 level，這裡是 3');
+  },
+  async (tok, S) => { // @1268.4
+    sm('名詞來源：樹（leaf）＋族譜（parent、child、sibling、ancestor、descendant）', 0, -0.4); cap('都只是名詞', '有的來自樹，有的來自族譜');
+  },
+]);
+
+// ════════ FxZGkU0MvfY（趙啟超 24A：m-ary tree、complete、n = mi + 1、balanced、l ≤ mʰ） ════════
+const BT = { r: null, x: 'r', y: 'r', x1: 'x', x2: 'x', y1: 'y', y2: 'y', y11: 'y1', y12: 'y1' };
+const BTP = { r: [0, 6.2], x: [-2.4, 5.0], y: [2.4, 5.0], x1: [-3.4, 3.8], x2: [-1.4, 3.8], y1: [1.4, 3.8], y2: [3.4, 3.8], y11: [0.8, 2.6], y12: [2.0, 2.6] };
+const BTK = kids(BT), BTL = levels(BT);
+const BTn = Object.keys(BT).length, BTi = Object.keys(BT).filter((v) => BTK[v].length).length, BTl = BTn - BTi, BTh = Math.max(...Object.values(BTL));
+const BTnames = Object.fromEntries(Object.keys(BT).map((n) => [n, '']));
+scene('g8b-recap', '24A：複習 rooted tree', [
+  async (tok, S) => { // @4.3
+    hd('複習：rooted tree 有一個特別的 vertex 叫 root', 0, 7.0); cap('上次講到 rooted tree', '');
+  },
+  async (tok, S) => { // @15.7
+    S.g = mkGraph(0.75); await grow(tok, S.g, BTP, parEdges(BT), { names: BTnames }); S.g.vcol('r', TC.gold); note('示意', 4.6, 6.2);
+    cap('root 畫在上面', '其他 vertex 往下畫');
+  },
+  async (tok, S) => { // @29.3
+    pl('今天：m-ary tree，還有幾個數量之間的關係', 0, 1.4); cap('今天看 m-ary tree', '和數量之間的關係');
+  },
+]);
+
+scene('g8b-mary', '24A：m-ary tree 與 complete m-ary tree', [
+  async (tok, S) => { // @39.0
+    hd('m-ary tree', 0, 7.0); cap('m-ary tree', '');
+  },
+  async (tok, S) => { // @61.2
+    pl('每個 internal vertex 的 children 最多 m 個', 0, 6.4); cap('每個 internal vertex', 'children 不超過 m 個');
+  },
+  async (tok, S) => { // @69.3
+    S.g = mkGraph(0.75); await grow(tok, S.g, BTP, parEdges(BT), { names: BTnames }); note('示意', 4.6, 6.2);
+    Object.keys(BT).forEach((n) => S.g.vcol(n, BTK[n].length ? TC.orange : TC.green));
+    sm('橘：internal vertex（有 children）　綠：leaf（沒有 children）', 0, 1.9); cap('vertex 分兩種', 'internal 和 leaf');
+  },
+  async (tok, S) => { // @104.7
+    pl('complete m-ary tree：每個 internal vertex 剛好 m 個 children', 0, 1.3); cap('complete m-ary tree', '有 children 就剛好 m 個');
+  },
+  async (tok, S) => { // @133.2
+    sm('m = 2：binary tree', -4.0, 0.7); cap('m = 2', 'binary tree');
+  },
+  async (tok, S) => { // @154.5
+    sm('m = 3：ternary tree', 0, 0.7); cap('m = 3', 'ternary tree');
+  },
+  async (tok, S) => { // @176.1
+    sm('m = 4：quaternary tree', 4.0, 0.7); cap('m = 4', 'quaternary tree');
+  },
+  async (tok, S) => { // @208.3
+    hot('例：complete binary tree', 0, 0.1); cap('看一個 complete binary tree', '');
+  },
+  async (tok, S) => { // @242.0
+    const inn = Object.keys(BT).filter((n) => BTK[n].length); inn.forEach((n) => glow(S.g.V[n], HL));
+    ok(inn.every((n) => BTK[n].length === 2), 0, -0.5, '每個 internal vertex 都剛好 2 個 children ✓'); cap('每個 internal vertex', '都剛好兩個 children');
+  },
+  async (tok, S) => { // @261.0
+    sm('很多應用都可以化成 binary tree', 0, -1.1); cap('很多應用', '都能化成 binary tree');
+  },
+]);
+
+scene('g8b-count', '24A：complete m-ary tree：n = mi + 1、l = (m − 1)i + 1', [
+  async (tok, S) => { // @291.0
+    hd('complete m-ary tree：n 個 vertices、l 個 leaves、i 個 internal vertices', 0, 7.0);
+    S.g = mkGraph(0.7); for (const n of Object.keys(BT)) S.g.v(n, BTP[n][0] - 2.2, BTP[n][1] - 0.2, BTK[n].length ? TC.orange : TC.green, ''); parEdges(BT).forEach(([u, v]) => S.g.e(u, v));
+    note('示意：m = 2', -5.4, 6.2); pl('n = ' + BTn + '　l = ' + BTl + '　i = ' + BTi, 4.3, 5.6); cap('complete m-ary tree', 'n、l、i 三個數');
+  },
+  async (tok, S) => { // @308.8
+    sm('vertex 不是 leaf 就是 internal：n = l + i', 4.3, 5.0); cap('四個數 m、n、l、i', '中間有關係');
+  },
+  async (tok, S) => { // @335.1
+    ['① n = mi + 1', '② l = (m − 1)i + 1', '③ i = (l − 1)/(m − 1) = (n − 1)/m'].forEach((t, k) => pl(t, 4.3, 4.2 - k * 0.6)); cap('三個關係式', '');
+  },
+  async (tok, S) => { // @380.0
+    sm('只要懂 ①，② ③ 都推得出來', 4.3, 2.2); cap('主要是第一式', '其他推得出來');
+  },
+  async (tok, S) => { // @397.6
+    pl('除了 root，每個 vertex 都是某個 internal vertex 的 child', 0, 1.3); S.g.vcol('r', TC.gold, HL); cap('除了 root 以外', '每個 vertex 都是某個 internal vertex 的 child');
+  },
+  async (tok, S) => { // @448.3
+    const inn = Object.keys(BT).filter((n) => BTK[n].length); const col = [TC.a, TC.b, TC.purple, TC.teal];
+    inn.forEach((p, k) => BTK[p].forEach((c) => { S.g.ecol(p, c, col[k], true); }));
+    sm('同色的邊：同一個 parent 的 children', 0, 0.75); cap('這是它的 child、這是它的 child…', '');
+  },
+  async (tok, S) => { // @489.3
+    sm('complete：每個 internal vertex 剛好 m 個 children', 0, 0.25); cap('complete 的定義', '每個 internal 剛好 m 個 children');
+  },
+  async (tok, S) => { // @531.7
+    pl('i 個 internal × 每個 m 個 children = mi', 0, -0.3); cap('i 個 internal vertex', '乘上 m');
+  },
+  async (tok, S) => { // @550.4
+    ok(2 * BTi === BTn - 1, 0, -0.85, 'mi 數到 root 以外的全部 vertex、不重複（parent 唯一）：2 × ' + BTi + ' = ' + (2 * BTi) + ' = n − 1 ✓'); cap('mi 數到 root 以外全部', '每個 parent 唯一，不重複');
+  },
+  async (tok, S) => { // @606.5
+    good('再加 root：n = mi + 1', 0, -1.4); cap('加上 root', 'n = mi + 1');
+  },
+  async (tok, S) => { // @668.0
+    sm('要 complete 才成立（不 complete 時 children 不一定剛好 m 個）', 0, -1.95); cap('要 complete 才成立', '');
+  },
+  async (tok, S) => { // @689.3
+    ok(BTl === (2 - 1) * BTi + 1, 4.3, 1.6, '② l = n − i = (m − 1)i + 1：' + BTl + ' = ' + BTi + ' + 1 ✓'); cap('第二式', 'l = n − i，再代入 n = mi + 1');
+  },
+  async (tok, S) => { // @745.0
+    ok(BTi === (BTl - 1) / (2 - 1) && BTi === (BTn - 1) / 2, 4.3, 1.0, '③ 從 ①② 解 i：' + BTi + ' = ' + (BTl - 1) + '/1 = ' + (BTn - 1) + '/2 ✓'); cap('第三式', '用一、二解出 i');
+  },
+  async (tok, S) => { // @784.5
+    let cnt = 0, bad0 = 0;
+    for (const m of [2, 3]) for (let i = 0; i <= (m === 2 ? 5 : 4); i++) for (const t of complete(m, i)) { cnt++; const n = tN(t), l = tL(t), ii = tI(t); if (n !== m * ii + 1 || l !== (m - 1) * ii + 1 || ii !== i) bad0++; }
+    ok(bad0 === 0, 0, -2.5, '電腦列出 m = 2、3 的 ' + cnt + ' 棵小 complete tree，三式全對 ✓'); cap('理解第一式就夠', '不要硬背');
+  },
+]);
+
+const UB = { r: null, L: 'r', u: 'r', u1: 'u', u2: 'u', a: 'u1', b: 'u1', c: 'u2', d: 'u2' };
+const UBP = { r: [0, 0], L: [-1.2, -1.1], u: [1.2, -1.1], u1: [0.5, -2.2], u2: [1.9, -2.2], a: [0.1, -3.3], b: [0.9, -3.3], c: [1.5, -3.3], d: [2.3, -3.3] };
+function lvTree(par) { const L = levels(par), K2 = kids(par); const h = Math.max(...Object.values(L)); const lv = Object.keys(par).filter((n) => !K2[n].length).map((n) => L[n]); return { h, lv, bal: lv.every((x) => x === h || x === h - 1) }; }
+scene('g8b-balance', '24A：Balanced——葉子的 level 是 h 或 h − 1', [
+  async (tok, S) => { // @833.3
+    hd('Balanced（跟 height 有關）', 0, 7.0); cap('另一個名詞：balanced', '跟 height 有關');
+  },
+  async (tok, S) => { // @864.2
+    S.g = mkGraph(0.7); const Pm = shift(BTP, -2.6, 0.2, 0.8); for (const n of Object.keys(BT)) S.g.v(n, ...Pm[n], TC.node, ''); parEdges(BT).forEach(([u, v]) => S.g.e(u, v));
+    [0, 1, 2, 3].forEach((l) => sm('level ' + l, -6.0, 6.2 * 0.8 + 0.2 - l * 0.96));
+    pl('height = ' + BTh, -2.6, 1.6); cap('分 level 0、1、2、3', 'height 是 3');
+  },
+  async (tok, S) => { // @891.6
+    pl('balanced：每個 leaf 的 level 都是 h 或 h − 1', 0, 6.4); cap('balanced', '每個葉子的 level 是 h 或 h − 1');
+  },
+  async (tok, S) => { // @900.0
+    const r = lvTree(BT); Object.keys(BT).forEach((n) => { if (!BTK[n].length) S.g.vcol(n, BTL[n] === 2 ? TC.a : TC.purple); });
+    const c2 = r.lv.filter((x) => x === 2).length, c3 = r.lv.filter((x) => x === 3).length;
+    ok(r.bal, -2.6, 1.0, r.lv.length + ' 個 leaves：' + c2 + ' 個 level 2、' + c3 + ' 個 level 3 → balanced ✓'); cap('這個例子 5 個葉子', 'level 不是 2 就是 3：balanced');
+  },
+  async (tok, S) => { // @927.1
+    const g = mkGraph(0.7); const Pm = shift(UBP, 3.4, 5.9); for (const n of Object.keys(UB)) g.v(n, ...Pm[n], TC.node, ''); parEdges(UB).forEach(([u, v]) => g.e(u, v));
+    const r = lvTree(UB); const UK = kids(UB), UL = levels(UB); Object.keys(UB).forEach((n) => { if (!UK[n].length) g.vcol(n, UL[n] === 1 ? TC.hot : TC.purple); });
+    ok(!r.bal, 3.4, 1.6, '一個葉子在 level 1、其他在 level 3（h = ' + r.h + '）→ 不 balanced ✓'); cap('像這樣', '一個葉子在 level 1：不 balanced');
+  },
+]);
+
+scene('g8b-bound', '24A：l ≤ mʰ、h ≥ ⌈log_m l⌉；ceiling 與 floor', [
+  async (tok, S) => { // @960.7
+    hd('m-ary tree，height h，l 個 leaves', 0, 7.0); hot('l ≤ mʰ', -2.4, 6.2); cap('height 跟葉子數的關係', 'l ≤ mʰ');
+  },
+  async (tok, S) => { // @986.0
+    hot('兩邊取 log_m → h ≥ ⌈log_m l⌉', 2.2, 6.2); cap('兩邊取以 m 為底的 log', 'h ≥ ⌈log_m l⌉');
+  },
+  async (tok, S) => { // @1001.7
+    pl('⌈x⌉（ceiling，天花板）：大於等於 x 的最小整數', 0, 5.2); cap('ceiling 符號', '大於等於 x 的最小整數');
+  },
+  async (tok, S) => { // @1043.2
+    ok(Math.ceil(3.5) === 4 && Math.ceil(4) === 4, 0, 4.5, '⌈3.5⌉ = ' + Math.ceil(3.5) + '　⌈4⌉ = ' + Math.ceil(4) + ' ✓');
+    S.nl = [3, 3.5, 4, 5].map((v, k) => cube(String(v), v === 3.5 ? TC.yel : '#e9dcc4', [0.6, 0.45, 0.4], -3 + k * 2, 3.3, 0, 0.5)); cap('3.5 取 ceiling 是 4', '4 還是 4');
+  },
+  async (tok, S) => { // @1057.0
+    pl('⌊x⌋（floor，地板）：小於等於 x 的最大整數', 0, 2.4); cap('相對的 floor', '小於等於 x 的最大整數');
+  },
+  async (tok, S) => { // @1091.5
+    ok(Math.floor(3.5) === 3 && Math.floor(4) === 4, 0, 1.7, '⌊3.5⌋ = ' + Math.floor(3.5) + '　⌊4⌋ = ' + Math.floor(4) + ' ✓'); cap('3.5 取 floor 是 3', '4 還是 4');
+  },
+  async (tok, S) => { // @1128.2
+    let cnt = 0, bad0 = 0;
+    for (const m of [2, 3]) for (let i = 0; i <= (m === 2 ? 5 : 4); i++) for (const t of complete(m, i)) { cnt++; const l = tL(t), h = tH(t); if (l > m ** h || h < ceilLog(m, l)) bad0++; }
+    ok(bad0 === 0, 0, 0.7, '直觀：長滿也只有 mʰ 個葉子（' + cnt + ' 棵小 tree 檢查 ✓）'); cap('height h 的 m-ary tree', '長滿也只有 mʰ 個葉子');
+  },
+]);
+
+scene('g8b-boundind', '24A：對 height 做歸納法證 l ≤ mʰ', [
+  async (tok, S) => { // @1138.2
+    hd('證明 l ≤ mʰ：對 height h 做數學歸納法', 0, 7.0); cap('寫下證明', '對 height 做 induction');
+  },
+  async (tok, S) => { // @1166.3
+    const g = mkGraph(0.6); g.v('r', -4.6, 6.0, TC.gold, ''); [-5.6, -4.6, -3.6].forEach((x, k) => { g.v('c' + k, x, 5.0, TC.green, ''); g.e('r', 'c' + k); });
+    sm('h = 1：葉子都是 root 的 children → l ≤ m = m¹', -4.6, 4.3); note('示意 m = 3', -4.6, 6.6); cap('basis：h = 1', '葉子最多 m 個');
+  },
+  async (tok, S) => { // @1220.0
+    pl('hypothesis：height < h 的 m-ary tree 都有 l ≤ m^(高度)', 2.0, 6.2); cap('induction hypothesis', 'height 小於 h 都成立');
+  },
+  async (tok, S) => { // @1267.0
+    S.g = mkGraph(0.7); S.g.v('R', 1.6, 5.3, TC.gold, 'root'); [-0.8, 1.6, 4.0].forEach((x, k) => { S.g.v('s' + k, x, 4.3, TC.a, ''); S.g.e('R', 's' + k); });
+    cap('看 level 1 的 vertices', '');
+  },
+  async (tok, S) => { // @1296.0
+    S.tr = [-0.8, 1.6, 4.0].map((x, k) => tri(x, 4.05, 2.0, 2.2, [TC.a, TC.b, TC.green][k], 'T' + (k + 1))); cap('以它們為 root 的 subtree', '');
+  },
+  async (tok, S) => { // @1343.2
+    sm('m-ary：root 最多 m 個 children → 最多 m 個 subtree', 1.6, 1.4); cap('最多 m 個 subtree', '');
+  },
+  async (tok, S) => { // @1378.0
+    sm('每個 subtree 少了 root 那一層 → height ≤ h − 1', 1.6, 0.85); cap('每個 subtree 的 height', '不超過 h − 1');
+  },
+  async (tok, S) => { // @1408.2
+    S.tr.forEach((t) => txt(t.userData.lbl, '≤ m^(h−1)')); pl('hypothesis → 每個 subtree 葉子 ≤ m^(h−1)', 1.6, 0.25); cap('用 hypothesis', '每個 subtree 葉子 ≤ m^(h−1)');
+  },
+  async (tok, S) => { // @1445.4
+    hot('全部葉子 ≤ m · m^(h−1) = mʰ', 1.6, -0.4); cap('全部葉子加起來', '≤ m · m^(h−1) = mʰ');
+  },
+  async (tok, S) => { // @1498.5
+    good('by induction 證完 ✓', 1.6, -1.0); cap('由數學歸納法', '證完');
+  },
+]);
+
+const SK = { r: null, l1: 'r', v1: 'r', l2: 'v1', v2: 'v1', l3: 'v2', v3: 'v2', l4: 'v3', l5: 'v3' };
+const SKP = { r: [0, 6.0], l1: [-0.8, 5.1], v1: [0.8, 5.1], l2: [0, 4.2], v2: [1.6, 4.2], l3: [0.8, 3.3], v3: [2.4, 3.3], l4: [1.6, 2.4], l5: [3.2, 2.4] };
+scene('g8b-lower', '24A：h ≥ ⌈log_m l⌉ 只是 lower bound', [
+  async (tok, S) => { // @1527.0
+    hd('l ≤ mʰ：直觀上，長滿才有 mʰ 個葉子', 0, 7.0); cap('第一部分證完', '長滿就是 mʰ');
+  },
+  async (tok, S) => { // @1558.5
+    pl('兩邊取 log_m（log 遞增，不等式方向不變）：log_m l ≤ h', 0, 6.3); cap('兩邊取 log', 'log 是遞增函數');
+  },
+  async (tok, S) => { // @1590.5
+    pl('h 是整數 → h ≥ ⌈log_m l⌉', 0, 5.7); cap('h 是整數', '所以取 ceiling');
+  },
+  async (tok, S) => { // @1642.0
+    const g = mkGraph(0.7); const Pm = shift(SKP, -1.2, -0.6); for (const n of Object.keys(SK)) g.v(n, ...Pm[n], kids(SK)[n].length ? TC.orange : TC.green, ''); parEdges(SK).forEach(([u, v]) => g.e(u, v));
+    const L = levels(SK), h = Math.max(...Object.values(L)), l = Object.keys(SK).filter((n) => !kids(SK)[n].length).length;
+    ok(h > ceilLog(2, l), 3.4, 3.0, 'binary、l = ' + l + '：⌈log₂ ' + l + '⌉ = ' + ceilLog(2, l) + '，但 h = ' + h + ' ✓');
+    sm('不 balanced：一邊拉很長，h 比 lower bound 大', 3.4, 2.4); note('示意', -3.6, 5.6); cap('這只是 lower bound', '不 balanced 時 h 可能更大');
+  },
+]);
+
+// ════════ gF8PA6FVLp0（趙啟超 24B：balanced + complete ⇒ h = ⌈log_m l⌉；tree traversal） ════════
+scene('g8b-exact', '24B：balanced 且 complete → h = ⌈log_m l⌉', [
+  async (tok, S) => { // @4.6
+    hd('再加條件：balanced 且 complete', 0, 7.0); cap('balanced 跟 complete', '兩個條件都加上去');
+  },
+  async (tok, S) => { // @43.0
+    S.g = mkGraph(0.7); const Pm = shift(BTP, -2.6, 0.2, 0.8); S.Pm = Pm;
+    for (const n of Object.keys(BT)) S.g.v(n, ...Pm[n], BTK[n].length ? TC.orange : TC.green, ''); parEdges(BT).forEach(([u, v]) => S.g.e(u, v)); note('示意 m = 2', -5.6, 5.4);
+    sm('complete：internal 都剛好 m 個；balanced：葉子在 h 或 h − 1', 0, 6.4); cap('complete 和 balanced', '');
+  },
+  async (tok, S) => { // @54.5
+    hot('height 剛好等於 lower bound：h = ⌈log_m l⌉', 2.4, 5.6); cap('height 剛好等於 lower bound', '');
+  },
+  async (tok, S) => { // @120.3
+    Object.keys(BT).filter((n) => BTL[n] === BTh).forEach((n) => S.g.vcol(n, TC.purple, HL));
+    pl('height = h → 至少一個葉子在 level h', 2.4, 4.8); cap('height 是 h', '至少一個葉子在 level h');
+  },
+  async (tok, S) => { // @196.1
+    sm('level h − 1 不一定有葉子（全部在 h 也算 balanced）', 2.4, 4.2); cap('level h − 1', '不見得有葉子');
+  },
+  async (tok, S) => { // @245.5
+    const at = Object.keys(BT).filter((n) => BTL[n] === BTh - 1).length;
+    ok(at === 2 ** (BTh - 1) && BTl > 2 ** (BTh - 1), 2.4, 3.5, 'complete：level h − 1 是滿的（' + at + ' = 2^' + (BTh - 1) + '），再多一層 → l > m^(h−1)：' + BTl + ' > ' + 2 ** (BTh - 1) + ' ✓');
+    cap('level h − 1 以上都長滿', '所以 l > m^(h−1)');
+  },
+  async (tok, S) => { // @309.0
+    ok(BTl <= 2 ** BTh, 2.4, 2.9, 'height h → l ≤ mʰ：' + BTl + ' ≤ ' + 2 ** BTh + ' ✓'); cap('height 是 h', 'l ≤ mʰ');
+  },
+  async (tok, S) => { // @350.0
+    pl('取 log_m：h − 1 < log_m l ≤ h', 2.4, 2.3); cap('兩邊取 log', 'h − 1 < log_m l ≤ h');
+  },
+  async (tok, S) => { // @384.0
+    ok(ceilLog(2, BTl) === BTh, 2.4, 1.6, 'h = ⌈log_m l⌉：⌈log₂ ' + BTl + '⌉ = ' + ceilLog(2, BTl) + ' = h ✓（例：算出 3.5 → h = 4；算出 4 → h = 4）'); cap('所以 h 就是取 ceiling', '3.5 → 4，4 → 4');
+  },
+  async (tok, S) => { // @451.4
+    let cnt = 0, bad0 = 0, unb = 0;
+    for (const m of [2, 3]) for (let i = 0; i <= (m === 2 ? 6 : 4); i++) for (const t of complete(m, i)) { if (tBal(t)) { cnt++; if (tH(t) !== ceilLog(m, tL(t))) bad0++; } else if (tH(t) !== ceilLog(m, tL(t))) unb++; }
+    ok(bad0 === 0 && unb > 0, 0, 0.6, 'complete + balanced 的 ' + cnt + ' 棵小 tree 全部 h = ⌈log_m l⌉ ✓；少了 balanced 就有反例（' + unb + ' 棵）');
+    cap('balanced 和 complete', '兩個都要用到');
+  },
+  async (tok, S) => { // @534.8
+    sm('應用：decision tree 常是 binary tree；height = 最多要做幾次 decision', 0, -0.1); cap('例如 decision tree', 'height 就是最多做幾次決定');
+  },
+]);
+
+const TRI = (S, xs, ys, labs) => labs.map((t, k) => tri(xs[k], ys, 1.7, 2.0, [TC.a, TC.b, TC.green, TC.purple][k % 4], t));
+scene('g8b-travdef', '24B：Tree traversal——preorder、postorder、inorder', [
+  async (tok, S) => { // @555.2
+    hd('rooted tree：要把每個 vertex 都 visit 一次', 0, 7.0); cap('要 visit 每一個 vertex', '有系統地走過');
+  },
+  async (tok, S) => { // @573.1
+    hot('tree traversal（traverse 的名詞）', 0, 6.4); cap('這叫 tree traversal', '');
+  },
+  async (tok, S) => { // @606.1
+    sm('用途：每個都走到，算某個量、找最大或最小', 0, 5.8); cap('為什麼要走過每個點', '算量、找最大最小');
+  },
+  async (tok, S) => { // @670.5
+    const g = mkGraph(0.8); g.v('r', 0, 5.0, TC.gold, 'r'); S.g = g;
+    const xs = [-3.6, -1.2, 1.2, 3.6]; xs.forEach((x, k) => { g.v('t' + k, x, 4.0, TC.node, ''); g.e('r', 't' + k); });
+    S.tr = TRI(S, xs, 3.8, ['T1', 'T2', '⋯', 'Tm']); cap('root 是 r', '下面有 subtree T1 到 Tm');
+  },
+  async (tok, S) => { // @701.8
+    pl('三種的差別：什麼時候 visit root', 0, 1.3); cap('三種方法', '差在什麼時候 visit root');
+  },
+  async (tok, S) => { // @726.1
+    S.l1 = pl('preorder：先 visit r', 0, 0.7); S.g.vcol('r', TC.hot, HL); cap('preorder', '一開始就 visit root');
+  },
+  async (tok, S) => { // @745.1
+    txt(S.l1, 'preorder：r → T1 → T2 → ⋯ → Tm（每個 subtree 再用 preorder，遞迴）'); cap('再用 preorder 走 T1、T2…', '自己叫自己（遞迴）');
+  },
+  async (tok, S) => { // @832.8
+    pl('postorder：T1 → T2 → ⋯ → Tm → r（root 最後）', 0, 0.1); cap('postorder', 'root 放最後');
+  },
+  async (tok, S) => { // @934.0
+    S.l3 = pl('inorder：root 放中間', 0, -0.5); cap('inorder', 'root 在中間');
+  },
+  async (tok, S) => { // @957.8
+    txt(S.l3, 'inorder（binary）：左 subtree → r → 右 subtree'); cap('binary tree', '左、root、右');
+  },
+  async (tok, S) => { // @1014.0
+    sm('一般 m-ary：T1 → r → T2 → ⋯ → Tm（root 放第二個）', 0, -1.1); cap('不只兩個 subtree 時', 'root 放在第二個');
+  },
+]);
+
+// 老師的例子（Grimaldi 的 binary tree）：r(a,b) a(c,d) c(f,g) f(j,–) j(p,q) g(k,–) b(–,e) e(h,i) h(–,m) m(s,–) i(–,n) n(t,u)
+const TV = { r: ['a', 'b'], a: ['c', 'd'], c: ['f', 'g'], f: ['j', null], j: ['p', 'q'], g: ['k', null], b: [null, 'e'], e: ['h', 'i'], h: [null, 'm'], m: ['s', null], i: [null, 'n'], n: ['t', 'u'] };
+const ch = (v) => TV[v] || [null, null];
+const pre = (v) => (v ? [v, ...pre(ch(v)[0]), ...pre(ch(v)[1])] : []);
+const post = (v) => (v ? [...post(ch(v)[0]), ...post(ch(v)[1]), v] : []);
+const ino = (v) => (v ? [...ino(ch(v)[0]), v, ...ino(ch(v)[1])] : []);
+const TVlv = {}; (function lv(v, d) { if (!v) return; TVlv[v] = d; lv(ch(v)[0], d + 1); lv(ch(v)[1], d + 1); })('r', 0);
+const TVP = Object.fromEntries(ino('r').map((v, k) => [v, [(k - 9) * 0.6, 6.5 - TVlv[v] * 0.95]]));
+const TVE = Object.entries(TV).flatMap(([p, cs]) => cs.filter(Boolean).map((c) => [p, c]));
+const LECT = { pre: 'racfjpqgkdbehmsintu', post: 'pqjfkgcdasmhtunieb' + 'r', in: 'pjqfckgadrbhsmeitnu' };
+function travScene(id, title, kind, head, seq) {
+  // seq: list of step kinds: 'draw' | 'title' | 'say:<text>' | array of vertices to visit | 'final'
+  const order = kind === 'pre' ? pre('r') : kind === 'post' ? post('r') : ino('r');
+  scene(id, title, seq.map((s) => async (tok, S) => {
+    if (!S.g) {
+      S.g = mkGraph(0.62); for (const n of Object.keys(TVP)) S.g.v(n, ...TVP[n]); TVE.forEach(([u, v]) => S.g.e(u, v)); S.k = 0; S.row = [];
+      hd(head, 0, 7.2);
+    }
+    if (s === 'draw' || s === 'title') { if (s === 'title') { S.t = sm(kind === 'pre' ? 'root → 左 subtree → 右 subtree' : kind === 'post' ? '左 subtree → 右 subtree → root' : '左 subtree → root → 右 subtree', 0, 6.75); } cap(head, s === 'draw' ? '老師的例子' : ''); return; }
+    if (typeof s === 'string' && s.startsWith('say:')) { if (S.say) gone(S.say); S.say = sm(s.slice(4), 0, 0.2); cap(s.slice(4), ''); return; }
+    if (s === 'final') {
+      const got = order.join('');
+      ok(got === LECT[kind], 0, -0.5, (kind === 'pre' ? 'preorder' : kind === 'post' ? 'postorder' : 'inorder') + '：' + order.join(' ') + '（跟老師的順序一樣 ✓）'); cap('全部走完', ''); return;
+    }
+    for (const v of s) {
+      const want = order[S.k];
+      S.g.vcol(want, TC.hot, HL); const n = S.k + 1; S.k++;
+      const l = lab.label(String(n), 'idx'); l.position.set(0.32, 0.32, 0); S.g.V[want].add(l);
+      S.row.push(cube(want, TC.yel, [0.5, 0.45, 0.4], -5.4 + (n - 1) * 0.6, 0.95, 0, 0.4));
+      await wt(tok, 120); S.g.vcol(want, TC.gold, null);
+      if (want !== v) bad('（預期 ' + v + '）', 0, 0.3);
+    }
+    cap('visit ' + s.join('、'), '');
+  }));
+}
+travScene('g8b-pre', '24B：Preorder 例子', 'pre', 'Preorder traversal', ['draw', 'title', ['r'], ['a'], ['c'], ['f'], ['j'], ['p'], ['q'], ['g'], ['k'], ['d'], ['b'], ['e'], ['h'], ['m'], ['s'], ['i', 'n', 't', 'u'], 'final']);
+travScene('g8b-post', '24B：Postorder 例子', 'post', 'Postorder traversal', ['title', 'say:先處理左邊的 subtree，一路往左下走', ['p'], ['q'], ['j'], ['f'], ['k'], ['g', 'c', 'd', 'a'], 'say:左邊做完；root 最後，先處理右邊的 subtree', ['s', 'm', 'h'], ['t'], ['u', 'n', 'i', 'e', 'b', 'r'], 'final']);
+travScene('g8b-in', '24B：Inorder 例子', 'in', 'Inorder traversal', ['title', 'say:先處理左邊的左邊的左邊…', ['p'], ['j', 'q'], ['f', 'c'], ['k', 'g'], ['a', 'd'], ['r'], ['b'], ['h'], ['s', 'm'], ['e'], ['i', 't', 'n', 'u'], 'final']);
+
+scene('g8b-travsum', '24B：整理三種 traversal', [
+  async (tok, S) => { // @1540.1
+    hd('自己用三種方法各跑一次這個例子', 0, 7.0);
+    [['preorder', pre('r')], ['postorder', post('r')], ['inorder', ino('r')]].forEach(([n, o], k) => pl(n + '：' + o.join(' '), 0, 5.8 - k * 0.8));
+    cap('自己各跑一次', 'pre、post、in');
+  },
+  async (tok, S) => { // @1571.0
+    good('三種的差別只在：什麼時候 visit root（前、後、中間）', 0, 3.0); cap('三種 traversal', '看 root 相對 subtree 的順序');
+  },
+]);
+  }
+  // @@FRAGMENTS@@
+  FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
+
   return {
     kicker: '離散數學・第 8 章',
     title: '圖論（進階）：樹、平面圖、著色',
@@ -1315,7 +2539,7 @@ export default function (ctx) {
       'tree-edges', 'st-remove-circuits', 'st-dfs', 'st-dfs-code', 'st-bfs', 'st-dfs-vs-bfs', 'st-directed-forest', 'st-exercise-remove', 'st-triangle-all',
       'cayley-k4', 'matrix-tree', 'kruskal', 'prim', 'dijkstra', 'cut-vertex', 'euler-trail', 'euler-formula', 'k5-k33', 'four-color',
       'col-map-dual', 'col-bipartite', 'col-complete', 'col-cycles', 'col-poly-map', 'col-poly-k4', 'hall-matching', 'max-flow',
-    ],
+    ].concat(FRAG.map((f) => f[0])),
     stop() { stopTimer(); },
   };
 }

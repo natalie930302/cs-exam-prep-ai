@@ -1,0 +1,263 @@
+{
+ "video": "m7RjwmS8c7U",
+ "label": "清大OCW 趙啟超《離散數學》第23D講 Trees",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "(d) ⇒ (a) 的證明",
+   "points": [
+    {
+     "t": 4,
+     "text": "假設 T 不 connected：取兩個 component T1、T2，各挑一個端點 a ∈ T1、b ∈ T2。"
+    },
+    {
+     "t": 89,
+     "text": "依 (d)，加上 {a,b} 應剛好產生一個 cycle；但 a、b 在不同 component，加上去不會有 cycle → 矛盾。"
+    },
+    {
+     "t": 214,
+     "text": "所以 T connected，又沒有 cycle → T 是 tree。"
+    },
+    {
+     "t": 360,
+     "text": "四個敘述全部等價；(b)(c)(d) 都可當定義，但定義仍用 connected 且沒有 cycle。"
+    }
+   ],
+   "scene": "g8b-da2",
+   "cues": [
+    4.3,
+    8,
+    10.1,
+    86.1,
+    89.3,
+    107.2,
+    114,
+    121,
+    203,
+    214.6,
+    298,
+    360.2,
+    378.4
+   ],
+   "explain": [
+    "接著證 (d) 推 (a)。用反證：假設 T 不 connected，那它至少有兩個 component。",
+    "如果有更多也沒關係，隨便挑兩個出來：T1（端點集 V1、邊集 E1）和 T2（V2、E2）。畫面是示意。",
+    "從兩個 component 各挑一個端點出來。",
+    "a 在 T1 裡，b 在 T2 裡。",
+    "(d) 說：加上任何原本沒有的邊，都會剛好產生一個 cycle。",
+    "那就故意加這條 {a,b}（黃色），它原本當然不存在。",
+    "程式算出：加上 {a,b} 以後，cycle 的個數是 0。",
+    "因為如果出現 cycle，它一定包含新加的 {a,b}，表示 a、b 本來就有路相連；可是它們在不同 component，本來不相連。",
+    "加了邊卻沒有 cycle，跟 (d) 的假設矛盾。",
+    "所以 T 不可能有兩個以上的 component，T 是 connected。",
+    "(d) 本來就說沒有 cycle，再加上 connected，T 就是 tree。",
+    "四段都證完：a⇒b⇒c⇒d⇒a，四個敘述全部等價。",
+    "所以 (b)(c)(d) 某種程度都能當 tree 的定義，不過一開始的定義還是用「connected 而且沒有 cycle」。"
+   ]
+  },
+  {
+   "title": "（老師：理解證明過程，不要硬記結果）",
+   "points": [
+    {
+     "t": 387,
+     "text": "理解內容比較重要；接下來講 rooted tree。"
+    }
+   ],
+   "scene": null
+  },
+  {
+   "title": "Rooted tree 的定義",
+   "points": [
+    {
+     "t": 420,
+     "text": "rooted tree：tree 裡有一個特別的端點叫 root（根）。"
+    },
+    {
+     "t": 447,
+     "text": "directed tree：directed graph 拿掉方向後是 tree。"
+    },
+    {
+     "t": 517,
+     "text": "rooted tree：directed tree 中有一個 root，每條邊的方向都 away from the root。"
+    },
+    {
+     "t": 606,
+     "text": "平常畫 rooted tree 不畫方向；root 畫在最上面往下長（像抓著根把樹提起來）。"
+    }
+   ],
+   "scene": "g8b-rooted",
+   "cues": [
+    420.3,
+    447.7,
+    471.3,
+    517.1,
+    534.6,
+    571,
+    606,
+    675,
+    691.2
+   ],
+   "explain": [
+    "接下來講 rooted tree：這種 tree 有一個特別的端點，叫 root（根）。",
+    "它的正式定義要用到 directed tree，所以先定義 directed tree。",
+    "一個 directed graph（有方向的圖）如果把箭頭拿掉以後是一棵 tree，它就叫 directed tree。左邊這張箭頭方向亂七八糟，但拿掉方向是 tree。（示意）",
+    "rooted tree：在 directed tree 裡，有一個端點特別，叫 root。右邊 A 就是 root。",
+    "而且每條邊的方向都是 directed away from the root，也就是從 root 往外走。",
+    "例子：A 是 root，所有箭頭都往外，這就是 rooted tree。",
+    "方向既然一定是往外（往下），大家都知道，畫的時候就不畫箭頭了，看起來像普通的無向圖。",
+    "它跟真正的樹相反：真的樹根在下面、往上長。",
+    "想像抓著 root 把整棵樹提起來，其他端點因為重量都垂到下面——這就是我們畫 rooted tree 的樣子。"
+   ]
+  },
+  {
+   "title": "名詞：parent、child、sibling、ancestor、descendant、leaf、internal、subtree",
+   "points": [
+    {
+     "t": 743,
+     "text": "例：A 是 root；B 是 C 的 parent，C 是 B 的 child（名詞都沒有性別）。"
+    },
+    {
+     "t": 837,
+     "text": "sibling：同一個 parent 的 children（H、I、J）。ancestor：E 的祖先是 C、B、A；descendant：B 的後代是 C、D、E。"
+    },
+    {
+     "t": 967,
+     "text": "leaf：沒有 children 的端點（D E F I K L N）；其他是 internal vertices（A B C G H J，含 root）。"
+    },
+    {
+     "t": 1098,
+     "text": "以 G 為 root 的 subtree：G 和它下面的部分。"
+    }
+   ],
+   "trap": "root 也是 internal vertex（只要它有 children）；ancestor/descendant 不包含自己。",
+   "scene": "g8b-terms",
+   "cues": [
+    743,
+    755.5,
+    770,
+    783.5,
+    801.6,
+    837.6,
+    888.2,
+    911,
+    967,
+    1013.3,
+    1044,
+    1098
+   ],
+   "explain": [
+    "介紹幾個名詞，大多借用族譜的稱呼，但都沒有性別。這是老師的例子，K、L、N 掛在哪個 parent 看不清楚，是示意。",
+    "A 是 root，root 只有一個，通常畫在最上面。",
+    "例如 C 在 B 的下面，因為方向都往下。",
+    "B 叫做 C 的 parent（父母，不分爸爸媽媽）。",
+    "反過來，C 叫做 B 的 child（小孩）。",
+    "同一個 parent 生的叫 sibling（兄弟姐妹、手足）：H、I、J 都是 G 的 child，所以是 siblings。",
+    "在某個點上面、一路往上的那些點叫它的 ancestor（祖先）：E 的祖先是 C、B、A。",
+    "反過來，在某點下面的叫 descendant（後代）：B 的後代是 C、D、E。",
+    "端點分兩類。第一類叫 leaves（葉子）：D、E、F、I、K、L、N。",
+    "葉子就是沒有 children 的端點，像樹最末端的葉子。",
+    "不是葉子的叫 internal vertices（內部端點）：A、B、C、G、H、J，root 也算在內。",
+    "把 G 下面這一整塊拿起來，就是「以 G 為 root 的 subtree」（子樹），G 變成這塊的 root。"
+   ]
+  },
+  {
+   "title": "Level 與 height",
+   "points": [
+    {
+     "t": 1160,
+     "text": "root 是 level 0；B F G 在 level 1、C H I J 在 level 2、D E K L N 在 level 3。"
+    },
+    {
+     "t": 1187,
+     "text": "level = root 到該端點唯一 path 的邊數；height = 最大的 level（例子是 3）。"
+    }
+   ],
+   "trap": "height 數的是「邊數」，不是層數；只有 root 的 tree height 是 0。",
+   "scene": "g8b-level",
+   "cues": [
+    1160.2,
+    1175.1,
+    1178,
+    1187,
+    1212.9,
+    1268.4
+   ],
+   "explain": [
+    "rooted tree 可以分層，叫 level。root 在 level 0。",
+    "往下一層是 level 1，再來 level 2、level 3，依此類推。",
+    "B、F、G 在 level 1；C、H、I、J 在 level 2；D、E、K、L、N 在 level 3。程式依 parent 關係算出來，跟老師說的一樣。",
+    "level 的定義：從 root 到那個端點的唯一 path 經過幾條邊。例如 K 是 A–G–H–K，3 條邊，所以在 level 3。",
+    "tree 的 height（高度）就是最大的 level，這棵是 3。",
+    "這些都只是名詞：葉子這類來自真正的樹，parent、child、sibling、ancestor、descendant 來自族譜。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "(d) ⇒ (a) 的證明中，從兩個不同 component 各取一點 a、b 加上 {a,b}，會產生幾個 cycle？",
+   "opts": [
+    "0 個",
+    "1 個",
+    "2 個",
+    "不一定"
+   ],
+   "ans": "0 個",
+   "why": "有 cycle 就表示 a、b 原本相連；它們在不同 component，所以沒有 cycle，與 (d) 矛盾。"
+  },
+  {
+   "q": "rooted tree 中每條邊的方向是？",
+   "opts": [
+    "away from the root（從 root 往外）",
+    "指向 root",
+    "任意",
+    "沒有方向"
+   ],
+   "ans": "away from the root（從 root 往外）",
+   "why": "定義：directed tree 有一個 root，每條邊都 directed away from the root；畫圖時才省略箭頭。"
+  },
+  {
+   "q": "在老師的例子中，E 的 ancestors 是？",
+   "opts": [
+    "C、B、A",
+    "D",
+    "C",
+    "A"
+   ],
+   "ans": "C、B、A",
+   "why": "ancestor 是從 E 往上到 root 路上的所有端點：C、B、A。"
+  },
+  {
+   "q": "下列哪個是 leaf（葉子）的定義？",
+   "opts": [
+    "沒有 children 的端點",
+    "在最底層的端點",
+    "只有一個 child 的端點",
+    "沒有 parent 的端點"
+   ],
+   "ans": "沒有 children 的端點",
+   "why": "葉子不一定在最底層（例如 F 在 level 1）；沒有 children 就是葉子。"
+  },
+  {
+   "q": "老師例子的 height 是多少？",
+   "opts": [
+    "3",
+    "4",
+    "13",
+    "2"
+   ],
+   "ans": "3",
+   "why": "最大的 level 是 3（D、E、K、L、N），height = 3。"
+  },
+  {
+   "q": "level 的定義是？",
+   "opts": [
+    "root 到該端點唯一 path 的邊數",
+    "root 到該端點的端點數",
+    "該端點的 children 數",
+    "該端點的 descendant 數"
+   ],
+   "ans": "root 到該端點唯一 path 的邊數",
+   "why": "tree 中 root 到任一點的 path 唯一，path 的邊數就是 level；root 是 level 0。"
+  }
+ ]
+}
