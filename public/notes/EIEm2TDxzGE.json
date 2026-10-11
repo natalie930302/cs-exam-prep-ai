@@ -1,0 +1,382 @@
+{
+ "video": "EIEm2TDxzGE",
+ "label": "清大OCW 趙啟超《離散數學》第29A講 Matching Problem",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：matching problem",
+   "points": [
+    {
+     "t": 4,
+     "text": "開始介紹 matching problem（optimization and matching 這部分的第三個主題），先用一個例子說明。"
+    }
+   ],
+   "scene": null
+  },
+  {
+   "title": "例子：dance party，8 個女生、8 個男生",
+   "points": [
+    {
+     "t": 50,
+     "text": "派對有 8 個女生（Alice、Betty、Cindy、Doris、E、Flo、Gloria、Hazel）和 8 個男生（Art、Bill、Carl、Don、Eric、Frank、Gary、Hal）。"
+    },
+    {
+     "t": 84,
+     "text": "喜歡清單：A: a e f g h、B: b c h、C: c e f g、D: d h、E: b c d、F: b d、G: a b c d、H: b c d。"
+    },
+    {
+     "t": 185,
+     "text": "問題：Is it possible for each girl to dance with a boy she likes?"
+    },
+    {
+     "t": 259,
+     "text": "條件 1：每個女生 exactly 配一個她喜歡的男生；條件 2：每個男生只能配一個女生。"
+    },
+    {
+     "t": 305,
+     "text": "目標：配到的女生越多越好，最好每個都配到。"
+    }
+   ],
+   "trap": "「喜歡」是單方向寫在女生的清單上；配對時男生必須在那個女生的清單裡，而且一個男生不能同時配兩個女生。",
+   "scene": "g8e-party",
+   "cues": [
+    50.4,
+    59.7,
+    72,
+    81.5,
+    84.9,
+    96.7,
+    99,
+    106.4,
+    107.5,
+    108.8,
+    110.7,
+    141.8,
+    185.5,
+    213.9,
+    216.3,
+    224.7,
+    259.4,
+    279.5,
+    304.9
+   ],
+   "explain": [
+    "老師用一個很好記的例子介紹 matching problem：一個派對裡有 8 個女生（左邊粉紅色方塊）和 8 個男生（右邊藍色方塊）。",
+    "有一張表，記錄每個女生喜歡哪些男生。接下來我們一行一行把它抄到左邊的板子上。",
+    "8 個女生的名字開頭剛好是 A 到 H。第 5 個女生的名字字幕聽不清楚，我們就叫她 E。",
+    "8 個男生的名字開頭也剛好是 A 到 H。之後老師用小寫字母代表男生，例如 a 就是 Art。",
+    "第一行：Alice 喜歡 Art、Eric、Frank、Gary、Hal，寫成 A: a e f g h。",
+    "Betty 喜歡 b、c、h。",
+    "Cindy 喜歡 c、e、f、g。",
+    "Doris 喜歡 d、h；第 5 個女生 E 喜歡 b、c、d。",
+    "Flo 喜歡 b、d，只有兩個選擇。",
+    "Gloria 喜歡 a、b、c、d。",
+    "Hazel 喜歡 b、c、d。整張表一共 26 個「喜歡」，程式數過了。",
+    "假設你是派對的主辦人（organizer），這是一場舞會，你要幫每個女生安排一個男舞伴。",
+    "問題是：有沒有辦法讓每個女生都跟一個「她喜歡的」男生跳舞？",
+    "舉例：把 Art 配給 Alice 可以，因為 Art 在 Alice 的清單上（綠線）。",
+    "但不能把 Don 配給 Alice，因為 Alice 的清單裡沒有 Don（紅線打叉）。",
+    "主辦人當然希望配成功的人越多越好，最理想的是每個女生都配到她喜歡的舞伴。",
+    "條件一：每個女生配「剛好一個」男生，而且這個男生要在她喜歡的清單裡。",
+    "條件二：每個男生也只能配一個女生。例如 Betty 和 Cindy 都喜歡 Carl，但不能把 Carl 同時配給兩個人。",
+    "在這兩個條件下，目標就是讓被配到的女生越多越好，最好全部都配到。"
+   ]
+  },
+  {
+   "title": "畫成圖：女生、男生是點，喜歡是邊",
+   "points": [
+    {
+     "t": 315,
+     "text": "matching problem 中文叫「配對問題」：要配對，而且配得越多越好。"
+    },
+    {
+     "t": 334,
+     "text": "女生、男生寫在兩邊，每個人一個點；女生喜歡男生就連一條邊（共 26 條）。"
+    },
+    {
+     "t": 509,
+     "text": "大寫字母代表女生、小寫字母代表男生。"
+    }
+   ],
+   "scene": "g8e-draw",
+   "cues": [
+    315.3,
+    334.7,
+    400.5,
+    416.8,
+    419.4,
+    434.4,
+    435,
+    436.4,
+    437.6,
+    439.4,
+    478.7,
+    509.5,
+    538.6
+   ],
+   "explain": [
+    "這個問題叫 matching problem，翻成中文就是「配對問題」：要配對，而且希望配得越多越好。右邊是剛才的喜歡清單。",
+    "怎麼表示它？把女生寫在左邊、男生寫在右邊，每個人用一個點（vertex，端點）代表。",
+    "女生喜歡哪個男生，就在兩個點之間連一條線（edge，邊）。先畫 Alice：她連到 a、e、f、g、h。",
+    "Betty 連到 b、c、h。",
+    "Cindy 連到 c、e、f、g。",
+    "Doris 連到 d、h。",
+    "E 連到 b、c、d。",
+    "Flo 連到 b、d。",
+    "Gloria 連到 a、b、c、d。",
+    "Hazel 連到 b、c、d。全部畫完一共 26 條邊，剛好等於表上的 26 個「喜歡」。",
+    "整理一下：每個人是一個端點，「喜歡」就是兩個端點之間的一條邊。這樣就得到一張圖。",
+    "因為名字剛好都是 A 到 H 開頭，老師用大寫字母代表女生、小寫字母代表男生，畫起來比較清楚。",
+    "這只是 matching problem 的一個例子，同樣的問題在很多地方都會出現。"
+   ]
+  },
+  {
+   "title": "一般的 matching problem：兩個集合 X、Y",
+   "points": [
+    {
+     "t": 563,
+     "text": "派對是 general matching problem 的 special case。"
+    },
+    {
+     "t": 596,
+     "text": "兩個集合 X、Y；X 的每個 member 和 Y 的某些 member compatible（派對：compatible＝喜歡）。"
+    },
+    {
+     "t": 692,
+     "text": "例 2：職業介紹所，X＝人、Y＝工作；每人配一個工作、每個工作給一個人。"
+    },
+    {
+     "t": 750,
+     "text": "例 3：X＝守備位置（指定打擊制 10 個）、Y＝球員；賽前排 lineup 也是 matching problem。"
+    }
+   ],
+   "scene": "g8e-general",
+   "cues": [
+    562.8,
+    595.8,
+    639.7,
+    692,
+    712.2,
+    725.7,
+    750.2,
+    771.3,
+    787.3,
+    816.1,
+    853.3
+   ],
+   "explain": [
+    "剛才的派對，其實是一般 matching problem 的一個特例（special case）。",
+    "一般的 matching problem 有兩個集合，叫 X 和 Y。在派對裡，X 是 8 個女生的集合，Y 是 8 個男生的集合。",
+    "X 的每個成員都跟 Y 的某些成員 compatible（合得來、相容）。在派對例子裡，compatible 就是「她喜歡他」。畫面上的連線是示意。",
+    "另一個例子是職業介紹所：X 是來找工作的人，Y 是工作機會。",
+    "一個人可能適合好幾種工作，一個工作也可能有好幾個人適合；但每個人只能配一個工作，一個工作也只能給一個人。",
+    "介紹所希望配成功的人越多越好，因為配到越多人，收的仲介費就越多。",
+    "再一個例子是運動比賽：X 是場上的守備位置，Y 是隊上可以上場的球員。",
+    "以職棒的指定打擊（DH）制為例，場上有 10 個位置：投手、捕手、一二三壘手、游擊手、左中右外野手，再加一個 DH。",
+    "一隊可以上場的人很多（美國大聯盟 active roster 以前 25 人，老師說今年 26 人），很多是投手；有些人能守好幾個位置，例如可以守游擊也可以守二壘。",
+    "比賽前教練要排出 lineup（先發名單）：10 個位置每個都要有人，一個人也不能同時守兩個位置。",
+    "這幾個問題本質上都一樣，都叫 matching problem。"
+   ]
+  },
+  {
+   "title": "Bipartite graph 與 matching 的定義",
+   "points": [
+    {
+     "t": 857,
+     "text": "matching problem 用 bipartite graph 描述：vertex set 分成兩個 disjoint subsets X、Y，每條邊一端在 X、一端在 Y。"
+    },
+    {
+     "t": 988,
+     "text": "matching M 是 edge set E 的 subset。"
+    },
+    {
+     "t": 1063,
+     "text": "條件：No two edges in M have a common endpoint（一女不配兩男、一男不配兩女）。"
+    },
+    {
+     "t": 1107,
+     "text": "希望 M 越大越好。"
+    }
+   ],
+   "trap": "matching 的條件是「任兩條邊沒有共同端點」，X 端和 Y 端都要檢查；只檢查一邊不夠。",
+   "scene": "g8e-def",
+   "cues": [
+    857.5,
+    869.8,
+    880.3,
+    886.2,
+    913.5,
+    944.8,
+    974.1,
+    988.1,
+    1016.6,
+    1063.1,
+    1080.2,
+    1094.4,
+    1107
+   ],
+   "explain": [
+    "在 graph theory 裡，我們就用剛才畫的那張圖來描述這種問題。",
+    "這種圖以前介紹過，叫 bipartite graph（二部圖）。",
+    "bipartite 的意思是：所有端點可以分成兩群（partition 成兩個 disjoint subsets），兩群沒有共同的點。這裡左邊一群叫 X、右邊一群叫 Y。",
+    "而且每一條邊的兩個端點，一定一個在 X、一個在 Y；同一群裡面的點之間不會有邊（紅線那種不行，示意）。",
+    "換成數學語言：G = (V, E) 是一個 bipartite graph，V 是端點集合、E 是邊的集合。",
+    "V 分成 X 和 Y 兩個 subset：X ∪ Y = V，而且 X ∩ Y = ∅（沒有交集）。",
+    "E 裡每一條邊，一個端點在 X、另一個在 Y。程式檢查了，派對的 26 條邊都是 X–Y。",
+    "那什麼叫一個 matching（配對）？",
+    "matching M 是 edge set E 的一個 subset，也就是從圖裡挑出來的一些邊。",
+    "它要滿足一個條件：M 裡任兩條邊都沒有共同的端點。例如綠色的 A–a、B–b、C–c 就是一個 matching（示意）。",
+    "共同端點不能在 X 這邊：A–a 和 A–e 共用 A，就等於一個女生配了兩個男生，不行。",
+    "共同端點也不能在 Y 這邊：B–c 和 C–c 共用 c，等於一個男生配了兩個女生，也不行。",
+    "在這個條件下，我們希望 M 越大越好，也就是越多女生被配到（或越多人被介紹到工作）。"
+   ]
+  },
+  {
+   "title": "Maximum matching 與 complete matching",
+   "points": [
+    {
+     "t": 1143,
+     "text": "最大的 matching：沒有其他 matching 的 cardinality |M| 比它大（老師稱 maximal matching，一般教科書叫 maximum matching）。"
+    },
+    {
+     "t": 1238,
+     "text": "每個女生都配到的 matching 叫 complete matching：|M| = |X|。"
+    },
+    {
+     "t": 1313,
+     "text": "原問題換成 graph 語言：這個 bipartite graph 有沒有 complete matching？沒有的話，maximum matching 多大？"
+    }
+   ],
+   "trap": "老師口頭說「maximal matching」，意思是 size 最大的 matching；多數教科書把 size 最大的叫 maximum matching，而 maximal matching 指「不能再加任何一條邊」的 matching，兩者不同。",
+   "scene": "g8e-maxcomp",
+   "cues": [
+    1143.7,
+    1178,
+    1195.6,
+    1206.8,
+    1221.1,
+    1238.5,
+    1285.6,
+    1313,
+    1356.6,
+    1397.7
+   ],
+   "explain": [
+    "接著定義「最大的 matching」，老師口頭稱為 maximal matching。",
+    "條件是：沒有其他 matching 的 cardinality 比它大。cardinality 就是集合裡元素的個數，這裡就是 matching 有幾條邊。",
+    "舉例：一個 matching 配到 5 個女生（畫面上的 M₁，程式確認它真的是 matching）。",
+    "另一個配到 6 個女生，那個就比較大。",
+    "matching 是一組邊，它有幾條邊就有幾個女生被配到。size 最大的，一般教科書正式名稱叫 maximum matching。",
+    "最好的情況是每個女生都被配到，這時候的 matching 叫 complete matching。",
+    "complete matching 的意思是 |M| = |X|。派對裡 X 有 8 個女生，所以要 |M| = 8 才是 complete。",
+    "原來的問題「能不能讓每個女生都跟喜歡的男生跳舞」，換成 graph theory 語言就是：這個 bipartite graph 有沒有 complete matching？",
+    "如果有，size 就是 8；如果沒有，就要問最多能配到幾個，也就是 maximum matching 有多大。",
+    "那要怎麼找最大的 matching 呢？老師說先拿例子來試試看。"
+   ]
+  },
+  {
+   "title": "先配配看：能配就配，配到 E 卡住",
+   "points": [
+    {
+     "t": 1412,
+     "text": "照字母順序、能配就先配：A–a、B–b、C–c、D–d（size 4）。"
+    },
+    {
+     "t": 1587,
+     "text": "E 喜歡 b、c、d，三個都被配走了：卡住，再加邊就違反 matching 的條件。"
+    },
+    {
+     "t": 1626,
+     "text": "A、B 其實不只喜歡一個男生，也許可以調整前面的配法。"
+    }
+   ],
+   "trap": "「能配就配」（greedy）不保證最大；卡住不代表已經是最大的 matching。",
+   "scene": "g8e-greedy",
+   "cues": [
+    1412.1,
+    1439,
+    1474.2,
+    1512.3,
+    1525,
+    1548.6,
+    1559,
+    1573.9,
+    1587.1,
+    1610.3,
+    1626.7,
+    1652.6
+   ],
+   "explain": [
+    "我們就用派對這個例子，先試試看，有問題再說。",
+    "把喜歡清單再抄一次：A: aefgh、B: bch、C: cefg、D: dh、E: bcd、F: bd、G: abcd、H: bcd。",
+    "先來配配看。",
+    "想方法的第一步，常常就是找例子動手試，試多了就會看出端倪。",
+    "能配就先配：Alice 喜歡的第一個是 Art，就把 A–a 這條邊放進 matching（變粗綠色）。",
+    "照字母順序配 B：Betty 喜歡的 b 還沒人配，就配給她。",
+    "Cindy 喜歡的 c 還 available（沒人用），就把 c 配給 Cindy。",
+    "Doris 喜歡 d 和 h，先把 d 配給她。現在有 4 條邊，程式確認這是一個 matching。",
+    "輪到 E：她喜歡 b、c、d，可是這三個男生都已經配給別人了。",
+    "如果硬把 E–b 也加進去，它和 B–b 共用端點 b，就違反 matching 的條件。所以卡住了。",
+    "怎麼辦？Alice、Betty 其實都不只喜歡一個男生，也許可以調整前面的配法。",
+    "配到這裡卡住了，下一段就來看要怎麼有系統地調整，把 E 也配上去。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "在 bipartite graph 裡，matching M 必須滿足什麼條件？",
+   "opts": [
+    "M 裡任兩條邊沒有共同端點",
+    "M 要包含所有端點",
+    "M 裡的邊要形成一條 path",
+    "M 的邊數要等於 |Y|"
+   ],
+   "ans": "M 裡任兩條邊沒有共同端點",
+   "why": "matching 是 E 的 subset，條件是 no two edges have a common endpoint：一個女生只配一個男生、一個男生也只配一個女生。"
+  },
+  {
+   "q": "complete matching 的意思是？",
+   "opts": [
+    "|M| = |X|，X 裡每個點都配到",
+    "|M| = |E|",
+    "每個 y 都至少連一條邊",
+    "|M| = |X| + |Y|"
+   ],
+   "ans": "|M| = |X|，X 裡每個點都配到",
+   "why": "派對裡就是 8 個女生全部配到喜歡的男生。"
+  },
+  {
+   "q": "派對例子照字母順序「能配就配」：A–a、B–b、C–c、D–d 之後，為什麼 E 配不上？",
+   "opts": [
+    "E 喜歡的 b、c、d 都已經被配走了",
+    "E 沒有喜歡任何男生",
+    "E 和 A 喜歡同一個男生",
+    "bipartite graph 不允許 5 條邊"
+   ],
+   "ans": "E 喜歡的 b、c、d 都已經被配走了",
+   "why": "再加 E–b、E–c 或 E–d 都會和現有的邊共用端點，違反 matching 條件。"
+  },
+  {
+   "q": "下列哪一個不是 bipartite graph 的條件？",
+   "opts": [
+    "X 裡的點彼此之間都要有邊",
+    "V 分成兩個 disjoint subsets X、Y",
+    "每條邊一端在 X、一端在 Y",
+    "同一個 subset 裡的點之間沒有邊"
+   ],
+   "ans": "X 裡的點彼此之間都要有邊",
+   "why": "剛好相反：同一個 subset 裡面的點之間不會有邊。"
+  },
+  {
+   "q": "職業介紹所的例子裡，X 和 Y 分別是什麼？",
+   "opts": [
+    "X＝找工作的人、Y＝工作",
+    "X＝工作、Y＝薪水",
+    "X＝介紹所、Y＝人",
+    "X＝男生、Y＝女生"
+   ],
+   "ans": "X＝找工作的人、Y＝工作",
+   "why": "每個人配一個工作、每個工作只給一個人，希望配到的人越多越好。"
+  }
+ ]
+}

@@ -1,0 +1,293 @@
+{
+ "video": "fOgt4u5Hjs0",
+ "label": "清大OCW 趙啟超《離散數學》第30A講 Matching Problem",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場回顧",
+   "points": [
+    {
+     "t": 4,
+     "text": "回顧：matching problem 的 graph 表述、Hungarian algorithm 與它的正確性；接下來看 matching 的數學性質。"
+    }
+   ],
+   "scene": null
+  },
+  {
+   "title": "符號 R(A)",
+   "points": [
+    {
+     "t": 34,
+     "text": "G 是 bipartite graph，V = X ∪ Y；A ⊆ X。"
+    },
+    {
+     "t": 82,
+     "text": "R(A)＝Y 裡跟 A 中某個 x 有邊相連的點：R(A) = { y ∈ Y：{x, y} ∈ E，x ∈ A }。"
+    },
+    {
+     "t": 163,
+     "text": "例：x1–y1, y2；x2–y2, y3；x3–y4, y1；A = {x1, x2, x3} → R(A) = {y1, y2, y3, y4}。"
+    }
+   ],
+   "scene": "g8e-ra",
+   "cues": [
+    34,
+    48.4,
+    71,
+    82.5,
+    119.5,
+    163.7,
+    183.6,
+    198.1,
+    234.2,
+    238.6,
+    246.2,
+    254.2
+   ],
+   "explain": [
+    "先介紹一個符號（notation），後面的定理會用到它。",
+    "設定：G 是 bipartite graph，端點分成 disjoint 的 X 和 Y，每條邊一端在 X、一端在 Y。",
+    "A 是 X 的一個 subset（子集合），就是左邊挑出來的某幾個點。",
+    "R(A) 的意思：Y 裡面，跟 A 中某個點有邊相連的那些點，全部放在一起。",
+    "用派對來說：A 是某幾個女生，例如 B、C、D；R(A) 就是她們喜歡的所有男生的集合。程式算出是 {b, c, d, e, f, g, h}。",
+    "老師舉一個小例子：左邊 x1、x2、x3，右邊 y1、y2、y3、y4。",
+    "邊這樣連：x1 連 y1、y2；x2 連 y2、y3；x3 連 y4、y1。",
+    "取 A = {x1, x2, x3}，它是 X 的 subset。",
+    "跟 x1 相連的是 y1、y2，先放進 R(A)。",
+    "跟 x2 相連的是 y2、y3。y2 已經在裡面了，只要再把 y3 放進來。",
+    "跟 x3 相連的是 y4、y1。y1 已經在裡面了，再放 y4。",
+    "所以 R(A) = {y1, y2, y3, y4}。就像這三個女生喜歡的男生的「聯集」。"
+   ]
+  },
+  {
+   "title": "Hall's theorem 與必要性",
+   "points": [
+    {
+     "t": 284,
+     "text": "Hall's theorem：bipartite graph G 有 complete matching ⇔ 對所有 A ⊆ X，|R(A)| ≥ |A|。"
+    },
+    {
+     "t": 382,
+     "text": "派對的意思：任找幾個女生，她們喜歡的男生數一定要 ≥ 女生數。"
+    },
+    {
+     "t": 415,
+     "text": "必要性（⇒）用 contrapositive：若某個 A 有 |R(A)| < |A|，光 A 就配不完，沒有 complete matching；很 trivial。"
+    }
+   ],
+   "trap": "條件是「對所有」subset A 都要成立；只檢查 A = X 一個不夠。",
+   "scene": "g8e-hall",
+   "cues": [
+    284.1,
+    305,
+    320.2,
+    345.6,
+    364.6,
+    382.4,
+    415.1,
+    442.5,
+    453,
+    485
+   ],
+   "explain": [
+    "問題：bipartite graph 什麼時候會有 complete matching？也就是 matching 的 size 等於 |X|，每個女生都配到。",
+    "回答這個問題的定理叫做 Hall's theorem。",
+    "它給出一個充分且必要條件（necessary and sufficient condition），用「若且唯若」（if and only if）連接。",
+    "定理的前半：bipartite graph G 有 complete matching，若且唯若……",
+    "……對 X 的「每一個」subset A，都有 |R(A)| ≥ |A|。",
+    "換成派對：隨便找幾個女生，她們喜歡的男生個數一定要大於等於女生人數。程式找到派對裡有不滿足的 A，所以它沒有 complete matching。",
+    "充分且必要要證兩個方向。先證必要條件：從「有 complete matching」推到「條件成立」，也就是 P ⇒ Q。",
+    "要證：如果有 complete matching，那對所有 A 都有 |R(A)| ≥ |A|。",
+    "用 contrapositive（逆否）：若非 Q 則非 P。只要有一個 A 讓 |R(A)| < |A|，例如三個女生只喜歡兩個男生，光她們就配不完（示意），整體當然沒有 complete matching。",
+    "這個方向很簡單，老師說 trivial（顯而易見），就不詳細寫了。"
+   ]
+  },
+  {
+   "title": "閒聊：trivial 的笑話",
+   "points": [
+    {
+     "t": 495,
+     "text": "老師講「It is trivial to see」的數學老師笑話。"
+    }
+   ],
+   "scene": null
+  },
+  {
+   "title": "Hall's theorem 充分性：用 Hungarian tree",
+   "points": [
+    {
+     "t": 551,
+     "text": "充分性（⇐）也用 contrapositive：假設沒有 complete matching，要找到一個 A 使 |R(A)| < |A|。"
+    },
+    {
+     "t": 666,
+     "text": "run Hungarian algorithm：有 x 沒配到，它是 Hungarian acorn，從它長出 Hungarian tree。"
+    },
+    {
+     "t": 785,
+     "text": "Hungarian tree 的葉子都是 x；tree 上 x 連到的 y 全在 tree 上；x 比 y 剛好多 1。"
+    },
+    {
+     "t": 968,
+     "text": "取 A＝tree 上的 x：派對 A = {B, D, E, F, H}，R(A) = {b, c, d, h}，4 < 5。"
+    }
+   ],
+   "trap": "Hungarian tree 上 x 比 y 多 1，是因為除了 root，每個 x 都由一條 matching 邊接在一個 y 下面。",
+   "scene": "g8e-hallpf",
+   "cues": [
+    551,
+    584.3,
+    609.1,
+    644.1,
+    666.5,
+    707.5,
+    749.6,
+    785,
+    816.1,
+    864,
+    901.2,
+    941.4,
+    968,
+    987.5,
+    1043.9,
+    1087
+   ],
+   "explain": [
+    "必要條件很清楚，但充分條件就不是那麼明白了。",
+    "怎麼證？還是用 contrapositive。",
+    "假設這個 bipartite graph 沒有 complete matching，然後證明那個條件不成立。",
+    "「對所有 A 都成立」的否定是「存在一個 A 不成立」。所以只要找到一個 A 讓 |R(A)| < |A| 就好。",
+    "用我們學過的工具：run Hungarian algorithm。它會產生 maximum matching，而因為沒有 complete matching，這個結果不是 complete。",
+    "不是 complete，就有 x-vertex 沒配到。algorithm 停下時，沒配到的都是 Hungarian acorn。",
+    "從 acorn 長出來的 alternating tree 就是 Hungarian tree：長完都找不到沒配到的 y。",
+    "關鍵：把 Hungarian tree 上的 x 和 y 數一數，x 的數目剛好比 y 多 1。",
+    "用前面的例子：H 沒配到，從 H 長出來的 Hungarian tree 就是右邊這棵。",
+    "tree 的葉子都會是 x-vertex（綠色亮的）：如果葉子是 y，它有配就會再接下去，沒配就找到 augmenting path 了，都不會停在 y。",
+    "跟 tree 上這些 x 相連的 y，全部都會出現在 tree 上；不然 tree 還沒長完。",
+    "為什麼 x always 多一個？tree 上每個 y 都用 matching 邊接一個 x，一對一對的，再加上一個 root，所以 x 多 1。",
+    "把 A 取成 tree 上的 x：B、D、E、F、H 五個；R(A) 就是 tree 上的 y：b、c、d、h 四個。4 < 5，條件不成立（程式驗證）。",
+    "所以只要沒有 complete matching，就找得到不滿足條件的 A。只要找到一個就好，充分條件證完了。",
+    "一般情況也一樣：A 取 Hungarian tree 上的 x，R(A) 一定就是 tree 上的 y，|R(A)| = |A| − 1。",
+    "兩個方向都是用 contrapositive（反證）證的，Hall's theorem 證完了。"
+   ]
+  },
+  {
+   "title": "Deficiency δ(G)：maximum matching = |X| − δ(G)",
+   "points": [
+    {
+     "t": 1097,
+     "text": "Hall's theorem 是充要條件，但要 check 所有 2^|X| 個 subset，不見得好用。"
+    },
+    {
+     "t": 1180,
+     "text": "deficiency：δ(G) = max over A ⊆ X 的 ( |A| − |R(A)| )；取 A = ∅ 得 δ(G) ≥ 0。"
+    },
+    {
+     "t": 1488,
+     "text": "δ = 0 ⇒ maximum matching = |X|；派對 δ = 1、|X| = 8 ⇒ 最多 7。"
+    },
+    {
+     "t": 1572,
+     "text": "定理：maximum matching 的 size = |X| − δ(G)；有 complete matching ⇔ δ(G) = 0。"
+    }
+   ],
+   "trap": "δ(G) 是「最大的不足量」，取 max 不是取和；而且 δ(G) ≥ 0（空集合給出 0）。",
+   "scene": "g8e-defic",
+   "cues": [
+    1097.7,
+    1110.5,
+    1150.4,
+    1180.4,
+    1206.5,
+    1232,
+    1241.7,
+    1260.7,
+    1333.4,
+    1372,
+    1427.2,
+    1488.2,
+    1510.2,
+    1572.6,
+    1604.6,
+    1642.3,
+    1673.1
+   ],
+   "explain": [
+    "Hall's theorem 給了有 complete matching 的若且唯若條件。",
+    "問題是 |X| 大的時候不好 check：要檢查所有 subset，一共 2^|X| 個。8 個女生就有 256 個。",
+    "第二件事：如果沒有 complete matching，maximum matching 的 size 到底是多少？",
+    "為此定義一個量，叫 deficiency（不足），記作 δ(G)。",
+    "它跟 |A| − |R(A)| 有關：一群女生的人數，減掉她們喜歡的男生數，就是「不夠幾個男生」。",
+    "例如 5 個女生只喜歡 4 個男生，這一群就差 1 個。",
+    "考慮所有 X 的 subset A，把每一群的不足量算出來，取最大的那個，就是 δ(G)。",
+    "再舉例：如果某個 A 有 3 個女生，R(A) 只有 1 個男生，這一群就差 2（示意）。",
+    "Remark：δ(G) 一定 ≥ 0，不會是負的。",
+    "因為 A 可以取空集合：|∅| − |R(∅)| = 0 − 0 = 0。最大值至少不會比 0 小。",
+    "δ 這個量跟 maximum matching 的 size 有什麼關係？想一想。",
+    "如果每一群都夠（不足量都 ≤ 0），δ 就是 0，這時 maximum matching 就是 |X|，也就是 complete matching。",
+    "如果 δ = 1、|X| = 8 呢？就像派對：程式把 256 個 subset 都算過，δ 真的是 1，最大 matching 是 7 = 8 − 1。",
+    "定理：bipartite graph G 的 maximum matching size = |X| − δ(G)。",
+    "特例：有 complete matching 時 δ 一定是 0，反過來也對；這跟 Hall's theorem 是同一件事。",
+    "一般情況下，maximum matching 比 complete 少的量就是 δ(G)。派對 8 個女生最多配到 7 個，差 1。",
+    "不過要直接算 δ，還是要考慮所有 2^|X| 個 subset，不是很好用；但定理至少告訴你答案是多少。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "在 x1–y1, y2；x2–y2, y3；x3–y4, y1 的圖中，R({x1, x2, x3}) 是？",
+   "opts": [
+    "{y1, y2, y3, y4}",
+    "{y1, y2}",
+    "{y2}",
+    "{x1, x2, x3}"
+   ],
+   "ans": "{y1, y2, y3, y4}",
+   "why": "R(A) 是跟 A 中任一點相連的所有 y 的聯集。"
+  },
+  {
+   "q": "Hall's theorem 說 bipartite graph 有 complete matching 若且唯若？",
+   "opts": [
+    "對所有 A ⊆ X，|R(A)| ≥ |A|",
+    "|X| = |Y|",
+    "存在一個 A 使 |R(A)| ≥ |A|",
+    "每個 y 的 degree ≥ 1"
+   ],
+   "ans": "對所有 A ⊆ X，|R(A)| ≥ |A|",
+   "why": "必須對每一個 subset 都成立。"
+  },
+  {
+   "q": "老師證明 Hall's theorem 的充分性時用了什麼工具？",
+   "opts": [
+    "Hungarian algorithm 停下時的 Hungarian tree",
+    "Euler 公式",
+    "數學歸納法",
+    "Dijkstra algorithm"
+   ],
+   "ans": "Hungarian algorithm 停下時的 Hungarian tree",
+   "why": "取 A＝tree 上的 x，R(A)＝tree 上的 y，|R(A)| = |A| − 1。"
+  },
+  {
+   "q": "派對例子的 deficiency δ(G) 是多少？",
+   "opts": [
+    "1",
+    "0",
+    "2",
+    "3"
+   ],
+   "ans": "1",
+   "why": "A = {B, D, E, F, H} 時 5 − 4 = 1，而且沒有更大的；maximum matching = 8 − 1 = 7。"
+  },
+  {
+   "q": "為什麼 δ(G) ≥ 0？",
+   "opts": [
+    "取 A = ∅ 時 |A| − |R(A)| = 0，最大值至少是 0",
+    "因為 |X| ≥ |Y|",
+    "因為 G 是 connected",
+    "因為 matching 不能是空的"
+   ],
+   "ans": "取 A = ∅ 時 |A| − |R(A)| = 0，最大值至少是 0",
+   "why": "空集合是任何集合的 subset。"
+  }
+ ]
+}

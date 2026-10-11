@@ -1,0 +1,234 @@
+{
+ "video": "PfQKS71fBus",
+ "label": "清大OCW 趙啟超《離散數學》第29C講 Matching Problem",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "從 F 長 alternating tree：F–b–E–c–C–e，5 → 6",
+   "points": [
+    {
+     "t": 4,
+     "text": "現在 A–a、B–h、C–c、D–d、E–b 五個配到了；F 喜歡 b、d。"
+    },
+    {
+     "t": 52,
+     "text": "以 F 為 root，用 modified BFS 長 alternating tree：往下走不在 M 的邊、往上一層走 M 裡的邊（沒得選）。"
+    },
+    {
+     "t": 147,
+     "text": "E → c（d 已在 tree）、D → h；c → C、h → B；C → e，e 沒配到：找到 F–b–E–c–C–e。"
+    },
+    {
+     "t": 396,
+     "text": "augment：F–b、E–c、C–e 進 M，E–b、C–c 出 M；|M| = 6。"
+    }
+   ],
+   "trap": "長 tree 時，已經出現在 tree 上的點不能再長一次（例如 E 不能再走到 d）；從 y 往下一定走它在 M 裡的那條邊。",
+   "scene": "g8e-treeF",
+   "cues": [
+    4.5,
+    12,
+    36.2,
+    52.7,
+    67.3,
+    104.5,
+    120.2,
+    147.7,
+    185.2,
+    208.6,
+    218.5,
+    236.2,
+    267.4,
+    303.5,
+    362.6,
+    396.1,
+    477.1,
+    558.3
+   ],
+   "explain": [
+    "上一段 run 到這裡：A–a、B–h、C–c、D–d、E–b，五個女生都配到了，程式確認 |M| = 5。",
+    "接下來想辦法配 F。",
+    "F 喜歡 b 和 d。F 還沒配，所以 F–b、F–d 這兩條邊都沒用到。",
+    "從 F 當 root（樹根），用類似 breadth-first search（BFS，廣度優先搜尋）的方法長一棵樹，但要稍微修正：邊必須交替。",
+    "第一層：起點 F 沒配到，第一條邊要「不在 matching」，所以長出 b 和 d（右邊的樹）。",
+    "下一層的邊必須「在 matching 裡」，所以沒得選：b 是配給 E 的，就接到 E。",
+    "d 是配給 Doris 的，接到 D。樹長到第二層。",
+    "從 E 往下要走不在 matching 的邊：E 喜歡 c、d（b 是她自己配的那條）。d 已經在樹上了，樹不能重複，所以只長出 c。",
+    "Doris 原本配 d，她還喜歡 h，所以從 D 長出 h。",
+    "再下一層又必須在 matching 裡，沒得選：c 配的是 Cindy，接到 C。",
+    "h 配的是 Betty，接到 B。",
+    "Cindy 喜歡 c、e、f、g。c 已經在樹上，下一個 e 還沒出現，就長出 e。",
+    "e 是沒配到的男生（unmatched y-vertex）！找到了，可以停下來。",
+    "這棵從 F 長出來的樹叫 alternating tree，樹上從 root 往下的每條路都是 alternating path。程式自己跑 modified BFS，也找到同一條 F–b–E–c–C–e。",
+    "一碰到 unmatched y-vertex 就停。F–b–E–c–C–e 從沒配到的 F 開始、結束在沒配到的 e，所以是 augmenting alternating path。",
+    "把這條路 augment：不在 matching 的變在、在 matching 的變不在。",
+    "反映到原來的 matching：Cindy 改配 e、E 改配 c、F 配 b；A、B、D 都不變。",
+    "matching 的 size 從 5 變成 6，程式確認這還是合法的 matching。"
+   ]
+  },
+  {
+   "title": "從 G 長 alternating tree：G–a–A–f，6 → 7",
+   "points": [
+    {
+     "t": 567,
+     "text": "從 G 當 root；G 喜歡 a、b、c、d，四個都在 M：a–A、b–F、c–E、d–D。"
+    },
+    {
+     "t": 660,
+     "text": "從 A：a 已在 tree；e 有配（給 C），再試 f；f 沒配到 → 找到 G–a–A–f。"
+    },
+    {
+     "t": 778,
+     "text": "augment：A 改配 f、a 配給 G；M = A–f、B–h、C–e、D–d、E–c、F–b、G–a，|M| = 7。"
+    }
+   ],
+   "scene": "g8e-treeG",
+   "cues": [
+    567.4,
+    598.2,
+    635.2,
+    660.2,
+    688.7,
+    699.1,
+    718,
+    733,
+    778.2,
+    805.3,
+    839
+   ],
+   "explain": [
+    "方法一樣：從現在這個 matching 再想辦法 augment。這次從還沒配到的 G 當 root，長 alternating tree。",
+    "G 喜歡 a、b、c、d。G 還沒配，四條邊都沒用到，第一層長出 a、b、c、d。",
+    "下一層必須走 matching 裡的邊，都沒得選：a 配 A、b 配 F、c 配 E、d 配 D。",
+    "再從 A 開始：A 喜歡 a、e、f、g、h。a 已經在樹上，下一個 e 可以長出來。",
+    "但 e 已經配給 C 了，還不能結束，再試下一個。",
+    "下一個是 f，f 沒有被配到！bingo，找到了。",
+    "只要樹碰到一個 unmatched y-vertex 就停。得到 augmenting alternating path：G–a–A–f，程式也算出同一條。",
+    "把這條路 augment：G–a、A–f 放進去，A–a 拿掉。",
+    "原本 a 配給 Alice；現在 a 配給 G，Alice 改配 f。",
+    "新的 matching 是 A–f、B–h、C–e、D–d、E–c、F–b、G–a。",
+    "cardinality 從 6 變成 7，程式確認。只剩 H 還沒配到。"
+   ]
+  },
+  {
+   "title": "從 H 長不出來：Hungarian tree 與 Hungarian acorn",
+   "points": [
+    {
+     "t": 844,
+     "text": "H 喜歡 b、c、d：b → F、c → E、d → D；F、E 長不下去，D → h → B，B 也長不下去。"
+    },
+    {
+     "t": 1012,
+     "text": "從 H 出發的 alternating path 沒有一條是 augmenting：這棵叫 Hungarian tree，root H 叫 Hungarian acorn（橡實）。"
+    },
+    {
+     "t": 1237,
+     "text": "tree 上 5 個女生 B、D、E、F、H 只喜歡 4 個男生 b、c、d、h，所以 8 個女生不可能都配到。"
+    },
+    {
+     "t": 1449,
+     "text": "algorithm 停下：|M| = 7 是 maximum matching；有一個 Hungarian acorn，所以一個人配不到。"
+    }
+   ],
+   "trap": "Hungarian tree 不是「找錯了」，它反而指出了問題所在：tree 上的 x 比 y 多一個，她們喜歡的男生不夠分。",
+   "scene": "g8e-hungtree",
+   "cues": [
+    844.6,
+    882.8,
+    907.2,
+    921,
+    930.2,
+    945.3,
+    963,
+    1012.6,
+    1030.1,
+    1054.1,
+    1135.8,
+    1237.6,
+    1267.1,
+    1288.1,
+    1417.6,
+    1449.5,
+    1477,
+    1496.7
+   ],
+   "explain": [
+    "最後還有 H 沒配到。方法一樣，從 H 開始長樹。H 喜歡 b、c、d。",
+    "三條邊都還沒用過，長出 b、c、d。它們都在 matching 裡，沒得選：b 接到 F、c 接到 E、d 接到 D。",
+    "從 F 往下：F 喜歡 b 和 d，可是兩個都已經在樹上了，F 下不去。",
+    "E 喜歡 b、c、d，也全都在樹上，沒辦法。",
+    "Doris 喜歡 d 和 h。d 在樹上了，唯一的可能是 h。",
+    "h 原本配給 Betty，在 matching 裡，沒得選，接到 B。",
+    "Betty 喜歡 b、c、h，全都已經在樹上。這棵樹長不下去了。程式跑 modified BFS 也確認找不到 unmatched y。",
+    "從 H 出發的所有 alternating path 就是樹上這些，沒有一條停在沒配到的男生，所以沒有一條是 augmenting。",
+    "這種長不出 augmenting path 的 alternating tree，叫做 Hungarian tree。",
+    "Hungarian tree 的 root 叫做 Hungarian acorn。acorn 是橡樹的果實「橡實」。",
+    "H 就是一個 Hungarian acorn：從 H 沒辦法把 matching 變大。其他女生都已經配到了，剩下的是 acorn，所以 algorithm 停了。",
+    "為什麼 H 配不下去？看這棵 Hungarian tree 就知道：樹上有 5 個女生：Hazel、Flo、E、Doris、Betty。",
+    "但樹上只有 4 個男生：b、c、d、h。",
+    "這 5 個女生喜歡的男生，聯集起來只有 b、c、d、h 四個（程式算過）。5 個人搶 4 個位子，不可能每人一個。",
+    "光這 5 個女生就擺不平，所以 8 個女生不可能每個人都跟喜歡的男生跳舞。",
+    "Hungarian algorithm 停下來的結果是 size 7。程式把所有配法暴力試過，最大真的就是 7，所以它是 maximum matching。",
+    "如果結果的 size 等於 |X|，就是 complete matching。這裡有一個 Hungarian acorn，所以有一個人配不到。",
+    "接下來會用 pseudocode 描述這個 algorithm，並證明它找到的一定是最大的 matching。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "從 F 用 modified BFS 長 alternating tree（當時 M = A–a、B–h、C–c、D–d、E–b），找到的 augmenting path 是？",
+   "opts": [
+    "F–b–E–c–C–e",
+    "F–d–D–h",
+    "F–b–E–d",
+    "F–d–D–h–B–c"
+   ],
+   "ans": "F–b–E–c–C–e",
+   "why": "h 有配（給 B），c 有配（給 C）；C 能走到沒配到的 e，所以停在 e。"
+  },
+  {
+   "q": "Hungarian tree 是什麼？",
+   "opts": [
+    "長完之後找不到 unmatched y-vertex 的 alternating tree",
+    "包含所有端點的 spanning tree",
+    "只有一個點的 tree",
+    "找到 augmenting path 的 alternating tree"
+   ],
+   "ans": "長完之後找不到 unmatched y-vertex 的 alternating tree",
+   "why": "它上面的 alternating path 都不能 augment；它的 root 叫 Hungarian acorn。"
+  },
+  {
+   "q": "從 H 長出的 Hungarian tree 上，女生和男生各有幾個？",
+   "opts": [
+    "女生 5、男生 4",
+    "女生 4、男生 4",
+    "女生 5、男生 5",
+    "女生 8、男生 7"
+   ],
+   "ans": "女生 5、男生 4",
+   "why": "B、D、E、F、H 只喜歡 b、c、d、h，所以不可能全部配到。"
+  },
+  {
+   "q": "派對例子的 maximum matching size 是多少？",
+   "opts": [
+    "7",
+    "8",
+    "6",
+    "5"
+   ],
+   "ans": "7",
+   "why": "Hungarian algorithm 停在 7，暴力檢查也是 7；H 是 Hungarian acorn。"
+  },
+  {
+   "q": "長 alternating tree 時，從一個 y-vertex 往下一層要走哪條邊？",
+   "opts": [
+    "它在 matching 裡的那條邊（沒得選）",
+    "任何一條不在 matching 的邊",
+    "連到 root 的邊",
+    "隨便一條"
+   ],
+   "ans": "它在 matching 裡的那條邊（沒得選）",
+   "why": "x 往 y 走不在 M 的邊；y 若有配，就沿著 M 裡唯一那條邊接到它的配對對象。"
+  }
+ ]
+}

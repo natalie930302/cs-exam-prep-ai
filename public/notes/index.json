@@ -953,6 +953,12 @@
   "quiz": 7,
   "cued": true
  },
+ "EIEm2TDxzGE": {
+  "label": "清大OCW 趙啟超《離散數學》第29A講 Matching Problem",
+  "points": 23,
+  "quiz": 5,
+  "cued": true
+ },
  "eKkXU3uu2zk": {
   "label": "Abdul Bari：4.3.1 Matrix Chain Multiplication (Program)",
   "points": 43,
@@ -1029,6 +1035,12 @@
   "label": "MIT 6.006：AVL Trees, AVL Sort",
   "points": 104,
   "quiz": 8,
+  "cued": true
+ },
+ "fOgt4u5Hjs0": {
+  "label": "清大OCW 趙啟超《離散數學》第30A講 Matching Problem",
+  "points": 16,
+  "quiz": 5,
   "cued": true
  },
  "FrLWd1tJ_Wc": {
@@ -1305,6 +1317,12 @@
   "label": "Abdul Bari：5.2 Articulation Point and Biconnected Components",
   "points": 19,
   "quiz": 6,
+  "cued": true
+ },
+ "JGqB5cUX6cE": {
+  "label": "清大OCW 趙啟超《離散數學》第30B講 Matching Problem",
+  "points": 12,
+  "quiz": 4,
   "cued": true
  },
  "jGwwJ6boXns": {
@@ -1793,10 +1811,22 @@
   "quiz": 6,
   "cued": true
  },
+ "PfQKS71fBus": {
+  "label": "清大OCW 趙啟超《離散數學》第29C講 Matching Problem",
+  "points": 11,
+  "quiz": 5,
+  "cued": true
+ },
  "pJ6qrCB8pDw": {
   "label": "Paging in Operating Systems with Example & Working",
   "points": 13,
   "quiz": 5,
+  "cued": true
+ },
+ "PLpMBf9Nbyg": {
+  "label": "清大OCW 趙啟超《離散數學》第29D講 Matching Problem",
+  "points": 16,
+  "quiz": 4,
   "cued": true
  },
  "ppLCIhAnxfI": {
@@ -2391,6 +2421,12 @@
   "label": "台大林軒田 DSA Tree",
   "points": 216,
   "quiz": 8,
+  "cued": true
+ },
+ "Xl7Giuc-Adk": {
+  "label": "清大OCW 趙啟超《離散數學》第29B講 Matching Problem",
+  "points": 12,
+  "quiz": 4,
   "cued": true
  },
  "xo41NfT8218": {

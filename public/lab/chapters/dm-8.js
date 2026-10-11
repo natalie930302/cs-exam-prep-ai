@@ -6674,6 +6674,1009 @@ scene('g8d-mst-cost', '28B：Prim 與 Kruskal 的複雜度', [
   },
 ]);
   }
+
+  // ═══ g8e.js ═══
+  {
+const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
+// (kit has no beat: short waits use ctx.beat)
+// ─── 離散數學 第 8 章（清大 趙啟超 第29A–30B講：Matching Problems）— cued scenes ───
+// bipartite graph、matching、maximum／complete matching、augmenting alternating path、Hungarian algorithm
+// （modified BFS 長 alternating tree、Hungarian tree／acorn）、正確性證明、R(A)、Hall's theorem、deficiency δ(G)。
+// 每個 scene 是一串 steps；每一步等老師講到那一句（notes 的 cues）才動一下。不重播、不循環。
+// 老師的例子照用：dance party 8 女 8 男（A: a e f g h、B: b c h、C: c e f g、D: d h、E: b c d、F: b d、G: a b c d、H: b c d），
+// 照老師的順序配：A–a、B–b、C–c、D–d → E 卡住 → E–b–B–h → F–b–E–c–C–e → G–a–A–f → H 長出 Hungarian tree。
+// 每一步的 matching 大小、R(A)、δ(G)、Hall 條件都用程式暴力算（✓／✘）。老師口頭舉、黑板看不清的例子一律標「示意」。
+const wt = (tok, ms) => ctx.beat(tok, ms);
+const cap = (a, b = '') => say(a, b);
+const cls = (l, c) => { if (l && l.element) l.element.className = 'lab-label ' + c; };
+const settxt = (l, t) => { if (l && l.element) l.element.textContent = t; };
+const T = (t, c, x, z, y = 0.4) => tag(t, c, x, y, z);
+const LL = (t, c, x, z, y = 0.4) => { const l = tag(t, c, x, y, z); if (l.center) l.center.set(0, 0.5); return l; };
+const ok = (b, x, z, t) => T(b ? t : t.replace(/✓/g, '✘'), b ? 'good' : 'bad', x, z);
+const SI = (x, z) => T('示意', 'idx', x, z);
+const CAM = [[0, 12.5, 7.8], [0, 0, 0.6]];
+function scene(id, title, steps, cam = CAM) {
+  FRAG.push([id, title, async (tok) => {
+    fresh(cam[0], cam[1]);
+    const S = {};
+    for (const f of steps) { await step(tok); await f(tok, S); }
+  }]);
+}
+// a board lying on the floor; the newest line is lit; old lines scroll away when it is full
+function board(x = -7.3, z0 = -4.7, dz = 0.6, max = 15) {
+  const ls = []; let last = null;
+  return {
+    ls,
+    add(t, c = 'note') {
+      if (last && last.userData.hot) { cls(last, 'say'); last.userData.hot = false; }
+      if (ls.length >= max) { kill(ls.shift()); ls.forEach((l, i) => { l.position.z = z0 + i * dz; }); }
+      const l = LL(t, c, x, z0 + ls.length * dz); ls.push(l); l.userData.hot = c === 'note'; last = l; return l;
+    },
+  };
+}
+// ───────── graph kit: boxes for vertices, rods for edges (state = colour + thickness) ─────────
+const GC = { girl: '#f2c4d6', boy: '#c4dcf2', hot: '#d64545', ok: '#2fc092', gold: '#c08a1f', dim: '#e6ddcd', new: '#e9c53a', x: '#f2c4d6', y: '#c4dcf2' };
+const EC = {
+  g: ['#a89878', 0.035],   // an edge of the graph, not in the matching
+  m: ['#2fc092', 0.1],     // in the matching
+  p: ['#dd8238', 0.08],    // on the path, not in the matching
+  pm: ['#1f9e74', 0.12],   // on the path, in the matching
+  bad: ['#d64545', 0.09],
+  dim: ['#ddd3c2', 0.025],
+  t: ['#c08a1f', 0.07],    // tree edge
+  A: ['#4b9ee2', 0.09],    // edge of A-matching (proof)
+  B: ['#dd8238', 0.09],    // edge of B-matching (proof)
+  k: ['#e9c53a', 0.06],    // a new edge (set K)
+  ok: ['#2fc092', 0.08],
+};
+function rod(x1, z1, x2, z2) {
+  const a = V3(x1, 0.22, z1), b = V3(x2, 0.22, z2);
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, Math.max(0.01, a.distanceTo(b)), 8), new THREE.MeshStandardMaterial({ color: '#a89878', roughness: 0.6 }));
+  m.position.copy(a.clone().add(b).multiplyScalar(0.5));
+  m.quaternion.setFromUnitVectors(V3(0, 1, 0), b.clone().sub(a).normalize());
+  lab.world.add(m); return m;
+}
+function G() {
+  const g = { V: {}, E: {}, P: {}, L: {} };
+  g.v = (n, x, z, c, name, sz = 0.5) => {
+    const m = lab.box(c, [sz, 0.32, sz]); m.userData.lbl = lab.label(name ?? n, 'val'); m.add(m.userData.lbl);
+    m.position.set(x, 0.3, z); lab.world.add(m); g.V[n] = m; g.P[n] = [x, z]; return m;
+  };
+  g.key = (a, b) => (g.E[a + '|' + b] ? a + '|' + b : b + '|' + a);
+  g.has = (a, b) => !!g.E[g.key(a, b)];
+  g.e = (a, b, st = 'g', show = true) => {
+    const [x1, z1] = g.P[a], [x2, z2] = g.P[b];
+    const m = rod(x1, z1, x2, z2); g.E[a + '|' + b] = m; g.set(a, b, st); m.visible = show; return m;
+  };
+  g.set = (a, b, st) => {
+    const m = g.E[g.key(a, b)]; if (!m) return; const [c, r] = EC[st];
+    m.material.color.set(c); m.scale.set(r / 0.05, 1, r / 0.05); m.visible = true; m.userData.st = st;
+  };
+  g.st = (a, b) => (g.E[g.key(a, b)] || { userData: {} }).userData.st;
+  g.hide = (a, b) => { const m = g.E[g.key(a, b)]; if (m) m.visible = false; };
+  g.vc = (n, c) => { g.V[n].material.color.set(c); };
+  g.glow = (n, c) => { g.V[n].material.emissive = new THREE.Color(c || '#000000'); };
+  g.kill = () => { Object.values(g.V).forEach((m) => kill(m)); Object.values(g.E).forEach((m) => lab.world.remove(m)); Object.values(g.L).forEach((l) => kill(l)); };
+  return g;
+}
+// ───────── the lecturer's dance party ─────────
+const LIKE = { A: 'aefgh', B: 'bch', C: 'cefg', D: 'dh', E: 'bcd', F: 'bd', G: 'abcd', H: 'bcd' };
+const GIRLS = [...'ABCDEFGH'], BOYS = [...'abcdefgh'];
+const GNAME = { A: 'Alice', B: 'Betty', C: 'Cindy', D: 'Doris', E: 'E（名字聽不清）', F: 'Flo', G: 'Gloria', H: 'Hazel' };
+const BNAME = { a: 'Art', b: 'Bill', c: 'Carl', d: 'Don', e: 'Eric', f: 'Frank', g: 'Gary', h: 'Hal' };
+const PX = 0.4, PY = 3.0, pz = (i) => -3.5 + i;
+const ADJ = Object.fromEntries(GIRLS.map((x) => [x, [...LIKE[x]]]));
+// the matchings of the lecturer's run (girl → boy)
+const M4 = { A: 'a', B: 'b', C: 'c', D: 'd' };
+const M5 = { A: 'a', B: 'h', C: 'c', D: 'd', E: 'b' };
+const M6 = { A: 'a', B: 'h', C: 'e', D: 'd', E: 'c', F: 'b' };
+const M7 = { A: 'f', B: 'h', C: 'e', D: 'd', E: 'c', F: 'b', G: 'a' };
+function party(o = {}) {
+  const g = G();
+  GIRLS.forEach((n, i) => g.v(n, PX, pz(i), GC.girl, n));
+  BOYS.forEach((n, i) => g.v(n, PY, pz(i), GC.boy, n));
+  if (o.names) GIRLS.forEach((n, i) => { g.L[n] = T(GNAME[n], 'idx', PX - 1.15, pz(i)); });
+  if (o.bnames) BOYS.forEach((n, i) => { g.L[n] = T(BNAME[n], 'idx', PY + 0.85, pz(i)); });
+  if (o.edges !== false) GIRLS.forEach((x) => ADJ[x].forEach((y) => g.e(x, y, 'g', o.edges !== 'hidden')));
+  if (o.M) paintM(g, o.M);
+  return g;
+}
+function paintM(g, M) {
+  GIRLS.forEach((x) => ADJ[x].forEach((y) => { if (g.has(x, y)) g.set(x, y, M[x] === y ? 'm' : 'g'); }));
+}
+// ───────── brute force (everything shown on stage is computed here) ─────────
+const isMatching = (M) => { const ys = Object.values(M); return new Set(ys).size === ys.length; };
+const inGraph = (adj, M) => Object.entries(M).every(([x, y]) => adj[x].includes(y));
+const msize = (M) => Object.keys(M).length;
+function maxMatch(adj, X = Object.keys(adj)) {
+  let bestN = -1, best = {}; const used = new Set(), cur = {};
+  (function rec(i, n) {
+    if (n + (X.length - i) <= bestN) return;
+    if (i === X.length) { bestN = n; best = { ...cur }; return; }
+    const x = X[i];
+    for (const y of adj[x]) if (!used.has(y)) { used.add(y); cur[x] = y; rec(i + 1, n + 1); used.delete(y); delete cur[x]; }
+    rec(i + 1, n);
+  })(0, 0);
+  return { n: bestN, M: best };
+}
+const Rof = (adj, A) => [...new Set(A.flatMap((x) => adj[x]))].sort();
+function subsets(X) { const out = []; for (let s = 0; s < 1 << X.length; s++) out.push(X.filter((_, i) => (s >> i) & 1)); return out; }
+function deficiency(adj, X = Object.keys(adj)) { let d = 0, arg = []; subsets(X).forEach((A) => { const v = A.length - Rof(adj, A).length; if (v > d) { d = v; arg = A; } }); return { d, arg }; }
+const hallOK = (adj, X = Object.keys(adj)) => subsets(X).every((A) => Rof(adj, A).length >= A.length);
+// modified BFS: grow the alternating tree from an unmatched x (edges not in M down to y, then the M edge up to x)
+function altTree(adj, M, root) {
+  const mate = Object.fromEntries(Object.entries(M).map(([x, y]) => [y, x]));
+  const xs = [root], ys = [], par = {}; let found = null;
+  for (let k = 0; k < xs.length && !found; k++) {
+    const x = xs[k];
+    for (const y of adj[x]) {
+      if (M[x] === y || ys.includes(y)) continue;
+      ys.push(y); par[y] = x;
+      if (!mate[y]) { found = y; break; }
+      xs.push(mate[y]); par[mate[y]] = y;
+    }
+  }
+  let path = null;
+  if (found) { path = [found]; let v = found; while (v !== root) { v = par[v]; path.unshift(v); } }
+  return { xs, ys, found, path };
+}
+function flip(M, path) { const N = { ...M }; for (let i = 0; i + 1 < path.length; i += 2) N[path[i]] = path[i + 1]; return N; }
+const sameM = (P1, P2) => JSON.stringify(Object.entries(P1).sort()) === JSON.stringify(Object.entries(P2).sort());
+const mtxt = (M) => Object.keys(M).sort().map((x) => x + '–' + M[x]).join('  ');
+// paint a path (list of vertex names, x first) on graph g: edges alternate not-in / in M
+function paintPath(g, path, M) { for (let i = 0; i + 1 < path.length; i++) { const [u, v] = [path[i], path[i + 1]]; const x = GIRLS.includes(u) ? u : v, y = x === u ? v : u; g.set(u, v, M[x] === y ? 'pm' : 'p'); } }
+// a small tree drawn on the right (alternating tree): nodes placed by hand in the lecturer's order
+const TX = (k, n) => 6.0 + (k - (n - 1) / 2) * 0.78, TZ = (lv) => -3.9 + lv * 1.45;
+function tnode(g, n, k, w, lv) { const isX = GIRLS.includes(n); g.v('t' + n, TX(k, w), TZ(lv), isX ? GC.girl : GC.boy, n, 0.42); }
+function tedge(g, a, b, st) { g.e('t' + a, 't' + b, st); }
+
+// ════════ EIEm2TDxzGE（第29A講：dance party、matching problem、bipartite graph、matching、maximum／complete matching、先配配看） ════════
+scene('g8e-party', 'Dance party：每個女生能不能配到喜歡的男生？', [
+  async (tok, S) => {
+    S.B = board(); S.B.add('Dance party：8 girls、8 boys');
+    S.g = party({ edges: 'hidden' });
+    T('girls', 'zone', PX, -4.4); T('boys', 'zone', PY, -4.4);
+    cap('一個 party：8 個女孩、8 個男孩', '左邊粉紅是女生，右邊藍色是男生');
+  },
+  async (tok, S) => { S.B.add('表：每個女生喜歡的男生列在右邊'); cap('下面有一張表', '每個女生喜歡哪些男生'); },
+  async (tok, S) => {
+    GIRLS.forEach((n, i) => { S.g.L[n] = T(GNAME[n], 'idx', PX - 1.15, pz(i)); });
+    cap('女生：Alice、Betty、Cindy、Doris…', '…Flo、Gloria、Hazel：開頭剛好是 A 到 H');
+  },
+  async (tok, S) => {
+    BOYS.forEach((n, i) => { S.g.L[n] = T(BNAME[n], 'idx', PY + 0.85, pz(i)); });
+    cap('男生也是 A 到 H 開頭', 'Art、Bill、Carl、Don、Eric、Frank、Gary、Hal');
+  },
+  async (tok, S) => { S.B.add('A（Alice）：a e f g h'); S.g.glow('A', '#553300'); cap('Alice 喜歡 Art、Eric、Frank、Gary、Hal', '用小寫字母：a e f g h'); },
+  async (tok, S) => { S.g.glow('A'); S.B.add('B（Betty）：b c h'); cap('Betty 喜歡 b、c、h', ''); },
+  async (tok, S) => { S.B.add('C（Cindy）：c e f g'); cap('Cindy 喜歡 c、e、f、g', ''); },
+  async (tok, S) => { S.B.add('D（Doris）：d h'); S.B.add('E：b c d'); cap('Doris 喜歡 d、h', '第 5 個女生 E 喜歡 b、c、d'); },
+  async (tok, S) => { S.B.add('F（Flo）：b d'); cap('Flo 喜歡 b、d', ''); },
+  async (tok, S) => { S.B.add('G（Gloria）：a b c d'); cap('Gloria 喜歡 a、b、c、d', ''); },
+  async (tok, S) => {
+    S.B.add('H（Hazel）：b c d');
+    const n = GIRLS.reduce((s, x) => s + ADJ[x].length, 0);
+    ok(n === 26, 5.6, 4.3, '表上一共 ' + n + ' 個「喜歡」✓');
+    cap('Hazel 喜歡 b、c、d', '整張表就這樣');
+  },
+  async (tok, S) => { S.B.add('你是 organizer：幫每個女生配一個男伴', 'note'); cap('你是 party 的 organizer', '這是 dance party，要幫每個女生配一個舞伴'); },
+  async (tok, S) => { S.B.add('能不能讓每個女生都跟她喜歡的男生跳舞？', 'note'); cap('Is it possible for each girl', 'to dance with a boy she likes?'); },
+  async (tok, S) => {
+    S.g.e('A', 'a', 'ok'); S.c1 = T('Alice–Art ✓（她喜歡）', 'good', 5.6, -3.5);
+    cap('例如 Art 配給 Alice：可以', '因為 Art 在 Alice 的清單裡');
+  },
+  async (tok, S) => {
+    S.g.e('A', 'd', 'bad'); S.c2 = T('Alice–Don ✘（她不喜歡）', 'bad', 5.6, -2.9);
+    cap('Don 配給 Alice：不可以', 'Alice 不喜歡 Don');
+  },
+  async (tok, S) => {
+    S.g.hide('A', 'a'); S.g.hide('A', 'd'); kill(S.c1); kill(S.c2);
+    S.B.add('希望配到的越多越好；最好每個女生都配到');
+    cap('organizer 當然希望越多人配到越好', '最好是每一個女生都配到喜歡的舞伴');
+  },
+  async (tok, S) => { S.B.add('條件 1：每個女生 exactly 配一個她喜歡的男生', 'note'); cap('條件一：每個女生配一個男生', '而且這個男生要在她喜歡的清單裡'); },
+  async (tok, S) => {
+    S.B.add('條件 2：每個男生只能配一個女生', 'note');
+    S.g.e('B', 'c', 'bad'); S.g.e('C', 'c', 'bad'); S.c3 = T('Carl 不能同時配 Betty 和 Cindy ✘', 'bad', 5.6, -1.5);
+    cap('條件二：每個男生只能配一個女生', 'Betty、Cindy 都喜歡 Carl，但 Carl 不能配兩個');
+  },
+  async (tok, S) => {
+    S.g.hide('B', 'c'); S.g.hide('C', 'c'); kill(S.c3);
+    S.B.add('目標：配到的女生越多越好', 'good');
+    cap('在這兩個條件下', '希望越多女生被配到越好，最好全部都配到');
+  },
+]);
+
+scene('g8e-draw', '把喜歡關係畫成 bipartite graph', [
+  async (tok, S) => {
+    S.B = board(); S.B.add('matching problem＝配對問題'); S.B.add('要配對，而且配得越多越好', 'say');
+    LL('喜歡清單', 'ptr', 4.6, -4.4); GIRLS.forEach((x, i) => LL(x + '：' + LIKE[x].split('').join(' '), 'say', 4.6, -3.5 + i));
+    cap('這叫 matching problem', '中文就是「配對問題」');
+  },
+  async (tok, S) => {
+    S.g = party({ edges: 'hidden' });
+    S.B.add('女生、男生寫在兩邊，每個人一個點');
+    cap('女生寫左邊、男生寫右邊', '每個人用一個點表示');
+  },
+  ...GIRLS.map((x) => async (tok, S) => {
+    for (const y of ADJ[x]) { S.g.set(x, y, 'g'); await wt(tok, 160); }
+    S.g.glow(x, '#553300'); GIRLS.forEach((z) => { if (z !== x) S.g.glow(z); });
+    cap(x + ' 喜歡 ' + ADJ[x].join('、'), '女生和她喜歡的男生之間畫一條線');
+    if (x === 'H') {
+      const n = Object.values(S.g.E).filter((m) => m.visible).length;
+      ok(n === 26, 0.4, 4.4, '畫了 ' + n + ' 條邊＝表上 26 個「喜歡」✓');
+    }
+  }),
+  async (tok, S) => {
+    S.g.glow('H');
+    S.B.add('每個人 → 一個端點（vertex）'); S.B.add('「喜歡」→ 兩端點之間一條邊（edge）');
+    cap('每個女生、每個男生都是一個端點', '女生喜歡男生，就在兩個端點之間連一條邊');
+  },
+  async (tok, S) => { S.B.add('大寫＝女生、小寫＝男生', 'say'); cap('剛好都是 A 到 H 開頭', '大寫字母是女生，小寫字母是男生'); },
+  async (tok, S) => { S.B.add('這是 matching problem 的一個 case', 'good'); cap('這是 matching problem 的一個例子', '這種問題不只出現在這裡'); },
+]);
+
+scene('g8e-general', '一般的 matching problem：X、Y 兩個集合', [
+  async (tok, S) => { S.B = board(); S.B.add('剛才是 general matching problem 的 special case'); cap('剛才的派對', '是一般 matching problem 的一個特例'); },
+  async (tok, S) => {
+    S.zx = lab.box('#f6dbe5', [2.2, 0.06, 7.4]); S.zx.position.set(0.6, 0.03, 0); lab.world.add(S.zx);
+    S.zy = lab.box('#dbe9f6', [2.2, 0.06, 7.4]); S.zy.position.set(4.6, 0.03, 0); lab.world.add(S.zy);
+    S.lx = T('X：girls', 'zone', 0.6, -4.2); S.ly = T('Y：boys', 'zone', 4.6, -4.2);
+    S.B.add('兩個集合 X、Y（X＝女生、Y＝男生）');
+    cap('matching problem 裡有兩個集合 X 和 Y', 'X 是 8 個女生，Y 是 8 個男生');
+  },
+  async (tok, S) => {
+    S.g = G(); [0, 1, 2, 3].forEach((i) => { S.g.v('x' + i, 0.6, -2.4 + i * 1.6, GC.x, ''); S.g.v('y' + i, 4.6, -2.4 + i * 1.6, GC.y, ''); });
+    [[0, 0], [0, 2], [1, 1], [2, 1], [2, 3], [3, 3]].forEach(([i, j]) => S.g.e('x' + i, 'y' + j));
+    SI(2.6, 3.6);
+    S.B.add('X 的每個 member 和 Y 的某些 member compatible');
+    cap('X 的每個成員和 Y 的某些成員 compatible（合得來）', '在派對例子裡，compatible 就是「她喜歡」');
+  },
+  async (tok, S) => {
+    settxt(S.lx, 'X：people'); settxt(S.ly, 'Y：jobs');
+    S.B.add('例 2：職業介紹所，X＝人、Y＝工作');
+    cap('另一個例子：職業介紹所', 'X 是來找工作的人，Y 是工作');
+  },
+  async (tok, S) => { S.B.add('一個人可適合好幾種工作，一個工作可有好幾人適合', 'say'); S.B.add('每人配一個工作、每個工作只給一個人'); cap('一個人可能適合好幾個工作', '但每人只配一個工作，一個工作也只給一個人'); },
+  async (tok, S) => { S.B.add('配到的人越多，仲介費收越多', 'say'); cap('介紹所希望配成功的越多越好', '配到越多人，收的仲介費越多'); },
+  async (tok, S) => { settxt(S.lx, 'X：positions'); settxt(S.ly, 'Y：players'); S.B.add('例 3：X＝守備位置、Y＝球員'); cap('再一個例子：運動比賽', 'X 是場上的位置，Y 是隊上可以上場的球員'); },
+  async (tok, S) => {
+    S.g.kill();
+    S.pos = ['P', 'C', '1B', '2B', 'SS', '3B', 'RF', 'CF', 'LF', 'DH'].map((p, i) => { const m = lab.box(GC.x, [0.9, 0.3, 0.5]); m.add(lab.label(p, 'val')); m.position.set(0.6, 0.3, -3.6 + i * 0.8); lab.world.add(m); return m; });
+    S.B.add('職棒指定打擊制：10 個位置');
+    cap('職棒有指定打擊（DH）制的話', '場上有 10 個位置：投、捕、一二三壘、游擊、三個外野、DH');
+  },
+  async (tok, S) => {
+    S.pl = [...Array(8)].map((_, i) => { const m = lab.box(GC.y, [0.5, 0.3, 0.5]); m.position.set(4.6, 0.3, -3.6 + i * 1.03); lab.world.add(m); return m; });
+    T('（球員很多，只畫幾個）', 'idx', 4.6, 4.4);
+    const g = G(); g.P = { p1: [0.6, -1.2], p2: [0.6, -0.4], q1: [4.6, -0.51], p3: [0.6, -2.0], q2: [4.6, -1.54] };
+    g.e('p1', 'q1'); g.e('p2', 'q1'); g.e('p3', 'q2'); g.e('p1', 'q2'); SI(2.6, -2.6);
+    S.B.add('一隊 26 人（以前 25），有人能守好幾個位置', 'say');
+    cap('美國大聯盟 active roster 以前 25 人、今年 26 人', '很多是投手；有些人可以守游擊也可以守二壘');
+  },
+  async (tok, S) => { S.B.add('賽前排 lineup：每個位置都要有人', 'note'); S.B.add('一人不能守兩個位置', 'note'); cap('比賽前教練要排 lineup', '10 個位置都要有人；一個人不能同時守兩個位置'); },
+  async (tok, S) => { S.B.add('這些都是 matching problem', 'good'); cap('這些問題本質都一樣', '都叫 matching problem'); },
+]);
+
+scene('g8e-def', 'Bipartite graph 與 matching 的定義', [
+  async (tok, S) => { S.B = board(); S.g = party(); S.B.add('用 graph 描述：就是剛才那張圖'); cap('在 graph theory 裡', '用這樣子的一張圖來描述'); },
+  async (tok, S) => { S.B.add('這種圖叫 bipartite graph', 'note'); cap('這種圖以前介紹過', '叫做 bipartite graph'); },
+  async (tok, S) => {
+    S.zx = lab.box('#f6dbe5', [1.0, 0.06, 8.4]); S.zx.position.set(PX, 0.03, 0); lab.world.add(S.zx);
+    S.zy = lab.box('#dbe9f6', [1.0, 0.06, 8.4]); S.zy.position.set(PY, 0.03, 0); lab.world.add(S.zy);
+    T('X', 'ptr', PX, -4.5); T('Y', 'ptr', PY, -4.5);
+    S.B.add('vertex set 分成兩個 disjoint subsets X、Y');
+    cap('端點可以 partition 成兩個 disjoint subsets', '左邊一群 X、右邊一群 Y，兩群沒有共同的點');
+  },
+  async (tok, S) => {
+    S.bad = rod(PX - 0.35, pz(0), PX - 0.35, pz(1)); S.bad.material.color.set(GC.hot);
+    S.bt = T('同一群裡不能有邊 ✘（示意）', 'bad', -1.5, -3.0);
+    S.B.add('每條邊：一端在 X、另一端在 Y', 'note');
+    cap('每條邊的兩個端點一個在 X、一個在 Y', '同一個 subset 裡面的點之間不會有邊');
+  },
+  async (tok, S) => { lab.world.remove(S.bad); kill(S.bt); S.B.add('G = (V, E) 是 bipartite graph'); cap('改用 graph theory 的語言', 'G = (V, E) 是一個 bipartite graph'); },
+  async (tok, S) => { S.B.add('V = X ∪ Y，X ∩ Y = ∅'); cap('V 分成兩個 subset X 和 Y', 'X ∪ Y = V，兩個沒有交集'); },
+  async (tok, S) => {
+    const all = GIRLS.every((x) => ADJ[x].every((y) => BOYS.includes(y)));
+    S.B.add('E 的每條邊：一個 vertex 在 X、另一個在 Y'); ok(all, 1.7, 4.4, '26 條邊都是 X–Y ✓');
+    cap('edge set E 裡的每一條邊', '一個端點在 X，另一個在 Y');
+  },
+  async (tok, S) => { S.B.add('什麼叫一個 matching（配對）？', 'note'); cap('那什麼叫一個 matching？', '就是一組配對'); },
+  async (tok, S) => { S.B.add('matching M ⊆ E：一些邊組成的集合'); cap('matching 是 edge set 的一個 subset', '裡面裝的都是邊'); },
+  async (tok, S) => {
+    S.B.add('條件：M 裡任兩條邊沒有共同端點', 'note');
+    S.M = { A: 'a', B: 'b', C: 'c' }; paintM(S.g, S.M); SI(5.0, -3.0);
+    ok(isMatching(S.M) && inGraph(ADJ, S.M), 5.0, -2.4, 'A–a、B–b、C–c 是 matching ✓');
+    cap('No two edges in M share an endpoint', '綠色三條邊彼此沒有共用端點');
+  },
+  async (tok, S) => {
+    S.g.set('A', 'e', 'bad'); S.t1 = T('A–a 和 A–e 共用 A ✘', 'bad', 5.0, -1.4);
+    cap('同樣的端點不會在 X 那邊', '一個女生只配一個男生');
+  },
+  async (tok, S) => {
+    S.g.set('A', 'e', 'g'); kill(S.t1); S.g.set('C', 'c', 'bad'); S.g.set('B', 'c', 'bad'); S.g.set('B', 'b', 'g');
+    S.t2 = T('B–c 和 C–c 共用 c ✘', 'bad', 5.0, -1.4);
+    cap('同樣的端點也不會在 Y 那邊', '一個男生只配一個女生');
+  },
+  async (tok, S) => { kill(S.t2); paintM(S.g, S.M); S.B.add('希望 M 越大越好（配到越多越好）', 'good'); cap('我們希望配對成功的越多越好', '越多女生被配到，或越多人被介紹到工作'); },
+]);
+
+scene('g8e-maxcomp', 'Maximum matching 與 complete matching', [
+  async (tok, S) => { S.B = board(); S.g = party(); S.B.add('「maximal matching」（老師的用詞）'); cap('最大的 matching', '老師稱為 maximal matching'); },
+  async (tok, S) => { S.B.add('沒有其他 matching 的 cardinality |M| 比它大', 'note'); cap('沒有別的 matching 有比較大的 cardinality', 'cardinality 就是集合裡有幾個元素'); },
+  async (tok, S) => {
+    paintM(S.g, M5); S.t1 = T('M₁：|M₁| = ' + msize(M5) + '（5 個女生配到）', 'say', 5.4, -3.4);
+    ok(isMatching(M5) && inGraph(ADJ, M5), 5.4, -2.8, 'M₁ 是 matching ✓');
+    cap('例如一個 matching 配到 5 個女生', '');
+  },
+  async (tok, S) => {
+    paintM(S.g, M6); settxt(S.t1, 'M₂：|M₂| = ' + msize(M6) + '（6 個女生配到）');
+    S.B.add('配到 6 個的比配到 5 個的大');
+    cap('另一個配到 6 個女生', '那個就比較大');
+  },
+  async (tok, S) => { S.B.add('|M| = 邊數 = 配到的女生數'); S.B.add('（標準名稱：maximum matching）', 'say'); cap('matching 是一些邊的集合', '它有幾條邊，就有幾個女生被配到'); },
+  async (tok, S) => { S.B.add('最好：每個女生都配到 → complete matching', 'note'); cap('最好的情況：每個女生都配到', '那時候的 matching 叫做 complete matching'); },
+  async (tok, S) => { S.B.add('complete matching：|M| = |X|（這裡 = 8）', 'note'); kill(S.t1); T('|X| = 8', 'ptr', PX, 4.4); cap('complete matching 就是 |M| = |X|', '這個例子 X 有 8 個女生，所以要 |M| = 8'); },
+  async (tok, S) => { S.B.add('原問題 ⇔ 這個 bipartite graph 有沒有 complete matching？', 'good'); cap('原來的問題換成 graph theory 語言', '這個 bipartite graph 存不存在 complete matching？'); },
+  async (tok, S) => { S.B.add('沒有的話：maximum matching 有多大？'); cap('如果存在，就是每個女生都配到（size 8）', '如果不存在，最多能配到幾個？'); },
+  async (tok, S) => { paintM(S.g, {}); S.B.add('怎麼找最大的 matching？先拿例子試試', 'say'); cap('這種問題有很多例子', '要怎麼找最大的 matching 呢？'); },
+]);
+
+scene('g8e-greedy', '先配配看：能配就配，配到 E 卡住', [
+  async (tok, S) => { S.B = board(); S.g = party(); S.B.add('用這個例子試試看，有問題再說'); cap('我們就用原來這個例子', '先試試看，有問題再說'); },
+  async (tok, S) => { GIRLS.forEach((x) => S.B.add(x + '：' + LIKE[x].split('').join(' '), 'say')); cap('把喜歡清單再抄一次', 'A: aefgh、B: bch、C: cefg、D: dh、E: bcd、F: bd、G: abcd、H: bcd'); },
+  async (tok, S) => { S.ttl = T('先配配看', 'ptr', 5.6, -4.2); cap('我們就先來配配看', ''); },
+  async (tok, S) => { S.t0 = T('想方法：先找例子試試，看出端倪', 'say', 5.6, -3.5); cap('想方法的第一步', '找個例子試試看，試多了就看出端倪'); },
+  async (tok, S) => {
+    kill(S.t0); S.M = { A: 'a' }; S.g.set('A', 'a', 'm');
+    S.ms = T('M = {A–a}', 'note', 5.6, -3.5); cap('能配就先配：Alice 配給 Art', '把 Aa 這條邊丟進 matching');
+  },
+  async (tok, S) => { S.M.B = 'b'; S.g.set('B', 'b', 'm'); settxt(S.ms, 'M = {' + mtxt(S.M) + '}'); cap('照字母順序配 B', 'Betty 第一個喜歡的 b 還沒人配，就配給她'); },
+  async (tok, S) => { S.M.C = 'c'; S.g.set('C', 'c', 'm'); settxt(S.ms, 'M = {' + mtxt(S.M) + '}'); cap('Cindy 喜歡 c、e、f、g', 'c 還 available，就把 c 配給 Cindy'); },
+  async (tok, S) => {
+    S.M.D = 'd'; S.g.set('D', 'd', 'm'); settxt(S.ms, 'M = {' + mtxt(S.M) + '}');
+    ok(isMatching(S.M) && sameM(S.M, M4), 5.6, -2.9, '|M| = ' + msize(S.M) + '，是 matching ✓');
+    cap('Doris 喜歡 d 和 h：把 d 配給 Doris', '能做就先做，有問題再說');
+  },
+  async (tok, S) => {
+    S.g.glow('E', '#661111'); ['b', 'c', 'd'].forEach((y) => S.g.glow(y, '#553300'));
+    const free = ADJ.E.filter((y) => !Object.values(S.M).includes(y));
+    ok(free.length === 0, 5.6, -2.3, 'E 喜歡的 b、c、d 都被配走了 ✓');
+    cap('再來是 E：她喜歡 b、c、d', '很不幸，b、c、d 都已經配給別人了');
+  },
+  async (tok, S) => {
+    S.g.set('E', 'b', 'bad'); S.t2 = T('再加 E–b：和 B–b 共用 b ✘', 'bad', 5.6, -1.7);
+    cap('再畫一條線就違反 matching 的條件', '兩條邊會有同樣的端點');
+  },
+  async (tok, S) => {
+    S.g.set('E', 'b', 'g'); kill(S.t2);
+    S.t3 = T('A、B 其實不只喜歡一個男生', 'say', 5.6, -1.7);
+    cap('那怎麼辦？也許可以調整一下前面的配法', 'Alice、Betty 其實都不只喜歡一個男生');
+  },
+  async (tok, S) => { S.t4 = T('卡在這裡 → 想辦法調整（下一段）', 'note', 5.6, -1.1); cap('配到這邊卡住了', '想辦法調整，把 E 也配上去'); },
+]);
+
+// ════════ Xl7Giuc-Adk（第29B講：調整配法、augmenting alternating path、Hungarian algorithm 的基本想法） ════════
+scene('g8e-aug1', '調整：E–b–B–h，把 matching 變大', [
+  async (tok, S) => {
+    S.B = board(); S.g = party({ M: M4 }); S.g.glow('E', '#661111');
+    S.ms = T('M = {' + mtxt(M4) + '}，|M| = 4', 'note', 5.6, -4.2);
+    S.B.add('配了 A、B、C、D，E 配不上去');
+    cap('做到這裡配了 4 個', '要配 E 的時候，她喜歡的三個男生都被配走了');
+  },
+  async (tok, S) => { S.B.add('想辦法調整上面的配法（要有系統）'); cap('上面的配法不是只有這一種', '想辦法有系統地調整一下'); },
+  async (tok, S) => { S.g.set('E', 'b', 'p'); S.B.add('E 喜歡 b、c、d，例如 b'); cap('E 喜歡 b、c、d', '比方說 E 喜歡 b'); },
+  async (tok, S) => { S.g.set('B', 'b', 'pm'); S.B.add('但 b 已經配給 Betty'); cap('但是 b 已經配給 Betty 了', ''); },
+  async (tok, S) => {
+    S.g.set('B', 'h', 'p'); S.g.glow('h', '#004422');
+    const taken = ['b', 'c'].every((y) => Object.values(M4).includes(y)) && !Object.values(M4).includes('h');
+    ok(taken, 5.6, -3.5, 'Betty：b、c 已配，h 還沒配 ✓');
+    S.B.add('Betty 喜歡 b、c、h：h 還沒被配！', 'note');
+    cap('Betty 喜歡 b、c、h', 'b、c 都配了，但 h 還沒有被配');
+  },
+  async (tok, S) => {
+    LL('細線：圖裡的邊、沒用到', 'say', 4.4, 3.4); LL('粗綠：在 matching 裡', 'good', 4.4, 4.0);
+    cap('老師板書：黃色＝圖裡有、但沒用到的邊', '白色＝用到的（在 matching 裡）；這裡用細線和粗綠線');
+  },
+  async (tok, S) => { S.B.add('E 其實可以配 b …'); cap('E 其實可以配 b', '但 b 已經配給 Betty，而 Betty 還喜歡 h'); },
+  async (tok, S) => {
+    S.M = flip(M4, ['E', 'b', 'B', 'h']);
+    S.g.set('E', 'b', 'm'); await wt(tok, 300); S.g.set('B', 'b', 'g'); await wt(tok, 300); S.g.set('B', 'h', 'm');
+    S.g.glow('E'); S.g.glow('h');
+    S.B.add('h 配給 Betty，b 配給 E', 'good');
+    cap('很簡單：把 h 配給 Betty', 'b 就可以配給 E，多配了一個人');
+  },
+  async (tok, S) => { S.B.add('黃 ↔ 白 對調（沒用的變用、用的拿掉）'); cap('就是把黃的跟白的反過來', '黃的變白的，白的拿掉'); },
+  async (tok, S) => { ['A', 'C', 'D'].forEach((x) => S.g.glow(x, '#225522')); S.B.add('A、C、D 都不變', 'say'); cap('其他三個 A、C、D 維持不變', '只動了 Betty 和 b、h'); },
+  async (tok, S) => {
+    ['A', 'C', 'D'].forEach((x) => S.g.glow(x));
+    settxt(S.ms, 'M = {' + mtxt(S.M) + '}，|M| = ' + msize(S.M));
+    ok(isMatching(S.M) && inGraph(ADJ, S.M) && sameM(S.M, M5), 5.6, -3.5, '還是 matching，|M| 從 4 變 5 ✓');
+    cap('這樣還是滿足 matching 的條件', 'size 從 4 變成 5，E 也配到了');
+  },
+  async (tok, S) => {
+    paintPath(S.g, ['E', 'b', 'B', 'h'], M4);
+    S.B.add('系統方法：不在 M、在 M、不在 M…，停在沒配到的男生', 'note');
+    cap('有系統的方法就是找這種東西', '不在 matching 的邊、在 matching 的邊…，最後停到沒配到的男生');
+  },
+  async (tok, S) => { paintM(S.g, S.M); S.B.add('然後黃白反過來 → matching 變大', 'good'); cap('找到之後把它反過來', '這就是解 matching problem 最基礎的方法'); },
+]);
+
+scene('g8e-hdef', 'Hungarian algorithm：alternating path 與 augmenting', [
+  async (tok, S) => { S.B = board(); S.g = party({ M: M4 }); S.B.add('Hungarian algorithm（幾位匈牙利數學家）'); cap('下面介紹 Hungarian algorithm', 'Hungarian＝匈牙利人，是幾位匈牙利數學家提出的'); },
+  async (tok, S) => { S.B.add('給一個 matching（例如 A–a、B–b、C–c、D–d）'); cap('它的基礎：手上有一個 given matching', '像剛才那四條邊'); },
+  async (tok, S) => { S.B.add('augment＝把它變大', 'note'); cap('要把這個 given matching augment', 'augment 就是「變大」'); },
+  async (tok, S) => { S.B.add('方法：找 augmenting alternating path', 'note'); cap('怎麼 augment？', '找一條 augmenting alternating path'); },
+  async (tok, S) => { paintPath(S.g, ['E', 'b', 'B', 'h'], M4); S.B.add('剛才的 E–b–B–h 就是一條'); cap('剛才找到的這條', '就是一條 augmenting alternating path'); },
+  async (tok, S) => { S.B.add('alternating：不在 M、在 M、不在 M、在 M…'); cap('alternating 是什麼？', '黃白黃白：不在 matching、在 matching 輪流出現'); },
+  async (tok, S) => { paintM(S.g, M4); S.g.glow('E', '#661111'); S.B.add('定義：從一個 unmatched x-vertex 出發', 'note'); cap('alternating path 從一個沒配到的 x-vertex 開始', '已經配到的不用理它，要把沒配到的配進去'); },
+  async (tok, S) => {
+    S.g.set('E', 'b', 'p'); await wt(tok, 250); S.g.set('B', 'b', 'pm'); await wt(tok, 250); S.g.set('B', 'h', 'p');
+    S.B.add('邊依序：not in M、in M、not in M、…', 'note');
+    cap('第一條邊不在 matching 裡', '下一條在 matching 裡，再下一條不在…');
+  },
+  async (tok, S) => {
+    paintM(S.g, M4); S.g.set('E', 'b', 'p'); S.g.set('B', 'b', 'pm');
+    S.t1 = T('E–b–B：停在 x-vertex，不能變大（示意）', 'bad', 5.6, -3.6);
+    S.B.add('alternating path 不一定能變大');
+    cap('不是每條 alternating path 都能變大', '例如停在 B 的 E–b–B 就不行');
+  },
+  async (tok, S) => { kill(S.t1); S.B.add('augmenting：最後停在 unmatched y-vertex', 'note'); cap('augmenting 的條件', '最後要結束在一個沒配到的 y-vertex'); },
+  async (tok, S) => {
+    S.g.set('B', 'h', 'p'); S.g.glow('h', '#004422');
+    const t = altTree(ADJ, M4, 'E');
+    ok(!Object.values(M4).includes('h'), 5.6, -3.6, 'E–b–B–h：3 條邊，h 沒配到 ✓');
+    cap('E–b–B–h 三條邊：不在、在、不在', '最後停在 h，h 是沒配到的男生');
+  },
+  async (tok, S) => {
+    S.g.glow('h'); S.g.glow('E'); paintM(S.g, flip(M4, ['E', 'b', 'B', 'h']));
+    S.B.add('找到就反過來（豬羊變色）→ |M| + 1', 'good');
+    cap('有系統地找這種 path，把它反過來', '不在的變在、在的變不在，matching 就大 1');
+  },
+  async (tok, S) => { S.B.add('新的 matching 再做一次…做不動就停 → 最大（之後證）', 'say'); cap('再從新的 given matching 繼續', '做到做不下去，結果就是最大的 matching（後面證明）'); },
+]);
+
+scene('g8e-flip', '例子回顧：E–b–B–h 反過來，4 → 5', [
+  async (tok, S) => { S.B = board(); S.g = party({ M: M4 }); paintPath(S.g, ['E', 'b', 'B', 'h'], M4); S.B.add('例子裡這條是 augmenting alternating path'); cap('剛才那個例子', '這條就是 augmenting alternating path'); },
+  async (tok, S) => { S.B.add('E–b 不在 M、b–B 在 M、B–h 不在 M'); cap('不在 matching、在 matching、不在 matching', ''); },
+  async (tok, S) => { S.g.glow('E', '#661111'); S.g.glow('h', '#004422'); S.B.add('起點 E：沒配到的女生；終點 h：沒配到的男生', 'note'); cap('一開始是沒配到的 x-vertex E', '最後結束在沒配到的 y-vertex h'); },
+  async (tok, S) => {
+    S.g.set('E', 'b', 'm'); await wt(tok, 300); S.g.set('B', 'b', 'g'); await wt(tok, 300); S.g.set('B', 'h', 'm');
+    S.g.glow('E'); S.g.glow('h');
+    S.B.add('反過來：不在的放進 M，在的拿掉', 'note');
+    cap('把它反過來', '不在 matching 的放進去，在 matching 的拿掉');
+  },
+  async (tok, S) => {
+    const N = flip(M4, ['E', 'b', 'B', 'h']);
+    ok(isMatching(N) && msize(N) === 5, 5.6, -3.6, 'path 上：1 條 → 2 條；|M|：4 → ' + msize(N) + ' ✓');
+    cap('這條 path 上原本 1 條在 matching，現在 2 條', '所以 matching 從 4 變 5');
+  },
+  async (tok, S) => { S.B.add('這就是 Hungarian algorithm 的核心', 'good'); cap('整個 Hungarian algorithm 的核心就在這裡', '下面把例子繼續 run 下去'); },
+]);
+
+// ════════ PfQKS71fBus（第29C講：從 F、G、H 長 alternating tree；Hungarian tree、Hungarian acorn） ════════
+scene('g8e-treeF', '從 F 長 alternating tree（modified BFS）', [
+  async (tok, S) => {
+    S.B = board(-7.3, -4.7, 0.6, 14); S.g = party({ M: M5 }); S.M = { ...M5 };
+    S.B.add('現在 A、B、C、D、E 五個都配到了');
+    ok(isMatching(M5) && msize(M5) === 5, 0.4, 4.4, '|M| = 5 ✓');
+    cap('剛才 run 到這邊', 'A、B、C、D、E 五個都配到了');
+  },
+  async (tok, S) => { S.g.glow('F', '#661111'); S.B.add('再來想辦法配 F'); cap('再來拿 F 想辦法配', ''); },
+  async (tok, S) => { S.B.add('F 喜歡 b、d；F–b、F–d 都沒用到'); cap('F 喜歡 b 和 d', 'F 還沒配，所以這兩條邊都沒用到'); },
+  async (tok, S) => {
+    S.t = G(); tnode(S.t, 'F', 0, 1, 0); T('alternating tree', 'zone', 6.0, -4.6);
+    S.B.add('F 當 root，用類似 BFS 的方法（要修正）', 'note');
+    cap('從 F 當 root', '用類似 breadth-first search 的方法，只是要稍微修正');
+  },
+  async (tok, S) => {
+    tnode(S.t, 'b', 0, 2, 1); tnode(S.t, 'd', 1, 2, 1); tedge(S.t, 'F', 'b', 'p'); tedge(S.t, 'F', 'd', 'p');
+    S.g.set('F', 'b', 'p'); S.g.set('F', 'd', 'p');
+    S.B.add('第 1 層：不在 M 的邊 → b、d');
+    cap('第一層：從 unmatched 的 F 出發', '第一條邊要不在 matching 裡：b、d');
+  },
+  async (tok, S) => { tnode(S.t, 'E', 0, 2, 2); tedge(S.t, 'b', 'E', 'pm'); S.g.set('E', 'b', 'pm'); S.B.add('下一層要在 M（沒得選）：b → E'); cap('下一條一定要在 matching 裡，沒得選', 'b 配的是 E'); },
+  async (tok, S) => { tnode(S.t, 'D', 1, 2, 2); tedge(S.t, 'd', 'D', 'pm'); S.g.set('D', 'd', 'pm'); S.B.add('d → D'); cap('d 配的是 Doris', '這樣 tree 長到第二層'); },
+  async (tok, S) => { tnode(S.t, 'c', 0, 2, 3); tedge(S.t, 'E', 'c', 'p'); S.g.set('E', 'c', 'p'); S.B.add('E：不在 M 的是 c、d；d 已在 tree → 只有 c'); cap('從 E 往下：要不在 matching 的邊', 'c 和 d，但 d 已經在 tree 上了，所以只有 c'); },
+  async (tok, S) => { tnode(S.t, 'h', 1, 2, 3); tedge(S.t, 'D', 'h', 'p'); S.g.set('D', 'h', 'p'); S.B.add('D：d 已配給她，還有 h → h'); cap('Doris 原本配 d', '她還喜歡 h，所以長出 h'); },
+  async (tok, S) => { tnode(S.t, 'C', 0, 2, 4); tedge(S.t, 'c', 'C', 'pm'); S.g.set('C', 'c', 'pm'); S.B.add('又要在 M：c → C（Cindy）'); cap('下一層又要在 matching：沒得選', 'c 配的是 Cindy'); },
+  async (tok, S) => { tnode(S.t, 'B', 1, 2, 4); tedge(S.t, 'h', 'B', 'pm'); S.g.set('B', 'h', 'pm'); S.B.add('h → B（Betty）'); cap('h 配的是 Betty', ''); },
+  async (tok, S) => { tnode(S.t, 'e', 0, 2, 5); tedge(S.t, 'C', 'e', 'p'); S.g.set('C', 'e', 'p'); S.B.add('C 喜歡 c、e、f、g：c 在 tree，e 還沒出現 → e'); cap('Cindy 喜歡 c、e、f、g', 'c 已經在 tree 上，下一個 e 還沒出現，長出 e'); },
+  async (tok, S) => {
+    S.t.glow('te', '#004422'); S.g.glow('e', '#004422');
+    ok(!Object.values(M5).includes('e'), 7.0, 3.4, 'e 沒配到 ✓');
+    S.B.add('e 是 unmatched y-vertex → 找到了！', 'good');
+    cap('要結束在一個 unmatched 的 y-vertex', 'e 沒有被配到，所以找到了');
+  },
+  async (tok, S) => {
+    const r = altTree(ADJ, M5, 'F');
+    ok(r.found === 'e' && r.path.join('') === 'FbEcCe', 5.4, 4.4, '程式跑 modified BFS：F–b–E–c–C–e ✓');
+    S.B.add('這棵叫 alternating tree（root 在 F）');
+    cap('從 F 建的這棵叫 alternating tree', '用 modified BFS 長出來，tree 上每條路都是 alternating path');
+  },
+  async (tok, S) => {
+    S.B.add('augmenting alternating path：F–b–E–c–C–e', 'note');
+    paintM(S.g, M5); paintPath(S.g, ['F', 'b', 'E', 'c', 'C', 'e'], M5);
+    cap('碰到 unmatched y-vertex 就停', 'F–b–E–c–C–e：從沒配到的 F 開始，結束在沒配到的 e');
+  },
+  async (tok, S) => {
+    [['F', 'b'], ['E', 'c'], ['C', 'e']].forEach(([a, b]) => tedge(S.t, a, b, 'm'));
+    [['b', 'E'], ['c', 'C']].forEach(([a, b]) => S.t.set('t' + a, 't' + b, 'g'));
+    S.B.add('把這條 path augment：黃白反過來');
+    cap('把這條 path augment', '不在裡面的變在裡面，在裡面的變不在');
+  },
+  async (tok, S) => {
+    S.M = flip(M5, ['F', 'b', 'E', 'c', 'C', 'e']); paintM(S.g, S.M); S.g.glow('F'); S.g.glow('e');
+    S.B.add('C–e、E–c、F–b（A、B、D 不變）', 'note');
+    cap('反映到原來的 matching', 'Cindy 配 e、E 配 c、F 配 b，其他不變');
+  },
+  async (tok, S) => {
+    ok(isMatching(S.M) && inGraph(ADJ, S.M) && sameM(S.M, M6), 0.4, 4.4, '|M| = ' + msize(S.M) + ' ✓');
+    S.B.add('|M|：5 → 6', 'good');
+    cap('matching 的 size 從 5 變成 6', '變大了');
+  },
+]);
+
+scene('g8e-treeG', '從 G 長 alternating tree：G–a–A–f', [
+  async (tok, S) => {
+    S.B = board(-7.3, -4.7, 0.6, 14); S.g = party({ M: M6 });
+    S.t = G(); tnode(S.t, 'G', 0, 1, 0); T('alternating tree', 'zone', 6.0, -4.6); S.g.glow('G', '#661111');
+    S.B.add('再從 G 當 root 長 alternating tree');
+    cap('下面類似：從這個 matching 再想辦法 augment', '從 G 當 root，用 modified BFS 長 alternating tree');
+  },
+  async (tok, S) => {
+    ['a', 'b', 'c', 'd'].forEach((y, k) => { tnode(S.t, y, k, 4, 1); tedge(S.t, 'G', y, 'p'); S.g.set('G', y, 'p'); });
+    S.B.add('G 喜歡 a、b、c、d，四條邊都沒用到');
+    cap('G 喜歡 a、b、c、d', 'G 還沒配，四條邊都沒用到');
+  },
+  async (tok, S) => {
+    const mate = { a: 'A', b: 'F', c: 'E', d: 'D' };
+    ['a', 'b', 'c', 'd'].forEach((y, k) => { tnode(S.t, mate[y], k, 4, 2); tedge(S.t, y, mate[y], 'pm'); S.g.set(mate[y], y, 'pm'); });
+    ok(Object.entries(mate).every(([y, x]) => M6[x] === y), 6.0, -0.2, 'a–A、b–F、c–E、d–D 都在 M ✓');
+    S.B.add('下一層要在 M（沒得選）：A、F、E、D');
+    cap('下一層要在 matching 裡，都沒得選', 'a 配 A、b 配 F、c 配 E、d 配 D');
+  },
+  async (tok, S) => {
+    tnode(S.t, 'e', 0, 4, 3); S.t.P.te[0] = TX(0, 4) - 0.2; S.t.V.te.position.x = S.t.P.te[0]; tedge(S.t, 'A', 'e', 'p'); S.g.set('A', 'e', 'p');
+    S.B.add('從 A：a e f g h，a 在 tree；e 可以');
+    cap('再從 A 開始：A 喜歡 a、e、f、g、h', 'a 已經在 tree 上，e 可以長出來');
+  },
+  async (tok, S) => {
+    ok(M6.C === 'e', 4.6, 0.6, 'e 已配給 C ✓');
+    S.B.add('但 e 有配到（給 C）→ 還不行，試下一個', 'say');
+    cap('但 e 已經 match 到了', '還不能結束，再試下一個');
+  },
+  async (tok, S) => {
+    tnode(S.t, 'f', 1, 4, 3); S.t.P.tf[0] = TX(1, 4) - 0.2; S.t.V.tf.position.x = S.t.P.tf[0]; tedge(S.t, 'A', 'f', 'p'); S.g.set('A', 'f', 'p');
+    S.t.glow('tf', '#004422'); S.g.glow('f', '#004422');
+    ok(!Object.values(M6).includes('f'), 5.8, 0.6, 'f 沒配到 ✓');
+    S.B.add('下一個 f：unmatched！', 'good');
+    cap('下一個是 f', 'f 沒有被 match，bingo，找到了');
+  },
+  async (tok, S) => {
+    const r = altTree(ADJ, M6, 'G');
+    ok(r.found === 'f' && r.path.join('') === 'GaAf', 5.6, 4.4, '程式：augmenting path G–a–A–f ✓');
+    paintM(S.g, M6); paintPath(S.g, ['G', 'a', 'A', 'f'], M6);
+    S.B.add('碰到 unmatched y 就停：G–a–A–f', 'note');
+    cap('tree 只要碰到一個 unmatched y-vertex 就停', '找到 augmenting alternating path：G–a–A–f');
+  },
+  async (tok, S) => {
+    S.g.set('G', 'a', 'm'); await wt(tok, 300); S.g.set('A', 'a', 'g'); await wt(tok, 300); S.g.set('A', 'f', 'm');
+    S.B.add('把它 augment'); cap('把這條 path augment', '');
+  },
+  async (tok, S) => { S.M = flip(M6, ['G', 'a', 'A', 'f']); paintM(S.g, S.M); S.g.glow('G'); S.g.glow('f'); S.B.add('A 改配 f，a 配給 G', 'note'); cap('原來 a 配 Alice', '現在 a 配給 G、f 配給 A'); },
+  async (tok, S) => { S.B.add('A–f B–h C–e D–d E–c F–b G–a', 'say'); cap('新的 matching', 'A–f、B–h、C–e、D–d、E–c、F–b、G–a'); },
+  async (tok, S) => {
+    ok(isMatching(S.M) && inGraph(ADJ, S.M) && sameM(S.M, M7), 0.4, 4.4, '|M| = ' + msize(S.M) + ' ✓');
+    S.B.add('|M|：6 → 7', 'good'); cap('cardinality 從 6 變成 7', '還剩 H 沒配到');
+  },
+]);
+
+scene('g8e-hungtree', '從 H 長不出來：Hungarian tree', [
+  async (tok, S) => {
+    S.B = board(-7.3, -4.7, 0.6, 14); S.g = party({ M: M7 }); S.g.glow('H', '#661111');
+    S.t = G(); tnode(S.t, 'H', 0, 1, 0); T('alternating tree', 'zone', 6.0, -4.6);
+    S.B.add('最後 H 還沒配：H 喜歡 b、c、d');
+    cap('最後還有 H 沒配到', '從 H 開始找，方法都一樣；H 喜歡 b、c、d');
+  },
+  async (tok, S) => {
+    const mate = { b: 'F', c: 'E', d: 'D' };
+    ['b', 'c', 'd'].forEach((y, k) => { tnode(S.t, y, k, 3, 1); tedge(S.t, 'H', y, 'p'); S.g.set('H', y, 'p'); });
+    await wt(tok, 400);
+    ['b', 'c', 'd'].forEach((y, k) => { tnode(S.t, mate[y], k, 3, 2); tedge(S.t, y, mate[y], 'pm'); S.g.set(mate[y], y, 'pm'); });
+    S.B.add('b、c、d 都在 M：b → F、c → E、d → D');
+    cap('三條邊都沒用過', 'b、c、d 已經在 matching 裡，沒得選：b 到 F、c 到 E、d 到 D');
+  },
+  async (tok, S) => { S.t.glow('tF', '#661111'); S.B.add('F：b、d 都已在 tree → 下不去'); cap('再從 F 長', 'F 喜歡 b 和 d，都已經出現過了，F 下不去'); },
+  async (tok, S) => { S.t.glow('tF'); S.t.glow('tE', '#661111'); S.B.add('E：b、c、d 也都在 tree'); cap('E 喜歡 b、c、d', '也都在 tree 上了，沒辦法'); },
+  async (tok, S) => { S.t.glow('tE'); tnode(S.t, 'h', 2, 3, 3); tedge(S.t, 'D', 'h', 'p'); S.g.set('D', 'h', 'p'); S.B.add('D：d、h → 唯一可能是 h'); cap('Doris 喜歡 d 和 h', 'd 在這兒了，唯一可能就是 h'); },
+  async (tok, S) => { tnode(S.t, 'B', 2, 3, 4); tedge(S.t, 'h', 'B', 'pm'); S.g.set('B', 'h', 'pm'); S.B.add('h 原本配 B（沒得選）→ B'); cap('h 原來配給 Betty', '在 matching 裡，沒得選'); },
+  async (tok, S) => {
+    S.t.glow('tB', '#661111');
+    const r = altTree(ADJ, M7, 'H');
+    ok(!r.found, 5.6, 4.4, '程式跑 modified BFS：找不到 unmatched y ✓');
+    S.B.add('B：b、c、h 都在 tree → 長不下去了');
+    cap('Betty 喜歡 b、c、h', '全都在 tree 上，這棵 alternating tree 長不下去了');
+  },
+  async (tok, S) => { S.t.glow('tB'); S.B.add('從 H 出發的 alternating paths 全在這；沒有一條 augmenting'); cap('從 H 出發的 alternating path 全部就這樣', '沒有一條停在 unmatched 的 y-vertex'); },
+  async (tok, S) => { S.ht = T('Hungarian tree', 'ptr alt', 6.0, 4.4); S.B.add('這棵叫 Hungarian tree', 'note'); cap('這種長不出 augmenting path 的 alternating tree', '叫做 Hungarian tree'); },
+  async (tok, S) => { S.t.glow('tH', '#661111'); S.B.add('它的 root 叫 Hungarian acorn（橡實）', 'note'); cap('Hungarian tree 的 root', '叫 Hungarian acorn；acorn 是橡樹的果實「橡實」'); },
+  async (tok, S) => {
+    const others = GIRLS.filter((x) => x !== 'H').every((x) => M7[x]);
+    ok(others, 0.4, 4.4, '其他女生都配到了 ✓');
+    S.B.add('H 是 Hungarian acorn → algorithm 停');
+    cap('從 H 沒辦法把 matching 變大', '其他人都配到了，剩下的是 Hungarian acorn，algorithm 就停了');
+  },
+  async (tok, S) => {
+    ['H', 'F', 'E', 'D', 'B'].forEach((x) => S.g.glow(x, '#661111'));
+    S.B.add('為什麼 H 配不下去？tree 上有 5 個女生', 'note');
+    cap('為什麼 H 配不下去？看 Hungarian tree', 'tree 上有 5 個女生：Hazel、Flo、E、Doris、Betty');
+  },
+  async (tok, S) => { ['b', 'c', 'd', 'h'].forEach((y) => S.g.glow(y, '#553300')); S.B.add('卻只有 4 個男生：b、c、d、h'); cap('tree 上只有 4 個男生', 'b、c、d、h'); },
+  async (tok, S) => {
+    const R = Rof(ADJ, ['B', 'D', 'E', 'F', 'H']);
+    ok(R.join('') === 'bcdh', 5.4, 3.7, 'B、D、E、F、H 喜歡的聯集 = {' + R.join(', ') + '}：4 < 5 ✓');
+    S.B.add('5 個女生喜歡的聯集只有 4 個男生', 'note');
+    cap('這五個女生喜歡的男生聯集起來', '只有 b、c、d、h 四個');
+  },
+  async (tok, S) => { S.B.add('光這 5 人就擺不平 → 8 人不可能都配到', 'bad'); cap('It is impossible for all eight girls', 'to dance with a compatible boy'); },
+  async (tok, S) => {
+    ['H', 'F', 'E', 'D', 'B', 'b', 'c', 'd', 'h'].forEach((n) => S.g.glow(n)); paintM(S.g, M7);
+    const mm = maxMatch(ADJ);
+    ok(mm.n === 7 && msize(M7) === 7, 0.4, 4.4, '暴力試所有配法：最大就是 ' + mm.n + ' ✓');
+    S.B.add('結果 |M| = 7 是 maximum matching', 'good');
+    cap('Hungarian algorithm 停下來的結果', '這個 size 7 的 matching 已經是最大的');
+  },
+  async (tok, S) => { S.B.add('|M| = |X| 才是 complete；這裡 1 個 acorn → 1 人沒配到'); cap('看它的 cardinality 是不是 |X|', '有一個 Hungarian acorn，所以有一個人配不到'); },
+  async (tok, S) => { S.B.add('接下來：pseudocode、證明它一定最大', 'say'); cap('接下來用 pseudocode 描述', '然後證明 Hungarian algorithm 一定找到最大的 matching'); },
+]);
+
+// ════════ PLpMBf9Nbyg（第29D講：Hungarian algorithm pseudocode、remark、正確性證明） ════════
+const PCODE = ['Hungarian algorithm（high level）', '1. 所有 x-vertex 標成 untested', '2. while 有 unmatched 且 untested 的 x：', '     選一個這樣的 x', '     從 x 長 alternating tree（modified BFS）', '     if tree 是 augmenting（碰到 unmatched y）：', '         augment；所有 x 改回 untested', '     else（Hungarian tree）：', '         x＝Hungarian acorn，標成 tested'];
+scene('g8e-pseudo', 'Hungarian algorithm 的 pseudocode', [
+  async (tok, S) => {
+    S.L = PCODE.map((t, i) => LL(t, i ? 'idx' : 'ptr', -7.3, -4.4 + i * 0.75));
+    S.hi = (i) => S.L.forEach((l, k) => cls(l, k === 0 ? 'ptr' : k === i ? 'note' : 'idx'));
+    cap('用 pseudocode 描述 Hungarian algorithm', '比較 high level，有些細節不講，看起來乾淨');
+  },
+  async (tok, S) => { S.t0 = LL('（怎麼實作 modified BFS 等細節要自己做）', 'say', 1.6, -4.4); cap('很多 implement 的細節', '要自己去做'); },
+  async (tok, S) => {
+    kill(S.t0); S.hi(1);
+    S.chip = GIRLS.map((x, i) => { const m = lab.box(GC.girl, [0.5, 0.3, 0.5]); m.add(lab.label(x, 'val')); m.position.set(4.2, 0.3, pz(i)); lab.world.add(m); return { m, l: LL('untested', 'idx', 4.7, pz(i)) }; });
+    SI(4.2, 4.4);
+    cap('第一步：所有 x-vertex 都標成 untested', '一開始都還沒測試過');
+  },
+  async (tok, S) => { S.hi(2); cap('while 迴圈什麼時候執行？', '還有沒配到、又沒測試過的 x-vertex 就繼續'); },
+  async (tok, S) => { S.hi(3); cap('隨便挑一個 unmatched、untested 的 x', '有好幾個的話挑哪個都可以'); },
+  async (tok, S) => { S.hi(4); cap('從它開始長一個 alternating tree', '用 modified BFS algorithm'); },
+  async (tok, S) => { S.hi(5); cap('如果這棵 tree 是 augmenting', '走到一個 unmatched y-vertex，就停下來'); },
+  async (tok, S) => { S.hi(6); cap('就把 matching augment，變大', ''); },
+  async (tok, S) => { cls(S.L[6], 'note'); S.chip.forEach((c) => settxt(c.l, 'untested')); cap('然後把所有 x 再標回 untested', '因為 matching 變了，等於重新 given 一個 matching'); },
+  async (tok, S) => { S.hi(8); cap('如果不是 augmenting', '碰到 Hungarian tree，root 是 Hungarian acorn，標成 tested'); },
+  async (tok, S) => {
+    S.hi(8); [0, 1, 2, 3].forEach((i) => { settxt(S.chip[i].l, 'matched'); S.chip[i].m.material.color.set(GC.ok); });
+    settxt(S.chip[4].l, 'tested（acorn）'); cls(S.chip[4].l, 'bad');
+    cap('例如 A–D 都 match，從 E 長出 Hungarian tree', '就把 E 標成 tested，再試下一個 F（示意）');
+  },
+  async (tok, S) => {
+    S.hi(6); settxt(S.chip[5].l, 'matched'); S.chip[5].m.material.color.set(GC.ok);
+    settxt(S.chip[4].l, 'untested'); cls(S.chip[4].l, 'say');
+    cap('如果從 F 可以 augment，matching 變了', 'E 搞不好又可以了，所以全部清回 untested');
+  },
+  async (tok, S) => { S.hi(2); cap('什麼時候結束？', '沒有 unmatched 又 untested 的 x-vertex 的時候'); },
+  async (tok, S) => { S.r1 = LL('Remark 1：停下來時，要嘛所有 x 都 matched', 'note', -7.3, 2.6); cap('停下來會是什麼樣子？', '第一種：所有 x-vertex 都 match 到'); },
+  async (tok, S) => { cls(S.r1, 'say'); S.r2 = LL('　要嘛所有 unmatched x 都是 Hungarian acorn', 'note', -7.3, 3.3); cap('不然就是：所有沒 match 到的 x', '都是 Hungarian acorn，從它長不出 augmenting path'); },
+  async (tok, S) => { cls(S.r2, 'say'); LL('Remark 2：結果是 maximum matching（要證明）', 'note', -7.3, 4.0); cap('第二點就是我們要證明的東西', ''); },
+]);
+
+scene('g8e-claim', '定理：結束時的 matching 是 maximum', [
+  async (tok, S) => { S.B = board(); S.B.add('Hungarian algorithm terminates 時：', 'note'); S.B.add('the resulting matching is a maximum matching', 'note'); S.g = party({ M: M7 }); cap('當 Hungarian algorithm 結束時', '最後的 matching 一定是最大的'); },
+  async (tok, S) => {
+    const mm = maxMatch(ADJ);
+    ok(mm.n === msize(M7), 0.4, 4.4, '派對例子：7，暴力算最大也是 ' + mm.n + ' ✓');
+    S.B.add('例如派對：最多 7 個女生配到');
+    cap('就像前面的例子', 'maximum matching 的 size 是 7');
+  },
+  async (tok, S) => { S.B.add('接下來證明它的正確性（correctness）', 'say'); cap('接下來證明這件事', 'Proof of correctness of Hungarian algorithm'); },
+]);
+
+// proof diagrams: x-vertices on the top row, y-vertices on the bottom row (示意)
+function zig(g, names, x0, dx, zt, zb) { names.forEach((n, i) => g.v(n, x0 + i * dx, i % 2 ? zb : zt, i % 2 ? GC.y : GC.x, n, 0.55)); }
+scene('g8e-proof1', '證明（一）：從 B-matched、A-unmatched 的 x 走 B A B A…', [
+  async (tok, S) => { S.B = board(); S.B.add('A-matching：Hungarian algorithm 的結果', 'note'); cap('考慮 Hungarian algorithm 的結果', '取個名字叫 A-matching'); },
+  async (tok, S) => { S.B.add('要證最大：假設有更好的，再說它其實沒比較好'); cap('要證它最大', '就假設有另一個更好的，然後 argue 它其實沒有比較好'); },
+  async (tok, S) => { S.B.add('假設 B-matching 比 A 好：|B| > |A|', 'note'); cap('假設有一個比較好的 matching', '叫 B-matching'); },
+  async (tok, S) => { S.B.add('→ 有些 x：B-matched，但 A-unmatched'); cap('B 比較好，配到的人比較多', '所以一定有些女生在 B 裡配到、在 A 裡沒配到'); },
+  async (tok, S) => {
+    S.g = G(); zig(S.g, ['x1', 'y1', 'x2', 'y2', 'x3'], 0.2, 1.5, -1.6, 1.6); SI(3.2, -3.0);
+    S.g.glow('x1', '#661111'); T('B-matched、A-unmatched', 'say', 0.2, -2.4);
+    LL('橘＝B-edge　藍＝A-edge', 'say', 0.0, 3.6);
+    cap('從任何一個這種 x-vertex 開始', '它在 B 裡有配、在 A 裡沒配');
+  },
+  async (tok, S) => { S.g.e('x1', 'y1', 'B'); S.B.add('建一條 alternating path：先走 B-edge'); cap('從它建一條 alternating path', '這次的 alternating 是 B、A 輪流：第一條是 B-edge'); },
+  async (tok, S) => {
+    S.g.e('y1', 'x2', 'A'); await wt(tok, 300); S.g.e('x2', 'y2', 'B'); await wt(tok, 300); S.g.e('y2', 'x3', 'A');
+    S.B.add('B-edge、A-edge、B-edge、A-edge…');
+    cap('B-edge、A-edge、B-edge、A-edge', '這樣輪流');
+  },
+  async (tok, S) => {
+    S.g.glow('x3', '#004422'); T('A-matched、B-unmatched', 'good', 6.2, -2.4);
+    S.B.add('主張：一定停在 A-matched、B-unmatched 的 x', 'note');
+    cap('一定會停到一個 x-vertex', '它剛好反過來：在 A 裡有配、在 B 裡沒配');
+  },
+  async (tok, S) => { S.B.add('一個點最多一條 B-edge、一條 A-edge → 只能 B A B A'); cap('為什麼只能 B A B A？', '兩條 B-edge 不會有同樣端點（B 是 matching），A 也一樣'); },
+  async (tok, S) => { S.B.add('最後一條不可能是 B-edge', 'note'); cap('最後一定是 A-edge', '不可能是 B A B A…B 停住'); },
+  async (tok, S) => {
+    S.g2 = G(); zig(S.g2, ['x1', 'y1', 'x2', 'y2'], -0.3, 1.5, 2.6, 4.4);
+    S.g2.e('x1', 'y1', 'B'); S.g2.e('y1', 'x2', 'A'); S.g2.e('x2', 'y2', 'B'); S.g2.glow('y2', '#661111');
+    T('如果停在 B-edge：y 在 A 裡沒配', 'bad', 6.0, 3.6);
+    S.B.add('若停在 B-edge → 對 A 是 augmenting path！', 'bad');
+    cap('如果最後是 B-edge 停在 y', '那個 y 在 A 裡沒配：這條對 A-matching 是 augmenting path');
+  },
+  async (tok, S) => { S.B.add('翻過來 A 就變大；但 Hungarian 停下時不會有', 'bad'); cap('把它翻過來，A-matching 就變大了', '可是 Hungarian algorithm 停下時，沒配到的都是 acorn，不會有這種 path'); },
+  async (tok, S) => { S.g2.kill(); S.B.add('所以：x 到 x、長度偶數、終點 A-matched B-unmatched', 'good'); cap('所以一定是 x 走到 x', '長度是偶數，最後一條是 A-edge'); },
+]);
+
+scene('g8e-proof2', '證明（二）：一對一 + 鴿籠 → |A| ≥ |B|', [
+  async (tok, S) => {
+    S.B = board(); S.B.add('B-matched A-unmatched 的 x → A-matched B-unmatched 的 x', 'note');
+    cap('總結：從 B-match、A-unmatch 的 x-vertex', '一定走到一個 A-match、B-unmatch 的 x-vertex');
+  },
+  async (tok, S) => { S.B.add('這是一個對應（mapping）f'); cap('這樣就造了一個 correspondence', '也就是一個 mapping'); },
+  async (tok, S) => { S.B.add('主張：f 是 one-to-one（一對一）', 'note'); cap('這個 mapping 是一對一函數', '為什麼？如果不是就會矛盾'); },
+  async (tok, S) => { S.B.add('若不是：兩個不同的 x 對到同一個'); cap('如果不是一對一', '就會有兩個不同的 x 對到同一個'); },
+  async (tok, S) => {
+    S.g = G(); SI(3.0, -4.4);
+    S.g.v('x10', 0.4, -3.4, GC.x); S.g.v('x12', 5.6, -3.4, GC.x); S.g.v('y5', 0.4, -0.6, GC.y); S.g.v('y6', 5.6, -0.6, GC.y); S.g.v('x7', 3.0, 2.0, GC.x);
+    S.g.e('x10', 'y5', 'B'); S.g.e('x12', 'y6', 'B'); S.g.e('y5', 'x7', 'A'); S.g.e('y6', 'x7', 'A');
+    cap('例如 x10、x12 都對到 x7', '黃（這裡橘）是 B-edge，白（這裡藍）是 A-edge');
+  },
+  async (tok, S) => { S.B.add('終點一樣 → 中間某處第一次碰到同一個端點'); cap('最後一樣', '所以一定有第一次碰在一起的地方'); },
+  async (tok, S) => { S.B.add('第一次碰到的那兩條：都是 A-edge 或都是 B-edge'); cap('第一次有同一個端點的地方', '不是發生在 A-edge，就是發生在 B-edge'); },
+  async (tok, S) => {
+    S.g.glow('x7', '#661111'); S.c1 = T('兩條不同 A-edge 共用 x7 ✘', 'bad', 3.0, 3.0);
+    S.B.add('發生在 A-edge：A 不是 matching，矛盾', 'bad');
+    cap('如果發生在 A-edge', '兩條不同的 A-edge 有同樣端點 x7，A 就不是 matching');
+  },
+  async (tok, S) => {
+    S.g.kill(); kill(S.c1);
+    S.g = G(); S.g.v('x10', 0.4, -2.4, GC.x); S.g.v('x12', 5.6, -2.4, GC.x); S.g.v('y6', 3.0, 0.8, GC.y);
+    S.g.e('x10', 'y6', 'B'); S.g.e('x12', 'y6', 'B'); S.g.glow('y6', '#661111');
+    S.c2 = T('兩條不同 B-edge 共用 y6 ✘', 'bad', 3.0, 1.9);
+    S.B.add('發生在 B-edge：B 不是 matching，矛盾', 'bad');
+    cap('如果發生在 B-edge', '兩條不同的 B-edge 有同樣端點 y6，B 就不是 matching');
+  },
+  async (tok, S) => { S.B.add('兩種都不可能 → f 一對一', 'good'); cap('兩種情況都不可能', '所以這個 mapping 一定是一對一'); },
+  async (tok, S) => {
+    S.g.kill(); kill(S.c2);
+    S.B.add('鴿籠原理：codomain 大小 ≥ domain 大小', 'note');
+    S.d = [0, 1, 2].map((i) => { const m = lab.box(GC.x, [0.5, 0.3, 0.5]); m.position.set(1.0, 0.3, -1.6 + i * 1.2); lab.world.add(m); return m; });
+    S.c = [0, 1, 2, 3].map((i) => { const m = lab.box(GC.x, [0.5, 0.3, 0.5]); m.position.set(5.0, 0.3, -2.2 + i * 1.2); lab.world.add(m); return m; });
+    [0, 1, 2].forEach((i) => { const r = rod(1.0, -1.6 + i * 1.2, 5.0, -2.2 + i * 1.2); r.material.color.set('#9b7ef4'); });
+    T('B 有 A 沒有', 'say', 1.0, -2.6); T('A 有 B 沒有', 'say', 5.0, -3.2); SI(3.0, 3.4);
+    cap('一對一，所以右邊（codomain）的個數', '一定大於等於左邊（domain）的個數');
+  },
+  async (tok, S) => { S.B.add('兩邊都配到、或兩邊都沒配到的 x：不影響大小比較', 'say'); cap('在 A、B 都配到或都沒配到的 x', '對兩個 size 的比較沒有影響'); },
+  async (tok, S) => {
+    S.B.add('所以 |A| ≥ |B|：B 沒有比較好 → 矛盾', 'good');
+    cap('A 有 B 沒有的 ≥ B 有 A 沒有的', '所以 |A| ≥ |B|，B 不可能比 A 好');
+  },
+]);
+
+scene('g8e-hsum', '小結：Hungarian algorithm 的結果最大', [
+  async (tok, S) => { S.B = board(); S.B.add('Hungarian algorithm 的結果一定是 maximum matching', 'good'); S.g = party({ M: M7 }); cap('所以 Hungarian algorithm 得到的 matching', '一定是最大的'); },
+  async (tok, S) => { S.B.add('核心：找 augmenting alternating path'); cap('這個 algorithm 不難', '核心就是怎麼把 given matching 變大：找 augmenting alternating path'); },
+  async (tok, S) => { S.B.add('從 unmatched x 長 alternating tree，碰到 unmatched y 就 augment；做到不能做為止', 'say'); cap('從沒配到的 x 長 alternating tree', '碰到 unmatched y 就變大；一直做到不能做為止'); },
+]);
+
+// ════════ fOgt4u5Hjs0（第30A講：R(A)、Hall's theorem 與證明、deficiency δ(G)） ════════
+scene('g8e-ra', '符號 R(A)：A 裡的 x 連到的所有 y', [
+  async (tok, S) => { S.B = board(); S.B.add('先介紹一個 notation（定理要用）'); cap('先介紹一個 notation', '後面的定理需要它'); },
+  async (tok, S) => { S.B.add('G：bipartite，V = X ∪ Y，邊都是 X–Y'); cap('有一個 bipartite graph G', 'vertices 分成 disjoint 的 X、Y，每條邊一端在 X、一端在 Y'); },
+  async (tok, S) => { S.B.add('A ⊆ X：左邊的某些 vertices'); cap('A 是 X 的一個 subset', '就是左邊某些 vertices 構成的集合'); },
+  async (tok, S) => { S.B.add('R(A) = { y ∈ Y：xy ∈ E，x ∈ A }', 'note'); cap('R(A)：Y 裡跟 A 中某個 x 有邊相連的點', '全部放在一起就是 R(A)'); },
+  async (tok, S) => {
+    const R = Rof(ADJ, ['B', 'C', 'D']);
+    S.B.add('派對：A = {B, C, D} → R(A) = 她們喜歡的男生全部');
+    S.r0 = ok(R.join('') === 'bcdefgh', 1.6, -4.2, 'R({B,C,D}) = {' + R.join(',') + '} ✓');
+    cap('用派對的例子：A 是某幾個女生，例如 B、C、D', '她們喜歡的所有男生的集合就是 R(A)');
+  },
+  async (tok, S) => {
+    kill(S.r0);
+    S.g = G(); ['x1', 'x2', 'x3'].forEach((n, i) => S.g.v(n, 1.0, -2.4 + i * 1.6, GC.x)); ['y1', 'y2', 'y3', 'y4'].forEach((n, i) => S.g.v(n, 4.6, -3.0 + i * 1.4, GC.y));
+    T('X', 'ptr', 1.0, -4.0); T('Y', 'ptr', 4.6, -4.2);
+    cap('舉個例子：左邊 x1、x2、x3', '右邊 y1、y2、y3、y4');
+  },
+  async (tok, S) => {
+    S.E = { x1: ['y1', 'y2'], x2: ['y2', 'y3'], x3: ['y4', 'y1'] };
+    for (const [x, ys] of Object.entries(S.E)) for (const y of ys) { S.g.e(x, y); await wt(tok, 150); }
+    cap('這個 bipartite graph 這樣連', 'x1–y1、x1–y2、x2–y2、x2–y3、x3–y4、x3–y1');
+  },
+  async (tok, S) => { ['x1', 'x2', 'x3'].forEach((n) => S.g.glow(n, '#661111')); S.B.add('A = {x1, x2, x3}'); cap('取 A = {x1, x2, x3}', 'A 是 X 的 subset，沒問題'); },
+  async (tok, S) => { S.E.x1.forEach((y) => { S.g.set('x1', y, 't'); S.g.glow(y, '#553300'); }); S.rl = T('R(A) = {y1, y2', 'note', 6.4, -4.2); cap('跟 x1 相連的：y1、y2', '放進 R(A)'); },
+  async (tok, S) => { S.E.x2.forEach((y) => { S.g.set('x2', y, 't'); S.g.glow(y, '#553300'); }); settxt(S.rl, 'R(A) = {y1, y2, y3'); cap('跟 x2 相連的：y2、y3', 'y2 已經在裡面了，再把 y3 放進來'); },
+  async (tok, S) => { S.E.x3.forEach((y) => { S.g.set('x3', y, 't'); S.g.glow(y, '#553300'); }); settxt(S.rl, 'R(A) = {y1, y2, y3, y4'); cap('跟 x3 相連的：y4、y1', 'y1 已經在裡面'); },
+  async (tok, S) => {
+    const R = Rof(S.E, ['x1', 'x2', 'x3']); settxt(S.rl, 'R(A) = {' + R.join(', ') + '}');
+    ok(R.length === 4, 6.4, -3.5, '|R(A)| = ' + R.length + ' ✓');
+    S.B.add('R(A)：這三個女生喜歡的男生的聯集', 'good');
+    cap('所以 R(A) = {y1, y2, y3, y4}', '就是跟 x1 或 x2 或 x3 相連的 y-vertices');
+  },
+]);
+
+scene('g8e-hall', "Hall's theorem：complete matching 的充要條件", [
+  async (tok, S) => { S.B = board(); S.B.add('什麼時候有 complete matching（|M| = |X|）？'); cap('什麼時候有 complete matching？', '就是 matching 的 size 等於 |X|，每個女生都配到'); },
+  async (tok, S) => { S.B.add("Hall's theorem", 'ptr'); cap('這個定理叫做', "Hall's theorem"); },
+  async (tok, S) => { S.B.add('充分且必要條件（if and only if）', 'say'); cap('它給你一個充分且必要條件', 'necessary and sufficient condition，若且唯若'); },
+  async (tok, S) => { S.B.add('G 有 complete matching ⇔'); cap('bipartite graph G 有 complete matching', '若且唯若'); },
+  async (tok, S) => { S.B.add('對所有 A ⊆ X：|R(A)| ≥ |A|', 'note'); cap('對所有 X 的 subset A', 'R(A) 的 cardinality 都要大於等於 A 的'); },
+  async (tok, S) => {
+    S.B.add('任找幾個女生，她們喜歡的男生數 ≥ 女生數', 'say');
+    const bad = subsets(GIRLS).find((A) => Rof(ADJ, A).length < A.length);
+    S.g = party(); ok(!!bad, 5.6, 4.4, '派對：有 A 不滿足（例如 ' + bad.join('') + '）✓');
+    cap('換成派對：任找幾個女生', '她們喜歡的男生個數一定要 ≥ 女生個數');
+  },
+  async (tok, S) => { S.g.kill(); S.B.add('要證兩個方向；先證必要條件（P ⇒ Q）'); cap('充分且必要，要證兩個方向', '先證必要條件：P 推到 Q'); },
+  async (tok, S) => { S.B.add('若有 complete matching ⇒ 對所有 A，|R(A)| ≥ |A|'); cap('如果有 complete matching', '那對所有 A，|R(A)| ≥ |A|'); },
+  async (tok, S) => {
+    S.B.add('contrapositive：有 A 使 |R(A)| < |A| ⇒ 沒有', 'note');
+    const ad = { u: ['p', 'q'], v: ['p', 'q'], w: ['q', 'p'] };
+    S.h = G(); ['u', 'v', 'w'].forEach((n, i) => S.h.v(n, 1.4, -1.6 + i * 1.4, GC.x, '')); ['p', 'q'].forEach((n, i) => S.h.v(n, 4.6, -0.9 + i * 1.4, GC.y, ''));
+    Object.entries(ad).forEach(([x, ys]) => ys.forEach((y) => S.h.e(x, y)));
+    SI(3.0, -2.8);
+    ok(maxMatch(ad).n === 2, 3.0, 2.8, '3 個女生只喜歡 2 個男生：最多配 ' + maxMatch(ad).n + ' 對 ✓');
+    cap('用 contrapositive：只要有一個 A 讓 |R(A)| < |A|', '比方三個女生只喜歡兩個男生，光她們就擺不平');
+  },
+  async (tok, S) => { S.B.add('這方向很簡單：trivial', 'good'); cap('這個方向很簡單', '老師說是 trivial'); },
+]);
+
+scene('g8e-hallpf', "Hall's theorem 充分性：用 Hungarian tree 找出壞的 A", [
+  async (tok, S) => { S.B = board(); S.B.add('充分條件：沒那麼明白'); cap('必要條件很清楚', '但充分條件就不是那麼明白'); },
+  async (tok, S) => { S.B.add('還是用 contrapositive'); cap('怎麼證？還是用 contrapositive', ''); },
+  async (tok, S) => { S.B.add('假設：沒有 complete matching', 'note'); cap('假設沒有 complete matching', '再證那個條件不成立'); },
+  async (tok, S) => { S.B.add('「對所有 A 成立」的否定：存在一個 A 使 |R(A)| < |A|', 'note'); cap('「對所有 A 都成立」的否定', '只要找到一個 A 不成立就好'); },
+  async (tok, S) => { S.B.add('run Hungarian algorithm → maximum matching，不是 complete'); S.g = party({ M: M7 }); cap('用我們學過的：run Hungarian algorithm', '它產生 maximum matching，而它不是 complete'); },
+  async (tok, S) => { S.g.glow('H', '#661111'); S.B.add('有 x 沒配到 → 它是 Hungarian acorn'); cap('不是 complete，就有 x-vertex 沒配到', '停下來時沒配到的都是 Hungarian acorn'); },
+  async (tok, S) => { S.B.add('從它長的 alternating tree 是 Hungarian tree'); cap('從它長 alternating tree', '會變成 Hungarian tree：找不到 unmatched y'); },
+  async (tok, S) => { S.B.add('數一數 tree 上的 x 和 y：x 剛好多 1', 'note'); cap('把 Hungarian tree 上的 x、y 數一數', 'x-vertex 的數目會剛好比 y-vertex 多 1'); },
+  async (tok, S) => {
+    S.t = G(); T('從 H 長出的 Hungarian tree', 'zone', 6.0, -4.6);
+    tnode(S.t, 'H', 0, 1, 0);
+    ['b', 'c', 'd'].forEach((y, k) => { tnode(S.t, y, k, 3, 1); tedge(S.t, 'H', y, 'p'); });
+    ['F', 'E', 'D'].forEach((x, k) => { tnode(S.t, x, k, 3, 2); tedge(S.t, 'bcd'[k], x, 'pm'); });
+    tnode(S.t, 'h', 2, 3, 3); tedge(S.t, 'D', 'h', 'p'); tnode(S.t, 'B', 2, 3, 4); tedge(S.t, 'h', 'B', 'pm');
+    cap('例如前面例子：H 沒配到', '從 H 長出來的 Hungarian tree 是這樣');
+  },
+  async (tok, S) => { ['F', 'E', 'B'].forEach((x) => S.t.glow('t' + x, '#225522')); S.B.add('葉子都是 x：y 有配就再接下去，沒配就是 augmenting'); cap('tree 的葉子都會是 x-vertex', 'y 如果有配，就把 matching 那條邊再畫下去；沒配就找到 augmenting path 了'); },
+  async (tok, S) => { ['F', 'E', 'B'].forEach((x) => S.t.glow('t' + x)); S.B.add('tree 上的 x 連到的 y，全都在 tree 上'); cap('跟 tree 上這些 x 相連的 y', '都會出現在 tree 裡（不然 tree 還沒長完）'); },
+  async (tok, S) => { S.B.add('每個 y 配一個 x，再加 root → x 多 1'); cap('為什麼 always 多一個？', 'y 和 x 一對一對（matching 邊），再多一個 root'); },
+  async (tok, S) => {
+    const A = ['B', 'D', 'E', 'F', 'H'], R = Rof(ADJ, A);
+    ok(R.length === 4 && A.length === 5, 2.0, 4.4, 'A = {B,D,E,F,H}，R(A) = {' + R.join(',') + '}：4 < 5 ✓');
+    S.B.add('取 A＝tree 上的 x：|A| = 5、|R(A)| = 4', 'note');
+    cap('把 A 取成 tree 上的 x-vertices：B、D、E、F、H', 'R(A) 就是 b、c、d、h；|R(A)| = 4 < |A| = 5');
+  },
+  async (tok, S) => { S.B.add('至少找到一個 A 不滿足 → 充分性得證', 'good'); cap('沒有 complete matching，就找到不滿足的 A', '只要找到一個就好，證完了'); },
+  async (tok, S) => { S.B.add('一般：A＝tree 上的 x，R(A)＝tree 上的 y', 'say'); cap('一般情況也一樣', 'A 取 tree 上的 x，R(A) 一定就是 tree 上的 y'); },
+  async (tok, S) => { S.B.add('兩個方向都用 contrapositive（反證）', 'say'); cap('兩個方向都用 contrapositive', "Hall's theorem 就證完了"); },
+]);
+
+scene('g8e-defic', 'Deficiency δ(G) 與 maximum matching 的大小', [
+  async (tok, S) => { S.B = board(); S.B.add("Hall's theorem：complete matching 的充要條件"); cap("Hall's theorem", '是有 complete matching 的若且唯若條件'); },
+  async (tok, S) => {
+    S.B.add('但要 check 所有 2^|X| 個 subset', 'say');
+    ok(subsets(GIRLS).length === 256, 3.0, -4.2, '8 個女生：2⁸ = ' + subsets(GIRLS).length + ' 個 subset ✓');
+    cap('問題是 |X| 大的時候不好 check', '要檢查所有 subset，一共 2^|X| 個');
+  },
+  async (tok, S) => { S.B.add('第二件事：maximum matching 的 size 是多少？'); cap('第二件事', '到底 maximum matching 的 size 是多少'); },
+  async (tok, S) => { S.B.add('定義 deficiency（不足）δ(G)', 'ptr'); cap('定義一個東西叫 deficiency', '中文是「不足」'); },
+  async (tok, S) => { S.B.add('看 |A| − |R(A)|：女生比喜歡的男生多幾個'); cap('跟 |A| 和 |R(A)| 有關', '|A| − |R(A)| 就是這群女生不夠幾個男生'); },
+  async (tok, S) => { S.B.add('例：5 個女生只喜歡 4 個男生 → 差 1'); cap('比方五個女生只有四個男生', '就差一個男生'); },
+  async (tok, S) => { S.B.add('δ(G) = max over A ⊆ X of ( |A| − |R(A)| )', 'note'); cap('考慮所有 X 的 subset A', '不足的量裡面最大的，就是 deficiency δ(G)'); },
+  async (tok, S) => { S.B.add('例：|A| = 3、|R(A)| = 1 → 差 2（示意）', 'say'); cap('比方 A 有 3 個、R(A) 只有 1 個', '那這個 A 差 2'); },
+  async (tok, S) => { S.B.add('Remark：δ(G) ≥ 0', 'note'); cap('第一個 remark', 'deficiency 一定 ≥ 0，不會是負的'); },
+  async (tok, S) => { S.B.add('A = ∅：|∅| − |R(∅)| = 0 − 0 = 0'); cap('因為 A 可以取空集合', '0 − 0 = 0，最大值至少是 0'); },
+  async (tok, S) => { S.B.add('δ 和 maximum matching 的 size 有什麼關係？'); cap('這個量跟 maximum matching 的 size 有關', '想一下會是什麼關係'); },
+  async (tok, S) => { S.B.add('δ = 0（每群都夠）→ maximum = |X|（complete）'); cap('如果 always 夠，δ 就是 0', '這時 maximum matching 就是 |X|'); },
+  async (tok, S) => {
+    const d = deficiency(ADJ), mm = maxMatch(ADJ);
+    S.B.add('派對：|X| = 8、δ = 1 → 最多 7');
+    ok(d.d === 1 && mm.n === 7, 0.4, 4.4, '暴力算 256 個 A：δ = ' + d.d + '；最大 matching = ' + mm.n + ' = 8 − 1 ✓');
+    S.g = party({ M: M7 });
+    cap('δ = 1、|X| = 8 的話呢？', '像派對例子：Hazel 沒配到，最多 7 = 8 − 1');
+  },
+  async (tok, S) => { S.B.add('定理：maximum matching 的 size = |X| − δ(G)', 'good'); cap('性質：bipartite graph G 的', 'maximum matching size = |X| − δ(G)'); },
+  async (tok, S) => { S.B.add('特例：有 complete matching ⇔ δ = 0（同 Hall）', 'say'); cap('特別的例子：有 complete matching', '那 δ 一定是 0，跟前面 Hall 一樣'); },
+  async (tok, S) => { S.B.add('maximum 比 complete 少的量＝δ(G)'); cap('其他情況差多少', '就差 deficiency 那麼多：8 個女生配到 7 個'); },
+  async (tok, S) => { S.B.add('但直接算 δ 也要看所有 2^|X| 個 subset', 'say'); cap('實際要用還是要算 deficiency', '直接算也要考慮所有 subset，不是很好用'); },
+]);
+
+// ════════ JGqB5cUX6cE（第30B講：證明 maximum matching = |X| − δ(G)） ════════
+const A0 = ['B', 'D', 'E', 'F', 'H'];
+scene('g8e-dpf1', '證明（一）：任何 matching ≤ |X| − δ', [
+  async (tok, S) => { S.B = board(); S.B.add('要證：maximum matching 的 size = |X| − δ', 'note'); cap('來證這個性質', 'maximum matching 的 size 剛好是 |X| − δ'); },
+  async (tok, S) => { S.B.add('δ = max over A ⊆ X 的 |A| − |R(A)|'); cap('回來看 δ 的定義', '所有 subset A 的 |A| − |R(A)| 的最大值'); },
+  async (tok, S) => { S.B.add('最大值一定在某個 subset 達到', 'say'); cap('因為是 maximum', '一定存在一個 subset 剛好達到這個最大值'); },
+  async (tok, S) => {
+    S.B.add('存在 A₀ ⊆ X：|A₀| − |R(A₀)| = δ', 'note');
+    S.g = party({ M: M7 }); A0.forEach((x) => S.g.glow(x, '#661111'));
+    const R = Rof(ADJ, A0); const d = deficiency(ADJ).d;
+    ok(A0.length - R.length === d, 5.6, 4.4, '派對：A₀ = {B,D,E,F,H}，5 − 4 = 1 = δ ✓');
+    cap('有一個 subset 叫 A₀', '|A₀| − |R(A₀)| 剛好等於 δ（maximum，不是 supremum）');
+  },
+  async (tok, S) => { S.B.add('光看 A₀：不管怎麼配，都差 δ 個'); cap('光考慮 A₀ 這幾個女生', '她們喜歡的男生比她們少 δ 個，怎麼配都會差 δ'); },
+  async (tok, S) => {
+    S.B.add('任何 matching：A₀ 至少 δ 人 unmatched', 'note');
+    const allM = [M5, M6, M7].every((M) => A0.filter((x) => !M[x]).length >= 1);
+    ok(allM, 5.6, 3.7, '老師 run 出的 M₅、M₆、M₇：A₀ 都有人沒配 ✓');
+    cap('所以任何 matching', 'A₀ 裡至少有 δ 個人會 remain unmatched');
+  },
+  async (tok, S) => { A0.forEach((x) => S.g.glow(x)); S.B.add('⇒ 任何 matching 的 size ≤ |X| − δ（upper bound）', 'good'); cap('所以任何 matching 的 size', '都 ≤ |X| − δ，這是 upper bound'); },
+]);
+
+scene('g8e-dpf2', '證明（二）：想法——加點加邊做出 complete matching', [
+  async (tok, S) => { S.B = board(); S.B.add('只差一步：找一個 size 剛好 = |X| − δ 的 matching', 'note'); cap('再來要證剛好等於', '只要找到一個 matching 剛好這麼大'); },
+  async (tok, S) => { S.B.add('所有都 ≤ 它，又有一個等於 → 它就是 maximum'); cap('所有 matching 都 ≤ 這個 upper bound', '找到一個剛好等於的，它就一定最大'); },
+  async (tok, S) => { S.g = party(); S.B.add('想法：加一些點、邊，讓它有 complete matching'); cap('想辦法在原來的 bipartite graph 上', '加一些點、加一些邊，讓它有 complete matching'); },
+  async (tok, S) => { S.B.add('complete 的 size = |X|，再把多加的邊丟掉', 'say'); cap('complete matching 的 size 就是 |X|', '然後把裡面多加的邊丟掉，就知道剩多少'); },
+  async (tok, S) => {
+    S.g.v('z', PY, 4.6, GC.new, 'D'); S.zl = T('新加的點（集合 D）', 'ptr alt', PY + 1.8, 4.6);
+    S.B.add('點加在 Y 這邊：集合 D');
+    cap('要維持 X 不變，點都加在 Y 這邊', '這些新的點叫集合 D');
+  },
+  async (tok, S) => { GIRLS.forEach((x) => S.g.e(x, 'z', 'k')); S.B.add('X 的每個點連到 D 的每個點', 'note'); cap('然後把 X 的所有點', '連到 D 的所有點，能畫的邊全部畫上去'); },
+  async (tok, S) => { S.B.add('新圖有 complete matching → 拿掉新邊 → 原圖的 matching', 'say'); cap('再 argue：加得夠，新圖就有 complete matching', '把新加的邊拿掉，就得到原圖一個剛好那麼大的 matching'); },
+]);
+
+scene('g8e-dpf3', '證明（三）：G* 滿足 Hall 條件，拿掉 δ 條邊', [
+  async (tok, S) => {
+    S.B = board(); S.g = party();
+    S.g.v('z', PY, 4.6, GC.new, 'D₁'); S.B.add('|D| = δ（加 δ 個新點）', 'note');
+    T('派對：δ = 1，加 1 個點（示意）', 'say', PY + 2.6, 4.6);
+    cap('D 的 size 剛好是 δ', '加進去 δ 個新端點');
+  },
+  async (tok, S) => { S.B.add('新的圖叫 G*'); cap('新的圖叫 G*', '原來的圖是 G'); },
+  async (tok, S) => { S.B.add('X* = X，Y* = Y ∪ D'); cap('G* 還是 bipartite graph', 'X* 還是原來的 X；Y* 是原來的 Y 再加上 D'); },
+  async (tok, S) => { GIRLS.forEach((x) => S.g.e(x, 'z', 'k')); S.B.add('E* = E ∪ K，K＝X 和 D 之間所有可能的邊', 'note'); cap('edge set：原來的 E 再聯集 K', 'K is the set of all possible edges connecting X and D'); },
+  async (tok, S) => { S.B.add('黃色的邊＝K、黃色的點＝D', 'say'); cap('黃色的邊就是 K，黃色的點就是 D', 'G* 就是白色原圖再加上黃色的部分'); },
+  async (tok, S) => { S.B.add("主張：G* 有 complete matching（用 Hall's theorem）", 'note'); cap('保證 G* 有 complete matching', "怎麼證？check Hall's theorem 的條件"); },
+  async (tok, S) => { S.B.add('考慮任一 A ⊆ X*，R*(A)＝在 G* 裡的 R(A)'); cap('考慮所有 X* 的 subset A', 'R*(A) 是在 G* 裡的 R(A)'); },
+  async (tok, S) => { S.B.add('R*(A) = R(A) ∪ D（A 不是空集合時）'); cap('R*(A) 有兩部分', '原來的 R(A)，再加上整個 D（A 的點都連到 D 的每個點）'); },
+  async (tok, S) => { S.B.add('R(A) ∩ D = ∅ ⇒ |R*(A)| = |R(A)| + δ'); cap('R(A) 和 D 沒有交集', '所以聯集的 size 等於各自 size 的和'); },
+  async (tok, S) => { S.B.add('δ 是最大值：|A| − |R(A)| ≤ δ ⇒ |R(A)| − |A| ≥ −δ'); cap('δ 是所有 |A| − |R(A)| 的最大值', '反過來減：|R(A)| − |A| ≥ −δ'); },
+  async (tok, S) => {
+    const adj2 = Object.fromEntries(GIRLS.map((x) => [x, [...ADJ[x], 'z']]));
+    S.adj2 = adj2;
+    ok(hallOK(adj2), 5.6, -2.8, 'G*：256 個 A 全部 |R*(A)| ≥ |A| ✓');
+    S.B.add('|R*(A)| − |A| ≥ δ − δ = 0：Hall 條件成立', 'good');
+    cap('所以 |R*(A)| − |A| ≥ δ − δ = 0', 'G* 對所有 A 都滿足 Hall condition');
+  },
+  async (tok, S) => {
+    S.Ms = { ...M7, H: 'z' };
+    paintM(S.g, S.Ms); GIRLS.forEach((x) => S.g.set(x, 'z', S.Ms[x] === 'z' ? 'm' : 'k'));
+    ok(isMatching(S.Ms) && msize(S.Ms) === 8 && maxMatch(S.adj2).n === 8, 5.6, -4.2, 'G* 的 complete matching M*：|M*| = 8 ✓');
+    S.B.add('G* 有 complete matching M*', 'note');
+    cap('所以 G* 有一個 complete matching M*', '有些邊是白的（原圖）、有些是黃的（K）');
+  },
+  async (tok, S) => { S.B.add('把 M* 裡屬於 K 的邊拿掉'); cap('把 M* 裡面那些黃色的邊拿掉', '它們是我們新加進去的'); },
+  async (tok, S) => { S.B.add('M* 在 K 裡最多 δ 條（D 只有 δ 個點）'); cap('M* 在 K 裡最多幾條？', 'D 只有 δ 個點，每個點最多碰一條 matching 邊'); },
+  async (tok, S) => { S.B.add('也不會少於 δ：否則剩下的 > |X| − δ，矛盾'); cap('也不可能少於 δ', '不然拿掉以後剩下的 matching 比 |X| − δ 還大，違反剛才的 upper bound'); },
+  async (tok, S) => {
+    const N = { ...S.Ms }; Object.keys(N).forEach((x) => { if (N[x] === 'z') delete N[x]; });
+    GIRLS.forEach((x) => S.g.hide(x, 'z')); S.g.V.z.visible = false;
+    ok(isMatching(N) && inGraph(ADJ, N) && msize(N) === 8 - 1, 5.6, -3.5, '拿掉 δ = 1 條：剩 ' + msize(N) + ' = 8 − 1 ✓');
+    S.B.add('|M*| = |X|，拿掉 δ 條 → G 的 matching，size |X| − δ', 'good');
+    cap('M* 的 size 是 |X|，拿掉剛好 δ 條', '剩下的是原圖 G 的 matching，size |X| − δ');
+  },
+  async (tok, S) => { S.B.add('所以 maximum matching 的 size = |X| − δ(G)', 'good'); cap('最大就這麼多，又找到一個這麼大的', '所以 maximum matching 的 size 就是 |X| − δ'); },
+]);
+
+scene('g8e-sum', '本段小結：Hall 與 deficiency', [
+  async (tok, S) => { S.B = board(); S.B.add("1. Hall's theorem：有 complete matching ⇔ 所有 A，|R(A)| ≥ |A|", 'note'); cap('這堂課講了兩個性質', "第一個是 Hall's theorem：complete matching 存在的充要條件"); },
+  async (tok, S) => { S.B.add('2. maximum matching 的 size = |X| − δ(G)', 'note'); cap('第二個性質', '用 deficiency 描述 maximum matching 的 size'); },
+  async (tok, S) => { S.B.add("證明：Hall 用 Hungarian algorithm；δ 的性質用 Hall", 'say'); cap("Hall's theorem 的證明用到 Hungarian algorithm", '第二個性質的證明用到 Hall 的結果'); },
+]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

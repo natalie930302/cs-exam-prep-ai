@@ -1,0 +1,266 @@
+{
+ "video": "PLpMBf9Nbyg",
+ "label": "清大OCW 趙啟超《離散數學》第29D講 Matching Problem",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Hungarian algorithm 的 pseudocode",
+   "points": [
+    {
+     "t": 4,
+     "text": "用 high-level pseudocode 描述，實作細節（modified BFS 等）自己做。"
+    },
+    {
+     "t": 56,
+     "text": "先把所有 x-vertex 標成 untested；while 還有 unmatched 且 untested 的 x：任選一個，從它長 alternating tree。"
+    },
+    {
+     "t": 146,
+     "text": "tree 是 augmenting → augment matching，並把所有 x 改回 untested（matching 變了，之前不行的可能又可以）。"
+    },
+    {
+     "t": 199,
+     "text": "不是 augmenting → 碰到 Hungarian tree，它的 root（Hungarian acorn）標成 tested。"
+    },
+    {
+     "t": 351,
+     "text": "Remark 1：停下時，要嘛所有 x 都 matched，要嘛所有 unmatched x 都是 Hungarian acorn。"
+    }
+   ],
+   "trap": "每次 augment 之後都要把所有 x 清回 untested；之前被判為 acorn 的點，在新的 matching 下可能又能 augment。",
+   "scene": "g8e-pseudo",
+   "cues": [
+    4,
+    46,
+    56.5,
+    70.4,
+    107,
+    124.2,
+    146,
+    173.1,
+    180.5,
+    199.5,
+    229.1,
+    268,
+    306.7,
+    351.3,
+    407.7,
+    487.7
+   ],
+   "explain": [
+    "這段用 pseudocode（虛擬碼）描述 Hungarian algorithm。它比較 high level，省略一些細節，看起來比較乾淨。",
+    "像「怎麼用 modified BFS 長 tree」這種 implement（實作）的細節，就要自己去做。",
+    "第一步：把所有 x-vertex 都標成 untested（還沒測試過）。右邊是每個女生的狀態（示意）。",
+    "while 迴圈：只要還有「沒配到、而且沒測試過」的 x-vertex，就繼續做。",
+    "每一輪隨便挑一個沒配到、沒測試過的 x，挑哪一個都可以。",
+    "從它開始長一棵 alternating tree，用的就是 modified BFS。",
+    "如果這棵樹是 augmenting 的，也就是走到一個沒配到的 y-vertex，就停下來。",
+    "這時就找到了 augmenting path，把 matching augment，變大 1。",
+    "matching 變了，等於重新給了一個新的 matching，所以要把所有 x 都標回 untested。",
+    "如果樹不是 augmenting，那就是碰到 Hungarian tree，它的 root 就是 Hungarian acorn，把它標成 tested，之後先不處理它。",
+    "舉例（示意）：A、B、C、D 都配到了，從 E 長出來是 Hungarian tree，就把 E 標成 tested，再去試 F。",
+    "如果從 F 成功 augment，matching 就變了，剛才不行的 E 搞不好又可以了，所以全部清回 untested。",
+    "什麼時候結束？當沒有「沒配到又沒測試過」的 x-vertex 時，while 迴圈就停。",
+    "Remark 1：停下來時只有兩種情況。第一種：所有 x-vertex 都配到了。",
+    "第二種：所有沒配到的 x-vertex 都是 Hungarian acorn，從它長的樹都不能 augment。例如派對裡的 H。",
+    "Remark 2 就是接下來要證明的：停下來的結果一定是最大的 matching。"
+   ]
+  },
+  {
+   "title": "定理：結束時的 matching 是 maximum matching",
+   "points": [
+    {
+     "t": 513,
+     "text": "When the Hungarian algorithm terminates, the resulting matching is a maximum matching。"
+    },
+    {
+     "t": 568,
+     "text": "例如派對：size 7；接著證明 algorithm 的 correctness。"
+    }
+   ],
+   "scene": "g8e-claim",
+   "cues": [
+    513.4,
+    568.5,
+    578
+   ],
+   "explain": [
+    "定理：Hungarian algorithm 結束時，最後得到的 matching 一定是最大的（maximum matching）。",
+    "就像前面派對的例子，跑出來 size 是 7，程式暴力檢查最大也是 7。",
+    "接下來就要證明這件事，也就是證明這個 algorithm 的正確性（correctness）。"
+   ]
+  },
+  {
+   "title": "證明（一）：B A B A 交替的 path 一定停在 A-matched、B-unmatched 的 x",
+   "points": [
+    {
+     "t": 617,
+     "text": "A-matching＝Hungarian algorithm 的結果；假設有更好的 B-matching，|B| > |A|。"
+    },
+    {
+     "t": 684,
+     "text": "則有 x 是 B-matched 但 A-unmatched；從它出發走 B-edge、A-edge、B-edge…交替的 path。"
+    },
+    {
+     "t": 901,
+     "text": "這條 path 一定停在一個 A-matched、B-unmatched 的 x-vertex。"
+    },
+    {
+     "t": 1053,
+     "text": "若最後停在 B-edge 的 y，該 y 是 A-unmatched，path 對 A 是 augmenting，與 Hungarian algorithm 停止的狀態矛盾。"
+    }
+   ],
+   "trap": "這裡的 alternating 是「B-edge、A-edge」交替，不是「不在 M、在 M」；兩個 matching 互相比較。",
+   "scene": "g8e-proof1",
+   "cues": [
+    617.7,
+    638,
+    664.3,
+    684.6,
+    771.6,
+    831,
+    878.4,
+    901.3,
+    966,
+    1053.3,
+    1071,
+    1172.2,
+    1189.2
+   ],
+   "explain": [
+    "證明開始：把 Hungarian algorithm 最後的結果叫做 A-matching，只是取個名字方便講。",
+    "要證明它最大，常用的方法是：假設有另一個更好的，再 argue（論證）其實它沒有比較好。",
+    "假設有一個更好的 matching，叫 B-matching，也就是 |B| > |A|。",
+    "B 配到的人比較多，所以一定有某些女生在 B 裡配到、在 A 裡沒配到；不然 B 不可能比較好。",
+    "從任何一個這種 x-vertex 出發（畫面上的 x1，示意圖）。橘色代表 B-edge（在 B 裡的邊），藍色代表 A-edge。",
+    "從它建一條 alternating path。這次的「交替」是 B、A 輪流：x1 在 B 裡有配，所以第一條是 B-edge。",
+    "接著是 A-edge、B-edge、A-edge……這樣輪流下去。",
+    "主張：這條路最後一定停在一個 x-vertex，它剛好相反：在 A 裡有配、在 B 裡沒配。",
+    "為什麼一定 B、A 輪流？一個點最多只有一條 B-edge（B 是 matching，兩條 B-edge 不能共用端點），A 也一樣，所以走法是被逼出來的。",
+    "最後一條不可能是 B-edge，一定是 A-edge。",
+    "如果最後停在一條 B-edge 的 y 上，代表這個 y 在 A 裡沒配。那這條路從 A 沒配到的 x1 開始、停在 A 沒配到的 y，對 A 來說正是一條 augmenting path！",
+    "把它翻過來 A 就能變大。可是 Hungarian algorithm 停下時，沒配到的都是 Hungarian acorn，不可能還有這種路，矛盾。",
+    "所以路一定是從 x 走到 x，長度是偶數，終點是 A-matched、B-unmatched 的 x。"
+   ]
+  },
+  {
+   "title": "證明（二）：一對一的對應與鴿籠原理",
+   "points": [
+    {
+     "t": 1258,
+     "text": "每個 B-matched A-unmatched 的 x 對應到一個 A-matched B-unmatched 的 x：這個 mapping 是 one-to-one。"
+    },
+    {
+     "t": 1403,
+     "text": "若兩條 path 終點相同，第一次碰到同一端點的兩條邊同為 A-edge（A 不是 matching）或同為 B-edge（B 不是 matching），矛盾。"
+    },
+    {
+     "t": 1827,
+     "text": "Pigeonhole：A-matched B-unmatched 的 x 個數 ≥ B-matched A-unmatched 的 x 個數，所以 |A| ≥ |B|，矛盾。"
+    }
+   ],
+   "trap": "兩邊都配到或都沒配到的 x 不影響比較；只要比「A 有 B 沒有」和「B 有 A 沒有」這兩種 x 的個數。",
+   "scene": "g8e-proof2",
+   "cues": [
+    1258.1,
+    1333.1,
+    1351.1,
+    1403.7,
+    1474.3,
+    1497.2,
+    1534.3,
+    1648,
+    1725.1,
+    1802.4,
+    1827.5,
+    1863.3,
+    1959
+   ],
+   "explain": [
+    "總結剛才的結果：從一個「B 有配、A 沒配」的 x，一定能走到一個「A 有配、B 沒配」的 x。",
+    "這樣就造出一個對應關係，也就是一個 mapping（函數）f。",
+    "主張：這個 mapping 是 one-to-one（一對一）。",
+    "如果不是一對一，就會有兩個不同的 x 對到同一個 x。",
+    "例如（示意）x10 和 x12 兩條路最後都走到 x7。橘色是 B-edge，藍色是 A-edge。",
+    "兩條路終點一樣，所以中間一定有「第一次碰到同一個端點」的地方。",
+    "第一次碰在一起的兩條邊，不是兩條都是 A-edge，就是兩條都是 B-edge。",
+    "如果是 A-edge：兩條不同的 A-edge 共用端點 x7，那 A 就不是 matching，矛盾。",
+    "如果是 B-edge：兩條不同的 B-edge 共用端點 y6，那 B 就不是 matching，也矛盾。",
+    "兩種情況都不可能，所以這個 mapping 一定是一對一。",
+    "鴿籠原理（pigeonhole principle）：一對一函數的 codomain（右邊）大小，一定大於等於 domain（左邊）大小。紫線是對應關係（示意）。",
+    "比較 |A| 和 |B| 時，兩邊都配到或兩邊都沒配到的 x 不會造成差別，只要比這兩種不一樣的 x。",
+    "「A 有、B 沒有」的 x 至少和「B 有、A 沒有」的一樣多，所以 |A| ≥ |B|，B 根本沒比較好，跟假設矛盾。"
+   ]
+  },
+  {
+   "title": "小結：Hungarian algorithm 一定找到最大的 matching",
+   "points": [
+    {
+     "t": 1991,
+     "text": "Hungarian algorithm 停下來的結果是 maximum matching。"
+    },
+    {
+     "t": 2040,
+     "text": "核心：從 unmatched x 長 alternating tree，碰到 unmatched y 就 augment，做到不能做為止。"
+    }
+   ],
+   "scene": "g8e-hsum",
+   "cues": [
+    1991.7,
+    2040.3,
+    2050.4
+   ],
+   "explain": [
+    "所以 Hungarian algorithm 得到的 matching 一定是最大的：如果有更大的，推下去就會矛盾。",
+    "這個 algorithm 其實不難，核心就是怎麼把 given matching 變大：找 augmenting alternating path。",
+    "從沒配到的 x 長 alternating tree，碰到沒配到的 y 就 augment；一直做到不能做為止，結果就是最大的。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Hungarian algorithm 每次成功 augment 之後，為什麼要把所有 x-vertex 改回 untested？",
+   "opts": [
+    "matching 變了，之前不能 augment 的點可能變得可以",
+    "為了讓迴圈永遠不會停",
+    "因為 tree 要重畫成 spanning tree",
+    "因為 Hungarian acorn 會消失"
+   ],
+   "ans": "matching 變了，之前不能 augment 的點可能變得可以",
+   "why": "老師舉例：E 原本是 acorn，F augment 後 E 搞不好又可以了。"
+  },
+  {
+   "q": "Hungarian algorithm 停下來時，下列哪一種情況一定成立？",
+   "opts": [
+    "所有 x 都 matched，或所有 unmatched x 都是 Hungarian acorn",
+    "所有 y 都 matched",
+    "至少有一個 augmenting path",
+    "每個 x 都是 tested"
+   ],
+   "ans": "所有 x 都 matched，或所有 unmatched x 都是 Hungarian acorn",
+   "why": "這是 Remark 1：while 迴圈只在沒有 unmatched 且 untested 的 x 時才停。"
+  },
+  {
+   "q": "正確性證明中，從 B-matched、A-unmatched 的 x 走 B A B A 的 path，為什麼不能停在 B-edge？",
+   "opts": [
+    "那樣它對 A 是 augmenting path，與演算法停止狀態矛盾",
+    "因為 B-edge 不在圖裡",
+    "因為 path 長度必須是奇數",
+    "因為 B 不是 matching"
+   ],
+   "ans": "那樣它對 A 是 augmenting path，與演算法停止狀態矛盾",
+   "why": "起點 A 沒配、終點 y 也 A 沒配，翻過來 A 就變大。"
+  },
+  {
+   "q": "證明裡的對應「B 有 A 沒有的 x → A 有 B 沒有的 x」是一對一，再用什麼原理得到 |A| ≥ |B|？",
+   "opts": [
+    "鴿籠原理（pigeonhole principle）",
+    "數學歸納法",
+    "Euler 公式",
+    "排容原理"
+   ],
+   "ans": "鴿籠原理（pigeonhole principle）",
+   "why": "一對一函數的 codomain 大小 ≥ domain 大小。"
+  }
+ ]
+}

@@ -1,0 +1,216 @@
+{
+ "video": "JGqB5cUX6cE",
+ "label": "清大OCW 趙啟超《離散數學》第30B講 Matching Problem",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "證明（一）：任何 matching 的 size ≤ |X| − δ",
+   "points": [
+    {
+     "t": 4,
+     "text": "要證：maximum matching 的 size = |X| − δ(G)。"
+    },
+    {
+     "t": 59,
+     "text": "δ 是 maximum，一定有 A₀ ⊆ X 使 |A₀| − |R(A₀)| = δ。"
+    },
+    {
+     "t": 125,
+     "text": "光 A₀ 就有 δ 個人配不到，所以任何 matching 的 size ≤ |X| − δ（upper bound）。"
+    }
+   ],
+   "scene": "g8e-dpf1",
+   "cues": [
+    4.4,
+    43.6,
+    59,
+    99.4,
+    125.1,
+    174,
+    193.1
+   ],
+   "explain": [
+    "這段要證明：maximum matching 的 size 剛好是 |X| − δ；δ 描述的就是「比 complete 少多少」。",
+    "先回顧 δ 的定義：對 X 的所有 subset A，算 |A| − |R(A)|，取最大值。",
+    "因為是 maximum（最大值），一定有某一個 subset 剛好達到這個值。",
+    "把它叫做 A₀：|A₀| − |R(A₀)| = δ。（如果是 supremum 最小上界，就不一定有人剛好等於；但這裡是有限多個取最大值，一定達得到。）派對裡 A₀ = {B, D, E, F, H}。",
+    "光看 A₀ 這幾個女生：她們喜歡的男生比她們少 δ 個，不管怎麼配，都會差 δ 個。",
+    "所以任何 matching，A₀ 裡至少有 δ 個人沒配到。老師前面 run 出的每一個 matching 都是這樣（程式檢查）。",
+    "因此任何 matching 的 size 都 ≤ |X| − δ。這是一個 upper bound（上界）。"
+   ]
+  },
+  {
+   "title": "證明（二）：想法——加點、加邊做出 complete matching",
+   "points": [
+    {
+     "t": 222,
+     "text": "只要再找到一個 size 剛好 |X| − δ 的 matching，它就是 maximum。"
+    },
+    {
+     "t": 291,
+     "text": "想法：在 Y 這邊加一組新點 D，把 X 的每個點連到 D 的每個點，讓新圖有 complete matching，再丟掉新邊。"
+    }
+   ],
+   "scene": "g8e-dpf2",
+   "cues": [
+    222.4,
+    244.4,
+    291.2,
+    326.2,
+    343.5,
+    370.6,
+    399.6
+   ],
+   "explain": [
+    "接下來要證「剛好等於」。只差一步：找到一個 matching，size 剛好是 |X| − δ。",
+    "所有 matching 都 ≤ 這個 upper bound；如果有一個剛好等於，它一定就是最大的。",
+    "想法：在原來的 bipartite graph 上加一些點、加一些邊，讓它有 complete matching。",
+    "complete matching 的 size 就是 |X|；之後再把裡面我們多加的邊丟掉，看剩多少。",
+    "為了不動到 X，新的點都加在 Y 這一邊，這些新點的集合叫 D（黃色方塊）。",
+    "然後把 X 的每一個點，都連到 D 的每一個點，能畫的邊全部畫上去（黃色的線）。",
+    "再 argue：加得夠多，新圖就有 complete matching；把新加的邊拿掉，就得到原圖的一個 matching，大小剛好是我們要的。"
+   ]
+  },
+  {
+   "title": "證明（三）：G* 滿足 Hall 條件，拿掉剛好 δ 條",
+   "points": [
+    {
+     "t": 431,
+     "text": "|D| = δ；G* 的 X* = X、Y* = Y ∪ D、E* = E ∪ K，K＝X 與 D 之間所有可能的邊。"
+    },
+    {
+     "t": 627,
+     "text": "對 A ⊆ X*（A 非空）：R*(A) = R(A) ∪ D，兩者不相交，|R*(A)| = |R(A)| + δ ≥ |A|。"
+    },
+    {
+     "t": 937,
+     "text": "G* 滿足 Hall condition，所以有 complete matching M*（|M*| = |X|）。"
+    },
+    {
+     "t": 1013,
+     "text": "M* 在 K 裡最多 δ 條（D 只有 δ 個點），也不能少於 δ（否則超過 upper bound）：拿掉剛好 δ 條，得到 size |X| − δ 的 matching。"
+    }
+   ],
+   "trap": "R*(A) = R(A) ∪ D 只對非空的 A 成立；A = ∅ 時兩邊都是 0，Hall 條件也成立。",
+   "scene": "g8e-dpf3",
+   "cues": [
+    431.6,
+    441.5,
+    469,
+    509,
+    556,
+    580.2,
+    627.4,
+    654,
+    761.7,
+    829.7,
+    885.9,
+    937.3,
+    964.5,
+    1013,
+    1086.1,
+    1214.7,
+    1255.3
+   ],
+   "explain": [
+    "D 要加幾個點？剛好 δ 個。派對 δ = 1，所以只加 1 個新點（示意）。",
+    "加完的新圖叫 G*，原來的圖叫 G。",
+    "G* 還是 bipartite graph：左邊 X* 就是原來的 X；右邊 Y* 是原來的 Y 再加上 D。",
+    "G* 的邊是原來的 E 再聯集 K，K 是「X 和 D 之間所有可能的邊」。",
+    "畫面上黃色的邊就是 K，黃色的點就是 D；G* 就是原圖再加上這些黃色的部分。",
+    "主張：G* 一定有 complete matching。怎麼證？檢查 Hall's theorem 的條件。",
+    "考慮 X* 的任一 subset A。R*(A) 表示在新圖 G* 裡的 R(A)，和原圖的 R(A) 區分開。",
+    "R*(A) 有兩部分：原來的 R(A)，再加上整個 D，因為 A 裡每個點都連到 D 的所有點。（這裡 A 不是空集合；A 是空集合時兩邊都是 0，也沒問題。）",
+    "R(A) 在原來的 Y 裡、D 是新加的，兩者交集是空集合，所以 |R*(A)| = |R(A)| + |D| = |R(A)| + δ。",
+    "δ 是所有 |A| − |R(A)| 的最大值，所以 |A| − |R(A)| ≤ δ；反過來寫就是 |R(A)| − |A| ≥ −δ。",
+    "合起來：|R*(A)| − |A| = δ + (|R(A)| − |A|) ≥ δ − δ = 0。G* 滿足 Hall condition；程式把 256 個 A 都檢查過了。",
+    "所以 G* 有一個 complete matching，叫 M*，size 是 |X| = 8。它有些邊是原圖的（綠），有些是黃色的 K。",
+    "接著把 M* 裡屬於 K 的邊（我們新加的）拿掉。",
+    "M* 在 K 裡最多幾條？D 只有 δ 個點，每個點最多碰到一條 matching 邊，所以最多 δ 條。",
+    "也不可能少於 δ 條：不然拿掉後剩下的比 |X| − δ 還大，違反剛才證的 upper bound。所以剛好 δ 條。",
+    "M* 的 size 是 |X|，拿掉剛好 δ 條，剩下的是原圖 G 的一個 matching，size 是 |X| − δ。派對：8 − 1 = 7（程式檢查）。",
+    "最大就這麼多，又真的找到一個這麼大的，所以 maximum matching 的 size 就是 |X| − δ(G)。"
+   ]
+  },
+  {
+   "title": "本段小結",
+   "points": [
+    {
+     "t": 1266,
+     "text": "兩個性質：Hall's theorem（complete matching 的充要條件）、maximum matching 的 size = |X| − δ(G)。"
+    },
+    {
+     "t": 1314,
+     "text": "Hall's theorem 的證明用到 Hungarian algorithm；deficiency 性質的證明用到 Hall's theorem。"
+    }
+   ],
+   "scene": "g8e-sum",
+   "cues": [
+    1266.3,
+    1291.1,
+    1314
+   ],
+   "explain": [
+    "這堂課講了兩個性質。第一個是 Hall's theorem：有 complete matching，若且唯若對所有 A 都有 |R(A)| ≥ |A|。",
+    "第二個：maximum matching 的 size 比 complete 少的量就是 deficiency，也就是 size = |X| − δ(G)。",
+    "Hall's theorem 的證明用到 Hungarian algorithm；第二個性質的證明又用到 Hall's theorem 的結果。"
+   ]
+  },
+  {
+   "title": "預告：maximum flow problem",
+   "points": [
+    {
+     "t": 1329,
+     "text": "matching problem 講到這裡；最後一個 topic 是 maximum flow problem，下次繼續。"
+    }
+   ],
+   "scene": null
+  }
+ ],
+ "quiz": [
+  {
+   "q": "證明 maximum matching ≤ |X| − δ 時，關鍵是哪個 subset？",
+   "opts": [
+    "達到最大值的 A₀：|A₀| − |R(A₀)| = δ",
+    "A = ∅",
+    "A = X",
+    "任意一個單點集合"
+   ],
+   "ans": "達到最大值的 A₀：|A₀| − |R(A₀)| = δ",
+   "why": "光 A₀ 就有 δ 個人一定配不到。"
+  },
+  {
+   "q": "新圖 G* 在 Y 那邊加了幾個新點？",
+   "opts": [
+    "δ 個",
+    "|X| 個",
+    "1 個",
+    "|Y| 個"
+   ],
+   "ans": "δ 個",
+   "why": "|D| = δ，再把 X 的每個點連到 D 的每個點。"
+  },
+  {
+   "q": "對非空的 A ⊆ X，|R*(A)| 等於？",
+   "opts": [
+    "|R(A)| + δ",
+    "|R(A)|",
+    "|A| + δ",
+    "δ"
+   ],
+   "ans": "|R(A)| + δ",
+   "why": "R*(A) = R(A) ∪ D，兩者不相交，|D| = δ。"
+  },
+  {
+   "q": "G* 的 complete matching M* 裡，屬於 K 的邊為什麼剛好 δ 條？",
+   "opts": [
+    "最多 δ（D 只有 δ 點），也不能少於 δ（否則超過 |X| − δ 的上界）",
+    "因為 K 只有 δ 條邊",
+    "因為 Hall 定理這樣規定",
+    "因為 |X| = |Y|"
+   ],
+   "ans": "最多 δ（D 只有 δ 點），也不能少於 δ（否則超過 |X| − δ 的上界）",
+   "why": "拿掉後剩 |X| − δ，就是原圖的 maximum matching。"
+  }
+ ]
+}

@@ -1,0 +1,196 @@
+{
+ "video": "Xl7Giuc-Adk",
+ "label": "清大OCW 趙啟超《離散數學》第29B講 Matching Problem",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "調整配法：E–b–B–h，size 4 → 5",
+   "points": [
+    {
+     "t": 4,
+     "text": "配了 A、B、C、D，E 喜歡的 b、c、d 都被配走了；要有系統地調整。"
+    },
+    {
+     "t": 74,
+     "text": "E 喜歡 b，但 b 已配給 Betty；Betty 還喜歡 h，而 h 還沒被配。"
+    },
+    {
+     "t": 132,
+     "text": "把 h 配給 Betty、b 配給 E：不在 matching 的邊和在 matching 的邊對調，A、C、D 不變。"
+    },
+    {
+     "t": 211,
+     "text": "matching 的 size 從 4 變成 5。"
+    },
+    {
+     "t": 231,
+     "text": "系統方法：找「不在、在、不在…」交替、最後停在沒配到男生的路徑，然後反過來。"
+    }
+   ],
+   "scene": "g8e-aug1",
+   "cues": [
+    4.3,
+    8.3,
+    74.1,
+    88.1,
+    89.1,
+    102.2,
+    116.1,
+    132.2,
+    145.1,
+    184,
+    211,
+    231,
+    278.4
+   ],
+   "explain": [
+    "上一段配到 A、B、C、D 四個，要配 E 的時候卡住了：E 喜歡的三個男生都已經被配走。",
+    "上面的配法不是只有這一種。我們要想辦法「有系統地」調整一下。",
+    "E 喜歡 b、c、d。先看 b（橘色的線）。",
+    "可是 b 已經配給 Betty 了（深綠粗線）。",
+    "Betty 喜歡 b、c、h。b、c 都配了，但 h 還沒有人配！程式確認了這件事。",
+    "老師黑板上：黃色是圖裡有、但還沒用到的邊；白色是用到的、在 matching 裡的邊。畫面上我們用細線代表沒用到、粗綠線代表在 matching 裡。",
+    "所以 E 其實可以拿 b，只是 b 現在被 Betty 佔著，而 Betty 還有別的選擇 h。",
+    "很簡單：把 h 配給 Betty，b 就空出來可以配給 E。這樣就多配了一個人。",
+    "其實就是把這條路上的黃邊和白邊對調：沒用到的變成用到，原本用到的拿掉。",
+    "其他三個 A、C、D 完全不變，只動到 Betty、b 和 h。",
+    "程式檢查：調整後還是 matching，size 從 4 變成 5，E 也配到了。",
+    "有系統的方法就是找這種路：一條不在 matching 的邊、一條在 matching 的邊、再一條不在…，最後停在一個還沒配到的男生。",
+    "找到之後把它反過來，matching 就變大。這就是解 matching problem 最基礎的方法。"
+   ]
+  },
+  {
+   "title": "Hungarian algorithm：alternating path 與 augmenting path",
+   "points": [
+    {
+     "t": 310,
+     "text": "Hungarian algorithm（由幾位匈牙利數學家提出）：給一個 matching，想辦法 augment（變大）。"
+    },
+    {
+     "t": 365,
+     "text": "方法：找 augmenting alternating path。"
+    },
+    {
+     "t": 478,
+     "text": "alternating path：從 unmatched x-vertex 出發，邊依序 not in M、in M、not in M…。"
+    },
+    {
+     "t": 576,
+     "text": "augmenting：最後結束在一個 unmatched y-vertex；例如 E–b–B–h。"
+    },
+    {
+     "t": 675,
+     "text": "把路上的邊反過來（豬羊變色），|M| 加 1；重複到做不下去，結果是最大的 matching（之後證明）。"
+    }
+   ],
+   "trap": "alternating path 不一定能 augment；要結束在 unmatched 的 y-vertex 才是 augmenting。",
+   "scene": "g8e-hdef",
+   "cues": [
+    310.4,
+    322.5,
+    335.1,
+    365.2,
+    397,
+    412.5,
+    478.5,
+    507.4,
+    539.5,
+    576.1,
+    637,
+    675,
+    715.7
+   ],
+   "explain": [
+    "下面介紹 Hungarian algorithm。Hungarian 是「匈牙利人」，這是幾位匈牙利數學家提出的方法。",
+    "它的基礎是：手上已經有一個 matching（叫 given matching），例如剛才 A–a、B–b、C–c、D–d 這四條邊。",
+    "要把這個 given matching augment。augment 這個字的意思就是「變大」。",
+    "怎麼把它變大？去找一條 augmenting alternating path。",
+    "剛才找到的 E–b–B–h 就是一條 augmenting alternating path。",
+    "先看 alternating（交替）：路上的邊黃白黃白，也就是「不在 matching、在 matching、不在 matching…」輪流出現。",
+    "正式定義：alternating path 要從一個還沒配到的 x-vertex 出發。已經配到的不用管，我們要把沒配到的配進去。",
+    "接下來路上的邊依序是 not in M、in M、not in M…。因為起點沒配到，第一條一定不在 matching 裡。",
+    "但不是每條 alternating path 都能讓 matching 變大。例如 E–b–B 停在女生 B 身上，就沒辦法多配一對（示意）。",
+    "能變大的叫 augmenting：路的最後要結束在一個還沒配到的 y-vertex（沒配到的男生）。",
+    "E–b–B–h 有三條邊：不在、在、不在；最後停在 h，而 h 是沒配到的男生，所以它是 augmenting。",
+    "找到這種路，就把它反過來（老師說像「豬羊變色」）：不在的放進 matching、在的拿掉。matching 就多 1。",
+    "然後把新的 matching 當成 given matching，再找、再變大，一直做到做不下去為止；之後會證明結果就是最大的 matching。"
+   ]
+  },
+  {
+   "title": "例子回顧：反過來，4 → 5",
+   "points": [
+    {
+     "t": 781,
+     "text": "E–b–B–h：起點 E 沒配到、終點 h 沒配到，邊是不在、在、不在。"
+    },
+    {
+     "t": 813,
+     "text": "反過來：path 上原本 1 條在 matching，變成 2 條；|M| 從 4 變 5。"
+    }
+   ],
+   "scene": "g8e-flip",
+   "cues": [
+    780.9,
+    788.1,
+    791.3,
+    813.7,
+    849.3,
+    862
+   ],
+   "explain": [
+    "回到剛才的例子：橘色和深綠色這條就是一條 augmenting alternating path。",
+    "它的邊：E–b 不在 matching、b–B 在 matching、B–h 不在 matching。",
+    "起點 E 是沒配到的 x-vertex（女生），終點 h 是沒配到的 y-vertex（男生）。",
+    "把它反過來：不在 matching 的 E–b、B–h 放進去，在 matching 的 B–b 拿掉。",
+    "這條 path 上原本只有 1 條邊在 matching，反過來變 2 條，所以整個 matching 從 4 變 5。",
+    "這就是整個 Hungarian algorithm 的核心。下一段把例子繼續 run 下去。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "augmenting alternating path 的起點和終點分別是？",
+   "opts": [
+    "起點是 unmatched x-vertex，終點是 unmatched y-vertex",
+    "起點、終點都是 matched 的點",
+    "起點是 y-vertex，終點是 x-vertex，都 matched",
+    "起點、終點都在 X"
+   ],
+   "ans": "起點是 unmatched x-vertex，終點是 unmatched y-vertex",
+   "why": "這樣把路上的邊反過來，兩端都配到了，matching 多 1。"
+  },
+  {
+   "q": "把一條 augmenting path 反過來（不在 M 的放進去、在 M 的拿掉），|M| 會？",
+   "opts": [
+    "加 1",
+    "減 1",
+    "不變",
+    "加倍"
+   ],
+   "ans": "加 1",
+   "why": "路上不在 M 的邊比在 M 的邊多一條。"
+  },
+  {
+   "q": "在 A–a、B–b、C–c、D–d 的 matching 下，哪一條是 augmenting path？",
+   "opts": [
+    "E–b–B–h",
+    "E–b–B",
+    "A–a",
+    "E–c–C–c"
+   ],
+   "ans": "E–b–B–h",
+   "why": "E、h 都沒配到，邊依序不在、在、不在。E–b–B 停在女生 B，不能 augment。"
+  },
+  {
+   "q": "「augment」這個字在這裡的意思是？",
+   "opts": [
+    "把 matching 變大",
+    "把圖變成 bipartite",
+    "刪掉一個端點",
+    "把 matching 清空重來"
+   ],
+   "ans": "把 matching 變大",
+   "why": "Hungarian algorithm 就是一直把 given matching augment，直到做不下去。"
+  }
+ ]
+}
