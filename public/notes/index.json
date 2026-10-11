@@ -685,9 +685,9 @@
  },
  "BaM7OCEm3G0": {
   "label": "3Blue1Brown：Cross products as linear transformations",
-  "points": 27,
+  "points": 22,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "bFHb-eTM7oU": {
   "label": "清大周志遠 第10D講 Memory Management",
@@ -1505,6 +1505,12 @@
   "quiz": 8,
   "cued": true
  },
+ "kYB8IZa5AuE": {
+  "label": "3Blue1Brown：Linear transformations and matrices",
+  "points": 23,
+  "quiz": 6,
+  "cued": true
+ },
  "kyLxTdsT8ws": {
   "label": "Abdul Bari：6.2 Sum Of Subsets Problem - Backtracking",
   "points": 15,
@@ -1907,6 +1913,12 @@
   "quiz": 7,
   "cued": true
  },
+ "P2LTAUO1TdA": {
+  "label": "3Blue1Brown：Change of basis",
+  "points": 21,
+  "quiz": 6,
+  "cued": true
+ },
  "p7C-ObHrCP8": {
   "label": "清大周志遠 第11A講 Non-Contiguous Memory Allocation - Paging(續)",
   "points": 22,
@@ -2141,6 +2153,12 @@
   "quiz": 5,
   "cued": true
  },
+ "rHLEWRxRGiM": {
+  "label": "3Blue1Brown：Three-dimensional linear transformations",
+  "points": 10,
+  "quiz": 4,
+  "cued": true
+ },
  "RjvhXL0WTrY": {
   "label": "台大林軒田 DSA Tree / Heap",
   "points": 166,
@@ -2303,6 +2321,12 @@
   "quiz": 8,
   "cued": true
  },
+ "Ts3o2I8_Mxc": {
+  "label": "MIT 18.06 L30：Linear Transformations and Their Matrices",
+  "points": 36,
+  "quiz": 7,
+  "cued": true
+ },
  "tTFolqL1TX4": {
   "label": "交大江蕙如 Lec05 Chapter 2 Algorithm Analysis (2/2)",
   "points": 148,
@@ -2429,6 +2453,12 @@
   "quiz": 7,
   "cued": true
  },
+ "v8VSDg_WQlA": {
+  "label": "3Blue1Brown：Nonsquare matrices as transformations",
+  "points": 13,
+  "quiz": 5,
+  "cued": true
+ },
  "VAaunFe_lRs": {
   "label": "清大周志遠 第13B講 Demand Paging & Process Creation",
   "points": 40,
@@ -2456,6 +2486,12 @@
  "vfyUU_prh9s": {
   "label": "Algebraic Structures: Groups, Rings, and Fields",
   "points": 23,
+  "quiz": 7,
+  "cued": true
+ },
+ "vGkn-3NFGck": {
+  "label": "MIT 18.06 L31：Change of Basis; Image Compression",
+  "points": 31,
   "quiz": 7,
   "cued": true
  },
