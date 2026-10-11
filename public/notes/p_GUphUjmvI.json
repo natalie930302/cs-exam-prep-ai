@@ -1,0 +1,620 @@
+{
+ "video": "p_GUphUjmvI",
+ "label": "黃婷婷教授計算機結構_第19B講 Pipelining",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "forwarding unit 在 EX 檢查：爸爸、祖父在哪裡",
+   "scene": "ppA-19b-where",
+   "points": [
+    {
+     "t": 17,
+     "text": "forwarding unit 在 EX 這段做 check：rs、rt 照樣從 register file 讀出來，真正要用時才決定要不要 forward。"
+    },
+    {
+     "t": 64,
+     "text": "我在 EX 時：前一個（爸爸）在 MEM，結果在 EX/MEM；前兩個（祖父）在 WB，結果在 MEM/WB。"
+    }
+   ],
+   "cues": [
+    17.3,
+    22.8,
+    36.2,
+    58.5,
+    63.7,
+    76.1,
+    87,
+    98.4,
+    113.2
+   ],
+   "explain": [
+    "先看一個 forwarding 的例子。在那之前，老師要我們注意兩件事。",
+    "第一：forwarding unit（轉送單元）是在 EX（execution）這段做檢查的，不是在前面讀 register 的時候。",
+    "因為不是每次都需要 forward。正常狀況下，rs、rt 還是照樣從 register file 讀出來送進 ID/EX。",
+    "等到真正要用它、也就是在 ALU 要算的時候，才檢查需不需要 forward。",
+    "第二個要注意的：我正在做 execution 的時候，前一個 instruction 在哪裡？",
+    "老師用家族來比喻：前一個是「爸爸」，它的結果在 EX/MEM；前兩個是「祖父」，結果在 MEM/WB。",
+    "剛才那種立體的 datapath 圖容易搞混，可以改看這種只有時間的圖：每列一個指令，往右是 clock cycle。",
+    "例如在第 5 個 clock cycle，任何一個時間只有框起來的這幾格在運作。",
+    "我在 EX（cycle 5）時，前一個在 MEM（它的結果放在 EX/MEM），前兩個在 WB（結果放在 MEM/WB）。這要搞清楚，後面判斷 forward 才不會亂。"
+   ]
+  },
+  {
+   "title": "例子：sub、and、or、add 每個 cycle 該 forward 什麼",
+   "scene": "ppA-19b-ex1",
+   "points": [
+    {
+     "t": 121,
+     "text": "課本例子：sub $2,$1,$3；and $4,$2,$5；or $4,$4,$2；add $9,$4,$2。"
+    },
+    {
+     "t": 151,
+     "text": "cycle 4：and 在 EX，rs = 2 等於 EX/MEM.rd = 2，sub 會寫 register 且不是 $0 → ForwardA = 10。"
+    },
+    {
+     "t": 283,
+     "text": "cycle 5：or 在 EX，rs = 4 對到 EX/MEM（and）→ ForwardA = 10；rt = 2 對到 MEM/WB（sub）→ ForwardB = 01。"
+    },
+    {
+     "t": 386,
+     "text": "cycle 6：add 在 EX，前一個、前兩個都寫 $4 → 選最新的 EX/MEM，ForwardA = 10；$2 已寫回，ForwardB = 00。"
+    }
+   ],
+   "cues": [
+    120.8,
+    125.1,
+    135.3,
+    140.4,
+    145.5,
+    151.3,
+    187,
+    208.3,
+    212.6,
+    229.2,
+    241.2,
+    253.8,
+    283,
+    287.4,
+    300.6,
+    304.6,
+    312,
+    323.4,
+    356.5,
+    363.3,
+    386.2,
+    398.3,
+    400.5,
+    431.4,
+    452.6
+   ],
+   "explain": [
+    "來看這個例子（課本的四個指令）。",
+    "第一個 sub：它的 destination（要寫的目的暫存器）是 register 2。",
+    "後面接的 and：它的 rs 要讀 2（另一個運算元是 5）。",
+    "and 寫回去的 destination 是 4。",
+    "後面的 or、add 也用到 4 和 2，這段程式有好多 dependency。",
+    "下一個 clock（cycle 4）：sub 運算完了，它算出的 $2 放在 EX/MEM 這個 pipeline register。同時還要記下「destination 是 2」，forwarding unit 才能比對。",
+    "現在 and 在 EX 要運算，source 是 2 和 5。剛才說過，rs、rt 的號碼要存在 ID/EX，不能讀完就丟。",
+    "把 2 和 5 拿去比對：rs 的 2 跟 EX/MEM 的 destination 2 一樣。",
+    "還要檢查：sub 是不是會寫 register 的指令？是（RegWrite = 1）。它寫的是 $0 嗎？也不是。",
+    "條件都成立，所以要 forward：把 EX/MEM 裡的東西送到 ALU 的 rs 那一邊。",
+    "老師問：rs 這個 mux 的 control signal 應該是多少？",
+    "答案是 10，表示從 EX/MEM 過來。rt（$5）沒有依賴，維持 00。程式用本章的 forwarding 邏輯算出同樣的結果。",
+    "再下一個 clock，第 5 個 cycle，換 or 進 EX 執行。",
+    "前一個（and）的 destination 是 4，拉過來給 forwarding unit。",
+    "前兩個（祖父 sub）也要顧到，它的 destination 是 2，也拉過來。",
+    "or 要讀的 rs、rt 是 4 和 2。",
+    "比對結果：4 要 forward 到 rs；2 要 forward 到 rt。",
+    "再檢查是不是 write：and、sub 都是 R-type，都會寫 register，所以都會 forward。",
+    "rs 的 4 是從 EX/MEM（前一個）過來的，所以 ForwardA = 10。",
+    "rt 的 2 是從 MEM/WB 這個 stage forward 的，所以 ForwardB = 01。程式驗算一樣。",
+    "第 6 個 cycle：add 進 EX，要讀 4 跟 2（剛才記下來的號碼）。",
+    "前兩個 stage 要寫哪裡？前一個 or 寫 4，前兩個 and 也寫 4，兩個都要寫 4。",
+    "那 rs 這時候應該選誰？",
+    "選 10，從 EX/MEM forward，因為要拿最新的那一個（or 的結果）。rt 的 $2 在 cycle 5 已經寫回 register file（前半寫、後半讀），所以 ForwardB = 00。",
+    "這就是 forwarding。有了它，這四個指令完全不用 stall，共 4 + 4 = 8 個 cycle。老師說只要懂每條線在做什麼，control 其實不難。"
+   ]
+  },
+  {
+   "title": "load-use：forwarding 救不了，一定要 stall",
+   "scene": "ppA-19b-loaduse",
+   "points": [
+    {
+     "t": 472,
+     "text": "寫 register 的只有 R-type 與 load；讀都在第 2 段。前一個是 R-type → EX 就算好，可以 forward。"
+    },
+    {
+     "t": 535,
+     "text": "前一個是 load：EX 只算位址，MEM 讀完才有資料；下一個在 EX 就要用 → cannot always forward，一定要 stall 一個 cycle（插一個 nop）。"
+    },
+    {
+     "t": 641,
+     "text": "hardware 用 hazard detection 偵測；插 nop = 該指令再執行一遍，第一次 decode 的 control 全給 0 變成 bubble。要做兩件事：detect 與 stall 的 datapath。"
+    }
+   ],
+   "cues": [
+    472,
+    483,
+    491,
+    502.4,
+    511.6,
+    534.9,
+    543.7,
+    555,
+    577.1,
+    602.5,
+    641.2,
+    652.6,
+    687.2,
+    698.5
+   ],
+   "explain": [
+    "接下來是另外一種 hazard。我們說過 data hazard 有 R-type 接 R-type、load 接 R-type 兩種，為什麼只有這兩種？把所有 instruction 再分析一下。",
+    "先問：誰會「寫」register file？",
+    "誰會「讀」register file？很多指令都會讀，而且讀一定在第二段（register access）。下面這列代表讀的人，藍色那格是它讀的時候。",
+    "寫回去的，到目前為止只有兩種 type：R-type，以及 load（把東西從 memory 拿出來）。",
+    "如果前一個是 R-type：它在 EX 就把東西算好了，下一個指令來的時候就可以 forward，沒問題（金色箭頭往右走）。",
+    "如果前一個是 load：它什麼時候才拿到資料？",
+    "在 execution 時，load 只是在算 memory 的地址而已，還沒拿到資料；要等 memory access 完畢（cycle 4 結束）才有。",
+    "下一個指令在 cycle 4 一開始做 EX 就要用了，可是資料 cycle 4 結束才出來。紅色箭頭往回走（時間倒流），真的拿不到，forward 也沒辦法。",
+    "所以不是永遠都能 forward（cannot always forward）：load 後面馬上讀它的結果，一定要停下來。",
+    "停一個 cycle，等於加一個 no-op（nop）在中間。讀的人的 EX 延到 cycle 5，這時資料已經在 MEM/WB，再 forward 就好。程式排程驗算：stall 1 個 cycle、EX 在 cycle 5。",
+    "如果用 software，也許就由 compiler 插一個 no-op；如果不靠 software，就要在 run time（執行時）用 hardware 的 hazard detection 自己偵測。",
+    "什麼叫 insert 一個 no-op？意思是這個 instruction「再執行一遍」：偵測到它依賴上面的 load，就先不要往下走，再 fetch、再 decode 同一個 instruction（ID 做了兩次）。",
+    "第一次 decode 出來的那份不要用，就把它的 control 全部給 0。全部是 0 的 control 往下傳，就是一個什麼都不做的 nop，也叫 bubble（氣泡）。",
+    "所以要做兩件事：第一，要有一個 detection 的 controller 去偵測這種情況；第二，datapath 要能真的停下來（stall）。"
+   ]
+  },
+  {
+   "title": "在 ID 偵測 load-use，怎麼讓 pipeline 停一個 cycle",
+   "scene": "ppA-19b-detect",
+   "points": [
+    {
+     "t": 766,
+     "text": "在 ID 段就能偵測：前一個指令在 ID/EX，看它的 MemRead 判斷是不是 load，再比較它的 destination 與我的 rs、rt。"
+    },
+    {
+     "t": 884,
+     "text": "stall 的做法：control 經 mux 全部給 0（變 no-op）；IF/ID 與 PC 都不寫入，讓指令重做一次。"
+    }
+   ],
+   "cues": [
+    765.9,
+    780,
+    793.3,
+    814.2,
+    829.9,
+    853.4,
+    869,
+    884.2,
+    912.6,
+    936.5,
+    941.1,
+    959.6,
+    974.8
+   ],
+   "explain": [
+    "接下來要做這兩件事：怎麼偵測、datapath 怎麼 stall。上面的方塊是 hazard detection unit（危障偵測單元），下面是五段 datapath。",
+    "假設前一個 instruction 是 lw $2，而我這個 instruction（and）在 ID，又要 access 它寫的 register。",
+    "在 instruction decode 的時候就知道了：decode 時，我的 rs、rt 是誰已經知道。",
+    "那前一個 instruction 在哪裡？在 ID/EX（它正在 EX）。它已經 decode 完了，它的資料、control 全都在這個 pipeline register 裡。",
+    "怎麼知道前一個是不是 load？看它的 control signal：MemRead（要讀記憶體）有沒有 enable。只有 load 會讀記憶體。所以把 ID/EX.MemRead 拉進 hazard detection unit。",
+    "再把我這個指令要讀的 rs、rt（在 IF/ID）也拉進來做比對。",
+    "還要把前一個指令的 destination 拉過來。如果前一個是 load，而且它的 destination 跟我的 rs 或 rt 一樣，就一定要 stall。程式用課本的條件驗算：成立。",
+    "那怎麼 stall？我（and）現在在 decode，一定會產生一組 control signal。",
+    "如果什麼都不做，這組 control 下一個 cycle 就送去執行了。可是我們已經偵測到要停一個 cycle，這次 decode 出來的不能用，要當成 no-op。",
+    "做法：把 control 全部 set 成 0，它就是 no-op。畫面上 Control 和 ID/EX 之間的 mux 改選 0。",
+    "那 IF/ID 裡的 and 要保留，因為下一個 cycle 要再執行一遍。所以 IF/ID 不能讓新的指令寫進去。",
+    "PC 也一樣：本來要寫入 PC + 4，現在不要寫，PC 不動。所以要送出 PCWrite = 0、IF/IDWrite = 0。",
+    "整理一下：在 ID 偵測到 load-use，就讓 control 給 0（插一個 bubble），再讓 PC、IF/ID 不動（讓指令重做一次），這就是 stall。"
+   ]
+  },
+  {
+   "title": "hazard detection unit 的 input、output 與 bubble",
+   "scene": "ppA-19b-hdu",
+   "points": [
+    {
+     "t": 995,
+     "text": "input：ID/EX.MemRead、ID/EX.rt（load 的 destination 是 rt）、IF/ID.rs、IF/ID.rt；output：PCWrite、IF/IDWrite、control mux 選 0。"
+    },
+    {
+     "t": 1076,
+     "text": "下一個 cycle：送進去的 control 全是 0 = bubble；IF/ID、PC 沒變 → 指令再 decode、再 fetch 一次。"
+    },
+    {
+     "t": 1218,
+     "text": "條件：if (ID/EX.MemRead and (ID/EX.rt = IF/ID.rs or ID/EX.rt = IF/ID.rt)) stall one cycle：不改 PC、不改 IF/ID，control 全給 0。"
+    }
+   ],
+   "cues": [
+    1001.1,
+    1019.6,
+    1040,
+    1050.1,
+    1076,
+    1085.2,
+    1104.8,
+    1112.8,
+    1162.3,
+    1196.6,
+    1218.3,
+    1244.6,
+    1254.4,
+    1266.3
+   ],
+   "explain": [
+    "再整理一次。怎麼知道前一個是 load？只要看它 control signal 裡的 MemRead。",
+    "還要拉過來：load 到底要寫哪一個 register（它的 destination 號碼）。",
+    "另外這兩條是我現在這個 instruction 的 rs、rt。到這裡，input 全部都知道了。",
+    "output（綠色的線）有三個 control signal：PC 不要 write enable、IF/ID 不要 write enable、control 的 mux 選 0。",
+    "下一個 clock cycle，送進 ID/EX 的 control 全部是 0，就是不做任何事。灰色的 bubble 就是它。",
+    "and、or 原地踏步：IF/ID 沒有寫入新的，所以 and 再 decode 一次；PC 也沒改變，所以再抓一次同樣的 or。",
+    "這就叫 insert 一個 bubble（插入一個氣泡）。",
+    "分兩部分來看：datapath 在 register access 那裡多一個 hazard detection unit；control 的部分，就是把剛才的條件寫成 Boolean equation（布林式）。",
+    "老師提醒：不要忘記把 rt 放進去。",
+    "因為 load 的 destination 是 rt，不是 rd。所以要拿 ID/EX.rt 跟我的 rs、rt 比。老師說考試也考過這題。",
+    "寫成條件：如果在 ID/EX 的前一個指令 MemRead = 1，而且它的 rt 等於 IF/ID 的 rs 或 rt，就 stall。",
+    "條件成立就 stall pipeline 一個 cycle。程式測了四組：lw 後面讀 rs、讀 rt 都要 stall；lw 後面不相關不用；add 後面讀它也不用 stall（交給 forwarding）。",
+    "stall 怎麼做：不要 change PC，也不要 change IF/ID 那個 pipeline register，讓它重複再執行一遍。",
+    "另外，現在正在 decode 的那份 control 全部給 0 傳下去，就相當於傳下去一個 no-op。"
+   ]
+  },
+  {
+   "title": "例子：lw 之後的 stall、bubble 與 forwarding",
+   "scene": "ppA-19b-ex2",
+   "points": [
+    {
+     "t": 1289,
+     "text": "課本例子：lw $2,20($1)；and $4,$2,$5；or $4,$4,$2；add $9,$4,$2。lw 在 ID/EX、MemRead = 1、rt = 2 = and 的 rs → stall：control 給 0、PC 與 IF/ID 不動。"
+    },
+    {
+     "t": 1409,
+     "text": "cycle 5：and 在 EX，EX/MEM 是 bubble、MEM/WB 是 lw（rd = 2）→ ForwardA = 01、ForwardB = 00。"
+    },
+    {
+     "t": 1491,
+     "text": "cycle 6：or 的 rs = 4 對到 and → ForwardA = 10；cycle 7：add 的 rs = 4，or、and 都寫 4 → 取最新的 10。整段 stall 1 個 cycle，共 9 個 cycle。"
+    }
+   ],
+   "cues": [
+    1289.3,
+    1295.3,
+    1302.8,
+    1319.9,
+    1339.1,
+    1345.1,
+    1356.4,
+    1363.6,
+    1371.4,
+    1409,
+    1421.5,
+    1429.1,
+    1441.2,
+    1465.6,
+    1469.8,
+    1491.5,
+    1500.6,
+    1512.4,
+    1529.3,
+    1532.7,
+    1538.2,
+    1550.1,
+    1563.7,
+    1582.3
+   ],
+   "explain": [
+    "來看一個例子（課本的四個指令）。第一個是 load instruction。",
+    "lw 要寫的是 rt，destination 是 2。等一下要在這個 stage 檢查它。",
+    "下一個 instruction 是 and，要讀第 2 個 register。",
+    "lw 把它的 destination 2 傳過來；and 把它要讀的 rs、rt（2 和 5）傳過來。",
+    "怎麼知道前一個是不是 load？看 MemRead 有沒有 enable——有。",
+    "條件全部符合：load 後面接一個 access 同一個 register 的指令，這就要 stall。程式用條件驗算：成立。",
+    "第一件事：發出 control signal，讓 mux 選 0，0 就往下 propagate（傳下去）。",
+    "再來：PC 不要動、IF/ID 不要動，and 要再執行一遍。",
+    "下一個 cycle：0 傳下去了，在 EX 那段變成 bubble；and 還在 ID、or 還在 IF，都沒動，因為它們的 register 沒有被寫入（clock 沒有 enable 就保持原來的內容）。",
+    "換到 forwarding 的圖。現在是 cycle 5：bubble 繼續往下走；and 進 EX 要運算了，讀的是 2 跟 5。",
+    "rs、rt 的號碼 2、5 送到 forwarding unit。",
+    "前面那個 stage（EX/MEM）是 bubble，沒東西；再前面 MEM/WB 是 lw，它的 destination 是 2。",
+    "lw 之後要做 forwarding：因為已經 delay 了一個 cycle，lw 讀出來的資料已經在 MEM/WB 了。",
+    "rs 的 control signal 應該是 01，從 MEM/WB forward 過來（2 跟這個 2 一樣，而且它是 write）。",
+    "rt（$5）正常就是 00。程式驗算：A = 01、B = 00。",
+    "cycle 6：換 or 進 EX。這裡已經沒有 load 的 hazard 了，只看要不要 forward。",
+    "or 要讀 4 跟 2。前一個（and）寫 4；再前一個是 bubble，沒有影響。",
+    "and 又是 write 的 instruction，4 跟 rs 一樣，又要 forward。",
+    "rs 從 EX/MEM 來，所以這個 stage 發出 10。",
+    "rt 的 2 有沒有 forward？沒有，正常就是 00，因為 lw 在 cycle 5 已經寫回 $2，or 在 cycle 5 decode 時（後半段讀）就讀到了。",
+    "cycle 7：add 進 EX，要讀 4 跟 2。",
+    "前一個（or）寫 4，再前一個（and）也寫 4。第一個 operand 要 forward，從哪裡？",
+    "從前面這個（最新的 or，EX/MEM）forward，所以設成 10；rt 照樣 00。",
+    "整段畫成時序圖：lw 後面插了一個 bubble，and 的 ID 做兩次、or 的 IF 做兩次；總共 4 + 4 + 1 = 9 個 cycle，程式排程驗算相同。老師說考試很喜歡考 control signal 怎麼設，懂了就會，不用背。"
+   ]
+  },
+  {
+   "title": "複習：兩類 data hazard",
+   "scene": "ppA-19b-recap",
+   "points": [
+    {
+     "t": 1611,
+     "text": "data hazard 兩種：前面是 R-type → 結果已算出，always forward；前面是 load、下一個馬上讀 → 先 stall 一個 cycle，再 forward。"
+    }
+   ],
+   "cues": [
+    1611.7,
+    1652.6,
+    1660.9,
+    1681.8,
+    1694,
+    1704.5,
+    1711.9
+   ],
+   "explain": [
+    "再複習一下，不要讀到後面就搞亂：剛才介紹的 data hazard 就兩種狀況。",
+    "有一種永遠可以 forward。",
+    "那就是前面是 R-type，後面不管什麼指令，只要去 access register。R-type 雖然還來不及寫回，但其實已經算出來了，所以 always forward。",
+    "那第二種 type 呢？",
+    "前一個是 load，下面馬上要 access register。這時候可以 forward 嗎？不行，資料真的還沒出來（箭頭往回）。",
+    "一定要先 stall 一個 clock cycle。等資料出來了，如果還需要，再 forward。",
+    "這兩個 type 一定要分清楚：一種可以直接 forward，一種沒辦法，要先 stall 一個 cycle。"
+   ]
+  },
+  {
+   "title": "branch hazard：決定得越晚，flush 越多",
+   "scene": "ppA-19b-branch",
+   "points": [
+    {
+     "t": 1732,
+     "text": "branch：PC = PC + 4 或跳到 target；決定得晚，但 pipeline 要裝滿，下一個早就 fetch 進來 → control（branch）hazard。"
+    },
+    {
+     "t": 1834,
+     "text": "這個 datapath 在第 4 段（MEM）才決定：已進來的 3 個指令要 flush（control 全設 0），犧牲 3 個 cycle。"
+    },
+    {
+     "t": 1922,
+     "text": "把決定移到 ID（decode 完就知道是 branch、rs rt 也讀出來了，比對即可）：只要 flush 1 個指令（IF/ID 清成 0），PC 改成 target。"
+    }
+   ],
+   "cues": [
+    1732.5,
+    1745.7,
+    1763.3,
+    1786.3,
+    1807.7,
+    1833.9,
+    1846.1,
+    1860.4,
+    1889.1,
+    1905.9,
+    1922.5,
+    1939.3,
+    1948.3,
+    1967.7,
+    1980.5
+   ],
+   "explain": [
+    "再來看 branch hazard。",
+    "依序執行時，做完一個指令才決定下一個：一般指令 PC = PC + 4；branch 如果 taken（要跳），就算出 target（例如 1000）跳過去。",
+    "問題是：什麼時候才知道要不要跳？decode 時？execution 時？還是要到 memory？要看你怎麼切 datapath，可能在很後面的 stage 才知道。",
+    "可是 pipeline 要裝滿：beq 才執行到 decode，下一個指令就已經要 fetch 進來了，我連這條 beq 要不要跳都還不知道。",
+    "如果決定和抓進來的不一樣，就產生 control hazard，也叫 branch hazard。它也是因為 feedback：前面的指令要到很後面才寫「要跳去哪裡」。",
+    "在這個 pipeline 的分法裡，要到第 4 個 stage（memory access）才決定要跳去哪裡。",
+    "如果要跳，下面已經進來的這幾個指令都要犧牲掉。",
+    "怎麼洗掉（flush）？剛才學過：把它們的 control signal 全部設成 0，就變成 no-op。",
+    "這樣來得及嗎？來得及。只有 write（寫 register、寫記憶體）才會改變 state，它們都還沒走到那裡，所以清掉沒有副作用。",
+    "但是在 MEM 才比對的話，要犧牲幾個 cycle？已經抓進來 3 個，target 要到 cycle 5 才 fetch，犧牲 3 個 cycle，太浪費了。程式算出 penalty 是 3。",
+    "可不可以把決定往前移一點？只是多加一點 hardware。",
+    "能移到最前面（IF）嗎？沒辦法，那時指令才剛抓進來，還不知道它是不是 branch。",
+    "最快可以移到 ID：decode 完就知道它是 branch，rs、rt 也已經讀出來了，做個比對就好。",
+    "如果發現跟我猜的一樣，就 OK 繼續往下；猜得不對，就要 flush。",
+    "flush 做什麼？把 IF/ID 裡剛抓進來的那一個變成 0，PC 改選要跳去的 target。這樣只 flush 1 個、只犧牲 1 個 cycle。程式算出 penalty 是 1。"
+   ]
+  },
+  {
+   "title": "predict not taken、把 branch 移到 ID、flush 一個 bubble",
+   "scene": "ppA-19b-pnt",
+   "points": [
+    {
+     "t": 2042,
+     "text": "predict not taken：照順序繼續 fetch，決定時若其實 taken，已抓的都要 flush，需要 flush 的 hardware。"
+    },
+    {
+     "t": 2136,
+     "text": "把 branch 位址計算與 rs = rt 比較移到 ID，只有 IF 多抓的一個要 flush：IF/ID 前的 2-to-1 mux 寫入 0（IF.Flush）。"
+    },
+    {
+     "t": 2332,
+     "text": "課本例子：40 beq $1,$3,7 在 ID 判定 taken，target = 40 + 4 + 7 × 4 = 72；44 的 and 變成 bubble，下一個 cycle fetch 72 的 lw，只犧牲 1 個 cycle。"
+    }
+   ],
+   "cues": [
+    2042.6,
+    2065,
+    2072.8,
+    2093,
+    2115.4,
+    2136,
+    2143.9,
+    2157.6,
+    2168.7,
+    2222.9,
+    2238.5,
+    2281.9,
+    2296.7,
+    2332,
+    2338.1,
+    2356.9,
+    2367.8,
+    2381
+   ],
+   "explain": [
+    "來看例子：branch equal，如果相等就要跳到 target。",
+    "但執行時根本不知道什麼時候要跳，所以還是照順序一直 fetch。這等於假設這個 branch 不會跳：predict not taken。",
+    "等到真的決定時（這個設計是在 MEM），發現其實要跳（taken），那後面這三個全部都是錯的。",
+    "所以 predict always not taken 的話，需要加一些 hardware：在做決定之後，能把那些抓錯的 instruction flush 掉。",
+    "剛才講過，決定放在 memory 這段要 flush 好多個。那就移到前面一點：早點做決定，錯也早點錯，不用在 pipeline 走了半天才 flush。",
+    "做法是把 branch 的 address calculation（算跳躍位址：PC + 4 + offset × 4）移到 instruction decode 這個階段。",
+    "beq 的 rs、rt 在 ID 已經讀出來了，再加一個比較器（相等嗎？）。這樣 branch decision 在 ID 就做得出來。",
+    "這樣的話，只有 IF 那裡多抓了一個 instruction 是錯的，只要 flush 那一個。",
+    "怎麼 flush？讓 IF/ID 這次寫進去的是 0，而不是剛從記憶體讀出來的指令。",
+    "這就相當於在 IF/ID 前面加一個 2-to-1 的 mux：正常時寫入剛讀的指令，要 flush 時寫入 0。",
+    "在 ID 這裡做偵測：讀出來是 branch equal，而且比對成立要跳，就發出 control，讓 mux 寫 0 進來。",
+    "target 的地址在 ID 已經算好，PC 直接改成它，下一個 cycle 就把 target 的指令讀進來。",
+    "犧牲的就只有一個 bubble，相當於把後面那個 instruction flush 掉。",
+    "用課本的例子看：位址 36 的 sub、40 的 beq $1, $3, 7、44 的 and、72 的 lw。",
+    "cycle 3：beq 在 ID 比對 $1 和 $3，結果相等，要跳（taken）。",
+    "要跳到哪裡？target = 40 + 4 + 7 × 4 = 72，也在 ID 算好。taken 的話，下一個 clock IF/ID 全部是 0，PC 跳到 72。",
+    "cycle 4：44 那條 and 變成 bubble（no-op），72 的 lw 被 fetch 進來，抓到正確的指令了。",
+    "總結：只犧牲 1 個 bubble、flush 一個 instruction 就可以。程式排程算出 lw 在 cycle 4 fetch，3 個有效指令共 8 個 cycle。"
+   ]
+  },
+  {
+   "title": "dynamic branch prediction：1-bit 錯兩次、2-bit 錯一次",
+   "scene": "ppA-19b-predict",
+   "points": [
+    {
+     "t": 2393,
+     "text": "一律猜 PC + 4 對 if-then-else 影響不大，但迴圈的 branch 幾乎每次都 taken，會一直錯。"
+    },
+    {
+     "t": 2513,
+     "text": "dynamic branch prediction：用 instruction 地址查 branch prediction buffer（branch history table），在 IF 時就決定下一個抓 PC + 4 還是 target；猜錯才 flush。"
+    },
+    {
+     "t": 2773,
+     "text": "1-bit：只記上一次；內層迴圈每跑一趟錯 2 次（最後一次、下一趟第一次）。2-bit：連錯兩次才改預測，每趟只錯 1 次。"
+    }
+   ],
+   "cues": [
+    2392.8,
+    2399.4,
+    2411.7,
+    2448.3,
+    2452.3,
+    2460.6,
+    2470.1,
+    2487.1,
+    2512.8,
+    2521.8,
+    2537.2,
+    2568.7,
+    2608.9,
+    2662.4,
+    2706.7,
+    2772.9,
+    2797.1,
+    2813.7,
+    2826.3,
+    2851.6,
+    2880.5,
+    2893.4,
+    2903.1,
+    2925.2
+   ],
+   "explain": [
+    "再來：怎麼樣去 predict（預測）？",
+    "剛才我們一律預測 sequential，PC = PC + 4。這樣對不對？",
+    "什麼時候對、什麼時候不對？taken 的意思是跳到 target；not taken 就是 PC = PC + 4。正常狀況好像大多是 PC + 4。",
+    "程式什麼時候會跳？一個是 if-then-else。",
+    "還有 for loop。",
+    "loop 最後一個 instruction 是 branch，要跳回開頭，這是 taken，而且它會執行很多很多次。",
+    "if-then-else 只執行一次，猜錯一次無所謂。",
+    "可是 loop 一直反覆執行，如果一直假設 PC + 4，就一直錯。程式算：迴圈跑 101 次，一直猜 not taken 會錯 100 次。",
+    "所以不一定每次都猜 PC + 4：每個 branch 要 taken 還是 not taken，可以做 dynamic branch prediction（動態預測，預測會隨情況改變）。",
+    "最簡單的規則：這個 branch 上一次跳了，這次就猜跳；上一次沒跳，這次就猜不跳。",
+    "怎麼記錄？每個 instruction 都有一個地址，就用這個地址當 index，到一張表（array）裡去查它上一次是跳還是不跳。畫面的表是示意。",
+    "什麼時候查？在 instruction fetch 時就要查：抓到某個地址，如果它是 branch、上次 taken，下一個就直接到 target 去抓。",
+    "為什麼這麼在意？如果 pipeline 很長、branch 又在很後面才決定，一猜錯就要 flush 很多個指令，代價很大，所以希望盡量猜對。",
+    "這張表叫 branch prediction buffer，也叫 branch history table。",
+    "表不可能很大，所以只記錄最近做過跳躍決定的 branch：它的地址，以及 taken 還是 not taken。查到就照它猜；真的猜錯了才 flush。",
+    "剛才說的是 1-bit predictor：只看前一次，永遠跟前一次一樣；錯了就趕快改過來。",
+    "這常出問題的例子：有 inner loop（內層迴圈）和 outer loop（外層迴圈），可能執行幾千次。假設 inner loop 的 branch 跳 100 次，第 101 次就不跳了，往下走。",
+    "第 101 次：預測 taken，實際 not taken，錯一次。",
+    "同時，因為 1-bit 只記最後一次，history 被改成 not taken。",
+    "等 outer loop 做完一圈又回到 inner loop：第一個 iteration 實際要跳（taken），卻被猜成 not taken，又錯一次。",
+    "所以連錯兩次：最後一次和下一趟的第一次剛好都錯。程式用本章的 predictor 模擬，每趟 inner loop 錯 2 次。",
+    "改進方法：不要只看一次，看兩次，也就是 2-bit predictor，有四個狀態（強 N、弱 N、弱 T、強 T）。",
+    "要連續兩次結果都一樣（例如連續兩次 taken）才改變預測，否則維持原狀。迴圈出口錯一次只會從「強 T」降到「弱 T」，下一趟第一次仍然猜 taken，猜對。程式模擬：每趟只錯 1 次。",
+    "prediction 很重要，所以才要做這些比較複雜的 predictor。老師說下次再繼續介紹。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "sub $2,$1,$3 之後 and $4,$2,$5；or $4,$4,$2。or 在 EX 時的 ForwardA、ForwardB 各是多少？",
+   "opts": [
+    "10、01",
+    "01、10",
+    "10、00",
+    "00、01"
+   ],
+   "ans": "10、01",
+   "why": "rs = $4 由前一個 and 產生（EX/MEM → 10）；rt = $2 由前兩個 sub 產生（MEM/WB → 01）。"
+  },
+  {
+   "q": "lw $2, 20($1) 後面緊接 and $4, $2, $5（有 forwarding），要 stall 幾個 cycle？",
+   "opts": [
+    "1",
+    "0",
+    "2",
+    "3"
+   ],
+   "ans": "1",
+   "why": "load-use：資料要 MEM 結束才有，stall 1 個 cycle 後再從 MEM/WB forward（ForwardA = 01）。"
+  },
+  {
+   "q": "hazard detection unit 判斷 load-use 的條件是？",
+   "opts": [
+    "ID/EX.MemRead 且 ID/EX.rt 等於 IF/ID.rs 或 IF/ID.rt",
+    "EX/MEM.RegWrite 且 EX/MEM.rd 等於 ID/EX.rs",
+    "ID/EX.MemWrite 且 rd 等於 rs",
+    "IF/ID 是 branch 指令"
+   ],
+   "ans": "ID/EX.MemRead 且 ID/EX.rt 等於 IF/ID.rs 或 IF/ID.rt",
+   "why": "load 的 destination 是 rt；前一個是 load（MemRead）且要寫的就是我要讀的，才 stall。"
+  },
+  {
+   "q": "stall 一個 cycle 時，hazard detection unit 要做哪些事？",
+   "opts": [
+    "PC 與 IF/ID 不寫入，送進 ID/EX 的 control 全設 0",
+    "把 IF/ID 清成 0 並跳到 target",
+    "把 EX/MEM 的結果 forward 回 ALU",
+    "把 register file 改成前半寫後半讀"
+   ],
+   "ans": "PC 與 IF/ID 不寫入，送進 ID/EX 的 control 全設 0",
+   "why": "保持 PC、IF/ID 讓指令重做一次，同時插入 control 全 0 的 bubble。"
+  },
+  {
+   "q": "branch 若在 MEM 段才決定、採 predict not taken，猜錯要 flush 幾個指令？移到 ID 決定後呢？",
+   "opts": [
+    "3 個；1 個",
+    "1 個；0 個",
+    "2 個；1 個",
+    "4 個；2 個"
+   ],
+   "ans": "3 個；1 個",
+   "why": "在 MEM 決定時 IF、ID、EX 已有 3 個抓錯的；在 ID 決定時只有 IF 那 1 個。"
+  },
+  {
+   "q": "內層迴圈 branch：taken 100 次後 not taken 1 次，外層迴圈一再重跑。穩定後每跑一趟內層迴圈，1-bit 與 2-bit predictor 各猜錯幾次？",
+   "opts": [
+    "2 次；1 次",
+    "1 次；1 次",
+    "2 次；2 次",
+    "1 次；0 次"
+   ],
+   "ans": "2 次；1 次",
+   "why": "1-bit：出口錯一次並記成 not taken，下一趟第一次又錯；2-bit：出口錯一次只降到弱 taken，下一趟第一次仍猜對。"
+  },
+  {
+   "q": "beq 在位址 40、offset = 7，target 位址是多少？",
+   "opts": [
+    "72",
+    "47",
+    "68",
+    "44"
+   ],
+   "ans": "72",
+   "why": "target = PC + 4 + offset × 4 = 40 + 4 + 28 = 72。"
+  }
+ ]
+}

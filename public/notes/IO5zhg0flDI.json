@@ -1,0 +1,564 @@
+{
+ "video": "IO5zhg0flDI",
+ "label": "黃婷婷教授計算機結構_第18A講 Pipelining",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：pipeline 會因為 dependency 產生 hazard",
+   "scene": "ppA-18a-intro",
+   "points": [
+    {
+     "t": 17,
+     "text": "上次介紹了 pipeline overview（datapath、control）；理想上指令一步一步走過 pipeline，但 dependency 會產生 data hazard、control hazard。"
+    }
+   ],
+   "cues": [
+    17.3,
+    19.6,
+    22.2,
+    50.1
+   ],
+   "explain": [
+    "上一次介紹了 pipeline 的概觀：它的 datapath（資料走的路）和 control（控制訊號）長什麼樣子。今天要進入比較難的地方。",
+    "理想狀況下，把程式丟進 pipeline，每個指令就一段一段往前走，每個 cycle 都有一個做完，非常順。",
+    "但指令之間常有 dependency（相依：後面的要用前面的結果），這會產生 hazard（危障），例如 data hazard、control hazard，讓 pipeline 沒辦法一直順順地走。",
+    "在講 hazard 之前，老師先把 pipeline 再複習一遍，因為 high performance 的設計一定用 pipeline 的架構。"
+   ]
+  },
+  {
+   "title": "點名",
+   "scene": null,
+   "points": [
+    {
+     "t": 60,
+     "text": "老師點名（課堂互動）。"
+    }
+   ]
+  },
+  {
+   "title": "複習：五個 stage、錯開進場、latency 與 throughput",
+   "scene": "ppA-18a-review",
+   "points": [
+    {
+     "t": 95,
+     "text": "pipeline 讓 resource 給大家共用：同一時間有很多 instruction 在做。"
+    },
+    {
+     "t": 105,
+     "text": "五個 stage：instruction fetch、register access（同時 decoding）、ALU execution、memory access（R-type 也要空著經過）、write back。"
+    },
+    {
+     "t": 172,
+     "text": "第一個進第二段時第一段就空出來，下一個就進來；同一時間最多 5 個 instruction。"
+    },
+    {
+     "t": 207,
+     "text": "pipeline 不會縮短 latency（每個還是要走 5 段），增加的是 throughput（單位時間完成的工作）。"
+    }
+   ],
+   "trap": "pipeline 增加的是 throughput，不是讓單一指令變快；單一指令的 latency 不會減少（甚至因 pipeline register 略增）。",
+   "cues": [
+    94.6,
+    105,
+    115.5,
+    121.2,
+    127.6,
+    137.7,
+    148.2,
+    172.4,
+    188.5,
+    197,
+    207.4,
+    254.8
+   ],
+   "explain": [
+    "pipeline（管線）的基本想法：把硬體 resource 給大家共用。同一個時間，好幾個 instruction 各自在用不同的硬體，一起往前做。",
+    "做法是把 datapath 要做的事切成好幾段（stage），MIPS 切成 5 段。表格往右是 clock cycle（時脈的一拍）。",
+    "第一段：instruction fetch（IF），用 PC 去記憶體抓指令。老師說這一定要記得。",
+    "第二段：register access，讀暫存器；同時做 decoding（解讀這是什麼指令），所以也叫 ID。",
+    "第三段：ALU 的 execution（EX）。R-type 在這裡做加減；load、store 在這裡算記憶體位址。",
+    "第四段：memory access（MEM），讀或寫資料記憶體。R-type 沒有要存取記憶體，但還是要「空著」經過這一段。",
+    "第五段：write back（WB），把結果寫回 register file（暫存器檔）。這五段要記住。",
+    "切好之後：第一個 instruction 做第二段時，第一段的硬體已經 release（釋放）了，第二個 instruction 就可以進來用。",
+    "第一個走到第三段時，第一、二段都空出來，第三個 instruction 就進來。每個都比前一個晚一個 cycle。",
+    "所以同一個時間最多有 5 個 instruction 在跑，各用不同的資源。程式檢查：cycle 5 時五列都有東西在做，performance（效能）就提高了。",
+    "老師問：pipeline 會縮短 response time（也叫 latency，一個指令從進去到出來的時間）嗎？不會。每個指令自己還是要走完 5 段，紅色箭頭就是它的 5 個 cycle。",
+    "那它的好處是什麼？是 throughput（產出量：單位時間能完成的工作量）變大。從 cycle 5 開始，每個 cycle 都有一個指令做完。所以 pipeline 不改變 latency，但增加 throughput。"
+   ]
+  },
+  {
+   "title": "datapath：加 pipeline register，切得越平衡越好",
+   "scene": "ppA-18a-dp",
+   "points": [
+    {
+     "t": 268,
+     "text": "pipelined datapath 直接用 single cycle 的 datapath，在每兩個 stage 之間加一個 pipeline register（latch），一段做完先存起來才算一個 cycle。"
+    },
+    {
+     "t": 334,
+     "text": "clock period 被最長的那個 stage 決定（短的段做完也要等），所以切 stage 時要盡量 balance。"
+    }
+   ],
+   "cues": [
+    268.4,
+    283.2,
+    299.6,
+    313.7,
+    321.2,
+    333.6,
+    345.9,
+    371.9,
+    389.6
+   ],
+   "explain": [
+    "再看 datapath。pipeline 的 datapath 可以直接拿 single cycle 的 datapath 來用，因為它本來就一段一段排好了。",
+    "可是切成五段之後，還要加什麼東西，才能真的讓它變成五個 stage？",
+    "答案是 pipeline register（管線暫存器）。每兩個 stage 之間都要加一個，不是在心裡想想「這裡切一下」就好。",
+    "一段做完，就把結果先存進 pipeline register（老師也叫它 pipeline latch）。存好了，才算這一個 cycle 完成，下一段在下一個 cycle 從這裡拿資料。",
+    "這樣一個 cycle 只做一段，cycle 就切得比較細、比較短。",
+    "那要隨便切，還是盡量切得 balance（平均）一點？為什麼？",
+    "因為 pipeline 的 clock 由「最長的那一段」決定。畫面上的柱子是示意的每段所需時間，第 4 段最長。",
+    "短的段做完了，也不能叫指令先往下走，要等最慢那段做完，大家才一起進到下一段。灰掉的段就是在白白等待。",
+    "所以 clock period（每一拍的長度）= 最長那段的時間。各段越平均，浪費越少，所以切的時候要盡量 balance。"
+   ]
+  },
+  {
+   "title": "control：在 decode 產生，分組跟著往下傳",
+   "scene": "ppA-18a-ctl",
+   "points": [
+    {
+     "t": 406,
+     "text": "control 和 single cycle 一樣：main controller 看 opcode、ALU controller 看 function code。"
+    },
+    {
+     "t": 442,
+     "text": "opcode 在第 2 段 decode 完 control signal 就都知道，但在後面的段才用，所以分成 group 放在 pipeline register 一步一步往下傳。"
+    }
+   ],
+   "cues": [
+    406.3,
+    418.7,
+    430.9,
+    442.1,
+    456.8,
+    468.5,
+    485.8,
+    503.1
+   ],
+   "explain": [
+    "再看 control（控制）。其實在 single cycle 時就介紹過了。",
+    "有兩個 controller：main controller 看 opcode；另外一個 ALU controller 看 function code（R-type 指令裡決定做加、減、and、or 的欄位）。分兩個是為了讓 opcode 那邊簡單一點。",
+    "大部分的 control signal，只要知道 opcode、知道這是什麼 instruction，就知道了：source 從哪裡來、destination 在哪裡。",
+    "opcode 什麼時候知道？第一段抓指令、第二段 decode，decode 完就知道這是什麼 instruction，control signal 也就全部出來了。",
+    "可是這些訊號要在後面的 EX、MEM、WB 才用。那怎麼辦？",
+    "答案：一起傳下去。在 decode 這段產生，後面各段要用的不同訊號，就跟著指令往下走。",
+    "具體做法是先分成 group（EX 組、M 組、WB 組），每過一段就存在 pipeline register 裡，一步一步往下傳。",
+    "所以如果懂 single cycle 的 control，pipeline 的 control 其實很簡單：只是 decode 產生之後往下傳而已。"
+   ]
+  },
+  {
+   "title": "hazard 從哪來：往回走的 feedback path",
+   "scene": "ppA-18a-why",
+   "points": [
+    {
+     "t": 511,
+     "text": "兩大 hazard：data hazard 與 control hazard，都來自往回走的 feedback path（WB 寫回 register、branch 改 PC）。"
+    },
+    {
+     "t": 527,
+     "text": "data hazard：寫 register 要到第 5 段，下一個指令在第 2 段就要讀 → 讀到舊資料。"
+    },
+    {
+     "t": 591,
+     "text": "control hazard：beq 在這個 datapath 要到第 4 段才決定跳不跳，期間只好猜 PC + 4 抓進來；猜錯就要 flush。"
+    }
+   ],
+   "cues": [
+    511.2,
+    518.4,
+    527.5,
+    542.8,
+    554.6,
+    586.4,
+    591.3,
+    602.6,
+    615.7,
+    627.3
+   ],
+   "explain": [
+    "接下來講 hazard。兩大類：data hazard（資料危障）和 control hazard（控制危障）。",
+    "它們從哪裡來？看 datapath 上「往回走」的 feedback 路線：一條是 WB 把結果寫回前面的 register file；一條是 branch 決定新的 PC，送回最前面。資料往回走，就可能來不及給後面的指令用。",
+    "以前 sequential（一次只做一個指令）時沒有問題：一個 instruction 全部做完、都寫回去了，下一個才開始。",
+    "pipeline 就不一樣。以寫 register 來說，要到第 5 個 stage 才寫。",
+    "假設這個指令要寫 R5，下一個指令緊接著就要用 R5。它在第 2 段（cycle 3）讀 register 的時候，前一個指令才在 execution（第 3 段）。",
+    "這時 R5 還沒被寫進去，下一個讀到的是舊資料。這就是 data hazard 發生的原因。程式比對：讀在 cycle 3、寫在 cycle 5。",
+    "control hazard 也是一樣的道理。branch equal 可能照順序往下執行，也可能跳去 target（目標位址）。",
+    "那什麼時候才能決定？在這個 datapath 裡，可能要到第 4 個 stage（MEM）才知道要不要跳。",
+    "可是下一個指令馬上就要進來，decode 時根本不知道要不要跳。只好猜：先假裝 sequential，PC = PC + 4，把後面的指令抓進來。",
+    "等真正知道時，如果其實要跳，那下面已經抓進來、執行到一半的三個指令都錯了，要做 flush（像沖水一樣把它們沖掉）。程式數出被猜進來的剛好 3 個。"
+   ]
+  },
+  {
+   "title": "兩大類 data hazard：R-type → 讀、lw → 讀",
+   "scene": "ppA-18a-2types",
+   "points": [
+    {
+     "t": 643,
+     "text": "會寫 register 的只有兩類：R-type 與 load；讀 register 的都在第 2 段。"
+    },
+    {
+     "t": 741,
+     "text": "R-type 的資料其實在第 3 段（EX）就算好 → 可用 forwarding；load 的資料要 MEM 讀完才有 → 只能 stall。"
+    },
+    {
+     "t": 825,
+     "text": "聽到 data hazard 要知道是兩大類：一種 forwarding 能解決，一種一定要 stall；指令組合再多，前面寫的人只有這兩類。"
+    }
+   ],
+   "cues": [
+    643.4,
+    667.3,
+    698.2,
+    709.5,
+    741.3,
+    759.4,
+    790.2,
+    798.1,
+    824.9,
+    856.1,
+    869.8
+   ],
+   "explain": [
+    "先看 data hazard 怎麼發生。注意它有兩個 type：R-type 接 R-type，以及 load 接 R-type，兩個不太一樣。",
+    "老師先問：哪些指令會「寫」register？",
+    "會寫 register file 的只有兩大類：R-type（加、減這些運算）和 load（從記憶體拿東西放進 register）。它們都在第 5 段寫回。",
+    "那要「用（讀）」的人呢？各種指令都可能讀 register，而所有的 register access 都在第 2 段。",
+    "R-type 雖然第 5 段才寫回，但它的 data 其實在第 3 段（execution）就已經算好了。是我們規定它慢慢來、第 5 段才寫。",
+    "load 就不一樣：在 execution 時只算出記憶體位址，資料是什麼還不知道，要等第 4 段真的把記憶體讀完才有。",
+    "所以第一種（前面是 R-type）：data 已經在那裡，只是還沒寫回去。那就用 forwarding（轉送），直接把資料送過去。",
+    "第二種（前面是 load）：data 真的還不在那裡，沒有別的方法，只能 stall（停下來等）。",
+    "老師強調：以後聽到 data hazard，就要知道是兩大類，一種 forwarding 馬上可以解決，一種沒辦法、只好 stall。關鍵在前面那個指令的 data 到底出來了沒有。",
+    "還有別的指令會寫 register file 嗎？到目前為止沒有了。",
+    "實際程式裡什麼組合都有，不一定是 R 接 R、load 接 R。但後面接什麼都一樣，只要它去讀 register 就算；前面「寫」的人只有這兩類，所以歸類完就只有兩種情況。"
+   ]
+  },
+  {
+   "title": "三種 hazard 與「等待」這個萬用解",
+   "scene": "ppA-18a-three",
+   "points": [
+    {
+     "t": 910,
+     "text": "hazard 有三種：structural（兩個人搶同一個 resource，和 dependency 無關）、data、control。"
+    },
+    {
+     "t": 953,
+     "text": "structural hazard 的解法：每個 resource 都在同一個 stage 用，又相差一個 cycle，就永遠不衝突（例：R-type 不能提前在第 4 段寫）。"
+    },
+    {
+     "t": 1045,
+     "text": "data hazard：要用的 data 還沒 ready；control hazard：還不知道跳去哪就要 fetch，只好猜。"
+    },
+    {
+     "t": 1096,
+     "text": "萬用解是 wait：等前一個寫回再做（可能等 3 個 cycle），但浪費 cycle。"
+    }
+   ],
+   "cues": [
+    910.6,
+    918.8,
+    929.6,
+    953.4,
+    1007,
+    1044.9,
+    1079.9,
+    1096.1,
+    1109.4,
+    1117.7
+   ],
+   "explain": [
+    "先整理一下：hazard 到底有哪些？",
+    "剛才分了 data hazard 和 control hazard，其實還有第三種：structural hazard（結構危障）。意思是同一個 resource（硬體），兩個人同時搶著用。",
+    "structural hazard 跟 data dependency 沒有關係，只是不同的 instruction 要競爭同一個硬體。data hazard 和 control hazard 才跟指令之間的 dependency 有關。",
+    "怎麼解決 structural hazard？讓每一個 resource 都在同一個 stage 用。因為 pipeline 裡每個 instruction 只差一個 cycle，大家又在同一段用，就永遠不會衝突。程式檢查沒有衝突。",
+    "如果有人「提前」用就會撞。例如 R-type 想在第 4 段就寫回，又剛好接在 lw 後面，兩個就在 cycle 5 撞在一起。所以不論哪種指令，都要排成五段。",
+    "data hazard：因為 dependency，要用 data 的時候它根本還沒準備好，就會用到舊的 data。不管用什麼 structure，都不能違反寫程式的意思：寫完才用，就要用到新資料。",
+    "control hazard：因為跳來跳去，連下一個要跳去哪都還不知道，就必須 fetch 下一個 instruction，只好猜；猜錯就產生 hazard。",
+    "要解決 hazard，永遠有一個辦法：wait（等）。有 dependency 的話，就等你寫回去我再做。",
+    "例如等前一個在第 5 段寫回之後才讀（沒有其他技巧時），後一個的 fetch 要從 cycle 2 延到 cycle 5，多等 3 個 cycle。程式算出來剛好是老師說的 3 個。",
+    "等待一定能解決問題，但會浪費 cycle。做 pipeline 就是要 high performance，每個 cycle 都要有東西出來，所以要想更好的辦法。"
+   ]
+  },
+  {
+   "title": "structural hazard 的例子：只有一個 memory",
+   "scene": "ppA-18a-mem1",
+   "points": [
+    {
+     "t": 1131,
+     "text": "若 instruction memory 和 data memory 合成同一塊：cycle 4 時 lw 在做 data access，第 4 個指令同時要 instruction fetch → structural hazard。"
+    },
+    {
+     "t": 1207,
+     "text": "解法：拆成 instruction memory 與 data memory 兩塊；每一個 stage 用的 resource 要不一樣。"
+    }
+   ],
+   "cues": [
+    1131.6,
+    1138.2,
+    1147.8,
+    1154.6,
+    1185,
+    1207.3,
+    1216.7
+   ],
+   "explain": [
+    "structural hazard 還可以用這個例子來看。",
+    "現在我們的設計，memory 是分成兩塊的：一塊 instruction memory（放指令），一塊 data memory（放資料）。",
+    "假如把這兩塊合成同一塊 memory，會發生什麼事？",
+    "一個指令在第 4 段做 data memory access，同一時間另一個指令在第 1 段要 instruction fetch，也要用這塊 memory，就打架了。",
+    "看時序圖（往右是時間）：在第 4 個 cycle，lw 要讀資料，第 4 個指令剛好要抓指令，兩個都要用同一塊 memory。程式找出衝突就在 cycle 4。",
+    "解決方法：把它拆成兩個 memory，instruction memory 和 data memory。這樣 IF 用一塊、MEM 用另一塊，cycle 4 就不衝突了。",
+    "這也就是剛才講的條件：做 pipeline 時，每一個 stage 用的 resource 要不一樣。"
+   ]
+  },
+  {
+   "title": "在 datapath 上看 hazard：誰會讀到錯的 R5？",
+   "scene": "ppA-18a-path",
+   "points": [
+    {
+     "t": 1236,
+     "text": "feedback path 造成 hazard。control hazard：beq 第 4 段才決定，前三段已有猜進來的指令，猜錯要全部 flush。"
+    },
+    {
+     "t": 1316,
+     "text": "data hazard：寫 R5 的指令第 5 段才寫回；下一個、下兩個讀 R5 都會讀錯。"
+    },
+    {
+     "t": 1404,
+     "text": "下三個與寫回同一個 cycle：register file 設計成 internal forwarding（clock 前半段寫、後半段讀）就能讀到新值。"
+    }
+   ],
+   "cues": [
+    1236.2,
+    1245.2,
+    1256.5,
+    1279.7,
+    1298.4,
+    1315.8,
+    1344.3,
+    1351.5,
+    1404.3,
+    1430.2,
+    1479.5
+   ],
+   "explain": [
+    "開始講 data hazard，先在 datapath 上看看問題出在哪裡。",
+    "把 pipeline 分成五段之後，最主要的問題就是這些 feedback path（往回走的線）：寫回 register 和改 PC，都是從後面的段送回前面。",
+    "先看 control hazard：如果這是一個 branch equal，在這個 datapath 裡要到第 4 段才能決定要不要跳。",
+    "為了 high performance，前面三段裡早就各有一個 instruction 了。可是它們是誰？是「亂猜」進來的。",
+    "到了第 4 段，如果猜對，後面全部都對，就正常繼續；如果猜錯，這以下全部要沖掉（flush），重新開始。",
+    "再看 data hazard：這個指令在 execution 已經算完，但要到第 5 段才寫回 R5。",
+    "下一個指令正在做 register access，也要讀 R5。它會讀到正確資料嗎？不會，因為還沒寫回。",
+    "寫的人往前走到第 4 段，下兩個指令在讀 R5，一樣讀不到對的資料。",
+    "寫的人走到第 5 段、正在寫的時候，下三個指令同時在讀 R5。理論上還沒寫進去，也拿不到正確資料。",
+    "但如果把 register file 設計成 internal forwarding：利用 edge trigger（時脈上升的那一下就寫入），在 clock 的前半段先寫、後半段才讀，下三個就能讀到新寫進去的值。",
+    "結論：下三個 OK；但下一個、下兩個，只要它們讀的 source 剛好是 R5，一定會讀到錯誤的資料，這就是 data hazard。"
+   ]
+  },
+  {
+   "title": "時序圖：sub $2 寫回之前，誰讀到舊的 $2？",
+   "scene": "ppA-18a-time",
+   "points": [
+    {
+     "t": 1512,
+     "text": "另一種表示：sub 在 cycle 5 才寫回 R2，後面四個指令分別在 cycle 3、4、5、6 讀 R2。"
+    },
+    {
+     "t": 1606,
+     "text": "寫回之前讀的都是舊資料；cycle 6 讀正確；cycle 5 靠 internal forwarding 也正確 → 只剩前兩個有 data hazard。"
+    }
+   ],
+   "cues": [
+    1515.1,
+    1528.3,
+    1571,
+    1585.4,
+    1606.6,
+    1641.2,
+    1656.6,
+    1668.5
+   ],
+   "explain": [
+    "換另一種圖來表示，意思一樣。這裡用課本的例子：sub $2, $1, $3 之後，and、or、add、sw 都要用到 $2。",
+    "往右是時間（clock cycle），每個 instruction 都比前一個晚一個 cycle 開始。",
+    "sub 要寫回 R2（$2），要到第 5 個 clock cycle 的 WB 才寫回。",
+    "後面四個指令都要 access R2，分別在第 2 段讀，也就是 clock 3、4、5、6。程式從排程算出來，和老師說的一樣。",
+    "在 cycle 5 寫回之前去讀的，拿到的都是還沒寫回的舊資料。可是照程式的意思，它們要的是新的 $2。",
+    "cycle 6 讀的那個（add）就沒問題了，因為 cycle 5 已經寫下去了。",
+    "cycle 5 那個呢？讀和寫在同一個 cycle。如果 register file 有 internal forwarding（前半段寫、後半段讀），它也能讀到新值。",
+    "所以剩下 and、or 這兩個會讀錯，這就是 data hazard。"
+   ]
+  },
+  {
+   "title": "read after write（RAW）hazard",
+   "scene": "ppA-18a-raw",
+   "points": [
+    {
+     "t": 1670,
+     "text": "MIPS 會發生的是 read after write（RAW）hazard：I1 先寫、I2 後讀，I1 還沒寫進去 I2 就讀了。"
+    },
+    {
+     "t": 1722,
+     "text": "data hazard 共三種：RAW、WAR（write after read）、WAW（write after write）。WAR：I1 讀、I2 寫。"
+    }
+   ],
+   "cues": [
+    1670.1,
+    1694.3,
+    1721.7,
+    1736.6,
+    1744.9,
+    1810.9,
+    1825.7,
+    1843.7
+   ],
+   "explain": [
+    "整體來說，MIPS 裡發生的 data hazard，是 read 發生在 write 之後的那種。上面一列寫 R2，下面一列讀 R2。",
+    "它的名字叫 read after write hazard，簡稱 RAW。",
+    "其實 data hazard 總共有三種，等一下一個一個看。",
+    "先把名字講清楚，因為這裡很容易搞混：第一個 instruction 叫 I1，第二個叫 I2。",
+    "read after write 的意思是：I1 先 write，I2 後 read，I2 depend on（依賴）I1 寫的資料。正常應該 I1 寫完 I2 才讀；hazard 就是 I1 還沒寫進去，I2 就先去讀了（cycle 3 讀、cycle 5 才寫）。",
+    "這是我們的 MIPS 會發生的狀況：讀在第 2 段，寫在第 5 段，後面的指令很容易讀得太早。",
+    "第二種叫 write after read（WAR）：前面的 I1 是 read，後面的 I2 是 write。",
+    "老師先問大家：這樣為什麼會發生 hazard？（下一段揭曉）"
+   ]
+  },
+  {
+   "title": "點名與出席提醒",
+   "scene": null,
+   "points": [
+    {
+     "t": 1854,
+     "text": "老師點名，並提醒出席的重要（課堂互動）。"
+    }
+   ]
+  },
+  {
+   "title": "WAR、WAW 在 MIPS 為什麼不會發生",
+   "scene": "ppA-18a-warwaw",
+   "points": [
+    {
+     "t": 1920,
+     "text": "WAR：I1 應讀到舊值，若 I2 搶先寫入就讀到新值；通常發生在 auto increment 這類指令。"
+    },
+    {
+     "t": 1988,
+     "text": "MIPS 的 write 永遠在第 5 段、read 在第 2 段，後一個又晚一個 cycle，不可能搶先寫 → 沒有 WAR。"
+    },
+    {
+     "t": 2094,
+     "text": "WAW：兩個都寫同一個 register，最後應該是後者的值；MIPS 都在第 5 段寫、I1 永遠先寫 → 沒有 WAW。"
+    }
+   ],
+   "cues": [
+    1920.6,
+    1933.3,
+    1967.1,
+    1987.7,
+    2016.5,
+    2082.9,
+    2094,
+    2137,
+    2151.7
+   ],
+   "explain": [
+    "什麼叫 write after read（WAR）？I1 要讀 R3，I2 要寫 R3。",
+    "I1 在前面，本來應該讀到「舊」的 R3。hazard 的意思是：I2 不守規矩，在 I1 還沒讀之前就搶先寫下去，I1 反而讀到新的 data，結果就錯了。",
+    "這通常發生在有 auto increment（存取後自動把位址加一）的指令上。我們的 MIPS 沒有這種指令。",
+    "而且 MIPS 的 write 永遠在第 5 個 stage，read 在第 2 個 stage。",
+    "I2 比 I1 晚一個 cycle 開始，又在最後一段才寫；I1 早在第 2 段（cycle 2）就讀完了。程式比對：I2 寫在 cycle 6，遠在 I1 讀之後，不可能趕上。",
+    "所以 write after read 在 MIPS 不可能發生。",
+    "再來是 write after write（WAW）：I1、I2 都寫同一個 register。照程式的意思，最後留下來的應該是 I2（比較新）的值。",
+    "舉例：I1 寫 5、I2 寫 6，答案應該是 6。如果 6 搶先寫、5 後寫，最後變成 5，就錯了。",
+    "MIPS 會發生嗎？不會。大家都在第 5 個 stage 寫，I1 又永遠比 I2 早一個 cycle，所以 I1 一定先寫（cycle 5），I2 後寫（cycle 6），順序不會顛倒。"
+   ]
+  },
+  {
+   "title": "下課：發考卷、提醒複習",
+   "scene": null,
+   "points": [
+    {
+     "t": 2171,
+     "text": "老師提醒回去複習 single cycle 與 pipeline 的整體策略，後面會有比較複雜的條件。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "pipeline 對單一指令的 latency 與整體 throughput 有什麼影響？",
+   "opts": [
+    "latency 不會縮短，throughput 增加",
+    "latency 縮短，throughput 不變",
+    "兩者都增加",
+    "兩者都縮短"
+   ],
+   "ans": "latency 不會縮短，throughput 增加",
+   "why": "每個指令還是要走 5 段；但穩定後每個 cycle 完成一個指令。"
+  },
+  {
+   "q": "pipeline 的 clock period 由什麼決定？",
+   "opts": [
+    "最長（最慢）的那個 stage",
+    "最短的 stage",
+    "五個 stage 的平均",
+    "pipeline register 的數量"
+   ],
+   "ans": "最長（最慢）的那個 stage",
+   "why": "短的段做完也要等最慢的段，所以切 stage 要盡量 balance。"
+  },
+  {
+   "q": "若 instruction memory 與 data memory 合成一塊，lw 後面接三個指令時，哪個 cycle 會發生 structural hazard？",
+   "opts": [
+    "cycle 4",
+    "cycle 2",
+    "cycle 3",
+    "cycle 5"
+   ],
+   "ans": "cycle 4",
+   "why": "lw 的 MEM 在 cycle 4，第 4 個指令的 IF 也在 cycle 4，兩者搶同一塊 memory。"
+  },
+  {
+   "q": "sub $2, $1, $3 之後依序是 and、or、add、sw 都讀 $2（無 forwarding、register file 前半寫後半讀），哪幾個會讀到舊的 $2？",
+   "opts": [
+    "and、or",
+    "and、or、add",
+    "只有 and",
+    "四個都會"
+   ],
+   "ans": "and、or",
+   "why": "sub 在 cycle 5 寫回；and、or 在 cycle 3、4 讀；add 在 cycle 5 靠 internal forwarding 讀到新值；sw 在 cycle 6。"
+  },
+  {
+   "q": "下列哪一種 data hazard 會在 MIPS 五級 pipeline 中發生？",
+   "opts": [
+    "read after write（RAW）",
+    "write after read（WAR）",
+    "write after write（WAW）",
+    "三種都會"
+   ],
+   "ans": "read after write（RAW）",
+   "why": "MIPS 讀在第 2 段、寫一律在第 5 段且後者晚一個 cycle，所以 WAR、WAW 不會發生。"
+  },
+  {
+   "q": "哪一種 data hazard 沒辦法只靠 forwarding 解決、必須 stall？",
+   "opts": [
+    "前一個是 load，下一個馬上讀它載入的 register",
+    "前一個是 R-type，下一個馬上讀它的結果",
+    "兩個指令都只讀同一個 register",
+    "前一個是 sw"
+   ],
+   "ans": "前一個是 load，下一個馬上讀它載入的 register",
+   "why": "load 的資料要 MEM 讀完才有，下一個指令在 EX 就要用，真的還沒出來。"
+  }
+ ]
+}

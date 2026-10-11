@@ -1,0 +1,641 @@
+{
+ "video": "XtcJtp7n4o8",
+ "label": "黃婷婷教授計算機結構_第19A講 Pipelining",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習：single cycle → pipeline，latency 與 throughput",
+   "scene": "ppA-19a-review",
+   "points": [
+    {
+     "t": 18,
+     "text": "single cycle：一個 instruction 一個 cycle 全部做完，很多 resource 大部分時間閒著；pipeline 把工作切成 stage。"
+    },
+    {
+     "t": 82,
+     "text": "pipelined datapath 最重要是加 pipeline register：5 個 stage 加 4 個；clock cycle 變短。"
+    },
+    {
+     "t": 115,
+     "text": "pipeline 不能改善 latency（還是要 5 段），加快的是 throughput；control 在 decode 產生後往下傳。"
+    }
+   ],
+   "cues": [
+    18.1,
+    22.3,
+    56.4,
+    61.2,
+    82,
+    91.8,
+    98.3,
+    115.3,
+    128.9,
+    135.6,
+    178.4
+   ],
+   "explain": [
+    "今天繼續 pipeline。簡單講，pipeline 是一種 high performance 的設計：讓很多 instruction 在同一個時間一起做。",
+    "先回想 single cycle（單週期）：一個 instruction 在一個 clock cycle 裡全部執行完畢，下一個才進來。那條長長的藍色方塊就是「一個 cycle 做完全部」。",
+    "可是在這一個長 cycle 裡，前面、後面那些硬體大部分時間其實不需要被佔著，只是在等。畫面上灰掉的段是示意：同一時間只有一段在忙。",
+    "所以改用 pipeline implementation（管線化實作）：把要做的事切成好幾個 stage，讓不同的指令錯開，各用各的段。下面的表格每列一個 instruction，往右是時間。",
+    "pipeline 的 datapath 最重要的是：在 stage 之間加 pipeline register（存放每段結果的暫存器）。",
+    "切成 5 個 stage，中間就要加 4 個 pipeline register。程式數了一下，剛好 4 個。",
+    "這樣每個 clock cycle 只做一段，cycle 就比較短：每段做完把東西存起來，下一個 clock 再做下一段。datapath 只要做這樣簡單的修改。",
+    "老師問：pipeline 能改善 response time，也就是 latency（一個指令從開始到完成的時間）嗎？不行，每個指令還是要經過 5 個 stage（紅色箭頭）。",
+    "它加速的是 throughput：單位時間可以完成的工作變多。穩定之後每個 cycle 都有一個指令完成（金色格子）。",
+    "那 control 呢？和 single cycle 一樣可以 decode 出 control signal，但它不是一次用完，因為指令要經過很多個 stage。",
+    "所以在 decode 那段一次產生全部的 control signal，然後隨著 pipeline 一段一段往下傳（EX、M、WB 三組各自到它要用的那段）。"
+   ]
+  },
+  {
+   "title": "五個 stage 與三種 hazard",
+   "scene": "ppA-19a-five",
+   "points": [
+    {
+     "t": 212,
+     "text": "MIPS pipeline 五段：IF、ID（同時 register access）、EX（ALU 運算或算位址）、MEM、WB。"
+    },
+    {
+     "t": 297,
+     "text": "每個 instruction 晚前一個一步進來，同一時間可以執行 5 個 → throughput 加快。"
+    },
+    {
+     "t": 325,
+     "text": "三種 hazard：structural（已用「同資源同一段」解決）、data 與 control（指令之間的 dependency）；dependency 一定牽涉 write；control hazard 只好猜。"
+    }
+   ],
+   "cues": [
+    212.5,
+    245.7,
+    257.7,
+    273.4,
+    289.2,
+    291.7,
+    297.4,
+    320.3,
+    324.8,
+    334.3,
+    337.2,
+    388.1,
+    412.6
+   ],
+   "explain": [
+    "MIPS 的 pipeline 分成幾個 stage？五個。老師強調一定要記得，不然後面沒辦法算。",
+    "第一段：instruction fetch，抓指令。",
+    "第二段：instruction decode。decode 的同時就做 register access，因為指令一抓出來，rs、rt、rd 是哪幾個 register 都知道了。",
+    "第三段：execution。用 ALU 運算：R-type 做加減這些；load、store 則在這裡算 memory address。",
+    "第四段：memory access，讀或寫資料記憶體。",
+    "第五段：write back，把資料寫回 register file。",
+    "如果一切順利：第一個 instruction 到第二段時，第一段的 resource 空出來，第二個就進來；每個都比前一個晚一步。",
+    "這樣同一個時間可以執行 5 個 instruction，加快 throughput。",
+    "但要注意會產生 hazard，有三種：structural hazard、data hazard、control hazard。",
+    "structural hazard（兩個指令搶同一個硬體）用我們的方法就能解決：同一個資源都在同一段用。",
+    "data hazard 和 control hazard，主要是因為 instruction 和 instruction 之間有 dependency（相依關係）。",
+    "什麼情況才有 dependency 的問題？如果兩個指令都只是讀同一個 register，沒關係，讀不會改變結果。一定要牽涉到 write（寫），因為寫會改變 state（狀態），沒排好順序就會出錯。",
+    "control hazard：一個 branch 才走到第二段，就得 fetch 下一個 instruction，可是還不知道要不要跳，下一個是誰也不知道。為了讓 pipeline 保持滿的，只好先猜一個；猜對很好，猜錯就要處理。"
+   ]
+  },
+  {
+   "title": "structural hazard 複習：同一塊 memory",
+   "scene": "ppA-19a-struct",
+   "points": [
+    {
+     "t": 443,
+     "text": "structural hazard：兩個 instruction 同時搶同一個 resource。"
+    },
+    {
+     "t": 493,
+     "text": "例：若 data memory 與 instruction memory 是同一塊，cycle 4 時第 1 個在 MEM、第 4 個在 IF → 衝突；解法是每個 stage 用不同的 resource。"
+    }
+   ],
+   "cues": [
+    443.3,
+    480.6,
+    492.8,
+    518.1,
+    532.2,
+    544.4
+   ],
+   "explain": [
+    "再看一下 structural hazard，這是已經解決的那一種。",
+    "同學回答：structural hazard 就是兩個 instruction 同時要搶同一個 resource。",
+    "舉例：第 1 個指令在第四段要 access data memory；同一時間，第 4 個指令在第一段要做 instruction fetch。",
+    "如果 data memory 和 instruction memory 是同一塊 memory，那 cycle 4 這兩個就打架了，這叫 structural hazard。程式找出衝突就在 cycle 4。",
+    "解法很簡單：讓每一個 stage 都用不同的 resource（例如記憶體分成 IM、DM 兩塊）。程式再檢查一次，沒有衝突了。",
+    "而且後一個指令永遠晚一個 cycle：你用完就給我用，大家就不會打架。"
+   ]
+  },
+  {
+   "title": "data hazard：sub 寫 $2，後面三個讀錯",
+   "scene": "ppA-19a-dep",
+   "points": [
+    {
+     "t": 571,
+     "text": "例（課本）：sub $2 之後 and、or、add、sw 都讀 $2；sub 到 cycle 5 才寫回。"
+    },
+    {
+     "t": 653,
+     "text": "and 在 cycle 3、or 在 cycle 4 讀都還沒寫進去；add 在 cycle 5 讀時 sub 正在寫 → 不靠任何技巧時三個都拿不到新值，只有 cycle 6 的 sw 正確。"
+    }
+   ],
+   "cues": [
+    577.8,
+    586.9,
+    592.2,
+    615.6,
+    628.5,
+    653.3,
+    685.3,
+    695.1,
+    713.8,
+    730.5
+   ],
+   "explain": [
+    "structural hazard 複習完了，接著看 data hazard。用課本這個例子來看。",
+    "第一個 instruction（sub）要把結果寫到 register 2（$2）。",
+    "後面緊接著好多個 instruction（and、or、add、sw）都要讀 register 2。到底誰會讀到正確的資料？",
+    "看時間：第一個從 cycle 1 開始，後面每個晚一個 cycle，各自走 IF、ID、EX、MEM、WB。",
+    "sub 要到第 5 個 cycle（它的第五段）才會把結果寫回 register 2。",
+    "看第二個 instruction（and）：它在 cycle 3 做 register access 時，sub 還沒寫進去，所以拿到的是舊的、錯的資料。可是照程式的意思，它應該拿到新的值。",
+    "再看晚兩個的（or）：它在 cycle 4 讀，也還沒寫進去。",
+    "再下一個（add）在 cycle 5 讀，這時 sub 正在寫。到底寫進去了沒？",
+    "老師的結論：在不靠任何特別設計的情況下，這三個（cycle 3、4、5 讀的）都拿不到正確資料；只有 cycle 6 讀的 sw 是對的。這都是 data dependence 造成的。",
+    "剛才看到的只是其中一種 hazard，其實有很多種，下一段來分類。"
+   ]
+  },
+  {
+   "title": "read after write：MIPS 會發生",
+   "scene": "ppA-19a-raw",
+   "points": [
+    {
+     "t": 736,
+     "text": "read after write（RAW）：前面的指令 write、後面的 read；hazard 是 write 還沒寫進去就先 read。"
+    },
+    {
+     "t": 817,
+     "text": "MIPS 會發生 RAW（剛才 sub $2 的例子就是）。"
+    }
+   ],
+   "cues": [
+    736.7,
+    759.3,
+    783.1,
+    817,
+    841.1
+   ],
+   "explain": [
+    "第一種叫 read after write（RAW）。老師說不要死背，看名字就懂。",
+    "read after write：前面那個 instruction 是 write，後面那個是 read，排列就是上寫、下讀。",
+    "正確的順序是：write 寫完之後，我才去 read。hazard 就是 write 還沒寫進去，read 就先讀了，讀到舊的。",
+    "老師問：我們的 MIPS 會不會產生這種 hazard？",
+    "會！剛才不是已經示範了嗎？sub 要 write $2，後面馬上就要 read，結果三個都拿到錯誤的資料。"
+   ]
+  },
+  {
+   "title": "WAR、WAW 不會發生在 MIPS",
+   "scene": "ppA-19a-warwaw",
+   "points": [
+    {
+     "t": 854,
+     "text": "WAR：前面 read、後面 write；hazard 是後面的搶先寫、把舊資料蓋掉（auto increment 類指令才有）。MIPS 寫在第 5 段、讀在第 2 段，不會發生。"
+    },
+    {
+     "t": 976,
+     "text": "WAW：兩個都寫同一個 register，若後者先寫就錯；MIPS 都在第 5 段寫、前者永遠早一個 cycle，不會發生。"
+    },
+    {
+     "t": 1025,
+     "text": "三種 data hazard 只有 RAW 會發生在 MIPS：operand 在 ID 讀、write 在最後一段，讓 WAR、WAW 不可能發生。"
+    }
+   ],
+   "cues": [
+    854.4,
+    878.1,
+    904.2,
+    916.4,
+    939.5,
+    976.2,
+    981.3,
+    987.5,
+    995,
+    1025.3,
+    1034.6,
+    1116.2
+   ],
+   "explain": [
+    "再來第二種：write after read（WAR）。read 在前面的 instruction，write 在後面的 instruction。",
+    "正常應該是：前面的讀完，後面的才去寫。hazard 是：人家還沒讀，後面的就搶先寫下去，把舊資料蓋掉，前面的就讀到錯的。",
+    "像有些指令每讀一次就 auto increment（自動把 index 加一），才會發生這種事。MIPS 沒有這種指令。",
+    "那在 MIPS 的設計裡會不會發生？write 有可能搶到 read 前面嗎？",
+    "不會。後面的 instruction 一定在第 5 段才寫，而且比前一個晚一個 cycle 開始；前一個早在第 2 段就讀完了。程式比對：寫在 cycle 6、讀在 cycle 2，怎麼也趕不上。",
+    "再來第三種：write after write（WAW），就是兩個 write。",
+    "照理說第一個寫 3、第二個寫 5，最後的資料應該是 5。",
+    "hazard 是後面的先寫進去：先寫 5 再寫 3，最後變 3，資料就不一樣了。",
+    "MIPS 會不會發生？不會。大家都在第 5 段寫，前一個又永遠比你快一步（cycle 5 對 cycle 6），你沒辦法超越去蓋過它。",
+    "所以三種 data hazard 裡，只有第一種 read after write 會發生在我們的 MIPS，後兩種不會。",
+    "用時間軸的圖看：往右是時間。前面的指令應該先寫，可是下一個已經要拿了，依賴的箭頭往左走（時間倒流），這就是 RAW hazard。",
+    "要避免 WAR、WAW，只要 operand 在 instruction decode 這段就讀出來、write 都放在最後一段做，就絕對不會發生。MIPS 就是這樣設計的。"
+   ]
+  },
+  {
+   "title": "internal forwarding：前半寫、後半讀",
+   "scene": "ppA-19a-intfwd",
+   "points": [
+    {
+     "t": 1143,
+     "text": "三個拿不到 data 的指令中，第三個是在 sub 寫的同一個 cycle 讀。"
+    },
+    {
+     "t": 1176,
+     "text": "internal forwarding：register file 在 clock 一開始（edge trigger）就寫入，下半個 clock 讀就是新值 → 第三個解決，只剩兩個。"
+    }
+   ],
+   "cues": [
+    1144.2,
+    1146.9,
+    1151.4,
+    1176.2,
+    1188.8,
+    1197.2,
+    1228,
+    1234.2
+   ],
+   "explain": [
+    "什麼叫 internal forwarding？",
+    "剛才看到有三個 instruction 拿不到 data（紅色的格子）。",
+    "其中第三個（add）：sub 在寫的同一個 cycle，它同時要讀。",
+    "解法：把 register file 設計成 clock 一開始就寫進去（edge trigger：時脈上升的那一瞬間寫入）。",
+    "讀的那一邊，clock 一來也開始讀，剛開始讀到的可能是舊的 data。",
+    "可是過了半個 clock，前面已經寫進去了，register 裡就是新的資料，下半個 clock 讀出來的就是正確的。",
+    "所以有 internal forwarding，add 這個 hazard 就解決了。它在同一個 clock cycle 內就完成寫和讀。",
+    "現在還剩下 and、or 這兩個 instruction，怎麼辦？接下來就要解決它們。"
+   ]
+  },
+  {
+   "title": "compiler 插 no-op（軟體解法）",
+   "scene": "ppA-19a-nop",
+   "points": [
+    {
+     "t": 1250,
+     "text": "最簡單的方法：compiler 看到 dependency 就插 no-op，但浪費時間；所以要用 forwarding，另一種情況要 stall。"
+    },
+    {
+     "t": 1335,
+     "text": "software solution：sub 後要用 $2 至少要隔兩個 cycle → 插兩個 nop，共 11 個 cycle；用 hardware forwarding 只要 9 個。"
+    }
+   ],
+   "cues": [
+    1252.4,
+    1257.4,
+    1265.5,
+    1297.5,
+    1315.3,
+    1316.6,
+    1335.2,
+    1343.5,
+    1356.4,
+    1367.6
+   ],
+   "explain": [
+    "有哪些方法可以解決？第一個：compiler insert no-op（編譯器插入「什麼都不做」的指令）。",
+    "受影響的是後面兩個 instruction，它們差兩個 clock cycle 來不及拿到資料。",
+    "那 compiler 看到 dependency，就在那個指令後面插 no-op（no operation，什麼事都不做）。pipeline 裡就是空的，等第一個算好、寫好，距離夠遠了，資料就拿得到。",
+    "這很簡單，用 software 就做得出來，但浪費時間。用 pipeline 就是要加速，有 dependency 就插一堆 no-op，等於白白浪費 clock cycle。",
+    "所以我們要做 forwarding（硬體直接把結果轉送過去）。",
+    "另外還有一種狀況要 stall（停）。所以遇到 data dependency 有兩種處理：forwarding 和 stall，後面會介紹硬體怎麼做。",
+    "先看 software solution。sub 寫 $2，and、or 讀得太早（紅色）。要用到 $2，至少要等兩個 clock cycle。",
+    "and 必須在 cycle 5（sub 寫回的那個 cycle，前半寫、後半讀）才讀得到，所以要往後挪兩個 cycle。",
+    "compiler 就在 sub 後面加兩個 no-op。程式重排：and 的 ID 正好在 cycle 5，讀對了；但總共要 11 個 cycle。",
+    "對照用 hardware forwarding：不用插 nop，9 個 cycle 就做完，省下 2 個。所以我們希望透過 hardware 解決這個問題。"
+   ]
+  },
+  {
+   "title": "forwarding：結果早就算好，放在 pipeline register 裡",
+   "scene": "ppA-19a-fwd",
+   "points": [
+    {
+     "t": 1373,
+     "text": "sub 的結果 cycle 3（EX）就算好，只是規定第 5 段才寫；forwarding 就是直接拿來用。"
+    },
+    {
+     "t": 1449,
+     "text": "要學 forwarding 要知道兩件事：datapath 怎麼改、什麼時候要 forward（control）。"
+    },
+    {
+     "t": 1489,
+     "text": "結果放在 pipeline register：cycle 4 在 EX/MEM，cycle 5 在 MEM/WB；and 從 EX/MEM 拿、or 從 MEM/WB 拿。"
+    }
+   ],
+   "cues": [
+    1373,
+    1379.5,
+    1404.1,
+    1413.8,
+    1440.8,
+    1449.7,
+    1489.3,
+    1504.4,
+    1519.6,
+    1551,
+    1562.2,
+    1640.2,
+    1653.1
+   ],
+   "explain": [
+    "什麼叫 forwarding？再仔細看一下。",
+    "有問題的是 and 和 or：它們 register access 完，在 ALU（EX）這段要用到 $2。",
+    "那 sub 的結果是什麼時候算好的？其實在 cycle 3（EX）就算好了。",
+    "只是我們規定第 5 段才可以 write，所以 cycle 4、cycle 5 它一直都在那邊，只是還沒寫回 register file。",
+    "那就直接拿來用吧！下一個指令要計算時，直接拿這個結果。金色箭頭就是 forwarding：data 已經在那邊，拿出來用就好。",
+    "要學 forwarding 要知道兩件事：第一，因為要 forward，datapath 要怎麼設計；第二，什麼時候要 forward，也就是 control。",
+    "老師問：sub 算完、還沒寫回 register 時，它的資料放在哪裡？丟掉了嗎？",
+    "沒有丟掉，放在 pipeline register 裡面。",
+    "pipeline register 要有名字：在兩段之間畫一條斜線，例如 ID/EX（decode 與 execution 之間）、EX/MEM、MEM/WB。",
+    "在 cycle 4，sub 的結果放在 EX/MEM（execution 與 memory 之間的 pipeline register）。",
+    "到 cycle 5，它還沒寫進 register file，那資料又跑去哪裡了？",
+    "答案：在 MEM/WB（memory 與 write back 之間的 pipeline register），一樣沒有丟掉。",
+    "所以 and 在 cycle 4 要用時，從 EX/MEM 拿；or 在 cycle 5 要用時，從 MEM/WB 拿。每過一個 cycle，資料就往後移一格。"
+   ]
+  },
+  {
+   "title": "forwarding 的 datapath：ALU 前面的 3-to-1 mux",
+   "scene": "ppA-19a-fwdmux",
+   "points": [
+    {
+     "t": 1707,
+     "text": "ALU 的輸入有三種來源：正常從 register file（經 ID/EX）、前一個指令的結果（EX/MEM）、前兩個指令的結果（MEM/WB）→ 每個 ALU 輸入前加一個 3-to-1 mux。"
+    }
+   ],
+   "cues": [
+    1707.6,
+    1720.1,
+    1728,
+    1734.6,
+    1741.8,
+    1798.3,
+    1814.3
+   ],
+   "explain": [
+    "forwarding 的 datapath 要長什麼樣子？這是 EX 段附近的放大圖：左邊 ID/EX，中間 ALU，右邊 EX/MEM、DM、MEM/WB。",
+    "正常狀況：ALU 的資料從前面的 register file 讀出來，經過 ID/EX 送進來。",
+    "如果現在這個 instruction 依賴的是前一個 instruction，那資料在 EX/MEM 這個 pipeline register 裡。",
+    "如果依賴的是前兩個 instruction，它還沒寫回去，資料在 MEM/WB 這邊。",
+    "所以把這兩個地方的資料拉回來，接到 ALU 輸入前面的 mux（多工器）。",
+    "ALU 的每個 input 就有三種狀況：從 register file 讀出來的、從 EX/MEM forward 過來的、從 write back stage（MEM/WB）forward 過來的。",
+    "因此 ALU 的兩個輸入前面，各有一個 3-to-1 的 mux（三選一）。"
+   ]
+  },
+  {
+   "title": "forwarding unit：發出 00 / 10 / 01",
+   "scene": "ppA-19a-fwdunit",
+   "points": [
+    {
+     "t": 1821,
+     "text": "forwarding unit 控制 mux：00 = 正常（register file）、10 = 從 EX/MEM、01 = 從 MEM/WB。"
+    },
+    {
+     "t": 1875,
+     "text": "條件：讀的 rs、rt 和前面指令的 destination 一樣 → 有 dependency；所以 rs、rt 的號碼也要傳到 ID/EX，和 EX/MEM、MEM/WB 的 rd 比對。"
+    }
+   ],
+   "cues": [
+    1821.5,
+    1836.6,
+    1840.3,
+    1842.5,
+    1874.7,
+    1882.9,
+    1910.3,
+    1934.1,
+    1955.1
+   ],
+   "explain": [
+    "forwarding unit 負責 control：它要決定 mux 什麼時候選哪個 input。",
+    "它發出的 control signal：正常狀況是 00，選 register file 讀出來的值。",
+    "如果要從 EX/MEM 這邊 forward，就設 10。",
+    "如果要從 MEM/WB（write back 那邊）forward，就設 01。",
+    "那它怎麼知道什麼時候發 00、什麼時候發 01？要把 condition（條件）找出來。",
+    "要讀的是 rs、rt 這兩個 register；如果前一個指令的 destination 剛好也是 rs 或 rt，就可能有 dependency。",
+    "所以光讀出 rs、rt 的「值」不夠，一定要把 rs、rt 的「號碼」也傳到 ID/EX，交給 forwarding unit，跟要寫回的 rd 比對，一樣就 forward。",
+    "MEM/WB 那一段也要 write back，也有一個 destination，所以 EX/MEM 的 rd 和 MEM/WB 的 rd 都要拿進來比。",
+    "正常狀況也許不需要 forward，資料照樣從 register file 讀出來；但到底讀了哪幾個 register，它的 index（號碼）一定要記下來傳下去。"
+   ]
+  },
+  {
+   "title": "只比 register 號碼夠嗎？還要看 RegWrite",
+   "scene": "ppA-19a-enough",
+   "points": [
+    {
+     "t": 1975,
+     "text": "只比對 rs / rt 與 rd 不夠：每個指令的欄位永遠有值；前一個若不是寫 register 的指令就不能 forward，所以要看 RegWrite。"
+    },
+    {
+     "t": 2134,
+     "text": "forwarding unit 的 input：ID/EX 的 rs、rt；EX/MEM、MEM/WB 的 rd（經 RegDst mux 選出）與 RegWrite；output：ForwardA（rs）、ForwardB（rt），各 00 / 01 / 10。"
+    }
+   ],
+   "cues": [
+    1975.6,
+    1991.1,
+    2036,
+    2053.7,
+    2082.6,
+    2133.9,
+    2196.1,
+    2253.8,
+    2281.8,
+    2296.3
+   ],
+   "explain": [
+    "老師問：只比對 rs、rt 和 rd，這樣夠不夠？",
+    "想法是：我讀的 rs 或 rt，和你要寫回的 rd 一樣，就表示有 data dependency，所以 forward。只檢查這個就夠了嗎？",
+    "不夠！因為不管是哪種指令，rs、rt、rd 這些欄位永遠都會被拿出來，一路傳下來，裡面一定有值。",
+    "假如前一個指令根本不是寫 register 的指令（例如 sw、beq），就算欄位比對剛好一樣，也不該 forward，因為它根本沒有要寫。",
+    "所以還要把 RegWrite（這個指令會不會寫 register）這條線拉給 forwarding unit：RegWrite = 1 時才做比對。",
+    "整理 forwarding unit 需要的 input：ID/EX 裡現在這個指令的 rs、rt；EX/MEM（前一個）的 rd 和 RegWrite；MEM/WB（前兩個）的 rd 和 RegWrite。",
+    "這裡的 rd 是經過 RegDst mux 選出來的：load 取 rt、R-type 取 rd，最後只剩一個 destination。",
+    "得到這些 input 之後，forwarding unit 就發出 control signal，去控制 mux 的 input 從哪裡來。",
+    "因為有 rs、rt 兩個運算元，所以要發兩個 signal：ForwardA 管 rs、ForwardB 管 rt。兩個不一定一樣，例如 rs 依賴前一個、rt 依賴前兩個。",
+    "不依賴誰就選 00；依賴前兩個就選 01；依賴前一個就選 10。"
+   ]
+  },
+  {
+   "title": "確認每條線的用途（課堂問答）",
+   "scene": null,
+   "points": [
+    {
+     "t": 2308,
+     "text": "老師請同學說明圖上每一條線的作用（課堂互動）。"
+    }
+   ]
+  },
+  {
+   "title": "forwarding 的 condition：RegWrite、rd ≠ 0、rd = rs / rt",
+   "scene": "ppA-19a-cond",
+   "points": [
+    {
+     "t": 2377,
+     "text": "EX hazard：EX/MEM.RegWrite 且 EX/MEM.rd ≠ 0 且 EX/MEM.rd = ID/EX.rs → ForwardA = 10。"
+    },
+    {
+     "t": 2511,
+     "text": "MEM hazard：MEM/WB.RegWrite 且 MEM/WB.rd ≠ 0 且 MEM/WB.rd = ID/EX.rs → ForwardA = 01；rt 同理（ForwardB）。"
+    },
+    {
+     "t": 2539,
+     "text": "加上 forwarding 後：and 從 EX/MEM、or 從 MEM/WB、add 靠 internal forwarding，全部不用 stall。"
+    }
+   ],
+   "cues": [
+    2377.1,
+    2399.8,
+    2424.2,
+    2439.6,
+    2464.7,
+    2486.2,
+    2511,
+    2534.4,
+    2539.3,
+    2580.1
+   ],
+   "explain": [
+    "forwarding unit 還要注意哪些東西？把剛才的 condition 仔細寫出來。這些不用背，懂了意思就寫得出來。",
+    "EX/MEM 的 destination（也就是前一個指令要寫的 rd），如果跟我現在要讀的 rs 一樣，就可能要 forward。畫面例子：sub 寫 $2，and 讀 $2。",
+    "MEM/WB 的 rd（前兩個指令要寫的），如果跟我的 rs 或 rt 一樣，也可能要 forward。",
+    "注意：如果那個指令根本不是 write register，就不要 forward。例如前一個是 sw，它的欄位雖然剛好是 $2，但 RegWrite = 0。程式用本章的 forwarding 邏輯算出 ForwardA = 00。",
+    "再來：如果 destination 是 $0 要不要 forward？不用。$0 永遠是 0，寫進去也不會改變，所以 rd ≠ 0 才 forward。程式算出 00。",
+    "寫出來就是 EX hazard 的條件：前一個要 write、destination 不是 0、而且等於我的 rs，就 forward，ForwardA = 10。",
+    "再後面一個 stage（前兩個指令）也一樣：MEM/WB 要 write、destination 不是 0、而且等於我的 rs（或 rt），就 forward，送出 01。畫面例子是 or 的 rt 依賴 sub，ForwardB = 01。",
+    "以上是 rs 的條件；rt 一模一樣，只要把 rs 改成 rt，就得到 ForwardB 的條件。",
+    "做完 forwarding 會變成什麼樣子？在時間圖上：and 從 EX/MEM 拿（前一個 cycle 算好的），or 從 MEM/WB 拿（前兩個 cycle 算好的）。",
+    "畫成時間來看：我在 execution 時，前一個、前兩個 cycle 的結果都送給我；add 在 cycle 5 靠 internal forwarding。程式排程算出全部不用 stall。"
+   ]
+  },
+  {
+   "title": "兩個都要寫同一個 register：forward 最新的",
+   "scene": "ppA-19a-double",
+   "points": [
+    {
+     "t": 2610,
+     "text": "前一個、前兩個都寫 R3，而我要讀 R3：要 forward 最新的（EX/MEM）；兩個都符合時 EX/MEM 優先。"
+    },
+    {
+     "t": 2755,
+     "text": "mux 三個 input：00 正常、01 write back stage（MEM/WB）、10 最新的（EX/MEM）。"
+    },
+    {
+     "t": 2887,
+     "text": "MEM hazard 條件要多加一條：EX hazard 的條件不成立（前一個的 rd 不等於我的 rs）才選 01。"
+    }
+   ],
+   "cues": [
+    2610.7,
+    2635.5,
+    2646.3,
+    2716.6,
+    2725,
+    2738.6,
+    2754.9,
+    2797.6,
+    2825.4,
+    2849,
+    2887,
+    2896.4,
+    2950
+   ],
+   "explain": [
+    "還有一個小小的問題。",
+    "假如前一個指令要寫第 3 號 register，前兩個指令也要寫第 3 號 register。",
+    "而我的 rs 要讀第 3 號 register。兩個都符合 forward 的條件，到底要 forward 誰？",
+    "答案是左邊這個，也就是 EX/MEM（前一個指令）。",
+    "因為照時間的順序，最後寫 R3 的是前一個指令，它的值才是最新的資料。",
+    "所以兩個都要 forward 時，EX/MEM 這個優先；它沒有的時候，才輪到 MEM/WB。課本的例子 add $1, $1, $2 → add $1, $1, $3 → add $1, $1, $4，程式算出 ForwardA = 10。",
+    "整理一下 forwarding logic：ALU 前的 mux 有三個 input，一個是正常的（register file 讀出來的 rs、rt），另外兩個是因為 dependency、還沒寫回的（EX/MEM、MEM/WB）。",
+    "control signal 00、01、10 這樣選：00 選正常的；01 選 write back 那個 stage 的資料；10 選最新的，就是在 memory 那段（EX/MEM）的資料。",
+    "如果 write back 和 memory 兩邊都能 forward，要取 memory 那邊（最新的），不要取到 write back 的。",
+    "寫成 condition：先看前一個指令（在 memory access 那段）是不是 write、destination 不是 0、而且跟我的 rs 一樣，成立就寫 10。",
+    "前兩個指令的條件都一樣，但要再加一個條件。",
+    "加的條件是：前一個的 rd 跟我的 rs 不一樣（EX hazard 不成立）時，才去檢查前兩個，一樣就 forward 01。程式驗證：前一個不寫 R3 時選 01；兩個都寫時仍然是 10。",
+    "所以 forwarding unit 就是在這些 condition 之下，發出 00、01、10 的 control signal，決定 ALU 的 input 是正常來的，還是從哪一個 pipeline register 過來的。"
+   ]
+  },
+  {
+   "title": "下課休息",
+   "scene": null,
+   "points": [
+    {
+     "t": 2973,
+     "text": "老師宣布休息，下一節繼續。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "五級 pipeline 共有幾個 pipeline register？",
+   "opts": [
+    "4",
+    "5",
+    "3",
+    "6"
+   ],
+   "ans": "4",
+   "why": "5 個 stage 之間有 4 個：IF/ID、ID/EX、EX/MEM、MEM/WB。"
+  },
+  {
+   "q": "sub $2, $1, $3 之後立刻接 and $12, $2, $5，and 在 EX 時 sub 的結果放在哪裡？",
+   "opts": [
+    "EX/MEM pipeline register",
+    "MEM/WB pipeline register",
+    "register file",
+    "IF/ID pipeline register"
+   ],
+   "ans": "EX/MEM pipeline register",
+   "why": "sub 在 cycle 3 算好，cycle 4（and 的 EX）時存在 EX/MEM，所以 ForwardA = 10。"
+  },
+  {
+   "q": "若只用 compiler 插 nop 解決 sub $2 之後緊接 and、or 都讀 $2 的 hazard（register file 前半寫後半讀），sub 後面至少要插幾個 nop？",
+   "opts": [
+    "2",
+    "1",
+    "3",
+    "4"
+   ],
+   "ans": "2",
+   "why": "and 的 ID 必須在 sub 的 WB（cycle 5）或之後，原本在 cycle 3，所以要往後挪 2 個 cycle。"
+  },
+  {
+   "q": "forwarding unit 判斷要不要從 EX/MEM forward 給 rs，下列哪個條件「不」需要？",
+   "opts": [
+    "ID/EX.MemRead = 1",
+    "EX/MEM.RegWrite = 1",
+    "EX/MEM.rd ≠ 0",
+    "EX/MEM.rd = ID/EX.rs"
+   ],
+   "ans": "ID/EX.MemRead = 1",
+   "why": "MemRead 是 load-use 的 hazard detection 在看的；forwarding 看 RegWrite、rd ≠ 0、rd = rs。"
+  },
+  {
+   "q": "add $1,$1,$2；add $1,$1,$3；add $1,$1,$4 連續執行，第三個指令的 ForwardA 是多少？",
+   "opts": [
+    "10",
+    "01",
+    "00",
+    "11"
+   ],
+   "ans": "10",
+   "why": "EX/MEM 和 MEM/WB 都要寫 $1，要用最新的 EX/MEM（double data hazard），所以是 10。"
+  },
+  {
+   "q": "ForwardA = 01 代表 ALU 第一個運算元來自哪裡？",
+   "opts": [
+    "MEM/WB（前兩個指令的結果）",
+    "EX/MEM（前一個指令的結果）",
+    "register file",
+    "sign-extend 的立即值"
+   ],
+   "ans": "MEM/WB（前兩個指令的結果）",
+   "why": "00 = register file、10 = EX/MEM、01 = MEM/WB。"
+  }
+ ]
+}

@@ -675,6 +675,3006 @@ export default function (ctx) {
   // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
   const K = kit(ctx);
   const FRAG = [];
+  // ═══ ppA.js ═══
+  {
+const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
+const { ghostBox, tint, relabel } = P;
+// labels never wrap by default (nowrap): long notes get explicit line breaks at punctuation (~34 字寬)
+const WD = (ch) => (ch.charCodeAt(0) < 256 ? 0.55 : 1);
+function brk(t, max = 36) {
+  t = String(t); let tot = 0; for (const c of t) tot += WD(c); if (tot <= max + 4) return t;
+  const out = []; let line = '', len = 0;
+  for (const c of t) { line += c; len += WD(c); if ((len >= max && /[，；：、。）)→]/.test(c)) || (len >= max + 6 && c === ' ') || len >= max + 10) { out.push(line.trim()); line = ''; len = 0; } }
+  if (line.trim()) out.push(line.trim()); return out.join('\n');
+}
+const wrapL = (l) => { if (l.element.textContent.includes('\n')) Object.assign(l.element.style, { whiteSpace: 'pre-line', textAlign: 'center', fontSize: '11.5px', lineHeight: '1.3' }); return l; };
+const txt = (l, t) => { l.element.textContent = brk(t); wrapL(l); };
+// (kit has no beat: short waits use ctx.beat)
+// ─── 計算機組織 第 4 章（清大 黃婷婷 第17B、18A、19A、19B講 Pipelining）— cued scenes ───
+// 每個 scene = 一串 step 函式；影片講到那一句（notes 的 cue）才執行下一個。
+// 時序圖的每一格、總 cycle 數、forwarding 的 ForwardA/B、hazard detection 的條件、flush 的 penalty、
+// branch predictor 猜錯的次數，全部由程式計算（重用本章的 schedule()、fwdLogic()、predictRun()），
+// 再和老師口述的結果比對，畫面上顯示 ✓／✘。老師沒有講出的運算元（例如 lw $10, 20($1)）取自
+// Patterson & Hennessy 課本同一張圖，畫面標「課本」；自己加的說明圖標「示意」。
+const wt = (tok, ms) => ctx.beat(tok, ms);
+const cap = (a, b = '') => say(a, b);
+const hd = (t, x, y, z = 0) => wrapL(tag(brk(t), 'ptr', x, y, z));
+const hot = (t, x, y, z = 0) => wrapL(tag(brk(t), 'ptr alt', x, y, z));
+const sm = (t, x, y, z = 0) => wrapL(tag(brk(t), 'idx', x, y, z));
+const note = (t, x, y, z = 0) => wrapL(tag(brk(t), 'note', x, y, z));
+const good = (t, x, y, z = 0) => wrapL(tag(brk(t), 'good', x, y, z));
+const bad = (t, x, y, z = 0) => wrapL(tag(brk(t), 'bad', x, y, z));
+const bub = (t, x, y, z = 0) => wrapL(tag(brk(t), 'say', x, y, z));
+const pl = (t, x, y, z = 0) => wrapL(tag(brk(t), '', x, y, z));
+const ok = (b, x, y, t) => { if (!b) log('CHECK FAILED: ' + t, true); return b ? good(t, x, y) : bad(t.replace(/✓/g, '✘'), x, y); };
+const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.ls && typeof o.kill === 'function') return o.kill(); if (typeof o.all === 'function') return gone(o.all()); if (o.element) remove(o); else kill(o); });
+const CAM_G = [[0.6, 3.6, 13.2], [0.6, 3.6, 0]];
+const CAM_D = [[0, 3.2, 13.5], [0, 2.8, 0]];
+const FIVE = ['IF', 'ID', 'EX', 'MEM', 'WB'];
+const COL = { IF: '#4b9ee2', ID: '#9b7ef4', EX: '#dd8238', MEM: '#2fc092', WB: '#e55a9b', idle: '#ece5d6', bub: '#cfc6b6', bad: '#e8b4b4', gold: '#c08a1f', reg: '#6e5f49' };
+function scene(id, title, steps, o = {}) {
+  FRAG.push([id, title, async (tok) => {
+    const c = o.cam || CAM_G; fresh(c[0], c[1]);
+    const S = {};
+    for (const f of steps) { await step(tok); await f(tok, S); }
+  }]);
+}
+
+// ── 時序圖：列 = 指令，欄 = clock cycle；先登記（add / ins），upto(c) 才把 ≤ c 的格子掉下來 ──
+function mkGrid(S, T, o = {}) {
+  const w = o.w || Math.min(0.85, 9.0 / T), x0 = o.x0 ?? -2.9, y0 = o.y0 ?? 5.7, dy = o.dy || 0.62, lx = o.lx ?? -5.0;
+  const g = { T, w, x0, y0, dy, cells: {}, plan: [], labs: {}, ex: [], bands: [] };
+  g.cx = (c) => x0 + (c - 0.5) * w; g.cy = (k) => y0 - k * dy;
+  if (o.head !== false) { for (let c = 1; c <= T; c++) g.ex.push(small(tag(String(c), 'idx', g.cx(c), y0 + 0.62), 9)); g.ex.push(small(tag('clock cycle →', 'idx', lx, y0 + 0.62), 9)); }
+  g.label = (k, text, cls = '') => { if (g.labs[k]) remove(g.labs[k]); g.labs[k] = mono(tag(text, cls, lx, g.cy(k)), 10); return g.labs[k]; };
+  g.cell = (k, c, s, drop = true, shown) => {
+    const key = k + ':' + c; if (g.cells[key]) kill(g.cells[key]);
+    const col = COL[s] || (s === 'nop' || s === 'bubble' ? COL.bub : s === 'flush' ? COL.bad : COL.idle);
+    const m = cube(shown ?? s, col, [w * 0.92, Math.min(0.46, dy * 0.74), 0.5], g.cx(c), g.cy(k), 0, drop ? 0.9 : 0);
+    if (m.userData.lbl) small(m.userData.lbl, w < 0.7 ? 8 : 9);
+    g.cells[key] = m; return m;
+  };
+  // list = [[cycle, stage, shownText?], …]
+  g.add = (k, text, list) => { g.plan = g.plan.filter((p) => p.k !== k || p.done); g.plan.push(...list.map(([c, s, sh]) => ({ k, c, s, sh, done: false }))); if (text != null) g.label(k, text); };
+  g.ins = (k, text, c0, stages = FIVE) => g.add(k, text, stages.map((s, i) => [c0 + i, s]));
+  g.upto = (c, rows) => { for (const p of g.plan) if (!p.done && p.c <= c && (!rows || rows.includes(p.k))) { p.done = true; g.cell(p.k, p.c, p.s, true, p.sh); } };
+  g.row = (k) => g.upto(99, [k]);
+  g.at = (k, c) => g.cells[k + ':' + c];
+  g.band = (c, k0, k1, color = '#c08a1f') => { const h = (k1 - k0 + 1) * dy; const b = ghostBox(color, w, h, 0.7); b.position.set(g.cx(c), g.cy(k0) + dy / 2 - h / 2, 0); g.bands.push(b); return b; };
+  g.unband = () => { g.bands.forEach(kill); g.bands = []; };
+  g.hot = (k, c, color = '#c08a1f') => { const m = g.at(k, c); if (m) glow(m, color); return m; };
+  g.cool = () => Object.values(g.cells).forEach((m) => glow(m, null));
+  g.dropRow = (k) => { for (const key of Object.keys(g.cells)) if (key.startsWith(k + ':')) { kill(g.cells[key]); delete g.cells[key]; } if (g.labs[k]) { remove(g.labs[k]); delete g.labs[k]; } g.plan = g.plan.filter((p) => p.k !== k); };
+  g.rowsArr = () => { const m = {}; g.plan.forEach((p) => (m[p.k] = m[p.k] || []).push([p.c, p.s])); return Object.values(m); };
+  g.all = () => [...Object.values(g.cells), ...Object.values(g.labs), ...g.ex, ...g.bands];
+  return g;
+}
+// rows from the chapter's schedule(): stall cycles shown as the stage the instruction is stuck in
+function schedRows(S0) { return S0.rows.map((r) => (r.ghost ? { text: r.text, ghost: true, cells: [[r.IF, 'IF']] } : { text: r.text, cells: [[r.IF, 'IF'], ...Array.from({ length: r.ID - r.IF - 1 }, (_, j) => [r.IF + 1 + j, 'stall']), [r.ID, 'ID'], [r.EX, 'EX'], [r.MEM, 'MEM'], [r.WB, 'WB']], r })); }
+// structural check: in each cycle, does any stage (resource) appear twice?
+function clashes(rows) { const seen = {}, out = []; for (const r of rows) for (const [c, s] of r) { if (!FIVE.includes(s)) continue; const k = c + s; if (seen[k]) out.push([c, s]); seen[k] = 1; } return out; }
+
+// ── 五級 datapath 的方塊圖：IM → Reg → ALU → DM → Reg（寫回），中間四個 pipeline register ──
+function mkDP(S, o = {}) {
+  const y = o.y ?? 2.0, xs = [-5.6, -2.8, 0, 2.8, 5.6];
+  const units = o.units || ['Instr Mem', 'Reg 讀', 'ALU', 'Data Mem', 'Reg 寫回'];
+  const d = { y, xs, blocks: [], regs: [], chips: [], ex: [], ctlB: {}, rx: (i) => (xs[i] + xs[i + 1]) / 2 };
+  FIVE.forEach((s, i) => { const b = cube(units[i], COL[s], [1.7, 0.85, 0.7], xs[i], y); small(b.userData.lbl, 9); d.blocks.push(b); d.ex.push(hd(s, xs[i], y - 0.85)); });
+  if (o.regs !== false) ['IF/ID', 'ID/EX', 'EX/MEM', 'MEM/WB'].forEach((n, i) => { const r = cube('', COL.reg, [0.24, 1.9, 0.6], d.rx(i), y + 0.1); d.regs.push(r); d.ex.push(small(tag(n, 'idx', d.rx(i), y - 1.2), 9)); });
+  // an instruction chip riding above stage i
+  d.chip = (t, i, col = COL.gold) => { const m = cube(t, col, [1.55, 0.42, 0.5], xs[i], y + 1.35, 0.3); small(m.userData.lbl, 10); d.chips.push(m); return m; };
+  d.go = async (tok, moves, ms = 700) => { const mv = moves.map(([m, i]) => [m, m.position.clone(), V3(i < 0 ? xs[0] - 2.2 : i > 4 ? xs[4] + 2.0 : xs[i], m.position.y, m.position.z)]); await anim(tok, ms, (u) => mv.forEach(([m, a, b]) => m.position.lerpVectors(a, b, u))); };
+  d.drop = (m) => { kill(m); d.chips = d.chips.filter((x) => x !== m); };
+  // control groups (WB / M / EX) carried in pipeline register i (0 = IF/ID … 3 = MEM/WB)
+  d.ctl = (i, groups, vals = {}) => { (d.ctlB[i] || []).forEach(kill); d.ctlB[i] = groups.map((gname, j) => { const m = cube(gname + (vals[gname] ? ' ' + vals[gname] : ''), { WB: '#f2b8d2', M: '#b8ead6', EX: '#f6cfa6' }[gname], [vals[gname] ? 1.1 : 0.6, 0.34, 0.4], d.rx(i), y + 0.65 - j * 0.42, 0.45); small(m.userData.lbl, 9); return m; }); };
+  d.noCtl = () => { Object.values(d.ctlB).forEach((a) => a.forEach(kill)); d.ctlB = {}; };
+  d.hot = (i, on = true) => glow(d.blocks[i], on ? COL.gold : null);
+  d.cool = () => d.blocks.forEach((b) => glow(b, null));
+  d.all = () => [...d.blocks, ...d.regs, ...d.chips, ...d.ex, ...Object.values(d.ctlB).flat()];
+  return d;
+}
+const FW = (a, b, c) => fwdLogic(decodeFU(a), decodeFU(b), decodeFU(c));
+
+// ════════ _GDfZbzFVs0（第17B講：五級對齊、pipelined datapath、lw/sub 逐 cycle、pipelined control、hazard 預告） ════════
+const R4 = (c0) => [[c0, 'IF'], [c0 + 1, 'ID'], [c0 + 2, 'EX'], [c0 + 3, 'WB']];          // R-type 只走 4 段（會出事的版本）
+const R5 = (c0) => [[c0, 'IF'], [c0 + 1, 'ID'], [c0 + 2, 'EX'], [c0 + 3, 'MEM', '空'], [c0 + 4, 'WB']];
+const L5 = (c0) => FIVE.map((s, i) => [c0 + i, s]);
+const CL_BAD = clashes([L5(1), R4(2)]), CL_FIX = clashes([L5(1), R5(2)]);
+scene('ppA-17b-wb', '17B：R-type 提早寫回會和 lw 搶 register file', [
+  async (tok, S) => { // @18.2
+    S.g = mkGrid(S, 9);
+    S.g.add(0, 'lw', L5(1)); S.g.add(1, 'R-type', R4(2)); S.g.row(0); S.g.row(1);
+    S.t1 = hd('R-type 不用讀記憶體：EX 完就寫回（只走 4 段）', 0.9, 2.2);
+    cap('lw 走 5 個 stage，R-type 只走 4 個', 'R-type 晚 lw 一個 cycle 進來');
+  },
+  async (tok, S) => { // @21.3
+    S.g.band(5, 0, 1, '#d64545'); S.g.hot(0, 5, '#7a1010'); S.g.hot(1, 5, '#7a1010');
+    S.t2 = ok(CL_BAD.length === 1 && CL_BAD[0][0] === 5, 0.9, 1.5, 'cycle 5：兩個都要寫 register file → 衝突 ✓');
+    cap('lw 第 5 段寫回、R-type 第 4 段寫回', '兩個剛好在 cycle 5 撞在一起');
+  },
+  async (tok, S) => { // @58.7
+    gone(S.t1, S.t2); S.g.unband(); S.g.cool();
+    S.r1 = hot('規則一：同一時間，每個 functional unit 只給一個 instruction 用', 0.9, 2.2);
+    cap('規則一：一個 functional unit 一次只給一個人用', '不然就「打架」');
+  },
+  async (tok, S) => { // @76.6
+    S.r2 = hot('規則二：每個 resource 都在「同一個 stage」使用', 0.9, 1.5);
+    cap('規則二：同一個 resource 一定在同一個 stage 用', '');
+  },
+  async (tok, S) => { // @83.7
+    S.g.band(5, 0, 1, '#d64545');
+    S.t3 = note('lw 在第 5 段用、R-type 在第 4 段用 → 晚一個 cycle 剛好撞上', 0.9, 0.8);
+    cap('你第 4 段用、我第 5 段用', '又剛好差一個 cycle → 打架');
+  },
+  async (tok, S) => { // @96.1
+    gone(S.t3); S.g.unband(); S.g.hot(0, 5, COL.gold);
+    S.t3 = note('write back = 用 register file 的 write port；lw 在第 5 段用它', 0.9, 0.8);
+    cap('write back 要用 register file 的 write port', 'lw 是在第 5 個 stage 用');
+  },
+  async (tok, S) => { // @104.6
+    gone(S.t3); S.g.cool();
+    S.g.add(1, 'R-type', R5(2)); S.g.dropRow(1); S.g.add(1, 'R-type', R5(2)); S.g.row(1);
+    S.g.hot(1, 6, COL.gold);
+    S.t3 = note('R-type 也改成第 5 段才寫：第 4 段（MEM）空著', 0.9, 0.8);
+    cap('R-type 也在第 5 個 stage 寫', '第 4 段空著不做事');
+  },
+  async (tok, S) => { // @110.6
+    gone(S.r1, S.r2); S.g.cool();
+    S.t4 = ok(CL_FIX.length === 0, 0.9, 2.2, '檢查每個 cycle：同一種資源最多一個人用 ✓');
+    cap('錯開一個 cycle，就永遠不會打架', 'lw 在 cycle 5 寫、R-type 在 cycle 6 寫');
+  },
+  async (tok, S) => { // @153.5
+    S.a1 = arrow(V3(S.g.cx(1), S.g.cy(0) - 0.3, 0.4), V3(S.g.cx(2), S.g.cy(1) + 0.3, 0.4), 0xc08a1f);
+    S.t5 = note('後一個 instruction 一定晚一個 cycle：你用完、下一個 cycle 才輪到我', 0.9, 1.5);
+    cap('每個 instruction 都晚一個 cycle 進來', '你用完再給我用');
+  },
+  async (tok, S) => { // @197.9
+    gone(S.t3, S.t4, S.t5);
+    S.t6 = bub('比喻：我晚到一步，卻跳過「洗」直接去搶烘衣機 → 跟你搶同一台', 0.9, 0.8);
+    cap('就像不洗衣服就直接要烘乾', '跳過一段 = 搶先一步 = conflict');
+  },
+  async (tok, S) => { // @211.2
+    gone(S.t6, S.a1);
+    const rows = [L5(1), R5(2), L5(3), L5(4), L5(5)];
+    S.g.add(2, '下一個（示意）', L5(3)); S.g.add(3, '再下一個（示意）', L5(4)); S.g.add(4, '再下一個（示意）', L5(5)); S.g.upto(99);
+    S.t7 = ok(clashes(rows).length === 0, 0.9, 2.2, '5 個 instruction、每段都用固定的資源：沒有任何衝突 ✓');
+    cap('一律晚一個 cycle 進去、同一段用同一個資源', '你永遠在我前面 → 永遠不會打架');
+  },
+  async (tok, S) => { // @258.4
+    gone(S.t7); S.g.hot(1, 5, COL.gold);
+    S.t8 = note('R-type 往後一段：MEM 那格空著（不做 memory access），第 5 個 cycle 才寫回', 0.9, 1.0);
+    cap('把 R-type 往後挪一個 stage 就好', '本來要做 memory access 的那段空著');
+  },
+]);
+
+scene('ppA-17b-five', '17B：sw、beq 也排成五段；pipeline 的圖形表示法', [
+  async (tok, S) => { // @322.5
+    S.g = mkGrid(S, 8);
+    S.g.add(0, 'sw', [[1, 'IF'], [2, 'ID'], [3, 'EX'], [4, 'MEM'], [5, 'WB', '（空）']]); S.g.row(0);
+    S.t = note('store 只有 4 段：最後補一個「假的」write back', 0.9, 2.0);
+    cap('store 只要 4 個 stage', '最後一段放一個假的 write back');
+  },
+  async (tok, S) => { // @330.2
+    S.g.add(1, 'beq', [[2, 'IF'], [3, 'ID'], [4, 'EX'], [5, 'MEM', '（空）'], [6, 'WB', '（空）']]); S.g.row(1);
+    txt(S.t, 'beq 只有 3 段（IF、ID、EX）：MEM、WB 都假裝有');
+    cap('branch equal 只有 3 個 stage', '沒有 memory access、沒有 write back');
+  },
+  async (tok, S) => { // @351.6
+    S.g.add(2, 'R-type', R5(3)); S.g.add(3, 'lw', L5(4)); S.g.upto(99);
+    txt(S.t, '每個 instruction 都走完 IF → ID → EX → MEM → WB 五段');
+    S.t2 = ok(clashes(S.g.rowsArr()).length === 0, 0.9, 1.3, '每個 cycle 每段只有一個 instruction ✓');
+    cap('pipeline datapath 完成', '每個 instruction 都經過這五個 stage');
+  },
+  async (tok, S) => { // @369.9
+    gone(S.t2); S.g.hot(2, 5, COL.gold); S.g.hot(2, 7, COL.gold);
+    txt(S.t, 'R-type：EX 之後其實就能寫，但要跳過 MEM、等到第 5 段才寫');
+    cap('R-type 雖然算完就能寫', '還是要等到第 5 個 stage 才寫 register file');
+  },
+  async (tok, S) => { // @387.1
+    gone(S.g, S.t);
+    S.g = mkGrid(S, 7);
+    const U = ['IM', 'Reg', 'ALU', 'DM', 'Reg'];
+    [0, 1, 2].forEach((k) => S.g.add(k, 'instruction ' + (k + 1), FIVE.map((s, i) => [k + 1 + i, s, U[i]])));
+    S.g.upto(99);
+    S.t = note('圖形表示法：每一列一個 instruction，往右是時間；格子寫的是用到的硬體', 0.9, 2.6);
+    cap('把 pipeline 畫出來：第一個在這裡、第二個在這裡', '往右是 clock cycle');
+  },
+  async (tok, S) => { // @397.9
+    S.g.band(3, 0, 2);
+    S.t2 = hot('cycle 3：第 1 個在用 ALU、第 2 個在讀 register、第 3 個在抓指令', 0.9, 1.9);
+    cap('例如第 3 個 clock cycle', '第一個做 ALU、第二個做 register access');
+  },
+  async (tok, S) => { // @407.0
+    S.t3 = sm('一眼看出：每個 cycle、每個 instruction 在做什麼', 0.9, 1.3);
+    cap('這是一種 graphic representation', '可以看出每一個 cycle 做什麼事');
+  },
+]);
+
+// lw / sub 在 datapath 上一個 cycle 一個 cycle 走（課本的兩個指令）
+const LS = schedule(['lw $10, 20($1)', 'sub $11, $2, $3'].map((t) => parseIns(t)), { fwd: true, br: 'pnt', mem1: false });
+scene('ppA-17b-lwsub', '17B：lw 與 sub 一個 cycle 一個 cycle 走過 datapath', [
+  async (tok, S) => { // @414.1
+    S.d = mkDP(S);
+    S.c = code(['lw  $10, 20($1)', 'sub $11, $2, $3'], -1.2, 6.5, 0.5);
+    S.k = sm('（運算元是課本的例子）', 3.2, 6.5);
+    S.cy = hot('', 4.6, 5.6);
+    cap('用兩個 instruction 看它怎麼跑', 'lw 後面接 sub');
+  },
+  async (tok, S) => { // @423.1
+    txt(S.cy, 'cycle 1'); S.c.hl(0);
+    S.lw = S.d.chip('lw', 0); S.d.hot(0);
+    cap('cycle 1：lw 做 instruction fetch', '用 PC 到 instruction memory 抓指令');
+  },
+  async (tok, S) => { // @428.2
+    txt(S.cy, 'cycle 2'); S.d.cool();
+    await S.d.go(tok, [[S.lw, 1]]);
+    S.sub = S.d.chip('sub', 0, '#4b9ee2'); S.d.hot(0); S.d.hot(1);
+    cap('cycle 2：lw 讀 register（decode）', 'IF 空出來了 → sub 進來做 fetch');
+  },
+  async (tok, S) => { // @445.5
+    S.n1 = note('同一個 cycle：lw 在用 Reg、sub 在用 IM，各用各的硬體', 0, 4.9);
+    cap('注意：這兩個是分開的', '各自用不同的資源');
+  },
+  async (tok, S) => { // @485.0
+    gone(S.n1); glow(S.d.regs[0], COL.gold);
+    S.n1 = note('lw 的指令放在 IF/ID 這個 pipeline register 裡', S.d.rx(0), 4.9);
+    cap('cycle 2 時，lw 的指令在哪裡？', '在 pipeline register（IF/ID）裡面');
+  },
+  async (tok, S) => { // @491.0
+    txt(S.n1, 'clock cycle 結束的那一下：新內容「啪」寫進去，舊的被蓋掉');
+    S.d.regs.forEach((r) => glow(r, COL.gold));
+    cap('什麼時候寫進去？end of clock cycle', '新的寫進去，舊的已經用完就蓋掉');
+  },
+  async (tok, S) => { // @509.7
+    gone(S.n1); S.d.regs.forEach((r) => glow(r, null)); S.d.cool(); txt(S.cy, 'cycle 3');
+    await S.d.go(tok, [[S.lw, 2], [S.sub, 1]]); S.d.hot(2); S.d.hot(1);
+    S.n1 = note('lw：ALU 算位址 $1 + 20（sign-extend 的 20）', 0, 4.9);
+    S.n2 = note('sub：讀出 rs、rt（$2、$3）', -2.8, 0.2);
+    cap('cycle 3：lw 在 ALU 算 memory 位址', 'sub 去做 register access');
+  },
+  async (tok, S) => { // @543.4
+    gone(S.n1, S.n2); S.d.cool(); txt(S.cy, 'cycle 4');
+    await S.d.go(tok, [[S.lw, 3], [S.sub, 2]]); S.d.hot(3); S.d.hot(2);
+    S.n1 = note('lw：讀 data memory', 2.8, 4.9); S.n2 = note('sub：ALU 做 $2 − $3', 0, 0.2);
+    cap('cycle 4：lw 讀 memory', 'sub 在 ALU 做減法');
+  },
+  async (tok, S) => { // @563.5
+    gone(S.n1, S.n2); S.d.cool(); txt(S.cy, 'cycle 5');
+    await S.d.go(tok, [[S.lw, 4], [S.sub, 3]]); S.d.hot(4);
+    S.n1 = note('lw：寫回 $10（第 5 段）', 5.0, 4.9);
+    cap('cycle 5：lw 做 write back', '把讀到的資料寫回 $10');
+  },
+  async (tok, S) => { // @576.1
+    S.n2 = bub('sub 的結果其實 cycle 3 就算好了，可不可以現在就寫？', 1.4, 0.2);
+    cap('sub 的 data 早就算完了', '理論上下一個 cycle 就能寫回……');
+  },
+  async (tok, S) => { // @598.2
+    txt(S.n2, '不行：要在同一個 stage（第 5 段）才寫 → sub 在 MEM 這段什麼都不做');
+    glow(S.d.blocks[3], '#555555');
+    cap('不可以：要在第 5 個 stage 才寫', '所以 sub 在第 4 段不做任何事');
+  },
+  async (tok, S) => { // @610.2
+    gone(S.n1, S.n2); S.d.cool(); txt(S.cy, 'cycle 6');
+    S.d.drop(S.lw); await S.d.go(tok, [[S.sub, 4]]); S.d.hot(4);
+    S.n1 = note('sub：第 5 段才寫回 $11，用 register file 的 write port', 5.0, 4.9);
+    S.n2 = ok(LS.total === 6 && LS.stalls === 0, 0.6, 0.2, '兩個 instruction：2 + 4 = 6 個 cycle 跑完 ✓');
+    cap('cycle 6：sub 才寫回', '這時候才輪到它用 register 的 write port');
+  },
+], { cam: CAM_D });
+
+scene('ppA-17b-quiz', '17B：小問答：R-type 什麼時候寫回？', [
+  async (tok, S) => { // @639.5
+    S.g = mkGrid(S, 8);
+    S.g.add(0, 'lw', L5(1)); S.g.add(1, 'R-type', R5(2)); S.g.upto(99); S.g.hot(1, 6, COL.gold);
+    S.t = hot('問：R-type 的 write back 在第幾段？答：第 5 段，要和 lw 一致', 0.9, 2.2);
+    cap('R-type 的 write back 什麼時候寫？', '第五個 stage，跟 lw 一致');
+  },
+  async (tok, S) => { // @651.1
+    S.t2 = note('所有的 instruction：同一個 stage 做同一種事', 0.9, 1.5);
+    cap('所有的 instruction', '都要在同一個 stage 做相同的事情');
+  },
+  async (tok, S) => { // @663.4
+    gone(S.t2); S.g.cool(); S.g.dropRow(1); S.g.add(1, 'R-type（第 4 段寫）', R4(2)); S.g.row(1);
+    S.g.band(5, 0, 1, '#d64545');
+    S.t2 = note('如果 R-type 在第 4 段寫，又緊接在 lw 後面……', 0.9, 1.5);
+    cap('如果 R-type 在第 4 個 stage 寫', '又剛好緊接在 lw 後面？');
+  },
+  async (tok, S) => { // @674.7
+    S.t3 = ok(clashes(S.g.rowsArr()).length === 1, 0.9, 0.8, '兩個人搶同一個 write port → structural hazard ✓');
+    cap('兩個要競爭同一個 write port', '就產生 structural hazard');
+  },
+  async (tok, S) => { // @713.7
+    gone(S.t, S.t2, S.t3);
+    S.t = hot('structural hazard：兩個 instruction 同時搶同一個硬體', 0.9, 2.2);
+    cap('什麼叫 structural hazard？', '就是兩個同時搶一個資源');
+  },
+  async (tok, S) => { // @720.5
+    S.g.unband(); S.g.dropRow(1); S.g.add(1, 'R-type', R5(2)); S.g.row(1);
+    S.t2 = ok(clashes(S.g.rowsArr()).length === 0, 0.9, 1.5, '往後挪一段、不要搶先 → 沒有衝突 ✓');
+    cap('怎麼避免？往後挪一個', '不要那麼快、不要搶先');
+  },
+  async (tok, S) => { // @735.5
+    gone(S.t2);
+    S.t2 = note('一般原則：① 每個 resource 一次只給一個 instruction 用', 0.9, 1.5);
+    S.t3 = note('② 要用那個 resource，一定在相同的 stage 用', 0.9, 0.9);
+    cap('一般的原則', '每個 resource 一次給一個人；而且在相同 stage 用');
+  },
+  async (tok, S) => { // @763.7
+    S.g.hot(0, 5, COL.gold); S.g.hot(1, 6, COL.gold);
+    S.t4 = good('register file 的 write port：一律在第 5 段用', 0.9, 0.3);
+    cap('要用 write port', '就一定在第五個 stage 用');
+  },
+]);
+
+// ── 17B 下半：pipelined control、destination register、五個指令跑一遍、總結、hazard 預告 ──
+// 課本的 control 值：lw → EX 0001（RegDst 0、ALUOp 00、ALUSrc 1）、M 010（MemRead）、WB 11（RegWrite、MemtoReg）
+//                  R-type → EX 1100、M 000、WB 10（老師口述的「11」「10」「010」對得上）
+const CV = { lw: { EX: '0001', M: '010', WB: '11' }, R: { EX: '1100', M: '000', WB: '10' } };
+function ctrlBox(S, x = -2.8, y = 5.0) {
+  S.cb = cube('Control', '#8a7a5c', [1.6, 0.6, 0.6], x, y, 0); small(S.cb.userData.lbl, 10);
+  S.cbl = sm('opcode →', x - 1.7, y);
+  return S.cb;
+}
+scene('ppA-17b-ctl', '17B：pipelined control：signal 一樣，只是用的時間不一樣', [
+  async (tok, S) => { // @777.7
+    S.d = mkDP(S); ctrlBox(S);
+    cap('datapath 講完了，再來看 control', '');
+  },
+  async (tok, S) => { // @785.6
+    S.t = note('single cycle：controller 看 opcode，一次發出所有 control signal', 0.8, 6.3);
+    S.sig = code(['RegDst  ALUSrc  ALUOp', 'MemRead MemWrite Branch', 'RegWrite MemtoReg'], 3.8, 5.3, 0.42);
+    glow(S.cb, COL.gold);
+    cap('single cycle 時：opcode decode 完', '就知道所有的 control signal');
+  },
+  async (tok, S) => { // @804.6
+    S.t2 = sm('例如：要不要寫 register？ALU 做什麼？寫回的資料來自 memory 還是 ALU？', 0, -0.2);
+    cap('control signal 管什麼？', '要不要 write、ALU 做什麼、寫回的資料從哪來');
+  },
+  async (tok, S) => { // @835.7
+    gone(S.t2); glow(S.cb, null);
+    S.t2 = hot('pipeline 時：哪裡一樣？哪裡不一樣？', 0, -0.2);
+    cap('那 pipeline 要怎麼做？', '跟 single cycle 比，哪裡一樣、哪裡不一樣');
+  },
+  async (tok, S) => { // @888.9
+    txt(S.t2, 'R-type 在 EX：ALUSrc = 0（第二個運算元來自 rt）—— 和 single cycle 一樣');
+    S.d.hot(2);
+    cap('R-type 在 EX 要做 ALU 運算', '第二個 operand 從 rt 來：設法和 single cycle 一樣');
+  },
+  async (tok, S) => { // @920.8
+    S.d.cool(); S.d.hot(4);
+    txt(S.t2, 'R-type 在 WB：MemtoReg = 0（寫回 ALU 的結果）—— 也一樣');
+    cap('寫回的資料從哪來？', '選 0：ALU 算出來的 —— 也一樣');
+  },
+  async (tok, S) => { // @935.1
+    S.d.cool();
+    txt(S.t2, '不一樣的只有「什麼時候用」：EX 的在 cycle 3、M 的在 cycle 4、WB 的在 cycle 5');
+    [2, 3, 4].forEach((i) => S.d.hot(i));
+    cap('control signal 其實一樣', '只是用的時間不一樣');
+  },
+  async (tok, S) => { // @962.3
+    S.d.cool();
+    txt(S.t2, '辦法：把 control signal 依照「在哪一段用」分組（grouping）');
+    cap('那怎麼辦？', '把 control signal 做 grouping');
+  },
+  async (tok, S) => { // @975.9
+    txt(S.t, '怎麼產生？和 single cycle 一樣：opcode 查同一張 truth table');
+    glow(S.cb, COL.gold);
+    cap('decode 的方法跟以前一樣', 'opcode 查 truth table，0 或 1 照設');
+  },
+  async (tok, S) => { // @1020.3
+    glow(S.cb, null); S.d.hot(0);
+    txt(S.t2, '問：control signal 什麼時候產生？在第 1 段（IF）知道嗎？不知道');
+    cap('control signal 什麼時候產生？', '第一個 stage 知道嗎？不知道');
+  },
+  async (tok, S) => { // @1058.0
+    S.d.cool(); S.d.hot(1); glow(S.cb, COL.gold);
+    txt(S.t2, '第 2 段（ID）decode 完就全部知道了 —— 但要到後面幾段才用');
+    cap('第二個 stage 結束時就知道了', '可是要到後面的 stage 才用');
+  },
+  async (tok, S) => { // @1110.4
+    S.d.cool(); gone(S.sig);
+    S.d.ctl(1, ['WB', 'M', 'EX']);
+    S.g1 = sm('EX 組 → EX 段用', 1.6, 5.2); S.g2 = sm('M 組 → MEM 段用', 1.6, 4.7); S.g3 = sm('WB 組 → WB 段用', 1.6, 4.2);
+    txt(S.t2, '切成三塊：EX 組、M 組、WB 組');
+    cap('grouping：切成三塊', '一塊負責 EX、一塊 MEM、一塊 WB');
+  },
+  async (tok, S) => { // @1142.5
+    txt(S.t2, '還沒用到的組：放在 pipeline register 裡，跟著往下傳');
+    cap('還沒用到的怎麼辦？', '擺著不要動，繼續往下傳');
+  },
+  async (tok, S) => { // @1199.1
+    gone(S.g1, S.g2, S.g3);
+    S.ins = S.d.chip('instr', 1);
+    await S.d.go(tok, [[S.ins, 2]], 500); S.d.ctl(1, ['WB', 'M', 'EX']); glow(S.d.ctlB[1][2], COL.gold);
+    await wt(tok, 500);
+    await S.d.go(tok, [[S.ins, 3]], 500); S.d.noCtl(); S.d.ctl(2, ['WB', 'M']); glow(S.d.ctlB[2][1], COL.gold);
+    await wt(tok, 500);
+    await S.d.go(tok, [[S.ins, 4]], 500); S.d.noCtl(); S.d.ctl(3, ['WB']); glow(S.d.ctlB[3][0], COL.gold);
+    txt(S.t2, '第 2 段 decode 完 → 存進 ID/EX；EX 用掉 EX 組、MEM 用掉 M 組、WB 用掉最後一組');
+    cap('第 2 段 decode 完，存在 pipeline register', '下一段用 EX 組，再用 M 組，最後用 WB 組');
+  },
+], { cam: CAM_D });
+
+scene('ppA-17b-dst', '17B：要寫哪個 register？destination 也要跟著傳', [
+  async (tok, S) => { // @1271.9
+    S.d = mkDP(S); ctrlBox(S);
+    S.d.ctl(1, ['WB', 'M', 'EX']); S.d.ctl(2, ['WB', 'M']); S.d.ctl(3, ['WB']);
+    S.t = note('pipelined control：用掉的組就不再往下傳', 0.8, 6.3);
+    cap('control 的樣子：main control 分組', '用掉就不再傳，沒用到繼續往下傳');
+  },
+  async (tok, S) => { // @1293.6
+    S.d.hot(4);
+    S.t2 = hot('write back 的時候：要寫到哪一個 register？', 0, -0.2);
+    cap('write back 時要寫到哪一個 register？', '');
+  },
+  async (tok, S) => { // @1306.6
+    txt(S.t2, 'R-type 寫到 rd；lw 寫到 rt');
+    cap('R-type 寫回 rd', 'lw 寫回 rt');
+  },
+  async (tok, S) => { // @1327.4
+    S.d.cool();
+    S.old = S.d.chip('add $5, …', 4); S.nw = S.d.chip('or … ', 1, '#4b9ee2');
+    txt(S.t2, '不只 control signal，destination（要寫哪裡）也要往下傳');
+    cap('不只 control signal', 'destination 也要往下傳');
+  },
+  async (tok, S) => { // @1335.3
+    glow(S.d.regs[0], '#7a1010');
+    S.t3 = bad('IF/ID 裡的 rs、rt、rd 是「新進來的」instruction 的！', -2.8, 4.9);
+    cap('IF/ID 裡的 register 號碼', '是新的 instruction 的，不是要寫回的那個');
+  },
+  async (tok, S) => { // @1378.1
+    S.d.hot(4);
+    txt(S.t2, 'R-type、lw 都在第 5 段才寫回：寫的時候要告訴 register file「寫到哪」');
+    cap('R-type、lw 都在第五個 stage 寫回', '寫的時候要告訴它寫去哪裡');
+  },
+  async (tok, S) => { // @1420.3
+    txt(S.t3, '要用的是「正在寫回的這個」instruction 的 rd（示意：$5），不是 IF/ID 那個');
+    cap('要用正在寫回的這個 instruction 的 rd', '因為是它要寫回去');
+  },
+  async (tok, S) => { // @1441.4
+    glow(S.d.regs[0], null); S.d.cool(); gone(S.t3, S.old, S.nw);
+    S.ins = S.d.chip('add $5, …', 1); S.rd = cube('rd = $5', '#f3d36b', [0.9, 0.36, 0.4], S.d.rx(0), S.d.y - 0.35, 0.45); small(S.rd.userData.lbl, 9);
+    for (let i = 2; i <= 4; i++) {
+      await S.d.go(tok, [[S.ins, i]], 450);
+      await anim(tok, 300, (u) => { S.rd.position.x = S.d.rx(i - 2) + (S.d.rx(i - 1) - S.d.rx(i - 2)) * u; });
+    }
+    txt(S.t2, 'rd 雖然現在用不到，也跟著 instruction 一路在 pipeline register 裡傳到第 5 段');
+    cap('現在用不到，也要帶著跑', '在 pipeline register 一路跟過來');
+  },
+  async (tok, S) => { // @1462.7
+    S.d.hot(4); glow(S.rd, COL.gold);
+    txt(S.t2, 'WB 段：拿跟著跑過來的 rd 當 write register 位址');
+    cap('到了 write back stage', '用跟過來的 destination 寫回');
+  },
+], { cam: CAM_D });
+
+scene('ppA-17b-regdst', '17B：RegDst 的 mux：只帶一個 destination 往下傳', [
+  async (tok, S) => { // @1465.1
+    S.d = mkDP(S);
+    S.t = note('lw 寫回的 register：仍然來自它自己原本的 instruction', 0.8, 6.3);
+    cap('lw 寫回哪裡？', '還是來自它原來的 instruction');
+  },
+  async (tok, S) => { // @1488.6
+    S.mx = cube('mux', '#8a7a5c', [0.6, 0.9, 0.5], S.d.rx(1) + 0.55, 4.3, 0); small(S.mx.userData.lbl, 9);
+    S.i1 = sm('rt →', S.d.rx(1) - 0.5, 4.55); S.i2 = sm('rd →', S.d.rx(1) - 0.5, 4.05);
+    S.t2 = hot('mux：R-type 選 rd；lw 選 rt', 0, -0.2);
+    cap('做一個選擇', 'R-type 的 destination 是 rd，lw 的是 rt');
+  },
+  async (tok, S) => { // @1537.7
+    S.ins = S.d.chip('R-type', 1); S.d.hot(1);
+    txt(S.t2, '例：R-type 在 register access 這段：rs、rt、rd 全都出來了');
+    cap('假如一個 R-type 在做 register access', 'rs、rt、rd 都出來了');
+  },
+  async (tok, S) => { // @1574.2
+    txt(S.t2, 'rd 現在用得到嗎？用不到 —— 第 5 段才寫回');
+    cap('rd 現在用得到嗎？', '用不到，第五個 stage 才用');
+  },
+  async (tok, S) => { // @1586.6
+    S.d.cool(); glow(S.d.regs[1], COL.gold);
+    txt(S.t2, '丟掉的話，等一下就不知道寫去哪 → 留在 pipeline register 裡');
+    cap('丟掉的話待會就不知道寫去哪裡', '所以放在 pipeline register 裡');
+  },
+  async (tok, S) => { // @1611.3
+    glow(S.mx, COL.gold);
+    txt(S.t2, '為什麼有 mux？這時已經知道是 R-type 還是 lw → 只帶一個就好，不必 rt、rd 兩個都帶');
+    cap('為什麼這裡有一個 mux？', '已經知道是哪種指令，帶一個必要的就好');
+  },
+  async (tok, S) => { // @1666.0
+    glow(S.mx, null); glow(S.d.regs[1], null);
+    S.nw = S.d.chip('新 instruction', 1, '#4b9ee2'); await S.d.go(tok, [[S.ins, 4]], 600);
+    S.t3 = note('ID 段讀 register 用的 rs、rt：是現在這個新 instruction 的', -2.8, 4.9);
+    S.t4 = note('WB 段寫回用的 rt / rd：是跟著跑過來的那個', 4.4, 4.9);
+    txt(S.t2, '兩個 rt 不是同一個：一個屬於現在讀的，一個屬於要寫回的');
+    cap('這兩個 rt 是不一樣的東西', '一個是現在讀的，一個是要寫回的');
+  },
+  async (tok, S) => { // @1784.0
+    gone(S.t3, S.t4); relabel(S.ins, 'sw / beq');
+    S.t3 = note('不寫 register 的 instruction：位址照樣傳，但 RegWrite = 0 → 不會寫', 4.0, 4.9);
+    txt(S.t2, '和 single cycle 一樣：沒有 write enable 就不會寫');
+    cap('不是 lw、R-type 的也照樣一路傳', '但沒有 write enable，就不會寫');
+  },
+  async (tok, S) => { // @1828.6
+    gone(S.t3);
+    txt(S.t2, 'datapath with control：destination 位址和 control 一樣 —— 還沒用到就一路傳下去');
+    cap('Datapath with control', 'destination 位址也是：還沒用到就往下傳');
+  },
+], { cam: CAM_D });
+
+// 五個指令（課本）：lw $10、sub $11、and $12、or $13、add $14 —— 每個 cycle 誰在哪一段、control 在哪個 pipeline register
+const P5 = ['lw  $10, 20($1)', 'sub $11, $2, $3', 'and $12, $4, $5', 'or  $13, $6, $7', 'add $14, $8, $9'];
+const P5S = schedule(P5.map((t) => parseIns(t.replace(/\s+/, ' '))), { fwd: true, br: 'pnt', mem1: false });
+const P5N = ['lw', 'sub', 'and', 'or', 'add'], P5C = ['#c08a1f', '#4b9ee2', '#9b7ef4', '#2fc092', '#e55a9b'];
+async function run5(tok, S, c, note1) {
+  txt(S.cy, 'cycle ' + c);
+  const mv = [];
+  for (let k = 0; k < 5; k++) {
+    const st = c - 1 - k;
+    if (st === 0 && !S.ch[k]) S.ch[k] = S.d.chip(P5N[k], 0, P5C[k]);
+    if (st > 4 && S.ch[k]) { S.d.drop(S.ch[k]); S.ch[k] = null; }
+    if (S.ch[k] && st >= 1 && st <= 4) mv.push([S.ch[k], st]);
+    S.c.ls[k].element.textContent = (P5[k] + '   ' + (st < 0 ? '' : st > 4 ? '完成' : FIVE[st])).padEnd(26, ' ');
+  }
+  await S.d.go(tok, mv, 600);
+  S.d.noCtl();
+  for (let k = 0; k < 5; k++) { const st = c - 1 - k, v = k ? CV.R : CV.lw; if (st === 2) S.d.ctl(1, ['WB', 'M', 'EX'], v); if (st === 3) S.d.ctl(2, ['WB', 'M'], v); if (st === 4) S.d.ctl(3, ['WB'], v); }
+}
+scene('ppA-17b-run5', '17B：五個指令跑一遍：control 跟著指令走', [
+  async (tok, S) => { // @1851.2
+    S.d = mkDP(S, { y: 1.6 }); S.ch = [];
+    S.c = code(P5.map((t) => t.padEnd(26, ' ')), -3.0, 6.6, 0.42);
+    S.k = sm('（課本的五個指令）', 2.6, 6.6); S.cy = hot('', 4.8, 5.6);
+    cap('看 lw、sub、and、or、add', '用 pipeline 時 control 怎麼跑');
+  },
+  async (tok, S) => { // @1866.0
+    await run5(tok, S, 1);
+    S.t = note('cycle 1：lw 只做 instruction fetch，還沒有任何 control signal', 0.6, -0.4);
+    cap('cycle 1：lw 在 instruction fetch', '第一段還沒有 control signal');
+  },
+  async (tok, S) => { // @1881.3
+    await run5(tok, S, 2);
+    glow(S.d.blocks[1], COL.gold);
+    txt(S.t, 'cycle 2：lw decode → control 出來了（EX 0001、M 010、WB 11），放進 ID/EX；sub 做 fetch');
+    cap('cycle 2：lw 做 decoding', 'control 放進 pipeline register；sub 做 fetch');
+  },
+  async (tok, S) => { // @1904.0
+    glow(S.d.blocks[1], null);
+    await run5(tok, S, 3);
+    glow(S.d.ctlB[1][2], COL.gold);
+    txt(S.t, 'cycle 3：lw 用 EX 組 —— ALUSrc = 1，第二個運算元選 sign-extend 的 20');
+    cap('cycle 3：lw 用 EX 這組 control', 'ALUSrc 選 1：用 sign-extension 的值');
+  },
+  async (tok, S) => { // @1949.0
+    S.n2 = note('上個 cycle 讀出的 rs、rt、sign-extend 值也都放在 ID/EX', S.d.rx(1), 4.0);
+    cap('上個 cycle 讀出的 data', '也放在這個 pipeline register，下個 stage 才用');
+  },
+  async (tok, S) => { // @1990.8
+    gone(S.n2); glow(S.d.blocks[1], COL.gold);
+    txt(S.t, '同時 sub 在 decode，產生新的 control（11 → 10、010 → 000）—— 會跟 lw 的打架嗎？');
+    cap('sub 同時在 decoding', '新的 control 會不會跟 lw 的打架？');
+  },
+  async (tok, S) => { // @2015.0
+    txt(S.t, '不會：要等 clock edge 一來才寫進 pipeline register，那時 lw 的早就用完了');
+    S.d.regs.forEach((r) => glow(r, COL.gold));
+    cap('不會：clock edge 還沒來', '等 cycle 結束才寫進去，舊的已用完');
+  },
+  async (tok, S) => { // @2103.7
+    S.d.regs.forEach((r) => glow(r, null)); glow(S.d.blocks[1], null);
+    await run5(tok, S, 4);
+    glow(S.d.ctlB[2][1], COL.gold); glow(S.d.ctlB[1][2], COL.gold);
+    txt(S.t, 'cycle 4：lw 用 M 組讀 memory；sub 用 EX 組做減法；and decode；or fetch —— 各做各的');
+    cap('cycle 4：sub 在第三段、lw 在下一段', '新的指令進來 decode，各做各的');
+  },
+  async (tok, S) => { // @2152.7
+    txt(S.t, 'EX 做完之後：lw 只剩 M、WB 兩組往下帶');
+    cap('EX 做完了', '只把 M 跟 WB 的 control 帶過去');
+  },
+  async (tok, S) => { // @2199.1
+    await run5(tok, S, 5);
+    glow(S.d.ctlB[3][0], COL.gold);
+    S.n2 = note('lw 寫回 $10：用跟過來的 destination（rt = 10）', 5.0, 4.0);
+    txt(S.t, 'cycle 5：lw 用 WB 組寫回；sub 在 MEM、and 在 EX、or 在 ID、add 在 IF');
+    cap('cycle 5：lw 寫回 register file', '用剛才選好的 destination（$10）');
+  },
+  async (tok, S) => { // @2235.4
+    gone(S.n2); await run5(tok, S, 6);
+    txt(S.t, 'cycle 6：sub 寫回 $11 …… 每個 instruction 都帶著自己的 control 往前走');
+    cap('cycle 6：繼續往下走', 'sub 寫回 $11');
+  },
+  async (tok, S) => { // @2243.3
+    for (let c = 7; c <= 9; c++) { await run5(tok, S, c); if (c < 9) await wt(tok, 300); }
+    S.d.noCtl();
+    txt(S.t, '');
+    S.n2 = ok(P5S.total === 9 && P5S.stalls === 0, 0.6, -0.4, 'cycle 7、8、9：最後一個 add 在 cycle 9 寫回 → 5 + 4 = 9 個 cycle ✓');
+    cap('第七、八、九個 clock cycle', '五個指令全部做完');
+  },
+], { cam: CAM_D });
+
+// 理想 speedup 與「被最慢的 stage 限制」：示意的段長（單位時間），程式算給你看
+const SPD = (seg, n) => { const one = seg.reduce((a, b) => a + b, 0), clk = Math.max(...seg); return (one * n) / ((n + seg.length - 1) * clk); };
+const BAL = [1, 1, 1, 1, 1], UNB = [2, 1, 2, 2, 1];
+scene('ppA-17b-sum', '17B：總結：pipeline 的基本概念、5 倍加速與最慢的 stage', [
+  async (tok, S) => { // @2257.5
+    S.d = mkDP(S, { y: 3.4 });
+    S.t = note('datapath：就是 single cycle 的 datapath，切好 stage、加上 pipeline register', 0, 5.6);
+    S.d.regs.forEach((r) => glow(r, COL.gold));
+    cap('datapath：基本上就是 single cycle 的', '切好 stage 之後加上 pipeline register');
+  },
+  async (tok, S) => { // @2273.3
+    S.d.regs.forEach((r) => glow(r, null)); S.d.ctl(1, ['WB', 'M', 'EX']); S.d.ctl(2, ['WB', 'M']); S.d.ctl(3, ['WB']);
+    txt(S.t, 'control：第 2 段 decode 完，不馬上用，照「哪一段用」分組往下傳');
+    cap('control：第二段 decode 完', '分好組，一直往下傳到用到的 stage');
+  },
+  async (tok, S) => { // @2294.9
+    S.rd = cube('rd', '#f3d36b', [0.5, 0.34, 0.4], S.d.rx(3), S.d.y - 0.5, 0.45);
+    txt(S.t, '除了 control，destination register 這些「等一下才用」的東西也都往下傳');
+    cap('除了 control signal', 'destination register 這些也都要往下傳');
+  },
+  async (tok, S) => { // @2311.3
+    gone(S.d, S.rd); S.d = null;
+    S.g = mkGrid(S, 9, { y0: 6.2, dy: 0.5 });
+    [0, 1, 2, 3, 4].forEach((k) => S.g.add(k, 'instruction ' + (k + 1), L5(k + 1))); S.g.upto(99);
+    txt(S.t, '基本概念：很多個 step、各用不同的 resource，同時被不同的 instruction 執行');
+    S.t.position.set(0.6, 3.2, 0);
+    cap('pipeline 的基本概念', '多個 step 用不同的 resource，同時執行');
+  },
+  async (tok, S) => { // @2334.8
+    S.t2 = ok(clashes(S.g.rowsArr()).length === 0, 0.6, 2.6, '每個 clock cycle 開始一個新的 instruction、相隔一個 cycle、同段同資源 → 不打架 ✓');
+    cap('每個 clock cycle 開始下一個 instruction', '相隔一個 cycle，所以不會衝突');
+  },
+  async (tok, S) => { // @2355.4
+    gone(S.t2);
+    const n = 1000, sp = SPD(BAL, n);
+    S.t2 = ok(Math.abs(sp - 5) < 0.03, 0.6, 2.6, '示意：5 段一樣長、1000 個指令 → 加速 = 5000 / 1004 ≈ ' + sp.toFixed(2) + ' ≈ 5 倍 ✓');
+    cap('理論上切成五個 stage', '就有五倍的 speedup');
+  },
+  async (tok, S) => { // @2362.0
+    const n = 1000, sp = SPD(UNB, n);
+    S.bars = UNB.map((v, i) => { const b = cube(FIVE[i] + ' ' + v, COL[FIVE[i]], [v * 0.9 - 0.06, 0.4, 0.4], -3.9 + UNB.slice(0, i).reduce((a, x) => a + x, 0) * 0.9 + v * 0.45, 1.7, 0); small(b.userData.lbl, 9); return b; });
+    S.t3 = ok(Math.abs(sp - 4) < 0.03, 0.6, 0.9, '示意：段長 2、1、2、2、1 → clock 要用最長的 2 → 只剩 8 / 2 ≈ ' + sp.toFixed(2) + ' 倍 ✓');
+    cap('但會被最慢的那個 stage 限制', '所以切的時候要盡量 balance');
+  },
+  async (tok, S) => { // @2382.7
+    gone(S.t2, S.t3, S.bars);
+    S.t2 = hot('最麻煩的是 hazard：到目前都假設 instruction 之間沒有依賴', 0.6, 2.2);
+    cap('最麻煩的是 hazard', '到目前都假設沒有 hazard、彼此不依賴');
+  },
+  async (tok, S) => { // @2397.4
+    S.t3 = note('MIPS 好 pipeline：每個指令一樣長（32 bits）、格式簡單、規則', 0.6, 1.4);
+    cap('MIPS 為什麼好做 pipeline？', '指令長度相同、format 簡單');
+  },
+]);
+
+// hazard 預告：beq 的下一個要抓誰？寫 $5 的指令後面馬上讀 $5？
+scene('ppA-17b-hz', '17B：hazard 預告：data hazard 與 branch hazard', [
+  async (tok, S) => { // @2423.1
+    S.t = hot('hazard 兩大類：data hazard、branch（control）hazard', 0.6, 6.6);
+    cap('hazard 要來了', '一種 data hazard，一種 branch hazard');
+  },
+  async (tok, S) => { // @2433.3
+    S.t2 = note('data hazard：資料的 dependency（我要用你算的結果）造成的', 0.6, 5.9);
+    cap('data hazard', '因為 data 的 dependency 造成');
+  },
+  async (tok, S) => { // @2440.7
+    S.t3 = note('control hazard：下一個要執行哪個 instruction？sequential 就是下一個，branch 不一定', 0.6, 5.3);
+    cap('control hazard', '下一個要去哪一個 instruction');
+  },
+  async (tok, S) => { // @2456.0
+    gone(S.t2, S.t3);
+    S.g = mkGrid(S, 7, { y0: 5.0 });
+    S.g.add(0, 'beq', [[1, 'IF'], [2, 'ID'], [3, 'EX', 'EX 比對']]); S.g.add(1, '下一個？', [[2, 'IF', 'IF ?']]); S.g.add(2, '再下一個？', [[3, 'IF', 'IF ?']]);
+    S.g.upto(99); S.g.hot(0, 3, COL.gold);
+    S.t2 = note('beq 到第 3 段才比對完，但每個 cycle 都得 fetch 一個新的', 0.6, 2.6);
+    cap('branch 什麼時候才決定跳去哪？', 'cycle 3 才比對完，下一個早就要進來了');
+  },
+  async (tok, S) => { // @2491.1
+    txt(S.t2, '只好先猜一個：猜 sequential（PC + 4）—— 可能猜錯 → 這就是 hazard');
+    cap('還沒決定就得抓指令', '只好猜 sequential，可能會猜錯');
+  },
+  async (tok, S) => { // @2507.8
+    gone(S.g, S.t2); S.g = mkGrid(S, 7, { y0: 5.0 });
+    S.g.add(0, '寫 $5 的指令', L5(1)); S.g.upto(99); S.g.hot(0, 5, COL.gold);
+    S.t2 = note('第 1 個：算完要寫回 register 5，第 5 個 cycle 才寫', 0.6, 2.6);
+    cap('data hazard：第一個要寫 register 5', '第五個 cycle 才寫回去');
+  },
+  async (tok, S) => { // @2548.7
+    S.g.add(1, '讀 $5 的指令', L5(2)); S.g.row(1); S.g.hot(1, 3, '#7a1010');
+    S.t3 = ok(3 < 5, 0.6, 1.9, '第 2 個在 cycle 3（第 2 段）就要讀 $5，但 $5 cycle 5 才寫 → 讀到舊的 ✓ hazard');
+    cap('下一個在第二個 stage 就要讀了', '還沒寫回去 → hazard 產生');
+  },
+  async (tok, S) => { // @2566.7
+    S.g.add(2, '很後面才讀 $5（示意）', L5(5)); S.g.row(2); S.g.hot(2, 6, COL.gold);
+    S.t4 = ok(6 > 5, 0.6, 1.3, '在 cycle 6 才讀：$5 已經寫好 → 沒有 hazard ✓');
+    cap('如果很後面才讀，就沒有 hazard', '有 dependency 不一定有 hazard，看距離');
+  },
+  async (tok, S) => { // @2595.3
+    gone(S.t2, S.t3, S.t4); S.g.cool();
+    S.g.dropRow(2); S.g.label(0, 'R-type 寫 $5'); S.g.label(1, 'R-type 讀 $5');
+    S.g.hot(0, 3, COL.gold); S.g.hot(1, 4, COL.gold);
+    S.a = arrow(V3(S.g.cx(3) + 0.3, S.g.cy(0) - 0.15, 0.4), V3(S.g.cx(4) - 0.3, S.g.cy(1) + 0.12, 0.4), 0xc08a1f);
+    S.t2 = note('R-type → R-type：結果在 EX（cycle 3）就算好了，只是還沒寫 → 直接送過去：forwarding', 0.6, 2.2);
+    cap('R-type 接 R-type：data 早就算好了', '直接送給你，叫 forwarding');
+  },
+  async (tok, S) => { // @2660.0
+    gone(S.a); S.g.cool(); S.g.label(0, 'lw 載入 $5');
+    S.g.hot(0, 4, '#7a1010'); S.g.hot(1, 4, '#7a1010');
+    txt(S.t2, 'lw → R-type：資料要 MEM（cycle 4）讀完才有，下一個 cycle 4 就要用 → 真的還沒出來 → 只好 stall（停下來等）');
+    cap('load 接 R-type：data 真的還沒出來', '只好 stall，停下來等');
+  },
+  async (tok, S) => { // @2757.1
+    gone(S.g, S.t2);
+    S.g = mkGrid(S, 7, { y0: 5.0 }); S.g.add(0, 'beq', [[1, 'IF'], [2, 'ID'], [3, 'EX']]); S.g.add(1, '等（stall）', [[2, 'nop', '等'], [3, 'nop', '等']]); S.g.add(2, '下一個', [[4, 'IF']]); S.g.upto(99);
+    S.t2 = note('branch hazard 最笨的方法：停下來等決定 —— 但每個 branch 都浪費 cycle（示意）', 0.6, 2.4);
+    cap('branch hazard 最笨的方法：停', '可是停就影響 performance');
+  },
+  async (tok, S) => { // @2799.1
+    S.g.dropRow(1); S.g.dropRow(2); S.g.add(1, 'PC + 4（猜）', [[2, 'IF'], [3, 'ID']]); S.g.add(2, 'PC + 8（猜）', [[3, 'IF']]); S.g.upto(99);
+    txt(S.t2, '所以先猜 sequential（PC + 4）照樣抓；猜錯再 flush 補救 —— 大部分都猜對');
+    cap('所以先猜 sequential，照樣抓下去', '發現錯了再 flush；大部分猜對');
+  },
+]);
+
+// ════════ IO5zhg0flDI（第18A講：複習五段、pipeline register、control；hazard 總覽；兩類 data hazard；RAW / WAR / WAW） ════════
+scene('ppA-18a-intro', '18A：開場：pipeline 會因為 dependency 產生 hazard', [
+  async (tok, S) => { // @17.3
+    S.d = mkDP(S);
+    S.t = note('上次：pipeline overview —— datapath、control 長什麼樣', 0, 5.6);
+    cap('上次介紹了 pipeline overview', 'datapath、control 長什麼樣');
+  },
+  async (tok, S) => { // @19.6
+    S.ch = [0, 1, 2, 3, 4].map((i) => S.d.chip('指令 ' + (5 - i), i, ['#4b9ee2', '#9b7ef4', '#dd8238', '#2fc092', '#e55a9b'][i]));
+    txt(S.t, '理想狀況：程式丟進 pipeline，一步一步順順走過去');
+    cap('理想上把程式丟進 pipeline', '一步一步走過去就好');
+  },
+  async (tok, S) => { // @22.2
+    txt(S.t, '但指令之間有 dependency → 產生 hazard（data hazard、control hazard）');
+    glow(S.ch[1], '#7a1010'); glow(S.ch[2], '#7a1010');
+    cap('但是有 dependency 的關係', '會產生 hazard：data / control hazard');
+  },
+  async (tok, S) => { // @50.1
+    S.ch.forEach((m) => glow(m, null));
+    txt(S.t, '在講 hazard 之前，先把 pipeline 複習一遍');
+    cap('先把前面的 pipeline 再 review 一下', 'high performance 一定用 pipeline');
+  },
+], { cam: CAM_D });
+
+scene('ppA-18a-review', '18A：複習：五個 stage、錯開進場、latency 與 throughput', [
+  async (tok, S) => { // @94.6
+    S.t = note('pipeline：resource 給大家共用 —— 同一時間很多 instruction 一起做', 0.6, 6.7);
+    cap('pipeline：把 resource 給大家共用', '同一個時間很多 instruction 一起做');
+  },
+  async (tok, S) => { // @105.0
+    S.g = mkGrid(S, 9, { y0: 5.7 });
+    S.g.add(0, '第 1 個 instruction', []);
+    txt(S.t, '把 datapath 要做的事切成 5 個 stage');
+    cap('把 datapath 分成很多個 stage', '我們分成 5 個 stage');
+  },
+  async (tok, S) => { // @115.5
+    S.g.add(0, '第 1 個 instruction', [[1, 'IF']]); S.g.row(0);
+    S.s = sm('IF：instruction fetch（抓指令）', 0.6, 2.6);
+    cap('第一個：instruction fetch', '一定要記得');
+  },
+  async (tok, S) => { // @121.2
+    S.g.add(0, null, [[2, 'ID']]); S.g.row(0); txt(S.s, 'ID：register access，同時做 decoding');
+    cap('再來：register access', '同時做 decoding');
+  },
+  async (tok, S) => { // @127.6
+    S.g.add(0, null, [[3, 'EX']]); S.g.row(0); txt(S.s, 'EX：ALU execution —— R-type 加減；load / store 算位址');
+    cap('ALU 的 execution', 'R-type 做加減，load/store 算地址');
+  },
+  async (tok, S) => { // @137.7
+    S.g.add(0, null, [[4, 'MEM']]); S.g.row(0); txt(S.s, 'MEM：memory access —— R-type 不用，但也要「空著」經過');
+    cap('第四個：memory access', 'R-type 沒做也要空在那邊');
+  },
+  async (tok, S) => { // @148.2
+    S.g.add(0, null, [[5, 'WB']]); S.g.row(0); txt(S.s, 'WB：write back —— 寫回 register file');
+    cap('第五個 stage：write back', '寫回 register file');
+  },
+  async (tok, S) => { // @172.4
+    S.g.add(1, '第 2 個', L5(2)); S.g.upto(2); S.g.band(2, 0, 1);
+    txt(S.s, '第 1 個做第 2 段時，第 1 段的 resource 已經 release → 第 2 個進來');
+    cap('第一個做第二個 stage 時', '第一個 stage 的資源空出來，第二個就進來');
+  },
+  async (tok, S) => { // @188.5
+    S.g.unband(); S.g.add(2, '第 3 個', L5(3)); S.g.upto(3); S.g.band(3, 0, 2);
+    txt(S.s, '第 1 個到第 3 段：第 1、2 段都空出來 → 第 3 個進來');
+    cap('第一個到第三個 stage', '第三個 instruction 就可以進來');
+  },
+  async (tok, S) => { // @197.0
+    S.g.unband(); S.g.add(3, '第 4 個', L5(4)); S.g.add(4, '第 5 個', L5(5)); S.g.upto(5); S.g.band(5, 0, 4);
+    const busy = [0, 1, 2, 3, 4].filter((k) => S.g.at(k, 5)).length;
+    gone(S.s); S.s = ok(busy === 5, 0.6, 2.4, 'cycle 5：5 個 instruction 同時在跑，各用不同的 resource ✓');
+    cap('同一個時間最多 5 個 instruction 在跑', '用不同的 resource → performance 增加');
+  },
+  async (tok, S) => { // @207.4
+    S.g.unband(); S.g.upto(99);
+    gone(S.s); S.s = note('每個 instruction 自己還是要走 5 段（latency 一樣是 5 個 cycle）', 0.6, 2.4);
+    S.a = arrow(V3(S.g.cx(1) - 0.35, S.g.cy(0) - 0.35, 0.4), V3(S.g.cx(5) + 0.35, S.g.cy(0) - 0.35, 0.4), 0x7a1010);
+    cap('pipeline 會縮短 response time（latency）嗎？', '不會：丟進去還是要走五個 stage');
+  },
+  async (tok, S) => { // @254.8
+    S.s2 = ok(true, 0.6, 1.7, '但從 cycle 5 開始每個 cycle 都完成一個 → throughput（單位時間完成的工作）增加 ✓');
+    [5, 6, 7, 8, 9].forEach((c, k) => S.g.hot(k, c, COL.gold));
+    cap('pipeline 增加的是 throughput', '單位時間完成的工作變多；latency 不變');
+  },
+]);
+
+scene('ppA-18a-dp', '18A：datapath：加 pipeline register，切得越平衡越好', [
+  async (tok, S) => { // @268.4
+    S.d = mkDP(S, { regs: false });
+    S.t = note('pipeline 的 datapath：直接拿 single cycle 的 datapath 來用', 0, 5.6);
+    cap('再看 datapath', 'single cycle 的 datapath 直接拿來用');
+  },
+  async (tok, S) => { // @283.2
+    txt(S.t, '切成五個 stage 之後，還要加什麼？');
+    cap('切成五個 stage 之後', '要加什麼東西才能完成？');
+  },
+  async (tok, S) => { // @299.6
+    S.regs = ['IF/ID', 'ID/EX', 'EX/MEM', 'MEM/WB'].map((n, i) => { const r = cube('', COL.reg, [0.24, 1.9, 0.6], S.d.rx(i), S.d.y + 0.1, 0, 1.5); S.d.ex.push(small(tag(n, 'idx', S.d.rx(i), S.d.y - 1.2), 9)); return r; });
+    txt(S.t, '每兩個 stage 之間加一個 pipeline register（不能只在心裡切一切）');
+    cap('在每個 stage 之間', '要加一個 pipeline register');
+  },
+  async (tok, S) => { // @313.7
+    S.regs.forEach((r) => glow(r, COL.gold));
+    txt(S.t, '一個 stage 做完，結果先存進 pipeline register（latch）—— 這樣才算一個 cycle 完成');
+    cap('一個 stage 做完先存進 register', '這樣才叫一個 cycle 完成');
+  },
+  async (tok, S) => { // @321.2
+    S.regs.forEach((r) => glow(r, null));
+    txt(S.t, 'cycle 切得比較細：一個 cycle 只做一段');
+    cap('所以 cycle 切得比較細', '');
+  },
+  async (tok, S) => { // @333.6
+    txt(S.t, '要隨便亂切，還是切得 balance 一點？為什麼？');
+    cap('要隨便切，還是盡量 balance？', '為什麼要 balance？');
+  },
+  async (tok, S) => { // @345.9
+    S.len = [1.2, 0.6, 1.0, 1.4, 0.6];
+    S.bars = S.len.map((v, i) => { const b = cube('', COL[FIVE[i]], [0.5, v, 0.4], S.d.xs[i] + 0.6, 4.2 + v / 2, 0); return b; });
+    S.n = sm('（示意：每段需要的時間）', 0, 6.4);
+    txt(S.t, 'clock 被哪一段 dominate？最長的那一段');
+    cap('pipeline 的 clock 被誰決定？', '最長的那個 stage');
+  },
+  async (tok, S) => { // @371.9
+    S.bars.forEach((b, i) => { if (S.len[i] < 1.4) glow(b, '#555555'); });
+    S.w = bub('短的段做完也不能先走：要等最慢的那段做完，大家才一起往下一段', 0, 0.0);
+    cap('短的 stage 做完也不能叫人家先走', '要等最慢的那個做完');
+  },
+  async (tok, S) => { // @389.6
+    S.bars.forEach((b, i) => glow(b, S.len[i] === 1.4 ? COL.gold : null));
+    txt(S.t, 'clock period = 最長那段的時間 → 切的時候盡量 balance');
+    gone(S.w); S.w = ok(Math.max(...S.len) === S.len[3], 0, 0.0, '示意：最長是第 4 段 → 每個 cycle 都得等它 ✓');
+    cap('clock period 被最長的 stage 決定', '所以切的時候盡量 balance');
+  },
+], { cam: CAM_D });
+
+scene('ppA-18a-ctl', '18A：control：在 decode 產生，分組跟著往下傳', [
+  async (tok, S) => { // @406.3
+    S.d = mkDP(S); ctrlBox(S);
+    S.t = note('control：single cycle 時已經介紹過', 0.8, 6.3);
+    cap('control 的部分', '在 single cycle 已經介紹過');
+  },
+  async (tok, S) => { // @418.7
+    S.alu = cube('ALU control', '#a99470', [1.6, 0.5, 0.6], 0, 5.0, 0); small(S.alu.userData.lbl, 9);
+    S.f = sm('funct →', -1.6, 5.0);
+    txt(S.t, '兩個 controller：main controller（看 opcode）＋ ALU controller（看 function code）');
+    cap('兩個 controller', 'main controller 和 ALU controller');
+  },
+  async (tok, S) => { // @430.9
+    glow(S.cb, COL.gold);
+    txt(S.t, '大部分 control signal：知道 opcode（是哪種 instruction）就知道了');
+    cap('知道 opcode 就知道做什麼 instruction', 'source 從哪來、destination 在哪都知道');
+  },
+  async (tok, S) => { // @442.1
+    S.d.hot(1);
+    txt(S.t, 'opcode 在第 2 段（ID）decode 完就知道 → control signal 全部出來');
+    cap('opcode 在第二個 stage 就知道', 'decode 之後 control signal 就知道了');
+  },
+  async (tok, S) => { // @456.8
+    S.d.cool(); [2, 3, 4].forEach((i) => S.d.hot(i));
+    txt(S.t, '可是要在後面幾段才執行 —— 怎麼辦？');
+    cap('可是要在後面才執行', '這些 control signal 要怎麼辦？');
+  },
+  async (tok, S) => { // @468.5
+    S.d.cool(); S.d.ctl(1, ['WB', 'M', 'EX']);
+    txt(S.t, '一起傳下去：decode 時就產生，EX、MEM、WB 各用各的');
+    cap('就一起傳下去', 'decode 產生，後面各段用不同的 signal');
+  },
+  async (tok, S) => { // @485.8
+    S.d.ctl(2, ['WB', 'M']); S.d.ctl(3, ['WB']);
+    txt(S.t, '分成 group，放在 pipeline register 裡一步一步往下傳');
+    cap('分成 group', '在 pipeline register 裡一步一步往下傳');
+  },
+  async (tok, S) => { // @503.1
+    txt(S.t, '懂 single cycle 的 control，pipeline 的 control 就很簡單：decode 產生後往下傳');
+    cap('single cycle 懂了，pipeline 也很簡單', '只是 decode 產生之後往下傳');
+  },
+], { cam: CAM_D });
+
+// hazard 總覽：寫 R5 的指令 vs 下一個讀 R5；beq 在第 4 段才決定
+scene('ppA-18a-why', '18A：hazard 從哪來：往回走的 feedback path', [
+  async (tok, S) => { // @511.2
+    S.t = hot('兩大 hazard：data hazard、control hazard', 0.6, 6.7);
+    cap('接下來講 hazard', '兩大類：data hazard、control hazard');
+  },
+  async (tok, S) => { // @518.4
+    S.d = mkDP(S, { y: 3.6 });
+    S.fb1 = arrow(V3(5.6, 5.0, 0.4), V3(-2.4, 5.0, 0.4), 0xd64545); S.fb1l = sm('WB 寫回 register（往回走）', 1.6, 5.3);
+    S.fb2 = arrow(V3(2.8, 2.4, 0.4), V3(-5.6, 2.4, 0.4), 0xd64545); S.fb2l = sm('branch 決定新的 PC（往回走）', -1.4, 2.1);
+    cap('問題出在 feedback 的路線', '往回頭走的線');
+  },
+  async (tok, S) => { // @527.5
+    gone(S.d, S.fb1, S.fb2, S.fb1l, S.fb2l); S.d = null;
+    S.t2 = note('sequential（single cycle）：一個做完全部寫回，下一個才開始 → 不會有問題', 0.6, 6.1);
+    cap('sequential 執行時', '一個全部做完、寫回了，下一個才開始');
+  },
+  async (tok, S) => { // @542.8
+    S.g = mkGrid(S, 9, { y0: 5.2 });
+    S.g.add(0, '寫 R5', L5(1)); S.g.row(0); S.g.hot(0, 5, COL.gold);
+    txt(S.t2, 'pipeline：寫 register 要到第 5 個 stage');
+    cap('pipeline 時，寫 register', '要第五個 stage 才寫');
+  },
+  async (tok, S) => { // @554.6
+    S.g.add(1, '馬上讀 R5', L5(2)); S.g.row(1); S.g.hot(1, 3, '#7a1010');
+    S.t3 = note('下一個在第 2 段（cycle 3）就要讀 R5；那時寫 R5 的才在 EX', 0.6, 1.6);
+    cap('下一個 instruction 馬上要用 R5', '它讀的時候，前一個還在 execution');
+  },
+  async (tok, S) => { // @586.4
+    S.t4 = ok(3 < 5, 0.6, 1.0, 'R5 還沒寫進去（cycle 5 才寫）→ 讀到舊資料：data hazard ✓');
+    cap('資料不在裡面', '這就是 data hazard 的原因');
+  },
+  async (tok, S) => { // @591.3
+    gone(S.g, S.t3, S.t4); S.g = mkGrid(S, 9, { y0: 5.2 });
+    S.g.add(0, 'beq', [[1, 'IF'], [2, 'ID'], [3, 'EX'], [4, 'MEM', 'MEM 決定']]); S.g.row(0);
+    txt(S.t2, 'control hazard：beq 可能照順序執行，也可能跳去 target');
+    cap('control hazard 也一樣', 'branch equal 可能 sequential，也可能跳');
+  },
+  async (tok, S) => { // @602.6
+    S.g.hot(0, 4, COL.gold);
+    S.t3 = note('這個 datapath 要到第 4 段才決定跳不跳', 0.6, 1.6);
+    cap('什麼時候才能決定？', '可能要到第四個 stage');
+  },
+  async (tok, S) => { // @615.7
+    S.g.add(1, 'PC + 4（猜）', L5(2)); S.g.add(2, 'PC + 8（猜）', L5(3)); S.g.add(3, 'PC + 12（猜）', L5(4)); S.g.upto(4);
+    txt(S.t3, '下一個馬上要進來 → 只好猜：假裝 sequential，PC = PC + 4');
+    cap('下一個馬上要進來', '只好猜：假裝 sequential，PC + 4');
+  },
+  async (tok, S) => { // @627.3
+    [1, 2, 3].forEach((k) => { for (let c = 2; c <= 4; c++) { const m = S.g.at(k, c); if (m) { tint(m, COL.bad); relabel(m, 'flush'); } } });
+    const nGuess = [1, 2, 3].filter((k) => S.g.at(k, k + 1)).length;
+    S.t4 = ok(nGuess === 3, 0.6, 1.0, '真正知道時其實要跳 → 已進來的 3 個全錯，要 flush（沖掉）✓');
+    cap('真正知道時其實要跳', '下面已經執行的都錯了 → flush 沖掉');
+  },
+]);
+
+scene('ppA-18a-2types', '18A：兩大類 data hazard：R-type → 讀、lw → 讀', [
+  async (tok, S) => { // @643.4
+    S.t = hot('data hazard 有兩個 type：R-type 接 R-type、load 接 R-type', 0.6, 6.7);
+    cap('先看 data hazard', '有兩個 type：R 接 R、load 接 R');
+  },
+  async (tok, S) => { // @667.3
+    S.t2 = note('先問：誰會「寫」register？', 0.6, 6.1);
+    cap('先問：誰會寫 register？', '');
+  },
+  async (tok, S) => { // @698.2
+    txt(S.t2, '只有兩類會寫 register file：R-type（加減…）與 load（從 memory 拿東西）');
+    S.g = mkGrid(S, 8, { y0: 5.0 });
+    S.g.add(0, 'R-type（寫）', R5(1)); S.g.add(1, 'lw（寫）', L5(1).map(([c, s]) => [c, s])); S.g.upto(99);
+    S.g.hot(0, 5, COL.gold); S.g.hot(1, 5, COL.gold);
+    cap('會寫 register 的', '只有 R-type 和 load 兩大類');
+  },
+  async (tok, S) => { // @709.5
+    S.g.cool(); S.g.add(2, '讀的人（隨便什麼指令）', L5(2)); S.g.row(2); S.g.hot(2, 3, '#4b9ee2');
+    S.t3 = note('要「讀」的人：所有 register access 都在第 2 段', 0.6, 2.4);
+    cap('要用的人：access register', '全部都在第二個 stage');
+  },
+  async (tok, S) => { // @741.3
+    S.g.hot(0, 3, COL.gold);
+    txt(S.t3, 'R-type 雖然第 5 段才寫，data 其實在第 3 段（EX）就算好了 —— 是我們故意讓它慢慢來');
+    cap('R-type 的 data 什麼時候 ready？', 'execution（第三段）就已經算完了');
+  },
+  async (tok, S) => { // @759.4
+    S.g.cool(); S.g.hot(1, 3, '#7a1010'); S.g.hot(1, 4, COL.gold);
+    txt(S.t3, 'load：在 EX 只算出位址，資料要等 MEM 讀完才真的有');
+    cap('load 在 execution 時知道資料嗎？', '不知道，要等真的 load 完');
+  },
+  async (tok, S) => { // @790.2
+    S.g.cool(); S.g.hot(0, 3, COL.gold);
+    S.t4 = good('第一種：data 已經在那邊，只是沒寫回 → 用 forwarding', 0.6, 1.7);
+    cap('第一種：data 已經在那裡', '只是沒寫回去 → forwarding');
+  },
+  async (tok, S) => { // @798.1
+    S.t5 = bad('第二種：data 真的不在那邊 → 沒有別的方法，只能 stall（停）', 0.6, 1.1);
+    cap('第二種：data 真的不在', '沒有別的方法，只有 stall');
+  },
+  async (tok, S) => { // @824.9
+    txt(S.t, '聽到 data hazard，就要知道是兩大類：一種 forwarding 就能解決、一種只好 stall');
+    cap('data hazard 是兩大類', '一種 forwarding 解決，一種只好 stall');
+  },
+  async (tok, S) => { // @856.1
+    S.t6 = note('還有別的指令會寫 register file 嗎？到目前沒有了', 0.6, 0.4);
+    cap('還有別的 type 會寫 register 嗎？', '到目前好像沒有了');
+  },
+  async (tok, S) => { // @869.8
+    txt(S.t6, '後面接什麼都可以（各式各樣的組合），但「前面寫的人」只有這兩類 → 只要分這兩類');
+    cap('實際上什麼組合都有', '但寫回去的只有兩類，歸類完就這兩種');
+  },
+]);
+
+scene('ppA-18a-three', '18A：三種 hazard 與「等待」這個萬用解', [
+  async (tok, S) => { // @910.6
+    S.t = hot('hazard 有哪些？', 0.6, 6.7);
+    cap('先看一下 hazard 到底有哪些', '');
+  },
+  async (tok, S) => { // @918.8
+    S.h1 = note('① structural hazard：同一個 resource，兩個人搶著用', 0.6, 6.0);
+    cap('還有一個 structural hazard', '同一個 resource 兩個人搶著用');
+  },
+  async (tok, S) => { // @929.6
+    S.h1b = sm('（和 data dependency 沒有關係；data / control hazard 才和指令間的 dependency 有關）', 0.6, 5.5);
+    cap('structural hazard 跟 dependency 無關', '只是不同 instruction 競爭同一個 resource');
+  },
+  async (tok, S) => { // @953.4
+    S.g = mkGrid(S, 8, { y0: 4.6 }); S.g.add(0, '前一個', L5(1)); S.g.add(1, '後一個', L5(2)); S.g.upto(99);
+    S.t2 = ok(clashes(S.g.rowsArr()).length === 0, 0.6, 2.2, '解法：每個 resource 都在同一個 stage 用，又相差一個 cycle → 永遠不衝突 ✓');
+    cap('怎麼解決？大家在同一個 stage 用', '又差一個 cycle → 永遠不會衝突');
+  },
+  async (tok, S) => { // @1007.0
+    S.g.dropRow(1); S.g.add(1, 'R-type 第 4 段寫', R4(2)); S.g.row(1); S.g.band(5, 0, 1, '#d64545');
+    gone(S.t2); S.t2 = ok(clashes(S.g.rowsArr()).length === 1, 0.6, 2.2, '例：lw 後緊接 R-type，R-type 若提前到第 4 段寫 → 撞在 cycle 5 ✓');
+    cap('例如 R-type 第四個 stage 就寫', '剛好接在 lw 後面 → 衝突');
+  },
+  async (tok, S) => { // @1044.9
+    gone(S.g, S.t2);
+    S.h2 = note('② data hazard：要用的 data 還沒 ready，就讀到舊的 —— 不能違反程式的意思', 0.6, 4.6);
+    cap('data hazard：要用時 data 還沒準備好', '不能違反寫程式的意思');
+  },
+  async (tok, S) => { // @1079.9
+    S.h3 = note('③ control hazard：跳去哪都還不知道就得 fetch 下一個 → 只好猜，猜錯就是 hazard', 0.6, 4.0);
+    cap('control hazard', '還不知道跳去哪就要 fetch → 猜，猜錯就麻煩');
+  },
+  async (tok, S) => { // @1096.1
+    S.t3 = hot('解法永遠有一個：wait（等）', 0.6, 3.2);
+    cap('要解決 hazard，永遠可以 wait', '有 dependency 就等你寫回去再做');
+  },
+  async (tok, S) => { // @1109.4
+    S.g = mkGrid(S, 10, { y0: 2.5, dy: 0.55 });
+    // 沒有 internal forwarding 時：讀的人 ID 要在寫的人 WB 之後（cycle 6），IF 只好從 cycle 2 延到 cycle 5
+    const wbCycle = 5, idNeed = wbCycle + 1, ifAt = idNeed - 1, delay = ifAt - 2;
+    S.g.add(0, '寫 R5', L5(1)); S.g.add(1, '讀 R5（等）', [[2, 'nop', '等'], [3, 'nop', '等'], [4, 'nop', '等'], ...L5(ifAt)]); S.g.upto(99);
+    S.t4 = ok(delay === 3, 0.6, -0.4, '等第 5 段寫回後才讀：IF 從 cycle 2 延到 cycle ' + ifAt + ' → 多等 3 個 cycle ✓');
+    cap('等到第五個 stage 寫回去', '可能要等三個 cycle 才去 fetch');
+  },
+  async (tok, S) => { // @1117.7
+    [2, 3, 4].forEach((c) => S.g.hot(1, c, '#7a1010'));
+    txt(S.t3, 'wait 一定能解決，但浪費 cycle —— pipeline 就是要每個 cycle 都有東西出來');
+    cap('wait 永遠可以，但浪費 cycle', 'pipeline 要的是每個 cycle 都有東西出來');
+  },
+]);
+
+// 單一記憶體：lw 在 cycle 4 讀資料、第 4 個指令同時要抓指令
+const MEMR = (s) => (s === 'IF' || s === 'MEM' ? 'memory' : s);
+scene('ppA-18a-mem1', '18A：structural hazard 的例子：只有一個 memory', [
+  async (tok, S) => { // @1131.6
+    S.t = hot('structural hazard 的例子', 0.6, 6.7);
+    cap('structural hazard 也可以用這個例子', '');
+  },
+  async (tok, S) => { // @1138.2
+    S.im = cube('Instruction memory', COL.IF, [2.4, 0.6, 0.6], -2.0, 6.0, 0); S.dm = cube('Data memory', COL.MEM, [2.4, 0.6, 0.6], 2.6, 6.0, 0);
+    small(S.im.userData.lbl, 9); small(S.dm.userData.lbl, 9);
+    txt(S.t, '');
+    S.t2 = note('現在 memory 分成兩塊：instruction memory、data memory', 0.6, 5.2);
+    cap('現在 memory 分成兩塊', 'instruction memory 和 data memory');
+  },
+  async (tok, S) => { // @1147.8
+    gone(S.im, S.dm); S.one = cube('Memory（只有一塊）', '#8a7a5c', [3.6, 0.6, 0.6], 0.3, 6.0, 0); small(S.one.userData.lbl, 9);
+    txt(S.t2, '假如把兩塊變成同一塊……');
+    cap('假如把兩個變成同一塊', '');
+  },
+  async (tok, S) => { // @1154.6
+    S.g = mkGrid(S, 8, { y0: 4.4 });
+    S.g.add(0, 'lw', L5(1)); ['instr 2', 'instr 3', 'instr 4'].forEach((n, k) => S.g.add(k + 1, n, L5(k + 2)));
+    S.g.upto(99);
+    txt(S.t2, '一個在做 data memory access，同時另一個要 instruction fetch，也要用這塊 memory');
+    cap('一個在做 data memory access', '另一個已經要 fetch 指令 → 打架');
+  },
+  async (tok, S) => { // @1185.0
+    const rows = S.g.rowsArr().map((r) => r.map(([c, s]) => [c, MEMR(s)]));
+    const seen = {}; let hit = null; for (const r of rows) for (const [c, s] of r) { if (s !== 'memory') continue; if (seen[c]) hit = c; seen[c] = 1; }
+    S.g.band(hit || 4, 0, 3, '#d64545'); S.g.hot(0, 4, '#7a1010'); S.g.hot(3, 4, '#7a1010');
+    S.t3 = ok(hit === 4, 0.6, 1.4, 'cycle 4：lw 讀資料、instr 4 抓指令，都要用同一塊 memory → structural hazard ✓');
+    cap('往右是時間：第四個 cycle', 'lw 要 data access、第四個要 fetch');
+  },
+  async (tok, S) => { // @1207.3
+    S.g.unband(); S.g.cool(); kill(S.one);
+    S.im = cube('Instruction memory', COL.IF, [2.4, 0.6, 0.6], -2.0, 6.0, 0); S.dm = cube('Data memory', COL.MEM, [2.4, 0.6, 0.6], 2.6, 6.0, 0);
+    small(S.im.userData.lbl, 9); small(S.dm.userData.lbl, 9);
+    gone(S.t3); S.t3 = ok(clashes(S.g.rowsArr()).length === 0, 0.6, 1.4, '拆成兩個 memory：IF 用 IM、MEM 用 DM → cycle 4 不再衝突 ✓');
+    cap('解決方法：拆成兩個 memory', '一個 instruction memory、一個 data memory');
+  },
+  async (tok, S) => { // @1216.7
+    txt(S.t2, '條件：每一個 stage 用的 resource 要不一樣');
+    cap('這就是剛才講的條件', '每一個 stage 用的 resource 要不一樣');
+  },
+]);
+
+// 在 datapath 上看：寫 R5 的指令往前走，後面三個依序讀 R5
+scene('ppA-18a-path', '18A：在 datapath 上看 hazard：誰會讀到錯的 R5？', [
+  async (tok, S) => { // @1236.2
+    S.d = mkDP(S);
+    S.t = note('五段之間，有往回走的 feedback path —— hazard 就從這裡來', 0, 5.6);
+    cap('開始講 data hazard', '先在 datapath 上看');
+  },
+  async (tok, S) => { // @1245.2
+    S.fb1 = arrow(V3(5.6, 4.4, 0.4), V3(-2.4, 4.4, 0.4), 0xd64545); S.fb2 = arrow(V3(2.8, -0.2, 0.4), V3(-5.6, -0.2, 0.4), 0xd64545);
+    cap('分五個 stage', '最主要是這些 feedback path 造成 hazard');
+  },
+  async (tok, S) => { // @1256.5
+    S.br = S.d.chip('beq', 3, '#7a6a52'); glow(S.d.blocks[3], COL.gold);
+    txt(S.t, 'control hazard：這個 beq 要到第 4 段才決定跳不跳');
+    cap('control hazard：到第四個 stage', '才可以決定到底要不要跳');
+  },
+  async (tok, S) => { // @1279.7
+    S.gs = [0, 1, 2].map((i) => S.d.chip('猜的 ' + (3 - i), i, '#bcd8f3'));
+    txt(S.t, '為了 high performance，前面三段早就各有一個 instruction —— 都是猜的');
+    cap('前面這三段裡都已經有 instruction', '都是亂猜進來的');
+  },
+  async (tok, S) => { // @1298.4
+    S.gs.forEach((m) => { tint(m, COL.bad); relabel(m, 'flush'); });
+    txt(S.t, '猜對：繼續；猜錯：這以下全部沖掉（flush），從頭開始');
+    cap('猜對就正常繼續', '猜錯：這以下全部要沖掉、重新開始');
+  },
+  async (tok, S) => { // @1315.8
+    gone(S.br, S.gs); glow(S.d.blocks[3], null); S.d.chips = [];
+    S.p = S.d.chip('寫 R5', 2, COL.gold);
+    txt(S.t, 'data hazard：這個 instruction 執行完（EX），要到第 5 段才寫回 R5');
+    cap('data hazard：我已經 execution 完了', '但要到第五個 stage 才寫回 R5');
+  },
+  async (tok, S) => { // @1344.3
+    S.r1 = S.d.chip('讀 R5（下一個）', 1, '#4b9ee2'); glow(S.d.blocks[1], '#7a1010');
+    S.x1 = bad('下一個在 register access 讀 R5 → 讀不到正確資料', -2.8, 0.2);
+    cap('下一個 instruction 也要讀 R5', '會讀到正確資料嗎？不會');
+  },
+  async (tok, S) => { // @1351.5
+    await S.d.go(tok, [[S.p, 3], [S.r1, 2]]);
+    S.r2 = S.d.chip('讀 R5（下兩個）', 1, '#9b7ef4');
+    txt(S.x1, '寫的人走到 MEM，下兩個在讀 R5 → 也是錯的');
+    cap('我走到下一段，下兩個在讀 R5', '也不會 access 到對的資料');
+  },
+  async (tok, S) => { // @1404.3
+    await S.d.go(tok, [[S.p, 4], [S.r1, 3], [S.r2, 2]]);
+    S.r3 = S.d.chip('讀 R5（下三個）', 1, '#2fc092');
+    glow(S.d.blocks[4], COL.gold);
+    txt(S.x1, '寫的人在 WB「正在寫」，下三個同時在讀 —— 理論上還沒寫進去，也拿不到');
+    cap('我在寫的同時，下三個在讀', '理論上也拿不到正確資料');
+  },
+  async (tok, S) => { // @1430.2
+    S.half = cube('前半 cycle：寫 ｜ 後半 cycle：讀', '#f3d36b', [3.6, 0.42, 0.4], -1.2, -0.6, 0.4); small(S.half.userData.lbl, 9);
+    txt(S.x1, 'internal forwarding：register file 在 clock 前半段（rising edge）寫、後半段才讀 → 下三個讀到新值');
+    tint(S.r3, '#2fc092'); glow(S.r3, '#0f5a3a');
+    cap('internal forwarding：前半段寫、後半段讀', '下三個就讀到正確資料');
+  },
+  async (tok, S) => { // @1479.5
+    glow(S.r1, '#7a1010'); glow(S.r2, '#7a1010');
+    txt(S.t, '結論：下三個 OK；但下一個、下兩個一定讀到錯的（如果它們讀的 source = R5）');
+    cap('所以下三個 OK', '下一個、下兩個一定 access 到錯誤的資料');
+  },
+], { cam: CAM_D });
+
+// 課本：sub $2 之後 and / or / add / sw 都讀 $2 —— 讀的 cycle 由 schedule 算
+const DEP = ['sub $2, $1, $3', 'and $12, $2, $5', 'or $13, $6, $2', 'add $14, $2, $2', 'sw $15, 100($2)'];
+const DEP0 = schedule(DEP.map((t) => parseIns(t)), { fwd: true, br: 'pnt', mem1: false });
+const RD_CYC = DEP0.rows.slice(1, 5).map((r) => r.ID), WB2 = DEP0.rows[0].WB;
+scene('ppA-18a-time', '18A：時序圖：sub $2 寫回之前，誰讀到舊的 $2？', [
+  async (tok, S) => { // @1515.1
+    S.g = mkGrid(S, 9);
+    DEP.forEach((t, k) => S.g.add(k, t, L5(k + 1)));
+    S.k = sm('（課本的例子）', 4.6, 6.9);
+    cap('另外一種表示方法', '意思一樣');
+  },
+  async (tok, S) => { // @1528.3
+    S.g.upto(99);
+    S.t = note('往右是 clock cycle；每列晚一格開始', 0.6, 2.2);
+    cap('這是時間：clock cycle', '每個 instruction 晚一個 cycle');
+  },
+  async (tok, S) => { // @1571.0
+    S.g.hot(0, WB2, COL.gold);
+    txt(S.t, 'sub 要到 cycle ' + WB2 + ' 才寫回 $2');
+    cap('sub 要到第五個 clock cycle', '才把 R2 寫回去');
+  },
+  async (tok, S) => { // @1585.4
+    RD_CYC.forEach((c, k) => S.g.hot(k + 1, c, '#4b9ee2'));
+    S.t2 = ok(RD_CYC.join() === '3,4,5,6', 0.6, 1.6, '後面四個讀 $2 的 cycle：' + RD_CYC.join('、') + ' ✓');
+    cap('後面的 instruction 都要 access R2', '分別在 clock 3、4、5、6');
+  },
+  async (tok, S) => { // @1606.6
+    RD_CYC.forEach((c, k) => { if (c < WB2) S.g.hot(k + 1, c, '#7a1010'); });
+    txt(S.t, '在 cycle ' + WB2 + ' 之前讀的，都是還沒寫回的舊資料');
+    cap('在寫回之前去 access', '拿到的都是錯誤（舊）的資料');
+  },
+  async (tok, S) => { // @1641.2
+    S.g.hot(4, 6, '#0f5a3a');
+    gone(S.t2); S.t2 = ok(RD_CYC[3] > WB2, 0.6, 1.6, 'cycle 6 讀（add）：$2 已經寫好 → 正確 ✓');
+    cap('到這個 register 是正確資料了', '第五個 cycle 已經寫下去');
+  },
+  async (tok, S) => { // @1656.6
+    S.g.hot(3, 5, '#0f5a3a');
+    S.t3 = ok(RD_CYC[2] === WB2, 0.6, 1.0, 'cycle 5 讀（or）：同一個 cycle 寫與讀 → internal forwarding（前半寫、後半讀）也 OK ✓');
+    cap('cycle 5 有沒有問題？', '有 internal forwarding 的話就沒問題');
+  },
+  async (tok, S) => { // @1668.5
+    const bad2 = RD_CYC.filter((c) => c < WB2).length;
+    gone(S.t2, S.t3); S.t2 = ok(bad2 === 2, 0.6, 1.6, '剩下 and、or 這 ' + bad2 + ' 個會讀錯 → 這就是 data hazard ✓');
+    cap('這就是 data hazard', '');
+  },
+]);
+
+scene('ppA-18a-raw', '18A：read after write（RAW）hazard', [
+  async (tok, S) => { // @1670.1
+    S.t = hot('MIPS 會發生的：read 在 write 之後', 0.6, 6.7);
+    S.g = mkGrid(S, 8, { y0: 5.4 }); S.g.add(0, 'I1：write R2', L5(1)); S.g.add(1, 'I2：read R2', L5(2)); S.g.upto(99);
+    S.g.hot(0, 5, COL.gold); S.g.hot(1, 3, '#4b9ee2');
+    cap('MIPS 裡發生的 data hazard', 'read 在 write 之後');
+  },
+  async (tok, S) => { // @1694.3
+    S.t2 = note('名字：read after write（RAW）hazard', 0.6, 3.6);
+    cap('我們叫做 read after write hazard', '');
+  },
+  async (tok, S) => { // @1721.7
+    S.t3 = sm('data hazard 其實有三種：RAW、WAR、WAW', 0.6, 3.0);
+    cap('總共有三種 data hazard', '');
+  },
+  async (tok, S) => { // @1736.6
+    S.n1 = note('第一個 instruction 叫 I1、第二個叫 I2', 0.6, 2.4);
+    cap('第一個叫 I1、第二個叫 I2', '這裡容易 confuse，看清楚');
+  },
+  async (tok, S) => { // @1744.9
+    txt(S.n1, 'RAW：I1 先 write、I2 後 read —— I2 depend on I1 寫的資料');
+    S.g.hot(1, 3, '#7a1010');
+    txt(S.t3, 'hazard：I1 還沒寫進去，I2 就先 read 了（cycle 3 < cycle 5）');
+    cap('read after write：I2 讀 I1 寫的', '還沒寫進去就先讀 → RAW hazard');
+  },
+  async (tok, S) => { // @1810.9
+    S.ok1 = ok(3 < 5, 0.6, 1.6, 'MIPS 會發生 RAW：讀在第 2 段、寫在第 5 段 ✓');
+    cap('這是 MIPS 會發生的狀況', 'try to read before I1 writes it');
+  },
+  async (tok, S) => { // @1825.7
+    gone(S.g, S.t2, S.t3, S.n1, S.ok1);
+    S.t2 = note('第二種：write after read（WAR）—— I1 是 read、I2 是 write', 0.6, 5.6);
+    cap('第二種：write after read', '前面是 read、後面是 write');
+  },
+  async (tok, S) => { // @1843.7
+    S.t3 = hot('為什麼會發生 hazard？', 0.6, 4.8);
+    cap('那為什麼會發生 hazard？', '');
+  },
+]);
+
+scene('ppA-18a-warwaw', '18A：WAR、WAW 在 MIPS 為什麼不會發生', [
+  async (tok, S) => { // @1920.6
+    S.t = hot('write after read（WAR）', 0.6, 6.7);
+    S.g = mkGrid(S, 8, { y0: 5.6 }); S.g.add(0, 'I1：read R3', L5(1)); S.g.add(1, 'I2：write R3', L5(2)); S.g.upto(99);
+    cap('什麼叫 write after read？', '');
+  },
+  async (tok, S) => { // @1933.3
+    S.t2 = note('I1 應該讀到「舊」的 R3；hazard = I2 搶先寫下去，I1 讀到新的', 0.6, 3.8);
+    cap('本來應該讀到舊的 data', 'write 搶先寫下去 → 讀到新的，錯了');
+  },
+  async (tok, S) => { // @1967.1
+    S.t3 = sm('通常發生在 auto increment（位址自動加）的指令；MIPS 沒有這種指令', 0.6, 3.2);
+    cap('通常發生在 auto increment', '我們這邊沒有這種指令');
+  },
+  async (tok, S) => { // @1987.7
+    S.g.hot(0, 2, '#4b9ee2'); S.g.hot(1, 6, COL.gold);
+    txt(S.t2, 'MIPS：write 永遠在第 5 段、read 在第 2 段');
+    cap('我們的 write 永遠在第五個 stage', '');
+  },
+  async (tok, S) => { // @2016.5
+    const rd1 = 2, wr2 = 2 + 4;
+    S.ok1 = ok(wr2 > rd1, 0.6, 2.4, 'I1 cycle ' + rd1 + ' 讀、I2 晚一個 cycle 又在最後一段才寫（cycle ' + wr2 + '）→ 不可能搶先 ✓');
+    cap('後一個 instruction 晚一個 cycle', '又在最後一個 stage 才寫');
+  },
+  async (tok, S) => { // @2082.9
+    txt(S.t3, '所以 WAR 在 MIPS 不可能發生');
+    cap('所以 write after read', '在 MIPS 不可能發生');
+  },
+  async (tok, S) => { // @2094.0
+    gone(S.ok1); S.g.cool(); S.g.label(0, 'I1：write R3'); S.g.label(1, 'I2：write R3');
+    txt(S.t, 'write after write（WAW）');
+    txt(S.t2, 'I1、I2 都寫同一個 register：最後應該是 I2 寫的（比較新）');
+    txt(S.t3, '');
+    cap('再來：write after write', '兩個都寫同一個 register');
+  },
+  async (tok, S) => { // @2137.0
+    S.v1 = cube('5', '#bcd8f3', [0.5, 0.4, 0.4], S.g.cx(5), S.g.cy(0) + 0.42, 0.3); S.v2 = cube('6', '#f3d36b', [0.5, 0.4, 0.4], S.g.cx(6), S.g.cy(1) + 0.42, 0.3);
+    txt(S.t3, 'I1 寫 5、I2 寫 6 → 答案應該是 6；若 6 搶先寫、5 後寫 → 最後變 5，錯了');
+    cap('第一個寫 5、第二個寫 6', '應該是 6；6 搶先寫的話就錯了');
+  },
+  async (tok, S) => { // @2151.7
+    S.g.hot(0, 5, COL.gold); S.g.hot(1, 6, COL.gold);
+    S.ok1 = ok(5 < 6, 0.6, 2.4, '都在第 5 段寫：I1 在 cycle 5、I2 在 cycle 6 → 順序不會顛倒 ✓ MIPS 沒有 WAW');
+    cap('這也不會在 MIPS 發生', '大家都第五個 stage 寫，I1 永遠先寫');
+  },
+]);
+
+// ════════ XtcJtp7n4o8（第19A講：複習、structural hazard、sub $2 的 data hazard、RAW/WAR/WAW、internal forwarding、nop、forwarding datapath 與條件） ════════
+// forwarding 的 datapath 小圖：ID/EX → 兩個 3-to-1 mux → ALU → EX/MEM → DM → MEM/WB，下面一個 forwarding unit
+function mkFwd(S, o = {}) {
+  const F = { ex: [], ln: {}, tg: {} };
+  const bar = (x, n) => { const m = cube('', COL.reg, [0.3, 3.8, 0.6], x, 3.2, 0); F.ex.push(m, small(tag(n, 'idx', x, 0.95 + (o.low ? -0.1 : 0)), 9)); return m; };
+  F.idex = bar(-4.6, 'ID/EX'); F.exmem = bar(1.8, 'EX/MEM'); F.memwb = bar(4.9, 'MEM/WB');
+  F.muxA = cube('A', '#8a7a5c', [0.45, 1.0, 0.5], -2.7, 4.3, 0); F.muxB = cube('B', '#8a7a5c', [0.45, 1.0, 0.5], -2.7, 2.2, 0);
+  F.alu = cube('ALU', COL.EX, [1.0, 2.6, 0.6], -0.8, 3.25, 0); F.dm = cube('DM', COL.MEM, [0.9, 1.0, 0.6], 3.35, 3.2, 0);
+  F.ex.push(F.muxA, F.muxB, F.alu, F.dm);
+  const L = (pts, c = '#8a7a5c') => { const l = line(pts.map((p) => [p[0], p[1], 0.1]), c); F.ex.push(l); return l; };
+  L([[-4.45, 4.5], [-2.95, 4.5]]); L([[-4.45, 2.4], [-2.95, 2.4]]); L([[-2.45, 4.3], [-1.3, 4.0]]); L([[-2.45, 2.2], [-1.3, 2.5]]);
+  L([[-0.3, 3.25], [1.65, 3.25]]); L([[1.95, 3.25], [2.9, 3.25]]); L([[3.8, 3.25], [4.75, 3.25]]); L([[1.95, 4.6], [4.75, 4.6]]);
+  const G = '#d8cfc0';
+  F.ln.EA = L([[2.05, 2.6], [2.25, 2.6], [2.25, 0.6], [-3.3, 0.6], [-3.3, 4.3], [-2.95, 4.3]], G);
+  F.ln.EB = L([[-3.3, 2.2], [-2.95, 2.2]], G);
+  F.ln.WA = L([[5.15, 2.6], [5.35, 2.6], [5.35, 0.25], [-3.6, 0.25], [-3.6, 4.1], [-2.95, 4.1]], G);
+  F.ln.WB = L([[-3.6, 2.0], [-2.95, 2.0]], G);
+  [['00', 4.5], ['10', 4.3], ['01', 4.1], ['00', 2.4], ['10', 2.2], ['01', 2.0]].forEach(([t, y]) => F.ex.push(small(tag(t, 'idx', -3.95, y), 8)));
+  if (o.unit !== false) { F.unit = cube('Forwarding unit', '#a99470', [2.6, 0.5, 0.6], -0.8, -0.45, 0); small(F.unit.userData.lbl, 9); F.ex.push(F.unit); }
+  F.lab = {};
+  F.put = (which, text) => { const x = { idex: -4.6, exmem: 1.8, memwb: 4.9 }[which]; if (F.lab[which]) remove(F.lab[which]); F.lab[which] = mono(tag(text, '', x, 5.55 + (which === 'exmem' ? 0.45 : 0)), 10); return F.lab[which]; };
+  F.sel = (ab, code) => {
+    const em = ab === 'A' ? F.ln.EA : F.ln.EB, wb = ab === 'A' ? F.ln.WA : F.ln.WB, mux = ab === 'A' ? F.muxA : F.muxB;
+    // shared trunks: EB/WB branch from the A trunk, so colour the trunk too when B uses it
+    em.material.color.set(code === '10' ? '#d68a00' : G); wb.material.color.set(code === '01' ? '#d68a00' : G);
+    if (ab === 'B' && code === '10') F.ln.EA.material.color.set('#d68a00');
+    if (ab === 'B' && code === '01') F.ln.WA.material.color.set('#d68a00');
+    glow(mux, code !== '00' ? COL.gold : null);
+    if (F.tg[ab]) remove(F.tg[ab]);
+    F.tg[ab] = small(tag('Forward' + ab + ' = ' + code, code !== '00' ? 'ptr alt' : 'ptr', -2.7, ab === 'A' ? 5.15 : 1.4), 10);
+  };
+  F.reset = () => { Object.values(F.ln).forEach((l) => l.material.color.set(G)); glow(F.muxA, null); glow(F.muxB, null); Object.values(F.tg).forEach(remove); F.tg = {}; };
+  F.all = () => [...F.ex, ...Object.values(F.lab), ...Object.values(F.tg)];
+  return F;
+}
+const CAM_F = [[0.2, 3.0, 13.2], [0.2, 2.8, 0]];
+
+scene('ppA-19a-review', '19A：複習：single cycle → pipeline，latency 與 throughput', [
+  async (tok, S) => { // @18.1
+    S.t = note('pipeline：high performance —— 同一時間很多 instruction 一起做', 0.6, 6.7);
+    cap('pipeline：為了 high performance', '同一時間很多 instruction 同時做');
+  },
+  async (tok, S) => { // @22.3
+    S.sc = cube('一個 instruction：一個 cycle 全部做完', '#bcd8f3', [7.6, 0.55, 0.5], -0.6, 5.6, 0); small(S.sc.userData.lbl, 9);
+    S.l1 = sm('single cycle', -5.6, 5.6);
+    cap('single cycle：一個 instruction 一個 cycle', '執行完畢，下一個再來');
+  },
+  async (tok, S) => { // @56.4
+    S.parts = FIVE.map((s, i) => { const m = cube(s, COL[s], [1.45, 0.42, 0.5], -3.7 + i * 1.55, 4.8, 0); small(m.userData.lbl, 9); return m; });
+    S.parts.forEach((m, i) => { if (i !== 2) glow(m, '#555555'); });
+    txt(S.t, '一個 cycle 裡，前後各段的硬體其實大部分時間都閒著（示意：只有 EX 在忙）');
+    cap('其實執行前、執行後', '很多 resource 根本不需要一直佔著');
+  },
+  async (tok, S) => { // @61.2
+    S.parts.forEach((m) => glow(m, null));
+    S.g = mkGrid(S, 8, { y0: 3.6, dy: 0.5 });
+    [0, 1, 2].forEach((k) => S.g.add(k, 'instruction ' + (k + 1), L5(k + 1))); S.g.upto(99);
+    txt(S.t, '改成 pipeline implementation：把要做的事切成很多個 stage，錯開做');
+    cap('所以改用 pipeline implementation', '分成很多個 stage');
+  },
+  async (tok, S) => { // @82.0
+    gone(S.sc, S.l1, S.parts);
+    S.regs = [0, 1, 2, 3].map((i) => { const m = cube('', COL.reg, [0.14, 0.7, 0.5], -3.7 + i * 1.55 + 0.775, 5.6, 0); return m; });
+    S.parts = FIVE.map((s, i) => { const m = cube(s, COL[s], [1.3, 0.42, 0.5], -3.7 + i * 1.55, 5.6, 0); small(m.userData.lbl, 9); return m; });
+    txt(S.t, 'pipeline 的 datapath 最重要：加 pipeline register');
+    cap('pipeline 的 datapath 最重要的是', '加 pipeline register');
+  },
+  async (tok, S) => { // @91.8
+    S.regs.forEach((r) => glow(r, COL.gold));
+    S.c4 = ok(S.regs.length === FIVE.length - 1, 0.6, 6.2, '切成 5 個 stage → 中間加 4 個 pipeline register ✓');
+    cap('切成五個 stage', '中間加四個 pipeline register');
+  },
+  async (tok, S) => { // @98.3
+    gone(S.c4);
+    txt(S.t, '每個 clock cycle 比較短：每段做完存起來，下一個 clock 再做下一段');
+    cap('每個 clock cycle 都比較短', '每個 cycle 把東西存起來，下個 clock 再做');
+  },
+  async (tok, S) => { // @115.3
+    S.a = arrow(V3(S.g.cx(1) - 0.35, S.g.cy(0) + 0.35, 0.4), V3(S.g.cx(5) + 0.35, S.g.cy(0) + 0.35, 0.4), 0x7a1010);
+    txt(S.t, '能改善 response time（latency）嗎？不行 —— 還是要經過 5 個 stage');
+    cap('pipeline 能改善 latency 嗎？', '不行，還是要經過五個 stage');
+  },
+  async (tok, S) => { // @128.9
+    S.g.hot(0, 5, COL.gold); S.g.hot(1, 6, COL.gold); S.g.hot(2, 7, COL.gold);
+    txt(S.t, '加快的是 throughput：單位時間完成的工作變多（每個 cycle 完成一個）');
+    cap('它加快的是 throughput', '單位時間可以完成的工作');
+  },
+  async (tok, S) => { // @135.6
+    gone(S.a); S.g.cool();
+    txt(S.t, 'control：跟 single cycle 一樣 decode 出 control signal，但不是一次用完');
+    cap('control 的部分呢？', '一樣 decode，但不是一次用完');
+  },
+  async (tok, S) => { // @178.4
+    const x0 = -3.7 + 1.55, tx = [2, 3, 4].map((i) => -3.7 + i * 1.55);
+    S.cg = ['EX', 'M', 'WB'].map((n, i) => { const m = cube(n, { WB: '#f2b8d2', M: '#b8ead6', EX: '#f6cfa6' }[n], [0.55, 0.32, 0.4], x0, 6.25 - i * 0.0, 0.3); small(m.userData.lbl, 9); return m; });
+    await anim(tok, 1200, (u) => S.cg.forEach((m, i) => { m.position.x = x0 + (tx[i] - x0) * u; }));
+    txt(S.t, 'decode 那段就產生 control signal，隨著 pipeline 一段一段往下傳');
+    cap('把 control signal 往下傳', 'decode 時產生，隨 pipeline 一直往下 flow');
+  },
+]);
+
+scene('ppA-19a-five', '19A：五個 stage 與三種 hazard', [
+  async (tok, S) => { // @212.5
+    S.g = mkGrid(S, 9, { y0: 5.9, dy: 0.56 });
+    S.t = note('MIPS 的 pipeline：5 個 stage（一定要記得，不然後面沒辦法算）', 0.6, 1.4);
+    cap('MIPS 的 pipeline 分幾個 stage？', '五個 stage，一定要記得');
+  },
+  async (tok, S) => { // @245.7
+    S.g.add(0, 'instruction 1', [[1, 'IF']]); S.g.row(0); txt(S.t, '① instruction fetch');
+    cap('第一個：instruction fetch', '');
+  },
+  async (tok, S) => { // @257.7
+    S.g.add(0, null, [[2, 'ID']]); S.g.row(0); txt(S.t, '② instruction decode，同時做 register access（rs、rt、rd 都知道了）');
+    cap('再來：instruction decode', '同時做 register access');
+  },
+  async (tok, S) => { // @273.4
+    S.g.add(0, null, [[3, 'EX']]); S.g.row(0); txt(S.t, '③ execution：ALU 運算（R-type 加減；load / store 算位址）');
+    cap('第三個 stage：execution', 'ALU 運算，或算 memory address');
+  },
+  async (tok, S) => { // @289.2
+    S.g.add(0, null, [[4, 'MEM']]); S.g.row(0); txt(S.t, '④ memory access');
+    cap('第四個 stage：memory access', '');
+  },
+  async (tok, S) => { // @291.7
+    S.g.add(0, null, [[5, 'WB']]); S.g.row(0); txt(S.t, '⑤ write back：資料寫回 register file');
+    cap('第五個 stage：write back', '寫回 register file');
+  },
+  async (tok, S) => { // @297.4
+    S.g.add(1, 'instruction 2', L5(2)); S.g.add(2, 'instruction 3', L5(3)); S.g.upto(3);
+    txt(S.t, '第 1 個到第 2 段時，第 1 段空出來 → 第 2 個進來；每個都晚前一個一步');
+    cap('第一個到第二個 stage', 'resource 空出來，第二個就進來');
+  },
+  async (tok, S) => { // @320.3
+    S.g.add(3, 'instruction 4', L5(4)); S.g.add(4, 'instruction 5', L5(5)); S.g.upto(99); S.g.band(5, 0, 4);
+    txt(S.t, '同一個時間可以執行 5 個 instruction → throughput 加快');
+    cap('同一時間可以執行五個 instruction', '就可以加快 throughput');
+  },
+  async (tok, S) => { // @324.8
+    S.g.unband();
+    txt(S.t, '但要注意 hazard：structural、data、control 三種');
+    cap('但要注意有些 hazard 會產生', 'structural、data、control hazard');
+  },
+  async (tok, S) => { // @334.3
+    txt(S.t, 'structural hazard：用我們的方法（同一資源同一段用）已經解決了');
+    cap('structural hazard', '用我們的方法可以解決');
+  },
+  async (tok, S) => { // @337.2
+    txt(S.t, 'data hazard、control hazard：instruction 跟 instruction 之間有 dependency');
+    cap('data hazard、control hazard', '主要是 instruction 之間有 dependency');
+  },
+  async (tok, S) => { // @388.1
+    S.g.label(0, 'I1：write R2'); S.g.label(1, 'I2：read R2'); S.g.hot(0, 5, COL.gold); S.g.hot(1, 3, '#4b9ee2');
+    txt(S.t, 'dependency 一定牽涉 write：兩個都只讀沒關係；有寫，就會改變 state');
+    cap('dependency 一定牽涉到 write', '都只讀不會有問題；寫會改變 state');
+  },
+  async (tok, S) => { // @412.6
+    S.g.cool(); S.g.label(0, 'beq'); S.g.label(1, '下一個 = ？');
+    txt(S.t, 'control hazard：beq 才到第 2 段就要 fetch 下一個，還不知道是誰 → 只好猜');
+    cap('control hazard：才到第二個 stage', '就要 fetch 下一個 → 只好猜');
+  },
+]);
+
+scene('ppA-19a-struct', '19A：structural hazard 複習：同一塊 memory', [
+  async (tok, S) => { // @443.3
+    S.t = hot('structural hazard（已經解決的那一種）', 0.6, 6.7);
+    cap('再看一下 structural hazard', '');
+  },
+  async (tok, S) => { // @480.6
+    S.t2 = note('兩個 instruction 同時要搶同一個 resource', 0.6, 6.0);
+    cap('什麼叫 structural hazard？', '兩個 instruction 搶同一個 resource');
+  },
+  async (tok, S) => { // @492.8
+    S.g = mkGrid(S, 8, { y0: 4.9 });
+    S.g.add(0, 'instruction 1', L5(1)); ['instruction 2', 'instruction 3', 'instruction 4'].forEach((n, k) => S.g.add(k + 1, n, L5(k + 2))); S.g.upto(99);
+    S.g.hot(0, 4, COL.MEM); S.g.hot(3, 4, COL.IF);
+    S.t3 = note('例：第 4 段要 access data memory、第 1 段要 instruction fetch', 0.6, 1.8);
+    cap('例如第四個 stage 要 access data memory', '第一個 stage 要做 instruction fetch');
+  },
+  async (tok, S) => { // @518.1
+    const rows = S.g.rowsArr().map((r) => r.map(([c, s]) => [c, MEMR(s)]));
+    let hit = 0; const seen = {}; for (const r of rows) for (const [c, s] of r) if (s === 'memory') { if (seen[c]) hit = c; seen[c] = 1; }
+    S.g.band(hit, 0, 3, '#d64545');
+    S.t4 = ok(hit === 4, 0.6, 1.2, '若 IM、DM 是同一塊 memory：cycle 4 兩個搶它 → structural hazard ✓');
+    cap('如果是同一個 memory', '同一個時間就打架了');
+  },
+  async (tok, S) => { // @532.2
+    S.g.unband(); gone(S.t4);
+    S.t4 = ok(clashes(S.g.rowsArr()).length === 0, 0.6, 1.2, '解法：每個 stage 都用不同的 resource（IM、DM 分開）→ 沒有衝突 ✓');
+    cap('解決方法很簡單', '每一個 stage 都用不同的 resource');
+  },
+  async (tok, S) => { // @544.4
+    txt(S.t3, '後一個永遠晚一個 cycle：你用完就給我用 → 大家不會打架');
+    cap('我永遠晚你一個 clock cycle', '你用完就給我，就不會打架');
+  },
+]);
+
+// 課本 sub $2 的例子（DEP / DEP0 / RD_CYC / WB2 在 18A 已算好）
+scene('ppA-19a-dep', '19A：data hazard：sub 寫 $2，後面三個讀錯', [
+  async (tok, S) => { // @577.8
+    S.g = mkGrid(S, 9);
+    S.t = note('data hazard：以這個例子來看（課本）', 0.6, 2.4);
+    cap('什麼叫 data hazard？', '以這個例子來看');
+  },
+  async (tok, S) => { // @586.9
+    S.g.add(0, DEP[0], L5(1)); S.g.row(0);
+    txt(S.t, '第一個 instruction（sub）要把結果寫到 register 2');
+    cap('第一個 instruction', '要把東西寫到 register 2');
+  },
+  async (tok, S) => { // @592.2
+    DEP.slice(1).forEach((t, k) => S.g.add(k + 1, t, L5(k + 2))); S.g.upto(99);
+    txt(S.t, '後面緊接的好多個 instruction 都要讀 register 2 —— 誰會讀到正確的？');
+    cap('後面緊接的好多個都要讀它', '到底誰會得到正確的資料？');
+  },
+  async (tok, S) => { // @615.6
+    txt(S.t, '看時間：第一個從 cycle 1 開始，後面每個晚一個 cycle');
+    cap('看一下時間', '第一個從第一個 clock 開始');
+  },
+  async (tok, S) => { // @628.5
+    S.g.hot(0, WB2, COL.gold);
+    txt(S.t, 'sub 要到 cycle ' + WB2 + '（第 5 段）才寫回 register 2');
+    cap('它要到第五個 clock', '才會寫回 register');
+  },
+  async (tok, S) => { // @653.3
+    S.g.hot(1, RD_CYC[0], '#7a1010');
+    txt(S.t, 'and：cycle ' + RD_CYC[0] + ' 做 register access 時還沒寫進去 → 拿到舊的、錯的');
+    cap('第二個 instruction 做 register access 時', '還沒寫進去 → 拿到不對的資料');
+  },
+  async (tok, S) => { // @685.3
+    S.g.hot(2, RD_CYC[1], '#7a1010');
+    txt(S.t, 'or：cycle ' + RD_CYC[1] + ' 讀，也還沒寫進去');
+    cap('再看晚兩個的 instruction', '第四個 cycle 讀，也還沒寫進去');
+  },
+  async (tok, S) => { // @695.1
+    S.g.hot(3, RD_CYC[2], '#c08a1f'); S.g.hot(0, WB2, '#c08a1f');
+    txt(S.t, 'add：cycle ' + RD_CYC[2] + ' 讀的時候，sub「正在寫」—— 寫進去了沒？');
+    cap('第五個 cycle：讀的時候它正在寫', '寫進去了沒？');
+  },
+  async (tok, S) => { // @713.8
+    S.g.hot(3, RD_CYC[2], '#7a1010'); S.g.hot(4, RD_CYC[3], '#0f5a3a');
+    const nBad = RD_CYC.filter((c) => c <= WB2).length;
+    S.t2 = ok(nBad === 3, 0.6, 1.7, '不靠任何技巧時：cycle 3、4、5 讀的這 ' + nBad + ' 個都拿不到新的 $2；cycle 6 的 sw 才對 ✓');
+    cap('這三個是不對的', '因為 data dependence 拿到錯誤資料');
+  },
+  async (tok, S) => { // @730.5
+    gone(S.t2);
+    txt(S.t, '這只是其中一種 hazard，其實有很多種');
+    cap('剛才只看到其中一種 hazard', '其實有很多種');
+  },
+]);
+
+scene('ppA-19a-raw', '19A：read after write：MIPS 會發生', [
+  async (tok, S) => { // @736.7
+    S.g = mkGrid(S, 8, { y0: 5.4 }); S.t = hot('第一種：read after write（RAW）', 0.6, 6.7);
+    cap('第一種叫 read after write', '不要死背');
+  },
+  async (tok, S) => { // @759.3
+    S.g.add(0, 'I1：write', L5(1)); S.g.add(1, 'I2：read', L5(2)); S.g.upto(99); S.g.hot(0, 5, COL.gold); S.g.hot(1, 3, '#4b9ee2');
+    S.t2 = note('前面的 instruction 是 write、後面的是 read', 0.6, 3.6);
+    cap('上面的 instruction 是 write', '下面的 instruction 是 read');
+  },
+  async (tok, S) => { // @783.1
+    S.g.hot(1, 3, '#7a1010');
+    txt(S.t2, '應該 write 完才 read；hazard：write 還沒寫進去，read 就先讀了');
+    cap('應該 write 完我才去 read', 'write 還沒寫進去就先讀 → RAW hazard');
+  },
+  async (tok, S) => { // @817.0
+    S.t3 = hot('MIPS 會不會產生 RAW hazard？', 0.6, 2.8);
+    cap('MIPS 會不會產生這樣的 hazard？', '');
+  },
+  async (tok, S) => { // @841.1
+    txt(S.t3, '');
+    S.t4 = ok(RD_CYC.filter((c) => c <= WB2).length === 3, 0.6, 2.8, '會：剛才 sub 寫 $2，後面三個都拿到錯的 ✓');
+    cap('會！剛才就已經 demonstrate 了', 'write 之後馬上 read → 拿到錯誤資料');
+  },
+]);
+
+scene('ppA-19a-warwaw', '19A：WAR、WAW 不會發生在 MIPS', [
+  async (tok, S) => { // @854.4
+    S.g = mkGrid(S, 8, { y0: 5.4 }); S.t = hot('write after read（WAR）', 0.6, 6.7);
+    S.g.add(0, 'I1：read R', L5(1)); S.g.add(1, 'I2：write R', L5(2)); S.g.upto(99); S.g.hot(0, 2, '#4b9ee2'); S.g.hot(1, 6, COL.gold);
+    cap('再來：write after read', 'read 在前面、write 在後面');
+  },
+  async (tok, S) => { // @878.1
+    S.t2 = note('應該 I1 讀完、I2 再寫；hazard：I2 搶先寫，把舊資料蓋掉 → I1 讀錯', 0.6, 3.6);
+    cap('人家還沒 read', '後面的就搶先 write 下去 → hazard');
+  },
+  async (tok, S) => { // @904.2
+    S.t3 = sm('會發生在 auto increment index 這類指令；MIPS 沒有', 0.6, 3.0);
+    cap('像 auto increment 的指令才會發生', 'MIPS 沒有');
+  },
+  async (tok, S) => { // @916.4
+    S.t4 = hot('MIPS 會不會？write 能搶到 read 前面嗎？', 0.6, 2.3);
+    cap('在 MIPS 會不會發生？', '');
+  },
+  async (tok, S) => { // @939.5
+    gone(S.t4); S.t4 = ok(2 + 4 > 2, 0.6, 2.3, '不會：I2 一定在第 5 段寫（cycle 6），I1 早在第 2 段（cycle 2）讀完 ✓');
+    cap('不會：後面的一定在第五個 stage write', '前面的在第二個 stage 就 read 了');
+  },
+  async (tok, S) => { // @976.2
+    gone(S.t2, S.t3, S.t4); S.g.cool(); S.g.label(0, 'I1：write R'); S.g.label(1, 'I2：write R');
+    txt(S.t, 'write after write（WAW）');
+    cap('再來：write after write', '就是兩個 write');
+  },
+  async (tok, S) => { // @981.3
+    S.v1 = cube('3', '#bcd8f3', [0.5, 0.4, 0.4], S.g.cx(5), S.g.cy(0) + 0.42, 0.3); S.v2 = cube('5', '#f3d36b', [0.5, 0.4, 0.4], S.g.cx(6), S.g.cy(1) + 0.42, 0.3);
+    S.t2 = note('I1 寫 3、I2 寫 5 → 最後應該是 5', 0.6, 3.6);
+    cap('第一個寫 3、第二個寫 5', '最後的資料應該是 5');
+  },
+  async (tok, S) => { // @987.5
+    txt(S.t2, 'hazard：後面的先寫進去（先 5 再 3）→ 最後變成 3，錯了');
+    cap('hazard：後面的先寫進去', '先寫 5 再寫 3，資料就不一樣');
+  },
+  async (tok, S) => { // @995.0
+    S.g.hot(0, 5, COL.gold); S.g.hot(1, 6, COL.gold);
+    S.t3 = ok(5 < 6, 0.6, 3.0, 'MIPS 不會：大家都在第 5 段寫，I1 永遠早一個 cycle（5 < 6）✓');
+    cap('MIPS 會不會發生？不會', '大家都在第五個 stage 寫，你永遠快一步');
+  },
+  async (tok, S) => { // @1025.3
+    gone(S.v1, S.v2, S.t2, S.t3);
+    S.t2 = good('三種 data hazard 裡，只有 read after write 會發生在 MIPS', 0.6, 3.4);
+    cap('三種 data hazard', '只有 read after write 會發生在 MIPS');
+  },
+  async (tok, S) => { // @1034.6
+    S.g.dropRow(0); S.g.dropRow(1);
+    S.g.add(0, 'RAW：I1 寫', L5(1)); S.g.add(1, '　　 I2 讀', L5(2)); S.g.upto(99);
+    S.g.hot(0, 5, COL.gold); S.g.hot(1, 3, '#7a1010');
+    S.a = arrow(V3(S.g.cx(5), S.g.cy(0) - 0.2, 0.4), V3(S.g.cx(3) + 0.2, S.g.cy(1) + 0.2, 0.4), 0xd64545);
+    txt(S.t2, '用時間軸看：箭頭往左（時間倒流）的依賴就是 hazard —— 只有 RAW 長這樣');
+    cap('用這個圖看：往右是時間', '前面應該先寫，下一個已經要拿了');
+  },
+  async (tok, S) => { // @1116.2
+    gone(S.a);
+    txt(S.t2, '防 WAR：operand 在 ID（第 2 段）就讀；防 WAW：寫都排在最後一段 → MIPS 的設計讓它們不會發生');
+    cap('operand 在 decode 階段就讀、write 在最後', 'WAR、WAW 就絕對不會發生');
+  },
+]);
+
+scene('ppA-19a-intfwd', '19A：internal forwarding：前半寫、後半讀', [
+  async (tok, S) => { // @1144.2
+    S.g = mkGrid(S, 9);
+    DEP.forEach((t, k) => S.g.add(k, t, L5(k + 1))); S.g.upto(99);
+    S.t = hot('什麼叫 internal forwarding？', 0.6, 2.2);
+    cap('什麼叫 internal forwarding？', '');
+  },
+  async (tok, S) => { // @1146.9
+    RD_CYC.forEach((c, k) => { if (c <= WB2) S.g.hot(k + 1, c, '#7a1010'); });
+    S.t2 = note('剛才有三個 instruction 拿不到 data', 0.6, 1.5);
+    cap('剛才看到有三個 instruction', '拿不到 data');
+  },
+  async (tok, S) => { // @1151.4
+    S.g.band(WB2, 0, 3); S.g.hot(0, WB2, COL.gold);
+    txt(S.t2, '第三個（add）：sub 在寫的同一個 cycle，它同時要讀');
+    cap('第三個：它在寫的時候', '同時要去讀');
+  },
+  async (tok, S) => { // @1176.2
+    S.g.unband();
+    S.ck = [0, 1].map((i) => cube(i ? '後半：讀' : '前半：寫', i ? '#bcd8f3' : '#f3d36b', [1.5, 0.45, 0.4], 1.0 + i * 1.55, 0.6, 0.3)); S.ck.forEach((m) => small(m.userData.lbl, 9));
+    S.edge = sm('clock rising edge ↑ 一來就寫進去（edge trigger）', 1.8, 0.0);
+    txt(S.t2, '設計成：clock 一開始（edge trigger）就寫進去');
+    cap('把它設計成 clock 一開始就寫進去', 'edge trigger');
+  },
+  async (tok, S) => { // @1188.8
+    txt(S.t2, '讀的那一邊：clock 一來就開始 read，剛開始可能是舊 data');
+    cap('read 一開始可能讀到舊的 data', '');
+  },
+  async (tok, S) => { // @1197.2
+    glow(S.ck[1], '#0f5a3a');
+    txt(S.t2, '等到下半個 clock，前面已經寫進去了 → 讀到正確資料');
+    cap('到下半個 clock', '前面已經寫進去 → 讀到正確的資料');
+  },
+  async (tok, S) => { // @1228.0
+    S.g.hot(3, RD_CYC[2], '#0f5a3a');
+    S.t3 = ok(RD_CYC[2] === WB2, 0.6, -0.6, '有 internal forwarding：同一個 cycle 寫與讀的 add 解決了 ✓');
+    cap('有 internal forwarding', '這個 hazard 就解決了');
+  },
+  async (tok, S) => { // @1234.2
+    const left = RD_CYC.filter((c) => c < WB2).length;
+    gone(S.t3); S.t3 = ok(left === 2, 0.6, -0.6, '還剩 and、or 這 ' + left + ' 個怎麼辦？ ✓');
+    cap('現在剩下這兩個 instruction', '怎麼辦？');
+  },
+]);
+
+// 軟體解法：compiler 在 sub 後面插兩個 nop；和 forwarding 比總 cycle
+const NOPP = ['sub $2, $1, $3', 'nop', 'nop', 'and $12, $2, $5', 'or $13, $6, $2', 'add $14, $2, $2', 'sw $15, 100($2)'];
+const NOP0 = schedule(NOPP.map((t) => parseIns(t)), { fwd: false, br: 'pnt', mem1: false });
+const FWD0 = schedule(DEP.map((t) => parseIns(t)), { fwd: true, br: 'pnt', mem1: false });
+scene('ppA-19a-nop', '19A：compiler 插 no-op（軟體解法）', [
+  async (tok, S) => { // @1252.4
+    S.t = hot('有哪些方法？第一個：compiler insert no-op', 0.6, 6.7);
+    cap('有哪些方法可以解決？', 'compiler insert no-op');
+  },
+  async (tok, S) => { // @1257.4
+    S.t2 = note('受影響的是後面兩個：差兩個 clock cycle 來不及', 0.6, 6.1);
+    cap('後面兩個 instruction 來不及拿到資料', '差兩個 clock cycle');
+  },
+  async (tok, S) => { // @1265.5
+    S.t3 = note('看到 dependency，就在那個 instruction 後面插 no-op（什麼都不做）', 0.6, 5.5);
+    cap('看到 dependency 的關係', '就在後面 insert no-op');
+  },
+  async (tok, S) => { // @1297.5
+    S.t4 = bad('很簡單，用 software 就做得出來 —— 但浪費時間', 0.6, 4.9);
+    cap('很簡單，用 software 就能做', '但是浪費時間');
+  },
+  async (tok, S) => { // @1315.3
+    S.t5 = good('所以要做 forwarding', 0.6, 4.3);
+    cap('所以我們要做 forwarding', '');
+  },
+  async (tok, S) => { // @1316.6
+    S.t6 = note('另一種狀況要 stall（停）：data dependency 時有兩種處理 —— forwarding 與 stall', 0.6, 3.7);
+    cap('另外一種狀況叫 stall', '有兩種情形：forwarding、stall');
+  },
+  async (tok, S) => { // @1335.2
+    gone(S.t2, S.t3, S.t4, S.t5, S.t6);
+    S.g = mkGrid(S, 11, { y0: 5.9, dy: 0.5 });
+    txt(S.t, 'software solution：sub 之後要用 $2，至少等兩個 clock cycle');
+    DEP.forEach((t, k) => S.g.add(k, t, L5(k + 1))); S.g.upto(99);
+    S.g.hot(0, 5, COL.gold); S.g.hot(1, 3, '#7a1010'); S.g.hot(2, 4, '#7a1010');
+    cap('先看 software solution', '這個 data 出來，要用 2 至少要等');
+  },
+  async (tok, S) => { // @1343.5
+    S.t2 = note('and 要在 cycle 5（sub 寫回的那個 cycle，前寫後讀）才讀得到 → 要往後挪 2 個 cycle', 0.6, 2.1);
+    cap('至少要等兩個 clock cycle', '才拿得到');
+  },
+  async (tok, S) => { // @1356.4
+    S.g.all().filter((o) => !S.g.ex.includes(o)).forEach((o) => (o.element ? remove(o) : kill(o)));
+    S.g.cells = {}; S.g.labs = {}; S.g.plan = [];
+    schedRows(NOP0).forEach((r, k) => S.g.add(k, r.text, r.cells.map(([c, s]) => [c, r.text === 'nop' ? 'nop' : s, r.text === 'nop' ? '—' : s])));
+    S.g.upto(99);
+    const andRow = NOP0.rows[3];
+    gone(S.t2); S.t2 = ok(andRow.ID === NOP0.rows[0].WB && NOP0.stalls === 0 && NOP0.total === 11, 0.6, 1.6, '插兩個 nop：and 的 ID 在 cycle ' + andRow.ID + ' = sub 寫回的 cycle → 讀對；共 ' + NOP0.total + ' 個 cycle ✓');
+    cap('compiler 就在這邊加兩個 no-op', 'no operation，什麼都不做');
+  },
+  async (tok, S) => { // @1367.6
+    S.t3 = ok(FWD0.total === 9 && NOP0.total - FWD0.total === 2, 0.6, 1.0, '對照：用 hardware forwarding 不必插 nop → 9 個 cycle，省下 ' + (NOP0.total - FWD0.total) + ' 個 ✓');
+    cap('但是浪費 cycle', '希望透過 hardware 來解決');
+  },
+]);
+
+// forwarding 的概念：sub 的結果 cycle 3 算好，cycle 4 在 EX/MEM、cycle 5 在 MEM/WB
+scene('ppA-19a-fwd', '19A：forwarding：結果早就算好，放在 pipeline register 裡', [
+  async (tok, S) => { // @1373.0
+    S.g = mkGrid(S, 9);
+    DEP.slice(0, 4).forEach((t, k) => S.g.add(k, t, L5(k + 1))); S.g.upto(99);
+    S.t = hot('什麼叫 forwarding？', 0.6, 2.6);
+    cap('什麼叫 forwarding？', '再仔細看一下');
+  },
+  async (tok, S) => { // @1379.5
+    S.g.hot(1, 4, '#7a1010'); S.g.hot(2, 5, '#7a1010');
+    S.t2 = note('有問題的是 and 和 or：它們在 EX 要用到 $2', 0.6, 1.9);
+    cap('有問題的是這兩個 instruction', 'access 完，ALU 這邊要用到它');
+  },
+  async (tok, S) => { // @1404.1
+    S.g.hot(0, 3, COL.gold);
+    txt(S.t2, 'sub 的結果什麼時候算好？cycle 3（EX）就算好了');
+    cap('這個 instruction 什麼時候算好？', '第三個 clock 就算好了');
+  },
+  async (tok, S) => { // @1413.8
+    S.g.hot(0, 5, '#555555');
+    txt(S.t2, '只是規定第 5 段才能 write，所以 cycle 4、5 它一直「在那邊」，只是沒寫回');
+    cap('只是規定第五個 stage 才能寫', '它其實一直都在那邊');
+  },
+  async (tok, S) => { // @1440.8
+    S.a1 = arrow(V3(S.g.cx(3) + 0.3, S.g.cy(0) - 0.15, 0.4), V3(S.g.cx(4) - 0.3, S.g.cy(1) + 0.12, 0.4), 0xc08a1f);
+    S.a2 = arrow(V3(S.g.cx(4) + 0.3, S.g.cy(0) - 0.15, 0.4), V3(S.g.cx(5) - 0.3, S.g.cy(2) + 0.12, 0.4), 0xc08a1f);
+    txt(S.t2, 'forwarding：data 已經在那邊，直接拿來用（金色箭頭）');
+    cap('這就叫 forwarding', 'data 已經在那邊，直接拿來用');
+  },
+  async (tok, S) => { // @1449.7
+    S.t3 = note('要學 forwarding 要知道兩件事：① datapath 怎麼改 ② 什麼時候要 forward（control）', 0.6, 1.3);
+    cap('分兩個部分', 'datapath 怎麼設計、什麼時候要 forward');
+  },
+  async (tok, S) => { // @1489.3
+    gone(S.t3); txt(S.t2, '問：sub 算完、還沒寫回 register，它的資料放在哪裡？');
+    cap('算完以後，它的資料放在哪裡？', '沒寫回 register，丟掉了嗎？');
+  },
+  async (tok, S) => { // @1504.4
+    txt(S.t2, '放在 pipeline register 裡');
+    cap('放在 pipeline register 裡面', '');
+  },
+  async (tok, S) => { // @1519.6
+    S.nm = ['IF/ID', 'ID/EX', 'EX/MEM', 'MEM/WB'].map((n, i) => small(tag(n, 'idx', S.g.cx(i + 1) + S.g.w / 2, S.g.cy(4) + 0.1), 9));
+    txt(S.t2, '給 pipeline register 名字：兩段之間畫一條斜線 —— ID/EX、EX/MEM、MEM/WB');
+    cap('給 pipeline register 一個名字', 'execution 跟 memory 之間叫 EX/MEM');
+  },
+  async (tok, S) => { // @1551.0
+    S.p4 = hot('cycle 4：sub 的結果在 EX/MEM', S.g.cx(4), 0.6);
+    cap('第四個 clock cycle', 'sub 的 data 在 EX/MEM 這個 pipeline register');
+  },
+  async (tok, S) => { // @1562.2
+    S.p5 = hot('cycle 5：？', S.g.cx(5) + 1.4, 0.0);
+    cap('到第五個 cycle', '還沒寫進去，data 又跑去哪裡了？');
+  },
+  async (tok, S) => { // @1640.2
+    txt(S.p5, 'cycle 5：在 MEM/WB');
+    cap('在 memory 跟 write back 之間的', 'pipeline register 裡面，並沒有丟掉');
+  },
+  async (tok, S) => { // @1653.1
+    txt(S.t2, 'and 在 cycle 4 要用 → 從 EX/MEM 拿；or 在 cycle 5 要用 → 從 MEM/WB 拿');
+    glow(S.g.at(1, 4), COL.gold); glow(S.g.at(2, 5), COL.gold);
+    cap('第四個 clock 要用、第五個 clock 要用', '都可以給你用，只是放的地方不同');
+  },
+]);
+
+scene('ppA-19a-fwdmux', '19A：forwarding 的 datapath：ALU 前面的 3-to-1 mux', [
+  async (tok, S) => { // @1707.6
+    S.F = mkFwd(S, { unit: false });
+    S.t = hot('forwarding 的 datapath 要長什麼樣子？', 0.2, 6.9);
+    cap('forwarding 的 datapath', '要長什麼樣子？');
+  },
+  async (tok, S) => { // @1720.1
+    glow(S.F.idex, COL.gold);
+    S.t2 = note('正常狀況：ALU 的資料從前面 register file 讀出來（經 ID/EX）', 0.2, -0.5);
+    cap('正常的狀況', '從前面 register file 讀出來');
+  },
+  async (tok, S) => { // @1728.0
+    glow(S.F.idex, null); glow(S.F.exmem, COL.gold); S.F.ln.EA.material.color.set('#d68a00');
+    txt(S.t2, '如果依賴的是前一個 instruction：資料在 EX/MEM');
+    cap('依賴前一個 instruction', '資料在這個 pipeline register');
+  },
+  async (tok, S) => { // @1734.6
+    glow(S.F.exmem, null); S.F.ln.EA.material.color.set('#d8cfc0'); glow(S.F.memwb, COL.gold); S.F.ln.WA.material.color.set('#d68a00');
+    txt(S.t2, '如果依賴的是前兩個 instruction：資料在 MEM/WB');
+    cap('依賴前兩個 instruction', '資料在這個 stage 的 register');
+  },
+  async (tok, S) => { // @1741.8
+    glow(S.F.memwb, null); [S.F.ln.EA, S.F.ln.EB, S.F.ln.WA, S.F.ln.WB].forEach((l) => l.material.color.set('#d68a00'));
+    txt(S.t2, '把這兩個地方的資料拉回來，接到 ALU 輸入前面的 mux');
+    cap('把 data 拉過來', '當作 mux 的 input');
+  },
+  async (tok, S) => { // @1798.3
+    glow(S.F.muxA, COL.gold); glow(S.F.muxB, COL.gold);
+    txt(S.t2, 'ALU 每個輸入有三種來源：register file、EX/MEM、MEM/WB（write back stage）');
+    cap('input 有三種狀況', 'register file、EX/MEM、write back stage');
+  },
+  async (tok, S) => { // @1814.3
+    S.c = ok(3 === ['00', '10', '01'].length, 0.2, -1.1, '所以 ALU 前面各有一個 3-to-1 mux ✓');
+    cap('所以這邊有一個 3-to-1 的 mux', '');
+  },
+], { cam: CAM_F });
+
+scene('ppA-19a-fwdunit', '19A：forwarding unit：發出 00 / 10 / 01', [
+  async (tok, S) => { // @1821.5
+    S.F = mkFwd(S); glow(S.F.unit, COL.gold);
+    S.t = hot('forwarding unit：負責 control —— 什麼時候選哪個 input', 0.2, 6.9);
+    cap('forwarding unit 做 control', '怎麼知道什麼時候用哪個？');
+  },
+  async (tok, S) => { // @1836.6
+    glow(S.F.unit, null); S.F.sel('A', '00');
+    S.t2 = note('00：正常狀況，用 register file 讀出來的', 0.2, -1.1);
+    cap('正常的狀況就是 00', '');
+  },
+  async (tok, S) => { // @1840.3
+    S.F.sel('A', '10'); txt(S.t2, '10：從 EX/MEM forward（前一個 instruction）');
+    cap('從這邊 forward 就設 10', 'EX/MEM');
+  },
+  async (tok, S) => { // @1842.5
+    S.F.sel('A', '01'); txt(S.t2, '01：從 MEM/WB forward（write back 那邊，前兩個）');
+    cap('從這邊 forward 就設 01', 'MEM/WB（write back 那邊）');
+  },
+  async (tok, S) => { // @1874.7
+    S.F.reset(); glow(S.F.unit, COL.gold);
+    txt(S.t2, '什麼時候發哪一個？要把 condition 找出來');
+    cap('什麼時候發出 00、01？', '要把 condition 找出來');
+  },
+  async (tok, S) => { // @1882.9
+    S.F.put('idex', 'rs, rt'); S.F.put('exmem', 'rd'); S.F.put('memwb', 'rd');
+    txt(S.t2, '讀的時候用 rs、rt；前一個的 destination 若和 rs / rt 一樣 → 有 dependency');
+    cap('要讀的是 rs、rt', '前一個的 destination 一樣 → 可能有 dependency');
+  },
+  async (tok, S) => { // @1910.3
+    glow(S.F.idex, COL.gold);
+    txt(S.t2, '所以 rs、rt 的「號碼」也要跟著傳到 ID/EX，交給 forwarding unit 比對');
+    cap('一定要把 rs 跟 rt 也傳過來', '跟要寫回的 rd 比對，一樣就 forward');
+  },
+  async (tok, S) => { // @1934.1
+    glow(S.F.idex, null); glow(S.F.exmem, COL.gold); glow(S.F.memwb, COL.gold);
+    txt(S.t2, 'EX/MEM 的 destination、MEM/WB 的 destination 都拿來和 rs、rt 比');
+    cap('這個 stage 也有一個 destination', '都要拿進來比對');
+  },
+  async (tok, S) => { // @1955.1
+    glow(S.F.exmem, null); glow(S.F.memwb, null);
+    txt(S.t2, '正常狀況也許不必 forward，但讀了「哪幾個 register」的 index 一定要記下來');
+    cap('不需要 forward 時也照樣讀出來', '但 register 的 index 要記下來傳下去');
+  },
+], { cam: CAM_F });
+
+scene('ppA-19a-enough', '19A：只比 register 號碼夠嗎？還要看 RegWrite', [
+  async (tok, S) => { // @1975.6
+    S.F = mkFwd(S); S.F.put('idex', 'rs, rt'); S.F.put('exmem', 'rd'); S.F.put('memwb', 'rd');
+    S.t = hot('只比對 rs、rt 與 rd，這樣夠不夠？', 0.2, 6.9);
+    cap('這樣夠不夠？', '');
+  },
+  async (tok, S) => { // @1991.1
+    S.t2 = note('想法：讀的 rs / rt 和要寫回的 rd 一樣 → data dependency → forward', 0.2, -1.1);
+    cap('只要 check rs、rt 跟 rd', '一樣就 forward —— 這樣夠嗎？');
+  },
+  async (tok, S) => { // @2036.0
+    S.t.element.className = 'lab-label bad'; txt(S.t, '不夠！');
+    txt(S.t2, '因為不管哪種指令，rs、rt、rd 欄位永遠都有值，一路傳下來');
+    cap('應該是不夠的', 'rs、rt 不管怎樣都會拿出來，永遠有值');
+  },
+  async (tok, S) => { // @2053.7
+    S.F.put('exmem', 'sw / beq（不寫）');
+    txt(S.t2, '如果前一個根本不是「寫 register」的 instruction，比對剛好一樣也不該 forward');
+    cap('假如它根本不是 write 的 instruction', '幹嘛 check dependency？');
+  },
+  async (tok, S) => { // @2082.6
+    S.rw1 = small(tag('RegWrite', 'ptr alt', 1.8, 0.5), 9); S.rw2 = small(tag('RegWrite', 'ptr alt', 4.9, 0.1), 9);
+    txt(S.t2, '所以還要把 RegWrite 拉給 forwarding unit：RegWrite = 1 才比對');
+    cap('上面有一條告訴我它是不是 write', '是 1 的時候才要比對');
+  },
+  async (tok, S) => { // @2133.9
+    S.F.put('exmem', 'rd'); glow(S.F.unit, COL.gold);
+    txt(S.t2, 'forwarding unit 的 input：ID/EX 的 rs、rt；EX/MEM 的 rd、RegWrite；MEM/WB 的 rd、RegWrite');
+    cap('forwarding unit 需要什麼資料？', '這個 stage 的 rs、rt，前一個、前兩個的 rd 與 write');
+  },
+  async (tok, S) => { // @2196.1
+    glow(S.F.unit, null);
+    S.mx = sm('rd = RegDst mux 選出的 rt（lw）或 rd（R-type）', 3.35, 6.6);
+    txt(S.t2, '寫回的 destination 經過 rt / rd 的 mux：最後只剩一個 destination');
+    cap('這邊有一個 rt、rd 的 mux', 'load 取 rt、R-type 取 rd');
+  },
+  async (tok, S) => { // @2253.8
+    glow(S.F.unit, COL.gold); S.F.sel('A', '10');
+    txt(S.t2, '得到這些 input，forwarding unit 就發出 control，選 mux 的 input');
+    cap('得到 input 之後', '就發出 control 控制 mux 的 input');
+  },
+  async (tok, S) => { // @2281.8
+    S.F.sel('B', '01');
+    txt(S.t2, '有 rs、rt 兩個運算元 → 發兩個 signal：ForwardA（rs）、ForwardB（rt），兩個不一定一樣');
+    cap('有 rs 跟 rt', '所以發出兩個 signal，不一定一樣');
+  },
+  async (tok, S) => { // @2296.3
+    S.F.sel('B', '00');
+    txt(S.t2, '都不依賴 → 00；依賴前兩個 → 01；依賴前一個 → 10');
+    cap('不依賴誰就選 00', '這個選 01、這個選 10');
+  },
+], { cam: CAM_F });
+
+// 條件（課本 EX hazard / MEM hazard），用本章的 fwdLogic 驗證
+const C_EX = FW('add $4, $5, $6', 'sub $2, $1, $3', 'and $12, $2, $5');
+const C_MEM = FW('sub $2, $1, $3', 'add $4, $5, $6', 'or $13, $6, $2');
+const C_NOW = FW('add $4, $5, $6', 'sw $2, 0($3)', 'and $12, $2, $5');
+const C_ZERO = FW('add $4, $5, $6', 'or $0, $1, $2', 'and $12, $0, $5');
+scene('ppA-19a-cond', '19A：forwarding 的 condition：RegWrite、rd ≠ 0、rd = rs / rt', [
+  async (tok, S) => { // @2377.1
+    S.F = mkFwd(S); S.F.put('idex', 'rs, rt'); S.F.put('exmem', 'rd, RegWrite'); S.F.put('memwb', 'rd, RegWrite');
+    S.t = hot('forwarding unit 還要注意哪些東西？', 0.2, 6.9);
+    cap('forwarding unit 還要注意什麼？', '把 condition 仔細寫出來');
+  },
+  async (tok, S) => { // @2399.8
+    S.F.put('exmem', 'sub $2,…  rd=2'); S.F.put('idex', 'and …,$2,…  rs=2');
+    txt(S.t, 'EX/MEM.rd（前一個的 destination）= ID/EX.rs → 可能要 forward');
+    cap('EX/MEM 的 destination', '跟我現在的 rs 一樣 → 可能要 forward');
+  },
+  async (tok, S) => { // @2424.2
+    S.F.put('memwb', 'rd'); txt(S.t, 'MEM/WB.rd（前兩個的 destination）= rs 或 rt → 也可能要 forward');
+    cap('第五個 stage 的 MEM/WB', 'rd 跟我的 rs、rt 一樣也要 forward');
+  },
+  async (tok, S) => { // @2439.6
+    S.F.put('exmem', 'sw $2,…（RegWrite=0）');
+    S.c1 = ok(C_NOW.FA === '00', 0.2, -1.1, '前一個不是寫 register 的指令 → 不 forward（fwdLogic 算出 ForwardA = ' + C_NOW.FA + '）✓');
+    cap('不要 forward', '如果那個 instruction 根本不是寫 register');
+  },
+  async (tok, S) => { // @2464.7
+    gone(S.c1); S.F.put('exmem', 'or $0,…  rd=0'); S.F.put('idex', 'and …,$0,…  rs=0');
+    S.c1 = ok(C_ZERO.FA === '00', 0.2, -1.1, 'destination 是 $0 → 不 forward（$0 永遠是 0）：ForwardA = ' + C_ZERO.FA + ' ✓');
+    cap('destination 是 0 的話', '也不用 forward，0 永遠是 0');
+  },
+  async (tok, S) => { // @2486.2
+    gone(S.c1); S.F.put('exmem', 'sub $2,…  rd=2'); S.F.put('idex', 'and …,$2,…  rs=2'); S.F.sel('A', C_EX.FA);
+    S.cd = mono(tag('EX hazard：if EX/MEM.RegWrite and EX/MEM.rd ≠ 0\n           and EX/MEM.rd = ID/EX.rs → ForwardA = 10', '', 0.2, -1.0), 9);
+    S.c1 = ok(C_EX.FA === '10', 2.2, 6.3, 'fwdLogic：' + C_EX.FA + ' ✓');
+    cap('前一個要 write、destination 不是 0', '而且等於我的 rs → forward');
+  },
+  async (tok, S) => { // @2511.0
+    S.F.reset(); gone(S.cd, S.c1); S.F.put('exmem', 'add $4,…  rd=4'); S.F.put('memwb', 'sub $2,…  rd=2'); S.F.put('idex', 'or …,$6,$2  rt=2'); S.F.sel('B', C_MEM.FB);
+    S.cd = mono(tag('MEM hazard：if MEM/WB.RegWrite and MEM/WB.rd ≠ 0\n            and MEM/WB.rd = ID/EX.rt → ForwardB = 01', '', 0.2, -1.0), 9);
+    S.c1 = ok(C_MEM.FB === '01', 2.2, 6.3, 'fwdLogic：ForwardB = ' + C_MEM.FB + ' ✓');
+    cap('再後面一個 stage：前兩個 instruction', '也要 write、不是 0、等於我 → forward');
+  },
+  async (tok, S) => { // @2534.4
+    txt(S.t, 'rs 有一組條件（ForwardA），rt 一模一樣再一組（ForwardB）');
+    cap('rs 是這樣', 'rt 一樣，把 rs 改成 rt 就好');
+  },
+  async (tok, S) => { // @2539.3
+    gone(S.F, S.cd, S.c1); S.F = null;
+    S.g = mkGrid(S, 9); DEP.slice(0, 4).forEach((t, k) => S.g.add(k, t, L5(k + 1))); S.g.upto(99);
+    S.a1 = arrow(V3(S.g.cx(3) + 0.3, S.g.cy(0) - 0.15, 0.4), V3(S.g.cx(4) - 0.3, S.g.cy(1) + 0.12, 0.4), 0xc08a1f);
+    S.a2 = arrow(V3(S.g.cx(4) + 0.3, S.g.cy(0) - 0.15, 0.4), V3(S.g.cx(5) - 0.3, S.g.cy(2) + 0.12, 0.4), 0xc08a1f);
+    txt(S.t, '做完 forwarding：and 從 EX/MEM 拿、or 從 MEM/WB 拿');
+    cap('做完 forward 會變成什麼樣子？', '前一個放這裡、再過一個 cycle 放那裡');
+  },
+  async (tok, S) => { // @2580.1
+    S.g.hot(0, 5, COL.gold); S.g.hot(3, 5, COL.gold);
+    const sch = schedule(DEP.map((t) => parseIns(t)), { fwd: true, br: 'pnt', mem1: false });
+    S.c1 = ok(sch.stalls === 0, 0.6, 1.9, '時間軸上：add 在 cycle 5 靠 internal forwarding；全部不用 stall ✓');
+    cap('畫成時間來看', '我 execution 時，前一個、前兩個 cycle 給我');
+  },
+]);
+
+const C_DBL = FW('add $1, $1, $2', 'add $1, $1, $3', 'add $1, $1, $4');
+scene('ppA-19a-double', '19A：兩個都要寫同一個 register：forward 最新的', [
+  async (tok, S) => { // @2610.7
+    S.F = mkFwd(S);
+    S.t = hot('還有一個小小的問題', 0.2, 6.9);
+    cap('還有一些小小的問題', '');
+  },
+  async (tok, S) => { // @2635.5
+    S.F.put('exmem', 'write R3（前一個）'); S.F.put('memwb', 'write R3（前兩個）');
+    txt(S.t, '前一個、前兩個都要寫 R3');
+    cap('這個要寫到第三個 register', '這個也要寫到第三個 register');
+  },
+  async (tok, S) => { // @2646.3
+    S.F.put('idex', 'read R3（rs）'); glow(S.F.exmem, COL.gold); glow(S.F.memwb, COL.gold);
+    txt(S.t, '我的 rs 要讀 R3 —— 要 forward 誰？');
+    cap('我的 rs 要讀第三個 register', '到底要 forward 誰？');
+  },
+  async (tok, S) => { // @2716.6
+    glow(S.F.memwb, null);
+    txt(S.t, '左邊這個（EX/MEM，前一個）');
+    cap('左邊的', '因為時間的順序');
+  },
+  async (tok, S) => { // @2725.0
+    S.t2 = note('照程式順序，最後寫 R3 的是「前一個」→ 它的值最新', 0.2, -1.1);
+    cap('我要最新的資料', '');
+  },
+  async (tok, S) => { // @2738.6
+    S.F.sel('A', C_DBL.FA);
+    S.c = ok(C_DBL.FA === '10', 2.2, 6.3, '課本 add $1 三連：fwdLogic 選 ForwardA = ' + C_DBL.FA + ' ✓');
+    txt(S.t2, '兩個都符合時，EX/MEM 優先；EX/MEM 沒有時，才輪到 MEM/WB');
+    cap('兩個都要時，這個優先 forward', '這個沒有的時候，那個才 forward');
+  },
+  async (tok, S) => { // @2754.9
+    S.F.reset(); gone(S.c);
+    txt(S.t, 'forwarding logic：mux 有三個 input');
+    txt(S.t2, '正常的（register file 讀出來的 rs、rt）＋ 兩個還沒寫回的（EX/MEM、MEM/WB）');
+    cap('forwarding logic', 'mux 有三個 input');
+  },
+  async (tok, S) => { // @2797.6
+    S.F.sel('A', '00'); S.F.sel('B', '01');
+    txt(S.t2, '00 選正常的、01 選 write back stage 的、10 選最新的（memory stage 那個，EX/MEM）');
+    cap('control signal 00、01、10 這樣選', '01 是 write back 那邊，10 是最新的');
+  },
+  async (tok, S) => { // @2825.4
+    S.F.reset(); S.F.put('exmem', 'write R3'); S.F.put('memwb', 'write R3'); S.F.put('idex', 'read R3');
+    txt(S.t2, '兩個都能 forward 時：取 EX/MEM 那個（最新），不要取到 write back 的');
+    cap('兩個都 forward 的話', '要取前面最新的，不要取 write back 的');
+  },
+  async (tok, S) => { // @2849.0
+    S.F.sel('A', '10');
+    S.cd = mono(tag('EX hazard：EX/MEM.RegWrite and EX/MEM.rd ≠ 0\n           and EX/MEM.rd = ID/EX.rs  → ForwardA = 10', '', 0.2, -1.0), 9);
+    txt(S.t2, '');
+    cap('前一個：是不是 write、不是 0', '跟我的 rs 一樣 → 寫 10');
+  },
+  async (tok, S) => { // @2887.0
+    gone(S.cd);
+    S.cd = mono(tag('MEM hazard：MEM/WB.RegWrite and MEM/WB.rd ≠ 0\n  and not (EX hazard 的條件成立)\n  and MEM/WB.rd = ID/EX.rs  → ForwardA = 01', '', 0.2, -1.1), 9);
+    cap('前兩個 instruction 的條件都一樣', '要再加一個條件');
+  },
+  async (tok, S) => { // @2896.4
+    const C2 = FW('add $1, $1, $2', 'add $5, $6, $7', 'add $1, $1, $4');
+    S.c = ok(C_DBL.FA === '10' && C2.FA === '01', 2.2, 6.3, '前一個不寫 R3 時才選 MEM/WB：01 ✓（兩個都寫時仍是 10）');
+    cap('前一個的 rd 跟 rs 不一樣', '才去 check 前兩個 → forward 01');
+  },
+  async (tok, S) => { // @2950.0
+    S.F.sel('A', '01');
+    txt(S.t, 'forwarding unit：在這些 condition 下發出 00 / 01 / 10，決定 ALU 的 input 從哪裡來');
+    cap('在這些 condition 之下', '發出 00、01、10 控制 input 從哪裡來');
+  },
+], { cam: CAM_F });
+
+// ════════ p_GUphUjmvI（第19B講：forwarding 例子、load-use stall 與 hazard detection、branch hazard、flush、dynamic prediction） ════════
+scene('ppA-19b-where', '19B：forwarding unit 在 EX 檢查：爸爸、祖父在哪裡', [
+  async (tok, S) => { // @17.3
+    S.F = mkFwd(S);
+    S.t = hot('先看一個 forwarding 的例子 —— 先注意兩件事', 0.2, 6.9);
+    cap('看一個 forwarding 的例子', '複習之前先注意兩件事');
+  },
+  async (tok, S) => { // @22.8
+    glow(S.F.unit, COL.gold); glow(S.F.alu, COL.gold);
+    txt(S.t, '① forwarding unit 是在 EX 這個 stage 做 check，不是在讀 register 的時候');
+    cap('forwarding unit 在 execution 這個 stage', '做 check，不是在前面');
+  },
+  async (tok, S) => { // @36.2
+    glow(S.F.idex, COL.gold);
+    S.t2 = note('不是每次都要 forward：正常時 rs、rt 照樣從 register file 讀出來', 0.2, -1.1);
+    cap('不是什麼情況都要 forward', 'rs、rt 還是照樣讀出來');
+  },
+  async (tok, S) => { // @58.5
+    glow(S.F.idex, null);
+    txt(S.t2, '真正要用（在 ALU 算）的時候，才 check 需不需要 forward');
+    cap('真正用到它的時候', '才 check 需不需要 forward');
+  },
+  async (tok, S) => { // @63.7
+    glow(S.F.unit, null); glow(S.F.alu, null);
+    txt(S.t, '② 我正在 EX 時，前一個 instruction 在哪裡？');
+    cap('第二個要注意的', '我在 execution，前一個 instruction 在哪裡？');
+  },
+  async (tok, S) => { // @76.1
+    S.F.put('idex', '我（EX）'); S.F.put('exmem', '爸爸＝前一個'); S.F.put('memwb', '祖父＝前兩個');
+    glow(S.F.exmem, COL.gold); glow(S.F.memwb, COL.gold);
+    txt(S.t2, '前一個（爸爸）在 EX/MEM；前兩個（祖父）在 MEM/WB');
+    cap('我爸爸在哪裡？在這裡', '祖父在這裡');
+  },
+  async (tok, S) => { // @87.0
+    gone(S.F, S.t2); S.F = null;
+    S.g = mkGrid(S, 9); ['祖父', '爸爸', '我', '下一個'].forEach((n, k) => S.g.add(k, n, L5(k + 2))); S.g.upto(99);
+    txt(S.t, '剛才的立體圖容易搞混 —— 換這種只有時間的圖');
+    cap('立體的圖容易搞混', '看這種只有時間的圖');
+  },
+  async (tok, S) => { // @98.4
+    S.g.band(5, 0, 3);
+    S.t2 = note('在第 5 個 clock cycle：只有這幾格在運作', 0.6, 2.6);
+    cap('在第五個 clock cycle', '任何一個時間只有這幾個在運作');
+  },
+  async (tok, S) => { // @113.2
+    S.g.hot(2, 5, COL.gold); S.g.hot(1, 5, '#4b9ee2'); S.g.hot(0, 5, '#4b9ee2');
+    txt(S.t2, '我在 EX（cycle 5）時：前一個在 MEM（它的結果在 EX/MEM）、前兩個在 WB（結果在 MEM/WB）');
+    cap('我在 execution 時', '前一個在這裡，前兩個在這裡');
+  },
+]);
+
+// 課本例子：sub $2,$1,$3 / and $4,$2,$5 / or $4,$4,$2 / add $9,$4,$2 —— 每個 cycle 的 ForwardA/B 由 fwdLogic 算
+const E1 = ['sub $2, $1, $3', 'and $4, $2, $5', 'or $4, $4, $2', 'add $9, $4, $2'];
+const F4 = FW('nop', E1[0], E1[1]), F5 = FW(E1[0], E1[1], E1[2]), F6 = FW(E1[1], E1[2], E1[3]);
+const E1S = schedule(E1.map((t) => parseIns(t)), { fwd: true, br: 'pnt', mem1: false });
+scene('ppA-19b-ex1', '19B：例子：sub、and、or、add 每個 cycle 該 forward 什麼', [
+  async (tok, S) => { // @120.8
+    S.c = code(E1, -3.6, 6.7, 0.45); S.k = sm('（課本的例子）', 0.4, 6.7);
+    S.t = note('看這個例子', 0.6, 4.5);
+    cap('我們看這個例子', '');
+  },
+  async (tok, S) => { // @125.1
+    S.c.hl(0); txt(S.t, 'sub：destination 是 register 2');
+    cap('sub：destination 是 register 2', '');
+  },
+  async (tok, S) => { // @135.3
+    S.c.hl(1); txt(S.t, 'and：rs 要 read $2（還有 $5）');
+    cap('後面接的 and：rs 要 read 2', '');
+  },
+  async (tok, S) => { // @140.4
+    txt(S.t, 'and 寫回的 destination 是 $4');
+    cap('and 寫回去的 destination 是 4', '');
+  },
+  async (tok, S) => { // @145.5
+    S.c.hl(2); txt(S.t, 'or、add 也都用到 $4、$2 —— 好多 dependency');
+    cap('後面也有用到 4', '好多 dependency 在這邊');
+  },
+  async (tok, S) => { // @151.3
+    gone(S.c, S.k, S.t);
+    S.F = mkFwd(S); S.cy = hot('cycle 4', 5.2, 6.9);
+    S.F.put('exmem', 'sub  rd=2'); S.F.put('memwb', '（更早的）');
+    S.t = note('下一個 clock：sub 算完了，$2 放在 EX/MEM，還要記下「destination = 2」', 0.2, -1.1);
+    cap('下一個 clock，2 會在哪裡？', '擺在這邊，同時記下 destination 是 2');
+  },
+  async (tok, S) => { // @187.0
+    S.F.put('idex', 'and  rs=2, rt=5');
+    txt(S.t, 'and 要運算，source 是 2 和 5 —— rs、rt 的號碼存在 ID/EX，沒有丟掉');
+    cap('現在要運算，source 是 2 跟 5', 'rs、rt 存起來，不能 access 完就丟');
+  },
+  async (tok, S) => { // @208.3
+    glow(S.F.idex, COL.gold); glow(S.F.exmem, COL.gold);
+    txt(S.t, '2 和 2 一比對：一樣');
+    cap('2 跟 5 一比對', '這兩個 2 是一樣的');
+  },
+  async (tok, S) => { // @212.6
+    txt(S.t, '還要 check：sub 是 write 的 instruction 嗎？是（RegWrite = 1）；寫的是 $0 嗎？不是');
+    cap('它是不是 write 的 instruction？是', '是不是 register 0？也不是');
+  },
+  async (tok, S) => { // @229.2
+    txt(S.t, '→ 要 forward：把 EX/MEM 的東西送到 ALU 的 rs 那一邊');
+    cap('表示要 forward', '把這邊的東西 forward 到 rs');
+  },
+  async (tok, S) => { // @241.2
+    S.q = hot('ForwardA = ？', -2.7, 5.15);
+    cap('rs 這個 mux 應該得到什麼值？', '');
+  },
+  async (tok, S) => { // @253.8
+    gone(S.q); S.F.sel('A', F4.FA); S.F.sel('B', F4.FB);
+    S.ck = ok(F4.FA === '10' && F4.FB === '00', 2.6, 6.3, 'fwdLogic：A = ' + F4.FA + '、B = ' + F4.FB + ' ✓');
+    cap('10：從 EX/MEM 過來', 'control signal 發出 10');
+  },
+  async (tok, S) => { // @283.0
+    S.F.reset(); gone(S.ck); glow(S.F.idex, null); glow(S.F.exmem, null); txt(S.cy, 'cycle 5');
+    S.F.put('exmem', 'and  rd=4'); S.F.put('memwb', 'sub  rd=2'); S.F.put('idex', 'or');
+    txt(S.t, '下一個 clock（第 5 個）：又要執行下一個 instruction（or）');
+    cap('下個 clock cycle，第五個', '又開始執行下一個');
+  },
+  async (tok, S) => { // @287.4
+    glow(S.F.exmem, COL.gold);
+    txt(S.t, '前一個（and）的 destination 是 4 → 拉過來');
+    cap('前一個的 destination 是 4', '拉過來是 4');
+  },
+  async (tok, S) => { // @300.6
+    glow(S.F.memwb, COL.gold);
+    txt(S.t, '前兩個（sub，祖父）的 destination 是 2 → 也拉過來');
+    cap('前兩個（祖父）也要顧到', 'destination 是 2');
+  },
+  async (tok, S) => { // @304.6
+    S.F.put('idex', 'or  rs=4, rt=2');
+    txt(S.t, 'or 要讀的是 rs = 4、rt = 2');
+    cap('我要讀的 rs、rt', '是 4 跟 2');
+  },
+  async (tok, S) => { // @312.0
+    txt(S.t, '4 要 forward 到 rs；2 要 forward 到 rt');
+    cap('4 要 forward 到 rs', '2 要 forward 到 rt');
+  },
+  async (tok, S) => { // @323.4
+    txt(S.t, 'check：and、sub 都是 R-type，會 write register → 都要 forward');
+    cap('是不是 write？是，R-type', '所以這個也會 forward');
+  },
+  async (tok, S) => { // @356.5
+    S.F.sel('A', F5.FA);
+    cap('rs 的 4 從 EX/MEM 過來', '所以是 10');
+  },
+  async (tok, S) => { // @363.3
+    S.F.sel('B', F5.FB);
+    S.ck = ok(F5.FA === '10' && F5.FB === '01', 2.6, 6.3, 'fwdLogic：A = ' + F5.FA + '、B = ' + F5.FB + ' ✓');
+    cap('rt 的部分：01', '從 MEM/WB 這個 stage forward');
+  },
+  async (tok, S) => { // @386.2
+    S.F.reset(); gone(S.ck); glow(S.F.exmem, null); glow(S.F.memwb, null); txt(S.cy, 'cycle 6');
+    S.F.put('exmem', 'or  rd=4'); S.F.put('memwb', 'and  rd=4'); S.F.put('idex', 'add  rs=4, rt=2');
+    txt(S.t, '第 6 個 cycle：add 要讀 4 跟 2（剛才記下來的號碼）');
+    cap('現在執行 add', '要讀 4 跟 2');
+  },
+  async (tok, S) => { // @398.3
+    glow(S.F.exmem, COL.gold); glow(S.F.memwb, COL.gold);
+    txt(S.t, '前一個（or）、前兩個（and）都要寫 $4');
+    cap('前兩個 stage 要寫去哪裡？', '這兩個都要寫 4');
+  },
+  async (tok, S) => { // @400.5
+    S.q = hot('rs 要選誰？', -2.7, 5.15);
+    cap('這時候應該選誰？', '');
+  },
+  async (tok, S) => { // @431.4
+    gone(S.q); glow(S.F.memwb, null); S.F.sel('A', F6.FA); S.F.sel('B', F6.FB);
+    S.ck = ok(F6.FA === '10' && F6.FB === '00', 2.6, 6.3, 'fwdLogic：A = ' + F6.FA + '（取最新的）、B = ' + F6.FB + '（$2 在 cycle 5 已寫回）✓');
+    cap('選 10：從 EX/MEM forward', '要 forward 最新的');
+  },
+  async (tok, S) => { // @452.6
+    S.ck2 = ok(E1S.stalls === 0 && E1S.total === 8, 0.2, 0.0, '有 forwarding：4 個指令完全不用 stall，共 4 + 4 = ' + E1S.total + ' 個 cycle ✓');
+    txt(S.t, '');
+    cap('這就是 forwarding', '懂了每條線，control 其實不難');
+  },
+], { cam: CAM_F });
+
+// load-use：lw $2 之後馬上讀 $2
+scene('ppA-19b-loaduse', '19B：load-use：forwarding 救不了，一定要 stall', [
+  async (tok, S) => { // @472.0
+    S.t = hot('另外一種 hazard：先把所有 instruction 再分析一下', 0.6, 6.7);
+    cap('接下來是另外一種 hazard', 'R 接 R、load 接 R');
+  },
+  async (tok, S) => { // @483.0
+    S.t2 = note('誰會「寫」register file？', 0.6, 6.1);
+    cap('有誰會寫 register file？', '');
+  },
+  async (tok, S) => { // @491.0
+    S.g = mkGrid(S, 8, { y0: 5.0 });
+    S.g.add(2, '讀的人', L5(2)); S.g.row(2); S.g.hot(2, 3, '#4b9ee2');
+    txt(S.t2, '誰會「讀」？很多指令都會讀，讀一定在第 2 段（register access）');
+    cap('誰會讀 register file？', '讀一定在第二個 stage');
+  },
+  async (tok, S) => { // @502.4
+    txt(S.t2, '寫回去的到目前只有兩種：R-type、load（從 memory 拿出來）');
+    cap('寫回去的只有兩種 type', 'R-type 和 load');
+  },
+  async (tok, S) => { // @511.6
+    S.g.add(0, 'R-type（寫）', R5(1)); S.g.row(0); S.g.hot(0, 3, COL.gold);
+    S.a = arrow(V3(S.g.cx(3) + 0.3, S.g.cy(0) - 0.15, 0.4), V3(S.g.cx(4) - 0.3, S.g.cy(2) + 0.12, 0.4), 0xc08a1f);
+    S.t3 = good('前一個是 R-type：EX 就把東西算好 → 下一個來時可以 forward，沒問題', 0.6, 1.5);
+    cap('前面是 R-type，後面接 R-type', 'EX 就算好了，可以 forwarding');
+  },
+  async (tok, S) => { // @534.9
+    gone(S.a, S.t3); S.g.dropRow(0); S.g.add(0, 'lw（寫）', L5(1)); S.g.row(0);
+    txt(S.t2, '前一個是 load：什麼時候才拿到資料？');
+    cap('如果前一個是 load', '什麼時候才拿到資料？');
+  },
+  async (tok, S) => { // @543.7
+    S.g.hot(0, 3, '#555555'); S.g.hot(0, 4, COL.gold);
+    S.t3 = note('EX 時只算出 memory 位址；要 MEM 讀完（cycle 4 結束）才有資料', 0.6, 1.5);
+    cap('execution 時才算地址而已', '要 memory access 完才拿到');
+  },
+  async (tok, S) => { // @555.0
+    S.g.hot(2, 4, '#7a1010');
+    S.a = arrow(V3(S.g.cx(4) + 0.3, S.g.cy(0) - 0.15, 0.4), V3(S.g.cx(4) - 0.1, S.g.cy(2) + 0.12, 0.4), 0xd64545);
+    txt(S.t3, '下一個在 cycle 4 開始 EX 就要用，可是資料 cycle 4 結束才出來 → 箭頭往回走，真的拿不到');
+    cap('下一個 instruction 真的拿不到 data', 'forward 也沒辦法');
+  },
+  async (tok, S) => { // @577.1
+    S.t4 = bad('cannot always forward：load 後面馬上讀 → forwarding 也來不及', 0.6, 0.8);
+    cap('不是永遠都能 forward', 'load 之後馬上讀，一定要 stall');
+  },
+  async (tok, S) => { // @602.5
+    gone(S.a, S.t4); S.g.dropRow(2); S.g.add(1, 'bubble（nop）', [[4, 'bubble', 'nop'], [5, 'bubble', 'nop'], [6, 'bubble', 'nop']]); S.g.add(2, '讀的人', [[2, 'IF'], [3, 'ID'], [4, 'ID'], [5, 'EX'], [6, 'MEM'], [7, 'WB']]); S.g.upto(99);
+    S.g.hot(0, 4, COL.gold); S.g.hot(2, 5, '#0f5a3a');
+    S.a = arrow(V3(S.g.cx(4) + 0.3, S.g.cy(0) - 0.15, 0.4), V3(S.g.cx(5) - 0.3, S.g.cy(2) + 0.12, 0.4), 0xc08a1f);
+    const L1 = schedule(['lw $2, 20($1)', 'and $4, $2, $5'].map((t) => parseIns(t)), { fwd: true, br: 'pnt', mem1: false });
+    txt(S.t3, '停一個 cycle（加一個 nop）：讀的人 EX 延到 cycle 5，再從 MEM/WB forward');
+    S.t4 = ok(L1.rows[1].stall === 1 && L1.rows[1].EX === 5, 0.6, 0.8, 'schedule：and stall ' + L1.rows[1].stall + ' 個 cycle，EX 在 cycle ' + L1.rows[1].EX + ' ✓');
+    cap('一定要停一個 cycle', '加一個 no-op 在裡面');
+  },
+  async (tok, S) => { // @641.2
+    txt(S.t2, 'software 可以插 nop；hardware 則在執行時用 hazard detection 自己偵測');
+    cap('software 也許插一個 no-op', '不然 run time 要做 hazard detection');
+  },
+  async (tok, S) => { // @652.6
+    S.g.hot(2, 3, COL.gold); S.g.hot(2, 4, COL.gold);
+    txt(S.t3, 'insert 一個 no-op = 這個 instruction「再執行一遍」：再 fetch／decode 同一個（ID 做兩次）');
+    cap('insert no-op 的意思', '就是這個 instruction 再執行一遍');
+  },
+  async (tok, S) => { // @687.2
+    S.g.cool(); [4, 5, 6].forEach((c) => S.g.hot(1, c, COL.gold));
+    txt(S.t3, '第一次 decode 出來的那份不要用：把它的 control 全部給 0 → 變成一個 nop（bubble）往下走');
+    cap('不要用的那份', 'control 全部給 0 就是 no-op');
+  },
+  async (tok, S) => { // @698.5
+    S.g.cool();
+    txt(S.t2, '要做兩件事：① 用 controller 偵測（detect）這種情況 ② datapath 要能停（stall）');
+    cap('要做兩件事', '一個 detection 的 controller，一個 datapath');
+  },
+]);
+
+// hazard detection unit 在 ID 段：看 ID/EX.MemRead、ID/EX.rt、IF/ID.rs、IF/ID.rt
+function mkHDU(S, o = {}) {
+  const d = S.d = mkDP(S, { y: 1.4 });
+  const H = { ex: [] };
+  H.unit = cube('Hazard detection unit', '#a99470', [2.6, 0.55, 0.6], -1.4, 5.6, 0); small(H.unit.userData.lbl, 9);
+  H.ctl = cube('Control', '#8a7a5c', [1.2, 0.5, 0.6], -4.3, 4.3, 0); small(H.ctl.userData.lbl, 9);
+  H.mux = cube('mux', '#8a7a5c', [0.5, 0.75, 0.5], -1.4, 4.3, 0); small(H.mux.userData.lbl, 9);
+  H.zero = sm('0', -1.4, 3.65);
+  const L = (pts, c = '#8a7a5c') => { const l = line(pts.map((p) => [p[0], p[1], 0.1]), c); H.ex.push(l); return l; };
+  H.l = {
+    ctl: L([[-3.7, 4.3], [-1.65, 4.3]]), out: L([[-1.15, 4.3], [d.rx(1), 4.3], [d.rx(1), 2.5]]),
+    mr: L([[d.rx(1) + 0.15, 2.5], [d.rx(1) + 0.15, 5.6], [-0.1, 5.6]]),
+    rs: L([[d.rx(0) - 0.15, 2.5], [d.rx(0) - 0.15, 5.6], [-2.7, 5.6]]),
+    pc: L([[-2.7, 5.85], [-6.6, 5.85], [-6.6, 2.0]]), ifid: L([[-2.7, 5.75], [d.rx(0) + 0.15, 5.75], [d.rx(0) + 0.15, 2.5]]),
+    sel: L([[-1.4, 5.3], [-1.4, 4.7]]),
+  };
+  H.tag = {};
+  H.in = (k, t, x, y) => { if (H.tag[k]) remove(H.tag[k]); H.tag[k] = small(tag(t, 'idx', x, y), 9); return H.tag[k]; };
+  H.hot = (k, c = '#d68a00') => H.l[k].material.color.set(c);
+  H.cool = () => Object.values(H.l).forEach((l) => l.material.color.set('#8a7a5c'));
+  H.all = () => [H.unit, H.ctl, H.mux, H.zero, ...H.ex, ...Object.values(H.tag)];
+  S.H = H; return H;
+}
+// 課本條件：if (ID/EX.MemRead and (ID/EX.rt = IF/ID.rs or ID/EX.rt = IF/ID.rt)) stall
+const hzd = (ex, id) => { const a = decodeFU(ex), b = decodeFU(id); return !!(a.op === 'lw' && a.rd && (a.rd === b.rs || a.rd === b.rt)); };
+scene('ppA-19b-detect', '19B：在 ID 偵測 load-use，怎麼讓 pipeline 停一個 cycle', [
+  async (tok, S) => { // @765.9
+    mkHDU(S);
+    S.t = hot('兩件事：怎麼偵測？datapath 怎麼 stall？', 0, 6.9);
+    cap('datapath 怎麼做 stall 這件事？', '');
+  },
+  async (tok, S) => { // @780.0
+    S.lw = S.d.chip('lw $2', 2, COL.gold); S.an = S.d.chip('and …$2…', 1, '#4b9ee2');
+    S.t2 = note('假如前一個是 lw，我這個（在 ID）又要 access 它寫的 register', 0, -0.5);
+    cap('假如前一個 instruction 是 load', '我這個 instruction 又要 access register');
+  },
+  async (tok, S) => { // @793.3
+    S.d.hot(1); glow(S.H.unit, COL.gold);
+    txt(S.t2, '在 decode 這段就知道了：decode 時就知道自己的 rs、rt');
+    cap('在 instruction decode 時就知道', 'decode 時就知道 rs、rt 是誰');
+  },
+  async (tok, S) => { // @814.2
+    S.d.cool(); glow(S.d.regs[1], COL.gold);
+    txt(S.t2, '前一個 instruction 在哪？在 ID/EX —— 它已經 decode 完，資訊全在這裡');
+    cap('前一個 instruction 在哪裡？', '在這裡，它的資料全部都在這邊');
+  },
+  async (tok, S) => { // @829.9
+    S.H.hot('mr'); S.H.in('mr', 'ID/EX.MemRead', 1.2, 5.85);
+    txt(S.t2, '怎麼知道它是 load？看它的 MemRead control signal 是不是 enable');
+    cap('怎麼知道它是不是 load？', '看 memory read 那個 signal 有沒有 enable');
+  },
+  async (tok, S) => { // @853.4
+    S.H.hot('rs'); S.H.in('rs', 'IF/ID.rs、IF/ID.rt', -4.0, 5.85);
+    txt(S.t2, '再把我這個 instruction 讀的 rs、rt 拉進來比對');
+    cap('還要看我的 rs 跟 rt', '拉過來做比對');
+  },
+  async (tok, S) => { // @869.0
+    S.H.in('rt', 'ID/EX.rt（lw 的 destination）', 1.6, 5.35);
+    S.c = ok(hzd('lw $2, 20($1)', 'and $4, $2, $5'), 0, -1.1, '前一個是 load、而且它的 destination = 我的 rs 或 rt → 一定要 stall ✓');
+    cap('前一個是 load，destination 又跟我一樣', '就一定要 stall');
+  },
+  async (tok, S) => { // @884.2
+    gone(S.c);
+    txt(S.t2, '怎麼 stall？我（and）在 decode，會產生 control signal ……');
+    cap('那怎麼樣 stall？', '我現在在 decoding，一定有 control signal');
+  },
+  async (tok, S) => { // @912.6
+    txt(S.t2, '……什麼都不做的話，這些 control 下一個 cycle 就送去執行了 —— 但這次 decode 出來的不能用');
+    cap('現在 decode 出來的不能用', '要當作一個 no-op');
+  },
+  async (tok, S) => { // @936.5
+    S.H.hot('sel'); S.H.hot('out'); glow(S.H.mux, COL.gold); txt(S.H.zero, '選 0');
+    txt(S.t2, '只要把 control 全部 set 成 0，它就是 no-op');
+    cap('把 control 全部 set 成 0', '它就是 no-op');
+  },
+  async (tok, S) => { // @941.1
+    S.H.hot('ifid'); glow(S.d.regs[0], '#7a1010');
+    txt(S.t2, 'IF/ID 裡的 and 要保留：下次要再執行一遍 → IF/ID 不准寫入新的');
+    cap('IF/ID 這邊要保留', '不能讓新的寫進去，下次要再執行一遍');
+  },
+  async (tok, S) => { // @959.6
+    S.H.hot('pc'); S.H.in('pc', 'PCWrite = 0、IF/IDWrite = 0', -4.4, 6.3);
+    txt(S.t2, 'PC 也不更新（本來 PC + 4 不要寫進去）');
+    cap('PC 等於 PC + 4 也不要寫進去', '這兩個都不要動，這邊給 0');
+  },
+  async (tok, S) => { // @974.8
+    txt(S.t2, '整理：在 ID 偵測 → control 給 0（插 bubble）＋ PC、IF/ID 不動（重做一次）＝ stall');
+    cap('這就是 stall 的動作', '再講一遍');
+  },
+]);
+
+scene('ppA-19b-hdu', '19B：hazard detection unit 的 input、output 與 bubble', [
+  async (tok, S) => { // @1001.1
+    mkHDU(S); S.lw = S.d.chip('lw $2', 2, COL.gold); S.an = S.d.chip('and', 1, '#4b9ee2'); S.or = S.d.chip('or', 0, '#9b7ef4');
+    S.H.hot('mr'); S.H.in('mr', 'ID/EX.MemRead', 1.2, 5.85);
+    S.t = note('怎麼知道前一個是 load？看它的 control：MemRead', 0, -0.5);
+    cap('怎麼知道前一個是 load？', '看它的 control signal：memory read');
+  },
+  async (tok, S) => { // @1019.6
+    S.H.in('rt', 'ID/EX.rt', 1.6, 5.35);
+    txt(S.t, '再拉過來：load 要寫的那個 register 號碼');
+    cap('還要拉過來', '它到底要寫哪一個 register');
+  },
+  async (tok, S) => { // @1040.0
+    S.H.hot('rs'); S.H.in('rs', 'IF/ID.rs、IF/ID.rt', -4.0, 5.85);
+    txt(S.t, '這兩條：我現在這個 instruction 的 rs、rt —— input 全部知道了');
+    cap('這條線是我現在 instruction 的 rs、rt', 'input 全部都知道了');
+  },
+  async (tok, S) => { // @1050.1
+    S.H.hot('pc'); S.H.hot('ifid'); S.H.hot('sel'); S.H.in('pc', 'PCWrite、IF/IDWrite、mux 選 0', -4.4, 6.3);
+    txt(S.t, 'output：三個 control signal —— PC 不要 write、IF/ID 不要 write、control 的 mux 選 0');
+    cap('output：PC、IF/ID 不要 write enable', 'mux 選 0：發出三個 control signal');
+  },
+  async (tok, S) => { // @1076.0
+    S.bub = S.d.chip('bubble（全 0）', 2, '#cfc6b6');
+    await S.d.go(tok, [[S.lw, 3]], 600);
+    txt(S.t, '下一個 cycle：送進 ID/EX 的 control 全是 0 → 什麼都不做');
+    cap('下一個 clock cycle', '過去的東西全部都是 0');
+  },
+  async (tok, S) => { // @1085.2
+    glow(S.an, COL.gold); glow(S.or, COL.gold);
+    txt(S.t, 'and、or 原地踏步：IF/ID 沒寫新的 → and 再 decode 一次；PC 沒變 → 再抓一次 or');
+    cap('原地踏步', '再 decode 一次，PC 也沒改變');
+  },
+  async (tok, S) => { // @1104.8
+    txt(S.t, '這就是 insert 一個 bubble');
+    cap('這就是 insert 一個 bubble', '');
+  },
+  async (tok, S) => { // @1112.8
+    glow(S.an, null); glow(S.or, null);
+    txt(S.t, '分兩部分：datapath 加一個 hazard detection（在 register access 那段）；control 的條件寫成 Boolean equation');
+    cap('datapath、control 各有什麼改變', 'register access 那裡多一個 hazard detection');
+  },
+  async (tok, S) => { // @1162.3
+    glow(S.H.unit, COL.gold); S.H.hot('mr', '#d64545');
+    txt(S.t, '別忘了把 rt 放進去');
+    cap('不要忘記把 rt 放進去', '');
+  },
+  async (tok, S) => { // @1196.6
+    S.H.in('rt', 'ID/EX.rt ← load 的 destination 是 rt', 1.9, 5.35);
+    txt(S.t, 'load 的 destination 是 rt（不是 rd）→ 拿 ID/EX.rt 和我的 rs、rt 比（考試也考過）');
+    cap('load 的 destination 是 rt', '所以要把 rt 拿過來比');
+  },
+  async (tok, S) => { // @1218.3
+    S.cd = mono(tag('if ( ID/EX.MemRead and\n     ( ID/EX.rt = IF/ID.rs or ID/EX.rt = IF/ID.rt ) )\n   stall the pipeline for one cycle', '', 0.2, -1.5), 9);
+    txt(S.t, '');
+    cap('control 的條件', '前一個在 ID/EX 是 MemRead，且 destination 跟我一樣');
+  },
+  async (tok, S) => { // @1244.6
+    const tests = [['lw $2, 20($1)', 'and $4, $2, $5', true], ['lw $2, 20($1)', 'and $4, $5, $2', true], ['lw $2, 20($1)', 'and $4, $5, $6', false], ['add $2, $1, $3', 'and $4, $2, $5', false]];
+    const pass = tests.every(([a, b, want]) => hzd(a, b) === want);
+    S.c = ok(pass, 0.2, 6.9, '測 4 組：lw→用 rs ✓ stall、lw→用 rt ✓ stall、lw→不相關 不 stall、add→用 不 stall（交給 forwarding）✓');
+    cap('條件成立就 stall pipeline 一個 cycle', '');
+  },
+  async (tok, S) => { // @1254.4
+    gone(S.c);
+    S.t2 = note('stall：不要改 PC、不要改 IF/ID pipeline register → 重複再執行一遍', 0, 7.0);
+    cap('stall：不要 change PC', '也不要 change IF/ID');
+  },
+  async (tok, S) => { // @1266.3
+    txt(S.t2, '現在 decode 的那份全部給 0 往下傳 → 等於傳下去一個 no-op');
+    cap('現在 decode 的東西全部給 0', '相當於傳一個 no-op 往下走');
+  },
+]);
+
+// 課本 stall 例子：lw $2,20($1) / and $4,$2,$5 / or $4,$4,$2 / add $9,$4,$2
+const E2 = ['lw $2, 20($1)', 'and $4, $2, $5', 'or $4, $4, $2', 'add $9, $4, $2'];
+const E2S = schedule(E2.map((t) => parseIns(t)), { fwd: true, br: 'pnt', mem1: false });
+const G5 = FW(E2[0], 'nop', E2[1]), G6 = FW('nop', E2[1], E2[2]), G7 = FW(E2[1], E2[2], E2[3]);
+scene('ppA-19b-ex2', '19B：例子：lw 之後的 stall、bubble 與 forwarding', [
+  async (tok, S) => { // @1289.3
+    mkHDU(S);
+    S.c = code(E2, 3.2, 6.9, 0.42); S.k = sm('（課本）', 5.8, 5.2);
+    S.t = note('例子：load instruction', 0, -0.5);
+    cap('來看一個例子', '假如現在是 load instruction');
+  },
+  async (tok, S) => { // @1295.3
+    S.c.hl(0); S.lw = S.d.chip('lw  rt=2', 2, COL.gold);
+    txt(S.t, 'lw 要寫的是 rt，destination = 2（要在這個 stage 檢查）');
+    cap('它要寫的是 rt，destination 是 2', '');
+  },
+  async (tok, S) => { // @1302.8
+    S.c.hl(1); S.an = S.d.chip('and  rs=2, rt=5', 1, '#4b9ee2');
+    txt(S.t, '下一個 and 要讀第 2 個 register');
+    cap('下一個 instruction 是 and', '要讀第二個 register');
+  },
+  async (tok, S) => { // @1319.9
+    S.H.hot('rs'); S.H.in('rs', 'IF/ID：rs = 2、rt = 5', -4.0, 5.85); S.H.in('rt', 'ID/EX.rt = 2', 1.6, 5.35);
+    txt(S.t, 'lw 把 2 傳過來；and 把 rs、rt（2 和 5）傳過來');
+    cap('load 把 2 傳過來', '這邊要傳 2 跟 5');
+  },
+  async (tok, S) => { // @1339.1
+    S.H.hot('mr'); S.H.in('mr', 'ID/EX.MemRead = 1', 1.2, 5.85);
+    txt(S.t, '是不是 load？看 MemRead 有沒有 enable —— 有');
+    cap('怎麼知道它是不是 load？', '看 memory read 是不是 enable');
+  },
+  async (tok, S) => { // @1345.1
+    glow(S.H.unit, COL.gold);
+    S.ck = ok(hzd(E2[0], E2[1]), 0, -1.1, '條件全部符合：load 後面接 access 同一個 register → stall ✓');
+    cap('這幾個條件都符合', 'load 後面加一個 access 同一個 destination');
+  },
+  async (tok, S) => { // @1356.4
+    gone(S.ck); S.H.hot('sel'); S.H.hot('out'); glow(S.H.mux, COL.gold); txt(S.H.zero, '選 0');
+    txt(S.t, '第一件事：control 選 0，讓 0 往下 propagate');
+    cap('第一個：發出 control signal', '讓 0 往下 propagate');
+  },
+  async (tok, S) => { // @1363.6
+    S.H.hot('pc'); S.H.hot('ifid'); S.H.in('pc', 'PCWrite = 0、IF/IDWrite = 0', -4.4, 6.3);
+    txt(S.t, '再來：PC、IF/ID 不要動 → and 要再執行一遍');
+    cap('這邊不要動', 'and 要再執行一遍');
+  },
+  async (tok, S) => { // @1371.4
+    S.or = S.d.chip('or', 0, '#9b7ef4');
+    S.bub = S.d.chip('bubble', 2, '#cfc6b6');
+    await S.d.go(tok, [[S.lw, 3]], 600);
+    txt(S.t, '下一個 cycle：0 傳下去變成 bubble；and 還在 ID、or 還在 IF，都沒動');
+    cap('把 0 傳下去了，變成 bubble', 'and 還在這邊，or 還在這邊');
+  },
+  async (tok, S) => { // @1409.0
+    gone(S.d, S.H, S.c, S.k, S.t); S.d = null;
+    S.F = mkFwd(S); S.cy = hot('cycle 5', 5.2, 6.9);
+    S.F.put('idex', 'and  rs=2, rt=5'); S.F.put('exmem', 'bubble'); S.F.put('memwb', 'lw  rt=2');
+    S.t = note('bubble 繼續往下；and 現在要運算了，讀的是 2 跟 5', 0.2, -1.1);
+    cap('bubble 繼續往下', 'and 要運算了，讀的是 2 跟 5');
+  },
+  async (tok, S) => { // @1421.5
+    glow(S.F.idex, COL.gold);
+    txt(S.t, 'rs、rt 的號碼 2、5 送到 forwarding unit');
+    cap('我的讀是 2 跟 5', '');
+  },
+  async (tok, S) => { // @1429.1
+    glow(S.F.memwb, COL.gold);
+    txt(S.t, 'EX/MEM 是 bubble，沒東西；MEM/WB 是 lw，destination = 2');
+    cap('前面那個 stage 是 bubble', '這個 stage 的 destination 是 2');
+  },
+  async (tok, S) => { // @1441.2
+    txt(S.t, '已經 delay 了一個 cycle，lw 的資料已經在 MEM/WB → 可以 forward 了');
+    cap('lw 之後要做 forwarding', '因為已經 delay 一個 cycle，資料在那邊了');
+  },
+  async (tok, S) => { // @1465.6
+    S.F.sel('A', G5.FA);
+    cap('rs 的 control signal：01', '從 MEM/WB forward 過來');
+  },
+  async (tok, S) => { // @1469.8
+    S.F.sel('B', G5.FB);
+    S.ck = ok(G5.FA === '01' && G5.FB === '00', 2.6, 6.3, 'fwdLogic：A = ' + G5.FA + '、B = ' + G5.FB + ' ✓');
+    cap('rt 正常就是 00', '');
+  },
+  async (tok, S) => { // @1491.5
+    S.F.reset(); gone(S.ck); glow(S.F.idex, null); glow(S.F.memwb, null); txt(S.cy, 'cycle 6');
+    S.F.put('idex', 'or'); S.F.put('exmem', 'and  rd=4'); S.F.put('memwb', 'bubble');
+    txt(S.t, '再下一個：hazard 沒有 load 了，只看要不要 forward');
+    cap('再下面：這邊沒問題', '看有沒有要 forward');
+  },
+  async (tok, S) => { // @1500.6
+    S.F.put('idex', 'or  rs=4, rt=2'); glow(S.F.idex, COL.gold);
+    txt(S.t, 'or 要讀 4 跟 2；前一個（and）寫 4；再前一個是 bubble，沒影響');
+    cap('這個要讀的是 4 跟 2', 'bubble 沒有影響');
+  },
+  async (tok, S) => { // @1512.4
+    glow(S.F.exmem, COL.gold);
+    txt(S.t, 'and 又是 write 的 instruction，4 跟 rs 一樣 → 又要 forward');
+    cap('它又是一個 write instruction', '4 跟 rs 一樣，又要 forward');
+  },
+  async (tok, S) => { // @1529.3
+    S.F.sel('A', G6.FA);
+    cap('rs 這個 stage 發出 10', '');
+  },
+  async (tok, S) => { // @1532.7
+    S.F.sel('B', G6.FB);
+    S.ck = ok(G6.FA === '10' && G6.FB === '00', 2.6, 6.3, 'fwdLogic：A = ' + G6.FA + '、B = ' + G6.FB + '（$2 在 cycle 5 已寫回）✓');
+    cap('rt 有沒有 forward？沒有', '正常就是 00');
+  },
+  async (tok, S) => { // @1538.2
+    S.F.reset(); gone(S.ck); glow(S.F.idex, null); glow(S.F.exmem, null); txt(S.cy, 'cycle 7');
+    S.F.put('idex', 'add  rs=4, rt=2'); S.F.put('exmem', 'or  rd=4'); S.F.put('memwb', 'and  rd=4');
+    txt(S.t, '再執行到 add：要讀 4 跟 2');
+    cap('再執行到這個 instruction', '要讀 4 跟 2');
+  },
+  async (tok, S) => { // @1550.1
+    glow(S.F.exmem, COL.gold); glow(S.F.memwb, COL.gold);
+    txt(S.t, '前一個寫 4、再前一個也寫 4 → rs 要 forward，從哪裡？');
+    cap('前一個是 4，再前一個也是 4', '第一個 operand 要 forward');
+  },
+  async (tok, S) => { // @1563.7
+    glow(S.F.memwb, null); S.F.sel('A', G7.FA); S.F.sel('B', G7.FB);
+    S.ck = ok(G7.FA === '10' && G7.FB === '00', 2.6, 6.3, 'fwdLogic：A = ' + G7.FA + '（最新的 or）、B = ' + G7.FB + ' ✓');
+    cap('從前面這個 forward', '所以設成 10');
+  },
+  async (tok, S) => { // @1582.3
+    gone(S.F, S.cy, S.ck, S.t); S.F = null;
+    S.g = mkGrid(S, 10, { y0: 6.2, dy: 0.56 });
+    S.g.add(0, E2[0], L5(1)); S.g.add(1, 'bubble', [[4, 'bubble', 'nop'], [5, 'bubble', 'nop'], [6, 'bubble', 'nop']]);
+    S.g.add(2, E2[1], [[2, 'IF'], [3, 'ID'], [4, 'ID'], [5, 'EX'], [6, 'MEM'], [7, 'WB']]);
+    S.g.add(3, E2[2], [[3, 'IF'], [4, 'IF'], [5, 'ID'], [6, 'EX'], [7, 'MEM'], [8, 'WB']]);
+    S.g.add(4, E2[3], L5(5)); S.g.upto(99);
+    const r = E2S.rows;
+    S.ck = ok(E2S.total === 9 && E2S.stalls === 1 && r[1].EX === 5 && r[2].EX === 6 && r[3].EX === 7, 0.6, 2.8, '整段：stall 1 個 cycle，4 + 4 + 1 = ' + E2S.total + ' 個 cycle（schedule 驗算）✓');
+    S.t = note('老師：考試很喜歡考 control signal 怎麼設 —— 懂了每條線，答案很簡單', 0.6, 2.1);
+    cap('老師很喜歡考 control signal 怎麼設', '懂了就會，不用背');
+  },
+]);
+
+scene('ppA-19b-recap', '19B：複習：兩類 data hazard', [
+  async (tok, S) => { // @1611.7
+    S.t = hot('data hazard 就兩種狀況，不要搞亂', 0.6, 6.7);
+    S.g = mkGrid(S, 8, { y0: 5.4 });
+    cap('剛才介紹的 data hazard', '就兩種狀況');
+  },
+  async (tok, S) => { // @1652.6
+    S.t2 = note('第一種：永遠可以 forward', 0.6, 2.0);
+    cap('有一種永遠可以 forward', '');
+  },
+  async (tok, S) => { // @1660.9
+    S.g.add(0, 'R-type', R5(1)); S.g.add(1, '讀（任何指令）', L5(2)); S.g.upto(99);
+    S.a = arrow(V3(S.g.cx(3) + 0.3, S.g.cy(0) - 0.15, 0.4), V3(S.g.cx(4) - 0.3, S.g.cy(1) + 0.12, 0.4), 0xc08a1f);
+    txt(S.t2, '前面是 R-type：結果還來不及寫回，但其實已經算出來了 → always forward');
+    cap('前面是 R-type，後面去 access register', '來不及寫，但已經算出來 → forward');
+  },
+  async (tok, S) => { // @1681.8
+    gone(S.a); S.g.dropRow(0); S.g.dropRow(1);
+    txt(S.t2, '第二種呢？');
+    cap('那第二種 type 呢？', '');
+  },
+  async (tok, S) => { // @1694.0
+    S.g.add(0, 'lw', L5(1)); S.g.add(1, '讀（任何指令）', L5(2)); S.g.upto(99);
+    S.a = arrow(V3(S.g.cx(4) + 0.3, S.g.cy(0) - 0.15, 0.4), V3(S.g.cx(4) - 0.1, S.g.cy(1) + 0.12, 0.4), 0xd64545);
+    txt(S.t2, '前一個是 load，下面馬上 access register：可以 forward 嗎？不行（箭頭往回）');
+    cap('前一個是 load，下面要 access register', '這時候可以 forward 嗎？');
+  },
+  async (tok, S) => { // @1704.5
+    gone(S.a); S.g.dropRow(1); S.g.add(1, '讀（任何指令）', [[2, 'IF'], [3, 'ID'], [4, 'ID'], [5, 'EX'], [6, 'MEM'], [7, 'WB']]); S.g.upto(99);
+    S.a = arrow(V3(S.g.cx(4) + 0.3, S.g.cy(0) - 0.15, 0.4), V3(S.g.cx(5) - 0.3, S.g.cy(1) + 0.12, 0.4), 0xc08a1f);
+    txt(S.t2, '一定要先 stall 一個 clock cycle，資料出來後如果還需要，再 forward');
+    cap('一定要先 stall 一個 clock cycle', '然後才 forward');
+  },
+  async (tok, S) => { // @1711.9
+    S.t3 = good('兩個 type 要分清楚：R-type 之後 → forward；load 之後 → 先 stall 1 再 forward', 0.6, 1.3);
+    cap('這兩個 type 一定要分出來', '一種可以 forward，一種先 stall');
+  },
+]);
+
+// branch hazard：決定點在 MEM（第 4 段）→ 3 個被 flush；搬到 ID → 只 flush 1 個
+const BR_AT = (stage) => ({ decide: 1 + stage, fetchedWrong: stage, target: 2 + stage });   // beq IF 在 cycle 1；stage = 決定的段號（IF = 0）
+const BRM = BR_AT(3), BRI = BR_AT(1);
+scene('ppA-19b-branch', '19B：branch hazard：決定得越晚，flush 越多', [
+  async (tok, S) => { // @1732.5
+    S.t = hot('branch hazard', 0.6, 6.7);
+    cap('再看 branch hazard', '');
+  },
+  async (tok, S) => { // @1745.7
+    S.t2 = note('sequential：做完才決定下一個。一般 PC = PC + 4；branch taken 就跳到 target（例如 1000）', 0.6, 6.1);
+    cap('一般的 instruction：PC = PC + 4', 'branch taken 就跳到 target 去');
+  },
+  async (tok, S) => { // @1763.3
+    S.g = mkGrid(S, 9, { y0: 5.2 });
+    S.g.add(0, 'beq', [[1, 'IF'], [2, 'ID'], [3, 'EX'], [4, 'MEM', 'MEM 決定']]); S.g.row(0);
+    txt(S.t2, '什麼時候才知道要不要跳？看 datapath 怎麼切 —— 可能在 EX，也可能到 MEM');
+    cap('什麼時候才知道要不要跳？', '看你怎麼切 datapath，可能很後面');
+  },
+  async (tok, S) => { // @1786.3
+    S.g.add(1, '下一個（猜）', L5(2)); S.g.upto(2);
+    txt(S.t2, 'pipeline 要裝滿：beq 才到 decode，下一個就要 fetch 進來了');
+    cap('pipeline 要裝滿', 'beq 才到 decode，下一個就要進來');
+  },
+  async (tok, S) => { // @1807.7
+    txt(S.t2, '要執行的和抓進來的不一樣 → control hazard（branch hazard）；起因也是 feedback（PC 要到後面才寫）');
+    cap('要執行的跟 fetch 來的不一樣', '就產生 control hazard');
+  },
+  async (tok, S) => { // @1833.9
+    S.g.hot(0, BRM.decide, COL.gold);
+    S.t3 = note('這個 pipeline 的分法：到第 4 個 stage（MEM）才決定跳去哪', 0.6, 2.0);
+    cap('這個 pipeline 的分法', '要到第四個 stage 才決定');
+  },
+  async (tok, S) => { // @1846.1
+    S.g.add(2, '再下一個（猜）', L5(3)); S.g.add(3, '再下一個（猜）', L5(4)); S.g.upto(BRM.decide);
+    txt(S.t3, '如果要跳：已經進來的這幾個都要犧牲');
+    cap('如果要跳，下面已經在裡面的', '都要犧牲掉');
+  },
+  async (tok, S) => { // @1860.4
+    [1, 2, 3].forEach((k) => { for (let c = 1; c <= BRM.decide; c++) { const m = S.g.at(k, c); if (m) { tint(m, COL.bad); relabel(m, '0'); } } });
+    txt(S.t3, '洗掉（flush）：control signal 全部設成 0 → 變成 no-op');
+    cap('怎麼洗掉？全部設 0', '就是 no-op');
+  },
+  async (tok, S) => { // @1889.1
+    S.t4 = good('還來得及：它們都還沒到 WB / MEM，沒改變任何 state', 0.6, 1.4);
+    cap('只有 write 時才會改變 state', '在這之前都還沒改，所以來得及');
+  },
+  async (tok, S) => { // @1905.9
+    S.g.add(4, 'target', L5(BRM.target)); S.g.row(4);
+    const pen = BRM.target - 2;
+    gone(S.t4); S.t4 = ok(pen === 3 && BRM.fetchedWrong === 3, 0.6, 1.4, '決定在 MEM：被 flush 3 個，target 在 cycle ' + BRM.target + ' 才 fetch → 犧牲 ' + pen + ' 個 cycle ✓');
+    cap('在這個 stage 才比對', '要犧牲三個 cycle，太浪費了');
+  },
+  async (tok, S) => { // @1922.5
+    txt(S.t3, '可不可以把決定往前移？只是多加一點 hardware');
+    cap('可不可以把決定往前移一點？', '只是增加 hardware');
+  },
+  async (tok, S) => { // @1939.3
+    S.g.hot(0, 1, '#7a1010');
+    txt(S.t3, '移到 IF 可以嗎？沒辦法 —— 那時指令才剛抓進來，還不知道它是 branch');
+    cap('可以移到最前面嗎？', '沒辦法，那時還不知道是什麼指令');
+  },
+  async (tok, S) => { // @1948.3
+    S.g.cool(); S.g.hot(0, 2, COL.gold);
+    txt(S.t3, '最快移到 ID：decode 完就知道是 branch，rs、rt 也讀出來了 → 比對一下就好');
+    cap('已經 instruction decode', '知道是 branch、rs rt 也出來了 → 比對');
+  },
+  async (tok, S) => { // @1967.7
+    for (let k = 1; k <= 4; k++) S.g.dropRow(k);
+    S.g.dropRow(0); S.g.add(0, 'beq', [[1, 'IF'], [2, 'ID', 'ID 決定']]); S.g.row(0); S.g.hot(0, 2, COL.gold);
+    S.g.add(1, '下一個（猜）', [[2, 'IF']]); S.g.row(1);
+    txt(S.t3, '猜得跟決定一樣：OK 繼續往下；猜錯：要 flush');
+    cap('發現跟我猜的一樣，就繼續', '猜得不對就要 flush');
+  },
+  async (tok, S) => { // @1980.5
+    const m = S.g.at(1, 2); tint(m, COL.bad); relabel(m, '0');
+    S.g.add(2, 'target', L5(BRI.target)); S.g.row(2);
+    gone(S.t4); S.t4 = ok(BRI.target - 2 === 1, 0.6, 1.4, '決定在 ID：只 flush 1 個（IF/ID 清成 0），PC 改成 target → 只犧牲 1 個 cycle ✓');
+    cap('flush：把 IF/ID 變成 0', 'PC 選到你要跳去的地方');
+  },
+]);
+
+// predict not taken + 在 ID 決定（課本：36 sub、40 beq $1,$3,7、44 and、72 lw）
+const BRP = [parseIns('sub $10, $4, $8'), parseIns('beq $1, $3, 7', { taken: true, flushText: 'and $12, $2, $5' }), parseIns('lw $4, 50($7)')];
+const BRS = schedule(BRP, { fwd: true, br: 'pnt', mem1: false });
+scene('ppA-19b-pnt', '19B：predict not taken、把 branch 移到 ID、flush 一個 bubble', [
+  async (tok, S) => { // @2042.6
+    S.g = mkGrid(S, 9, { y0: 5.6 });
+    S.t = hot('branch hazard 的例子', 0.6, 6.7);
+    S.g.add(0, 'beq', [[1, 'IF'], [2, 'ID'], [3, 'EX'], [4, 'MEM', 'MEM 決定']]); S.g.row(0);
+    cap('branch hazard 的例子', 'equal 的話要跳到 target');
+  },
+  async (tok, S) => { // @2065.0
+    S.g.add(1, 'PC + 4', L5(2)); S.g.add(2, 'PC + 8', L5(3)); S.g.add(3, 'PC + 12', L5(4)); S.g.upto(4);
+    S.t2 = note('不知道什麼時候要跳 → 繼續 sequential fetch：假設 not taken', 0.6, 2.4);
+    cap('不知道要不要跳，還是照順序 fetch', '假設 not taken');
+  },
+  async (tok, S) => { // @2072.8
+    [1, 2, 3].forEach((k) => { for (let c = 2; c <= 4; c++) { const m = S.g.at(k, c); if (m) tint(m, COL.bad); } });
+    txt(S.t2, '真的決定時發現要跳（taken）→ 這三個全是錯的');
+    cap('真的決定時發現要跳', '這三個全部都是錯的');
+  },
+  async (tok, S) => { // @2093.0
+    txt(S.t2, 'predict always not taken：需要 hardware 把決定之後抓錯的 instruction flush 掉');
+    cap('predict always not taken', '要加 hardware 把錯的 flush 掉');
+  },
+  async (tok, S) => { // @2115.4
+    txt(S.t2, '決定放在 MEM 要 flush 好多個 → 移到前面：早點決定、錯也早點錯');
+    cap('在 memory stage 要 flush 好多個', '移到前面，早點決定');
+  },
+  async (tok, S) => { // @2136.0
+    gone(S.g); S.d = mkDP(S, { y: 1.6 });
+    S.add = cube('+', '#a99470', [0.5, 0.5, 0.5], -2.8, 4.0, 0); S.eq = cube('=', '#a99470', [0.5, 0.5, 0.5], -1.9, 4.0, 0);
+    S.l1 = sm('branch 位址：PC + 4 + offset × 4', -3.6, 4.7); S.l2 = sm('rs = rt ?', -1.4, 4.7);
+    S.t.position.set(0, 6.7, 0); txt(S.t2, '把 branch 的 address calculation 移到 ID');
+    S.t2.position.set(0, 6.0, 0);
+    cap('把 branch 的 address calculation', '移到 instruction decode 這個階段');
+  },
+  async (tok, S) => { // @2143.9
+    glow(S.eq, COL.gold);
+    txt(S.t2, 'beq 的 rs、rt 在 ID 已經讀出來 → 加一個比較器（相等嗎？）→ branch decision 在 ID 就做出來');
+    cap('rs、rt 已經讀出來', '做一個比較，ID 就能決定');
+  },
+  async (tok, S) => { // @2157.6
+    S.b = S.d.chip('beq', 1, '#7a6a52'); S.w = S.d.chip('PC + 4（猜）', 0, '#bcd8f3');
+    txt(S.t2, '這樣只有 IF 那裡多抓了一個 instruction 是錯的 → 只要 flush 那一個');
+    cap('只有 instruction fetch 那裡', '多一個 instruction，只要 flush 它');
+  },
+  async (tok, S) => { // @2168.7
+    glow(S.d.regs[0], '#7a1010');
+    txt(S.t2, '怎麼 flush？讓 IF/ID 這次寫進去的是 0，而不是剛讀出來的指令');
+    cap('怎麼 flush？', '讀進 IF/ID 的給它讀 0 就對了');
+  },
+  async (tok, S) => { // @2222.9
+    S.m2 = cube('2→1', '#8a7a5c', [0.45, 0.7, 0.45], S.d.rx(0) - 0.55, 3.4, 0); small(S.m2.userData.lbl, 8);
+    txt(S.t2, '等於 IF/ID 前面加一個 2-to-1 mux：正常寫指令；要 flush 時寫 0（IF.Flush）');
+    cap('相當於一個 2-to-1 的 mux', '要 flush 時寫 0 進去');
+  },
+  async (tok, S) => { // @2238.5
+    glow(S.eq, '#d64545');
+    txt(S.t2, '在 ID 偵測：讀出來是 branch，比對結果 taken → 發出 control，讓 mux 選 0');
+    cap('在這裡做 detect', '是 branch、比對成立 → 寫 0 進來');
+  },
+  async (tok, S) => { // @2281.9
+    S.tg = S.d.chip('target', 0, '#2fc092'); S.w.position.y += 0.5; relabel(S.w, '0（bubble）'); tint(S.w, COL.bad);
+    await S.d.go(tok, [[S.w, 1], [S.b, 2]], 600);
+    txt(S.t2, 'target 位址已經在 ID 算好 → 下一個 cycle 直接 fetch target');
+    cap('address 已經算出來了', '下一個 cycle 就讀進 target');
+  },
+  async (tok, S) => { // @2296.7
+    S.c = ok(BRS.rows.filter((r) => r.ghost).length === 1, 0, -0.6, '犧牲的就只有一個 bubble：flush 一個 instruction ✓');
+    cap('犧牲一個 bubble', '相當於把後面那個 instruction flush 掉');
+  },
+  async (tok, S) => { // @2332.0
+    gone(S.d, S.add, S.eq, S.l1, S.l2, S.c, S.m2); S.d = null;
+    S.g = mkGrid(S, 8, { y0: 5.4 });
+    txt(S.t, '例子（課本）：36 sub、40 beq $1, $3, 7、44 and …、72 lw'); S.t.position.set(0.6, 6.7, 0);
+    schedRows(BRS).forEach((r, k) => S.g.add(k, (['36 ', '40 ', '44 ', '72 '][k]) + r.text, r.cells.map(([c, s]) => [c, s]))); S.g.upto(2);
+    txt(S.t2, ''); S.t2.position.set(0.6, 2.4, 0);
+    cap('來看一個例子', 'branch equal');
+  },
+  async (tok, S) => { // @2338.1
+    S.g.upto(3); S.g.hot(1, 3, COL.gold);
+    txt(S.t2, 'cycle 3：beq 在 ID 比對 $1、$3 —— 相等（taken）');
+    cap('在 ID 這邊就比對了', '比對出來相等');
+  },
+  async (tok, S) => { // @2356.9
+    const tgt = 40 + 4 + 7 * 4;
+    S.c = ok(tgt === 72, 0.6, 1.7, '要跳的 target = 40 + 4 + 7 × 4 = ' + tgt + ' ✓（在 ID 算好）');
+    const m = S.g.at(2, 3); if (m) { tint(m, COL.bad); relabel(m, '0'); }
+    txt(S.t2, 'taken → 下一個 clock，IF/ID 全部寫 0；PC 跳到算出來的 target');
+    cap('branch taken：下一個 clock 這邊是 0', '跳到新算出來的 target address');
+  },
+  async (tok, S) => { // @2367.8
+    S.g.upto(99);
+    txt(S.t2, 'cycle 4：44 那條變成 bubble（no-op）；72 的 lw 被 fetch 進來 —— 正確的指令');
+    cap('下一個 clock cycle：這邊全是 0', 'bubble；fetch 到正確的指令');
+  },
+  async (tok, S) => { // @2381.0
+    const lw = BRS.rows[BRS.rows.length - 1];
+    gone(S.c); S.c = ok(lw.IF === 4 && BRS.total === 8, 0.6, 1.7, '只犧牲 1 個 bubble：lw 在 cycle ' + lw.IF + ' fetch，3 個有效指令共 ' + BRS.total + ' 個 cycle（= 3 + 4 + 1）✓');
+    cap('要犧牲的就是這一個 bubble', 'flush 一個 instruction 就可以了');
+  },
+]);
+
+// dynamic branch prediction：用本章 predictRun 跑老師說的內層迴圈（taken 100 次、第 101 次 not taken）
+const LOOP = ('T'.repeat(100) + 'N').split('');
+const P1 = predictRun('1bit', LOOP, 0), P2 = predictRun('2bit', LOOP, 2);
+const P1w = P1.filter((r) => !r.ok).length, P2w = P2.filter((r) => !r.ok).length;
+const PNTw = LOOP.filter((o) => o === 'T').length;
+const P2S = ['00 強 N', '01 弱 N', '10 弱 T', '11 強 T'];
+scene('ppA-19b-predict', '19B：dynamic branch prediction：1-bit 錯兩次、2-bit 錯一次', [
+  async (tok, S) => { // @2392.8
+    S.t = hot('怎麼 predict？', 0.6, 6.7);
+    cap('後面還有：怎麼樣去 predict', '');
+  },
+  async (tok, S) => { // @2399.4
+    S.t2 = note('剛才一律預測 sequential：PC = PC + 4（not taken）—— 這樣對不對？', 0.6, 6.1);
+    cap('always predict PC = PC + 4', '這樣對不對？');
+  },
+  async (tok, S) => { // @2411.7
+    txt(S.t2, '什麼時候對、什麼時候錯？taken 要跳到 target；not taken 就是 PC + 4');
+    cap('什麼時候對、什麼時候不對？', 'taken：跳到 target；not taken：PC + 4');
+  },
+  async (tok, S) => { // @2448.3
+    S.c = code(['for (i = 0; i < 100; i++) {', '    …                     ', '}  ← 迴圈底的 branch：跳回頭', 'if (…) … else …  ← 只執行一次'], -0.6, 5.3, 0.48);
+    S.c.hl(3);
+    txt(S.t2, '什麼時候會跳？if-then-else');
+    cap('什麼時候會跳？', 'if then else 會跳');
+  },
+  async (tok, S) => { // @2452.3
+    S.c.hl(0);
+    txt(S.t2, '還有 for loop');
+    cap('還有什麼時候會跳？', 'for loop');
+  },
+  async (tok, S) => { // @2460.6
+    S.c.hl(2);
+    txt(S.t2, 'loop 最後一個 instruction 是 branch：跳回開頭 → taken，而且執行很多很多次');
+    cap('loop 跳回去是 taken', '而且它執行很多很多次');
+  },
+  async (tok, S) => { // @2470.1
+    S.c.hl(3);
+    txt(S.t2, 'if-then-else 只執行一次：錯一次無所謂');
+    cap('if then else 錯一次', '因為執行一次而已');
+  },
+  async (tok, S) => { // @2487.1
+    S.c.hl(2);
+    S.k = ok(PNTw === 100, 0.6, 2.4, '迴圈的 branch 一直猜 PC + 4（not taken）：101 次裡猜錯 ' + PNTw + ' 次 ✓');
+    cap('一直假設 PC + 4', '迴圈就一直錯');
+  },
+  async (tok, S) => { // @2512.8
+    gone(S.k);
+    txt(S.t2, '所以做 dynamic branch prediction：每個 branch 要 taken 還是 not taken，會變化');
+    cap('dynamic branch prediction', '每個 branch 的預測會變');
+  },
+  async (tok, S) => { // @2521.8
+    txt(S.t2, '最簡單：上一次跳，這次就猜跳；上一次不跳，這次就猜不跳');
+    cap('上一次跳，這次就猜跳', '上一次不跳，這次就不跳');
+  },
+  async (tok, S) => { // @2537.2
+    gone(S.c);
+    S.tb = code(['address │ 上次', '  0x40  │  T  ', '  0x88  │  N  ', '  0xA0  │  T  '], -1.4, 5.3, 0.48);
+    S.tn = sm('（示意）', 1.6, 5.3);
+    txt(S.t2, '怎麼記錄？每個 instruction 都有地址 → 用地址當 index，查一張表');
+    cap('怎麼記錄？', '用 instruction 的地址做 index 查 table');
+  },
+  async (tok, S) => { // @2568.7
+    S.tb.hl(1);
+    txt(S.t2, '在 instruction fetch 時就查：如果是 branch 而且上次 taken，下一個就直接抓 target');
+    cap('什麼時候做？在 instruction fetch', '查到 taken，下一個就抓 target');
+  },
+  async (tok, S) => { // @2608.9
+    txt(S.t2, 'pipeline 越深、branch 越晚決定 → 猜錯要 flush 越多 → 猜準很重要');
+    cap('pipeline 很長、很後面才決定', '猜錯就 flush 很多個');
+  },
+  async (tok, S) => { // @2662.4
+    txt(S.t2, '這張表叫 branch prediction buffer，也叫 branch history table');
+    cap('branch prediction buffer', '也叫 branch history table');
+  },
+  async (tok, S) => { // @2706.7
+    txt(S.t2, '只記最近做過跳躍決定的 branch（表不可能很大）：address → taken / not taken；錯了才 flush');
+    cap('用最近 branch 的位址當 index', '只記最近的 branch，錯了才 flush');
+  },
+  async (tok, S) => { // @2772.9
+    gone(S.tb, S.tn);
+    S.st = [cube('猜 N', '#dd8238', [1.4, 0.55, 0.5], -1.6, 5.1, 0), cube('猜 T', '#2fc092', [1.4, 0.55, 0.5], 1.6, 5.1, 0)];
+    S.st.forEach((m) => small(m.userData.lbl, 10));
+    txt(S.t2, '1-bit predictor：只看前一次 —— 永遠跟前一次一樣；錯了就趕快改');
+    cap('one bit predict', '只看前一個，錯了就趕快改過來');
+  },
+  async (tok, S) => { // @2797.1
+    S.strip = [];
+    const show = [0, 1, 2, 98, 99, 100];
+    show.forEach((i, j) => { const r = P1[i]; S.strip.push(cube(r.o, r.ok ? '#bcd8f3' : '#d64545', [0.42, 0.36, 0.4], -3.4 + j * 0.62 + (j >= 3 ? 0.8 : 0), 3.6, 0)); });
+    S.dots = sm('…', -1.3, 3.6); S.lab1 = sm('第 1、2、3 次 … 第 99、100、101 次（實際結果；紅 = 1-bit 猜錯）', 0.6, 2.9);
+    txt(S.t2, '例：inner loop 跳 100 次，第 101 次不跳；外面還有 outer loop 一再回來');
+    cap('常有 inner loop、outer loop', 'inner loop 跳 100 次，第 101 次不跳');
+  },
+  async (tok, S) => { // @2813.7
+    glow(S.strip[5], COL.gold);
+    txt(S.t2, '第 101 次：預測 taken、實際 not taken → 錯一次');
+    cap('第 101 次不要跳了', 'predict 錯誤一次');
+  },
+  async (tok, S) => { // @2826.3
+    glow(S.st[0], COL.gold);
+    txt(S.t2, '同時 history 改成 not taken（1-bit 只記最後一次）');
+    cap('同時把 branch history 改成 not taken', '');
+  },
+  async (tok, S) => { // @2851.6
+    glow(S.strip[0], COL.gold);
+    txt(S.t2, 'outer loop 做完又回到 inner loop：第一個 iteration 實際要跳，卻猜 not taken → 又錯');
+    cap('又回到 inner loop 的第一個 iteration', '猜 not taken，實際 taken → 又錯');
+  },
+  async (tok, S) => { // @2880.5
+    S.k = ok(P1w === 2 && !P1[0].ok && !P1[100].ok, 0.6, 2.2, 'predictRun（1-bit，上次離開時是 N）：每跑一趟 inner loop 錯 ' + P1w + ' 次 —— 最後一次與下一趟的第一次 ✓');
+    cap('連錯兩次', '最後一次跟下一趟第一次剛好都錯');
+  },
+  async (tok, S) => { // @2893.4
+    gone(S.st); glow(S.st[0], null);
+    S.st = P2S.map((n, i) => { const m = cube(n, i >= 2 ? '#2fc092' : '#dd8238', [1.5, 0.5, 0.5], -4.2 + i * 1.75, 5.1, 0); small(m.userData.lbl, 9); return m; });
+    txt(S.t2, '改進：不要只看一次，看兩次 —— 2-bit predictor');
+    cap('把它更強化一點', '不只看一次，看兩次');
+  },
+  async (tok, S) => { // @2903.1
+    glow(S.st[2], COL.gold);
+    gone(S.k); S.k = ok(P2w === 1 && P2[0].ok, 0.6, 2.2, 'predictRun（2-bit）：要連錯兩次才改預測 → 出口錯 1 次後只降到「弱 T」，下一趟第一次仍猜對：每趟只錯 ' + P2w + ' 次 ✓');
+    cap('連續兩次才改變狀態', '否則就維持原狀');
+  },
+  async (tok, S) => { // @2925.2
+    txt(S.t2, 'prediction 很重要，所以才有這些比較複雜的 predictor —— 下次繼續');
+    cap('prediction 很重要', '下次再繼續介紹');
+  },
+]);
+  }
+
   // ═══ ppB.js ═══
   {
 const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;

@@ -1439,6 +1439,12 @@
   "quiz": 6,
   "cued": true
  },
+ "IO5zhg0flDI": {
+  "label": "黃婷婷教授計算機結構_第18A講 Pipelining",
+  "points": 34,
+  "quiz": 6,
+  "cued": true
+ },
  "IOx8vtDzGO0": {
   "label": "清大周志遠 第18D講 Critical Section(續)",
   "points": 20,
@@ -2189,6 +2195,12 @@
   "quiz": 7,
   "cued": true
  },
+ "p_GUphUjmvI": {
+  "label": "黃婷婷教授計算機結構_第19B講 Pipelining",
+  "points": 27,
+  "quiz": 7,
+  "cued": true
+ },
  "q-T1GS0zeM4": {
   "label": "清大OCW 趙啟超《離散數學》第14D講 Generating Functions",
   "points": 14,
@@ -2915,6 +2927,12 @@
   "quiz": 8,
   "cued": true
  },
+ "XtcJtp7n4o8": {
+  "label": "黃婷婷教授計算機結構_第19A講 Pipelining",
+  "points": 35,
+  "quiz": 6,
+  "cued": true
+ },
  "XVt8JJgj8JE": {
   "label": "清大OCW 趙啟超《離散數學》第17C講 Generating Functions and Complexity of Algorithms",
   "points": 20,
@@ -3158,6 +3176,12 @@
  "_ArgZzfH7aw": {
   "label": "清大OCW 趙啟超《離散數學》第26B講 Trees",
   "points": 16,
+  "quiz": 6,
+  "cued": true
+ },
+ "_GDfZbzFVs0": {
+  "label": "黃婷婷教授計算機結構_第17B講 Single-Cycle Processor / Pipelining",
+  "points": 43,
   "quiz": 6,
   "cued": true
  },

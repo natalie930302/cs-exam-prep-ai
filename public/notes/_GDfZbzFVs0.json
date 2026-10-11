@@ -1,0 +1,574 @@
+{
+ "video": "_GDfZbzFVs0",
+ "label": "黃婷婷教授計算機結構_第17B講 Single-Cycle Processor / Pipelining",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "五段對齊：R-type 不能提早寫回",
+   "scene": "ppA-17b-wb",
+   "points": [
+    {
+     "t": 18,
+     "text": "R-type 若只走 4 段、在第 4 段寫回，而 lw 在第 5 段寫回；R-type 緊接在 lw 後面時，兩個在同一個 cycle 搶 register file 的 write port。"
+    },
+    {
+     "t": 59,
+     "text": "原則：每個 functional unit 同一時間只能給一個 instruction 用；每個 resource 一定要在同一個 stage 使用。"
+    },
+    {
+     "t": 105,
+     "text": "解法：R-type 也在第 5 段寫回，第 4 段（MEM）空著不做事。"
+    },
+    {
+     "t": 211,
+     "text": "pipeline 每個 instruction 都晚一個 cycle 進來，只要同一個資源都在同一段用，就永遠不會打架。"
+    }
+   ],
+   "trap": "R-type 的結果在 EX 就算好了，但仍然要等到第 5 段才寫回；提早寫會和前面的 lw 搶 write port（structural hazard）。",
+   "cues": [
+    18.2,
+    21.3,
+    58.7,
+    76.6,
+    83.7,
+    96.1,
+    104.6,
+    110.6,
+    153.5,
+    197.9,
+    211.2,
+    258.4
+   ],
+   "explain": [
+    "先複習剛才的問題。表格每一列是一個 instruction，往右是時間（clock cycle）。lw（load word，從記憶體載入資料）要走完 5 段；R-type（像 add、sub 這種暫存器之間的運算）不必讀記憶體，如果只走 4 段，算完就馬上寫回。",
+    "問題來了：lw 在第 5 段寫回，是 cycle 5；R-type 晚一個 cycle 進來，卻在自己的第 4 段寫回，也是 cycle 5。兩個同時要寫 register file（暫存器檔），程式檢查出 cycle 5 撞在一起。",
+    "老師給的第一個重要觀念：做 pipeline 時，每一個 functional unit（功能單元，例如 ALU、記憶體、register file 的寫入口）同一時間只能給一個 instruction 用，不然就打架。",
+    "第二個觀念：同一個 resource（資源），所有 instruction 都要在「同一個 stage」用它。例如寫 register file，大家都在第 5 段寫。",
+    "為什麼？如果你在第 4 段用、我在第 5 段用，而我們又剛好差一個 cycle，那就會在同一個 cycle 用到同一個東西，這就是打架。",
+    "write back（寫回）其實就是用 register file 的 write port（寫入口）。lw 是在第 5 個 stage 用它。",
+    "那 R-type 也一律放到第 5 段才寫。它的第 4 段（MEM，存取資料記憶體）本來就不需要，就空著不做事。",
+    "改完之後，lw 在 cycle 5 寫、R-type 在 cycle 6 寫。程式把每個 cycle 用到的資源都檢查一遍，再也沒有衝突。",
+    "pipeline 的規矩是：後一個 instruction 一定比前一個晚一個 cycle 開始。你先用完，下一個 cycle 才輪到我用，所以不會搶。",
+    "老師用洗衣服比喻：本來應該先洗再烘，我晚一步到，卻跳過「洗」直接去搶烘衣機，就會跟前一個人搶同一台。跳過一段，就等於搶先一步。",
+    "只要每個 instruction 都晚一個 cycle 進來，而且同一個資源都在同一段用，前面的人永遠在你前面，就永遠不會打架。下面三列是示意的指令，程式檢查全部沒有衝突。",
+    "所以做法很簡單：把 R-type 的寫回往後挪一個 stage。中間那格 MEM 空著，理論上是做 memory access，但 R-type 不用，所以什麼都不做。"
+   ]
+  },
+  {
+   "title": "點名、確認同學聽懂",
+   "scene": null,
+   "points": [
+    {
+     "t": 295,
+     "text": "老師請同學回答剛才的概念（課堂互動）。"
+    }
+   ]
+  },
+  {
+   "title": "sw、beq 也排成五段；pipeline 的圖形表示法",
+   "scene": "ppA-17b-five",
+   "points": [
+    {
+     "t": 322,
+     "text": "store 只有 4 段：最後補一個「假的」write back；beq 只有 IF、ID、EX 三段，MEM、WB 也假裝有。"
+    },
+    {
+     "t": 352,
+     "text": "pipelined datapath：每個 instruction 都經過 IF、ID、EX、MEM、WB 五段；R-type 也要等到第 5 段才寫回。"
+    },
+    {
+     "t": 387,
+     "text": "圖形表示法：每列一個 instruction、往右是 clock cycle，可以看出每個 cycle 誰在做什麼（例如 cycle 3：第一個在用 ALU、第二個在讀 register）。"
+    }
+   ],
+   "cues": [
+    322.5,
+    330.2,
+    351.6,
+    369.9,
+    387.1,
+    397.9,
+    407
+   ],
+   "explain": [
+    "store（sw，把資料存進記憶體）只需要 4 段：抓指令、讀暫存器、算位址、寫記憶體。它不寫暫存器，所以老師說在最後補一個「假的」write back，讓大家長度一致。",
+    "beq（branch if equal，相等就跳）更短，只有 IF、ID、EX 三段：抓指令、讀兩個暫存器、比較。後面的 MEM、WB 也都假裝有，只是不做事。",
+    "這樣 pipelined datapath 就完成了：不管什麼指令，都走完 instruction fetch、instruction decode、execution、memory access、write back 這五段。程式檢查：每個 cycle、每一段都只有一個 instruction。",
+    "特別注意 R-type：它在 EX 算完其實就可以寫，但規定不行，要跳過 MEM、等到第 5 段才寫 register file。",
+    "也可以用另一種圖來表示：每一列是一個 instruction，第二個比第一個晚一格開始。格子裡寫的是那一段用到的硬體：IM（指令記憶體）、Reg（暫存器）、ALU、DM（資料記憶體）、Reg（寫回）。",
+    "這種圖的好處是可以「直著看」一個 cycle：例如第 3 個 clock cycle，第一個 instruction 在用 ALU，第二個在讀 register，第三個正在抓指令。",
+    "老師稱它為 graphic representation（圖形表示法），一眼就能看出每個 cycle、每個 instruction 在做什麼。"
+   ]
+  },
+  {
+   "title": "lw 與 sub 一個 cycle 一個 cycle 走過 datapath",
+   "scene": "ppA-17b-lwsub",
+   "points": [
+    {
+     "t": 414,
+     "text": "例子：lw 後面接 sub。cycle 1 lw 抓指令；cycle 2 lw decode、sub 抓指令。"
+    },
+    {
+     "t": 485,
+     "text": "上一段的結果（例如 lw 的指令）存在 pipeline register 裡，clock cycle 結束時才寫進去，舊的被蓋掉。"
+    },
+    {
+     "t": 510,
+     "text": "cycle 3：lw 用 ALU 算位址、sub 讀 rs rt；cycle 4：lw 讀 memory、sub 做減法；cycle 5：lw 寫回。"
+    },
+    {
+     "t": 576,
+     "text": "sub 的結果 cycle 3 就算好，但要在第 5 段才寫：cycle 5 它在 MEM 不做事，cycle 6 才寫回。"
+    }
+   ],
+   "cues": [
+    414.1,
+    423.1,
+    428.2,
+    445.5,
+    485,
+    491,
+    509.7,
+    543.4,
+    563.5,
+    576.1,
+    598.2,
+    610.2
+   ],
+   "explain": [
+    "用兩個 instruction 實際跑一次：lw $10, 20($1) 和 sub $11, $2, $3。老師沒有唸出運算元，這裡用課本同一張圖的指令。下面五塊是五段的硬體，中間的直條是 pipeline register（段與段之間暫存結果的暫存器）。",
+    "cycle 1：lw 進來做 instruction fetch（抓指令）：用 PC（程式計數器，記著下一個指令的位址）到 instruction memory 把指令讀出來。",
+    "cycle 2：lw 往前走到第二段，讀 register 並 decode（解讀指令要做什麼）。第一段空出來了，所以下一個 instruction sub 就可以進來 fetch。",
+    "注意，同一個 cycle 裡，lw 用的是 register file，sub 用的是 instruction memory，兩個用不同的硬體，彼此完全分開。",
+    "老師問：cycle 2 時，lw 那條指令放在哪裡？答案是在 pipeline register（IF/ID）裡。第一段讀出來的東西先存在這裡，第二段才拿來用。",
+    "什麼時候寫進 pipeline register？在 clock cycle 結束的那一瞬間（end of clock cycle）「啪」地寫進去。舊的內容那時已經用完了，就被蓋掉。",
+    "cycle 3：lw 到 ALU，算記憶體位址 = $1 + 20（20 要先做 sign extension，變成 32 位元）。sub 在第二段，把 rs、rt（$2、$3）讀出來。",
+    "cycle 4：lw 到第四段讀 data memory；sub 到 ALU 做 $2 − $3 的減法。",
+    "cycle 5：lw 到第五段 write back，把從記憶體讀到的資料寫回 $10。",
+    "有一個問題：sub 的答案在 cycle 4 的 ALU 就算完了，理論上下一個 cycle 就能寫回 register file，可以嗎？",
+    "不可以。規定同一種事要在同一個 stage 做：寫回一律在第 5 段。所以 cycle 5 時 sub 走到第 4 段（MEM），什麼事都不做。",
+    "cycle 6：sub 到第 5 段，才用 register file 的 write port 把答案寫回 $11。程式算出兩個 instruction 總共 2 + 4 = 6 個 cycle。"
+   ]
+  },
+  {
+   "title": "小問答：R-type 什麼時候寫回？structural hazard",
+   "scene": "ppA-17b-quiz",
+   "points": [
+    {
+     "t": 639,
+     "text": "R-type 的 write back 也在第 5 段，要和 lw 一致：所有 instruction 在同一個 stage 做相同的事。"
+    },
+    {
+     "t": 663,
+     "text": "若 R-type 在第 4 段寫、又緊接在 lw 後面，兩個會搶同一個 write port，產生 structural hazard。"
+    },
+    {
+     "t": 714,
+     "text": "structural hazard：兩個 instruction 同時搶同一個資源；避免方法：每個 resource 一次只給一個人用，而且在相同的 stage 用。"
+    }
+   ],
+   "cues": [
+    639.5,
+    651.1,
+    663.4,
+    674.7,
+    713.7,
+    720.5,
+    735.5,
+    763.7
+   ],
+   "explain": [
+    "老師點同學回答：R-type 的 write back 要什麼時候寫？答案是第 5 段，一定要跟 lw 一致。",
+    "更一般的說法：所有的 instruction 都要在同一個 stage 做相同的事情。",
+    "如果不這樣做會怎樣？假設 R-type 在第 4 段寫，又剛好緊接在 lw 後面，畫出來就是兩格 WB 落在同一個 cycle。",
+    "兩個 instruction 要競爭同一個 write port，這就產生 structural hazard（結構危障：硬體不夠用、兩個人搶同一個硬體）。",
+    "所以 structural hazard 的定義就是：兩個（或以上）instruction 在同一時間搶同一個資源。",
+    "怎麼避免？R-type 往後挪一段，不要那麼快、不要搶先。程式檢查：改完就沒有衝突了。",
+    "一般原則有兩條：第一，每個 resource 同一時間只給一個 instruction 用；第二，每個 instruction 要用那個 resource，一定要在相同的 stage 用。",
+    "以 register file 的 write port 為例：誰要用它，都一定在第 5 個 stage 用。"
+   ]
+  },
+  {
+   "title": "Pipelined control：signal 一樣，只是用的時間不一樣",
+   "scene": "ppA-17b-ctl",
+   "points": [
+    {
+     "t": 778,
+     "text": "single cycle 時，controller 把 opcode decode 完，就一次發出所有 control signal（RegWrite、ALU 做什麼、MemtoReg……）。"
+    },
+    {
+     "t": 836,
+     "text": "pipeline 的 control signal 和 single cycle 一樣（例如 R-type 的 ALUSrc = 0、MemtoReg = 0），只是用的時間不同。"
+    },
+    {
+     "t": 1020,
+     "text": "control signal 在第 2 段（ID）decode 完就全部知道，但要到 EX、MEM、WB 才用。"
+    },
+    {
+     "t": 1110,
+     "text": "把 control signal 依使用的段分成 EX、M、WB 三組，存在 pipeline register 裡隨指令往下傳，用掉的就不再傳。"
+    }
+   ],
+   "cues": [
+    777.7,
+    785.6,
+    804.6,
+    835.7,
+    888.9,
+    920.8,
+    935.1,
+    962.3,
+    975.9,
+    1020.3,
+    1058,
+    1110.4,
+    1142.5,
+    1199.1
+   ],
+   "explain": [
+    "datapath（資料走的路）講完了，再來看 control（控制）：是誰告訴每一段硬體「這次要做什麼」。",
+    "在 single cycle（一個指令一個 cycle 做完）的設計裡，有一個 controller（控制單元）。它看指令的 opcode（操作碼，指令的種類），一次發出所有的 control signal（控制訊號）。",
+    "control signal 管的是這些事：要不要寫 register？ALU 要做加還是減？寫回 register file 的資料，是從 memory 讀來的，還是 ALU 算出來的？",
+    "那改成 pipeline 之後要怎麼做？老師要我們想：跟 single cycle 比，哪裡一樣、哪裡不一樣。",
+    "先看 R-type 在 EX 段：ALU 要拿 rs 和 rt 來算，所以 ALUSrc（ALU 第二個輸入選誰）要設 0，表示選 rt。這和 single cycle 時一模一樣。",
+    "再看寫回：資料要從 ALU 的結果來，MemtoReg 選 0。這也和 single cycle 一樣。所以 control signal 的「值」其實沒變。",
+    "不一樣的只有「什麼時候用」：single cycle 是同一個 cycle 全部用完；pipeline 裡，EX 那段的訊號在第 3 個 cycle 用，MEM 的在第 4 個，WB 的在第 5 個。",
+    "老師說的辦法：把 control signal 做 grouping（分組）。",
+    "怎麼產生這些訊號？跟以前一樣：拿 opcode 去查同一張 truth table（真值表），R-type 該設 0 還是 1，表上都寫好了。",
+    "老師問：control signal 什麼時候產生？在第一段（instruction fetch）知道嗎？不知道，因為指令才剛被抓進來，還沒解讀。",
+    "第二段（decode）結束時就全部知道了。但是知道得早，用得晚：後面三段才分別要用。",
+    "所以把它切成三塊：一塊是 EX 段要用的（EX 組），一塊是 MEM 段要用的（M 組），一塊是 WB 段要用的（WB 組）。",
+    "還沒輪到用的組怎麼辦？就放在 pipeline register 裡擺著不動，跟著指令一段一段往下傳。",
+    "整個流程：第 2 段 decode 完，三組都存進 ID/EX；下一個 cycle 在 EX 用掉 EX 組，剩下 M、WB 往下傳；到 MEM 用掉 M 組；最後在 WB 用掉 WB 組。"
+   ]
+  },
+  {
+   "title": "「會不會教太快？」",
+   "scene": null,
+   "points": [
+    {
+     "t": 1240,
+     "text": "老師確認同學是否跟得上（課堂互動）。"
+    }
+   ]
+  },
+  {
+   "title": "Destination register 也要跟著傳",
+   "scene": "ppA-17b-dst",
+   "points": [
+    {
+     "t": 1267,
+     "text": "pipelined control：main control 分組，用掉的就不再往下傳。"
+    },
+    {
+     "t": 1294,
+     "text": "write back 時要知道寫哪個 register：R-type 寫 rd，lw 寫 rt。"
+    },
+    {
+     "t": 1327,
+     "text": "IF/ID 裡的 register 號碼屬於新進來的指令，不能拿來寫回；destination 必須跟著原本的指令在 pipeline register 一路傳到第 5 段。"
+    }
+   ],
+   "cues": [
+    1271.9,
+    1293.6,
+    1306.6,
+    1327.4,
+    1335.3,
+    1378.1,
+    1420.3,
+    1441.4,
+    1462.7
+   ],
+   "explain": [
+    "這是 pipelined control 的整體樣子：main control 在第二段產生 EX、M、WB 三組；每過一段用掉一組，用掉的就不再往下傳。",
+    "還有一個問題：write back 的時候，要寫到「哪一個」register？register file 需要一個寫入位址。",
+    "R-type 的答案要寫到 rd（目的暫存器）；lw 從記憶體讀到的資料要寫到 rt。",
+    "所以不只是 control signal 要往下傳，destination（目的地，要寫哪個 register）也要往下傳。",
+    "為什麼不能直接用 IF/ID 裡的號碼？因為這時 IF/ID 裡放的是「新進來的」instruction，它的 rs、rt、rd 跟正在寫回的那個 instruction 沒有關係。",
+    "R-type 和 lw 都在第 5 段才寫回。寫的時候一定要告訴 register file：寫到第幾號 register。",
+    "要用的是「正在寫回的這個」instruction 自己的 rd（畫面上示意為 $5），因為是它要寫回去，不是新進來的那個。",
+    "所以 rd 雖然現在用不到，也要跟著它的 instruction 一路跑：放在 pipeline register 裡，一段一段帶到第 5 段。",
+    "到了 write back stage，就拿這個一路跟過來的 destination 當寫入位址。"
+   ]
+  },
+  {
+   "title": "RegDst 的 mux：只帶一個 destination 往下傳",
+   "scene": "ppA-17b-regdst",
+   "points": [
+    {
+     "t": 1465,
+     "text": "lw 的寫回位址仍然來自它原本的 instruction：R-type 選 rd、lw 選 rt，用一個 mux 選好。"
+    },
+    {
+     "t": 1538,
+     "text": "R-type 在 ID 時 rs、rt、rd 都出來了，rd 要到第 5 段才用，所以不能丟，要存在 pipeline register。"
+    },
+    {
+     "t": 1611,
+     "text": "這時已知是 R-type 還是 lw，先用 mux 選好，只帶一個 destination 下去就好。"
+    },
+    {
+     "t": 1666,
+     "text": "ID 段讀 register 用的是新 instruction 的 rs、rt；WB 段寫回用的是跟過來的 rt/rd，兩者不同。"
+    },
+    {
+     "t": 1784,
+     "text": "不寫 register 的指令也照樣把位址往下傳，但 RegWrite = 0，不會寫。"
+    }
+   ],
+   "cues": [
+    1465.1,
+    1488.6,
+    1537.7,
+    1574.2,
+    1586.6,
+    1611.3,
+    1666,
+    1784,
+    1828.6
+   ],
+   "explain": [
+    "同學剛才問：lw 寫回的 register 號碼從哪裡來？答案還是它自己原本那條 instruction。",
+    "在這裡做一個選擇（用 mux，多工器：從幾個輸入中選一個輸出）：如果是 R-type，destination 選 rd；如果是 lw，選 rt。",
+    "舉例：一個 R-type 正在第二段做 register access，這時指令裡的 rs、rt、rd 三個欄位都已經拿出來了。",
+    "這時候 rd 用得到嗎？用不到，因為要到第 5 個 stage 才寫回。",
+    "那 rd 可以丟掉嗎？不行，丟掉的話等一下就不知道要寫去哪裡。所以跟 control signal 一樣，先放在 pipeline register 裡。",
+    "為什麼這裡要有一個 mux？因為 decode 完已經知道是 R-type 還是 lw。與其 rt、rd 兩個都帶著走（又重又麻煩），不如先選好，只帶必要的一個。",
+    "老師特別提醒：這時候 pipeline 裡有兩個「rt」。第二段讀 register 用的，是現在新進來那條 instruction 的 rs、rt；第五段寫回用的，是跟著舊 instruction 跑過來的 rt 或 rd。兩個是不同的東西。",
+    "如果某條指令根本不寫 register（例如 sw、beq），位址照樣算、照樣一路帶過去，但它的 RegWrite（寫入許可）是 0，到了第 5 段也不會寫。這跟 single cycle 的道理一樣。",
+    "總結：destination register 的位址，功能就跟 control 很像，還沒用到就一路傳下去。"
+   ]
+  },
+  {
+   "title": "五個指令跑一遍：control 跟著指令走",
+   "scene": "ppA-17b-run5",
+   "points": [
+    {
+     "t": 1851,
+     "text": "例子：lw、sub、and、or、add 五個 instruction，看 control signal 怎麼跟著跑。"
+    },
+    {
+     "t": 1881,
+     "text": "lw 在第 2 段 decode 出 control（EX/M/WB 三組），放進 ID/EX；第 3 段用 EX 組（ALUSrc = 1，選 sign-extend 的值）。"
+    },
+    {
+     "t": 1991,
+     "text": "sub 同時在 decode，新的 control 不會跟 lw 的打架：要等 clock edge 才寫進 pipeline register。"
+    },
+    {
+     "t": 2104,
+     "text": "cycle 4 起各段同時做不同指令的事；EX 用完後只帶 M、WB 兩組；cycle 5 lw 用 WB 組寫回 $10。"
+    },
+    {
+     "t": 2243,
+     "text": "五個指令共 5 + 4 = 9 個 cycle 做完。"
+    }
+   ],
+   "cues": [
+    1851.2,
+    1866,
+    1881.3,
+    1904,
+    1949,
+    1990.8,
+    2015,
+    2103.7,
+    2152.7,
+    2199.1,
+    2235.4,
+    2243.3
+   ],
+   "explain": [
+    "用 lw、sub、and、or、add 這五個 instruction（運算元用課本的）跑一遍，看看 control 怎麼跟著指令走。上面的清單會顯示每個指令目前在哪一段。",
+    "cycle 1：lw 只做 instruction fetch。第一段不需要任何 control signal，因為還不知道這是什麼指令。",
+    "cycle 2：lw 進入 decode，control 就出來了：EX 組 0001、M 組 010、WB 組 11（例如 MemRead = 1、RegWrite = 1、MemtoReg = 1）。這些值先放進 ID/EX 這個 pipeline register；同時 sub 進來做 fetch。",
+    "cycle 3：lw 到 EX，拿出 EX 組來用。因為是 lw，ALUSrc 設 1，ALU 的第二個輸入選 sign extension 過來的立即值 20，用來算位址。",
+    "上一個 cycle 讀出來的資料：rs 的值、rt 的值、sign-extend 後的立即值，也都一起放在這個 pipeline register，下一段才用。",
+    "同一個 cycle，sub 正在 decode，也產生了自己的 control（WB 從 11 變成 10、M 從 010 變成 000）。會不會跟 lw 還在用的那一組打架？",
+    "不會。新的值要等 clock edge（時脈邊緣）一來才寫進 pipeline register；到那時 lw 已經用完它的那一組了。新的寫進去、舊的被蓋掉，剛剛好。",
+    "cycle 4：lw 到 MEM，用 M 組讀記憶體；sub 到 EX，用自己的 EX 組做減法；and 在 decode；or 在 fetch。每一段做不同指令的事，各做各的，不打架。",
+    "過了 EX 之後，lw 只剩 M 和 WB 兩組要往下帶，EX 組已經用掉了。",
+    "cycle 5：lw 到 WB，用 WB 組把資料寫回 register file，寫入位址就是剛才用 mux 選好、一路跟過來的 destination（$10）。",
+    "cycle 6：sub 寫回 $11。每個 instruction 都帶著自己的 control，像帶著自己的說明書往前走。",
+    "第 7、8、9 個 cycle 再繼續往下走，最後一個 add 在 cycle 9 寫回。程式算出總共 5 + 4 = 9 個 cycle，和老師說的一樣。"
+   ]
+  },
+  {
+   "title": "總結：pipeline 的基本概念、5 倍加速與最慢的 stage",
+   "scene": "ppA-17b-sum",
+   "points": [
+    {
+     "t": 2257,
+     "text": "pipelined datapath = single cycle 的 datapath 切成 stage，再加 pipeline register；control 在第 2 段 decode 後分組往下傳，destination register 等也一起傳。"
+    },
+    {
+     "t": 2311,
+     "text": "基本概念：多個 step 用不同的 resource，同時被不同的 instruction 執行；每個 clock cycle 開始下一個 instruction。"
+    },
+    {
+     "t": 2355,
+     "text": "切成 5 段理論上有 5 倍 speedup，但 clock 被最慢的 stage 限制，所以切的時候要盡量 balance。"
+    },
+    {
+     "t": 2383,
+     "text": "最麻煩的是 hazard（到目前假設指令之間沒有依賴）。MIPS 指令長度相同、格式簡單，容易 pipeline。"
+    }
+   ],
+   "cues": [
+    2257.5,
+    2273.3,
+    2294.9,
+    2311.3,
+    2334.8,
+    2355.4,
+    2362,
+    2382.7,
+    2397.4
+   ],
+   "explain": [
+    "總結一下。datapath 的部分：基本上就是 single cycle 的 datapath，切好 stage 之後，在段與段之間加上 pipeline register。",
+    "control 的部分：也跟 single cycle 一樣在第二段 decode，但不馬上用，而是按照「哪一段用」分好組，一直往下傳，傳到用到的那一段才用。",
+    "除了 control signal，凡是「現在還沒用到、等一下才用」的東西，例如 destination register 的號碼，也都要往下傳。",
+    "pipeline 的基本概念：把工作分成好幾個 step，每個 step 用不同的 resource（硬體），所以很多個 step 可以同時被不同的 instruction 執行。",
+    "每一個 clock cycle 就開始下一個 instruction，彼此相隔一個 cycle；又規定同一個資源都在同一段用，所以不會打架。",
+    "理論上切成 5 段，就有 5 倍的 speedup（加速）。畫面用示意的數字算：5 段一樣長、跑 1000 個指令，加速大約 4.98 倍，接近 5。",
+    "但切 stage 時，clock 要配合最慢（最長）的那一段，其他段做完也得等它。示意：段長 2、1、2、2、1，clock 只能設成 2，加速就只剩約 4 倍。所以希望每段盡量 balance（一樣長）。",
+    "最麻煩的是 hazard（危障）。到目前為止，我們都假設每個 instruction 都不依賴前一個，一路順順地往下走。",
+    "老師也順便說 MIPS 的好處：每個指令長度都一樣（32 位元）、格式簡單，所以很容易做成 pipeline。"
+   ]
+  },
+  {
+   "title": "Hazard 預告：data hazard 與 branch hazard",
+   "scene": "ppA-17b-hz",
+   "points": [
+    {
+     "t": 2409,
+     "text": "hazard 分兩大類：data hazard（資料的 dependency）與 control / branch hazard（下一個要抓哪個 instruction）。"
+    },
+    {
+     "t": 2456,
+     "text": "branch 要過幾段才決定跳不跳，但每個 cycle 都要 fetch 新指令，只好先猜 sequential，可能猜錯。"
+    },
+    {
+     "t": 2508,
+     "text": "data hazard：前一個要到 cycle 5 才寫回 $5，下一個在第 2 段（cycle 3）就要讀 → 讀到舊值；距離夠遠就沒有 hazard。"
+    },
+    {
+     "t": 2595,
+     "text": "R-type → R-type：結果在 EX 就有了，可以 forwarding；lw → R-type：資料 MEM 後才有，只好 stall。"
+    },
+    {
+     "t": 2757,
+     "text": "branch hazard：stall 最簡單但傷 performance；改成猜 sequential，猜錯再 flush，大部分會猜對。"
+    }
+   ],
+   "cues": [
+    2423.1,
+    2433.3,
+    2440.7,
+    2456,
+    2491.1,
+    2507.8,
+    2548.7,
+    2566.7,
+    2595.3,
+    2660,
+    2757.1,
+    2799.1
+   ],
+   "explain": [
+    "到目前為止都是簡單的 pipeline 概念，後面麻煩的 hazard（危障：讓 pipeline 不能每個 cycle 順順往前走的狀況）要來了。主要有兩種：data hazard 和 branch hazard。",
+    "data hazard（資料危障）：因為 data dependency（資料相依：後面的指令要用前面指令算出來的結果）造成的。",
+    "control hazard（控制危障）：問題在「下一個要執行哪一個 instruction」。一般依序執行時，下一個就是 next instruction；遇到 branch（分支）就不一定。",
+    "以 branch 來說：cycle 1 抓指令、cycle 2 decode、cycle 3 才比對完知道要不要跳。可是 pipeline 每個 cycle 都要抓下一個指令，還沒決定，下一個就得先進來了。",
+    "還沒決定就要抓，只好先猜一個，通常猜 sequential（PC + 4，也就是照順序的下一個）。可能會猜錯，這就是 hazard。",
+    "data hazard 的例子：第一個 instruction 算完要寫回 register 5，但它要到第 5 個 cycle 才寫回去。",
+    "下一個 instruction 只晚一個 cycle，它在第二段（cycle 3）就要讀 register 5。那時還沒寫回，讀到的是舊值，hazard 就產生了。",
+    "但如果讀的指令在很後面才讀，例如 cycle 6 才讀，那時已經寫好了，就沒有 hazard。所以有 dependency 不一定有 hazard，要看兩個指令的距離。",
+    "data hazard 又分兩大類。第一類：R-type 接 R-type。答案其實在第三段（EX）就算好了，只是還沒寫回。那就直接把結果送過去，不用從 register file 拿，這叫 forwarding（轉送）。",
+    "第二類：lw 接 R-type。lw 的資料要在第四段讀完記憶體才拿得到，下一個指令在 cycle 4 就要用，資料真的還沒出來。沒辦法，只好 stall（停下來等）。",
+    "再來是 branch hazard。最笨的方法就是停下來，等決定了再抓（畫面是示意）。可是一停，本來每個 cycle 都有東西出來的 pipeline 就慢了，會影響 performance。",
+    "所以比較好的做法是先猜：大部分程式是照順序執行，就先猜 PC + 4 照樣抓下去；等發現猜錯，再做 flush（把抓錯的指令清掉）補救。大部分情況會猜對，就不傷 performance。"
+   ]
+  },
+  {
+   "title": "下次預告",
+   "scene": null,
+   "points": [
+    {
+     "t": 2834,
+     "text": "老師說下次再介紹細節，今天先講到這裡。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "為什麼 R-type 指令在 pipeline 裡也要等到第 5 段才寫回，而不在第 4 段寫？",
+   "opts": [
+    "避免和緊接在前面的 lw 同時搶 register file 的 write port",
+    "因為 R-type 的結果要到第 5 段才算出來",
+    "因為 R-type 要先存取 data memory",
+    "為了讓 forwarding 比較容易"
+   ],
+   "ans": "避免和緊接在前面的 lw 同時搶 register file 的 write port",
+   "why": "lw 在第 5 段寫回；R-type 晚一個 cycle 進來，若在第 4 段寫，兩個會在同一個 cycle 用到 write port，產生 structural hazard。"
+  },
+  {
+   "q": "lw 後面緊接 sub（無 hazard），兩個指令在五級 pipeline 共需幾個 clock cycle？",
+   "opts": [
+    "6",
+    "5",
+    "7",
+    "10"
+   ],
+   "ans": "6",
+   "why": "第一個指令 5 個 cycle，之後每個 cycle 完成一個：2 + 4 = 6。"
+  },
+  {
+   "q": "pipelined control 的 control signal 在哪一段產生？",
+   "opts": [
+    "第 2 段（ID）decode 完就產生，再分組隨指令往下傳",
+    "第 1 段（IF）就產生",
+    "每一段要用時才重新 decode",
+    "第 5 段才產生"
+   ],
+   "ans": "第 2 段（ID）decode 完就產生，再分組隨指令往下傳",
+   "why": "和 single cycle 一樣由 opcode decode，但分成 EX、M、WB 三組存在 pipeline register 裡往下傳。"
+  },
+  {
+   "q": "寫回 register 時用的 destination 號碼來自哪裡？",
+   "opts": [
+    "跟著該指令一路存在 pipeline register 裡傳過來的 rt / rd",
+    "IF/ID 裡目前那條指令的 rd",
+    "永遠是 rt",
+    "ALU 的輸出"
+   ],
+   "ans": "跟著該指令一路存在 pipeline register 裡傳過來的 rt / rd",
+   "why": "IF/ID 裡是新進來的指令；寫回要用原本那條指令的 destination（R-type 選 rd、lw 選 rt），所以要一路帶著走。"
+  },
+  {
+   "q": "5 個指令（lw、sub、and、or、add，彼此沒有 hazard）在五級 pipeline 上共需幾個 cycle？",
+   "opts": [
+    "9",
+    "25",
+    "5",
+    "10"
+   ],
+   "ans": "9",
+   "why": "5 + (5 − 1) = 9。"
+  },
+  {
+   "q": "五級 pipeline 的理想 speedup 是 5 倍，實際上常達不到的原因之一是？",
+   "opts": [
+    "clock 要配合最慢的 stage，各段不平衡",
+    "指令數量變多",
+    "每個指令的 CPI 變成 5",
+    "register file 變小"
+   ],
+   "ans": "clock 要配合最慢的 stage，各段不平衡",
+   "why": "老師強調切 stage 時要盡量 balance，因為會被最長的那一段限制。"
+  }
+ ]
+}
