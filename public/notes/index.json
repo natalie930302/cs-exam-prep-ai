@@ -1099,9 +1099,9 @@
  },
  "FX4C-JpTFgY": {
   "label": "MIT 18.06 L3：Multiplication and Inverse Matrices",
-  "points": 49,
+  "points": 53,
   "quiz": 7,
-  "cued": false
+  "cued": true
  },
  "FxZGkU0MvfY": {
   "label": "清大OCW 趙啟超《離散數學》第24A講 Trees",
@@ -1383,6 +1383,12 @@
   "label": "清大OCW 趙啟超《離散數學》第9C講 Principles of Counting",
   "points": 12,
   "quiz": 5,
+  "cued": true
+ },
+ "JibVXBElKL0": {
+  "label": "MIT OCW 18.06 L5：Transposes, Permutations, Spaces R^n",
+  "points": 45,
+  "quiz": 7,
   "cued": true
  },
  "jJZ8egWNiWo": {
@@ -2045,6 +2051,12 @@
   "quiz": 4,
   "cued": true
  },
+ "QNpj-gOXW9M": {
+  "label": "MIT OCW 18.06 L20：Cramer's Rule, Inverse Matrix, and Volume",
+  "points": 36,
+  "quiz": 7,
+  "cued": true
+ },
  "qQ8vS2btsxI": {
   "label": "Abdul Bari：9.2 Rabin-Karp String Matching Algorithm",
   "points": 39,
@@ -2565,6 +2577,12 @@
   "label": "台大林軒田 DSA Tree",
   "points": 216,
   "quiz": 8,
+  "cued": true
+ },
+ "XkY2DOUCWMU": {
+  "label": "3Blue1Brown：Matrix multiplication as composition",
+  "points": 20,
+  "quiz": 5,
   "cued": true
  },
  "Xl7Giuc-Adk": {
