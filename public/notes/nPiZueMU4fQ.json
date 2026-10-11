@@ -1,0 +1,464 @@
+{
+ "video": "nPiZueMU4fQ",
+ "label": "黃婷婷教授計算機結構_第24B講 Memory",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Byte address → block address",
+   "scene": "mh-24b-blockaddr",
+   "points": [
+    {
+     "t": 18,
+     "text": "給的是 byte address：算第幾個 word 要去掉最低 2 bits；block = 2 words（8 bytes）要去掉 3 bits。"
+    },
+    {
+     "t": 146,
+     "text": "步驟：先看 block size，去掉 block 內的 bits 得到 block number（lower、upper 單位一致）→ mod set 數 → index → 剩下是 tag；16 bytes 去 4 bits、32 bytes 去 5 bits。"
+    }
+   ],
+   "trap": "mod 之前兩邊單位要一致：先把 byte address 換成 block address，再 mod set 數。",
+   "cues": [
+    18.3,
+    20.3,
+    50.1,
+    58.1,
+    83.5,
+    96.6,
+    129.8,
+    146.1,
+    163,
+    186.6,
+    207,
+    225.4
+   ],
+   "explain": [
+    "很多同學搞不清楚的地方：我們給的 address 是 byte address，也就是以 byte 為單位編號。",
+    "要算第幾個 word：一個 word 是 4 個 byte，所以最後 2 個 bit 不用看。畫面上 0 到 3 是 word 0，4 到 7 是 word 1。",
+    "那如果一個 block 是兩個 word，後面要幾個 bit 不看？",
+    "要先找 block address，因為 lower level 和 upper level 都是以 block 為單位在搬。",
+    "用 modulo 找位置時，兩個 address 的單位一定要一樣，都要是 block。",
+    "一個 block 2 個 word、每個 word 4 個 byte，所以一個 block 有 8 個 byte，後面 3 個 bit 可以 ignore。",
+    "8 個 byte 綁成一體：0000 到 0111 是第 0 個 block，1000 到 1111 是第 1 個 block。最後 3 個 bit 只是 block 裡的第幾個 byte。",
+    "做 mapping 時第一件事：先想 block size 多大，lower level 和 upper level 的 block 要一致。",
+    "得到 block number 之後，再去 mod；看有幾個 set，就知道 index 幾個 bit，剩下的全部是 tag。",
+    "如果一個 block 是 16 個 byte：2⁴ = 16，後 4 個 bit 不理它，前面才是 block address。",
+    "如果一個 block 是 32 個 byte：2⁵ = 32，後面 5 個 bit 是 block 裡的 byte。",
+    "去掉這些 bit 才是 block address，再找 index、找 tag 就很容易了。"
+   ]
+  },
+  {
+   "title": "P&H 例：多層 cache，CPI 9 → 3.4",
+   "scene": "mh-24b-multi",
+   "points": [
+    {
+     "t": 245,
+     "text": "例：base CPI 1、4 GHz（0.25 ns/cycle）、L1 每指令 miss 2%、memory 100 ns = 400 cycles → CPI = 1 + 2% × 400 = 9。"
+    },
+    {
+     "t": 352,
+     "text": "加 L2：5 ns = 20 cycles；到 memory 的 global miss rate 0.5% → CPI = 1 + 2% × 20 + 0.5% × 400 = 3.4（約快 2.6 倍）。"
+    }
+   ],
+   "trap": "0.5% 是「每個 instruction」最後要去 memory 的比例（global miss rate），所以直接乘 400，不要再乘 2%。",
+   "cues": [
+    247.7,
+    275.7,
+    289.2,
+    304.5,
+    311.6,
+    327.9,
+    352.6,
+    361.8,
+    383.4,
+    417.8,
+    452.4,
+    464.6,
+    469.2,
+    493.7
+   ],
+   "explain": [
+    "Multi-level cache：越靠近 CPU 越快、越小；遠一點的大一點，主要用來 reduce miss。用例子算算看。",
+    "例子：沒有 miss 時 base CPI 是 1，clock rate 4 GHz；每個 instruction 有 2% 的機率在 L1（primary cache）miss。",
+    "Main memory 的 access time 是 100 ns（奈秒）。",
+    "Miss 時要用 clock cycle 來計算，所以先把 100 ns 換成 cycle 數。",
+    "4 GHz 表示每秒 4 × 10⁹ 個 cycle，一個 cycle 是 0.25 ns。100 ÷ 0.25 = 400，miss penalty 是 400 個 cycle。",
+    "每個 instruction 平均多 2% × 400 = 8 個 cycle，加上 base 1，CPI = 9。沒有 miss 只要 1 個 cycle，有了 cache miss 變成 9 個。",
+    "如果變成兩層：加一個 L2 cache。",
+    "L2 比 L1 大、比較慢，access 要 5 ns；但比去 memory 的 100 ns 快很多。",
+    "L1 miss 的那 2%，現在不直接去 main memory，先去 access L2。",
+    "L2 也 miss、真的要去 main memory 的，只剩 0.5%（以每個 instruction 來算）。",
+    "L1 miss 去 L2 的 penalty：5 ns ÷ 0.25 ns = 20 個 cycle。",
+    "去 main memory 還是 400 個 cycle。",
+    "平均 CPI = 1 + 2% × 20 + 0.5% × 400 = 1 + 0.4 + 2 = 3.4。",
+    "只多加一層 L2，CPI 就從 9 降到 3.4，大約快了 2.6 倍。"
+   ]
+  },
+  {
+   "title": "L1 與 L2 的設計重點",
+   "scene": "mh-24b-l1l2",
+   "points": [
+    {
+     "t": 500,
+     "text": "Primary（L1）cache 求 minimal hit time，所以小；L2 求 low miss rate，所以大，hit time 較長但遠小於去 memory；L1 常比單層設計更小、block 也比 L2 小。"
+    }
+   ],
+   "cues": [
+    503.3,
+    514.5,
+    521.8,
+    531.3,
+    554.6
+   ],
+   "explain": [
+    "Primary cache（L1）要做什麼？希望 hit time 越小越好。",
+    "更小，才會更快（small is fast）。",
+    "L2 比較慢，但希望 capacity 大一點，這樣可以 reduce cache miss，不要那麼常去 main memory。",
+    "L2 雖然比 L1 多一點時間，但比起去 main memory 少很多。所以 L2 專心在 low miss rate。",
+    "大部分存取還是在 primary cache 完成。所以有了 L2，L1 通常做得比 single-level 設計時更小，block size 也比 L2 小。"
+   ]
+  },
+  {
+   "title": "Cache miss 與 out-of-order superscalar",
+   "scene": "mh-24b-ooo",
+   "points": [
+    {
+     "t": 568,
+     "text": "ILP 有 superscalar 與 VLIW；compile 時不知道哪些 load 會 cache miss，無法靜態 scheduling，所以需要 out-of-order superscalar（reservation station 等 data ready）。"
+    }
+   ],
+   "cues": [
+    568.8,
+    585.4,
+    601.1,
+    606.8,
+    614.8,
+    620.8,
+    649.9,
+    699.4
+   ],
+   "explain": [
+    "Cache 很重要。回想前面 instruction-level parallelism（指令層級平行）有兩種方法：superscalar 和 VLIW。",
+    "VLIW 用 compiler 找出哪些指令沒有 dependency，可以同時一起做。",
+    "那全部都交給 compiler 就好了，為什麼還要 hardware 很多的 superscalar？",
+    "因為 cache：compile 的時候，根本不知道哪個 load 會 cache miss。",
+    "所以沒辦法在 compile 時排好順序，要靠 out-of-order 的 CPU 在 run time 動態處理。",
+    "Data 還沒來的指令，就放在 reservation station 裡等；data ready 的 function unit 先做運算。",
+    "Cache miss 只有在 run time 才知道，誰是 independent 的也只有那時才知道，所以需要 hardware 來動態排程。",
+    "要分析程式的 cache 行為更麻煩，通常用 simulator 模擬 cache 的 structure，看會發生多少 cache miss。"
+   ]
+  },
+  {
+   "title": "Radix sort vs quicksort：instruction 少不一定快",
+   "scene": "mh-24b-sort",
+   "points": [
+    {
+     "t": 741,
+     "text": "Radix sort O(n)、quicksort O(n log n)；每個 item 的 instruction 數 radix 較少，但實際 clock cycles/item 反而 quicksort 較快。"
+    },
+    {
+     "t": 838,
+     "text": "原因：radix 把 element 分散到 bucket，缺乏 locality，cache miss 多；quicksort 比對相鄰元素，miss 少。設計 algorithm 要考慮 data access pattern。"
+    }
+   ],
+   "cues": [
+    741.3,
+    752.4,
+    784.2,
+    789.3,
+    795.8,
+    815.7,
+    838.1,
+    856.9,
+    865.3,
+    887.8
+   ],
+   "explain": [
+    "Cache 和 software 的互動：比較兩種 sorting algorithm，radix sort 和 quicksort。",
+    "用 complexity 看：radix sort 是 O(n)，quicksort 是 O(n log n)，element 多時 radix 理論上比較快。",
+    "圖的 X 軸是要 sort 的 element 數目（曲線是示意，趨勢同課本）。",
+    "第一張圖：每個 item 要花幾個 instruction。radix sort 比較少，看起來比較快。",
+    "可是第二張圖：真正去跑，每個 item 要花幾個 clock cycle？反而 quicksort 比較快，radix 比較慢。",
+    "要怎麼解釋？",
+    "Radix sort 把 element 丟進各個 bucket，range 很大時，資料散在 array 的各個地方，沒有 locality，所以很多 cache miss。畫面上橘色的存取東一個西一個。",
+    "Quicksort 相對來說是相鄰的一直比對（藍色連在一起），cache miss 比較少。",
+    "第三張圖把 cache miss 拿出來看：radix sort 每個 item 的 cache miss 高很多，所以整體反而比較慢。",
+    "所以設計 algorithm 時，不能只看 big O 或 instruction 數，還要考慮 data access pattern 和 cache。"
+   ]
+  },
+  {
+   "title": "Virtual memory 入門：memory 當 disk 的 cache",
+   "scene": "mh-24b-vmintro",
+   "points": [
+    {
+     "t": 932,
+     "text": "Cache 部分結束（放、找、replace、write）；下一個 level：virtual memory（OS 課會再學，這裡著重需要的 hardware）。"
+    },
+    {
+     "t": 1019,
+     "text": "Cache ↔ memory 由 hardware（cache controller）處理、miss 時 stall；memory ↔ disk 差百萬 cycle，由 OS（software）處理。"
+    },
+    {
+     "t": 1043,
+     "text": "讓多個 program 共用 physical memory：各有自己的 address space，經 translation 對應；只搬需要的部分，其他放 disk。單位叫 page（很大），placement 用 fully associative。"
+    }
+   ],
+   "cues": [
+    937.2,
+    966.1,
+    1019,
+    1036.3,
+    1045.2,
+    1057.3,
+    1070.6,
+    1116,
+    1155,
+    1169.1,
+    1185.8,
+    1247.6,
+    1278.5,
+    1311.1,
+    1354
+   ],
+   "explain": [
+    "Cache 的部分到這裡結束：重點就是怎麼放、怎麼找、怎麼 replacement、怎麼 write 這四個 issue。",
+    "接下來看另一個 level：virtual memory（虛擬記憶體）。OS 課還會再教，這裡著重的是它需要哪些 hardware 支援。",
+    "之前講的是 cache 和 main memory 之間：由 cache controller 這個 hardware 控制，cache miss 時讓 processor stall 等資料。",
+    "Memory 和 disk 之間是下一個 level。",
+    "如果 program 用的 address 就是 physical address，那一個 memory 一次只能 run 一個 program。",
+    "可是實際上，我們希望同一個 physical memory 能同時 run 好多個 program。",
+    "每個 program 有自己的 address space，經過一個 translation 機制，map 到真正的 physical address。",
+    "而且不用把整個 program 都搬進來：program 有 locality，90% 的時間只用 10%。只搬一部分進 memory，其他放在 disk，要用再搬。",
+    "一樣是 upper level 和 lower level 的概念，只是現在 upper 是 memory，lower 是 disk。",
+    "Memory 和 cache 差幾十、幾百個 cycle；disk 和 memory 卻差幾百萬個 cycle，因為 disk 已經是 I/O 了。",
+    "所以這一層不用 hardware 搶時間，由 OS（system software）來處理。",
+    "另一個差別：搬動的單位叫 page，而且很大，因為從 disk 搬一次要花很大力氣。",
+    "Placement 也不一樣：一次一大塊，不要讓它搶位置，任何位置都可以放，也就是 fully associative。",
+    "所以 virtual memory 就是：把 main memory 當作 cache，把 disk 當作 lower level 的 storage。",
+    "Software 可以做比較複雜的 policy。比起一次 page fault 搬一個 page 的龐大時間，多花一點時間決定也沒關係；cache miss 就不行，要用 hardware 快速處理。"
+   ]
+  },
+  {
+   "title": "每個 program 有自己的 virtual address space",
+   "scene": "mh-24b-vmshare",
+   "points": [
+    {
+     "t": 1386,
+     "text": "多個 program 共用 memory（一個去做 I/O 時 CPU 可跑別的）；每個 program 有 private virtual address space，只有一個 physical memory。"
+    },
+    {
+     "t": 1484,
+     "text": "需要的 page 才搬進 physical memory，可放任何空位，靠 translation 找到；virtual address 是 lower、physical address 是 upper。"
+    },
+    {
+     "t": 1622,
+     "text": "好處：program 之間 protection；virtual address space 可以大於 physical memory。"
+    }
+   ],
+   "cues": [
+    1389.1,
+    1402.6,
+    1430.2,
+    1461.6,
+    1484.3,
+    1509.8,
+    1569.9,
+    1584.9,
+    1622.1,
+    1637.9
+   ],
+   "explain": [
+    "Virtual memory：很多不同的 program 要 share 同一個 main memory。左邊是兩個 program 的 virtual page，中間是 physical memory 的 frame。",
+    "為什麼要同時 run 很多 program？一個 program 跑到一半要去做 I/O，I/O 很慢，processor 不能白白空等，就讓別的 program 用。",
+    "只有一個 physical memory，但每個 program 都有自己的 memory space，彼此不 share。",
+    "每個 program 都有自己的 private virtual address space；physical 只有一個，例如 2³² 個 byte。",
+    "所有 program 的東西都可以放在 disk，要用的時候，只把需要的幾塊搬到 memory（示意：兩個 program 各搬兩頁）。",
+    "搬上來可以放在 physical memory 的任何空位，只要有一個 translation 告訴我們它放在哪裡就好。",
+    "Lower level 叫 virtual address，upper level 叫 physical address，中間靠 translation 轉換。",
+    "跟 cache 比：cache 用 index（direct-mapped、set associative）加 tag 比對找位置；這裡是 fully associative，查一個 table 就知道在哪。",
+    "另一個好處：每個 program 有自己的 virtual address，可以互相 protect，沒有權利就 access 不到別人的資料。",
+    "還有：virtual address space 可以比 physical memory 還大，因為每次只搬一小部分上來。"
+   ]
+  },
+  {
+   "title": "Page、page fault、frame 與 demand load",
+   "scene": "mh-24b-terms",
+   "points": [
+    {
+     "t": 1656,
+     "text": "概念同 cache：lower 是 virtual address space、upper 是 physical memory；搬動的 block 叫 page，page 不在 memory 叫 page fault（對應 cache miss）。"
+    },
+    {
+     "t": 1801,
+     "text": "Physical memory 切成和 page 一樣大的 frame，page map 到 frame；同樣要回答 size、placement / find、replacement；只在 page fault 時才搬（demand load）。"
+    }
+   ],
+   "cues": [
+    1659.1,
+    1693.5,
+    1713.7,
+    1732.6,
+    1753,
+    1801.2,
+    1841.4,
+    1865.9,
+    1915.8
+   ],
+   "explain": [
+    "Virtual memory 的概念跟 cache 一樣：lower level 是每個 program 的 virtual address space，upper level 是 physical memory。",
+    "從 lower 搬到 upper 一樣有一個 block，在這裡叫 page（頁）。",
+    "一個 program 可能有一千個 page，memory 裡可能只放五個（示意）：用到才放上去。",
+    "所以一樣有四個問題：placement、怎麼找、replacement、write。",
+    "這裡的 block 叫 page；要用的 page 不在 main memory，就叫 page fault，相當於 cache miss。",
+    "Physical memory 也切成和 page 一樣大的一塊塊，每一塊叫 frame。",
+    "一個 page 要 map 到一個 frame，大小一樣，一起搬進、一起搬出。畫面上 page 5 被放進 frame 2。",
+    "先回答幾個問題：page size 多大？怎麼放（決定了怎麼找）？怎麼 replacement？",
+    "什麼時候 fetch？Cache 常常 prefetch（還沒用就先搬）；page 太大，沒事搬進來太浪費 bandwidth，所以只有 page fault 時才搬，叫 demand load。"
+   ]
+  },
+  {
+   "title": "Page size、fully associative 與 page table",
+   "scene": "mh-24b-pagetable",
+   "points": [
+    {
+     "t": 1950,
+     "text": "Page fault 要幾百萬 cycle → page 要大（如 4 KB）；為了 reduce page fault，有空位就放 → fully associative placement。"
+    },
+    {
+     "t": 2066,
+     "text": "Fully associative 沒有 index → 用 page table（以 page number 為 index）記錄每個 page 在哪個 frame；不在 memory → page fault，由 OS 處理。"
+    }
+   ],
+   "cues": [
+    1953.5,
+    1993.9,
+    2014.8,
+    2047.8,
+    2066.2,
+    2093.3,
+    2099,
+    2175.4,
+    2233.9,
+    2243.3,
+    2269.8
+   ],
+   "explain": [
+    "Page size：page fault 的 penalty 非常大，要幾百萬個 cycle，因為是從 disk（I/O）搬到 memory。",
+    "OS 處理了半天，只搬一點點上來划不來，所以 page size 都很大，例如 4K byte。",
+    "Reducing page fault 很重要：不能像 direct-mapped 那樣，明明別的地方有空位卻不給你用。",
+    "所以 virtual memory 用 fully associative：只要 memory 有位置，就把 page 放進去。",
+    "Fully associative 就有「怎麼找」的問題：不能一個一個找，所以建一個 table，叫 page table。",
+    "Page table 很簡單：你是第幾個 page，就記錄你 map 到第幾個 frame。",
+    "它像 array：用 page number 當 index。16 個 page 就有 16 個 entry；要查第 i 個 page，就看第 i 個 entry。畫面示意 8 個 page，V=1 表示在 memory。",
+    "Virtual address 切成一塊塊 page，physical memory 切成一樣大的 frame，靠 page table 做 mapping；virtual 雖然連續，放到 physical 可以隨便擺。",
+    "每次 access：先到 page table 看這個 page 在不在 memory。page 3 在，table 告訴我們在 frame 1。",
+    "如果不在（像 page 4，V=0），表示它在 disk 裡，就產生 page fault。",
+    "一產生 page fault，要做一大堆處理，這是 OS 在做，不是 hardware。"
+   ]
+  },
+  {
+   "title": "Address translation：virtual page number → physical frame number",
+   "scene": "mh-24b-translate",
+   "points": [
+    {
+     "t": 2284,
+     "text": "跟 cache 一樣先找 block（page）number：4 KB page → 最低 12 bits 是 page offset，前面是 virtual page number。"
+    },
+    {
+     "t": 2374,
+     "text": "用 virtual page number 查 page table 得 physical frame number；page offset 原封不動接上 → physical address。"
+    }
+   ],
+   "trap": "Translation 只換 page number；page offset 不變（page 和 frame 一樣大）。",
+   "cues": [
+    2285.1,
+    2301.4,
+    2315.5,
+    2332.8,
+    2374.6,
+    2402.2,
+    2413.3,
+    2443.1,
+    2450.9
+   ],
+   "explain": [
+    "Page table 要怎麼做 translation？",
+    "跟 cache 一樣：先把 block（在這裡是 page）的 number 找出來，page 裡面的位址綁在一起，不用管。",
+    "Page size 是 4K = 2¹² 個 byte，所以最後 12 個 bit 是 page offset（page 裡第幾個 byte），去掉它才是 page number。",
+    "32-bit 的 virtual address（示意）：前 20 個 bit 就是 virtual page number，第幾個 page。",
+    "拿 virtual page number 去 page table 做 translation，看它擺在 physical 的哪裡。",
+    "Page table 告訴你前半部的 physical frame number；physical 有多少個 frame，就用幾個 bit 描述（示意 18 bits）。",
+    "一個 page 是整塊搬到一個 frame，裡面的位址分佈一模一樣。",
+    "所以在 page 裡是第三個 element，到 frame 裡也是第三個：page offset 直接照搬。示意：virtual address 0x3ABC → page 3、offset 0xABC → 假設在 frame 7 → physical address 0x7ABC。",
+    "Physical address = frame number 再接上同樣的 page offset。這就是 address translation。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "4 GHz、base CPI 1、L1 每指令 miss 2%、memory 100 ns；加 5 ns 的 L2 後，到 memory 的 global miss rate 0.5%。新的 CPI？",
+   "opts": [
+    "3.4",
+    "9",
+    "2.4",
+    "1.4"
+   ],
+   "ans": "3.4",
+   "why": "memory = 100/0.25 = 400 cycles、L2 = 20 cycles：1 + 0.02 × 20 + 0.005 × 400 = 3.4（只有 L1 時 1 + 0.02 × 400 = 9）。"
+  },
+  {
+   "q": "Byte address、block = 2 words（word = 4 bytes），算 block address 時要去掉最低幾個 bit？",
+   "opts": [
+    "3",
+    "2",
+    "1",
+    "4"
+   ],
+   "ans": "3",
+   "why": "block = 8 bytes = 2³。"
+  },
+  {
+   "q": "Radix sort 每個 item 的 instruction 較少，實際卻比 quicksort 慢，主因是？",
+   "opts": [
+    "存取分散、locality 差，cache miss 多",
+    "radix sort 的 big O 比較大",
+    "quicksort 不需要 memory",
+    "radix sort 不能 pipeline"
+   ],
+   "ans": "存取分散、locality 差，cache miss 多",
+   "why": "radix 把元素放進分散的 bucket；quicksort 比對相鄰元素，cache miss 少。"
+  },
+  {
+   "q": "Virtual memory 為什麼用 fully associative placement、且 page 很大？",
+   "opts": [
+    "page fault 要幾百萬 cycle，要盡量減少 fault 並讓每次搬動划得來",
+    "因為 hardware 比較便宜",
+    "因為 disk 很快",
+    "為了減少 page table 的大小"
+   ],
+   "ans": "page fault 要幾百萬 cycle，要盡量減少 fault 並讓每次搬動划得來",
+   "why": "miss penalty 極大：有空位就放（fully associative），且一次搬大塊（例如 4 KB）。"
+  },
+  {
+   "q": "4 KB page、32-bit virtual address，page offset 與 virtual page number 各幾 bits？",
+   "opts": [
+    "12 與 20",
+    "10 與 22",
+    "4 與 28",
+    "16 與 16"
+   ],
+   "ans": "12 與 20",
+   "why": "4 KB = 2¹² → offset 12 bits；32 − 12 = 20 bits 是 virtual page number。"
+  },
+  {
+   "q": "Address translation 時，哪一部分會被 page table 換掉？",
+   "opts": [
+    "page number（換成 frame number），offset 不變",
+    "page offset",
+    "整個 address 都換",
+    "只換最高 1 bit"
+   ],
+   "ans": "page number（換成 frame number），offset 不變",
+   "why": "page 與 frame 一樣大，page 內的位置不變。"
+  }
+ ]
+}

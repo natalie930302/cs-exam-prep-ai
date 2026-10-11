@@ -1,0 +1,666 @@
+{
+ "video": "p16QNdRJqMk",
+ "label": "黃婷婷教授計算機結構_第22A講 Memory",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Memory 單元大綱：cache 與 virtual memory",
+   "scene": "mh-22a-outline",
+   "points": [
+    {
+     "t": 17,
+     "text": "目標：一個又快、容量又大、又便宜的 memory 系統，靠 memory hierarchy 達成。"
+    },
+    {
+     "t": 22,
+     "text": "第一大塊：processor 與 memory 之間加 cache；先講簡單的 cache 怎麼運作，再談怎麼 improve performance。"
+    },
+    {
+     "t": 58,
+     "text": "第二大塊：memory 與 secondary memory（disk）之間加 virtual memory，讓 memory 看起來更大。"
+    }
+   ],
+   "cues": [
+    17.1,
+    18.6,
+    21.8,
+    51.4,
+    58.6,
+    75.1
+   ],
+   "explain": [
+    "這一講開始進入 memory（記憶體）這個單元。先看看整個單元要學哪些東西。",
+    "我們心中理想的 memory 有三個願望：存取很快、容量很大、價錢便宜。可惜這三件事通常互相衝突。",
+    "第一個做法：在 processor（處理器）和 memory 之間，加一個小而快的 cache（快取）。常用的資料先放在 cache，就不用每次都跑去慢的 memory。",
+    "先學最簡單的 cache 怎麼運作，之後再學一些技巧，讓它的 performance（效能）更好。",
+    "另一個階層在 memory 和 secondary memory（像 disk 硬碟）之間，叫 virtual memory（虛擬記憶體），它讓 memory 看起來比實際更大。",
+    "所以整個單元基本上就兩大塊：cache 和 virtual memory。"
+   ]
+  },
+  {
+   "title": "Random access、SRAM 與 DRAM 用在哪裡",
+   "scene": "mh-22a-ram",
+   "points": [
+    {
+     "t": 82,
+     "text": "Random access：不論存取哪個位置，時間都一樣；disk 不是，read/write head 要先移到位置，時間看 location 而定（主要當 secondary memory）。"
+    },
+    {
+     "t": 137,
+     "text": "Random access 分 SRAM（static）與 DRAM（dynamic）：SRAM 做 cache，速度可跟 CPU 的 cycle 同步；main memory 用 DRAM，要幾十到幾百個 cycle。"
+    },
+    {
+     "t": 210,
+     "text": "CPU 存取時先經過 cache；資料在 cache 裡就不必去 memory 拿。"
+    }
+   ],
+   "cues": [
+    82.8,
+    90.6,
+    102.3,
+    109.2,
+    133.2,
+    137.3,
+    147.4,
+    167.5,
+    180.6,
+    197.3,
+    210.1
+   ],
+   "explain": [
+    "先從 technology（做 memory 的技術）看起。依「存取的方式」可以分成兩大類。",
+    "Random access 的意思：不管你要存取哪一個位置，花的時間都一樣。畫面上每一格 access 時間都標一樣的 t。",
+    "另一類就不是這樣：位置不同，存取時間就不同。",
+    "例如 magnetic disk（磁碟）：read/write head（讀寫頭）要先移到資料所在的位置，才開始讀。所以時間要看它離上一個位置多遠。",
+    "Disk 主要用來當 secondary memory（第二層的儲存，像硬碟），不是我們平常說的主記憶體。",
+    "Random access memory（RAM）又分兩種：SRAM（static RAM，靜態）和 DRAM（dynamic RAM，動態）。",
+    "SRAM 主要用在 cache，也就是 processor 和 main memory 中間那一層。",
+    "為什麼需要 cache？因為去 memory 存取要花很多時間，可能要幾十、幾百個 clock cycle（時脈週期）。",
+    "Cache 很快，讀寫一次可以跟 CPU 的一個 cycle 一樣快，能跟 CPU 同步。",
+    "我們平常說的 memory，就是 main memory（主記憶體），它是用 DRAM 做的。",
+    "但 CPU 真正存取時，不是直接去 DRAM，而是先經過 cache。資料若已經在 cache 裡，就直接拿，不用再去 memory。"
+   ]
+  },
+  {
+   "title": "SRAM 與 DRAM 的 technology",
+   "scene": "mh-22a-sramdram",
+   "points": [
+    {
+     "t": 224,
+     "text": "SRAM：low density、high power、expensive、fast；用 cross-coupled gate（像 latch）做，一個 bit 要多個 transistor；只要有 power 值就一直在（static）。"
+    },
+    {
+     "t": 348,
+     "text": "DRAM：一個 transistor + 一個 capacitor 存一個 bit；電荷會 decay，要每幾個 ms refresh（dynamic）。"
+    },
+    {
+     "t": 419,
+     "text": "DRAM：high density、low power、便宜，但 slow（要用 sense amplifier 把微弱訊號放大）。"
+    }
+   ],
+   "trap": "Static/Dynamic 指的是要不要 refresh：SRAM 只要有電就保持；DRAM 的電容會漏電，必須定期 refresh。",
+   "cues": [
+    231.4,
+    236.7,
+    261.7,
+    283.6,
+    290.4,
+    312,
+    348,
+    362,
+    400.4,
+    419,
+    441.2
+   ],
+   "explain": [
+    "SRAM 的特性：low density（同樣面積存的 bit 少）、high power（耗電）、expensive（貴），但是 fast（快）。",
+    "SRAM 用兩個反相器（NOT gate）交叉接起來做，叫 cross-coupled：output 拉回去當 input，就像 logic design 學過的 latch，能把 1 或 0 鎖住。",
+    "它用了比較多的 transistor（電晶體），但和一般 logic 是同一種製程，製程進步它也跟著變快，所以很快。",
+    "電路一直接著電源在運作，所以耗電比較高（high power）。",
+    "一個 bit 要好幾個 transistor，同樣面積放不了多少 bit：容量小、又貴。所以不可能整個 memory 都用 SRAM 做。",
+    "為什麼叫 static（靜態）？因為只要 power on，電路一直接著 VDD 和 ground，存的 1 或 0 就一直保持住。",
+    "DRAM 不一樣：用一個 capacitor（電容）存電荷來表示 0 或 1，一個 transistor 加一個電容就能存一個 bit。",
+    "電容充好電之後，電荷會隨時間慢慢流掉（decay），畫面上藍色的電量一直下降。所以需要 refresh（刷新）。",
+    "Refresh 就是每隔幾個 millisecond（毫秒），把資料讀出來再寫回去。CPU 的 cycle 是 nanosecond（奈秒）等級，所以要跑很多很多 cycle 才 refresh 一次。這就是 dynamic（動態）的由來。",
+    "一個 transistor 就能存一個 bit，所以 DRAM 是 high density（容量大）、low power（不必一直接電源），而且便宜。",
+    "缺點是慢：讀的時候電容的訊號很微弱，要先用 sense amplifier（感測放大器）放大才知道是 0 還是 1。"
+   ]
+  },
+  {
+   "title": "DRAM 的 row address 與 column address",
+   "scene": "mh-22a-dramarray",
+   "points": [
+    {
+     "t": 454,
+     "text": "SRAM：給 address 就找到 content；DRAM 的 bit 排成 2-D array，address 拆成 row address 與 column address。"
+    },
+    {
+     "t": 535,
+     "text": "先用 row address 把整個 row 讀進 buffer，再用 column address 選出要的那個 data；這種結構用在 main memory。"
+    }
+   ],
+   "cues": [
+    457.2,
+    473.4,
+    501.9,
+    526.8,
+    535.6,
+    542.9,
+    574.6
+   ],
+   "explain": [
+    "SRAM 用起來很直覺：給它一個 address（地址），它就找出那個位置的 content（內容）。",
+    "DRAM 的結構不一樣：所有的 bit 排成像一個 2-dimension 的 matrix（二維矩陣）。這裡畫 6 × 8 只是示意，真的 DRAM 大得多。",
+    "要在矩陣裡找到一格，需要兩個座標：row address（第幾列）和 column address（第幾行）。",
+    "所以 address 要拆成兩半：一半當 row address，一半當 column address。",
+    "第一步：用 row address 把整個 row（一整列）activate，那一列的資料全部讀出來，放到 buffer（暫存區）。畫面上橘色那一列整列被讀下來。",
+    "第二步：再用 column address，從那一列裡 select（選出）你要的那一格。",
+    "這種 DRAM 結構主要用在 main memory。"
+   ]
+  },
+  {
+   "title": "存取時間與價錢：沒有一種 technology 能全包",
+   "scene": "mh-22a-cost",
+   "points": [
+    {
+     "t": 577,
+     "text": "2008 年：SRAM 0.5–2.5 ns、每 GB $2000–5000；DRAM 50–70 ns、$20–75；magnetic disk 5–20 ms、$0.20–2。"
+    },
+    {
+     "t": 656,
+     "text": "理想：access 很快、容量很大、很便宜；單一 technology 做不到，三種結合成階層才行。"
+    },
+    {
+     "t": 733,
+     "text": "目標：access time 像 SRAM，capacity 與 cost 像 disk。"
+    }
+   ],
+   "cues": [
+    579.4,
+    590.5,
+    603.2,
+    616.5,
+    632.9,
+    636.4,
+    641.1,
+    656.8,
+    695.8,
+    703.6,
+    711,
+    732.9
+   ],
+   "explain": [
+    "再看看各種 technology 的存取時間和價錢。這是 2008 年的資料（課本的表），重點是數量級的差距。",
+    "SRAM：0.5 到 2.5 ns（奈秒），大約一個 clock cycle 就能存取完。",
+    "DRAM：50 到 70 ns，大約慢 100 倍。50 ÷ 0.5 = 100，所以資料若在 DRAM 裡，可能要 100 個 cycle 才拿得到。",
+    "Magnetic disk 更遠：5 到 20 ms（毫秒），5 ms = 5,000,000 ns，是百萬倍的等級。這是 secondary memory。",
+    "價錢：SRAM 每 GB 要 2000 到 5000 美金。",
+    "DRAM 每 GB 只要 20 到 75 美金，差非常多。",
+    "Magnetic disk 更便宜，每 GB 大約 0.2 到 2 美金。",
+    "有這麼多種 technology，到底要用哪一種來做 memory 系統？",
+    "貪心一點的話，我們想要：access 很快、容量很大、又很便宜。",
+    "可惜任何一種單獨使用都做不到：快的很貴，便宜的很慢。",
+    "但是把三種合在一起，規劃成一層一層的階層（hierarchy），就能做到又快、容量又大、又便宜。",
+    "最終目標：存取時間像 SRAM 一樣快，容量和成本卻像 disk 一樣大又便宜。"
+   ]
+  },
+  {
+   "title": "Processor–DRAM gap 與 memory hierarchy",
+   "scene": "mh-22a-gap",
+   "points": [
+    {
+     "t": 738,
+     "text": "Processor 依 Moore's law 越來越快，DRAM（電容製程）進步慢，gap 越來越大；load/store 一等 memory，processor 再快也沒用，所以 cache 很重要。"
+    },
+    {
+     "t": 824,
+     "text": "Memory hierarchy：越靠近 processor 越快、越小、越貴；越遠越大、越慢、越便宜。"
+    },
+    {
+     "t": 847,
+     "text": "Cache 不能無限做大：small is fast，做大就變慢。"
+    }
+   ],
+   "cues": [
+    743.4,
+    763.8,
+    783.8,
+    796.1,
+    816.3,
+    823.9,
+    833.1,
+    847,
+    867.5,
+    898.4,
+    913.9
+   ],
+   "explain": [
+    "這張圖（示意）比較 processor 和 DRAM 的速度成長。依 Moore's law，logic 電路越做越小，processor 越來越快。",
+    "DRAM 是另一種製程，靠電容存資料，不能像 logic 那樣一直變快，速度進步得很慢。",
+    "所以 processor 和 memory 的速度差距（gap）一年比一年大。",
+    "程式裡 load/store（讀寫記憶體）很多，一做就要停下來等 memory。東西沒拿到，processor 再快也只能空等。",
+    "Gap 越嚴重，cache 就越重要。",
+    "解法：建立 memory hierarchy（記憶體階層），把不同 technology 一層一層排好。",
+    "越靠近 processor，用越貴、越快的 technology，但容量比較小。",
+    "有人會想：我願意多花錢，把 cache 做得超大，這樣不是更好嗎？",
+    "不行。設計的老原則：small is fast。東西做大，訊號要走更遠、要找的格子更多，就變慢了。所以 cache 一定要小。",
+    "越往下層：容量越大、速度越慢、越便宜。",
+    "Data 不可能全部放在最上面那層，所以上下兩層之間需要一些機制，決定什麼時候把資料搬上來、搬下去。"
+   ]
+  },
+  {
+   "title": "Upper level、lower level 與 block",
+   "scene": "mh-22a-levels",
+   "points": [
+    {
+     "t": 975,
+     "text": "兩對層級：cache ↔ memory、memory ↔ disk（virtual memory）；靠近 processor 叫 upper level，遠離叫 lower level（memory 的角色會隨著談哪一對而變）。"
+    },
+    {
+     "t": 1067,
+     "text": "上下層之間以固定大小搬資料：最小單位在 cache 叫 block，在 virtual memory 叫 page；要搬就整塊一起搬。"
+    }
+   ],
+   "cues": [
+    976.8,
+    999.7,
+    1026.8,
+    1045,
+    1067.4,
+    1078.9,
+    1090.7,
+    1111
+   ],
+   "explain": [
+    "這單元會談兩對層級：第一對是 cache 和 memory，第二對是 memory 和 disk（也就是 virtual memory 系統）。",
+    "每一對裡，靠近 processor 的叫 upper level（上層），離 processor 遠的叫 lower level（下層）。",
+    "同一個 memory 的角色會變：在 cache 那一對裡它是 lower level；在 virtual memory 那一對裡它變成 upper level。看你在講哪一件事。",
+    "Upper level 比較小、lower level 比較大，所以不可能把所有東西都放在 upper level。資料得在上下層之間搬來搬去。",
+    "搬的大小要固定，不能這次搬一個、下次搬兩個，那樣太亂了。畫面上粉紅色的方塊就是一次搬一塊。",
+    "這個固定的最小搬動單位，在 cache 和 memory 之間叫 block（區塊）。",
+    "在 virtual memory 裡，同樣的概念叫 page（頁）。",
+    "規則是：要嘛整個 block 一起搬進來，要嘛整個搬出去，不會只搬其中一兩個 byte。"
+   ]
+  },
+  {
+   "title": "Principle of locality：90/10 rule",
+   "scene": "mh-22a-locality",
+   "points": [
+    {
+     "t": 1120,
+     "text": "Memory hierarchy 會 work 是因為 principle of locality：任何時間 program 只 access 一小部分 address space。"
+    },
+    {
+     "t": 1169,
+     "text": "90/10 rule：90% 的時間在跑 10% 的 code；一次執行的 statement、只走一邊的 if-then-else 不常用，function 與 loop 會一直重複。"
+    },
+    {
+     "t": 1339,
+     "text": "所以只要把常用的那 10% 搬到最靠近的 cache，用到再搬進來，不用就搬出去。"
+    }
+   ],
+   "cues": [
+    1135.6,
+    1155.6,
+    1169.3,
+    1216,
+    1229,
+    1267.3,
+    1273.8,
+    1287,
+    1339.1,
+    1361.5
+   ],
+   "explain": [
+    "上層小又快、下層大又慢，這樣的設計真的有用嗎？",
+    "有用！關鍵觀察叫 principle of locality（區域性原理）：任何一個時間，program 只會存取 address space（所有地址）裡很小的一部分。",
+    "常說的 90/10 rule：90% 的時間都在執行那 10% 的 code。畫面上只有一小格（橘色）是常跑的。",
+    "想想自己寫程式：寫了 100 行，真正一直反覆在做的只有一小段。",
+    "哪一段會一直做？像 function、subroutine 會被一直呼叫。",
+    "一般的 statement 執行一次就走了，不會一直重複。",
+    "If-then-else 也只執行其中一邊。",
+    "真正的主角是 loop（迴圈）：程式碼很短，卻佔了大部分的執行時間。",
+    "所以只要把那 10% 正確地搬到最靠近的地方（cache），大部分時間要用的東西都找得到。",
+    "其他 90% 平常用不到，就不用搬進來；用到時再搬，不用了就搬出去。常用的東西自然一直留在 cache。"
+   ]
+  },
+  {
+   "title": "Temporal 與 spatial locality",
+   "scene": "mh-22a-temporal",
+   "points": [
+    {
+     "t": 1369,
+     "text": "Temporal locality：一個 item 被 reference 後，很快會再被 reference；spatial locality：被 reference 的位置附近很快也會被 reference。"
+    }
+   ],
+   "cues": [
+    1369.3,
+    1385.2,
+    1396.5
+   ],
+   "explain": [
+    "Locality 又分兩種：temporal（時間上的）和 spatial（空間上的）。",
+    "Temporal locality：一個東西剛被用過，很快又會被用一次。畫面上同一個 x 一再出現。",
+    "Spatial locality：用到一個位置，它旁邊、後面的位置很快也會被用到。畫面上 a、a+1、a+2…連著用。"
+   ]
+  },
+  {
+   "title": "課堂問答（點名）",
+   "scene": null,
+   "points": [
+    {
+     "t": 1406,
+     "text": "老師點名同學舉出符合 temporal / spatial locality 的 program construct。"
+    }
+   ]
+  },
+  {
+   "title": "Locality 的例子：loop、array、sequential instruction",
+   "scene": "mh-22a-examples",
+   "points": [
+    {
+     "t": 1569,
+     "text": "Temporal 例子：loop 的 instruction 一再 fetch，應留在 cache。"
+    },
+    {
+     "t": 1596,
+     "text": "Spatial 例子：array 依序存取；linked list 位址跳來跳去不算；program 的 instruction 依序執行（PC = PC + 4）。"
+    },
+    {
+     "t": 1712,
+     "text": "有 principle of locality，memory hierarchy 才會 work。"
+    }
+   ],
+   "cues": [
+    1571.3,
+    1584.3,
+    1596.2,
+    1619.2,
+    1661.5,
+    1688.3,
+    1712.1
+   ],
+   "explain": [
+    "Temporal locality 的例子：loop。迴圈裡的 instruction 剛 fetch（從記憶體取出指令）完，下一圈馬上又要 fetch。",
+    "所以 loop 的 instruction 應該放在 cache 裡留著，不要搬走，因為馬上又要用。",
+    "那 spatial locality 的例子呢？存取了一個位置之後，隔壁的位置馬上會被存取。",
+    "Array（陣列）！A[0]、A[1]、A[2]…在記憶體裡排在一起，依序被存取。",
+    "Linked list（鏈結串列）呢？它的 node 散在記憶體各處，靠 pointer 跳來跳去，位址不連續，所以沒有好的 spatial locality。",
+    "Program 本身也是：instruction 大多一條接一條執行，PC = PC + 4，下一條指令就在隔壁。",
+    "正因為程式有這些 locality，memory hierarchy 才會 work。"
+   ]
+  },
+  {
+   "title": "各層級與誰來管理",
+   "scene": "mh-22a-who",
+   "points": [
+    {
+     "t": 1769,
+     "text": "層級：registers（32 個）→ cache（on-chip，與 CPU 同一顆 chip）→ main memory（DRAM，off-chip，約 100 cycles）→ disk。"
+    },
+    {
+     "t": 1926,
+     "text": "管理者：register ↔ memory 由 compiler（或 assembly programmer）；cache ↔ memory 由 cache controller（hardware）；memory ↔ disk 由 OS（software 加少量 hardware）；file 由 user。"
+    }
+   ],
+   "cues": [
+    1771.8,
+    1786.4,
+    1793.6,
+    1808.9,
+    1813.9,
+    1858.8,
+    1889.9,
+    1916.3,
+    1926.5,
+    1957.9,
+    1971.1,
+    2007
+   ],
+   "explain": [
+    "看整個 memory hierarchy 的層級。最上面其實 register（暫存器）也是存東西的地方，最靠近 processor。",
+    "像 MIPS 有 32 個 register，非常快，運算完的結果都先存回 register。",
+    "下一層是 memory。學 single-cycle 的時候，好像只有一個 memory，直接 load/store。",
+    "可是直接用 memory 太慢了，每次 load/store 可能要 100 個 cycle。",
+    "所以中間加一層 cache。Cache 和 processor 做在同一顆 chip 上（on-chip）。",
+    "Main memory（DRAM）和 CPU 不在同一顆 chip，是 off-chip。你買 CPU 和買記憶體條是分開買的。要存取 memory 得出 chip，所以更慢。",
+    "把 processor 的照片放大來看，很大一塊面積都是 cache。",
+    "再下一層是 disk，又是另一個獨立的裝置。",
+    "Register 和 memory 之間由誰管？大部分是 compiler：它決定哪個 variable 放哪個 register。如果你寫 assembly，就是你自己決定。",
+    "Cache 和 memory 之間由 cache controller 管，這是 hardware（硬體）。發生 cache miss 時，hardware 讓 CPU 停下來等資料讀進來。",
+    "Memory 和 disk 之間搬的是 page，主要由 OS（operating system，作業系統）做，它是 software，再加一點 hardware 協助。",
+    "最後 file（檔案）的讀寫，由 user 自己決定。"
+   ]
+  },
+  {
+   "title": "Hit、hit rate、hit time、miss rate、miss penalty",
+   "scene": "mh-22a-terms",
+   "points": [
+    {
+     "t": 2054,
+     "text": "Hit：資料在 upper level；miss：不在。Hit rate = 在 upper level 找到的比例；miss rate = 1 − hit rate。"
+    },
+    {
+     "t": 2104,
+     "text": "Hit time = 存取 upper level 的時間 + 判斷 hit/miss 的時間。"
+    },
+    {
+     "t": 2146,
+     "text": "Miss penalty = 換掉 upper level 的 block + 從 lower level 取來（latency + transfer）並送到 processor 的時間；hit time ≪ miss penalty。"
+    }
+   ],
+   "trap": "Hit time 不只是讀資料的時間，還包含「判斷是不是 hit」的時間；miss rate = 1 − hit rate。",
+   "cues": [
+    2058.3,
+    2080.5,
+    2083.3,
+    2089.2,
+    2091.6,
+    2104.2,
+    2143.5,
+    2150.7,
+    2180.6,
+    2201.8
+   ],
+   "explain": [
+    "先學幾個一定會用到的名詞。左邊綠色是 upper level，右邊藍色是 lower level。",
+    "要的資料不一定都在 upper level。畫面上 X 只在 lower level。",
+    "CPU 去 upper level 找，找不到，這就叫 miss（未命中）。",
+    "如果資料就在 upper level（像 Y），就叫 hit（命中）。",
+    "Hit rate（命中率）：存取 upper level 時，有多少百分比找得到。",
+    "Hit time（命中時間）包含兩段：存取 upper level 的時間，加上判斷「這是不是我要的」的時間。因為 upper level 比較小，放在那一格的不一定是你要的，要檢查。",
+    "Miss rate（未命中率）= 1 − hit rate。",
+    "Miss penalty（未命中的代價）：要把 upper level 某個 block 換掉，從 lower level 把新的 block 拿上來，再送給 processor。畫面上 X 從下層搬到上層。",
+    "去 lower level 拿要時間：main memory 本身有 latency（延遲），從 off-chip 搬到 on-chip 還有 transfer（傳輸）時間。",
+    "記住：hit time 遠遠小於 miss penalty。所以 miss 一多，效能就掉很多。"
+   ]
+  },
+  {
+   "title": "Memory hierarchy 的四個問題",
+   "scene": "mh-22a-4q",
+   "points": [
+    {
+     "t": 2224,
+     "text": "① Block placement：block 放在 upper level 的哪裡？② Block identification：怎麼找到它？③ Block replacement：位置不夠時換掉誰？④ Write strategy：寫的時候 upper / lower 兩份 copy 要不要維持一致？"
+    },
+    {
+     "t": 2337,
+     "text": "Read 不改內容沒問題；write 改變 state 才需要 write policy。"
+    }
+   ],
+   "cues": [
+    2224,
+    2241.2,
+    2265.1,
+    2286.9,
+    2295.3,
+    2309.8,
+    2336.9,
+    2357.4
+   ],
+   "explain": [
+    "接下來在 cache、virtual memory 兩個層級，都會問同樣幾個問題。",
+    "第一個：block placement（放置）。搬上來的單位是 block，但 upper level 比較小，要放在哪裡？",
+    "打個比方（示意）：下面可能有 100 個人，上面只有 10 個位置，一定不是一人一個位置。",
+    "很多人會搶同一個位置，那第二個問題來了：block identification，你要怎麼找到你的 block？",
+    "第三個：block replacement（替換）。10 個位置都坐滿了，第 11 個人要上來，總得有一個人出去。要請誰出去？",
+    "第四個：write strategy（寫入策略）。現在資料有兩份 copy，一份在 upper level、一份在 lower level，要不要隨時保持一樣？",
+    "Read 只是讀，不改內容，兩份 copy 一樣，不會出問題。Write 會改變內容，才會讓兩份不一致，代價和問題都在這裡。",
+    "把這四個問題都回答完，cache 和 virtual memory 你就全懂了。"
+   ]
+  },
+  {
+   "title": "小結：locality 與兩種 technology",
+   "scene": "mh-22a-summary",
+   "points": [
+    {
+     "t": 2365,
+     "text": "兩種 locality：temporal（loop）、spatial（array、sequential access）；90% 時間 access 10% program。"
+    },
+    {
+     "t": 2424,
+     "text": "常用的放最近（小、快、貴），不常用的放遠（大、慢、便宜）；DRAM 慢但便宜 dense，SRAM 快但貴。"
+    }
+   ],
+   "cues": [
+    2364.8,
+    2392.4,
+    2397.4,
+    2412.7,
+    2423.9,
+    2452
+   ],
+   "explain": [
+    "整理一下 memory hierarchy 的重點。先問：兩種 locality 是哪兩種？",
+    "Temporal locality（時間）：例子是 loop。",
+    "Spatial locality（空間）：例子是 array 的 data access，以及 program 的 sequential（依序）執行。",
+    "Principle of locality：90% 的時間都在存取 10% 的 program。這是 memory hierarchy 能 work 的最重要原因。",
+    "利用它：常用的東西放在最靠近的地方，容量小但很快，貴一點沒關係；不常用的放遠一點，容量大、便宜，慢一點也沒關係。",
+    "兩種 technology：DRAM 慢但便宜又 dense，提供大容量；SRAM 快但貴、不 dense，提供快速存取。"
+   ]
+  },
+  {
+   "title": "Direct-mapped cache：block address mod 8",
+   "scene": "mh-22a-direct",
+   "points": [
+    {
+     "t": 2484,
+     "text": "Cache 在 processor 與 memory 之間、建在 CPU 裡（on-chip）；memory 約 100 cycles。問題：怎麼 place、怎麼 identify。"
+    },
+    {
+     "t": 2601,
+     "text": "最簡單的 direct-mapped：例子 upper 8 個 block、lower 32 個（1 block = 1 byte），lower level 依序輪流分配位置。"
+    },
+    {
+     "t": 2742,
+     "text": "位置 = (block address) mod (cache 的 block 數)；用 binary 看，8 個 block 就是取最低 3 bits（index）：00001、01001、10001、11001 都到 001。"
+    }
+   ],
+   "trap": "Direct-mapped 的 index 是「block address」mod block 數，不是 byte address；只有 block 數是 2 的冪次時，才剛好等於取最低幾個 bit。",
+   "cues": [
+    2494.4,
+    2516.7,
+    2545.9,
+    2561.7,
+    2600.8,
+    2623.9,
+    2636.2,
+    2656.1,
+    2678.2,
+    2702.3,
+    2742.4,
+    2753.3,
+    2783.8,
+    2793.9,
+    2824.7,
+    2842.2
+   ],
+   "explain": [
+    "現在正式看 cache。它在 memory 和 processor 之間。",
+    "Register 直接存取 memory 可能要 100 個 cycle，太慢；所以中間加 cache，它建在 CPU 裡面，跟 CPU 在一起。",
+    "要解決的問題：哪些東西要放上來？放在哪（place）？要用的時候怎麼找到（identify）？",
+    "Memory 的地址是 0、1、2、3…依序排的，可是程式存取的順序不一定照排，可能東一個西一個。所以需要一套規則決定放哪裡。",
+    "最簡單的第一種規則，叫 direct-mapped cache（直接對映）。",
+    "例子：upper level（cache）有 8 個 block，lower level（memory）有 32 個 block。Memory 排成 4 列，每列 8 個，等一下就看得出為什麼這樣排。",
+    "進出都以 block 為單位。這裡為了簡單，假設一個 block 就是一個 byte。",
+    "Cache 的 8 個位置編號 0 到 7。",
+    "Lower level 就照次序分配位置：0 到 7，然後再從 0 到 7，一輪一輪下去。每一列剛好一輪。",
+    "所以同一欄的 block 都要搶 cache 上同一個位置。橘紅色的（1、9、17、25）都要去 cache 的第 1 格，灰色的（5、13、21、29）都要去第 5 格。",
+    "給一個地址，怎麼馬上知道它在哪一格？把 lower level 的 block address 除以 upper level 的 block 數（8），取餘數就好。",
+    "Modulo（mod）就是取餘數。例如 101 mod 100 = 1。",
+    "換成 binary（二進位）看更清楚：cache 位置是 3 bits（000 到 111），memory 的 block 地址是 5 bits。",
+    "橘紅色的 00001、01001、10001、11001，除以 8 的餘數都是 1，剛好就是最後 3 個 bit：001。",
+    "灰色的也一樣，最後 3 個 bit 都是 101，所以都到第 5 格。",
+    "結論：block 數是 8（2 的 3 次方）時，不用真的做除法，取地址最低 3 bits 就是位置。這 3 bits 叫 index。這就是 direct-mapped。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "SRAM 和 DRAM 相比，下列哪個描述正確？",
+   "opts": [
+    "SRAM 快但貴、density 低，用在 cache",
+    "SRAM 便宜、density 高，用在 main memory",
+    "DRAM 不需要 refresh",
+    "DRAM 一個 bit 要用 cross-coupled 的 6 個 transistor"
+   ],
+   "ans": "SRAM 快但貴、density 低，用在 cache",
+   "why": "SRAM 用 cross-coupled gate 做，快但一個 bit 要多個 transistor；DRAM 一個 transistor + 電容，便宜 dense 但慢，且要 refresh。"
+  },
+  {
+   "q": "「迴圈裡的 instruction 剛被 fetch，很快又被 fetch」屬於哪一種 locality？",
+   "opts": [
+    "Temporal locality",
+    "Spatial locality",
+    "兩者都不是",
+    "Sequential locality"
+   ],
+   "ans": "Temporal locality",
+   "why": "同一個 item 在時間上很快被重複使用是 temporal；依序存取 array 的鄰近元素才是 spatial。"
+  },
+  {
+   "q": "Miss rate 與 hit rate 的關係是？",
+   "opts": [
+    "miss rate = 1 − hit rate",
+    "miss rate = hit rate / miss penalty",
+    "miss rate = 1 / hit rate",
+    "miss rate = hit time × hit rate"
+   ],
+   "ans": "miss rate = 1 − hit rate",
+   "why": "每次存取不是 hit 就是 miss，兩個比例加起來是 1。"
+  },
+  {
+   "q": "8 個 block 的 direct-mapped cache（1 block = 1 byte），memory block 21 會放在第幾格？",
+   "opts": [
+    "5",
+    "2",
+    "1",
+    "21"
+   ],
+   "ans": "5",
+   "why": "21 mod 8 = 5；binary 10101 的最低 3 bits 是 101 = 5。"
+  },
+  {
+   "q": "Cache 和 main memory 之間搬資料，主要由誰負責？",
+   "opts": [
+    "Cache controller（hardware）",
+    "Operating system",
+    "Compiler",
+    "User"
+   ],
+   "ans": "Cache controller（hardware）",
+   "why": "Cache ↔ memory 太頻繁、要很快，由 hardware 處理；memory ↔ disk（virtual memory）才主要由 OS 處理。"
+  },
+  {
+   "q": "為什麼不能把 cache 做得非常大來減少 miss？",
+   "opts": [
+    "small is fast：做大會變慢，而且很貴",
+    "因為 cache 只能存 instruction",
+    "因為 DRAM 不能和 CPU 放一起",
+    "因為 locality 只對小 cache 成立"
+   ],
+   "ans": "small is fast：做大會變慢，而且很貴",
+   "why": "越大的 memory 存取越慢（hit time 變長），SRAM 又貴，所以越靠近 CPU 的層級越小。"
+  }
+ ]
+}

@@ -17,6 +17,12 @@
   "quiz": 5,
   "cued": true
  },
+ "-83W2w16UYI": {
+  "label": "黃婷婷教授計算機結構_第23A講 Memory（Cache/Block Size/Write-Through）",
+  "points": 24,
+  "quiz": 6,
+  "cued": true
+ },
  "-b2lciNd2L4": {
   "label": "Binary Tree Traversals（Inorder, Preorder, Postorder）",
   "points": 22,
@@ -134,6 +140,12 @@
  "1FEP_sNb62k": {
   "label": "Abdul Bari：7.3 Traveling Salesman Problem - Branch and Bound",
   "points": 32,
+  "quiz": 7,
+  "cued": true
+ },
+ "1fhK7KF8hgE": {
+  "label": "黃婷婷教授計算機結構_第24A講 Memory",
+  "points": 20,
   "quiz": 7,
   "cued": true
  },
@@ -302,6 +314,12 @@
  "4myFFRFCMXw": {
   "label": "清大OCW 趙啟超《離散數學》第3D講 Mathematical Induction and Functions",
   "points": 7,
+  "quiz": 6,
+  "cued": true
+ },
+ "4q1UMEuDvpM": {
+  "label": "黃婷婷教授計算機結構_第22B講 Memory",
+  "points": 24,
   "quiz": 6,
   "cued": true
  },
@@ -1931,6 +1949,12 @@
   "quiz": 8,
   "cued": true
  },
+ "nPiZueMU4fQ": {
+  "label": "黃婷婷教授計算機結構_第24B講 Memory",
+  "points": 20,
+  "quiz": 6,
+  "cued": true
+ },
  "Nx0lRBaXoz4": {
   "label": "MIT 18.06 L29：（另一個錄影版本）",
   "points": 36,
@@ -2073,6 +2097,12 @@
   "label": "MIT 6.006 L17：Bellman-Ford",
   "points": 79,
   "quiz": 7,
+  "cued": true
+ },
+ "p16QNdRJqMk": {
+  "label": "黃婷婷教授計算機結構_第22A講 Memory",
+  "points": 39,
+  "quiz": 6,
   "cued": true
  },
  "p1EnSvS3urU": {
@@ -2301,6 +2331,12 @@
   "label": "MIT OCW 18.06 L2：Elimination with Matrices",
   "points": 32,
   "quiz": 7,
+  "cued": true
+ },
+ "QWGIvh-k7go": {
+  "label": "黃婷婷教授計算機結構_第23B講 Memory",
+  "points": 25,
+  "quiz": 6,
   "cued": true
  },
  "qZs767KQcvE": {
@@ -2991,6 +3027,12 @@
   "label": "清大周志遠 第23A講 File Concept & Access Methods",
   "points": 36,
   "quiz": 6,
+  "cued": true
+ },
+ "Y1esjWBTf7Q": {
+  "label": "Average Memory Access Time（AMAT）— Computer Organization",
+  "points": 12,
+  "quiz": 5,
   "cued": true
  },
  "y4sLC9zeEvU": {

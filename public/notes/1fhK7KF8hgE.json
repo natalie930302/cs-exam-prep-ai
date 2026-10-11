@@ -1,0 +1,523 @@
+{
+ "video": "1fhK7KF8hgE",
+ "label": "黃婷婷教授計算機結構_第24A講 Memory",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習：hierarchy 與四個問題",
+   "scene": "mh-24a-review",
+   "points": [
+    {
+     "t": 17,
+     "text": "因為 locality，memory 組成 hierarchy；processor 與 memory 之間加 SRAM 做的 cache（upper level），main memory 是 lower level。"
+    },
+    {
+     "t": 117,
+     "text": "四個問題：placement、finding the block、replacement、write；memory 與 disk 之間也一樣。"
+    }
+   ],
+   "cues": [
+    16.8,
+    20.4,
+    21.8,
+    74.7,
+    92.9,
+    117.6,
+    129.7,
+    141.2,
+    154.4,
+    175.4
+   ],
+   "explain": [
+    "複習：memory 有不同的 technology，容量、速度、價錢都不一樣。",
+    "Locality：90% 的時間大部分只用 10% 的 program。",
+    "因為 locality，把 memory 做成一層一層的 hierarchy：近的快、小、貴，遠的便宜、大、慢。processor 看到的是一個又快又大的 memory。",
+    "第一層：在 memory 和 processor 之間加一層 cache，用 SRAM 做，快、容量小、比較貴。",
+    "靠近 processor 的 cache 叫 upper level，main memory 叫 lower level。",
+    "Cache 小，只有少部分東西能放上去，所以第一個問題：placement，怎麼放？",
+    "怎麼放，就決定了怎麼找：第二個問題 finding the block。",
+    "不能全部都擺在上面，有競爭時就要有人回到 lower level：第三個問題 replacement。",
+    "還有 write 的問題：寫了一個 block，會造成 upper level 和 lower level 不一致。",
+    "把這四個問題搞清楚，整個系統就懂了。今天後面還會看到 main memory 和 secondary storage 之間也是同樣的關係。"
+   ]
+  },
+  {
+   "title": "Direct-mapped 的問題 → fully associative → set associative",
+   "scene": "mh-24a-three",
+   "points": [
+    {
+     "t": 186,
+     "text": "Improve cache：從 hit time、miss rate、miss penalty 下手。Direct-mapped 每個 block 固定位置，交替存取同位置的 block 會一直 miss，其他位置卻空著。"
+    },
+    {
+     "t": 333,
+     "text": "Fully associative：有空就放，但每格都要存 address、每格都要比對（8 格 8 個 comparator）。取中間：set associative。"
+    }
+   ],
+   "cues": [
+    189.7,
+    203,
+    216.4,
+    239.6,
+    260,
+    313.8,
+    332.9,
+    361.9,
+    416.8,
+    451,
+    484
+   ],
+   "explain": [
+    "Placement 最簡單的第一種是 direct-mapped，但它有一些缺點。",
+    "要 improve cache performance，可以從三個角度：降低 hit time、降低 miss rate、降低 miss penalty。",
+    "Direct-mapped：每個人都有固定的位置。Upper level 有 8 個 block（0 到 7），下面照次序排。",
+    "找位置：lower level 的地址除以 upper level 的數目，餘數就是位置。畫面示意：0 和 8 都到第 0 格。",
+    "問題：如果程式交替 access 這兩個橘紅色的 block（0、8、0、8……），它們只能放同一個位置，每次都把對方踢出去，一直 miss。",
+    "大家都擠在這個位置，其他位置搞不好都是空的。這在這種情況下就不是好的 structure。",
+    "為什麼要強迫每個人坐固定位置？另一個極端：沒有固定位置，只要有空就可以進去。這叫 fully associative。",
+    "差別在哪？Direct-mapped 只要比對那一個位置的 tag，就知道是不是我。",
+    "Fully associative 可能擺在任何一格，所以每一格都要存 address，access 時每一格的 address 都要比對。",
+    "雖然很好，但 hardware 很多：access 一個 element 要比對 8 次；一個一個比太慢，所以要 8 個 comparator 同時比。",
+    "一個極端只有一個位置，另一個極端全部位置都可以，那就取個中間：set associative。"
+   ]
+  },
+  {
+   "title": "Set associative：先找 set，再在 set 裡比對",
+   "scene": "mh-24a-sets",
+   "points": [
+    {
+     "t": 490,
+     "text": "Set associative：像 direct-mapped 先找到「家」（set = block number mod set 數），家裡有 2 或 4 個房間（way），在 set 內同時比對 n 個 tag。"
+    },
+    {
+     "t": 775,
+     "text": "n-way：每 set n 個 block、n 個 comparator；8 個 block 時 index 3 → 2 → 1 bits（direct / 2-way / 4-way），fully 沒有 index。"
+    }
+   ],
+   "trap": "n-way 的 set 數 = block 數 ÷ n；index bits = log₂（set 數），不是 log₂（block 數）。",
+   "cues": [
+    492.9,
+    522.3,
+    530.9,
+    586.8,
+    614.4,
+    631.9,
+    654.2,
+    669.6,
+    716.3,
+    775.6,
+    790.4,
+    815.1,
+    870.9,
+    887.6,
+    977.9
+   ],
+   "explain": [
+    "Set associative 和 direct-mapped 很像：原本 8 家，每家一個房間。現在讓一個號碼（一戶）裡有兩個或四個房間。",
+    "一樣用 modulo 的概念：先找到地址，也就是找到這個 set（家）。右邊是 2-way：4 家，每家 2 個房間。",
+    "以前 8 個 entry 要除以 8；現在 8 個 entry 拆成 4 家，每家 2 間，所以除以 4 就找到家。",
+    "找到 set 之後，兩個房間都可能放，不知道在哪一間，所以要同時比對 2 個 tag，需要 2 個 comparator。",
+    "比 fully associative 的 8 個少，比 direct-mapped 的 1 個多一點：取中間。",
+    "整理三種 mapping：direct-mapped 每個人只到一個位置；fully associative 任何位置都可以。",
+    "其實 cache 要存的是 address 和 data。Direct-mapped 同一位置的 low-order bits 一樣，所以只存前半段；fully associative 沒有共同的部分，整個 address 都要存，tag 更長。",
+    "Set associative：除以 set number 找到家，家裡面的幾個 block 再像 fully associative 一樣全部 check。",
+    "Fully associative 每個 entry 都要 search，所以每個 entry 一個 comparator：8 個位置 8 個，16 個就 16 個。",
+    "n-way set associative：n 代表一個 set 裡有幾個 block。2 個叫 two-way，4 個叫 four-way。",
+    "Two-way 要 2 個 comparator，four-way 要 4 個。",
+    "Index 的 bit 數：8 個 entry 用 direct-mapped 有 8 家，3 bits；2-way 只剩 4 家，2 bits；4-way 只剩 2 家，1 bit。",
+    "Fully associative 有沒有 index？沒有了，任何位置都可以。",
+    "n-way：每個 set 有 n 個 entry。用 block number mod「set 的數目」決定在哪個 set，不是除以 block 數。",
+    "找到 set 後，在 set 裡用 fully associative 的方式 check：有幾個 block 就要幾個 comparator，同時比。"
+   ]
+  },
+  {
+   "title": "P&H 例：block 12 放在哪",
+   "scene": "mh-24a-block12",
+   "points": [
+    {
+     "t": 1000,
+     "text": "8-block cache：direct-mapped 12 mod 8 = 4；2-way（4 sets）12 mod 4 = 0，set 0 兩格任選（2 個 comparator）；fully 任何一格（8 個 comparator）。"
+    }
+   ],
+   "cues": [
+    1002.3,
+    1017.4,
+    1027.4,
+    1043.6,
+    1050.4,
+    1069.7,
+    1085.2
+   ],
+   "explain": [
+    "用不同的圖再表示一次：同樣 8 個 entry，三種組織方式。",
+    "Block address 12。Direct-mapped：12 除以 8 餘 4，只能放第 4 格，只要比一個 tag。",
+    "2-way set associative：先看有幾個 set。8 個 entry、一家兩個人，所以只有 4 個 set（0 到 3）。",
+    "12 除以 4 餘 0，所以 map 到 set 0，set 0 的兩格都可以放。",
+    "Set 0 有兩個 entry，要兩個 comparator 同時 search。",
+    "Fully associative：任何一個空位都可以放；不知道在哪一格，所以要 8 個 comparator 同時比對。",
+    "Index 呢？Direct-mapped 用 3 個 bit 找位置；2-way 用 2 個 bit；fully associative 不需要 index。"
+   ]
+  },
+  {
+   "title": "8 個 block 的四種組織與 tag 長度",
+   "scene": "mh-24a-tagsize",
+   "points": [
+    {
+     "t": 1105,
+     "text": "8-block cache 可組成 1-way（8 sets）、2-way（4 sets）、4-way（2 sets）、8-way（1 set = fully）；每個 entry 都存 tag + data。"
+    },
+    {
+     "t": 1246,
+     "text": "Address 固定時，index 每少 1 bit，tag 就多 1 bit；fully associative 的 index 為 0，全部是 tag。"
+    }
+   ],
+   "cues": [
+    1109.3,
+    1117.1,
+    1155.8,
+    1186.6,
+    1205.4,
+    1229.9,
+    1247.8,
+    1295.2,
+    1322,
+    1341.4
+   ],
+   "explain": [
+    "看同樣 8 個 block 的 cache 怎麼組織。Direct-mapped：8 個 set，每一格存 tag 和 data。",
+    "Tag 的長度會隨組織而不同。理論上要存整個 address，但 index 那段在同一個位置都一樣，是 redundant 的，所以去掉 index 剩下的才是 tag。",
+    "2-way：一個 set 有兩個 entry，變成 4 個 set。",
+    "Mapping 時把 block address 除以 4 找到 set，set 裡兩個 tag 拿出來同時比對，看是 hit 還是 miss。",
+    "4-way：一個 set 4 個 entry，只剩 2 個 set，每個 set 有 4 個 tag。",
+    "8-way 就是 fully associative：只有一個 set，裡面 8 個 data，要 8 個 tag 同時比對。",
+    "從上到下，tag 的 bit 數會越來越長還是越來越短？",
+    "Address 長度固定：index 用來選 set，剩下的就是 tag。畫面示意 5-bit block address：direct 的 tag 2 bits，2-way 3 bits，4-way 4 bits，fully 5 bits，每次多一個 bit。",
+    "Index 從 3 個 bit 變 2 個、1 個、最後 0 個，剩下的全部都是 tag。",
+    "變來變去其實只有一個概念：address 分成 tag 和 set number（當 index）。一個 set 只有一個 entry 就是 direct-mapped；全部擺在一個 set 就是 fully associative。"
+   ]
+  },
+  {
+   "title": "P&H 例：0, 8, 0, 6, 8 在三種組織",
+   "scene": "mh-24a-058",
+   "points": [
+    {
+     "t": 1362,
+     "text": "4-block cache，存取 0, 8, 0, 6, 8：direct-mapped（mod 4）0、8 互踢，5 次全 miss。"
+    },
+    {
+     "t": 1523,
+     "text": "2-way（2 sets，mod 2）：0 M、8 M、0 H、6 M（LRU 踢 8）、8 M（踢 0）→ 1 hit、4 miss；set 變少、更多人擠。"
+    },
+    {
+     "t": 1675,
+     "text": "Fully associative：0 M、8 M、0 H、6 M、8 H → 3 miss；miss 最少但比對最貴（4 / 2 / 1 個 comparator）。"
+    }
+   ],
+   "trap": "2-way 時 6 mod 2 = 0，和 0、8 擠同一個 set；用 LRU 換掉最久沒用的 8。",
+   "cues": [
+    1364.5,
+    1389.3,
+    1407.5,
+    1417.1,
+    1434.8,
+    1461.1,
+    1470.3,
+    1485.5,
+    1496.1,
+    1522.8,
+    1555,
+    1562,
+    1577.3,
+    1589.7,
+    1629.9,
+    1658.3,
+    1669.6,
+    1675,
+    1694.6,
+    1705.6
+   ],
+   "explain": [
+    "再看一個例子：依序 access block 0、8、0、6、8。分別用 direct-mapped、2-way、fully associative 會怎樣？",
+    "Cache 只有 4 個 block：direct-mapped 有 4 個位置（0 到 3）；2-way 只有 2 個 set；fully associative 沒有地址，只有一個 set。",
+    "先看 direct-mapped，access 順序從上到下。",
+    "Access 0：0 mod 4 = 0，map 到 index 0。裡面沒東西，miss，把 block 0 放進去。",
+    "Access 8：8 mod 4 = 0，又是同一個位置。Direct-mapped 只有一個位置，0 被踢出去，8 進來，miss。",
+    "再 access 0：又 map 到同一格，只好把 8 踢出去、0 回來，miss。",
+    "Access 6：6 mod 4 = 2，第二個位置第一次用，miss，放進去。",
+    "再 access 8：又是位置 0，再把 0 踢出去，miss。",
+    "每一次都是 cache miss！明明只是 0、8 交替，但只有一個位置，太限制了。5 次全 miss。",
+    "2-way set associative：4 個 block、一個 set 2 個，所以有 2 個 set，地址要除以 2。",
+    "Access 0：0 mod 2 = 0，miss，跟剛才一樣；但這個 set 可以放兩個 element。",
+    "Access 8：8 mod 2 = 0，同一個 set，但還有一個空位，擺進去（miss）。",
+    "再 access 0：0 還在裡面，hit！",
+    "Access 6：6 mod 2 = 0。剛才有 4 個位置時它在別的地方，現在只剩 2 個 set，6 也擠到 set 0。只有兩個 entry，就用 LRU 把最久沒用的 8 換出去。",
+    "8 又來了，剛剛被搬出去，miss；位置不夠，把 0 換出去。",
+    "雖然一個 set 裡有兩個 entry，但 cache 大小固定時 set 數變少，更多人會擠到同一個 set 搶位置。",
+    "2-way 的結果：1 個 hit、4 個 miss。",
+    "Fully associative 最有彈性，有空位就進來：0 miss、8 miss、0 hit、6 miss（還有空位）、8 hit。",
+    "Fully 有兩個 hit，只 miss 3 次。miss 次數 5 → 4 → 3：associativity 越高，miss 越少。",
+    "但成本最貴：fully 每次要 4 個 comparator 比對；2-way 只要 2 個；direct-mapped 只要 1 個。"
+   ]
+  },
+  {
+   "title": "Associativity 的效果越來越小",
+   "scene": "mh-24a-assoc",
+   "points": [
+    {
+     "t": 1739,
+     "text": "Associativity 增加會降低 miss rate，但改善越來越小（P&H 64 KiB、16-word block：10.3% → 8.6% → 8.3% → 8.1%），comparator 卻一直增加。"
+    }
+   ],
+   "cues": [
+    1738.9,
+    1752.6,
+    1764.1,
+    1771.3
+   ],
+   "explain": [
+    "Associativity 增加（direct-mapped → 2-way → 4-way），除了要更多 comparator，miss rate 會降低。",
+    "但降低的幅度越來越小。課本的例子（64 KiB data cache、16-word block）：1-way 10.3%，2-way 降到 8.6%，大約少 2%。",
+    "到 4-way 只再降 0.3%，到 8-way 只降 0.2%：效果越來越低。",
+    "而且每增加 associativity，comparator 的數目還要一直增加，成本變高。"
+   ]
+  },
+  {
+   "title": "4-way set-associative cache 的實作",
+   "scene": "mh-24a-4way",
+   "points": [
+    {
+     "t": 1775,
+     "text": "每 set 4 個 entry（4-way）；block = 1 word = 4 bytes → byte offset 2 bits；256 sets × 4 = 1024 blocks → index 8 bits、tag 32 − 8 − 2 = 22 bits。"
+    },
+    {
+     "t": 2109,
+     "text": "Index 選 set → 4 個 tag 同時比（4 個 comparator）→ OR 得 hit → 4-to-1 MUX 選出 data。"
+    }
+   ],
+   "cues": [
+    1775.7,
+    1797.4,
+    1810.9,
+    1836.4,
+    1841.2,
+    1873.6,
+    1899.7,
+    1931.7,
+    1948.2,
+    1979.2,
+    1988.6,
+    2031.9,
+    2041.1,
+    2108.9,
+    2118.4,
+    2140.5,
+    2151
+   ],
+   "explain": [
+    "看這張圖，了解 address 怎麼分配：index 和 tag 怎麼切。",
+    "這個 cache 每個 set 有 4 個 entry（4 個 way），所以是 4-way set associative。",
+    "每個 block 多大？block 是搬進搬出的單位。",
+    "圖上 data 是 32 bit，也就是一個 word、4 個 byte。所以一個 block 就是一個 word。",
+    "Byte address 的最後兩個 bit（0 和 1）是 byte offset，用來選 word 裡第幾個 byte，找 block 時不用它；從 bit 2 開始才是 block address。",
+    "這個 cache 有多少個 entry？有幾個 set？",
+    "256 個 set，每個 set 4 個 block，所以總共 256 × 4 = 1024 個 block。",
+    "反過來，從 cache 的 block 數看，要除以 4 才得到 set 的數目。",
+    "256 個 set，要 8 個 bit 才能選出第幾個 set，這就是 index。",
+    "Block address 除以 256 的餘數，就是它最後 8 個 bit，直接拿來當 set index。",
+    "找到 set 了，那 tag 有多大？",
+    "Index 那段已經隱含在位置裡，不用再存。32 − 8 − 2 = 22，tag 是 22 個 bit。",
+    "一個 set 有 4 個 block，4 個 tag 都要存著；算 cache 總大小時，這些 tag 也要算進去。",
+    "Access 時，用 8-bit index 直接選到一個 set（畫面示意第 1 列，四個 way 都亮起來）。",
+    "4 個 way 都有可能是我要的，所以 4 個 tag 一起讀出來，用 4 個 comparator 同時跟 address 的 tag 比對。",
+    "比對一樣（而且 valid）就輸出 1。4 個結果經過一個 OR gate，只要任何一個是 1，就是 hit。",
+    "Hit 了，是哪一個 way？用比對結果去控制一個 4-to-1 MUX，從 4 筆 data 裡選出那一筆。"
+   ]
+  },
+  {
+   "title": "Replacement：random、LRU、pseudo-LRU",
+   "scene": "mh-24a-repl",
+   "points": [
+    {
+     "t": 2190,
+     "text": "Direct-mapped 沒得選；n-way 在 set 內有 n 個選擇；fully 有 cache block 數個選擇 → 需要 replacement policy。"
+    },
+    {
+     "t": 2325,
+     "text": "希望踢掉待會不會再用的：random（不加 hardware）或 LRU（最久沒用的）；真 LRU 成本高，常用 pseudo-LRU（2 個 entry 用一個 pointer）。"
+    }
+   ],
+   "cues": [
+    2192.7,
+    2222.5,
+    2236.8,
+    2261.5,
+    2290.7,
+    2325.5,
+    2341.2,
+    2346.8,
+    2363.8,
+    2407.2,
+    2420.2,
+    2428.5
+   ],
+   "explain": [
+    "複習 placement：direct-mapped 每個人只 map 到一個位置，沒得選，直接擺進去。",
+    "原來在那個位置的人就被蓋過去。N-way：map 到 set 後有 n 個選擇，2-way 就有兩個選擇。",
+    "4-way 四個選擇；fully associative：cache 有幾個 block，就有幾個選擇。",
+    "Direct-mapped 不用選；但有 n 個位置時，你放在哪一格，原來那格的人就要出去。所以要決定誰出去：replacement。",
+    "萬一選錯，踢掉的人等一下又要用，就會搬來搬去，又回到 direct-mapped 那種問題。",
+    "所以我們希望被 replace 掉的，是待會兒不會再用到的。",
+    "Cache block replacement 怎麼做？Direct-mapped 沒有選擇。",
+    "Set associative 和 fully associative 可以用 random：如果不想花額外 hardware 去記錄，就隨便挑一個。",
+    "另一種：least recently used（LRU），換掉最久沒被用到的。因為 locality：很久沒用，可能就不會再用了。",
+    "可是要維持真正的 LRU 很麻煩，要記錄每個 block 誰早誰晚，需要比較多的 hardware。",
+    "所以大家用近似的就好，叫 pseudo-LRU。",
+    "例如 2 個 entry 時：設一個 pointer，被指到的就是下次要被 replace 的。只要一用到某個 entry，就把 pointer 推到另一個。最近被用到的一定不會被指到，這樣就近似 LRU。"
+   ]
+  },
+  {
+   "title": "Direct-mapped vs set associative：comparator 與 MUX delay",
+   "scene": "mh-24a-dmvssa",
+   "points": [
+    {
+     "t": 2494,
+     "text": "N-way 要 n 個 comparator 與一個 MUX，必須等 hit 決定後才選 data；direct-mapped 只有一筆 data，可先拿來用（假設 hit），miss 再丟掉 → hit time 較短。"
+    }
+   ],
+   "trap": "Set associative 的 MUX 在 tag 比對之後，所以 hit time 比 direct-mapped 長；cache access 常在 critical path 上。",
+   "cues": [
+    2496.6,
+    2500.8,
+    2516.2,
+    2543.3,
+    2572.7,
+    2588.9,
+    2614,
+    2662
+   ],
+   "explain": [
+    "把 direct-mapped 和 n-way set associative 比較一下。",
+    "N-way 要 n 個 comparator 同時比對；direct-mapped 只有一個 entry，只要一個 comparator。",
+    "4-way 還需要一個 MUX：就算 hit 了，也不知道是第一、第二、第三還是第四個，要用 MUX 選出來。",
+    "問題在哪？要等 tag 比對完、hit 決定之後，才知道要從 4 筆 data 選哪一筆，所以時間要等。",
+    "Direct-mapped 只有一筆 data：可以不等，先把 data 拿去用，假設它是 hit。",
+    "如果最後發現是 miss，把那筆 data 丟掉就好；反正 miss 本來就要做很多事。",
+    "Set associative 多一個 MUX 的 delay。Cache access 常常在 pipeline 的 critical path 上，timing 影響很大，所以這個 delay 很重要。",
+    "不同的 structure（direct-mapped、fully、set associative），就是在 hit time、miss rate、miss penalty 之間取捨。"
+   ]
+  },
+  {
+   "title": "Multilevel cache：L1 求快、L2 求少 miss",
+   "scene": "mh-24a-multi",
+   "points": [
+    {
+     "t": 2700,
+     "text": "另一種加速：multilevel cache（L1、L2、甚至 L3）；L1（primary）小而快，目標是降低 hit time。"
+    },
+    {
+     "t": 2771,
+     "text": "L2 較大、較慢，目標是降低 miss rate；L1 miss 先找 L2，真的放不下才去 main memory，整體時間下降。"
+    }
+   ],
+   "cues": [
+    2715,
+    2730.5,
+    2737.1,
+    2746.6,
+    2773.4,
+    2795.8,
+    2821.1,
+    2844
+   ],
+   "explain": [
+    "另一種加速的方法：multilevel cache（多層快取）。",
+    "不只一層：第一層 cache、第二層 cache，甚至第三層。",
+    "都是用 cache 的 technology，但越靠近 processor 的越小、越快。",
+    "最靠近 CPU 的叫 primary cache（L1）。它小，所以快（small is fast），主要目的是降低 hit time。",
+    "另一層 cache（L2）做大一點，大就不容易 miss，目的是降低 miss rate。",
+    "L1 miss 時，不直接去 main memory（太花時間），而是先找 L2，由 L2 來 serve。",
+    "L2 比 L1 大、慢一點，但至少比 main memory 快很多。真的連 L2 都放不下，才去 main memory。",
+    "Main memory 雖然最慢，但要去的比例很低了，所以整體時間降低。更 high-end 的處理器還有第三層 cache。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "4 個 block 的 cache，依序存取 block 0, 8, 0, 6, 8。2-way set associative（LRU）共幾次 miss？",
+   "opts": [
+    "4",
+    "5",
+    "3",
+    "2"
+   ],
+   "ans": "4",
+   "why": "2 個 set，都 mod 2 = 0：0 M、8 M、0 H、6 M（換 8）、8 M（換 0）。"
+  },
+  {
+   "q": "同上序列，direct-mapped 與 fully associative 的 miss 次數分別是？",
+   "opts": [
+    "5 與 3",
+    "4 與 2",
+    "5 與 2",
+    "3 與 3"
+   ],
+   "ans": "5 與 3",
+   "why": "Direct-mapped 0、8 同在 index 0 互踢，全 miss；fully：0 M、8 M、0 H、6 M、8 H。"
+  },
+  {
+   "q": "8-block cache 中，block 12 在 2-way set associative 會放到哪？",
+   "opts": [
+    "set 0 的任一格",
+    "set 4",
+    "第 4 格",
+    "任何一格"
+   ],
+   "ans": "set 0 的任一格",
+   "why": "8 / 2 = 4 個 set，12 mod 4 = 0。第 4 格是 direct-mapped 的答案。"
+  },
+  {
+   "q": "4-way set associative、256 個 set、block = 1 word、32-bit byte address，tag 幾 bits？",
+   "opts": [
+    "22",
+    "20",
+    "24",
+    "30"
+   ],
+   "ans": "22",
+   "why": "byte offset 2 + index log₂256 = 8，tag = 32 − 10 = 22。"
+  },
+  {
+   "q": "Associativity 加倍（cache 大小與 block size 不變），index 與 tag 的變化？",
+   "opts": [
+    "index 少 1 bit、tag 多 1 bit",
+    "index 多 1 bit、tag 少 1 bit",
+    "兩者都不變",
+    "tag 變 2 倍"
+   ],
+   "ans": "index 少 1 bit、tag 多 1 bit",
+   "why": "set 數減半，index 少 1 bit，多出來的那個 bit 歸到 tag。"
+  },
+  {
+   "q": "為什麼 set-associative cache 的 hit time 通常比 direct-mapped 長？",
+   "opts": [
+    "要等 tag 比對、決定 hit 後才能用 MUX 選 data",
+    "它的 block 比較大",
+    "它不需要 tag",
+    "它的 miss rate 比較高"
+   ],
+   "ans": "要等 tag 比對、決定 hit 後才能用 MUX 選 data",
+   "why": "direct-mapped 只有一筆 data，可先拿來用，miss 再丟掉。"
+  },
+  {
+   "q": "Multilevel cache 中，L1 與 L2 的主要設計目標分別是？",
+   "opts": [
+    "L1 降低 hit time；L2 降低 miss rate（避免去 memory）",
+    "L1 降低 miss rate；L2 降低 hit time",
+    "兩者都只為了降低 miss penalty",
+    "L1 存 instruction、L2 存 data"
+   ],
+   "ans": "L1 降低 hit time；L2 降低 miss rate（避免去 memory）",
+   "why": "L1 小而快；L2 大一點，攔住 L1 的 miss，讓去 main memory 的比例很低。"
+  }
+ ]
+}

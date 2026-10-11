@@ -1,0 +1,466 @@
+{
+ "video": "-83W2w16UYI",
+ "label": "黃婷婷教授計算機結構_第23A講 Memory（Cache/Block Size/Write-Through）",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習：memory hierarchy 與 locality",
+   "scene": "mh-23a-review",
+   "points": [
+    {
+     "t": 17,
+     "text": "SRAM 快、小、貴；DRAM 大、慢、便宜；因為 program 有 locality，可組成 hierarchy：越近越快越小，越遠越大越便宜。"
+    },
+    {
+     "t": 144,
+     "text": "Principle of locality：90% 時間 access 10% 的 program（像圖書館常看的書放身邊）。"
+    },
+    {
+     "t": 194,
+     "text": "Temporal（loop）與 spatial（array、sequential instruction）；有 locality，hierarchy 才行得通。"
+    }
+   ],
+   "cues": [
+    17.5,
+    22.2,
+    51.1,
+    63.7,
+    144.1,
+    169.5,
+    196,
+    216.2,
+    241.1,
+    270.4,
+    287.2,
+    313.7,
+    325.8
+   ],
+   "explain": [
+    "先複習上次：不同 technology 各有優缺點。SRAM 快但容量小又貴；DRAM 容量大、比較慢、便宜。",
+    "我們希望看到的 memory：又快、又大、又便宜。單用一種做不到。",
+    "但是 program 執行時有 locality（區域性），所以可以把 memory 組織成一層一層的 hierarchy。",
+    "越靠近 processor，用小但快的 technology；越遠離 processor，用慢一點、但容量大又便宜的。",
+    "Principle of locality：大約 90% 的時間，只在 access 10% 的 program。如果每個地址被用到的機率都一樣，怎麼組織都沒用；正因為不平均，才有辦法。",
+    "就像去圖書館：你不會每本書都看，常看的那幾本放在身邊，大部分時候伸手就拿得到。",
+    "Locality 有兩種：temporal（時間）和 spatial（空間）。",
+    "Temporal locality：現在 access 的東西，等一下很快又會 access 到。",
+    "符合這種的程式結構：loop（迴圈），一圈一圈重複執行同一段。",
+    "Spatial locality：access 某個地址後，它附近的地址很快也會被 access。",
+    "例子：array 的資料，access 一個 element 後，很快就 access 下一個。",
+    "還有 instruction：程式大多依序執行，PC（program counter）指的下一條，很快就會被執行。",
+    "正因為有 temporal 和 spatial locality，memory hierarchy 才行得通：常用的放近、不常用的放遠。"
+   ]
+  },
+  {
+   "title": "複習：block、direct-mapped 與 tag",
+   "scene": "mh-23a-dmreview",
+   "points": [
+    {
+     "t": 360,
+     "text": "上下兩層以固定大小的 block（virtual memory 叫 page）搬動；block 只有 1 word 時用不到 spatial locality。"
+    },
+    {
+     "t": 501,
+     "text": "Placement：direct-mapped 每個 block 有固定位置 = 地址 mod 格數；2 的冪次時看 low-order bits。"
+    },
+    {
+     "t": 678,
+     "text": "同位置的 block low-order bits 相同，用 high-order bits（tag）區分；存取時先用 low-order bits 找位置，再比對 tag。"
+    }
+   ],
+   "cues": [
+    361,
+    381.9,
+    395.1,
+    432.7,
+    438.4,
+    501.6,
+    532.5,
+    550.8,
+    599.6,
+    680.1,
+    710.1,
+    744.3,
+    749.5
+   ],
+   "explain": [
+    "兩層的 memory 結構：靠近 processor 的叫 upper（high）level，遠一點的叫 lower level。",
+    "兩層之間搬資料，基本單位叫 block，一塊一塊整個搬。在 virtual memory 裡同樣的東西叫 page。",
+    "有點像讀 memory 時一次讀一個 word：4 個 byte 一起讀，不會拆開。",
+    "Block size 可大可小：一個 word、四個 word、十六個 word 都可以。舉例時常說一個 block 就是一個 word。",
+    "可是 block 只有一個 word 的話，用不到 spatial locality：下一個要用的根本沒搬進來。所以實際上 block 會大一點。",
+    "上面容量比較小：假設下面有 100 個 element，上面可能只有 10 個位置。要怎麼擺？這就是 placement 問題。",
+    "最簡單的方法 direct-mapped：照次序輪流，第 1 到第 10 個人坐 1 到 10 號，第 11 個人又回到 1 號。",
+    "所以每個人都有固定的位置：把 lower level 的地址 mod upper level 的格數，餘數就是位置。畫面上 1 號和 11 號都搶 1 號位。",
+    "如果大小都是 2 的幾次方，連除法都不用做，直接看地址最低幾個 bit（low-order bits）就知道在哪一格。",
+    "問題：很多人的 low-order bits 都一樣，都 map 到同一個位置。它們不一樣的地方在 high-order bits。（畫面上是示意的 5-bit 地址。）",
+    "所以把 high-order bits 記下來，用來分辨是誰，這叫 tag。",
+    "Low-order bits 不用存，因為它已經隱含在位置（location）裡了。",
+    "存取時的流程：先用 low-order bits 找到位置，再 check tag，確定是不是我要的資料。"
+   ]
+  },
+  {
+   "title": "複習：block size 的好處與代價",
+   "scene": "mh-23a-bsize",
+   "points": [
+    {
+     "t": 793,
+     "text": "Large block：利用 spatial locality，一次 miss 搬進鄰近資料，之後 hit → 降低 miss rate。"
+    },
+    {
+     "t": 873,
+     "text": "代價：cache 大小固定時 block 數減少、競爭變多；miss penalty 變大、可能白搬；容易被寫過（pollution）而要寫回。"
+    },
+    {
+     "t": 1086,
+     "text": "改善：early restart（要的 word 一到就開始）、critical word first（先搬要的那個 word）。"
+    }
+   ],
+   "cues": [
+    793,
+    819,
+    847.2,
+    866.3,
+    873.2,
+    918.9,
+    950.5,
+    964.4,
+    978,
+    1056.2,
+    1086.3,
+    1100.9
+   ],
+   "explain": [
+    "Block size 要設多大？一個 word、四個、十六個？畫面上 cache 有 10 個 block（示意）。",
+    "為了 spatial locality：用到一個，下一個很快也會用到，所以要搬就一起搬進來。",
+    "第一次 access w0 是 miss，但整個 block 一起搬進來了；接著 access w1、w2、w3 就都 hit。",
+    "所以 block 大一點，可以降低 miss rate。",
+    "可是 cache 的大小是固定的：一個 block 變成兩個單位大，cache 就只剩 5 個 block 了。",
+    "本來有 10 個位置，現在只剩 5 個，更多人 map 到同一個位置，競爭更激烈。",
+    "Miss penalty 也很重要：block 變大，每次從 lower level 搬要花更多時間。",
+    "而且可能白搬：一大塊搬進來，可能只用到其中兩個，後面根本沒用到。",
+    "Block 越大，被寫過（dirty）的機率越大。被 replace 時要寫回 memory，又多花時間，這叫 pollution。",
+    "Block 很大，搬完要很久。本來 4 個 word 很快，變 16 個 word 就要更長時間，通常要等全部搬完才重新 access。",
+    "改善方法一：early restart。假設要的是第 4 個 word，1、2、3、4 搬進來就開始做，5 以後慢慢搬。",
+    "方法二：critical word first。先搬第 4 個，再 5、6…到 16，最後回頭搬 1、2、3。當然這要更多 hardware。"
+   ]
+  },
+  {
+   "title": "看圖：miss rate 對 block size",
+   "scene": "mh-23a-graph",
+   "points": [
+    {
+     "t": 1120,
+     "text": "圖：X 軸 block size，每條線一種 cache size（4K、16K、64K、256K），Y 軸 miss rate。"
+    },
+    {
+     "t": 1179,
+     "text": "4K：先降（spatial locality）後升（block 數太少、衝突多）；64K、256K 較平：cache 夠大，block 數仍足夠。"
+    }
+   ],
+   "cues": [
+    1121.9,
+    1166,
+    1177.7,
+    1178.8,
+    1213.2,
+    1245.6,
+    1263.5
+   ],
+   "explain": [
+    "最重要的是這張圖（數值示意，趨勢同課本）。看圖要會分析出設計的道理。",
+    "X 軸是 block size。每一條曲線代表一種 cache size：最上面是 4K，再來 16K…",
+    "Y 軸是 cache 的 miss rate。",
+    "看 4K 這條線：先往下彎，然後又往上去。代表什麼？",
+    "前半段 miss 變少：block size 變大，spatial locality 發揮作用，可能要 access 的先搬進來了。綠色那段。",
+    "後半段為什麼又往上？block 太大，block 的數目變少，更多人 map 到同一個 location 互相競爭，miss 反而增加。紅色那段。",
+    "下面 64K、256K 的線就比較平：cache 夠大的時候，就算 block 大，block 數目還是夠，不會擠來擠去。"
+   ]
+  },
+  {
+   "title": "Read hit / miss：stall，不是 interrupt",
+   "scene": "mh-23a-read",
+   "points": [
+    {
+     "t": 1341,
+     "text": "四個 case：read/write × hit/miss。Read hit：CPU 照常；read miss：stall，從 main memory 把 block 搬進 cache。"
+    },
+    {
+     "t": 1409,
+     "text": "Instruction miss 重新 fetch；data miss 等 data 到再做。Cache miss 是 stall（CPU 不讓給別人）；virtual memory 的 miss 才是 OS interrupt。"
+    }
+   ],
+   "trap": "Cache miss → hardware stall；page fault（virtual memory）→ OS 處理（interrupt / exception），兩者處理方式不同。",
+   "cues": [
+    1341.6,
+    1355.5,
+    1394.4,
+    1401.8,
+    1409.5,
+    1438.6,
+    1456.1
+   ],
+   "explain": [
+    "Cache hit 和 miss，再分 read 和 write，一共四個 case，一個一個分析。",
+    "Read hit 是最好的狀況：資料在 cache，很快拿到，CPU 照常做，完全不受影響。",
+    "Read miss：資料不在 cache。CPU 必須 stall（停一下），因為沒資料不能往下做。",
+    "這時候去 main memory 把整個 block 搬到 cache 裡。",
+    "如果是 instruction miss，就重新 fetch 一次指令；如果是 data miss，等 data 來了再開始做運算。",
+    "這跟之後要學的 virtual memory 不一樣：那邊（memory 和 disk 之間）miss 的時候，是由 OS 用 interrupt 來處理。",
+    "Cache miss 是 stall：CPU 不會讓給別的程式用，它還是自己的，只是停下來等 data 搬進來再繼續。"
+   ]
+  },
+  {
+   "title": "Write hit：write-through 與 write-back",
+   "scene": "mh-23a-writehit",
+   "points": [
+    {
+     "t": 1478,
+     "text": "Write hit 會改 cache 的 data，cache 與 memory 兩份 copy 不一致。"
+    },
+    {
+     "t": 1520,
+     "text": "Write-through：每次 update cache 都寫 memory；優點永遠一致，缺點浪費 memory bandwidth、製造 traffic。"
+    },
+    {
+     "t": 1595,
+     "text": "Write-back：只寫 cache，block 被 replace 時才寫回；需要 dirty bit（被寫過設 1，replace 時才寫回）；優點 traffic 少，缺點 memory 暫時是舊的。兩種都可加 buffer。"
+    }
+   ],
+   "trap": "Write-back 必須有 dirty bit；dirty = 0 的 block 被換掉時直接覆蓋，不用寫回。",
+   "cues": [
+    1477.8,
+    1495.4,
+    1523,
+    1555.6,
+    1577.6,
+    1601.3,
+    1611.3,
+    1640.8,
+    1663.6,
+    1687.9,
+    1695.5,
+    1718.8
+   ],
+   "explain": [
+    "Write 也分 hit 和 miss。Write hit：要寫的 data 已經在 cache 裡。畫面上的值是示意。",
+    "Write 會改變 cache 的 data。Read 做 100 次都不影響內容，可是 write 一次，memory 和 cache 的內容就不一樣了。",
+    "第一種 policy：write-through。每次 update cache，也寫回 main memory，永遠維持兩邊一致（consistent）。",
+    "Write-through 的優點：兩份 copy 永遠一樣，就算突然發生 interrupt，memory 裡也是最新的。",
+    "缺點：每次 update cache 都要寫 memory，浪費 memory 的 bandwidth（頻寬），製造很多 traffic。",
+    "另一個 approach：write-back。新的 update 只寫在 cache 裡。",
+    "一直等到這個 block 被 replace（很久沒用、位置被別人搶走），才把最新的資料寫回 main memory。",
+    "要用 write-back，cache 每一格要多記一個資訊：它有沒有被寫過。",
+    "這個 bit 叫 dirty bit。被寫過就設成 1。被 replace 時，dirty = 1 才需要寫回；dirty = 0 表示和 memory 一樣，直接蓋過去就好。",
+    "Write-back 的優點：不會製造很多 traffic。例如同一格連寫 3 次，write-through 要寫 memory 3 次，write-back 只在被換掉時寫 1 次（示意）。",
+    "缺點：在寫回之前，memory 那份是舊的，兩份 copy 不一致。",
+    "不管 write-through 還是 write-back，寫回 memory 時都可以用一個 buffer：先寫進 buffer，讓它慢慢寫回，CPU 不用等。"
+   ]
+  },
+  {
+   "title": "Write miss：write allocate 或 write around",
+   "scene": "mh-23a-writemiss",
+   "points": [
+    {
+     "t": 1767,
+     "text": "第四個 case：write miss。直覺是先把 block 搬進來再寫，但看搭配的 policy。"
+    },
+    {
+     "t": 1812,
+     "text": "Write-back 通常 write allocate（fetch block 進 cache 再寫）；write-through 可 allocate，也可 no-write allocate（write around，直接寫 memory，像 initialization 只寫不讀）。"
+    }
+   ],
+   "cues": [
+    1769.3,
+    1793.8,
+    1808.1,
+    1814,
+    1848.9,
+    1856.6,
+    1876.9,
+    1890.8,
+    1945.7
+   ],
+   "explain": [
+    "前三種狀況講完了（read hit、read miss、write hit），第四種是 write miss。",
+    "要寫的東西不在 cache 裡怎麼辦？直覺是：先把它搬進來，再把新資料寫上去。",
+    "不過，搭配不同的 write policy，會有不同的做法。",
+    "Write-back：因為它本來就是寫在 cache、等 replace 才寫回，所以 write miss 時會把那個 block fetch 進 cache，再寫到 cache。這叫 write allocate。",
+    "Write-through：不一定要 allocate（搬進來）。",
+    "為什麼？很多時候，例如 initialization（初始化），只是寫一次，之後根本不再讀。搬進來只會增加 traffic。",
+    "所以 write-through 常常在 write miss 時直接寫 main memory，不把 block 搬進來。這叫 no-write allocate，也叫 write around。",
+    "整理成表：write-back 通常 fetch block；write-through 可以 allocate，也可以不 allocate。",
+    "Cache hit、miss 再分 read、write，四個 case 各要做什麼，分類清楚就不會亂。"
+   ]
+  },
+  {
+   "title": "實例：Intrinsity FastMATH",
+   "scene": "mh-23a-fastmath",
+   "points": [
+    {
+     "t": 1953,
+     "text": "Intrinsity FastMATH：12-stage pipeline 的 embedded processor，每 cycle 都要 instruction 與 data access → split I-cache / D-cache。"
+    },
+    {
+     "t": 1984,
+     "text": "各 256 blocks × 16 words（64 bytes/block，16 KiB）；D-cache 可 write-through 或 write-back。"
+    },
+    {
+     "t": 2024,
+     "text": "Miss rate：I-cache 0.4%、D-cache 11.4%、合計約 3.2%；instruction 較 sequential，data（尤其 pointer）較亂。"
+    }
+   ],
+   "cues": [
+    1952.9,
+    1971.6,
+    1984.6,
+    1987.3,
+    1998.7,
+    2016.2,
+    2023.9,
+    2040.6,
+    2055.8,
+    2069.2
+   ],
+   "explain": [
+    "看一個真實的商用例子：Intrinsity FastMATH，一顆 embedded processor（嵌入式處理器）。",
+    "它有 12 個 stage 的 pipeline，每個 cycle 都可能同時要取 instruction 和存取 data。",
+    "所以用 split cache：instruction cache（I-cache）和 data cache（D-cache）分開，可以同時存取。",
+    "每一個 cache 都是 256 個 block，每個 block 16 個 word。",
+    "16 個 word = 64 個 byte；256 × 64 bytes = 16 KiB。之前舉例用一個 word 的 block，是很 extreme 的情況。",
+    "D-cache 可以設成 write-through，也可以設成 write-back。",
+    "Miss rate：I-cache 只有 0.4%，D-cache 大約 11.4%（課本的 SPEC 測試數據）。",
+    "為什麼 I-cache 這麼低？instruction 大多 sequential 執行，又有 loop，temporal 和 spatial locality 都很好抓。",
+    "Data 比較亂：除了 array 比較整齊，其他資料，尤其有 pointer 的，不知道會指到哪裡，所以 miss 比較高。",
+    "平均起來整體 miss rate 大約 3.2%，其實相當低。"
+   ]
+  },
+  {
+   "title": "FastMATH 的位址切割：tag 18 | index 8 | block offset 4 | byte offset 2",
+   "scene": "mh-23a-fmaddr",
+   "points": [
+    {
+     "t": 2086,
+     "text": "32-bit byte address：byte offset 2 bits；16 words/block → block offset 4 bits；256 blocks → index 8 bits；tag = 32 − 8 − 4 − 2 = 18。"
+    },
+    {
+     "t": 2256,
+     "text": "每列：valid、18-bit tag、16 words；index 選列、tag 比對決定 hit。"
+    },
+    {
+     "t": 2459,
+     "text": "Hit 後用 block offset（4 bits）經 MUX 選出 word，再用 byte offset 選 byte；若 block 只有 4 words，block offset 2 bits。"
+    }
+   ],
+   "trap": "Block offset 選 word、byte offset 選 byte；兩者都不參與 index 與 tag。",
+   "cues": [
+    2085.9,
+    2106,
+    2122.7,
+    2142.8,
+    2178.1,
+    2194.7,
+    2222.5,
+    2256.3,
+    2280.5,
+    2379.2,
+    2396.2,
+    2459.7,
+    2485.8,
+    2571,
+    2651.3,
+    2705.5,
+    2784.6,
+    2829
+   ],
+   "explain": [
+    "來看 FastMATH 的 address 怎麼切。它是 32-bit 的 byte address。",
+    "最後兩個 bit 是 byte offset：一個 word 有 4 個 byte，用它選第幾個 byte。",
+    "一個 block 有 16 個 word，16 = 2⁴，所以要 4 個 bit 描述是第幾個 word。這叫 block offset。",
+    "要知道是第幾個 block，就看再前面那一段，這就是 index。",
+    "有 256 個 block，256 = 2⁸，所以 index 要 8 個 bit。",
+    "那剩下的 18 個 bit 是什麼？",
+    "就是 tag！index 相同、map 到同一個位置的人，前面這 18 bits 不一樣，靠它來區分。32 − 8 − 4 − 2 = 18。",
+    "再看 cache 的結構：每一列有 valid bit、18-bit 的 tag，和 16 個 word 的 data。總共 256 列。",
+    "用 8-bit 的 index 選到一列，再拿 address 的 tag 跟那列存的 tag 比對，一樣（而且 valid）就是 hit。",
+    "老師問：這一條 line（一個 block）裡有幾個 word？",
+    "16 個 word。一個 block 就是 16 個 word，整塊一起搬。",
+    "那要拿 block 裡的第幾個 word，用 address 的哪一部分？",
+    "就是那 4 個 bit 的 block offset：0000 是第 0 個 word，0001 是第 1 個，一直到 1111。",
+    "Hit 之後，用這 4 個 bit 控制一個 MUX（多工器，16 選 1），選出你要的 word。畫面示意 offset = 0001。",
+    "同一個 block 的 16 個 word，tag 和 index 全部一樣，只差在這 4 個 bit。",
+    "Word 選出來後，最後兩個 bit（byte offset）00、01、10、11，再選這個 word 的 4 個 byte 中的哪一個。",
+    "如果一個 block 只放 4 個 word，block offset 就只要 2 個 bit。",
+    "整個流程：valid bit + tag 比對決定 hit；再用 block 內的 offset 選出要的 word（和 byte）。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Intrinsity FastMATH 的 cache：256 個 block、每 block 16 words、32-bit byte address，tag 有幾 bits？",
+   "opts": [
+    "18",
+    "20",
+    "22",
+    "24"
+   ],
+   "ans": "18",
+   "why": "byte offset 2 + block offset 4（16 words）+ index 8（256 blocks）= 14；32 − 14 = 18。"
+  },
+  {
+   "q": "Write-back cache 為什麼需要 dirty bit？",
+   "opts": [
+    "知道 block 被換掉時要不要寫回 memory",
+    "知道 block 是否有效",
+    "知道要選哪個 word",
+    "知道 block 是 instruction 還是 data"
+   ],
+   "ans": "知道 block 被換掉時要不要寫回 memory",
+   "why": "只寫 cache 不寫 memory，被寫過（dirty = 1）的 block replace 時才需寫回。"
+  },
+  {
+   "q": "Write miss 時「不把 block 搬進 cache，直接寫 memory」叫做？通常搭配哪種 policy？",
+   "opts": [
+    "No-write allocate（write around），搭配 write-through",
+    "Write allocate，搭配 write-through",
+    "Write allocate，搭配 write-back",
+    "No-write allocate，搭配 write-back"
+   ],
+   "ans": "No-write allocate（write around），搭配 write-through",
+   "why": "Write-back 通常 write allocate；write-through 常不 allocate，避免像 initialization 這種只寫不讀的資料白搬。"
+  },
+  {
+   "q": "Cache miss 與 virtual memory 的 page fault，處理方式的差別？",
+   "opts": [
+    "cache miss 由 hardware stall CPU；page fault 由 OS 處理",
+    "兩者都由 OS 處理",
+    "cache miss 由 OS 處理；page fault 由 hardware stall",
+    "兩者都只 stall"
+   ],
+   "ans": "cache miss 由 hardware stall CPU；page fault 由 OS 處理",
+   "why": "cache miss 只要幾十～幾百 cycle，hardware 讓 CPU 等；page fault 要百萬 cycle，由 OS 以 interrupt/exception 處理。"
+  },
+  {
+   "q": "在 miss rate 對 block size 的圖中，大 cache（如 256K）的曲線較平，原因是？",
+   "opts": [
+    "cache 夠大，block 變大後 block 數仍足夠",
+    "大 cache 沒有 spatial locality",
+    "大 cache 的 miss penalty 是 0",
+    "大 cache 不用 tag"
+   ],
+   "ans": "cache 夠大，block 變大後 block 數仍足夠",
+   "why": "小 cache 加大 block 會讓 block 數太少而衝突；大 cache 不容易發生。"
+  },
+  {
+   "q": "FastMATH 的 I-cache miss rate（0.4%）遠低於 D-cache（11.4%），主因是？",
+   "opts": [
+    "instruction 多為 sequential 與 loop，locality 好",
+    "I-cache 比較大",
+    "D-cache 用 write-through",
+    "instruction 不需要 tag"
+   ],
+   "ans": "instruction 多為 sequential 與 loop，locality 好",
+   "why": "資料存取（特別是 pointer）比較不規則，locality 較差。"
+  }
+ ]
+}

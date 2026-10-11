@@ -1,0 +1,252 @@
+{
+ "video": "Y1esjWBTf7Q",
+ "label": "Average Memory Access Time（AMAT）— Computer Organization",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "5 個 request 的平均存取時間",
+   "scene": "mh-amat-avg",
+   "points": [
+    {
+     "t": 15,
+     "text": "例：5 個 request A–E，A、B、C miss，D、E hit；hit time t = 5 s，miss time（miss penalty）m = 10 s。"
+    },
+    {
+     "t": 41,
+     "text": "AMAT = (#hits × t + #misses × m) / 總次數 = (2 × 5 + 3 × 10) / 5 = 40 / 5 = 8 s。"
+    }
+   ],
+   "cues": [
+    15.1,
+    22.1,
+    27.2,
+    34.9,
+    41.2,
+    68.3,
+    86
+   ],
+   "explain": [
+    "這支英文影片推導 average memory access time（AMAT，平均記憶體存取時間）的公式，分 simultaneous（同時）和 hierarchical（階層）兩種情況。",
+    "先舉例：有 5 個 request（存取要求），叫 A、B、C、D、E。",
+    "假設 A、B、C 都是 miss（快取裡沒有），D、E 是 hit（有找到）。",
+    "Hit 一次要花 t = 5 秒，miss 一次要花 m = 10 秒（影片把 miss 的整段時間叫 miss penalty；秒數只是方便計算的示意單位）。",
+    "平均存取時間 = （hit 次數 × hit time + miss 次數 × miss 時間）÷ 全部的次數。",
+    "Hit 有 2 個：2 × 5 = 10；miss 有 3 個：3 × 10 = 30。畫面上綠色矮柱是 hit、紅色高柱是 miss。",
+    "加起來 40，除以 5 次，平均是 8 秒。那條金色線就是平均高度。"
+   ]
+  },
+  {
+   "title": "AMAT = h × t + (1 − h) × m",
+   "scene": "mh-amat-ratio",
+   "points": [
+    {
+     "t": 89,
+     "text": "Hit 5 s、miss 10 s，平均 8 s。題目通常給 hit ratio h：h = #hits / #attempts，miss ratio = 1 − h。"
+    },
+    {
+     "t": 123,
+     "text": "公式拆成兩半 → AMAT = h × t + (1 − h) × m（標準公式）；代回 0.4 × 5 + 0.6 × 10 = 8。"
+    },
+    {
+     "t": 164,
+     "text": "這裡 m 是 miss 的總時間；寫成 P&H 的 hit time + miss rate × (額外時間) = 5 + 0.6 × 5 也是 8。"
+    }
+   ],
+   "trap": "看清楚題目的 miss penalty 是「miss 的總時間」還是「額外的時間」：前者用 h·t + (1−h)·m，後者用 t + (1−h)·penalty。",
+   "cues": [
+    89.2,
+    103.4,
+    112.3,
+    123.7,
+    145.9,
+    153.5,
+    164.5
+   ],
+   "explain": [
+    "意思是：hit 的 request CPU 要 5 秒，miss 的要 10 秒，全部平均下來每個 request 大約 8 秒。",
+    "一般考題不會告訴你幾次 hit、幾次 miss，而是直接給 hit ratio（命中率）。",
+    "Hit ratio h = hit 次數 ÷ 總次數；miss ratio = 1 − h = miss 次數 ÷ 總次數。",
+    "把剛才的公式拆成兩半：hit 那部分除以總次數，加上 miss 那部分除以總次數。",
+    "hits ÷ attempts 就是 hit ratio h；misses ÷ attempts 就是 miss ratio 1 − h。",
+    "所以 AMAT = h × t + (1 − h) × m。這是大部分書上會看到的標準公式。",
+    "代回例子：h = 2/5 = 0.4，0.4 × 5 + 0.6 × 10 = 8，跟剛才一樣。注意這裡的 m 是 miss 的「總時間」；課本（P&H）常寫成 hit time + miss rate × miss penalty，那裡的 penalty 是「額外」多花的 5 秒：5 + 0.6 × 5 = 8，結果相同。"
+   ]
+  },
+  {
+   "title": "兩層 simultaneous：h·t1 + (1−h)·t2",
+   "scene": "mh-amat-sim2",
+   "points": [
+    {
+     "t": 167,
+     "text": "Simultaneous：CPU 同時 access L1、L2；L1 時間 t1、hit ratio h；L2 是最後一層，hit ratio 1。"
+    },
+    {
+     "t": 205,
+     "text": "AMAT(sim) = h × t1 + (1 − h) × t2。"
+    }
+   ],
+   "cues": [
+    167.9,
+    173.3,
+    178.9,
+    182,
+    187.4,
+    205
+   ],
+   "explain": [
+    "用這個標準公式，推導兩種情況：simultaneous 和 hierarchical。",
+    "Simultaneous（同時）：CPU 同時對兩層 memory 發出 access，兩層一起找。",
+    "Access L1 要 t1，access L2 要 t2。",
+    "L1 的 hit ratio 設為 h。",
+    "L2 是最後一層，假設資料一定在那裡，所以 L2 的 hit ratio 是 1。",
+    "套公式：hit 時花 t1；miss 時因為 L2 早就同時在找，只要等 t2。AMAT = h × t1 + (1 − h) × t2。畫面用示意數字 h = 0.8、t1 = 2、t2 = 10 驗算：1.6 + 2 = 3.6。"
+   ]
+  },
+  {
+   "title": "兩層 hierarchical：t1 + (1−h)·t2",
+   "scene": "mh-amat-hier2",
+   "points": [
+    {
+     "t": 219,
+     "text": "Hierarchical：先找 L1（t1），找不到再找 L2（t2）；miss penalty = t1 + t2。"
+    },
+    {
+     "t": 242,
+     "text": "AMAT(hier) = h × t1 + (1 − h)(t1 + t2) = t1 + (1 − h) × t2。"
+    }
+   ],
+   "trap": "Hierarchical 時 miss 已經花了 t1 才去 L2，所以 miss 的時間是 t1 + t2，不是 t2。",
+   "cues": [
+    219.9,
+    225.2,
+    232.8,
+    238.6,
+    242.2,
+    260
+   ],
+   "explain": [
+    "Hierarchical（階層）：資料先在 L1 找，花 t1。",
+    "L1 找不到，才去 L2 找，再花 t2。",
+    "L1 的 hit ratio 是 h；不在 L1 就去 L2，L2 一定找得到（hit ratio 1）。",
+    "所以 miss 的時候，已經花了 t1 找 L1，再加上 t2 找 L2：miss penalty = t1 + t2。畫面上兩段時間接在一起。",
+    "套標準公式：AMAT = h × t1 + (1 − h) × (t1 + t2)。",
+    "化簡：h·t1 和 (1 − h)·t1 加起來剛好是 t1，剩下 AMAT = t1 + (1 − h) × t2。示意數字 h = 0.8、t1 = 2、t2 = 10：展開和化簡都是 4。"
+   ]
+  },
+  {
+   "title": "三層 simultaneous",
+   "scene": "mh-amat-sim3",
+   "points": [
+    {
+     "t": 271,
+     "text": "三層：時間 t1、t2、t3，hit ratio h1、h2，最後一層 L3 為 1。"
+    },
+    {
+     "t": 292,
+     "text": "AMAT(sim) = h1·t1 + (1 − h1)·h2·t2 + (1 − h1)(1 − h2)·t3。"
+    }
+   ],
+   "cues": [
+    273.1,
+    287.3,
+    292.1,
+    295.1,
+    308,
+    310.9,
+    328.5,
+    359.3
+   ],
+   "explain": [
+    "同樣的方法推到三層：L1、L2、L3 的時間是 t1、t2、t3，L1、L2 的 hit ratio 是 h1、h2。",
+    "最後一層 L3 一定有資料，hit ratio 是 1。",
+    "三層的 AMAT 第一項：在 L1 hit 的機率 h1，乘上 L1 的時間 t1。",
+    "如果資料不在 L1，就是 L1 miss。",
+    "L1 miss、但在 L2 hit：機率是 (1 − h1) × h2，時間是 t2。",
+    "如果 L2 也 miss，就在 L3 hit：機率是 (1 − h1)(1 − h2) × 1，時間是 t3。",
+    "全部加起來：AMAT = h1·t1 + (1 − h1)·h2·t2 + (1 − h1)(1 − h2)·t3。示意 h1 = 0.8、h2 = 0.5、t = 1、5、20：0.8 + 0.5 + 2 = 3.3，而且三種情況的機率加起來剛好是 1。",
+    "這是 simultaneous 的公式：因為三層同時在找，每種情況只算「找到的那一層」的時間。"
+   ]
+  },
+  {
+   "title": "三層 hierarchical",
+   "scene": "mh-amat-hier3",
+   "points": [
+    {
+     "t": 361,
+     "text": "Hierarchical 三層：到第 k 層才找到要花 t1 + … + tk；AMAT = h1·t1 + (1−h1)·h2·(t1+t2) + (1−h1)(1−h2)·(t1+t2+t3) = t1 + (1−h1)·t2 + (1−h1)(1−h2)·t3。"
+    }
+   ],
+   "cues": [
+    361,
+    370.1,
+    375.3,
+    383.6,
+    396.2
+   ],
+   "explain": [
+    "如果是 hierarchical（一層一層找）：L1 時間 t1、L2 t2、L3 t3；hit ratio h1、h2。",
+    "L3 假設一定成功，hit ratio 是 1。",
+    "公式長得一樣，唯一的差別是時間：在第一層找到花 t1；到第二層才找到要 t1 + t2；到第三層要 t1 + t2 + t3。",
+    "代進去：h1·t1 + (1 − h1)·h2·(t1 + t2) + (1 − h1)(1 − h2)·(t1 + t2 + t3)。",
+    "影片把化簡留給你自己試：結果是 t1 + (1 − h1)·t2 + (1 − h1)(1 − h2)·t3。意思是：t1 每次都要付；L1 miss 的才多付 t2；L1、L2 都 miss 的才再多付 t3。示意數字代入，兩個式子都等於 4。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "5 次存取中 2 次 hit、3 次 miss；hit 花 5 s、miss 花 10 s（總時間），平均存取時間？",
+   "opts": [
+    "8 s",
+    "7.5 s",
+    "6 s",
+    "9 s"
+   ],
+   "ans": "8 s",
+   "why": "(2 × 5 + 3 × 10) / 5 = 40 / 5 = 8。"
+  },
+  {
+   "q": "兩層 simultaneous：L1 時間 t1、hit ratio h，L2 時間 t2（一定 hit），AMAT = ？",
+   "opts": [
+    "h·t1 + (1 − h)·t2",
+    "h·t1 + (1 − h)·(t1 + t2)",
+    "t1 + t2",
+    "(1 − h)·t1 + h·t2"
+   ],
+   "ans": "h·t1 + (1 − h)·t2",
+   "why": "同時找：miss 時只需等 L2 的 t2。"
+  },
+  {
+   "q": "兩層 hierarchical，h = 0.9、t1 = 1、t2 = 20，AMAT = ？",
+   "opts": [
+    "3",
+    "2.9",
+    "21",
+    "1.9"
+   ],
+   "ans": "3",
+   "why": "t1 + (1 − h)·t2 = 1 + 0.1 × 20 = 3（展開 0.9 × 1 + 0.1 × 21 也是 3）。"
+  },
+  {
+   "q": "三層 hierarchical 的化簡結果是？",
+   "opts": [
+    "t1 + (1 − h1)·t2 + (1 − h1)(1 − h2)·t3",
+    "h1·t1 + h2·t2 + t3",
+    "h1·t1 + (1 − h1)·h2·t2 + (1 − h1)(1 − h2)·t3",
+    "t1 + t2 + t3"
+   ],
+   "ans": "t1 + (1 − h1)·t2 + (1 − h1)(1 − h2)·t3",
+   "why": "t1 每次都付；L1 miss 才付 t2；L1、L2 都 miss 才付 t3。第三個選項是 simultaneous 的公式。"
+  },
+  {
+   "q": "Hit time 5、miss 的「總時間」10、hit ratio 0.4。若改用 P&H 寫法 hit time + miss rate × miss penalty，miss penalty 應代多少？",
+   "opts": [
+    "5（額外的時間）",
+    "10",
+    "15",
+    "0.6"
+   ],
+   "ans": "5（額外的時間）",
+   "why": "P&H 的 miss penalty 是 miss 時額外多花的時間：10 − 5 = 5；5 + 0.6 × 5 = 8，與 0.4 × 5 + 0.6 × 10 相同。"
+  }
+ ]
+}
