@@ -1,0 +1,336 @@
+{
+ "video": "ju-qSc1_rwQ",
+ "label": "清大OCW 趙啟超《離散數學》第31C講 Maximum Flow Problem",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "取 T = {t}：value 也等於 sink 的 inflow",
+   "points": [
+    {
+     "t": 4,
+     "text": "回顧：val(f) = 從 S 流到 T 的 − 從 T 流回 S 的，對任何 cut 成立。"
+    },
+    {
+     "t": 40,
+     "text": "取 T = {t}、S = 其他全部，是合法的 cut。"
+    },
+    {
+     "t": 140,
+     "text": "前項 = inflow(t)，後項 = outflow(t) = 0。"
+    },
+    {
+     "t": 212,
+     "text": "所以 val(f) = outflow(s) = inflow(t)；例子都是 8。"
+    }
+   ],
+   "scene": "g8f-sinkin",
+   "cues": [
+    3.8,
+    40.5,
+    66.5,
+    96.2,
+    120.8,
+    140.4,
+    153,
+    190.1,
+    212.2,
+    229.1
+   ],
+   "explain": [
+    "回顧上次的性質：對任何把 s、t 分開的 cut，value = 從 S 流到 T 的總量 − 從 T 流回 S 的總量。",
+    "現在挑一個特別的 cut：T 只放 sink t，其他所有端點都放在 S。",
+    "檢查：S、T 是 partition，source 在 S、sink 在 T，所以是合法的 cut。",
+    "套用性質：value = 從 S 流到 t 的 − 從 t 流回 S 的。",
+    "原本是對 T 裡所有端點加總，現在 T 只有 t 一個，所以只剩跟 t 有關的項。",
+    "前面那項：所有流到 sink 的 flow 加起來，就是 sink 的 inflow。例子：2 + 4 + 2 = 8。",
+    "後面那項：從 sink 流出去的，就是 sink 的 outflow。",
+    "sink 的邊全部都是朝向它的，沒有邊從 t 出去，所以 outflow(t) = 0。",
+    "結論：value 雖然定義成 source 的 outflow，其實也等於 sink 的 inflow。例子：8 = 8 ✓。",
+    "直覺很簡單：中間每個點都守恆，從 source 流出來的東西，最後全部都流到 sink。"
+   ]
+  },
+  {
+   "title": "cut 的 capacity",
+   "points": [
+    {
+     "t": 268,
+     "text": "定義 cut 的 capacity：c(S, T) = Σ c(x, y)，x ∈ S、y ∈ T。"
+    },
+    {
+     "t": 345,
+     "text": "只加從 S 到 T 的邊，從 T 回到 S 的邊不加。"
+    },
+    {
+     "t": 388,
+     "text": "例：S = {s,a,b}：3 + 6 + 2 + 3 = 14。"
+    },
+    {
+     "t": 497,
+     "text": "例：S = {s,b}：(s,a) 5 + (b,d) 2 + (s,c) 3 = 10。"
+    },
+    {
+     "t": 577,
+     "text": "不同 cut 的 capacity 可以不同。"
+    }
+   ],
+   "trap": "cut capacity 只算 S→T 方向的 capacity；flow value 公式才要「減掉 T→S 的 flow」。兩者不要混在一起。",
+   "scene": "g8f-cutcap",
+   "cues": [
+    267.9,
+    280.3,
+    336.8,
+    345.6,
+    388.3,
+    435.2,
+    452.7,
+    461.5,
+    497.2,
+    547.6,
+    560.2,
+    577.6,
+    587
+   ],
+   "explain": [
+    "flow 和 cut 還有另一個關係，要先定義一個新東西：cut 的 capacity。",
+    "原本 capacity 是每條邊各自有的；現在對整個 cut 也定義一個 capacity。",
+    "c(S, T) = 把所有從 S 指到 T 的邊的 capacity 加起來。",
+    "注意：反方向（從 T 指回 S）的邊不加！只加 S 到 T 的。",
+    "例子：S = {s, a, b}，T = {c, d, t}。",
+    "想像沿著 S 和 T 的交界切下去，打剪刀符號的邊就是被切到的。",
+    "被切到、而且從 S 指向 T 的有 4 條：(s,c)、(a,d)、(b,d)、(a,t)。",
+    "它們的 capacity 是 3、6、2、3，加起來 c(S, T) = 14。",
+    "換一個 cut：S = {s, b}，T = {a, c, d, t}。",
+    "這次被切到的只有 (s,a)、(b,d)、(s,c) 三條。",
+    "capacity 是 5 + 2 + 3 = 10，比剛才的小。",
+    "所以每個 cut 的 capacity 不一定一樣，有大有小。",
+    "如果切到方向反過來的邊（例如 S = {s,a,b,d} 時的 (c,d)，從 T 指回 S），它的 capacity 7 不算進去。這個例子是示意。"
+   ]
+  },
+  {
+   "title": "性質：val(f) ≤ c(S, T)",
+   "points": [
+    {
+     "t": 605,
+     "text": "任何 flow f、任何 cut (S, T)：val(f) ≤ c(S, T)。"
+    },
+    {
+     "t": 635,
+     "text": "val(f) = Σf(S→T) − Σf(T→S)，後項 ≥ 0 丟掉 → val(f) ≤ Σf(S→T)。"
+    },
+    {
+     "t": 727,
+     "text": "再用 feasibility f(x,y) ≤ c(x,y)：Σf(S→T) ≤ c(S, T)。"
+    }
+   ],
+   "scene": "g8f-leq",
+   "cues": [
+    605,
+    618,
+    635,
+    676.6,
+    702.7,
+    729.6,
+    777.6,
+    792.6
+   ],
+   "explain": [
+    "有了 cut capacity，再來一個很重要的性質，後面的定理就是靠它推出來的。",
+    "性質：任何 flow 的 value，都 ≤ 任何 cut 的 capacity。也就是 val(f) ≤ c(S, T)。",
+    "證明從上次的性質開始：val(f) = 流過去 − 流回來。畫面用 S = {s,a,b,d} 對照：9 − 1 = 8（示意）。",
+    "flow 都是非負整數，所以「流回來」那一整塊加起來也 ≥ 0。",
+    "一個數減掉 ≥ 0 的東西，一定 ≤ 原來的數。把它丟掉就得到 upper bound：val(f) ≤ 流過去的總量。例子：8 ≤ 9。",
+    "再用 feasibility：每條邊的 flow ≤ capacity。被切到的 forward edge：2 ≤ 3、4 ≤ 4、3 ≤ 3。",
+    "每一條都 ≤，加起來也 ≤，而右邊加起來正好是 cut 的 capacity。例子：9 ≤ 10。",
+    "證完了：先用 conservation 得到等式，丟掉 ≥ 0 的部分，再用 feasibility。程式也檢查：這個 flow 的 8 ≤ 全部 16 個 cut 的 capacity。"
+   ]
+  },
+  {
+   "title": "max flow ≤ min cut",
+   "points": [
+    {
+     "t": 809,
+     "text": "任何 flow ≤ 任何 cut capacity，所以 max flow ≤ min cut。"
+    },
+    {
+     "t": 890,
+     "text": "找到一個 flow 剛好等於某個 cut capacity，它就是 maximum flow。"
+    },
+    {
+     "t": 922,
+     "text": "後面的 Max-Flow Min-Cut Theorem：其實相等。"
+    },
+    {
+     "t": 945,
+     "text": "例：flow 8；cut 14、10；如果 flow 做到 10 就一定最大。"
+    }
+   ],
+   "scene": "g8f-maxmin",
+   "cues": [
+    809.3,
+    833,
+    852.5,
+    890.1,
+    922.1,
+    945,
+    982
+   ],
+   "explain": [
+    "剛剛證的是：隨便拿一個 flow、隨便拿一個 cut，flow 的 value 都 ≤ cut 的 capacity。數線上 flow 永遠在 cut 的左邊。",
+    "既然「任何」都成立，那拿 value 最大的 flow 和 capacity 最小的 cut 來比，也一樣成立。",
+    "所以：max flow ≤ min cut。",
+    "很有用的推論：如果你找到一個 flow，剛好等於某一個 cut 的 capacity，那它一定是 maximum flow（因為它已經頂到上限了）。",
+    "後面的定理會告訴我們：這其實是等號。這就是有名的 Max-Flow Min-Cut Theorem。",
+    "回到例子：這個 flow 的 value 是 8；我們算過的 cut capacity 有 14 和 10。",
+    "如果我們能把 flow 加大到 10，那它一定是最大的（因為有一個 cut 是 10），而 10 也一定是最小的 cut。所以問題變成：怎麼把 flow 變大？"
+   ]
+  },
+  {
+   "title": "把 flow 變大：沿 s → a → t 加 1",
+   "points": [
+    {
+     "t": 1002,
+     "text": "given network 和 flow，怎麼把 value 變大（類似 augment matching）。"
+    },
+    {
+     "t": 1067,
+     "text": "directed path s → a → t：(s,a) 3/5、(a,t) 2/3 都沒滿。"
+    },
+    {
+     "t": 1127,
+     "text": "兩條邊加同樣的量，conservation 還成立；最多加 min(5−3, 3−2) = 1。"
+    },
+    {
+     "t": 1303,
+     "text": "新的 flow F1：(s,a) 4、(a,t) 3，value = 9。"
+    }
+   ],
+   "trap": "可以加的量要取最小值：(s,a) 能加 2、(a,t) 只能加 1，加 2 會讓 (a,t) 超過容量。",
+   "scene": "g8f-sat",
+   "cues": [
+    1002.3,
+    1016,
+    1051.9,
+    1067,
+    1111.7,
+    1127.6,
+    1149.4,
+    1159.6,
+    1219.5,
+    1248,
+    1264.2,
+    1303.3,
+    1345.1,
+    1372.1
+   ],
+   "explain": [
+    "現在的問題：給定 network 和一個 flow，怎麼把 flow 的 value 變大？這就是後面 algorithm 的核心。",
+    "這跟前面的 matching 很像：已經有一個 matching，再想辦法 augment（擴大）它。",
+    "看這張圖和這個 flow。只要每條邊還滿足 feasibility、每個點還滿足 conservation，怎麼改都可以。",
+    "注意這條照箭頭走的 directed path：s → a → t。",
+    "(s,a) 的 flow 是 3、capacity 5；(a,t) 的 flow 是 2、capacity 3。兩條都還沒滿。",
+    "如果兩條邊加「一樣多」，a 多進來的剛好又多流出去，a 還是守恆。",
+    "但不能超過容量：(s,a) 不能超過 5，(a,t) 不能超過 3。",
+    "(s,a) 最多還能加 2，(a,t) 最多只能加 1。要兩條一起加，所以只能加 1。",
+    "寫下來：path s a t 上，兩條邊的 flow 都還沒到 capacity，所以都可以增加。",
+    "能加多少：5 − 3 = 2、3 − 2 = 1，取最小值 = 1。",
+    "把兩條邊的 flow 都加 1。",
+    "新的 flow 叫 F1：(s,a) 變成 4，(a,t) 變成 3。",
+    "還是合法的 flow：feasibility 成立（因為取了最小值）；conservation 成立（a 的進出都加 1，4 = 1 + 3）。",
+    "value 多了 1：source 流出 4 + 2 + 3 = 9，sink 流入 3 + 4 + 2 = 9。從 8 變成 9。"
+   ]
+  },
+  {
+   "title": "再找一條：s-a-d-c-t（有反方向的邊）",
+   "points": [
+    {
+     "t": 1408,
+     "text": "F1 的 value 是 9，還能再增加嗎？"
+    },
+    {
+     "t": 1436,
+     "text": "找 path「s a d c t」：d → c 跟 (c, d) 的箭頭反方向。"
+    },
+    {
+     "t": 1492,
+     "text": "network 上的 path = 對應 undirected graph 上的 path。"
+    }
+   ],
+   "scene": "g8f-sadct-intro",
+   "cues": [
+    1408,
+    1424.8,
+    1436.2,
+    1467.3,
+    1485.3,
+    1492.5,
+    1519
+   ],
+   "explain": [
+    "新的 flow value 是 9。還能不能再增加？再找一條 path 看看。",
+    "這次找的 path 會用到「反方向」的邊，這是剛才沒討論的情況。",
+    "找這條：s → a → d → c → t。",
+    "注意 d → c 這一段：圖上的箭頭是 (c, d)，從 c 指向 d，我們卻是反著走。所以它不是原圖的 directed path，而是 underlying undirected graph（把箭頭拿掉的圖）上的 path。",
+    "把這條 path 單獨畫在下面，比較看得清楚。",
+    "後面方法要找的「network 上的 path」，指的就是對應的 undirected graph 上的 path，方向可以跟箭頭不一致。",
+    "問題是：在這條 path 上，有沒有辦法把 flow 增加？下一講繼續。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "cut S = {s, a, b}、T = {c, d, t} 的 capacity 是？（c(s,c)=3、c(a,d)=6、c(a,t)=3、c(b,d)=2）",
+   "opts": [
+    "14",
+    "10",
+    "11",
+    "17"
+   ],
+   "ans": "14",
+   "why": "只加從 S 指到 T 的邊：3 + 6 + 3 + 2 = 14。"
+  },
+  {
+   "q": "cut capacity 的定義，對「從 T 指回 S」的邊怎麼處理？",
+   "opts": [
+    "不加",
+    "要扣掉",
+    "要加上",
+    "乘 2"
+   ],
+   "ans": "不加",
+   "why": "c(S, T) 只加 x ∈ S、y ∈ T 的 c(x, y)，反方向的邊不算。"
+  },
+  {
+   "q": "為什麼任何 flow 都有 val(f) ≤ c(S, T)？",
+   "opts": [
+    "丟掉 ≥ 0 的流回量，再用 f ≤ c",
+    "因為 flow 是整數",
+    "因為 graph 是 connected",
+    "因為 sink 沒有 outflow"
+   ],
+   "ans": "丟掉 ≥ 0 的流回量，再用 f ≤ c",
+   "why": "val = 流過去 − 流回來 ≤ 流過去 ≤ 流過去邊的 capacity 總和。"
+  },
+  {
+   "q": "一個 flow 的 value 剛好等於某個 cut 的 capacity，可以得到什麼？",
+   "opts": [
+    "這個 flow 是 maximum flow",
+    "這個 flow 不合法",
+    "這個 cut 是最大的 cut",
+    "什麼都不能推"
+   ],
+   "ans": "這個 flow 是 maximum flow",
+   "why": "任何 flow ≤ 那個 cut capacity，它已經頂到上限，所以最大（那個 cut 也是最小的）。"
+  },
+  {
+   "q": "path s → a → t 上 (s,a) 是 3/5、(a,t) 是 2/3，最多能加多少？",
+   "opts": [
+    "1",
+    "2",
+    "3",
+    "5"
+   ],
+   "ans": "1",
+   "why": "min(5 − 3, 3 − 2) = min(2, 1) = 1。"
+  }
+ ]
+}

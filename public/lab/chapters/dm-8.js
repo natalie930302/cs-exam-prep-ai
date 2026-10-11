@@ -7677,6 +7677,1768 @@ scene('g8e-sum', '本段小結：Hall 與 deficiency', [
   async (tok, S) => { S.B.add("證明：Hall 用 Hungarian algorithm；δ 的性質用 Hall", 'say'); cap("Hall's theorem 的證明用到 Hungarian algorithm", '第二個性質的證明用到 Hall 的結果'); },
 ]);
   }
+
+  // ═══ g8f.js ═══
+  {
+const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
+// (kit has no beat: short waits use ctx.beat)
+// ─── 離散數學 第 8 章（清大 趙啟超 第31A–32B講 Maximum Flow）— cued scenes ───
+// transport network、capacity、flow（feasibility + conservation）、value、cut、val = 流過去 − 流回來、
+// cut capacity、val ≤ c(S,T)、f-augmenting path（forward / backward）、Δ_P、Max-Flow Min-Cut Theorem 的證明、
+// Edmonds–Karp。每個 scene 是一串 step；每個 step 等老師講到那一句（notes 的 cues）才動一下，不重播。
+// 老師從頭到尾用同一個 network（由 31A–31D 口述的數字重建，彼此吻合）：
+//   c(s,a)=5 c(s,b)=4 c(s,c)=3 c(a,d)=6 c(a,t)=3 c(b,d)=2 c(c,d)=7 c(c,t)=5 c(d,t)=4
+//   flow f：3 2 3 1 2 2 1 2 4（value 8）→ 沿 s-a-t 加 1（9）→ 沿 s-a-d-c-t 加 1（10，cut {s,b} = 10）
+// 所有 inflow/outflow、flow value、cut capacity、Δ 都由程式從這些數字算出來，畫面上顯示 ✓（不對會變 ✘）。
+// 老師沒畫的（小例子、Edmonds–Karp 實際跑一次）一律標「示意」。
+const wt = (tok, ms) => ctx.beat(tok, ms);
+const cap = (a, b = '') => say(a, b);
+const cls = (l, c) => { if (l && l.element) l.element.className = 'lab-label ' + c; };
+const lb = (t, c, x, y) => tag(t, c, x, y, 0.3);
+const ok = (b, t, x, y) => (b ? lb(t, 'good', x, y) : lb(t.replace(/✓/g, '✘'), 'bad', x, y));
+const vis = (o, on) => { if (!o) return; o.visible = on; if (o.element) o.element.style.visibility = on ? '' : 'hidden'; };
+const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.element) remove(o); else kill(o); });
+const CAM = [[0, 3.6, 15], [0, 3.1, 0]];
+const FC = { v: '#cdbfa6', S: '#e55a9b', T: '#4b9ee2', e: '#9c8b70', hot: '#d64545', ok: '#2fc092', sat: '#c08a1f', back: '#9b7ef4', fwd: '#dd8238', dim: '#e2d8c6', blue: '#4b9ee2' };
+function scene(id, title, steps, cam = CAM) {
+  FRAG.push([id, title, async (tok) => {
+    fresh(cam[0], cam[1]);
+    const S = {};
+    for (const f of steps) { await step(tok); await f(tok, S); }
+  }]);
+}
+// a board at the top: newest line lit (note), older lines plain (say); at most `max` lines, oldest drops off
+function board(o = {}) {
+  const x = o.x ?? 0, y0 = o.y ?? 8.7, dy = o.dy ?? 0.64, max = o.max ?? 4;
+  const ls = [];
+  const lay = () => ls.forEach((l, i) => l.position.set(x, y0 - i * dy, 0.3));
+  return {
+    ls,
+    add(t, c = 'note') {
+      ls.forEach((l) => { if (l.userData.hot) { cls(l, 'say'); l.userData.hot = false; } });
+      if (ls.length >= max) remove(ls.shift());
+      const l = tag(t, c, x, y0, 0.3); l.userData.hot = c === 'note'; ls.push(l); lay(); return l;
+    },
+    clear() { ls.forEach((l) => remove(l)); ls.length = 0; },
+  };
+}
+
+// ── the lecturer's network and all the arithmetic on it ──
+const NE = [['s', 'a', 5], ['s', 'b', 4], ['s', 'c', 3], ['a', 'd', 6], ['a', 't', 3], ['b', 'd', 2], ['c', 'd', 7], ['c', 't', 5], ['d', 't', 4]];
+const KEYS = NE.map(([u, w]) => u + w);
+const CAPS = Object.fromEntries(NE.map(([u, w, c]) => [u + w, c]));
+const VS = ['s', 'a', 'b', 'c', 'd', 't'];
+const F8 = { sa: 3, sb: 2, sc: 3, ad: 1, at: 2, bd: 2, cd: 1, ct: 2, dt: 4 };
+const F9 = { ...F8, sa: 4, at: 3 };
+const F10 = { ...F9, sa: 5, ad: 2, cd: 0, ct: 3 };
+const ZERO = Object.fromEntries(KEYS.map((k) => [k, 0]));
+const ins = (v) => KEYS.filter((k) => k[1] === v);
+const outs = (v) => KEYS.filter((k) => k[0] === v);
+const sumF = (F, ks) => ks.reduce((s, k) => s + F[k], 0);
+const sumC = (ks) => ks.reduce((s, k) => s + CAPS[k], 0);
+const inF = (F, v) => sumF(F, ins(v));
+const outF = (F, v) => sumF(F, outs(v));
+const val = (F) => outF(F, 's');
+const feasible = (F) => KEYS.every((k) => Number.isInteger(F[k]) && F[k] >= 0 && F[k] <= CAPS[k]);
+const conserv = (F) => ['a', 'b', 'c', 'd'].every((v) => inF(F, v) === outF(F, v));
+const fwdE = (S) => KEYS.filter((k) => S.includes(k[0]) && !S.includes(k[1]));
+const bwdE = (S) => KEYS.filter((k) => !S.includes(k[0]) && S.includes(k[1]));
+const inSE = (S) => KEYS.filter((k) => S.includes(k[0]) && S.includes(k[1]));
+const capCut = (S) => sumC(fwdE(S));
+const netCut = (F, S) => sumF(F, fwdE(S)) - sumF(F, bwdE(S));
+const ALLS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((m) => ['s', ...['a', 'b', 'c', 'd'].filter((_, i) => m & (1 << i))]);
+const MINCUT = Math.min(...ALLS.map(capCut));
+const plus = (F, ks) => ks.map((k) => F[k]).join(' + ');
+const plusC = (ks) => ks.map((k) => CAPS[k]).join(' + ');
+const en = (k) => '(' + k[0] + ',' + k[1] + ')';
+const setS = (S) => '{' + S.join(',') + '}';
+const comp = (S) => VS.filter((v) => !S.includes(v));
+// BFS tree of incomplete f-augmenting paths (forward f < c, backward f > 0)
+function bfs(F) {
+  const par = { s: null }, lev = { s: 0 }, order = ['s'], q = ['s'];
+  while (q.length) {
+    const u = q.shift();
+    for (const k of KEYS) {
+      if (k[0] === u && !(k[1] in par) && F[k] < CAPS[k]) { par[k[1]] = [u, k, 'f']; lev[k[1]] = lev[u] + 1; q.push(k[1]); order.push(k[1]); }
+      else if (k[1] === u && !(k[0] in par) && F[k] > 0) { par[k[0]] = [u, k, 'b']; lev[k[0]] = lev[u] + 1; q.push(k[0]); order.push(k[0]); }
+    }
+  }
+  return { par, lev, order, hasT: 't' in par };
+}
+function pathTo(par, v) { const p = []; while (par[v]) { p.unshift(par[v]); v = par[v][0]; } return p; }
+const dOf = (F, [, k, d]) => (d === 'f' ? CAPS[k] - F[k] : F[k]);
+const deltaOf = (F, p) => Math.min(...p.map((e) => dOf(F, e)));
+function augment(F, p, D) { const G = { ...F }; p.forEach(([, k, d]) => { G[k] += d === 'f' ? D : -D; }); return G; }
+// Edmonds–Karp on the lecturer's network from the zero flow (示意 run)
+const EKRUN = (() => {
+  let F = { ...ZERO }; const out = [];
+  for (let i = 0; i < 20; i++) {
+    const B = bfs(F); if (!B.hasT) { out.push({ end: true, B, F }); break; }
+    const p = pathTo(B.par, 't'), D = deltaOf(F, p); const G = augment(F, p, D);
+    out.push({ B, p, D, F: G }); F = G;
+  }
+  return out;
+})();
+const EKEND = EKRUN[EKRUN.length - 1];
+const pathNames = (p) => ['s', ...p.map(([u, k]) => (k[0] === u ? k[1] : k[0]))];
+
+// ── drawing: a directed edge in the picture plane (x right, y up) ──
+const UP = V3(0, 1, 0);
+function dEdge(pa, pb, o = {}) {
+  const gap = o.gap ?? 0.44, r = o.r ?? 0.055;
+  const n = pb.clone().sub(pa).normalize();
+  const s = pa.clone().addScaledVector(n, gap), e = pb.clone().addScaledVector(n, -gap);
+  const L = Math.max(0.05, s.distanceTo(e) - 0.3);
+  const mat = new THREE.MeshStandardMaterial({ color: o.c || FC.e, roughness: 0.6 });
+  const g = new THREE.Group();
+  const cyl = new THREE.Mesh(new THREE.CylinderGeometry(r, r, L, 8), mat);
+  cyl.position.copy(s).addScaledVector(n, L / 2); cyl.quaternion.setFromUnitVectors(UP, n); g.add(cyl);
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.34, 12), mat);
+  cone.position.copy(e).addScaledVector(n, -0.17); cone.quaternion.setFromUnitVectors(UP, n); g.add(cone);
+  lab.world.add(g);
+  return { g, mat, cyl, mid: s.clone().add(e).multiplyScalar(0.5), side: V3(-n.y, n.x, 0) };
+}
+function halo(p, color, r = 0.62) {
+  const m = new THREE.Mesh(new THREE.CircleGeometry(r, 28), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.35, depthWrite: false }));
+  m.position.set(p.x, p.y, -0.3); lab.world.add(m); return m;
+}
+const NV = { s: [-5.6, 3], a: [-1.9, 5.7], b: [-1.9, 3], c: [-1.9, 0.3], d: [2.1, 3], t: [5.6, 3] };
+// the network: o.s scale, o.ox/o.oy shift, o.show false = start hidden
+function mkNet(o = {}) {
+  const sc = o.s ?? 1, ox = o.ox ?? 0, oy = o.oy ?? 0;
+  const N = { v: {}, e: {}, h: {}, F: { ...ZERO } };
+  N.p = (n) => V3(ox + NV[n][0] * sc, oy + NV[n][1] * sc, 0);
+  VS.forEach((n) => {
+    const m = lab.box(FC.v, [0.66, 0.66, 0.42]); m.userData.lbl = lab.label(n, 'val'); m.add(m.userData.lbl);
+    m.position.copy(N.p(n)); lab.world.add(m); N.v[n] = m; vis(m, o.show !== false); vis(m.userData.lbl, o.show !== false);
+  });
+  NE.forEach(([u, w, c]) => {
+    const k = u + w, d = dEdge(N.p(u), N.p(w), { gap: 0.44 });
+    const q = d.mid.clone().addScaledVector(d.side, 0.36);
+    const l = tag(String(c), 'note', q.x, q.y, 0.3);
+    N.e[k] = { k, u, w, c, ...d, l, mode: 'cap' };
+    vis(d.g, o.show !== false); vis(l, o.show !== false && o.labels !== false);
+  });
+  N.showV = (n, on = true) => { vis(N.v[n], on); vis(N.v[n].userData.lbl, on); };
+  N.showE = (k, on = true) => { vis(N.e[k].g, on); if (N.e[k].mode !== 'none') vis(N.e[k].l, on); };
+  N.lab = (k, mode) => {
+    const e = N.e[k]; e.mode = mode;
+    if (mode === 'none') { vis(e.l, false); return; }
+    vis(e.l, true);
+    if (mode === 'cap') { cls(e.l, 'note'); e.l.element.textContent = String(e.c); }
+    else if (mode === 'q') { cls(e.l, 'say'); e.l.element.innerHTML = '<b style="color:#c62828">?</b><span style="color:#8a6a00">/' + e.c + '</span>'; }
+    else { cls(e.l, 'say'); e.l.element.innerHTML = '<b style="color:#c62828">' + N.F[k] + '</b><span style="color:#8a6a00">/' + e.c + '</span>'; }
+  };
+  N.f = (k, v) => { N.F[k] = v; N.lab(k, 'flow'); };
+  N.setF = (F) => KEYS.forEach((k) => N.f(k, F[k]));
+  N.labs = (mode) => KEYS.forEach((k) => N.lab(k, mode));
+  N.pe = (k, c, thick) => { const e = N.e[k]; e.mat.color.set(c || FC.e); const s = thick ? 1.9 : 1; e.cyl.scale.set(s, 1, s); };
+  N.reset = () => KEYS.forEach((k) => N.pe(k, FC.e));
+  N.vc = (n, c, em) => { N.v[n].material.color.set(c || FC.v); glow(N.v[n], em || '#000000'); };
+  N.halo = (n, c) => { if (N.h[n]) kill(N.h[n]); N.h[n] = c ? halo(N.p(n), c) : null; };
+  N.cut = (S) => { VS.forEach((v) => { N.halo(v, S.includes(v) ? FC.S : FC.T); N.vc(v, S.includes(v) ? '#f2b8d2' : '#b9d6f2'); }); };
+  N.uncut = () => { VS.forEach((v) => { N.halo(v, null); N.vc(v); }); };
+  N.paintCut = (S) => { N.reset(); fwdE(S).forEach((k) => N.pe(k, FC.fwd, true)); bwdE(S).forEach((k) => N.pe(k, FC.back, true)); };
+  N.ptag = (n, t, c = 'ptr', dy = -0.75) => { const p = N.p(n); return lb(t, c, p.x, p.y + dy); };
+  N.mtag = (k, t, c = 'ptr alt', off = -0.42) => { const e = N.e[k]; const q = e.mid.clone().addScaledVector(e.side, off); return lb(t, c, q.x, q.y); };
+  return N;
+}
+async function pop(tok, m, k = 0.35, ms = 420) { await anim(tok, ms, (u) => m.scale.setScalar(1 + k * Math.sin(Math.PI * u))); m.scale.setScalar(1); }
+async function flowIn(tok, N, k, v, ms = 380) { N.pe(k, FC.hot, true); N.f(k, v); await pop(tok, N.v[N.e[k].w], 0.2, ms); N.pe(k, FC.e); }
+// a small "water" packet travelling along a list of vertices
+async function pkt(tok, N, names, text = '流', ms = 1800) {
+  const l = lb(text, 'pkt', N.p(names[0]).x, N.p(names[0]).y + 0.5);
+  const seg = Math.min(700, ms / (names.length - 1));
+  for (let i = 1; i < names.length; i++) {
+    const a = N.p(names[i - 1]), b = N.p(names[i]); a.y += 0.5; b.y += 0.5; a.z = b.z = 0.3;
+    await travel(tok, l, a, b, seg);
+  }
+  remove(l);
+}
+// the path s-a-d-c-t drawn on its own row (31C/31D): [key, from x, to x]
+const PROW = { s: -5, a: -2.5, d: 0, c: 2.5, t: 5 };
+function pathRow(y = -1.4) {
+  const R = { v: {}, e: {}, y };
+  Object.entries(PROW).forEach(([n, x]) => { const m = lab.box('#efe3c8', [0.6, 0.6, 0.4]); m.userData.lbl = lab.label(n, 'val'); m.add(m.userData.lbl); m.position.set(x, y, 0); lab.world.add(m); R.v[n] = m; });
+  ['sa', 'ad', 'cd', 'ct'].forEach((k) => {
+    const d = dEdge(V3(PROW[k[0]], y, 0), V3(PROW[k[1]], y, 0), { gap: 0.42 });
+    const l = lb(String(CAPS[k]), 'note', (PROW[k[0]] + PROW[k[1]]) / 2, y + 0.55);
+    R.e[k] = { ...d, l };
+  });
+  R.show = (F) => Object.entries(R.e).forEach(([k, e]) => { cls(e.l, 'say'); e.l.element.innerHTML = '<b style="color:#c62828">' + F[k] + '</b><span style="color:#8a6a00">/' + CAPS[k] + '</span>'; });
+  R.mark = (k, t, c) => lb(t, c, (PROW[k[0]] + PROW[k[1]]) / 2, y - 0.62);
+  return R;
+}
+const SADCT = [['s', 'sa', 'f'], ['a', 'ad', 'f'], ['d', 'cd', 'b'], ['c', 'ct', 'f']];
+
+// ════════ O2cUhuqSQJ8（第31A講：transport network、capacity、flow、feasibility、conservation、value） ════════
+scene('g8f-network', 'Maximum flow problem：transport network', [
+  async (tok, S) => {
+    S.B = board();
+    S.B.add('最後一個題目：maximum flow problem');
+    S.B.add('裡面有名的定理：max-flow min-cut theorem', 'say');
+    cap('Optimization 與 matching 的最後一題', 'maximum flow problem');
+  },
+  async (tok, S) => {
+    S.N = mkNet({ labels: false });
+    S.N.labs('none');
+    S.B.add('N = (V, E)：connected、directed、simple graph');
+    cap('我們討論的 graph 叫 N = (V, E)', 'connected directed simple graph');
+  },
+  async (tok, S) => {
+    KEYS.forEach((k) => S.N.pe(k, FC.hot, true)); await wt(tok, 700); S.N.reset();
+    S.B.add('之前的問題都是 undirected；這裡每條邊有方向', 'say');
+    cap('前面幾個問題的圖是 undirected', '這裡是 directed graph');
+  },
+  async (tok, S) => {
+    S.B.add('這樣的 N 叫 network，或 transport network');
+    cap('N 叫 network', '或者叫 transport network');
+  },
+  async (tok, S) => {
+    S.N.vc('s', FC.S); await pop(tok, S.N.v.s);
+    S.ts = S.N.ptag('s', 'source s（唯一）');
+    cap('第一：有唯一的端點 s', '叫 source');
+  },
+  async (tok, S) => {
+    for (const k of outs('s')) { S.N.pe(k, FC.fwd, true); await wt(tok, 250); }
+    S.B.add('連到 s 的邊全都 directed away from s（離開 s）');
+    cap('連在 source 上的邊', '方向全部是離開 s');
+  },
+  async (tok, S) => {
+    S.N.vc('t', FC.T); await pop(tok, S.N.v.t);
+    S.tt = S.N.ptag('t', 'sink t（唯一）');
+    cap('對應的另一個特別端點：sink t', '也是唯一的');
+  },
+  async (tok, S) => {
+    for (const k of ins('t')) { S.N.pe(k, FC.blue, true); await wt(tok, 250); }
+    S.B.add('連到 t 的邊全都 directed toward t（朝向 t）');
+    cap('連在 t 上的邊方向都朝向 t', 'source 只出、sink 只進');
+  },
+  async (tok, S) => {
+    S.N.reset();
+    for (const k of KEYS) { S.N.lab(k, 'cap'); await wt(tok, 120); }
+    S.B.add('capacity：每條有向邊 (v, w) 有一個 c(v, w)');
+    S.B.add('(v, w) 是有序對（有方向）；以前無向邊是 {v, w}', 'say');
+    cap('每條邊有一個 capacity c(v, w)', '(v, w) 有方向，不是集合 {v, w}');
+  },
+  async (tok, S) => {
+    const good = KEYS.every((k) => Number.isInteger(CAPS[k]) && CAPS[k] >= 0);
+    S.B.add('假設 capacity 都是 non-negative integer（非負整數）');
+    S.k1 = ok(good, '這張圖的 9 個 capacity 都是非負整數 ✓', 0, -0.9);
+    cap('capacity 假設是非負整數', '這不影響實際問題');
+  },
+  async (tok, S) => {
+    gone(S.k1);
+    const a = [-2, 3], k = -Math.min(...a);
+    S.m1 = lb('示意：有負的？全部加 ' + k + '：' + a.join(', ') + ' → ' + a.map((x) => x + k).join(', '), 'say', 0, -0.9);
+    cap('如果不是 ≥ 0', '全部加一個常數就好');
+  },
+  async (tok, S) => {
+    const a = [0.5, 1.25], m = 4;
+    S.m2 = lb('示意：不是整數？全部乘 ' + m + '：' + a.join(', ') + ' → ' + a.map((x) => x * m).join(', '), 'say', 0, -1.6);
+    cap('如果不是整數：精確度有限', '全部乘一個常數就變整數');
+  },
+  async (tok, S) => {
+    gone(S.m1, S.m2);
+    S.B.add('network = source（全部出）+ sink（全部進）+ 每條邊的 capacity');
+    cap('這樣的東西叫 network', 'source、sink、每邊一個 capacity');
+  },
+  async (tok, S) => {
+    S.u1 = lb('例：輸送液體的管線：capacity = 管子的容量', 'say', 0, -0.9);
+    await pkt(tok, S.N, ['s', 'a', 't'], '油', 1400);
+    cap('可以 model 輸液體的管線', 'capacity 就是每根管子的容量');
+  },
+  async (tok, S) => {
+    S.u2 = lb('例：computer network：capacity = link 的最大傳輸速率', 'say', 0, -1.6);
+    await pkt(tok, S.N, ['s', 'c', 't'], 'data', 1400);
+    cap('也可以 model computer network', '每個 link 的最大 data rate');
+  },
+  async (tok, S) => {
+    S.B.add('max-flow min-cut theorem 也用在 network coding', 'say');
+    cap('後面的定理', 'network coding 的基本原則會用到它');
+  },
+]);
+
+scene('g8f-example', '老師的例子：s, a, b, c, d, t', [
+  async (tok, S) => {
+    S.B = board();
+    S.N = mkNet({ show: false });
+    S.B.add('舉個例子（後面從頭到尾都用它）');
+    cap('看一個例子', '');
+  },
+  async (tok, S) => {
+    for (const n of VS) { S.N.showV(n); await wt(tok, 150); }
+    S.B.add('connected directed simple graph，6 個端點 s, a, b, c, d, t');
+    cap('六個端點：s, a, b, c, d, t', '');
+  },
+  async (tok, S) => {
+    S.N.vc('s', FC.S);
+    for (const k of outs('s')) { S.N.showE(k); S.N.lab(k, 'none'); S.N.pe(k, FC.fwd, true); await wt(tok, 250); }
+    S.B.add('s 是 source：' + outs('s').map(en).join('、') + ' 都從 s 出去');
+    cap('s 是 source', '邊都 directed away from s');
+  },
+  async (tok, S) => {
+    S.N.vc('t', FC.T);
+    for (const k of KEYS.filter((k) => k[0] !== 's')) { S.N.showE(k); S.N.lab(k, 'none'); if (k[1] === 't') S.N.pe(k, FC.blue, true); await wt(tok, 200); }
+    const okT = outs('t').length === 0 && ins('s').length === 0;
+    S.B.add('t 是 sink：' + ins('t').map(en).join('、') + ' 都朝向 t');
+    S.k = ok(okT, '檢查：沒有邊進 s、沒有邊出 t ✓', 0, -0.9);
+    cap('t 是 sink', '邊都 directed towards t');
+  },
+  async (tok, S) => {
+    S.N.reset();
+    for (const k of KEYS) { S.N.lab(k, 'cap'); await wt(tok, 160); }
+    S.B.add('黃色數字 = 每條 directed edge 的 capacity（非負整數）');
+    cap('每個 edge 上有一個 capacity', '黃色的數字');
+  },
+  async (tok, S) => {
+    S.N.pe('sa', FC.hot, true); await pop(tok, S.N.v.a, 0.2);
+    S.h = S.N.mtag('sa', 'c(s, a) = ' + CAPS.sa);
+    cap('例如 c(s, a) = 5', '其他依此類推');
+  },
+  async (tok, S) => {
+    S.N.pe('sa', FC.e); gone(S.h, S.k);
+    S.B.add('也像交通網路：capacity = 最大通行量（速率）', 'say');
+    cap('這就是 network／transport network', '像交通網路的最大通行量');
+  },
+  async (tok, S) => {
+    S.B.add('後面講這個問題時，從頭到尾都用這個例子');
+    cap('這是我們要考慮的 graph', '後面都用它');
+  },
+]);
+
+scene('g8f-flowdef', 'flow 的定義：feasibility 與 conservation', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet();
+    S.B.add('Maximum flow problem：先定義什麼叫 flow');
+    cap('什麼叫 flow？', '');
+  },
+  async (tok, S) => {
+    for (const k of KEYS) { S.N.lab(k, 'q'); await wt(tok, 120); }
+    S.B.add('flow f：每條邊 e 給一個 non-negative integer f(e)');
+    cap('flow 是一個 function', '每條邊上給一個非負整數 f(e)');
+  },
+  async (tok, S) => {
+    S.B.add('條件 1：f(e) ≤ c(e)（流量不能超過容量）');
+    S.N.pe('sa', FC.hot, true);
+    S.x = S.N.mtag('sa', 'f(s,a) ≤ ' + CAPS.sa);
+    cap('第一個條件：flow 不能超過 capacity', 'f(e) ≤ c(e)');
+  },
+  async (tok, S) => {
+    S.B.add('這個條件叫 feasibility；flow = 流量、capacity = 容量', 'say');
+    cap('這叫 feasibility', 'flow 叫流量，capacity 叫容量');
+  },
+  async (tok, S) => {
+    gone(S.x); S.N.pe('sa', FC.e);
+    S.d = lb('像 network 的 link：實際傳的 data rate ≤ 最高 data rate', 'say', 0, -0.9);
+    cap('實際傳的速率', '不能超過 link 最高的速率');
+  },
+  async (tok, S) => {
+    gone(S.d);
+    S.N.vc('d', FC.sat); await pop(tok, S.N.v.d);
+    S.B.add('條件 2：每個端點 v：inflow(v) = outflow(v)');
+    cap('第二個條件：流進去 = 流出來', '以 d 為例');
+  },
+  async (tok, S) => {
+    for (const k of ins('d')) { S.N.pe(k, FC.blue, true); await wt(tok, 250); }
+    S.in = lb('inflow(d) = Σ f(u, d)：' + ins('d').map((k) => 'f' + en(k)).join(' + '), 'say', 0, -0.9);
+    cap('inflow：從其他端點流進 v 的', '所有 (u, v) 邊上的 flow 加起來');
+  },
+  async (tok, S) => {
+    for (const k of outs('d')) { S.N.pe(k, FC.fwd, true); await wt(tok, 250); }
+    S.out = lb('outflow(d) = Σ f(d, w)：' + outs('d').map((k) => 'f' + en(k)).join(' + '), 'say', 0, -1.6);
+    cap('outflow：從 v 流出去的', '所有 (v, w) 邊上的 flow 加起來');
+  },
+  async (tok, S) => {
+    S.B.add('這叫 conservation（流量守恆）；source 和 sink 除外');
+    S.N.vc('s', FC.dim); S.N.vc('t', FC.dim);
+    S.ex = lb('s 只有流出、t 只有流進 → 不要求', 'idx', 0, -2.3);
+    cap('這叫 conservation，流量守恆', '除了 source 和 sink');
+  },
+  async (tok, S) => {
+    await pkt(tok, S.N, ['b', 'd', 't'], '油', 1500);
+    cap('想像成油管', '流進去的不流出來，跑到哪裡去？不會漏');
+  },
+  async (tok, S) => {
+    gone(S.in, S.out, S.ex); S.N.reset(); S.N.vc('d'); S.N.vc('s'); S.N.vc('t');
+    S.B.add('flow 要滿足兩個條件：feasibility ＋ conservation', 'good');
+    cap('flow 的兩個條件', 'feasibility 和 conservation');
+  },
+  async (tok, S) => {
+    const noE = !KEYS.includes('ab') && !KEYS.includes('ba');
+    S.z = ok(noE, '沒有邊的地方（例如 a, b 之間）：c = f = 0 ✓', 0, -0.9);
+    cap('沒有邊的時候', 'capacity 和 flow 都當作 0');
+  },
+  async (tok, S) => {
+    gone(S.z);
+    S.B.add('滿足條件的 flow 有很多 → 找 maximum flow（總量最大的）');
+    cap('這樣的 flow 很多很多', '要找一個最大的：maximum flow');
+  },
+]);
+
+scene('g8f-flow8', '一個 flow 的例子：逐邊 check', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet();
+    S.B.add('一個 flow 的例子：同一個 network，每條邊給一個流量');
+    cap('看一個 flow 的例子', '還是用這個圖');
+  },
+  async (tok, S) => {
+    await flowIn(tok, S.N, 'sa', F8.sa);
+    S.B.add('容量是黃色、流量是紅色：f(s,a) = ' + F8.sa, 'say');
+    cap('(s,a) 上的 flow 是 3', '紅色寫流量，黃色是容量');
+  },
+  async (tok, S) => { await flowIn(tok, S.N, 'sb', F8.sb); cap('(s,b) 上的 flow 是 2', ''); },
+  async (tok, S) => { await flowIn(tok, S.N, 'sc', F8.sc); cap('(s,c) 上的 flow 是 3', ''); },
+  async (tok, S) => {
+    for (const k of ['at', 'ad', 'bd', 'cd', 'dt', 'ct']) await flowIn(tok, S.N, k, F8[k], 300);
+    cap('其他的邊：2 1 2 1 4 2', '每條邊都有一個流量');
+  },
+  async (tok, S) => {
+    S.B.add('先 check feasibility：每條邊 紅 ≤ 黃');
+    cap('先 check feasibility', '每個紅色要 ≤ 黃色');
+  },
+  async (tok, S) => {
+    S.tk = [];
+    for (const k of KEYS) { const g = F8[k] <= CAPS[k]; S.N.pe(k, g ? FC.ok : FC.hot, true); S.tk.push(S.N.mtag(k, F8[k] + '≤' + CAPS[k] + (g ? ' ✓' : ' ✘'), g ? 'good' : 'bad')); await wt(tok, 230); }
+    cap('3 ≤ 5、2 ≤ 4、3 ≤ 3、…', '一條一條比');
+  },
+  async (tok, S) => {
+    S.k1 = ok(feasible(F8), 'feasibility ✓（9 條邊都 f ≤ c）', 0, -0.9);
+    cap('全部都滿足', 'feasibility ✓');
+  },
+  async (tok, S) => {
+    gone(S.tk); S.N.reset();
+    S.B.add('再 check conservation：a, b, c, d 的 inflow = outflow');
+    cap('再 check conservation', '流量守恆');
+  },
+  async (tok, S) => {
+    outs('s').forEach((k) => S.N.pe(k, FC.fwd, true));
+    S.cs = S.N.ptag('s', 'outflow(s) = ' + plus(F8, outs('s')) + ' = ' + outF(F8, 's'));
+    cap('S 的 outflow：3 + 2 + 3 = 8', '');
+  },
+  async (tok, S) => {
+    S.k0 = lb('s 沒有 inflow（source 只流出）：inflow(s) = ' + inF(F8, 's'), 'say', 0, -1.6);
+    cap('S 沒有 inflow', 'source 只有流出去');
+  },
+  async (tok, S) => {
+    S.N.reset(); gone(S.k0);
+    S.N.vc('a', FC.sat); ins('a').forEach((k) => S.N.pe(k, FC.blue, true));
+    S.ca = S.N.ptag('a', 'in ' + plus(F8, ins('a')) + ' = ' + inF(F8, 'a'), 'ptr', 0.85);
+    cap('看 a：inflow 是 3', '只有一條邊進來');
+  },
+  async (tok, S) => {
+    outs('a').forEach((k) => S.N.pe(k, FC.fwd, true));
+    gone(S.ca); S.ca = ok(inF(F8, 'a') === outF(F8, 'a'), 'a：' + inF(F8, 'a') + ' = ' + plus(F8, outs('a')) + ' ✓', S.N.p('a').x, S.N.p('a').y + 0.85);
+    cap('a 的 outflow：1 + 2 = 3', 'inflow = outflow');
+  },
+  async (tok, S) => {
+    S.N.reset(); S.N.vc('a'); S.N.vc('b', FC.sat); [...ins('b'), ...outs('b')].forEach((k) => S.N.pe(k, k[1] === 'b' ? FC.blue : FC.fwd, true));
+    S.cb = ok(inF(F8, 'b') === outF(F8, 'b'), 'b：' + inF(F8, 'b') + ' = ' + outF(F8, 'b') + ' ✓', S.N.p('b').x + 0.2, S.N.p('b').y - 0.75);
+    cap('b：inflow 2，outflow 2', '都只有一條邊');
+  },
+  async (tok, S) => {
+    S.N.reset(); S.N.vc('b'); S.N.vc('c', FC.sat); [...ins('c'), ...outs('c')].forEach((k) => S.N.pe(k, k[1] === 'c' ? FC.blue : FC.fwd, true));
+    S.cc = ok(inF(F8, 'c') === outF(F8, 'c'), 'c：' + inF(F8, 'c') + ' = ' + plus(F8, outs('c')) + ' ✓', S.N.p('c').x, S.N.p('c').y - 0.75);
+    cap('c：inflow 3，outflow 1 + 2', '相等');
+  },
+  async (tok, S) => {
+    S.N.reset(); S.N.vc('c'); S.N.vc('d', FC.sat); [...ins('d'), ...outs('d')].forEach((k) => S.N.pe(k, k[1] === 'd' ? FC.blue : FC.fwd, true));
+    S.cd = ok(inF(F8, 'd') === outF(F8, 'd'), 'd：' + plus(F8, ins('d')) + ' = ' + outF(F8, 'd') + ' ✓', S.N.p('d').x + 0.3, S.N.p('d').y - 0.8);
+    cap('d：inflow 1 + 2 + 1 = 4', 'outflow 只有一條邊：4');
+  },
+  async (tok, S) => {
+    S.N.reset(); S.N.vc('d'); ins('t').forEach((k) => S.N.pe(k, FC.blue, true));
+    S.ct = S.N.ptag('t', 'inflow(t) = ' + plus(F8, ins('t')) + ' = ' + inF(F8, 't'));
+    cap('t 只有 inflow：2 + 4 + 2 = 8', '');
+  },
+  async (tok, S) => {
+    S.N.reset();
+    S.k2 = ok(conserv(F8), 'conservation ✓（a, b, c, d 都 inflow = outflow）', 0, -1.6);
+    cap('除了 source 和 sink', '其他四個端點 inflow 都等於 outflow');
+  },
+  async (tok, S) => {
+    S.k3 = ok(feasible(F8) && conserv(F8), '所以紅色這組數字是一個（合法的）flow ✓', 0, -2.3);
+    cap('滿足 feasibility 和 conservation', '紅色的 assignment 就是一個 flow');
+  },
+  async (tok, S) => {
+    S.B.add('flow = 每條邊一個非負整數，滿足 feasibility 和 conservation', 'good');
+    cap('原來那個叫 network', '上面這樣的 assignment 叫 flow');
+  },
+]);
+
+scene('g8f-value', 'flow 的 value 與 maximum flow', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet(); S.N.setF(F8);
+    S.B.add('什麼叫 flow 的 value？');
+    cap('要找最大的 flow', '先定義 flow 的 value');
+  },
+  async (tok, S) => {
+    S.B.add('f 是 function：domain = E，codomain = 非負整數', 'say');
+    cap('flow 是一個 function', 'domain 是 edge set');
+  },
+  async (tok, S) => {
+    outs('s').forEach((k) => S.N.pe(k, FC.fwd, true));
+    S.B.add('value of the flow = outflow of the source');
+    cap('flow 的 value 定義成', 'source 的 outflow');
+  },
+  async (tok, S) => {
+    S.v = lb('val(f) = ' + plus(F8, outs('s')) + ' = ' + val(F8), 'ptr alt', 0, -0.9);
+    await pop(tok, S.N.v.s);
+    cap('剛才的例子：value 是 8', '3 + 2 + 3');
+  },
+  async (tok, S) => {
+    S.B.add('滿足兩個條件的 flow 很多；maximum flow = value 最大的那個');
+    cap('flow 有很多個', 'value 最大的叫 maximum flow');
+  },
+  async (tok, S) => {
+    S.N.reset();
+    S.B.add('問題：given 一個 network，怎麼找 maximum flow？value 是多少？');
+    cap('given 黃色的 network', '怎麼找 maximum flow？');
+  },
+  async (tok, S) => {
+    S.B.add('後面：maximum flow 滿足什麼條件 ＋ 找它的 algorithm', 'say');
+    cap('maximum flow 會滿足什麼條件', '還有找它的 algorithm');
+  },
+  async (tok, S) => {
+    gone(S.v); S.v = lb('VAL(f) = outflow(s) = ' + val(F8), 'ptr alt', 0, -0.9);
+    outs('s').forEach((k) => S.N.pe(k, FC.fwd, true));
+    cap('同一個例子：VAL(f) = 8', '就是 source 的 outflow');
+  },
+  async (tok, S) => {
+    S.N.reset();
+    S.B.add('network 和 flow 定義清楚了 → 接下來找 maximum flow', 'good');
+    cap('network 和 flow 都定義好了', '接下來要找 maximum flow');
+  },
+]);
+
+// ════════ ePI-vLEM01Q（第31B講：cut、val(f) = 流過去 − 流回來、證明） ════════
+const CUT1 = ['s', 'a', 'b', 'd'];
+const FW1 = ['at', 'dt', 'sc'].filter((k) => fwdE(CUT1).includes(k)); // the lecturer's order: 2 + 4 + 3
+scene('g8f-cut', 'cut：把 source 和 sink 分開', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet(); S.N.setF(F8);
+    S.B.add('flow 的性質越多，工具越多；先看 cut');
+    cap('flow 跟 cut 很有關係', '先看什麼叫 cut');
+  },
+  async (tok, S) => {
+    S.B.add('一個 cut 有兩個集合：S 和 T');
+    cap('一個 cut 有兩個集合', '一個叫 S，一個叫 T');
+  },
+  async (tok, S) => {
+    S.N.halo('s', FC.S); S.N.halo('t', FC.T);
+    S.B.add('(S, T)：separating source and sink');
+    cap('separating source and sink', '把 source 和 sink 分開來');
+  },
+  async (tok, S) => {
+    S.B.add('(S, T) 是 V 的 partition：S ∪ T = V，S ∩ T = ∅');
+    cap('S、T 是 V 的 partition', '聯集是 V，交集是空集合');
+  },
+  async (tok, S) => {
+    S.B.add('而且 source s ∈ S，sink t ∈ T');
+    await pop(tok, S.N.v.s); await pop(tok, S.N.v.t);
+    cap('一部分一定包含 source', '另一部分一定包含 sink');
+  },
+  async (tok, S) => {
+    S.N.cut(CUT1);
+    S.B.add('例：S = ' + setS(CUT1) + '，T = ' + setS(comp(CUT1)));
+    cap('例如 s, a, b, d 當 S', 'c 和 t 當 T');
+  },
+  async (tok, S) => {
+    S.N.paintCut(CUT1);
+    S.sc = [...fwdE(CUT1), ...bwdE(CUT1)].map((k) => S.N.mtag(k, '✂', 'ptr', 0));
+    cap('就好像把它這樣切下去', '被切到的邊上了顏色');
+  },
+  async (tok, S) => {
+    const T = comp(CUT1); const part = CUT1.length + T.length === VS.length && CUT1.every((v) => !T.includes(v));
+    S.k = ok(part && CUT1.includes('s') && T.includes('t'), '4 個在 S、2 個在 T；s ∈ S、t ∈ T → 是 cut ✓', 0, -0.9);
+    cap('四個端點在一邊、兩個在另一邊', '這就是一個 cut');
+  },
+]);
+
+scene('g8f-cutflow', 'val(f) = 流過去 − 流回來', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet(); S.N.setF(F8);
+    S.B.add('cut 跟 flow value 有什麼關係？');
+    cap('cut 跟 flow 的 value', '有一個性質，對任何 cut 都成立');
+  },
+  async (tok, S) => {
+    S.B.add('對任何 flow f、任何 separating s 和 t 的 cut (S, T)：', 'say');
+    cap('任何 flow', '任何把 s、t 分開的 cut');
+  },
+  async (tok, S) => {
+    S.B.add('val(f) = 流過去的 − 流回來的');
+    cap('flow 的 value 等於', '流過去的扣掉流回來的');
+  },
+  async (tok, S) => {
+    S.B.add('流過去：Σ f(x, y)，x ∈ S、y ∈ T', 'say');
+    cap('流過去：所有從 S 到 T 的邊', '上面的 flow 加起來');
+  },
+  async (tok, S) => {
+    S.B.add('val(f) = Σ f(x,y)[x∈S, y∈T] − Σ f(u,v)[u∈T, v∈S]');
+    cap('扣掉流回來的', '所有從 T 到 S 的邊上的 flow');
+  },
+  async (tok, S) => {
+    S.N.cut(CUT1);
+    S.e = lb('例：S = ' + setS(CUT1) + '，T = ' + setS(comp(CUT1)), 'ptr', 0, -0.9);
+    cap('例如剛剛的 cut', 'S = {s, a, b, d}');
+  },
+  async (tok, S) => {
+    for (const k of FW1) { S.N.pe(k, FC.fwd, true); await wt(tok, 300); }
+    cap('流過去的是這三條邊', FW1.map(en).join('、'));
+  },
+  async (tok, S) => {
+    S.f = lb('流過去：' + plus(F8, FW1) + ' = ' + sumF(F8, fwdE(CUT1)), 'say', -3.2, -1.6);
+    cap('流過去的量：2 + 4 + 3', '');
+  },
+  async (tok, S) => {
+    for (const k of bwdE(CUT1)) S.N.pe(k, FC.back, true);
+    S.b = lb('流回來：' + bwdE(CUT1).map(en).join('') + ' 上的 ' + sumF(F8, bwdE(CUT1)), 'say', 3.2, -1.6);
+    cap('流回來的只有一條邊', '(c, d) 上的 1');
+  },
+  async (tok, S) => {
+    S.k = ok(netCut(F8, CUT1) === val(F8), sumF(F8, fwdE(CUT1)) + ' − ' + sumF(F8, bwdE(CUT1)) + ' = ' + netCut(F8, CUT1) + ' = val(f) ✓', 0, -2.3);
+    cap('9 − 1 = 8', '正好是剛剛算的 flow value');
+  },
+  async (tok, S) => {
+    gone(S.f, S.b, S.k, S.e); S.N.uncut(); S.N.reset();
+    const all = ALLS.every((C) => netCut(F8, C) === val(F8));
+    S.k = ok(all, '程式把 16 個 cut 都算一次：流過去 − 流回來 全都 = ' + val(F8) + ' ✓', 0, -0.9);
+    cap('對任何 cut 都成立', '只要 s 在一邊、t 在另一邊');
+  },
+  async (tok, S) => {
+    S.B.add('原因：conservation，流量不會漏掉', 'good');
+    await pkt(tok, S.N, ['s', 'c', 'd', 't'], '流', 1500);
+    cap('因為流量守恆', 'flow 不會跑掉');
+  },
+]);
+
+scene('g8f-cutproof-ex', '證明前：把例子寫清楚', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet(); S.N.setF(F8);
+    S.B.add('來證明：基本上只用 conservation');
+    cap('我們來證明一下', '先把例子寫清楚');
+  },
+  async (tok, S) => {
+    S.N.cut(CUT1);
+    S.B.add('S = ' + setS(CUT1) + '，T = ' + setS(comp(CUT1)));
+    cap('S 是 source 和 a, b, d', 'T 是 c 和 t');
+  },
+  async (tok, S) => {
+    for (const k of FW1) { S.N.pe(k, FC.fwd, true); await wt(tok, 300); }
+    S.f = lb('S → T：' + FW1.map((k) => 'f' + en(k)).join(' + ') + ' = ' + plus(F8, FW1), 'say', 0, -0.9);
+    cap('從 S 流到 T 的', '(a,t)、(d,t)、(s,c)：2 + 4 + 3');
+  },
+  async (tok, S) => {
+    bwdE(CUT1).forEach((k) => S.N.pe(k, FC.back, true));
+    S.b = lb('T → S：' + bwdE(CUT1).map((k) => 'f' + en(k)).join(' + ') + ' = ' + sumF(F8, bwdE(CUT1)), 'say', 0, -1.6);
+    cap('流回來的只有 (c, d)', '是 1');
+  },
+  async (tok, S) => {
+    S.k = ok(netCut(F8, CUT1) === val(F8), 'val(f) = ' + val(F8) + ' = ' + sumF(F8, fwdE(CUT1)) + ' − ' + sumF(F8, bwdE(CUT1)) + ' ✓', 0, -2.3);
+    cap('value 是 8', '剛好是 9 − 1');
+  },
+  async (tok, S) => {
+    S.B.add('Σ 其實是 double summation（x 和 y 兩個變數）', 'say');
+    cap('這個 Σ 其實是 double summation', '有 x、y 兩個 dummy variable');
+  },
+  async (tok, S) => {
+    S.B.add('沒有邊的 (x, y)：f = 0，只要加真的有的邊', 'say');
+    cap('沒有 edge 的 flow 是 0', '所以只要加真的有的邊');
+  },
+]);
+
+const PR_X = -6.9;
+scene('g8f-cutproof', '證明：val(f) = 流過去 − 流回來（只用 conservation）', [
+  async (tok, S) => {
+    S.N = mkNet({ s: 0.62, ox: 3.4, oy: 4.6 }); S.N.setF(F8); S.N.cut(CUT1);
+    S.L = board({ x: -0.6, y: 8.8, dy: 0.62, max: 6 });
+    S.L.add('要證：val(f) = Σ_{x∈S,y∈T} f(x,y) − Σ_{u∈T,v∈S} f(u,v)');
+    S.n = lb('右邊用例子對照：S = ' + setS(CUT1) + '（示意對照）', 'idx', 3.4, 3.7);
+    cap('要證的式子', '從定義開始');
+  },
+  async (tok, S) => {
+    S.L.add('val(f) = Σ_{y∈V} f(s, y)　（source 的 outflow）');
+    S.r = lb('例：' + outF(F8, 's'), 'ptr', 3.4, 3.0);
+    cap('value 是 source 的 outflow', 's 到所有 y 的 flow 加起來');
+  },
+  async (tok, S) => {
+    S.L.add('　　 − Σ_{u∈V} f(u, s)　（s 的 inflow = 0，多扣 0）');
+    gone(S.r); S.r = lb('例：' + outF(F8, 's') + ' − ' + inF(F8, 's'), 'ptr', 3.4, 3.0);
+    cap('s 的 inflow 是 0', '多扣一個 0 不影響');
+  },
+  async (tok, S) => {
+    S.L.add('　　 + Σ_{x∈S−{s}} [ Σ_y f(x,y) − Σ_u f(u,x) ]');
+    const xs = CUT1.filter((v) => v !== 's');
+    S.c = xs.map((v, i) => ok(outF(F8, v) === inF(F8, v), v + '：' + outF(F8, v) + ' − ' + inF(F8, v) + ' = 0 ✓', 0.7 + i * 2.2, 0.8));
+    cap('把 S 裡其他端點都加進來', '它們都守恆，t 不在 S 裡');
+  },
+  async (tok, S) => {
+    S.L.add('　　每個括號 = outflow(x) − inflow(x) = 0（conservation）', 'say');
+    cap('括號裡前面是 outflow', '後面是 inflow，相減是 0');
+  },
+  async (tok, S) => {
+    gone(S.c);
+    const o = CUT1.reduce((s, v) => s + outF(F8, v), 0), i = CUT1.reduce((s, v) => s + inF(F8, v), 0);
+    S.L.add('合併：Σ_{x∈S} Σ_{y∈V} f(x,y) − Σ_{x∈S} Σ_{u∈V} f(u,x)');
+    gone(S.r); S.r = lb('例：' + o + ' − ' + i, 'ptr', 3.4, 3.0); S.oi = [o, i];
+    cap('s 那項和其他的合在一起', '變成對整個 S 加總');
+  },
+  async (tok, S) => {
+    S.L.add('dummy variable 換名字：x → v，後項 = Σ_{v∈S} Σ_{u∈V} f(u,v)', 'say');
+    cap('只是把 x 換成 v', '看起來跟後面一致');
+  },
+  async (tok, S) => {
+    const ss = sumF(F8, inSE(CUT1)), st = sumF(F8, fwdE(CUT1)), ts = sumF(F8, bwdE(CUT1));
+    S.L.add('V = S ∪ T 拆開：[S→S] + [S→T] − [S→S] − [T→S]');
+    gone(S.r); S.r = lb('例：(' + ss + ' + ' + st + ') − (' + ss + ' + ' + ts + ')', 'ptr', 3.4, 3.0);
+    S.chk = ok(ss + st === S.oi[0] && ss + ts === S.oi[1], ss + ' + ' + st + ' = ' + S.oi[0] + '、' + ss + ' + ' + ts + ' = ' + S.oi[1] + ' ✓', 3.4, 2.3);
+    inSE(CUT1).forEach((k) => S.N.pe(k, FC.sat, true));
+    cap('因為 S、T 是 V 的 partition', '每個 Σ 拆成兩個');
+  },
+  async (tok, S) => {
+    S.L.add('兩個 [S→S] 一樣（只是名字不同）→ 消掉');
+    gone(S.chk); inSE(CUT1).forEach((k) => S.N.pe(k, FC.dim));
+    cap('S 到 S 的兩項一樣', '消掉');
+  },
+  async (tok, S) => {
+    const st = sumF(F8, fwdE(CUT1)), ts = sumF(F8, bwdE(CUT1));
+    S.L.add('剩下：Σ_{x∈S,y∈T} f(x,y) − Σ_{v∈S,u∈T} f(u,v)');
+    S.N.paintCut(CUT1);
+    gone(S.r); S.r = lb('例：' + st + ' − ' + ts, 'ptr', 3.4, 3.0);
+    cap('最後剩下兩項', '從 S 流到 T 的、從 T 流到 S 的');
+  },
+  async (tok, S) => {
+    S.L.add('double summation 先加 u 或先加 v 都一樣 → 改寫成要的形式', 'say');
+    cap('double summation 的順序', '反過來寫是一樣的');
+  },
+  async (tok, S) => {
+    gone(S.r); S.r = ok(netCut(F8, CUT1) === val(F8), '例：' + sumF(F8, fwdE(CUT1)) + ' − ' + sumF(F8, bwdE(CUT1)) + ' = ' + val(F8) + ' = val(f) ✓', 3.4, 3.0);
+    S.L.add('證完：val(f) = 流過去 − 流回來', 'good');
+    cap('這就是要證的', '證完了');
+  },
+  async (tok, S) => {
+    S.L.add('只用了：多扣 0（s 的 inflow）、多加 0（conservation）、拆開、消掉', 'say');
+    cap('其實只用了 conservation', 'notation 有點多而已');
+  },
+  async (tok, S) => {
+    S.L.add('cut 把 s、t 拆到兩邊 → 淨流量 = flow 的量', 'good');
+    cap('任何 cut 的淨流量', '都等於 flow 的 value');
+  },
+]);
+
+// ════════ ju-qSc1_rwQ（第31C講：val = inflow(t)、cut capacity、val ≤ c(S,T)、max flow ≤ min cut、s-a-t 加 1） ════════
+const CUTT = ['s', 'a', 'b', 'c', 'd'];
+scene('g8f-sinkin', '取 T = {t}：value = sink 的 inflow', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet(); S.N.setF(F8);
+    S.B.add('val(f) = 從 S 流到 T 的 − 從 T 流回 S 的（任何 cut）');
+    cap('上次：value 等於', '任何 cut 流過去扣掉流回來');
+  },
+  async (tok, S) => {
+    S.N.cut(CUTT);
+    S.B.add('取 T = {t}，S = 其他全部');
+    cap('隨便取一個 cut', 'T 只有 sink，其他都放 S');
+  },
+  async (tok, S) => {
+    S.k = ok(CUTT.includes('s') && !CUTT.includes('t') && CUTT.length === 5, 'partition、s ∈ S、t ∈ T → 合法的 cut ✓', 0, -0.9);
+    cap('這個 cut 沒問題', 'source 在 S、sink 在 T');
+  },
+  async (tok, S) => {
+    gone(S.k);
+    S.B.add('val(f) = Σ f(x, t) − Σ f(t, v)', 'say');
+    cap('套剛剛的性質', '');
+  },
+  async (tok, S) => {
+    S.B.add('T 只有 t：Σ over T 只剩 sink 一項', 'say');
+    cap('因為 T 只有一個端點', '把 sink 帶進去就好');
+  },
+  async (tok, S) => {
+    ins('t').forEach((k) => S.N.pe(k, FC.fwd, true));
+    S.i = lb('前項 = inflow(t) = ' + plus(F8, ins('t')) + ' = ' + inF(F8, 't'), 'say', 0, -0.9);
+    cap('前面那項：所有流到 sink 的', '就是 sink 的 inflow');
+  },
+  async (tok, S) => {
+    S.o = lb('後項 = outflow(t)', 'say', 0, -1.6);
+    cap('後面那項：從 sink 流出去的', '就是 sink 的 outflow');
+  },
+  async (tok, S) => {
+    gone(S.o); S.o = ok(outs('t').length === 0, '後項 = outflow(t) = 0（t 沒有出去的邊）✓', 0, -1.6);
+    cap('sink 的 outflow 是 0', '它的邊全部 directed toward sink');
+  },
+  async (tok, S) => {
+    S.k = ok(val(F8) === inF(F8, 't'), 'val(f) = outflow(s) = ' + val(F8) + ' = inflow(t) = ' + inF(F8, 't') + ' ✓', 0, -2.3);
+    cap('value 定義成 source 的 outflow', '也會等於 sink 的 inflow');
+  },
+  async (tok, S) => {
+    S.N.uncut(); S.N.reset();
+    await pkt(tok, S.N, ['s', 'a', 'd', 't'], '流', 1600);
+    cap('中間每個點都守恆', '所以全部最後都流到 sink');
+  },
+]);
+
+const CUTA = ['s', 'a', 'b'], CUTB = ['s', 'b'];
+scene('g8f-cutcap', 'cut 的 capacity', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet();
+    S.B.add('flow 和 cut 還有什麼關係？先定義 cut 的 capacity');
+    cap('再來一個 flow 跟 cut 的關係', '先定義 cut 的 capacity');
+  },
+  async (tok, S) => {
+    S.B.add('每條邊有 capacity；整個 cut 也定義一個 capacity', 'say');
+    cap('原來 capacity 是每條邊的', '現在整個 cut 也有一個');
+  },
+  async (tok, S) => {
+    S.B.add('c(S, T) = Σ c(x, y)，x ∈ S、y ∈ T（從 S 到 T 的邊）');
+    cap('把所有從 S 到 T 的邊', '的 capacity 加起來');
+  },
+  async (tok, S) => {
+    S.B.add('反方向（T 到 S）的邊不加！', 'bad');
+    cap('反過來的那部分不加', '只加從 S 到 T 的');
+  },
+  async (tok, S) => {
+    S.N.cut(CUTA);
+    S.e = lb('例：S = ' + setS(CUTA) + '，T = ' + setS(comp(CUTA)), 'ptr', 0, -0.9);
+    cap('例：S 是 s, a, b', 'T 是 c, d, t');
+  },
+  async (tok, S) => {
+    S.sc = [...fwdE(CUTA), ...bwdE(CUTA)].map((k) => S.N.mtag(k, '✂', 'ptr', 0));
+    cap('SAB 這樣切下來', '');
+  },
+  async (tok, S) => {
+    for (const k of fwdE(CUTA)) { S.N.pe(k, FC.fwd, true); await wt(tok, 300); }
+    cap('被切到的是這 ' + fwdE(CUTA).length + ' 條邊', '都是從 S 到 T');
+  },
+  async (tok, S) => {
+    const ks = ['sc', 'ad', 'bd', 'at'].filter((k) => fwdE(CUTA).includes(k));
+    S.k1 = ok(ks.length === fwdE(CUTA).length && bwdE(CUTA).length === 0, 'c(S,T) = ' + plusC(ks) + ' = ' + capCut(CUTA) + ' ✓', 0, -1.6);
+    cap('3 + 6 + 2 + 3', '這個 cut 的 capacity 是 14');
+  },
+  async (tok, S) => {
+    gone(S.sc, S.e, S.k1); S.N.reset(); S.N.cut(CUTB);
+    S.e = lb('換一個：S = ' + setS(CUTB) + '，T = ' + setS(comp(CUTB)), 'ptr', 0, -0.9);
+    cap('再換一個 cut', 'S 只有 source 和 b');
+  },
+  async (tok, S) => {
+    S.sc = [];
+    for (const k of fwdE(CUTB)) { S.N.pe(k, FC.fwd, true); S.sc.push(S.N.mtag(k, '✂', 'ptr', 0)); await wt(tok, 300); }
+    cap('切到的只有 (s,a)、(b,d)、(s,c)', '');
+  },
+  async (tok, S) => {
+    S.k2 = ok(true, 'c(S,T) = ' + plusC(fwdE(CUTB)) + ' = ' + capCut(CUTB) + ' ✓', 0, -1.6);
+    cap('5 + 2 + 3 = 10', '這個 cut 比較小');
+  },
+  async (tok, S) => {
+    S.k3 = lb('cut capacity 不一定一樣：' + capCut(CUTA) + ' 和 ' + capCut(CUTB), 'say', 0, -2.3);
+    cap('每個 cut 的 capacity', '不見得一樣，有大有小');
+  },
+  async (tok, S) => {
+    const C = ['s', 'a', 'b', 'd'];
+    gone(S.sc, S.k2, S.k3, S.e); S.N.cut(C); S.N.paintCut(C);
+    S.e = lb('示意：S = ' + setS(C) + ' 時，紫色 ' + bwdE(C).map(en).join('') + ' 是 T → S，不加', 'say', 0, -0.9);
+    S.k = ok(capCut(C) === sumC(fwdE(C)), 'c(S,T) = ' + plusC(fwdE(C)) + ' = ' + capCut(C) + '（c(c,d) = 7 不算）✓', 0, -1.6);
+    cap('切到方向反過來的邊', '那個不加');
+  },
+]);
+
+scene('g8f-leq', '性質：val(f) ≤ c(S, T)', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet(); S.N.setF(F8);
+    S.B.add('一個很重要的性質（後面推到定理就靠它）');
+    cap('定義了 cut capacity 以後', '又有一個重要的性質');
+  },
+  async (tok, S) => {
+    S.B.add('任何 flow f、任何 cut (S, T)：val(f) ≤ c(S, T)');
+    cap('flow 的 value', '一定 ≤ cut 的 capacity');
+  },
+  async (tok, S) => {
+    S.N.cut(CUT1); S.N.paintCut(CUT1);
+    S.B.add('val(f) = Σ f(S→T) − Σ f(T→S)', 'say');
+    S.e = lb('示意對照：S = ' + setS(CUT1) + '：' + sumF(F8, fwdE(CUT1)) + ' − ' + sumF(F8, bwdE(CUT1)) + ' = ' + netCut(F8, CUT1), 'ptr', 0, -0.9);
+    cap('用前面的性質', '流過去的扣掉流回來的');
+  },
+  async (tok, S) => {
+    S.B.add('每個 f ≥ 0 → 流回來的 Σ f(T→S) ≥ 0', 'say');
+    cap('flow 一定 ≥ 0', '所以後面那塊整個 ≥ 0');
+  },
+  async (tok, S) => {
+    S.B.add('丟掉它 → val(f) ≤ Σ f(S→T)（upper bound）');
+    S.a = ok(val(F8) <= sumF(F8, fwdE(CUT1)), val(F8) + ' ≤ ' + sumF(F8, fwdE(CUT1)) + ' ✓', -3.2, -1.6);
+    cap('減掉一個 ≥ 0 的數', '丟掉就變 upper bound');
+  },
+  async (tok, S) => {
+    S.B.add('feasibility：每條 f(x, y) ≤ c(x, y)', 'say');
+    S.t = fwdE(CUT1).map((k) => S.N.mtag(k, F8[k] + '≤' + CAPS[k] + ' ✓', F8[k] <= CAPS[k] ? 'good' : 'bad'));
+    cap('再用 feasibility', '流量 ≤ 容量，每條邊都成立');
+  },
+  async (tok, S) => {
+    S.B.add('Σ f(S→T) ≤ Σ c(S→T) = c(S, T)');
+    S.b = ok(sumF(F8, fwdE(CUT1)) <= capCut(CUT1), sumF(F8, fwdE(CUT1)) + ' ≤ ' + capCut(CUT1) + ' = c(S,T) ✓', 3.2, -1.6);
+    cap('全部加起來也 ≤', '就是這個 cut 的 capacity');
+  },
+  async (tok, S) => {
+    gone(S.t);
+    S.k = ok(ALLS.every((C) => val(F8) <= capCut(C)), '證完：val(f) ≤ c(S,T)；16 個 cut 都 ≥ ' + val(F8) + ' ✓', 0, -2.3);
+    cap('證完了：conservation、丟掉 ≥ 0', '再用 feasibility');
+  },
+]);
+
+scene('g8f-maxmin', 'max flow ≤ min cut', [
+  async (tok, S) => {
+    S.B = board();
+    S.B.add('任何 flow 的 value ≤ 任何 cut 的 capacity');
+    S.ax = []; for (let x = 0; x <= 16; x += 2) S.ax.push(lb(String(x), 'idx', -6 + x * 0.75, 2.2));
+    S.line = new THREE.Mesh(new THREE.BoxGeometry(12.4, 0.06, 0.06), new THREE.MeshStandardMaterial({ color: FC.e })); S.line.position.set(0, 2.7, 0); lab.world.add(S.line);
+    S.X = (v) => -6 + v * 0.75;
+    S.fl = lb('flow ' + val(F8), 'pkt', S.X(val(F8)), 3.5);
+    cap('任何 flow 都 ≤', '任何 cut 的 capacity');
+  },
+  async (tok, S) => {
+    S.B.add('取 value 最大的 flow、capacity 最小的 cut：還是 ≤', 'say');
+    cap('最大的 flow', '也 ≤ 最小的 cut');
+  },
+  async (tok, S) => {
+    S.B.add('max flow ≤ min cut');
+    cap('max flow', '≤ min cut');
+  },
+  async (tok, S) => {
+    S.B.add('找到一個 flow 剛好 = 某個 cut capacity → 它就是 max flow', 'good');
+    cap('如果 flow 剛好等於某個 cut capacity', '那就一定是 max flow');
+  },
+  async (tok, S) => {
+    S.B.add('後面的定理：其實是等號（Max-Flow Min-Cut Theorem）', 'say');
+    cap('後面有定理說', 'max flow 其實等於 min cut');
+  },
+  async (tok, S) => {
+    S.c1 = lb('cut ' + capCut(CUTA), 'ptr', S.X(capCut(CUTA)), 1.5);
+    S.c2 = lb('cut ' + capCut(CUTB), 'ptr', S.X(capCut(CUTB)), 1.5);
+    S.k = ok(val(F8) <= capCut(CUTB) && val(F8) <= capCut(CUTA), '這個 flow：' + val(F8) + '；算過的 cut：' + capCut(CUTA) + '、' + capCut(CUTB) + ' ✓', 0, 0.4);
+    cap('這個 flow 的 value 是 8', 'cut 算過 14 和 10');
+  },
+  async (tok, S) => {
+    const from = S.X(val(F8)), to = S.X(capCut(CUTB));
+    await anim(tok, 1200, (u) => { S.fl.position.x = from + (to - from) * u; });
+    S.fl.element.textContent = 'flow ' + capCut(CUTB) + '?';
+    S.B.add('如果把 flow 增大到 10 → 一定最大（10 也一定是最小的 cut）');
+    cap('如果 flow 變成 10', '那 10 就一定最大');
+  },
+]);
+
+scene('g8f-sat', '把 flow 變大：沿 s → a → t 加 1', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet(); S.N.setF(F8);
+    S.B.add('問題：given network 和 flow，怎麼把 flow 值變大？');
+    cap('現在的問題', '怎麼把 flow 值變大');
+  },
+  async (tok, S) => {
+    S.B.add('像 matching：已有 matching，再找方法 augment 它', 'say');
+    cap('跟 matching problem 類似', '把 matching augment 變大');
+  },
+  async (tok, S) => {
+    S.B.add('只要保持 feasibility 和 conservation 就 OK', 'say');
+    cap('看這個 network 和 flow', '有沒有辦法增大？');
+  },
+  async (tok, S) => {
+    S.N.pe('sa', FC.hot, true); S.N.pe('at', FC.hot, true);
+    S.B.add('一條 directed path：s → a → t');
+    cap('有一條 directed path', 's a t，照箭頭走');
+  },
+  async (tok, S) => {
+    S.x1 = S.N.mtag('sa', 'f ' + F8.sa + ' < c ' + CAPS.sa); S.x2 = S.N.mtag('at', 'f ' + F8.at + ' < c ' + CAPS.at);
+    cap('(s,a)：flow 3、capacity 5', '(a,t)：flow 2、capacity 3');
+  },
+  async (tok, S) => {
+    S.B.add('兩條一起加同樣的量 → a 還是守恆', 'say');
+    await pkt(tok, S.N, ['s', 'a', 't'], '+?', 1300);
+    cap('這邊加、那邊加一樣多', '流量守恆就還成立');
+  },
+  async (tok, S) => {
+    S.B.add('但不能超過：(s,a) ≤ ' + CAPS.sa + '、(a,t) ≤ ' + CAPS.at, 'say');
+    cap('要滿足 feasibility', '不能超過 5，不能超過 3');
+  },
+  async (tok, S) => {
+    gone(S.x1, S.x2);
+    S.x1 = S.N.mtag('sa', '還能 +' + (CAPS.sa - F8.sa)); S.x2 = S.N.mtag('at', '還能 +' + (CAPS.at - F8.at));
+    cap('這邊最多加 2、那邊最多加 1', '所以只能加 1');
+  },
+  async (tok, S) => {
+    S.B.add('(s,a)、(a,t) 的 flow 都沒到 capacity → 兩條都能增加');
+    cap('寫下來：path s a t', '兩條邊都沒滿');
+  },
+  async (tok, S) => {
+    const p = [['s', 'sa', 'f'], ['a', 'at', 'f']], D = deltaOf(F8, p);
+    S.D = D;
+    S.m = ok(D === 1, 'min(' + (CAPS.sa - F8.sa) + ', ' + (CAPS.at - F8.at) + ') = ' + D + ' ✓', 0, -0.9);
+    cap('5 − 3 = 2，3 − 2 = 1', '取最小值：加 1');
+  },
+  async (tok, S) => {
+    gone(S.x1, S.x2);
+    await flowIn(tok, S.N, 'sa', F8.sa + S.D, 500); await flowIn(tok, S.N, 'at', F8.at + S.D, 500);
+    S.N.pe('sa', FC.hot, true); S.N.pe('at', FC.hot, true);
+    cap('兩條邊的 flow 都加 1', '');
+  },
+  async (tok, S) => {
+    S.B.add('新的 flow F1：f(s,a) = ' + F9.sa + '、f(a,t) = ' + F9.at);
+    cap('新的 flow 叫 F1', '(s,a) 變 4，(a,t) 變 3');
+  },
+  async (tok, S) => {
+    S.k = ok(feasible(F9) && conserv(F9), 'feasibility ✓（取了最小值）　conservation ✓（a：' + inF(F9, 'a') + ' = ' + plus(F9, outs('a')) + '）', 0, -1.6);
+    cap('feasibility：因為取最小值', 'conservation：a 進出都加 1');
+  },
+  async (tok, S) => {
+    S.N.reset();
+    S.v = ok(val(F9) === inF(F9, 't') && val(F9) === val(F8) + 1, 'val = ' + plus(F9, outs('s')) + ' = ' + val(F9) + '；inflow(t) = ' + plus(F9, ins('t')) + ' = ' + inF(F9, 't') + ' ✓', 0, -2.3);
+    cap('source 流出多 1，sink 流進多 1', 'value：8 + 1 = 9');
+  },
+]);
+
+scene('g8f-sadct-intro', '再找一條：s-a-d-c-t（有反方向的邊）', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet(); S.N.setF(F9);
+    S.B.add('新的 flow F1，value = ' + val(F9) + '：還能再增加嗎？');
+    cap('flow 現在是 9', '還有沒有辦法再增加？');
+  },
+  async (tok, S) => {
+    S.B.add('這次的 path 會用到反方向的 edge', 'say');
+    cap('再找一條 path', '這次牽涉到反方向的 edge');
+  },
+  async (tok, S) => {
+    for (const [, k] of SADCT) { S.N.pe(k, k === 'cd' ? FC.back : FC.hot, true); await wt(tok, 300); }
+    S.B.add('path「s a d c t」');
+    cap('找這條：s a d c t', '');
+  },
+  async (tok, S) => {
+    S.r = S.N.mtag('cd', '逆向！', 'bad');
+    S.B.add('d → c 跟箭頭 (c, d) 反方向：它是 underlying undirected graph 的 path', 'say');
+    cap('d 到 c 是逆著走的', '不是原圖的 directed path');
+  },
+  async (tok, S) => {
+    S.R = pathRow(-1.4); S.R.show(F9);
+    cap('把這條 path 單獨畫出來', '比較清楚');
+  },
+  async (tok, S) => {
+    S.B.add('network 上的 path = 對應的 undirected graph 上的 path');
+    cap('後面方法要找的 path', '是對應無向圖上的 path');
+  },
+  async (tok, S) => {
+    S.B.add('這條 path 上能不能把 flow 增加？', 'good');
+    cap('看看這條 path', '有沒有辦法把 flow 增加');
+  },
+]);
+
+// ════════ YnPS5TFJiFE（第31D講：s-a-d-c-t 加 1 → F2、cut {s,b}、f-augmenting path、Δ_P） ════════
+scene('g8f-sadct', 's-a-d-c-t：最多可以加多少？', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet({ s: 0.62, ox: 0, oy: 3.0 }); S.N.setF(F9);
+    SADCT.forEach(([, k]) => S.N.pe(k, k === 'cd' ? FC.back : FC.hot, true));
+    S.B.add('path s-a-d-c-t（underlying undirected graph 的 path）');
+    cap('上次找到的 path：s a d c t', '');
+  },
+  async (tok, S) => {
+    S.R = pathRow(-1.2);
+    S.B.add('單獨畫出來：capacity ' + SADCT.map(([, k]) => CAPS[k]).join(' ') , 'say');
+    cap('capacity：5 6 7 5', '');
+  },
+  async (tok, S) => {
+    S.R.show(F9);
+    S.B.add('現在的 flow：' + SADCT.map(([, k]) => F9[k]).join(' ') + '；(c, d) 是反的', 'say');
+    cap('flow：4 1 1 2', '(c,d) 這條方向是反的');
+  },
+  async (tok, S) => {
+    S.m = SADCT.map(([, k, d]) => S.R.mark(k, d === 'f' ? 'forward' : 'backward', d === 'f' ? 'ptr' : 'bad'));
+    cap('一般的情況', 'path 上有順向的、有逆向的');
+  },
+  async (tok, S) => {
+    S.B.add('沿著 path 這個方向，每條邊都多送同樣的量 Δ');
+    S.pk = lb('+Δ', 'pkt', -5, -0.4);
+    await travel(tok, S.pk, V3(-5, -0.4, 0.3), V3(5, -0.4, 0.3), 1600);
+    cap('四條邊都增加同樣的量', '不超過 capacity，就還是 flow');
+  },
+  async (tok, S) => {
+    remove(S.pk);
+    S.B.add('source 多出 Δ、sink 多進 Δ → value 增加', 'say');
+    cap('source 增加多少', 'sink 也增加同樣的量');
+  },
+  async (tok, S) => {
+    gone(S.m); S.m = [];
+    for (const [, k, d] of SADCT.filter((e) => e[2] === 'f')) { S.m.push(S.R.mark(k, CAPS[k] + '−' + F9[k] + ' = ' + (CAPS[k] - F9[k]), 'good')); await wt(tok, 350); }
+    cap('順向：5−4 = 1、6−1 = 5、5−2 = 3', 'capacity 減掉現在的 flow');
+  },
+  async (tok, S) => {
+    S.bk = S.R.mark('cd', '反向原本流 ' + F9.cd, 'bad');
+    cap('逆向的怎麼辦？', '原本 c → d 流 1，往這邊加等於把它抵消');
+  },
+  async (tok, S) => {
+    gone(S.bk); S.bk = S.R.mark('cd', '最多 ' + F9.cd + '（減到 0）', 'good');
+    cap('最多只能加 1', '再多就變負的，不合 flow 的定義');
+  },
+  async (tok, S) => {
+    const D = deltaOf(F9, SADCT);
+    S.k = ok(D === 1, 'Δ = min(' + SADCT.map((e) => dOf(F9, e)).join(', ') + ') = ' + D + ' ✓', 0, -2.6);
+    cap('全部取最小值', 'min(5−4, 6−1, 1, 5−2) = 1');
+  },
+  async (tok, S) => {
+    S.B.add('沿這個方向加 1：feasibility、conservation 都還成立', 'good');
+    cap('這條 path 上加 1', 'feasibility 和 conservation 都還成立');
+  },
+]);
+
+scene('g8f-f2', '新的 flow F2：value = 10', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet(); S.N.setF(F9);
+    SADCT.forEach(([, k]) => S.N.pe(k, k === 'cd' ? FC.back : FC.hot, true));
+    S.B.add('四條邊沿 s-a-d-c-t 的方向 +1（不違反兩個 rule）');
+    cap('這四條邊照這個方向 +1', '不違反 feasibility 和 conservation');
+  },
+  async (tok, S) => {
+    S.N.f('sa', F9.sa + 1); await pop(tok, S.N.v.a, 0.2);
+    S.x = [S.N.mtag('sa', F9.sa + '+1')];
+    cap('(s,a)：原來 4，加 1', '');
+  },
+  async (tok, S) => {
+    S.N.f('ad', F9.ad + 1); await pop(tok, S.N.v.d, 0.2);
+    S.x.push(S.N.mtag('ad', F9.ad + '+1'));
+    cap('(a,d)：原來 1，加 1', '');
+  },
+  async (tok, S) => {
+    S.N.f('cd', F9.cd - 1); await pop(tok, S.N.v.c, 0.2);
+    S.x.push(S.N.mtag('cd', F9.cd + '−1', 'bad'));
+    cap('(c,d) 原來這個方向是 1', '反方向加 1 = 這邊扣 1');
+  },
+  async (tok, S) => {
+    S.N.f('ct', F9.ct + 1); await pop(tok, S.N.v.t, 0.2);
+    S.x.push(S.N.mtag('ct', F9.ct + '+1'));
+    cap('(c,t)：原來 2，加 1', '');
+  },
+  async (tok, S) => {
+    gone(S.x); S.N.reset();
+    const same = KEYS.every((k) => S.N.F[k] === F10[k]);
+    S.B.add('新的 flow 叫 F2：(s,a) ' + F10.sa + '、(a,d) ' + F10.ad + '、(c,d) ' + F10.cd + '、(c,t) ' + F10.ct);
+    S.k0 = ok(same, '有些加、有些減，重寫一次 = F2 ✓', 0, -0.9);
+    cap('4+1、1+1、1−1、2+1', '變成 5、2、0、3');
+  },
+  async (tok, S) => {
+    gone(S.k0);
+    S.k1 = ok(feasible(F10) && conserv(F10), 'feasibility ✓　conservation ✓（a ' + inF(F10, 'a') + '=' + outF(F10, 'a') + '、c ' + inF(F10, 'c') + '=' + outF(F10, 'c') + '、d ' + inF(F10, 'd') + '=' + outF(F10, 'd') + '）', 0, -0.9);
+    cap('feasibility 還是滿足', 'path 上加的量一樣，所以守恆');
+  },
+  async (tok, S) => {
+    outs('s').forEach((k) => S.N.pe(k, FC.fwd, true));
+    S.v1 = lb('source 的 outflow = ' + plus(F10, outs('s')) + ' = ' + val(F10), 'say', -3.2, -1.6);
+    cap('value 多 1', 'source 的 outflow：5 + 2 + 3 = 10');
+  },
+  async (tok, S) => {
+    ins('t').forEach((k) => S.N.pe(k, FC.blue, true));
+    S.v2 = ok(inF(F10, 't') === val(F10), 'sink 的 inflow = ' + plus(F10, ins('t')) + ' = ' + inF(F10, 't') + ' ✓', 3.2, -1.6);
+    cap('sink 的 inflow', '3 + 4 + 3 也是 10');
+  },
+  async (tok, S) => {
+    S.N.reset();
+    S.k = ok(val(F8) === 8 && val(F9) === 9 && val(F10) === 10, 'value：' + val(F8) + '（f）→ ' + val(F9) + '（s-a-t）→ ' + val(F10) + '（s-a-d-c-t）✓', 0, -2.3);
+    cap('一開始 8', '沿 s a t 變 9，沿 s a d c t 變 10');
+  },
+]);
+
+scene('g8f-f2max', 'cut {s, b} = 10 ⇒ F2 是 maximum flow', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet(); S.N.setF(F10);
+    S.B.add('F2 的 value = ' + val(F10) + '；記得前面算過一個 cut');
+    cap('新的 flow F2，value 是 10', '前面算過一個 cut');
+  },
+  async (tok, S) => {
+    S.N.cut(CUTB);
+    S.B.add('S = ' + setS(CUTB) + '，T = ' + setS(comp(CUTB)));
+    cap('S 是 source 和 b', 'T 是 a, c, d, t');
+  },
+  async (tok, S) => {
+    S.N.paintCut(CUTB);
+    S.k = ok(true, 'c(S,T) = ' + plusC(fwdE(CUTB)) + ' = ' + capCut(CUTB), 0, -0.9);
+    cap('從這邊切下來', 'capacity：5 + 2 + 3 = 10');
+  },
+  async (tok, S) => {
+    S.B.add('任何 flow 的 value ≤ 任何 cut 的 capacity', 'say');
+    cap('任何 flow 的 value', '都 ≤ 任何 cut 的 capacity');
+  },
+  async (tok, S) => {
+    S.k2 = ok(val(F10) === capCut(CUTB), 'val(F2) = ' + val(F10) + ' = c(S,T) = ' + capCut(CUTB) + ' → 已經頂到了 ✓', 0, -1.6);
+    cap('現在剛好相等', '所以一定是最大的');
+  },
+  async (tok, S) => {
+    S.k3 = ok(feasible(F10) && conserv(F10) && val(F10) === MINCUT, 'F2 是 maximum flow（16 個 cut 最小就是 ' + MINCUT + '）✓', 0, -2.3);
+    cap('F2 是 maximum flow', 'feasibility、conservation、value 最大');
+  },
+]);
+
+scene('g8f-method', '一般做法：從 0 開始一步一步加大', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet();
+    S.B.add('given 一個 network');
+    cap('這個例子告訴我們', 'given 一個 network 怎麼做');
+  },
+  async (tok, S) => {
+    S.N.setF(ZERO);
+    S.B.add('一開始：flow 全部是 0');
+    cap('一開始 flow 全部是 0', '再一步一步增大');
+  },
+  async (tok, S) => {
+    S.B.add('跟 maximum matching 類似（一開始空的）', 'say');
+    cap('跟 maximum matching 類似', '');
+  },
+  async (tok, S) => {
+    S.k = ok(feasible(ZERO) && conserv(ZERO), '全 0 的 flow：feasibility ✓ conservation ✓（value = ' + val(ZERO) + '）', 0, -0.9);
+    cap('全部是 0', '一定滿足兩個條件');
+  },
+  async (tok, S) => {
+    S.B.add('找 s-a-d-c-t 這種 path → 增大 → 變成新的 flow');
+    S.loop = lb('找 path → 加 Δ → 新的 flow → 再找…', 'ptr alt', 0, -1.6);
+    cap('找剛才那種路徑', '增大以後就是新的 flow');
+  },
+  async (tok, S) => {
+    S.B.add('一直做到沒辦法增大 → 就是 maximum flow', 'good');
+    cap('一直做到沒辦法增大為止', '就找到 maximum flow');
+  },
+  async (tok, S) => {
+    S.B.add('關鍵：到底要找怎麼樣的 path？（下面寫一般條件）', 'say');
+    cap('到底找怎麼樣的路徑？', '這是 algorithm 和定理的關鍵');
+  },
+]);
+
+scene('g8f-augdef', 'f-augmenting path 的定義', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet(); S.N.setF(F9);
+    S.B.add('In general：類似 maximum matching 的 augmenting alternating path');
+    cap('一般的情況', '類似 matching 的 augmenting path');
+  },
+  async (tok, S) => {
+    S.B.add('這邊要找的叫 f-augmenting path（能把 flow value 增大）');
+    cap('這種 path 叫 f-augmenting path', 'augment 就是增大');
+  },
+  async (tok, S) => {
+    SADCT.forEach(([, k]) => S.N.pe(k, FC.hot, true));
+    S.B.add('P：從 source 到 sink 的 path（undirected graph 上的 path）', 'say');
+    cap('從 source 到 sink 的 path P', 'network 的 path = 無向圖上的 path');
+  },
+  async (tok, S) => {
+    S.m = SADCT.map(([, k, d]) => S.N.mtag(k, d === 'f' ? 'forward' : 'backward', d === 'f' ? 'ptr' : 'bad'));
+    SADCT.forEach(([, k, d]) => S.N.pe(k, d === 'f' ? FC.fwd : FC.back, true));
+    S.B.add('P 上的邊有兩種：順向 forward、逆向 backward', 'say');
+    cap('P 上的 edge 有兩種', '順向的和逆向的');
+  },
+  async (tok, S) => {
+    S.B.add('forward edge e：f(e) < c(e)');
+    cap('forward edge', 'flow 要小於 capacity，才有增加空間');
+  },
+  async (tok, S) => {
+    const full = KEYS.filter((k) => F9[k] === CAPS[k]);
+    S.f = full.map((k) => S.N.mtag(k, '滿', 'bad', 0.42));
+    S.x = lb('已經 f = c 的邊（' + full.map(en).join('') + '）沒有空間了', 'say', 0, -0.9);
+    cap('如果已經 flow = capacity', '就沒有增加空間了');
+  },
+  async (tok, S) => {
+    gone(S.f, S.x);
+    S.B.add('backward edge e：f(e) > 0（反向加 = 把它抵消）');
+    cap('backward edge', 'flow 要大於 0；是 0 就不能再抵消');
+  },
+  async (tok, S) => {
+    const okP = SADCT.every(([, k, d]) => (d === 'f' ? F9[k] < CAPS[k] : F9[k] > 0));
+    S.k = ok(okP, 's-a-d-c-t 在 F1 上：' + SADCT.map(([, k, d]) => (d === 'f' ? F9[k] + '<' + CAPS[k] : F9[k] + '>0')).join('、') + ' → f-augmenting ✓', 0, -0.9);
+    cap('每條 edge 都滿足條件', '這樣的 path 叫 f-augmenting path');
+  },
+  async (tok, S) => {
+    S.B.add('algorithm 就是在找 s 到 t 的 f-augmenting path', 'good');
+    cap('後面的 algorithm', '主要就是在找這種 path');
+  },
+]);
+
+scene('g8f-delta', '最多能加多少：Δ_P = min Δ_e', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet({ s: 0.62, ox: 0, oy: 3.0 }); S.N.setF(F9);
+    SADCT.forEach(([, k, d]) => S.N.pe(k, d === 'f' ? FC.fwd : FC.back, true));
+    S.R = pathRow(-1.2); S.R.show(F9);
+    S.B.add('找到 f-augmenting path P：flow 最多可以增加多少？');
+    cap('找到了 f-augmenting path', 'flow 最多可以加多少？');
+  },
+  async (tok, S) => {
+    S.B.add('forward edge 上增加、backward edge 上減少（抵消）', 'say');
+    cap('forward edge 真的增加', 'backward edge 是把反向的減少');
+  },
+  async (tok, S) => {
+    S.B.add('Δ_P = min{ Δ_e : e 在 P 上 }');
+    cap('可以加的量 Δ_P', '是 path 上每條邊 Δ_e 的最小值');
+  },
+  async (tok, S) => {
+    S.B.add('forward：Δ_e = c(e) − f(e)', 'say');
+    S.m = SADCT.filter((e) => e[2] === 'f').map(([, k]) => S.R.mark(k, CAPS[k] + '−' + F9[k] + ' = ' + (CAPS[k] - F9[k]), 'good'));
+    cap('forward edge', 'capacity 減掉 flow');
+  },
+  async (tok, S) => {
+    S.B.add('backward：Δ_e = f(e)（最多減到 0，不能變負）', 'say');
+    S.m.push(S.R.mark('cd', 'f = ' + F9.cd, 'good'));
+    cap('backward edge', '就是現在的 flow，最多扣到 0');
+  },
+  async (tok, S) => {
+    const D = deltaOf(F9, SADCT);
+    S.k = ok(D === 1, 'Δ_P = min(' + SADCT.map((e) => dOf(F9, e)).join(', ') + ') = ' + D + ' ✓', 0, -2.4);
+    cap('前面那個例子', 'min(5−4, 6−1, 1, 5−2) = 1');
+  },
+  async (tok, S) => {
+    S.B.add('given network + flow：找 f-augmenting path，加 Δ_P', 'good');
+    cap('主要做的事', '找 f-augmenting path，再加 Δ_P');
+  },
+  async (tok, S) => {
+    S.B.add('變大後又是同樣的問題：再找、再加…直到找不到', 'say');
+    cap('下一次又是同樣的問題', '一直找、一直加，直到找不到');
+  },
+  async (tok, S) => {
+    S.B.add('找不到時就是最大：會剛好等於某個 cut 的 capacity', 'good');
+    cap('找不到這種 path', 'flow 就最大了：等於某個 cut capacity');
+  },
+  async (tok, S) => {
+    S.B.add('下次：Max-Flow Min-Cut Theorem（不只 ≤，而是 =）', 'say');
+    cap('下次證明這個有名的定理', 'max flow 其實等於 min cut');
+  },
+]);
+
+// ════════ ZCOlf1NFPA4（第32A講：Max-Flow Min-Cut Theorem 與證明前半） ════════
+scene('g8f-mfmc', 'Max-Flow Min-Cut Theorem', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet({ s: 0.62, ox: 2.6, oy: 1.4 }); S.N.setF(F10);
+    S.B.add('之前：任何 flow value ≤ 任何 cut 的 capacity');
+    cap('前面教到', 'flow value ≤ any cut 的 capacity');
+  },
+  async (tok, S) => {
+    S.B.add('有 f-augmenting path（forward f < c、backward f > 0）→ 可以增大', 'say');
+    cap('找得到 f-augmenting path', '就可以把 flow 增大');
+  },
+  async (tok, S) => {
+    S.B.add('The Max-Flow Min-Cut Theorem');
+    cap('這個很有名的定理', 'Max-Flow Min-Cut Theorem');
+  },
+  async (tok, S) => {
+    S.B.add('max value of flow（s 到 t）= min capacity of a cut separating s and t');
+    const caps = ALLS.map(capCut);
+    S.k = ok(val(EKEND.F) === MINCUT, '示意（這個 network）：max flow = ' + val(EKEND.F) + '；16 個 cut 最小 = ' + MINCUT + ' ✓', 0, -0.9);
+    S.c = lb('16 個 cut 的 capacity：' + [...new Set(caps)].sort((x, y) => x - y).join(' ') , 'idx', 0, -1.6);
+    cap('flow 的最大值', '剛好等於 cut capacity 的最小值');
+  },
+  async (tok, S) => {
+    S.B.add('之前只知道 ≤；定理說：剛好相等', 'good');
+    cap('之前講 max flow ≤ min cut', '現在說它們相等');
+  },
+  async (tok, S) => {
+    S.B.add('看怎麼證；證完 algorithm 就出來了', 'say');
+    cap('看怎麼證明', '證完 algorithm 就出來');
+  },
+]);
+
+scene('g8f-proofS', '證明：從 maximum flow 定義集合 S', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet(); S.N.setF(F10);
+    S.B.add('假設 F 是一個 maximum flow');
+    cap('先假設有一個 maximum flow F', '');
+  },
+  async (tok, S) => {
+    S.B.add('要做的：找一個 cut (S, T)，capacity 剛好 = val(F)');
+    cap('我要找出一個 cut', 'capacity 剛好等於 F 的 value');
+  },
+  async (tok, S) => {
+    S.B.add('S = { v : 有一條從 s 到 v 的 incomplete f-augmenting path }');
+    S.N.vc('s', FC.S);
+    cap('S 這個集合', '可以從 source 走 incomplete f-augmenting path 到的端點');
+  },
+  async (tok, S) => {
+    S.B.add('什麼叫 incomplete f-augmenting path？', 'say');
+    cap('什麼叫 incomplete？', '');
+  },
+  async (tok, S) => {
+    S.B.add('一條 path（undirected 意義），每條邊都滿足 f-augmenting 條件', 'say');
+    S.r = lb('forward：f < c　　backward：f > 0', 'ptr', 0, -0.9);
+    cap('path 上的邊', 'forward f < c，backward f > 0');
+  },
+  async (tok, S) => {
+    S.N.pe('sb', FC.ok, true); S.N.vc('b', '#f2b8d2');
+    S.x = S.N.mtag('sb', 'f ' + F10.sb + ' < c ' + CAPS.sb, 'good');
+    S.e = lb('示意：s → b 就是一條結尾在 b 的 incomplete path（終點不必是 t）', 'say', 0, -1.6);
+    cap('差別：最後的端點不見得是 sink', '只要走到 v 就好');
+  },
+  async (tok, S) => {
+    S.B.add('這些 v 放進 S；剩下的放 T = V − S（S 的 complement）');
+    cap('這些端點放到 S', '剩下的就是 T');
+  },
+]);
+
+scene('g8f-findS', '例子：在 max flow F2 上找 S', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet(); S.N.setF(F10);
+    S.B.add('例子：上次最後算到的 max flow（F2）');
+    cap('用前面的例子說明', 'S 怎麼找');
+  },
+  async (tok, S) => {
+    S.k1 = ok(feasible(F10), 'feasibility ✓（每個紅的 ≤ 黃的）', -3.2, -0.9);
+    cap('確定一下：每個紅的 ≤ 黃的', 'feasibility');
+  },
+  async (tok, S) => {
+    S.k2 = ok(conserv(F10), 'conservation ✓', 3.2, -0.9);
+    cap('除了 source 和 sink', 'inflow 都等於 outflow');
+  },
+  async (tok, S) => {
+    S.N.vc('s', FC.S); S.N.halo('s', FC.S);
+    S.B.add('從 s 出發：哪些端點有 incomplete f-augmenting path 到得了？');
+    cap('從 source 出發', '看哪些端點到得了');
+  },
+  async (tok, S) => {
+    S.N.pe('sa', FC.hot, true); S.x1 = S.N.mtag('sa', F10.sa + ' = ' + CAPS.sa + ' ✘', 'bad');
+    cap('走這邊不行', '(s,a) 的 flow 5 剛好等於 5');
+  },
+  async (tok, S) => {
+    S.N.pe('sc', FC.hot, true); S.x2 = S.N.mtag('sc', F10.sc + ' = ' + CAPS.sc + ' ✘', 'bad');
+    cap('(s,c) 也不行', '3 等於 3');
+  },
+  async (tok, S) => {
+    S.N.pe('sb', FC.ok, true); S.x3 = S.N.mtag('sb', F10.sb + ' < ' + CAPS.sb + ' ✓', 'good');
+    S.N.vc('b', FC.S); S.N.halo('b', FC.S); await pop(tok, S.N.v.b);
+    cap('只能走這邊：s 到 b', '2 < 4，所以 b 可以到');
+  },
+  async (tok, S) => {
+    S.N.vc('a', FC.dim); S.N.vc('c', FC.dim);
+    cap('a 和 c 下不去', '第一條邊就不滿足');
+  },
+  async (tok, S) => {
+    S.N.pe('bd', FC.hot, true); S.x4 = S.N.mtag('bd', F10.bd + ' = ' + CAPS.bd + ' ✘', 'bad');
+    const back = KEYS.filter((k) => (k[1] === 's' || k[1] === 'b') && F10[k] > 0);
+    S.x5 = lb('（也沒有 flow > 0 的邊指進 s 或 b：' + back.length + ' 條）', 'idx', 0, -1.6);
+    cap('從 b 往下：(b,d) 2 = 2', 'b 也下不去了');
+  },
+  async (tok, S) => {
+    const R = Object.keys(bfs(F10).par);
+    S.k3 = ok(R.length === 2 && R.includes('s') && R.includes('b'), 'S = ' + setS(R) + ' ✓', 0, -2.3);
+    cap('滿足條件的只有 s 和 b', '所以 S = {s, b}');
+  },
+  async (tok, S) => {
+    comp(CUTB).forEach((v) => { S.N.vc(v, '#b9d6f2'); S.N.halo(v, FC.T); });
+    S.t = lb('T = ' + setS(comp(CUTB)), 'ptr', 3.2, -2.3);
+    cap('剩下的就是 T', 'a, c, d, t');
+  },
+  async (tok, S) => {
+    gone(S.x1, S.x2, S.x3, S.x4, S.x5);
+    S.B.add('S = source ＋ 有 incomplete f-augmenting path 到得了的端點', 'good');
+    cap('S 就是這樣找的', 'source 本身也在裡面');
+  },
+]);
+
+scene('g8f-tinT', 'S、T 是合法的 cut：t 一定在 T', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet(); S.N.setF(F10); S.N.cut(CUTB);
+    S.B.add('要確定 (S, T) 是 cut：partition ✓、s ∈ S ✓');
+    cap('先確定這是合法的 cut', 'partition、source 在 S');
+  },
+  async (tok, S) => {
+    S.B.add('只要再確定：sink t ∈ T');
+    await pop(tok, S.N.v.t);
+    cap('只要確定 sink 在 T 裡', '');
+  },
+  async (tok, S) => {
+    S.B.add('反證：假設 t 不在 T，那 t ∈ S', 'bad');
+    cap('如果 sink 不在 T', '它就在 S 裡面');
+  },
+  async (tok, S) => {
+    S.B.add('→ 有 incomplete f-augmenting path 從 s 到 t → 它就是真的 f-augmenting path', 'say');
+    cap('那從 s 到 t 有 incomplete path', '結尾是 t，就是真的 f-augmenting path');
+  },
+  async (tok, S) => {
+    S.B.add('→ F 還可以增大', 'say');
+    cap('有 f-augmenting path', '表示 flow 還可以增大');
+  },
+  async (tok, S) => {
+    S.B.add('矛盾！F 是 maximum flow，不可能再增大', 'bad');
+    cap('跟假設矛盾', 'F 已經是最大值');
+  },
+  async (tok, S) => {
+    S.k = ok(!CUTB.includes('t'), '所以 t ∈ T，(S, T) 是 separating s 和 t 的 cut（例：t ∉ ' + setS(CUTB) + '）✓', 0, -0.9);
+    cap('所以 sink 一定在 T', '這樣找出來的 S、T 是 cut');
+  },
+]);
+
+scene('g8f-fwdsat', '從 S 到 T 的 forward edge 一定滿載', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet(); S.N.setF(F10); S.N.cut(CUTB);
+    S.B.add('再來：證 c(S, T) = val(F)');
+    cap('再來要 argue', '這個 cut 的 capacity 等於 flow value');
+  },
+  async (tok, S) => {
+    S.B.add('（cut 是從 maximum flow F 找出來的）', 'say');
+    cap('cut 是從 F 找出來的', '先有 F，才定義 S');
+  },
+  async (tok, S) => {
+    S.B.add('val(F) = Σ f(S→T) − Σ f(T→S)', 'say');
+    S.N.paintCut(CUTB);
+    cap('value 怎麼算', '正向的 flow 扣掉反向的 flow');
+  },
+  async (tok, S) => {
+    S.B.add('看一條 forward edge (x, y)：x ∈ S、y ∈ T');
+    S.g = lb('x ∈ S ── (x,y) ──▶ y ∈ T', 'ptr', 0, -0.9);
+    cap('先看 forward edge', 'x 在 S，y 在 T');
+  },
+  async (tok, S) => {
+    S.B.add('x ∈ S → 有 incomplete f-augmenting path 從 s 到 x', 'say');
+    cap('x 在 S 裡', '從 source 到 x 有 incomplete path');
+  },
+  async (tok, S) => {
+    S.B.add('f(x, y) ≤ c(x, y)：要嘛 <，要嘛 =', 'say');
+    cap('flow 一定 ≤ capacity', '一種是小於，一種是等於');
+  },
+  async (tok, S) => {
+    S.B.add('如果 f(x,y) < c(x,y)：path 可以延長到 y → y ∈ S，矛盾！', 'bad');
+    cap('如果小於', 'path 延長到 y，y 就在 S：矛盾');
+  },
+  async (tok, S) => {
+    S.B.add('所以 f(x, y) = c(x, y)（forward edge 滿載）', 'good');
+    cap('小於不成立', '只好等於');
+  },
+  async (tok, S) => {
+    gone(S.g);
+    S.t = fwdE(CUTB).map((k) => S.N.mtag(k, F10[k] + ' = ' + CAPS[k] + (F10[k] === CAPS[k] ? ' ✓' : ' ✘'), F10[k] === CAPS[k] ? 'good' : 'bad'));
+    S.k = ok(fwdE(CUTB).every((k) => F10[k] === CAPS[k]), '例：' + fwdE(CUTB).map(en).join('、') + ' 全部滿載 ✓', 0, -0.9);
+    cap('例子：(s,a)、(s,c)、(b,d)', '從 S 到 T 的邊 flow 都等於 capacity');
+  },
+]);
+
+scene('g8f-bwdzero', '從 T 到 S 的 backward edge 一定是 0', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet(); S.N.setF(F10); S.N.cut(CUTB); S.N.paintCut(CUTB);
+    S.B.add('同樣的道理看 backward edge');
+    cap('類似的 argue', '再看 backward edge');
+  },
+  async (tok, S) => {
+    S.B.add('(u, v)：u ∈ T、v ∈ S（從 T 指回 S）');
+    S.g = lb('u ∈ T ── (u,v) ──▶ v ∈ S', 'ptr', 0, -0.9);
+    cap('edge (u, v)', 'u 在 T，v 在 S');
+  },
+  async (tok, S) => {
+    S.B.add('v ∈ S → 有 incomplete f-augmenting path 從 s 到 v', 'say');
+    cap('v 在 S 裡', '從 source 到 v 有 incomplete path');
+  },
+  async (tok, S) => {
+    S.B.add('如果 f(u, v) > 0：backward 條件滿足 → path 延長到 u → u ∈ S', 'bad');
+    cap('如果 flow > 0', '就能從 v 延伸到 u');
+  },
+  async (tok, S) => {
+    S.B.add('跟 u ∈ T 矛盾！', 'bad');
+    const b = bwdE(CUTB);
+    S.k = ok(b.every((k) => F10[k] === 0), '例：從 T 指回 S = ' + setS(CUTB) + ' 的邊有 ' + b.length + ' 條（沒有反例）✓', 0, -1.6);
+    cap('u 就會在 S 裡', '跟假設 u 在 T 矛盾');
+  },
+]);
+
+// ════════ oFStjKYt8b4（第32B講：證明收尾、Edmonds–Karp、Ford–Fulkerson、回顧） ════════
+scene('g8f-conclude', '代回去：c(S, T) = val(F)，而且是 min cut', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet(); S.N.setF(F10); S.N.cut(CUTB); S.N.paintCut(CUTB);
+    S.B.add('矛盾 → f(u, v) > 0 不對 → f(u, v) = 0（非負整數）');
+    cap('flow 是非負整數', '大於 0 不行，只能等於 0');
+  },
+  async (tok, S) => {
+    S.B.add('兩個結論：S→T 的邊 f = c；T→S 的邊 f = 0', 'good');
+    cap('兩個結論', 'forward 滿載，backward 是 0');
+  },
+  async (tok, S) => {
+    S.B.add('代進 val(F) = Σ f(x,y)[x∈S,y∈T] − Σ f(u,v)[u∈T,v∈S]', 'say');
+    cap('帶進去算 flow value', '這個式子對任何 cut 都成立');
+  },
+  async (tok, S) => {
+    S.B.add('前面每項 = c(x, y)；後面每項 = 0', 'say');
+    cap('forward edge 那項等於 capacity', 'backward edge 那項是 0');
+  },
+  async (tok, S) => {
+    S.B.add('val(F) = Σ c(x, y)[x∈S, y∈T] = c(S, T)');
+    S.k = ok(val(F10) === capCut(CUTB), '例：val = ' + val(F10) + '，c(S,T) = ' + plusC(fwdE(CUTB)) + ' = ' + capCut(CUTB) + ' ✓', 0, -0.9);
+    cap('剩下的就是 capacity 加起來', '就是這個 cut 的 capacity');
+  },
+  async (tok, S) => {
+    S.B.add('證出：這個 cut 的 capacity = maximum flow 的 value', 'good');
+    cap('有 maximum flow', '就能找到 capacity 剛好等於它的 cut');
+  },
+  async (tok, S) => {
+    S.B.add('任何其他 cut (S′, T′)：c(S′, T′) ≥ val(F) = c(S, T)', 'say');
+    S.k2 = ok(ALLS.every((C) => capCut(C) >= val(F10)), '例：16 個 cut 的 capacity 都 ≥ ' + val(F10) + ' ✓', 0, -1.6);
+    cap('任何 cut 的 capacity', '都 ≥ flow 的 value');
+  },
+  async (tok, S) => {
+    S.B.add('所以 (S, T) 是 minimum cut');
+    S.k3 = ok(capCut(CUTB) === MINCUT, 'c(S,T) = ' + capCut(CUTB) + ' = 最小值 ' + MINCUT + ' ✓', 0, -2.3);
+    cap('所以這個 cut capacity', '是所有 cut 中最小的');
+  },
+  async (tok, S) => {
+    S.B.add('Max-Flow Min-Cut Theorem 證完：max flow = min cut', 'good');
+    cap('證完了', 'max flow 等於 min cut');
+  },
+  async (tok, S) => {
+    S.B.add('回顧：max flow → 定義 S → 合法 cut → c(S,T) = val → 最小', 'say');
+    cap('主要用到 f-augmenting path 的條件', '');
+  },
+]);
+
+const EKC = [
+  'Edmonds–Karp',
+  'f ← 0（每條邊）',
+  'repeat',
+  '  從 s 用 BFS 長 tree of',
+  '  incomplete f-augmenting paths',
+  '  if tree 到達 t：',
+  '    沿 path 加 Δ_P；done ← 0',
+  '  else done ← 1',
+  'until done = 1',
+  'S ← tree 的端點；T ← V − S',
+];
+function ekTree(S, B) {
+  gone(S.tr || []); S.tr = [];
+  S.N.reset(); VS.forEach((v) => { S.N.vc(v); S.N.halo(v, null); });
+  B.order.forEach((v) => { S.N.halo(v, FC.ok); });
+  Object.entries(B.par).forEach(([v, pr]) => { if (pr) S.N.pe(pr[1], pr[2] === 'f' ? FC.ok : FC.back, true); });
+  B.order.forEach((v) => { if (v !== 's') S.tr.push(S.N.ptag(v, 'L' + B.lev[v], 'idx', 0.62)); });
+}
+scene('g8f-ek', 'Edmonds–Karp algorithm', [
+  async (tok, S) => {
+    S.B = board({ x: 2.4, max: 3 });
+    S.B.add('定理：flow 值 = 某個 cut capacity → 這個 flow 是 max、cut 是 min');
+    cap('證完 Max-Flow Min-Cut Theorem', 'flow 等於 cut capacity 就是 max');
+  },
+  async (tok, S) => {
+    S.C = code(EKC, -4.4, 7.4, 0.62);
+    S.N = mkNet({ s: 0.62, ox: 3.3, oy: 1.2 });
+    S.n = lb('右邊：在老師的 network 上跑一次（示意）', 'idx', 3.3, 0.2);
+    S.B.add('Edmonds–Karp algorithm：找 maximum flow，也給 min cut（high-level）', 'say');
+    cap('介紹 Edmonds–Karp algorithm', 'pseudocode 是比較 high level 的');
+  },
+  async (tok, S) => {
+    S.C.hl(0);
+    S.B.add('Edmonds 和 Karp，1972 年提出', 'say');
+    cap('這兩個人', '1972 年提出來的');
+  },
+  async (tok, S) => {
+    S.C.hl(1); S.F = { ...ZERO }; S.N.setF(S.F);
+    S.v = lb('val = 0', 'ptr alt', 3.3, -0.6);
+    cap('一開始 flow 全部設為 0', 'network 已經 given');
+  },
+  async (tok, S) => { S.C.hl(2); cap('然後 repeat 下面的事', ''); },
+  async (tok, S) => {
+    S.C.hl(3);
+    cap('從 source 去找 f-augmenting path', '跟 maximum matching 類似');
+  },
+  async (tok, S) => {
+    S.B.add('用 breadth-first search（廣度優先）來找', 'say');
+    cap('用 breadth-first search', '一層一層找');
+  },
+  async (tok, S) => {
+    S.C.hl(4);
+    S.B.add('加進 tree 的邊要合條件：forward f < c、backward f > 0', 'say');
+    cap('每條邊要滿足條件', 'forward f < c，backward f > 0');
+  },
+  async (tok, S) => {
+    S.N.vc('s', FC.S); S.N.halo('s', FC.ok);
+    cap('長一個 BFS tree', 'tree of incomplete f-augmenting paths，root 在 source');
+  },
+  async (tok, S) => {
+    S.it = EKRUN[0];
+    for (let L = 1; L <= Math.max(...Object.values(S.it.B.lev)); L++) {
+      ekTree(S, { ...S.it.B, order: S.it.B.order.filter((v) => S.it.B.lev[v] <= L), par: Object.fromEntries(Object.entries(S.it.B.par).filter(([v]) => S.it.B.lev[v] <= L)) });
+      await wt(tok, 650);
+    }
+    cap('第一層的邊合不合？合就放到 tree 上', '再從第一層長第二層…');
+  },
+  async (tok, S) => {
+    S.C.hl(5);
+    S.r = ok(S.it.B.hasT, 'tree 到達 t ✓', 3.3, -1.3);
+    cap('如果 tree 到了 sink', '表示有 f-augmenting path');
+  },
+  async (tok, S) => {
+    S.C.hl(6); gone(S.r);
+    const p = S.it.p; S.N.reset(); p.forEach(([, k]) => S.N.pe(k, FC.hot, true));
+    S.F = S.it.F; S.N.setF(S.F); S.v.element.textContent = 'val = ' + val(S.F);
+    S.r = lb('path ' + pathNames(p).join('-') + '，Δ = ' + S.it.D, 'say', 3.3, -1.3);
+    cap('照前面的方法增大', 'Δ = path 上 Δ_e 的最小值');
+  },
+  async (tok, S) => {
+    gone(S.r);
+    const rest = EKRUN.slice(1).filter((x) => !x.end);
+    S.hist = [S.it];
+    for (const it of rest) {
+      S.N.reset(); it.p.forEach(([, k]) => S.N.pe(k, FC.hot, true));
+      S.F = it.F; S.N.setF(S.F); S.v.element.textContent = 'val = ' + val(S.F); S.hist.push(it);
+      await wt(tok, 750);
+    }
+    S.r = lb('（示意）' + S.hist.map((it) => pathNames(it.p).join('') + '+' + it.D).join('，'), 'say', 3.3, -1.3);
+    cap('增大了，done = 0，再找一次', '一次加一條 f-augmenting path');
+  },
+  async (tok, S) => {
+    S.C.hl(7); gone(S.r);
+    ekTree(S, EKEND.B);
+    S.r = ok(!EKEND.B.hasT, 'tree 沒有 sink → done = 1，停', 3.3, -1.3);
+    cap('如果 tree 最後沒有包含 sink', 'flow 沒辦法增大了');
+  },
+  async (tok, S) => {
+    S.C.hl(8);
+    cap('repeat 直到 done = 1', '到了 sink 就加大、再重來');
+  },
+  async (tok, S) => {
+    S.C.hl(9); gone(S.r, S.tr);
+    const Sset = EKEND.B.order;
+    S.N.cut(Sset); S.N.paintCut(Sset);
+    S.r = ok(capCut(Sset) === val(EKEND.F), 'S = ' + setS(Sset) + '，c(S,T) = ' + capCut(Sset) + ' = val ' + val(EKEND.F) + ' ✓', 3.3, -1.3);
+    cap('S = tree 裡的端點', '剩下的放 T（S bar）');
+  },
+]);
+
+scene('g8f-ekwhy', '為什麼 Edmonds–Karp 對；和 Ford–Fulkerson 的關係', [
+  async (tok, S) => {
+    S.B = board(); S.N = mkNet(); S.N.setF(EKEND.F); const Sset = EKEND.B.order; S.N.cut(Sset); S.N.paintCut(Sset); S.Sset = Sset;
+    S.B.add('停下來時 S 裡沒有 sink → (S, T) 是合法的 cut');
+    S.k = ok(!Sset.includes('t'), '示意：S = ' + setS(Sset) + '，t ∈ T ✓', 0, -0.9);
+    cap('做出來的 S、T 是合法的 cut', '因為 sink 一直在 T');
+  },
+  async (tok, S) => {
+    const f = fwdE(S.Sset).every((k) => EKEND.F[k] === CAPS[k]), b = bwdE(S.Sset).every((k) => EKEND.F[k] === 0);
+    S.B.add('S→T 的邊 f = c、T→S 的邊 f = 0（不然 tree 還能長）', 'say');
+    S.k2 = ok(f && b && capCut(S.Sset) === val(EKEND.F), 'forward 全滿 ✓ backward 全 0 ✓ → c(S,T) = ' + capCut(S.Sset) + ' = val ✓', 0, -1.6);
+    cap('跟定理的證明一模一樣', 'cut capacity 剛好等於現在的 flow 值');
+  },
+  async (tok, S) => {
+    S.B.add('Remark 1：結束時 flow 是 maximum flow，cut 是 minimum cut', 'good');
+    cap('第一個 remark', '結束時 flow 最大、cut 最小');
+  },
+  async (tok, S) => {
+    S.B.add('Remark 2：Ford–Fulkerson method（1956）');
+    cap('第二個 remark', '還有一個方法叫 Ford–Fulkerson');
+  },
+  async (tok, S) => {
+    S.B.add('Ford–Fulkerson 沒規定怎麼找 f-augmenting path；Edmonds–Karp 用 BFS 找', 'say');
+    cap('Ford–Fulkerson 沒有 specify 怎麼找', 'Edmonds–Karp 是用 BFS 的一種 implementation');
+  },
+  async (tok, S) => {
+    S.B.add('Edmonds–Karp（1972）可以看成 Ford–Fulkerson（1956）的 implementation', 'good');
+    cap('Edmonds–Karp 比較晚', '1972 vs 1956');
+  },
+]);
+
+scene('g8f-recap', 'Maximum flow 單元回顧', [
+  async (tok, S) => {
+    S.B = board({ y: 8.6, max: 8, dy: 0.66 });
+    S.N = mkNet({ s: 0.55, ox: 0, oy: 0.4 }); S.N.setF(F10);
+    S.B.add('network：source、sink、每條邊的 capacity');
+    cap('Maximum flow 這部分講完了', '先介紹 network');
+  },
+  async (tok, S) => { S.B.add('flow：feasibility ＋ conservation'); cap('flow 要滿足兩個條件', 'feasibility 和 conservation'); },
+  async (tok, S) => { S.B.add('value = source 的 outflow'); cap('flow value 怎麼定義', ''); },
+  async (tok, S) => { S.B.add('cut (S, T)：val = 流過去 − 流回來'); cap('怎麼定義 cut', 'flow value 跟 cut 的關係'); },
+  async (tok, S) => { S.B.add('任何 flow 的 value ≤ 任何 cut 的 capacity'); cap('任何 flow value', '都 ≤ cut 的 capacity'); },
+  async (tok, S) => { S.B.add('找 f-augmenting path 把 flow 增大'); cap('怎麼把 flow 增大', '找 f-augmenting path'); },
+  async (tok, S) => { S.B.add('Max-Flow Min-Cut Theorem：max flow = min cut'); cap('maximum flow', '剛好等於 min cut'); },
+  async (tok, S) => {
+    S.B.add('Edmonds–Karp：結束時得到 max flow 和 min cut', 'good');
+    S.N.cut(CUTB);
+    cap('Edmonds–Karp algorithm', '結束時 flow 最大，cut 最小');
+  },
+]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

@@ -1,0 +1,248 @@
+{
+ "video": "ePI-vLEM01Q",
+ "label": "清大OCW 趙啟超《離散數學》第31B講 Maximum Flow Problem",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "cut：把 source 和 sink 分開",
+   "points": [
+    {
+     "t": 4,
+     "text": "flow 和 cut 很有關係；cut 有兩個集合 S 和 T。"
+    },
+    {
+     "t": 71,
+     "text": "cut (S, T) separating source and sink：S、T 是 V 的 partition，s ∈ S、t ∈ T。"
+    },
+    {
+     "t": 185,
+     "text": "例：S = {s, a, b, d}，T = {c, t}，就像把圖切成兩半。"
+    }
+   ],
+   "scene": "g8f-cut",
+   "cues": [
+    4.3,
+    9.2,
+    71.7,
+    132.5,
+    160.3,
+    185,
+    227,
+    246.6
+   ],
+   "explain": [
+    "有了 flow，再看它有哪些性質，工具越多越好研究。第一個要介紹的是 cut（割）。",
+    "一個 cut 由兩個集合組成：一個叫 S，一個叫 T。",
+    "這種 cut 叫 separating source and sink：它要把 source 和 sink 分開。",
+    "S 和 T 要是 V 的 partition（分割）：S ∪ T = V（每個端點都分到某一邊），S ∩ T = ∅（沒有端點同時在兩邊）。",
+    "而且 source s 一定在 S 裡、sink t 一定在 T 裡。",
+    "例如把 s、a、b、d 放在 S（粉紅色），c、t 放在 T（藍色）。",
+    "就好像拿刀把圖切下去：被切到的邊上了顏色，橘色是從 S 指向 T，紫色是從 T 指回 S。",
+    "四個端點在一邊、兩個在另一邊，s 在 S、t 在 T，所以這是一個合法的 cut。"
+   ]
+  },
+  {
+   "title": "性質：val(f) = 流過去 − 流回來",
+   "points": [
+    {
+     "t": 254,
+     "text": "對任何 flow f 與任何 separating s、t 的 cut (S, T)："
+    },
+    {
+     "t": 306,
+     "text": "val(f) = Σ_{x∈S, y∈T} f(x, y) − Σ_{u∈T, v∈S} f(u, v)。"
+    },
+    {
+     "t": 414,
+     "text": "例：S = {s,a,b,d}：流過去 2 + 4 + 3 = 9，流回來 (c,d) 1，9 − 1 = 8 = val(f)。"
+    },
+    {
+     "t": 479,
+     "text": "對任何 cut 都成立，原因是 conservation（流量不會漏）。"
+    }
+   ],
+   "trap": "流回來的（T 到 S）要扣掉，不是加上去。",
+   "scene": "g8f-cutflow",
+   "cues": [
+    254.7,
+    292.6,
+    306.8,
+    363.7,
+    389.4,
+    414.2,
+    427.8,
+    434.3,
+    436.2,
+    449.7,
+    479,
+    498.3
+   ],
+   "explain": [
+    "cut 和 flow 的 value 有什麼關係？有一個性質，對任何 cut 都成立。",
+    "這個性質對「任何」滿足兩個條件的 flow，以及「任何」把 s、t 分開的 cut 都成立。",
+    "它說：flow 的 value（從 source 流出的總量）＝ 流過 cut 的量扣掉流回來的量。",
+    "「流過去的」是：所有從 S 指到 T 的邊（x 在 S、y 在 T）上的 flow 加起來。",
+    "「流回來的」是：所有從 T 指回 S 的邊（u 在 T、v 在 S）上的 flow 加起來。value 就是前者減後者。",
+    "用剛才的 cut 當例子：S = {s, a, b, d}，T = {c, t}。",
+    "從 S 流到 T 的邊有三條：(a,t)、(d,t)、(s,c)。",
+    "它們的 flow 是 2、4、3，流過去的總量 = 9。",
+    "從 T 流回 S 的只有一條 (c,d)，flow 是 1。",
+    "9 − 1 = 8，剛好等於之前算的 flow value 8。",
+    "換任何 cut 都一樣。程式把這張圖所有 16 種 cut 都算了一遍，「流過去 − 流回來」全部都是 8。",
+    "為什麼？因為流量守恆：中間的點都不會漏，從 source 流出來的東西最後都要「淨穿過」這條切線。"
+   ]
+  },
+  {
+   "title": "證明前：把例子寫清楚",
+   "points": [
+    {
+     "t": 531,
+     "text": "證明只用 conservation。"
+    },
+    {
+     "t": 558,
+     "text": "S = {s,a,b,d}，T = {c,t}：S→T 是 (a,t)、(d,t)、(s,c)，T→S 是 (c,d)。"
+    },
+    {
+     "t": 642,
+     "text": "8 = 9 − 1；Σ 是 double summation，沒有邊的 flow 當 0。"
+    }
+   ],
+   "scene": "g8f-cutproof-ex",
+   "cues": [
+    531.7,
+    558.6,
+    586.1,
+    620,
+    642,
+    651.2,
+    664.5
+   ],
+   "explain": [
+    "接下來證明這個性質。老師先說：基本上只會用到流量守恆。",
+    "先把例子寫清楚：S 是 source 和 a、b、d 四個端點，T 是 c 和 t。",
+    "從 S 流到 T 的：(a,t)、(d,t)、(s,c) 三條邊，flow 是 2 + 4 + 3。",
+    "從 T 流回 S 的只有 (c,d)，flow 是 1。",
+    "所以 value 8 剛好是 9 − 1。",
+    "式子裡的 Σ 其實是 double summation（雙重加總）：同時跑 x 和 y 兩個變數，老師只是懶得寫兩個 Σ。",
+    "沒有邊的地方 flow 是 0，所以實際上只要加「真的存在的邊」就好。"
+   ]
+  },
+  {
+   "title": "證明：從 val(f) = outflow(s) 一路整理",
+   "points": [
+    {
+     "t": 680,
+     "text": "從定義：val(f) = Σ_y f(s, y)，再扣掉 s 的 inflow（= 0）。"
+    },
+    {
+     "t": 799,
+     "text": "對 S 裡其他每個 x 加上 outflow(x) − inflow(x)（= 0，因為 t ∉ S）。"
+    },
+    {
+     "t": 961,
+     "text": "合併成對整個 S 加總，再把 V 拆成 S ∪ T。"
+    },
+    {
+     "t": 1293,
+     "text": "S→S 的兩項一樣、消掉，剩下 Σ f(S→T) − Σ f(T→S)。"
+    },
+    {
+     "t": 1381,
+     "text": "整個證明只用到 conservation。"
+    }
+   ],
+   "trap": "加進來的 outflow(x) − inflow(x) = 0 只對 x ≠ s、t 成立；這裡 x ∈ S − {s}，而 t 在 T，所以沒問題。",
+   "scene": "g8f-cutproof",
+   "cues": [
+    680.1,
+    701.1,
+    745.7,
+    799.1,
+    893.6,
+    961,
+    1141,
+    1184,
+    1293,
+    1325.4,
+    1341.2,
+    1364.6,
+    1381.4,
+    1436.2
+   ],
+   "explain": [
+    "開始證明。要證的是：val(f) 等於「S 到 T 的 flow 總和」減「T 到 S 的 flow 總和」。右邊小圖用剛才的例子（S = {s,a,b,d}）同步算數字對照。",
+    "從定義出發：val(f) 是 source 的 outflow，也就是 s 到所有 y 的 flow 加起來。例子裡是 8。",
+    "小技巧：s 的 inflow 是 0（沒有邊流進 source），所以多扣一個 inflow(s) 不會改變答案。例子：8 − 0。",
+    "再對 S 裡除了 s 以外的每個 x，加上「outflow(x) − inflow(x)」。因為 t 不在 S，這些 x 都要守恆，每一項都是 0。例子裡 a、b、d 都是 0。",
+    "括號裡前面那項是 x 的 outflow，後面那項是 x 的 inflow，相減是 0。加一堆 0，答案不變。",
+    "把 s 那一項和其他 x 的項合併：變成「對 S 裡每個點的 outflow 加總」減「對 S 裡每個點的 inflow 加總」。例子：17 − 9。",
+    "後面那項只是換個 dummy variable 的名字（x 換成 v），意思完全一樣，只是讓它長得跟前面一致。",
+    "因為 V = S ∪ T，每個「對 V 加總」都可以拆成「對 S 的部分」加「對 T 的部分」。例子：17 = 8 + 9，9 = 8 + 1（S 內部的邊加起來是 8）。",
+    "S 到 S 的那兩項其實是同一個東西（S 內部的邊，只是變數名字不同），一加一減就消掉了。",
+    "最後剩下兩項：從 S 流到 T 的，減掉從 T 流到 S 的。例子：9 − 1。",
+    "double summation 先加 u 還是先加 v 都一樣，所以可以把順序反過來寫成我們要的樣子。",
+    "證完了：val(f) = 流過去 − 流回來。例子：9 − 1 = 8 ✓。",
+    "回頭看，證明只做了幾件事：多扣一個 0、多加一堆 0（都是 conservation 給的）、拆開、消掉。",
+    "直覺就是：cut 把 source 和 sink 拆到兩邊，因為流量守恆，穿過這條切線的「淨流量」一定等於 flow 的總量。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "一個 cut (S, T) separating source and sink，下列何者必須成立？",
+   "opts": [
+    "S ∪ T = V、S ∩ T = ∅、s ∈ S、t ∈ T",
+    "S 和 T 一樣大",
+    "s 和 t 在同一邊",
+    "S 只能有 source"
+   ],
+   "ans": "S ∪ T = V、S ∩ T = ∅、s ∈ S、t ∈ T",
+   "why": "cut 是 V 的 partition，而且要把 source 和 sink 分開。"
+  },
+  {
+   "q": "例子 S = {s,a,b,d}、T = {c,t}：流過去 2 + 4 + 3、流回來 1。val(f) 是？",
+   "opts": [
+    "8",
+    "10",
+    "9",
+    "1"
+   ],
+   "ans": "8",
+   "why": "val(f) = 流過去 − 流回來 = 9 − 1 = 8。"
+  },
+  {
+   "q": "val(f) = Σf(S→T) − Σf(T→S) 的證明主要用到哪個條件？",
+   "opts": [
+    "conservation",
+    "feasibility",
+    "capacity 是整數",
+    "graph 是 simple"
+   ],
+   "ans": "conservation",
+   "why": "證明是加上一堆 outflow − inflow = 0 再整理，只用到流量守恆。"
+  },
+  {
+   "q": "證明中為什麼可以「多扣掉 s 的 inflow」？",
+   "opts": [
+    "因為 source 的 inflow = 0",
+    "因為 s 守恆",
+    "因為 f(e) ≤ c(e)",
+    "因為 t 在 T"
+   ],
+   "ans": "因為 source 的 inflow = 0",
+   "why": "沒有邊流進 source，扣掉 0 不影響答案。"
+  },
+  {
+   "q": "在式子 Σ_{u∈T, v∈S} f(u, v) 裡，計算的是哪些邊？",
+   "opts": [
+    "從 T 指回 S 的邊",
+    "從 S 指到 T 的邊",
+    "S 內部的邊",
+    "所有邊"
+   ],
+   "ans": "從 T 指回 S 的邊",
+   "why": "u 在 T、v 在 S，(u, v) 方向是從 T 到 S，也就是「流回來」的部分。"
+  }
+ ]
+}

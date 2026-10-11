@@ -971,6 +971,12 @@
   "quiz": 7,
   "cued": true
  },
+ "ePI-vLEM01Q": {
+  "label": "清大OCW 趙啟超《離散數學》第31B講 Maximum Flow Problem",
+  "points": 15,
+  "quiz": 5,
+  "cued": true
+ },
  "EpZgvKBf5eo": {
   "label": "清大周志遠 第16C講 Basic Concepts",
   "points": 36,
@@ -1349,6 +1355,12 @@
   "quiz": 8,
   "cued": true
  },
+ "ju-qSc1_rwQ": {
+  "label": "清大OCW 趙啟超《離散數學》第31C講 Maximum Flow Problem",
+  "points": 23,
+  "quiz": 5,
+  "cued": true
+ },
  "JvcqtZk2mng": {
   "label": "Abdul Bari：2.1.4 Recurrence Relation #4",
   "points": 30,
@@ -1655,6 +1667,12 @@
   "quiz": 5,
   "cued": true
  },
+ "O2cUhuqSQJ8": {
+  "label": "清大OCW 趙啟超《離散數學》第31A講 Maximum Flow Problem",
+  "points": 24,
+  "quiz": 5,
+  "cued": true
+ },
  "OApn18tz9EU": {
   "label": "清大周志遠 第4D講 Hardware Protection",
   "points": 23,
@@ -1665,6 +1683,12 @@
   "label": "MIT 6.006 L21",
   "points": 70,
   "quiz": 7,
+  "cued": true
+ },
+ "oFStjKYt8b4": {
+  "label": "清大OCW 趙啟超《離散數學》第32B講 Maximum Flow Problem",
+  "points": 13,
+  "quiz": 6,
   "cued": true
  },
  "ogk1m2TvR0I": {
@@ -2507,6 +2531,12 @@
   "quiz": 7,
   "cued": true
  },
+ "YnPS5TFJiFE": {
+  "label": "清大OCW 趙啟超《離散數學》第31D講 Maximum Flow Problem",
+  "points": 21,
+  "quiz": 5,
+  "cued": true
+ },
  "Ypxv0k322n8": {
   "label": "清大周志遠 第26D講 I/O Systems",
   "points": 37,
@@ -2559,6 +2589,12 @@
   "label": "MIT 6.006 L2：Models of Computation, Document Distance",
   "points": 94,
   "quiz": 7,
+  "cued": true
+ },
+ "ZCOlf1NFPA4": {
+  "label": "清大OCW 趙啟超《離散數學》第32A講 Maximum Flow Problem",
+  "points": 18,
+  "quiz": 5,
   "cued": true
  },
  "zjsDjXEa6Zc": {

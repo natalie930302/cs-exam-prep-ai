@@ -1,0 +1,316 @@
+{
+ "video": "YnPS5TFJiFE",
+ "label": "清大OCW 趙啟超《離散數學》第31D講 Maximum Flow Problem",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "s-a-d-c-t：最多可以加多少？",
+   "points": [
+    {
+     "t": 4,
+     "text": "path s-a-d-c-t：capacity 5 6 7 5，flow 4 1 1 2，(c, d) 是反方向。"
+    },
+    {
+     "t": 76,
+     "text": "path 上有 forward、backward 邊；每條邊沿 path 方向加同樣的量，value 就增加。"
+    },
+    {
+     "t": 132,
+     "text": "forward 能加 c − f：5−4 = 1、6−1 = 5、5−2 = 3。"
+    },
+    {
+     "t": 147,
+     "text": "backward 等於把反向的 flow 抵消：最多加原本的 flow 1（不能變負）。"
+    },
+    {
+     "t": 188,
+     "text": "Δ = min(1, 5, 1, 3) = 1。"
+    }
+   ],
+   "trap": "backward edge 不是看 capacity 7，而是看它現在的 flow 1——最多把它抵消到 0。",
+   "scene": "g8f-sadct",
+   "cues": [
+    4.3,
+    7.6,
+    51.4,
+    76.5,
+    89.1,
+    106,
+    132.6,
+    152.4,
+    164,
+    188.7,
+    280
+   ],
+   "explain": [
+    "上次找到的 path：s-a-d-c-t。network 上的 path 指的是對應無向圖上的 path，所以可以逆著箭頭走。",
+    "單獨畫出來，先寫 capacity：(s,a) 5、(a,d) 6、(c,d) 7、(c,t) 5。",
+    "再寫現在的 flow（F1）：4、1、1、2。其中 (c,d) 的箭頭是從 c 到 d，跟我們走的方向（d 到 c）相反。",
+    "這就是一般的情況：path 上有順向的邊（forward edge）、也有逆向的邊（backward edge）。",
+    "想法：沿著 path 的方向，在每條邊上都多送「同樣的量」。只要不超過容量，conservation 就自然成立。",
+    "這條 path 從 source 出發、到 sink 結束，source 多送出多少，sink 就多收到多少，所以 value 增加。",
+    "順向的邊能加多少？capacity 減掉現在的 flow：5 − 4 = 1、6 − 1 = 5、5 − 2 = 3。",
+    "逆向的邊怎麼辦？原本 flow 是從 c 流到 d 的 1。我們往 d → c 方向「加」，其實就是把原本 c → d 的流量減少（抵消）。",
+    "最多只能加 1：加 1 就把 (c,d) 減到 0；加 2 的話 (c,d) 會變成 −1，flow 不能是負的，不合法。",
+    "全部取最小值：min(5−4, 6−1, 1, 5−2) = 1。這條 path 上最多加 1。",
+    "沿這個方向加 1 之後，feasibility 和 conservation 都還成立。"
+   ]
+  },
+  {
+   "title": "新的 flow F2：value = 10",
+   "points": [
+    {
+     "t": 333,
+     "text": "沿 s-a-d-c-t 加 1：(s,a) 4→5、(a,d) 1→2、(c,d) 1→0、(c,t) 2→3。"
+    },
+    {
+     "t": 457,
+     "text": "feasibility、conservation 仍成立。"
+    },
+    {
+     "t": 469,
+     "text": "value：source 5 + 2 + 3 = 10，sink 3 + 4 + 3 = 10；8 → 9 → 10。"
+    }
+   ],
+   "scene": "g8f-f2",
+   "cues": [
+    333.7,
+    377.7,
+    381.6,
+    388.7,
+    421.1,
+    438.7,
+    457.7,
+    469,
+    479.2,
+    494.2
+   ],
+   "explain": [
+    "把這四條邊沿著 path 的方向都 +1，不會違反 feasibility 和 conservation。",
+    "(s,a)：原來 4，加 1 變 5。",
+    "(a,d)：原來 1，加 1 變 2。",
+    "(c,d)：原來 c → d 流 1。我們在反方向加 1，等於在原方向扣 1，變成 0。",
+    "(c,t)：原來 2，加 1 變 3。",
+    "有些加、有些減，重寫一次就是新的 flow，叫 F2：5、2、0、3（其他邊不變）。",
+    "檢查：每條邊都還 ≤ 容量；a、c、d 都還守恆（a：5 = 2 + 3；c：3 = 0 + 3；d：2 + 2 + 0 = 4）。",
+    "value 多了 1：source 的 outflow = 5 + 2 + 3 = 10。",
+    "sink 的 inflow = 3 + 4 + 3，也是 10。兩邊一致 ✓。",
+    "回顧：一開始 flow 是 8；沿 s-a-t 兩條邊各加 1 變 9；再沿 s-a-d-c-t 加 1 變 10。"
+   ]
+  },
+  {
+   "title": "cut {s, b} = 10 ⇒ F2 是 maximum flow",
+   "points": [
+    {
+     "t": 525,
+     "text": "cut S = {s, b}、T = {a, c, d, t}，capacity 5 + 2 + 3 = 10。"
+    },
+    {
+     "t": 576,
+     "text": "任何 flow ≤ 任何 cut；val(F2) = 10 = 這個 cut 的 capacity，所以 F2 是 maximum flow。"
+    }
+   ],
+   "scene": "g8f-f2max",
+   "cues": [
+    525.5,
+    546.1,
+    557.6,
+    576.5,
+    587,
+    606
+   ],
+   "explain": [
+    "F2 的 value 是 10。還記得前面算過一個 capacity 是 10 的 cut 嗎？",
+    "就是 S = {s, b}，T = {a, c, d, t}。",
+    "從這邊切下來，S 到 T 的邊是 (s,a)、(s,c)、(b,d)，capacity 5 + 2 + 3 = 10。",
+    "前面證過：任何 flow 的 value 都 ≤ 任何 cut 的 capacity。",
+    "現在 F2 的 value 剛好等於這個 cut 的 capacity 10，已經頂到上限，不可能更大了。",
+    "所以 F2 是 maximum flow：它滿足 feasibility、conservation，而且 value 最大。程式也確認這張圖 16 個 cut 中最小的就是 10。"
+   ]
+  },
+  {
+   "title": "一般做法：從 0 開始一步一步加大",
+   "points": [
+    {
+     "t": 633,
+     "text": "一開始 flow 全部是 0（一定合法），像 maximum matching 從空的開始。"
+    },
+    {
+     "t": 663,
+     "text": "找 s-a-d-c-t 這種 path 把 flow 增大，一直做到不能增大為止。"
+    },
+    {
+     "t": 696,
+     "text": "關鍵：要找什麼樣的 path。"
+    }
+   ],
+   "scene": "g8f-method",
+   "cues": [
+    633.4,
+    640.2,
+    648.4,
+    654.6,
+    663.6,
+    688.2,
+    696.3
+   ],
+   "explain": [
+    "這個例子告訴我們一般的做法。先 given 一個 network。",
+    "一開始把所有邊的 flow 都設成 0。",
+    "這跟 maximum matching 很像：那時候一開始也是空的 matching，再一步一步變大。",
+    "全部是 0 的 flow 一定合法：0 ≤ 任何容量，而且每個點進出都是 0。只是 value 是 0。",
+    "然後找像 s-a-d-c-t 這種路徑，把 flow 增大，就得到一個新的 flow。",
+    "一直重複，直到再也沒辦法增大為止，那時候就是 maximum flow。",
+    "關鍵問題是：到底要找什麼樣的 path？下面寫出一般的條件，這也是 algorithm 和定理證明的核心。"
+   ]
+  },
+  {
+   "title": "f-augmenting path 的定義",
+   "points": [
+    {
+     "t": 734,
+     "text": "類似 matching 的 augmenting alternating path，這裡找 f-augmenting path。"
+    },
+    {
+     "t": 781,
+     "text": "P 是 s 到 t 的 path（在 underlying undirected graph 上）。"
+    },
+    {
+     "t": 821,
+     "text": "forward edge：f(e) < c(e)；backward edge：f(e) > 0。"
+    },
+    {
+     "t": 926,
+     "text": "每條邊都滿足，就是 f-augmenting path，可以把 flow 增大。"
+    }
+   ],
+   "trap": "forward 要「嚴格小於」capacity（等於就沒空間）；backward 要「嚴格大於」0（是 0 就沒得抵消）。",
+   "scene": "g8f-augdef",
+   "cues": [
+    734.2,
+    750.5,
+    781.5,
+    821.2,
+    846.8,
+    862.9,
+    899.3,
+    926.6,
+    951.3
+   ],
+   "explain": [
+    "一般的情況：類似 maximum matching 裡要找的 augmenting alternating path，這裡也要找一種 path。",
+    "這種 path 叫 f-augmenting path：可以把 flow f 的 value 增大（augment 就是增大的意思）。",
+    "P 是從 source 到 sink 的 path；network 上的 path 指的是對應無向圖上的 path，所以可以逆著箭頭走。",
+    "P 上的邊分兩種：跟箭頭同方向的叫 forward edge（順向），跟箭頭反方向的叫 backward edge（逆向）。以 s-a-d-c-t 為例，只有 (c,d) 是 backward。",
+    "forward edge 的條件：flow 要「小於」capacity，f(e) < c(e)，才有增加的空間。",
+    "如果已經 f = c（滿了），就沒有增加空間。畫面標「滿」的邊就是 F1 裡已經滿載的。",
+    "backward edge 的條件：flow 要「大於」0，f(e) > 0。因為在反方向增加，其實是把它抵消；如果已經是 0，就沒東西可以抵消了。",
+    "整條 path 每條邊都滿足自己的條件，就叫 f-augmenting path。s-a-d-c-t 在 F1 上：4 < 5、1 < 6、1 > 0、2 < 5，全部滿足 ✓。",
+    "後面的 algorithm 主要就是在找這種從 s 到 t 的 f-augmenting path，跟 matching 的想法一樣，只是條件不同。"
+   ]
+  },
+  {
+   "title": "最多能加多少：Δ_P = min Δ_e",
+   "points": [
+    {
+     "t": 970,
+     "text": "forward 邊上增加、backward 邊上減少，不違反兩個 rule。"
+    },
+    {
+     "t": 1041,
+     "text": "Δ_P = min{Δ_e}：forward Δ_e = c(e) − f(e)，backward Δ_e = f(e)。"
+    },
+    {
+     "t": 1148,
+     "text": "例：min(5−4, 6−1, 1, 5−2) = 1。"
+    },
+    {
+     "t": 1166,
+     "text": "一直找 f-augmenting path、加 Δ_P，直到找不到；那時 flow 等於某個 cut capacity，就是最大。"
+    }
+   ],
+   "scene": "g8f-delta",
+   "cues": [
+    970.2,
+    1006.2,
+    1041.3,
+    1089.4,
+    1119.5,
+    1148.5,
+    1166.4,
+    1215.4,
+    1233.6,
+    1265.3
+   ],
+   "explain": [
+    "找到一條 f-augmenting path 之後，flow 最多可以增加多少？",
+    "在 forward edge 上是真的增加 flow；在 backward edge 上是把反向的 flow 減少（抵消）。這樣都不會違反 feasibility 和 conservation。",
+    "能加的量 Δ_P = path 上每條邊的 Δ_e 取最小值。",
+    "forward edge：Δ_e = c(e) − f(e)，也就是還剩多少容量。",
+    "backward edge：Δ_e = f(e)，就是現在的 flow，最多把它扣到 0，不能變負的。",
+    "前面的例子：min(5−4, 6−1, 1, 5−2) = 1，所以 Δ_P = 1。",
+    "整理：given network 和 flow，就去找一條 s 到 t 的 f-augmenting path，然後加 Δ_P。",
+    "加完之後又是同樣的問題（新的 network + 新的 flow），就再找、再加……一直到找不到為止。",
+    "找不到這種 path 時，flow 就是最大的。原因是那時 flow 會剛好等於某個 cut 的 capacity，而前面證過這樣就一定最大。",
+    "下次要證明的就是這個有名的定理：Max-Flow Min-Cut Theorem——max flow 不只 ≤ min cut，而是相等。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "f-augmenting path 上的 backward edge 要滿足什麼條件？",
+   "opts": [
+    "f(e) > 0",
+    "f(e) < c(e)",
+    "f(e) = c(e)",
+    "f(e) = 0"
+   ],
+   "ans": "f(e) > 0",
+   "why": "逆向增加 = 把原本的 flow 抵消，所以原本要有 flow（> 0）。"
+  },
+  {
+   "q": "forward edge 上能增加的量 Δ_e 是？",
+   "opts": [
+    "c(e) − f(e)",
+    "f(e)",
+    "c(e)",
+    "c(e) + f(e)"
+   ],
+   "ans": "c(e) − f(e)",
+   "why": "剩下的容量就是能增加的量；backward edge 才是 f(e)。"
+  },
+  {
+   "q": "path s-a-d-c-t（flow 4/5、1/6、(c,d) 1/7 逆向、2/5）的 Δ_P 是？",
+   "opts": [
+    "1",
+    "3",
+    "5",
+    "7"
+   ],
+   "ans": "1",
+   "why": "min(5−4, 6−1, 1, 5−2) = min(1, 5, 1, 3) = 1；逆向邊看的是 flow 1，不是 capacity 7。"
+  },
+  {
+   "q": "沿 s-a-d-c-t 加 1 之後，(c, d) 的 flow 變成？",
+   "opts": [
+    "0",
+    "2",
+    "1",
+    "−1"
+   ],
+   "ans": "0",
+   "why": "在反方向加 1 等於原方向扣 1：1 − 1 = 0。"
+  },
+  {
+   "q": "為什麼 F2（value 10）一定是 maximum flow？",
+   "opts": [
+    "因為 cut {s,b} 的 capacity 也是 10",
+    "因為所有邊都滿了",
+    "因為 value 是偶數",
+    "因為找到兩條 path"
+   ],
+   "ans": "因為 cut {s,b} 的 capacity 也是 10",
+   "why": "任何 flow ≤ 任何 cut capacity；val(F2) 已經等於 10，不可能再大。"
+  }
+ ]
+}

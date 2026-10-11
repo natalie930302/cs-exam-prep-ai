@@ -1,0 +1,254 @@
+{
+ "video": "oFStjKYt8b4",
+ "label": "清大OCW 趙啟超《離散數學》第32B講 Maximum Flow Problem",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "代回去：c(S, T) = val(F)，而且是 min cut",
+   "points": [
+    {
+     "t": 8,
+     "text": "矛盾 → T 到 S 的邊 flow = 0；S 到 T 的邊 flow = capacity。"
+    },
+    {
+     "t": 49,
+     "text": "代入 val(F) = Σf(S→T) − Σf(T→S) = Σc(S→T) = c(S, T)。"
+    },
+    {
+     "t": 207,
+     "text": "任何 cut (S′, T′)：c(S′, T′) ≥ val(F) = c(S, T)，所以 (S, T) 是 minimum cut；定理證完。"
+    }
+   ],
+   "scene": "g8f-conclude",
+   "cues": [
+    7.8,
+    12.2,
+    49.1,
+    110.1,
+    135.4,
+    172.1,
+    207.4,
+    273,
+    294.1,
+    326
+   ],
+   "explain": [
+    "上一講最後的矛盾表示：從 T 指回 S 的邊，flow 不能 > 0。flow 是非負整數，所以只能等於 0。",
+    "得到兩個結論：從 S 到 T 的 forward edge，flow = capacity；從 T 到 S 的 backward edge，flow = 0。",
+    "把它們代進算 flow value 的式子：value = 從 S 到 T 的 flow 總和 − 從 T 到 S 的 flow 總和（對任何 cut 都成立）。",
+    "前面每一項都換成 capacity，後面每一項都是 0。",
+    "後面那項整個消失，只剩「從 S 到 T 的邊的 capacity 總和」，這正是 cut 的 capacity c(S, T)。例子：val = 10，c(S,T) = 5 + 2 + 3 = 10 ✓。",
+    "證出來了：有一個 maximum flow，就能找到一個 cut，它的 capacity 剛好等於 maximum flow 的 value。",
+    "再來說明這個 cut 是最小的：任何其他 cut (S′, T′)，前面證過它的 capacity ≥ flow 的 value。例子：16 個 cut 的 capacity 都 ≥ 10。",
+    "flow 的 value 就是 c(S, T)，所以任何其他 cut 的 capacity 都 ≥ c(S, T)，(S, T) 就是 minimum cut。",
+    "定理證完：maximum flow 的 value = minimum cut 的 capacity。",
+    "回顧整個證明：從 maximum flow 定義 S → 證明 (S, T) 是合法 cut → 證明 c(S, T) = value → 證明它最小。主要只用到 f-augmenting path 的條件。"
+   ]
+  },
+  {
+   "title": "Edmonds–Karp algorithm",
+   "points": [
+    {
+     "t": 377,
+     "text": "定理：flow 值等於某個 cut capacity → flow 是 max、cut 是 min。"
+    },
+    {
+     "t": 403,
+     "text": "Edmonds–Karp（1972）：一開始 flow 全 0。"
+    },
+    {
+     "t": 492,
+     "text": "repeat：從 s 用 BFS 長 tree of incomplete f-augmenting paths；到了 t 就沿 path 加 Δ_P，否則停。"
+    },
+    {
+     "t": 782,
+     "text": "停下來時 S = tree 的端點，T = V − S。"
+    }
+   ],
+   "trap": "BFS 長 tree 時，每條加進 tree 的邊都要滿足條件：forward f < c、backward f > 0；不是照箭頭方向就能走。",
+   "scene": "g8f-ek",
+   "cues": [
+    377.5,
+    403,
+    448,
+    473.8,
+    492.7,
+    503.6,
+    517.5,
+    525,
+    535.7,
+    566.4,
+    609.3,
+    632.7,
+    694.2,
+    706.1,
+    724.7,
+    782.1
+   ],
+   "explain": [
+    "剛證完 Max-Flow Min-Cut Theorem：只要從一個 flow 找到一個 cut，它的 capacity 等於 flow 的值，那這個 flow 就是 max flow，那個 cut 就是 min cut。",
+    "接下來介紹找 maximum flow 的 algorithm：Edmonds–Karp。它結束時會給你 maximum flow，也給你一個 min cut。左邊是 high-level 的 pseudocode；右邊在老師的 network 上實際跑一次（示意）。",
+    "這個 algorithm 是 Edmonds 和 Karp 兩個人在 1972 年提出來的。",
+    "一開始把所有邊的 flow 都設成 0。",
+    "然後 repeat（重複）下面的事情。",
+    "從 source 出發去找 f-augmenting path，就跟 maximum matching 的做法類似。",
+    "用 breadth-first search（BFS，廣度優先搜尋）來找：先看離 s 一步的，再看兩步的……一層一層往外。",
+    "每條要加進來的邊都要滿足 f-augmenting 的條件：forward 邊 f < c、backward 邊 f > 0。",
+    "這樣長出來的是一棵 tree，root 在 source，tree 上每條從 root 出發的路都是 incomplete f-augmenting path。",
+    "BFS 一層一層長：第一層看 s 出去的邊合不合，合就放上 tree；再從第一層的點長第二層。畫面上 L1、L2 是層數。",
+    "長完之後看：這棵 tree 有沒有到達 sink？這一輪有，表示有一條 s 到 t 的 f-augmenting path。",
+    "那就照前面的方法增大：Δ = path 上 Δ_e 的最小值。第一輪是 s-a-t，Δ = 3。",
+    "增大之後 done = 0，表示還沒做完，再重來找一次。一次加一條 path：示意中依序是 s-c-t 加 3、s-a-d-t 加 2、s-b-d-t 加 2，value 變成 10。",
+    "如果長出來的 tree 沒有包含 sink，表示 flow 沒辦法再增大了，done = 1。最後一輪 tree 只長到 s 和 b。",
+    "repeat 一直做到 done = 1 為止：到了 sink 就增大、再重來；到不了就停。",
+    "停下來時，S = tree 裡的端點，剩下的放進 T（S bar）。示意結果：S = {s, b}，c(S, T) = 10 = flow 的 value ✓。"
+   ]
+  },
+  {
+   "title": "為什麼 Edmonds–Karp 對；和 Ford–Fulkerson 的關係",
+   "points": [
+    {
+     "t": 897,
+     "text": "停下時 t ∉ S，(S, T) 是合法的 cut；S→T 滿載、T→S 為 0，所以 c(S, T) = flow 值。"
+    },
+    {
+     "t": 993,
+     "text": "Remark 1：結束時 flow 是 maximum flow，cut 是 minimum cut。"
+    },
+    {
+     "t": 1029,
+     "text": "Remark 2：Ford–Fulkerson method（1956）沒規定怎麼找 path；Edmonds–Karp 用 BFS，是它的一種 implementation。"
+    }
+   ],
+   "scene": "g8f-ekwhy",
+   "cues": [
+    897.3,
+    914.8,
+    993.6,
+    1029.1,
+    1077.2,
+    1117.4
+   ],
+   "explain": [
+    "為什麼這樣做是對的？第一，停下來時 sink 不在 S（tree 沒到 sink），所以 (S, T) 是合法的 cut。",
+    "第二，跟定理的證明一模一樣：從 S 到 T 的 forward edge 一定滿載（不然 tree 還能長過去），從 T 到 S 的 backward edge 一定是 0（不然 S 還能擴大）。所以 cut capacity 剛好等於現在的 flow 值。",
+    "Remark 1：結束時，那個 flow 一定是 maximum flow，那個 cut 一定是 minimum cut，因為它們的值相等。",
+    "Remark 2：還有一個方法叫 Ford–Fulkerson method，是 Ford 和 Fulkerson 在 1956 年提出的。",
+    "Ford–Fulkerson 沒有規定要怎麼找 f-augmenting path；Edmonds–Karp 明確規定用 BFS 找。",
+    "所以 Edmonds–Karp（1972，比較晚）可以看成是 Ford–Fulkerson method 的一種 implementation（實作方式）。"
+   ]
+  },
+  {
+   "title": "Maximum flow 單元回顧",
+   "points": [
+    {
+     "t": 1129,
+     "text": "回顧：network、flow 的兩個條件、value、cut、val ≤ cut capacity、f-augmenting path、Max-Flow Min-Cut Theorem、Edmonds–Karp。"
+    }
+   ],
+   "scene": "g8f-recap",
+   "cues": [
+    1129.4,
+    1138.7,
+    1145.3,
+    1147.6,
+    1153,
+    1159.5,
+    1168.4,
+    1173
+   ],
+   "explain": [
+    "Maximum flow 這部分講完了。先介紹了 network：一個 source、一個 sink、每條邊有 capacity。",
+    "flow 要滿足兩個條件：feasibility（不超過容量）和 conservation（流量守恆）。",
+    "flow 的 value 定義成 source 的 outflow。",
+    "定義了 cut，也知道 flow value = 穿過 cut 的淨流量（流過去 − 流回來）。",
+    "任何 flow 的 value 都 ≤ 任何 cut 的 capacity。",
+    "怎麼把 flow 增大：找從 source 到 sink 的 f-augmenting path。",
+    "Max-Flow Min-Cut Theorem：maximum flow 剛好等於 min cut。",
+    "最後是 Edmonds–Karp algorithm：結束時得到的 flow 是 maximum flow，得到的 cut 是 min cut（例子裡就是 {s, b} 那個 cut）。"
+   ]
+  },
+  {
+   "title": "整學期課程回顧（閒聊）",
+   "points": [
+    {
+     "t": 1193,
+     "text": "整學期回顧：邏輯、集合、歸納法、function、pigeonhole、relation；counting、排容、recurrence、generating function、Big-O；graph、tree、shortest path、MST、matching、max flow。"
+    },
+    {
+     "t": 1346,
+     "text": "課程內容是老師選的，可能跟別校的離散數學不完全一樣。"
+    }
+   ],
+   "scene": null
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Edmonds–Karp 用什麼方法找 f-augmenting path？",
+   "opts": [
+    "breadth-first search（BFS）",
+    "depth-first search（DFS）",
+    "Dijkstra",
+    "隨便找"
+   ],
+   "ans": "breadth-first search（BFS）",
+   "why": "從 source 用 BFS 長 tree of incomplete f-augmenting paths。"
+  },
+  {
+   "q": "Edmonds–Karp 什麼時候停止？",
+   "opts": [
+    "BFS tree 沒有包含 sink 時",
+    "flow 等於 0 時",
+    "所有邊都滿載時",
+    "跑完 |V| 次時"
+   ],
+   "ans": "BFS tree 沒有包含 sink 時",
+   "why": "tree 到不了 t 表示沒有 f-augmenting path，done = 1。"
+  },
+  {
+   "q": "停下來時，min cut 的 S 是什麼？",
+   "opts": [
+    "最後那棵 BFS tree 的端點",
+    "所有滿載邊的終點",
+    "只有 source",
+    "所有 flow > 0 的端點"
+   ],
+   "ans": "最後那棵 BFS tree 的端點",
+   "why": "S = tree 的 vertex set，T = V − S；這個 cut 的 capacity 等於 flow 值。"
+  },
+  {
+   "q": "Edmonds–Karp 和 Ford–Fulkerson 的關係是？",
+   "opts": [
+    "Edmonds–Karp 是用 BFS 找 path 的 Ford–Fulkerson implementation",
+    "兩者完全無關",
+    "Ford–Fulkerson 比較晚提出",
+    "Edmonds–Karp 不用 augmenting path"
+   ],
+   "ans": "Edmonds–Karp 是用 BFS 找 path 的 Ford–Fulkerson implementation",
+   "why": "Ford–Fulkerson（1956）沒規定怎麼找 path；Edmonds–Karp（1972）規定用 BFS。"
+  },
+  {
+   "q": "定理證明中，從 T 指回 S 的 backward edge 的 flow 一定是？",
+   "opts": [
+    "0",
+    "等於 capacity",
+    "大於 0",
+    "不一定"
+   ],
+   "ans": "0",
+   "why": "若 > 0，incomplete path 可以延伸到 T 裡的端點，矛盾；flow 是非負整數，所以只能是 0。"
+  },
+  {
+   "q": "老師的例子用 Edmonds–Karp 跑完，max flow 和 min cut 是？",
+   "opts": [
+    "10 和 10",
+    "8 和 10",
+    "10 和 14",
+    "12 和 12"
+   ],
+   "ans": "10 和 10",
+   "why": "max flow = 10，min cut {s,b} 的 capacity 也是 5 + 2 + 3 = 10。"
+  }
+ ]
+}

@@ -1,0 +1,344 @@
+{
+ "video": "O2cUhuqSQJ8",
+ "label": "清大OCW 趙啟超《離散數學》第31A講 Maximum Flow Problem",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "Maximum flow problem：什麼是 transport network",
+   "points": [
+    {
+     "t": 4,
+     "text": "這門課 optimization 與 matching 部分的最後一個題目：maximum flow problem，裡面有 max-flow min-cut theorem。"
+    },
+    {
+     "t": 46,
+     "text": "N = (V, E) 是 connected directed simple graph，叫 network（transport network）。"
+    },
+    {
+     "t": 89,
+     "text": "有唯一的 source s：連在 s 上的邊都 directed away from s。"
+    },
+    {
+     "t": 143,
+     "text": "有唯一的 sink t：連在 t 上的邊都 directed toward t。"
+    },
+    {
+     "t": 187,
+     "text": "每條有向邊 (v, w) 有 capacity c(v, w)，假設是非負整數。"
+    },
+    {
+     "t": 238,
+     "text": "不是 ≥ 0 就全部加常數、不是整數就全部乘常數，不影響實際問題。"
+    },
+    {
+     "t": 287,
+     "text": "可以 model 液體管線（管子容量）或 computer network（link 的最大 data rate）。"
+    }
+   ],
+   "trap": "(v, w) 是有序對：c(v, w) 和 c(w, v) 是兩條不同方向的邊，不要當成無向邊 {v, w}。",
+   "scene": "g8f-network",
+   "cues": [
+    4.3,
+    45.8,
+    57.4,
+    72,
+    89.5,
+    102.8,
+    143.2,
+    155.3,
+    187.4,
+    221.2,
+    238.1,
+    249.3,
+    277.2,
+    287.1,
+    302,
+    318.5
+   ],
+   "explain": [
+    "這是這門課最後一個題目：maximum flow problem（最大流問題）。它裡面有一個很有名的定理，叫 max-flow min-cut theorem。",
+    "我們討論的圖叫 N = (V, E)：V 是端點集合，E 是邊的集合。它是 connected（連通）、directed（每條邊有方向）、simple（沒有重複邊、沒有自己連自己）的 graph。",
+    "前面學的最短路徑、生成樹、matching，用的都是 undirected graph（邊沒有方向）。這裡不一樣，每條邊都有箭頭。",
+    "這樣的圖叫 network，也叫 transport network（運輸網路），可以想成東西在上面「運送」。",
+    "第一個特別的點：source s（源頭），而且只有一個。東西都從這裡出發。",
+    "source 的條件：所有連在 s 上的邊，方向都是「離開 s」（directed away from s）。也就是說 s 只送出去，不收進來。",
+    "對應的另一個特別點叫 sink t（匯點、終點），也只有一個。",
+    "sink 的條件：連在 t 上的邊，方向都「朝向 t」。所以一個只出、一個只進。",
+    "每條有向邊 (v, w) 都有一個 capacity c(v, w)，中文叫容量。(v, w) 是有順序的一對（從 v 到 w），不像無向邊 {v, w} 是沒有順序的集合。",
+    "我們假設 capacity 都是 non-negative integer（非負整數：0、1、2、…）。畫面上這張圖的 9 個容量，程式檢查過都是非負整數。",
+    "這個假設其實不會限制實際問題：如果有負的數，全部加同一個常數就都變成 ≥ 0 了（畫面上是示意的小例子）。",
+    "如果不是整數也沒關係：電腦存的數字精確度有限，全部乘同一個常數（像乘 4）就變成整數。",
+    "整理一下：network 就是「一個 source（全部出去）、一個 sink（全部進來），每條邊有一個 capacity」。",
+    "它可以描述很多東西。例如輸送液體的管線：capacity 就是每根管子最多能流多少。",
+    "也可以描述電腦網路：每條 link 的 capacity 就是它最高能傳的 data rate（資料速率）。",
+    "後面要講的 max-flow min-cut theorem 很有用，例如 network coding（網路編碼）的一些基本原則就會用到它。"
+   ]
+  },
+  {
+   "title": "老師的例子：6 個端點的 network",
+   "points": [
+    {
+     "t": 338,
+     "text": "例子：6 個端點 s, a, b, c, d, t 的 connected directed simple graph。"
+    },
+    {
+     "t": 375,
+     "text": "s 的邊都往外、t 的邊都朝內。"
+    },
+    {
+     "t": 398,
+     "text": "黃色數字是每條邊的 capacity，例如 c(s, a) = 5。"
+    },
+    {
+     "t": 436,
+     "text": "後面從頭到尾都用這個例子。"
+    }
+   ],
+   "scene": "g8f-example",
+   "cues": [
+    338.5,
+    360.7,
+    375,
+    382.3,
+    398,
+    415.6,
+    423.4,
+    435.8
+   ],
+   "explain": [
+    "老師舉一個具體的例子。後面所有的東西都會用這張圖來說明，先把它記熟。",
+    "這張圖有 6 個端點：s、a、b、c、d、t。",
+    "s 是 source：從 s 連出去的三條邊 (s,a)、(s,b)、(s,c) 都是離開 s 的。",
+    "t 是 sink：(a,t)、(d,t)、(c,t) 都朝向 t。程式也檢查了：沒有任何邊進 s、也沒有任何邊離開 t。",
+    "每條邊旁邊的黃色數字就是 capacity，都是非負整數。",
+    "例如 c(s, a) = 5，代表從 s 到 a 這條邊最多能流 5。其他邊依此類推。",
+    "你也可以把它想成交通網路：capacity 就是一條路每單位時間最多能通過的車流量。",
+    "老師強調：後面講這個問題時，從頭到尾都用這個例子。"
+   ]
+  },
+  {
+   "title": "flow 的定義：feasibility 與 conservation",
+   "points": [
+    {
+     "t": 462,
+     "text": "flow f 是一個 function：每條邊 e 給一個非負整數 f(e)。"
+    },
+    {
+     "t": 524,
+     "text": "條件 1 feasibility：f(e) ≤ c(e)，流量不能超過容量。"
+    },
+    {
+     "t": 583,
+     "text": "條件 2 conservation：除了 s 和 t，每個端點 inflow = outflow（流量守恆）。"
+    },
+    {
+     "t": 714,
+     "text": "沒有邊的地方 capacity 和 flow 都當作 0。"
+    },
+    {
+     "t": 770,
+     "text": "滿足條件的 flow 很多，要找 value 最大的 maximum flow。"
+    }
+   ],
+   "trap": "conservation 不要求 source 和 sink：s 只流出、t 只流進。",
+   "scene": "g8f-flowdef",
+   "cues": [
+    461.9,
+    488.9,
+    524.4,
+    536.9,
+    564.3,
+    585.8,
+    596.8,
+    618.1,
+    646.6,
+    676.8,
+    698.5,
+    714.3,
+    770.2
+   ],
+   "explain": [
+    "要談「最大的 flow」，先要知道什麼叫 flow（流）。",
+    "flow f 是一個 function（函數）：圖上的每一條邊 e，都要給它一個非負整數 f(e)，代表這條邊上實際流了多少。畫面上的「?」就是等著填的流量。",
+    "第一個條件：每條邊的 flow 不能超過它的 capacity，寫成 f(e) ≤ c(e)。",
+    "這個條件叫 feasibility（可行性）。老師提醒：flow 叫「流量」，capacity 叫「容量」，流量不能大於容量。",
+    "就像網路的一條 link：它最高能傳某個速率，你實際傳的速率當然不能超過它。",
+    "第二個條件：每個端點流進去的總量要等於流出來的總量。畫面上用 d 當例子。",
+    "inflow（流入量）：把所有「指向 v 的邊」上的 flow 加起來。對 d 來說就是 (a,d)、(b,d)、(c,d) 三條邊。",
+    "outflow（流出量）：把所有「從 v 出去的邊」上的 flow 加起來。對 d 來說就是 (d,t)。",
+    "「inflow = outflow」這個條件叫 conservation（流量守恆）。但 source 和 sink 例外：s 只會流出、t 只會流進。",
+    "想像成油管：流進一個接頭的油，一定要從另一邊流出去，不然跑到哪裡去？除非漏掉，而我們假設不會漏。",
+    "所以 flow 要同時滿足兩個條件：feasibility（不超過容量）和 conservation（流量守恆）。",
+    "小細節：如果兩點之間沒有邊（例如 a 和 b 之間），就把那裡的 capacity 和 flow 都當作 0，式子才會寫得通。",
+    "滿足這兩個條件的 flow 有很多很多種。我們要找的是「總量最大」的那一個，叫 maximum flow（最大流）。"
+   ]
+  },
+  {
+   "title": "一個 flow 的例子：逐邊 check",
+   "points": [
+    {
+     "t": 808,
+     "text": "在同一個 network 上給每條邊一個流量（紅色）：(s,a) 3、(s,b) 2、(s,c) 3，其他 2 1 2 1 4 2。"
+    },
+    {
+     "t": 880,
+     "text": "feasibility：每條邊 紅 ≤ 黃 ✓。"
+    },
+    {
+     "t": 904,
+     "text": "conservation：outflow(s) = 3 + 2 + 3 = 8；a：3 = 1 + 2；b：2 = 2；c：3 = 1 + 2；d：1 + 2 + 1 = 4；inflow(t) = 2 + 4 + 2 = 8。"
+    },
+    {
+     "t": 1098,
+     "text": "紅色的 assignment 是一個合法的 flow。"
+    }
+   ],
+   "scene": "g8f-flow8",
+   "cues": [
+    807.8,
+    838,
+    853,
+    859.7,
+    876.1,
+    878,
+    890,
+    900.1,
+    904.7,
+    913.8,
+    938.8,
+    944.4,
+    970.2,
+    993.6,
+    1019.6,
+    1039,
+    1066.9,
+    1080.5,
+    1098.3,
+    1114.4
+   ],
+   "explain": [
+    "來看一個具體的 flow。還是同一張圖，只是每條邊上再多寫一個流量。",
+    "老師用紅色寫流量、黃色是原來的容量。(s,a) 這條邊的 flow 是 3（容量 5）。",
+    "(s,b) 的 flow 是 2。",
+    "(s,c) 的 flow 是 3。",
+    "其他邊也各給一個流量：(a,t) 2、(a,d) 1、(b,d) 2、(c,d) 1、(d,t) 4、(c,t) 2。",
+    "先檢查第一個條件 feasibility：每條邊的紅色數字要 ≤ 黃色數字。",
+    "一條一條比：3 ≤ 5、2 ≤ 4、3 ≤ 3、1 ≤ 6、2 ≤ 2、1 ≤ 7、2 ≤ 3、4 ≤ 4、2 ≤ 5。綠色代表通過。",
+    "9 條邊全部通過，所以 feasibility ✓。注意「等於」也可以，例如 (s,c) 的 3 ≤ 3。",
+    "再檢查第二個條件 conservation：中間的 a、b、c、d 都要 inflow = outflow。",
+    "先看 source s 的 outflow：3 + 2 + 3 = 8。",
+    "s 是 source，沒有任何邊流進它，所以它沒有 inflow，也不用檢查守恆。",
+    "看 a：只有 (s,a) 一條邊流進來，inflow 是 3。",
+    "a 流出去有兩條：(a,d) 1 和 (a,t) 2，outflow = 1 + 2 = 3。inflow = outflow，守恆 ✓。",
+    "b：流進 2、流出 2，各只有一條邊，守恆 ✓。",
+    "c：流進 3，流出 (c,d) 1 + (c,t) 2 = 3，守恆 ✓。",
+    "d：流進三條 1 + 2 + 1 = 4，流出只有 (d,t) 一條 4，守恆 ✓。",
+    "最後看 sink t：只有 inflow，2 + 4 + 2 = 8。",
+    "除了 source 和 sink，a、b、c、d 四個端點都 inflow = outflow，所以 conservation ✓。",
+    "兩個條件都滿足，所以紅色這組數字就是一個合法的 flow。",
+    "總結：network 上每條邊給一個非負整數，只要同時滿足 feasibility 和 conservation，就叫一個 flow。"
+   ]
+  },
+  {
+   "title": "flow 的 value 與 maximum flow 問題",
+   "points": [
+    {
+     "t": 1132,
+     "text": "flow 是 function：domain 是 E，codomain 是非負整數。"
+    },
+    {
+     "t": 1179,
+     "text": "value of the flow 定義成 source 的 outflow；例子 val(f) = 8。"
+    },
+    {
+     "t": 1211,
+     "text": "maximum flow：value 最大的 flow。問題：怎麼找它、它滿足什麼條件。"
+    },
+    {
+     "t": 1298,
+     "text": "network 與 flow 定義完成，接下來找 maximum flow。"
+    }
+   ],
+   "scene": "g8f-value",
+   "cues": [
+    1132.4,
+    1160.2,
+    1179.1,
+    1201.2,
+    1211.6,
+    1228.6,
+    1243.5,
+    1260.1,
+    1298.4
+   ],
+   "explain": [
+    "要比較哪個 flow「比較大」，得先定義 flow 的 value（值）。",
+    "flow 是一個 function：它的 domain（定義域）是所有邊的集合 E，codomain（對應域）是非負整數。",
+    "flow 的 value 定義成 source 的 outflow，也就是從 s 流出去的總量。",
+    "剛剛那個例子：從 s 出去的是 3 + 2 + 3，所以 value 是 8。",
+    "同一個 network 上，滿足兩個條件的 flow 有很多個。value 最大的那個叫 maximum flow。",
+    "所以問題是：給定一個 network（黃色那些容量），怎麼找出 maximum flow？它的 value 是多少？",
+    "後面會講：當 flow 是 maximum flow 時會滿足什麼條件，還有一個找它的 algorithm。",
+    "再寫一次剛才的例子：VAL(f) 就是 source 的 outflow，等於 8。",
+    "到這裡 network 和 flow 都定義清楚了，接下來的目標就是找 maximum flow。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "在 transport network 裡，source s 的條件是？",
+   "opts": [
+    "連在 s 上的邊都離開 s",
+    "連在 s 上的邊都朝向 s",
+    "s 的 inflow = outflow",
+    "s 沒有任何邊"
+   ],
+   "ans": "連在 s 上的邊都離開 s",
+   "why": "source 只往外送：所有 incident 的邊都 directed away from s。"
+  },
+  {
+   "q": "flow 的 feasibility 條件是？",
+   "opts": [
+    "每條邊 f(e) ≤ c(e)",
+    "每條邊 f(e) = c(e)",
+    "每個端點 inflow = outflow",
+    "f(e) 可以是負的"
+   ],
+   "ans": "每條邊 f(e) ≤ c(e)",
+   "why": "流量不能超過容量；inflow = outflow 是 conservation。"
+  },
+  {
+   "q": "conservation（流量守恆）要求哪些端點 inflow = outflow？",
+   "opts": [
+    "除了 source 和 sink 以外的端點",
+    "所有端點",
+    "只有 source 和 sink",
+    "只有 sink"
+   ],
+   "ans": "除了 source 和 sink 以外的端點",
+   "why": "s 只流出、t 只流進，所以它們不要求守恆。"
+  },
+  {
+   "q": "老師的例子 flow：(s,a) 3、(s,b) 2、(s,c) 3。這個 flow 的 value 是？",
+   "opts": [
+    "8",
+    "3",
+    "12",
+    "9"
+   ],
+   "ans": "8",
+   "why": "value = source 的 outflow = 3 + 2 + 3 = 8（也等於 sink 的 inflow 2 + 4 + 2）。"
+  },
+  {
+   "q": "例子中端點 d 的 inflow 是 (a,d) 1、(b,d) 2、(c,d) 1，(d,t) 必須是多少才守恆？",
+   "opts": [
+    "4",
+    "2",
+    "1",
+    "5"
+   ],
+   "ans": "4",
+   "why": "1 + 2 + 1 = 4，outflow 只有 (d,t) 一條，所以要是 4（剛好等於它的 capacity 4）。"
+  }
+ ]
+}

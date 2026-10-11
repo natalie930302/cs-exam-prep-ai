@@ -1,0 +1,288 @@
+{
+ "video": "ZCOlf1NFPA4",
+ "label": "清大OCW 趙啟超《離散數學》第32A講 Maximum Flow Problem",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "The Max-Flow Min-Cut Theorem",
+   "points": [
+    {
+     "t": 4,
+     "text": "回顧：val(f) ≤ 任何 cut capacity；有 f-augmenting path 就能增大。"
+    },
+    {
+     "t": 61,
+     "text": "定理：從 s 到 t 的 flow 最大值 = separating s、t 的 cut capacity 最小值。"
+    },
+    {
+     "t": 104,
+     "text": "之前只有 ≤，定理說剛好相等；證明之後 algorithm 就出來了。"
+    }
+   ],
+   "scene": "g8f-mfmc",
+   "cues": [
+    4.3,
+    9.2,
+    61.7,
+    76.1,
+    104.3,
+    131.4
+   ],
+   "explain": [
+    "回顧：給一個 network、一個 flow，對任何把 s、t 分開的 cut，flow 的 value 都 ≤ cut 的 capacity。",
+    "也回顧：如果能從 source 到 sink 找到 f-augmenting path（forward 邊 f < c、backward 邊 f > 0），就可以把 flow 增大。",
+    "接下來是這個單元最有名的定理：The Max-Flow Min-Cut Theorem。",
+    "定理說：所有 flow 的 value 的最大值，剛好等於所有 separating s、t 的 cut 的 capacity 最小值。拿老師的 network 示意：max flow 是 10，程式列出 16 個 cut，最小的 capacity 也是 10。",
+    "之前只知道 max flow ≤ min cut；定理說不只是 ≤，而是剛好相等。注意：是「最大的 flow」等於「最小的 cut」，不是任何 flow 都等於任何 cut。",
+    "接下來看怎麼證明。證完之後，找 maximum flow 的 algorithm 就自然出來了。"
+   ]
+  },
+  {
+   "title": "證明：從 maximum flow 定義集合 S",
+   "points": [
+    {
+     "t": 156,
+     "text": "假設 F 是 maximum flow，要找一個 cut，capacity 剛好 = val(F)。"
+    },
+    {
+     "t": 245,
+     "text": "S = 所有 v，使得有一條從 s 到 v 的 incomplete f-augmenting path。"
+    },
+    {
+     "t": 303,
+     "text": "incomplete：每條邊都滿足 f-augmenting 的條件，但終點不必是 sink。"
+    },
+    {
+     "t": 394,
+     "text": "T = V − S。"
+    }
+   ],
+   "scene": "g8f-proofS",
+   "cues": [
+    156.1,
+    173,
+    245.8,
+    289.4,
+    303.6,
+    325.3,
+    394
+   ],
+   "explain": [
+    "證明開始：先假設 F 是一個 maximum flow。",
+    "要做的事：從 F 找出一個 cut，它的 capacity 剛好等於 F 的 value。這樣就證明 max flow = min cut。",
+    "定義 S：所有「從 source 出發，可以沿著 incomplete f-augmenting path 走到」的端點 v。",
+    "什麼叫 incomplete f-augmenting path？前面只定義過 f-augmenting path。",
+    "它是一條 path（在無向的意義下，可以逆著箭頭走），而且 path 上每條邊都滿足 f-augmenting 的條件：forward 邊 f < c，backward 邊 f > 0。",
+    "跟 f-augmenting path 唯一的差別：最後的端點不一定是 sink，走到 v 就停。畫面用 F2 示意：s → b（2 < 4）就是一條結尾在 b 的 incomplete path。",
+    "把這些 v 都放進 S（source 自己也在），剩下的端點放進 T，T = V − S，也就是 S 的 complement。"
+   ]
+  },
+  {
+   "title": "例子：在 max flow F2 上找 S",
+   "points": [
+    {
+     "t": 413,
+     "text": "用上次的 maximum flow F2（value 10），feasibility、conservation 都成立。"
+    },
+    {
+     "t": 491,
+     "text": "(s,a) 5 = 5、(s,c) 3 = 3 走不過去；(s,b) 2 < 4 → b ∈ S。"
+    },
+    {
+     "t": 544,
+     "text": "(b,d) 2 = 2 也走不過去，所以 S = {s, b}、T = {a, c, d, t}。"
+    }
+   ],
+   "scene": "g8f-findS",
+   "cues": [
+    413.4,
+    453,
+    469,
+    476.9,
+    491,
+    504,
+    507.1,
+    531.1,
+    543.8,
+    552.4,
+    568.2,
+    592
+   ],
+   "explain": [
+    "用例子說明 S 怎麼找。用的是上次最後算出來的 maximum flow F2。",
+    "先確認它是合法的 flow：每個紅色都 ≤ 黃色，feasibility ✓。",
+    "除了 source 和 sink，每個點 inflow 都等於 outflow，conservation ✓。",
+    "現在從 source 出發，看哪些端點可以經由 incomplete f-augmenting path 到達。",
+    "走 (s,a) 不行：它是 forward 邊，需要 f < c，但 5 剛好等於 5，滿了。",
+    "走 (s,c) 也不行：3 等於 3，也滿了。",
+    "只剩 (s,b)：2 < 4，可以走。所以 b 可以到，b 放進 S。",
+    "a 和 c 都到不了，因為第一條邊就不滿足條件。",
+    "從 b 再往下：(b,d) 的 flow 2 等於 capacity 2，又走不過去。也沒有 flow > 0 的邊指進 s 或 b（可以逆著走的）。",
+    "所以能到的只有 s 和 b：S = {s, b}。程式用 BFS 也算出一樣的結果。",
+    "剩下的放 T：a、c、d、t。",
+    "這就是 S 的找法：source 本身，加上所有能用 incomplete f-augmenting path 走到的端點。"
+   ]
+  },
+  {
+   "title": "S、T 是合法的 cut：t 一定在 T",
+   "points": [
+    {
+     "t": 646,
+     "text": "S、T 是 partition 且 s ∈ S，只要再證 t ∈ T。"
+    },
+    {
+     "t": 699,
+     "text": "反證：若 t ∈ S，就有 s 到 t 的 f-augmenting path，F 還能增大，與 F 是 maximum 矛盾。"
+    },
+    {
+     "t": 824,
+     "text": "所以 (S, T) 是 separating s、t 的 cut。"
+    }
+   ],
+   "scene": "g8f-tinT",
+   "cues": [
+    645.8,
+    666.2,
+    699.5,
+    722.5,
+    757.4,
+    779,
+    824.1
+   ],
+   "explain": [
+    "要確定這樣找出來的 (S, T) 是合法的 cut：它是 V 的 partition（T 就是剩下的），source 也在 S 裡。",
+    "只剩一件事要確定：sink t 一定在 T 裡。",
+    "用反證法：假設 t 不在 T，那 t 就在 S 裡。",
+    "t 在 S，照 S 的定義，就有一條從 s 到 t 的 incomplete f-augmenting path。終點剛好是 t，所以它就是一條真正的 f-augmenting path。",
+    "有 f-augmenting path，就表示 flow 還可以再增大。",
+    "可是我們假設 F 是 maximum flow，不可能再增大，矛盾！",
+    "所以 t 一定在 T，(S, T) 是一個 separating source 和 sink 的 cut。例子：t 不在 {s, b} 裡 ✓。"
+   ]
+  },
+  {
+   "title": "從 S 到 T 的 forward edge 一定滿載",
+   "points": [
+    {
+     "t": 862,
+     "text": "接著證 c(S, T) = val(F)：val(F) = Σf(S→T) − Σf(T→S)。"
+    },
+    {
+     "t": 975,
+     "text": "forward edge (x, y)，x ∈ S、y ∈ T：若 f(x,y) < c(x,y)，path 可延長到 y，y ∈ S 矛盾。"
+    },
+    {
+     "t": 1223,
+     "text": "所以 f(x, y) = c(x, y)；例：(s,a)、(s,c)、(b,d) 都滿載。"
+    }
+   ],
+   "scene": "g8f-fwdsat",
+   "cues": [
+    862.1,
+    885.6,
+    942.1,
+    975.2,
+    1023,
+    1073.1,
+    1098,
+    1223,
+    1249.2
+   ],
+   "explain": [
+    "再來要證：這個 cut 的 capacity 剛好等於 maximum flow F 的 value。",
+    "注意順序：先有 maximum flow F，再用 F 定義出 S，最後才得到這個 cut。",
+    "value 的算法：從 S 流到 T 的總量，減掉從 T 流回 S 的總量（對任何 cut 都成立）。所以分別看這兩種邊。",
+    "先看 forward edge (x, y)：x 在 S、y 在 T，方向從 S 指到 T。",
+    "x 在 S，照定義，從 source 到 x 有一條 incomplete f-augmenting path。",
+    "flow 一定 ≤ capacity，只有兩種可能：小於，或等於。",
+    "如果 f(x,y) < c(x,y)：這條邊滿足 forward 的條件，可以把到 x 的 path 再延長到 y，那 y 就應該在 S。但 y 在 T，矛盾！",
+    "所以「小於」不可能，只好「等於」：從 S 到 T 的 forward edge，flow 一定等於 capacity（滿載）。",
+    "對照例子：從 {s,b} 指到 T 的 (s,a) 5 = 5、(s,c) 3 = 3、(b,d) 2 = 2，全部滿載 ✓。"
+   ]
+  },
+  {
+   "title": "從 T 到 S 的 backward edge 一定是 0",
+   "points": [
+    {
+     "t": 1263,
+     "text": "backward edge (u, v)，u ∈ T、v ∈ S。"
+    },
+    {
+     "t": 1381,
+     "text": "若 f(u, v) > 0，path 可從 v 延伸到 u，u ∈ S，與 u ∈ T 矛盾。"
+    }
+   ],
+   "scene": "g8f-bwdzero",
+   "cues": [
+    1263.4,
+    1294.1,
+    1314.6,
+    1381.1,
+    1429.5
+   ],
+   "explain": [
+    "用類似的道理，再看 backward edge。",
+    "邊 (u, v)：u 在 T、v 在 S，方向是從 T 指回 S。",
+    "v 在 S，所以從 source 到 v 有一條 incomplete f-augmenting path。",
+    "如果這條邊的 flow > 0：從 v 逆著走到 u，剛好符合 backward edge 的條件（f > 0），path 就能延伸到 u，u 就會在 S。",
+    "可是 u 在 T，矛盾！所以下一講會得到：這種邊的 flow 一定是 0。例子裡剛好沒有從 T 指回 {s, b} 的邊，也沒有反例。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Max-Flow Min-Cut Theorem 說的是？",
+   "opts": [
+    "flow 的最大值 = cut capacity 的最小值",
+    "任何 flow = 任何 cut capacity",
+    "flow 的最大值 = cut capacity 的最大值",
+    "flow 的最小值 = 0"
+   ],
+   "ans": "flow 的最大值 = cut capacity 的最小值",
+   "why": "最大的 flow value 剛好等於最小的 cut capacity；一般的 flow 只是 ≤。"
+  },
+  {
+   "q": "證明中 S 是怎麼定義的？",
+   "opts": [
+    "能從 s 經由 incomplete f-augmenting path 到達的端點",
+    "所有 flow > 0 的端點",
+    "跟 s 相鄰的端點",
+    "所有滿載邊的起點"
+   ],
+   "ans": "能從 s 經由 incomplete f-augmenting path 到達的端點",
+   "why": "S = { v : 存在從 s 到 v 的 incomplete f-augmenting path }，T = V − S。"
+  },
+  {
+   "q": "在 F2 上（(s,a) 5/5、(s,b) 2/4、(s,c) 3/3、(b,d) 2/2），S 是？",
+   "opts": [
+    "{s, b}",
+    "{s, a, b}",
+    "{s}",
+    "{s, b, d}"
+   ],
+   "ans": "{s, b}",
+   "why": "只有 (s,b) 沒滿可以走；從 b 出去的 (b,d) 也滿了。"
+  },
+  {
+   "q": "為什麼 sink t 一定在 T？",
+   "opts": [
+    "否則有 s 到 t 的 f-augmenting path，F 還能增大，矛盾",
+    "因為 t 沒有 outflow",
+    "因為 T 一定比 S 大",
+    "因為 capacity 是整數"
+   ],
+   "ans": "否則有 s 到 t 的 f-augmenting path，F 還能增大，矛盾",
+   "why": "t 在 S 代表有一條完整的 f-augmenting path，跟 F 是 maximum flow 矛盾。"
+  },
+  {
+   "q": "證明中，從 S 指到 T 的 forward edge (x, y) 的 flow 一定是？",
+   "opts": [
+    "等於 c(x, y)",
+    "等於 0",
+    "小於 c(x, y)",
+    "大於 c(x, y)"
+   ],
+   "ans": "等於 c(x, y)",
+   "why": "若小於 capacity，path 可延伸到 y，y 會在 S，矛盾，所以一定滿載。"
+  }
+ ]
+}
