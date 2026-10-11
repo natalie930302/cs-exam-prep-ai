@@ -199,9 +199,9 @@
  },
  "2IdtqGM6KWU": {
   "label": "MIT OCW 18.06 L11：Matrix Spaces; Rank 1; Small World Graphs",
-  "points": 35,
-  "quiz": 5,
-  "cued": false
+  "points": 49,
+  "quiz": 6,
+  "cued": true
  },
  "2nTqrHZhVQ0": {
   "label": "清大周志遠 第2A講 Historical Prospective(Mainframe)",
@@ -337,9 +337,9 @@
  },
  "6-wh6yvk6uc": {
   "label": "MIT OCW 18.06 L12：Graphs, Networks, Incidence Matrices",
-  "points": 34,
-  "quiz": 5,
-  "cued": false
+  "points": 43,
+  "quiz": 6,
+  "cued": true
  },
  "62uS-MOv0bY": {
   "label": "交大江蕙如 Lec15 Divide and Conquer (1/2)",
@@ -965,6 +965,12 @@
   "quiz": 7,
   "cued": true
  },
+ "eeMJg4uI7o0": {
+  "label": "MIT 18.06：Independence, Basis, and Dimension",
+  "points": 15,
+  "quiz": 5,
+  "cued": true
+ },
  "efH4nuwUalA": {
   "label": "清大周志遠 第22A講 System Model & Deadlock Characterization",
   "points": 36,
@@ -1071,6 +1077,12 @@
   "label": "MIT 6.006：AVL Trees, AVL Sort",
   "points": 104,
   "quiz": 8,
+  "cued": true
+ },
+ "fNk_zzaMoSs": {
+  "label": "3Blue1Brown：Vectors",
+  "points": 15,
+  "quiz": 5,
   "cued": true
  },
  "fOgt4u5Hjs0": {
@@ -1439,6 +1451,12 @@
   "quiz": 7,
   "cued": true
  },
+ "k7RM-ot2NWY": {
+  "label": "3Blue1Brown：Linear combinations, span, and basis vectors",
+  "points": 13,
+  "quiz": 5,
+  "cued": true
+ },
  "Kg4bqzAqRBM": {
   "label": "MIT 6.006 L3：Insertion Sort, Merge Sort",
   "points": 87,
@@ -1496,6 +1514,12 @@
  "kyUpc_5705s": {
   "label": "Abdul Bari：BFS DFS - Simplified",
   "points": 15,
+  "quiz": 7,
+  "cued": true
+ },
+ "l88D4r74gtM": {
+  "label": "MIT OCW 18.06 L13：Quiz 1 Review",
+  "points": 31,
   "quiz": 7,
   "cued": true
  },
@@ -2243,6 +2267,12 @@
   "quiz": 7,
   "cued": true
  },
+ "TgKwz5Ikpc8": {
+  "label": "3Blue1Brown：Abstract vector spaces | Ch16",
+  "points": 21,
+  "quiz": 5,
+  "cued": true
+ },
  "tIE2lkJv20c": {
   "label": "Theory of Computation：P, NP, NP-Complete and NP-Hard",
   "points": 27,
@@ -2361,6 +2391,12 @@
   "label": "清大周志遠 第24B講 File System Implementation",
   "points": 23,
   "quiz": 7,
+  "cued": true
+ },
+ "uQhTuRlWMxw": {
+  "label": "3Blue1Brown：Inverse matrices, column space and null space",
+  "points": 17,
+  "quiz": 6,
   "cued": true
  },
  "USLvdBuxTno": {
