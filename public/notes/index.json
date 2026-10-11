@@ -193,9 +193,9 @@
  },
  "2dYV_lADfFI": {
   "label": "Amdahl's Law in COA: Basics, Proof, and CPU Performance",
-  "points": 16,
+  "points": 17,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "2E7MmKv0Y24": {
   "label": "MIT 6.006 L16：Dijkstra",
@@ -1015,9 +1015,9 @@
  },
  "E82x-cug9YE": {
   "label": "Modes of Transfer | Programmed, Interrupt-initiated I/O & DMA",
-  "points": 24,
+  "points": 28,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "EAvNAZUNDnw": {
   "label": "清大OCW 趙啟超《離散數學》第6B講 Relations",
@@ -2405,6 +2405,12 @@
   "quiz": 6,
   "cued": true
  },
+ "r_ZE1XVT8Ao": {
+  "label": "Cache Coherence Problem & Cache Coherency Protocols",
+  "points": 32,
+  "quiz": 7,
+  "cued": true
+ },
  "s-CYnVz-uh4": {
   "label": "MIT 6.006 L13：BFS",
   "points": 33,
@@ -3039,6 +3045,12 @@
   "label": "清大周志遠 第26D講 I/O Systems",
   "points": 37,
   "quiz": 7,
+  "cued": true
+ },
+ "Yp_3OrDhUkQ": {
+  "label": "Bus Arbitration in Computer Organization | Centralized & Distributed",
+  "points": 21,
+  "quiz": 6,
   "cued": true
  },
  "yR-nZxFS8Hk": {

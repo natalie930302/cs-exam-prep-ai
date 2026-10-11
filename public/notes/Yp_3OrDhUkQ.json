@@ -1,0 +1,316 @@
+{
+ "video": "Yp_3OrDhUkQ",
+ "label": "Bus Arbitration in Computer Organization | Centralized & Distributed",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：接續上一講的 bus architecture",
+   "scene": null,
+   "points": [
+    {
+     "t": 0,
+     "text": "上一講談 bus architecture，這一講談 bus arbitration。"
+    }
+   ]
+  },
+  {
+   "title": "什麼是 bus arbitration",
+   "scene": "cio-arbwhy",
+   "points": [
+    {
+     "t": 13,
+     "text": "system bus 由 data bus、address bus、control bus 組成。"
+    },
+    {
+     "t": 23,
+     "text": "arbitration：決定誰可以使用 bus 來讀或寫。"
+    },
+    {
+     "t": 37,
+     "text": "多個裝置可能同時需要 bus，但同一時間只能服務一個裝置，所以要由 arbitration（像 master）決定先給誰。"
+    },
+    {
+     "t": 100,
+     "text": "arbitration scheme 要在 bus priority（高優先先服務）與 fairness（每個裝置都能被服務）之間取得平衡。"
+    },
+    {
+     "t": 166,
+     "text": "三種機制：daisy chain、polling、independent request；各用特別的 control lines，都依 priority 服務，但規則不同。"
+    }
+   ],
+   "cues": [
+    13.1,
+    23.6,
+    37.6,
+    62.2,
+    81.1,
+    92,
+    100.6,
+    140.2,
+    149.5,
+    166,
+    190.7,
+    212.2,
+    225.2
+   ],
+   "explain": [
+    "先複習：電腦裡的 system [[bus]]（大家共用的一組傳輸線）分成三種：data bus 傳資料、address bus 傳位址、control bus 傳控制訊號。",
+    "arbitration（仲裁）就是「決定現在輪到誰用 bus」，不論是要讀還是要寫。左邊方塊代表做決定的電路。",
+    "為什麼需要仲裁？因為好幾個裝置（D1、D2、D3）可能在同一時間都想用 bus。",
+    "bus 同時接著很多裝置，所以必須決定「先把 bus 交給哪一個」。",
+    "講者把 arbitration 比喻成一個 master（老大）：由它決定哪個裝置先用。",
+    "同一時間 bus 只能服務一個裝置：D1 的資料上了 bus，D2、D3 只能等。",
+    "好的仲裁方式要在兩件事之間取得平衡：priority（優先權）和 fairness（公平）。像天秤的兩端。",
+    "priority：優先權最高的先服務，再輪到較低的。這裡假設 D1 最高、D3 最低。",
+    "fairness：每個裝置是不是都有機會被服務到，不會有人永遠排不到。",
+    "實際上有三種仲裁機制。",
+    "分別是 ① daisy chain（菊花鏈）、② polling（輪詢）、③ independent request（獨立請求）。",
+    "每一種都要用一些特別的控制線（control lines），下面列出各自用到的線，等一下一個一個看。",
+    "三種的目標一樣：依照優先權服務裝置；只是做法和規則各不相同。"
+   ]
+  },
+  {
+   "title": "① Daisy chain",
+   "scene": "cio-daisy",
+   "points": [
+    {
+     "t": 244,
+     "text": "整個系統只有一個 bus master 負責決定；裝置 D1、D2、D3 接到 bus request、bus busy、bus grant 三條線。"
+    },
+    {
+     "t": 332,
+     "text": "裝置送 bus request 給 master；master 確認 bus 空閒（不 busy）。"
+    },
+    {
+     "t": 356,
+     "text": "優先權由位置決定：D1 最高、D3 最低；master 先把 grant 給 D1，D1 拿到 bus 並送出 busy。"
+    },
+    {
+     "t": 394,
+     "text": "D1 用完釋放 bus，grant 往下傳，D2 接著用，之後才輪到 D3。"
+    },
+    {
+     "t": 424,
+     "text": "優點：構造簡單。"
+    },
+    {
+     "t": 436,
+     "text": "缺點：不能保證 fairness，低優先權裝置可能被無限期擋住（starvation）；grant 一台台傳，限制 bus 速度、比較慢。"
+    }
+   ],
+   "trap": "補充（課本）：daisy chain 的 grant 只有在裝置「沒有請求」時才往下傳；離 arbiter 越近優先權越高，遠端可能 starvation。",
+   "cues": [
+    244.3,
+    261.3,
+    295.5,
+    309.7,
+    332.6,
+    340.8,
+    356.8,
+    369.5,
+    380.3,
+    394.3,
+    404,
+    414.5,
+    424.5,
+    436.7,
+    453,
+    484.7
+   ],
+   "explain": [
+    "第一種：daisy chain（菊花鏈）。名字的意思是裝置像花圈一樣一個串一個。",
+    "做決定的只有一個角色：bus master。整個系統只有一個 master。",
+    "接上三個裝置 D1、D2、D3。",
+    "三條控制線：BR（bus request，請求線，大家共用）、BUSY（忙碌線，大家共用）、BG（bus grant，允許線）。BG 很特別：它從 master 出發，一台串一台經過 D1、D2、D3。",
+    "想用 bus 的裝置把 BR 拉起來，通知 master「有人要用」。這裡假設三台都要（示意）。",
+    "master 先確認 BUSY 線是 0，也就是 bus 現在沒人在用。",
+    "daisy chain 的優先權由「離 master 多近」決定：D1 最近、優先權最高；D3 最遠、最低。",
+    "master 送出 grant，grant 先到 D1。D1 有請求，就把 grant 攔下來，不再往下傳。",
+    "D1 拿到 bus，同時拉起 BUSY 線（紅色），告訴大家「我在用」，別人就不能再要。",
+    "D1 用完就釋放 bus（BUSY 放下）。下一次 grant 經過 D1 時，D1 已經沒有請求，就把 grant 往下傳給 D2（這是課本的標準做法）。",
+    "程式模擬：D2 是下一個有請求的裝置，所以 D2 拿到 bus。",
+    "D2 用完後，grant 一路經過 D1、D2，最後到 D3。服務順序就是 D1 → D2 → D3，一個接一個，像一條鏈。",
+    "優點：電路很簡單，線也很少。",
+    "缺點：不能保證 fairness（公平）。低優先權的裝置可能被一直擋在外面。",
+    "示意：D3 一直在等，但 D1、D2 用完又馬上再請求。因為 grant 總是先經過它們，模擬 4 輪都被 D1、D2 拿走，D3 一次都沒輪到。這種「永遠等不到」叫 starvation（飢餓）。",
+    "另一個缺點：比較慢。grant 要一台一台經過才能到後面的裝置，到 D3 要經過 3 站，鏈越長越慢，這就限制了 bus 的速度。"
+   ]
+  },
+  {
+   "title": "② Polling",
+   "scene": "cio-poll",
+   "points": [
+    {
+     "t": 497,
+     "text": "polling 像 daisy chain，但沒有串接的 bus grant；改用一組 poll lines，由 master 決定先服務誰。"
+    },
+    {
+     "t": 584,
+     "text": "步驟：bus 不忙時裝置發 bus request → master 把 device ID 依序放上 poll lines 檢查 → 拿到 grant 的裝置標示 bus busy。"
+    },
+    {
+     "t": 692,
+     "text": "優點：沒有 daisy chain 的缺點；每台有 ID，不會無限期等待。"
+    },
+    {
+     "t": 749,
+     "text": "缺點：需要額外的 poll lines；逐一 poll 也有延遲。"
+    }
+   ],
+   "cues": [
+    497.7,
+    509,
+    525.3,
+    539.1,
+    560.6,
+    584.9,
+    605.4,
+    644.9,
+    664.9,
+    692.9,
+    709.6,
+    733.6,
+    749.3,
+    766.2
+   ],
+   "explain": [
+    "第二種：polling（輪詢）。講者特別強調拼法是 p-o-l-l-i-n-g。",
+    "它很像 daisy chain，差別是：沒有那條一路串下去的 bus grant，而是由 master 自己決定先服務哪一台。",
+    "一樣接三個裝置 D1、D2、D3。",
+    "用到三種線：poll lines（紫色，可以有好幾條）、bus request、bus busy（有人在用 bus 時拉起來）。",
+    "原本的 grant 線換成「一組 poll lines」，上面放的是裝置的 ID（編號）。程式算：3 台裝置用 ID 1～3，2 條線就能表示（2 個 bit 最多到 3），這是示意。",
+    "步驟 1：bus 沒在忙時，想用的裝置向 master 發 bus request。這裡假設 D2、D3 想用（示意）。",
+    "步驟 2：master 一個一個把裝置 ID 放上 poll lines 去問。ID 1 是 D1，它沒請求；ID 2 是 D2，它有請求，就回應 master。",
+    "每台裝置都有自己的 ID，master 依照 ID 決定先服務誰。",
+    "步驟 3：拿到 bus grant 的裝置（D2）把 bus 標成 busy，開始使用。",
+    "優點：daisy chain 的那些缺點，在這裡都沒有。",
+    "複習 daisy chain 的問題：不公平、比較慢；最低優先權的裝置可能一直等。",
+    "在 polling 裡每台都有 ID，master 可以安排從哪個 ID 開始問。示意：上一次服務了 D2，這次從 ID 3 開始，D3 就先被服務，不會無限期等下去。",
+    "缺點：需要多幾條 poll lines；daisy chain 只要一條 grant 線就夠。",
+    "另外，master 一台一台 poll 也要花時間，所以跟 daisy chain 的 grant 一樣有延遲。"
+   ]
+  },
+  {
+   "title": "③ Independent request",
+   "scene": "cio-indep",
+   "points": [
+    {
+     "t": 772,
+     "text": "每個裝置各有獨立的 request（R）與 grant（G）線，直接向 bus master 請求。"
+    },
+    {
+     "t": 805,
+     "text": "裝置送 R_i，bus 空閒時 master 回 G_i；bus 忙時要等釋放後才會被 grant，仍依 priority 決定。"
+    },
+    {
+     "t": 885,
+     "text": "步驟：bus 不忙 → bus request；master 經 grant 線決定給誰；拿到 grant 標 bus busy；用完 bus release。"
+    },
+    {
+     "t": 916,
+     "text": "優點：快、可以做 dynamic priority。"
+    },
+    {
+     "t": 932,
+     "text": "缺點：N 個裝置需要 2N 條線（request 與 grant 各一條）。"
+    }
+   ],
+   "cues": [
+    772.8,
+    790.2,
+    805.1,
+    816,
+    822.1,
+    835,
+    851.4,
+    864.7,
+    885.9,
+    916.8,
+    932.6,
+    952.5
+   ],
+   "explain": [
+    "第三種：independent request（獨立請求）。名字就說了：每個裝置彼此獨立。",
+    "master 和 D1、D2、D3 之間，每台都有一條自己的 request 線（R，橘色）和一條自己的 grant 線（G，綠色），還有一條大家共用的 BUSY。",
+    "D1 準備好要用 bus，就從自己的 R1 線送出請求；bus 正空著，master 從 G1 線回覆允許，D1 拿到 bus。",
+    "D2 也從 R2 送請求，但 bus 正被 D1 用，所以先等；D1 用完釋放後，master 才從 G2 回覆 D2。",
+    "D3 從 R3 請求，等 bus 空出來，master 就送 G3 給 D3。",
+    "那條共用的 BUSY 線：誰在用 bus，誰就把它拉起來，別人一看就知道要等。",
+    "講者強調：bus 忙的時候，裝置一定要等到 bus 被釋放。這次 D1 再請求，要等 D3 放掉 bus，master 才送 G1。",
+    "如果好幾台同時請求，master 一樣是 bus 空了才送 grant，並依照優先權決定。示意中 D1 優先權最高，所以先給 D1。",
+    "整理步驟：① bus 不忙就送 request；② master 決定給誰、從 grant 線通知；③ 拿到的人標 bus busy；④ 用完標 bus release（釋放）。",
+    "優點：反應快，而且可以做 dynamic priority（動態優先權）：優先權可以隨時調整。示意：把 D3 調成最高，這次就給 D3。",
+    "缺點：線太多了。每台要一條 request 加一條 grant，N 台就要 2N 條；3 台就是 6 條（亮起來的就是這 6 條）。",
+    "三種機制整理：daisy chain 線最少但不公平、慢；polling 要額外的 poll lines；independent request 最快、最有彈性，但要 2N 條線。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Bus arbitration 的目的？",
+   "opts": [
+    "多個裝置同時要用 bus 時，決定由誰先使用",
+    "把 data bus 拆成 address bus",
+    "加快 CPU 的 clock",
+    "讓所有裝置同時使用 bus"
+   ],
+   "ans": "多個裝置同時要用 bus 時，決定由誰先使用",
+   "why": "同一時間 bus 只能服務一個裝置，所以要仲裁。"
+  },
+  {
+   "q": "Daisy chain 中，三台裝置 D1（最靠近 master）、D2、D3 都送出請求，誰先拿到 bus？",
+   "opts": [
+    "D1",
+    "D2",
+    "D3",
+    "三台同時"
+   ],
+   "ans": "D1",
+   "why": "grant 從 master 依序傳，第一個有請求的 D1 會攔下來。"
+  },
+  {
+   "q": "Daisy chain 的缺點？",
+   "opts": [
+    "不能保證 fairness，低優先權可能無限期等待，且 grant 逐台傳遞較慢",
+    "需要 2N 條線",
+    "需要額外的 poll lines",
+    "構造非常複雜"
+   ],
+   "ans": "不能保證 fairness，低優先權可能無限期等待，且 grant 逐台傳遞較慢",
+   "why": "影片：simple 是優點；缺點是 no fairness 與 slower。"
+  },
+  {
+   "q": "Polling arbitration 中，master 如何決定服務哪個裝置？",
+   "opts": [
+    "把 device ID 放上 poll lines，逐一檢查有請求的裝置",
+    "把 grant 從第一台一路串到最後一台",
+    "每台裝置各用一條獨立的 grant 線",
+    "讓裝置自己偵測碰撞"
+   ],
+   "ans": "把 device ID 放上 poll lines，逐一檢查有請求的裝置",
+   "why": "每台有 ID，master 放 ID 到 poll lines 上檢查；缺點是多了 poll lines。"
+  },
+  {
+   "q": "Independent request 用於 N 個裝置時需要多少條 request／grant 線？",
+   "opts": [
+    "2N",
+    "N",
+    "1",
+    "log₂N"
+   ],
+   "ans": "2N",
+   "why": "每台一條 request、一條 grant。"
+  },
+  {
+   "q": "Independent request 的優點？",
+   "opts": [
+    "快，而且可以使用 dynamic priority",
+    "線最少",
+    "不需要 bus master",
+    "一定不會有人等待"
+   ],
+   "ans": "快，而且可以使用 dynamic priority",
+   "why": "master 一次看到所有 request，可以隨時改變優先權。"
+  }
+ ]
+}

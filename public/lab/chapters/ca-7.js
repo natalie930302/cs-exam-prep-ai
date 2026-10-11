@@ -2,6 +2,8 @@
 // MIPS 的 exception／interrupt 處理：EPC、Cause；polling／interrupt／DMA 的 CPU 負擔；bus、handshake、bus arbitration；磁碟存取時間）。
 // 影片 E82x-cug9YE（Modes of Transfer）有字幕：場景 three-modes、programmed-io、interrupt-io、pio-limits、dma、dma-pros-cons 依它的順序與內容。
 // Bus Arbitration 影片沒有逐字稿；其餘場景依 Patterson & Hennessy（MIPS 版）。
+import kit from './_kit.js';
+
 export default function (ctx) {
   const { THREE, lab, sleep, $, log, clearLog, setState, controls, on, say, beat } = ctx;
   let timer = null;
@@ -665,6 +667,904 @@ export default function (ctx) {
     'disk-time': { title: 'P&H 例：磁碟讀一個 sector 約 6.2 ms', play: scDiskTime },
   };
 
+
+  // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
+  const K = kit(ctx);
+  const FRAG = [];
+  // ═══ io.js ═══
+  {
+const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
+const { tint, relabel } = P;
+// ─── 計算機組織 第 7 章（E82x-cug9YE Modes of Transfer、Yp_3OrDhUkQ Bus Arbitration）— cued scenes ───
+// 每個 scene = 一串 step 函式；影片講到那一句（notes 的 cue）才執行下一個。
+// CPU 忙碌時間（示意模型）、DMA 搬了幾個 word、daisy chain／polling／independent request 誰拿到 bus、
+// 線路數量，全部由程式模擬計算，再和畫面上的說法比對，顯示 ✓／✘。講者沒有給數字的例子標「示意」。
+const WD = (ch) => (ch.charCodeAt(0) < 256 ? 0.55 : 1);
+function brk(t, max = 34) {
+  t = String(t); let tot = 0; for (const c of t) tot += WD(c); if (tot <= max + 4) return t;
+  const out = []; let ln = '', len = 0;
+  for (const c of t) { ln += c; len += WD(c); if ((len >= max && /[，；：、。）)→]/.test(c)) || (len >= max + 6 && c === ' ') || len >= max + 10) { out.push(ln.trim()); ln = ''; len = 0; } }
+  if (ln.trim()) out.push(ln.trim()); return out.join('\n');
+}
+const wrapL = (l) => { if (l.element.textContent.includes('\n')) Object.assign(l.element.style, { whiteSpace: 'pre-line', textAlign: 'center', fontSize: '11.5px', lineHeight: '1.3' }); return l; };
+const txt = (l, t) => { l.element.textContent = brk(t); wrapL(l); };
+const cap = (a, b = '') => say(a, b);
+const hd = (t, x, y, z = 0) => wrapL(tag(brk(t), 'ptr', x, y, z));
+const hot = (t, x, y, z = 0) => wrapL(tag(brk(t), 'ptr alt', x, y, z));
+const sm = (t, x, y, z = 0) => wrapL(tag(brk(t), 'idx', x, y, z));
+const note = (t, x, y, z = 0) => wrapL(tag(brk(t), 'note', x, y, z));
+const good = (t, x, y, z = 0) => wrapL(tag(brk(t), 'good', x, y, z));
+const bad = (t, x, y, z = 0) => wrapL(tag(brk(t), 'bad', x, y, z));
+const bub = (t, x, y, z = 0) => wrapL(tag(brk(t), 'say', x, y, z));
+const ok = (b, x, y, t) => { if (!b) log('CHECK FAILED: ' + t, true); return b ? good(t, x, y) : bad(t.replace(/✓/g, '✘'), x, y); };
+const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.ls && typeof o.kill === 'function') return o.kill(); if (typeof o.all === 'function') return gone(o.all()); if (o.element) remove(o); else kill(o); });
+const wt = (tok, ms) => ctx.beat(tok, ms);
+const CAM = [[0, 3.9, 14.2], [0, 3.4, 0]];
+function scene(id, title, steps, cam = CAM) {
+  FRAG.push([id, title, async (tok) => {
+    fresh(cam[0], cam[1]);
+    const S = {};
+    for (const f of steps) { await step(tok); await f(tok, S); }
+  }]);
+}
+// a straight wire (horizontal or vertical) drawn as a thin box, so it can glow
+function wire(x1, y1, x2, y2, color = '#b9a98c', th = 0.1) {
+  const w = Math.max(th, Math.abs(x2 - x1)), h = Math.max(th, Math.abs(y2 - y1));
+  return cube('', color, [w, h, th * 2], (x1 + x2) / 2, (y1 + y2) / 2, 0);
+}
+// a signal / data chip (label) travelling along a path of [x, y] points
+async function go(tok, l, pts, ms = 900) {
+  const ps = pts.map(([x, y]) => V3(x, y, 0.9));
+  let tot = 0; const d = []; for (let i = 1; i < ps.length; i++) { d.push(ps[i].distanceTo(ps[i - 1])); tot += d[i - 1]; }
+  for (let i = 1; i < ps.length; i++) await travel(tok, l, ps[i - 1], ps[i], Math.max(60, ms * d[i - 1] / tot));
+}
+async function chip(tok, text, pts, ms = 900, keep = false) {
+  const l = tag(text, 'pkt', pts[0][0], pts[0][1], 0.9);
+  await go(tok, l, pts, ms);
+  if (!keep) remove(l);
+  return l;
+}
+
+// ════════ E82x-cug9YE（Modes of Transfer：programmed I/O、interrupt-initiated I/O、DMA） ════════
+// 小舞台：CPU、Memory 在上面，memory bus 在中間，I/O interface（或 DMA controller）與周邊裝置在下面
+const CPU = [-4.6, 4.9], MEM = [4.6, 4.9], ITF = [0.6, 1.5], DEV = [4.6, 1.5], BY = 3.2;
+const PATH = {
+  devMem: [DEV, ITF, [ITF[0], BY], [MEM[0], BY], MEM],
+  devCpu: [DEV, ITF, [ITF[0], BY], [CPU[0], BY], CPU],
+  cpuMem: [CPU, [CPU[0], BY], [MEM[0], BY], MEM],
+  memCpu: [MEM, [MEM[0], BY], [CPU[0], BY], CPU],
+  cpuDev: [CPU, [CPU[0], BY], [ITF[0], BY], ITF, DEV],
+  cpuItf: [CPU, [CPU[0], BY], [ITF[0], BY], ITF],
+  itfCpu: [ITF, [ITF[0], BY], [CPU[0], BY], CPU],
+  memDev: [MEM, [MEM[0], BY], [ITF[0], BY], ITF, DEV],
+};
+function rig(S, itfName = 'I/O interface') {
+  S.cpu = cube('CPU', '#31aab0', [1.9, 1.1, 1.2], CPU[0], CPU[1]);
+  S.mem = cube('Memory', '#c9b48e', [1.9, 1.3, 1.2], MEM[0], MEM[1]);
+  S.bus = cube('', '#b9a98c', [12.2, 0.14, 0.3], 0, BY);
+  S.busL = sm('memory bus', -5.4, BY + 0.38);
+  S.itf = cube(itfName, itfName.startsWith('DMA') ? '#2fc092' : '#9b7ef4', [2.2, 0.9, 1.0], ITF[0], ITF[1]);
+  S.dev = cube('周邊裝置', '#efe6d6', [1.8, 0.9, 1.0], DEV[0], DEV[1]);
+  S.wires = [wire(CPU[0], BY, CPU[0], CPU[1] - 0.55), wire(MEM[0], BY, MEM[0], MEM[1] - 0.65), wire(ITF[0], ITF[1] + 0.45, ITF[0], BY), wire(ITF[0] + 1.1, ITF[1], DEV[0] - 0.9, DEV[1])];
+}
+// CPU 時間條（示意模型）：8 個 word，裝置每 20 cycles 準備好一個（t = 10, 30, …, 150），觀察 160 cycles
+const TLN = 8, TLD = 20, TLT = 160, ISR = 6, SETUP = 10;
+const READY = Array.from({ length: TLN }, (_, k) => 10 + TLD * k);
+function cpuModel(mode) {
+  const seg = [];
+  if (mode === 'pio') { let t0 = 0; for (const t of READY) { seg.push([t0, t, 'poll'], [t, t + 2, 'xfer']); t0 = t + 2; } seg.push([t0, TLT, 'poll']); }
+  if (mode === 'intr') for (const t of READY) seg.push([t, t + ISR, 'isr']);
+  if (mode === 'dma') { seg.push([0, SETUP, 'setup']); for (const t of READY) seg.push([t, t + 1, 'steal']); seg.push([READY[TLN - 1] + 1, READY[TLN - 1] + 1 + ISR, 'isr']); }
+  seg.sort((a, b) => a[0] - b[0]);
+  let busy = 0, overlap = false, end = 0;
+  for (const [a, b] of seg) { if (a < end) overlap = true; busy += b - a; end = Math.max(end, b); }
+  return { seg, busy, free: TLT - busy, overlap, pct: Math.round((TLT - busy) / TLT * 100) };
+}
+const SEGC = { poll: '#d64545', xfer: '#dd8238', isr: '#e55a9b', setup: '#9b7ef4', steal: '#c08a1f' };
+const SEGN = { poll: 'polling', xfer: '搬資料', isr: '中斷服務', setup: '設定 DMA', steal: '被偷的 cycle' };
+function mkStrip(y = 7.0, x0 = -3.6, W = 7.2) {
+  const k = W / TLT, st = { parts: [], k, x0, y }; st.all = () => st.parts;
+  st.parts.push(cube('', '#2fc092', [W, 0.12, 0.5], x0 + W / 2, y - 0.12));
+  st.parts.push(sm('CPU 的時間（示意：' + TLT + ' cycles）', x0 - 1.9, y));
+  st.seg = (a, b, kind) => { const w = Math.max(0.03, (b - a) * k); const m = cube('', SEGC[kind], [w, 0.38, 0.55], x0 + a * k + w / 2, y); st.parts.push(m); return m; };
+  st.draw = async (tok, model, ms = 1600) => { const n = model.seg.length; for (let i = 0; i < n; i++) { const [a, b, kd] = model.seg[i]; st.seg(a, b, kd); if (i % Math.max(1, Math.round(n / 12)) === 0) await wt(tok, ms / Math.min(12, n)); } };
+  return st;
+}
+
+scene('cio-three', 'Modes of transfer：memory 才是 source 與 target', [
+  async (tok, S) => { // @32.2
+    rig(S);
+    S.bits = tag('0101', 'pkt', DEV[0], DEV[1] + 0.8, 0.9);
+    S.t = hd('電腦處理的是 binary 資訊（0 與 1）', 0, 7.2);
+    cap('電腦處理的是 binary 資訊', '外部裝置送來的也是 0 與 1');
+  },
+  async (tok, S) => { // @46.0
+    await go(tok, S.bits, PATH.devMem, 1800);
+    glow(S.mem, '#6a4a00');
+    S.n1 = note('外部裝置送來的每一筆資料 → 最後都存進 memory', 0, 0.2);
+    cap('外部裝置的資料最後存進 memory', '以 binary 的形式存');
+  },
+  async (tok, S) => { // @57.7
+    gone(S.n1); glow(S.mem, null);
+    await chip(tok, '0110', [...PATH.memCpu, [CPU[0], BY], [ITF[0], BY], ITF, DEV], 2400);
+    S.n1 = note('CPU 送到外部裝置的資料 → 也是從 memory 出發', 0, 0.2);
+    cap('CPU 送出去的資料也來自 memory', '');
+  },
+  async (tok, S) => { // @67.4
+    glow(S.cpu, '#6a4a00');
+    S.c1 = bub('CPU 只是處理、居中轉手', CPU[0], CPU[1] + 1.1);
+    cap('CPU 只負責處理資訊', '');
+  },
+  async (tok, S) => { // @74.5
+    glow(S.cpu, null); gone(S.n1);
+    glow(S.mem, '#0f5a3a');
+    S.m1 = hot('source 與 target 永遠是 memory', MEM[0], MEM[1] + 1.1);
+    cap('真正的 source 與 target 是 memory', 'memory unit is the source and target');
+  },
+  async (tok, S) => { // @84.2
+    gone(S.t, S.c1, S.bits); glow(S.mem, null);
+    S.t = hd('CPU ↔ I/O 的資料傳輸：有不同的 mode', 0, 7.2);
+    cap('CPU 與 I/O 的資料傳輸', '可以用不同的 mode 來做');
+  },
+  async (tok, S) => { // @93.4
+    S.n1 = note('有的 mode：CPU 是中間路徑', -2.6, 0.2);
+    glow(S.cpu, '#6a4a00');
+    await chip(tok, 'data', [...PATH.devCpu, [CPU[0], BY], [MEM[0], BY], MEM], 2200);
+    glow(S.cpu, null);
+    cap('有的 mode：資料經過 CPU', 'CPU 是 intermediate path');
+  },
+  async (tok, S) => { // @96.5
+    S.n2 = note('有的 mode：memory ↔ I/O 直接傳', 3.0, 0.2);
+    await chip(tok, 'data', PATH.devMem, 1500);
+    cap('有的 mode：memory 與 I/O 直接傳', '不經過 CPU');
+  },
+  async (tok, S) => { // @110.8
+    gone(S.n1, S.n2, S.m1);
+    S.list = ['① Programmed I/O', '② Interrupt-initiated I/O', '③ Direct Memory Access（DMA）'].map((s, k) => hot(s, 0, 6.4 - k * 0.62));
+    cap('三種方式', 'programmed I/O、interrupt I/O、DMA');
+  },
+]);
+
+scene('cio-pio', 'Programmed I/O：CPU 一直 polling（busy waiting）', [
+  async (tok, S) => { // @129.2
+    rig(S);
+    S.t = hd('① Programmed I/O：最簡單的 I/O 方式', 0, 7.5);
+    cap('第一種：Programmed I/O', '最簡單的 input-output 方式');
+  },
+  async (tok, S) => { // @137.1
+    glow(S.cpu, '#6a4a00');
+    S.c1 = bub('所有工作都由 CPU 做', CPU[0], CPU[1] + 1.1);
+    cap('CPU 要做所有的事', 'every work is done by the CPU');
+  },
+  async (tok, S) => { // @154.1
+    glow(S.cpu, null);
+    await chip(tok, 'data', PATH.devCpu, 1600);
+    S.n1 = note('processor ↔ I/O module：資料一定經過 CPU', 0, 0.2);
+    cap('processor 與 I/O module 之間傳資料', 'transfer is via CPU only');
+  },
+  async (tok, S) => { // @170.2
+    gone(S.c1, S.n1);
+    S.code = code(['loop: lw  $t0, STATUS   # 讀狀態', '      beq $t0, $0, loop  # 還沒 ready', '      lw  $t1, DATA     # 讀資料', '      sw  $t1, 0($a0)   # 存進 memory'], -0.6, 6.85, 0.44);
+    S.cn = sm('程式裡的 I/O 指令（示意，MIPS 風格）', -0.6, 5.0);
+    cap('I/O 指令寫在程式裡', '程式執行到它們才傳資料');
+  },
+  async (tok, S) => { // @181.7
+    S.code.hl(2); glow(S.cpu, '#6a4a00');
+    S.reg = tag('$t1', 'pkt', CPU[0] - 0.4, CPU[1] - 1.0, 0.9);
+    await chip(tok, 'data', PATH.devCpu, 1300);
+    S.n1 = note('每一筆資料，都要由程式裡的一個指令發動', 0, 0.2);
+    cap('每一筆資料都由一個指令發動', 'lw 把資料讀進 CPU 暫存器');
+  },
+  async (tok, S) => { // @190.3
+    S.code.hl(3); remove(S.reg);
+    await chip(tok, '$t1', PATH.cpuMem, 1500);
+    glow(S.cpu, null);
+    txt(S.n1, '通常是：CPU 暫存器 ↔ memory');
+    cap('通常是 CPU 暫存器與 memory 之間', 'sw 把暫存器存進 memory');
+  },
+  async (tok, S) => { // @198.4
+    gone(S.n1);
+    S.code.hl(0); S.polls = 1; glow(S.cpu, '#7a1010');
+    await chip(tok, 'ready?', PATH.cpuItf, 900);
+    await chip(tok, 'status = 0', PATH.itfCpu, 900);
+    S.code.hl(1);
+    S.pc = bad('polling 第 1 次：還沒 ready', CPU[0], 6.05);
+    cap('CPU 必須一直監看周邊裝置', 'constant monitoring by the CPU');
+  },
+  async (tok, S) => { // @209.8
+    for (let k = 0; k < 2; k++) {
+      S.code.hl(0); await chip(tok, 'ready?', PATH.cpuItf, 600);
+      await chip(tok, 'status = 0', PATH.itfCpu, 600); S.code.hl(1); S.polls++;
+      txt(S.pc, 'polling 第 ' + S.polls + ' 次：還沒 ready');
+    }
+    cap('一直問：裝置 ready 了沒？', 'ready for data transfer or not');
+  },
+  async (tok, S) => { // @218.4
+    gone(S.code, S.cn);
+    S.m = cpuModel('pio'); S.st = mkStrip(7.0);
+    await S.st.draw(tok, S.m, 1800);
+    S.n1 = note('CPU 一直忙著 polling（紅）與搬資料（橘）', 1.2, 6.3);
+    cap('CPU 一直處在忙碌狀態', '忙著監看裝置');
+  },
+  async (tok, S) => { // @227.5
+    S.other = bad('其他程式：等不到 CPU', CPU[0], 6.6);
+    cap('這段時間 CPU 不能做別的事', '只有在監看');
+  },
+  async (tok, S) => { // @235.0
+    gone(S.n1);
+    S.c2 = ok(S.m.busy === TLT && S.m.free === 0 && !S.m.overlap, 1.2, 6.3, 'CPU 可以做別的事：' + S.m.free + ' / ' + TLT + ' cycles = ' + S.m.pct + '% ✓');
+    cap('所以非常耗時間', 'CPU 白白忙著監看');
+  },
+  async (tok, S) => { // @246.0
+    gone(S.pc);
+    S.pro = good('優點：簡單、硬體很少', -2.6, 0.2);
+    cap('優點：容易實作', '需要的硬體很少');
+  },
+  async (tok, S) => { // @253.0
+    S.con = bad('缺點：busy waiting（一直空等）', 2.8, 0.2);
+    S.code0 = await chip(tok, 'ready?', PATH.cpuItf, 700);
+    cap('缺點：busy waiting', 'CPU 一直監看周邊 ready 了沒');
+  },
+  async (tok, S) => { // @266.6
+    glow(S.cpu, '#7a1010');
+    S.n2 = note('把 CPU 綁住很久，卻沒做有用的事', 0, 1.0);
+    cap('CPU 被綁住很久', '卻沒有做有用的事');
+  },
+]);
+
+scene('cio-intr', 'Interrupt-initiated I/O：ready 才發 interrupt request', [
+  async (tok, S) => { // @275.8
+    rig(S);
+    S.t = hd('② Interrupt-initiated I/O', 0, 7.5);
+    S.work = hot('CPU：主程式 執行中', CPU[0], 6.3);
+    cap('第二種：Interrupt-initiated I/O', '');
+  },
+  async (tok, S) => { // @282.5
+    glow(S.cpu, '#6a4a00');
+    txt(S.work, 'CPU：主程式（被打斷、暫停）');
+    cap('interrupt：正在做的事被打斷', 'some task is stopped');
+  },
+  async (tok, S) => { // @291.3
+    txt(S.work, 'CPU：先處理別的事'); await wt(tok, 900);
+    txt(S.work, 'CPU：回到主程式（resume）'); glow(S.cpu, null);
+    cap('先處理別的事', '再 resume 原本的工作');
+  },
+  async (tok, S) => { // @298.1
+    S.n1 = bad('programmed I/O 的限制：CPU 一直 polling', -1.6, 0.2);
+    await chip(tok, 'ready?', PATH.cpuItf, 800);
+    S.n2 = good('這種方式把它解決了', 3.6, 0.2);
+    cap('解決 programmed I/O 的限制', 'CPU 不再一直監看');
+  },
+  async (tok, S) => { // @314.9
+    gone(S.n1, S.n2);
+    glow(S.cpu, '#0f5a3a');
+    S.n1 = note('CPU 不必一直忙：靠 interrupt 機制', 0, 0.2);
+    cap('CPU 不用一直忙', '用的是 interrupt 的概念');
+  },
+  async (tok, S) => { // @329.7
+    await chip(tok, 'command', PATH.cpuItf, 1300);
+    glow(S.itf, '#6a4a00');
+    txt(S.n1, 'CPU 先送特別的 command 給 interface：資料好了就發 interrupt request');
+    cap('special command 送到 interface', '讓 interface 能發 interrupt request');
+  },
+  async (tok, S) => { // @345.3
+    glow(S.itf, null);
+    S.dv = sm('資料準備中…', DEV[0], DEV[1] - 0.85);
+    txt(S.n1, '什麼時候發？裝置的資料 available（ready）的時候');
+    cap('為什麼要 interrupt request？', '資料好了時才發');
+  },
+  async (tok, S) => { // @356.4
+    for (let k = 1; k <= 3; k++) { txt(S.work, 'CPU：執行其他程式 第 ' + k + ' 段'); await wt(tok, 600); }
+    txt(S.n1, '同時，CPU 繼續執行其他程式');
+    cap('在這段期間', 'CPU 可以繼續執行別的程式');
+  },
+  async (tok, S) => { // @360.9
+    glow(S.itf, '#6a4a00');
+    for (let k = 0; k < 2; k++) { await chip(tok, '?', [ITF, DEV], 450); await chip(tok, '還沒', [DEV, ITF], 450); }
+    txt(S.n1, '一直監看裝置的是 interface，不是 CPU');
+    cap('interface 持續監看裝置', 'the interface monitors the device');
+  },
+  async (tok, S) => { // @370.2
+    glow(S.itf, null); glow(S.dev, '#0f5a3a'); txt(S.dv, '資料 ready！');
+    await chip(tok, 'IRQ', PATH.itfCpu, 1500);
+    glow(S.cpu, '#6a4a00');
+    txt(S.n1, '裝置 ready 時，interface 才送出 interrupt request（IRQ）');
+    cap('裝置 ready 才發 IRQ', 'interrupt request signal');
+  },
+  async (tok, S) => { // @387.7
+    txt(S.work, 'CPU：主程式（暫停）');
+    txt(S.n1, 'CPU 看到訊號 → 停下目前正在執行的工作');
+    cap('CPU 看到 IRQ', '停下目前正在做的工作');
+  },
+  async (tok, S) => { // @399.1
+    txt(S.work, 'CPU：服務這個 request');
+    await chip(tok, 'data', [...PATH.devCpu, [CPU[0], BY], [MEM[0], BY], MEM], 2200);
+    glow(S.dev, null); txt(S.dv, '');
+    txt(S.n1, '去處理這個 request：把資料搬好');
+    cap('去執行這個 request', '把資料搬走');
+  },
+  async (tok, S) => { // @403.7
+    glow(S.cpu, '#0f5a3a');
+    txt(S.work, 'CPU：回到主程式，把它做完');
+    txt(S.n1, '做完後回到原本的工作，繼續完成');
+    cap('處理完回到原本的工作', '把它完成');
+  },
+  async (tok, S) => { // @414.5
+    gone(S.work, S.t);
+    S.m = cpuModel('intr'); S.st = mkStrip(7.0);
+    await S.st.draw(tok, S.m, 1600);
+    S.c = ok(S.m.free === TLT - TLN * ISR && !S.m.overlap, 0, 6.3, '只在 8 次中斷時忙：可做別的事 ' + S.m.free + ' / ' + TLT + ' = ' + S.m.pct + '% ✓');
+    txt(S.n1, '不必一直監看；裝置 ready 時 interface 才發 IRQ');
+    cap('不必一直監看周邊', 'ready 時才由 interface 發 IRQ');
+  },
+]);
+
+scene('cio-limits', '前兩種的共同缺點：每筆都靠處理器', [
+  async (tok, S) => { // @429.4
+    rig(S);
+    S.a = hot('Programmed I/O', -2.4, 7.3); S.b = hot('Interrupt-initiated I/O', 2.4, 7.3);
+    cap('回顧兩種方式', 'programmed I/O 與 interrupt I/O');
+  },
+  async (tok, S) => { // @440.3
+    S.t = hd('兩者都有兩個大缺點', 0, 6.6);
+    cap('兩者都有兩個主要缺點', '');
+  },
+  async (tok, S) => { // @443.5
+    S.ins = 0; S.cnt = bad('', CPU[0], 6.0);
+    for (let w = 0; w < 4; w++) {
+      glow(S.cpu, '#6a4a00');
+      await chip(tok, 'w' + w, [...PATH.devCpu, [CPU[0], BY], [MEM[0], BY], MEM], 560);
+      S.ins += 2; txt(S.cnt, 'CPU 執行的搬運指令：' + S.ins);
+    }
+    glow(S.cpu, null);
+    S.c = ok(S.ins === 4 * 2, 0, 0.2, '① 每筆傳輸都由處理器管：4 個 word × 2 個指令 = 8 個指令 ✓（示意）');
+    cap('① 每筆 I/O 都由處理器管理', '每次都要執行好幾個指令');
+  },
+  async (tok, S) => { // @453.8
+    gone(S.c);
+    glow(S.cpu, '#7a1010');
+    S.q = ['w4', 'w5', 'w6'].map((w, k) => tag(w, 'pkt', ITF[0] - 0.9 + k * 0.9, ITF[1] + 0.85, 0.9));
+    S.c = note('② 傳輸率受限於處理器的速度：資料排隊等 CPU', 0, 0.2);
+    cap('② I/O 傳輸率受限於處理器速度', '資料一定要等 CPU 搬');
+  },
+  async (tok, S) => { // @465.9
+    gone(S.q, S.c); glow(S.cpu, null);
+    relabel(S.itf, 'DMA controller'); tint(S.itf, '#2fc092');
+    await chip(tok, 'data', PATH.devMem, 1500);
+    S.c = good('③ DMA：資料直接進 memory，兩個缺點都解決', 0, 0.2);
+    cap('這兩個缺點', '由第三種方式 DMA 解決');
+  },
+]);
+
+scene('cio-dma', 'DMA：CPU 只發動，bus request／grant 後直接傳（cycle stealing）', [
+  async (tok, S) => { // @475.5
+    rig(S, 'DMA controller');
+    S.t = hd('③ DMA：interface 經 memory bus 直接搬進／搬出 memory', 0, 7.5);
+    await chip(tok, 'data', PATH.devMem, 1700);
+    cap('Direct memory access', 'interface 經 memory bus 直接搬資料');
+  },
+  async (tok, S) => { // @484.7
+    glow(S.cpu, '#0f5a3a');
+    S.work = hot('CPU：做自己的事', CPU[0], 6.3);
+    S.n1 = note('資料在 memory 與 I/O 之間傳，不用每次都找 CPU', 0, 0.2);
+    cap('memory 與 I/O 之間直接傳', '不必每次都動用 CPU');
+  },
+  async (tok, S) => { // @492.8
+    await chip(tok, '起始位址 A000、4 個 word', PATH.cpuItf, 1600);
+    S.reg = { addr: 0xA000, cnt: 4 };
+    S.rl = sm('DMA 暫存器：位址 A000、剩 4 個（示意）', -2.4, 2.45);
+    txt(S.n1, 'CPU 只負責「發動」：把起始位址等資訊交給 interface');
+    cap('CPU initiates the transfer', '提供起始位址給 interface');
+  },
+  async (tok, S) => { // @495.8
+    relabel(S.dev, '磁碟／磁帶'); glow(S.dev, '#6a4a00');
+    txt(S.n1, '適合快速的儲存裝置（magnetic disk、tape）和 memory 之間傳');
+    cap('快速儲存裝置 ↔ memory', 'magnetic disk、magnetic tape');
+  },
+  async (tok, S) => { // @521.0
+    glow(S.dev, null);
+    S.a1 = arrow(V3(DEV[0] - 0.2, DEV[1] + 0.5, 0.5), V3(MEM[0] - 0.2, MEM[1] - 0.7, 0.5), 0x2fc092);
+    txt(S.n1, '周邊裝置經由 memory 直接交換資料');
+    cap('周邊經由 memory 直接溝通', '這就是 DMA');
+  },
+  async (tok, S) => { // @540.5
+    gone(S.a1);
+    await chip(tok, 'bus request', [ITF, [ITF[0], BY], [CPU[0], BY], CPU], 1400);
+    txt(S.n1, '要傳時，DMA 先經 memory bus 要一個 memory cycle（bus request）');
+    cap('DMA 要求 memory cycle', 'request through the memory bus');
+  },
+  async (tok, S) => { // @547.3
+    await chip(tok, 'bus grant', PATH.itfCpu.slice().reverse(), 1000);
+    tint(S.bus, '#2fc092');
+    await chip(tok, 'w0', PATH.devMem, 1100);
+    S.reg.addr++; S.reg.cnt--; S.got = ['w0'];
+    txt(S.rl, 'DMA 暫存器：下一個位址 A00' + (S.reg.addr - 0xA000) + '、剩 ' + S.reg.cnt + ' 個');
+    txt(S.n1, '被允許（grant）後，DMA 直接把資料寫進 memory');
+    cap('request 被 grant', 'DMA 直接把資料寫進 memory');
+  },
+  async (tok, S) => { // @557.6
+    tint(S.bus, '#b9a98c');
+    S.st = mkStrip(7.0); S.st.seg(0, SETUP, 'setup'); S.st.seg(READY[0], READY[0] + 1, 'steal');
+    txt(S.work, 'CPU：要讀 memory → 等 1 個 cycle');
+    S.n2 = sm('課本稱 cycle stealing：DMA 偷用一個 bus cycle', 3.2, 2.45);
+    txt(S.n1, 'CPU 只是把自己的 memory 存取延後一下');
+    cap('CPU 只延後自己的 memory 存取', '課本：cycle stealing');
+  },
+  async (tok, S) => { // @569.4
+    for (let w = 1; w < 4; w++) {
+      tint(S.bus, '#2fc092');
+      await chip(tok, 'w' + w, PATH.devMem, 600);
+      tint(S.bus, '#b9a98c');
+      S.st.seg(READY[w], READY[w] + 1, 'steal');
+      S.reg.addr++; S.reg.cnt--; S.got.push('w' + w);
+      txt(S.rl, 'DMA 暫存器：下一個位址 A00' + (S.reg.addr - 0xA000) + '、剩 ' + S.reg.cnt + ' 個');
+    }
+    S.c = ok(S.reg.cnt === 0 && S.got.join() === 'w0,w1,w2,w3' && S.reg.addr === 0xA004, 1.4, 6.3, '4 個 word 寫進 A000–A003，每個只偷 1 個 cycle ✓');
+    txt(S.work, 'CPU：每次只等一下下');
+    cap('只是延遲一下', '每個 word 偷一個 cycle');
+  },
+  async (tok, S) => { // @574.3
+    gone(S.c, S.n2);
+    tint(S.bus, '#2fc092'); glow(S.cpu, '#555555');
+    txt(S.work, 'CPU：此刻沒有 bus 控制權');
+    txt(S.n1, 'DMA 傳輸期間：bus 由 DMA controller 掌控，CPU 不能用 memory bus');
+    cap('DMA 期間 CPU 沒有 bus 控制權', 'it has no control over the memory bus');
+  },
+  async (tok, S) => { // @583.0
+    glow(S.cpu, '#0f5a3a'); tint(S.bus, '#b9a98c'); gone(S.st);
+    S.m = cpuModel('dma'); S.st = mkStrip(7.0);
+    await S.st.draw(tok, S.m, 1400);
+    S.c = ok(S.m.busy === SETUP + TLN + ISR && !S.m.overlap, 1.4, 6.3, '8 個 word：設定 10 + 偷 8 + 結束中斷 6 = 24 cycles → 可做別的事 ' + S.m.pct + '% ✓');
+    S.n2 = sm('課本：傳完一整塊才發一次 interrupt；另有 burst mode（一次佔住 bus 傳整塊）', 3.2, 2.45);
+    txt(S.n1, 'DMA controller 掌控 bus、直接傳 → 很有利，是首選');
+    cap('DMA controller 掌控 bus', '直接傳，很划算');
+  },
+]);
+
+scene('cio-dmapc', 'DMA 的優缺點：成本、cache coherence', [
+  async (tok, S) => { // @596.7
+    rig(S, 'DMA controller');
+    S.pro = hd('優點', -3.4, 7.4); S.con = hd('缺點', 3.4, 7.4);
+    await chip(tok, 'data', PATH.devMem, 1500);
+    S.p1 = good('周邊直接讀寫 memory，不經 CPU', -3.4, 6.7);
+    cap('優點：周邊直接讀寫 memory', '不需要 CPU 參與');
+  },
+  async (tok, S) => { // @604.1
+    glow(S.cpu, '#0f5a3a');
+    S.w = hot('CPU：同時在算別的', CPU[0], 3.75);
+    for (let k = 0; k < 2; k++) await chip(tok, 'w' + k, PATH.devMem, 700);
+    S.p2 = good('傳輸時 CPU 能做別的事 → 處理更快', -3.4, 6.1);
+    cap('優點：處理更快', '傳輸時 processor 可以做別的事');
+  },
+  async (tok, S) => { // @617.3
+    gone(S.w); glow(S.cpu, null); glow(S.itf, '#6a4a00');
+    S.c1 = bad('需要 DMA controller → 系統成本增加', 3.4, 6.7);
+    cap('缺點：需要 DMA controller', '系統成本增加');
+  },
+  async (tok, S) => { // @632.1
+    glow(S.itf, null);
+    S.cache = cube('cache：X = 5', '#4b9ee2', [2.0, 0.55, 0.9], -2.2, 4.9);
+    relabel(S.mem, 'Memory X = 5');
+    const x = { cache: 5, mem: 5 };
+    await chip(tok, 'X = 9', PATH.devMem, 1300);
+    x.mem = 9; relabel(S.mem, 'Memory X = 9'); glow(S.mem, '#6a4a00'); tint(S.cache, '#d64545');
+    S.c2 = ok(x.cache !== x.mem, 3.4, 6.1, 'DMA 改了 memory，cache 還是舊值 5 ≠ 9 → cache coherence 問題 ✓（示意）');
+    cap('缺點：可能有 cache coherence 問題', 'cache 裡還是舊的值');
+  },
+  async (tok, S) => { // @639.5
+    glow(S.mem, null);
+    S.sum = note('DMA：快、CPU 自由；代價是 controller 成本與 coherence 問題', 0, 0.2);
+    cap('這就是 DMA 的優缺點', '');
+  },
+]);
+
+// ════════ Yp_3OrDhUkQ（Bus Arbitration：daisy chain、polling、independent request） ════════
+const MST = [-5.0, 2.6], DX = [-1.6, 1.5, 4.6], DY = 2.6, YBR = 4.7, YBUSY = 4.05;
+function arbRig(S, o = {}) {
+  S.mst = cube('Bus master', '#31aab0', [1.9, 1.5, 1.2], MST[0], MST[1]);
+  S.dev = DX.map((x, i) => cube('D' + (i + 1), '#c9b48e', [1.5, 1.0, 1.0], x, DY));
+  S.pri = DX.map((x, i) => sm(o.noPri ? '' : ['最高優先', '中', '最低優先'][i], x, DY - 0.85));
+  S.wires = [];
+  if (o.br !== false) { S.br = wire(MST[0] + 0.95, YBR, 5.6, YBR, '#b9a98c', 0.08); S.wires.push(S.br, ...DX.map((x) => wire(x - 0.3, DY + 0.5, x - 0.3, YBR, '#b9a98c', 0.06))); S.brL = sm('BR（bus request）', -3.0, YBR + 0.32); }
+  if (o.busy !== false) { S.busy = wire(MST[0] + 0.95, YBUSY, 5.6, YBUSY, '#b9a98c', 0.08); S.wires.push(S.busy, ...DX.map((x) => wire(x + 0.3, DY + 0.5, x + 0.3, YBUSY, '#b9a98c', 0.06))); S.busyL = sm('BUSY', -3.0, YBUSY + 0.3); }
+  S.reqL = DX.map((x) => tag('', 'pkt', x, DY + 1.0, 0.9)); S.reqL.forEach((l) => (l.element.style.visibility = 'hidden'));
+  S.req = [false, false, false];
+  S.setReq = (i, on) => { S.req[i] = on; S.reqL[i].element.textContent = 'req'; S.reqL[i].element.style.visibility = on ? '' : 'hidden'; tint(S.dev[i], on ? '#dd8238' : '#c9b48e'); };
+  S.own = -1;
+  S.take = (i) => { S.own = i; S.dev.forEach((m, k) => glow(m, k === i ? '#0f5a3a' : null)); if (S.busy) tint(S.busy, i >= 0 ? '#d64545' : '#b9a98c'); if (i >= 0) S.setReq(i, false); };
+}
+// daisy chain：grant 從 master 出發，依序經過 D1、D2、D3；第一個有請求的攔下來
+function daisy(req) { for (let i = 0; i < req.length; i++) if (req[i]) return { win: i, hops: i + 1 }; return { win: -1, hops: req.length }; }
+// polling：master 從 start 開始依序把 device ID 放上 poll lines，第一個有請求且 ID 相符的拿到 bus
+function pollFrom(req, start) { const seq = []; for (let k = 0; k < req.length; k++) { const i = (start + k) % req.length; seq.push(i); if (req[i]) return { win: i, seq }; } return { win: -1, seq }; }
+// independent request：固定優先權（D1 最高）的 arbiter；bus 忙時大家等
+function prio(req, order = [0, 1, 2]) { for (const i of order) if (req[i]) return i; return -1; }
+const POLLBITS = (n) => Math.ceil(Math.log2(n + 1));  // ID 1..n 要幾條 poll line（0 保留給「沒人」）
+
+scene('cio-arbwhy', 'Bus arbitration：誰先用 bus？priority 與 fairness', [
+  async (tok, S) => { // @13.1
+    S.b = [['data bus', '#4b9ee2'], ['address bus', '#9b7ef4'], ['control bus', '#dd8238']].map(([n, c], k) => [cube('', c, [10.4, 0.14, 0.3], 0.6, 6.4 - k * 0.5), sm(n, -5.6, 6.4 - k * 0.5)]);
+    S.t = hd('system bus = data bus + address bus + control bus', 0.6, 7.5);
+    cap('system bus 由三種 bus 組成', 'data、address、control bus');
+  },
+  async (tok, S) => { // @23.6
+    S.mst = cube('arbitration', '#31aab0', [2.0, 1.2, 1.1], -5.0, 3.0);
+    S.n = note('arbitration：決定誰可以使用 bus 來讀或寫', 0.6, 0.2);
+    cap('arbitration：決定誰能用 bus', 'for reading or writing');
+  },
+  async (tok, S) => { // @37.6
+    S.dev = DX.map((x, i) => cube('D' + (i + 1), '#dd8238', [1.5, 1.0, 1.0], x, 3.0));
+    S.rq = DX.map((x) => tag('我要用 bus！', 'pkt', x, 4.0, 0.9));
+    txt(S.n, '為什麼需要？好幾個裝置可能在同一時間都要用 bus');
+    cap('多個裝置可能同時要用 bus', 'at the same time');
+  },
+  async (tok, S) => { // @62.2
+    S.conn = DX.map((x) => wire(x, 3.5, x, 5.4, '#b9a98c', 0.06));
+    S.qm = hot('先給誰？', -5.0, 4.2);
+    txt(S.n, 'bus 接著很多裝置 → 必須決定先把 bus 交給哪一個');
+    cap('必須決定先交給哪個裝置', '');
+  },
+  async (tok, S) => { // @81.1
+    gone(S.qm); glow(S.mst, '#6a4a00');
+    S.qm = hot('由 master 決定', -5.0, 4.2);
+    txt(S.n, 'bus arbitration 就像一個 master：決定哪個裝置先用');
+    cap('arbitration 就是 master', '決定誰先存取');
+  },
+  async (tok, S) => { // @92.0
+    glow(S.mst, null);
+    const w = 0; glow(S.dev[w], '#0f5a3a'); remove(S.rq[w]);
+    S.d = tag('D1 的資料', 'pkt', DX[0], 5.4, 0.9);
+    await travel(tok, S.d, V3(DX[0], 5.4, 0.9), V3(4.0, 6.4, 0.9), 1200);
+    [1, 2].forEach((i) => { S.rq[i].element.textContent = '等一下'; });
+    S.one = ok(S.dev.filter((m, i) => i === w).length === 1, 0.6, 1.2, '同一時間只服務 1 個裝置，其他人等 ✓');
+    cap('一次只能服務一個裝置', '其他人要等');
+  },
+  async (tok, S) => { // @100.6
+    gone(S.d, S.one, S.rq, S.conn, S.b, S.t); S.dev.forEach((m) => glow(m, null));
+    S.t = hd('arbitration scheme：在 priority 與 fairness 之間取得平衡', 0.6, 7.3);
+    S.beam = cube('', '#6e5f49', [6.0, 0.12, 0.4], 0.6, 5.7); S.piv = cube('', '#6e5f49', [0.3, 0.8, 0.3], 0.6, 5.25);
+    S.L = hot('priority', -1.9, 6.15); S.R = hot('fairness', 3.1, 6.15);
+    cap('平衡 bus priority 與 fairness', '');
+  },
+  async (tok, S) => { // @140.2
+    S.order = [0, 1, 2];
+    S.pr = S.order.map((i, k) => sm((k + 1) + '. D' + (i + 1), DX[i], 1.9));
+    S.dev.forEach((m, i) => relabel(m, 'D' + (i + 1) + (i === 0 ? '（高）' : i === 2 ? '（低）' : '')));
+    txt(S.n, 'priority：優先權最高的先服務，再輪到低的');
+    cap('priority：最高優先的先服務', '之後才輪到低的');
+  },
+  async (tok, S) => { // @149.5
+    S.ck = DX.map((x) => good('有被服務 ✓', x, 4.0));
+    txt(S.n, 'fairness：是不是每個裝置都能被服務到');
+    cap('fairness：每個裝置都有機會', '');
+  },
+  async (tok, S) => { // @166.0
+    gone(S.ck, S.pr, S.beam, S.piv, S.L, S.R, S.t);
+    S.t = hd('三種 arbitration mechanism', 0.6, 7.3);
+    txt(S.n, '有三種機制可以決定把 bus 交給哪個裝置');
+    cap('三種 arbitration mechanism', '');
+  },
+  async (tok, S) => { // @190.7
+    S.m3 = ['① Daisy chain', '② Polling', '③ Independent request'].map((s, k) => hot(s, -2.6 + k * 3.6, 6.4));
+    cap('daisy chain、polling', 'independent request');
+  },
+  async (tok, S) => { // @212.2
+    S.lines = ['BR、BG、BUSY', 'BR、BUSY、poll lines', 'R/G 各一對、BUSY'].map((s, k) => sm(s, -2.6 + k * 3.6, 5.8));
+    txt(S.n, '每一種都要用一些特別的 control lines');
+    cap('每一種都用特別的 control lines', '');
+  },
+  async (tok, S) => { // @225.2
+    txt(S.n, '目標都一樣：依 priority 服務裝置；只是各有各的規則');
+    cap('目標：依 priority 服務裝置', '但各有自己的規則');
+  },
+]);
+
+scene('cio-daisy', 'Daisy chain：grant 一個傳一個，近的優先', [
+  async (tok, S) => { // @244.3
+    S.t = hd('① Daisy chain arbitration', 0, 7.4);
+    cap('第一種：daisy chain', '');
+  },
+  async (tok, S) => { // @261.3
+    S.mst = cube('Bus master', '#31aab0', [1.9, 1.5, 1.2], MST[0], MST[1]);
+    S.n = note('做決定的只有一個：bus master', 0, 0.2);
+    cap('只有 master 能決定', '整個系統只有一個 bus master');
+  },
+  async (tok, S) => { // @295.5
+    kill(S.mst); arbRig(S, { br: false, busy: false });
+    txt(S.n, '接上三個裝置 D1、D2、D3');
+    cap('三個裝置 D1、D2、D3', '');
+  },
+  async (tok, S) => { // @309.7
+    gone(S.mst, S.dev, S.pri, S.reqL, S.wires); arbRig(S, {});
+    // BG 串起來：master → D1 → D2 → D3
+    S.bg = [wire(MST[0] + 0.95, DY, DX[0] - 0.75, DY, '#2fc092', 0.08), wire(DX[0] + 0.75, DY, DX[1] - 0.75, DY, '#2fc092', 0.08), wire(DX[1] + 0.75, DY, DX[2] - 0.75, DY, '#2fc092', 0.08)];
+    S.bgL = sm('BG（bus grant）：一個串一個', -3.3, DY - 0.35);
+    txt(S.n, '三條線：bus request（共用）、bus busy（共用）、bus grant（串成一條鏈）');
+    cap('三條線：BR、BUSY、BG', 'BG 從 master 串過每個裝置');
+  },
+  async (tok, S) => { // @332.6
+    [0, 1, 2].forEach((i) => S.setReq(i, true));
+    tint(S.br, '#dd8238');
+    const l = tag('BR', 'pkt', DX[2], YBR, 0.9); await travel(tok, l, V3(DX[2], YBR, 0.9), V3(MST[0] + 1.0, YBR, 0.9), 1200); remove(l);
+    txt(S.n, '要用 bus 的裝置拉起 BR，送給 bus master（這裡三台都要，示意）');
+    cap('裝置把 bus request 送給 master', '');
+  },
+  async (tok, S) => { // @340.8
+    glow(S.mst, '#6a4a00');
+    S.chk = hot('BUSY = 0：bus 空著', -3.0, YBUSY - 0.35);
+    txt(S.n, 'master 先確認 bus 是空的（沒有人在用）');
+    cap('master 先看 bus 是否空閒', '沒有裝置在傳資料');
+  },
+  async (tok, S) => { // @356.8
+    gone(S.chk); glow(S.mst, null);
+    S.pri.forEach((l, i) => { l.element.className = 'lab-label ' + (i === 0 ? 'ptr alt' : 'ptr'); });
+    txt(S.n, '優先權由位置決定：離 master 最近的 D1 最高，D3 最低');
+    cap('D1 優先權最高', 'D3 最低');
+  },
+  async (tok, S) => { // @369.5
+    S.r = daisy(S.req);
+    S.g = tag('BG', 'pkt', MST[0] + 1.0, DY + 0.45, 0.9);
+    await travel(tok, S.g, V3(MST[0] + 1.0, DY + 0.45, 0.9), V3(DX[0], DY + 0.45, 0.9), 900);
+    S.c = ok(S.r.win === 0, 0, 1.0, 'grant 先到 D1：D1 有請求 → 攔下來 ✓');
+    cap('master 先把 grant 給 D1', '');
+  },
+  async (tok, S) => { // @380.3
+    gone(S.c); remove(S.g); S.take(0); S.served = [0];
+    S.c = sm('D1 拉起 BUSY：其他裝置不能再要 bus', 0, 1.0);
+    txt(S.n, 'D1 拿到 bus，送出 busy 訊號');
+    cap('D1 拿走 bus、送出 BUSY', '別人就不能再要 bus');
+  },
+  async (tok, S) => { // @394.3
+    gone(S.c); S.take(-1);
+    S.r = daisy(S.req);
+    S.g = tag('BG', 'pkt', MST[0] + 1.0, DY + 0.45, 0.9);
+    await travel(tok, S.g, V3(MST[0] + 1.0, DY + 0.45, 0.9), V3(DX[0], DY + 0.45, 0.9), 700);
+    S.c = sm('D1 用完、釋放 bus；D1 不再請求 → grant 往下傳', 0, 1.0);
+    await travel(tok, S.g, V3(DX[0], DY + 0.45, 0.9), V3(DX[1], DY + 0.45, 0.9), 800);
+    txt(S.n, 'D1 做完就釋放 bus；下一次 grant 經過 D1 時，它不攔、往下一台傳（課本）');
+    cap('D1 用完就釋放 bus', 'grant 傳給下一台');
+  },
+  async (tok, S) => { // @404.0
+    gone(S.c); remove(S.g); S.take(S.r.win); S.served.push(S.r.win);
+    S.c = ok(S.r.win === 1, 0, 1.0, 'D2 是下一個有請求的 → D2 拿到 bus ✓');
+    cap('D2 接著拿到 bus', '');
+  },
+  async (tok, S) => { // @414.5
+    gone(S.c); S.take(-1);
+    S.r = daisy(S.req);
+    S.g = tag('BG', 'pkt', MST[0] + 1.0, DY + 0.45, 0.9);
+    await travel(tok, S.g, V3(MST[0] + 1.0, DY + 0.45, 0.9), V3(DX[2], DY + 0.45, 0.9), 1500);
+    remove(S.g); S.take(S.r.win); S.served.push(S.r.win);
+    S.c = ok(S.served.join() === '0,1,2', 0, 1.0, '服務順序 D1 → D2 → D3 ✓');
+    cap('最後輪到 D3', '一個接一個，像一條鏈');
+  },
+  async (tok, S) => { // @424.5
+    gone(S.c); S.take(-1);
+    S.p = good('優點：構造很簡單', -2.6, 6.6);
+    cap('優點：很簡單', '');
+  },
+  async (tok, S) => { // @436.7
+    S.q = bad('缺點：不能保證 fairness', 2.6, 6.6);
+    txt(S.n, '低優先權的裝置可能被無限期擋在外面（locked out）');
+    cap('缺點：不能保證 fairness', '低優先權可能一直等');
+  },
+  async (tok, S) => { // @453.0
+    // 示意：D3 一直請求，D1、D2 輪流又插隊請求
+    S.setReq(2, true);
+    const wins = [];
+    for (const again of [0, 1, 0, 1]) {
+      S.setReq(again, true);
+      const r = daisy(S.req); wins.push(r.win); S.take(r.win); await wt(tok, 500); S.take(-1);
+    }
+    S.setReq(2, true);
+    S.c = ok(!wins.includes(2) && wins.join() === '0,1,0,1', 0, 1.0, '4 輪都被 D1、D2 拿走，D3 一次都沒輪到 → starvation ✓（示意）');
+    cap('高優先權一直插進來', 'D3 可能永遠等不到');
+  },
+  async (tok, S) => { // @484.7
+    gone(S.c, S.p, S.q); [0, 1, 2].forEach((i) => S.setReq(i, false)); S.setReq(2, true);
+    const r = daisy(S.req);
+    S.g = tag('BG', 'pkt', MST[0] + 1.0, DY + 0.45, 0.9);
+    for (let i = 0; i <= r.win; i++) { await travel(tok, S.g, S.g.position.clone(), V3(DX[i], DY + 0.45, 0.9), 450); glow(S.dev[i], '#6a4a00'); }
+    S.c = ok(r.hops === 3, 0, 1.0, 'grant 要一台一台經過：到 D3 要過 ' + r.hops + ' 站 → 比較慢 ✓');
+    txt(S.n, '另一個缺點：grant 要沿著鏈一路傳，限制了 bus 速度');
+    cap('缺點：比較慢', 'grant 信號限制了 bus 速度');
+  },
+]);
+
+scene('cio-poll', 'Polling：master 把 device ID 放上 poll lines', [
+  async (tok, S) => { // @497.7
+    S.t = hd('② Polling arbitration', 0, 7.4);
+    cap('第二種：polling', '');
+  },
+  async (tok, S) => { // @509.0
+    S.mst = cube('Bus master', '#31aab0', [1.9, 1.5, 1.2], MST[0], MST[1]);
+    S.n = note('像 daisy chain，但沒有一路串下去的 bus grant：由 master 決定先服務誰', 0, 0.2);
+    cap('像 daisy chain，但沒有串接的 grant', 'master 決定先服務誰');
+  },
+  async (tok, S) => { // @525.3
+    kill(S.mst); arbRig(S, { noPri: true });
+    S.dev.forEach((m, i) => relabel(m, 'D' + (i + 1)));
+    txt(S.n, '一樣接三個裝置 D1、D2、D3，和幾條線');
+    cap('裝置 D1、D2、D3', '');
+  },
+  async (tok, S) => { // @539.1
+    S.nb = POLLBITS(3);
+    S.pl = Array.from({ length: S.nb }, (_, k) => wire(MST[0] + 0.95, 1.5 - k * 0.3, 5.6, 1.5 - k * 0.3, '#9b7ef4', 0.07));
+    S.plL = sm('poll lines', -3.2, 1.75);
+    S.drop = DX.map((x) => wire(x, DY - 0.5, x, 1.5 - (S.nb - 1) * 0.3, '#9b7ef4', 0.05));
+    txt(S.n, '三種線：poll lines、bus request、bus busy（用的時候送 busy）');
+    cap('poll lines、BR、BUSY', '');
+  },
+  async (tok, S) => { // @560.6
+    S.c = ok(S.nb === 2 && (1 << S.nb) - 1 >= 3, 0, 0.85, '3 台裝置用 ID 1–3：' + S.nb + ' 條 poll line 就能編碼 ✓（示意）');
+    txt(S.n, '原本的 grant 改成「一組 poll lines」：上面放的是 device ID');
+    cap('grant 改成一組 poll lines', '');
+  },
+  async (tok, S) => { // @584.9
+    gone(S.c);
+    S.setReq(1, true); S.setReq(2, true);
+    tint(S.br, '#dd8238');
+    const l = tag('BR', 'pkt', DX[1], YBR, 0.9); await travel(tok, l, V3(DX[1], YBR, 0.9), V3(MST[0] + 1.0, YBR, 0.9), 1000); remove(l);
+    txt(S.n, '步驟 1：bus 沒在忙 → 裝置向 master 發 bus request（這裡 D2、D3，示意）');
+    cap('1. bus 不忙 → 發 bus request', '');
+  },
+  async (tok, S) => { // @605.4
+    S.r = pollFrom(S.req, 0); S.idL = hot('', -3.2, 1.0);
+    for (const i of S.r.seq) {
+      txt(S.idL, 'poll lines 上的 ID = ' + (i + 1) + '（' + (i + 1).toString(2).padStart(S.nb, '0') + '）');
+      glow(S.dev[i], '#6a4a00'); await wt(tok, 900); glow(S.dev[i], null);
+    }
+    S.c = ok(S.r.seq.join() === '0,1' && S.r.win === 1, 0, 6.6, 'ID 1：D1 沒請求；ID 2：D2 有請求 → D2 回應 ✓');
+    txt(S.n, '步驟 2：master 一個一個把 device ID 放上 poll lines，檢查誰有請求');
+    cap('2. master 依序放 device ID', '一台一台檢查');
+  },
+  async (tok, S) => { // @644.9
+    S.idTags = DX.map((x, i) => sm('ID ' + (i + 1), x, DY - 0.85));
+    txt(S.n, '每個裝置都有自己的 ID；由 master 依 ID 決定先服務誰');
+    cap('每個裝置有一個 ID', 'master 依 ID 決定');
+  },
+  async (tok, S) => { // @664.9
+    gone(S.c); S.take(S.r.win); tint(S.br, '#b9a98c');
+    S.c = sm('D2 拿到 bus → 拉起 BUSY', 0, 6.6);
+    txt(S.n, '步驟 3：裝置拿到 bus grant → 標示 bus busy');
+    cap('3. 拿到 grant → 標 bus busy', '');
+  },
+  async (tok, S) => { // @692.9
+    gone(S.c);
+    S.p = good('優點：沒有 daisy chain 的缺點', -2.6, 6.6);
+    cap('優點：沒有 daisy chain 的缺點', '');
+  },
+  async (tok, S) => { // @709.6
+    S.q0 = sm('daisy chain：沒有 fairness、比較慢；低優先權可能一直等', -2.6, 6.0);
+    cap('daisy chain 的問題', '不公平、比較慢');
+  },
+  async (tok, S) => { // @733.6
+    S.take(-1); S.setReq(1, true);  // D2 又想用
+    S.r2 = pollFrom(S.req, (S.r.win + 1) % 3);
+    for (const i of S.r2.seq) { txt(S.idL, 'poll lines 上的 ID = ' + (i + 1) + '（' + (i + 1).toString(2).padStart(S.nb, '0') + '）'); glow(S.dev[i], '#6a4a00'); await wt(tok, 700); glow(S.dev[i], null); }
+    S.take(S.r2.win);
+    S.c = ok(S.r2.win === 2, 2.6, 1.0, '這次從 ID 3 開始 poll → D3 先被服務，不會無限等 ✓（示意）');
+    txt(S.n, '每台都有 ID：master 可以安排 poll 的順序，裝置不會無限期等下去');
+    cap('每台有 ID → 不會無限期等待', 'master 決定服務順序');
+  },
+  async (tok, S) => { // @749.3
+    gone(S.c);
+    S.q = bad('缺點：要多幾條 poll lines（daisy chain 只要 1 條 grant）', 2.6, 6.6);
+    S.pl.forEach((m) => glow(m, '#6a4a00'));
+    cap('缺點：需要額外的 poll lines', 'daisy chain 只要一條 grant 線');
+  },
+  async (tok, S) => { // @766.2
+    S.pl.forEach((m) => glow(m, null));
+    S.c = bad('polling 一台一台問也要時間：和 grant 一樣有 delay', 0, 1.0);
+    cap('polling 也有延遲', '就像 bus grant 一樣');
+  },
+]);
+
+scene('cio-indep', 'Independent request：每台各有 request／grant，2N 條線', [
+  async (tok, S) => { // @772.8
+    S.t = hd('③ Independent request', 0, 7.4);
+    S.n = note('名字就說明了：每個裝置彼此獨立地提出請求', 0, 0.2);
+    cap('第三種：independent request', '每個裝置各自獨立');
+  },
+  async (tok, S) => { // @790.2
+    arbRig(S, { br: false, noPri: true });
+    S.dev.forEach((m, i) => relabel(m, 'D' + (i + 1)));
+    // 每台一對獨立的 R_i（上）與 G_i（下）
+    S.R = DX.map((x, i) => wire(MST[0] + 0.95, 5.3 + i * 0.32, x - 0.25, 5.3 + i * 0.32, '#dd8238', 0.06));
+    S.Rv = DX.map((x, i) => wire(x - 0.25, DY + 0.5, x - 0.25, 5.3 + i * 0.32, '#dd8238', 0.05));
+    S.G = DX.map((x, i) => wire(MST[0] + 0.95, 1.4 - i * 0.3, x + 0.25, 1.4 - i * 0.3, '#2fc092', 0.06));
+    S.Gv = DX.map((x, i) => wire(x + 0.25, DY - 0.5, x + 0.25, 1.4 - i * 0.3, '#2fc092', 0.05));
+    S.RL = sm('R1–R3（request）', -3.2, 6.35); S.GL = sm('G1–G3（grant）', -5.0, 1.1);
+    txt(S.n, 'bus master 和 D1、D2、D3：每台都有自己的 request 線與 grant 線');
+    cap('每台有自己的 R 線與 G 線', '');
+  },
+  async (tok, S) => { // @805.1
+    S.setReq(0, true); glow(S.R[0], '#6a4a00');
+    const l = tag('R1', 'pkt', DX[0], 5.3, 0.9); await travel(tok, l, V3(DX[0] - 0.25, 5.3, 0.9), V3(MST[0] + 1.0, 5.3, 0.9), 800); remove(l);
+    S.w = prio(S.req); glow(S.R[0], null);
+    const g = tag('G1', 'pkt', MST[0] + 1.0, 1.4, 0.9); await travel(tok, g, V3(MST[0] + 1.0, 1.4, 0.9), V3(DX[0] + 0.25, 1.4, 0.9), 800); remove(g);
+    S.take(S.w); S.log = ['D1'];
+    S.c = ok(S.w === 0, 0, 6.85, 'bus 空著：R1 → G1，D1 拿到 bus ✓');
+    cap('D1 送 R1', 'master 回 G1');
+  },
+  async (tok, S) => { // @816.0
+    gone(S.c);
+    S.setReq(1, true);
+    const l = tag('R2', 'pkt', DX[1], 5.62, 0.9); await travel(tok, l, V3(DX[1] - 0.25, 5.62, 0.9), V3(MST[0] + 1.0, 5.62, 0.9), 800); remove(l);
+    S.c = sm('bus 正被 D1 使用 → D2 先等', 0, 6.85); await wt(tok, 500);
+    S.take(-1); S.w = prio(S.req);
+    const g = tag('G2', 'pkt', MST[0] + 1.0, 1.1, 0.9); await travel(tok, g, V3(MST[0] + 1.0, 1.1, 0.9), V3(DX[1] + 0.25, 1.1, 0.9), 800); remove(g);
+    S.take(S.w); S.log.push('D' + (S.w + 1));
+    gone(S.c); S.c = ok(S.w === 1, 0, 6.85, 'D1 釋放後 bus 空了 → G2 ✓');
+    cap('D2 送 R2', 'bus 空了才給 G2');
+  },
+  async (tok, S) => { // @822.1
+    gone(S.c);
+    S.setReq(2, true);
+    const l = tag('R3', 'pkt', DX[2], 5.94, 0.9); await travel(tok, l, V3(DX[2] - 0.25, 5.94, 0.9), V3(MST[0] + 1.0, 5.94, 0.9), 800); remove(l);
+    S.take(-1); S.w = prio(S.req);
+    const g = tag('G3', 'pkt', MST[0] + 1.0, 0.8, 0.9); await travel(tok, g, V3(MST[0] + 1.0, 0.8, 0.9), V3(DX[2] + 0.25, 0.8, 0.9), 800); remove(g);
+    S.take(S.w); S.log.push('D' + (S.w + 1));
+    S.c = ok(S.w === 2, 0, 6.85, 'D3 送 R3 → master 給 G3 ✓');
+    cap('D3 送 R3', 'master 給 G3');
+  },
+  async (tok, S) => { // @835.0
+    gone(S.c); glow(S.busy, '#6a4a00');
+    S.c = sm('BUSY 線：大家共用，用 bus 的那台把它拉起來', 0, 6.85);
+    cap('還有一條共用的 bus busy', '');
+  },
+  async (tok, S) => { // @851.4
+    glow(S.busy, null); gone(S.c);
+    S.setReq(0, true);
+    S.c = sm('D3 還在用（BUSY）→ D1 必須等', 0, 6.85); await wt(tok, 900);
+    S.take(-1); S.w = prio(S.req);
+    const g = tag('G1', 'pkt', MST[0] + 1.0, 1.4, 0.9); await travel(tok, g, V3(MST[0] + 1.0, 1.4, 0.9), V3(DX[0] + 0.25, 1.4, 0.9), 800); remove(g);
+    S.take(S.w); S.log.push('D' + (S.w + 1));
+    gone(S.c); S.c = ok(S.w === 0, 0, 6.85, 'D3 釋放 bus 後，master 才送 G1 給 D1 ✓');
+    cap('bus 忙時要等', '釋放後 master 才送 grant');
+  },
+  async (tok, S) => { // @864.7
+    gone(S.c); S.take(-1);
+    [0, 1, 2].forEach((i) => S.setReq(i, true));
+    S.w = prio(S.req);
+    await wt(tok, 500);
+    S.take(S.w); S.log.push('D' + (S.w + 1));
+    S.c = ok(S.w === 0, 0, 6.85, '三台同時請求 → 依 priority 給 D1（D1 最高，示意）✓');
+    cap('bus 空了才送 grant', '還是依 priority 決定');
+  },
+  async (tok, S) => { // @885.9
+    gone(S.c, S.t);
+    S.steps = ['1. bus 不忙 → 送 bus request', '2. master 決定給誰：經 grant 線', '3. 拿到 grant → 標 bus busy', '4. 用完 → bus release'].map((s, k) => sm(s, 2.4, 7.4 - k * 0.42));
+    await wt(tok, 400); S.take(-1);
+    cap('步驟：request → grant', '→ busy → release');
+  },
+  async (tok, S) => { // @916.8
+    gone(S.steps);
+    S.p = good('優點：快、可以做 dynamic priority', -2.4, 7.2);
+    S.order = [2, 0, 1];  // 示意：把 D3 調成最高
+    S.dev.forEach((m, i) => relabel(m, 'D' + (i + 1) + '（第 ' + (S.order.indexOf(i) + 1) + '）'));
+    S.w = prio(S.req, S.order); S.take(S.w);
+    S.c = ok(S.w === 2, 2.6, 7.2, '把 D3 調成最高 → 這次給 D3 ✓（示意）');
+    cap('優點：快、dynamic priority', 'priority 可以隨時調整');
+  },
+  async (tok, S) => { // @932.6
+    gone(S.c); S.take(-1);
+    const N = 3, rg = S.R.length + S.G.length;
+    [...S.R, ...S.G].forEach((m) => glow(m, '#6a4a00'));
+    S.q = ok(rg === 2 * N, 2.6, 7.2, '缺點：N 台要 2N 條線：3 台 → ' + rg + ' 條 ✓');
+    cap('缺點：N 個裝置要 2N 條線', 'request 與 grant 各一條');
+  },
+  async (tok, S) => { // @952.5
+    [...S.R, ...S.G].forEach((m) => glow(m, null)); gone(S.p, S.q);
+    const N = 3;
+    S.sum = [['Daisy chain', 'BR、BG、BUSY：3 條（與 N 無關）'], ['Polling', 'BR、BUSY + ' + POLLBITS(N) + ' 條 poll lines'], ['Independent', '2N = ' + 2 * N + ' 條 + BUSY']].map(([a, b], k) => sm(a + '：' + b, 2.0, 7.3 - k * 0.42));
+    cap('三種：daisy chain、polling', 'independent request');
+  },
+]);
+  }
+  // @@FRAGMENTS@@
+  FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
+
   return {
     kicker: '計算機組織・第 7 章',
     title: 'I/O 與中斷',
@@ -678,7 +1578,7 @@ export default function (ctx) {
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['three-modes', 'programmed-io', 'interrupt-io', 'pio-limits', 'dma', 'dma-pros-cons',
-      'mem-mapped-io', 'exception-epc', 'exc-vs-int', 'interrupt-flow', 'polling-cost', 'interrupt-cost', 'dma-cost', 'bus-types', 'handshake', 'arbitration', 'disk-time'],
+      'mem-mapped-io', 'exception-epc', 'exc-vs-int', 'interrupt-flow', 'polling-cost', 'interrupt-cost', 'dma-cost', 'bus-types', 'handshake', 'arbitration', 'disk-time'].concat(FRAG.map((f) => f[0])),
     _genQ: genQ,
     stop() { stopTimer(); },
   };

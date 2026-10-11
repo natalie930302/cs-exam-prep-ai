@@ -1,140 +1,308 @@
 {
  "video": "E82x-cug9YE",
  "label": "Modes of Transfer | Programmed, Interrupt-initiated I/O & DMA",
- "source": "whisper",
+ "timing": "exact",
  "sections": [
   {
-   "title": "資料傳輸：記憶體是來源與目標",
-   "scene": "three-modes",
+   "title": "開場：今天談 modes of transfer",
+   "scene": null,
    "points": [
     {
-     "text": "電腦處理的是 binary 資訊；從外部裝置收到的資料最後都存進記憶體。",
-     "t": 20
-    },
-    {
-     "text": "CPU 送到外部裝置的資料也來自記憶體：CPU 只負責處理，真正的 source 與 target 是 memory unit。",
-     "t": 69
-    },
-    {
-     "text": "CPU 與 I/O 之間的傳輸有不同模式：有的以 CPU 為中間路徑，有的直接在記憶體與 I/O 之間傳。",
-     "t": 90
-    },
-    {
-     "text": "三種方式：programmed I/O、interrupt-initiated I/O、direct memory access（DMA）。",
-     "t": 104
+     "t": 7,
+     "text": "主題：和周邊裝置（peripherals）之間傳資料，有哪幾種方式（modes of transfer）。"
     }
+   ]
+  },
+  {
+   "title": "資料傳輸：memory 是 source 與 target",
+   "scene": "cio-three",
+   "points": [
+    {
+     "t": 32,
+     "text": "電腦處理的是 binary 資訊；從外部裝置收到的資料，最後都存進 memory。"
+    },
+    {
+     "t": 57,
+     "text": "CPU 送到外部裝置的資料也來自 memory：CPU 只負責處理，真正的 source 與 target 是 memory unit。"
+    },
+    {
+     "t": 84,
+     "text": "CPU 與 I/O 之間的傳輸有不同 mode：有的以 CPU 為中間路徑，有的直接在 memory 與 I/O 之間傳。"
+    },
+    {
+     "t": 110,
+     "text": "三種方式：programmed I/O、interrupt-initiated I/O、direct memory access（DMA）。"
+    }
+   ],
+   "cues": [
+    32.2,
+    46,
+    57.7,
+    67.4,
+    74.5,
+    84.2,
+    93.4,
+    96.5,
+    110.8
+   ],
+   "explain": [
+    "電腦裡的一切資料，最後都是一串 0 和 1，這叫 binary（二進位）資訊。右下角的「周邊裝置」（例如鍵盤、磁碟）送出來的，也是一串 0 和 1。",
+    "從外部裝置收到的資料，最後一定會被存進 [[記憶體]]（memory）。看那包 0101 沿著線路走進右上角的 Memory。",
+    "反過來，CPU 要送到外部裝置的資料，也是先從 memory 拿出來的：資料從 memory 出發，經過 [[CPU]]，再送到裝置。",
+    "CPU 在這裡的角色只是「處理」和「轉手」，它本身不是資料的老家。",
+    "所以講者強調：資料傳輸真正的起點（source）和終點（target）永遠是 memory。這個觀念會幫你理解後面為什麼 DMA 可以跳過 CPU。",
+    "既然資料是在 memory 和 I/O 裝置之間跑，那「怎麼跑」就有好幾種做法，每一種叫一個 mode（模式）。",
+    "第一類做法：CPU 當中間人。資料先從裝置進到 CPU，再由 CPU 寫進 memory（看資料繞經左上角的 CPU）。",
+    "第二類做法：資料直接在 memory 和 I/O 之間傳，不必繞到 CPU。等一下的 DMA 就是這種。",
+    "講者列出三種方式：① Programmed I/O、② Interrupt-initiated I/O、③ DMA（Direct Memory Access，直接記憶體存取）。接下來一個一個看。"
    ]
   },
   {
    "title": "Programmed I/O",
-   "scene": "programmed-io",
+   "scene": "cio-pio",
    "points": [
     {
-     "text": "最簡單的 I/O 方式：所有工作都由 CPU 做，資料經 CPU 在處理器與 I/O module 之間傳。",
-     "t": 116
+     "t": 129,
+     "text": "最簡單的 I/O 方式：所有工作都由 CPU 做，資料經 CPU 在 processor 與 I/O module 之間傳。"
     },
     {
-     "text": "I/O 指令寫在程式裡，每一筆資料傳輸都由程式中的一個指令發動；通常是 CPU 暫存器與記憶體之間。",
-     "t": 160
+     "t": 170,
+     "text": "I/O 指令寫在程式裡，每一筆資料傳輸都由程式中的一個指令發動；通常是 CPU 暫存器與 memory 之間。"
     },
     {
-     "text": "CPU 必須持續監看周邊裝置是否 ready（polling），監看期間不能做別的事，很耗時間。",
-     "t": 195
+     "t": 198,
+     "text": "CPU 必須持續監看周邊裝置是否 ready（polling），監看期間不能做別的事，很耗時間。"
     },
     {
-     "text": "優點：容易實作、需要的硬體很少。",
-     "t": 235
+     "t": 246,
+     "text": "優點：容易實作、需要的硬體很少。"
     },
     {
-     "text": "缺點：busy waiting，CPU 長時間被綁住卻沒做有用的事。",
-     "t": 250
+     "t": 253,
+     "text": "缺點：busy waiting，CPU 長時間被綁住卻沒做有用的事。"
     }
    ],
-   "trap": "補充：polling 的 CPU 負擔要用「每秒 poll 次數 × 每次 cycles ÷ clock rate」算，而且不論裝置忙不忙都得一直 poll（P&H 例題）。"
+   "trap": "補充：polling 的 CPU 負擔要用「每秒 poll 次數 × 每次 cycles ÷ clock rate」算，而且不論裝置忙不忙都得一直 poll（P&H 例題）。",
+   "cues": [
+    129.2,
+    137.1,
+    154.1,
+    170.2,
+    181.7,
+    190.3,
+    198.4,
+    209.8,
+    218.4,
+    227.5,
+    235,
+    246,
+    253,
+    266.6
+   ],
+   "explain": [
+    "第一種方式叫 Programmed I/O，是最簡單的 input/output 做法。「programmed」的意思是：一切都寫在程式裡、由程式控制。",
+    "在這種方式裡，[[CPU]] 要包辦所有工作，沒有其他幫手。",
+    "資料在處理器和 I/O module（裝置的介面）之間傳，而且一定要經過 CPU：看資料從裝置一路走到 CPU。",
+    "負責 I/O 的指令就寫在程式裡。上面這四行是示意（用 MIPS 組合語言的寫法）：先讀裝置的狀態，還沒好就跳回去再讀；好了就讀資料、再存進 memory。",
+    "程式一行一行執行，每一筆資料都要靠一個指令來搬。亮起來的那行 lw 把資料從裝置讀進 CPU 的暫存器 $t1（暫存器就是 CPU 裡面超快的小格子）。",
+    "接著 sw 把 $t1 存進 memory。所以一般情況下，資料是在「CPU 暫存器」和「memory」之間搬來搬去。",
+    "問題來了：CPU 不知道裝置什麼時候準備好，只好一直去問。這種「一直去問」叫 [[polling]]（輪詢）。第一次問：status = 0，還沒好，beq 就跳回 loop 再問。",
+    "CPU 一次又一次地問「ready 了沒？」，答案一直是「還沒」。計數器顯示已經問了幾次。",
+    "上方這條是 CPU 時間的示意圖（假設 160 個 cycle 內來 8 筆資料）。紅色是在 polling，橘色是在搬資料：整條都被佔滿，CPU 一直在忙。",
+    "既然 CPU 整段時間都在監看，其他程式就分不到 CPU，只能乾等。",
+    "程式算出來：CPU 能拿去做別的事的時間是 0 / 160，也就是 0%。這就是講者說的「非常耗時間」。",
+    "它也有優點：做法很簡單，需要的硬體很少，不用額外的控制電路。",
+    "缺點就是 [[busy waiting]]（忙碌等待）：CPU 一直在等裝置 ready，看起來很忙，其實什麼正事都沒做。",
+    "講者總結：這會把 CPU 綁住很長一段時間，卻沒有產生有用的結果。下一種方式就是要解決這個問題。"
+   ]
   },
   {
    "title": "Interrupt-initiated I/O",
-   "scene": "interrupt-io",
+   "scene": "cio-intr",
    "points": [
     {
-     "text": "解決 programmed I/O 的問題：CPU 不必一直監看周邊裝置。",
-     "t": 270
+     "t": 275,
+     "text": "interrupt：正在做的工作被暫停，先處理別的事，再回到原本的工作（resume）。"
     },
     {
-     "text": "改由 interface 監看裝置；資料 ready 時，interface 發出 interrupt request 訊號。",
-     "t": 320
+     "t": 298,
+     "text": "它解決了 programmed I/O 的限制：CPU 不必一直監看周邊裝置。"
     },
     {
-     "text": "在這之前 CPU 可以繼續執行其他程式。",
-     "t": 345
+     "t": 329,
+     "text": "CPU 先送特別的 command 給 interface；資料 available 時，interface 發出 interrupt request 訊號。"
     },
     {
-     "text": "CPU 收到中斷後，停下目前的工作去服務這個請求，完成後回到原本的工作繼續。",
-     "t": 380
+     "t": 356,
+     "text": "在這之前 CPU 可以繼續執行其他程式；持續監看裝置的是 interface。"
+    },
+    {
+     "t": 370,
+     "text": "CPU 看到 interrupt request 後，停下目前的工作去服務這個請求，完成後回到原本的工作繼續。"
     }
    ],
-   "trap": "補充：同儕筆記常把 exception（處理器內部，如 overflow）與 interrupt（外部 I/O）流程混著講；MIPS 兩者都存 EPC、Cause 再跳 handler，但 EPC 指向的指令不同，要分開記。"
+   "trap": "補充：exception（處理器內部，如 overflow）與 interrupt（外部 I/O）在 MIPS 都會存 EPC、Cause 再跳 handler，但 EPC 指向的指令不同，要分開記。",
+   "cues": [
+    275.8,
+    282.5,
+    291.3,
+    298.1,
+    314.9,
+    329.7,
+    345.3,
+    356.4,
+    360.9,
+    370.2,
+    387.7,
+    399.1,
+    403.7,
+    414.5
+   ],
+   "explain": [
+    "第二種方式叫 Interrupt-initiated I/O，「由中斷發動的 I/O」。CPU 上方的標籤顯示它現在在做什麼：正在跑主程式。",
+    "[[interrupt]]（中斷）這個字的意思就是「打斷」：正在做的事情被暫停下來。",
+    "被打斷之後，CPU 先去處理別的事，處理完再回來把原本的工作接著做完，這叫 resume（繼續）。就像你寫作業時接了一通電話，講完再回來寫。",
+    "這種方式的好處：programmed I/O 裡 CPU 一直 polling 的那個限制，在這裡被解決了。",
+    "CPU 不用一直忙著盯裝置了，靠的就是「中斷」這個機制。",
+    "CPU 先送一個特別的指令（command）給 I/O interface，意思是：「資料好了的時候，你發一個 interrupt request 通知我。」",
+    "那 interface 什麼時候發呢？當裝置的資料準備好（available）的時候。現在裝置還在準備資料。",
+    "在等的這段時間，CPU 可以去執行別的程式，不必乾等。",
+    "真正一直在監看裝置的，是 interface（介面電路），不是 CPU。看 interface 和裝置之間來回確認。",
+    "裝置準備好了！這時 interface 才送出 interrupt request（簡稱 IRQ）給 CPU。",
+    "CPU 看到這個訊號，就把目前正在執行的工作先停下來（主程式暫停）。",
+    "接著 CPU 去處理這個請求：把裝置的資料搬進來、存到 memory。這段處理中斷的程式叫中斷服務程式（ISR）。",
+    "處理完，CPU 回到剛才被打斷的主程式，繼續把它做完。",
+    "用同樣的示意模型算一次：8 筆資料各中斷一次、每次 6 個 cycle，CPU 只忙 48 個 cycle，剩下 112 / 160 = 70% 可以做別的事。不必一直監看，差別就在這裡。"
+   ]
   },
   {
    "title": "前兩種方式共同的缺點",
-   "scene": "pio-limits",
+   "scene": "cio-limits",
    "points": [
     {
-     "text": "Programmed I/O 與 interrupt I/O 都由處理器管理每一筆傳輸，每個 I/O 都要執行好幾個指令。",
-     "t": 435
+     "t": 429,
+     "text": "Programmed I/O 與 interrupt I/O 都有兩個主要缺點。"
     },
     {
-     "text": "傳輸率受限於處理器處理資料的速度。",
-     "t": 455
+     "t": 443,
+     "text": "① 處理器要管理每一筆 I/O 傳輸，每次 I/O 都要執行好幾個指令。"
     },
     {
-     "text": "這兩個缺點由第三種方式 DMA 解決。",
-     "t": 468
+     "t": 453,
+     "text": "② I/O 傳輸率受限於處理器處理資料的速度。"
+    },
+    {
+     "t": 465,
+     "text": "這兩個缺點由第三種方式 DMA 解決。"
     }
+   ],
+   "cues": [
+    429.4,
+    440.3,
+    443.5,
+    453.8,
+    465.9
+   ],
+   "explain": [
+    "回頭比較剛剛的兩種方式：programmed I/O 和 interrupt-initiated I/O。",
+    "講者說：兩者都有兩個主要的缺點。",
+    "缺點 ①：每一筆傳輸都要處理器親自管理，而且每筆都要執行好幾個指令。示意：4 個 word（一個 word 就是一筆固定大小的資料）各需要 lw、sw 兩個指令，共 8 個指令。",
+    "缺點 ②：資料一定要經過 CPU，所以傳輸速度最多只能跟 CPU 搬資料的速度一樣快。資料在 interface 前排隊等 CPU。",
+    "這兩個缺點要靠第三種方式解決：DMA。看資料直接從裝置走進 memory，不經過 CPU。"
    ]
   },
   {
    "title": "Direct Memory Access（DMA）",
-   "scene": "dma",
+   "scene": "cio-dma",
    "points": [
     {
-     "text": "DMA：interface 透過 memory bus 直接把資料搬進／搬出記憶體，不必每次都經過 CPU。",
-     "t": 475
+     "t": 475,
+     "text": "DMA：interface 透過 memory bus 直接把資料搬進／搬出 memory，不必每次都經過 CPU。"
     },
     {
-     "text": "CPU 只負責發動傳輸：提供起始位址等資訊給 interface。",
-     "t": 500
+     "t": 492,
+     "text": "CPU 只負責發動傳輸：提供起始位址等資訊給 interface；適合磁碟、磁帶等快速儲存裝置。"
     },
     {
-     "text": "DMA 經 memory bus 要求記憶體 cycle；被允許後直接把資料寫進記憶體，CPU 只是延後自己的記憶體存取。",
-     "t": 540
+     "t": 540,
+     "text": "DMA 經 memory bus 要求 memory cycle；被允許後直接把資料寫進 memory，CPU 只是延後自己的 memory 存取。"
     },
     {
-     "text": "DMA 期間由 DMA controller 掌控 bus，CPU 沒有 bus 的控制權。",
-     "t": 569
+     "t": 574,
+     "text": "DMA 期間由 DMA controller 掌控 bus，CPU 沒有 memory bus 的控制權。"
     }
    ],
-   "trap": "補充：P&H 的 DMA 傳完一整塊後會發一次中斷通知 CPU；所以 DMA 只在開頭（設定）與結尾（中斷）打擾 CPU。"
+   "trap": "補充：P&H 的 DMA 傳完一整塊後會發一次中斷通知 CPU；所以 DMA 只在開頭（設定）與結尾（中斷）打擾 CPU。",
+   "cues": [
+    475.5,
+    484.7,
+    492.8,
+    495.8,
+    521,
+    540.5,
+    547.3,
+    557.6,
+    569.4,
+    574.3,
+    583
+   ],
+   "explain": [
+    "第三種方式 DMA（Direct Memory Access，直接記憶體存取）。負責的 interface 現在換成 DMA controller，它透過 memory [[bus]] 直接把資料搬進或搬出 memory。",
+    "資料在 memory 和 I/O 之間直接傳，不需要每一筆都麻煩 CPU。CPU 可以做自己的事。",
+    "CPU 只負責「發動」：把起始位址（從哪裡開始放）和要傳幾個 word 告訴 DMA controller（數字是示意）。之後就交給它。",
+    "DMA 特別適合快速的儲存裝置，例如磁碟（magnetic disk）、磁帶（magnetic tape），它們一次要傳很多資料。",
+    "講者說：DMA 讓周邊裝置透過 memory 直接交換資料，箭頭表示裝置和 memory 直接連起來。",
+    "真正要傳的時候，DMA 先透過 memory bus 要一個 memory cycle（使用 bus 的一小段時間），這個請求叫 bus request。",
+    "請求被允許（bus grant）後，DMA 就直接把第一個 word 寫進 memory 的 A000，暫存器裡的位址往後移一格、剩餘數量減 1。",
+    "這時 CPU 如果也想讀 memory，只要稍等一個 cycle 就好。課本把這種做法叫 cycle stealing（偷 cycle）：DMA 偷用 bus 一下，CPU 只延後一點點。上方時間條的金色小格就是被偷的那個 cycle。",
+    "剩下的 word 也一樣：每傳一個就偷一個 cycle。程式檢查：4 個 word 依序寫進 A000～A003，剩餘數量歸零。",
+    "在 DMA 傳輸的那一刻，bus 由 DMA controller 掌控（bus 變成綠色），CPU 沒有 memory bus 的控制權。",
+    "整體來看：DMA 只在開頭設定（10 cycles）、每個 word 偷 1 cycle、結束時中斷一次（6 cycles），8 個 word 共 24 cycles，CPU 有 85% 的時間是自由的。課本另外提到 burst mode：DMA 一次佔住 bus 把整塊傳完。"
+   ]
   },
   {
    "title": "DMA 的優缺點",
-   "scene": "dma-pros-cons",
+   "scene": "cio-dmapc",
    "points": [
     {
-     "text": "優點：周邊可以直接讀寫記憶體，不需要 CPU 參與。",
-     "t": 594
+     "t": 596,
+     "text": "優點：周邊可以直接讀寫 memory，不需要 CPU 參與。"
     },
     {
-     "text": "優點：傳輸期間處理器可以做別的事，處理更快。",
-     "t": 605
+     "t": 604,
+     "text": "優點：傳輸期間處理器可以做別的事，處理更快。"
     },
     {
-     "text": "缺點：需要 DMA controller，增加系統成本。",
-     "t": 620
+     "t": 617,
+     "text": "缺點：需要 DMA controller，增加系統成本。"
     },
     {
-     "text": "缺點：可能產生 cache coherence 問題。",
-     "t": 634
+     "t": 632,
+     "text": "缺點：可能產生 cache coherence 問題。"
+    }
+   ],
+   "cues": [
+    596.7,
+    604.1,
+    617.3,
+    632.1,
+    639.5
+   ],
+   "explain": [
+    "優點一：周邊裝置可以直接讀寫 memory，不需要 CPU 插手。",
+    "優點二：資料在傳的同時，處理器可以去算別的東西，所以整體處理更快。",
+    "缺點一：要多一顆 DMA controller 來負責搬運，系統成本就增加了。",
+    "缺點二：可能出現 cache coherence（快取一致性）問題。示意：CPU 的 [[cache]] 裡存著 X = 5，DMA 直接把 memory 的 X 改成 9，cache 卻不知道，還是舊的 5，兩邊對不上。",
+    "總結 DMA：快、讓 CPU 自由；代價是控制器的成本，以及 cache 可能拿到舊資料的問題。"
+   ]
+  },
+  {
+   "title": "結尾",
+   "scene": null,
+   "points": [
+    {
+     "t": 643,
+     "text": "影片結束。"
     }
    ]
   }
@@ -149,7 +317,7 @@
     "DMA controller"
    ],
    "ans": "Memory unit",
-   "why": "外部裝置的資料最後存進記憶體，送出去的資料也來自記憶體；CPU 只是處理與居中搬運。"
+   "why": "外部裝置的資料最後存進 memory，送出去的資料也來自 memory；CPU 只是處理與居中搬運。"
   },
   {
    "q": "Programmed I/O 的主要缺點是？",
@@ -163,7 +331,7 @@
    "why": "programmed I/O 硬體最少、最簡單，但 CPU 一直在 polling。"
   },
   {
-   "q": "Interrupt-initiated I/O 中，裝置 ready 時是誰發出 interrupt request？",
+   "q": "Interrupt-initiated I/O 中，持續監看裝置並在 ready 時發出 interrupt request 的是？",
    "opts": [
     "I/O interface",
     "CPU",
@@ -187,13 +355,13 @@
   {
    "q": "DMA 傳輸期間，CPU 做什麼？",
    "opts": [
-    "延後自己的記憶體存取，bus 由 DMA controller 掌控",
+    "延後自己的 memory 存取，bus 由 DMA controller 掌控",
     "逐一搬每一個 word",
     "持續 polling DMA controller",
-    "關機等待"
+    "停止執行任何程式直到整塊傳完"
    ],
-   "ans": "延後自己的記憶體存取，bus 由 DMA controller 掌控",
-   "why": "CPU 只發動傳輸（給起始位址等），之後 DMA 直接存取記憶體。"
+   "ans": "延後自己的 memory 存取，bus 由 DMA controller 掌控",
+   "why": "CPU 只發動傳輸（給起始位址等），之後 DMA 直接存取 memory；課本稱 cycle stealing。"
   },
   {
    "q": "影片提到 DMA 的缺點是？",
@@ -204,8 +372,7 @@
     "傳輸率受限於 CPU 速度"
    ],
    "ans": "需要 DMA controller 增加成本，且可能有 cache coherence 問題",
-   "why": "DMA 直接改記憶體，cache 中可能還留著舊資料。"
+   "why": "DMA 直接改 memory，cache 中可能還留著舊資料。"
   }
- ],
- "timing": "estimated"
+ ]
 }

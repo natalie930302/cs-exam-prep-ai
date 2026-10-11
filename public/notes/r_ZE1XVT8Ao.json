@@ -1,0 +1,418 @@
+{
+ "video": "r_ZE1XVT8Ao",
+ "label": "Cache Coherence Problem & Cache Coherency Protocols",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場：今天的問題與解法",
+   "scene": null,
+   "points": [
+    {
+     "t": 5,
+     "text": "主題：multiprocessor 系統的 cache coherence problem，以及解法 cache coherency protocols。"
+    }
+   ]
+  },
+  {
+   "title": "多核心的 private 與 shared storage",
+   "scene": "cpar-org",
+   "points": [
+    {
+     "t": 37,
+     "text": "dual-core processor：處理器經 system bus 接到 main memory。"
+    },
+    {
+     "t": 51,
+     "text": "每個 core 的 L1、L2 cache 是 private；L3 cache 與 main memory 是 shared。"
+    },
+    {
+     "t": 64,
+     "text": "multiprocessor 中每個 core 有自己的儲存，也有大家共用的儲存。"
+    },
+    {
+     "t": 78,
+     "text": "簡化模型：P1–P4 各有一個 private cache；共用 main memory 經 system bus 連接；private cache 之間以 internal bus 互連。"
+    }
+   ],
+   "cues": [
+    37.2,
+    45.9,
+    51.1,
+    60.2,
+    64.7,
+    78.8,
+    96.4,
+    103.7
+   ],
+   "explain": [
+    "先回想 dual-core（雙核心）處理器的樣子：兩個 core（核心，真正執行指令的地方），每個 core 下面有自己的 L1、L2 [[cache]]，再下面是一個 L3 cache。cache 是放在 CPU 旁邊的小而快的記憶體。",
+    "處理器透過 system bus（系統匯流排，一組共用的傳輸線）連到 main memory（主記憶體）。",
+    "仔細看：L1、L2 是每個 core 自己私有的（private），別的 core 用不到。",
+    "而 L3 cache 和 main memory 是大家共用的（shared）。",
+    "所以在多處理器系統裡，每個 core 有自己的儲存空間，同時也有一些大家共用的儲存空間。問題就藏在這裡。",
+    "換成一個更簡單的模型：四個處理器 P1～P4，為了簡化，每個只有一個 private cache。",
+    "大家共用的儲存是 main memory，透過 system bus 連到每個處理器。",
+    "另外，四個 private cache 之間也用一條 internal bus（內部匯流排）互相連在一起。"
+   ]
+  },
+  {
+   "title": "例子：A = 7，四個處理器各改一次",
+   "scene": "cpar-incoh",
+   "points": [
+    {
+     "t": 109,
+     "text": "main memory 有一個 global variable A，初值 7；四個處理器都在處理同一個 A（講者稱 MISD）。"
+    },
+    {
+     "t": 134,
+     "text": "P1 要做 A + 1：自己的 cache 沒有 A（第一次存取 → compulsory miss），從 main memory 拿 7，改成 8。"
+    },
+    {
+     "t": 184,
+     "text": "P2 做 A + 2：同樣從 main memory 拿 7 → 9；P3 做 A − 1 → 6；P4 做 A − 2 → 5。"
+    },
+    {
+     "t": 257,
+     "text": "同一個 A 在不同 private cache 裡有不同的值：這種不一致就是 cache coherence problem。"
+    }
+   ],
+   "trap": "補充：講者稱這種「多個處理器處理同一份資料」為 MISD；依 Flynn 分類，共享記憶體的多核心是 MIMD。",
+   "cues": [
+    109.5,
+    118.1,
+    134.3,
+    143.5,
+    160,
+    175.3,
+    184,
+    205.5,
+    217.8,
+    240,
+    257,
+    263.8
+   ],
+   "explain": [
+    "main memory 裡的程式有一個 global variable（全域變數）A，一開始等於 7。",
+    "四個處理器都要處理同一個 A。講者把這種組織稱為 MISD（多個指令流、單一資料流）；依課本的 Flynn 分類，一般多核心共用記憶體其實屬於 MIMD。這裡只要記住：大家共用同一份資料 A。",
+    "P1 想把 A 加 1。",
+    "P1 先在自己的 private cache 找 A，但這是第一次存取，cache 裡還沒有，這叫 compulsory miss（強制失誤，第一次一定會 miss）。",
+    "所以 P1 到下一層記憶體，也就是 main memory，把 A = 7 帶進自己的 cache。",
+    "有了 A 之後，P1 把它加 1，自己 cache 裡的 A 變成 8。",
+    "接著 P2 想把 A 加 2。它的 cache 也沒有 A，只好去 main memory 拿。注意：P1 只改了自己的 cache（假設 [[write back]]，晚點才寫回），所以 memory 裡還是 7。",
+    "P2 把 7 加 2，它的 cache 裡 A = 9。",
+    "P3 想把 A 減 1：一樣從 main memory 拿 7，減 1 變 6。",
+    "最後 P4 想把 A 減 2：從 memory 拿 7，變成 5。",
+    "現在仔細看：同一個變數 A，在四個 cache 裡分別是 8、9、6、5，memory 還是 7。程式核對了這五個值。",
+    "這種「同一份資料、不同地方的值不一樣」的狀況叫 inconsistency（不一致），也就是 cache coherence problem（快取一致性問題）。"
+   ]
+  },
+  {
+   "title": "cache coherence 與 coherence problem 的定義",
+   "scene": "cpar-def",
+   "points": [
+    {
+     "t": 270,
+     "text": "cache coherence：共享資料存在多個 local cache 時要保持一致（uniformity）。"
+    },
+    {
+     "t": 285,
+     "text": "cache coherence problem：某個處理器更新了共享資料的 local copy 時，如何讓多個 cache 保持同步。"
+    },
+    {
+     "t": 311,
+     "text": "解法：cache coherency protocols，訂定規則達成一致。"
+    }
+   ],
+   "cues": [
+    270,
+    285.2,
+    297.9,
+    311.2
+   ],
+   "explain": [
+    "cache coherence（快取一致性）的意思是：同一份共享資料被放進好幾個 local cache 時，大家的值要一樣。現在四個 cache 都是 7，就是一致的。",
+    "coherence problem 就是：當某個處理器更新了自己那份副本（P1 改成 8），其他 cache 怎麼跟著同步？",
+    "只要共享的值同時待在好幾個 private cache 裡，它們就必須保持同步；難就難在要一直維持這件事。",
+    "解法是 cache coherency protocol（快取一致性協定）：訂好一套規則，讓所有 private cache 保持一致。"
+   ]
+  },
+  {
+   "title": "cache line 的狀態：M、S、I",
+   "scene": "cpar-msi",
+   "points": [
+    {
+     "t": 323,
+     "text": "每個 cache 邏輯上分成 lines（blocks）；cache controller 為每個 block 記一個狀態。"
+    },
+    {
+     "t": 346,
+     "text": "Modified：被自己的處理器改過，和 main memory 不一致。"
+    },
+    {
+     "t": 360,
+     "text": "Shared：沒被改過，可以出現在一個以上的 cache；block 要同時出現在多個 cache，只能是 Shared。"
+    },
+    {
+     "t": 380,
+     "text": "Invalid：別的處理器寫了這份資料，所以這條 line 的資料作廢。"
+    },
+    {
+     "t": 393,
+     "text": "第一次從 memory 取進來設為 Shared；自己要改就升為 Modified；別人先改了，自己的就降為 Invalid。"
+    }
+   ],
+   "trap": "補充：這三個狀態就是 MSI protocol；「寫之前先讓別人的副本失效」是 write invalidate 的做法。",
+   "cues": [
+    327.9,
+    334.7,
+    346.8,
+    360.4,
+    374.7,
+    380.2,
+    393.1,
+    403.4,
+    411.8
+   ],
+   "explain": [
+    "先認識名詞：cache 在邏輯上切成一條一條的 line（也叫 block），每次搬資料就是以一條 line 為單位。",
+    "為了維持一致，cache controller（管理 cache 的電路）替每一條 block 記一個「狀態」。",
+    "第一種狀態 M（Modified，已修改）：這條 line 被自己的處理器改過，所以和 main memory 裡的不一樣。",
+    "第二種 S（Shared，共享）：資料沒被改過，可以同時出現在一個以上的 cache 裡。",
+    "重點：一個 block 若要同時出現在好幾個 cache，它一定要是 Shared 狀態。",
+    "第三種 I（Invalid，無效）：別的處理器寫了這份資料，所以我手上的副本作廢、不能再用。",
+    "套在 A = 7 上：P1、P2 第一次從 memory 把 A 拿進來，狀態都設成 S。程式模擬的結果是 P1、P2 為 S，P3、P4 還沒有（I）。",
+    "P1 要把 A 改成 8：它的 line 從 S 升級成 M。因為是 write-back，memory 暫時還是 7。同時 P1 在 bus 上送出 invalidate（作廢）訊號。",
+    "從 P2 的角度看：別的處理器（P1）先改了 A，為了保持一致，P2 這條 line 從 S 降成 I。下次 P2 要用 A 就得重新拿最新的值。"
+   ]
+  },
+  {
+   "title": "其他狀態：Exclusive、Owned、Forward",
+   "scene": "cpar-eof",
+   "points": [
+    {
+     "t": 429,
+     "text": "除了 M、S、I，還可以有 Exclusive、Owned、Forward。"
+    },
+    {
+     "t": 437,
+     "text": "Exclusive：只在這個 cache、且和 memory 一致；別的處理器來讀時可隨時變成 Shared。"
+    },
+    {
+     "t": 451,
+     "text": "Owned：這個 cache 是內容的擁有者，負責回應其他處理器的讀取。"
+    },
+    {
+     "t": 464,
+     "text": "Forward：特殊的 Shared，由它負責把資料轉送給其他 cache。"
+    },
+    {
+     "t": 485,
+     "text": "一條 line 能有哪些狀態，取決於採用的 protocol。"
+    }
+   ],
+   "trap": "補充：Forward 在課本（MESIF）中的作用是「多個共享者裡指定一個負責回應讀取」，避免大家同時回應。",
+   "cues": [
+    429.5,
+    437.9,
+    451.4,
+    464.4,
+    485.3
+   ],
+   "explain": [
+    "除了 M、S、I，還可以定義其他狀態：E（Exclusive）、O（Owned）、F（Forward）。",
+    "E（Exclusive，獨占）：這條 line 只在我的 cache，而且和 memory 一樣。P1 自己讀 A 時是 E；P2 也來讀，P1 就變成 S，兩邊都 S（這是 MESI 協定）。",
+    "O（Owned，擁有者）：我是這份內容的負責人，別人來讀時由我提供資料。示意（MOESI）：P1 已把 A 改成 8（M），P2 來讀時 P1 變 O、直接把 8 交給 P2，memory 還是舊的 7。",
+    "F（Forward，轉送）是一種特殊的 Shared。講者說它負責把更新轉送給其他 cache；課本（Intel 的 MESIF）的說法是：好幾個 cache 共享時，由 F 那一份負責回應新的讀取。示意：P3 來讀，由 P2（F）轉送，之後 F 交給最新拿到的 P3。",
+    "一條 line 能有哪些狀態，要看用哪一種 protocol：MSI、MESI、MOESI、MESIF 等。"
+   ]
+  },
+  {
+   "title": "軟體 scheme vs 硬體 protocol",
+   "scene": "cpar-swhw",
+   "points": [
+    {
+     "t": 492,
+     "text": "軟體做法（software-based cache coherence scheme）只靠 compiler 與 OS。"
+    },
+    {
+     "t": 507,
+     "text": "compiler 分析程式找出不適合 cache 的資料，OS 在執行時不讓它們被 cache。"
+    },
+    {
+     "t": 520,
+     "text": "軟體的叫 scheme；硬體的才叫 protocol。COA 重點是硬體 protocol，效能較好。"
+    }
+   ],
+   "cues": [
+    494.8,
+    507.3,
+    520.4,
+    530.9
+   ],
+   "explain": [
+    "講者先說明：解決 coherence problem 也有軟體做法，叫 software-based scheme，完全靠 compiler（編譯器）和作業系統（OS）。",
+    "compiler 會分析程式碼，找出哪些資料放進 cache 可能不安全（例如共享變數）；OS 再在程式執行時阻止這些資料被放進 cache。上面兩行程式是示意。",
+    "這些軟體做法叫 scheme（方案），不叫 protocol；硬體的做法才叫 cache coherency protocol。",
+    "因為這是計算機組織（COA）課程，重點放在硬體 protocol；而且 protocol 的效能比軟體 scheme 好。"
+   ]
+  },
+  {
+   "title": "Snooping protocol：write update vs write invalidate",
+   "scene": "cpar-snoop",
+   "points": [
+    {
+     "t": 543,
+     "text": "protocol 分兩類；第一類是 snooping（bus-based）：處理器在 shared bus 上廣播，其他 cache controller 都在監聽並管理自己的 cache。"
+    },
+    {
+     "t": 567,
+     "text": "兩種做法：write update（其他共享副本一起更新）、write invalidate（其他共享副本作廢）。"
+    },
+    {
+     "t": 598,
+     "text": "各自再依 write-through 或 write-back 細分，共四種組合。"
+    }
+   ],
+   "trap": "補充（P&H）：實務上多數 snooping 系統採 write invalidate + write-back（例如 MSI／MESI）。",
+   "cues": [
+    543.3,
+    549.6,
+    567.3,
+    576.5,
+    589.1,
+    598.8,
+    623.1
+   ],
+   "explain": [
+    "硬體 protocol 分兩類：第一類叫 snooping（窺探）或 bus-based protocol，第二類是 directory-based。",
+    "顧名思義，每個 cache 隨時「監聽」（snoop）bus。只要有處理器在 shared bus 上廣播一個請求，其他 cache controller 都聽得到，並據此處理自己的副本。現在四個 cache 都有 A = 7（S）。",
+    "snooping 主要有兩種做法：write update（寫入更新）和 write invalidate（寫入作廢）。",
+    "write update：某個 cache line 從 S 變 M（有人寫入）時，其他共享同一份內容的 cache 會同時被更新。P1 寫 8，其他三個也一起變 8。",
+    "write invalidate：同樣 P1 寫 8，但其他共享的 cache 不是更新，而是把自己的副本作廢（I）。P1 成為唯一一份 M。",
+    "還記得 cache 的寫入策略嗎？[[write through]] 是寫 cache 時同時寫 memory；[[write back]] 是先只寫 cache、之後再寫回。所以 P1 寫 8 之後，write-through 的 memory 立刻是 8，write-back 的 memory 還是 7。",
+    "兩種做法 × 兩種寫入策略 = 四種組合：write update + write-through、write update + write-back、write invalidate + write-through、write invalidate + write-back。"
+   ]
+  },
+  {
+   "title": "Directory-based protocol",
+   "scene": "cpar-dir",
+   "points": [
+    {
+     "t": 636,
+     "text": "第二類：directory-based protocol；集中的 directory 記錄每個資料在哪裡，每個處理器也有 private directory。"
+    },
+    {
+     "t": 652,
+     "text": "差別：snooping 用 broadcast 訊息、cache 經 bus 相連；directory 用可擴充的互連網路做 point-to-point 通訊。"
+    },
+    {
+     "t": 678,
+     "text": "cache coherency protocol 是 coherence problem 的硬體解法。"
+    }
+   ],
+   "cues": [
+    636.2,
+    641.4,
+    646.1,
+    652.7,
+    678
+   ],
+   "explain": [
+    "第二類硬體 protocol：directory-based（目錄式）。",
+    "它維護一個集中的 directory（目錄），記錄每個資料目前在哪些 cache 裡。示意：A 在 P1、P3，directory 記成 [1 0 1 0]。",
+    "除了集中的目錄，每個處理器也維護自己的 private directory，一起幫忙達成一致性。",
+    "最大差別：snooping 用廣播（broadcast）、所有 cache 接在同一條 bus 上；directory 用可擴充的網路，點對點（point-to-point）傳訊。示意：P1 要寫 A，directory 只需通知 P3 一個人；用 snooping 就得廣播給其他三個。",
+    "最後記住：cache coherency protocol 是解決 coherence problem 的「硬體」做法。"
+   ]
+  },
+  {
+   "title": "結尾",
+   "scene": null,
+   "points": [
+    {
+     "t": 685,
+     "text": "下一講會更詳細介紹 snooping-based protocol。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "影片例子：A = 7，P1 做 A+1、P2 做 A+2、P3 做 A−1、P4 做 A−2，各自從 main memory 讀入後只改自己的 cache。四個 cache 的值是？",
+   "opts": [
+    "8、9、6、5",
+    "8、10、9、7",
+    "7、7、7、7",
+    "10、10、10、10"
+   ],
+   "ans": "8、9、6、5",
+   "why": "每個處理器都從 memory 拿到 7（write-back，memory 沒被更新），所以分別得到 8、9、6、5——同一個 A 有不同值，這就是 coherence problem。"
+  },
+  {
+   "q": "Cache coherence problem 指的是？",
+   "opts": [
+    "同一份共享資料在多個 local cache 中的值不一致",
+    "cache 容量不夠大",
+    "cache miss rate 太高",
+    "bus 頻寬不足"
+   ],
+   "ans": "同一份共享資料在多個 local cache 中的值不一致",
+   "why": "某個處理器更新了自己的副本，其他 cache 沒同步。"
+  },
+  {
+   "q": "MSI 中，一個 block 若同時存在於多個 cache，它必須是哪個狀態？",
+   "opts": [
+    "Shared",
+    "Modified",
+    "Invalid",
+    "Exclusive"
+   ],
+   "ans": "Shared",
+   "why": "只有 Shared（未修改）的資料可以同時出現在多個 cache。"
+  },
+  {
+   "q": "P1、P2 都持有 A（Shared）。在 write invalidate 下 P1 寫入 A，兩者的狀態變成？",
+   "opts": [
+    "P1 = M，P2 = I",
+    "P1 = S，P2 = S",
+    "P1 = I，P2 = M",
+    "P1 = M，P2 = S"
+   ],
+   "ans": "P1 = M，P2 = I",
+   "why": "寫的人 S → M，其他共享者 S → I。"
+  },
+  {
+   "q": "write update 與 write invalidate 的差別？",
+   "opts": [
+    "update：其他副本一起改成新值；invalidate：其他副本作廢",
+    "update 只用在 directory protocol",
+    "invalidate 會同時更新 memory",
+    "兩者完全相同"
+   ],
+   "ans": "update：其他副本一起改成新值；invalidate：其他副本作廢",
+   "why": "影片：write update 讓共享的 cache 平行更新；write invalidate 讓它們作廢自己的副本。"
+  },
+  {
+   "q": "Snooping 與 directory-based protocol 的主要差別？",
+   "opts": [
+    "snooping 用廣播與共用 bus；directory 用可擴充網路做點對點通訊",
+    "snooping 是軟體做法",
+    "directory 不需要記錄資料在哪",
+    "snooping 沒有狀態"
+   ],
+   "ans": "snooping 用廣播與共用 bus；directory 用可擴充網路做點對點通訊",
+   "why": "directory 記錄資料位置，只通知相關的 cache，所以適合大型系統。"
+  },
+  {
+   "q": "只靠 compiler 與 OS 的一致性做法，影片稱為？",
+   "opts": [
+    "cache coherence scheme（軟體）",
+    "cache coherency protocol（硬體）",
+    "write update",
+    "snooping"
+   ],
+   "ans": "cache coherence scheme（軟體）",
+   "why": "軟體的叫 scheme；硬體的才叫 protocol，效能較好。"
+  }
+ ]
+}
