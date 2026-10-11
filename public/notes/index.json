@@ -85,9 +85,9 @@
  },
  "0MtwqhIwdrI": {
   "label": "MIT 18.06 L17：Orthogonal Matrices and Gram-Schmidt",
-  "points": 42,
+  "points": 40,
   "quiz": 6,
-  "cued": false
+  "cued": true
  },
  "0M_kIqhwbFo": {
   "label": "MIT 6.006 L8：Hashing with Chaining",
@@ -1207,9 +1207,9 @@
  },
  "HEQuN0QELSQ": {
   "label": "Gram-Schmidt Orthogonalization（換個角度講解）",
-  "points": 19,
+  "points": 18,
   "quiz": 5,
-  "cued": false
+  "cued": true
  },
  "Hfc676iknHY": {
   "label": "清大OCW 趙啟超《離散數學》第12D講 Recurrence Relations",
@@ -1613,6 +1613,12 @@
   "quiz": 7,
   "cued": true
  },
+ "LyGKycYT2v0": {
+  "label": "3Blue1Brown：Dot products and duality | Essence of linear algebra Ch9",
+  "points": 19,
+  "quiz": 6,
+  "cued": true
+ },
  "lyVL6rqj7gU": {
   "label": "清大OCW 趙啟超《離散數學》第19C講 Introduction to Graph Theory",
   "points": 25,
@@ -1875,6 +1881,12 @@
   "label": "MIT 6.006 Rec16：Rubik's Cube, StarCraft Zero（圖搜尋應用，補充）",
   "points": 31,
   "quiz": 7,
+  "cued": true
+ },
+ "osh80YCg_GM": {
+  "label": "MIT OCW 18.06 L16：Projection Matrices and Least Squares",
+  "points": 23,
+  "quiz": 6,
   "cued": true
  },
  "otP5yRAYc9w": {
@@ -2459,6 +2471,12 @@
   "quiz": 7,
   "cued": true
  },
+ "uNsCkP9mgRk": {
+  "label": "MIT 18.06 L17：Orthogonal Matrices and Gram-Schmidt（另一錄影版本）",
+  "points": 40,
+  "quiz": 6,
+  "cued": true
+ },
  "UO0B1SQOAgk": {
   "label": "交大彭文志 Lec13 Trees (2/6)",
   "points": 76,
@@ -2847,6 +2865,18 @@
   "label": "交大彭文志 Lec21 Graph (4/4)",
   "points": 90,
   "quiz": 7,
+  "cued": true
+ },
+ "YzZUIYRCE38": {
+  "label": "MIT OCW 18.06 L14：Orthogonal Vectors and Subspaces",
+  "points": 28,
+  "quiz": 6,
+  "cued": true
+ },
+ "Y_Ac6KiQ1t0": {
+  "label": "MIT OCW 18.06 L15：Projections onto Subspaces",
+  "points": 26,
+  "quiz": 6,
   "cued": true
  },
  "z9KwEh9GBes": {
