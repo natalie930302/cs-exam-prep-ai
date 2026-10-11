@@ -1,0 +1,400 @@
+{
+ "video": "2aH0dlnEhZ0",
+ "label": "清大OCW 趙啟超《離散數學》第19B講 Introduction to Graph Theory",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "上一段的收尾",
+   "points": [
+    {
+     "t": 5,
+     "text": "（接續上一講）這其實是很簡單的結果。"
+    }
+   ],
+   "scene": null
+  },
+  {
+   "title": "Regular graph",
+   "points": [
+    {
+     "t": 16,
+     "text": "regular graph：undirected，所有端點 degree 相同。"
+    },
+    {
+     "t": 108,
+     "text": "每點 degree 都是 r → r-regular。"
+    }
+   ],
+   "scene": "gr-19b-regular",
+   "cues": [
+    16.6,
+    58.5,
+    67.4,
+    108.4,
+    122.7
+   ],
+   "explain": [
+    "接下來看一種特別的圖：regular graph（正則圖）。",
+    "定義：一個 undirected graph，所有端點的 degree 都一樣。舞台上的圖是示意，每個點都是 3 度。",
+    "這樣的 graph 就叫 regular graph。",
+    "如果每個 vertex 的 degree 都是 r，就叫 r-regular。例如這個是 3-regular。",
+    "下面看幾個常見的 regular graph。"
+   ]
+  },
+  {
+   "title": "Complete graph Kₙ",
+   "points": [
+    {
+     "t": 152,
+     "text": "Kₙ：n 個端點，任兩個不同端點之間恰一條 edge。"
+    },
+    {
+     "t": 232,
+     "text": "K₁、K₂、K₃、…、K₇ 依此類推。"
+    },
+    {
+     "t": 357,
+     "text": "Kₙ 有 n 個端點、C(n, 2) = n(n−1)/2 條邊。"
+    },
+    {
+     "t": 387,
+     "text": "Kₙ 是 (n−1)-regular。"
+    }
+   ],
+   "scene": "gr-19b-kn",
+   "cues": [
+    152.1,
+    157.2,
+    210.9,
+    232.3,
+    241,
+    244.6,
+    262.4,
+    288.3,
+    313.8,
+    347.1,
+    357.5,
+    361.9,
+    386.9,
+    394.9,
+    408.3
+   ],
+   "explain": [
+    "第一類：complete graph（完全圖）。",
+    "在 n 個 vertices 上的 complete graph，符號寫成 Kₙ。",
+    "Kₙ 是 undirected graph，任兩個不同的端點之間，都剛好有一條 edge。",
+    "K₁ 只有一個端點，沒有邊。",
+    "K₂：兩個端點，中間一條邊。",
+    "K₃：三個端點，兩兩相連，是一個三角形，有 3 條邊。",
+    "K₄：四個端點，任兩個都連，一共 6 條邊。",
+    "K₅：五個端點，10 條邊。",
+    "K₆：六個端點，15 條邊。",
+    "K₇：七個端點，21 條邊，依此類推。",
+    "Kₙ 有幾個端點？就是 n 個。",
+    "邊數：任兩個不同端點之間剛好一條，就是從 n 個點中挑 2 個，C(n, 2) = n(n−1)/2 條。",
+    "Kₙ 也是一個 regular graph，每個點的 degree 都一樣。",
+    "那它是幾 regular 呢？",
+    "每個 vertex 都跟其他 n − 1 個點各有一條邊，所以 degree 都是 n − 1：Kₙ 是 (n−1)-regular。"
+   ]
+  },
+  {
+   "title": "Cycle graph Cₙ 與 Petersen graph",
+   "points": [
+    {
+     "t": 428,
+     "text": "Cₙ（n ≥ 3）：n 個端點繞成一圈，n 條邊，2-regular。"
+    },
+    {
+     "t": 574,
+     "text": "Petersen graph：10 個端點、15 條邊，3-regular。"
+    }
+   ],
+   "scene": "gr-19b-cn",
+   "cues": [
+    428.4,
+    450.6,
+    454.7,
+    474.2,
+    477.3,
+    504.1,
+    518.2,
+    520.6,
+    541.6,
+    547.5,
+    574.6,
+    586,
+    597.1,
+    603,
+    607.1
+   ],
+   "explain": [
+    "第二類：cycle graph（環）。",
+    "符號 Cₙ，從 n ≥ 3 才開始講。",
+    "C₃：三個點繞成一圈。",
+    "C₄：四個點繞一圈。",
+    "C₅：五個點繞一圈。",
+    "C₆：六個點繞一圈。",
+    "Cₙ 有 n 個端點。",
+    "邊數：C₃ 有 3 條、C₄ 有 4 條、C₅ 有 5 條、C₆ 有 6 條，Cₙ 有 n 條。",
+    "Cₙ 也是 regular graph，每個端點的 degree 都一樣。",
+    "每點只跟左右兩個相鄰的點有邊，degree 都是 2，所以是 2-regular。",
+    "這個圖上次講過，叫什麼 graph？",
+    "它是 Petersen graph，後面還會再碰到好幾次。",
+    "它有 10 個端點。",
+    "有 15 條邊。",
+    "每個 vertex 的 degree 都是 3，所以是 3-regular graph。"
+   ]
+  },
+  {
+   "title": "Walk 的定義",
+   "points": [
+    {
+     "t": 644,
+     "text": "名詞分類照教科書；各書不一定相同。"
+    },
+    {
+     "t": 686,
+     "text": "walk：有限的交替序列 v₀, e₁, v₁, e₂, …, eₙ, vₙ，eᵢ 連接 vᵢ₋₁ 與 vᵢ。"
+    },
+    {
+     "t": 878,
+     "text": "walk 沒有限制：端點、邊都可以重複。"
+    }
+   ],
+   "scene": "gr-19b-walk",
+   "cues": [
+    644.3,
+    655.6,
+    666.6,
+    686.5,
+    724.1,
+    732.7,
+    737.5,
+    765.1,
+    767.2,
+    768.8,
+    773.9,
+    796.2,
+    815.7,
+    858.8,
+    878.6
+   ],
+   "explain": [
+    "接下來介紹幾個名詞：walk、trail、path。",
+    "這裡的分類照我們用的教科書。",
+    "不見得每本書的分法都一樣，看上下文大概知道意思。",
+    "第一個叫 walk。舞台上的圖是示意。",
+    "walk 就是在一個圖上沿著邊走來走去。",
+    "在 undirected graph 上，walk 是一個有限的、點和邊交替出現的序列（finite alternating sequence）。",
+    "從 v₀ 開始，這裡 v₀ = A。",
+    "經過 e₁ 這條 edge 走到 v₁ = B。",
+    "再經過 e₂ 走到 v₂ = C。",
+    "再經過 e₃ 走到 v₃，這裡又回到 A。",
+    "一直走下去，最後經過 eₙ 走到 vₙ。這裡再走 AB 一次，到 B。",
+    "序列是 vertex、edge、vertex、edge… 交替出現，所以叫 alternating。",
+    "開始在 v₀、結束在 vₙ，中間用到 e₁、e₂、…、eₙ。",
+    "eᵢ 的兩個端點是 vᵢ₋₁ 和 vᵢ：e₁ 連 v₀ 和 v₁，e₂ 連 v₁ 和 v₂，依此類推。",
+    "walk 沒有任何限制，照著邊走就對了：A 走了兩次、AB 也走了兩次都可以。"
+   ]
+  },
+  {
+   "title": "Walk 的長度；closed／open walk",
+   "points": [
+    {
+     "t": 891,
+     "text": "walk 的長度 = 經過的 edge 個數 n（重複也算）。"
+    },
+    {
+     "t": 934,
+     "text": "起點 = 終點：closed walk；否則 open walk。"
+    }
+   ],
+   "scene": "gr-19b-closed",
+   "cues": [
+    891.2,
+    924.1,
+    934.7,
+    954.7,
+    966.6,
+    991.1
+   ],
+   "explain": [
+    "walk 的長度（length）就是它經過的 edge 個數。",
+    "v₀ e₁ … eₙ vₙ 經過 n 條 edge，長度就是 n。例如 A B C A B 長度是 4，重複走的也要算。",
+    "如果起點跟終點一樣，例如 A → B → C → A……",
+    "走出去又繞回原點，這種 walk 叫 closed walk。",
+    "不是 closed 的就叫 open walk，例如 A → B → C → D，起點終點不同。",
+    "整理：起點 = 終點叫 closed walk，不一樣叫 open walk。"
+   ]
+  },
+  {
+   "title": "Trail、circuit、path、cycle",
+   "points": [
+    {
+     "t": 1013,
+     "text": "walk 最廣義：端點、edge 都可重複。"
+    },
+    {
+     "t": 1030,
+     "text": "trail：edge 不重複；closed trail 叫 circuit。"
+    },
+    {
+     "t": 1126,
+     "text": "path：端點不重複（因此 edge 也不重複）；closed path 叫 cycle。"
+    },
+    {
+     "t": 1248,
+     "text": "這是教科書的嚴格叫法，各書不統一。"
+    }
+   ],
+   "trap": "端點不重複 ⇒ 邊一定不重複；但邊不重複不代表端點不重複（trail 可以經過同一點兩次）。",
+   "scene": "gr-19b-trail",
+   "cues": [
+    1013.3,
+    1020.4,
+    1025,
+    1030.5,
+    1060.9,
+    1069.5,
+    1100.2,
+    1109.9,
+    1126.2,
+    1165.8,
+    1173.1,
+    1198.3,
+    1212.7,
+    1233.2,
+    1248.5
+   ],
+   "explain": [
+    "剛才的 walk 是最廣義的。舞台上的圖是示意。",
+    "端點可以重複：走過一個點，之後還可以再回來。",
+    "edge 也可以重複：同一條邊可以再走一次。",
+    "加第一個限制：edge 不能重複。",
+    "沒有任何 edge 重複的 walk 叫 trail。例如 A B C D E C：C 經過兩次沒關係，但每條邊只走一次。",
+    "trail 原意是登山健行走的小徑。",
+    "如果 edge 不重複、而且起點 = 終點，就是 closed trail，例如再從 C 回到 A。",
+    "closed trail 另外有個名字，叫 circuit。",
+    "加第二個限制：端點也不能重複。",
+    "每個端點在 walk 裡最多只出現一次，例如 A B C D。",
+    "端點不重複，edge 就一定不會重複：要重複走一條邊，它的端點一定會走兩次。",
+    "端點不重複的 walk 叫 path。",
+    "我們平常說的「路徑」，就是端點不重複的 walk。",
+    "closed path：除了起點等於終點，其他端點都不重複，叫 cycle，例如 A → B → C → A。",
+    "這是我們教科書的叫法，比較嚴格；別的地方 trail、path 可能不分，要看定義。"
+   ]
+  },
+  {
+   "title": "名詞整理表",
+   "points": [
+    {
+     "t": 1311,
+     "text": "可重複點與邊：open walk／closed walk。"
+    },
+    {
+     "t": 1399,
+     "text": "邊不重複：trail／circuit。"
+    },
+    {
+     "t": 1438,
+     "text": "點不重複：path／cycle。"
+    }
+   ],
+   "scene": "gr-19b-table",
+   "cues": [
+    1311.3,
+    1343,
+    1353.7,
+    1383.8,
+    1399.7,
+    1423.1,
+    1427.5,
+    1437.8,
+    1456.3,
+    1467.1,
+    1482.2
+   ],
+   "explain": [
+    "把剛才介紹的名詞整理成一張表。",
+    "第一列：完全沒有限制，可以重複端點、也可以重複 edge。",
+    "open 的叫 open walk。",
+    "closed 的叫 closed walk。最廣義的就是 walk。",
+    "第二列：edge 不能重複，但端點可以重複。",
+    "open 的叫 trail（小徑）。",
+    "closed 的叫 circuit。",
+    "第三列：端點不能重複，edge 也就一定不能重複。",
+    "open 的叫 path。",
+    "closed 的叫 cycle。",
+    "各地方的叫法沒有統一，但至少這門課後面都照這張表用。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "Kₙ 有幾條邊？",
+   "opts": [
+    "n(n−1)/2",
+    "n(n−1)",
+    "n",
+    "2ⁿ"
+   ],
+   "ans": "n(n−1)/2",
+   "why": "任兩個不同端點恰一條邊：C(n, 2)。"
+  },
+  {
+   "q": "K₇ 是幾 regular？",
+   "opts": [
+    "6",
+    "7",
+    "21",
+    "2"
+   ],
+   "ans": "6",
+   "why": "每點跟其他 6 個點都有一條邊。"
+  },
+  {
+   "q": "C₈ 有幾條邊？",
+   "opts": [
+    "8",
+    "16",
+    "28",
+    "7"
+   ],
+   "ans": "8",
+   "why": "Cₙ 有 n 個點、n 條邊，是 2-regular。"
+  },
+  {
+   "q": "依本課教科書，「edge 不重複、起點 = 終點」的 walk 叫？",
+   "opts": [
+    "circuit",
+    "cycle",
+    "path",
+    "trail"
+   ],
+   "ans": "circuit",
+   "why": "edge 不重複叫 trail，closed trail 叫 circuit；端點也不重複的 closed path 才叫 cycle。"
+  },
+  {
+   "q": "walk A, B, C, A, B 的長度是？",
+   "opts": [
+    "4",
+    "5",
+    "3",
+    "2"
+   ],
+   "ans": "4",
+   "why": "長度 = 經過的 edge 數：AB、BC、CA、AB 共 4 條（重複的也算）。"
+  },
+  {
+   "q": "下列敘述何者正確？",
+   "opts": [
+    "端點不重複的 walk，edge 一定不重複",
+    "edge 不重複的 walk，端點一定不重複",
+    "trail 一定是 path",
+    "closed walk 一定是 cycle"
+   ],
+   "ans": "端點不重複的 walk，edge 一定不重複",
+   "why": "重複一條邊必定重複它的端點；反之不成立。"
+  }
+ ]
+}

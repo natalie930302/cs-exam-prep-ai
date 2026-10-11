@@ -167,6 +167,12 @@
   "quiz": 7,
   "cued": true
  },
+ "2aH0dlnEhZ0": {
+  "label": "清大OCW 趙啟超《離散數學》第19B講 Introduction to Graph Theory",
+  "points": 21,
+  "quiz": 6,
+  "cued": true
+ },
  "2dYV_lADfFI": {
   "label": "Amdahl's Law in COA: Basics, Proof, and CPU Performance",
   "points": 16,
@@ -1391,6 +1397,12 @@
   "quiz": 7,
   "cued": true
  },
+ "lyVL6rqj7gU": {
+  "label": "清大OCW 趙啟超《離散數學》第19C講 Introduction to Graph Theory",
+  "points": 10,
+  "quiz": 4,
+  "cued": true
+ },
  "Lzr5-m7ap-8": {
   "label": "台大林軒田 DSA Skip List / BST / AVL Tree",
   "points": 192,
@@ -1745,6 +1757,12 @@
   "quiz": 6,
   "cued": true
  },
+ "q0Vy0gQCB_g": {
+  "label": "交大OCW 易志偉《離散數學》Lec22 Graphs (1/3)",
+  "points": 53,
+  "quiz": 7,
+  "cued": true
+ },
  "Q2-sJ3eYGYE": {
   "label": "清大周志遠 第10B講 Memory Management",
   "points": 11,
@@ -2039,6 +2057,12 @@
   "quiz": 8,
   "cued": true
  },
+ "ue8V8aOKveE": {
+  "label": "清大OCW 趙啟超《離散數學》第19A講 Introduction to Graph Theory",
+  "points": 15,
+  "quiz": 5,
+  "cued": true
+ },
  "uEUXGcc2VXM": {
   "label": "Abdul Bari：2.6.2 Binary Search Recursive Method",
   "points": 21,
@@ -2133,6 +2157,12 @@
   "label": "Abdul Bari：Optimal BST (Successful Search Only)",
   "points": 65,
   "quiz": 6,
+  "cued": true
+ },
+ "vNXSZd63tuw": {
+  "label": "清大OCW 趙啟超《離散數學》第18B講 Introduction to Graph Theory",
+  "points": 17,
+  "quiz": 5,
   "cued": true
  },
  "VwQeypxlevE": {
@@ -2231,6 +2261,12 @@
   "quiz": 5,
   "cued": true
  },
+ "xDNyQRMyLCM": {
+  "label": "清大OCW 趙啟超《離散數學》第18A講 Introduction to Graph Theory",
+  "points": 21,
+  "quiz": 5,
+  "cued": true
+ },
  "xFv_Hl4B83A": {
   "label": "Abdul Bari：6.1 N Queens Problem using Backtracking",
   "points": 16,
@@ -2301,6 +2337,12 @@
   "label": "清大周志遠 第23A講 File Concept & Access Methods",
   "points": 36,
   "quiz": 6,
+  "cued": true
+ },
+ "y4sLC9zeEvU": {
+  "label": "交大OCW 易志偉《離散數學》Lec23 Graphs (2/3)",
+  "points": 28,
+  "quiz": 7,
   "cued": true
  },
  "ygK0YON10sQ": {

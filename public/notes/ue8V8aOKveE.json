@@ -1,0 +1,298 @@
+{
+ "video": "ue8V8aOKveE",
+ "label": "清大OCW 趙啟超《離散數學》第19A講 Introduction to Graph Theory",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "複習上一講",
+   "points": [
+    {
+     "t": 4,
+     "text": "上次講了 directed／undirected graph、adjacency matrix、isomorphic；今天再補幾個名詞。"
+    }
+   ],
+   "scene": null
+  },
+  {
+   "title": "Simple graph 與 multigraph",
+   "points": [
+    {
+     "t": 91,
+     "text": "simple graph：任兩個不同端點之間最多一條 edge，而且沒有 loop。"
+    },
+    {
+     "t": 173,
+     "text": "multigraph：允許多重邊（multiple edges）與 loop，是更廣義的 graph。"
+    },
+    {
+     "t": 285,
+     "text": "讀題時先確定討論的是 simple graph 還是 multigraph。"
+    }
+   ],
+   "trap": "這門課（Grimaldi）的 multigraph 允許 loop；Rosen 把有 loop 的叫 pseudograph。看到名詞要先確認定義。",
+   "scene": "gr-19a-simple",
+   "cues": [
+    91,
+    101.3,
+    118.7,
+    140.5,
+    155.3,
+    164.4,
+    173.3,
+    270.7,
+    285.2,
+    308
+   ],
+   "explain": [
+    "有時候為了限制討論的範圍，會對 graph 加上條件。",
+    "條件一：兩個不同的端點之間，只能有一條 edge。",
+    "這樣的 graph 叫 simple graph（簡單圖）。",
+    "「不同的（distinct）」端點才能連邊，所以不能有 loop：loop 是一條自己繞回自己的邊。",
+    "而且兩個不同端點之間只能有一條邊，不能有兩條平行的邊。",
+    "沒有 loop、任兩點最多一條邊，就是 simple graph。",
+    "如果允許 loop、允許兩點之間不只一條邊，就叫 multigraph。",
+    "multigraph 可以有 multiple edges（多重邊），也可以有 loop，是更廣義的 graph 定義。",
+    "為了講清楚範圍，老師會特別說是 simple graph 還是 multigraph。",
+    "別人沒講清楚時，要先確定他討論的範圍，因為有些結論在兩種圖上會不太一樣。"
+   ]
+  },
+  {
+   "title": "Vertex degree 與 loop",
+   "points": [
+    {
+     "t": 340,
+     "text": "deg(v)：與 v 相連（incident）的 edge 數，simple graph 與 multigraph 都適用。"
+    },
+    {
+     "t": 476,
+     "text": "loop 對 degree 貢獻 2。"
+    }
+   ],
+   "trap": "一個 loop 讓 deg(v) 加 2，不是加 1。",
+   "scene": "gr-19a-degree",
+   "cues": [
+    340.2,
+    349.7,
+    394.3,
+    419.2,
+    435.8,
+    476.2,
+    510.4,
+    523.2,
+    531.4
+   ],
+   "explain": [
+    "接著看 vertex degree（端點的度數）。",
+    "每個 vertex 都可以定義一個 degree。舞台上的圖是示意。",
+    "degree 就是跟這個 vertex 相連的 edge 有幾條，英文叫 number of edges incident with v。",
+    "例如 v 連出去 3 條邊，deg(v) 就是 3。",
+    "這個定義在 simple graph 或 multigraph 都一樣。",
+    "但是有 loop 的時候要小心算。",
+    "multigraph 可以有 loop：這條 edge 只繞著 v 自己。",
+    "loop 要對 degree 貢獻 2，所以 deg(v) 從 3 變成 5。",
+    "為什麼？因為一條 edge 本來有兩個端點，各貢獻 1；loop 的兩個端點都是 v，所以 v 一共得到 2。"
+   ]
+  },
+  {
+   "title": "例子與定理：Σ deg(v) = 2|E|",
+   "points": [
+    {
+     "t": 549,
+     "text": "例：6 個 vertices，degree 為 3、2、4、2、0、1（a 有一個 loop）。"
+    },
+    {
+     "t": 675,
+     "text": "總和 3+2+4+2+0+1 = 12 = 2 × 6 條邊。"
+    },
+    {
+     "t": 743,
+     "text": "定理：Σ_{v∈V} deg(v) = 2|E|。"
+    },
+    {
+     "t": 784,
+     "text": "證明：每條 edge（含 loop）對 degree 總和恰好貢獻 2。"
+    }
+   ],
+   "scene": "gr-19a-sum",
+   "cues": [
+    549.1,
+    591,
+    643.4,
+    646.8,
+    665.6,
+    674.8,
+    701.5,
+    714.9,
+    725.2,
+    731,
+    760.4,
+    784.4,
+    794.9,
+    813,
+    817.5,
+    863
+   ],
+   "explain": [
+    "看一個例子。",
+    "這個 graph 有 a、b、c、d、e、f 六個 vertices（擺放位置是示意，度數依老師板書）。每個點的 degree 是多少？",
+    "f 只連一條邊，degree 是 1。",
+    "a 有一個 loop 貢獻 2，再加上一條普通的邊貢獻 1，所以 deg(a) = 3。",
+    "如果這邊再多一條邊（示意），它的兩端點 degree 又會各多 1。",
+    "現在把所有 vertex 的 degree 加起來。",
+    "依序是 3 + 2 + 4 + 2 + 0 + 1。e 沒有任何邊，degree 是 0。",
+    "加起來等於 12。12 跟什麼有關呢？",
+    "數一數邊：一共 6 條（loop 也算一條）。",
+    "12 剛好是 2 × 6，就是邊數的兩倍。",
+    "這就得到一個定理：所有 vertex 的 degree 加起來，等於 edge 個數的兩倍，Σ deg(v) = 2|E|。",
+    "證明：為什麼一定是兩倍？我們一條一條邊來看。",
+    "每條普通的邊，給它的兩個端點各加 1。看計數一邊跑、一邊往上加。",
+    "loop 這條 edge 則是給 a 加 2。",
+    "所以每一條 edge 都剛好對總和貢獻 2。",
+    "有 |E| 條 edge，每條貢獻 2，總和就是 2|E|。證明完畢。"
+   ]
+  },
+  {
+   "title": "奇數 degree 的端點有偶數個",
+   "points": [
+    {
+     "t": 883,
+     "text": "把 V 分成 V_O（degree 奇數）與 V_E（degree 偶數），兩者是 V 的 partition。"
+    },
+    {
+     "t": 1029,
+     "text": "Σ_{V_O} deg + Σ_{V_E} deg = 2|E|，右邊和 V_E 部分都是偶數 → V_O 部分也是偶數。"
+    },
+    {
+     "t": 1107,
+     "text": "V_O 中每項都是奇數 → |V_O| 一定是偶數。"
+    }
+   ],
+   "scene": "gr-19a-parity",
+   "cues": [
+    883.1,
+    885.9,
+    898.1,
+    932.3,
+    950.1,
+    980.8,
+    1029.7,
+    1057.6,
+    1067.6,
+    1072.9,
+    1092.6,
+    1106.8,
+    1114.8
+   ],
+   "explain": [
+    "從剛剛的定理，還可以推出另一個結果。",
+    "先把所有 vertices 分成兩種。",
+    "V_O：degree 是奇數（odd）的 vertices，舞台上塗粉紅。例子裡是 a（3）和 f（1）。",
+    "V_E：剩下 degree 是偶數（even）的 vertices，塗藍色。",
+    "V_O 和 V_E 構成 V 的一個 partition（分割）。",
+    "partition 的意思：兩個子集合聯集起來是 V，交集是空集合。一個點的 degree 不是奇數就是偶數，不會兩者都是。",
+    "所以 degree 的總和可以拆成兩個 sum：V_O 那一堆加上 V_E 那一堆。",
+    "而總和等於 2 × edge 個數。",
+    "2|E| 一定是偶數。",
+    "V_E 那一堆每個都是偶數，偶數加偶數還是偶數。",
+    "偶數 = (V_O 那堆) + 偶數，所以 V_O 那一堆的和也一定是偶數。",
+    "可是 V_O 裡每一個 degree 都是奇數。",
+    "奇數要有偶數個，加起來才會是偶數。所以 |V_O|（奇數度端點的個數）一定是偶數。"
+   ]
+  },
+  {
+   "title": "Handshaking lemma",
+   "points": [
+    {
+     "t": 1138,
+     "text": "Handshaking lemma：奇數 degree 的 vertices 個數一定是偶數。"
+    },
+    {
+     "t": 1200,
+     "text": "派對：人 = 端點、握過手 = 邊；跟奇數個人握過手的人數一定是偶數。"
+    }
+   ],
+   "scene": "gr-19a-hand",
+   "cues": [
+    1138,
+    1157.8,
+    1193.7,
+    1200.5,
+    1232.3,
+    1242.4,
+    1288.5,
+    1305.7,
+    1316,
+    1340.5
+   ],
+   "explain": [
+    "這個性質叫 handshaking lemma（握手引理）。",
+    "它說：degree 是奇數的 vertices，個數一定是偶數。",
+    "為什麼叫「握手」？用派對來解釋。",
+    "在一場 party 裡，有些人互相握手。舞台上的人和握手情形是示意。",
+    "A 跟 B 握手：A 握到 B 的手，B 也握到 A 的手，兩個人的握手次數各加 1。",
+    "把每個人當成一個端點，兩人握過手就連一條邊，派對就變成一個 graph。",
+    "結論：跟「奇數個」人握過手的那些人，人數一定是偶數。",
+    "不管有多少人、不管大家怎麼握，都成立。每個人的 degree 就是他握手的次數。",
+    "把跟奇數個人握手的人找出來（粉紅），數一數，一定是偶數個。",
+    "這些人正是 V_O，所以人數是偶數，就是 handshaking lemma。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "simple graph 的條件是？",
+   "opts": [
+    "沒有 loop，且任兩不同端點間最多一條邊",
+    "沒有 loop 即可",
+    "每個端點 degree 相同",
+    "邊都有方向"
+   ],
+   "ans": "沒有 loop，且任兩不同端點間最多一條邊",
+   "why": "simple graph：不能有 loop、不能有多重邊。"
+  },
+  {
+   "q": "某 vertex 有一個 loop，另外還連著 2 條普通邊，它的 degree 是？",
+   "opts": [
+    "4",
+    "3",
+    "2",
+    "5"
+   ],
+   "ans": "4",
+   "why": "loop 貢獻 2，兩條普通邊各貢獻 1：2 + 2 = 4。"
+  },
+  {
+   "q": "一個圖的 degree 為 3、2、4、2、0、1，它有幾條邊？",
+   "opts": [
+    "6",
+    "12",
+    "5",
+    "7"
+   ],
+   "ans": "6",
+   "why": "Σ deg = 12 = 2|E| → |E| = 6。"
+  },
+  {
+   "q": "下列哪一組不可能是某個圖的 degree（允許 loop、多重邊）？",
+   "opts": [
+    "3, 3, 3",
+    "3, 3, 2",
+    "1, 1, 0",
+    "4, 2, 2"
+   ],
+   "ans": "3, 3, 3",
+   "why": "3 + 3 + 3 = 9 是奇數，但 Σ deg = 2|E| 必為偶數（奇數度的點要有偶數個）。"
+  },
+  {
+   "q": "Handshaking lemma 說的是？",
+   "opts": [
+    "奇數 degree 的端點個數是偶數",
+    "偶數 degree 的端點個數是偶數",
+    "每個人都握過手",
+    "邊數是偶數"
+   ],
+   "ans": "奇數 degree 的端點個數是偶數",
+   "why": "由 Σ deg = 2|E| 推得 |V_O| 為偶數。"
+  }
+ ]
+}
