@@ -7720,3 +7720,4 @@ body#appRoot .gs-btn.listening { background: color-mix(in srgb, #d64545 14%, var
 body#appRoot .global-search-input-row { padding: 14px 14px 14px 22px !important; }
 body#appRoot .global-search-results { padding: 10px 12px 12px !important; gap: 2px !important; }
 body#appRoot .global-search-item { padding: 10px 14px !important; }
+body#appRoot .global-search-results { gap: 6px !important; }

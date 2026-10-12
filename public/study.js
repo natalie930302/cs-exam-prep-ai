@@ -885,15 +885,21 @@
     const el = $('panel-lab');
     if (el.dataset.loaded) return;
     el.dataset.loaded = '1';
-    el.innerHTML = '<iframe class="st-lab-frame" src="' + labUrl + '&embed=1" title="互動實驗室" loading="lazy"></iframe>';
+    el.innerHTML = '<iframe class="st-lab-frame" src="' + labUrl + '&embed=1" title="互動實驗室" loading="lazy" scrolling="no"></iframe>';
     // the frame is as tall as the lab's own content, so no blank space below it
     const fr = el.querySelector('iframe');
     fr.addEventListener('load', function(){
       try {
         const doc = fr.contentDocument;
-        const fit = function(){ fr.style.height = Math.max(320, Math.ceil(doc.documentElement.getBoundingClientRect().height)) + 'px'; };
+        // no scrollbars inside the lab (the frame grows to fit it anyway)
+        const st = doc.createElement('style');
+        st.textContent = '*{scrollbar-width:none}*::-webkit-scrollbar{display:none}html,body{overflow:hidden}';
+        doc.head.appendChild(st);
+        const fit = function(){ fr.style.height = Math.max(320, Math.ceil(doc.documentElement.getBoundingClientRect().height), doc.body.scrollHeight) + 'px'; };
         fit();
-        new ResizeObserver(fit).observe(doc.body);
+        const ro = new ResizeObserver(fit); ro.observe(doc.body); ro.observe(doc.documentElement);
+        if (doc.body.firstElementChild) ro.observe(doc.body.firstElementChild);
+        [300, 1000, 2500].forEach(function(t){ setTimeout(fit, t); });
       } catch (e) {}
     });
   }

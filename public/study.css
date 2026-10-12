@@ -422,3 +422,8 @@ a { color: inherit; }
 .st-v.watched .st-v-title { color: var(--mt); }
 .st-v .st-progress { position: absolute; left: 50px; right: 76px; bottom: 11px; margin: 0; }
 .st-v-pl { top: auto; bottom: 4px; right: 8px; }
+
+/* 實驗室：不顯示捲軸 */
+#panel-lab, #panel-lab * { scrollbar-width: none; }
+#panel-lab::-webkit-scrollbar, #panel-lab *::-webkit-scrollbar { display: none; }
+.st-lab-frame { overflow: hidden; }
