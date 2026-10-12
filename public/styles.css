@@ -7587,3 +7587,4 @@ body#appRoot #main #sec-subjects .rec-books.rec-series .rec-books-hd {
   font-size: 14px !important; font-weight: 700 !important; letter-spacing: 0 !important; color: var(--tx) !important;
 }
 body#appRoot #main #sec-subjects .rec-books.rec-series .rec-count { font-size: 12px !important; font-weight: 500 !important; letter-spacing: 0 !important; color: var(--mt) !important; }
+body#appRoot .ch-study-link, body#appRoot .ch-study-link:hover, body#appRoot .ch-study-link:active { transform: none !important; }
