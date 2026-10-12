@@ -7592,7 +7592,7 @@ body#appRoot #main #sec-subjects .rec-books.rec-series .rec-books-hd { padding-b
 body#appRoot #main #sec-subjects .rec-series .rec-books-body > .rec-series-row:first-child { padding-top: 0 !important; }
 body#appRoot #main #sec-subjects .rec-series .rec-books-body > .rec-series-row:last-child { padding-bottom: 0 !important; }
 /* 系列素材卡：標題和清單之間用 gap，不用 margin */
-body#appRoot #main #sec-subjects .rec-books.rec-series { display: flex !important; flex-direction: column !important; gap: 10px !important; }
+body#appRoot #main #sec-subjects .rec-books.rec-series { display: flex !important; flex-direction: column !important; gap: 14px !important; }
 body#appRoot #main #sec-subjects .rec-books.rec-series .rec-books-hd { margin: 0 !important; }
 body#appRoot #main #sec-subjects .sp .smeta > .sm:first-child { padding-top: 0 !important; }
 body#appRoot #main #sec-subjects .sp .smeta > .sm:last-child { padding-bottom: 0 !important; }
