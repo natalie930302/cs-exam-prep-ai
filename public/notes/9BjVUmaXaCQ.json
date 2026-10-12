@@ -1,0 +1,537 @@
+{
+ "video": "9BjVUmaXaCQ",
+ "label": "Computer Science Lessons：DRAM Part 6 Burst Mode and Bank Interleaving",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "DIMM 的階層：rank → chip → bank → array → row／column",
+   "scene": "dram-hier",
+   "points": [
+    {
+     "t": 4,
+     "text": "DIMM（dual inline memory module）是插在主機板上的 DRAM 記憶體條；一般主機板有 4 個 DIMM 插槽。"
+    },
+    {
+     "t": 17,
+     "text": "典型 DIMM 的一面有 8 顆晶片，組成 1 個 rank；有些 DIMM 背面還有第二個 rank。"
+    },
+    {
+     "t": 31,
+     "text": "層級：DIMM → rank → chip → bank → array → row × column → cell（1 bit）。"
+    },
+    {
+     "t": 47,
+     "text": "設計記憶體要在容量、速度、能源效率、成本之間取捨。"
+    }
+   ],
+   "trap": "rank 不是「一面」本身，而是「一起回應同一個讀寫請求的一組晶片」；通常剛好是一面的 8 顆。",
+   "cues": [
+    4.3,
+    11.9,
+    17.8,
+    24.3,
+    27.0,
+    31.2,
+    33.6,
+    37.6,
+    47.7
+   ],
+   "explain": [
+    "DIMM 就是我們平常說的「一條記憶體」，上面焊著好幾顆 DRAM 晶片，插在主機板上。",
+    "一般桌機主機板有 4 個插 DIMM 的插槽（slot），所以最多可以一次裝 4 條。",
+    "rank 是「一起被讀寫的一組晶片」。典型 DIMM 正面的 8 顆晶片合起來就是 1 個 rank。",
+    "有些 DIMM 不只一個 rank，例如雙 rank 的記憶體條。",
+    "第二個 rank 通常放在電路板背面。畫面把 DIMM 翻過來，背面那 8 顆就是 rank 1。",
+    "再往裡看：每顆晶片裡面切成好幾個 bank（這裡畫 8 個），bank 就像晶片裡的獨立小倉庫。",
+    "每個 bank 又由好幾個 array（陣列）組成。",
+    "每個 array 是排成格子的 cell：橫的一排叫 row（列），直的一行叫 column（行），交叉點存 1 個 bit。",
+    "影片接下來會談：設計記憶體時要在容量、速度、耗電和成本之間怎麼取捨。"
+   ]
+  },
+  {
+   "title": "Memory channel：address／command／data 三組線",
+   "scene": "dram-channel",
+   "points": [
+    {
+     "t": 58,
+     "text": "DIMM 插在插槽上，經由 memory channel 接到 memory controller；現代 PC 的 memory controller 整合在 CPU 晶片裡。"
+    },
+    {
+     "t": 80,
+     "text": "Memory channel = address bus（約 17 條）+ command/control bus（約 6 條）+ data bus（64 條）。"
+    },
+    {
+     "t": 93,
+     "text": "Row address 和 column address 用同一組位址線分兩次送（位址多工），所以位址可以超過 17 bits。"
+    },
+    {
+     "t": 111,
+     "text": "有 ECC 的 data bus 是 72 bits（64 data + 8 檢查）。"
+    },
+    {
+     "t": 117,
+     "text": "早期 PC 的 data bus 只有 32 條，模組叫 SIMM；32 bits = 4 bytes 叫一個 word。"
+    },
+    {
+     "t": 144,
+     "text": "現代 PC data bus 64 bits，模組叫 DIMM；word 大小是 64 bits。"
+    }
+   ],
+   "trap": "DIMM 的 dual 比較精確的意思是「兩面接點各自獨立」，不只是「寬度是 SIMM 兩倍」；位址線 17 條，但 row、column 分兩次送，所以能定址的範圍遠大於 2^17。",
+   "cues": [
+    58.7,
+    64.0,
+    73.7,
+    80.2,
+    89.7,
+    93.4,
+    102.8,
+    107.0,
+    110.9,
+    117.5,
+    128.4,
+    134.1,
+    144.0,
+    155.3,
+    162.5
+   ],
+   "explain": [
+    "先看 DIMM 怎麼和 CPU 溝通：左邊是 CPU，右邊是一條 DIMM。",
+    "DIMM 插在主機板插槽上，插槽再經過一組叫 memory channel 的線路，連到 memory controller（記憶體控制器，負責指揮記憶體讀寫的電路）。",
+    "在現代 PC 裡，memory controller 不是獨立晶片，而是和 CPU 做在同一顆晶片上，所以畫面把它搬進 CPU。",
+    "memory channel 其實是三組線：address bus 送「要哪裡」，command/control bus 送「要做什麼」，data bus 送資料本身。",
+    "其中通常有 17 條線專門送記憶體位址。",
+    "位址分兩次送：先送 row address，再用同一組線送 column address。這叫位址多工，所以總位址可以比 17 bits 更長（我們用 row 17 + column 10 當示意）。",
+    "另外 6 條線送命令和控制訊號，例如「開 row」「讀」「寫」。",
+    "data bus 有 64 條線，一次可以傳 64 bits。三組加起來 17 + 6 + 64 = 87 條。",
+    "如果記憶體支援 ECC（錯誤更正碼），會多 8 條檢查用的線，data bus 變成 72 bits。",
+    "早期 PC 的 data bus 只有 32 條，記憶體模組和主機板之間也只有 32-bit 的連接。",
+    "那種模組叫 SIMM（single inline memory module，單列直插記憶體模組）。",
+    "當時資料一次搬 32 bits，也就是 4 bytes，這個單位叫一個 word（字組）。",
+    "現代 PC 的 data bus 是 64 bits，是 SIMM 的兩倍。",
+    "影片說因為寬度兩倍所以叫「dual」；但比較精確的說法是：DIMM 兩面的金手指是各自獨立的訊號，SIMM 兩面接點是相通的。",
+    "現代 PC 的 word 是 64 bits，也就是 8 bytes。"
+   ]
+  },
+  {
+   "title": "2,133 MT/s：每個 word 不到半奈秒",
+   "scene": "dram-rate",
+   "points": [
+    {
+     "t": 168,
+     "text": "記憶體通道有效頻率典型 2,133 MHz（每秒 2,133 百萬次傳輸）→ 每秒約 21.33 億個 64-bit word。"
+    },
+    {
+     "t": 182,
+     "text": "每個 word 約 0.469 ns，不到半奈秒；頻寬 = 2,133 M × 8 B = 17.064 GB/s。"
+    }
+   ],
+   "cues": [
+    168.0,
+    174.2,
+    182.7,
+    184.6
+   ],
+   "explain": [
+    "memory channel 的「有效頻率」通常是 2,133 MHz，意思是每秒可以傳 2,133 百萬次資料（常寫成 2,133 MT/s）。",
+    "每次傳一個 64-bit word，所以每秒傳 21 億 3,300 萬個 word。再乘上每個 word 8 bytes，頻寬是 17.064 GB/s。",
+    "反過來算每個 word 花多少時間：1 ÷ 2,133,000,000 秒 ≈ 0.469 奈秒，比半奈秒還短。",
+    "可是存取一個 cell 其實很慢，DIMM 怎麼跟得上這麼快的 bus？影片等一下會用 DDR、burst、bank interleaving 來解釋。"
+   ]
+  },
+  {
+   "title": "Single／dual／quad channel 與 rank",
+   "scene": "dram-chmode",
+   "points": [
+    {
+     "t": 190,
+     "text": "兩條 DIMM 共用一條通道 = single-channel；各有自己的通道、memory controller 可同時存取 = dual-channel，理論頻寬 × 2。"
+    },
+    {
+     "t": 217,
+     "text": "4 條 DIMM 各有通道 = quad-channel（理論 × 4），需要主機板與 CPU 支援；多數 PC 有 dual-channel。"
+    },
+    {
+     "t": 241,
+     "text": "一條通道能掛的 DIMM 數有電氣限制（訊號分岔會變弱），通常最多 2 條。"
+    },
+    {
+     "t": 254,
+     "text": "同一條 DIMM 的多個 rank 在同一插槽，必定共用同一條通道；多 rank 容量大、較耗電，但速度幾乎不變。"
+    }
+   ],
+   "trap": "dual-channel 的「兩倍」是理論頻寬；雙 rank DIMM 不等於雙通道，兩個 rank 共用同一條通道。",
+   "cues": [
+    190.0,
+    195.5,
+    199.5,
+    207.7,
+    210.3,
+    217.2,
+    228.2,
+    240.8,
+    247.1,
+    250.4,
+    254.0,
+    263.3
+   ],
+   "explain": [
+    "假設裝了兩條 DIMM，而且它們共用同一條 memory channel（藍色線）。",
+    "這叫 single-channel mode。一次只有一條通道在傳資料，用前面的數字算是 17.064 GB/s。",
+    "如果兩條 DIMM 各有自己的通道（藍線和橘線），memory controller 就能同時對兩條讀寫。",
+    "這叫 dual-channel mode（雙通道）。",
+    "兩條通道同時跑，理論頻寬變兩倍：34.128 GB/s。「理論」是因為實際程式不一定能一直同時用到兩條。",
+    "4 條 DIMM、每條有自己的通道，就是 quad-channel，理論頻寬 × 4 = 68.256 GB/s，常見於高階電競或工作站電腦。",
+    "能不能多通道，要看主機板怎麼佈線、CPU 的記憶體控制器支不支援；大多數 PC 有雙通道。",
+    "一條通道能接幾條 DIMM 是有限制的，跟電氣訊號的功率有關。",
+    "因為同一條線分岔接到好幾條 DIMM，訊號會被分弱，傳不了那麼快。",
+    "所以通常一條通道最多掛 2 條 DIMM。",
+    "一條 DIMM 如果有兩個 rank，它們插在同一個插槽上，所以一定共用同一條通道。",
+    "雙 rank、四 rank 的 DIMM 容量比較大，但比較耗電；因為還是同一條通道，速度幾乎沒有提升。"
+   ]
+  },
+  {
+   "title": "DDR：一個 clock 傳兩次；8 顆晶片各管 8 條線",
+   "scene": "dram-ddr",
+   "points": [
+    {
+     "t": 273,
+     "text": "存取單一 cell 很慢（好幾個 clock），但 DDR data bus 在 clock 上升緣和下降緣各傳一次 → 每個 clock 2 個 word。"
+    },
+    {
+     "t": 308,
+     "text": "典型 DIMM 每顆晶片接 8 條資料線（x8），8 顆同時各讀寫 8 bits → 一個 64-bit word。"
+    },
+    {
+     "t": 327,
+     "text": "晶片多：容量大但耗電；晶片少：省電但每顆要更多資料接腳（貴）。"
+    },
+    {
+     "t": 356,
+     "text": "每顆晶片通常 8 個 bank；各晶片同位置的 bank 共用位址與控制訊號，一起讀寫。一次 64 bits 並不會讓單次存取變快。"
+    }
+   ],
+   "trap": "影片說每個 bank「can store 8 bits」是口誤式說法：bank 能存的遠多於 8 bits，正確意思是 x8 晶片每次存取進出 8 bits。",
+   "cues": [
+    273.4,
+    278.1,
+    283.4,
+    294.2,
+    299.8,
+    308.1,
+    313.9,
+    322.8,
+    327.6,
+    333.8,
+    341.9,
+    349.2,
+    356.0,
+    362.3,
+    369.0,
+    376.8
+   ],
+   "explain": [
+    "存取單一個記憶體 cell 其實是很慢的過程。",
+    "光是讀或寫 1 個 bit，就要花好幾個 clock cycle（時脈週期）。",
+    "可是 data bus 每個 clock 可以傳兩個 64-bit word：時脈從低變高（上升緣，藍色）傳一次，從高變低（下降緣，橘色）再傳一次。",
+    "這就是 DDR（Double Data Rate，雙倍資料速率）名字的由來。所以 2,133 MT/s 的實際時脈只有一半：1,066.5 MHz。",
+    "因此記憶體模組的設計目標，就是讓 data bus 盡量一直有資料在跑，不要閒著。",
+    "在一般 DIMM 上，每顆晶片只接 data bus 的 8 條線。",
+    "一個 64-bit word 拆成 8 份，每份 8 bits，8 顆晶片同時各自負責一份。",
+    "8 顆是最常見的，但有的 DIMM 晶片比較多、有的比較少。",
+    "假設每顆晶片的容量固定，晶片越多，總容量就越大（例如每顆 8 Gbit，8 顆就是 8 GB，這是示意數字）。",
+    "但這些晶片要一起處理每個讀寫請求，晶片越多，每次動起來就越耗電。",
+    "反過來，晶片少比較省電，可是每顆晶片要負責更多條資料線。例如用 x16 的晶片，只要 4 顆，每顆管 16 條。",
+    "這代表每顆晶片要有更多資料接腳，而接腳（pin）是很貴的。",
+    "每顆晶片裡通常有 8 個 bank（畫面上每顆晶片前面的 8 片淺藍色）。x8 晶片每次存取進出 8 bits。",
+    "各晶片中「位置相同」的 bank（例如都是 bank 0）共用同一組位址線和控制訊號，所以會一起動作。",
+    "所以寫一個 64-bit word 時，8 bits 同時寫進每顆晶片的 bank 0。",
+    "但要注意：一次讀寫 64 bits 只是比較「寬」，每次存取要等的時間跟讀 1 bit 一樣，並沒有比較快。"
+   ]
+  },
+  {
+   "title": "Bank 內部：RAS 開 row → CAS 選 column → output buffer",
+   "scene": "dram-rascas",
+   "points": [
+    {
+     "t": 385,
+     "text": "示意模型：一個 bank 有 8 個 array，每個 8 × 8 = 64 cells；真實 array 例如 1024 columns × 16384 rows（row 14 bits、column 10 bits）。"
+    },
+    {
+     "t": 409,
+     "text": "讀取：先送 row address（RAS，row address strobe）啟動讀取週期，再送 column address（CAS）。"
+    },
+    {
+     "t": 431,
+     "text": "被選中的整個 row 被啟動並鎖存到 sense amplifiers（row buffer）——這一步比較慢；之後這個 row 是 open 的。"
+    },
+    {
+     "t": 442,
+     "text": "每個 array 各送 1 bit 到 output buffer；8 顆晶片的 bank 同時做，合起來是 64-bit word。"
+    },
+    {
+     "t": 463,
+     "text": "早期 DRAM 讀完就關 row；但開 1024 columns 只讀 1 個很浪費。"
+    }
+   ],
+   "trap": "RAS 先、CAS 後：先開 row（慢），再選 column（快）。row 開著時讀同一 row 的其他 column 不必重送 row address。",
+   "cues": [
+    385.0,
+    395.0,
+    401.4,
+    409.5,
+    417.3,
+    419.7,
+    431.0,
+    435.5,
+    439.2,
+    442.8,
+    448.8,
+    459.2,
+    463.7,
+    475.4
+   ],
+   "explain": [
+    "要知道怎麼加速，先打開一個 bank 看裡面。前面這張 8 × 8 的格子是一個 array，後面還疊著 7 個。",
+    "這個示意模型有 8 個 array，每個 8 row × 8 column = 64 個 cell，8 個加起來 512 個。",
+    "這只是模型；真實的 array 是長方形，例如 1024 columns × 16384 rows，一個 array 就有 16,777,216 個 cell。要選 16384 個 row 需要 14 bits，選 1024 個 column 需要 10 bits。",
+    "讀資料時，先送出 row address 並發出 RAS（row address strobe，列位址選通）訊號，這會啟動讀取週期。畫面上選的是 row 5（示意）。",
+    "接著送 column address 和 CAS（column address strobe）訊號，這裡選 column 3。",
+    "row 加 column 就指定了每個 array 裡的一個 cell。8 個 array 共用同一組位址，所以 8 個 cell 都在同一個位置 (5, 3)。",
+    "被選中的整個 row 5 會被「啟動」，整排資料被複製進下方的 sense amplifiers（感測放大器，也叫 row buffer）並鎖住。",
+    "這個開 row 的動作是讀取週期裡比較慢的部分。",
+    "完成後，我們說 row 5 現在是「open（開著）」的。",
+    "現在每個 array 從 row buffer 中挑出 column 3 那個 bit，同時送進 output buffer，8 個 array 共 8 bits。",
+    "記住這只是模型：DIMM 上 8 顆晶片裡位置相同的 bank，正在同一時間做一模一樣的事。",
+    "每顆晶片 8 bits × 8 顆，合起來就是送到 output buffer 的一個 64-bit word。",
+    "一個 bank 一次只能開一個 row。早期的 DRAM 讀完就把 row 關掉，下次要用再重新打開。",
+    "可是開一整個 row（真實情況可能 1024 columns，甚至兩倍）卻只用其中 1 個，只用了約 0.098%，非常浪費時間。"
+   ]
+  },
+  {
+   "title": "Burst mode：row 開著就連讀好幾個 column",
+   "scene": "dram-burst",
+   "points": [
+    {
+     "t": 487,
+     "text": "row 還開著時，可以接連從 row buffer 讀下一個、再下一個 column → 只給一個 row + 一個 column address 就讀出一串（burst）。"
+    },
+    {
+     "t": 503,
+     "text": "在 row 開著時讀的 column 數叫 burst length。影片：DDR2 = 4、DDR3 = 8、DDR4 = 16。"
+    },
+    {
+     "t": 525,
+     "text": "DDR3：8 顆晶片的 bank 同時動作，一次 burst 連續送出 8 個 64-bit word（64 bytes），這叫 prefetching。"
+    }
+   ],
+   "trap": "影片說 DDR4 burst length = 16 不正確：DDR4 是 BL8（可截成 BC4），DDR5 才是 BL16。",
+   "cues": [
+    487.0,
+    493.3,
+    495.8,
+    503.5,
+    511.0,
+    515.0,
+    525.0,
+    528.0,
+    541.3
+   ],
+   "explain": [
+    "所以聰明的做法是：row 5 還開著，就直接再讀下一個 column（column 4），不用重新開 row。",
+    "然後再讀 column 5、column 6……一個接一個，資料就從 row buffer 很快地流出來。",
+    "換句話說，只要給一個 row address 和一個起始 column address，就能快速讀出一整串資料，這叫 burst（突發傳輸）。",
+    "row 開著時連續讀了幾個 column，就叫 burst length。畫面讀了 column 3、4、5、6，burst length 是 4（示意）。",
+    "不同世代的 DRAM，burst length 不一樣。",
+    "影片說 DDR2 是 4、DDR3 是 8、DDR4 是 16。不過要更正：DDR4 標準的 burst length 其實還是 8，DDR5 才是 16。",
+    "別忘了，畫面上只是一個 bank。",
+    "實際上 DDR3 模組 8 顆晶片裡的 bank 同時運作，一次 burst 連續送出 8 個 64-bit word，共 8 × 8 = 64 bytes。",
+    "這種「一次從 array 抓好幾份資料，再一份一份快速送出」的技術叫 prefetching（預取）。"
+   ]
+  },
+  {
+   "title": "關 row 要 18 cycles；bank interleaving 讓 bus 不停",
+   "scene": "dram-bankint",
+   "points": [
+    {
+     "t": 545,
+     "text": "每個 bank 一次只能開一個 row；burst 完要關 row（寫回刷新 + bit line precharge），最多約 18 個 clock。"
+    },
+    {
+     "t": 566,
+     "text": "CPU 與 DRAM 以 cache line（通常 64 bytes = 8 個 64-bit word）為單位搬資料；一次 BL8 burst 剛好填滿一條（DDR 下 4 clocks）。"
+    },
+    {
+     "t": 585,
+     "text": "要連讀好幾條 cache line：同一 bank 必須等關 row + 再開 row；晶片內的 bank 彼此獨立，可處在不同階段。"
+    },
+    {
+     "t": 605,
+     "text": "Bank interleaving：一個 bank 送完 burst，下一個 bank 立刻接上；最後一個 bank 送完時第一個早已恢復 → data bus 長時間保持滿載。"
+    }
+   ],
+   "trap": "時間軸的「開 row 10 clocks」是我們補的示意數字；影片只給了關 row 最多 18 clocks、cache line 64 bytes。重點是：bank 輪一圈的時間 ≥ 單一 bank 的恢復時間，bus 才不會空下來。",
+   "cues": [
+    545.0,
+    547.2,
+    551.3,
+    556.3,
+    561.8,
+    566.0,
+    573.0,
+    580.0,
+    585.8,
+    590.6,
+    600.4,
+    605.6,
+    613.5,
+    620.4,
+    623.0,
+    629.0,
+    637.4
+   ],
+   "explain": [
+    "不過還有一個問題。畫面是時間軸（示意）：bank 0 先花一段時間開 row（淺藍），再用 data bus 送一次 burst（綠色）。",
+    "每個 bank 同一時間只能開一個 row。",
+    "burst 結束後，必須先把這個 row 關掉（灰色），才能開別的 row。",
+    "關 row 要做兩件事：把剛讀過的 cell 寫回去刷新（DRAM 讀取會破壞電荷），再把 bit line 重新 precharge（預充電）到準備好的電壓。",
+    "這可能要花多達 18 個 clock cycle。",
+    "另外，CPU 和 DRAM 之間不是一個 byte 一個 byte 搬，而是以 cache line（快取區塊）為單位。",
+    "一條 cache line 通常 64 bytes，也就是 8 個 64-bit word。",
+    "一次 burst length 8 的 burst：8 次傳輸 × 8 bytes = 64 bytes，剛好填滿一條 cache line；DDR 每個 clock 傳 2 次，所以只要 4 個 clock。",
+    "但如果要接連讀好幾條 cache line 呢？只靠 bank 0 的話，要等 4 + 18 + 10 = 32 個 clock 才能再送下一次，bus 只有 4/32 = 12.5% 的時間在忙（示意）。",
+    "為了提高吞吐量，同一顆晶片裡的每個 bank 都設計成可以獨立運作。",
+    "也就是說，不同 bank 可以同時處在讀寫週期的不同階段：有的在開 row，有的在送資料，有的在關 row。",
+    "這種輪流使用 bank 的方法叫 bank interleaving（bank 交錯）。",
+    "bank 0 一送完 burst，bank 1 的 burst 馬上接上（它早就提前開好 row 了）。",
+    "接著 bank 2、bank 3……一路輪下去，data bus 上的綠色一格接一格，沒有空隙。",
+    "看這條直線那一刻：bank 3 正在送資料，其他 bank 有的在開 row、有的在關 row，都在為下一次做準備。",
+    "等 bank 7 送完，bank 0 已經關好再開好了：它需要 4 + 18 + 10 = 32 個 clock，而 8 個 bank 輪一圈剛好 8 × 4 = 32 個 clock，正好接上。",
+    "所以 bank interleaving 讓 data bus 能以很高的速度運作，最重要的是在長時間連續讀寫時一直保持滿載（忙碌率 100%）。"
+   ]
+  },
+  {
+   "title": "要放幾個 bank：速度 vs 容量",
+   "scene": "dram-banks",
+   "points": [
+    {
+     "t": 651,
+     "text": "bank 越多 → 平行度越高、延遲越低、data bus 更常忙碌 → 記憶體越快。"
+    },
+    {
+     "t": 676,
+     "text": "但面積固定：bank 多 → bank 小、array 小且多；每個 array 都有自己的 decoder、sense amp、mux，周邊電路吃掉儲存空間 → 容量變低。"
+    },
+    {
+     "t": 710,
+     "text": "bank 少 → array 大、容量可能高；但 bit line 長 → 較慢、較耗電。"
+    }
+   ],
+   "cues": [
+    651.3,
+    656.2,
+    663.3,
+    669.2,
+    676.6,
+    684.0,
+    686.4,
+    692.6,
+    705.0,
+    710.8,
+    717.7
+   ],
+   "explain": [
+    "這顆晶片有 8 個 bank，但也有晶片多一些或少一些。",
+    "一顆晶片要放幾個 bank，是 DRAM 設計者要做的重要決定。",
+    "bank 越多，能同時進行的存取越多（平行度高），平均等待時間也越短（延遲低）。",
+    "所以 bank 多更能讓 data bus 一直有事做，記憶體就更快。",
+    "但這裡要取捨：晶片的矽面積是固定的，bank 越多（畫面換成 16 個），每個 bank 就越小。",
+    "這也代表 array 變小、數量變多。",
+    "而每個 array 都需要自己的周邊電路（橘色）：decoder（解碼器，把位址變成要選哪一排）、sense amplifier（感測放大器）、multiplexer（多工器，挑出要的 column）。",
+    "如果想做出容量最大的 DRAM，就要盡量少放這些周邊電路，把空間留給真正存資料的 cell。",
+    "所以 bank 越多，容量越低。示意算法：面積 100、每個 bank 周邊電路佔 1.5，8 個 bank 剩 88 給 cell，16 個 bank 只剩 76。",
+    "反過來，bank 少（畫面換成 4 個）代表 bank 和 array 都比較大，容量可能更高。",
+    "但大 array 的 bit line（紅線，連接一整行 cell 的導線）比較長，電容大，讀寫比較慢，也比較耗電。"
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "記憶體通道 2,133 MT/s、data bus 64 bits，理論頻寬約多少？",
+   "opts": [
+    "17.064 GB/s",
+    "2.133 GB/s",
+    "34.128 GB/s",
+    "136.512 GB/s"
+   ],
+   "ans": "17.064 GB/s",
+   "why": "每次傳 8 bytes：2,133 × 10⁶ × 8 B = 17.064 × 10⁹ B/s。"
+  },
+  {
+   "q": "DDR 的「double data rate」指的是？",
+   "opts": [
+    "每個 clock 的上升緣和下降緣各傳一次資料",
+    "有兩條 memory channel",
+    "DIMM 兩面各一個 rank",
+    "data bus 從 32 bits 變 64 bits"
+   ],
+   "ans": "每個 clock 的上升緣和下降緣各傳一次資料",
+   "why": "一個 clock 傳兩次，所以 2,133 MT/s 的實際 I/O clock 是 1,066.5 MHz。"
+  },
+  {
+   "q": "典型 DIMM 有 8 顆 x8 晶片，一次存取送出幾 bits？",
+   "opts": [
+    "64",
+    "8",
+    "16",
+    "512"
+   ],
+   "ans": "64",
+   "why": "8 顆 × 每顆 8 條資料線 = 64 bits，正好是 data bus 的寬度。"
+  },
+  {
+   "q": "DRAM 讀取的正確順序是？",
+   "opts": [
+    "送 row address（RAS）開 row 到 sense amplifiers → 送 column address（CAS）選 column",
+    "先 CAS 再 RAS",
+    "row 和 column 位址同時送",
+    "先 precharge 再 CAS，不需要 RAS"
+   ],
+   "ans": "送 row address（RAS）開 row 到 sense amplifiers → 送 column address（CAS）選 column",
+   "why": "先用 RAS 把整個 row 鎖進 row buffer（較慢），再用 CAS 從中挑 column。"
+  },
+  {
+   "q": "Burst length 的意思是？",
+   "opts": [
+    "row 開著時連續讀出的 column 數",
+    "一個 row 有幾個 column",
+    "關 row 需要幾個 clock",
+    "一條 cache line 有幾個 byte"
+   ],
+   "ans": "row 開著時連續讀出的 column 數",
+   "why": "只送一次 row + 起始 column，就連續送出 burst length 個傳輸；DDR3/DDR4 是 8。"
+  },
+  {
+   "q": "Bank interleaving 主要解決什麼問題？",
+   "opts": [
+    "一個 bank burst 完要關 row／precharge，期間讓其他 bank 接手，data bus 不會閒置",
+    "讓單一 cell 的存取時間變短",
+    "讓 DIMM 容量變大",
+    "減少 address bus 的線數"
+   ],
+   "ans": "一個 bank burst 完要關 row／precharge，期間讓其他 bank 接手，data bus 不會閒置",
+   "why": "不同 bank 可以在不同階段，輪流送 burst，bus 保持滿載；單一 cell 並沒有變快。"
+  },
+  {
+   "q": "在固定的矽面積下，bank 數變多通常會怎樣？",
+   "opts": [
+    "平行度高、較快，但周邊電路變多，容量變低",
+    "容量變高、速度變慢",
+    "耗電一定變少",
+    "沒有任何影響"
+   ],
+   "ans": "平行度高、較快，但周邊電路變多，容量變低",
+   "why": "每個 array 都要 decoder、sense amp、mux，bank 多 → 周邊電路多 → 留給 cell 的面積少。"
+  }
+ ]
+}

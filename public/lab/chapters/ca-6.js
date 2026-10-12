@@ -661,6 +661,1090 @@ export default function (ctx) {
   // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
   const K = kit(ctx);
   const FRAG = [];
+  // ═══ dram.js ═══
+  {
+const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
+const { txt, tint, line, relabel } = P;
+// (kit has no beat: short waits use ctx.beat)
+// ─── 計算機組織 第 6 章（英文影片：Computer Science Lessons「DRAM Part 6 Burst Mode and Bank Interleaving」、
+//     「Memory Interleaving concept」）— cued scenes ───
+// 每個 scene 是一串 step；每個 step 等講者講到那句話（notes 的 cues，標在 // @秒數 ~關鍵字）才做一個短動作，不循環、不重播。
+// 講者的數字照用（17 address／6 command／64 data 線、72-bit ECC、2,133 MT/s、8 chips × 8 bits、8 banks、
+// 1024 × 16384 array、burst length 4/8/16、18 cycles、64-byte cache line；1 + 5 + 1 = 7、28 vs 10 cycles、4 banks 2 bits…），
+// 每個頻寬、位址切割、bit 數、cycle 數都由程式算出再顯示 ✓；講者沒給數字、我們補的例子標「示意」。
+const wt = (tok, ms) => ctx.beat(tok, ms);
+const cap = (a, b = '') => say(a, b);
+const hd = (t, x, y, z = 0) => tag(t, 'ptr', x, y, z);
+const hot = (t, x, y, z = 0) => tag(t, 'ptr alt', x, y, z);
+const sm = (t, x, y, z = 0) => tag(t, 'idx', x, y, z);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const ok = (b, t, x, y) => { if (!b) log('CHECK FAILED: ' + t, true); return b ? good(t, x, y) : bad(t.replace(/✓/g, '✘'), x, y); };
+const bx = (t, c, x, y, z = 0, w = 2.2, h = 0.6, d = 0.9) => cube(t, c, [w, h, d], x, y, z);
+const NC = { blue: '#4b9ee2', orange: '#dd8238', green: '#2fc092', purple: '#9b7ef4', pink: '#e55a9b', teal: '#31aab0', red: '#d64545', gray: '#d8cfc0', dark: '#8d8170', sand: '#e9dcc4', paper: '#f6efe2', gold: '#c08a1f', tan: '#c9bba3', mint: '#d2f1e6', lilac: '#dfd3fb', sky: '#cfe6f7', rose: '#f2c4c4', metal: '#8a94a6', off: '#efe6d6', pcb: '#2e7d4f', chip: '#34363b' };
+const HL = '#6a4a00', OKG = '#0f5a3a', NG = '#5a1010';
+const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.ls && typeof o.kill === 'function') return o.kill(); if (o.cubes && typeof o.kill === 'function') return o.kill(); if (o.cells) return gone(o.cells.flat(), o.lbls); if (o.g) return kill(o.g); if (o.element) remove(o); else kill(o); });
+const lk = (x1, y1, x2, y2, c = 0x6e5f49, z = 0.1) => arrow(V3(x1, y1, z), V3(x2, y2, z), c);
+async function slide(tok, o, x, y, z = 0, ms = 600) { const a = o.position.clone(); await travel(tok, o, a, V3(x, y, z), ms); }
+const fx = (v, d = 3) => String(Math.round(v * Math.pow(10, d)) / Math.pow(10, d));
+const lg2 = (n) => Math.round(Math.log2(n));
+const b2 = (v, n) => v.toString(2).padStart(n, '0');
+const grp = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+function scene(id, title, steps, cam) {
+  FRAG.push([id, title, async (tok) => {
+    const c = cam || [[0, 4.0, 14], [0, 3.1, 0]]; fresh(c[0], c[1]);
+    const S = {};
+    for (const f of steps) { await step(tok); await f(tok, S); }
+  }]);
+}
+// a growing column of lines: add() puts the next line under the last one
+function list(x, yTop, dy = 0.5, cls = 'idx') {
+  const ls = [];
+  return { ls, add(t, c) { const l = tag(t, c || cls, x, yTop - ls.length * dy); ls.push(l); return l; }, push(l) { ls.push(l); return l; }, kill() { ls.forEach(remove); ls.length = 0; } };
+}
+// a DIMM: green board, gold contacts, 8 chips on the front (rank 0) and optionally 8 on the back (rank 1)
+function dimm(x, y, o = {}) {
+  const s = o.s || 1, g = new THREE.Group(); g.position.set(x, y, o.z || 0);
+  const add = (m, px, py, pz) => { m.position.set(px, py, pz); g.add(m); return m; };
+  add(lab.box(NC.pcb, [6 * s, 1.3 * s, 0.1]), 0, 0, 0);
+  add(lab.box('#d9b45a', [5.6 * s, 0.16 * s, 0.12]), 0, -0.56 * s, 0);
+  const chips = [], back = [];
+  for (let i = 0; i < 8; i++) {
+    chips.push(add(lab.box(NC.chip, [0.56 * s, 0.72 * s, 0.1]), (-2.45 + i * 0.7) * s, 0.12 * s, 0.1));
+    if (o.back) back.push(add(lab.box('#4a3f6b', [0.56 * s, 0.72 * s, 0.1]), (-2.45 + i * 0.7) * s, 0.12 * s, -0.1));
+  }
+  lab.world.add(g);
+  return { g, chips, back, cx: (i) => x + (-2.45 + i * 0.7) * s };
+}
+// a bar on a timeline: from x0 to x1 at height y
+const tbar = (x0, x1, y, color, text = '', h = 0.34) => { const w = Math.max(0.05, x1 - x0); return cube(text, color, [w, h, 0.45], x0 + w / 2, y, 0); };
+// a DRAM bank seen from the front: an 8 × 8 array (7 more arrays behind it), sense amplifiers, output buffer
+function bankView(S) {
+  const cs = 0.36, st = 0.42, x0 = -3.1, yTop = 4.85;
+  S.gx = (c) => x0 + c * st; S.gy = (r) => yTop - r * st;
+  S.grid = { cells: [], lbls: [] };
+  for (let r = 0; r < 8; r++) { const row = []; for (let c = 0; c < 8; c++) row.push(bx('', NC.off, S.gx(c), S.gy(r), 0, cs, cs, 0.3)); S.grid.cells.push(row); }
+  S.behind = [];
+  for (let k = 1; k < 8; k++) { const m = bx('', NC.sand, S.gx(3.5) + k * 0.07, S.gy(3.5) + k * 0.07, -k * 0.32, 8 * st, 8 * st, 0.06); S.behind.push(m); }
+  S.grid.lbls.push(sm('row 0…7', S.gx(0) - 0.95, S.gy(0)), sm('column 0…7', S.gx(3.5), yTop + 0.5));
+  S.sa = []; for (let c = 0; c < 8; c++) S.sa.push(bx('', NC.mint, S.gx(c), 1.15, 0, cs, cs, 0.3));
+  S.saL = sm('sense amplifiers（row buffer）', S.gx(3.5), 0.6);
+  S.ob = []; for (let i = 0; i < 8; i++) S.ob.push(bx('', NC.off, 1.7 + i * 0.5, 4.3, 0, 0.42, 0.42, 0.3));
+  S.obL = sm('output buffer（8 個 array 各 1 bit）', 3.45, 4.95);
+}
+const BW = 2133e6 * 8;   // 2,133 MT/s × 8 bytes per transfer
+
+// ════════ 9BjVUmaXaCQ（DRAM Part 6：DIMM 階層、memory channel、DDR、RAS/CAS、burst、bank interleaving） ════════
+scene('dram-hier', 'DIMM 的階層：rank → chip → bank → array → row／column', [
+  async (tok, S) => { // @4 ~organisation of a DRAM dual inline memory module
+    S.d = dimm(0, 5.0, { back: true });
+    S.h = hd('DIMM（dual inline memory module）', 0, 6.3);
+    cap('DRAM 記憶體模組：DIMM', '一條插在主機板上的記憶體條');
+  },
+  async (tok, S) => { // @12 ~four DIM slots
+    S.slots = [0, 1, 2, 3].map((i) => bx('', NC.dark, 0.4, 3.5 - i * 0.42, 0, 5.6, 0.14, 0.3));
+    S.sl = [0, 1, 2, 3].map((i) => sm('slot ' + i, -3.1, 3.5 - i * 0.42));
+    S.t1 = note('主機板通常 4 個 DIMM 插槽 → 最多裝 4 條', 0, 1.35);
+    cap('主機板通常有 4 個 DIMM 插槽', '最多同時裝 4 條');
+  },
+  async (tok, S) => { // @18 ~one rank of eight chips on one face
+    S.d.chips.forEach((c) => glow(c, HL));
+    S.r0 = hot('rank 0：正面 8 顆 DRAM 晶片', 0, 4.05);
+    cap('一個 rank = 一起工作的一組晶片', '典型 DIMM：正面 8 顆 = 1 個 rank');
+  },
+  async (tok, S) => { // @24 ~Some DIMs have more than one rank
+    txt(S.t1, '有些 DIMM 不只 1 個 rank');
+    cap('有些 DIMM 不只一個 rank');
+  },
+  async (tok, S) => { // @27 ~second rank ... opposite face
+    S.d.chips.forEach((c) => glow(c, null)); S.d.back.forEach((c) => glow(c, HL));
+    txt(S.r0, 'rank 1：背面另外 8 顆');
+    await anim(tok, 1400, (u) => { S.d.g.rotation.y = u * Math.PI; });
+    cap('第二個 rank 通常在電路板背面', '翻過來看：背面又是 8 顆');
+  },
+  async (tok, S) => { // @31 ~Each chip contains multiple banks
+    gone(S.slots, S.sl, S.t1, S.r0);
+    await anim(tok, 700, (u) => { S.d.g.rotation.y = Math.PI * (1 + u); });
+    S.d.back.forEach((c) => glow(c, null)); glow(S.d.chips[0], HL);
+    S.banks = []; for (let i = 0; i < 8; i++) S.banks.push(bx('bank ' + i, NC.sky, -3.5 + i * 1.0, 3.0, 0, 0.9, 0.55, 0.5));
+    S.a1 = lk(S.d.cx(0), 4.3, -3.5, 3.35);
+    S.t2 = sm('chip 0 裡面：8 個 bank', 3.6, 3.75);
+    cap('每顆晶片裡有好幾個 bank');
+  },
+  async (tok, S) => { // @34 ~each bank contains multiple arrays
+    glow(S.banks[0], HL);
+    S.arr = []; for (let i = 0; i < 8; i++) S.arr.push(bx('', NC.sand, -5.3 + i * 0.22, 1.5 + i * 0.06, -i * 0.25, 1.1, 0.9, 0.05));
+    S.a2 = lk(-3.5, 2.7, -4.4, 2.15);
+    S.t3 = sm('bank 0 裡面：8 個 array', -4.3, 0.75);
+    cap('每個 bank 又由好幾個 array 組成');
+  },
+  async (tok, S) => { // @38 ~multiple rows and columns
+    S.grid = { cells: [], lbls: [] };
+    for (let r = 0; r < 8; r++) { const row = []; for (let c = 0; c < 8; c++) row.push(bx('', NC.off, 1.6 + c * 0.24, 2.15 - r * 0.24, 0, 0.2, 0.2, 0.15)); S.grid.cells.push(row); }
+    S.a3 = lk(-3.6, 1.6, 1.3, 1.4);
+    S.grid.lbls.push(sm('row（列）', 0.9, 2.15), sm('column（行）', 2.45, 2.55), sm('一個 cell = 1 bit', 4.6, 1.3));
+    S.grid.cells[2].forEach((m) => glow(m, HL));
+    cap('每個 array 排成很多 row 和 column', '交叉點就是一個 cell（1 bit）');
+  },
+  async (tok, S) => { // @48 ~capacity, speed, energy efficiency and cost
+    txt(S.h, '設計取捨：容量 · 速度 · 耗電 · 成本');
+    cap('記憶體設計要在四件事之間取捨', '容量、速度、能源效率、成本');
+  },
+]);
+
+scene('dram-channel', 'Memory channel：address／command／data 三組線', [
+  async (tok, S) => { // @59 ~how a DIM interacts with the processor
+    S.cpu = prop('cpu', -5.0, 3.9, 0, 1.2, 'CPU');
+    S.d = dimm(3.6, 6.1, { s: 0.45 });
+    cap('先看 DIMM 怎麼和處理器溝通');
+  },
+  async (tok, S) => { // @64 ~plugged into a slot ... memory controller via a memory channel
+    S.slot = bx('slot', NC.dark, 3.6, 5.55, 0, 2.9, 0.22, 0.3);
+    S.mc = bx('memory controller', NC.sky, -1.8, 4.6, 0, 2.3, 0.5, 0.5);
+    S.ch = bx('memory channel', NC.tan, 1.6, 4.6, 0, 3.6, 0.3, 0.3);
+    S.up = lk(3.4, 4.8, 3.4, 5.4);
+    cap('DIMM 插在主機板插槽上', '透過 memory channel 接到 memory controller');
+  },
+  async (tok, S) => { // @74 ~integrated into the same chip as the CPU
+    relabel(S.mc, 'MC');
+    await slide(tok, S.mc, -5.0, 4.75, 0, 800);
+    S.mc.scale.set(0.45, 1, 1);
+    gone(S.ch); S.ch = bx('memory channel', NC.tan, -0.3, 4.6, 0, 7.4, 0.3, 0.3);
+    S.t0 = sm('現代 PC：memory controller 就在 CPU 晶片裡', -3.0, 5.6);
+    cap('現代 PC 的 memory controller', '和 CPU 做在同一顆晶片上');
+  },
+  async (tok, S) => { // @80 ~address bus, a command and control bus, and a data bus
+    gone(S.ch, S.t0);
+    S.ab = bx('address bus', NC.blue, -0.3, 4.6, 0, 7.4, 0.3, 0.3);
+    S.cb = bx('command / control bus', NC.orange, -0.3, 4.15, 0, 7.4, 0.3, 0.3);
+    S.db = bx('data bus', NC.green, -0.3, 3.7, 0, 7.4, 0.3, 0.3);
+    cap('memory channel 有三組線：', 'address bus、command/control bus、data bus');
+  },
+  async (tok, S) => { // @90 ~17 lines carry the memory address
+    relabel(S.ab, 'address bus：17 條');
+    cap('通常 17 條線送記憶體位址');
+  },
+  async (tok, S) => { // @93 ~row address and a column address separately
+    S.pk = hot('row', -3.8, 5.05);
+    await slide(tok, S.pk, 3.2, 5.05, 0, 900); txt(S.pk, 'column');
+    await slide(tok, S.pk, -3.8, 5.05, 0, 10); await slide(tok, S.pk, 3.2, 5.05, 0, 900);
+    S.L = list(0, 2.9, 0.5);
+    const rowB = 17, colB = 10;
+    S.L.push(ok(rowB + colB > 17, '同一組 17 條線分兩次送：row 17 + column 10（示意）= 27 bits > 17 ✓', 0, 2.9));
+    cap('位址分兩次送：先 row 再 column', '所以位址可以比 17 bits 更長');
+  },
+  async (tok, S) => { // @103 ~Six lines ... command and control
+    gone(S.pk); relabel(S.cb, 'command / control：6 條');
+    cap('6 條線送命令和控制訊號');
+  },
+  async (tok, S) => { // @107 ~64 lines carry the data
+    relabel(S.db, 'data bus：64 條');
+    S.L.push(ok(17 + 6 + 64 === 87, '17 + 6 + 64 = 87 條線 ✓', 0, 2.4));
+    cap('64 條線送資料本身');
+  },
+  async (tok, S) => { // @111 ~error correction ... 72 bits
+    S.L.push(ok(64 + 8 === 72, '有 ECC（錯誤更正）：64 data + 8 檢查 = 72 bits ✓', 0, 1.9));
+    cap('支援錯誤更正（ECC）時', 'data bus 是 72 bits，不是 64');
+  },
+  async (tok, S) => { // @118 ~early PC had only 32 lines
+    S.L.kill(); relabel(S.db, 'data bus：32 條（早期 PC）'); S.db.scale.y = 0.55;
+    S.L = list(0, 2.9, 0.5); S.L.push(note('早期 PC：data bus 只有 32 條 → 模組只有 32-bit 連接', 0, 2.9));
+    cap('早期 PC 的 data bus 只有 32 條線', '記憶體模組也只有 32-bit 連接');
+  },
+  async (tok, S) => { // @129 ~single inline memory modules, or SIMs
+    S.L.push(sm('這種模組叫 SIMM（single inline memory module）', 0, 2.4));
+    cap('這種模組叫 SIMM', 'single inline memory module');
+  },
+  async (tok, S) => { // @134 ~32 bits at a time ... known as a word
+    S.L.push(ok(32 / 8 === 4, '一次搬 32 bits = 4 bytes = 1 word（早期）✓', 0, 1.9));
+    cap('早期資料一次搬 32 bits', '32 bits = 4 bytes，叫一個 word');
+  },
+  async (tok, S) => { // @144 ~modern PC has a 64-bit data bus
+    relabel(S.db, 'data bus：64 條（現代）'); S.db.scale.y = 1;
+    S.L.push(ok(64 / 32 === 2, '現代：64-bit 資料連接 = SIMM 的 2 倍 ✓', 0, 1.4));
+    cap('現代 PC 的 data bus 是 64 bits', '是 SIMM 的兩倍');
+  },
+  async (tok, S) => { // @155 ~referred to as a dual inline memory module
+    glow(S.d.g.children[0], HL);
+    S.L.push(note('影片說法：2 倍寬 → dual；課本／業界：dual 指兩面金手指是各自獨立的訊號', 0, 0.9));
+    cap('所以現代模組叫 DIMM', '（dual 的真正意思見下方提醒）');
+  },
+  async (tok, S) => { // @163 ~word size of a modern PC is 64 bits
+    S.L.kill(); S.L = list(0, 2.9, 0.5);
+    S.L.push(ok(64 / 8 === 8, '現代 PC：1 word = 64 bits = 8 bytes ✓', 0, 2.9));
+    cap('現代 PC 的 word 是 64 bits');
+  },
+]);
+
+scene('dram-rate', '2,133 MT/s：每個 word 不到半奈秒', [
+  async (tok, S) => { // @168 ~effective frequency ... 2,133 MHz
+    S.cpu = prop('cpu', -5.0, 3.9, 0, 1.2, 'CPU + MC');
+    S.d = dimm(3.6, 5.6, { s: 0.45 });
+    S.db = bx('data bus（64 bits）', NC.green, -0.3, 4.2, 0, 7.4, 0.3, 0.3);
+    S.h = hot('有效頻率 2,133 MHz（每秒 2,133 百萬次傳輸，MT/s）', 0, 6.6);
+    cap('memory channel 的有效頻率', '通常是 2,133 MHz');
+  },
+  async (tok, S) => { // @174 ~2,132,000,000 new 64-bit words ... every second
+    const words = 2133e6;
+    S.L = list(0, 2.9, 0.5);
+    S.L.push(ok(words === 2133 * 1e6, '每次傳 1 個 64-bit word → 每秒 ' + grp(words) + ' 個 word ✓', 0, 2.9));
+    S.L.push(ok(fx(BW / 1e9) === '17.064', '× 8 bytes = ' + fx(BW / 1e9) + ' GB/s（我們算的頻寬）✓', 0, 2.4));
+    cap('每秒可以傳約 21 億個 64-bit word');
+  },
+  async (tok, S) => { // @183 ~less than half a nanosecond per word
+    const ns = 1e9 / 2133e6;
+    S.L.push(ok(ns < 0.5, '1 ÷ 2,133,000,000 秒 ≈ ' + fx(ns) + ' ns < 0.5 ns ✓', 0, 1.9));
+    S.w = [0, 1, 2, 3].map((i) => bx('w' + i, NC.gold, -3.6 - i * 0.8, 4.2, 0.35, 0.6, 0.36, 0.2));
+    await anim(tok, 1600, (u) => S.w.forEach((m, i) => { m.position.x = -3.6 - i * 0.8 + u * 6.2; }));
+    cap('每個 word 只花不到半奈秒');
+  },
+  async (tok, S) => { // @185 ~how the DIM can keep up with this
+    S.L.push(note('單一 cell 很慢，DIMM 怎麼跟上？→ DDR、burst、bank interleaving', 0, 1.4));
+    cap('DIMM 怎麼跟得上這麼快的 bus？', '等一下揭曉');
+  },
+]);
+
+scene('dram-chmode', 'Single／dual／quad channel 與 rank', [
+  async (tok, S) => { // @190 ~two DIMMs ... share the same memory channel
+    S.mc = bx('memory controller', NC.sky, -4.6, 4.3, 0, 2.4, 0.6, 0.5);
+    S.D = [0, 1].map((i) => bx('DIMM ' + i, NC.pcb, 3.8, 5.8 - i * 1.0, 0, 2.2, 0.5, 0.2));
+    S.ar = [lk(-3.4, 4.4, 2.6, 5.8, 0x4b9ee2), lk(-3.4, 4.3, 2.6, 4.8, 0x4b9ee2)];
+    S.ct = sm('channel A（兩條共用）', -0.4, 5.6);
+    cap('兩條 DIMM 共用同一個 memory channel');
+  },
+  async (tok, S) => { // @196 ~single-channel mode
+    S.h = hot('single-channel mode', 0, 6.7);
+    S.L = list(0, 2.6, 0.5);
+    S.L.push(ok(fx(BW / 1e9) === '17.064', '一次只走 1 條通道：' + fx(BW / 1e9) + ' GB/s（2,133 MT/s × 8 B）✓', 0, 2.6));
+    cap('這叫 single-channel mode');
+  },
+  async (tok, S) => { // @200 ~each of two DIMMs has its own memory channel
+    gone(S.ar, S.ct);
+    S.ar = [lk(-3.4, 4.4, 2.6, 5.8, 0x4b9ee2), lk(-3.4, 4.2, 2.6, 4.8, 0xdd8238)];
+    S.ct = [sm('channel A', -0.6, 5.6), sm('channel B', 0.2, 4.0)];
+    glow(S.D[0], OKG); glow(S.D[1], OKG);
+    cap('如果每條 DIMM 有自己的通道', 'memory controller 可以同時存取兩條');
+  },
+  async (tok, S) => { // @208 ~dual-channel mode
+    txt(S.h, 'dual-channel mode');
+    cap('這叫 dual-channel mode');
+  },
+  async (tok, S) => { // @210 ~twice as fast
+    S.L.push(ok(fx(2 * BW / 1e9) === '34.128', '理論頻寬 × 2 = ' + fx(2 * BW / 1e9) + ' GB/s ✓', 0, 2.1));
+    cap('理論上存取速度變兩倍');
+  },
+  async (tok, S) => { // @217 ~four DIMMs ... quad-channel mode
+    S.D.push(...[2, 3].map((i) => bx('DIMM ' + i, NC.pcb, 3.8, 5.8 - i * 1.0, 0, 2.2, 0.5, 0.2)));
+    S.ar.push(lk(-3.4, 4.0, 2.6, 3.8, 0x2fc092), lk(-3.4, 3.9, 2.6, 2.8, 0x9b7ef4));
+    S.ct.push(sm('channel C', 0.2, 3.25), sm('channel D', -0.6, 2.95));
+    txt(S.h, 'quad-channel mode（高階電競 PC）');
+    S.L.push(ok(fx(4 * BW / 1e9) === '68.256', '4 條通道：理論頻寬 × 4 = ' + fx(4 * BW / 1e9) + ' GB/s ✓', 0, 1.6));
+    cap('4 條 DIMM 各有通道：quad-channel', '有些高階電競 PC 才有');
+  },
+  async (tok, S) => { // @228 ~depends on the design of the motherboard and ... CPU
+    S.L.push(note('能不能多通道：看主機板設計 + CPU 能力；多數 PC 有 dual', 0, 1.1));
+    cap('能不能用多通道', '要看主機板設計和 CPU；多數 PC 有 dual');
+  },
+  async (tok, S) => { // @241 ~power constraints on how many DIMMs can share one memory channel
+    S.L.kill(); S.L = list(0, 2.1, 0.5);
+    gone(S.ar.slice(1), S.ct, S.D.slice(2)); S.D.length = 2; S.ar.length = 1;
+    S.ar.push(lk(-3.4, 4.3, 2.6, 4.8, 0x4b9ee2)); S.ct = sm('channel A', -0.4, 5.6);
+    glow(S.D[0], null); glow(S.D[1], null);
+    S.L.push(note('一條通道能掛幾條 DIMM，有電氣（power）限制', 0, 2.1));
+    cap('一條通道能掛幾條 DIMM', '受到電氣限制');
+  },
+  async (tok, S) => { // @247 ~signals are weakened when split
+    S.L.push(bad('訊號分給好幾條 DIMM → 變弱', 0, 1.6));
+    cap('訊號分岔給好幾條 DIMM 會變弱');
+  },
+  async (tok, S) => { // @251 ~maximum of two DIMMs can share one channel
+    S.L.push(good('通常一條通道最多 2 條 DIMM', 0, 1.1));
+    cap('通常一條通道最多掛 2 條 DIMM');
+  },
+  async (tok, S) => { // @254 ~two ranks ... share the same memory channel ... same slot
+    gone(S.D[1], S.ar[1]); txt(S.h, 'DIMM 0：rank 0（正面）+ rank 1（背面）');
+    S.rk = [sm('rank 0', 5.4, 6.0), sm('rank 1', 5.4, 5.6)];
+    S.L.push(note('同一條 DIMM 的 2 個 rank 在同一個插槽 → 一定共用同一條通道', 0, 0.6));
+    cap('一條 DIMM 的兩個 rank', '插在同一插槽，必定共用通道');
+  },
+  async (tok, S) => { // @263 ~Dual and quad-rank ... higher capacity ... more power ... little extra speed
+    S.L.kill(); S.L = list(0, 2.1, 0.5);
+    S.L.push(good('dual／quad-rank：容量 ↑', 0, 2.1)); S.L.push(bad('耗電 ↑', 0, 1.6)); S.L.push(sm('速度：幾乎沒變（還是同一條通道）', 0, 1.1));
+    cap('多 rank：容量大、比較耗電', '速度卻幾乎沒變');
+  },
+]);
+
+scene('dram-ddr', 'DDR：一個 clock 傳兩次；8 顆晶片各管 8 條線', [
+  async (tok, S) => { // @274 ~Accessing an individual memory cell is ... slow
+    S.cell = bx('cell', NC.off, -4.8, 3.6, 0, 0.8, 0.8, 0.5);
+    S.t1 = bad('存取一個 cell：相對很慢', -4.8, 2.8);
+    cap('存取單一個 cell 很慢');
+  },
+  async (tok, S) => { // @278 ~several clock cycles
+    S.t2 = sm('讀寫 1 bit 就要好幾個 clock cycle', -4.8, 2.3);
+    cap('讀寫 1 bit 要好幾個 clock cycle');
+  },
+  async (tok, S) => { // @284 ~two new 64-bit words in every clock cycle ... rising ... falling
+    const x0 = -2.0, per = 2.0, lo = 5.4, hi = 6.0;
+    S.wave = [];
+    for (let k = 0; k < 4; k++) {
+      const a = x0 + k * per;
+      S.wave.push(line(a, lo, a, hi), line(a, hi, a + per / 2, hi), line(a + per / 2, hi, a + per / 2, lo), line(a + per / 2, lo, a + per, lo));
+    }
+    S.wl = sm('clock', x0 - 0.6, 5.7);
+    S.tx = [];
+    for (let k = 0; k < 8; k++) { S.tx.push(bx('w' + k, k % 2 ? NC.orange : NC.blue, x0 + k * per / 2, 4.8, 0, 0.5, 0.34, 0.2)); await wt(tok, 120); }
+    S.t3 = sm('上升緣（藍）+ 下降緣（橘）：每個 clock 傳 2 個 64-bit word', 2.0, 4.25);
+    cap('data bus 每個 clock 傳兩個 word', '上升緣一次、下降緣一次');
+  },
+  async (tok, S) => { // @294 ~double data rate DDR
+    S.h = hot('DDR = Double Data Rate', 2.0, 6.6);
+    S.k = ok(2133 / 2 === 1066.5, '2,133 MT/s ÷ 2 = 1,066.5 MHz 實際 clock ✓', 2.0, 3.75);
+    cap('這就是 DDR（Double Data Rate）', '的名字由來');
+  },
+  async (tok, S) => { // @300 ~keep the data bus fully occupied
+    S.t4 = note('目標：讓 data bus 一直有資料在跑', -4.6, 1.8);
+    cap('記憶體模組的設計目標：', '讓 data bus 盡量一直忙');
+  },
+  async (tok, S) => { // @308 ~Each chip ... wired to eight lines of the data bus
+    gone(S.cell, S.t1, S.t2, S.t4, S.t3, S.k);
+    S.chips = []; S.cl = [];
+    for (let i = 0; i < 8; i++) { S.chips.push(bx('chip ' + i, NC.chip, -4.9 + i * 1.4, 3.2, 0, 1.15, 0.8, 0.4)); S.cl.push(sm('8 條', -4.9 + i * 1.4, 2.6)); }
+    cap('DIMM 上每顆晶片接 data bus 的 8 條線');
+  },
+  async (tok, S) => { // @314 ~eight bits of a 64-bit word ... each of eight chips simultaneously
+    S.word = []; for (let i = 0; i < 8; i++) S.word.push(bx('bit ' + (i * 8) + '–' + (i * 8 + 7), [NC.blue, NC.orange, NC.green, NC.purple, NC.pink, NC.teal, NC.gold, NC.red][i], -4.9 + i * 1.4, 1.85, 0, 1.3, 0.4, 0.3));
+    S.k = ok(8 * 8 === 64, '8 顆 × 8 bits = 64 bits，同時讀寫 ✓', 0, 1.2);
+    cap('一個 64-bit word 拆成 8 份', '8 顆晶片同時各讀寫 8 bits');
+  },
+  async (tok, S) => { // @323 ~Eight chips is typical
+    S.L = list(0, 0.65, 0.5); S.L.push(sm('8 顆最常見，也有更多或更少的 DIMM', 0, 0.65));
+    cap('8 顆最常見', '有的 DIMM 多一些、有的少一些');
+  },
+  async (tok, S) => { // @328 ~fixed capacity, then more chips means more storage
+    S.L.kill(); const gb = 8 * 8 / 8;
+    S.L.push(ok(gb === 8, '示意：每顆 8 Gbit × 8 顆 = 64 Gbit = 8 GB ✓（晶片越多，容量越大）', 0, 0.65));
+    cap('如果每顆容量固定', '晶片越多 → 容量越大');
+  },
+  async (tok, S) => { // @334 ~more chips would use more power
+    S.chips.forEach((m) => glow(m, NG));
+    S.L.push(bad('但每次讀寫 8 顆一起動 → 晶片越多越耗電', 0, 0.15));
+    cap('但晶片要一起處理每個請求', '晶片越多越耗電');
+  },
+  async (tok, S) => { // @342 ~Fewer chips ... bigger share of 64 data lines
+    S.chips.forEach((m, i) => { glow(m, null); if (i >= 4) tint(m, NC.gray); });
+    S.cl.forEach((l, i) => txt(l, i < 4 ? '16 條' : ''));
+    S.L.kill(); S.L.push(ok(64 / 16 === 4, '示意：用 x16 晶片 → 64 ÷ 16 = 4 顆，每顆管 16 條線 ✓', 0, 0.65));
+    cap('晶片少比較省電', '但每顆要負責更多條資料線');
+  },
+  async (tok, S) => { // @349 ~more data pins per chip, and pins are expensive
+    S.L.push(bad('每顆晶片接腳變多 → 接腳很貴', 0, 0.15));
+    cap('每顆晶片的資料接腳變多', '而接腳很貴');
+  },
+  async (tok, S) => { // @356 ~8 banks, each of which can store 8 bits
+    S.chips.forEach((m) => tint(m, NC.chip)); S.cl.forEach((l) => txt(l, '8 條'));
+    S.L.kill(); gone(S.k);
+    S.bk = []; for (let i = 0; i < 8; i++) { const col = []; for (let b = 0; b < 8; b++) col.push(bx('', NC.sky, -4.9 + i * 1.4, 2.88 + b * 0.09, 0.32, 1.0, 0.06, 0.05)); S.bk.push(col); }
+    S.L.push(sm('每顆晶片 8 個 bank；x8 晶片每次存取進出 8 bits', 0, 0.65));
+    cap('每顆晶片裡通常有 8 個 bank', '每次進出 8 bits');
+  },
+  async (tok, S) => { // @362 ~Banks at equivalent positions ... share the same address lines
+    S.bk.forEach((col) => glow(col[0], HL));
+    S.bl = line(-5.6, 2.88, 5.6, 2.88, 0.4, '#6a4a00');
+    S.L.push(hot('各晶片的 bank 0 共用同一組位址線、控制訊號', 0, 0.15));
+    cap('各晶片中位置相同的 bank', '共用位址線和控制訊號');
+  },
+  async (tok, S) => { // @369 ~8 bits are written to each chip ... banks in equivalent positions
+    S.L.kill();
+    await anim(tok, 900, (u) => S.word.forEach((m) => { m.position.y = 1.85 + u * 1.0; }));
+    S.L.push(ok(8 * 8 === 64, '64 bits 拆 8 份 → 同時寫進 8 顆晶片的 bank 0 ✓', 0, 0.65));
+    cap('8 bits 同時寫進每顆晶片', '寫進的都是位置相同的 bank');
+  },
+  async (tok, S) => { // @377 ~isn't any faster than reading or writing just one bit
+    S.L.push(bad('一次 64 bits 很寬，但每次存取的等待時間和 1 bit 一樣，沒有比較快', 0, 0.15));
+    cap('一次存 64 bits 並沒有更快', '每次存取一樣要等那麼久');
+  },
+]);
+
+scene('dram-rascas', 'Bank 內部：RAS 開 row → CAS 選 column → output buffer', [
+  async (tok, S) => { // @385 ~look inside a single bank
+    bankView(S);
+    S.h = hd('一個 bank（示意模型：8 個 8 × 8 array）', -1.4, 6.3);
+    cap('要加速，先看一個 bank 的內部');
+  },
+  async (tok, S) => { // @395 ~eight arrays, each with 64 memory cells ... eight rows and eight columns
+    S.R = list(3.4, 3.4, 0.5);
+    S.R.push(ok(8 * 8 === 64 && 8 * 64 === 512, '每個 array 8 × 8 = 64 cells；8 個 array 共 512 ✓', 3.4, 3.4));
+    cap('這個 bank 有 8 個 array', '每個 array 8 row × 8 column = 64 cells');
+  },
+  async (tok, S) => { // @402 ~typical array ... 1024 columns and 16384 rows
+    const cells = 1024 * 16384;
+    S.R.push(ok(cells === 16777216, '真實：1024 × 16384 = ' + grp(cells) + ' cells ✓', 3.4, 2.9));
+    S.R.push(ok(lg2(16384) === 14 && lg2(1024) === 10, 'row 位址 14 bits、column 位址 10 bits ✓', 3.4, 2.4));
+    cap('這只是模型；真實 array 是長方形', '1024 columns × 16384 rows');
+  },
+  async (tok, S) => { // @410 ~first the row address is strobed
+    S.ras = hot('RAS：row 5（示意）', -6.0, S.gy(5));
+    await slide(tok, S.ras, -4.6, S.gy(5), 0, 700);
+    S.grid.cells[5].forEach((m) => tint(m, NC.sky));
+    cap('讀資料：先送 row address（RAS）', '這會啟動讀取週期');
+  },
+  async (tok, S) => { // @418 ~followed by the column address
+    S.cas = hot('CAS：column 3', S.gx(3), 6.05);
+    S.cp = lk(S.gx(3), 5.75, S.gx(3), 5.1);
+    cap('接著送 column address（CAS）');
+  },
+  async (tok, S) => { // @420 ~identify a particular cell in each array ... same position
+    glow(S.grid.cells[5][3], HL); S.behind.forEach((m) => glow(m, '#3a2a00'));
+    S.R.push(sm('row 5 + column 3 → 8 個 array 同一位置各 1 個 cell', 3.4, 1.9));
+    cap('row + column 指定每個 array 的一個 cell', '8 個 array 位置都一樣');
+  },
+  async (tok, S) => { // @431 ~row is activated and latched into the sense amplifiers
+    S.behind.forEach((m) => glow(m, null));
+    S.mv = S.grid.cells[5].map((m, c) => bx('', NC.sky, S.gx(c), S.gy(5), 0.25, 0.32, 0.32, 0.2));
+    await anim(tok, 1000, (u) => S.mv.forEach((m) => { m.position.y = S.gy(5) + (1.15 - S.gy(5)) * u; }));
+    gone(S.mv); S.sa.forEach((m) => tint(m, NC.sky));
+    cap('整個 row 被啟動', '存進 sense amplifiers（row buffer）');
+  },
+  async (tok, S) => { // @436 ~relatively slow part of the read cycle
+    S.slow = bad('開 row（activate）：讀取週期裡較慢的一段', S.gx(3.5), 0.1);
+    cap('開 row 是讀取週期中比較慢的部分');
+  },
+  async (tok, S) => { // @439 ~the row is said to be open
+    S.open = good('row 5 is open', -4.9, S.gy(5) - 0.45);
+    cap('這時候 row 5 是「open」狀態');
+  },
+  async (tok, S) => { // @443 ~one bit from each array ... output buffer
+    glow(S.sa[3], HL);
+    const p = bx('', NC.gold, S.gx(3), 1.15, 0.3, 0.3, 0.3, 0.2);
+    await slide(tok, p, 1.7, 4.3, 0.3, 700); gone(p);
+    S.ob.forEach((m, i) => { tint(m, NC.gold); relabel(m, 'a' + i); });
+    cap('每個 array 各送 1 bit', '同時進 output buffer');
+  },
+  async (tok, S) => { // @449 ~bank in each chip doing exactly the same thing
+    S.R.push(sm('8 顆晶片裡同位置的 bank 同時做一樣的事', 3.4, 1.4));
+    cap('記住這只是模型：8 顆晶片的 bank', '同時做完全一樣的事');
+  },
+  async (tok, S) => { // @459 ~deliver a 64-bit word
+    S.R.push(ok(8 * 8 === 64, '每顆 8 bits × 8 顆 = 1 個 64-bit word ✓', 3.4, 0.9));
+    cap('合起來送出一個 64-bit word');
+  },
+  async (tok, S) => { // @464 ~early types of DRAM would now close the row
+    S.sa.forEach((m) => { tint(m, NC.mint); glow(m, null); }); S.grid.cells[5].forEach((m) => { tint(m, NC.off); glow(m, null); });
+    txt(S.open, 'close row（早期 DRAM：讀完就關）'); S.open.element.className = 'lab-label bad';
+    cap('一次只能開一個 row', '早期 DRAM 讀完就關掉，要用再開');
+  },
+  async (tok, S) => { // @476 ~opening a whole row ... just to read one bit, is a waste
+    S.R.kill(); S.R = list(3.4, 3.4, 0.5);
+    S.R.push(ok(fx(100 / 1024) === '0.098', '開 1024 columns 只用 1 個：1/1024 ≈ 0.098% ✓', 3.4, 3.4));
+    S.R.push(bad('→ 浪費時間', 3.4, 2.9));
+    cap('開了一整個 row 只讀 1 bit', '很浪費時間');
+  },
+]);
+
+scene('dram-burst', 'Burst mode：row 開著就連讀好幾個 column', [
+  async (tok, S) => { // @487 ~while the row is already open, another byte
+    bankView(S); S.h = hd('row 5 還開著（示意）', -1.4, 6.3);
+    S.grid.cells[5].forEach((m) => tint(m, NC.sky)); S.sa.forEach((m) => tint(m, NC.sky));
+    S.cols = [3, 4]; S.cp = lk(S.gx(3), 5.75, S.gx(3), 5.1);
+    S.R = list(3.4, 3.4, 0.5); S.R.push(sm('第 1 次：column 3 → output buffer', 3.4, 3.4));
+    gone(S.cp); S.cp = lk(S.gx(4), 5.75, S.gx(4), 5.1); glow(S.sa[4], HL);
+    S.R.push(good('row 不關，直接再讀 column 4', 3.4, 2.9));
+    cap('row 還開著，就直接再讀下一個 column');
+  },
+  async (tok, S) => { // @493 ~another, and another
+    for (const c of [5, 6]) { gone(S.cp); S.cp = lk(S.gx(c), 5.75, S.gx(c), 5.1); glow(S.sa[c], HL); S.cols.push(c); await wt(tok, 500); }
+    S.R.push(good('再 column 5、column 6……', 3.4, 2.4));
+    cap('再一個、再一個');
+  },
+  async (tok, S) => { // @496 ~burst ... just one row address and one column address
+    S.R.push(hot('只給 1 個 row + 1 個起始 column → 一串（burst）資料', 3.4, 1.9));
+    cap('只給一個 row、一個 column address', '就能很快讀出一串資料：burst');
+  },
+  async (tok, S) => { // @504 ~number of columns read ... burst length
+    S.R.push(ok(S.cols.length === 4, '讀了 column ' + S.cols.join('、') + ' → burst length = ' + S.cols.length + '（示意）✓', 3.4, 1.4));
+    cap('row 開著時讀幾個 column', '叫做 burst length');
+  },
+  async (tok, S) => { // @511 ~Different generations ... different burst lengths
+    S.R.kill(); S.R = list(3.4, 3.4, 0.5);
+    S.R.push(sm('不同世代 DRAM 的 burst length 不同', 3.4, 3.4));
+    cap('不同世代的 DRAM', 'burst length 不一樣');
+  },
+  async (tok, S) => { // @515 ~DDR2 4, DDR3 8, DDR4 16
+    S.R.push(sm('影片：DDR2 = 4、DDR3 = 8、DDR4 = 16', 3.4, 2.9));
+    S.R.push(bad('更正：DDR4 標準仍是 BL8，BL16 是 DDR5', 3.4, 2.4));
+    cap('影片說 DDR2 4、DDR3 8、DDR4 16', '（DDR4 其實是 8，DDR5 才是 16）');
+  },
+  async (tok, S) => { // @525 ~what you can see here is just one bank
+    S.R.push(note('畫面只是 1 個 bank', 3.4, 1.9));
+    cap('別忘了：畫面上只是一個 bank');
+  },
+  async (tok, S) => { // @528 ~DDR3 ... eight 64-bit words in very close succession
+    const bytes = 8 * 8;
+    S.R.push(ok(bytes === 64, 'DDR3：8 顆晶片 × BL8 → 8 個 64-bit word = ' + bytes + ' bytes ✓', 3.4, 1.4));
+    cap('DDR3：8 顆晶片的 bank 一起動', '連續送出 8 個 64-bit word');
+  },
+  async (tok, S) => { // @541 ~This technique is called pre-fetching
+    S.R.push(hot('prefetch：一次從 array 抓 8 份，再一份份快速送出', 3.4, 0.9));
+    cap('這叫 prefetching（預取）');
+  },
+]);
+
+// bank-interleaving timeline (示意)：開 row + CAS 10 clocks、burst 4 clocks（BL8 ÷ 2）、關 row 18 clocks；8 個 bank 錯開 4 clocks
+const OPEN = 10, BURST = 8 / 2, CLOSE = 18, NB = 8;
+const cx = (c) => -5.4 + c * 0.2;
+const by = (b) => 6.1 - b * 0.48;
+scene('dram-bankint', '關 row 要 18 cycles；bank interleaving 讓 bus 不停', [
+  async (tok, S) => { // @545 ~there's still a problem
+    S.ax = [line(cx(0), 1.75, cx(56), 1.75), sm('clock →', cx(56) + 0.5, 1.75)];
+    S.bl = [sm('bank 0', cx(0) - 0.6, by(0))];
+    S.o0 = tbar(cx(0), cx(OPEN), by(0), NC.sky, 'open');
+    S.u0 = tbar(cx(OPEN), cx(OPEN + BURST), by(0), NC.green);
+    S.bus = sm('data bus', cx(0) - 0.6, 2.2); S.bb = [tbar(cx(OPEN), cx(OPEN + BURST), 2.2, NC.green)];
+    S.k = sm('示意時間軸：開 row + CAS 10 clocks、burst 4 clocks', 0, 6.8);
+    cap('但還有一個問題');
+  },
+  async (tok, S) => { // @547 ~Only one row per bank can be open
+    S.L = list(0, 1.15, 0.45); S.L.push(bad('每個 bank 同時只能開 1 個 row', 0, 1.15));
+    cap('每個 bank 同一時間只能開一個 row');
+  },
+  async (tok, S) => { // @552 ~the row has to be closed before another can be opened
+    S.c0 = tbar(cx(OPEN + BURST), cx(OPEN + BURST + CLOSE), by(0), NC.gray, 'close');
+    cap('burst 結束後，要先關這個 row', '才能開別的 row');
+  },
+  async (tok, S) => { // @556 ~refreshing the cells ... pre-charging the bitlines
+    S.L.push(sm('關 row = 把剛讀的 cell 寫回刷新 + bit line 重新 precharge', 0, 0.7));
+    cap('關 row：把讀過的 cell 寫回刷新', '再把 bit line 重新 precharge');
+  },
+  async (tok, S) => { // @562 ~as many as 18 clock cycles
+    relabel(S.c0, 'close 18');
+    S.L.push(ok(CLOSE === 18, '關 row 最多要 18 clocks ✓', 0, 0.25));
+    cap('這可能要多達 18 個 clock cycle');
+  },
+  async (tok, S) => { // @566 ~blocks known as cache lines
+    S.L.kill(); S.L = list(0, 1.15, 0.45);
+    S.L.push(sm('CPU ↔ DRAM 以 cache line 為單位搬資料', 0, 1.15));
+    cap('CPU 和 DRAM 之間', '以 cache line 為單位搬資料');
+  },
+  async (tok, S) => { // @573 ~64 bytes ... eight 64-bit words
+    S.L.push(ok(64 / 8 === 8, 'cache line 64 bytes = 8 個 64-bit word ✓', 0, 0.7));
+    cap('一條 cache line 通常 64 bytes', '= 8 個 64-bit word');
+  },
+  async (tok, S) => { // @580 ~One burst ... fill a single cache line
+    relabel(S.u0, 'BL8');
+    S.L.push(ok(8 * 8 === 64 && BURST === 4, '1 次 burst：8 次傳輸 × 8 B = 64 B；DDR 每 clock 2 次 → 4 clocks ✓', 0, 0.25));
+    cap('一次 burst 剛好填滿一條 cache line', '以 bus 最快的速度');
+  },
+  async (tok, S) => { // @586 ~multiple cache lines ... in close succession
+    S.L.kill(); S.L = list(0, 1.15, 0.45);
+    const gap = OPEN + BURST + CLOSE, util = BURST / gap;
+    S.w0 = tbar(cx(OPEN + BURST + CLOSE), cx(gap + OPEN), by(0), NC.sky, 'open');
+    S.L.push(ok(gap === 32 && util === 0.125, '只有 bank 0：下一次 burst 要等 4 + 18 + 10 = 32 clocks，bus 只忙 4/32 = 12.5% ✓', 0, 1.15));
+    cap('如果要接連讀好幾條 cache line 呢？');
+  },
+  async (tok, S) => { // @591 ~each bank ... operate independently
+    gone(S.w0);
+    for (let b = 1; b < NB; b++) S.bl.push(sm('bank ' + b, cx(0) - 0.6, by(b)));
+    S.L.push(sm('同一顆晶片裡每個 bank 都能各自獨立運作', 0, 0.7));
+    cap('每個 bank 設計成可以獨立運作');
+  },
+  async (tok, S) => { // @601 ~different stages of their read or write cycles
+    S.L.push(sm('→ 不同 bank 可以在讀寫週期的不同階段', 0, 0.25));
+    cap('不同 bank 可以在不同階段');
+  },
+  async (tok, S) => { // @606 ~bank interleaving
+    S.h = hot('bank interleaving', 3.5, 6.8); gone(S.k);
+    cap('這叫 bank interleaving（bank 交錯）');
+  },
+  async (tok, S) => { // @614 ~another burst can begin immediately from the next bank
+    S.rows = [];
+    const b = 1, t = b * BURST;
+    S.rows.push(tbar(cx(t), cx(t + OPEN), by(b), NC.sky), tbar(cx(t + OPEN), cx(t + OPEN + BURST), by(b), NC.green), tbar(cx(t + OPEN + BURST), cx(t + OPEN + BURST + CLOSE), by(b), NC.gray));
+    S.bb.push(tbar(cx(t + OPEN), cx(t + OPEN + BURST), 2.2, NC.teal));
+    cap('bank 0 一送完', 'bank 1 的 burst 立刻接上');
+  },
+  async (tok, S) => { // @621 ~and then the next, and then the next
+    for (let b = 2; b < NB; b++) {
+      const t = b * BURST;
+      S.rows.push(tbar(cx(t), cx(t + OPEN), by(b), NC.sky), tbar(cx(t + OPEN), cx(t + OPEN + BURST), by(b), NC.green), tbar(cx(t + OPEN + BURST), cx(Math.min(56, t + OPEN + BURST + CLOSE)), by(b), NC.gray));
+      S.bb.push(tbar(cx(t + OPEN), cx(t + OPEN + BURST), 2.2, b % 2 ? NC.teal : NC.green));
+      await wt(tok, 250);
+    }
+    cap('接著 bank 2、bank 3……輪流接力');
+  },
+  async (tok, S) => { // @623 ~While one bank is pumping out data, the others ... getting ready
+    S.L.kill(); S.L = list(0, 1.15, 0.45);
+    S.vl = line(cx(OPEN + 3 * BURST + 2), 1.9, cx(OPEN + 3 * BURST + 2), 6.3, 0.3, '#6a4a00');
+    S.L.push(sm('這一刻：bank 3 在送資料，其他 bank 在開 row 或關 row', 0, 1.15));
+    cap('一個 bank 在送資料時', '其他 bank 在準備下一次');
+  },
+  async (tok, S) => { // @629 ~By the time the last bank ... the first bank has had plenty of time to recover
+    const lastEnd = (NB - 1) * BURST + OPEN + BURST, t = NB * BURST;
+    S.again = [tbar(cx(t), cx(t + OPEN), by(0) + 0.0, NC.sky, 'open'), tbar(cx(t + OPEN), cx(t + OPEN + BURST), by(0), NC.green)];
+    S.bb.push(tbar(cx(t + OPEN), cx(t + OPEN + BURST), 2.2, NC.green));
+    glow(S.again[1], HL);
+    S.L.push(ok(BURST + CLOSE + OPEN === NB * BURST && t + OPEN === lastEnd, 'bank 0 需要 4 + 18 + 10 = 32 clocks 才能再送；8 bank × 4 = 32 → 剛好接在 bank 7 後面 ✓', 0, 0.7));
+    cap('最後一個 bank 送完時', 'bank 0 早就恢復好了');
+  },
+  async (tok, S) => { // @638 ~data bus ... remain saturated
+    const busy = S.bb.length * BURST, span = (NB + 1) * BURST;
+    S.L.push(ok(busy === span, 'data bus 從 clock ' + OPEN + ' 到 ' + (OPEN + span) + ' 一直有資料：忙碌率 100% ✓', 0, 0.25));
+    cap('bank interleaving 讓 data bus', '長時間讀寫時一直保持滿載');
+  },
+]);
+
+scene('dram-banks', '要放幾個 bank：速度 vs 容量', [
+  async (tok, S) => { // @652 ~This chip has 8 banks
+    S.chip = zone('chip（8 banks）', -3.2, 2.0, 0, 5.0, 3.6, '#e2d6c0');
+    S.b8 = []; for (let i = 0; i < 8; i++) S.b8.push(bx('bank ' + i, NC.sky, -4.95 + (i % 4) * 1.17, 4.7 - Math.floor(i / 4) * 1.4, 0, 1.05, 1.2, 0.3));
+    S.L = list(3.4, 5.6, 0.5); S.L.push(sm('這顆晶片 8 個 bank（也有更多或更少）', 3.4, 5.6));
+    cap('這顆晶片有 8 個 bank', '也有的多、有的少');
+  },
+  async (tok, S) => { // @656 ~important decision that DRAM designers have to make
+    S.L.push(hot('放幾個 bank：DRAM 設計者的重要決定', 3.4, 5.1));
+    cap('放幾個 bank', '是 DRAM 設計者的重要決定');
+  },
+  async (tok, S) => { // @664 ~More banks offer more parallelism and lower latency
+    S.L.push(good('bank 多 → 平行度高、延遲低', 3.4, 4.6));
+    cap('bank 越多，平行度越高', '延遲越低');
+  },
+  async (tok, S) => { // @669 ~keeping the data bus busy ... faster memory
+    S.L.push(good('→ data bus 更常保持忙碌 → 記憶體更快', 3.4, 4.1));
+    cap('越能讓 data bus 保持忙碌', 'bank 越多，記憶體越快');
+  },
+  async (tok, S) => { // @676 ~for a given area of silicon more banks means smaller banks
+    gone(S.b8);
+    S.b16 = []; for (let i = 0; i < 16; i++) S.b16.push(bx('', NC.sky, -5.05 + (i % 4) * 1.17, 5.05 - Math.floor(i / 4) * 0.7, 0, 1.05, 0.58, 0.3));
+    S.chip.userData.name.element.textContent = 'chip（同樣面積，16 banks，示意）';
+    S.L.push(note('但面積固定：bank 越多，每個 bank 越小', 3.4, 3.6));
+    cap('但矽晶片面積固定', 'bank 越多，每個 bank 就越小');
+  },
+  async (tok, S) => { // @684 ~smaller arrays and more of them
+    S.b16.forEach((m) => tint(m, NC.mint));
+    S.L.push(sm('→ array 更小、數量更多', 3.4, 3.1));
+    cap('array 變小、數量變多');
+  },
+  async (tok, S) => { // @687 ~each array has its own peripheral components ... decoders sense amplifiers and multiplexers
+    S.per = S.b16.map((m) => bx('', NC.orange, m.position.x, m.position.y - 0.33, 0.1, 1.05, 0.1, 0.32));
+    S.L.push(bad('每個 array 都有自己的周邊電路：decoder、sense amp、mux（橘色）', 3.4, 2.6));
+    cap('每個 array 都要自己的周邊元件', 'decoder、sense amplifier、multiplexer');
+  },
+  async (tok, S) => { // @693 ~highest possible storage capacity ... minimize the number of supporting components
+    S.L.push(sm('要容量最大 → 周邊元件越少越好，空間留給 cell', 3.4, 2.1));
+    cap('想要容量最大', '就要減少周邊元件、空間留給 cell');
+  },
+  async (tok, S) => { // @705 ~more banks means lower capacity
+    const area = 100, per = 1.5, cap8 = area - 8 * per, cap16 = area - 16 * per;
+    S.L.push(ok(cap8 === 88 && cap16 === 76, '示意：面積 100、每個 bank 周邊 1.5 → 8 banks 剩 88、16 banks 剩 76 ✓', 3.4, 1.6));
+    cap('所以 bank 越多，容量越低');
+  },
+  async (tok, S) => { // @711 ~fewer banks ... larger arrays ... higher capacity
+    gone(S.b16, S.per);
+    S.b4 = []; for (let i = 0; i < 4; i++) S.b4.push(bx('bank ' + i, NC.sky, -4.4 + (i % 2) * 2.4, 4.4 - Math.floor(i / 2) * 1.8, 0, 2.2, 1.6, 0.3));
+    S.chip.userData.name.element.textContent = 'chip（同樣面積，4 banks，示意）';
+    S.L.push(good('bank 少 → bank、array 都大 → 容量可能更高', 3.4, 1.1));
+    cap('bank 少：bank 大、array 大', '容量可能更高');
+  },
+  async (tok, S) => { // @718 ~larger arrays have longer bit lines ... slower ... more power
+    S.bitl = S.b4.map((m) => line(m.position.x, m.position.y - 0.75, m.position.x, m.position.y + 0.75, 0.2, '#7a1010'));
+    S.L.push(bad('但大 array 的 bit line 長 → 較慢、較耗電（紅線）', 3.4, 0.6));
+    cap('但大 array 的 bit line 比較長', '比較慢，也比較耗電');
+  },
+]);
+
+// ════════ 0dTWcYk1rts（Memory Interleaving concept：定義、層級、7 / 28 / 10 cycles、n-way、low/high-order、優缺點） ════════
+scene('dram-ilv-gap', '為什麼要 interleaving：CPU 太快、記憶體跟不上', [
+  async (tok, S) => { // @10 ~smarter architecture, higher clock frequencies and deeper pipelining
+    S.cpu = prop('cpu', -4.0, 3.2, 0, 1.3, 'CPU');
+    S.cb = bx('', NC.green, 0.5, 5.2, 0, 0.1, 0.5, 0.4);
+    await anim(tok, 1200, (u) => { S.cb.scale.x = 1 + u * 50; S.cb.position.x = -1.5 + u * 2.5; });
+    S.ct = sm('處理速度：越來越快（時脈、管線）', 1.0, 5.8);
+    cap('架構更聰明、時脈更高、管線更深', 'CPU 越來越快');
+  },
+  async (tok, S) => { // @16 ~challenge to match the speed of the memory
+    S.mem = bx('Main memory', NC.tan, -4.0, 1.4, 0, 2.2, 0.7, 0.6);
+    S.mb = bx('', NC.metal, -0.5, 3.6, 0, 1.6, 0.5, 0.4);
+    S.mt = sm('記憶體供應資料的速度：跟不上', 1.0, 3.0);
+    cap('記憶體很難及時把資料', '餵給這麼快的 CPU');
+  },
+  async (tok, S) => { // @24 ~mismatch ... (von Neumann) bottleneck
+    S.gap = bad('速度落差 = von Neumann bottleneck（瓶頸）', 1.0, 2.2);
+    S.a = lk(-4.0, 2.0, -4.0, 2.9, 0xd64545);
+    cap('這個速度落差叫 von Neumann 瓶頸', '高階處理器的效能被拖住');
+  },
+  async (tok, S) => { // @36 ~memory has undergone several transitions ... memory interleaving
+    S.h = hot('早期的解法之一：memory interleaving（記憶體交錯）', 0, 6.6);
+    cap('記憶體有好幾次演進', '早期的一種就是 memory interleaving');
+  },
+  async (tok, S) => { // @45 ~how memory interleaving works, types, advantages and disadvantages
+    S.L = list(3.0, 1.5, 0.45); ['① 怎麼運作', '② 有哪些類型', '③ 優點與缺點'].forEach((t) => S.L.add(t, 'note'));
+    cap('這支影片：怎麼運作、有哪些類型', '以及優缺點');
+  },
+]);
+
+scene('dram-ilv-what', 'Interleaving：連續位址輪流放到不同 bank', [
+  async (tok, S) => { // @56 ~what memory interleaving means
+    S.cpu = prop('cpu', 0, 5.2, 0, 1.0, 'CPU');
+    S.B = [0, 1, 2, 3].map((b) => bx('bank ' + b, NC.sky, -4.5 + b * 3, 1.0, 0, 2.2, 0.5, 0.6));
+    cap('Memory interleaving 是什麼？');
+  },
+  async (tok, S) => { // @58 ~assign successive memory addresses across multiple memory units
+    S.a = [];
+    for (let a = 0; a < 8; a++) { S.a.push(cube('位址 ' + a, [NC.blue, NC.orange, NC.green, NC.purple][a % 4], [1.6, 0.42, 0.5], -4.5 + (a % 4) * 3, 1.6 + Math.floor(a / 4) * 0.5, 0, 2.5)); await wt(tok, 180); }
+    S.k = ok([0, 1, 2, 3, 4, 5, 6, 7].every((a) => a % 4 === (a & 3)), '連續位址 0,1,2,3,… 輪流放：bank = 位址 mod 4 ✓（示意 4 banks）', 0, 3.3);
+    cap('把連續的位址輪流分到不同 bank', '位址 0、1、2、3 各在不同 bank');
+  },
+  async (tok, S) => { // @72 ~After a memory chip is accessed ... a delay before ... accessed again
+    gone(S.k); glow(S.B[0], NG); S.rec = bad('bank 0 剛被存取 → 要恢復一段時間', -4.5, 0.35);
+    cap('一個記憶體晶片存取完', '要等一段時間才能再存取');
+  },
+  async (tok, S) => { // @78 ~long enough to put a wait state in a fast CPU
+    S.w = bad('沒有 interleaving：CPU 只能等（wait state）', 0, 6.6);
+    cap('長到快速的 CPU 只能停下來等', '（wait state）');
+  },
+  async (tok, S) => { // @82 ~each unit takes turns ... while the other is recovering
+    gone(S.w); glow(S.B[1], OKG);
+    S.t = good('interleaving：bank 0 恢復時，bank 1 接手', 0, 6.6);
+    cap('有了 interleaving，各 bank 輪流服務', '一個在恢復，另一個接手');
+  },
+  async (tok, S) => { // @96 ~first memory unit is sending data ... second unit will receive the address
+    glow(S.B[0], OKG); glow(S.B[1], HL);
+    const d = hot('data（bank 0）', -4.5, 1.9), ad = hot('address → bank 1', 0, 4.4);
+    await anim(tok, 1000, (u) => { d.position.set(-4.5 + 3.9 * u, 1.9 + 2.5 * u, 0); ad.position.set(-1.5 * u, 4.4 - 2.5 * u, 0); });
+    S.p = [d, ad];
+    cap('bank 0 把資料送給 CPU 的同時', 'bank 1 接收 CPU 送來的位址');
+  },
+  async (tok, S) => { // @103 ~when the second unit will send data, the first unit can be accessed again
+    gone(S.p, S.rec); glow(S.B[1], OKG); glow(S.B[0], HL);
+    const d = hot('data（bank 1）', -1.5, 1.9), ad = hot('address → bank 0', 0, 4.4);
+    await anim(tok, 1000, (u) => { d.position.set(-1.5 + 2.1 * u, 1.9 + 2.5 * u, 0); ad.position.set(-4.5 * u, 4.4 - 2.5 * u, 0); });
+    S.p = [d, ad];
+    cap('bank 1 送資料時', 'bank 0 又可以被存取了');
+  },
+  async (tok, S) => { // @108 ~delay between accessing subsequent word is reduced
+    gone(S.p); S.B.forEach((m) => glow(m, null));
+    S.k = good('連續 word 之間的等待大幅縮短', 0, 3.3);
+    cap('連續 word 之間的延遲', '大幅縮短');
+  },
+]);
+
+scene('dram-ilv-hier', '記憶體的層級：DIMM → rank → chip → bank → cell', [
+  async (tok, S) => { // @113 ~quick look at the memory units
+    S.h = hd('先看記憶體的組成', 0, 6.6);
+    cap('深入之前，先看記憶體的組成');
+  },
+  async (tok, S) => { // @119 ~main memory comprises of these kind of sticks
+    S.d = dimm(0, 5.2, { back: true });
+    cap('主記憶體就是一條條記憶體條');
+  },
+  async (tok, S) => { // @122 ~DIMM-based SDRAM, the front view and back view forms the DIMM
+    S.t1 = sm('正面 + 背面 = 一條 DIMM（dual inline memory module）', 0, 4.2);
+    await anim(tok, 1800, (u) => { S.d.g.rotation.y = u * 2 * Math.PI; });
+    cap('DIMM 型 SDRAM：正面和背面', '合起來就是一條 DIMM');
+  },
+  async (tok, S) => { // @130 ~Collection of chips on each side ... RANK ... DRAM chips
+    S.d.chips.forEach((c) => glow(c, HL));
+    txt(S.t1, '每一面的一組晶片 = 1 個 rank；rank 由 DRAM chip 組成');
+    cap('每一面的一組晶片叫 rank', 'rank 由 DRAM 晶片組成');
+  },
+  async (tok, S) => { // @137 ~each DRAM chip ... memory banks ... two dimensional array ... rows and column
+    S.d.chips.forEach((c, i) => glow(c, i ? null : HL));
+    S.banks = []; for (let i = 0; i < 4; i++) S.banks.push(bx('bank ' + i, NC.sky, -4.8 + i * 1.3, 2.8, 0, 1.15, 0.55, 0.4));
+    S.a1 = lk(S.d.cx(0), 4.5, -4.8, 3.15);
+    S.grid = { cells: [], lbls: [] };
+    for (let r = 0; r < 6; r++) { const row = []; for (let c = 0; c < 6; c++) row.push(bx('', NC.off, 1.6 + c * 0.32, 3.3 - r * 0.32, 0, 0.27, 0.27, 0.2)); S.grid.cells.push(row); }
+    S.grid.lbls.push(sm('bank = 二維陣列（rows × columns，示意 6 × 6）', 2.4, 3.75));
+    S.a2 = lk(-4.8, 2.5, 1.4, 2.6);
+    cap('每顆晶片分成好幾個 bank', 'bank 是由 row、column 組成的二維陣列');
+  },
+  async (tok, S) => { // @147 ~intersection of row and column is called cell
+    glow(S.grid.cells[2][3], HL); S.c = good('row 2 × column 3 交叉 = 一個 cell', 2.4, 1.2);
+    cap('row 和 column 的交叉點叫 cell', '資料就存在這裡');
+  },
+  async (tok, S) => { // @153 ~implemented at various levels ... rank based, chip based ... channel based
+    S.L = list(-3.6, 1.6, 0.45);
+    S.L.add('interleaving 可以做在：channel、rank、chip、bank', 'note');
+    cap('interleaving 可以做在不同層級', 'channel、rank、chip……');
+  },
+  async (tok, S) => { // @170 ~most basic unit ... were banks
+    S.banks.forEach((m) => glow(m, HL));
+    S.L.add('最基本的單位：bank → 這支影片講 bank interleaving', 'ptr alt');
+    cap('最基本的是 bank', '接下來都講以 bank 為單位的 interleaving');
+  },
+  async (tok, S) => { // @177 ~main memory is divided into memory banks ... addresses are interleaved across these banks
+    gone(S.d, S.t1, S.a1, S.a2, S.grid, S.c, S.L, S.banks);
+    S.cpu = prop('cpu', 0, 5.0, 0, 1.0, 'CPU');
+    S.B = [0, 1, 2, 3].map((b) => bx('bank ' + b + '：' + [b, b + 4, b + 8].join(', ') + ' …', NC.sky, -4.5 + b * 3, 2.0, 0, 2.6, 0.6, 0.5));
+    S.ar = S.B.map((m) => lk(0, 4.8, m.position.x, 2.4));
+    S.k = ok([0, 1, 2, 3].every((b) => (b + 4) % 4 === b && (b + 8) % 4 === b), '抽象架構：主記憶體分成 bank，位址輪流交錯放（示意 4 banks）✓', 0, 0.9);
+    cap('主記憶體分成好幾個 bank', '位址交錯分配到這些 bank');
+  },
+]);
+
+// 講者的數字：送位址 1、存取 5、回傳 1 cycle；4 個 word
+const T_A = 1, T_M = 5, T_D = 1, NW = 4;
+const ilvTimes = () => [0, 1, 2, 3].map((k) => ({ a: k, m: k + T_A, d: k + T_A + T_M, end: k + T_A + T_M + T_D }));
+const qx = (c) => -5.6 + c * 0.4;
+scene('dram-ilv-cycles', '非交錯 vs 交錯：7 cycles、28 vs 10', [
+  async (tok, S) => { // @191 ~example ... non-interleaved ... interleaved memory access
+    S.ax = [line(qx(0), 0.55, qx(28), 0.55), sm('cycle →', qx(28) + 0.3, 0.2)];
+    S.tk = [0, 7, 10, 14, 21, 28].map((c) => sm(String(c), qx(c), 0.2));
+    S.l1 = sm('非交錯', qx(0) - 0.15, 5.9); S.l1.center && S.l1.center.set(1, 0.5);
+    S.l2 = sm('交錯', qx(0) - 0.15, 3.5); S.l2.center && S.l2.center.set(1, 0.5);
+    cap('用例子比較：非交錯 vs 交錯存取');
+  },
+  async (tok, S) => { // @201 ~non-interleaved ... only when the previous memory access is completed
+    S.n = [];
+    for (let w = 0; w < NW; w++) { const t = w * 7; S.n.push(tbar(qx(t), qx(t + 7), 5.4, [NC.blue, NC.orange, NC.green, NC.purple][w], 'w' + w)); await wt(tok, 200); }
+    cap('非交錯：前一次存取完成', '才能存取下一個位址');
+  },
+  async (tok, S) => { // @209 ~interleaved ... can be overlapped
+    S.iv = ilvTimes().map((r, k) => tbar(qx(r.a), qx(r.end), 3.4 - k * 0.5, [NC.blue, NC.orange, NC.green, NC.purple][k], 'bank ' + k));
+    cap('交錯：位址分散在各 bank', '存取可以重疊，總時間大幅減少');
+  },
+  async (tok, S) => { // @224 ~considering cycle times
+    gone(S.n, S.iv); S.n = []; S.iv = [];
+    S.L = list(3.2, 6.6, 0.45);
+    cap('用 cycle 數來算算看');
+  },
+  async (tok, S) => { // @232 ~one cycle to send the address ... five cycles to access ... one cycle to return
+    S.one = [tbar(qx(0), qx(T_A), 5.4, NC.sky, 'A'), tbar(qx(T_A), qx(T_A + T_M), 5.4, NC.tan, '存取 5'), tbar(qx(T_A + T_M), qx(T_A + T_M + T_D), 5.4, NC.green, 'D')];
+    S.L.add('送位址 1 + 存取 5 + 回傳 1（cycles）');
+    cap('送位址 1 cycle、存取一個 word 5 cycles', '回傳資料 1 cycle');
+  },
+  async (tok, S) => { // @244 ~seven clock cycles
+    S.L.push(ok(T_A + T_M + T_D === 7, '取 1 個 word：1 + 5 + 1 = 7 cycles ✓', 3.2, 6.15));
+    cap('取一個 word 要 7 個 cycle');
+  },
+  async (tok, S) => { // @252 ~non-interleaved ... four words ... 28 clock cycles
+    gone(S.one);
+    for (let w = 0; w < NW; w++) { const t = w * 7; S.n.push(tbar(qx(t), qx(t + T_A), 5.4, NC.sky), tbar(qx(t + T_A), qx(t + T_A + T_M), 5.4, NC.tan, 'w' + w), tbar(qx(t + T_A + T_M), qx(t + 7), 5.4, NC.green)); await wt(tok, 150); }
+    S.L.push(ok(NW * (T_A + T_M + T_D) === 28, '非交錯 4 個 word：4 × 7 = 28 cycles ✓', 3.2, 5.7));
+    cap('非交錯取 4 個 word：28 cycles');
+  },
+  async (tok, S) => { // @262 ~interleaved ... only 10 clock cycles
+    const R = ilvTimes();
+    R.forEach((r, k) => { const y = 3.4 - k * 0.5; S.iv.push(tbar(qx(r.a), qx(r.m), y, NC.sky), tbar(qx(r.m), qx(r.d), y, NC.tan, 'bank ' + k), tbar(qx(r.d), qx(r.end), y, NC.green)); });
+    const end = Math.max(...R.map((r) => r.end));
+    S.L.push(ok(end === 10 && end === T_A + T_M + NW * T_D, '交錯 4 個 bank：位址每 cycle 送一個 → 最後在 cycle ' + end + ' 結束 = 1 + 5 + 4 × 1 ✓', 3.2, 5.25));
+    cap('交錯：同樣 4 個 word', '只要 10 cycles');
+  },
+  async (tok, S) => { // @270 ~access time is reduced considerably
+    S.L.push(ok(fx(28 / 10, 1) === '2.8', '28 ÷ 10 = 快 2.8 倍 ✓', 3.2, 4.8));
+    cap('交錯存取大幅縮短存取時間');
+  },
+]);
+
+scene('dram-ilv-nway', 'n-way interleaving：分成幾個 bank', [
+  async (tok, S) => { // @276 ~n-way interleaving
+    S.h = hot('n-way interleaving', 0, 6.6);
+    cap('接下來：n-way interleaving');
+  },
+  async (tok, S) => { // @280 ~determined by the number of memory units or banks
+    S.t = sm('幾 way = 主記憶體分成幾個 bank', 0, 6.0);
+    cap('「幾 way」由主記憶體', '分成幾個 bank 決定');
+  },
+  async (tok, S) => { // @288 ~two-way ... two banks
+    S.w2 = [0, 1].map((b) => bx('bank ' + b, NC.sky, -4.4 + b * 2.0, 4.4, 0, 1.8, 0.6, 0.5));
+    S.k2 = ok(lg2(2) === 1, '2-way：2 個 bank → 選 bank 要 1 bit ✓', -3.4, 3.6);
+    cap('2-way：記憶體分成 2 個 bank');
+  },
+  async (tok, S) => { // @296 ~four-way ... four banks
+    S.w4 = [0, 1, 2, 3].map((b) => bx('bank ' + b, NC.mint, 0.6 + b * 1.6, 4.4, 0, 1.45, 0.6, 0.5));
+    S.k4 = ok(lg2(4) === 2, '4-way：4 個 bank → 2 bits ✓', 3.0, 3.6);
+    cap('4-way：記憶體分成 4 個 bank');
+  },
+  async (tok, S) => { // @302 ~n-way ... divided into n banks
+    S.kn = ok([2, 4, 8, 16].every((n) => 2 ** lg2(n) === n), 'n-way：n 個 bank → 選 bank 要 log₂ n bits（8-way 3 bits、16-way 4 bits）✓', 0, 2.2);
+    cap('n-way：分成 n 個 bank');
+  },
+]);
+
+// 4-bit 位址（示意）：low-order → bank = 低 2 bits；high-order → bank = 高 2 bits
+const lowMap = (a) => ({ bank: a & 3, word: a >> 2 });
+const highMap = (a) => ({ bank: a >> 2, word: a & 3 });
+function addrField(S, x, y, hiC, loC, hiN, loN) {
+  S.f = [bx(hiN, hiC, x - 0.95, y, 0, 1.8, 0.55, 0.5), bx(loN, loC, x + 0.95, y, 0, 1.8, 0.55, 0.5)];
+  S.fl = [sm('高位 bits（MSB）', x - 0.95, y + 0.5), sm('低位 bits（LSB）', x + 0.95, y + 0.5)];
+}
+scene('dram-ilv-types', 'Low-order vs high-order：哪幾個 bit 選 bank', [
+  async (tok, S) => { // @307 ~two types ... low-order ... high-order
+    S.h = hot('兩種：low-order interleaving、high-order interleaving', 0, 6.6);
+    cap('interleaving 有兩種', 'low-order 和 high-order');
+  },
+  async (tok, S) => { // @315 ~least significant bits ... select the bank ... high-order bits ... word
+    S.t1 = hd('low-order', -3.2, 5.8);
+    addrField(S, -3.2, 4.9, NC.lilac, NC.orange, 'word', 'bank');
+    S.lo = { f: S.f, fl: S.fl };
+    cap('low-order：位址最低幾個 bit 選 bank', '高位 bits 選 bank 裡的 word');
+  },
+  async (tok, S) => { // @326 ~subsequent memory addresses are spread across the banks
+    S.lb = [0, 1, 2, 3].map((b) => bx('bank ' + b + '：' + [0, 1, 2, 3].map((w) => b + 4 * w).join(','), NC.sky, -3.2, 3.6 - b * 0.55, 0, 3.4, 0.45, 0.4));
+    S.k1 = ok([...Array(16).keys()].every((a) => lowMap(a).bank === a % 4), '連續位址輪流分散到各 bank ✓', -3.2, 1.0);
+    cap('連續位址會分散到各個 bank');
+  },
+  async (tok, S) => { // @333 ~most significant bits ... select the bank
+    S.t2 = hd('high-order', 3.2, 5.8);
+    addrField(S, 3.2, 4.9, NC.orange, NC.lilac, 'bank', 'word');
+    cap('high-order：位址最高幾個 bit 選 bank', '低位 bits 選 bank 裡的 word');
+  },
+  async (tok, S) => { // @343 ~block of successive memory addresses
+    S.hb = [0, 1, 2, 3].map((b) => bx('bank ' + b + '：' + [0, 1, 2, 3].map((w) => 4 * b + w).join(','), NC.mint, 3.2, 3.6 - b * 0.55, 0, 3.4, 0.45, 0.4));
+    S.k2 = ok([...Array(16).keys()].every((a) => highMap(a).bank === Math.floor(a / 4)), '一整塊連續位址放在同一個 bank ✓', 3.2, 1.0);
+    cap('一整塊連續位址', '放在同一個 bank');
+  },
+]);
+
+scene('dram-ilv-low', '例子：4 個 bank 的 low-order interleaving', [
+  async (tok, S) => { // @353 ~memory is divided into four banks
+    S.B = [0, 1, 2, 3].map((b) => bx('bank ' + b, NC.sky, -4.5 + b * 3, 3.4, 0, 2.4, 0.5, 0.5));
+    S.h = hd('4 個 bank；4-bit 位址（示意 16 個 word）', 0, 6.6);
+    cap('假設記憶體分成 4 個 bank');
+  },
+  async (tok, S) => { // @356 ~lower order interleaved, subsequent memory addresses ... across the banks
+    S.cells = [];
+    for (let a = 0; a < 16; a++) { const m = lowMap(a); S.cells.push(bx(b2(a, 4), NC.off, -4.5 + m.bank * 3, 2.75 - m.word * 0.48, 0, 1.4, 0.4, 0.3)); }
+    cap('low-order：連續位址輪流放在各 bank');
+  },
+  async (tok, S) => { // @365 ~lower bits ... select the bank and the remaining higher bits ... word
+    S.cpu = prop('cpu', -5.2, 5.1, 0, 0.8, 'CPU');
+    S.F = [bx('word', NC.lilac, 0.0, 5.4, 0, 1.4, 0.5, 0.4), bx('bank', NC.orange, 1.45, 5.4, 0, 1.4, 0.5, 0.4)];
+    S.Fl = [sm('高位', 0.0, 5.85), sm('低位', 1.45, 5.85)];
+    cap('CPU 送出位址：低位 bits 選 bank', '其餘高位 bits 選要拿的 word');
+  },
+  async (tok, S) => { // @374 ~four banks, so two bits will be required to select the bank
+    S.k = ok(lg2(4) === 2, '4 個 bank → log₂ 4 = 2 bits 選 bank；4 − 2 = 2 bits 選 word ✓', 2.6, 4.5);
+    relabel(S.F[1], 'bank（2 bits）'); relabel(S.F[0], 'word（2 bits）');
+    cap('4 個 bank，所以要 2 個 bit 選 bank');
+  },
+  async (tok, S) => { // @381 ~lower order bits, zero, zero ... select bank zero ... word within bank zero
+    const a = 0, m = lowMap(a);
+    relabel(S.F[0], b2(a >> 2, 2)); relabel(S.F[1], b2(a & 3, 2));
+    glow(S.B[m.bank], HL); glow(S.cells[a], HL);
+    gone(S.k);
+    S.k = ok(m.bank === 0 && m.word === 0, '位址 0000：低位 00 → bank 0；高位 00 → bank 0 的 word 0 ✓', 2.6, 4.5);
+    const e = lowMap(6);
+    S.k2 = ok(e.bank === 2 && e.word === 1, '再一例（示意）：0110 → 低位 10 = bank 2、高位 01 = word 1 ✓', 0, 0.35);
+    cap('第一個例子：低位 00 → bank 0', '其餘 bits 選 bank 0 裡的 word');
+  },
+  async (tok, S) => { // @392 ~after the first cycle, the state of the system
+    S.st = sm('第 1 個 cycle 後：bank 0 開始存取位址 0000', 0, 4.0);
+    cap('第一個 cycle 之後', '系統狀態像這樣');
+  },
+  async (tok, S) => { // @398 ~subsequent cycles ... overlap
+    gone(S.k2);
+    for (let a = 1; a < 4; a++) { const m = lowMap(a); glow(S.B[m.bank], HL); glow(S.cells[a], HL); relabel(S.F[0], b2(a >> 2, 2)); relabel(S.F[1], b2(a & 3, 2)); await wt(tok, 450); }
+    txt(S.st, '位址 0000、0001、0010、0011 → bank 0、1、2、3：存取彼此重疊');
+    S.k2 = ok([0, 1, 2, 3].map((a) => lowMap(a).bank).join() === '0,1,2,3', '連續 4 個位址落在 4 個不同 bank → 可以重疊 ✓', 0, 0.35);
+    cap('接下來的 cycle', '取資料和選 bank、word 會重疊進行');
+  },
+]);
+
+scene('dram-ilv-high', '例子：4 個 bank 的 high-order interleaving', [
+  async (tok, S) => { // @405 ~same four banked memory ... block of successive memory addresses
+    S.B = [0, 1, 2, 3].map((b) => bx('bank ' + b, NC.mint, -4.5 + b * 3, 3.4, 0, 2.4, 0.5, 0.5));
+    S.cells = [];
+    for (let a = 0; a < 16; a++) { const m = highMap(a); S.cells.push(bx(b2(a, 4), NC.off, -4.5 + m.bank * 3, 2.75 - m.word * 0.48, 0, 1.4, 0.4, 0.3)); }
+    S.h = hd('同樣 4 個 bank；一整塊連續位址放同一個 bank', 0, 6.6);
+    cap('high-order：同樣 4 個 bank', '但一整塊連續位址放在同一個 bank');
+  },
+  async (tok, S) => { // @416 ~most significant two bits will select the bank
+    S.cpu = prop('cpu', -5.2, 5.1, 0, 0.8, 'CPU');
+    S.F = [bx('bank（2 bits）', NC.orange, 0.0, 5.4, 0, 1.4, 0.5, 0.4), bx('word（2 bits）', NC.lilac, 1.45, 5.4, 0, 1.4, 0.5, 0.4)];
+    S.Fl = [sm('高位（MSB）', 0.0, 5.85), sm('低位', 1.45, 5.85)];
+    cap('CPU 送出位址', '最高的 2 個 bit 選 bank');
+  },
+  async (tok, S) => { // @423 ~MSB ... 00 will select bank 0 ... lower order bits ... word
+    const a = 0, m = highMap(a);
+    relabel(S.F[0], b2(a >> 2, 2)); relabel(S.F[1], b2(a & 3, 2));
+    glow(S.B[m.bank], HL); glow(S.cells[a], HL);
+    S.k = ok(m.bank === 0 && m.word === 0, '位址 0000：高位 00 → bank 0；低位 00 → word 0 ✓', 2.6, 4.5);
+    const e = highMap(6);
+    S.k2 = ok(e.bank === 1 && e.word === 2, '再一例（示意）：0110 → 高位 01 = bank 1、低位 10 = word 2 ✓', 0, 0.35);
+    cap('高位 00 選 bank 0', '其餘低位 bits 選 bank 0 裡的 word');
+  },
+  async (tok, S) => { // @436 ~best suited for shared memory systems when the first processor is accessing a bank
+    gone(S.cpu, S.F, S.Fl, S.k);
+    S.p1 = bx('CPU 1', NC.teal, -4.5, 5.4, 0, 1.4, 0.5, 0.4); S.l1 = lk(-4.5, 5.1, -4.5, 3.7, 0x31aab0);
+    glow(S.B[0], HL);
+    S.t = sm('shared memory：CPU 1 正在用 bank 0', 0, 6.1);
+    cap('high-order 最適合共享記憶體系統', 'CPU 1 正在存取一個 bank');
+  },
+  async (tok, S) => { // @448 ~another processor can access another bank
+    S.p2 = bx('CPU 2', NC.purple, 1.5, 5.4, 0, 1.4, 0.5, 0.4); S.l2 = lk(1.5, 5.1, 1.5, 3.7, 0x9b7ef4);
+    glow(S.B[2], OKG);
+    txt(S.t, 'CPU 1 用 bank 0，同時 CPU 2 用 bank 2（不同 bank → 不衝突）');
+    cap('同一時間，另一個處理器', '可以存取另一個 bank');
+  },
+]);
+
+scene('dram-ilv-pros', '優缺點、兩種一起用、bank conflict', [
+  async (tok, S) => { // @451 ~advantages and disadvantages
+    S.hl = hd('low-order', -3.4, 6.6); S.hh = hd('high-order', 3.4, 6.6);
+    S.L = list(-3.4, 6.0, 0.48); S.H = list(3.4, 6.0, 0.48);
+    cap('來看兩種方式的優缺點');
+  },
+  async (tok, S) => { // @455 ~burst mode, reads from sequential location can overlap latencies
+    S.L.add('＋ burst：連續位址的延遲可以重疊（剛剛 28 → 10）', 'good');
+    cap('low-order：burst 模式讀連續位址', '各 word 的延遲可以重疊');
+  },
+  async (tok, S) => { // @467 ~better load sharing between banks
+    S.L.add('＋ 連續位址分散 → 各 bank 負載平均', 'good');
+    cap('連續位址分散開來', 'bank 之間負載比較平均');
+  },
+  async (tok, S) => { // @475 ~non-sequential reads may lead to bank conflicts
+    const hits = [0, 4, 8, 12].map((a) => lowMap(a).bank);
+    S.L.push(ok(hits.every((b) => b === 0), '－ 不連續讀（示意：0, 4, 8, 12）→ 全在 bank 0 → bank conflict ✓', -3.4, 6.0 - S.L.ls.length * 0.48));
+    cap('缺點：不連續的讀取', '可能撞在同一個 bank（bank conflict）');
+  },
+  async (tok, S) => { // @481 ~failure of single bank may lead to failure of entire DRAM
+    S.L.add('－ 每塊資料都分散在所有 bank：壞 1 個 bank 就全部受影響', 'bad');
+    cap('單一 bank 故障', '可能讓整個 DRAM 都不能用');
+  },
+  async (tok, S) => { // @487 ~high-order ... better parallelism ... CPUs in shared memory
+    S.H.add('＋ 共享記憶體：多個 CPU 同時用不同 bank → 平行度好', 'good');
+    cap('high-order：多個 CPU', '可以同時存取不同 bank');
+  },
+  async (tok, S) => { // @501 ~better resilience to entire system failure
+    S.H.add('＋ 壞 1 個 bank 只影響那一塊位址 → 容錯較好', 'good');
+    cap('對整個系統故障的容錯也比較好');
+  },
+  async (tok, S) => { // @507 ~does not support pipeline block access of contiguous memory locations
+    const hits = [0, 1, 2, 3].map((a) => highMap(a).bank);
+    S.H.push(ok(hits.every((b) => b === 0), '－ 連續位址 0, 1, 2, 3 全在 bank 0 → 不能管線化重疊 ✓', 3.4, 6.0 - S.H.ls.length * 0.48));
+    cap('缺點：連續位址的區塊存取', '沒辦法管線化');
+  },
+  async (tok, S) => { // @515 ~combine both the types
+    S.c = hot('兩種可以一起用嗎？可以！', 0, 3.6);
+    cap('兩種可以結合起來嗎？', '答案是可以');
+  },
+  async (tok, S) => { // @522 ~High order ... chip level ... low order ... bank level
+    S.c2 = [bx('chip（high-order 選）', NC.orange, -2.2, 2.7, 0, 3.6, 0.5, 0.4), bx('bank（low-order 選）', NC.sky, 2.2, 2.7, 0, 3.6, 0.5, 0.4)];
+    S.c3 = sm('外層 chip 用 high-order（平行），內層 bank 用 low-order（重疊連續讀）', 0, 2.1);
+    cap('chip 層用 high-order：平行度', 'bank 層用 low-order：重疊延遲');
+  },
+  async (tok, S) => { // @532 ~to conclude ... main memory ... low order ... same bank ... Bank Conflict
+    gone(S.c, S.c2, S.c3);
+    S.K = list(0, 3.6, 0.48); S.K.add('總結：interleaving 用在主記憶體', 'ptr alt');
+    S.K.add('low-order：CPU 接連存取的位址落在同一個 bank → bank conflict', 'bad');
+    cap('總結：low-order 時，接連存取', '落在同一個 bank 就是 bank conflict');
+  },
+  async (tok, S) => { // @549 ~shared memory with high order ... multiple processors ... same bank
+    S.K.add('high-order 共享記憶體：多個 CPU 搶同一個 bank → 衝突', 'bad');
+    cap('high-order 共享記憶體：', '多個處理器搶同一個 bank 也會衝突');
+  },
+  async (tok, S) => { // @558 ~DDR ... optional technique specially for burst mode
+    S.K.add('DDR 等現代記憶體：interleaving 是可選功能，常配合 burst', 'note');
+    cap('現代 DDR 裡，interleaving 是可選的', '特別是配合 burst 模式');
+  },
+  async (tok, S) => { // @566 ~wider memory and wider cache ... alternative
+    S.K.push(ok(T_A + T_M + T_D === 7, '另一條路：更寬的記憶體（示意 4 word 寬：1 + 5 + 1 = 7 cycles 拿 4 個）✓', 0, 3.6 - S.K.ls.length * 0.48));
+    cap('更寬的記憶體、更寬的 cache', '曾被當作 interleaving 的替代方案');
+  },
+]);
+  }
+
   // ═══ vm.js ═══
   {
 const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;

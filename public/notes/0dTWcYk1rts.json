@@ -1,0 +1,423 @@
+{
+ "video": "0dTWcYk1rts",
+ "label": "Memory Interleaving concept",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "開場",
+   "scene": null,
+   "points": [
+    {
+     "t": 0,
+     "text": "講者自我介紹。"
+    }
+   ]
+  },
+  {
+   "title": "為什麼要 interleaving：CPU 太快、記憶體跟不上",
+   "scene": "dram-ilv-gap",
+   "points": [
+    {
+     "t": 9,
+     "text": "CPU 因更好的架構、更高時脈、更深管線而越來越快，記憶體很難及時供應資料。"
+    },
+    {
+     "t": 24,
+     "text": "處理器與記憶體的速度落差（von Neumann bottleneck）拖累整體效率；早期的解法之一就是 memory interleaving。"
+    }
+   ],
+   "trap": "字幕的 born human bottleneck 是 von Neumann bottleneck 的誤聽。",
+   "cues": [
+    9.5,
+    16.0,
+    24.0,
+    39.7,
+    45.0
+   ],
+   "explain": [
+    "CPU 的架構越來越聰明、時脈越來越高、管線越來越深，處理速度越來越快（綠色長條一直變長）。",
+    "可是記憶體供應資料的速度跟不上，CPU 常常等不到資料。",
+    "這個「CPU 快、記憶體慢」造成的瓶頸叫 von Neumann bottleneck（字幕聽成 born human），會讓昂貴的高階處理器沒辦法全力運作。",
+    "為了縮小這個落差，記憶體設計經歷了好幾次演進，早期的一種就是 memory interleaving（記憶體交錯）。",
+    "這支影片會講三件事：它怎麼運作、有哪些類型、各有什麼優缺點。"
+   ]
+  },
+  {
+   "title": "Interleaving：連續位址輪流放到不同 bank",
+   "scene": "dram-ilv-what",
+   "points": [
+    {
+     "t": 56,
+     "text": "Memory interleaving：把連續的記憶體位址輪流分配到多個記憶體單元（bank）。"
+    },
+    {
+     "t": 71,
+     "text": "一個晶片被存取後要恢復一段時間才能再存取；沒有交錯時快速 CPU 只能等（wait state）。"
+    },
+    {
+     "t": 81,
+     "text": "交錯後各 bank 輪流服務：bank 0 送資料時 bank 1 收位址，bank 1 送資料時 bank 0 又能被存取 → 連續 word 之間的延遲大幅縮短。"
+    }
+   ],
+   "cues": [
+    56.0,
+    58.4,
+    71.7,
+    78.0,
+    81.8,
+    96.1,
+    102.7,
+    108.0
+   ],
+   "explain": [
+    "先看 memory interleaving 的意思。上面是 CPU，下面是 4 個 memory bank。",
+    "把連續的位址 0、1、2、3、4…輪流放進不同 bank：位址 0 在 bank 0、1 在 bank 1……4 又回到 bank 0。用 4 個 bank 時，bank 編號 = 位址除以 4 的餘數（示意）。",
+    "為什麼要這樣？因為一個記憶體晶片被存取之後，要先恢復一段時間，才能再被存取（bank 0 變紅）。",
+    "如果連續位址都在同一個晶片，快速的 CPU 就只能停下來等，這段等待叫 wait state。",
+    "有了 interleaving，連續位址在不同 bank，大家輪流服務：bank 0 在恢復時，bank 1 接手。",
+    "所以 bank 0 把資料送給 CPU 的同時，bank 1 已經在接收 CPU 送來的下一個位址。",
+    "等 bank 1 送資料時，bank 0 已經恢復好，又可以被存取了。",
+    "結果，連續幾個 word 之間的等待時間大幅縮短。"
+   ]
+  },
+  {
+   "title": "記憶體的層級：DIMM → rank → chip → bank → cell",
+   "scene": "dram-ilv-hier",
+   "points": [
+    {
+     "t": 113,
+     "text": "主記憶體由記憶體條組成；DIMM 型 SDRAM 有正面和背面，每一面的一組 DRAM 晶片叫 rank。"
+    },
+    {
+     "t": 137,
+     "text": "每顆 DRAM 晶片分成多個 bank；bank 是 row × column 的二維陣列，交叉點是 cell。"
+    },
+    {
+     "t": 152,
+     "text": "Interleaving 可以做在 channel、rank、chip、bank 等層級；最基本的是 bank interleaving：主記憶體分成 bank，位址交錯分配。"
+    }
+   ],
+   "trap": "影片把 DIMM 的 dual 說成「正面和背面」；嚴格說 dual 指兩面接點訊號各自獨立，rank 也不一定剛好等於一面。",
+   "cues": [
+    113.3,
+    118.6,
+    122.3,
+    130.2,
+    137.1,
+    146.3,
+    152.6,
+    168.1,
+    178.6
+   ],
+   "explain": [
+    "在深入之前，先快速看一下記憶體是怎麼組成的。",
+    "主記憶體就是這樣一條條的記憶體條。",
+    "以 DIMM 型的 SDRAM 來說，記憶體條有正面和背面，合起來就是一條 DIMM（雙列直插記憶體模組）。",
+    "每一面上的一組晶片叫一個 rank，rank 是由好幾顆 DRAM 晶片組成的。",
+    "每顆 DRAM 晶片又分成好幾個 bank，每個 bank 是一個由 row（列）和 column（行）組成的二維陣列。",
+    "row 和 column 的交叉點叫 cell，資料就以矩陣的形式存在這些 cell 裡。",
+    "interleaving 可以做在不同層級：多通道記憶體可以在 channel 之間交錯，也可以在 rank 之間、chip 之間交錯。",
+    "但 interleaving 最早、最基本的單位是 bank，所以影片接下來都講以 bank 為單位的 interleaving。",
+    "抽象來看：主記憶體分成好幾個 bank，位址輪流交錯放在這些 bank 上，例如 bank 0 放 0、4、8……"
+   ]
+  },
+  {
+   "title": "非交錯 vs 交錯：7 cycles、28 vs 10",
+   "scene": "dram-ilv-cycles",
+   "points": [
+    {
+     "t": 190,
+     "text": "非交錯：前一次存取完成才能開始下一次；交錯：分散在各 bank 的連續位址可以重疊存取。"
+    },
+    {
+     "t": 232,
+     "text": "假設送位址 1 cycle、存取 5 cycles、回傳 1 cycle → 取一個 word 要 1 + 5 + 1 = 7 cycles。"
+    },
+    {
+     "t": 252,
+     "text": "取 4 個 word：非交錯 4 × 7 = 28 cycles；4 個 bank 交錯 1 + 5 + 4 × 1 = 10 cycles（快 2.8 倍）。"
+    }
+   ],
+   "trap": "這裡的 28 是「每個 word 都重送位址」的算法；課本（P&H）若位址只送一次，非交錯是 1 + 4 × 5 + 4 × 1 = 25。交錯的 10 = 1 + 5 + 4 × 1 兩種算法一致。",
+   "cues": [
+    190.7,
+    200.9,
+    208.9,
+    224.3,
+    232.1,
+    244.2,
+    252.3,
+    261.5,
+    269.7
+   ],
+   "explain": [
+    "用一個例子比較「非交錯」和「交錯」存取。上面一排是非交錯，下面四排是交錯的 4 個 bank，橫軸是時間（cycle）。",
+    "非交錯時，必須等前一次存取完全結束，才能開始下一個位址，所以四個 word 排成一長條。",
+    "交錯時，連續位址分散在不同 bank，各 bank 的存取可以重疊，同樣的資料量總時間大幅減少。",
+    "我們用 cycle 數實際算算看。",
+    "假設：把位址送給 DRAM 要 1 個 cycle（A），DRAM 存取一個 word 要 5 個 cycle，把資料送回來要 1 個 cycle（D）。",
+    "所以取一個 word 要 1 + 5 + 1 = 7 個 cycle。",
+    "非交錯時，4 個 word 一個做完才做下一個：4 × 7 = 28 個 cycle。",
+    "交錯時，每個 cycle 送一個位址給不同 bank，四個 bank 的存取錯開一個 cycle 重疊進行，最後一個在第 10 個 cycle 結束。也就是 1 + 5 + 4 × 1 = 10（和課本公式一樣）。",
+    "28 ÷ 10 = 2.8，交錯存取快了 2.8 倍，存取時間大幅縮短。"
+   ]
+  },
+  {
+   "title": "n-way interleaving：分成幾個 bank",
+   "scene": "dram-ilv-nway",
+   "points": [
+    {
+     "t": 276,
+     "text": "n-way interleaving：主記憶體分成 n 個 bank；2-way = 2 個 bank、4-way = 4 個 bank，選 bank 要 log₂ n bits。"
+    }
+   ],
+   "cues": [
+    276.0,
+    280.0,
+    288.3,
+    295.5,
+    301.8
+   ],
+   "explain": [
+    "接下來是 n-way interleaving（n 路交錯）。",
+    "「幾 way」是看主記憶體被分成幾個 bank。",
+    "2-way 就是分成 2 個 bank。要選 2 個 bank 中的一個，只需要 1 個 bit。",
+    "4-way 就是分成 4 個 bank，選 bank 需要 2 個 bit（00、01、10、11）。",
+    "一般來說 n-way 就是 n 個 bank，選 bank 需要 log₂ n 個 bit，例如 8-way 要 3 bits、16-way 要 4 bits。"
+   ]
+  },
+  {
+   "title": "Low-order vs high-order：哪幾個 bit 選 bank",
+   "scene": "dram-ilv-types",
+   "points": [
+    {
+     "t": 307,
+     "text": "Low-order interleaving：位址的低位 bits 選 bank、高位 bits 選 bank 內的 word → 連續位址分散到各 bank。"
+    },
+    {
+     "t": 332,
+     "text": "High-order interleaving：位址的高位 bits 選 bank、低位 bits 選 word → 一整塊連續位址在同一個 bank。"
+    }
+   ],
+   "trap": "low-order 的「low」是指用位址的低位 bits 選 bank（不是 bank 編號低）；連續位址會分散到不同 bank。",
+   "cues": [
+    307.4,
+    315.3,
+    325.8,
+    332.8,
+    342.5
+   ],
+   "explain": [
+    "interleaving 有兩種：low-order（低位交錯）和 high-order（高位交錯），差別在用位址的哪幾個 bit 來選 bank。",
+    "low-order：用位址最右邊、最低位的幾個 bit（LSB）選 bank，左邊高位的 bits 選 bank 裡的第幾個 word。",
+    "這樣連續位址的低位 bits 一直在變，所以 0、1、2、3 會輪流落在 bank 0、1、2、3（示意 16 個位址、4 個 bank）。",
+    "high-order：反過來，用位址最左邊、最高位的幾個 bit（MSB）選 bank，低位 bits 選 word。",
+    "這樣連續位址的高位 bits 不變，0～3 全在 bank 0、4～7 全在 bank 1，一整塊一整塊分配。"
+   ]
+  },
+  {
+   "title": "例子：4 個 bank 的 low-order interleaving",
+   "scene": "dram-ilv-low",
+   "points": [
+    {
+     "t": 349,
+     "text": "4 個 bank 的 low-order：位址最低 2 bits 選 bank，其餘高位 bits 選 bank 內的 word。"
+    },
+    {
+     "t": 381,
+     "text": "位址低位 00 → bank 0；之後連續位址落在 bank 1、2、3，存取和選 bank／word 在後續 cycle 重疊進行。"
+    }
+   ],
+   "cues": [
+    353.3,
+    356.0,
+    364.5,
+    374.0,
+    381.1,
+    391.5,
+    398.3
+   ],
+   "explain": [
+    "來看具體例子：記憶體分成 4 個 bank。我們用 4-bit 位址、16 個 word 當示意。",
+    "因為是 low-order，連續位址輪流放：0000 在 bank 0、0001 在 bank 1、0010 在 bank 2、0011 在 bank 3，0100 又回到 bank 0。",
+    "CPU 送出位址時，低位的 bits 用來選 bank，其餘高位的 bits 用來選 bank 裡要拿的那個 word。",
+    "有 4 個 bank，所以需要 log₂ 4 = 2 個 bit 選 bank；4-bit 位址剩下 2 bits 選 word。",
+    "第一個例子：位址 0000 的低位 00 選到 bank 0，高位 00 選 bank 0 裡的第 0 個 word。再舉一例：0110 的低位 10 是 bank 2、高位 01 是 word 1。",
+    "第一個 cycle 結束後，bank 0 已經開始處理位址 0000。",
+    "接下來的 cycle，CPU 繼續送 0001、0010、0011，它們落在 bank 1、2、3，所以取資料和選 bank、選 word 可以重疊進行。"
+   ]
+  },
+  {
+   "title": "例子：4 個 bank 的 high-order interleaving",
+   "scene": "dram-ilv-high",
+   "points": [
+    {
+     "t": 405,
+     "text": "同樣 4 個 bank 的 high-order：一整塊連續位址放同一個 bank；位址最高 2 bits 選 bank，低位 bits 選 word。"
+    },
+    {
+     "t": 435,
+     "text": "High-order 最適合共享記憶體的多處理器：一個處理器用某個 bank 時，另一個可以同時用另一個 bank。"
+    }
+   ],
+   "cues": [
+    404.9,
+    416.1,
+    423.3,
+    435.4,
+    448.4
+   ],
+   "explain": [
+    "high-order 用同樣 4 個 bank，唯一的差別是：一整塊連續位址放在同一個 bank。0000～0011 都在 bank 0。",
+    "CPU 送出位址時，最高的 2 個 bit 用來選 bank。",
+    "位址 0000 的高位 00 選 bank 0，低位 00 選 bank 0 裡的 word 0。再舉一例：0110 的高位 01 是 bank 1、低位 10 是 word 2。",
+    "high-order 最適合「共享記憶體」系統，也就是好幾個處理器共用同一塊記憶體。例如 CPU 1 正在存取 bank 0。",
+    "同一時間 CPU 2 可以存取另一個 bank（bank 2），兩個不衝突，可以真正同時進行。"
+   ]
+  },
+  {
+   "title": "優缺點、兩種一起用、bank conflict",
+   "scene": "dram-ilv-pros",
+   "points": [
+    {
+     "t": 451,
+     "text": "Low-order 優點：burst 讀連續位址時延遲可重疊、bank 負載平均；缺點：不連續讀可能 bank conflict，任何一個 bank 壞掉影響所有區塊。"
+    },
+    {
+     "t": 487,
+     "text": "High-order 優點：共享記憶體中多 CPU 可同時用不同 bank、容錯較好；缺點：連續位址在同一 bank，無法管線化區塊存取。"
+    },
+    {
+     "t": 514,
+     "text": "兩者可結合：chip 層用 high-order（平行），bank 層用 low-order（重疊連續讀的延遲）。"
+    },
+    {
+     "t": 531,
+     "text": "Bank conflict：low-order 時連續存取落在同一 bank；high-order 共享記憶體時多個處理器搶同一 bank。DDR 中 interleaving 是可選技術；更寬的記憶體／cache 是另一種替代方案。"
+    }
+   ],
+   "trap": "Low-order 適合「單一處理器連續存取」（重疊延遲）；high-order 適合「多處理器各用一塊」（平行）。不要記反。",
+   "cues": [
+    451.1,
+    455.2,
+    467.0,
+    477.7,
+    480.4,
+    490.4,
+    500.6,
+    506.8,
+    514.7,
+    522.0,
+    535.5,
+    549.1,
+    557.8,
+    565.8
+   ],
+   "explain": [
+    "最後比較兩種方式的優缺點：左邊 low-order，右邊 high-order。",
+    "low-order 的優點：burst 模式讀連續位址時，每個 word 的存取延遲可以重疊，就像剛剛 28 cycles 變 10 cycles。",
+    "另外，連續位址分散到各 bank，每個 bank 分到的工作比較平均（負載平衡）。",
+    "缺點：如果讀取不是連續的，例如位址 0、4、8、12（每次跳 4），在 4 個 bank 的 low-order 下全部落在 bank 0，就會互相卡住，叫 bank conflict。",
+    "另一個缺點：每一塊資料都分散在所有 bank 上，只要一個 bank 壞掉，幾乎所有資料都受影響，整個 DRAM 就不能用了。",
+    "high-order 的優點：在共享記憶體系統裡，不同 CPU 可以同時存取不同 bank，平行度比較好。",
+    "它的容錯也比較好：壞一個 bank 只影響那一整塊位址，其他區塊照常使用。",
+    "缺點：連續位址 0、1、2、3 都在同一個 bank，沒辦法像 low-order 那樣讓連續存取管線化重疊。",
+    "那能不能兩種一起用？答案是可以。",
+    "外層在 chip 層級用 high-order，提供多處理器的平行度；內層在 bank 層級用 low-order，讓連續讀取的延遲可以重疊。",
+    "總結：memory interleaving 用在主記憶體。low-order 時，如果 CPU 接連存取的位址落在同一個 bank，就會發生 bank conflict。",
+    "high-order 的共享記憶體中，如果好幾個處理器同時要用同一個 bank，也會衝突。",
+    "在現在的 DDR 等記憶體技術中，interleaving 是可選的功能，特別常搭配 burst 模式使用。",
+    "另一種提高頻寬的做法是把記憶體和 cache 做寬，例如一次拿 4 個 word 寬的資料，只要 1 + 5 + 1 = 7 cycles（示意），但匯流排和多工器成本比較高。"
+   ]
+  },
+  {
+   "title": "參考資料與致謝",
+   "scene": null,
+   "points": [
+    {
+     "t": 571,
+     "text": "參考資料與致謝。"
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "送位址 1、存取 5、回傳 1 cycle；非交錯（每個 word 都重送位址）取 4 個 word 要幾個 cycle？",
+   "opts": [
+    "28",
+    "10",
+    "7",
+    "25"
+   ],
+   "ans": "28",
+   "why": "每個 word 1 + 5 + 1 = 7，一個接一個：4 × 7 = 28。"
+  },
+  {
+   "q": "同上條件，4 個 bank 的 interleaving 取 4 個 word 要幾個 cycle？",
+   "opts": [
+    "10",
+    "28",
+    "7",
+    "20"
+   ],
+   "ans": "10",
+   "why": "存取彼此重疊：1 + 5 + 4 × 1 = 10。"
+  },
+  {
+   "q": "8-way low-order interleaving 用位址的哪些 bits 選 bank？",
+   "opts": [
+    "最低的 3 bits",
+    "最高的 3 bits",
+    "最低的 8 bits",
+    "最高的 2 bits"
+   ],
+   "ans": "最低的 3 bits",
+   "why": "8 個 bank 需要 log₂ 8 = 3 bits；low-order 用最低位。"
+  },
+  {
+   "q": "4 個 bank、4-bit 位址、low-order interleaving：位址 0110 在哪個 bank？",
+   "opts": [
+    "bank 2",
+    "bank 1",
+    "bank 0",
+    "bank 3"
+   ],
+   "ans": "bank 2",
+   "why": "低 2 bits 是 10 = 2；高 2 bits 01 是 bank 內的 word 1。"
+  },
+  {
+   "q": "同樣 4 個 bank、4-bit 位址，但改成 high-order：位址 0110 在哪個 bank？",
+   "opts": [
+    "bank 1",
+    "bank 2",
+    "bank 0",
+    "bank 3"
+   ],
+   "ans": "bank 1",
+   "why": "高 2 bits 是 01 = 1；低 2 bits 10 是 word 2。"
+  },
+  {
+   "q": "哪一種最適合多個處理器共享記憶體、各用一塊區域？",
+   "opts": [
+    "high-order interleaving",
+    "low-order interleaving",
+    "完全不交錯",
+    "只能用 wider memory"
+   ],
+   "ans": "high-order interleaving",
+   "why": "連續的一整塊位址在同一個 bank，不同處理器用不同 bank 可以真正同時存取。"
+  },
+  {
+   "q": "4 個 bank 的 low-order interleaving，哪一串存取最容易發生 bank conflict？",
+   "opts": [
+    "0, 4, 8, 12",
+    "0, 1, 2, 3",
+    "4, 5, 6, 7",
+    "1, 2, 3, 4"
+   ],
+   "ans": "0, 4, 8, 12",
+   "why": "0、4、8、12 除以 4 的餘數都是 0，全部落在 bank 0。"
+  }
+ ]
+}
