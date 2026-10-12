@@ -59,6 +59,8 @@
   // ── Stage or notes on the right ──
   if (hasStage) {
     $('stage').hidden = false;
+    $('side').classList.add('is-loading');
+    setTimeout(function(){ $('side').classList.remove('is-loading'); }, 15000);
     $('stage').src = labUrl + '&stage=1';
     $('fullTab').hidden = false;
     $('labTab').hidden = false;
@@ -73,6 +75,7 @@
   function stageIsReady(){
     if (stageReady) return;
     stageReady = true;
+    $('side').classList.remove('is-loading');
     const p = pendingScene; pendingScene = null;
     if (p && p.idle) postIdle(p.idle);
     else if (p && sceneFor(p)) postScene(p);
@@ -326,6 +329,7 @@
       events: {
         onReady: function(){
           playerReady = true;
+          document.querySelector('.st-player-wrap').classList.remove('is-loading');
           ytCaptionsOff();
           if (current) player.cueVideoById({videoId: current.id, startSeconds: Number(store.get('yt-pos-' + current.id)) || 0});
         },
@@ -888,10 +892,12 @@
     const el = $('panel-lab');
     if (el.dataset.loaded) return;
     el.dataset.loaded = '1';
+    el.classList.add('is-loading');
     el.innerHTML = '<iframe class="st-lab-frame" src="' + labUrl + '&embed=1" title="互動實驗室" loading="lazy" scrolling="no"></iframe>';
     // the frame is as tall as the lab's own content, so no blank space below it
     const fr = el.querySelector('iframe');
     fr.addEventListener('load', function(){
+      fr.classList.add('ready'); el.classList.remove('is-loading');
       try {
         const doc = fr.contentDocument;
         // no scrollbars inside the lab (the frame grows to fit it anyway)

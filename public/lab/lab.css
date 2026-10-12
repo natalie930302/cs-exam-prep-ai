@@ -191,3 +191,21 @@ body.idle .lab-caption::before { background: var(--bd2); box-shadow: none; }
 @media (prefers-reduced-motion: reduce) {
   .lab-label.icon, .lab-label.zone, .lab-label.note, .lab-label.say { animation: none; }
 }
+
+/* idle stage: a calm placeholder instead of an empty floor */
+body.idle .lab-caption { left: 50% !important; right: auto !important; margin: 0 !important; transform: translate(-50%, -50%) !important; flex-direction: column; align-items: center; gap: 14px; font-size: 14px; font-weight: 600; color: var(--mt); max-width: 80%; }
+body.idle .lab-caption::before {
+  width: 44px; height: 44px; transform: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--subj, var(--ac)) 55%, #fff) 0 30%, color-mix(in srgb, var(--subj, var(--ac)) 18%, transparent) 31% 100%);
+  animation: idle-breathe 2.6s ease-in-out infinite;
+}
+body.idle .lab-caption::after { content: '講到概念時，這裡會出現動畫'; font-size: 12px; font-weight: 400; color: var(--mt); opacity: .75; }
+@keyframes idle-breathe {
+  0%, 100% { transform: scale(.86); box-shadow: 0 0 0 0 color-mix(in srgb, var(--subj, var(--ac)) 30%, transparent); }
+  50% { transform: scale(1); box-shadow: 0 0 0 14px transparent; }
+}
+@media (prefers-reduced-motion: reduce) { body.idle .lab-caption::before { animation: none; } }
+
+/* 全站不顯示捲軸（仍可捲動） */
+html, body, * { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { display: none; width: 0; height: 0; }

@@ -7724,3 +7724,28 @@ body#appRoot .global-search-results { gap: 6px !important; }
 body#appRoot .fab-nav { row-gap: 8px !important; }
 body#appRoot #main > #sec-subjects { padding: 32px !important; }
 body#appRoot #main { padding: 0 !important; }
+
+/* ── 互動元件：統一尺寸、間隔、過渡 ── */
+body#appRoot .ui-btn:not(.ui-btn-icon):not(.fab-btn):not(.chapter-tool-close),
+body#appRoot .ch-study-link {
+  height: 36px !important; min-height: 36px !important; padding: 0 14px !important; border-radius: 12px !important;
+  display: inline-flex !important; align-items: center; justify-content: center; gap: 6px;
+}
+body#appRoot .ui-btn.ui-btn-icon:not(.fab-btn), body#appRoot .nav-btn { width: 36px !important; height: 36px !important; min-height: 36px !important; padding: 0 !important; border-radius: 12px !important; }
+body#appRoot .stabs, body#appRoot .cal-nav { gap: 8px !important; }
+body#appRoot .ui-btn, body#appRoot .ch-study-link, body#appRoot .fab-btn, body#appRoot .global-search-item, body#appRoot .cal-cell, body#appRoot .ch-mat {
+  transition: background-color .16s ease, color .16s ease, border-color .16s ease, box-shadow .16s ease, transform .12s ease !important;
+}
+body#appRoot .ui-btn:active, body#appRoot .ch-study-link:active, body#appRoot .fab-btn:active, body#appRoot .global-search-item:active { transform: scale(.97); }
+
+/* search opens with a soft fade + lift instead of popping */
+@keyframes gs-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gs-dialog-in { from { opacity: 0; transform: translateY(-8px) scale(.98); } to { opacity: 1; transform: none; } }
+body#appRoot .global-search-panel.open { animation: gs-overlay-in .16s ease both; }
+body#appRoot .global-search-panel.open .global-search-dialog { animation: gs-dialog-in .2s cubic-bezier(.2,.8,.2,1) both; }
+body#appRoot .global-search-item { animation: gs-overlay-in .18s ease both; }
+
+@media (prefers-reduced-motion: reduce) {
+  body#appRoot .global-search-panel.open, body#appRoot .global-search-panel.open .global-search-dialog, body#appRoot .global-search-item { animation: none !important; }
+  body#appRoot .ui-btn:active, body#appRoot .ch-study-link:active, body#appRoot .fab-btn:active { transform: none; }
+}

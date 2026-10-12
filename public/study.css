@@ -430,3 +430,67 @@ a { color: inherit; }
 /* 上一支／下一支、上一章／下一章：箭頭圖示置中 */
 #prevVid, #nextVid { display: inline-grid; place-items: center; padding: 0; width: 34px; height: auto; align-self: stretch; flex: 0 0 34px; }
 #prevVid svg, #nextVid svg, .st-chbtn svg { display: block; }
+
+/* ── 載入中：骨架閃光，載好後淡入 ── */
+@keyframes st-shimmer { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+@keyframes st-fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes st-spin { to { transform: rotate(360deg); } }
+.st-player-wrap, .st-side, #panel-lab { position: relative; }
+.st-player-wrap.is-loading::after, .st-side.is-loading::after, #panel-lab.is-loading::after {
+  content: ''; position: absolute; inset: 0; z-index: 3; border-radius: inherit; pointer-events: none;
+  background:
+    linear-gradient(100deg, transparent 30%, rgba(255,255,255,.55) 50%, transparent 70%) 0 0 / 200% 100%,
+    var(--surf2, #f1e9da);
+  animation: st-shimmer 1.4s ease-in-out infinite;
+}
+.st-player-wrap.is-loading::after {
+  background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.07) 50%, transparent 70%) 0 0 / 200% 100%, #1d1810;
+}
+/* small spinner in the middle of a loading box */
+.st-player-wrap.is-loading::before, .st-side.is-loading::before, #panel-lab.is-loading::before {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; z-index: 4;
+  border-radius: 50%; border: 2.5px solid color-mix(in srgb, var(--ac, #5b7a45) 22%, transparent); border-top-color: var(--ac, #5b7a45);
+  animation: st-spin .8s linear infinite; pointer-events: none;
+}
+.st-player-wrap.is-loading::before { border-color: rgba(255,255,255,.15); border-top-color: rgba(255,255,255,.7); }
+#panel-lab.is-loading { min-height: 420px; border-radius: var(--r, 16px); }
+.st-lab-frame { opacity: 0; transition: opacity .3s ease; }
+.st-lab-frame.ready { opacity: 1; }
+.st-stage { animation: st-fade-in .35s ease both; }
+
+/* empty lists before their data arrives: skeleton pills instead of nothing */
+.st-timeline:empty { min-height: 54px; }
+.st-timeline:empty::before {
+  content: ''; flex: 1; border-radius: 12px;
+  background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.6) 50%, transparent 70%) 0 0 / 200% 100%, var(--surf2, #f1e9da);
+  -webkit-mask: repeating-linear-gradient(90deg, #000 0 150px, transparent 150px 158px);
+          mask: repeating-linear-gradient(90deg, #000 0 150px, transparent 150px 158px);
+  animation: st-shimmer 1.4s ease-in-out infinite;
+}
+.st-now-sec:empty::before, .st-vlist:empty::before {
+  content: ''; display: block; height: 14px; width: 200px; max-width: 70%; border-radius: 7px;
+  background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.6) 50%, transparent 70%) 0 0 / 200% 100%, var(--surf2, #f1e9da);
+  animation: st-shimmer 1.4s ease-in-out infinite;
+}
+.st-vlist:empty::before { height: 94px; width: 100%; max-width: none; border-radius: 14px; }
+
+/* tab panels and lists fade in instead of popping */
+.st-panel:not([hidden]) { animation: st-fade-in .22s ease both; }
+.st-timeline > *, .st-vlist > * { animation: st-fade-in .25s ease both; }
+
+/* ── 互動元件：統一尺寸、間隔、過渡 ── */
+.st-btn, .st-back, .st-chbtn, .st-seg, .st-pt, .st-v, .st-tabs button {
+  transition: background-color .16s ease, color .16s ease, border-color .16s ease, box-shadow .16s ease, transform .12s ease !important;
+}
+.st-btn:active, .st-back:active, .st-chbtn:active, .st-seg:active, .st-v:active { transform: scale(.97); }
+.st-btn, .st-back { height: 36px; padding: 0 14px; border-radius: 12px; display: inline-flex; align-items: center; gap: 6px; }
+.st-chbtn, #prevVid, #nextVid { width: 36px !important; height: 36px !important; padding: 0 !important; border-radius: 12px; flex: 0 0 36px !important; align-self: center !important; }
+.st-chnav, .st-now-actions, .st-walk-btns { gap: 8px !important; }
+.st-timeline { gap: 8px !important; }
+.st-tabs { gap: 4px !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .st-player-wrap.is-loading::after, .st-side.is-loading::after, #panel-lab.is-loading::after,
+  .st-timeline:empty::before, .st-now-sec:empty::before, .st-vlist:empty::before,
+  .st-panel:not([hidden]), .st-timeline > *, .st-vlist > *, .st-stage { animation: none !important; }
+}
