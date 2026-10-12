@@ -1725,7 +1725,7 @@ async function init(){
 
     var subjectPlaylists = SUBJECT_PLAYLISTS[s.id] || [];
     // always open: a plain card, no toggle
-    var videosHtml = '<div class="rec-books rec-series rec-fixed"><div class="rec-books-hd">本科完整影片系列素材 <span class="rec-count">'+subjectPlaylists.length+' 套</span></div><div class="rec-books-body">'
+    var videosHtml = '<div class="rec-books rec-series rec-fixed"><div class="rec-books-body">'
       + subjectPlaylists.map(function(series){
           return '<div class="rec-book-row rec-series-row"><div class="rec-book-body">'
             +'<a class="rec-book-name" href="'+series.url+'" target="_blank" rel="noopener">'+series.name+'</a>'
