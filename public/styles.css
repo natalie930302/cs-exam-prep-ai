@@ -7580,3 +7580,10 @@ body#appRoot .rec-book-note { margin-top: 0 !important; }
 /* 系列素材每一列、進度卡每一格：上下 10px，左右 0 */
 body#appRoot #main #sec-subjects .sp .rec-book-row.rec-series-row,
 body#appRoot #main #sec-subjects .sp .smeta .sm { padding: 10px 0 !important; }
+/* 系列素材標題：不撐高、不拉字距，跟下面的列緊貼 */
+body#appRoot #main #sec-subjects .rec-books.rec-series .rec-books-hd {
+  min-height: 0 !important; height: auto !important; padding: 0 0 6px !important; margin: 0 !important;
+  display: flex !important; align-items: baseline !important; gap: 8px;
+  font-size: 14px !important; font-weight: 700 !important; letter-spacing: 0 !important; color: var(--tx) !important;
+}
+body#appRoot #main #sec-subjects .rec-books.rec-series .rec-count { font-size: 12px !important; font-weight: 500 !important; letter-spacing: 0 !important; color: var(--mt) !important; }
