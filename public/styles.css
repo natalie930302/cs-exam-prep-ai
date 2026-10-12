@@ -7536,3 +7536,11 @@ body#appRoot #sec-schedule > .sh { margin: 0 0 16px !important; }
   body#appRoot .sec > .sh { font-size: 24px !important; padding-right: 132px; white-space: nowrap; }
   body#appRoot .fab-nav .fab-btn, body#appRoot .fab-nav .fab-btn.pill { width: 34px !important; height: 34px !important; }
 }
+
+/* AI 助教回到右上角的懸浮鈕組（第三顆）；分頁本身照常顯示 */
+body#appRoot .fab-nav .fab-btn[data-sec="ai"] { display: grid !important; position: relative; }
+body#appRoot .fab-nav .fab-btn .pill-unread { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--red, #d64545); }
+@media (max-width: 759px) { body#appRoot .sec > .sh { padding-right: 176px; } }
+@media (max-width: 759px) { body#appRoot .sec > .sh { font-size: 21px !important; } }
+body#appRoot #sec-ai .ss { display: none !important; }
+body#appRoot #sec-ai > .sh { margin-bottom: 16px !important; }
