@@ -1776,7 +1776,7 @@ async function init(){
         // key points and peer notes live inside the chapter (study room), next
         // to the video parts that teach them; the card stays a plain list
         +'<div class="ch-section">'+chapterStudyHtml(s.id,idx)+'</div>'
-        +'<div class="ch-section"><div class="ch-section-lbl">本章影片 · 全部 '+displayMats.length+' 支，依序看完</div><div class="ch-mats">'+(matsHtml||'<div class="ch-video-empty">這章沒有指定影片</div>')+'</div></div>'
+        +'<div class="ch-section"><div class="ch-mats">'+(matsHtml||'<div class="ch-video-empty">這章沒有指定影片</div>')+'</div></div>'
         +'</div></div>'
         +'</div></div>';
     }).join('');
