@@ -44,7 +44,7 @@
   document.title = chapter.t + '｜學習空間';
   $('kicker').textContent = subject.name + '・第 ' + (chIndex + 1) + ' 章' + (chapter.hrs ? '・預估 ' + chapter.hrs : '');
   $('chTitle').textContent = chapter.t;
-  $('backLink').href = '/#subjects';
+  $('backLink').href = '/#/subjects/' + subject.id + '/' + (chIndex + 1);
   function chLink(el, i){
     if (i < 0 || i >= subject.chapters.length) { el.setAttribute('aria-disabled', 'true'); return; }
     el.href = studyRoomUrl(subject.id, i);
@@ -275,7 +275,7 @@
       : '<span class="st-badge none">動畫製作中</span> 這支影片還沒有動畫，可以先看影片和字幕';
     activeSeries = si;
     store.set('study-last-' + chKey, id);
-    history.replaceState(null, '', videoRoomUrl(subject.id, chIndex, id));
+    history.replaceState(null, '', roomUrl(id));
     $('nowSeries').textContent = s.name + '・第 ' + (i + 1) + ' / ' + s.options.length + ' 支' + (opt.dur ? '・' + opt.dur : '');
     $('nowTitle').textContent = opt.label;
     $('prevVid').disabled = i === 0;
@@ -851,7 +851,15 @@
 
   // ── Tabs ──
   const TABS = ['videos', 'full', 'lab', 'quiz', 'goals'];
+  // The address carries the open video (v) and the open tab (t), so a
+  // refresh or a shared link reopens exactly this view.
+  let currentTab = 'videos';
+  function roomUrl(id){
+    return videoRoomUrl(subject.id, chIndex, id || (current && current.id)) + (currentTab !== 'videos' ? '&t=' + currentTab : '');
+  }
   function setTab(tab){
+    currentTab = tab;
+    history.replaceState(null, '', roomUrl());
     document.querySelectorAll('.st-tabs button').forEach(function(b){ b.setAttribute('aria-selected', String(b.dataset.tab === tab)); });
     TABS.forEach(function(t){ $('panel-' + t).hidden = t !== tab; });
     if (tab === 'lab') renderLab();
@@ -948,7 +956,7 @@
     if (start) playVideo(start[0], start[1], false);
     else { $('player').outerHTML = '<div class="st-empty-player">這章沒有指定影片。</div>'; renderSeriesChips(); renderVideoList(); }
     $('followChk').onchange = function(e){ follow = e.target.checked; };
-    const tab = store.get('study-tab');
+    const tab = new URLSearchParams(location.search).get('t') || store.get('study-tab');
     const usable = tab && $('panel-' + tab) && !((tab === 'lab' || tab === 'full') && !hasStage);
     setTab(usable ? tab : 'videos');
   })();

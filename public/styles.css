@@ -7544,3 +7544,34 @@ body#appRoot .fab-nav .fab-btn .pill-unread { position: absolute; top: 6px; righ
 @media (max-width: 759px) { body#appRoot .sec > .sh { font-size: 21px !important; } }
 body#appRoot #sec-ai .ss { display: none !important; }
 body#appRoot #sec-ai > .sh { margin-bottom: 16px !important; }
+
+/* ── AI 助教：懸浮對話框（右上按鈕組左邊展開），只有對話 ── */
+body#appRoot .ai-float {
+  position: fixed; top: 16px; right: 88px; z-index: 70;
+  width: min(380px, calc(100vw - 112px)); height: min(560px, calc(100vh - 32px));
+  display: flex; flex-direction: column; gap: 8px; padding: 12px 12px 12px;
+  background: var(--surf); border: 1px solid var(--bd); border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(46, 36, 24, .18);
+}
+body#appRoot .ai-float[hidden] { display: none !important; }
+body#appRoot .ai-float-hd { display: flex; align-items: center; gap: 8px; padding: 2px 4px 6px; border-bottom: 1px solid var(--bd); }
+body#appRoot .ai-float-hd b { font-size: 15px; margin-right: auto; }
+body#appRoot .ai-float-new { border: 1px solid var(--bd); background: var(--surf); color: var(--mt2, var(--mt)); font-size: 12px; padding: 4px 10px; border-radius: 999px; cursor: pointer; }
+body#appRoot .ai-float-new:hover { color: var(--tx); border-color: var(--bd2, var(--bd)); }
+body#appRoot .ai-float-x { width: 28px; height: 28px; border: 0; background: transparent; font-size: 20px; line-height: 1; color: var(--mt); border-radius: 50%; cursor: pointer; }
+body#appRoot .ai-float-x:hover { background: var(--surf2); color: var(--tx); }
+body#appRoot .ai-float .chat-log { flex: 1; min-height: 0; overflow-y: auto; max-height: none !important; height: auto !important; margin: 0 !important; }
+body#appRoot .ai-float .chat-status:empty { display: none; }
+body#appRoot .ai-float .chat-input-row { display: flex; gap: 8px; margin: 0 !important; }
+body#appRoot .ai-float .chat-input { flex: 1; min-width: 0; }
+@media (max-width: 759px) {
+  body#appRoot .ai-float { top: 64px; right: 8px; left: 8px; width: auto; height: calc(100vh - 80px); }
+}
+
+/* 六科左欄兩張卡＋右邊章節清單：內距統一 16px */
+body#appRoot #main .sp .subject-overview-card { padding: 16px !important; }
+body#appRoot #main .sp .rec-books.rec-series { padding: 16px !important; }
+body#appRoot #main .sp .rec-books.rec-series .rec-books-hd { padding: 0 0 6px !important; }
+body#appRoot #main .sp .rec-books.rec-series .rec-books-body { padding: 0 !important; }
+body#appRoot #main .sp .ch-list { padding: 16px !important; }
+body#appRoot #main #sec-subjects > #spPanels > .sp.on > :is(.subject-overview-card, .ch-list), body#appRoot #main #sec-subjects > #spPanels > .sp.on > .sp-rec-row > .rec-series { padding: 16px !important; }

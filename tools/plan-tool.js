@@ -370,6 +370,15 @@ function usage() {
 // A week's queue task (w<N>-video) or one video (vid-<youtube id>).
 const TASK_ID_RE = /^(w([1-9]|1[0-9])-video|vid-[\w-]{11})$/;
 
+// The assistant only talks (and keeps long-term memories): it may read the
+// plan to answer questions, but never changes progress, dates or scores.
+const CHANGES_PROGRESS = new Set(['record-practice-result', 'record-review-result', 'log-study-time',
+  'set-start-date', 'mark-done', 'mark-undone', 'mark-checklist-done', 'mark-checklist-undone']);
+if (CHANGES_PROGRESS.has(cmd)) {
+  console.log(JSON.stringify({ ok: false, error: 'AI 助教只負責對話和記憶，不能修改進度、日期或成績；請使用者自己在網站上操作。' }));
+  process.exit(1);
+}
+
 switch (cmd) {
   case 'get-status': {
     out({ start_date: db.getStartDate(), queue: queueStatus() });

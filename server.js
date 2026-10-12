@@ -469,7 +469,7 @@ app.post('/api/chat', async (req, res) => {
       cleanText(rawStudyContext.daily_energy, 20) ? `今日精神狀態=${cleanText(rawStudyContext.daily_energy, 20)}` : '今日精神狀態=未回報',
       Number.isFinite(Number(rawStudyContext.today_study_minutes)) ? `今日實際計時=${Math.max(0, Number(rawStudyContext.today_study_minutes))}分鐘` : '',
     ].filter(Boolean);
-    snapshotNote = '網站同步快照：' + parts.join('；') + '。快照只用來理解目前畫面與提供更主動的下一步；回答規劃類問題時，在正常回答後主動收斂成一個最值得立刻執行的行動。若使用者詢問精確進度、是否落後或要求變更任務，仍須依 AGENTS.md 執行規劃工具查證，不可只信快照。';
+    snapshotNote = '網站同步快照：' + parts.join('；') + '。快照只用來理解目前畫面；只回答使用者問的，不要主動附加計畫或行動建議。若使用者詢問精確進度或是否落後，仍須依 AGENTS.md 用唯讀查詢工具查證，不可只信快照；不能替使用者修改任何進度。';
   }
   const contextNotes = [uiContext ? '網站目前瀏覽情境：' + uiContext + '。' : '', snapshotNote].filter(Boolean).join('\n');
   const contextualMessage = contextNotes ? '（' + contextNotes + '）\n\n' + message : message;
@@ -626,6 +626,12 @@ app.get('/api/checkin', async (req, res) => {
   db.setDailyCheckin(today, result.reply);
   db.addChatMessage('assistant', result.reply);
   res.json({ date: today, message: result.reply, isNew: true });
+});
+
+// Readable paths open the same views as the hash routes in app.js:
+// /calendar[/YYYY-MM-DD] and /subjects[/subj[/chapter]].
+app.get(/^\/(calendar|subjects)(\/[\w-]+){0,2}\/?$/, (req, res) => {
+  res.redirect('/#' + req.path.replace(/\/$/, ''));
 });
 
 app.listen(PORT, () => {

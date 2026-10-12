@@ -988,6 +988,7 @@ function goCalDay(iso){
   calSelectedIso = iso;
   pendingCalMotion = 'none';
   renderCalContainer();
+  writeRoute('#/calendar/' + iso, true);
 }
 
 // ── Day-by-day video plan: starting today, the unwatched videos are laid
@@ -1430,7 +1431,7 @@ function renderAiContextDock(){
   const actions = document.getElementById('aiContextActions');
   const nudgeEl=document.getElementById('aiContextNudge'),peek=document.getElementById('aiContextPeek');
   if(!dock || !title || !actions) return;
-  const onAiPage = document.getElementById('sec-ai').classList.contains('on');
+  const onAiPage = true; // the assistant is a floating chat now; the context dock stays hidden
   const active=document.querySelector('.sec.on');
   const nudge=aiProactiveNudge(active?active.id.replace('sec-',''):'schedule');
   const homeNudge=document.getElementById('aiHomeNudge');
@@ -1542,7 +1543,7 @@ function useAiContextPrompt(index){
 }
 function openAiWithPrompt(text){
   closeAiContextDock();
-  goSec('ai');
+  toggleAiPanel(true);
   setTimeout(function(){
     const input = document.getElementById('chatInput');
     if(!input) return;
@@ -1568,6 +1569,8 @@ function goSec(id, el){
   // the Today-page banner directly.
   if(id === 'ai') markCheckinSeen(isoDate(new Date()));
   setTimeout(renderAiContextDock,0);
+  if(id === 'schedule') writeRoute('#/calendar' + (calSelectedIso ? '/' + calSelectedIso : ''));
+  else if(id === 'subjects') writeRoute(subjectsRoute());
 }
 
 // ── Init ──────────────────────────────────────────────────────────
@@ -1696,6 +1699,7 @@ async function init(){
       document.getElementById('sp-'+this.dataset.id).classList.add('on');
       document.getElementById('sp-'+this.dataset.id).setAttribute('aria-hidden','false');
       setTimeout(renderAiContextDock,0);
+      if(document.getElementById('sec-subjects').classList.contains('on')) writeRoute(subjectsRoute());
     };
     stabs.appendChild(t);
 
@@ -1866,6 +1870,7 @@ async function init(){
         var collapsed = row.classList.toggle('collapsed');
         head.setAttribute('aria-expanded', String(!collapsed));
         setTimeout(renderAiContextDock,0);
+        writeRoute(subjectsRoute(), true);
       });
       head.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); head.click(); } });
     });
@@ -2006,8 +2011,9 @@ async function init(){
   const cur = nextFoundationTask(DONE_TASK_IDS), curSub = cur && SUBJECTS.find(function(s){ return s.name === cur.subject; });
   const curTab = curSub && document.querySelector('.stab[data-id="'+curSub.id+'"]');
   if(curTab) curTab.click();
-  // Links like the study room's 「← 六科」 point at /#subjects.
-  if(location.hash === '#subjects') goSec('subjects', document.querySelector('.pill[data-sec="subjects"]'));
+  // The URL decides what opens: #/calendar[/YYYY-MM-DD], #/subjects[/subj[/chapter]]
+  applyRoute(true);
+  window.addEventListener('popstate', function(){ applyRoute(false); });
 }
 
 init();
@@ -2389,4 +2395,79 @@ function renderRestart(){
     + '<div class="rs-grid-wrap"><span class="rs-grid-lbl">最近 14 天</span><span class="rs-grid">'+cells+'</span><span class="rs-grid-note">這 7 天有讀書 '+st.last7Studied+' 天</span></div>'
     + '<div class="rs-msg" id="restartMsg">'+(done ? '今天的目標完成了。多讀是加分，不讀也沒關係。' : '讀一小段就算數，不用補昨天的。')+'</div>';
   card.hidden = false;
+}
+
+// ── AI 助教：右上角按鈕開關的懸浮對話框 ──
+let aiHistoryLoaded = false;
+function toggleAiPanel(open){
+  const panel = document.getElementById('aiPanel');
+  const btn = document.querySelector('.fab-btn[data-sec="ai"]');
+  if(!panel) return;
+  const show = open === undefined ? panel.hidden : !!open;
+  panel.hidden = !show;
+  if(btn){ btn.classList.toggle('on', show); btn.setAttribute('aria-expanded', String(show)); }
+  if(show){
+    if(!aiHistoryLoaded){ aiHistoryLoaded = true; loadChatHistory(); }
+    markCheckinSeen(isoDate(new Date()));
+    const log = document.getElementById('chatLog'); if(log) log.scrollTop = log.scrollHeight;
+    const input = document.getElementById('chatInput'); if(input) setTimeout(function(){ input.focus(); }, 50);
+  }
+}
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){ const p = document.getElementById('aiPanel'); if(p && !p.hidden) toggleAiPanel(false); }
+});
+
+// ── Router ──
+// Every view has its own address, so back/forward, refresh and bookmarks
+// land on the same place:
+//   #/calendar                 the month calendar
+//   #/calendar/2026-10-15      …with that day's list open
+//   #/subjects/ds              六科, on 資料結構
+//   #/subjects/ds/3            …with chapter 3 open
+// (old links "#subjects" still work.)
+let routing = false;
+function writeRoute(hash, replace){
+  if(routing || location.hash === hash) return;
+  if(replace) history.replaceState(null, '', hash); else history.pushState(null, '', hash);
+}
+function subjectsRoute(){
+  const tab = document.querySelector('.stab.on'); if(!tab) return '#/subjects';
+  const rows = Array.from(document.querySelectorAll('#sp-' + tab.dataset.id + ' .ch-row'));
+  const open = rows.findIndex(function(r){ return !r.classList.contains('collapsed'); });
+  return '#/subjects/' + tab.dataset.id + (open >= 0 ? '/' + (open + 1) : '');
+}
+function applyRoute(initial){
+  const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+  routing = true;
+  try {
+    if(parts[0] === 'subjects'){
+      goSec('subjects');
+      const subj = parts[1] && SUBJECTS.find(function(x){ return x.id === parts[1]; });
+      if(subj){
+        const tab = document.querySelector('.stab[data-id="' + subj.id + '"]'); if(tab) tab.click();
+        const rows = document.querySelectorAll('#sp-' + subj.id + ' .ch-row');
+        const n = parseInt(parts[2], 10);
+        rows.forEach(function(r, i){
+          const open = i === n - 1;
+          r.classList.toggle('collapsed', !open);
+          const head = r.querySelector('[data-chtoggle]'); if(head) head.setAttribute('aria-expanded', String(open));
+        });
+        if(n >= 1 && rows[n - 1]) setTimeout(function(){ rows[n - 1].scrollIntoView({behavior: initial ? 'auto' : 'smooth', block: 'start'}); }, 0);
+        else window.scrollTo(0, 0);
+      }
+    } else {
+      const day = /^\d{4}-\d{2}-\d{2}$/.test(parts[1] || '') ? parts[1] : null;
+      if(day){
+        calSelectedIso = day;
+        const d = new Date(day + 'T12:00:00');
+        if(typeof calMonthCursor !== 'undefined' && !isNaN(d)) calMonthCursor = new Date(d.getFullYear(), d.getMonth(), 1);
+        pendingCalMotion = 'none';
+        renderCalContainer();
+      }
+      goSec('schedule');
+    }
+  } finally { routing = false; }
+  // normalise the address (e.g. "" or the old "#subjects") without a new history entry
+  const want = document.getElementById('sec-subjects').classList.contains('on') ? subjectsRoute() : '#/calendar' + (calSelectedIso && parts[1] ? '/' + calSelectedIso : '');
+  if(location.hash !== want) history.replaceState(null, '', want);
 }
