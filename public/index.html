@@ -21,13 +21,11 @@
   <nav class="fab-nav" id="pillnav" aria-label="主要功能">
     <button class="pill fab-btn on" type="button" data-sec="schedule" aria-current="page" onclick="goSec('schedule',this)" aria-label="日曆" title="日曆"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
     <button class="pill fab-btn" type="button" data-sec="subjects" onclick="goSec('subjects',this)" aria-label="六科" title="六科"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></button>
-    <button class="fab-btn" type="button" data-sec="ai" aria-expanded="false" onclick="toggleAiPanel()" aria-label="AI 助教" title="AI 助教"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="pill-unread" id="aiUnreadDot" style="display:none;"></span></button>
     <button class="fab-btn global-search-toggle" type="button" onclick="openGlobalSearch()" aria-label="搜尋章節與資源" title="搜尋（Ctrl+K）"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
   </nav>
 
   <!-- ══════════ 日曆 ══════════ -->
   <div class="sec on" id="sec-schedule" aria-hidden="false">
-    <div class="checkin-banner" id="checkinBanner" style="display:none;"></div>
     <section class="restart-card" id="restartCard" aria-label="重啟模式" hidden></section>
 
     <div class="sh">備考日曆</div>
@@ -70,21 +68,6 @@
     <div class="uni-grid" id="uniGrid"></div>
   </div>
 
-  <!-- ══════════ AI 助教：懸浮對話框（只聊天，會記住長期的事） ══════════ -->
-  <section class="ai-float" id="aiPanel" role="dialog" aria-label="AI 助教" hidden>
-    <div class="ai-float-hd">
-      <b>AI 助教</b>
-      <button class="ai-float-new" type="button" onclick="resetChat()" title="清掉對話；AI 記得的長期事實會保留">開始新對話</button>
-      <button class="ai-float-x" type="button" onclick="toggleAiPanel(false)" aria-label="關閉">×</button>
-    </div>
-    <div class="chat-log" id="chatLog" role="log" aria-live="polite" aria-relevant="additions"></div>
-    <div class="chat-status" id="chatStatus" role="status" aria-live="polite"></div>
-    <div class="ai-compose">
-      <input type="text" id="chatInput" class="ai-compose-input" aria-label="輸入給 AI 助教的問題" placeholder="問 AI 問題…" />
-      <button class="ai-compose-mic voice-input-btn" type="button" onclick="startVoiceInput('chatInput',this)" aria-label="語音輸入" title="語音輸入"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="22"/></svg></button>
-      <button class="ai-compose-send" id="chatSendBtn" type="button" onclick="sendChat()" aria-label="送出" title="送出"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
-    </div>
-  </section>
 </main>
 
 <div class="task-toast" id="taskToast" role="status" aria-live="polite"></div>

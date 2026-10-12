@@ -2415,25 +2415,7 @@ function renderRestart(){
   card.hidden = false;
 }
 
-// ── AI 助教：右上角按鈕開關的懸浮對話框 ──
-let aiHistoryLoaded = false;
-function toggleAiPanel(open){
-  const panel = document.getElementById('aiPanel');
-  const btn = document.querySelector('.fab-btn[data-sec="ai"]');
-  if(!panel) return;
-  const show = open === undefined ? panel.hidden : !!open;
-  panel.hidden = !show;
-  if(btn){ btn.classList.toggle('on', show); btn.setAttribute('aria-expanded', String(show)); }
-  if(show){
-    if(!aiHistoryLoaded){ aiHistoryLoaded = true; loadChatHistory(); }
-    markCheckinSeen(isoDate(new Date()));
-    const log = document.getElementById('chatLog'); if(log) log.scrollTop = log.scrollHeight;
-    const input = document.getElementById('chatInput'); if(input) setTimeout(function(){ input.focus(); }, 50);
-  }
-}
-document.addEventListener('keydown', function(e){
-  if(e.key === 'Escape'){ const p = document.getElementById('aiPanel'); if(p && !p.hidden) toggleAiPanel(false); }
-});
+function toggleAiPanel(){}
 
 // ── Router ──
 // Every view has its own address, so back/forward, refresh and bookmarks
