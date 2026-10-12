@@ -1230,7 +1230,6 @@ tip:"Pipeline與Cache是核心章節。Pipeline要能手算Hazard與CPI，Cache�
   {n:"主題6",t:"記憶體系統",sub:"Main Memory、DRAM、Memory Interleaving",pri:"hi",hrs:"6hr",wk:null,
    key:"DRAM存取流程（RAS/CAS）、Memory Interleaving如何降低存取延遲、記憶體頻寬計算",
    mats:[
-    {type:"vid",text:"Computer Organization & Architecture - Memory Interleaving",url:"https://www.youtube.com/watch?v=3SA_iJD2KJo",dur:"12:11"},
     {type:"vid",text:"黃婷婷教授計算機結構_第25A講 Memory",url:"https://www.youtube.com/watch?v=JqxIZlm23R8",dur:"49:19"},
     {type:"vid",text:"黃婷婷教授計算機結構_第25B講 Memory",url:"https://www.youtube.com/watch?v=CDpUW5B9EbA",dur:"47:46"},
     {type:"vid",text:"黃婷婷教授計算機結構_第26A講 Memory",url:"https://www.youtube.com/watch?v=Jtulk55Q1Ls",dur:"46:15"},
