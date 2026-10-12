@@ -2038,7 +2038,10 @@ async function loadChatHistory(){
       renderChatFollowups();
       return;
     }
-    log.innerHTML = j.messages.map(function(m){ return chatBubbleHtml(m.role, m.content); }).join('');
+    // Daily check-ins pile up as back-to-back assistant messages nobody
+    // replied to; keep only the last of each such run.
+    const msgs = j.messages.filter(function(m,i,a){ return !(m.role==='assistant' && a[i+1] && a[i+1].role==='assistant'); });
+    log.innerHTML = msgs.map(function(m){ return chatBubbleHtml(m.role, m.content); }).join('');
     log.scrollTop = log.scrollHeight;
     renderChatFollowups();
   }catch(e){
@@ -2213,21 +2216,16 @@ async function importProgressBackup(file){
 }
 
 function globalSearchCatalog(){
+  // chapters (open on 六科) and every lecture video (open in the study room)
   const items = [];
   SUBJECTS.forEach(function(s){
     s.chapters.forEach(function(c,idx){
-      items.push({type:s.name,title:c.t,detail:c.sub+' '+c.key,action:'chapter',subject:s.name,index:idx});
+      items.push({kind:'章節',subj:s,title:'第'+(idx+1)+'章 '+c.t,detail:c.sub || '',searchText:c.key||'',action:'chapter',subject:s.name,index:idx});
+      chapterDisplayMaterials(c).forEach(function(m){
+        if(!m.videoId) return;
+        items.push({kind:'影片',subj:s,title:m.text,detail:'第'+(idx+1)+'章 '+c.t+(m.dur?'・'+m.dur:''),href:studyRoomUrl(s.id,idx,m.videoId)});
+      });
     });
-  });
-  Object.keys(SUBJECT_PLAYLISTS).forEach(function(id){
-    SUBJECT_PLAYLISTS[id].forEach(function(p){ items.push({type:'完整課程',title:p.name,detail:'YouTube Playlist',url:p.url}); });
-  });
-  MATS.forEach(function(m){
-    const url = m.url || (m.urls && m.urls[0] && m.urls[0].url);
-    if(url) items.push({type:m.type,title:m.name,detail:m.st || '',url:url});
-  });
-  UNIS.forEach(function(u,idx){
-    items.push({type:'學校',title:u.name,detail:u.en+'｜115考試 '+u.exam,searchText:u.subjs.join(' '),action:'school',index:idx});
   });
   return items;
 }
@@ -2247,26 +2245,40 @@ function closeGlobalSearch(){
   if(wasOpen&&globalSearchReturnFocus?.isConnected)globalSearchReturnFocus.focus();
   globalSearchReturnFocus=null;
 }
+let globalSearchActive=0;
 function renderGlobalSearch(query){
   const out = document.getElementById('globalSearchResults');
   const announcement = document.getElementById('globalSearchAnnouncement');
   if(!out) return;
   const q = String(query||'').trim().toLowerCase();
-  if(!q){ out.innerHTML='<div class="global-search-empty">輸入考點、章節、學校或素材名稱</div>'; if(announcement)announcement.textContent=''; return; }
-  const matches = globalSearchCatalog().filter(function(x){ return (x.title+' '+x.detail+' '+(x.searchText||'')+' '+x.type).toLowerCase().includes(q); }).slice(0,24);
+  globalSearchActive = 0;
+  if(!q){ out.innerHTML='<div class="global-search-empty">輸入章節、考點或影片名稱，例如 AVL、Page Fault、Jordan</div>'; if(announcement)announcement.textContent=''; return; }
+  const all = globalSearchCatalog().filter(function(x){ return (x.title+' '+x.detail+' '+(x.searchText||'')+' '+x.subj.name).toLowerCase().includes(q); });
+  // chapters first, then videos; at most 30
+  const matches = all.filter(function(x){return x.kind==='章節';}).concat(all.filter(function(x){return x.kind==='影片';})).slice(0,30);
   if(announcement) announcement.textContent = matches.length ? '找到 '+matches.length+' 筆結果' : '找不到符合的結果';
-  out.innerHTML = matches.length ? matches.map(function(x){
-    const action = x.action === 'chapter' ? 'goSearchChapter(\''+x.subject+'\','+x.index+')' : x.action === 'school' ? 'goSearchSchool('+x.index+')' : '';
-    const tag = x.url ? 'a href="'+x.url+'" target="_blank" rel="noopener"' : 'button type="button" onclick="'+action+'"';
-    const close = x.url ? 'a' : 'button';
-    return '<'+tag+' class="global-search-item"><span class="global-search-type">'+escapeHtml(x.type)+'</span><span><b>'+escapeHtml(x.title)+'</b><small>'+escapeHtml(x.detail)+'</small></span></'+close+'>';
-  }).join('') : '<div class="global-search-empty">找不到符合的章節或資源</div>';
+  out.innerHTML = matches.length ? matches.map(function(x,i){
+    const open = x.href ? 'a href="'+x.href+'"' : 'button type="button" onclick="goSearchChapter(\''+x.subject+'\','+x.index+')"';
+    const close = x.href ? 'a' : 'button';
+    return '<'+open+' class="global-search-item'+(i===0?' active':'')+'" style="--gs-c:'+(x.subj.color||'var(--ac)')+'">'
+      +'<span class="gs-kind">'+escapeHtml(x.subj.name)+'<i>'+x.kind+'</i></span>'
+      +'<span class="gs-text"><b>'+escapeHtml(x.title)+'</b>'+(x.detail?'<small>'+escapeHtml(x.detail)+'</small>':'')+'</span>'
+      +'<span class="gs-go" aria-hidden="true">›</span></'+close+'>';
+  }).join('') : '<div class="global-search-empty">找不到符合的章節或影片</div>';
+}
+function moveGlobalSearch(delta){
+  const items = Array.from(document.querySelectorAll('#globalSearchResults .global-search-item'));
+  if(!items.length) return;
+  globalSearchActive = (globalSearchActive + delta + items.length) % items.length;
+  items.forEach(function(el,i){ el.classList.toggle('active', i===globalSearchActive); });
+  items[globalSearchActive].scrollIntoView({block:'nearest'});
 }
 function goSearchChapter(subjectName,index){
   closeGlobalSearch();
   const s=SUBJECTS.find(function(x){return x.name===subjectName;});if(!s)return;
   goSec('subjects');const tab=document.querySelector('.stab[data-id="'+s.id+'"]');if(tab)tab.click();
-  const row=document.querySelectorAll('#sp-'+s.id+' .ch-row')[index];if(row){row.classList.remove('collapsed');row.scrollIntoView({block:'center'});}
+  const row=document.querySelectorAll('#sp-'+s.id+' .ch-row')[index];if(row){row.classList.remove('collapsed');const h=row.querySelector('[data-chtoggle]');if(h)h.setAttribute('aria-expanded','true');row.scrollIntoView({block:'start'});}
+  writeRoute(subjectsRoute(), true);
 }
 function goSearchSchool(index){
   closeGlobalSearch();goSec('schools');
@@ -2278,6 +2290,12 @@ document.addEventListener('DOMContentLoaded', function(){
   if(input) input.addEventListener('keydown', function(e){ if(e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) sendChat(); });
   const globalInput = document.getElementById('globalSearchInput');
   if(globalInput) globalInput.addEventListener('input',function(){renderGlobalSearch(this.value);});
+  if(globalInput) globalInput.addEventListener('keydown',function(e){
+    if(e.isComposing || e.keyCode === 229) return;
+    if(e.key==='ArrowDown'){ e.preventDefault(); moveGlobalSearch(1); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); moveGlobalSearch(-1); }
+    else if(e.key==='Enter'){ const a=document.querySelector('#globalSearchResults .global-search-item.active'); if(a){ e.preventDefault(); a.click(); } }
+  });
   document.addEventListener('keydown',function(e){
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openGlobalSearch();}
     if(e.key==='Escape'){
