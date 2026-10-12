@@ -7723,3 +7723,4 @@ body#appRoot .global-search-item { padding: 10px 14px !important; }
 body#appRoot .global-search-results { gap: 6px !important; }
 body#appRoot .fab-nav { row-gap: 8px !important; }
 body#appRoot #main > #sec-subjects { padding: 32px !important; }
+body#appRoot #main { padding: 0 !important; }

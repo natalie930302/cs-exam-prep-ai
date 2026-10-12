@@ -988,7 +988,7 @@ function goCalDay(iso){
   calSelectedIso = iso;
   pendingCalMotion = 'none';
   renderCalContainer();
-  writeRoute('#/calendar/' + iso, true);
+  writeRoute('/calendar/' + iso, true);
 }
 
 // ── Day-by-day video plan: starting today, the unwatched videos are laid
@@ -1565,7 +1565,7 @@ function goSec(id, el){
   const directPill = document.querySelector('.pill[data-sec="'+id+'"]');
   if(directPill){ directPill.classList.add('on'); directPill.setAttribute('aria-current','page'); }
   setTimeout(renderAiContextDock,0);
-  if(id === 'schedule') writeRoute('#/calendar' + (calSelectedIso ? '/' + calSelectedIso : ''));
+  if(id === 'schedule') writeRoute('/calendar' + (calSelectedIso ? '/' + calSelectedIso : ''));
   else if(id === 'subjects') writeRoute(subjectsRoute());
 }
 
@@ -2007,7 +2007,7 @@ async function init(){
   const cur = nextFoundationTask(DONE_TASK_IDS), curSub = cur && SUBJECTS.find(function(s){ return s.name === cur.subject; });
   const curTab = curSub && document.querySelector('.stab[data-id="'+curSub.id+'"]');
   if(curTab) curTab.click();
-  // The URL decides what opens: #/calendar[/YYYY-MM-DD], #/subjects[/subj[/chapter]]
+  // The URL decides what opens: /calendar[/YYYY-MM-DD], /subjects[/subj[/chapter]]
   applyRoute(true);
   window.addEventListener('popstate', function(){ applyRoute(false); });
 }
@@ -2275,24 +2275,30 @@ function toggleAiPanel(){}
 // ── Router ──
 // Every view has its own address, so back/forward, refresh and bookmarks
 // land on the same place:
-//   #/calendar                 the month calendar
-//   #/calendar/2026-10-15      …with that day's list open
-//   #/subjects/ds              六科, on 資料結構
-//   #/subjects/ds/3            …with chapter 3 open
-// (old links "#subjects" still work.)
+//   /calendar                 the month calendar
+//   /calendar/2026-10-15      …with that day's list open
+//   /subjects/ds              六科, on 資料結構
+//   /subjects/ds/3            …with chapter 3 open
+// (old "#/subjects/…" and "#subjects" links are converted on load.)
 let routing = false;
-function writeRoute(hash, replace){
-  if(routing || location.hash === hash) return;
-  if(replace) history.replaceState(null, '', hash); else history.pushState(null, '', hash);
+function writeRoute(path, replace){
+  if(routing || location.pathname === path) return;
+  if(replace) history.replaceState(null, '', path); else history.pushState(null, '', path);
 }
 function subjectsRoute(){
-  const tab = document.querySelector('.stab.on'); if(!tab) return '#/subjects';
+  const tab = document.querySelector('.stab.on'); if(!tab) return '/subjects';
   const rows = Array.from(document.querySelectorAll('#sp-' + tab.dataset.id + ' .ch-row'));
   const open = rows.findIndex(function(r){ return !r.classList.contains('collapsed'); });
-  return '#/subjects/' + tab.dataset.id + (open >= 0 ? '/' + (open + 1) : '');
+  return '/subjects/' + tab.dataset.id + (open >= 0 ? '/' + (open + 1) : '');
+}
+function routeParts(){
+  // an old hash link wins over the path it was opened on
+  const h = location.hash.replace(/^#\/?/, '');
+  const src = /^(calendar|subjects|schedule)/.test(h) ? h : location.pathname.replace(/^\//, '');
+  return src.split('/').filter(Boolean);
 }
 function applyRoute(initial){
-  const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+  const parts = routeParts();
   routing = true;
   try {
     if(parts[0] === 'subjects'){
@@ -2323,6 +2329,6 @@ function applyRoute(initial){
     }
   } finally { routing = false; }
   // normalise the address (e.g. "" or the old "#subjects") without a new history entry
-  const want = document.getElementById('sec-subjects').classList.contains('on') ? subjectsRoute() : '#/calendar' + (calSelectedIso && parts[1] ? '/' + calSelectedIso : '');
-  if(location.hash !== want) history.replaceState(null, '', want);
+  const want = document.getElementById('sec-subjects').classList.contains('on') ? subjectsRoute() : '/calendar' + (calSelectedIso && parts[1] ? '/' + calSelectedIso : '');
+  if(location.pathname !== want || location.hash) history.replaceState(null, '', want);
 }

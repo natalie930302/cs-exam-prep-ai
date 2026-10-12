@@ -148,7 +148,7 @@ function studyRoomUrl(subjectId, idx, videoId){
   return videoRoomUrl(subjectId, idx, videoId);
 }
 function videoRoomUrl(subjectId, idx, videoId){
-  return '/study.html?s='+encodeURIComponent(subjectId)+'&c='+idx+(videoId?'&v='+encodeURIComponent(videoId):'');
+  return '/study/'+encodeURIComponent(subjectId)+'/'+(idx+1)+(videoId?'?v='+encodeURIComponent(videoId):'');
 }
 function youtubeId(url){
   const m = String(url || '').match(/(?:v=|youtu\.be\/)([\w-]{11})/);

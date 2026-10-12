@@ -5,9 +5,11 @@
 // Chapters without a lab yet show the synced notes on the right instead.
 // Progress uses the same task ids as the main site (chapter-core.js).
 (function(){
+  // /study/<subj>/<chapter, from 1>?v=<video>&t=<tab>
   const params = new URLSearchParams(location.search);
-  const subject = SUBJECTS.find(function(s){ return s.id === params.get('s'); }) || SUBJECTS[0];
-  const chIndex = Math.max(0, Math.min(subject.chapters.length - 1, Number(params.get('c')) || 0));
+  const pathParts = location.pathname.split('/').filter(Boolean);
+  const subject = SUBJECTS.find(function(s){ return s.id === pathParts[1]; }) || SUBJECTS[0];
+  const chIndex = Math.max(0, Math.min(subject.chapters.length - 1, (Number(pathParts[2]) || 1) - 1));
   const chapter = subject.chapters[chIndex];
   const chKey = subject.id + '-' + stableTaskKey(chapter.t);
   // One list: every video of the chapter is required, in teaching order
@@ -44,7 +46,7 @@
   document.title = chapter.t + '｜學習空間';
   $('kicker').textContent = subject.name + '・第 ' + (chIndex + 1) + ' 章' + (chapter.hrs ? '・預估 ' + chapter.hrs : '');
   $('chTitle').textContent = chapter.t;
-  $('backLink').href = '/#/subjects/' + subject.id + '/' + (chIndex + 1);
+  $('backLink').href = '/subjects/' + subject.id + '/' + (chIndex + 1);
   function chLink(el, i){
     if (i < 0 || i >= subject.chapters.length) { el.setAttribute('aria-disabled', 'true'); return; }
     el.href = studyRoomUrl(subject.id, i);
@@ -855,7 +857,8 @@
   // refresh or a shared link reopens exactly this view.
   let currentTab = 'videos';
   function roomUrl(id){
-    return videoRoomUrl(subject.id, chIndex, id || (current && current.id)) + (currentTab !== 'videos' ? '&t=' + currentTab : '');
+    const u = videoRoomUrl(subject.id, chIndex, id || (current && current.id));
+    return u + (currentTab !== 'videos' ? (u.indexOf('?') < 0 ? '?' : '&') + 't=' + currentTab : '');
   }
   function setTab(tab){
     currentTab = tab;

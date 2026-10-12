@@ -31,14 +31,28 @@ function serveHtmlPage(file) {
     let html;
     try { html = fs.readFileSync(path.join(PUBLIC_DIR, file), 'utf8'); }
     catch (e) { return res.status(500).send(file + ' missing'); }
-    html = html.replace(/((?:src|href)=")([\w./-]+\.(?:js|css))\?v=[^"]*(")/g,
-      (m, pre, asset, post) => `${pre}${asset}?v=${assetVersion(asset)}${post}`);
+    html = html.replace(/((?:src|href)=")(\/?[\w./-]+\.(?:js|css))\?v=[^"]*(")/g,
+      (m, pre, asset, post) => `${pre}/${asset.replace(/^\//, '')}?v=${assetVersion(asset.replace(/^\//, ''))}${post}`);
     res.set('Cache-Control', 'no-cache');
     res.type('html').send(html);
   };
 }
-app.get(['/', '/index.html'], serveHtmlPage('index.html'));
-app.get('/study.html', serveHtmlPage('study.html'));
+// One address scheme, no .html and no #:
+//   /calendar[/YYYY-MM-DD]          the calendar
+//   /subjects[/<subj>[/<chapter>]]  六科 (chapter numbers start at 1)
+//   /study/<subj>/<chapter>[?v=<video>&t=<tab>]  the study room
+app.get(['/', /^\/(calendar|subjects)(\/[\w-]+){0,2}\/?$/], serveHtmlPage('index.html'));
+app.get(/^\/study\/[\w-]+\/\d+\/?$/, serveHtmlPage('study.html'));
+// old addresses
+app.get('/index.html', (req, res) => res.redirect(301, '/'));
+app.get('/study.html', (req, res) => {
+  const q = new URLSearchParams();
+  if (req.query.v) q.set('v', req.query.v);
+  if (req.query.t) q.set('t', req.query.t);
+  const s = String(req.query.s || 'ds').replace(/[^\w-]/g, '');
+  const c = (parseInt(req.query.c, 10) || 0) + 1;
+  res.redirect(301, `/study/${s}/${c}` + (q.toString() ? '?' + q : ''));
+});
 
 app.use('/vendor/katex', express.static(path.join(__dirname, 'node_modules', 'katex', 'dist'), { maxAge: '30d', etag: true }));
 app.use('/vendor/three', express.static(path.join(__dirname, 'node_modules', 'three'), { maxAge: '30d', etag: true }));
@@ -519,11 +533,7 @@ app.post('/api/restart/undo', (req, res) => {
   db.undoRestartLog(localDate(), kind);
   res.json(restartStatus());
 });
-// Readable paths open the same views as the hash routes in app.js:
-// /calendar[/YYYY-MM-DD] and /subjects[/subj[/chapter]].
-app.get(/^\/(calendar|subjects)(\/[\w-]+){0,2}\/?$/, (req, res) => {
-  res.redirect('/#' + req.path.replace(/\/$/, ''));
-});
+
 
 app.listen(PORT, () => {
   console.log(`CSIE Prep Hub running at http://localhost:${PORT}`);
