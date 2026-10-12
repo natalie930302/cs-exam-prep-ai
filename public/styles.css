@@ -7577,3 +7577,6 @@ body#appRoot #main .sp .ch-list { padding: 16px !important; }
 body#appRoot #main #sec-subjects > #spPanels > .sp.on > :is(.subject-overview-card, .ch-list), body#appRoot #main #sec-subjects > #spPanels > .sp.on > .sp-rec-row > .rec-series { padding: 16px !important; }
 body#appRoot .ch-study-link { margin-top: 0 !important; }
 body#appRoot .rec-book-note { margin-top: 0 !important; }
+/* 系列素材每一列、進度卡每一格：上下 10px，左右 0 */
+body#appRoot #main #sec-subjects .sp .rec-book-row.rec-series-row,
+body#appRoot #main #sec-subjects .sp .smeta .sm { padding: 10px 0 !important; }
