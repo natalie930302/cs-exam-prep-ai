@@ -2275,7 +2275,7 @@ function goSearchSchool(index){
 
 document.addEventListener('DOMContentLoaded', function(){
   const input = document.getElementById('chatInput');
-  if(input) input.addEventListener('keydown', function(e){ if(e.key === 'Enter') sendChat(); });
+  if(input) input.addEventListener('keydown', function(e){ if(e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) sendChat(); });
   const globalInput = document.getElementById('globalSearchInput');
   if(globalInput) globalInput.addEventListener('input',function(){renderGlobalSearch(this.value);});
   document.addEventListener('keydown',function(e){
