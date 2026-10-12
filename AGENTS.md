@@ -1,11 +1,12 @@
 # CSIE Prep Hub
 
 Node.js + Express + SQLite (built-in `node:sqlite`) local web app. Serves
-`public/` (frontend) and exposes an AI chat bridge at `POST /api/chat` that
-spawns this very `Codex` CLI in headless print mode (`-p`) per message.
+`public/` (frontend). There is no chat any more; a few one-off AI endpoints
+(`/api/daily-brief`, `/api/diagnostic`, `/api/chapter-summary`) spawn this
+very `Codex` CLI headless per request.
 
-- `server.js` — Express app + API routes + the chat bridge (spawns `codex exec --json`)
-- `db.js` — SQLite access layer (settings, checklist, chat history)
+- `server.js` — Express app + API routes + the Codex bridge (spawns `codex exec --json`)
+- `db.js` — SQLite access layer (settings, checklist, memory)
 - `tools/plan-tool.js` — the only script the embedded AI agent may run
 - `public/` — frontend (`index.html`, `app.js`, `data.js`, `styles.css`)
 

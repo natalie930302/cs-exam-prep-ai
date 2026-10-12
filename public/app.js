@@ -1564,10 +1564,6 @@ function goSec(id, el){
   document.querySelectorAll('.pill').forEach(function(p){ p.classList.remove('on'); p.removeAttribute('aria-current'); });
   const directPill = document.querySelector('.pill[data-sec="'+id+'"]');
   if(directPill){ directPill.classList.add('on'); directPill.setAttribute('aria-current','page'); }
-  // Opening the AI tab counts as having seen today's proactive check-in
-  // (it's the first thing in the chat log), even if they never touched
-  // the Today-page banner directly.
-  if(id === 'ai') markCheckinSeen(isoDate(new Date()));
   setTimeout(renderAiContextDock,0);
   if(id === 'schedule') writeRoute('#/calendar' + (calSelectedIso ? '/' + calSelectedIso : ''));
   else if(id === 'subjects') writeRoute(subjectsRoute());
@@ -2022,77 +2018,6 @@ init();
 function escapeHtml(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
-function chatBubbleHtml(role, content){
-  const cls = role === 'user' ? 'user' : role === 'assistant' ? 'assistant' : 'system';
-  return '<div class="chat-msg '+cls+'">'+escapeHtml(content)+'</div>';
-}
-
-async function loadChatHistory(){
-  const log = document.getElementById('chatLog');
-  if(!log) return;
-  try{
-    const r = await fetch('/api/chat/history');
-    const j = await r.json();
-    if(!j.messages || !j.messages.length){
-      log.innerHTML = '<div class="chat-empty">還沒有對話。問問題，或跟AI說「這週進度落後了」讓它幫你調整。</div>';
-      renderChatFollowups();
-      return;
-    }
-    // Daily check-ins pile up as back-to-back assistant messages nobody
-    // replied to; keep only the last of each such run.
-    const msgs = j.messages.filter(function(m,i,a){ return !(m.role==='assistant' && a[i+1] && a[i+1].role==='assistant'); });
-    log.innerHTML = msgs.map(function(m){ return chatBubbleHtml(m.role, m.content); }).join('');
-    log.scrollTop = log.scrollHeight;
-    renderChatFollowups();
-  }catch(e){
-    log.innerHTML = '<div class="chat-empty">無法連線到伺服器。</div>';
-  }
-}
-
-// Proactive daily check-in — this app has no background process, so
-// "proactive" here means: the first time the page loads on a new calendar
-// day, ask the server for today's check-in (it generates + caches one real
-// AI-written greeting if today doesn't have one yet, otherwise just returns
-// the cached one — never more than one AI call per day). If the user
-// hasn't "seen" today's check-in yet (tracked in localStorage, since this
-// is a single-user local app with no server-side read-state), show it as
-// a banner on the Today page and a dot on the AI 助教 nav item, instead of
-// only sitting quietly at the top of the AI chat log where they might not
-// look until much later.
-function checkinSeenKey(date){ return 'checkin-seen-' + date; }
-function markCheckinSeen(date){
-  try{ localStorage.setItem(checkinSeenKey(date), '1'); }catch(e){}
-  const dot = document.getElementById('aiUnreadDot');
-  if(dot) dot.style.display = 'none';
-}
-async function loadDailyCheckin(){
-  const banner = document.getElementById('checkinBanner');
-  if(!banner) return;
-  try{
-    const r = await fetch('/api/checkin');
-    if(!r.ok) return; // Codex CLI unavailable etc. — fail quietly, rule-based hero still works
-    const j = await r.json();
-    if(!j.message) return;
-    let seen = false;
-    try{ seen = !!localStorage.getItem(checkinSeenKey(j.date)); }catch(e){}
-    if(seen) return;
-    banner.innerHTML = '<span class="checkin-icon">'+svgIcon('message-circle',18)+'</span><span class="checkin-text">'+escapeHtml(j.message)+'</span>'
-      +'<button class="checkin-dismiss" onclick="dismissCheckin(\''+j.date+'\')" aria-label="關閉">'+svgIcon('x',13)+'</button>';
-    banner.style.display = 'flex';
-    const dot = document.getElementById('aiUnreadDot');
-    if(dot) dot.style.display = 'inline-block';
-    // loadChatHistory() already ran once on init, before this (slower,
-    // spawns Codex CLI) request resolved — reload it so a freshly
-    // generated check-in is actually there if the user opens the AI tab.
-    if(j.isNew) loadChatHistory();
-  }catch(e){ /* offline or server not running — quietly skip, not fatal */ }
-}
-function dismissCheckin(date){
-  markCheckinSeen(date);
-  const banner = document.getElementById('checkinBanner');
-  if(banner) banner.style.display = 'none';
-}
-
 async function loadMemories(){
   const list = document.getElementById('memoryList');
   if(!list) return;
@@ -2118,75 +2043,8 @@ async function deleteMemory(id){
   loadMemories();
 }
 
-function quickChat(text){
-  const input = document.getElementById('chatInput');
-  if(!input) return;
-  input.value = text;
-  sendChat();
-}
-
-async function sendChat(){
-  const input = document.getElementById('chatInput');
-  const btn = document.getElementById('chatSendBtn');
-  const status = document.getElementById('chatStatus');
-  const log = document.getElementById('chatLog');
-  if(!input || !btn || !status || !log) return;
-  const msg = input.value.trim();
-  if(!msg) return;
-
-  const empty = log.querySelector('.chat-empty');
-  if(empty) empty.remove();
-  log.insertAdjacentHTML('beforeend', chatBubbleHtml('user', msg));
-  log.scrollTop = log.scrollHeight;
-  input.value = '';
-  input.disabled = true;
-  btn.disabled = true;
-  log.setAttribute('aria-busy','true');
-  status.textContent = 'AI 思考中…（正在呼叫本機 Codex，約需幾秒）';
-
-  try{
-    const r = await fetch('/api/chat', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg, ui_context: lastAiContextLabel, study_context:aiContextSnapshot()})
-    });
-    const j = await r.json();
-    if(!r.ok){
-      log.insertAdjacentHTML('beforeend', chatBubbleHtml('system', '⚠ ' + (j.message || j.error || '發生錯誤')));
-      status.textContent = '';
-      return;
-    }
-    log.insertAdjacentHTML('beforeend', chatBubbleHtml('assistant', j.reply));
-    log.scrollTop = log.scrollHeight;
-    // The AI may have marked tasks done/undone or changed the start date via
-    // plan-tool.js (that's the only way to change it now, there's no UI) —
-    // refresh queue/settings state and re-render if either actually changed.
-    const prevDone = DONE_TASK_IDS.join(',');
-    const prevStartDate = SETTINGS.start_date;
-    if(j.settings) SETTINGS = j.settings;
-    await fetchDoneTasks();
-    if(DONE_TASK_IDS.join(',') !== prevDone || SETTINGS.start_date !== prevStartDate){
-      renderGreetingHeader();
-      renderCalContainer();
-    }
-    renderChatFollowups();
-    loadMemories(); // the AI may have remembered or forgotten something this turn
-    status.textContent = typeof j.cost_usd === 'number' ? ('花費 $' + j.cost_usd.toFixed(3)) : '';
-  }catch(e){
-    log.insertAdjacentHTML('beforeend', chatBubbleHtml('system', '⚠ 連線失敗，確認伺服器（node server.js）是否還在跑'));
-    status.textContent = '';
-  }finally{
-    log.setAttribute('aria-busy','false');
-    input.disabled = false;
-    btn.disabled = false;
-    input.focus();
-  }
-}
-
-async function resetChat(){
-  await fetch('/api/chat/reset', {method:'POST'});
-  const log = document.getElementById('chatLog');
-  if(log) log.innerHTML = '<div class="chat-empty">已開始新對話。</div>';
-  renderChatFollowups();
-}
+// The chat backend is gone; leftover AI-dock helpers call this.
+function sendChat(){}
 
 async function exportProgressBackup(){
   try{
@@ -2285,8 +2143,6 @@ function goSearchSchool(index){
 }
 
 document.addEventListener('DOMContentLoaded', function(){
-  const input = document.getElementById('chatInput');
-  if(input) input.addEventListener('keydown', function(e){ if(e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) sendChat(); });
   const globalInput = document.getElementById('globalSearchInput');
   if(globalInput) globalInput.addEventListener('input',function(){renderGlobalSearch(this.value);});
   if(globalInput) globalInput.addEventListener('keydown',function(e){

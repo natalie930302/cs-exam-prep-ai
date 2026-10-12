@@ -314,33 +314,6 @@ function setChecklistItem(date, index, done) {
   else db.prepare('DELETE FROM checklist WHERE date = ? AND item_index = ?').run(date, index);
 }
 
-function addChatMessage(role, content, action) {
-  db.prepare('INSERT INTO chat_messages(role, content, action) VALUES (?, ?, ?)')
-    .run(role, content, action ? JSON.stringify(action) : null);
-}
-function getChatHistory(limit = 100) {
-  return db.prepare('SELECT role, content, action, created_at FROM chat_messages ORDER BY id DESC LIMIT ?')
-    .all(limit).reverse();
-}
-
-function getClaudeSessionId() {
-  const row = db.prepare('SELECT claude_session_id FROM chat_session WHERE id = 1').get();
-  return row ? row.claude_session_id : null;
-}
-function setClaudeSessionId(id) {
-  db.prepare(
-    'INSERT INTO chat_session(id, claude_session_id) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET claude_session_id = excluded.claude_session_id'
-  ).run(id);
-}
-function resetChatSession() {
-  db.exec('DELETE FROM chat_session; DELETE FROM chat_messages;');
-}
-
-// The column keeps its historical name for a no-risk SQLite migration, but
-// now stores the active Codex thread id.
-const getAiSessionId = getClaudeSessionId;
-const setAiSessionId = setClaudeSessionId;
-
 // Long-term facts the AI should keep knowing even after the visible
 // conversation is reset (e.g. "weak at DP problems", "prefers short
 // reminders") — separate from chat_messages, which "開始新對話" clears.
@@ -354,20 +327,6 @@ function getMemories() {
 function deleteMemory(id) {
   const result = db.prepare('DELETE FROM ai_memory WHERE id = ?').run(id);
   return result.changes > 0;
-}
-
-// Daily proactive check-in — one AI-generated greeting per calendar day,
-// cached so opening the app twice in one day doesn't re-spend API usage.
-// Separate from chat_messages' own history so "did we already check in
-// today" is a single indexed lookup, not a date-scan over the chat log.
-function getDailyCheckin(date) {
-  const row = db.prepare('SELECT message, created_at FROM daily_checkins WHERE date = ?').get(date);
-  return row || null;
-}
-function setDailyCheckin(date, message) {
-  db.prepare(
-    'INSERT INTO daily_checkins(date, message) VALUES (?, ?) ON CONFLICT(date) DO UPDATE SET message = excluded.message'
-  ).run(date, message);
 }
 
 // 重啟模式：每日最小目標（番茄鐘、散步、心情）的簡單紀錄。
@@ -427,16 +386,7 @@ module.exports = {
   getChecklistDone,
   toggleChecklistItem,
   setChecklistItem,
-  addChatMessage,
-  getChatHistory,
-  getClaudeSessionId,
-  setClaudeSessionId,
-  getAiSessionId,
-  setAiSessionId,
-  resetChatSession,
   addMemory,
   getMemories,
   deleteMemory,
-  getDailyCheckin,
-  setDailyCheckin,
 };

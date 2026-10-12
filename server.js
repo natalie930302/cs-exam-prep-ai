@@ -235,28 +235,16 @@ function ensureSandboxNode() {
 }
 const CODEX_NODE_EXE = ensureSandboxNode();
 
-// ── Chat bridge (spawns the local Codex CLI non-interactively) ──
-app.get('/api/chat/history', (req, res) => {
-  res.json({ messages: db.getChatHistory() });
-});
-
-app.post('/api/chat/reset', (req, res) => {
-  db.resetChatSession();
-  res.json({ ok: true });
-});
-
-// Shared spawn logic behind both /api/chat and /api/checkin — same Codex CLI
-// invocation, same session continuity, same JSON-parsing/error handling.
+// ── Codex bridge (spawns the local Codex CLI non-interactively) ──
+// Shared spawn logic behind the AI endpoints below — one-off Codex CLI
+// runs with the same JSON-parsing/error handling.
 // Resolves { reply } on success or { errMsg, status, detail } on failure so
 // callers can decide how to persist/respond without duplicating the
 // spawn/parse plumbing.
-function runCodex(message, options = {}) {
+function runCodex(message) {
   return new Promise((resolve) => {
-    const sessionId = options.standalone ? null : db.getAiSessionId();
     const codexBin = path.join(__dirname, 'tools', 'codex-cli', 'vendor', 'x86_64-pc-windows-msvc', 'bin', 'codex.exe');
-    const args = sessionId
-      ? ['exec', 'resume', '--skip-git-repo-check', '--json', sessionId, '-']
-      : ['exec', '--skip-git-repo-check', '--sandbox', 'workspace-write', '--json', '-'];
+    const args = ['exec', '--skip-git-repo-check', '--sandbox', 'workspace-write', '--json', '-'];
 
     const userHome = os.homedir();
     const codexEnv = {
@@ -306,8 +294,6 @@ function runCodex(message, options = {}) {
         });
         return;
       }
-      const started = events.find((e) => e.type === 'thread.started');
-      if (started?.thread_id && !options.standalone) db.setAiSessionId(started.thread_id);
       const failure = events.find((e) => e.type === 'turn.failed' || e.type === 'error');
       if (failure) {
         resolve({
@@ -340,7 +326,7 @@ app.post('/api/diagnostic', async (req, res) => {
     ? `這章已經有實際讀過同儕筆記後驗證的地雷：${peerNote}\n請至少安排1–2題直接測驗學生是否真的掌握這些已驗證的地雷（不是泛泛的常見陷阱，是這裡列出的具體內容），其餘題目再涵蓋其他考點。`
     : '';
   const prompt = `你是台灣資工所筆試命題老師。請針對「${subject}／${chapter}」產生5題繁體中文單選診斷題，涵蓋核心概念、計算或推導、常見陷阱。章節考點：${keyPoints}\n\n${peerNoteInstruction}\n\n${personalization}\n\n只輸出合法JSON，不要Markdown、不要前後說明。格式：{"questions":[{"question":"題目","choices":["選項A","選項B","選項C","選項D"],"answer":0,"explanation":"答案解析","error_type":"概念|公式|計算|讀題|時間"}]}。answer必須是0到3的整數，正確選項位置要分散。所有數學式、矩陣、集合、漸近符號與邏輯式都必須使用可由KaTeX解析的LaTeX：行內公式用$...$，獨立公式用$$...$$；JSON內的反斜線必須正確跳脫。不要用純文字模擬分數或上下標。`;
-  const result = await runCodex(prompt, { standalone:true });
+  const result = await runCodex(prompt);
   if (result.errMsg) return res.status(result.status).json({ error:'diagnostic_unavailable', message:result.errMsg });
   try {
     const raw=result.reply.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
@@ -392,7 +378,7 @@ ${personalization}
 - 所有數學式、矩陣、集合、漸近符號都必須用KaTeX可解析的LaTeX：行內用$...$，獨立成行用$$...$$。
 - 條列時每行開頭用「- 」。
 - 長度大約500–900字，寧可精簡正確，不要為了湊字數亂補內容。`;
-  const result = await runCodex(prompt, { standalone: true });
+  const result = await runCodex(prompt);
   if (result.errMsg) return res.status(result.status).json({ error: 'summary_unavailable', message: result.errMsg });
   res.json({ summary: result.reply.trim() });
 });
@@ -433,74 +419,10 @@ app.post('/api/daily-brief', async (req, res) => {
 - 上面任何一項寫「尚無資料」的，不要假裝有那項數據、也不要虛構具體數字。
 - 條列時每行開頭用「- 」。
 - 長度大約300–500字，精簡勝過長篇。`;
-  const result = await runCodex(prompt, { standalone: true });
+  const result = await runCodex(prompt);
   if (result.errMsg) return res.status(result.status).json({ error: 'brief_unavailable', message: result.errMsg });
   res.json({ brief: result.reply.trim() });
 });
-
-app.post('/api/chat', async (req, res) => {
-  const message = (req.body?.message || '').toString().slice(0, 4000);
-  const uiContext = (req.body?.ui_context || '').toString().replace(/\s+/g, ' ').trim().slice(0, 300);
-  const rawStudyContext = req.body?.study_context && typeof req.body.study_context === 'object' ? req.body.study_context : null;
-  if (!message.trim()) return res.status(400).json({ error: 'empty message' });
-
-  db.addChatMessage('user', message);
-  syncMemoryIntoAgentsMd();
-
-  const cleanText = (value, max = 160) => String(value || '').replace(/[\r\n]+/g, ' ').trim().slice(0, max);
-  let snapshotNote = '';
-  if (rawStudyContext) {
-    const q = rawStudyContext.queue && typeof rawStudyContext.queue === 'object' ? rawStudyContext.queue : {};
-    const next = rawStudyContext.next_task && typeof rawStudyContext.next_task === 'object' ? rawStudyContext.next_task : null;
-    const weak = rawStudyContext.evidenced_weakness && typeof rawStudyContext.evidenced_weakness === 'object' ? rawStudyContext.evidenced_weakness : null;
-    const due = Array.isArray(rawStudyContext.due_reviews) ? rawStudyContext.due_reviews.slice(0, 5).map((x) => cleanText(x, 100)).filter(Boolean) : [];
-    const parts = [
-      `頁面=${cleanText(rawStudyContext.section, 30)}`,
-      cleanText(rawStudyContext.visible_subject) ? `畫面科目=${cleanText(rawStudyContext.visible_subject)}` : '',
-      cleanText(rawStudyContext.visible_chapter) ? `展開章節=${cleanText(rawStudyContext.visible_chapter)}` : '',
-      cleanText(rawStudyContext.visible_school) ? `展開學校=${cleanText(rawStudyContext.visible_school)}` : '',
-      Number.isFinite(Number(q.effective_week)) ? `有效週次=${Number(q.effective_week)}` : '',
-      Number.isFinite(Number(q.undone_count)) ? `未完成任務=${Number(q.undone_count)}` : '',
-      Number.isFinite(Number(q.remaining_minutes)) ? `估計剩餘=${Number(q.remaining_minutes)}分鐘` : '',
-      next ? `下一任務=${cleanText(next.subject, 40)}／${cleanText(next.title)}（約${Math.max(0, Number(next.estimated_minutes) || 0)}分鐘）` : '',
-      due.length ? `到期複習=${due.join('、')}` : '到期複習=無',
-      weak ? `優先弱點=${cleanText(weak.subject, 40)}／${cleanText(weak.chapter)}（${Math.max(0, Math.min(100, Number(weak.score) || 0))}%／${weak.verified ? '有作答證據' : '尚待驗證'}）` : '優先弱點=無足夠證據',
-      cleanText(rawStudyContext.active_timer) ? `目前計時=${cleanText(rawStudyContext.active_timer)}` : '',
-      cleanText(rawStudyContext.daily_energy, 20) ? `今日精神狀態=${cleanText(rawStudyContext.daily_energy, 20)}` : '今日精神狀態=未回報',
-      Number.isFinite(Number(rawStudyContext.today_study_minutes)) ? `今日實際計時=${Math.max(0, Number(rawStudyContext.today_study_minutes))}分鐘` : '',
-    ].filter(Boolean);
-    snapshotNote = '網站同步快照：' + parts.join('；') + '。快照只用來理解目前畫面；只回答使用者問的，不要主動附加計畫或行動建議。若使用者詢問精確進度或是否落後，仍須依 AGENTS.md 用唯讀查詢工具查證，不可只信快照；不能替使用者修改任何進度。';
-  }
-  const contextNotes = [uiContext ? '網站目前瀏覽情境：' + uiContext + '。' : '', snapshotNote].filter(Boolean).join('\n');
-  const contextualMessage = contextNotes ? '（' + contextNotes + '）\n\n' + message : message;
-  const result = await runCodex(contextualMessage);
-  if (result.errMsg) {
-    db.addChatMessage('assistant', result.errMsg);
-    return res.status(result.status).json({ ...result.detail, message: result.errMsg });
-  }
-
-  db.addChatMessage('assistant', result.reply);
-  res.json({ reply: result.reply, settings: currentSettings() });
-});
-
-// ── Daily proactive check-in ─────────────────────────────────────────
-// Not a background scheduler — this app has no persistent process to run
-// one from. Instead: whenever the frontend asks (on page load), if today
-// doesn't have a check-in yet, generate exactly one via the same Codex
-// bridge and cache it — so opening the app twice in one day never
-// spends a second AI call, but the FIRST open each day gets a real,
-// freshly-generated greeting waiting for it rather than a rule-based
-// summary. The check-in also lands in the normal chat thread (same
-// session, same chat_messages table) so replying to it continues the
-// conversation naturally, and it survives "開始新對話" like the rest of
-// today's history until that reset also clears it.
-const CHECKIN_PROMPT =
-  '（系統自動觸發：新的一天開始，使用者剛打開這個網頁。請主動、簡短地打個招呼並關心一下進度——' +
-  '先執行 tools\\plan-tool.cmd get-queue-status 查詢目前基礎期佇列剩多少任務、剩多少小時，' +
-  '再用 1 個時間有意義（今天日期、剩幾天）判斷目前在基礎期／刷題期／收斂期哪個階段，' +
-  '寫一段 2–4 句、口語、像朋友早上打招呼那樣的訊息：帶一點今天的進度或提醒，不要條列、不要長篇大論、' +
-  '不要說「以下是」這種開場白，直接講重點就好。用繁體中文。）';
-
 
 // ── 重啟模式（2026/9 加入）─────────────────────────────────────────
 // 不看「還剩多少任務／小時」的總量，只看今天的一小步：每天最小目標會
@@ -597,37 +519,6 @@ app.post('/api/restart/undo', (req, res) => {
   db.undoRestartLog(localDate(), kind);
   res.json(restartStatus());
 });
-function buildCheckinPrompt() {
-  const st = restartStatus();
-  const y = st.days[st.days.length - 2];
-  const info = `重啟模式資料：今天 ${st.today}，重啟第 ${st.week} 週（${st.week === 0 ? '明天正式開始，今天可以先暖身' : '進行中'}），` +
-    `今日最小目標＝${st.target.label}；連續讀書 ${st.streak} 天；最近 7 天有讀書 ${st.last7Studied} 天；` +
-    `昨天讀書 ${y.studyMinutes} 分。`;
-  return '（系統自動觸發：新的一天開始，使用者剛打開這個網頁。她最近狀態低落、容易自責，正在用「重啟模式」慢慢把讀書節奏找回來。' +
-    info +
-    '請先執行 tools\\plan-tool.cmd get-study-context 找出佇列裡第一個還沒完成的內容，然後寫 2–4 句像朋友早上打招呼的話：' +
-    '把今天的最小目標具體指到那個內容的一小段（例如某支影片的前 25 分鐘或課本某一小節）；有連續天數就具體肯定她，昨天沒讀也不要責備，只說今天讀一小段就好。' +
-    '不要提剩下多少任務、剩多少小時這類總量，不要條列、不要說教。用繁體中文。）';
-}
-
-app.get('/api/checkin', async (req, res) => {
-  const today = localDate();
-  const existing = db.getDailyCheckin(today);
-  if (existing) return res.json({ date: today, message: existing.message, isNew: false });
-
-  syncMemoryIntoAgentsMd();
-  const result = await runCodex(buildCheckinPrompt());
-  if (result.errMsg) {
-    // Don't cache failures — next page load should just try again rather
-    // than being stuck with an error message as "today's greeting".
-    return res.status(result.status).json({ ...result.detail, message: result.errMsg });
-  }
-
-  db.setDailyCheckin(today, result.reply);
-  db.addChatMessage('assistant', result.reply);
-  res.json({ date: today, message: result.reply, isNew: true });
-});
-
 // Readable paths open the same views as the hash routes in app.js:
 // /calendar[/YYYY-MM-DD] and /subjects[/subj[/chapter]].
 app.get(/^\/(calendar|subjects)(\/[\w-]+){0,2}\/?$/, (req, res) => {
