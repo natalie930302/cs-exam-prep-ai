@@ -2261,9 +2261,8 @@ function renderGlobalSearch(query){
     const open = x.href ? 'a href="'+x.href+'"' : 'button type="button" onclick="goSearchChapter(\''+x.subject+'\','+x.index+')"';
     const close = x.href ? 'a' : 'button';
     return '<'+open+' class="global-search-item'+(i===0?' active':'')+'" style="--gs-c:'+(x.subj.color||'var(--ac)')+'">'
-      +'<span class="gs-kind">'+escapeHtml(x.subj.name)+'<i>'+x.kind+'</i></span>'
-      +'<span class="gs-text"><b>'+escapeHtml(x.title)+'</b>'+(x.detail?'<small>'+escapeHtml(x.detail)+'</small>':'')+'</span>'
-      +'<span class="gs-go" aria-hidden="true">›</span></'+close+'>';
+      +'<b>'+escapeHtml(x.title)+'</b>'
+      +'<small><span class="gs-subj">'+escapeHtml(x.subj.name)+'</span>'+x.kind+(x.detail?'・'+escapeHtml(x.detail):'')+'</small></'+close+'>';
   }).join('') : '<div class="global-search-empty">找不到符合的章節或影片</div>';
 }
 function moveGlobalSearch(delta){

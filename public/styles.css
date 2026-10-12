@@ -7699,3 +7699,19 @@ body#appRoot #main #sec-subjects .rec-series .rec-book-name {
 body#appRoot #main #sec-subjects .rec-series .rec-book-name:hover { color: var(--tx) !important; text-decoration: underline; }
 body#appRoot #main #sec-subjects .rec-series .rec-book-note { font-size: 12px !important; color: var(--mt) !important; opacity: .8; }
 body#appRoot #main #sec-subjects .rec-series .rec-books-hd { font-size: 13px !important; color: var(--mt2, var(--mt)) !important; }
+
+/* 全站搜尋 v2：單欄、緊湊、圓形按鈕 */
+body#appRoot .global-search-results { padding: 6px !important; gap: 0 !important; }
+body#appRoot .global-search-item {
+  display: flex !important; flex-direction: column; align-items: stretch; gap: 3px !important;
+  padding: 9px 14px !important; border-radius: 10px !important;
+}
+body#appRoot .global-search-item > b { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body#appRoot .global-search-item > small { font-size: 12px; color: var(--mt); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body#appRoot .global-search-item .gs-subj { color: var(--gs-c); font-weight: 600; margin-right: 6px; }
+body#appRoot .gs-btn, body#appRoot .global-search-input-row .voice-input-btn {
+  width: 34px !important; height: 34px !important; min-width: 34px !important; min-height: 34px !important; max-height: 34px !important;
+  flex: 0 0 34px !important; aspect-ratio: 1; border-radius: 50% !important; background: transparent !important; outline: 0;
+}
+body#appRoot .gs-btn:hover, body#appRoot .gs-btn:focus-visible { background: var(--surf2) !important; }
+body#appRoot .gs-btn.listening { background: color-mix(in srgb, #d64545 14%, var(--surf)) !important; color: #d64545 !important; }
