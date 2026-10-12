@@ -7575,3 +7575,4 @@ body#appRoot #main .sp .rec-books.rec-series .rec-books-hd { padding: 0 0 6px !i
 body#appRoot #main .sp .rec-books.rec-series .rec-books-body { padding: 0 !important; }
 body#appRoot #main .sp .ch-list { padding: 16px !important; }
 body#appRoot #main #sec-subjects > #spPanels > .sp.on > :is(.subject-overview-card, .ch-list), body#appRoot #main #sec-subjects > #spPanels > .sp.on > .sp-rec-row > .rec-series { padding: 16px !important; }
+body#appRoot .ch-study-link { margin-top: 0 !important; }
