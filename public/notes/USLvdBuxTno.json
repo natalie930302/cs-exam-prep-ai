@@ -874,7 +874,7 @@
    "points": [
     {
      "text": "C++ STL 的 vector 其實是 extendable array。",
-     "t": 5431
+     "t": 5427
     },
     {
      "text": "它支援 vector 要的 at、set、insert、erase，再多一個 extendable 特性。",
@@ -894,7 +894,7 @@
     }
    ],
    "cues": [
-    5432.3,
+    5427.2,
     5451.8,
     5459.8,
     5470.43,
