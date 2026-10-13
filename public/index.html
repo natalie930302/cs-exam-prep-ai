@@ -37,7 +37,6 @@
     </div>
 
     <div class="smart-overview" id="smartOverview"></div>
-    <button class="ai-daily-brief-btn ui-btn ui-btn-primary" id="aiDailyBriefBtn" type="button" onclick="requestDailyBrief()" style="display:none;">AI 每日建議 →</button>
 
     <div id="calContainer"></div>
   </div>
@@ -71,14 +70,6 @@
 </main>
 
 <div class="task-toast" id="taskToast" role="status" aria-live="polite"></div>
-<div class="chapter-tool-modal diagnostic-modal" id="dailyBriefModal" aria-hidden="true" onclick="if(event.target===this)closeDailyBriefModal()">
-  <div class="chapter-tool-dialog diagnostic-dialog" role="dialog" aria-modal="true" aria-labelledby="dailyBriefTitle">
-    <button class="chapter-tool-close ui-btn ui-btn-icon" type="button" onclick="closeDailyBriefModal()" aria-label="關閉">×</button>
-    <div class="chapter-tool-kicker">AI 每日建議</div>
-    <h2 id="dailyBriefTitle">整理中</h2>
-    <div id="dailyBriefBody" class="diagnostic-body"><div class="diagnostic-loading"><span></span><p>正在根據你的實際進度整理今天建議…</p></div></div>
-  </div>
-</div>
 <div class="global-search-panel" id="globalSearchPanel" aria-hidden="true" onclick="if(event.target===this)closeGlobalSearch()">
   <div class="global-search-dialog" role="dialog" aria-modal="true" aria-label="搜尋章節與資源">
     <div class="global-search-input-row">
@@ -91,21 +82,6 @@
   </div>
 </div>
 
-<div class="ai-context-dock" id="aiContextDock">
-  <div class="ai-context-panel" id="aiContextPanel" role="dialog" aria-label="情境 AI 助教" aria-hidden="true">
-    <div class="ai-context-eyebrow">目前頁面</div>
-    <div class="ai-context-title" id="aiContextTitle">日曆與今日進度</div>
-    <button class="ai-context-nudge" id="aiContextNudge" type="button" onclick="useAiProactivePrompt()"></button>
-    <div class="ai-energy-check compact" id="aiContextEnergy" aria-label="今天的精神狀態"></div>
-    <div class="ai-time-plans compact" id="aiContextTimePlans" aria-label="依可用時間產生計畫"></div>
-    <div class="ai-context-actions" id="aiContextActions"></div>
-    <button class="ai-context-full" type="button" onclick="openAiWithPrompt('')">開啟完整 AI 助教</button>
-  </div>
-  <button class="ai-context-peek" id="aiContextPeek" type="button" onclick="toggleAiContextDock()" aria-label="查看 AI 主動建議" aria-live="polite"></button>
-  <button class="ai-context-trigger" type="button" onclick="toggleAiContextDock()" aria-label="開啟情境 AI 助教" aria-controls="aiContextPanel" aria-expanded="false">
-    <svg class="ic ai-assistant-icon" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5c.7 4.8 3.2 7.3 8 8-4.8.7-7.3 3.2-8 8-.7-4.8-3.2-7.3-8-8 4.8-.7 7.3-3.2 8-8z"/><path d="M19 3v4M17 5h4M5.5 17.5v3M4 19h3"/></svg>
-  </button>
-</div>
 
 <script src="motion.js?v=1"></script>
 <script src="data.js?v=20261008m"></script>

@@ -603,8 +603,6 @@ function renderGreetingHeader(){
   renderDailyFocus();
   renderSmartOverview();
   refreshSchoolExamReadiness();
-  renderAiContextDock();
-  renderChatFollowups();
 }
 
 function calibratedTimeFactor(){
@@ -685,9 +683,6 @@ function openReadinessTarget(subjectId,index){
     setTimeout(function(){row.classList.remove('readiness-target-flash');},1800);
   },0);
 }
-// Shared by the rule-based smart-overview cards and the AI daily-brief
-// request, so the AI reasons over exactly the same real numbers the cards
-// show — not a separately-computed or re-guessed picture.
 function smartOverviewData(){
   const factor=calibratedTimeFactor();
   const today=isoDate(new Date()), due=(LEARNING_EVIDENCE.reviews||[]).filter(function(r){return r.due_date<=today;});
@@ -704,45 +699,7 @@ function renderSmartOverview(){
   if(d.evidencedWeak)cards.push('<div class="smart-card"><div class="smart-kicker">優先補強</div><div class="smart-value">'+d.evidencedWeak.c+'</div><div class="smart-copy">'+d.evidencedWeak.s+' · '+d.evidencedWeak.score+'%'+(d.evidencedWeak.verified?'，已有作答證據':'，尚待題目驗證')+'</div></div>');
   if(d.accuracy!==null||(LEARNING_EVIDENCE.sessions||[]).length)cards.push('<div class="smart-card"><div class="smart-kicker">本週學習</div><div class="smart-value">'+(d.accuracy===null?'時間校準中':d.accuracy+'% 正確率')+'</div><div class="smart-copy">時間校準：'+d.factor.confidence+(d.factor.factor!==1?'（實際約為預估 '+Math.round(d.factor.factor*100)+'%）':'')+'</div></div>');
   el.innerHTML=cards.join('');el.style.display=cards.length?'grid':'none';
-  const briefBtn=document.getElementById('aiDailyBriefBtn');if(briefBtn)briefBtn.style.display=SUBJECTS.length?'':'none';
 }
-let dailyBriefReturnFocus=null;
-function closeDailyBriefModal(){
-  const modal=document.getElementById('dailyBriefModal');
-  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
-  if(dailyBriefReturnFocus&&dailyBriefReturnFocus.isConnected)dailyBriefReturnFocus.focus();
-  dailyBriefReturnFocus=null;
-}
-// Same on-demand AI-synthesis pattern, applied to the very first screen the
-// student sees: turns the rule-based smart-overview stat cards (due
-// reviews, weakest verified chapter, weekly accuracy, time calibration)
-// into one coherent, reasoned recommendation instead of three disconnected
-// numbers the student has to interpret themselves.
-async function requestDailyBrief(){
-  const modal=document.getElementById('dailyBriefModal'),body=document.getElementById('dailyBriefBody');if(!modal||!body)return;
-  if(!modal.classList.contains('open'))dailyBriefReturnFocus=document.activeElement;
-  body.innerHTML='<div class="diagnostic-loading"><span></span><p>正在根據你的實際進度整理今天建議…</p></div>';
-  modal.classList.add('open');modal.setAttribute('aria-hidden','false');modal.querySelector('.chapter-tool-close')?.focus();
-  const d=smartOverviewData();
-  const nextTask=(function(){const el=document.getElementById('calNextInfo');return el?el.textContent.trim():'';})();
-  try{
-    const r=await fetch('/api/daily-brief',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      current_week:d.currentWeek,
-      next_task:nextTask,
-      due_review_count:d.due.length,
-      due_reviews:d.due.slice(0,5).map(function(r){const s=SUBJECTS.find(function(x){return x.id===r.subject_id;});const c=s&&s.chapters.find(function(x){return stableTaskKey(x.t)===r.chapter_key;});return (s?s.name:'')+'／'+(c?c.t:'');}).join('、'),
-      weak_chapter:d.evidencedWeak?(d.evidencedWeak.s+'／'+d.evidencedWeak.c+'（'+d.evidencedWeak.score+'%'+(d.evidencedWeak.verified?'，已有作答證據':'，尚待驗證')+'）'):'',
-      recent_accuracy:d.accuracy==null?'':(d.accuracy+'%'),
-      time_calibration:d.factor.factor!==1?('實際約為預估的 '+Math.round(d.factor.factor*100)+'%（'+d.factor.confidence+'）'):''
-    })});
-    const j=await r.json();
-    if(!r.ok||!j.brief)throw new Error(j.message||'目前無法產生建議');
-    body.innerHTML='<div class="chapter-summary-content">'+renderChapterSummaryText(j.brief)+'</div>';
-  }catch(e){
-    body.innerHTML='<div class="diagnostic-error"><b>建議暫時載入失敗</b><span>'+escapeHtml(e.message)+'</span><button type="button" onclick="requestDailyBrief()">重新產生</button></div>';
-  }
-}
-function chapterRef(subjectId,index){const s=SUBJECTS.find(function(x){return x.id===subjectId;});return s&&{subject:s,chapter:s.chapters[index]};}
 let activeVoiceRecognition=null;
 function voiceButtonHtml(targetId){return '<button class="voice-input-btn tool-voice-btn" type="button" onclick="startVoiceInput(\''+targetId+'\',this)" aria-label="語音輸入"></button>';}
 function spokenNumber(text){
@@ -758,29 +715,6 @@ function startVoiceInput(targetId,button){
   recognition.onresult=function(e){let text=Array.from(e.results).map(function(r){return r[0].transcript;}).join('');if(target.type==='number')text=spokenNumber(text);target.value=target.type==='number'?text:(target.value?(target.value+' '+text):text);target.dispatchEvent(new Event('input',{bubbles:true}));};
   recognition.onerror=function(e){if(e.error!=='aborted')showTaskToast(e.error==='not-allowed'?'請允許麥克風權限後再試':'沒有聽清楚，請再說一次');};
   recognition.onend=function(){button.classList.remove('listening');if(activeVoiceRecognition===recognition)activeVoiceRecognition=null;};recognition.start();
-}
-// Light markdown (## headings, - lists, $math$) for AI brief text.
-function formatDiagnosticMath(text){
-  const source=String(text||''),pattern=/(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\])/g;let out='',last=0,match;
-  while((match=pattern.exec(source))){
-    out+=escapeHtml(source.slice(last,match.index));const token=match[0],display=token.startsWith('$$')||token.startsWith('\\[');const expr=token.replace(/^\$\$|\$\$$/g,'').replace(/^\$|\$$/g,'').replace(/^\\\(|\\\)$/g,'').replace(/^\\\[|\\\]$/g,'');
-    try{out+=window.katex?window.katex.renderToString(expr,{throwOnError:false,displayMode:display,strict:false}):escapeHtml(token);}catch(e){out+=escapeHtml(token);}last=match.index+token.length;
-  }
-  return out+escapeHtml(source.slice(last));
-}
-function renderChapterSummaryText(text){
-  const lines=String(text||'').split(/\r?\n/);
-  let html='',inList=false;
-  function closeList(){if(inList){html+='</ul>';inList=false;}}
-  lines.forEach(function(line){
-    const trimmed=line.trim();
-    if(!trimmed){closeList();return;}
-    if(trimmed.indexOf('## ')===0){closeList();html+='<h4 class="cs-h">'+formatDiagnosticMath(trimmed.slice(3))+'</h4>';}
-    else if(trimmed.indexOf('- ')===0){if(!inList){html+='<ul class="cs-list">';inList=true;}html+='<li>'+formatDiagnosticMath(trimmed.slice(2))+'</li>';}
-    else{closeList();html+='<p class="cs-p">'+formatDiagnosticMath(trimmed)+'</p>';}
-  });
-  closeList();
-  return html;
 }
 // Days in a row (ending today, or yesterday if nothing yet today) on which at
 // least one video was checked off — from the real completion dates.
@@ -939,7 +873,6 @@ async function toggleTask(taskId, el){
       const p = subjectVideoProgress(subject, new Set(DONE_TASK_IDS));
       celebrate(chapter.t+' 完成！', subject.name+' 已看 '+p.done+'/'+p.total+' 支', subject.color);
     }else showTaskToast(isDone ? '已看完，進度已同步到日曆' : '已取消完成');
-    if(isDone)signalAiNudge();
   }
 }
 
@@ -1327,231 +1260,6 @@ function noteUiAction(){
   uiFastTimer = setTimeout(function(){ root.classList.remove('ui-fast'); }, 360);
 }
 
-let currentAiContextPrompts = [];
-let currentAiProactivePrompt = '';
-let transientAiNudge = null;
-let lastAiContextLabel = '日曆與今日進度';
-function dailyEnergy(){
-  try{const row=JSON.parse(localStorage.getItem('dailyEnergyV1')||'null');return row&&row.date===isoDate(new Date())?row.value:'';}catch(e){return '';}
-}
-function energyLabel(value){return value==='low'?'有點累':value==='high'?'有精神':value==='normal'?'普通':'';}
-function setDailyEnergy(value){
-  if(['low','normal','high'].indexOf(value)===-1)return;
-  try{localStorage.setItem('dailyEnergyV1',JSON.stringify({date:isoDate(new Date()),value:value}));}catch(e){}
-  renderAiContextDock();renderChatFollowups();
-  signalAiNudge({label:value==='low'?'今天先用小步驟前進':value==='high'?'把精神用在最重要的難題':'照穩定節奏完成一件事',detail:value==='low'?'AI 會縮短單次專注並保留休息':'已依今天狀態調整規劃方式',prompt:'我今天的精神狀態是「'+energyLabel(value)+'」。請依我的真實進度安排下一步，調整任務大小與休息節奏；不要因為今天疲累就降低對長期能力的判斷。'});
-}
-function energyCheckHtml(){
-  const current=dailyEnergy();return '<span>'+(current?'今天狀態':'今天感覺如何')+'</span><div>'+[['low','有點累'],['normal','普通'],['high','有精神']].map(function(x){return '<button type="button" class="'+(current===x[0]?'active':'')+'" aria-pressed="'+String(current===x[0])+'" onclick="setDailyEnergy(\''+x[0]+'\')">'+x[1]+'</button>';}).join('')+'</div>';
-}
-function todayStudyMinutes(){
-  const today=isoDate(new Date());
-  return (LEARNING_EVIDENCE.sessions||[]).reduce(function(total,row){
-    const raw=row.finished_at||row.started_at;if(!raw)return total;
-    const date=new Date(String(raw).endsWith('Z')?raw:raw+'Z');
-    return !Number.isNaN(date.getTime())&&isoDate(date)===today?total+(Number(row.actual_minutes)||0):total;
-  },0);
-}
-function endDayPrompt(){
-  const minutes=todayStudyMinutes(),d=smartOverviewData(),next=nextFoundationTask(DONE_TASK_IDS);
-  return '我今天實際計時讀了 '+minutes+' 分鐘。請根據網站中的真實學習、作答與複習紀錄，幫我做一個簡短收尾：整理今天確實完成或練習的內容、指出一件值得肯定的具體行動、提醒尚未解決的重點，最後只留下明天開始時的第一步'+(next?'（目前下一任務是 '+next.subject+'／'+next.title+'）':'')+'。不要虛構今天沒有發生的成果，也不要用責備語氣。';
-}
-function aiProactiveNudge(sectionId){
-  if(transientAiNudge&&transientAiNudge.expires>Date.now())return transientAiNudge;
-  transientAiNudge=null;
-  const overview=smartOverviewData();
-  if(sectionId==='subjects'){
-    const tab=document.querySelector('.stab.on'),subject=SUBJECTS.find(function(s){return tab&&s.id===tab.dataset.id;});
-    if(subject){
-      const rows=subject.chapters.map(function(c,index){const m=chapterEstimatedMastery(subject,c);return {c:c,index:index,m:m};}).filter(function(x){return x.c.pri==='must';}).sort(function(a,b){return a.m.score-b.m.score;});
-      const target=rows[0];if(target)return {label:'本科優先：'+target.c.t,detail:target.m.verified?'目前掌握推估 '+target.m.score+'%，建議先補錯題':'目前僅依完成度推估，建議先做章節診斷',prompt:'請根據我的真實進度，分析「'+subject.name+'／'+target.c.t+'」目前最值得先補的觀念，並安排一個可立即開始的短任務。沒有作答證據時請明確說明。'};
-    }
-  }
-  if(sectionId==='schools'){
-    const opened=document.querySelector('.uni-card[open]'),u=opened&&UNIS.find(function(row){return opened.querySelector('.uni-en')?.textContent.startsWith(row.en);});
-    if(u){const d=schoolExamReadiness(u);if(d&&d.weakest)return {label:u.name+'：先補 '+d.weakest.subject.name,detail:d.weakest.chapter.t+(d.weakest.verified?'':' · 尚待題目驗證'),prompt:'請依網站記錄的真實進度與「'+u.name+'」考科，說明我現在為什麼應優先處理「'+d.weakest.subject.name+'／'+d.weakest.chapter.t+'」，並給我今天能完成的行動。不要把準備度當成錄取率。'};}
-    return {label:'先選一間學校查看個人化建議',detail:'展開校卡後，AI 會依該校考科找出下一步',prompt:'請根據網站目前的各校考科與我的真實六科進度，建議我先深入比較哪三間學校，以及各自需要確認的官方資訊。'};
-  }
-  if(sectionId==='materials'){
-    const next=nextFoundationTask(DONE_TASK_IDS);
-    return next?{label:'素材要跟著下一項任務走',detail:next.subject+' · '+next.title,prompt:'我的下一項任務是「'+next.subject+'／'+next.title+'」。請只從網站已有素材中選擇現在最適合的一套，說明使用順序並避免重複學習。'}:{label:'基礎素材已完成',detail:'接著應改用考古題與錯題紀錄',prompt:'我的基礎教材任務已完成，請依真實作答與複習紀錄安排下一輪刷題素材。'};
-  }
-  const todayMinutes=todayStudyMinutes();
-  if((sectionId==='schedule'||sectionId==='ai')&&todayMinutes>=20&&new Date().getHours()>=20)return {label:'今天已讀 '+todayMinutes+' 分鐘，要收尾了嗎？',detail:'AI 可以整理今天並留下明天第一步',prompt:endDayPrompt()};
-  if(overview.due.length)return {label:'有 '+overview.due.length+' 個到期複習',detail:'先處理間隔複習，再回到主任務',prompt:'我目前有 '+overview.due.length+' 個到期複習。請依真實進度幫我選出今天先複習的章節，再銜接主任務。'};
-  const next=nextFoundationTask(DONE_TASK_IDS);
-  return next?{label:'現在最值得做：'+next.title,detail:next.subject+' · 約 '+Math.max(1,Math.round(next.estMinutes/60*10)/10)+' 小時',prompt:'請查詢我的真實任務進度，針對下一項「'+next.subject+'／'+next.title+'」拆成今天可執行的最小步驟。'}:{label:'基礎期任務已完成',detail:'下一步應以作答證據安排補強',prompt:'我的基礎期任務已完成，請根據作答與複習紀錄安排接下來一週的刷題重點。'};
-}
-function aiPageContext(){
-  const active = document.querySelector('.sec.on');
-  const id = active ? active.id.replace('sec-','') : 'schedule';
-  if(id === 'subjects'){
-    const panel = document.querySelector('.sp.on');
-    const subject = document.querySelector('.stab.on');
-    const chapter = panel && (panel.querySelector('.ch-row:not(.collapsed) .ch-title') || panel.querySelector('.ch-row .ch-title'));
-    const label = (subject ? subject.textContent.trim() : '六科')+(chapter ? ' · '+chapter.textContent.trim() : '');
-    return {label:label,prompts:[
-      {label:'解釋目前考點',text:'我正在看「'+label+'」。請用資工所考試會用到的深度解釋核心觀念，並提醒常見陷阱。'},
-      {label:'安排本章讀法',text:'請根據我目前的進度，幫我安排「'+label+'」的閱讀、影片與練習順序。'},
-      {label:'出題測驗我',text:'請針對「'+label+'」出3題由淺到深的資工所程度題目，先不要公布答案。'}
-    ]};
-  }
-  if(id === 'schools'){
-    const opened = document.querySelector('.uni-card[open] .uni-name');
-    const label = opened ? opened.textContent.trim() : '各校考試資訊';
-    return {label:label,prompts:[
-      {label:'整理考科差異',text:'請根據網站目前的學校資料，整理「'+label+'」的考科、考試方式與我需要注意的差異。'},
-      {label:'規劃報考策略',text:'以我準備六科資工所考試的情況，幫我分析「'+label+'」的準備重點與報考策略。'},
-      {label:'列出待確認資訊',text:'請列出「'+label+'」目前仍應以116學年度官方簡章確認的資訊，不要把未確認資料說成確定。'}
-    ]};
-  }
-  if(id === 'materials'){
-    const activeFilter = document.querySelector('#matFilterChips .filter-chip.active');
-    const detail = activeFilter && activeFilter.textContent.trim() !== '全部' ? ' · '+activeFilter.textContent.trim() : '';
-    const label = '備考素材'+detail;
-    return {label:label,prompts:[
-      {label:'推薦現在素材',text:'請依照我的真實進度，從網站現有素材中建議我現在最該使用的書目、影片系列或筆記。'},
-      {label:'比較課程版本',text:'請比較網站素材頁中同一科目的不同老師或OCW版本，告訴我卡住時適合換哪一套。'},
-      {label:'安排使用順序',text:'請把網站現有素材依照我的六科任務進度排成實際使用順序，避免重複看相同主題。'}
-    ]};
-  }
-  const next = document.getElementById('calNextInfo');
-  const cal = document.querySelector('#calContainer .cal-title');
-  const label = '日曆'+(cal ? ' · '+cal.textContent.trim() : '');
-  const nextText = next ? next.textContent.replace(/\s+/g,' ').trim() : '';
-  return {label:label,prompts:[
-    {label:'評估下一步',text:'這是我日曆目前顯示的下一步：'+nextText+'。請查詢真實進度後，告訴我現在最應該先完成什麼。'},
-    {label:'檢查是否落後',text:'請查詢我目前的任務進度，判斷是否落後，並用剩餘任務數與工時說明。'},
-    {label:'調整今天安排',text:'請根據我目前真實進度與今天可讀時間，幫我調整今天的讀書安排；先提出建議，不要直接跳過任務。'}
-  ]};
-}
-function renderAiContextDock(){
-  const dock = document.getElementById('aiContextDock');
-  const title = document.getElementById('aiContextTitle');
-  const actions = document.getElementById('aiContextActions');
-  const nudgeEl=document.getElementById('aiContextNudge'),peek=document.getElementById('aiContextPeek');
-  if(!dock || !title || !actions) return;
-  const onAiPage = true; // the assistant is a floating chat now; the context dock stays hidden
-  const active=document.querySelector('.sec.on');
-  const nudge=aiProactiveNudge(active?active.id.replace('sec-',''):'schedule');
-  const homeNudge=document.getElementById('aiHomeNudge');
-  if(homeNudge){homeNudge.innerHTML=nudge?'<small>AI 主動建議</small><b>'+escapeHtml(nudge.label)+'</b><span>'+escapeHtml(nudge.detail)+'</span>':'';homeNudge.hidden=!nudge;}
-  const energyHtml=energyCheckHtml(),homeEnergy=document.getElementById('aiHomeEnergy'),contextEnergy=document.getElementById('aiContextEnergy');
-  if(homeEnergy)homeEnergy.innerHTML=energyHtml;if(contextEnergy)contextEnergy.innerHTML=energyHtml;
-  const timePlansHtml='<span>我現在有</span>'+[30,60,120].map(function(minutes){return '<button type="button" onclick="useAiTimePlan('+minutes+')">'+minutes+' 分</button>';}).join('');
-  const homeTime=document.getElementById('aiHomeTimePlans'),contextTime=document.getElementById('aiContextTimePlans');
-  if(homeTime)homeTime.innerHTML=timePlansHtml;if(contextTime)contextTime.innerHTML=timePlansHtml;
-  currentAiProactivePrompt=nudge?nudge.prompt:'';
-  dock.classList.toggle('is-hidden', onAiPage);
-  if(onAiPage){ dock.classList.remove('open'); return; }
-  const ctx = aiPageContext();
-  currentAiContextPrompts = ctx.prompts;
-  lastAiContextLabel = ctx.label;
-  title.textContent = ctx.label;
-  if(nudgeEl)nudgeEl.innerHTML=nudge?'<b>'+escapeHtml(nudge.label)+'</b><span>'+escapeHtml(nudge.detail)+'</span>':'';
-  if(peek){peek.innerHTML=nudge?'<span></span>'+escapeHtml(nudge.label):'';peek.hidden=!nudge;}
-  actions.innerHTML = ctx.prompts.map(function(p,i){
-    return '<button type="button" onclick="useAiContextPrompt('+i+')">'+escapeHtml(p.label)+'</button>';
-  }).join('');
-}
-function signalAiNudge(nudge){
-  if(nudge)transientAiNudge=Object.assign({expires:Date.now()+15000},nudge);
-  renderAiContextDock();
-  const dock=document.getElementById('aiContextDock');if(!dock||dock.classList.contains('is-hidden'))return;
-  dock.classList.remove('attention');void dock.offsetWidth;dock.classList.add('attention');
-  setTimeout(function(){dock.classList.remove('attention');},1800);
-}
-function useAiProactivePrompt(){
-  if(!currentAiProactivePrompt)return;
-  sendAiPromptNow(currentAiProactivePrompt);
-}
-function sendAiPromptNow(prompt){
-  const send=document.getElementById('chatSendBtn');if(send&&send.disabled)return;
-  openAiWithPrompt(prompt);
-  setTimeout(function(){const input=document.getElementById('chatInput');if(input&&input.value.trim())sendChat();},80);
-}
-function useAiTimePlan(minutes){
-  const allowed=[30,60,120];if(allowed.indexOf(minutes)===-1)return;
-  const d=smartOverviewData(),next=nextFoundationTask(DONE_TASK_IDS);
-  const due=d.due.slice(0,4).map(function(r){const s=SUBJECTS.find(function(x){return x.id===r.subject_id;});const c=s&&s.chapters.find(function(x){return stableTaskKey(x.t)===r.chapter_key;});return s&&c?s.name+'／'+c.t:'';}).filter(Boolean);
-  const context=aiPageContext().label;
-  const energy=energyLabel(dailyEnergy());
-  const prompt='我現在有 '+minutes+' 分鐘可讀'+(energy?'，今天精神狀態是「'+energy+'」':'')+'。請依我的真實進度，排一份總長不超過 '+minutes+' 分鐘、可以立刻照做的計畫。'
-    +'目前頁面情境：'+context+'。'
-    +(next?'下一個未完成任務：'+next.subject+'／'+next.title+'。':'基礎期任務已完成。')
-    +(due.length?'到期複習：'+due.join('、')+'。':'目前沒有到期複習。')
-    +(d.evidencedWeak?'已知優先補強：'+d.evidencedWeak.s+'／'+d.evidencedWeak.c+'（'+d.evidencedWeak.score+'%'+(d.evidencedWeak.verified?'，有作答證據':'，尚待驗證')+'）。':'目前沒有足夠弱點證據。')
-    +(energy==='有點累'?'請拆成較短專注段並安排一次明確休息，不要用責備語氣。':energy==='有精神'?'把認知負荷最高、最需要推導或手算的內容排在前面。':'用穩定節奏安排，避免塞入過多切換。')
-    +'請分配每一步分鐘數，總和必須等於或小於 '+minutes+' 分鐘；先說第一步，不要提供空泛鼓勵，也不要自行把任何任務標成完成。';
-  sendAiPromptNow(prompt);
-}
-function aiContextSnapshot(){
-  const d=smartOverviewData(),queue=getFoundationQueueStatus(DONE_TASK_IDS),next=nextFoundationTask(DONE_TASK_IDS);
-  const active=document.querySelector('.sec.on'),section=active?active.id.replace('sec-',''):'schedule';
-  const subjectTab=document.querySelector('.stab.on'),openChapter=document.querySelector('.sp.on .ch-row:not(.collapsed) .ch-title');
-  const school=document.querySelector('.uni-card[open] .uni-name');
-  return {
-    section:section,
-    page_label:lastAiContextLabel,
-    queue:{effective_week:queue.effectiveWeek,undone_count:queue.undoneCount,remaining_minutes:queue.totalRemainingMinutes},
-    next_task:next?{subject:next.subject,title:next.title,estimated_minutes:next.estMinutes}:null,
-    due_reviews:d.due.slice(0,5).map(function(r){const s=SUBJECTS.find(function(x){return x.id===r.subject_id;});const c=s&&s.chapters.find(function(x){return stableTaskKey(x.t)===r.chapter_key;});return s&&c?s.name+'／'+c.t:'';}).filter(Boolean),
-    evidenced_weakness:d.evidencedWeak?{subject:d.evidencedWeak.s,chapter:d.evidencedWeak.c,score:d.evidencedWeak.score,verified:d.evidencedWeak.verified}:null,
-    visible_subject:section==='subjects'&&subjectTab?subjectTab.textContent.trim():'',
-    visible_chapter:section==='subjects'&&openChapter?openChapter.textContent.trim():'',
-    visible_school:section==='schools'&&school?school.textContent.trim():'',
-    daily_energy:energyLabel(dailyEnergy()),
-    today_study_minutes:todayStudyMinutes()
-  };
-}
-function renderChatFollowups(){
-  const root=document.getElementById('aiFollowups');if(!root)return;
-  const d=smartOverviewData(),next=nextFoundationTask(DONE_TASK_IDS),actions=[];
-  const todayMinutes=todayStudyMinutes();
-  if(todayMinutes>0&&new Date().getHours()>=18)actions.push({label:'幫今天收尾 · '+todayMinutes+' 分',icon:'check-circle',run:'sendAiPromptNow(endDayPrompt())'});
-  if(d.due.length)actions.push({label:'安排 '+d.due.length+' 個到期複習',icon:'clock',run:"sendAiPromptNow('請依照到期日、章節重要性與我的真實掌握證據，安排目前到期複習的處理順序。給我第一個立刻能開始的動作。')"});
-  if(d.evidencedWeak){
-    const s=SUBJECTS.find(function(x){return x.name===d.evidencedWeak.s;}),index=s?s.chapters.findIndex(function(c){return c.t===d.evidencedWeak.c;}):-1;
-    if(s&&index>=0)actions.push({label:'前往補強 '+d.evidencedWeak.c,icon:'target',run:"openReadinessTarget('"+s.id+"',"+index+")"});
-  }
-  if(next)actions.push({label:'前往下一項任務',icon:'chevron-right',run:"goSubjWeek('"+next.subject+"',"+next.week+",'"+next.type+"')"});
-  actions.push({label:'縮成 30 分鐘計畫',icon:'clock',run:'useAiTimePlan(30)'});
-  root.innerHTML='<span>接下來可以</span><div>'+actions.slice(0,4).map(function(a){return '<button type="button" onclick="'+a.run+'">'+svgIcon(a.icon,12)+escapeHtml(a.label)+'</button>';}).join('')+'</div>';
-}
-function toggleAiContextDock(){
-  const dock = document.getElementById('aiContextDock');
-  if(!dock) return;
-  const open = dock.classList.toggle('open');
-  const panel = document.getElementById('aiContextPanel');
-  const trigger = dock.querySelector('.ai-context-trigger');
-  if(panel) panel.setAttribute('aria-hidden',String(!open));
-  if(trigger) trigger.setAttribute('aria-expanded',String(open));
-  if(open) renderAiContextDock();
-}
-function closeAiContextDock(){
-  const dock = document.getElementById('aiContextDock');
-  if(!dock) return;
-  dock.classList.remove('open');
-  const panel = document.getElementById('aiContextPanel');
-  const trigger = dock.querySelector('.ai-context-trigger');
-  if(panel) panel.setAttribute('aria-hidden','true');
-  if(trigger) trigger.setAttribute('aria-expanded','false');
-}
-function useAiContextPrompt(index){
-  const item = currentAiContextPrompts[index];
-  if(item) openAiWithPrompt(item.text);
-}
-function openAiWithPrompt(text){
-  closeAiContextDock();
-  toggleAiPanel(true);
-  setTimeout(function(){
-    const input = document.getElementById('chatInput');
-    if(!input) return;
-    const draft = input.value.trim();
-    input.value = text ? (draft ? draft+'\n\n'+text : text) : draft;
-    input.focus();
-  },0);
-}
 // All 6 destinations are direct pills now (no 更多 dropdown — the user
 // didn't want secondary pages tucked away or pushed to the page bottom),
 // so active state is a straight data-sec lookup.
@@ -1564,7 +1272,6 @@ function goSec(id, el){
   document.querySelectorAll('.pill').forEach(function(p){ p.classList.remove('on'); p.removeAttribute('aria-current'); });
   const directPill = document.querySelector('.pill[data-sec="'+id+'"]');
   if(directPill){ directPill.classList.add('on'); directPill.setAttribute('aria-current','page'); }
-  setTimeout(renderAiContextDock,0);
   if(id === 'schedule') writeRoute('/calendar' + (calSelectedIso ? '/' + calSelectedIso : ''));
   else if(id === 'subjects') writeRoute(subjectsRoute());
 }
@@ -1694,7 +1401,6 @@ async function init(){
       this.tabIndex=0;
       document.getElementById('sp-'+this.dataset.id).classList.add('on');
       document.getElementById('sp-'+this.dataset.id).setAttribute('aria-hidden','false');
-      setTimeout(renderAiContextDock,0);
       if(document.getElementById('sec-subjects').classList.contains('on')) writeRoute(subjectsRoute());
     };
     stabs.appendChild(t);
@@ -1865,7 +1571,6 @@ async function init(){
         var row = head.closest('.ch-row');
         var collapsed = row.classList.toggle('collapsed');
         head.setAttribute('aria-expanded', String(!collapsed));
-        setTimeout(renderAiContextDock,0);
         writeRoute(subjectsRoute(), true);
       });
       head.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); head.click(); } });
@@ -1998,11 +1703,9 @@ async function init(){
     });
   })();
 
-  // The AI chat, check-in banner and restart card are hidden on the
-  // simplified main page (日曆 + 六科 only), so their loaders aren't started:
-  // no chat history fetch, no AI check-in generation, no 60 s restart poll.
+  // The restart card is hidden on the simplified main page (日曆 + 六科
+  // only), so its 60 s poll isn't started.
   document.body.classList.add('ui-ready');
-  renderAiContextDock();
   // 六科 opens on the subject of the current task, not always the first tab.
   const cur = nextFoundationTask(DONE_TASK_IDS), curSub = cur && SUBJECTS.find(function(s){ return s.name === cur.subject; });
   const curTab = curSub && document.querySelector('.stab[data-id="'+curSub.id+'"]');
@@ -2014,38 +1717,9 @@ async function init(){
 
 init();
 
-// ── AI Chat (bridges to the local Codex CLI via the server) ─────────
 function escapeHtml(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
-async function loadMemories(){
-  const list = document.getElementById('memoryList');
-  if(!list) return;
-  try{
-    const r = await fetch('/api/memory');
-    const j = await r.json();
-    const memories = j.memories || [];
-    if(!memories.length){
-      list.innerHTML = '<div class="memory-empty">還沒有長期記憶——AI 聊天時發現值得記住的事會存在這裡。</div>';
-      return;
-    }
-    list.innerHTML = memories.map(function(m){
-      return '<div class="memory-item"><span>'+escapeHtml(m.content)+'</span>'
-        +'<button class="memory-del" onclick="deleteMemory('+m.id+')" title="刪除">'+svgIcon('x',13)+'</button></div>';
-    }).join('');
-  }catch(e){
-    list.innerHTML = '<div class="memory-empty">無法連線到伺服器。</div>';
-  }
-}
-
-async function deleteMemory(id){
-  await fetch('/api/memory/' + id, { method:'DELETE' });
-  loadMemories();
-}
-
-// The chat backend is gone; leftover AI-dock helpers call this.
-function sendChat(){}
-
 async function exportProgressBackup(){
   try{
     const r = await fetch('/api/progress/export');
@@ -2155,7 +1829,6 @@ document.addEventListener('DOMContentLoaded', function(){
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openGlobalSearch();}
     if(e.key==='Escape'){
       if(document.getElementById('globalSearchPanel')?.classList.contains('open'))closeGlobalSearch();
-      else closeAiContextDock();
     }
     if(e.key==='Tab'){
       var activeDialog=document.querySelector('.chapter-tool-modal.open .chapter-tool-dialog, .global-search-panel.open .global-search-dialog');
@@ -2166,11 +1839,6 @@ document.addEventListener('DOMContentLoaded', function(){
       if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
       else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
     }
-  });
-  document.addEventListener('click',function(e){
-    const dock = document.getElementById('aiContextDock');
-    if(dock && dock.classList.contains('open') && !e.target.closest('#aiContextDock')) closeAiContextDock();
-    if(e.target.closest('.uni-summary,#matFilterChips .filter-chip')) setTimeout(renderAiContextDock,0);
   });
 });
 
@@ -2269,8 +1937,6 @@ function renderRestart(){
     + '<div class="rs-msg" id="restartMsg">'+(done ? '今天的目標完成了。多讀是加分，不讀也沒關係。' : '讀一小段就算數，不用補昨天的。')+'</div>';
   card.hidden = false;
 }
-
-function toggleAiPanel(){}
 
 // ── Router ──
 // Every view has its own address, so back/forward, refresh and bookmarks
