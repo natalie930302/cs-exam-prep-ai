@@ -620,3 +620,12 @@ a { color: inherit; }
   /* the video is full-bleed on phones; keep the bar above it inside the gutter */
   .st-player-wrap { margin-top: 0 !important; }
 }
+/* 手機：切換列和段落進度（時間軸）都在影片上方 */
+@media (max-width: 900px) {
+  .st-now { order: 0 !important; }
+  .st-timeline { order: 1 !important; margin: 0 0 8px !important; }
+  .st-player-wrap { order: 2 !important; }
+  .st-teach { order: 3 !important; }
+  .st-side { order: 4 !important; }
+  .st-more { order: 5 !important; }
+}
