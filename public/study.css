@@ -605,3 +605,4 @@ a { color: inherit; }
   .st-skip { bottom: 7% !important; }
   .st-player-wrap.has-skip .st-sub { max-width: calc(100% - 150px) !important; }
 }
+.st-skip { border: 1.5px solid color-mix(in srgb, var(--subj, var(--ac)) 70%, #fff) !important; }
