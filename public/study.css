@@ -542,3 +542,8 @@ a { color: inherit; }
 /* 雙語字幕：中文在上、大而粗；英文在下、小而淡 */
 .st-sub-zh { font-size: 1.12em; font-weight: 700; letter-spacing: .01em; }
 .st-sub-en { font-size: .72em !important; opacity: .7 !important; font-weight: 400; margin-top: 2px; }
+/* 手機：動畫區沒有在播動畫時縮小，不佔掉半個畫面 */
+@media (max-width: 760px) {
+  .st-side { transition: height .3s ease; }
+  .st-side.is-idle { height: 120px !important; }
+}

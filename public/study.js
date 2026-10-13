@@ -111,6 +111,7 @@
   // A section's scene, with its step times (cues) and where the section ends,
   // so each step of the animation starts when the lecturer says it.
   function postScene(sec){
+    $('side').classList.remove('is-idle');
     $('stage').contentWindow.postMessage({type: 'scene', scene: sec.scene, params: sec.params || {},
       cues: sec.cues || null, end: sec._end == null ? null : sec._end}, location.origin);
   }
@@ -123,6 +124,7 @@
     if (!hasStage) return;
     if (stageScene === 'idle:' + text) return;
     stageScene = 'idle:' + text;
+    $('side').classList.add('is-idle');
     if (stageReady) postIdle(text); else pendingScene = {idle: text};
   }
   window.addEventListener('message', function(e){
@@ -463,7 +465,9 @@
     if (k >= 0) addCardTerms(subs[k][2] + ' ' + (subs[k][3] || ''));
     if (k >= 0) el.innerHTML = subs[k][3]
       ? '<span class="st-sub-zh">' + esc(subs[k][3]) + '</span><span class="st-sub-en">' + esc(subs[k][2]) + '</span>'
-      : '<span class="st-sub-zh">' + esc(subs[k][2]) + '</span>';
+      : subs[k].length > 3   // bilingual video, but this line has no translation
+        ? '<span class="st-sub-en">' + esc(subs[k][2]) + '</span>'
+        : '<span class="st-sub-zh">' + esc(subs[k][2]) + '</span>';
   }
 
   // ── Skip offer: segments checked by hand to be admin / chit-chat only
@@ -624,6 +628,7 @@
     if (stageReady) {
       if (stageScene !== key) {
         stageScene = key;
+        $('side').classList.remove('is-idle');
         $('stage').contentWindow.postMessage({type: 'scene', scene: sceneFor(sec), params: sec.params || {}, manual: true, step: st.k}, location.origin);
       } else $('stage').contentWindow.postMessage({type: 'goto', step: st.k}, location.origin);
     }
