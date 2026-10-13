@@ -640,3 +640,9 @@ a { color: inherit; }
 @media (max-width: 640px) {
   .st-top { position: static !important; }
 }
+/* 手機／平板：學習空間每個區塊之間一律 12px */
+@media (max-width: 900px) {
+  .st-main { row-gap: 12px !important; }
+  .st-now, .st-timeline, .st-player-wrap, .st-teach, .st-side, .st-more { margin-top: 0 !important; margin-bottom: 0 !important; }
+  .st-timeline { padding-bottom: 0 !important; }
+}
