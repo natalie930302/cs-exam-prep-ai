@@ -569,3 +569,17 @@ a { color: inherit; }
   .st-end .st-qz { padding: 12px 14px !important; }
   .st-qz-q { font-size: 14px; }
 }
+
+/* 手機／平板（單欄）：影片 → 操作列 → 段落時間軸 → 講解 → 動畫 → 分頁，
+   操作和講解都在影片正下方，不用往下捲才找得到 */
+@media (max-width: 900px) {
+  .st-player-wrap { order: 1; }
+  .st-now { order: 2; margin-top: 8px; }
+  .st-timeline { order: 3; }
+  .st-teach { order: 4; margin-top: 8px !important; }
+  .st-side { order: 5; }
+  .st-more { order: 6; }
+}
+@media (max-width: 900px) {
+  .st-teach { max-height: 42vh; overflow-y: auto; overscroll-behavior: contain; }
+}

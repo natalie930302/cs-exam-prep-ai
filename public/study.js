@@ -355,6 +355,28 @@
   $('prevVid').onclick = function(){ if (current) playVideo(current.seriesIdx, current.idx - 1, true); };
   $('nextVid').onclick = function(){ if (current) playVideo(current.seriesIdx, current.idx + 1, true); };
 
+  // ── Keyboard: space play/pause, ←/→ 5 s, [ / ] previous / next part ──
+  // (not while typing, and not while a quiz card waits for an answer)
+  document.addEventListener('keydown', function(e){
+    const tag = (e.target && e.target.tagName) || '';
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || (e.target && e.target.isContentEditable)) return;
+    if (e.ctrlKey || e.metaKey || e.altKey || !playerReady || !current) return;
+    if (document.querySelector('.st-ask')) return;
+    const t = player.getCurrentTime ? player.getCurrentTime() : 0;
+    if (e.key === ' ' || e.key === 'k') {
+      e.preventDefault();
+      if (player.getPlayerState() === 1) player.pauseVideo(); else player.playVideo();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      seek(Math.max(0, t + (e.key === 'ArrowLeft' ? -5 : 5)));
+    } else if ((e.key === '[' || e.key === ']') && curNotes) {
+      // start times of the parts, then the one before / after now
+      const starts = curNotes.sections.map(function(sec){ return sec.points.length ? sec.points[0].t : null; }).filter(function(x){ return x != null; });
+      const target = e.key === ']' ? starts.find(function(x){ return x > t + 1; }) : starts.filter(function(x){ return x < t - 2; }).pop();
+      if (target != null) { e.preventDefault(); seek(target); }
+    }
+  });
+
   async function markWatched(id, value){
     const wasDone = chapterVideosDone(subject.id, chapter, done);
     await setTask(vidTask(id), value);
