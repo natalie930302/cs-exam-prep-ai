@@ -583,3 +583,6 @@ a { color: inherit; }
 @media (max-width: 900px) {
   .st-teach { max-height: 42vh; overflow-y: auto; overscroll-behavior: contain; }
 }
+/* 跳過按鈕放右上（YouTube 標題列下方），不擋到下方的字幕 */
+.st-skip { top: 16% !important; bottom: auto !important; right: 12px !important; max-width: 46%; }
+@media (max-width: 640px) { .st-skip { top: 22% !important; right: 8px !important; max-width: 60%; padding: 6px 10px !important; } .st-skip span { font-size: 11px; } .st-skip b { font-size: 13px; } }
