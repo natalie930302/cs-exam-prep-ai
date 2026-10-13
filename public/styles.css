@@ -7820,3 +7820,12 @@ body#appRoot #main > .sec.on > * { animation: m-in .24s cubic-bezier(.2,.8,.2,1)
   body#appRoot .fab-nav { flex-direction: row !important; top: 24px !important; right: 32px !important; gap: 6px !important; padding: 4px !important; }
   body#appRoot .sec > .sh { padding-right: 170px; }
 }
+
+/* 手機六科：每個區塊之間一律 16px，科目按鈕撐滿寬度（跟下面的卡片一樣寬） */
+@media (max-width: 640px) {
+  body#appRoot #main #sec-subjects .stabs { width: 100% !important; max-width: none !important; margin: 0 0 16px !important; box-sizing: border-box; }
+  body#appRoot #main #sec-subjects > .sh { margin-bottom: 16px !important; }
+  body#appRoot #main #sec-subjects #spPanels { margin: 0 !important; padding: 0 !important; }
+  body#appRoot #main #sec-subjects #spPanels > .sp.on { display: flex !important; flex-direction: column !important; gap: 16px !important; margin: 0 !important; padding: 0 !important; }
+  body#appRoot #main #sec-subjects #spPanels > .sp.on > * { margin: 0 !important; }
+}
