@@ -341,7 +341,7 @@
    "q": "證 NPC 時為什麼用 decision 版？",
    "opts": [
     "optimization 至少和 decision 一樣難，decision 難就夠了",
-    "decision 版一定在 P",
+    "decision 版一定在 P，比較容易做 poly time reduction 的證明",
     "optimization 版不能寫演算法",
     "decision 版沒有答案"
    ],
@@ -353,7 +353,7 @@
    "opts": [
     "A 的 yes 對應 B 的 yes、no 對應 no",
     "B 必須是 NPC",
-    "A 的 instance 比 B 小",
+    "A 的 instance 大小必須比 B 的 instance 小",
     "B 的演算法要 O(n)"
    ],
    "ans": "A 的 yes 對應 B 的 yes、no 對應 no",
@@ -363,7 +363,7 @@
    "q": "第一個 NP-complete 問題是怎麼來的？",
    "opts": [
     "Cook–Levin 從 first principles 證明 SAT 是 NPC",
-    "從 CLIQUE reduce 過來",
+    "從 CLIQUE reduce 過來，再反過來證明 SAT ≤p CLIQUE",
     "從 TSP reduce 過來",
     "它是公理，不用證"
    ],
@@ -376,7 +376,7 @@
     "A 也有 poly time 解",
     "A 沒有 poly 解",
     "B 是 NPC",
-    "什麼都推不出"
+    "什麼都推不出（方向反了）"
    ],
    "ans": "A 也有 poly time 解",
    "why": "Poly 轉換 ＋ poly 解 B = poly。"

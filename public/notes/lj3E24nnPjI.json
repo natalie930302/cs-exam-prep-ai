@@ -379,7 +379,7 @@
     "(n + 1)/2",
     "n/2",
     "n",
-    "log n"
+    "(n − 1)/2"
    ],
    "ans": "(n + 1)/2",
    "why": "(1 + 2 + … + n)/n = (n + 1)/2。"
@@ -390,7 +390,7 @@
     "任何 case 都可以用 O、Ω 或 Θ 表示",
     "worst case 只能用 O",
     "best case 只能用 Ω",
-    "average case 只能用 Θ"
+    "worst case 只能用 O，best case 只能用 Ω"
    ],
    "ans": "任何 case 都可以用 O、Ω 或 Θ 表示",
    "why": "符號描述函數，case 是分析方式，兩者無關。"

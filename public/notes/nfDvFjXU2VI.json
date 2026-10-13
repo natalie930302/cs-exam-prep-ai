@@ -971,9 +971,9 @@
   {
    "q": "插入 APR 後 MAR 與 MAY 的 BF 都是 2，A 應選誰？",
    "opts": [
-    "MAY（比較上面）",
+    "MAY（離 root 比較近、在上面）",
     "MAR（離 APR 最近）",
-    "兩個都要各做一次",
+    "兩個都要各做一次 rotation",
     "root"
    ],
    "ans": "MAR（離 APR 最近）",
@@ -983,7 +983,7 @@
    "q": "LR 調整後，四塊 subtree B_L、C_L、C_R、A_R 的接法？",
    "opts": [
     "B_L→B 左、C_L→B 右、C_R→A 左、A_R→A 右",
-    "C_L→A 左、C_R→B 右",
+    "B_L→B 左、C_L→A 左、C_R→B 右、A_R→A 右",
     "B_L、C_L 接到 C 下面",
     "C_L、C_R 交換位置"
    ],
@@ -996,7 +996,7 @@
     "O(n)",
     "O(log n)",
     "O(n log n)",
-    "O(n²)"
+    "O(n² log n)"
    ],
    "ans": "O(n log n)",
    "why": "每次 insert（含找 A 與旋轉）是 O(log n)，共 n 次。"

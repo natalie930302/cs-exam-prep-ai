@@ -450,8 +450,8 @@
    "q": "T1 (4,1)、T2 (5,2)、T3 (20,5) 用 RM，t = 4 時發生什麼？",
    "opts": [
     "T1 到達，搶佔正在跑的 T3",
-    "T3 繼續跑完",
-    "T2 搶佔 T1",
+    "T3 繼續跑完，T1 要等它做完",
+    "T2 到達，搶佔正在跑的 T1",
     "T3 miss deadline"
    ],
    "ans": "T1 到達，搶佔正在跑的 T3",
@@ -462,7 +462,7 @@
    "opts": [
     "T2，因為 deadline 5 < 6",
     "T1，因為 period 較短",
-    "T1，因為剛到達",
+    "T1，因為剛到達且 deadline 是 4",
     "兩個輪流"
    ],
    "ans": "T2，因為 deadline 5 < 6",
@@ -484,7 +484,7 @@
    "opts": [
     "把 process 排在資料所在 memory 附近的 CPU",
     "每次都換 CPU 平均負載",
-    "把資料複製到每個 node",
+    "把資料複製一份到每個 node 的 local memory 裡",
     "只用一顆 CPU"
    ],
    "ans": "把 process 排在資料所在 memory 附近的 CPU",
@@ -494,8 +494,8 @@
    "q": "Fine-grained multithreading 的特點？",
    "opts": [
     "靠額外 hardware register 保留 state，切換成本低",
-    "每次切換都 flush pipeline",
-    "由 OS 做 context switch",
+    "每次切換都 flush pipeline，切換成本高",
+    "由 OS 做 context switch，把 state 存回 PCB 再切換",
     "只在 I/O 時切換"
    ],
    "ans": "靠額外 hardware register 保留 state，切換成本低",

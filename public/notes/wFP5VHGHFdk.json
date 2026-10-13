@@ -992,7 +992,7 @@
    "q": "把 knapsack 寫成圖時，拿 item i 的邊權為什麼設成 −vᵢ？",
    "opts": [
     "把最大化收益變成最小化路徑權重，才能用 shortest path",
-    "因為重量要扣掉",
+    "因為重量要扣掉，用負的邊權代表背包的剩餘容量跟著變小",
     "避免出現環",
     "讓 Dijkstra 跑得更快"
    ],
@@ -1004,7 +1004,7 @@
    "opts": [
     "DAG shortest path（拓樸排序 + relax），O(V + E)",
     "Dijkstra",
-    "Bellman-Ford，O(VE)",
+    "Bellman-Ford（每輪 relax 所有邊，可處理負邊），O(VE)",
     "BFS"
    ],
    "ans": "DAG shortest path（拓樸排序 + relax），O(V + E)",
@@ -1016,7 +1016,7 @@
     "max(dp(i+1, j), vᵢ + dp(i+1, j − sᵢ))（後者需 j ≥ sᵢ）",
     "dp(i+1, j) + vᵢ",
     "min(dp(i+1, j), dp(i+1, j − sᵢ))",
-    "max(dp(i−1, j), vᵢ + dp(i−1, j + sᵢ))"
+    "max(dp(i−1, j), vᵢ + dp(i−1, j + sᵢ))（後者需 j + sᵢ ≤ S）"
    ],
    "ans": "max(dp(i+1, j), vᵢ + dp(i+1, j − sᵢ))（後者需 j ≥ sᵢ）",
    "why": "不拿：容量不變；拿：賺 vᵢ、剩下容量 j − sᵢ。"
@@ -1036,9 +1036,9 @@
    "q": "為什麼 O(nS) 被稱為 pseudo-polynomial？",
    "opts": [
     "S 用 b = log S 個 bits 表示，時間是 n·2ᵇ，對輸入大小是指數",
-    "因為常數太大",
+    "因為常數太大，實際上跑起來像指數時間，所以只能算是近似 polynomial",
     "因為 n 可能很小",
-    "因為它其實是 O(n²)"
+    "因為它其實是 O(n²)，S 與 n 同一個量級"
    ],
    "ans": "S 用 b = log S 個 bits 表示，時間是 n·2ᵇ，對輸入大小是指數",
    "why": "輸入大小約 n·b；word size 加倍，時間平方倍成長。"
@@ -1047,7 +1047,7 @@
    "q": "為什麼 Dijkstra 不是 pseudo-polynomial？",
    "opts": [
     "權重 W 的大小沒有出現在運算數 E + V log V 裡",
-    "因為它沒有用 DP",
+    "因為它沒有用 DP，只用 greedy 每次選最近的點",
     "因為邊權都是正的",
     "因為 V 永遠很小"
    ],

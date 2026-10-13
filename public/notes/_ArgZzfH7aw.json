@@ -214,7 +214,7 @@
    "q": "merge sort 的 worst-case 比較次數是？",
    "opts": [
     "O(n log n)",
-    "O(n²)",
+    "O(n² log n)",
     "O(n)",
     "O(log n)"
    ],
@@ -259,7 +259,7 @@
    "opts": [
     "P 中 A 到 C 那段是 A 到 C 的最短路徑",
     "C 到 B 的最短路徑一定經過 A",
-    "A 到 C 只有一條 path",
+    "A 到 B 的最短路徑只有 P 這一條，不會有第二條",
     "P 的每條邊 weight 都相同"
    ],
    "ans": "P 中 A 到 C 那段是 A 到 C 的最短路徑",

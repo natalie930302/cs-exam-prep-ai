@@ -247,7 +247,7 @@
    "opts": [
     "log n",
     "n",
-    "n/2",
+    "n log n",
     "√n"
    ],
    "ans": "log n",
@@ -258,7 +258,7 @@
    "opts": [
     "Θ(n log n)",
     "Θ(log n)",
-    "Θ(n)",
+    "Θ(n² log n)",
     "Θ(log² n)"
    ],
    "ans": "Θ(n log n)",

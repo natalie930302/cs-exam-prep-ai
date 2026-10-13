@@ -216,7 +216,7 @@
    "opts": [
     "main memory",
     "cache",
-    "hard disk",
+    "hard disk（HDD）",
     "SSD"
    ],
    "ans": "main memory",
@@ -248,9 +248,9 @@
    "q": "課堂說大型系統最後一層仍常用 tape 的原因？",
    "opts": [
     "便宜、容量大、不容易壞",
-    "速度最快",
+    "速度最快，適合即時存取",
     "可以 random access",
-    "CPU 可以直接讀"
+    "CPU 可以直接讀取"
    ],
    "ans": "便宜、容量大、不容易壞",
    "why": "tape 可靠，上面再用多層加速。"

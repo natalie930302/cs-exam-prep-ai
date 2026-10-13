@@ -250,9 +250,9 @@
    "q": "Bus arbitration 的目的？",
    "opts": [
     "多個裝置同時要用 bus 時，決定由誰先使用",
-    "把 data bus 拆成 address bus",
-    "加快 CPU 的 clock",
-    "讓所有裝置同時使用 bus"
+    "把 data bus 拆出 address bus，讓兩者分開傳送",
+    "加快 CPU 的 clock，讓 bus 傳輸更快",
+    "讓所有裝置同時使用 bus，平均分配頻寬"
    ],
    "ans": "多個裝置同時要用 bus 時，決定由誰先使用",
    "why": "同一時間 bus 只能服務一個裝置，所以要仲裁。"
@@ -272,9 +272,9 @@
    "q": "Daisy chain 的缺點？",
    "opts": [
     "不能保證 fairness，低優先權可能無限期等待，且 grant 逐台傳遞較慢",
-    "需要 2N 條線",
-    "需要額外的 poll lines",
-    "構造非常複雜"
+    "需要 2N 條獨立的 request／grant 線，接線成本隨裝置數量呈線性增加",
+    "需要額外的 poll lines 與 counter，由 master 逐一詢問",
+    "構造非常複雜，每台裝置都要有獨立的仲裁電路"
    ],
    "ans": "不能保證 fairness，低優先權可能無限期等待，且 grant 逐台傳遞較慢",
    "why": "影片：simple 是優點；缺點是 no fairness 與 slower。"
@@ -283,9 +283,9 @@
    "q": "Polling arbitration 中，master 如何決定服務哪個裝置？",
    "opts": [
     "把 device ID 放上 poll lines，逐一檢查有請求的裝置",
-    "把 grant 從第一台一路串到最後一台",
-    "每台裝置各用一條獨立的 grant 線",
-    "讓裝置自己偵測碰撞"
+    "把 grant 從第一台一路串到最後一台，先收到的裝置先用",
+    "每台裝置各用一條獨立的 request／grant 線",
+    "讓裝置自己偵測 bus 上的碰撞再重送"
    ],
    "ans": "把 device ID 放上 poll lines，逐一檢查有請求的裝置",
    "why": "每台有 ID，master 放 ID 到 poll lines 上檢查；缺點是多了 poll lines。"
@@ -305,9 +305,9 @@
    "q": "Independent request 的優點？",
    "opts": [
     "快，而且可以使用 dynamic priority",
-    "線最少",
-    "不需要 bus master",
-    "一定不會有人等待"
+    "需要的線最少，只要一條 grant 線",
+    "不需要 bus master，裝置自行協調",
+    "一定不會有人等待，所有請求立刻服務"
    ],
    "ans": "快，而且可以使用 dynamic priority",
    "why": "master 一次看到所有 request，可以隨時改變優先權。"

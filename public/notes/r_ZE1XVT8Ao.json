@@ -352,9 +352,9 @@
    "q": "Cache coherence problem 指的是？",
    "opts": [
     "同一份共享資料在多個 local cache 中的值不一致",
-    "cache 容量不夠大",
-    "cache miss rate 太高",
-    "bus 頻寬不足"
+    "cache 容量不夠大，多個 CPU 的共享資料同時放不下",
+    "多個 CPU 的 cache miss rate 太高",
+    "bus 頻寬不足，cache 之間無法傳資料"
    ],
    "ans": "同一份共享資料在多個 local cache 中的值不一致",
    "why": "某個處理器更新了自己的副本，其他 cache 沒同步。"
@@ -385,9 +385,9 @@
    "q": "write update 與 write invalidate 的差別？",
    "opts": [
     "update：其他副本一起改成新值；invalidate：其他副本作廢",
-    "update 只用在 directory protocol",
-    "invalidate 會同時更新 memory",
-    "兩者完全相同"
+    "update 只用在 directory protocol；invalidate 只用在 snooping",
+    "invalidate 會同時更新 memory；update 只改自己的 cache",
+    "兩者完全相同，只是不同廠商的名稱"
    ],
    "ans": "update：其他副本一起改成新值；invalidate：其他副本作廢",
    "why": "影片：write update 讓共享的 cache 平行更新；write invalidate 讓它們作廢自己的副本。"
@@ -396,9 +396,9 @@
    "q": "Snooping 與 directory-based protocol 的主要差別？",
    "opts": [
     "snooping 用廣播與共用 bus；directory 用可擴充網路做點對點通訊",
-    "snooping 是軟體做法",
-    "directory 不需要記錄資料在哪",
-    "snooping 沒有狀態"
+    "snooping 是軟體做法；directory 由硬體在 cache controller 中實作",
+    "directory 不需要記錄資料在哪，靠廣播找到所有副本",
+    "snooping 沒有狀態；directory 為每個 block 記 MESI 狀態"
    ],
    "ans": "snooping 用廣播與共用 bus；directory 用可擴充網路做點對點通訊",
    "why": "directory 記錄資料位置，只通知相關的 cache，所以適合大型系統。"

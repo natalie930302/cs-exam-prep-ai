@@ -911,8 +911,8 @@
    "q": "為什麼要預先存 magic = base^size mod p？",
    "opts": [
     "base^size 是大數，連 repeated squaring 也要 O(log size)",
-    "因為 p 是質數",
-    "為了減少 collision",
+    "因為 p 是質數，magic 永遠是 1",
+    "為了減少 collision，讓 hash 值在 0 到 p − 1 之間分布更平均",
     "為了讓 hash 是負數"
    ],
    "ans": "base^size 是大數，連 repeated squaring 也要 O(log size)",
@@ -923,8 +923,8 @@
    "opts": [
     "old·magic < base·p，加上後一定非負，mod p 結果不變",
     "為了讓 hash 變大以減少 false positive",
-    "因為 base 是質數",
-    "為了更新 magic"
+    "因為 base 是質數，加上 p·base 後結果才一定能被 p 整除",
+    "為了更新 magic，讓下一次 skip 可以直接用"
    ],
    "ans": "old·magic < base·p，加上後一定非負，mod p 結果不變",
    "why": "部分語言的 % 對負數回傳負值。"

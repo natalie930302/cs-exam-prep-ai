@@ -323,8 +323,8 @@
    "q": "Programmed I/O 的主要缺點是？",
    "opts": [
     "CPU busy waiting，持續監看周邊而無法做別的事",
-    "需要額外的 DMA controller",
-    "可能產生 cache coherence 問題",
+    "需要額外的 DMA controller，增加整體的硬體成本",
+    "可能產生 cache coherence 問題，資料不一致",
     "硬體非常複雜"
    ],
    "ans": "CPU busy waiting，持續監看周邊而無法做別的事",
@@ -335,7 +335,7 @@
    "opts": [
     "I/O interface",
     "CPU",
-    "Memory",
+    "DMA controller",
     "Bus arbiter"
    ],
    "ans": "I/O interface",
@@ -345,8 +345,8 @@
    "q": "Programmed I/O 與 interrupt I/O 共同的兩個缺點是？",
    "opts": [
     "每筆傳輸都要處理器管理，且傳輸率受限於處理器速度",
-    "需要 DMA controller 且有 coherence 問題",
-    "無法處理慢速裝置且需要 polling",
+    "需要 DMA controller，且有 cache coherence 問題",
+    "無法處理慢速裝置，且一定要 polling 才知道是否 ready",
     "需要 bus arbitration 且不能中斷"
    ],
    "ans": "每筆傳輸都要處理器管理，且傳輸率受限於處理器速度",
@@ -356,8 +356,8 @@
    "q": "DMA 傳輸期間，CPU 做什麼？",
    "opts": [
     "延後自己的 memory 存取，bus 由 DMA controller 掌控",
-    "逐一搬每一個 word",
-    "持續 polling DMA controller",
+    "逐一搬每一個 word，DMA controller 只負責計數與通知",
+    "持續 polling DMA controller，確認傳到哪裡",
     "停止執行任何程式直到整塊傳完"
    ],
    "ans": "延後自己的 memory 存取，bus 由 DMA controller 掌控",
@@ -367,8 +367,8 @@
    "q": "影片提到 DMA 的缺點是？",
    "opts": [
     "需要 DMA controller 增加成本，且可能有 cache coherence 問題",
-    "CPU busy waiting",
-    "每筆資料都要中斷一次",
+    "CPU busy waiting，在傳輸期間無法做別的事",
+    "每筆資料都要中斷一次 CPU，interrupt 的 overhead 比 programmed I/O 更大",
     "傳輸率受限於 CPU 速度"
    ],
    "ans": "需要 DMA controller 增加成本，且可能有 cache coherence 問題",

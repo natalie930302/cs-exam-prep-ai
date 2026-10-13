@@ -738,7 +738,7 @@
    "q": "江老師說證明 greedy algorithm 能達到最佳解，常用的兩種策略是？",
    "opts": [
     "greedy stays ahead 與 exchange argument",
-    "divide and conquer 與 recursion",
+    "divide and conquer 與 recursion tree method",
     "反證法與窮舉法",
     "loop unrolling 與 memoization"
    ],
@@ -749,7 +749,7 @@
    "q": "Exchange argument 每做一次交換，需要證明哪兩件事？",
    "opts": [
     "解仍然 feasible，且 solution quality 不變差",
-    "解變得更短，且步數減少",
+    "解變得更短，且 greedy 演算法的步數不會增加",
     "解唯一，且是 greedy 的",
     "時間複雜度不變，且空間不變"
    ],
@@ -782,9 +782,9 @@
    "q": "老師證明 Dijkstra 正確時，用的是哪種方式？",
    "opts": [
     "loop invariant，對 |S| 做 induction",
-    "exchange argument",
+    "exchange argument，交換一條邊後比較 cost",
     "master theorem",
-    "potential function"
+    "potential function 分析"
    ],
    "ans": "loop invariant，對 |S| 做 induction",
    "why": "invariant：S 裡每個點的 d 都是最短距離。basis 是 S = {s}，inductive step 用 weak induction 從 k 推到 k+1。"

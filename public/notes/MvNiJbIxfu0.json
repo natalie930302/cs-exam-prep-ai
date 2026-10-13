@@ -291,7 +291,7 @@
   {
    "q": "已知 x R y，證明 [x] ⊆ [y] 時，由 w R x 推到 w R y 用的是？",
    "opts": [
-    "反證法",
+    "antisymmetric",
     "transitive",
     "symmetric",
     "reflexive"

@@ -323,8 +323,8 @@
    "q": "SMP 和 AMP 的差別是？",
    "opts": [
     "SMP 每個 core 對等；AMP 有一個 master 管理其他 core",
-    "SMP 只有一個 core；AMP 有很多 core",
-    "SMP 透過網路連結；AMP 用 system bus",
+    "SMP 只有一個 core；AMP 有很多 core 共用同一個 memory",
+    "SMP 透過網路連結各台電腦；AMP 用 system bus 連結 core",
     "SMP 用在 supercomputer；AMP 用在手機"
    ],
    "ans": "SMP 每個 core 對等；AMP 有一個 master 管理其他 core",
@@ -334,9 +334,9 @@
    "q": "Multi-core processor 為什麼要處理 cache coherence？",
    "opts": [
     "每個 core 有自己的 L1 cache，一個 core 改寫後各 copy 可能不一致",
-    "因為 memory 不能共用",
+    "因為 memory 不能共用，每個 core 都要有自己的一份完整 main memory",
     "因為 GPU 太慢",
-    "因為每個 core 執行不同的 OS"
+    "因為每個 core 執行不同的 OS，cache 格式不一樣"
    ],
    "ans": "每個 core 有自己的 L1 cache，一個 core 改寫後各 copy 可能不一致",
    "why": "程式會在 core 之間切換，同一 address 必須看到同樣的值。"
@@ -345,7 +345,7 @@
    "q": "GPU 屬於哪種架構？",
    "opts": [
     "SIMD：同一時間一個 instruction，套用到多筆 data",
-    "MIMD：每個 core 做不同的 instruction",
+    "MIMD：每個 core 同時做不同的 instruction 與 data",
     "單核心 CPU",
     "AMP"
    ],
@@ -356,9 +356,9 @@
    "q": "早期 PC 作業系統 security 差的最主要原因是？",
    "opts": [
     "當初沒想到 Internet，外來使用者可透過網路入侵",
-    "CPU 太慢",
+    "CPU 太慢，做不了加密與權限檢查，只好全部關閉",
     "沒有 GUI",
-    "memory 太小"
+    "memory 太小，放不下防毒軟體與 kernel 的保護機制"
    ],
    "ans": "當初沒想到 Internet，外來使用者可透過網路入侵",
    "why": "早期只要使用者不破壞自己的電腦就好；現在都連網。"

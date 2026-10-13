@@ -160,7 +160,7 @@
    "opts": [
     "單一 variable",
     "Routine（function code）",
-    "整個 process",
+    "整個 program（含 data 區）",
     "一個 byte"
    ],
    "ans": "Routine（function code）",
@@ -182,7 +182,7 @@
    "opts": [
     "Compile 時",
     "Link 時",
-    "程式 load 時",
+    "程式一 load 進 memory 時",
     "真的 call 到它的時候"
    ],
    "ans": "真的 call 到它的時候",
@@ -193,7 +193,7 @@
    "opts": [
     "程式裡很多 routine（如 error handling）從沒被用到",
     "Library 會被壓縮",
-    "MMU 會刪掉重複的 page",
+    "OS 會把重複的 library page 合併，所有 process 共用一份",
     "Stack 會變小"
    ],
    "ans": "程式裡很多 routine（如 error handling）從沒被用到",
@@ -202,7 +202,7 @@
   {
    "q": "多個 C 程式同時執行、各自 static link 了 C library，會造成什麼問題？",
    "opts": [
-    "External fragmentation",
+    "External fragmentation，library 之間留下很多空洞",
     "同一份 library 在 memory 裡重複好幾份",
     "TLB miss",
     "Deadlock"

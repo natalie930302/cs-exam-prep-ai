@@ -213,8 +213,8 @@
    "q": "hard drive 的讀取時間可以拆成哪兩部分？",
    "opts": [
     "transfer time + positioning（seek）time",
-    "cache time + memory time",
-    "CPU time + I/O time",
+    "cache lookup time + memory（DRAM）access time",
+    "CPU time + I/O waiting time",
     "boot time + run time"
    ],
    "ans": "transfer time + positioning（seek）time",
@@ -224,9 +224,9 @@
    "q": "為什麼 hard drive 不被稱為 random access？",
    "opts": [
     "讀不同位置要 seek，花的時間不一樣",
-    "因為它是 volatile",
-    "因為它只能循序寫入",
-    "因為 CPU 可以直接讀它"
+    "因為它是 volatile，斷電資料就消失",
+    "因為它只能循序寫入，不能覆寫",
+    "因為 CPU 可以直接讀它，不經 memory"
    ],
    "ans": "讀不同位置要 seek，花的時間不一樣",
    "why": "random access 指任何位置讀取時間都相同，硬碟做不到。"
@@ -235,9 +235,9 @@
    "q": "下列哪種情況 SSD 相對 hard drive 的優勢最大？",
    "opts": [
     "資料讀取跳來跳去（random）",
-    "連續讀一個很大的檔案",
-    "資料完全不讀",
-    "只寫入一次的備份"
+    "連續讀一個很大的檔案（sequential）",
+    "資料完全不讀，只放著保存",
+    "只寫入一次的長期備份"
    ],
    "ans": "資料讀取跳來跳去（random）",
    "why": "sequential 大量讀取時 transfer time dominate，硬碟不會輸太多。"
@@ -246,9 +246,9 @@
    "q": "關於 cache，下列何者正確？",
    "opts": [
     "cache 是 copy，砍掉不應造成資料遺失",
-    "cache 是把資料搬移到上層",
+    "cache 是把資料搬移到上層，原處不再保留",
     "cache miss 一定比沒有 cache 快",
-    "巨量資料系統一定要 cache"
+    "巨量資料系統一定要 cache 才能運作"
    ],
    "ans": "cache 是 copy，砍掉不應造成資料遺失",
    "why": "搬移就不叫 cache；miss 可能更慢；巨量資料讀一遍就丟，常不 cache。"
@@ -257,9 +257,9 @@
    "q": "只修改 cache、還沒 update 到 memory，造成的是什麼問題？",
    "opts": [
     "coherence / consistency 問題",
-    "deadlock",
-    "starvation",
-    "page fault"
+    "deadlock：兩邊互相等待對方",
+    "starvation：memory 永遠拿不到資料",
+    "page fault：資料不在 memory 中"
    ],
    "ans": "coherence / consistency 問題",
    "why": "分身和本尊不一致；multi-core 各自的 L1 cache 也要處理 cache coherence。"

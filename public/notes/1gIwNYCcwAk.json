@@ -292,7 +292,7 @@
    "q": "Real-time system 的核心要求是？",
    "opts": [
     "在 deadline 之前完成",
-    "反應越快越好",
+    "反應越快越好（latency 最小）",
     "一次只執行一個工作",
     "一定要有 GPU"
    ],
@@ -314,7 +314,7 @@
    "q": "Hard real-time 系統通常避免使用什麼？",
    "opts": [
     "Secondary storage",
-    "Main memory",
+    "Main memory（RAM）",
     "Scheduler",
     "Interrupt"
    ],
@@ -337,7 +337,7 @@
    "opts": [
     "光跑 OS 就吃掉大部分資源，而且不管電力",
     "手機沒有 CPU",
-    "傳統 OS 不支援 C 語言",
+    "傳統 OS 不支援 C 語言，無法移植到手機",
     "手機不需要 memory"
    ],
    "ans": "光跑 OS 就吃掉大部分資源，而且不管電力",

@@ -362,9 +362,9 @@
    "q": "關於 NUMA，下列何者正確？",
    "opts": [
     "存取 local memory 比 remote memory 快，且可 scale 得更大",
-    "所有 CPU 存取任何 memory 的時間都相同",
-    "NUMA 的 memory 完全不共用",
-    "一般手機都是 NUMA"
+    "所有 CPU 存取任何 memory 的時間都相同，所以容易 scale",
+    "NUMA 的 memory 完全不共用，CPU 之間只能靠網路互相傳送訊息",
+    "一般手機與筆電的單顆 CPU 都是 NUMA 架構"
    ],
    "ans": "存取 local memory 比 remote memory 快，且可 scale 得更大",
    "why": "hierarchy 讓系統可擴大，但 remote 要經過對方 controller，較慢。"
@@ -373,9 +373,9 @@
    "q": "Distributed system 和 multiprocessor 最大的差別之一是？",
    "opts": [
     "每台電腦的 memory 都是 local、不共用",
-    "分散式系統只有一個 CPU",
-    "分散式系統一定比較快",
-    "multiprocessor 透過 Internet 連線"
+    "分散式系統只有一個 CPU，靠網路分享給多台電腦",
+    "分散式系統一定比較快，因為沒有共用 bus",
+    "multiprocessor 透過 Internet 連線，共用遠端 memory"
    ],
    "ans": "每台電腦的 memory 都是 local、不共用",
    "why": "別人要透過我的程式與 OS 才能用我的 memory。"
@@ -384,9 +384,9 @@
    "q": "Peer-to-peer 相較 client-server 最大的優點是？",
    "opts": [
     "沒有 single point of failure",
-    "比較容易建",
-    "有集中控制",
-    "server 計算力強"
+    "比較容易建置與管理，不需要協調",
+    "有集中控制，資料一致性較好",
+    "server 計算力強，回應時間較穩定"
    ],
    "ans": "沒有 single point of failure",
    "why": "任何一台離開系統都能繼續運作；client-server 的 server 是 bottleneck 也是單點失效。"
@@ -395,9 +395,9 @@
    "q": "InfiniBand 傳輸很快，主要用了什麼技術？",
    "opts": [
     "RDMA：把 DMA 擴充到跨網路",
-    "SIMD",
-    "virtual memory",
-    "time sharing"
+    "SIMD：一道指令同時處理多筆資料",
+    "virtual memory：把遠端記憶體映射進來",
+    "time sharing：輪流使用網路頻寬"
    ],
    "ans": "RDMA：把 DMA 擴充到跨網路",
    "why": "高效能 cluster 與 supercomputer 幾乎都用 InfiniBand。"
@@ -406,7 +406,7 @@
    "q": "主機板上有多個 CPU 插槽的電腦稱為？",
    "opts": [
     "Multiprocessor computer system",
-    "Multi-core processor",
+    "Multi-core processor computer system",
     "Many-core processor",
     "Cluster"
    ],

@@ -184,6 +184,19 @@
   // where each key point is taught: public/keymap.json (chapter → point → video parts)
   let keymap = null;
   fetch('/keymap.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){ keymap = j && j[subject.id + '-' + chIndex]; renderGoals(); }).catch(function(){});
+  // goals are listed with 、 ; — but not the 、 inside （…） or (…)
+  function splitGoals(text){
+    const out = []; let cur = '', depth = 0;
+    for (const ch of String(text || '')) {
+      if (ch === '（' || ch === '(') depth++;
+      else if ((ch === '）' || ch === ')') && depth) depth--;
+      if (!depth && /[、；;]/.test(ch)) { if (cur.trim()) out.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    if (cur.trim()) out.push(cur.trim());
+    // a remark after —— was a note for the author, not part of the goal
+    return out.map(function(x){ return x.split('——')[0].trim(); }).filter(Boolean);
+  }
   function renderGoals(){
     const vids = chapterDisplayMaterials(chapter);
     const left = vids.filter(function(m){ return !done.has(chapterMaterialTaskId(subject.id, chapter, m)); });
@@ -194,7 +207,7 @@
         if (!done.has(chapterMaterialTaskId(subject.id, c, m))) { sLeftN++; sLeftSec += durToSec(m.dur); }
       });
     });
-    const items = String(chapter.key || '').split(/[、；;]/).map(function(x){ return x.trim(); }).filter(Boolean);
+    const items = splitGoals(chapter.key);
     const check = function(id, text){
       const d = done.has(id);
       return '<li><button class="st-check' + (d ? ' done' : '') + '" data-task="' + id + '"><span class="st-box">' + (d ? '✓' : '') + '</span><span class="st-check-text">' + text + '</span></button></li>';

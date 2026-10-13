@@ -323,9 +323,9 @@
    "q": "One-to-One model 的主要缺點是？",
    "opts": [
     "每個 user thread 都要建立 kernel thread，成本高且數量有上限",
-    "一個 thread block 會讓全部 block",
-    "無法利用多核心",
-    "mapping 在 run time 決定，最複雜"
+    "一個 thread 做 blocking system call 會讓全部 thread block",
+    "無法利用多核心，所有 thread 都只能排在同一顆 CPU core 上執行",
+    "mapping 在 run time 才決定，實作最複雜"
    ],
    "ans": "每個 user thread 都要建立 kernel thread，成本高且數量有上限",
    "why": "kernel thread 需要 control block 等資源，OS 會限制數量。"
@@ -334,9 +334,9 @@
    "q": "Many-to-Many model 的特點是？",
    "opts": [
     "多個 user thread 對到較少或相等數量的 kernel thread，彈性最好但 overhead 大",
-    "一個 user thread 對到多個 kernel thread",
-    "所有 user thread 對到一個 kernel thread",
-    "不需要 kernel thread"
+    "一個 user thread 對到多個 kernel thread，讓同一個 thread 可以在多核心上平行執行",
+    "所有 user thread 對到一個 kernel thread，overhead 最小",
+    "不需要 kernel thread，完全由 user-level library 排程"
    ],
    "ans": "多個 user thread 對到較少或相等數量的 kernel thread，彈性最好但 overhead 大",
    "why": "run time 動態 mapping：不容易卡住，但管理複雜。"

@@ -1901,7 +1901,7 @@
     "O(log n)",
     "O(1)",
     "O(n)",
-    "O(√n)"
+    "O(n log n)"
    ],
    "ans": "O(log n)",
    "why": "要問每棵樹的 root，樹最多 ⌊log₂n⌋ + 1 棵。"

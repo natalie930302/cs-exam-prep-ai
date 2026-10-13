@@ -472,8 +472,8 @@
    "q": "為什麼判斷「拜訪過沒」要用「在不在 parent dict 裡」，而不是 parent 是否為 None？",
    "opts": [
     "起點的 parent 就是 None，會被誤判成沒拜訪過",
-    "None 不能當 dict 的 value",
-    "判斷 None 比較慢",
+    "None 不能當 dict 的 value，存進去會丟出 TypeError",
+    "判斷 None 比較慢，dict 查詢是 O(1)",
     "兩種寫法完全一樣"
    ],
    "ans": "起點的 parent 就是 None，會被誤判成沒拜訪過",
@@ -495,7 +495,7 @@
    "opts": [
     "tree edge 與 back edge",
     "四種都有",
-    "tree、forward、cross",
+    "tree、forward、cross edge",
     "只有 tree edge"
    ],
    "ans": "tree edge 與 back edge",

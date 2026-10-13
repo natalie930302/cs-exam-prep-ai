@@ -378,9 +378,9 @@
    "q": "Optimal algorithm 為什麼無法實作？",
    "opts": [
     "必須事先知道未來的 reference string",
-    "O(n²) 太慢",
-    "會有 Belady's anomaly",
-    "需要 dirty bit"
+    "要 O(n²) 比對所有 page，實際太慢",
+    "會發生 Belady's anomaly，frame 越多越差",
+    "需要 dirty bit 硬體支援，一般 CPU 沒有"
    ],
    "ans": "必須事先知道未來的 reference string",
    "why": "只能當 baseline。"
@@ -389,9 +389,9 @@
    "q": "LRU 要做到 O(1) 通常用什麼資料結構？",
    "opts": [
     "hash map + doubly linked list",
-    "只用 array 線性搜尋",
-    "binary search tree",
-    "heap"
+    "array + 線性搜尋最舊的 page",
+    "binary search tree（依時間排序）",
+    "min-heap（依最後使用時間）"
    ],
    "ans": "hash map + doubly linked list",
    "why": "hash 找節點，linked list O(1) 移到最前面。"
@@ -411,9 +411,9 @@
    "q": "Second-chance（clock）演算法中，指標遇到 reference bit = 1 的 page 會？",
    "opts": [
     "把 bit 清成 0 並跳過",
-    "立刻換掉它",
-    "把 bit 設成 1",
-    "寫回 disk"
+    "立刻換掉它，因為它最近被用過",
+    "把 bit 設成 1 再停在這裡",
+    "把它寫回 disk 再跳過"
    ],
    "ans": "把 bit 清成 0 並跳過",
    "why": "給它第二次機會；遇到 bit 0 才換掉。"
@@ -422,9 +422,9 @@
    "q": "LFU 的主要問題是？",
    "opts": [
     "一段 burst 讓 count 很高，之後不用卻一直佔著 frame",
-    "一定比 FIFO 差",
-    "無法計數",
-    "需要知道未來"
+    "一定比 FIFO 差，因為不考慮進入時間",
+    "需要硬體計數器，軟體無法計數",
+    "跟 optimal 一樣，需要事先知道未來的 reference string"
    ],
    "ans": "一段 burst 讓 count 很高，之後不用卻一直佔著 frame",
    "why": "常用不代表正在用。"

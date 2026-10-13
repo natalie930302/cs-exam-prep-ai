@@ -213,7 +213,7 @@
    "opts": [
     "induction basis",
     "induction hypothesis",
-    "induction step",
+    "induction step（k → k+1）",
     "conclusion"
    ],
    "ans": "induction hypothesis",
@@ -247,7 +247,7 @@
     "k²/4 + k + 1",
     "k² + k + 1",
     "k/2 + 1",
-    "k² + 2k"
+    "k²/2 + k + 1"
    ],
    "ans": "k²/4 + k + 1",
    "why": "k²(k+1)²/4 + (k+1)³ = (k+1)²(k²/4 + k + 1) = (k+1)²(k+2)²/4。"

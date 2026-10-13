@@ -772,7 +772,7 @@
    "q": "下列哪個敘述正確？",
    "opts": [
     "DAG 演算法可處理負邊，Dijkstra 可處理 cycle",
-    "Dijkstra 可處理負邊",
+    "Dijkstra 可處理負邊，DAG 演算法可處理 cycle",
     "DAG 演算法被 Dijkstra 完全取代",
     "兩者都不能有 cycle"
    ],
@@ -805,7 +805,7 @@
    "q": "Fibonacci heap 讓 Dijkstra 變成 Θ(V log V + E)，關鍵是哪個操作變快？",
    "opts": [
     "Decrease-Key 攤銷 Θ(1)",
-    "Extract-Min 變 Θ(1)",
+    "Extract-Min 攤銷變 Θ(1)",
     "Insert 變 Θ(1)",
     "不需要 Decrease-Key"
    ],

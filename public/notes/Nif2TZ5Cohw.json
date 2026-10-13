@@ -213,9 +213,9 @@
    "q": "Page fault 時送給 OS 的是什麼訊號？",
    "opts": [
     "trap（高優先，不能忽略）",
-    "一般的 I/O 完成中斷",
-    "segmentation fault",
-    "system call"
+    "一般的 I/O 完成中斷（可延後處理）",
+    "segmentation fault（程式直接終止）",
+    "system call（由程式主動發出）"
    ],
    "ans": "trap（高優先，不能忽略）",
    "why": "step 2：產生 page trap signal。"
@@ -224,9 +224,9 @@
    "q": "P3 被載入 F34 之後，下一步是？",
    "opts": [
     "update page table（P3 → F34）",
-    "重新開機",
-    "把 P1 換出",
-    "清空 TLB"
+    "把 F34 標成 free frame",
+    "把 P1 換出到 disk（swap out）",
+    "清空 TLB（flush 所有 entry）"
    ],
    "ans": "update page table（P3 → F34）",
    "why": "再 restart 指令。"
@@ -246,8 +246,8 @@
    "q": "如果需要的 page 本來就在 memory 中？",
    "opts": [
     "step 1 直接到 step 6",
-    "仍要走完 6 步",
-    "要先做 step 3",
+    "仍要走完 6 步，只是 step 4 較快",
+    "要先做 step 3 確認 disk 位置",
     "一定會 thrashing"
    ],
    "ans": "step 1 直接到 step 6",
@@ -257,9 +257,9 @@
    "q": "Thrashing 是指？",
    "opts": [
     "page 因 page fault 在 RAM 與 VM 間失控地來回 swap",
-    "CPU 過熱",
-    "TLB 命中率太高",
-    "working set 太小"
+    "CPU 過熱而自動降頻，導致效能下降",
+    "TLB 命中率太高，page table 很少被查",
+    "working set 太小，大部分 frame 一直閒置而浪費 RAM 空間"
    ],
    "ans": "page 因 page fault 在 RAM 與 VM 間失控地來回 swap",
    "why": "處理 fault 的時間壓過運算時間。"

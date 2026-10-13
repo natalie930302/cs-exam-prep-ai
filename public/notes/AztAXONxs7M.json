@@ -388,7 +388,7 @@
    "opts": [
     "CPU idle，大家都在等 I/O",
     "I/O 裝置閒著",
-    "CPU 和 I/O 都很忙",
+    "CPU 和 I/O 都很忙，效能最好",
     "一定 thrashing"
    ],
    "ans": "CPU idle，大家都在等 I/O",

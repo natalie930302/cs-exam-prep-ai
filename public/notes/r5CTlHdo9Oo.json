@@ -705,7 +705,7 @@
     "有一條 edge 的兩端在 BFS 的同一層",
     "有一條 edge 連相鄰兩層",
     "BFS tree 的高度是奇數",
-    "graph 不是 connected"
+    "graph 不是 connected，BFS 走不到所有點"
    ],
    "ans": "有一條 edge 的兩端在 BFS 的同一層",
    "why": "同層 edge 兩端同色；而且可以找到長度 1 + 2(j − i) 的 odd cycle。不 connected 只要各 component 分開塗。"
@@ -716,7 +716,7 @@
     "2(j − i) + 1",
     "2(j − i)",
     "j − i + 1",
-    "j + i"
+    "2(j − i) − 1"
    ],
    "ans": "2(j − i) + 1",
    "why": "y 到 z、z 到 x 各 j − i 條，再加 x–y 一條，必為奇數。"
@@ -748,7 +748,7 @@
    "opts": [
     "從 s 在 G 上 BFS 得 R，再從 s 在 G^rev 上 BFS 得 R^rev，檢查 R = R^rev = V",
     "從每個點各做一次 BFS",
-    "只要從 s 在 G 上做一次 BFS 到達所有點即可",
+    "從 s 在 G 上 BFS 得 R，再從 R 中任一點在 G 上 BFS 得 R′，檢查 R = R′ = V",
     "對 G 做 topological sort"
    ],
    "ans": "從 s 在 G 上 BFS 得 R，再從 s 在 G^rev 上 BFS 得 R^rev，檢查 R = R^rev = V",
@@ -759,7 +759,7 @@
    "opts": [
     "u、w mutually reachable",
     "u → w 有一條 edge",
-    "u、v、w 形成 odd cycle",
+    "u、v、w 一定形成一個 odd cycle",
     "沒有任何結論"
    ],
    "ans": "u、w mutually reachable",

@@ -408,7 +408,7 @@
    "q": "「把 process 放進 ready queue」實際上放進 queue 的是什麼？",
    "opts": [
     "它的 PCB（用 linked list 串起來）",
-    "它整個 memory space",
+    "它整個 memory space（code、data、stack）",
     "它的程式檔",
     "它的 stack"
    ],
@@ -421,7 +421,7 @@
     "kernel space 的 memory",
     "process 自己的 stack",
     "disk",
-    "CPU 的 cache"
+    "process 自己的 heap 區段"
    ],
    "ans": "kernel space 的 memory",
    "why": "PCB 是 OS 的資料，放在 kernel 自己的 memory。"
@@ -432,7 +432,7 @@
     "CPU 提供多組 register set",
     "增加 process 數量",
     "加大 disk",
-    "增加 time quantum 以外的 I/O"
+    "把 time quantum 調得更短，讓 switch 更頻繁"
    ],
    "ans": "CPU 提供多組 register set",
    "why": "switch 時只換用另一組 register，不必把 state 寫回 memory。"

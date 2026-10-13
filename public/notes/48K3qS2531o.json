@@ -356,7 +356,7 @@
    "opts": [
     "bounded-buffer、readers-writers、dining-philosophers",
     "producer、consumer、scheduler",
-    "deadlock、starvation、race condition",
+    "race-condition、critical-section、priority-inversion",
     "FCFS、SJF、RR"
    ],
    "ans": "bounded-buffer、readers-writers、dining-philosophers",
@@ -367,7 +367,7 @@
    "opts": [
     "readcount 變成 1 的那個 reader",
     "每一個 reader",
-    "最後一個 reader",
+    "readcount 變成 0 的那個 reader",
     "只有 writer"
    ],
    "ans": "readcount 變成 1 的那個 reader",
@@ -389,7 +389,7 @@
    "opts": [
     "它是 reader 之間共享、會被同時 ++/--",
     "為了擋 writer",
-    "為了讓 writer 優先",
+    "為了讓 writer 在 reader 讀取期間也能進入修改",
     "不用保護"
    ],
    "ans": "它是 reader 之間共享、會被同時 ++/--",
@@ -412,7 +412,7 @@
     "同一時間只有一個 thread 能在裡面執行 method",
     "不能有變數",
     "method 不能有參數",
-    "只能被一個 thread 呼叫"
+    "method 都會自動 lock 整個 process，其他 thread 全部暫停"
    ],
    "ans": "同一時間只有一個 thread 能在裡面執行 method",
    "why": "語言層級保證 mutual exclusion。"

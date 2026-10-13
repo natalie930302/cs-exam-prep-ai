@@ -244,7 +244,7 @@
    "q": "證明中 S 是怎麼定義的？",
    "opts": [
     "能從 s 經由 incomplete f-augmenting path 到達的端點",
-    "所有 flow > 0 的端點",
+    "能從 s 只經由 saturated edge（滿載邊）走到的所有端點",
     "跟 s 相鄰的端點",
     "所有滿載邊的起點"
    ],
@@ -268,7 +268,7 @@
     "否則有 s 到 t 的 f-augmenting path，F 還能增大，矛盾",
     "因為 t 沒有 outflow",
     "因為 T 一定比 S 大",
-    "因為 capacity 是整數"
+    "因為 capacity 是整數，F 每次至少加 1，最後一定碰到 t"
    ],
    "ans": "否則有 s 到 t 的 f-augmenting path，F 還能增大，矛盾",
    "why": "t 在 S 代表有一條完整的 f-augmenting path，跟 F 是 maximum flow 矛盾。"

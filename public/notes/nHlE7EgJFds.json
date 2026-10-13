@@ -365,7 +365,7 @@
    "opts": [
     "column space",
     "row space",
-    "null space",
+    "null space（解集合）",
     "rank"
    ],
    "ans": "column space",

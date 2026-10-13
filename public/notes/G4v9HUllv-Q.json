@@ -146,7 +146,7 @@
    "q": "SMP 共用一個 ready queue 時，dequeue 要注意什麼？",
    "opts": [
     "synchronization：同一個 process 不能被兩顆 CPU 拿走",
-    "需要 master CPU 分派",
+    "需要一顆 master CPU 統一分派，其他 CPU 不能存取 queue",
     "只能用 FCFS",
     "不能用 affinity"
    ],
@@ -179,8 +179,8 @@
    "q": "Hard affinity 與 soft affinity 的差別？",
    "opts": [
     "hard 寧可等也不換 core；soft 太忙時可以換",
-    "hard 用在 GPU；soft 用在 CPU",
-    "hard 由硬體決定；soft 由使用者決定",
+    "hard 用在 GPU；soft 用在 CPU 的 scheduling",
+    "hard 由硬體決定；soft 由使用者程式決定",
     "沒有差別"
    ],
    "ans": "hard 寧可等也不換 core；soft 太忙時可以換",

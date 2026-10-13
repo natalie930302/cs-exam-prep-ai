@@ -551,7 +551,7 @@
     "大小固定，宣告後不能增減",
     "不能用 index 存取",
     "只能建在 Stack",
-    "元素一定要是 int"
+    "存取第 i 個元素要 O(n) 時間"
    ],
    "ans": "大小固定，宣告後不能增減",
    "why": "陣列大小在 compile time 決定，但元素個數要到 runtime 才知道，太小放不下、太大浪費。"
@@ -582,7 +582,7 @@
    "q": "struct Node { int data; struct Node *next; }; 這種結構叫什麼？",
    "opts": [
     "self-referential structure",
-    "nested structure",
+    "nested structure（巢狀結構）",
     "union",
     "abstract class"
    ],
@@ -617,7 +617,7 @@
     "p->next == NULL",
     "p == NULL",
     "p->data == 0",
-    "p == first"
+    "p->next == first"
    ],
    "ans": "p->next == NULL",
    "why": "最後一個 node 的 next 不指向任何 node。p == NULL 是 p 本身沒指向 node。"

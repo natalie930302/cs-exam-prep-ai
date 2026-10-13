@@ -2767,7 +2767,7 @@
     "某一輪完全沒有交換就提早停止",
     "每次挑隨機的 pivot",
     "改成從最高位開始排",
-    "先建一個 max heap"
+    "先建一個 max heap，每輪取最大值"
    ],
    "ans": "某一輪完全沒有交換就提早停止",
    "why": "沒有交換代表沒有 disordered pair，已經排好，後面的輪都不用掃（early stop）。"
@@ -2778,7 +2778,7 @@
     "間隔大的 insertion 會一次跳很多格，跨過同值的元素",
     "它需要額外的暫存陣列",
     "它用 heap 找最大值",
-    "它最後一輪不是 insertion sort"
+    "它最後一輪不是 insertion sort，而是 bubble sort"
    ],
    "ans": "間隔大的 insertion 會一次跳很多格，跨過同值的元素",
    "why": "Long jump 讓元素越過中間的同值元素；但它仍然 in-place，而且跟 insertion 一樣蠻 adaptive。"

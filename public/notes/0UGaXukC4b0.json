@@ -1191,7 +1191,7 @@
    "q": "Interval partitioning 的 greedy 如何處理 interval？",
    "opts": [
     "依 starting time 排序，指派任一個沒衝突的 label",
-    "依 finish time 排序，衝突就丟掉",
+    "依 finish time 排序，與已選的 interval 衝突就直接丟掉",
     "依長度排序，長的先放",
     "隨機順序，衝突就開新 label"
    ],
@@ -1224,7 +1224,7 @@
    "q": "交換相鄰 inversion（i 在前、d_j < d_i）後，為什麼 max lateness 不會變大？",
    "opts": [
     "ℓ'_i = f_j − d_i ≤ f_j − d_j = ℓ_j",
-    "i 的 lateness 一定變成 0",
+    "ℓ'_i = f_i − d_j ≤ f_j − d_j = ℓ_j",
     "總完成時間變短",
     "其他 job 都提早完成"
    ],

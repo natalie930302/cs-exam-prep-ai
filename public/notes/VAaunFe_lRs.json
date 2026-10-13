@@ -415,7 +415,7 @@
    "q": "Page fault 處理完後，為什麼要把 PC 減 4？",
    "opts": [
     "重新執行造成 fault 的那個 instruction",
-    "跳過那個 instruction",
+    "跳過那個 instruction，因為它已經執行完成",
     "回到上一個 function",
     "清空 TLB"
    ],
@@ -439,7 +439,7 @@
     "0.0000025",
     "0.001",
     "0.1",
-    "0.00025"
+    "0.00000025"
    ],
    "ans": "0.0000025",
    "why": "220 > 200 + 7,999,800p → p < 0.0000025。"
@@ -448,7 +448,7 @@
    "q": "swapper（mid-term scheduler）與 pager 的差別？",
    "opts": [
     "swapper 以 process 為單位，pager 以 page 為單位",
-    "swapper 以 page 為單位",
+    "swapper 以 page 為單位，pager 以 process 為單位",
     "兩者完全相同",
     "pager 只處理 file system"
    ],
@@ -459,7 +459,7 @@
    "q": "沒有 free frame 時，page fault 處理會多出哪一步？",
    "opts": [
     "用 replacement algorithm 選 victim 換出去",
-    "直接 abort process",
+    "直接 abort 發生 page fault 的那個 process",
     "把 TLB 清空",
     "重新開機"
    ],

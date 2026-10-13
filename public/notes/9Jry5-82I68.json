@@ -986,9 +986,9 @@
    "q": "為什麼 min-heap 不適合做 k 分鐘檢查？",
    "opts": [
     "invariant 只管父子，找 t 附近的元素要 O(n)",
-    "heap 插入要 O(n)",
-    "heap 不能存實數",
-    "heap 找最小值要 O(n)"
+    "heap 插入要 O(n)，因為每次都要搬移整個 array",
+    "heap 不能存實數，只能存整數 key",
+    "heap 找最小值要 O(n)，要掃過所有 leaf"
    ],
    "ans": "invariant 只管父子，找 t 附近的元素要 O(n)",
    "why": "插入 25 時只沿一條路往上換，另一邊（如 23 的子樹）完全不會被看到。"
@@ -1031,8 +1031,8 @@
    "opts": [
     "退化成一條 list，h = n",
     "完全平衡，h = log n",
-    "root 是 49",
-    "會自動旋轉成平衡"
+    "root 是 49，往左長成一條 list",
+    "會自動旋轉成平衡，h = log n"
    ],
    "ans": "退化成一條 list，h = n",
    "why": "每個新 key 都比前面大，一直接在右邊；需要 balanced BST 才能保證 O(log n)。"

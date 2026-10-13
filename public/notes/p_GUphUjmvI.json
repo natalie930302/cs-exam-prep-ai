@@ -565,7 +565,7 @@
    "q": "hazard detection unit 判斷 load-use 的條件是？",
    "opts": [
     "ID/EX.MemRead 且 ID/EX.rt 等於 IF/ID.rs 或 IF/ID.rt",
-    "EX/MEM.RegWrite 且 EX/MEM.rd 等於 ID/EX.rs",
+    "EX/MEM.RegWrite 且 EX/MEM.rd 等於 ID/EX.rs 或 ID/EX.rt",
     "ID/EX.MemWrite 且 rd 等於 rs",
     "IF/ID 是 branch 指令"
    ],
@@ -576,7 +576,7 @@
    "q": "stall 一個 cycle 時，hazard detection unit 要做哪些事？",
    "opts": [
     "PC 與 IF/ID 不寫入，送進 ID/EX 的 control 全設 0",
-    "把 IF/ID 清成 0 並跳到 target",
+    "把 IF/ID 清成 0（flush）並把 PC 改成 branch target",
     "把 EX/MEM 的結果 forward 回 ALU",
     "把 register file 改成前半寫後半讀"
    ],

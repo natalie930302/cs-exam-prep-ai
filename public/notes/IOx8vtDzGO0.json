@@ -332,7 +332,7 @@
    "opts": [
     "flag[i] = true; turn = j; while (flag[j] && turn == j);",
     "turn = i; while (turn != i);",
-    "flag[i] = true; while (flag[j]);",
+    "flag[i] = true; turn = i; while (flag[j] && turn == j);",
     "while (turn == j); flag[i] = true;"
    ],
    "ans": "flag[i] = true; turn = j; while (flag[j] && turn == j);",
@@ -342,7 +342,7 @@
    "q": "Peterson 證 mutual exclusion 的關鍵？",
    "opts": [
     "turn 只能是 0 或 1，兩人的進入條件不能同時成立",
-    "flag 一定是 false",
+    "flag 一定是 false，所以同一時間只有一人能設成 true",
     "while 有分號",
     "CPU 只有一個"
    ],
@@ -353,7 +353,7 @@
    "q": "Peterson 中剛出來的 P1 沒被 context switch、又想進，會怎樣？",
    "opts": [
     "它先把 turn 交給 P0，被擋在 while 直到換 P0 進去",
-    "立刻再進 critical section",
+    "立刻再進 critical section，因為自己的 flag 還是 true",
     "造成 deadlock",
     "把 P0 的 flag 設成 false"
    ],
@@ -375,7 +375,7 @@
    "q": "定義 critical section 的原則？",
    "opts": [
     "越小越好，只包會 race 的程式",
-    "越大越安全",
+    "越大越安全，可以避免漏包 shared data",
     "整個 function 都包",
     "只包 remainder section"
    ],

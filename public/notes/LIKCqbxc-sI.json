@@ -160,9 +160,9 @@
    "q": "Kruskal 證明二的 induction hypothesis 為什麼用 subgraph 而不是 subtree？",
    "opts": [
     "因為過程中的 T 可能有好幾個 component，不一定是 tree",
-    "因為 T 一定是 tree",
-    "因為 M 不是 tree",
-    "因為 subgraph 比較好畫"
+    "因為 T 一定是 tree，subtree 這個詞範圍太狹義",
+    "因為 M 不是 tree，只能說 T 是 M 的 subgraph 而非 subtree",
+    "因為 subgraph 比較好畫，證明時方便說明"
    ],
    "ans": "因為過程中的 T 可能有好幾個 component，不一定是 tree",
    "why": "Kruskal 的 T 在過程中是 forest。"
@@ -182,9 +182,9 @@
    "q": "證明中為什麼 w(e) ≤ w(e′)？",
    "opts": [
     "e、e′ 都可以加，而 algorithm 選了 weight 最小的 e",
-    "因為 e′ 在 M 裡",
+    "因為 e′ 在 M 裡，而 M 是 minimum spanning tree 的一部分",
     "因為 e 比 e′ 先被畫出來",
-    "因為 cycle 上 weight 都相同"
+    "因為 cycle 上所有 edge 的 weight 都相同"
    ],
    "ans": "e、e′ 都可以加，而 algorithm 選了 weight 最小的 e",
    "why": "Kruskal 照 weight 從小到大考慮，e 先被選中。"
@@ -195,7 +195,7 @@
     "O(e log e)",
     "O(n²)",
     "O(e²)",
-    "O(n)"
+    "O(n log n)"
    ],
    "ans": "O(e log e)",
    "why": "主要花在把 e 條邊排序。"
@@ -204,8 +204,8 @@
    "q": "binary heap（min-heap）滿足什麼性質？",
    "opts": [
     "complete binary tree，且 parent ≤ children",
-    "每個節點恰有兩個 children",
-    "left child ≤ parent ≤ right child",
+    "每個節點恰有兩個 children，且 parent ≤ children",
+    "binary tree，且 left child ≤ parent ≤ right child",
     "所有 leaf 都在同一層"
    ],
    "ans": "complete binary tree，且 parent ≤ children",

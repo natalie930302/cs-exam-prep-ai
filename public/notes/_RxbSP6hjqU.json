@@ -284,7 +284,7 @@
    "q": "MS-DOS 這類 simple OS 最大的問題是？",
    "opts": [
     "沒有清楚分層，非常不安全、難以 maintain",
-    "效能太差",
+    "效能太差，所有服務都要經過 message passing",
     "kernel 太小",
     "一定要 message passing"
    ],
@@ -317,7 +317,7 @@
    "q": "Microkernel 效能較差的主要原因是？",
    "opts": [
     "user space 的元件彼此溝通都要經過 kernel（system call + message passing）",
-    "kernel 太大",
+    "kernel 太大，所有 service 與 driver 都塞在 kernel space 裡執行，切換成本高",
     "沒有 driver",
     "不能使用 cache"
    ],
@@ -328,7 +328,7 @@
    "q": "Modular OS（如 Linux）和 microkernel 最大的不同？",
    "opts": [
     "module 全部在 kernel space，溝通不必 message passing",
-    "module 全部在 user space",
+    "module 全部在 user space，彼此要透過 kernel 的 message 溝通",
     "沒有 interface 定義",
     "不能動態載入"
    ],

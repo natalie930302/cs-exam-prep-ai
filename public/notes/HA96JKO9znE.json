@@ -320,7 +320,7 @@
     "讓每個使用者依喜好調整操作環境（alias、顏色…）",
     "因為 OS 不會執行指令",
     "為了加速 system call",
-    "為了做 memory management"
+    "為了做 memory management，分配每個程式的空間"
    ],
    "ans": "讓每個使用者依喜好調整操作環境（alias、顏色…）",
    "why": "system call 的定義不能改，shell 讓個人化發生在 OS 外。"
@@ -330,7 +330,7 @@
    "opts": [
     "protection：process 不能直接寫別人的 memory",
     "因為 kernel 比較快",
-    "因為 shared memory 不存在",
+    "因為 shared memory 不存在，只能透過 kernel 傳",
     "為了壓縮資料"
    ],
    "ans": "protection：process 不能直接寫別人的 memory",
@@ -340,7 +340,7 @@
    "q": "Shared memory 的主要缺點？",
    "opts": [
     "synchronization 與 deadlock 問題",
-    "一定比 message passing 慢",
+    "一定比 message passing 慢，因為每次都要 system call",
     "不能在同一台電腦使用",
     "需要網路"
    ],
@@ -352,7 +352,7 @@
    "opts": [
     "限制一個 process 最多配置 4 GB、開檔數有上限",
     "計算薪水",
-    "統計 CPU 溫度",
+    "統計 CPU 溫度，過熱時自動降低時脈並記錄在 log",
     "記錄滑鼠位置"
    ],
    "ans": "限制一個 process 最多配置 4 GB、開檔數有上限",

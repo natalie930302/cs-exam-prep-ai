@@ -336,7 +336,7 @@
    "q": "為什麼空間以 word 而不是 bytes 計算？",
    "opts": [
     "演算法階段還不知道變數型別",
-    "word 比 bytes 小",
+    "word 比 bytes 小，計算比較精確",
     "bytes 只用在硬碟",
     "word 才能表示 O(1)"
    ],
@@ -348,7 +348,7 @@
    "opts": [
     "耗電量（power consumption）",
     "Time",
-    "Space",
+    "Space（執行時需要的記憶體空間）",
     "以上皆是主要準則"
    ],
    "ans": "耗電量（power consumption）",
@@ -358,8 +358,8 @@
    "q": "關於演算法的語法，影片的結論是？",
    "opts": [
     "沒有固定語法，相關的人看得懂即可",
-    "一定要寫 data type",
-    "一定要用 begin／end",
+    "一定要寫 data type，否則無法分析",
+    "一定要用 begin／end 標示區塊",
     "一定要先宣告所有變數"
    ],
    "ans": "沒有固定語法，相關的人看得懂即可",

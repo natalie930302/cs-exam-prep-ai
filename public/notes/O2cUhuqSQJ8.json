@@ -311,7 +311,7 @@
    "q": "conservation（流量守恆）要求哪些端點 inflow = outflow？",
    "opts": [
     "除了 source 和 sink 以外的端點",
-    "所有端點",
+    "所有端點（包含 source 和 sink）",
     "只有 source 和 sink",
     "只有 sink"
    ],

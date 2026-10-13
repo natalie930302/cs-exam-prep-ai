@@ -701,9 +701,9 @@
    "q": "MIPS 叫 load-store machine 的意思是？",
    "opts": [
     "算術運算的 operand 必須在 register，記憶體只能用 load/store 存取",
-    "每個指令都要 load 和 store 一次",
+    "每個指令都要先 load operand、算完再 store 回 memory",
     "只能存取 byte",
-    "運算可以直接用 memory operand"
+    "算術指令可以直接用 memory operand 當來源，不必先 load 到 register"
    ],
    "ans": "算術運算的 operand 必須在 register，記憶體只能用 load/store 存取",
    "why": "運算前資料要先 lw 進 register，結果再 sw 回記憶體。"
@@ -747,7 +747,7 @@
     "addi $sp, $sp, -12",
     "addi $sp, $sp, 12",
     "addi $sp, $sp, -3",
-    "sw $sp, 12($sp)"
+    "addiu $sp, $sp, -16"
    ],
    "ans": "addi $sp, $sp, -12",
    "why": "3 個 word × 4 bytes = 12；MIPS 的 stack 往低位址長，所以減 12。"
@@ -767,7 +767,7 @@
    "q": "為什麼 non-leaf procedure 一定要把 $ra 存到 stack？",
    "opts": [
     "它用 jal 呼叫別人時會覆寫 $ra",
-    "因為 $ra 是 temporary",
+    "因為 jr 會把 $ra 清成 0，回來時就找不到位址",
     "因為 jr 只能讀 stack",
     "因為 $sp 會被清成 0"
    ],

@@ -193,9 +193,9 @@
    "q": "一個 cut (S, T) separating source and sink，下列何者必須成立？",
    "opts": [
     "S ∪ T = V、S ∩ T = ∅、s ∈ S、t ∈ T",
-    "S 和 T 一樣大",
-    "s 和 t 在同一邊",
-    "S 只能有 source"
+    "S 和 T 一樣大，且 s ∈ S、t ∈ T、S ∩ T = ∅",
+    "s 和 t 在同一邊，S ∪ T = V",
+    "S 只能有 source，T = V − {s}"
    ],
    "ans": "S ∪ T = V、S ∩ T = ∅、s ∈ S、t ∈ T",
    "why": "cut 是 V 的 partition，而且要把 source 和 sink 分開。"
@@ -226,9 +226,9 @@
    "q": "證明中為什麼可以「多扣掉 s 的 inflow」？",
    "opts": [
     "因為 source 的 inflow = 0",
-    "因為 s 守恆",
-    "因為 f(e) ≤ c(e)",
-    "因為 t 在 T"
+    "因為 s 也滿足 flow conservation",
+    "因為每條邊 f(e) ≤ c(e)",
+    "因為 t 在 T，不在 S 裡面"
    ],
    "ans": "因為 source 的 inflow = 0",
    "why": "沒有邊流進 source，扣掉 0 不影響答案。"

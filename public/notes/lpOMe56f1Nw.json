@@ -390,7 +390,7 @@
    "q": "下列關於 system call 的敘述何者正確？",
    "opts": [
     "是 software interrupt，呼叫後會進入 kernel mode",
-    "呼叫 API 一定會進入 kernel mode",
+    "呼叫任何 API 都一定會進入 kernel mode，不需要 trap",
     "system call 通常用 Java 寫",
     "system call 和 API 只是別名"
    ],
@@ -403,7 +403,7 @@
     "多對一：兩個 API 都 call brk",
     "一對一",
     "一對零：都不需要 OS",
-    "各自對到十幾個 system call"
+    "一對多：每個 API 各自對到十幾個 system call"
    ],
    "ans": "多對一：兩個 API 都 call brk",
    "why": "課堂例子：只是參數不同（增加或減少）。"
@@ -423,7 +423,7 @@
    "q": "POSIX 帶來的主要好處是？",
    "opts": [
     "portability：程式換到其他 POSIX 系統只需重新 compile",
-    "讓 system call 都一樣",
+    "讓所有 OS 的 system call 編號完全相同，binary 不用重編",
     "讓程式不用 compile",
     "讓程式跑得更快"
    ],
@@ -457,7 +457,7 @@
    "opts": [
     "system call 很 expensive 又 low level，API 用最有效率的方式包好",
     "system call 不能用",
-    "system call 比 API 更安全",
+    "API 會繞過 kernel mode 直接存取硬體，所以一定比 system call 快得多",
     "API 一定比 system call 快"
    ],
    "ans": "system call 很 expensive 又 low level，API 用最有效率的方式包好",

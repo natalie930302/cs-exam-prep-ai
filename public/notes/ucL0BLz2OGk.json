@@ -910,7 +910,7 @@
    "opts": [
     "三個數字都往上",
     "最大的放新 node、中間的送 parent、最小的留在原 node",
-    "最小的送 parent",
+    "最小的送 parent、中間的留在原 node、最大的放新 node",
     "直接開新的 root"
    ],
    "ans": "最大的放新 node、中間的送 parent、最小的留在原 node",
@@ -976,8 +976,8 @@
    "opts": [
     "一定比較矮",
     "insert / delete 的調整只發生一次，不會連鎖",
-    "不需要 split",
-    "所有 key 都在 leaf"
+    "不需要 split，node 滿了直接往右延伸",
+    "所有 key 都在 leaf，internal node 只存索引"
    ],
    "ans": "insert / delete 的調整只發生一次，不會連鎖",
    "why": "老師提到的兩個優點：調整不會連鎖，以及可以表示成 red-black tree。"

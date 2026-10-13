@@ -1672,9 +1672,9 @@
    "q": "紅黑樹插入 15 時，爸爸 14 與叔叔 7 都是紅色，對應 2-3-4 tree 的什麼狀況？",
    "opts": [
     "4-node 已滿，要分家（recolor 後往上）",
-    "3-node 插錯邊，要 restructure",
-    "2-node 有空房間，直接放",
-    "要做 fuse"
+    "3-node 插錯邊，要 restructure（rotate 後結束）",
+    "2-node 有空房間，直接把 15 放進去",
+    "3-node 被拆開，要做 fuse（和兄弟合併）"
    ],
    "ans": "4-node 已滿，要分家（recolor 後往上）",
    "why": "紅叔不能容：7 11 14 這家已滿，11 往上推，7、14 塗黑、11 塗紅，問題往上一層傳。"
@@ -1683,8 +1683,8 @@
    "q": "紅黑樹 remove 一個黑色 leaf，它的兄弟是黑色且有紅色小孩，應做什麼？",
    "opts": [
     "restructure（rotate），紅外甥塗黑後結束",
-    "只把兄弟塗紅",
-    "先 rotate 找真兄弟",
+    "只把兄弟塗紅，爸爸變 double black 往上傳",
+    "先 rotate 找真兄弟，再重新判斷是哪個 case",
     "直接移掉即可"
    ],
    "ans": "restructure（rotate），紅外甥塗黑後結束",
@@ -1694,8 +1694,8 @@
    "q": "Case 2：被移掉的黑 node 的兄弟是黑且只有黑小孩，若爸爸 A 原本是黑，結果是？",
    "opts": [
     "兄弟塗紅，A 變 double black，往上一層繼續",
-    "兄弟塗紅，A 塗黑，結束",
-    "A 塗紅，結束",
+    "兄弟塗紅，A 直接塗黑，整個 removal 就此結束",
+    "A 塗紅、兄弟塗黑，做一次 rotate 後結束",
     "做一次 rotate 後結束"
    ],
    "ans": "兄弟塗紅，A 變 double black，往上一層繼續",
@@ -1705,8 +1705,8 @@
    "q": "remove 時遇到紅色兄弟（red sibling）代表什麼？",
    "opts": [
     "那個紅兄弟其實是爸爸那層 3-node 的家人，要先 rotate 找真兄弟",
-    "兄弟家有人可借",
-    "要直接 recolor",
+    "兄弟家有多的人可借，直接做 transfer，把紅兄弟塗黑後整個就結束",
+    "代表 4-node 已滿要分家，直接 recolor 兄弟與爸爸再往上一層",
     "樹已經不平衡，要整棵重建"
    ],
    "ans": "那個紅兄弟其實是爸爸那層 3-node 的家人，要先 rotate 找真兄弟",
@@ -1716,8 +1716,8 @@
    "q": "在 2-3-4 tree remove 21 時，兄弟 16 只有一人、爸爸是 5 18，應做哪個操作？",
    "opts": [
     "fuse：18 拉下來和 16 合一家",
-    "transfer：16 上去、18 下來",
-    "split：18 往上推",
+    "transfer：16 上去、18 下來補 21 的位置",
+    "split：18 往上推，5 18 拆成兩個 node",
     "直接移掉 21 即可"
    ],
    "ans": "fuse：18 拉下來和 16 合一家",
@@ -1727,8 +1727,8 @@
    "q": "為什麼紅黑樹的 removal 仍是 O(log n)？",
    "opts": [
     "只有 recolor 可能一路往上，而高度是 O(log n)；rotate/restructure 只做常數次",
-    "因為每次 remove 都要旋轉 log n 次",
-    "因為紅黑樹是 complete binary tree",
+    "因為每次 remove 都要旋轉 log n 次，而每次 rotate 是 O(1)，相乘還是 O(log n)",
+    "因為紅黑樹是 complete binary tree，高度固定是 ⌊log n⌋，recolor 只做一次",
     "因為 remove 只會發生在 root"
    ],
    "ans": "只有 recolor 可能一路往上，而高度是 O(log n)；rotate/restructure 只做常數次",
@@ -1738,8 +1738,8 @@
    "q": "紅黑樹規則「所有 external node 有相同 black depth」對應 2-3-4 tree 的哪個性質？",
    "opts": [
     "所有 leaf（蟑螂腳）在同一高度",
-    "每個 node 最多 4 個小孩",
-    "node 內的 key 排好序",
+    "每個 node 最多 4 個小孩（3 個 key）",
+    "node 內的 key 由小到大排好序",
     "root 至少有兩個小孩"
    ],
    "ans": "所有 leaf（蟑螂腳）在同一高度",

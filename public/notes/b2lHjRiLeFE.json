@@ -200,9 +200,9 @@
    "q": "Deadlock detection（multiple instance）和 Banker 的 safety 檢查最大的差別？",
    "opts": [
     "detection 比的是目前的 Request，不需要 Max",
-    "detection 比的是 Max",
-    "detection 只能用在 single instance",
-    "detection 不需要 Allocation"
+    "detection 比的是 Max − Allocation，和 Banker 相同",
+    "detection 只能用在 single instance 的 graph",
+    "detection 不需要 Allocation 欄位"
    ],
    "ans": "detection 比的是目前的 Request，不需要 Max",
    "why": "Banker 用 Need = Max − Allocation（假設最壞）；detection 用已經 given 的 Request。"
@@ -211,9 +211,9 @@
    "q": "恐龍書 detection 例（Available (0,0,0)）中，P2 的 Request 改為 (0,0,1) 後？",
    "opts": [
     "P1、P2、P3、P4 deadlock",
-    "沒有 deadlock",
-    "只有 P2 deadlock",
-    "全部 5 個 deadlock"
+    "沒有 deadlock，所有 process 都能完成",
+    "只有 P2 一個 process deadlock",
+    "全部 5 個 process 都 deadlock"
    ],
    "ans": "P1、P2、P3、P4 deadlock",
    "why": "P0 做完後 Work = (0,1,0)，其餘 Request 都有一欄不夠。"
@@ -222,9 +222,9 @@
    "q": "Wait-for graph 適用於？",
    "opts": [
     "每種資源只有一個 instance 的 detection",
-    "multiple instance 的 detection",
-    "Banker 的 safety 檢查",
-    "prevention"
+    "每種資源有多個 instance 的 detection",
+    "Banker 的 safety 檢查（avoidance 用途）",
+    "deadlock prevention 的資源排序"
    ],
    "ans": "每種資源只有一個 instance 的 detection",
    "why": "把 RAG 的資源節點收掉；有 cycle 就是 deadlock。"

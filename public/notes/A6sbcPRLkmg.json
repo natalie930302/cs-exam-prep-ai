@@ -600,7 +600,7 @@
    "q": "SPEC power benchmark 在 0% load 仍量到不少 power，主要原因是？",
    "opts": [
     "static power（leakage）",
-    "dynamic power 充放電",
+    "dynamic power（充放電）",
     "clock rate 太高",
     "benchmark 量錯"
    ],

@@ -475,9 +475,9 @@
    "q": "傳統 linked allocation 要從第 5 個 block 開始讀，為什麼還要讀前 4 個 block？",
    "opts": [
     "pointer 存在每個 data block 裡，要讀出來才知道下一塊",
-    "檔案必須從頭讀才合法",
-    "前 4 塊存 index",
-    "disk 只能 sequential"
+    "檔案必須從頭讀才合法，OS 會檢查讀取順序",
+    "前 4 塊存的是 index，要先讀完才能定位第 5 塊",
+    "disk 只能 sequential 存取，磁頭無法直接跳到第 5 塊上"
    ],
    "ans": "pointer 存在每個 data block 裡，要讀出來才知道下一塊",
    "why": "pointer 散落在 disk 上，每讀一個就是一次 I/O。"
@@ -486,9 +486,9 @@
    "q": "FAT 改善 linked allocation random access 的關鍵是？",
    "opts": [
     "pointer 集中成表並在 mount 時載入 memory",
-    "每塊多加一個 back pointer",
-    "改成連續存放",
-    "使用 bit vector"
+    "每塊多加一個 back pointer，可以雙向走訪",
+    "改成連續存放，直接用 offset 計算每塊位置",
+    "使用 bit vector 記錄每塊的下一塊"
    ],
    "ans": "pointer 集中成表並在 mount 時載入 memory",
    "why": "沿鏈走的動作在 memory 完成，不需 disk I/O。"
@@ -509,8 +509,8 @@
    "opts": [
     "48KB + 4MB",
     "48KB",
-    "4MB",
-    "4GB"
+    "48KB + 1MB",
+    "48KB + 4GB"
    ],
    "ans": "48KB + 4MB",
    "why": "direct 12 × 4KB = 48KB；single 1024 × 4KB = 4MB。"
@@ -519,9 +519,9 @@
    "q": "Multi-level index 相對 linked index scheme 的主要優點？",
    "opts": [
     "大檔案各位置的存取時間較平均",
-    "小檔案浪費較少",
-    "不需要 index block",
-    "可以支援 cycle"
+    "小檔案浪費的 index 空間比較少",
+    "完全不需要 index block",
+    "可以支援 block 之間的 cycle"
    ],
    "ans": "大檔案各位置的存取時間較平均",
    "why": "linked index 越後面要 lookup 越多個 index block。"

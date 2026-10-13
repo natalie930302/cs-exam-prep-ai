@@ -247,7 +247,7 @@
    "opts": [
     "connected 且沒有 cycle 的 undirected simple graph",
     "connected 的 undirected simple graph",
-    "沒有 cycle 的 undirected simple graph",
+    "connected 且每個 vertex degree ≥ 1 的 undirected simple graph",
     "每個 component 都沒有 cycle 的 graph"
    ],
    "ans": "connected 且沒有 cycle 的 undirected simple graph",

@@ -825,7 +825,7 @@
    "q": "HC ≤p TSP 的轉換中，bound B 設成多少？",
    "opts": [
     "n（點數）",
-    "n²",
+    "n²（邊數上界）",
     "2n",
     "1"
    ],
@@ -836,9 +836,9 @@
    "q": "為什麼 TSP 找到總長 ≤ n 的 tour，就代表 G 有 Hamiltonian cycle？",
    "opts": [
     "n 條邊、每條 ≥ 1、總和 ≤ n → 每條都是 1，全是 G 的邊",
-    "因為 TSP 一定有解",
+    "因為 TSP 一定有解，而 complete graph 的任何 tour 都對應 G 的 HC",
     "因為 complete graph 一定有 HC",
-    "因為 bound 比 n 大"
+    "因為 bound 比 n 大，tour 可以用到權重 2 的邊"
    ],
    "ans": "n 條邊、每條 ≥ 1、總和 ≤ n → 每條都是 1，全是 G 的邊",
    "why": "Cost 只有 1 或 2；cost 1 的邊就是 G 原本的邊。"
@@ -848,7 +848,7 @@
    "opts": [
     "NP-hard",
     "NP",
-    "P",
+    "NP-intermediate",
     "co-NP"
    ],
    "ans": "NP-hard",
@@ -858,9 +858,9 @@
    "q": "X ≤p Y 且 Y ≤p X 代表？",
    "opts": [
     "兩者 polynomially equivalent（一樣難）",
-    "X 比 Y 難",
-    "Y 比 X 難",
-    "兩者都在 P"
+    "X 比 Y 難（X 可以拿來解 Y）",
+    "Y 比 X 難，X 只是 Y 的一個特例（多項式時間內）",
+    "兩者都在 P，可以 poly time 互解"
    ],
    "ans": "兩者 polynomially equivalent（一樣難）",
    "why": "互相 reduce 得過去，只差 transformation 的時間。"
@@ -869,8 +869,8 @@
    "q": "Bipartite matching ≤p network flow 告訴我們什麼？",
    "opts": [
     "matching 可以 efficient 解，且不比 flow 難",
-    "matching 是 NPC",
-    "network flow 比 matching 簡單",
+    "matching 是 NPC，可以 reduce 到 flow 來近似",
+    "network flow 比 matching 簡單，可用 matching 來解",
     "matching 沒有 poly 解"
    ],
    "ans": "matching 可以 efficient 解，且不比 flow 難",

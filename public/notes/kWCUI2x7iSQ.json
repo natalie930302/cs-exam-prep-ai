@@ -478,9 +478,9 @@
    "q": "ripple carry adder 慢的主要原因是？",
    "opts": [
     "每一位都要等前一位的 carry out",
-    "sum 要經過很多 gate",
-    "full adder 有三個 input",
-    "要先做 two's complement"
+    "sum 要經過很多層 gate 才算得出來",
+    "full adder 有三個 input，gate 數太多",
+    "要先做 two's complement 才能相加"
    ],
    "ans": "每一位都要等前一位的 carry out",
    "why": "每級 2 gate delays，32 bits 要等 32 級。"
@@ -502,7 +502,7 @@
     "g1 + p1·g0 + p1·p0·c0",
     "g1 + g0 + c0",
     "p1·p0·c0",
-    "g1 · p1 + g0 · p0"
+    "p1 + g1·p0 + g1·g0·c0"
    ],
    "ans": "g1 + p1·g0 + p1·p0·c0",
    "why": "bit 1 自己 generate，或 bit 0 generate 且 bit 1 propagate，或 c0 被兩位 propagate。"
@@ -511,9 +511,9 @@
    "q": "carry lookahead 不能直接做到 32 bits 的原因？",
    "opts": [
     "高位 carry 的 AND／OR gate input 太多（fan-in）",
-    "需要 3 級 gate",
-    "gi、pi 算不出來",
-    "sum 不能平行算"
+    "需要 3 級 gate，比 ripple carry 還多級",
+    "gi、pi 要等前一位算完才算得出來",
+    "sum 不能平行算，要等所有位數的 carry 都依序完成才行"
    ],
    "ans": "高位 carry 的 AND／OR gate input 太多（fan-in）",
    "why": "c16 的最後一項要 17 個 input 的 AND，OR 也要 17 項。"
@@ -533,9 +533,9 @@
    "q": "carry select adder 的做法是？",
    "opts": [
     "上半部假設 carry = 0 與 1 各算一次，再用 MUX 選",
-    "把 carry 存起來下一個 cycle 再加",
-    "只用一個 full adder",
-    "用大 P、大 G 算 carry"
+    "把 carry 存在 register 裡，等下一個 clock cycle 再加回去",
+    "只用一個 full adder，每個 cycle 處理一個 bit",
+    "把 bits 分組，用大 P、大 G 直接算出每組 carry"
    ],
    "ans": "上半部假設 carry = 0 與 1 各算一次，再用 MUX 選",
    "why": "用 duplicate 的硬體換時間，delay 由 2n 變 n。"

@@ -908,7 +908,7 @@
     "m",
     "⌊log₂m⌋ + 1",
     "⌈m/2⌉",
-    "√m"
+    "⌈log₂(m/2)⌉"
    ],
    "ans": "⌊log₂m⌋ + 1",
    "why": "課本 Lemma：weighted union 保證高度不超過 ⌊log₂m⌋ + 1，故 find 為 O(log m)。"
@@ -929,8 +929,8 @@
    "opts": [
     "只有被頻繁查詢的 node 才會被移到 root 下",
     "每次 find(i) 都把 i 到 root 路徑上的 node 直接改指向 root",
-    "只在 union 時調整 tree",
-    "會把 node 數較少的 tree 接到較大的 tree"
+    "只在 union 時調整 tree，把較矮的 tree 整棵接到另一棵的 root 下",
+    "會把 node 數較少的 tree 接到較大的 tree，降低高度"
    ],
    "ans": "每次 find(i) 都把 i 到 root 路徑上的 node 直接改指向 root",
    "why": "collapsingFind 不需預測查詢頻率，每次 find 都壓縮路徑；最後一個選項描述的是 weighting rule。"

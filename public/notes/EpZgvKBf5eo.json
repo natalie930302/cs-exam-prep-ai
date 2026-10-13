@@ -376,7 +376,7 @@
    "q": "Non-preemptive scheduling 只會在哪些狀態轉換時重新選人？",
    "opts": [
     "running → waiting 與 running → terminate",
-    "running → ready 與 waiting → ready",
+    "running → ready 與 running → terminate",
     "只有 timer interrupt",
     "四種轉換都會"
    ],
@@ -432,7 +432,7 @@
    "opts": [
     "把 timer interrupt disable",
     "改用 FCFS",
-    "提高 kernel 的 priority",
+    "提高 kernel thread 的 priority",
     "關掉 cache"
    ],
    "ans": "把 timer interrupt disable",

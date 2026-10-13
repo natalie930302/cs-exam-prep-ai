@@ -207,7 +207,7 @@
    "q": "考慮一個 job 時，應該放在哪個空 slot？",
    "opts": [
     "deadline 之前最晚的空 slot",
-    "最早的空 slot",
+    "deadline 之前最早的空 slot",
     "任何空 slot 都一樣",
     "deadline 之後的 slot"
    ],

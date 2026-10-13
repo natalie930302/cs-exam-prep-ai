@@ -458,9 +458,9 @@
    "q": "為什麼 thread 被稱為 lightweight process？",
    "opts": [
     "它共用 process 的 code、data、resources，只需自己的 ID、PC、registers、stack",
-    "它的程式碼比較短",
-    "它不需要用到 CPU",
-    "它只能在單核心上執行"
+    "它的程式碼比較短，只包含單一 function，所以從 disk load 起來比較快",
+    "它不需要用到 CPU，由 I/O controller 直接執行，所以負擔很小",
+    "它只能在單核心上執行，不需要和其他 core 做 synchronization 與 context switch"
    ],
    "ans": "它共用 process 的 code、data、resources，只需自己的 ID、PC、registers、stack",
    "why": "建立 thread 只要讓 segment 共用，不必複製整個 address space，所以輕。"
@@ -469,9 +469,9 @@
    "q": "每個 thread 有自己的 program counter，代表什麼？",
    "opts": [
     "每個 thread 可以執行不同位置的指令",
-    "所有 thread 一定執行同一行",
-    "thread 不能呼叫 function",
-    "thread 共用同一組 registers"
+    "所有 thread 一定同時執行同一行指令",
+    "thread 不能呼叫 function，只能循序執行",
+    "所有 thread 共用同一組 registers 和 stack"
    ],
    "ans": "每個 thread 可以執行不同位置的指令",
    "why": "PC 記錄下一個要執行的指令；各自一份，所以能獨立執行不同的 function。"
@@ -480,7 +480,7 @@
    "q": "web server 用 multithreading 的典型做法是？",
    "opts": [
     "main thread 持續等待，每個 request 交給新的 thread 處理",
-    "每個 request 都 fork 一個 process 並等它結束",
+    "每個 request 都 fork 一個 process，main 等它結束才接下一個",
     "只用一個 thread 依序處理所有 request",
     "讓 client 自己建立 thread"
    ],
@@ -491,9 +491,9 @@
    "q": "thread 的 Economy 這個好處是指？",
    "opts": [
     "create、切換 thread 比 process 便宜很多",
-    "thread 可以跨電腦共用記憶體",
-    "thread 不會有同步問題",
-    "thread 不需要 OS"
+    "thread 可以跨電腦共用同一塊實體記憶體空間",
+    "thread 之間不會有 synchronization 問題",
+    "thread 不需要 OS 介入，切換完全免費"
    ],
    "ans": "create、切換 thread 比 process 便宜很多",
    "why": "課堂實驗：pthread_create 比 fork 快 20 幾倍到 50 倍。"
@@ -502,9 +502,9 @@
    "q": "Load balancing 為什麼重要？",
    "opts": [
     "程式的結束時間取決於最慢的那個 thread",
-    "thread 越多一定越快",
-    "debugger 需要它才能運作",
-    "它能消除 data dependency"
+    "thread 越多一定越快，平均分配才能開更多",
+    "debugger 需要它才能正確追蹤每個 thread",
+    "它能消除 thread 之間的 data dependency"
    ],
    "ans": "程式的結束時間取決於最慢的那個 thread",
    "why": "工作量不平均時，其他 thread 都在等最慢的那個，等於沒有平行。"

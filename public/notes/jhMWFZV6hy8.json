@@ -351,8 +351,8 @@
    "q": "R-format 中 shamt 為什麼只要 5 bits？",
    "opts": [
     "32-bit 資料最多 shift 31 次，0～31 用 5 bits 表示",
-    "因為 register 有 5 個",
-    "因為 op code 是 5 bits",
+    "因為 MIPS 有 32 個 register，編號剛好需要用 5 bits",
+    "因為 op code 是 5 bits，要對齊",
     "因為 shift 只能做 5 次"
    ],
    "ans": "32-bit 資料最多 shift 31 次，0～31 用 5 bits 表示",

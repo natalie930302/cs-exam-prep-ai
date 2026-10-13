@@ -250,8 +250,8 @@
    "opts": [
     "process 的內容已被 ex2 取代，不會回到 ex1 的程式碼",
     "printf 寫錯了",
-    "ex2 把它 kill 掉了",
-    "因為 PID 不同"
+    "ex2 結束時把 parent 的 ex1 也 kill 掉了",
+    "因為 PID 不同，printf 的輸出被導到 ex2 的 terminal"
    ],
    "ans": "process 的內容已被 ex2 取代，不會回到 ex1 的程式碼",
    "why": "exec 成功後不會 return 回原本的程式。"
@@ -261,7 +261,7 @@
    "opts": [
     "避免兩個程式的輸出檔都叫 a.out 而互相覆蓋",
     "讓程式跑得更快",
-    "-o 是 fork 需要的參數",
+    "-o 是 fork 需要的參數，沒加的話 fork 會失敗",
     "為了改變 PID"
    ],
    "ans": "避免兩個程式的輸出檔都叫 a.out 而互相覆蓋",

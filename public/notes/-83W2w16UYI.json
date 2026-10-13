@@ -411,8 +411,8 @@
    "q": "Write-back cache 為什麼需要 dirty bit？",
    "opts": [
     "知道 block 被換掉時要不要寫回 memory",
-    "知道 block 是否有效",
-    "知道要選哪個 word",
+    "知道 block 裡的資料是否有效（開機時清 0）",
+    "知道要選 block 裡的哪個 word",
     "知道 block 是 instruction 還是 data"
    ],
    "ans": "知道 block 被換掉時要不要寫回 memory",
@@ -422,7 +422,7 @@
    "q": "Write miss 時「不把 block 搬進 cache，直接寫 memory」叫做？通常搭配哪種 policy？",
    "opts": [
     "No-write allocate（write around），搭配 write-through",
-    "Write allocate，搭配 write-through",
+    "Write allocate（fetch on write），搭配 write-through 一起用",
     "Write allocate，搭配 write-back",
     "No-write allocate，搭配 write-back"
    ],
@@ -433,9 +433,9 @@
    "q": "Cache miss 與 virtual memory 的 page fault，處理方式的差別？",
    "opts": [
     "cache miss 由 hardware stall CPU；page fault 由 OS 處理",
-    "兩者都由 OS 處理",
-    "cache miss 由 OS 處理；page fault 由 hardware stall",
-    "兩者都只 stall"
+    "cache miss 由 OS 處理；page fault 由 hardware stall CPU",
+    "兩者都由 OS 處理，各自觸發 exception",
+    "兩者都只由 hardware stall CPU 等待"
    ],
    "ans": "cache miss 由 hardware stall CPU；page fault 由 OS 處理",
    "why": "cache miss 只要幾十～幾百 cycle，hardware 讓 CPU 等；page fault 要百萬 cycle，由 OS 以 interrupt/exception 處理。"
@@ -444,9 +444,9 @@
    "q": "在 miss rate 對 block size 的圖中，大 cache（如 256K）的曲線較平，原因是？",
    "opts": [
     "cache 夠大，block 變大後 block 數仍足夠",
-    "大 cache 沒有 spatial locality",
+    "大 cache 沒有 spatial locality，block size 沒影響",
     "大 cache 的 miss penalty 是 0",
-    "大 cache 不用 tag"
+    "大 cache 不用 tag，比較省空間"
    ],
    "ans": "cache 夠大，block 變大後 block 數仍足夠",
    "why": "小 cache 加大 block 會讓 block 數太少而衝突；大 cache 不容易發生。"
@@ -455,7 +455,7 @@
    "q": "FastMATH 的 I-cache miss rate（0.4%）遠低於 D-cache（11.4%），主因是？",
    "opts": [
     "instruction 多為 sequential 與 loop，locality 好",
-    "I-cache 比較大",
+    "I-cache 容量比 D-cache 大好幾倍，conflict miss 很少",
     "D-cache 用 write-through",
     "instruction 不需要 tag"
    ],

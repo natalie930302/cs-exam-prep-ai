@@ -956,7 +956,7 @@
    "q": "下列何者不是 B-tree 的規則？",
    "opts": [
     "非 root node 至少 ⌈m/2⌉ 個 child",
-    "root 至少 2 個 child",
+    "root 至少 2 個 child（除非它是 leaf）",
     "所有 leaf 在同一層",
     "每個 node 都必須剛好 m − 1 個 key"
    ],
@@ -979,7 +979,7 @@
    "opts": [
     "B+ tree 不平衡",
     "B+ tree 只有 leaf 有 record pointer，leaf 串成 linked list",
-    "B+ tree 的 node 只有一個 key",
+    "B+ tree 的 internal node 也存 record pointer，leaf 之間沒有連結",
     "B+ tree 沒有 internal node"
    ],
    "ans": "B+ tree 只有 leaf 有 record pointer，leaf 串成 linked list",

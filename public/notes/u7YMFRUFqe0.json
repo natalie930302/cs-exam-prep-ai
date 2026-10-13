@@ -397,7 +397,7 @@
    "q": "分治法的答案是哪三者的最大值？",
    "opts": [
     "左半最大、右半最大、跨中點的 cross sum",
-    "左半最大、右半最大、整個陣列總和",
+    "左半最大、右半最大、整個陣列的 total sum",
     "第一個、最後一個、中間元素",
     "left subsum、right subsum、pivot"
    ],
@@ -442,7 +442,7 @@
    "opts": [
     "O(n log n)",
     "O(n)",
-    "O(n²)",
+    "O(n² log n)",
     "O(log n)"
    ],
    "ans": "O(n log n)",

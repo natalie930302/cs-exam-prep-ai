@@ -329,7 +329,7 @@
    "opts": [
     "含所有端點、每點只有一個前一點所以沒有 cycle、都連回起點所以 connected",
     "因為它用了所有的 edge",
-    "因為每條 edge 的 weight 都不同",
+    "因為每條 edge 的 weight 都不同，所以每點只會被 relax 一次、不會形成 cycle",
     "因為圖是 complete graph"
    ],
    "ans": "含所有端點、每點只有一個前一點所以沒有 cycle、都連回起點所以 connected",

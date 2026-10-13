@@ -509,7 +509,7 @@
     "denormalized number：0.F × 2⁻¹²⁶",
     "±0",
     "NaN",
-    "1.F × 2⁻¹²⁷"
+    "normalized number：1.F × 2⁻¹²⁷（最小值）"
    ],
    "ans": "denormalized number：0.F × 2⁻¹²⁶",
    "why": "沒有 hidden 1、指數固定 −126（gradual underflow）。"
@@ -529,7 +529,7 @@
    "q": "浮點加法的第一步要做什麼？",
    "opts": [
     "把指數小的數 right shift 對齊",
-    "把指數大的數 left shift",
+    "把指數大的數 left shift 來對齊",
     "直接把 significand 相加",
     "先 rounding"
    ],

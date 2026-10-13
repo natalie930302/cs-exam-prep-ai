@@ -1459,9 +1459,9 @@
    "q": "C 寫 void swap(int a, int b) 並呼叫 swap(x, y)，為什麼 x、y 沒有被交換？",
    "opts": [
     "C 是 call by value，函式交換的是複製出來的 a、b",
-    "C 不允許在函式裡寫賦值",
-    "沒有回傳值所以結果被丟掉",
-    "int 不能交換，要用 double"
+    "C 不允許在函式裡對參數賦值，交換的程式碼被忽略",
+    "沒有回傳值，所以交換後的結果在 return 時就被丟掉了",
+    "int 不能直接交換，要先轉成 double 再用暫存變數"
    ],
    "ans": "C 是 call by value，函式交換的是複製出來的 a、b",
    "why": "x、y 的值被複製到 a、b（影印本），換的是影印本，原稿不變；要用指標或 C++ reference。"
@@ -1470,9 +1470,9 @@
    "q": "C++ 中 void swap(int &a, int &b) 的 a 是什麼？",
    "opts": [
     "傳進來變數 x 的 reference（暱稱）",
-    "x 的一份複本",
-    "一個可以是 NULL 的指標",
-    "x 的位置數值"
+    "x 的一份複本，修改不影響 x",
+    "一個可以是 NULL 的指標（型別為 int *）",
+    "x 的位置數值，要用 *a 取值"
    ],
    "ans": "傳進來變數 x 的 reference（暱稱）",
    "why": "& 讓 a 成為 x 的暱稱，對 a 的操作就是對 x 的操作；背後由 compiler 轉成指標。"
@@ -1503,9 +1503,9 @@
    "q": "和 one block 相比，array of arrays 的 2D array 哪個敘述正確？",
    "opts": [
     "多存一組指標、get 要多一層，但通常比較好寫",
-    "一定比 one block 快",
-    "不需要額外空間",
-    "每個 row 必須在記憶體中相鄰"
+    "一定比 one block 快，因為每個 row 可以分開配置",
+    "不需要額外空間，指標只在編譯時存在",
+    "每個 row 必須在記憶體中相鄰，才能用 a[i][j] 存取"
    ],
    "ans": "多存一組指標、get 要多一層，但通常比較好寫",
    "why": "要多存放各 row 位置的小紙條，construct 分段配置、get 跑兩關；好處是兩個維度分開處理較好寫。"
@@ -1525,9 +1525,9 @@
    "q": "C 的 2D array 上，row sum（外層 i、內層 j）比 column sum 快約一倍的主因是？",
    "opts": [
     "row sum 存取連續記憶體，cache 一次抓回的資料用得到",
-    "row sum 做的加法比較少",
-    "column sum 的結果比較大",
-    "compiler 對 column sum 不做最佳化"
+    "row sum 做的加法比較少，因為內層迴圈比較短",
+    "column sum 的結果比較大，需要用 long long 存所以變慢",
+    "compiler 對 column sum 不做最佳化，迴圈無法展開"
    ],
    "ans": "row sum 存取連續記憶體，cache 一次抓回的資料用得到",
    "why": "C 是 row-major；column sum 每次跳一整列，常常 cache miss。"

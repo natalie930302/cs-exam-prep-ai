@@ -846,7 +846,7 @@
    "opts": [
     "最佳化（mathematical programming）",
     "寫程式",
-    "動態配置記憶體",
+    "寫成可執行程式（computer programming）",
     "排程"
    ],
    "ans": "最佳化（mathematical programming）",
@@ -889,7 +889,7 @@
    "q": "巧克力 LP 的 dual 是？",
    "opts": [
     "min 200y1 + 300y2 + 400y3，s.t. y1 + y3 ≥ 1、y2 + y3 ≥ 6、y ≥ 0",
-    "max 200y1 + 300y2 + 400y3，s.t. y1 + y2 ≤ 1",
+    "max 200y1 + 300y2 + 400y3，s.t. y1 + y3 ≤ 1、y2 + y3 ≤ 6、y ≥ 0",
     "min x1 + 6x2",
     "max y1 + 6y2"
    ],
@@ -900,7 +900,7 @@
    "q": "Duality theorem 說的是？",
    "opts": [
     "primal 有最佳解，則 dual 也有，且兩者最佳值相等",
-    "dual 的值永遠比 primal 小",
+    "primal 有最佳解時 dual 一定 infeasible，兩者不能同時最佳",
     "primal 與 dual 不可能同時有解",
     "dual 只適用於 max flow"
    ],

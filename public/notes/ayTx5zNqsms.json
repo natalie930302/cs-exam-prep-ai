@@ -213,9 +213,9 @@
   {
    "q": "total order 比 partial order 多要求什麼？",
    "opts": [
-    "symmetric",
+    "必須是 symmetric relation",
     "每個元素都有 loop",
-    "沒有 maximal element",
+    "恰好只有一個 maximal element",
     "任兩個元素都 comparable"
    ],
    "ans": "任兩個元素都 comparable",
@@ -257,7 +257,7 @@
   {
    "q": "poset 是什麼的簡寫？",
    "opts": [
-    "positive set",
+    "positively ordered set",
     "power set",
     "possible set",
     "partially ordered set"

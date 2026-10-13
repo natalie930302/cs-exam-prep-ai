@@ -469,9 +469,9 @@
    "q": "Booth's algorithm 中，（目前 bit, 右邊 bit）= (1, 0) 要做什麼？",
    "opts": [
     "減 multiplicand（一串 1 的開始）",
-    "加 multiplicand",
+    "加 multiplicand（一串 1 的開始）",
     "不動",
-    "左移"
+    "只做左移，不加也不減"
    ],
    "ans": "減 multiplicand（一串 1 的開始）",
    "why": "10 是 beginning of run → 減；01 是 end of run → 加；00、11 不動。"
@@ -480,9 +480,9 @@
    "q": "Booth 算 2 × 7（0010 × 0111）時，會做幾次加或減？",
    "opts": [
     "2 次（一減一加）",
-    "3 次",
-    "4 次",
-    "1 次"
+    "3 次（一減兩加）",
+    "4 次（每個 bit 一次）",
+    "1 次（只減一次）"
    ],
    "ans": "2 次（一減一加）",
    "why": "0111 的配對依序是 10、11、11、01：只有第 1 輪減、第 4 輪加。"
@@ -491,8 +491,8 @@
    "q": "Booth 每輪的 shift 要注意什麼？",
    "opts": [
     "算術右移，左邊補 sign bit",
-    "邏輯右移，左邊補 0",
-    "左移",
+    "邏輯右移，左邊一律補 0（不看 sign）",
+    "左移，右邊補 0",
     "不用 shift"
    ],
    "ans": "算術右移，左邊補 sign bit",
@@ -503,7 +503,7 @@
    "opts": [
     "三個數進、兩個數出，只有一個 full adder 的 delay",
     "把 carry 一路傳到最高位",
-    "需要 log n 層的 carry lookahead",
+    "需要 log n 層的 carry lookahead 才能算出 carry",
     "只能加兩個數"
    ],
    "ans": "三個數進、兩個數出，只有一個 full adder 的 delay",
@@ -524,8 +524,8 @@
    "q": "改良版除法器相較第一版的改變？",
    "opts": [
     "Divisor 不動（32 bits），Remainder 往左移，Quotient 放進 Remainder 右邊",
-    "Divisor 改成往左移",
-    "ALU 改成 128 bits",
+    "Divisor 改成往左移，Quotient 也一起往左移",
+    "Divisor 改成往左移（64 bits），Remainder 不動，Quotient 另外用一個 register 存",
     "取消 restore"
    ],
    "ans": "Divisor 不動（32 bits），Remainder 往左移，Quotient 放進 Remainder 右邊",

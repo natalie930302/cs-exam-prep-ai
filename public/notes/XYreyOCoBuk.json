@@ -238,7 +238,7 @@
    "q": "Solaris 的 time-sharing process 用完整個 time quantum 時？",
    "opts": [
     "priority 降低（例 59 → 49），之後 quantum 較長",
-    "priority 提高",
+    "priority 提高（例 49 → 59），之後 quantum 較短",
     "priority 不變",
     "被移到 interrupt class"
    ],
@@ -249,7 +249,7 @@
    "q": "Solaris 中 process 從 sleep 回到 ready queue 時，priority 通常？",
    "opts": [
     "提高（例 20 → 52）",
-    "降低",
+    "降低（例 52 → 20）",
     "歸零",
     "改成 real-time"
    ],
@@ -262,7 +262,7 @@
     "real-time（16～31）",
     "normal",
     "idle",
-    "above normal"
+    "above normal（10～15）"
    ],
    "ans": "real-time（16～31）",
    "why": "其他 class 會在自己的 7 個數字內依 CPU / I/O 行為升降。"
@@ -271,7 +271,7 @@
    "q": "Linux（2.6）的 active / expired array：task 用完它的 time quantum 後會？",
    "opts": [
     "放到 expired array，等兩個 array 交換",
-    "留在 active array 隊尾",
+    "留在 active array 隊尾，等其他 task 輪完",
     "立刻降 priority 並重新開始",
     "被 kill"
    ],

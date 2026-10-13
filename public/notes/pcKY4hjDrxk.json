@@ -628,7 +628,7 @@
     "level order",
     "pre-order",
     "in-order",
-    "post-order"
+    "depth-first order"
    ],
    "ans": "level order",
    "why": "BFS 一層一層往外擴，就是 level order；DFS 才像 pre-order。"

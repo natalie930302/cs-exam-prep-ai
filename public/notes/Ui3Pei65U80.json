@@ -607,7 +607,7 @@
    "q": "LOOK 和 SCAN 的主要差別？",
    "opts": [
     "LOOK 只走到最遠的 request 就回頭，不走到磁碟兩端",
-    "LOOK 每次挑最近的 request，可以左右跳",
+    "LOOK 每次挑最近的 request，可以左右跳（像 SSTF）",
     "LOOK 不需要 request queue",
     "LOOK 只能往一個方向"
    ],

@@ -177,7 +177,7 @@
    "opts": [
     "user mode 比較安全：程式 crash 不會讓整個系統當掉",
     "user mode 可以直接存取 hardware",
-    "user mode 速度比 kernel mode 快很多",
+    "user mode 速度比 kernel mode 快很多，不用檢查權限",
     "kernel mode 不能執行 C 程式"
    ],
    "ans": "user mode 比較安全：程式 crash 不會讓整個系統當掉",
@@ -187,7 +187,7 @@
    "q": "System call 的定義是？",
    "opts": [
     "程式向 OS kernel 請求 service 的 programmatic 方式",
-    "硬體送給 CPU 的中斷訊號",
+    "硬體送給 CPU 的中斷訊號，用來通知 CPU 某個 I/O 已經完成",
     "CPU 換執行另一個 process",
     "編譯器產生的機器碼"
    ],
@@ -199,7 +199,7 @@
    "opts": [
     "要存取 monitor 這個 output device（hardware）",
     "因為要建立新檔案",
-    "因為要切換到另一個 process",
+    "因為要切換到另一個 process 來負責顯示這段提示",
     "其實不需要 system call"
    ],
    "ans": "要存取 monitor 這個 output device（hardware）",
@@ -221,7 +221,7 @@
    "opts": [
     "整個系統可能 crash 或停擺",
     "只有那個程式結束",
-    "自動切回 user mode 繼續",
+    "自動切回 user mode 繼續執行",
     "沒有任何影響"
    ],
    "ans": "整個系統可能 crash 或停擺",

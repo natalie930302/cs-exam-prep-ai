@@ -194,9 +194,9 @@
    "q": "「monitor 裡同一時間只能有一個 thread」這句話？",
    "opts": [
     "錯：可以有很多 thread，但只有一個是 active",
-    "對",
-    "錯：可以有很多 active 的 thread",
-    "錯：monitor 裡不能有 thread"
+    "對：monitor 用 mutex 擋住，第二個 thread 根本進不去",
+    "錯：可以有很多 active 的 thread，只要存取不同變數",
+    "錯：monitor 裡不能有 thread，只能在外面排隊"
    ],
    "ans": "錯：可以有很多 thread，但只有一個是 active",
    "why": "在 CV queue 裡 wait 的 thread 是 inactive。"
@@ -205,9 +205,9 @@
    "q": "condition variable 的 signal 和 semaphore 的 signal 最大差別？",
    "opts": [
     "CV 的 queue 空時 signal 什麼都不做；semaphore 的值一定加 1",
-    "兩者完全相同",
-    "CV 的 signal 會讓值減 1",
-    "semaphore 的 signal 在沒人等時什麼都不做"
+    "兩者完全相同：都讓計數加 1 並喚醒一個等待者",
+    "CV 的 signal 會讓值減 1；semaphore 的 signal 則讓值加 1",
+    "semaphore 的 signal 在沒人等時什麼都不做；CV 的 signal 會被記住"
    ],
    "ans": "CV 的 queue 空時 signal 什麼都不做；semaphore 的值一定加 1",
    "why": "CV 是 queue，semaphore 是 counter。"
@@ -216,9 +216,9 @@
    "q": "dining philosophers 的 monitor 解法中，test(k) 讓 k 開始吃的條件？",
    "opts": [
     "左右都不在 EATING，且 k 是 HUNGRY",
-    "左邊不在 EATING 即可",
-    "k 是 THINKING",
-    "左右都是 HUNGRY"
+    "左邊不在 EATING 即可，右邊之後再檢查",
+    "k 是 THINKING，且左右都不在 HUNGRY",
+    "左右都是 HUNGRY，且 k 不在 EATING"
    ],
    "ans": "左右都不在 EATING，且 k 是 HUNGRY",
    "why": "然後 state[k] = EATING、self[k].signal()。"
@@ -227,9 +227,9 @@
    "q": "pickup(i) 中 test 失敗時會？",
    "opts": [
     "self[i].wait()，等鄰居 putdown 時 test 並 signal",
-    "一直 busy waiting",
-    "拿起一支筷子等另一支",
-    "直接進入 THINKING"
+    "一直 busy waiting，在迴圈裡反覆呼叫 test(i) 直到成功",
+    "先拿起左邊的筷子，再 wait 等右邊的筷子被放下",
+    "直接進入 THINKING，下一輪再重新呼叫 pickup(i)"
    ],
    "ans": "self[i].wait()，等鄰居 putdown 時 test 並 signal",
    "why": "不會 hold and wait，所以不會 deadlock。"
@@ -238,9 +238,9 @@
    "q": "putdown(i) 之後要做什麼？",
    "opts": [
     "test 左右鄰居 (i+4)%5、(i+1)%5",
-    "什麼都不做",
-    "signal 自己",
-    "test 所有人"
+    "什麼都不做，鄰居會自己重新 test",
+    "signal 自己的 self[i]，讓自己再排隊",
+    "依序 test 全部五個人 0～4，一個不漏"
    ],
    "ans": "test 左右鄰居 (i+4)%5、(i+1)%5",
    "why": "鄰居可能正在等這兩支筷子。"
@@ -249,9 +249,9 @@
    "q": "相較於 semaphore，monitor 的優點？",
    "opts": [
     "high level：不用自己排 wait / signal 順序，較不易寫錯",
-    "執行一定比較快",
-    "不需要 condition variable",
-    "可以讓多個 thread 同時 active"
+    "執行一定比較快：monitor 由硬體直接實作，不用 system call",
+    "不需要 condition variable，同步完全由 compiler 處理",
+    "可以讓多個 thread 同時 active，因此 parallelism 較高"
    ],
    "ans": "high level：不用自己排 wait / signal 順序，較不易寫錯",
    "why": "semaphore 移一行就可能 deadlock 或 race。"

@@ -215,7 +215,7 @@
    "q": "LRU 找 victim 的快速技巧是？",
    "opts": [
     "從目前位置往左看，最後才出現的 page",
-    "往右看，最先出現的 page",
+    "從目前位置往右看，最晚才會用到的 page",
     "選編號最小的 page",
     "選最早進來的 page"
    ],
@@ -226,7 +226,7 @@
    "q": "Optimal 遇到 frame 裡的 page 以後都不會再被用到（平手）時，影片用什麼規則？",
    "opts": [
     "FIFO：換掉最早進來的",
-    "換掉編號最大的",
+    "LRU：換掉最久沒用的",
     "不換",
     "換掉最近用過的"
    ],
@@ -238,7 +238,7 @@
    "opts": [
     "不能據此說 FIFO 比 LRU 好；只有 OPT 一定最少",
     "FIFO 永遠比 LRU 好",
-    "LRU 有 Belady's anomaly",
+    "LRU 有 Belady's anomaly，所以表現比 FIFO 差",
     "OPT 不一定最少"
    ],
    "ans": "不能據此說 FIFO 比 LRU 好；只有 OPT 一定最少",

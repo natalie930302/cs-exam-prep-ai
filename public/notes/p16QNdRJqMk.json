@@ -644,8 +644,8 @@
    "q": "Cache 和 main memory 之間搬資料，主要由誰負責？",
    "opts": [
     "Cache controller（hardware）",
-    "Operating system",
-    "Compiler",
+    "Operating system（software）",
+    "Compiler（插入搬移指令）",
     "User"
    ],
    "ans": "Cache controller（hardware）",
@@ -657,7 +657,7 @@
     "small is fast：做大會變慢，而且很貴",
     "因為 cache 只能存 instruction",
     "因為 DRAM 不能和 CPU 放一起",
-    "因為 locality 只對小 cache 成立"
+    "因為 locality 只對小 cache 成立，做大也沒用"
    ],
    "ans": "small is fast：做大會變慢，而且很貴",
    "why": "越大的 memory 存取越慢（hit time 變長），SRAM 又貴，所以越靠近 CPU 的層級越小。"

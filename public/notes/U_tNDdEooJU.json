@@ -1592,7 +1592,7 @@
    "opts": [
     "A 的最後一個 node",
     "NULL",
-    "b.first",
+    "A 的倒數第二個 node",
     "A 的第一個 node"
    ],
    "ans": "A 的最後一個 node",

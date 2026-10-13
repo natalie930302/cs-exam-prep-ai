@@ -1056,7 +1056,7 @@
    "q": "高度 h 的 AVL tree 最少 node 數 N_h 的遞迴式？",
    "opts": [
     "N_h = 2N_{h−1}",
-    "N_h = N_{h−1} + 1",
+    "N_h = 2 + N_{h−1} + N_{h−2}",
     "N_h = 1 + N_{h−1} + N_{h−2}",
     "N_h = N_{h−1} + N_{h−2}"
    ],
@@ -1068,7 +1068,7 @@
    "opts": [
     "log₂ n",
     "1.44 log₂ n",
-    "2 n",
+    "0.72 log₂ n",
     "n / 2"
    ],
    "ans": "1.44 log₂ n",
@@ -1077,7 +1077,7 @@
   {
    "q": "在 41/20/65… 那棵樹（23 已修好）插入 55，怎麼修？",
    "opts": [
-    "right rotate(65)",
+    "right rotate(65) 再 left rotate(50)",
     "left rotate(50) 再 right rotate(65)",
     "left rotate(65)",
     "right rotate(41)"
@@ -1113,7 +1113,7 @@
     "O(n)",
     "O(n log n)",
     "O(n²)",
-    "O(log n)"
+    "O(n log log n)"
    ],
    "ans": "O(n log n)",
    "why": "n 次 insert 各 O(log n)，加上 O(n) 的 in-order traversal。"

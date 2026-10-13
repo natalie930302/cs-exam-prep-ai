@@ -424,7 +424,7 @@
    "q": "Response time 的定義是？",
    "opts": [
     "submit 到第一個 CPU burst 開始執行",
-    "submit 到整個 process 結束",
+    "submit 到整個 process 執行結束為止",
     "在 ready queue 等的總時間",
     "CPU burst 的總長度"
    ],

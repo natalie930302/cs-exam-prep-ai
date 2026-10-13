@@ -367,10 +367,10 @@
   {
    "q": "Load-time binding 的程式要在執行中換位置，需要怎麼做？",
    "opts": [
-    "只改 base register",
+    "只改 base register 就好，不必重新 load",
     "什麼都不用做",
     "重新 load（不必 recompile）",
-    "一定要 recompile"
+    "一定要 recompile 再 load"
    ],
    "ans": "重新 load（不必 recompile）",
    "why": "只有 loader 知道位置，執行中要換就得 kill 掉重新 load；但不用重新 compile。"
@@ -401,7 +401,7 @@
    "q": "哪一種 binding 下，logical address 和 physical address 會不同？",
    "opts": [
     "Compile time",
-    "Load time",
+    "Load time（relocatable code）",
     "Execution time",
     "三種都相同"
    ],

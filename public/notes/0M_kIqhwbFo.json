@@ -716,8 +716,8 @@
    "q": "Direct access table 的主要問題？",
    "opts": [
     "key 不一定是整數，而且 key 範圍大時極度浪費空間",
-    "search 要 O(n)",
-    "insert 要 O(log n)",
+    "search 要 O(n)，因為要從頭掃描整個 table",
+    "insert 要 O(log n)，因為 table 要隨時保持 key 排序",
     "不能刪除"
    ],
    "ans": "key 不一定是整數，而且 key 範圍大時極度浪費空間",
@@ -727,8 +727,8 @@
    "q": "為什麼 Python 的 list 不能當 dict 的 key？",
    "opts": [
     "它是 mutable，prehash 值可能改變，之後就找不到",
-    "它太長",
-    "它沒有 __eq__",
+    "它太長，prehash 會 overflow 成負數",
+    "它沒有 __eq__，Python 無法比較兩個 key 是否相等",
     "它不能被比較大小"
    ],
    "ans": "它是 mutable，prehash 值可能改變，之後就找不到",
@@ -739,7 +739,7 @@
    "opts": [
     "只用到一半的 slot",
     "完全不會碰撞",
-    "hash 值全是 0",
+    "hash 值全是 0，全部擠在同一格",
     "沒有影響"
    ],
    "ans": "只用到一半的 slot",
@@ -749,8 +749,8 @@
    "q": "Universal hashing 中「碰撞機率 ≤ 1/m」的機率是對什麼取的？",
    "opts": [
     "隨機選的 a、b（hash function）",
-    "隨機的輸入 key",
-    "隨機的 table 大小",
+    "隨機的輸入 key（假設均勻分布）",
+    "隨機的 table 大小 m",
     "隨機的插入順序"
    ],
    "ans": "隨機選的 a、b（hash function）",

@@ -235,7 +235,7 @@
    "q": "main 函式在 Stack 上的那一塊記憶體叫？",
    "opts": [
     "activation record（stack frame）",
-    "heap block",
+    "heap block（malloc 動態配置的區塊）",
     "code segment",
     "page table"
    ],
@@ -247,7 +247,7 @@
    "opts": [
     "透過存放在 Stack 的 pointer 間接存取",
     "用變數名稱直接存取",
-    "只能由 OS 存取",
+    "只能由 OS 存取，要透過 system call 才行",
     "載入 Code section 後存取"
    ],
    "ans": "透過存放在 Stack 的 pointer 間接存取",
@@ -258,7 +258,7 @@
    "opts": [
     "Heap 中那 10 bytes 的起始位址",
     "數字 10",
-    "p 自己的位址",
+    "p 這個變數自己在 Stack 上的位址",
     "Stack 的頂端位址"
    ],
    "ans": "Heap 中那 10 bytes 的起始位址",

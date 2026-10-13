@@ -487,9 +487,9 @@
    "q": "R-type 的 rs、rt、rd 為什麼各是 5 bits？",
    "opts": [
     "register file 有 32 個 register",
-    "ALU 有 5 種運算",
-    "指令有 5 個欄位",
-    "shift 最多 5 位"
+    "ALU 有 5 種運算，各用 1 bit 選擇",
+    "指令有 5 個欄位，每欄各佔 5 bits",
+    "shift 最多 5 位，所以欄位也取 5"
    ],
    "ans": "register file 有 32 個 register",
    "why": "要指定 32 個 register 中的哪一個，需要 log₂32 = 5 bits。"
@@ -521,7 +521,7 @@
    "opts": [
     "PC + 4 + (SignExt(imm16) ‖ 00)",
     "PC + imm16",
-    "(PC + 4)[31:28] ‖ target ‖ 00",
+    "(PC + 4)[31:28] ‖ target26 ‖ 00",
     "R[rs] + SignExt(imm16)"
    ],
    "ans": "PC + 4 + (SignExt(imm16) ‖ 00)",
@@ -531,9 +531,9 @@
    "q": "register file 每個 cycle 可以？",
    "opts": [
     "讀兩個 register、寫一個",
-    "讀一個、寫一個",
-    "讀兩個、寫兩個",
-    "只能讀或寫其中一個"
+    "讀一個 register、寫一個",
+    "讀兩個 register、寫兩個",
+    "只能讀或寫其中一個 register"
    ],
    "ans": "讀兩個 register、寫一個",
    "why": "有 RA、RB 兩個 read port 與 RW 一個 write port；memory element 則一次只 read 或 write。"
@@ -553,9 +553,9 @@
    "q": "算好的 PC + 4 什麼時候寫進 PC？",
    "opts": [
     "clock cycle 結束的 clock edge",
-    "算好立刻寫入",
-    "decode 完成時",
-    "ALU 算完時"
+    "算好立刻寫入，不必等待 clock",
+    "decode 完成、知道指令類型的時候",
+    "ALU 算完 branch target 時"
    ],
    "ans": "clock cycle 結束的 clock edge",
    "why": "中途改 PC 會讓 instruction memory 輸出另一個指令；等到 edge 才寫。"

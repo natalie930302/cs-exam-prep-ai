@@ -389,9 +389,9 @@
    "q": "下列何者是 merge sort 適合 linked list 的原因？",
    "opts": [
     "merge 只要改 link，不必建第三個串列",
-    "linked list 可以 random access",
-    "linked list 一定已排序",
-    "merge sort 不需要比較"
+    "linked list 可以 random access 到中間點",
+    "linked list 插入時會自動維持排序",
+    "merge sort 對 linked list 不需要做比較"
    ],
    "ans": "merge 只要改 link，不必建第三個串列",
    "why": "兩個已排序 linked list 只要重接指標就能合併。"
@@ -400,9 +400,9 @@
    "q": "檔案 15 GB、記憶體 4 GB，仍能用 merge 排序，靠的是？",
    "opts": [
     "External merging：分段帶進記憶體",
-    "In-place merging",
-    "Quick sort 的 partition",
-    "把檔案壓縮到 4 GB"
+    "In-place merging：不用額外記憶體",
+    "Quick sort 的 partition：先切成小段",
+    "把檔案壓縮到 4 GB 以內"
    ],
    "ans": "External merging：分段帶進記憶體",
    "why": "一次只帶一小塊資料進來比較並寫出結果。"
@@ -411,9 +411,9 @@
    "q": "Stable sorting 指的是？",
    "opts": [
     "值相同的元素排序後保持原本的先後順序",
-    "排序時不使用額外空間",
+    "排序時不使用額外空間，只用常數個變數",
     "最壞時間等於平均時間",
-    "排序結果唯一"
+    "不論輸入順序，排序結果都唯一"
    ],
    "ans": "值相同的元素排序後保持原本的先後順序",
    "why": "例：兩個 8 分的學生，原本 Ravi 在前，排序後仍在前。"
@@ -423,8 +423,8 @@
    "opts": [
     "n + log n = Θ(n)",
     "Θ(1)",
-    "Θ(log n)",
-    "Θ(n²)"
+    "log n = Θ(log n)",
+    "n log n = Θ(n log n)"
    ],
    "ans": "n + log n = Θ(n)",
    "why": "auxiliary array n，加上遞迴深度 log n 的 stack。"
@@ -433,8 +433,8 @@
    "q": "實務上小串列（約 n ≤ 15）為什麼改用 insertion sort？",
    "opts": [
     "merge sort 的遞迴開銷讓它在小 n 時較慢，且 insertion sort 也 stable",
-    "insertion sort 是 O(n log n)",
-    "merge sort 無法處理 15 個以下的元素",
+    "insertion sort 在小 n 時也是 O(n log n)，而且比較次數一定比 merge sort 少",
+    "merge sort 無法處理 15 個以下的元素，遞迴會停不下來",
     "insertion sort 不需要比較"
    ],
    "ans": "merge sort 的遞迴開銷讓它在小 n 時較慢，且 insertion sort 也 stable",

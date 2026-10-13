@@ -721,7 +721,7 @@
    "q": "AOV network 中頂點與邊分別代表？",
    "opts": [
     "頂點 = activity，邊 = 先後順序",
-    "頂點 = 事件，邊 = activity",
+    "頂點 = 事件（event），邊 = activity",
     "頂點 = 時間，邊 = 成本",
     "頂點 = 課程，邊 = 學分"
    ],
@@ -754,8 +754,8 @@
    "q": "AOE 中 ee(w) 怎麼算？",
    "opts": [
     "所有指向 w 的 v 取 max(ee(v) + dur(v, w))",
-    "取 min(ee(v) + dur(v, w))",
-    "ee(v) − dur(v, w)",
+    "所有指向 w 的 v 取 min(ee(v) + dur(v, w))",
+    "所有 w 指向的 v 取 min(le(v) − dur(w, v))",
     "所有 duration 相加"
    ],
    "ans": "所有指向 w 的 v 取 max(ee(v) + dur(v, w))",
@@ -776,9 +776,9 @@
    "q": "critical path 上的點滿足？",
    "opts": [
     "ee = le（slack 為 0）",
-    "ee > le",
-    "le − ee 最大",
-    "in-degree = 0"
+    "ee > le（slack 為負）",
+    "le − ee 最大的點",
+    "in-degree = 0 的點"
    ],
    "ans": "ee = le（slack 為 0）",
    "why": "最早與最晚時間相同，代表完全不能延誤。"

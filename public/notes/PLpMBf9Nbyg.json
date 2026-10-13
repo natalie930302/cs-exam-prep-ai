@@ -223,7 +223,7 @@
    "opts": [
     "matching 變了，之前不能 augment 的點可能變得可以",
     "為了讓迴圈永遠不會停",
-    "因為 tree 要重畫成 spanning tree",
+    "因為 tree 要重畫成 spanning tree 才能繼續往下長",
     "因為 Hungarian acorn 會消失"
    ],
    "ans": "matching 變了，之前不能 augment 的點可能變得可以",
@@ -234,7 +234,7 @@
    "opts": [
     "所有 x 都 matched，或所有 unmatched x 都是 Hungarian acorn",
     "所有 y 都 matched",
-    "至少有一個 augmenting path",
+    "至少還有一條 augmenting path，留給下一輪的 search 再處理",
     "每個 x 都是 tested"
    ],
    "ans": "所有 x 都 matched，或所有 unmatched x 都是 Hungarian acorn",
@@ -244,7 +244,7 @@
    "q": "正確性證明中，從 B-matched、A-unmatched 的 x 走 B A B A 的 path，為什麼不能停在 B-edge？",
    "opts": [
     "那樣它對 A 是 augmenting path，與演算法停止狀態矛盾",
-    "因為 B-edge 不在圖裡",
+    "因為 B-edge 不在原本的圖裡，path 只能停在 A-edge",
     "因為 path 長度必須是奇數",
     "因為 B 不是 matching"
    ],
@@ -255,9 +255,9 @@
    "q": "證明裡的對應「B 有 A 沒有的 x → A 有 B 沒有的 x」是一對一，再用什麼原理得到 |A| ≥ |B|？",
    "opts": [
     "鴿籠原理（pigeonhole principle）",
-    "數學歸納法",
+    "數學歸納法（mathematical induction）",
     "Euler 公式",
-    "排容原理"
+    "排容原理（inclusion–exclusion）"
    ],
    "ans": "鴿籠原理（pigeonhole principle）",
    "why": "一對一函數的 codomain 大小 ≥ domain 大小。"

@@ -556,7 +556,7 @@
    "opts": [
     "R-type 寫 rd，lw 寫 rt",
     "要選 rs 或 rt 讀",
-    "fan-out 太多",
+    "要選 ALU 結果或 memory 資料寫回",
     "要選 PC + 4 或 target"
    ],
    "ans": "R-type 寫 rd，lw 寫 rt",
@@ -566,7 +566,7 @@
    "q": "beq 的 PCSrc 怎麼產生？",
    "opts": [
     "Branch AND Zero",
-    "只看 opcode",
+    "只看 opcode 是否為 beq",
     "Branch OR Zero",
     "ALUOp"
    ],
@@ -588,7 +588,7 @@
    "q": "為什麼需要 ALU control 這個第二層 decoder？",
    "opts": [
     "R-type 的 opcode 都相同，要再看 funct",
-    "opcode 太長",
+    "opcode 太長，一層 decoder 放不下所有指令",
     "ALU 太慢",
     "為了算 branch target"
    ],

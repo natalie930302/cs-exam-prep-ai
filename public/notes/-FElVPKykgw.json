@@ -770,7 +770,7 @@
     "Θ(log log n)",
     "Θ(log n)",
     "Θ(√n)",
-    "Θ(1)"
+    "Θ(log² log n)"
    ],
    "ans": "Θ(log log n)",
    "why": "n^(1/2ʰ) 縮到常數需要 2ʰ = log n，h = log log n 層，每層 1。"

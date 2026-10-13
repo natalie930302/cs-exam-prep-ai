@@ -444,8 +444,8 @@
    "q": "Microkernel 和 modular OS 最主要的差別是？",
    "opts": [
     "microkernel 的 module 在 user space，modular OS 的 module 在 kernel space",
+    "microkernel 的 module 在 kernel space，modular OS 的 module 在 user space",
     "microkernel 沒有 module",
-    "modular OS 的 kernel 比較小",
     "兩者都靠 message passing 溝通"
    ],
    "ans": "microkernel 的 module 在 user space，modular OS 的 module 在 kernel space",
@@ -466,7 +466,7 @@
    "q": "沒有 hardware support 時，guest kernel 執行 privileged instruction 會怎樣？",
    "opts": [
     "在 user space 失敗並丟出 exception，由下層的 VM 管理層攔截後代為執行",
-    "直接成功執行",
+    "直接在 hardware 上成功執行，因為 guest kernel 本來就跑在 kernel mode",
     "整台電腦 crash",
     "被忽略，什麼都不做"
    ],

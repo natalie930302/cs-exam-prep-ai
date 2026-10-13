@@ -208,7 +208,7 @@
    "q": "Kruskal 每次考慮加入哪條 edge？",
    "opts": [
     "還沒考慮過的 edge 中 weight 最小的，且加入後不形成 cycle",
-    "一端在 T、一端不在 T 中 weight 最小的",
+    "一端在 T、一端不在 T 的 edge 中 weight 最小的，且不形成 cycle",
     "weight 最大的 edge",
     "離起點最近的 edge"
    ],
@@ -243,7 +243,7 @@
     "Kruskal 過程中不一定是 tree；Prim 一直是 tree",
     "Kruskal 不是 greedy",
     "Prim 要先 sort 所有 edge",
-    "Kruskal 找到的不一定是 MST"
+    "Prim 過程中不一定是 tree；Kruskal 一直是 tree"
    ],
    "ans": "Kruskal 過程中不一定是 tree；Prim 一直是 tree",
    "why": "兩者都是 greedy，都會找到 MST。"
@@ -253,7 +253,7 @@
    "opts": [
     "k 個 component 的 forest 有「邊數 + k」個端點",
     "tree 的邊數 = 端點數",
-    "每個端點的 degree 都是 2",
+    "k 個 component 的 forest 有「邊數 − k」個端點",
     "complete graph 的邊數"
    ],
    "ans": "k 個 component 的 forest 有「邊數 + k」個端點",

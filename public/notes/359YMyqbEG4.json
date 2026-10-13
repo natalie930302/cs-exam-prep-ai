@@ -1231,7 +1231,7 @@
    "opts": [
     "寫程式（coding）",
     "Mathematical programming，也就是最佳化",
-    "排程（scheduling）",
+    "Dynamic programming language，即動態型別語言",
     "遞迴程式設計"
    ],
    "ans": "Mathematical programming，也就是最佳化",
@@ -1262,7 +1262,7 @@
   {
    "q": "為什麼「每次挑最早結束」的 greedy 不適用於 weighted interval scheduling？",
    "opts": [
-    "它會選到重疊的 interval",
+    "它會選到重疊的 interval，違反相容性",
     "它最大化的是個數，不是總 value",
     "它的時間複雜度太高",
     "它需要先算 p(j)"
@@ -1274,7 +1274,7 @@
    "q": "Memoization 與 iteration（bottom-up）的差別，下列何者正確？",
    "opts": [
     "只有 iteration 是 DP",
-    "memoization 一定比 iteration 算更多子問題",
+    "memoization 會算出所有子問題；iteration 只在需要時才算",
     "iteration 會算出所有子問題；memoization 只在需要時才算",
     "memoization 不需要 table"
    ],
@@ -1286,7 +1286,7 @@
    "opts": [
     "輸入一定是陣列",
     "子問題有天生不會改變的 natural（linear）order",
-    "問題一定要有負數",
+    "子問題的答案都可以用 greedy 選擇直接一步決定出來",
     "可以用 greedy 證明"
    ],
    "ans": "子問題有天生不會改變的 natural（linear）order",
@@ -1297,7 +1297,7 @@
    "opts": [
     "因為 F₀ = −1",
     "Fibonacci 的數都 ≥ 0，−1 可以代表「還沒算過」",
-    "為了讓加法更快",
+    "−1 代表該項是負數，遞迴時可以直接跳過不必再算",
     "避免 overflow"
    ],
    "ans": "Fibonacci 的數都 ≥ 0，−1 可以代表「還沒算過」",

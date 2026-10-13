@@ -488,9 +488,9 @@
   {
    "q": "KMP 的 Phase 1 在做什麼？",
    "opts": [
-    "拿 P 在 T 上逐格比對",
+    "拿 P 在 T 上逐格比對，記錄 match 位置",
     "P 自己跟自己比，算出 fail function",
-    "把 T 排序",
+    "把 T 排序後再二分搜尋",
     "計算 T 的 fail function"
    ],
    "ans": "P 自己跟自己比，算出 fail function",
@@ -499,10 +499,10 @@
   {
    "q": "C++ 的 template <class KeyType> 最主要的好處是？",
    "opts": [
-    "程式執行比較快",
+    "程式執行比較快，因為 compile 時展開成 inline",
     "同一份程式可套用到 int、float 等不同型態",
-    "可以自動配置記憶體",
-    "讓陣列大小可以改變"
+    "可以自動配置與回收記憶體",
+    "讓陣列大小可以在執行時改變"
    ],
    "ans": "同一份程式可套用到 int、float 等不同型態",
    "why": "KeyType 到實際宣告（如 float farray、int intarray）時才決定型態。"
@@ -546,7 +546,7 @@
     "top == MaxStackSize",
     "top == MaxStackSize − 1",
     "top == −1",
-    "top == 0"
+    "top == MaxStackSize + 1"
    ],
    "ans": "top == MaxStackSize − 1",
    "why": "index 從 0 到 MaxStackSize − 1，top 指到最後一格就滿了。"

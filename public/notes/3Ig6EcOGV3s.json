@@ -467,9 +467,9 @@
    "q": "beq 的 RegDst 為什麼是 X（don't care）？",
    "opts": [
     "RegWrite = 0，選誰都不會寫入",
-    "beq 沒有 rt",
-    "beq 用 rd",
-    "ALU 不用"
+    "beq 沒有 rt，所以不用選",
+    "beq 用 rd 當目的地，固定選 1",
+    "ALU 不用比較，RegDst 無意義"
    ],
    "ans": "RegWrite = 0，選誰都不會寫入",
    "why": "不寫 register file，寫入地址選 rt 或 rd 都沒影響。"
@@ -500,7 +500,7 @@
    "q": "ALU control 的 Operation3（最高位）的邏輯式是？",
    "opts": [
     "恆為 0（接 ground）",
-    "ALUOp1",
+    "ALUOp1（直接接過去）",
     "ALUOp0 + F1",
     "F3 + F0"
    ],

@@ -263,7 +263,7 @@
    "opts": [
     "兩者完全相同",
     "maximal 一定唯一",
-    "greatest 可以有很多個",
+    "maximal 要比所有元素都大；greatest 只要沒有元素比它大",
     "greatest 要比所有元素都大；maximal 只要沒有元素比它大"
    ],
    "ans": "greatest 要比所有元素都大；maximal 只要沒有元素比它大",
@@ -318,7 +318,7 @@
    "opts": [
     "任兩個元素都有 lub 和 glb 的 poset",
     "任兩個元素都 comparable 的 poset",
-    "有 greatest element 的 poset",
+    "有 greatest 與 least element 的 poset",
     "有限的 poset"
    ],
    "ans": "任兩個元素都有 lub 和 glb 的 poset",

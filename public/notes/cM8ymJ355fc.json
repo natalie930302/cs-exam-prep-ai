@@ -265,7 +265,7 @@
    "opts": [
     "n(n − 1)/2",
     "n − 1",
-    "n²",
+    "n(n + 1)/2",
     "n log n"
    ],
    "ans": "n(n − 1)/2",
@@ -297,7 +297,7 @@
    "q": "下列敘述何者正確？",
    "opts": [
     "bubble sort 與 insertion sort（worst case）的比較次數都是 O(n²)",
-    "insertion sort 在 worst case 是 O(n log n)",
+    "insertion sort 在 worst case 是 O(n log n)，bubble sort 是 O(n²)",
     "bubble sort 的比較次數依輸入而不同",
     "任何 sorting 在 worst case 都至少要 n² 次比較"
    ],
@@ -308,9 +308,9 @@
    "q": "sorting 用數學說法是在找什麼？",
    "opts": [
     "一個 permutation π，使 x_π(1) < x_π(2) < ⋯ < x_π(n)",
-    "一個 partition",
+    "一個 partition，把 x 分成大於與小於 pivot 的兩群子集合",
     "最大的那個數",
-    "一個 generating function"
+    "一個 generating function，使係數由小到大"
    ],
    "ans": "一個 permutation π，使 x_π(1) < x_π(2) < ⋯ < x_π(n)",
    "why": "排序就是重新排列位置，permutation 是 {1, …, n} 到自己的 bijection。"

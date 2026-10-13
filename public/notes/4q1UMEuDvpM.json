@@ -419,7 +419,7 @@
    "q": "Valid bit 的用途是？",
    "opts": [
     "標示這格的資料是否有效（開機時全設 0）",
-    "標示這格是否被寫過",
+    "標示這格是否被寫過（write-back 時要寫回）",
     "用來選 block 裡的第幾個 byte",
     "記錄最近被用過的時間"
    ],
@@ -441,7 +441,7 @@
    "q": "Cache 總容量固定時，block size 一直加大，miss rate 最後反而上升的主因是？",
    "opts": [
     "block 數變少，競爭同一位置的 block 變多",
-    "spatial locality 消失",
+    "spatial locality 消失，相鄰資料不再被用到",
     "tag 變長",
     "valid bit 不夠"
    ],

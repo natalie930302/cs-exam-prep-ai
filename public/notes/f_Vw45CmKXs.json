@@ -476,7 +476,7 @@
   {
    "q": "A ∪ Aᶜ 等於什麼？",
    "opts": [
-    "∅",
+    "∅（empty set）",
     "A",
     "U（universe）",
     "Aᶜ"

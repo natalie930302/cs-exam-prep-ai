@@ -263,7 +263,7 @@
     "b^(log_c a)",
     "log_c(ab)",
     "a·b",
-    "c^(log a)"
+    "a^(log_b c)"
    ],
    "ans": "b^(log_c a)",
    "why": "log 公式 4：底數與真數可以互換。"

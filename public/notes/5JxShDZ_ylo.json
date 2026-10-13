@@ -408,7 +408,7 @@
    "opts": [
     "hash table（dict / set）",
     "queue",
-    "linked list",
+    "sorted array（binary search）",
     "stack"
    ],
    "ans": "hash table（dict / set）",
@@ -430,7 +430,7 @@
    "opts": [
     "O(V + E)",
     "O(V²)",
-    "O(E²)",
+    "O(V · E)",
     "O(V)"
    ],
    "ans": "O(V + E)",

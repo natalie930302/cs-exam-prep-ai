@@ -417,7 +417,7 @@
    "q": "TSP 的 DP 遞迴式是？",
    "opts": [
     "g(i, S) = min_{k∈S} { c(i,k) + g(k, S − {k}) }",
-    "g(i, S) = max_{k∈S} { c(i,k) + g(k, S) }",
+    "g(i, S) = max_{k∈S} { c(i,k) + g(k, S − {k}) }",
     "g(i, S) = c(i,1) + g(i, S − {i})",
     "g(i, S) = min_{k∉S} { c(k,i) }"
    ],

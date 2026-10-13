@@ -501,7 +501,7 @@
    "opts": [
     "mismatch 後 string 的 index i 會倒退",
     "pattern 太短",
-    "要先排序 string",
+    "每次比對前都要先把 string 排序一次，成本很高",
     "只比較最後一個字元"
    ],
    "ans": "mismatch 後 string 的 index i 會倒退",

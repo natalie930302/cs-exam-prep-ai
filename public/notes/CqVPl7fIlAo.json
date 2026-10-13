@@ -651,7 +651,7 @@
    "q": "fact 的 L1 部分，jal fact 回來後第一個指令是 lw $a0, 0($sp)，目的是？",
    "opts": [
     "拿回原本的 n，再和 fact(n − 1) 相乘",
-    "把回傳值放進 $a0",
+    "把 fact(n − 1) 的回傳值放進 $a0 當參數",
     "讓 $sp 回到原位",
     "跳回 caller"
    ],
@@ -663,7 +663,7 @@
    "opts": [
     "stack 從高位址往下長，heap 往上長",
     "兩者都往上長",
-    "stack 往上長，heap 往下長",
+    "stack 從低位址往上長，heap 往下長",
     "兩者都固定大小"
    ],
    "ans": "stack 從高位址往下長，heap 往上長",
@@ -684,7 +684,7 @@
    "q": "strcpy 中 callee 用 $s0 當 index i，依 convention 它必須？",
    "opts": [
     "先把 $s0 存到 stack，結束前還原",
-    "什麼都不用做",
+    "什麼都不用做，$s0 是 temporary register",
     "請 caller 先存 $s0",
     "改用 $a0 當 index"
    ],

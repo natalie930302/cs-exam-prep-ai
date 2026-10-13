@@ -279,7 +279,7 @@
   {
    "q": "elementary subdivision 是？",
    "opts": [
-    "刪掉一個點",
+    "刪掉一個點 z，把它的兩條邊 vz、zw 併成 vw",
     "把一條邊 vw 換成 vz、zw（z 為新點）",
     "合併兩個點",
     "加一條新邊"
@@ -292,7 +292,7 @@
    "opts": [
     "G 的邊數 > 3v − 6",
     "G 有一個 subgraph homeomorphic to K₅ 或 K₃,₃",
-    "G 含有三角形",
+    "G 含有一個 subgraph isomorphic to K₄ 或 K₂,₃",
     "G 不是 bipartite"
    ],
    "ans": "G 有一個 subgraph homeomorphic to K₅ 或 K₃,₃",
@@ -301,7 +301,7 @@
   {
    "q": "Petersen graph 的 girth 和 edge–vertex inequality 上界是？",
    "opts": [
-    "g = 3，上界 24",
+    "g = 3，上界 3v − 6 = 24",
     "g = 5，上界 40/3 ≈ 13.3",
     "g = 4，上界 16",
     "g = 5，上界 15"
@@ -323,7 +323,7 @@
   {
    "q": "如果一個圖滿足 edge–vertex inequality，能確定它是 planar 嗎？",
    "opts": [
-    "能",
+    "能，那是充分必要條件",
     "不能，那只是必要條件",
     "只有 bipartite 時能",
     "只有 g = 3 時能"

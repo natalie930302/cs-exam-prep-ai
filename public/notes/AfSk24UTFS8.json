@@ -562,7 +562,7 @@
    "opts": [
     "只有 tree edge 和 back edge",
     "四種都有",
-    "tree、forward、cross",
+    "tree edge、forward edge 和 back edge",
     "只有 tree edge"
    ],
    "ans": "只有 tree edge 和 back edge",
@@ -573,7 +573,7 @@
    "opts": [
     "取 cycle 上第一個被拜訪的 v0，vk 會在 v0 結束前被拜訪，看 vk → v0 時 v0 還在堆疊上",
     "取 cycle 上編號最小的點",
-    "BFS 會先找到 cycle",
+    "取 cycle 上最後一個被拜訪的 vk，它結束時 v0 已經離開堆疊，所以 vk → v0 是 back edge",
     "cycle 上每條邊都是 tree edge"
    ],
    "ans": "取 cycle 上第一個被拜訪的 v0，vk 會在 v0 結束前被拜訪，看 vk → v0 時 v0 還在堆疊上",
@@ -583,7 +583,7 @@
    "q": "DFS 版 topological sort 輸出的是？",
    "opts": [
     "依 finishing time 由大到小（反序）",
-    "依 discovery time 由小到大",
+    "依 discovery time 由大到小（反序）",
     "依 finishing time 由小到大",
     "依 in-degree 由小到大"
    ],
@@ -594,7 +594,7 @@
    "q": "DFS 的總時間 Θ(V + E) 中，E 這一項來自？",
    "opts": [
     "所有 adjacency list 的長度總和",
-    "外層迴圈",
+    "外層迴圈掃過所有頂點的次數總和",
     "遞迴的深度",
     "parent 字典的大小"
    ],

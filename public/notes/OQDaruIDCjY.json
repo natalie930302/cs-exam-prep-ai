@@ -1307,9 +1307,9 @@
    "q": "下列關於 strong component（SCC）的敘述何者正確？",
    "opts": [
     "必須是 maximal：再加任何一點就不再任兩點 mutually reachable",
-    "只要裡面任兩點 mutually reachable 就算一個 SCC",
-    "每個 directed graph 只有一個 SCC",
-    "SCC 之間可以形成 cycle"
+    "只要裡面任兩點 mutually reachable 就算一個 SCC，不必是最大的",
+    "每個 directed graph 只有一個 SCC，就是整張圖",
+    "SCC 之間可以形成 cycle，condensation 不一定是 DAG"
    ],
    "ans": "必須是 maximal：再加任何一點就不再任兩點 mutually reachable",
    "why": "還能再長大的集合不算 SCC；SCC 縮點後一定是 DAG。"
@@ -1329,9 +1329,9 @@
    "q": "任選 s、t，s 所在與 t 所在的 strong component 的關係？",
    "opts": [
     "要嘛相同，要嘛 disjoint",
-    "一定相同",
+    "一定相同，因為 s、t 都在圖中",
     "一定 disjoint",
-    "可能部分重疊"
+    "可能部分重疊（共用一些點）"
    ],
    "ans": "要嘛相同，要嘛 disjoint",
    "why": "s、t mutually reachable 時相同；不是時一定不同、沒有交集。"
@@ -1351,9 +1351,9 @@
    "q": "老師證明「DAG 一定有沒有 incoming edge 的點」時，沿 incoming edge 往回走幾步？",
    "opts": [
     "收集 n + 1 個點（走 n 步），必有重複點形成 cycle",
-    "走 n − 1 步一定回到起點",
-    "走 2n 步",
-    "走到 source 為止"
+    "走 n − 1 步一定會回到起點，起點與終點就形成 cycle",
+    "走 2n 步，每個點至少經過兩次",
+    "走 log n 步就足以找到重複點"
    ],
    "ans": "收集 n + 1 個點（走 n 步），必有重複點形成 cycle",
    "why": "只有 n 個點，n + 1 個必有重複（鴿籠原理），兩次之間是 cycle，與 DAG 矛盾。"

@@ -747,7 +747,7 @@
    "q": "j 指令目標位址的組成方式是？",
    "opts": [
     "PC 高 4 bits 串接 26-bit 欄位再串接 00",
-    "PC + 4 + 26-bit 欄位 × 4",
+    "PC + 4 再加上 sign-extend 後的 26-bit 欄位 × 4",
     "26-bit 欄位直接當位址",
     "register 的 32-bit 值"
    ],
@@ -758,7 +758,7 @@
    "q": "beq $s0, $s1, L1 的 L1 太遠、16-bit offset 放不下，assembler 會怎麼改寫？",
    "opts": [
     "bne $s0, $s1, L2；j L1；L2:",
-    "beq $s0, $s1, L2；jr L1",
+    "beq $s0, $s1, L2；j L1；L2:",
     "把 offset 改成 32 bits",
     "jal L1"
    ],

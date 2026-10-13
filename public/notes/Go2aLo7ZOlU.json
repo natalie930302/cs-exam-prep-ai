@@ -480,9 +480,9 @@
    "q": "full column rank 時，A·(AᵀA)⁻¹Aᵀ 是什麼？",
    "opts": [
     "投影到 column space 的矩陣",
-    "I",
+    "單位矩陣 I",
     "投影到 row space 的矩陣",
-    "0"
+    "投影到 left null space 的矩陣"
    ],
    "ans": "投影到 column space 的矩陣",
    "why": "這就是 P = A(AᵀA)⁻¹Aᵀ；只有 m = n 時才等於 I。"
@@ -492,7 +492,7 @@
    "opts": [
     "[1/3 0; 0 0; 0 0]（3×2）",
     "[1/3 0 0; 0 0 0]（2×3）",
-    "[3 0; 0 0; 0 0]",
+    "[3 0; 0 0; 0 0]（3×2）",
     "不存在"
    ],
    "ans": "[1/3 0; 0 0; 0 0]（3×2）",
@@ -502,7 +502,7 @@
    "q": "x、y 在 row space 且 Ax = Ay，為什麼 x = y？",
    "opts": [
     "x − y 同時在 row space 與 null space，只能是 0",
-    "因為 A 可逆",
+    "因為 A 一定可逆，兩邊同乘 A⁻¹ 就直接得到 x = y",
     "因為 x、y 正交",
     "因為 Ax 在 column space"
    ],

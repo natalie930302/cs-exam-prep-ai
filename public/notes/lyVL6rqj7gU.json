@@ -311,7 +311,7 @@
    "opts": [
     "equivalence relation",
     "partial order",
-    "只有 symmetric",
+    "只有 symmetric，不是 reflexive",
     "只有 transitive"
    ],
    "ans": "equivalence relation",
@@ -321,8 +321,8 @@
    "q": "為什麼不會有一條邊一端在 V₁、另一端在 V₂？",
    "opts": [
     "有這條邊，兩邊的點就有路徑相通，會在同一個 equivalence class",
-    "因為 graph 是 directed",
-    "因為每個點的 degree 都是偶數",
+    "因為 graph 是 directed，邊只能從 V₁ 指向 V₁",
+    "因為每個點的 degree 都是偶數，邊只能在同一個 class 內兩兩配對",
     "因為 E 是空集合"
    ],
    "ans": "有這條邊，兩邊的點就有路徑相通，會在同一個 equivalence class",
@@ -332,9 +332,9 @@
    "q": "component Gᵢ 指的是？",
    "opts": [
     "(Vᵢ, Eᵢ)：一個 equivalence class 的端點，加上兩端都在裡面的邊",
-    "任何一條 path",
-    "度數最大的端點",
-    "任意兩點之間的邊"
+    "任何一條 path 上的端點與邊",
+    "度數最大的端點，加上和它相鄰的所有邊與端點",
+    "(Vᵢ, E)：一個 equivalence class 的端點，再加上原圖 G 的所有邊"
    ],
    "ans": "(Vᵢ, Eᵢ)：一個 equivalence class 的端點，加上兩端都在裡面的邊",
    "why": "Vᵢ 是 equivalence class，Eᵢ 是兩個端點都在 Vᵢ 的邊。"
@@ -354,7 +354,7 @@
    "q": "connected graph 的定義是？",
    "opts": [
     "任兩個不同端點之間都有 path",
-    "任兩個端點之間都有 edge",
+    "任兩個不同端點之間都有 edge",
     "每個端點 degree 相同",
     "沒有 cycle"
    ],

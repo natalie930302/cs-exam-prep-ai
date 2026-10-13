@@ -677,7 +677,7 @@
    "opts": [
     "Direct recursion",
     "Indirect recursion",
-    "Tail recursion",
+    "Tail recursion（尾端遞迴）",
     "Iteration"
    ],
    "ans": "Indirect recursion",
@@ -686,7 +686,7 @@
   {
    "q": "空間需求 S(P) = c + S_P 中，分析時主要關注哪一部分？",
    "opts": [
-    "c，固定部分",
+    "c，固定部分（指令與常數所佔空間）",
     "S_P，與輸入資料量有關的部分",
     "compile time",
     "兩者都不需要分析"
@@ -741,9 +741,9 @@
   {
    "q": "關於 Big-O 中 g(n) 的選擇，課堂強調的是？",
    "opts": [
-    "任何 upper bound 都一樣好",
+    "任何 upper bound 都一樣好，只要成立就行",
     "要取所有 upper bound 中最小（最緊）的那一個",
-    "要取最大的 upper bound",
+    "要取最大的 upper bound，才能保證涵蓋所有的情況",
     "g(n) 必須等於 f(n)"
    ],
    "ans": "要取所有 upper bound 中最小（最緊）的那一個",

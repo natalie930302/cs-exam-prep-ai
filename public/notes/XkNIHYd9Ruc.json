@@ -1909,7 +1909,7 @@
    "q": "在 A(B(E(K,L),F), C(G), D(H(M),I,J)) 中，D 與 G 的關係為何？",
    "opts": [
     "D 是 G 的 parent",
-    "D 是 G 的 sibling",
+    "D 是 G 的 parent 的 parent（grandparent）",
     "D 是 G 的 parent 的 sibling（uncle）",
     "D 是 G 的 descendant"
    ],
@@ -1944,7 +1944,7 @@
     "parent",
     "first child",
     "next sibling",
-    "last child"
+    "previous sibling"
    ],
    "ans": "next sibling",
    "why": "左連結 = 原樹的 child 關係，右連結 = 原樹的平輩（sibling）關係；因此原 root 轉換後的右邊一定為空。"
@@ -1954,8 +1954,8 @@
    "opts": [
     "h ≤ n ≤ 2^h",
     "h+1 ≤ n ≤ 2^(h+1) − 1",
-    "h ≤ n ≤ 2^h − 1",
-    "1 ≤ n ≤ 2^(h+1)"
+    "h ≤ n ≤ 2^(h+1) − 1",
+    "h+1 ≤ n ≤ 2^(h+2) − 1"
    ],
    "ans": "h+1 ≤ n ≤ 2^(h+1) − 1",
    "why": "最少是每代單傳的 skewed tree（h+1 個），最多是每層都滿的 full binary tree（1+2+…+2^h = 2^(h+1) − 1）。若用洪逸 root=level 1、depth k，最多為 2^k − 1。"

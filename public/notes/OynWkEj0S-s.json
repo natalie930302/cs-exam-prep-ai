@@ -294,7 +294,7 @@
    "opts": [
     "Θ(n² log n)",
     "Θ(n²)",
-    "Θ(n³)",
+    "Θ(n² log² n)",
     "Θ(n log n)"
    ],
    "ans": "Θ(n² log n)",
@@ -306,7 +306,7 @@
     "Θ(n log log n)",
     "Θ(n)",
     "Θ(n log n)",
-    "Θ(n/log n)"
+    "Θ(n² / log n)"
    ],
    "ans": "Θ(n log log n)",
    "why": "case 2、p = −1。"

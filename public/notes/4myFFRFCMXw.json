@@ -174,7 +174,7 @@
     "f(a₁) = f(a₂) ⇒ a₁ = a₂",
     "任給 b ∈ B，存在 a ∈ A 使 f(a) = b",
     "每個 a 都有唯一的 f(a)",
-    "f(A) ⊆ B"
+    "任給 a ∈ A，存在 b ∈ B 使 f(a) = b"
    ],
    "ans": "任給 b ∈ B，存在 a ∈ A 使 f(a) = b",
    "why": "onto 就是 f(A) = B。"

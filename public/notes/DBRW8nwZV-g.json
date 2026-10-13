@@ -312,9 +312,9 @@
    "q": "Graph 中的資料點和連線分別叫做？",
    "opts": [
     "node（vertex）與 edge",
-    "key 與 value",
+    "key 與 value（pair）",
     "row 與 column",
-    "root 與 leaf"
+    "root（根）與 leaf（葉）"
    ],
    "ans": "node（vertex）與 edge",
    "why": "影片定義：資料叫 node 或 vertex，連線叫 edge。"
@@ -347,7 +347,7 @@
     "i 和 j 之間沒有邊",
     "i 和 j 是同一點",
     "邊的權重為 1",
-    "i 的 degree 為 0"
+    "i 的 degree 為 0，是孤立點"
    ],
    "ans": "i 和 j 之間沒有邊",
    "why": "unweighted adjacency matrix：1 表示有邊、0 表示沒邊。"

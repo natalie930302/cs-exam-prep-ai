@@ -331,9 +331,9 @@
    "q": "circular buffer 中為什麼 full 的判斷要用 (in + 1) % size == out？",
    "opts": [
     "若真的寫滿，in == out，會跟 empty 分不出來",
-    "為了讓 producer 跑比較快",
-    "因為 out 永遠比 in 大",
-    "因為 buffer 最後一格不能用"
+    "為了讓 producer 不必等 consumer 就能一直寫入下一格",
+    "因為 out 永遠比 in 大，in 追上 out 就代表滿了",
+    "因為 buffer 最後一格保留給 OS 存控制資訊"
    ],
    "ans": "若真的寫滿，in == out，會跟 empty 分不出來",
    "why": "只用 in、out 判斷，所以犧牲一格；之後用 locking 可以用滿。"
@@ -342,9 +342,9 @@
    "q": "為什麼說 message passing 比 shared memory 好寫？",
    "opts": [
     "send / receive 本身包含同步，自己的 memory 不會被別人覆蓋",
-    "它比較快",
-    "不需要 system call",
-    "可以直接用 pointer 存取對方的變數"
+    "它比 shared memory 快，因為資料不必經過 kernel 複製",
+    "不需要 system call，process 之間可以直接在 user space 交換資料",
+    "可以直接用 pointer 存取對方的變數，省去複製成本"
    ],
    "ans": "send / receive 本身包含同步，自己的 memory 不會被別人覆蓋",
    "why": "message passing 比較慢（要 copy），但同步內建、比較好 debug。"
@@ -353,9 +353,9 @@
    "q": "Direct communication 的特性何者正確？",
    "opts": [
     "一定是 one-to-one，要指定對方是誰",
-    "可以 broadcast 給一群人",
-    "需要先建立 mailbox",
-    "sender 不需要知道 receiver"
+    "可以 broadcast 給一群人，不必一一指定 receiver",
+    "需要先建立 mailbox，雙方再透過它收送",
+    "sender 不需要知道 receiver 是誰"
    ],
    "ans": "一定是 one-to-one，要指定對方是誰",
    "why": "send(Q, msg)、receive(P, msg)，對象寫死，要換人得重建連線。"
@@ -364,9 +364,9 @@
    "q": "Indirect communication 中，多個 receiver 同時 receive 同一個 message，下列哪個「不是」課堂提到的解法？",
    "opts": [
     "讓每個 receiver 都拿到一份並刪除 mailbox",
-    "一個 link 只允許兩個 process",
-    "用 locking 一次只允許一個 receive",
-    "mailbox 自己決定給誰並 notify"
+    "限制一個 link 只能連結兩個 process",
+    "用 locking 一次只允許一個 process 執行 receive",
+    "由 mailbox 自己決定給哪個 receiver 並 notify sender"
    ],
    "ans": "讓每個 receiver 都拿到一份並刪除 mailbox",
    "why": "三個解法：限制兩個 process、locking、mailbox 仲裁並通知。"
@@ -375,9 +375,9 @@
    "q": "blocking send 什麼時候 return？",
    "opts": [
     "receiver 收到並 copy 進自己的 buffer 之後",
-    "message 一送出就 return",
-    "receiver call receive 之前",
-    "OS 開始 copy 時"
+    "message 一複製到網路卡、送出後就立刻 return",
+    "receiver 呼叫 receive 之前就先 return",
+    "OS 開始把 message copy 到 kernel 時"
    ],
    "ans": "receiver 收到並 copy 進自己的 buffer 之後",
    "why": "non-blocking send 才是送出就 return。"
@@ -386,9 +386,9 @@
    "q": "non-blocking receive return 後，buffer 裡一定有新 message 嗎？",
    "opts": [
     "不一定，要用回傳的 token 事後檢查",
-    "一定有",
-    "一定是空的",
-    "會等到有才 return"
+    "一定有，OS 保證 return 前已經 copy 完成",
+    "一定是空的，message 要下次呼叫才會進來",
+    "會等到有 message 才 return"
    ],
    "ans": "不一定，要用回傳的 token 事後檢查",
    "why": "對方可能還沒 send；non-blocking 立刻 return。"
@@ -397,9 +397,9 @@
    "q": "要支援 non-blocking send，中間的 message service 需要什麼？",
    "opts": [
     "一個 buffer 暫存 message",
-    "一把 lock",
-    "一個新的 process ID",
-    "shared memory region"
+    "一把 lock 鎖住 receiver 的 queue",
+    "一個新的 process ID 給 receiver",
+    "一塊 shared memory region"
    ],
    "ans": "一個 buffer 暫存 message",
    "why": "sender 立刻 return，message 先放在 service 的 buffer；bounded 滿了會擋住或回 error。"

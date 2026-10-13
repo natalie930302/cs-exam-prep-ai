@@ -457,9 +457,9 @@
    "q": "為什麼 A·Cᵀ 的對角線外都是 0？",
    "opts": [
     "等於一個有兩列相同的矩陣的行列式",
-    "因為 A 是對稱矩陣",
-    "因為 cofactor 都是 0",
-    "因為 det A = 1"
+    "因為 A 是對稱矩陣，Cᵀ 等於 C",
+    "因為那些位置的 cofactor 都是 0",
+    "因為 det A = 1，非對角項會互相抵消"
    ],
    "ans": "等於一個有兩列相同的矩陣的行列式",
    "why": "第 i 列配第 j 列的 cofactor，相當於把第 j 列換成第 i 列再算行列式，兩列相同 ⇒ 0。"
@@ -468,9 +468,9 @@
    "q": "Cramer's rule：x₂ = ？",
    "opts": [
     "det(B₂)/det(A)，B₂ 是 A 的第 2 行換成 b",
-    "det(A)/det(B₂)",
+    "det(A)/det(B₂)，B₂ 是 A 的第 2 行換成 b",
     "b₂/det(A)",
-    "det(B₂)·det(A)"
+    "det(B₂)/det(A)，B₂ 是 A 的第 2 列換成 b"
    ],
    "ans": "det(B₂)/det(A)，B₂ 是 A 的第 2 行換成 b",
    "why": "Cᵀb 的第 2 個元素正是 B₂ 沿第 2 行的 cofactor 展開。"
@@ -479,7 +479,7 @@
    "q": "實際解很大的 Ax = b，應該用？",
    "opts": [
     "elimination（消去法）",
-    "Cramer's rule",
+    "Cramer's rule 逐一算 xᵢ",
     "先算 Cᵀ 再除以 det A",
     "列出行列式所有 n! 項"
    ],

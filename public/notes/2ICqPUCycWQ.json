@@ -685,7 +685,7 @@
    "q": "System software 主要包括哪兩種？",
    "opts": [
     "compiler 與 operating system",
-    "compiler 與 application",
+    "compiler 與 application program",
     "hardware 與 OS",
     "assembler 與 game"
    ],
@@ -740,7 +740,7 @@
    "q": "多加一個 processor，各自跑不同的 job，通常會？",
    "opts": [
     "throughput 增加，但單一 job 的 response time 不一定變短",
-    "response time 一定變短",
+    "response time 一定變短，因為每個 job 都分到更多 CPU 時間",
     "throughput 和 response time 都不變",
     "throughput 下降"
    ],
@@ -751,7 +751,7 @@
    "q": "Main memory（DRAM）和 disk 的差別，下列何者正確？",
    "opts": [
     "DRAM 是 volatile（斷電資料消失），disk 是 non-volatile 但比較慢",
-    "DRAM 是 non-volatile，disk 是 volatile",
+    "DRAM 是 non-volatile（斷電資料仍保留），disk 是 volatile 但比較快",
     "兩者都在 CPU 的 chip 上",
     "disk 比 cache 還快"
    ],

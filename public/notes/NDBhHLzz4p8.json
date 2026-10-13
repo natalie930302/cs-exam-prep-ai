@@ -369,9 +369,9 @@
    "q": "Partition 與 volume 的主要差別是？",
    "opts": [
     "volume 已經 format、有 file system",
-    "partition 一定比 volume 大",
-    "volume 只能在一顆硬碟上",
-    "兩者完全相同"
+    "partition 一定比 volume 大，可以包含多個 volume",
+    "volume 只能在一顆硬碟上，partition 可以跨硬碟",
+    "兩者完全相同，只是不同 OS 的稱呼"
    ],
    "ans": "volume 已經 format、有 file system",
    "why": "partition 是 raw 的，format 後建立 file system 才成為 volume。"
@@ -391,9 +391,9 @@
    "q": "Single-level directory 的主要問題是？",
    "opts": [
     "檔名必須唯一且 list 效率差",
-    "不能存檔案",
-    "無法 mapping 到 ID",
-    "一定會有 cycle"
+    "不能存放檔案，只能存子目錄的名稱",
+    "檔名無法 mapping 到 file ID",
+    "一定會有 cycle，走訪無法停止"
    ],
    "ans": "檔名必須唯一且 list 效率差",
    "why": "所有人共用一層，a.out 容易撞名，list 也得掃過所有檔案。"
@@ -402,9 +402,9 @@
    "q": "在現代檔案系統中，哪個 directory operation 常是 bottleneck？",
    "opts": [
     "list directory",
-    "rename",
-    "create",
-    "delete"
+    "rename directory",
+    "create file",
+    "delete file"
    ],
    "ans": "list directory",
    "why": "一個 folder 可能有上萬個 file，要從 disk 全部撈出來很耗時。"
@@ -413,9 +413,9 @@
    "q": "Acyclic-graph directory 相對於 tree 放寬了什麼？",
    "opts": [
     "一個檔案可以有多個 parent（共享）",
-    "可以有 cycle",
-    "檔名可以重複在同一層",
-    "不需要 root"
+    "目錄之間可以有 cycle（互相包含對方）",
+    "同一層的檔名可以重複出現",
+    "不需要 root，任何目錄都能當起點"
    ],
    "ans": "一個檔案可以有多個 parent（共享）",
    "why": "例如 /dict/count 與 /spell/count 指到同一份，但不能形成 cycle。"
@@ -424,9 +424,9 @@
    "q": "Acyclic graph 中，什麼時候才真的刪除共享檔案？",
    "opts": [
     "reference counter 變成 0",
-    "任何一個名字被刪時",
-    "每次開機時",
-    "永遠不刪"
+    "任何一個名字被刪時就立即刪除",
+    "每次開機時由 fsck 統一清除",
+    "永遠不刪，只移除 link"
    ],
    "ans": "reference counter 變成 0",
    "why": "每多一個名字 counter +1，刪名字 −1，變 0 才 remove。"

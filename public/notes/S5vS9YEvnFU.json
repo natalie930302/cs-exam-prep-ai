@@ -904,7 +904,7 @@
   {
    "q": "要把「找匯率乘積 > 1 的 cycle」轉成 shortest path 問題，edge weight 該設為？",
    "opts": [
-    "r",
+    "−1 / r",
     "log r",
     "−log r",
     "1 / r"
@@ -918,7 +918,7 @@
     "少跑一個 iteration",
     "多跑一個 iteration，看值有沒有變小",
     "把所有 edge weight 取絕對值",
-    "改用 Dijkstra 比較結果"
+    "跑完後再用 Dijkstra 比較兩邊的距離是否一致"
    ],
    "ans": "多跑一個 iteration，看值有沒有變小",
    "why": "第 n 輪值還變小，表示剛好 n 條 edge 的路徑更好；鴿籠原理說它含 cycle，且必須是負的。"
@@ -926,7 +926,7 @@
   {
    "q": "要抓出圖中所有 negative cycle，老師的做法是？",
    "opts": [
-    "對每個點各跑一次 Dijkstra",
+    "對每個點各跑一次 Dijkstra，檢查哪些點回到自己的最短距離會變成負無限大",
     "加一個新點 t，每個點都連一條 weight 0 的 edge 到 t，再跑 Bellman-Ford",
     "刪掉所有負邊",
     "隨便選一個點當 destination"
@@ -940,7 +940,7 @@
     "OPT(S, u, v) = min_w { c(u, w) + OPT(S − {u}, w, v) }",
     "OPT(S, u, v) = max_w { c(u, w) + OPT(S, w, v) }",
     "OPT(i) = OPT(i − 1) + c(i − 1, i)",
-    "OPT(S, u, v) = c(u, v) + OPT(S − {v}, u, v)"
+    "OPT(S, u, v) = min_w { c(u, w) + OPT(S ∪ {w}, w, v) }"
    ],
    "ans": "OPT(S, u, v) = min_w { c(u, w) + OPT(S − {u}, w, v) }",
    "why": "u 先到某個 w，u 已走過所以從 S 拿掉；對所有 w 取最小。boundary 是 S = {u, v} 時為 c(u, v)。"
@@ -948,7 +948,7 @@
   {
    "q": "為什麼 TSP 不適合用 DP（效果不好）？",
    "opts": [
-    "它沒有 optimal substructure",
+    "它沒有 optimal substructure，子問題的最佳解拼不出整體最佳",
     "城市沒有固定的 linear order，子問題數是 exponential",
     "它只能用 greedy 求最佳解",
     "它的 edge weight 可能是負的"

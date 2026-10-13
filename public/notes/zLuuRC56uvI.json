@@ -904,7 +904,7 @@
     "存每個數字的 linked list",
     "記錄數字是否已經印出，避免重複出現在別的 class",
     "當作 stack 存待走訪的數字",
-    "記錄 pair 的輸入順序"
+    "記錄 pair 的輸入順序，輸出時依照原本的順序印出"
    ],
    "ans": "記錄數字是否已經印出，避免重複出現在別的 class",
    "why": "out 是 boolean array，印出後設 true，之後碰到就跳過。"
@@ -915,7 +915,7 @@
     "n + m + r",
     "max{n, m} + r + 1",
     "n × m + 1",
-    "r + 1"
+    "max{n, m} × r + 1"
    ],
    "ans": "max{n, m} + r + 1",
    "why": "head node 共用給 row 和 column，所以是 max{n, m} 個，加 r 個 entry 和 1 個總 head node。"

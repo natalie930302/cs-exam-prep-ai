@@ -423,9 +423,9 @@
    "q": "jump 的目標地址如何組成？",
    "opts": [
     "{PC+4[31:28], address[25:0], 00}",
-    "PC + 4 + address × 4",
-    "address[25:0] ‖ 000000",
-    "R[rs]"
+    "PC + 4 + sign-extend(address) × 4",
+    "{PC[31:26], address[25:0]}",
+    "R[rs] + address × 4"
    ],
    "ans": "{PC+4[31:28], address[25:0], 00}",
    "why": "26-bit address shift 2 位成 28 bits，前面接 PC+4 的前 4 bits，共 32 bits。"
@@ -435,7 +435,7 @@
    "opts": [
     "3.5 小時",
     "6 小時",
-    "2 小時",
+    "2.5 小時",
     "4 小時"
    ],
    "ans": "3.5 小時",
@@ -456,9 +456,9 @@
    "q": "pipeline 的 potential speedup 等於？",
    "opts": [
     "pipeline stage 的數目",
-    "最慢 stage 的時間",
-    "指令數",
-    "永遠 2 倍"
+    "最慢與最快 stage 的時間比",
+    "程式的指令數",
+    "永遠是 2 倍，與 stage 數無關"
    ],
    "ans": "pipeline stage 的數目",
    "why": "理想上 n 個 stage 同時工作；不平均的 stage、fill／drain 與 dependency 會讓實際值較低。"
@@ -478,8 +478,8 @@
    "q": "為什麼要在 stage 之間加 pipeline register？",
    "opts": [
     "把每個 stage 的結果存起來，讓 stage 切乾淨並釋放 resource",
-    "增加 register 數量給程式用",
-    "減少 instruction count",
+    "增加 register 數量給程式用，以減少 load / store 指令的次數",
+    "減少 instruction count，讓每個指令的 CPI 降為 1",
     "取代 data memory"
    ],
    "ans": "把每個 stage 的結果存起來，讓 stage 切乾淨並釋放 resource",
@@ -489,9 +489,9 @@
    "q": "lw 後面緊接著 4-stage 的 R-type，會發生什麼？",
    "opts": [
     "兩者在同一個 cycle 寫 register file：structural hazard",
-    "data hazard：R-type 讀到舊值",
-    "control hazard",
-    "不會有問題"
+    "data hazard：R-type 在 EX 階段會讀到 lw 尚未寫回的舊值",
+    "control hazard：lw 會改變 PC",
+    "不會有問題，register file 可同時寫兩個值"
    ],
    "ans": "兩者在同一個 cycle 寫 register file：structural hazard",
    "why": "lw 在第 5 stage 寫、R-type 在第 4 stage 寫，晚一個 cycle 進來剛好同一 cycle 搶 write port。"

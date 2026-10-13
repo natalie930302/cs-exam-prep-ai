@@ -413,8 +413,8 @@
    "q": "execlp 做了什麼？",
    "opts": [
     "把 code 換成新程式、清空 heap/stack、PC 重設",
-    "建立新的 process",
-    "等待 child 結束",
+    "建立新的 process，並複製 parent 的 code 與 data",
+    "等待 child 結束並回收資源",
     "複製 parent 的 memory"
    ],
    "ans": "把 code 換成新程式、清空 heap/stack、PC 重設",
@@ -425,7 +425,7 @@
    "opts": [
     "parent 或 child 寫入共用的內容時",
     "fork 一呼叫就複製",
-    "exec 時",
+    "child 呼叫 exec 載入新的程式時才複製",
     "process 結束時"
    ],
    "ans": "parent 或 child 寫入共用的內容時",
@@ -446,7 +446,7 @@
    "q": "child 想知道自己的 parent 是誰，應該怎麼做？",
    "opts": [
     "另外呼叫 system call 問 OS（如 getppid）",
-    "看 fork 的回傳值",
+    "看 fork 的回傳值（child 拿到 parent 的 PID）",
     "讀自己的 PID 減 1",
     "沒有辦法知道"
    ],

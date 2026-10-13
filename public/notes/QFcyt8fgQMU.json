@@ -737,7 +737,7 @@
    "q": "get_words_from_string 裡 elif len(character_list) > 0 的作用是？",
    "opts": [
     "連續空白時避免把空字串當成 word",
-    "處理最後一個 word",
+    "處理字串最後一個 word 沒接空白的情況",
     "把字元轉成小寫",
     "讓迴圈提早結束"
    ],

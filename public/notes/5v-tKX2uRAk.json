@@ -155,7 +155,7 @@
    "q": "下列排序何者正確？",
    "opts": [
     "log n < √n < n log n < n²",
-    "√n < log n < n < n²",
+    "√n < log n < n log n < n²",
     "n² < n log n < n",
     "2ⁿ < n³ < 3ⁿ"
    ],

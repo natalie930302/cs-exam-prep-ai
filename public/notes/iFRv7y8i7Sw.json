@@ -140,7 +140,7 @@
    "opts": [
     "create 一個 thread 服務該 client，main thread 繼續 listen",
     "main thread 自己服務，其他人排隊",
-    "每次都 fork 一個 process 並讓 main 等它",
+    "每次都 fork 一個 process，並讓 main 等它結束再回去 accept",
     "關掉 port 再重開"
    ],
    "ans": "create 一個 thread 服務該 client，main thread 繼續 listen",
@@ -152,7 +152,7 @@
     "parameter marshalling",
     "context switch",
     "copy-on-write",
-    "busy waiting"
+    "remote procedure binding"
    ],
    "ans": "parameter marshalling",
    "why": "client 的 stub、server 的 skeleton 負責 package / unpackage。"
@@ -161,9 +161,9 @@
    "q": "為什麼大部分 RPC 不支援傳 pointer？",
    "opts": [
     "pointer 指的是 local memory，到別台電腦沒意義，且不知道要 copy 多少",
-    "pointer 太大",
-    "socket 不能傳數字",
-    "因為 RPC 只能傳字串"
+    "pointer 太大，超過一個 packet 能傳的長度",
+    "socket 不能傳數字，只能傳字元，而 pointer 是一個記憶體位址，無法轉成字元",
+    "因為 RPC 只能傳字串，pointer 無法轉成字串格式"
    ],
    "ans": "pointer 指的是 local memory，到別台電腦沒意義，且不知道要 copy 多少",
    "why": "大小確定的 data structure 可以 copy；pointer 成本太高。"
@@ -172,9 +172,9 @@
    "q": "socket 傳輸的資料型態是？",
    "opts": [
     "unstructured string of bytes，由 programmer 自己 parse",
-    "有型態的參數",
+    "有型態的參數（int、float 等），由 stub 自動做 marshalling",
     "只能傳 integer",
-    "物件"
+    "物件（object），由 OS 自動序列化"
    ],
    "ans": "unstructured string of bytes，由 programmer 自己 parse",
    "why": "socket 只負責建立 channel；要有 data type 就用 RPC。"

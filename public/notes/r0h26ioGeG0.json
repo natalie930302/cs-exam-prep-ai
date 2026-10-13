@@ -253,9 +253,9 @@
    "q": "non-busy waiting 的 semaphore 中，wait 的步驟是？",
    "opts": [
     "先 value--，若 < 0 就加入 list 並 sleep",
-    "先檢查 value，再 while 迴圈等待",
+    "先檢查 value，再用 while 迴圈 busy waiting",
     "先 sleep，再 value--",
-    "若 value == 0 就 wakeup"
+    "若 value == 0 就 wakeup 一個 process"
    ],
    "ans": "先 value--，若 < 0 就加入 list 並 sleep",
    "why": "睡著就沒機會再減，所以要先減。"
@@ -287,7 +287,7 @@
    "opts": [
     "不能把 sleep 包在 critical section 裡",
     "sleep 一定要包在 critical section 裡",
-    "不需要 exit section",
+    "不需要 exit section，sleep 時自動釋放",
     "只要一個 exit section"
    ],
    "ans": "不能把 sleep 包在 critical section 裡",
@@ -297,7 +297,7 @@
    "q": "要讓 S1（P1）先於 S2（P2），sync 的初值與寫法？",
    "opts": [
     "sync = 0；P1：S1; signal(sync)；P2：wait(sync); S2",
-    "sync = 1；兩邊都 wait",
+    "sync = 1；P1：S1; signal(sync)；P2：wait(sync); S2",
     "sync = 0；P1：wait(sync); S1",
     "sync = 1；P2：signal(sync); S2"
    ],

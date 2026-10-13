@@ -861,9 +861,9 @@
    "q": "知道 k 時最簡單的 O(log n) 做法？",
    "opts": [
     "兩段各做一次 binary search",
-    "先移回原順序",
+    "先移回原順序，再做 binary search",
     "從 k 開始 linear search",
-    "sort 一次"
+    "sort 一次再 binary search"
    ],
    "ans": "兩段各做一次 binary search",
    "why": "兩段各自已排序；移回去要 O(k) 以上。"
@@ -907,7 +907,7 @@
     "S(n) = 2S(n/2) + n → O(n log n)",
     "S(n) = S(n/2) + n → O(n)",
     "S(n) = 2S(n/2) + 1 → O(n)",
-    "S(n) = n² → O(n²)"
+    "S(n) = 4S(n/2) + n → O(n² log n)"
    ],
    "ans": "S(n) = 2S(n/2) + n → O(n log n)",
    "why": "兩個一半都要遞迴，跟 merge sort 一樣。"

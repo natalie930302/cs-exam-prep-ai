@@ -787,7 +787,7 @@
    "q": "deleteMax 程式中，若 heap[j].key < heap[j+1].key 就做 j++，目的是？",
    "opts": [
     "讓 j 指向較大的 child",
-    "讓 j 指向 parent",
+    "讓 j 指向較小的 child",
     "跳出迴圈",
     "把 n 減 1"
    ],
@@ -799,7 +799,7 @@
    "opts": [
     "O(n log n)",
     "O(n)",
-    "O(n^2)",
+    "O(n^2 log n)",
     "O(log n)"
    ],
    "ans": "O(n log n)",

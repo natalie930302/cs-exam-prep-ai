@@ -686,8 +686,8 @@
    "q": "MIPS pipeline 中，4C 的 add 在 EX 偵測到 overflow，下列處理何者正確？",
    "opts": [
     "前面的 and、or 繼續完成；add、slt、lw flush 成 bubble；PC 改成 8000 0180",
-    "所有指令都 flush，從 40 重新執行",
-    "add 先寫回 $1 再跳到 handler",
+    "所有指令（包含 and、or）都 flush 成 bubble，從 40 重新執行，PC 改成 8000 0180",
+    "add 先寫回 $1 再跳到 handler，後面的 slt、lw 繼續完成",
     "等 lw 做完再處理 exception"
    ],
    "ans": "前面的 and、or 繼續完成；add、slt、lw flush 成 bubble；PC 改成 8000 0180",
@@ -697,9 +697,9 @@
    "q": "同一個 cycle 有好幾個 stage 的指令發生 exception，precise exception 要先處理哪一個？",
    "opts": [
     "在 pipeline 最後面 stage、最早進來的那個",
-    "在 IF stage 的那個",
-    "最後一個發生的",
-    "任選一個"
+    "在 pipeline 最前面 IF stage、最晚進來的那個",
+    "最後一個發生的，因為它最新",
+    "任選一個，因為最後都會處理"
    ],
    "ans": "在 pipeline 最後面 stage、最早進來的那個",
    "why": "in-order 的 pipeline 中走得最遠的就是最早的指令；它之前的都已完成，它以下全部 flush。out-of-order 時無法這樣判斷，才用 imprecise。"
@@ -708,7 +708,7 @@
    "q": "關於 static 與 dynamic multiple issue，下列何者正確？",
    "opts": [
     "static 由 compiler 在 compile time 把指令 pack 成 issue packet；dynamic 由 hardware 在 run time 決定",
-    "static 由 hardware 決定，dynamic 由 compiler 決定",
+    "static 由 hardware 在 run time 決定；dynamic 由 compiler 在 compile time 把指令 pack 成 issue packet",
     "兩者都完全不需要 compiler",
     "dynamic multiple issue 不會有 hazard"
    ],
@@ -719,7 +719,7 @@
    "q": "store 後面緊接一個 load，讓 load 先執行（speculate on load），什麼情況會讀錯？",
    "opts": [
     "兩者存取同一個記憶體位址",
-    "兩者存取不同位址",
+    "兩者存取相鄰但不同的記憶體位址",
     "load 的目的暫存器是 $0",
     "store 存的是 0"
    ],

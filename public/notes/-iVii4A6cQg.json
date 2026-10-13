@@ -545,8 +545,8 @@
    "q": "MIPS 的 move $t0, $t1 是什麼？",
    "opts": [
     "pseudo-instruction，assembler 換成 add $t0, $zero, $t1",
-    "真正的 instruction，有專門的 register 搬移硬體",
-    "J-type instruction",
+    "真正的 R-type instruction，CPU 有專門的 register 搬移硬體",
+    "J-type instruction，直接跳到 $t1 存的位址",
     "只能在 ARM 上用"
    ],
    "ans": "pseudo-instruction，assembler 換成 add $t0, $zero, $t1",
@@ -557,7 +557,7 @@
    "opts": [
     "slt $at, $t0, $t1 ＋ bne $at, $zero, L",
     "beq $t0, $t1, L",
-    "sub $t0, $t0, $t1 ＋ j L",
+    "slt $at, $t1, $t0 ＋ beq $at, $zero, L",
     "lw $at, 0($t0) ＋ bne $at, $t1, L"
    ],
    "ans": "slt $at, $t0, $t1 ＋ bne $at, $zero, L",
@@ -567,8 +567,8 @@
    "q": "評估 compiler optimization 的效果，應該看？",
    "opts": [
     "execution time（IC × CPI × clock cycle time）",
-    "只看 instruction count",
-    "只看 CPI",
+    "只看 instruction count（指令越少越快）",
+    "只看 CPI（每道指令平均 cycle 數越小程式就越快）",
     "只看 clock rate"
    ],
    "ans": "execution time（IC × CPI × clock cycle time）",
@@ -600,7 +600,7 @@
    "q": "x86 這麼複雜還一直存在的主要原因？",
    "opts": [
     "backward compatibility：舊程式要能跑",
-    "它是 RISC，比較 elegant",
+    "它是 RISC，instruction 格式整齊比較 elegant",
     "它的 instruction 都是固定 32 bits",
     "它有 32 個 general purpose register"
    ],
@@ -611,9 +611,9 @@
    "q": "下列何者是 fallacy（錯誤觀念）？",
    "opts": [
     "powerful 的 instruction 一定帶來 higher performance",
-    "連續 word 的 address 每次 +4",
-    "register 0 固定為 0",
-    "MIPS 有三種 instruction format"
+    "連續 word 的 address 每次 +4（因為是 byte addressing）",
+    "register $zero 固定為 0，不能被寫入",
+    "MIPS 有 R、I、J 三種 instruction format"
    ],
    "ans": "powerful 的 instruction 一定帶來 higher performance",
    "why": "complex instruction 難實作，還會拉長 clock cycle、拖累其他 instruction。"

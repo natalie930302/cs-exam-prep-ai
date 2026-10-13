@@ -395,7 +395,7 @@
    "opts": [
     "Index 是 page number，存 frame number",
     "Index 是 frame number，存 (PID, page number)",
-    "Index 是 PID，存 page table 位置",
+    "Index 是 page number，存 (PID, frame number)",
     "Index 是 segment number，存 base 與 limit"
    ],
    "ans": "Index 是 frame number，存 (PID, page number)",
@@ -404,7 +404,7 @@
   {
    "q": "Inverted page table 最大的缺點之一是？",
    "opts": [
-    "每個 process 要一張很大的表",
+    "每個 process 都要一張很大的 inverted table",
     "難以做 page sharing，且要 search",
     "會產生 external fragmentation",
     "無法用 TLB"

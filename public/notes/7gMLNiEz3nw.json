@@ -384,7 +384,7 @@
     "Work + Allocation(P2) = (5,3,2)",
     "Work + Need(P2) = (4,5,4)",
     "Work − Need(P2) = (2,1,0)",
-    "Work 不變"
+    "Work − Allocation(P2) = (1,3,2)"
    ],
    "ans": "Work + Allocation(P2) = (5,3,2)",
    "why": "它做完會把全部持有的資源還回來，淨增加 Allocation。"
@@ -404,9 +404,9 @@
    "q": "Unsafe state 代表？",
    "opts": [
     "可能會 deadlock，但不一定已經 deadlock",
-    "一定已經 deadlock",
-    "一定不會 deadlock",
-    "有 process 的 Need 為負"
+    "一定已經 deadlock，必須立即終止某個 process",
+    "一定不會 deadlock，只是效率較差",
+    "有 process 的 Need 為負，資料不一致"
    ],
    "ans": "可能會 deadlock，但不一定已經 deadlock",
    "why": "deadlock ⊂ unsafe。"

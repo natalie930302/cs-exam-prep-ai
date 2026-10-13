@@ -1107,9 +1107,9 @@
    "q": "老師的例子用 Kruskal（edge 從小到大：AD 5、CE 5、DF 6、AB 7、BE 7、BC 8、EF 8、BD 9、EG 9…），第一條被跳過的是哪一條？為什麼？",
    "opts": [
     "BC 8：B、C 已經連通，加了會形成 cycle",
-    "DF 6：cost 太高",
-    "EG 9：G 會變孤兒",
-    "AB 7：A 已經在樹裡"
+    "DF 6：cost 比前兩條高，Kruskal 先跳過",
+    "EG 9：G 只有這條邊，加了 G 會變孤兒",
+    "AB 7：A 已經在樹裡，加了會重複連到 A"
    ],
    "ans": "BC 8：B、C 已經連通，加了會形成 cycle",
    "why": "加完 AD、CE、DF、AB、BE 後，B 可以經 B–E–C 到 C，BC 兩端已在同一棵樹，再加就是 cycle，所以跳過。"
@@ -1129,9 +1129,9 @@
    "q": "Cut property 第一版證明（砍掉任一條跨 cut 的 f、換成 e）錯在哪？",
    "opts": [
     "換完不一定還是 tree：可能有點變孤兒（disconnected）",
-    "e 不一定比 f 便宜",
-    "exchange argument 不能用在 MST",
-    "T 不一定跨過 cut"
+    "e 不一定比 f 便宜，換完 cost 可能變大",
+    "exchange argument 不能用在 MST，只能用在 interval scheduling",
+    "T 不一定跨過 cut，可能完全在 cut 的一側"
    ],
    "ans": "換完不一定還是 tree：可能有點變孤兒（disconnected）",
    "why": "f 若不在 T 裡 e 兩端之間的 path 上，砍掉會斷開。正確版要挑 path P 穿過 cut 的那條 e'，換完才仍 connected 且無 cycle。"
@@ -1173,9 +1173,9 @@
    "q": "Union-find 的 path compression 做的是？",
    "opts": [
     "FIND 之後，把路上每個點的 parent 直接改指向 root",
-    "UNION 時把深的樹接到淺的樹下",
-    "把所有 set 合併成一個",
-    "每次 FIND 都重新建樹"
+    "UNION 時把深的樹接到淺的樹下，讓高度不變",
+    "把所有 set 合併成一個，讓 FIND 都變 O(1)",
+    "每次 FIND 都重新建樹，把被查的點換成新的 root 再接回"
    ],
    "ans": "FIND 之後，把路上每個點的 parent 直接改指向 root",
    "why": "例如 9 → 4 → 0 做完 FIND(9) 後變成 9 → 0；配合 union by rank，每個 operation 約 O(α(n))。"
@@ -1186,7 +1186,7 @@
     "n − 1 次；O(m log n)",
     "m 次；O(m log n)",
     "n − 1 次；O(n²)",
-    "2m 次；O(m α(n))"
+    "n − 1 次；O(m α(n) + n)"
    ],
    "ans": "n − 1 次；O(m log n)",
    "why": "MST 只有 n − 1 條 edge，所以只 UNION n − 1 次；FIND 是 2m 次。排序 O(m log m) = O(m log n) 主導整體時間。"

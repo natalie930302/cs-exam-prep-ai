@@ -363,7 +363,7 @@
    "q": "microkernel 名詞解釋一定要提到的重點？",
    "opts": [
     "modularized，且把不重要的 component 移到 user space、用 message passing 溝通",
-    "所有功能都在 kernel space",
+    "把所有 service 都放在 kernel space，用 function call 直接溝通以降低 overhead",
     "沒有 system call",
     "只能跑一個 process"
    ],
@@ -374,7 +374,7 @@
    "q": "為什麼 segmentation 放在上層、paging 放在下層？",
    "opts": [
     "segmentation 符合程式組織、方便 compiler；paging 固定大小方便管理 physical memory、沒有 external fragmentation",
-    "paging 比較符合程式組織",
+    "paging 符合程式組織、方便 compiler；segmentation 固定大小方便管理 physical memory、沒有 internal fragmentation",
     "segmentation 沒有 fragmentation",
     "兩者順序無所謂"
    ],
@@ -386,7 +386,7 @@
    "opts": [
     "loading 減少單一 process 的 memory 使用；linking 讓 process 間 share library、runtime 才 link",
     "兩者相同",
-    "loading 是 process 間共用 library",
+    "linking 減少單一 process 的 memory 使用；loading 讓 process 間 share library、compile time 就 link",
     "linking 是 compile time 完成"
    ],
    "ans": "loading 減少單一 process 的 memory 使用；linking 讓 process 間 share library、runtime 才 link",
@@ -408,7 +408,7 @@
    "opts": [
     "16 bytes",
     "4 bytes",
-    "4KB",
+    "64 bytes",
     "1KB"
    ],
    "ans": "16 bytes",
@@ -419,7 +419,7 @@
    "opts": [
     "frame 變多時，原本會留下的最近 page 仍會被包含",
     "它不會 page fault",
-    "它是隨機的",
+    "frame 變多時，被替換的 page 一定是最早進來的那一個",
     "它看未來"
    ],
    "ans": "frame 變多時，原本會留下的最近 page 仍會被包含",

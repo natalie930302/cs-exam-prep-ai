@@ -251,7 +251,7 @@
    "q": "NP 是什麼的縮寫？",
    "opts": [
     "Nondeterministic Polynomial time",
-    "Not Polynomial time",
+    "Not Polynomial time（不是多項式時間）",
     "Non-P",
     "New Polynomial"
    ],

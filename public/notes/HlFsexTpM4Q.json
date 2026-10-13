@@ -314,7 +314,7 @@
    "opts": [
     "s → a → b → c，cost 6",
     "s → a → c，cost 11",
-    "s → b → c，cost 7",
+    "s → b → a → c，cost 14",
     "s → c，cost 10"
    ],
    "ans": "s → a → b → c，cost 6",

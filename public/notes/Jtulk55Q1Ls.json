@@ -446,7 +446,7 @@
    "q": "Virtually addressed cache 在 multiprogramming 下的第一個問題怎麼解？",
    "opts": [
     "在 tag 加上 process ID",
-    "把 page size 變大",
+    "把 page size 變大到等於 cache size",
     "改用 write through",
     "把 TLB 變大"
    ],
@@ -469,7 +469,7 @@
    "opts": [
     "page table 是完整的 lookup table，用 page number 直接 index",
     "因為 page 很大",
-    "因為 TLB 會幫忙比對",
+    "因為 TLB 已先比對過 tag，page table 只需要回傳 frame number",
     "因為它是 direct mapped"
    ],
    "ans": "page table 是完整的 lookup table，用 page number 直接 index",
@@ -490,7 +490,7 @@
    "q": "Cache size 固定，block size 一直加大，miss rate 最後反而上升，主因是？",
    "opts": [
     "block 數變少，conflict 增加",
-    "spatial locality 消失",
+    "spatial locality 消失，tag 變長",
     "tag 變長",
     "hit time 變短"
    ],
@@ -512,7 +512,7 @@
    "q": "使用者程式要做只有 OS 才能做的事（例如動 page table），要怎麼辦？",
    "opts": [
     "透過 system call 進入 kernel mode，由 OS 做",
-    "直接寫 page table register",
+    "直接寫 page table register 並關掉 interrupt",
     "關掉 TLB",
     "改用 physical address"
    ],

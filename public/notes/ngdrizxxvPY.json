@@ -297,9 +297,9 @@
    "q": "Copy-on-write 中，什麼時候才真正複製 page？",
    "opts": [
     "parent 或 child 對該 page 做 write 時",
-    "fork 一呼叫就全部複製",
-    "read 時",
-    "process 結束時"
+    "fork 一呼叫就把 parent 的所有 page 全部複製",
+    "parent 或 child 對該 page 做 read 時",
+    "child 呼叫 exec() 載入新程式時"
    ],
    "ans": "parent 或 child 對該 page 做 write 時",
    "why": "內容一樣時共用，寫入才複製那一頁。"
@@ -308,9 +308,9 @@
    "q": "COW 例子中 parent 新建變數 Test1 在 page C，結果是？",
    "opts": [
     "只有 page C 被複製一份",
-    "A、B、C 全部被複製",
-    "child 也看得到 Test1",
-    "page table 不用改"
+    "A、B、C 全部被複製一份",
+    "child 也看得到 Test1 這個新變數",
+    "page table 不用改，兩邊仍共用 C"
    ],
    "ans": "只有 page C 被複製一份",
    "why": "只有被寫入的 page 才 copy，其他仍共用。"
@@ -319,9 +319,9 @@
    "q": "Memory-mapped file 最大的好處是？",
    "opts": [
     "bypass file system，存取較快",
-    "自動有 access control",
-    "斷電不會遺失資料",
-    "程式比較好寫"
+    "自動有 access control，比 file 安全",
+    "斷電不會遺失資料，寫入立刻落在 disk",
+    "檔案大小可以超過 virtual address space"
    ],
    "ans": "bypass file system，存取較快",
    "why": "直接用 memory access 操作 file。"
@@ -330,9 +330,9 @@
    "q": "下列哪一個是 memory-mapped file 的缺點？",
    "opts": [
     "資料在 memory 中，crash 時容易 data loss",
-    "一定比 file system 慢",
-    "不能 share",
-    "只能讀不能寫"
+    "一定比 file system 慢，因為每次存取都 page fault",
+    "不能 share，多個 process 無法 map 同一個檔案",
+    "只能讀不能寫，修改必須改回 read()/write()"
    ],
    "ans": "資料在 memory 中，crash 時容易 data loss",
    "why": "要到 munmap 才寫回 file。"
@@ -341,9 +341,9 @@
    "q": "用 file system 的 read 讀 4 bytes，資料大致被 copy 幾次？",
    "opts": [
     "兩次：disk → FS buffer → user buffer",
-    "一次",
-    "零次",
-    "四次"
+    "一次：disk 直接 DMA 到 user buffer",
+    "零次：直接讀 disk 上的資料",
+    "四次：disk → controller → cache → register → user"
    ],
    "ans": "兩次：disk → FS buffer → user buffer",
    "why": "FS 先 prefetch 到 buffer，再 copy 到 user space。"
@@ -352,9 +352,9 @@
    "q": "為什麼 swap space 放在 SSD 會讓電腦變快？",
    "opts": [
     "page fault 讀 disk 的時間被大幅縮短",
-    "TLB 變大",
-    "CPU 時脈變快",
-    "page size 變大"
+    "TLB 變大，address translation 更常 hit",
+    "CPU 時脈變快，因為 I/O 等待被移除",
+    "page size 變大，page fault 次數因而減少"
    ],
    "ans": "page fault 讀 disk 的時間被大幅縮短",
    "why": "EAT 被 page fault time 主宰。"

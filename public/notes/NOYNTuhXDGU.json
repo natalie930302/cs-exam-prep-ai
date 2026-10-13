@@ -1053,9 +1053,9 @@
    "q": "Forward edge 原 flow f、capacity c，沿 augmenting path 加 bottleneck b 後，為何 f + b ≤ c？",
    "opts": [
     "因為 b ≤ residual = c − f",
-    "因為 b ≤ f",
-    "因為 b = 1",
-    "因為 c 是整數"
+    "因為 b ≤ residual = f",
+    "因為 b = 1，每次只增加一單位",
+    "因為 c 是整數，f 也是整數"
    ],
    "ans": "因為 b ≤ residual = c − f",
    "why": "bottleneck 是 path 上最小的 residual，所以 f′ = f + b ≤ f + (c − f) = c。"
@@ -1064,8 +1064,8 @@
    "q": "Backward edge 減掉 b 後為何不會變負？",
    "opts": [
     "backward 的 residual = f，且 b ≤ f",
-    "因為 b < c",
-    "因為 flow 嚴格遞增",
+    "因為 b < c，而 c 一定大於 f",
+    "backward 的 residual = c − f，且 b ≤ c − f",
     "因為 s 沒有 incoming edge"
    ],
    "ans": "backward 的 residual = f，且 b ≤ f",
@@ -1086,9 +1086,9 @@
    "q": "O(mC) 為什麼是 pseudo-polynomial？",
    "opts": [
     "C 是數值，不是 input size",
-    "m 可能很大",
+    "m 可能很大，超過多項式",
     "它有兩個變數相乘",
-    "因為用 DFS 找路"
+    "因為用 DFS 找 augmenting path"
    ],
    "ans": "C 是數值，不是 input size",
    "why": "C 可以極大而邊很少，像 Knapsack 的 O(nW)。"
@@ -1119,9 +1119,9 @@
    "q": "Weak duality 的內容是？",
    "opts": [
     "任何 flow 的值 ≤ 任何 cut 的 capacity",
-    "max flow = min cut",
-    "每條邊都會飽和",
-    "任何 cut 的 capacity 都相等"
+    "max flow 的值 = min cut 的 capacity",
+    "每條邊在 max flow 中都會飽和",
+    "任何兩個 s-t cut 的 capacity 一定都相等"
    ],
    "ans": "任何 flow 的值 ≤ 任何 cut 的 capacity",
    "why": "v(f) = f_out(A) − f_in(A) ≤ f_out(A) ≤ cap(A, B)；等號成立就推得 ① ⇒ ②。"

@@ -511,7 +511,7 @@
     "2.5 倍",
     "4 倍",
     "5 倍",
-    "2 倍"
+    "1.5 倍"
    ],
    "ans": "2.5 倍",
    "why": "原本 5 h，現在 0.5 + 1 + 0.5 = 2 h，5 ÷ 2 = 2.5；市區兩段改進不了。"
@@ -522,7 +522,7 @@
     "做不到",
     "5 倍",
     "20 倍",
-    "80 倍"
+    "100 倍"
    ],
    "ans": "做不到",
    "why": "目標 20 s，但非乘法的 20 s 不變：80/n + 20 = 20 → n 無限大（Amdahl's law）。"
@@ -531,9 +531,9 @@
    "q": "關於用 MIPS（每秒百萬指令數）比較效能，何者正確？",
    "opts": [
     "MIPS 不管指令複雜度，不能反映真正效能",
-    "MIPS 越高一定越快",
+    "MIPS 越高一定越快，因為執行時間與它成反比",
     "MIPS 就是 execution time",
-    "MIPS 已考慮 CPI"
+    "MIPS 已考慮 CPI，可跨 ISA 比較"
    ],
    "ans": "MIPS 不管指令複雜度，不能反映真正效能",
    "why": "不同 ISA 指令複雜度不同，要比 execution time。"
@@ -564,7 +564,7 @@
    "q": "電腦在 0% load（什麼都不做）時仍消耗不少 power，主要因為？",
    "opts": [
     "leakage（static power）",
-    "clock rate 太高",
+    "clock rate 太高（dynamic power）",
     "dynamic power 充放電",
     "benchmark 量錯"
    ],

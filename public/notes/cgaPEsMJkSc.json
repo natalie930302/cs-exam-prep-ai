@@ -1293,7 +1293,7 @@
    "opts": [
     "O(rows · cols)",
     "O(cols² · rows)",
-    "O(rows + cols)",
+    "O(rows² · cols)",
     "O(terms)"
    ],
    "ans": "O(cols² · rows)",
@@ -1313,7 +1313,7 @@
   {
    "q": "Fast transpose 的第二個迴圈裡 j = rowStart[b[i].col]++，如果拿掉 ++ 會怎樣？",
    "opts": [
-    "結果一樣，只是比較慢",
+    "結果一樣，只是每次都要重新查 rowStart，比較慢",
     "同一列的項會一直覆蓋到該列第一格",
     "rowSize 會算錯",
     "會變成 O(cols · terms)"
@@ -1349,7 +1349,7 @@
     "P[1]",
     "P[j − 1]",
     "P[f(j−1) + 1]",
-    "P[f(j) + 1]"
+    "P[f(j + 1) + 1]"
    ],
    "ans": "P[f(j−1) + 1]",
    "why": "j−1 之前的紅色區塊長 f(j−1)，已經確定相同，從它的下一個開始比；T 的 i 不回頭。"

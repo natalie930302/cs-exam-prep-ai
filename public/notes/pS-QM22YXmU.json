@@ -121,9 +121,9 @@
    "q": "Type 1 hypervisor 的特徵？",
    "opts": [
     "直接跑在硬體上（bare metal）",
-    "跑在已安裝的作業系統上",
-    "一定要先裝 host OS",
-    "只能跑一台 VM"
+    "跑在已安裝的作業系統上（hosted）",
+    "一定要先裝 host OS 再安裝",
+    "只能跑一台 VM，不能共享"
    ],
    "ans": "直接跑在硬體上（bare metal）",
    "why": "Type 1 本身就扮演 host 的作業系統；Type 2 才跑在 host OS 上。"
@@ -145,7 +145,7 @@
     "virtual machine monitor（VMM）",
     "memory management unit（MMU）",
     "device driver",
-    "bootstrap program"
+    "bootstrap program（boot loader）"
    ],
    "ans": "virtual machine monitor（VMM）",
    "why": "hypervisor = VMM，負責建立與管理 VM。"
@@ -165,9 +165,9 @@
    "q": "為什麼 VM 可以容易地 migrate 到另一台 server？",
    "opts": [
     "VM 不綁定底層的實體硬體",
-    "VM 沒有作業系統",
-    "VM 只存在 cache 裡",
-    "hypervisor 會複製硬體"
+    "VM 沒有作業系統，只有應用程式",
+    "VM 只存在 cache 裡，搬移很快",
+    "hypervisor 會複製整台實體硬體"
    ],
    "ans": "VM 不綁定底層的實體硬體",
    "why": "hypervisor 把硬體抽象化，VM 看到的是虛擬硬體。"

@@ -195,7 +195,7 @@
     "|A|!",
     "|A|²",
     "A 的 partitions 個數",
-    "2^|A|"
+    "A 的 subsets 個數 2^|A|"
    ],
    "ans": "A 的 partitions 個數",
    "why": "兩者之間有 bijection。"

@@ -376,7 +376,7 @@
    "q": "為什麼 lw/sw 用 base register + offset，而不把位址直接寫進指令？",
    "opts": [
     "32-bit 位址太長，指令放不下；指定 register 只要 5 bits",
-    "因為 memory 是 word address",
+    "因為 memory 是 word address，offset 要乘 4 才能放進指令",
     "因為 register 比較便宜",
     "因為 offset 一定是 0"
    ],

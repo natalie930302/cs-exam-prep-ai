@@ -194,8 +194,8 @@
    "q": "Program 和 process 的差別，何者正確？",
    "opts": [
     "program 是 disk 上的 passive binary，process 是 memory 中執行的 active entity",
-    "兩者只是中英文翻譯不同",
-    "process 存在 disk 上",
+    "兩者只是中英文翻譯不同，指的都是存在 disk 上、可以直接被 CPU 執行的 binary 檔",
+    "process 存在 disk 上，program 是載入 memory 後實際執行中的 active entity",
     "program 有自己的 program counter"
    ],
    "ans": "program 是 disk 上的 passive binary，process 是 memory 中執行的 active entity",
@@ -227,9 +227,9 @@
    "q": "local variable 放在 stack 的主要原因是？",
    "opts": [
     "function return 時可以一次 pop 掉，有效率",
-    "stack 的空間最大",
-    "所有 function 都要看得到它",
-    "它要在 load 時就存在"
+    "stack 的空間最大，放得下所有變數",
+    "所有 function 都要看得到它，放 stack 才能共享",
+    "它要在 load 時就存在，所以放 stack"
    ],
    "ans": "function return 時可以一次 pop 掉，有效率",
    "why": "local variable 隨 function 結束而消失，用 stack 管理最方便。"
@@ -238,9 +238,9 @@
    "q": "為什麼 register 的值要記在 process 的 metadata 裡？",
    "opts": [
     "CPU 被多個程式共用，被換走時要保存",
-    "為了加速 cache",
-    "因為 register 在 disk 上",
-    "為了 debug"
+    "為了加速 cache，減少 memory 存取",
+    "因為 register 在 disk 上，要先記下位置",
+    "為了 debug，方便印出錯誤訊息"
    ],
    "ans": "CPU 被多個程式共用，被換走時要保存",
    "why": "switch 時把 register 存起來，回來時才能接著跑。"

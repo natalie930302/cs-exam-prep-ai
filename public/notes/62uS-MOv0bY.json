@@ -993,10 +993,10 @@
   {
    "q": "Strong induction 的 inductive step 假設的是什麼？",
    "opts": [
-    "只假設 n = k 成立",
+    "只假設 n = k 成立，再推 n = k + 1",
     "假設所有 ≤ k 的情形都成立",
-    "假設 n = k + 1 成立",
-    "不需要 hypothesis"
+    "假設 n = k + 1 成立，再往回推 n = k",
+    "不需要 hypothesis，直接驗證 base case"
    ],
    "ans": "假設所有 ≤ k 的情形都成立",
    "why": "Weak 只假設 k 成立、一次走一步；strong 假設 ≤ k 全部成立，可以一次跳一大步。兩者其實等價。"
@@ -1016,9 +1016,9 @@
    "q": "Defective chessboard 的 inductive step 中，切成四塊後中央那一塊 L 形磁磚的作用是什麼？",
    "opts": [
     "讓沒有洞的三塊也各少一格，變成同樣的 defective 子問題",
-    "填補原本的洞",
-    "讓四塊大小不同",
-    "只是裝飾，沒有必要"
+    "填補原本的洞，讓整塊棋盤變回沒有缺格、可以直接鋪滿的完整棋盤",
+    "讓四塊大小不同，再依大小分別遞迴處理",
+    "只是裝飾，拿掉後四塊仍各自都是 defective 子問題"
    ],
    "ans": "讓沒有洞的三塊也各少一格，變成同樣的 defective 子問題",
    "why": "洞只在其中一塊；另外三塊靠中央各挖一格放一塊 L，四塊就都是 2^n × 2^n 的 defective chessboard，可套 hypothesis。"
@@ -1038,9 +1038,9 @@
    "q": "用 D&C 的角度看 binary search，它的 combine 步驟做什麼？",
    "opts": [
     "什麼都不做（do nothing）",
-    "合併左右兩半的結果",
-    "重新排序",
-    "比較左右兩半的最大值"
+    "合併左右兩半的搜尋結果（merge）",
+    "重新排序後再比較",
+    "比較左右兩半找到的最大值"
    ],
    "ans": "什麼都不做（do nothing）",
    "why": "Divide 時跟中間比較就決定只找一側，最後只剩 yes/no，combine 是 trivial 的；一般 D&C 的 combine 通常最難。"
@@ -1049,9 +1049,9 @@
    "q": "MERGE-SORT(A, p, r) 第 1 行的 if p < r 不成立，代表什麼？",
    "opts": [
     "這一段只剩一個元素，已排序，直接 return",
-    "陣列是空的，程式出錯",
-    "要把 p、r 交換",
-    "要呼叫 MERGE"
+    "陣列是空的，程式出錯，必須丟出 exception",
+    "要先把 p、r 交換再繼續遞迴",
+    "要直接呼叫 MERGE 合併左右兩半"
    ],
    "ans": "這一段只剩一個元素，已排序，直接 return",
    "why": "不會讓 p > r，唯一可能是 p = r，只有一個數，本身就是排好的，這就是 base case。"
@@ -1061,7 +1061,7 @@
    "opts": [
     "O(n log n)",
     "O(n)",
-    "O(n²)",
+    "O(n² log n)",
     "O(log n)"
    ],
    "ans": "O(n log n)",
@@ -1072,8 +1072,8 @@
    "opts": [
     "Ω(n log n)",
     "Ω(n)",
-    "Ω(log n)",
-    "Ω(n²)"
+    "Ω(n² / log n)",
+    "Ω(log n)"
    ],
    "ans": "Ω(n log n)",
    "why": "Comparison sort 的下限是 n log n；linear sorting 需要額外的 input 資訊才能更快。"

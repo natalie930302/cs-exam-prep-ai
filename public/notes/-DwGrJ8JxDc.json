@@ -968,9 +968,9 @@
    "q": "rolling hash 若用 p = 2^w 當模數，乘法反元素存在的條件是？",
    "opts": [
     "base b 與 2^w 互質（b 為奇數）",
-    "w 是質數",
-    "b 是 2 的次方",
-    "永遠不存在"
+    "w 是質數，2^w 才會是質數模數",
+    "b 是 2 的次方，乘法才能用 shift 做",
+    "永遠不存在，因為 2^w 不是質數"
    ],
    "ans": "base b 與 2^w 互質（b 為奇數）",
    "why": "extended Euclid 給出 xb + yp = gcd(b, p)；gcd = 1 時 x 就是反元素。"
@@ -979,9 +979,9 @@
    "q": "base b = 2⁸、所有 digits 都是偶數時，K mod 2³² 會怎樣？",
    "opts": [
     "一定是偶數，一半的 outputs 用不到",
-    "均勻分布",
-    "一定是 0",
-    "一定是奇數"
+    "仍然均勻分布，因為 b 是 2 的次方",
+    "一定是 0，所有 digits 都被消掉",
+    "一定是奇數，另一半的 outputs 用不到"
    ],
    "ans": "一定是偶數，一半的 outputs 用不到",
    "why": "base 是偶數，末位 digit 偶數 → K 偶數；mod 2³² 保留最低位元，仍是偶數。"
@@ -990,9 +990,9 @@
    "q": "MIT Rec 9b 認為「好的 hash function」最關鍵的性質是？",
    "opts": [
     "distribute：輸出分布均勻，input 的規律不會留在 output",
-    "永遠回傳 0",
-    "計算最快",
-    "沒有任何 collision"
+    "fast：計算越快越好，即使輸出有規律也可以接受",
+    "collision-free：任兩個不同 input 都保證得到不同 output",
+    "reversible：可以從 output 反推回原本的 input 值"
    ],
    "ans": "distribute：輸出分布均勻，input 的規律不會留在 output",
    "why": "inputs ≫ outputs，collision 不可避免；重點是分散。"
@@ -1001,9 +1001,9 @@
    "q": "Python 的 for x in obj 背後做了什麼？",
    "opts": [
     "呼叫 iter(obj) 取得 iterator，再反覆呼叫 next 直到 StopIteration",
-    "先把 obj 轉成 list",
-    "呼叫 len(obj) 決定次數",
-    "呼叫 obj.has_next()"
+    "先把 obj 轉成 list，再用索引 obj[i] 從 0 走到 len(obj) − 1",
+    "呼叫 len(obj) 決定次數，再用 obj[i] 依序逐一取出元素直到 IndexError",
+    "呼叫 obj.has_next() 判斷，再呼叫 obj.next() 取值"
    ],
    "ans": "呼叫 iter(obj) 取得 iterator，再反覆呼叫 next 直到 StopIteration",
    "why": "for 會自動接住 StopIteration。"
@@ -1012,9 +1012,9 @@
    "q": "把「建 list 再 return」改成 yield 的 generator，最主要的好處是？",
    "opts": [
     "記憶體從 O(n) 降到 O(1)",
-    "時間從 O(n) 降到 O(1)",
-    "可以用 len()",
-    "可以倒著走"
+    "執行時間從 O(n) 降到 O(1)",
+    "可以用 len() 直接取得長度",
+    "可以倒著走（reversed）"
    ],
    "ans": "記憶體從 O(n) 降到 O(1)",
    "why": "generator 每次 next 才算下一個值，不保存整個 list。"

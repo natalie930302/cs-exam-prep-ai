@@ -746,9 +746,9 @@
    "q": "證明中為什麼可以說最短路徑 v0…vk 的 k ≤ |V| − 1？",
    "opts": [
     "沒有負 cycle 時最短路徑是簡單路徑，超過就會重複頂點",
-    "因為 Bellman-Ford 只做 |V| − 1 輪",
-    "因為每個頂點最多一條出邊",
-    "因為權重都是正的"
+    "因為 Bellman-Ford 演算法本身就只做 |V| − 1 輪 relax",
+    "因為每個頂點最多只有一條出邊",
+    "因為權重都是正的，不會繞圈"
    ],
    "ans": "沒有負 cycle 時最短路徑是簡單路徑，超過就會重複頂點",
    "why": "k 條邊的路徑有 k + 1 個頂點；k ≥ |V| 必有重複頂點（cycle）。"
@@ -757,9 +757,9 @@
    "q": "圖裡有負 cycle，但從 s 走不到它。Bellman-Ford 會？",
    "opts": [
     "不回報，走得到的頂點 d 正確，其他維持 ∞",
-    "回報負 cycle 存在",
-    "進入無窮迴圈",
-    "所有 d 變成 −∞"
+    "回報負 cycle 存在，所有頂點的 d 都不可信",
+    "進入無窮迴圈，永遠不會停止",
+    "所有 d 變成 −∞，包含走得到的頂點"
    ],
    "ans": "不回報，走得到的頂點 d 正確，其他維持 ∞",
    "why": "Initialize 只讓 d(s) = 0；∞ + w 還是 ∞，負 cycle 上的邊永遠無法 relax。"
@@ -768,8 +768,8 @@
    "q": "把正權重圖的邊全部取負號再跑 Bellman-Ford 來求 longest path，一般會怎樣？",
    "opts": [
     "只要圖有 cycle，取負後就是負 cycle，Bellman-Ford abort",
-    "一定得到 longest path",
-    "得到 shortest path",
+    "一定得到 longest path，因為 Bellman-Ford 本來就允許負權重",
+    "得到 shortest path，因為取負不改變大小順序",
     "時間變成指數"
    ],
    "ans": "只要圖有 cycle，取負後就是負 cycle，Bellman-Ford abort",
@@ -779,7 +779,7 @@
    "q": "圖中有負 cycle 時，求「最短簡單路徑」的難度是？",
    "opts": [
     "NP-hard，目前只知道指數時間演算法",
-    "O(VE)，用 Bellman-Ford",
+    "O(VE)，用 Bellman-Ford 跳過負 cycle 即可",
     "O(V log V + E)，用 Dijkstra",
     "O(V + E)，用 BFS"
    ],

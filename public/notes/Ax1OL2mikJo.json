@@ -822,9 +822,9 @@
    "q": "adjacency list 與 adjacency multilist 最根本的差別是？",
    "opts": [
     "前者以 vertex 為主，後者以 edge 為主",
-    "前者用陣列，後者用矩陣",
-    "前者只能存 directed graph",
-    "後者每條邊存兩次"
+    "前者用陣列，後者用二維矩陣",
+    "前者只能存 directed graph，後者存 undirected",
+    "後者每條邊在 list 中存兩次"
    ],
    "ans": "前者以 vertex 為主，後者以 edge 為主",
    "why": "multilist 每條邊一個 node，同時掛在兩個端點的串列上。"

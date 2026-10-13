@@ -250,7 +250,7 @@
    "q": "Prim 跟 Kruskal 最大的差別是？",
    "opts": [
     "Prim 只挑跟目前這棵樹相連的邊",
-    "Prim 依 cost 由大到小挑",
+    "Prim 依 cost 由大到小挑，Kruskal 由小到大",
     "Prim 允許 cycle",
     "Prim 只能用在有向圖"
    ],
@@ -261,7 +261,7 @@
    "q": "edge rejection 方法一每次刪哪條邊？",
    "opts": [
     "某個 cycle 裡 cost 最高的邊",
-    "整張圖 cost 最小的邊",
+    "整張圖目前 cost 最小、不在 cycle 上的邊",
     "任一條邊",
     "度數最大的頂點的邊"
    ],

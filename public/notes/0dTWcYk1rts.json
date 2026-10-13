@@ -403,7 +403,7 @@
     "high-order interleaving",
     "low-order interleaving",
     "完全不交錯",
-    "只能用 wider memory"
+    "只能用 wider memory（加寬 bus）"
    ],
    "ans": "high-order interleaving",
    "why": "連續的一整塊位址在同一個 bank，不同處理器用不同 bank 可以真正同時存取。"
@@ -414,7 +414,7 @@
     "0, 4, 8, 12",
     "0, 1, 2, 3",
     "4, 5, 6, 7",
-    "1, 2, 3, 4"
+    "12, 13, 14, 15"
    ],
    "ans": "0, 4, 8, 12",
    "why": "0、4、8、12 除以 4 的餘數都是 0，全部落在 bank 0。"

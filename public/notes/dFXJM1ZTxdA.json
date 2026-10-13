@@ -198,9 +198,9 @@
    "q": "OS 的「coordinate」最在意的是什麼？",
    "opts": [
     "很多程式同時執行又不出錯（例如不能改到別人的 memory）",
-    "讓 CPU 跑得更快",
-    "把資料壓縮",
-    "決定螢幕解析度"
+    "讓 CPU 跑得更快（例如自動提高時脈與動態調整 cache 大小）",
+    "把資料壓縮，節省 disk 空間",
+    "決定螢幕解析度與各視窗的排列方式"
    ],
    "ans": "很多程式同時執行又不出錯（例如不能改到別人的 memory）",
    "why": "程式要 concurrent 地 share 電腦，又不能互相破壞。"
@@ -209,9 +209,9 @@
    "q": "device controller 上為什麼一定要有 buffer？",
    "opts": [
     "I/O device 很慢、CPU 很快，沒有 buffer CPU 會 idle 很久",
-    "因為 memory 不夠大",
-    "因為 buffer 比 memory 便宜",
-    "為了讓 disk 轉更快"
+    "因為 memory 不夠大，所有 I/O 資料只能先放在 controller 上",
+    "因為 buffer 比 memory 便宜，可以省成本",
+    "為了讓 disk 轉更快，減少 seek time"
    ],
    "ans": "I/O device 很慢、CPU 很快，沒有 buffer CPU 會 idle 很久",
    "why": "資料先進 buffer，CPU 不必等慢速 device 一個一個傳。"
@@ -220,9 +220,9 @@
    "q": "controller 的 status register 用來？",
    "opts": [
     "告訴 CPU 現在是 busy 還是 idle",
-    "存放要寫出的資料",
+    "存放要寫出到 device 的資料內容",
     "記錄被打斷程式的 PC",
-    "存放 system call 編號"
+    "存放 system call 的編號與參數"
    ],
    "ans": "告訴 CPU 現在是 busy 還是 idle",
    "why": "data register 才是放資料（像另一個 buffer）。"
@@ -242,9 +242,9 @@
    "q": "busy waiting 的主要問題是？",
    "opts": [
     "CPU 一直 peek 狀態、浪費 cycle，CPU 與 I/O 無法 overlap",
-    "buffer 會變大",
-    "資料會寫錯位置",
-    "需要很多 interrupt"
+    "buffer 會越變越大，最後 overflow",
+    "資料會寫錯位置，因為沒有 interrupt 通知 CPU",
+    "需要很多 interrupt，每個 byte 都要打斷 CPU 一次並存回 memory"
    ],
    "ans": "CPU 一直 peek 狀態、浪費 cycle，CPU 與 I/O 無法 overlap",
    "why": "等待期間 CPU 等於 idle，還同時霸佔 CPU 與 I/O。"

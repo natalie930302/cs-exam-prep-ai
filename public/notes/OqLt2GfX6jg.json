@@ -334,9 +334,9 @@
    "q": "p = malloc(10); 之後 p 裡存的是？",
    "opts": [
     "heap 上那塊記憶體的起始位址",
-    "數字 10",
-    "p 自己的位址",
-    "stack 的頂端"
+    "數字 10，也就是配置的 bytes 數",
+    "p 自己在 stack 上的位址",
+    "stack 的頂端位址（stack pointer）"
    ],
    "ans": "heap 上那塊記憶體的起始位址",
    "why": "malloc 在 heap 配空間並回傳第一個 byte 的位址。"
@@ -356,9 +356,9 @@
    "q": "要讓 swap 真的交換 main 的 a、b，應該？",
    "opts": [
     "參數改成 int *，呼叫 swap(&a, &b)",
-    "把 a、b 改成 float",
-    "在 swap 裡 return 交換後的值",
-    "呼叫 swap(*a, *b)"
+    "把 a、b 改成 float，再呼叫 swap(a, b)",
+    "在 swap 裡 return 交換後的 a、b",
+    "參數改成 int *，呼叫 swap(*a, *b)"
    ],
    "ans": "參數改成 int *，呼叫 swap(&a, &b)",
    "why": "傳位址後，swap 透過 *x、*y 間接改到 main 的變數。"
@@ -367,9 +367,9 @@
    "q": "activation record 是？",
    "opts": [
     "函式執行時在 stack 配給它的變數區塊",
-    "heap 上 malloc 的區塊",
-    "程式碼所在的 code 區",
-    "檔案的指標"
+    "malloc 時在 heap 上配給它的記憶體區塊",
+    "程式碼所在的 code 區（text segment）",
+    "開檔後 OS 回傳的檔案指標"
    ],
    "ans": "函式執行時在 stack 配給它的變數區塊",
    "why": "每個函式呼叫都有自己的 activation record，彼此不能直接存取。"
@@ -378,8 +378,8 @@
    "q": "C 程式要讀寫磁碟上的檔案需要？",
    "opts": [
     "FILE * 檔案指標",
-    "一個 2D 陣列",
-    "malloc",
+    "一個 2D char 陣列",
+    "malloc 出來的 buffer",
     "遞迴"
    ],
    "ans": "FILE * 檔案指標",

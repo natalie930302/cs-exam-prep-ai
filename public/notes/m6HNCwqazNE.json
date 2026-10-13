@@ -457,9 +457,9 @@
    "q": "Write-back、write-allocate 的 cache，write miss 且被換掉的 block 是 dirty，controller 會經過哪些 state？",
    "opts": [
     "Idle → Compare Tag → Write-Back → Allocate → Compare Tag → Idle",
-    "Idle → Compare Tag → Allocate → Idle",
+    "Idle → Compare Tag → Allocate → Write-Back → Compare Tag → Idle",
     "Idle → Write-Back → Idle",
-    "Idle → Compare Tag → Idle"
+    "Idle → Compare Tag → Allocate → Idle"
    ],
    "ans": "Idle → Compare Tag → Write-Back → Allocate → Compare Tag → Idle",
    "why": "Dirty 要先寫回，再 Allocate 讀新 block，回 Compare Tag 才 hit 並寫入、設 dirty。"
@@ -479,9 +479,9 @@
    "q": "Cache 與 memory 之間的 data 線為什麼是 128 bits？",
    "opts": [
     "一次搬一個 4-word block：4 × 32 = 128",
-    "因為 address 是 128 bits",
-    "因為 cache 有 128 個 block",
-    "因為 memory 比較快"
+    "因為 address 是 128 bits，要一起傳",
+    "因為 cache 有 128 個 block，每個 1 bit",
+    "因為 memory 比較快，可以多送幾條"
    ],
    "ans": "一次搬一個 4-word block：4 × 32 = 128",
    "why": "CPU 一次要一個 word（32 bits），cache miss 時一次搬一整個 block。"
@@ -490,8 +490,8 @@
    "q": "Invalidating snooping protocol 中，cache A 要寫 X 時做什麼？",
    "opts": [
     "取得 exclusive access，並在 bus 上 broadcast invalidate",
-    "把 X 直接寫到所有其他 cache",
-    "先通知 directory 再寫",
+    "把新的 X 直接寫到所有其他 cache 上（write update / broadcast）",
+    "先通知 directory，等它回覆後再寫",
     "等其他 cache 都 miss 才寫"
    ],
    "ans": "取得 exclusive access，並在 bus 上 broadcast invalidate",

@@ -315,8 +315,8 @@
    "q": "Pthread mutex 的 entry 與 exit 分別是？",
    "opts": [
     "pthread_mutex_lock 與 pthread_mutex_unlock",
-    "init 與 destroy",
-    "wait 與 signal",
+    "pthread_mutex_init 與 pthread_mutex_destroy",
+    "pthread_cond_wait 與 pthread_cond_signal",
     "TestAndSet 與 Swap"
    ],
    "ans": "pthread_mutex_lock 與 pthread_mutex_unlock",
@@ -326,7 +326,7 @@
    "q": "condition variable 的 broadcast 會？",
    "opts": [
     "叫醒所有在這個 condition 上等待的 thread",
-    "只叫醒一個",
+    "只叫醒一個在這個 condition 上等待的 thread",
     "讓所有 thread 去睡",
     "釋放 mutex"
    ],
@@ -337,7 +337,7 @@
    "q": "pthread_cond_wait 為什麼要傳入 mutex？",
    "opts": [
     "它會在睡覺時 release mutex，醒來 return 前 reacquire",
-    "它要 destroy mutex",
+    "它要在 return 前 destroy mutex，避免 thread 結束後產生 deadlock",
     "它用 mutex 計數",
     "不需要，只是習慣"
    ],
@@ -348,7 +348,7 @@
    "q": "TestAndSet(&lock) 做的事是？",
    "opts": [
     "回傳 lock 原本的值，並把 lock 設成 true（atomic）",
-    "把 lock 設成 false",
+    "回傳 lock 的新值，並把 lock 設成 false（atomic）",
     "交換兩個變數",
     "等待 lock 變成 false"
    ],
@@ -370,7 +370,7 @@
    "q": "Swap 解法中，進入 critical section 的條件是？",
    "opts": [
     "和 lock 交換後拿到 false（紅球）",
-    "key 一直是 true",
+    "key 一直是 true，表示鎖還空著可以進入",
     "lock 是 true",
     "自己 PID 最小"
    ],

@@ -367,7 +367,7 @@
    "q": "RAID 0 的特性？",
    "opts": [
     "只用 striping，效能約 n 倍，但沒有 redundancy",
-    "只用 mirroring，空間剩一半",
+    "只用 mirroring，每份資料都存兩份，可用空間剩一半",
     "用 Hamming code 偵錯",
     "parity 輪流放在每顆硬碟"
    ],
@@ -400,8 +400,8 @@
    "q": "為什麼 RAID 3/4 只要一個 parity 就能救回一顆壞掉的硬碟？",
    "opts": [
     "硬碟的 ECC 已經知道哪一顆壞了，只需要 recovery",
-    "parity 可以找出任意兩顆錯誤",
-    "因為資料都有兩份",
+    "parity 可以同時找出並更正任意兩顆錯誤硬碟的位置",
+    "因為資料都有兩份，壞一顆還有備份",
     "因為只用 bit level"
    ],
    "ans": "硬碟的 ECC 已經知道哪一顆壞了，只需要 recovery",
@@ -411,7 +411,7 @@
    "q": "RAID 5 相對 RAID 4 的主要改進？",
    "opts": [
     "parity 分散到每顆硬碟，避免單一 parity disk 成為瓶頸",
-    "可以容忍兩顆硬碟壞掉",
+    "可以同時容忍兩顆硬碟壞掉，因為每個 stripe 有兩份 parity",
     "不需要 parity",
     "容量變成 100%"
    ],

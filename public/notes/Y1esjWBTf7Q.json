@@ -241,7 +241,7 @@
    "q": "Hit time 5、miss 的「總時間」10、hit ratio 0.4。若改用 P&H 寫法 hit time + miss rate × miss penalty，miss penalty 應代多少？",
    "opts": [
     "5（額外的時間）",
-    "10",
+    "10（miss 的總時間）",
     "15",
     "0.6"
    ],

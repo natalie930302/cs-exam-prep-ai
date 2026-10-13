@@ -267,7 +267,7 @@
   {
    "q": "在充分條件的演算法中，為什麼 get stuck 的點一定是出發點？",
    "opts": [
-    "因為 G 是 simple graph",
+    "因為 G 是 simple graph：沒有平行邊，所以不會重複走同一條邊",
     "因為每點 degree 偶數：中間點用掉奇數條時一定還有邊可出去",
     "因為邊數是偶數",
     "因為 G 沒有 loop"
@@ -278,10 +278,10 @@
   {
    "q": "circuit A,B,C,D,E,A 卡在 A，但 C 還有一條沒用的邊連到 X。break out 怎麼做？",
    "opts": [
-    "丟掉這個 circuit 從 X 重新走",
+    "丟掉這個 circuit，改從 X 出發重新走一個新的 circuit",
     "把 circuit 改寫成 C,D,E,A,B,C，再從 C 走到 X",
     "把 C–X 刪掉",
-    "回頭走 A→E"
+    "回頭走 A→E→D→C，再從 C 走到 X"
    ],
    "ans": "把 circuit 改寫成 C,D,E,A,B,C，再從 C 走到 X",
    "why": "換起點不改變 circuit，回到 C 時沿沒用的邊衝出去。"
@@ -300,10 +300,10 @@
   {
    "q": "這個證明屬於哪一種？",
    "opts": [
-    "反證法但不給方法",
+    "反證法：假設不存在 Euler circuit，推出 degree 有奇數的矛盾",
     "constructive proof：給出找 Euler circuit 的 algorithm",
     "窮舉法",
-    "數學歸納法對頂點數"
+    "數學歸納法：對頂點數 n 做 induction"
    ],
    "ans": "constructive proof：給出找 Euler circuit 的 algorithm",
    "why": "老師強調不只證存在，還給方法並說明為何一定找得到。"
@@ -312,7 +312,7 @@
    "q": "deg(v) 為什麼等於 2 × 離開 v 的邊數（v 不是出發點時）？",
    "opts": [
     "每經過 v 一次恰用掉一條進來、一條離開的邊",
-    "因為 v 有 loop",
+    "因為 v 有 loop，每個 loop 貢獻 2 個 degree",
     "因為 G 是 complete graph",
     "因為邊都有方向"
    ],

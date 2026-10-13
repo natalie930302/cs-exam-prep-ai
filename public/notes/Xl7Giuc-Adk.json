@@ -152,9 +152,9 @@
    "q": "augmenting alternating path 的起點和終點分別是？",
    "opts": [
     "起點是 unmatched x-vertex，終點是 unmatched y-vertex",
-    "起點、終點都是 matched 的點",
-    "起點是 y-vertex，終點是 x-vertex，都 matched",
-    "起點、終點都在 X"
+    "起點、終點都是 matched 的點，中間 matched 與 unmatched 邊交替",
+    "起點是 y-vertex，終點是 x-vertex，兩者都已 matched",
+    "起點、終點都在 X，且都是 unmatched"
    ],
    "ans": "起點是 unmatched x-vertex，終點是 unmatched y-vertex",
    "why": "這樣把路上的邊反過來，兩端都配到了，matching 多 1。"

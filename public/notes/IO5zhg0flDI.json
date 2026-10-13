@@ -498,7 +498,7 @@
    "q": "pipeline 對單一指令的 latency 與整體 throughput 有什麼影響？",
    "opts": [
     "latency 不會縮短，throughput 增加",
-    "latency 縮短，throughput 不變",
+    "latency 縮短一半，throughput 不變",
     "兩者都增加",
     "兩者都縮短"
    ],
@@ -553,7 +553,7 @@
    "q": "哪一種 data hazard 沒辦法只靠 forwarding 解決、必須 stall？",
    "opts": [
     "前一個是 load，下一個馬上讀它載入的 register",
-    "前一個是 R-type，下一個馬上讀它的結果",
+    "前一個是 R-type，下一個馬上讀它算出來的結果",
     "兩個指令都只讀同一個 register",
     "前一個是 sw"
    ],

@@ -889,7 +889,7 @@
    "opts": [
     "把它 decode 出來的 control signal 全部設成 0",
     "把它的結果寫回後再還原",
-    "讓整條 pipeline 停 3 個 cycle",
+    "讓整條 pipeline 停 3 個 cycle，等它自己執行完",
     "把 PC 設成 0"
    ],
    "ans": "把它 decode 出來的 control signal 全部設成 0",
@@ -921,7 +921,7 @@
    "q": "為什麼 branch history table 除了 taken / not taken，還要記 target address？",
    "opts": [
     "target 要到 ID 才算得出來，IF 抓下一個指令時就需要它",
-    "因為 associative memory 規定要存兩欄",
+    "因為 associative memory 規定每個 entry 要存兩欄才能比對",
     "為了計算 CPI",
     "為了處理 overflow exception"
    ],
@@ -932,7 +932,7 @@
    "q": "關於 delayed branch，下列何者正確？",
    "opts": [
     "branch 後面那個 slot 的指令不管跳不跳都會執行",
-    "slot 裡的指令只有在 taken 時執行",
+    "slot 裡的指令只有在 branch 為 taken 時才會執行",
     "一定要 flush slot 裡的指令",
     "pipeline 越深越容易填滿 slot"
    ],

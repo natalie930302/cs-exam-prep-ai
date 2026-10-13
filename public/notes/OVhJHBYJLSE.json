@@ -804,9 +804,9 @@
    "q": "Stability 證明的 Case 2：m 曾向 w′ propose 但被拒絕。w′ 為什麼會拒絕他？",
    "opts": [
     "她那時有更喜歡的男生",
-    "她已經 married",
-    "m 不在她的 list 裡",
-    "隨機拒絕"
+    "她那時已經 married，不能再換",
+    "m 不在她的 preference list 裡",
+    "GS 隨機拒絕"
    ],
    "ans": "她那時有更喜歡的男生",
    "why": "依 procedure，女生只有遇到更喜歡的對象才會 reject；之後也只會換更好的，所以最後 w′ 喜歡 m′ 勝過 m，矛盾。"
@@ -817,7 +817,7 @@
     "w 在 m 的 list 排第一",
     "存在某個 stable matching 把 m 與 w 配在一起",
     "GS 的輸出把 m 與 w 配在一起",
-    "w 也最喜歡 m"
+    "每一個 stable matching 都把 m 與 w 配在一起"
    ],
    "ans": "存在某個 stable matching 把 m 與 w 配在一起",
    "why": "valid 只要求「某個」stable matching 能配在一起；valid 中排名最高的才是 best(m)。"
@@ -825,9 +825,9 @@
   {
    "q": "男生 propose 的 GS，結果對女生而言是？",
    "opts": [
-    "female-optimal",
+    "female-optimal（每人最好的 valid partner）",
     "female-pessimal（最差的 valid partner）",
-    "隨機",
+    "依 propose 順序而定",
     "不一定 stable"
    ],
    "ans": "female-pessimal（最差的 valid partner）",
@@ -836,7 +836,7 @@
   {
    "q": "Male-optimal 的反證法挑哪一個事件來討論？",
    "opts": [
-    "最後一次 proposal",
+    "整個執行 E 中最後一次有男生被拒絕的那個 proposal",
     "整個執行 E 中第一次有男生被 valid partner 拒絕",
     "第一次 proposal",
     "任意一次 rejection"
@@ -847,9 +847,9 @@
   {
    "q": "為什麼不管誰來執行 GS（任意挑 free 男生的順序），結果都一樣？",
    "opts": [
-    "因為 GS 是 greedy",
+    "因為 GS 是 greedy，每步都選局部最好的",
     "因為每個男生都配到 best(m)，而 best(m) 唯一",
-    "因為 stable matching 只有一個",
+    "因為 stable matching 只有一個，GS 一定找到它",
     "因為女生都配到最愛"
    ],
    "ans": "因為每個男生都配到 best(m)，而 best(m) 唯一",

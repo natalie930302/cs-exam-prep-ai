@@ -441,7 +441,7 @@
     "從一個 stage 連到下一個 stage",
     "同一個 stage 內互連",
     "任意兩點都可以連",
-    "只能連回 source"
+    "從一個 stage 連到任何後面的 stage"
    ],
    "ans": "從一個 stage 連到下一個 stage",
    "why": "頂點分成 stages，邊只從 stage i 指向 stage i+1；第一與最後 stage 只有 source、sink。"
@@ -485,7 +485,7 @@
     "因為決策是從 source 依 d 值往前做的",
     "因為邊都是往前指的",
     "因為只算前半段",
-    "因為使用了 greedy"
+    "因為使用了 greedy，每步選目前最小的 cost"
    ],
    "ans": "因為決策是從 source 依 d 值往前做的",
    "why": "cost 表從後往前填，但用 d 值做一連串決策是從 1 → 2 → 7 → 10 → 12。"

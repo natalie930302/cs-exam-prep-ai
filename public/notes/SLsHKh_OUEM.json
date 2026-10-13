@@ -227,8 +227,8 @@
    "q": "Master Theorem 要求的條件？",
    "opts": [
     "a ≥ 1、b > 1、f 漸近為正",
-    "a > 1、b ≥ 1",
-    "a、b 都是整數",
+    "a > 1、b ≥ 1、f 為多項式",
+    "a、b 都是整數且 a ≥ b",
     "f(n) 必須是多項式"
    ],
    "ans": "a ≥ 1、b > 1、f 漸近為正",
@@ -262,7 +262,7 @@
     "Θ(n log² n)",
     "Θ(n log n)",
     "Θ(n²)",
-    "Θ(n)"
+    "Θ(n² log n)"
    ],
    "ans": "Θ(n log² n)",
    "why": "case 2 延伸，k = 1 → 再乘一個 log n。"
@@ -271,9 +271,9 @@
    "q": "Case 3 除了 f 較大，還要檢查？",
    "opts": [
     "Regularity：a·f(n/b) ≤ c·f(n)，c < 1",
-    "a = b",
-    "f(n) 是常數",
-    "n 是 2 的次方"
+    "a = b，且 f(n) = Θ(n)",
+    "f(n) 是常數，否則 Case 3 不適用",
+    "Smoothness：a·f(n/b) ≥ c·f(n)，c > 1"
    ],
    "ans": "Regularity：a·f(n/b) ≤ c·f(n)，c < 1",
    "why": "確保根的工作真的主導。"

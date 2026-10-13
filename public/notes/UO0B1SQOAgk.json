@@ -721,7 +721,7 @@
    "opts": [
     "每一層變成由右到左輸出",
     "結果不變",
-    "變成 preorder",
+    "變成 preorder（root、右、左）",
     "程式會無窮迴圈"
    ],
    "ans": "每一層變成由右到左輸出",
@@ -731,7 +731,7 @@
    "q": "在 Copy 中把 temp->leftChild = Copy(orig->leftChild) 改成 temp->leftChild = orig->leftChild，會發生什麼事？",
    "opts": [
     "只複製了 root 節點，左子樹與原樹共用",
-    "結果完全相同，只是比較快",
+    "結果完全相同，只是少了一次遞迴、比較快",
     "編譯錯誤",
     "左子樹會被刪除"
    ],
@@ -742,7 +742,7 @@
    "q": "Equal(a, b) 何時回傳 true？",
    "opts": [
     "兩者皆空，或兩者皆非空且 data 相同、左子樹 Equal、右子樹 Equal",
-    "兩者 root 的 data 相同即可",
+    "兩者 root 的 data 相同，且左右子樹各自的節點數與高度都相同",
     "兩者節點數相同",
     "兩者 inorder 字串相同"
    ],
@@ -776,8 +776,8 @@
    "opts": [
     "運算子節點需要先知道左右子樹的值，postorder 先處理子樹再處理自己",
     "postorder 比較省記憶體",
-    "preorder 無法走訪所有節點",
-    "postorder 才能用 queue 實作"
+    "preorder 無法走訪所有節點，會漏掉 leaf",
+    "postorder 才能用 queue 實作，不需要 recursion 或 stack 的支援"
    ],
    "ans": "運算子節點需要先知道左右子樹的值，postorder 先處理子樹再處理自己",
    "why": "LRV 確保運算元（子樹）先算完，最終結果會存在 root 的 value。"

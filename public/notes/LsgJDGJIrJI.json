@@ -136,8 +136,8 @@
    "q": "Many-to-One model 為什麼 thread creation 與切換很快？",
    "opts": [
     "管理都在 user space，不需要 system call 與 mode switching",
-    "kernel thread 很多",
-    "每個 thread 都有自己的 kernel thread",
+    "kernel thread 很多，可以平行建立與切換",
+    "每個 thread 都有自己的 kernel thread，由 kernel 直接負責排程",
     "它不需要 context switch"
    ],
    "ans": "管理都在 user space，不需要 system call 與 mode switching",
@@ -147,9 +147,9 @@
    "q": "Many-to-One 中 T1 被 block，為什麼整個 process 也 block？",
    "opts": [
     "kernel 不知道 process 裡分成多個 thread，只看到一個執行單位",
-    "其他 thread 自動結束",
+    "其他 thread 會自動結束，等 T1 回來再重建",
     "OS 會 kill 整個 process",
-    "因為有 mode switching"
+    "因為做 mode switching 時，要先把所有 user thread 都 block 住"
    ],
    "ans": "kernel 不知道 process 裡分成多個 thread，只看到一個執行單位",
    "why": "唯一的 kernel thread 被卡住，大家都不能跑。"
@@ -158,9 +158,9 @@
    "q": "One-to-One model 的缺點是？",
    "opts": [
     "kernel 參與、overhead 高，且 OS 可能限制 thread 數量",
-    "一個 block 全部 block",
+    "一個 thread block 會讓整個 process 都 block",
     "沒有 parallelism",
-    "無法在多核心上執行"
+    "無法在多核心上執行，所有 thread 共用一個 kernel thread"
    ],
    "ans": "kernel 參與、overhead 高，且 OS 可能限制 thread 數量",
    "why": "每個 user thread 都要一個 kernel thread，建立與切換都較貴。"
@@ -169,9 +169,9 @@
    "q": "Many-to-Many model 中，kernel thread 的數量？",
    "opts": [
     "小於或等於 user thread 的數量",
-    "一定大於 user thread",
+    "一定大於 user thread 的數量",
     "一定只有一個",
-    "一定等於 CPU 核心數"
+    "一定等於 CPU 核心數，每核一個 kernel thread"
    ],
    "ans": "小於或等於 user thread 的數量",
    "why": "maps many user-level threads to a smaller or equal number of kernel threads。"

@@ -136,7 +136,7 @@
    "q": "process call printf 之後，會被放到哪裡？",
    "opts": [
     "該 I/O device 的 device queue",
-    "ready queue 尾端",
+    "ready queue 尾端，等下一個 time slice",
     "job queue",
     "直接 terminated"
    ],
@@ -159,8 +159,8 @@
    "opts": [
     "用 PCB 裡的 pointer 串成 linked list",
     "用陣列存它們的程式碼",
-    "把 memory space 搬到 queue",
-    "用 PID 排序存在 disk"
+    "把整個 memory space 搬到 queue 裡排隊",
+    "用 PID 排序存在 disk 上的檔案"
    ],
    "ans": "用 PCB 裡的 pointer 串成 linked list",
    "why": "queue 裡串的是 PCB；有時還記 head、tail 或雙向串，方便 reorder。"
@@ -170,7 +170,7 @@
    "opts": [
     "100 秒到、interrupt 把它叫醒時",
     "下一個 time slice 開始時",
-    "有別的 process 結束時",
+    "有別的 process 結束、釋放 CPU 時",
     "馬上就回去"
    ],
    "ans": "100 秒到、interrupt 把它叫醒時",

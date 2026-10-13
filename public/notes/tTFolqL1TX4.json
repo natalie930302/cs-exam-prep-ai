@@ -1296,7 +1296,7 @@
    "q": "free man 名單為何用 linked list 而不用 static array？",
    "opts": [
     "free 人數動態變化，且需要 O(1) insert / delete",
-    "linked list 一定比 array 快",
+    "linked list 一定比 array 快，存取第 i 個也是 O(1)",
     "array 不能存整數",
     "要依編號排序 free man"
    ],

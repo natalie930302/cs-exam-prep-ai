@@ -242,7 +242,7 @@
    "q": "老師的規則下，process 已有 R0、R5，想要 R3，要怎麼做？",
    "opts": [
     "先放掉 R5，再要 R3",
-    "直接要 R3",
+    "直接要 R3，系統會自動排序",
     "放掉 R0 和 R5",
     "等 R5 用完"
    ],
@@ -253,8 +253,8 @@
    "q": "哪一種資源最適合用「拿掉 mutual exclusion」來 prevent？",
    "opts": [
     "read-only 的 memory 資料",
-    "printer",
-    "critical section",
+    "printer 這類輸出裝置",
+    "critical section 裡的共享變數",
     "tape drive"
    ],
    "ans": "read-only 的 memory 資料",

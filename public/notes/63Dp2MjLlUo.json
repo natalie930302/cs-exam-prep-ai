@@ -1309,8 +1309,8 @@
    "q": "在 Optimal BST 的 cost 公式中，fail node Ei 那一項為什麼是 qi × (level(Ei) − 1)？",
    "opts": [
     "因為走到 leaf 就知道失敗，不會真的走到方塊",
-    "因為 fail node 的機率比較小",
-    "因為 root 的 level 是 0",
+    "因為 fail node 的機率比較小，權重要打折",
+    "因為 root 的 level 是 0，所以每一層都要再減 1",
     "因為 external path 要扣掉 root"
    ],
    "ans": "因為走到 leaf 就知道失敗，不會真的走到方塊",
@@ -1342,7 +1342,7 @@
    "q": "Optimal BST 的 DP 遞迴式是？",
    "opts": [
     "cij = wij + min(c(i,k−1) + c(k,j))，i < k ≤ j",
-    "cij = pk + min(c(i,k) + c(k,j))",
+    "cij = pk + min(c(i,k−1) + c(k+1,j))，i ≤ k ≤ j",
     "cij = wij × min(c(i,k−1), c(k,j))",
     "cij = min(w(i,k−1) + w(k,j))"
    ],

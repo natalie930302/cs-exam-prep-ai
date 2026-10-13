@@ -202,10 +202,10 @@
   {
    "q": "下列關於 frame 與 page 的敘述何者正確？",
    "opts": [
-    "Frame 比 page 大一倍",
+    "Frame size 一定是 page size 的兩倍",
     "Frame size 一定等於 page size",
     "Page 在 RAM、frame 在 disk",
-    "兩者大小沒有關係"
+    "兩者大小沒有固定關係"
    ],
    "ans": "Frame size 一定等於 page size",
    "why": "Page 是 logical 的區塊、frame 是 physical 的區塊，大小必須相同才能一對一放入。"
@@ -213,10 +213,10 @@
   {
    "q": "MMU 用 page number 查 page table 時是怎麼找的？",
    "opts": [
-    "從第一列一行一行比對",
+    "從第一列一行一行往下比對",
     "直接當 index 跳到那一列",
-    "用 hash 找",
-    "問 OS"
+    "用 hash 算出對應的那一列",
+    "送 system call 問 OS"
    ],
    "ans": "直接當 index 跳到那一列",
    "why": "Page number 就是 page table 的 index，直接跳過去。"
@@ -224,10 +224,10 @@
   {
    "q": "P5 在 frame 21，page size 2048 bytes，offset 3（以 byte 計），physical address 是？",
    "opts": [
-    "24",
-    "2048 × 5 + 3",
+    "21 + 3 = 24",
+    "5 × 2048 + 21 = 10261",
     "21 × 2048 + 3 = 43011",
-    "21 + 3"
+    "21 × 2048 = 43008"
    ],
    "ans": "21 × 2048 + 3 = 43011",
    "why": "Frame number 取代 page number，offset 照抄：21 × 2048 + 3。"
@@ -235,10 +235,10 @@
   {
    "q": "MMU 查到 P4 的 entry 是 INV（invalid），代表什麼？",
    "opts": [
-    "P4 是 read-only",
+    "P4 是 read-only page，寫入時會發生 protection fault 中斷",
     "P4 不在 RAM（在 secondary storage），發生 page fault",
-    "P4 已被刪除",
-    "TLB miss"
+    "P4 已被刪除，process 會被直接終止",
+    "TLB miss，MMU 要重新查一次 page table"
    ],
    "ans": "P4 不在 RAM（在 secondary storage），發生 page fault",
    "why": "Invalid 代表該 page 目前不在 physical memory，需要搬進來。"

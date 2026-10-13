@@ -287,7 +287,7 @@
    "q": "證明 l > m^(h−1) 用到了哪些條件？",
    "opts": [
     "complete 且 balanced",
-    "只要 complete",
+    "只要 complete，不需 balanced",
     "只要 balanced",
     "都不需要"
    ],
@@ -320,7 +320,7 @@
    "q": "binary tree 的 inorder 順序是？",
    "opts": [
     "左 subtree → root → 右 subtree",
-    "root → 左 → 右",
+    "root → 左 subtree → 右 subtree",
     "左 → 右 → root",
     "逐層由左到右"
    ],

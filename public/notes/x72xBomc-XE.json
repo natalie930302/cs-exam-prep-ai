@@ -820,8 +820,8 @@
    "opts": [
     "兩個多項式的最高次數",
     "兩個多項式的非 0 項數",
-    "termArray 的大小",
-    "MaxTerms"
+    "termArray 的大小與已用格數",
+    "MaxTerms 的上限值"
    ],
    "ans": "兩個多項式的非 0 項數",
    "why": "係數 0 的項不在 termArray 裡，兩個指標各掃一次非 0 項。"
@@ -829,10 +829,10 @@
   {
    "q": "free 已經 ≥ MaxTerms，但前面有已 destruct 的多項式空出的格子，問題出在哪？",
    "opts": [
-    "termArray 不是 static",
+    "termArray 不是 static，每個多項式各有一份",
     "只靠一個 free 指標找不到中間的空洞",
-    "Term 少了 friend",
-    "exp 存錯位置"
+    "Term 少了 friend 宣告，無法存取",
+    "exp 存錯位置，排序被打亂"
    ],
    "ans": "只靠一個 free 指標找不到中間的空洞",
    "why": "free 只往後走；要回收需 free list 或把在用的項往前搬（像磁碟重組）。"
@@ -840,10 +840,10 @@
   {
    "q": "Horowitz 的 6 × 6 例子用 <row, col, value> 存，排序規則是？",
    "opts": [
-    "依 value 由小到大",
-    "依 column，再依 row",
+    "依 value 由小到大排序",
+    "依 column，同 column 再依 row",
     "依 row，同 row 再依 column",
-    "照輸入順序"
+    "照輸入順序，不排序"
    ],
    "ans": "依 row，同 row 再依 column",
    "why": "row-major：a[0] = (0,0,15)、a[1] = (0,3,22)、a[2] = (0,5,−15)、a[3] = (1,1,11)…"

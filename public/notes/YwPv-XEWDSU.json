@@ -243,7 +243,7 @@
   {
    "q": "Loader 和 swapper 的主要差別是？",
    "opts": [
-    "Loader 只搬 data，swapper 會 create PCB",
+    "Loader 只在 memory 與 disk 之間 copy data；swapper 把 program 變成 process（create PCB、初始化等）",
     "Loader 把 program 變成 process（create PCB、初始化等）；swapper 只在 memory 與 disk 之間 copy data",
     "兩者完全相同",
     "Swapper 在 compile time 執行"
@@ -256,7 +256,7 @@
    "opts": [
     "加了 stub",
     "Library 的 code 被一起綁進 binary",
-    "包含了 page table",
+    "binary 內多放了 dynamic linking 用的 stub",
     "包含 swap space"
    ],
    "ans": "Library 的 code 被一起綁進 binary",
@@ -267,7 +267,7 @@
    "opts": [
     "把 library 壓縮",
     "Library 在系統中只放一份，大家 run time link 到同一份",
-    "每支程式只 load 用到的 function",
+    "每支程式只 load 用到的 function，沒用到的 routine 留在 disk",
     "把 library 放到 disk 不 load"
    ],
    "ans": "Library 在系統中只放一份，大家 run time link 到同一份",

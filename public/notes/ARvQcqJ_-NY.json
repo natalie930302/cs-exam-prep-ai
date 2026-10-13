@@ -218,7 +218,7 @@
     "feasible solution",
     "optimal solution",
     "greedy solution",
-    "partial solution"
+    "approximate solution"
    ],
    "ans": "feasible solution",
    "why": "例如「12 小時內到達」：火車、飛機符合限制，是 feasible；其中成本最小的才是 optimal。"
@@ -249,9 +249,9 @@
    "q": "Greedy 一般演算法每個 stage 做什麼？",
    "opts": [
     "選一個 input，若 feasible 就加入解",
-    "把所有 input 排列組合",
-    "遞迴拆成兩半",
-    "回溯上一步"
+    "把所有 input 排列組合後，挑出最好的一組",
+    "遞迴把問題拆成兩半再合併解",
+    "回溯到上一步，換一個 input 重試"
    ],
    "ans": "選一個 input，若 feasible 就加入解",
    "why": "for i = 1 to n：x = Select(a)；if Feasible(x) then Solution = Solution + x。"
@@ -260,9 +260,9 @@
    "q": "影片的「篩選應徵者」例子說明了 greedy 的什麼特點？",
    "opts": [
     "照已知的選擇程序快速得到解，而不是檢查所有可能",
-    "一定要讓每個人考完所有關卡",
-    "最佳解一定不唯一",
-    "greedy 只適用於排序問題"
+    "一定要讓每個人考完所有關卡，才能比較出要錄取誰",
+    "最佳解一定不唯一，所以挑哪個都可以",
+    "greedy 只適用於排序問題，篩選只是排序"
    ],
    "ans": "照已知的選擇程序快速得到解，而不是檢查所有可能",
    "why": "讓 1000 人都考完所有關卡太耗時；greedy 依篩選程序直接選出結果。"

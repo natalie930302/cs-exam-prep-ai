@@ -493,9 +493,9 @@
    "q": "下列哪個資訊應該放在 per-process 的 open-file table？",
    "opts": [
     "目前讀寫的 position",
-    "disk location",
+    "檔案在 disk 上的 location",
     "file size",
-    "access date"
+    "最後的 access date"
    ],
    "ans": "目前讀寫的 position",
    "why": "每個 process 讀到哪不同；disk location、size、date 大家看到都一樣，放 system-wide。"
@@ -504,9 +504,9 @@
    "q": "為什麼 file size 不在每個 process 的表裡各存一份？",
    "opts": [
     "複製多份會有 data consistency 問題",
-    "process 不能知道檔案大小",
+    "process 不能知道檔案大小，只有 OS 能",
     "file size 不需要存",
-    "open-file table 太小"
+    "open-file table 太小放不下"
    ],
    "ans": "複製多份會有 data consistency 問題",
    "why": "一個 process write 改了 size，其他副本會不一致，所以只存一份在 system-wide table。"
@@ -526,7 +526,7 @@
    "q": "呼叫 read(fp, 4) 只給長度、不給位置，屬於哪種 access method？",
    "opts": [
     "Sequential access",
-    "Direct access",
+    "Direct access（relative block）",
     "Index access",
     "Hashed access"
    ],
@@ -537,8 +537,8 @@
    "q": "為什麼檔案系統偏好 sequential access？",
    "opts": [
     "硬碟 sequential 讀寫遠快於 random",
-    "random access 無法實作",
-    "sequential 比較省空間",
+    "random access 在磁碟上無法實作",
+    "sequential 比較省空間，不需要 index",
     "C 語言只支援 sequential"
    ],
    "ans": "硬碟 sequential 讀寫遠快於 random",

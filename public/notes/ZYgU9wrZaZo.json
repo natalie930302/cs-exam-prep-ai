@@ -401,8 +401,8 @@
    "q": "Mount 一個 partition 最主要做的事是？",
    "opts": [
     "把 partition table load 到 memory",
-    "格式化 partition",
-    "建立 FCB",
+    "格式化 partition，建立新的 file system",
+    "為每個檔案建立 FCB",
     "複製所有檔案到 memory"
    ],
    "ans": "把 partition table load 到 memory",
@@ -412,9 +412,9 @@
    "q": "open() 最主要的工作是？",
    "opts": [
     "找到 FCB 並 load 到 open-file table",
-    "讀出整個檔案內容",
-    "建立新的 data block",
-    "更新 bit vector"
+    "讀出整個檔案內容放到 memory 的 buffer 中",
+    "建立新的 data block 給這個檔案",
+    "更新 bit vector 標記檔案已開啟"
    ],
    "ans": "找到 FCB 並 load 到 open-file table",
    "why": "traverse directory 找到 FCB，load 到 system-wide table，再填 per-process table。"
@@ -423,9 +423,9 @@
    "q": "File handle 實際上指向什麼？",
    "opts": [
     "per-process open-file table 的 entry",
-    "disk 上的 data block",
-    "superblock",
-    "boot control block"
+    "disk 上該檔案第一個 data block 的位址",
+    "superblock 中該檔案的欄位",
+    "boot control block 的 entry"
    ],
    "ans": "per-process open-file table 的 entry",
    "why": "從 entry 得到 permission、position，再指到 system-wide 的 FCB。"
@@ -434,9 +434,9 @@
    "q": "跳電後資料遺失最常見的原因是？",
    "opts": [
     "修改只寫到 in-memory structure，還沒 flush 回 disk",
-    "FCB 被刪除",
-    "disk 被格式化",
-    "VFS 失效"
+    "FCB 在斷電瞬間被 OS 主動刪除",
+    "disk 重新開機時被自動格式化",
+    "VFS 失效，重新開機後找不到對應的 file system 與 inode"
    ],
    "ans": "修改只寫到 in-memory structure，還沒 flush 回 disk",
    "why": "file system 週期性才 flush；logging 可協助 recovery。"

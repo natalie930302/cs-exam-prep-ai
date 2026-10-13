@@ -1697,7 +1697,7 @@
    "opts": [
     "Perfect matching，且沒有 unstable pair",
     "每個人都配到第一志願",
-    "男女人數可以不同，但要 stable",
+    "男女人數可以不同，只要沒有 unstable pair",
     "總滿意度最大"
    ],
    "ans": "Perfect matching，且沒有 unstable pair",
@@ -1718,7 +1718,7 @@
    "q": "Gale–Shapley 中，engaged 的女生遇到她更喜歡的男生 propose 時會？",
    "opts": [
     "dump 原未婚夫，改與新男生 engaged",
-    "reject 新男生",
+    "reject 新男生，維持原本的 engagement",
     "兩個都保留",
     "回到 free"
    ],

@@ -247,7 +247,7 @@
    "opts": [
     "把 key 轉成陣列的 index",
     "把 value 加密",
-    "把陣列排序",
+    "把 key 依大小排序後存進陣列",
     "刪除重複的 key"
    ],
    "ans": "把 key 轉成陣列的 index",
@@ -279,9 +279,9 @@
    "q": "影片用哪種方法處理 collision？",
    "opts": [
     "chaining：每個 index 接一條 linked list",
-    "linear probing：放到下一格",
+    "linear probing：往下一格找，直到找到空的 index",
     "直接覆蓋舊資料",
-    "把表放大一倍"
+    "把表放大一倍後 rehash"
    ],
    "ans": "chaining：每個 index 接一條 linked list",
    "why": "老師在每個 index 拉出 linked list，碰撞的資料都接在同一格的串列上。"
@@ -291,7 +291,7 @@
    "opts": [
     "只看 index 1，沿著它的串列找",
     "從 index 0 開始一格一格找",
-    "看 index 1 和 2",
+    "看 index 1 和 index 2 兩條串列",
     "把整個表排序後二分搜尋"
    ],
    "ans": "只看 index 1，沿著它的串列找",

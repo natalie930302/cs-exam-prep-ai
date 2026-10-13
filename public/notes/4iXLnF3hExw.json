@@ -535,7 +535,7 @@
    "q": "count_frequency 中哪一行主導執行時間？",
    "opts": [
     "if new_word == entry[0]：O(W·L·w̄)",
-    "for new_word in word_list：O(W)",
+    "for new_word in word_list：O(W·w̄)",
     "L.append：O(L)",
     "entry[1] += 1：O(W − L)"
    ],
@@ -547,7 +547,7 @@
    "opts": [
     "W − L",
     "L",
-    "W",
+    "W − 1",
     "L·W"
    ],
    "ans": "W − L",
@@ -557,9 +557,9 @@
    "q": "為什麼字串比較不能直接當 O(1)？",
    "opts": [
     "要逐字元比，成本與字長成正比",
-    "Python 的字串是 linked list",
+    "Python 的字串是 linked list，要逐節點走",
     "要先排序",
-    "要計算 hash"
+    "要先計算 hash"
    ],
    "ans": "要逐字元比，成本與字長成正比",
    "why": "兩字串只差最後一個字元時要比到底；只有字長有界時才能當常數。"
@@ -592,7 +592,7 @@
     "Θ(N log N)",
     "Θ(N)",
     "Θ(log N)",
-    "Θ(N²)"
+    "Θ(N log² N)"
    ],
    "ans": "Θ(N log N)",
    "why": "每次約 log N 步，共 N 次；兩指標只要 2N。"

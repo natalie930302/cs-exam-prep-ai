@@ -308,8 +308,8 @@
    "q": "下列哪一個「不是」課堂提到 process 需要 IPC 的理由？",
    "opts": [
     "讓每個 process 的 memory 互相隔離",
-    "information sharing",
-    "平行計算加速",
+    "information sharing（如共用檔案）",
+    "computation speedup（平行計算）",
     "modularity（如 microkernel）"
    ],
    "ans": "讓每個 process 的 memory 互相隔離",
@@ -319,9 +319,9 @@
    "q": "關於 shared memory 與 message passing，何者正確？",
    "opts": [
     "shared memory 較快，但要自己處理 synchronization",
-    "message passing 不需要 system call",
+    "message passing 不需要經過 system call，所以比較快",
     "跨電腦溝通通常用 shared memory",
-    "shared memory 由 OS 管理裡面的資料格式"
+    "shared memory 由 OS 管理裡面的資料格式與同步"
    ],
    "ans": "shared memory 較快，但要自己處理 synchronization",
    "why": "message passing 要 system call 和 copy；跨電腦用 message passing；shared region 的內容 OS 不管。"
@@ -341,9 +341,9 @@
    "q": "RPC 相對 socket 的主要優點是？",
    "opts": [
     "像 call function 一樣溝通，參數與回傳值有 data type",
-    "不需要網路",
+    "不需要網路，因為 client 與 server 一定在同一台電腦上",
     "比 shared memory 更快",
-    "不需要 server 端"
+    "不需要 server 端，client 自己就能執行遠端程式"
    ],
    "ans": "像 call function 一樣溝通，參數與回傳值有 data type",
    "why": "socket 只傳一串 bytes；RPC 讓 client 直接 call server 的 function。"
@@ -363,9 +363,9 @@
    "q": "consumer 的 while (in == out); 代表？",
    "opts": [
     "buffer 是空的，就一直空轉等待（busy waiting）",
-    "buffer 滿了",
+    "buffer 滿了，就一直空轉等待",
     "consumer 結束",
-    "進入 waiting queue 睡覺"
+    "進入 waiting queue 睡覺，等 producer 呼叫 signal 叫醒"
    ],
    "ans": "buffer 是空的，就一直空轉等待（busy waiting）",
    "why": "in == out 是 empty；分號讓它卡在這行一直檢查。"

@@ -192,7 +192,7 @@
     "長完之後找不到 unmatched y-vertex 的 alternating tree",
     "包含所有端點的 spanning tree",
     "只有一個點的 tree",
-    "找到 augmenting path 的 alternating tree"
+    "找到 augmenting path、可以擴大 matching 的 alternating tree"
    ],
    "ans": "長完之後找不到 unmatched y-vertex 的 alternating tree",
    "why": "它上面的 alternating path 都不能 augment；它的 root 叫 Hungarian acorn。"
@@ -223,7 +223,7 @@
    "q": "長 alternating tree 時，從一個 y-vertex 往下一層要走哪條邊？",
    "opts": [
     "它在 matching 裡的那條邊（沒得選）",
-    "任何一條不在 matching 的邊",
+    "任何一條不在 matching 裡的邊（任選）",
     "連到 root 的邊",
     "隨便一條"
    ],

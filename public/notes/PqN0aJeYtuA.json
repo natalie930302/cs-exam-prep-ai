@@ -913,7 +913,7 @@
    "q": "NP 的「N」代表什麼？",
    "opts": [
     "Non-deterministic",
-    "Non（非 P）",
+    "Non-polynomial（非多項式）",
     "Network",
     "Normal"
    ],
@@ -923,9 +923,9 @@
   {
    "q": "下列哪一個是 MST 的 decision 版本？",
    "opts": [
-    "找 cost 最小的 spanning tree",
+    "找 cost 最小的 spanning tree 並輸出它",
     "是否存在 cost ≤ k 的 spanning tree？",
-    "列出所有 spanning tree",
+    "列出所有 cost ≤ k 的 spanning tree",
     "計算 spanning tree 的個數"
    ],
    "ans": "是否存在 cost ≤ k 的 spanning tree？",
@@ -935,8 +935,8 @@
    "q": "Knapsack 的 DP 是 O(nW)，為什麼不能說 knapsack ∈ P？",
    "opts": [
     "O(nW) 是 pseudo-polynomial：W 只佔 lg W 個 bit",
-    "DP 不能算正確答案",
-    "O(nW) 是指數的 n",
+    "DP 不能算出正確答案，只能得到近似解",
+    "O(nW) 其實是 n 的指數，因為 knapsack 的 W 一定 ≥ 2ⁿ",
     "因為 knapsack 不是 decision problem"
    ],
    "ans": "O(nW) 是 pseudo-polynomial：W 只佔 lg W 個 bit",
@@ -957,7 +957,7 @@
    "q": "驗證一個 TSP tour 不需要檢查哪一項？",
    "opts": [
     "它是不是所有 tour 中最短的",
-    "起點是否等於終點",
+    "起點是否等於終點（形成 cycle）",
     "每個 city 是否恰好一次",
     "總長是否 ≤ B"
    ],
@@ -979,7 +979,7 @@
    "q": "只有 MST 的 decision 版（cost ≤ k？）時，怎麼求最小 cost？",
    "opts": [
     "對 k 做 binary search",
-    "把 k 設成 0",
+    "把 k 設成 0 問一次，再逐步加 1",
     "列舉所有 tree",
     "沒辦法求"
    ],

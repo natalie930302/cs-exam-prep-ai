@@ -258,7 +258,7 @@
    "opts": [
     "1 + xᵏ = (1 − x²ᵏ)/(1 − xᵏ)，偶數次方互相消掉",
     "把兩邊都展開到 x¹²，係數相同",
-    "用 Ferrers 圖 transpose",
+    "用 Ferrers 圖 transpose，把奇數份換成相異份",
     "用 Euler 五邊形數定理"
    ],
    "ans": "1 + xᵏ = (1 − x²ᵏ)/(1 − xᵏ)，偶數次方互相消掉",
@@ -279,7 +279,7 @@
    "q": "「分割 n + r 成恰好 r 份」對應到「分割 n 成 ≤ r 份」，用的是？",
    "opts": [
     "拿掉 Ferrers 圖最左邊那一個 column（r 個點）",
-    "拿掉 Ferrers 圖最上面那一個 row",
+    "拿掉 Ferrers 圖最上面那一個 row（共 r 個點）",
     "把 Ferrers 圖 transpose",
     "每一份都減 r"
    ],

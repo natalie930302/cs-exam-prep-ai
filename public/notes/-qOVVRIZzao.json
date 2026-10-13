@@ -329,9 +329,9 @@
    "q": "Quicksort 的 best case 時間與條件是？",
    "opts": [
     "每次 partition 切在中間，Θ(n log n)",
-    "輸入已排序，Θ(n)",
-    "pivot 選第一個，Θ(n log n)",
-    "每次切在開頭，Θ(n²)"
+    "輸入已排序，只要掃一遍，Θ(n)",
+    "pivot 固定選陣列第一個元素，Θ(n log n)",
+    "每次 partition 切在開頭，Θ(n²)"
    ],
    "ans": "每次 partition 切在中間，Θ(n log n)",
    "why": "樹高 log n、每層 n。"
@@ -340,9 +340,9 @@
    "q": "pivot 取第一個元素時，什麼輸入會造成 worst case？",
    "opts": [
     "已排序（遞增或遞減）",
-    "完全隨機",
-    "所有元素不同",
-    "元素個數為奇數"
+    "完全隨機的排列",
+    "所有元素都不相同（無重複 key）",
+    "元素個數為奇數（中間無法對半）"
    ],
    "ans": "已排序（遞增或遞減）",
    "why": "每次都切在一端，一邊是空的。"
@@ -352,8 +352,8 @@
    "opts": [
     "n(n+1)/2",
     "n log n",
-    "2n",
-    "n²/4"
+    "2n log n",
+    "n(n+1)/4"
    ],
    "ans": "n(n+1)/2",
    "why": "n + (n−1) + … + 1。"
@@ -362,9 +362,9 @@
    "q": "改選中間元素當 pivot，下列何者正確？",
    "opts": [
     "已排序輸入變成 best case，但最壞仍是 n²",
-    "最壞情況變成 n log n",
-    "不再需要 partition",
-    "空間變成 O(1)"
+    "最壞情況變成 n log n，不再有 n² 的輸入",
+    "不再需要 partition，直接遞迴左右兩半即可",
+    "空間變成 O(1)，因為遞迴深度固定為 log n"
    ],
    "ans": "已排序輸入變成 best case，但最壞仍是 n²",
    "why": "總有別的排列讓中間 pivot 也很差。"
@@ -384,9 +384,9 @@
    "q": "為什麼 quicksort 的 best case 無法刻意達成？",
    "opts": [
     "要每次選到 median，但沒排序就不知道 median",
-    "partition 一定切在開頭",
-    "best case 只對 merge sort 存在",
-    "遞迴深度一定是 n"
+    "partition 一定切在開頭，所以永遠是 worst case",
+    "best case 只對 merge sort 存在，quicksort 沒有定義",
+    "遞迴深度一定是 n，無論 pivot 怎麼選都一樣"
    ],
    "ans": "要每次選到 median，但沒排序就不知道 median",
    "why": "影片：只可能隨機碰到。"

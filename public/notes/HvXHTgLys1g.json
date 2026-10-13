@@ -503,7 +503,7 @@
    "q": "同上，但 P2 持有 3 台，則？",
    "opts": [
     "unsafe，但目前還不是 deadlock",
-    "已經 deadlock",
+    "已經 deadlock，所有 process 都在等",
     "safe：< P1, P0, P2 >",
     "safe：< P1, P2, P0 >"
    ],
@@ -536,7 +536,7 @@
    "q": "同一例（原狀態），P4 request (3,3,0)，結果？",
    "opts": [
     "不給：假設給後找不到 safe sequence",
-    "給：資源足夠",
+    "給：Available 足夠，且給了之後仍 safe",
     "錯誤：超過 Need",
     "已經 deadlock"
    ],
@@ -547,9 +547,9 @@
    "q": "Single instance 的 avoidance 中，claim edge 代表？",
    "opts": [
     "process 未來可能會 request 這個 resource",
-    "resource 已經配給 process",
+    "resource 已經配給 process，process 正在使用中",
     "process 正在等 resource",
-    "process 在等另一個 process"
+    "process 在等另一個 process 釋放資源"
    ],
    "ans": "process 未來可能會 request 這個 resource",
    "why": "方向同 request edge（P → R），用虛線；request 來時檢查變成 assignment 會不會成圈。"
@@ -559,7 +559,7 @@
    "opts": [
     "它的 Allocation",
     "它的 Max",
-    "它的 Need",
+    "它的 Need（尚需的量）",
     "它的 Request"
    ],
    "ans": "它的 Allocation",

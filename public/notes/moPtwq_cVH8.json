@@ -916,8 +916,8 @@
    "q": "老師用什麼論證「幾乎所有決策問題都不可計算」？",
    "opts": [
     "程式是有限 bit 串（對應 ℕ），問題是無限 bit 串（對應 ℝ），ℝ 不可數",
-    "Halting problem 可以歸約到所有問題",
-    "因為 P ≠ NP",
+    "Halting problem 可以歸約到所有決策問題，所以它們都不可計算",
+    "因為 P ≠ NP，大部分問題沒有 poly time 演算法，所以都不可計算（undecidable）",
     "因為 chess 不在 P"
    ],
    "ans": "程式是有限 bit 串（對應 ℕ），問題是無限 bit 串（對應 ℝ），ℝ 不可數",
@@ -928,7 +928,7 @@
    "opts": [
     "Nondeterministic",
     "Not",
-    "Non-polynomial",
+    "Non-polynomial-time",
     "Number"
    ],
    "ans": "Nondeterministic",
@@ -938,8 +938,8 @@
    "q": "為什麼「Tetris 能不能活下來」在 NP，而「會不會死」不一定？",
    "opts": [
     "NP 只要求 YES 時有可快速檢查的證明，YES 方向要設對",
-    "因為活下來比較簡單",
-    "因為死掉的盤面無法模擬",
+    "因為活下來比較簡單，可以用 greedy 在 poly time 決定",
+    "因為死掉的盤面無法模擬，沒辦法寫出驗證程式",
     "兩者都在 P"
    ],
    "ans": "NP 只要求 YES 時有可快速檢查的證明，YES 方向要設對",
@@ -960,8 +960,8 @@
    "q": "老師說目前證明 chess 不在 P 的方法是？",
    "opts": [
     "chess 是 EXP-complete，且 P ≠ EXP",
-    "chess 是 NP-complete",
-    "chess 不在 R",
+    "chess 是 NP-complete，且 P ≠ NP 已被證明",
+    "chess 不在 R（不可計算）",
     "直接窮舉 8×8 棋盤"
    ],
    "ans": "chess 是 EXP-complete，且 P ≠ EXP",
@@ -971,8 +971,8 @@
    "q": "用 Dijkstra 解無權重最短路徑，邊權重應設為？",
    "opts": [
     "全部設 1（或任何相同正數）",
-    "全部設 0",
-    "隨機正數",
+    "全部設 0（距離都視為相同）",
+    "隨機正數，平均起來會一樣",
     "全部設 −1"
    ],
    "ans": "全部設 1（或任何相同正數）",

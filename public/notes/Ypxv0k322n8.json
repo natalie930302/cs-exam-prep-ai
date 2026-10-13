@@ -521,8 +521,8 @@
    "q": "使用 memory-mapped I/O 時，CPU 用什麼指令把資料送到 device？",
    "opts": [
     "一般的 memory 指令（如 MOV）",
-    "IN / OUT 等 I/O instruction",
-    "只能用 system call",
+    "IN / OUT 等特殊 I/O instruction",
+    "只能透過 system call 讓 OS 代送",
     "interrupt 指令"
    ],
    "ans": "一般的 memory 指令（如 MOV）",
@@ -543,8 +543,8 @@
    "q": "I/O 很小、很快就完成時，哪種方式可能比較划算？",
    "opts": [
     "polling（busy-waiting）",
-    "interrupt",
-    "DMA",
+    "interrupt（事件驅動通知）",
+    "DMA（直接記憶體存取）",
     "spooling"
    ],
    "ans": "polling（busy-waiting）",
@@ -565,9 +565,9 @@
    "q": "buffering 和 caching 的主要差別？",
    "opts": [
     "cache 是可丟掉的副本，為了加速重複存取；buffer 是為了調節 device 之間的速度",
-    "buffer 一定在 disk 上，cache 一定在 memory",
-    "兩者完全相同",
-    "cache 只用在 output"
+    "buffer 一定在 disk 上、cache 一定在 memory，兩者只差在所在的儲存層級與存取速度",
+    "兩者完全相同，只是名稱不同",
+    "cache 只用在 output；buffer 只用在 input"
    ],
    "ans": "cache 是可丟掉的副本，為了加速重複存取；buffer 是為了調節 device 之間的速度",
    "why": "同一塊 memory 可以兼做兩者，但目的不同。"
@@ -576,9 +576,9 @@
    "q": "Spooling 最典型的例子？",
    "opts": [
     "印表機的列印佇列",
-    "TLB",
+    "TLB 的 entry 替換",
     "page table",
-    "RAID 0"
+    "RAID 0 的 striping"
    ],
    "ans": "印表機的列印佇列",
    "why": "各程式的輸出先存到 spool 排隊，一份收齊再送去印。"
@@ -587,9 +587,9 @@
    "q": "blocking I/O 的特性？",
    "opts": [
     "system call 要等 I/O 完成才 return（synchronous）",
-    "system call 立刻 return，之後用 interrupt 通知",
+    "system call 立刻 return，之後用 interrupt 通知（asynchronous）",
     "不需要 system call",
-    "只能用在 network"
+    "只能用在 network socket"
    ],
    "ans": "system call 要等 I/O 完成才 return（synchronous）",
    "why": "好寫但程式會卡住；non-blocking / asynchronous 則先 return。"

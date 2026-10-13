@@ -271,9 +271,9 @@
    "q": "Virtual memory 讓「放進 memory 的東西真的被用到」，這提升的是什麼？",
    "opts": [
     "memory utilization（放進去的被 access）",
-    "disk 容量",
-    "CPU 時脈",
-    "TLB 大小"
+    "disk utilization（swap space 被充分利用）",
+    "CPU 時脈（clock rate）",
+    "TLB 大小（entry 數變多）"
    ],
    "ans": "memory utilization（放進去的被 access）",
    "why": "老師強調：使用率不是放了多少，而是放進去的內容真的有被存取。"
@@ -315,9 +315,9 @@
    "q": "把一個 page 從 disk 搬回 memory，和 load program 的差別是？",
    "opts": [
     "swap 只是 copy 4KB 的 bytes，不建 PCB／page table",
-    "兩者完全一樣",
-    "swap 會重新 compile",
-    "load program 不需要 page table"
+    "兩者完全一樣，都要重新建立 PCB 與 page table，再複製 bytes",
+    "swap 會重新 compile 該 page 的程式碼",
+    "load program 不需要 page table，只複製 bytes"
    ],
    "ans": "swap 只是 copy 4KB 的 bytes，不建 PCB／page table",
    "why": "老師提醒：swapping 不在乎內容，只是搬 bytes。"

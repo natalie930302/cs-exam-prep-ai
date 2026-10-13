@@ -1766,7 +1766,7 @@
     "O(1)",
     "O(log nnz)",
     "O(nnz)",
-    "O(n)"
+    "O(nnz log n)"
    ],
    "ans": "O(log nnz)",
    "why": "項依 index 排好，可以 binary search；改用 ordered linked list 就只能 O(nnz) 的 sequential search。"
@@ -1776,7 +1776,7 @@
    "opts": [
     "dynamic max length",
     "fast indexed access",
-    "sequential access",
+    "fast sequential access",
     "O(1) insertion"
    ],
    "ans": "fast indexed access",
@@ -1796,9 +1796,9 @@
   {
    "q": "林軒田課本用語裡的 vector 指的是什麼？",
    "opts": [
-    "C++ STL 的 std::vector",
+    "C++ STL 的 std::vector 這個 class",
     "支援 index access 的資料結構家族",
-    "只能 sequential access 的容器",
+    "只能 sequential access 的線性容器",
     "doubly linked list 的別名"
    ],
    "ans": "支援 index access 的資料結構家族",
@@ -1807,8 +1807,8 @@
   {
    "q": "dense array 的 iterator：n 個 int 的 array，end() 代表的位置是？",
    "opts": [
-    "arr[0] 的位置",
-    "arr[n−1] 的位置",
+    "arr[0] 的位置（begin 與 end 重疊在一起）",
+    "arr[n−1] 的位置（最後一個有效元素）",
     "arr[n] 的位置（past-the-end，不必配置）",
     "NULL"
    ],

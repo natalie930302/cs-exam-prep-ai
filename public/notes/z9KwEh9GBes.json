@@ -190,7 +190,7 @@
    "opts": [
     "f 是 onto",
     "f 不是 well-defined 的函式",
-    "f 是 one-to-one",
+    "f 是函式，但不是 one-to-one 的",
     "f 是 bijection"
    ],
    "ans": "f 不是 well-defined 的函式",

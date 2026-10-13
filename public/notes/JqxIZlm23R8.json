@@ -598,9 +598,9 @@
    "q": "為什麼 virtual memory 的 page 通常很大（1 KiB 以上）？",
    "opts": [
     "page fault 的 penalty 上百萬 cycle，一次多搬一點來分攤",
-    "因為 page table 需要很多 bit",
-    "因為 cache 的 block 很大",
-    "為了讓 TLB 比較小"
+    "因為 page table 需要很多 bit，page 夠大才能放得下整張 table",
+    "因為 cache 的 block 很大，page 要跟它一樣大",
+    "為了讓 TLB 比較小，可以少放幾個 entry"
    ],
    "ans": "page fault 的 penalty 上百萬 cycle，一次多搬一點來分攤",
    "why": "Disk 很慢，搬一次的代價極高，所以 block（page）做大，平衡很長的 access time。"
@@ -642,9 +642,9 @@
    "q": "為什麼 page fault 用 software（OS）處理，而 cache miss 用 hardware？",
    "opts": [
     "page fault 要上百萬 cycle，OS 多花幾萬 cycle 也划算",
-    "OS 比 hardware 快",
-    "cache miss 不需要處理",
-    "page fault 不會發生 context switch"
+    "OS 比 hardware 快，處理複雜情況更有效率",
+    "cache miss 不需要處理，硬體會自動忽略",
+    "page fault 不會發生 context switch，交給 OS 也不影響"
    ],
    "ans": "page fault 要上百萬 cycle，OS 多花幾萬 cycle 也划算",
    "why": "Hardware 只偵測；處理交給 OS，可以做複雜的決定，且 process 會 context switch 讓出 CPU。"

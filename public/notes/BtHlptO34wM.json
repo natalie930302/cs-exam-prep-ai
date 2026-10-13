@@ -583,9 +583,9 @@
    "q": "Busy-wait 做 I/O 的主要缺點是？",
    "opts": [
     "CPU 一直檢查 status 浪費 cycle，無法和 I/O overlap",
-    "I/O 速度變慢",
-    "需要 DMA",
-    "無法處理錯誤"
+    "I/O 裝置本身的傳輸速度會被 CPU 拖慢，每筆資料延遲變長",
+    "一定需要 DMA controller 配合，硬體成本較高",
+    "無法處理 I/O 錯誤，status 出錯時 CPU 會停住"
    ],
    "ans": "CPU 一直檢查 status 浪費 cycle，無法和 I/O overlap",
    "why": "CPU 使用率看似 100%，卻都在 peek。"
@@ -594,9 +594,9 @@
    "q": "Interrupt vector 每一格存的是？",
    "opts": [
     "handler 的 function pointer",
-    "handler 的完整程式碼",
-    "被打斷程式的 PC",
-    "system call 的參數"
+    "handler 的完整程式碼（machine code）",
+    "被打斷程式的 PC 與 register",
+    "system call 的編號與參數"
    ],
    "ans": "handler 的 function pointer",
    "why": "handler 大小不一，所以 vector 只存固定大小（4 bytes）的 pointer。"
@@ -605,9 +605,9 @@
    "q": "System call 的處理為何用 switch-case 而不是固定 array？",
    "opts": [
     "system call 是軟體定義的，數量不受硬體限制",
-    "因為比較快",
-    "因為 hardware 不支援 array",
-    "因為 system call 只有一個"
+    "switch-case 一定比 array 查表快，可以少一次記憶體存取",
+    "hardware 不支援 array 索引，只能逐一比較編號",
+    "每個 system call 的參數個數不同，array 放不下"
    ],
    "ans": "system call 是軟體定義的，數量不受硬體限制",
    "why": "可以載入 kernel module 任意增加 system call。"
@@ -616,9 +616,9 @@
    "q": "處理 interrupt 時一定要記下什麼？",
    "opts": [
     "被打斷程式的 address（PC）",
-    "所有檔案內容",
-    "disk 的位置",
-    "cache 內容"
+    "所有已開啟檔案的內容",
+    "disk head 目前的位置（track）",
+    "cache 內所有 dirty block 的內容"
    ],
    "ans": "被打斷程式的 address（PC）",
    "why": "做完才能回到原來的位置 resume。"
@@ -638,9 +638,9 @@
    "q": "為什麼 system call 一定要透過 interrupt？",
    "opts": [
     "讓 OS 能檢查與保護系統，user 不能直接跳進 OS",
-    "因為比 function call 快",
-    "因為 compiler 規定",
-    "為了省 memory"
+    "因為 interrupt 比一般 function call 快，可以省下 stack 操作",
+    "因為 compiler 規定所有 library 呼叫都要經過 interrupt",
+    "為了省 memory，OS 的程式碼不用載入 user space"
    ],
    "ans": "讓 OS 能檢查與保護系統，user 不能直接跳進 OS",
    "why": "透過 trap 才能區分 OS 的服務與一般 function，並做合法性檢查。"

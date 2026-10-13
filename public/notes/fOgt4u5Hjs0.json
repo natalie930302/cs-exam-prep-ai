@@ -240,7 +240,7 @@
     "{y1, y2, y3, y4}",
     "{y1, y2}",
     "{y2}",
-    "{x1, x2, x3}"
+    "{x1, x2, x3, y1}"
    ],
    "ans": "{y1, y2, y3, y4}",
    "why": "R(A) 是跟 A 中任一點相連的所有 y 的聯集。"
@@ -262,7 +262,7 @@
     "Hungarian algorithm 停下時的 Hungarian tree",
     "Euler 公式",
     "數學歸納法",
-    "Dijkstra algorithm"
+    "Ford–Fulkerson 停下時的 min cut 與 max flow"
    ],
    "ans": "Hungarian algorithm 停下時的 Hungarian tree",
    "why": "取 A＝tree 上的 x，R(A)＝tree 上的 y，|R(A)| = |A| − 1。"
@@ -284,7 +284,7 @@
     "取 A = ∅ 時 |A| − |R(A)| = 0，最大值至少是 0",
     "因為 |X| ≥ |Y|",
     "因為 G 是 connected",
-    "因為 matching 不能是空的"
+    "取 A = X 時 |A| − |R(A)| = 0，最小值至少是 0"
    ],
    "ans": "取 A = ∅ 時 |A| − |R(A)| = 0，最大值至少是 0",
    "why": "空集合是任何集合的 subset。"

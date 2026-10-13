@@ -2174,7 +2174,7 @@
    "q": "Quick sort 什麼時候會退化成 O(n²)？",
    "opts": [
     "每次 pivot 都剛好是最小或最大",
-    "每次 pivot 都是中位數",
+    "每次 pivot 都剛好是中位數，切得太平均",
     "資料量很小時",
     "用 median-of-three 選 pivot"
    ],

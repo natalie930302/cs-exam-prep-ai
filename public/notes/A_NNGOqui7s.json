@@ -303,9 +303,9 @@
    "q": "趙啟超的離散數學課把內容分成哪三大部分？",
    "opts": [
     "Fundamentals、Enumeration、Graph Theory",
-    "Logic、Calculus、Linear Algebra",
+    "Logic、Combinatorics、Algorithm Analysis",
     "Set Theory、Probability、Algorithms",
-    "Counting、Statistics、Number Theory"
+    "Counting、Number Theory、Linear Algebra"
    ],
    "ans": "Fundamentals、Enumeration、Graph Theory",
    "why": "基礎（邏輯、集合、歸納、函數、關係）→ 計數 → 圖論。"
@@ -315,7 +315,7 @@
    "opts": [
     "equivalence relation 與 partial ordering",
     "function 與 inverse function",
-    "reflexive 與 symmetric",
+    "symmetric relation 與 transitive closure",
     "bijection 與 injection"
    ],
    "ans": "equivalence relation 與 partial ordering",
@@ -325,9 +325,9 @@
    "q": "用 Generating Function 解 recurrence relation，被類比成微分方程裡的哪個工具？",
    "opts": [
     "Laplace transform",
-    "Taylor 展開",
+    "Fourier series 展開",
     "分離變數法",
-    "Euler 方法"
+    "Euler 數值積分法"
    ],
    "ans": "Laplace transform",
    "why": "都是換到另一個 domain 先解，再變回原本的 domain。"
@@ -336,7 +336,7 @@
    "q": "Recurrence relation 又稱為什麼？",
    "opts": [
     "Difference equation（差分方程）",
-    "Differential equation",
+    "Differential equation（微分方程）",
     "Partial order",
     "Characteristic polynomial"
    ],
@@ -359,7 +359,7 @@
    "opts": [
     "Traveling Salesman Problem",
     "Shortest Paths",
-    "Minimal Spanning Tree",
+    "Minimal Spanning Tree Problem",
     "Max Flow"
    ],
    "ans": "Traveling Salesman Problem",
@@ -371,7 +371,7 @@
     "Grimaldi 第 5 版",
     "Rosen 第 8 版",
     "CLRS 第 3 版",
-    "Biggs 第 2 版"
+    "Johnsonbaugh 第 8 版"
    ],
    "ans": "Grimaldi 第 5 版",
    "why": "Grimaldi 為課本；Rosen 是台灣另一本常用的書，列為參考。"

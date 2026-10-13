@@ -460,7 +460,7 @@
    "q": "pthread_create 只接受一個 argument，要傳多個值怎麼辦？",
    "opts": [
     "包成 struct，傳它的 pointer",
-    "呼叫多次 pthread_create",
+    "呼叫多次 pthread_create，每次傳一個值",
     "只能改用 global variable",
     "用 pthread_join 傳"
    ],
@@ -482,7 +482,7 @@
    "q": "不打算 join 的 thread 應該？",
    "opts": [
     "呼叫 pthread_detach",
-    "呼叫 kill",
+    "呼叫 pthread_cancel",
     "什麼都不用做",
     "呼叫 fork"
    ],
@@ -493,7 +493,7 @@
    "q": "Shared-memory（thread）溝通比 message passing 快的主要原因？",
    "opts": [
     "不用做 memory copy",
-    "不會有同步問題",
+    "不會有同步問題（不需要 lock）",
     "不需要 CPU",
     "可以跨電腦"
    ],
@@ -517,7 +517,7 @@
     "JVM 這層會對到各 OS 的 thread library（Win32 thread、pthread）",
     "Java thread 不需要 OS",
     "Java 只能跑在 Linux",
-    "Java thread 都是 many-to-one"
+    "Java thread 都是 many-to-one，由 JVM 自己在 user space 排程"
    ],
    "ans": "JVM 這層會對到各 OS 的 thread library（Win32 thread、pthread）",
    "why": "隔了一層 virtual machine，同一份程式可在不同 OS 執行。"

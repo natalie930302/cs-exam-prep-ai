@@ -305,7 +305,7 @@
    "q": "為什麼 F2（value 10）一定是 maximum flow？",
    "opts": [
     "因為 cut {s,b} 的 capacity 也是 10",
-    "因為所有邊都滿了",
+    "因為 residual graph 中還有 s→t 的 path",
     "因為 value 是偶數",
     "因為找到兩條 path"
    ],

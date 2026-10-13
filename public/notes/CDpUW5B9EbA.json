@@ -474,7 +474,7 @@
    "q": "Two-level page table 省空間的原因是？",
    "opts": [
     "只為有用到的區塊配置第二層 table",
-    "把每個 entry 變小",
+    "把每個 entry 變小，只存 frame 的高位 bits",
     "把 page size 變小",
     "把 TLB 變大"
    ],
@@ -509,7 +509,7 @@
     "cache miss 由 hardware（CPU stall）；page fault 由 OS（software）",
     "兩者都由 OS 處理",
     "兩者都由 hardware 處理",
-    "cache miss 由 OS；page fault 由 hardware"
+    "cache miss 由 OS（software）；page fault 由 hardware（CPU stall）"
    ],
    "ans": "cache miss 由 hardware（CPU stall）；page fault 由 OS（software）",
    "why": "Cache miss 只要幾個 cycle；page fault 要上百萬 cycle，交給 OS 並 context switch。"

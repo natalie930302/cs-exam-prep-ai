@@ -232,7 +232,7 @@
    "q": "多執行緒 process 中，一個 thread 呼叫 fork()，新 process 會有幾個 thread？",
    "opts": [
     "視 OS 而定：可能複製全部 thread，也可能只複製呼叫的那個",
-    "一定複製全部 thread",
+    "一定複製全部 thread，每個 thread 都從 fork 之後繼續跑",
     "一定只有呼叫的那個",
     "fork 在 thread 裡不能呼叫"
    ],
@@ -243,7 +243,7 @@
    "q": "thread 呼叫 exec() 之後？",
    "opts": [
     "整個 process（包含所有 thread）被新程式取代",
-    "只有呼叫的 thread 被取代",
+    "只有呼叫的 thread 被取代，其他 thread 不受影響",
     "其他 thread 繼續執行舊程式",
     "會產生新的 process"
    ],
@@ -254,7 +254,7 @@
    "q": "Deferred cancellation 的意思是？",
    "opts": [
     "target thread 執行到 cancellation point 才安全結束",
-    "立刻終止 target thread",
+    "立刻終止 target thread，不等它執行到任何檢查點或釋放資源",
     "取消後由 OS 重新啟動 thread",
     "只能取消 main thread"
    ],
@@ -265,7 +265,7 @@
    "q": "thread 呼叫 sleep(10) 後產生的 signal，通常交給誰處理？",
    "opts": [
     "產生這個 signal 的那個 thread",
-    "所有 thread",
+    "所有 thread（每個 thread 各收到一份）",
     "隨機一個 thread",
     "kernel thread"
    ],
@@ -276,7 +276,7 @@
    "q": "Thread pool 的兩大好處是？",
    "opts": [
     "不用每次臨時 create thread，且能限制同時使用的資源量",
-    "thread 永遠不會 block",
+    "thread 永遠不會 block，也不需要做 context switch 和排程",
     "不需要 synchronization",
     "能讓 single core 真正平行"
    ],

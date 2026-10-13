@@ -693,9 +693,9 @@
    "q": "17A 的 MLFQ 例子中，process 何時被降到下一層？",
    "opts": [
     "用完該層的 time quantum 還沒做完",
-    "做了一次 I/O",
-    "剛到達時",
-    "等了太久"
+    "做了一次 I/O、主動讓出 CPU 時",
+    "剛到達系統、第一次進入 queue 時",
+    "在 queue 中等太久、超過 aging 門檻時"
    ],
    "ans": "用完該層的 time quantum 還沒做完",
    "why": "用完 8 ms → 判定 CPU burst 長 → 往下踢；等太久是 aging，往上提。"
@@ -704,9 +704,9 @@
    "q": "MLQ（17A 版）在多個 queue 之間如何選？",
    "opts": [
     "依 weight 的機率挑 queue",
-    "永遠先挑最上層",
-    "輪流各挑一個",
-    "挑最長的 queue"
+    "永遠先挑最上層、非空的 queue",
+    "輪流各挑一個 process",
+    "挑目前最長的 queue"
    ],
    "ans": "依 weight 的機率挑 queue",
    "why": "本講的 MLQ 上下沒有意義，純粹看權重；MLFQ 才是從最上層開始。"
@@ -715,9 +715,9 @@
    "q": "Deterministic modeling 的主要缺點？",
    "opts": [
     "結果只對那組輸入成立，不 general",
-    "太難計算",
-    "需要真的實作進 OS",
-    "一定要有 queueing model"
+    "太難計算，需要解 queueing 方程式",
+    "需要真的實作進 OS 才能量測",
+    "一定要先有 queueing model 才能分析"
    ],
    "ans": "結果只對那組輸入成立，不 general",
    "why": "例：FCFS 先短後長很好，先長後短最糟。"

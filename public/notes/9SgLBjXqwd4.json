@@ -348,7 +348,7 @@
     "O(log n)",
     "O(n)",
     "O(n/2)",
-    "O(√n)"
+    "O(n log n)"
    ],
    "ans": "O(log n)",
    "why": "n/2ᵏ = 1 → k = log₂ n。"
@@ -369,7 +369,7 @@
    "opts": [
     "O(log log n)",
     "O(log n)",
-    "O(n log n)",
+    "O(n log log n)",
     "O(log² n)"
    ],
    "ans": "O(log log n)",
@@ -390,7 +390,7 @@
    "q": "外層 for (i = 0; i < n; i++)、內層 for (j = 1; j < n; j *= 2) 的複雜度？",
    "opts": [
     "O(n log n)",
-    "O(n²)",
+    "O(n² log n)",
     "O(log n)",
     "O(n)"
    ],

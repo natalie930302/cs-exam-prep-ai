@@ -374,7 +374,7 @@
     "num[i] = max(num) + 1",
     "num[i] = PID",
     "num[i] = num[i] + 1",
-    "num[i] = 0"
+    "num[i] = min(num) + 1"
    ],
    "ans": "num[i] = max(num) + 1",
    "why": "號碼越抽越大；max 不是 atomic，可能抽到一樣的號碼。"
@@ -394,7 +394,7 @@
    "q": "沒有 choosing 時，課堂例子出了什麼錯？",
    "opts": [
     "P1、P4 都抽到 6 且都進了 critical section",
-    "P1、P4 都卡住（deadlock）",
+    "P1、P4 都抽到 6 而互相等待，形成 deadlock",
     "P4 永遠進不去",
     "號碼被重複使用"
    ],
@@ -405,7 +405,7 @@
    "q": "證明 bounded waiting 時常被忽略的情況？",
    "opts": [
     "剛出來的人沒被 context switch，馬上又想進去",
-    "兩人都不想進",
+    "兩人都不想進 critical section 時，turn 一直停在同一人",
     "只有一個 process",
     "turn 的初值"
    ],

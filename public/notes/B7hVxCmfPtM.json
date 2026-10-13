@@ -802,7 +802,7 @@
     "以 left(i)、right(i) 為根的子樹都已是 max-heap",
     "A 已經排序",
     "A[i] 是最大值",
-    "整個陣列只有葉子違規"
+    "A[i] 已經大於等於 left(i)、right(i) 兩個子節點"
    ],
    "ans": "以 left(i)、right(i) 為根的子樹都已是 max-heap",
    "why": "只有根 A[i] 可能違規，才能沿一條路往下修，時間 O(log n)。"
@@ -823,7 +823,7 @@
    "opts": [
     "A[⌊n/2⌋+1..n] 都是葉子，本來就是 max-heap",
     "前半段已經排序",
-    "為了讓時間變 O(log n)",
+    "A[1..⌊n/2⌋] 都是葉子，本來就已經是 max-heap",
     "因為根在 n/2"
    ],
    "ans": "A[⌊n/2⌋+1..n] 都是葉子，本來就是 max-heap",
@@ -857,7 +857,7 @@
     "swap A[1]↔A[n] → heap size − 1 → max_heapify(A, 1)",
     "max_heapify(A, n) → swap → build_max_heap",
     "heap size − 1 → swap A[1]↔A[2] → insert",
-    "extract_max → build_max_heap → swap"
+    "swap A[1]↔A[n] → max_heapify(A, 1) → heap size − 1"
    ],
    "ans": "swap A[1]↔A[n] → heap size − 1 → max_heapify(A, 1)",
    "why": "最大值換到尾端後丟出 heap，只剩根可能違規，所以 max_heapify(A, 1)。"

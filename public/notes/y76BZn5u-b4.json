@@ -511,7 +511,7 @@
    "q": "ENIAC 用什麼當 switch？",
    "opts": [
     "真空管（vacuum tube）",
-    "電晶體（transistor）",
+    "繼電器（relay switch）",
     "IC",
     "microprocessor"
    ],
@@ -523,7 +523,7 @@
    "opts": [
     "把 transistor、電阻、電容做在同一塊半導體上，尺寸可以一直縮小",
     "讓電腦可以 programmable",
-    "讓 instruction 和 data 分開存",
+    "讓 instruction 和 data 存在同一個 memory，電腦可以 stored-program",
     "讓 PC 變成 open system"
    ],
    "ans": "把 transistor、電阻、電容做在同一塊半導體上，尺寸可以一直縮小",
@@ -533,7 +533,7 @@
    "q": "老師講的 Moore's Law 是？",
    "opts": [
     "每 18 個月，一顆 chip 上的 transistor 數量 double",
-    "每 18 個月 clock rate double",
+    "每 18 個月，一顆 chip 的 clock rate 與功耗都 double",
     "每年 feature size 減半",
     "每 18 個月價格 double"
    ],
@@ -546,7 +546,7 @@
     "IBM PC 是 open system，spec 公開，大家都能做相容產品、比較便宜",
     "IBM PC 用 RISC",
     "IBM PC 不需要 OS",
-    "Apple II 沒有 microprocessor"
+    "Apple II 沒有 microprocessor，只能用分離式電晶體組 CPU、成本高"
    ],
    "ans": "IBM PC 是 open system，spec 公開，大家都能做相容產品、比較便宜",
    "why": "規格公開讓很多廠商參與、價格下降，也帶動臺灣的周邊產業。"
@@ -568,7 +568,7 @@
     "0.028 µm",
     "0.28 µm",
     "2.8 µm",
-    "28 µm"
+    "0.0028 µm"
    ],
    "ans": "0.028 µm",
    "why": "1 µm = 1000 nm，28 ÷ 1000 = 0.028；頭髮約 100 µm。"

@@ -246,9 +246,9 @@
    "q": "Ford-Fulkerson 什麼時候停止？",
    "opts": [
     "找不到 s 到 t 的 augmenting path",
-    "所有邊都飽和",
-    "flow 等於 source 出邊容量總和",
-    "做滿 |V| 次"
+    "每條從 s 出發的邊都被走過至少一次",
+    "所有邊都飽和，residual capacity 都變成 0",
+    "做滿 |V| 次 augmentation"
    ],
    "ans": "找不到 s 到 t 的 augmenting path",
    "why": "每次找 augmenting path 加流，找不到時目前的 flow 就是最大流。"
@@ -259,7 +259,7 @@
     "bottleneck capacity",
     "min cut",
     "residual graph",
-    "augmenting path"
+    "minimum cut capacity"
    ],
    "ans": "bottleneck capacity",
    "why": "路徑上最小的剩餘容量叫 bottleneck；min cut 是頂點的二分切割。"
@@ -268,7 +268,7 @@
    "q": "Augmenting path 上可以使用哪兩種邊？",
    "opts": [
     "沒滿的 forward edge 與有 flow 的 backward edge",
-    "只有沒滿的 forward edge",
+    "只有沒滿的 forward edge，有 flow 的 backward edge 不能走",
     "飽和的 forward edge 與空的 backward edge",
     "任何原圖的邊"
    ],

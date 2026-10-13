@@ -223,9 +223,9 @@
    "q": "minimal spanning tree 是什麼？",
    "opts": [
     "所有 spanning tree 中，edge weight 總和最小的那一棵",
-    "從起點到每點都最短的那棵 tree",
-    "邊數最少的 subgraph",
-    "weight 最小的那一條 edge"
+    "從起點到每個點的 path 都最短的那棵 shortest-path tree",
+    "邊數最少、能連通所有點的 subgraph",
+    "所有 edge 中 weight 最小的那一條 edge 與它的兩個端點"
    ],
    "ans": "所有 spanning tree 中，edge weight 總和最小的那一棵",
    "why": "MST 比的是整棵樹邊的 weight 總和。"
@@ -245,9 +245,9 @@
    "q": "greedy algorithm 的特色是？",
    "opts": [
     "每一步都選當下最好的，不考慮未來的影響",
-    "把所有可能都列出來比較",
+    "把所有可能都列出來，再逐一比較選出最好的",
     "每一步都回頭修改之前的選擇",
-    "隨機挑一個"
+    "隨機挑一個，多跑幾次取最好的"
    ],
    "ans": "每一步都選當下最好的，不考慮未來的影響",
    "why": "locally best choice，ignoring effects in the future。"
@@ -256,8 +256,8 @@
    "q": "Prim's algorithm 每次加的 edge 必須滿足？",
    "opts": [
     "一端在 T、一端不在 T，而且是這種邊中 weight 最小的",
-    "兩端都在 T 裡",
-    "全圖 weight 最小、不管位置",
+    "兩端都在 T 裡，而且是這種邊中 weight 最小的",
+    "全圖 weight 最小、不管兩端位置，只要不形成 cycle 即可",
     "兩端都不在 T 裡"
    ],
    "ans": "一端在 T、一端不在 T，而且是這種邊中 weight 最小的",

@@ -64,9 +64,9 @@
    "q": "Priori analysis 的結果是什麼形式？",
    "opts": [
     "time function 與 space function",
-    "實際執行的秒數",
+    "實際執行的秒數（wall-clock time）",
     "記憶體用量的 bytes 實測值",
-    "編譯後機器碼的長度"
+    "編譯後機器碼的長度與指令數"
    ],
    "ans": "time function 與 space function",
    "why": "分析對象是演算法，結果是跟輸入大小有關的函數。"
@@ -86,9 +86,9 @@
    "q": "下列何者會影響 posteriori testing 的結果，卻不影響 priori analysis？",
    "opts": [
     "硬體與作業系統",
-    "輸入大小 n",
-    "迴圈的層數",
-    "演算法的步驟"
+    "輸入大小 n 的值",
+    "迴圈的巢狀層數",
+    "演算法的步驟數量"
    ],
    "ans": "硬體與作業系統",
    "why": "演算法與硬體無關；程式實測則依賴硬體、語言、OS。"

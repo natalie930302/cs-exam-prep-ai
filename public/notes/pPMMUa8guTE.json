@@ -1339,9 +1339,9 @@
    "q": "關於 Huffman tree，下列何者正確？",
    "opts": [
     "給定頻率時樹一定唯一",
-    "每次合併頻率最大的兩個",
+    "每次合併頻率最大的兩個節點",
     "n 個 message 需 merge n-1 次",
-    "內部節點也代表真實 message"
+    "內部節點也代表真實的 message"
    ],
    "ans": "n 個 message 需 merge n-1 次",
    "why": "每次 merge 讓 queue 中的樹少一棵，從 n 棵到 1 棵要 n-1 次；同分時樹不唯一；內部節點只是虛擬合併字。"
@@ -1363,7 +1363,7 @@
     "O(1) 與 O(n)",
     "O(n) 與 O(1)",
     "O(log n) 與 O(log n)",
-    "O(n) 與 O(n)"
+    "O(log n) 與 O(n log n)"
    ],
    "ans": "O(log n) 與 O(log n)",
    "why": "Heap 是 complete binary tree，高度約 log n，insert 往上爬、delete 往下調整都只沿一條路徑。"

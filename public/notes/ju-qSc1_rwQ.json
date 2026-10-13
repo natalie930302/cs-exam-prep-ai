@@ -303,7 +303,7 @@
    "q": "為什麼任何 flow 都有 val(f) ≤ c(S, T)？",
    "opts": [
     "丟掉 ≥ 0 的流回量，再用 f ≤ c",
-    "因為 flow 是整數",
+    "因為 flow 是整數，不會超過 capacity",
     "因為 graph 是 connected",
     "因為 sink 沒有 outflow"
    ],
@@ -315,7 +315,7 @@
    "opts": [
     "這個 flow 是 maximum flow",
     "這個 flow 不合法",
-    "這個 cut 是最大的 cut",
+    "這個 cut 是 capacity 最大的 cut",
     "什麼都不能推"
    ],
    "ans": "這個 flow 是 maximum flow",

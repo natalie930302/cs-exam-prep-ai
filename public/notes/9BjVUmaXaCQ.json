@@ -471,7 +471,7 @@
    "q": "DDR 的「double data rate」指的是？",
    "opts": [
     "每個 clock 的上升緣和下降緣各傳一次資料",
-    "有兩條 memory channel",
+    "有兩條 memory channel，可同時各傳一筆資料",
     "DIMM 兩面各一個 rank",
     "data bus 從 32 bits 變 64 bits"
    ],
@@ -493,7 +493,7 @@
    "q": "DRAM 讀取的正確順序是？",
    "opts": [
     "送 row address（RAS）開 row 到 sense amplifiers → 送 column address（CAS）選 column",
-    "先 CAS 再 RAS",
+    "先送 column address（CAS）選 column → 再送 row address（RAS）開 row 到 sense amplifiers",
     "row 和 column 位址同時送",
     "先 precharge 再 CAS，不需要 RAS"
    ],
@@ -504,7 +504,7 @@
    "q": "Burst length 的意思是？",
    "opts": [
     "row 開著時連續讀出的 column 數",
-    "一個 row 有幾個 column",
+    "一個 row 總共有幾個 column（row 的寬度）",
     "關 row 需要幾個 clock",
     "一條 cache line 有幾個 byte"
    ],
@@ -515,7 +515,7 @@
    "q": "Bank interleaving 主要解決什麼問題？",
    "opts": [
     "一個 bank burst 完要關 row／precharge，期間讓其他 bank 接手，data bus 不會閒置",
-    "讓單一 cell 的存取時間變短",
+    "讓單一 cell 的存取時間變短，每次 RAS 到 CAS 的延遲變小，整體 latency 跟著下降",
     "讓 DIMM 容量變大",
     "減少 address bus 的線數"
    ],
@@ -526,7 +526,7 @@
    "q": "在固定的矽面積下，bank 數變多通常會怎樣？",
    "opts": [
     "平行度高、較快，但周邊電路變多，容量變低",
-    "容量變高、速度變慢",
+    "容量變高、速度變慢，因為每個 bank 變小",
     "耗電一定變少",
     "沒有任何影響"
    ],

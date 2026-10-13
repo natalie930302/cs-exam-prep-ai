@@ -599,7 +599,7 @@
     "讓 op 維持 6 bits，I-type 保有 16-bit immediate",
     "因為 R-type 指令比較長",
     "因為 funct 執行比較快",
-    "因為 R-type 不需要 op 欄位"
+    "讓 funct 維持 6 bits，R-type 保有 16-bit immediate"
    ],
    "ans": "讓 op 維持 6 bits，I-type 保有 16-bit immediate",
    "why": "所有 format 的 op 一樣長；op 加長會讓 I-type 的 immediate 變短、範圍變小。R-type 剛好有剩下的 6 bits 可當 funct。"

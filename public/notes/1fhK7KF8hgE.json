@@ -468,8 +468,8 @@
    "q": "8-block cache 中，block 12 在 2-way set associative 會放到哪？",
    "opts": [
     "set 0 的任一格",
-    "set 4",
-    "第 4 格",
+    "set 4 的任一格",
+    "第 4 格（12 mod 8）",
     "任何一格"
    ],
    "ans": "set 0 的任一格",
@@ -501,9 +501,9 @@
    "q": "為什麼 set-associative cache 的 hit time 通常比 direct-mapped 長？",
    "opts": [
     "要等 tag 比對、決定 hit 後才能用 MUX 選 data",
-    "它的 block 比較大",
-    "它不需要 tag",
-    "它的 miss rate 比較高"
+    "它的 block 比較大，每次 hit 都要搬整個 block 比較久",
+    "它不需要 tag，要額外計算 index",
+    "它的 miss rate 比較高，常常要去下一層"
    ],
    "ans": "要等 tag 比對、決定 hit 後才能用 MUX 選 data",
    "why": "direct-mapped 只有一筆 data，可先拿來用，miss 再丟掉。"
@@ -512,9 +512,9 @@
    "q": "Multilevel cache 中，L1 與 L2 的主要設計目標分別是？",
    "opts": [
     "L1 降低 hit time；L2 降低 miss rate（避免去 memory）",
-    "L1 降低 miss rate；L2 降低 hit time",
-    "兩者都只為了降低 miss penalty",
-    "L1 存 instruction、L2 存 data"
+    "L1 降低 miss rate；L2 降低 hit time（越靠近 CPU 越快）",
+    "兩者都只為了降低 miss penalty，容量相同",
+    "L1 存 instruction、L2 存 data，彼此分工"
    ],
    "ans": "L1 降低 hit time；L2 降低 miss rate（避免去 memory）",
    "why": "L1 小而快；L2 大一點，攔住 L1 的 miss，讓去 main memory 的比例很低。"

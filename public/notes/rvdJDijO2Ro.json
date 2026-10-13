@@ -742,9 +742,9 @@
    "q": "Open addressing 為什麼必須 m ≥ n？",
    "opts": [
     "每格最多放一個 item，沒有 chain",
-    "因為要用 linked list",
-    "因為 α 要大於 1",
-    "因為 h 需要質數"
+    "因為要用 linked list 串起 collision",
+    "因為 load factor α 要大於 1",
+    "因為 h 的 table size 需要是質數"
    ],
    "ans": "每格最多放一個 item，沒有 chain",
    "why": "沒有 linked list 可以延伸。"
@@ -764,9 +764,9 @@
    "q": "Open addressing 的 delete 為什麼不能直接設成 None？",
    "opts": [
     "之後 search 會在那格提早停下，誤判 key 不存在",
-    "會浪費記憶體",
-    "會讓 insert 失敗",
-    "會破壞 hash function"
+    "會浪費記憶體，那格永遠不能再用",
+    "會讓之後的 insert 在那格失敗",
+    "會破壞 hash function，必須重新 rehash 整張 table"
    ],
    "ans": "之後 search 會在那格提早停下，誤判 key 不存在",
    "why": "所以改放 DeleteMe：search 繼續、insert 可重用。"
@@ -775,9 +775,9 @@
    "q": "Linear probing 的主要問題？",
    "opts": [
     "clustering：連續被佔的區段越來越長",
-    "不滿足 permutation",
-    "需要 linked list",
-    "h′ 必須是質數"
+    "probe sequence 不滿足 permutation",
+    "collision 時需要額外的 linked list",
+    "h′ 必須是質數，table size 受限"
    ],
    "ans": "clustering：連續被佔的區段越來越長",
    "why": "大 cluster 更容易被撞到而更大。"
@@ -787,7 +787,7 @@
    "opts": [
     "與 m 互質",
     "等於 1",
-    "是偶數",
+    "是 m 的倍數",
     "大於 m"
    ],
    "ans": "與 m 互質",
@@ -808,9 +808,9 @@
    "q": "Password storage 用 cryptographic hash 的關鍵性質？",
    "opts": [
     "one-way：給 h(x) 很難找出 x",
-    "計算要非常慢",
-    "輸出要比輸入長",
-    "可以還原出原密碼"
+    "計算要非常快，登入才不會卡",
+    "輸出要比輸入長，才不會 collision",
+    "可以還原出原密碼，方便找回"
    ],
    "ans": "one-way：給 h(x) 很難找出 x",
    "why": "系統只存 h(x)，登入時比對 h(x′)。"

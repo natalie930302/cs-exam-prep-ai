@@ -233,7 +233,7 @@
    "opts": [
     "Base（displacement）addressing",
     "Immediate addressing",
-    "PC-relative addressing",
+    "PC-relative（offset）addressing",
     "Pseudo-direct addressing"
    ],
    "ans": "Base（displacement）addressing",
@@ -276,9 +276,9 @@
    "q": "Register addressing 的 register field 為什麼是 5 bits？",
    "opts": [
     "MIPS 有 32 個 register，2⁵ = 32",
-    "因為 op code 是 5 bits",
+    "因為 op code 也是 5 bits，欄位要對齊",
     "因為 word 是 5 bytes",
-    "因為 shamt 是 5 bits"
+    "因為 shamt 是 5 bits，最多移 32 位"
    ],
    "ans": "MIPS 有 32 個 register，2⁵ = 32",
    "why": "5 bits 剛好能編號 0～31。"
@@ -287,8 +287,8 @@
    "q": "Immediate addressing 的特點是？",
    "opts": [
     "operand 的資料直接放在指令裡",
-    "operand 一定在 memory",
-    "位址由 PC 決定",
+    "operand 一定在 memory，用位址存取",
+    "位址由 PC 加上 offset 決定",
     "三個 operand 都是 register"
    ],
    "ans": "operand 的資料直接放在指令裡",

@@ -277,7 +277,7 @@
     "region 裡面的頂點數",
     "繞 region 邊界一圈的最短 closed walk 的邊數",
     "region 的面積",
-    "邊界上的頂點數，重複的不算"
+    "繞 region 邊界一圈的頂點數，重複的只算一次"
    ],
    "ans": "繞 region 邊界一圈的最短 closed walk 的邊數",
    "why": "伸進 region 的邊會被走兩次，要算兩次。"
@@ -318,7 +318,7 @@
   {
    "q": "一個圖滿足 Edge–Vertex Inequality，可以推出什麼？",
    "opts": [
-    "它一定是 planar",
+    "它一定是 planar，因為邊數夠少",
     "它一定不是 planar",
     "它可能是 planar，但不能確定",
     "它沒有 cycle"

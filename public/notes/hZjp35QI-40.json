@@ -1018,9 +1018,9 @@
    "q": "證明 |A| = |O| 時假設 m > k，矛盾出在哪裡？",
    "opts": [
     "j_{k+1} 在選完 i_k 後仍在 R，while loop 會再選一個",
-    "O 一定有 overlap",
-    "排序結果不唯一",
-    "f(i_k) > f(j_k)"
+    "O 一定有兩個 interval overlap，與 O 是 feasible 矛盾",
+    "排序結果不唯一，greedy 可能選錯",
+    "f(i_k) > f(j_k)，與 greedy 的選法矛盾"
    ],
    "ans": "j_{k+1} 在選完 i_k 後仍在 R，while loop 會再選一個",
    "why": "f(i_k) ≤ f(j_k) ≤ s(j_{k+1})，j_{k+1} 沒被槓掉，所以 A 應該有第 k+1 個，與 |A| = k 矛盾。"

@@ -1819,7 +1819,7 @@
    "q": "Doubly linked list 比 singly linked list 多付出一個 prev 指標，主要換到什麼？",
    "opts": [
     "可以 remove here，不必從 head 找前一個",
-    "支援 random access",
+    "支援 random access，可直接跳到第 k 個 node",
     "完全不需要 head",
     "記憶體用量更少"
    ],

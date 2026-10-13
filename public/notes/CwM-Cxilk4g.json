@@ -442,9 +442,9 @@
    "q": "Open addressing 和 separate chaining 最大的差別是？",
    "opts": [
     "所有資料都放在表本身，不用額外的 linked list",
-    "每個 index 掛一條 linked list",
-    "不需要 hash function",
-    "表的大小可以小於資料數"
+    "每個 index 掛一條 linked list 存放碰撞的資料",
+    "不需要 hash function，直接用 key 當 index",
+    "表的大小可以小於資料數，load factor 可大於 1"
    ],
    "ans": "所有資料都放在表本身，不用額外的 linked list",
    "why": "Open addressing 碰撞時在表裡找別的空格；chaining 才是另外掛串列。"
@@ -475,8 +475,8 @@
    "q": "Open addressing 的 find 何時可以判定 key 不在表中？",
    "opts": [
     "沿 probe sequence 遇到空格時",
-    "第一次 probe 不是時",
-    "走到表的最後一格時",
+    "第一次 probe 的位置不是該 key 時",
+    "走到表的最後一格、還沒找到時",
     "probe 次數超過 2 次時"
    ],
    "ans": "沿 probe sequence 遇到空格時",

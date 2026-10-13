@@ -547,9 +547,9 @@
    "q": "NOR 的 ALU control 為什麼是 1100？",
    "opts": [
     "Ainvert、Bnegate 都是 1，再選 AND（00）",
-    "選 OR 再整個反相",
-    "Bnegate = 1 再選加法",
-    "選 Less 輸入（11）"
+    "選 OR（01）再把整個結果反相",
+    "Bnegate = 1 再選加法（10）",
+    "Ainvert = 1、Bnegate = 0，再選 OR（01）"
    ],
    "ans": "Ainvert、Bnegate 都是 1，再選 AND（00）",
    "why": "De Morgan：NOT(a OR b) = (NOT a) AND (NOT b)。"
@@ -558,9 +558,9 @@
    "q": "用加法器做 A − B，除了讓 Binvert = 1 之外還要？",
    "opts": [
     "把 bit 0 的 CarryIn 設成 1",
-    "把 MSB 的 CarryOut 設成 1",
-    "把結果再反相",
-    "把 A 也反相"
+    "把 MSB 的 CarryOut 強制設成 1",
+    "把結果再整個反相",
+    "把 A 也反相再相加"
    ],
    "ans": "把 bit 0 的 CarryIn 設成 1",
    "why": "−B = B 反相 + 1；那個 +1 就由最低位的 CarryIn 提供。"
@@ -580,9 +580,9 @@
    "q": "ALU 怎麼偵測 overflow？",
    "opts": [
     "MSB 的 carry in XOR carry out",
-    "看 MSB 有沒有 carry out",
-    "看結果的 sign bit 是不是 1",
-    "所有 bit 做 NOR"
+    "看 MSB 有沒有 carry out 產生",
+    "看結果的 sign bit 是不是 1（負數）",
+    "所有 bit 的結果做 NOR"
    ],
    "ans": "MSB 的 carry in XOR carry out",
    "why": "兩者不同才是 overflow；所有 bit 做 NOR 是 Zero 偵測。"
@@ -591,9 +591,9 @@
    "q": "slt 時，bit 0 那一片 MUX 的 Less 輸入接到哪裡？",
    "opts": [
     "MSB 那片加法器算出的 a − b 的 sign bit（Set）",
-    "固定接 0",
-    "MSB 的 CarryOut",
-    "bit 0 自己的 sum"
+    "固定接 0，由 bit 0 自己的 sum 決定",
+    "MSB 那片加法器的 CarryOut（a − b 是否發生借位）",
+    "bit 0 自己那片加法器算出的 sum"
    ],
    "ans": "MSB 那片加法器算出的 a − b 的 sign bit（Set）",
    "why": "a < b ⇔ a − b 為負 ⇔ sign bit = 1；其他片的 Less 接 0。"

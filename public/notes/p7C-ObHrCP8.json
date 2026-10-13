@@ -362,7 +362,7 @@
   {
    "q": "Page size 設太小的主要缺點是？",
    "opts": [
-    "Internal fragmentation 很嚴重",
+    "Internal fragmentation 很嚴重，每頁浪費變多",
     "Page table 很大，且要存取的 page 數變多",
     "無法做 sharing",
     "會產生 external fragmentation"
@@ -373,7 +373,7 @@
   {
    "q": "在一般 paging 中，frame table 的用途是？",
    "opts": [
-    "做 address translation",
+    "做 address translation，取代每個 process 的 page table",
     "只做 accounting，記錄每個 frame 被誰使用",
     "取代 TLB",
     "存放 PTBR"

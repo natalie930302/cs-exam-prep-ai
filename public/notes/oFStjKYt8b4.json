@@ -190,7 +190,7 @@
     "breadth-first search（BFS）",
     "depth-first search（DFS）",
     "Dijkstra",
-    "隨便找"
+    "iterative deepening search（IDS）"
    ],
    "ans": "breadth-first search（BFS）",
    "why": "從 source 用 BFS 長 tree of incomplete f-augmenting paths。"
@@ -200,7 +200,7 @@
    "opts": [
     "BFS tree 沒有包含 sink 時",
     "flow 等於 0 時",
-    "所有邊都滿載時",
+    "residual graph 所有邊都滿載時",
     "跑完 |V| 次時"
    ],
    "ans": "BFS tree 沒有包含 sink 時",
@@ -212,7 +212,7 @@
     "最後那棵 BFS tree 的端點",
     "所有滿載邊的終點",
     "只有 source",
-    "所有 flow > 0 的端點"
+    "所有 flow > 0 的邊的端點"
    ],
    "ans": "最後那棵 BFS tree 的端點",
    "why": "S = tree 的 vertex set，T = V − S；這個 cut 的 capacity 等於 flow 值。"
@@ -223,7 +223,7 @@
     "Edmonds–Karp 是用 BFS 找 path 的 Ford–Fulkerson implementation",
     "兩者完全無關",
     "Ford–Fulkerson 比較晚提出",
-    "Edmonds–Karp 不用 augmenting path"
+    "Edmonds–Karp 不用 augmenting path，而是直接 push 每個點多出的 flow"
    ],
    "ans": "Edmonds–Karp 是用 BFS 找 path 的 Ford–Fulkerson implementation",
    "why": "Ford–Fulkerson（1956）沒規定怎麼找 path；Edmonds–Karp（1972）規定用 BFS。"

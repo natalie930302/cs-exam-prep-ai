@@ -155,7 +155,7 @@
    "opts": [
     "執行不影響其他 process，各用自己的 resource",
     "一定共用 memory",
-    "執行會影響其他 process",
+    "執行會影響其他 process，需要共用 resource",
     "一定要用 semaphore"
    ],
    "ans": "執行不影響其他 process，各用自己的 resource",
@@ -166,7 +166,7 @@
    "opts": [
     "一段同一時間只能被一個 process 執行、含 shared variable 的 code segment",
     "一個硬體元件",
-    "一個 process",
+    "一段只能由 OS kernel 執行、用來保護 shared variable 的 kernel code section",
     "OS 的 kernel"
    ],
    "ans": "一段同一時間只能被一個 process 執行、含 shared variable 的 code segment",
@@ -176,7 +176,7 @@
    "q": "影片中 entry section 與 exit section 的角色？",
    "opts": [
     "entry 取得 lock、exit 解開 lock",
-    "entry 解鎖、exit 上鎖",
+    "entry 解開 lock、exit 取得 lock",
     "兩者都上鎖",
     "兩者都不涉及 lock"
    ],

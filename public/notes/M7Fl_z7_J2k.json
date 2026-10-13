@@ -239,7 +239,7 @@
    "opts": [
     "所有不在解 S 裡的 job 的 penalty 總和",
     "已選 job 的 penalty 總和",
-    "到第 k 個 job 為止跳過的 penalty",
+    "到第 k 個 job 為止被跳過的 penalty 總和",
     "最大的 deadline"
    ],
    "ans": "所有不在解 S 裡的 job 的 penalty 總和",
@@ -249,7 +249,7 @@
    "q": "影片中只選 J3 的節點（c = 15）為什麼被殺掉？",
    "opts": [
     "c = 15 大於當時的 upper = 14",
-    "J3 的 deadline 太早",
+    "J3 的 deadline 太早，排不進時間表",
     "時間不夠",
     "u 是 ∞"
    ],
@@ -260,7 +260,7 @@
    "q": "{J1, J2} 之後為什麼不能再加 J3？",
    "opts": [
     "J1 + J2 已用掉 3 個時間單位，J3 的 deadline 2 已過",
-    "J3 的 penalty 太大",
+    "J1 + J2 已用掉 2 個時間單位，J3 的 deadline 1 已過",
     "c 大於 upper",
     "J3 已經被選過"
    ],

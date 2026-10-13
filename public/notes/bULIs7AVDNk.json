@@ -1705,9 +1705,9 @@
    "q": "Bucket size s = 1 時，collision 與 overflow 的關係是？",
    "opts": [
     "只要發生 collision 就一定 overflow",
-    "overflow 永遠不會發生",
+    "overflow 永遠不會發生，因為一格就夠",
     "collision 不會發生",
-    "兩者完全無關"
+    "兩者完全無關，各自獨立計算"
    ],
    "ans": "只要發生 collision 就一定 overflow",
    "why": "Bucket 只能放一筆，第二筆 hash 到同一格（collision）就放不下，也就是 overflow。"
@@ -1760,9 +1760,9 @@
    "q": "用 h(x) = x mod M 時，為什麼 M = 2ⁱ 不好？",
    "opts": [
     "結果只取決於 key 最後 i 個 bit",
-    "會算出負數",
-    "一定沒有 collision",
-    "計算太慢"
+    "會算出負數，無法當 index",
+    "一定沒有 collision，但浪費空間",
+    "計算太慢，因為要做一次除法"
    ],
    "ans": "結果只取決於 key 最後 i 個 bit",
    "why": "除以 2ⁱ 的餘數就是最後 i 個 bit，例如 A1、B1、C1 最後一個 bit 都是 1，mod 2 全擠在同一個 bucket。"

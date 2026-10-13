@@ -466,7 +466,7 @@
    "q": "課堂所說的 protection 是指？",
    "opts": [
     "正常使用下，一個使用者（程式 crash）不會影響其他使用者",
-    "防止駭客透過網路入侵",
+    "防止駭客透過網路入侵、竊取系統裡的帳號密碼與機密資料",
     "加密使用者的檔案",
     "防毒軟體"
    ],
@@ -477,7 +477,7 @@
    "q": "OS 的 control 與 coordinate，哪個敘述正確？",
    "opts": [
     "control 是單方向控制；coordinate 是在多人共享時協調資源分配",
-    "control 比 coordinate 複雜",
+    "control 比 coordinate 複雜，因為 control 要直接管理所有硬體",
     "coordinate 就是寫 driver",
     "batch 系統最需要 coordinate"
    ],
@@ -488,7 +488,7 @@
    "q": "程式呼叫 printf 時，輸出到螢幕的路徑是？",
    "opts": [
     "printf → system call → driver → hardware",
-    "printf → compiler → hardware",
+    "printf → compiler → linker → loader → hardware",
     "printf 直接寫入螢幕的記憶體",
     "printf → linker → screen"
    ],
@@ -510,7 +510,7 @@
    "q": "關於 OS 的 convenience 與 efficiency，何者正確？",
    "opts": [
     "兩者互相矛盾，要依使用者需求取捨（trade-off）",
-    "兩者可以同時最大化",
+    "兩者可以同時最大化，只要硬體夠快就完全沒有衝突",
     "現在的 OS 只在乎 efficiency",
     "手機 OS 不在乎 efficiency"
    ],

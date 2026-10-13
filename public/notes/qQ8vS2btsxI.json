@@ -437,7 +437,7 @@
    "opts": [
     "hash 相同但子字串不是 pattern",
     "hash 不同但子字串是 pattern",
-    "pattern 出現兩次",
+    "hash 相同且子字串就是 pattern",
     "hash 值溢位"
    ],
    "ans": "hash 相同但子字串不是 pattern",
@@ -471,7 +471,7 @@
     "平均 Θ(n − m + 1)，最壞 O(mn)",
     "平均 O(mn)，最壞 O(n)",
     "兩者都是 O(n + m)",
-    "平均 O(log n)，最壞 O(n)"
+    "平均 Θ(mn)，最壞 O(n − m + 1)"
    ],
    "ans": "平均 Θ(n − m + 1)，最壞 O(mn)",
    "why": "沒有 spurious hit 時只掃一次；大量 spurious hit 時每個位置都要逐字比。"
@@ -482,7 +482,7 @@
     "避免 overflow；代價是 spurious hit 可能變多",
     "讓 hash 變成質數；沒有代價",
     "加快逐字比較；代價是要排序",
-    "避免 collision；代價是需要更多記憶體"
+    "避免 collision；代價是 hash table 需要更多記憶體"
    ],
    "ans": "避免 overflow；代價是 spurious hit 可能變多",
    "why": "base 的次方很快超過 int 範圍；取 mod 後不同字串更容易得到相同值。"

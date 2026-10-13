@@ -793,7 +793,7 @@
    "q": "MIPS static dual issue 的每個 issue packet 由哪兩種指令組成？",
    "opts": [
     "一個 ALU 或 branch，加一個 load 或 store",
-    "任意兩個沒有 dependency 的指令",
+    "任意兩個沒有 dependency 的指令，種類不限",
     "兩個 load/store",
     "兩個 ALU 指令"
    ],
@@ -826,7 +826,7 @@
    "q": "loop unrolling 時把每一份的 $t0 改名成 $t1、$t2、$t3，消除的是哪一種相依？",
    "opts": [
     "anti-dependence（name dependence）",
-    "真正的 data dependence（RAW）",
+    "真正的 data dependence（true dependence, RAW）",
     "control dependence",
     "structural hazard"
    ],
@@ -837,7 +837,7 @@
    "q": "在 dual-issue 的 MIPS 上，lw 的結果被下一個指令立刻使用，會怎樣？",
    "opts": [
     "仍要停 1 個 cycle，但這個 cycle 等於浪費 2 個指令的位置",
-    "可以用 forwarding 完全避免",
+    "可以用 forwarding 從 MEM 直接送到 EX，完全避免，不必停任何 cycle",
     "要停 2 個 cycle",
     "只有 single issue 才會有 load-use hazard"
    ],
@@ -849,7 +849,7 @@
    "opts": [
     "function unit 的執行（operand 到齊就做）",
     "instruction fetch 與 decode",
-    "commit 寫回 register 與 memory",
+    "commit 寫回 register 與 memory（完成就寫）",
     "三個部分全都 out-of-order"
    ],
    "ans": "function unit 的執行（operand 到齊就做）",
@@ -859,7 +859,7 @@
    "q": "下列哪一個是「只靠 compiler（VLIW）不夠，還需要 superscalar」的原因？",
    "opts": [
     "compile 時無法知道哪些存取會 cache miss",
-    "compiler 無法做 loop unrolling",
+    "compiler 無法做 loop unrolling 與 register renaming",
     "VLIW 不能執行 branch",
     "superscalar 不需要任何額外硬體"
    ],

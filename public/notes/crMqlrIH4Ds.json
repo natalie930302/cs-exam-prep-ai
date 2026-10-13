@@ -170,7 +170,7 @@
    "q": "證明 Prim 的 output 是 spanning tree 時，為什麼沒有 cycle？",
    "opts": [
     "每條加入的邊一端在 T、一端不在 T",
-    "因為每條邊的 weight 都不同",
+    "因為每條邊的 weight 都不同，不會選到重複邊",
     "因為圖是 simple graph",
     "因為只加了 n 條邊"
    ],
@@ -192,8 +192,8 @@
    "q": "Case 2 中，e′ 是怎麼找到的？",
    "opts": [
     "把 e 加進 M 產生 cycle，沿 cycle 找另一條跨過 T 邊界的邊",
-    "在全圖找 weight 最大的邊",
-    "在 T 裡找一條邊",
+    "在整個 M 裡找 weight 最大的邊，直接把它從 M 拿掉再補上 e",
+    "在 T 裡找一條與 e 相鄰的邊",
     "任取 M 中不在 T 的一條邊"
    ],
    "ans": "把 e 加進 M 產生 cycle，沿 cycle 找另一條跨過 T 邊界的邊",
@@ -203,7 +203,7 @@
    "q": "為什麼 w(e′) ≥ w(e)？",
    "opts": [
     "e′ 也是可加的候選，但 algorithm 選了 weight 最小的 e",
-    "因為 e′ 在 M 裡",
+    "因為 e′ 在 M 裡，而 M 的邊 weight 一定不小於 T 裡的邊",
     "因為 e′ 在 cycle 上",
     "因為 e 先被考慮"
    ],
@@ -214,7 +214,7 @@
    "q": "M′ = M + e − e′ 為什麼還是 MST？",
    "opts": [
     "它是 spanning tree 且 weight ≤ w(M)",
-    "因為它包含 e",
+    "因為它包含 e，而 e 是全圖 weight 最小的邊",
     "因為 M′ = M",
     "因為 e′ 是 weight 最大的邊"
    ],

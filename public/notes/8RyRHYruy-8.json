@@ -277,9 +277,9 @@
    "q": "PTBR（page-table base register）裡存的是什麼？",
    "opts": [
     "Page table 在 memory 的 physical address",
-    "Page table 在 memory 的 logical address",
-    "目前 process 的 page 數",
-    "TLB 的大小"
+    "Page table 在 memory 的 logical（virtual）address",
+    "目前 process 的 page 數量",
+    "TLB 的大小（entry 數）"
    ],
    "ans": "Page table 在 memory 的 physical address",
    "why": "MMU 是硬體直接讀 page table，沒有人再幫它翻譯，所以是 physical address。"

@@ -365,7 +365,7 @@
    "q": "Contiguous allocation 最大的缺點是？",
    "opts": [
     "external fragmentation，檔案難以增長",
-    "random access 很慢",
+    "random access 很慢，要從頭沿 link 走",
     "每個 block 浪費空間存 pointer",
     "一個 link 斷掉檔案就毀了"
    ],
@@ -399,7 +399,7 @@
    "opts": [
     "table 每個 entry 用 32 bits",
     "最多 32 個檔案",
-    "block 大小 32KB",
+    "block（cluster）大小為 32 KB",
     "32 層目錄"
    ],
    "ans": "table 每個 entry 用 32 bits",
@@ -409,9 +409,9 @@
    "q": "FAT 讓 linked allocation 的 random access 變快的關鍵是？",
    "opts": [
     "整張表 mount 時 load 到 memory，在 memory 裡 lookup",
-    "每個 block 存兩個 pointer",
+    "每個 block 存兩個 pointer，可往前也可往後走，跳得比較快",
     "檔案改成連續擺放",
-    "使用 bit vector"
+    "使用 bit vector 記錄 free block"
    ],
    "ans": "整張表 mount 時 load 到 memory，在 memory 裡 lookup",
    "why": "查表免 disk I/O，找到 block ID 後只需 1 次 I/O。"

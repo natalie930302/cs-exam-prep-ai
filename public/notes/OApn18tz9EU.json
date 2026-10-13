@@ -338,9 +338,9 @@
    "q": "mode bit 在什麼時候會從 user mode 切到 monitor（kernel）mode？",
    "opts": [
     "發生 interrupt / trap（含 system call）時",
-    "程式執行 add 指令時",
-    "使用者按下 Enter 時",
-    "每讀一次 memory 時"
+    "程式執行 add 等一般運算指令時",
+    "程式呼叫一般 library function（如 strlen）時",
+    "每次讀寫 memory（load / store）時"
    ],
    "ans": "發生 interrupt / trap（含 system call）時",
    "why": "處理 interrupt 第一件事就是 flip mode bit；return to user program 時再切回。"
@@ -349,9 +349,9 @@
    "q": "user mode 下的程式執行 privileged instruction 會怎樣？",
    "opts": [
     "CPU 檢查 mode bit 後拒絕並 trap 給 OS，通常程式被停掉",
-    "照常執行",
-    "自動切到 kernel mode 再執行",
-    "電腦直接重開機"
+    "照常執行，因為 privileged 只是建議用法",
+    "CPU 自動切到 kernel mode 再執行，結束後切回 user mode",
+    "電腦直接重開機，以免 OS 被破壞"
    ],
    "ans": "CPU 檢查 mode bit 後拒絕並 trap 給 OS，通常程式被停掉",
    "why": "privileged instruction 只能在 monitor mode 執行，要做就得 call system call。"
@@ -371,9 +371,9 @@
    "q": "base register 與 limit register 的作用是？",
    "opts": [
     "限制程式只能存取自己那段連續 memory",
-    "記錄被打斷程式的 PC",
-    "決定 timer 多久觸發",
-    "存放 system call 編號"
+    "記錄被打斷程式的 PC 與 return address",
+    "決定 timer 多久觸發一次 interrupt",
+    "存放 system call 編號與參數位置"
    ],
    "ans": "限制程式只能存取自己那段連續 memory",
    "why": "address < base 或 ≥ base + limit 就 trap。"
@@ -382,9 +382,9 @@
    "q": "為什麼只把 I/O 指令設成 privileged 還不夠？",
    "opts": [
     "使用者若能改 memory（如 interrupt vector），就能繞過 OS",
-    "因為 I/O 太慢",
-    "因為 CPU 不支援",
-    "因為 timer 會失效"
+    "因為 I/O 太慢，每次做 privileged 檢查會拖慢整個系統",
+    "因為 CPU 不支援 privileged 的 I/O 指令",
+    "因為 timer 會失效，OS 無法定期透過 interrupt 取回控制權"
    ],
    "ans": "使用者若能改 memory（如 interrupt vector），就能繞過 OS",
    "why": "所以還要用 base / limit 保護 memory。"
@@ -393,9 +393,9 @@
    "q": "寫錯 while(1) 時還能按 Ctrl-C 取回控制，靠的是？",
    "opts": [
     "timer 定期丟 interrupt，把控制權交回 OS",
-    "busy waiting",
-    "cache coherence",
-    "DMA"
+    "busy waiting：OS 一直輪詢鍵盤的 status",
+    "cache coherence 讓 OS 看到最新的迴圈變數",
+    "DMA 直接把 Ctrl-C 寫進程式的 memory"
    ],
    "ans": "timer 定期丟 interrupt，把控制權交回 OS",
    "why": "time sharing 也是對 CPU 的保護，沒有人能一直佔住 CPU。"

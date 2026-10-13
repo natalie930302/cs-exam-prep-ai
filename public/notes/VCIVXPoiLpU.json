@@ -142,9 +142,9 @@
    "q": "t = 6 時 P2 與 P4 的 burst time 都是 4，選誰？",
    "opts": [
     "P2，因為 arrival time 較早",
-    "P4，因為比較晚到",
-    "任選，結果不同",
-    "兩個同時執行"
+    "P4，因為比較晚到、等待較短",
+    "任選，兩者的 waiting time 都一樣",
+    "兩個同時執行，各分一半 CPU"
    ],
    "ans": "P2，因為 arrival time 較早",
    "why": "平手先比 arrival time；arrival 也相同才比 process id。"
@@ -164,8 +164,8 @@
    "q": "這題的平均 turnaround time？",
    "opts": [
     "6.25",
-    "3",
-    "5",
+    "7.25",
+    "5.75",
     "14"
    ],
    "ans": "6.25",

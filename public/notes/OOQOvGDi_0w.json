@@ -264,7 +264,7 @@
    "q": "BFS 只做到 level 5 就停，得到的 tree 有什麼性質？",
    "opts": [
     "離起點最短距離 ≤ 5 的端點全部在裡面",
-    "一定是 spanning tree",
+    "一定是 spanning tree，包含圖上所有端點",
     "一定比 DFS tree 高",
     "只有葉子在 level 5"
    ],

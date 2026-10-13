@@ -633,9 +633,9 @@
    "q": "單週期 CPU 的 CPI 是多少？它的缺點是？",
    "opts": [
     "CPI = 1，clock period 要等最長的指令",
-    "CPI = 5，clock period 很短",
-    "CPI = 1，clock period 最短",
-    "CPI 不固定，需要 pipeline register"
+    "CPI = 5，clock period 很短但要分 5 步",
+    "CPI = 1，clock period 由最短的指令決定",
+    "CPI 不固定，需要 pipeline register 暫存"
    ],
    "ans": "CPI = 1，clock period 要等最長的指令",
    "why": "每個指令一個 cycle，但 cycle 長度必須容納最慢的指令（lw），短指令也要等。"
@@ -644,9 +644,9 @@
    "q": "edge-triggered 且有 write enable 的 register，什麼時候會寫入？",
    "opts": [
     "clock 的 rising edge 且 Write = 1",
-    "clock 為 high 的整段時間",
-    "只要 input 改變",
-    "Write = 1 的任何時間"
+    "clock 為 high 的整段時間，不管 Write",
+    "只要 input 改變就立即寫入",
+    "Write = 1 的任何時間，不需等 clock"
    ],
    "ans": "clock 的 rising edge 且 Write = 1",
    "why": "edge-triggered 只在 transition 寫；再加 write enable，Write = 0 時即使有 edge 也不寫。"
@@ -655,9 +655,9 @@
    "q": "clock period 由什麼決定？",
    "opts": [
     "combinational logic 中最長的 path（critical path）",
-    "最短的 path",
-    "所有 path delay 的平均",
-    "register 的個數"
+    "combinational logic 中最短的 path（fastest path）的 delay",
+    "所有 path delay 的平均值",
+    "register 的個數乘上 setup time"
    ],
    "ans": "combinational logic 中最長的 path（critical path）",
    "why": "delay 必須小於 clock period 才能 latch 到正確資料，所以要用最長的那條。"

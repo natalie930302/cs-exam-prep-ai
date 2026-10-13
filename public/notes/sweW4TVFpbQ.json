@@ -1481,9 +1481,9 @@
    "q": "資料以 linked list 儲存時，老師建議用哪種 n log n 排序？代價是什麼？",
    "opts": [
     "Merge sort，代價是 MERGE 需要額外的輔助 array",
-    "Heap sort，代價是需要 index",
+    "Heap sort，代價是需要以 index 隨機存取父子節點",
     "Heap sort，沒有代價",
-    "Merge sort，代價是 worst case O(n²)"
+    "Merge sort，代價是 worst case 變成 O(n²)"
    ],
    "ans": "Merge sort，代價是 MERGE 需要額外的輔助 array",
    "why": "Heap sort 需要用 index 直接取 element，linked list 做不到；merge sort 很自然，但要多耗一些 memory。"
@@ -1492,7 +1492,7 @@
    "q": "T(n) = 2T(n/2) + cn 的 recursion tree，每一層成本與層數分別是？",
    "opts": [
     "每層 cn，共 log₂n 層",
-    "每層 cn/2，共 n 層",
+    "每層 cn/2，共 2log₂n 層",
     "每層 c，共 log₂n 層",
     "每層 n²，共 2 層"
    ],
@@ -1547,8 +1547,8 @@
    "q": "為什麼每個 δ/2 × δ/2 的小格子裡最多只有一個點？",
    "opts": [
     "同格兩點必在同側，距離 ≤ δ/√2 < δ，與 δ 是同側最近距離矛盾",
-    "因為假設所有 x 座標都不同",
-    "因為帶子已經依 y 排序",
+    "因為一開始就假設所有點的 x 座標都不同，同一個格子裡不可能有兩點",
+    "因為帶子已經依 y 排序，同格的點會被合併",
     "因為格子裡的點會被刪掉"
    ],
    "ans": "同格兩點必在同側，距離 ≤ δ/√2 < δ，與 δ 是同側最近距離矛盾",

@@ -625,8 +625,8 @@
    "opts": [
     "只得到頂點 1 那一塊的 spanning tree",
     "得到整張圖的 spanning tree",
-    "每一塊各一棵",
-    "演算法會報錯"
+    "每一塊各得到一棵 spanning tree（spanning forest）",
+    "演算法會報錯並停止"
    ],
    "ans": "只得到頂點 1 那一塊的 spanning tree",
    "why": "Prim 只加跟目前這棵樹相連的邊，碰不到另一塊。"

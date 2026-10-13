@@ -355,9 +355,9 @@
    "q": "Multiprogramming 主要想解決什麼問題？",
    "opts": [
     "I/O 時 CPU idle、資源使用率低",
-    "使用者無法互動",
+    "使用者無法即時和執行中的程式互動",
     "程式無法在 deadline 前完成",
-    "memory 太小"
+    "memory 太小，放不下單一程式"
    ],
    "ans": "I/O 時 CPU idle、資源使用率低",
    "why": "放多個 program，讓 CPU 與 I/O 時間 overlap。"
@@ -366,9 +366,9 @@
    "q": "Time sharing 相對於 multiprogramming 多了什麼？",
    "opts": [
     "依 time slot 頻繁切換，提供 interactive 與短 response time",
-    "一次只執行一個 job",
-    "把 disk 當 memory",
-    "不需要 CPU scheduling"
+    "一次只執行一個 job，做完才換下一個，讓 response time 最穩定",
+    "把 disk 當 memory 使用，讓程式可以比 RAM 大",
+    "不需要 CPU scheduling，由使用者自己決定執行順序"
    ],
    "ans": "依 time slot 頻繁切換，提供 interactive 與短 response time",
    "why": "multiprogramming 做完（或去 I/O）才換；time sharing 每幾 ms 就換。"
@@ -410,9 +410,9 @@
    "q": "為什麼 time sharing 下的同步問題特別難？",
    "opts": [
     "切換發生在 CPU 的低階指令之間，不是程式的一行 statement",
-    "CPU 太慢",
-    "程式只能一次跑一個",
-    "disk 太小"
+    "CPU 太慢，來不及在一個 time slot 內做完一行 statement 的所有指令",
+    "程式一次只能跑一個，無法用 lock 保護共享資料",
+    "disk 太小，共享資料必須頻繁寫回才能同步"
    ],
    "ans": "切換發生在 CPU 的低階指令之間，不是程式的一行 statement",
    "why": "一行 count++ 會變成 load / add / store，中間就可能被切換。"

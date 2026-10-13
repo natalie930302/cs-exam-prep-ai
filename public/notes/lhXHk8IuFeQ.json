@@ -770,9 +770,9 @@
    "q": "執行 *x = *y 之後，下列何者正確？",
    "opts": [
     "x 所指 node 的 data 與 link 都和 y 所指 node 相同，但 x != y",
-    "只有 data 被複製，link 不變",
-    "x 和 y 指向同一個 node",
-    "y 所指 node 被刪除"
+    "只有 data 欄位被複製，x 的 link 仍指向原本 x 後面的那個 node",
+    "x 和 y 指向同一個 node，之後 x == y",
+    "y 所指的 node 被刪除，記憶體還給系統"
    ],
    "ans": "x 所指 node 的 data 與 link 都和 y 所指 node 相同，但 x != y",
    "why": "*x = *y 複製所有欄位（包括 link），兩個 pointer 本身仍是不同位址。"
@@ -781,9 +781,9 @@
    "q": "Insert50(x) 若把兩行寫反：先 x->link = t; 再 t->link = x->link;，結果？",
    "opts": [
     "t->link 指向自己，原本 x 後面的 node 遺失",
-    "結果一樣正確",
-    "50 被插到 x 前面",
-    "程式編譯錯誤"
+    "結果一樣正確，兩行順序可以互換",
+    "50 被插到 x 前面，變成整個 list 的新 first",
+    "程式編譯錯誤，因為 t 還沒初始化"
    ],
    "ans": "t->link 指向自己，原本 x 後面的 node 遺失",
    "why": "x->link 已被改成 t，再讀 x->link 拿到的是 t 自己；20 的位址沒人記得了。"
@@ -803,9 +803,9 @@
    "q": "把刪掉的 node 放進 free list、之後 new 時先從那裡拿，主要好處是？",
    "opts": [
     "減少向系統要記憶體（system call）的 overhead",
-    "讓搜尋變成 O(1)",
-    "不需要 first 指標",
-    "可以用索引直接存取"
+    "讓搜尋變成 O(1)，因為 free list 中的 node 已經排序",
+    "不需要 first 指標，可以從 free list 走訪",
+    "可以用索引像陣列一樣直接存取 node"
    ],
    "ans": "減少向系統要記憶體（system call）的 overhead",
    "why": "node 重複利用，不必每次 new／delete 都請系統配置或回收記憶體。"

@@ -402,9 +402,9 @@
    "q": "Global replacement 的特性是？",
    "opts": [
     "可以從任何 process 挑 victim",
-    "只能換自己的 page",
-    "一定搭配 equal allocation",
-    "不會有 thrashing"
+    "只能換自己的 page，不影響其他 process",
+    "一定搭配 equal allocation 使用",
+    "不會有 thrashing，因為 frame 可以互借"
    ],
    "ans": "可以從任何 process 挑 victim",
    "why": "常與 priority allocation 搭配。"
@@ -413,9 +413,9 @@
    "q": "Thrashing 的定義是？",
    "opts": [
     "花在 paging 的時間超過 execution 的時間",
-    "CPU 使用率 100%",
-    "TLB miss 太多",
-    "process 數量太少"
+    "CPU 使用率長時間維持在 100% 以上",
+    "TLB miss 太多，導致每次 memory access 變慢",
+    "process 數量太少，CPU 常常閒置"
    ],
    "ans": "花在 paging 的時間超過 execution 的時間",
    "why": "此時 CPU 使用率會驟降。"
@@ -424,9 +424,9 @@
    "q": "Thrashing 惡性循環中，OS 看到 CPU 使用率下降時錯誤地做了什麼？",
    "opts": [
     "增加 degree of multiprogramming",
-    "suspend 所有 process",
-    "增加 page size",
-    "關閉 virtual memory"
+    "suspend 所有 process 並清空 memory",
+    "增加 page size 以減少 page fault",
+    "關閉 virtual memory 改用 swapping"
    ],
    "ans": "增加 degree of multiprogramming",
    "why": "加 process 只會讓每人 frame 更少、fault 更多。"
@@ -446,9 +446,9 @@
    "q": "Working set 中 D = Σ WSSi > m 時，OS 應該？",
    "opts": [
     "suspend 一個 process",
-    "再啟動一個 process",
-    "增加 Δ",
-    "什麼都不做"
+    "再啟動一個 process 提高 CPU 使用率",
+    "增加 Δ 讓 working set 變大",
+    "什麼都不做，等 D 自己下降"
    ],
    "ans": "suspend 一個 process",
    "why": "讓 D ≤ m，避免 thrashing。"
@@ -457,9 +457,9 @@
    "q": "Page-fault frequency 中，某 process 的 rate 低於 lower bound 代表？",
    "opts": [
     "它的 frame 太多，可以收回一些",
-    "它的 frame 不夠",
-    "正在 thrashing",
-    "要提高它的 priority"
+    "它的 frame 不夠，要再多給它",
+    "它正在 thrashing，應該 suspend",
+    "要提高它的 priority 讓它多跑"
    ],
    "ans": "它的 frame 太多，可以收回一些",
    "why": "收回的 frame 給 rate 超過上界的 process。"

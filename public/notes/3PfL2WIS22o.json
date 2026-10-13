@@ -192,7 +192,7 @@
    "q": "Nachos 是什麼？",
    "opts": [
     "教學用、模擬的作業系統",
-    "Linux 的一個 shell",
+    "Linux 的一個 shell 介面",
     "一種 CPU 排程演算法",
     "一種檔案系統格式"
    ],
@@ -203,7 +203,7 @@
    "q": "課堂所說的 code tracing 指的是？",
    "opts": [
     "先了解程式架構與 code path，再判斷要改哪裡",
-    "從第一個檔案第一行逐行讀完",
+    "從第一個檔案的第一行開始逐行讀完所有 code",
     "用 GUI 除錯器單步執行",
     "把程式重寫一遍"
    ],
@@ -215,7 +215,7 @@
    "opts": [
     "Linux 是 open source，可以去改、去動",
     "Linux 比較 user friendly",
-    "Windows 沒有 command line",
+    "Windows 沒有 command line，無法編譯 Nachos",
     "Nachos 只能在手機上跑"
    ],
    "ans": "Linux 是 open source，可以去改、去動",

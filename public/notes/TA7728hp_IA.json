@@ -337,8 +337,8 @@
    "q": "不同 file system（如 FAT32、NTFS）最大的差別在哪？",
    "opts": [
     "disk allocation 與 file structure 搜尋的實作",
-    "提供給使用者的 API",
-    "是否有 directory",
+    "提供給使用者的 API（open、read、write、close）",
+    "是否有 directory 與 subdirectory 結構",
     "是否能存檔案"
    ],
    "ans": "disk allocation 與 file structure 搜尋的實作",
@@ -361,7 +361,7 @@
     "File-organization module",
     "Logical file system",
     "Basic file system",
-    "I/O control"
+    "I/O control（device driver）"
    ],
    "ans": "File-organization module",
    "why": "它負責 logical position → block；basic FS 再把 block 對到 cylinder/track/sector。"
@@ -370,8 +370,8 @@
    "q": "Virtual file system（VFS）的作用是？",
    "opts": [
     "提供統一介面，把呼叫轉給實際管理該檔案的 FS",
-    "把 disk 當成 memory",
-    "加速 disk I/O",
+    "把 disk 當成 memory 使用，提供 virtual memory",
+    "加速 disk I/O，把常用檔案 cache 在記憶體",
     "取代 device driver"
    ],
    "ans": "提供統一介面，把呼叫轉給實際管理該檔案的 FS",
@@ -383,7 +383,7 @@
     "Partition control block",
     "Boot control block",
     "File control block",
-    "Open-file table"
+    "Per-process open-file table"
    ],
    "ans": "Partition control block",
    "why": "boot control block 存開機用 code；FCB 存單一檔案的 attributes；open-file table 在 memory。"

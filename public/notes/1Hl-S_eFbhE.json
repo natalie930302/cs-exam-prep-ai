@@ -400,9 +400,9 @@
    "q": "為什麼有些 boot code 要用 raw data 直接存在硬碟上？",
    "opts": [
     "file system 還沒架起來前無法透過它讀檔",
-    "raw data 比較安全",
-    "ROM 空間不夠存任何 code",
-    "OS 不允許讀 boot block"
+    "raw data 比較安全，不會被病毒改掉",
+    "ROM 空間不夠存任何 code，只能放硬碟",
+    "OS 不允許透過 file system 讀 boot block"
    ],
    "ans": "file system 還沒架起來前無法透過它讀檔",
    "why": "所以 boot block 在磁碟最前面，不需要 FS 介入。"
@@ -411,9 +411,9 @@
    "q": "Sector sparing 的缺點是？",
    "opts": [
     "logical 連續但 physical 不連續，影響排程效能",
-    "要搬動所有資料",
+    "要把壞軌後面所有 sector 的資料全部往後搬一格，非常耗時",
     "會遺失資料",
-    "只能用在 IDE"
+    "只能用在 IDE，SCSI 硬碟不支援"
    ],
    "ans": "logical 連續但 physical 不連續，影響排程效能",
    "why": "spare 在 track 後面，讀到那個 sector 磁頭要跳過去。"
@@ -422,7 +422,7 @@
    "q": "Sector slipping 處理 sector 4 壞掉的方式？",
    "opts": [
     "原本 5 改成 4，後面全部往後挪一格",
-    "直接用最後的 spare 當 4",
+    "直接用最後的 spare 當 4，其他 sector 不動",
     "只標記成壞軌",
     "把資料搬到另一顆硬碟"
    ],
@@ -433,7 +433,7 @@
    "q": "Swap space 用 raw partition 的主要缺點？",
    "opts": [
     "大小固定，調整很麻煩",
-    "比用檔案慢",
+    "比用檔案慢，要多經過一層 file system",
     "不能存 page",
     "需要 file system"
    ],
@@ -444,7 +444,7 @@
    "q": "依課堂介紹的最省空間策略，哪種 page 被換出時要寫入 swap space？",
    "opts": [
     "stack / heap 等動態產生的 page",
-    "code（text）page",
+    "code（text）page，因為它最常被存取",
     "所有 page 在 load 時就寫",
     "只寫 read-only page"
    ],

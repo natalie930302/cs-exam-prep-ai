@@ -412,7 +412,7 @@
    "q": "General-graph directory 中刪掉 bin→g2 的 link 後，g2 與 t1 互相參照。怎麼回收？",
    "opts": [
     "Garbage collection：從 root 標記走得到的，刪掉沒標記的",
-    "等 reference count 變 0",
+    "Reference counting：等 g2、t1 的 count 變 0 時自動刪除",
     "刪除 root",
     "把 link 改成 hard link"
    ],
@@ -424,7 +424,7 @@
    "opts": [
     "週期性 garbage collection 對大量檔案太耗時",
     "無法建立 link",
-    "不能有 mount point",
+    "general graph 不能有 mount point，無法掛載其他 FS",
     "權限無法設定"
    ],
    "ans": "週期性 garbage collection 對大量檔案太耗時",

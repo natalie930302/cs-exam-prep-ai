@@ -479,8 +479,8 @@
    "q": "MIPS 執行 mult $t1, $t2 後，乘積在哪裡？",
    "opts": [
     "Hi（高 32 bits）與 Lo（低 32 bits）",
-    "$t1",
-    "$t2 與 $t3",
+    "$t1（覆蓋原本的被乘數）",
+    "$t2 與 $t3（分別放高 32 與低 32 bits）",
     "只有 Lo"
    ],
    "ans": "Hi（高 32 bits）與 Lo（低 32 bits）",
@@ -490,9 +490,9 @@
    "q": "第一版乘法器每一輪做什麼？",
    "opts": [
     "Multiplier0 = 1 就 Product += Multiplicand；Multiplicand 左移、Multiplier 右移",
+    "Multiplier0 = 1 就 Product += Multiplicand；Multiplicand 右移、Multiplier 左移",
     "Product 右移、Multiplicand 不動",
-    "看兩個 bit 決定加或減",
-    "Multiplicand 右移、Multiplier 左移"
+    "看兩個 bit 決定加或減"
    ],
    "ans": "Multiplier0 = 1 就 Product += Multiplicand；Multiplicand 左移、Multiplier 右移",
    "why": "這是照紙筆算法直接搬過去的版本，需要 64-bit 的 Multiplicand 與 ALU。"
@@ -501,8 +501,8 @@
    "q": "改良版乘法器的關鍵改變是？",
    "opts": [
     "Multiplicand 不動、Product 右移，multiplier 放進 Product 右半",
-    "Multiplicand 改成 128 bits",
-    "每次看兩個 bit",
+    "Multiplicand 改成 128 bits，Product 改成每一輪往左移一位，ALU 也加寬",
+    "每次看 multiplier 的兩個 bit，決定加、減或不動",
     "把 ALU 改成 64 bits"
    ],
    "ans": "Multiplicand 不動、Product 右移，multiplier 放進 Product 右半",
@@ -512,7 +512,7 @@
    "q": "4-bit two's complement 乘法 −7 × −7，乘數 sign bit 那一輪要？",
    "opts": [
     "減掉 multiplicand（左移 3 位）",
-    "加上 multiplicand",
+    "加上 multiplicand（左移 3 位）",
     "什麼都不做",
     "把結果反相"
    ],

@@ -299,9 +299,9 @@
    "q": "呼叫 pthread_cond_wait 時，lock 會怎樣？",
    "opts": [
     "被 release，醒來 return 前再 reacquire",
-    "一直被持有",
+    "一直被持有，直到 signal 的 thread 呼叫 unlock",
     "被 destroy",
-    "交給 OS 永久保管"
+    "交給 OS 保管，醒來後要自己重新 init"
    ],
    "ans": "被 release，醒來 return 前再 reacquire",
    "why": "否則 signal 的人進不了 critical section，會 deadlock。"
@@ -310,7 +310,7 @@
    "q": "thread pool 中，worker thread 怎麼知道有工作？",
    "opts": [
     "wait 在同一個 condition variable，master 填好 job 後 signal",
-    "一直 busy waiting 檢查 job",
+    "每個 worker 自己一直 busy waiting，不斷檢查 job queue 是否非空",
     "每次有工作就 create 新 thread",
     "由 OS 自動分配"
    ],
@@ -321,7 +321,7 @@
    "q": "為什麼 TestAndSet 要用 hardware 實作？",
    "opts": [
     "software 版本身是好幾行，兩個 thread 同時呼叫就會 race",
-    "software 寫不出來",
+    "software 寫不出 test 與 set 的邏輯，只有 hardware 能判斷",
     "hardware 比較省電",
     "為了 bounded waiting"
    ],
@@ -343,9 +343,9 @@
    "q": "semaphore 的 wait / signal 為什麼必須 atomic？",
    "opts": [
     "S 是 shared variable，++ / -- 本身會 race",
-    "為了 bounded waiting",
+    "為了 bounded waiting，避免某個 process 一直等",
     "為了避免 starvation",
-    "因為它是 hardware"
+    "因為它是 hardware 指令"
    ],
    "ans": "S 是 shared variable，++ / -- 本身會 race",
    "why": "可用 hardware、software CS 或關 interrupt 實現。"

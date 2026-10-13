@@ -400,10 +400,10 @@
   {
    "q": "Swap space（backing store）的特性是？",
    "opts": [
-    "屬於 file system 的一般檔案",
+    "屬於 file system 的一般檔案，由使用者自行建立與刪除",
     "Disk 上 OS 專用、不歸 file system 管的一塊空間",
-    "位於 CPU cache",
-    "只在 compile time 使用"
+    "位於 CPU cache 中，存放被換出的 page",
+    "只在 compile time 使用的暫存區"
    ],
    "ans": "Disk 上 OS 專用、不歸 file system 管的一塊空間",
    "why": "Swap space 放的是 memory content（page），不是 user 檔案，由 OS 直接管理。"
@@ -412,9 +412,9 @@
    "q": "為什麼 swapping 要配合 execution-time binding？",
    "opts": [
     "Swap 回來時才能放到不同位置",
-    "可以避免 I/O",
-    "可以不需要 disk",
-    "可以省 TLB"
+    "可以避免 swap 時的 disk I/O",
+    "可以不需要 disk，直接在 memory 搬移",
+    "可以省下 TLB 的 entry 數"
    ],
    "ans": "Swap 回來時才能放到不同位置",
    "why": "Compile/load time binding 必須回原位置，可能永遠等不到；execution time 改 base register 即可。"
@@ -422,10 +422,10 @@
   {
    "q": "哪種 process 不能被 swap 出去？",
    "opts": [
-    "在 sleep queue 的",
-    "在 ready queue 的",
+    "在 sleep queue 中、等待 timer 喚醒的",
+    "在 ready queue 中、正在等待 CPU 排程的",
     "正在等 I/O、device 正寫入它 memory 的",
-    "已經結束的"
+    "剛建立、還沒執行過任何指令的"
    ],
    "ans": "正在等 I/O、device 正寫入它 memory 的",
    "why": "I/O device 透過 memory bus 寫它的 memory，swap 掉會寫錯；可用 OS buffer 解決。"
@@ -444,10 +444,10 @@
   {
    "q": "實務上最常用哪個演算法，為什麼？",
    "opts": [
-    "Best fit，最省空間",
-    "Worst fit，剩下的最大",
+    "Best fit，剩下的碎片最小，最省空間",
+    "Worst fit，剩下的洞最大，之後最容易被再次利用",
     "First fit，找到第一個就停，average case 最快",
-    "三者都不用"
+    "Next fit，從上次位置繼續找，碎片最少"
    ],
    "ans": "First fit，找到第一個就停，average case 最快",
    "why": "Best/worst fit 要掃整個 list，效能又沒保證較好。"

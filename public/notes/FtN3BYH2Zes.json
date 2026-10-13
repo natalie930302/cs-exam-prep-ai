@@ -427,7 +427,7 @@
    "q": "Bellman-Ford 屬於哪一種策略？",
    "opts": [
     "Dynamic programming",
-    "Greedy method",
+    "Greedy method（同 Dijkstra）",
     "Divide and conquer",
     "Backtracking"
    ],
@@ -472,7 +472,7 @@
    "opts": [
     "做完 n − 1 輪後再 relax 一次，若還有頂點被更新",
     "看圖中有沒有負邊",
-    "第一輪就有頂點被更新",
+    "做完第一輪後就檢查，若有任何頂點的距離變成負的",
     "最後距離出現 0"
    ],
    "ans": "做完 n − 1 輪後再 relax 一次，若還有頂點被更新",

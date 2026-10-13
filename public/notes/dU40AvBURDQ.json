@@ -554,8 +554,8 @@
    "q": "影片說 2005 年後處理器效能主要靠什麼提升？",
    "opts": [
     "一顆晶片放多個核心",
-    "時脈持續倍增",
-    "更深的 pipeline",
+    "時脈每年持續倍增",
+    "更深的 pipeline 與更高時脈",
     "更大的硬碟"
    ],
    "ans": "一顆晶片放多個核心",
@@ -565,8 +565,8 @@
    "q": "Execution migration 相對於遠端資料存取的優點是？",
    "opts": [
     "單程，不需要一來一回",
-    "要搬的資料比較少",
-    "不需要網路",
+    "要搬的資料量一定比較少",
+    "不需要網路或 interconnect",
     "不會有 cache miss"
    ],
    "ans": "單程，不需要一來一回",
@@ -600,7 +600,7 @@
     "NP-complete",
     "多項式時間",
     "O(1)",
-    "不可判定"
+    "PSPACE-complete"
    ],
    "ans": "NP-complete",
    "why": "反方向的 origami design 反而可以解。"
@@ -611,7 +611,7 @@
     "O(log_B n)",
     "O(log₂ n)",
     "O(n/B)",
-    "O(1)"
+    "O(B log n)"
    ],
    "ans": "O(log_B n)",
    "why": "一次讀一整個 block，例如 B-tree。"
@@ -622,7 +622,7 @@
     "O(log log u)",
     "O(log n)",
     "O(log u)",
-    "O(√n)"
+    "O(log u / log log u)"
    ],
    "ans": "O(log log u)",
    "why": "fusion tree 則是 O(log n / log log u)。"

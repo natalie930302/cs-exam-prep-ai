@@ -246,8 +246,8 @@
    "q": "要保證 S1（在 P1）先於 S2（在 P2），sync 的初值與放法？",
    "opts": [
     "sync = 0；S1 後 signal(sync)，S2 前 wait(sync)",
-    "sync = 1；S1 前 wait(sync)",
-    "sync = 0；S2 後 signal(sync)",
+    "sync = 1；S1 前 wait(sync)，S2 後 signal(sync)",
+    "sync = 0；S2 後 signal(sync)，S1 前 wait(sync)",
     "sync = 1；兩邊都 signal"
    ],
    "ans": "sync = 0；S1 後 signal(sync)，S2 前 wait(sync)",
@@ -257,7 +257,7 @@
    "q": "block / wakeup 版的 wait，S 減 1 後小於 0 時？",
    "opts": [
     "加入 waiting list 並 block",
-    "在 while 迴圈裡轉",
+    "在 while 迴圈裡轉，直到 S > 0",
     "直接進入 critical section",
     "把 S 設回 0"
    ],
@@ -281,7 +281,7 @@
     "等的 process 一直佔用 CPU 空轉",
     "無法保證 mutual exclusion",
     "一定會 deadlock",
-    "不能用在 multiprocessor"
+    "不能用在 multiprocessor 系統上"
    ],
    "ans": "等的 process 一直佔用 CPU 空轉",
    "why": "所以改成 block / wakeup。"

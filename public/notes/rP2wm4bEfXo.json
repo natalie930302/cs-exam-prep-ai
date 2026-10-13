@@ -1073,7 +1073,7 @@
    "opts": [
     "n",
     "2n",
-    "n²",
+    "n² + 2n",
     "2n²"
    ],
    "ans": "2n²",
@@ -1082,7 +1082,7 @@
   {
    "q": "理論分析 running time 為什麼通常用 worst case 而不是 average case？",
    "opts": [
-    "worst case 比較好算",
+    "worst case 比較好算，average case 要跑實驗才能得到",
     "average case 要先知道 input 的分布，理論上通常不知道",
     "average case 一定比 worst case 大",
     "best case 才是標準"
@@ -1096,7 +1096,7 @@
     "在真實 input 上跑得快",
     "比 brute force 快",
     "有 polynomial 的 worst-case running time",
-    "average case 是 O(n log n)"
+    "average-case running time 在 O(n log n) 以內"
    ],
    "ans": "有 polynomial 的 worst-case running time",
    "why": "要找得到常數 c、d > 0，使 worst-case 步驟數 ≤ c·n^d。"
@@ -1137,7 +1137,7 @@
   {
    "q": "f(n) = 5n³、g(n) = 3n²，都寫成 O(n³)。下列何者正確？",
    "opts": [
-    "f(n) = g(n)",
+    "f(n) = g(n)，因為兩者都等於 O(n³)",
     "O(n³) 是一個函數集合，f(n) ∈ O(n³)",
     "g(n) 不能寫成 O(n³)",
     "O(n³) 只代表 n³ 本身"
@@ -1148,7 +1148,7 @@
   {
    "q": "6.02×10²³ · n²⁰ 的 running time 屬於？",
    "opts": [
-    "polynomial，而且實務可行",
+    "polynomial，而且只要是 polynomial 實務上就可行",
     "polynomial，但 c、d 太大實務上不可行",
     "exponential",
     "不能分析"

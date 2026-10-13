@@ -1213,7 +1213,7 @@
    "opts": [
     "in-place：只用原本的 array",
     "stable：相同 key 順序不變",
-    "最好情況 O(n)",
+    "最好情況 O(n)，已排序時最快",
     "需要額外 O(n) 的暫存陣列"
    ],
    "ans": "in-place：只用原本的 array",
@@ -1224,8 +1224,8 @@
    "opts": [
     "m（edge 數）",
     "n（點數）",
-    "n²",
-    "n log n"
+    "n²（每對點）",
+    "n log n（heap 高度）"
    ],
    "ans": "m（edge 數）",
    "why": "每個點只檢查自己往外連出的 edge，所有點加起來就是 edge 總數 m。"
@@ -1234,9 +1234,9 @@
    "q": "為什麼 minimum spanning 的最佳解一定是 tree？",
    "opts": [
     "有 cycle 就能剪掉 cycle 上一條 edge，仍 connected 且 cost 不增",
-    "因為 graph 本身就是 tree",
-    "因為 edge cost 都相同",
-    "因為 greedy 只能產生 tree"
+    "因為輸入的 graph 本身就是 tree，所以任何 connected 子圖也只能是 tree",
+    "因為 edge cost 都相同，選哪 n − 1 條都一樣",
+    "因為 greedy 只能產生 tree，不可能選出 cycle"
    ],
    "ans": "有 cycle 就能剪掉 cycle 上一條 edge，仍 connected 且 cost 不增",
    "why": "cost 非負，剪掉 cycle 上的 edge 不會變貴，也不會斷開，所以最佳解可以沒有 cycle。"

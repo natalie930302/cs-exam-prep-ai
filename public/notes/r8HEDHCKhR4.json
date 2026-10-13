@@ -370,7 +370,7 @@
    "q": "證 (A ∪ B)ᶜ ⊆ Aᶜ ∩ Bᶜ 時，從 ¬(x ∈ A ∨ x ∈ B) 推到 x ∉ A ∧ x ∉ B，用的是？",
    "opts": [
     "邏輯的 De Morgan's law",
-    "分配律",
+    "邏輯的分配律（distributive law）",
     "交換律",
     "結合律"
    ],

@@ -318,7 +318,7 @@
     "10 次，Belady's anomaly",
     "8 次，thrashing",
     "6 次，locality",
-    "9 次，沒有變化"
+    "11 次，Belady's anomaly"
    ],
    "ans": "10 次，Belady's anomaly",
    "why": "frame 變多 fault 反而變多。"
@@ -327,7 +327,7 @@
    "q": "Dirty bit = 0 的 page 被選為 victim 時？",
    "opts": [
     "不用寫回 disk，直接覆蓋",
-    "整頁寫回 disk",
+    "要先整頁寫回 disk 再覆蓋",
     "不能被換出",
     "要先 zero-out"
    ],
@@ -338,7 +338,7 @@
    "q": "Page replacement algorithm 的 input 是？",
    "opts": [
     "reference string（依序 access 的 page 編號）",
-    "每次 access 的 byte address",
+    "每次 access 的完整 byte address（含 offset）",
     "process 的 priority",
     "frame 的實體位址"
    ],
@@ -349,7 +349,7 @@
    "q": "在 FIFO 中，一個 page 被 hit 之後？",
    "opts": [
     "位置不變，仍照進來的順序被踢",
-    "移到 queue 最前面",
+    "移到 queue 尾端，重新排隊等被踢",
     "永遠不會被踢",
     "dirty bit 設成 1"
    ],

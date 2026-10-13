@@ -1749,7 +1749,7 @@
    "opts": [
     "前者是後者的充分條件，但不是必要條件",
     "兩者完全等價",
-    "後者是前者的充分條件",
+    "後者是前者的充分條件，但不是必要條件",
     "兩者沒有關係"
    ],
    "ans": "前者是後者的充分條件，但不是必要條件",
@@ -1814,9 +1814,9 @@
    "q": "用 singly linked list 實作 stack，為什麼把 top 放在 head？",
    "opts": [
     "在 head 插入與刪除都只要改 head，O(1)；刪尾巴要先找到前一個節點",
-    "因為尾巴不能插入新節點",
+    "因為尾巴不能插入新節點，singly linked list 只能從 head 加入新的節點",
     "因為 head 一定比較省記憶體",
-    "因為 STL 規定 top 必須在 head"
+    "因為 STL 規定 top 必須在 head，tail 只給 queue 用"
    ],
    "ans": "在 head 插入與刪除都只要改 head，O(1)；刪尾巴要先找到前一個節點",
    "why": "pop 是 removal；在 singly linked list 尾巴 removal 要改尾巴前一個的 pointer，得從 head 走過去，比較困難。"

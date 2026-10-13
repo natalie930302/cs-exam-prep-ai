@@ -417,7 +417,7 @@
    "q": "Resource-allocation graph 中，R → P 的箭頭代表？",
    "opts": [
     "assignment edge：資源已配給該 process",
-    "request edge：process 在等資源",
+    "request edge：process 正在等待該資源被釋放",
     "claim edge：未來可能要求",
     "process 在等另一個 process"
    ],
@@ -440,7 +440,7 @@
    "opts": [
     "一定沒有 deadlock",
     "一定 deadlock",
-    "可能 deadlock",
+    "有可能發生 deadlock",
     "要看 instance 數"
    ],
    "ans": "一定沒有 deadlock",
@@ -452,7 +452,7 @@
     "ignore，發生就讓使用者 reboot",
     "prevention",
     "avoidance",
-    "每秒跑一次 detection"
+    "每秒跑一次 detection，再 abort 所有 process"
    ],
    "ans": "ignore，發生就讓使用者 reboot",
    "why": "detection/avoidance 代價高，而 deadlock 不常發生。重要系統（核電廠）則不能這樣。"

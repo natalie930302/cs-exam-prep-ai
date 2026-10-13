@@ -1593,7 +1593,7 @@
     "list2 + i",
     "&list2[i]",
     "*(list2 + i)",
-    "*list2 + i"
+    "*(list2) + i"
    ],
    "ans": "*(list2 + i)",
    "why": "list2 + i 是位址 &list2[i]，前面加 * 才取值；*list2 + i 是 list2[0] + i。"
@@ -1612,7 +1612,7 @@
   {
    "q": "class Polynomial 裡的 termArray 為什麼宣告成 static？",
    "opts": [
-    "讓存取比較快",
+    "讓存取比較快，不必經過物件指標",
     "讓所有多項式共用同一個 array",
     "讓 array 可以自動變大",
     "避免被 friend class 存取"

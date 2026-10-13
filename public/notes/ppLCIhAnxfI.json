@@ -309,8 +309,8 @@
    "opts": [
     "E′ = E（T 包含 G 的所有邊）",
     "T 是 G 的 subgraph",
-    "T 是 tree",
-    "V′ = V"
+    "T 是 tree（connected 且沒有 cycle）",
+    "V′ = V（T 包含 G 的所有頂點）"
    ],
    "ans": "E′ = E（T 包含 G 的所有邊）",
    "why": "spanning 只要求包含所有端點；邊只取一部分（n 個點用 n − 1 條邊）。"

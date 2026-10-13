@@ -284,9 +284,9 @@
    "q": "老師說作業系統在電腦中的位置是？",
    "opts": [
     "夾在應用程式與硬體中間，連結上下",
-    "最上層的應用程式",
-    "最下層的硬體",
-    "只存在於伺服器上"
+    "最上層的應用程式，直接和使用者互動",
+    "最下層的硬體，負責實際運算",
+    "只存在於伺服器上，個人電腦不需要"
    ],
    "ans": "夾在應用程式與硬體中間，連結上下",
    "why": "上面的軟體怎麼用電腦、下面的硬體怎麼管理，都靠 OS。"
@@ -295,9 +295,9 @@
    "q": "今天的 mainframe 在設計上特別重視什麼？",
    "opts": [
     "reliability 與 security",
-    "遊戲效能",
-    "螢幕解析度",
-    "電池續航"
+    "遊戲與多媒體的效能",
+    "graphics 與 user interface",
+    "電池續航與低耗電設計"
    ],
    "ans": "reliability 與 security",
    "why": "專門處理重要的大量工作，零件壞了也不能 crash，也不能被入侵。"
@@ -317,9 +317,9 @@
    "q": "Batch system 的 OS 主要只做什麼？",
    "opts": [
     "在 job 之間 transfer control（initialize、clean up）",
-    "CPU scheduling",
-    "virtual memory",
-    "檔案權限管理"
+    "CPU scheduling：在多個 job 之間依 time slice 輪流切換執行",
+    "virtual memory：讓 job 使用比 RAM 大的空間",
+    "檔案權限管理：控制每個 user 能讀寫的檔案"
    ],
    "ans": "在 job 之間 transfer control（initialize、clean up）",
    "why": "一次只有一個人在用，OS 幾乎什麼都不用管。"
@@ -328,9 +328,9 @@
    "q": "Batch 時代 CPU 常 idle 的根本原因是？",
    "opts": [
     "I/O（讀卡片）遠慢於 CPU",
-    "CPU 太慢",
-    "memory 太大",
-    "使用者太多"
+    "CPU 太慢，跟不上讀卡機",
+    "memory 太大，載入時間太長",
+    "使用者太多，排隊等待輸入"
    ],
    "ans": "I/O（讀卡片）遠慢於 CPU",
    "why": "機械式讀卡片很慢，CPU 只能等；今天 CPU 仍遠快於 I/O。"

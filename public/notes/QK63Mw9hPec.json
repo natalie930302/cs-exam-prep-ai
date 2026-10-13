@@ -223,7 +223,7 @@
    "q": "老師說電腦（與 OS）不可或缺的三個要素是？",
    "opts": [
     "CPU（process）、memory、storage",
-    "keyboard、mouse、monitor",
+    "keyboard、mouse、monitor、printer",
     "compiler、linker、loader",
     "network、cloud、IoT"
    ],
@@ -234,8 +234,8 @@
    "q": "為什麼電腦能用很少的 CPU 同時跑上千個 process？",
    "opts": [
     "因為 OS 負責 scheduling，決定現在該誰執行",
-    "因為每個 process 都有自己的 CPU",
-    "因為 process 都在 disk 上執行",
+    "因為每個 process 都有自己的 CPU core",
+    "因為 process 都在 disk 上執行，不需要 CPU",
     "因為 memory 會幫忙計算"
    ],
    "ans": "因為 OS 負責 scheduling，決定現在該誰執行",
@@ -245,8 +245,8 @@
    "q": "為什麼 synchronization 這一章沒有程式作業？",
    "opts": [
     "可能性太多，跑一次程式無法證明正確性",
-    "因為它太簡單",
-    "因為 Nachos 沒有 thread",
+    "因為它太簡單，課堂練習就夠",
+    "因為 Nachos 沒有 thread，無法實作 lock",
     "因為期末不考"
    ],
    "ans": "可能性太多，跑一次程式無法證明正確性",
@@ -256,9 +256,9 @@
    "q": "分散式系統的想法是？",
    "opts": [
     "把很多電腦連在一起管理，像一台電腦一樣做事",
-    "一台電腦只跑一個程式",
+    "一台電腦只跑一個程式，避免多個程式互相干擾而當機",
     "把 disk 當 memory 用",
-    "不需要網路"
+    "每台電腦各自獨立，不需要網路溝通"
    ],
    "ans": "把很多電腦連在一起管理，像一台電腦一樣做事",
    "why": "雲端、巨量資料、IoT 都不是一台電腦做得完的。"

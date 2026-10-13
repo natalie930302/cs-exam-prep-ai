@@ -508,8 +508,8 @@
    "q": "為什麼 R-type 指令在 pipeline 裡也要等到第 5 段才寫回，而不在第 4 段寫？",
    "opts": [
     "避免和緊接在前面的 lw 同時搶 register file 的 write port",
-    "因為 R-type 的結果要到第 5 段才算出來",
-    "因為 R-type 要先存取 data memory",
+    "因為 R-type 的結果要到第 5 段才由 ALU 算出來",
+    "因為 R-type 要先在第 4 段存取 data memory，之後才能寫回結果",
     "為了讓 forwarding 比較容易"
    ],
    "ans": "避免和緊接在前面的 lw 同時搶 register file 的 write port",
@@ -530,9 +530,9 @@
    "q": "pipelined control 的 control signal 在哪一段產生？",
    "opts": [
     "第 2 段（ID）decode 完就產生，再分組隨指令往下傳",
-    "第 1 段（IF）就產生",
-    "每一段要用時才重新 decode",
-    "第 5 段才產生"
+    "第 1 段（IF）fetch 時就產生，整組控制訊號一起往下傳",
+    "每一段要用時才各自重新 decode 一次",
+    "第 5 段（WB）才產生"
    ],
    "ans": "第 2 段（ID）decode 完就產生，再分組隨指令往下傳",
    "why": "和 single cycle 一樣由 opcode decode，但分成 EX、M、WB 三組存在 pipeline register 裡往下傳。"
@@ -541,9 +541,9 @@
    "q": "寫回 register 時用的 destination 號碼來自哪裡？",
    "opts": [
     "跟著該指令一路存在 pipeline register 裡傳過來的 rt / rd",
-    "IF/ID 裡目前那條指令的 rd",
+    "IF/ID 裡目前正在 decode 的那條新指令的 rd 欄位（rs / rt）",
     "永遠是 rt",
-    "ALU 的輸出"
+    "ALU 的輸出結果"
    ],
    "ans": "跟著該指令一路存在 pipeline register 裡傳過來的 rt / rd",
    "why": "IF/ID 裡是新進來的指令；寫回要用原本那條指令的 destination（R-type 選 rd、lw 選 rt），所以要一路帶著走。"
@@ -563,9 +563,9 @@
    "q": "五級 pipeline 的理想 speedup 是 5 倍，實際上常達不到的原因之一是？",
    "opts": [
     "clock 要配合最慢的 stage，各段不平衡",
-    "指令數量變多",
-    "每個指令的 CPI 變成 5",
-    "register file 變小"
+    "指令數量變成原本的 5 倍",
+    "每個指令的 CPI 都變成 5",
+    "register file 變小，常常要存回 memory"
    ],
    "ans": "clock 要配合最慢的 stage，各段不平衡",
    "why": "老師強調切 stage 時要盡量 balance，因為會被最長的那一段限制。"

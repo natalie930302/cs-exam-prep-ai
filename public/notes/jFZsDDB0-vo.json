@@ -284,9 +284,9 @@
    "q": "依影片，articulation point 是什麼？",
    "opts": [
     "拿掉它圖就斷成多個 component 的頂點",
-    "度數最大的頂點",
-    "DFS 的起點",
-    "在環上的頂點"
+    "度數最大、連到最多 component 的頂點",
+    "DFS 的起點，也就是 DFS tree 的 root",
+    "在環上、拿掉後環就斷掉的頂點"
    ],
    "ans": "拿掉它圖就斷成多個 component 的頂點",
    "why": "定義就是：移除後圖變得不連通。"
@@ -306,9 +306,9 @@
    "q": "非 root 的 u（parent）是 articulation point 的條件是？",
    "opts": [
     "存在 child v 使 L[v] ≥ d[u]",
-    "L[u] ≥ d[v]",
-    "d[u] > d[v]",
-    "u 有兩個 child"
+    "存在 child v 使 L[u] ≥ d[v]",
+    "存在 child v 使 d[u] > d[v]",
+    "u 在 DFS 樹中有兩個以上 child"
    ],
    "ans": "存在 child v 使 L[v] ≥ d[u]",
    "why": "v 那一支繞不回 u 的上面。"
@@ -317,9 +317,9 @@
    "q": "root 什麼時候是 articulation point？",
    "opts": [
     "DFS 樹中 root 有兩個以上 child",
-    "root 的 L 等於 1",
-    "永遠是",
-    "永遠不是"
+    "root 的 L 值等於 1",
+    "永遠是，因為 root 連著所有子樹",
+    "永遠不是，因為 root 沒有 parent"
    ],
    "ans": "DFS 樹中 root 有兩個以上 child",
    "why": "影片最後講的 root 特殊條件。"
@@ -328,9 +328,9 @@
    "q": "影片中消除 articulation point 3 的方法是？",
    "opts": [
     "在兩邊的 component 之間加一條邊",
-    "把 3 刪掉",
-    "把圖改成有向圖",
-    "重新做 BFS"
+    "把頂點 3 和它的邊全部刪掉",
+    "把圖改成有向圖再重新計算",
+    "重新做 BFS 找出新的 spanning tree"
    ],
    "ans": "在兩邊的 component 之間加一條邊",
    "why": "加上 4–5，拿掉 3 也不會斷。"

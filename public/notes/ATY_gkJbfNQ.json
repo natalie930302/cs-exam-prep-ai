@@ -272,7 +272,7 @@
   {
    "q": "照字母順序從 A 出發，第一次 get stuck 時走出的 circuit 是？",
    "opts": [
-    "A B D C A",
+    "A B D C D A",
     "A B A C D A",
     "A C D B A",
     "A D C A"
@@ -285,7 +285,7 @@
    "opts": [
     "C D A B D B A C D C",
     "A B C D A",
-    "B D B A C D A B",
+    "B D B A C D A B D C",
     "C D C A B"
    ],
    "ans": "C D A B D B A C D C",
@@ -294,10 +294,10 @@
   {
    "q": "connected graph 有 Euler trail（非 circuit）的條件是？",
    "opts": [
-    "每點 degree 偶數",
+    "每個 vertex 的 degree 都是偶數",
     "恰好兩個 vertices 的 degree 是奇數",
-    "至少一個點 degree 奇數",
-    "所有點 degree 奇數"
+    "至少一個 vertex 的 degree 是奇數即可",
+    "所有 vertices 的 degree 都是奇數"
    ],
    "ans": "恰好兩個 vertices 的 degree 是奇數",
    "why": "起點先出去、終點最後只進來，所以這兩點是奇數。"
@@ -305,7 +305,7 @@
   {
    "q": "證明 Euler trail 的充分條件時，用了什麼技巧？",
    "opts": [
-    "刪掉一個奇點",
+    "刪掉一個奇點及其所有邊，對剩下的圖找 Euler circuit 再把它接回來",
     "在兩個奇點之間加一條 imaginary edge，找 Euler circuit 後再刪掉",
     "對邊數做歸納",
     "把圖變成 directed graph"

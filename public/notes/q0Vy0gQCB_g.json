@@ -904,7 +904,7 @@
    "opts": [
     "directed graph",
     "pseudograph",
-    "multigraph",
+    "directed multigraph",
     "simple graph"
    ],
    "ans": "directed graph",

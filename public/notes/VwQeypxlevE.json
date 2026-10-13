@@ -1556,7 +1556,7 @@
     "n − 1",
     "nk − n",
     "n(k−1) + 1",
-    "nk"
+    "n(k−1) − 1"
    ],
    "ans": "n(k−1) + 1",
    "why": "總共 nk 個 pointer，除 root 外每個 node 被一個 pointer 指到，用掉 n−1 個，剩 nk−(n−1) = n(k−1)+1。"
@@ -1564,7 +1564,7 @@
   {
    "q": "下列關於 binary tree 與一般 tree 的敘述，何者正確？",
    "opts": [
-    "一般 tree 可以是空的，binary tree 不行",
+    "一般 tree 可以是空的，binary tree 至少要有 root",
     "Binary tree 可以是空的，且左右子樹有區分",
     "兩者都不區分左右子樹",
     "一般 tree 的 degree 限制為 2"

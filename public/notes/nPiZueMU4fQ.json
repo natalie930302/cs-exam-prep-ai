@@ -420,7 +420,7 @@
    "q": "Radix sort 每個 item 的 instruction 較少，實際卻比 quicksort 慢，主因是？",
    "opts": [
     "存取分散、locality 差，cache miss 多",
-    "radix sort 的 big O 比較大",
+    "radix sort 的 big O 比較大，是 O(n log n)",
     "quicksort 不需要 memory",
     "radix sort 不能 pipeline"
    ],
@@ -433,7 +433,7 @@
     "page fault 要幾百萬 cycle，要盡量減少 fault 並讓每次搬動划得來",
     "因為 hardware 比較便宜",
     "因為 disk 很快",
-    "為了減少 page table 的大小"
+    "為了減少 page table 的大小，讓整張 page table 都能放進 TLB 裡面"
    ],
    "ans": "page fault 要幾百萬 cycle，要盡量減少 fault 並讓每次搬動划得來",
    "why": "miss penalty 極大：有空位就放（fully associative），且一次搬大塊（例如 4 KB）。"
@@ -454,7 +454,7 @@
    "opts": [
     "page number（換成 frame number），offset 不變",
     "page offset",
-    "整個 address 都換",
+    "整個 address（page number 與 offset）都要換掉",
     "只換最高 1 bit"
    ],
    "ans": "page number（換成 frame number），offset 不變",

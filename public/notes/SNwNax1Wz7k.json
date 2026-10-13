@@ -175,9 +175,9 @@
    "q": "monitor 解法中，P1 正在吃時 P2 呼叫 pickup(2)，會？",
    "opts": [
     "state[2] = HUNGRY，test 失敗 → self[2].wait()",
-    "P2 也開始吃",
-    "P2 拿起一支筷子等另一支",
-    "P1 被迫停止"
+    "state[2] = EATING，P2 與 P1 同時開始吃",
+    "P2 先拿起左邊的筷子，再 busy waiting 等右邊那支",
+    "P1 被迫停止吃並 signal P2"
    ],
    "ans": "state[2] = HUNGRY，test 失敗 → self[2].wait()",
    "why": "鄰居 P1 是 EATING。"
@@ -186,9 +186,9 @@
    "q": "P1 putdown 後 P2 怎麼開始吃？",
    "opts": [
     "putdown 裡 test(2) 成功 → state[2] = EATING 並 self[2].signal()",
-    "P2 自己 busy waiting 發現",
-    "OS 自動叫醒",
-    "P2 重新呼叫 pickup"
+    "P2 自己用 busy waiting 不斷檢查 state[1] 是否已變回 THINKING 狀態",
+    "OS 的 scheduler 發現 P1 結束後自動叫醒 P2",
+    "P2 被 timeout 喚醒後重新呼叫 pickup(2)"
    ],
    "ans": "putdown 裡 test(2) 成功 → state[2] = EATING 並 self[2].signal()",
    "why": "test 做兩件事：改 state、signal。"
@@ -197,9 +197,9 @@
    "q": "Java 的 synchronized method 的特性？",
    "opts": [
     "標了 synchronized 的 method 之間互斥，沒標的不受限",
-    "整個 class 所有 method 都互斥",
-    "可以把 method 分成不同組各自互斥",
-    "只能用在 static method"
+    "整個 class 所有 method 都互斥，包含沒標 synchronized 的",
+    "可以把 method 分成不同組，各組各自互斥",
+    "只能用在 static method 上"
    ],
    "ans": "標了 synchronized 的 method 之間互斥，沒標的不受限",
    "why": "比 monitor 更 fine-grained，但不能分組。"
@@ -208,8 +208,8 @@
    "q": "Java 的 synchronized(obj) { … } 區塊比較接近？",
    "opts": [
     "mutex lock（compiler 幫你加 lock / unlock）",
-    "semaphore 計數",
-    "condition variable",
+    "counting semaphore（初值為 obj 可用的數量）",
+    "condition variable（進區塊前先 wait）",
     "monitor 的整個 class"
    ],
    "ans": "mutex lock（compiler 幫你加 lock / unlock）",
@@ -219,9 +219,9 @@
    "q": "atomic transaction 的意思？",
    "opts": [
     "all or nothing：要嘛全部完成，要嘛像沒發生",
-    "一定很快完成",
-    "只能一個人使用 database",
-    "不需要 log"
+    "一定在一個 time slice 內完成，中途不會被打斷",
+    "同一時間只能一個人使用 database",
+    "不需要 log，做到一半會自動重來"
    ],
    "ans": "all or nothing：要嘛全部完成，要嘛像沒發生",
    "why": "做到一半的 state 是 unstable。"
@@ -230,9 +230,9 @@
    "q": "為什麼需要 checkpoint？",
    "opts": [
     "log 會越來越長，從 checkpoint 開始 recovery 不用從頭",
-    "取代 commit",
-    "讓 transaction 更快 commit",
-    "避免 deadlock"
+    "取代 commit，transaction 只要寫到 checkpoint 就算完成",
+    "讓 transaction 更快 commit，不必等 log 寫入 disk",
+    "避免多個 transaction 之間發生 deadlock"
    ],
    "ans": "log 會越來越長，從 checkpoint 開始 recovery 不用從頭",
    "why": "checkpoint 是系統還原點。"

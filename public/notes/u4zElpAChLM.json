@@ -419,10 +419,10 @@
   {
    "q": "TLB hit rate 實際上往往很高（> 99%），主要原因是？",
    "opts": [
-    "TLB 容量很大",
+    "TLB 容量很大，可以放下整張 page table 的所有 entry",
     "程式存取有 locality，一筆 TLB entry 涵蓋整個 page",
     "Page table 很小",
-    "OS 會預先填滿 TLB"
+    "OS 會在 context switch 時預先填滿 TLB"
    ],
    "ans": "程式存取有 locality，一筆 TLB entry 涵蓋整個 page",
    "why": "第一次存取某 page miss，之後同一 page 內的連續存取都 hit。"
@@ -441,9 +441,9 @@
   {
    "q": "有了 page table length register 為什麼還需要 valid bit？",
    "opts": [
-    "Length 只能以 page 為單位",
+    "Length 只能以 page 為單位，無法表示最後一個 page 內哪些 byte 才是有效的",
     "長度內的 page 可能被 swap 到 disk，或 heap/stack 之間有沒配置的 page",
-    "Valid bit 可以取代 TLB",
+    "Valid bit 可以取代 TLB，省下一次 memory access",
     "其實不需要"
    ],
    "ans": "長度內的 page 可能被 swap 到 disk，或 heap/stack 之間有沒配置的 page",
@@ -453,7 +453,7 @@
    "q": "多個 process 共用 editor 的 code page，必須滿足什麼條件？",
    "opts": [
     "Code 是 reentrant（pure）code",
-    "Code 小於 4KB",
+    "Code 必須小於 4KB（一個 page）",
     "Process 必須是 parent/child",
     "必須用 inverted page table"
    ],
@@ -463,10 +463,10 @@
   {
    "q": "32-bit two-level paging 切成 10 | 10 | 12，相較 one-level，下列何者正確？",
    "opts": [
-    "Total entry 數變少",
+    "Total entry 數不變，但每次存取仍只需 2 次 memory access",
     "每張 table 最多 4KB，但沒有 TLB 時要 3 次 memory access",
     "只需要 1 次 memory access",
-    "Offset 變成 10 bits"
+    "Offset 變成 10 bits，每個 page 1KB"
    ],
    "ans": "每張 table 最多 4KB，但沒有 TLB 時要 3 次 memory access",
    "why": "單一 table 變小到一個 frame；代價是多一層查表，total entry 數反而增加。"
@@ -487,8 +487,8 @@
    "opts": [
     "只有 frame number",
     "Page number、frame number、指向下一個的 pointer",
-    "PID 與 page number",
-    "Base 與 limit"
+    "PID 與 page number（和 inverted page table 一樣）",
+    "Base 與 limit，以及 valid bit"
    ],
    "ans": "Page number、frame number、指向下一個的 pointer",
    "why": "同一 bucket 可能有 3、13、23 等多個 page，要比對 page number 才能拿 frame。"

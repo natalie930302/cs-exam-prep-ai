@@ -241,7 +241,7 @@
    "opts": [
     "先 fork，再在 child 裡 execlp",
     "只要 execlp",
-    "先 execlp 再 fork",
+    "先 execlp，再在新的程式裡 fork",
     "只要 fork"
    ],
    "ans": "先 fork，再在 child 裡 execlp",
@@ -262,7 +262,7 @@
    "q": "child 呼叫 execlp(\"/bin/ls\", …) 成功之後，它還會執行 execlp 後面的程式碼嗎？",
    "opts": [
     "不會，程式碼已被整個覆蓋",
-    "會，執行完 ls 再回來",
+    "會，ls 結束後回到 execlp 下一行繼續",
     "會，但只執行 printf",
     "看 scheduler 決定"
    ],
@@ -284,7 +284,7 @@
    "q": "parent 可以用 abort 強迫結束哪些 process？",
    "opts": [
     "自己的 children",
-    "自己的 parent",
+    "自己的 parent process",
     "任何 process",
     "只有自己"
    ],

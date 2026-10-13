@@ -430,8 +430,8 @@
    "q": "電腦用二進位，最根本的原因是？",
    "opts": [
     "訊號電壓用 threshold 只分 high、low 兩種狀態，最穩定",
-    "二進位的數字比十進位短",
-    "十進位無法表示負數",
+    "二進位的數字比十進位短，可以省下記憶體與 disk 的儲存空間",
+    "十進位無法表示負數，二進位可用 two's complement",
     "二進位不需要電晶體"
    ],
    "ans": "訊號電壓用 threshold 只分 high、low 兩種狀態，最穩定",
@@ -454,7 +454,7 @@
     "NAND",
     "NOR",
     "AND",
-    "XOR"
+    "XNOR"
    ],
    "ans": "NAND",
    "why": "只有 A = B = 1 時串聯的 NMOS 全通、PMOS 全斷，輸出 0；其他情況輸出 1。"
@@ -464,7 +464,7 @@
    "opts": [
     "Instruction Set Architecture + Machine Organization",
     "Datapath + Control",
-    "Compiler + Operating System",
+    "Instruction Set Architecture + Compiler Optimization",
     "Memory + I/O"
    ],
    "ans": "Instruction Set Architecture + Machine Organization",
@@ -485,7 +485,7 @@
    "q": "下列哪一個正確？",
    "opts": [
     "Intel x86 是 CISC，ARM 與 MIPS 是 RISC",
-    "Intel x86 是 RISC，ARM 是 CISC",
+    "Intel x86 是 RISC，ARM 與 MIPS 是 CISC",
     "ARM 與 x86 都是 CISC",
     "MIPS 是 CISC"
    ],
@@ -496,9 +496,9 @@
    "q": "MIPS 有幾種 instruction format？",
    "opts": [
     "3 種（R、I、J），都是 32 bits",
-    "2 種，長度不同",
+    "2 種（R、I），長度不同",
     "1 種，16 bits",
-    "很多種，1～15 bytes"
+    "很多種，長度 1～15 bytes 不等"
    ],
    "ans": "3 種（R、I、J），都是 32 bits",
    "why": "R：op rs rt rd shamt funct；I：op rs rt immediate；J：op address，加起來都是 32 bits。"

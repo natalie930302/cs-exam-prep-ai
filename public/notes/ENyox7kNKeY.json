@@ -935,8 +935,8 @@
    "q": "DP 的五個步驟中，第 2 步是什麼？",
    "opts": [
     "猜（guess）解的某個特徵，數有幾種選擇",
-    "建 DP 表",
-    "定義子問題",
+    "建 DP 表，先決定子問題的 topological order",
+    "定義子問題，數有幾個子問題",
     "解原問題"
    ],
    "ans": "猜（guess）解的某個特徵，數有幾種選擇",
@@ -968,8 +968,8 @@
    "q": "Text justification 的子問題為什麼只有 n 個？",
    "opts": [
     "只記得剩下的 suffix words[i:]，忘掉過去",
-    "每行最多 n 個字",
-    "只看 prefix",
+    "每行最多 n 個字，所以每一行只有 n 種斷法",
+    "只看 prefix words[:i]，忘掉後面",
     "用 greedy 剪枝"
    ],
    "ans": "只記得剩下的 suffix words[i:]，忘掉過去",
@@ -979,7 +979,7 @@
    "q": "DP(i) = min_j badness(i, j) + DP(j) 要按什麼順序算？",
    "opts": [
     "i 從 n−1 往下到 0（DP(n) = 0）",
-    "i 從 0 往上到 n",
+    "i 從 1 往上到 n（base case DP(0) = 0）",
     "任意順序",
     "依 badness 大小"
    ],
@@ -990,8 +990,8 @@
    "q": "Perfect-information blackjack 的子問題與猜測分別是？",
    "opts": [
     "牌的 suffix cᵢ:；猜這一手要 hit 幾次",
-    "牌的子集合；猜下一張牌",
-    "玩家點數；猜莊家的蓋牌",
+    "牌的子集合 S；猜莊家下一張會發哪張牌",
+    "玩家點數；猜莊家的蓋牌是什麼",
     "牌的 prefix；猜要不要加注"
    ],
    "ans": "牌的 suffix cᵢ:；猜這一手要 hit 幾次",

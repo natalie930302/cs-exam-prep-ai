@@ -372,7 +372,7 @@
     "seek time + rotation time + transfer time",
     "CPU time + I/O time + wait time",
     "boot time + mount time + read time",
-    "seek time + cache time + bus time"
+    "seek time + rotation time + controller cache time"
    ],
    "ans": "seek time + rotation time + transfer time",
    "why": "先移磁頭到 track，再轉到 sector，最後傳輸資料。"
@@ -403,9 +403,9 @@
    "q": "Sector 編號為什麼要連續？",
    "opts": [
     "編號差反映讀寫頭要移動的距離，方便 scheduling",
-    "因為 file system 只能讀連續編號",
+    "因為 file system 只能讀連續編號的 sector",
     "為了加密",
-    "因為 SSD 需要"
+    "因為 SSD 需要 sector 連續編號才能做 wear leveling"
    ],
    "ans": "編號差反映讀寫頭要移動的距離，方便 scheduling",
    "why": "硬碟順著移動方向讀寫最好；看編號就知道距離。"
