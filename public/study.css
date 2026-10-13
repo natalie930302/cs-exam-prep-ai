@@ -654,3 +654,12 @@ a { color: inherit; }
 @media (max-width: 640px) {
   .st-side { margin: 0 !important; border-radius: var(--r, 16px) !important; border: 1px solid var(--bd) !important; overflow: hidden; }
 }
+
+/* 分頁內容一律從分頁列下方 16px 開始（每個分頁第一個元素不再各自多出上邊距） */
+.st-panel { padding-top: 16px !important; }
+.st-panel > :first-child, .st-panel > :first-child > :first-child,
+.st-notes-full > .st-sec:first-child > h3, .st-notes-full > :first-child { margin-top: 0 !important; }
+.st-notes-full { padding-top: 0 !important; }
+#panel-videos > .st-now-video:empty, #panel-videos > .st-series-hd:has(.st-card-sub:empty) { display: none; }
+#panel-videos .st-vlist { margin-top: 0 !important; }
+#panel-videos > .st-series:empty { display: none !important; }
