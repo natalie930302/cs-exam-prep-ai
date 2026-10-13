@@ -219,7 +219,7 @@ export default function (ctx) {
     on('qAll', () => qScan('all'));
     on('qEx', () => qScan('ex'));
     on('qNeg', () => qScan('neg'));
-    on('qDom', () => { const pool = [-3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]; qm.dom = pool.sort(() => Math.random() - 0.5).slice(0, 6); clearLog(); enterQuant(); });
+    on('qDom', () => { const pool = [-3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]; qm.dom = pool.map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]).slice(0, 6); clearLog(); enterQuant(); });
     log('∀x P(x)：D 裡每一個 x 都要讓 P(x) 為真；一個反例就假。');
     log('∃x P(x)：只要找到一個 x 讓 P(x) 為真。');
     qState('');
@@ -399,7 +399,7 @@ export default function (ctx) {
       if (!good.length || badR.length < 3) return genQ();
       const fmt = (e) => Object.keys(e).map((v) => v + '=' + TF(e[v])).join(', ');
       const ans = fmt(pick(good));
-      const opts = [ans, ...badR.sort(() => Math.random() - 0.5).slice(0, 3).map(fmt)];
+      const opts = [ans, ...badR.map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]).slice(0, 3).map(fmt)];
       return { q: '下列哪一組真假值讓 ' + f.name + ' 為' + (target ? '真' : '假') + '？', opts, ans, why: '代入逐欄計算；p → q 只有在 p=T、q=F 時為假。' };
     }
     if (k < 0.32) {
@@ -419,7 +419,7 @@ export default function (ctx) {
     }
     if (k < 0.62) {
       const pool = [-3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8];
-      const dom = pool.sort(() => Math.random() - 0.5).slice(0, 5).sort((a, b) => a - b);
+      const dom = pool.map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]).slice(0, 5).sort((a, b) => a - b);
       const P = pick(PREDS);
       const a = dom.every(P.f), e = dom.some(P.f);
       const f = (x, y) => '∀ ' + (x ? '真' : '假') + '，∃ ' + (y ? '真' : '假');
@@ -450,7 +450,7 @@ export default function (ctx) {
   let qs = { score: 0, total: 0 };
   function renderQuiz(el) {
     const p = genQ();
-    const opts = [...new Set(p.opts)].sort(() => Math.random() - 0.5);
+    const opts = [...new Set(p.opts)].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
     if (!opts.includes(p.ans)) opts[0] = p.ans;
     el.innerHTML = '<h2>小測驗</h2><div class="lab-quiz-score">答對 ' + qs.score + ' / ' + qs.total + '</div>'
       + '<div class="lab-quiz-q" style="white-space:pre-wrap">' + p.q + '</div><div class="lab-quiz-opts">'

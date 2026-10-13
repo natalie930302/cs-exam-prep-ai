@@ -435,7 +435,7 @@ export default function (ctx) {
     if (k < 0.72) {
       const items = [['1/(1 − x)', '1, 1, 1, 1, …'], ['1/(1 − x)²', '1, 2, 3, 4, …'], ['1/(1 + x)', '1, −1, 1, −1, …'], ['x/(1 − x)', '0, 1, 1, 1, …'], ['1/(1 − 2x)', '1, 2, 4, 8, …'], ['1/(1 − x²)', '1, 0, 1, 0, …']];
       const [g, a] = pick(items);
-      return { q: 'G(x) = ' + g + ' 對應的數列 a₀, a₁, a₂, … 是？', opts: items.map((it) => it[1]).filter((s) => s !== a).sort(() => Math.random() - 0.5).slice(0, 3).concat([a]), ans: a, why: '由 1/(1 − ax) = Σ aᵏxᵏ 變形：代換 a、乘 x 右移、或平方（係數變成 k + 1）。' };
+      return { q: 'G(x) = ' + g + ' 對應的數列 a₀, a₁, a₂, … 是？', opts: items.map((it) => it[1]).filter((s) => s !== a).map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]).slice(0, 3).concat([a]), ans: a, why: '由 1/(1 − ax) = Σ aᵏxᵏ 變形：代換 a、乘 x 右移、或平方（係數變成 k + 1）。' };
     }
     if (k < 0.86) {
       const n = 3 + Math.floor(Math.random() * 6);
@@ -450,7 +450,7 @@ export default function (ctx) {
   let qs = { score: 0, total: 0 };
   function renderQuiz(el) {
     const p = genQ();
-    const opts = [...new Set(p.opts.map(String))].sort(() => Math.random() - 0.5);
+    const opts = [...new Set(p.opts.map(String))].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
     if (!opts.includes(p.ans)) opts[0] = p.ans;
     el.innerHTML = '<h2>小測驗</h2><div class="lab-quiz-score">答對 ' + qs.score + ' / ' + qs.total + '</div>'
       + '<div class="lab-quiz-q" style="white-space:pre-wrap">' + p.q + '</div><div class="lab-quiz-opts">'

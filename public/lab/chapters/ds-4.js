@@ -495,7 +495,7 @@ export default function (ctx) {
     cmp.seq = CMP_ORDERS[cmp.order].seq ? CMP_ORDERS[cmp.order].seq.slice(0, n)
       : cmp.order === 'asc' ? Array.from({ length: n }, (_, k) => k + 1)
       : cmp.order === 'desc' ? Array.from({ length: n }, (_, k) => n - k)
-      : Array.from({ length: n }, (_, k) => k + 1).sort(() => Math.random() - 0.5);
+      : Array.from({ length: n }, (_, k) => k + 1).map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
     cmp.i = 0;
     cmp.ll = lab.label('BST', 'ptr'); cmp.ll.position.set(-3.5, 7.5, 0);
     cmp.rl = lab.label('AVL', 'ptr alt'); cmp.rl.position.set(3.5, 7.5, 0);
@@ -714,7 +714,7 @@ export default function (ctx) {
   const qs = { score: 0, total: 0 };
   function renderQuiz(el) {
     const p = genQ();
-    const opts = [...p.opts].sort(() => Math.random() - 0.5);
+    const opts = [...p.opts].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
     el.innerHTML = '<h2>小測驗</h2><div class="lab-quiz-score">答對 ' + qs.score + ' / ' + qs.total + '</div>'
       + '<div class="lab-quiz-q">' + p.q + '</div><div class="lab-quiz-opts">'
       + opts.map((o) => '<button data-o="' + encodeURIComponent(o) + '">' + o + '</button>').join('') + '</div><div id="qx"></div>';

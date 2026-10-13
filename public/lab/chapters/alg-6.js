@@ -635,7 +635,7 @@ export default function (ctx) {
       const opts = [ans];
       let guard = 0;
       while (opts.length < 4 && guard++ < 300) {
-        const p = [...Array(n).keys()].sort(() => Math.random() - 0.5);
+        const p = [...Array(n).keys()].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
         const s = p.map((x) => LET[x]).join(' ');
         if (!valid(p) && !opts.includes(s)) opts.push(s);
       }
@@ -674,7 +674,7 @@ export default function (ctx) {
   }
   function renderQuiz(el) {
     const p = genQ();
-    const opts = [...p.opts].sort(() => Math.random() - 0.5);
+    const opts = [...p.opts].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
     el.innerHTML = '<h2>小測驗</h2><div class="lab-quiz-score">答對 ' + qs.score + ' / ' + qs.total + '</div>'
       + '<div class="lab-quiz-q" style="white-space:pre-wrap">' + p.q + '</div><div class="lab-quiz-opts">'
       + opts.map((o) => '<button data-o="' + encodeURIComponent(o) + '">' + o + '</button>').join('') + '</div><div id="qx"></div>';

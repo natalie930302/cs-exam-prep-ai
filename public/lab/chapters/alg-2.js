@@ -314,7 +314,7 @@ export default function (ctx) {
       return { q: '已排序陣列（索引 1～15）：\n' + a.join(', ') + '\n用 binary search（mid = ⌊(low+high)/2⌋）找 ' + key + '，要比較幾次？', opts: uniq4(String(c), ['1', '2', '3', '4', '5']), ans: String(c), why: '依序比較位置 ' + path.join(' → ') + (hit ? '，找到。' : '，low > high 結束，找不到。') + '最多 ⌊log₂15⌋ + 1 = 4 次。' };
     }
     if (t < 0.3) {
-      const all = Array.from({ length: 30 }, (_, i) => i + 1).sort(() => Math.random() - 0.5).slice(0, 8);
+      const all = Array.from({ length: 30 }, (_, i) => i + 1).map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]).slice(0, 8);
       const A = all.slice(0, 4).sort((x, y) => x - y), B = all.slice(4).sort((x, y) => x - y);
       let i = 0, j = 0, c = 0; while (i < 4 && j < 4) { c++; if (A[i] < B[j]) i++; else j++; }
       return { q: '合併 A = [' + A.join(', ') + '] 與 B = [' + B.join(', ') + ']，while 迴圈中做了幾次比較？', opts: uniq4(String(c), ['4', '5', '6', '7', '8']), ans: String(c), why: '每次比較搬一個元素；一邊用完後剩下的直接複製，不再比較。最多 m + n − 1 = 7 次、最少 min(m, n) = 4 次。' };
@@ -322,8 +322,8 @@ export default function (ctx) {
     if (t < 0.42) {
       const R = [['Binary search', 'T(n) = T(n/2) + 1', 'Θ(log n)'], ['Merge sort', 'T(n) = 2T(n/2) + n', 'Θ(n log n)'], ['Strassen', 'T(n) = 7T(n/2) + n²', 'Θ(n^2.81)'], ['分治矩陣乘法', 'T(n) = 8T(n/2) + n²', 'Θ(n³)'], ['Karatsuba', 'T(n) = 3T(n/2) + n', 'Θ(n^1.58)'], ['Quicksort 最壞', 'T(n) = T(n−1) + n', 'Θ(n²)'], ['分治找最大最小', 'T(n) = 2T(n/2) + 2', 'Θ(n)']];
       const r = pick(R), byRec = Math.random() < 0.5;
-      return byRec ? { q: r[0] + ' 的遞迴式是？', opts: uniq4(r[1], R.map((x) => x[1]).sort(() => Math.random() - 0.5)), ans: r[1], why: r[0] + '：' + r[1] + ' → ' + r[2] + '。' }
-        : { q: r[1] + ' 的解是？（' + r[0] + '）', opts: uniq4(r[2], R.map((x) => x[2]).sort(() => Math.random() - 0.5)), ans: r[2], why: r[0] + '：' + r[1] + ' → ' + r[2] + '。' };
+      return byRec ? { q: r[0] + ' 的遞迴式是？', opts: uniq4(r[1], R.map((x) => x[1]).map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1])), ans: r[1], why: r[0] + '：' + r[1] + ' → ' + r[2] + '。' }
+        : { q: r[1] + ' 的解是？（' + r[0] + '）', opts: uniq4(r[2], R.map((x) => x[2]).map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1])), ans: r[2], why: r[0] + '：' + r[1] + ' → ' + r[2] + '。' };
     }
     if (t < 0.52) {
       const n = ri(5, 200), p = Math.ceil(lg(n));
@@ -333,7 +333,7 @@ export default function (ctx) {
       const n = 5 + ri(0, 3), a = Array.from({ length: n }, () => ri(1, 40));
       const b = a.slice(), x = b[n - 1]; let i = -1; for (let j = 0; j < n - 1; j++) if (b[j] <= x) { i++; [b[i], b[j]] = [b[j], b[i]]; } [b[i + 1], b[n - 1]] = [b[n - 1], b[i + 1]];
       const q = i + 2;
-      return { q: 'CLRS PARTITION（pivot = 最後一個）對 [' + a.join(', ') + '] 做一次，pivot ' + x + ' 最後落在第幾個位置（從 1 數）？', opts: uniq4(String(q), Array.from({ length: n }, (_, k) => String(k + 1)).sort(() => Math.random() - 0.5)), ans: String(q), why: '≤ ' + x + ' 的有 ' + (q - 1) + ' 個，pivot 放在它們後面：[' + b.join(', ') + ']。' };
+      return { q: 'CLRS PARTITION（pivot = 最後一個）對 [' + a.join(', ') + '] 做一次，pivot ' + x + ' 最後落在第幾個位置（從 1 數）？', opts: uniq4(String(q), Array.from({ length: n }, (_, k) => String(k + 1)).map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1])), ans: String(q), why: '≤ ' + x + ' 的有 ' + (q - 1) + ' 個，pivot 放在它們後面：[' + b.join(', ') + ']。' };
     }
     if (t < 0.74) {
       const k = ri(2, 6);
@@ -356,7 +356,7 @@ export default function (ctx) {
   }
   function renderQuiz(el) {
     const p = genQ();
-    const opts = [...p.opts].sort(() => Math.random() - 0.5);
+    const opts = [...p.opts].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
     el.innerHTML = '<h2>小測驗</h2><div class="lab-quiz-score">答對 ' + qs.score + ' / ' + qs.total + '</div>'
       + '<div class="lab-quiz-q" style="white-space:pre-wrap">' + p.q + '</div><div class="lab-quiz-opts">'
       + opts.map((o) => '<button data-o="' + encodeURIComponent(o) + '">' + o + '</button>').join('') + '</div><div id="qx"></div>';

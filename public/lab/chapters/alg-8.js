@@ -333,7 +333,7 @@ export default function (ctx) {
   const BM = { E: [] };
   function randBip() {
     const E = [];
-    for (let l = 0; l < 4; l++) { const deg = 1 + Math.floor(Math.random() * 2); const rs = [0, 1, 2, 3].sort(() => Math.random() - 0.5).slice(0, deg); rs.forEach((r) => E.push([l, r])); }
+    for (let l = 0; l < 4; l++) { const deg = 1 + Math.floor(Math.random() * 2); const rs = [0, 1, 2, 3].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]).slice(0, deg); rs.forEach((r) => E.push([l, r])); }
     return E;
   }
   function enterMatch(keep) {
@@ -387,7 +387,7 @@ export default function (ctx) {
     }
     if (t === 2) {
       const L = 3 + rnd(2), E = [];
-      for (let l = 0; l < L; l++) { const rs = [0, 1, 2, 3].sort(() => Math.random() - 0.5).slice(0, 1 + rnd(2)); rs.forEach((r) => E.push([l, r])); }
+      for (let l = 0; l < L; l++) { const rs = [0, 1, 2, 3].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]).slice(0, 1 + rnd(2)); rs.forEach((r) => E.push([l, r])); }
       const n = L + 6, s = 0, tt = n - 1;
       const net = [...[...Array(L).keys()].map((l) => [s, 1 + l, 1]), ...E.map(([l, r]) => [1 + l, 1 + L + r, 1]), ...[0, 1, 2, 3].map((r) => [1 + L + r, tt, 1])];
       const { val } = maxflow(n, net, s, tt);
@@ -410,7 +410,7 @@ export default function (ctx) {
   }
   function renderQuiz(el) {
     const p = genQ();
-    const opts = [...p.opts].sort(() => Math.random() - 0.5);
+    const opts = [...p.opts].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
     el.innerHTML = '<h2>小測驗</h2><div class="lab-quiz-score">答對 ' + qs.score + ' / ' + qs.total + '</div>'
       + '<div class="lab-quiz-q" style="white-space:pre-wrap">' + p.q + '</div><div class="lab-quiz-opts">'
       + opts.map((o) => '<button data-o="' + encodeURIComponent(o) + '">' + o + '</button>').join('') + '</div><div id="qx"></div>';

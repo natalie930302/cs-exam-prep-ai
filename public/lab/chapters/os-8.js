@@ -439,7 +439,7 @@ export default function (ctx) {
       return { q: 'reference string：' + WSREF.slice(0, t).join(' ') + ' …，Δ = ' + D + '，在第 ' + t + ' 個 reference 之後的 working set 是？', opts, ans, why: '只看最後 ' + D + ' 個：' + WSREF.slice(t - D, t).join(' ') + ' → ' + ans + '。' };
     }
     if (k === 6) {
-      const F = 4, bits = Array.from({ length: F }, () => rnd(2)), ptr = rnd(F), pages = [3, 8, 5, 1].sort(() => Math.random() - 0.5);
+      const F = 4, bits = Array.from({ length: F }, () => rnd(2)), ptr = rnd(F), pages = [3, 8, 5, 1].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
       let p = ptr, g = 0; const b = bits.slice(); while (b[p] && g++ < 8) { b[p] = 0; p = (p + 1) % F; }
       const ans = 'page ' + pages[p];
       return { q: 'Second-chance：frame 0–3 的 page 是 ' + pages.join('、') + '，reference bit 是 ' + bits.join(' ') + '，指標在 frame ' + ptr + '。發生 page fault 時換掉誰？', opts: pages.map((x) => 'page ' + x), ans, why: '從 frame ' + ptr + ' 開始：bit = 1 的清成 0 給第二次機會、往下走；第一個 bit = 0 的就是 victim（全部是 1 時繞一圈後等於 FIFO）。' };
@@ -457,7 +457,7 @@ export default function (ctx) {
   }
   function renderQuiz(el) {
     const p = genQ();
-    const opts = [...new Set(p.opts)].sort(() => Math.random() - 0.5);
+    const opts = [...new Set(p.opts)].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
     el.innerHTML = '<h2>小測驗</h2><div class="lab-quiz-score">答對 ' + qs.score + ' / ' + qs.total + '</div>'
       + '<div class="lab-quiz-q" style="white-space:pre-wrap">' + p.q + '</div><div class="lab-quiz-opts">'
       + opts.map((o) => '<button data-o="' + encodeURIComponent(o) + '">' + o + '</button>').join('') + '</div><div id="qx"></div>';

@@ -594,7 +594,7 @@ function genQueueQ() {
 }
 function renderQuiz(pageEl) {
   const pool = genQueueQ();
-  const opts = [...pool.opts].sort(() => Math.random() - 0.5);
+  const opts = [...pool.opts].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
   pageEl.innerHTML = '<h2>小測驗</h2><div class="lab-quiz-score">答對 ' + quizState.score + ' / ' + quizState.total + '</div>'
     + '<div class="lab-quiz-q">' + pool.q + '</div><div class="lab-quiz-opts">'
     + opts.map((o) => '<button data-o="' + encodeURIComponent(o) + '">' + o + '</button>').join('') + '</div><div id="qx"></div>';

@@ -368,7 +368,7 @@ export default function (ctx) {
   let qs = { score: 0, total: 0 };
   function renderQuiz(el) {
     const p = genQ();
-    const opts = [...new Set(p.opts)].sort(() => Math.random() - 0.5);
+    const opts = [...new Set(p.opts)].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
     if (!opts.includes(p.ans)) opts[0] = p.ans;
     el.innerHTML = '<h2>小測驗</h2><div class="lab-quiz-score">答對 ' + qs.score + ' / ' + qs.total + '</div>'
       + '<div class="lab-quiz-q" style="white-space:pre-wrap">' + p.q + '</div><div class="lab-quiz-opts">'

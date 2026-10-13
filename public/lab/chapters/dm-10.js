@@ -308,10 +308,10 @@ export default function (ctx) {
     if (r < 0.13) { const n = pick([6, 8, 9, 10, 12, 15, 18, 20]), k = 1 + rnd(n - 1), o = n / gcd(n, k); return { q: '在 (ℤ' + sub(n) + ', +) 中，元素 ' + k + ' 的 order 是？', opts: [...new Set([o, n, k, gcd(n, k), n - k].map(String))].slice(0, 4), ans: String(o), why: 'ord(k) = n / gcd(n,k) = ' + n + '/' + gcd(n, k) + ' = ' + o + '。' }; }
     if (r < 0.25) { const n = pick([5, 6, 8, 9, 10, 12, 14, 15, 16, 18]); const g = range(n).filter((a) => gcd(a, n) === 1); return { q: '(ℤ' + sub(n) + ', +) 有幾個生成元？', opts: [...new Set([g.length, n - 1, Math.floor(n / 2), 2].map(String))].concat(['1']).slice(0, 4), ans: String(g.length), why: '生成元 = 與 n 互質的 k，共 φ(' + n + ') = ' + g.length + ' 個：' + g.join(', ') + '。' }; }
     if (r < 0.37) { const n = pick([4, 5, 6, 7, 8, 9, 10, 11, 12, 13]); const pr = range(n - 2).every((t) => n % (t + 2) !== 0); return { q: '(ℤ' + sub(n) + ' − {0}, ×) 是群嗎？', opts: ['是', '不是：不封閉（有零因子）', '不是：沒有單位元', '不是：不結合'], ans: pr ? '是' : '不是：不封閉（有零因子）', why: pr ? n + ' 是質數：非零元素都和 ' + n + ' 互質、都有乘法反元素。' : n + ' 不是質數：例如 ' + (range(n).find((t) => t > 1 && n % t === 0)) + ' × ' + (n / range(n).find((t) => t > 1 && n % t === 0)) + ' ≡ 0，0 不在集合裡。' }; }
-    if (r < 0.49) { const n = pick([12, 15, 18, 20, 24, 30]); const non = range(n).map((x) => x + 1).filter((d) => n % d !== 0 && d < n); const bad = pick(non); const divs = range(n).map((x) => x + 1).filter((d) => n % d === 0 && d > 1 && d < n); const o = [bad, ...divs.sort(() => Math.random() - 0.5).slice(0, 3)].map(String); return { q: '|G| = ' + n + '，下列哪個「不可能」是子群的大小？', opts: o, ans: String(bad), why: 'Lagrange：子群大小必整除 |G| = ' + n + '，而 ' + bad + ' ∤ ' + n + '。' }; }
+    if (r < 0.49) { const n = pick([12, 15, 18, 20, 24, 30]); const non = range(n).map((x) => x + 1).filter((d) => n % d !== 0 && d < n); const bad = pick(non); const divs = range(n).map((x) => x + 1).filter((d) => n % d === 0 && d > 1 && d < n); const o = [bad, ...divs.map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]).slice(0, 3)].map(String); return { q: '|G| = ' + n + '，下列哪個「不可能」是子群的大小？', opts: o, ans: String(bad), why: 'Lagrange：子群大小必整除 |G| = ' + n + '，而 ' + bad + ' ∤ ' + n + '。' }; }
     if (r < 0.6) { const n = pick([7, 9, 10, 11, 12, 13, 14, 15]); const us = range(n).filter((a) => a > 1 && gcd(a, n) === 1); const a = pick(us); const inv = range(n).find((b) => mod(a * b, n) === 1); return { q: '在 (ℤ' + sub(n) + '*, ×) 中，' + a + ' 的反元素是？', opts: [...new Set([inv, n - a, mod(inv + 1, n) || 2, a].map(String))].concat(['1']).slice(0, 4), ans: String(inv), why: a + ' × ' + inv + ' = ' + a * inv + ' ≡ 1 (mod ' + n + ')。' }; }
     if (r < 0.72) {
-      const n = 5 + rnd(3); const p = range(n).sort(() => Math.random() - 0.5);
+      const n = 5 + rnd(3); const p = range(n).map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
       return { q: 'σ = (' + oneLine(p) + ')（one-line）寫成 cycle 是？order？', opts: [...new Set([cycStr(p) + '，order ' + ordOf(p), cycStr(p) + '，order ' + cycles(p).reduce((s, c) => s + c.length, 0), cycStr(range(n).map((i) => p.indexOf(i))) + '，order ' + ordOf(p), cycStr(p) + '，order ' + n, cycStr(p) + '，order ' + ordOf(p) * 2, cycStr(range(n).map((i) => p.indexOf(i))) + '，order ' + n])].slice(0, 4), ans: cycStr(p) + '，order ' + ordOf(p), why: '從 1 開始追 1 → σ(1) → …；order = 各 cycle 長度的 lcm（不是和）。' + (cycles(p).length ? '' : '') };
     }
     if (r < 0.86) {
@@ -331,7 +331,7 @@ export default function (ctx) {
   }
   function renderQuiz(el) {
     const p = fixOpts(genQ());
-    const opts = [...p.opts].sort(() => Math.random() - 0.5);
+    const opts = [...p.opts].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
     el.innerHTML = '<h2>小測驗</h2><div class="lab-quiz-score">答對 ' + qs.score + ' / ' + qs.total + '</div>'
       + '<div class="lab-quiz-q" style="white-space:pre-wrap">' + p.q + '</div><div class="lab-quiz-opts">'
       + opts.map((o) => '<button data-o="' + encodeURIComponent(o) + '">' + o + '</button>').join('') + '</div><div id="qx"></div>';

@@ -557,10 +557,10 @@ export default function (ctx) {
   const LET = ['A', 'B', 'C', 'D', 'E'];
   function randGraph() {
     for (;;) {
-      const ws = [...Array(15).keys()].map((x) => x + 1).sort(() => Math.random() - 0.5);
+      const ws = [...Array(15).keys()].map((x) => x + 1).map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
       const all = [];
       for (let i = 0; i < 5; i++) for (let j = i + 1; j < 5; j++) all.push([i, j]);
-      all.sort(() => Math.random() - 0.5);
+      all.map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
       const edges = all.slice(0, 7).map(([u, v], k) => [u, v, ws[k]]);
       const par = [0, 1, 2, 3, 4];
       const f = (x) => (par[x] === x ? x : (par[x] = f(par[x])));
@@ -640,7 +640,7 @@ export default function (ctx) {
   }
   function renderQuiz(el) {
     const p = genQ();
-    const opts = [...p.opts].sort(() => Math.random() - 0.5);
+    const opts = [...p.opts].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
     el.innerHTML = '<h2>小測驗</h2><div class="lab-quiz-score">答對 ' + qs.score + ' / ' + qs.total + '</div>'
       + '<div class="lab-quiz-q" style="white-space:pre-wrap">' + p.q + '</div><div class="lab-quiz-opts">'
       + opts.map((o) => '<button data-o="' + encodeURIComponent(o) + '">' + o + '</button>').join('') + '</div><div id="qx"></div>';

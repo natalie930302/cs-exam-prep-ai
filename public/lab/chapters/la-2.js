@@ -543,7 +543,7 @@ export default function (ctx) {
     }
     if (kind === 5) {
       const items = [['AB = AC 且 A ≠ 0 ⇒ B = C', false], ['AB = 0 ⇒ A = 0 或 B = 0', false], ['A² = A ⇒ A = I 或 A = 0', false], ['AB = BA 對所有方陣成立', false], ['(AB)C = A(BC)', true], ['A(B + C) = AB + AC', true]];
-      const tru = pick(items.filter((x) => x[1])), fs = items.filter((x) => !x[1]).sort(() => Math.random() - 0.5).slice(0, 3);
+      const tru = pick(items.filter((x) => x[1])), fs = items.filter((x) => !x[1]).map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]).slice(0, 3);
       return { q: '下列哪一個「一定成立」？', opts: [tru[0], ...fs.map((x) => x[0])], ans: tru[0], why: '結合律、分配律成立；交換律、消去律都不成立。反例：A = [1 1; 1 1]、B = [1 −1; −1 1] 有 AB = 0；A = [1 0; 0 0] 有 A² = A。' };
     }
     if (kind === 6) {
@@ -959,7 +959,7 @@ export default function (ctx) {
   }
   function renderQuiz(elx) {
     const p = genQ();
-    const opts = [...p.opts].sort(() => Math.random() - 0.5);
+    const opts = [...p.opts].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
     elx.innerHTML = '<h2>小測驗</h2><div class="lab-quiz-score">答對 ' + qs.score + ' / ' + qs.total + '</div>'
       + '<div class="lab-quiz-q" style="white-space:pre-wrap">' + p.q + '</div><div class="lab-quiz-opts">'
       + opts.map((o) => '<button data-o="' + encodeURIComponent(o) + '">' + o + '</button>').join('') + '</div><div id="qx"></div>';

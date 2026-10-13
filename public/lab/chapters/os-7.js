@@ -81,7 +81,7 @@ export default function (ctx) {
   const TR_M = 5, TR_FR = 8; // logical 32 bytes（5 bits），physical 8 frames
   function trNewTable() {
     const pages = 1 << (TR_M - tr.n);
-    const fr = [...Array(TR_FR).keys()].sort(() => Math.random() - 0.5);
+    const fr = [...Array(TR_FR).keys()].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
     tr.pt = []; tr.valid = [];
     const validN = pages === 8 ? 6 : 3;
     for (let p = 0; p < pages; p++) { tr.pt.push(fr[p % TR_FR]); tr.valid.push(p < validN); }
@@ -454,7 +454,7 @@ export default function (ctx) {
   function genQ() {
     const k = rnd(9);
     if (k === 0) {
-      const n = pick([8, 9, 10, 11, 12]), psz = 1 << n, pages = 8, pt = [...Array(16).keys()].sort(() => Math.random() - 0.5).slice(0, pages);
+      const n = pick([8, 9, 10, 11, 12]), psz = 1 << n, pages = 8, pt = [...Array(16).keys()].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]).slice(0, pages);
       const p = rnd(pages), d = rnd(psz), la = p * psz + d, pa = pt[p] * psz + d;
       return { q: 'page size = ' + psz + ' bytes，page table = [' + pt.join(', ') + ']（index 0 起）。logical address ' + la + ' 的 physical address 是？', opts: [String(pa), String(pt[p] + d), String(p * psz + pt[p]), String(pt[p] * psz + d + psz)], ans: String(pa), why: 'p = ⌊' + la + ' / ' + psz + '⌋ = ' + p + '，d = ' + d + '；frame = ' + pt[p] + ' → ' + pt[p] + ' × ' + psz + ' + ' + d + ' = ' + pa + '。' };
     }
@@ -478,7 +478,7 @@ export default function (ctx) {
       const hs = holes.map((s, i) => ({ size: s, i }));
       const ch = fitChoose(hs, size, alg);
       const ans = '第 ' + (ch.i + 1) + ' 個（' + ch.size + 'K）';
-      const others = hs.filter((h) => h !== ch).map((h) => '第 ' + (h.i + 1) + ' 個（' + h.size + 'K）').sort(() => Math.random() - 0.5);
+      const others = hs.filter((h) => h !== ch).map((h) => '第 ' + (h.i + 1) + ' 個（' + h.size + 'K）').map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
       const opts = [ans, ...others.slice(0, 2), '放不下'];
       return { q: 'hole 依位址順序是 ' + holes.map((h) => h + 'K').join('、') + '。用 ' + { first: 'First-fit', best: 'Best-fit', worst: 'Worst-fit' }[alg] + ' 配置 ' + size + 'K，會放進哪個？', opts, ans, why: { first: 'First-fit：從頭找第一個 ≥ ' + size + 'K 的。', best: 'Best-fit：所有夠大的 hole 裡挑最小的（剩下的碎片最小）。', worst: 'Worst-fit：挑最大的 hole（剩下的還夠大能再用）。' }[alg] };
     }
@@ -512,7 +512,7 @@ export default function (ctx) {
   }
   function renderQuiz(el) {
     const p = genQ();
-    const opts = [...new Set(p.opts)].sort(() => Math.random() - 0.5);
+    const opts = [...new Set(p.opts)].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
     el.innerHTML = '<h2>小測驗</h2><div class="lab-quiz-score">答對 ' + qs.score + ' / ' + qs.total + '</div>'
       + '<div class="lab-quiz-q" style="white-space:pre-wrap">' + p.q + '</div><div class="lab-quiz-opts">'
       + opts.map((o) => '<button data-o="' + encodeURIComponent(o) + '">' + o + '</button>').join('') + '</div><div id="qx"></div>';

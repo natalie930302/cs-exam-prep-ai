@@ -455,7 +455,7 @@ export default function (ctx) {
   function randomRank() {
     for (;;) {
       const r = rint(1, 3);
-      const cols = [0, 1, 2, 3].sort(() => Math.random() - 0.5).slice(0, r).sort();
+      const cols = [0, 1, 2, 3].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]).slice(0, r).sort();
       const R = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]];
       cols.forEach((c, i) => { R[i][c] = 1; for (let j = c + 1; j < 4; j++) if (!cols.includes(j)) R[i][j] = rint(-2, 2); });
       const E = matMul([[1, 0, 0], [rint(-2, 2), 1, 0], [rint(-2, 2), rint(-2, 2), 1]], [[pick([1, 2]), rint(-1, 1), rint(-1, 1)], [0, 1, rint(-1, 1)], [0, 0, 1]]);
@@ -594,7 +594,7 @@ export default function (ctx) {
   }
   function renderQuiz(elx) {
     const p = genQ();
-    const opts = [...p.opts].sort(() => Math.random() - 0.5);
+    const opts = [...p.opts].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
     elx.innerHTML = '<h2>小測驗</h2><div class="lab-quiz-score">答對 ' + qs.score + ' / ' + qs.total + '</div>'
       + '<div class="lab-quiz-q" style="white-space:pre-wrap">' + p.q + '</div><div class="lab-quiz-opts">'
       + opts.map((o) => '<button data-o="' + encodeURIComponent(o) + '">' + o + '</button>').join('') + '</div><div id="qx"></div>';

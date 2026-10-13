@@ -43,7 +43,7 @@ export default function (ctx) {
   function labelLevel(root, shuffle) {
     const nodes = levelorder(root);
     const letters = 'ABCDEFGHIJKLMNO'.slice(0, nodes.length).split('');
-    if (shuffle) letters.sort(() => Math.random() - 0.5);
+    if (shuffle) letters.map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
     nodes.forEach((n, i) => { n.label = letters[i]; });
     return root;
   }
@@ -605,7 +605,7 @@ export default function (ctx) {
   const qs = { score: 0, total: 0 };
   function renderQuiz(el) {
     const p = genQ();
-    const opts = [...p.opts].sort(() => Math.random() - 0.5);
+    const opts = [...p.opts].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
     el.innerHTML = '<h2>小測驗</h2><div class="lab-quiz-score">答對 ' + qs.score + ' / ' + qs.total + '</div>'
       + '<div class="lab-quiz-q">' + p.q + '</div><div class="lab-quiz-opts">'
       + opts.map((o) => '<button data-o="' + encodeURIComponent(o) + '">' + o + '</button>').join('') + '</div><div id="qx"></div>';
