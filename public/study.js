@@ -111,7 +111,7 @@
   // A section's scene, with its step times (cues) and where the section ends,
   // so each step of the animation starts when the lecturer says it.
   function postScene(sec){
-    $('side').classList.remove('is-idle');
+    $('side').classList.remove('is-idle', 'no-anim');
     $('stage').contentWindow.postMessage({type: 'scene', scene: sec.scene, params: sec.params || {},
       cues: sec.cues || null, end: sec._end == null ? null : sec._end}, location.origin);
   }
@@ -119,9 +119,10 @@
   // Nothing to show (logistics, chat, or no animation for this video yet):
   // a quiet stage rather than an unrelated animation.
   const IDLE_CHAT = '老師在講課務或閒聊';
-  const IDLE_NONE = '這支影片的動畫還在製作中，先看左邊的影片';
+  const IDLE_NONE = '這支影片的動畫還在製作中';
   const IDLE_START = '老師講到概念時，這裡會出現動畫';
   function showIdle(text){
+    $('side').classList.toggle('no-anim', text === IDLE_NONE);
     if (!hasStage) return;
     if (stageScene === 'idle:' + text) return;
     stageScene = 'idle:' + text;
