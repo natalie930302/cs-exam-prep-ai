@@ -494,3 +494,6 @@ a { color: inherit; }
   .st-timeline:empty::before, .st-now-sec:empty::before, .st-vlist:empty::before,
   .st-panel:not([hidden]), .st-timeline > *, .st-vlist > *, .st-stage { animation: none !important; }
 }
+
+/* end-of-video card fades in (it fades out via fadeRemove) */
+.st-end { animation: m-in .25s cubic-bezier(.2,.8,.2,1) both; }

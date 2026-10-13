@@ -7647,7 +7647,11 @@ body#appRoot .global-search-panel {
   position: fixed; inset: 0; z-index: 400; display: flex; justify-content: center; align-items: flex-start;
   padding: 12vh 16px 16px; background: rgba(20,18,14,.32); backdrop-filter: blur(3px);
 }
-body#appRoot .global-search-panel:not(.open) { display: none !important; }
+/* closed: fade out, then become invisible (visibility waits for the fade) */
+body#appRoot .global-search-panel { transition: opacity .18s ease, visibility 0s linear 0s; }
+body#appRoot .global-search-panel:not(.open) { opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; transition: opacity .18s ease, visibility 0s linear .18s; }
+body#appRoot .global-search-dialog { transition: transform .2s cubic-bezier(.2,.8,.2,1), opacity .2s ease; }
+body#appRoot .global-search-panel:not(.open) .global-search-dialog { transform: translateY(-8px) scale(.98); opacity: 0; }
 body#appRoot .global-search-dialog {
   width: min(640px,100%); max-height: 70vh; display: flex; flex-direction: column; overflow: hidden;
   background: var(--surf); border: 1px solid var(--bd); border-radius: 20px; box-shadow: 0 24px 60px rgba(0,0,0,.18); padding: 0 !important;
@@ -7741,8 +7745,6 @@ body#appRoot .ui-btn:active, body#appRoot .ch-study-link:active, body#appRoot .f
 /* search opens with a soft fade + lift instead of popping */
 @keyframes gs-overlay-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes gs-dialog-in { from { opacity: 0; transform: translateY(-8px) scale(.98); } to { opacity: 1; transform: none; } }
-body#appRoot .global-search-panel.open { animation: gs-overlay-in .16s ease both; }
-body#appRoot .global-search-panel.open .global-search-dialog { animation: gs-dialog-in .2s cubic-bezier(.2,.8,.2,1) both; }
 body#appRoot .global-search-item { animation: gs-overlay-in .18s ease both; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -7769,3 +7771,6 @@ body#appRoot .sp.on .ch-row:nth-child(13) { animation-delay: 336ms; }
 body#appRoot .sp.on .ch-row:nth-child(14) { animation-delay: 364ms; }
 body#appRoot .sp.on .ch-row:nth-child(15) { animation-delay: 392ms; }
 @media (prefers-reduced-motion: reduce) { body#appRoot .sp.on .ch-row { animation: none !important; } }
+/* 切換日曆／六科：內容淡入 */
+body#appRoot #main > .sec.on > * { animation: m-in .24s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion: reduce) { body#appRoot #main > .sec.on > * { animation: none; } }

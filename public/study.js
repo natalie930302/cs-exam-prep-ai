@@ -770,7 +770,7 @@
     host.appendChild(card);
     requestAnimationFrame(function(){ card.classList.add('in'); });
     let answered = false;
-    function close(delay){ setTimeout(function(){ card.classList.remove('in'); setTimeout(function(){ card.remove(); if (onDone) onDone(); }, 260); }, delay); }
+    function close(delay){ setTimeout(function(){ card.classList.remove('in'); setTimeout(function(){ card.fadeRemove(onDone); }, 60); }, delay); }
     card.querySelectorAll('.st-qz-opts button').forEach(function(b){
       b.onclick = function(){
         if (answered) return; answered = true;
@@ -780,7 +780,7 @@
         });
         if (!ok) b.classList.add('no');
         card.classList.add(ok ? 'right' : 'wrong');
-        card.querySelector('.st-qz-skip').remove();
+        card.querySelector('.st-qz-skip').fadeRemove();
         const why = document.createElement('div');
         why.className = 'st-qz-why';
         why.textContent = (ok ? '答對！' : '答案是「' + q.ans + '」。') + (q.why ? ' ' + q.why : '');
@@ -819,7 +819,7 @@
   function endCard(){
     if (!current) return;
     const wrap = document.querySelector('.st-player-wrap');
-    const old = wrap.querySelector('.st-end'); if (old) old.remove();
+    const old = wrap.querySelector('.st-end'); if (old) old.fadeRemove();
     const end = document.createElement('div');
     end.className = 'st-end';
     wrap.appendChild(end);
@@ -836,7 +836,7 @@
         end.innerHTML = '<div class="st-end-box"><b>這章的影片看完了</b>'
           + (chIndex + 1 < subject.chapters.length ? '<a class="st-btn" href="' + studyRoomUrl(subject.id, chIndex + 1) + '">下一章：' + esc(subject.chapters[chIndex + 1].t) + ' ›</a>' : '')
           + '<button class="st-btn st-end-close">留在這裡</button></div>';
-        end.querySelector('.st-end-close').onclick = function(){ end.remove(); };
+        end.querySelector('.st-end-close').onclick = function(){ end.fadeRemove(); };
         return;
       }
       let n = 8;
@@ -846,9 +846,9 @@
         n--; const sp = end.querySelector('.st-end-go span'); if (sp) sp.textContent = n;
         if (n <= 0) go();
       }, 1000);
-      function go(){ clearInterval(tick); end.remove(); playVideo(current.seriesIdx, idx + 1, true); }
+      function go(){ clearInterval(tick); end.fadeRemove(); playVideo(current.seriesIdx, idx + 1, true); }
       end.querySelector('.st-end-go').onclick = go;
-      end.querySelector('.st-end-close').onclick = function(){ clearInterval(tick); end.remove(); };
+      end.querySelector('.st-end-close').onclick = function(){ clearInterval(tick); end.fadeRemove(); };
     }
     ask(0);
   }
