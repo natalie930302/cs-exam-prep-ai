@@ -526,7 +526,9 @@
     const key = current.id + r[0];
     if (b.dataset.k !== key) {
       b.dataset.k = key;
-      b.innerHTML = '<span>這段是「' + esc(r[2]) + '」，跟考試內容無關</span><b>跳到 ' + fmt(r[1]) + ' ›</b>';
+      // short label; what the part is shows on hover
+      b.innerHTML = '<b>跳過 ›</b>';
+      b.title = '這段是「' + r[2] + '」，跟考試無關，跳到 ' + fmt(r[1]);
       b.onclick = function(){ seek(r[1]); b.hidden = true; };
     }
     b.hidden = false;
