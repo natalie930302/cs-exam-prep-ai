@@ -759,37 +759,54 @@
     for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = r[i]; r[i] = r[j]; r[j] = t; }
     return r;
   }
-  // One question card. `onDone` runs after the answer (or skip) has shown.
+  // ── 作答紀錄（小測驗分頁顯示這裡的內容）──
+  function quizHistory(){ try { return JSON.parse(store.get('qz-history') || '[]'); } catch (e) { return []; } }
+  function recordAnswer(q, pick, ok){
+    const h = quizHistory();
+    h.push({vid: current ? current.id : '', label: current && current.opt ? current.opt.label : '', subj: subject.id, ch: chIndex,
+      at: playerReady && typeof player.getCurrentTime === 'function' ? Math.round(player.getCurrentTime()) : 0,
+      q: q.q, pick: pick, ans: q.ans, ok: ok, why: q.why || '', ts: Date.now()});
+    store.set('qz-history', JSON.stringify(h.slice(-3000)));
+    updateCounts();
+    if (currentTab === 'quiz') renderQuiz();
+  }
+  // One question card, shown over the video. It stays until it is answered;
+  // after the answer the explanation shows and 繼續 (or, when right, a short
+  // wait) closes it and runs `onDone`.
   function questionCard(host, q, onDone){
     q = Object.assign({}, q, {opts: shuffled(q.opts)});
     const card = document.createElement('div');
     card.className = 'st-qz';
     card.innerHTML = '<div class="st-qz-hd">小挑戰</div><div class="st-qz-q">' + esc(q.q) + '</div>'
-      + '<div class="st-qz-opts">' + q.opts.map(function(o, i){ return '<button data-i="' + i + '">' + esc(o) + '</button>'; }).join('') + '</div>'
-      + '<button class="st-qz-skip">略過</button>';
+      + '<div class="st-qz-opts">' + q.opts.map(function(o, i){ return '<button data-i="' + i + '">' + esc(o) + '</button>'; }).join('') + '</div>';
     host.appendChild(card);
     requestAnimationFrame(function(){ card.classList.add('in'); });
-    let answered = false;
-    function close(delay){ setTimeout(function(){ card.classList.remove('in'); setTimeout(function(){ card.fadeRemove(onDone); }, 60); }, delay); }
+    let answered = false, closed = false;
+    function close(){ if (closed) return; closed = true; card.classList.remove('in'); setTimeout(function(){ card.fadeRemove(onDone); }, 60); }
     card.querySelectorAll('.st-qz-opts button').forEach(function(b){
       b.onclick = function(){
         if (answered) return; answered = true;
-        const ok = q.opts[Number(b.dataset.i)] === q.ans;
+        const pick = q.opts[Number(b.dataset.i)], ok = pick === q.ans;
         card.querySelectorAll('.st-qz-opts button').forEach(function(x){
           if (q.opts[Number(x.dataset.i)] === q.ans) x.classList.add('ok');
+          x.disabled = true;
         });
         if (!ok) b.classList.add('no');
         card.classList.add(ok ? 'right' : 'wrong');
-        card.querySelector('.st-qz-skip').fadeRemove();
         const why = document.createElement('div');
         why.className = 'st-qz-why';
         why.textContent = (ok ? '答對！' : '答案是「' + q.ans + '」。') + (q.why ? ' ' + q.why : '');
         card.appendChild(why);
-        if (ok) burst(b);
-        close(ok ? 2600 : 6000);
+        const go = document.createElement('button');
+        go.className = 'st-btn st-btn-watch st-qz-go';
+        go.textContent = '繼續';
+        go.onclick = close;
+        card.appendChild(go);
+        go.focus();
+        recordAnswer(q, pick, ok);
+        if (ok) { burst(b); setTimeout(close, 2600); }
       };
     });
-    card.querySelector('.st-qz-skip').onclick = function(){ answered = true; close(0); };
     return card;
   }
   // a small spray of colour from the button that was answered right
@@ -811,7 +828,16 @@
     const qi = quizPlan(curNotes).bySec[si];
     if (qi == null || asked(current.id).indexOf(qi) >= 0) return;
     markAsked(current.id, qi);
-    questionCard(document.body, curNotes.quiz[qi]);
+    const wrap = document.querySelector('.st-player-wrap');
+    const layer = document.createElement('div');
+    layer.className = 'st-end st-ask';
+    wrap.appendChild(layer);
+    let wasPlaying = false;
+    try { wasPlaying = playerReady && player.getPlayerState() === 1; if (wasPlaying) player.pauseVideo(); } catch (e) {}
+    questionCard(layer, curNotes.quiz[qi], function(){
+      layer.fadeRemove();
+      try { if (wasPlaying) player.playVideo(); } catch (e) {}
+    });
   }
 
   // End of a video: up to two questions not asked yet, then the next video
@@ -880,8 +906,7 @@
     return out;
   }
   function updateCounts(){
-    const ids = allVideoIds().filter(function(id){ return notesIndex[id]; });
-    const q = ids.reduce(function(a, id){ return a + (notesIndex[id].quiz || 0); }, 0);
+    const q = chapterHistory().length;
     document.querySelector('[data-tab=quiz]').innerHTML = '小測驗' + (q ? '<span class="count">' + q + '</span>' : '');
     const cur = current && notesIndex[current.id];
     $('notesCount').textContent = cur ? cur.points + ' 個重點' : '';
@@ -914,34 +939,37 @@
   }
 
   // ── Quiz ──
-  let quizPool = [], quizPos = 0, score = 0, answered = 0;
-  async function renderQuiz(){
-    if (!quizPool.length) {
-      const ids = allVideoIds().filter(function(id){ return notesIndex[id]; });
-      for (const id of ids) {
-        const n = await loadNotes(id);
-        if (n) n.quiz.forEach(function(q){ quizPool.push(Object.assign({src: n.label}, q)); });
-      }
-      quizPool.sort(function(){ return Math.random() - 0.5; });
-    }
+  var quizFilter = 'all';
+  function chapterHistory(){
+    return quizHistory().filter(function(r){ return r.subj === subject.id && r.ch === chIndex; });
+  }
+  function renderQuiz(){
     const el = $('panel-quiz');
-    if (!quizPool.length) { el.innerHTML = '<div class="st-nonotes">這章影片的重點整理好之後，題目會出現在這裡。</div>'; return; }
-    const q = quizPool[quizPos % quizPool.length];
-    const opts = shuffled(q.opts);
-    el.innerHTML = '<div class="st-quiz"><div class="st-quiz-top"><span>第 ' + (quizPos % quizPool.length + 1) + ' / ' + quizPool.length + ' 題・出自 ' + esc(q.src) + '</span><span>答對 ' + score + ' / ' + answered + '</span></div>'
-      + '<div class="st-quiz-q">' + esc(q.q) + '</div><div class="st-quiz-opts">'
-      + opts.map(function(o){ return '<button data-o="' + encodeURIComponent(o) + '">' + esc(o) + '</button>'; }).join('') + '</div><div id="quizWhy"></div></div>';
-    el.querySelectorAll('.st-quiz-opts button').forEach(function(b){
+    const all = chapterHistory();
+    if (!all.length) {
+      el.innerHTML = '<div class="st-nonotes">還沒有作答紀錄。看影片時，每講完一段會暫停出一題小挑戰，影片結束時也會出題；答過的題目都會記在這裡。</div>';
+      return;
+    }
+    const right = all.filter(function(r){ return r.ok; }).length;
+    const rows = (quizFilter === 'wrong' ? all.filter(function(r){ return !r.ok; }) : all).slice().reverse();
+    el.innerHTML = '<div class="st-qh">'
+      + '<div class="st-qh-top"><span>這章答過 <b>' + all.length + '</b> 題・答對 <b>' + right + '</b> 題（' + Math.round(right / all.length * 100) + '%）</span>'
+      + '<span class="st-qh-filter"><button data-f="all"' + (quizFilter === 'all' ? ' class="on"' : '') + '>全部</button><button data-f="wrong"' + (quizFilter === 'wrong' ? ' class="on"' : '') + '>答錯的</button></span></div>'
+      + (rows.length ? rows.map(function(r){
+          return '<div class="st-qh-item ' + (r.ok ? 'ok' : 'no') + '">'
+            + '<div class="st-qh-q"><span class="st-qh-mark">' + (r.ok ? '✓' : '✗') + '</span>' + esc(r.q) + '</div>'
+            + '<div class="st-qh-a">你的答案：' + esc(r.pick) + (r.ok ? '' : '<br>正確答案：<b>' + esc(r.ans) + '</b>') + '</div>'
+            + (r.why ? '<div class="st-qh-why">' + esc(r.why) + '</div>' : '')
+            + '<button class="st-qh-src" data-vid="' + esc(r.vid) + '" data-at="' + (r.at || 0) + '">' + esc(r.label || '') + '・' + fmt(r.at || 0) + '</button>'
+            + '</div>';
+        }).join('') : '<div class="st-nonotes">沒有答錯的題目。</div>')
+      + '</div>';
+    el.querySelectorAll('.st-qh-filter button').forEach(function(b){ b.onclick = function(){ quizFilter = b.dataset.f; renderQuiz(); }; });
+    el.querySelectorAll('.st-qh-src').forEach(function(b){
       b.onclick = function(){
-        if (el.querySelector('.right')) return;
-        const pick = decodeURIComponent(b.dataset.o);
-        answered++; if (pick === q.ans) score++;
-        el.querySelectorAll('.st-quiz-opts button').forEach(function(x){
-          const o = decodeURIComponent(x.dataset.o);
-          if (o === q.ans) x.classList.add('right'); else if (x === b) x.classList.add('wrong');
-        });
-        $('quizWhy').innerHTML = '<div class="st-quiz-why"><b>' + (pick === q.ans ? '答對了。' : '答錯了。') + '</b>' + esc(q.why) + '</div><button class="st-quiz-next" id="quizNext">下一題</button>';
-        $('quizNext').onclick = function(){ quizPos++; renderQuiz(); };
+        const at = Math.max(0, Number(b.dataset.at) - 5);
+        if (current && b.dataset.vid === current.id) { seek(at); window.scrollTo({top: 0, behavior: 'smooth'}); }
+        else location.href = videoRoomUrl(subject.id, chIndex, b.dataset.vid);
       };
     });
   }
