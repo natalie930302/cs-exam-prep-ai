@@ -530,3 +530,15 @@ a { color: inherit; }
 .st-qh-src { justify-self: start; border: 0; background: none; padding: 0; font: inherit; font-size: 12px; color: var(--subj, var(--ac)); cursor: pointer; text-align: left; }
 .st-qh-src:hover { text-decoration: underline; }
 .st-end { z-index: 30 !important; }
+
+/* 手機：標題獨佔第二行，不會被擠成直排；進度膠囊留在第一行 */
+@media (max-width: 640px) {
+  .st-top { flex-wrap: wrap; row-gap: 6px; }
+  .st-top .st-title { order: 5; flex: 1 1 100%; }
+  .st-top h1 { font-size: 15px; -webkit-line-clamp: 2; }
+  .st-chprog { flex: 1 1 auto; justify-content: flex-start; }
+}
+
+/* 雙語字幕：中文在上、大而粗；英文在下、小而淡 */
+.st-sub-zh { font-size: 1.12em; font-weight: 700; letter-spacing: .01em; }
+.st-sub-en { font-size: .72em !important; opacity: .7 !important; font-weight: 400; margin-top: 2px; }

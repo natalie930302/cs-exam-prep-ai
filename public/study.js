@@ -7,6 +7,12 @@
 (function(){
   // /study/<subj>/<chapter, from 1>?v=<video>&t=<tab>
   const params = new URLSearchParams(location.search);
+  // read the requested tab now: opening the first video rewrites the address
+  const askedTab = params.get('t');
+  // ?at=<sec> (from search): open the video at that moment
+  if (params.get('v') && params.get('at') != null) {
+    try { localStorage.setItem('yt-pos-' + params.get('v'), String(Math.max(0, Number(params.get('at')) || 0))); } catch (e) {}
+  }
   const pathParts = location.pathname.split('/').filter(Boolean);
   const subject = SUBJECTS.find(function(s){ return s.id === pathParts[1]; }) || SUBJECTS[0];
   const chIndex = Math.max(0, Math.min(subject.chapters.length - 1, (Number(pathParts[2]) || 1) - 1));
@@ -54,7 +60,11 @@
   }
   chLink($('prevCh'), chIndex - 1);
   chLink($('nextCh'), chIndex + 1);
-  if (chapter.peerNote) { $('peerCard').hidden = false; $('peerNote').textContent = chapter.peerNote; }
+  // peerNote was written while reading other students' notes; keep the
+  // pitfalls, drop the sentences that only talk about those notes
+  const pitfalls = String(chapter.peerNote || '').replace(/^同儕筆記[^：]{0,6}：/, '')
+    .split(/(?<=[。！？])/).filter(function(x){ return x.trim() && !/同儕筆記|讀過的|筆記/.test(x); }).join('');
+  if (pitfalls) { $('peerCard').hidden = false; $('peerNote').textContent = pitfalls; }
 
   // ── Stage or notes on the right ──
   if (hasStage) {
@@ -999,7 +1009,7 @@
     if (start) playVideo(start[0], start[1], false);
     else { $('player').outerHTML = '<div class="st-empty-player">這章沒有指定影片。</div>'; renderSeriesChips(); renderVideoList(); }
     $('followChk').onchange = function(e){ follow = e.target.checked; };
-    const tab = new URLSearchParams(location.search).get('t') || store.get('study-tab');
+    const tab = askedTab || store.get('study-tab');
     const usable = tab && $('panel-' + tab) && !((tab === 'lab' || tab === 'full') && !hasStage);
     setTab(usable ? tab : 'videos');
   })();

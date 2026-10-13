@@ -822,7 +822,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
    {name:"線性代數（下）含歷屆經典試題解析一版（林緯）大碩",note:"✅ 你有這本。Ch5對角化→Ch6 Jordan Form→Ch7內積空間→Ch8各內積算子含SVD"}],
  recommended_videos:[
    {name:"MIT 18.06 L1：Geometry of Linear Equations",url:"https://www.youtube.com/watch?v=ZK3O402wf1c",note:"Strang的第一堂課，開繁中字幕，整科的起點"},
-   {name:"MIT 18.06 L9：Four Fundamental Subspaces",url:"https://www.youtube.com/watch?v=nHlE7EgJFds",note:"線代最重要的一支影片，向量空間章節的核心觀念都在這"},
+   {name:"MIT 18.06 L10：Four Fundamental Subspaces",url:"https://www.youtube.com/watch?v=nHlE7EgJFds",note:"線代最重要的一支影片，向量空間章節的核心觀念都在這"},
    {name:"3Blue1Brown：Eigenvectors and eigenvalues",url:"https://www.youtube.com/watch?v=PFDu9oVAE-g",note:"特徵值特徵向量的幾何直覺，公式背不熟時回來看這支"}],
  chapters:[
   {n:"主題1",t:"矩陣與線性方程組",sub:"Gaussian Elimination、Row Reduction、RREF",pri:"must",hrs:"9.5hr",wk:16,
@@ -864,7 +864,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
    mats:[
     {type:"book",text:"線性代數上冊（林緯）Ch3 向量空間：3-1到3-7（含空間直和），概念抽象，每節讀完做3-7進階試題"},
     {type:"vidgroup",text:"【強烈推薦】四個基本子空間 Four Fundamental Subspaces",options:[
-      {label:"MIT 18.06 L9：Four Fundamental Subspaces",url:"https://www.youtube.com/watch?v=nHlE7EgJFds",dur:"49:20"},
+      {label:"MIT 18.06 L10：Four Fundamental Subspaces",url:"https://www.youtube.com/watch?v=nHlE7EgJFds",dur:"49:20"},
       {label:"MIT 18.06 L6：Column Space and Nullspace",url:"https://www.youtube.com/watch?v=8o5Cmfpeo6g",dur:"46:01"},
       {label:"3Blue1Brown：Inverse matrices, column space and null space",url:"https://www.youtube.com/watch?v=uQhTuRlWMxw",dur:"12:09"}
     ]},
@@ -2274,7 +2274,7 @@ const WK_FOUND=[
    mat:'📘 離散下冊（林緯）Ch11–Ch13\n🎬 Equivalence Relation\n🎬 Neso Academy：Finite State Machine（Finite Automata）\n✏️ 等價關係判斷 × 3 題 + Boolean Algebra基本運算 × 5 題 + 有限狀態機設計 × 2 題',hrs:"15.0"},
   {wk:"W16",date:"11/23–11/26",subj:'線性代數',color:"#1E6FBF",
    ch:'LA Ch1 矩陣（定義與運算）+ Ch2 線性方程組與求解（高斯消去、行列式）+ Ch3 向量空間 + Ch4 線性映射',
-   mat:'📘 線代上冊（林緯）Ch1–Ch4\n🎬 MIT 18.06 L1：Geometry of Linear Equations\n🎬 MIT 18.06 L2：Elimination\n🎬 MIT 18.06 L18：Determinants\n🎬 MIT 18.06 L9：Four Fundamental Subspaces\n✏️ 高斯消去法手算 × 5 題 + 3×3逆矩陣手算 × 3 題 + 行列式Cofactor展開 × 5 題',hrs:"21.0"},
+   mat:'📘 線代上冊（林緯）Ch1–Ch4\n🎬 MIT 18.06 L1：Geometry of Linear Equations\n🎬 MIT 18.06 L2：Elimination\n🎬 MIT 18.06 L18：Determinants\n🎬 MIT 18.06 L10：Four Fundamental Subspaces\n✏️ 高斯消去法手算 × 5 題 + 3×3逆矩陣手算 × 3 題 + 行列式Cofactor展開 × 5 題',hrs:"21.0"},
   {wk:"W17",date:"11/27–11/30",subj:'線性代數',color:"#1E6FBF",
    ch:'LA Ch5 對角化理論（特徵值/特徵向量、對角化、Cayley-Hamilton）+ Ch7 內積空間（Gram-Schmidt正交化）+ Ch8 各內積算子（SVD）——Ch6 Jordan Form基礎要知道，深入題型可選擇性放（曾有考生反映意外被考到，別完全跳過）',
    mat:'📘 線代下冊（林緯）Ch5、Ch7–Ch8\n🎬 MIT 18.06 L21：Eigenvalues\n🎬 3Blue1Brown：Eigenvectors\n🎬 MIT 18.06 L29：SVD\n🎬 3Blue1Brown：Singular Value Decomposition\n✏️ 特徵值/特徵向量計算 × 5 題 + Gram-Schmidt正交化 × 3 題 + SVD分解步驟練習 × 2 題',hrs:"18.0"},

@@ -983,7 +983,7 @@ function dayPlanHeadline(items){
   items.forEach(function(x){ const k = x.subj+'|'+x.ci; if(chs.indexOf(k) < 0) chs.push(k); });
   return {subj:a.subj, ch:'第'+(a.ci+1)+'章 '+a.ch, more:chs.length - 1};
 }
-function fmtMin(m){ const h = Math.floor(m/60), r = Math.round(m%60); return h ? h+' 小時'+(r ? ' '+r+' 分' : '') : r+' 分'; }
+function fmtMin(m){ m = Math.round(m); const h = Math.floor(m/60), r = m%60; return h ? h+' 小時'+(r ? ' '+r+' 分' : '') : r+' 分'; }
 function renderCalDayDetail(iso){
   const p = iso.split('-');
   const d = new Date(Number(p[0]), Number(p[1])-1, Number(p[2]));
@@ -1789,13 +1789,45 @@ function renderGlobalSearch(query){
   // chapters first, then videos; at most 30
   const matches = all.filter(function(x){return x.kind==='章節';}).concat(all.filter(function(x){return x.kind==='影片';})).slice(0,30);
   if(announcement) announcement.textContent = matches.length ? '找到 '+matches.length+' 筆結果' : '找不到符合的結果';
-  out.innerHTML = matches.length ? matches.map(function(x,i){
+  out.innerHTML = renderSearchItems(matches);
+  if(!matches.length) out.innerHTML = '<div class="global-search-empty">搜尋筆記與字幕內容…</div>';
+  // then the full-text hits (notes + subtitles), fetched from the server
+  clearTimeout(searchTimer);
+  const asked = q;
+  searchTimer = setTimeout(async function(){
+    try{
+      const r = await fetch('/api/search?q=' + encodeURIComponent(asked));
+      const j = await r.json();
+      if(asked !== String(document.getElementById('globalSearchInput').value||'').trim().toLowerCase()) return;
+      const map = videoPlaceMap();
+      const hits = (j.results||[]).map(function(h){
+        const p = map[h.vid]; if(!p) return null;
+        return {kind: h.src === 'note' ? '筆記' : '字幕', subj: p.subj, title: h.text, detail: p.label + '・' + fmtClock(h.t) + (h.sec && h.src === 'note' && h.sec !== h.text ? '・' + h.sec : ''),
+          href: studyRoomUrl(p.subj.id, p.idx, h.vid) + '&at=' + h.t};
+      }).filter(Boolean);
+      const all = matches.concat(hits).slice(0, 60);
+      if(announcement) announcement.textContent = all.length ? '找到 '+all.length+' 筆結果' : '找不到符合的結果';
+      out.innerHTML = all.length ? renderSearchItems(all) : '<div class="global-search-empty">找不到符合的章節、影片或內容</div>';
+      globalSearchActive = 0;
+    }catch(e){ if(!matches.length) out.innerHTML = '<div class="global-search-empty">找不到符合的章節或影片</div>'; }
+  }, 220);
+}
+let searchTimer = null, videoPlaceCache = null;
+function videoPlaceMap(){
+  if(videoPlaceCache) return videoPlaceCache;
+  const m = {};
+  SUBJECTS.forEach(function(s){ s.chapters.forEach(function(c, idx){ chapterDisplayMaterials(c).forEach(function(v){ if(v.videoId && !m[v.videoId]) m[v.videoId] = {subj: s, idx: idx, label: v.text}; }); }); });
+  return (videoPlaceCache = m);
+}
+function fmtClock(t){ t = Math.max(0, Math.floor(t)); const h = Math.floor(t/3600), m = Math.floor(t%3600/60), s = t%60; return (h ? h+':'+String(m).padStart(2,'0') : m)+':'+String(s).padStart(2,'0'); }
+function renderSearchItems(matches){
+  return matches.map(function(x,i){
     const open = x.href ? 'a href="'+x.href+'"' : 'button type="button" onclick="goSearchChapter(\''+x.subject+'\','+x.index+')"';
     const close = x.href ? 'a' : 'button';
     return '<'+open+' class="global-search-item'+(i===0?' active':'')+'" style="--gs-c:'+(x.subj.color||'var(--ac)')+'">'
       +'<b>'+escapeHtml(x.title)+'</b>'
       +'<small><span class="gs-subj">'+escapeHtml(x.subj.name)+'</span>'+x.kind+(x.detail?'・'+escapeHtml(x.detail):'')+'</small></'+close+'>';
-  }).join('') : '<div class="global-search-empty">找不到符合的章節或影片</div>';
+  }).join('');
 }
 function moveGlobalSearch(delta){
   const items = Array.from(document.querySelectorAll('#globalSearchResults .global-search-item'));

@@ -177,6 +177,52 @@ app.post('/api/checklist/:date/toggle', (req, res) => {
   res.json({ done, all: db.getChecklistDone(req.params.date) });
 });
 
+// ── Full-text search over notes and subtitles ──
+// Built once (lazily) from public/notes and public/transcripts; each hit is
+// a video id + second, so the page can open the study room right there.
+let SEARCH_INDEX = null;
+function buildSearchIndex() {
+  const rows = [];
+  const read = (dir) => { try { return fs.readdirSync(path.join(PUBLIC_DIR, dir)).filter((f) => /^[\w-]{11}\.json$/.test(f)); } catch (e) { return []; } };
+  for (const f of read('notes')) {
+    try {
+      const n = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'notes', f), 'utf8'));
+      const vid = f.slice(0, -5);
+      for (const sec of n.sections || []) {
+        const t0 = (sec.points && sec.points[0] && sec.points[0].t) || (sec.cues && sec.cues[0]) || 0;
+        rows.push({ vid, t: Math.floor(t0), text: sec.title || '', src: 'note', sec: sec.title || '' });
+        for (const p of sec.points || []) rows.push({ vid, t: Math.floor(p.t || t0), text: p.text || '', src: 'note', sec: sec.title || '' });
+      }
+    } catch (e) { /* skip a broken file */ }
+  }
+  for (const f of read('transcripts')) {
+    try {
+      const cues = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'transcripts', f), 'utf8'));
+      const vid = f.slice(0, -5);
+      for (const c of cues) rows.push({ vid, t: Math.floor(c[0]), text: (c[3] ? c[3] + ' ' : '') + (c[2] || ''), src: 'sub' });
+    } catch (e) { /* skip */ }
+  }
+  for (const r of rows) r.low = r.text.toLowerCase();
+  return rows;
+}
+app.get('/api/search', (req, res) => {
+  const q = String(req.query.q || '').trim().toLowerCase().slice(0, 60);
+  if (q.length < 2) return res.json({ results: [] });
+  if (!SEARCH_INDEX) SEARCH_INDEX = buildSearchIndex();
+  const terms = q.split(/\s+/).filter(Boolean);
+  const notes = [], subs = [], perVideo = new Map();
+  for (const r of SEARCH_INDEX) {
+    if (!terms.every((w) => r.low.includes(w))) continue;
+    const k = r.vid + r.src;
+    const n = perVideo.get(k) || 0;
+    if (n >= (r.src === 'note' ? 3 : 2)) continue; // a few hits per video, so one video can't fill the list
+    perVideo.set(k, n + 1);
+    (r.src === 'note' ? notes : subs).push({ vid: r.vid, t: r.t, text: r.text.slice(0, 140), src: r.src, sec: r.sec });
+    if (notes.length >= 40 && subs.length >= 40) break;
+  }
+  res.json({ results: notes.slice(0, 25).concat(subs.slice(0, 25)) });
+});
+
 // ── 重啟模式（2026/9 加入）─────────────────────────────────────────
 // 不看「還剩多少任務／小時」的總量，只看今天的一小步：每天最小目標會
 // 隨週數慢慢加量（第 1 週 1 個番茄鐘 → 第 4 週起約 2.5 小時），並顯示
