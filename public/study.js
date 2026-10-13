@@ -219,8 +219,8 @@
       + items.map(function(t){
         const k = (keymap && keymap.points || []).find(function(p){ return p.point === t; });
         const where = k && k.where.length
-          ? '<span class="st-where">' + k.where.map(function(w){ return '<button type="button" class="st-where-b" data-v="' + w.video + '" data-t="' + w.t + '">' + esc(w.who) + ' ' + fmt(w.t) + '・' + esc(w.sec) + '</button>'; }).join('') + '</span>'
-          : '<span class="st-where none">這章的影片沒有找到專門講這一點的段落</span>';
+          ? '<span class="st-where">' + k.where.map(function(w){ return '<button type="button" class="st-where-b" data-v="' + w.video + '" data-t="' + w.t + '"' + (w.ch != null && w.ch !== chIndex ? ' data-ch="' + w.ch + '"' : '') + '>' + (w.ch != null && w.ch !== chIndex ? '第 ' + (w.ch + 1) + ' 章・' : '') + esc(w.who || '') + ' ' + fmt(w.t) + '・' + esc(w.sec) + '</button>'; }).join('') + '</span>'
+          : '<span class="st-where none">影片沒有專門講這一點，請看課本</span>';
         return check('kp-' + chKey + '-' + stableTaskKey(t), esc(t)) .replace('</li>', where + '</li>');
       }).join('')
       + '<li class="st-src">「看完要會」：自己覺得做到了再打勾。</li>';
@@ -229,9 +229,13 @@
     });
     $('goals').querySelectorAll('.st-where-b').forEach(function(b){
       b.onclick = function(){
-        const vi = series[0] ? series[0].options.findIndex(function(o){ return youtubeId(o.url) === b.dataset.v; }) : -1;
+        const t = Number(b.dataset.t);
+        // a video in another chapter: open that chapter's study room there
+        if (b.dataset.ch) { location.href = videoRoomUrl(subject.id, Number(b.dataset.ch), b.dataset.v) + '&at=' + t; return; }
+        let si = -1, vi = -1;
+        series.forEach(function(sr, k){ const i = sr.options.findIndex(function(o){ return youtubeId(o.url) === b.dataset.v; }); if (i >= 0 && si < 0) { si = k; vi = i; } });
         if (vi < 0) return;
-        if (current && current.id === b.dataset.v) seek(Number(b.dataset.t)); else playVideo(0, vi, true, Number(b.dataset.t));
+        if (current && current.id === b.dataset.v) seek(t); else playVideo(si, vi, true, t);
         window.scrollTo({top: 0, behavior: 'smooth'});
       };
     });
