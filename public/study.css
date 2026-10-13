@@ -689,3 +689,12 @@ a { color: inherit; }
   .st-chprog { flex: 0 0 auto !important; }
   .st-chprog .st-pill { font-size: 11px !important; padding: 2px 8px !important; white-space: nowrap; }
 }
+
+/* 手機分頁列：五個分頁平均排滿一行；放不下時也只能左右滑，不會上下晃 */
+.st-tabs { overflow-y: hidden !important; overscroll-behavior-x: contain; touch-action: pan-x pan-y; }
+@media (max-width: 640px) {
+  .st-tabs { display: flex !important; justify-content: space-between; gap: 0 !important; }
+  .st-tabs button { flex: 1 1 auto; padding: 9px 4px !important; font-size: 13.5px !important; white-space: nowrap; text-align: center; }
+  .st-tabs button .count { margin-left: 2px; }
+}
+.st-timeline, .st-terms, .st-series { overflow-y: hidden !important; overscroll-behavior-x: contain; touch-action: pan-x pan-y; }
