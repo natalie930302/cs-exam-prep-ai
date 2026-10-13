@@ -187,7 +187,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
    {name:"Abdul Bari：Heap",url:"https://www.youtube.com/watch?v=HqPJF2L5h9U",note:"Heap建構與調整的手算流程，配合Priority Queue章節看"}],
  chapters:[
   {n:"主題1",t:"複雜度分析",sub:"Big-O / Θ / Ω、遞迴分析",pri:"must",hrs:"7.5hr",wk:1,
-   key:"Big-O、Ω、Θ 的定義與用 c、n₀ 證明",
+   key:"Big-O／Ω／Θ 的定義與用 c 和 n₀ 證明",
    mats:[
     {type:"vidgroup",text:"複雜度分析 Big-O/Θ/Ω",options:[
       {label:"Time Complexity of a Computer Program",url:"https://www.youtube.com/watch?v=V42FBiohc6c",dur:"9:42"},

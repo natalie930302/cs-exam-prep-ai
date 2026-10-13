@@ -932,13 +932,15 @@ function goCalDay(iso){
 let calSelectedIso = null;
 let dayPlanCache = null;
 function foundationVideoQueue(){
-  const done = new Set(DONE_TASK_IDS), out = [];
+  const done = new Set(DONE_TASK_IDS), out = [], seen = new Set();
   for(let wk=1; wk<=FOUNDATION_WEEKS; wk++){
     SUBJECTS.forEach(function(sub){
       sub.chapters.forEach(function(c, ci){
         if(c.wk !== wk) return;
         chapterDisplayMaterials(c).forEach(function(m, vi, all){
           if(done.has(chapterMaterialTaskId(sub.id, c, m))) return;
+          // a video listed in two chapters is scheduled once (where it first appears)
+          if(m.videoId){ if(seen.has(m.videoId)) return; seen.add(m.videoId); }
           // exact length (not rounded up per video), minus what was already
           // watched of it in the study room (it resumes from there)
           const p = String(m.dur || '').split(':').map(Number);
@@ -1803,7 +1805,7 @@ function renderGlobalSearch(query){
       const hits = (j.results||[]).map(function(h){
         const p = map[h.vid]; if(!p) return null;
         return {kind: h.src === 'note' ? '筆記' : '字幕', subj: p.subj, title: h.text, detail: p.label + '・' + fmtClock(h.t) + (h.sec && h.src === 'note' && h.sec !== h.text ? '・' + h.sec : ''),
-          href: studyRoomUrl(p.subj.id, p.idx, h.vid) + '&at=' + h.t};
+          href: studyRoomUrl(p.subj.id, p.idx, h.vid) + '&at=' + h.t + '&t=full'};
       }).filter(Boolean);
       const all = matches.concat(hits).slice(0, 60);
       if(announcement) announcement.textContent = all.length ? '找到 '+all.length+' 筆結果' : '找不到符合的結果';

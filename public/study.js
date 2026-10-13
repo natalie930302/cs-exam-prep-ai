@@ -119,7 +119,8 @@
   // Nothing to show (logistics, chat, or no animation for this video yet):
   // a quiet stage rather than an unrelated animation.
   const IDLE_CHAT = '老師在講課務或閒聊';
-  const IDLE_NONE = '這支影片的動畫還在製作中';
+  const IDLE_NONE = '這支影片的動畫還在製作中，先看左邊的影片';
+  const IDLE_START = '老師講到概念時，這裡會出現動畫';
   function showIdle(text){
     if (!hasStage) return;
     if (stageScene === 'idle:' + text) return;
@@ -145,7 +146,9 @@
   function showScene(sec){
     if (!hasStage || !sec) return;
     const id = sceneFor(sec);
-    if (!id) { showIdle(IDLE_CHAT); return; }
+    // no scene: a video without any animation yet, or a section where the
+    // lecturer is not teaching (chat / admin)
+    if (!id) { showIdle(curNotes && !curNotes.sections.some(function(x){ return x.scene; }) ? IDLE_NONE : IDLE_CHAT); return; }
     const si = curNotes ? curNotes.sections.indexOf(sec) : -1;
     const nxt = si >= 0 ? curNotes.sections[si + 1] : null;
     sec = Object.assign({}, sec, {scene: id, _end: nxt && nxt.points.length ? nxt.points[0].t : null});
@@ -185,6 +188,7 @@
   let keymap = null;
   fetch('/keymap.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){ keymap = j && j[subject.id + '-' + chIndex]; renderGoals(); }).catch(function(){});
   // goals are listed with 、 ; — but not the 、 inside （…） or (…)
+  function subjName(id){ const x = SUBJECTS.find(function(s){ return s.id === id; }); return x ? x.name : ''; }
   function splitGoals(text){
     const out = []; let cur = '', depth = 0;
     for (const ch of String(text || '')) {
@@ -217,9 +221,11 @@
       + esc(subject.name) + '整科還有 ' + sLeftN + ' / ' + sTotal + ' 支，約 ' + hm(sLeftSec) + '。</li>'
       + '<li class="st-goal-h">看完要會（點時間跳到影片講這個的地方）</li>'
       + items.map(function(t){
-        const k = (keymap && keymap.points || []).find(function(p){ return p.point === t; });
+        // compare without punctuation/spaces: the same goal may be written with 、 or ；
+        const norm = function(x){ return String(x).replace(/[、；;，,／/\s]/g, ''); };
+        const k = (keymap && keymap.points || []).find(function(p){ return norm(p.point) === norm(t); });
         const where = k && k.where.length
-          ? '<span class="st-where">' + k.where.map(function(w){ return '<button type="button" class="st-where-b" data-v="' + w.video + '" data-t="' + w.t + '"' + (w.ch != null && w.ch !== chIndex ? ' data-ch="' + w.ch + '"' : '') + '>' + (w.ch != null && w.ch !== chIndex ? '第 ' + (w.ch + 1) + ' 章・' : '') + esc(w.who || '') + ' ' + fmt(w.t) + '・' + esc(w.sec) + '</button>'; }).join('') + '</span>'
+          ? '<span class="st-where">' + k.where.map(function(w){ return '<button type="button" class="st-where-b" data-v="' + w.video + '" data-t="' + w.t + '"' + (w.ch != null && (w.ch !== chIndex || w.subj) ? ' data-ch="' + w.ch + '" data-subj="' + (w.subj || subject.id) + '"' : '') + '>' + (w.ch != null && (w.ch !== chIndex || w.subj) ? (w.subj ? subjName(w.subj) : '') + '第 ' + (w.ch + 1) + ' 章・' : '') + esc(w.who || '') + ' ' + fmt(w.t) + '・' + esc(w.sec) + '</button>'; }).join('') + '</span>'
           : '<span class="st-where none">影片沒有專門講這一點，請看課本</span>';
         return check('kp-' + chKey + '-' + stableTaskKey(t), esc(t)) .replace('</li>', where + '</li>');
       }).join('')
@@ -231,7 +237,7 @@
       b.onclick = function(){
         const t = Number(b.dataset.t);
         // a video in another chapter: open that chapter's study room there
-        if (b.dataset.ch) { location.href = videoRoomUrl(subject.id, Number(b.dataset.ch), b.dataset.v) + '&at=' + t; return; }
+        if (b.dataset.ch) { location.href = videoRoomUrl(b.dataset.subj || subject.id, Number(b.dataset.ch), b.dataset.v) + '&at=' + t + '&t=full'; return; }
         let si = -1, vi = -1;
         series.forEach(function(sr, k){ const i = sr.options.findIndex(function(o){ return youtubeId(o.url) === b.dataset.v; }); if (i >= 0 && si < 0) { si = k; vi = i; } });
         if (vi < 0) return;
@@ -271,7 +277,7 @@
   }
   // How far this video's animation is: following the lecturer sentence by
   // sentence, the older section-by-section version, or not made yet.
-  function syncState(id){ const n = notesIndex[id]; return !n ? 'none' : n.cued ? 'cued' : 'old'; }
+  function syncState(id){ const n = notesIndex[id]; return !n || n.anim === false ? 'none' : n.cued ? 'cued' : 'old'; }
   function syncBadge(id){
     const st = syncState(id);
     // a finished video needs no label; only the unfinished ones say so
@@ -733,7 +739,8 @@
     });
     const sec = curNotes.sections[secIdx];
     $('nowSec').textContent = sec.title;
-    showScene(sec);
+    // before the first point is taught: a hint (or, for a video without animations, say so)
+    if (pt) showScene(sec); else showIdle(curNotes.sections.some(function(x){ return x.scene; }) ? IDLE_START : IDLE_NONE);
     showTeach(sec, t);
     $('timeline').querySelectorAll('.st-seg').forEach(function(b){
       const i = Number(b.dataset.sec);
@@ -805,10 +812,22 @@
   }
   // ── 作答紀錄（小測驗分頁顯示這裡的內容）──
   function quizHistory(){ try { return JSON.parse(store.get('qz-history') || '[]'); } catch (e) { return []; } }
+  function questionSection(q){
+    if (!curNotes) return null;
+    const qt = terms(q.q + ' ' + q.ans + ' ' + (q.why || ''));
+    let best = null, bestN = -1;
+    curNotes.sections.forEach(function(sec){
+      const st = terms(sec.title + ' ' + sec.points.map(function(p){ return p.text; }).join(' '));
+      let c = 0; qt.forEach(function(w){ if (st.has(w)) c++; });
+      if (c > bestN && sec.points.length) { bestN = c; best = sec; }
+    });
+    return best;
+  }
   function recordAnswer(q, pick, ok){
     const h = quizHistory();
     h.push({vid: current ? current.id : '', label: current && current.opt ? current.opt.label : '', subj: subject.id, ch: chIndex,
-      at: playerReady && typeof player.getCurrentTime === 'function' ? Math.round(player.getCurrentTime()) : 0,
+      // review jumps to the start of the part that teaches this question
+      at: (function(){ const sec = questionSection(q); return sec ? Math.floor(sec.points[0].t) : 0; })(),
       q: q.q, pick: pick, ans: q.ans, ok: ok, why: q.why || '', ts: Date.now()});
     store.set('qz-history', JSON.stringify(h.slice(-3000)));
     updateCounts();
@@ -846,6 +865,14 @@
         go.textContent = '繼續';
         go.onclick = close;
         card.appendChild(go);
+        const sec = ok ? null : questionSection(q);
+        if (sec) {
+          const back = document.createElement('button');
+          back.className = 'st-btn st-qz-back';
+          back.textContent = '重看這段（' + fmt(sec.points[0].t) + '）';
+          back.onclick = function(){ close(); setTimeout(function(){ seek(sec.points[0].t); try { player.playVideo(); } catch (e) {} }, 320); };
+          card.appendChild(back);
+        }
         go.focus();
         recordAnswer(q, pick, ok);
         if (ok) { burst(b); setTimeout(close, 2600); }
@@ -1011,7 +1038,7 @@
     el.querySelectorAll('.st-qh-filter button').forEach(function(b){ b.onclick = function(){ quizFilter = b.dataset.f; renderQuiz(); }; });
     el.querySelectorAll('.st-qh-src').forEach(function(b){
       b.onclick = function(){
-        const at = Math.max(0, Number(b.dataset.at) - 5);
+        const at = Math.max(0, Number(b.dataset.at));
         if (current && b.dataset.vid === current.id) { seek(at); window.scrollTo({top: 0, behavior: 'smooth'}); }
         else location.href = videoRoomUrl(subject.id, chIndex, b.dataset.vid);
       };

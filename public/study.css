@@ -547,3 +547,5 @@ a { color: inherit; }
   .st-side { transition: height .3s ease; }
   .st-side.is-idle { height: 120px !important; }
 }
+.st-btn[hidden], .st-walk-toggle[hidden], #subBtn[hidden] { display: none !important; }
+.st-qz-back { margin-top: 6px; width: 100%; justify-content: center; }
