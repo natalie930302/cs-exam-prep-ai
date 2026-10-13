@@ -199,7 +199,6 @@ body.idle .lab-caption::before {
   background: radial-gradient(circle, color-mix(in srgb, var(--subj, var(--ac)) 55%, #fff) 0 30%, color-mix(in srgb, var(--subj, var(--ac)) 18%, transparent) 31% 100%);
   animation: idle-breathe 2.6s ease-in-out infinite;
 }
-body.idle .lab-caption::after { content: '講到概念時，這裡會出現動畫'; font-size: 12px; font-weight: 400; color: var(--mt); opacity: .75; }
 @keyframes idle-breathe {
   0%, 100% { transform: scale(.86); box-shadow: 0 0 0 0 color-mix(in srgb, var(--subj, var(--ac)) 30%, transparent); }
   50% { transform: scale(1); box-shadow: 0 0 0 14px transparent; }

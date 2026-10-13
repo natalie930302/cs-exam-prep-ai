@@ -102,7 +102,28 @@ CREATE TABLE IF NOT EXISTS material_preferences (
   note TEXT,
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+-- study-room state the browser keeps (quiz answer history, which quizzes
+-- were asked, where each video was left off), so it survives clearing the
+-- browser and is the same on every device
+CREATE TABLE IF NOT EXISTS client_state (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 `);
+
+const CLIENT_KEY = /^(qz-history|qz-asked-[\w-]+|yt-pos-[\w-]+)$/;
+function getClientState() {
+  const out = {};
+  for (const r of db.prepare('SELECT key, value FROM client_state').all()) out[r.key] = r.value;
+  return out;
+}
+function setClientState(key, value) {
+  if (!CLIENT_KEY.test(key)) return false;
+  if (value == null) db.prepare('DELETE FROM client_state WHERE key = ?').run(key);
+  else db.prepare("INSERT INTO client_state(key, value, updated_at) VALUES (?, ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at").run(key, String(value).slice(0, 2000000));
+  return true;
+}
 
 function getSetting(key, fallback) {
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
@@ -243,6 +264,7 @@ function exportProgress() {
     quiz_attempts: getQuizAttempts(10000),
     review_schedule: getReviewSchedule(),
     material_preferences: getMaterialPreferences(),
+    client_state: getClientState(),
   };
 }
 function importProgress(payload) {
@@ -285,6 +307,10 @@ function importProgress(payload) {
     safeReviews.forEach((r)=>reviewStmt.run(r.subject_id,r.chapter_key,r.due_date,Number(r.interval_days)||1,Number(r.streak)||0,r.updated_at||new Date().toISOString()));
     const preferenceStmt=db.prepare('INSERT INTO material_preferences(source,rating,note,updated_at) VALUES(?,?,?,?)');
     safePreferences.forEach((r)=>preferenceStmt.run(r.source,Number(r.rating),r.note||null,r.updated_at||new Date().toISOString()));
+    if (payload.client_state && typeof payload.client_state === 'object') {
+      db.exec('DELETE FROM client_state;');
+      for (const [k, v] of Object.entries(payload.client_state)) setClientState(k, v);
+    }
     db.exec('COMMIT');
   } catch (e) {
     db.exec('ROLLBACK');
@@ -356,6 +382,8 @@ function setChapterNote(key, content) {
 }
 
 module.exports = {
+  getClientState,
+  setClientState,
   getChapterNote,
   setChapterNote,
   addRestartLog,

@@ -549,3 +549,23 @@ a { color: inherit; }
 }
 .st-btn[hidden], .st-walk-toggle[hidden], #subBtn[hidden] { display: none !important; }
 .st-qz-back { margin-top: 6px; width: 100%; justify-content: center; }
+
+/* ── 小挑戰題卡：緊湊、選項兩欄、按鈕並排，塞得進影片畫面 ── */
+.st-end { padding: 16px !important; place-items: center !important; }
+.st-end .st-qz {
+  width: min(640px, 100%) !important; max-height: calc(100% - 8px); padding: 14px 18px 14px !important;
+  border-radius: 16px !important; box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
+}
+.st-qz-hd { margin-bottom: 2px; }
+.st-qz-q { font-size: 15px; line-height: 1.5; margin-bottom: 10px; }
+.st-qz-opts { grid-template-columns: 1fr 1fr; gap: 8px; }
+.st-qz-opts button { padding: 9px 12px; font-size: 13.5px; line-height: 1.45; border-radius: 10px; }
+.st-qz-why { font-size: 13px; line-height: 1.55; margin-top: 10px; }
+.st-qz-go, .st-qz-back { width: auto !important; margin-top: 10px !important; padding: 0 18px !important; }
+.st-qz-back { margin-left: 8px !important; }
+.st-qz:has(.st-qz-go) .st-qz-why { margin-bottom: 0; }
+@media (max-width: 640px) {
+  .st-qz-opts { grid-template-columns: 1fr; gap: 6px; }
+  .st-end .st-qz { padding: 12px 14px !important; }
+  .st-qz-q { font-size: 14px; }
+}

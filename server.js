@@ -177,6 +177,13 @@ app.post('/api/checklist/:date/toggle', (req, res) => {
   res.json({ done, all: db.getChecklistDone(req.params.date) });
 });
 
+// ── Study-room state kept in the browser, mirrored here (see db.js) ──
+app.get('/api/state', (req, res) => res.json(db.getClientState()));
+app.put('/api/state/:key', (req, res) => {
+  const ok = db.setClientState(req.params.key, req.body ? req.body.value : null);
+  res.status(ok ? 200 : 400).json({ ok });
+});
+
 // ── Full-text search over notes and subtitles ──
 // Built once (lazily) from public/notes and public/transcripts; each hit is
 // a video id + second, so the page can open the study room right there.
