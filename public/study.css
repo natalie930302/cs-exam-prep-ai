@@ -679,3 +679,13 @@ a { color: inherit; }
 }
 .st-main { padding-top: 16px !important; }
 .st-now { padding-top: 0 !important; padding-bottom: 0 !important; }
+
+/* 標題列：拿掉上一章／下一章（下面已有切換）；手機上標題與返回鈕同一行，不換行 */
+.st-chnav { display: none !important; }
+@media (max-width: 640px) {
+  .st-top { flex-wrap: nowrap !important; gap: 10px !important; }
+  .st-top .st-title { order: 0 !important; flex: 1 1 auto !important; min-width: 0 !important; }
+  .st-top h1 { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; display: block !important; -webkit-line-clamp: unset !important; font-size: 15px !important; }
+  .st-chprog { flex: 0 0 auto !important; }
+  .st-chprog .st-pill { font-size: 11px !important; padding: 2px 8px !important; white-space: nowrap; }
+}
