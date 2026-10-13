@@ -646,3 +646,11 @@ a { color: inherit; }
   .st-now, .st-timeline, .st-player-wrap, .st-teach, .st-side, .st-more { margin-top: 0 !important; margin-bottom: 0 !important; }
   .st-timeline { padding-bottom: 0 !important; }
 }
+/* 手機：術語小卡跟講解文字對齊（不貼卡片邊框）；動畫區跟其他卡片一樣留左右邊界與圓角 */
+@media (max-width: 900px) {
+  .st-terms { margin: 12px 0 0 !important; padding: 0 0 4px !important; scroll-padding-left: 0; }
+  .st-terms .st-tcard { flex: 0 0 82%; }
+}
+@media (max-width: 640px) {
+  .st-side { margin: 0 !important; border-radius: var(--r, 16px) !important; border: 1px solid var(--bd) !important; overflow: hidden; }
+}
