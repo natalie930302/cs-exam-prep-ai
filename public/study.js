@@ -180,7 +180,7 @@
 
   // ── Goals & tasks: concrete, countable, with what is left ──
   function secsLeft(list){ return list.reduce(function(a, m){ return a + durToSec(m.dur); }, 0); }
-  function hm(sec){ const h = Math.floor(sec / 3600), m = Math.round(sec % 3600 / 60); return (h ? h + ' 小時 ' : '') + m + ' 分'; }
+  function hm(sec){ const t = Math.round(sec / 60), h = Math.floor(t / 60), m = t % 60; return (h ? h + ' 小時 ' : '') + m + ' 分'; }
   // where each key point is taught: public/keymap.json (chapter → point → video parts)
   let keymap = null;
   fetch('/keymap.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){ keymap = j && j[subject.id + '-' + chIndex]; renderGoals(); }).catch(function(){});

@@ -187,7 +187,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
    {name:"Abdul Bari：Heap",url:"https://www.youtube.com/watch?v=HqPJF2L5h9U",note:"Heap建構與調整的手算流程，配合Priority Queue章節看"}],
  chapters:[
   {n:"主題1",t:"複雜度分析",sub:"Big-O / Θ / Ω、遞迴分析",pri:"must",hrs:"7.5hr",wk:1,
-   key:"Master Theorem三種情況、遞迴樹畫法、常見函數成長率比較（log n < n < n log n < n² < 2ⁿ）",
+   key:"Big-O、Ω、Θ 的定義與用 c、n₀ 證明",
    mats:[
     {type:"vidgroup",text:"複雜度分析 Big-O/Θ/Ω",options:[
       {label:"Time Complexity of a Computer Program",url:"https://www.youtube.com/watch?v=V42FBiohc6c",dur:"9:42"},
@@ -201,7 +201,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
     ]}
    ]},
   {n:"主題2",t:"陣列、Linked List、Stack、Queue",sub:"Array、Singly/Doubly/Circular LL、Stack、Queue",pri:"must",hrs:"28.5hr",wk:2,
-   key:"各結構insert/delete時間複雜度比較、Circular Queue環狀操作、Stack用陣列vs鏈結實作差異",
+   key:"各結構insert/delete時間複雜度比較、Circular Queue環狀操作、Stack用陣列vs鏈結實作差異、常見函數成長率比較（log n < n < n log n < n² < 2ⁿ）",
    peerNote:"同儕筆記校正：有份筆記的行主序（row-major）範例最後一項誤植為i（應為l），Protected存取層級也只寫「部分人能拿取」，實際上是子類別可存取，讀到這段時以課本為準。",
    mats:[
     {type:"book",text:"資結七版（洪逸）Ch2 Arrays & Structures + Ch3 Stack & Queue + Ch4 Linked List：重點標記各操作時間複雜度"},
@@ -310,7 +310,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
     {type:"ex",text:"給定圖，手寫 Adjacency Matrix/List，並寫出 DFS/BFS 走訪順序 × 3 題"}
    ]},
   {n:"主題8",t:"排序演算法",sub:"Merge/Quick/Heap/Counting/Radix Sort",pri:"must",hrs:"12.5hr",wk:4,
-   key:"所有排序的最佳/平均/最差複雜度表、穩定性比較（Merge/Insertion穩定；Quick/Heap不穩定）、Quick Sort的pivot選擇",
+   key:"所有排序的最佳/平均/最差複雜度表、穩定性比較（Merge/Insertion穩定；Quick/Heap不穩定）、Quick Sort的pivot選擇、Master Theorem三種情況、遞迴樹畫法",
    peerNote:"同儕筆記缺口：讀過的三份資料結構同儕筆記沒有一份完整涵蓋排序演算法比較，這章不能靠同儕筆記補，建議直接練課本習題與考古題。",
    mats:[
     {type:"vid",text:"Abdul Bari：Merge Sort",url:"https://www.youtube.com/watch?v=mB5HXBb_HY8",dur:"20:23"},
@@ -826,7 +826,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
    {name:"3Blue1Brown：Eigenvectors and eigenvalues",url:"https://www.youtube.com/watch?v=PFDu9oVAE-g",note:"特徵值特徵向量的幾何直覺，公式背不熟時回來看這支"}],
  chapters:[
   {n:"主題1",t:"矩陣與線性方程組",sub:"Gaussian Elimination、Row Reduction、RREF",pri:"must",hrs:"9.5hr",wk:16,
-   key:"高斯消去法手算、REF/RREF的定義、解的三種情況（unique/no/infinite）、自由變數的判斷",
+   key:"高斯消去法手算、解的三種情況（unique/no/infinite）",
    mats:[
     {type:"book",text:"線性代數上冊（林緯）Ch2 線性方程組與求解：2-1線性方程組 + 2-3行列式 — 搭配Ch2-5進階試題"},
     {type:"vid",text:"MIT OCW 18.06 L1：Geometry of Linear Equations",url:"https://www.youtube.com/watch?v=ZK3O402wf1c",dur:"39:49",note:"Strang的課，免費，開繁中字幕"},
@@ -859,7 +859,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
     {type:"vid",text:"3Blue1Brown：Cramer's rule, explained geometrically | Ch12",url:"https://www.youtube.com/watch?v=jBsC34PxzoM",dur:"12:12"},
     {type:"ex",text:"3×3和4×4矩陣計算行列式 × 8題"}]},
   {n:"主題4",t:"向量空間",sub:"Subspace、Span、Basis、Dimension、Rank-Nullity",pri:"must",hrs:"12.5hr",wk:16,
-   key:"四個基本子空間（Column Space/Null Space/Row Space/Left Null Space）、Rank-Nullity Theorem（rank+nullity=n）、線性獨立的判斷",
+   key:"四個基本子空間（Column Space/Null Space/Row Space/Left Null Space）、Rank-Nullity Theorem（rank+nullity=n）、線性獨立的判斷、REF/RREF的定義、自由變數的判斷",
    peerNote:"同儕筆記地雷：求行空間（column space）要用行運算、求列空間（row space）要用列運算，兩者搞混會直接算錯。",
    mats:[
     {type:"book",text:"線性代數上冊（林緯）Ch3 向量空間：3-1到3-7（含空間直和），概念抽象，每節讀完做3-7進階試題"},
@@ -966,7 +966,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
    {name:"Generating Functions | Part 1",url:"https://www.youtube.com/watch?v=tA2cqfNh5EM",note:"生成函數最容易卡關，這支從頭建立觀念，配合遞推關係章節看"}],
  chapters:[
   {n:"主題1",t:"邏輯與命題",sub:"Propositional Logic、Predicate Logic、量詞",pri:"must",hrs:"5hr",wk:11,
-   key:"真值表、邏輯等價（De Morgan定律背熟）、量詞∀和∃的否定、謂詞邏輯的推導",
+   key:"真值表、邏輯等價（De Morgan定律背熟）、量詞∀和∃的否定",
    mats:[
     {type:"vid",text:"交大OCW 易志偉《離散數學》Lec01 Logic and Proofs (1/5)",url:"https://www.youtube.com/watch?v=klWl-t7V5qY",dur:"1:21:01"},
     {type:"vid",text:"交大OCW 易志偉《離散數學》Lec02 Logic and Proofs (2/5)",url:"https://www.youtube.com/watch?v=ih43BS7GsNY",dur:"36:23"},
@@ -976,7 +976,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
     {type:"ex",text:"真值表與邏輯等價練習 × 5 題（離散上冊 Ch1 習題）"}
    ]},
   {n:"主題2",t:"證明方法",sub:"Direct Proof、Proof by Contradiction、Mathematical Induction",pri:"must",hrs:"11.5hr",wk:12,
-   key:"三種證明方法的結構、強歸納法（Strong Induction）、Well-Ordering Principle",
+   key:"三種證明方法的結構、強歸納法（Strong Induction）、Well-Ordering Principle、謂詞邏輯的推導",
    mats:[
     {type:"vid",text:"交大OCW 易志偉《離散數學》Lec03 Logic and Proofs (3/5)",url:"https://www.youtube.com/watch?v=_WXIdyyHfqk",dur:"1:07:01"},
     {type:"vid",text:"交大OCW 易志偉《離散數學》Lec04 Logic and Proofs (4/5)",url:"https://www.youtube.com/watch?v=qilMh8Uoabk",dur:"1:38:07"},
@@ -1066,7 +1066,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
     {type:"ex",text:"容斥原理應用題 × 5 題（離散上冊 Ch6 習題）"}
    ]},
   {n:"主題7",t:"圖論（基礎）",sub:"圖的定義、Walk/Path/Cycle、Euler/Hamilton路徑",pri:"must",hrs:"6.5hr",wk:14,
-   key:"握手定理（Σdeg=2|E|）、Euler路徑/迴路的條件（奇數度節點數）、Hamilton路徑（無簡單判斷條件，考概念）",
+   key:"握手定理（Σdeg=2|E|）",
    mats:[
     {type:"vid",text:"交大OCW 易志偉《離散數學》Lec22 Graphs (1/3)",url:"https://www.youtube.com/watch?v=q0Vy0gQCB_g",dur:"1:23:28"},
     {type:"vid",text:"交大OCW 易志偉《離散數學》Lec23 Graphs (2/3)",url:"https://www.youtube.com/watch?v=y4sLC9zeEvU",dur:"40:14"},
@@ -1078,7 +1078,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
     {type:"ex",text:"Euler 路徑判斷 + 握手定理計算 × 5 題（離散下冊 Ch8 習題）"}
    ]},
   {n:"主題8",t:"圖論（進階）",sub:"Planar Graph、Graph Coloring、Spanning Tree",pri:"hi",hrs:"20.5hr",wk:14,
-   key:"Euler公式（v-e+f=2，平面圖）、四色定理（概念，不需證明）、Chromatic Number定義、生成樹計數",
+   key:"Euler公式（v-e+f=2，平面圖）、四色定理（概念，不需證明）、Chromatic Number定義、生成樹計數、Euler路徑/迴路的條件（奇數度節點數）、Hamilton路徑（無簡單判斷條件，考概念）",
    mats:[
     {type:"vid",text:"Spanning Tree：Discrete Mathematics",url:"https://www.youtube.com/watch?v=6WZvVJ0Q1FA",dur:"43:05"},
     {type:"vid",text:"Discrete Math II - 10.8.1 Graph Coloring",url:"https://www.youtube.com/watch?v=Erea1QASjXY",dur:"14:33"},
