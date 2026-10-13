@@ -250,7 +250,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
       {label:"交大彭文志 Lec17 Trees (6/6)",url:"https://www.youtube.com/watch?v=4HDjWNV09QY",dur:"45:15"}
     ]},
     {type:"ex",text:"給定一棵樹，手寫三種走訪結果 × 5題（資結七版（洪逸）書後習題）"}]},
-  {n:"主題4",t:"BST、AVL Tree、Red-Black Tree",sub:"二元搜尋樹、高度平衡樹",pri:"must",hrs:"20hr",wk:4,
+  {n:"主題4",t:"BST、AVL Tree、Red-Black Tree",sub:"二元搜尋樹、高度平衡樹",pri:"must",hrs:"20hr",wk:3,
    key:"BST插入/刪除/搜尋、AVL四種旋轉（LL/RR/LR/RL）、平衡因子計算、紅黑樹性質（不要求手推旋轉，要知道特性）",
    peerNote:"同儕筆記地雷：BST不平衡會退化成linked list、O(log N)優勢消失；紅黑樹插入/刪除後務必把root塗黑，是常被漏掉的細節。讀過的資料結構同儕筆記完全沒提到AVL/Red-Black Tree的實作，這塊要靠課本/影片，不能只找同儕筆記。",
    mats:[
@@ -273,7 +273,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
     ]},
     {type:"ex",text:"手畫AVL旋轉過程：給定插入序列，畫出每步旋轉 × 5組（課本習題）"},
     {type:"rec",text:"補充：搜尋「AVL Tree 題目 研究所」找練習題"}]},
-  {n:"主題5",t:"Heap 與 Priority Queue",sub:"Min/Max Heap、Priority Queue",pri:"must",hrs:"8hr",wk:4,
+  {n:"主題5",t:"Heap 與 Priority Queue",sub:"Min/Max Heap、Priority Queue",pri:"must",hrs:"8hr",wk:3,
    key:"建堆複雜度O(n)為何（bottom-up heapify）、Heap Sort複雜度O(n log n)、Priority Queue用途（Dijkstra等）",
    mats:[
     {type:"book",text:"資結七版（洪逸）Ch9-1 Min-Max Heap：建堆O(n)的推導是重點，搭配Q講義Q6"},
@@ -284,7 +284,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
       {label:"MIT 6.006 L4：Heaps and Heap Sort",url:"https://www.youtube.com/watch?v=B7hVxCmfPtM",dur:"52:32"}
     ]},
     {type:"ex",text:"給定陣列，手動建Max Heap並做Heap Sort，畫出每步 × 3題"}]},
-  {n:"主題6",t:"雜湊表 Hash Table",sub:"Hash Function、衝突處理",pri:"must",hrs:"11.5hr",wk:4,
+  {n:"主題6",t:"雜湊表 Hash Table",sub:"Hash Function、衝突處理",pri:"must",hrs:"11.5hr",wk:3,
    key:"Chaining vs Open Addressing（Linear/Quadratic Probing、Double Hashing）、Load Factor對效率的影響、各方法worst case",
    peerNote:"同儕筆記地雷：linear probing在load factor過高時效率會劇烈下降；讀過的同儕筆記也沒提到hash table動態resize，這塊需另外靠課本補。",
    mats:[
@@ -298,7 +298,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
       {label:"交大彭文志 Lec23 Hashing",url:"https://www.youtube.com/watch?v=bULIs7AVDNk",dur:"1:35:18"}
     ]},
     {type:"ex",text:"給定hash function和鍵值，手算Chaining和Linear Probing的表格 × 3題"}]},
-  {n:"主題7",t:"圖（基礎）",sub:"有向/無向圖、表示法、DFS/BFS",pri:"must",hrs:"6.5hr",wk:3,
+  {n:"主題7",t:"圖（基礎）",sub:"有向/無向圖、表示法、DFS/BFS",pri:"must",hrs:"6.5hr",wk:4,
    key:"Adjacency Matrix vs List的空間/時間複雜度、DFS/BFS的時間複雜度（O(V+E)）、有向圖vs無向圖的矩陣對稱性",
    mats:[
     {type:"vidgroup",text:"圖的表示法與 DFS/BFS",options:[
@@ -309,7 +309,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
     ]},
     {type:"ex",text:"給定圖，手寫 Adjacency Matrix/List，並寫出 DFS/BFS 走訪順序 × 3 題"}
    ]},
-  {n:"主題8",t:"排序演算法",sub:"Merge/Quick/Heap/Counting/Radix Sort",pri:"must",hrs:"12.5hr",wk:3,
+  {n:"主題8",t:"排序演算法",sub:"Merge/Quick/Heap/Counting/Radix Sort",pri:"must",hrs:"12.5hr",wk:4,
    key:"所有排序的最佳/平均/最差複雜度表、穩定性比較（Merge/Insertion穩定；Quick/Heap不穩定）、Quick Sort的pivot選擇",
    peerNote:"同儕筆記缺口：讀過的三份資料結構同儕筆記沒有一份完整涵蓋排序演算法比較，這章不能靠同儕筆記補，建議直接練課本習題與考古題。",
    mats:[
@@ -336,7 +336,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
       {label:"交大彭文志 Lec26 Search Structures (3/3)",url:"https://www.youtube.com/watch?v=ucL0BLz2OGk",dur:"36:17"}
     ]},
     {type:"ex",text:"給定插入序列，手動建B-Tree並模擬分裂 × 2題"}]},
-  {n:"主題10",t:"圖演算法",sub:"Dijkstra、Kruskal、Prim、Bellman-Ford",pri:"must",hrs:"10hr",wk:3,
+  {n:"主題10",t:"圖演算法",sub:"Dijkstra、Kruskal、Prim、Bellman-Ford",pri:"must",hrs:"10hr",wk:4,
    key:"Dijkstra限制（無負邊）vs Bellman-Ford（可處理負邊）、MST兩種演算法複雜度比較、Greedy正確性",
    peerNote:"同儕筆記缺口：讀過的三份資料結構同儕筆記沒有一份完整涵蓋圖論最短路徑，這章不能靠同儕筆記補，建議直接練課本習題與考古題。Kruskal／Prim／MST本質是同一組安全邊（safe edge）與cut-and-paste正確性證明，不是三種互斥知識。",
    mats:[
@@ -469,7 +469,7 @@ tip:"DP是最常出大題的考點，主題3、4要花最多時間，務必手�
     {type:"vid",text:"Maximum Subarray solution using Divide & Conquer | Kadane",url:"https://www.youtube.com/watch?v=u7YMFRUFqe0",dur:"10:11"},
     {type:"vid",text:"Abdul Bari：2.8.2 QuickSort Analysis",url:"https://www.youtube.com/watch?v=-qOVVRIZzao",dur:"11:37"},
     {type:"ex",text:"手推Merge Sort遞迴樹並推導T(n)=2T(n/2)+n的解 × 3遍"}]},
-  {n:"主題3",t:"動態規劃（基礎）",sub:"Memoization、Bottom-up DP、LCS、LIS、Knapsack",pri:"must",hrs:"13.5hr",wk:6,
+  {n:"主題3",t:"動態規劃（基礎）",sub:"Memoization、Bottom-up DP、LCS、LIS、Knapsack",pri:"must",hrs:"13.5hr",wk:5,
    key:"DP兩要素：最優子結構＋重疊子問題；LCS的狀態轉移表手推；0/1 Knapsack的dp[i][w]定義；LIS的O(n²)和O(n log n)解法",
    peerNote:"同儕筆記提醒：DP章節多數只是把遞迴關係式化簡，真正需要額外花時間搞懂的是字串處理科（見資料結構主題11）的KMP演算法。DP程式碼最好背到能上機驗證，不是只會紙上寫轉移式。",
    mats:[
@@ -521,7 +521,7 @@ tip:"DP是最常出大題的考點，主題3、4要花最多時間，務必手�
     {type:"vid",text:"MIT 6.006 Rec22：DP: Dance Dance Revolution（進階DP範例，補充）",url:"https://www.youtube.com/watch?v=PptQgy89cN8",dur:"53:15"},
     {type:"vid",text:"Abdul Bari：4.8 Reliability Design - DP",url:"https://www.youtube.com/watch?v=uJOmqBwENB8",dur:"26:32"},
     {type:"ex",text:"Matrix Chain：給定矩陣維度，手填m[i][j]表格 × 3題"}]},
-  {n:"主題5",t:"貪婪演算法 Greedy",sub:"Activity Selection、Huffman Code、Fractional Knapsack",pri:"must",hrs:"11.5hr",wk:5,
+  {n:"主題5",t:"貪婪演算法 Greedy",sub:"Activity Selection、Huffman Code、Fractional Knapsack",pri:"must",hrs:"11.5hr",wk:6,
    key:"Greedy vs DP的選擇判斷、Activity Selection的正確性證明思路、Huffman Tree建構步驟",
    mats:[
     {type:"book",text:"演算法~1~（林立宇）Ch1 Amortized analysis（1.3）+ 貪婪相關融入各章習題"},
@@ -614,7 +614,7 @@ tip:"DP是最常出大題的考點，主題3、4要花最多時間，務必手�
     {type:"vid",text:"How to prove NP-Completeness - The Steps",url:"https://www.youtube.com/watch?v=a_IRpiyBIm0",dur:"17:29",note:"補充Reduction證明的具體步驟"},
     {type:"vid",text:"Abdul Bari：8.1 NP-Hard Graph Problem - Clique Decision Problem",url:"https://www.youtube.com/watch?v=qZs767KQcvE",dur:"17:14"},
     {type:"ex",text:"練習題：「請說明XX問題為NP-Complete」觀念題 × 5題（各校歷屆）"}]},
-  {n:"主題10",t:"近似算法 / 亂數算法",sub:"Approximation、Randomized",pri:"lo",hrs:"9hr",wk:null,
+  {n:"主題10",t:"近似算法 / 亂數算法",sub:"Approximation、Randomized",pri:"lo",hrs:"9hr",wk:7,
    key:"近似比定義、Vertex Cover 2-approximation、Las Vegas vs Monte Carlo區別",
    mats:[
     {type:"vid",text:"Approximation Algorithms 1 - Introduction and Vertex Cover Problem",url:"https://www.youtube.com/watch?v=xyqIXdUXeU0",dur:"23:31"},
@@ -666,7 +666,8 @@ tip:"CPU排程、同步／互斥、死鎖、記憶體與虛擬記憶體是五大
       {label:"清大周志遠 第5A講 Nachos解說/OS Structure",url:"https://www.youtube.com/watch?v=9vrPlp_f5A0",dur:"28:28"},
       {label:"清大周志遠 第5B講 OS Services",url:"https://www.youtube.com/watch?v=HA96JKO9znE",dur:"22:30"},
       {label:"清大周志遠 第5C講 OS Application Interface",url:"https://www.youtube.com/watch?v=lpOMe56f1Nw",dur:"28:54"},
-      {label:"清大周志遠 第5D講 OS Structure",url:"https://www.youtube.com/watch?v=_RxbSP6hjqU",dur:"19:22"}
+      {label:"清大周志遠 第5D講 OS Structure",url:"https://www.youtube.com/watch?v=_RxbSP6hjqU",dur:"19:22"},
+      {label:"清大周志遠 第6A講 OS Structure/Processes Concept",url:"https://www.youtube.com/watch?v=qbUTlZ05VYk",dur:"35:41"}
     ]},
     {type:"ex",text:"背誦System Call流程（trap→kernel→return），能手寫說明"}]},
   {n:"主題2",t:"Process管理",sub:"PCB、Process State、Context Switch、fork()",pri:"must",hrs:"7hr",wk:8,
@@ -676,7 +677,6 @@ tip:"CPU排程、同步／互斥、死鎖、記憶體與虛擬記憶體是五大
     {type:"vidgroup",text:"Process Concept（周志遠完整系列）",options:[
       {label:"清大周志遠 第9A講 Processes Concept",url:"https://www.youtube.com/watch?v=dDghjse91lE",dur:"35:59"},
       {label:"清大周志遠 第9B講 Processes Concept",url:"https://www.youtube.com/watch?v=iFRv7y8i7Sw",dur:"11:01"},
-      {label:"清大周志遠 第6A講 OS Structure/Processes Concept",url:"https://www.youtube.com/watch?v=qbUTlZ05VYk",dur:"35:41"},
       {label:"清大周志遠 第6B講 Processes Concept",url:"https://www.youtube.com/watch?v=FiRH2TYB1Mw",dur:"9:29"},
       {label:"清大周志遠 第7A講 Processes Concept",url:"https://www.youtube.com/watch?v=f-mBLtGY6Ig",dur:"33:46"},
       {label:"清大周志遠 第7B講 Processes Concept",url:"https://www.youtube.com/watch?v=aKiUuuKXfKY",dur:"8:38"},
@@ -809,7 +809,7 @@ tip:"CPU排程、同步／互斥、死鎖、記憶體與虛擬記憶體是五大
     {type:"vid",text:"SCAN Disk Scheduling Algorithm",url:"https://www.youtube.com/watch?v=ko8ogLJc1Ko",dur:"5:40"},
     {type:"ex",text:"SSTF/SCAN/C-SCAN 磁頭移動距離計算 × 3 題（Q講義 Q6）"}
    ]},
-  {n:"主題11",t:"虛擬化與安全",sub:"Hypervisor、VM、Protection",pri:"lo",hrs:"3hr",wk:null,
+  {n:"主題11",t:"虛擬化與安全",sub:"Hypervisor、VM、Protection",pri:"lo",hrs:"3hr",wk:10,
    key:"Type 1（Bare-metal）vs Type 2（Hosted）Hypervisor、OS安全機制概念",
    mats:[
     {type:"vid",text:"What is a Hypervisor? Type 1 vs Type 2 Hypervisors Explained",url:"https://www.youtube.com/watch?v=pS-QM22YXmU",dur:"3:19"},
@@ -831,7 +831,6 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
     {type:"book",text:"線性代數上冊（林緯）Ch2 線性方程組與求解：2-1線性方程組 + 2-3行列式 — 搭配Ch2-5進階試題"},
     {type:"vid",text:"MIT OCW 18.06 L1：Geometry of Linear Equations",url:"https://www.youtube.com/watch?v=ZK3O402wf1c",dur:"39:49",note:"Strang的課，免費，開繁中字幕"},
     {type:"vid",text:"MIT OCW 18.06 L2：Elimination with Matrices",url:"https://www.youtube.com/watch?v=QVKj3LADCnA",dur:"47:41"},
-    {type:"vid",text:"MIT OCW 18.06 L4：Factorization into A = LU",url:"https://www.youtube.com/watch?v=5hO3MrzPa0A",dur:"50:21"},
     {type:"vid",text:"3Blue1Brown：Essence of linear algebra preview",url:"https://www.youtube.com/watch?v=kjBOesZCoqc",dur:"5:09"},
     {type:"ex",text:"給定方程組，用高斯消去法求解 × 8題（課本習題）"}]},
   {n:"主題2",t:"矩陣運算",sub:"乘法、轉置、逆矩陣、Elementary Matrix",pri:"must",hrs:"5hr",wk:16,
@@ -843,7 +842,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
       {label:"MIT 18.06 L3：Multiplication and Inverse Matrices",url:"https://www.youtube.com/watch?v=FX4C-JpTFgY",dur:"46:48"},
       {label:"3Blue1Brown：Matrix multiplication as composition",url:"https://www.youtube.com/watch?v=XkY2DOUCWMU",dur:"10:04"}
     ]},
-    {type:"vid",text:"MIT OCW 18.06 L20：Cramer's Rule, Inverse Matrix, and Volume",url:"https://www.youtube.com/watch?v=QNpj-gOXW9M",dur:"51:01"},
+    {type:"vid",text:"MIT OCW 18.06 L4：Factorization into A = LU",url:"https://www.youtube.com/watch?v=5hO3MrzPa0A",dur:"50:21"},
     {type:"vid",text:"MIT OCW 18.06 L5：Transposes, Permutations, Spaces R^n",url:"https://www.youtube.com/watch?v=JibVXBElKL0",dur:"47:41"},
     {type:"ex",text:"3×3矩陣求逆矩陣手算 × 5題"}]},
   {n:"主題3",t:"行列式 Determinant",sub:"Cofactor Expansion、性質、幾何意義",pri:"must",hrs:"6.5hr",wk:16,
@@ -856,6 +855,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
       {label:"3Blue1Brown：The determinant",url:"https://www.youtube.com/watch?v=Ip3X9LOh2dk",dur:"10:03"}
     ]},
     {type:"vid",text:"3Blue1Brown：Cross products | Essence of linear algebra Ch10",url:"https://www.youtube.com/watch?v=eu6i7WJeinw",dur:"8:54"},
+    {type:"vid",text:"MIT OCW 18.06 L20：Cramer's Rule, Inverse Matrix, and Volume",url:"https://www.youtube.com/watch?v=QNpj-gOXW9M",dur:"51:01"},
     {type:"vid",text:"3Blue1Brown：Cramer's rule, explained geometrically | Ch12",url:"https://www.youtube.com/watch?v=jBsC34PxzoM",dur:"12:12"},
     {type:"ex",text:"3×3和4×4矩陣計算行列式 × 8題"}]},
   {n:"主題4",t:"向量空間",sub:"Subspace、Span、Basis、Dimension、Rank-Nullity",pri:"must",hrs:"12.5hr",wk:16,
@@ -1227,7 +1227,7 @@ tip:"Pipeline與Cache是核心章節。Pipeline要能手算Hazard與CPI，Cache�
     {type:"vid",text:"黃婷婷教授計算機結構_第24B講 Memory",url:"https://www.youtube.com/watch?v=nPiZueMU4fQ",dur:"41:42"},
     {type:"ex",text:"Cache AMAT 計算 × 5 題 + Direct-mapped vs Set-Associative 比較（計組下冊 Ch6 考古題）"}
    ]},
-  {n:"主題6",t:"記憶體系統",sub:"Main Memory、DRAM、Memory Interleaving",pri:"hi",hrs:"6hr",wk:null,
+  {n:"主題6",t:"記憶體系統",sub:"Main Memory、DRAM、Memory Interleaving",pri:"hi",hrs:"6hr",wk:19,
    key:"DRAM存取流程（RAS/CAS）、Memory Interleaving如何降低存取延遲、記憶體頻寬計算",
    mats:[
     {type:"vid",text:"Computer Science Lessons：DRAM Part 6 Burst Mode and Bank Interleaving",url:"https://www.youtube.com/watch?v=9BjVUmaXaCQ",dur:"12:09"},
@@ -1238,7 +1238,7 @@ tip:"Pipeline與Cache是核心章節。Pipeline要能手算Hazard與CPI，Cache�
     {type:"vid",text:"黃婷婷教授計算機結構_第26B講 Memory",url:"https://www.youtube.com/watch?v=m6HNCwqazNE",dur:"36:44"},
     {type:"ex",text:"Memory Interleaving 存取時間計算 × 2 題"}
    ]},
-  {n:"主題7",t:"I/O與中斷",sub:"DMA、Polling、Interrupt、Bus仲裁",pri:"hi",hrs:"3hr",wk:null,
+  {n:"主題7",t:"I/O與中斷",sub:"DMA、Polling、Interrupt、Bus仲裁",pri:"hi",hrs:"3hr",wk:19,
    key:"三種I/O方式比較（Polling耗CPU/Interrupt效率高/DMA最高效）、Interrupt的處理流程、Bus仲裁方式",
    peerNote:"同儕筆記地雷：有筆記把Exception（軟體觸發）跟Interrupt（硬體觸發）處理流程混著講、沒有分開列，讀這段時自己對照課本把兩種異常處理流程拆開記，不要照單全收。",
    mats:[
@@ -1246,7 +1246,7 @@ tip:"Pipeline與Cache是核心章節。Pipeline要能手算Hazard與CPI，Cache�
     {type:"vid",text:"Bus Arbitration in Computer Organization | Centralized & Distributed",url:"https://www.youtube.com/watch?v=Yp_3OrDhUkQ",dur:"16:09"},
     {type:"ex",text:"DMA vs Polling vs Interrupt 比較題 × 3 題"}
    ]},
-  {n:"主題8",t:"平行與多核",sub:"Multiprocessor、Cache Coherence、Amdahl's Law",pri:"lo",hrs:"3hr",wk:null,
+  {n:"主題8",t:"平行與多核",sub:"Multiprocessor、Cache Coherence、Amdahl's Law",pri:"lo",hrs:"3hr",wk:19,
    key:"MESI協定的四個狀態（Modified/Exclusive/Shared/Invalid）、Amdahl's Law計算最大加速比",
    peerNote:"同儕筆記提醒：只有一份筆記（大碩張凡）真正系統講到多處理器（SMP/MPP、cache coherence、Flynn分類、GPU），其他同儕筆記都在Cache／虛擬記憶體就結束，這章要靠這份加課本補。",
    mats:[

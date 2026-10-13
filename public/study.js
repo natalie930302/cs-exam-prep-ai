@@ -27,6 +27,11 @@
   })}] : [];
   const labUrl = chapterLabUrl(subject.id, chIndex);
   const hasStage = !!labUrl;
+  // Videos moved to another chapter whose animations still live in their old
+  // chapter's lab file: the stage loads that lab while one of them plays.
+  const LAB_OF = {'5hO3MrzPa0A': 'la-1', 'QNpj-gOXW9M': 'la-2', 'qbUTlZ05VYk': 'os-2'};
+  function stageUrlFor(id){ return LAB_OF[id] ? '/lab/lab.html?ch=' + LAB_OF[id] : labUrl; }
+  let stageLab = labUrl;
 
   let done = new Set();
   let notesIndex = {};
@@ -291,6 +296,13 @@
     activeSeries = si;
     store.set('study-last-' + chKey, id);
     history.replaceState(null, '', roomUrl(id));
+    if (hasStage && stageUrlFor(id) !== stageLab) {
+      stageLab = stageUrlFor(id);
+      stageReady = false;
+      Object.keys(stageScenes).forEach(function(k){ delete stageScenes[k]; });
+      $('side').classList.add('is-loading');
+      $('stage').src = stageLab + '&stage=1';
+    }
     $('nowSeries').textContent = s.name + '・第 ' + (i + 1) + ' / ' + s.options.length + ' 支' + (opt.dur ? '・' + opt.dur : '');
     $('nowTitle').textContent = opt.label;
     $('prevVid').disabled = i === 0;
