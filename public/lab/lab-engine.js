@@ -192,7 +192,8 @@ export function createLab(container) {
     let goal = fit.scale;
     if (need > 1.0) goal = fit.scale * need * 1.05;
     else if (need < 0.6) goal = fit.scale * need / 0.75; // lots of empty room: step in a little
-    goal = Math.min(1.9, Math.max(0.85, goal));
+    // narrow stages (phones) may need to back off further to fit wide layouts
+    goal = Math.min(container.clientWidth < 520 ? 2.8 : 1.9, Math.max(0.85, goal));
     if (Math.abs(goal - fit.goalScale) / fit.goalScale > 0.05) fit.goalScale = goal;
     // re-centre: screen offset -> world offset on the camera's right/up plane
     const H = container.clientHeight;
