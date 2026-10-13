@@ -598,3 +598,10 @@ a { color: inherit; }
 /* 跳過：右下角，在字幕上方一點，不跟字幕重疊 */
 .st-skip { top: auto !important; bottom: calc(6% + 64px) !important; right: 12px !important; }
 @media (max-width: 640px) { .st-skip { top: auto !important; bottom: calc(7% + 46px) !important; right: 8px !important; } }
+/* 跳過在右下角、跟字幕同一高度；有跳過時字幕縮窄，兩者並排不重疊 */
+.st-skip { bottom: 6% !important; }
+.st-player-wrap.has-skip .st-sub { max-width: calc(100% - 180px) !important; }
+@media (max-width: 640px) {
+  .st-skip { bottom: 7% !important; }
+  .st-player-wrap.has-skip .st-sub { max-width: calc(100% - 150px) !important; }
+}

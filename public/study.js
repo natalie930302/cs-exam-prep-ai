@@ -522,6 +522,8 @@
   function showSkip(t){
     const b = $('skipBtn');
     const r = current && (skips[current.id] || []).find(function(x){ return t >= x[0] && t < x[1] - 3; });
+    const wrap = document.querySelector('.st-player-wrap');
+    if (wrap) wrap.classList.toggle('has-skip', !!r);
     if (!r) { if (!b.hidden) b.hidden = true; return; }
     const key = current.id + r[0];
     if (b.dataset.k !== key) {
