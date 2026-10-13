@@ -7829,3 +7829,17 @@ body#appRoot #main > .sec.on > * { animation: m-in .24s cubic-bezier(.2,.8,.2,1)
   body#appRoot #main #sec-subjects #spPanels > .sp.on { display: flex !important; flex-direction: column !important; gap: 16px !important; margin: 0 !important; padding: 0 !important; }
   body#appRoot #main #sec-subjects #spPanels > .sp.on > * { margin: 0 !important; }
 }
+
+/* ── 六科：平板也用整齊的單欄間距（同手機）；筆電版科目列到下方 16px ── */
+@media (min-width: 641px) and (max-width: 999px) {
+  body#appRoot #main #sec-subjects .stabs { width: 100% !important; max-width: none !important; margin: 0 0 16px !important; box-sizing: border-box; display: flex !important; justify-content: space-between; }
+  body#appRoot #main #sec-subjects > .sh { margin-bottom: 16px !important; }
+  body#appRoot #main #sec-subjects #spPanels { margin: 0 !important; padding: 0 !important; }
+  body#appRoot #main #sec-subjects #spPanels > .sp.on { display: flex !important; flex-direction: column !important; gap: 16px !important; margin: 0 !important; padding: 0 !important; }
+  body#appRoot #main #sec-subjects #spPanels > .sp.on > * { margin: 0 !important; }
+}
+@media (min-width: 1000px) {
+  body#appRoot #main #sec-subjects.on > .stabs { margin-bottom: 0 !important; }
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > .subject-overview-card,
+  body#appRoot #main #sec-subjects > #spPanels > .sp.on > .ch-list { margin-top: 16px !important; }
+}

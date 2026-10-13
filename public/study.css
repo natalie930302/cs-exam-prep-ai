@@ -663,3 +663,18 @@ a { color: inherit; }
 #panel-videos > .st-now-video:empty, #panel-videos > .st-series-hd:has(.st-card-sub:empty) { display: none; }
 #panel-videos .st-vlist { margin-top: 0 !important; }
 #panel-videos > .st-series:empty { display: none !important; }
+
+/* ── 全站間距統一：左右留白 手機 16px、平板以上 32px；區塊之間 16px ── */
+@media (min-width: 641px) {
+  .st-main { padding-left: 32px !important; padding-right: 32px !important; }
+  .st-top { padding-left: 32px !important; padding-right: 32px !important; }
+}
+.st-main { row-gap: 16px !important; column-gap: 16px !important; }
+@media (max-width: 900px) { .st-main { row-gap: 16px !important; } }
+/* desktop: the stage is as tall as the video (no hole under the video on narrower laptops) */
+@media (min-width: 901px) {
+  .st-side { min-height: 0 !important; }
+  .st-now, .st-timeline, .st-teach { margin-top: 0 !important; }
+  .st-more { margin-top: 0 !important; }
+}
+.st-main { padding-top: 16px !important; }
