@@ -823,12 +823,13 @@
     });
     return best;
   }
-  function recordAnswer(q, pick, ok){
+  function recordAnswer(q, pick, ok, meta){
+    meta = meta || {};
     const h = quizHistory();
-    h.push({vid: current ? current.id : '', label: current && current.opt ? current.opt.label : '', subj: subject.id, ch: chIndex,
+    h.push({vid: meta.vid || (current ? current.id : ''), label: meta.label || (current && current.opt ? current.opt.label : ''), subj: subject.id, ch: chIndex,
       // review jumps to the start of the part that teaches this question
-      at: (function(){ const sec = questionSection(q); return sec ? Math.floor(sec.points[0].t) : 0; })(),
-      q: q.q, pick: pick, ans: q.ans, ok: ok, why: q.why || '', ts: Date.now()});
+      at: meta.at != null ? meta.at : (function(){ const sec = questionSection(q); return sec ? Math.floor(sec.points[0].t) : 0; })(),
+      q: q.q, opts: q.opts, pick: pick, ans: q.ans, ok: ok, why: q.why || '', ts: Date.now()});
     store.set('qz-history', JSON.stringify(h.slice(-3000)));
     updateCounts();
     if (currentTab === 'quiz') renderQuiz();
@@ -836,7 +837,7 @@
   // One question card, shown over the video. It stays until it is answered;
   // after the answer the explanation shows and 繼續 (or, when right, a short
   // wait) closes it and runs `onDone`.
-  function questionCard(host, q, onDone){
+  function questionCard(host, q, onDone, meta){
     q = Object.assign({}, q, {opts: shuffled(q.opts)});
     const card = document.createElement('div');
     card.className = 'st-qz';
@@ -865,7 +866,7 @@
         go.textContent = '繼續';
         go.onclick = close;
         card.appendChild(go);
-        const sec = ok ? null : questionSection(q);
+        const sec = ok || meta ? null : questionSection(q);  // (redo of another video: no rewatch here)
         if (sec) {
           const back = document.createElement('button');
           back.className = 'st-btn st-qz-back';
@@ -874,7 +875,7 @@
           card.appendChild(back);
         }
         go.focus();
-        recordAnswer(q, pick, ok);
+        recordAnswer(q, pick, ok, meta);
         if (ok) { burst(b); setTimeout(close, 2600); }
       };
     });
@@ -921,7 +922,7 @@
     end.className = 'st-end';
     wrap.appendChild(end);
     const id = current.id, idx = current.idx, s = series[current.seriesIdx];
-    const left = curNotes && curNotes.quiz ? curNotes.quiz.map(function(q, qi){ return qi; }).filter(function(qi){ return asked(id).indexOf(qi) < 0; }).slice(0, 2) : [];
+    const left = curNotes && curNotes.quiz ? curNotes.quiz.map(function(q, qi){ return qi; }).filter(function(qi){ return asked(id).indexOf(qi) < 0; }) : [];
     function ask(k){
       if (k >= left.length) return next();
       markAsked(id, left[k]);
@@ -1014,6 +1015,36 @@
   function chapterHistory(){
     return quizHistory().filter(function(r){ return r.subj === subject.id && r.ch === chIndex; });
   }
+  function stillWrong(){
+    const last = {};
+    chapterHistory().forEach(function(r){ last[r.vid + '|' + r.q] = r; });
+    return Object.keys(last).map(function(k){ return last[k]; }).filter(function(r){ return !r.ok; });
+  }
+  // 重做答錯的題: asked again one by one over the video, like any 小挑戰
+  async function redoWrong(){
+    const list = stillWrong();
+    if (!list.length) return;
+    const qs = [];
+    for (const r of list) {
+      let q = null;
+      const n = await loadNotes(r.vid);
+      if (n) q = (n.quiz || []).find(function(x){ return x.q === r.q; });
+      if (!q && r.opts) q = {q: r.q, opts: r.opts, ans: r.ans, why: r.why};
+      if (q) qs.push({q: q, r: r});
+    }
+    if (!qs.length) return;
+    window.scrollTo({top: 0, behavior: 'smooth'});
+    const wrap = document.querySelector('.st-player-wrap');
+    const layer = document.createElement('div');
+    layer.className = 'st-end st-ask';
+    wrap.appendChild(layer);
+    try { if (playerReady && player.getPlayerState() === 1) player.pauseVideo(); } catch (e) {}
+    (function ask(k){
+      if (k >= qs.length) { layer.fadeRemove(); return; }
+      // answers are recorded against the question's own video and part
+      questionCard(layer, qs[k].q, function(){ ask(k + 1); }, {vid: qs[k].r.vid, label: qs[k].r.label, at: qs[k].r.at});
+    })(0);
+  }
   function renderQuiz(){
     const el = $('panel-quiz');
     const all = chapterHistory();
@@ -1025,6 +1056,7 @@
     const rows = (quizFilter === 'wrong' ? all.filter(function(r){ return !r.ok; }) : all).slice().reverse();
     el.innerHTML = '<div class="st-qh">'
       + '<div class="st-qh-top"><span>這章答過 <b>' + all.length + '</b> 題・答對 <b>' + right + '</b> 題（' + Math.round(right / all.length * 100) + '%）</span>'
+      + (stillWrong().length ? '<button class="st-btn st-btn-watch st-qh-redo">重做答錯的 ' + stillWrong().length + ' 題</button>' : '')
       + '<span class="st-qh-filter"><button data-f="all"' + (quizFilter === 'all' ? ' class="on"' : '') + '>全部</button><button data-f="wrong"' + (quizFilter === 'wrong' ? ' class="on"' : '') + '>答錯的</button></span></div>'
       + (rows.length ? rows.map(function(r){
           return '<div class="st-qh-item ' + (r.ok ? 'ok' : 'no') + '">'
@@ -1036,6 +1068,7 @@
         }).join('') : '<div class="st-nonotes">沒有答錯的題目。</div>')
       + '</div>';
     el.querySelectorAll('.st-qh-filter button').forEach(function(b){ b.onclick = function(){ quizFilter = b.dataset.f; renderQuiz(); }; });
+    const redo = el.querySelector('.st-qh-redo'); if (redo) redo.onclick = redoWrong;
     el.querySelectorAll('.st-qh-src').forEach(function(b){
       b.onclick = function(){
         const at = Math.max(0, Number(b.dataset.at));
