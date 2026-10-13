@@ -569,10 +569,27 @@
     const n = Object.keys(glossary).length;
     if (n === termsGlossLen) return termRe;
     termsGlossLen = n; termKey = {};
-    const keys = Object.keys(glossary).filter(function(k){ return !glossary[k].basic; })
+    // cards marked `only` are everyday words with a special meaning in one subject
+    // (page, frame, bank…): they appear only in that subject's videos
+    const keys = Object.keys(glossary).filter(function(k){ const g = glossary[k]; return !g.basic && (!g.only || g.subj === subject.id); })
       .sort(function(x, y){ return y.length - x.length; });
-    keys.forEach(function(k){ termKey[norm(k)] = k; });
-    termRe = keys.length ? new RegExp(keys.map(function(k){
+    // a card is found by its key and also by its other names (the Chinese name
+    // of an English card, a longer English name of a Chinese card), so
+    // 「實體位址」 in an explanation brings up the "physical address" card
+    const names = [];
+    keys.forEach(function(k){
+      termKey[norm(k)] = k; names.push(k);
+      const g = glossary[k];
+      String(g.zh || '').split(/\s*[\/／、]\s*/).concat(String(g.en || '').split(/\s*[\/／]\s*/)).forEach(function(n){
+        n = n.replace(/[（(].*?[)）]/g, '').trim();
+        const cjk = /[一-鿿]/.test(n);
+        if (!n || n === k || (cjk ? n.length < 2 : (n.length < 5 && !/\s/.test(n)))) return;
+        if (termKey[norm(n)]) return;            // another card already uses this name
+        termKey[norm(n)] = k; names.push(n);
+      });
+    });
+    names.sort(function(x, y){ return y.length - x.length; });
+    termRe = names.length ? new RegExp(names.map(function(k){
       const q = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       // a space and a hyphen count as the same (depth-first / depth first search)
       return /^[\w .'-]+$/.test(k) ? '\\b' + q.replace(/[\s-]+/g, '[\\s-]+') + '(?:s|es|ed|ing)?\\b' : q;
