@@ -1,0 +1,143 @@
+{
+ "video": "Nn_Eq7--Rk4",
+ "label": "The Academician：Las Vegas vs Monte Carlo",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "什麼是隨機演算法",
+   "scene": null,
+   "points": [
+    {
+     "text": "隨機演算法在邏輯中用亂數決定下一步怎麼做。",
+     "t": 22.15
+    },
+    {
+     "text": "目標是對所有可能的隨機選擇，平均表現良好。",
+     "t": 36.77
+    },
+    {
+     "text": "例：randomized quicksort 用亂數挑 pivot。",
+     "t": 52.41
+    }
+   ]
+  },
+  {
+   "title": "兩種類型",
+   "scene": null,
+   "points": [
+    {
+     "text": "隨機演算法分兩種：Las Vegas 與 Monte Carlo。",
+     "t": 64.75
+    },
+    {
+     "text": "Las Vegas：一定以正確答案結束，執行時間不固定（期望值有限）。",
+     "t": 70.37
+    },
+    {
+     "text": "Monte Carlo：執行時間固定，但有機會輸出錯誤結果。",
+     "t": 86.61
+    }
+   ]
+  },
+  {
+   "title": "例：Las Vegas 搜尋",
+   "scene": null,
+   "points": [
+    {
+     "text": "問題：在 n 個元素的陣列中找值 a，且 a 一定存在。",
+     "t": 112.06
+    },
+    {
+     "text": "while (true) 隨機抽一個元素，等於 a 就回傳 true。",
+     "t": 145.61
+    },
+    {
+     "text": "迭代次數會變動、可能任意大，但只要結束一定回傳正確的 true。",
+     "t": 184.69
+    }
+   ]
+  },
+  {
+   "title": "例：Monte Carlo 搜尋",
+   "scene": null,
+   "points": [
+    {
+     "text": "只抽固定 x 次（while i < x），抽到 a 就把 flag 設成 true。",
+     "t": 201.39
+    },
+    {
+     "text": "x 次都沒抽到就回傳 false，即使 a 其實在陣列裡 → 答案錯誤。",
+     "t": 231.25
+    },
+    {
+     "text": "迭代次數固定，但結果可能對也可能錯。",
+     "t": 259.87
+    }
+   ]
+  },
+  {
+   "title": "比較與如何選擇",
+   "scene": null,
+   "points": [
+    {
+     "text": "Las Vegas 一定輸出正確答案，但執行時間是隨機變數。",
+     "t": 269.47
+    },
+    {
+     "text": "Monte Carlo 的時間可用輸入大小與參數 x 界定，但有小機率出錯。",
+     "t": 275.31
+    },
+    {
+     "text": "正確性必要、時間不重要 → 用 Las Vegas；時間重要、可容忍少量錯誤 → 用 Monte Carlo。",
+     "t": 296.49
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "下列何者正確描述 Las Vegas 演算法？",
+   "opts": [
+    "執行時間固定，但有小機率答案錯誤",
+    "執行時間固定，答案也一定正確",
+    "答案一定正確，執行時間是隨機的",
+    "執行時間隨機，答案也可能錯誤"
+   ],
+   "ans": "答案一定正確，執行時間是隨機的",
+   "why": "Las Vegas：always correct、時間隨機；Monte Carlo：時間固定（有上界）、可能出錯。"
+  },
+  {
+   "q": "影片中 Monte Carlo 搜尋只抽 x 次。若 a 確實在陣列中，演算法可能回傳？",
+   "opts": [
+    "一定是 true，只是較慢",
+    "丟出例外並重新抽樣",
+    "永遠不會結束執行",
+    "false（錯誤答案）"
+   ],
+   "ans": "false（錯誤答案）",
+   "why": "x 次都沒抽到 a 時，flag 仍是初始的 false，於是回傳錯誤答案。"
+  },
+  {
+   "q": "影片中 Las Vegas 搜尋（while true 隨機抽）的迭代次數為？",
+   "opts": [
+    "最多 x 次，超過就回傳 false",
+    "期望為 1 次，因抽一次必中",
+    "固定為 n 次，與 a 位置無關",
+    "不固定，可能任意大"
+   ],
+   "ans": "不固定，可能任意大",
+   "why": "每次是否抽到 a 是隨機的，次數不固定且無上界，但結束時答案一定正確。"
+  },
+  {
+   "q": "時間限制非常嚴格、且能容忍極小錯誤率時，影片建議用哪一類？",
+   "opts": [
+    "兩類沒有任何差別",
+    "Las Vegas 演算法",
+    "兩類都不適合，應改用確定性窮舉法",
+    "Monte Carlo 演算法"
+   ],
+   "ans": "Monte Carlo 演算法",
+   "why": "Monte Carlo 執行時間固定可預期，代價是小機率出錯；正確性優先時才選 Las Vegas。"
+  }
+ ]
+}

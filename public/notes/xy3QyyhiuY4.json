@@ -1,0 +1,194 @@
+{
+ "video": "xy3QyyhiuY4",
+ "label": "Steve Brunton：SVD 與矩陣近似",
+ "timing": "exact",
+ "sections": [
+  {
+   "title": "SVD 回顧",
+   "scene": null,
+   "points": [
+    {
+     "text": "X = UΣV^T：U 與 X 的 column space 有關，V 與 row space 有關，Σ 是對角矩陣。",
+     "t": 6.64
+    },
+    {
+     "text": "奇異值依大小排列，σ1 ≥ σ2 ≥ …，代表 u_i、v_i 的重要性。",
+     "t": 31.32
+    },
+    {
+     "text": "X 只有 m 個 column，所以只有 U 的前 m 個 column 對表示資料有用。",
+     "t": 65.08
+    }
+   ]
+  },
+  {
+   "title": "展開成 rank-1 矩陣的和",
+   "scene": null,
+   "points": [
+    {
+     "text": "UΣ：每個 u_i 被對應的 σ_i 縮放。",
+     "t": 113.48
+    },
+    {
+     "text": "X = σ1 u1 v1^T + σ2 u2 v2^T + … + σm um vm^T。",
+     "t": 169.48
+    },
+    {
+     "text": "rank 最多是 m，所以第 m 個之後的奇異值都是 0，可以丟掉。",
+     "t": 205.72
+    }
+   ]
+  },
+  {
+   "title": "Economy SVD",
+   "scene": null,
+   "points": [
+    {
+     "text": "只留 U 的前 m 個 column 與 Σ 的 m×m 區塊（Û、Σ̂），X = ÛΣ̂V^T 仍然精確。",
+     "t": 248.18
+    },
+    {
+     "text": "高瘦矩陣（n ≫ m，例如每個 column 一百萬像素、只有一千人）幾乎都該用 economy SVD。",
+     "t": 313.46
+    },
+    {
+     "text": "MATLAB：[U,S,V] = svd(X,'econ')，只回傳前 m 個 column。",
+     "t": 345.58
+    }
+   ]
+  },
+  {
+   "title": "外積與 rank 1",
+   "scene": null,
+   "points": [
+    {
+     "text": "每一項 σ_i u_i v_i^T 都是 rank-1 矩陣。",
+     "t": 378.1
+    },
+    {
+     "text": "column vector 乘 row vector 是外積（outer product），結果是矩陣。",
+     "t": 434.06
+    },
+    {
+     "text": "每一列都是 v1^T 的倍數，只有一個線性獨立的 row 與 column → rank 1。",
+     "t": 462.46
+    }
+   ]
+  },
+  {
+   "title": "截斷 SVD：最佳低秩近似",
+   "scene": null,
+   "points": [
+    {
+     "text": "SVD 把 X 拆成依重要性排列的 rank-1 項，每多加一項近似就更好。",
+     "t": 488.1
+    },
+    {
+     "text": "最佳 rank-1 近似是 σ1 u1 v1^T；加上 σ2 u2 v2^T 是最佳 rank-2 近似。",
+     "t": 503.3
+    },
+    {
+     "text": "若 σ_{r+1} … σ_m 很小，就截斷只留前 r 個最大的奇異值：X ≈ ŨΣ̃Ṽ^T。",
+     "t": 550.1
+    },
+    {
+     "text": "Eckart–Young 定理（1936）：在 Frobenius norm 下，rank r 的最佳近似正是截斷 SVD。",
+     "t": 619.4
+    }
+   ]
+  },
+  {
+   "title": "截斷後的陷阱",
+   "scene": null,
+   "points": [
+    {
+     "text": "完整的 U、V 是 unitary：UU^T = U^TU = I。",
+     "t": 720.09
+    },
+    {
+     "text": "截斷到 rank r 後 Ũ 不再是方陣。",
+     "t": 738.19
+    },
+    {
+     "text": "Ũ^TŨ 仍是 r×r 單位矩陣，但 ŨŨ^T（n×n、rank r）不是單位矩陣。",
+     "t": 755.01
+    },
+    {
+     "text": "很多人在證明裡忘了這點而寫錯。",
+     "t": 780.91
+    }
+   ]
+  },
+  {
+   "title": "總結",
+   "scene": null,
+   "points": [
+    {
+     "text": "SVD 可重排成 rank-1 項的和；高瘦矩陣用 economy SVD。",
+     "t": 824.37
+    },
+    {
+     "text": "再丟掉小奇異值得到 rank r 近似，由 Eckart–Young 保證是最佳。",
+     "t": 858.71
+    }
+   ]
+  }
+ ],
+ "quiz": [
+  {
+   "q": "要得到矩陣 X 的最佳 rank r 近似，截斷 SVD 應保留哪些奇異值？",
+   "opts": [
+    "最中間的 r 個奇異值及其 u、v",
+    "最大的 r 個奇異值及其 u、v",
+    "最小的 r 個奇異值及其 u、v",
+    "任意 r 個非零奇異值及其 u、v"
+   ],
+   "ans": "最大的 r 個奇異值及其 u、v",
+   "why": "奇異值越大代表越重要；Eckart–Young：保留前 r 個（最大的）σ 得到 Frobenius norm 下最佳近似。"
+  },
+  {
+   "q": "X 為 n×m 且 n ≫ m（rank m），economy SVD 中 Û 的大小為？",
+   "opts": [
+    "m × m",
+    "n × m",
+    "m × n",
+    "n × n（同完整 U）"
+   ],
+   "ans": "n × m",
+   "why": "economy SVD 只留 U 的前 m 個 column，所以 Û 是 n×m。"
+  },
+  {
+   "q": "把 U 截斷成只剩前 r 個 column 的 Ũ 後，下列何者正確？",
+   "opts": [
+    "Ũ^TŨ 與 ŨŨ^T 兩者都等於單位矩陣 I",
+    "兩者都不等於 I，因為已非方陣",
+    "Ũ^TŨ = I，但 ŨŨ^T ≠ I",
+    "ŨŨ^T = I，但 Ũ^TŨ ≠ I"
+   ],
+   "ans": "Ũ^TŨ = I，但 ŨŨ^T ≠ I",
+   "why": "column 仍互相正交所以 Ũ^TŨ = I_r；但 ŨŨ^T 是 rank r 的 n×n 矩陣，不可能是單位矩陣。"
+  },
+  {
+   "q": "SVD 展開中的單一項 σ1 u1 v1^T，其 rank 為？",
+   "opts": [
+    "m",
+    "min(n, m)",
+    "1",
+    "2"
+   ],
+   "ans": "1",
+   "why": "column vector 乘 row vector 的外積，每列都是 v1^T 的倍數，rank 為 1。"
+  },
+  {
+   "q": "Eckart–Young 定理的內容是？",
+   "opts": [
+    "截斷 SVD 是 rank r 的最佳近似",
+    "每個矩陣的 SVD 都是唯一的分解",
+    "economy SVD 會損失 X 的部分資訊",
+    "奇異值恰好等於 X 的特徵值"
+   ],
+   "ans": "截斷 SVD 是 rank r 的最佳近似",
+   "why": "它保證在 Frobenius norm 下，誤差最小的 rank r 矩陣就是 ŨΣ̃Ṽ^T；economy SVD 則是精確的。"
+  }
+ ]
+}

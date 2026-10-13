@@ -335,6 +335,7 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
       {label:"Abdul Bari：B Trees and B+ Trees",url:"https://www.youtube.com/watch?v=aZjYr87r1b8",dur:"39:41"},
       {label:"交大彭文志 Lec26 Search Structures (3/3)",url:"https://www.youtube.com/watch?v=ucL0BLz2OGk",dur:"36:17"}
     ]},
+    {type:"vid",text:"HackerRank：Data Structures — Tries",url:"https://www.youtube.com/watch?v=zIjfhVPRZCg",dur:"4:54"},
     {type:"ex",text:"給定插入序列，手動建B-Tree並模擬分裂 × 2題"}]},
   {n:"主題10",t:"圖演算法",sub:"Dijkstra、Kruskal、Prim、Bellman-Ford",pri:"must",hrs:"10hr",wk:4,
    key:"Dijkstra限制（無負邊）vs Bellman-Ford（可處理負邊）、MST兩種演算法複雜度比較、Greedy正確性",
@@ -631,6 +632,7 @@ tip:"DP是最常出大題的考點，主題3、4要花最多時間，務必手�
     {type:"vid",text:"Abdul Bari：7.1 Job Sequencing with Deadline - Branch and Bound",url:"https://www.youtube.com/watch?v=M7Fl_z7_J2k",dur:"10:56"},
     {type:"vid",text:"Abdul Bari：7.2 0/1 Knapsack using Branch and Bound",url:"https://www.youtube.com/watch?v=yV1d-b_NeK8",dur:"10:48"},
     {type:"vid",text:"Abdul Bari：7.3 Traveling Salesman Problem - Branch and Bound",url:"https://www.youtube.com/watch?v=1FEP_sNb62k",dur:"24:42"},
+    {type:"vid",text:"The Academician：Las Vegas vs Monte Carlo 隨機演算法",url:"https://www.youtube.com/watch?v=Nn_Eq7--Rk4",dur:"5:15"},
     {type:"ex",text:"此章考試比重低，輕讀了解近似比定義即可，不需深入"}
    ]}]},
 {id:"os",name:"作業系統",color:"#DD8238",hours:50,weeks:3,coverage:"9/11校",
@@ -954,6 +956,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
     {type:"vid",text:"MIT OCW 18.06 L32：Quiz 3 Review",url:"https://www.youtube.com/watch?v=HgC1l_6ySkc",dur:"47:05"},
     {type:"vid",text:"MIT OCW 18.06 L33：Left and Right Inverses; Pseudoinverse",url:"https://www.youtube.com/watch?v=Go2aLo7ZOlU",dur:"41:52"},
     {type:"vid",text:"MIT OCW 18.06 L34：Final Course Review",url:"https://www.youtube.com/watch?v=RWvi4Vx4CDc",dur:"43:26"},
+    {type:"vid",text:"Steve Brunton：SVD — Matrix Approximation（低秩近似）",url:"https://www.youtube.com/watch?v=xy3QyyhiuY4",dur:"14:54"},
     {type:"ex",text:"給定2×2矩陣，手算完整SVD × 2題"}]}]},
 {id:"dm",name:"離散數學",color:"#E55A9B",hours:52,weeks:5,coverage:"8/11校",
 tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起讀。同一主題有多位老師時，完成任一版本即可。",
@@ -1121,6 +1124,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
     {type:"vid",text:"清大OCW 趙啟超《離散數學》第31D講 Maximum Flow Problem",url:"https://www.youtube.com/watch?v=YnPS5TFJiFE",dur:"21:22"},
     {type:"vid",text:"清大OCW 趙啟超《離散數學》第32A講 Maximum Flow Problem",url:"https://www.youtube.com/watch?v=ZCOlf1NFPA4",dur:"24:30"},
     {type:"vid",text:"清大OCW 趙啟超《離散數學》第32B講 Maximum Flow Problem",url:"https://www.youtube.com/watch?v=oFStjKYt8b4",dur:"22:57"},
+    {type:"vid",text:"Math at Andrews：Cayley's Tree Theorem（生成樹計數）",url:"https://www.youtube.com/watch?v=Wi8IvnlMNxs",dur:"11:17"},
     {type:"ex",text:"Euler 公式（v-e+f=2）判斷平面圖 × 3 題"}
    ]},
   {n:"主題9",t:"二元關係",sub:"Equivalence Relation、Partial Order、Poset、Hasse Diagram",pri:"must",hrs:"6.5hr",wk:15,
@@ -1198,6 +1202,7 @@ tip:"Pipeline與Cache是核心章節。Pipeline要能手算Hazard與CPI，Cache�
     {type:"vid",text:"黃婷婷教授計算機結構_第14B講 Computer Arithmetic / Single-Cycle Processor",url:"https://www.youtube.com/watch?v=YvSSt6kQbuk",dur:"48:15"},
     {type:"vid",text:"黃婷婷教授計算機結構_第16A講 Single-Cycle Processor",url:"https://www.youtube.com/watch?v=3Ig6EcOGV3s",dur:"51:02"},
     {type:"vid",text:"黃婷婷教授計算機結構_第17A講 Single-Cycle Processor / Pipelining",url:"https://www.youtube.com/watch?v=4vRk10j9MC8",dur:"41:39"},
+    {type:"vid",text:"Enzo 獨自升級：單週期 vs FSM（多週期）vs Pipeline【計算機架構 EP2】",url:"https://www.youtube.com/watch?v=QQG_zv-moMs",dur:"16:15"},
     {type:"ex",text:"控制訊號真值表填寫 × 3 題（計組上冊張凡 Ch4 考古題）"}
    ]},
   {n:"主題4",t:"Pipeline",sub:"五階段Pipeline、Hazard偵測與處理",pri:"must",hrs:"11hr",wk:19,
@@ -1212,6 +1217,7 @@ tip:"Pipeline與Cache是核心章節。Pipeline要能手算Hazard與CPI，Cache�
     {type:"vid",text:"黃婷婷教授計算機結構_第19A講 Pipelining",url:"https://www.youtube.com/watch?v=XtcJtp7n4o8",dur:"49:53"},
     {type:"vid",text:"黃婷婷教授計算機結構_第19B講 Pipelining",url:"https://www.youtube.com/watch?v=p_GUphUjmvI",dur:"49:10"},
     {type:"vid",text:"黃婷婷教授計算機結構_第20A講 Pipelining",url:"https://www.youtube.com/watch?v=II7Eh-Q8hdI",dur:"51:36"},
+    {type:"vid",text:"Udacity：Pipeline CPI（Georgia Tech HPCA）",url:"https://www.youtube.com/watch?v=GAUppsLpjvg",dur:"3:36"},
     {type:"ex",text:"Pipeline CPI 和 Stall 手算 × 5 題（計組上冊 Ch5 所有考古題）"}
    ]},
   {n:"主題5",t:"記憶體層次與Cache",sub:"Cache設計、命中率、AMAT計算",pri:"must",hrs:"10hr",wk:19,

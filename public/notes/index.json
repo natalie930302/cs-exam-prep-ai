@@ -3322,5 +3322,41 @@
   "points": 50,
   "quiz": 7,
   "cued": true
+ },
+ "GAUppsLpjvg": {
+  "label": "Udacity：Pipeline 的 CPI 與 stall",
+  "points": 13,
+  "quiz": 4,
+  "cued": false
+ },
+ "QQG_zv-moMs": {
+  "label": "Enzo 獨自升級：單週期 vs FSM vs Pipeline",
+  "points": 35,
+  "quiz": 5,
+  "cued": false
+ },
+ "xy3QyyhiuY4": {
+  "label": "Steve Brunton：SVD 與矩陣近似",
+  "points": 22,
+  "quiz": 5,
+  "cued": false
+ },
+ "Nn_Eq7--Rk4": {
+  "label": "The Academician：Las Vegas vs Monte Carlo",
+  "points": 15,
+  "quiz": 4,
+  "cued": false
+ },
+ "zIjfhVPRZCg": {
+  "label": "HackerRank：Trie",
+  "points": 18,
+  "quiz": 4,
+  "cued": false
+ },
+ "Wi8IvnlMNxs": {
+  "label": "Math at Andrews University：Cayley 樹定理",
+  "points": 21,
+  "quiz": 5,
+  "cued": false
  }
 }
