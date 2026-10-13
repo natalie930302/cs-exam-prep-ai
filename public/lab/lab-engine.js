@@ -111,6 +111,8 @@ export function createLab(container) {
     look: new THREE.Vector3(0, 0, 0), dir: new THREE.Vector3(0, 7, 16).normalize(), dist: Math.hypot(7, 16),
     scale: 1, goalScale: 1, shift: new THREE.Vector3(), goalShift: new THREE.Vector3(),
     bias: new THREE.Vector3(), goalBias: new THREE.Vector3(),
+    // where frameCamera() last asked to look from; the camera glides there
+    lookGoal: new THREE.Vector3(0, 0, 0), dirGoal: new THREE.Vector3(0, 7, 16).normalize(), distGoal: Math.hypot(7, 16),
   };
   controls.addEventListener('start', () => { fit.user = true; });
   const _p = new THREE.Vector3(), _q = new THREE.Vector3(), _box = new THREE.Box3(), _size = new THREE.Vector3();
@@ -183,7 +185,7 @@ export function createLab(container) {
     return { x0: 14, x1: W - 14, y0: top, y1: bottom };
   }
   function fitStep(r) {
-    if (!r) return;
+    if (!r || appears.size) return; // wait until new objects have grown to full size
     const s = safeArea();
     const cw = r.x1 - r.x0, ch = r.y1 - r.y0, sw = s.x1 - s.x0, sh = s.y1 - s.y0;
     const need = Math.max(cw / sw, ch / sh); // > 1: spills out of the safe area
@@ -221,6 +223,11 @@ export function createLab(container) {
   }
   function applyFit(dt) {
     const k = dt >= 1 ? 1 : 1 - Math.exp(-dt * 2.4);
+    // glide between framings (new scene, or a camera move inside one)
+    const g = dt >= 1 ? 1 : 1 - Math.exp(-dt * 3.6);
+    fit.look.lerp(fit.lookGoal, g);
+    fit.dir.lerp(fit.dirGoal, g).normalize();
+    fit.dist += (fit.distGoal - fit.dist) * g;
     fit.scale += (fit.goalScale - fit.scale) * k;
     fit.shift.lerp(fit.goalShift, k);
     fit.bias.lerp(fit.goalBias, dt >= 1 ? 1 : 1 - Math.exp(-dt * 1.1));
@@ -314,6 +321,8 @@ export function createLab(container) {
     const dt = Math.min(0.033, (now - last) / 1000);
     last = now;
     for (const b of bodies) stepBody(b, dt);
+    scanAppears();
+    stepAppears(dt);
     stepPops(dt);
     for (const fn of frameFns) { try { fn(dt, now / 1000); } catch (e) { frameFns.delete(fn); } }
     if (!visible) { requestAnimationFrame(tick); return; }
@@ -412,6 +421,43 @@ export function createLab(container) {
       p.last = (p.last || new THREE.Vector3()).copy(obj.scale);
     }
   }
+  // New things don't just blink into existence: each object added to the
+  // world grows in with a small overshoot, and a batch added together
+  // (a scene building its layout) comes in as a quick ripple. Things at the
+  // origin (edges, axes, groups drawn in world coordinates) and falling
+  // bodies (they already move in) are left alone.
+  const seen = new WeakSet(), appears = new Map();
+  let appearBatch = 0;
+  function scanAppears() {
+    let n = 0;
+    for (const o of world.children) {
+      if (seen.has(o)) continue;
+      seen.add(o);
+      if (CALM || !o.scale || o.position.lengthSq() < 1e-6) continue;
+      let falling = false;
+      for (const b of bodies) if (b.obj === o && (b.mode === 'fall' || b.mode === 'fly')) { falling = true; break; }
+      if (falling) continue;
+      const base = o.scale.clone();
+      appears.set(o, { base, t: -Math.min(0.28, (appearBatch + n++) * 0.03), last: null });
+      o.scale.copy(base).multiplyScalar(0.001);
+      appears.get(o).last = o.scale.clone();
+    }
+    appearBatch = n ? appearBatch + n : 0;
+  }
+  function stepAppears(dt) {
+    for (const [o, a] of appears) {
+      if (!o.parent || (a.last && !o.scale.equals(a.last))) { // removed, or the scene set the scale itself
+        if (o.parent && a.last && o.scale.equals(a.last)) o.scale.copy(a.base);
+        appears.delete(o); continue;
+      }
+      a.t += dt;
+      const u = Math.max(0, Math.min(1, a.t / 0.36));
+      if (u >= 1) { o.scale.copy(a.base); appears.delete(o); continue; }
+      const c = 1.7, e = 1 + (c + 1) * Math.pow(u - 1, 3) + c * Math.pow(u - 1, 2); // ease-out-back
+      o.scale.copy(a.base).multiplyScalar(Math.max(0.001, e));
+      a.last.copy(o.scale);
+    }
+  }
   function flyAway(b, dir = new THREE.Vector3(0, 9, 4)) {
     b.vel.copy(dir); b.mode = 'fly'; b.life = 1; b.baseScale = b.obj.scale.clone();
     b.obj.traverse((o) => {
@@ -424,6 +470,7 @@ export function createLab(container) {
   }
   function clear() {
     frameFns.clear();
+    appears.clear(); appearBatch = 0;
     for (const b of [...bodies]) removeBody(b);
     while (world.children.length) {
       const o = world.children.pop();
@@ -469,18 +516,29 @@ export function createLab(container) {
     const now = performance.now();
     const d = Math.hypot(pos[0] - look[0], pos[1] - look[1], pos[2] - look[2]);
     if (d > 0.01) {
+      const wasUser = fit.user; // the viewer had orbited: cut back, don't glide from a stale view
       const key = pos.concat(look).map((v) => v.toFixed(3)).join(',');
       // same framing as last time = the scene is looping: keep the fitted
       // view instead of jumping back and re-fitting every loop
       if (now - fit.lastFrameAt > 400 && key !== fit.key) {
-        fit.scale = fit.goalScale = 1; fit.shift.set(0, 0, 0); fit.goalShift.set(0, 0, 0); fit.bias.set(0, 0, 0); fit.goalBias.set(0, 0, 0);
+        fit.goalScale = 1; fit.goalShift.set(0, 0, 0); fit.goalBias.set(0, 0, 0);
+        if (wasUser || !(fit.on && !CALM && fit.lastFrameAt > -1e8)) { fit.scale = 1; fit.shift.set(0, 0, 0); fit.bias.set(0, 0, 0); }
       }
       if (now - fit.lastFrameAt > 400) fit.user = false;
       fit.key = key;
-      fit.look.set(...look);
-      fit.dir.set(pos[0] - look[0], pos[1] - look[1], pos[2] - look[2]).normalize();
-      fit.dist = d;
-      if (fit.on && !fit.user) applyFit(0);
+      fit.lookGoal.set(...look);
+      fit.dirGoal.set(pos[0] - look[0], pos[1] - look[1], pos[2] - look[2]).normalize();
+      fit.distGoal = d;
+      // the very first framing (and reduced motion) cuts; later ones glide
+      const glide = fit.on && !fit.user && !wasUser && !CALM && fit.lastFrameAt > -1e8;
+      if (glide) {
+        // stay where we are; applyFit() moves us toward the new goal
+        controls.target.copy(fit.look).add(fit.shift).add(fit.bias);
+        camera.position.copy(controls.target).addScaledVector(fit.dir, fit.dist * fit.scale);
+      } else {
+        fit.look.copy(fit.lookGoal); fit.dir.copy(fit.dirGoal); fit.dist = d;
+        if (fit.on && !fit.user) applyFit(0);
+      }
     }
     fit.lastFrameAt = now;
   }
@@ -489,6 +547,7 @@ export function createLab(container) {
   function advance(seconds = 2) {
     for (let t = 0; t < seconds; t += 1 / 60) {
       for (const b of [...bodies]) stepBody(b, 1 / 60);
+      scanAppears(); stepAppears(1 / 60);
       stepPops(1 / 60);
       const due = Math.round(t * 60) % 8 === 0; const r = due ? measureTick() : null;
       if (Math.round(t * 60) % 3 === 0) focusTick();

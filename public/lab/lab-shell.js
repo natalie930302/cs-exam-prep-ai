@@ -14,7 +14,7 @@
 // look and behave alike. ?stage=1 is the study-room mode: no chrome, one
 // caption + one formula line, scenes driven by postMessage from study.html
 // ({type:'scene', scene, params} or {type:'tour'}).
-import { THREE, createLab, colorFor } from './lab-engine.js?v=22';
+import { THREE, createLab, colorFor } from './lab-engine.js?v=23';
 
 const q = new URLSearchParams(location.search);
 const CH = (q.get('ch') || 'ds-2').replace(/[^\w-]/g, '');
