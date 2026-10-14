@@ -321,9 +321,10 @@ export function createLab(container) {
   // ── Labels never sit on each other ──
   // After the CSS2D pass places every label, labels that would cover another
   // are nudged up or down on screen (the shortest way clear). Labels on blocks
-  // (values) and icons keep their place; everything else moves around them.
+  // (values) and icons keep their place (squeezed ones get smaller); everything
+  // else moves around them, up / down first, then sideways.
   // Goals are recomputed every few frames and eased into, so nothing jumps.
-  const nudge = new Map();          // element → { cur, goal }
+  const nudge = new Map();          // element → current / goal offset and scale
   const TR = /translate\(([-\d.e]+)px,\s*([-\d.e]+)px\)\s*$/;
   let dcCount = 0;
   function declutter(dt, snap = false) {
@@ -347,18 +348,30 @@ export function createLab(container) {
       });
       const seen = new Set();
       for (const it of items) {
-        let dy = 0;
-        if (!it.fixed && it.w && hits(it.x, it.y, it.w, it.h)) {
-          const stepPx = Math.max(6, it.h * 0.5);
-          dy = null;
-          for (let k = 1; k <= 8 && dy === null; k++) {
-            for (const d of [-k * stepPx, k * stepPx]) if (!hits(it.x, it.y + d, it.w, it.h)) { dy = d; break; }
+        let dx = 0, dy = 0, sc = 1;
+        if (it.w && hits(it.x, it.y, it.w, it.h)) {
+          if (it.fixed) {
+            // a value on a block keeps its place: shrink it until it fits
+            for (const f of [0.85, 0.72, 0.6]) if (!hits(it.x, it.y, it.w * f, it.h * f)) { sc = f; break; }
+            if (sc === 1) sc = 0.6;
+          } else {
+            // the shortest way clear: up / down first, then sideways
+            const sy = Math.max(6, it.h * 0.5), sx = Math.max(10, it.w * 0.35);
+            let found = false;
+            for (let k = 1; k <= 8 && !found; k++) {
+              for (const d of [-k * sy, k * sy]) if (!hits(it.x, it.y + d, it.w, it.h)) { dy = d; found = true; break; }
+            }
+            for (let k = 1; k <= 6 && !found; k++) {
+              for (const d of [k * sx, -k * sx]) if (!hits(it.x + d, it.y, it.w, it.h)) { dx = d; found = true; break; }
+            }
+            for (let k = 1; k <= 4 && !found; k++) {
+              for (const [ex, ey] of [[k * sx, -k * sy], [-k * sx, -k * sy], [k * sx, k * sy], [-k * sx, k * sy]]) if (!hits(it.x + ex, it.y + ey, it.w, it.h)) { dx = ex; dy = ey; found = true; break; }
+            }
           }
-          if (dy === null) dy = 0;
         }
-        placed.push({ x: it.x, y: it.y + dy, w: it.w || 0, h: it.h || 0 });
-        const n = nudge.get(it.el) || { cur: 0, goal: 0 };
-        n.goal = dy; nudge.set(it.el, n); seen.add(it.el);
+        placed.push({ x: it.x + dx, y: it.y + dy, w: (it.w || 0) * sc, h: (it.h || 0) * sc });
+        const n = nudge.get(it.el) || { cx: 0, cy: 0, cs: 1, gx: 0, gy: 0, gs: 1 };
+        n.gx = dx; n.gy = dy; n.gs = sc; nudge.set(it.el, n); seen.add(it.el);
       }
       for (const el of nudge.keys()) if (!seen.has(el)) nudge.delete(el);
     }
@@ -366,8 +379,9 @@ export function createLab(container) {
     for (const it of items) {
       const n = nudge.get(it.el);
       if (!n) continue;
-      n.cur += (n.goal - n.cur) * k;
-      if (Math.abs(n.cur) > 0.3) it.el.style.transform += ' translateY(' + n.cur.toFixed(1) + 'px)';
+      n.cx += (n.gx - n.cx) * k; n.cy += (n.gy - n.cy) * k; n.cs += (n.gs - n.cs) * k;
+      if (Math.abs(n.cx) > 0.3 || Math.abs(n.cy) > 0.3) it.el.style.transform += ' translate(' + n.cx.toFixed(1) + 'px,' + n.cy.toFixed(1) + 'px)';
+      if (n.cs < 0.995) it.el.style.transform += ' scale(' + n.cs.toFixed(3) + ')';
     }
   }
 
