@@ -2843,6 +2843,144 @@ sc('lt-g-eigen', 'MIT L31：特徵向量基底 → 對角矩陣 Λ', async (tok,
   },
   async (tok, S) => { cap('完美的基底，但求像素矩陣的特徵向量太貴', '所以改用便宜又接近的：小波'); },
 ]);
+
+// ═══════════════════════ 補上的教學段落：總結、開場的觀念、壓縮的應用 ═══════════════════════
+// 叉積（BaM7OCEm3G0）總結：兩條路找到同一個 dual vector p
+sc('lt-c-sum', '叉積總結：算法的 p ＝ 幾何的 p', async (tok, S) => {
+  crossStage(S, 0.55, 40, 18);
+}, [
+  async (tok, S) => {
+    cap('用 v、w 定義一個 3D → 數線的線性變換', 'T(x) = det[x v w]（示意 v = (2, 0, 1)、w = (0, 2, 1)）');
+    S.L = [mono(hd('T(x) = det[ x  v  w ]：3D → 數線', -4.6, 2.0))];
+  },
+  async (tok, S) => {
+    cap('它的 dual vector p：套用 T = 跟 p 做內積', 'T(x) = p · x');
+    S.L.push(mono(hd('dual vector p：T(x) = p · x', -4.6, 1.0)));
+  },
+  async (tok, S) => {
+    const p = cof1(CV, CW);
+    cap('計算面：第 1 欄放 î、ĵ、k̂，算行列式', '得到 p = (−2, −2, 4)');
+    ok(eqv(p, CP) && eqv(p, [-2, -2, 4]), '算法：det[ î ĵ k̂ | v | w ] → p = (−2, −2, 4) ✓', -4.6, 0.0);
+  },
+  async (tok, S) => {
+    cap('幾何面：p 垂直 v、w，長度 = 平行四邊形面積', '');
+    S.pg = pgram(S.Sp, CV, CW, COL.g, 0.3);
+    S.ap = S.Sp.arrow([0, 0, 0.001], COL.r, 'p'); await anim(tok, 1200, (t) => S.Sp.set(S.ap, scl(CP, 0.6 * Math.max(0.01, t))));
+    S.ap.tag('p（畫成 0.6 倍）');
+    ok(Math.abs(dot(CP, CV)) < 1e-9 && Math.abs(dot(CP, CW)) < 1e-9 && Math.abs(norm(CP) - pgArea(CV, CW)) < 1e-9, '幾何：p ⊥ v、w，|p| = 面積 = √24 ✓', -4.6, -1.0);
+  },
+  async (tok, S) => {
+    cap('兩種方法找的是同一個變換的 dual vector', '所以一定是同一個向量');
+    const x = [1.4, -1.2, 1.5];
+    ok(Math.abs(fvol(x) - dot(CP, x)) < 1e-9, '同一個 p：p · x = det[x v w] ✓', -4.6, -2.0);
+  },
+]);
+
+// 3B1B 第 3 集（kYB8IZa5AuE）總結：變換 ↔ 矩陣
+const SUMA = [[1, -1], [0.5, 1]], SUMV = [1.5, 1];
+sc('lt-k-sum', '總結：矩陣的欄 = î、ĵ 的落點，矩陣 = 空間的變換', async (tok, S) => {
+  plane(S);
+}, [
+  async (tok, S) => {
+    cap('線性變換：格線保持平行、等距，原點不動', '示意 A = [1 −1; 0.5 1]');
+    await S.go(tok, SUMA, 1800);
+    pane(S, 0, '格線平行且等距、原點不動');
+  },
+  async (tok, S) => {
+    cap('只要幾個數字就能描述它', '基底向量落在哪裡');
+    S.ai.tag('î → (1, 0.5)'); S.aj.tag('ĵ → (−1, 1)');
+    pane(S, 1, 'î → (1, 0.5)、ĵ → (−1, 1)');
+  },
+  async (tok, S) => {
+    cap('矩陣的欄就是這些座標', 'A = [1 −1; 0.5 1]');
+    ok(eqv(colOf(SUMA, 0), [1, 0.5]) && eqv(colOf(SUMA, 1), [-1, 1]), 'A 的欄 = î、ĵ 的落點 ✓', -5.0, 0.5, -3.3 + 2 * 0.62);
+  },
+  async (tok, S) => {
+    const r = mulMV(SUMA, SUMV);
+    cap('矩陣乘向量：算出變換把這個向量送到哪', 'A(1.5, 1) = 1.5·(1, 0.5) + 1·(−1, 1) = (0.5, 1.75)');
+    S.track(SUMV, COL.g, 'Av');
+    ok(eqv(r, [0.5, 1.75]), 'A(1.5, 1) = (0.5, 1.75) ✓', -5.0, 0.5, -3.3 + 3 * 0.62);
+  },
+  async (tok, S) => {
+    const R = [[0, -1], [1, 0]];
+    cap('每看到一個矩陣，都可以讀成空間的一個變換', '例：[0 −1; 1 0] = 逆時針轉 90°');
+    S.ai.tag('î'); S.aj.tag('ĵ');
+    await S.go(tok, I2, 1200); await S.go(tok, R, 1600);
+    pane(S, 4, '[0 −1; 1 0]：整個平面轉 90°');
+  },
+]);
+
+// MIT L30（Ts3o2I8_Mxc）開場：不用座標也能談線性變換；要計算才引入座標 → 矩陣
+const TSA = [[1, -1], [0.5, 1]], TSV = [1.5, 1], TSW = [-1, 1.2];
+sc('lt-m-intro', 'L30 開場：線性變換不需要座標；要計算才有矩陣', async (tok, S) => {
+  plane(S, { basis: false }); S.G.visible = false; hide(S.axes);
+}, [
+  async (tok, S) => {
+    cap('線性變換 T：吃一個向量、吐一個向量', '這裡先不畫座標（示意的 T）');
+    S.v = S.F.arrow(TSV, COL.g, 'v'); S.tv = S.F.arrow(mulMV(TSA, TSV), COL.c, 'T(v)');
+    pane(S, 0, 'T：向量 → 向量');
+  },
+  async (tok, S) => {
+    cap('不需要矩陣、不需要數字也說得通', '只看整個空間怎麼動（物理學家喜歡這樣）');
+    S.w = S.F.arrow(TSW, COL.b, 'w'); S.tw = S.F.arrow(mulMV(TSA, TSW), COL.r, 'T(w)');
+    pane(S, 1, 'T(v + w) = T(v) + T(w)、T(cv) = cT(v)');
+    ok(eqv(mulMV(TSA, [TSV[0] + TSW[0], TSV[1] + TSW[1]]), mulMV(TSA, TSV).map((x, i) => x + mulMV(TSA, TSW)[i])), '線性 ✓', -5.0, 0.5, -3.3 + 2 * 0.62);
+  },
+  async (tok, S) => {
+    cap('要算東西，就引入座標（選基底）', '每個線性變換就對應一個矩陣 A');
+    S.axes.forEach((o) => { o.visible = true; }); S.G.visible = true;
+    gone(S.w, S.tw);
+    await anim(tok, 1600, (u) => S.G.setM(lerpM(I2, TSA, u)));
+    pane(S, 3, '有了座標：T(x) = Ax，A = [1 −1; 0.5 1]');
+  },
+  async (tok, S) => {
+    cap('零空間、行列式、特徵值…都從矩陣算出來', '但背後的主角是線性變換');
+    pane(S, 4, 'N(A)、C(A)、det、λ 都從 A 來；背後是 T', 'ptr alt');
+  },
+]);
+
+// MIT L31（vGkn-3NFGck）：FBI 指紋要選基底；影片 = 預測 + 修正
+const FP = [...Array(8).keys()].map((i) => [...Array(8).keys()].map((j) => (Math.round(Math.hypot(i - 3.5, j - 4) * 1.15) % 2)));
+const vidFrame = (k) => [...Array(6).keys()].map((i) => [...Array(6).keys()].map((j) => (i === 0 ? (j % 2) : (i >= 2 && i <= 3 && (j === k || j === k + 1) ? 1 : 0))));
+function pix(M, x0, y0, sz, on = COL.k, off = '#efe6d6') {
+  return M.map((r, i) => r.map((v, j) => cube('', v > 0 ? on : v < 0 ? COL.r : off, [sz * 0.9, sz * 0.9, 0.14], x0 + j * sz, y0 - i * sz, 0)));
+}
+sc('lt-g-video', 'L31：FBI 指紋與影片壓縮——選基底、預測 + 修正', async (tok, S) => {
+  fresh(CAMB[0], CAMB[1]);
+}, [
+  async (tok, S) => {
+    cap('FBI 有幾千萬份指紋', '以前是紙本檔案，查一次要等一個星期');
+    S.fp = pix(FP, -5.6, 4.4, 0.3); S.l1 = sm('指紋影像（示意）', -4.55, 4.95);
+    S.ic = P.icon('🗄️', '3000 萬份指紋', -1.2, 3.4);
+  },
+  async (tok, S) => {
+    cap('數位化之後每張還是太大', '要壓縮：FBI 必須決定用哪一組基底');
+    S.n1 = sm('每張 512 × 512 像素：資訊量太大，沒辦法快速搜尋', 0, 1.4);
+    S.n2 = note('壓縮 = 換一組好的基底（FBI 用的是 wavelet 類的基底）', 0, 0.7);
+  },
+  async (tok, S) => {
+    cap('影片是一張接一張的影像', '一張一張各自壓縮不是最好的做法');
+    gone(S.fp.flat(), S.l1, S.ic, S.n1, S.n2);
+    S.F = [0, 1, 2, 3].map((k) => { const x0 = -6.2 + k * 2.3; sm('第 ' + (k + 1) + ' 張', x0 + 0.75, 4.95); return pix(vidFrame(k), x0, 4.4, 0.3, COL.a); });
+    S.n3 = sm('影片 = 影像序列（示意：上排是黑板、中間是移動的老師）', -2.0, 2.0);
+  },
+  async (tok, S) => {
+    cap('相鄰兩張影像高度相關', '幾乎一樣，只差一點點');
+    const same = vidFrame(0).flat().filter((v, i) => v === vidFrame(1).flat()[i]).length;
+    S.n4 = sm('第 1、2 張有 ' + same + ' / 36 格完全相同', -2.0, 1.3);
+  },
+  async (tok, S) => {
+    cap('預測 + 修正：先假設下一張一樣', '只對「修正量」編碼、壓縮');
+    const D = vidFrame(1).map((r, i) => r.map((v, j) => v - vidFrame(0)[i][j]));
+    sm('修正量 = 第 2 張 − 第 1 張', 4.35, 4.95); pix(D, 3.6, 4.4, 0.3, COL.d);
+    const nz = D.flat().filter((v) => v !== 0).length;
+    ok(nz === 4, '只有 ' + nz + ' 格要記（其他 32 格是 0）✓', 2.0, 0.6);
+  },
+  async (tok, S) => {
+    cap('壓縮永遠在利用相關性', '時間、空間上變化平滑 → 由前一個值預測下一個');
+    hot('利用相關性：東西不會瞬間改變', 0, -0.1);
+  },
+]);
   }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });

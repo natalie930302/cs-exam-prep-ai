@@ -802,15 +802,15 @@
  ],
  "quiz": [
   {
-   "q": "依老師的說法，設計一個 system 時應該先掌握什麼？",
+   "q": "以比較為基礎（comparison-based）的排序，最壞情況下時間的下界是？",
    "opts": [
-    "要用哪種程式語言與哪套開發框架來寫比較好",
-    "requirement：input、output 與主要功能",
-    "變數與 function 要怎麼命名才一致好讀",
-    "要買多大容量的硬碟與多少記憶體才夠用"
+    "Ω(n log n)",
+    "Ω(n)",
+    "Ω(log n)",
+    "Ω(n log² n)"
    ],
-   "ans": "requirement：input、output 與主要功能",
-   "why": "先從使用者看到的 input、output 與功能出發（top-down），再往下設計各 component。"
+   "ans": "Ω(n log n)",
+   "why": "比較排序的 decision tree 至少有 n! 片葉子，樹高 ≥ log n! = Ω(n log n)；radix、bucket 等不靠比較的方法才能更快。"
   },
   {
    "q": "Scalability 測試在做什麼？",

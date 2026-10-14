@@ -3640,6 +3640,365 @@ scene('cpu-struct', '17A：R-type 4 個 stage + lw 5 個 stage → structural ha
     S.q = small(note('解法：下一節', 3.6, 2.2), 11);
   },
 ]);
+// ════════ QQG_zv-moMs（Enzo 計算機架構第 2 集：五個步驟、單週期 → FSM（多週期）→ Pipeline、三種 hazard、branch prediction） ════════
+// 影片的數字照用（add 2 ns、load 10 ns；FSM 每步 2 ns，add 4 步、load 5 步、jump 3 步）；
+// 單週期／FSM 的時間、硬體使用率、各種 hazard 要 stall 幾個 cycle、預測對幾次，都在這裡用小模擬算出來。
+const Q5 = ['IF', 'ID', 'EX', 'MEM', 'WB'];
+const QNM = { IF: 'Fetch', ID: 'Decode', EX: 'Execute', MEM: 'Memory', WB: 'Write Back' };
+// a pipeline grid: rows = instructions, columns = cycles
+function qGrid(rows, T, o = {}) {
+  const x0 = o.x0 === undefined ? -2.4 : o.x0, w = o.w || Math.min(1.0, (6.4 - x0) / T), yT = o.y === undefined ? 5.0 : o.y, dy = o.dy || 0.62;
+  const cx = (c) => x0 + (c - 0.5) * w, cy = (k) => yT - k * dy;
+  const G = { cx, cy, w, cells: rows.map(() => ({})), ls: [] };
+  if (o.head !== false) for (let c = 1; c <= T; c++) G.ls.push(small(sm(String(c), cx(c), yT + dy * 0.85), 9));
+  G.rl = rows.map((t, k) => { const l = mt(t, x0 - 0.2, cy(k), 10); l.center.set(1, 0.5); G.ls.push(l); return l; });
+  G.put = (k, c, s, col) => { const m = cube(s, col || STC[s] || CC.gray, [w * 0.92, dy * 0.72, 0.4], cx(c), cy(k), 0); if (m.userData.lbl) small(m.userData.lbl, w < 0.8 ? 8 : 9); G.cells[k][c] = m; return m; };
+  G.row = (k, c0, st) => st.forEach((s, i) => { if (s) G.put(k, c0 + i, s); });
+  G.all = () => G.cells.flatMap((r) => Object.values(r));
+  G.kill = () => gone(G.ls, G.all());
+  return G;
+}
+const qKill = (...gs) => gs.forEach((g) => { if (g && g.kill && g.cells) g.kill(); else gone(g); });
+// single cycle vs FSM (video numbers): clock = slowest instruction; FSM: 2 ns per step
+const QT = { add: 2, load: 10 }, QCLK = Math.max(QT.add, QT.load), QIDLE = QCLK - QT.add;
+const QSTEP = 2, QFSM = { add: ['IF', 'ID', 'EX', 'WB'], load: Q5, jump: ['IF', 'ID', 'EX'] };
+const qFsmT = (k) => QFSM[k].length * QSTEP;
+const QF_OK = QCLK === 10 && QIDLE === 8 && qFsmT('add') === 8 && qFsmT('load') === 10 && qFsmT('jump') === 6;
+// FSM runs one instruction at a time: load (5) then add (4) → 9 cycles; 5 units × 9 cycles, each cycle uses 1 unit
+const QSER = QFSM.load.length + QFSM.add.length, QUSE = QSER / (5 * QSER);
+// RAW hazard, producer fetched in pIF, consumer in cIF (P&H 5-stage: write in 1st half, read in 2nd half of a cycle)
+//   no forwarding: consumer ID must be ≥ producer WB;  forwarding: consumer EX must come after producer's result (EX, or MEM for load)
+const qStall = (pIF, cIF, fwd, load) => (fwd ? Math.max(0, pIF + (load ? 3 : 2) + 1 - (cIF + 2)) : Math.max(0, pIF + 4 - (cIF + 1)));
+const QS_OK = qStall(1, 2, false, false) === 2 && qStall(1, 2, true, false) === 0 && qStall(1, 2, true, true) === 1 && qStall(1, 3, true, true) === 0;
+const stallRow = (n) => ['IF', ...Array(n).fill('NOP'), 'ID', 'EX', 'MEM', 'WB'];
+// laundry: same 30 minutes per step (示意)
+const QL = [30, 30, 30], QLS = laundry(4, QL, false), QLP = laundry(4, QL, true);
+// branch outcomes of a loop branch: taken 10 times, then not taken (exit)
+const QBR = [...Array(10).fill('T'), 'N'];
+const qPNT = QBR.map((o) => o === 'N');                                  // predict not taken
+const qHist = QBR.map((o, i) => o === (i ? QBR[i - 1] : 'N'));           // 1-bit history: guess what happened last time (start: N)
+const QB_OK = qPNT.filter(Boolean).length === 1 && qHist.filter(Boolean).length === 9;
+const STC2 = Object.assign({}, STC, { NOP: CC.gray });
+const QCAM = [[0, 3.8, 15], [0, 3.6, 0]];
+
+scene('cpu-qq-five', 'Enzo：CPU 執行一道指令的五個步驟', [
+  async (tok, S) => {   // 14.1 ISA 只是說明書
+    S.a = [prop('file', -3.6, 3.6, 0, 1.6, 'ISA：說明書'), prop('cpu', 3.6, 3.9, 0, 2.0, 'CPU 內部')];
+    S.b = [sm('規定 CPU 能做什麼', -3.6, 2.9), sm('沒說內部怎麼設計才快', 3.6, 2.9)];
+    cap('ISA 只是說明書', '告訴你 CPU 能做什麼，沒說內部怎麼設計');
+  },
+  async (tok, S) => {   // 30.0 三代演進
+    S.c = [['單週期', CC.sky], ['FSM（多週期）', CC.lilac], ['Pipeline', CC.mint]].map(([t, c], i) => bx(t, c, -4.6 + i * 4.6, 1.4, 2.8, 0.6));
+    S.c.push(arrow(V3(-3.1, 1.4, 0.3), V3(-1.5, 1.4, 0.3)), arrow(V3(1.5, 1.4, 0.3), V3(3.1, 1.4, 0.3)));
+    S.c.push(sm('每一代都在解決上一代的根本問題', 0, 0.6));
+    cap('三個階段的演進', '單週期 → FSM → Pipeline');
+  },
+  async (tok, S) => {   // 67.2 Fetch
+    gone(S.a, S.b, S.c);
+    S.st = Q5.map((s, i) => bx(QNM[s], STC[s], -5.2 + i * 2.6, 6.3, 2.3, 0.6));
+    S.st.forEach((m, i) => { if (i) glow(m, null); }); glow(S.st[0], HL);
+    S.d = [bx('PC = 1000', CC.gold, -4.6, 4.4, 2.2, 0.6), bx('記憶體', CC.sand, -0.6, 4.4, 2.0, 0.6), bx('一串 0 和 1', CC.paper, 3.6, 4.4, 2.6, 0.6)];
+    S.d.push(arrow(V3(-3.4, 4.4, 0.3), V3(-1.7, 4.4, 0.3)), arrow(V3(0.5, 4.4, 0.3), V3(2.2, 4.4, 0.3)));
+    await wt(tok, 900); relabel(S.d[0], 'PC = 1004'); glow(S.d[0], HL);
+    S.d.push(sm('抓完 PC 指向下一道（MIPS 一道 4 bytes：PC + 4；位址示意）', 0, 3.5));
+    cap('① Fetch：依 PC 抓指令', '抓完 PC 指向下一道');
+  },
+  async (tok, S) => {   // 82.1 Decode
+    gone(S.d); S.st.forEach((m) => glow(m, null)); glow(S.st[1], HL);
+    S.d = [bx('一串 0 和 1', CC.paper, -3.6, 4.4, 2.6, 0.6), bx('add：R1 + R2 → R0', CC.lilac, 2.4, 4.4, 4.0, 0.6), arrow(V3(-2.2, 4.4, 0.3), V3(0.3, 4.4, 0.3))];
+    S.d.push(sm('像翻譯官：判斷是什麼操作、用哪些暫存器', 0, 3.5));
+    cap('② Decode：解碼', '判斷是什麼操作、要用哪些暫存器');
+  },
+  async (tok, S) => {   // 100.2 Execute
+    gone(S.d); S.st.forEach((m) => glow(m, null)); glow(S.st[2], HL);
+    S.d = [bx('R1 = 5', CC.sky, -4.4, 4.8, 1.8, 0.55), bx('R2 = 3', CC.sky, -4.4, 3.9, 1.8, 0.55), bx('ALU', CC.orange, -0.8, 4.35, 1.4, 1.3), bx(String(5 + 3), CC.mint, 2.6, 4.35, 1.0, 0.55)];
+    S.d.push(arrow(V3(-3.4, 4.8, 0.3), V3(-1.6, 4.5, 0.3)), arrow(V3(-3.4, 3.9, 0.3), V3(-1.6, 4.2, 0.3)), arrow(V3(0.0, 4.35, 0.3), V3(2.0, 4.35, 0.3)));
+    S.d.push(small(note('數值示意', 5.0, 4.35), 10), sm('跳躍指令：這一步算要跳去的位址', 0, 2.9));
+    cap('③ Execute：送進 ALU 運算', '跳躍指令在這步算目標位址');
+  },
+  async (tok, S) => {   // 114.2 Memory access
+    gone(S.d); S.st.forEach((m) => glow(m, null)); glow(S.st[3], HL);
+    S.d = [bx('Load / Store：讀寫記憶體', CC.green, -2.6, 4.4, 4.4, 0.6), bx('add：這步跳過', CC.gray, 3.0, 4.4, 3.2, 0.6)];
+    S.d[1].material.transparent = true; S.d[1].material.opacity = 0.5;
+    cap('④ Memory Access', '只有 Load／Store 需要；純運算就跳過');
+  },
+  async (tok, S) => {   // 128.6 Write back
+    gone(S.d); S.st.forEach((m) => glow(m, null)); glow(S.st[4], HL);
+    S.d = [bx('8', CC.mint, -2.0, 4.4, 1.0, 0.55), bx('R0 = 8', CC.pink, 2.0, 4.4, 1.8, 0.55), arrow(V3(-1.4, 4.4, 0.3), V3(1.0, 4.4, 0.3))];
+    S.d.push(sm('add R0, R1, R2：結果寫回 R0', 0, 3.5), good('記住五步：Fetch → Decode → Execute → Memory → Write Back', 0, 2.3));
+    cap('⑤ Write Back：結果寫回暫存器', 'add R0, R1, R2 → 結果存進 R0');
+  },
+], QCAM);
+
+scene('cpu-qq-single', 'Enzo：單週期：clock 被最慢的指令拖住', [
+  async (tok, S) => {   // 148.8 一個 cycle 走完五步
+    hd('單週期：一道指令 = 一個 clock cycle', 0, 7.0);
+    Q5.forEach((s, i) => bx(s, STC[s], -4.0 + i * 2.0, 5.9, 1.95, 0.6));
+    sm('一個 clock cycle 走完全部五步', 0, 5.2);
+    cap('每道指令用一個 clock cycle', '走完全部五個步驟');
+  },
+  async (tok, S) => {   // 180.2 CPI = 1
+    hot('CPI 永遠 = 1，設計最簡單', 0, 4.5);
+    cap('CPI 永遠是 1', '設計最簡單');
+  },
+  async (tok, S) => {   // 193.6 週期由最慢的決定
+    bad('致命問題：clock cycle 長度 = 最慢那道指令', 0, 3.8);
+    cap('但 clock cycle 的長度', '必須由最慢的指令決定');
+  },
+  async (tok, S) => {   // 201.3 add 2 ns、load 10 ns
+    const x0 = -4.0;
+    S.add = bx('add ' + QT.add + ' ns', CC.orange, x0 + QT.add / 2, 2.8, QT.add - 0.05, 0.55);
+    bx('load ' + QT.load + ' ns', CC.green, x0 + QT.load / 2, 1.9, QT.load - 0.05, 0.55);
+    line([[x0, 1.4], [x0, 3.3]], CC.brown); line([[x0 + QCLK, 1.4], [x0 + QCLK, 3.3]], CC.brown);
+    small(sm('clock cycle = ' + QCLK + ' ns（每道指令都一樣）', 1.0, 1.0), 10);
+    cap('例：add 2 ns、load 10 ns', 'clock 至少要 10 ns，load 才跑得完');
+  },
+  async (tok, S) => {   // 221.5 add 空等 8 ns
+    const x0 = -4.0, m = bx('空等 ' + QIDLE + ' ns', CC.gray, x0 + QT.add + QIDLE / 2, 2.8, QIDLE - 0.05, 0.55);
+    m.material.transparent = true; m.material.opacity = 0.55;
+    ok(QF_OK, 'add 也要等滿 ' + QCLK + ' ns：電路大部分閒置', 0, 0.3);
+    cap('add 明明 2 ns 就夠', '還是要等 10 ns，白白空等 8 ns');
+  },
+  async (tok, S) => {   // 246.0 整個 CPU 用最慢的速度
+    note('幾十種指令都照最慢的節奏 → 整個 CPU 用最慢的速度跑', 0, -0.5);
+    cap('用最慢的指令決定所有人的節奏', '整體效能被拖垮');
+  },
+], QCAM);
+
+scene('cpu-qq-fsm', 'Enzo：FSM（多週期）：短 cycle，但一次只跑一道', [
+  async (tok, S) => {   // 273.9 拆成多個短 cycle
+    hd('FSM（多週期）：一個 cycle 只做一步', 0, 7.0);
+    S.top = sm('把一道指令拆成好幾個短的 cycle', 0, 6.3);
+    cap('把一道指令拆成多個 cycle', '每個 cycle 只做一個步驟');
+  },
+  async (tok, S) => {   // 285.7 add 4、load 5、jump 3
+    const x0 = -4.4; S.rows = [];
+    ['add', 'load', 'jump'].forEach((k, r) => {
+      const y = 5.2 - r * 0.85;
+      S.rows.push(mt(k + '（' + QFSM[k].length + '）', x0 - 1.0, y, 11));
+      QFSM[k].forEach((s, i) => S.rows.push(bx(s, STC[s], x0 + QSTEP * i + QSTEP / 2, y, QSTEP - 0.08, 0.55)));
+    });
+    cap('不同指令，步驟數不同', 'add 4 個、load 5 個、jump 3 個 cycle');
+  },
+  async (tok, S) => {   // 301.5 每步 2 ns
+    const x0 = -4.4;
+    ['add', 'load', 'jump'].forEach((k, r) => S.rows.push(small(hot(qFsmT(k) + ' ns', x0 + qFsmT(k) + 0.8, 5.2 - r * 0.85), 10)));
+    S.rows.push(ok(QF_OK, '每步 ' + QSTEP + ' ns：add ' + qFsmT('add') + '、jump ' + qFsmT('jump') + ' ns，不用陪 load 等 ' + QCLK + ' ns', 0, 2.4));
+    cap('每一步很簡單，cycle 可以很短', '例如 2 ns，不再為最慢的指令空等');
+  },
+  async (tok, S) => {   // 315.9 有限狀態機
+    gone(S.rows); txt(S.top, '控制單元 = 有限狀態機（記住現在走到第幾步）');
+    S.fs = Q5.map((s, i) => bx('S' + i + ' ' + QNM[s], STC[s], -5.2 + i * 2.6, 4.8, 2.3, 0.6));
+    for (let i = 0; i < 4; i++) S.fs.push(arrow(V3(-4.0 + i * 2.6, 4.8, 0.3), V3(-3.4 + i * 2.6, 4.8, 0.3)));
+    for (let i = 0; i < 5; i++) { glow(S.fs[i], HL); await wt(tok, 450); glow(S.fs[i], null); }
+    S.nw = bx('新狀態', CC.yel, 0, 3.6, 1.8, 0.55); S.fs.push(S.nw);
+    S.fs.push(good('加新的複雜指令：多加幾個狀態就好，不必改整條 datapath', 0, 2.7));
+    cap('控制單元是一個有限狀態機', '加新指令只要加狀態');
+  },
+  async (tok, S) => {   // 343.4 一道做完下一道才開始
+    gone(S.fs); txt(S.top, '前一道做完，下一道才能開始');
+    S.G = qGrid(['load', 'add'], QSER, { y: 5.0, x0: -3.4, w: 1.0 });
+    S.G.row(0, 1, QFSM.load); S.G.row(1, QFSM.load.length + 1, QFSM.add);
+    bad('同一時間只有一道指令在跑', 0, 2.9);
+    cap('FSM 的瓶頸', '一次只有一道指令在跑');
+  },
+  async (tok, S) => {   // 354.0 硬體閒置
+    S.G.all().forEach((m) => { if (m.userData.lbl && m.userData.lbl.element.textContent !== 'EX') { m.material.transparent = true; m.material.opacity = 0.45; } else glow(m, HL); });
+    sm('Execute 的 ALU 只在 EX 那一格忙，其他 cycle 都閒著', 0, 2.2);
+    ok(QUSE === 0.2, QSER + ' 個 cycle × 5 個單元，只用了 ' + QSER + ' 格 → 使用率 ' + Math.round(QUSE * 100) + '%', 0, 1.4);
+    cap('其他階段的硬體都在閒置', '硬體使用率還是很低');
+  },
+], QCAM);
+
+scene('cpu-qq-pipe', 'Enzo：Pipeline：五個工作站同時開工', [
+  async (tok, S) => {   // 382.8 洗衣：一件一件來
+    hd('Pipeline 的靈感：洗衣機 + 烘衣機', 0, 7.0); small(note('時間示意', 5.6, 7.0), 10);
+    S.l1 = drawLaundry(QLS, -5.0, 6.1, 11 / QLS.end, 0.5);
+    S.l1.push(sm('一件洗完、烘完、摺好才換下一件：' + QLS.end + ' 分鐘', 0, 3.9));
+    cap('四件衣服要洗', '傻瓜做法：一件做完才做下一件');
+  },
+  async (tok, S) => {   // 394.0 重疊
+    S.l2 = drawLaundry(QLP, -5.0, 3.2, 11 / QLS.end, 0.5);
+    S.l2.push(ok(QLP.end * 2 === QLS.end, '第一件進烘衣機，第二件馬上進洗衣機：' + QLP.end + ' 分鐘', 0, 1.0));
+    cap('聰明做法：第一件去烘時', '第二件馬上進洗衣機');
+  },
+  async (tok, S) => {   // 416.8 五個工作站
+    gone(S.l1, S.l2);
+    S.st = Q5.map((s, i) => bx(QNM[s], STC[s], -4.8 + i * 2.4, 6.2, 2.1, 0.5));
+    S.G = qGrid(['A', 'B', 'C', 'D', 'E'], 9, { y: 4.8, x0: -2.6, w: 0.95, dy: 0.6 });
+    cap('五個步驟 = 五個工作站', '不同指令同時在不同站處理');
+  },
+  async (tok, S) => {   // 426.2 cycle 1
+    S.G.put(0, 1, 'IF');
+    cap('第 1 個 cycle', '指令 A 在 Fetch');
+  },
+  async (tok, S) => {   // 429.0 cycle 2
+    S.G.put(0, 2, 'ID'); S.G.put(1, 2, 'IF');
+    cap('第 2 個 cycle', 'A 在 Decode，同時 B 開始 Fetch');
+  },
+  async (tok, S) => {   // 434.4 cycle 3
+    S.G.put(0, 3, 'EX'); S.G.put(1, 3, 'ID'); S.G.put(2, 3, 'IF');
+    cap('第 3 個 cycle', 'A Execute、B Decode、C Fetch');
+  },
+  async (tok, S) => {   // 440.7 穩定狀態
+    for (let k = 0; k < 5; k++) Q5.forEach((s, i) => { const c = k + 1 + i; if (!S.G.cells[k][c]) S.G.put(k, c, s); });
+    for (let c = 5; c <= 9; c++) glow(S.G.cells[c - 5][c], OKG);
+    good('穩定狀態：每個 cycle 完成一道（綠框）', 0, 1.4);
+    sm('5 級 pipeline：理想上約是單週期的 5 倍', 0, 0.7);
+    cap('到了穩定狀態', '每個 clock cycle 都有一道指令完成');
+  },
+  async (tok, S) => {   // 455.5 跟 FSM 比
+    hot('跟 FSM 比：cycle 一樣短，CPI 從 3～5 降到 ≈ 1', 0, 0.0);
+    cap('跟 FSM 比：clock 週期差不多', '但 CPI 大幅降低，throughput 大增');
+  },
+], QCAM);
+
+scene('cpu-qq-hazard', 'Enzo：Structural、Data hazard 與解法', [
+  async (tok, S) => {   // 468.2 三種 hazard
+    S.h = hd('Hazard：多道指令互相干擾', 0, 7.0);
+    S.k = [['Structural', CC.sky], ['Data', CC.mint], ['Control', CC.peach]].map(([t, c], i) => bx(t + ' hazard', c, -4.4 + i * 4.4, 6.1, 3.4, 0.55));
+    S.x = [sm('多道指令同時在 pipeline 裡，可能互相干擾', 0, 5.4)];
+    cap('天下沒有白吃的午餐', '三種 hazard：structural、data、control');
+  },
+  async (tok, S) => {   // 489.6 structural：共用記憶體
+    gone(S.x); [1, 2].forEach((i) => { S.k[i].material.transparent = true; S.k[i].material.opacity = 0.35; }); glow(S.k[0], HL);
+    S.G = qGrid(['A', 'B', 'C', 'D'], 8, { y: 4.6, x0: -2.4, w: 0.9, dy: 0.55 });
+    for (let k = 0; k < 4; k++) S.G.row(k, k + 1, Q5);
+    glow(S.G.cells[0][4], BADG); glow(S.G.cells[3][4], BADG);
+    S.x = [bad('cycle 4：A 讀資料（MEM）、D 抓指令（IF）→ 搶同一塊記憶體', 0, 2.1)];
+    cap('Structural hazard：搶同一個硬體', '指令和資料放在同一塊記憶體');
+  },
+  async (tok, S) => {   // 518.9 I-cache / D-cache
+    S.x.push(good('解法：指令、資料分開 → I-cache + D-cache', 0, 1.4));
+    cap('解法：指令記憶體和資料記憶體分開', 'I-cache、D-cache 兩條路互不相搶');
+  },
+  async (tok, S) => {   // 539.0 data hazard
+    qKill(S.G); gone(S.x); glow(S.k[0], null); S.k[0].material.opacity = 0.35; S.k[1].material.opacity = 1; glow(S.k[1], HL);
+    S.G = qGrid(['add R0, R1, R2', 'sub R3, R0, R4'], 8, { y: 4.6, x0: -1.8, w: 0.9 });
+    S.G.row(0, 1, Q5); S.G.row(1, 2, Q5);
+    glow(S.G.cells[1][3], BADG); glow(S.G.cells[0][5], HL);
+    S.x = [bad('sub 在 cycle 3 讀 R0，add 到 cycle 5 才寫回 → 讀到舊值', 0, 2.8)];
+    cap('Data hazard：sub 要用 add 的結果 R0', '但 add 還沒寫回');
+  },
+  async (tok, S) => {   // 573.0 stall
+    qKill(S.G); gone(S.x);
+    const n = qStall(1, 2, false, false);
+    S.G = qGrid(['add R0, R1, R2', 'sub R3, R0, R4'], 8, { y: 4.6, x0: -1.8, w: 0.9 });
+    S.G.row(0, 1, Q5); stallRow(n).forEach((s, i) => S.G.put(1, 2 + i, s, STC2[s]));
+    S.x = [ok(QS_OK, '插 ' + n + ' 個 bubble（NOP）：sub 等到 add 寫回才讀', 0, 2.8), sm('簡單，但浪費時間、throughput 下降', 0, 2.1)];
+    cap('解法一：stall，插入 bubble', '讓前一道有時間走到 Write Back');
+  },
+  async (tok, S) => {   // 612.8 forwarding
+    qKill(S.G); gone(S.x);
+    const n = qStall(1, 2, true, false);
+    S.G = qGrid(['add R0, R1, R2', 'sub R3, R0, R4'], 8, { y: 4.6, x0: -1.8, w: 0.9 });
+    S.G.row(0, 1, Q5); S.G.row(1, 2 + n, Q5);
+    S.x = [arrow(V3(S.G.cx(3) + 0.3, S.G.cy(0) - 0.15, 0.4), V3(S.G.cx(4) - 0.1, S.G.cy(1) + 0.1, 0.4), 0x2fc092)];
+    S.x.push(ok(QS_OK && n === 0, 'Forwarding：add 的 EX 一算完就轉給 sub 的 EX，stall ' + n + ' 個', 0, 2.8), sm('多一些偵測、轉發的電路', 0, 2.1));
+    cap('解法二：forwarding（bypassing）', '不必等寫回，直接從生產線上傳過去');
+  },
+  async (tok, S) => {   // 660.9 load-use
+    qKill(S.G); gone(S.x);
+    const n = qStall(1, 2, true, true);
+    S.G = qGrid(['load R0, [記憶體]', 'add R3, R0, R1'], 8, { y: 4.6, x0: -1.8, w: 0.9 });
+    S.G.row(0, 1, Q5); stallRow(n).forEach((s, i) => S.G.put(1, 2 + i, s, STC2[s]));
+    S.x = [arrow(V3(S.G.cx(4) + 0.3, S.G.cy(0) - 0.15, 0.4), V3(S.G.cx(5) - 0.1, S.G.cy(1) + 0.1, 0.4), 0x2fc092)];
+    S.x.push(bad('Load-use：資料到 MEM 才拿到，forwarding 也來不及 → stall ' + n + ' 個', 0, 2.8));
+    cap('Load-use hazard', 'forwarding 也救不了，一定要 stall 一個 cycle');
+  },
+  async (tok, S) => {   // 695.7 instruction scheduling
+    qKill(S.G); gone(S.x);
+    const n = qStall(1, 3, true, true);
+    S.G = qGrid(['load R0, [記憶體]', 'sub R6, R7, R8', 'add R3, R0, R1'], 8, { y: 4.6, x0: -1.8, w: 0.9 });
+    S.G.row(0, 1, Q5); S.G.row(1, 2, Q5); S.G.row(2, 3 + n, Q5); S.G.all().slice(5, 10).forEach((m) => glow(m, OKG));
+    S.x = [ok(QS_OK && n === 0, '編譯器塞進一道不相關的指令 → 不用空等', 0, 2.3), small(note('sub 為示意', 5.6, 3.4), 10)];
+    cap('編譯器做 instruction scheduling', '把等待的那個 cycle 拿來做別的事');
+  },
+], QCAM);
+
+scene('cpu-qq-ctrl', 'Enzo：Control hazard、flush 與 branch prediction', [
+  async (tok, S) => {   // 715.6 下一道在哪？
+    hd('Control hazard：下一道指令在哪？', 0, 7.0);
+    S.a = [bx('beq R1, R2, L', CC.peach, -3.6, 5.6, 2.8, 0.6), bx('不跳：下一道', CC.paper, 2.6, 6.1, 2.6, 0.5), bx('跳：L', CC.paper, 2.6, 5.1, 2.6, 0.5)];
+    S.a.push(arrow(V3(-2.1, 5.7, 0.3), V3(1.2, 6.1, 0.3)), arrow(V3(-2.1, 5.5, 0.3), V3(1.2, 5.1, 0.3)), sm('if-else、迴圈都會遇到', 0, 4.2));
+    cap('遇到 if-else、迴圈的跳躍', 'CPU 根本不知道下一道在哪');
+  },
+  async (tok, S) => {   // 737.1 先 fetch
+    gone(S.a);
+    S.G = qGrid(['beq R1, R2, L', '下一道（猜的）', '再下一道（猜的）'], 7, { y: 5.6, x0: -1.8, w: 0.95 });
+    S.G.row(0, 1, Q5); S.G.row(1, 2, ['IF', 'ID']); S.G.row(2, 3, ['IF']);
+    glow(S.G.cells[0][3], HL);
+    S.x = [sm('beq 在 EX 才知道跳不跳（示意），但後面已經先 fetch 了', 0, 3.4)];
+    cap('beq 還沒執行完', 'CPU 就必須先決定要 fetch 哪一道');
+  },
+  async (tok, S) => {   // 743.1 flush
+    const wrong = [1, 2], lost = wrong.length;
+    wrong.forEach((k) => { Object.values(S.G.cells[k]).forEach((m) => tint(m, '#efb4b4')); S.G.rl[k].element.style.textDecoration = 'line-through'; });
+    S.x.push(bad('猜錯 → 已進來的全部丟掉（pipeline flush），損失 ' + lost + ' 個 cycle（示意）', 0, 2.7));
+    cap('猜錯了：pipeline flush', '已經進來的指令全部清掉，重來');
+  },
+  async (tok, S) => {   // 766.6 branch prediction
+    S.x.push(hot('解法：branch prediction（現代 CPU 準確率 95% 以上）', 0, 2.0));
+    cap('解法：分支預測', '現代 CPU 猜得非常準');
+  },
+  async (tok, S) => {   // 779.4 預測不跳
+    qKill(S.G); gone(S.x);
+    const x0 = -2.6, w = 0.72;
+    S.rl = (t, y) => { const l = mt(t, x0 - 0.5, y, 10); l.center.set(1, 0.5); return l; };
+    S.rl('迴圈的 branch', 5.6); QBR.forEach((o, i) => bx(o, o === 'T' ? CC.green : CC.orange, x0 + i * w, 5.6, w - 0.08, 0.5));
+    small(sm('T = 跳回去再做一次，N = 離開迴圈', 1.4, 6.3), 10);
+    S.rl('一律預測不跳', 4.7); qPNT.forEach((r, i) => bx(r ? '✓' : '✘', r ? CC.mint : '#efb4b4', x0 + i * w, 4.7, w - 0.08, 0.5));
+    small(sm('對 ' + qPNT.filter(Boolean).length + ' / ' + QBR.length, x0 + QBR.length * w + 0.5, 4.7), 10);
+    cap('最簡單：一律預測不跳', '實作簡單，但迴圈裡常常猜錯');
+  },
+  async (tok, S) => {   // 794.2 用歷史紀錄
+    const x0 = -2.6, w = 0.72;
+    S.rl('照上次的結果猜', 3.8); qHist.forEach((r, i) => bx(r ? '✓' : '✘', r ? CC.mint : '#efb4b4', x0 + i * w, 3.8, w - 0.08, 0.5));
+    small(sm('對 ' + qHist.filter(Boolean).length + ' / ' + QBR.length, x0 + QBR.length * w + 0.5, 3.8), 10);
+    ok(QB_OK, '連續跳了 10 次 → 下一次大概還是跳', 0, 2.8);
+    cap('聰明做法：記住每個 branch 的歷史', '跳了很多次，下次大機率還是跳');
+  },
+  async (tok, S) => {   // 809.1 猜對免費、猜錯付代價
+    good('猜對：pipeline 滿速前進，沒有損失', 0, 2.0); bad('猜錯：flush 錯的指令，損失幾個 cycle', 0, 1.3);
+    cap('猜對免費', '猜錯就 flush，付出幾個 cycle 的代價');
+  },
+], QCAM);
+
+scene('cpu-qq-sum', 'Enzo：總結：單週期 → FSM → Pipeline → hazard 的解法', [
+  async (tok, S) => {   // 832.0 演進線
+    S.c = [['單週期', CC.sky], ['FSM（多週期）', CC.lilac], ['Pipeline', CC.mint]].map(([t, c], i) => bx(t, c, -4.6 + i * 4.6, 6.6, 2.8, 0.6));
+    arrow(V3(-3.1, 6.6, 0.3), V3(-1.5, 6.6, 0.3)); arrow(V3(1.5, 6.6, 0.3), V3(3.1, 6.6, 0.3));
+    cap('整理成一條演進線', '單週期 → FSM → Pipeline');
+  },
+  async (tok, S) => {   // 845.8 單週期 → FSM
+    bad('被最慢的指令拖垮', -4.6, 5.8); glow(S.c[0], HL);
+    good('多個短 cycle', 0, 5.8);
+    cap('單週期被最慢的指令拖垮', '所以讓指令用多個短 cycle → FSM');
+  },
+  async (tok, S) => {   // 861.4 FSM → pipeline
+    glow(S.c[0], null); glow(S.c[1], HL);
+    bad('還是一道一道做', 0, 5.1);
+    good('多道同時在不同階段', 4.6, 5.8);
+    cap('FSM 還是序列執行', '所以讓多道指令同時在不同階段 → Pipeline');
+  },
+  async (tok, S) => {   // 874.2 三種 hazard 與解法
+    glow(S.c[1], null); glow(S.c[2], HL);
+    hot('N 級 pipeline ≈ N 倍，但帶來三種 hazard', 0, 4.2);
+    [['Structural → 指令、資料記憶體分開', CC.sky], ['Data → forwarding；load-use 要 stall + 指令排程', CC.mint], ['Control → branch prediction（猜錯就 flush）', CC.peach]]
+      .forEach(([t, c], i) => bx(t, c, 0, 3.4 - i * 0.7, 8.6, 0.55));
+    cap('理論上 N 級就是 N 倍', '但三種 hazard 都需要解法');
+  },
+  async (tok, S) => {   // 911.1 現代 CPU
+    note('現代 CPU：十幾～二十幾級、好幾條 pipeline', 0, 1.0);
+    small(sm('延伸：speculative execution、out-of-order、register renaming', 0, 0.3), 10);
+    cap('現代 CPU 早就不只五級', '還延伸出 speculative、out-of-order 等技術');
+  },
+  async (tok, S) => {   // 944.0 下一集 cache
+    hot('下一集：cache（記憶體跟不上 pipeline）', 0, -0.5);
+    cap('下一集：cache', '因為記憶體的速度跟不上 pipeline');
+  },
+], QCAM);
+
   }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });

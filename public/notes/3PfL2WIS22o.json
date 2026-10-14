@@ -176,50 +176,5 @@
    ]
   }
  ],
- "quiz": [
-  {
-   "q": "周志遠老師這門課使用的課本是？",
-   "opts": [
-    "Operating System Concepts（恐龍書）",
-    "Modern Operating Systems（Tanenbaum）",
-    "Computer Organization and Design",
-    "The C Programming Language"
-   ],
-   "ans": "Operating System Concepts（恐龍書）",
-   "why": "課堂開頭就說明以 Operating System Concepts 第九版為主。"
-  },
-  {
-   "q": "Nachos 是什麼？",
-   "opts": [
-    "教學用、模擬的作業系統",
-    "Linux 的一個 shell 介面",
-    "一種 CPU 排程演算法",
-    "一種檔案系統格式"
-   ],
-   "ans": "教學用、模擬的作業系統",
-   "why": "作業要修改這個 simulated、for education 的 OS。"
-  },
-  {
-   "q": "課堂所說的 code tracing 指的是？",
-   "opts": [
-    "先了解程式架構與 code path，再判斷要改哪裡",
-    "從第一個檔案的第一行開始逐行讀完所有 code",
-    "用 GUI 除錯器單步執行",
-    "把程式重寫一遍"
-   ],
-   "ans": "先了解程式架構與 code path，再判斷要改哪裡",
-   "why": "修改別人的大型程式，要先知道檔案、function 之間的呼叫順序。"
-  },
-  {
-   "q": "老師說這門課用 Linux 而不是 Windows 的主要原因是？",
-   "opts": [
-    "Linux 是 open source，可以去改、去動",
-    "Linux 比較 user friendly",
-    "Windows 沒有 command line，無法編譯 Nachos",
-    "Nachos 只能在手機上跑"
-   ],
-   "ans": "Linux 是 open source，可以去改、去動",
-   "why": "Windows 是 commercial、包起來的產品；OS 課要能看到、改到裡面。"
-  }
- ]
+ "quiz": []
 }

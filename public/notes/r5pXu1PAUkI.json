@@ -992,15 +992,15 @@
    "why": "successor 沒有左孩子，刪它是容易的 case。"
   },
   {
-   "q": "為什麼交作業前要拿掉 checkRI？",
+   "q": "BST 刪除一個只有一個孩子的節點，正確做法是？",
    "opts": [
-    "它要走遍整個結構，會把 O(log n) 的 update 拖成 O(n)",
-    "它會修改節點的 size 欄位，讓之後的 query 回傳錯誤結果",
-    "它只能在 heap 用",
-    "Python 不允許"
+    "把那個孩子直接接到被刪節點的父節點上",
+    "找 successor 交換 key，再刪掉 successor",
+    "把被刪節點的整棵子樹一起刪除掉",
+    "把孩子變成整棵樹的新 root 再重建"
    ],
-   "ans": "它要走遍整個結構，會把 O(log n) 的 update 拖成 O(n)",
-   "why": "checkRI 是 debug 工具。"
+   "ans": "把那個孩子直接接到被刪節點的父節點上",
+   "why": "只有一個孩子是 happy case，改父節點的 link 與孩子的 parent 即可；左右都有孩子才需要找 successor。"
   },
   {
    "q": "節點存「子樹 min」時，insert 一個新 key 後要更新哪些節點？",

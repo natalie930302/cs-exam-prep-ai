@@ -598,15 +598,15 @@
    "why": "每次約 log N 步，共 N 次；兩指標只要 2N。"
   },
   {
-   "q": "Profiler 找瓶頸時應看哪個欄位？",
+   "q": "count_frequency 中，if new_word == entry[0] 這一行在最壞情況下執行幾次？",
    "opts": [
-    "total time（函數本身）",
-    "cumulative time（含子函數）",
-    "呼叫次數",
-    "行數"
+    "L·W 次",
+    "W 次",
+    "L 次",
+    "W − L 次"
    ],
-   "ans": "total time（函數本身）",
-   "why": "cumulative time 會把子函數的慢算在父函數頭上。"
+   "ans": "L·W 次",
+   "why": "外層走過 W 個字，每個字最壞要掃完 L 個 entry，所以是 L·W 次，再乘上字串比較的 w̄ 就是主導項。"
   }
  ]
 }

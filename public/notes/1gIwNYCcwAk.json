@@ -333,15 +333,15 @@
    "why": "就像寫作業：最早要交的先做。"
   },
   {
-   "q": "手機為什麼不裝傳統的 OS？",
+   "q": "Hard real-time 系統 miss 了一個 deadline，代表什麼？",
    "opts": [
-    "光跑 OS 就吃掉大部分資源，而且不管電力",
-    "手機沒有 CPU",
-    "傳統 OS 不支援 C 語言，無法移植到手機",
-    "手機不需要 memory"
+    "fundamental failure，系統可能出事",
+    "只是畫面或品質下降，使用者仍可以接受",
+    "OS 會自動把這個 deadline 往後延長",
+    "改用 FCFS scheduling 重新排程就不會有影響"
    ],
-   "ans": "光跑 OS 就吃掉大部分資源，而且不管電力",
-   "why": "handheld 的 memory 小、processor 慢、電力 critical，OS 要客製化。"
+   "ans": "fundamental failure，系統可能出事",
+   "why": "Hard real-time（如汽車、武器控制）任何 deadline 都不能 miss；只是品質下降的是 soft real-time。"
   }
  ]
 }

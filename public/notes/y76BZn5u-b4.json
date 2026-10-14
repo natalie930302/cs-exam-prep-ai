@@ -508,15 +508,15 @@
    "why": "Harvard Mark I（1944）的 instruction 與 data 分開儲存，這種設計就叫 Harvard architecture。"
   },
   {
-   "q": "ENIAC 用什麼當 switch？",
+   "q": "Feature size（line width）縮小，為什麼能讓 transistor 變快？",
    "opts": [
-    "真空管（vacuum tube）",
-    "繼電器（relay switch）",
-    "IC",
-    "microprocessor"
+    "source 到 drain 的距離變短，開關較快",
+    "電壓變大，流過 transistor 的電流變得更強",
+    "晶片面積變大，可以放更多 cache",
+    "transistor 數量變少，干擾變小"
    ],
-   "ans": "真空管（vacuum tube）",
-   "why": "ENIAC（1943–1946）用真空管，每秒 1,900 個加法；電晶體之後才取代真空管。"
+   "ans": "source 到 drain 的距離變短，開關較快",
+   "why": "Transistor 開關速度取決於 source 到 drain 的距離；feature size 越小越快，同面積也能放更多 transistor。"
   },
   {
    "q": "Integrated Circuit（IC）帶來的最大改變是？",
@@ -541,15 +541,15 @@
    "why": "Moore（Intel co-founder）1965 年預測：feature size 越縮越小，每 18 個月 transistor 數 double。"
   },
   {
-   "q": "Apple II（1977）比 IBM PC（1981）早，為什麼後來大部分 PC 是 IBM 架構？",
+   "q": "Desktop、server、embedded 三類電腦中，server 最重視的是？",
    "opts": [
-    "IBM PC 是 open system，spec 公開，大家都能做相容產品、比較便宜",
-    "IBM PC 用 RISC",
-    "IBM PC 不需要 OS",
-    "Apple II 沒有 microprocessor，只能用分離式電晶體組 CPU、成本高"
+    "capacity、performance 與 reliability",
+    "cost 與 power，越便宜、越省電就越好",
+    "cost/performance 與好用的 GUI interface",
+    "low power 與可長期使用的 4/8-bit processor"
    ],
-   "ans": "IBM PC 是 open system，spec 公開，大家都能做相容產品、比較便宜",
-   "why": "規格公開讓很多廠商參與、價格下降，也帶動臺灣的周邊產業。"
+   "ans": "capacity、performance 與 reliability",
+   "why": "Server 要服務大量使用者，重視容量、效能與可靠度；embedded 重 cost 與 power，desktop 看 cost/performance。"
   },
   {
    "q": "embedded computer 最重要的考量通常是？",

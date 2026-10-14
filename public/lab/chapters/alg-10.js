@@ -6784,6 +6784,35 @@ FRAG.push(['bt-mit24r-rec', '期末複習：切木頭的遞迴式（O(n³)）', 
   void W;
 }]);
 
+// 15:53 Q&A：每種 DP 技巧都能用在每一題嗎？
+FRAG.push(['bt-mit24r-qa', '期末複習 Q&A：選哪種子問題，看執行時間', async (tok) => {
+  fresh([0, 3.6, 11.5], [0, 2.6, 0]);
+  const cards = [['prefix  x[:i]', C.B, -4.2, 'n 個子問題'], ['suffix  x[i:]', C.P, 0, 'n 個子問題'], ['substring  x[i:j]', C.O, 4.2, 'n² 個子問題']];
+  const K3 = [];
+  let lb1 = null, lb2 = null;
+  await step(tok);                                   // 15:53 does any DP technique solve any problem, only complexity changes?
+  for (const [t, c, x, s] of cards) { K3.push(card(t, c, x, 5.3, 0, 3.4)); tag(s, 'idx', x, 4.55, 0.4); await wt(tok, 200); }
+  sayc('Q：每種子問題技巧都能解每一題', '只差在複雜度嗎？');
+  await step(tok);                                   // 16:13 prefixes on wood cutting: misses choices → fast but wrong
+  woodWorld(0.9);
+  glow(K3[0], REDEM);
+  lb1 = bad('prefix 套到切木頭：沒看到所有切法 → 快但錯 ✕', 0, 3.4);
+  sayc('不是每個技巧都套得上', '切木頭用 prefix：漏掉一些選擇，答案不是最佳');
+  await step(tok);                                   // 16:30 LIS with substrings: works (more general) but slower
+  glow(K3[0], null); glow(K3[2], GREEN);
+  lb2 = good('最長遞增子序列（LIS）用 substring：可以，但比較慢', 0, 2.6);
+  sayc('LIS 用 substring 一定行', 'substring 比 prefix／suffix 更一般，但比較慢');
+  await step(tok);                                   // 16:44 in theory: try all, keep the ones that apply, pick the fastest
+  remove(lb1); remove(lb2); glow(K3[2], null);
+  K3.forEach((m) => glow(m, GOLD));
+  lb1 = note('理論上：每個技巧都試 → 留下適用的 → 挑執行時間最好的', 0, 3.4);
+  sayc('理論上：所有技巧都試一遍', '在適用的裡面挑最快的');
+  await step(tok);                                   // 16:56 in practice: the given running time tells you the technique
+  K3.forEach((m) => glow(m, null)); glow(K3[2], GOLD);
+  lb2 = hot('實務上：題目給 O(n³) → n² 個子問題 × O(n) 個選擇 → substring', 0, 2.6);
+  sayc('實務上：題目通常會給執行時間', '從執行時間倒推該用哪種技巧');
+}]);
+
 // 17:15 位元表實作 set
 FRAG.push(['bt-mit24r-bits', '期末複習：只存位元的 hash 集合', async (tok) => {
   fresh([0, 3.6, 12], [0, 2.0, 0]);
@@ -6996,6 +7025,249 @@ FRAG.push(['bt-mit24r-use', '期末複習：獨立性假設與 Bloom filter 的�
   sayc('放在昂貴的檢查前面', '先擋掉大部分，剩下少數再仔細查');
   await step(tok);                                   // 49:25 doubling memory beats two filters
   sayc('把記憶體加倍，比用兩個獨立的 filter 好');
+}]);
+  }
+  // ═══ Nn_Eq7--Rk4（The Academician：Las Vegas vs Monte Carlo 隨機演算法） ═══
+  // 陣列 n = 8，a 一定在陣列裡（在 A[4]），兩種隨機搜尋：
+  //   Las Vegas：while (true) 隨機挑一格，是 a 就 return true → 一定對、圈數不固定（期望 n 圈）
+  //   Monte Carlo：只挑固定 x 次（x = 4），沒挑到就 return false → 時間固定、可能錯（錯的機率 (1 − 1/n)^x）
+  {
+const { V3, tag, cube, kill, code, anim, travel, relabel, tint, glow, step, fresh, icon, remove, txt, move } = K;
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const hd = (t, x, y, z = 0) => tag(t, 'ptr', x, y, z);
+const hot = (t, x, y, z = 0) => tag(t, 'ptr alt', x, y, z);
+const bx = (t, c, x, y, z = 0, w = 2.4, drop = 0, h = 0.6, d = 0.9) => cube(t, c, [w, h, d], x, y, z, drop);
+const sayc = (a, b = '') => say(a, b);
+const RV = [12, 5, 31, 8, 'a', 17, 26, 3];          // A[0..7]，a 在 A[4]
+const AX = (i) => -6.0 + i * 0.8;
+function rsArray(y = 1.0) {
+  tag('A', 'ptr', AX(0) - 0.75, y);
+  const cells = RV.map((v, i) => cube('?', C.K, [0.66, 0.66, 0.66], AX(i), y, 0, 2));
+  RV.forEach((v, i) => tag(String(i), 'idx', AX(i), y - 0.62, 0.4));
+  return cells;
+}
+function rsHide(cells) { cells.forEach((m) => { relabel(m, '?'); tint(m, C.K); glow(m, null); }); }
+// the random pointer moves above cell i, the cell shows its value: a → green, otherwise grey
+async function rsPick(tok, cells, ptr, i, y = 1.0, ms = 380) {
+  const from = ptr.position.clone();
+  await travel(tok, ptr, from, V3(AX(i), y + 0.85, 0), ms);
+  const hit = RV[i] === 'a';
+  relabel(cells[i], RV[i]); tint(cells[i], hit ? C.G : '#bdb2a0'); glow(cells[i], hit ? GREEN : null);
+  return hit;
+}
+const LV_CODE = ['LasVegasSearch(A, n)', '  while (true)', '    k = random(0 … n−1)', '    if A[k] == a', '      return true'];
+const MC_CODE = ['MonteCarloSearch(A, n, x)', '  i = 0;  flag = false', '  while (i < x)', '    k = random(0 … n−1);  i++', '    if A[k] == a', '      flag = true', '  return flag'];
+
+// 0:22 什麼是隨機演算法
+FRAG.push(['rand-what', '隨機演算法：用亂數決定下一步', async (tok) => {
+  fresh([0, 3.4, 10.5], [0, 2.5, 0]);
+  await step(tok);                                   // 0:22 employs randomness as part of its logic
+  const alg = bx('演算法', C.B, -1.6, 3.4, 0, 2.6, 2, 0.7, 1);
+  const dice = icon('🎲', '亂數', -5.4, 3.5);
+  sayc('隨機演算法：邏輯裡用到亂數', '');
+  await step(tok);                                   // 0:31 uniformly random values guide its behaviour
+  for (const v of ['3', '7', '1']) {
+    const p = pkt(v, -4.6, 3.5);
+    await travel(tok, p, V3(-4.6, 3.5, 0), V3(-2.9, 3.5, 0), 500);
+    remove(p);
+  }
+  note('均勻分布的亂數 → 引導下一步', -1.6, 4.4);
+  sayc('均勻分布的亂數當輸入', '用它來引導演算法的行為');
+  await step(tok);                                   // 0:37 good performance on average over all random choices
+  const runs = [1.6, 3.0, 0.9, 2.2];
+  for (let k = 0; k < runs.length; k++) {
+    const h = runs[k], x = 1.8 + k * 1.2;
+    const m = cube('', C.P, [0.8, 1, 0.6], x, 0.01, 0); m.scale.y = 0.01;
+    tag('第' + (k + 1) + '次', 'idx', x, 0, 0.7);
+    await anim(tok, 350, (u) => { m.scale.y = Math.max(0.01, h * u); m.position.y = m.scale.y / 2; });
+  }
+  rod(V3(1.2, 1.93, 0.35), V3(6.0, 1.93, 0.35), C.R, 0.03);
+  hot('平均', 6.3, 2.4);
+  sayc('每次跑的亂數不同，花的時間也不同', '目標：對所有亂數選擇「平均」表現好');
+  await step(tok);                                   // 0:47 random numbers decide what to do next anywhere in its logic
+  const A = bx('做法 A', C.K, -3.0, 1.4, 0, 1.6, 2, 0.5, 0.7), B = bx('做法 B', C.K, -0.2, 1.4, 0, 1.6, 2, 0.5, 0.7);
+  rod(V3(-2.0, 3.0, 0), V3(-3.0, 1.7, 0), EDGE, 0.04); rod(V3(-1.2, 3.0, 0), V3(-0.2, 1.7, 0), EDGE, 0.04);
+  await anim(tok, 500, () => {});
+  tint(B, C.G); glow(B, GREEN); tint(A, '#bdb2a0');
+  sayc('只要用亂數決定「下一步做什麼」', '就叫隨機演算法');
+  await step(tok);                                   // 0:55 e.g. randomized quicksort picks the pivot at random
+  fresh([0, 3.4, 10.5], [0, 2.5, 0]);
+  const QV = [5, 2, 8, 1, 9, 3, 7];
+  const qs = QV.map((v, i) => cube(v, C.K, [0.7, 0.7, 0.7], -3.6 + i * 1.2, 3.2, 0, 2));
+  const dice2 = icon('🎲', '', -5.6, 4.6);
+  await anim(tok, 600, () => {});
+  tint(qs[5], C.Y); glow(qs[5], GOLD);
+  hot('pivot（亂數挑到 3）', -3.6 + 5 * 1.2, 4.3);
+  sayc('例：randomized quicksort', '用亂數挑 pivot');
+  await anim(tok, 900, () => {});
+  let l = 0, r = 0;
+  for (let i = 0; i < QV.length; i++) {
+    if (i === 5) { move(qs[i], 0, 1.2, 0); continue; }
+    if (QV[i] < 3) { move(qs[i], -1.6 - (l++) * 1.0, 1.2, 0); tint(qs[i], C.B); }
+    else { move(qs[i], 1.4 + (r++) * 1.0, 1.2, 0); tint(qs[i], C.O); }
+    await anim(tok, 200, () => {});
+  }
+  note('< 3', -2.1, 0.4, 0.6); note('> 3', 2.9, 0.4, 0.6);
+  sayc('比 pivot 小的放左邊、大的放右邊', '不管輸入怎麼排，期望時間都是 O(n lg n)');
+  void alg; void dice; void dice2;
+}]);
+
+// 1:04 兩種類型
+FRAG.push(['rand-two-types', 'Las Vegas 與 Monte Carlo：哪個固定、哪個會變', async (tok) => {
+  fresh([0, 3.4, 10.5], [0, 2.6, 0]);
+  await step(tok);                                   // 1:04 two types
+  bx('Las Vegas', C.B, -3.6, 5.2, 0, 3.0, 2, 0.6, 0.9);
+  bx('Monte Carlo', C.O, 3.6, 5.2, 0, 3.0, 2, 0.6, 0.9);
+  sayc('隨機演算法分兩種', 'Las Vegas 與 Monte Carlo');
+  await step(tok);                                   // 1:10 always terminate with the correct answer
+  good('一定結束，答案一定正確 ✓', -3.6, 4.3);
+  sayc('Las Vegas：一定會結束', '而且答案一定正確');
+  await step(tok);                                   // 1:18 expected running time is finite (but varies)
+  const LV = [1.3, 3.4, 2.1];
+  for (let k = 0; k < 3; k++) {
+    const L = LV[k], y = 3.2 - k * 0.8;
+    const m = cube('', C.B, [1, 0.38, 0.5], -6.2, y, 0); m.scale.x = 0.01;
+    await anim(tok, 300 + L * 160, (u) => { m.scale.x = Math.max(0.01, L * u); m.position.x = -6.2 + m.scale.x / 2; });
+    good('✓', -6.2 + L + 0.35, y);
+  }
+  tag('時間不固定（期望值有限）', 'idx', -3.6, 0.7, 0.5);
+  sayc('跑多久不一定，每次都不一樣', '但「期望」執行時間是有限的');
+  await step(tok);                                   // 1:26 Monte Carlo: chance of an incorrect result
+  bad('有機會答錯 ✕', 3.6, 4.3);
+  sayc('Monte Carlo：有機會產生錯誤結果');
+  await step(tok);                                   // 1:31 but the running time is fixed
+  const res = ['✓', '✓', '✕'];
+  for (let k = 0; k < 3; k++) {
+    const y = 3.2 - k * 0.8;
+    const m = cube('', C.O, [1, 0.38, 0.5], 1.4, y, 0); m.scale.x = 0.01;
+    await anim(tok, 550, (u) => { m.scale.x = Math.max(0.01, 2.4 * u); m.position.x = 1.4 + m.scale.x / 2; });
+    (res[k] === '✓' ? good : bad)(res[k], 1.4 + 2.4 + 0.35, y);
+  }
+  tag('時間固定（每次一樣長）', 'idx', 3.6, 0.7, 0.5);
+  sayc('但執行時間是固定的', '每次都跑一樣久');
+  await step(tok);                                   // 1:33 recap
+  sayc('Las Vegas：時間會變，答案一定對', 'Monte Carlo：時間固定，答案可能錯');
+}]);
+
+// 1:52 例：Las Vegas 搜尋
+FRAG.push(['rand-lv-search', 'Las Vegas 搜尋：一直抽到 a 為止', async (tok) => {
+  fresh([0, 3.4, 10.5], [0, 2.6, 0]);
+  let cells = null, cd = null, ptr = null, cnt = null, nt = null, found = null;
+  await step(tok);                                   // 1:52 find a in an array of n elements
+  cells = rsArray();
+  sayc('問題：在 n 個元素的陣列 A 裡找 a', '這裡 n = 8');
+  await step(tok);                                   // 2:09 a is present somewhere in the array
+  nt = note('a 一定在陣列裡（只是不知道在哪）', -3.2, 2.7);
+  sayc('前提：a 一定在陣列裡', '但我們不知道在哪一格');
+  await step(tok);                                   // 2:25 while (true) randomly select an element
+  cd = code(LV_CODE, 3.9, 5.2, 0.5);
+  cd.hl(1);
+  ptr = hot('k = random', AX(0), 1.85);
+  sayc('while (true)：每一圈從 n 格裡隨機挑一格', '');
+  await step(tok);                                   // 2:35 compare with a; if found return true
+  remove(nt);
+  cnt = hd('第 0 圈', -3.2, 3.5);
+  let it = 0;
+  for (const i of [6, 1, 4]) {
+    it++; txt(cnt, '第 ' + it + ' 圈'); cd.hl(2);
+    const hit = await rsPick(tok, cells, ptr, i);
+    cd.hl(3); await anim(tok, 350, () => {});
+    if (hit) { cd.hl(4); found = good('A[4] 是 a → return true', -3.2, 2.7); }
+  }
+  sayc('挑到的跟 a 比，是 a 就 return true', '這次第 3 圈挑到 A[4]');
+  await step(tok);                                   // 2:50 while true = infinite loop
+  remove(found); rsHide(cells); cd.hl(1); it = 0;
+  for (const i of [2, 2, 7, 0, 4]) {
+    it++; txt(cnt, '再跑一次：第 ' + it + ' 圈'); cd.hl(2);
+    await rsPick(tok, cells, ptr, i, 1.0, 300);
+    await anim(tok, 250, () => {});
+  }
+  cd.hl(4);
+  note('同一格可能被重複挑到', 3.9, 1.6);
+  sayc('while (true) 是無窮迴圈：沒挑到就一直挑', '這次挑了 5 圈（A[2] 被挑了兩次）');
+  await step(tok);                                   // 3:13 iterations vary, arbitrarily large, but always true
+  remove(cnt); remove(ptr); rsHide(cells); cd.hl(-1);
+  const runs = [3, 5, 1, 14];
+  runs.forEach((k, j) => good('第 ' + (j + 1) + ' 次跑：' + k + ' 圈 → true ✓', -3.2, 5.3 - j * 0.65));
+  hot('平均要 n = 8 圈（期望值有限）', -3.2, 2.55);
+  sayc('圈數每次不同、可能任意大', '但只要停下來，答案一定是正確的 true');
+}]);
+
+// 3:21 例：Monte Carlo 搜尋
+FRAG.push(['rand-mc-search', 'Monte Carlo 搜尋：只抽 x 次', async (tok) => {
+  fresh([0, 3.4, 10.5], [0, 2.6, 0]);
+  const cells = rsArray();
+  let cd = null, ptr = null, cnt = null, fl = null, out = null;
+  await step(tok);                                   // 3:22 Monte Carlo: array, n, and a parameter x
+  cd = code(MC_CODE, 3.7, 5.6, 0.5);
+  cd.hl(0);
+  hd('x = 4（固定）', -3.2, 4.4);
+  sayc('Monte Carlo 版：多傳一個參數 x', '這裡 x = 4');
+  await step(tok);                                   // 3:31 i = 0, flag = false, while i < x
+  cd.hl(2);
+  fl = hd('flag = false', -3.2, 3.6);
+  cnt = hot('i = 0', -3.2, 2.85);
+  sayc('i = 0、flag = false，while (i < x)', 'x 固定 → 迴圈圈數固定');
+  ptr = hot('k = random', AX(0), 1.85);
+  await step(tok);                                   // 3:41 select, i++, if a found flag = true
+  let i = 0;
+  for (const k of [2, 4, 0, 6]) {
+    i++; cd.hl(3); txt(cnt, 'i = ' + i);
+    const hit = await rsPick(tok, cells, ptr, k);
+    cd.hl(4); await anim(tok, 250, () => {});
+    if (hit) { cd.hl(5); txt(fl, 'flag = true'); setCls(fl, 'good'); await anim(tok, 400, () => {}); }
+  }
+  cd.hl(6);
+  out = good('return true ✓', 3.7, 1.6);
+  sayc('第 2 圈挑到 a → flag = true', '跑滿 x = 4 圈，回傳 true（正確）');
+  await step(tok);                                   // 3:54 never picked a → return false although a is there
+  remove(out); rsHide(cells); txt(fl, 'flag = false'); setCls(fl, 'ptr'); i = 0;
+  for (const k of [1, 6, 3, 1]) {
+    i++; cd.hl(3); txt(cnt, 'i = ' + i);
+    await rsPick(tok, cells, ptr, k);
+    cd.hl(4); await anim(tok, 300, () => {});
+  }
+  cd.hl(6);
+  out = bad('return false ✕（a 明明在 A[4]）', 3.7, 1.6);
+  sayc('再跑一次：4 圈都沒挑到 a', 'flag 還是 false → 回傳 false，答錯了');
+  await step(tok);                                   // 4:22 fixed iterations, true or false
+  sayc('迭代次數固定，但結果可能對、可能錯', '沒挑到的機率 = (1 − 1/n)ˣ = (7/8)⁴ ≈ 0.59');
+}]);
+
+// 4:29 比較與如何選擇
+FRAG.push(['rand-lv-mc-choose', 'Las Vegas 還是 Monte Carlo：看重答案還是時間', async (tok) => {
+  fresh([0, 3.4, 10.5], [0, 2.6, 0]);
+  await step(tok);                                   // 4:33 Las Vegas: always correct, running time is a random variable
+  bx('Las Vegas', C.B, -3.6, 5.4, 0, 3.0, 2, 0.6, 0.9);
+  for (let k = 1; k <= 12; k++) {
+    const h = 0.15 + 3.0 * Math.pow(7 / 8, k - 1), x = -6.3 + (k - 1) * 0.42;
+    const m = cube('', C.B, [0.34, 1, 0.5], x, 0.01, 0); m.scale.y = 0.01;
+    await anim(tok, 110, (u) => { m.scale.y = Math.max(0.01, h * u); m.position.y = m.scale.y / 2; });
+  }
+  tag('1 圈', 'idx', -6.3, 0, 0.7); tag('12 圈 …', 'idx', -1.7, 0, 0.7);
+  good('答案永遠正確 ✓', -3.6, 4.5);
+  sayc('Las Vegas：一定輸出正確答案', '執行時間是一個隨機變數（圈數的分布）');
+  await step(tok);                                   // 4:41 Monte Carlo: time bounded by a function of n and x
+  bx('Monte Carlo', C.O, 3.6, 5.4, 0, 3.0, 2, 0.6, 0.9);
+  const m = cube('x 圈', C.O, [1, 0.5, 0.6], 1.2, 1.0, 0); m.scale.x = 0.01;
+  await anim(tok, 600, (u) => { m.scale.x = Math.max(0.01, 3.2 * u); m.position.x = 1.2 + m.scale.x / 2; });
+  hd('時間 ≤ f(n, x)：一定在時限內做完', 3.6, 2.0);
+  sayc('Monte Carlo：時間有上限', '可以用輸入大小 n 和參數 x 算出來');
+  await step(tok);                                   // 4:48 always a small probability of error
+  const pr = [['x = 4', '0.59'], ['x = 16', '0.12'], ['x = 40', '0.005']];
+  pr.forEach(([a, b], j) => tag(a + '：P(錯) ≈ ' + b, 'note', 3.6, 4.5 - j * 0.65));
+  sayc('但總有一個小機率會出錯', 'P(錯) = (1 − 1/n)ˣ，x 越大越小（n = 8）');
+  await step(tok);                                   // 4:59 correct output essential, time not important → Las Vegas
+  const c1 = bx('答案一定要對、時間不重要 → Las Vegas', C.B, -3.0, 0.3, 2.2, 5.6, 2, 0.5, 0.6);
+  glow(c1, GOLD);
+  sayc('正確答案是必要的、時間不重要', '→ 用 Las Vegas');
+  await step(tok);                                   // 5:06 time important, can bear some error → Monte Carlo
+  const c2 = bx('時間要緊、能容忍少量錯誤 → Monte Carlo', C.O, 3.0, 0.3, 2.2, 5.6, 2, 0.5, 0.6);
+  glow(c1, null); glow(c2, GOLD);
+  sayc('時間很重要、可以容忍一點錯', '→ Monte Carlo 是最好的選擇');
 }]);
   }
   // @@FRAGMENTS@@

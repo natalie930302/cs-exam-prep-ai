@@ -99,7 +99,7 @@
   },
   {
    "title": "作業 4 介紹：Decision Tree",
-   "scene": null,
+   "scene": "qa-decision-tree",
    "points": [
     {
      "text": "作業 4 的主角是機器學習裡的 Decision Tree：non-leaf node 放問題、leaf 放最後的決策。",
@@ -121,6 +121,22 @@
      "text": "建樹是 top-down recursive；印成程式則是某一種 tree traversal。",
      "t": 1400
     }
+   ],
+   "cues": [
+    949.03,
+    1024.45,
+    1141,
+    1197.78,
+    1240,
+    1400
+   ],
+   "explain": [
+    "作業 4 的主角是機器學習裡的 decision tree。non-leaf node（包括 root）放的是問題，例如「多雲嗎？」，不同答案走左邊或右邊；leaf 放的是最後的決策，例如「出門」。",
+    "一棵 decision tree 就對應到一長串 if-then-else 的程式。作業要先建出樹，再把樹輸出成對應的 if-then-else 程式碼。",
+    "怎麼建樹？像切西瓜：找一刀把資料切成兩半，左邊一半遞迴建出左 subtree，右邊一半遞迴建出右 subtree，最後用 root（就是這一刀）連起來。這正是 tree 的遞迴定義。",
+    "那一刀切在哪裡？看 confusion：希望切下去之後，答案是 Y 的儘量集中在一邊，答案是 N 的儘量集中在另一邊。混在一起的就是不好的切法。",
+    "遞迴一定要有 terminating condition：如果再也切不下去（例如資料全都是同一種答案），就停下來回傳一個 leaf。",
+    "所以建樹是 top-down 的遞迴；要把樹印成程式時，用的是某一種 tree traversal，拜訪每個 node，把內容印成 if-then-else。"
    ]
   },
   {
@@ -1510,7 +1526,7 @@
   },
   {
    "title": "Q&A 與閒聊",
-   "scene": null,
+   "scene": "qa-insert-cost",
    "points": [
     {
      "text": "紅黑樹還沒那麼快教到。",
@@ -1524,6 +1540,16 @@
      "text": "Ordered array 的 insert 不是 log n：binary search 找到位置後，還要把後面推開。",
      "t": 8690
     }
+   ],
+   "cues": [
+    8613.12,
+    8677.35,
+    8690.06
+   ],
+   "explain": [
+    "同學問 insert 的時間怎麼算。不管有沒有重複，insert 主要的力氣花在：array 要把其他東西擠開，ordered linked list 要先找到該插入的位置。",
+    "所以討論時常把 insert 想成兩段：先 get（用 key 去查），發現沒有之後再把它放進去；查的力氣就跟 get 一樣。",
+    "ordered array 的 insert 不是 log n：binary search 找到位置只要 O(log n)，但還要把後面的元素一個一個往後推，最壞要 O(n)。"
    ]
   },
   {

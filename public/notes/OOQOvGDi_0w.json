@@ -283,15 +283,15 @@
    "why": "Erdős number = collaboration graph 上到 Erdős 的最短距離。"
   },
   {
-   "q": "Paul Erdős 本人的 Erdős number 是？",
+   "q": "從起點做 BFS 建出的 tree 中，一個端點所在的 level 代表什麼？",
    "opts": [
-    "0",
-    "1",
-    "無定義",
-    "512"
+    "它到起點的最短 path 邊數",
+    "它被加入 tree 的先後順序",
+    "它在原圖中的 degree",
+    "它在 DFS 中被 backtrack 的次數"
    ],
-   "ans": "0",
-   "why": "他是 BFS 的起點（level 0）。"
+   "ans": "它到起點的最短 path 邊數",
+   "why": "BFS 一層一層往外擴，第 k 層的端點離起點的最短距離恰為 k，例如 collaboration graph 上的 Erdős number。"
   },
   {
    "q": "A–J 那張圖（10 個點）的 spanning tree 有幾條邊？",

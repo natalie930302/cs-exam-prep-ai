@@ -11396,6 +11396,172 @@ FRAG.push(['rblin-tree-family', '樹的家族：AVL、2-3、2-3-4、紅黑、AA�
   say('重要的概念', '針對不同的儲存媒介，設計不同的資料結構');
 }]);
   }
+  // ═══ qa-ds4.js（課堂 Q&A 段落的場景） ═══
+  {
+const { V3, fresh, tag, cube, kill, fly, move, glow, tint, txt, line, arrow, ghostBox, prop, step, GOLD, GREEN } = K;
+const RBR = '#d64545', RBB = '#2b2b2b';
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const bubble = (t, x, y, z = 0.4) => tag(t, 'say', x, y, z);
+const pkt = (t, x, y, z = 0.5) => tag(t, 'pkt', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const wipe = (arr) => { arr.forEach(kill); arr.length = 0; };
+// a multi-key node: keys side by side, returns the key cubes
+function knode(keys, x, y, color = '#4b9ee2', w = 0.7) { return keys.map((k, i) => cube(k, color, [w, 0.6, 0.7], x + (i - (keys.length - 1) / 2) * (w + 0.05), y, 0)); }
+
+// ── cH8nH0Enjhw：4-node 為什麼只能放 3 個 ──
+FRAG.push(['qa-234-4node', '4-node 只能放 3 個 key（黑 + 兩紅）', async (tok) => {
+  fresh([0, 3.6, 12], [0, 2.2, 0]);
+  const S = [];
+  await step(tok);                                   // 4-node：4 個小孩、3 個東西
+  S.push(...knode([10, 20, 30], -3.4, 3.4));
+  for (let i = 0; i < 4; i++) S.push(line(-3.4 - 1.1 + i * 0.75, 3.1, -3.4 - 1.6 + i * 1.05, 2.0));
+  S.push(tag('4-node：4 個小孩、裡面 3 個 key', 'ptr', -3.4, 4.4));
+  say('4-node 的意思是有 4 個小孩的 node', '裡面只能放 3 個東西');
+  await step(tok);                                   // 對應紅黑樹：一黑兩紅
+  S.push(arrow(V3(-1.6, 3.4, 0), V3(0.8, 3.4, 0)));
+  const b = cube(20, RBB, [0.7, 0.7, 0.7], 3.2, 3.6, 0), r1 = cube(10, RBR, [0.7, 0.7, 0.7], 2.0, 2.3, 0), r2 = cube(30, RBR, [0.7, 0.7, 0.7], 4.4, 2.3, 0);
+  S.push(b, r1, r2, line(3.2, 3.25, 2.0, 2.65), line(3.2, 3.25, 4.4, 2.65));
+  S.push(tag('紅黑樹：一個黑的帶兩個紅的', 'ptr', 3.2, 5.3));
+  say('放了 3 個東西的 4-node', '對應到紅黑樹：一個黑的、兩個紅的已經串好');
+  await step(tok);                                   // 再放一個紅的就不行
+  const n4 = cube(25, '#f0a8a8', [0.7, 0.6, 0.7], -0.6, 4.6, 0); S.push(n4);
+  const r3 = cube(25, RBR, [0.7, 0.7, 0.7], 3.8, 1.0, 0); S.push(r3, line(4.4, 1.95, 3.8, 1.35));
+  S.push(bad('第 4 個 key：4-node 放不下', -3.4, 1.0), bad('紅下面再接紅：不行', 3.2, -0.1));
+  say('再塞一個紅的進去就不行了', '所以 4-node 要先 split（紅黑樹要先調整）');
+}]);
+
+// ── gqphGLSGyQ4：recolor 往上傳遞 = fuse 往上一層做 removal ──
+FRAG.push(['qa-rb-recolor-up', 'recolor 往上傳遞 = fuse 後在上一層做 removal', async (tok) => {
+  fresh([0, 3.8, 12.5], [0, 2.4, 0]);
+  const S = [];
+  await step(tok);                                   // 同學問：recolor 向上傳遞怎麼理解
+  const root = knode([40], 0, 4.6); const L = knode([20], -2.6, 3.2); const R = knode([60], 2.6, 3.2);
+  const LL = knode([10], -3.8, 1.8), LR = knode([30], -1.4, 1.8), RL = knode([50], 1.4, 1.8), RR = knode([70], 3.8, 1.8);
+  S.push(...root, ...L, ...R, ...LL, ...LR, ...RL, ...RR);
+  [[0, 4.3, -2.6, 3.5], [0, 4.3, 2.6, 3.5], [-2.6, 2.9, -3.8, 2.1], [-2.6, 2.9, -1.4, 2.1], [2.6, 2.9, 1.4, 2.1], [2.6, 2.9, 3.8, 2.1]].forEach(([a, b, c, d]) => S.push(line(a, b, c, d)));
+  S.push(bubble('recolor 往上傳遞要怎麼理解？', -3.6, 5.6));
+  say('同學問：紅黑樹 removal 的 recolor 往上傳', '要怎麼理解？先看 2-3-4 樹');
+  await step(tok);                                   // fuse：這層移完了，從上面請一個下來
+  fly(LL[0]);
+  await beat(tok, 900);
+  move(L[0], -1.75, 1.8); tint(L[0], '#f0a030'); move(LR[0], -1.0, 1.8);
+  const gh = ghostBox('#e06666', 0.8, 0.6, 0.7); gh.position.set(-2.6, 3.2, 0); S.push(gh);
+  S.push(bad('左邊的 node 空了 → 上一層也要做 removal', 0, 0.7));
+  S.push(good('fuse：20 從上面請下來，和 30 合併', 0, 0.0));
+  say('刪掉 10，兄弟借不到 → fuse', '從上面請一個 key 下來＝在上面那一層執行 removal');
+  await step(tok);                                   // recolor 就是在上一層做同樣的事
+  glow(L[0], null);
+  S.push(pkt('紅黑樹：double black 往上傳', 1.8, 5.6));
+  glow(root[0], GOLD);
+  S.push(note('recolor 往上傳 = fuse 後在上一層做 removal', 0, -0.8));
+  say('上面那一層要執行 removal', '在紅黑樹裡就是在上面那裡執行 recolor：一模一樣的事');
+}]);
+
+// ── IWzYoXKaRIc：題外話 B-tree ──
+FRAG.push(['qa-btree-fanout', 'B-tree：分支很多、樹很矮', async (tok) => {
+  fresh([0, 3.8, 12.5], [0, 2.4, 0]);
+  const S = [];
+  await step(tok);                                   // 有一種樹叫 B-tree
+  S.push(cube('BST', '#4b9ee2', [0.9, 0.6, 0.7], -4.2, 4.2, 0), line(-4.2, 3.9, -4.9, 2.9), line(-4.2, 3.9, -3.5, 2.9));
+  S.push(tag('2 個 children', 'idx', -4.2, 2.4));
+  const bn = cube('B-tree node', '#2fc092', [4.6, 0.6, 0.7], 1.6, 4.2, 0); S.push(bn);
+  for (let i = 0; i < 12; i++) S.push(line(1.6 - 2.2 + i * 0.4, 3.9, 1.6 - 3.6 + i * 0.65, 2.9));
+  S.push(tag('上千個 children，key 保持排序', 'idx', 1.6, 2.4));
+  say('每個 node 很多 children 會怎樣？', '真的有這種樹：B-tree');
+  await step(tok);                                   // 用在磁碟上的資料庫
+  const dk = prop('disk', -4.6, 0, 0.6, 1.0); S.push(dk);
+  S.push(arrow(V3(-3.8, 0.8, 0.6), V3(-0.4, 3.6, 0), 0xa8730f));
+  S.push(bad('每讀一個 node = 一次很貴的 disk access', 1.4, 1.2));
+  say('B-tree 用在磁碟上的資料庫', '每讀一個 node 都要一次 disk access，很貴');
+  await step(tok);                                   // 讀幾百 bytes 和幾 KB 差不多
+  S.push(good('讀幾 bytes 和讀幾 KB 成本差不多 → node 做大', 1.4, 0.4));
+  await K.anim(tok, 900, (u) => bn.scale.set(1 + u * 0.3, 1 + u * 0.4, 1));
+  say('既然都要讀一次，node 要多大都可以', '讀幾百 bytes 跟幾 KB 的成本差不多');
+  await step(tok);                                   // 仍然是 log n
+  wipe(S);
+  S.push(line(-5, 0, 1, 0));
+  const b2 = cube('', '#4b9ee2', [1.0, 3.0, 0.8], -3.6, 1.5, 0), b1k = cube('', '#2fc092', [1.0, 0.3, 0.8], -1.2, 0.15, 0);
+  S.push(b2, b1k, tag('binary：log₂(10⁹) ≈ 30 層', 'idx', -3.6, 3.4), tag('B-tree：log₁₀₀₀(10⁹) = 3 層', 'idx', -1.0, 0.8));
+  S.push(note('children 數是常數 → 高度還是 O(log n)', 3.4, 3.0));
+  say('只要 children 的數量是常數', '高度一樣是 log n，只是底數大、樹非常矮');
+  await step(tok);                                   // 不用旋轉，用別的方法平衡
+  S.push(bad('1000 個 children 的旋轉？太複雜', 3.4, 1.8), good('B-tree 用 split / merge 保持平衡', 3.4, 1.0));
+  say('B-tree 不用旋轉', '它用別的方法（node 分裂、合併）保持平衡');
+}]);
+
+// ── Lzr5-m7ap-8：Open Addressing 要連 key 一起存 ──
+FRAG.push(['qa-oa-store-key', 'Open Addressing：table 裡要把 key 一起存', async (tok) => {
+  fresh([0, 3.8, 12.5], [0, 2.2, 0]);
+  const S = [];
+  const X = (i) => -4.55 + i * 1.3;
+  const slots = []; for (let i = 0; i < 8; i++) { slots.push(cube('', '#f6deb0', [1.15, 0.5, 0.9], X(i), 0.6, 0)); S.push(tag(String(i), 'idx', X(i), -0.1)); }
+  S.push(...slots);
+  await step(tok);                                   // 下次怎麼確定拿到的是自己的？
+  const kw = cube('5', '#4b9ee2', [0.9, 0.5, 0.7], X(3), 1.2, 0, 2); S.push(kw);
+  const p1 = pkt('h(kiwi) = 3', X(3), 2.5); S.push(p1);
+  await beat(tok, 900);
+  const ap = cube('7', '#2fc092', [0.9, 0.5, 0.7], X(4), 1.2, 0, 2); S.push(ap);
+  const p2 = pkt('h(apple) = 3 → 被占了，放 4', X(4) + 1.2, 3.3); S.push(p2);
+  S.push(bubble('下次拿 apple，怎麼知道 4 號是我的？', -1.4, 4.6));
+  say('collision 時放到附近的格子', '下次取用，怎麼確定拿到的是自己要的那筆？');
+  await step(tok);                                   // 把 key 也存起來
+  K.relabel(kw, 'kiwi:5'); K.relabel(ap, 'apple:7');
+  S.push(good('table 裡存 (key, value)，不能只存 value', 0, 5.4));
+  say('資料可能不在 key 原本對應的位置', '所以一定要把 key 和 value 一起存');
+  await step(tok);                                   // 同一格可能放不同 key 的東西
+  kill(p1); kill(p2);
+  glow(kw, GOLD); const b3 = bad('3 號：kiwi ≠ apple', X(3) - 1.2, 2.3); S.push(b3);
+  await beat(tok, 1200);
+  glow(kw, null); glow(ap, GREEN); const g4 = good('4 號：apple ✓', X(4) + 1.4, 2.3); S.push(g4);
+  say('拿著 key 照順序一格一格找，邊找邊比對 key', '同一格可能放著不同 key 的東西');
+  await step(tok);                                   // 想成 implicit linked list
+  kill(b3); kill(g4); glow(ap, null);
+  S.push(note('就像 array 隱含一棵 complete binary tree：位置串起來，不寫 link', 0, -0.9));
+  say('可以把 Open Addressing 想成', '在原來的空間裡串了好多條 implicit linked list');
+  await step(tok);                                   // 每個 key 一串
+  const hop = (a, b, c) => S.push(arrow(V3(X(a), 1.0, 0.5), V3(X(b), 1.0, 0.5), c));
+  hop(1, 3, 0x4b9ee2); hop(3, 7, 0x4b9ee2);
+  hop(2, 7, 0x9b7ef4);
+  S.push(tag('1 → 3 → 7', 'ptr', X(2), 2.8, 0.5), tag('2 → 7', 'ptr', X(6), 2.8, 0.5));
+  say('每個位置有自己要找的順序（一條鏈）', '7 號可能屬於不同的鏈 → 要靠存下來的 key 比對');
+}]);
+
+// ── Lzr5-m7ap-8：Skip List 小結 ──
+FRAG.push(['qa-skiplist-recap', 'Skip List 小結：快慢車 + randomization', async (tok) => {
+  fresh([0, 3.6, 12.5], [0, 2.0, 0]);
+  const S = [];
+  const keys = [3, 7, 12, 19, 25, 31, 40, 48];
+  const lv = { 7: 1, 19: 2, 31: 1, 48: 2 };
+  const X = (i) => -4.2 + i * 1.3, Y = (l) => 0.6 + l * 1.1;
+  const cells = {};
+  for (let l = 0; l <= 2; l++) {
+    S.push(cube(l === 0 ? '−∞' : '', '#6e5f49', [0.8, 0.5, 0.6], -5.6, Y(l), 0));
+    let prev = -5.6;
+    keys.forEach((k, i) => { if ((lv[k] || 0) >= l) { const c = cube(k, ['#4b9ee2', '#9b7ef4', '#2fc092'][l], [0.8, 0.5, 0.6], X(i), Y(l), 0); cells[l + ':' + k] = c; S.push(c, line(prev + 0.4, Y(l), X(i) - 0.4, Y(l))); prev = X(i); } });
+  }
+  S.push(tag('快車', 'idx', 6.1, Y(2)), tag('慢車', 'idx', 6.1, Y(0)));
+  await step(tok);                                   // search 靠快慢車
+  say('search：先坐快車，過頭了就下來換慢車', '像 binary search 一樣跳著找');
+  for (const id of ['2:19', '1:19', '0:19', '0:25']) { glow(cells[id], GOLD); await beat(tok, 450); }
+  const g25 = good('找 25：19 → 下一層 → 25', 0, 4.4); S.push(g25);
+  await step(tok);                                   // insertion 靠 randomization
+  Object.values(cells).forEach((c) => glow(c, null)); kill(g25);
+  const nw = cube(28, '#f0a030', [0.8, 0.5, 0.6], X(4) + 0.65, -0.5, 0, 0); S.push(nw);
+  S.push(pkt('丟銅板：正面 → 再長高一層', X(4) + 0.65, 3.9));
+  say('insertion：新的 node 要長幾層', '靠丟銅板決定（randomization）');
+  await step(tok);                                   // 很好實作
+  S.push(note('有 linked list library 就能寫：約 2 倍記憶體換快速 map', 0, 5.0));
+  say('這樣很隨便？其實很好實作', '有 linked list 的 library 就能快速做出一個 map');
+  await step(tok);                                   // randomization 之美
+  S.push(tag('之後還會看到：QuickSort 也靠 randomization', 'idx', 0, -1.4));
+  say('the beauty of randomization', '未來在演算法設計裡是很有用的工具');
+  await step(tok);                                   // 畫起來很像一棵 tree
+  [['2:19', '1:7'], ['2:19', '1:31'], ['2:48', '1:31']].forEach(([a, b]) => { const p = cells[a].position, q = cells[b].position; S.push(arrow(V3(p.x, p.y - 0.3, 0.4), V3(q.x, q.y + 0.3, 0.4), 0xa8730f)); });
+  S.push(bubble('這樣畫很像一棵 tree！', 3.8, 4.2));
+  say('同學說：這樣畫很像一棵 tree', '這正是接下來要講的：skip list 跟 tree 的關係');
+}]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

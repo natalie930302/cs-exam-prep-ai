@@ -448,7 +448,7 @@
   },
   {
    "title": "Q&A：this、效能與回傳 reference",
-   "scene": null,
+   "scene": "qa-cpp-this",
    "points": [
     {
      "text": "入門上可把 class 看成 struct 加上相關的 function（另外還有權限控制）。",
@@ -466,6 +466,20 @@
      "text": "operator= 回傳 reference：避免多拷貝一份物件、避免多餘的記憶體。",
      "t": 2940
     }
+   ],
+   "cues": [
+    2803,
+    2855,
+    2895,
+    2956,
+    3008.29
+   ],
+   "explain": [
+    "同學問：class 是不是 C 的 structure 加上 function？入門可以這樣想：把資料（x、y）和跟它有關的 function 綁在一起。另外 class 還有權限控制（private / public），那是更核心的物件導向內容。",
+    "this 是什麼？一個物件的變數放在記憶體的某個位置，系統偷偷把這個位置藏在一個叫 this 的指標裡。所以 this 指向「目前這個物件」在記憶體中的位置。",
+    "operator overloading 會比一般 function 慢嗎？幾乎不會。編譯器會把 c = a + b 翻譯成對應的 function 呼叫 operator+(a, b)，執行速度差不多；差別在寫程式的速度，code 更乾淨。",
+    "為什麼 operator= 要回傳 reference？如果回傳的不是 reference，回傳的東西會再複製一份給接收方，手上就有兩份，多花時間，也可能多出沒人 free 的記憶體。",
+    "回傳 reference 就沒有複製的動作：直接把原來那一份的位置交出去。省下複製的時間，也不會有多餘（redundant）的記憶體。"
    ]
   },
   {
@@ -584,7 +598,7 @@
   },
   {
    "title": "Q&A：STL、auto 與 operator",
-   "scene": null,
+   "scene": "qa-cpp-sort",
    "points": [
     {
      "text": "作業沒有寫不能用 STL，就可以用。",
@@ -602,11 +616,21 @@
      "text": "reference 可以看成 pointer 的一種比較安全的包裝。",
      "t": 3914
     }
+   ],
+   "cues": [
+    3859.35,
+    3893.35,
+    3913.14
+   ],
+   "explain": [
+    "用 STL 的 sort 排序自己定義的型別（例如 Student）時，sort 至少要知道兩個東西誰比較小，所以這個型別一定要有比較大小的 operator。",
+    "template 的程式碼由編譯器把 T 換成你的型別。換完之後如果找不到 operator< 的定義，就會 compile 不過；寫好 bool operator<(…) 才能 sort。同理，要做加總就要有 operator+。",
+    "reference 很像 C 的 pointer 嗎？可以說是，但語意上不同：pointer 可以改指別的地方、也可能是 NULL；reference 是變數的別名，一定綁著那個變數。可以把 reference 看成 pointer 一種比較安全的包裝。"
    ]
   },
   {
    "title": "下課與 Q&A：class 預設權限、測資",
-   "scene": null,
+   "scene": "qa-cpp-access",
    "points": [
     {
      "text": "C++ 部分到此，下課休息約 10 分鐘。",
@@ -628,6 +652,16 @@
      "text": "private / public 是權限控制：某些程式不能看到或改動某些資料。",
      "t": 4979
     }
+   ],
+   "cues": [
+    4696,
+    4709.75,
+    4978.49
+   ],
+   "explain": [
+    "在 C++ 裡 class 和 struct 幾乎一樣，差別是預設權限：class 預設是 private，struct 預設是 public。",
+    "所以 C++ 的 struct 也可以像 class 一樣寫 function；C 的 struct 只能宣告資料型態，不能寫 function。",
+    "private / public 是權限控制：外面的程式不能看到、也不能改 private 的資料，只能透過 public 的 function 來操作。"
    ]
   },
   {
@@ -1341,7 +1375,7 @@
   },
   {
    "title": "Q&A：row-major 與 column-major",
-   "scene": null,
+   "scene": "qa-arr-rowmajor",
    "points": [
     {
      "text": "array 較小時差距較小；大規模資料才看得出影響。",
@@ -1360,7 +1394,19 @@
      "t": 9173
     }
    ],
-   "trap": "補充：C / C++ 是 row-major；Fortran、MATLAB 是 column-major。"
+   "trap": "補充：C / C++ 是 row-major；Fortran、MATLAB 是 column-major。",
+   "cues": [
+    9030,
+    9079.75,
+    9151.18,
+    9173
+   ],
+   "explain": [
+    "剛才的實驗：2D array 在記憶體裡是一整塊，row sum 照記憶體順序連續走，column sum 每次要跳一整列。資料小的時候可能比不出差別，資料很大時，因為 cache 的關係差距才會明顯。",
+    "cache 裡的東西會存多久，要問計算機結構和 OS 的老師；大致上別的程式用到 cache 就可能把你的東西洗掉。而且 cache 只是影響時間的其中一個因素，要做到時間完全一樣很難。",
+    "剛才測的是 one block：C 原生的 2D array 會配置成一整塊連續記憶體。另一種是 array of arrays：先有一排指標，每一列各自是一塊，可能散在不同地方，可以自己測測看有什麼不同。",
+    "怎麼知道語言用 row-major 還是 column-major？這是語言特性，要去查。C 配置 one block 時用 row-major（一列一列放）；當代語言多半是 row-major，有些傳統語言（例如 Fortran）因為歷史原因用 column-major（一行一行放）。"
+   ]
   },
   {
    "title": "Ordered array",

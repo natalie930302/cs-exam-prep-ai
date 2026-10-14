@@ -828,7 +828,7 @@
   },
   {
    "title": "題外話：B-tree",
-   "scene": null,
+   "scene": "qa-btree-fanout",
    "points": [
     {
      "text": "學生問每個節點 4 個子會怎樣？有一種 B-tree，fanout 很大。",
@@ -842,6 +842,20 @@
      "text": "只要子節點數是常數，高度仍是 log n；B-tree 不用旋轉，平衡方式不同。",
      "t": 2381
     }
+   ],
+   "cues": [
+    2331.64,
+    2345,
+    2360,
+    2379,
+    2403
+   ],
+   "explain": [
+    "學生問：如果每個 node 有很多 children 會怎樣？真的有這種樹，叫 B-tree，每個 node 可以有上千個 children，裡面的 key 一樣保持排序。",
+    "B-tree 用在放在磁碟上的資料庫。每讀一個 node 都要做一次 disk access，非常昂貴，所以要讓樹的高度盡量小。",
+    "既然都要做一次 disk access，從磁碟讀幾百 bytes 和讀幾 KB 的成本差不多，所以 node 做大一點、一次多讀一些 key 比較划算。",
+    "只要 children 的數量是常數，高度還是 O(log n)，只是底數很大：10⁹ 筆資料，binary tree 約 30 層，每個 node 1000 個 children 的 B-tree 只要 3 層。",
+    "B-tree 不用旋轉（1000 個 children 的旋轉會複雜到不合理），它用別的方法保持平衡：node 滿了就 split、太空就跟兄弟借或 merge（第 9 章會詳細講）。"
    ]
   },
   {

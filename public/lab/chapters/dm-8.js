@@ -11092,6 +11092,298 @@ scene('g8g-strong', '有向圖：強連通與弱連通', [
     cap('弱連通：把方向拿掉，當成無向圖', '如果連在一起，就叫 weakly connected');
   },
 ]);
+
+// ════════ Wi8IvnlMNxs（Math at Andrews：Cayley's Tree Theorem、Prüfer code） ════════
+// 例子全照影片：3 個頂點 3 棵、4 個頂點 4（星形）+ 12（路徑形 24 ÷ 2）= 16 棵、6 個頂點的樹
+// （邊 1–3、1–6、1–2、2–4、2–5）的 Prüfer code = 1 2 2 1。所有數目都用 spanningTrees(Kₙ) 列舉驗算、打 ✓。
+const NUMG = (P, es) => parseG(P, es);
+const KN = (n, R = 1.1) => { const names = Array.from({ length: n }, (_, i) => String(i + 1)); const es = []; names.forEach((a, i) => names.slice(i + 1).forEach((b) => es.push(a + '-' + b))); return parseG(ringP(names, R), es.join(' ')); };
+const sameEdges = (A, B) => { const k = (G) => G.E.map((e) => [e.u, e.v].sort().join('|')).sort().join(' '); return k(A) === k(B); };
+const boxLbl = (gv, n, t) => { const l = lab.label(String(t), 'val'); gv.vm[n].add(l); return l; };
+// Prüfer code: repeatedly cut the smallest-numbered leaf, record its neighbour
+function pruferOf(G) {
+  const A = Object.fromEntries(G.V.map((v) => [v, new Set()]));
+  G.E.forEach((e) => { A[e.u].add(e.v); A[e.v].add(e.u); });
+  const out = [];
+  for (let k = 0; k < G.V.length - 2; k++) {
+    const leaves = Object.keys(A).filter((v) => A[v].size === 1).sort((a, b) => a - b);
+    const leaf = leaves[0], nb = [...A[leaf]][0];
+    out.push({ leaves, leaf, nb });
+    A[nb].delete(leaf); delete A[leaf];
+  }
+  return out;
+}
+// …and back: code → edges
+function pruferDecode(code, n) {
+  const deg = {}; for (let v = 1; v <= n; v++) deg[v] = 1; code.forEach((a) => deg[a]++);
+  const E = [];
+  code.forEach((a) => { const leaf = Object.keys(deg).map(Number).filter((v) => deg[v] === 1).sort((x, y) => x - y)[0]; E.push([leaf, a]); deg[leaf]--; deg[a]--; });
+  const last = Object.keys(deg).map(Number).filter((v) => deg[v] === 1); E.push(last);
+  return E.map(([u, v]) => [String(u), String(v)]);
+}
+const PT6 = NUMG({ 1: [-1, 0], 2: [1.2, 0], 3: [-2.4, -1.3], 6: [-2.4, 1.3], 4: [2.6, -1.3], 5: [2.6, 1.3] }, '1-3 1-6 1-2 2-4 2-5');
+
+scene('g8w-cay-3', '三個頂點：同構的樹 vs. 標號的樹', [
+  async (tok, S) => {
+    const shapes = [
+      NUMG({ a: [-1, -0.6], b: [0, 0.6], c: [1, -0.6] }, 'a-b b-c'),
+      NUMG({ a: [-1, 0.6], b: [0, -0.6], c: [1, 0.6] }, 'a-b b-c'),
+      NUMG({ a: [-1.2, 0], b: [0, 0], c: [1.2, 0] }, 'a-b b-c'),
+    ];
+    S.gs = shapes.map((G, i) => drawGraph(G, { s: 1, ox: -4 + i * 4, oz: -0.8, noName: true }));
+    ['V 字', '倒 V', '一直線'].forEach((t, i) => tag(t, 'idx', -4 + i * 4, 0.3, 0.9));
+    cap('三個頂點的樹：V 字、倒 V、一直線', '看起來不一樣');
+  },
+  async (tok, S) => {
+    S.gs.forEach((gv) => { const d = degs(gv.G); tag('degree ' + ['a', 'b', 'c'].map((v) => d[v]).join('–'), 'ptr alt', gv.pos('b').x, 0.3, 1.7); });
+    tag('葉–中心–葉：都同構（isomorphic）', 'good', 0, 0.3, 2.7);
+    cap('其實都一樣：葉子連到 degree 2 的點再連到葉子', '叫同構（isomorphic）');
+  },
+  async (tok, S) => {
+    fresh(...GCAM);
+    drawGraph(NUMG({ 1: [-1.1, 0], 2: [0, 0], 3: [1.1, 0] }, '1-2 2-3'), { s: 0.8, ox: -5.1, oz: -0.6 });
+    tag('=', 'ptr', -3.6, 0.3, -0.6);
+    drawGraph(NUMG({ 3: [-1.1, 0.5], 2: [0, -0.6], 1: [1.1, 0.5] }, '3-2 2-1'), { s: 0.8, ox: -2.1, oz: -0.6 });
+    tag('中心是 2（同一棵）', 'ptr alt', -3.6, 0.3, 1.0);
+    cap('把頂點標上 1、2、3：labeled tree', '兩種畫法的中心都是 2，記錄的資訊一樣');
+  },
+  async (tok, S) => {
+    drawGraph(NUMG({ 2: [-1.1, 0], 1: [0, 0], 3: [1.1, 0] }, '2-1 1-3'), { s: 0.8, ox: 1.3, oz: -0.6 });
+    tag('中心是 1', 'ptr alt', 1.3, 0.3, 1.0);
+    await wt(tok, 900);
+    drawGraph(NUMG({ 1: [-1.1, 0], 3: [0, 0], 2: [1.1, 0] }, '1-3 3-2'), { s: 0.8, ox: 4.9, oz: -0.6 });
+    tag('中心是 3', 'ptr alt', 4.9, 0.3, 1.0);
+    cap('中心換成 1 或 3，就是不同的樹', '只差在中間那個點是誰');
+  },
+  async (tok, S) => {
+    const n = spanningTrees(KN(3)).length;
+    tag('3 個頂點：共 ' + n + ' 棵 labeled tree' + (n === 3 ? ' ✓' : ' ✗'), 'good', 0, 0.3, 2.5);
+    cap('三個頂點的 labeled tree 共 3 棵', '中心可以是 1、2、3');
+  },
+]);
+
+scene('g8w-cay-4', '四個頂點：數出 16 棵', [
+  async (tok, S) => {
+    S.U = drawGraph(NUMG({ a: [-1, -0.8], b: [-1, 0.7], c: [1, 0.7], d: [1, -0.8] }, 'a-b b-c c-d'), { s: 1, ox: -3.4, oz: -0.6, noName: true });
+    S.T = drawGraph(NUMG({ c: [0, 0], a: [0, -1.2], b: [-1.1, 0.7], d: [1.1, 0.7] }, 'c-a c-b c-d'), { s: 1, ox: 3.4, oz: -0.6, noName: true });
+    tag('U 形（路徑形）', 'idx', -3.4, 0.3, 1.4); tag('星形', 'idx', 3.4, 0.3, 1.4);
+    cap('四個頂點的樹只有兩種形狀', 'U 形（路徑）或一點連到另外三點');
+  },
+  async (tok, S) => {
+    [S.U, S.T].forEach((gv) => { const d = degs(gv.G); gv.G.V.forEach((v) => { const p = gv.pos(v); tag(String(d[v]), d[v] === 3 ? 'ptr alt' : 'ptr', p.x + 0.55, p.y + 0.6, p.z - 0.45); }); });
+    tag('degree 1、2、2、1', 'ptr', -3.4, 0.3, 2.3); tag('有一個 degree 3', 'ptr alt', 3.4, 0.3, 2.3);
+    cap('兩種本質上不同', '一個是 1、2、2、1，一個有 degree 3 的點');
+  },
+  async (tok, S) => {
+    fresh(...GCAM);
+    [1, 2, 3, 4].forEach((c, i) => {
+      const L = [1, 2, 3, 4].filter((x) => x !== c);
+      const P = { [c]: [0, 0], [L[0]]: [0, -1.2], [L[1]]: [-1.1, 0.7], [L[2]]: [1.1, 0.7] };
+      drawGraph(NUMG(P, L.map((x) => c + '-' + x).join(' ')), { s: 0.62, ox: -5 + i * 3.33, oz: -1.4 });
+      tag('中心 ' + c, 'ptr alt', -5 + i * 3.33, 0.3, -0.2);
+    });
+    S.st = tag('葉子怎麼標都一樣，只看中心 → 星形 4 種', 'good', 0, 0.3, 1.0);
+    cap('星形：只看 degree 3 的中心標什麼', '1、2、3、4 → 4 種');
+  },
+  async (tok, S) => {
+    S.P = drawGraph(NUMG({ a: [-3, 0], b: [-1, 0], c: [1, 0], d: [3, 0] }, 'a-b b-c c-d'), { s: 1, ox: 0, oz: 2.2, noName: true });
+    const lab4 = ['2', '1', '3', '4'], ch = [4, 3, 2, 1];
+    for (let i = 0; i < 4; i++) {
+      const n = 'abcd'[i]; boxLbl(S.P, n, lab4[i]); vcol(S.P, n, COL.vis);
+      tag(ch[i] + ' 種', 'idx', S.P.pos(n).x, 0.3, 3.0);
+      await wt(tok, 650);
+    }
+    S.prod = tag('路徑形：4 × 3 × 2 × 1 = 24 種排法？', 'ptr alt', 0, 0.3, 3.7);
+    cap('路徑形：第一個點 4 種、下一個 3 種、再 2 種', '4 × 3 × 2 = 24 種？');
+  },
+  async (tok, S) => {
+    const A = NUMG({ 2: [0, 0], 1: [1, 0], 3: [2, 0], 4: [3, 0] }, '2-1 1-3 3-4');
+    const B = NUMG({ 4: [0, 0], 3: [1, 0], 1: [2, 0], 2: [3, 0] }, '4-3 3-1 1-2');
+    const same = sameEdges(A, B);
+    txt(S.prod, '2–1–3–4 倒過來 = 4–3–1–2：同一棵' + (same ? ' ✓' : ' ✗') + ' → 24 ÷ 2 = 12');
+    S.P.G.V.forEach((v) => vcol(S.P, v, COL.tree));
+    cap('但倒過來標（4–3–1–2）是同一棵樹', '鏡像對稱，每棵被數兩次：24 ÷ 2 = 12');
+  },
+  async (tok, S) => {
+    const n = spanningTrees(KN(4)).length;
+    kill(S.st);
+    tag('12（路徑形）+ 4（星形）= ' + (12 + 4) + ' 棵' + (n === 16 ? ' ✓' : ' ✗'), 'good', 0, 0.3, 1.0);
+    cap('總共 12 + 4 = 16 棵', '四個頂點的 labeled tree');
+  },
+]);
+
+scene('g8w-cay-thm', 'Cayley 定理：n^(n−2) 棵', [
+  async (tok, S) => {
+    S.B = board(-6.9, -3.4, 0.62);
+    S.B.add('3 個頂點 3 棵、4 個頂點 16 棵');
+    S.B.add('5、6、7……100 個頂點呢？有公式嗎？');
+    cap('n 個頂點的 labeled tree 有幾棵？', '一個一個數會數不完');
+  },
+  async (tok, S) => {
+    S.B.add('Cayley 定理：n 個頂點的 labeled tree 有 n^(n−2) 棵', 'good');
+    cap('Cayley 定理', 'n 個頂點的 labeled tree 共 n^(n−2) 棵');
+  },
+  ...[3, 4, 5].map((n, i) => async (tok, S) => {
+    const G = KN(n, 1.05), gv = drawGraph(G, { s: 0.85, ox: -4.2 + i * 4.2, oz: 0.9, size: [0.5, 0.4, 0.5] });
+    const T = spanningTrees(G), want = Math.pow(n, n - 2);
+    const cnt = tag('', 'ptr alt', -4.2 + i * 4.2, 0.3, 2.7);
+    const ms = Math.max(30, Math.min(400, 4200 / T.length));
+    for (let k = 0; k < T.length; k++) {
+      gv.em.forEach((e, j) => paintEdge(e, T[k].includes(j) ? COL.tree : COL.dim, T[k].includes(j)));
+      txt(cnt, '第 ' + (k + 1) + ' 棵');
+      await wt(tok, ms);
+    }
+    txt(cnt, n + '^' + (n - 2) + ' = ' + want + (T.length === want ? ' ✓' : ' ✗'));
+    setc(cnt, T.length === want ? 'good' : 'bad');
+    cap('n = ' + n + '：' + n + '^(' + n + '−2) = ' + want, n === 5 ? '五個頂點就有 125 棵' : '跟剛才數的一樣');
+  }),
+]);
+
+scene('g8w-cay-bij', '證明想法：雙射（bijection）', [
+  async (tok, S) => {
+    S.B = board(-6.9, -3.4, 0.62);
+    S.B.add('要證：剛好 n^(n−2) 棵 —— 直接數很難');
+    S.pile = Array.from({ length: 10 }, (_, i) => cube('樹', COL.idle, [0.6, 0.4, 0.6], -1 + (i % 5) * 1.2, 0.3, 0.6 + Math.floor(i / 5) * 1.2, 2 + i * 0.3));
+    cap('n^(n−2) 怎麼證？', '直接一棵一棵數非常困難');
+  },
+  async (tok, S) => {
+    S.pile.forEach((m) => kill(m));
+    S.R = [0, 1, 2, 3, 4].map((i) => cube('', COL.pink, [0.5, 0.5, 0.5], -1.6 + i * 1.3, 0.3, -0.4));
+    S.L = [0, 1, 2, 3, 4].map((i) => cube('', COL.blue, [0.5, 0.5, 0.5], -1.6 + i * 1.3, 0.3, 1.9));
+    tag('右手（難數）', 'ptr', -3.6, 0.3, -0.4); tag('左手（好數）', 'ptr', -3.6, 0.3, 1.9);
+    S.B.add('組合學技巧：右手難數 → 和左手一一對應');
+    cap('右手的手指難數？', '把它跟左手一根對一根');
+  },
+  async (tok, S) => {
+    for (let i = 0; i < 5; i++) {
+      edgeMesh(S.R[i].position.clone(), S.L[i].position.clone(), { color: COL.vis, gap: 0.35 });
+      S.L[i].add(lab.label(String(i + 1), 'val'));
+      await wt(tok, 450);
+    }
+    S.B.add('一一對應叫 bijection（雙射）→ 數左手：5 → 右手也是 5', 'good');
+    cap('每根手指對到另一根：bijection', '數左手 5 根 → 右手也一定 5 根');
+  },
+  async (tok, S) => {
+    fresh(...GCAM);
+    S.B = board(-6.9, -3.4, 0.62);
+    S.B.add('把 labeled tree 對應到數列 a₁ a₂ … aₙ₋₂');
+    drawGraph(PT6, { s: 0.6, ox: -3.6, oz: 0.8, size: [0.45, 0.4, 0.45] });
+    tag('一棵 labeled tree（n = 6）', 'idx', -3.6, 0.3, 2.4);
+    arrow(V3(-1.4, 0.4, 0.8), V3(0.4, 0.4, 0.8), 0x2fc092);
+    tag('一一對應', 'idx', -0.5, 0.3, 0.2);
+    S.sl = ['a₁', 'a₂', 'a₃', 'a₄'].map((t, i) => cube(t, COL.orange, [0.75, 0.4, 0.75], 1.4 + i * 1.3, 0.3, 0.8));
+    tag('Prüfer code（長度 n − 2）', 'ptr alt', 3.35, 0.3, -0.4);
+    tag('每一項是 1～n', 'idx', 3.35, 0.3, 1.8);
+    cap('改成把樹對應到一串數字', '長度 n − 2，每項是 1 到 n：叫 Prüfer code');
+  },
+  async (tok, S) => {
+    S.sl.forEach((m, i) => tag('n 種', 'ptr', m.position.x, 0.3, 2.6));
+    const n = 6, all = Math.pow(n, n - 2);
+    S.B.add('每項 n 種 → n × n × … × n = n^(n−2) 個數列', 'note');
+    S.B.add('一一對應 → labeled tree 也有 n^(n−2) 棵（n = 6：' + all + '）', 'good');
+    cap('每一項都有 n 種選法', '共 n^(n−2) 個數列 → 樹也有 n^(n−2) 棵');
+  },
+]);
+
+scene('g8w-prufer', 'Prüfer code：一直剪最小的葉子', [
+  async (tok, S) => {
+    S.gv = drawGraph(PT6, { s: 1, ox: 2.4, oz: -0.9 });
+    S.B = board(-6.9, -3.4, 0.56);
+    S.B.add('一棵 6 個頂點、標 1～6 的樹');
+    S.run = pruferOf(PT6); S.out = new Set();
+    S.slots = [0, 1, 2, 3].map((i) => cube('', COL.dim, [0.8, 0.25, 0.8], -2.6 + i * 1.2, 0.2, 2.9));
+    tag('code：', 'ptr', -4.3, 0.3, 2.9);
+    cap('從樹得到 code：拿一棵 6 個頂點的樹', 'code 長度 6 − 2 = 4');
+  },
+  async (tok, S) => {
+    S.run[0].leaves.forEach((v) => vcol(S.gv, v, COL.orange));
+    S.B.add('規則：找編號最小的葉子（degree 1）');
+    S.B.add('　記下它的鄰居，再把葉子和那條邊拿掉', 'say');
+    cap('每次找編號最小的葉子', '葉子是 3、4、5、6');
+  },
+  ...[0, 1, 2, 3].map((k) => async (tok, S) => {
+    const r = S.run[k];
+    PT6.V.forEach((v) => { if (!S.out.has(v)) vcol(S.gv, v, r.leaves.includes(v) ? COL.orange : COL.idle); });
+    vcol(S.gv, r.leaf, COL.hot, '#5a1010'); vcol(S.gv, r.nb, COL.tree, '#6a4a00');
+    await wt(tok, 800);
+    const s = S.slots[k]; s.material.color.set(COL.tree); S.slots[k] = cube(r.nb, COL.tree, [0.8, 0.4, 0.8], s.position.x, 0.4, 2.9, 1.6); kill(s);
+    await removeEdge(tok, EG(S.gv, r.leaf, r.nb));
+    S.out.add(r.leaf); vcol(S.gv, r.leaf, COL.dim); S.gv.vm[r.leaf].position.y = 0.1;
+    vcol(S.gv, r.nb, COL.idle);
+    S.B.add('剪 ' + r.leaf + '，鄰居 ' + r.nb + ' → 記 ' + r.nb);
+    cap('最小的葉子 ' + r.leaf + ' 連到 ' + r.nb, k === 3 ? '2 現在也變成葉子了' : '記下 ' + r.nb + '，拿掉 ' + r.leaf);
+  }),
+  async (tok, S) => {
+    const code = S.run.map((r) => r.nb);
+    const ok = code.join(' ') === '1 2 2 1';
+    PT6.V.forEach((v) => { if (!S.out.has(v)) vcol(S.gv, v, COL.vis); });
+    S.B.add('Prüfer code = ' + code.join(' ') + (ok ? ' ✓' : ' ✗') + '（剩一條邊就停）', 'good');
+    cap('這棵樹的 Prüfer code：1 2 2 1', '長度 6 − 2 = 4，剩最後一條邊 {1,6} 就停');
+  },
+  async (tok, S) => {
+    const E = pruferDecode(S.run.map((r) => Number(r.nb)), 6);
+    const back = parseG(PT6.P, E.map((e) => e.join('-')).join(' '));
+    PT6.V.forEach((v) => { S.gv.vm[v].position.y = 0.3; vcol(S.gv, v, COL.idle); });
+    for (const [u, v] of E) { paintEdge(EG(S.gv, u, v), COL.vis, true, true); await wt(tok, 450); }
+    S.B.add('由 1 2 2 1 反推回同一棵樹' + (sameEdges(back, PT6) ? ' ✓' : ' ✗'));
+    S.B.add('樹 ↔ code 一一對應 → 樹有 n^(n−2) 棵', 'good');
+    cap('每棵樹的 Prüfer code 唯一，也能從 code 還原樹', '一一對應，所以樹的數目 = n^(n−2)');
+  },
+]);
+
+// ════════ P2FRYshQ57s 補：想一想怎麼找、同構保留連通性 ════════
+scene('g8g-tw-think', '想一想：從臺北出發，你會怎麼找？', [
+  async (tok, S) => {
+    S.gv = twMap({ s: 0.85, ox: 2.4 });
+    S.gv.em.forEach((e) => showL(e.wl, true));
+    vcol(S.gv, '臺北', COL.vis, '#8a6400');
+    S.q = TW.V.filter((v) => v !== '臺北').map((v) => { const p = S.gv.pos(v); return tag('?', 'ptr alt', p.x + 0.7, 0.7, p.z - 0.4); });
+    S.B = board(-6.9, -3.4);
+    S.B.add('從臺北出發：到每個城市最短多遠？');
+    cap('如果是你，你會怎麼做？', '從臺北出發，到每個城市的最短距離');
+  },
+  async (tok, S) => {
+    const len = (p) => p.slice(1).reduce((s, v, i) => s + TW.E[S.gv.find(p[i], v)].w, 0);
+    const r1 = ['臺北', '桃園', '新竹', '臺中'], r2 = ['臺北', '宜蘭', '南投', '臺中'];
+    r1.slice(1).forEach((v, i) => paintEdge(EG(S.gv, r1[i], v), COL.blue, true));
+    S.B.add('到臺中：北→桃→竹→中 = ' + len(r1));
+    await wt(tok, 900);
+    r2.slice(1).forEach((v, i) => paintEdge(EG(S.gv, r2[i], v), COL.orange, true));
+    S.B.add('　　　　北→宜→投→中 = ' + len(r2));
+    cap('路線很多條，一條一條列出來比？', '城市一多就列不完');
+  },
+  async (tok, S) => {
+    calm(S.gv);
+    S.B.add('有沒有聰明的順序？先想一想', 'good');
+    cap('先自己想想看', '下一段：最直覺的 greedy 想法');
+  },
+]);
+
+const ISO1 = parseG({ a: [-1, -1], b: [1, -1], c: [0, 0.8], d: [-1, 2.4], e: [1, 2.4] }, 'a-b b-c c-a d-e');
+const ISOF = { a: '3', b: '1', c: '5', d: '2', e: '4' };
+const ISO2 = parseG({ 1: [0, 2.2], 3: [-1.1, 0.4], 5: [1.1, 0.4], 2: [-1.1, -1.4], 4: [1.1, -1.4] }, ISO1.E.map((e) => ISOF[e.u] + '-' + ISOF[e.v]).join(' '));
+scene('g8g-iso-conn', '同構的圖：連通性也一樣', [
+  async (tok, S) => {
+    S.g1 = drawGraph(ISO1, { s: 0.9, ox: -3.2, oz: -0.9 }); S.g2 = drawGraph(ISO2, { s: 0.9, ox: 3.2, oz: -0.4 });
+    tag('G₁', 'ptr', -5.6, 0.3, -2.4); tag('G₂', 'ptr', 5.6, 0.3, -2.4);
+    const ok = ISO1.E.every((e) => S.g2.find(ISOF[e.u], ISOF[e.v]) >= 0) && ISO1.E.length === ISO2.E.length;
+    tag('f：a→3　b→1　c→5　d→2　e→4　邊一一對應' + (ok ? ' ✓' : ' ✗'), 'ptr alt', 0, 0.3, 2.9);
+    cap('G₁ 和 G₂ 是 isomorphic', '頂點一一對應，邊也一一對應');
+  },
+  async (tok, S) => {
+    const p = ['a', 'b', 'c'];
+    p.slice(1).forEach((v, i) => { paintEdge(EG(S.g1, p[i], v), COL.blue, true); paintEdge(EG(S.g2, ISOF[p[i]], ISOF[v]), COL.blue, true); });
+    tag('路徑 a–b–c ↔ 3–1–5', 'good', 0, 0.3, -2.9);
+    cap('G₁ 有一條路徑', '對應過去，G₂ 也有同樣的路徑');
+  },
+  async (tok, S) => {
+    const c1 = components(ISO1.V, ISO1.E.map((e) => [e.u, e.v])), c2 = components(ISO2.V, ISO2.E.map((e) => [e.u, e.v]));
+    const no1 = !reach(ISO1.V, ISO1.E.map((e) => [e.u, e.v]), 'a').has('d'), no2 = !reach(ISO2.V, ISO2.E.map((e) => [e.u, e.v]), '3').has('2');
+    ['d', 'e'].forEach((v) => { vcol(S.g1, v, COL.orange); vcol(S.g2, ISOF[v], COL.orange); });
+    tag('a 到 d 沒有路 ↔ 3 到 2 也沒有' + (no1 && no2 ? ' ✓' : ' ✗') + '；component 都是 ' + c1 + (c1 === c2 ? ' ✓' : ' ✗'), 'good', 0, 0.3, -3.6);
+    cap('連不連通、有沒有路徑', 'isomorphic 的兩張圖都一模一樣，不會變');
+  },
+]);
   }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });

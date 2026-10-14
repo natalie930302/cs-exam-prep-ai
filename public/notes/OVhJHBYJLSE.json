@@ -790,15 +790,15 @@
    "why": "每個 iteration 一定有一次 proposal，男生不會向同一位女生求兩次，可能的 proposal 只有 n × n 個。"
   },
   {
-   "q": "老師認為 GS 不算 greedy algorithm，主要因為它不符合 greedy 的哪個特性？",
+   "q": "一般所說的 greedy algorithm 有什麼特性？",
    "opts": [
-    "每步選當下最好的選擇",
-    "決定做完就不再反悔",
-    "step by step 做決定",
-    "一定會停下來"
+    "每步選當下最好的，做過的決定不再反悔",
+    "先列出所有可能組合，再挑最好的那一個",
+    "決定可以隨時反悔，再改選更好的對象",
+    "先把問題拆成子問題，最後再合併答案"
    ],
-   "ans": "決定做完就不再反悔",
-   "why": "GS 的女生 accept 之後，遇到更喜歡的男生還會換人，決定會被 revisit。"
+   "ans": "每步選當下最好的，做過的決定不再反悔",
+   "why": "Greedy 一步一步做決定且不 revisit；GS 中女生可以換人（決定可反悔），所以雖有 greedy 味道，通常不算 greedy algorithm。"
   },
   {
    "q": "Stability 證明的 Case 2：m 曾向 w′ propose 但被拒絕。w′ 為什麼會拒絕他？",

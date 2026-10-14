@@ -559,7 +559,7 @@
   },
   {
    "title": "第一章回顧",
-   "scene": null,
+   "scene": "recap-ch1",
    "points": [
     {
      "text": "第一章最重要：data structure 是幹嘛的、跟 algorithm 的關係。",
@@ -573,6 +573,18 @@
      "text": "用 time 與 storage complexity 評估方法好壞。",
      "t": 1343
     }
+   ],
+   "cues": [
+    1291,
+    1300.25,
+    1309,
+    1333.01
+   ],
+   "explain": [
+    "第一章最重要的是：data structure 是做什麼用的，以及它跟 algorithm 之間的關係。",
+    "algorithm 是用來解決問題的：有 input、有 output，還要符合幾個 criteria（例如每一步要明確、一定會結束、做得到）。",
+    "data structure 是用來把這些方法 implement 出來的。怎麼 implement 跟用什麼 data structure 有很大的關係，performance 也會受到很大的影響。",
+    "最後要評估方法的好壞，靠的是 complexity，從 time（時間）和 storage（空間）兩個角度看。要記得常見複雜度的大小關係：1 < log n < n < n log n < n² < 2ⁿ。"
    ]
   },
   {

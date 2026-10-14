@@ -5628,6 +5628,31 @@ FRAG.push(['spmit2-generic-problems', 'L17：通用演算法的兩個問題', as
   say('DAG 能處理負邊', '一般圖的負 cycle：今天解決');
 }]);
 
+// 09:01 Five-Minute University：6.006 的 10 秒版本，對回今天的兩個問題
+FRAG.push(['spmit2-five-minute', 'L17：6.006 的 10 秒版本（多項式／指數／無限）', async (tok) => {
+  fresh([0, 12.5, 8], [0, 0, -0.3]);
+  const g = s2Pal(5.6, 3.0, 0.6, '畢業生');
+  await step(tok);                                   // 9:02 SNL: Five-Minute University
+  tag('五分鐘大學：畢業 5 年後，你只記得 5 分鐘份量的東西', 'say', 0, 0.3, -4.0);
+  g.talk('都忘光了…'); g.mood('sad');
+  say('小品「五分鐘大學」', '畢業五年後，大概什麼都不記得');
+  await step(tok);                                   // 10:18 the 10-second version of 6.006
+  const cards = [['多項式時間', '很棒 ✓', C.ok, -4.0], ['指數時間', '很糟 ✗', C.hot, 0], ['無限時間', '會被開除！', C.back, 4.0]];
+  for (const [a, b, col, x] of cards) { cube(a, col, [3.0, 0.6, 1.0], x, 0.3, -2.2, 2); tag(b, 'note', x, 0.3, -1.1); await beat(tok, 450); }
+  g.mood('happy'); g.talk('記住這三句！');
+  say('6.006 的 10 秒版本', '多項式很棒、指數很糟、無限會被開除');
+  await step(tok);                                   // 10:44 wrong edge choices: polynomial → exponential
+  buildGraph(GRAPHS.chain, { scale: 0.62, dx: -2.4, dz: 2.4, ns: 0.7, noDrop: true });
+  for (const [u, v] of [[0, 2], [2, 4], [0, 1], [1, 2], [2, 4]]) { edgeColor(s2E(u, v), C.hot, 1.8); await beat(tok, 260); edgeColor(s2E(u, v), C.edge, 1); }
+  tag('問題 1：選錯邊 → 指數時間', 'ptr alt', 0, 0.3, 0.2);
+  g.mood('wow'); g.talk('本來是多項式…');
+  say('通用演算法選錯邊', '本來多項式（像 Dijkstra）變成指數時間');
+  await step(tok);                                   // 11:09 unexpected negative cycle: never completes
+  tag('問題 2：遇到負 cycle → 永遠跑不完', 'ptr alt', 4.0, 0.3, 1.0);
+  g.mood('sad'); g.talk('停不下來！');
+  say('圖裡有預期之外的負 cycle', '終止條件永遠不成立 → 永遠跑不完');
+}]);
+
 const BF_CODE = ['Bellman-Ford(G, W, s)', '  Initialize()', '  for i = 1 to |V| − 1:', '    for each edge (u, v) ∈ E:', '      Relax(u, v, w)', '  for each edge (u, v) ∈ E:', '    if d[v] > d[u] + w(u, v):', '      report 負 cycle 存在'];
 // 11:29 四行程式：|V| − 1 輪 relax 每條邊，再一輪檢查
 FRAG.push(['spmit2-bf-code', 'L17：Bellman-Ford 的程式', async (tok) => {

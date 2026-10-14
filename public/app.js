@@ -316,7 +316,7 @@ const FOUNDATION_CONTENT = {
     10:{subj:'作業系統', ch:'OS Ch7 記憶管理（Paging、Segmentation）+ Ch8 虛擬記憶體（Page Replacement Algorithms）+ Ch9 輔助儲存體管理（磁碟排程SCAN/C-SCAN）+ Ch10 檔案系統——基礎期最後一週',
         book:'金寶典 Ch7–Ch10 + Q講義Q5–Q6',
         vid:[{icon:'🎬',text:'Page Replacement Algorithms（LRU and Optimal）',url:'https://www.youtube.com/watch?v=DXU7SqsYDvg',dur:'16:18'},
-             {icon:'🎬',text:'SCAN Disk Scheduling Algorithm',url:'https://www.youtube.com/watch?v=ko8ogLJc1Ko',dur:'5:40'}]},
+             {icon:'🎬',text:'SCAN Disk Scheduling Algorithm',url:'https://www.youtube.com/watch?v=lQAYseBJPuA',dur:'4:24'}]},
     11:{subj:'離散數學', ch:'DM Ch1 邏輯（命題與真值表、邏輯等價）+ Ch2 集合論（集合論、排容原理）',
         book:'離散上冊（林緯）Ch1–Ch2',
         vid:[{icon:'🎬',text:'交大OCW 易志偉《離散數學》Lec01 Logic and Proofs (1/5)',url:'https://www.youtube.com/watch?v=klWl-t7V5qY',dur:'1:21:01'},

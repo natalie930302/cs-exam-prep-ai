@@ -1759,15 +1759,15 @@
    "why": "提出方（男生）是 optimal；被動的一方是 pessimal。"
   },
   {
-   "q": "大考分發若使用 Gale–Shapley，考生扮演哪個角色？",
+   "q": "課堂列出的經典問題中，哪一個可以用 network flow 有效率地解？",
    "opts": [
-    "主動 propose 的一方（男生）",
-    "accept／reject 的一方（女生）",
-    "兩者輪流",
-    "不參與配對"
+    "Bipartite matching",
+    "Independent set",
+    "Competitive facility location",
+    "Traveling salesman problem"
    ],
-   "ans": "主動 propose 的一方（男生）",
-   "why": "所以放榜以考生的最大利益為出發點。"
+   "ans": "Bipartite matching",
+   "why": "Bipartite matching 可轉成 max flow 求解；independent set 是 NP-complete，competitive facility location 是 PSPACE-complete。"
   },
   {
    "q": "下列哪個問題老師歸為 NP-complete？",

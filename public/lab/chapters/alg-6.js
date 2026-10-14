@@ -6910,6 +6910,54 @@ FRAG.push(['graphmit-r13-dist', 'BFS 算出最短距離（邊數）', async (tok
   say('笑臉 = 已經算過距離，不要再更新', '這就是 BFS 的精髓');
 }]);
 
+// 52:03 應用：社群網路——好友（無向）、追蹤／訂閱（有向）、BFS 找「朋友的朋友的朋友」
+const GM_FB = { title: '好友關係', directed: false, names: ['我', '小明', '小華', '阿美', '大雄', '靜香'],
+  pos: [[-5.0, 0.0], [-2.5, -2.2], [-2.5, 2.0], [0.3, 0.2], [3.0, -1.8], [5.2, 0.8]],
+  edges: [[0, 1], [0, 2], [1, 3], [2, 3], [3, 4], [4, 5]] };
+const GM_TW = { ...GM_FB, title: '追蹤關係', directed: true,
+  edges: [[0, 1], [1, 0], [2, 0], [3, 2], [4, 3], [0, 4], [5, 4]] };
+FRAG.push(['graphmit-r13-social', '社群網路：好友是無向圖、追蹤是有向圖、BFS 找人脈', async (tok) => {
+  gmFresh();
+  let A = null;
+  await step(tok);                                   // 3126.3 Facebook vs Twitter: which is directed?
+  A = gmG(GM_FB);
+  T('人 = 頂點', 'say', 0, -4.2);
+  say('Facebook 和 Twitter：哪個是有向圖？', '');
+  await step(tok);                                   // 3134.9 Facebook friendship: undirected
+  A.ec('我', '小明', GM.hot, 2);
+  A.top('我', '好友'); A.top('小明', '好友');
+  T('Facebook 好友：你是我的朋友 ⇔ 我是你的朋友 → 無向（線）', 'note', 0, 3.9);
+  say('Facebook 好友是雙向的', '→ undirected graph');
+  await step(tok);                                   // 3162.7 Twitter: directed because of follows
+  gmFresh();
+  A = gmG(GM_TW, { noDrop: true });
+  A.ec('小華', '我', GM.hot, 2);
+  T('Twitter 追蹤：小華追蹤我，我不一定追蹤小華 → 有向（箭頭）', 'note', 0, 3.9);
+  say('Twitter 的 follow 是單向的', '→ directed graph');
+  await step(tok);                                   // 3210.3 Facebook has two graphs on the same vertices
+  gmFresh();
+  gmG(GM_FB, { noDrop: true, scale: 0.55, dx: -3.4, ns: 0.8 });
+  A = gmG(GM_TW, { noDrop: true, scale: 0.55, dx: 3.4, ns: 0.8 });
+  T('好友 → 無向圖', 'say', -3.4, -2.6);
+  T('訂閱（subscribe）→ 有向圖', 'say', 3.4, -2.6);
+  T('頂點一樣（都是人），邊完全不同 → 是兩張圖', 'note', 0, 2.8);
+  say('Facebook 裡其實有兩張圖', '同一群頂點，好友是無向、訂閱是有向');
+  await step(tok);                                   // 3237.0 BFS on Facebook: 1st degree, 2nd degree …
+  gmFresh();
+  A = gmG(GM_FB, { noDrop: true });
+  const LV = { 我: 0, 小明: 1, 小華: 1, 阿美: 2, 大雄: 3, 靜香: 4 };
+  const LC = ['#4b9ee2', '#2fc092', '#e8b02a', '#e55a9b', '#9b7ef4'];
+  for (let d = 0; d <= 4; d++) {
+    for (const v in LV) if (LV[v] === d) { A.col(v, LC[d], 0.2); A.top(v, d === 0 ? '起點' : d + ' 度'); }
+    await kan(tok, 380, () => {});
+  }
+  say('從自己跑 BFS：一層一層往外', '1 度 = 朋友、2 度 = 朋友的朋友 …');
+  await step(tok);                                   // 3257.4 reach someone you don't know with minimum effort
+  for (const [u, v] of [['我', '小明'], ['小明', '阿美'], ['阿美', '大雄']]) { A.ec(u, v, C.tree, 2.4); await gmHop(tok, A, u, v, 380); }
+  T('想聯絡大雄：他是「朋友的朋友的朋友」→ 最少 3 步', 'note', 0, 3.9);
+  say('BFS 給的就是最短的人脈鏈', '我 → 小明 → 阿美 → 大雄');
+}]);
+
 // ═════════════════ AfSk24UTFS8：MIT 6.006 L14 — DFS, edge classification, cycles, topological sort ═════════════════
 const GM_L13G = { title: 'L13 例子', directed: false, names: ['s', 'a', 'x', 'z', 'd', 'c', 'f', 'v'],
   pos: [[-1.5, -1.6], [-4.5, -1.6], [-1.5, 1.6], [-4.5, 1.6], [1.5, -1.6], [1.5, 1.6], [4.5, -1.6], [4.5, 1.6]],

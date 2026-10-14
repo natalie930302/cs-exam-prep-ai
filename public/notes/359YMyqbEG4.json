@@ -1282,15 +1282,15 @@
    "why": "兩者都是正確的 DP；top-down 只展開被用到的子問題，所以有時算得少一點。"
   },
   {
-   "q": "老師認為判斷一個問題適不適合 DP，最重要的特性是什麼？",
+   "q": "依 CLRS，一個問題適合用 dynamic programming 需要具備哪兩個特性？",
    "opts": [
-    "輸入一定是陣列",
-    "子問題有天生不會改變的 natural（linear）order",
-    "子問題的答案都可以用 greedy 選擇直接一步決定出來",
-    "可以用 greedy 證明"
+    "optimal substructure 與 overlapping subproblems",
+    "greedy-choice property 以及 optimal substructure",
+    "子問題彼此獨立、不重複出現，且可平行計算",
+    "子問題總數為指數個，且輸入已事先排好序"
    ],
-   "ans": "子問題有天生不會改變的 natural（linear）order",
-   "why": "有固定順序就能由小到大計算；再配合 polynomial 個子問題與好算的 recurrence。"
+   "ans": "optimal substructure 與 overlapping subproblems",
+   "why": "最佳解要由子問題的最佳解組成，且子問題會重複出現，記在 table 裡才只需算一次；子問題不重複的就適合 D&C。"
   },
   {
    "q": "用 memoization 算 Fibonacci 時，陣列 F 為什麼先初始化成 −1？",

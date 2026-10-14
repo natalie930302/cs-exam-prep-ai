@@ -6172,6 +6172,32 @@ scene('isB-8a-trans', 'C program 怎麼變成 memory 裡的 0101', CAM, [
     cap('有 virtual memory 的系統', '放在哪一塊都能執行（後面再介紹）');
   },
 ]);
+// ════════ H6wkyzXzX6g §17（第 7A 講問答：jal 做哪兩件事） ════════
+const JQ_PC = 1000, JQ_T = 2000, JQ_RA = JQ_PC + 4;       // 位址示意（十進位）
+scene('isB-7a-jalqa', 'jal 做兩件事：PC + 4 存進 $ra，再跳到 label', CAM, [
+  async (tok, S) => { // 1835 jal 做什麼？
+    S.cd = code([JQ_PC + '  jal  leaf', JQ_RA + '  add  $s4, $v0, $zero', ' …', JQ_T + '  leaf: add $t0, $a0, $a1'], -1.0, 6.3, 0.55); S.cd.hl(0);
+    S.R = regs([['PC', JQ_PC, FC.gold], ['$ra', '?']], -1.6, 3.4, 3.2, { w: 1.6 });
+    small(note('位址示意', 5.2, 6.3), 10);
+    cap('jump and link 做什麼？', '剛剛講過的');
+  },
+  async (tok, S) => { // 1855 $ra = PC + 4
+    S.R.$ra.set(JQ_RA); S.R.$ra.glow(OKG); S.cd.hl(1);
+    sm('① link：下一道指令的位址（PC + 4 = ' + JQ_RA + '）存進 $ra', 0, 2.3);
+    cap('把下一個 instruction 的位址', '存到 $ra');
+  },
+  async (tok, S) => { // 1861 跳到 label
+    S.R.PC.set(JQ_T); S.R.PC.glow(HL); S.cd.hl(3);
+    sm('② jump：PC 換成 leaf 的位址 ' + JQ_T, 0, 1.6);
+    cap('然後跳', '跳到你的 label 去');
+  },
+  async (tok, S) => { // 1865 一道指令兩件事
+    ok(JQ_RA === JQ_PC + 4, '✓ 一道 jal 做兩件事：存回程位址 + 跳過去', 0, 0.8);
+    sm('callee 做完用 jr $ra 就回到 ' + JQ_RA, 0, 0.1);
+    cap('jal 一道指令做兩件事', '這樣 caller 就完成了');
+  },
+]);
+
   }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });

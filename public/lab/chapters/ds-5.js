@@ -4484,6 +4484,40 @@ FRAG.push(['heapur-push-worst', 'push 最好 O(1)、最差 O(log n)', async (tok
   say('push 平均常數，worst case log n', 'pop：log n');
 }]);
   }
+  // ═══ qa-ds5.js（課堂 Q&A 段落的場景） ═══
+  {
+const { fresh, tag, cube, kill, glow, line, step, GOLD } = K;
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+// RjvhXL0WTrY：建樹用 prefix 還是 postfix
+FRAG.push(['qa-tree-build-order', '遞迴建樹：先建自己（prefix）或先建左右（postfix）', async (tok) => {
+  fresh([0, 3.6, 12], [0, 2.4, 0]);
+  const P = { A: [0, 4.4], B: [-2.2, 3.1], C: [2.2, 3.1], D: [-3.3, 1.8], E: [-1.1, 1.8] };
+  const E = [['A', 'B'], ['A', 'C'], ['B', 'D'], ['B', 'E']];
+  let S = [];
+  async function build(order, color) {
+    S.forEach(kill); S = [];
+    E.forEach(([a, b]) => S.push(line(P[a][0], P[a][1] - 0.3, P[b][0], P[b][1] + 0.3)));
+    for (let i = 0; i < order.length; i++) {
+      const [x, y] = P[order[i]];
+      const m = cube(order[i], color, [0.7, 0.6, 0.6], x, y, 0, 1.5); S.push(m);
+      S.push(tag('第 ' + (i + 1) + ' 個', 'idx', x + 0.95, y));
+      await beat(tok, 650);
+    }
+  }
+  await step(tok);                                   // prefix：先建自己再建左右
+  say('prefix：先把這裡的 node 建好', '再遞迴去建左 subtree、右 subtree');
+  await build(['A', 'B', 'D', 'E', 'C'], '#4b9ee2');
+  S.push(note('prefix：A B D E C', 0, 0.6));
+  await step(tok);                                   // postfix：先建左右再接上自己
+  say('postfix：先把左右兩邊建好', '最後再跟自己連起來');
+  await build(['D', 'E', 'B', 'C', 'A'], '#2fc092');
+  S.push(note('postfix：D E B C A', 0, 0.6));
+  await step(tok);                                   // 跟 tree traversal 有關
+  S.forEach((o) => { if (o.material && o.userData && o.userData.lbl && o.userData.lbl.element.textContent === 'A') glow(o, GOLD); });
+  S.push(tag('兩種都常見，正好對應 preorder / postorder traversal', 'ptr', 0, -0.2));
+  say('兩種寫法都會看到', '作業四會練到各種 tree traversal');
+}]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

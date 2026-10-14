@@ -2236,6 +2236,189 @@ FRAG.push(['btree-p-rtree', '預告：2D 空間查詢與 R-tree', async (tok) =>
   say('R-tree 也能推廣到多維度空間', 'multidimensional space');
 }]);
   }
+  // ═══ trie-hackerrank.js（HackerRank：Tries 短片） ═══
+  {
+const { V3, fresh, tag, cube, kill, glow, txt, arrow, step, GOLD, GREEN } = K;
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const bubble = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const setCls = (l, cls) => { l.element.className = 'lab-label ' + cls; };
+// 小字典：car 既是單字也是 card / care 的前綴；cal 是 call / calm 的前綴
+const HR_DICT = ['car', 'card', 'care', 'cat', 'call', 'calm', 'do', 'dog'];
+function hrBuild(words) {
+  enterTrie(true);
+  for (const w of words) for (const _ of trInsert(w)) { /* silent */ }
+  lab.frameCamera([0, 4.6, 10.5], [0, 3.2, 0]);
+  trRender();
+}
+function hrNode(path) { let n = TR.root; for (const ch of path) { n = n && n.kids.get(ch); } return n || null; }
+const hrPre = (w) => { const out = []; for (let i = 1; i <= w.length; i++) out.push(w.slice(0, i)); return out; };
+function hrSub(path) { const out = []; (function g(x) { out.push(x.path); trKids(x).forEach(g); })(hrNode(path)); return out; }
+// 從 root 一個字元一個字元往下走（游標跟著動）
+async function hrWalk(tok, w, ms = 600, keep = []) {
+  const hot = [...keep];
+  for (const p of hrPre(w)) {
+    const n = hrNode(p); if (!n) return false;
+    hot.push(p); trRender(new Set(hot), n);
+    await beat(tok, ms);
+  }
+  return true;
+}
+
+FRAG.push(['trie-hr-what', 'Trie：每個節點存一個字元，路徑就是單字', async (tok) => {
+  hrBuild(HR_DICT);
+  await step(tok);                                   // 0:10 trie 是一種 tree
+  say('trie 是一種資料結構，其實就是一棵 tree', '面試很常考，學校卻不太教');
+  await step(tok);                                   // 0:15 每個節點存一個字元
+  trRender(new Set(hrSub('')), null);
+  note('每個節點的資料：1 個字元', 0, 1.6);
+  say('每個節點只存一個字元', '');
+  await step(tok);                                   // 0:24 root 到節點的路徑 = 單字（的一部分）
+  trRender(new Set(['c', 'ca']), hrNode('ca'));
+  const l1 = pkt('root → c → a ＝ "ca"：單字的一部分', 0, 0.9);
+  say('從 root 走到某個節點的路徑', '就代表一個單字或單字的一部分');
+  await beat(tok, 2200);
+  trRender(new Set(['c', 'ca', 'car']), hrNode('car'));
+  txt(l1, 'root → c → a → r ＝ "car"：完整單字（金色）');
+  await step(tok);                                   // 0:34 某一類非常快的查詢
+  good('查「某個字串在不在」只要沿路往下走', 0, 0.2);
+  say('所以能做某一類非常快速的查詢', '長度 L 的字串只走 L 步');
+}]);
+
+FRAG.push(['trie-hr-car', '前綴查詢：有沒有以 C-A-R 開頭的單字？', async (tok) => {
+  hrBuild(HR_DICT);
+  await step(tok);                                   // 0:38 存一個小字典
+  note('小字典：' + HR_DICT.join(', '), 0, 1.6);
+  say('把一個很小的英文字典存進 trie', '金色節點：有單字在這裡結束');
+  await step(tok);                                   // 0:46 有沒有 C-A-R 開頭的？
+  const q = pkt('查詢：C-A-R 開頭？', -4.6, 6.0);
+  say('問：有沒有以 C-A-R 開頭的單字？', '從 root 走 c → a → r');
+  await hrWalk(tok, 'car', 700);
+  await step(tok);                                   // 0:52 car 本身是完整單字
+  good('car：完整單字', 0, 0.9);
+  say('有！car 本身就是一個完整單字', 'r 節點是金色的');
+  await step(tok);                                   // 0:56 還有 card → car 也是前綴
+  trRender(new Set(['c', 'ca', ...hrSub('car')]), hrNode('car'));
+  note('car 底下還有 card、care → car 也是前綴', 0, 0.2);
+  say('底下還有 card：car 同時也是前綴', '整棵 car 子樹就是答案');
+  await step(tok);                                   // 0:59 非常快
+  txt(q, '只走 3 步就知道');
+  say('查詢非常快', '<span class="ok">只看字串長度，跟字典有多少字無關</span>');
+}]);
+
+FRAG.push(['trie-hr-node', '實作：Node 裡放 children 表和 isCompleteWord', async (tok) => {
+  fresh([0, 4.2, 12], [0, 2.6, 0]);
+  await step(tok);                                   // 1:06 class Node，不像 BST
+  cube('Node', '#4b9ee2', [1.6, 0.8, 0.8], 0, 4.4, 0, 2);
+  const L = cube('', '#d8cfc0', [0.8, 0.8, 0.8], -2.6, 2.2, 0), R = cube('', '#d8cfc0', [0.8, 0.8, 0.8], 2.6, 2.2, 0);
+  const aL = arrow(V3(-0.6, 4.0, 0), V3(-2.3, 2.6, 0)), aR = arrow(V3(0.6, 4.0, 0), V3(2.3, 2.6, 0));
+  const tL = tag('left', 'idx', -1.9, 3.5), tR = tag('right', 'idx', 1.9, 3.5);
+  const b1 = bad('BST 的 node：只有 left / right 兩個指標', 0, 1.0);
+  say('寫一個 class Node', '但不像 BST 只有 left、right 兩個指標');
+  await step(tok);                                   // 1:14 children 陣列
+  [L, R, aL, aR, tL, tR, b1].forEach(kill);
+  const cells = [];
+  for (let i = 0; i < 26; i++) cells.push(cube(String.fromCharCode(97 + i), '#f6deb0', [0.38, 0.38, 0.38], -5.25 + i * 0.42, 2.6, 0));
+  const ta = tag('children[26]：每個字母一格（大多是空的）', 'ptr', 0, 1.6);
+  say('做法一：children 陣列，每個字母一格', '用 children[ch − \'a\'] 直接找到');
+  await step(tok);                                   // 1:21 更常用 lookup table
+  cells.forEach(kill); kill(ta);
+  const rows = ['a', 'o', 'r'].map((ch, i) => cube(ch + ' → ', '#f6deb0', [1.3, 0.5, 0.6], -1.2, 3.0 - i * 0.75, 0));
+  const kids = ['a', 'o', 'r'].map((ch, i) => cube(ch, '#4b9ee2', [0.55, 0.55, 0.55], 2.4, 3.0 - i * 0.75, 0));
+  rows.forEach((r, i) => arrow(V3(-0.45, 3.0 - i * 0.75, 0), V3(2.05, 3.0 - i * 0.75, 0)));
+  tag('lookup table：字元 → 子節點', 'ptr', -1.2, 0.9);
+  say('更常用 lookup table（例如 hash map）', '把字元對應到子節點，只存真的有的 child');
+  await step(tok);                                   // 1:26 有沒有 A？馬上拿到
+  const ask = pkt('有 A 這個 child 嗎？', -4.6, 3.0);
+  glow(rows[0], GREEN); glow(kids[0], GREEN);
+  say('可以馬上問：有沒有 A 這個 child？', '有的話直接拿到那個節點');
+  await step(tok);                                   // 1:39 還要知道是不是完整單字
+  glow(rows[0], null); glow(kids[0], null); kill(ask);
+  glow(rows[2], GOLD); glow(kids[2], GOLD);
+  const qq = bubble('走到 r：是完整單字？還是只是前綴？', 0, 5.5);
+  say('光知道有 R 這個 child 還不夠', '還要知道走到這裡是不是一個完整單字');
+  await step(tok);                                   // 1:53 isCompleteWord flag
+  kill(qq);
+  cube('true', '#c08a1f', [0.9, 0.5, 0.6], 2.0, 4.4, 0, 2);
+  tag('isCompleteWord', 'ptr alt', 2.0, 5.2);
+  good('每個節點多一個 flag：區分完整單字和前綴', 0, 0.2);
+  say('每個節點再加一個 flag，例如 isCompleteWord', 'true：這裡是單字結尾　false：只是前綴');
+}]);
+
+FRAG.push(['trie-hr-uses', '什麼題目會用到 trie：單字驗證', async (tok) => {
+  fresh([0, 4.2, 12.5], [0, 2.6, 0]);
+  await step(tok);                                   // 2:05 跟單字驗證有關的題目
+  const hd = note('面試題只要跟「驗證單字」有關 → 可能用到 trie', 0, 5.4);
+  say('面試時拿到跟「單字驗證」有關的題目', 'trie 很可能派上用場');
+  await step(tok);                                   // 2:14 拼字遊戲盤面找所有單字
+  const G = ['CATS', 'ORED', 'DOGX', 'EARN'];
+  const gc = [];
+  G.forEach((row, j) => [...row].forEach((ch, i) => gc.push(cube(ch, '#f6deb0', [0.62, 0.62, 0.3], -5.0 + i * 0.75, 3.8 - j * 0.75, 0))));
+  tag('拼字遊戲盤面', 'ptr', -3.9, 4.6);
+  for (const k of [0, 1, 2]) glow(gc[k], GREEN);
+  for (const k of [8, 9, 10]) glow(gc[k], GREEN);
+  tag('CAT、DOG…', 'good', -3.9, 0.6);
+  say('例：在拼字遊戲盤面上找出所有單字', '邊走邊用 trie 檢查「還是不是有效前綴」');
+  await step(tok);                                   // 2:20 字串清單找名人名字
+  const names = [['taylor swift', 1], ['qwzx', 0], ['tom hanks', 1], ['abcde', 0]];
+  tag('字串清單', 'ptr', 3.6, 4.6);
+  names.forEach(([s, ok], i) => tag(s, ok ? 'good' : 'idx', 3.6, 3.8 - i * 0.75));
+  say('例：給一串字串，找出所有名人的名字', '名人名字先存進 trie，再逐一比對');
+  await step(tok);                                   // 2:27 看到就想 trie
+  txt(hd, 'word list validation → 想想 trie！');
+  say('看到「單字清單驗證」類的題目', '就想想 trie 有沒有用');
+}]);
+
+FRAG.push(['trie-hr-incr', '最佳化：記住上次查到的節點', async (tok) => {
+  hrBuild(HR_DICT);
+  await step(tok);                                   // 2:38 使用者邊打字邊檢查
+  const typed = pkt('輸入：', 0, 1.6);
+  const st = tag('', 'idx', 0, 0.9);
+  say('使用者邊打字，我們邊檢查', '一確定不可能成為單字，就畫底線');
+  const show = async (w) => {
+    txt(typed, '輸入：' + w.toUpperCase());
+    const n = hrNode(w);
+    if (n) { trRender(new Set(hrPre(w)), n); setCls(st, 'good'); txt(st, '✓ ' + w.toUpperCase() + ' 是有效前綴'); }
+    else { setCls(st, 'bad'); txt(st, '✗ ' + w.slice(0, -1).toUpperCase() + ' 底下沒有 ' + w.slice(-1).toUpperCase() + ' → 畫底線'); }
+  };
+  await step(tok);                                   // 2:50 打 C
+  await show('c'); say('打了 C：有可能變成單字', '');
+  await step(tok);                                   // 2:55 CA
+  await show('ca'); say('CA：還是有效前綴', '');
+  await step(tok);                                   // 2:58 CAL
+  await show('cal'); say('CAL：有 call、calm', '以 CAL 開頭的單字存在');
+  await step(tok);                                   // 3:04 CALP → 錯
+  await show('calp'); say('CALP：糟糕，沒有這種單字', '標成錯字');
+  await step(tok);                                   // 3:09 天真做法：每次從 root 重查
+  setCls(st, 'idx'); txt(st, '');
+  const cnt = note('從 root 重查：0 步', -4.6, 6.2);
+  let total = 0;
+  for (const w of ['c', 'ca', 'cal']) {
+    txt(typed, '查 ' + w.toUpperCase() + '：又從 root 開始');
+    trRender(new Set(), TR.root); await beat(tok, 400);
+    for (const p of hrPre(w)) { total++; txt(cnt, '從 root 重查：' + total + ' 步'); trRender(new Set(hrPre(p)), hrNode(p)); await beat(tok, 420); }
+  }
+  txt(typed, '1 + 2 + 3 + … ：一直重走同一段路');
+  say('天真做法：每次都從 root 重查整個前綴', '前面走過的路一直重走');
+  await step(tok);                                   // 3:26 記住上次的節點
+  txt(cnt, '記住位置：每打一個字只要 1 步');
+  for (const w of ['c', 'ca', 'cal']) {
+    txt(typed, '打 ' + w.slice(-1).toUpperCase() + '：只問「是不是上一個節點的 child？」');
+    trRender(new Set(hrPre(w)), hrNode(w)); await beat(tok, 900);
+  }
+  txt(typed, '打 P：cal 沒有 p 這個 child → 錯');
+  say('更好：記住上次查到的節點', '下一個字元只要檢查是不是它的 child');
+  await step(tok);                                   // 3:53 兩種實作
+  kill(typed);
+  good('做法一：trie 自己保存「目前位置」', 0, 1.7);
+  good('做法二：把 node 回傳給呼叫者', 0, 0.9);
+  setCls(st, 'idx'); txt(st, '下次直接從那個 node 往下問');
+  st.position.set(0, 0.1, 0);
+  say('實作方式有兩種', '在 trie 內保存狀態，或把節點回傳給呼叫者');
+}]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

@@ -5,7 +5,7 @@
  "sections": [
   {
    "title": "指令執行的五個步驟",
-   "scene": null,
+   "scene": "cpu-qq-five",
    "points": [
     {
      "text": "ISA 只是說明書：規定 CPU 能做什麼，但沒規定內部怎麼設計才快。",
@@ -31,11 +31,29 @@
      "text": "Memory Access：只有 Load／Store 需要；Write Back：結果寫回暫存器。",
      "t": 114.2
     }
+   ],
+   "cues": [
+    14.1,
+    30.0,
+    67.2,
+    82.1,
+    100.2,
+    114.2,
+    128.6
+   ],
+   "explain": [
+    "ISA（指令集架構）像一本說明書：規定 CPU 認識哪些指令、指令長什麼樣子，但沒有規定 CPU 內部要怎麼設計才跑得又快又好。",
+    "這集看三代 CPU 設計：單週期 → FSM（多週期）→ Pipeline。每一代都是為了解決上一代的根本問題才出現的。",
+    "幾乎每道指令都能拆成五步。第一步 Fetch：照 PC 指的位置，從記憶體把指令（一串 0 和 1）抓進來，PC 再指向下一道。影片說「PC 加一」意思是下一道；MIPS 一道指令 4 bytes，所以是 PC + 4（位址是示意）。",
+    "第二步 Decode：解碼電路讀這串 0 和 1，判斷是什麼操作、要用哪些暫存器，像翻譯官把它翻成「這是加法，用 R1 和 R2」。",
+    "第三步 Execute：真正做運算。加法就是把兩個數送進 ALU 相加（數值是示意）；跳躍指令則是在這一步算出要跳去的位址。",
+    "第四步 Memory Access：只有要讀寫記憶體的指令（Load、Store）在這一步做事；純運算的指令（像 add）這步就跳過。",
+    "第五步 Write Back：把結果寫回目標暫存器，例如 add R0, R1, R2 就是把相加的結果存進 R0。後面三種處理器，都是用不同方式走完這五步。"
    ]
   },
   {
    "title": "單週期處理器",
-   "scene": null,
+   "scene": "cpu-qq-single",
    "points": [
     {
      "text": "每道指令用一個 clock cycle 走完全部五步。",
@@ -57,11 +75,27 @@
      "text": "快的指令大量浪費時間，大部分電路閒置，整體效能被拖垮。",
      "t": 230.54
     }
+   ],
+   "cues": [
+    148.8,
+    180.2,
+    193.6,
+    201.3,
+    221.5,
+    246.0
+   ],
+   "explain": [
+    "單週期處理器（single cycle）：每道指令用「一個」clock cycle 就把五個步驟全部走完。",
+    "所以 CPI（每道指令平均幾個 cycle）永遠是 1，前一道做完下一道馬上開始，設計最簡單。",
+    "致命問題：所有指令共用同一個 clock，週期長度必須讓最慢的那道指令也做得完。",
+    "例子：add 只要 2 ns，load 要從記憶體讀資料，要 10 ns。clock cycle 至少要設成 10 ns，不然 load 跑不完。",
+    "結果做一道 add 明明 2 ns 就夠，還是要等滿 10 ns，白白空等 8 ns；這段時間大部分電路都閒著。",
+    "真實 CPU 有幾十種指令，時間可以差好幾倍；用最慢的指令決定所有人的節奏，等於整顆 CPU 都用最慢的速度在跑。"
    ]
   },
   {
    "title": "FSM（多週期）處理器",
-   "scene": null,
+   "scene": "cpu-qq-fsm",
    "points": [
     {
      "text": "把一道指令拆成多個短 cycle，每個 cycle 只做一個步驟。",
@@ -83,11 +117,27 @@
      "text": "瓶頸：一次只有一道指令在跑，其他階段的硬體都閒置，使用率仍低。",
      "t": 340.34
     }
+   ],
+   "cues": [
+    273.9,
+    285.7,
+    301.5,
+    315.9,
+    343.4,
+    354.0
+   ],
+   "explain": [
+    "FSM（多週期）處理器的想法：不要讓每道指令都用一樣的時間，而是把一道指令拆成好幾個短的 cycle，每個 cycle 只做一步。",
+    "不同指令需要的步驟數不同：add 只要 Fetch、Decode、Execute、Write Back 四個 cycle；load 要五個；跳躍指令大約三個。",
+    "每一步很簡單，cycle 可以縮短到例如 2 ns。add 只花 8 ns、jump 6 ns，不必再陪 load 等 10 ns。",
+    "控制單元是一個有限狀態機（finite state machine）：記住現在走到第幾步，依目前的狀態決定下一步做什麼。要加新的複雜指令，通常只要多加幾個狀態，不必改整條 datapath。",
+    "但 FSM 有根本的瓶頸：前一道指令沒做完，下一道就不能開始，同一時間只有一道指令在跑。",
+    "所以 Fetch 的電路在 Execute 時閒著，ALU 在 Memory Access 時也閒著。這個例子 9 個 cycle × 5 個單元，只用到 9 格，使用率才 20%。"
    ]
   },
   {
    "title": "Pipeline 的概念",
-   "scene": null,
+   "scene": "cpu-qq-pipe",
    "points": [
     {
      "text": "洗衣機／烘衣機比喻：第一件進烘衣機時，第二件馬上進洗衣機。",
@@ -105,11 +155,31 @@
      "text": "相較 FSM：clock 週期長度相近，但 CPI 大幅降低，throughput 大增。",
      "t": 455.48
     }
+   ],
+   "cues": [
+    382.8,
+    394.0,
+    416.8,
+    426.2,
+    429.0,
+    434.4,
+    440.7,
+    455.5
+   ],
+   "explain": [
+    "Pipeline（管線）的靈感來自洗衣服：四件衣服，傻瓜做法是一件洗完、烘完、摺好才換下一件（時間是示意）。",
+    "聰明做法：第一件洗好搬進烘衣機時，第二件馬上進洗衣機；洗衣機和烘衣機同時在跑，總時間少了一半。",
+    "把五個步驟想成五個工作站，讓不同的指令同時在不同的站處理。",
+    "第 1 個 cycle：指令 A 在 Fetch。",
+    "第 2 個 cycle：A 在 Decode，同時 B 開始 Fetch。",
+    "第 3 個 cycle：A 在 Execute、B 在 Decode、C 在 Fetch，三道指令同時在不同的站。",
+    "到了穩定狀態，每個 clock cycle 都有一道指令做完（綠框）。理論上 5 級 pipeline 的效能可以到單週期的 5 倍，這正是現代 CPU 的核心設計。",
+    "跟 FSM 比：clock 週期差不多短，但 FSM 一道指令要 3～5 個 cycle，pipeline 平均每道只要約 1 個 cycle（CPI 大幅降低），throughput（吞吐量）大增。"
    ]
   },
   {
    "title": "Structural 與 Data Hazard",
-   "scene": null,
+   "scene": "cpu-qq-hazard",
    "points": [
     {
      "text": "多道指令同時在 pipeline 會互相干擾：structural、data、control 三種 hazard。",
@@ -135,11 +205,31 @@
      "text": "Load-use hazard 連 forwarding 都救不了，必須 stall 一個 cycle；編譯器可用 instruction scheduling 塞入無關指令。",
      "t": 660.94
     }
+   ],
+   "cues": [
+    468.2,
+    489.6,
+    518.9,
+    539.0,
+    573.0,
+    612.8,
+    660.9,
+    695.7
+   ],
+   "explain": [
+    "天下沒有白吃的午餐：多道指令同時在 pipeline 裡，可能互相干擾，這叫 hazard（冒險），分成 structural、data、control 三種。",
+    "Structural hazard：兩道指令在同一個 cycle 要用同一個硬體。早期指令和資料放在同一塊記憶體，cycle 4 時 A 在 Memory Access 讀資料、D 在 Fetch 抓指令，兩個搶同一塊記憶體。",
+    "解法：把指令記憶體和資料記憶體分開，這就是 CPU 快取分成 I-cache（指令）和 D-cache（資料）的原因，Fetch 和 Memory Access 就不會互搶。",
+    "Data hazard 最常見：sub R3, R0, R4 要用 add R0, R1, R2 算出來的 R0，可是 sub 在 Decode（cycle 3）讀 R0 時，add 要到 Write Back（cycle 5）才寫回，讀到的會是舊值。",
+    "解法一 stall：在 pipeline 插入空的 cycle（bubble／NOP），讓 sub 等到 add 寫回才讀（課本假設前半個 cycle 寫、後半個 cycle 讀，所以要等 2 個 cycle）。簡單但浪費時間。",
+    "解法二 forwarding（又叫 bypassing）：add 在 Execute 算完，結果其實已經在 CPU 裡，直接轉給 sub 的 Execute，不必等寫回，就不用 stall。代價是要多一些偵測、轉發的電路。",
+    "Load-use hazard：load 要到 Memory Access 才拿到資料，但下一道 add 的 Execute 正好排在同一個時間，差了一個 cycle，forwarding 也來不及，一定要 stall 1 個 cycle。",
+    "聰明的編譯器會做 instruction scheduling（指令排程）：在 load 和 add 中間塞一道不相關的指令（這裡的 sub 是示意），等待的那個 cycle 就被利用起來，不用真的空等。"
    ]
   },
   {
    "title": "Control Hazard 與分支預測",
-   "scene": null,
+   "scene": "cpu-qq-ctrl",
    "points": [
     {
      "text": "遇到分支時 CPU 還不知道下一道指令在哪，卻必須先 fetch。",
@@ -161,11 +251,29 @@
      "text": "猜對沒有損失、猜錯付出 flush 的代價。",
      "t": 809.12
     }
+   ],
+   "cues": [
+    715.6,
+    737.1,
+    743.1,
+    766.6,
+    779.4,
+    794.2,
+    809.1
+   ],
+   "explain": [
+    "Control hazard 最棘手：遇到 if-else、迴圈這種分支（例如 beq），CPU 不知道下一道是接著往下走，還是跳到 L。",
+    "pipeline 要一直提前 fetch 指令，所以 beq 還沒執行完（這裡假設到 EX 才知道結果，示意），後面就已經先抓進兩道「猜的」指令。",
+    "如果猜錯，已經進入 pipeline 的錯誤指令全部要丟掉，叫 pipeline flush（清空），白白損失好幾個 cycle（這裡是 2 個）。",
+    "解法是 branch prediction（分支預測）：CPU 先猜。現代 CPU 猜得非常準，準確率可以到 95% 以上。",
+    "最簡單的策略是一律預測「不跳」。但迴圈的 branch 幾乎每次都跳回去（T），只有最後一次離開（N），所以這裡 11 次只猜對 1 次。",
+    "更聰明的是記住每個 branch 的歷史：上次跳，這次就猜跳。迴圈連續跳了 10 次，下次大機率還是跳，這裡 11 次猜對 9 次。",
+    "猜對：pipeline 繼續滿速前進，沒有損失；猜錯：把錯的指令 flush 掉，從正確的位置重來，損失幾個 cycle。"
    ]
   },
   {
    "title": "總結與延伸",
-   "scene": null,
+   "scene": "cpu-qq-sum",
    "points": [
     {
      "text": "單週期被最慢指令拖垮 → FSM 用多個短 cycle → 但仍序列執行 → Pipeline 讓多道指令並行。",
@@ -183,6 +291,22 @@
      "text": "下一集：cache，因為記憶體速度跟不上 pipeline。",
      "t": 944.02
     }
+   ],
+   "cues": [
+    832.0,
+    845.8,
+    861.4,
+    874.2,
+    911.1,
+    944.0
+   ],
+   "explain": [
+    "總結成一條演進線：單週期 → FSM（多週期）→ Pipeline。",
+    "單週期每道指令一個 cycle，設計最簡單，但 clock 被最慢的指令拖垮、硬體大量閒置；所以讓指令用多個短 cycle，就有了 FSM。",
+    "FSM 比較靈活，但指令還是一道一道序列執行，硬體使用率低；所以讓多道指令同時在不同階段執行，就有了 pipeline。",
+    "理論上 N 級 pipeline 有 N 倍效能，但帶來三種 hazard：structural 靠分開指令／資料記憶體；data 靠 forwarding，load-use 要 stall 再加上編譯器排程；control 靠 branch prediction，猜錯就 flush。",
+    "現代 CPU 早就不只五級，有十幾到二十幾級，還能同時跑好幾條 pipeline；flush 演變成 speculative execution，data hazard 的解法演變成 out-of-order execution 和 register renaming。",
+    "下一集講 cache：pipeline 讓 CPU 跑很快，但記憶體速度跟不上；如果每次都要去記憶體拿資料，pipeline 的優勢就被抵消了。"
    ]
   }
  ],

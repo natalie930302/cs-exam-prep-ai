@@ -3637,6 +3637,30 @@ FRAG.push(['syn-20b-posix', 'POSIX semaphore 的 API', async (tok) => {
 }]);
 
 // ════════ r0h26ioGeG0（第 20C 講）：non-busy waiting semaphore、何時用 spinlock、atomic 的實作、排順序與 data flow、deadlock / starvation ════════
+FRAG.push(['syn-20c-q7', '期中考第 7 題補充：hierarchical 不一定只有一層', async (tok) => {
+  fresh([0, 6.5, 13], [0, 1.6, 0]);
+  const xs = [-4.4, 0, 4.4];
+  let cs = [], lv = [];
+  await step(tok);                                   // 22 第 7 題的選項：inverted、hash、hierarchical
+  hd('第 7 題：哪種情境用哪種 page table？', 0, 6.2);
+  cs = ['inverted', 'hash', 'hierarchical'].map((t, i) => card(t, [PCS[3], PCS[2], PCS[0]][i], xs[i], 0.3, -2.4, 2.6));
+  cap('第七題的選項：inverted、hash、hierarchical', '題目原本想的是一般的 one-level page table');
+  await step(tok);                                   // 38 hierarchical 不一定是 one-level → multi-level 會慢
+  lv = [0, 1, 2].map((i) => bx('', '#e8c98c', xs[2] - 1.0 + i * 1.0, 0.3 + i * 0.7, -0.6, 0.8, 0.5, 0.8, 1.2));
+  idx('hierarchical 可能是 multi-level：查好幾層才找到 frame', 2.4, 3.0, -0.6);
+  bad('層數多 → 每次 access 要多查幾次 → 慢', 2.4, 3.7, -0.6);
+  cap('但 hierarchical 沒說一定是 one-level', '如果是 multi-level，就要查好幾層，會比較慢');
+  await step(tok);                                   // 54 要快的情境 → 選 hash 也合理
+  glow(cs[1], DIM); good('要快 → hash：平均查一次就找到', xs[1], 1.2, -2.4);
+  cap('所以「要快」的情境選 hash 也可以', 'hash 平均（in average）一次 access 就找到');
+  await step(tok);                                   // 89 很分散的情境 → hierarchical：沒用到的 leaf table 不建
+  glow(cs[2], DIM); lv.slice(1).forEach((m) => P.tint(m, '#d8cfc0'));
+  good('很分散 → hierarchical：沒用到的 leaf page table 不用建，省空間', 0, 4.6, 1.6);
+  cap('page 很分散、要省空間 → hierarchical', '用不到的 leaf level page table 根本不用 create');
+  await step(tok);                                   // 109 解釋合理就給分
+  note('沒有標準答案：理由合理、符合系統實際運作就給分', 0, 5.4, 1.6);
+  cap('這題沒有標準答案', '只要解釋合理，就可以拿到分數');
+}]);
 const SEMW = ['wait(S) {', '  S.value--;', '  if (S.value < 0) {', '    add P to S.list;', '    sleep();   // block', '  }', '}', 'signal(S) {', '  S.value++;', '  if (S.value <= 0) {', '    remove P from S.list;', '    wakeup(P);', '  }', '}'];
 FRAG.push(['syn-20c-sleep', 'Non-busy waiting：semaphore 帶一個 waiting queue', async (tok) => {
   fresh([0, 6.5, 13], [0, 1.6, 0]);

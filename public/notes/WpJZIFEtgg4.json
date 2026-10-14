@@ -451,12 +451,24 @@
   },
   {
    "title": "（問同學：兩條 pipeline 每個 cycle fetch 幾個指令）",
-   "scene": null,
+   "scene": "ppB-21a-fetch2",
    "points": [
     {
      "t": 1781,
      "text": "老師點名同學回答兩條 pipeline 時每個 cycle 要 fetch 幾個指令。"
     }
+   ],
+   "cues": [
+    1785,
+    1803,
+    1812,
+    1836
+   ],
+   "explain": [
+    "老師問：如果有兩條 pipeline，每個 clock cycle 要發出（fetch）幾個指令？",
+    "先回想一條 pipeline：每個 cycle 丟一個指令進去，一個接一個。",
+    "兩條 pipeline 就是把 resource 加倍：有兩個 instruction fetch、register file 一次能讀更多 operand、ALU 也有兩個。",
+    "所以兩條同時各跑一個指令，每個 cycle 要 fetch 2 個。填滿之後每個 cycle 能完成 2 個，理想上 IPC = 2（CPI = 0.5）。"
    ]
   },
   {

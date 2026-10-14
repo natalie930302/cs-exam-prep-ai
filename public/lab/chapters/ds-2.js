@@ -16753,6 +16753,395 @@ FRAG.push(['ptrwhy-summary', '總整理：stack 以外都靠指標', async (tok)
   at(3);
 }]);
   }
+  // ═══ qa-ds2.js（課堂 Q&A 與回顧段落的場景） ═══
+  {
+const QK = kit(ctx);
+const { V3, fresh, tag, cube, kill, glow, tint, txt, arrow, line, ghostBox, code, anim, buddy, GOLD, GREEN, RED } = QK;
+const step = (tok) => ctx.step(tok);
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const bubble = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
+const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const bar = (x, h, color, z = 0) => cube('', color, [0.7, Math.max(0.05, h), 0.7], x, h / 2, z);
+const wipe = (arr) => { arr.forEach(kill); arr.length = 0; };
+
+// ── -1FYYVpgyUo：Big O 的 Q&A ──
+FRAG.push(['qa-bigo-bound', 'Big O 只要上限；差值可能是負的', async (tok) => {
+  fresh([0, 3.6, 12.5], [0, 2.0, 0]);
+  const S = [];
+  await step(tok);                                   // 71:48 拆開絕對值：上限和下限
+  S.push(note('|f(n) / g(n) − c| < ε', 0, 4.6));
+  S.push(line(-5, 1, 5, 1));
+  const lo = cube('', '#d8cfc0', [0.15, 0.6, 0.4], -1.6, 1, 0), mid = cube('', '#4b9ee2', [0.15, 0.6, 0.4], 0, 1, 0), hi = cube('', '#2fc092', [0.15, 0.6, 0.4], 1.6, 1, 0);
+  S.push(lo, mid, hi);
+  S.push(tag('c − ε', 'idx', -1.6, 0.3), tag('c', 'idx', 0, 0.3), tag('c + ε', 'idx', 1.6, 0.3));
+  say('極限的定義拆開絕對值', '同時得到一個上限和一個下限');
+  await beat(tok, 1600);
+  glow(hi, GREEN);
+  S.push(good('上限：Big O 只需要這一邊', 2.6, 2.6), tag('下限：之後用別的記號（Ω）', 'idx', -2.6, 1.6));
+  await step(tok);                                   // 72:14 時間、空間不會是負的
+  wipe(S); kill(lo); kill(mid); kill(hi);
+  S.push(line(-5, 0, 5, 0));
+  S.push(bar(-2.4, 2.4, '#4b9ee2'), bar(-0.8, 1.6, '#9b7ef4'));
+  S.push(tag('時間', 'idx', -2.4, -0.5), tag('空間', 'idx', -0.8, -0.5), good('都 ≥ 0', 2.4, 1.6));
+  say('時間、空間本身不會是負的', '');
+  await step(tok);                                   // 72:27 兩個東西的差可能是負的
+  wipe(S);
+  S.push(line(-5, 0, 5, 0));
+  S.push(bar(-3.2, 2.0, '#4b9ee2'), bar(-1.6, 3.0, '#9b7ef4'));
+  S.push(tag('f₁(n)', 'idx', -3.2, -0.5), tag('f₂(n)', 'idx', -1.6, -0.5));
+  const neg = cube('', '#e06666', [0.7, 1.0, 0.7], 1.6, -0.5, 0); S.push(neg);
+  S.push(bad('f₁ − f₂ = −1：差可能是負的', 3.0, 1.0));
+  say('但兩個量的「差」可能是負的', '例如 f₁(n) − f₂(n)');
+  await step(tok);                                   // 72:43 用在負的東西要講清楚
+  S.push(pkt('照原值算：f₁ − f₂ ≤ c·g(n)？', 0, 4.7), pkt('還是取絕對值：|f₁ − f₂| ≤ c·g(n)？', 0, 3.9));
+  say('把 Big O 用在可能是負的東西上', '要先講清楚：照原值，還是取絕對值');
+}]);
+
+FRAG.push(['qa-bigo-omega', 'Big O 的底數、little-o、Ω、Θ', async (tok) => {
+  fresh([0, 3.8, 12.5], [0, 2.4, 0]);
+  const S = [];
+  await step(tok);                                   // 95:36 多個 Big O 之間做運算
+  S.push(note('O(f) + O(g) = ?　O(f) · O(g) = ?', 0, 4.4));
+  say('多個 Big O 之間可以做運算', '下一段的主題');
+  await step(tok);                                   // 96:20 底數有沒有關係
+  wipe(S);
+  S.push(good('log₂ n = (log₂ 10) · log₁₀ n：只差常數倍', 0, 4.4));
+  S.push(tag('→ 底數不同，都是 O(log n)', 'idx', 0, 3.7));
+  S.push(bad('3ⁿ / 2ⁿ = (1.5)ⁿ → ∞：不是常數倍', 0, 2.4));
+  S.push(tag('→ 指數的底數不同，就是不同等級', 'idx', 0, 1.7));
+  say('底數有沒有關係？要用定義證明', 'log 的底數沒關係；指數的底數有關係，比較 tricky');
+  await step(tok);                                   // 97:20 little-o、little-omega
+  wipe(S);
+  S.push(note('f = o(g)：f / g → 0（嚴格比 g 小）', 0, 4.4));
+  S.push(note('f = ω(g)：f / g → ∞（嚴格比 g 大）', 0, 3.5));
+  S.push(tag('定義比較接近極限，只在特定地方用到', 'idx', 0, 2.6));
+  say('little o、little omega 各有定義', '比較接近極限的寫法');
+  await step(tok);                                   // 97:54 Big Omega
+  wipe(S);
+  S.push(note('Ω：下界', 0, 4.6));
+  S.push(bad('不是「某個 input 運氣好」的時間', 0, 3.7), good('常用在：一個問題最少要多少時間', 0, 2.9));
+  S.push(tag('例：比較式排序最少 Ω(n log n)', 'idx', 0, 2.2));
+  say('Ω 常用來說「這個問題最少要多少時間」', '比這更快就註定會錯');
+  await step(tok);                                   // 99:16 任何函數都可以講 O、Ω、Θ
+  wipe(S);
+  const f = cube('f(n)', '#4b9ee2', [2.2, 0.6, 0.6], 0, 2.4, 0); S.push(f);
+  const up = cube('O(g)：上界', '#2fc092', [3.4, 0.35, 0.6], 0, 3.6, 0), dn = cube('Ω(g)：下界', '#9b7ef4', [3.4, 0.35, 0.6], 0, 1.2, 0);
+  S.push(up, dn);
+  S.push(good('上下都夾住 → Θ(g)', 0, 4.4), tag('最常用：worst case 的 Big O', 'idx', 0, 0.4));
+  say('任何函數都可以講 O、Ω，知道確切的話講 Θ', '這門課最常用的是 Big O');
+}]);
+
+FRAG.push(['qa-two-n', '2ⁿ 的例子：窮舉與天真遞迴', async (tok) => {
+  fresh([0, 3.6, 12.5], [0, 2.4, 0]);
+  const S = [];
+  await step(tok);                                   // 130:17 2ⁿ 的程式其實不少
+  S.push(line(-6, 0, 2, 0));
+  [2, 4, 8, 16, 32, 64].forEach((v, i) => { S.push(bar(-5.4 + i * 1.3, v * 0.075, '#e06666')); S.push(tag('n=' + (i + 1) + '：' + v, 'idx', -5.4 + i * 1.3, -0.45)); });
+  S.push(note('2ⁿ：n 每 +1，時間就翻倍', 4.2, 3.6));
+  say('2ⁿ 時間的程式其實不少', '只是大家還沒碰到那麼大的問題');
+  await step(tok);                                   // 131:52 窮舉 0/1 字串
+  wipe(S);
+  const strs = ['000', '001', '010', '011', '100', '101', '110', '111'];
+  const cs = strs.map((s, i) => cube(s, '#f6deb0', [0.9, 0.55, 0.6], -4.55 + i * 1.3, 1.6, 0)); S.push(...cs);
+  S.push(note('長度 n 的 0/1 字串：2ⁿ 個（n = 3 → 8 個）', 0, 3.6));
+  say('窮舉：在所有長度 n 的二進位字串裡', '一個一個找，就像 sequential search');
+  for (let i = 0; i < 8; i++) { glow(cs[i], GOLD); await beat(tok, 380); glow(cs[i], null); }
+  glow(cs[7], GOLD);
+  await step(tok);                                   // 132:37 沒寫好的 Fibonacci
+  wipe(S);
+  const T = [['F(4)', 0, 4.8, -1], ['F(3)', -2.4, 3.6, 0], ['F(2)', 2.4, 3.6, 0], ['F(2)', -3.6, 2.4, 1], ['F(1)', -1.2, 2.4, 1], ['F(1)', 1.2, 2.4, 2], ['F(0)', 3.6, 2.4, 2], ['F(1)', -4.4, 1.2, 3], ['F(0)', -2.8, 1.2, 3]];
+  const ns = [];
+  for (const [t, x, y, p] of T) {
+    const m = cube(t, t === 'F(2)' ? '#f0a8a8' : '#4b9ee2', [0.95, 0.5, 0.5], x, y, 0, 1.5); ns.push(m); S.push(m);
+    if (p >= 0) S.push(line(T[p][1], T[p][2] - 0.25, x, y + 0.25));
+    await beat(tok, 260);
+  }
+  S.push(bad('F(2) 被重算了兩次', 3.2, 1.2));
+  S.push(note('天真遞迴：呼叫次數是指數級，上界 O(2ⁿ)', 0, 0.2));
+  say('分析沒寫好的遞迴（例如 Fibonacci）', '也常常得到 2ⁿ');
+}]);
+
+FRAG.push(['qa-stack-browser', '瀏覽器上一頁與 restricted container', async (tok) => {
+  fresh([0, 3.8, 12.5], [0, 2.4, 0]);
+  const S = [];
+  await step(tok);                                   // 164:04 上一頁也是 stack
+  const pg = ['A 首頁', 'B 文章', 'C 留言'].map((t, i) => cube(t, ['#4b9ee2', '#9b7ef4', '#2fc092'][i], [2.0, 0.6, 1.0], -3, 0.35 + i * 0.7, 0, 3));
+  S.push(...pg);
+  S.push(tag('造訪順序：A → B → C', 'idx', -3, 3.0));
+  say('瀏覽器的「上一頁」可以想成 stack', '每開一頁就 push');
+  await step(tok);                                   // 164:15 也可以想成 linked list
+  const ll = [2, 1].map((i) => arrow(V3(-1.9, 0.35 + i * 0.7, 0), V3(-1.9, 0.35 + (i - 1) * 0.7 + 0.15, 0.4), 0xa8730f));
+  S.push(...ll, bubble('也可以是一條隱含的 linked list', 2.4, 2.4));
+  say('換個角度：也可以想成 linked list', '實作不一定是 stack');
+  await step(tok);                                   // 164:29 按上一頁回到最後造訪的
+  QK.fly(pg[2]);
+  glow(pg[1], GOLD);
+  S.push(good('上一頁 = pop：回到 B', 2.4, 1.4));
+  say('按「上一頁」：回到最後造訪的頁面', '最後進來的先出去');
+  await step(tok);                                   // 166:06 container
+  wipe(S); pg.forEach(kill);
+  const g1 = ghostBox('#4b9ee2', 3.2, 2.0, 1.4); g1.position.set(-3.4, 1.2, 0); S.push(g1);
+  const g2 = ghostBox('#2fc092', 1.4, 2.6, 1.4); g2.position.set(3.0, 1.5, 0); S.push(g2);
+  S.push(tag('array、list：general container', 'ptr', -3.4, 3.0), tag('stack：restricted container', 'ptr', 3.0, 4.9));
+  [-4.4, -3.4, -2.4].forEach((x, i) => S.push(cube(String(i + 1), '#9b7ef4', [0.6, 0.6, 0.6], x, 0.5, 0, 2)));
+  S.push(tag('哪裡都可以放、可以拿', 'idx', -3.4, -0.4), tag('只有上面一個開口', 'idx', 3.0, -0.4));
+  S.push(arrow(V3(3.0, 4.5, 0), V3(3.0, 2.9, 0), 0x0f5a3a));
+  say('container 就是可以裝東西的容器', 'array、list 很自由；stack 有規定的進出方式');
+  await step(tok);                                   // 166:56 stack = 底層容器 + 限定開口
+  S.push(cube('array / linked list', '#d8c29b', [2.6, 0.3, 1.4], 3.0, 0.05, 0));
+  S.push(good('stack = 底層容器 + 限定的開口', 0, -1.1));
+  say('stack 底下其實是 array 或 linked list', '只是在上面加了一個限定的開口');
+}]);
+
+// ── 1yyu70Vy9Zc：C++ 的 Q&A 與 row-major ──
+FRAG.push(['qa-cpp-this', 'class、this、operator overloading、回傳 reference', async (tok) => {
+  fresh([0, 3.8, 12.5], [0, 2.2, 0]);
+  const S = [];
+  await step(tok);                                   // 46:43 class ≈ struct + function
+  const box = ghostBox('#4b9ee2', 4.4, 1.6, 1.4); box.position.set(-2.4, 1.6, 0); S.push(box);
+  S.push(cube('x', '#4b9ee2', [0.8, 0.6, 0.6], -3.6, 1.6, 0), cube('y', '#4b9ee2', [0.8, 0.6, 0.6], -2.6, 1.6, 0));
+  const nm = tag('struct Point', 'ptr', -2.4, 2.9); S.push(nm);
+  say('入門可以把 class 看成 struct 加上 function', '');
+  await beat(tok, 1500);
+  S.push(cube('move()', '#c08a1f', [1.1, 0.6, 0.6], -1.2, 1.6, 0, 2));
+  txt(nm, 'class Point：資料 + function');
+  S.push(tag('另外還有權限控制（private / public）', 'idx', 2.8, 1.6));
+  await step(tok);                                   // 47:35 this 指標
+  wipe(S);
+  const mem = []; for (let i = 0; i < 8; i++) { mem.push(cube('', '#f6deb0', [0.9, 0.4, 0.8], -3.85 + i * 1.1, 0.4, 0)); S.push(tag('0x' + (0x1000 + i * 4).toString(16), 'idx', -3.85 + i * 1.1, -0.2)); }
+  S.push(...mem);
+  [3, 4].forEach((i) => tint(mem[i], '#4b9ee2'));
+  S.push(tag('這個物件（x、y）', 'ptr', -3.85 + 3.5 * 1.1, 1.2));
+  const th = pkt('this = 0x100c', -3.85 + 3 * 1.1, 3.4); S.push(th);
+  S.push(arrow(V3(-3.85 + 3 * 1.1, 3.0, 0), V3(-3.85 + 3 * 1.1, 0.75, 0), 0xa8730f));
+  say('this：系統偷偷藏起來的指標', '記著「目前這個物件」在記憶體的哪裡');
+  await step(tok);                                   // 48:15 operator overloading 速度
+  wipe(S);
+  S.push(note('c = a + b;', -3, 3.6));
+  S.push(arrow(V3(-1.4, 3.6, 0), V3(0.6, 3.6, 0)));
+  S.push(note('c = operator+(a, b);', 3, 3.6));
+  S.push(good('編譯器翻譯成 function 呼叫：執行速度幾乎一樣', 0, 2.2));
+  S.push(tag('差別在寫程式的速度：code 更乾淨', 'idx', 0, 1.4));
+  say('operator overloading 跟 function 一樣快', '差的是「寫」的速度');
+  await step(tok);                                   // 49:16 不回傳 reference：多複製一份
+  wipe(S);
+  S.push(note('a = b;', 0, 4.6));
+  const ret = cube('回傳的物件', '#9b7ef4', [1.8, 0.7, 0.8], -2.6, 2.4, 0), rcv = cube('接收方', '#4b9ee2', [1.8, 0.7, 0.8], 2.6, 2.4, 0);
+  S.push(ret, rcv);
+  const cp = cube('複製品', '#f0a8a8', [1.8, 0.7, 0.8], -2.6, 2.4, 0); S.push(cp);
+  await anim(tok, 900, (u) => cp.position.set(-2.6 + u * 2.6, 2.4 + Math.sin(u * Math.PI) * 0.8, 0));
+  S.push(bad('不回傳 reference：多複製一份、多佔記憶體', 0, 0.9));
+  say('operator= 如果不回傳 reference', '回傳的東西會再複製一份給接收方');
+  await step(tok);                                   // 50:08 回傳 reference：不複製
+  QK.fly(cp);
+  S.push(good('回傳 reference：直接用原來那一份，不複製', 0, 0.2));
+  S.push(pkt('Point& operator=(const Point&)', 0, 3.8));
+  say('回傳 reference：沒有複製的動作', '省時間，也不會有多餘的記憶體');
+}]);
+
+FRAG.push(['qa-cpp-sort', 'STL sort 需要比較大小的 operator；reference 像安全的 pointer', async (tok) => {
+  fresh([0, 3.8, 12.5], [0, 2.2, 0]);
+  const S = [];
+  await step(tok);                                   // 64:19 自訂型別要能比大小
+  const st = ['Amy', 'Bob', 'Cat'].map((t, i) => cube(t, '#9b7ef4', [1.3, 0.7, 0.8], -4.4 + i * 1.6, 2.2, 0, 2)); S.push(...st);
+  S.push(note('sort(v.begin(), v.end());', 2.8, 3.6), bubble('Student 誰比較小？', -2.8, 3.4));
+  say('用 STL 的 sort 排自訂型別', '至少要能比較大小');
+  await step(tok);                                   // 64:53 編譯器找不到就 compile 不過
+  const c = code(['template <class T>', 'void sort(T* a, ...) {', '  if (a[j] < a[i]) ...', '}'], 2.6, 2.6, 0.5); S.push(...c.ls);
+  c.hl(2);
+  S.push(bad('沒有 operator< → compile 不過', -2.8, 0.8));
+  say('編譯器把 T 換成 Student 之後', '找不到 < 的定義就 compile 不過');
+  await beat(tok, 2600);
+  S.push(good('bool operator<(const Student&) 寫好就能 sort', -1.6, 0.0));
+  await step(tok);                                   // 65:13 reference 是比較安全的 pointer
+  wipe(S); c.kill();
+  const x = cube('x = 5', '#4b9ee2', [1.4, 0.7, 0.8], 0, 2.0, 0); S.push(x);
+  S.push(pkt('int* p = &x;', -3.6, 3.6), arrow(V3(-3.0, 3.3, 0), V3(-0.8, 2.3, 0), 0xa8730f));
+  S.push(tag('pointer：可以改指別處、可以是 NULL', 'idx', -3.6, 0.9));
+  S.push(pkt('int& r = x;', 3.6, 3.6), arrow(V3(3.0, 3.3, 0), V3(0.8, 2.3, 0), 0x0f5a3a));
+  S.push(tag('reference：x 的別名，一定綁著 x', 'idx', 3.6, 0.1));
+  say('reference 很像 C 的 pointer', '可以看成 pointer 一種比較安全的包裝');
+}]);
+
+FRAG.push(['qa-cpp-access', 'class 與 struct 的預設權限', async (tok) => {
+  fresh([0, 3.8, 12.5], [0, 2.2, 0]);
+  const S = [];
+  await step(tok);                                   // 78:16 class 預設 private、struct 預設 public
+  const gc = ghostBox('#9b7ef4', 3.6, 1.8, 1.4); gc.position.set(-3, 1.6, 0); S.push(gc);
+  const gs = ghostBox('#2fc092', 3.6, 1.8, 1.4); gs.position.set(3, 1.6, 0); S.push(gs);
+  S.push(tag('class：預設 private', 'ptr', -3, 2.9), tag('struct：預設 public', 'ptr', 3, 2.9));
+  S.push(cube('data', '#9b7ef4', [1.2, 0.6, 0.6], -3, 1.4, 0), cube('data', '#2fc092', [1.2, 0.6, 0.6], 3, 1.4, 0));
+  say('C++ 的 class 和 struct 幾乎一樣', 'class 預設 private，struct 預設 public');
+  await step(tok);                                   // 78:29 C++ 的 struct 也能寫 function
+  S.push(cube('f()', '#c08a1f', [0.8, 0.6, 0.6], 4.2, 1.4, 0, 2));
+  S.push(good('C++ 的 struct 也能寫 function', 3, 0.3), tag('C 的 struct：只能宣告資料', 'idx', -3, -0.4));
+  say('C++ 的 struct 也可以寫 function', 'C 的 struct 只能放資料');
+  await step(tok);                                   // 82:58 private / public = 權限控制
+  wipe(S);
+  const box = ghostBox('#9b7ef4', 4.0, 2.0, 1.4); box.position.set(2.4, 1.6, 0); S.push(box);
+  const pv = cube('private: balance', '#9b7ef4', [2.6, 0.55, 0.6], 2.4, 2.1, 0), pb = cube('public: show()', '#2fc092', [2.6, 0.55, 0.6], 2.4, 1.2, 0);
+  S.push(pv, pb);
+  const out = buddy('外面的程式', '', '#f3d36b', -4.2, 0, 0.6, 0.8); S.push(out.g);
+  S.push(arrow(V3(-3.4, 1.4, 0.3), V3(0.9, 2.1, 0.3), 0x7a1010), bad('看不到、改不了', -1.4, 3.0));
+  out.mood('sad');
+  await beat(tok, 1600);
+  S.push(arrow(V3(-3.4, 0.9, 0.3), V3(0.9, 1.2, 0.3), 0x0f5a3a), good('可以呼叫', -1.4, 0.2));
+  say('private / public 是權限控制', '某些程式不能看到、不能改某些資料');
+}]);
+
+FRAG.push(['qa-arr-rowmajor', 'row-major、cache 與 one block', async (tok) => {
+  fresh([0, 3.8, 12.5], [0, 2.2, 0]);
+  const S = [];
+  await step(tok);                                   // 150:30 大規模資料才看得出差別
+  const mem = [];
+  for (let i = 0; i < 12; i++) { const r = Math.floor(i / 4), c = i % 4; mem.push(cube(r + '' + c, ['#4b9ee2', '#9b7ef4', '#2fc092'][r], [0.6, 0.5, 0.6], -4.4 + i * 0.8, 1.4, 0)); }
+  S.push(...mem, tag('記憶體（one block，row-major）', 'ptr', 0, 2.3));
+  say('row sum：照記憶體順序一格一格走', '');
+  for (let i = 0; i < 12; i++) { glow(mem[i], GREEN); await beat(tok, 140); }
+  await beat(tok, 500); mem.forEach((m) => glow(m, null));
+  say('column sum：每次跳 4 格', '資料小看不出差別；資料大時 cache 會讓差距變明顯');
+  for (const i of [0, 4, 8, 1, 5, 9, 2, 6, 10, 3, 7, 11]) { glow(mem[i], GOLD); await beat(tok, 160); }
+  S.push(good('row sum：連續存取', -2.6, 0.4), bad('column sum：跳著存取', 2.6, -0.3));
+  await step(tok);                                   // 151:20 cache 會被洗掉、不是唯一因素
+  mem.forEach((m) => glow(m, null));
+  S.push(QK.prop('cpu', -5.6, 3.0, 0, 0.8));
+  S.push(note('cache：會被別的程式洗掉', 1.2, 4.2), tag('cache 只是影響時間的因素之一', 'idx', 1.2, 3.4));
+  say('cache 裡的東西會被別的工作洗掉', '而且 cache 只是其中一個因素');
+  await step(tok);                                   // 152:31 測的是 one block
+  wipe(S); mem.length = 0;
+  for (let i = 0; i < 12; i++) S.push(cube('', ['#4b9ee2', '#9b7ef4', '#2fc092'][Math.floor(i / 4)], [0.6, 0.5, 0.6], -4.4 + i * 0.8, 3.4, 0));
+  S.push(tag('one block：整個 2D array 一整塊連續', 'ptr', 0, 4.3));
+  for (let r = 0; r < 3; r++) {
+    S.push(cube('', '#d8c29b', [0.6, 0.5, 0.6], -4.4, 1.6 - r * 0.7, 0));
+    for (let c = 0; c < 4; c++) S.push(cube('', ['#4b9ee2', '#9b7ef4', '#2fc092'][r], [0.6, 0.5, 0.6], -1.2 + r * 0.6 + c * 0.7 + r * 1.6, 1.6 - r * 0.7, 0));
+    S.push(arrow(V3(-4.05, 1.6 - r * 0.7, 0), V3(-1.55 + r * 2.2, 1.6 - r * 0.7, 0), 0x6e5f49));
+  }
+  S.push(tag('array of arrays：每一列各自一塊', 'ptr', 0, -0.6));
+  say('剛才測的是 one block（C 原生的 2D array）', 'array of arrays 每一列可能散在不同地方');
+  await step(tok);                                   // 152:53 C 是 row-major
+  wipe(S);
+  const rm = [], cm = [];
+  for (let i = 0; i < 12; i++) {
+    const r = Math.floor(i / 4), c = i % 4;
+    rm.push(cube(r + '' + c, ['#4b9ee2', '#9b7ef4', '#2fc092'][r], [0.6, 0.5, 0.6], -4.4 + i * 0.8, 3.0, 0));
+    const r2 = i % 3, c2 = Math.floor(i / 3);
+    cm.push(cube(r2 + '' + c2, ['#4b9ee2', '#9b7ef4', '#2fc092'][r2], [0.6, 0.5, 0.6], -4.4 + i * 0.8, 1.0, 0));
+  }
+  S.push(...rm, ...cm);
+  S.push(tag('row-major（C、C++ 等多數當代語言）：一列一列放', 'ptr', 0, 3.9), tag('column-major（Fortran 等傳統語言）：一行一行放', 'ptr', 0, 1.9));
+  say('C 配置 one block 用 row-major', '這是語言特性，要去查；有些傳統語言用 column-major');
+}]);
+
+// ── B0ywTK-Lklw：同學挑出的錯 ──
+FRAG.push(['qa-search-fix', 'binary search 的迴圈條件與 NOT_FOUND', async (tok) => {
+  fresh([0, 3.8, 12.5], [0, 2.2, 0]);
+  const S = [];
+  const A = [3, 8, 12, 20, 27, 35, 41, 56];
+  await step(tok);                                   // 67:32 迴圈條件寫反
+  const cs = A.map((v, i) => cube(v, '#f6deb0', [0.8, 0.6, 0.7], -3.85 + i * 1.1, 1.0, 0)); S.push(...cs);
+  S.push(pkt('left', -3.85, 2.0), pkt('right', -3.85 + 7 * 1.1, 2.0));
+  S.push(bad('while (left > right)：寫反了', -2.4, 3.8), good('while (left <= right)：還有書可找才繼續', 2.0, 3.0));
+  say('同學抓到：binary search 的迴圈條件寫反', '應該是「還有書可找」才繼續找');
+  await step(tok);                                   // 68:09 return NOT_FOUND 前不用 else
+  wipe(S); cs.length = 0;
+  const c = code(['for (i = 0; i < n; i++) {', '  if (a[i] == toFind) return i;', '  if (a[i] > toFind) break; // 後面只會更大', '}', 'return NOT_FOUND; // 在整個 for 外面'], 0, 4.2, 0.55);
+  S.push(...c.ls);
+  c.hl(2); say('排好序的 sequential search：碰到更大的就停', '中途停下來（也可以寫成 break）');
+  await beat(tok, 2500);
+  c.hl(4); S.push(good('NOT_FOUND 在 for 外面：不需要 else', 0, 1.0));
+  await step(tok);                                   // 71:26 跑完都沒跳出 → toFind 比全部大
+  c.kill(); wipe(S);
+  const cs2 = A.map((v, i) => cube(v, '#f6deb0', [0.8, 0.6, 0.7], -3.85 + i * 1.1, 1.0, 0)); S.push(...cs2);
+  const q = pkt('toFind = 99', -5.0, 2.6); S.push(q);
+  for (let i = 0; i < 8; i++) { glow(cs2[i], GOLD); await beat(tok, 260); glow(cs2[i], null); }
+  S.push(bad('迴圈跑完都沒跳出', 0, 3.4), good('→ toFind 比全部都大：NOT_FOUND', 0, 2.6));
+  say('迴圈整個跑完都沒有跳出來', '代表 toFind 比所有元素都大');
+}]);
+
+// ── 回顧段落 ──
+FRAG.push(['recap-array-unit', 'Array 單元回顧', async (tok) => {
+  fresh([0, 3.8, 12.5], [0, 2.2, 0]);
+  const S = [];
+  await step(tok);                                   // index 對 value
+  for (let i = 0; i < 6; i++) { S.push(cube([7, 2, 9, 4, 1, 6][i], '#4b9ee2', [0.8, 0.6, 0.7], -2.75 + i * 1.1, 1.6, 0, 2)); S.push(tag(String(i), 'idx', -2.75 + i * 1.1, 0.9)); }
+  S.push(note('array：index → value，就這麼簡單', 0, 3.4));
+  say('array 本身很簡單：index 對 value', '重點在它的應用');
+  await step(tok);                                   // 多項式的表示
+  wipe(S);
+  S.push(tag('表示法 1：一個多項式一個 array（索引 = 次方）', 'ptr', 0, 4.6));
+  [1, 2, 3, 0, 0].forEach((v, i) => S.push(cube(v, '#9b7ef4', [0.7, 0.5, 0.6], -2.2 + i * 0.9, 3.8, 0)));
+  S.push(tag('表示法 2：很多多項式共用一個 (係數, 次方) array', 'ptr', 0, 2.4));
+  [['3,2', '#4b9ee2'], ['2,1', '#4b9ee2'], ['1,0', '#4b9ee2'], ['5,4', '#2fc092'], ['1,0', '#2fc092']].forEach(([t, col], i) => S.push(cube(t, col, [0.8, 0.5, 0.6], -2.2 + i * 0.95, 1.6, 0)));
+  S.push(tag('A(x) = 3x² + 2x + 1　B(x) = 5x⁴ + 1', 'idx', 0, 0.8));
+  say('多項式可以有不同的 array 表示法', '空間成本、運算的 complexity 都不一樣');
+  await step(tok);                                   // sparse matrix 與 transpose
+  wipe(S);
+  S.push(tag('sparse matrix：只存非 0 的 (row, col, value)', 'ptr', 0, 4.4));
+  const tri = [['0,0,15', '0,0,15'], ['0,3,22', '3,0,22'], ['1,1,11', '1,1,11'], ['2,3,-6', '3,2,-6']];
+  const L = tri.map((t, i) => cube(t[0], '#f6deb0', [1.3, 0.5, 0.6], -2.4, 3.4 - i * 0.65, 0)); S.push(...L);
+  S.push(arrow(V3(-1.4, 2.4, 0), V3(0.9, 2.4, 0)), tag('transpose：row、col 對調', 'idx', -0.25, 0.5));
+  tri.forEach((t, i) => S.push(cube(t[1], '#2fc092', [1.3, 0.5, 0.6], 2.4, 3.4 - i * 0.65, 0, 2)));
+  say('sparse matrix 有專門的表示法', '只存不是 0 的地方，也教了怎麼做 transpose');
+  await step(tok);                                   // string matching
+  wipe(S);
+  const tx = [...'ababcab'].map((ch, i) => cube(ch, '#f6deb0', [0.7, 0.6, 0.6], -3.3 + i * 1.1, 1.4, 0)); S.push(...tx);
+  const pt = [...'abc'].map((ch, i) => cube(ch, '#9b7ef4', [0.7, 0.6, 0.6], -3.3 + i * 1.1, 2.6, 0)); S.push(...pt);
+  S.push(tag('pattern 有沒有出現在字串裡？', 'ptr', 0, 3.8));
+  say('最後一個應用：string matching', '找 pattern 有沒有出現在字串裡');
+  for (let s = 1; s <= 2; s++) { await beat(tok, 700); pt.forEach((m, i) => QK.move(m, -3.3 + (s + i) * 1.1, 2.6)); }
+  await beat(tok, 700);
+  for (let i = 2; i < 5; i++) glow(tx[i], GREEN);
+  S.push(good('在 index 2 找到 "abc"', 0, 0.4));
+}]);
+
+FRAG.push(['recap-ch1', '第一章回顧：資料結構、演算法與複雜度', async (tok) => {
+  fresh([0, 3.8, 12.5], [0, 2.2, 0]);
+  const S = [];
+  await step(tok);                                   // DS 和 algorithm 的關係
+  const al = buddy('algorithm', '', '#9b7ef4', -3.2, 0, 0, 1.0), ds = buddy('data structure', '', '#4b9ee2', 3.2, 0, 0, 1.0);
+  S.push(al.g, ds.g, line(-2.4, 0.6, 2.4, 0.6));
+  say('第一章最重要：data structure 是做什麼的', '它跟 algorithm 的關係是什麼');
+  await step(tok);                                   // algorithm 解決問題
+  S.push(note('input → output', -3.2, 2.9), tag('還要符合 criteria（明確、會結束、做得到…）', 'idx', -3.2, 2.2));
+  al.mood('happy');
+  say('algorithm 是用來解決問題的', '有 input、output，還要符合幾個 criteria');
+  await step(tok);                                   // DS 用來 implement，影響 performance
+  S.push(note('把方法 implement 出來', 3.2, 4.3), tag('選什麼 DS 會影響 performance', 'idx', 3.2, 3.6));
+  ds.mood('happy');
+  say('data structure 把這些方法 implement 出來', '用哪一種，performance 差很多');
+  await step(tok);                                   // complexity
+  wipe(S);
+  const G = [['1', 0.3], ['log n', 0.7], ['n', 1.2], ['n log n', 1.8], ['n²', 2.6], ['2ⁿ', 3.6]];
+  S.push(line(-5, 0, 3, 0));
+  G.forEach(([t, h], i) => { S.push(bar(-4.4 + i * 1.4, h, ['#2fc092', '#2fc092', '#4b9ee2', '#4b9ee2', '#c08a1f', '#e06666'][i])); S.push(tag(t, 'idx', -4.4 + i * 1.4, -0.45)); });
+  S.push(note('time 與 storage complexity', 4.6, 3.6));
+  say('用 complexity 評估方法的好壞', '從 time 和 storage 兩個角度看');
+}]);
+
+FRAG.push(['recap-ds-alg', '回顧：資料結構搭配演算法', async (tok) => {
+  fresh([0, 3.8, 12.5], [0, 2.6, 0]);
+  const row = (name, color, y) => cube(name, color, [2.6, 0.55, 0.7], -3.8, y, 0, 2);
+  const alg = (t, y) => tag(t, 'note', 2.0, y);
+  await step(tok);                                   // array → sequential search
+  row('array', '#4b9ee2', 5.0); const a1 = alg('sequential search', 5.0);
+  say('從最簡單的開始：array 上做 sequential search', 'linked list 上也能做');
+  await step(tok);                                   // 找最小值 → selection sort
+  txt(a1, 'sequential search → 找最小值 → selection sort');
+  say('找「最小的那個」幾乎一模一樣', '再配一個 for 迴圈就是 selection sort');
+  await step(tok);                                   // linked list → insertion sort；ordered array → binary search
+  row('linked list', '#9b7ef4', 4.1); alg('insertion 方便 → insertion sort', 4.1);
+  row('ordered array', '#31aab0', 3.2); alg('binary search', 3.2);
+  say('linked list 插入方便 → insertion sort', '排好序的 array → binary search');
+  await step(tok);                                   // sparse / polynomial；龜兔賽跑
+  row('sparse / polynomial', '#2fc092', 2.3); alg('merge、inner product；偵測 cycle（龜兔賽跑）', 2.3);
+  say('linked list 表示 sparse vector、polynomial', '還有面試常考的龜兔賽跑找 cycle');
+  await step(tok);                                   // stack
+  row('stack', '#c08a1f', 1.4); alg('括號配對、postfix 求值、infix → postfix', 1.4);
+  say('stack：parentheses matching', 'postfix evaluation、infix to postfix');
+}]);
+  }
   // @@FRAGMENTS@@
 
   const TITLES = {"stack-lifo": "Stack：後進先出", "queue-fifo": "Queue：先進先出", "queue-false-full": "線性 Queue 的假滿", "circular-queue": "環狀 Queue", "list-insert": "Linked List 插入與刪除", "postfix-eval": "Postfix 求值", "infix-to-postfix": "Infix 轉 Postfix", "maze-dfs": "Stack 走迷宮（DFS）", "maze-compare": "DFS 與 BFS"};

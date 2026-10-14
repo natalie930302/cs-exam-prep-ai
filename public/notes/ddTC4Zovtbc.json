@@ -301,15 +301,15 @@
    "why": "push 順序是 H G F E C D B A，pop 反過來。"
   },
   {
-   "q": "影片提到的拓撲排序應用是？",
+   "q": "用 DFS 做 topological sort 時，最後的拓撲順序怎麼得到？",
    "opts": [
-    "build system 決定 package 的建置順序",
-    "network routing 找出兩點間的最短路徑",
-    "壓縮資料",
-    "找最小生成樹"
+    "依序 pop stack（finishing time 由大到小）",
+    "依 DFS 第一次拜訪（discovery time 由小到大）的順序輸出",
+    "依頂點的編號由小到大直接輸出",
+    "依各頂點的 in-degree 由大到小輸出，大的先輸出"
    ],
-   "ans": "build system 決定 package 的建置順序",
-   "why": "依賴的 package 要先 build。"
+   "ans": "依序 pop stack（finishing time 由大到小）",
+   "why": "頂點的 children 都探索完才 push 進 stack，所以後完成的在上面；pop 出來就是 finishing time 遞減的順序。"
   },
   {
    "q": "同一張 DAG 的拓撲排序答案？",

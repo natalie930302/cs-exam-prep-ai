@@ -257,15 +257,15 @@
    "why": "exec 成功後不會 return 回原本的程式。"
   },
   {
-   "q": "為什麼示範時要用 gcc ex1.c -o ex1？",
+   "q": "關於 exec() 系列 system call，下列何者正確？",
    "opts": [
-    "避免兩個程式的輸出檔都叫 a.out 而互相覆蓋",
-    "讓程式跑得更快",
-    "-o 是 fork 需要的參數，沒加的話 fork 會失敗",
-    "為了改變 PID"
+    "不會建立新 process，只把目前 process 換成新程式",
+    "先建立一個新的 child process，再由 child 執行新程式",
+    "複製目前的 process，新 process 的 PID 會不同",
+    "新程式執行完後，會回到 exec 的下一行繼續執行"
    ],
-   "ans": "避免兩個程式的輸出檔都叫 a.out 而互相覆蓋",
-   "why": "gcc 預設輸出 a.out；-o 指定檔名。"
+   "ans": "不會建立新 process，只把目前 process 換成新程式",
+   "why": "exec 用新程式取代整個 process 的內容，PID 不變；建立 PID 不同的複本是 fork，成功的 exec 不會返回。"
   }
  ]
 }

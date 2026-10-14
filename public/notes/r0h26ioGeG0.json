@@ -5,7 +5,14 @@
  "sections": [
   {
    "title": "期中考第 7 題的補充說明（idle）",
-   "scene": null,
+   "scene": "syn-20c-q7",
+   "cues": [
+    22.5,
+    37.6,
+    54.1,
+    89.5,
+    109.2
+   ],
    "points": [
     {
      "t": 15,
@@ -15,6 +22,13 @@
      "t": 151,
      "text": "有疑問這週內來找老師（上課或 email 約）。"
     }
+   ],
+   "explain": [
+    "老師補充期中考第 7 題：問不同情境該用哪種 page table，選項是 inverted、hash、hierarchical。老師原本想的是一般只有一層（one-level）的 page table。",
+    "但題目寫的是 hierarchical，沒說一定只有一層。如果是 multi-level，每次查詢要一層一層往下查好幾次，就會比較慢。",
+    "所以如果你是因為這個理由，在「要快」的情境選 hash，也是合理的：hash 平均（in average）一次 access 就能找到。",
+    "而在 page 很分散、要省空間的情境選 hierarchical 也說得通：用不到的那一段，下層（leaf level）的 page table 根本不用建立，比較省記憶體。",
+    "這題沒有標準答案，只要解釋合理、符合系統實際的運作方式，就可以給分。"
    ]
   },
   {

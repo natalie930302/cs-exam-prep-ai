@@ -1728,6 +1728,41 @@ FRAG.push(['flow-l20-mfmc', 'Lec20：max-flow min-cut（27、21、19）', async 
   say('最佳解出現在 min cut 上', '');
 }]);
 
+// 74:46 應用：資源分配 → model 成 flow network（例子自訂：3 個人、2 個資源，∞ 表示沒有上限）
+NETS.ra = { title: '資源分配', names: ['s', '甲', '乙', '丙', 'R1', 'R2', 't'], s: 0, t: 6,
+  pos: [[-6.0, 0], [-2.6, -2.6], [-2.6, 0], [-2.6, 2.6], [1.6, -1.4], [1.6, 1.6], [5.6, 0]],
+  edges: [[0, 1, 2], [0, 2, 3], [0, 3, 2], [1, 4, 99], [2, 4, 99], [2, 5, 99], [3, 5, 99], [4, 6, 3], [5, 6, 2]] };
+const RA_F = [2, 1, 2, 2, 1, 0, 2, 3, 2];
+const raCap = (c) => (c === 99 ? '∞' : String(c));
+FRAG.push(['flow-l20-resource', 'Lec20：資源分配 → model 成 flow network', async (tok) => {
+  fresh();
+  await step(tok);                                   // 4486 max flow is used most for resource allocation
+  const T = SAY('資源分配：很多人要用有限的資源', 0, -4.3);
+  buildNet('ra'); flView((i, c) => raCap(c));
+  say('Max flow 最常用來處理資源分配', '');
+  await step(tok);                                   // 4491.7 the pipes are resources, each with a limit
+  flView((i, c) => raCap(c), new Set([7, 8]));
+  nodeTag(4, 'R1：最多 3'); nodeTag(5, 'R2：最多 2');
+  say('管子就是資源，每個資源都有上限', 'capacity：最多就只能用這麼多');
+  await step(tok);                                   // 4504 many people (objects) want to use them
+  flView((i, c) => raCap(c), new Set([0, 1, 2, 3, 4, 5, 6]));
+  nodeTag(1, '要 2'); nodeTag(2, '要 3'); nodeTag(3, '要 2');
+  const N = NOTE('s → 人：每人要多少；人 → 資源：誰能用哪個資源', 0, 4.3);
+  say('很多人都要用這些資源', '要怎麼分配？');
+  await step(tok);                                   // 4516.2 allocate with network flow
+  for (const p of [['s', '甲', 'R1', 't'], ['s', '乙', 'R1', 't'], ['s', '丙', 'R2', 't']]) await flPkt(tok, p, '用', 1200);
+  flSet(RA_F);
+  flView((i, c, f) => f + '/' + raCap(c), new Set(RA_F.map((f, i) => (f > 0 ? i : -1)).filter((i) => i >= 0)));
+  txt(T, '跑 max flow：最多分出 5 單位（R1 3 + R2 2 都用滿）');
+  say('用 network flow 來分配', '甲 2、乙 1、丙 2，總共 5');
+  await step(tok);                                   // 4545.6 almost every allocation problem gets a network flow solution
+  txt(N, '資源分配問題，幾乎都有人用 network flow 解');
+  say('資源分配問題非常常見', '幾乎都找得到 network flow 的解法');
+  await step(tok);                                   // 4600.9 the key: model the problem as a flow network
+  txt(N, '關鍵：把問題 model 成 flow network，剩下交給 max flow');
+  say('應用的關鍵在 modeling', '能 model 成 flow network，就能用 network flow 求解');
+}]);
+
 // 76:52 Bipartite matching：3 對 vs 最多 4 對
 FRAG.push(['flow-l20-bip-problem', 'Lec20：bipartite matching，3 對與最多 4 對', async (tok) => {
   fresh();

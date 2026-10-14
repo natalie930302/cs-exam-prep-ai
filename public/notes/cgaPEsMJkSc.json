@@ -1248,7 +1248,7 @@
   },
   {
    "title": "Array 單元總結",
-   "scene": null,
+   "scene": "recap-array-unit",
    "points": [
     {
      "text": "Array 講完了：本身只是 index 對 value，重點在應用。",
@@ -1262,6 +1262,18 @@
      "text": "Sparse matrix 專用的表示法與 transpose；最後是 string matching。",
      "t": 5103
     }
+   ],
+   "cues": [
+    5041.48,
+    5067.22,
+    5101,
+    5139.98
+   ],
+   "explain": [
+    "Array 單元總結：array 本身很簡單，就是 index 對 value，存取它就好。重點在它的應用。",
+    "應用一：多項式。可以一個多項式用一個 array（位置就是次方），也可以很多個多項式共用一個存 (係數, 次方) 的 array。同樣用 array，不同表示法的空間成本和 complexity 都不一樣，這就是 data structure 的學問。",
+    "應用二：sparse matrix（大部分是 0 的矩陣）有專門的表示法，只存不是 0 的 (row, col, value)；還教了怎麼在這種表示法上做 transpose（row、col 對調）。",
+    "最後是 string matching：字串常用 array 來存，要找某個 pattern（例如 abc）有沒有出現在字串裡、出現在哪裡。"
    ]
   }
  ],

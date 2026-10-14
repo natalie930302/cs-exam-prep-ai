@@ -293,15 +293,15 @@
    "why": "ab、ad 是邊，所以 f(a)f(b)、f(a)f(d) 也必須是邊。"
   },
   {
-   "q": "下列哪一個不是課堂提到的 graph isomorphism 應用？",
+   "q": "要證明兩個 graph「不是」isomorphic，最直接的做法是？",
    "opts": [
-    "計算圓周率",
-    "比對化學分子結構",
-    "比對電路 schematic",
-    "抓 IC layout 抄襲"
+    "找出兩圖不同的不變量，如邊數、degree 序列",
+    "找到兩圖端點間保持 adjacency 的 bijection 對應",
+    "把兩個圖重新畫成看起來一樣的形狀",
+    "只檢查兩個圖的端點數是否相同"
    ],
-   "ans": "計算圓周率",
-   "why": "老師提到化學、電路、抓抄襲、bioinformatics、computer vision。"
+   "ans": "找出兩圖不同的不變量，如邊數、degree 序列",
+   "why": "isomorphic 的圖所有性質都相同，所以只要找到一個不同的性質就能否定；要證明「是」則必須給出對應。"
   }
  ]
 }

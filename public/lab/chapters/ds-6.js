@@ -6384,6 +6384,108 @@ FRAG.push(['hashpeng-avl-def', 'AVL tree：|h_L − h_R| ≤ 1，BF ∈ {−1, 0
   say('BF 超過 1 或小於 −1 → 不 balance', '例：JAN 先進來那棵，FEB 的 BF = 3、MAY 的 BF = −3');
 }]);
   }
+  // ═══ qa-ds6.js（課堂 Q&A 與作業說明段落的場景） ═══
+  {
+const { V3, fresh, tag, cube, kill, move, glow, tint, line, arrow, ghostBox, code, step, GOLD, GREEN } = K;
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const pkt = (t, x, y, z = 0.5) => tag(t, 'pkt', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+const wipe = (arr) => { arr.forEach(kill); arr.length = 0; };
+
+// ── CwM-Cxilk4g：結語 quadratic probing、open addressing 不用額外結構 ──
+FRAG.push(['qa-oa-quad-wrap', 'quadratic probing 減輕 clustering；open addressing 只用表本身', async (tok) => {
+  fresh([0, 3.6, 12.5], [0, 2.0, 0]);
+  const S = [];
+  const X = (i) => -5.4 + i * 1.2;
+  const cells = []; for (let i = 0; i < 10; i++) { cells.push(cube('', [2, 3, 4, 5].includes(i) ? '#e06666' : '#f6deb0', [1.05, 0.5, 0.9], X(i), 0.6, 0)); S.push(tag(String(i), 'idx', X(i), -0.1)); }
+  S.push(...cells);
+  await step(tok);                                   // quadratic probing 解決 clustering
+  S.push(bad('linear：一格一格往旁邊找 → 擠成一團（clustering）', 0, 3.6));
+  const h = 2;
+  [1, 4, 9].forEach((d, k) => { const t = (h + d) % 10; S.push(arrow(V3(X(h), 1.0 + k * 0.4, 0.5), V3(X(t), 1.0 + k * 0.4, 0.5), 0x0f5a3a)); S.push(tag('+' + d, 'idx', (X(h) + X(t)) / 2, 1.25 + k * 0.4, 0.5)); });
+  glow(cells[(h + 9) % 10], GREEN);
+  S.push(good('quadratic：h+1、h+4、h+9… 跳開找', 0, 2.9));
+  say('下一個方法 quadratic probing', '跳著找空位，可以減輕 clustering');
+  await step(tok);                                   // 用同一塊記憶體，不需要額外結構
+  wipe(S); cells.length = 0;
+  for (let i = 0; i < 6; i++) S.push(cube(['k1', '', 'k2', 'k3', '', 'k4'][i], '#f6deb0', [1.0, 0.5, 0.9], -5.0 + i * 1.1, 2.4, 0));
+  S.push(tag('open addressing：全部放在 table 本身', 'ptr', -2.25, 3.4), good('不用額外記憶體', -2.25, 1.4));
+  for (let i = 0; i < 4; i++) S.push(cube('', '#f6deb0', [1.0, 0.5, 0.9], 1.9 + i * 1.1, 3.4, 0));
+  [[0, 2], [2, 1]].forEach(([b, n]) => { for (let j = 0; j < n; j++) { S.push(cube('', '#9b7ef4', [0.8, 0.45, 0.7], 1.9 + b * 1.1, 2.5 - j * 0.8, 0)); S.push(line(1.9 + b * 1.1, 3.15 - j * 0.8, 1.9 + b * 1.1, 2.72 - j * 0.8)); } });
+  S.push(tag('separate chaining：每格再掛 linked list', 'ptr', 3.55, 4.3), bad('額外的記憶體和資料結構', 3.55, 0.6));
+  say('open addressing 用的是同一塊記憶體', '不像 separate chaining 要額外的記憶體和資料結構');
+}]);
+
+// ── SBQLkYIDAZI：作業 4 Decision Tree ──
+FRAG.push(['qa-decision-tree', 'Decision tree：問題在 non-leaf、決策在 leaf，遞迴切資料建樹', async (tok) => {
+  fresh([0, 3.8, 12.5], [0, 2.4, 0]);
+  const S = [];
+  await step(tok);                                   // non-leaf 是問題、leaf 是決策
+  const q1 = cube('多雲？', '#4b9ee2', [1.5, 0.6, 0.7], -3.4, 4.4, 0, 1.5), q2 = cube('有風？', '#4b9ee2', [1.5, 0.6, 0.7], -4.8, 3.0, 0, 1.5);
+  const l1 = cube('出門', '#2fc092', [1.3, 0.6, 0.7], -2.0, 3.0, 0, 1.5), l2 = cube('不出門', '#e06666', [1.4, 0.6, 0.7], -5.6, 1.6, 0, 1.5), l3 = cube('出門', '#2fc092', [1.3, 0.6, 0.7], -4.0, 1.6, 0, 1.5);
+  S.push(q1, q2, l1, l2, l3, line(-3.4, 4.1, -4.8, 3.3), line(-3.4, 4.1, -2.0, 3.3), line(-4.8, 2.7, -5.6, 1.9), line(-4.8, 2.7, -4.0, 1.9));
+  S.push(tag('是', 'idx', -4.4, 3.8), tag('否', 'idx', -2.4, 3.8));
+  S.push(tag('non-leaf：問題　leaf：決策', 'ptr', -3.6, 0.7));
+  say('作業 4 的主角：機器學習裡的 decision tree', 'non-leaf node 放問題，leaf 放最後的決策');
+  await step(tok);                                   // 對應一串 if-then-else
+  const c = code(['if (多雲) {', '  if (有風) 不出門;', '  else 出門;', '} else 出門;'], 2.6, 4.4, 0.55); S.push(...c.ls);
+  S.push(arrow(V3(-1.2, 3.0, 0), V3(0.6, 3.0, 0)));
+  say('一棵 decision tree 就對應一串 if-then-else', '作業要把建好的樹輸出成這段程式');
+  await step(tok);                                   // 建樹像切西瓜
+  wipe(S); c.kill();
+  const pts = [[-4.6, 0.6, 1], [-4.0, 1.6, 1], [-3.4, 0.9, 1], [-2.8, 2.0, 0], [-1.0, 0.7, 0], [-0.4, 1.8, 0], [0.4, 1.1, 0], [-4.4, 2.2, 1]];
+  const balls = pts.map(([x, y, yes]) => { const m = cube(yes ? 'Y' : 'N', yes ? '#2fc092' : '#e06666', [0.45, 0.45, 0.45], x, y, 0); S.push(m); return m; });
+  S.push(tag('資料：Y = 是，N = 否', 'ptr', -2.0, 3.2));
+  await beat(tok, 1200);
+  const cut = cube('', '#c08a1f', [0.08, 2.6, 1.0], -3.1, 1.4, 0); S.push(cut);
+  S.push(tag('左半 → 遞迴建左 subtree', 'idx', -3.8, -0.3), tag('右半 → 遞迴建右 subtree', 'idx', -0.5, -0.3));
+  S.push(note('這一刀 = root', 3.4, 2.6));
+  say('建樹像切西瓜：一刀把資料切成兩半', '左右各自遞迴建 subtree，再用 root 連起來');
+  await step(tok);                                   // 怎麼切：confusion
+  move(cut, -0.7, 1.4);
+  await beat(tok, 900);
+  const bb = bad('這刀不好：左邊 Y、N 還混在一起', 3.4, 1.8); S.push(bb);
+  await beat(tok, 1500);
+  move(cut, -3.1, 1.4); kill(bb);
+  await beat(tok, 900);
+  S.push(good('好的一刀：Y、N 各集中一邊', 3.0, 4.2));
+  say('怎麼選那一刀？看 confusion', '希望切完 Y 儘量在一邊、N 儘量在另一邊');
+  await step(tok);                                   // terminating condition
+  balls.forEach((b, i) => glow(b, pts[i][2] ? GREEN : null));
+  S.push(pkt('切不下去（全都是 Y）→ 回傳 leaf', 3.4, 0.5));
+  say('遞迴一定要有 terminating condition', '切不下去了，就停下來回傳一個 leaf');
+  await step(tok);                                   // top-down recursive；印程式 = traversal
+  wipe(S);
+  S.push(note('建樹：top-down recursive', -2.8, 3.6), note('印成程式：某一種 tree traversal', 2.8, 2.6));
+  S.push(tag('拜訪每個 node，把內容印成 if-then-else', 'idx', 2.8, 1.8));
+  say('建樹是 top-down 的遞迴', '把樹印成程式，用的是某一種 tree traversal');
+}]);
+
+// ── SBQLkYIDAZI：insert 的成本、ordered array 的 insert 不是 log n ──
+FRAG.push(['qa-insert-cost', 'insert 的成本：先 get，ordered array 還要往後推', async (tok) => {
+  fresh([0, 3.6, 12.5], [0, 2.0, 0]);
+  const S = [];
+  const A = [3, 8, 12, 20, 27, 35];
+  const X = (i) => -4.4 + i * 1.1;
+  const cs = A.map((v, i) => cube(v, '#4b9ee2', [0.9, 0.55, 0.7], X(i), 1.0, 0)); S.push(...cs);
+  for (let i = 6; i < 8; i++) S.push(cube('', '#f6deb0', [0.9, 0.55, 0.7], X(i), 1.0, 0));
+  await step(tok);                                   // insert 主要的力氣
+  S.push(note('insert 的主要力氣：找位置、把別人擠開', 0, 3.6));
+  say('不管有沒有重複，insert 花的力氣差不多', 'array 要把別人擠開；linked list 要找到位置');
+  await step(tok);                                   // insert = get 完發現沒有，再放進去
+  S.push(tag('insert ≈ 先 get（發現沒有）＋ 再放進去', 'ptr', 0, 2.8));
+  say('討論時常把 insert 想成：', '先 get，確認沒有之後再放進去');
+  await step(tok);                                   // ordered array 不是 log n
+  const nw = cube(15, '#f0a030', [0.9, 0.55, 0.7], -5.6, 2.2, 0); S.push(nw);
+  for (const i of [2, 4, 3]) { glow(cs[i], GOLD); await beat(tok, 450); glow(cs[i], null); }
+  S.push(good('binary search 找位置：O(log n)', -2.4, -0.2));
+  for (let i = 5; i >= 3; i--) { move(cs[i], X(i + 1), 1.0); await beat(tok, 300); }
+  move(nw, X(3), 1.0);
+  S.push(bad('後面全部往後推：O(n)', 2.6, -0.9));
+  say('ordered array 的 insert 不是 log n', 'binary search 找到位置後，還要把後面的推開');
+}]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

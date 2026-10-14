@@ -2986,6 +2986,37 @@ FRAG.push(['graphpeng-cc-program', 'DFS／BFS 的寫法與 connected component',
   say('回去一定要 trace code', '花點時間一步一步追程式');
 }]);
   }
+  // ═══ qa-ds7.js（地圖就是 graph） ═══
+  {
+const { V3, fresh, tag, cube, kill, glow, line, arrow, step, GOLD, GREEN } = K;
+const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
+const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
+const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
+FRAG.push(['qa-map-graph', '地圖就是 graph：POI 與不完整的圖資', async (tok) => {
+  fresh([0, 8.5, 8.5], [0, 0, 0.3]);
+  const N = { A: [-4.8, 0.6], B: [-2.6, -1.8], C: [-1.0, 1.4], D: [1.2, -1.6], E: [2.4, 1.6], F: [4.6, -0.4] };
+  const R = [['A', 'B'], ['A', 'C'], ['B', 'D'], ['C', 'E'], ['D', 'F'], ['E', 'F']];
+  cube('', '#efe6d2', [12, 0.06, 6.4], 0, -0.05, 0);
+  const V = {};
+  await step(tok);                                   // 地圖是 graph G = (V, E)
+  for (const [k, [x, z]] of Object.entries(N)) V[k] = cube(k, '#4b9ee2', [0.5, 0.35, 0.5], x, 0.18, z, 1.5);
+  const roads = R.map(([a, b]) => line(N[a][0], 0.05, N[b][0], 0.05, 0, '#8a7a60'));
+  roads.forEach((l, i) => { const [a, b] = R[i]; l.geometry.setFromPoints([V3(N[a][0], 0.06, N[a][1]), V3(N[b][0], 0.06, N[b][1])]); });
+  tag('G = (V, E)：V = 地點、路口　E = 道路', 'note', 0, 0.3, -3.0);
+  say('地圖其實就是一個 graph', 'G = (V, E)：點是地點、邊是道路');
+  await step(tok);                                   // POI
+  for (const [k, t] of [['C', '交大'], ['E', '鬆餅店']]) { glow(V[k], GOLD); tag(t, 'ptr', N[k][0], 0.8, N[k][1]); }
+  const poi = tag('POI（Point of Interest）：景點、餐廳…', 'idx', 0, 0.3, 3.0);
+  say('POI = Point of Interest', '景點、餐廳、地標，都是地圖上的點');
+  await step(tok);                                   // 圖資不完整 → shortest path 不一定最短
+  for (const k of ['A', 'C', 'E', 'F']) glow(V[k], GREEN);
+  [1, 3, 5].forEach((i) => { roads[i].material.color.set('#0f5a3a'); });
+  const miss = line(0, 0.06, 0, 0.06, 0, '#d64545'); miss.geometry.setFromPoints([V3(N.A[0], 0.07, N.A[1]), V3(N.F[0], 0.07, N.F[1])]);
+  bad('真正的近路沒在圖資裡', 0, 0.4, -0.4);
+  kill(poi); good('演算法找到的「最短」：A → C → E → F', 0, 0.3, 3.0);
+  say('圖資不完整時，找到的 shortest path', '不一定真的最短；不是演算法爛，是圖資不夠完整');
+}]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

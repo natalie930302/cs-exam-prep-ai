@@ -423,7 +423,7 @@
   },
   {
    "title": "結語：下一個是 quadratic probing",
-   "scene": null,
+   "scene": "qa-oa-quad-wrap",
    "points": [
     {
      "t": 980,
@@ -434,7 +434,15 @@
      "text": "Open addressing 只用表本身的記憶體，不需 chaining 的額外資料結構。"
     }
    ],
-   "trap": "老師在 16:07 說 quadratic probing「會消除 clustering 的問題」，但正確是它只消除 primary clustering；起點相同的 key 走同一條探測序列，仍有 secondary clustering（課本：Horowitz 8.2）。"
+   "trap": "老師在 16:07 說 quadratic probing「會消除 clustering 的問題」，但正確是它只消除 primary clustering；起點相同的 key 走同一條探測序列，仍有 secondary clustering（課本：Horowitz 8.2）。",
+   "cues": [
+    980,
+    984.37
+   ],
+   "explain": [
+    "下一個方法是 quadratic probing：linear probing 一格一格往旁邊找，容易擠成一團（clustering）；quadratic probing 改成跳著找（h+1、h+4、h+9…），可以減輕 clustering。",
+    "這段也說明了 open addressing 的好處：所有資料都放在 hash table 同一塊記憶體裡，不像 open hashing（separate chaining）要在每格再掛 linked list，多出額外的記憶體和資料結構。"
+   ]
   }
  ],
  "quiz": [

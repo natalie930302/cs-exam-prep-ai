@@ -2718,6 +2718,88 @@ scene('io-scan-pro', 'SCAN 的優點與限制', CAMD, [
   },
 ]);
 function total0(alg, dir) { return seekTotal(QH, schedule(alg, QH, QQ, dir), false).tot; }
+
+// ════════ lQAYseBJPuA（SCAN Disk Scheduling Algorithm，TutorialsPoint 英文短片；同一組 queue，用「上一個 request 在 60」判斷方向） ════════
+scene('io-scan2-prob', 'SCAN 題目：head 在 53，上一個 request 在 60', CAMD, [
+  async (tok, S) => {                                   // 0 同一題，換 SCAN
+    cap('同一個磁碟排程問題', '這次用 SCAN 演算法來解');
+  },
+  async (tok, S) => {                                   // 22 200 個 cylinder
+    bx('', '#6e5f49', 0, 0.03, -3.3, 12.2, 0.06, 0.06); sm('0', X(0), 0.05, -2.75); sm('199', X(199), 0.05, -2.75);
+    cap('磁碟有 200 個 cylinder', '編號 0 到 199');
+  },
+  async (tok, S) => {                                   // 30 head 在 53
+    S.h = bx('', MC.blue, X(53), 0.2, -1.6, 0.4, 0.4, 0.4); hot('head 53', X(53) - 1.0, 0.6, -1.6);
+    cap('讀寫頭目前在 cylinder 53', '');
+  },
+  async (tok, S) => {                                   // 40 上一個 request 在 60
+    bx('', MC.gray, X(60), 0.2, -1.6, 0.3, 0.3, 0.3); sm('上一個：60', X(60) + 1.1, 0.6, -1.0);
+    seg(V3(X(60), 0.5, -1.6), V3(X(53), 0.5, -1.6), '#d64545');
+    note('SCAN 會用到「上一個 request 在 60」這個資訊', 0, 0.6, 0.4);
+    cap('上一個 request 在 cylinder 60', 'SCAN 會用到這個資訊');
+  },
+  async (tok, S) => {                                   // 51 FIFO queue
+    QQ.forEach((r, i) => bx(String(r), MC.orange, -4.9 + i * 1.4, 0.3, 2.6, 1.1, 0.5, 0.6)); sm('queue（FIFO）', -5.2, 0.3, 3.5);
+    cap('等待中的 request 依 FIFO 順序', '98, 183, 37, 122, 14, 124, 65, 67');
+  },
+  async (tok, S) => {                                   // 57 算總移動距離
+    hot('讀寫頭總共要移動多少 cylinder？', 0, 0.6, 4.6);
+    cap('題目：算出讀寫頭總共移動的距離', '');
+  },
+]);
+
+scene('io-scan2-dir', 'SCAN 的方向：看磁頭原本往哪裡走', CAMD, [
+  async (tok, S) => {                                   // 66 依遞增順序排好
+    S.D = dsk(QH, QQ, { dz: 0.6 }); kill(S.D.hm); remove(S.D.hl);
+    cap('把 0、199 和所有 request 依遞增順序排好', '0, 14, 37, 65, 67, 98, 122, 124, 183, 199');
+  },
+  async (tok, S) => {                                   // 75 把 53 放進去
+    S.D.hm = bx('', MC.blue, X(QH), 0.2, S.D.z, 0.4, 0.4, 0.4); S.D.hl = hot('head 53', X(QH) - 0.9, 0.6, S.D.z);
+    cap('再把 53 放進去', '它不在 request 裡，但讀寫頭一開始就在 53');
+  },
+  async (tok, S) => {                                   // 87 60 → 53：往遞減方向
+    bx('', MC.gray, X(60), 0.2, S.D.z, 0.3, 0.3, 0.3); sm('上一個 60', X(60) + 0.9, 0.6, -2.1);
+    S.ar = arrow(V3(X(60), 0.9, -1.5), V3(X(10), 0.9, -1.5), 0x2f6fb0); sm('慣性：往編號變小的方向', X(30), 0.6, -0.8);
+    cap('上一個在 60，現在在 53：60 → 53 是遞減', '讀寫頭有往小編號移動的「慣性」');
+  },
+  async (tok, S) => {                                   // 116 先到 0，再上到 183
+    good('所以：53 → 37 → 14 → 0，再 → 65 → … → 183', 0, 0.6, 0.6);
+    cap('所以先往 0 一路走到底', '再折返往上，走到 183');
+  },
+  async (tok, S) => {                                   // 123 如果上一個是 6
+    arrow(V3(X(53), 0.9, 1.6), V3(X(190), 0.9, 1.6), 0xe55a9b);
+    bad('假設上一個是 6：6 → 53 遞增 → 先 183、199，再折返服務 37、14', 0, 0.6, 2.4);
+    cap('如果上一個是 6 呢？', '6 → 53 是遞增：先走到 183、199，再折返服務 37、14');
+  },
+  async (tok, S) => {                                   // 140 SCAN 需要這個資訊
+    note('SCAN 要知道磁頭原本的移動方向', 0, 0.6, 3.6);
+    cap('所以 SCAN 需要「上一個 request」這個資訊', '才知道一開始要往哪個方向掃');
+  },
+]);
+
+// 9 段移動量（照影片的寫法：0 → 65 寫成 65 − 0）
+const SCAN2 = [[53, 37], [37, 14], [14, 0], [65, 0], [67, 65], [98, 67], [122, 98], [124, 122], [183, 124]];
+scene('io-scan2-run', 'SCAN 的服務順序與總移動（236）', CAMD, [
+  async (tok, S) => {                                   // 146 從 53 開始
+    S.D = dsk(QH, QQ, { dz: 0.6 }); S.D.tl.position.set(-4.6, 0.6, 3.6);
+    bx('', MC.gray, X(60), 0.2, S.D.z, 0.3, 0.3, 0.3); sm('上一個 60', X(60) + 0.9, 0.6, -2.1);
+    cap('從 53 開始，先往遞減方向', '（上一個在 60）');
+  },
+  ...moves('scan', 'down', 'SCAN'),                     // 154–170 37, 14, 0, 65, 67, 98, 122, 124, 183
+  async (tok, S) => {                                   // 175 每一段的移動量
+    S.r = SCAN2.map(([a, b], i) => sm(a + '−' + b, -5.6 + i * 1.4, 0.6, i % 2 ? 5.3 : 4.6));
+    cap('每一段的移動量：大的減小的', '53−37、37−14、14−0、65−0、67−65 …');
+  },
+  async (tok, S) => {                                   // 206 算出來
+    SCAN2.forEach(([a, b], i) => txt(S.r[i], a + '−' + b + '=' + (a - b)));
+    cap('做減法', '16, 23, 14, 65, 2, 31, 24, 2, 59');
+  },
+  async (tok, S) => {                                   // 241 加總 236
+    const want = chk(S.D, 'scan', 'down');
+    good(SCAN2.map(([a, b]) => a - b).join('+') + ' = ' + want, 0, 0.6, 6.1);
+    cap('全部加起來：總移動 ' + want + ' cylinders', '跟 53 + 183 一樣');
+  },
+]);
   }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });

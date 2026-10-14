@@ -226,48 +226,15 @@
  ],
  "quiz": [
   {
-   "q": "Nachos 上的 user program 被 compile 成哪種指令？",
+   "q": "在 x86 的機器上要執行為 MIPS 編譯的程式，virtual machine（模擬器）必須做什麼？",
    "opts": [
-    "MIPS",
-    "x86",
-    "ARM",
-    "Java bytecode"
+    "把 MIPS 指令逐一翻譯成 x86 指令再執行",
+    "直接把 MIPS binary 交給 x86 CPU 執行",
+    "把 MIPS 指令搬進 cache 就能直接執行",
+    "只要把 user program 改成 GUI 介面即可"
    ],
-   "ans": "MIPS",
-   "why": "machine simulation 模擬 MIPS CPU，再翻成 x86 給 Linux 執行。"
-  },
-  {
-   "q": "Nachos 的 file system stub 怎麼處理 open？",
-   "opts": [
-    "把請求 forward 給下面 Linux 的 file system",
-    "自己實作完整的 file system，存在 Nachos 的 disk 上",
-    "回傳錯誤",
-    "存在 memory 裡"
-   ],
-   "ans": "把請求 forward 給下面 Linux 的 file system",
-   "why": "real file system 要到作業四才實作。"
-  },
-  {
-   "q": "修改 machine 資料夾的程式碼，相當於？",
-   "opts": [
-    "修改 hardware",
-    "修改 OS",
-    "修改 user program",
-    "修改 compiler"
-   ],
-   "ans": "修改 hardware",
-   "why": "machine 是模擬的硬體，例如加一個 signal。"
-  },
-  {
-   "q": "為什麼用 printf 驗證作業結果不可靠？",
-   "opts": [
-    "printf 走的是 Linux 的 standard I/O，沒經過 Nachos",
-    "printf 會讓 Nachos 的 scheduler 錯亂，整個模擬器 crash",
-    "printf 太慢",
-    "Nachos 不支援字串"
-   ],
-   "ans": "printf 走的是 Linux 的 standard I/O，沒經過 Nachos",
-   "why": "要用 Nachos 的 system call 與 counter 確認。"
+   "ans": "把 MIPS 指令逐一翻譯成 x86 指令再執行",
+   "why": "兩種 ISA 的指令格式不同，x86 CPU 看不懂 MIPS 指令，VM 必須做 instruction set translation（emulation）。"
   }
  ]
 }

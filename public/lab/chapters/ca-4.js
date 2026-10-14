@@ -6548,6 +6548,148 @@ scene('ppB-hz-ctrl', 'Control hazard：branch 改變 PC', [
     cap('總結', '三種 hazard：structural、data、control');
   },
 ]);
+// ════════ WpJZIFEtgg4 §12（第 21A 講：問同學——兩條 pipeline 每個 cycle 要 fetch 幾個指令） ════════
+// issue width w: instruction k is fetched in cycle floor(k / w) + 1 → finishes (WB) 4 cycles later
+const issueSim = (n, w) => { const IF = []; for (let k = 0; k < n; k++) IF.push(Math.floor(k / w) + 1); const done = {}; IF.forEach((c) => { done[c + 4] = (done[c + 4] || 0) + 1; }); return { IF, done }; };
+const IS1 = issueSim(3, 1), IS2 = issueSim(6, 2);
+const IS_OK = IS1.IF.join() === '1,2,3' && IS2.IF.join() === '1,1,2,2,3,3' && IS2.done[5] === 2 && IS2.done[6] === 2;
+scene('ppB-21a-fetch2', '21A：兩條 pipeline → 每個 cycle fetch 2 個指令', [
+  async (tok, S) => { // 1785
+    hd('兩條 pipeline：每個 cycle 要 fetch 幾個指令？', 0, 6.6);
+    cap('如果有兩條 pipeline', '每個 clock 要發出幾個 instruction？');
+  },
+  async (tok, S) => { // 1803
+    S.A = grid(['i1', 'i2', 'i3'], 7, { y: 5.4, x0: -4.4, w: 0.78, dy: 0.62 }); IS1.IF.forEach((c, k) => S.A.row(k, c, FIVE));
+    sm('一條 pipeline：每個 cycle 丟 1 個進去', -2.2, 3.4);
+    cap('一條 pipeline', '每個 cycle 丟一個、丟一個');
+  },
+  async (tok, S) => { // 1812
+    S.r = [['IF ×2：一次抓兩個指令', FC.sky], ['register file：一次讀更多 operand', FC.lilac], ['ALU ×2', FC.peach]].map(([t, c], i) => card(t, c, 4.2, 5.4 - i * 0.75, 4.6, 0.55, 0.6, 10));
+    sm('兩條 pipeline = resource 加倍', 4.2, 3.0);
+    cap('兩條 pipeline 就是把 resource double', '兩個 fetch、register file 讀更多、兩個 ALU');
+  },
+  async (tok, S) => { // 1836
+    S.B = grid(['i1', 'i2', 'i3', 'i4', 'i5', 'i6'], 7, { y: 2.3, x0: -4.4, w: 0.78, dy: 0.5, head: false }); IS2.IF.forEach((c, k) => S.B.row(k, c, FIVE));
+    ok(IS_OK, '每個 cycle fetch 2 個 ✓', 3.6, 1.6);
+    sm('cycle 5 起每 cycle 完成 ' + IS2.done[5] + ' 個', 3.6, 0.9);
+    sm('理想 IPC = 2（CPI = 0.5）', 3.6, 0.2);
+    cap('兩條 pipeline：同一個時間各跑一個', '每個 cycle 要 fetch 2 個指令');
+  },
+]);
+
+// ════════ GAUppsLpjvg（Udacity：pipeline 的 CPI——初始填充、stall 讓 CPI > 1） ════════
+// 5-stage pipeline, no stalls: N instructions take N + 4 cycles → CPI = (N + 4) / N → 1 as N grows
+const cpiFill = (N) => (N + 4) / N;
+const CF_OK = cpiFill(6) === 10 / 6 && cpiFill(100) === 1.04 && cpiFill(1e9) - 1 < 1e-8;
+// car line: one stall every k cars → k cars take k + 1 cycles (steady state)
+const stallCPI = (k) => (k + 1) / k;
+const SC_OK = Math.abs(stallCPI(5) - 1.2) < 1e-12 && Math.abs(stallCPI(5) - (1 + 1 / 5)) < 1e-12;
+scene('ppB-cpi-fill', 'Pipeline 的 CPI：填滿之後每個 cycle 完成一道', [
+  async (tok, S) => { // 0.0
+    S.G = grid(['I1', 'I2', 'I3', 'I4', 'I5', 'I6'], 10, { y: 5.6, x0: -1.6 }); for (let k = 0; k < 6; k++) S.G.row(k, k + 1, FIVE);
+    for (let k = 0; k < 6; k++) S.G.hl(k, k + 5, OKG);
+    hd('CPI', -4.6, 6.3); sm('cycle 5 起，每個 cycle 都有一道 WB', 2.6, 1.7);
+    cap('pipeline 填滿之後', '每個 cycle 完成一道指令：CPI = 1');
+  },
+  async (tok, S) => { // 7.4
+    for (let k = 0; k < 4; k++) for (let c = 1; c <= 4; c++) if (S.G.cells[k][c]) fade(S.G.cells[k][c], 0.45);
+    sm('前 4 個 cycle 在填 pipeline，還沒有指令完成', 2.6, 1.0);
+    bub('一個程式：數十億道指令', -4.6, 1.0);
+    cap('一個程式通常有數十億道指令', '一開始填 pipeline 的幾個 cycle 可以忽略');
+  },
+  async (tok, S) => { // 21.0
+    hot('N 道指令要 N + 4 個 cycle → CPI = (N + 4) / N', 0.6, 0.2);
+    cap('CPI 不一定是 1 的原因之一', '一開始要先把 pipeline 填滿');
+  },
+  async (tok, S) => { // 29.6
+    S.t = [[6, cpiFill(6).toFixed(2)], [100, cpiFill(100).toFixed(2)], ['10⁹', '1.000000004']].map(([n, v], i) => card('N = ' + n + '：CPI ' + v, FC.paper, -4.0 + i * 4.2, -0.6, 3.8, 0.55, 0.6, 10));
+    ok(CF_OK, 'N 越大，CPI 越接近 1 ✓', -4.6, 3.6);
+    cap('指令數越多', 'CPI 就越來越接近 1');
+  },
+  async (tok, S) => { // 40.3
+    good('填充只是開頭幾個 cycle → 可以說 CPI ≈ 1', 0.6, -1.4);
+    cap('指令非常多，填充不是大問題', '還是可以說 CPI 是 1');
+  },
+]);
+
+const CAR = { black: '#4a4a4a', purple: '#9b7ef4', green: '#2fc092', blue: '#4b9ee2' };
+const STX = [-4.5, -1.5, 1.5, 4.5];
+const carAt = (t, c, i) => card(t, c, STX[i], 2.6, 1.6, 0.7, 0.8, 11);
+scene('ppB-cpi-car', '汽車生產線：一台車 stall，前後的站都閒置', [
+  async (tok, S) => { // 46.2
+    hd('穩定狀態的 CPI 也不是 1？', 0, 6.4);
+    sm('原因：pipeline stall', 0, 5.7);
+    cap('穩定狀態的 CPI 不是 1', '還有一個原因：pipeline stall');
+  },
+  async (tok, S) => { // 53.7
+    S.st = ['裝車門', '裝前輪', '裝後輪', '下一站…'].map((t, i) => card(t, FC.sand, STX[i], 1.6, 2.4, 0.5, 0.8, 11));
+    S.ar = arrow(V3(-5.8, 4.2, 0), V3(5.8, 4.2, 0), 0x6e5f49); sm('每個 cycle，每台車往前一站', 0, 4.7);
+    S.m = sm('', 0, 0.5);
+    cap('一條汽車生產線', '裝車門 → 裝前輪 → 裝後輪 → …');
+  },
+  async (tok, S) => { // 66.1
+    S.g = carAt('綠車', CAR.green, 0); S.p = carAt('紫車', CAR.purple, 1); S.b = carAt('黑車', CAR.black, 2);
+    txt(S.m, '黑車已有前輪；紫車在等裝前輪；綠車正在裝車門');
+    cap('某個時刻：黑車、紫車、綠車', '各在一站');
+  },
+  async (tok, S) => { // 79.1
+    glow(S.p, '#7a1010'); S.x = bad('✘ 輪子壞了', STX[1], 3.5);
+    txt(S.m, '裝前輪時，機器把紫車的輪子弄壞了');
+    cap('裝前輪的時候', '機器把輪子弄壞了');
+  },
+  async (tok, S) => { // 87.3
+    await slide(tok, S.b, STX[3], 2.6, 0, 700);
+    txt(S.m, '黑車往前；紫車沒有前輪，不能走 → 多待一個 cycle 重裝');
+    cap('生產線往前：黑車移到下一站', '紫車留在原地重裝輪子');
+  },
+  async (tok, S) => { // 115.5
+    fade(S.st[2], 0.4); S.i2 = sm('閒置', STX[2], 2.6);
+    txt(S.m, '紫車沒過來 → 裝後輪的工人這個 cycle 沒車可做');
+    cap('紫車沒有往前', '裝後輪這一站就閒著');
+  },
+  async (tok, S) => { // 123.0
+    S.w = hot('等', STX[0], 3.5);
+    txt(S.m, '綠車車門裝好了，但前面被紫車擋住 → 也不能前進');
+    cap('綠車也被擋住', '這裡也出現閒置');
+  },
+  async (tok, S) => { // 131.7
+    gone(S.x, S.w, S.i2); glow(S.p, null); fade(S.st[2], 1);
+    await anim(tok, 300, (u) => { S.b.position.x = STX[3] + u * 2.5; }); kill(S.b);
+    await Promise.all([slide(tok, S.p, STX[2], 2.6, 0, 700), slide(tok, S.g, STX[1], 2.6, 0, 700)]);
+    S.n = carAt('新車', CAR.blue, 0); fade(S.st[3], 0.4); S.i3 = sm('閒置', STX[3], 2.6);
+    txt(S.m, '輪子裝好 → 紫車、綠車往前，新車進來；但下一站這次沒車');
+    cap('這次輪子裝好了，大家往前', '空檔（bubble）跟著往下一站走');
+  },
+]);
+
+scene('ppB-cpi-stall', '每 5 台 stall 一次：6 個 cycle 完成 5 台，CPI = 1.2', [
+  async (tok, S) => { // 148.4
+    hd('生產線出口：每個 cycle 完成幾台？', 0, 6.6);
+    S.r1 = [['黑車', CAR.black], ['（沒有）', FC.gray], ['紫車', CAR.purple]].map(([t, c], i) => card(t, c, -3.0 + i * 3.0, 5.4, 2.4, 0.6, 0.7, 11));
+    [1, 2, 3].forEach((c, i) => sm('cycle ' + c, -3.0 + i * 3.0, 4.75));
+    cap('黑車離開之後', '有一台車的時間沒有完成任何車');
+  },
+  async (tok, S) => { // 159.3
+    glow(S.r1[1], '#7a1010'); bad('stall：本來該完成一台，卻沒有完成', 0, 4.1);
+    cap('每一次 stall', '都讓某個 cycle 少完成一台');
+  },
+  async (tok, S) => { // 176.7
+    const k = 5, row = []; for (let c = 0; c < k + 1; c++) row.push(c === k ? null : c + 1);
+    S.r2 = row.map((v, i) => card(v ? '車 ' + v : '（stall）', v ? FC.mint : FC.rose, -5.0 + i * 2.0, 2.8, 1.8, 0.6, 0.7, 10));
+    sm('例：每 5 台車發生一次 stall → ' + (k + 1) + ' 個 cycle 才完成 ' + k + ' 台', 0, 2.1);
+    cap('如果每 5 台車 stall 一次', '要 6 個 cycle 才完成 5 台');
+  },
+  async (tok, S) => { // 184.5
+    ok(SC_OK, 'CPI = 6 / 5 = ' + stallCPI(5).toFixed(1) + ' = 1 + 1/5 ✓', 0, 1.3);
+    cap('CPI = 6 個 cycle ÷ 5 台', '= 1.2，不是 1');
+  },
+  async (tok, S) => { // 192.0
+    hot('穩定狀態有 stall → CPI > 1', 0, 0.5);
+    note('影片口誤說 lower；其實 CPI 是變大', 0, -0.3);
+    cap('即使在穩定狀態', '有 stall 的 pipeline，CPI 還是大於 1');
+  },
+]);
+
   }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });

@@ -496,15 +496,15 @@
    "why": "做第 k 號任務時，更上層的任務都還沒完成要擱在一邊，各自的 16 bytes 同時存在。"
   },
   {
-   "q": "依老師的說法，寫遞迴時一定要想清楚哪兩件事？",
+   "q": "寫一個正確的遞迴函式，一定要具備哪兩個要素？",
    "opts": [
-    "recursive formula 與 terminating condition",
+    "遞迴式（recursive formula）與終止條件",
     "迴圈變數的初值與陣列的長度上限",
-    "time complexity 與 space complexity 的上界",
-    "指標的指向與記憶體的配置釋放"
+    "time complexity 與 space complexity 的上界值",
+    "指標的指向與記憶體的配置與釋放順序"
    ],
-   "ans": "recursive formula 與 terminating condition",
-   "why": "要能把問題寫成遞迴定義，並設定合理的終止條件，否則會無限遞迴。"
+   "ans": "遞迴式（recursive formula）與終止條件",
+   "why": "要把問題化成較小的同類問題（recursive formula），並有終止條件，否則會一直遞迴下去不停止。"
   },
   {
    "q": "rows × cols 矩陣加法的計算力氣，「差不多」與什麼成正比？",

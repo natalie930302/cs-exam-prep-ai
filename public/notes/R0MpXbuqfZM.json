@@ -1438,7 +1438,7 @@
   },
   {
    "title": "回顧：資料結構搭配演算法",
-   "scene": null,
+   "scene": "recap-ds-alg",
    "points": [
     {
      "text": "回顧：資料結構和演算法搭配著講，已經講了不少東西。",
@@ -1460,6 +1460,20 @@
      "text": "Stack：parentheses matching、postfix evaluation、infix to postfix。",
      "t": 6846
     }
+   ],
+   "cues": [
+    6741,
+    6768.58,
+    6789.57,
+    6808,
+    6846
+   ],
+   "explain": [
+    "回顧到目前為止「資料結構搭配演算法」：最簡單的是在 array 上做 sequential search，在 linked list 上也可以做。",
+    "sequential search 的變形是「找最小的那個在哪裡」，寫法幾乎一模一樣；再配上一個 for 迴圈重複做，就是 selection sort。",
+    "linked list 插入比較方便，所以帶出 insertion sort；如果有排好序的 ordered array，就可以做 binary search。",
+    "用 linked list 表示 sparse vector、polynomial，可以做 polynomial 的合併、sparse vector 的內積；linked list 上還有面試常考的演算法，例如用龜兔賽跑偵測有沒有 cycle、找中點。",
+    "stack 則帶出了 parentheses matching（括號配對）、postfix evaluation（後序式求值）以及 infix to postfix（中序轉後序）。"
    ]
   },
   {

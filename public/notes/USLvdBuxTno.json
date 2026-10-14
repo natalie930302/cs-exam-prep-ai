@@ -1794,15 +1794,15 @@
    "why": "從 rear 後面放進、從 front（rear 的下一個）拿出，先進先出就是 queue。"
   },
   {
-   "q": "林軒田課本用語裡的 vector 指的是什麼？",
+   "q": "Sparse array 改用 ordered linked list 存 non-zero 項，查某個 index 的值要花多少時間？",
    "opts": [
-    "C++ STL 的 std::vector 這個 class",
-    "支援 index access 的資料結構家族",
-    "只能 sequential access 的線性容器",
-    "doubly linked list 的別名"
+    "O(nnz)",
+    "O(log nnz)",
+    "O(1)",
+    "O(nnz²)"
    ],
-   "ans": "支援 index access 的資料結構家族",
-   "why": "只要支援 at、set、insert、erase 這些 index access 功能就叫 vector；dense、sparse、extendable array 都是成員。"
+   "ans": "O(nnz)",
+   "why": "linked list 無法直接跳到中間，不能 binary search，只能 sequential search；但已知位置時插入、刪除不必搬資料。"
   },
   {
    "q": "dense array 的 iterator：n 個 int 的 array，end() 代表的位置是？",

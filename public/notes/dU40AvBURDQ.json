@@ -595,15 +595,15 @@
    "why": "n·q 個子問題，每個要比較 q 個起點。"
   },
   {
-   "q": "影片說判斷一張摺痕圖能不能摺（foldability）的複雜度是？",
+   "q": "Migration DP 中 DP[k][p]＝處理完前 k 次存取、最後在處理器 p 的最小成本。n 次存取、q 個處理器共有幾個子問題？",
    "opts": [
-    "NP-complete",
-    "多項式時間",
-    "O(1)",
-    "PSPACE-complete"
+    "n·q 個",
+    "n + q 個",
+    "n·q² 個",
+    "qⁿ 個"
    ],
-   "ans": "NP-complete",
-   "why": "反方向的 origami design 反而可以解。"
+   "ans": "n·q 個",
+   "why": "k 有 n 種、p 有 q 種，共 n·q 個子問題；每個子問題要看 q 個前一狀態，所以總時間 O(n q²)。"
   },
   {
    "q": "以 block（大小 B）傳輸的模型中，搜尋要幾次記憶體傳輸？",

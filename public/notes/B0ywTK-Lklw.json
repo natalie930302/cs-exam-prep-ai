@@ -573,7 +573,7 @@
   },
   {
    "title": "Q&A：挑老師的錯",
-   "scene": null,
+   "scene": "qa-search-fix",
    "points": [
     {
      "text": "同學抓到 binary search 的迴圈條件寫反，應該是「有書可找」才繼續。",
@@ -591,6 +591,16 @@
      "text": "休息十分鐘。",
      "t": 4333
     }
+   ],
+   "cues": [
+    4052.74,
+    4089.32,
+    4286.47
+   ],
+   "explain": [
+    "同學抓到老師的錯：binary search 的迴圈條件寫反了。應該是「還有書可找」（left <= right）才繼續找。",
+    "同學問：排好序的 sequential search，return NOT_FOUND 前面要不要 else？不用。迴圈裡碰到比 toFind 大的就知道後面不用找了，直接中斷（也可以寫成 break）；NOT_FOUND 是寫在整個 for 迴圈外面的。",
+    "如果迴圈整個跑完都沒有跳出來，代表 toFind 比所有元素都大（例如找 99），這時就回傳 NOT_FOUND。"
    ]
   },
   {

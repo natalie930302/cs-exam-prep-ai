@@ -3,6 +3,7 @@
    one accent per subject. No photo backgrounds or frosted glass — the
    content (video, 3D scenes) is what should stand out. */
 :root {
+  color-scheme: only light;
   --bg: #faf6ef;
   --surf: #ffffff;
   --surf2: #f5eee1;

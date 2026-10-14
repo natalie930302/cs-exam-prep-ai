@@ -392,15 +392,15 @@
    "why": "任何一台離開系統都能繼續運作；client-server 的 server 是 bottleneck 也是單點失效。"
   },
   {
-   "q": "InfiniBand 傳輸很快，主要用了什麼技術？",
+   "q": "Cluster 和一般的分散式系統相比，特點是？",
    "opts": [
-    "RDMA：把 DMA 擴充到跨網路",
-    "SIMD：一道指令同時處理多筆資料",
-    "virtual memory：把遠端記憶體映射進來",
-    "time sharing：輪流使用網路頻寬"
+    "用 LAN 連在同一個機房，傳輸較快",
+    "各節點共用同一塊 memory 與 bus",
+    "整個 cluster 只能有一個 CPU core",
+    "必須透過 Internet 連到世界各地"
    ],
-   "ans": "RDMA：把 DMA 擴充到跨網路",
-   "why": "高效能 cluster 與 supercomputer 幾乎都用 InfiniBand。"
+   "ans": "用 LAN 連在同一個機房，傳輸較快",
+   "why": "Cluster 是分散式系統的 subset，以 local area network 連在一起、單一管理；memory 仍各自 local，不共用。"
   },
   {
    "q": "主機板上有多個 CPU 插槽的電腦稱為？",

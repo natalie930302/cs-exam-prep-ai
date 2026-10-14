@@ -5,7 +5,7 @@
  "sections": [
   {
    "title": "開場 Q&A：Open Addressing 要連 key 一起存",
-   "scene": null,
+   "scene": "qa-oa-store-key",
    "points": [
     {
      "text": "開場，先回答同學上次留下的問題。",
@@ -27,6 +27,20 @@
      "text": "同一格可能放著來自不同 key 的資料，所以要靠存下來的 key 做比對。",
      "t": 620
     }
+   ],
+   "cues": [
+    415,
+    458.18,
+    498.65,
+    536.14,
+    587.27
+   ],
+   "explain": [
+    "同學問：Open Addressing 在 collision 時把資料放到附近的格子，下次取用時要怎麼確定拿到的是自己要的那筆？例如 kiwi 先占了 3 號，apple 也算出 3 號，只好放到 4 號。",
+    "因為資料可能不在 key 原本對應的位置，table 裡一定要把 key 也存起來：存 (key, value)，不能只存 value。",
+    "找的時候還是拿著 key，照 Open Addressing 的順序一格一格看，邊看邊比對 key：3 號是 kiwi，不是；4 號是 apple，對了。因為同一格可能放著來自不同 key 的東西，不比對 key 就分不出來。",
+    "可以把 Open Addressing 想成：在原來的同一塊空間裡，串了好多條 implicit（隱含的）linked list。就像 array 隱含一棵 complete binary tree：位置串起來了，但 link 都不用寫。",
+    "每個位置有自己要找的順序，例如 1 號串到 3 號再到 7 號、2 號也串到 7 號。7 號可能屬於不同的鏈，所以要靠存下來的 key 比對，就像失散的兄弟要帶著信物才能相認。"
    ]
   },
   {
@@ -714,7 +728,7 @@
   },
   {
    "title": "Skip List 小結與 Q&A",
-   "scene": null,
+   "scene": "qa-skiplist-recap",
    "points": [
     {
      "text": "search 靠類似 binary search 的快慢車，insertion 靠 randomization。",
@@ -736,6 +750,20 @@
      "text": "同學說這樣畫很像一棵 tree——這正是接下來要講的。",
      "t": 4658
     }
+   ],
+   "cues": [
+    4515,
+    4529.76,
+    4595.91,
+    4626.7,
+    4658.25
+   ],
+   "explain": [
+    "Skip list 小結：search 靠「快慢車」達成，像 binary search 一樣：先坐上層的快車，過頭了就下到下一層換慢車。例如找 25：上層到 19，下一層到 19，最底層往右就是 25。",
+    "insertion 靠 randomization：新的 node 要長幾層，用丟銅板決定，正面就再長高一層。removal 也需要類似的處理，時間關係不講。",
+    "同學說這也太隨便？其實它很好實作：如果已經有 linked list 的 library（例如 STL 的 list），願意多花大約兩倍記憶體，就能很快寫出一個 map。",
+    "這就是 randomization 之美。之後還會看到用 randomization 加速的例子，例如 QuickSort；在演算法設計裡它是非常有用的工具。",
+    "同學說這樣畫很像一棵 tree：上層的 node 好像下層一段 node 的「爸爸」。這正是接下來要講的：skip list 跟 tree 有什麼關係。"
    ]
   },
   {

@@ -292,15 +292,15 @@
    "why": "上面的軟體怎麼用電腦、下面的硬體怎麼管理，都靠 OS。"
   },
   {
-   "q": "今天的 mainframe 在設計上特別重視什麼？",
+   "q": "Multiprogramming 與 time sharing 分別解決 batch system 的哪個問題？",
    "opts": [
-    "reliability 與 security",
-    "遊戲與多媒體的效能",
-    "graphics 與 user interface",
-    "電池續航與低耗電設計"
+    "前者解決 CPU idle，後者解決沒有 interaction",
+    "前者解決沒有 interaction，後者解決 CPU idle",
+    "兩者都是為了解決 memory 容量太小的問題",
+    "兩者都是為了讓 I/O 裝置比 CPU 跑得更快"
    ],
-   "ans": "reliability 與 security",
-   "why": "專門處理重要的大量工作，零件壞了也不能 crash，也不能被入侵。"
+   "ans": "前者解決 CPU idle，後者解決沒有 interaction",
+   "why": "Multiprogramming 讓一個 job 等 I/O 時 CPU 去跑別的 job；time sharing 快速切換，提供互動與短 response time。"
   },
   {
    "q": "Batch system 中，決定使用者執行順序的是？",

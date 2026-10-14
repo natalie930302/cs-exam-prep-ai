@@ -6661,6 +6661,51 @@ scene('acC-rr-third-pf', '15B：三個不同的根 — partial fraction', [
   },
 ]);
 
+// ════════ zjsDjXEa6Zc 開頭：房貸作業的背景（每月還一樣多：利息越來越少、本金越來越多） ════════
+// 老師只說「借二十萬、兩年還完」；利率沒給，這裡用示意的月利率 1%（年利率 12%）。D 由 aₙ₊₁ = (1 + i)aₙ − D、a₂₄ = 0 算出。
+const LOAN = (() => {
+  const P0 = 200000, i = 0.01, n = 24, D = Math.round(P0 * i / (1 - Math.pow(1 + i, -n)));
+  const rows = []; let a = P0;
+  for (let k = 1; k <= n; k++) { const I = Math.round(a * i), pr = Math.min(a, D - I); rows.push({ k, a, I, pr }); a = a - pr; }
+  return { P0, i, n, D, rows, end: a };
+})();
+const loanBar = (r, x, w = 0.38) => {
+  const sc = 3.0 / LOAN.D, hi = r.I * sc, hp = r.pr * sc;
+  return [cube('', C.blue, [w, hp, 0.4], x, 0.2 + hp / 2, 0), cube('', C.orange, [w, hi, 0.4], x, 0.2 + hp + hi / 2, 0)];
+};
+const LX = (k) => -5.75 + (k - 1) * 0.5;
+scene('acC-loan', '作業背景：房貸每月怎麼還', [
+  async (tok, S) => { // 4
+    S.t = card('借 200,000，兩年（24 個月）還完，每月還一樣多 D', C.lilac, 0, 6.3); glow(S.t, HL);
+    S.f = hot('aₙ₊₁ = (1 + i)·aₙ − D　（aₙ：還欠的本金，i：月利率，示意 1%）', 0, 5.4);
+    cap('房貸作業：每個月固定還一樣的錢', '欠的錢每月先長利息，再扣掉 D');
+  },
+  async (tok, S) => { // 23
+    glow(S.t, null);
+    const r = LOAN.rows[0]; S.b = [loanBar(r, LX(1))];
+    S.l1 = sm('第 1 月：欠 ' + r.a + '，利息 ' + r.I + '，D = ' + LOAN.D + ' → 還本金 ' + r.pr, 0, 4.6);
+    cap('第一個月：先產生一個月的利息', '還的錢一部分付利息（橘）、其餘還本金（藍）');
+  },
+  async (tok, S) => { // 36
+    const r = LOAN.rows[1]; S.b.push(loanBar(r, LX(2)));
+    S.l2 = sm('第 2 月：欠 ' + r.a + '，利息 ' + r.I + ' → 還本金 ' + r.pr, 0, 3.9);
+    cap('本金變少了，第二個月的利息就少一點', '同樣還 D，還本金的部分變多');
+  },
+  async (tok, S) => { // 54
+    const r = LOAN.rows[2]; S.b.push(loanBar(r, LX(3)));
+    S.l3 = sm('第 3 月：欠 ' + r.a + '，利息 ' + r.I + ' → 還本金 ' + r.pr, 0, 3.15);
+    cap('第三個月也一樣', '利息越來越少、本金越還越多');
+  },
+  async (tok, S) => { // 61
+    gone(S.l1, S.l2, S.l3);
+    for (const r of LOAN.rows.slice(3)) { S.b.push(loanBar(r, LX(r.k))); await wt(tok, 90); }
+    sm('第 1 月', LX(1), -0.3); sm('第 24 月', LX(24), -0.3);
+    const ok = Math.abs(LOAN.end) < 5 && LOAN.rows.every((r, k) => k === 0 || r.I <= LOAN.rows[k - 1].I);
+    good('每月都是 D = ' + LOAN.D + '：橘色利息越來越少，24 個月後欠 0' + (ok ? ' ✓' : ' ✗'), 0, 4.4);
+    cap('每月還的錢一樣', '利息部分越來越少，最後剛好還完');
+  },
+]);
+
 // ════════ zjsDjXEa6Zc（趙啟超 15C：生成函數拿來計數 — a + b = n、集合的生成函數相乘） ════════
 scene('acC-cnt-intro', '15C：應用二 — 用生成函數計數', [
   async (tok, S) => { // 123.8

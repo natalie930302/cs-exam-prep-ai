@@ -193,7 +193,19 @@
      "text": "學生提問，老師回顧 (b) 的第二段：x R y 的假設一直都在，用 symmetric 反過來成 y R x 才能接上 transitive。"
     }
    ],
-   "scene": null
+   "scene": "reA-7a-qa",
+   "cues": [
+    1007,
+    1028,
+    1043,
+    1057
+   ],
+   "explain": [
+    "同學問：證明 (b) 的第二段，為什麼可以用 symmetric？",
+    "先看第一段 [x] ⊆ [y]：w R x，加上 x R y，用 transitive 得到 w R y。",
+    "重點是「x R y」是一開始的假設，整個 ⇒ 方向的證明裡它一直都成立，兩段都能用。",
+    "第二段 [y] ⊆ [x]：用 symmetric 把 x R y 反過來變成 y R x，才能跟 t R y 接上 transitive，得到 t R x。"
+   ]
   },
   {
    "title": "equivalence classes 的直觀：物以類聚",

@@ -1389,7 +1389,7 @@
   },
   {
    "title": "Q&A：考試與休息",
-   "scene": null,
+   "scene": "qa-rb-recolor-up",
    "points": [
     {
      "text": "recolor 向上傳遞 = fuse 時在上一層執行 removal，一模一樣的事。",
@@ -1403,6 +1403,16 @@
      "text": "終於過了紅黑樹 removal 的大魔王，休息 10 分鐘。",
      "t": 8448
     }
+   ],
+   "cues": [
+    8326.41,
+    8336,
+    8345.98
+   ],
+   "explain": [
+    "同學問：紅黑樹 removal 的 recolor 往上傳遞要怎麼理解？先用對應的 2-3-4 樹來看。",
+    "在 2-3-4 樹刪掉 10，左邊的 node 變空；兄弟只有一個 key 借不到，只好 fuse：從上面請一個 key（20）下來跟兄弟 30 合併。上面那一層少了一個 key，等於要在上一層執行 removal（可能又不夠，要繼續往上處理）。",
+    "紅黑樹的 recolor 往上傳，做的就是一模一樣的事：fuse 時要在上一層做 removal，在紅黑樹裡就是在上一層繼續做 recolor（double black 往上傳）。"
    ]
   },
   {

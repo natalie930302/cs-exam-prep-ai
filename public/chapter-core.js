@@ -13,7 +13,72 @@ function stableTaskKey(value){
   }
   return (hash >>> 0).toString(36);
 }
-function videoSeriesName(label){
+// The YouTube channel of videos whose title names no teacher or course.
+const VIDEO_CHANNEL = {
+  'V42FBiohc6c':"mycodeschool",
+  'akErwS16DUg':"Hacktrickz",
+  '-b2lciNd2L4':"Jenny's Lectures CS IT",
+  'cvooTtquDlQ':"Education 4u",
+  '4tSdhWBVv6A':"Renzym Education",
+  'MfhjkfocRR0':"Paul Programming",
+  'CwM-Cxilk4g':"saurabhschool",
+  'DBRW8nwZV-g':"freeCodeCamp.org",
+  'IilVRpUsAiQ':"StudyKorner",
+  'zIjfhVPRZCg':"HackerRank",
+  'HlFsexTpM4Q':"Lalitha Natraj",
+  'JR2fneVevbg':"Education 4u",
+  'V5-7GzOfADQ':"Abdul Bari",
+  'SLsHKh_OUEM':"ByteQuest",
+  'u7YMFRUFqe0':"Algorithms Made Easy",
+  '7fujbpJ0LB4':"WilliamFiset",
+  'ddTC4Zovtbc':"Tushar Roy",
+  'RpgcYiky7uw':"Tushar Roy",
+  'FrLWd1tJ_Wc':"Techdose",
+  'Iwc3Uj4aaF4':"TutorialsPoint",
+  'tIE2lkJv20c':"Radhakrishna Dasari",
+  'a_IRpiyBIm0':"Anand Seetharam",
+  'xyqIXdUXeU0':"Learn@Home",
+  'Nn_Eq7--Rk4':"The Academician",
+  'lhToWeuWWfw':"Neso Academy",
+  'IFEFVXvjiHY':"Neso Academy",
+  'LsgJDGJIrJI':"THE GATEHUB",
+  'VCIVXPoiLpU':"Gate Smashers",
+  'sEVfeXqWY-s':"Education 4u",
+  'HUA_cVBdLw0':"Solving Skills",
+  '7gMLNiEz3nw':"Gate Smashers",
+  'XpKrBUZqfGI':"Easy Engineering Classes",
+  'pJ6qrCB8pDw':"Simple Snippets",
+  'DXU7SqsYDvg':"Jenny's Lectures CS IT",
+  'Nif2TZ5Cohw':"Simple Snippets",
+  'lQAYseBJPuA':"TutorialsPoint",
+  'pS-QM22YXmU':"iCertGlobal",
+  'HEQuN0QELSQ':"MIT OCW 18.06SC 習題課",
+  'f8DVtPvqtwc':"Understand The Math",
+  'xy3QyyhiuY4':"Steve Brunton",
+  'dVPDdHE3RJU':"Neso Academy",
+  'tA2cqfNh5EM':"MathPod",
+  '2-mxYrCNX60':"TrevTutor",
+  'DBugSTeX1zw':"TrevTutor",
+  'YlKDp03Kg68':"SawFin Mathematics",
+  '6WZvVJ0Q1FA':"Charles Ed",
+  'Erea1QASjXY':"SawFin Mathematics",
+  'Wi8IvnlMNxs':"Math at Andrews",
+  'RexPywlCmV8':"Neso Academy",
+  'vfyUU_prh9s':"James Hamblin",
+  'sKxdXfH5qko':"T V Nagaraju Technical",
+  'fy7H3jWfBnY':"KKT Virtual Learning",
+  'QQG_zv-moMs':"Enzo 獨自升級",
+  't27kbXWP5GY':"Dr. Sapna Katiyar",
+  'GAUppsLpjvg':"Udacity",
+  'Y1esjWBTf7Q':"PacketPrep",
+  '9BjVUmaXaCQ':"Computer Science Lessons",
+  '0dTWcYk1rts':"Richa Thakur",
+  'E82x-cug9YE':"Dr. Sapna Katiyar",
+  'Yp_3OrDhUkQ':"Education 4u",
+  'r_ZE1XVT8Ao':"Neso Academy",
+  '2dYV_lADfFI':"Engineering Funda"
+};
+function videoSeriesName(label, url){
   const text = String(label || '');
   const rules = [
     [/林軒田/,'台大 林軒田 DSA'],[/彭文志/,'交大OCW 彭文志'],[/江蕙如/,'交大OCW 江蕙如'],
@@ -23,7 +88,7 @@ function videoSeriesName(label){
     [/MIT(?: OCW)? 18\.06/i,'MIT OCW 18.06']
   ];
   for(let i=0;i<rules.length;i++) if(rules[i][0].test(text)) return rules[i][1];
-  return '';
+  return VIDEO_CHANNEL[youtubeId(url)] || '';
 }
 // Sort key for a video inside one teacher's series. Playlist position first
 // (video-order.js — the order the course is actually taught), then lecture
@@ -53,7 +118,7 @@ function groupVideoSeries(options){
   const groups = [];
   const map = {};
   options.forEach(function(option,index){
-    const name = videoSeriesName(option.label);
+    const name = videoSeriesName(option.label, option.url);
     if(!map[name]){
       map[name] = {name:name,options:[],firstIndex:index};
       groups.push(map[name]);
@@ -68,7 +133,10 @@ function groupVideoSeries(options){
     group.options.sort(function(a,b){ return a.sequence-b.sequence || a.sourceIndex-b.sourceIndex; });
     group.topics = Array.from(new Set(group.options.map(function(o){ return o.topic; }).filter(Boolean)));
   });
-  return groups.sort(function(a,b){ return a.firstIndex-b.firstIndex; });
+  // 3Blue1Brown's short intuition videos come first: they make the long
+  // lectures after them easier to follow
+  const intro = function(g){ return g.name === '3Blue1Brown' ? 0 : 1; };
+  return groups.sort(function(a,b){ return intro(a)-intro(b) || a.firstIndex-b.firstIndex; });
 }
 // A chapter's materials are its videos and nothing else: every video of every
 // teacher's series is required, each one its own task. Order is the teaching

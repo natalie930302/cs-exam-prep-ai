@@ -1869,6 +1869,31 @@ scene('vm-14a-code', 'File system 讀寫 vs memory-mapped file', CAMW, [
   },
 ]);
 
+scene('vm-14a-recap', '小結：munmap ≠ close；跟 disk 有關的記憶體技巧', CAMW, [
+  async (tok, S) => {                                   // 1603 API 細節各系統不同
+    S.c = code(['fd = open(file);', 'p = mmap(..., fd, off);', 'p[1000]++;', 'munmap(p, len);', 'close(fd);'], -4.6, 5.6, 0.5);
+    sm('（pseudo code：各系統 API 細節不同）', -3.0, 2.6);
+    cap('程式只是示意（pseudo code）', '每個系統的 API 設計都有點不一樣');
+  },
+  async (tok, S) => {                                   // 1632 munmap 與 close 是兩件事
+    S.c.hl(3); S.m = bx('munmap → memory', MC.blue, 2.6, 5.0, 0, 3.2, 0.55, 0.7);
+    await wt(tok, 400); S.c.hl(4); S.f = bx('close → file handle', MC.orange, 2.6, 3.8, 0, 3.2, 0.55, 0.7);
+    cap('重點：munmap 跟 close 要分開做', '一個釋放 memory 的 mapping，一個關掉 file handle');
+  },
+  async (tok, S) => {                                   // 1667 前半段重點：demand paging、COW、mmap
+    S.c.kill(); gone(S.m, S.f);
+    S.k = ['demand paging', 'copy-on-write', 'memory-mapped file'].map((t, i) => bx(t, [MC.blue, MC.green, MC.purple][i], -4.4 + i * 4.4, 4.4, 0, 3.6, 0.6, 0.9));
+    hd('這一講前半段的重點', 0, 6.0);
+    cap('前半段的重點', 'demand paging、copy-on-write，還有 memory-mapped file');
+  },
+  async (tok, S) => {                                   // 1676 特殊的記憶體操作，跟 disk 息息相關
+    S.d = bx('disk', MC.dark, 0, 1.4, 0, 6.0, 0.6, 0.9);
+    S.k.forEach((m, i) => arrow(V3(-4.4 + i * 4.4, 4.0, 0.4), V3(-2.0 + i * 2.0, 1.8, 0.4)));
+    good('都是特殊的 memory 操作，而且都跟 disk 息息相關', 0, 2.8, 0.8);
+    cap('這些都是比較特殊的 memory 操作', '而且都跟 disk 息息相關，要知道它們在做什麼');
+  },
+]);
+
 // ════════ P1MlFqr5VMw（第 14B 講：Page Replacement、FIFO、Belady's anomaly） ════════
 const BEL = [1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5];
 scene('vm-14b-why', 'Page replacement 為什麼重要', CAM, [

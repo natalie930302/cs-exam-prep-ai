@@ -353,8 +353,8 @@ tip:"主題1–9按順序打基礎（約4週），圖論演算法與字串處理
     ]},
     {type:"vid",text:"Abdul Bari：Disjoint Sets Data Structure（Kruskal的前置知識：Union-Find）",url:"https://www.youtube.com/watch?v=wU6udHRIkcc",dur:"26:04"},
     {type:"ex",text:"給定加權圖，手算Dijkstra和Kruskal的執行過程 × 3題"}]},
-  {n:"主題11",t:"字串處理：KMP、Boyer-Moore",sub:"模式比對",pri:"hi",hrs:"5.5hr",wk:6,
-   key:"KMP的Failure Function建構步驟、KMP為何O(n+m)、Boyer-Moore的Bad Character規則",
+  {n:"主題11",t:"字串處理：KMP",sub:"模式比對",pri:"hi",hrs:"5.5hr",wk:6,
+   key:"KMP的Failure Function建構步驟、KMP為何O(n+m)",
    peerNote:"同儕筆記提醒：KMP演算法通常需要額外花時間才能真正搞懂，不要輕估這章，多演練Failure Function手算題。",
    mats:[
     {type:"book",text:"資結七版（洪逸）Ch7-1搜尋（含KMP相關）+ 演算法~1~（林立宇）Ch3-7 KMP Algorithm"},
@@ -808,7 +808,7 @@ tip:"CPU排程、同步／互斥、死鎖、記憶體與虛擬記憶體是五大
       {label:"清大周志遠 第26C講 RAID",url:"https://www.youtube.com/watch?v=TiyQuiVq0Zs",dur:"27:16"},
       {label:"清大周志遠 第26D講 I/O Systems",url:"https://www.youtube.com/watch?v=Ypxv0k322n8",dur:"40:33"}
     ]},
-    {type:"vid",text:"SCAN Disk Scheduling Algorithm",url:"https://www.youtube.com/watch?v=ko8ogLJc1Ko",dur:"5:40"},
+    {type:"vid",text:"SCAN Disk Scheduling Algorithm",url:"https://www.youtube.com/watch?v=lQAYseBJPuA",dur:"4:24"},
     {type:"ex",text:"SSTF/SCAN/C-SCAN 磁頭移動距離計算 × 3 題（Q講義 Q6）"}
    ]},
   {n:"主題11",t:"虛擬化與安全",sub:"Hypervisor、VM、Protection",pri:"lo",hrs:"3hr",wk:10,
@@ -825,7 +825,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
  recommended_videos:[
    {name:"MIT 18.06 L1：Geometry of Linear Equations",url:"https://www.youtube.com/watch?v=ZK3O402wf1c",note:"Strang的第一堂課，開繁中字幕，整科的起點"},
    {name:"MIT 18.06 L10：Four Fundamental Subspaces",url:"https://www.youtube.com/watch?v=nHlE7EgJFds",note:"線代最重要的一支影片，向量空間章節的核心觀念都在這"},
-   {name:"3Blue1Brown：Eigenvectors and eigenvalues",url:"https://www.youtube.com/watch?v=PFDu9oVAE-g",note:"特徵值特徵向量的幾何直覺，公式背不熟時回來看這支"}],
+   {name:"3Blue1Brown：Eigenvectors and eigenvalues | Ch14",url:"https://www.youtube.com/watch?v=PFDu9oVAE-g",note:"特徵值特徵向量的幾何直覺，公式背不熟時回來看這支"}],
  chapters:[
   {n:"主題1",t:"矩陣與線性方程組",sub:"Gaussian Elimination、Row Reduction、RREF",pri:"must",hrs:"9.5hr",wk:16,
    key:"高斯消去法手算、解的三種情況（unique/no/infinite）",
@@ -833,7 +833,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
     {type:"book",text:"線性代數上冊（林緯）Ch2 線性方程組與求解：2-1線性方程組 + 2-3行列式 — 搭配Ch2-5進階試題"},
     {type:"vid",text:"MIT OCW 18.06 L1：Geometry of Linear Equations",url:"https://www.youtube.com/watch?v=ZK3O402wf1c",dur:"39:49",note:"Strang的課，免費，開繁中字幕"},
     {type:"vid",text:"MIT OCW 18.06 L2：Elimination with Matrices",url:"https://www.youtube.com/watch?v=QVKj3LADCnA",dur:"47:41"},
-    {type:"vid",text:"3Blue1Brown：Essence of linear algebra preview",url:"https://www.youtube.com/watch?v=kjBOesZCoqc",dur:"5:09"},
+    {type:"vid",text:"3Blue1Brown：Essence of linear algebra preview | Ch0",url:"https://www.youtube.com/watch?v=kjBOesZCoqc",dur:"5:09"},
     {type:"ex",text:"給定方程組，用高斯消去法求解 × 8題（課本習題）"}]},
   {n:"主題2",t:"矩陣運算",sub:"乘法、轉置、逆矩陣、Elementary Matrix",pri:"must",hrs:"5hr",wk:16,
    key:"矩陣乘法的條件與複雜度、逆矩陣存在⟺det≠0、逆矩陣求法（augmented matrix method）",
@@ -842,7 +842,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
     {type:"book",text:"線性代數上冊（林緯）Ch1 矩陣：1-1矩陣的定義與運算 + 1-2列運算與行運算"},
     {type:"vidgroup",text:"矩陣乘法 Matrix Multiplication",options:[
       {label:"MIT 18.06 L3：Multiplication and Inverse Matrices",url:"https://www.youtube.com/watch?v=FX4C-JpTFgY",dur:"46:48"},
-      {label:"3Blue1Brown：Matrix multiplication as composition",url:"https://www.youtube.com/watch?v=XkY2DOUCWMU",dur:"10:04"}
+      {label:"3Blue1Brown：Matrix multiplication as composition | Ch4",url:"https://www.youtube.com/watch?v=XkY2DOUCWMU",dur:"10:04"}
     ]},
     {type:"vid",text:"MIT OCW 18.06 L4：Factorization into A = LU",url:"https://www.youtube.com/watch?v=5hO3MrzPa0A",dur:"50:21"},
     {type:"vid",text:"MIT OCW 18.06 L5：Transposes, Permutations, Spaces R^n",url:"https://www.youtube.com/watch?v=JibVXBElKL0",dur:"47:41"},
@@ -854,7 +854,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
     {type:"vidgroup",text:"行列式的性質與公式 Determinant",options:[
       {label:"MIT 18.06 L18：Properties of Determinants",url:"https://www.youtube.com/watch?v=srxexLishgY",dur:"49:12"},
       {label:"MIT 18.06 L19：Determinant Formulas and Cofactors",url:"https://www.youtube.com/watch?v=23LLB9mNJvc",dur:"53:17"},
-      {label:"3Blue1Brown：The determinant",url:"https://www.youtube.com/watch?v=Ip3X9LOh2dk",dur:"10:03"}
+      {label:"3Blue1Brown：The determinant | Ch6",url:"https://www.youtube.com/watch?v=Ip3X9LOh2dk",dur:"10:03"}
     ]},
     {type:"vid",text:"3Blue1Brown：Cross products | Essence of linear algebra Ch10",url:"https://www.youtube.com/watch?v=eu6i7WJeinw",dur:"8:54"},
     {type:"vid",text:"MIT OCW 18.06 L20：Cramer's Rule, Inverse Matrix, and Volume",url:"https://www.youtube.com/watch?v=QNpj-gOXW9M",dur:"51:01"},
@@ -868,13 +868,13 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
     {type:"vidgroup",text:"【強烈推薦】四個基本子空間 Four Fundamental Subspaces",options:[
       {label:"MIT 18.06 L10：Four Fundamental Subspaces",url:"https://www.youtube.com/watch?v=nHlE7EgJFds",dur:"49:20"},
       {label:"MIT 18.06 L6：Column Space and Nullspace",url:"https://www.youtube.com/watch?v=8o5Cmfpeo6g",dur:"46:01"},
-      {label:"3Blue1Brown：Inverse matrices, column space and null space",url:"https://www.youtube.com/watch?v=uQhTuRlWMxw",dur:"12:09"}
+      {label:"3Blue1Brown：Inverse matrices, column space and null space | Ch7",url:"https://www.youtube.com/watch?v=uQhTuRlWMxw",dur:"12:09"}
     ]},
     {type:"vidgroup",text:"Independence、Basis、Dimension",options:[
       {label:"MIT 18.06：Independence, Basis, and Dimension",url:"https://www.youtube.com/watch?v=eeMJg4uI7o0",dur:"13:19"},
       {label:"MIT 18.06 L9：Independence, Basis, and Dimension（完整版）",url:"https://www.youtube.com/watch?v=yjBerM5jWsc",dur:"50:14"},
-      {label:"3Blue1Brown：Vectors",url:"https://www.youtube.com/watch?v=fNk_zzaMoSs",dur:"9:52"},
-      {label:"3Blue1Brown：Linear combinations, span, and basis vectors",url:"https://www.youtube.com/watch?v=k7RM-ot2NWY",dur:"9:59"}
+      {label:"3Blue1Brown：Vectors | Ch1",url:"https://www.youtube.com/watch?v=fNk_zzaMoSs",dur:"9:52"},
+      {label:"3Blue1Brown：Linear combinations, span, and basis vectors | Ch2",url:"https://www.youtube.com/watch?v=k7RM-ot2NWY",dur:"9:59"}
     ]},
     {type:"vid",text:"MIT OCW 18.06 L7：Solving Ax = 0: Pivot Variables, Special Solutions",url:"https://www.youtube.com/watch?v=VqP2tREMvt0",dur:"43:19"},
     {type:"vid",text:"MIT OCW 18.06 L8：Solving Ax = b: Row Reduced Form R",url:"https://www.youtube.com/watch?v=9Q1q7s1jTzU",dur:"47:19"},
@@ -889,14 +889,14 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
     {type:"book",text:"線性代數上冊（林緯）Ch4 線性映射：4-1到4-4（含一對一與映成）"},
     {type:"vidgroup",text:"線性變換與矩陣表示",options:[
       {label:"MIT 18.06 L30：Linear Transformations and Their Matrices",url:"https://www.youtube.com/watch?v=Ts3o2I8_Mxc",dur:"49:27"},
-      {label:"3Blue1Brown：Linear transformations and matrices",url:"https://www.youtube.com/watch?v=kYB8IZa5AuE",dur:"10:59"},
-      {label:"3Blue1Brown：Three-dimensional linear transformations",url:"https://www.youtube.com/watch?v=rHLEWRxRGiM",dur:"4:46"},
-      {label:"3Blue1Brown：Nonsquare matrices as transformations",url:"https://www.youtube.com/watch?v=v8VSDg_WQlA",dur:"4:27"},
-      {label:"3Blue1Brown：Cross products as linear transformations",url:"https://www.youtube.com/watch?v=BaM7OCEm3G0",dur:"13:10"}
+      {label:"3Blue1Brown：Linear transformations and matrices | Ch3",url:"https://www.youtube.com/watch?v=kYB8IZa5AuE",dur:"10:59"},
+      {label:"3Blue1Brown：Three-dimensional linear transformations | Ch5",url:"https://www.youtube.com/watch?v=rHLEWRxRGiM",dur:"4:46"},
+      {label:"3Blue1Brown：Nonsquare matrices as transformations | Ch8",url:"https://www.youtube.com/watch?v=v8VSDg_WQlA",dur:"4:27"},
+      {label:"3Blue1Brown：Cross products as linear transformations | Ch11",url:"https://www.youtube.com/watch?v=BaM7OCEm3G0",dur:"13:10"}
     ]},
     {type:"vidgroup",text:"Change of Basis",options:[
       {label:"MIT 18.06 L31：Change of Basis; Image Compression",url:"https://www.youtube.com/watch?v=vGkn-3NFGck",dur:"50:13"},
-      {label:"3Blue1Brown：Change of basis",url:"https://www.youtube.com/watch?v=P2LTAUO1TdA",dur:"12:51"}
+      {label:"3Blue1Brown：Change of basis | Ch13",url:"https://www.youtube.com/watch?v=P2LTAUO1TdA",dur:"12:51"}
     ]},
     {type:"ex",text:"給定線性變換，找出其Kernel × 3題"}]},
   {n:"主題6",t:"特徵值與特徵向量",sub:"Eigenvalue、Eigenvector、對角化",pri:"must",hrs:"12hr",wk:17,
@@ -907,8 +907,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
     {type:"book",text:"線性代數下冊（林緯）Ch6 Jordan Form：基礎定義與求法讀過即可，不用深入練習"},
     {type:"vidgroup",text:"Eigenvalues and Eigenvectors",options:[
       {label:"MIT 18.06 L21：Eigenvalues and Eigenvectors",url:"https://www.youtube.com/watch?v=cdZnhQjJu4I",dur:"51:22"},
-      {label:"MIT 18.06 L21：Eigenvalues and Eigenvectors（另一錄影版本）",url:"https://www.youtube.com/watch?v=lXNXrLcoerU",dur:"51:22"},
-      {label:"3Blue1Brown：Eigenvectors and eigenvalues",url:"https://www.youtube.com/watch?v=PFDu9oVAE-g",dur:"17:15"}
+      {label:"3Blue1Brown：Eigenvectors and eigenvalues | Ch14",url:"https://www.youtube.com/watch?v=PFDu9oVAE-g",dur:"17:15"}
     ]},
     {type:"vid",text:"MIT OCW 18.06 L22：Diagonalization and Powers of A",url:"https://www.youtube.com/watch?v=13r9QY6cmjc",dur:"51:50"},
     {type:"vid",text:"MIT OCW 18.06 L23：Differential Equations and exp(At)",url:"https://www.youtube.com/watch?v=IZqwi0wJovM",dur:"51:03"},
@@ -924,7 +923,6 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
     {type:"book",text:"線性代數下冊（林緯）Ch7 內積空間：7-2 Gram-Schmidt正交化 + 7-3正交投影"},
     {type:"vidgroup",text:"Orthogonal Matrices and Gram-Schmidt",options:[
       {label:"MIT 18.06 L17：Orthogonal Matrices and Gram-Schmidt",url:"https://www.youtube.com/watch?v=0MtwqhIwdrI",dur:"49:09"},
-      {label:"MIT 18.06 L17：Orthogonal Matrices and Gram-Schmidt（另一錄影版本）",url:"https://www.youtube.com/watch?v=uNsCkP9mgRk",dur:"49:24"},
       {label:"Gram-Schmidt Orthogonalization（換個角度講解）",url:"https://www.youtube.com/watch?v=HEQuN0QELSQ",dur:"10:00"}
     ]},
     {type:"vid",text:"MIT OCW 18.06 L14：Orthogonal Vectors and Subspaces",url:"https://www.youtube.com/watch?v=YzZUIYRCE38",dur:"49:47"},
@@ -938,8 +936,7 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
    mats:[
     {type:"book",text:"線性代數下冊（林緯）Ch8：8-3正定與正半定 + 8-4二次式的應用"},
     {type:"vidgroup",text:"Symmetric Matrices and Positive Definiteness",options:[
-      {label:"MIT 18.06 L25：Symmetric Matrices and Positive Definiteness",url:"https://www.youtube.com/watch?v=UCc9q_cAhho",dur:"43:52"},
-      {label:"MIT 18.06 L25：（另一個錄影版本）",url:"https://www.youtube.com/watch?v=umt6BB1nJ4w",dur:"43:52"}
+      {label:"MIT 18.06 L25：Symmetric Matrices and Positive Definiteness",url:"https://www.youtube.com/watch?v=UCc9q_cAhho",dur:"43:52"}
     ]},
     {type:"vid",text:"MIT OCW 18.06 L26：Complex Matrices; Fast Fourier Transform",url:"https://www.youtube.com/watch?v=M0Sa8fLOajA",dur:"47:52"},
     {type:"vid",text:"MIT OCW 18.06 L27：Positive Definite Matrices and Minima",url:"https://www.youtube.com/watch?v=vF7eyJ2g3kU",dur:"50:40"},
@@ -950,7 +947,6 @@ tip:"線性代數適合每天少量持續練習；特徵值、特徵向量與向
     {type:"book",text:"線性代數下冊（林緯）Ch8-6奇異值分解（SVD）：這是林緯課本最後一章的重點"},
     {type:"vidgroup",text:"Singular Value Decomposition (SVD)",options:[
       {label:"MIT 18.06 L29：Singular Value Decomposition",url:"https://www.youtube.com/watch?v=TX_vooSnhm8",dur:"40:28"},
-      {label:"MIT 18.06 L29：（另一個錄影版本）",url:"https://www.youtube.com/watch?v=Nx0lRBaXoz4",dur:"41:35"},
       {label:"SVD | Step-By-Step Example and Explanation",url:"https://www.youtube.com/watch?v=f8DVtPvqtwc",dur:"19:00"}
     ]},
     {type:"vid",text:"MIT OCW 18.06 L32：Quiz 3 Review",url:"https://www.youtube.com/watch?v=HgC1l_6ySkc",dur:"47:05"},
@@ -1383,20 +1379,20 @@ const MATS=[
      {label:"L14 Orthogonal Vectors and Subspaces（49:47）",url:"https://www.youtube.com/watch?v=YzZUIYRCE38"},
      {label:"L15 Projections onto Subspaces（48:51）",url:"https://www.youtube.com/watch?v=Y_Ac6KiQ1t0"},
      {label:"L16 Projection Matrices and Least Squares（48:05）",url:"https://www.youtube.com/watch?v=osh80YCg_GM"},
-     {label:"L17 Orthogonal Matrices and Gram-Schmidt（49:24）",url:"https://www.youtube.com/watch?v=uNsCkP9mgRk"},
+     {label:"L17 Orthogonal Matrices and Gram-Schmidt（49:24）",url:"https://www.youtube.com/watch?v=0MtwqhIwdrI"},
      {label:"L18 Properties of Determinants（49:12）",url:"https://www.youtube.com/watch?v=srxexLishgY"},
      {label:"L19 Determinant Formulas and Cofactors（53:17）",url:"https://www.youtube.com/watch?v=23LLB9mNJvc"},
      {label:"L20 Cramer's Rule, Inverse Matrix, and Volume（51:01）",url:"https://www.youtube.com/watch?v=QNpj-gOXW9M"},
-     {label:"L21 Eigenvalues and Eigenvectors（51:22）",url:"https://www.youtube.com/watch?v=lXNXrLcoerU"},
+     {label:"L21 Eigenvalues and Eigenvectors（51:22）",url:"https://www.youtube.com/watch?v=cdZnhQjJu4I"},
      {label:"L22 Diagonalization and Powers of A（51:50）",url:"https://www.youtube.com/watch?v=13r9QY6cmjc"},
      {label:"L23 Differential Equations and exp(At)（51:03）",url:"https://www.youtube.com/watch?v=IZqwi0wJovM"},
      {label:"L24 Markov Matrices; Fourier Series（51:11）",url:"https://www.youtube.com/watch?v=8MF3pz-oYHo"},
      {label:"L24b Quiz 2 Review（48:20）",url:"https://www.youtube.com/watch?v=sFxA8eIS6tA"},
-     {label:"L25 Symmetric Matrices and Positive Definiteness（43:52）",url:"https://www.youtube.com/watch?v=umt6BB1nJ4w"},
+     {label:"L25 Symmetric Matrices and Positive Definiteness（43:52）",url:"https://www.youtube.com/watch?v=UCc9q_cAhho"},
      {label:"L26 Complex Matrices; Fast Fourier Transform（47:52）",url:"https://www.youtube.com/watch?v=M0Sa8fLOajA"},
      {label:"L27 Positive Definite Matrices and Minima（50:40）",url:"https://www.youtube.com/watch?v=vF7eyJ2g3kU"},
      {label:"L28 Similar Matrices and Jordan Form（45:56）",url:"https://www.youtube.com/watch?v=z_zYQHmrh08"},
-     {label:"L29 Singular Value Decomposition（41:35）",url:"https://www.youtube.com/watch?v=Nx0lRBaXoz4"},
+     {label:"L29 Singular Value Decomposition（41:35）",url:"https://www.youtube.com/watch?v=TX_vooSnhm8"},
      {label:"L30 Linear Transformations and Their Matrices（49:27）",url:"https://www.youtube.com/watch?v=Ts3o2I8_Mxc"},
      {label:"L31 Change of Basis; Image Compression（50:13）",url:"https://www.youtube.com/watch?v=vGkn-3NFGck"},
      {label:"L32 Quiz 3 Review（47:05）",url:"https://www.youtube.com/watch?v=HgC1l_6ySkc"},

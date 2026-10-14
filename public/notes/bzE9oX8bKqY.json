@@ -518,15 +518,15 @@
    "why": "為了方便加 GUI 會吃資源而變慢；手機的耗電也是 efficiency。"
   },
   {
-   "q": "下列何者不是老師說 OS 重要的原因？",
+   "q": "下列哪一個屬於 OS（kernel）的一部分？",
    "opts": [
-    "OS 是程式執行最快的部分",
-    "它是 user program 與 hardware 之間唯一的 interface",
-    "OS 絕對不能有 bug，crash 會讓整台電腦與狀態都沒了",
-    "掌握 OS 就能影響上面軟體與下面硬體的開發"
+    "device driver",
+    "C compiler",
+    "bash shell",
+    "text editor（vim）"
    ],
-   "ans": "OS 是程式執行最快的部分",
-   "why": "三個原因：唯一 interface、不能壞、能掌握上下游的開發。"
+   "ans": "device driver",
+   "why": "Driver 是 OS 控制硬體的部分，可以安裝；compiler、toolchain、shell 等是 OS 之上的程式，不屬於 kernel。"
   }
  ]
 }

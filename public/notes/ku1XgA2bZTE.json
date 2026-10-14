@@ -353,15 +353,15 @@
    "why": "所以適合 matrix 計算，不適合很多 if-else 分支的程式。"
   },
   {
-   "q": "早期 PC 作業系統 security 差的最主要原因是？",
+   "q": "SMP 的 core 數量不容易 scale 到很大，主要原因是？",
    "opts": [
-    "當初沒想到 Internet，外來使用者可透過網路入侵",
-    "CPU 太慢，做不了加密與權限檢查，只好全部關閉",
-    "沒有 GUI",
-    "memory 太小，放不下防毒軟體與 kernel 的保護機制"
+    "core 間要 locking 同步，overhead 隨 core 數變大",
+    "沒有 master core，system 就無法 boot 與管理其他 core",
+    "每個 core 同一時間只能執行一個 process",
+    "SMP 不能共用 memory，core 之間只能用 network 傳資料"
    ],
-   "ans": "當初沒想到 Internet，外來使用者可透過網路入侵",
-   "why": "早期只要使用者不破壞自己的電腦就好；現在都連網。"
+   "ans": "core 間要 locking 同步，overhead 隨 core 數變大",
+   "why": "SMP 的 core 對等、共用 memory，需要 locking 同步，core 越多 overhead 越大；AMP 由 master 管理，可 scale 更大。"
   }
  ]
 }

@@ -300,17 +300,6 @@
  ],
  "quiz": [
   {
-   "q": "趙啟超的離散數學課把內容分成哪三大部分？",
-   "opts": [
-    "Fundamentals、Enumeration、Graph Theory",
-    "Logic、Combinatorics、Algorithm Analysis",
-    "Set Theory、Probability、Algorithms",
-    "Counting、Number Theory、Linear Algebra"
-   ],
-   "ans": "Fundamentals、Enumeration、Graph Theory",
-   "why": "基礎（邏輯、集合、歸納、函數、關係）→ 計數 → 圖論。"
-  },
-  {
    "q": "課程說的兩類重要 binary relation 是？",
    "opts": [
     "equivalence relation 與 partial ordering",
@@ -353,28 +342,6 @@
    ],
    "ans": "先 homogeneous，再 non-homogeneous",
    "why": "non-homogeneous 的解 = homogeneous 通解 + particular solution，所以要先會 homogeneous。"
-  },
-  {
-   "q": "Graph Theory 部分的四個最佳化/配對問題不包含哪一個？",
-   "opts": [
-    "Traveling Salesman Problem",
-    "Shortest Paths",
-    "Minimal Spanning Tree Problem",
-    "Max Flow"
-   ],
-   "ans": "Traveling Salesman Problem",
-   "why": "課程列的是 Shortest Paths、MST、Maximum Matching、Max Flow（Max-Flow Min-Cut）。"
-  },
-  {
-   "q": "這門課指定的課本是？",
-   "opts": [
-    "Grimaldi 第 5 版",
-    "Rosen 第 8 版",
-    "CLRS 第 3 版",
-    "Johnsonbaugh 第 8 版"
-   ],
-   "ans": "Grimaldi 第 5 版",
-   "why": "Grimaldi 為課本；Rosen 是台灣另一本常用的書，列為參考。"
   }
  ]
 }

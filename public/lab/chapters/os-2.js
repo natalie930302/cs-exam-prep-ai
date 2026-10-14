@@ -3408,6 +3408,29 @@ FRAG.push(['proc-9b-rpc', 'RPC：stub、skeleton 與 parameter marshalling', asy
   cap('大小確定的 data structure 會幫你 copy', '但 pointer 不知道要 copy 多少，大多不 support');
   void be; void sk2;
 }]);
+FRAG.push(['proc-9b-sum', '溝通方式總結：各領域會用到哪一種', async (tok) => {
+  fresh([0, 5, 14.5], [0, 2.4, 0]);
+  const xs = [-4.6, 0, 4.6];
+  await step(tok);                                   // 609 溝通（communication）這部分很重要
+  hd('Process 之間的溝通（communication）', 0, 6.2);
+  cap('溝通這一部分雖然沒有作業', '但對以後的學習非常重要');
+  await step(tok);                                   // 620 平行程式：shared memory、message passing
+  bx('平行程式', PC[0], xs[0], 3.6, 0, 3.4, 0.6, 0.9, 1.5);
+  idx('shared memory', xs[0], 2.6); idx('message passing', xs[0], 1.9);
+  cap('學平行程式', '就會用到 shared memory 跟 message passing');
+  await step(tok);                                   // 624 網路：socket
+  bx('網路', PC[1], xs[1], 3.6, 0, 3.4, 0.6, 0.9, 1.5);
+  idx('socket', xs[1], 2.6);
+  cap('走網路方面', '就會用到 socket');
+  await step(tok);                                   // 627 分散式、大型系統：RPC
+  bx('分散式系統', PC[2], xs[2], 3.6, 0, 3.4, 0.6, 0.9, 1.5);
+  idx('RPC', xs[2], 2.6);
+  cap('走分散式、比較大型的系統', '就會用到 RPC');
+  await step(tok);                                   // 632 觀念都是今天講的
+  good('觀念都是這一章講過的', 0, 0.6, 1.0);
+  cap('這些的觀念就是我們剛剛講的', '下次開始第八章');
+}]);
+
 
 // ════════ IFEFVXvjiHY（Neso Academy：fork() and exec()）：定義、Linux 實機示範 ════════
 // a little terminal: monospace lines appended at (x, yTop)

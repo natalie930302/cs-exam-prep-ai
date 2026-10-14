@@ -6238,6 +6238,64 @@ scene('nuB-13a-pipe', "13A：切成幾個 stage", CAM, [
           good('通常把浮點運算 pipeline', 0, 3.2); cap('花的時間比較長', '通常 pipeline；乘法下次講');
         }
 ]);
+// ════════ gBaVGirWTlU §12（第 12B 講課堂問答：two's complement 要用減法比大小；exponent 為什麼減 127） ════════
+const tc4 = (n) => (((n % 16) + 16) % 16).toString(2).padStart(4, '0');
+const fromTc4 = (b) => parseInt(b, 2) - (b[0] === '1' ? 16 : 0);
+const magGT = (a, b) => { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return { gt: a[i] === '1', at: i }; return { gt: false, at: -1 }; };   // a plain comparator: first different bit from the left decides
+const brow4 = (bits, x, y, w = 0.62) => [...bits].map((b, i) => bx(b, b === '1' ? FC.blue : FC.sky, x + i * w, y, 0, w - 0.07, 0.5, 0.5));
+function cmpPair(S, a, b) {
+  const x = -1.0, A = tc4(a), B = tc4(b);
+  S.p = [brow4(A, x, 5.3), brow4(B, x, 4.6), hd('A', x - 0.9, 5.3), hd('B', x - 0.9, 4.6), sm(A + ' = ' + fromTc4(A), x + 3.6, 5.3), sm(B + ' = ' + fromTc4(B), x + 3.6, 4.6)];
+  return { A, B, ra: S.p[0], rb: S.p[1] };
+}
+scene('nuB-12b-cmpqa', "12B 問答：two's complement 用減法比大小；exponent 減 127", CAM, [
+  async (tok, S) => {   // 2261 比大小
+    S.h = hd("two's complement 的數怎麼比大小？", 0, 6.6);
+    S.q = cmpPair(S, -1, 7); S.n4 = small(note('4 bits 示意', 5.4, 6.6), 10);
+    cap("這是 two's complement 的表示法", '要比大小，要怎麼比？');
+  },
+  async (tok, S) => {   // 2281 直接用 comparator
+    const r = magGT(S.q.A, S.q.B); glow(S.q.ra[r.at], HL); glow(S.q.rb[r.at], HL);
+    S.w = bad('比較器從最高位比：1 > 0 → 說 A 比較大 ✘（' + fromTc4(S.q.A) + ' < ' + fromTc4(S.q.B) + '）', 0, 3.6);
+    cap('直接丟進比較器', '第一個 bit 比較大，就說它大 → 不對');
+  },
+  async (tok, S) => {   // 2306 用減法器
+    const d = fromTc4(S.q.A) - fromTc4(S.q.B), D = tc4(d);
+    S.d = [brow4(D, -1.0, 2.8), hd('A − B', -2.2, 2.8)];
+    S.d.push(ok(D === '1000' && d < 0, 0, 2.0, 'A − B = ' + D + ' = ' + d + '，是負的 → A 比較小 ✓'));
+    cap('要用減法器', '減完看是正數還是負數');
+  },
+  async (tok, S) => {   // 2320 −8 與 −7
+    gone(S.p, S.w, S.d);
+    S.q = cmpPair(S, -8, -7);
+    const d = -8 - (-7), D = tc4(d);
+    S.d = [sm('sign bit 都是 1：看 sign 也分不出來', 0, 3.6), brow4(D, -1.0, 2.8), hd('A − B', -2.2, 2.8), ok(fromTc4(D) === -1, 0, 2.0, 'A − B = ' + D + ' = ' + d + ' < 0 → −8 < −7 ✓')];
+    cap('−8 跟 −7 前面都是負的', '一定要減完再看正負');
+  },
+  async (tok, S) => {   // 2342 真正的比較器
+    gone(S.p, S.d); S.q = null;
+    const A = '0110', B = '0101', x = -1.0;
+    S.p = [brow4(A, x, 5.3), brow4(B, x, 4.6), sm('magnitude（無號）', x + 3.8, 5.0)];
+    const r = magGT(A, B);
+    for (let i = 0; i <= r.at; i++) { glow(S.p[0][i], i === r.at ? OKG : HL); glow(S.p[1][i], i === r.at ? OKG : HL); await wt(tok, 450); }
+    S.d = [good('比較器：從最高位往下，第 ' + (r.at + 1) + ' 個 bit 不同就決定 → 很快', 0, 3.6), sm('後面的 bit 不用再比', 0, 2.9)];
+    cap('比較器從最高位開始比', '只比 magnitude，速度比較快');
+  },
+  async (tok, S) => {   // 2399 exponent 為什麼減 127
+    gone(S.p, S.d, S.n4); txt(S.h, 'exponent 為什麼要減 127？');
+    const sx = (e) => -5.5 + e * 11 / 255;
+    S.n = [bx('', '#efb4b4', (sx(0) + sx(126)) / 2, 4.2, 0, sx(126) - sx(0), 0.3, 0.3), bx('', FC.mint, (sx(128) + sx(255)) / 2, 4.2, 0, sx(255) - sx(128), 0.3, 0.3), bx('', FC.gold, sx(127), 4.2, 0, 0.18, 0.5, 0.35)];
+    [[0, -127], [127, 0], [255, 128]].forEach(([e, v]) => { S.n.push(sm('E = ' + e, sx(e), 4.75), small(hd(String(e - 127), sx(e), 3.6), 10)); });
+    S.n.push(sm('負的 exponent', sx(63), 3.0), sm('正的 exponent', sx(191), 3.0));
+    cap('8 bits 的 exponent：0 ～ 255', '前面 127 個位置要留給負的');
+  },
+  async (tok, S) => {   // 2418 真正的值
+    const e = 104 - 127;
+    ok(e === -23, 0, 2.2, '真正的值 = E − 127，例：E = 104 → ' + e + ' ✓');
+    cap('所以存的 E 減掉 127', '才是真正的 exponent');
+  },
+]);
+
   }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });

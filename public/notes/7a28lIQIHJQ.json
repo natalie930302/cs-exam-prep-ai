@@ -484,15 +484,15 @@
  ],
  "quiz": [
   {
-   "q": "老師認為解決難題的第一步是什麼？",
+   "q": "依 Knuth，演算法的 Effective 指的是？",
    "opts": [
-    "抽絲剝繭，萃取問題本質（essential）",
-    "立刻開始寫程式，邊寫邊想",
-    "先處理所有瑣碎細節（各種 corner case）",
-    "直接套用 greedy"
+    "每一步都能用紙筆實際模擬做出來",
+    "每一步的描述都不能有兩種以上解讀",
+    "一定要在有限步驟內停下來",
+    "一定要得到最佳解且執行很快"
    ],
-   "ans": "抽絲剝繭，萃取問題本質（essential）",
-   "why": "先理出核心，瑣碎的部分之後再用 generalization／extension 處理。"
+   "ans": "每一步都能用紙筆實際模擬做出來",
+   "why": "Effective 要求每個步驟都做得到；不能有歧義是 Definite，有限步停下是 Finite。"
   },
   {
    "q": "Dynamic Programming 中的 programming 指的是？",

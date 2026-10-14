@@ -378,7 +378,7 @@
   },
   {
    "title": "Q&A 與休息",
-   "scene": null,
+   "scene": "qa-tree-build-order",
    "points": [
     {
      "text": "Q：建樹用 prefix 比較好？常見是 prefix（先建自己再建左右）或 postfix（先建左右再接上自己）。",
@@ -392,6 +392,16 @@
      "text": "下一個 topic 是 heap，先休息 10 分鐘。",
      "t": 2746
     }
+   ],
+   "cues": [
+    2489,
+    2530.91,
+    2552
+   ],
+   "explain": [
+    "同學問：建樹用 prefix 比較好嗎？用遞迴建樹時，常見的一種是 prefix：先把這裡的 node 建好，再去建左 subtree、右 subtree（建立順序 A B D E C）。",
+    "另一種是 postfix：先把左右兩邊的 subtree 建好，最後再跟自己連起來（建立順序 D E B C A）。",
+    "兩種寫法都會看到，順序正好對應 preorder 和 postorder traversal。作業四會練到各種跟 tree traversal 有關的東西。"
    ]
   },
   {

@@ -442,12 +442,24 @@
   },
   {
    "title": "（同學回答 jal 做什麼）",
-   "scene": null,
+   "scene": "isB-7a-jalqa",
    "points": [
     {
      "t": 1803,
      "text": "同學回答：jal 把下一個指令的位址存到 $ra，再跳到 label。"
     }
+   ],
+   "cues": [
+    1835,
+    1855,
+    1861,
+    1865
+   ],
+   "explain": [
+    "老師問同學：jal（jump and link）做什麼？假設 jal leaf 放在位址 1000，leaf 在 2000（位址是示意）。",
+    "第一件事 link：把下一道指令的位址（PC + 4 = 1004）存進 $ra，之後才回得來。",
+    "第二件事 jump：PC 換成 label（leaf）的位址，跳過去執行 procedure。",
+    "所以 jal 一道指令做兩件事：存回程位址、再跳過去。callee 做完用 jr $ra 就回到 1004，caller 的部分就完成了。"
    ]
   },
   {

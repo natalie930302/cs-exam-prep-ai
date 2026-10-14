@@ -348,15 +348,15 @@
    "why": "大家同時讀寫同一塊 memory，結果可能不可預期。"
   },
   {
-   "q": "課堂舉的 accounting 例子是？",
+   "q": "依恐龍書，下列哪一項 OS service 主要是為了讓系統本身有效率地運作，而不是直接服務 user？",
    "opts": [
-    "限制一個 process 最多配置 4 GB、開檔數有上限",
-    "計算薪水",
-    "統計 CPU 溫度，過熱時自動降低時脈並記錄在 log",
-    "記錄滑鼠位置"
+    "resource allocation（如 CPU scheduling）",
+    "user interface（提供 CLI 與 GUI 介面）",
+    "program execution（load 並執行 user program）",
+    "file-system manipulation（建立、讀寫與刪除檔案）"
    ],
-   "ans": "限制一個 process 最多配置 4 GB、開檔數有上限",
-   "why": "OS 追蹤資源使用量，避免單一使用者拖垮系統。"
+   "ans": "resource allocation（如 CPU scheduling）",
+   "why": "Resource allocation、accounting、protection & security 讓系統本身運作；UI、程式執行、I/O、檔案、通訊、錯誤偵測則直接幫助 user。"
   }
  ]
 }

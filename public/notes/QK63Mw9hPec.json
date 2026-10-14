@@ -220,17 +220,6 @@
  ],
  "quiz": [
   {
-   "q": "老師說電腦（與 OS）不可或缺的三個要素是？",
-   "opts": [
-    "CPU（process）、memory、storage",
-    "keyboard、mouse、monitor、printer",
-    "compiler、linker、loader",
-    "network、cloud、IoT"
-   ],
-   "ans": "CPU（process）、memory、storage",
-   "why": "拿到一台電腦一定有這三個 part，課程前五個 part 就在講它們。"
-  },
-  {
    "q": "為什麼電腦能用很少的 CPU 同時跑上千個 process？",
    "opts": [
     "因為 OS 負責 scheduling，決定現在該誰執行",
@@ -240,17 +229,6 @@
    ],
    "ans": "因為 OS 負責 scheduling，決定現在該誰執行",
    "why": "老師說 OS 最重要的角色就是 scheduling、分配資源。"
-  },
-  {
-   "q": "為什麼 synchronization 這一章沒有程式作業？",
-   "opts": [
-    "可能性太多，跑一次程式無法證明正確性",
-    "因為它太簡單，課堂練習就夠",
-    "因為 Nachos 沒有 thread，無法實作 lock",
-    "因為期末不考"
-   ],
-   "ans": "可能性太多，跑一次程式無法證明正確性",
-   "why": "程式跑出來只是當下那次的結果，同步要靠嚴謹的設計來保證。"
   },
   {
    "q": "分散式系統的想法是？",

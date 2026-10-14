@@ -1613,6 +1613,30 @@ scene('reA-7a-pc', '7A：證明 (c)——不是一樣就是 disjoint', [
   },
 ]);
 
+// MvNiJbIxfu0 課堂問答：(b) 第二段為什麼能用 symmetric —— 「x R y」這個假設兩段都一直在
+scene('reA-7a-qa', '7A：問答——x R y 的假設一直都在', [
+  async (tok, S) => {
+    S.bx = blob(PX[0], PX[1], 1.5, 1.9, TC.a, 0.18); S.by = blob(PY[0], PY[1], 1.5, 1.9, TC.b, 0.18);
+    hd('[x]', PX[0], 5.7); hd('[y]', PY[0], 5.7); dot('x', ...PX, TC.orange); dot('y', ...PY, TC.orange);
+    S.xy = darr(PX, PY, TC.gold); S.h = hot('假設：x R y', -3.4, 0.9);
+    S.B = board(0.6, 6.3); S.B.add('問：(b) 第二段為什麼能用 symmetric？', 'ptr'); cap('同學問：第二段為什麼可以這樣推', '');
+  },
+  async (tok, S) => {
+    const wp = [PX[0] - 0.6, PX[1] - 1.2]; S.w = dot('w', ...wp, TC.green); S.a1 = darr(wp, PX, TC.a); S.a2 = darr(wp, PY, TC.green);
+    S.B.add('第一段 [x] ⊆ [y]：w R x、x R y ⇒ w R y'); cap('第一段：用到 x R y', '再用 transitive');
+  },
+  async (tok, S) => {
+    gone(S.w, S.a1, S.a2); setCls(S.h, 'good');
+    S.B.add('x R y 是一開始的假設：兩段證明都一直可以用', 'ptr alt'); cap('x R y 是一開始的假設', '整個 ⇒ 方向都假設它成立');
+  },
+  async (tok, S) => {
+    S.yx = darr([PY[0], PY[1] - 0.15], [PX[0], PX[1] - 0.15], TC.b);
+    const tp = [PY[0] + 0.6, PY[1] - 1.2]; S.t = dot('t', ...tp, TC.purple); darr(tp, PY, TC.b); darr(tp, PX, TC.green);
+    S.B.add('第二段 [y] ⊆ [x]：x R y ⇒ y R x（symmetric）');
+    S.B.add('t R y、y R x ⇒ t R x', 'good'); cap('第二段：假設還在，用 symmetric 反過來', 'y R x 才能接上 transitive');
+  },
+]);
+
 // 示意：一群元素「物以類聚」
 const FL = [[-6.0, 5.6], [-3.1, 2.0], [-1.0, 4.9], [-4.6, 3.4], [-0.6, 1.8], [-5.4, 1.4], [-2.4, 5.8], [-3.6, 4.2], [-1.6, 2.9]];
 scene('reA-7a-flock', '7A：equivalence classes 的直觀——物以類聚', [

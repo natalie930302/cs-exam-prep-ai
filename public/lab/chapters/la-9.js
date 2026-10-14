@@ -3237,6 +3237,331 @@ scene('sv-l33-pinv', 'L33：A⁺ = VΣ⁺Uᵀ', [
     cap('不會考 pseudo-inverse', '但背後的圖就是第一到四章');
   },
 ]);
+
+// ════════ xy3QyyhiuY4（Steve Brunton：SVD — Matrix Approximation）════════
+// 影片沒有具體數字，畫面用「示意」的資料矩陣 X（n = 8、m = 4）：
+// U = 8×8 Hadamard / √8 的 columns、V = 4×4 Hadamard / 2 的 columns、σ = 6、3、0.6、0.3（σ₃、σ₄ 故意很小，示範截斷）。
+// 所有乘積、rank、誤差都由程式現場計算並打 ✓／✘。
+const XH = (() => { let H = [[1]]; for (let k = 0; k < 3; k++) H = [...H.map((r) => [...r, ...r]), ...H.map((r) => [...r, ...r.map((x) => -x)])]; return H; })();
+const XU = colsM([0, 4, 2, 6, 1, 5, 3, 7].map((j) => XH.map((r) => r[j] / Math.sqrt(8))));   // 8×8 orthogonal
+const XV = colsM([0, 2, 1, 3].map((j) => [[1, 1, 1, 1], [1, -1, 1, -1], [1, 1, -1, -1], [1, -1, -1, 1]].map((r) => r[j] / 2))); // 4×4 orthogonal
+const XS = [6, 3, 0.6, 0.3];
+const XN = 8, XM = 4;
+const Xcol = (A, j) => A.map((r) => r[j]);
+const Xterm = (k) => Xcol(XU, k).map((a) => Xcol(XV, k).map((b) => XS[k] * a * b));      // σ_k u_k v_kᵀ
+const Xsum = (ks) => ks.reduce((A, k) => madd(A, Xterm(k)), Array.from({ length: XN }, () => new Array(XM).fill(0)));
+const XX = Xsum([0, 1, 2, 3]);
+const fro = (A) => Math.sqrt(A.flat().reduce((s, x) => s + x * x, 0));
+const XVM = 1.1;                                                                           // 色階：|值| ≥ 1.8 最深
+const HPa = new THREE.Color('#f4ede1'), HBl = new THREE.Color('#2f7fd0'), HRd = new THREE.Color('#d6542a');
+const heatCol = (v, vm) => HPa.clone().lerp(v >= 0 ? HBl : HRd, Math.min(1, Math.abs(v) / vm));
+// 熱度圖矩陣（每格一塊小方塊，藍 = 正、橘 = 負、越深越大）
+function heat(M, x0, y0, sz = 0.34, vm = XVM) {
+  const c = M.map((r, i) => r.map((v, j) => cube('', '#f4ede1', [sz * 0.9, sz * 0.9, 0.16], x0 + j * sz, y0 - i * sz, 0)));
+  const H = { c, all: c.flat() };
+  H.set = (A) => A.forEach((r, i) => r.forEach((v, j) => c[i][j].material.color.copy(heatCol(v, vm))));
+  H.set(M); return H;
+}
+const Xdiag = (n, m, d) => dg(n, m, d);
+// Σ：對角格用金色（σ 的值寫在旁邊的說明裡，小格子放不下標籤）
+function sigGrid(n, m, x0, y0, sz = 0.34) {
+  const c = Array.from({ length: n }, (_, i) => Array.from({ length: m }, (__, j) => (i === j ? cube('', VC.g, [sz * 0.9, sz * 0.9, 0.16], x0 + j * sz, y0 - i * sz, 0) : cube('', VC.pale, [sz * 0.9, sz * 0.9, 0.16], x0 + j * sz, y0 - i * sz, 0))));
+  return { c, all: c.flat() };
+}
+const XOK = eqM(mm(XU, mm(Xdiag(XN, XM, XS), tr(XV))), XX) && eqM(mm(tr(XU), XU), eye(XN)) && eqM(mm(tr(XV), XV), eye(XM));
+const XSV = svd(XX).sig;
+
+scene('sv-xy-svd', 'SVD 回顧：X = UΣVᵀ 與奇異值的排序', [
+  async (tok, S) => { // @6.6
+    hd('SVD：X = U Σ Vᵀ（示意 n = 8、m = 4）', 0, 7.1);
+    S.X = heat(XX, -5.6, 5.6); sm('X（n×m）', -5.09, 6.25);
+    pl('=', -3.85, 4.4);
+    S.U = heat(XU, -3.3, 5.6, 0.34, 0.4); sm('U（n×n）', -2.11, 6.25);
+    S.Sg = sigGrid(XN, XM, -0.2, 5.6); sm('Σ（n×m）', 0.31, 6.25);
+    S.V = heat(tr(XV), 1.5, 5.6, 0.34, 0.55); sm('Vᵀ（m×m）', 2.01, 6.25);
+    S.ck = ok(XOK, 4.9, 4.4, 'UΣVᵀ = X');
+    cap('資料矩陣 X 拆成三個矩陣相乘', 'X = U Σ Vᵀ');
+  },
+  async (tok, S) => { // @17.9
+    S.L = ledger(0, 2.5, 0.7);
+    S.L.add('U 的 columns：X 的 column space 的資訊　｜　V：X 的 row space 的資訊', 'idx');
+    cap('U 管 column space，V 管 row space', 'Σ 是對角矩陣');
+  },
+  async (tok, S) => { // @32.9
+    for (let k = 0; k < XM; k++) { glow(S.Sg.c[k][k], GOLD); S.U.c.forEach((r) => glow(r[k], GOLD)); await wt(tok, 450); S.U.c.forEach((r) => glow(r[k], null)); }
+    S.L.add('σ₁ ≥ σ₂ ≥ σ₃ ≥ σ₄（6 ≥ 3 ≥ 0.6 ≥ 0.3）：u₁ 比 u₂ 重要，u₂ 比 u₃ 重要…', 'idx');
+    cap('奇異值由大到小排', 'σ 代表對應的 u、v 有多重要');
+  },
+  async (tok, S) => { // @46.9
+    S.V.c[0].forEach((m) => glow(m, GOLD));
+    S.L.add('Vᵀ 的每一列 = V 的 column 躺平：v₁ᵀ、v₂ᵀ、v₃ᵀ、v₄ᵀ', 'idx');
+    cap('把 V 的 columns 轉成橫的', 'Vᵀ 的列就是 v₁ᵀ、v₂ᵀ…');
+  },
+  async (tok, S) => { // @65.1
+    S.V.c[0].forEach((m) => glow(m, null));
+    S.X.all.forEach((m) => glow(m, GOLD));
+    ok(rank(XX) <= XM && rank(XX) === 4, 0, S.L.y, 'X 只有 m = 4 個 columns → 在 ℝ⁸ 裡最多 4 個線性獨立'); S.L.y -= 0.7;
+    cap('X 只有 m 個 columns', '最多 m 個線性獨立的方向');
+  },
+  async (tok, S) => { // @80.9
+    S.X.all.forEach((m) => glow(m, null));
+    S.U.c.forEach((r) => r.forEach((m, j) => { if (j >= XM) tint(m, VC.pale); }));
+    hot('只有 U 的前 m 個 columns 用來表示資料', 0, S.L.y);
+    cap('U 只有前 m 個 columns 有用', '後面的 columns 等一下會被丟掉');
+  },
+]);
+
+scene('sv-xy-sum', 'SVD 展開成 rank-1 矩陣的和', [
+  async (tok, S) => { // @113.5
+    S.U = heat(XU, -6.2, 6.4, 0.34, 0.4); sm('U', -5.0, 6.95);
+    S.Sg = sigGrid(XN, XM, -3.3, 6.4); sm('Σ', -2.79, 6.95);
+    pl('=', -1.85, 5.2);
+    S.US = heat(XU.map((r) => r.slice(0, XM).map(() => 0)), -1.3, 6.4, 0.34, 2.2); sm('UΣ', -0.79, 6.95);
+    S.st = sm('先算 UΣ：Σ 是對角矩陣', -1.2, 3.45);
+    cap('先看 U 乘 Σ', 'Σ 是對角矩陣');
+  },
+  async (tok, S) => { // @122.3
+    S.U.c.forEach((r) => glow(r[0], GOLD)); glow(S.Sg.c[0][0], GOLD);
+    const US = mm(XU, Xdiag(XN, XM, XS));
+    await anim(tok, 800, (k) => S.US.set(US.map((r) => r.map((x, j) => (j === 0 ? x * k : 0)))));
+    txt(S.st, 'UΣ 的第 1 行 = σ₁u₁（同一行的其他項都乘到 0）');
+    cap('u₁ 只被 σ₁ 放大', '其他格都是 0');
+  },
+  async (tok, S) => { // @145.1
+    S.U.c.forEach((r) => glow(r[0], null)); glow(S.Sg.c[0][0], null);
+    const US = mm(XU, Xdiag(XN, XM, XS));
+    await anim(tok, 900, (k) => S.US.set(US.map((r) => r.map((x, j) => (j === 0 ? x : x * k)))));
+    const okC = [0, 1, 2, 3].every((j) => eqV(Xcol(US, j), mul(XS[j], Xcol(XU, j))));
+    txt(S.st, (okC ? '✓ ' : '✘ ') + 'UΣ = [σ₁u₁  σ₂u₂  σ₃u₃  σ₄u₄]');
+    cap('UΣ 的每一行都是 σᵢuᵢ', '');
+  },
+  async (tok, S) => { // @157.9
+    pl('·', 0.25, 5.2);
+    S.V = heat(tr(XV), 0.6, 6.4, 0.34, 0.55); sm('Vᵀ', 1.11, 6.95);
+    S.US.c.forEach((r) => glow(r[0], GOLD)); S.V.c[0].forEach((m) => glow(m, GOLD));
+    txt(S.st, '再乘 Vᵀ：σ₁u₁ 這一行只會碰到 v₁ᵀ 這一列');
+    cap('乘上 Vᵀ', '第 i 行只配第 i 列');
+  },
+  async (tok, S) => { // @169.5
+    S.US.c.forEach((r) => glow(r[0], null)); S.V.c[0].forEach((m) => glow(m, null));
+    pl('=  X', 2.3, 5.2); S.X = heat(XX, 3.0, 6.4); sm('X', 3.51, 6.95);
+    const xs = [-6.0, -3.6, -1.2, 1.2];
+    S.T = xs.map((x, k) => { const H = heat(Xterm(k), x, 2.2, 0.32); sm('σ' + '₁₂₃₄'[k] + 'u' + '₁₂₃₄'[k] + 'v' + '₁₂₃₄'[k] + 'ᵀ', x + 0.48, 2.75); return H; });
+    [-4.4, -2.0, 0.4].forEach((x) => pl('+', x, 1.1));
+    ok(eqM(Xsum([0, 1, 2, 3]), XX), 4.6, 1.1, 'X = 四項加起來');
+    txt(S.st, 'X = σ₁u₁v₁ᵀ + σ₂u₂v₂ᵀ + … + σ_m u_m v_mᵀ');
+    cap('展開成 m 項的和', 'X = σ₁u₁v₁ᵀ + σ₂u₂v₂ᵀ + … + σ_m u_m v_mᵀ');
+  },
+  async (tok, S) => { // @205.7
+    S.Sg.c.forEach((r, i) => { if (i >= XM) r.forEach((m) => glow(m, GOLD)); });
+    sm('U 有 n = 8 個 columns，但 rank(X) ≤ m = 4：σ₅、σ₆ … 都是 0', 0, -0.85);
+    cap('U 有 n 個 columns', '但非零的奇異值最多只有 m 個');
+  },
+  async (tok, S) => { // @238.2
+    S.Sg.c.forEach((r, i) => { if (i >= XM) r.forEach((m) => { glow(m, null); tint(m, '#efe8dc'); }); });
+    S.U.c.forEach((r) => r.forEach((m, j) => { if (j >= XM) tint(m, '#efe8dc'); }));
+    hot('第 m 個之後的 u、v 都乘到 0 → 可以丟掉', 0, -1.55);
+    cap('乘到 0 的部分全部丟掉', '');
+  },
+]);
+
+scene('sv-xy-econ', 'Economy SVD：只留前 m 個 columns', [
+  async (tok, S) => { // @248.2
+    S.X = heat(XX, -5.6, 5.6); sm('X', -5.09, 6.25);
+    pl('=', -3.85, 4.4);
+    S.U = heat(XU, -3.3, 5.6, 0.34, 0.4); S.uL = sm('U（8×8）', -2.11, 6.25);
+    S.Sg = sigGrid(XN, XM, -0.2, 5.6); S.sL = sm('Σ（8×4）', 0.31, 6.25);
+    S.V = heat(tr(XV), 1.5, 5.6, 0.34, 0.55); sm('Vᵀ（4×4）', 2.01, 6.25);
+    await wt(tok, 900);
+    const out = [...S.U.c.flatMap((r) => r.slice(XM)), ...S.Sg.c.slice(XM).flat()];
+    await anim(tok, 900, (k) => out.forEach((m) => { m.position.z = 2.5 * k; m.scale.setScalar(Math.max(0.01, 1 - k)); }));
+    gone(out);
+    cap('只留 U 的前 m 個 columns、Σ 的 m×m 區塊', 'V 完全不動');
+  },
+  async (tok, S) => { // @261.9
+    txt(S.uL, 'Û（8×4）'); txt(S.sL, 'Σ̂（4×4）');
+    cap('叫它們 Û、Σ̂', '');
+  },
+  async (tok, S) => { // @283.6
+    const Uh = XU.map((r) => r.slice(0, XM)), Sh = Xdiag(XM, XM, XS);
+    ok(eqM(mm(Uh, mm(Sh, tr(XV))), XX), 0, 2.5, 'X = ÛΣ̂Vᵀ：一點都沒少，還是精確相等');
+    cap('X = UΣVᵀ = ÛΣ̂Vᵀ', '這是精確的，不是近似');
+  },
+  async (tok, S) => { // @302.0
+    hot('這叫 economy SVD', 0, 1.8);
+    cap('這叫 economy SVD', '幾乎所有情況都該用它');
+  },
+  async (tok, S) => { // @317.4
+    const tall = cube('', VC.a, [0.32, 4.6, 0.3], 5.5, 3.5, 0);
+    sm('tall skinny X', 5.5, 6.25); sm('n ≈ 100 萬像素', 5.5, 0.6);
+    sm('m ≈ 1000 人：n ≫ m', 5.5, -0.1); void tall;
+    note('一百萬像素 × 一千人 → 用 economy SVD', -0.5, 1.1);
+    cap('高瘦矩陣：n 遠大於 m', '完整的 U 會是 n×n 的大怪物');
+  },
+  async (tok, S) => { // @345.6
+    const c = code(["[U, S, V] = svd(X, 'econ');"], -1.0, 0.3);
+    void c; sm('只回傳 U 的前 m 個 columns（對應非零 σ）', -1.0, -0.4);
+    cap("MATLAB：svd(X, 'econ')", '不用回傳 n×n 的完整 U');
+  },
+]);
+
+const OU = [1, 2, -1], OV = [3, 1, 0, 2];
+const OUT = OU.map((a) => OV.map((b) => a * b));
+scene('sv-xy-outer', '外積：每一項 σuvᵀ 都是 rank 1', [
+  async (tok, S) => { // @378.1
+    hd('X = σ₁u₁v₁ᵀ + σ₂u₂v₂ᵀ + …', 0, 7.0);
+    sm('每一項都是 rank-1 矩陣', 0, 6.35);
+    cap('每一項都是 rank 1 的矩陣', '為什麼？');
+  },
+  async (tok, S) => { // @390.6
+    S.u = grid(OU.map((x) => [x]), -3.6, 4.4, VC.a, 0.62); sm('u（column）', -5.1, 3.78);
+    S.v = grid([OV], -2.6, 5.3, VC.c, 0.62); sm('vᵀ（row）', 0.6, 5.3);
+    S.L = ledger(3.9, 4.6, 0.7);
+    S.L.add('示意：u = (1, 2, −1)、vᵀ = (3 1 0 2)', 'idx');
+    cap('u 是 column vector，vᵀ 是 row vector', 'σ 只是乘上一個數');
+  },
+  async (tok, S) => { // @422.1
+    S.L.add('inner product：row × column = 一個數，例如 uᵀu = ' + dot(OU, OU), 'idx');
+    cap('平常熟的是 inner product', '躺著的乘直的，得到一個數');
+  },
+  async (tok, S) => { // @434.1
+    S.L.add('outer product：column × row = 3×4 的矩陣', 'ptr alt');
+    cap('直的乘躺著的：outer product', '結果是矩陣');
+  },
+  async (tok, S) => { // @441.9
+    S.R = [];
+    for (let i = 0; i < OU.length; i++) {
+      glow(S.u.c[i][0], GOLD); S.v.all.forEach((m) => glow(m, GOLD));
+      S.R.push(OV.map((_, j) => cube(frac(OUT[i][j]), OUT[i][j] === 0 ? VC.pale : VC.d, [0.57, 0.57, 0.25], -2.6 + j * 0.62, 4.4 - i * 0.62, 0, 1.2)));
+      await wt(tok, 900); glow(S.u.c[i][0], null); S.v.all.forEach((m) => glow(m, null));
+    }
+    S.L.add('第 i 列 = uᵢ × 整個 vᵀ', 'idx');
+    cap('第 i 列：u 的第 i 個數乘整個 vᵀ', '一列一列做完就是矩陣');
+  },
+  async (tok, S) => { // @462.5
+    ok(rank(OUT) === 1, 3.9, S.L.y, '每列都是 vᵀ 的倍數 → rank 1'); S.L.y -= 0.7;
+    sm('只有一個獨立的 row、一個獨立的 column', 3.9, S.L.y);
+    cap('rank 1', '每一列、每一行都跟 vᵀ、u 成倍數');
+  },
+]);
+
+scene('sv-xy-trunc', '截斷 SVD：最佳 rank-r 近似（Eckart–Young）', [
+  async (tok, S) => { // @488.1
+    S.X = heat(XX, -6.0, 5.8, 0.4); sm('X', -5.4, 6.45);
+    S.A = heat(XX.map((r) => r.map(() => 0)), -3.4, 5.8, 0.4); S.aL = sm('X̃ = 0　誤差 ' + f2(fro(XX)), -2.8, 6.45);
+    S.bars = XS.map((s, k) => { const h = (s / XS[0]) * 2.8; const m = cube('', '#d8cfc0', [0.4, h, 0.3], 0.6 + k * 1.2, 3.0 + h / 2, 0); sm('σ' + '₁₂₃₄'[k] + ' = ' + f2(s), 0.6 + k * 1.2, 3.0 + h + 0.3); return m; });
+    S.L = ledger(0.4, 2.3, 0.7);
+    S.L.add('SVD 把 X 拆成依重要性排好的 rank-1 項', 'idx');
+    ok(eqV(XSV, XS, 1e-9), 5.0, 5.6, 'svd(X) 算出 σ = 6、3、0.6、0.3');
+    cap('rank-1 項依 σ 由大到小排好', '每多加一項，近似就更好');
+  },
+  async (tok, S) => { // @503.3
+    tint(S.bars[0], VC.g);
+    await anim(tok, 900, (k) => S.A.set(msc(Xsum([0]), k)));
+    txt(S.aL, 'X̃ = σ₁u₁v₁ᵀ　誤差 ' + f2(fro(madd(XX, msc(Xsum([0]), -1)))));
+    cap('只有一個 u、一個 v', 'σ₁u₁v₁ᵀ 是最好的 rank-1 近似');
+  },
+  async (tok, S) => { // @513.9
+    tint(S.bars[1], VC.g);
+    await anim(tok, 900, (k) => S.A.set(madd(Xsum([0]), msc(Xterm(1), k))));
+    txt(S.aL, 'X̃ = 前 2 項　誤差 ' + f2(fro(madd(XX, msc(Xsum([0, 1]), -1)))));
+    S.L.add('加上 σ₂u₂v₂ᵀ → 最好的 rank-2 近似；rank 3、4… 同理', 'idx');
+    cap('再加 σ₂u₂v₂ᵀ', '得到最好的 rank-2 近似');
+  },
+  async (tok, S) => { // @550.1
+    tint(S.bars[2], VC.r); tint(S.bars[3], VC.r);
+    S.L.add('σ₃、σ₄ 很小（能量很低）→ 截斷在 r = 2', 'ptr alt');
+    cap('後面的 σ 很小', '就在 r 截斷，只留前 r 個');
+  },
+  async (tok, S) => { // @568.4
+    const Ut = XU.map((r) => r.slice(0, 2)), Vt = XV.map((r) => r.slice(0, 2));
+    const Xt = mm(Ut, mm(Xdiag(2, 2, XS), tr(Vt)));
+    S.L.add('Ũ（n×r）、Σ̃（r×r）、Ṽᵀ（r×m）：X ≈ ŨΣ̃Ṽᵀ', 'idx');
+    ok(eqM(Xt, Xsum([0, 1])) && rank(Xt) === 2, 5.0, 4.9, 'ŨΣ̃Ṽᵀ = 前 2 項，rank 2');
+    cap('X ≈ Ũ Σ̃ Ṽᵀ', '前 r 個 columns 的 U、V 與 r×r 的 Σ');
+  },
+  async (tok, S) => { // @619.4
+    const e = fro(madd(XX, msc(Xsum([0, 1]), -1)));
+    S.L.add('Eckart–Young（1936）：rank r 的矩陣裡，‖X − X̃‖_F 最小的就是截斷 SVD', 'ptr alt');
+    ok(near(e, Math.sqrt(XS[2] ** 2 + XS[3] ** 2)), 5.0, 4.2, '誤差 = √(σ₃² + σ₄²) = ' + f2(e));
+    cap('Eckart–Young 定理', 'argmin_{rank X̃ = r} ‖X − X̃‖_F = ŨΣ̃Ṽᵀ');
+  },
+  async (tok, S) => { // @687.4
+    const other = Xsum([0, 2]), eo = fro(madd(XX, msc(other, -1))), e = fro(madd(XX, msc(Xsum([0, 1]), -1)));
+    ok(rank(other) === 2 && eo > e, 0.4, S.L.y, '換一個 rank 2（例如留 σ₁、σ₃ 兩項）：誤差 ' + f2(eo) + ' > ' + f2(e));
+    cap('任何 rank r 的矩陣都不會更好', '截斷 SVD 就是最佳近似');
+  },
+]);
+
+const XUt = XU.map((r) => r.slice(0, 2));
+scene('sv-xy-unitary', '截斷後：ŨᵀŨ = I，但 ŨŨᵀ ≠ I', [
+  async (tok, S) => { // @720.1
+    S.U = heat(XU, -6.0, 6.2, 0.3, 0.4); sm('U（n×n）', -4.95, 6.75);
+    note('完整 SVD：U、V 是 unitary（實數就是 orthogonal）', 0, 0.3);
+    cap('完整的 U、V 是 unitary', 'U 是 n×n，V 是 m×m');
+  },
+  async (tok, S) => { // @732.6
+    heat(mm(tr(XU), XU), -2.6, 6.2, 0.3, 1); sm('UᵀU', -1.55, 6.75);
+    heat(mm(XU, tr(XU)), 0.8, 6.2, 0.3, 1); sm('UUᵀ', 1.85, 6.75);
+    ok(eqM(mm(tr(XU), XU), eye(8)) && eqM(mm(XU, tr(XU)), eye(8)), 4.9, 5.3, 'UᵀU = UUᵀ = I');
+    cap('UUᵀ = UᵀU = I', '兩邊乘都是單位矩陣');
+  },
+  async (tok, S) => { // @739.5
+    S.Ut = heat(XUt, -5.0, 3.0, 0.3, 0.4); sm('Ũ（8×2）', -4.85, 3.55);
+    S.U.c.forEach((r) => r.forEach((m, j) => glow(m, j < 2 ? GOLD : null)));
+    cap('截斷到 rank r：只留 r 個 columns', 'Ũ 不再是方陣');
+  },
+  async (tok, S) => { // @750.7
+    S.U.all.forEach((m) => glow(m, null));
+    heat(mm(tr(XUt), XUt), -2.2, 3.0, 0.3, 1); sm('ŨᵀŨ（2×2）', -2.05, 3.55);
+    ok(eqM(mm(tr(XUt), XUt), eye(2)), 4.9, 1.9, 'ŨᵀŨ = I（r×r）');
+    cap('ŨᵀŨ 還是 r×r 單位矩陣', 'columns 仍然 orthonormal');
+  },
+  async (tok, S) => { // @759.2
+    const P = mm(XUt, tr(XUt));
+    heat(P, 0.8, 3.0, 0.3, 0.3); sm('ŨŨᵀ（8×8）', 1.85, 3.55);
+    bad('ŨŨᵀ ≠ I', 4.9, 1.2);
+    cap('但 ŨŨᵀ 不是單位矩陣', '截斷前是，截斷後不是');
+  },
+  async (tok, S) => { // @780.9
+    hot('很多人在證明裡忘了這點而寫錯（老師說他自己也犯過）', 0, -0.4);
+    cap('這點非常重要', '很多錯誤的證明都栽在這裡');
+  },
+  async (tok, S) => { // @813.9
+    const P = mm(XUt, tr(XUt));
+    ok(rank(P) === 2 && eqM(mm(P, P), P), 0, -1.1, 'ŨŨᵀ 是 n×n、rank r：投影到 Ũ 的 column space（P² = P）');
+    cap('ŨŨᵀ 是 n×n、rank r', '它是投影矩陣，不是 I');
+  },
+]);
+
+scene('sv-xy-recap', '總結：full → economy → truncated SVD', [
+  async (tok, S) => { // @824.4
+    const row = (y, nm, sizes, cols) => { pl('X ' + (nm[3] || '='), -5.3, y); [-3.6, -2.2, -1.0].forEach((x, i) => cube(nm[i], cols[i], [sizes[i][0], sizes[i][1], 0.3], x, y, 0)); };
+    S.row = row;
+    row(5.6, ['U', 'Σ', 'Vᵀ'], [[1.6, 1.6], [0.8, 1.6], [0.8, 0.8]], [VC.a, VC.g, VC.c]);
+    sm('full SVD：X = UΣVᵀ', 2.9, 5.95);
+    cap('SVD：X = UΣVᵀ', '');
+  },
+  async (tok, S) => { // @834.4
+    sm('= σ₁u₁v₁ᵀ + σ₂u₂v₂ᵀ + …：rank-1 項的和', 2.9, 5.25);
+    cap('重排成 rank-1 項的和', 'σ₁u₁v₁ᵀ + σ₂u₂v₂ᵀ + …');
+  },
+  async (tok, S) => { // @849.7
+    S.row(3.5, ['Û', 'Σ̂', 'Vᵀ'], [[0.8, 1.6], [0.8, 0.8], [0.8, 0.8]], [VC.a, VC.g, VC.c]);
+    sm('economy SVD（高瘦 n ≫ m）：前 m 個', 2.9, 3.5);
+    cap('高瘦資料矩陣：economy SVD', '只留前 m 個 columns，仍然精確');
+  },
+  async (tok, S) => { // @860.4
+    S.row(1.5, ['Ũ', 'Σ̃', 'Ṽᵀ', '≈'], [[0.4, 1.6], [0.4, 0.4], [0.8, 0.4]], [VC.a, VC.g, VC.c]);
+    sm('truncated：丟掉小的 σ，只留 r 個', 2.9, 1.5);
+    cap('再丟掉小的奇異值', '得到 rank r 近似');
+  },
+  async (tok, S) => { // @876.6
+    const e = fro(madd(XX, msc(Xsum([0, 1]), -1)));
+    ok(near(e, Math.sqrt(XS[2] ** 2 + XS[3] ** 2)), 0, -0.3, 'Eckart–Young：截斷 SVD 是最佳 rank r 近似（示意 X：誤差 √(σ₃² + σ₄²)）');
+    cap('Eckart–Young 保證它最好', '');
+  },
+]);
   }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });

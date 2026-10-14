@@ -16229,6 +16229,36 @@ FRAG.push(['algmit3-bst-succ', 'min + successor 走訪 BST：每條邊走兩次'
   B('range 的時間 = O(log n + 輸出個數)');
   say('總時間 O(log n + 輸出個數)', '');
 }]);
+// 60:23 總結：amortized 看整串操作（用剛才 table doubling 的 16 次插入）
+FRAG.push(['algmit3-amort-sum', 'Amortized 總結：看整串操作，平均比 n × 最壞緊', async (tok) => {
+  fresh([0, 4.5, 13], [0, 2.2, 0]);
+  const X = (i) => -6.1 + i * 0.72, H = 0.42;
+  const B = m3Board(0, 6.3, 0);
+  const cost = []; let size = 0;
+  for (let i = 1; i <= 16; i++) { let c = 1; if (size === 0) size = 1; else if (i > size) { c = i; size *= 2; } cost[i] = c; }
+  const total = cost.reduce((s, c) => s + (c || 0), 0), worst = Math.max(...cost.filter(Boolean));
+  const bars = [];
+  await step(tok);                                   // 3623.4 look at all the operations, not one at a time
+  B('看「整串」操作，不是一次只看一個');
+  for (let i = 1; i <= 16; i++) { const b = m3Bar(M3.sand, 0.5, 0.6, X(i), 0); bars[i] = b; tag(String(i), 'idx', X(i), 0, 0.7); }
+  await anim(tok, 900, (u) => { for (let i = 1; i <= 16; i++) m3Set(bars[i], cost[i] * H * u); });
+  say('amortized：把所有操作一起看', 'table doubling 的 16 次插入');
+  await step(tok);                                   // 3629.0 many fast operations, slow ones don't happen often
+  for (let i = 1; i <= 16; i++) tint(bars[i], cost[i] > 1 ? M3.red : M3.green);
+  B('快的（綠）很多，慢的（紅）很少');
+  say('很多操作非常快', '慢的不會常常發生');
+  await step(tok);                                   // 3636.7 then argue about the average cost
+  const avg = total / 16;
+  line(X(1) - 0.4, avg * H, X(16) + 0.4, avg * H, 0.4, M3.blue);
+  tag('平均 = ' + total + ' / 16 ≈ ' + avg.toFixed(1), 'ptr', X(16) + 0.2, avg * H + 0.5, 0.4);
+  B('總成本 ' + total + ' → 平均每次不到 2，攤銷 O(1)');
+  say('就能論證「平均成本」', '總成本 ' + total + '，每次攤到 O(1)');
+  await step(tok);                                   // 3640.7 better than n × the worst case of one operation
+  line(X(1) - 0.4, worst * H, X(16) + 0.4, worst * H, 0.4, M3.red);
+  tag('單次最壞 = ' + worst + ' → n × 最壞 = ' + 16 * worst, 'ptr alt', X(8), worst * H + 0.5, 0.4);
+  B('只用「n × 單次最壞」估：' + 16 * worst + '，比實際的 ' + total + ' 鬆很多');
+  say('比「n × 單次最壞成本」好得多', total + ' vs ' + 16 * worst);
+}]);
 // ═══ -FElVPKykgw：Rec10 Quiz 1 Review ═══
 FRAG.push(['algmit3-resize-cost', 'Resize 成本：滿或空都是 Θ(m)', async (tok) => {
   fresh([0, 6, 13], [0, 1.5, 0]);

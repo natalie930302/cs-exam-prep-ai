@@ -279,7 +279,13 @@
   },
   {
    "title": "小結",
-   "scene": null,
+   "scene": "vm-14a-recap",
+   "cues": [
+    1603.5,
+    1632.6,
+    1667.2,
+    1676.3
+   ],
    "points": [
     {
      "t": 1603,
@@ -289,6 +295,12 @@
      "t": 1659,
      "text": "前半段重點：demand paging、copy-on-write、memory-mapped file——都是跟 disk 息息相關的特殊記憶體操作。"
     }
+   ],
+   "explain": [
+    "投影片上的 memory-mapped file 程式只是示意（pseudo code），每個系統的 API 設計都有點不一樣，不用太在意細節。",
+    "重點是：用完要 munmap，也要 close，這是兩件不同的事。munmap 解除的是 memory 的 mapping，close 關掉的是 file handle（檔案代號）。",
+    "這一講前半段的重點有三個：demand paging（用到才載入 page）、copy-on-write（寫的時候才複製），還有 memory-mapped file（把檔案映射到記憶體）。",
+    "它們都是比較特殊的 memory 操作，而且都跟 disk 息息相關：page 要從 disk 載入、或要寫回 disk。知道它們各在做什麼就好。"
    ]
   }
  ],

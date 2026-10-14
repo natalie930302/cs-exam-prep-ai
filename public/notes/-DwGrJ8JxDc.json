@@ -998,15 +998,15 @@
    "why": "inputs ≫ outputs，collision 不可避免；重點是分散。"
   },
   {
-   "q": "Python 的 for x in obj 背後做了什麼？",
+   "q": "rolling hash 取 p = 2^w 當模數，好處與代價是？",
    "opts": [
-    "呼叫 iter(obj) 取得 iterator，再反覆呼叫 next 直到 StopIteration",
-    "先把 obj 轉成 list，再用索引 obj[i] 從 0 走到 len(obj) − 1",
-    "呼叫 len(obj) 決定次數，再用 obj[i] 依序逐一取出元素直到 IndexError",
-    "呼叫 obj.has_next() 判斷，再呼叫 obj.next() 取值"
+    "mod 只需截掉高位 bits 很快，但分布可能不均",
+    "一定不會有 collision，但要多用很多 memory",
+    "分布一定最均勻，但任何乘法反元素都不存在",
+    "可以從 hash 值反推出原本的 string，但計算比較慢"
    ],
-   "ans": "呼叫 iter(obj) 取得 iterator，再反覆呼叫 next 直到 StopIteration",
-   "why": "for 會自動接住 StopIteration。"
+   "ans": "mod 只需截掉高位 bits 很快，但分布可能不均",
+   "why": "mod 2^w 只看最低 w 個 bits，計算快；但 input 的規律（例如 digit 全偶數）會留在 output，hash 品質較差。"
   },
   {
    "q": "把「建 list 再 return」改成 yield 的 generator，最主要的好處是？",
