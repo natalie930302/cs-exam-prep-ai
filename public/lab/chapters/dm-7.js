@@ -964,6 +964,8 @@ const DEMO = (x, y, z = 0) => T('示意', 'idx', x, y, z);
 // a board: lines appear one under another (left-aligned); the newest line is lit.
 // At most `max` lines are kept: the oldest scrolls off the top.
 function board(x, yTop, dy = 0.56, z = -2.6, max = 7) {
+  // lines closer than this print over each other on the 640×360 stage; keep the board's height (fewer lines, they scroll off sooner)
+  { const h = max * dy; dy = Math.max(dy, z < -3 ? 0.9 : 0.82); max = Math.max(3, Math.floor(h / dy + 0.35)); }
   const ls = []; let last = null;
   return {
     ls,
@@ -1006,6 +1008,7 @@ async function walk(tok, G, tk, a, b, ms = 650, color = COL.gold) {
 }
 // a small matrix drawn as monospace rows; rows appear one by one with row(i)
 function matrix(head, rows, x, yTop, dy = 0.48, z = -2.4) {
+  dy = Math.max(dy, z < -2 ? 0.74 : dy);
   const H = M(head, x, yTop, z, 'say'); const R = [];
   return { H, R, row(i) { R[i] = M(rows[i], x, yTop - (i + 1) * dy, z, 'note'); if (i > 0 && R[i - 1]) cls(R[i - 1], 'say'); return R[i]; }, all() { rows.forEach((_, i) => { if (!R[i]) this.row(i); }); }, kill() { kill(H); R.forEach((l) => l && kill(l)); } };
 }
@@ -1020,13 +1023,13 @@ scene('gr-18a-def', 'Graph 的定義：G = (V, E)、directed graph', [
   async (tok, S) => { S.B.add('第一個集合：V'); S.vz = zone('V', 2.7, 0.02, 0, 5.6, 4.6, '#e3edf7'); cap('第一個集合叫 V', ''); },
   async (tok, S) => { S.B.add('V：finite、non-empty set（有限、非空）'); cap('V 是有限、而且不是空的集合', '至少要有一個點'); },
   async (tok, S) => {
-    S.G = gnew(A4); DEMO(2.7, 0.4, 2.8);
+    S.G = gnew(A4); DEMO(6.0, 0.4, 0.6);
     S.B.add('V 的元素叫 vertices（端點）'); cap('V 裡的元素叫做 vertices', '畫成小圓圈');
   },
-  async (tok, S) => { T('單數 vertex／複數 vertices', 'ptr', 2.7, 2.0, -2.6); cap('單數 vertex，複數 vertices', '中文：端點、頂點'); },
+  async (tok, S) => { S.vv = T('單數 vertex／複數 vertices', 'ptr', 2.7, 0.5, 3.8); cap('單數 vertex，複數 vertices', '中文：端點、頂點'); },
   async (tok, S) => { S.B.add('第二個集合：E'); cap('第二個集合叫 E', ''); },
   async (tok, S) => { S.B.add('directed graph：E ⊆ V × V'); cap('E 是 V × V 的子集合', 'V × V：Cartesian product'); },
-  async (tok, S) => { S.B.add('V × V = 所有 ordered pair (u, v)'); T('(a,a) (a,b) … (d,d)：4 × 4 = 16 個', 'say', 2.7, 2.7, -2.6); cap('V × V：所有前後都在 V 裡的 ordered pair', '有順序的一對'); },
+  async (tok, S) => { S.B.add('V × V = 所有 ordered pair (u, v)'); kill(S.vv); T('(a,a) (a,b) … (d,d)：4 × 4 = 16 個', 'say', 2.7, 0.5, 3.8); cap('V × V：所有前後都在 V 裡的 ordered pair', '有順序的一對'); },
   async (tok, S) => {
     ge(S.G, 'a', 'b', { dir: true }); ge(S.G, 'b', 'd', { dir: true }); ge(S.G, 'c', 'a', { dir: true });
     S.B.add('E 的元素叫 edges（邊）'); cap('E 裡的元素叫做 edges（邊）', '單數 edge');
@@ -1194,7 +1197,7 @@ scene('gr-18b-noniso', '不是 isomorphic：邊數 8 ≠ 7', [
   async (tok, S) => {
     const E1 = ['12', '13', '14', '23', '24', '34', '15', '25'], E2 = ['12', '13', '14', '23', '24', '15', '25'];
     for (let k = 0; k < 8; k++) { ge(S.G1, E1[k][0], E1[k][1]); if (k < 7) ge(S.G2, E2[k][0], E2[k][1]); await wt(tok, 200); }
-    T('|E₁| = ' + S.G1.E.length, 'ptr', -3.9, 1.4, 3.8); T('|E₂| = ' + S.G2.E.length, 'ptr alt', 3.7, 1.4, 3.8);
+    T('|E₁| = ' + S.G1.E.length, 'ptr', -3.9, 0.2, 4.6); T('|E₂| = ' + S.G2.E.length, 'ptr alt', 3.7, 0.2, 4.6);
     cap('數邊：' + S.G1.E.length + ' 條 vs ' + S.G2.E.length + ' 條', '');
   },
   async (tok, S) => { S.B.add('邊數不同 → 不是 isomorphic', 'bad'); cap('所以它們不是 isomorphic', ''); },
@@ -1271,7 +1274,7 @@ scene('gr-19a-simple', 'Simple graph 與 multigraph', [
   async (tok, S) => { S.B = board(-6.6, 4.8); S.B.add('先講清楚討論的範圍'); S.G = gnew([['u', 1.4, -1.0], ['v', 4.6, -1.0], ['w', 3.0, 1.8]]); cap('有時候要限制 graph 的範圍', ''); },
   async (tok, S) => { S.B.add('兩個不同端點之間最多一條 edge'); S.e1 = ge(S.G, 'u', 'v'); cap('兩個不同 vertex 之間只能有一條 edge', ''); },
   async (tok, S) => { S.B.add('→ simple graph', 'good'); cap('這樣的 graph 叫 simple graph', ''); },
-  async (tok, S) => { S.lp = ge(S.G, 'w', 'w', { color: COL.purple }); S.x1 = T('✘ loop', 'bad', 3.0, 2.4, 1.8); S.B.add('distinct → 不能有 loop'); cap('「不同的」端點：所以不能有 loop', '自己繞一圈的邊叫 loop'); },
+  async (tok, S) => { S.lp = ge(S.G, 'w', 'w', { color: COL.purple }); S.x1 = T('✘ loop', 'bad', 4.9, 0.9, 2.2); S.B.add('distinct → 不能有 loop'); cap('「不同的」端點：所以不能有 loop', '自己繞一圈的邊叫 loop'); },
   async (tok, S) => { S.m2 = ge(S.G, 'u', 'v', { bend: 0.8, color: COL.pink }); S.x2 = T('✘ 兩條', 'bad', 3.0, 0.9, -2.0); S.B.add('也不能有兩條平行的邊'); cap('兩點之間也不能有兩條邊', ''); },
   async (tok, S) => { S.B.add('沒有 loop、沒有重邊 = simple graph', 'good'); cap('沒有 loop、任兩點最多一條邊', '就是 simple graph'); },
   async (tok, S) => { kill(S.x1); kill(S.x2); S.B.add('可以有 loop、多條邊 → multigraph'); cap('如果允許 loop、允許多條邊', '叫 multigraph'); },
@@ -1342,7 +1345,7 @@ scene('gr-19a-hand', 'Handshaking lemma：派對上的握手', [
   async (tok, S) => { paintE(S.G.E[0], COL.edge, false); for (const s of ['AC', 'AD', 'BE', 'CF', 'DE', 'EF']) { ge(S.G, s[0], s[1]); await wt(tok, 250); } S.B.add('人 = 端點，握過手 = 一條邊'); cap('每個人是一個端點', '握過手就連一條邊'); },
   async (tok, S) => { showDeg(S.G); S.B.add('跟奇數個人握過手的人數 = 偶數'); cap('跟奇數個人握過手的人', '這些人的個數一定是偶數'); },
   async (tok, S) => { cap('不管有多少人、怎麼握', '都成立'); T('degree = 握手次數', 'ptr', 2.6, 2.8, -2.6); },
-  async (tok, S) => { const d = deg(S.G); d.forEach((x, i) => { if (x % 2) { vcol(S.G, i, COL.pink); vglow(S.G, i, RED); } }); T('奇數次：' + d.filter((x) => x % 2).length + ' 人', 'good', 2.6, 0.3, -3.0); cap('把跟奇數個人握手的人找出來', '數一數：一定是偶數'); },
+  async (tok, S) => { const d = deg(S.G); d.forEach((x, i) => { if (x % 2) { vcol(S.G, i, COL.pink); vglow(S.G, i, RED); } }); T('奇數次：' + d.filter((x) => x % 2).length + ' 人', 'good', 6.0, 0.3, 2.6); cap('把跟奇數個人握手的人找出來', '數一數：一定是偶數'); },
   async (tok, S) => { S.B.add('那些人就是 V_O → 個數是偶數', 'good'); cap('這些人就是 V_O', '人數一定是偶數'); },
 ], CAMW);
 
@@ -1432,14 +1435,14 @@ scene('gr-19b-trail', 'Trail、circuit、path、cycle', [
   async (tok, S) => { vglow(S.G, 'A', null); paintE(findE(S.G, 'A', 'B'), COL.hot, true); S.B.add('edge 也可以重複'); cap('edge 也可以重複', '同一條邊再走一次'); },
   async (tok, S) => { paintE(findE(S.G, 'A', 'B'), COL.edge, false); S.B.add('限制一：edge 不能重複'); cap('第一個限制：沒有 edge 重複', ''); },
   async (tok, S) => { S.tk = tokenAt(S.G, 'A'); for (const [p, q] of [['A', 'B'], ['B', 'C'], ['C', 'D'], ['D', 'E'], ['E', 'C']]) await walk(tok, S.G, S.tk, p, q, 380, COL.gold); S.B.add('no edge repeated → trail', 'good'); cap('沒有 edge 重複的 walk 叫 trail', 'A B C D E C：C 經過兩次沒關係'); },
-  async (tok, S) => { cap('trail：像健行走的小徑', ''); T('trail（小徑）', 'ptr', 3.0, 2.8, -2.8); },
+  async (tok, S) => { cap('trail：像健行走的小徑', ''); S.tn = T('trail（小徑）', 'ptr', 3.0, 2.8, -2.8); },
   async (tok, S) => { await walk(tok, S.G, S.tk, 'C', 'A', 450, COL.gold); S.B.add('closed trail'); cap('沒有 edge 重複、起點 = 終點', 'closed trail'); },
   async (tok, S) => { S.B.add('closed trail = circuit', 'good'); cap('closed trail 另一個名字', '叫 circuit'); },
   async (tok, S) => { S.G.E.forEach((e) => paintE(e, COL.edge, false)); S.B.add('限制二：端點也不能重複'); cap('第二個限制：端點也不重複', ''); },
   async (tok, S) => { S.tk.position.copy(S.G.V[0].p).add(V3(0, 0.35, 0)); for (const [p, q] of [['A', 'B'], ['B', 'C'], ['C', 'D']]) await walk(tok, S.G, S.tk, p, q, 450, COL.green); cap('每個端點最多出現一次', 'A B C D'); },
   async (tok, S) => { S.B.add('端點不重複 ⇒ edge 一定不重複'); cap('端點不重複，edge 就一定不重複', '要重複邊，端點一定得走兩次'); },
   async (tok, S) => { S.B.add('no vertex repeated → path', 'good'); cap('這樣的 walk 叫 path', ''); },
-  async (tok, S) => { cap('通常說的「路徑」', '就是端點不重複的 walk'); T('path（路徑）', 'ptr', 3.0, 2.8, -2.8); },
+  async (tok, S) => { cap('通常說的「路徑」', '就是端點不重複的 walk'); kill(S.tn); T('path（路徑）', 'ptr', 3.0, 2.8, -2.8); },
   async (tok, S) => { S.G.E.forEach((e) => paintE(e, COL.edge, false)); S.tk.position.copy(S.G.V[0].p).add(V3(0, 0.35, 0)); for (const [p, q] of [['A', 'B'], ['B', 'C'], ['C', 'A']]) await walk(tok, S.G, S.tk, p, q, 450, COL.pink); S.B.add('closed path = cycle', 'good'); cap('closed path：只有起點 = 終點', '其他端點不重複：叫 cycle'); },
   async (tok, S) => { S.B.add('教科書的叫法，各書不統一'); cap('這是我們教科書的叫法', '別的地方 trail、path 可能不分'); },
 ], CAMW);
@@ -1472,7 +1475,7 @@ const CA = ['1', '2', '3', '4', '5'], CB = ['6', '7', '8'];
 const inA = (G, i) => CA.includes(G.V[i].name);
 const ccPaint = (G) => { CA.forEach((n) => vcol(G, n, CCOL[0])); CB.forEach((n) => vcol(G, n, CCOL[1])); };
 const ccEdges = (G, thick = true) => G.E.forEach((e) => paintE(e, CCOL[inA(G, e.u) ? 0 : 1], thick));
-const ccTags = () => [T('{1,2,3,4,5}', 'ptr', 0.6, 3.2, -1.6), T('{6,7,8}', 'ptr', 4.9, 2.6, -1.6)];
+const ccTags = () => [T('{1,2,3,4,5}', 'ptr', 0.3, 0.2, 4.0), T('{6,7,8}', 'ptr', 5.0, 0.2, 3.8)];
 async function walkPath(tok, G, ns, color = COL.gold, ms = 500) {
   const tk = tokenAt(G, ns[0]);
   for (let i = 0; i + 1 < ns.length; i++) await walk(tok, G, tk, ns[i], ns[i + 1], ms, color);
@@ -1480,7 +1483,7 @@ async function walkPath(tok, G, ns, color = COL.gold, ms = 500) {
 }
 
 scene('gr-19c-path', '用「有沒有 path」定義一個 relation', [
-  async (tok, S) => { S.G = ccG(); DEMO(2.6, 0.3, 3.4); S.B = board(-6.6, 4.8); S.B.add('u、v：graph 的兩個端點'); S.B.add('定義一個 binary relation'); vglow(S.G, '1', GOLD); vglow(S.G, '5', GOLD); T('u', 'ptr', -0.4, 1.4, -1.8); T('v', 'ptr', -0.2, 1.4, 2.4); cap('拿 graph 的兩個端點 u、v', '定義一個 binary relation'); },
+  async (tok, S) => { S.G = ccG(); DEMO(2.6, 0.3, 3.4); S.B = board(-6.6, 4.8); S.B.add('u、v：graph 的兩個端點'); S.B.add('定義一個 binary relation'); vglow(S.G, '1', GOLD); vglow(S.G, '5', GOLD); T('u', 'ptr', -1.5, 0.5, -1.8); T('v', 'ptr', -1.3, 0.5, 2.6); cap('拿 graph 的兩個端點 u、v', '定義一個 binary relation'); },
   async (tok, S) => { S.tk = await walkPath(tok, S.G, ['1', '2', '4', '5'], COL.green); cap('如果兩點中間有一條 path', '可以從這一點一路走到那一點'); },
   async (tok, S) => { S.B.add('u R v ⇔ u、v 之間有 path', 'good'); cap('就說這兩個端點滿足這個 relation', 'u R v'); },
   async (tok, S) => { S.B.add('path：端點不重複、edge 不重複'); cap('path：端點不會重複', 'edge 也不會重複'); },
@@ -1492,14 +1495,14 @@ scene('gr-19c-equiv', '「有 path」是 equivalence relation', [
   async (tok, S) => { S.G = ccG(); DEMO(2.6, 0.3, 3.4); S.B = board(-6.6, 4.9, 0.52, -2.6, 8); S.B.add('vertex set V：任拿兩個端點'); vglow(S.G, '1', GOLD); vglow(S.G, '7', GOLD); cap('在 vertex set V 裡', '任意拿兩個端點出來'); },
   async (tok, S) => { for (const [p, q] of [['1', '2'], ['2', '4'], ['4', '5']]) { paintE(findE(S.G, p, q), COL.green, true); await wt(tok, 250); } S.t1 = T('1、5：有 path → 滿足', 'good', -0.2, 2.0, 3.4); S.t2 = T('1、7：沒有 path → 不滿足', 'bad', 5.0, 2.0, -2.8); S.B.add('要嘛滿足、要嘛不滿足'); cap('兩點要嘛滿足這個 relation', '要嘛不滿足：看中間有沒有路徑'); },
   async (tok, S) => { kill(S.t1); kill(S.t2); vglow(S.G, '1', null); vglow(S.G, '7', null); S.G.E.forEach((e) => paintE(e, COL.edge, false)); S.B.add('equivalence relation：檢查三個條件'); cap('這個 relation 是 equivalence relation', '要滿足三個條件'); },
-  async (tok, S) => { S.B.add('① reflexive：A R A'); vglow(S.G, '3', GOLD); T('A', 'ptr', 2.2, 1.4, 0.0); cap('① 自己跟自己要滿足', '點就在那裡，所以 OK'); },
+  async (tok, S) => { S.B.add('① reflexive：A R A'); vglow(S.G, '3', GOLD); S.ra = T('A', 'ptr', 2.2, 1.4, 0.0); cap('① 自己跟自己要滿足', '點就在那裡，所以 OK'); },
   async (tok, S) => { vglow(S.G, '3', null); S.B.add('② symmetric：A R B ⇒ B R A'); cap('② A 跟 B 滿足', 'B 就要跟 A 滿足'); },
-  async (tok, S) => { T('A', 'ptr', -0.4, 1.4, -1.8); T('B', 'ptr', 2.2, 1.9, 0.0); S.tk = await walkPath(tok, S.G, ['1', '2', '3'], COL.gold); cap('A R B：有一條路徑從 A 到 B', ''); },
+  async (tok, S) => { kill(S.ra); T('A', 'ptr', -0.4, 1.4, -1.8); T('B', 'ptr', 2.2, 1.9, 0.0); S.tk = await walkPath(tok, S.G, ['1', '2', '3'], COL.gold); cap('A R B：有一條路徑從 A 到 B', ''); },
   async (tok, S) => { await walk(tok, S.G, S.tk, '3', '2', 500, null); await walk(tok, S.G, S.tk, '2', '1', 500, null); kill(S.tk); cap('把路徑反過來走', '就是 B 到 A → B R A'); },
   async (tok, S) => { S.B.add('③ transitive：A R B、B R C ⇒ A R C'); cap('③ 遞移性：A 跟 B 滿足、B 跟 C 滿足', 'A 就要跟 C 滿足'); },
-  async (tok, S) => { T('C', 'ptr', -0.2, 1.4, 2.4); S.tk = tokenAt(S.G, '1'); await walk(tok, S.G, S.tk, '1', '2', 450, COL.gold); await walk(tok, S.G, S.tk, '2', '3', 450, COL.gold); cap('A R B：有一條路徑 A 到 B', ''); },
+  async (tok, S) => { T('C', 'ptr', -1.3, 0.5, 2.6); S.tk = tokenAt(S.G, '1'); await walk(tok, S.G, S.tk, '1', '2', 450, COL.gold); await walk(tok, S.G, S.tk, '2', '3', 450, COL.gold); cap('A R B：有一條路徑 A 到 B', ''); },
   async (tok, S) => { await walk(tok, S.G, S.tk, '3', '4', 450, COL.green); await walk(tok, S.G, S.tk, '4', '5', 450, COL.green); cap('B R C：B 有一條路徑到 C', ''); },
-  async (tok, S) => { kill(S.tk); T('A → B → C', 'good', 1.0, 3.4, -0.4); cap('接起來：就有一條路從 A 到 C', '所以 A R C'); },
+  async (tok, S) => { kill(S.tk); T('A → B → C', 'good', 0.2, 0.3, 4.4); cap('接起來：就有一條路從 A 到 C', '所以 A R C'); },
   async (tok, S) => { S.B.add('transitive ✓'); cap('所以它也滿足 transitive condition', ''); },
   async (tok, S) => { S.B.add('reflexive、symmetric、transitive → equivalence relation', 'good'); cap('reflexive、symmetric、transitive 都滿足', '所以這是一個 equivalence relation'); },
 ], CAMW);
@@ -1516,12 +1519,12 @@ scene('gr-19c-class', 'Equivalence classes：把 V 分成幾塊', [
 scene('gr-19c-comp', 'Components：G 分成 r 塊', [
   async (tok, S) => { S.B = board(-6.6, 4.9, 0.52, -2.6, 8); S.B.add('G = (V, E)'); S.G = ccG(); DEMO(2.6, 0.3, 3.4); cap('假設 graph 是 G', '兩個集合：vertex set V、edge set E'); },
   async (tok, S) => { S.B.add('undirected graph'); cap('它是 undirected graph', ''); },
-  async (tok, S) => { S.B.add('用剛才「中間有 path」的 equivalence relation'); cap('用剛才定義的 equivalence relation', '兩點中間有 path 就滿足'); },
+  async (tok, S) => { S.B.add('用「有 path」的 relation'); cap('用剛才定義的 equivalence relation', '兩點中間有 path 就滿足'); },
   async (tok, S) => { ccPaint(S.G); S.B.add('V 被 partition 成 r 個 classes'); cap('V 被 partition 成 r 個 classes', '這張示意圖 r = 2'); },
   async (tok, S) => { ccEdges(S.G); cap('每個 class 裡的端點', '都有 path 連在一起'); },
-  async (tok, S) => { T('之間沒有 path', 'bad', 3.4, 1.8, 0.4); cap('不同 class 的兩點之間就沒有 path', '有 path 的話就會在同一個 class'); },
-  async (tok, S) => { T('V₁', 'ptr', 0.6, 3.2, -1.6); T('V₂', 'ptr', 4.9, 2.6, -1.6); S.B.add('V 分成 V₁, V₂, …, V_r'); cap('把 V 分成 V₁ 到 V_r 這些 subset', ''); },
-  async (tok, S) => { S.B.add('Eᵢ：兩個端點都在 Vᵢ 的 edges'); T('E₁', 'ptr', 1.0, 2.2, -0.6); T('E₂', 'ptr', 5.0, 1.6, 0.4); cap('Eᵢ 包含哪些 edge？', '兩個端點都在 Vᵢ 裡的那些邊'); },
+  async (tok, S) => { T('之間沒有 path', 'bad', 2.9, -0.5, 4.8); cap('不同 class 的兩點之間就沒有 path', '有 path 的話就會在同一個 class'); },
+  async (tok, S) => { T('V₁', 'ptr', 0.0, 0.2, 4.0); T('V₂', 'ptr', 4.6, 0.2, 3.8); S.B.add('V 分成 V₁, V₂, …, V_r'); cap('把 V 分成 V₁ 到 V_r 這些 subset', ''); },
+  async (tok, S) => { S.B.add('Eᵢ：兩個端點都在 Vᵢ 的 edges'); T('E₁', 'ptr', 1.2, 0.2, 4.0); T('E₂', 'ptr', 5.8, 0.2, 3.8); cap('Eᵢ 包含哪些 edge？', '兩個端點都在 Vᵢ 裡的那些邊'); },
   async (tok, S) => { S.bad = ge(S.G, '3', '6', { color: COL.hot }); paintE(S.bad, COL.hot, true); S.q = T('跨兩塊的邊？', 'bad', 3.2, 1.6, -1.0); cap('會不會有一條邊一端在 V₁、一端在 V₂？', '不可能——為什麼？'); },
   async (tok, S) => { CB.forEach((n) => vcol(S.G, n, CCOL[0])); cap('如果有這種邊，它就像一座橋', '兩邊的點都走得到 → 變成同一個 class'); },
   async (tok, S) => { removeEdge(S.G, S.bad); kill(S.q); ccPaint(S.G); S.B.add('不會有跨兩個 class 的邊', 'bad'); cap('但它們本來在不同的 class', '所以不可能有這種邊'); },
@@ -1532,9 +1535,9 @@ scene('gr-19c-comp', 'Components：G 分成 r 塊', [
 
 scene('gr-19c-conn', 'Component 的直覺、connected graph', [
   async (tok, S) => { S.B = board(-6.6, 4.9, 0.52, -2.6, 8); S.G = ccG(); DEMO(2.6, 0.3, 3.4); ccPaint(S.G); ccEdges(S.G); S.B.add('每個 component 自己是一個 graph'); cap('每個 component', '它自己就是一個 graph'); },
-  async (tok, S) => { S.B.add('跟其他 component 不會連在一起'); T('中間沒有邊', 'bad', 3.4, 1.8, 0.4); cap('它跟其他 component', '不會連在一起'); },
-  async (tok, S) => { CB.forEach((n) => vcol(S.G, n, COL.dim)); S.G.E.forEach((e) => { if (!inA(S.G, e.u)) paintE(e, COL.dim, false); }); T('(V₁, E₁)', 'ptr', 0.6, 3.2, -1.6); cap('把所有 edge 放進來：', 'V₁、E₁ 就是一個 component'); },
-  async (tok, S) => { CB.forEach((n) => vcol(S.G, n, CCOL[1])); S.G.E.forEach((e) => { if (!inA(S.G, e.u)) paintE(e, CCOL[1], true); }); T('(V₂, E₂)', 'ptr', 4.9, 2.6, -1.6); cap('V₂、E₂ 是另一個 component', ''); },
+  async (tok, S) => { S.B.add('跟其他 component 不會連在一起'); T('中間沒有邊', 'bad', 2.9, -0.5, 4.8); cap('它跟其他 component', '不會連在一起'); },
+  async (tok, S) => { CB.forEach((n) => vcol(S.G, n, COL.dim)); S.G.E.forEach((e) => { if (!inA(S.G, e.u)) paintE(e, COL.dim, false); }); T('(V₁, E₁)', 'ptr', 0.3, 0.2, 4.0); cap('把所有 edge 放進來：', 'V₁、E₁ 就是一個 component'); },
+  async (tok, S) => { CB.forEach((n) => vcol(S.G, n, CCOL[1])); S.G.E.forEach((e) => { if (!inA(S.G, e.u)) paintE(e, CCOL[1], true); }); T('(V₂, E₂)', 'ptr', 5.0, 0.2, 3.8); cap('V₂、E₂ 是另一個 component', ''); },
   async (tok, S) => { S.B.add('連在一起的那一整塊 = 一個 component', 'good'); cap('簡單講：連在一起的那一整塊', '就叫一個 component'); },
   async (tok, S) => { S.B.add('只有一個 component → connected', 'good'); cap('如果這個圖只有一個 component', '它就叫 connected'); },
   async (tok, S) => { S.B.add('connected graph（連通圖）'); cap('只有一個 component 的圖', '叫 connected graph'); },
@@ -1543,10 +1546,10 @@ scene('gr-19c-conn', 'Component 的直覺、connected graph', [
 scene('gr-19c-ex', '例子：這個圖有幾個 component？', [
   async (tok, S) => { S.B = board(-6.6, 4.9, 0.52, -2.6, 8); S.G = ccG(); DEMO(2.6, 0.3, 3.4); S.B.add('用例子看（點名為示意）'); cap('用下面這個例子', '很簡單就看出來'); },
   async (tok, S) => { S.B.add('這個 graph 有幾個 component？'); cap('這個 graph 有幾個 component？', ''); },
-  async (tok, S) => { CA.forEach((n) => vcol(S.G, n, CCOL[0])); S.G.E.forEach((e) => { if (inA(S.G, e.u)) paintE(e, CCOL[0], true); }); T('1~5：一個 component', 'ptr', 0.6, 3.2, -1.6); cap('1、2、3、4、5 這五點和它們的邊', '連在一起，是一個 component'); },
-  async (tok, S) => { CB.forEach((n) => vcol(S.G, n, CCOL[1])); S.G.E.forEach((e) => { if (!inA(S.G, e.u)) paintE(e, CCOL[1], true); }); T('2 個 components', 'bad', 2.6, 3.9, -2.6); S.B.add('兩部分沒連在一起 → 2 個 components'); cap('另一部分跟它根本沒有連在一起', '所以有兩個 components'); },
+  async (tok, S) => { CA.forEach((n) => vcol(S.G, n, CCOL[0])); S.G.E.forEach((e) => { if (inA(S.G, e.u)) paintE(e, CCOL[0], true); }); S.c1 = T('1~5：一個 component', 'ptr', 0.3, 0.2, 4.0); cap('1、2、3、4、5 這五點和它們的邊', '連在一起，是一個 component'); },
+  async (tok, S) => { CB.forEach((n) => vcol(S.G, n, CCOL[1])); S.G.E.forEach((e) => { if (!inA(S.G, e.u)) paintE(e, CCOL[1], true); }); S.c2 = T('2 個 components', 'bad', 5.0, 0.2, 3.8); S.B.add('兩部分沒連在一起 → 2 個 components'); cap('另一部分跟它根本沒有連在一起', '所以有兩個 components'); },
   async (tok, S) => { S.B.add('相連的一部分 = 一個 component'); cap('相連的部分有幾塊', '就有幾個 component'); },
-  async (tok, S) => { S.e = ge(S.G, '3', '6', { color: COL.gold }); paintE(S.e, COL.gold, true); S.G.V.forEach((v, i) => vcol(S.G, i, CCOL[0])); T('（示意）全部連在一起 → 1 個', 'good', 2.6, 3.3, -2.6); cap('如果全部連在一起', '就只有一個 component'); },
+  async (tok, S) => { S.e = ge(S.G, '3', '6', { color: COL.gold }); paintE(S.e, COL.gold, true); S.G.V.forEach((v, i) => vcol(S.G, i, CCOL[0])); kill(S.c1); kill(S.c2); T('（示意）全部連在一起 → 1 個', 'good', 2.6, -0.5, 4.8); cap('如果全部連在一起', '就只有一個 component'); },
   async (tok, S) => { S.B.add('只有 1 個 component → connected graph', 'good'); cap('這個圖就叫 connected graph', ''); },
 ], CAMW);
 
@@ -1601,16 +1604,16 @@ scene('gr-l22-po-ex', '例子：整除、⊆；total order', [
     ge(S.G, '2', '4', { dir: true }); ge(S.G, '4', '8', { dir: true }); await wt(tok, 300); paintE(ge(S.G, '2', '8', { dir: true, bend: 1.2 }), COL.green, true);
     cap('2 | 4、4 | 8 ⇒ 2 | 8', 'transitive');
   },
-  async (tok, S) => { T('2 ∤ 3：不能比', 'bad', 4.8, 1.5, 0); cap('2 可以整除 3 嗎？不行', '不是所有數之間都能比'); },
+  async (tok, S) => { S.nd = T('2 ∤ 3：不能比', 'bad', 4.8, 1.5, 0); cap('2 可以整除 3 嗎？不行', '不是所有數之間都能比'); },
   async (tok, S) => { S.B.add('a | b 且 b | a ⇒ a = b（antisymmetric）'); cap('你整除我、我也整除你', '那一定是同一個數（正整數）'); },
   async (tok, S) => { S.B.add('a | a（reflexive）'); cap('任何數都整除自己', 'reflexive'); },
-  async (tok, S) => { gkill(S.G); S.B.add('集合的包含 ⊆ 也是'); cap('集合的 ⊆ 也是 partial order', 'A ⊆ A'); },
+  async (tok, S) => { gkill(S.G); kill(S.nd); S.B.add('集合的包含 ⊆ 也是'); cap('集合的 ⊆ 也是 partial order', 'A ⊆ A'); },
   async (tok, S) => { S.B.add('A ⊆ B 且 B ⊆ A ⇒ A = B'); cap('互相包含 → 兩集合相等', '以前就這樣證明集合相等'); },
   async (tok, S) => { S.B.add('A ⊆ B、B ⊆ C ⇒ A ⊆ C'); cap('transitive 也成立', ''); },
   async (tok, S) => { S.B.add('total ordering（全序）', 'good'); cap('total ordering', ''); },
   async (tok, S) => { S.B.add('任兩個都能比較'); cap('任何兩個拿出來一定有大小', '沒有不能比的情況'); },
   async (tok, S) => { S.B.add('也叫 linear ordering：串成一串'); cap('又叫 linear ordering', '像實數、整數排成一條線'); },
-  async (tok, S) => { for (let i = 0; i < 6; i++) { cube(['A', 'K', 'Q', 'J', '10', '9'][i], '#fdfaf3', [0.7, 0.05, 1.0], 2.6, 0.3 + i * 0.12, 0, 1.5); await wt(tok, 120); } T('撲克牌：排成一疊', 'ptr', 2.6, 1.8, 0); cap('撲克牌用花色 + 點數排大小', '52 張一定能疊成一疊'); },
+  async (tok, S) => { for (let i = 0; i < 6; i++) { cube(['A', 'K', 'Q', 'J', '10', '9'][i], '#fdfaf3', [0.7, 0.05, 1.0], 0.4 + i * 0.95, 0.3, 0, 1.5); await wt(tok, 120); } T('撲克牌：一張接一張排好', 'ptr', 2.8, 1.5, 0); cap('撲克牌用花色 + 點數排大小', '52 張一定能疊成一疊'); },
 ], CAMW);
 
 scene('gr-l22-lex', '兩個 poset 的直積與字典順序', [
@@ -1628,11 +1631,11 @@ scene('gr-l22-lex', '兩個 poset 的直積與字典順序', [
   async (tok, S) => { S.B.add('lexicographic order（字典順序）', 'good'); cap('這叫 lexicographic order', '字典順序'); },
 ], CAMW);
 
-const CH4 = [['a', -1.2, 0.8], ['b', 2.8, 0.8], ['c', 2.8, 3.8], ['d', -1.2, 3.8]];
+const CH4 = [['a', 0.4, 0.6], ['b', 4.4, 0.6], ['c', 4.4, 2.8], ['d', 0.4, 2.8]];
 scene('gr-l22-hasse', '從關係圖化簡成 Hasse diagram', [
   async (tok, S) => { S.B = board(-6.8, 5.0, 0.5, -2.6, 6); S.B.add('用圖來呈現 partial order'); cap('用圖來呈現 partial order', ''); },
   async (tok, S) => {
-    S.G = hv(CH4); DEMO(0.8, 0.0, 0.6);
+    S.G = hv(CH4); DEMO(2.4, 0.0, 0.6);
     for (const [p, q] of [['a', 'b'], ['b', 'c'], ['c', 'd'], ['a', 'c'], ['b', 'd'], ['a', 'd']]) ge(S.G, p, q, { dir: true });
     S.loops = ['a', 'b', 'c', 'd'].map((n) => ge(S.G, n, n, { color: COL.purple }));
     cap('這是一個 relation 的圖', '（例子是示意：a ≤ b ≤ c ≤ d）');
@@ -1648,7 +1651,7 @@ scene('gr-l22-hasse', '從關係圖化簡成 Hasse diagram', [
   async (tok, S) => { removeEdge(S.G, findE(S.G, 'b', 'd')); cap('b→d 可以由 b→c→d 推出', '擦掉'); },
   async (tok, S) => { removeEdge(S.G, findE(S.G, 'a', 'd')); cap('a→d 也推得出來', '擦完只剩最基本的'); },
   async (tok, S) => { S.B.add('擦圈、擦遞移邊'); cap('第一步擦圈、第二步擦遞移邊', ''); },
-  async (tok, S) => { await mv(tok, S.G, [V3(0.8, 0.6, 0), V3(0.8, 1.9, 0), V3(0.8, 3.2, 0), V3(0.8, 4.5, 0)], 1500); S.B.add('第三步：小的在下、大的在上'); cap('像抓一把粽子提起來', '小的寫底下、大的寫上面'); },
+  async (tok, S) => { await mv(tok, S.G, [V3(3.6, 0.4, 0), V3(3.6, 1.3, 0), V3(3.6, 2.2, 0), V3(3.6, 3.1, 0)], 1500); S.B.add('第三步：小的在下、大的在上'); cap('像抓一把粽子提起來', '小的寫底下、大的寫上面'); },
   async (tok, S) => { S.G.E.slice().forEach((e) => { removeEdge(S.G, e); }); ['ab', 'bc', 'cd'].forEach((s) => ge(S.G, s[0], s[1])); S.B.add('第四步：箭頭也不用畫'); cap('大的都在上面了', '箭頭也擦掉'); },
   async (tok, S) => { S.B.add('Hasse diagram', 'good'); cap('最後這個就是 Hasse diagram', ''); },
 ], CAMW);
@@ -1707,14 +1710,14 @@ scene('gr-l22-maxmin', 'Maximal／greatest、minimal／least', [
   async (tok, S) => { S.B.add('證明：不是極小 → 找更小的；有限所以會停'); cap('證明：a 不是極小，就找比它小的', '有限集合，只能做有限次'); },
 ], CAMW);
 
-const UB = [['a', -0.6, 0.8], ['b', 2.6, 0.8], ['c', 1.0, 2.4], ['d', -0.2, 4.0], ['e', 2.2, 4.0]];
+const UB = [['a', 0.6, 0.6], ['b', 3.8, 0.6], ['c', 2.2, 1.8], ['d', 1.0, 3.0], ['e', 3.4, 3.0]];
 scene('gr-l22-ub', 'Upper bound 與 least upper bound', [
-  async (tok, S) => { S.B = board(-6.8, 5.0, 0.5, -2.6, 6); S.B.add('upper bound（上界）'); S.G = hv(UB); hasseUp(S.G, [['a', 'c'], ['b', 'c'], ['c', 'd'], ['c', 'e']]); DEMO(1.0, 0.0, 0.6); cap('介紹 upper bound（上界）', ''); },
+  async (tok, S) => { S.B = board(-6.8, 5.0, 0.5, -2.6, 6); S.B.add('upper bound（上界）'); S.G = hv(UB); hasseUp(S.G, [['a', 'c'], ['b', 'c'], ['c', 'd'], ['c', 'e']]); DEMO(4.8, 0.0, 0.6); cap('介紹 upper bound（上界）', ''); },
   async (tok, S) => { S.B.add('u 是集合 A 的上界：A 裡每個都 ≼ u'); cap('u 比集合裡所有元素都大', '就叫上界'); },
   async (tok, S) => { vcol(S.G, 'a', COL.blue); vcol(S.G, 'b', COL.blue); cap('看圖：取 a、b 兩個元素', ''); },
   async (tok, S) => { vcol(S.G, 'c', COL.gold); cap('c 比 a、b 都大', 'c 是 {a, b} 的上界'); },
   async (tok, S) => { vcol(S.G, 'd', COL.gold); cap('d 也比 a、b 都大', 'd 也是上界'); },
-  async (tok, S) => { vcol(S.G, 'e', COL.gold); T('{a,b} 的上界：c、d、e', 'good', 1.0, 5.0, 0); cap('e 也是上界', '上界有 c、d、e'); },
+  async (tok, S) => { vcol(S.G, 'e', COL.gold); T('{a,b} 的上界：c、d、e', 'good', 2.0, -0.5, 1.4); cap('e 也是上界', '上界有 c、d、e'); },
   async (tok, S) => { S.B.add('上界可以在集合裡，也可以在外面'); cap('定義沒說上界一定在集合裡或外', ''); },
   async (tok, S) => { vcol(S.G, 'c', COL.blue); cap('{a, b, c}：c 是不是它的上界？', '是：c ≼ c'); },
   async (tok, S) => { S.B.add('least upper bound（最小上界）'); cap('有了上界，就有最小上界', ''); },
@@ -1746,7 +1749,7 @@ scene('gr-l22-lattice', 'Lattice：任兩元素都有 LUB 與 GLB', [
   async (tok, S) => { S.B.add('lattice 的長相：上下都收起來'); cap('lattice 大概長這樣', '底下收起來、上面也收起來'); },
 ], CAMW);
 
-const TP = [['A', -1.2, 0.8], ['B', 1.0, 0.8], ['C', 0.0, 2.4], ['D', -1.0, 4.0], ['E', 1.2, 4.0], ['F', 3.4, 0.8], ['G', 3.4, 2.8]];
+const TP = [['A', 0.2, 0.5], ['B', 2.4, 0.5], ['C', 1.4, 1.6], ['D', 0.4, 2.7], ['E', 2.6, 2.7], ['F', 4.8, 0.5], ['G', 4.8, 2.2]];
 const TPE = [['A', 'C'], ['B', 'C'], ['C', 'D'], ['C', 'E'], ['F', 'G']];
 scene('gr-l22-topo', 'Topological sorting：每次挑一個 minimal element', [
   async (tok, S) => { S.B = board(-6.8, 5.0, 0.5, -2.6, 6); S.B.add('工作之間有先後順序'); cap('搬家：要先拉網路線、先清空位置…', '工作之間有先後'); },
@@ -1755,12 +1758,12 @@ scene('gr-l22-topo', 'Topological sorting：每次挑一個 minimal element', [
   async (tok, S) => { S.B.add('能不能把所有工作排成一列？'); cap('能不能把一百個工作排成一列', '一次做一個'); },
   async (tok, S) => { S.B.add('第 1 個做完做第 2 個…'); cap('第一個先做、再做第二個…', '做完也不會有衝突'); },
   async (tok, S) => { S.B.add('這樣的排列：topological sorting', 'good'); cap('排出來的叫 topological sorting', '（拓撲排序）'); },
-  async (tok, S) => { S.G = hv(TP); TPE.forEach(([p, q]) => ge(S.G, p, q, { dir: true })); DEMO(1.0, 0.0, 0.6); cap('例：A～G 七個工作', ''); },
+  async (tok, S) => { S.G = hv(TP); TPE.forEach(([p, q]) => ge(S.G, p, q, { dir: true })); DEMO(5.8, -0.2, 0.6); cap('例：A～G 七個工作', ''); },
   async (tok, S) => { ['A', 'C'].forEach((n) => vglow(S.G, n, GOLD)); cap('A 一定要比 C 早做', 'C 要比 D、E 早做'); },
   async (tok, S) => { ['A', 'C'].forEach((n) => vglow(S.G, n, null)); vglow(S.G, 'A', GOLD); vglow(S.G, 'B', GOLD); cap('沒有關係的兩個', '誰先誰後都可以'); },
-  async (tok, S) => { vglow(S.G, 'A', null); vglow(S.G, 'B', null); S.o1 = T('A B C D E F G', 'good', 1.0, -0.3, 1.2); cap('一種答案：A B C D E F G', ''); },
+  async (tok, S) => { vglow(S.G, 'A', null); vglow(S.G, 'B', null); S.o1 = T('A B C D E F G', 'good', 2.4, -0.3, 1.2); cap('一種答案：A B C D E F G', ''); },
   async (tok, S) => { S.B.add('能比的：小的在前、大的在後'); cap('可以比較的，小的一定在前面', ''); },
-  async (tok, S) => { S.o2 = T('A B C D E F G 之外還有很多種', 'say', 1.0, -0.9, 1.2); cap('答案不只一種', ''); },
+  async (tok, S) => { S.o2 = T('A B C D E F G 之外還有很多種', 'say', 2.4, -0.9, 1.2); cap('答案不只一種', ''); },
   async (tok, S) => { txt(S.o2, 'F G B A C E D 也 OK'); cap('F G B A C E D', '也符合條件'); },
   async (tok, S) => { S.B.add('演算法：每次挑剩下的 minimal element'); cap('演算法很簡單', '每次挑剩下來的一個極小元素'); },
   async (tok, S) => { S.B.add('finite poset 一定有 minimal'); cap('有限集合一定有 minimal element', '所以永遠挑得到'); },
@@ -1772,7 +1775,7 @@ scene('gr-l22-topo', 'Topological sorting：每次挑一個 minimal element', [
       cap('挑 ' + m + '，拿走', '排序：' + S.out.join(' ')); await wt(tok, 280);
     }
   },
-  async (tok, S) => { T('topological sort：' + S.out.join(' '), 'good', 1.0, 5.4, 0); cap('從頭排到尾', '這就是 topological sorting'); },
+  async (tok, S) => { kill(S.o2); T('topological sort：' + S.out.join(' '), 'good', 2.4, -0.9, 1.2); cap('從頭排到尾', '這就是 topological sorting'); },
 ], CAMW);
 
 scene('gr-l22-gdef', '圖：節點與邊、有向與無向', [
@@ -2019,7 +2022,7 @@ scene('gr-l23-rep', '圖的表示法：邊列表、adjacency list', [
   async (tok, S) => { S.G.E.forEach((e) => paintE(e, COL.edge, false)); cls(S.L, 'say'); S.B.add('adjacency list（相鄰清單）'); cap('adjacency list', '寫下每個節點的鄰居'); },
   ...['A', 'B', 'C', 'D', 'E', 'F'].map((n, k) => async (tok, S) => {
     S.G.V.forEach((v, i) => vglow(S.G, i, null)); vglow(S.G, n, GOLD); const nb = nbrs(S.G, n); nb.forEach((m) => vcol(S.G, m, COL.green));
-    M(n + ' : ' + (nb.join(', ') || '（空）'), -6.6, 2.0 - k * 0.45, -2.6, 'note');
+    M(n + ' : ' + (nb.join(', ') || '（空）'), -6.6, 2.0 - k * 0.6, -2.6, 'note');
     cap(n + ' 的鄰居：' + (nb.join('、') || '沒有'), '');
     await wt(tok, 400); nb.forEach((m) => vcol(S.G, m, COL.node));
   }),
@@ -2028,7 +2031,7 @@ scene('gr-l23-rep', '圖的表示法：邊列表、adjacency list', [
   async (tok, S) => { for (const [p, q] of [['A', 'B'], ['B', 'C'], ['C', 'B'], ['B', 'E'], ['C', 'A'], ['F', 'B'], ['F', 'C']]) ge(S.G, p, q, { dir: true, bend: (p === 'B' && q === 'C') || (p === 'C' && q === 'B') ? 0.4 : 0 }); DEMO(3.0, 0.3, 3.2); cap('每條邊加上方向（BF、CF 的方向是示意）', ''); },
   async (tok, S) => { S.B.add('只寫「從我出去」的邊的頭'); cap('清單裡寫的是邊的頭', '從這個節點出去，指到誰'); },
   async (tok, S) => {
-    ['A', 'B', 'C', 'D', 'E', 'F'].forEach((n, k) => { const out = S.G.E.filter((e) => e.u === vi(S.G, n)).map((e) => S.G.V[e.v].name).sort(); M(n + ' → ' + (out.join(', ') || '（空）'), -6.6, 2.4 - k * 0.45, -2.6, k < 3 ? 'note' : 'say'); });
+    ['A', 'B', 'C', 'D', 'E', 'F'].forEach((n, k) => { const out = S.G.E.filter((e) => e.u === vi(S.G, n)).map((e) => S.G.V[e.v].name).sort(); M(n + ' → ' + (out.join(', ') || '（空）'), -6.6, 2.4 - k * 0.6, -2.6, k < 3 ? 'note' : 'say'); });
     cap('A → B；B → C、E；C → A、B', '');
   },
 ], CAMW);
@@ -2041,15 +2044,15 @@ scene('gr-l23-mat', 'Adjacency matrix、incidence matrix、Aᵏ 數路徑', [
     S.Mx = matrix('    A B C D E F', S.A.map((r, i) => 'ABCDEF'[i] + ' │ ' + r.join(' ')), -6.6, 2.8, 0.42, -2.6); S.Mx.all();
     S.B.add('adjacency matrix（相鄰矩陣）'); cap('adjacency matrix', '就是之前 relation 的矩陣表示法');
   },
-  async (tok, S) => { T('無向 → 對稱', 'good', -3.0, 3.2, -2.6); cap('無向圖：A、B 相鄰，B、A 也相鄰', '是對稱矩陣'); },
+  async (tok, S) => { S.B.add('無向 → 對稱', 'good'); cap('無向圖：A、B 相鄰，B、A 也相鄰', '是對稱矩陣'); },
   async (tok, S) => { S.B.add('有向圖：從列看到行，不一定對稱'); cap('有向圖要記方向', '從列看到行：不一定對稱'); },
-  async (tok, S) => { S.Mx.kill(); lab.clear(); S.B = board(-6.8, 5.0, 0.5, -2.6, 3); S.B.add('incidence matrix（關聯矩陣）'); S.G = gnew([['v1', 1.0, -1.6], ['v2', 3.4, -2.0], ['v3', 2.0, 0.6], ['v4', 5.2, -0.4], ['v5', 1.0, 2.4], ['v6', 4.0, 2.4]]); DEMO(3.0, 0.3, 3.3); cap('另一種：incidence matrix', '物件不一樣'); },
+  async (tok, S) => { S.Mx.kill(); lab.clear(); S.B = board(-6.8, 5.0, 0.5, -2.6, 3); S.B.add('incidence matrix（關聯矩陣）'); S.G = gnew([['v1', 1.0, -1.6], ['v2', 3.4, -2.0], ['v3', 2.0, 0.6], ['v4', 5.2, -0.4], ['v5', -0.2, 2.6], ['v6', 4.0, 2.4]]); DEMO(3.0, 0.3, 3.3); cap('另一種：incidence matrix', '物件不一樣'); },
   async (tok, S) => { cap('這個圖有 ' + S.G.V.length + ' 個節點', 'v1～v6'); },
   async (tok, S) => { S.IE = [['v1', 'v2'], ['v1', 'v3'], ['v2', 'v4'], ['v3', 'v5'], ['v3', 'v6']]; S.IE.forEach(([p, q], k) => eTag(ge(S.G, p, q), 'e' + (k + 1))); cap('5 條邊', '（e3～e5 的位置是示意）'); },
-  async (tok, S) => { S.H = M('     v1 v2 v3 v4 v5 v6', -6.6, 3.0, -2.6, 'say'); cap('矩陣 5 列 6 行', '列是邊、行是節點'); },
-  async (tok, S) => { S.IE.forEach(([p, q], k) => { if (k) return; M('e' + (k + 1) + ' │ ' + S.G.V.map((v) => (v.name === p || v.name === q ? ' 1' : ' 0')).join(' '), -6.6, 2.55 - k * 0.45, -2.6, 'note'); }); paintE(S.G.E[0], COL.gold, true); cap('e1 從 v1 連到 v2', 'v1、v2 那兩格是 1'); },
-  async (tok, S) => { T('每一列恰好兩個 1', 'good', -3.0, 0.2, -2.6); cap('特色：每一列只有兩個 1', '一條邊兩個端點'); },
-  async (tok, S) => { S.IE.forEach(([p, q], k) => { if (!k) return; M('e' + (k + 1) + ' │ ' + S.G.V.map((v) => (v.name === p || v.name === q ? ' 1' : ' 0')).join(' '), -6.6, 2.55 - k * 0.45, -2.6, k === 1 ? 'note' : 'say'); }); paintE(S.G.E[0], COL.edge, false); paintE(S.G.E[1], COL.gold, true); cap('e2 從 v1 連到 v3', ''); },
+  async (tok, S) => { S.H = M('     v1 v2 v3 v4 v5 v6', -6.6, 2.55, -2.6, 'say'); cap('矩陣 5 列 6 行', '列是邊、行是節點'); },
+  async (tok, S) => { S.IE.forEach(([p, q], k) => { if (k) return; M('e' + (k + 1) + ' │ ' + S.G.V.map((v) => (v.name === p || v.name === q ? ' 1' : ' 0')).join(' '), -6.6, 1.9 - k * 0.62, -2.6, 'note'); }); paintE(S.G.E[0], COL.gold, true); cap('e1 從 v1 連到 v2', 'v1、v2 那兩格是 1'); },
+  async (tok, S) => { S.B.add('每一列恰好兩個 1', 'good'); cap('特色：每一列只有兩個 1', '一條邊兩個端點'); },
+  async (tok, S) => { S.IE.forEach(([p, q], k) => { if (!k) return; M('e' + (k + 1) + ' │ ' + S.G.V.map((v) => (v.name === p || v.name === q ? ' 1' : ' 0')).join(' '), -6.6, 1.9 - k * 0.62, -2.6, k === 1 ? 'note' : 'say'); }); paintE(S.G.E[0], COL.edge, false); paintE(S.G.E[1], COL.gold, true); cap('e2 從 v1 連到 v3', ''); },
   async (tok, S) => { S.B.add('較少用；一眼看出每條邊的兩端'); cap('incidence matrix 用得比較少', '好處：很快看出邊連哪兩個節點'); },
   async (tok, S) => { lab.clear(); S.B = board(-6.8, 5.0, 0.5, -2.6, 4); S.G = rpG(); S.A = S.G.V.map((_, i) => S.G.V.map((_, j) => (findE(S.G, i, j) ? 1 : 0))); S.B.add('相鄰矩陣的次方 A²、A³…'); cap('回到相鄰矩陣：它的次方', '以前講 relation 的複合 R²、R³'); },
   async (tok, S) => { S.B.add('布林運算（1+1=1）：有沒有長度 3 的路'); cap('用布林代數 1 + 1 = 1', 'A³ 某格是 1 ⇔ 有長度 3 的 walk'); },
@@ -2101,7 +2104,7 @@ scene('gr-l23-inv', '怎麼判斷不同構：節點數、邊數、degree', [
   async (tok, S) => { showDeg(S.G1); showDeg(S.G2); ['c', 'd'].forEach((n) => { vcol(S.G1, n, COL.orange); vcol(S.G2, n, COL.orange); }); cap('看 degree 3 的點', '兩邊都只有兩個，要互相對應'); },
   async (tok, S) => { ['b', 'e'].forEach((n) => { vcol(S.G1, n, COL.purple); vcol(S.G2, n, COL.purple); }); ['a', 'f'].forEach((n) => { vcol(S.G1, n, COL.green); vcol(S.G2, n, COL.green); }); cap('degree 4 的兩個、degree 2 的兩個', '也各自對應'); },
   async (tok, S) => { cap('a 對 a、b 對 b、d 對 d、e 對 e、f 對 f', '（名字相同的對應）'); T('同名對應', 'ptr', 0, 2.6, -2.4); },
-  async (tok, S) => { await mv(tok, S.G2, S.G1.V.map((v) => v.p.clone().add(V3(6.6, 0, 0))), 1600); T('翻一翻：一模一樣 ✔', 'good', 3.0, 1.6, 2.8); cap('雖然長得不一樣', '對應之後一模一樣'); },
+  async (tok, S) => { await mv(tok, S.G2, S.G1.V.map((v) => v.p.clone().add(V3(6.6, 0, 0))), 700); T('翻一翻：一模一樣 ✔', 'good', 3.0, 1.6, 2.8); cap('雖然長得不一樣', '對應之後一模一樣'); },
   async (tok, S) => { lab.clear(); S.B = board(-6.8, 5.2, 0.48, -3.4, 4); S.P = gnew([['a', -5.4, -1.4], ['b', -2.4, -1.4], ['c', -1.2, 1.0], ['d', -3.9, 2.4], ['e', -5.8, 0.8]], { color: '#bcd3ee' }); ges(S.P, 'ab bc cd de ea ac bd'); S.Q = gnew([['p', 1.8, -1.4], ['q', 5.4, -1.4], ['r', 1.4, 1.6], ['s', 3.6, 2.2], ['t', 5.8, 1.6]], { color: '#f2c6da' }); ges(S.Q, 'pq pr ps pt qr qs qt'); DEMO(0, 0.3, 3.2); cap('例二：這兩個', ''); },
   async (tok, S) => { T('5 點、' + S.P.E.length + ' 邊', 'ptr', -3.6, 3.4, -2.4); T('5 點、' + S.Q.E.length + ' 邊', 'ptr alt', 3.6, 3.4, -2.4); cap('都是 5 個節點', '邊數 ' + S.P.E.length + ' 和 ' + S.Q.E.length + '：一樣'); },
   async (tok, S) => { showDeg(S.P); showDeg(S.Q); const d2 = (G) => deg(G).filter((x) => x === 2).length; [S.P, S.Q].forEach((G) => deg(G).forEach((x, i) => { if (x === 2) vcol(G, i, COL.hot); })); cap('degree 2 的點', '左邊 ' + d2(S.P) + ' 個、右邊 ' + d2(S.Q) + ' 個'); },

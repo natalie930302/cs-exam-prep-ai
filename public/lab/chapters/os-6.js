@@ -110,7 +110,7 @@ export default function (ctx) {
       const r = workRows.length;
       const y = rowY(r);
       const row = w.map((v, k) => cube(v, '#2fc092', [0.56, 0.5, 0.36], xw + k * 0.66, y, 0, 1.2));
-      if (note) row.push(tag(note, 'idx', xw + m * 0.66, y, 0));
+      if (note) row.push(tag(note, 'idx', xw + (m - 1) * 0.66 + 0.5 + String(note).length * 0.1, y, 0));
       workRows.push(row);
       return row;
     }
@@ -536,7 +536,7 @@ export default function (ctx) {
     const R = Array.from({ length: N }, (_, k) => { const [x, z] = pp(k + 0.5, 1.9); return cube('R' + (k + 1), RCOL[k], [0.8, 0.5, 0.8], x, 0.25, z); });
     const C = [
       ['① Mutual exclusion', '資源一次只能一個人用', () => R.forEach((m) => glow(m, GOLD))],
-      ['② Hold and wait', '拿著一個，還在等別的', () => R.forEach((m, k) => { const [x, z] = pp(k, 2.4); move(m, x + 0.3, 0.9, z); })],
+      ['② Hold and wait', '拿著一個，還在等別的', () => R.forEach((m, k) => { const [x, z] = pp(k, 2.3); move(m, x + 0.9, 0.9, z); })],
       ['③ No preemption', '資源只能自己放，不能被搶', () => P.forEach((m) => glow(m, GOLD))],
       ['④ Circular wait', 'P1 等 P2、P2 等 P3 … P4 等 P1', () => { for (let k = 0; k < N; k++) { const [x1, z1] = pp(k, 3.2), [x2, z2] = pp(k + 1, 3.2); arrow(V3(x1, 1.0, z1), V3(x2, 1.0, z2), '#d64545', 0.8); } P.forEach((m) => glow(m, RED)); }],
     ];
@@ -599,7 +599,7 @@ export default function (ctx) {
     for (let k = 0; k < 4; k++) {
       const x = -4.8 + k * 3.2;
       cube(M[k][0], PCOL[k], [2.8, 0.8, 1.2], x, 0.4, 0, 3);
-      tag(M[k][1], 'idx', x, 0, 1.1);
+      tag(M[k][1], 'idx', x, 0, 1.1 + (k % 2) * 0.9);
       say(M[k][0], M[k][1]);
       await beat(tok, 2400);
     }
@@ -989,27 +989,27 @@ FRAG.push(['dl-a-what', '什麼是 deadlock：hold 著資源又在等', async (t
   cap('什麼是 deadlock？', '先從 concept 的角度描述');
   await step(tok); // @152.0 process 執行需要 resource（很抽象）
   const r1 = bx('R1', RCOL[0], -1.2, 0.3, -1.6, 1.2, 0.6, 0.9), r2 = bx('R2', RCOL[1], 1.2, 0.3, -1.6, 1.2, 0.6, 0.9);
-  idx('一段程式、memory content、CPU core 的 slot…', 0, 1.3, -1.6);
+  const rsT = idx('一段程式、memory content、CPU core 的 slot…', 0, 1.3, -1.6);
   cap('process 執行時需要 resource', 'resource 很抽象：佔有它才能繼續執行的東西');
   await step(tok); // @188.3 資源有限，被搶走就要等
-  put(r1, -3.2, 1.05, 1); a.mood('happy');
+  put(r1, -4.7, 0.3, 1); a.mood('happy');
   cap('資源是有限的', '被別人拿走時，你只能在那邊等');
   await step(tok); // @197.3 需要很多 resource → 各自掌握部分 → 互相等待
-  put(r2, 3.2, 1.05, 1); b.mood('happy');
+  put(r2, 4.7, 0.3, 1); b.mood('happy');
   const w1 = pipe(V3(-2.6, 0.9, 1), V3(2.6, 0.9, 1), '#d64545', 0.1, 0.1);
   const w2 = pipe(V3(2.6, 0.45, 1), V3(-2.6, 0.45, 1), '#d64545', 0.1, 0.1);
   cap('要用很多 resource 時', '各自掌握一部分，然後互相等待 → 卡住');
   await step(tok); // @219.3 hold 著又 wait，等不到也不放
   a.mood('sad'); b.mood('sad');
-  bub('hold R1，wait R2', -3.2, 2.5, 1); bub('hold R2，wait R1', 3.2, 2.5, 1);
+  const hw1 = bub('hold R1，wait R2', -3.2, 2.2, 1), hw2 = bub('hold R2，wait R1', 3.2, 2.2, 1);
   cap('hold 著 resource，同時又在 wait', '等不到下一個，手上的又不願意放 → 卡住');
   await step(tok); // @238.9 例：兩個 tape drive
-  gone(a, b, r1, r2, w1, w2);
+  gone(a, b, r1, r2, w1, w2, hw1, hw2, rsT);
   const c = pal('P1', PCOL[0], -3.2, 0, 1), d = pal('P2', PCOL[1], 3.2, 0, 1);
   const t1 = prop('disk', -1.2, 0, -1.6, 0.9, 'drive 1'), t2 = prop('disk', 1.2, 0, -1.6, 0.9, 'drive 2');
   cap('例：兩個 tape drive', '一個 drive 一次只能給一個程式用；程式要同時寫到兩個');
   await step(tok); // @270.2 兩個 process 各 hold 一個再等另一個
-  put(t1, -3.2, 1.0, 0.2); put(t2, 3.2, 1.0, 0.2);
+  put(t1, -4.8, 0, 1); put(t2, 4.8, 0, 1);
   pipe(V3(-2.6, 0.7, 1), V3(2.6, 0.7, 1), '#d64545', 0.1, 0.1); pipe(V3(2.6, 0.3, 1.3), V3(-2.6, 0.3, 1.3), '#d64545', 0.1, 0.1);
   c.mood('sad'); d.mood('sad');
   cap('剛好兩個 process 各拿到一個，再等另一個', '兩個都不退讓 → 永遠卡在那裡');
@@ -1021,14 +1021,14 @@ FRAG.push(['dl-a-what', '什麼是 deadlock：hold 著資源又在等', async (t
   cap('另一個例子：A、B 兩個 semaphore', '兩邊都要拿到 A 和 B 才做事');
   await step(tok); // @324.5 順序不好：兩邊各先 grab 一個
   cA.hl(0); cB.hl(0);
-  const sA = bx('A', '#c08a1f', -3.2, 1.05, 1, 0.6, 0.4, 0.6), sB = bx('B', '#6a7fd0', 3.2, 1.05, 1, 0.6, 0.4, 0.6);
+  const sA = bx('A', '#c08a1f', -4.4, 0.25, 1, 0.6, 0.4, 0.6), sB = bx('B', '#6a7fd0', 4.4, 0.25, 1, 0.6, 0.4, 0.6);
   await wt(tok, 500);
   cA.hl(1); cB.hl(1); e.mood('sad'); f.mood('sad');
-  bub('等 B', -3.2, 2.4, 1); bub('等 A', 3.2, 2.4, 1);
+  bub('等 B', -3.2, 1.75, 1); bub('等 A', 3.2, 1.75, 1);
   cap('call 的順序不好：兩邊都先 grab 了一個', '要兩個都有才肯放 → 一樣 deadlock');
   await step(tok); // @355.0 需要 acquire multiple 資源又被搶 → deadlock
   glow(sA, RED); glow(sB, RED);
-  hot('需要 multiple resource ＋ 被別人拿走 → deadlock', 0, 3.3, 1);
+  hot('需要 multiple resource ＋ 被別人拿走 → deadlock', 0, -0.5, 2.6);
   cap('只要一個程式需要 acquire 多個資源', '而這些資源又被別人搶走，就可能 deadlock');
 }]);
 
@@ -1107,13 +1107,13 @@ FRAG.push(['dl-a-traffic', '交通的例子：四台車卡在路口', async (tok
   cap('Mutual exclusion：路口每一塊空間 = 資源', '一次只能有一台車，不能兩台撞在一起');
   await step(tok); // @683.0 hold and wait
   cars.forEach((c) => glow(c, GOLD));
-  bub('hold 這格，wait 前面那格', 3.4, 1.4, -2.4);
+  bub('hold 這格，wait 前面那格', 4.7, 1.4, -2.4);
   cap('Hold and wait：車停在這一格（hold）', '在等前面那一格（wait）');
   await step(tok); // @700.0 黃線：不能停在路口
-  note('路口畫黃線：不准停 → 不准 hold and wait', -3.4, 1.4, 2.6);
+  note('路口畫黃線：不准停 → 不准 hold and wait', -4.3, 0.6, 3.0);
   cap('所以路口會畫黃線，不能停在那裡', '一停就有 hold and wait');
   await step(tok); // @716.3 no preemption：一般車不能叫前面讓開
-  bub('一般車不能叫前面的讓開', -3.4, 1.4, -2.6);
+  bub('一般車不能叫前面的讓開', -4.7, 1.4, -2.6);
   cap('No preemption：一般車子不能強迫前面的人讓開', '只有消防車、救護車才有權 preempt');
   await step(tok); // @737.5 circular wait：互相等
   for (let k = 0; k < 4; k++) { const [x1, z1] = C[k], [x2, z2] = C[(k + 1) % 4]; pipe(V3(x1, 0.8, z1), V3(x2, 0.8, z2), '#d64545', 0.3, 0.3, 0.04); }
@@ -1144,7 +1144,7 @@ FRAG.push(['dl-a-model', 'System model：resource type、instance、request → 
   cap('就像 counting semaphore', 'instance 是可以數的數量');
   await step(tok); // @886.0 程式需要哪些 resource、各幾個
   const p = pal('Pi', PCOL[0], -4.5, 0, 3.0, 0.65);
-  bub('要 CPU ×1、disk ×2', -2.2, 1.6, 3.0);
+  bub('要 CPU ×1、disk ×2', -2.0, 0.5, 4.2);
   cap('程式的執行可以描述成', '需要哪些 resource，每一種要幾個 instance');
   await step(tok); // @905.2 request → use → release
   const steps = ['request', 'use', 'release'].map((t, k) => bx(t, ['#dd8238', '#2fc092', '#4b9ee2'][k], 0.4 + k * 2.4, 0.3, 3.0, 2.0, 0.5, 0.8));
@@ -1162,7 +1162,7 @@ FRAG.push(['dl-a-rag', 'Resource-allocation graph：request edge 與 assignment 
   hd('用 graph 看 process 之間的關係', 0, 2.6, -4.2);
   cap('用剛才的 symbol 畫成一張圖', '關係這件事，最好用 graph 去理解');
   await step(tok); // @963.4 resource allocation graph
-  hot('Resource-allocation graph', 0, 2.0, -4.2);
+  const ragT = hot('Resource-allocation graph', 0, 2.0, -4.2);
   cap('這張圖叫 resource-allocation graph', '用它描述系統目前的狀態');
   await step(tok); // @974.0 process：圓圈，三個
   G = rag({ P: { P1: [-3.5, 0], P2: [0, 0], P3: [3.5, 0] } });
@@ -1182,7 +1182,7 @@ FRAG.push(['dl-a-rag', 'Resource-allocation graph：request edge 與 assignment 
   for (const [a, b] of [['R1', 'P2'], ['R2', 'P2'], ['R2', 'P1'], ['R3', 'P3']]) { G.add(a, b, 'asg'); await wt(tok, 350); }
   cap('已經拿到：畫 assignment edge，方向 R → P', 'R1、R2 給 P2；另一個 R2 給 P1；R3 給 P3');
   await step(tok); // @1064.6 顏色不重要，方向才重要
-  note('灰：request（P → R）　綠：assignment（R → P）', 0, 1.6, 4.4);
+  note('灰：request（P → R）　綠：assignment（R → P）', 0, 0.1, 5.4);
   cap('顏色不重要，重點是方向', 'R → P：這個 instance 已經 assign 給 process、正在使用');
   await step(tok); // @1101.0 hold and wait：P1 hold R2、wait R1
   G.paint('R2', 'P1', GOLD); G.paint('P1', 'R1', GOLD); G.node.P1.glow(GOLD);
@@ -1191,7 +1191,7 @@ FRAG.push(['dl-a-rag', 'Resource-allocation graph：request edge 與 assignment 
   G.paint('R2', 'P1', ECOL.asg); G.paint('P1', 'R1', ECOL.req); G.node.P1.glow(null);
   cap('也可以從圖上看有沒有 circular waiting', '用圖學的 algorithm 來解');
   await step(tok); // @1141.1 用它判斷 deadlock、request 能不能給
-  hot('之後：用這張圖判斷有沒有 deadlock、request 能不能給', 0, 1.6, -4.2);
+  tx(ragT, '之後：用這張圖判斷有沒有 deadlock、request 能不能給');
   cap('用這張圖描述系統狀態', '判斷現在有沒有 deadlock，或答應 request 未來會不會危險');
 }]);
 
@@ -1285,14 +1285,14 @@ FRAG.push(['dl-a-methods', '處理 deadlock：prevention、avoidance、detection
   cap('第二種 Avoidance：run time 一直 monitor', '看目前資源分配、process 之間的關聯，判斷能不能 assign');
   await step(tok); // @1593.2 記住兩者的區隔
   glow(box[0], GOLD); glow(box[1], GOLD);
-  note('prevention = 事前拿掉條件；avoidance = run time 判斷', 0, 2.6);
+  const pa = note('prevention = 事前拿掉條件；avoidance = run time 判斷', 0, 2.6);
   cap('記一下：prevention 是把條件拿掉', 'avoidance 是 run time 的時候判斷、避開（常搞混）');
   await step(tok); // @1634.6 讓它發生再解決
   glow(box[0], null); glow(box[1], null);
   show(2);
   cap('另一種：不 detect 了，讓系統隨便跑', '等 deadlock 發生了再 recovery（比較消極）');
   await step(tok); // @1660.2 要能 detect，還要知道怎麼 recover
-  bub('① 偵測到已發生　② 要 kill 哪一個？', 1.6, 2.6, 0);
+  gone(pa); bub('① 偵測到已發生　② 要 kill 哪一個？', 1.6, 2.6, 0);
   cap('這樣要解兩件事：能 detect deadlock 已經發生', '偵測到後怎麼 recover —— 例如要 kill 哪個 process');
   await step(tok); // @1701.0 ignore
   show(3);
@@ -1330,16 +1330,16 @@ FRAG.push(['dl-b-me', 'Prevention ①：拿掉 mutual exclusion', async (tok) =>
   const mem = bx('memory（read-only）', '#7fc6a4', 0, 0.3, 1.4, 3.4, 0.6, 1.0);
   const rs = [-3.6, -1.6, 1.6, 3.6].map((x, k) => pal('T' + (k + 1), PCOL[k], x, 0, 3.4, 0.5));
   rs.forEach((b) => b.mood('happy'));
-  good('大家同時讀，不用 lock → 不會因此 deadlock', 0, 1.5, 1.4);
+  const rd = good('大家同時讀，不用 lock → 不會因此 deadlock', 0, 1.1, 2.6);
   cap('例：memory 的 access 如果都是 read-only', '大家同時 access 也沒問題，不需要 lock');
   await step(tok); // @101.3 但很多資源一定要 mutual exclusion
-  gone(...rs);
+  gone(...rs, rd);
   const pr = prop('printer', 4.6, 0, 1.6, 0.8, 'printer');
-  bad('printer、critical section：一定要 mutual exclusion', 0, 2.6, 3.2);
+  bad('printer、critical section：一定要 mutual exclusion', 0, 1.9, 1.4);
   cap('但不可能什麼都用這招', 'printer、critical section 一定要 mutual exclusion');
   await step(tok); // @125.7 資源分類：可 share 的就不要 lock
   glow(mem, GREEN);
-  note('先把資源分類：能 share 的就不要 lock', -3.0, 2.6, 3.2);
+  note('先把資源分類：能 share 的就不要 lock', 0, -0.1, 3.8);
   cap('所以先把資源做分類，用不同方式管理', '本來就能 share 的，就不要去 lock 它');
 }]);
 
@@ -1348,7 +1348,7 @@ FRAG.push(['dl-b-hw', 'Prevention ②：拿掉 hold and wait（all or nothing）
   const p = pal('P', PCOL[0], -4.2, 0, 1.2, 0.8);
   const R = ['R1', 'R2', 'R3'].map((n, k) => bx(n, RCOL[k], -0.5 + k * 2.2, 0.3, -1.4, 1.4, 0.6, 0.9));
   await step(tok); // @159.4 hold and wait：hold 一個再等
-  put(R[0], -4.2, 1.35, 1.2); bub('hold R1，等 R2、R3', -4.2, 2.6, 1.2);
+  put(R[0], -4.2, 0.3, 2.8); bub('hold R1，等 R2、R3', -4.2, 2.6, 1.2);
   cap('② Hold and wait', 'hold 一個，然後再去等');
   await step(tok); // @168.0 一次 acquire 全部才往下做
   put(R[0], -0.5, 0.3, -1.4);
@@ -1356,7 +1356,7 @@ FRAG.push(['dl-b-hw', 'Prevention ②：拿掉 hold and wait（all or nothing）
   const rule = hot('規則：一次把全部 resource 都 acquire 到，才做下一步', 0, 4.4);
   cap('拿掉它：程式寫法要改', '要用多個資源時，一次就要把所有 resource 都 acquire 到');
   await step(tok); // @182.2 拿不到一個 → 全部 release 從頭來
-  put(R[0], -4.2, 1.35, 1.2); await wt(tok, 500); glow(R[1], RED);
+  put(R[0], -4.2, 0.3, 2.8); await wt(tok, 500); glow(R[1], RED);
   bub('R2 拿不到 → 全部放掉', -4.2, 2.6, 1.2); await wt(tok, 500); put(R[0], -0.5, 0.3, -1.4);
   cap('只要有一個拿不到（fail 或 waiting）', '就把已經拿到的全部 release，從頭來過 → 沒有 hold and wait');
   await step(tok); // @220.4 缺點：資源使用率很低
@@ -1368,7 +1368,7 @@ FRAG.push(['dl-b-hw', 'Prevention ②：拿掉 hold and wait（all or nothing）
   cap('機率是相乘的（示意）', '每個 1/2，三個同時拿到只剩 1/8');
   await step(tok); // @254.7 不斷 acquire / release 卻無法執行
   gone(pb);
-  for (let k = 0; k < 2; k++) { R.forEach((m, j) => put(m, -4.2 + (j - 1) * 0.6, 1.35, 1.2)); await wt(tok, 450); R.forEach((m, j) => put(m, -0.5 + j * 2.2, 0.3, -1.4)); await wt(tok, 450); }
+  for (let k = 0; k < 2; k++) { R.forEach((m, j) => put(m, -4.2 + (j - 1) * 1.5, 0.3, 2.8)); await wt(tok, 450); R.forEach((m, j) => put(m, -0.5 + j * 2.2, 0.3, -1.4)); await wt(tok, 450); }
   p.mood('sad');
   cap('很多 process 不斷 acquire、release，真的執行不了', '資源也常常沒人在用 → 電腦效能變低');
   await step(tok); // @276.9 CPU 這種重要資源不適合
@@ -1387,13 +1387,13 @@ FRAG.push(['dl-b-np', 'Prevention ③：允許 preemption（記下 state）', as
   await step(tok); // @314.5 能 preempt：把 state 記下來
   hd('③ 拿掉 No preemption = 允許 preemption', 0, 4.8);
   const a = pal('P1', PCOL[0], -3.6, 0, 1, 0.8), b = pal('P2', PCOL[1], 3.6, 0, 1, 0.8);
-  const r = bx('resource', RCOL[0], -3.6, 1.4, 1, 1.4, 0.5, 0.9);
+  const r = bx('resource', RCOL[0], -3.6, 2.1, 1, 1.4, 0.5, 0.9);
   cap('拿掉 no preemption：要能做 preemption', '條件：能把這個資源的 state 記下來');
   await step(tok); // @331.0 隨時打斷、別人用完再從停的地方繼續
-  const st = bx('state 存起來', '#e9dcc4', -3.6, 0.3, -1.8, 2.4, 0.5, 0.9);
-  put(r, 3.6, 1.4, 1); a.mood('calm'); b.mood('happy');
+  const st = bx('state 存起來', '#e9dcc4', -3.6, 0.25, 3.0, 2.4, 0.5, 0.9);
+  put(r, 3.6, 2.1, 1); a.mood('calm'); b.mood('happy');
   await wt(tok, 900);
-  put(r, -3.6, 1.4, 1); b.mood('calm'); a.mood('happy'); glow(st, GREEN);
+  put(r, -3.6, 2.1, 1); b.mood('calm'); a.mood('happy'); glow(st, GREEN);
   cap('任何時候都可以打斷：停，先讓別人用', '別人用完再還你，你從剛剛停的地方繼續');
   await step(tok); // @349.0 CPU 就是：context switch
   gone(a, b, r, st);
@@ -1515,23 +1515,23 @@ FRAG.push(['dl-c-memcpu', 'Prevention 實例：memory 拿掉互斥、CPU 允許 
   await step(tok); // @18.4 memory 可以 share access（global memory）
   const T = [-5.2, -3.4, -1.6].map((x, k) => pal('T' + (k + 1), PCOL[k], x, 0, 2.2, 0.5));
   T.forEach((t) => t.mood('happy'));
-  idx('multi-thread：global memory 大家 free to access', -3.4, 1.4, 1.2);
+  idx('multi-thread：global memory 大家 free to access', -3.4, 1.5, -0.6);
   cap('memory：系統讓你 share access', '例：multi-thread 程式的 global memory，大家可以同時 access');
   await step(tok); // @44.6 系統拿掉 mutual exclusion → 不會因 memory 而 deadlock
   glow(mem, GREEN);
-  good('拿掉 mutual exclusion', -3.4, 2.5, -0.6);
+  good('拿掉 mutual exclusion', -3.4, 2.3, -0.6);
   cap('以系統角度：memory 把 mutual exclusion 拿掉', '所以 memory access 本身不會造成 deadlock');
   await step(tok); // @57.0 第六章的 deadlock 是 programmer 自己造成
-  note('第六章的 deadlock：programmer 自己加了 critical section', -3.4, 3.3, -0.6);
+  note('第六章的 deadlock：programmer 自己加了 critical section', -3.4, 3.1, -0.6);
   cap('那第六章的 deadlock 哪來的？', 'programmer 為了解 race condition，自己加了 critical section');
   await step(tok); // @91.0 CPU 不能 share
-  bad('instruction、pipeline 不能混在一起 → 不能 share', 3.4, 2.5, -0.6);
+  bad('instruction、pipeline 不能混在一起 → 不能 share', 3.4, 2.3, -0.6);
   cap('反過來，CPU 不能被 share', '兩個 instruction 不能混在 pipeline 裡一起執行');
   await step(tok); // @113.5 所以 OS 用 preemption（context switch 存 register）
   const q = [pal('P1', PCOL[3], 2.2, 0, 2.2, 0.55), pal('P2', PCOL[4], 4.6, 0, 2.2, 0.55)];
   const rg = bx('registers 存到 memory', '#e55a9b', 3.4, 0.25, 3.8, 2.8, 0.4, 0.7, 1.5);
   q[0].glow(GOLD); await wt(tok, 600); q[0].glow(null); q[1].glow(GOLD);
-  good('允許 preemption', 3.4, 3.3, -0.6);
+  good('允許 preemption', 3.4, 3.1, -0.6);
   cap('所以 OS 用 preemption', '用 context switch 把 register 存起來，讓 CPU 可以被 preempt');
   await step(tok); // @131.0 兩個反過來的例子：CPU 不可能造成 deadlock
   glow(cpu.children[0], GREEN);
@@ -1577,11 +1577,11 @@ FRAG.push(['dl-c-claim', 'Single instance：claim edge 畫出未來可能的 req
   G.add('R1', 'P1', 'asg'); await wt(tok, 400); G.add('P2', 'R1', 'req');
   cap('symbol 一樣：request edge、assignment edge', '代表已經發生的事：R1 已經 assign 給 P1');
   await step(tok); // @314.7 worst case：考慮未來可能發生的事
-  hot('worst case：還要考慮「未來可能」', 0, 1.8, -4.2);
+  const wc = hot('worst case：還要考慮「未來可能」', 0, 1.8, -4.2);
   cap('worst case：系統必須考慮未來還可能發生的事', '');
   await step(tok); // @324.3 多一種 edge：claim edge
   G.add('P1', 'R2', 'claim');
-  note('claim edge：trace process 的 code，知道它未來「may」要 R2', 0, 1.8, 4.3);
+  note('claim edge：trace process 的 code，知道它未來「may」要 R2', 0, 0.1, 5.2);
   cap('所以多加一種 edge：claim edge', 'trace process 的 code，知道它未來「有可能」要哪些 resource');
   await step(tok); // @355.0 方向同 request（P → R），不同顏色
   G.add('P2', 'R2', 'claim');
@@ -1592,7 +1592,7 @@ FRAG.push(['dl-c-claim', 'Single instance：claim edge 畫出未來可能的 req
   await step(tok); // @411.4 edge 多 → 更有機會 circular wait
   cap('edge 變多，代表更有機會出現 circular wait', '未來的事假設都發生 → 這就是 worst case');
   await step(tok); // @428.7 claim edge 都是 P → R，加上去不會造成 circle
-  good('claim edge 只是 P → R：單純加上去不會造成 circle', 0, 1.8, -4.2);
+  gone(wc); good('claim edge 只是 P → R：單純加上去不會造成 circle', 0, 1.8, -4.2);
   cap('但 claim edge 都是從 process 指到 resource', '單純畫上去不會造成 circular wait');
   await step(tok); // @440.2 變 request 只是變顏色，方向一樣
   G.retype('P2', 'R2', 'req'); await wt(tok, 900); G.retype('P2', 'R2', 'claim');
@@ -1604,7 +1604,7 @@ FRAG.push(['dl-c-decide', 'Request 來了：變成 assignment 會不會有 cycle
   const G = rag(CLAIM);
   G.add('R1', 'P1', 'asg'); G.add('P2', 'R1', 'req'); G.add('P1', 'R2', 'claim'); G.add('P2', 'R2', 'claim');
   await step(tok); // @461.6 真正怕的是變成 assignment edge
-  hot('真正怕的：變成 assignment edge', 0, 1.8, -4.2);
+  const fear = hot('真正怕的：變成 assignment edge', 0, 1.8, -4.2);
   cap('我們真正怕的，是它變成 assignment edge', '');
   await step(tok); // @471.2 claim edge 真的發生；現在沒人用 R2
   glow(G.node.R2.m, GOLD);
@@ -1632,7 +1632,7 @@ FRAG.push(['dl-c-decide', 'Request 來了：變成 assignment 會不會有 cycle
   cap('可是萬一是 P2 來要 R2', '把它變成綠色、方向一改 → 變成一個 circle');
   await step(tok); // @552.0 雖然還沒發生，worst case 下一秒就發生
   G.node.P1.glow(RED); G.node.P2.glow(RED);
-  bad('P1 → R2 那條還只是 claim，但下一秒可能成真', 0, 2.0, 4.3);
+  const nx = bad('P1 → R2 那條還只是 claim，但下一秒可能成真', 0, 0.1, 5.2);
   cap('雖然 P1 → R2 現在還沒發生', 'worst case：它下一秒就可能發生（unpredictable）→ 可能 deadlock');
   await step(tok); // @584.3 所以 P2 要 R2 → 不答應；P1 要 → 同意
   G.retype('R2', 'P2', 'req', true); G.path(['P2', 'R1', 'P1'], ECOL.req); G.paint('R1', 'P1', ECOL.asg); G.paint('P1', 'R2', ECOL.claim);
@@ -1642,13 +1642,13 @@ FRAG.push(['dl-c-decide', 'Request 來了：變成 assignment 會不會有 cycle
   cap('avoidance：先把所有可能都畫上去', 'claim 變 request 時決定要不要變 assignment —— resource available 也可以擋');
   await step(tok); // @637.0 depend on 系統狀態：若 P1 沒有 R1 → 不會有 circle
   G.paint('R1', 'P1', '#cfc6b6');
-  note('如果 P1 沒有拿著 R1（只是 claim），給 P2 也不會有 circle', 0, 2.0, 4.3);
+  gone(nx); note('如果 P1 沒有拿著 R1（只是 claim），給 P2 也不會有 circle', 0, 0.1, 5.2);
   cap('這個決定 depend on 目前系統狀態', '如果 P1 根本沒拿著 R1，就算給 P2 也不會有 circle');
   await step(tok); // @659.0 擋掉 → 維持 request；同意 → 下一秒可能 deadlock
   G.paint('R1', 'P1', ECOL.asg);
   cap('問題是：紫色變紅色之後，要不要再變綠色', '擋掉就只是紅線；同意變綠又有 circle → 下一秒可能 deadlock');
   await step(tok); // @684.2 做法：假設同意 → 跑 circle detection → 有就擋
-  hot('假設同意 → 跑 circle detection → 有 circle 就擋，等狀態改變', 0, 1.8, -4.2);
+  tx(fear, '假設同意 → 跑 circle detection → 有 circle 就擋，等狀態改變');
   cap('實作：假設同意，跑 circle detection algorithm', '有 circle 就擋掉、等在那裡，直到狀態改變才允許 assign');
 }]);
 
@@ -1662,13 +1662,13 @@ FRAG.push(['dl-c-cost', 'Avoidance 的代價：n²', async (tok) => {
   idx('resource type、process 數量都很多（幾千個）', 0, 1.2, 2.0);
   cap('程式系統拆下來，resource type 遠比你想像的多', 'process 數量動輒幾千 → n 不會很小');
   await step(tok); // @744.2 最好的 detection algorithm 也要 n²
-  hot('最好的 algorithm 也要 O(n²)', 0, 3.4);
+  const n2 = hot('最好的 algorithm 也要 O(n²)', 0, 3.4);
   cap('跑一次 detection，最好的 algorithm 也要 n²', '時間會花很多');
   await step(tok); // @750.9 除非很怕 deadlock，否則不一定願意付代價
-  note('除非真的很怕 deadlock，否則不一定願意付這個代價', 0, 2.6);
+  const pay = note('除非真的很怕 deadlock，否則不一定願意付這個代價', 0, 2.6);
   cap('所以除非真的很怕 deadlock', '不然不一定願意付這個代價');
   await step(tok); // @760.0 總結 algorithm
-  P.code(['1. 把 claim edge 畫上去', '2. claim edge 變成 request', '3. 假設變成 assignment，跑 circle detection', '4. 有 circle → 維持 request；沒有 → grant'], -2.6, 4.2, 0.5, 3.4).hl(3);
+  gone(pay, n2); P.code(['1. 把 claim edge 畫上去', '2. claim edge 變成 request', '3. 假設變成 assignment，跑 circle detection', '4. 有 circle → 維持 request；沒有 → grant'], -2.6, 4.2, 0.5, 3.4).hl(3);
   cap('algorithm 總結：claim edge → request 時跑一次', '變成 assignment 會有 circle 就維持 request，不會才 grant');
 }]);
 
@@ -1689,7 +1689,7 @@ FRAG.push(['dl-c-safe', 'Safe、unsafe 與 deadlock', async (tok) => {
   cap('safe：絕對不可能有 deadlock 發生', '');
   await step(tok); // @842.4 unsafe：worst case 有可能；裡面才有 deadlock
   const zd = zone('deadlock', 3.0, 0.06, 1.4, 2.6, 2.4, '#f2b8b0');
-  idx('worst case 下「有可能」', 2.6, 0.8, -1.2);
+  idx('worst case 下「有可能」', 3.8, 0.5, -1.0);
   cap('unsafe：worst case 下有可能 deadlock', 'unsafe 裡面才有真的 deadlock 的狀況');
   await step(tok); // @858.0 avoidance = 維持在 safe，擋掉 safe → unsafe
   const dot = bx('', '#4b9ee2', -2.6, 0.35, 1.4, 0.5, 0.5, 0.5);
@@ -1726,10 +1726,10 @@ FRAG.push(['dl-c-tape', 'Safe sequence：12 台 tape drive', async (tok) => {
   fresh([0, 6, 11.5], [0, 1.2, 0]);
   let T = null, av = null, need = [];
   await step(tok); // @1000.3 什麼叫 safe sequence
-  hd('Safe sequence', 0, 4.6);
+  const ssT = hd('Safe sequence', 0, 4.6);
   cap('來看什麼叫做 safe sequence', '在 safe state 裡找到的順序');
   await step(tok); // @1011.3 一種 type，12 個 instance
-  idx('一種 resource type：12 台 tape drive', 0, 3.8);
+  const tdT = idx('一種 resource type：12 台 tape drive', 0, 3.8);
   cap('用一個表描述，只考慮一種 resource type', '重點是它有 12 個 instance');
   await step(tok); // @1045.5 三個 process：P0 5、P1 2、P2 2
   T = tapeRig([['P0', 10, 5], ['P1', 4, 2], ['P2', 9, 2]]);
@@ -1741,13 +1741,13 @@ FRAG.push(['dl-c-tape', 'Safe sequence：12 台 tape drive', async (tok) => {
   cap('worst case：profile 程式，最多同時用幾個 instance', 'P0 現在只用 5 個，但最多會到 10 個 → 下一秒可能再要 5 個');
   await step(tok); // @1105.6 Max 是 given；是同一時間最多需要
   T.R[0].nm.element.className = 'lab-label ptr';
-  note('Max：compiler 或 programmer 給的；「同一時間」最多要幾個，不是總共用了幾個', 0, 3.8, -2.6);
+  gone(tdT); note('Max：compiler 或 programmer 給的；「同一時間」最多要幾個，不是總共用了幾個', 0, 3.8);
   cap('這就是 maximal need，在題目裡是 given', '注意：是某一步同時最多需要多少，不是總共用多少');
   await step(tok); // @1133.0 safe sequence <P1, P0, P2>
-  hot('safe sequence：< P1, P0, P2 >', 0, 4.6, -2.6);
+  gone(ssT); hot('safe sequence：< P1, P0, P2 >', 0, 4.6);
   cap('這個例子可以找到 safe sequence：P1、P0、P2', '一步一步看為什麼');
   await step(tok); // @1159.7 total 12，用了 9，剩 3
-  av = hot('Available = 12 − 9 = 3', 4.8, 1.6, 2.6);
+  av = hot('Available = 12 − 9 = 3', 4.8, 2.6, 2.6);
   cap('total 是 12 個，用了 5 + 2 + 2 = 9 個', '剩下 3 個');
   await step(tok); // @1166.0 worst case：還要 5、2、7
   need = T.R.map((r) => idx('還要 ' + (r.max - r.held.length), 4.4, 0.3, r.z));
@@ -1780,11 +1780,11 @@ FRAG.push(['dl-c-unsafe', '找不到 safe sequence：unsafe（但還不是 deadl
   cap('另一個例子：找不到 safe sequence', '這當然是有可能的');
   await step(tok); // @1303.0 P2 從 2 改成 3
   T.give(2, 1); T.R[2].nm.element.className = 'lab-label ptr alt';
-  av = hot('Available = 12 − 10 = 2', 4.8, 1.6, 2.6);
+  av = hot('Available = 12 − 10 = 2', 4.8, 2.6, 2.6);
   need = T.R.map((r) => idx('還要 ' + (r.max - r.held.length), 4.4, 0.3, r.z));
   cap('小改一下：P2 從 2 個改成 3 個', '只是多拿了一個 resource → 剩 2 個');
   await step(tok); // @1317.3 掃描順序無所謂，free resource 只會增加
-  note('找 sequence：從上到下掃、順序無所謂 —— free resource 只會越來越多', 0, 3.8, -2.8);
+  const scan = note('找 sequence：從上到下掃、順序無所謂 —— free resource 只會越來越多', 0, 3.8, -2.8);
   cap('找 sequence 不用擔心 ordering', '每次只是 incrementally 增加 free resource，掃過這個表就好');
   await step(tok); // @1342.2 剩 2：P1 OK → free → 4
   T.R[2].nm.element.className = 'lab-label ptr';
@@ -1804,7 +1804,7 @@ FRAG.push(['dl-c-unsafe', '找不到 safe sequence：unsafe（但還不是 deadl
   cap('avoidance：事前看 worst case 會不會 unsafe', '沒有 safe sequence → 這個 state 是 unsafe → 必須擋掉');
   await step(tok); // @1437.5 注意：做完加回去的是目前 hold 的，不是 Max
   T.R.forEach((r) => r.held.forEach((m) => glow(m, GOLD)));
-  hot('做完 free 的 = 目前 hold 的數量（不是 Max）', 0, 3.8, -2.8);
+  gone(scan); hot('做完 free 的 = 目前 hold 的數量（不是 Max）', 0, 3.8, -2.8);
   cap('大家每次都搞混：Max 是最多會用的量', '做完 free 掉時，加回去的是「目前 hold」的數量，不是 Max');
 }]);
 
@@ -1926,7 +1926,7 @@ FRAG.push(['dl-c-req1', 'Request：P1 再要 (1, 0, 2) → 假設給，仍然 sa
   B.clearHl(); w = avail0(T);
   cap('改成 (3,0,2) 後，再跑一次 safety', '看找不找得到');
   await step(tok); // @1812.6 找不到 → 不能同意
-  bad('找不到 → 不能同意（可能 deadlock）', -3.6, 0.3, 1.2);
+  const no1 = bad('找不到 → 不能同意（可能 deadlock）', -3.6, 0.3, 1.2);
   cap('如果找不到 safe sequence', '這個 assignment 就不能同意，因為有可能 deadlock');
   await step(tok); // @1820.5 這例找得到：P1、P3
   const nT = needOf(T);
@@ -1941,7 +1941,7 @@ FRAG.push(['dl-c-req1', 'Request：P1 再要 (1, 0, 2) → 假設給，仍然 sa
   cap('P4 → (7,4,5)、P0 → (7,5,5)、P2 → (10,5,7)', 'safe sequence < P1, P3, P4, P0, P2 >');
   await step(tok); // @1834.6 可以 accept
   B.fin.forEach((f) => glow(f, GREEN));
-  good('✓ 同意 P1 的 request', -3.6, 0.3, 1.2);
+  gone(no1); good('✓ 同意 P1 的 request', -3.6, 0.3, 1.2);
   cap('所以這個 assignment 可以 accept', '同意之後，未來任何狀況發生都還有解，不會 deadlock');
 }]);
 
@@ -2066,7 +2066,7 @@ FRAG.push(['dl-d-multi', 'Multiple instance：detection algorithm（Allocation �
   cap('能滿足的，就讓它把 Allocation 的 resource free 掉', 'P0 要 (0,0,0) → 做完，Available 變 (0,1,0)');
   await step(tok); // @253.5 不需要 Max 的原因
   B.clearHl();
-  note('Need = Max − Allocation 是「假設」最多要多少；Request 是「已經 given」的', -1.5, 0.5, 1.2);
+  const nm = note('Need = Max − Allocation 是「假設」最多要多少；Request 是「已經 given」的', -1.5, 0.5, 1.2);
   cap('為什麼不用 Max？Need 只是假設最多要多少', '這裡的 Request 是 given：現在就是要這麼多才能執行');
   await step(tok); // @271.3 直接用 Available 檢查 Request
   judge(B, 'Request', 1, S.req[1], w); await wt(tok, 350);
@@ -2080,7 +2080,7 @@ FRAG.push(['dl-d-multi', 'Multiple instance：detection algorithm（Allocation �
   cap('有達到就 free，沒達到就等在那裡', 'P4 (0,0,2) → (5,2,6)；回頭 P1 (2,0,2) → (7,2,6)');
   await step(tok); // @280.7 找到 → 沒有 deadlock
   B.fin.forEach((f) => glow(f, GREEN));
-  good('全部 Finish = true → 現在沒有 deadlock', -3.4, 0.3, 1.2);
+  gone(nm); good('全部 Finish = true → 現在沒有 deadlock', -3.4, 0.3, 1.2);
   cap('全部都能做完 → 目前不可能有 deadlock', '找不到的話，就代表偵測到了 → 看怎麼做 recovery');
 }]);
 
@@ -2090,7 +2090,7 @@ FRAG.push(['dl-d-more', 'P2 再多要一個 C → 系統已經 deadlock', async 
   let B = null;
   await step(tok); // @297.5 原來的例子 OK
   B = board(S, { groups: [['Allocation', S.alloc, '#4b9ee2'], ['Request', S.req, '#dd8238']] }); B.pushWork(avail0(S), 'Available');
-  good('原來的例子：沒有 deadlock', 0, 6.1);
+  const ok0 = good('原來的例子：沒有 deadlock', 0, 6.1);
   cap('一樣的例子：原來是 OK 的', '');
   await step(tok); // @302.3 P2 的 Request 多一個
   S.req[2] = [0, 0, 1];
@@ -2103,7 +2103,7 @@ FRAG.push(['dl-d-more', 'P2 再多要一個 C → 系統已經 deadlock', async 
   cap('沒有 avoidance 的機制 → 程式要，系統就同意', '跑 detection：P0 做完 → (0,1,0)，剩下的 Request 都不夠');
   await step(tok); // @318.0 已呈現 deadlock
   r.dead.forEach((i) => { B.hlRow('Allocation', i, RED); B.hlRow('Request', i, RED); });
-  bad('P1、P2、P3、P4 → deadlock', 0, 6.1);
+  gone(ok0); bad('P1、P2、P3、P4 → deadlock', 0, 6.1);
   cap('改了之後，系統已經呈現 deadlock 的狀態', 'Finish 仍是 false 的 P1～P4 就是卡住的 process');
   await step(tok); // @327.3 OS 要 detect：卡住的是 user program
   note('OS 還能跑：它要知道程式不跑的原因 → counting、checking', -1.5, 0.5, 1.2);
@@ -2119,7 +2119,7 @@ FRAG.push(['dl-d-recover', 'Recovery：kill process、選 victim、rollback、st
   O = [pal('P5', PCOL[4], 4.4, 0, -1.4, 0.6), pal('P6', PCOL[5], 4.4, 0, 1.4, 0.6)];
   for (let k = 0; k < N; k++) { const [x1, z1] = pp(k, 2.2), [x2, z2] = pp(k + 1, 2.2); pipe(V3(x1, 0.8, z1), V3(x2, 0.8, z2), '#d64545', 0.6, 0.6); }
   B.forEach((b) => { b.glow(RED); b.mood('sad'); });
-  hd('偵測到 deadlock（示意：P1～P4 繞成圈）', 0, 4.4);
+  const dd = hd('偵測到 deadlock（示意：P1～P4 繞成圈）', 0, 4.4);
   cap('知道怎麼 detect 之後，麻煩的是 recovery', '有幾種 solution');
   await step(tok); // @360.6 最暴力：全部 kill（= reboot）
   const all = bad('① 全部 kill 掉 ＝ reboot', 0, 3.6);
@@ -2134,10 +2134,10 @@ FRAG.push(['dl-d-recover', 'Recovery：kill process、選 victim、rollback、st
   cap('不要那麼暴力：one at a time', '先砍一個，看能不能解套；不行再繼續砍');
   await step(tok); // @420.3 誰先砍？priority 最低不一定能解
   B[2].g.scale.setScalar(0.75);
-  bub('priority 最低（示意）', pp(2, 2.2)[0], 1.7, pp(2, 2.2)[1]);
+  const lowP = bub('priority 最低（示意）', pp(2, 2.2)[0], 1.7, pp(2, 2.2)[1]);
   cap('問題：到底誰要先被砍？', '砍 priority 最低的不一定能解 —— 它拿的 resource 可能很少');
   await step(tok); // @437.0 砍到最後反而砍更多 → case by case
-  note('從 priority 低的一路砍，最後可能砍得更多 → 需要 user program 的資訊，case by case', 0, 3.6, 2.6);
+  gone(lowP); note('從 priority 低的一路砍，最後可能砍得更多 → 需要 user program 的資訊，case by case', 0, 3.6, 2.6);
   cap('從 priority 低的一直砍，最後砍掉的反而更多', '怎麼做最好要很多 user program 的資訊，case by case');
   await step(tok); // @466.0 選 victim；preemption + rollback（checkpoint）
   lab.world.children.filter((o) => o.element && (o.element.className.includes('note') || o.element.className.includes('say'))).forEach((o) => kill(o));
@@ -2153,7 +2153,7 @@ FRAG.push(['dl-d-recover', 'Recovery：kill process、選 victim、rollback、st
   B[2].mood('sad'); bad('同一個一直被砍 → starvation', 2.6, 3.0, 2.6);
   cap('會不會老是砍同一個？很有可能', '那個程式就永遠跑不完 → starvation');
   await step(tok); // @518.3 不 cover 太多：avoid / prevent 或 ignore
-  hot('多半：avoid 或 prevent，不然就 ignore', 0, 4.4);
+  gone(dd); hot('多半：avoid 或 prevent，不然就 ignore', 0, 4.4);
   cap('recovery 很多是 case by case，這裡不多講', '要嘛 avoid、prevent，要嘛 ignore 讓使用者自己解決');
 }]);
 
@@ -2192,7 +2192,7 @@ FRAG.push(['dl-e-bridge', '單線橋：兩台車誰都不退', async (tok) => {
   bub('我不退', -2.2, 1.6, 0); bub('我也不退', 2.2, 1.6, 0);
   cap('只有一台退後，另一台才能過', '如果兩台都決定不退 → deadlock，誰都過不去');
   await step(tok); // @126.7 一個 resource、兩個 process 都在要
-  hot('橋 = resource；兩台車 = 兩個 process', 0, 2.6, 1.6);
+  hot('橋 = resource；兩台車 = 兩個 process', 0, 0.2, 2.4);
   cap('對應回 OS：橋是一個 resource', '兩個 process 都在 request 它 → deadlock 的情境');
 }]);
 
@@ -2244,7 +2244,7 @@ FRAG.push(['dl-e-four', '四個必要條件（同時成立）', async (tok) => {
   await step(tok); // @345.7 mutual exclusion：一次一個 process
   on(0);
   a = pal('P1', PCOL[0], -2.6, 0, 1.2, 0.7); b = pal('P2', PCOL[1], 2.6, 0, 1.2, 0.7);
-  r1 = bx('R', RCOL[0], 0, 0.3, -0.6, 1.0, 0.6, 0.8); put(r1, -2.6, 1.15, 1.2); b.mood('sad');
+  r1 = bx('R', RCOL[0], 0, 0.3, -0.6, 1.0, 0.6, 0.8); put(r1, -4.0, 0.3, 1.2); b.mood('sad');
   cap('① Mutual exclusion', '一次只有一個 process 能使用這個 resource');
   await step(tok); // @365.6 不能 shared mode
   bub('不能 share：只能等', 2.6, 1.8, 1.2);
@@ -2252,7 +2252,7 @@ FRAG.push(['dl-e-four', '四個必要條件（同時成立）', async (tok) => {
   await step(tok); // @378.2 hold and wait
   on(1);
   lab.world.children.filter((o) => o.element && o.element.className.includes('say')).forEach((o) => kill(o));
-  r2 = bx('R2', RCOL[1], 2.6, 1.15, 1.2, 1.0, 0.6, 0.8); P.relabel(r1, 'R1');
+  r2 = bx('R2', RCOL[1], 4.0, 0.3, 1.2, 1.0, 0.6, 0.8); P.relabel(r1, 'R1');
   pipe(V3(-2.0, 0.6, 1.2), V3(2.0, 0.6, 1.2), '#d64545', 0.1, 0.1);
   bub('hold R1，wait R2', -2.6, 2.2, 1.2);
   cap('② Hold and wait', 'process 至少 hold 一個 resource，同時在等另一個');
@@ -2419,7 +2419,7 @@ FRAG.push(['dl-f-tables', '題目：5 個 process、A/B/C、Allocation、Max', a
   const ty = idx('A = CPU、B = memory、C = printer（instance = 個數）', -1.5, 0.5, 1.2);
   cap('3 種不同 type 的 resource', 'A 可以想成 CPU、B 是 memory、C 是 printer');
   await step(tok); // @178.1 A 10、B 5、C 7
-  hot('Total：A 10、B 5、C 7', 3.6, 6.1);
+  hot('Total：A 10、B 5、C 7', 3.6, 6.8);
   cap('系統裡 A 有 10 個、B 5 個、C 7 個', '10 個 CPU、5 個 memory、7 個 printer');
   await step(tok); // @195.7 Allocation：已經配給的
   B.cellsOf('Allocation').forEach((r, i) => B.hlRow('Allocation', i, GOLD));
@@ -2457,7 +2457,7 @@ FRAG.push(['dl-f-safe', 'Safe 與 unsafe（影片的簡化說法）', async (tok
   await step(tok); // @357.6 safe = 不會；unsafe = 會（簡化）
   zone('safe', -2.6, 0.02, 0.6, 4.6, 5.0, '#cfe8d6'); zone('unsafe', 2.6, 0.02, 0.6, 4.6, 5.0, '#f3dcc0');
   zone('deadlock', 3.0, 0.06, 1.4, 2.6, 2.4, '#f2b8b0');
-  good('safe：不會 deadlock', -2.6, 0.8, 0.6); note('影片：unsafe = 會 deadlock（其實是「可能」）', 2.6, 0.8, -1.4);
+  good('safe：不會 deadlock', -2.6, 0.8, 0.6); note('影片：unsafe = 會 deadlock（其實是「可能」）', 3.6, 0.6, 2.4);
   cap('用 safe / unsafe 回答：safe 不會 deadlock', '影片說 unsafe 會 deadlock —— 精確說是「可能」');
   await step(tok); // @377.6 不會 deadlock → 寫 safe sequence
   ['P?', 'P?', 'P?', 'P?', 'P?'].forEach((t, k) => bx(t, PCOL[k], -4.4 + k * 1.0, 0.3, -1.2, 0.8, 0.5, 0.7));
@@ -2560,7 +2560,7 @@ FRAG.push(['dl-f-safety', 'Safety check：P2 → P4 → P5 → P1 → P3', async
   cap('P1 要 A 7 個，只有 3；B 要 4，只有 3；C 要 3，只有 2', '不能 fulfill → P1 先不放進 sequence');
   await step(tok); // @749.9 下一個 P2；若全部都不行 → deadlock
   B.clearHl();
-  note('如果所有 process 都 fulfill 不了 → deadlock（unsafe）', -1.5, 0.5, 1.2);
+  const allNo = note('如果所有 process 都 fulfill 不了 → deadlock（unsafe）', -1.5, 0.5, 1.2);
   cap('接著檢查 P2', '如果每個 process 的 need 都無法 fulfill，就會 deadlock');
   await step(tok); // @765.2 P2：1 ≤ 3、2 ≤ 3、2 ≤ 2 → 可以
   judge(B, 'Need', 1, need[1], w);
@@ -2591,7 +2591,7 @@ FRAG.push(['dl-f-safety', 'Safety check：P2 → P4 → P5 → P1 → P3', async
   cap('P4：A 要 2 有 5、B 要 1 有 3、C 要 1 有 2', 'yes → 下一個成功執行的是 P4');
   await step(tok); // @1040.4 規則：remaining need ≤ current availability（每一種）
   B.clearHl();
-  note('規則：每一種 resource 都要 remaining need ≤ current availability', -1.5, 0.5, 1.2);
+  gone(allNo); note('規則：每一種 resource 都要 remaining need ≤ current availability', -1.5, 0.5, 1.2);
   cap('規則：need ≤ current availability', '對所有 resource 都成立，才能 provide');
   await step(tok); // @1083.5 P4 terminate → +(2,1,1) = (7,4,3)
   B.setFinish(3, true); w = add(w, S.alloc[3]); await B.release(tok, 3, w, '+P4', 800);
@@ -2635,7 +2635,7 @@ FRAG.push(['dl-f-limits', 'Safe sequence 不唯一；Banker 的限制', async (t
   row = order.map((p, k) => bx(p, PCOL[Number(p[1]) - 1], -4.4 + k * 2.2, 0.35, -1.2, 1.6, 0.6, 0.9));
   const alt = ['P2', 'P4', 'P3', 'P5', 'P1'].map((p, k) => bx(p, PCOL[Number(p[1]) - 1], -4.4 + k * 2.2, 0.35, 1.0, 1.6, 0.6, 0.9, 2));
   glow(alt[2], GOLD);
-  idx('也可以：P2 → P4 → P3 → …（P4 之後 Work (7,4,3) ≥ P3 的 (6,0,0)）', 0, 1.3, 2.2);
+  idx('也可以：P2 → P4 → P3 → …（P4 之後 Work (7,4,3) ≥ P3 的 (6,0,0)）', 0, -0.4, 2.2);
   cap('第一：safe sequence 不是唯一的', '例如 P3 也可以排更前面');
   await step(tok); // @1329.0 考題可能問某個 sequence
   note('考題可能給一個 sequence 問你對不對 → 每一步都驗算', 0, 3.4);

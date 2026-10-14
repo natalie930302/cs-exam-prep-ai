@@ -377,7 +377,7 @@ export default function (ctx) {
     const pkt = o.pkt = cube('(' + s + ', ' + d + ')', S.c, [1.4, 0.45, 0.6], -5.4, 1.2, 0.6);
     if (speak) say('logical address = (segment ' + s + ', offset ' + d + ')', '先用 s 查 segment table');
     await wait(tok, 1100);
-    move(pkt, -1.3, 5.5 - s * 0.62 + 0.5, 0.6); glow(row.l, GOLD); glow(row.b, GOLD);
+    move(pkt, 1.2, 5.5 - s * 0.62, 0.6); glow(row.l, GOLD); glow(row.b, GOLD);
     await wait(tok, 1100);
     if (d >= S.limit) {
       tint(pkt, RED); relabel(pkt, 'trap'); glow(row.l, BADR);
@@ -566,7 +566,7 @@ export default function (ctx) {
     [[0, 256000, 'OS', DARK], [256000, 300040, 'process', SAND], [300040, 420940, 'process', BLUE], [420940, 880000, 'process', SAND], [880000, 1024000, '', '#f6efe2']].forEach(([a, b, n, c]) => {
       const h = Y(a) - Y(b); cube(n, c, [2.4, h - 0.04, 1.1], 3.6, (Y(a) + Y(b)) / 2);
     });
-    [0, 256000, 300040, 420940, 880000, 1024000].forEach((a) => tag(String(a), 'idx', 5.6, Y(a)));
+    [0, 256000, 300040, 420940, 880000, 1024000].forEach((a, i) => tag(String(a), 'idx', 5.6 + (i % 2) * 1.3, Y(a)));
     const base = cube('base 300040', ORANGE, [2.2, 0.55, 0.8], -2.6, 6.0), lim = cube('limit 120900', PURPLE, [2.2, 0.55, 0.8], 0.2, 6.0);
     const g1 = ghost('#c08a1f', 0.25, 2.0, 1.4, -2.6, 2.0, 0, 0.35), g2 = ghost('#9b7ef4', 0.25, 2.0, 1.4, 0.2, 2.0, 0, 0.35);
     tag('a ≥ base ?', 'idx', -2.6, 3.3); tag('a < base + limit ?', 'idx', 0.2, 3.3);
@@ -592,7 +592,7 @@ export default function (ctx) {
         say(a + ' 不小於 420940 → trap', '上界是「<」：等於也不合法'); await beat(tok, 2400);
         fly(m); g2.material.color.set('#9b7ef4'); continue;
       }
-      tint(m, GREEN); move(m, 3.6, Y(a), 0.7);
+      tint(m, GREEN); move(m, 1.6, Y(a), 0.7);
       say('兩關都過：去 memory 讀 ' + a, '300040 ≤ 350000 < 420940');
       await beat(tok, 2200);
     }
@@ -834,7 +834,7 @@ export default function (ctx) {
     tag('physical memory', 'ptr', 4.4, 6.9);
     const t1 = cube('P1 的 page table', BLUE, [2.6, 0.9, 1.0], 4.4, 5.4), t2 = cube('P2 的 page table', PURPLE, [2.6, 0.9, 1.0], 4.4, 2.6);
     cube('…', '#f6efe2', [2.6, 0.9, 1.0], 4.4, 4.0); cube('…', '#f6efe2', [2.6, 0.9, 1.0], 4.4, 1.2);
-    tag('0x5000（例）', 'idx', 6.4, 5.4); tag('0x9000（例）', 'idx', 6.4, 2.6);
+    tag('0x5000（例）', 'idx', 4.4, 4.75); tag('0x9000（例）', 'idx', 4.4, 1.95);
     ghost(RED, 2.6, 2.0, 1.6, 0, 3.6, 0, 0.08); tag('MMU（hardware）', 'ptr', 0, 4.9);
     const reg = cube('PTBR = 0x5000', ORANGE, [2.2, 0.55, 0.8], 0, 3.4);
     let ln = line(1.1, 3.4, 3.1, 5.4, 0.2, BLUE);
@@ -872,16 +872,16 @@ export default function (ctx) {
     await beat(tok, 2200);
     const pk = cube('(p, d)', ORANGE, [1.0, 0.45, 0.6], -5.4, 2.4, 0.7);
     move(pk, -1.8, 2.4, 0.7); await beat(tok, 900);
-    move(pk, 3.8, 4.8, 0.8); glow(pt, GOLD); txt(cnt, 'memory access：1 次');
+    move(pk, 3.8, 5.55, 0.8); glow(pt, GOLD); txt(cnt, 'memory access：1 次');
     say('第 1 次：先讀 page table', '查出 frame number');
     await beat(tok, 1900);
     relabel(pk, '(f, d)'); tint(pk, GREEN); move(pk, -1.8, 2.4, 0.7); glow(pt, null);
     await beat(tok, 1000);
-    move(pk, 3.8, 1.6, 0.8); glow(da, OKG); txt(cnt, 'memory access：2 次');
+    move(pk, 3.8, 2.35, 0.8); glow(da, OKG); txt(cnt, 'memory access：2 次');
     say('第 2 次：才真的讀到資料', '一次 read 變兩次 memory access');
     await beat(tok, 2200);
-    const bar = cube('', BLUE, [1.2, 1, 1.2], -4.4, 0.5, 2.5); bar.scale.y = 4; bar.position.y = 2;
-    const bl = tag('100 GB/s', 'ptr', -4.4, 4.5, 2.5);
+    const bar = cube('', BLUE, [1.2, 1, 1.2], 0.8, 0.5, 2.5); bar.scale.y = 4; bar.position.y = 2;
+    const bl = tag('100 GB/s', 'ptr', 0.8, 4.5, 2.5);
     say('access time 變兩倍', '花錢買 100 GB/s，只剩 50 GB/s 的效果');
     await anim(tok, 800, (t) => { const h = 4 - 2 * t; bar.scale.y = h; bar.position.y = h / 2; bl.position.y = h + 0.5; });
     txt(bl, '50 GB/s'); tint(bar, RED);
@@ -1075,7 +1075,7 @@ export default function (ctx) {
     say('page number 20 bits 再切成 p1 | p2', '每段 10 bits：一張 table 1024 筆 × 4 B = 剛好一個 page');
     await beat(tok, 3200);
     tag('outer page table', 'ptr', -4.4, 5.3);
-    const outer = ['0', '1', '2', '…', '1023'].map((t, i) => { tag(t, 'idx', -5.6, 4.6 - i * 0.6); return cube(i === 3 ? '' : i === 4 ? 'null' : '→ 內層 #' + i, i === 4 ? GRAY : SAND, [1.8, 0.45, 0.7], -4.4, 4.6 - i * 0.6); });
+    const outer = ['0', '1', '2', '…', '1023'].map((t, i) => { tag(t, 'idx', -6.0, 4.6 - i * 0.6); return cube(i === 3 ? '' : i === 4 ? 'null' : '→ 內層 #' + i, i === 4 ? GRAY : SAND, [1.8, 0.45, 0.7], -4.4, 4.6 - i * 0.6); });
     tag('inner page tables', 'ptr', 0, 5.3);
     const inner = [0, 1, 2].map((k) => cube('內層 #' + k, '#cfe6f7', [1.9, 0.5, 0.7], 0, 4.6 - k * 1.3));
     const innerRows = ['0', '1', '2', '3'].map((t, i) => cube(i === 3 ? 'f 12' : 'f ' + [5, 9, 2][i], SAND, [1.3, 0.38, 0.6], 2.5, 3.7 - i * 0.5));
@@ -1172,13 +1172,13 @@ export default function (ctx) {
     for (let k = 0; k < 3; k++) {
       const pid = procs[k], y = 5.8 - k * 2.0, pt = PTs[pid];
       tag(pid, 'ptr', -6.3, y);
-      const pages = [...names, 'data ' + (k + 1)].map((n, i) => cube(n, i < 3 ? ORANGE : PC[pid], [1.0, 0.45, 0.6], -5.0 + (i % 2) * 1.1, y - Math.floor(i / 2) * 0.55));
-      tag('table ' + pt.join(' '), 'idx', -2.0, y - 0.25);
+      const pages = [...names, 'data ' + (k + 1)].map((n, i) => cube(n, i < 3 ? ORANGE : PC[pid], [1.2, 0.45, 0.6], -5.0 + (i % 2) * 1.4, y - Math.floor(i / 2) * 0.55));
+      tag('table ' + pt.join(' '), 'idx', -1.4, y - 0.25);
       say(pid + ' 執行編輯器 ed', 'page table：' + pt.join('、'));
       await beat(tok, 1400);
       for (let i = 0; i < 4; i++) {
         const f = pt[i];
-        line(-4.4 + (i % 2) * 1.1, y - Math.floor(i / 2) * 0.55, 2.9, fy(f), 0, i < 3 ? '#dd8238' : '#8fb7e0');
+        line(-4.4 + (i % 2) * 1.4, y - Math.floor(i / 2) * 0.55, 2.9, fy(f), 0, i < 3 ? '#dd8238' : '#8fb7e0');
         if (!placed[f]) { placed[f] = cube(i < 3 ? names[i] : 'data ' + (k + 1), i < 3 ? ORANGE : PC[pid], [1.6, 0.5, 0.6], 3.8, fy(f), 0, 2.5); }
         else glow(placed[f], GOLD);
         glow(pages[i], GOLD);
@@ -1306,8 +1306,8 @@ function tbl(x, yTop, vals, o = {}) {
   const dy = o.dy || 0.56, w = o.w || 1.2, c = o.c || MC.sand;
   const cells = vals.map((v, i) => bx(String(v), Array.isArray(c) ? c[i] : c, x, yTop - i * dy, 0, w, dy - 0.08, 0.7));
   const idx = o.noIdx ? [] : vals.map((v, i) => sm(o.idx ? o.idx[i] : String(i), x - w / 2 - 0.35, yTop - i * dy));
-  if (o.title) hd(o.title, x, yTop + 0.6);
-  return { cells, idx, y: (i) => yTop - i * dy };
+  const title = o.title ? hd(o.title, x, yTop + 0.6) : null;
+  return { cells, idx, title, y: (i) => yTop - i * dy };
 }
 // a row of bit cubes
 function bits(s, x, y, colorAt, size = 0.42) {
@@ -1440,11 +1440,11 @@ scene('mem-10a-steps', 'Address binding 的三個時間點', CAMW, [
   },
   async (tok, S) => {                                   // 551 static loading vs dynamic loading（run time）
     glow(S.st[1], null); glow(S.st[2], HL); sm('static loading：load time', 2.8, 2.9);
-    await wt(tok, 300); glow(S.st[3], HL); sm('dynamic loading：run time', 5.3, 2.9);
+    await wt(tok, 300); glow(S.st[3], HL); sm('dynamic loading：run time', 5.3, 3.6);
     cap('static loading 在 load time', 'dynamic loading：執行時才 load 進 memory');
   },
   async (tok, S) => {                                   // 569 dynamic linking 也是 run time
-    sm('dynamic linking：run time', 5.3, 3.5); glow(S.st[2], null);
+    sm('dynamic linking：run time', 5.3, 4.3); glow(S.st[2], null);
     cap('dynamic linking 也是 run time', '這四個名詞之後分別解釋');
   },
 ]);
@@ -1474,7 +1474,7 @@ scene('mem-10a-compile', 'Compile-time binding：absolute code', CAMW, [
     cap('compile 時寫 0x1000', '假設程式執行時會被放到 0x1000');
   },
   async (tok, S) => {                                   // 725 CPU 一行一行讀，位置一樣 → 正確
-    S.bin.hl(0); sm('data 在 0x1000 + 0x18 = 0x1018', 3.6, 3.6);
+    S.bin.hl(0); S.dl = sm('data 在 0x1000 + 0x18 = 0x1018', 3.6, 3.6);
     cap('CPU 只是一行一行讀', '看到什麼位置就去哪讀：擺的位置一樣，就讀得對');
   },
   async (tok, S) => {                                   // 740 compile-time address binding
@@ -1490,7 +1490,7 @@ scene('mem-10a-compile', 'Compile-time binding：absolute code', CAMW, [
     cap('好處非常簡單', 'CPU 要的位置就在那裡，run time 很快');
   },
   async (tok, S) => {                                   // 828 缺點：一搬動就完了（0x1000 → 0x2000）
-    await slide(tok, S.prog, 3.6, 2.9, 0.1, 700); sm('搬到 0x2000', 5.5, 2.9);
+    gone(S.dl); await slide(tok, S.prog, 3.6, 2.9, 0.1, 700); sm('搬到 0x2000', 5.5, 2.9);
     S.bin.ls.forEach((l) => { l.element.className = 'lab-label bad'; });
     cap('缺點：在 memory 裡一搬動就完了', '位置寫死在 code 裡：還在讀 0x1018');
   },
@@ -1563,7 +1563,7 @@ scene('mem-10a-exec', 'Execution-time binding：MMU 在送出前才翻譯', CAMW
   },
   async (tok, S) => {                                   // 1303 同樣例子：compile、load 都沒差別
     S.code = code(['LOAD  0x18', 'ADD   1', 'STORE 0x18'], -5.0, 5.8);
-    sm('compile 後：0x18', -5.0, 4.4); sm('load 後：還是 0x18', -5.0, 3.9);
+    sm('compile 後：0x18', -5.0, 4.0); sm('load 後：還是 0x18', -5.0, 3.4);
     cap('同樣的例子', 'compile 和 load 都沒改：都是相對位置');
   },
   async (tok, S) => {                                   // 1318 0x18：從程式開頭算起
@@ -1573,7 +1573,7 @@ scene('mem-10a-exec', 'Execution-time binding：MMU 在送出前才翻譯', CAMW
     cap('0x18：相對於程式開頭', 'loader 什麼都不動，直接放 0x18');
   },
   async (tok, S) => {                                   // 1356 memory 裡的位址跟實際位置不一樣
-    hot('instruction 寫 0x18', 4.6, 3.2, 0.6);
+    hot('instruction 寫 0x18', 4.6, 3.75, 0.6);
     cap('重點：位址跟實際位置居然不一樣', '前兩種放進 memory 前一定要 match');
   },
   async (tok, S) => {                                   // 1379 實際應該是 0x2018
@@ -1581,7 +1581,7 @@ scene('mem-10a-exec', 'Execution-time binding：MMU 在送出前才翻譯', CAMW
     cap('實際位置應該是 0x2018', 'instruction 裡放的還是 0x18');
   },
   async (tok, S) => {                                   // 1394 virtual address vs physical
-    hd('0x18：virtual address（假的）', -3.0, 2.6); hd('0x2018：physical address（真的）', -3.0, 2.0);
+    S.vp = [hd('0x18：virtual address（假的）', -3.0, 2.6), hd('0x2018：physical address（真的）', -3.0, 2.0)];
     cap('0x18 叫 virtual address', '0x2018 才是 physical address');
   },
   async (tok, S) => {                                   // 1421 為什麼 work：MMU
@@ -1604,7 +1604,7 @@ scene('mem-10a-exec', 'Execution-time binding：MMU 在送出前才翻譯', CAMW
     cap('它是 OS 的一部分', '但存取太頻繁，真的實作是 hardware logic');
   },
   async (tok, S) => {                                   // 1545 CPU 送 logical 346
-    gone(S.code.ls); S.code = null;
+    gone(S.code.ls, S.vp); S.code = null;
     S.pk = pkt('346', MC.orange, -5.4, 1.5);
     cap('run time 實際發生什麼？', 'CPU 送出 logical address，例如 346');
   },
@@ -1694,11 +1694,11 @@ scene('mem-10b-why', 'Dynamic loading：用到才 load', CAMW, [
     cap('程式常 allocate 一大堆卻不用', '例：多打了幾個 0，array 開 1 萬個');
   },
   async (tok, S) => {                                   // 124 浪費
-    tint(S.blocks[4], MC.red); bad('load time 就佔住 → 浪費', 3.6, 3.7);
+    tint(S.blocks[4], MC.red); S.bd = bad('load time 就佔住 → 浪費', 3.6, 3.7);
     cap('load time 就得把空間佔住', '浪費很多根本用不到的 memory');
   },
   async (tok, S) => {                                   // 138 dynamic loading：真的要用才 load
-    gone(S.blocks); S.blocks = [];
+    gone(S.blocks, S.bd); S.blocks = [];
     S.m = bx('main', MC.blue, 1.8, 0.4, 0, 1.4, 0.7, 1.0);
     good('dynamic loading：用到的時候才 load', 3.6, 3.7);
     cap('解法：dynamic loading', '發現你真的要用，才 load 進 memory');
@@ -1708,7 +1708,7 @@ scene('mem-10b-why', 'Dynamic loading：用到才 load', CAMW, [
     cap('variable 太底層不好管', 'OS 做的是 routine level：以 function code 為單位');
   },
   async (tok, S) => {                                   // 192 call 到才 load，沒 call 就不存在
-    S.f = pkt('f1()', MC.green, -5.6, 1.4); await slide(tok, S.f, 3.4, 0.4, 0, 800);
+    S.f = pkt('f1()', MC.green, -5.6, 2.6); await slide(tok, S.f, 3.4, 0.4, 0, 800);
     cap('call 到這個 function 才 load', '沒 call，它在 memory 裡就不存在');
   },
   async (tok, S) => {                                   // 237 很多 routine 從來沒用到
@@ -1744,7 +1744,7 @@ scene('mem-10b-dl', 'Dynamic loading 怎麼用：dlopen、dlsym', CAMW, [
     cap('C 的例子', 'include dynamic function 的 header：dlfcn.h');
   },
   async (tok, S) => {                                   // 400 先把 function compile 成 library
-    S.lib = bx('library（libm.so）', MC.pink, 4.8, 1.0, 0, 2.6, 0.8, 1.0); prop('disk', 4.8, 0, -1.6, 0.8);
+    S.lib = bx('library（libm.so）', MC.pink, 4.8, 0.4, 0, 2.6, 0.8, 1.0); prop('disk', 4.8, 0, -1.6, 0.8);
     cap('先把要 dynamic loading 的 function', '自己 compile 成一個 library（不需要 main）');
   },
   async (tok, S) => {                                   // 449 define 一個 cosine function pointer
@@ -1756,11 +1756,11 @@ scene('mem-10b-dl', 'Dynamic loading 怎麼用：dlopen、dlsym', CAMW, [
     cap('dlopen：把 library 開啟、註冊', '裡面的 function 是 run time 才 access 的');
   },
   async (tok, S) => {                                   // 486 cos 是 library 裡的那個 function
-    S.c.hl(3); glow(S.lib, null); sm('cosine ↔ library 裡的 cos', 4.8, 2.0);
+    S.c.hl(3); glow(S.lib, null); S.cs = sm('cosine ↔ library 裡的 cos', 4.8, 1.5);
     cap('run time 做 binding', 'cosine 對到 dynamic library 裡的 cos');
   },
   async (tok, S) => {                                   // 515 load 程式時不 load；call 到才從 disk load
-    S.c.hl(4); S.k = pkt('cos 的 code', MC.pink, 4.8, 1.0, 0.7, 1.6);
+    S.c.hl(4); S.k = pkt('cos 的 code', MC.pink, 4.8, 0.4, 0.7, 1.6);
     await slide(tok, S.k, 0.6, -0.2, 1.4, 800);
     cap('程式 load 時 cos 不在 memory', 'call 這一行時，才從 disk 的 library load 進來');
   },
@@ -1769,19 +1769,19 @@ scene('mem-10b-dl', 'Dynamic loading 怎麼用：dlopen、dlsym', CAMW, [
     cap('用完 dlclose 關掉', '用 dynamic loading 就這幾行');
   },
   async (tok, S) => {                                   // 555 好處：省 memory，也讓 programmer 有彈性
-    S.c.hl(-1); good('省 memory', -5.4, 3.0); good('programmer 有彈性', -3.4, 3.0);
+    gone(S.cs); S.c.hl(-1); S.gd = [good('省 memory', -5.0, 3.05), good('programmer 有彈性', -5.0, 2.3)];
     cap('好處：解決 memory 浪費', '對 programmer 也很有彈性');
   },
   async (tok, S) => {                                   // 576 run time 決定 bind 到 cos 或 cos double
-    sm('run time 決定：cos？還是更精準的 cos double？', 0.6, 2.5);
+    S.rt = sm('run time 決定：cos？還是更精準的 cos double？', 1.9, 2.3);
     cap('runtime 才決定 bind 到誰', '不同系統 support 的 function 不同');
   },
   async (tok, S) => {                                   // 608 現在多半為了 runtime 決定 function
-    S.me.mood('happy'); note('現在多為了：runtime 決定 call 哪個 function', 0.6, 3.2);
+    S.me.mood('happy'); S.nt = note('現在多為了：runtime 決定 call 哪個 function', 0.6, 1.55);
     cap('現在 programmer 用它', '多半不是為了省 memory，而是 runtime 決定 function');
   },
   async (tok, S) => {                                   // 633 圖：程式有 A、B、C 三個 function
-    gone(S.c.ls, S.k, S.os, S.me);
+    gone(S.c.ls, S.k, S.os, S.me, S.gd, S.rt, S.nt);
     hd('disk image', -4.6, 5.2); S.img = ['main', 'A', 'B', 'C'].map((n, i) => bx(n, i ? MC.green : MC.blue, -4.6, 4.4 - i * 0.8, 0, 1.6, 0.6, 0.8));
     hd('memory', 1.6, 5.2);
     cap('簡單的圖示', '程式 define 了三個 function（disk image）');
@@ -1829,11 +1829,11 @@ scene('mem-10b-link', 'Linking：每個程式都 link 一份 C library', CAMW, [
 scene('mem-10c-swapper', 'Loader 跟 swapper 不一樣', CAMW, [
   async (tok, S) => {                                   // 2 同學問：load time binding 是 disk image → memory
     S.disk = prop('disk', -5.4, 0, 0, 1.2, 'disk'); hd('memory', 4.2, 4.4); zone('', 4.2, 0, 0, 4.4, 3.0);
-    S.img = pkt('disk image', MC.gray, -5.4, 1.6, 0.6, 1.6);
+    S.img = pkt('disk image', MC.gray, -5.4, 2.3, 0.6, 1.6);
     cap('同學的問題', 'load time binding：從 disk image load 到 memory 時做');
   },
   async (tok, S) => {                                   // 50 run time：swapping 從 disk 搬回再設 address
-    S.sw = pkt('memory content', MC.orange, -5.4, 2.4, 0.6, 1.8);
+    S.sw = pkt('memory content', MC.orange, -5.4, 3.1, 0.6, 1.8);
     cap('run time 的情況', 'swapping 把 content 從 disk 搬回來，再設 address');
   },
   async (tok, S) => {                                   // 68 相同點：都是 disk → memory
@@ -1969,11 +1969,11 @@ scene('mem-10c-stub', '怎麼實作：dynamic library 與 stub', CAMW, [
     cap('static：全部綁在一起', '變一包丟給 loader，code 全在 binary 裡');
   },
   async (tok, S) => {                                   // 519 dynamic：library 先 compile 成 dynamic，binary 比較小
-    S.b2 = bx('binary：main（小）', MC.blue, 4.2, 4.2, 0, 2.0, 0.6, 0.8);
+    S.b2 = bx('binary：main（小）', MC.blue, 3.6, 4.2, 0, 2.0, 0.6, 0.8);
     cap('dynamic：library 要先 compile 成 dynamic', 'binary 比較小：根本還沒 include 進去');
   },
   async (tok, S) => {                                   // 548 linker 偷加 stub
-    S.stub = bx('stub', MC.orange, 5.6, 4.2, 0, 0.8, 0.6, 0.8);
+    S.stub = bx('stub', MC.orange, 6.3, 4.2, 0, 0.8, 0.6, 0.8);
     cap('linker 會幫你偷加一段程式', '一個很簡單的小程式：stub');
   },
   async (tok, S) => {                                   // 584 stub 問 OS：load 了沒？在哪？
@@ -2062,19 +2062,19 @@ scene('mem-10d-swapspace', 'Swapping 與 swap space（backing store）', CAMW, [
     cap('到底 swap 到 disk 哪裡？', 'disk 上 OS 專用的一塊指定空間');
   },
   async (tok, S) => {                                   // 64 灌 OS 時問 swap space 多大
-    bub('要切多少給 swap space？', 3.8, 4.0);
+    S.q = bub('要切多少給 swap space？', 3.8, 4.0);
     cap('灌過 OS 就知道', '安裝時會問你 swap space 要多少');
   },
   async (tok, S) => {                                   // 72 不夠 → out of memory
-    bad('連 swap 都用完 → out of memory', 3.8, 4.7);
+    S.oom = bad('連 swap 都用完 → out of memory', 3.8, 4.7);
     cap('swap space 不夠很快就 out of memory', 'out of memory 是連 swap 都用完，不只是實體 memory');
   },
   async (tok, S) => {                                   // 92 別名 backing store；不是檔案系統
-    relabel(S.sp, 'backing store'); sm('不屬於 file system', 3.8, 1.9);
+    relabel(S.sp, 'backing store'); sm('不屬於 file system', 3.8, 1.2, 1.2);
     cap('swap space 又叫 backing store', '是還沒有檔案系統就先切出來的特殊空間');
   },
   async (tok, S) => {                                   // 116 目的：midterm scheduling，把整個 process swap 出去
-    await slide(tok, S.mem.m[2], 3.8, 3.0, 0.6, 800);
+    gone(S.q, S.oom); await slide(tok, S.mem.m[2], 3.8, 3.6, 0.6, 800);
     cap('目的：midterm scheduling', 'memory 不夠就挑 process 整個 swap 到 backing store');
   },
   async (tok, S) => {                                   // 133 virtual memory：以 page（4KB）為單位
@@ -2142,15 +2142,15 @@ scene('mem-10d-io', '只有 idle 的 process 能 swap：I/O 與 OS buffer', CAMW
   },
   async (tok, S) => {                                   // 403 waiting queue：I/O device 透過 memory bus 寫它的 memory
     S.dev = prop('disk', 4.6, 0, 0, 1.0, 'I/O device');
-    S.d = pkt('I/O data', MC.orange, 4.6, 1.6); await slide(tok, S.d, 0.2, 3.0, 0.6, 800);
+    S.d = pkt('I/O data', MC.orange, 4.6, 2.3); await slide(tok, S.d, 1.6, 3.0, 0.6, 800);
     cap('在 waiting queue 時雖然不用 CPU', 'I/O device 正用 memory bus 把資料寫進它的 memory');
   },
   async (tok, S) => {                                   // 422 這時 swap → 寫錯地方
-    await slide(tok, S.p, -1.0, 3.0, -3.0, 600); tint(S.d, MC.red); bad('swap 走了 → I/O 寫錯地方！', 0.2, 1.4);
+    await slide(tok, S.p, -1.0, 3.0, -3.0, 600); tint(S.d, MC.red); S.bd = bad('swap 走了 → I/O 寫錯地方！', 0.2, 1.4);
     cap('做 I/O 時把它 swap 掉就完了', 'I/O 會寫錯或沒地方寫');
   },
   async (tok, S) => {                                   // 459 I/O 的 waiting queue 不行，sleep 可以
-    await slide(tok, S.p, -1.0, 3.0, 0, 500); gone(S.d);
+    await slide(tok, S.p, -1.0, 3.0, 0, 500); gone(S.d, S.bd);
     sm('sleep 的 waiting queue：可以 swap', -4.0, 6.0); sm('I/O 的 waiting queue：不行', 2.4, 6.0);
     cap('在 I/O 的 waiting queue 不行', 'sleep 的 waiting queue 是 OK 的');
   },
@@ -2163,12 +2163,12 @@ scene('mem-10d-io', '只有 idle 的 process 能 swap：I/O 與 OS buffer', CAMW
     cap('解法二（比較常用）', 'I/O 是透過 OS 做：OS 有自己的 buffer');
   },
   async (tok, S) => {                                   // 527 資料先寫 OS buffer → 程式可以 swap
-    const d = pkt('I/O data', MC.orange, 4.6, 1.6); await slide(tok, d, 2.4, 1.4, 0.6, 600);
+    const d = pkt('I/O data', MC.orange, 4.6, 2.3); await slide(tok, d, 2.4, 1.4, 0.6, 600);
     await slide(tok, S.p, -1.0, 3.0, -3.0, 600); S.d2 = d;
     cap('資料先搬到 OS 的 memory', '程式的 memory 沒被碰到，就可以被 swap 掉');
   },
   async (tok, S) => {                                   // 545 swap 回來再 copy 到 user memory
-    await slide(tok, S.p, -1.0, 3.0, 0, 500); await slide(tok, S.d2, -1.0, 3.0, 0.6, 600);
+    await slide(tok, S.p, -1.0, 3.0, 0, 500); await slide(tok, S.d2, 1.6, 3.0, 0.6, 600);
     cap('I/O 做完、程式 swap 回來', '再把 OS buffer 的內容 copy 到程式的 memory');
   },
   async (tok, S) => {                                   // 557 這就是 buffering
@@ -2207,21 +2207,21 @@ scene('mem-10d-part', 'Contiguous allocation：fixed vs variable partition', CAM
     cap('第一種：contiguous', '就是給你一塊連續的空間');
   },
   async (tok, S) => {                                   // 730 discontiguous 等一下講
-    sm('（discontiguous：不連續，等一下講，比較難）', 0, 4.9);
+    S.dc = sm('（discontiguous：不連續，等一下講，比較難）', 0, 4.9);
     cap('難的是 discontiguous', '先看連續的就好');
   },
   async (tok, S) => {                                   // 738 連續比較符合 programming 概念
-    note('code、heap、stack：我們畫圖都畫成連續的', 0, 4.3);
+    S.cn = note('code、heap、stack：我們畫圖都畫成連續的', 0, 4.3);
     cap('連續比較符合 programming 的概念', '');
   },
   async (tok, S) => {                                   // 769 fixed partition
-    gone(S.bar); S.slots = [];
+    gone(S.bar, S.dc, S.cn); S.slots = [];
     for (let i = 0; i < 5; i++) S.slots.push(bx('', MC.paper, -4.4 + i * 2.2, 3.0, 0, 2.0, 0.3, 1.0));
     hd('fixed partition', -6.0, 3.8);
     cap('第一種分配：fixed partition', '先把 physical memory 切成固定大小');
   },
   async (tok, S) => {                                   // 787 像停車格
-    S.slots.forEach((s, i) => sm('格 ' + (i + 1), -4.4 + i * 2.2, 2.5));
+    S.gl = S.slots.map((s, i) => sm('格 ' + (i + 1), -4.4 + i * 2.2, 2.5));
     cap('就像規劃停車場', '切成一格一格相同大小的停車格');
   },
   async (tok, S) => {                                   // 813 一車一格；格數 = degree of multiprogramming
@@ -2234,7 +2234,7 @@ scene('mem-10d-part', 'Contiguous allocation：fixed vs variable partition', CAM
     cap('問題：小機車只用四分之一格', '還可以停兩三台，很浪費');
   },
   async (tok, S) => {                                   // 865 variable size partition
-    gone(S.slots, S.cars); S.v = [];
+    gone(S.slots, S.cars, S.gl); S.v = [];
     let x = -5.6; [[1.6, 'P1', MC.blue], [1.0, 'P2', MC.orange], [1.9, 'P3', MC.purple], [1.2, 'P4', MC.green]].forEach(([w, n, c]) => { S.v.push(bx(n, c, x + w / 2, 1.0, 0, w - 0.05, 0.6, 0.9)); x += w; });
     hd('variable size partition', -6.0, 1.8);
     cap('variable size partition', '你要多少，我就切多少給你');
@@ -2274,7 +2274,7 @@ scene('mem-10d-fit', 'First fit、Best fit、Worst fit', CAMW, [
   },
   async (tok, S) => {                                   // 1010 best fit：全部找過，挑最剛好的
     const r = S.rows[1]; r.hs.forEach((h) => glow(h.m, h.h >= 35 ? DIMG : null)); await wt(tok, 400); r.hs.forEach((h) => glow(h.m, null)); glow(r.hs[2].m, OKG);
-    const h = r.hs[2]; bx('35K', MC.teal, h.x0 + 35 * 0.045 / 2, r.y, 0.1, 35 * 0.045 - 0.05, 0.6, 0.8); sm('剩 5K', h.x0 + h.w - 0.1, r.y - 0.65);
+    const h = r.hs[2]; bx('35K', MC.teal, h.x0 + 35 * 0.045 / 2, r.y, 0.1, 35 * 0.045 - 0.05, 0.6, 0.8); relabel(h.m, ''); sm('剩 5K', h.x0 + h.w - 0.1, r.y - 0.65);
     cap('best fit：全部找過一遍', '挑最 match 的 40K → 剩 5K');
   },
   async (tok, S) => {                                   // 1033 剩下的更小，很難再用
@@ -2291,7 +2291,7 @@ scene('mem-10d-fit', 'First fit、Best fit、Worst fit', CAMW, [
     cap('想法：大洞用掉一部分', '剩下的還很大，別人還能用');
   },
   async (tok, S) => {                                   // 1087 考試：模擬擺放
-    note('考試：照規則模擬誰進來、誰離開', 4.6, 6.2);
+    note('考試：照規則模擬誰進來、誰離開', 0.4, 6.2);
     cap('考試可能會問', '用這三個規則模擬擺放；課本有習題');
   },
   async (tok, S) => {                                   // 1109 哪個好？較多人用 first fit
@@ -2316,16 +2316,16 @@ scene('mem-10d-frag', 'External vs internal fragmentation', CAMW, [
     cap('兩種 allocation 的最大問題', '可能造成空間的浪費');
   },
   async (tok, S) => {                                   // 1179 fragmentation：零碎的空間
-    hot('fragmentation：零碎的空間', 0, 0.2);
+    S.fg = hot('fragmentation：零碎的空間', 0, 0.2);
     cap('專有名詞：fragmentation', '一定要記住：零碎的空間');
   },
   async (tok, S) => {                                   // 1192 分 external、internal
-    sm('external ?', -3.4, 7.0); sm('internal ?', 3.6, 7.0);
+    S.ex = sm('external ?', -3.4, 7.0); sm('internal ?', 3.6, 7.0);
     cap('分成 external 跟 internal', '');
   },
   async (tok, S) => {                                   // 1197 external：在程式外（P1、P2 中間）
     glow(S.v.m[1], NG); glow(S.v.m[3], NG); glow(S.v.m[5], NG);
-    hd('external：洞在 process 之間', -3.4, 0.9);
+    gone(S.fg); hd('external：洞在 process 之間', -3.4, 0.45);
     cap('external：在程式外', '洞在 P1 跟 P2 的中間');
   },
   async (tok, S) => {                                   // 1210 有程式要跑，卻塞不進任何洞
@@ -2333,7 +2333,7 @@ scene('mem-10d-frag', 'External vs internal fragmentation', CAMW, [
     cap('有程式要執行，卻塞不進任何一個洞', '洞明明空著卻不能用 → external fragmentation');
   },
   async (tok, S) => {                                   // 1237 只在 variable size 發生
-    sm('只在 variable size 發生', -3.4, 0.35);
+    sm('只在 variable size 發生', -3.4, -0.2);
     cap('只在 variable size 發生', 'fixed size 切好格子，來一個一定找得到位置');
   },
   async (tok, S) => {                                   // 1267 internal：fixed partition 時
@@ -2341,29 +2341,30 @@ scene('mem-10d-frag', 'External vs internal fragmentation', CAMW, [
     cap('internal：右邊 fixed partition', '每個 process 要的空間不一樣');
   },
   async (tok, S) => {                                   // 1287 給很大的空間 → 裡面沒用到的浪費
-    S.f.forEach((f) => glow(f, NG)); hd('internal：配出去的區塊裡面沒用到', 3.6, 0.9);
+    S.f.forEach((f) => glow(f, NG)); hd('internal：配出去的區塊裡面沒用到', 3.6, 0.45);
     cap('給它一整格，裡面沒用到的就浪費', '像重型機車佔一格：internal fragmentation');
   },
   async (tok, S) => {                                   // 1311 internal：把車位切小 → paging
-    sm('解法：格子切小 → paging', 3.6, 0.35);
+    sm('解法：格子切小 → paging', 3.6, -0.2);
     cap('internal 沒什麼好解法', '唯一辦法是把車位切更小：下次的 paging');
   },
   async (tok, S) => {                                   // 1343 variable size：compaction
-    hot('external 的解法：compaction', -3.4, 7.1);
+    gone(S.ex); hot('external 的解法：compaction', -3.4, 7.4);
     cap('variable size 的解法', 'compaction：壓縮');
   },
   async (tok, S) => {                                   // 1358 定期清理，把洞合起來
+    gone(S.v.m[1], S.v.m[3], S.v.m[5]);
     await slide(tok, S.v.m[2], -3.4, 6.2 - 1.2 - 0.6, 0, 500); await slide(tok, S.v.m[4], -3.4, 6.2 - 2.4 - 0.5, 0, 500);
-    gone(S.v.m[1], S.v.m[3], S.v.m[5]); bx('一個大 hole', '#fff7e8', -3.4, 6.2 - 3.4 - 0.9, 0, 2.2, 1.75, 0.9);
-    await slide(tok, S.n, -3.4, 6.2 - 3.4 - 0.75, 0.4, 600); tint(S.n, MC.teal);
+    const big = bx('一個大 hole', '#fff7e8', -3.4, 6.2 - 3.4 - 0.9, 0, 2.2, 1.75, 0.9);
+    await slide(tok, S.n, -3.4, 6.2 - 3.4 - 0.75, 0.4, 600); tint(S.n, MC.teal); relabel(big, '');
     cap('定期清理 memory', '把洞清到一起，P4 就放得下了');
   },
   async (tok, S) => {                                   // 1370 disk 也常見（清理硬碟）
-    prop('disk', 0.2, 0, 2.0, 0.7, '磁碟重組');
+    prop('disk', 0.2, 2.2, 1.0, 0.7, '磁碟重組');
     cap('compaction 在 disk 上更常見', '「清理硬碟」就是在做 compaction');
   },
   async (tok, S) => {                                   // 1401 memory 會先切成小 page → 不嚴重
-    note('memory 會先切成小 page → 不太有這問題', 0.2, 2.8, 2.0);
+    note('memory 會先切成小 page → 不太有這問題', 0.2, -0.95, 2.0);
     cap('memory 也有同樣現象', '但會先切成很小的 page，除非用最傳統的 variable size');
   },
 ]);
@@ -2374,7 +2375,7 @@ scene('mem-10d-paging', 'Paging：page、frame 與 page table', CAMW, [
     cap('接下來講一點 paging', '跟剛剛的差別是？');
   },
   async (tok, S) => {                                   // 1436 non-contiguous：一個程式的空間本身不連續
-    sm('剛才：contiguous　→　現在：non-contiguous', 0, 6.2);
+    S.c1 = sm('剛才：contiguous　→　現在：non-contiguous', 0, 6.2);
     cap('剛才都是 contiguous', 'non-contiguous：單一程式的 memory 本身就不連續');
   },
   async (tok, S) => {                                   // 1456 fixed size 的 non-contiguous = paging
@@ -2387,7 +2388,7 @@ scene('mem-10d-paging', 'Paging：page、frame 與 page table', CAMW, [
     cap('有 logical 跟 physical address', '想要不連續：兩邊都各自做 partition');
   },
   async (tok, S) => {                                   // 1512 physical 切出來的：frame
-    gone(S.Pm.m); S.fr = []; for (let i = 0; i < 8; i++) { S.fr.push(bx('frame ' + i, MC.paper, 3.4, 4.32 - i * 0.55, 0, 1.8, 0.5, 0.8)); }
+    gone(S.Pm.m); S.fr = []; for (let i = 0; i < 8; i++) { const f = bx('frame ' + i, MC.paper, 3.4, 4.32 - i * 0.55, 0, 1.8, 0.5, 0.8); f.userData.lbl.position.x = -1.75; S.fr.push(f); }
     cap('physical 切出來的一格一格', '叫做 frame：像車位一樣的空間');
   },
   async (tok, S) => {                                   // 1521 logical 切出來的：page
@@ -2395,7 +2396,7 @@ scene('mem-10d-paging', 'Paging：page、frame 與 page table', CAMW, [
     cap('logical 切出來的叫 page', '你的程式就是一堆 page');
   },
   async (tok, S) => {                                   // 1540 不能互換；size 完全相同
-    hot('frame = physical　page = logical　（大小完全相同）', 0, 0.9);
+    S.fp = hot('frame = physical　page = logical　（大小完全相同）', 0, -0.3);
     cap('frame 和 page 不能互換', '但兩個的 size 完全相同，才能 mapping');
   },
   async (tok, S) => {                                   // 1576 程式大小 → 幾個 page → 找相同數量的 frame
@@ -2416,15 +2417,15 @@ scene('mem-10d-paging', 'Paging：page、frame 與 page table', CAMW, [
     cap('好處一：physical 可以不連續地分配', '使用者看到連續的空間，實際散落在不同 frame');
   },
   async (tok, S) => {                                   // 1670 好處 2：沒有 external；internal 可減少
-    good('fixed size：沒有 external fragmentation', 0, 0.3);
+    gone(S.fp); good('fixed size：沒有 external fragmentation', 0, -0.3);
     cap('好處二：page 是 fixed size', '完全沒有 external；internal 可以靠切小來減少（有 tradeoff）');
   },
   async (tok, S) => {                                   // 1707 好處 3：share memory
-    good('share：page table 指到同一個 frame', 0, -0.3);
+    good('share：page table 指到同一個 frame', 0, -1.0);
     cap('好處三、非常重要：share memory', 'dynamic linking 的 shared library 就是這樣做到的');
   },
   async (tok, S) => {                                   // 1740 切割 → fine-grained sharing
-    sm('只 share code section、某個 function 所在的 page', 0, 6.2, 1.0);
+    gone(S.c1); sm('只 share code section、某個 function 所在的 page', 0, 6.2, 1.0);
     cap('為什麼要切成 page？', '只 share 需要的一小部分：fine-grained sharing');
   },
 ]);
@@ -2504,7 +2505,7 @@ scene('mem-11a-recap', 'Paging 複習：兩邊都切、page table 做 mapping', 
     cap('一個 page 查 table', '就知道它在 physical 的哪個 frame：1、4、3、7');
   },
   async (tok, S) => {                                   // 123 實作上存 frame 的 base address
-    S.pt.cells.forEach((c, i) => relabel(c, 'frame ' + [1, 4, 3, 7][i] + ' 起點'));
+    S.pt.cells.forEach((c, i) => relabel(c, 'frame ' + [1, 4, 3, 7][i] + ' 起點')); S.pt.idx.forEach((l) => { l.position.x -= 0.9; });
     cap('概念上寫 frame number', '實作上存的是 frame 的 base address（起始位置）');
   },
   async (tok, S) => {                                   // 150 每個 process 一張，OS maintain 很多張
@@ -2529,7 +2530,7 @@ scene('mem-11a-pd', 'Logical address = page number p | offset d', CAMW, [
     cap('CPU access memory 是 byte addressing', '每個 address 指到一個 byte，像門牌號碼');
   },
   async (tok, S) => {                                   // 248 不是所有系統都是（4-byte addressing）
-    sm('有些系統：一個 address = 4 bytes', 2.4, 4.9);
+    S.ad = sm('有些系統：一個 address = 4 bytes', 2.4, 4.9);
     cap('不是所有系統都這樣', '有些設計是 4-byte addressing；沒特別說就是 byte');
   },
   async (tok, S) => {                                   // 267 logical address 切成兩部分
@@ -2565,11 +2566,11 @@ scene('mem-11a-pd', 'Logical address = page number p | offset d', CAMW, [
     cap('從 32 bit 換到 64 bit', '所有 address 和 hardware 都要修改，很麻煩');
   },
   async (tok, S) => {                                   // 458 offset n bits → page size 2ⁿ
-    glow(S.d, HL); sm('offset 有 n bits → page size = 2ⁿ', 2.0, 4.5);
+    glow(S.d, HL); S.on = sm('offset 有 n bits → page size = 2ⁿ', 2.0, 4.5);
     cap('page offset 的 bit 數', 'n bits 能描述的最大值，就是 page 的 size：2ⁿ');
   },
   async (tok, S) => {                                   // 486 4KB = 2¹² → offset 12 bits
-    glow(S.d, null); good('page 4KB = 2¹² → offset 一定是 12 bits', 2.0, 5.0);
+    glow(S.d, null); gone(S.ad, S.on); good('page 4KB = 2¹² → offset 一定是 12 bits', 2.0, 4.6);
     cap('page size 4KB = 2¹²', 'address 裡必須留 12 個 bit 給 offset');
   },
 ]);
@@ -2589,7 +2590,7 @@ scene('mem-11a-xlate', 'Address translation：p 換成 frame，d 照抄', CAMW, 
     cap('再加上相同的 offset', 'page 跟 frame 大小剛好一樣');
   },
   async (tok, S) => {                                   // 570 圖：64/32 bits，前面 p 後面 d
-    note('64 bits（早期 32 bits）：前面 p、後面 d', -4.2, 4.6);
+    S.nb = note('64 bits（早期 32 bits）：前面 p、後面 d', -4.2, 3.2);
     cap('直接看圖', 'address 有很多 bit：前面叫 p，後面叫 d');
   },
   async (tok, S) => {                                   // 589 page size 大 → d bits 多、p bits 少
@@ -2609,8 +2610,8 @@ scene('mem-11a-xlate', 'Address translation：p 換成 frame，d 照抄', CAMW, 
     cap('就得到完整的 physical address', '');
   },
   async (tok, S) => {                                   // 636 例：page size 1KB = 2¹⁰ → offset 10 bits
-    gone(S.p, S.d, S.d2, S.f, S.pt.cells, S.pt.idx);
-    hd('例：page 1KB = 2¹⁰ → offset 10 bits', 0, 4.6);
+    gone(S.p, S.d, S.d2, S.f, S.pt.cells, S.pt.idx, S.nb);
+    hd('例：page 1KB = 2¹⁰ → offset 10 bits', 0, 5.4);
     cap('簡單的例子：page size 1KB', '2¹⁰：腦袋馬上想到 offset 是 10 個 bit');
   },
   async (tok, S) => {                                   // 654 一串 0101…：後 10 bits 是 offset
@@ -2709,7 +2710,7 @@ scene('mem-11a-free', 'Free frame list', CAMW, [
   },
   async (tok, S) => {                                   // 1182 free frame list：linked list
     hd('free frame list', -3.0, 6.6); S.L = [0, 3, 5, 7].map((f, i) => bx('frame ' + f, MC.mint, -4.6 + i * 1.5, 5.8, 0, 1.3, 0.55, 0.8));
-    sm('（哪些 frame 空著為示意）', -2.4, 5.1);
+    sm('（哪些 frame 空著為示意）', -2.4, 4.7);
     cap('OS 有一個 free frame list', '很單純：一個 linked list');
   },
   async (tok, S) => {                                   // 1192 create process：pop 一個 frame 放進 page table
@@ -2723,7 +2724,7 @@ scene('mem-11a-free', 'Free frame list', CAMW, [
     cap('maintained by OS', '非常快：O(1)，一直 pop 出來就好');
   },
   async (tok, S) => {                                   // 1232 kill：看 page table，把 frame 還回 list
-    for (let i = 0; i < 2; i++) { const m = bx('frame ' + [0, 3][i], MC.mint, -3.0, 3.2 - i * 0.6, 0.5, 1.3, 0.55, 0.8); await slide(tok, m, -4.6 + (2 + i) * 1.5, 5.8, 0, 500); relabel(S.pt.cells[i], ''); }
+    for (let i = 0; i < 2; i++) { relabel(S.pt.cells[i], ''); const m = bx('frame ' + [0, 3][i], MC.mint, -3.0, 3.2 - i * 0.6, 0.5, 1.3, 0.55, 0.8); await slide(tok, m, -4.6 + (2 + i) * 1.5, 5.8, 0, 500); }
     cap('程式被 kill 掉、free memory', '看它的 page table，把 frame 放回 list');
   },
 ]);
@@ -2786,11 +2787,11 @@ scene('mem-11a-sum', 'Paging 總結與 frame table', CAMW, [
     cap('有 page table，那有 frame table 嗎？', '有：倒過來，記每個 frame 放了哪個 process 的哪個 page');
   },
   async (tok, S) => {                                   // 1643 只是 accounting，不參與 translation
-    note('frame table：accounting 用，不參與 translation', 2.4, 0.4);
+    note('frame table：accounting 用，不參與 translation', -1.6, 0.4);
     cap('用 paging 時它意義不大', '純粹 accounting，不是 translation 的一部分');
   },
   async (tok, S) => {                                   // 1661 例外：inverted page table
-    hot('特例：inverted page table 用它做 translation', 2.4, 1.1);
+    hot('特例：inverted page table 用它做 translation', -1.6, 1.1);
     cap('唯一特例', '最後會講的 inverted page table：一般電腦很少用');
   },
 ]);
@@ -2856,13 +2857,13 @@ scene('mem-11b-two', '一次 read 變兩次 memory access', CAM, [
   },
   async (tok, S) => {                                   // 228 第一次：load page table
     S.pk = pkt('(p, d)', MC.orange, -5.4, 2.4);
-    await slide(tok, S.pk, -1.8, 2.4, 0.7, 500); await slide(tok, S.pk, 3.8, 4.8, 0.8, 600);
+    await slide(tok, S.pk, -1.8, 2.4, 0.7, 500); await slide(tok, S.pk, 3.8, 5.55, 0.8, 600);
     glow(S.pt, HL); txt(S.cnt, 'memory access：1 次');
     cap('第 1 次：讀 page table', 'load 進 MMU 才能 translate');
   },
   async (tok, S) => {                                   // 247 第二次：真的讀資料
     relabel(S.pk, '(f, d)'); tint(S.pk, MC.green); glow(S.pt, null);
-    await slide(tok, S.pk, 3.8, 1.6, 0.8, 600); glow(S.da, OKG); txt(S.cnt, 'memory access：2 次');
+    await slide(tok, S.pk, 3.8, 2.35, 0.8, 600); glow(S.da, OKG); txt(S.cnt, 'memory access：2 次');
     cap('第 2 次：才真的讀到資料', '');
   },
   async (tok, S) => {                                   // 262 使用者看不到第一個
@@ -2953,7 +2954,7 @@ scene('mem-11b-flow', 'TLB 與 page table 一起用：hit / miss', CAMW, [
   async (tok, S) => {                                   // 525 先遮掉 TLB：原本兩次 access
     S.tlb.forEach((m) => { m.visible = false; m.userData.lbl.visible = false; });
     const pk = pkt('(2, d)', MC.orange, -6.0, 1.9);
-    await slide(tok, pk, 1.4, S.pt.y(2) + 0.45, 0.8, 600); glow(S.pt.cells[2], HL);
+    await slide(tok, pk, 2.9, S.pt.y(2), 0.8, 600); glow(S.pt.cells[2], HL);
     await slide(tok, pk, 5.0, 6.0 - 6 * 0.56 + 0.4, 0.8, 600); glow(S.fm[6], OKG);
     txt(S.cnt, '沒有 TLB：2 次 memory access'); gone(pk); glow(S.pt.cells[2], null); glow(S.fm[6], null);
     cap('先遮掉 TLB：就是原本的流程', 'p → page table → 讀資料：慢一倍');
@@ -2964,7 +2965,7 @@ scene('mem-11b-flow', 'TLB 與 page table 一起用：hit / miss', CAMW, [
     cap('加上 TLB', '紅框是 MMU，是 hardware；其他在 memory');
   },
   async (tok, S) => {                                   // 564 TLB 就是 MMU 的 cache
-    note('TLB = MMU 的 cache（像 CPU 的 L1、L2）', -3.0, 6.2);
+    note('TLB = MMU 的 cache', -3.0, 2.2);
     cap('TLB 就是 MMU 的 cache', '放在 MMU 裡面');
   },
   async (tok, S) => {                                   // 574 每個 process 一張 page table，TLB 只有一個
@@ -2980,7 +2981,7 @@ scene('mem-11b-flow', 'TLB 與 page table 一起用：hit / miss', CAMW, [
   async (tok, S) => {                                   // 622 第一步先看 TLB：hit 直接拿 f，一次 access
     glow(S.tlb[2], null);
     const pk = pkt('(2, d)', MC.orange, -6.0, 1.9);
-    await slide(tok, pk, -4.6, 3.5, 0.8, 500); glow(S.tlb[2], OKG);
+    await slide(tok, pk, -5.6, 3.5, 0.8, 500); glow(S.tlb[2], OKG);
     relabel(pk, '(6, d)'); tint(pk, MC.green); await slide(tok, pk, 5.0, 6.0 - 6 * 0.56 + 0.4, 0.8, 700); glow(S.fm[6], OKG);
     txt(S.cnt, 'TLB hit：1 次 memory access'); S.pk = pk;
     cap('每次 translation 先查 TLB', 'hit：直接拿到 f，只碰 memory 一次');
@@ -2988,8 +2989,8 @@ scene('mem-11b-flow', 'TLB 與 page table 一起用：hit / miss', CAMW, [
   async (tok, S) => {                                   // 642 miss：回到老路，兩次 access
     gone(S.pk); glow(S.fm[6], null); glow(S.tlb[2], null);
     const pk = pkt('(4, d)', MC.orange, -6.0, 1.9);
-    await slide(tok, pk, -4.6, 3.5, 0.8, 400); tint(pk, MC.red); await wt(tok, 250); tint(pk, MC.orange);
-    await slide(tok, pk, 1.4, S.pt.y(4) + 0.45, 0.8, 500); glow(S.pt.cells[4], HL);
+    await slide(tok, pk, -5.6, 3.5, 0.8, 400); tint(pk, MC.red); await wt(tok, 250); tint(pk, MC.orange);
+    await slide(tok, pk, 2.9, S.pt.y(4), 0.8, 500); glow(S.pt.cells[4], HL);
     relabel(pk, '(1, d)'); tint(pk, MC.green); await slide(tok, pk, 5.0, 6.0 - 1 * 0.56 + 0.4, 0.8, 500); glow(S.fm[1], OKG);
     txt(S.cnt, 'TLB miss：2 次 memory access');
     cap('miss：O(1) 查完沒有', '走老路查 page table → 兩次 memory access');
@@ -3033,7 +3034,7 @@ scene('mem-11b-flush', 'Context switch：flush TLB 或加 PID', CAM, [
     cap('PID 要多存 4 bytes', '8 → 12 bytes：多出的佔 1/3（33%）');
   },
   async (tok, S) => {                                   // 785 context switch：load PTBR + flush TLB
-    gone(S.r2); good('context switch：載入 PTBR + flush TLB', 0.6, 6.2);
+    gone(S.r2); good('context switch：載入 PTBR + flush TLB', 0.6, 0.2);
     cap('把兩章串起來', 'context switch 要 load base register，還要 flush TLB');
   },
   async (tok, S) => {                                   // 804 flush 後全部 miss，直到填回來
@@ -3079,40 +3080,41 @@ scene('mem-11b-emat', 'EMAT：TLB 20 ns、memory 100 ns', CAM, [
 scene('mem-12a-emat', 'TLB hit rate 為什麼這麼高：locality', CAMW, [
   async (tok, S) => {                                   // 15 TLB 20 ns、memory 100 ns
     bx('TLB 20 ns', MC.orange, -5.0, 6.3, 0, 1.8, 0.5, 0.8); bx('memory 100 ns', MC.blue, -2.6, 6.3, 0, 2.2, 0.5, 0.8);
-    S.st = (x, parts, label) => { let y = 0; for (const [v, c] of parts) { const h = v * 0.02; bx(v >= 60 ? String(v) : '', c, x, y + h / 2, 0, 1.3, h - 0.03, 1.0); y += h; } sm(label, x, -0.25, 0.9); return y; };
+    S.all = [];
+    S.st = (x, parts, label) => { let y = 0; for (const [v, c] of parts) { const h = v * 0.02; S.all.push(bx(v >= 60 ? String(v) : '', c, x, y + h / 2, 0, 1.3, h - 0.03, 1.0)); y += h; } S.all.push(sm(label, x, -0.25, 0.9)); return y; };
     cap('上次的例子', 'TLB 是 hardware，至少快 10 倍：20 ns vs 100 ns');
   },
   async (tok, S) => {                                   // 50 hit = 120
-    const t = S.st(-5.6, [[20, MC.orange], [100, MC.blue]], 'hit'); hot('120', -5.6, t + 0.35);
+    const t = S.st(-5.6, [[20, MC.orange], [100, MC.blue]], 'hit'); S.all.push(hot('120', -5.6, t + 0.35));
     cap('hit：看一次 TLB，再讀 memory content', '20 + 100 = 120 ns');
   },
   async (tok, S) => {                                   // 61 miss 也要先查 TLB
-    note('先看了才知道 hit 還是 miss → 20 ns 一定會發生', -2.0, 5.5);
+    S.n20 = note('先看了才知道 hit 還是 miss → 20 ns 一定會發生', 3.0, 5.6);
     cap('TLB 這個最佳化有代價', 'miss 也要先查，20 ns 不管怎樣都會發生');
   },
   async (tok, S) => {                                   // 78 miss：page table + data → 220
-    const t = S.st(-3.6, [[20, MC.orange], [100, MC.blue], [100, MC.blue]], 'miss'); hot('220', -3.6, t + 0.35);
+    const t = S.st(-3.6, [[20, MC.orange], [100, MC.blue], [100, MC.blue]], 'miss'); S.all.push(hot('220', -3.6, t + 0.35));
     cap('miss 更慘', '查 TLB 20 + 讀 page table 100 + 讀資料 100 = 220 ns');
   },
   async (tok, S) => {                                   // 104 70% → 150，比 200 快 25%
-    const t = S.st(-1.6, [[150, MC.green]], '70%'); hot('150', -1.6, t + 0.35);
-    const t2 = S.st(4.4, [[100, MC.gray], [100, MC.gray]], '無 TLB'); hd('200', 4.4, t2 + 0.35);
+    const t = S.st(-1.6, [[150, MC.green]], '70%'); S.all.push(hot('150', -1.6, t + 0.35));
+    const t2 = S.st(4.4, [[100, MC.gray], [100, MC.gray]], '無 TLB'); S.all.push(hd('200', 4.4, t2 + 0.35));
     cap('hit rate 70%：0.7 × 120 + 0.3 × 220 = 150', '比沒有 TLB 的 200 ns 快了 25%');
   },
   async (tok, S) => {                                   // 116 98% → 122
-    const t = S.st(0.4, [[122, MC.green]], '98%'); hot('122', 0.4, t + 0.35);
+    const t = S.st(0.4, [[122, MC.green]], '98%'); S.all.push(hot('122', 0.4, t + 0.35));
     cap('hit rate 98%', '0.98 × 120 + 0.02 × 220 = 122 ns');
   },
   async (tok, S) => {                                   // 141 98% 真的有這麼厲害？
-    bub('98% 才到 122？真的做得到嗎？會不會只有 40%？', 0.6, 5.0);
+    gone(S.n20); S.q = bub('98% 真的做得到嗎？會不會只有 40%？', 2.2, 4.9);
     cap('98% 看起來很驚人', '真的有這麼高嗎？');
   },
   async (tok, S) => {                                   // 159 實際 > 99%：locality
-    good('實際 hit rate 往往 > 99%：因為 locality', 0.6, 4.3);
+    S.gl = good('實際 hit rate 往往 > 99%：因為 locality', 2.6, 6.3);
     cap('事實上遠高於 99%', '原因：程式讀資料有很強的 locality');
   },
   async (tok, S) => {                                   // 189 instruction 一行接一行：PC 每次 +4
-    S.pg = bx('一個 page（4KB）', MC.paper, 2.4, 2.4, 1.5, 6.0, 0.5, 0.8);
+    gone(S.all, S.q); S.pg = bx('一個 page（4KB）', MC.paper, 2.4, 2.4, 1.5, 6.0, 0.5, 0.8);
     S.pc = hot('PC', -0.4, 3.1, 1.5);
     await anim(tok, 900, (u) => { S.pc.position.x = -0.4 + 1.2 * u; });
     cap('寫的 code 一行接一行執行', 'program counter 4 byte、4 byte 連續往下讀');
@@ -3134,7 +3136,7 @@ scene('mem-12a-emat', 'TLB hit rate 為什麼這麼高：locality', CAMW, [
     cap('hit rate 通常相當高', '98% 就 122；再高就盡量接近 100 ns');
   },
   async (tok, S) => {                                   // 300 TLB 是最佳化，translation 過程沒差
-    note('TLB 是最佳化：可以沒有；翻譯的過程不變', 4.4, 6.3);
+    gone(S.gl); note('TLB 是最佳化：可以沒有；翻譯的過程不變', 4.4, 6.3);
     cap('不要忘記 TLB 是一個最佳化', '只是從 TLB lookup 還是從 memory 讀 page table');
   },
 ]);
@@ -3151,11 +3153,11 @@ scene('mem-12a-valid', 'Page table 的 protection bit：valid / invalid', CAMW, 
     cap('page table 裡通常再加一個 bit', '當作 protection bit');
   },
   async (tok, S) => {                                   // 420 valid / invalid；read-only / write / execute
-    note('可以表示：有效 / 無效、read-only、write、executable', 3.6, 5.6);
+    note('有效 / 無效、read-only、write、executable', 4.0, 5.6);
     cap('這個 bit 可以 indicate', '有效或無效；或這個 page 是 read-only、write、executable');
   },
   async (tok, S) => {                                   // 441 像 file 的權限、const
-    sm('就像 file 的 read only、程式的 const', 3.6, 5.0);
+    sm('就像 file 的 read only、程式的 const', 4.0, 5.0);
     cap('有點像 file 有 read only、write only', '或程式裡 assign 之後不能動的 constant');
   },
   async (tok, S) => {                                   // 503 general OS 主要是 valid / invalid
@@ -3163,11 +3165,11 @@ scene('mem-12a-valid', 'Page table 的 protection bit：valid / invalid', CAMW, 
     cap('一般 OS 在這裡最主要用的', '只是 valid 跟 invalid');
   },
   async (tok, S) => {                                   // 517 為什麼不能用：reserve 了但還沒用
-    note('reserve 了但還沒用（還沒 malloc、stack 還沒長）', 3.6, 4.2);
+    note('reserve 了但還沒用（還沒 malloc、stack 還沒長）', 4.4, 4.2);
     cap('這個 frame 的內容目前能不能用？', '例如 OS 先 reserve 很大的空間，你還沒真的用');
   },
   async (tok, S) => {                                   // 547 下一章：invalid = 被 swap 到 disk
-    note('下一章最常見：invalid = 這個 page 被 swap 到 disk', 3.6, 3.6);
+    note('下一章最常見：invalid = 這個 page 被 swap 到 disk', 4.6, 3.5);
     cap('下一章 virtual memory 非常依賴這個 bit', 'invalid：page 存在，但被 swap 到 disk 上了');
   },
   async (tok, S) => {                                   // 600 例：page number 3 bits → 8 個 entry
@@ -3179,8 +3181,8 @@ scene('mem-12a-valid', 'Page table 的 protection bit：valid / invalid', CAMW, 
     cap('program 會長，一開始只用 6 個', '前面都是 valid，6 跟 7 還沒 allocate → invalid');
   },
   async (tok, S) => {                                   // 660 指到 page 6 或 7 → 擋掉
-    const q = pkt('pointer → page 6', MC.orange, 3.4, 2.2, 0.6, 2.4); await slide(tok, q, -2.0, 5.6 - 6 * 0.6, 0.6, 700); tint(q, MC.red);
-    bad('查 page table 立刻擋掉：fault', 1.2, 1.4);
+    const q = pkt('pointer → page 6', MC.orange, 3.4, 2.2, 0.6, 2.4); await slide(tok, q, 1.6, 5.6 - 6 * 0.6, 0.6, 700); tint(q, MC.red);
+    bad('查 page table 立刻擋掉：fault', 2.2, 0.8);
     cap('pointer 不小心指到 page 6 或 7', '查 page table 時立刻被擋掉，丟出 fault');
   },
 ]);
@@ -3191,7 +3193,7 @@ scene('mem-12a-ptlr', 'Page table length register（PTLR）', CAMW, [
     cap('實際上 page table 絕對不會這麼小', '我們可以 access 的空間相當大');
   },
   async (tok, S) => {                                   // 694 小程式：前 10 個 v、後 9000 個 invalid
-    bx('前 10 筆：v', MC.green, -3.0, 5.9, 0.45, 2.3, 0.5, 0.1); bx('後面 9000 筆：invalid', MC.red, -3.0, 2.8, 0.45, 2.3, 4.2, 0.1);
+    S.ov = [bx('前 10 筆：v', MC.green, -3.0, 5.9, 0.45, 2.3, 0.5, 0.1), bx('後面 9000 筆：invalid', MC.red, -3.0, 2.8, 0.45, 2.3, 4.2, 0.1)];
     cap('很多程式都很小', '前面十個 valid，後面 9000 個 entry 全是 invalid → 浪費');
   },
   async (tok, S) => {                                   // 726 page table length register
@@ -3203,7 +3205,7 @@ scene('mem-12a-ptlr', 'Page table length register（PTLR）', CAMW, [
     cap('回憶 chapter 1 怎麼保護 memory', '有一個 memory length（limit）：同樣的概念');
   },
   async (tok, S) => {                                   // 755 不 create 8 個，只記 length 6
-    gone(S.big); S.pt = tbl(-3.0, 5.6, ['f', 'f', 'f', 'f', 'f', 'f'], { dy: 0.6, w: 1.2 });
+    gone(S.big, S.ov); S.pt = tbl(-3.0, 5.6, ['f', 'f', 'f', 'f', 'f', 'f'], { dy: 0.6, w: 1.2 });
     good('只 allocate 6 個 entry；page ≥ 6 → 直接擋', 2.6, 4.2);
     cap('不 create 8 個 entry', '用到多少就 allocate 多少，length 記 6，超過就 return');
   },
@@ -3299,7 +3301,7 @@ scene('mem-12a-why', '為什麼需要不同的 page table 結構', CAMW, [
     cap('接下來非常重要', '不同的 page table structure');
   },
   async (tok, S) => {                                   // 1445 one level 的限制：程式越來越大
-    sm('one level：page number → offset，一次查完', 0, 6.2);
+    S.ol = sm('one level：page number → offset，一次查完', 0, 6.2);
     cap('之前的做法有 limitation', '程式、logical address 越來越大時……');
   },
   async (tok, S) => {                                   // 1474 32 bits（4GB）→ 2²⁰ entries
@@ -3313,7 +3315,7 @@ scene('mem-12a-why', '為什麼需要不同的 page table 結構', CAMW, [
     cap('每個 entry 4 bytes', '光 page table 本身就 4MB');
   },
   async (tok, S) => {                                   // 1520 MMU 讀 physical → 必須 physically 連續
-    note('MMU 直接讀 physical：第 3 個 entry 就跳到第 3 個位置 → 4MB 必須實體連續', 2.4, 3.6);
+    note('MMU 直接讀 physical → 4MB 的 table 必須實體連續', 3.2, 3.6);
     cap('MMU 讀的是 physical address', '沒人幫它翻譯：這 4MB 在實體上必須完全連續');
   },
   async (tok, S) => {                                   // 1564 很難找到 4MB 連續
@@ -3326,7 +3328,7 @@ scene('mem-12a-why', '為什麼需要不同的 page table 結構', CAMW, [
     cap('所以才有這麼多 structure', '怎麼讓 page table 的 size 變小？');
   },
   async (tok, S) => {                                   // 1624 hierarchical、hashed、inverted
-    ['hierarchical', 'hashed', 'inverted'].forEach((t, i) => bx(t, [MC.purple, MC.teal, MC.pink][i], -4.0 + i * 4.0, 6.2, 0.6, 2.8, 0.6, 0.8));
+    gone(S.ol); ['hierarchical', 'hashed', 'inverted'].forEach((t, i) => bx(t, [MC.purple, MC.teal, MC.pink][i], -4.0 + i * 4.0, 6.2, 0.6, 2.8, 0.6, 0.8));
     cap('typical 的做法有三個', 'hierarchical、hashed、inverted：留意 table 大小的變化');
   },
 ]);
@@ -3350,7 +3352,7 @@ scene('mem-12a-hier', 'Hierarchical（two-level）page table：10 | 10 | 12', CA
     cap('原本叫 one level', '接下來走 two level 的例子，同理可以三層、四層');
   },
   async (tok, S) => {                                   // 1764 32 bits：原本 20 | 12
-    gone(S.out.cells, S.out.idx, S.sm);
+    gone(S.out.cells, S.out.idx, S.out.title, S.sm);
     S.a = bx('p：20 bits', MC.blue, -2.0, 5.6, 0, 7.5 * 20 / 32, 0.6, 0.9); S.b = bx('d：12', MC.orange, -2.0 + 7.5 * 16 / 32, 5.6, 0, 7.5 * 12 / 32, 0.6, 0.9);
     cap('input 一樣是 32 bits', '原本前面 20 bits、後面 12 bits：table 非常龐大');
   },
@@ -3453,54 +3455,53 @@ scene('mem-12a-hash', 'Hashed page table', CAMW, [
     cap('hashing 基本上就是分 bucket', '');
   },
   async (tok, S) => {                                   // 2456 例：5 個 bucket，mod 5
-    sm('hash(p) = p mod 5（例子）', -5.0, 6.3);
+    sm('hash(p) = p mod 5（例子；frame 值為示意）', -4.2, 6.3);
     cap('hash 方式可以很簡單', '例如 5 個 bucket：mod 5 看餘數');
   },
   async (tok, S) => {                                   // 2479 hash by page number
     S.ch = {}; S.add = (p, f) => { const b = p % 5; S.ch[b] = S.ch[b] || []; const k = S.ch[b].length; const m = bx('p ' + p + ' | f ' + f, MC.tlb, -2.6 + k * 2.4, S.by(b), 0, 2.0, 0.6, 0.8); S.ch[b].push({ p, f, m }); line(-4.3 + k * 2.4, S.by(b), -3.6 + k * 2.4, S.by(b), 0, '#6e5f49'); return m; };
     for (const [p, f] of [[3, 7], [6, 2], [13, 5], [10, 9]]) { S.add(p, f); await wt(tok, 200); }
-    sm('frame 值為示意', 2.6, 0.5);
     cap('一開始只有 page number', '所以 hash by page number，放進對應的 bucket');
   },
   async (tok, S) => {                                   // 2488 bucket 數有彈性，跟 address bit 無關
-    note('bucket 數自己定：跟 virtual address 的 bit 數無關', 2.6, 6.2);
+    S.t6 = note('bucket 數自己定：跟 virtual address 的 bit 數無關', 0, 0.9);
     cap('跟剛才的差別', 'bucket 數很有彈性，不受 virtual address 的 bit 限制');
   },
   async (tok, S) => {                                   // 2502 bucket 少 → collision → 一個個找
-    S.add(23, 1); bad('bucket 少 → collision 多 → 要一個一個 search', 2.6, 5.5);
+    gone(S.t6); S.add(23, 1); S.t7 = [bad('bucket 少 → collision 多 → 要一個一個 search', 0, 0.9)];
     cap('bucket 很少', '會有很多 collision：找到 bucket 後還要一個一個 search');
   },
   async (tok, S) => {                                   // 2514 bucket 多 → 每個只有一兩個
-    good('bucket 多 → 每個只有一兩個 → 很快', 2.6, 4.8);
+    S.t7.push(good('bucket 多 → 每個只有一兩個 → 很快', 0, 0.2));
     cap('bucket 很多', '每個裡面只有一兩個 entry，就很快；多少個是 tradeoff');
   },
   async (tok, S) => {                                   // 2567 好處：程式用的 address 很分散
-    sm('program 用的 address：heap、stack 很分散', 2.6, 3.9);
+    gone(S.t7); S.t9 = [sm('program 用的 address：heap、stack 很分散', 0, 0.9)];
     cap('真正的好處', '程式不會連續使用 virtual address：有 heap、有 stack，很分散');
   },
   async (tok, S) => {                                   // 2594 原本的 table：中間沒用也要 entry
-    sm('一般 page table：中間沒用的也要留 entry', 2.6, 3.3);
+    S.t9.push(sm('一般 page table：中間沒用的也要留 entry', 0, 0.3));
     cap('之前的做法', '最大多少就要留多少 entry：中間沒用到也要有');
   },
   async (tok, S) => {                                   // 2647 hash：沒用到的 page 不在 bucket
-    good('hash：沒用到的 page 根本不在 bucket 裡', 2.6, 2.7);
+    S.t9.push(good('hash：沒用到的 page 根本不在 bucket 裡', 0, -0.35));
     cap('hash 不一樣', '沒用到的 page 不會存在 bucket：用得少又散時很有效率');
   },
   async (tok, S) => {                                   // 2695 缺點：pointer 4 bytes，浪費一倍
-    bad('每筆多一個 pointer（4 B）：frame base 也才 4 B → 空間一倍', 2.6, 2.0);
+    gone(S.t9); S.t12 = [bad('每筆多一個 pointer（4 B）：frame base 也才 4 B → 空間一倍', 0, 0.9)];
     cap('缺點：很多 pointer', 'entry 本來只存 4 bytes 的 frame base，pointer 又 4 bytes');
   },
   async (tok, S) => {                                   // 2720 traverse linked list：每次一 memory access
-    bad('走 linked list：每一步都是一次 memory access', 2.6, 1.3);
+    S.t12.push(bad('走 linked list：每一步都是一次 memory access', 0, 0.2));
     cap('運氣不好要 traverse', '每走一個 pointer 就是一次 memory access，跟多層 table 一樣');
   },
   async (tok, S) => {                                   // 2738 translation：hash(p) → bucket → 比對 p（3、13、23）
-    const q = pkt('找 p = 13', MC.orange, -5.0, 0.2); await slide(tok, q, -5.0, S.by(3) + 0.55, 0.6, 500); glow(S.bk[3], HL);
+    const q = pkt('找 p = 13', MC.orange, -3.8, 0.2); await slide(tok, q, -4.3, S.by(3) + 0.55, 0.6, 500); glow(S.bk[3], HL);
     for (const e of S.ch[3]) { await slide(tok, q, e.m.position.x, S.by(3) + 0.55, 0.6, 350); glow(e.m, e.p === 13 ? OKG : NG); if (e.p === 13) break; }
     cap('page number 直接 hash 到 bucket 3', '餘數都是 3 的有 3、13、23：要比對原本的值');
   },
   async (tok, S) => {                                   // 2779 entry：page number、frame number、pointer
-    note('每個 element：page number｜frame number｜pointer', -1.0, 0.3);
+    gone(S.t12); note('每個 element：page number｜frame number｜pointer', 0, 0.9);
     cap('每個 element 存三樣', 'page number、frame number、pointer；相符才拿 frame');
   },
 ]);
@@ -3594,23 +3595,23 @@ scene('mem-12b-inv', 'Inverted page table', CAMW, [
     cap('為什麼要倒過來？為了省 memory', '一萬個 process 就要管一萬張 page table，還會長');
   },
   async (tok, S) => {                                   // 413 frame 是硬體，不變 → 事先 allocate、大小固定、使用率 100%
-    good('frame 數量 = 硬體，不會變：事先 allocate、大小固定', 4.4, 5.4);
+    S.gA = [good('frame 數量 = 硬體，不會變：事先 allocate、大小固定', 0.4, -0.5)];
     cap('frame 是 hardware，從來不變', 'frame table 可事先 allocate，size 不用動，使用率接近 100%');
   },
   async (tok, S) => {                                   // 454 所有 page table 加起來 >> frame table
-    gone(S.many); good('全系統一張，大小只看 physical memory', 4.4, 4.7);
+    gone(S.many); S.gA.push(good('全系統一張，大小只看 physical memory', 0.4, -1.15));
     cap('比單一張 page table 大', '但所有 process 的 page table 加起來，一定遠大於 frame table');
   },
   async (tok, S) => {                                   // 490 缺點一：要 search
-    bad('缺點一：要 search', 4.4, 3.6);
+    gone(S.gA); S.gB = [bad('缺點一：要 search', 0.4, -0.5)];
     cap('兩個缺點', '第一：translation 時要 search 這張 frame table');
   },
   async (tok, S) => {                                   // 505 page table 直接跳；frame table 沒順序
-    sm('page table：page 3 直接跳第 3 格', 4.4, 3.0); sm('frame table：沒有順序，只能找', 4.4, 2.5);
+    S.gB.push(sm('page table：page 3 直接跳第 3 格', 0.4, -1.15), sm('frame table：沒有順序，只能找', 0.4, -1.8));
     cap('page table 可以直接跳', 'frame 屬於不同 process 的不同 page，沒有 ordering');
   },
   async (tok, S) => {                                   // 528 缺點二：sharing 很難
-    bad('缺點二：一個 frame 只記一個 (pid, page) → sharing 很難', 4.4, 1.7);
+    gone(S.gB); S.b2 = bad('缺點二：一個 frame 只記一個 (pid, page) → sharing 很難', 0.4, -0.5);
     cap('第二：sharing 很難', '一個 entry 只能對到一個 page，兩個 page 共用一個 frame 就沒辦法');
   },
   async (tok, S) => {                                   // 560 圖：給 (pid, p) → search → index = frame
@@ -3620,15 +3621,15 @@ scene('mem-12b-inv', 'Inverted page table', CAMW, [
     cap('給 PID 跟 p，一個一個 entry search', '找到第 5 個 entry → 它就是 frame 5，再接上 d');
   },
   async (tok, S) => {                                   // 619 virtual bits >> physical → entry 少；全系統一張
-    good('virtual 的 bit 數通常遠大於 physical → entry 少', 4.4, 0.9);
+    S.gC = [good('virtual 的 bit 數通常遠大於 physical → entry 少', 0.4, -1.15)];
     cap('好處', 'size 只跟 physical memory 有關，整個系統一張就好');
   },
   async (tok, S) => {                                   // 656 可以整張 load 進 MMU 加速 search
-    sm('連續的 table → 可以 load 進 MMU 做 linear search', 4.4, 0.3);
+    S.gC.push(sm('連續的 table → 可以 load 進 MMU 做 linear search', 0.4, -1.8));
     cap('search 可以加速', 'table entry 是連續的：一次 load 到 MMU 裡 search');
   },
   async (tok, S) => {                                   // 672 page sharing 很難 → 很少見
-    hot('page sharing 太重要 → inverted 很少見', 0.4, -0.5);
+    gone(S.gC); hot('page sharing 太重要 → inverted 很少見', 0.4, -1.15);
     cap('更難解決的是 page sharing', '很難做得好，所以這個做法很少見');
   },
 ]);
@@ -3651,7 +3652,7 @@ scene('mem-12b-seg', 'Segmentation：用 programmer 的角度切', CAMW, [
     cap('variable size 的不連續配置', '名字就叫 segmentation');
   },
   async (tok, S) => {                                   // 820 以使用者的角度切
-    note('不只大小不同：以使用者的角度切 program 的 memory', 3.0, 3.9);
+    S.nu = note('不只大小不同：以使用者的角度切 program 的 memory', 3.0, 3.9);
     cap('更重要的是', '它以使用者的角度去想：怎麼切割 program 的 memory');
   },
   async (tok, S) => {                                   // 837 program 是好幾個 segment：code、function、object
@@ -3671,7 +3672,7 @@ scene('mem-12b-seg', 'Segmentation：用 programmer 的角度切', CAMW, [
     cap('依 code 的 memory 內容切成 segment', '寫過 assembly 就知道：code segment、data segment');
   },
   async (tok, S) => {                                   // 948 load 時：segment table 做 translation，放任何位置
-    S.sg.forEach((m) => glow(m, null)); S.tb = bx('segment table', MC.lilac, 5.6, 4.0, 0, 2.2, 1.0, 0.8);
+    gone(S.nu); S.sg.forEach((m) => glow(m, null)); S.tb = bx('segment table', MC.lilac, 5.6, 4.0, 0, 2.2, 1.0, 0.8);
     cap('load 時怎麼擺？', '跟 paging 一樣，需要一個 segment table 做 translation');
   },
   async (tok, S) => {                                   // 964 缺點：external fragmentation
@@ -3745,11 +3746,11 @@ scene('mem-12b-segshare', 'Segmentation vs paging、sharing 與 protection', CAM
     cap('summary', 'page 存 frame 的 base；segment 除了 base 還有 limit');
   },
   async (tok, S) => {                                   // 1421 segment base 任意位置；page 在 boundary → append
-    sm('page：base 一定在 4KB boundary → 後面全是 0 → 直接 append', -3.4, 5.3);
+    S.s1 = sm('page：base 一定在 4KB boundary → 後面全是 0 → 直接 append', -3.4, 5.3);
     cap('第二：segment base 可以是任何位置', 'page 一定在 frame 的 boundary：只記 frame number，後面接上 offset');
   },
   async (tok, S) => {                                   // 1450 segment 要乖乖相加
-    sm('segment：base 任意 → 要乖乖相加', 3.4, 5.3);
+    S.s2 = sm('segment：base 任意 → 要乖乖相加', 3.4, 5.3);
     cap('segment 就要乖乖用加的', '');
   },
   async (tok, S) => {                                   // 1456 例：process 每個 content 一個 segment
@@ -3786,7 +3787,7 @@ scene('mem-12b-segshare', 'Segmentation vs paging、sharing 與 protection', CAM
     cap('還記得 thread 嗎？', 'heap 是 share 的、stack 不 share：stack 和 heap 是兩個 segment');
   },
   async (tok, S) => {                                   // 1686 方法：base address 設成相同
-    good('方法：兩張 segment table 的 base 設成一樣', 0, 5.4);
+    gone(S.s1, S.s2); good('方法：兩張 segment table 的 base 設成一樣', 0, 5.4);
     cap('方法很簡單', '把 base address 設成相同，指到同一個 physical 位置');
   },
 ]);
@@ -3801,7 +3802,7 @@ scene('mem-12b-segpage', 'Segmentation + paging：linear address', CAMW, [
     cap('它的壞處', '很容易有 external fragmentation');
   },
   async (tok, S) => {                                   // 1735 segment 之後再做 paging
-    sm('segment 之後 → 再做 paging', 0, 5.6);
+    S.sp = sm('segment 之後 → 再做 paging', 0, 5.6);
     cap('所以電腦在 segment 之後', '再對它做 paging');
   },
   async (tok, S) => {                                   // 1744 圖：process 的 segment 不同顏色
@@ -3809,7 +3810,7 @@ scene('mem-12b-segpage', 'Segmentation + paging：linear address', CAMW, [
     cap('看這個圖', '一個 process 的 memory content：不同顏色是不同 segment');
   },
   async (tok, S) => {                                   // 1757 中間：linear address（假空間）
-    hd('linear address space（假的）', 0, 5.4); S.lin = bx('', MC.paper, 0, 2.6, -0.4, 2.0, 5.0, 0.2);
+    gone(S.sp); hd('linear address space（假的）', 0, 5.4); S.lin = bx('', MC.paper, 0, 2.6, -0.4, 2.0, 5.0, 0.2);
     S.ls = [[4.4, 0.9, MC.blue], [2.9, 1.4, MC.purple], [0.7, 0.8, MC.pink]].map(([y, h, c]) => bx('', c, 0, y, 0, 1.8, h, 0.6));
     cap('中間是一個假的空間', '叫 linear address：segment 放到各處，中間有洞也無所謂');
   },
@@ -3860,6 +3861,7 @@ scene('mem-12b-pentium', 'Intel Pentium 的位址轉換', CAMW, [
   async (tok, S) => {                                   // 2044 selector 16 bits：13 bits segment number
     glow(S.off, null); gone(S.sel); const w = 12 / 48;
     S.sn = bx('s：13', MC.purple, -6 + 6.5 * w, 5.8, 0, 13 * w - 0.05, 0.6, 0.9); S.g = bx('g', MC.teal, -6 + 13.5 * w, 5.8, 0, w - 0.03, 0.6, 0.9); S.pp = bx('p', MC.pink, -6 + 15 * w, 5.8, 0, 2 * w - 0.03, 0.6, 0.9);
+    S.g.userData.lbl.position.y = 0.55; S.pp.userData.lbl.position.set(0.7, -0.55, 0);
     sm('最多 2¹³ 個 segment', -4.4, 5.1);
     cap('前面 16 bits 是 selector', '只有 13 bits 是 segment number：最多 2¹³ 個 segment');
   },
@@ -3909,7 +3911,7 @@ scene('mem-12b-exam', '期中考例題：segmentation + paging', CAMW, [
     cap('真實系統不用想那麼複雜', '把基本的 paging、segmentation 和兩者合起來會轉換就好');
   },
   async (tok, S) => {                                   // 2516 期中考常考
-    sm('前幾年期中考每次都考類似的', 0, 6.2);
+    S.mt = sm('前幾年期中考每次都考類似的', 0, 6.2);
     cap('回去一定要自己看', '至少這一題要做得出來');
   },
   async (tok, S) => {                                   // 2525 physical 512 bytes → 9 bits
@@ -3926,11 +3928,11 @@ scene('mem-12b-exam', '期中考例題：segmentation + paging', CAMW, [
   },
   async (tok, S) => {                                   // 2560 logical 0x448 → 12 bits
     S.b = bits('010001001000', -6.0, 3.4, (i) => (i < 3 ? MC.purple : MC.orange));
-    hd('logical 0x448', 0.2, 3.4);
+    hd('logical 0x448', 1.6, 3.4);
     cap('給你 logical address 0x448', '先換成 12 個 bit：0100 0100 1000');
   },
   async (tok, S) => {                                   // 2579 前 3 bits → segment 2
-    hot('s = 010₂ = 2', -5.5, 2.7); sm('segment offset = 0 0100 1000₂ = 72', -2.2, 2.7);
+    hot('s = 010₂ = 2', -5.5, 2.7); sm('segment offset = 0 0100 1000₂ = 72', 0.0, 2.7);
     cap('hint：3 bits 是 segment', '看前 3 bits：答案是 2');
   },
   async (tok, S) => {                                   // 2592 查 segment table 第 2 個 → base
@@ -3960,7 +3962,7 @@ scene('mem-12b-exam', '期中考例題：segmentation + paging', CAMW, [
     cap('不用擔心會不會跟別人撞', 'allocate 時 MMU 確認過；offset 超過 segment 長度就被打掉');
   },
   async (tok, S) => {                                   // 2711 第八章結束：考前 go through 例子
-    good('本章結束：考前一定要把這些例子 go through', 0, 6.2, 0.6);
+    gone(S.mt); good('本章結束：考前一定要把這些例子 go through', 0, 6.2, 0.6);
     cap('第八章就到這裡', '考前一定要 go through 這些例子');
   },
 ]);
@@ -3976,7 +3978,7 @@ scene('mem-pg-why', '為什麼需要 paging：RAM 不夠用', CAMW, [
     cap('一台桌機或筆電', '三個元件：RAM（主記憶體）、hard disk、CPU');
   },
   async (tok, S) => {                                   // 100 RAM 有限：4GB～128GB vs disk 1TB
-    sm('RAM：4 GB～128 GB', -0.6, 2.6); sm('disk：500 GB、1 TB 起跳', 4.6, 2.8);
+    sm('RAM：4 GB～128 GB', -0.6, 2.6); S.ds = sm('disk：500 GB、1 TB 起跳', 4.6, 2.8);
     cap('RAM 的容量很有限', 'RAM 約 4～128 GB，硬碟動輒 1 TB');
   },
   async (tok, S) => {                                   // 127 RAM 貴但快、volatile；執行時搬進 RAM
@@ -3996,7 +3998,7 @@ scene('mem-pg-why', '為什麼需要 paging：RAM 不夠用', CAMW, [
     cap('paging 是一種有效管理 memory 的方法', '由 memory management unit（MMU）實作');
   },
   async (tok, S) => {                                   // 228 一部分 disk 當 virtual RAM
-    S.vr = bx('virtual memory 區', MC.lilac, 4.6, 2.6, 0, 2.6, 0.6, 1.0);
+    gone(S.ds); S.vr = bx('virtual memory 區', MC.lilac, 4.6, 2.6, 0, 2.6, 0.6, 1.0);
     cap('把一部分 secondary memory 拿來用', '影片叫 virtual RAM：存放 process 的 page');
   },
   async (tok, S) => {                                   // 263 沒在用的 app 移到 disk，需要再搬回
@@ -4047,7 +4049,7 @@ scene('mem-pg-theory', 'Paging 的定義：page、frame、MMU', CAMW, [
     cap('非常重要：frame size 一定等於 page size', 'page 2KB，frame 也是 2KB');
   },
   async (tok, S) => {                                   // 447 logical 由 CPU 產生；physical 在 RAM
-    S.cpu = bx('CPU', MC.dark, -2.6, 0.9, 0, 1.2, 0.8, 0.8); sm('產生 logical（virtual）address', -2.6, 1.6);
+    S.cpu = bx('CPU', MC.dark, -2.6, 0.9, 0, 1.2, 0.8, 0.8); sm('產生 logical（virtual）address', -4.6, 1.6);
     cap('logical / virtual address 由 CPU 產生', 'physical address 是 RAM 裡真正的位置');
   },
   async (tok, S) => {                                   // 467 mapping 由 MMU（hardware）做
@@ -4071,7 +4073,7 @@ scene('mem-pg-ex', '例子：process X 的 P5 在 frame 21', CAMW, [
     cap('process 有 10KB，page size 2KB', '所以切成 5 個 2KB 的 page');
   },
   async (tok, S) => {                                   // 603 CPU 產生 logical address（p, d）
-    S.cpu = bx('CPU', MC.dark, -2.8, 5.6, 0, 1.2, 0.8, 0.8); S.addr = [bx('p', MC.blue, -3.2, 4.5, 0, 0.8, 0.55, 0.7), bx('d', MC.orange, -2.4, 4.5, 0, 0.8, 0.55, 0.7)];
+    S.cpu = bx('CPU', MC.dark, -2.8, 5.6, 0, 1.2, 0.8, 0.8); S.addr = [bx('p', MC.blue, -3.6, 4.5, 0, 0.8, 0.55, 0.7), bx('d', MC.orange, -2.2, 4.5, 0, 0.8, 0.55, 0.7)];
     cap('CPU 產生 logical address', '由兩部分組成：p 和 d');
   },
   async (tok, S) => {                                   // 615 p = page number = page table 的 index
@@ -4088,7 +4090,7 @@ scene('mem-pg-ex', '例子：process X 的 P5 在 frame 21', CAMW, [
     cap('CPU 產生 logical address', '假設要找 P5');
   },
   async (tok, S) => {                                   // 716 MMU 直接跳 P5 那一列
-    const k = pkt('P5', MC.pink, -3.2, 4.5); await slide(tok, k, 0.6, S.pt.y(4) + 0.45, 0.6, 600); gone(k); glow(S.pt.cells[4], HL);
+    const k = pkt('P5', MC.pink, -3.6, 4.5); await slide(tok, k, 0.6, S.pt.y(4) + 0.45, 0.6, 600); gone(k); glow(S.pt.cells[4], HL);
     cap('MMU 去 process X 的 page table', '直接跳到第 5 列：是 index，不用一行一行找');
   },
   async (tok, S) => {                                   // 745 frame 21
@@ -4101,7 +4103,7 @@ scene('mem-pg-ex', '例子：process X 的 P5 在 frame 21', CAMW, [
     cap('address 的另一部分 d', 'page offset：跟 base address 組合成 physical address');
   },
   async (tok, S) => {                                   // 829 d = 3（示意）兩邊一樣
-    relabel(S.addr[1], '3'); sm('d = 3（示意）：page 裡第 3 個位置', -2.8, 3.8);
+    relabel(S.addr[1], '3'); sm('d = 3（示意）', -2.8, 3.8); S.f21.userData.lbl.position.y = 0.55;
     S.ln = [0, 1, 2, 3, 4].map((i) => bx(i === 3 ? '3' : '', i === 3 ? MC.orange : MC.paper, 4.0 + i * 0.4, 4.0, 0.5, 0.35, 0.35, 0.3));
     cap('page 2KB，裡面有很多內容', '假設 d = 3：offset 在 page 裡、在 frame 裡都一樣');
   },
@@ -4122,11 +4124,11 @@ scene('mem-pg-fault', 'Page fault 初探', CAMW, [
     cap('最後快速講 page fault', '');
   },
   async (tok, S) => {                                   // 950 CPU 要 P4
-    S.q = pkt('要 P4', MC.purple, -5.2, 4.0);
+    S.q = pkt('要 P4', MC.purple, 1.4, 6.4);
     cap('這次 CPU 要執行 process X 的 page 4', '');
   },
   async (tok, S) => {                                   // 957 MMU 查 P4 → INV
-    await slide(tok, S.q, -1.0, 5.6 - 3 * 0.7 + 0.45, 0.6, 600); glow(S.pt.cells[3], NG); tint(S.q, MC.red);
+    await slide(tok, S.q, 1.0, 5.6 - 3 * 0.7, 0.6, 600); glow(S.pt.cells[3], NG); tint(S.q, MC.red);
     cap('MMU 查 P4 的 entry', '看到 INV：invalid bit');
   },
   async (tok, S) => {                                   // 970 P4 不在 RAM，在 disk

@@ -145,12 +145,17 @@ export default function (ctx) {
     const every = Math.max(1, Math.ceil(bnds.length / (opt.maxTicks || 20)));
     const shown = new Set(bnds.filter((b, k) => k % every === 0 || k === bnds.length - 1));
     const ticks = new Set();
-    function tickAt(b) { if (opt.noTicks || ticks.has(b) || !shown.has(b)) return; ticks.add(b); tag(fmt(b * unit), 'idx', x0 + b * sx, y - 0.25, z + d / 2 + 0.3); }
+    const tickX = [];
+    function tickAt(b) {
+      if (opt.noTicks || ticks.has(b) || !shown.has(b)) return; ticks.add(b);
+      const x = x0 + b * sx, near = tickX.some((p) => p.row === 0 && Math.abs(p.x - x) < 0.6); tickX.push({ x, row: near ? 1 : 0 });
+      tag(fmt(b * unit), 'idx', x, y - 0.25, z + d / 2 + 0.3 + (near ? 0.5 : 0));
+    }
     let cursor = null, cl = null;
     if (!opt.noCursor) {
       cursor = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.3, 0.05), new THREE.MeshBasicMaterial({ color: '#c08a1f' }));
       cursor.position.set(x0, y + 0.4, z - d / 2 - 0.05); lab.world.add(cursor);
-      cl = tag('', 'idx', x0, y + 1.25, z - d / 2);
+      cl = tag('', 'idx', x0, y - 0.25, z + d / 2 + 1.25);
     }
     if (opt.title) tag(opt.title, 'ptr', x0 - 0.2, y + 0.2, z - d / 2 - 0.55);
     tickAt(0);
@@ -182,7 +187,7 @@ export default function (ctx) {
     const colors = {}; procs.forEach((p, i) => { colors[p.id] = PCOL[i % PCOL.length]; });
     const G = gantt(res.segs, res.T, { color: (id) => colors[id], z: 1.7, title: opt.ganttTitle || 'Gantt chart' });
     const tb = opt.noTable ? null : code(tableLines(procs, res, new Set(), opt), 0, 5.4, 0.46, -3.6);
-    tag('Ready queue →', 'ptr', -4.6, 0.1, -2.3);
+    tag('Ready queue →', 'ptr', -5.0, 0.1, -2.9);
     ctx.tile(V3(5.3, 0.04, -1.3), 1.6, 1.4, '#c9b48e');
     tag('CPU', 'ptr alt', 5.3, 0.1, -0.3);
     const tok = {}; const done = new Set();
@@ -204,7 +209,7 @@ export default function (ctx) {
           if (!tok[p.id]) tok[p.id] = cube(p.id, colors[p.id], [0.8, 0.6, 0.8], -5.3, 0.3, -1.3, 3);
           const m = tok[p.id];
           if (f && f.run === p.id) { move(m, 5.3, 0.45, -1.3); glow(m, GOLD); }
-          else if (f) { const k = f.ready.indexOf(p.id); move(m, -5.3 + Math.max(k, 0) * 0.95, 0.3, -1.3); glow(m, null); }
+          else if (f) { const k = f.ready.indexOf(p.id); move(m, -5.3 + Math.max(k, 0) * 1.45, 0.3, -1.3); glow(m, null); }
           if (opt.showPri && f) relabel(m, p.id + '·' + f.pr[p.id]);
           if (opt.showRem && f) relabel(m, p.id + '·' + f.rem[p.id]);
         });
@@ -358,7 +363,7 @@ export default function (ctx) {
   function mlfqStage(procs, res) {
     const colors = {}; procs.forEach((p, i) => { colors[p.id] = PCOL[i % PCOL.length]; });
     ['Q0　RR q = 8', 'Q1　RR q = 16', 'Q2　FCFS'].forEach((s, k) => { tag(s, k ? 'ptr' : 'ptr alt', -5.6, 0.2, LANE_Z[k]); ctx.tile(V3(-1.2, 0.03, LANE_Z[k]), 6.4, 0.9, k === 0 ? '#e9dcc4' : k === 1 ? '#e3d3b6' : '#dccaa8'); });
-    ctx.tile(V3(5.2, 0.04, -2.1), 1.6, 1.4, '#c9b48e'); tag('CPU', 'ptr alt', 5.2, 0.1, -1.1);
+    ctx.tile(V3(5.2, 0.04, -2.1), 1.6, 1.4, '#c9b48e'); tag('CPU', 'ptr alt', 6.4, 0.1, -2.1);
     const G = gantt(res.segs, res.T, { color: (id) => colors[id], z: 1.6, maxTicks: 14 });
     const tok = {}; const done = new Set();
     return {
@@ -533,7 +538,7 @@ export default function (ctx) {
     say('連續的 CPU 指令合成一個 burst', 'CPU burst 之後一定接 I/O burst，反之亦然');
     await beat(tok, 2600);
     say('做 I/O 的 process 在 waiting queue', 'CPU scheduler 只管 CPU burst');
-    glow(ps[1], GOLD); move(ps[1], -1, 0.3, -4.2); tag('waiting（做 I/O）', 'idx', -1, 0, -4.9);
+    glow(ps[1], GOLD); move(ps[1], -1, 0.3, -4.2); tag('waiting（做 I/O）', 'idx', 1.5, 0.3, -4.2);
     await beat(tok, 1600);
     move(ps[0], 4.8, 0.45, -2.6); glow(ps[0], GREEN);
     say('ready 的 process 裡挑一個上 CPU', '提高 CPU 使用率');
@@ -564,14 +569,15 @@ export default function (ctx) {
     const nm = { new: 'new', ready: 'ready', running: 'running', waiting: 'waiting', term: 'terminated' };
     const node = {};
     for (const k in N) { node[k] = cube(nm[k], k === 'running' ? '#4b9ee2' : k === 'ready' ? '#2fc092' : k === 'waiting' ? '#dd8238' : '#9b7ef4', [2.0, 0.6, 1.0], N[k][0], 0.3, N[k][1]); }
-    const ar = (a, b, lab2) => { const [x1, z1] = N[a], [x2, z2] = N[b]; const l = line(x1, 0.7, z1, x2, 0.7, z2, '#8a7a5c'); const t = tag(lab2, 'idx', (x1 + x2) / 2, 0.9, (z1 + z2) / 2); return { l, t }; };
+    // at: where the arrow's label sits (beside the arrow, so labels never share a spot)
+    const ar = (a, b, lab2, at) => { const [x1, z1] = N[a], [x2, z2] = N[b]; const l = line(x1, 0.7, z1, x2, 0.7, z2, '#8a7a5c'); const t = tag(lab2, 'idx', at ? at[0] : (x1 + x2) / 2, 0.9, at ? at[1] : (z1 + z2) / 2); return { l, t }; };
     const E = {
       admit: ar('new', 'ready', 'admitted'),
-      dispatch: ar('ready', 'running', 'scheduler dispatch'),
-      e1: ar('running', 'waiting', '① I/O 或 event wait'),
-      e2: { t: tag('② interrupt（timer）', 'idx', 0, 1.6, 0.25) },
-      e3: ar('waiting', 'ready', '③ I/O 完成'),
-      e4: ar('running', 'term', '④ exit'),
+      dispatch: ar('ready', 'running', 'scheduler dispatch', [0, 1.2]),
+      e1: ar('running', 'waiting', '① I/O 或 event wait', [2.7, -1.4]),
+      e2: { t: tag('② interrupt（timer）', 'idx', 0, 0.9, 0.05) },
+      e3: ar('waiting', 'ready', '③ I/O 完成', [-2.5, -1.4]),
+      e4: ar('running', 'term', '④ exit', [4.9, -0.2]),
     };
     line(2.2, 1.0, 0.35, -2.2, 1.0, 0.35, '#8a7a5c');
     return { N, node, E };
@@ -623,7 +629,7 @@ export default function (ctx) {
     const procs = [{ id: 'P1', arr: 0, burst: 7, pri: 3 }, { id: 'P2', arr: 3, burst: 3, pri: 1 }];
     const a = simulate(procs, 'PRI'), b = simulate(procs, 'PPRI');
     const col = (id) => (id === 'P1' ? PCOL[0] : PCOL[1]);
-    const G1 = gantt(a.segs, 10, { color: col, z: -1.6, title: 'non-preemptive', maxTicks: 8 });
+    const G1 = gantt(a.segs, 10, { color: col, z: -2.3, title: 'non-preemptive', maxTicks: 8 });
     const G2 = gantt(b.segs, 10, { color: col, z: 1.6, title: 'preemptive', maxTicks: 8 });
     say('P1 正在跑；t = 3 時更重要的 P2 進到 ready', 'P1 burst 7（pri 3）、P2 burst 3（pri 1，數字小 = 優先）');
     for (let t = 0; t <= 10; t++) {
@@ -944,7 +950,7 @@ export default function (ctx) {
     const cpu = [-3.5, 3.5].map((x, k) => { cube('CPU ' + k, '#4b9ee2', [2.6, 0.8, 1.4], x, 0.4, -2); return x; });
     const mem = [-3.5, 3.5].map((x, k) => { cube('memory ' + k, '#c9b48e', [2.6, 0.6, 1.2], x, 0.3, 1.4); line(x, 0.5, -1.2, x, 0.5, 0.8, '#2fc092'); return x; });
     line(-2.2, 0.5, -1.4, 2.2, 0.5, 1.2, '#d64545');
-    tag('快（local）', 'idx', -3.5, 1.2, -0.2); tag('慢（remote）', 'idx', 0, 1.3, 0);
+    tag('快（local）', 'idx', -5.4, 0.5, -0.2); tag('慢（remote）', 'idx', 0, 1.3, 0);
     say('NUMA：每顆 CPU 旁邊有比較近的 memory', 'access local 快、access 別人的慢');
     await beat(tok, 2800);
     const d = cube('P 的資料', '#e55a9b', [1.2, 0.4, 0.8], mem[0], 0.9, 1.4, 2);
@@ -980,7 +986,7 @@ export default function (ctx) {
     const pat = [['C', 1], ['M', 2.2], ['C', 1], ['M', 2.2], ['C', 1]];
     say('一個 core 執行時常卡在 memory access', 'memory stall：CPU 沒在跑指令，只是在等');
     let x = -6;
-    tag('thread 0', 'ptr', -6.6, 0.2, -1.8);
+    tag('thread 0', 'ptr', -6.4, 1.0, -1.5);
     for (const [k, w] of pat) { cube(k === 'C' ? 'compute' : 'stall', k === 'C' ? '#4b9ee2' : '#d8cfc0', [w, 0.5, 0.8], x + w / 2, 0.25, -1.2, 2); x += w + 0.04; await beat(tok, 450); }
     await beat(tok, 1800);
     say('趁 stall 換另一個 hardware thread 來算', 'Hyper-threading、GPU 一個 core 好多 thread');
@@ -1118,10 +1124,15 @@ async function rise(tok, x, z, hgt, color, ms = 500, w = 0.55, d = 0.55) {
 function chart(T, o = {}) {
   const W = o.w || 11, x0 = o.x0 === undefined ? -W / 2 : o.x0, z = o.z === undefined ? 1.8 : o.z, y = o.y === undefined ? 0.3 : o.y;
   const sx = W / T, col = o.color || ((id) => PC[id] || '#bfb3a0'), unit = o.unit || 1;
-  const ticks = new Set(); const blocks = [];
+  const ticks = new Set(); const blocks = []; const parts = [];
   const fmtT = (t) => String(Math.round(t * unit * 100) / 100);
-  const tick = (t) => { if (ticks.has(t) || o.noTicks) return; ticks.add(t); sm(fmtT(t), x0 + t * sx, y - 0.3, z + 0.7); };
-  if (o.title) hd(o.title, x0 - 0.1, y + 0.1, z - 0.85);
+  const tickX = [];
+  const tick = (t) => {
+    if (ticks.has(t) || o.noTicks) return; ticks.add(t);
+    const x = x0 + t * sx, near = tickX.some((p) => p.row === 0 && Math.abs(p.x - x) < 0.6); tickX.push({ x, row: near ? 1 : 0 });
+    const l = sm(fmtT(t), x, y - 0.3, z + 0.7 + (near ? 0.5 : 0)); parts.push(l); return l;
+  };
+  if (o.title) parts.push(hd(o.title, x0 - 0.1, y + 0.1, z - 0.85));
   tick(0);
   return {
     sx, x0, z, y, blocks, xAt: (t) => x0 + t * sx, tick,
@@ -1129,6 +1140,8 @@ function chart(T, o = {}) {
       const m = await grow(tok, x0 + s * sx, x0 + e * sx, y, z, color || (id === null ? '#d8cfc0' : col(id)), (e - s) * sx > 0.42 ? (id === null ? 'idle' : id) : '', ms, 0.55, 0.85);
       tick(s); tick(e); blocks.push({ id, s, e, m }); return m;
     },
+    // take the whole chart off the stage (blocks, ticks, title)
+    clear() { blocks.forEach((b) => kill(b.m)); blocks.length = 0; parts.forEach((l) => remove(l)); parts.length = 0; },
   };
 }
 // FRAG scene from a list of steps: each step waits for its cue, then runs fn(tok, S)
@@ -1145,13 +1158,13 @@ const CAMG = [[0, 7, 12.5], [0, 1.2, 0.2]];
 //   B.arrive(id, v) puts a buddy at the end of the queue; await B.run(tok, id, s, e) walks it to the CPU and grows its block;
 //   await B.back(tok, id) returns it to the queue end; await B.done(tok, id) sends it off; B.set(id, v) changes its belly number.
 function board(T, o = {}) {
-  zone(o.qname || 'ready queue', -2.4, 0, -2.6, 7.6, 1.5);
+  zone(o.qname || 'ready queue', -2.4, 0, -2.6, 7.6, 1.5).userData.name.position.set(-6.0, 0.05, -1.5);   // name on the front edge, clear of the buddies' names
   const cpu = prop('cpu', 5.3, 0, -2.6, 0.9, 'CPU');
   const B = { G: chart(T, { z: o.gz === undefined ? 2.0 : o.gz, w: o.w || 11.4, x0: o.x0, title: o.title }), b: {}, q: [], cur: null, cpu };
   const qx = (k) => -5.6 + k * 1.2;
   B.arrive = (id, v = '', color) => { const b = pal(id, v, color || PC[id] || '#bfb3a0', qx(B.q.length), -2.6, 0.55); B.b[id] = b; B.q.push(id); return b; };
   B.layout = async (tok) => { for (let k = 0; k < B.q.length; k++) { const g = B.b[B.q[k]].g; if (Math.abs(g.position.x - qx(k)) > 0.01 || Math.abs(g.position.z + 2.6) > 0.01) await walk(tok, B.b[B.q[k]], qx(k), -2.6, 220); } };
-  B.toCPU = async (tok, id) => { B.q = B.q.filter((x) => x !== id); B.cur = id; const b = B.b[id]; b.mood('happy'); b.glow('#3a2a00'); await walk(tok, b, 5.3, -1.5, 500); b.glow(null); await B.layout(tok); };
+  B.toCPU = async (tok, id) => { B.q = B.q.filter((x) => x !== id); B.cur = id; const b = B.b[id]; b.mood('happy'); b.glow('#3a2a00'); await walk(tok, b, 5.3, -1.0, 500); b.glow(null); await B.layout(tok); };
   B.run = async (tok, id, s, e, ms = 650) => { if (B.cur !== id) await B.toCPU(tok, id); return B.G.add(tok, id, s, e, ms); };
   B.back = async (tok, id) => { const b = B.b[id]; b.mood('sad'); B.q.push(id); B.cur = null; await walk(tok, b, qx(B.q.length - 1), -2.6, 450); };
   B.done = async (tok, id) => { const b = B.b[id]; if (!b) return; b.mood('happy'); await b.hop(tok); kill(b.g); delete B.b[id]; if (B.cur === id) B.cur = null; B.q = B.q.filter((x) => x !== id); };
@@ -1159,7 +1172,7 @@ function board(T, o = {}) {
   return B;
 }
 // a small table panel (monospace) that can be rewritten row by row
-function table(lines, x, y, z = -3.8, dy = 0.46) { const c = code(lines, x, y, dy, z); c.set = (i, s) => { if (c.ls[i]) txt(c.ls[i], s.padEnd(Math.max(...lines.map((l) => l.length)), ' ')); }; return c; }
+function table(lines, x, y, z = -3.8, dy = 0.6) { const c = code(lines, x, y, dy, z); c.set = (i, s) => { if (c.ls[i]) txt(c.ls[i], s.padEnd(Math.max(...lines.map((l) => l.length)), ' ')); }; return c; }
 
 // ════════ EpZgvKBf5eo（第 16C 講 Basic Concepts） ════════
 scene('sch-16c-intro', '本章談什麼：CPU scheduling', CAM, () => ({}), [
@@ -1194,7 +1207,7 @@ scene('sch-16c-burst', 'CPU burst 與 I/O burst', CAM, () => ({}), [
     sayc('為什麼要有 scheduler？', '');
   },
   async (tok, S) => {                                   // 177 multiprogramming：memory 裡塞很多 process
-    zone('memory', -2.6, 0, -1.6, 7.0, 2.0);
+    zone('memory', -2.6, 0, -1.6, 7.0, 2.0).userData.name.position.set(1.1, 0.05, -1.6);   // name to the right of the zone, clear of the buddies' names
     S.ps = ['P1', 'P2', 'P3', 'P4', 'P5'].map((n, i) => pal(n, '', PC[n], -5.4 + i * 1.4, -1.6, 0.6));
     for (const p of S.ps) p.mood('happy');
     sayc('multiprogramming', '很多 process 同時放在 memory 裡，大家都 ready');
@@ -1205,7 +1218,7 @@ scene('sch-16c-burst', 'CPU burst 與 I/O burst', CAM, () => ({}), [
     sayc('可是 CPU 的 core 是有限的', '一次只能有一個在上面跑');
   },
   async (tok, S) => {                                   // 189 scheduler 讓 CPU 不斷執行指令，提高使用率
-    await walk(tok, S.ps[0], 4.6, -1.0, 700); S.ps[0].mood('wow');
+    await walk(tok, S.ps[0], -5.4, -3.0, 200); await walk(tok, S.ps[0], 3.4, -3.0, 450); await walk(tok, S.ps[0], 4.6, -1.0, 250); S.ps[0].mood('wow');   // round the back of the line, not through the other names
     good('CPU 一直有事做 → 使用率高', 4.4, 2.6, -1.6);
     sayc('scheduler 的目的', '讓 CPU 不斷執行 instruction，增加使用率');
   },
@@ -1226,17 +1239,17 @@ scene('sch-16c-burst', 'CPU burst 與 I/O burst', CAM, () => ({}), [
     sayc('一下 CPU、一下 I/O', '整個程式就是 CPU burst 與 I/O burst 交替');
   },
   async (tok, S) => {                                   // 269 連續做 CPU 的指令合成一個 burst
-    note('連續的 CPU 指令 = 同一個 burst → CPU 後面一定接 I/O', 0, 1.3, 3.6);
+    note('連續的 CPU 指令 = 同一個 burst → CPU 後面一定接 I/O', 0, 0.3, 3.8);
     sayc('CPU burst 之後一定接 I/O burst', '只要一直在用 CPU，就串成一個 single burst');
   },
   async (tok, S) => {                                   // 281 scheduler 只在乎 CPU burst；做 I/O 的去 waiting queue
-    zone('waiting queue（做 I/O）', -2.2, 0, -4.2, 4.0, 1.2, WAITC);
+    S.wq = zone('waiting queue（做 I/O）', -2.2, 0, -4.2, 4.0, 1.2, WAITC).userData.name; S.wq.center.set(1, 0.5); S.wq.position.set(-4.4, 0.05, -4.2);   // name left of the zone
     await walk(tok, S.ps[2], -2.2, -4.2, 700); S.ps[2].mood('calm');
     sayc('CPU scheduler care 的是 CPU burst', '在做 I/O burst 的 process 會被放到 waiting queue');
   },
   async (tok, S) => {                                   // 296 scheduler 看不見做 I/O 的程式
     S.ps[2].glow('#555555'); bad('scheduler 看不見它', -2.2, 1.6, -4.2);
-    good('看得見：ready、等著開始 CPU burst 的', -2.6, 1.8, -1.6);
+    good('看得見：ready、等著開始 CPU burst 的', -2.6, 0.05, -0.3);
     sayc('scheduler 根本看不見在做 I/O 的程式', '只決定 ready 的人誰先開始 CPU burst');
   },
 ]);
@@ -1325,11 +1338,11 @@ scene('sch-16c-four', '四個 scheduling 時機', [[0, 8.5, 9.5], [0, 0, -0.8]],
     sayc('preemptive / non-preemptive 的關鍵', 'scheduler 在什麼時機點可以重新選人');
   },
   async (tok, S) => {                                   // 657 從狀態轉換看，最多四個點
-    sm('從 process 的狀態轉換來看，最多只有四個時機', 0, 2.2, 2.4);
+    sm('從 process 的狀態轉換來看，最多只有四個時機', 0, 0.3, -5.2);
     sayc('從 process 的 life cycle 來看', '可以做 scheduling 的點最多就四個');
   },
   async (tok, S) => {                                   // 670 ① running → waiting：去做 I/O
-    S.p = cube('P', '#e55a9b', [0.6, 0.5, 0.6], S.D.N.running[0], 1.0, S.D.N.running[1], 1.5);
+    S.p = cube('P', '#e55a9b', [0.6, 0.5, 0.6], S.D.N.running[0], 1.0, S.D.N.running[1], 0.4);
     await wt(tok, 300); await slide(tok, S.p, S.D.N.waiting[0], 1.0, S.D.N.waiting[1], 700); litE(S.D.E, 'e1');
     sayc('① running → waiting', '它做 I/O：CPU burst 結束，進入 I/O burst');
   },
@@ -1339,22 +1352,22 @@ scene('sch-16c-four', '四個 scheduling 時機', [[0, 8.5, 9.5], [0, 0, -0.8]],
   },
   async (tok, S) => {                                   // 699 ② running → ready：time sharing 的 timer
     gone(S.em); glow(S.D.node.running, null); kill(S.p);
-    S.p = cube('P', '#e55a9b', [0.6, 0.5, 0.6], S.D.N.running[0], 1.0, S.D.N.running[1], 1.5);
-    S.tm = hot('⏰ timer（例如每 100 ms）', S.D.N.running[0], 2.0, S.D.N.running[1]);
+    S.p = cube('P', '#e55a9b', [0.6, 0.5, 0.6], S.D.N.running[0], 1.0, S.D.N.running[1], 0.4);
+    S.tm = hot('⏰ timer（例如每 100 ms）', S.D.N.running[0], 0.2, S.D.N.running[1] + 1.5);
     await wt(tok, 300); await slide(tok, S.p, S.D.N.ready[0], 1.0, S.D.N.ready[1], 700); litE(S.D.E, 'e2');
     sayc('② running → ready', 'time sharing：timer 一到就把它 kick out 回 ready');
   },
   async (tok, S) => {                                   // 728 OS 重新掌控：可以選同一個人，也可以換人
-    gone(S.tm); sm('OS 重新決定：可能選回同一個，也可能換別人', S.D.N.ready[0] + 1.0, 1.9, S.D.N.ready[1] - 0.8);
+    gone(S.tm); sm('OS 重新決定：可能選回同一個，也可能換別人', -1.0, 0.2, S.D.N.ready[1] + 1.6);
     sayc('OS 重新拿回掌控權', '可以選同一個人，也可以換別人');
   },
   async (tok, S) => {                                   // 740 ③ waiting → ready：新的 candidate
-    kill(S.p); S.p = cube('P2', '#2fc092', [0.6, 0.5, 0.6], S.D.N.waiting[0], 1.0, S.D.N.waiting[1], 1.5);
-    await wt(tok, 300); await slide(tok, S.p, S.D.N.ready[0] + 0.7, 1.0, S.D.N.ready[1], 700); litE(S.D.E, 'e3');
+    kill(S.p); S.p = cube('P2', '#2fc092', [0.6, 0.5, 0.6], S.D.N.waiting[0], 1.0, S.D.N.waiting[1], 0.4);
+    await wt(tok, 300); await slide(tok, S.p, S.D.N.ready[0] - 0.9, 1.0, S.D.N.ready[1], 700); litE(S.D.E, 'e3');
     sayc('③ waiting → ready', 'I/O 做完回來，ready queue 有新的 candidate，說不定很重要');
   },
   async (tok, S) => {                                   // 770 ④ running → terminate
-    const q = cube('P', '#9b7ef4', [0.6, 0.5, 0.6], S.D.N.running[0], 1.0, S.D.N.running[1], 1.5);
+    const q = cube('P', '#9b7ef4', [0.6, 0.5, 0.6], S.D.N.running[0], 1.0, S.D.N.running[1], 0.4);
     await wt(tok, 300); await slide(tok, q, S.D.N.term[0], 1.0, S.D.N.term[1], 700); litE(S.D.E, 'e4');
     sayc('④ running → terminate', '執行完了，當然要叫 scheduler 選下一個');
   },
@@ -1362,8 +1375,9 @@ scene('sch-16c-four', '四個 scheduling 時機', [[0, 8.5, 9.5], [0, 0, -0.8]],
 
 scene('sch-16c-preempt', 'Non-preemptive vs preemptive', CAMG, () => {
   const S = {};
-  S.cpu = prop('cpu', 4.6, 0, -2.6, 0.9, 'CPU'); zone('ready queue', -2.8, 0, -2.6, 5.2, 1.4);
-  S.P1 = pal('P1', '', PC.P1, 4.6, -1.7, 0.7);
+  S.cpu = prop('cpu', 4.6, 0, -2.6, 0.9, 'CPU');
+  const zl = zone('ready queue', -2.8, 0, -2.6, 5.2, 1.4).userData.name; zl.center.set(1, 0.5); zl.position.set(-5.5, 0.05, -2.9);   // name left of the zone, clear of the buddies
+  S.P1 = pal('P1', '', PC.P1, 4.6, -1.1, 0.7);
   S.list = ['① running→waiting', '② running→ready', '③ waiting→ready', '④ terminate'].map((t, i) => sm(t, -5.2 + i * 3.3, 3.6, -3.8));
   return S;
 }, [
@@ -1391,11 +1405,11 @@ scene('sch-16c-preempt', 'Non-preemptive vs preemptive', CAMG, () => {
   async (tok, S) => {                                   // 868 情況 ②：timer 到，preemptive 可能選別人
     gone(S.b); S.t = hot('⏰ timer', 4.6, 2.6, -2.6);
     S.P3 = pal('P3', '', PC.P3, -2.0, -2.6, 0.6);
-    await walk(tok, S.P1, -4.2, -2.6, 650); S.P1.mood('sad'); await walk(tok, S.P3, 4.6, -1.7, 650); S.P3.mood('happy');
+    await walk(tok, S.P1, -4.2, -2.6, 650); S.P1.mood('sad'); await walk(tok, S.P3, 4.6, -1.1, 650); S.P3.mood('happy');
     sayc('情況 ②（timer）+ preemptive', 'P1 被 kick out 回 ready queue，換別人跑');
   },
   async (tok, S) => {                                   // 903 non-preemptive：知道它還沒做完，馬上放回 running
-    await walk(tok, S.P3, -2.0, -2.6, 500); await walk(tok, S.P1, 4.6, -1.7, 600); S.P1.mood('happy'); gone(S.t);
+    await walk(tok, S.P3, -2.0, -2.6, 500); await walk(tok, S.P1, 4.6, -1.1, 600); S.P1.mood('happy'); gone(S.t);
     sayc('同樣情況換成 non-preemptive', '知道 P1 還沒做完，馬上把它放回 running');
   },
   async (tok, S) => {                                   // 924 情況 ③：P2 從 waiting 回到 ready，priority 更高 → preemptive 打斷 P1
@@ -1406,24 +1420,24 @@ scene('sch-16c-preempt', 'Non-preemptive vs preemptive', CAMG, () => {
     sayc('情況 ③ + preemptive', 'P2 回到 ready 且 priority 較高 → P1 直接讓開');
   },
   async (tok, S) => {                                   // 959 non-preemptive：ignore，等 P1 跑完再說
-    S.Gn = chart(10, { z: 2.9, title: 'non-preemptive', w: 10, x0: -5 });
+    S.Gn = chart(10, { z: 4.0, title: 'non-preemptive', w: 10, x0: -5 });
     await S.Gn.add(tok, 'P1', 0, 7, 500); await S.Gn.add(tok, 'P2', 7, 10, 400);
     sayc('情況 ③ + non-preemptive', '雖然來了更重要的人，還是讓 P1 跑完再說');
   },
   async (tok, S) => {                                   // 987 判斷：Gantt 上 CPU burst 畫到一半就換人 → preemptive
     S.Gp.blocks.filter((b) => b.id === 'P1').forEach((b) => glow(b.m, '#7a1010'));
-    bad('P1 的 burst 被切成兩段 → preemptive', 0, 1.5, 0.6);
+    bad('P1 的 burst 被切成兩段 → preemptive', 4.2, 1.0, 0.6);
     sayc('最好判斷的方法', 'Gantt chart 上 CPU burst 畫到一半就換人 → preemptive');
   },
   async (tok, S) => {                                   // 1011 一定要整段跑完才換 → non-preemptive
-    glow(S.Gn.blocks[0].m, '#0f5a3a'); good('每段都剛好是完整的 burst → non-preemptive', 0, 3.8, 2.9);
+    glow(S.Gn.blocks[0].m, '#0f5a3a'); good('每段都剛好是完整的 burst → non-preemptive', 2.7, 0.4, 3.15);
     sayc('一定要把整個 CPU burst run 完才換人', '就是 non-preemptive');
   },
 ]);
 
 scene('sch-16c-sync', 'Preemptive 的代價：synchronization', CAM, () => ({}), [
   async (tok, S) => {                                   // 1037 preemptive 效能通常比較好
-    S.m = bx('count = 5', '#c9b48e', 0, 0.4, -2.6, 2.6, 0, 0.8, 1.2); sm('shared memory（示意）', 0, 0, -1.7);
+    S.m = bx('count = 5', '#c9b48e', 0, 0.4, -2.6, 2.6, 0, 0.8, 1.2); sm('shared memory（示意）', 0, 1.15, -2.6);
     S.P1 = pal('P1', '', PC.P1, -4.2, 0.6, 0.75); S.P2 = pal('P2', '', PC.P2, 4.2, 0.6, 0.75);
     good('preemptive：效能通常比較好', 0, 3.4, -2.6);
     sayc('preemptive 的效能通常比較好', '因為它比較 dynamic');
@@ -1462,7 +1476,7 @@ scene('sch-16c-sync', 'Preemptive 的代價：synchronization', CAM, () => ({}),
     sayc('解法二（大部分 Linux 的作法）', '執行 kernel process 時，把 timer interrupt disable');
   },
   async (tok, S) => {                                   // 1213 kernel 沒有 time sharing → 變成 non-preemptive，一次做完
-    S.k.glow('#0f5a3a'); good('kernel 一口氣做完 = non-preemptive', 0, 2.8, 1.6);
+    S.k.glow('#0f5a3a'); good('kernel 一口氣做完 = non-preemptive', 5.4, 2.7, 1.6);
     sayc('kernel 在跑時就沒有 time sharing', 'scheduler 對它來說變成 non-preemptive');
   },
   async (tok, S) => {                                   // 1255 一般 OS：preemptive + 這個 trick
@@ -1547,7 +1561,7 @@ scene('sch-16d-metrics', '衡量排程好壞：utilization、throughput、三種
   },
   async (tok, S) => {                                   // 99 throughput：單位時間完成的工作量
     S.m[1].element.className = 'lab-label ptr alt';
-    zone('完成區', 4.2, 0, -2.0, 3.2, 1.4, '#d6ead8');
+    zone('完成區', 4.2, 0, -2.0, 3.2, 1.4, '#d6ead8').userData.name.position.set(5.9, 0.05, -2.0);   // name right of the zone, clear of the boxes
     sayc('throughput', 'CPU 忙不代表在做有意義的事：看每單位時間完成多少工作');
   },
   async (tok, S) => {                                   // 128 例：丟 100 個 process，每秒平均完成幾個
@@ -1556,11 +1570,11 @@ scene('sch-16d-metrics', '衡量排程好壞：utilization、throughput、三種
     sayc('例：丟進 100 個 process', '每秒鐘平均能「執行完」幾個 process');
   },
   async (tok, S) => {                                   // 153 跟 workload 有關，只能同輸入互相比
-    note('process 都很大 → throughput 自然小；只能「同樣輸入」比較不同電腦', 0, 0.3, -0.4);
+    S.wl = note('process 都很大 → throughput 自然小；只能「同樣輸入」比較不同電腦', 0, 0.3, -0.4);
     sayc('input workload 不同，數值就不同', '沒有像 0～100 的絕對標準，只能拿來比較');
   },
   async (tok, S) => {                                   // 184 三個跟 CPU scheduler 最有關的時間
-    [2, 3, 4].forEach((i) => { S.m[i].element.className = 'lab-label ptr alt'; });
+    gone(S.wl); [2, 3, 4].forEach((i) => { S.m[i].element.className = 'lab-label ptr alt'; });
     S.G = chart(10, { z: 2.4, w: 10, x0: -5, title: '一個 job 的一生（示意）' });
     sayc('接下來三個時間', '跟 CPU scheduler 關係最密切、也最容易計算');
   },
@@ -1571,7 +1585,7 @@ scene('sch-16d-metrics', '衡量排程好壞：utilization、throughput、三種
   },
   async (tok, S) => {                                   // 233 waiting time：待在 ready queue 的總時間
     S.G.blocks.filter((b) => b.id === 'ready').forEach((b) => glow(b.m, '#7a1010'));
-    sm('waiting = 2 + 1 = 3（只算 ready queue，不算 I/O）', 0, 0.3, 3.6);
+    sm('waiting = 2 + 1 = 3（只算 ready queue，不算 I/O）', 0, 0, 4.3);
     sayc('waiting time', '能做卻因為別人在用 CPU 而在 ready queue 等的時間總和');
   },
   async (tok, S) => {                                   // 291 response time：submit 到第一個 CPU burst 開始
@@ -1579,11 +1593,11 @@ scene('sch-16d-metrics', '衡量排程好壞：utilization、throughput、三種
     sayc('response time', '從 submit 到第一個 CPU burst 開始執行（first response）');
   },
   async (tok, S) => {                                   // 318 response 只看第一次；waiting 要把每次等的都加起來
-    note('response 只看第一次；waiting 把所有 burst 前等的都加起來 → 兩者不同', 0, 0.3, 4.4);
+    note('response 只看第一次；waiting 把所有 burst 前等的都加起來 → 兩者不同', 0, 0, 5.4);
     sayc('程式有好幾個 CPU burst', 'response 只看第一次，waiting 算全部在 ready queue 的時間');
   },
   async (tok, S) => {                                   // 358 interactive 最重視 response time
-    S.u = pal('使用者', '', '#c08a1f', -5.2, -0.4, 0.6); S.u.mood('happy'); bub('有回應了！', -5.2, 1.5, -0.4);
+    S.u = pal('使用者', '', '#c08a1f', 5.6, 0.2, 0.6); S.u.mood('happy'); bub('有回應了！', 5.6, 1.5, 0.2);
     sayc('interactive 的系統', '最重視 response time：一有回應就覺得它在動了');
   },
   async (tok, S) => {                                   // 373 waiting time：Shortest Job First 可證明最短
@@ -1598,7 +1612,7 @@ scene('sch-16d-metrics', '衡量排程好壞：utilization、throughput、三種
 
 scene('sch-16d-fcfs', 'FCFS：24、3、3 與 convoy', CAMG, () => {
   const S = {};
-  S.t = table(['P    burst', 'P1     24', 'P2      3', 'P3      3', '（都在 0 到達）'], -4.4, 5.4, -3.8);
+  S.t = table(['P    burst', 'P1     24', 'P2      3', 'P3      3', '（都在 0 到達）'], -6.0, 5.4, -3.8);
   return S;
 }, [
   async (tok, S) => {                                   // 425 First come first serve：最直覺
@@ -1612,7 +1626,7 @@ scene('sch-16d-fcfs', 'FCFS：24、3、3 與 convoy', CAMG, () => {
   },
   async (tok, S) => {                                   // 465 P1 只寫 24：真實程式有好幾個 burst，這裡只看一個
     S.t.hl(1);
-    note('真實程式有好幾個 CPU burst，這裡只模擬「當下這一個」', 0, 0.3, 4.2);
+    S.n1 = note('真實程式有好幾個 CPU burst，這裡只模擬「當下這一個」', 0, 0.3, 4.2);
     sayc('P1 只寫 24', '真實程式有很多 burst，這裡簡化成只看一個');
   },
   async (tok, S) => {                                   // 529 P1 先來 → 先執行 0～24
@@ -1624,7 +1638,7 @@ scene('sch-16d-fcfs', 'FCFS：24、3、3 與 convoy', CAMG, () => {
     sayc('P1 執行完，P2 才能執行', '然後才是 P3');
   },
   async (tok, S) => {                                   // 545 FCFS：preemptive 或 non-preemptive 結果一樣
-    note('FCFS：preemptive / non-preemptive 結果一樣（先來的 priority 不變）', 0, 0.3, 4.2);
+    gone(S.n1); S.n2 = note('FCFS：preemptive / non-preemptive 結果一樣（先來的 priority 不變）', 0, 0.3, 4.2);
     sayc('對 FCFS 來說', '就算可以打斷也不會打斷：先來的永遠先做');
   },
   async (tok, S) => {                                   // 573 waiting time：P1 0、P2 24、P3 27
@@ -1633,42 +1647,42 @@ scene('sch-16d-fcfs', 'FCFS：24、3、3 與 convoy', CAMG, () => {
     sayc('waiting time', 'P1 一開始就執行 = 0；P2 = 24；P3 = 27');
   },
   async (tok, S) => {                                   // 589 平均 = 17
-    S.avg = hot('平均 WT = (0 + 24 + 27) / 3 = 17', 2.6, 4.6, -3.8);
+    S.avg = hot('平均 WT = (0 + 24 + 27) / 3 = 17', 3.6, 4.6, -3.8);
     sayc('average waiting time', '(0 + 24 + 27) / 3 = 17');
   },
   async (tok, S) => {                                   // 597 response：0、24、27（只有一個 burst 時跟 WT 一樣）
-    sm('response time 也是 0、24、27', 2.6, 4.0, -3.8);
+    sm('response time 也是 0、24、27', 3.6, 4.0, -3.8);
     sayc('response time', '這裡也是 0、24、27');
   },
   async (tok, S) => {                                   // 633 若 P1 後面還有 I/O 4 秒再回來：WT 只算 2
-    S.G2 = chart(34, { z: 3.7, w: 11.4, title: '若 P1 還有第二個 burst（第二段長度示意）' });
+    gone(S.n2); S.G2 = chart(34, { z: 5.3, w: 11.4, title: '若 P1 還有第二個 burst（第二段長度示意）' });
     await S.G2.add(tok, 'P1', 0, 24, 400); await S.G2.add(tok, 'I/O 4', 24, 28, 300, IOC); await S.G2.add(tok, '等', 28, 30, 300, '#d64545'); await S.G2.add(tok, 'P1', 30, 33, 300);
     sayc('P1 做完 24 去做 I/O 4 秒，28 回來', '要等到 30 才能跑：等了 30 − 24 − 4 = 2，不是 6');
   },
   async (tok, S) => {                                   // 684 這裡只有一個 burst，所以 WT = RT
-    sm('只模擬一個 burst → waiting time 剛好等於 response time', 0, 0.3, 5.0);
+    S.n3 = sm('只模擬一個 burst → waiting time 剛好等於 response time', 0, -0.6, 6.0);
     sayc('I/O 的時間不算 waiting', '這例子只有一個 burst，所以 WT 剛好等於 RT');
   },
   async (tok, S) => {                                   // 701 FCFS 很糟：一開始跑大的，後面全部從 24 起跳
     S.B.G.blocks[0] && glow(S.B.G.blocks[0].m, '#7a1010');
-    bad('一開始跑大的 → 後面的 wait 都從 24 起跳（convoy effect）', 0, 1.4, 0.4);
+    bad('一開始跑大的 → 後面的 wait 都從 24 起跳（convoy effect）', 0, 2.0, 0.4);
     sayc('若要減少 average wait time，FCFS 很糟', '一開始 run 一個很大的 process，後面全部陪著等');
   },
   async (tok, S) => {                                   // 745 換順序 P2、P3、P1 → 平均 3
-    S.G3 = chart(30, { z: 5.3, w: 11.4, title: '換成 P2、P3、P1 的順序' });
+    S.G2.clear(); gone(S.n3); S.G3 = chart(30, { z: 5.3, w: 11.4, title: '換成 P2、P3、P1 的順序' });
     await S.G3.add(tok, 'P2', 0, 3, 300); await S.G3.add(tok, 'P3', 3, 6, 300); await S.G3.add(tok, 'P1', 6, 30, 700);
     txt(S.avg, '平均 WT：17 → (0 + 3 + 6) / 3 = 3');
     sayc('同樣都是 0 秒來，只是 P2、P3 先進來', '平均 wait time 大幅減少到 3');
   },
   async (tok, S) => {                                   // 769 FCFS 沒有 intelligence，看運氣
-    bad('FCFS 沒有 intelligence：表現全看到達順序（運氣）', 2.6, 3.4, -3.8);
+    bad('FCFS 沒有 intelligence：表現全看到達順序（運氣）', 3.6, 3.4, -3.8);
     sayc('FCFS 沒有 intelligence', '就看運氣：input 一開始是長的，wait time 就很久');
   },
 ]);
 
 scene('sch-16d-sjf', 'SJF（non-preemptive）：P1 7、P2 4、P3 1、P4 4', CAMG, () => {
   const S = {};
-  S.t = table(['P   arr burst', 'P1   0    7', 'P2   2    4', 'P3   4    1', 'P4   5    4'], -4.6, 5.4, -3.8);
+  S.t = table(['P   arr burst', 'P1   0    7', 'P2   2    4', 'P3   4    1', 'P4   5    4'], -6.2, 5.4, -3.8);
   return S;
 }, [
   async (tok, S) => {                                   // 788 要最短 average wait：讓最短的先
@@ -1683,15 +1697,15 @@ scene('sch-16d-sjf', 'SJF（non-preemptive）：P1 7、P2 4、P3 1、P4 4', CAMG
   },
   async (tok, S) => {                                   // 811 Shortest Job First：理論上 average wait 最小
     gone(S.a, S.b, S.c1);
-    good('Shortest Job First：average waiting time 理論上 minimal', 2.4, 4.6, -3.8);
+    good('Shortest Job First：average waiting time 理論上 minimal', 3.8, 4.6, -3.8);
     sayc('shortest job first', '目的就是 minimize wait time，最短的先執行');
   },
   async (tok, S) => {                                   // 835 preemptive 與 non-preemptive 結果可能不同
-    note('到達時間不同時，preemptive / non-preemptive 結果會不一樣', 2.4, 4.0, -3.8);
+    note('到達時間不同時，preemptive / non-preemptive 結果會不一樣', 3.8, 4.0, -3.8);
     sayc('SJF 要注意是哪一種', 'process 到達時間不同時，preemptive 跟 non-preemptive 結果不同');
   },
   async (tok, S) => {                                   // 856 各自的 optimum；preemptive 的 ≤ non-preemptive
-    sm('preemptive 的最佳平均 WT ≤ non-preemptive 的（機會更多）', 2.4, 3.4, -3.8);
+    sm('preemptive 的最佳平均 WT ≤ non-preemptive 的（機會更多）', 3.8, 3.4, -3.8);
     sayc('optimal 在兩種裡面都成立', 'preemptive 的 optimum 一定 ≤ non-preemptive');
   },
   async (tok, S) => {                                   // 877 例子：到達時間不同，只看一個 burst
@@ -1721,7 +1735,7 @@ scene('sch-16d-sjf', 'SJF（non-preemptive）：P1 7、P2 4、P3 1、P4 4', CAMG
   },
   async (tok, S) => {                                   // 1000 平均 = 4：non-preemptive 裡最小
     S.t.set(2, 'P2   2    4   6  (8−2)'); S.t.set(4, 'P4   5    4   7  (12−5)');
-    hot('平均 WT = (0 + 6 + 3 + 7) / 4 = 4', 2.4, 2.8, -3.8);
+    hot('平均 WT = (0 + 6 + 3 + 7) / 4 = 4', 3.8, 2.8, -3.8);
     sayc('平均就是 4', '任何 non-preemptive algorithm 都不可能比 4 更小');
   },
   async (tok, S) => {                                   // 1016 不代表最好：可能犧牲 response / turnaround
@@ -1729,7 +1743,7 @@ scene('sch-16d-sjf', 'SJF（non-preemptive）：P1 7、P2 4、P3 1、P4 4', CAMG
     sayc('這不代表這個 algorithm 是最好', '它可能犧牲掉 response time 或 turnaround time');
   },
   async (tok, S) => {                                   // 1039 response：P2 第 8 秒才執行，2 進來 → 6
-    sm('response：P1 0、P2 8 − 2 = 6 …', 2.4, 2.2, -3.8);
+    sm('response：P1 0、P2 8 − 2 = 6 …', 3.8, 2.2, -3.8);
     sayc('response time', 'P1 是 0；P2 第 8 秒才開始、2 進來 → 等了 6');
   },
   async (tok, S) => {                                   // 1053 看系統需求選演算法
@@ -1740,7 +1754,7 @@ scene('sch-16d-sjf', 'SJF（non-preemptive）：P1 7、P2 4、P3 1、P4 4', CAMG
 
 scene('sch-16d-srtf', 'Preemptive SJF：平均 WT 3', CAMG, () => {
   const S = {};
-  S.t = table(['P   arr burst', 'P1   0    7', 'P2   2    4', 'P3   4    1', 'P4   5    4'], -4.6, 5.4, -3.8);
+  S.t = table(['P   arr burst', 'P1   0    7', 'P2   2    4', 'P3   4    1', 'P4   5    4'], -6.2, 5.4, -3.8);
   S.B = board(16, { title: 'SJF（preemptive，又叫 SRTF）　肚子上的數字 = 剩餘時間' });
   return S;
 }, [
@@ -1754,7 +1768,7 @@ scene('sch-16d-srtf', 'Preemptive SJF：平均 WT 3', CAMG, () => {
   },
   async (tok, S) => {                                   // 1091 t=2：P2 來了；4 < P1 剩 5 → preempt
     S.B.arrive('P2', 4); S.t.hl(2);
-    S.c = hot('t=2：P2 要 4 < P1 剩 5 → 打斷 P1', 1.6, 1.5, -2.6);
+    S.c = hot('t=2：P2 要 4 < P1 剩 5 → 打斷 P1', 0.6, 1.9, -2.6);
     await S.B.back(tok, 'P1'); await S.B.run(tok, 'P2', 2, 4, 600); S.B.set('P2', 2);
     sayc('第 2 秒 P2 進來', 'P2 只要 4，P1 剩 5 → preemption：P1 的 CPU burst 被砍一半');
   },
@@ -1785,15 +1799,15 @@ scene('sch-16d-srtf', 'Preemptive SJF：平均 WT 3', CAMG, () => {
   },
   async (tok, S) => {                                   // 1210 平均 WT = 3：比 non-preemptive 的 4 小
     S.t.set(0, 'P   arr burst  CT  WT'); S.t.set(1, 'P1   0    7   16   9'); S.t.set(2, 'P2   2    4    7   1'); S.t.set(3, 'P3   4    1    5   0'); S.t.set(4, 'P4   5    4   11   2');
-    hot('平均 WT = (9 + 1 + 0 + 2) / 4 = 3 ≤ 4', 2.4, 4.6, -3.8);
+    hot('平均 WT = (9 + 1 + 0 + 2) / 4 = 3 ≤ 4', 3.8, 4.6, -3.8);
     sayc('average wait time = 3', '一定比 non-preemptive 小或相同，不可能更差');
   },
   async (tok, S) => {                                   // 1224 被打斷時 wait 要小心算：P2 2 進來立刻跑，但 7 才結束
-    sm('P2：2 進來立刻跑（response 0），中間被打斷，7 才結束', 2.4, 4.0, -3.8);
+    sm('P2：2 進來立刻跑（response 0），中間被打斷，7 才結束', 3.8, 4.0, -3.8);
     sayc('被打斷時算 wait 比較複雜', 'P2 一進來就執行，但中間被打斷，真正結束是 7');
   },
   async (tok, S) => {                                   // 1252 公式：WT = completion − arrival − burst
-    good('WT = 完成 − 到達 − burst：P2 = 7 − 2 − 4 = 1', 2.4, 3.4, -3.8);
+    good('WT = 完成 − 到達 − burst：P2 = 7 − 2 − 4 = 1', 3.8, 3.4, -3.8);
     sayc('簡單的公式', 'completion time 減 arrival time，再減 run time');
   },
   async (tok, S) => {                                   // 1259 若有好幾個 burst，還要減掉 I/O 時間
@@ -1994,15 +2008,15 @@ scene('sch-17a-fcfs', 'FCFS 為什麼不好', CAMG, () => ({ B: board(30, { titl
 
 scene('sch-17a-sjf', 'SJF（non-preemptive）：一段 CPU burst 不打斷', CAMG, () => {
   const S = {};
-  S.t = table(['P   arr burst', 'P1   0    7', 'P2   2    4', 'P3   4    1', 'P4   5    4'], -4.6, 5.4, -3.8);
+  S.t = table(['P   arr burst', 'P1   0    7', 'P2   2    4', 'P3   4    1', 'P4   5    4'], -6.2, 5.4, -3.8);
   return S;
 }, [
   async (tok, S) => {                                   // 167 要 minimize wait time：SJF
-    good('minimize 平均 wait time → shortest job first', 2.4, 4.6, -3.8);
+    S.g1 = good('minimize 平均 wait time → shortest job first', 3.8, 4.6, -3.8);
     sayc('想把 wait time minimize', '理論上可以證明就是 shortest job first');
   },
   async (tok, S) => {                                   // 178 ready queue 裡最短的先排
-    sm('看「目前 ready queue 裡」最短的', 2.4, 4.0, -3.8);
+    S.g2 = sm('看「目前 ready queue 裡」最短的', 3.8, 4.0, -3.8);
     sayc('最短的先排就對了', '是目前在 ready queue 裡最短的');
   },
   async (tok, S) => {                                   // 183 preemptive / non-preemptive 結果不一樣
@@ -2020,16 +2034,16 @@ scene('sch-17a-sjf', 'SJF（non-preemptive）：一段 CPU burst 不打斷', CAM
     sayc('一旦做下去就沒辦法打斷', '打斷不是指整個程式，而是這一個 CPU burst');
   },
   async (tok, S) => {                                   // 208 for loop：i++ 是 CPU burst，print 是 I/O burst
-    S.c = code(['for (…) {', '  i++;        // CPU burst', '  print(i);   // I/O burst', '}'], 3.6, 5.4, 0.46, -3.8);
+    gone(S.g1, S.g2); S.c = code(['for (…) {', '  i++;        // CPU burst', '  print(i);   // I/O burst', '}'], 3.6, 5.4, 0.6, -3.8);
     sayc('P1 這個程式其實有很多 burst', '像 for loop 裡 i++ 是 CPU burst、print i 是 I/O burst');
   },
   async (tok, S) => {                                   // 223 考題：第一個 burst 7、第二個 burst 4、中間隔多久
-    S.G2 = chart(20, { z: 3.8, w: 11.4, title: '真實的 P1（考題會這樣出；中間間隔示意）' });
+    S.G2 = chart(20, { z: 5.3, w: 11.4, title: '真實的 P1（考題會這樣出；中間間隔示意）' });
     await S.G2.add(tok, 'P1', 0, 7, 400); await S.G2.add(tok, 'I/O', 7, 13, 300, IOC); await S.G2.add(tok, 'P1', 13, 17, 300);
     sayc('考試可能這樣出', '第一個 burst 7、第二個 burst 4，中間過了多少時間');
   },
   async (tok, S) => {                                   // 250 下一個 burst 來時，要加進 ready queue
-    note('第二個 burst 來時 → 再加進 ready queue 重新排', 0, 0.3, 5.0);
+    note('第二個 burst 來時 → 再加進 ready queue 重新排', 0, -0.6, 6.0);
     sayc('CPU burst 來的時候', '你要記得它會重新加入 ready queue');
   },
   async (tok, S) => {                                   // 257 non-preemptive：每段剛好等於 burst 長度
@@ -2042,12 +2056,12 @@ scene('sch-17a-sjf', 'SJF（non-preemptive）：一段 CPU burst 不打斷', CAM
 
 scene('sch-17a-srtf', 'Preemptive SJF：response 與 waiting 不同', CAMG, () => {
   const S = {};
-  S.t = table(['P   arr burst', 'P1   0    7', 'P2   2    4', 'P3   4    1', 'P4   5    4'], -4.6, 5.4, -3.8);
+  S.t = table(['P   arr burst', 'P1   0    7', 'P2   2    4', 'P3   4    1', 'P4   5    4'], -6.2, 5.4, -3.8);
   S.G = chart(16, { title: 'SJF（preemptive）', z: 1.6 });
   return S;
 }, [
   async (tok, S) => {                                   // 265 preemptive：隨時判斷有沒有新的人到
-    sm('每有人進 ready queue，就重比「剩餘時間」', 2.4, 4.6, -3.8);
+    sm('每有人進 ready queue，就重比「剩餘時間」', 3.8, 4.6, -3.8);
     sayc('preemptive 比較複雜', '要隨時判斷有沒有新的人到 ready queue');
   },
   async (tok, S) => {                                   // 276 P1 還是先執行，但被打斷
@@ -2061,15 +2075,15 @@ scene('sch-17a-srtf', 'Preemptive SJF：response 與 waiting 不同', CAMG, () =
     sayc('P1 一進來就 response', '但中間一直在 ready queue 等，wait time 還是很久');
   },
   async (tok, S) => {                                   // 318 response 與 wait 是兩個不同的 metric
-    note('preemptive 時 response time ≠ waiting time：兩個不同的 metric', 0, 0.3, 3.2);
+    note('preemptive 時 response time ≠ waiting time：兩個不同的 metric', 0, -0.3, 3.6);
     sayc('preemptive 時', 'response time 跟 wait time 很容易不一樣');
   },
   async (tok, S) => {                                   // 333 preemptive 比 non-preemptive 好
-    good('平均 WT：preemptive 3 ≤ non-preemptive 4', 2.4, 4.0, -3.8);
+    good('平均 WT：preemptive 3 ≤ non-preemptive 4', 3.8, 4.0, -3.8);
     sayc('preemptive 一定比 non-preemptive 好', '（這個例子平均 WT 3 vs 4）');
   },
   async (tok, S) => {                                   // 338 但 burst 中途 context switch → synchronization
-    bad('代價：burst 中途 context switch → synchronization（下一章）', 0, 0.3, 4.2);
+    bad('代價：burst 中途 context switch → synchronization（下一章）', 0, -0.6, 4.4);
     sayc('只是在 CPU burst 中間做 context switch', '下一章會教：會有 synchronization 的問題');
   },
 ]);
@@ -2214,7 +2228,7 @@ scene('sch-17a-rr', 'Round-Robin 與 time quantum', CAMG, () => ({}), [
 
 scene('sch-17a-rr20', 'RR 例子：q = 20，53、17、68、24', CAMG, () => {
   const S = {};
-  S.t = table(['P   burst', 'P1   53', 'P2   17', 'P3   68', 'P4   24'], -4.8, 5.4, -3.8);
+  S.t = table(['P   burst', 'P1   53', 'P2   17', 'P3   68', 'P4   24'], -6.0, 5.4, -3.8);
   S.B = board(162, { title: 'RR，time quantum = 20', gz: 1.8 });
   for (const [id, b] of [['P1', 53], ['P2', 17], ['P3', 68], ['P4', 24]]) S.B.arrive(id, b);
   return S;
@@ -2233,7 +2247,7 @@ scene('sch-17a-rr20', 'RR 例子：q = 20，53、17、68、24', CAMG, () => {
   },
   async (tok, S) => {                                   // 740 37 時 P2 做完，換 P3
     await S.B.done(tok, 'P2'); S.B.G.tick(37);
-    sm('t = 37：P2 做完', S.B.G.xAt(28), 1.3, 1.8);
+    sm('t = 37：P2 做完', S.B.G.xAt(37), 1.8, 1.8);
     sayc('到了 37 P2 就做完了', '做完之後換下一個人 P3');
   },
   async (tok, S) => {                                   // 745 P3 超過 20 也只做 20，以此類推到大家做完
@@ -2243,7 +2257,7 @@ scene('sch-17a-rr20', 'RR 例子：q = 20，53、17、68、24', CAMG, () => {
   },
   async (tok, S) => {                                   // 755 標準 RR；quantum 可大可小
     S.t.set(0, 'P   burst  CT  WT'); S.t.set(1, 'P1   53   134  81'); S.t.set(2, 'P2   17    37  20'); S.t.set(3, 'P3   68   162  94'); S.t.set(4, 'P4   24   121  97');
-    sm('補充：平均 WT = (81 + 20 + 94 + 97) / 4 = 73', 2.0, 4.6, -3.8);
+    sm('補充：平均 WT = (81 + 20 + 94 + 97) / 4 = 73', 3.2, 4.6, -3.8);
     sayc('這就是標準的 round robin', 'quantum 可大可小（補充：平均 WT = 73）');
   },
 ]);
@@ -3389,26 +3403,26 @@ scene('sch-18b-linux', 'Linux：0～140、active / expired array', [[0, 6.2, 12.
 // ════════ VCIVXPoiLpU（Gate Smashers：Shortest Job First） ════════
 scene('sch-gs-gantt', 'SJF 例題：一步一步畫 Gantt chart', CAMG, () => {
   const S = {};
-  S.t = table(['P   AT  BT', 'P1   1   3', 'P2   2   4', 'P3   1   2', 'P4   4   4'], -4.6, 5.4, -3.8);
+  S.t = table(['P   AT  BT', 'P1   1   3', 'P2   2   4', 'P3   1   2', 'P4   4   4'], -6.2, 5.4, -3.8);
   return S;
 }, [
   async (tok, S) => {                                   // 1 SJF 例題：4 個 process，給 arrival time 與 burst time
     sayc('Shortest Job First 的數值例題', '四個 process，給 arrival time（AT）和 burst time（BT）');
   },
   async (tok, S) => {                                   // 15 要求 CT、TAT、WT、RT
-    sm('要求：completion、turnaround、waiting、response time', 2.4, 4.6, -3.8);
+    sm('要求：completion、turnaround、waiting、response time', 3.8, 4.6, -3.8);
     sayc('要算的', 'completion time、turnaround time、waiting time、response time');
   },
   async (tok, S) => {                                   // 27 criteria：burst time
-    hot('選人的 criteria：burst time', 2.4, 4.0, -3.8);
+    hot('選人的 criteria：burst time', 3.8, 4.0, -3.8);
     sayc('SJF 的 criteria', '看 burst time');
   },
   async (tok, S) => {                                   // 32 burst time 最小的先上 CPU
-    sm('burst time 最小的 → 先上 CPU', 2.4, 3.4, -3.8);
+    sm('burst time 最小的 → 先上 CPU', 3.8, 3.4, -3.8);
     sayc('shortest job', 'burst time 最小的 process，先讓它在 CPU 上跑');
   },
   async (tok, S) => {                                   // 45 mode：non-preemptive，一給 CPU 就跑完
-    note('mode：non-preemptive → 一旦給了 CPU，就整個跑完，中間不打斷', 2.4, 2.8, -3.8);
+    note('mode：non-preemptive → 一給 CPU 就整個跑完，中間不打斷', 3.8, 2.8, -3.8);
     sayc('mode 是 non-preemptive', '給了 CPU 就完整執行，中間不會被 interrupt');
   },
   async (tok, S) => {                                   // 57 用 Gantt chart，時間從 0 開始

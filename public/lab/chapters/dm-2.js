@@ -252,7 +252,7 @@ export default function (ctx) {
       const neg = a - d * (q + 1);
       const nm = cube('', '#d64545', [0.7, 0.3, 0.7], X(n - 1) + 1.1, 0.15, 0);
       nm.material.transparent = true; nm.material.opacity = 0.4;
-      tag(neg + '（負，不在 S）', 'idx', X(n - 1) + 1.1, 0.7);
+      tag(neg + '（負，不在 S）', 'idx', X(n - 1) + 1.6, 1.4);
       await w(tok ? 600 : 50);
       glow(wo.ms[n - 1], GOLD); tint(wo.ms[n - 1], '#dd8238');
     } finally { busy = false; }
@@ -820,10 +820,10 @@ scene('pfA-l3-forall', '全稱量詞 ∀：班上每個人都高於 120？', [
     cap('P(x)：x 這個同學身高 > 120', '');
   },
   async (tok, S) => { // 457.1 集合
-    S.z = zone('班上同學（集合）', 0, -0.05, 0, 11.5, 2.2);
+    S.z = zone('班上同學（集合）', 0, -0.05, 0, 11.5, 2.2); S.z.userData.name.position.set(-5.55, -0.55, 1.2);
     const H = [135, 128, 142, 131, 126];
     S.k = ['A', 'B', 'C', 'D', 'E'].map((n, i) => buddy(n, H[i], [FC.blue, FC.green, FC.orange, FC.purple, FC.teal][i], -4.4 + i * 2.2, 0, 0, 0.8));
-    T('身高為示意', 'idx', 4.8, 2.4);
+    T('身高為示意', 'idx', 4.8, -0.6, 1.2);
     cap('把班上同學看成一個集合', '每個人帶進 P(x) 看看');
   },
   async (tok, S) => { // 508.0 ∀x P(x)
@@ -1639,16 +1639,16 @@ scene('pfA-l4-syllo-alg', '用邏輯等式證三段論是 tautology', [
     cap('用 OR 的分配律', '把 ¬p ∨ r 分給每個括號');
   },
   async (tok, S) => { // 1085.0 第一項
-    T('p ∨ ¬p', 'good', -4.6, 2.3); T('= T', 'good', -4.6, 1.7);
+    T('p ∨ ¬p', 'good', -4.6, 1.75); T('= T', 'good', -4.6, 1.15);
     cap('第一個括號有 p 和 ¬p', 'OR 在一起永遠為真');
   },
   async (tok, S) => { // 1097.0 第二項
-    T('p ∨ ¬p', 'good', -0.6, 2.3); T('= T', 'good', -0.6, 1.7);
+    T('p ∨ ¬p', 'good', -0.6, 1.75); T('= T', 'good', -0.6, 1.15);
     cap('第二個括號也有 ¬p 和 p', '永遠為真');
   },
   async (tok, S) => { // 1110.2 第三項
-    T('r ∨ ¬r', 'good', 3.8, 2.3); T('= T', 'good', 3.8, 1.7);
-    T('T ∧ T ∧ T = T → tautology ✓', 'ptr alt', 0, 0.9);
+    T('r ∨ ¬r', 'good', 3.8, 1.75); T('= T', 'good', 3.8, 1.15);
+    T('T ∧ T ∧ T = T → tautology ✓', 'ptr alt', 0, 0.35);
     cap('第三個有 r 和 ¬r', '全部是 T → 是 tautology');
   },
 ]);
@@ -2391,7 +2391,7 @@ scene('pfA-l4-bad2', '錯誤證明：n 不是正數 → n² 不是正數？', [
   async (tok, S) => { // 5400.7
     S.b = board(-6.4, 6.0, 0.7);
     S.b.ln('「若 n 不是正數，則 n² 不是正數」', 'note');
-    T('結論是錯的：n = −1 時 n² = 1 是正數', 'bad', 2.2, 5.3);
+    T('結論是錯的：n = −1 時 n² = 1 是正數', 'bad', 0, 2.3);
     cap('要證：n 不是正數 → n² 不是正數', '這本身就錯，平方除了 0 都是正數');
   },
   async (tok, S) => { // 5434.0
@@ -2723,7 +2723,7 @@ scene('pfB-l8-congr', "同餘：a ≡ b (mod m) ⇔ m | (a − b)", CAM, [
         },
   // 609.9
   async (tok, S) => {
-          sm('≡ 讀作「同餘」；(mod m) 說明除數', -3.6, 3.4); cap('符號 ≡', '括號註明 mod m');
+          S.L.add('≡ 讀作「同餘」；(mod m) 說明除數', 'idx'); cap('符號 ≡', '括號註明 mod m');
         },
   // 622.6
   async (tok, S) => {
@@ -2931,7 +2931,7 @@ scene('pfB-l9-divsign', "除法公式：±11 除以 ±3", CAM, [
         },
   // 394.2
   async (tok, S) => {
-          sm('除數 −3：餘數仍要 0 ≤ r < 3', 3.3, 3.6); cap('除數是 −3 呢？', '餘數仍 0 ≤ r < 3');
+          S.R.add('除數 −3：餘數仍要 0 ≤ r < 3', 'idx'); cap('除數是 −3 呢？', '餘數仍 0 ≤ r < 3');
         },
   // 425
   async (tok, S) => {
@@ -3482,7 +3482,7 @@ scene('pfB-l10-group', "(ABC)₁₆ → 二進位 → (5274)₈", CAM, [
         },
   // 1425
   async (tok, S) => {
-          for (let i = 8; i < 12; i++) S.bits[i].visible = true; S.abc.push(sm('C', 5.13, 6.3)); good('(ABC)₁₆ = (101010111100)₂', 3.0, 4.9); cap('C = 1100', '(ABC)₁₆ = (101010111100)₂');
+          for (let i = 8; i < 12; i++) S.bits[i].visible = true; S.abc.push(sm('C', 5.13, 6.3)); S.eq = good('(ABC)₁₆ = (101010111100)₂', 3.0, 4.9); cap('C = 1100', '(ABC)₁₆ = (101010111100)₂');
         },
   // 1428.7
   async (tok, S) => {
@@ -3498,7 +3498,7 @@ scene('pfB-l10-group', "(ABC)₁₆ → 二進位 → (5274)₈", CAM, [
         },
   // 1476
   async (tok, S) => {
-          ['5', '2', '7', '4'].forEach((d, g) => good(d, 0.54 + g * 1.92, 4.6)); hot('= (5274)₈', 3.0, 2.4); cap('(101 010 111 100)₂ = (5274)₈', '');
+          gone(S.eq); ['5', '2', '7', '4'].forEach((d, g) => good(d, 0.54 + g * 1.92, 4.6)); hot('= (5274)₈', 3.0, 2.4); cap('(101 010 111 100)₂ = (5274)₈', '');
         },
 ]);
 scene('pfB-l10-753', "753 = (11003)₅ = (1361)₈ = (2F1)₁₆", CAM, [
@@ -3897,7 +3897,7 @@ scene('pfB-l10-inv5', "5⁻¹ ≡ −1 ≡ 2 (mod 3)", CAM, [
         },
   // 3683.8
   async (tok, S) => {
-          S.B.hi(-1); note('mod 運算用 =；同餘關係用 ≡', 3.4, 5.6); cap('= 和 ≡ 意義不同', '');
+          S.B.hi(-1); note('mod 運算用 =；同餘關係用 ≡', 3.4, 3.65); cap('= 和 ≡ 意義不同', '');
         },
   // 3732.6
   async (tok, S) => {
@@ -3927,7 +3927,7 @@ scene('pfB-l10-invex', "倒數的例子：mod 3、mod 6、mod 9", CAM, [
         },
   // 3906.6
   async (tok, S) => {
-          S.R = board(3.4, 6.6, 0.68); S.R.add('mod 6：gcd(5, 6) = 1 ✔'); S.R.last(); S.c6 = [0, 1, 2, 3, 4, 5].map((v, i) => bx(String(v), v === 5 ? FC.green : FC.sand, 1.2 + i * 0.85, 4.8, 0, 0.6, 0.6, 0.6)); cap('mod 6 裡的 5', '和 6 互質');
+          S.R = board(3.4, 6.6, 0.68); S.R.add('mod 6：gcd(5, 6) = 1 ✔'); S.R.last(); S.c6 = [0, 1, 2, 3, 4, 5].map((v, i) => bx(String(v), v === 5 ? FC.green : FC.sand, 1.2 + i * 0.85, 3.0, 0, 0.6, 0.6, 0.6)); cap('mod 6 裡的 5', '和 6 互質');
         },
   // 3931.3
   async (tok, S) => {
@@ -4455,7 +4455,7 @@ scene('pfB-l11-rsakey', "RSA：p, q → n = pq → e、d", CAM, [
 scene('pfB-l11-rsaenc', "C = M^e mod n，M = C^d mod n", CAM, [
   // 2129.4
   async (tok, S) => {
-          S.bits = row(-4.6, 5.8, '0100100001101001'.split(''), { w: 0.42, gap: 0.06, c: (i, v) => (v === '1' ? FC.green : FC.gray) }).cells; sm('明文的 ASCII（示意 "Hi"）', -1.0, 6.6); cap('明文 = 一串二進位', 'ASCII code');
+          S.bits = row(-4.6, 5.8, '0100100001101001'.split(''), { w: 0.42, gap: 0.06, c: (i, v) => (v === '1' ? FC.green : FC.gray) }).cells; S.bm = sm('明文的 ASCII（示意 "Hi"）', -1.0, 6.6); cap('明文 = 一串二進位', 'ASCII code');
         },
   // 2149.4
   async (tok, S) => {
@@ -4479,11 +4479,11 @@ scene('pfB-l11-rsaenc', "C = M^e mod n，M = C^d mod n", CAM, [
         },
   // 2228.2
   async (tok, S) => {
-          note('Rosen：用公開 e 加密、私鑰 d 解密', 1.6, 1.6); cap('哪把鑰匙公開？', '課本：e 公開、d 私藏');
+          note('Rosen：用公開 e 加密、私鑰 d 解密', 1.6, 3.05); cap('哪把鑰匙公開？', '課本：e 公開、d 私藏');
         },
   // 2254.7
   async (tok, S) => {
-          S.L.hi(-1); hd('為什麼 C^d ≡ M？', -4.0, 7.2); cap('為什麼會還原？', '');
+          S.L.hi(-1); gone(S.bits, S.bm); hd('為什麼 C^d ≡ M？', -4.0, 7.2); cap('為什麼會還原？', '');
         },
   // 2295.1
   async (tok, S) => {
@@ -4623,12 +4623,13 @@ function scene(id, title, steps, cam = CAM) {
   }]);
 }
 // a proof board: lines appear one under another (left-aligned); add() lights the newest line
-function board(x, yTop, dy = 0.6) {
+function board(x, yTop, dy = 0.6, max = 0) {
   const ls = []; let last = null;
   return {
     ls,
     add(t, c = 'note', dx = 0) {
       if (last && last.userData.hot) { cls(last, 'say'); last.userData.hot = false; }
+      if (max && ls.length >= max) { kill(ls.shift()); ls.forEach((o) => { o.position.y += dy; }); }
       const l = L(t, c, x + dx, yTop - ls.length * dy); ls.push(l); l.userData.hot = c === 'note'; last = l; return l;
     },
     set(i, c) { cls(ls[i < 0 ? ls.length + i : i], c); },
@@ -4784,13 +4785,13 @@ scene('pfC-12-modexp', '快速冪演算法（modular exponentiation）', [
   async (tok, S) => { // 548.1
     S.B = board(-6.6, 6.4); S.B.add('換成一般的 aᵇ：b 寫成二進位');
     S.lad = ['a', 'a²', 'a⁴', 'a⁸'].map((t, i) => chip(t, FC.gray, 1.4 + i * 1.6, 4.6, 1.0, 0.6));
-    ['2⁰', '2¹', '2²', '2³'].forEach((t, i) => T('a^(' + t + ')', 'idx', 1.4 + i * 1.6, 3.95));
+    S.pw = ['2⁰', '2¹', '2²', '2³'].map((t, i) => T('a^(' + t + ')', 'idx', 1.4 + i * 1.6, 3.95));
     S.x = T('x = 1', 'note', 3.8, 2.9);
     cap('把底數換成 a：aᵇ', '先把 b 換成二進位');
   },
   async (tok, S) => { // 572.6
     tint(S.lad[0], FC.blue); glow(S.lad[0], OKG); txt(S.x, 'x = a');
-    T('第 0 位 = 1 → 乘', 'good', 1.4, 5.3);
+    S.bit = T('第 0 位 = 1 → 乘', 'good', 1.4, 5.3);
     cap('第 0 位是 1：乘上 a^(2⁰) = a', '結果先放在暫存器 x');
   },
   async (tok, S) => { // 585.5
@@ -4798,17 +4799,17 @@ scene('pfC-12-modexp', '快速冪演算法（modular exponentiation）', [
     cap('把 a 自己平方 → a^(2¹)', '');
   },
   async (tok, S) => { // 596.3
-    T('第 1 位 = 0 → 不乘', 'idx', 3.0, 5.3);
+    kill(S.bit); S.bit = T('第 1 位 = 0 → 不乘', 'idx', 3.0, 5.3);
     cap('這一位是 0：這一項沒有，不要乘', '但還是要繼續平方');
   },
   async (tok, S) => { // 605.2
-    tint(S.lad[2], FC.blue); glow(S.lad[2], OKG); T('第 2 位 = 1 → 乘', 'good', 4.6, 5.3); txt(S.x, 'x = a · a⁴ = a⁵');
+    tint(S.lad[2], FC.blue); glow(S.lad[2], OKG); kill(S.bit); S.bit = T('第 2 位 = 1 → 乘', 'good', 4.6, 5.3); txt(S.x, 'x = a · a⁴ = a⁵');
     await wt(tok, 500);
-    tint(S.lad[3], FC.blue); glow(S.lad[3], OKG); T('第 3 位 = 1 → 乘', 'good', 6.2, 5.3); txt(S.x, 'x = a⁵ · a⁸ = a¹³（示意：b = 1101₂）');
+    tint(S.lad[3], FC.blue); glow(S.lad[3], OKG); kill(S.bit); S.bit = T('第 3 位 = 1 → 乘', 'good', 6.2, 5.3); txt(S.x, 'x = a⁵ · a⁸ = a¹³（示意：b = 1101₂）');
     cap('再平方 → a⁴、a⁸；那一位是 1 就乘進來', '一直累乘上去');
   },
   async (tok, S) => { // 630.6
-    S.B.clear(); S.lad.forEach((m) => kill(m)); kill(S.x);
+    S.B.clear(); S.lad.forEach((m) => kill(m)); kill(S.x); kill(S.bit); S.pw.forEach((l) => kill(l));
     S.code = code(['procedure modexp(b, n = (a_{k-1}…a₁a₀)₂, m)', 'x := 1', 'power := b mod m', 'for i := 0 to k − 1', '   if aᵢ = 1 then x := (x · power) mod m', '   power := (power · power) mod m', 'return x      { x = bⁿ mod m }'], -2.6, 6.4);
     S.code.hl(1); cls(S.code.ls[2], 'ptr alt');
     cap('寫成演算法：x := 1，power := b mod m', '底數太大沒用，先取餘數');
@@ -4828,23 +4829,23 @@ scene('pfC-12-modexp', '快速冪演算法（modular exponentiation）', [
   async (tok, S) => { // 774.0
     S.code.hl(-1);
     T('例：13 = 8 + 4 + 1 → 2¹³ = 2⁸ · 2⁴ · 2¹', 'note', 3.4, 2.4);
-    ['i', 'aᵢ', 'power', 'x'].forEach((h, j) => T(h, 'ptr', 1.2 + j * 1.6, 1.7));
+    ['i', 'aᵢ', 'power', 'x'].forEach((h, j) => T(h, 'ptr', [0.6, 2.0, 3.6, 6.2][j], 1.7));
     cap('不看 mod，用 2¹³ 走一次', '13 = 1101₂');
   },
   async (tok, S) => { // 797.6
-    ['0', '1', '2', '1 · 2 = 2'].forEach((v, j) => T(v, 'say', 1.2 + j * 1.6, 1.15));
+    ['0', '1', '2', '1 · 2 = 2'].forEach((v, j) => T(v, 'say', [0.6, 2.0, 3.6, 6.2][j], 1.15));
     cap('i = 0：power = 2¹ = 2，位元 1 → x = 2', '');
   },
   async (tok, S) => { // 810.7
-    ['1', '0', '4', '2（不乘）'].forEach((v, j) => T(v, j === 3 ? 'idx' : 'say', 1.2 + j * 1.6, 0.6));
+    ['1', '0', '4', '2（不乘）'].forEach((v, j) => T(v, j === 3 ? 'idx' : 'say', [0.6, 2.0, 3.6, 6.2][j], 0.6));
     cap('i = 1：power = 2·2 = 4，位元 0 → 不乘', '');
   },
   async (tok, S) => { // 836.6
-    ['2', '1', '16', '2 · 16 = 32'].forEach((v, j) => T(v, 'say', 1.2 + j * 1.6, 0.05));
+    ['2', '1', '16', '2 · 16 = 32'].forEach((v, j) => T(v, 'say', [0.6, 2.0, 3.6, 6.2][j], 0.05));
     cap('i = 2：power = 4·4 = 16，位元 1 → x = 32', '');
   },
   async (tok, S) => { // 848.5
-    ['3', '1', '256', '32 · 256 = 8192'].forEach((v, j) => T(v, j === 3 ? 'good' : 'say', 1.2 + j * 1.6, -0.5));
+    ['3', '1', '256', '32 · 256 = 8192'].forEach((v, j) => T(v, j === 3 ? 'good' : 'say', [0.6, 2.0, 3.6, 6.2][j], -0.5));
     cap('i = 3：power = 256 → x = 8192 = 2¹³', '16·16 = 256');
   },
   async (tok, S) => { // 860.4
@@ -5219,12 +5220,12 @@ scene('pfC-12-demorgan', '推廣的 De Morgan 定律', [
 
 scene('pfC-12-incl', '排容原理的歸納證明', [
   async (tok, S) => { // 2844.5
-    S.B = board(-6.6, 6.4); S.B.add('排容原理：|A₁ ∪ A₂ ∪ … ∪ Aₙ| = ?');
+    S.B = board(-6.6, 6.4, 0.6, 6); S.B.add('排容原理：|A₁ ∪ A₂ ∪ … ∪ Aₙ| = ?');
     cap('Inclusion–exclusion principle', '算連集裡有幾個東西');
   },
   async (tok, S) => { // 2867.9
     S.B.add('= Σ|Aᵢ| − Σ_{i<j}|Aᵢ ∩ Aⱼ| + Σ_{i<j<l}|Aᵢ ∩ Aⱼ ∩ A_l| − …');
-    T('加個別 → 減兩兩（加過頭）→ 加回三個（減過頭）…', 'idx', 0.4, 4.6);
+    S.ex = T('加個別 → 減兩兩（加過頭）→ 加回三個（減過頭）…', 'idx', 0.4, 4.6);
     cap('先加個別的，加過頭就減掉兩兩的', '減過頭再把三個的加回去');
   },
   async (tok, S) => { // 2924.6
@@ -5232,7 +5233,7 @@ scene('pfC-12-incl', '排容原理的歸納證明', [
     cap('假設 n 個集合成立', '手上的工具：兩個集合的公式、n 個的公式');
   },
   async (tok, S) => { // 2950.1
-    S.B.add('把 Aₙ ∪ Aₙ₊₁ 當成一個集合 → 只剩 n 個 → 套假設');
+    kill(S.ex); S.B.add('把 Aₙ ∪ Aₙ₊₁ 當成一個集合 → 只剩 n 個 → 套假設');
     S.c = [1, 2, 3].map((i) => chip('A' + ['₁', '₂', '…'][i - 1], FC.blue, 0.8 + i * 1.1, 2.0, 0.9, 0.6, 1));
     S.d = chip('Aₙ ∪ Aₙ₊₁', FC.orange, 6.0, 2.0, 1.6, 0.6, 1);
     cap('最後兩個先綁成一個', '這樣只有 n 個集合，可以套假設');
@@ -5383,7 +5384,7 @@ scene('pfC-12-match', '撿火柴遊戲：後手必勝', [
 
 scene('pfC-12-stamp', '郵票：4 元與 5 元湊出 ≥ 12 元', [
   async (tok, S) => { // 3764.5
-    S.B = board(-6.6, 6.4); S.B.add('寄信：要準備幾種郵票才夠貼？');
+    S.B = board(-6.6, 6.4, 0.6, 6); S.B.add('寄信：要準備幾種郵票才夠貼？');
     cap('去郵局寄信：30、40、50 元…', '要準備幾種郵票？');
   },
   async (tok, S) => { // 3787.3
@@ -5396,19 +5397,19 @@ scene('pfC-12-stamp', '郵票：4 元與 5 元湊出 ≥ 12 元', [
   },
   async (tok, S) => { // 3860.9
     S.row = (y, a) => a.forEach((v, i) => chip(String(v), v === 4 ? FC.blue : FC.orange, 2.4 + i * 0.75, y, 0.6, 0.6, 1));
-    T('12', 'ptr', 1.4, 4.4); S.row(4.4, [4, 4, 4]);
+    T('12', 'ptr', 1.4, 2.6); S.row(2.6, [4, 4, 4]);
     cap('12 = 4 + 4 + 4', '');
   },
   async (tok, S) => { // 3870.0
-    T('13', 'ptr', 1.4, 3.6); S.row(3.6, [4, 4, 5]);
+    T('13', 'ptr', 1.4, 1.9); S.row(1.9, [4, 4, 5]);
     cap('13 = 4 + 4 + 5', '');
   },
   async (tok, S) => { // 3873.7
-    T('14', 'ptr', 1.4, 2.8); S.row(2.8, [4, 5, 5]);
+    T('14', 'ptr', 1.4, 1.2); S.row(1.2, [4, 5, 5]);
     cap('14 = 4 + 5 + 5', '');
   },
   async (tok, S) => { // 3876.4
-    T('15', 'ptr', 1.4, 2.0); S.row(2.0, [5, 5, 5]);
+    T('15', 'ptr', 1.4, 0.5); S.row(0.5, [5, 5, 5]);
     cap('15 = 5 + 5 + 5', '這 4 個是起始條件');
   },
   async (tok, S) => { // 3898.1
@@ -5417,7 +5418,7 @@ scene('pfC-12-stamp', '郵票：4 元與 5 元湊出 ≥ 12 元', [
   },
   async (tok, S) => { // 3921.7
     S.B.add('k+1：先貼一張 4 元，剩 k−3');
-    T('k+1', 'ptr', 1.4, 0.9); chip('4', FC.blue, 2.4, 0.9, 0.6, 0.6, 1); chip('k−3', FC.gray, 3.6, 0.9, 1.2, 0.6, 1);
+    T('k+1', 'ptr', 1.4, -0.2); chip('4', FC.blue, 2.4, -0.2, 0.6, 0.6, 1); chip('k−3', FC.gray, 3.6, -0.2, 1.2, 0.6, 1);
     cap('先貼一張 4 元郵票', '剩下只要湊 k−3');
   },
   async (tok, S) => { // 3947.5
@@ -5463,7 +5464,7 @@ scene('pfC-12-tri', '三角剖分：n 邊形切成 n − 2 個三角形', [
   },
   async (tok, S) => { // 4149.3
     const pent = [0, 1, 2, 3, 4].map((k) => [4.6 + 1.2 * Math.cos(Math.PI / 2 + k * 2 * Math.PI / 5), 5.0 + 1.2 * Math.sin(Math.PI / 2 + k * 2 * Math.PI / 5)]);
-    poly(pent); seg(pent[0], pent[2], '#2fc092'); seg(pent[0], pent[3], '#2fc092');
+    S.pent = [...poly(pent), seg(pent[0], pent[2], '#2fc092'), seg(pent[0], pent[3], '#2fc092')];
     S.B.add('凸的：5 → 3、6 → 4、7 → 5、8 → 6');
     cap('凸多邊形很好理解', '五邊形對角線畫出去，切成 3 個');
   },
@@ -5487,7 +5488,7 @@ scene('pfC-12-tri', '三角剖分：n 邊形切成 n − 2 個三角形', [
   },
   async (tok, S) => { // 4317.3
     OCT.forEach((p, i) => { const q = OCT[(i + 1) % 8]; T(String(i + 1), 'idx', (p[0] + q[0]) / 2, (p[1] + q[1]) / 2 - 0.25); });
-    S.B.add('例：八邊形（形狀示意）');
+    S.B.clear(); S.pent.forEach((o) => kill(o)); S.B.add('例：八邊形（形狀示意）');
     cap('數一下：原來有 8 個邊', '');
   },
   async (tok, S) => { // 4340.1
@@ -5529,7 +5530,7 @@ scene('pfC-13-seq', '遞迴定義數列：首項 + 遞迴式', [
     cap('先看最常見的形式：數列', 'aₙ 就是一個以整數 n 為變數的函式');
   },
   async (tok, S) => { // 61.1
-    S.B.add('給首項，後面的項用前面的項湊出來 → 遞迴定義');
+    S.B.add('給首項＋用前面的項湊 → 遞迴定義');
     cap('另一種定義法：給首項', '後面的用 aₙ₋₁、aₙ₋₂… 湊出來');
   },
   async (tok, S) => { // 87.1
@@ -5740,17 +5741,17 @@ scene('pfC-13-str', '字串與字母集 Σ', [
   },
   async (tok, S) => { // 1054.8
     S.B.add('Σ⁰ = {λ}：長度 0（空字串）');
-    chip('λ', FC.gray, 2.0, 5.2, 0.8, 0.6, 1); T('Σ⁰', 'ptr', 0.9, 5.2);
+    chip('λ', FC.gray, 2.6, 5.2, 0.8, 0.6, 1); T('Σ⁰', 'ptr', 1.6, 5.2);
     cap('Σ⁰：長度 0 的字串', '只有一個：空字串');
   },
   async (tok, S) => { // 1074.9
     S.B.add('Σ¹ = {a, b, c, …, z}：長度 1');
-    ['a', 'b', 'c', '…', 'z'].forEach((t, i) => chip(t, FC.blue, 2.0 + i * 0.9, 4.2, 0.7, 0.6, 1)); T('Σ¹', 'ptr', 0.9, 4.2);
+    ['a', 'b', 'c', '…', 'z'].forEach((t, i) => chip(t, FC.blue, 2.6 + i * 0.85, 4.2, 0.7, 0.6, 1)); T('Σ¹', 'ptr', 1.6, 4.2);
     cap('Σ¹：長度 1 的字串', 'a、b、c 一直到 z');
   },
   async (tok, S) => { // 1097.8
-    S.B.add('Σ² = {aa, ab, …, ba, bb, …, zz}：順序有關');
-    ['aa', 'ab', '…', 'ba', 'bb', '…'].forEach((t, i) => chip(t, FC.orange, 2.0 + i * 0.9, 3.2, 0.8, 0.6, 1)); T('Σ²', 'ptr', 0.9, 3.2);
+    S.B.add('Σ² = {aa, ab, …, zz}：順序有關');
+    ['aa', 'ab', '…', 'ba', 'bb', '…'].forEach((t, i) => chip(t, FC.orange, 2.6 + i * 0.85, 3.2, 0.8, 0.6, 1)); T('Σ²', 'ptr', 1.6, 3.2);
     cap('Σ²：長度 2 的字串', 'ab 跟 ba 不一樣');
   },
   async (tok, S) => { // 1125.9
@@ -5767,7 +5768,7 @@ scene('pfC-13-str', '字串與字母集 Σ', [
   },
   async (tok, S) => { // 1224.3
     S.B.add('Σ = {0, 1} → 二進位字串');
-    ['0', '1', '01', '110'].forEach((t, i) => chip(t, FC.teal, 2.0 + i * 1.0, 1.8, 0.8, 0.6, 1));
+    ['0', '1', '01', '110'].forEach((t, i) => chip(t, FC.teal, 2.6 + i * 1.0, 1.0, 0.8, 0.6, 1));
     cap('字母集是 {0, 1}', '列出來的就是一串串二進位');
   },
 ]);
@@ -5880,11 +5881,11 @@ scene('pfC-13-btree', '遞迴定義二元樹（extended binary tree）', [
     cap('只能接兩棵：T₁ 和 T₂', '每個人最多兩個小孩');
   },
   async (tok, S) => { // 1897.7
-    T('∅', 'note', 1.4, 4.6); T('最小的二元樹', 'idx', 1.4, 4.0);
+    S.mini = [T('∅', 'note', 1.4, 4.6), T('最小的二元樹', 'idx', 1.4, 4.0)];
     cap('最小的二元樹是什麼？', '是空的，這要小心');
   },
   async (tok, S) => { // 1917.9
-    T('∅', 'idx', 2.7, 4.0); T('∅', 'idx', 3.9, 4.0); tree([[0, 0]], [], 3.3, 4.8); T('→ 一個點', 'say', 4.9, 4.8);
+    S.mini.push(T('∅', 'idx', 2.7, 4.0), T('∅', 'idx', 3.9, 4.0), tree([[0, 0]], [], 3.3, 4.8), T('→ 一個點', 'say', 4.9, 4.8));
     cap('左邊放空樹、右邊放空樹、加樹根', '空的沒有根可以連 → 只剩一個點');
   },
   async (tok, S) => { // 1945.3
@@ -5897,7 +5898,7 @@ scene('pfC-13-btree', '遞迴定義二元樹（extended binary tree）', [
     cap('左兒子下面整串：左子樹', '右邊的：右子樹');
   },
   async (tok, S) => { // 2012.3
-    S.B.add('有根樹：最小是一個點；小孩不限個數、不分順序', 'say');
+    S.mini.forEach((o) => (o.kill ? o.kill() : kill(o))); S.B.add('有根樹：最小是一個點；小孩不限個數、不分順序', 'say');
     cap('比較：有根樹最小是一個點', '小孩隨便生，畫左畫右都一樣');
   },
   async (tok, S) => { // 2059.6
@@ -5907,7 +5908,7 @@ scene('pfC-13-btree', '遞迴定義二元樹（extended binary tree）', [
     cap('同樣一個小孩', '一個是左邊有兒子，一個是右邊有兒子');
   },
   async (tok, S) => { // 2110.5
-    S.B.add('有兒子 = 內部節點；沒兒子 = 葉子（leaf / external node）', 'good');
+    S.B.add('有兒子：內部節點；沒兒子：葉子（leaf）', 'good');
     S.bt.ms.forEach((m, i) => tint(m, i === 2 || i === 3 ? FC.orange : FC.green));
     cap('有兒子的：internal node', '沒兒子的：leaf，像樹葉');
   },
@@ -6364,7 +6365,7 @@ scene('pfC-3a-cube', '例：Σ i³ = [n(n+1)/2]²', [
 
 scene('pfC-3a-rec', '不知道答案時：recurrence relation', [
   async (tok, S) => { // 840.8
-    S.B = board(-6.6, 6.4); S.B.add('用歸納法證明：必須先知道答案');
+    S.B = board(-6.6, 6.4, 0.6, 7); S.B.add('用歸納法證明：必須先知道答案');
     cap('要證這個，得先知道右邊是什麼', '證明都是這樣');
   },
   async (tok, S) => { // 860.6
@@ -6455,12 +6456,12 @@ scene('pfC-3b-gen', '廣義的歸納法：從 n₀ 開始、可用前面全部',
 
 scene('pfC-3b-rec2', 'second-order 遞迴：aₙ = 3ⁿ − 2ⁿ', [
   async (tok, S) => { // 197.4
-    S.B = board(-6.6, 6.4); S.B.add('second-order recurrence：跟前兩項有關');
+    S.B = board(-6.6, 6.4, 0.6, 8); S.B.add('second-order recurrence：跟前兩項有關');
     cap('second order recurrence relation', '剛才那個只跟前一項有關：first order');
   },
   async (tok, S) => { // 215.8
     S.B.add('a₁ = 1，a₂ = 5 → a₃ = 5·5 − 6·1 = 19 …');
-    [['a₁', 1], ['a₂', 5], ['a₃', 19], ['a₄', 65]].forEach(([n, v], i) => { chip(String(v), i < 2 ? FC.blue : FC.green, 1.6 + i * 1.3, 4.6, 0.9, 0.6, 1); T(n, 'idx', 1.6 + i * 1.3, 4.0); });
+    S.av = []; [['a₁', 1], ['a₂', 5], ['a₃', 19], ['a₄', 65]].forEach(([n, v], i) => { S.av.push(chip(String(v), i < 2 ? FC.blue : FC.green, 1.6 + i * 1.3, 4.6, 0.9, 0.6, 1), T(n, 'idx', 1.6 + i * 1.3, 4.0)); });
     cap('要有兩個起始值', '有 a₁、a₂ 就能算 a₃、a₄… → well-defined');
   },
   async (tok, S) => { // 238.9
@@ -6472,7 +6473,7 @@ scene('pfC-3b-rec2', 'second-order 遞迴：aₙ = 3ⁿ − 2ⁿ', [
     cap('這是 homogeneous recurrence', '後面學會的話一下就解出來');
   },
   async (tok, S) => { // 280.3
-    S.B.add('用歸納法證（已經知道答案）：要 check 兩個 basis');
+    S.av.forEach((o) => kill(o)); S.B.add('用歸納法證（已經知道答案）：要 check 兩個 basis');
     S.D = dominoes(6, 1.2, 0.3, 0.9, FC.blue, ['n=1', 'n=2', 'n=3', 'n=4', 'n=5', '…']);
     cap('證下一個要用前面兩個', '所以要 check 兩個');
   },
@@ -6509,18 +6510,18 @@ scene('pfC-3b-rec2', 'second-order 遞迴：aₙ = 3ⁿ − 2ⁿ', [
     cap('1、2 成立 → 3；2、3 → 4；3、4 → 5…', '一直歸納下去');
   },
   async (tok, S) => { // 462.7
-    T('■', 'note', 6.3, 1.8);
+    T('■', 'note', 6.6, 0.9);
     cap('畫一個塗黑的方塊：證明結束', '有些人寫 QED');
   },
   async (tok, S) => { // 473.9
-    T('hypothesis 假設幾格，看 step 用到幾格', 'say', 3.6, 3.0);
+    T('hypothesis 假設幾格，看 step 用到幾格', 'say', 3.0, 1.6);
     cap('這裡用到兩格，就假設兩格', '其實從頭到現在都可以用');
   },
 ]);
 
 scene('pfC-3b-rich', '「定理」：everybody is rich', [
   async (tok, S) => { // 518.6
-    S.B = board(-6.6, 6.4); S.B.add('定理：everybody is rich（每個人都有錢）');
+    S.B = board(-6.6, 6.4, 0.6, 4); S.B.add('定理：everybody is rich（每個人都有錢）');
     cap('看我怎麼用歸納法證這個定理', '每個人都有錢');
   },
   async (tok, S) => { // 545.7
@@ -6549,13 +6550,13 @@ scene('pfC-3b-rich', '「定理」：everybody is rich', [
   },
   async (tok, S) => { // 742.8
     S.B.add('第一組 α₁ … α_k（k 個人，含 α₁）→ 依 S(k) 全有錢', 'say');
-    S.g1 = T('第一組：α₁ … α_k', 'ptr', 3.15, 2.2);
+    S.g1 = T('第一組：α₁ … α_k', 'ptr', 3.15, 2.9);
     for (let i = 1; i < 4; i++) { tint(S.p[i].body, FC.gold); S.p[i].set('$'); }
     cap('先把 α_{k+1} 拿掉，剩 k 個人', '裡面有 α₁ 有錢 → 全部有錢');
   },
   async (tok, S) => { // 797.1
     S.B.add('第二組 α₁, …, α_{k−1}, α_{k+1}（拿掉 α_k）→ 也全有錢', 'say');
-    kill(S.g1); T('第二組：拿掉 α_k，放進 α_{k+1}', 'ptr', 3.8, 2.2);
+    kill(S.g1); S.g2 = T('第二組：拿掉 α_k，放進 α_{k+1}', 'ptr', 3.8, 2.9);
     tint(S.p[4].body, FC.gold); S.p[4].set('$'); await S.p[4].hop(tok);
     cap('再找 k 個人：拿掉 α_k、放進 α_{k+1}', '裡面還是有 α₁ → 全部有錢');
   },
@@ -6569,16 +6570,16 @@ scene('pfC-3b-rich', '「定理」：everybody is rich', [
     cap('所以所有人都有錢', '定理證完了？');
   },
   async (tok, S) => { // 935.3
-    T('把 rich 換成 beautiful、ugly… 也都「證得出來」', 'say', 3.6, 3.6);
+    kill(S.g2); T('把 rich 換成 beautiful、ugly… 也都「證得出來」', 'say', 3.6, 4.0);
     cap('證明跟「有錢」這個形容詞無關', '換成任何形容詞都成立？');
   },
   async (tok, S) => { // 956.8
-    T('結論不對 → 證明一定有錯（窮教授就是反例）', 'bad', 3.6, 4.4);
+    T('結論不對 → 證明一定有錯（窮教授就是反例）', 'bad', 3.6, 3.35);
     S.p.forEach((b) => b.mood('wow'));
     cap('問題：證明是錯的', '要 disprove 結論，找一個沒錢的人就好');
   },
   async (tok, S) => { // 975.4
-    T('重點：找出「證明」哪裡錯', 'note', 3.6, 5.2);
+    T('重點：找出「證明」哪裡錯', 'note', 3.6, 2.7);
     cap('定理很複雜時你不知道它對不對', '要能看出證明哪裡不對');
   },
 ]);
@@ -6735,11 +6736,11 @@ scene('pfC-3c-inj', 'one-to-one（injective）與 onto', [
 // ── 3D ──
 scene('pfC-3d-onto', 'onto（surjective）與 bijective', [
   async (tok, S) => { // 4.3
-    S.B = board(-6.6, 6.4); S.B.add('onto：f 的 range 就是 codomain，f(A) = B');
-    oval(1.6, 2.4, 1.2, 1.8); oval(5.4, 2.4, 1.2, 1.8);
-    [3.6, 2.4, 1.2].forEach((y, i) => dot('a' + (i + 1), FC.blue, 1.6, y));
-    [3.3, 1.5].forEach((y, i) => dot('b' + (i + 1), FC.orange, 5.4, y));
-    arr([2.0, 3.6], [5.0, 3.3]); arr([2.0, 2.4], [5.0, 1.6]); arr([2.0, 1.2], [5.0, 1.4]);
+    S.B = board(-6.6, 6.4, 0.6, 5); S.B.add('onto：f 的 range 就是 codomain，f(A) = B');
+    oval(1.6, 1.6, 1.2, 1.8); oval(5.4, 1.6, 1.2, 1.8);
+    [2.8, 1.6, 0.4].forEach((y, i) => dot('a' + (i + 1), FC.blue, 1.6, y));
+    [2.5, 0.7].forEach((y, i) => dot('b' + (i + 1), FC.orange, 5.4, y));
+    arr([2.0, 2.8], [5.0, 2.5]); arr([2.0, 1.6], [5.0, 0.8]); arr([2.0, 0.4], [5.0, 0.6]);
     cap('f 的值域就是 codomain', '');
   },
   async (tok, S) => { // 7.0
@@ -6764,7 +6765,7 @@ scene('pfC-3d-onto', 'onto（surjective）與 bijective', [
     cap('又是 one-to-one 又是 onto', '叫 bijective，名詞 bijection');
   },
   async (tok, S) => { // 162.8
-    ['injective 嵌射', 'surjective 蓋射', 'bijective 對射'].forEach((t, i) => T(t, i === 2 ? 'good' : 'note', 3.6, 5.4 - i * 0.6));
+    ['injective 嵌射', 'surjective 蓋射', 'bijective 對射'].forEach((t, i) => T(t, i === 2 ? 'good' : 'note', -4.2, 3.0 - i * 0.65));
     cap('嵌射、蓋射、對射', 'injective、surjective、bijective');
   },
 ]);
@@ -6791,7 +6792,7 @@ scene('pfC-3d-count', '例：A = {1, 2, 3} → B = {x, y} 的 8 個函式', [
     cap('B 有 4 個元素就是 4³', '一般：n 的 m 次方');
   },
   async (tok, S) => { // 405.2
-    const fs = ['xxx', 'xxy', 'xyx', 'xyy', 'yxx', 'yxy', 'yyx', 'yyy'];
+    const fs = ['xxx', 'xxy', 'xyx', 'xyy', 'yxx', 'yxy', 'yyx', 'yyy']; S.B.clear();
     T('f(1) f(2) f(3)', 'ptr', 2.6, 6.0);
     S.rows = fs.map((t, i) => { T('f' + (i + 1), 'idx', 0.9, 5.4 - i * 0.62); return t.split('').map((c, j) => dot(c, c === 'x' ? FC.blue : FC.orange, 1.8 + j * 0.8, 5.4 - i * 0.62)); });
     S.col = (j, name) => T(name, 'ptr', 4.4 + j * 1.2, 6.0);
@@ -6813,14 +6814,14 @@ scene('pfC-3d-count', '例：A = {1, 2, 3} → B = {x, y} 的 8 個函式', [
     cap('bijective：兩個都要 yes', '沒有一個 → 0 個');
   },
   async (tok, S) => { // 617.8
-    S.B.add('答案：injective 0、surjective 6、bijective 0', 'good');
+    T('答案：injective 0、surjective 6、bijective 0', 'good', -3.4, 0.3);
     cap('injective 0 個', 'surjective 6 個、bijective 0 個');
   },
 ]);
 
 scene('pfC-3d-gen', '一般情況：|A| = m，|B| = n', [
   async (tok, S) => { // 640.0
-    S.B = board(-6.6, 6.4); S.B.add('|A| = m，|B| = n → 共 nᵐ 個函式');
+    S.B = board(-6.6, 6.4, 0.6, 4); S.B.add('|A| = m，|B| = n → 共 nᵐ 個函式');
     cap('全部 2³ = 8 個', '一般是 n 的 m 次方個');
   },
   async (tok, S) => { // 657.9
@@ -6829,9 +6830,9 @@ scene('pfC-3d-gen', '一般情況：|A| = m，|B| = n', [
   },
   async (tok, S) => { // 692.9
     S.B.add('A 有 3 個、B 有 4 個 → injective 有 4·3·2 = 24 個', 'say');
-    [0, 1, 2].forEach((i) => dot(String(i + 1), FC.blue, 1.6, 4.4 - i * 1.0));
-    [0, 1, 2, 3].forEach((i) => dot('b' + (i + 1), FC.orange, 5.0, 4.8 - i * 1.0));
-    T('4 種 · 3 種 · 2 種（排列）', 'idx', 3.3, 1.0);
+    [0, 1, 2].forEach((i) => dot(String(i + 1), FC.blue, 1.6, 3.2 - i * 1.0));
+    [0, 1, 2, 3].forEach((i) => dot('b' + (i + 1), FC.orange, 5.0, 3.6 - i * 1.0));
+    T('4 種 · 3 種 · 2 種（排列）', 'idx', 3.3, -0.2);
     cap('簡單的排列組合', '1 有 4 種、2 剩 3 種、3 剩 2 種');
   },
   async (tok, S) => { // 712.2

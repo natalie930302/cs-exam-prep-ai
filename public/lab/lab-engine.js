@@ -318,6 +318,59 @@ export function createLab(container) {
   const frameFns = new Set();
   function onFrame(fn) { frameFns.add(fn); return () => frameFns.delete(fn); }
   let last = performance.now();
+  // ── Labels never sit on each other ──
+  // After the CSS2D pass places every label, labels that would cover another
+  // are nudged up or down on screen (the shortest way clear). Labels on blocks
+  // (values) and icons keep their place; everything else moves around them.
+  // Goals are recomputed every few frames and eased into, so nothing jumps.
+  const nudge = new Map();          // element → { cur, goal }
+  const TR = /translate\(([-\d.e]+)px,\s*([-\d.e]+)px\)\s*$/;
+  let dcCount = 0;
+  function declutter(dt, snap = false) {
+    const items = [];
+    scene.traverseVisible((o) => {
+      if (!o.isCSS2DObject) return;
+      const el = o.element, st = el.style;
+      if (!el.textContent || st.display === 'none' || st.visibility === 'hidden' || st.opacity === '0' || !el.isConnected) return;
+      const m = TR.exec(st.transform);
+      if (!m) return;
+      items.push({ el, x: +m[1], y: +m[2] });
+    });
+    if (snap || dcCount++ % 6 === 0) {
+      for (const it of items) { it.w = it.el.offsetWidth; it.h = it.el.offsetHeight; it.fixed = it.el.classList.contains('val') || it.el.classList.contains('icon'); }
+      items.sort((a, b) => (b.fixed - a.fixed) || (a.y - b.y));
+      const placed = [];
+      const hits = (x, y, w, h) => placed.some((p) => {
+        const ox = Math.min(x + w / 2, p.x + p.w / 2) - Math.max(x - w / 2, p.x - p.w / 2);
+        const oy = Math.min(y + h / 2, p.y + p.h / 2) - Math.max(y - h / 2, p.y - p.h / 2);
+        return ox > 2 && oy > 2 && ox * oy > 0.12 * Math.min(w * h, p.w * p.h);
+      });
+      const seen = new Set();
+      for (const it of items) {
+        let dy = 0;
+        if (!it.fixed && it.w && hits(it.x, it.y, it.w, it.h)) {
+          const stepPx = Math.max(6, it.h * 0.5);
+          dy = null;
+          for (let k = 1; k <= 8 && dy === null; k++) {
+            for (const d of [-k * stepPx, k * stepPx]) if (!hits(it.x, it.y + d, it.w, it.h)) { dy = d; break; }
+          }
+          if (dy === null) dy = 0;
+        }
+        placed.push({ x: it.x, y: it.y + dy, w: it.w || 0, h: it.h || 0 });
+        const n = nudge.get(it.el) || { cur: 0, goal: 0 };
+        n.goal = dy; nudge.set(it.el, n); seen.add(it.el);
+      }
+      for (const el of nudge.keys()) if (!seen.has(el)) nudge.delete(el);
+    }
+    const k = snap ? 1 : Math.min(1, dt * 12);
+    for (const it of items) {
+      const n = nudge.get(it.el);
+      if (!n) continue;
+      n.cur += (n.goal - n.cur) * k;
+      if (Math.abs(n.cur) > 0.3) it.el.style.transform += ' translateY(' + n.cur.toFixed(1) + 'px)';
+    }
+  }
+
   function tick(now) {
     const dt = Math.min(0.033, (now - last) / 1000);
     last = now;
@@ -331,6 +384,7 @@ export function createLab(container) {
     controls.update();
     renderer.render(scene, camera);
     labels.render(scene, camera);
+    declutter(dt);
     requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
@@ -558,6 +612,7 @@ export function createLab(container) {
     controls.update();
     renderer.render(scene, camera);
     labels.render(scene, camera);
+    declutter(0, true);
   }
   return { onFrame, advance, scene, world, camera, controls, addBody, removeBody, dropTo, springTo, flyAway, clear, label, box, frameCamera, bodies, renderer, setVisible };
 }

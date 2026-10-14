@@ -122,7 +122,7 @@ export default function (ctx) {
     const X = (i) => x0 + i * cw, rowY = (r) => top - 0.75 - r * 0.56, faultY = top - 0.75 - F * 0.56 - 0.05;
     const g = { L, F, cw, X, rowY, faultY, top, refs: [], cols: [], marks: [], count: 0 };
     ref.forEach((p, i) => g.refs.push(cube(p, pcol(p), [cw * 0.84, 0.46, 0.5], X(i), top, 0)));
-    if (opts.name) tag(opts.name, 'ptr', X(0) - cw / 2 - 0.1, top + 0.55);
+    if (opts.name) tag(opts.name, 'ptr', X(0) - cw / 2 - 1.1, top);
     for (let r = 0; r < F; r++) for (let i = 0; i < L; i++) ctx.tile(V3(X(i), rowY(r) - 0.25, -0.1), cw * 0.9, 0.5, '#efe5d3');
     g.cnt = tag('', 'ptr alt', opts.cntX === undefined ? X(L - 1) + 0.2 : opts.cntX, faultY - 0.55);
     return g;
@@ -376,9 +376,9 @@ export default function (ctx) {
   const wsSet = (ref, t, D) => [...new Set(ref.slice(Math.max(0, t - D), t))].sort((a, b) => a - b);
   function wsDraw() {
     lab.clear();
-    const L = WSREF.length, cw = 12.6 / L, X = (i) => -6.3 + cw / 2 + i * cw;
+    const L = WSREF.length, cw = 13.4 / L, X = (i) => -6.7 + cw / 2 + i * cw;
     ws.X = X; ws.cw = cw;
-    ws.o.refs = WSREF.map((p, i) => cube(p, pcol(p), [cw * 0.86, 0.42, 0.42], X(i), 4.4));
+    ws.o.refs = WSREF.map((p, i) => { const m = cube(p, pcol(p), [cw * 0.86, 0.42, 0.42], X(i), 4.4); Object.assign(m.userData.lbl.element.style, { minWidth: '0', padding: '0 1px', fontSize: '10px' }); return m; });
     for (let i = 0; i < L; i += 5) tag(String(i + 1), 'idx', X(i), 3.85);
     ws.o.win = ghost('#c08a1f', 1, 0.8, 0.8, 0, 4.4, 0, 0.25);
     ws.o.t = tag('', 'ptr alt', 0, 5.2);
@@ -674,7 +674,7 @@ export default function (ctx) {
     const cw = 0.62, X = (i) => -6.0 + i * cw;
     const rm = REF.map((p, i) => cube(p, pcol(p), [0.52, 0.45, 0.5], X(i), 6.2));
     tag('a', 'ptr alt', (X(9) + X(10)) / 2, 6.9); tag('b', 'ptr alt', (X(10) + X(11)) / 2, 6.9);
-    tag('stack（上 = 最近用過）', 'ptr', 3.6, 6.2);
+    tag('stack（上 = 最近用過）', 'ptr', 4.4, 5.85);
     const sm = new Map(); let stack = [];
     const sy = (k) => 5.2 - k * 0.66;
     say('LRU 的一種實作：用 stack 記錄使用順序', '被參考的 page 拿到最上面');
@@ -909,7 +909,7 @@ const MC = { blue: '#4b9ee2', orange: '#dd8238', green: '#2fc092', purple: '#9b7
 const HL = '#6a4a00', OKG = '#0f5a3a', NG = '#5a1010';
 const PGC = { 1: '#4b9ee2', 2: '#2fc092', 3: '#9b7ef4', 4: '#dd8238', 5: '#e55a9b', 6: '#31aab0', 7: '#c08a1f', 0: '#7a8fa6' };
 const pc = (p) => PGC[p] || '#b5a58a';
-const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.g) kill(o.g); else if (o.element) remove(o); else kill(o); });
+const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.g) kill(o.g); else if (o.element) remove(o); else { if (o.userData && o.userData.name) remove(o.userData.name); kill(o); } });
 async function slide(tok, o, x, y, z = 0, ms = 600) { const a = o.position.clone(); await travel(tok, o, a, V3(x, y, z), ms); }
 function scene(id, title, cam, steps) {
   FRAG.push([id, title, async (tok) => {
@@ -928,13 +928,13 @@ function poly(pts, color = '#8d6b3a', z = 0) { const ls = []; for (let i = 1; i 
 // small axes: origin (x0, y0), width w, height h
 function axes(x0, y0, w, h, xl, yl) {
   const a = [line(x0, y0, x0 + w, y0, 0, '#6e5f49'), line(x0, y0, x0, y0 + h, 0, '#6e5f49')];
-  a.push(sm(xl, x0 + w - 0.4, y0 - 0.4), sm(yl, x0 + 0.3, y0 + h + 0.35));
+  a.push(xl.length > 10 ? sm(xl, x0 + w - 0.4, y0 - 0.4) : sm(xl, x0 + w + 0.9, y0), sm(yl, x0 + 0.3, y0 + h + 0.35));
   return a;
 }
 // a page table: rows [page, frame, bit]; columns: page # | frame # | v/i
 function ptable(x, yTop, rows, o = {}) {
   const dy = o.dy || 0.6, w = o.w || 0.9;
-  const head = o.head === false ? [] : [sm(o.h0 || 'page', x - w - 0.05, yTop + 0.55), sm(o.h1 || 'frame', x, yTop + 0.55), sm('v / i', x + w * 0.8, yTop + 0.55)];
+  const head = o.head === false ? [] : [sm(o.h0 || 'page', x - w - 0.05, yTop + 0.55), sm(o.h1 || 'frame', x, yTop + 0.95), sm('v / i', x + w * 0.8, yTop + 0.55)];
   const cells = rows.map(([p, f, b], i) => {
     const y = yTop - i * dy;
     const c0 = bx(String(p), o.pcol ? o.pcol(p) : MC.sand, x - w - 0.05, y, 0, w - 0.08, dy - 0.08, 0.6);
@@ -1030,9 +1030,9 @@ function cycle(names, cx, cy, r, color = MC.sand) {
 // ════════ TnmN_KNIbc4（第 13A 講：Virtual Memory 背景） ════════
 scene('vm-13a-plan', '本章談什麼：virtual memory', CAM, [
   async (tok, S) => {                                   // 14.8 第九章 virtual memory：memory 管理會用到硬碟
-    S.ram = zone('memory', -2.6, 0, 0, 4.4, 2.4); S.disk = prop('disk', 3.4, 0, 0, 1.1, 'disk');
+    S.ram = zone('memory', -2.6, 0, 0, 4.4, 2.4); S.ram.userData.name.position.y = 1.2; S.disk = prop('disk', 3.4, 0, 0, 1.1, 'disk');
     S.p = [0, 1, 2].map((i) => bx('page', MC.blue, -3.8 + i * 1.2, 0.4, 0, 1.0, 0.5, 0.8));
-    const g = pkt('page', MC.orange, -1.4, 1.2, 0.6, 1.0); await slide(tok, g, 3.4, 1.6, 0.6, 700);
+    const g = pkt('page', MC.orange, -1.4, 1.2, 0.6, 1.0); await slide(tok, g, 3.4, 2.3, 0.6, 700);
     cap('第九章：virtual memory', 'memory 管理不只用 memory，還會用到硬碟');
   },
   async (tok, S) => {                                   // 36.4 先介紹 virtual memory；學過 paging
@@ -1066,7 +1066,7 @@ scene('vm-13a-why', '為什麼不必把整支程式放進 memory', CAM, [
     hd('一支 program 的內容', -4.2, 6.6);
     S.parts = [['main code', MC.blue], ['error 處理', MC.red], ['很少走的 branch', MC.orange], ['library', MC.purple], ['int a[10000]', MC.teal]]
       .map(([t, c], i) => bx(t, c, -4.2, 5.8 - i * 0.75, 0, 3.0, 0.6, 0.8));
-    S.mem = zone('memory', 3.0, 1.0, 0, 4.4, 3.0);
+    S.mem = zone('memory', 3.0, 1.0, 0, 4.4, 3.0); S.mem.userData.name.position.y = 2.5;
     cap('不希望一開始就把整個 process', '的 memory content 全部放進 memory');
   },
   async (tok, S) => {                                   // 140.7 之前：dynamic loading、dynamic linking
@@ -1100,7 +1100,7 @@ scene('vm-13a-why', '為什麼不必把整支程式放進 memory', CAM, [
     cap('virtual memory 可以做到更 low level', 'page 沒被 access 到，就不放在 memory 裡');
   },
   async (tok, S) => {                                   // 260.6 utilization：放進去的東西真的被 access
-    good('目的：放進 memory 的都是真的會被 access 的', 0.8, 3.4);
+    good('目的：放進 memory 的都會被 access', 3.4, 3.2);
     cap('一切都是為了增加 memory utilization', '不是放了多少，而是放進去的真的被用到');
   },
 ]);
@@ -1144,7 +1144,7 @@ scene('vm-13a-benefit', 'Virtual memory 的四個好處', CAM, [
     cap('demand paging 一開始什麼都不 load', '要用的 page 才放進來，一次只搬 4KB');
   },
   async (tok, S) => {                                   // 576.0 VM 包含 virtual address，又更進一步到 disk
-    note('virtual memory ⊃ virtual address：還多用到 disk', 0.4, 0.2);
+    note('virtual memory ⊃ virtual address：還多用到 disk', 0.4, -0.6);
     cap('跟第八章 virtual address 的好處有重疊', 'virtual memory 更進一步：用到 disk');
   },
 ]);
@@ -1191,11 +1191,11 @@ scene('vm-13a-map', 'Virtual memory 示意：page 可以待在 disk', CAM, [
     S.v = ['A', 'B', 'C', 'D'].map((n, i) => bx(n, pc(i + 1), -4.8, 5.8 - i * 0.65, 0, 1.2, 0.55, 0.7));
     S.t = ptable(-1.1, 5.8, [[0, 1, 'v'], [1, 0, 'v'], [2, 2, 'v'], [3, null, 'i']], { head: false, w: 0.8 });
     S.f = [['B', 2], ['A', 1], ['C', 3]].map(([n, c], i) => bx(n, pc(c), 2.4, 5.8 - i * 0.65, 0, 1.2, 0.55, 0.7));
-    S.disk = prop('disk', 5.4, 1.6, 0, 1.0, 'disk'); bx('D', pc(4), 5.4, 3.0, 0, 0.9, 0.5, 0.6);
+    S.disk = prop('disk', 5.4, 1.6, 0, 1.0, 'disk'); bx('D', pc(4), 5.4, 3.6, 0, 0.9, 0.5, 0.6);
     cap('logical address 就是一堆 page', '經過 page table（memory map）對到 physical memory');
   },
   async (tok, S) => {                                   // 834.9 很久沒被 access 的 page swap 到 disk
-    const c = S.f[2]; await slide(tok, c, 5.4, 3.6, 0, 800);
+    const c = S.f[2]; await slide(tok, c, 5.4, 4.3, 0, 800);
     S.t.set(2, null, 'i');
     cap('virtual memory 再加一層', '很久沒被 access 的 page，swap 到 disk 上');
   },
@@ -1237,7 +1237,7 @@ scene('vm-13a-novm', '沒有 virtual memory 時，程式怎麼跑', CAM, [
   },
   async (tok, S) => {                                   // 1028.6 memory 不夠：整個 process swap 到硬碟
     S.disk = prop('disk', 5.8, 0.4, 0, 0.9, 'disk');
-    const g = pkt('整個 process', MC.blue, 3.0, 3.4, 0.8, 1.8); await slide(tok, g, 5.8, 1.8, 0.8, 800);
+    const g = pkt('整個 process', MC.blue, 3.0, 3.4, 0.8, 1.8); await slide(tok, g, 5.8, 2.6, 0.8, 800);
     cap('memory 不夠或很久沒跑', '就整個 process 為單位 swap 到硬碟');
   },
   async (tok, S) => {                                   // 1046.5 執行：透過 page table translation
@@ -1262,8 +1262,8 @@ scene('vm-13a-novm', '沒有 virtual memory 時，程式怎麼跑', CAM, [
 // ════════ VAaunFe_lRs（第 13B 講：Demand Paging & Process Creation） ════════
 scene('vm-13b-what', 'Demand paging：要了才搬', CAM, [
   async (tok, S) => {                                   // 14.8 demand：你要才做
-    S.mem = zone('memory', -2.8, 0, 0, 5.0, 2.6); S.disk = prop('disk', 4.2, 0, 0, 1.1, 'disk');
-    S.pg = ['A', 'B', 'C', 'D', 'E'].map((n, i) => bx(n, pc(i + 1), 2.6 + i * 0.75, 1.8, 0, 0.65, 0.5, 0.6));
+    S.mem = zone('memory', -2.8, 0, 0, 5.0, 2.6); S.mem.userData.name.position.y = 2.3; S.disk = prop('disk', 4.2, 0, 0, 1.1, 'disk');
+    S.pg = ['A', 'B', 'C', 'D', 'E'].map((n, i) => bx(n, pc(i + 1), 2.6 + i * 0.75, 2.5, 0, 0.65, 0.5, 0.6));
     cap('demand paging 的 demand', '就是「你要了，我才去做」');
   },
   async (tok, S) => {                                   // 25.1 不是一次全部 load，要哪頁才搬
@@ -1314,7 +1314,7 @@ scene('vm-13b-invalid', '無效位址 vs 還沒搬進來', CAM, [
     cap('pure demand paging', 'load process 時只建 page table、PCB，memory 什麼都沒有');
   },
   async (tok, S) => {                                   // 177.1 run 時才把 page 放到 memory
-    const c = pkt('page 2', MC.lilac, -3.0, 4.56, 0.6, 1.2); await slide(tok, c, 2.0, 0.6, 0.6, 800);
+    const c = pkt('page 2', MC.lilac, -3.0, 4.56, 0.6, 1.2); await slide(tok, c, 3.6, 1.0, 0.6, 800);
     cap('真的開始 run', '用到哪個 page，才把它放到 memory');
   },
   async (tok, S) => {                                   // 192.2 pure 比較極端；實際可能先 load 一定會用的
@@ -1337,7 +1337,7 @@ scene('vm-13b-pager', 'Swapper（process 為單位）vs pager（page 為單位�
   },
   async (tok, S) => {                                   // 233.7 pager：以 page 為單位
     hd('pager：一次一個 page', -2.6, 3.9);
-    await slide(tok, S.p2[2], 4.4, 1.6, 0.6, 700);
+    await slide(tok, S.p2[2], 4.4, 2.3, 0.6, 700);
     cap('demand paging 是 pager 做的事', '以 page 為單位，不會一次放整個 process');
   },
   async (tok, S) => {                                   // 259.3 部分在 disk，process 仍可運作
@@ -1440,7 +1440,7 @@ scene('vm-13b-run', '例子：pure demand paging 一步步跑', CAM, [
     cap('下一個指令一樣先檢查', '不同的 page 就 fault → 搬進來 → update → 再做一次');
   },
   async (tok, S) => {                                   // 579.9 怎麼知道 address 有效？segment length 先檢查
-    note('有效與否：上一層 segment length 先檢查過了；這裡只看在不在 memory', 0, 1.6);
+    note('有效與否：上一層 segment length 先檢查過了；這裡只看在不在 memory', 0, -0.6);
     cap('怎麼知道 address 有沒有效？', '上一層 segment 會先檢查 length；到 paging 只看在不在 memory');
   },
 ]);
@@ -1450,7 +1450,7 @@ scene('vm-13b-steps', 'Page fault 處理步驟', CAMW, [
     S.cpu = prop('cpu', -5.6, 4.6, 0, 0.9, 'CPU'); S.t = ptable(-1.6, 5.6, [[0, 3, 'v'], [1, null, 'i'], [2, 7, 'v']], { w: 0.8, pcol: (p) => pc(p + 1) });
     S.os = buddy('OS', '', MC.orange, 1.1, 3.6, 0, 0.55); S.disk = prop('disk', 5.4, 0.4, 0, 1.0, 'disk');
     hd('physical memory', 3.0, 6.6); S.fr = [0, 1, 2, 3].map((i) => bx(['', '', '', 'free'][i], [MC.blue, MC.purple, MC.green, MC.paper][i], 3.0, 5.8 - i * 0.62, 0, 1.6, 0.52, 0.7));
-    S.st = bullets(-6.6, 3.0, 0.5);
+    S.st = bullets(-6.6, 3.0, 0.7);
     cap('pure demand paging 的步驟', '把剛剛的流程列下來');
   },
   async (tok, S) => {                                   // 626.1 ① access → invalid → page fault trap
@@ -1478,7 +1478,7 @@ scene('vm-13b-steps', 'Page fault 處理步驟', CAMW, [
   },
   async (tok, S) => {                                   // 726.3 update page table、valid bit 設成 v
     S.t.set(1, 9, 'v'); glow(S.t.cells[1][2], OKG); S.st('⑤ update page table：frame 號碼、bit → v');
-    sm('（示意：frame 9）', 0.6, 6.4);
+    sm('（示意：frame 9）', -1.6, 3.65);
     cap('update page table 的內容', '還要把 valid bit 設成 valid');
   },
   async (tok, S) => {                                   // 737.7 最後 restart：PC −4
@@ -1486,11 +1486,11 @@ scene('vm-13b-steps', 'Page fault 處理步驟', CAMW, [
     cap('最後一步千萬別忘了：restart', 'program counter 減 4，重新執行之前的指令');
   },
   async (tok, S) => {                                   // 758.5 整理：先 access，bit 無效 → interrupt 被 pager catch
-    hot('page fault 由 OS 的 pager 接住', 3.4, 2.9);
+    hot('page fault 由 OS 的 pager 接住', 0, -1.95);
     cap('整理一下：不管三七二十一先 access', '看到 bit 無效就產生 interrupt，被 OS 的 pager 接住');
   },
   async (tok, S) => {                                   // 780.6 disk 位置在 load／搬出時就記下來
-    sm('page 在 disk 的位置：load 或搬出時就記下了', 3.6, 2.3);
+    sm('page 在 disk 的位置：load 或搬出時就記下了', 0, -2.6);
     cap('page 在 disk 的哪裡？', 'load 或搬到 disk 時就記下來了，所以找得到');
   },
 ]);
@@ -1507,7 +1507,7 @@ scene('vm-13b-noframe', '沒有 free frame：要先 replacement', CAM, [
     cap('萬一 frame 全都滿了怎麼辦？', '在「找 free frame」後面要多一步');
   },
   async (tok, S) => {                                   // 839.4 強迫某 page swap 到 disk
-    glow(S.fr[2], NG); await slide(tok, S.fr[2], 4.6, 4.0, 0, 800);
+    glow(S.fr[2], NG); await slide(tok, S.fr[2], 4.6, 4.7, 0, 800);
     cap('強迫某一個 page 從 memory', 'swap 到 disk，清出一個位置');
   },
   async (tok, S) => {                                   // 852.0 選誰 → replacement algorithm
@@ -1632,7 +1632,7 @@ scene('vm-14a-eat', '複習：EAT 被 page fault 主宰', CAM, [
     cap('因為 disk 比 memory 慢太多', '用簡單的數學 model 就能評估 page fault rate 的影響');
   },
   async (tok, S) => {                                   // 64.8 使用者能容忍 10% → p 極低
-    note('能容忍慢 10% → page fault rate 要極低，遠低於 TLB miss rate', -1.0, 0.5);
+    note('能容忍慢 10% → page fault rate 要極低，遠低於 TLB miss rate', 1.4, 0.0);
     cap('使用者大概能容忍慢 10%', '算出來 page fault rate 要非常非常低');
   },
   async (tok, S) => {                                   // 96.3 原因：locality
@@ -1640,7 +1640,7 @@ scene('vm-14a-eat', '複習：EAT 被 page fault 主宰', CAM, [
     cap('為什麼做得到？', '程式的 locality');
   },
   async (tok, S) => {                                   // 106.2 一次搬一整個 page：4KB、8KB、甚至 4MB
-    const p = pkt('4 KB page', MC.blue, 3.6, 3.6, 0.8, 1.4); await slide(tok, p, -1.6, 3.8, 1.0, 800);
+    const p = pkt('4 KB page', MC.blue, 3.6, 3.6, 0.8, 1.4); await slide(tok, p, 0.4, 3.8, 1.0, 800);
     sm('page size：4KB、8KB，Pentium 可選 4MB', -1.6, 5.1);
     cap('page fault 雖然慢，但一次搬一整個 page', '通常 4KB，現在有 8KB，Pentium 還能選 4MB');
   },
@@ -1650,7 +1650,7 @@ scene('vm-14a-eat', '複習：EAT 被 page fault 主宰', CAM, [
     cap('每次 memory access 只讀幾個 byte', '接下來在這個 page 裡的 access 都不會再 fault');
   },
   async (tok, S) => {                                   // 164.1 不是沒影響：程式跳來跳去、開太多程式
-    bad('開太多程式 → memory 不夠 → fault 變多 → 越來越慢', -1.0, -0.1);
+    bad('開太多程式 → memory 不夠 → fault 變多 → 越來越慢', 1.4, -0.7);
     cap('但不是沒有影響', '程式跳來跳去、開一堆程式，page fault 機率升高就變慢');
   },
   async (tok, S) => {                                   // 192.9 SSD：swap space 放 SSD
@@ -1702,7 +1702,7 @@ scene('vm-14a-cow', 'Copy-on-write 的想法', CAM, [
     cap('建立新 process 的時間大幅縮短', '代價是執行中才 copy，會稍微慢一點');
   },
   async (tok, S) => {                                   // 416.5 free frame 給新 page 前會 zero-out
-    sm('給新 page 的 free frame 會先 zero-out（清成 0），避免看到前一個 process 的資料', 0, 1.3);
+    sm('給新 page 的 free frame 會先 zero-out（清成 0），避免看到前一個 process 的資料', 0, -0.4);
     cap('補充：拿 free frame 給新 page 時', '通常先 zero-out 清光，避免 security 問題');
   },
 ]);
@@ -1743,7 +1743,7 @@ scene('vm-14a-cowex', 'COW 例子：parent 改了 page C', CAM, [
 
 scene('vm-14a-mmap', 'Memory-mapped file 的概念', CAM, [
   async (tok, S) => {                                   // 602.1 memory-mapped file
-    hd('memory-mapped file', 0, 6.7); S.file = prop('file', 4.6, 3.0, 0, 1.4, 'file（disk）');
+    hd('memory-mapped file', 0, 6.7); S.file = prop('file', 5.4, 2.6, 0, 1.4, 'file（disk）');
     cap('下一個比較特別的：memory-mapped file', '先看它的概念');
   },
   async (tok, S) => {                                   // 613.6 用 memory access 的方式 read／write file
@@ -1751,9 +1751,9 @@ scene('vm-14a-mmap', 'Memory-mapped file 的概念', CAM, [
     cap('讓 user program 用 memory access 的方式', '去 read 或 write 一個 file');
   },
   async (tok, S) => {                                   // 629.5 就是 array：file 是 byte stream
-    S.arr = [0, 1, 2, 3, 4, 5].map((i) => bx('A[' + i + ']', MC.tlb, -2.2 + i * 0.9, 5.0, 0, 0.8, 0.55, 0.7));
-    S.byt = [0, 1, 2, 3, 4, 5].map((i) => bx('byte ' + i, MC.lilac, -2.2 + i * 0.9, 1.4, 0, 0.8, 0.55, 0.7));
-    S.ar = [0, 1, 2, 3, 4, 5].map((i) => arrow(V3(-2.2 + i * 0.9, 4.65, 0.4), V3(-2.2 + i * 0.9, 1.8, 0.4)));
+    S.arr = [0, 1, 2, 3, 4, 5].map((i) => bx('A[' + i + ']', MC.tlb, -2.8 + i * 1.2, 5.0, 0, 1.0, 0.55, 0.7));
+    S.byt = [0, 1, 2, 3, 4, 5].map((i) => bx('byte ' + i, MC.lilac, -2.8 + i * 1.2, 1.4, 0, 1.0, 0.55, 0.7));
+    S.ar = [0, 1, 2, 3, 4, 5].map((i) => arrow(V3(-2.8 + i * 1.2, 4.65, 0.4), V3(-2.8 + i * 1.2, 1.8, 0.4)));
     cap('什麼叫 memory access 的方式？就是 array', 'file 是 byte stream，map 到一個 byte array');
   },
   async (tok, S) => {                                   // 651.6 一個指令 map 上去，之後用 pointer 操作
@@ -1765,7 +1765,7 @@ scene('vm-14a-mmap', 'Memory-mapped file 的概念', CAM, [
     cap('其實跟 virtual memory 是一樣的概念', 'memory address 直接對到 disk 上的 content');
   },
   async (tok, S) => {                                   // 708.4 改 A[1] → OS 寫回 file 的那個 byte
-    relabel(S.arr[1], "A[1]='x'"); glow(S.arr[1], HL); await wt(tok, 400); glow(S.byt[1], HL); relabel(S.byt[1], "'x'");
+    relabel(S.arr[1], "'x'"); glow(S.arr[1], HL); await wt(tok, 400); glow(S.byt[1], HL); relabel(S.byt[1], "'x'");
     cap('你只是改了 A[1] 這個 memory', 'OS 知道它對到 file 的哪個 byte，寫回去');
   },
 ]);
@@ -1831,21 +1831,21 @@ scene('vm-14a-code', 'File system 讀寫 vs memory-mapped file', CAMW, [
   },
   async (tok, S) => {                                   // 1239.2 FS 做 buffering／caching：一次抓 256 bytes
     S.c1.hl(2); S.buf = bx('FS buffer：256 bytes', MC.sand, 2.6, 2.4, 0, 2.6, 0.55, 0.7);
-    const a = pkt('256 B', MC.lilac, 4.6, 4.7, 0.7, 0.9); await slide(tok, a, 2.6, 2.4, 0.9, 700); gone(a);
+    const a = pkt('256 B', MC.lilac, 4.6, 4.7, 0.7, 0.9); await slide(tok, a, 2.6, 3.05, 0.9, 700); gone(a);
     cap('file system 很重要的工作：buffering／caching', 'disk 太慢，所以 prefetch 一次抓一整塊（例：256 bytes）');
   },
   async (tok, S) => {                                   // 1293.7 user 只要 4 bytes：再 copy 到 user space
     S.ub = bx('user buf：4 bytes', MC.tlb, 2.6, 1.3, 0, 2.6, 0.55, 0.7);
-    const b = pkt('4 B', MC.lilac, 2.6, 2.4, 0.7, 0.6); await slide(tok, b, 2.6, 1.3, 0.9, 600); gone(b);
-    bad('memory copy 兩次', 5.4, 1.8);
+    const b = pkt('4 B', MC.lilac, 2.6, 2.4, 0.7, 0.6); await slide(tok, b, 2.6, 1.85, 0.9, 600); gone(b);
+    S.bd1 = bad('memory copy 兩次', 5.4, 1.8);
     cap('使用者只要一個 int（4 bytes）', '再從 buffer copy 到 user space：等於 copy 兩次');
   },
   async (tok, S) => {                                   // 1325.8 write 寫到 buffer，close 時才 flush
-    S.c1.hl(4); await wt(tok, 300); S.c1.hl(5); sm('close 時才 flush 到硬碟（fflush 可強迫）', 2.6, 0.5);
+    S.c1.hl(4); await wt(tok, 300); S.c1.hl(5); S.fl = sm('close 時才 flush 到硬碟（fflush 可強迫）', 2.6, 0.5);
     cap('write 也一樣：先寫到 buffer', '等 close 時才 flush 到硬碟；fflush 會強迫寫');
   },
   async (tok, S) => {                                   // 1377.0 mmap：open 後跟 OS 說 map 哪一段，回傳 pointer
-    S.c1.kill(); gone(S.buf, S.ub);
+    S.c1.kill(); gone(S.buf, S.ub, S.bd1, S.fl);
     S.c2 = code(['fd = open(file);', 'p = mmap(..., fd, off);', 'p[1000]++;', 'munmap(p, len);', 'close(fd);'], -4.6, 3.8, 0.5);
     S.c2.hl(1); S.ptr = hot('p', -0.6, 5.6);
     cap('memory-mapped file：open 一樣', '跟 OS 說要把 file 哪一段 map 到 memory，回傳一個 pointer');
@@ -1855,11 +1855,11 @@ scene('vm-14a-code', 'File system 讀寫 vs memory-mapped file', CAMW, [
     cap('不用 read、write 這些 file system call', '用 pointer 直接 ++，那就是一個 write');
   },
   async (tok, S) => {                                   // 1484.3 只改 memory，還沒 sync → 斷電就沒
-    bad('還沒 sync 到 disk：斷電就沒了（data loss）', 2.6, 2.0);
+    S.ns = bad('還沒 sync 到 disk：斷電就沒了（data loss）', 2.6, 2.0);
     cap('寫下去只是改自己的 memory content', '兩邊還沒 sync，這時斷電資料就沒了');
   },
   async (tok, S) => {                                   // 1511.8 munmap 時整段寫回 file
-    S.c2.hl(3); const a = pkt('整段寫回', MC.tlb, 0.6, 5.35, 0.8, 1.4); await slide(tok, a, 4.6, 5.35, 0.8, 800); gone(a);
+    gone(S.ns); S.c2.hl(3); const a = pkt('整段寫回', MC.tlb, 0.6, 5.35, 0.8, 1.4); await slide(tok, a, 4.6, 5.35, 0.8, 800); gone(a);
     glow(S.mp[1], null); glow(S.df[1], HL);
     cap('只有 call munmap 時才寫下來', '不知道你改了哪裡，就整段 dump 回 file');
   },
@@ -1872,7 +1872,7 @@ scene('vm-14a-code', 'File system 讀寫 vs memory-mapped file', CAMW, [
 scene('vm-14a-recap', '小結：munmap ≠ close；跟 disk 有關的記憶體技巧', CAMW, [
   async (tok, S) => {                                   // 1603 API 細節各系統不同
     S.c = code(['fd = open(file);', 'p = mmap(..., fd, off);', 'p[1000]++;', 'munmap(p, len);', 'close(fd);'], -4.6, 5.6, 0.5);
-    sm('（pseudo code：各系統 API 細節不同）', -3.0, 2.6);
+    S.ps = sm('（pseudo code：各系統 API 細節不同）', -3.0, 2.6);
     cap('程式只是示意（pseudo code）', '每個系統的 API 設計都有點不一樣');
   },
   async (tok, S) => {                                   // 1632 munmap 與 close 是兩件事
@@ -1881,7 +1881,7 @@ scene('vm-14a-recap', '小結：munmap ≠ close；跟 disk 有關的記憶體�
     cap('重點：munmap 跟 close 要分開做', '一個釋放 memory 的 mapping，一個關掉 file handle');
   },
   async (tok, S) => {                                   // 1667 前半段重點：demand paging、COW、mmap
-    S.c.kill(); gone(S.m, S.f);
+    S.c.kill(); gone(S.m, S.f, S.ps);
     S.k = ['demand paging', 'copy-on-write', 'memory-mapped file'].map((t, i) => bx(t, [MC.blue, MC.green, MC.purple][i], -4.4 + i * 4.4, 4.4, 0, 3.6, 0.6, 0.9));
     hd('這一講前半段的重點', 0, 6.0);
     cap('前半段的重點', 'demand paging、copy-on-write，還有 memory-mapped file');
@@ -1933,7 +1933,7 @@ scene('vm-14b-dirty', 'Dirty（modify）bit：沒改過就不必寫回', CAM, [
     cap('page 被 swap 到 disk', '有點像 memory-mapped file 的情況');
   },
   async (tok, S) => {                                   // 163.8 disk 上本來就有一份 copy
-    S.copy = [0, 1, 2].map((i) => bx('copy', MC.paper, 4.2 - 0.9 + i * 0.9, 3.6, 0, 0.8, 0.45, 0.6));
+    S.copy = [0, 1, 2].map((i) => bx('copy', MC.paper, 4.2 - 0.9 + i * 0.9, 4.4, 0, 0.8, 0.45, 0.6));
     cap('memory content 一開始其實在 disk', 'load 進 memory 而已：disk 上本來就有一份 copy');
   },
   async (tok, S) => {                                   // 189.8 很多沒改過（library 只讀）→ 再 copy 浪費
@@ -1953,7 +1953,7 @@ scene('vm-14b-dirty', 'Dirty（modify）bit：沒改過就不必寫回', CAM, [
     cap('要 swap 出去時，OS 檢查這個 bit', '沒被設起來 = 從沒改過：不用理它，直接覆蓋');
   },
   async (tok, S) => {                                   // 264.8 1 → 整頁寫回 disk
-    const w = pkt('整頁 4KB', pc(2), -2.8, 5.1, 0.7, 1.2); await slide(tok, w, 4.2, 3.6, 0.8, 800);
+    const w = pkt('整頁 4KB', pc(2), -2.8, 5.1, 0.7, 1.2); await slide(tok, w, 4.2, 5.15, 0.8, 800);
     bad('dirty = 1 → 整個 page 寫回 disk', -1.0, 2.0);
     cap('bit 被設起來 = 某個 byte 改過', '不知道是哪一個，只好整頁寫回硬碟');
   },
@@ -1990,7 +1990,7 @@ scene('vm-14b-two', '兩個問題：frame allocation 與 page replacement', CAM,
 
 scene('vm-14b-steps', 'Page replacement 的步驟', CAM, [
   async (tok, S) => {                                   // 400.2 ① 找要的 page 在 disk 哪裡
-    S.disk = prop('disk', 4.8, 0.6, 0, 1.1, 'disk'); S.want = bx('page 6', pc(6), 4.8, 2.4, 0, 1.2, 0.5, 0.7);
+    S.disk = prop('disk', 4.8, 0.6, 0, 1.1, 'disk'); S.want = bx('page 6', pc(6), 4.8, 3.0, 0, 1.2, 0.5, 0.7);
     hd('memory', -1.0, 6.6); S.fr = [1, 2, 3, 4].map((p, i) => bx('page ' + p, pc(p), -1.0, 5.8 - i * 0.62, 0, 1.8, 0.52, 0.7));
     S.b = bullets(-6.6, 2.2, 0.55); S.b('① 找到要的 page 在 disk 的位置');
     cap('第一步：找到造成 page fault 的那個 page', '在 disk 的什麼位置');
@@ -2000,7 +2000,7 @@ scene('vm-14b-steps', 'Page replacement 的步驟', CAM, [
     cap('想把它 swap 進來', '先去看 free frame 有沒有空的，有就先用');
   },
   async (tok, S) => {                                   // 418.9 沒有 → replacement algorithm 選 victim、swap 出去
-    glow(S.fr[2], NG); S.v = bad('victim', 1.0, 4.56); await slide(tok, S.fr[2], 4.8, 3.6, 0, 700);
+    glow(S.fr[2], NG); S.v = bad('victim', 1.0, 4.56); await slide(tok, S.fr[2], 4.8, 4.3, 0, 700);
     S.b('　沒有 → replacement algorithm 選 victim，swap 出去', 'bad');
     cap('沒有的話就 call replacement algorithm', '選一個 frame 當 victim（受害者），swap 出去');
   },
@@ -2043,11 +2043,11 @@ scene('vm-14b-refstr', 'Reference string：演算法的 input', CAM, [
 
 scene('vm-14b-fifo', 'FIFO：3 個 frame，9 次 page fault', CAMW, [
   async (tok, S) => {                                   // 597.0 先看 FIFO
-    S.G = rgrid(BEL, 3, 'fifo', { dx: 0.95, y: 6.0 }); sm('reference string', -6.4, 6.0);
+    S.G = rgrid(BEL, 3, 'fifo', { dx: 0.95, y: 6.0 }); sm('reference string', -5.8, 6.7);
     cap('先從 first in, first out 看', 'input：reference string');
   },
   async (tok, S) => {                                   // 614.0 還需要 frame 數：3 個
-    S.fl = ['新 ↑', '', '舊 ↓'].map((t, r) => sm(t, -6.4, S.G.yRow(r))); hd('3 個 frame', -6.4, 6.8);
+    S.fl = ['新 ↑', '', '舊 ↓'].map((t, r) => sm(t, -6.4, S.G.yRow(r))); hd('3 個 frame', -6.4, 7.4);
     cap('第二個需要：physical memory 有幾個 frame', '簡單的例子：只有 3 個 frame');
   },
   async (tok, S) => {                                   // 645.4 被 access 的一定要在 frame；其他留誰
@@ -2360,7 +2360,7 @@ scene('vm-14c-lruo1', '為什麼 LRU 是 O(1)：hash map ＋ doubly linked list'
     cap('大家的做法：用一個 hash map', 'hash 1 就拿到它在 linked list 的 pointer');
   },
   async (tok, S) => {                                   // 707.6 dequeue 再 enqueue 到 head
-    await slide(tok, S.nd[1], -4.2, 4.6, 0, 600); await slide(tok, S.nd[0], -2.0, 4.6, 0, 500); glow(S.nd[1], null);
+    await Promise.all([slide(tok, S.nd[1], -4.2, 4.6, 0, 600), slide(tok, S.nd[0], -2.0, 4.6, 0, 600)]); glow(S.nd[1], null);
     good('hash + doubly linked list：平均 O(1)', 1.4, 0.6);
     cap('找到之後 dequeue、重新 enqueue 到最前面', 'hash map + double link list：平均 O(1)');
   },
@@ -2381,7 +2381,7 @@ scene('vm-14c-stack', 'Stack algorithm：frame 變多不會更糟', CAMW, [
     cap('heuristic 的好壞不一定', '系統人更 care 可以被證明的 property');
   },
   async (tok, S) => {                                   // 792.3 OPT、LRU 都是 stack algorithm
-    S.b = bullets(-6.6, 6.2, 0.5); S.b('LRU、Optimal 都屬於 stack algorithm', 'good');
+    S.b = bullets(-6.6, 1.2, 0.7); S.b('LRU、Optimal 都屬於 stack algorithm', 'good');
     cap('LRU 跟 optimal 都屬於', '所謂的 stack algorithm：一個 class of algorithm');
   },
   async (tok, S) => {                                   // 813.5 定義：n 個 frame 時的 page 集合
@@ -2407,17 +2407,17 @@ scene('vm-14c-stack', 'Stack algorithm：frame 變多不會更糟', CAMW, [
   },
   async (tok, S) => {                                   // 961.1 LRU 證明：往回看 4 個 distinct vs 5 個
     S.lb = arrow(V3(-0.9, 4.0, 0.4), V3(-5.6, 4.0, 0.4));
-    sm('LRU：往回看，最先看到的 n 個不同 page；n + 1 時一定包含它們', -3.0, 3.5);
+    sm('LRU：往回看 n 個 distinct；n + 1 一定包含', -3.4, 3.5);
     cap('LRU 為什麼是？任何時間點往回看', '先看到的 4 個 distinct；5 個 frame 就看 5 個，一定包含原來 4 個');
   },
   async (tok, S) => {                                   // 1010.9 OPT：往未來看，同理
-    sm('OPT：往未來看，一樣的道理', -3.0, 3.0);
+    sm('OPT：往未來看，同理', -3.4, 3.0);
     cap('optimal 只是方向不同', '往未來看 n 個 distinct，frame 多就看更多：也是 stack algorithm');
   },
   async (tok, S) => {                                   // 1044.2 FIFO 不是
     const f3 = vmSim(BEL, 3, 'fifo')[6].order, f4 = vmSim(BEL, 4, 'fifo')[6].order;
     const miss = f3.filter((p) => !f4.includes(p));
-    bad('FIFO 不是：同一時間點 3 frames {' + f3.join(', ') + '}，4 frames {' + f4.join(', ') + '}，少了 ' + miss.join('、'), 0, 0.9);
+    bad('FIFO 不是：同一時間點 3 frames {' + f3.join(', ') + '}，4 frames {' + f4.join(', ') + '}，少了 ' + miss.join('、'), 0, -1.0);
     cap('FIFO 不是 stack algorithm', '同一時間點，4 個 frame 的內容沒有包含 3 個 frame 的');
   },
 ]);
@@ -2428,27 +2428,27 @@ scene('vm-14c-approx', 'LRU 的變形：additional-reference-bits、second chanc
     cap('cache 的 replacement algorithm 非常多', '不會一一 go through，知道 concept 就好');
   },
   async (tok, S) => {                                   // 1089.3 additional reference bit、second chance
-    S.b = bullets(-6.4, 6.0, 0.55); S.b('additional-reference-bits：每頁 8 bits 定期右移，值最小的最久沒用（例：01110111 < 11000100）');
+    S.b = bullets(-6.4, 6.0, 0.7); S.b('additional-reference-bits：8 bits 定期右移，值最小 = 最久沒用');
     S.b('second chance（clock）');
     cap('課本提到幾個變化', '像 additional reference bit、second chance');
   },
   async (tok, S) => {                                   // 1095.8 second chance：給第二次機會
     const pts = [[0, 3.7], [2.0, 2.4], [0, 1.1], [-2.0, 2.4]];
-    S.ring = [[2, 1], [5, 1], [1, 0], [4, 1]].map(([p, r], i) => ({ p: bx('page ' + p, pc(p), pts[i][0], pts[i][1], 0, 1.5, 0.5, 0.7), r: bx(String(r), r ? MC.mint : '#f3c9c9', pts[i][0] + 1.0, pts[i][1], 0, 0.45, 0.45, 0.5) }));
-    S.ptr = hot('▶ 指標', -1.6, 3.7); sm('（課本版 clock，示意）', 0, 0.3);
+    S.ring = [[2, 1], [5, 1], [1, 0], [4, 1]].map(([p, r], i) => ({ p: bx('page ' + p, pc(p), pts[i][0], pts[i][1], 0, 1.5, 0.5, 0.7), r: bx(String(r), r ? MC.mint : '#f3c9c9', pts[i][0] + 1.45, pts[i][1], 0, 0.45, 0.45, 0.5) }));
+    S.ptr = hot('▶ 指標', -2.0, 3.7); sm('（課本版 clock，示意）', 0, 0.3);
     S.nw = pkt('page 6', pc(6), 4.8, 2.4, 0.6, 1.2);
     cap('second chance：被選中時給第二次機會', '課本做法：FIFO 加一個 reference bit（clock）');
   },
   async (tok, S) => {                                   // 1114.4 被踢出來先降級（bit 1 → 0，跳過）
-    for (const i of [0, 1]) { relabel(S.ring[i].r, '0'); tint(S.ring[i].r, '#f3c9c9'); glow(S.ring[i].p, HL); await wt(tok, 400); glow(S.ring[i].p, null); S.ptr.position.set([2.0, 0][i] - 1.6, [2.4, 1.1][i], 0); }
+    for (const i of [0, 1]) { relabel(S.ring[i].r, '0'); tint(S.ring[i].r, '#f3c9c9'); glow(S.ring[i].p, HL); await wt(tok, 400); glow(S.ring[i].p, null); S.ptr.position.set([2.0, 0][i] - 2.0, [2.4, 1.1][i], 0); }
     cap('被踢出來的先放到低 priority', 'clock：reference bit 是 1 就清成 0、跳過，給第二次機會');
   },
   async (tok, S) => {                                   // 1123.8 真正被踢的是 low priority 裡的
-    glow(S.ring[2].p, NG); await slide(tok, S.nw, 0, 1.1, 0.6, 700); kill(S.ring[2].p); relabel(S.ring[2].r, '1'); tint(S.ring[2].r, MC.mint);
+    glow(S.ring[2].p, NG); await wt(tok, 300); kill(S.ring[2].p); await slide(tok, S.nw, 0, 1.1, 0.6, 700); relabel(S.ring[2].r, '1'); tint(S.ring[2].r, MC.mint);
     cap('真正要踢的，從 low priority 裡挑', 'bit 是 0 的 page 1 被換成 page 6');
   },
   async (tok, S) => {                                   // 1155.2 都是 LRU 的變形
-    good('基本上都是 LRU 的變形（近似 LRU）', 0, -0.3);
+    good('基本上都是 LRU 的變形（近似 LRU）', 0, -0.6);
     cap('這些基本上都是 LRU 的變形', '因為 LRU 有剛剛那幾個非常重要的好處');
   },
 ]);
@@ -2464,11 +2464,11 @@ scene('vm-14c-count', 'Counting：LFU 與 MFU', CAM, [
     cap('最常用到的留在 frame 裡', 'page fault 次數就會減少：比較 make sense？');
   },
   async (tok, S) => {                                   // 1217.3 LFU：count 最低的踢
-    glow(S.f[1].p, NG); bad('LFU：count 最小的踢掉（page 2）', -3.8, 4.85);
+    glow(S.f[1].p, NG); bad('LFU：踢 count 最小的', 4.0, 4.85);
     cap('LFU：least frequently used', 'frequency 最低的先踢掉');
   },
   async (tok, S) => {                                   // 1239.3 MFU：count 最高的踢
-    glow(S.f[0].p, NG); bad('MFU：count 最大的踢掉（page 1）', 4.2, 5.6);
+    glow(S.f[0].p, NG); bad('MFU：踢 count 最大的', 4.0, 5.6);
     cap('MFU 倒過來', '最常用的那個，反而踢掉');
   },
   async (tok, S) => {                                   // 1252.9 LFU 問題：burst
@@ -2725,7 +2725,7 @@ scene('vm-14d-ws', 'Working set 的概念', CAM, [
 scene('vm-14d-wsex', 'Working set 例子：Δ = 10', CAMW, [
   async (tok, S) => {                                   // 1059.5 實際是時間，但簡化成數次數
     S.rs = WSREF.map((p, i) => cube(String(p), pc(p), [0.42, 0.42, 0.42], -6.25 + i * 0.5, 4.6, 0));
-    sm('page reference table（課本圖）', -4.0, 5.5);
+    sm('page reference table（課本圖）', -4.0, 6.1);
     cap('實際上是時間', '但通常為了簡單，只看順序：數最近多少個 memory access');
   },
   async (tok, S) => {                                   // 1080.2 保留過去 10 個
@@ -2773,7 +2773,7 @@ scene('vm-14d-wsd', 'D = Σ WSSi 與 m', CAM, [
   },
   async (tok, S) => {                                   // 1212.1 suspend 一個 process（priority 最低）
     const p3 = S.ps[2]; await anim(tok, 900, (u) => { p3.b.g.position.y = 4.2 + 2.4 * u; p3.b.g.position.x = -0.2 + 5.0 * u; });
-    p3.b.mood('sad'); txt(p3.t, 'P3 suspend（swap 出去）'); relabel(S.D, 'D = 5 + 2 = 7 ≤ m'); glow(S.D, OKG); gone(S.w);
+    p3.b.mood('sad'); txt(p3.t, 'P3 suspend（swap 出去）'); p3.t.position.set(4.8, 6.1, 0); relabel(S.D, 'D = 5 + 2 = 7 ≤ m'); glow(S.D, OKG); gone(S.w);
     cap('OS 去 suspend 一個 process', '例如 priority 最低的，整個 swap 到 disk：讓 D ≤ m');
   },
   async (tok, S) => {                                   // 1244.8 m ≫ D → 啟動新的 process
@@ -2807,7 +2807,7 @@ scene('vm-14d-pff', 'Page-fault frequency（PFF）', CAM, [
     cap('monitor 每個 process 的 page fault rate', '控制在一個範圍中間（例如 10%、5%）');
   },
   async (tok, S) => {                                   // 1425.5 為什麼不是 0%
-    sm('太低（接近 0）：frame 太多閒著，degree 不夠', 0.8, 0.9);
+    sm('太低（接近 0）：frame 太多閒著，degree 不夠', -0.4, -0.75);
     cap('為什麼不是 0%？', '0% 代表給了太多 free frame，degree of multiprogramming 不夠');
   },
   async (tok, S) => {                                   // 1446.7 upper／lower bound
@@ -2824,7 +2824,7 @@ scene('vm-14d-pff', 'Page-fault frequency（PFF）', CAM, [
     cap('rate 太高的 process frame 不夠：給它 frame', 'frame 從 rate 太低的人身上拿：做 balancing');
   },
   async (tok, S) => {                                   // 1552.8 frame 增加 fault 一定減少（stack algorithm）
-    note('frame 增加 → page fault 一定減少（因為用 stack algorithm，沒有 anomaly）', 0, -0.4);
+    note('frame 增加 → page fault 一定減少（因為用 stack algorithm，沒有 anomaly）', 0, -1.45);
     cap('frame 增加 page fault 一定減少', '這就是為什麼不能有 anomaly：要 follow stack algorithm');
   },
 ]);
@@ -2837,11 +2837,11 @@ scene('vm-14d-rel', 'Working set 與 PFF 的關係', CAM, [
   async (tok, S) => {                                   // 1600.2 時間軸上 rate 有高有低
     S.ax = axes(-5.4, 0.6, 10.6, 4.4, '時間', 'page fault rate');
     const pts = []; for (let k = 0; k <= 60; k++) { const x = -5.2 + k * 0.17; const ph = (k % 20) / 20; pts.push([x, 1.0 + (ph < 0.15 ? 3.4 * Math.sin((ph / 0.15) * Math.PI) : 0.15)]); }
-    S.cv = poly(pts, '#8d6b3a'); sm('（曲線示意）', 3.8, 5.4);
+    S.cv = poly(pts, '#8d6b3a'); sm('（曲線示意）', 4.4, 6.1);
     cap('以時間的角度看', 'page fault rate 有時高、有時低');
   },
   async (tok, S) => {                                   // 1607.2 進入新 locality 時升高
-    hot('進入新的 locality → rate 升高（peak）', -1.8, 5.4);
+    hot('進入新的 locality → rate 升高（peak）', 0.8, 5.4);
     cap('什麼時候會高？', '進入一個新的 locality，要重新算 working set 的時候');
   },
   async (tok, S) => {                                   // 1619.0 兩個 peak 之間就是一個 working set
@@ -2870,11 +2870,11 @@ scene('vm-ex-lru', 'LRU 例題：14 次 page fault', CAMW, [
     cap('給 3 個 frame，用 LRU', '求 page fault 次數，還有 hit ratio');
   },
   async (tok, S) => {                                   // 27.5 frame 全空時也算 page fault
-    sm('frame 全空時進來的，也算 page fault', 0, 1.3);
+    S.e0 = sm('frame 全空時進來的，也算 page fault', 0, 1.3);
     cap('題目也可能加一個條件', 'frame 一開始全空，放進去也算 page fault');
   },
   async (tok, S) => {                                   // 42.3 LRU：替換最久沒用的
-    note('LRU：換掉最久沒被用到的 page', 0, 0.7);
+    note('LRU：換掉最久沒被用到的 page', 0, 0.4);
     cap('LRU：least recently used', '換掉最長一段時間沒被用到的 page');
   },
   nx(1, '先要 page 3：沒有 → page fault', '放進 f1'),                                   // 64.2
@@ -2886,7 +2886,7 @@ scene('vm-ex-lru', 'LRU 例題：14 次 page fault', CAMW, [
     cap('下一個是 4：不在 → miss', '3 個 frame 都滿了，放不下');
   },
   async (tok, S) => {                                   // 143.5 OS 選一個 page swap out
-    sm('選一個 swap out 到 secondary memory，4 swap in', S.G.x(4), 1.4);
+    gone(S.e0); sm('選一個 swap out 到 secondary memory，4 swap in', S.G.x(4), 1.25);
     cap('OS 要選一個 page swap out', '換成 4 swap in；選誰由 LRU 決定');
   },
   async (tok, S) => {                                   // 184.5 trick：從右往左看 → 2 最久沒用
@@ -3008,7 +3008,7 @@ scene('vm-pf-what', 'Process A 與 page fault', CAM, [
   },
   async (tok, S) => {                                   // 71.7 page fault：要的 page 不在 main memory
     S.disk = prop('disk', 5.4, 0.6, 0, 1.0, 'secondary storage'); [0, 1, 3].forEach((i, k) => { relabel(S.fr[k], ['P1', 'P2', 'P4'][k]); tint(S.fr[k], pc(i + 1)); });
-    await slide(tok, S.pg[2], 5.4, 2.2, 0, 800); bad('P3 不在 main memory → page fault', 0, 1.6);
+    await slide(tok, S.pg[2], 5.4, 2.7, 0, 800); bad('P3 不在 main memory → page fault', 0, 1.6);
     cap('page fault：要執行的 page 不在 main memory', '它在 secondary storage（virtual memory）裡');
   },
   async (tok, S) => {                                   // 86.0 secondary storage 留空間放 page
@@ -3022,7 +3022,7 @@ scene('vm-pf-steps', 'Page fault handling 六步驟', CAMW, [
     S.cpu = prop('cpu', -5.8, 5.2, 0, 0.9, 'CPU'); S.ins = bx('P2：load X', pc(2), -5.8, 4.1, 0, 1.8, 0.55, 0.7);
     hd('main memory', 4.0, 6.9);
     S.mem = [['F7', 'P1', pc(1)], ['F8', 'P2', pc(2)], ['F9', 'P4', pc(4)], ['', '✗ 已占用', MC.gray], ['F34', 'free', MC.paper]].map(([f, t, c], i) => { sm(f, 2.9, 6.2 - i * 0.62); return bx(t, c, 4.0, 6.2 - i * 0.62, 0, 1.6, 0.52, 0.7); });
-    sm('（F9 為示意）', 5.6, 4.96);
+    sm('（F9 為示意）', 6.6, 4.96);
     cap('CPU 正在執行 process A 的 P2', 'P2 裡有一個指令：load X');
   },
   async (tok, S) => {                                   // 119.8 load X 需要 P3 → 發出 request
@@ -3032,7 +3032,7 @@ scene('vm-pf-steps', 'Page fault handling 六步驟', CAMW, [
   async (tok, S) => {                                   // 128.8 CPU 不知道 → MMU 查 page table（step 1）
     S.mmu = bx('MMU', MC.teal, -3.2, 4.1, 0, 1.0, 0.6, 0.7);
     S.t = ptable(-0.7, 6.2, [['P1', 'F7', 'v'], ['P2', 'F8', 'v'], ['P3', null, 'i'], ['P4', 'F9', 'v']], { w: 0.85, pcol: (p) => pc(Number(String(p).slice(1))) });
-    S.b = bullets(-6.8, 2.4, 0.48); S.b('① MMU 查 page table');
+    S.b = bullets(-6.8, 2.4, 0.68); S.b('① MMU 查 page table');
     cap('CPU 不知道 P3 不在 memory', 'MMU 拿 P3 去查 process A 的 page table（step 1）');
   },
   async (tok, S) => {                                   // 167.0 第一欄 page number、第二欄 frame number
@@ -3055,12 +3055,12 @@ scene('vm-pf-steps', 'Page fault handling 六步驟', CAMW, [
     cap('trap 是很高優先的 signal', 'OS 不能 preempt、不能忽略，一定要處理');
   },
   async (tok, S) => {                                   // 255.9 step 3：OS 在 secondary storage 找到 P3
-    S.disk = prop('disk', 5.6, -0.2, 0, 1.0, 'secondary storage'); S.p3 = bx('P3', pc(3), 5.6, 1.5, 0, 1.0, 0.5, 0.6); glow(S.p3, HL);
+    S.disk = prop('disk', 5.6, -0.2, 0, 1.0, 'secondary storage'); S.p3 = bx('P3', pc(3), 5.6, 2.0, 0, 1.0, 0.5, 0.6); glow(S.p3, HL);
     S.b('③ OS 在 secondary storage 找到 P3');
     cap('step 3：OS 到 secondary storage', '在當作 virtual memory 的那塊找到 P3');
   },
   async (tok, S) => {                                   // 282.4 step 4：放進 free frame F34
-    glow(S.p3, null); await slide(tok, S.p3, 4.0, 6.2 - 4 * 0.62, 0.5, 900); kill(S.mem[4]); S.b('④ 搬進 free frame：F34');
+    glow(S.p3, null); kill(S.mem[4]); await slide(tok, S.p3, 4.0, 6.2 - 4 * 0.62, 0.5, 900); S.b('④ 搬進 free frame：F34');
     cap('step 4：把缺的 page 帶回 main memory', 'F34 是空的（✗ 那塊被占用），P3 載入 F34');
   },
   async (tok, S) => {                                   // 316.9 不連續也沒關係：page table 當 index
@@ -3076,7 +3076,7 @@ scene('vm-pf-steps', 'Page fault handling 六步驟', CAMW, [
     cap('step 6：restart the instruction', 'CPU 重新執行 load X，這次在 page table 找到 P3');
   },
   async (tok, S) => {                                   // 409.8 如果 P3 本來就在：1 直接到 6
-    note('如果 P3 本來就在 F34：step 1 → step 6，不需要 2～5', 0, -0.6);
+    note('如果 P3 本來就在 F34：step 1 → step 6，不需要 2～5', 0, -1.8);
     cap('如果 P3 原本就在 F34', '就不會 page fault：從 step 1 直接到 step 6');
   },
 ]);
@@ -3123,7 +3123,7 @@ scene('vm-pf-eat', 'EAT 計算題：91 ms', CAM, [
 
 scene('vm-pf-thrash', 'Thrashing：working set 太大時', CAM, [
   async (tok, S) => {                                   // 660.1 最後：thrashing
-    S.ram = zone('RAM（physical memory）', -2.6, 0, 0, 4.6, 3.2); S.vm = zone('virtual memory（disk）', 3.6, 0, 0, 3.6, 3.2);
+    S.ram = zone('RAM（physical memory）', -2.6, 0, 0, 4.6, 3.2); S.ram.userData.name.position.y = 1.75; S.vm = zone('virtual memory（disk）', 3.6, 0, 0, 3.6, 3.2);
     cap('最後談 thrashing', '照著理論一句句看');
   },
   async (tok, S) => {                                   // 667.9 初始化後只用少量 code／data pages

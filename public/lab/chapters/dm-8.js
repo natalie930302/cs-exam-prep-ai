@@ -110,7 +110,8 @@ export default function (ctx) {
       const g = edgeMesh(pos(e.u), pos(e.v), { directed: G.dir, off, gap: o.gap ?? 0.42 * Math.min(1, s + 0.15), r: o.r });
       let wl = null;
       if (e.w !== undefined && o.weights !== false) {
-        const p = g.userData.mid.clone().addScaledVector(g.userData.side, G.dir ? 0.28 : 0.22);
+        // a parallel / opposite edge: its weight goes on the outer side of its own rod, away from the twin's
+        const p = g.userData.mid.clone().addScaledVector(g.userData.side, (G.dir ? 0.28 : 0.22) * (off < 0 ? -1 : 1));
         wl = tag(String(e.w), 'idx', p.x, p.y + 0.25, p.z);
       }
       return { ...e, g, wl };
@@ -1303,6 +1304,46 @@ export default function (ctx) {
   // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
   const K = kit(ctx);
   const FRAG = [];
+  // A board = one stack of chips laid out by the page, so its lines sit under each other and never cover each
+  // other whatever the camera does; past `max` lines (or `maxH` px) the oldest drops off. The holder is a 0×0
+  // point, so the stage's auto framing ignores it. o.pin: the board is pinned to the left edge of the stage
+  // (o.pin px in), at the height where its world anchor projects (never above the caption) — scenes then
+  // keep the left strip free for it; otherwise its top-left (top-centre with o.center) sits on the anchor.
+  const _bv = new THREE.Vector3();
+  function stackBoard(x, y, z, o = {}) {
+    const max = o.max ?? 7, center = !!o.center, maxH = o.maxH ?? 220;
+    const hold = lab.label('', '');
+    const el = hold.element; el.className = 'lab-stack';
+    Object.assign(el.style, { width: '0', height: '0', overflow: 'visible', pointerEvents: 'none' });
+    const col = document.createElement('div');
+    Object.assign(col.style, { position: 'absolute', left: '0', top: '0', width: 'max-content', display: 'flex', flexDirection: 'column', gap: '3px', alignItems: center ? 'center' : 'flex-start' });
+    if (center) col.style.transform = 'translateX(-50%)';
+    el.appendChild(col);
+    if (hold.center) hold.center.set(0, 0);
+    hold.position.set(x, y, z); lab.world.add(hold);
+    if (o.pin !== undefined) {
+      hold.onAfterRender = (r, sc, cam) => {
+        const H = (r.getSize ? r.getSize().height : 0) || 360;
+        _bv.setFromMatrixPosition(hold.matrixWorld).project(cam);
+        const top = Math.max(o.top ?? 46, Math.round((0.5 - _bv.y / 2) * H));
+        el.style.transform = 'translate(' + o.pin + 'px,' + top + 'px)';
+      };
+    }
+    const ls = [];
+    const line = (t, c, dx) => {
+      const d = document.createElement('div'); d.className = 'lab-label ' + (c || ''); d.textContent = t;
+      if (dx) d.style.marginLeft = Math.round(dx * 22) + 'px';
+      if (o.maxW) Object.assign(d.style, { whiteSpace: 'normal', maxWidth: o.maxW + 'px', fontSize: '11.5px' });
+      col.appendChild(d);
+      const l = { element: d, userData: {}, visible: true, position: new THREE.Vector3(), parent: null, traverse(f) { f(this); } };
+      ls.push(l);
+      while (ls.length > max) ls.shift().element.remove();
+      return l;
+    };
+    // too tall on screen (long, wrapped lines): the oldest lines drop off
+    if (typeof ResizeObserver === 'function') new ResizeObserver(() => { while (ls.length > 1 && col.offsetHeight > maxH) ls.shift().element.remove(); }).observe(col);
+    return { hold, ls, line, clear() { ls.forEach((l) => l.element.remove()); ls.length = 0; } };
+  }
   // ═══ g8a.js ═══
   {
 const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
@@ -1319,6 +1360,8 @@ const LL = (t, c, x, z, y = 0.4) => { const l = tag(t, c, x, y, z); if (l.center
 const settxt = (l, t) => { if (l && l.element) l.element.textContent = t; };
 const GC = { v: '#cdbfa6', e: '#9c8b70', hot: '#d64545', ok: '#2fc092', blue: '#4b9ee2', gold: '#c08a1f', pink: '#e55a9b', purple: '#9b7ef4', orange: '#dd8238', dim: '#e2d8c6', water: '#9fd3f0', land: '#e8dcc0', bridge: '#e9c53a' };
 const CAM = [[0, 12.5, 7.8], [0, 0, 0.6]];
+// scenes with pictures on both sides: look a little to the left so the pictures leave the board's strip free
+const CAMR = [[-3.3, 13.4, 8.4], [-3.3, 0, 0.6]];
 function scene(id, title, steps, cam = CAM) {
   FRAG.push([id, title, async (tok) => {
     fresh(cam[0], cam[1]);
@@ -1327,16 +1370,16 @@ function scene(id, title, steps, cam = CAM) {
   }]);
 }
 // a board lying on the floor: lines appear one under another; the newest line is lit
-function board(x, z0, dz = 0.62) {
-  const ls = []; let last = null;
+function board(x, z0, dz = 0.62, o = {}) {
+  const st = stackBoard(x, 0.4, z0, Object.assign(x < -4 ? { maxW: 200, pin: 12 } : { maxW: 200 }, o)); const ls = st.ls; let last = null;
   return {
     ls,
     add(t, c = 'note', dx = 0) {
       if (last && last.userData.hot) { cls(last, 'say'); last.userData.hot = false; }
-      const l = LL(t, c, x + dx, z0 + ls.length * dz); ls.push(l); l.userData.hot = c === 'note'; last = l; return l;
+      const l = st.line(t, c, dx); l.userData.hot = c === 'note'; last = l; return l;
     },
-    set(i, c) { cls(ls[i < 0 ? ls.length + i : i], c); },
-    clear() { ls.forEach((l) => kill(l)); ls.length = 0; last = null; },
+    set(i, c) { const l = ls[i < 0 ? ls.length + i : i]; if (l) cls(l, c); },
+    clear() { st.clear(); last = null; },
   };
 }
 // a graph whose vertices/edges can appear one by one; edges are tubes along (curved) paths
@@ -1474,7 +1517,7 @@ scene('g8a-konig-map', 'Königsberg 七橋問題', [
   },
   async (tok, S) => {
     S.M = kbMap({ land: false, br: false });
-    T('Pregel 河（示意）', 'say', -5.2, 0, 0.3);
+    T('Pregel 河（示意）', 'say', 3.6, -5.5, 0.3);
     cap('Königsberg 是普魯士的一個城市', '城裡有一條河：Pregel 河');
   },
   async (tok, S) => {
@@ -1718,7 +1761,7 @@ scene('g8a-thm', '定理：Euler circuit ⇔ connected 且每點 degree 偶數',
   },
   async (tok, S) => {
     S.g = quick({ ox: 3, oz: 0.2 }, { a: [-2.4, -1.2], b: [-0.8, -1.2], c: [-1.6, 0.4], x: [1.2, -0.4], y: [2.6, -0.4], z: [1.9, 1.0] }, 'a-b b-c c-a x-y y-z z-x');
-    T('示意：兩塊', 'idx', 3, -2.4);
+    T('示意：兩塊', 'idx', 0.8, -2.4);
     S.x = T('這邊出發永遠到不了那邊 ✗', 'bad', 3, 2.2);
     cap('如果圖分成兩塊', '從這塊出發，永遠走不到那塊的邊');
   },
@@ -1815,8 +1858,8 @@ scene('g8a-nec-deg', '必要條件收尾：degree 為偶數', [
   async (tok, S) => {
     S.g = quick({ ox: 2.2, oz: 0.4, s: 1.1 }, { v: [0, 0], p: [-2.4, -1.6], q: [2.4, -1.6], r: [-2.4, 1.6], t: [2.4, 1.6] }, 'v-p v-q v-r v-t');
     S.w = walker(S.g.pos('p'));
-    await go(tok, S.w, S.g.find('v', 'p'), 'p', 500, GC.blue); T('進（arriving）', 'good', 0.4, -1.4);
-    await go(tok, S.w, S.g.find('v', 'q'), 'v', 500, GC.orange); T('出（departing）', 'bad', 4.2, -1.4);
+    await go(tok, S.w, S.g.find('v', 'p'), 'p', 500, GC.blue); T('進（arriving）', 'good', 0.2, -2.5);
+    await go(tok, S.w, S.g.find('v', 'q'), 'v', 500, GC.orange); T('出（departing）', 'bad', 4.4, -2.5);
     S.B = board(-7, -4.4, 0.62);
     S.B.add('每經過 v 一次：一條進來、一條離開');
     cap('每次經過一個端點 v', '一定用掉兩條連到 v 的邊：一條進來、一條離開');
@@ -2264,11 +2307,11 @@ scene('g8a-trail', 'Euler trail：恰兩個 degree 奇數的點', [
     cap('原本每點 degree 偶數，是因為一進一出', '起點和終點同一點，也是出去、回來成對');
   },
   async (tok, S) => {
-    S.g.vc('s', GC.hot); T('起點：先出去 1 次 → 奇數', 'bad', 1.2, -1.9);
+    S.g.vc('s', GC.hot); T('起點：先出去 1 次 → 奇數', 'bad', 0.8, 1.0);
     cap('現在起點 ≠ 終點', '起點第一次只出去（1 次），之後進出成對 → degree 奇數');
   },
   async (tok, S) => {
-    S.g.vc('r', GC.hot); T('終點：最後只進來 → 奇數', 'bad', 5.6, -1.9);
+    S.g.vc('r', GC.hot); T('終點：最後只進來 → 奇數', 'bad', 5.9, 1.0);
     cap('終點最後只進來、不出去 → 也是奇數', '其他點還是一進一出 → 偶數');
   },
   async (tok, S) => {
@@ -2306,7 +2349,7 @@ scene('g8a-trail-proof', '充分條件：加一條想像的邊', [
   },
   async (tok, S) => { S.B.add('circuit 繞一圈：從哪裡算起都可以', 'say'); cap('circuit 是繞一圈', '從任何地方當起點都可以；把新加的邊當第一條'); },
   async (tok, S) => {
-    S.circ = LL('r →(想像) s p q r s t r', 'note', -6.9, -1.0);
+    S.circ = T('r →(想像) s p q r s t r', 'note', 3.4, 3.6);
     cap('這個 circuit 第一條就是想像的邊', 'r → s，接著 s p q r s t r');
   },
   async (tok, S) => {
@@ -2385,7 +2428,7 @@ scene('g8a-planar-use', 'Planar graph 的用途與 embedding', [
 ]);
 
 scene('g8a-kn', 'Complete graph：K1、K2、K3、K4 都是 planar', [
-  async (tok, S) => { S.B = board(-7, -4.6, 0.6); S.B.add('例子：complete graph Kₙ'); cap('看幾個例子', '先看 complete graph'); },
+  async (tok, S) => { S.B = board(-7, -4.6, 0.6, { maxH: 95 }); S.B.add('例子：complete graph Kₙ'); cap('看幾個例子', '先看 complete graph'); },
   async (tok, S) => { S.B.add('Kₙ：simple graph，任兩個不同點之間恰一條 edge', 'say'); cap('Kₙ 是 simple graph', '任兩個不一樣的 vertices 之間，exactly 一條 edge'); },
   async (tok, S) => { S.k1 = quick({ ox: -5.6, oz: 1.6, noName: true }, { a: [0, 0] }, ''); T('K₁', 'ptr', -5.6, 0.6); cap('K₁：一個端點', ''); },
   async (tok, S) => { S.k2 = quick({ ox: -3.6, oz: 1.6, noName: true }, { a: [-0.6, 0], b: [0.6, 0] }, 'a-b'); T('K₂', 'ptr', -3.6, 0.6); cap('K₂：兩個端點、一條邊', ''); },
@@ -2602,7 +2645,7 @@ function fillFaces(g, lbl0 = 1) {
 }
 
 scene('g8a-regions', 'Embedding 把平面切成 regions', [
-  async (tok, S) => { S.B = board(-7, -4.8, 0.56); S.B.add('planar graph 畫在平面上（embedding）以後…'); cap('planar graph 的性質', '把它畫在平面上（一個 embedding）以後'); },
+  async (tok, S) => { S.B = board(-7, -4.8, 0.56, { maxH: 52 }); S.B.add('planar graph 畫在平面上（embedding）以後…'); cap('planar graph 的性質', '把它畫在平面上（一個 embedding）以後'); },
   async (tok, S) => { S.B.add('…平面被切成好幾個 regions', 'note'); cap('平面被切成好幾個 regions', 'an embedding splits the plane into regions'); },
   async (tok, S) => { S.L = k4emb(-3.4, 0.9); T('K₄ 的 planar embedding', 'say', -3.4, -1.8); cap('例子：K₄ 的 planar embedding', '畫在平面上，邊都不交叉'); },
   async (tok, S) => {
@@ -2636,7 +2679,7 @@ scene('g8a-euler-thm', 'Euler 公式：v − e + r = 2', [
 ]);
 
 scene('g8a-base', '歸納基底：0 條邊、1 條邊', [
-  async (tok, S) => { S.B = board(-7, -4.8, 0.6); S.B.add('initial condition：e = 0 和 e = 1'); cap('先 check initial condition', '0 條邊和 1 條邊這兩個 case'); },
+  async (tok, S) => { S.B = board(-7, -4.8, 0.6, { maxH: 110 }); S.B.add('initial condition：e = 0 和 e = 1'); cap('先 check initial condition', '0 條邊和 1 條邊這兩個 case'); },
   async (tok, S) => { S.B.add('simple 或 multigraph 都可以（可以有 loop）', 'say'); cap('這裡沒有要求 simple graph', 'multigraph 也 OK，所以可以有 loop'); },
   async (tok, S) => { S.B.add('把所有可能的情況都舉出來 check', 'say'); cap('0 條邊、1 條邊的情況很少', '全部列出來 check 就好'); },
   async (tok, S) => {
@@ -2654,7 +2697,7 @@ scene('g8a-base', '歸納基底：0 條邊、1 條邊', [
   async (tok, S) => { S.b.region([[S.lp, 'v']], GC.blue); T('裡', 'ptr alt', 0, 1.6, 0.5); T('1 − 1 + 2 = 2', 'good', 0, 3.2); cap('loop：一個點、一條邊', '裡面、外面兩個 regions：1 − 1 + 2 = 2'); },
   async (tok, S) => { T('2 − 1 + 1 = 2', 'good', 4.4, 3.2); cap('兩點一邊：只有一個 region', '2 − 1 + 1 = 2'); },
   async (tok, S) => { S.B.add('三種都滿足 → initial condition OK', 'good'); cap('三種都滿足 v − e + r = 2', 'initial condition 檢查完畢'); },
-]);
+], CAMR);
 
 // case D / E / F（拿掉一條邊後仍 connected）
 function caseG(kind, ox, oz) {
@@ -2714,7 +2757,7 @@ scene('g8a-case2', 'Case 2：拿掉後變兩個 component', [
     S.B.add('Case 2：拿掉 ab 後變兩個 component');
     cap('拿掉 ab 這條邊', '圖斷成兩個 component');
   },
-  async (tok, S) => { T('(G) 這個 case', 'ptr', 3.0, -2.6); cap('這種情況叫 case (G)', '兩邊不會再有邊連過來，不然就還是 connected'); },
+  async (tok, S) => { T('(G) 這個 case', 'ptr', 3.0, -3.3); cap('這種情況叫 case (G)', '兩邊不會再有邊連過來，不然就還是 connected'); },
   async (tok, S) => {
     zone('H₁', 0.8, 0.02, -0.6, 3.6, 3.6, '#dcebf7'); zone('H₂', 5.2, 0.02, -0.6, 3.6, 3.6, '#f7e0ea');
     S.B.add('H 有兩個 component：H₁、H₂', 'say');
@@ -2773,8 +2816,8 @@ scene('g8a-girth-def', 'Girth：最短 cycle 的長度', [
     S.B.add('cycle：繞一圈回來，點、邊都不重複（頭尾除外）', 'say');
     cap('cycle：走一圈回到起點', '邊不能重複，端點也不能重複（除了頭尾同一點）');
   },
-  async (tok, S) => { T('長度 6', 'ptr alt', 3.2, -0.6); cap('最短的那個 cycle 的長度', '就叫這個圖的 girth'); },
-  async (tok, S) => { kill(S.w); S.g.kill(); S.B.add('沒有 cycle：定義成全部 edges 的個數', 'note'); cap('如果圖根本沒有 cycle 呢？', '這裡把 girth 定義成全部 edge 的個數'); },
+  async (tok, S) => { S.len6 = T('長度 6', 'ptr alt', 3.2, -0.6); cap('最短的那個 cycle 的長度', '就叫這個圖的 girth'); },
+  async (tok, S) => { kill(S.w); kill(S.len6); S.g.kill(); S.B.add('沒有 cycle：定義成全部 edges 的個數', 'note'); cap('如果圖根本沒有 cycle 呢？', '這裡把 girth 定義成全部 edge 的個數'); },
   async (tok, S) => { S.B.add('（為了後面的不等式；別的書不見得這樣定義）', 'say'); cap('這是為了後面那個不等式也能用', '別的地方通常只說最短 cycle，沒定義沒有 cycle 的情況'); },
   async (tok, S) => {
     S.t = quick({ ox: 3.2, oz: -1.8, s: 0.9, noName: true }, { a: [-2.4, 0], b: [-1.2, -0.8], c: [0, 0], d: [1.2, -0.8], e: [2.4, 0], f: [0, 1.2] }, 'a-b b-c c-d d-e c-f');
@@ -2829,19 +2872,22 @@ scene('g8a-girth-ex', 'K5 的 girth = 3、K3,3 的 girth = 4', [
 function regTop(ox, oz, s = 0.95) {
   const g = quick({ ox, oz, s }, { a: [-1.6, -1.2], b: [0, -2.2], c: [1.6, -1.2], d: [1.0, 1.2], e: [-1.0, 1.2], x: [0, -0.6], f: [2.0, 2.4] }, 'a-b b-c c-d d-e e-a x-a x-b x-c d-f');
   g.F = { R1: ['x', 'c', 'd', 'e', 'a'], R2: ['x', 'a', 'b'], R3: ['x', 'b', 'c'] };
+  g.FL = { R1: [0, 0.5] }; // label spots where the centroid would sit on a vertex
   g.outer = ['a', 'b', 'c', 'd', 'f', 'd', 'e', 'a'];
   return g;
 }
 function regBot(ox, oz, s = 0.95) {
   const g = quick({ ox, oz, s }, { a: [-2, 0], b: [-1, -1.6], c: [1, -1.6], d: [2, 0], e: [1, 1.6], f: [-1, 1.6], g: [-0.8, 0.05] }, 'a-b b-c c-d d-e e-f f-a a-c c-f a-g');
   g.F = { R5: ['c', 'd', 'e', 'f'], R6: ['a', 'b', 'c'], R7: ['a', 'c', 'f'] };
+  g.FL = { R6: [0, -1.15], R7: [-1.0, 0.85] };
   g.outer = ['a', 'b', 'c', 'd', 'e', 'f', 'a'];
   return g;
 }
 function regFill(g, name, color) {
   const cyc = g.F[name];
   const m = g.region(cyc.map((n, k) => [g.find(n, cyc[(k + 1) % cyc.length]), n]), color);
-  const c = cyc.reduce((s, n) => [s[0] + g.pos(n).x / cyc.length, s[1] + g.pos(n).z / cyc.length], [0, 0]);
+  let c = cyc.reduce((s, n) => [s[0] + g.pos(n).x / cyc.length, s[1] + g.pos(n).z / cyc.length], [0, 0]);
+  if (g.FL && g.FL[name]) { const p = g.at(...g.FL[name]); c = [p.x, p.z]; }
   const l = T(name, 'ptr', c[0], c[1], 0.5);
   return { m, l, c };
 }
@@ -2869,7 +2915,7 @@ scene('g8a-regdeg-def', 'Region 的 degree', [
 scene('g8a-regdeg-ex', '例子：數 region 的 degree', [
   async (tok, S) => { S.t = regTop(-3.0, 0.4); S.u = regBot(3.4, 0.4); T('上面的圖（示意）', 'say', -3.0, -2.6); T('下面的圖（示意）', 'say', 3.4, -2.6); cap('兩個 graph', '先看第一個（老師黑板上方那個）'); },
   async (tok, S) => {
-    S.tR = ['R1', 'R2', 'R3'].map((n, i) => regFill(S.t, n, RG[i])); T('R4（外面）', 'ptr alt', -5.6, 2.8);
+    S.tR = ['R1', 'R2', 'R3'].map((n, i) => regFill(S.t, n, RG[i])); S.r4 = T('R4（外面）', 'ptr alt', -5.6, 2.8);
     S.tc = T('7 個 vertices、9 條 edges、4 個 regions', 'note', -3.0, 3.8);
     cap('9 條邊、4 個 regions：R1、R2、R3，外面 R4', '頂點是 7 個（老師口頭數成 6；用 v − e + r = 2 檢查應是 7）');
   },
@@ -2879,10 +2925,10 @@ scene('g8a-regdeg-ex', '例子：數 region 的 degree', [
   async (tok, S) => { S.t.E.forEach((e) => e.paint(GC.e)); S.t.find('d', 'f').paint(GC.hot); cap('R4 是外面那塊，要稍微小心', '有一條邊（d–f）伸到外面'); },
   async (tok, S) => {
     await walkSeq(tok, S.t, S.w, S.t.outer, 280, GC.gold);
-    T('R4:7（d–f 走兩次）', 'ptr alt', -1.0, 3.0);
+    settxt(S.r4, 'R4:7（d–f 走兩次）');
     cap('closed walk 要回到原點：d–f 走出去還得走回來', '這條邊算兩次：1、2、3、4、5、6、7 → deg(R4) = 7');
   },
-  async (tok, S) => { kill(S.w); S.uR = ['R5', 'R6', 'R7'].map((n, i) => regFill(S.u, n, RG[i + 3])); T('R8（外面）', 'ptr alt', 5.6, 2.8); T('7 點、9 邊、4 regions', 'note', 3.4, 3.8); cap('第二個圖：也有四個 regions', 'R5、R6、R7、R8'); },
+  async (tok, S) => { kill(S.w); S.uR = ['R5', 'R6', 'R7'].map((n, i) => regFill(S.u, n, RG[i + 3])); S.r8 = T('R8（外面）', 'ptr alt', 5.6, 2.8); T('7 點、9 邊、4 regions', 'note', 3.4, 3.8); cap('第二個圖：也有四個 regions', 'R5、R6、R7、R8'); },
   async (tok, S) => { S.w = walker(S.u.pos('c')); await walkSeq(tok, S.u, S.w, ['c', 'd', 'e', 'f', 'c'], 280, GC.gold); settxt(S.uR[0].l, 'R5:4'); cap('R5：1、2、3、4', 'deg(R5) = 4'); },
   async (tok, S) => { await walkSeq(tok, S.u, S.w, ['a', 'b', 'c', 'a'], 280, GC.gold); settxt(S.uR[1].l, 'R6:3'); cap('R6：三條邊', 'deg(R6) = 3'); },
   async (tok, S) => {
@@ -2890,28 +2936,28 @@ scene('g8a-regdeg-ex', '例子：數 region 的 degree', [
     await walkSeq(tok, S.u, S.w, ['a', 'g', 'a', 'c', 'f', 'a'], 280, GC.gold); settxt(S.uR[2].l, 'R7:5');
     cap('R7：裡面有一條伸進來的邊 a–g（示意）', 'closed walk 走進去又走出來：3 + 2 = 5');
   },
-  async (tok, S) => { await walkSeq(tok, S.u, S.w, S.u.outer, 240, GC.gold); T('R8:6', 'ptr alt', 5.6, 3.2); cap('R8 是外面那塊', '1、2、3、4、5、6 → deg(R8) = 6'); },
+  async (tok, S) => { await walkSeq(tok, S.u, S.w, S.u.outer, 240, GC.gold); settxt(S.r8, 'R8:6'); cap('R8 是外面那塊', '1、2、3、4、5、6 → deg(R8) = 6'); },
 ]);
 
 scene('g8a-regdeg-sum', '所有 region 的 degree 加起來 = 2e', [
   async (tok, S) => {
-    S.t = regTop(-3.0, 0.0); S.u = regBot(3.4, 0.0);
+    S.t = regTop(-3.0, 0.7); S.u = regBot(3.4, 0.7);
     [['R1', 5], ['R2', 3], ['R3', 3]].forEach(([n, d], i) => { const f = regFill(S.t, n, RG[i]); settxt(f.l, n + ':' + d); });
     [['R5', 4], ['R6', 3], ['R7', 5]].forEach(([n, d], i) => { const f = regFill(S.u, n, RG[i + 3]); settxt(f.l, n + ':' + d); });
-    T('R4:7', 'ptr alt', -5.6, 2.4); T('R8:6', 'ptr alt', 5.6, 2.4);
-    S.B = board(-7, -4.8, 0.56);
+    T('R4:7', 'ptr alt', -5.6, 3.1); T('R8:6', 'ptr alt', 5.6, 3.1);
+    S.B = board(-7, -4.8, 0.56, { maxH: 50 });
     S.B.add('定義 region degree 做什麼？看一個性質');
     cap('定義 region 的 degree 有什麼用？', '先看一個性質');
   },
   async (tok, S) => { S.B.add('回想：所有 vertex degree 加起來 = 2 × edges', 'say'); cap('以前學過：所有 vertex 的 degree 加起來', '等於 edge 個數的兩倍'); },
   async (tok, S) => { S.B.add('因為每條邊有兩個端點，各算一次', 'say'); cap('因為每條 edge 有兩個端點', '算 degree 時兩端各算一次'); },
-  async (tok, S) => { S.s1 = T('5 + 3 + 3 + 7 = 18', 'note', -3.0, 3.4); cap('把上面那個圖的 region degree 加起來', '5 + 3 + 3 + 7 = 18'); },
+  async (tok, S) => { S.s1 = T('5 + 3 + 3 + 7 = 18', 'note', -3.0, 4.1); cap('把上面那個圖的 region degree 加起來', '5 + 3 + 3 + 7 = 18'); },
   async (tok, S) => { settxt(S.s1, '18 = 2 × 9 條邊'); cls(S.s1, 'good'); cap('它有 9 條邊', '18 剛好是 2 × 9'); },
-  async (tok, S) => { T('4 + 3 + 5 + 6 = 18 = 2 × 9', 'good', 3.4, 3.4); cap('下面的圖：4 + 3 + 5 + 6 = 18', '它也有 9 條邊：又是兩倍'); },
+  async (tok, S) => { T('4 + 3 + 5 + 6 = 18 = 2 × 9', 'good', 3.4, 4.1); cap('下面的圖：4 + 3 + 5 + 6 = 18', '它也有 9 條邊：又是兩倍'); },
   async (tok, S) => { S.B.add('region degree 加起來也 = 2 × edges', 'note'); cap('跟 vertex 的性質很像', 'region degree 加起來也是 edge 數的兩倍'); },
   async (tok, S) => { S.B.add('為什麼？對任何 planar embedding 都成立', 'say'); cap('為什麼？', '這對任何 planar graph 的 planar embedding 都成立'); },
   async (tok, S) => { S.e = S.u.find('c', 'f'); S.e.paint(GC.hot); cap('看一條邊：它有兩側', ''); },
-  async (tok, S) => { S.x1 = T('算 R5 時 +1', 'pkt', 4.6, -0.6); S.x2 = T('算 R7 時 +1', 'pkt', 2.4, 1.2); cap('數 R5 的 degree 時這條邊算一次', '數 R7 的 degree 時又算一次'); },
+  async (tok, S) => { S.x1 = T('算 R5 時 +1', 'pkt', 4.6, 0.1); S.x2 = T('算 R7 時 +1', 'pkt', 1.0, 3.0); cap('數 R5 的 degree 時這條邊算一次', '數 R7 的 degree 時又算一次'); },
   async (tok, S) => { S.B.add('每條邊隔開兩側 → 各貢獻 1，共貢獻 2', 'say'); cap('每條邊都剛好隔開兩側', '兩側各貢獻 1（兩側同一塊時，那塊就算它兩次）'); },
   async (tok, S) => { S.B.add('Σ deg(R) = 2e', 'good'); cap('所以所有 region 的 degree 加起來', '= 2 × edge 個數'); },
 ]);
@@ -4301,7 +4347,7 @@ function travScene(id, title, kind, head, seq) {
       S.g = mkGraph(0.62); for (const n of Object.keys(TVP)) S.g.v(n, ...TVP[n]); TVE.forEach(([u, v]) => S.g.e(u, v)); S.k = 0; S.row = [];
       hd(head, 0, 7.2);
     }
-    if (s === 'draw' || s === 'title') { if (s === 'title') { S.t = sm(kind === 'pre' ? 'root → 左 subtree → 右 subtree' : kind === 'post' ? '左 subtree → 右 subtree → root' : '左 subtree → root → 右 subtree', 0, 6.75); } cap(head, s === 'draw' ? '老師的例子' : ''); return; }
+    if (s === 'draw' || s === 'title') { if (s === 'title') { S.t = sm(kind === 'pre' ? 'root → 左 subtree → 右 subtree' : kind === 'post' ? '左 subtree → 右 subtree → root' : '左 subtree → root → 右 subtree', -3.6, 6.5); } cap(head, s === 'draw' ? '老師的例子' : ''); return; }
     if (typeof s === 'string' && s.startsWith('say:')) { if (S.say) gone(S.say); S.say = sm(s.slice(4), 0, 0.2); cap(s.slice(4), ''); return; }
     if (s === 'final') {
       const got = order.join('');
@@ -4310,7 +4356,7 @@ function travScene(id, title, kind, head, seq) {
     for (const v of s) {
       const want = order[S.k];
       S.g.vcol(want, TC.hot, HL); const n = S.k + 1; S.k++;
-      const l = lab.label(String(n), 'idx'); l.position.set(0.32, 0.32, 0); S.g.V[want].add(l);
+      const l = lab.label(String(n), 'idx'); l.position.set(0.56, 0.05, 0); S.g.V[want].add(l);
       S.row.push(cube(want, TC.yel, [0.5, 0.45, 0.4], -5.4 + (n - 1) * 0.6, 0.95, 0, 0.4));
       await wt(tok, 120); S.g.vcol(want, TC.gold, null);
       if (want !== v) bad('（預期 ' + v + '）', 0, 0.3);
@@ -6704,13 +6750,12 @@ function scene(id, title, steps, cam = CAM) {
 }
 // a board lying on the floor; the newest line is lit; old lines scroll away when it is full
 function board(x = -7.3, z0 = -4.7, dz = 0.6, max = 15) {
-  const ls = []; let last = null;
+  const st = stackBoard(x, 0.4, z0, { max: Math.min(max, 7), maxW: 200, pin: 12 }); let last = null;
   return {
-    ls,
+    ls: st.ls,
     add(t, c = 'note') {
       if (last && last.userData.hot) { cls(last, 'say'); last.userData.hot = false; }
-      if (ls.length >= max) { kill(ls.shift()); ls.forEach((l, i) => { l.position.z = z0 + i * dz; }); }
-      const l = LL(t, c, x, z0 + ls.length * dz); ls.push(l); l.userData.hot = c === 'note'; last = l; return l;
+      const l = st.line(t, c); l.userData.hot = c === 'note'; last = l; return l;
     },
   };
 }
@@ -7709,17 +7754,14 @@ function scene(id, title, steps, cam = CAM) {
 }
 // a board at the top: newest line lit (note), older lines plain (say); at most `max` lines, oldest drops off
 function board(o = {}) {
-  const x = o.x ?? 0, y0 = o.y ?? 8.7, dy = o.dy ?? 0.64, max = o.max ?? 4;
-  const ls = [];
-  const lay = () => ls.forEach((l, i) => l.position.set(x, y0 - i * dy, 0.3));
+  const st = stackBoard(o.x ?? 0, o.y ?? 8.7, 0.3, { max: o.max ?? 4, center: true }); const ls = st.ls;
   return {
     ls,
     add(t, c = 'note') {
       ls.forEach((l) => { if (l.userData.hot) { cls(l, 'say'); l.userData.hot = false; } });
-      if (ls.length >= max) remove(ls.shift());
-      const l = tag(t, c, x, y0, 0.3); l.userData.hot = c === 'note'; ls.push(l); lay(); return l;
+      const l = st.line(t, c); l.userData.hot = c === 'note'; return l;
     },
-    clear() { ls.forEach((l) => remove(l)); ls.length = 0; },
+    clear() { st.clear(); },
   };
 }
 
@@ -9467,14 +9509,14 @@ function scene(id, title, steps, cam = GCAM) {
 }
 // lines on the floor, one under another; the newest line is lit
 function board(x, z0, dz = 0.58) {
-  const ls = []; let last = null;
+  const st = stackBoard(x, 0.4, z0, x < -4 ? { maxW: 200, pin: 12 } : { maxW: 200 }); let last = null;
   return {
-    ls,
+    ls: st.ls,
     add(t, c = 'note') {
       if (last && last.userData.hot) { setc(last, 'say'); last.userData.hot = false; }
-      const l = LL(t, c, x, z0 + ls.length * dz); ls.push(l); l.userData.hot = c === 'note'; last = l; return l;
+      const l = st.line(t, c); l.userData.hot = c === 'note'; last = l; return l;
     },
-    clear() { ls.forEach((l) => kill(l)); ls.length = 0; last = null; },
+    clear() { st.clear(); last = null; },
   };
 }
 const EG = (gv, u, v) => { const k = gv.find(u, v); if (k < 0) throw new Error('no edge ' + u + '-' + v); return gv.em[k]; };

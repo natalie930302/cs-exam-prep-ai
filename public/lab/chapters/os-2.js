@@ -368,8 +368,8 @@ export default function (ctx) {
     cube('producer', COL.user, [2, 0.8, 1], -5, 0.4, 0); cube('consumer', COL.cpu, [2, 0.8, 1], 5, 0.4, 0);
     if (ipc.mode === 'shm') {
       for (let k = 0; k < BS; k++) { ctx.tile(V3(-2 + k, 0.04, 0), 0.9, 0.9, '#f3e6c8'); tag('[' + k + ']', 'idx', -2 + k, 0, 0.8); }
-      ipc.inL = tag('in', 'ptr', -2, 0, -0.9); ipc.outL = tag('out', 'ptr alt', -2, 0, -1.4);
-      tag('shared buffer（BUFFER_SIZE = 5）', 'ptr', 0, 1.6);
+      ipc.inL = tag('in', 'ptr', -2, 1.15, 0); ipc.outL = tag('out', 'ptr alt', -2, 1.85, 0);
+      tag('shared buffer（BUFFER_SIZE = 5）', 'ptr', 0, 3.0);
       log('課本的 bounded buffer：in 指向下一個空格、out 指向第一個有資料的格。');
       log('空：in == out；滿：(in + 1) % 5 == out → 最多只放 4 個（BUFFER_SIZE − 1）。');
     } else {
@@ -515,7 +515,7 @@ export default function (ctx) {
     const steps = [[-1, 'text', '程式碼 load 進 memory：code segment', '等著被 CPU fetch 的 instruction'], [0, 'data', 'global variable → data section', 'load 時就知道、每個 function 都看得到'], [2, 'stack', 'local variable → stack', 'function return 就一次 pop 掉'], [3, 'heap', 'malloc 出來的 → heap', '最自由、也最要小心']];
     for (const [ln, k, a, b] of steps) {
       cd.hl(ln); glow(sec[k], GOLD);
-      if (ln >= 0) { const v = cube(k === 'data' ? 'g' : k === 'stack' ? 'x' : '8B', '#ffffff', [0.5, 0.4, 0.4], -1, 5.4 - ln * 0.55, 0.6); move(v, X - 0.6, sec[k].position.y, 0.8); }
+      if (ln >= 0) { const v = cube(k === 'data' ? 'g' : k === 'stack' ? 'x' : '8B', '#ffffff', [0.5, 0.4, 0.4], -1, 5.4 - ln * 0.55, 0.6); move(v, X + 1.05, sec[k].position.y, 0.8); }
       say(a, b); await W(tok, 2400); glow(sec[k], null);
     }
     cd.hl(-1);
@@ -579,9 +579,10 @@ export default function (ctx) {
     say('要搶的資源很少：要排程', '進 memory 要排、上 CPU 也要排');
     await W(tok, 2400);
     let L = 0, S = 0; const mem = [];
+    const lay = () => mem.forEach((q, i) => move(q, -1.0 + i * 1.0, 0.25, 0));
     for (let t = 0; t < 12; t++) {
-      if (t % 5 === 0 && ps.length) { const p = ps.shift(); mem.push(p); move(p, -0.8 + (mem.length % 3) * 0.8, 0.25, 0); L++; txt(lc, '執行 ' + L + ' 次'); say('使用者 launch 程式：long-term 才動', '幾秒、幾分鐘一次 → long-term'); }
-      if (mem.length) { const p = mem.shift(); move(p, 4.8, 0.25, 0); S++; txt(sc_, '執行 ' + S + ' 次'); await W(tok, 420); move(p, -0.8 + (mem.length % 3) * 0.8, 0.75, 0); mem.push(p); }
+      if (t % 5 === 0 && ps.length) { const p = ps.shift(); mem.push(p); lay(); L++; txt(lc, '執行 ' + L + ' 次'); say('使用者 launch 程式：long-term 才動', '幾秒、幾分鐘一次 → long-term'); }
+      if (mem.length) { const p = mem.shift(); move(p, 4.8, 0.25, 0); S++; txt(sc_, '執行 ' + S + ' 次'); await W(tok, 420); mem.push(p); lay(); }
       if (t % 5 !== 0) say('timer 每幾 ms 響一次：重新排 CPU', '非常頻繁 → short-term');
       await W(tok, 300);
     }
@@ -664,7 +665,7 @@ export default function (ctx) {
     fresh([0, 3.6, 14], [0, 3.2, 0]);
     // 課本 Fig. 3.8（Linux 的 process tree）
     const T = [['init', 1, null], ['login', 8415, 1], ['kthreadd', 2, 1], ['sshd', 3028, 1], ['bash', 8416, 8415], ['pdflush', 200, 2], ['khelper', 6, 2], ['sshd', 3610, 3028], ['ps', 9298, 8416], ['emacs', 9204, 8416], ['tcsch', 4005, 3610]];
-    const pos = { 1: [0, 5.6], 8415: [-3.6, 4.2], 2: [0, 4.2], 3028: [3.6, 4.2], 8416: [-3.6, 2.8], 200: [-0.8, 2.8], 6: [0.9, 2.8], 3610: [3.6, 2.8], 9298: [-4.7, 1.4], 9204: [-2.5, 1.4], 4005: [3.6, 1.4] };
+    const pos = { 1: [0, 5.6], 8415: [-3.6, 4.2], 2: [0, 4.2], 3028: [3.6, 4.2], 8416: [-3.6, 2.8], 200: [-1.35, 2.8], 6: [1.35, 2.8], 3610: [3.6, 2.8], 9298: [-4.7, 1.4], 9204: [-2.5, 1.4], 4005: [3.6, 1.4] };
     say('每個 process 都有唯一的 PID', 'process identifier');
     await W(tok, 2200);
     const M = {};
@@ -693,7 +694,7 @@ export default function (ctx) {
     const rows = [];
     for (let i = 0; i < D.length; i++) {
       tag(D[i][0], 'ptr', -4.6, 4.6 - i * 1.7);
-      rows.push(D[i][1].map((o, k) => cube(o, COL.paper, [2.6, 0.6, 0.9], -1.4 + k * 2.9, 4.6 - i * 1.7, 0, 2)));
+      rows.push(D[i][1].map((o, k) => cube(o, COL.paper, [2.6, 0.6, 0.9], D[i][1].length === 2 ? [-0.6, 3.9][k] : -1.4 + k * 2.9, 4.6 - i * 1.7, 0, 2)));
       say(D[i][0] + '：' + D[i][1].length + ' 種選擇', D[i][1].join(' / ') + '；' + (i === 0 ? '例：child 能否繼承 file handler？' : i === 1 ? 'wait 的話 parent 進 waiting queue' : 'duplicate 連 PC 都一樣'));
       await W(tok, 2800);
     }
@@ -925,6 +926,13 @@ const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel,
 // between steps only short moves (≤ ~2.5 s); nothing loops or replays.
 // 課堂的例子照影片；動畫自己補的數字一律標「示意」。
 const wt = (tok, ms) => ctx.beat(tok, ms);
+// code lines anchored on their left edge and not padded: a short line never covers what stands beside it
+function codeL(lines, x, yTop, dy = 0.45, z = 0) {
+  const ls = lines.map((s, i) => { const l = tag(s, '', x, yTop - i * dy, z); Object.assign(l.element.style, P.MONO); l.center.set(0, 0.5); return l; });
+  return { ls, hl(i) { ls.forEach((l, k) => { l.element.className = 'lab-label' + (k === i ? ' ptr alt' : ''); }); }, kill() { ls.forEach(kill); } };
+}
+// a label whose text keeps its line breaks (long sentences as two short lines)
+const lines2 = (l) => { l.element.style.whiteSpace = 'pre'; l.element.style.textAlign = 'center'; return l; };
 const cap = (a, b = '') => say(a, b);
 const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
 const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
@@ -944,8 +952,10 @@ const gone = (...os) => os.forEach((o) => { if (o) kill(o.g || o); });
 const PC = ['#4b9ee2', '#e55a9b', '#2fc092', '#c08a1f', '#9b7ef4', '#31aab0', '#dd8238', '#5c7a4a'];
 const CO = { cpu: '#4b9ee2', io: '#dd8238', os: '#9b7ef4', user: '#2fc092', disk: '#5c7a4a', paper: '#e9dcc4', idle: '#d8cfc0', bad: '#d64545', gold: '#c08a1f', kern: '#7d6bd6' };
 // three places a process can be: disk, memory, CPU (zones + props)
+// a zone's name on its front edge, so the things standing in the zone don't cover it
+function zfront(z, d) { z.userData.name.position.z = z.position.z + d / 2 + 0.3; return z; }
 function places(y = 0, labels = ['disk', 'memory', 'CPU'], xs = [-4.6, 0, 4.6]) {
-  const zs = xs.map((x, i) => zone(labels[i], x, y + 0.02, 0, 3.4, 3.0, ['#d8e6cf', '#f3e6c8', '#d6e6f6'][i]));
+  const zs = xs.map((x, i) => zfront(zone(labels[i], x, y + 0.02, 0, 3.4, 3.0, ['#d8e6cf', '#f3e6c8', '#d6e6f6'][i]), 3.0));
   const d = prop('disk', xs[0] + 1.1, y, -0.9, 0.7), c = prop('cpu', xs[2] + 1.0, y, -0.9, 0.7);
   return { zs, d, c, xs };
 }
@@ -1000,7 +1010,7 @@ FRAG.push(['proc-6b-memory', 'Process 的 memory：code、data、stack、heap', 
   fresh([0, 5, 14.5], [0, 2.6, 0]);
   const X = 3.4;
   await step(tok);                                   // 292 process 在 memory 裡
-  zone('memory', X, 0.02, 0, 3.6, 3.0, '#f3e6c8');
+  zfront(zone('memory', X, 0.02, 0, 3.6, 3.0, '#f3e6c8'), 3.0);
   hd('一個 process 的 memory space', X, 6.3);
   cap('Process 在 memory 裡', '');
   await step(tok);                                   // 302 有自己的 space、切成區塊
@@ -1018,14 +1028,14 @@ FRAG.push(['proc-6b-memory', 'Process 的 memory：code、data、stack、heap', 
   cap('原本在 file，執行時 load 進 memory', '沒有程式碼怎麼執行');
   await step(tok);                                   // 347 等 CPU fetch 的 instruction
   const cpu = prop('cpu', -1.6, 0, 0, 0.9, 'CPU');
-  const ins = pkt('instruction', X - 1.4, 0.8, 0.8);
-  await travel(tok, ins, V3(X - 1.4, 0.8, 0.8), V3(-1.4, 1.2, 0.6), 1000); remove(ins);
+  const ins = pkt('instruction', X - 1.6, 1.6, 0.8);
+  await travel(tok, ins, V3(X - 1.6, 1.6, 0.8), V3(-1.4, 1.2, 0.6), 1000); remove(ins);
   cap('放在 memory 等 CPU fetch', '一道一道 instruction');
   await step(tok);                                   // 357 compile 好的機器指令
-  note('compile 好的指令，不是 C code', X, 1.4, 1.0);
+  const cn = note('compile 好的指令，不是 C code', X, 1.4, 1.0);
   cap('不是 C code', '是 compile 好、直接送進 CPU 的指令');
   await step(tok);                                   // 367 接下來三塊放變數
-  gone(f, cpu);
+  gone(f, cpu); remove(cn);
   const cd = code(['int g;            // 示意', 'int main() {', '  int x;', '  p = malloc(8);', '}'], -3.6, 5.0, 0.55);
   cap('接下來三塊放 variable', '變數放在三個不同的地方，非常重要');
   await step(tok);                                   // 386 data section：global
@@ -1033,7 +1043,7 @@ FRAG.push(['proc-6b-memory', 'Process 的 memory：code、data、stack、heap', 
   cd.hl(0);
   cap('第一個：data section', '放 global variable');
   await step(tok);                                   // 404 load 時就存在，所有 function 都看得到
-  const g = pkt('g', -3.6, 5.0, 0.6); await travel(tok, g, V3(-3.6, 5.0, 0.6), V3(X, 1.5, 0.8), 1000);
+  const g = pkt('g', -0.4, 5.0, 0.6); await travel(tok, g, V3(-0.4, 5.0, 0.6), V3(X + 1.1, 1.5, 0.8), 1000);
   cap('load 時就知道它存在', '任何 function 都 access 得到');
   await step(tok);                                   // 423 範圍不會剛剛好
   note('留一段範圍，因為會動態增加', X, 3.4, 1.0);
@@ -1041,16 +1051,16 @@ FRAG.push(['proc-6b-memory', 'Process 的 memory：code、data、stack、heap', 
   await step(tok);                                   // 433 stack：local variable
   S.stack = bx('stack ↓', CO.os, X, 4.6, 0, 2.6, 0.8, 1.1, 2);
   cd.hl(2);
-  const x = pkt('x', -3.6, 3.9, 0.6); await travel(tok, x, V3(-3.6, 3.9, 0.6), V3(X, 4.6, 0.8), 1000);
+  const x = pkt('x', -0.4, 3.9, 0.6); await travel(tok, x, V3(-0.4, 3.9, 0.6), V3(X + 2.0, 4.6, 0.8), 1000);
   cap('stack 放 local variable', 'function 裡的變數');
   await step(tok);                                   // 445 function return 就 pop 掉
   cd.hl(4);
-  await anim(tok, 800, (u) => { x.position.y = 4.6 + u * 2; }); remove(x);
+  await anim(tok, 500, (u) => { x.position.y = 4.6 + u * 2; }); remove(x);
   cap('function return 就消失', '用 stack 一次 pop 掉，有效率');
   await step(tok);                                   // 463 heap：dynamic allocation
   S.heap = bx('heap ↑', CO.io, X, 2.35, 0, 2.6, 0.8, 1.1, 2);
   cd.hl(3);
-  const h = pkt('8 bytes', -2.6, 3.4, 0.6); await travel(tok, h, V3(-2.6, 3.4, 0.6), V3(X, 2.4, 0.8), 1000);
+  const h = pkt('8 bytes', -0.2, 3.35, 0.6); await travel(tok, h, V3(-0.2, 3.35, 0.6), V3(-0.2, 2.4, 0.8), 200); await travel(tok, h, V3(-0.2, 2.4, 0.8), V3(X + 2.3, 2.4, 0.8), 500);
   cap('heap：dynamic allocation', 'malloc 出來的東西放這裡');
   await step(tok);                                   // 465 最自由也最要小心
   bad('最自由，也最要小心', X - 3.4, 2.4, 0.8);
@@ -1065,7 +1075,7 @@ FRAG.push(['proc-6b-memory', 'Process 的 memory：code、data、stack、heap', 
 FRAG.push(['proc-6b-meta', 'Process 的 metadata：PC、register、resource', async (tok) => {
   fresh([0, 5, 14], [0, 2.4, 0]);
   await step(tok);                                   // 495 還需要 metadata
-  zone('memory 內容', -3.8, 0.02, 0, 3.4, 3.0, '#f3e6c8');
+  zfront(zone('memory 內容', -3.8, 0.02, 0, 3.4, 3.0, '#f3e6c8'), 3.0);
   ['code', 'data', 'heap', 'stack'].forEach((n, i) => bx(n, [CO.cpu, CO.user, CO.io, CO.os][i], -3.8, 0.35 + i * 0.7, 0, 2.2, 0.6, 1));
   hd('metadata：管理這個 process 的資料', 2.6, 5.6);
   const card = bx('', '#fffaf0', 2.6, 2.6, 0, 3.8, 4.0, 0.3);
@@ -1084,7 +1094,7 @@ FRAG.push(['proc-6b-meta', 'Process 的 metadata：PC、register、resource', as
   cap('CPU 是很多程式在共用', 'register 不可能一直歸你用');
   await step(tok);                                   // 522 被 switch 走時要存下來
   const r = pkt('r1, r2, …', 5.6, 1.4, 1.8);
-  await travel(tok, r, V3(5.6, 1.4, 1.8), V3(2.6, 3.3, 0.6), 1100); remove(r);
+  await travel(tok, r, V3(5.6, 1.4, 1.8), V3(5.1, 3.3, 0.6), 1100); remove(r);
   a.mood('calm'); b.mood('happy');
   cap('被 switch 換走時', 'register 的值要存起來，讓出來');
   await step(tok);                                   // 532 resource
@@ -1103,6 +1113,11 @@ function crowd(n, x0, z0, names, colors, s = 0.48, cols = 3, dx = 0.95, dz = 0.9
   return Array.from({ length: n }, (_, k) => pal(names ? names[k] : '', '', colors ? colors[k % colors.length] : PC[k % 8], x0 + (k % cols) * dx, 0, z0 + Math.floor(k / cols) * dz, s));
 }
 const setCls = (l, cls) => { l.element.className = 'lab-label ' + cls; };
+// move a buddy around the others (out to z = zf, across, then in) so its name never sweeps over theirs
+async function via(tok, o, pts, ms = 900) { for (const [x, z] of pts) await slide(tok, o, x, 0, z, ms / pts.length); }
+async function detour(tok, o, x, z, ms = 900, zf = 2.6) {
+  await slide(tok, o, o.position.x, 0, zf, ms * 0.25); await slide(tok, o, x, 0, zf, ms * 0.5); await slide(tok, o, x, 0, z, ms * 0.25);
+}
 FRAG.push(['proc-8a-stateloc', '狀態 ↔ 位置：disk、memory、CPU', async (tok) => {
   fresh([0, 6, 14], [0, 1.4, 0]);
   places();
@@ -1110,19 +1125,19 @@ FRAG.push(['proc-8a-stateloc', '狀態 ↔ 位置：disk、memory、CPU', async 
   hot('CPU 只有個位數～十幾個 core', 4.6, 3.0);
   cap('除了切換 state，OS 還要做 scheduling', 'CPU 的數量很少');
   await step(tok);                                   // 20 memory 裡的 process 很多
-  const mem = crowd(6, -0.95, -0.6, ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'], null);
+  const mem = crowd(6, -1.1, -1.1, ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'], null, 0.48, 3, 1.1, 2.0);
   cap('memory 裡的 process 卻很多', 'multiprogramming');
   await step(tok);                                   // 44 輪流使用 CPU
   await slide(tok, mem[0].g, 4.6, 0, 0.4, 700); mem[0].mood('happy');
   await wt(tok, 300);
-  await slide(tok, mem[0].g, -0.95, 0, -0.6, 700); mem[0].mood('calm');
+  await slide(tok, mem[0].g, -1.1, 0, -1.1, 700); mem[0].mood('calm');
   cap('所以大家輪流使用 CPU', '');
   await step(tok);                                   // 48 等著被 load 的 program 更多
   const dk = crowd(9, -5.55, -0.9, null, ['#c9b48e', '#b9a27a'], 0.4, 3, 0.95, 0.8);
   cap('等著被 load 進 memory 的更多', 'memory 也是有限的');
   await step(tok);                                   // 62 不是想執行就能進 memory
   dk[0].mood('sad'); dk[4].mood('sad');
-  bad('memory 滿了：要排隊', 0, 3.0);
+  const full = bad('memory 滿了：要排隊', 0, 3.0);
   cap('使用者說要執行，不一定進得去', '也要排程決定誰先');
   await step(tok);                                   // 81 CPU = running
   good('running', 4.6, 2.4, 1.4);
@@ -1137,25 +1152,26 @@ FRAG.push(['proc-8a-stateloc', '狀態 ↔ 位置：disk、memory、CPU', async 
   await step(tok);                                   // 112 執行完 = terminated
   const t = pal('P7', '', PC[6], 4.6, 0, 0.3, 0.5); t.mood('happy');
   await wt(tok, 300); await slide(tok, t.g, 6.4, 0, 2.6, 900);
-  hd('terminated', 5.8, 1.2, 2.6);
+  hd('terminated', 5.8, 1.9, 2.6);
   cap('執行完離開 = terminated', '');
   await step(tok);                                   // 118 特別的：waiting
-  await slide(tok, mem[5].g, 0.6, 0, 1.6, 700); mem[5].mood('sad'); mem[5].glow('#3a2400');
-  bad('waiting', 1.4, 1.4, 2.2);
+  remove(full);
+  await slide(tok, mem[5].g, 1.5, 0, 2.4, 700); mem[5].mood('sad'); mem[5].glow('#3a2400');
+  bad('waiting', 2.5, 1.85, 2.4);
   cap('唯一特別的是 waiting', '');
   await step(tok);                                   // 122 等別人、interrupt、sleep
   note('等別人 / 等 interrupt / call sleep()', 0.6, 3.6, 1.6);
   cap('在等別人、等 interrupt', '或自己 call sleep 這種 system call');
   await step(tok);                                   // 137 在 memory 但 CPU 空也不能跑
-  arr(1.4, 1.0, 3.6, 1.0, CO.bad, 1.6); bad('✗', 2.5, 1.5, 1.6);
+  arr(2.0, 0.6, 3.6, 0.6, CO.bad, 2.0); bad('✗', 3.0, 0.9, 2.0);
   cap('在 memory，但就算 CPU 空也不能執行', '這就是 waiting state');
 }]);
 
 FRAG.push(['proc-8a-ltst', 'Long-term（job）vs Short-term（CPU）scheduler', async (tok) => {
   fresh([0, 6, 14], [0, 1.4, 0]);
   places(0, ['disk（new）', 'memory（ready）', 'CPU（running）']);
-  const dk = crowd(4, -5.4, -0.6, ['A', 'B', 'C', 'D'], ['#c9b48e', '#b9a27a'], 0.45, 2, 1.2, 1.0);
-  const mem = crowd(3, -0.95, -0.6, ['P1', 'P2', 'P3'], null, 0.45);
+  const dk = crowd(4, -6.1, -0.6, ['A', 'B', 'C', 'D'], ['#c9b48e', '#b9a27a'], 0.45, 4, 1.0, 0);
+  const mem = crowd(3, -1.0, -1.0, ['P1', 'P2', 'P3'], null, 0.45, 3, 1.0, 0);
   await step(tok);                                   // 158 要搶就要排程
   arr(-2.9, 1.8, -1.7, 1.8, CO.gold); arr(1.7, 1.8, 2.9, 1.8, CO.gold);
   cap('三個階段之間要搶', '要搶就需要 schedule');
@@ -1165,40 +1181,40 @@ FRAG.push(['proc-8a-ltst', 'Long-term（job）vs Short-term（CPU）scheduler', 
   cap('進到 CPU：CPU scheduling', '');
   await step(tok);                                   // 175 進 memory：job scheduling
   hot('job scheduling', -2.3, 2.6);
-  await slide(tok, dk[0].g, 0.95, 0, 0.4, 700);
+  await via(tok, dk[0].g, [[-6.1, 1.0], [-0.5, 1.0]], 600);
   cap('進到 memory：job scheduling', '不同的 scheduler 負責');
   await step(tok);                                   // 190 CPU scheduler = short-term
   good('short-term', 2.3, 3.4);
   cap('CPU scheduler 又叫 short-term', '照字面理解：很頻繁');
   await step(tok);                                   // 204 time sharing：每幾 ms 一個 alarm
   pkt('⏰ timer alarm', 4.6, 3.6, 0);
-  await slide(tok, mem[0].g, 0.95, 0, 0.6, 450);
+  await slide(tok, mem[0].g, 0.5, 0, 1.0, 450);
   await slide(tok, mem[1].g, 4.4, 0, 0, 450);
   cap('time sharing：每幾 ms 響一次 alarm', '打斷程式，叫 OS 重新排');
   await step(tok);                                   // 216 頻率非常高
-  await slide(tok, mem[1].g, -0.95, 0, 0.6, 400);
+  await slide(tok, mem[1].g, 0.0, 0, -1.0, 400);
   await slide(tok, mem[2].g, 4.4, 0, 0, 400);
-  idx('幾 ms 一次', 2.3, 2.2);
+  idx('幾 ms 一次', 2.3, 4.1);
   cap('頻率非常非常高', '所以叫 short-term');
   await step(tok);                                   // 225 job = long-term：幾秒、幾分鐘
   good('long-term', -2.3, 3.4);
-  idx('幾秒～幾分鐘一次', -2.3, 2.2);
+  idx('幾秒～幾分鐘一次', -2.3, 4.1);
   cap('job scheduler 叫 long-term', '相較之下很久才做一次');
   await step(tok);                                   // 245 因為是使用者 launch 才需要
   const u = pal('使用者', '', '#f0c27a', -5.0, 0, 2.6, 0.6); u.mood('happy');
-  bub('我要開程式！', -5.0, 1.6, 2.6);
-  await slide(tok, dk[1].g, 0.95, 0, 1.4, 800);
+  bub('我要開程式！', -5.2, 2.5, 2.6);
+  await via(tok, dk[1].g, [[-5.1, -2.4], [1.0, -2.4], [1.0, -1.0]], 600);
   cap('人 launch 新 process 才要排', '人的動作大概幾秒一次');
   await step(tok);                                   // 271 對應記好
-  note('short-term = CPU；long-term = job', 0, 4.4);
+  note('short-term = CPU；long-term = job', 0, 5.0);
   cap('short-term ↔ CPU scheduling', 'long-term ↔ job scheduling');
 }]);
 
 FRAG.push(['proc-8a-midterm', 'Mid-term scheduler：把 process swap 回 disk', async (tok) => {
   fresh([0, 6, 14], [0, 1.4, 0]);
-  zone('disk', -3.8, 0.02, 0, 4.6, 3.2, '#d8e6cf'); zone('memory（容量有限）', 2.8, 0.02, 0, 5.0, 3.2, '#f3e6c8');
+  zfront(zone('disk', -3.8, 0.02, 0, 4.6, 3.2, '#d8e6cf'), 3.2); zfront(zone('memory（容量有限）', 2.8, 0.02, 0, 5.0, 3.2, '#f3e6c8'), 3.2);
   prop('disk', -5.4, 0, -1.0, 0.7);
-  const ps = crowd(6, 1.3, -0.7, ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'], null, 0.5, 3, 1.4, 1.2);
+  const ps = crowd(6, 1.3, -1.1, ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'], null, 0.5, 3, 1.4, 2.0);
   await step(tok);                                   // 284 中間還有 mid-term
   hot('mid-term scheduler', -0.6, 3.8);
   cap('兩者中間還有一個', 'mid-term scheduler');
@@ -1210,37 +1226,40 @@ FRAG.push(['proc-8a-midterm', 'Mid-term scheduler：把 process swap 回 disk', 
   cap('跟 virtual memory 結合', 'disk 拿一塊當 memory 用');
   await step(tok);                                   // 337 memory 不夠：踢回 disk
   ps.slice(3).forEach((b) => b.mood('sad'));
-  bad('memory 不夠了', 2.8, 3.2);
-  await slide(tok, ps[5].g, -3.0, 0, 0.9, 900);
+  const nf = bad('memory 不夠了', 2.8, 3.2);
+  await via(tok, ps[5].g, [[4.1, 2.6], [-6.6, 2.6], [-6.6, -1.0], [-3.0, -1.0]], 600);
   cap('memory 不夠時', '把一些 process 踢回 disk');
   await step(tok);                                   // 349 swapping：memory content dump 到 disk
-  await slide(tok, ps[4].g, -4.6, 0, 0.9, 800);
+  await via(tok, ps[4].g, [[2.7, 2.6], [-6.6, 2.6], [-6.6, -1.0], [-4.6, -1.0]], 600);
   good('swapping', -3.8, 2.6);
   cap('這個動作叫 swapping', '把 memory content dump 到 disk');
   await step(tok);                                   // 367 allocate 1 GB 但不會立刻用
+  remove(nf);
   const big = bx('allocate 1 GB', '#e8d9bd', 4.6, 2.2, 1.0, 1.6, 0.8, 0.8);
-  note('真的會馬上用嗎？不會', 4.6, 3.4, 1.0);
+  const nq = note('真的會馬上用嗎？不會', 4.6, 3.4, 1.0);
   cap('程式可以 allocate 很大的空間', '但不一定會立刻用');
   await step(tok);                                   // 387 沒用到的空間切到 disk
-  await slide(tok, big, -3.8, 1.2, -0.6, 900);
+  remove(nq); P.showL(big.userData.lbl, false);
+  await slide(tok, big, 4.6, 3.2, 1.0, 150); await slide(tok, big, -3.8, 3.2, 1.0, 300); await slide(tok, big, -3.8, 0.75, 1.0, 150);
+  P.showL(big.userData.lbl, true);
   cap('沒在用的空間就搬到 disk', '保留 memory 的空間');
   await step(tok);                                   // 410 被搬走的 process 不能直接跑
   ps[4].glow('#3a2400'); ps[5].glow('#3a2400');
   hd('不能直接執行', -3.8, 3.6);
   cap('整個 process 被搬到 disk', '要執行前得先搬回 memory');
   await step(tok);                                   // 443 是 memory content，不是檔案
-  note('存的是 memory content，不是程式檔', -3.8, -0.4, 2.0);
+  note('存的是 memory content，不是程式檔', -3.8, -0.9, 2.0);
   cap('不是你的程式檔', '是 memory content 的形式存到 disk');
   await step(tok);                                   // 458 有空了 / 被選中：先搬回 memory
   ps[4].glow(null); ps[4].mood('happy');
-  await slide(tok, ps[4].g, 4.1, 0, 0.5, 900);
-  good('swap in → ready', 3.4, 1.6, 1.4);
+  await via(tok, ps[4].g, [[-4.6, -2.4], [3.4, -2.4], [3.4, 0.9]], 600);
+  good('swap in → ready', 3.4, 2.5, 0.9);
   cap('有空位或被選中要執行', 'mid-term 先搬回 memory 才回到 ready');
 }]);
 
 FRAG.push(['proc-8a-dopmix', 'Degree of multiprogramming 與 CPU / I/O mix', async (tok) => {
   fresh([0, 5.5, 14], [0, 2.0, 0]);
-  zone('memory', 0, 0.02, 0, 4.4, 3.2, '#f3e6c8');
+  zfront(zone('memory', 0, 0.02, 0, 4.4, 3.2, '#f3e6c8'), 3.2);
   prop('cpu', -5.0, 0, 0, 1.0, 'CPU'); prop('printer', 5.0, 0, 0, 1.0, 'I/O device');
   const deg = hot('degree = 0', 0, 4.4);
   let mem = [];
@@ -1288,10 +1307,10 @@ FRAG.push(['proc-8a-dopmix', 'Degree of multiprogramming 與 CPU / I/O mix', asy
   tx(s1, 'I/O 也忙'); tx(s2, 'CPU 忙'); setCls(s1, 'good'); setCls(s2, 'good');
   cap('選進來的要讓 CPU 和 I/O 平衡', '兩邊都不 idle，使用率才會增加');
   await step(tok);                                   // 734 使用者的程式可能突然全是某一種
-  note('找一個好的 mix ratio', 0, 3.6);
+  const mx = note('找一個好的 mix ratio', 0, 3.6);
   cap('使用者的程式可能突然全是 CPU-bound', 'scheduler 要從中挑出好的 mix');
   await step(tok);                                   // 749 現代電腦：long-term 淡化
-  bx('memory 很大 + virtual memory', '#f3e6c8', 0, 3.0, -1.6, 4.0, 0.4, 0.6);
+  remove(mx); bx('memory 很大 + virtual memory', '#f3e6c8', 0, 3.0, -1.6, 4.0, 0.4, 0.6);
   cap('現代 memory 大的電腦', 'long-term 的角色已被淡化');
   await step(tok);                                   // 795 角色流到 mid-term
   hot('mid-term：決定誰被 kick out 回 disk', 0, 6.6);
@@ -1320,25 +1339,25 @@ FRAG.push(['proc-8a-stdesign', 'Short-term scheduler：頻繁、要公平、演�
   cap('short-term 的重點是它的演算法', '後面有整章介紹');
   await step(tok);                                   // 946 第一個要確保：wait time
   q.forEach((b) => b.mood('sad'));
-  note('平均等了多久（wait time）', -3.0, 2.6);
+  const wn = note('平均等了多久（wait time）', -3.0, 2.6);
   cap('第一個：wait time', '大家都不喜歡等很久，像中午排隊買飯');
   await step(tok);                                   // 976 同樣的人、不同演算法 → 平均不同
   await slide(tok, q[3].g, -4.6, 0, 0.9, 400);
   await slide(tok, q[0].g, -1.3, 0, 0.9, 400);
-  idx('換個順序（示意）→ 平均 wait time 不同', -3.0, 3.4);
+  const ro = idx('換個順序（示意）→ 平均 wait time 不同', -3.0, 3.4);
   cap('同樣的人、同樣的順序進來', '不同演算法 → 平均 wait time 不同');
   await step(tok);                                   // 992 fairness
   good('fairness：每個人等得差不多', -3.0, 4.2);
   cap('或是 fairness', 'priority、round-robin 等演算法');
   await step(tok);                                   // 1007 平均低 ≠ 大家都高興
   q[1].mood('happy'); q[2].mood('happy');
-  bad('平均很低 ≠ 大家都滿意', 1.0, 2.6);
+  const avg = bad('平均很低 ≠ 大家都滿意', 1.0, 2.6);
   cap('平均很低不代表大家都高興', '國家收入高，不代表均富');
   await step(tok);                                   // 1041 直接影響效能、response time
   hd('response time', 4.6, 3.6);
   cap('short-term 直接決定等待時間', '影響效能和使用者看到的 response time');
   await step(tok);                                   // 1058 演算法本身要很快
-  gone(...q);
+  gone(...q, wn, ro, avg);
   bad('queue 很長 + n² 演算法 → 太慢', -2.4, 2.6);
   cap('偏偏演算法本身必須非常有效率', 'queue 很長時 n² 會很驚人');
   await step(tok);                                   // 1099 100 ms 跑 10 ms → 10%
@@ -1363,35 +1382,35 @@ FRAG.push(['proc-8a-stdesign', 'Short-term scheduler：頻繁、要公平、演�
 
 FRAG.push(['proc-8a-swapio', 'Mid-term：swap out 與 swap in', async (tok) => {
   fresh([0, 6, 14], [0, 1.4, 0]);
-  zone('disk', -3.8, 0.02, 0, 4.6, 3.2, '#d8e6cf'); zone('memory', 2.8, 0.02, 0, 5.0, 3.2, '#f3e6c8');
+  zfront(zone('disk', -3.8, 0.02, 0, 4.6, 3.2, '#d8e6cf'), 3.2); zfront(zone('memory', 2.8, 0.02, 0, 5.0, 3.2, '#f3e6c8'), 3.2);
   prop('disk', -5.4, 0, -1.0, 0.7); prop('cpu', 6.4, 0, -2.4, 0.6, 'CPU');
-  const ps = crowd(6, 1.3, -0.7, ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'], [CO.cpu, CO.cpu, CO.cpu, CO.io, CO.cpu, CO.io], 0.5, 3, 1.4, 1.2);
+  const ps = crowd(6, 1.3, -1.1, ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'], [CO.cpu, CO.cpu, CO.cpu, CO.io, CO.cpu, CO.io], 0.5, 3, 1.4, 2.0);
   await step(tok);                                   // 1184 swap out / swap in
   hot('mid-term：swap out ⇄ swap in', -0.6, 4.0);
   cap('mid-term 做 swap out 和 swap in', '在 disk 和 memory 之間切換');
   await step(tok);                                   // 1207 swap out：搬回 disk
-  ps[4].mood('sad'); await slide(tok, ps[4].g, -3.6, 0, 0.2, 900);
+  ps[4].mood('sad'); await detour(tok, ps[4].g, -3.6, 0.2, 900);
   cap('swap out：把 process 從 memory 搬回 disk', '');
   await step(tok);                                   // 1215 為了控制 degree
-  const d = bad('太多 → thrashing', 2.8, 3.1);
+  const d = bad('太多 → thrashing', 2.8, 2.5);
   cap('為什麼要搬？控制 degree', '太多會 thrashing');
   await step(tok);                                   // 1222 CPU 很忙卻沒跑使用者的指令
-  const n2 = note('CPU 忙著搬，使用者的指令沒在跑', 2.8, 3.8);
+  const n2 = note('CPU 忙著搬，使用者的指令沒在跑', 2.8, 3.2);
   cap('CPU 很忙碌', '但根本不在跑使用者的指令');
   await step(tok);                                   // 1234 swap in：位置空出來就搬回來
   remove(d); remove(n2); gone(ps[1]);
-  ps[4].mood('happy'); await slide(tok, ps[4].g, 2.7, 0, -0.7, 900);
+  ps[4].mood('happy'); await detour(tok, ps[4].g, 2.7, 0.9, 900);
   cap('swap in：memory 位置空出來', '讓等在 disk 的再回來執行');
   await step(tok);                                   // 1253 improve process mix
-  await slide(tok, ps[2].g, -4.8, 0, 0.6, 700); ps[2].mood('sad');
+  await detour(tok, ps[2].g, -4.8, 0.6, 700, -2.6); ps[2].mood('sad');
   good('改善 CPU / I/O mix', 2.8, 3.4);
   cap('最主要：improve process mix', '挑誰留在 memory、誰先離開');
   await step(tok);                                   // 1272 現代沒有 long-term，靠 mid-term
   idx('現代：先全部進來，再由 mid-term 管', -0.6, 5.0);
   cap('現在的電腦沒有 long-term', '進來之後靠 mid-term 進一步管理');
   await step(tok);                                   // 1285 free 出 memory 給正在執行的
-  await slide(tok, ps[5].g, -2.6, 0, 0.6, 700);
-  good('memory 讓給真的在執行的', 4.0, 1.6, 1.6);
+  await detour(tok, ps[5].g, -2.6, 0.6, 700);
+  good('memory 讓給真的在執行的', 3.0, 2.6, 0.9);
   cap('第二：free out memory', '讓給正在執行的，而不是在等的');
   await step(tok);                                   // 1317 跟 virtual memory 結合
   hd('之後在 virtual memory 章節講清楚', 0, 6.0);
@@ -1420,7 +1439,7 @@ FRAG.push(['proc-8b-tree', 'PID 與 tree of processes', async (tok) => {
   fresh([0, 4, 14.5], [0, 3.2, 0]);
   // 課本 Fig. 3.8（Linux 的 process tree）
   const T = [['init', 1, null], ['login', 8415, 1], ['kthreadd', 2, 1], ['sshd', 3028, 1], ['bash', 8416, 8415], ['pdflush', 200, 2], ['khelper', 6, 2], ['sshd', 3610, 3028], ['ps', 9298, 8416], ['emacs', 9204, 8416], ['tcsch', 4005, 3610]];
-  const pos = { 1: [0, 5.6], 8415: [-3.6, 4.2], 2: [0, 4.2], 3028: [3.6, 4.2], 8416: [-3.6, 2.8], 200: [-0.9, 2.8], 6: [0.9, 2.8], 3610: [3.6, 2.8], 9298: [-4.7, 1.4], 9204: [-2.5, 1.4], 4005: [3.6, 1.4] };
+  const pos = { 1: [0, 5.6], 8415: [-3.6, 4.2], 2: [0, 4.2], 3028: [3.6, 4.2], 8416: [-3.6, 2.8], 200: [-1.4, 2.8], 6: [1.4, 2.8], 3610: [3.6, 2.8], 9298: [-4.7, 1.4], 9204: [-2.5, 1.4], 4005: [3.6, 1.4] };
   const M = {};
   const add = (n, pid, par) => { const [x, y] = pos[pid]; if (par !== null) M['e' + pid] = ln(pos[par][0], pos[par][1] - 0.25, x, y + 0.25, 0, '#8a7a5c'); M[pid] = bx(n + ' · ' + pid, PC[pid % 8], x, y, 0, 1.7, 0.5, 0.7, 2); };
   await step(tok);                                   // 54 進入 process 本身
@@ -1428,19 +1447,19 @@ FRAG.push(['proc-8b-tree', 'PID 與 tree of processes', async (tok) => {
   cap('剛剛講 OS 怎麼管理 process', '接下來看 process 本身');
   await step(tok);                                   // 65 programmer 怎麼 create、怎麼溝通
   const pg = pal('programmer', '', '#f0c27a', 5.4, 0, 1.6, 0.7); pg.mood('happy');
-  bub('怎麼 create process？怎麼溝通？', 5.0, 1.6, 1.6);
+  const qb = bub('怎麼 create process？怎麼溝通？', 5.0, 1.6, 1.6);
   cap('回到 user / programmer', '怎麼 create process、怎麼溝通');
   await step(tok);                                   // 83 process 是 entity：要 unique ID
   const me = pal('process', '?', PC[2], 0, 0, 1.6, 0.7);
   cap('process 是一個 entity', '要認得它，就需要一個 unique 的 ID');
   await step(tok);                                   // 91 PID
-  me.set('PID'); hot('process identifier（PID）', 0, 1.3, 1.6);
+  me.set('PID'); hot('process identifier（PID）', 0, 2.0, 1.6);
   cap('這個 ID 叫 process identifier', '簡稱 PID');
   await step(tok);                                   // 98 一被 create 就 assign PID
   me.mood('happy'); await me.hop(tok);
   cap('process 只要被 create 出來', '就會被 assign 一個 PID');
   await step(tok);                                   // 111 有 parent / children 關係
-  gone(me, os, pg);
+  gone(me, os, pg, qb);
   cap('process 不是一開始就全部跑出來', '要被 create，有 parent / children 關係');
   await step(tok);                                   // 122 一開始只有一個 process
   add('init', 1, null);
@@ -1453,10 +1472,10 @@ FRAG.push(['proc-8b-tree', 'PID 與 tree of processes', async (tok) => {
   hd('tree of processes（課本 Fig. 3.8）', 0, 6.6);
   cap('任何系統、任何時候', '都畫得出一棵 tree，沒有例外');
   await step(tok);                                   // 148 不會有 parent 不存在的 process
-  const lone = bx('? · 7777', CO.idle, 5.6, 0.4, 0, 1.5, 0.5, 0.7); bad('沒有 parent？不可能', 5.4, 1.2);
+  const lone = bx('? · 7777', CO.idle, 5.6, -0.4, 0, 1.5, 0.5, 0.7); const lb = bad('沒有 parent？不可能', 5.4, 0.35);
   cap('不可能 parent 不存在', '像 dangling pointer 一樣，OS 不允許');
   await step(tok);                                   // 166 parent 不見了，下面全部砍掉
-  kill(lone);
+  kill(lone); remove(lb);
   for (const pid of [8416, 9298, 9204]) glow(M[pid], '#5a1010');
   await wt(tok, 500);
   for (const pid of [9298, 9204, 8416]) { kill(M[pid]); kill(M['e' + pid]); await wt(tok, 250); }
@@ -1477,36 +1496,36 @@ FRAG.push(['proc-8b-options', 'Parent 與 child 的三種關係選擇', async (t
   await slide(tok, ch.g, -3.8, 0, 2.0, 700); ch.mood('happy');
   cap('process creation', '其實是 parent 跟 children 的關聯性');
   await step(tok);                                   // 251 兩支不同的程式，有三個面向
-  const rows = ['① resource sharing', '② execution', '③ address space'].map((n, i) => hd(n, -0.6, 5.6 - i * 1.9));
+  const rows = ['① resource sharing', '② execution', '③ address space'].map((n, i) => hd(n, 2.4, 6.7 - i * 2.0));
   cap('兩支不同的程式，卻有關聯', '分成三個比較重要的部分');
   await step(tok);                                   // 267 由 OS 設計者決定
-  note('由 OS 的設計者決定', 4.6, 6.4);
+  note('由 OS 的設計者決定', -4.0, 6.0);
   cap('到底什麼關聯性', '由 OS 的設計者自己決定');
   await step(tok);                                   // 274 resource sharing：能不能繼承 file handler
   setCls(rows[0], 'ptr alt'); const f = prop('file', -5.4, 1.4, -0.4, 0.6, 'a.txt');
-  bub('我也能用這個 file 嗎？', -3.8, 1.5, 2.0);
+  const fb = bub('我也能用這個 file 嗎？', -2.8, 1.9, 2.0);
   cap('第一：resource sharing', 'parent open 的 file，child 能直接 access 嗎？');
   await step(tok);                                   // 302 file handler、memory、global、dynamic
-  idx('file handler、global variable、動態配置的變數…', 2.2, 5.0);
+  idx('file handler、global variable、動態配置的變數…', 2.4, 5.3);
   cap('process 有很多 memory content', 'file handler、global、動態配置的 variable');
   await step(tok);                                   // 322 share all
-  const o1 = bx('share all', CO.user, 0.2, 5.6, 0, 2.2, 0.55, 0.8, 2);
+  const o1 = bx('share all', CO.user, 0.2, 6.0, 0, 2.2, 0.55, 0.8, 2);
   cap('可能是 share all', '兩個看到一模一樣的 content');
   await step(tok);                                   // 328 subset
-  const o2 = bx('subset', CO.user, 2.6, 5.6, 0, 2.0, 0.55, 0.8, 2);
+  const o2 = bx('subset', CO.user, 2.6, 6.0, 0, 2.0, 0.55, 0.8, 2);
   cap('或只 share 一部分（subset）', '例：global 看得到，動態的看不到');
   await step(tok);                                   // 339 nothing：分家
-  const o3 = bx('share nothing', CO.user, 5.0, 5.6, 0, 2.4, 0.55, 0.8, 2);
+  const o3 = bx('share nothing', CO.user, 5.0, 6.0, 0, 2.4, 0.55, 0.8, 2);
   cap('或全部不一樣：你是你、我是我', '只給一份 copy，memory address 完全不同');
   await step(tok);                                   // 371 execution 順序：一顆 CPU
   const cpu = prop('cpu', -0.6, 0, 2.8, 0.7, 'CPU');
-  bub('call system call：create child', -5.4, 2.4, 1.4);
+  remove(fb); bub('call system call：create child', -3.4, 3.2, 1.4);
   cap('第二：執行順序', 'child 被 create 出來，但 CPU 只有一個');
   await step(tok);                                   // 403 concurrent：scheduler 決定
-  const e1 = bx('concurrent', CO.cpu, 1.4, 3.7, 0, 2.4, 0.55, 0.8, 2);
+  const e1 = bx('concurrent', CO.cpu, 1.0, 4.0, 0, 2.4, 0.55, 0.8, 2);
   cap('concurrent：讓 OS scheduler 決定', '誰先誰後都 OK');
   await step(tok);                                   // 423 wait until children terminate
-  const e2 = bx('parent 等 child 結束', CO.cpu, 4.4, 3.7, 0, 3.0, 0.55, 0.8, 2);
+  const e2 = bx('parent 等 child 結束', CO.cpu, 4.4, 4.0, 0, 3.0, 0.55, 0.8, 2);
   cap('或 wait until children terminate', 'child 先執行完，parent 才接著跑');
   await step(tok);                                   // 440 所以 fork 後 parent 進 waiting queue
   par.mood('sad'); await slide(tok, par.g, -5.4, 0, -1.2, 600);
@@ -1516,16 +1535,16 @@ FRAG.push(['proc-8b-options', 'Parent 與 child 的三種關係選擇', async (t
   par.mood('calm'); await slide(tok, par.g, -5.4, 0, 1.4, 500);
   cap('第三：memory content', '也是最重要的部分');
   await step(tok);                                   // 493 duplicate
-  const a1 = bx('duplicate（完全複製）', CO.io, 1.4, 1.8, 0, 3.0, 0.55, 0.8, 2);
+  const a1 = bx('duplicate（完全複製）', CO.io, 0.6, 2.0, 0, 3.0, 0.55, 0.8, 2);
   cap('duplicate', '把 parent 的內容完全複製一份');
   await step(tok);                                   // 516 load 新 program、PC 重設
-  const a2 = bx('load 新 program', CO.io, 4.8, 1.8, 0, 2.8, 0.55, 0.8, 2);
+  const a2 = bx('load 新 program', CO.io, 5.0, 2.0, 0, 2.8, 0.55, 0.8, 2);
   cap('或 create 完直接 load 一個 program', 'code 換掉、PC 重設，變成完全不同的程式');
   await step(tok);                                   // 539 duplicate 連 PC 都一樣
-  const pa = pkt('PC：第 3 行（示意）', -5.4, 2.6, 1.4), pb = pkt('PC：第 3 行（示意）', -3.8, 1.0, 2.6);
+  const pa = pkt('PC：第 3 行（示意）', -5.4, 1.5, 1.4), pb = pkt('PC：第 3 行（示意）', -2.8, 0.3, 2.6);
   cap('duplicate 連 program counter 都一樣', 'parent 在第 3 行，child 也從第 3 行開始');
   await step(tok);                                   // 560 看起來一樣，address 不同
-  bad('memory address 不同：是兩支程式', -4.6, 0.3, 3.4);
+  bad('memory address 不同：是兩支程式', -2.0, -0.7, 3.4);
   cap('兩支分不出來，行為完全一樣', '但 memory address 不同，只是 copy');
   void f; void o1; void o2; void o3; void cpu; void e1; void e2; void a1; void a2; void pa; void pb;
 }]);
@@ -1533,7 +1552,7 @@ FRAG.push(['proc-8b-options', 'Parent 與 child 的三種關係選擇', async (t
 FRAG.push(['proc-8b-fork', 'fork()：duplicate + concurrent，回傳 PID / 0', async (tok) => {
   fresh([0, 5, 14.5], [0, 2.6, 0]);
   const lines = ['int a = 5;          // 示意', 'pid = fork();', 'if (pid == 0) …    // child', 'else …             // parent'];
-  const A = code(lines, -3.4, 6.2, 0.48);
+  const A = code(lines, -3.4, 7.0, 0.48);
   await step(tok);                                   // 588 實際的 Linux / UNIX
   hd('Linux / UNIX（Windows 也類似）', 3.6, 6.4);
   cap('直接看真實的 Linux / UNIX', '大部分作業系統都類似');
@@ -1550,17 +1569,17 @@ FRAG.push(['proc-8b-fork', 'fork()：duplicate + concurrent，回傳 PID / 0', a
   mk(-3.4); mk(3.4);
   cap('fork 之前的 global、heap 的值', 'child 通通都有，完全一樣');
   await step(tok);                                   // 659 你有 a，我就有 a
-  pkt('a = 5', -3.4, 4.3, 0); pkt('a = 5', 3.4, 4.3, 0);
+  pkt('a = 5', -3.4, 4.2, 0); pkt('a = 5', 3.4, 4.2, 0);
   cap('你有 variable a，我就有 variable a', '動態配置的值也照抄一份');
   await step(tok);                                   // 675 連 PC 都一樣
-  hot('PC → fork 那行', -3.4, 5.0); hot('PC → fork 那行', 3.4, 5.0);
+  hot('PC → fork 那行', -3.4, 4.85); hot('PC → fork 那行', 3.4, 4.85);
   cap('連 program counter 的位置都一樣', '等於完全一樣的兩支程式');
   await step(tok);                                   // 683 concurrent：誰先跑不一定
-  const cpu = prop('cpu', 0, 0, -1.6, 0.8, 'CPU');
+  const cpu = prop('cpu', 0, 0, -1.6, 0.8); tag('CPU', 'say', -1.4, 0.35, -1.6);
   await slide(tok, chd.g, 0.6, 0, -0.6, 500); await slide(tok, chd.g, 3.4, 0, 1.0, 500);
   cap('它選擇 concurrent execution', '可能 child 先跑，也可能 parent');
   await step(tok);                                   // 699 parent 不用等
-  par.mood('happy'); good('parent 不用進 waiting', -3.4, 0.3, 2.4);
+  par.mood('happy'); good('parent 不用進 waiting', -3.4, -0.6, 2.4);
   cap('看 OS 決定，parent 不用等', '大部分使用者也比較希望這樣');
   await step(tok);                                   // 709 唯一不同：回傳值
   A.hl(1);
@@ -1572,11 +1591,11 @@ FRAG.push(['proc-8b-fork', 'fork()：duplicate + concurrent，回傳 PID / 0', a
   par.set('fork() = 101'); par.mood('happy');
   cap('如果是 parent：return 新 child 的 PID', '所以 parent 知道 child 是誰');
   await step(tok);                                   // 760 父母一定知道小孩是誰
-  bub('我知道你是 101', -3.4, 2.0, 1.6); bub('我不知道爸媽是誰…', 3.4, 2.0, 1.6);
+  bub('我知道你是 101', -3.4, 2.0, 1.6); const dk = bub('我不知道爸媽是誰…', 3.4, 2.0, 1.6);
   cap('跟人很像：父母一定知道小孩', '小孩不一定知道父母');
   await step(tok);                                   // 781 child 可以另外問 OS
-  const os = pal('OS', '', CO.os, 6.0, 0, -1.2, 0.6);
-  bub('getppid() → 100', 6.0, 1.3, -1.2);
+  remove(dk); const os = pal('OS', '', CO.os, 6.0, 0, -1.2, 0.6);
+  bub('getppid() → 100', 6.0, 1.6, -1.2);
   cap('child 可以再 call 別的 system call 問 OS', 'fork 的回傳值不會告訴它');
   await step(tok);                                   // 794 用回傳值判斷自己是誰
   A.hl(2); chd.glow('#3a2a00');
@@ -1632,7 +1651,7 @@ FRAG.push(['proc-8b-wait', 'wait()：parent 等 child 結束', async (tok) => {
   const L = ['pid = fork();', 'if (pid == 0)', '  execlp("/bin/ls", "ls", NULL);', 'else', '  wait(NULL);'];
   const cd = code(L, -2.6, 6.2, 0.45);
   const par = pal('parent', '', PC[0], -4.4, 0, 1.2, 0.75), chd = pal('child', 'ls', CO.disk, 2.4, 0, 1.2, 0.75);
-  const cpu = prop('cpu', -1.0, 0, -1.4, 0.8, 'CPU');
+  const cpu = prop('cpu', -1.0, 0, -1.4, 0.8); tag('CPU', 'say', -2.5, 0.4, -1.4);
   await step(tok);                                   // 942 最後一個常用：wait
   cd.hl(4);
   cap('最後一個常用的：wait', '');
@@ -1681,21 +1700,21 @@ FRAG.push(['proc-8b-cow', 'Duplicate 的實作：copy-on-write', async (tok) => 
   const C = bx("A'", PC[0], 0.6, 0.5, 0, 2.0, 1.0, 1.2, 3);
   cap('產生一個 child，佔住一塊空間', '同樣的顏色：內容一樣，叫 A\'');
   await step(tok);                                   // 1100 為什麼比較小？兩種實作
-  note('為什麼 A\' 比較小？', 0.6, 2.6);
+  const why = note('為什麼 A\' 比較小？', 0.6, 2.6);
   cap('A\' 比 A 小一點', '因為實作上有兩種選擇');
   await step(tok);                                   // 1113 naive：exact copy，100 MB
-  P.relabel(A, 'A（100 MB）');
+  P.relabel(A, 'A（100 MB）'); remove(why);
   const B = bx("A'（再 100 MB）", PC[0], 3.0, 1.2, 0, 2.0, 2.4, 1.2, 3);
   cap('naive 的選擇：exact copy', '佔 100 MB 就再要 100 MB，全部 copy');
   await step(tok);                                   // 1130 浪費 memory
-  bad('一模一樣，何必兩份？', 3.0, 3.2);
+  const twice = bad('一模一樣，何必兩份？', 3.0, 3.2);
   cap('裡面 content 完全一樣', '何必兩份？浪費 memory');
   await step(tok);                                   // 1146 實際作法：copy-on-write
-  kill(B);
+  kill(B); remove(twice);
   hot('copy-on-write', 0.6, 3.6);
   cap('比較好的實作：copy-on-write', '下一章 memory 會講更仔細');
   await step(tok);                                   // 1158 只 copy 一定會改的部分
-  pkt('PC', 0.2, 1.3, 0.8); pkt('初始變數', 1.2, 1.3, 0.8);
+  const cp = [pkt('PC', -0.3, 1.3, 0.8), pkt('初始變數', 1.6, 1.3, 0.8)];
   cap('只 copy 一定會改掉的部分', '像 program counter、一些基本 variable');
   await step(tok);                                   // 1176 其他用 pointer 共用
   const link = ln(-4.0, 1.8, -0.4, 0.9, 0.8, '#c08a1f');
@@ -1704,7 +1723,7 @@ FRAG.push(['proc-8b-cow', 'Duplicate 的實作：copy-on-write', async (tok) => 
   good('一開始相同 → share', -2.0, 3.0);
   cap('一開始大家都相同', '所以讓你們 share');
   await step(tok);                                   // 1207 有人修改 → run time 才 copy
-  bub('child 改了 x！', 0.6, 3.0, 0.8);
+  cp.forEach(remove); const chg = bub('child 改了 x！', 1.6, 3.0, 0.8);
   await anim(tok, 900, (u) => { C.scale.y = 1 + u * 0.6; C.position.y = 0.5 * (1 + u * 0.6); });
   cap('parent 或 child 修改共用的值', 'run time 時 OS 才幫你 copy，兩邊分家');
   await step(tok);                                   // 1229 慢慢長到一樣大，內容不同
@@ -1715,11 +1734,11 @@ FRAG.push(['proc-8b-cow', 'Duplicate 的實作：copy-on-write', async (tok) => 
   note('使用者看到：一模一樣；OS 偷偷省 memory', 0.6, 5.0);
   cap('對使用者看到的 process 而言', '內容一模一樣，OS 偷偷省 memory');
   await step(tok);                                   // 1284 call execlp：整個換掉
-  C.material.color.set(CO.disk); P.relabel(C, 'C：execlp 新程式');
+  C.material.color.set(CO.disk); P.relabel(C, 'C：execlp 新程式'); remove(chg);
   cap('想讓新 process 跑不同程式', 'call execlp：code 換掉、heap 等 reset');
   await step(tok);                                   // 1304 大小、內容跟 A 脫鉤
   await anim(tok, 800, (u) => { C.scale.y = 2.4 - u * 1.0; C.position.y = 0.5 * (2.4 - u * 1.0); });
-  good('大小、內容都跟 A 脫鉤', 0.6, 3.4, 0.8);
+  good('大小、內容都跟 A 脫鉤', 0.6, 2.8, 0.8);
   cap('空間大小和內容', '跟 A 完全無關了');
   void os;
 }]);
@@ -1732,11 +1751,11 @@ FRAG.push(['proc-6a-struct', 'OS 架構：simple 與 layered', async (tok) => {
   cap('前面介紹了好多種 OS 架構', '要知道定義、好處和壞處');
   await step(tok);                                   // 3 simple：developer 很自由
   zone('simple', -3.6, 0.02, 0, 5.0, 3.4, '#f3e6c8');
-  const S = ['檔案', 'I/O', 'memory', '排程', 'driver'].map((n, i) => bx(n, PC[i], -5.2 + (i % 3) * 1.6, 0.4 + Math.floor(i / 3) * 0.9, -0.6 + (i % 2) * 1.0, 1.3, 0.5, 0.7, 2));
+  const S = ['檔案', 'I/O', 'memory', '排程', 'driver'].map((n, i) => bx(n, PC[i], -5.2 + (i % 3) * 1.6, 1.2 + Math.floor(i / 3) * 0.9, -0.6 + (i % 2) * 1.0, 1.3, 0.5, 0.7, 2));
   const dev = pal('developer', '', '#f0c27a', -3.6, 0, 2.4, 0.55); dev.mood('happy');
   cap('simple：很簡單', 'developer 可以用任何方式建構 OS');
   await step(tok);                                   // 6 沒有任何區分、規則
-  ln(-5.2, 0.4, -3.6, 1.3, 0, CO.bad); ln(-2.0, 0.4, -5.2, 1.3, 0, CO.bad); ln(-3.6, 0.4, -2.0, 1.3, 0, CO.bad);
+  ln(-5.2, 1.2, -3.6, 2.1, 0, CO.bad); ln(-2.0, 1.2, -5.2, 2.1, 0, CO.bad); ln(-3.6, 1.2, -2.0, 2.1, 0, CO.bad);
   cap('缺點：沒有任何區分', '非常自由，沒有任何規則');
   await step(tok);                                   // 42 容易有 bug、被 hacker 侵入、難維護
   bad('容易有 bug、被 hacker 侵入、難 maintain', -3.6, 3.0); dev.mood('sad');
@@ -1757,21 +1776,21 @@ FRAG.push(['proc-6a-struct', 'OS 架構：simple 與 layered', async (tok) => {
 
 FRAG.push(['proc-6a-micro', 'Microkernel 與 modular OS', async (tok) => {
   fresh([0, 5, 14], [0, 2.4, 0]);
-  zone('user space', 0, 2.6, -0.4, 12, 2.4, '#e3f3ea'); zone('kernel space', 0, 0.02, 0.6, 12, 2.4, '#ece3fb');
+  [zone('user space', 0, 2.6, -0.4, 12, 2.4, '#e3f3ea'), zone('kernel space', 0, 0.02, 0.6, 12, 2.4, '#ece3fb')].forEach((z) => { z.userData.name.position.x = 4.4; });
   await step(tok);                                   // 89 microkernel：只留最核心的
   const k = bx('micro kernel', CO.os, -3.6, 0.4, 0.6, 2.0, 0.6, 1.0, 2);
   cap('Microkernel：一定要知道', '只把 OS 最核心、必要的部分當 kernel');
   await step(tok);                                   // 100 其他變成可替換的 module
   const M = ['file system', 'device driver', 'memory 管理'].map((n, i) => bx(n, PC[i + 2], -3.6 + (i - 1) * 2.2, 0.5, 0.6, 2.0, 0.5, 0.8, 0));
   M.forEach((m) => { m.position.y = 0.4; m.position.z = 1.8; });
-  good('configurable：module 可以替換', -3.6, 1.6, 2.6);
+  const cfg = good('configurable：module 可以替換', -3.6, 1.6, 2.6);
   cap('其他部分盡量變成一堆 module', '可以替換 → OS 是 configurable');
   await step(tok);                                   // 116 module run 在 user space
   for (const [i, m] of M.entries()) { await slide(tok, m, -3.6 + (i - 1) * 2.2, 2.9, -0.4, 500); }
   hot('module 放在 user space！', -3.6, 4.0, -0.4);
   cap('非常重要：這些 module run 在 user space', '要分清 kernel space 和 user space');
   await step(tok);                                   // 134 用 message passing 溝通
-  const msg = pkt('message', -5.8, 3.0, -0.2);
+  remove(cfg); const msg = pkt('message', -5.8, 3.0, -0.2);
   await travel(tok, msg, V3(-5.8, 3.0, -0.2), V3(-3.6, 0.9, 0.8), 800);
   await travel(tok, msg, V3(-3.6, 0.9, 0.8), V3(-1.4, 3.0, -0.2), 800); remove(msg);
   cap('所以溝通要透過 message passing', '由 kernel 提供的 communication service');
@@ -1779,12 +1798,12 @@ FRAG.push(['proc-6a-micro', 'Microkernel 與 modular OS', async (tok) => {
   bad('system call、interrupt 很慢 → 效能差一些', -3.6, 5.0);
   cap('效能上會比較慢', 'message passing 的 system call、interrupt 很 slow');
   await step(tok);                                   // 158 flexible、reliable
-  good('flexible、kernel 小 → 比較 reliable', -3.6, -0.3, 2.4);
+  good('flexible、kernel 小 → 比較 reliable', -3.6, -0.6, 2.4);
   cap('但很 modular：非常 flexible', 'kernel 很小，出錯機會自然小');
   await step(tok);                                   // 180 modular OS：module 在 kernel space
   const K2 = bx('kernel', CO.os, 3.6, 0.4, 0.6, 2.0, 0.6, 1.0, 2);
   ['fs', 'driver', 'mm'].forEach((n, i) => bx(n, PC[i + 2], 3.6 + (i - 1) * 1.5, 1.05, 0.6, 1.3, 0.5, 0.8, 2));
-  hd('modular OS（現代 OS）', 3.6, 4.6); good('plug in，但都在 kernel space → 有效率', 3.6, -0.3, 2.4);
+  hd('modular OS（現代 OS）', 3.6, 4.6); good('plug in，但都在 kernel space → 有效率', 3.6, -0.6, 2.4);
   cap('modular OS：現代 OS 的主要架構', 'module 可以 plug in，但都在 kernel space');
   await step(tok);                                   // 209 自己試 insert kernel module
   const ins = bx('insmod 新 module', CO.gold, 6.0, 3.2, 0.6, 1.8, 0.5, 0.8);
@@ -1827,14 +1846,14 @@ FRAG.push(['proc-6a-vmconcept', 'VM 的概念：把下面整個抽象成 hardwar
   cap('VM：把下面的東西整個抽象化', 'OS 本來就有這個特性，VM 的定義更 general');
   await step(tok);                                   // 349 下面已經有 OS / 軟體，也抽象成像 hardware
   const host = bx('已經有一個 OS', CO.os, 0, 1.0, 0, 8.0, 0.6, 1.4, 2);
-  hot('看起來就像 hardware 一樣', 0, 1.9, 0.8);
+  hot('看起來就像 hardware 一樣', 2.0, 1.9, 0.8);
   cap('下面即使已經有作業系統、別的軟體', '仍然把它抽象成就像 hardware');
   await step(tok);                                   // 362 灌一個 OS，上面再灌一個 OS
   const g = bx('再灌一個 OS', PC[1], -2.0, 1.75, 0, 3.4, 0.6, 1.2, 3);
   const app = bx('app', PC[2], -2.0, 2.45, 0, 2.4, 0.6, 1.0, 3);
   cap('灌了一個 OS，上面還可以透過 VM', '再灌一個 OS：抽象又多一層');
   await step(tok);                                   // 388 Nachos：translation 轉換指令
-  const tr = pkt('instruction → translation → instruction', 2.6, 2.6, 0.6);
+  const tr = pkt('instruction → translation → instruction', 1.4, 3.2, 0.6);
   cap('Nachos 就是一種 virtualize 的方式', '透過 translation 轉換指令');
   await step(tok);                                   // 408 但不只是 CPU instruction，還有 I/O
   prop('printer', 4.4, 1.3, -0.4, 0.6, 'I/O');
@@ -1847,45 +1866,48 @@ FRAG.push(['proc-6a-vmconcept', 'VM 的概念：把下面整個抽象成 hardwar
 
 FRAG.push(['proc-6a-trap', 'VM 怎麼執行 privileged instruction：trap 給下面代做', async (tok) => {
   fresh([0, 5, 14], [0, 2.6, 0]);
-  const hw = bx('hardware', '#8a94a6', 0, 0.3, 0, 9.0, 0.6, 1.4);
-  const vmm = bx('host OS / VM 管理層（kernel mode）', CO.os, 0, 1.0, 0, 9.0, 0.6, 1.4);
-  idx('user space', -5.6, 2.0, 0.8);
+  // the VMs sit right of centre: the left lane (x = LX) is where the trapped instruction travels
+  const VX = [-1.6, 1.2, 4.0], LX = -5.2;
+  const hw = bx('hardware', '#8a94a6', 0.6, 0.3, 0, 9.0, 0.6, 1.4);
+  const vmm = bx('host OS / VM 管理層（kernel mode）', CO.os, 0.6, 1.0, 0, 9.0, 0.6, 1.4);
+  idx('user space', 6.4, 2.0, 0.8);
   await step(tok);                                   // 455 VM 的定義：hardware 上有管理軟體，上面很多 VM
-  const V = [-3, 0, 3].map((x, i) => [bx('VM ' + (i + 1), PC[i], x, 2.0, 0, 2.6, 0.9, 1.2, 2), bx('guest kernel', CO.kern, x, 2.9, 0, 2.4, 0.5, 1.0, 2)]);
+  const V = VX.map((x, i) => [bx('VM ' + (i + 1), PC[i], x, 2.0, 0, 2.6, 0.9, 1.2, 2), bx('guest kernel', CO.kern, x, 2.9, 0, 2.4, 0.5, 1.0, 2)]);
   cap('hardware 上有原本的 OS 或管理軟體', '上面 create 很多 VM，各自有自己的 OS');
   await step(tok);                                   // 481 夾一個 layer；彼此不知道；都以為 hardware 是自己的
-  V.forEach(([v], i) => bub('hardware 是我的！', -3 + i * 3, 3.8, 0.6));
+  const mine = V.map(([v], i) => bub('hardware 是我的！', VX[i], 3.8, 0.6));
   cap('虛擬化：夾一個 layer', 'VM 互不知道彼此，都以為整台 hardware 屬於自己');
   await step(tok);                                   // 504 難點：kernel 假設自己在 kernel space
   hot('kernel 才能執行 privileged instruction', 0, 5.2);
   cap('難點又是 user space vs kernel space', 'kernel 假設自己在 kernel space');
   await step(tok);                                   // 527 guest kernel 其實在 user space
   glow(V[0][1], '#5a1010');
-  bad('其實 run 在 user space！', -3, 1.2, 1.0);
+  bad('其實 run 在 user space！', VX[0], 4.5, 0.6);
   cap('可是這個 guest kernel', '對底層來說其實是 run 在 user space');
   await step(tok);                                   // 552 執行 privileged instruction 就 fail
-  const pi = pkt('privileged instruction', -3, 3.6, 0.8);
-  await travel(tok, pi, V3(-3, 3.6, 0.8), V3(-3, 2.2, 0.8), 700);
+  mine.forEach(remove);
+  const pi = pkt('privileged instruction', LX, 3.6, 0.8);
+  await travel(tok, pi, V3(LX, 3.6, 0.8), V3(LX, 2.2, 0.8), 700);
   tx(pi, '✗ 在 user space 執行 → fail');
   cap('它執行 privileged instruction 時', '因為在 user space，沒辦法執行');
   await step(tok);                                   // 585 解法：interrupt（exception）
   tx(pi, 'illegal instruction → exception');
   cap('第一代 VM 就知道怎麼解', '還記得 interrupt 嗎？非法指令丟 exception');
   await step(tok);                                   // 613 interrupt 先回到下面這個 OS
-  await travel(tok, pi, V3(-3, 2.2, 0.8), V3(-3, 1.2, 0.8), 700);
+  await travel(tok, pi, V3(LX, 2.2, 0.8), V3(LX, 1.2, 0.8), 700);
   glow(vmm, '#3a2a00');
   cap('這個 interrupt 先回到下面的 OS', '它接到 interrupt');
   await step(tok);                                   // 633 知道是 VM → 在 kernel space 幫它再執行一次
   tx(pi, '在 kernel space 代為執行 ✓'); setCls(pi, 'good');
   cap('它知道上面是 VM', '在 kernel space 幫它再執行一次 → 過了');
   await step(tok);                                   // 690 攔截 interrupt、再幫它做一次
-  await travel(tok, pi, V3(-3, 1.2, 0.8), V3(-3, 3.6, 0.8), 700);
+  await travel(tok, pi, V3(LX, 1.2, 0.8), V3(LX, 3.6, 0.8), 700);
   cap('VM 能 run 的關鍵', '攔截 interrupt，再幫它執行一次');
   await step(tok);                                   // 704 比較慢：做兩次
-  bad('下去、上來、再下去：做兩次 → 慢', 3.0, 5.2);
+  bad('下去、上來、再下去：做兩次 → 慢', 3.6, 4.5, 0.6);
   cap('所以比較慢', 'system call 本來就慢，現在做兩次');
   await step(tok);                                   // 728 只有 privileged instruction 做兩次
-  const ok = pkt('一般 instruction：直接 go through', 3, 3.6, 0.8);
+  const ok = pkt('一般 instruction：直接 go through', 3.0, 3.6, 0.8);
   cap('只有 privileged instruction 做兩次', '不是的話直接 go through，沒問題');
   await step(tok);                                   // 735 hardware support：CPU 支援 virtualization
   remove(pi); remove(ok);
@@ -1895,15 +1917,15 @@ FRAG.push(['proc-6a-trap', 'VM 怎麼執行 privileged instruction：trap 給下
   note('kernel mode / user mode / VM mode', 5.0, 4.0, 1.8);
   cap('CPU 多加一個 bit', '除了 kernel、user mode，還有 VM mode');
   await step(tok);                                   // 773 CPU 自己判斷，一次就過 → 快
-  const p2 = pkt('privileged（來自 VM）', 0, 3.6, 0.8);
-  await travel(tok, p2, V3(0, 3.6, 0.8), V3(0, 0.6, 0.8), 1000); tx(p2, '來自 VM → 直接 go through ✓'); setCls(p2, 'good');
+  const p2 = pkt('privileged（來自 VM）', LX, 3.6, 0.8);
+  await travel(tok, p2, V3(LX, 3.6, 0.8), V3(LX, 0.3, 0.8), 1000); tx(p2, '來自 VM → 直接 go through ✓'); setCls(p2, 'good');
   cap('CPU 自己知道指令來自 VM', '直接 go through，不用上來 → 比較快');
   void hw;
 }]);
 
 FRAG.push(['proc-6a-critical', 'Critical instruction：user / kernel 結果不同（補充）', async (tok) => {
   fresh([0, 5, 14], [0, 2.4, 0]);
-  zone('user space', -3.2, 0.02, 0, 5.4, 3.0, '#e3f3ea'); zone('kernel space', 3.2, 0.02, 0, 5.4, 3.0, '#ece3fb');
+  zfront(zone('user space', -3.2, 0.02, 0, 5.4, 3.0, '#e3f3ea'), 3.0).userData.name.position.x = -2.2; zfront(zone('kernel space', 3.2, 0.02, 0, 5.4, 3.0, '#ece3fb'), 3.0);
   await step(tok);                                   // 812 看起來很美好，但……
   hd('critical instruction', 0, 6.0);
   cap('看起來問題解決了', '但有個非常討厭的：critical instruction');
@@ -1923,14 +1945,14 @@ FRAG.push(['proc-6a-critical', 'Critical instruction：user / kernel 結果不�
   bad('不會丟 interrupt → 下面的人不知道', 0, 3.6);
   cap('沒有 hardware support 就麻煩了', '它不會被 catch，不會丟 interrupt');
   await step(tok);                                   // 911 guest kernel 執行 → 結果錯
-  const g = pal('guest kernel', 'A + B ✗', CO.kern, -3.2, 0, 1.6, 0.55); g.mood('sad');
-  bub('我以為會得到 A + 2B…', -3.2, 1.5, 1.6);
+  const g = pal('guest kernel', 'A + B ✗', CO.kern, -5.4, 0, 1.4, 0.55); g.mood('sad');
+  bub('我以為會得到 A + 2B…', -5.0, 2.1, 1.4);
   cap('guest kernel 在 user space 執行它', '直接 go through，得到 A + B：結果錯了');
   await step(tok);                                   // 927 要用別的方式找出它們 → 很囉嗦
   note('不能靠 privileged 的定義判斷 → 很囉嗦', 0, 4.4);
   cap('得先知道哪些是 critical instruction', '不能靠 privileged 的定義，變得很麻煩');
   await step(tok);                                   // 966 software 虛擬化不簡單
-  good('software 虛擬化要處理 critical instruction', 0, 5.1);
+  good('software 虛擬化要處理 critical instruction', 0, 2.75);
   cap('所以 software 要虛擬化不簡單', '要 handle critical instruction');
 }]);
 
@@ -1945,44 +1967,44 @@ FRAG.push(['proc-6a-vmwhy', '為什麼 VM 這麼 popular', async (tok) => {
   reason('① protection', 0);
   const v1 = bx('VM 1', PC[0], 0.4, 0.5, 0, 1.6, 1.0, 1.0), v2 = bx('VM 2', PC[1], 2.6, 0.5, 0, 1.6, 1.0, 1.0);
   const hk = pal('hacker', '', '#444', 0.4, 1.0, 0, 0.5); hk.mood('happy');
-  bad('hack 一個 OS，碰不到另一個', 1.5, 2.6);
+  const hb = bad('hack 一個 OS，碰不到另一個', 1.5, 2.6);
   cap('第一：protection', 'isolation 更好：hack 一個 OS 也碰不到另一個');
   await step(tok);                                   // 1029 ② compatibility：legacy software
-  gone(v1, v2, hk);
+  gone(v1, v2, hk, hb);
   reason('② compatibility', 1);
   const lg = prop('file', 0.4, 0, 0, 0.9, 'legacy software');
-  bub('我一定要舊版 Windows！', 0.4, 2.4);
+  const old = bub('我一定要舊版 Windows！', 0.4, 2.4);
   cap('第二：compatibility', 'legacy software 一定要特定的舊環境');
   await step(tok);                                   // 1065 每個環境一台電腦 → 浪費
   const pcs = [1.8, 3.4, 5.0].map((x) => prop('monitor', x, 0, 0, 0.7));
-  bad('一個環境買一台電腦 → 浪費錢', 3.2, 2.6);
+  const waste = bad('一個環境買一台電腦 → 浪費錢', 3.2, 2.6);
   cap('每個 app 要的環境不同', '只好買很多台電腦，很浪費');
   await step(tok);                                   // 1103 一台電腦開 VM 就好
   gone(...pcs.slice(1));
-  good('一台電腦 + 開個 VM 就好', 3.2, 3.4);
+  const one = good('一台電腦 + 開個 VM 就好', 3.2, 3.4);
   cap('有 VM：買一台、灌最常用的 OS', '要別的環境就開個 VM，例如在 Mac 上跑 Linux');
   await step(tok);                                   // 1143 ③ research 與開發
-  gone(lg, pcs[0]);
+  gone(lg, pcs[0], old, waste, one);
   reason('③ research / 開發', 2);
   const dev = pal('kernel 開發者', '', '#f0c27a', 1.0, 0, 0, 0.6);
   cap('第三：academic 的 research 和開發', 'kernel 只要有 bug 就 crash');
   await step(tok);                                   // 1173 沒有 VM：整台 crash
-  dev.mood('sad'); const m1 = prop('monitor', 3.6, 0, 0, 0.8); bad('整台 crash、重新開機', 3.6, 2.2);
+  dev.mood('sad'); const m1 = prop('monitor', 3.6, 0, 0, 0.8); const cr = bad('整台 crash、重新開機', 3.6, 2.2);
   cap('沒有 VM：改實體機器的 OS', '有 bug 整台 crash、重開機，很痛苦');
   await step(tok);                                   // 1196 有 VM：只是一個 program
-  dev.mood('happy'); good('VM crash 也只是一個 program', 3.6, 2.9);
+  dev.mood('happy'); const vc = good('VM crash 也只是一個 program', 3.6, 2.9);
   cap('有 VM：OS 再怎麼 crash', '也只是一個 program，還能把 state 存下來');
   await step(tok);                                   // 1228 honey farm
-  gone(dev, m1);
+  gone(dev, m1, cr, vc);
   const hv = prop('warehouse', 2.2, 0, 0, 0.9, 'honey farm');
   cap('很好玩的應用：honey farm', '做 security 的人最喜歡');
   await step(tok);                                   // 1281 假的 VM 讓你攻擊，記錄 pattern
   const at = pal('attacker', '', '#444', 5.6, 0, 0.6, 0.5); at.mood('happy');
   await slide(tok, at.g, 3.4, 0, 0.8, 800);
-  note('記錄 attack 的 pattern 與 behavior', 2.6, 3.0);
+  const rec = note('記錄 attack 的 pattern 與 behavior', 2.6, 3.0);
   cap('開假的 VM 讓人攻擊', '把攻擊的 pattern 記下來做研究');
   await step(tok);                                   // 1323 ④ cloud computing
-  gone(hv, at);
+  gone(hv, at, rec);
   reason('④ cloud computing', 3);
   const dc = prop('warehouse', 2.6, 0, -0.6, 1.2, 'data center');
   cap('第四：cloud computing（雲端計算）', 'Google、Microsoft、Amazon');
@@ -2032,10 +2054,10 @@ FRAG.push(['proc-6a-fullpara', 'Full virtualization vs Para-virtualization', asy
   hd('Para-virtualization', 3.4, 5.6);
   cap('另一種：para-virtualization', '');
   await step(tok);                                   // 1666 global zone / master
-  const ms = bx('master（global zone）', CO.gold, 1.9, 1.8, 0, 2.0, 0.8, 1.2, 2);
+  const ms = bx('master\n（global zone）', CO.gold, 1.6, 1.8, 0, 2.0, 0.8, 1.2, 2); ms.userData.lbl.element.style.whiteSpace = 'pre';
   cap('左邊多一個 global zone', '叫 master / manager：知道所有 VM 的存在');
   await step(tok);                                   // 1687 guest OS 必須修改
-  const pg = [3.9, 5.4].map((x) => bx('改過的 guest', PC[3], x, 1.8, 0, 1.4, 0.8, 1.2, 2));
+  const pg = [3.9, 5.4].map((x) => { const b = bx('改過的\nguest', PC[3], x, 1.8, 0, 1.4, 0.8, 1.2, 2); b.userData.lbl.element.style.whiteSpace = 'pre'; return b; });
   bad('guest OS 必須被修改', 4.6, 3.4);
   cap('重點：guest OS 要被修改', '只有一半虛擬化，比較有限制');
   await step(tok);                                   // 1730 效能不一定比較差
@@ -2085,7 +2107,7 @@ FRAG.push(['proc-6a-jvm', 'Java virtual machine：bytecode、translation、JIT',
   const dict = bx('翻過的（JIT 記下來）', CO.user, 4.6, 2.4, -1.0, 2.6, 0.6, 1.0, 2);
   cap('Java 厲害的是 just-in-time compile', '翻過的像字典一樣記下來，直接 reuse');
   await step(tok);                                   // 2067 還是比 C 慢一點
-  note('還是比 C 慢一點', 4.6, 3.3, -1.0);
+  note('還是比 C 慢一點', 4.6, 4.5, -1.0);
   cap('省下一些時間', '效能還是會比 C 這些差一點');
   void j; void bc; void hs; void dict;
 }]);
@@ -2104,7 +2126,8 @@ function memImage(x, y0 = 0.1, w = 2.6, z = 0) {
 FRAG.push(['proc-7a-layout', 'Process 在 memory 裡的樣子', async (tok) => {
   fresh([0, 5, 14], [0, 2.6, 0]);
   const X = 3.6;
-  zone('process 的 memory space', X, 0.02, 0, 3.6, 2.4, '#f3e6c8');
+  const zn = zone('process 的 memory space', X, 0.02, 0, 3.6, 2.4, '#f3e6c8').userData.name;
+  zn.position.set(X - 1.9, 0.07, 1.5); zn.center.set(1, 0.5);
   const show = (m) => { m.visible = true; };
   const S = memImage(X); Object.values(S).forEach((m) => { m.visible = false; });
   await step(tok);                                   // 2 memory 的組成：程式碼
@@ -2124,7 +2147,7 @@ FRAG.push(['proc-7a-layout', 'Process 在 memory 裡的樣子', async (tok) => {
   cap('heap 由 programmer 自己管理', '要記得 deallocate，不然 memory leak');
   await step(tok);                                   // 77 OS 還要記 state、PC、register
   remove(lk);
-  const card = bx('PCB 的資訊', '#fffaf0', -3.4, 3.0, 0, 3.4, 2.8, 0.3);
+  const card = bx('', '#fffaf0', -3.4, 3.0, 0, 3.4, 2.8, 0.3), ct = hd('PCB 的資訊', -3.4, 4.75);
   const r1 = bx('state、program counter', CO.gold, -3.4, 3.9, 0.3, 3.0, 0.5, 0.3);
   cap('OS 還需要知道 process 的資訊', '目前的 state、program counter');
   await step(tok);                                   // 97 register：context switch 時要存
@@ -2134,7 +2157,7 @@ FRAG.push(['proc-7a-layout', 'Process 在 memory 裡的樣子', async (tok) => {
   const r3 = bx('resource（open file…）', CO.io, -3.4, 2.5, 0.3, 3.0, 0.5, 0.3);
   cap('最後是 resource', '開 file、跟 OS 要的 hardware control');
   await step(tok);                                   // 152 layout 例子：0 在下
-  gone(card, r1, r2, r3);
+  gone(card, ct, r1, r2, r3);
   hd('一個例子（每個 OS 不太一樣）', X, 5.7);
   cap('基本架構的一個例子', '0 在下面：先放 text，再放 data');
   await step(tok);                                   // 166 heap、stack run time 會變：中間留空
@@ -2144,7 +2167,7 @@ FRAG.push(['proc-7a-layout', 'Process 在 memory 裡的樣子', async (tok) => {
   cap('heap 和 stack 在 run time 會變化', '一個往上長、一個往下長');
   await step(tok);                                   // 188 out of memory
   await anim(tok, 900, (u) => { S.stack.scale.y = 1.5 + u * 0.8; S.stack.position.y = 4.18 - u * 0.28; });
-  bad('recursive 太深 / allocate 太多 → out of memory', -2.6, 4.2);
+  bad('recursive 太深 / allocate 太多 → out of memory', -3.0, 4.9);
   cap('allocate 太多或一直 recursive', '空間用完 → out of memory');
   void up; void dn;
 }]);
@@ -2158,7 +2181,7 @@ FRAG.push(['proc-7a-thread', 'Thread：lightweight process', async (tok) => {
   hot('又叫 lightweight process', 0, 5.4);
   cap('thread 又叫 lightweight process', '');
   await step(tok);                                   // 251 管理一樣，但共用一些 memory
-  const pz = zone('一個 process', 0, 0.02, 0, 9.0, 3.4, '#f3e6c8');
+  const pz = zone('一個 process', 0, 0.02, 0, 9.0, 3.4, '#f3e6c8'); pz.userData.name.position.set(3.9, 0.07, 2.0);
   const sh = ['code', 'data', 'files'].map((n, i) => bx(n, [CO.cpu, CO.user, CO.io][i], -2.4 + i * 2.4, 3.6, -0.6, 2.2, 0.7, 1.0, 2));
   cap('管理跟長相跟 process 一樣', '但同一個 process 的 thread 共用一些 memory');
   await step(tok);                                   // 276 create thread 不用重建共用空間 → lightweight
@@ -2177,10 +2200,11 @@ FRAG.push(['proc-7a-thread', 'Thread：lightweight process', async (tok) => {
   cap('by definition：code、data section', '還有 OS 的 resource，這三塊共用');
   await step(tok);                                   // 374 一個 thread 開 file，另一個直接用
   const fp = pkt('file pointer', 2.4, 3.0, 0.2);
-  await travel(tok, fp, V3(2.4, 3.0, 0.2), V3(-3, 1.6, 0.8), 900);
+  await travel(tok, fp, V3(2.4, 3.0, 0.2), V3(-3, 2.7, 0.8), 900);
   cap('一個 thread open 一個 file', '另一個 thread 直接拿 file pointer 讀寫');
   await step(tok);                                   // 385 register、stack 不共用
-  const own = T.map((t, i) => [bx('register', CO.cpu, [-3, 0, 3][i], 0.3, 1.9, 1.4, 0.35, 0.6), bx('stack', CO.os, [-3, 0, 3][i], 0.75, 1.9, 1.4, 0.35, 0.6)]);
+  remove(fp);
+  const own = T.map((t, i) => [bx('register', CO.cpu, [-3, 0, 3][i], 1.75, 1.9, 1.4, 0.35, 0.6), bx('stack', CO.os, [-3, 0, 3][i], 2.2, 1.9, 1.4, 0.35, 0.6)]);
   cap('但 register 和 stack', '就沒有 share');
   await step(tok);                                   // 394 register：每個執行位置不同
   T.forEach((t, i) => t.set('PC：第 ' + (3 + i * 4) + ' 行'));
@@ -2190,16 +2214,16 @@ FRAG.push(['proc-7a-thread', 'Thread：lightweight process', async (tok) => {
   cap('stack 放各自的 function call', 'local variable 互相看不見');
   await step(tok);                                   // 438 data 共用 → 用 global variable 溝通
   const g = pkt('global x', 0, 3.6, 0.2);
-  await travel(tok, g, V3(0, 3.6, 0.2), V3(-3, 1.6, 0.8), 700); await travel(tok, g, V3(-3, 1.6, 0.8), V3(3, 1.6, 0.8), 900);
+  await travel(tok, g, V3(0, 3.6, 0.2), V3(-3, 2.95, 0.8), 700); await travel(tok, g, V3(-3, 2.95, 0.8), V3(3, 2.95, 0.8), 900);
   cap('data 是 shared', 'multi-thread programming 用 global variable 溝通');
   await step(tok);                                   // 475 各自獨立：PC、register、thread ID、stack
-  note('各自獨立：PC、register、thread ID、stack', 0, 5.6, 1.0);
+  remove(g); note('各自獨立：PC、register、thread ID、stack', 0, 2.95, 1.0);
   cap('要能獨立執行', 'PC、register、thread ID、stack 各自一份');
   await step(tok);                                   // 502 管理方式一樣，這章講 process
   cap('管理 thread 的大概念跟 process 一樣', '這章講 process，概念可以 apply 到 thread');
   await step(tok);                                   // 529 Linux：都當 thread；Nachos 也叫 thread
   T.forEach((t) => t.mood('wow'));
-  idx('Linux、Nachos：process 當 thread 管理', 0, 6.6);
+  idx('Linux、Nachos：process 當 thread 管理', 0, 7.0);
   cap('Linux 對 OS 而言只有 thread', 'Nachos 也都叫 thread：名字是次要的');
   void pz; void cpu; void own;
 }]);
@@ -2217,7 +2241,7 @@ function arrowST(a, b, name, dy = 0, lx = 0, ly = 0) {
   const t = tag(name, 'idx', (x1 + x2) / 2 + lx, (y1 + y2) / 2 + dy * 1.8 + ly, -0.6);
   return [ar, t];
 }
-const at5 = (k, dz = 0.4) => [ST5[k][0], ST5[k][1] - 0.35, dz];
+const at5 = (k, dz = 0.4) => [ST5[k][0], ST5[k][1] - 1.45, dz];
 FRAG.push(['proc-7a-states', 'Process 的五個狀態（life cycle）', async (tok) => {
   fresh([0, 3.6, 14.5], [0, 2.6, 0]);
   const S = fiveStates(false);
@@ -2228,10 +2252,10 @@ FRAG.push(['proc-7a-states', 'Process 的五個狀態（life cycle）', async (t
   cap('process 被 launch 後', '整個執行過程分成五個 state');
   await step(tok);                                   // 605 new：load 進 memory、initialize
   S.new.visible = true; p.g.visible = true; await go('new');
-  bub('load、allocate segment、initialize', -5.0, 5.6);
+  const ld = bub('load、allocate segment、initialize', -5.0, 5.6);
   cap('第一個：new', '把 program load 進 memory、initialize');
   await step(tok);                                   // 648 memory 少時連 new 都會 fail
-  const f = bad('memory 不夠 → new 就 fail、被 kill', -5.0, 3.6);
+  remove(ld); const f = bad('memory 不夠 → new 就 fail、被 kill', -5.0, 5.5);
   cap('早期 memory 少、launch 太多', '連 new 都 allocate 不到 memory，直接 fail');
   await step(tok);                                   // 686 ready：在 queue 裡等 CPU core
   remove(f); S.ready.visible = true;
@@ -2241,16 +2265,16 @@ FRAG.push(['proc-7a-states', 'Process 的五個狀態（life cycle）', async (t
   cap('第三：running', '被選中，真的把 instruction 送進 CPU 執行');
   await step(tok);                                   // 746 做 I/O → waiting
   S.waiting.visible = true;
-  bub('printf / scanf', 0, -0.4, 0.6);
+  const io = bub('printf / scanf', 0, -0.4, 0.6);
   cap('執行中會做 I/O（printf、scanf）', '不需要 CPU 也不能立刻執行：waiting');
   await step(tok);                                   // 783 I/O 做完才放回 ready
   cap('等這些事情完成、需要 CPU 時', '才被放回 ready state');
   await step(tok);                                   // 795 terminate：release 資源
-  S.terminated.visible = true;
+  S.terminated.visible = true; remove(io);
   cap('最後：terminated', '跟 new 相反：把所有資源 release 給 OS');
   await step(tok);                                   // 821 diagram：new 之後 OS 要 admit
   const [a1, t1] = arrowST('new', 'ready', 'admitted', 0, -0.4, 0.4);
-  bad('memory 不夠 / 沒有 permission → 擋掉', -5.0, 3.6);
+  bad('memory 不夠 / 沒有 permission → 擋掉', -5.0, 5.5);
   cap('用這個 diagram 記起來', 'new 之後 OS 還要 admit：不夠或沒權限就擋掉');
   await step(tok);                                   // 859 正常就進 ready（一個 queue）
   await go('ready');
@@ -2261,7 +2285,7 @@ FRAG.push(['proc-7a-states', 'Process 的五個狀態（life cycle）', async (t
   cap('schedule 是選人；dispatch 是把它 load 進 CPU', '進入 running');
   await step(tok);                                   // 900 簡單程式：算完就離開
   const ex = arrowST('running', 'terminated', 'exit', 0, 0, 0.35);
-  bub('for (…) i++; 算完就離開', 2.4, 3.8);
+  bub('for (…) i++; 算完就離開', 1.6, 4.7);
   cap('簡單的程式只做計算', '執行完就直接離開');
   await step(tok);                                   // 913 interrupt（timer）→ 回 ready
   arrowST('running', 'ready', 'interrupt', -0.3);
@@ -2272,18 +2296,18 @@ FRAG.push(['proc-7a-states', 'Process 的五個狀態（life cycle）', async (t
   cap('切換給 OS 的 scheduler', '所以 OS 隨時能掌握、隨時能換人');
   await step(tok);                                   // 984 自己做 I/O、sleep → waiting
   await go('running', 500);
-  arrowST('running', 'waiting', 'I/O or event wait', 0, 1.6, 0);
+  arrowST('running', 'waiting', 'I/O or event wait', 0, 1.6, -0.3);
   p.mood('calm'); await go('waiting');
   cap('自己要做 I/O 或 call sleep', '放掉 CPU，進入 waiting');
   await step(tok);                                   // 1018 event 完成（interrupt）→ ready
-  arrowST('waiting', 'ready', 'I/O or event completion', 0, -1.6, 0);
-  pkt('sleep 10 秒到了！', 0, -0.4, 1.0); await go('ready'); p.mood('happy');
+  arrowST('waiting', 'ready', 'I/O or event completion', 0, -1.6, -0.3);
+  const wake = pkt('sleep 10 秒到了！', 0, -0.4, 1.0); await go('ready'); p.mood('happy');
   cap('I/O 結束或 sleep 10 秒到了', '靠 interrupt 通知 OS → 從 waiting 回到 ready');
   await step(tok);                                   // 1051 scheduler 從 ready queue 挑人
   const q = [1, 2].map((k) => pal('', '', PC[k + 2], -2.4 - k * 0.7, 2.25, 1.0, 0.35));
   cap('scheduler 只要從 ready queue 挑程式', '在 ready 就代表一定可以執行');
   await step(tok);                                   // 1080 記住轉換的原因；ready / waiting 都是 queue
-  good('ready、waiting 都是 queue', 0, -0.9, 1.6);
+  remove(wake); good('ready、waiting 都是 queue', 0, -1.5, 1.6);
   cap('這張圖非常重要', '記好每個轉換的原因；ready、waiting 都用 queue 管理');
   void a1; void t1; void ex; void os; void q;
 }]);
@@ -2291,7 +2315,7 @@ FRAG.push(['proc-7a-states', 'Process 的五個狀態（life cycle）', async (t
 FRAG.push(['proc-7a-pcb', 'Process Control Block（PCB）', async (tok) => {
   fresh([0, 5, 14.5], [0, 2.6, 0]);
   await step(tok);                                   // 1124 OS 要掌握 process：怎麼實現？
-  zone('kernel space（OS 自己的 memory）', 2.6, 0.02, 0, 7.6, 3.6, '#ece3fb');
+  zfront(zone('kernel space（OS 自己的 memory）', 2.6, 0.02, 0, 7.6, 3.6, '#ece3fb'), 3.6);
   const p = pal('process', '', PC[2], -5.0, 0, 0.6, 0.7);
   cap('OS 要掌握每個 process', '剛剛的邏輯要怎麼實現？');
   await step(tok);                                   // 1142 每個 process 一個 PCB
@@ -2332,22 +2356,22 @@ FRAG.push(['proc-7a-pcb', 'Process Control Block（PCB）', async (tok) => {
   cap('accounting', '開了多少個 file 也記在這');
   await step(tok);                                   // 1405 存在 kernel 自己的 memory
   glow(card, '#3a2a00'); p.mood('happy');
-  good('PCB 存在 kernel 自己的 memory', 2.6, -0.4, 2.0);
+  good('PCB 存在 kernel 自己的 memory', 2.6, -1.0, 2.0);
   cap('PCB 是 OS 管理 process 最重要的資訊', '記得它存在 kernel 自己的 memory');
   void others; void rows;
 }]);
 
 // context switch stage: CPU (registers) in the middle, PCB0 / PCB1 on both sides, P0 / P1 buddies
 function ctxStage() {
-  const cpu = prop('cpu', 0, 0, 0, 1.2, 'CPU');
+  const cpu = prop('cpu', 0, 0, 0, 1.2); tag('CPU', 'say', -1.7, 0.35, 0.8);
   const reg = bx('register：P0', PC[0], 0, 1.3, 0.6, 2.2, 0.5, 0.8);
   const pcb = [bx('PCB₀', PC[0], -4.6, 1.0, 0, 1.8, 1.6, 0.6), bx('PCB₁', PC[1], 4.6, 1.0, 0, 1.8, 1.6, 0.6)];
   const pp = [pal('P0', '', PC[0], -4.6, 0, 2.0, 0.55), pal('P1', '', PC[1], 4.6, 0, 2.0, 0.55)];
   return { cpu, reg, pcb, pp };
 }
 async function regTo(tok, from, to, text, color) {
-  const c = bx(text, color, from.x, from.y, 0.9, 1.6, 0.4, 0.5);
-  await slide(tok, c, to.x, to.y, 0.9, 800); kill(c);
+  const c = bx(text, color, from.x, from.y + 0.95, 0.9, 1.6, 0.4, 0.5);
+  await slide(tok, c, to.x, to.y + 0.95, 0.9, 500); kill(c);
 }
 FRAG.push(['proc-7a-ctx', 'Context switch：save 進 PCB、load 另一個 PCB', async (tok) => {
   fresh([0, 5, 14], [0, 2.0, 0]);
@@ -2383,10 +2407,10 @@ FRAG.push(['proc-7a-ctx', 'Context switch：save 進 PCB、load 另一個 PCB', 
   P.relabel(C.reg, 'register：P1'); C.reg.material.color.set(PC[1]);
   cap('要 run 新的 P1（可能是 OS 或別的 process）', '從 P1 的 PCB load 它的 state');
   await step(tok);                                   // 1616 這段時間兩個都 idle
-  bad('這段時間 P0、P1 都 idle', 0, 4.4);
+  const idle = bad('這段時間 P0、P1 都 idle', 0, 4.4);
   cap('這段時間 P0、P1 都在 idle', '只是在跑 OS 做 context switch');
   await step(tok);                                   // 1647 switch 完 P1 才執行
-  C.pp[1].mood('happy'); tx(who, 'P1 執行中（PC 設到它的位置）');
+  remove(idle); C.pp[1].mood('happy'); tx(who, 'P1 執行中（PC 設到它的位置）');
   cap('context switch 完成，P1 才開始執行', 'PC 設到它要執行的位置開始 fetch');
   await step(tok);                                   // 1672 P1 讓回給 P0：save PCB1、load PCB0
   tx(who, 'save PCB₁ → load PCB₀');
@@ -2417,13 +2441,14 @@ FRAG.push(['proc-7a-ctxcost', 'Context switch 是 overhead：怎麼變快', asyn
   const mem = prop('warehouse', -4.4, 0, -1.6, 0.8, 'memory');
   cap('實際系統要減少 switch 的時間', '第一：memory 快一點（save / load 都是 memory 存取）');
   await step(tok);                                   // 1817 register 數量：少存一點，但大家想要更多
-  const rg = Array.from({ length: 8 }, (_, i) => bx('r' + i, CO.cpu, -0.9 + (i % 4) * 0.6, 3.0 + Math.floor(i / 4) * 0.5, -1.6, 0.5, 0.4, 0.5));
+  const rg = Array.from({ length: 8 }, (_, i) => bx('r' + i, CO.cpu, -4.6 + (i % 4) * 0.6, 3.0 + Math.floor(i / 4) * 0.5, -1.6, 0.5, 0.4, 0.5));
   note('register 少 → 要存的少；但大家想要更多 register', 0, 4.4, -1.6);
   cap('第二：register 的數量', '少一點要存的就少，但現在 CPU 的 register 只會變多');
   await step(tok);                                   // 1847 software：一個指令做完 load + save
-  pkt('一個 instruction：load + save 一次做完', 3.4, 3.2, -1.6);
+  const one = pkt('一個 instruction：load + save 一次做完', 2.6, 3.2, -1.6);
   cap('software 端：OS 跟 CPU 合作', '一個 instruction 就做完 load 和 save');
   await step(tok);                                   // 1883 hardware support：多組 register set
+  remove(one);
   const sets = [0, 1, 2, 3].map((i) => bx('register set ' + i, PC[i], 4.6, 0.4 + i * 0.55, -0.4, 2.4, 0.45, 0.8, 2));
   cap('更常見的是 hardware support', 'CPU 裡有好幾組 register set');
   await step(tok);                                   // 1915 switch 只是換一組 → 快；成本高
@@ -2437,9 +2462,9 @@ FRAG.push(['proc-7a-ctxcost', 'Context switch 是 overhead：怎麼變快', asyn
 
 // ════════ aKiUuuKXfKY（第 7B 講）：scheduling 與各種 queue、queueing diagram ════════
 // a queue drawn as a row of floor slots with a header label and PCB cards
-function qRow(name, x, z, n = 5, color = '#f3e6c8') {
+function qRow(name, x, z, n = 5, color = '#f3e6c8', hx = 1.3) {
   for (let k = 0; k < n; k++) ctx.tile(V3(x + k * 0.8, 0.04, z), 0.7, 0.7, color);
-  const h = hd(name, x - 1.3, 0.3, z);
+  const h = hd(name, x - hx, 0.3, z);
   return { x, z, h, at: (k) => [x + k * 0.8, 0, z] };
 }
 FRAG.push(['proc-7b-queues', 'Process scheduling 與各種 queue', async (tok) => {
@@ -2458,15 +2483,15 @@ FRAG.push(['proc-7b-queues', 'Process scheduling 與各種 queue', async (tok) =
   await slide(tok, ps[0].g, 4.6, 0, -1.4, 450); await slide(tok, ps[0].g, -2.0, 0, -2.4, 450);
   cap('而且很頻繁地做 context switch', '實現 time sharing，才有 interactive 的系統');
   await step(tok);                                   // 78 輪流使用 CPU，順序由 scheduling 決定
-  const sch = pal('scheduler', '', CO.os, 1.8, 0, -0.6, 0.55);
+  const sch = pal('scheduler', '', CO.os, 1.8, 0, 0.6, 0.55);
   cap('process 必須輪流使用 CPU', '誰先誰後由 scheduling algorithm 負責');
   await step(tok);                                   // 92 CPU free 或被迫 switch → scheduler 選一個
   sch.mood('wow'); await sch.hop(tok);
-  await slide(tok, ps[1].g, 4.6, 0, -1.4, 600); ps[1].mood('happy');
+  await via(tok, ps[1].g, [[-1.0, -1.0], [4.6, -1.4]], 600); ps[1].mood('happy');
   cap('CPU free 出來，或被強迫 context switch', 'scheduler 被叫起來，選一個新的 process');
   await step(tok);                                   // 115 在 queue 裡；不只 ready queue
   gone(...ps, sch);
-  const R = qRow('ready queue', -2.4, -0.6), J = qRow('job queue', -2.4, -2.2), D = qRow('device queue', -2.4, 1.4);
+  const R = qRow('ready queue', -2.4, -0.6, 5, '#f3e6c8', 1.9), J = qRow('job queue', -2.4, -2.2, 5, '#f3e6c8', 1.9), D = qRow('device queue', -2.4, 1.4, 5, '#f3e6c8', 1.9);
   cap('排程時 process 被放在 queue 裡', '不只 ready queue，還有 job queue、device queue');
   await step(tok);                                   // 136 有 queue 就要 schedule；最主要是 ready queue
   setCls(R.h, 'ptr alt');
@@ -2487,10 +2512,10 @@ FRAG.push(['proc-7b-queues', 'Process scheduling 與各種 queue', async (tok) =
   arr(R.at(0)[0] + 0.3, 0.3, R.at(1)[0] - 0.3, 0.3, CO.gold, R.z); arr(R.at(1)[0] + 0.3, 0.3, R.at(2)[0] - 0.3, 0.3, CO.gold, R.z);
   cap('一個 ready queue for CPU、很多個 I/O queue', '用 PCB 裡的 pointer 串起來');
   await step(tok);                                   // 251 head、tail、雙向串，方便 reorder
-  hot('head', R.at(0)[0], 0.9, R.z); hot('tail', R.at(2)[0], 0.9, R.z);
+  hot('head', R.at(0)[0], 1.9, R.z); hot('tail', R.at(2)[0], 1.9, R.z);
   cap('有時 head 和 tail 都串起來、甚至雙向', '方便 run time 調整順序（reorder）');
   await step(tok);                                   // 277 作業 3：ready queue 分 level 1、2、3
-  [1, 2, 3].forEach((l) => idx('level ' + l, 3.0, 0.3, -2.4 + l * 0.5));
+  [1, 2, 3].forEach((l) => idx('level ' + l, 1.4 + (l - 1) * 1.25, 0.3, -1.0));
   cap('作業 3 實作比較複雜的 scheduling', 'ready queue 可能分成 level 1、2、3');
   void cpu; void disk; void D; void dq; void rp;
 }]);
@@ -2498,14 +2523,15 @@ FRAG.push(['proc-7b-queues', 'Process scheduling 與各種 queue', async (tok) =
 FRAG.push(['proc-7b-qdiagram', 'Queueing diagram：process 在 queue 之間移動', async (tok) => {
   fresh([0, 6, 14], [0, 1.6, 0]);
   const R = qRow('ready queue', -5.0, 2.4);
-  const cpu = prop('cpu', 2.6, 0, 2.4, 0.9, 'CPU');
+  const cpu = prop('cpu', 3.4, 0, 2.4, 0.9); tag('CPU', 'say', 4.7, 0.3, 2.4);
   const lanes = [['I/O queue → I/O', 1.0], ['time slice expired', 0], ['fork a child', -1.2], ['wait for an interrupt', -2.4]];
   lanes.forEach(([n, z]) => { idx(n, 0.8, 0.1, z); P.line(-6.0, 0.05, 6.0, 0.05, z - 0.3, '#e0d3bb'); });
   const p = pal('P', '', PC[1], ...R.at(0), 0.45);
   const others = [1, 2, 3].map((k) => pal('', '', PC[k + 2], ...R.at(k), 0.4));
-  const toCpu = async () => { await slide(tok, p.g, 2.6, 0.5, 2.4, 600); p.mood('happy'); };
-  const lane = async (z) => { await slide(tok, p.g, 5.0, 0, z, 600); };
-  const back = async (z) => { await slide(tok, p.g, -6.2, 0, z, 800); await slide(tok, p.g, ...R.at(4), 500); p.mood('calm'); };
+  const toCpu = async () => { await slide(tok, p.g, p.g.position.x, 1.9, 2.4, 150); await slide(tok, p.g, 3.4, 1.9, 2.4, 300); await slide(tok, p.g, 3.4, 0.5, 2.4, 150); p.mood('happy'); };
+  const lane = async (z) => { await slide(tok, p.g, 5.0, 0.5, 2.4, 250); await slide(tok, p.g, 5.0, 0, z, 350); };
+  // going back, P rides above the lanes so its name never sweeps over a lane's name
+  const back = async (z) => { await slide(tok, p.g, 5.0, 0.9, z, 200); await slide(tok, p.g, -6.2, 0.9, z, 700); await slide(tok, p.g, ...R.at(4), 500); p.mood('calm'); };
   await step(tok);                                   // 303 queue 和 state 轉換的關係
   hd('queueing diagram', 0, 4.4);
   cap('ready queue 是最主要的 scheduling', '看 queue 跟 state 轉換之間的關係');
@@ -2513,33 +2539,33 @@ FRAG.push(['proc-7b-qdiagram', 'Queueing diagram：process 在 queue 之間移�
   await toCpu();
   cap('process 通常在 ready queue 等 CPU', '被 dispatch 上去執行');
   await step(tok);                                   // 323 I/O request → I/O queue
-  bub('printf！', 2.6, 2.0, 2.4);
+  const say1 = bub('printf！', 3.4, 2.3, 2.4);
   await lane(1.0); p.mood('sad');
   cap('自己發出 I/O request（call printf）', '被放到 I/O queue（monitor 的 device queue）');
   await step(tok);                                   // 334 I/O 做完 → interrupt → 回 ready queue
-  pkt('I/O 完成：interrupt', 5.0, 1.2, 1.0);
+  remove(say1); const done = pkt('I/O 完成：interrupt', 5.0, 1.2, 1.0);
   await back(1.0);
   cap('做完 I/O，丟一個 interrupt 回來', 'OS 就把它放回 ready queue');
   await step(tok);                                   // 346 timer alarm → 直接回 ready queue
-  await slide(tok, p.g, 2.6, 0.5, 2.4, 600);
-  pkt('⏰ timer', 2.6, 2.0, 1.6); await lane(0); await back(0);
+  remove(done); await toCpu();
+  const tm = pkt('⏰ timer', 3.4, 2.3, 1.6); await lane(0); await back(0);
   cap('timer 的 alarm 被 fire（time sharing）', '從 CPU 直接回到 ready queue');
   await step(tok);                                   // 357 create process（fork）：parent / children 是 tree
-  await slide(tok, p.g, 2.6, 0.5, 2.4, 600);
+  remove(tm); await toCpu();
   await lane(-1.2);
   const ch = pal('child', '', PC[5], 5.0, 0, -1.2, 0.35); await slide(tok, ch.g, 6.2, 0, -0.6, 500);
   cap('process 可以 create process', 'Linux 叫 fork；parent 和 children 形成 tree');
   await step(tok);                                   // 385 讓 child 先跑：parent 進 waiting queue
-  bub('child 先執行，parent 等', 5.0, 1.2, -1.2); p.mood('sad');
+  const cf = bub('child 先執行，parent 等', 5.0, 1.9, -1.2); p.mood('sad');
   await wt(tok, 600); gone(ch); await back(-1.2);
   cap('設計成讓 children 先執行的話', 'parent 進 waiting queue，等 child 完再回 ready queue');
   await step(tok);                                   // 419 wait for interrupt：sleep 100 秒
-  await slide(tok, p.g, 2.6, 0.5, 2.4, 600);
-  bub('sleep(100)', 2.6, 2.0, 2.4); await lane(-2.4); p.mood('calm');
-  pkt('100 秒到：interrupt → wake up', 5.0, 1.2, -2.4); await back(-2.4);
+  remove(cf); await toCpu();
+  const sl = bub('sleep(100)', 3.4, 2.3, 2.4); await lane(-2.4); p.mood('calm');
+  const wk = pkt('100 秒到：interrupt → wake up', 5.0, 1.2, -2.4); await back(-2.4);
   cap('wait for interrupt：例如 sleep 100 秒', '時間到 fire interrupt 叫醒它，回 ready queue');
   await step(tok);                                   // 450 waiting queue 有很多種
-  good('不同的 event → 各有專門的 waiting queue', 0, 3.6);
+  remove(sl); remove(wk); good('不同的 event → 各有專門的 waiting queue', 0, 3.6);
   cap('從 CPU 被踢出來的原因很多', 'OS 通常為每種 event 準備專門的 queue');
   void cpu; void others;
 }]);
@@ -2549,7 +2575,7 @@ FRAG.push(['proc-8c-why', '為什麼 Linux 把 fork 和 execlp 分開', async (t
   fresh([0, 5, 14], [0, 2.4, 0]);
   await step(tok);                                   // 15 為什麼要有 fork 再 execlp？
   const st = pal('同學', '', '#f0c27a', -5.4, 0, 1.6, 0.6); st.mood('wow');
-  bub('為什麼要 fork 再 execlp？', -5.0, 1.6, 1.6);
+  const q = bub('為什麼要 fork 再 execlp？', -5.0, 1.6, 1.6);
   cap('下課很多同學問', '為什麼要先 fork、再 execlp？');
   await step(tok);                                   // 27 每個 OS 可以 define 自己的 system call
   const os = pal('Linux', '', CO.os, 0, 0, 0, 0.8);
@@ -2570,6 +2596,7 @@ FRAG.push(['proc-8c-why', '為什麼 Linux 把 fork 和 execlp 分開', async (t
   remove(seq);
   cap('這很合理', 'create process 和 reset 內容是完全不同的兩件事');
   await step(tok);                                   // 111 create：allocate memory、PCB、initialize
+  remove(q);
   ['memory space', 'PCB', 'metadata', 'initialize'].forEach((n, i) => bx(n, CO.user, -4.4 + (i % 2) * 2.4, 2.4 - Math.floor(i / 2) * 0.7, 0.4, 2.2, 0.5, 0.6, 2));
   cap('create：allocate memory 空間', 'create PCB、metadata，還要 initialize');
   await step(tok);                                   // 145 裡面存什麼（變數、PC、code）是 execlp 設定
@@ -2596,10 +2623,10 @@ FRAG.push(['proc-8c-example', '範例：fork + execlp + wait 的輸出', async (
   const A = code(L, -3.8, 6.4, 0.46), B = code(L, 3.4, 6.4, 0.46);
   B.ls.forEach((l) => { l.element.style.opacity = '0.12'; });
   tag('示意程式（依課堂說明）', 'idx', -3.8, 6.9);
-  const out = []; const outY = (k) => 1.6 - k * 0.42;
+  const out = []; const outY = (k) => 1.7 - k * 0.6;
   const print = (t) => { out.push(tag(t, 'pkt', 0, outY(out.length), 2.2)); };
   await step(tok);                                   // 297 直接用三個 system call 寫程式
-  hd('螢幕 output', 0, 2.1, 2.2);
+  hd('螢幕 output', 0, 2.35, 2.2);
   cap('用剛剛三個 system call', '寫一個簡單的程式');
   await step(tok);                                   // 310 call fork（C library function）
   A.hl(0);
@@ -2636,7 +2663,7 @@ FRAG.push(['proc-8c-example', '範例：fork + execlp + wait 的輸出', async (
   await wt(tok, 400); gone(ch);
   cap('child 執行完 ls 就結束', '後面的程式它全部看不見了');
   await step(tok);                                   // 492 parent wait：等的還是同一個 process
-  bub('等的還是同一個 child（同一個 PID）', -3.8, 1.6, 2.2);
+  bub('等的還是同一個 child（同一個 PID）', -4.2, 1.6, 2.2);
   cap('parent 在 wait', '內容換了，但還是同一支 process');
   await step(tok);                                   // 518 parent 在 waiting queue；child 結束 → signal → ready
   pa.mood('happy'); A.hl(8);
@@ -2645,20 +2672,20 @@ FRAG.push(['proc-8c-example', '範例：fork + execlp + wait 的輸出', async (
   print('process end');
   cap('最後一行只會被 parent 執行到', 'child 已經變成 ls，看不見它');
   await step(tok);                                   // 574 output：前兩行 child、parent，順序不一定
-  const sw = note('前兩行順序不一定（concurrent）', 3.0, 1.6, 2.2);
+  const sw = note('前兩行順序不一定（concurrent）', 0, -0.3, 2.2);
   cap('看 output：前兩行是 child 和 parent', '順序沒有一定，可能互換');
   await step(tok);                                   // 599 第三行 ls，一定在最後一行之前
   remove(sw); out.forEach((o) => setCls(o, 'pkt'));
-  good('ls 一定在 process end 之前（因為 wait）', 3.0, 1.6, 2.2);
+  good('ls 一定在 process end 之前（因為 wait）', 0, -0.3, 2.2);
   cap('ls 一定出現在最後一行之前', '因為 parent 要 wait child 結束');
   await step(tok);                                   // 662 process end 只會有一行
-  bad('process end 只會有一行', 3.0, 0.9, 2.2);
+  bad('process end 只會有一行', 0, -0.95, 2.2);
   cap('process end 只可能看見一行', '不可能看見兩行');
   await step(tok);                                   // 672 考試：用 system call 寫的程式，要能推出 output
   cap('考試可能給這種簡單程式', '懂 fork、execlp、wait 的意義就能推出 output');
   await step(tok);                                   // 711 wait(&status)：status 指標、回傳 PID
   A.hl(6);
-  note('wait(&status)：存 child 的結束狀態；回傳 child 的 PID', -3.8, 0.9, 2.2);
+  note('wait(&status)：存 child 的結束狀態；回傳 child 的 PID', -3.8, -1.6, 2.2);
   cap('Linux 的 wait 要塞一個 status pointer', '記錄 success 或 fail；回傳等到的 PID');
   await step(tok);                                   // 754 沒指定哪個 child：任何一個結束就 break
   cap('這裡沒指定等哪一個', '任何一個 child 結束就 break；也有指定的版本');
@@ -2717,23 +2744,23 @@ FRAG.push(['proc-8c-exit', 'Termination：exit、abort、cascading', async (tok)
   await step(tok);                                   // 1072 把 resource 全部 deallocate
   const rs = ['file handler', 'I/O buffer', 'memory'].map((n, i) => bx(n, [CO.io, CO.cpu, CO.user][i], -1.8, 0.4 + i * 0.6, 0.6, 1.8, 0.5, 0.6));
   const os = pal('OS', '', CO.os, 1.6, 0, 0.6, 0.6);
-  for (const r of rs) await slide(tok, r, 1.6, 1.6, 0.6, 400);
-  gone(...rs, p); os.mood('happy');
+  for (const r of rs) { await slide(tok, r, 1.6, 1.6, 0.6, 400); kill(r); }
+  gone(p); os.mood('happy');
   cap('把所有 resource deallocate', 'file handler、I/O buffer、memory 全部還給 OS');
   await step(tok);                                   // 1101 parent 可以強迫 kill child：abort(PID)
   const P0 = pal('parent', '', PC[0], 3.0, 0, -1.4, 0.6), C1 = pal('child', '', PC[1], 5.4, 0, 0.6, 0.5);
   ln(3.0, 0.6, 5.4, 0.6, 0);
-  bub('abort(child 的 PID)', 3.0, 1.6, -1.4);
+  const ab = bub('abort(child 的 PID)', 3.0, 1.6, -1.4);
   cap('parent 也可以強迫 kill 一個程式', '叫 abort，給它一個 PID');
   await step(tok);                                   // 1124 只能 kill children
   C1.mood('sad');
-  note('只能 kill 自己的 children', 4.2, 2.6, -0.4);
+  const own = note('只能 kill 自己的 children', 4.2, 2.6, -0.4);
   cap('只能 kill 你的 children', '不能 kill parent（那自己也會被砍）');
   await step(tok);                                   // 1146 何時 abort：child 用太多資源、client 斷線
   const ws = prop('monitor', 0, 0, -1.6, 0.7, 'web server');
   cap('什麼時候 abort？例：web server', 'child 用太多資源（malicious user）或 client 斷線了');
   await step(tok);                                   // 1208 tree：kill parent → 下面全部砍掉
-  gone(C1);
+  gone(C1, ab, own);
   const kids = [[5.0, 0.6], [6.2, 0.6], [5.6, 2.0]].map(([x, z], i) => pal('', '', PC[i + 3], x, 0, z, 0.4));
   await wt(tok, 300); P0.mood('sad'); for (const k of [P0, ...kids]) { gone(k); await wt(tok, 250); }
   bad('kill parent → 下面全部一層一層砍掉', 4.2, 2.6, 0.6);
@@ -2805,19 +2832,19 @@ FRAG.push(['proc-8d-models', 'Shared memory vs Message passing', async (tok) => 
   await travel(tok, msg, V3(1.6, 1.4, 0.6), V3(3.5, 2.9, 0.6), 600); await travel(tok, msg, V3(3.5, 2.9, 0.6), V3(5.4, 1.4, 0.6), 600); remove(msg);
   cap('message passing：透過 memory copy', '跨電腦時更像傳訊息，像 email');
   await step(tok);                                   // 277 network、socket programming 都是 message passing
-  note('socket programming：封包傳到另一台電腦', 3.5, 4.0);
+  const sk = note('socket programming：封包傳到另一台電腦', 3.5, 4.25);
   cap('網路程式、socket programming', '都是 message passing');
   await step(tok);                                   // 298 shared memory：synchronization 討厭；快
-  bad('缺點：synchronization 很難', -3.5, 4.6); good('優點：快（直接用 address）', -3.5, 4.0);
+  bad('缺點：synchronization 很難', -3.5, 4.85); good('優點：快（直接用 address）', -3.5, 4.25);
   cap('shared memory 最討厭的是 synchronization', '好處是快：用 memory address 直接存取');
   await step(tok);                                   // 321 用 pointer → shared；call send / receive → message
-  idx('用 pointer → shared memory', -3.5, 3.4); idx('call send / receive → message passing', 3.5, 3.4);
+  idx('用 pointer → shared memory', -3.5, 3.65); idx('call send / receive → message passing', 3.5, 3.65);
   cap('自己就感覺得出來', '用 pointer 是 shared memory；call send、receive 是 message passing');
   await step(tok);                                   // 343 message passing：要 system call + copy → 慢
-  bad('system call + copy → 比較慢', 3.5, 4.6);
+  remove(sk); bad('system call + copy → 比較慢', 3.5, 4.85);
   cap('message passing 要透過 system call', '又要 copy，通常比較慢');
   await step(tok);                                   // 357 資料小、免 synchronization → 可能更快
-  good('資料小 / 不用 locking → 有時更快', 3.5, 4.0);
+  good('資料小 / 不用 locking → 有時更快', 3.5, 4.25);
   cap('但資料很小、或不想碰 synchronization', 'message passing 有時反而更快');
   await step(tok);                                   // 382 跨電腦只能 message passing
   const net = prop('monitor', 6.4, 0, -1.8, 0.6, '另一台電腦');
@@ -2837,12 +2864,13 @@ FRAG.push(['proc-8d-socket', 'Socket：IP + port', async (tok) => {
   bx('socket', CO.cpu, -2.4, 5.4, 0, 2.2, 0.6, 0.9, 2); bx('RPC', CO.user, 2.4, 5.4, 0, 2.2, 0.6, 0.9, 2);
   cap('message passing 最常見的：socket', '另一個是 RPC');
   await step(tok);                                   // 471 分散式系統用 RPC
-  idx('跨電腦的分散式系統常用', 2.4, 4.6);
+  const dist = idx('跨電腦的分散式系統常用', 2.4, 4.6);
   cap('很多大型、跨電腦的分散式系統', '都用 RPC 做 programming');
   await step(tok);                                   // 492 socket 很基本
-  note('建議修網路程式設計，寫一次 socket', -2.4, 4.6);
+  const adv = note('建議修網路程式設計，寫一次 socket', -2.4, 4.6);
   cap('socket 很基本', '不熟的話一定要寫一下 socket programming');
   await step(tok);                                   // 505 用 IP 跟 port identify
+  remove(dist); remove(adv);
   const h1 = prop('monitor', -4.4, 0, 0, 1.0), h2 = prop('monitor', 4.4, 0, 0, 1.0);
   cap('socket identify 對方的方式', '透過 IP 和 port');
   await step(tok);                                   // 516 IP：一台電腦
@@ -2857,7 +2885,7 @@ FRAG.push(['proc-8d-socket', 'Socket：IP + port', async (tok) => {
   cap('port number 其實就是 process', '程式先 bind 到 port，OS 就把封包交給它');
   await step(tok);                                   // 556 identify 哪台 host 的哪支程式；不能兩個綁同一個 port
   const pk = pkt('封包 → IP:port', -3.6, 1.6, 0.8);
-  await travel(tok, pk, V3(-3.6, 1.6, 0.8), V3(3.6, 1.0, 1.8), 1000);
+  await travel(tok, pk, V3(-3.6, 1.6, 0.8), V3(3.6, 1.75, 1.8), 1000);
   bad('兩個 process 綁同一個 port？不可能', 0, 3.6);
   cap('IP + port：哪台 host 上的哪支程式', '不可能兩個 process 綁到同一個 port');
   await step(tok);                                   // 580 socket 很 low-level：一串 bytes
@@ -2876,7 +2904,7 @@ FRAG.push(['proc-8d-rpc', 'RPC：像呼叫 function 一樣溝通', async (tok) =
   hd('RPC：Remote Procedure Call', 0, 6.0);
   cap('另一個很重要的：RPC', 'remote procedure call');
   await step(tok);                                   // 643 跟 socket 不同：大家喜歡寫 function call
-  bad('socket：一串 bytes', -4.4, 2.4);
+  bad('socket：一串 bytes', -4.4, 3.4);
   cap('socket 很 flexible 但很 low-level', '可是寫程式時我們喜歡 function call');
   await step(tok);                                   // 669 直接 call 對方的 function 來溝通
   const fn = code(['int add(int a, int b) {', '  return a + b;', '}'], 4.4, 4.6, 0.45);
@@ -2885,19 +2913,19 @@ FRAG.push(['proc-8d-rpc', 'RPC：像呼叫 function 一樣溝通', async (tok) =
   idx('在另一個 process，甚至另一台電腦', 4.4, 2.6);
   cap('call 的 procedure 是 remote 的', '在另一個 process，甚至另一台電腦上');
   await step(tok);                                   // 694 一層 API：架在 system call 上
-  bx('RPC API', CO.user, 0, 0.3, -1.4, 4.0, 0.5, 0.8); bx('OS system call（message passing）', CO.os, 0, 0.3, -2.4, 6.0, 0.5, 0.8);
+  bx('RPC API', CO.user, 0, 0.85, -2.4, 4.0, 0.5, 0.8); bx('OS system call（message passing）', CO.os, 0, 0.3, -2.4, 6.0, 0.5, 0.8);
   cap('RPC 是一層 API', '建在 OS 的 system call 上，expose 給使用者');
   await step(tok);                                   // 713 server register 可以被 call 的 function
-  sv.mood('happy'); bub('register：add() 可以被 call', 4.4, 1.8, 0.6);
+  sv.mood('happy'); const rg = bub('register：add() 可以被 call', 4.4, 1.8, 0.6);
   cap('server 定義 function', '向 library register 哪些可以被 call；也要 set up port');
   await step(tok);                                   // 741 client 直接 call server 的 function
-  const c = pkt('add(3, 4)', -3.4, 1.4, 0.8);
-  await travel(tok, c, V3(-3.4, 1.4, 0.8), V3(3.4, 1.4, 0.8), 1000);
+  remove(rg); const c = pkt('add(3, 4)', -3.4, 2.1, 0.8);
+  await travel(tok, c, V3(-3.4, 2.1, 0.8), V3(3.4, 2.1, 0.8), 1000);
   cap('client 用了 RPC 之後', '就可以直接 call server 上的 function');
   await step(tok);                                   // 746 argument、return 有 data type
   tx(c, 'return 7（int）');
-  await travel(tok, c, V3(3.4, 1.4, 0.8), V3(-3.4, 1.4, 0.8), 1000); cl.mood('happy');
-  good('參數、回傳值有 type（int、float…）', -3.4, 2.6, 0.8);
+  await travel(tok, c, V3(3.4, 2.1, 0.8), V3(-3.4, 2.1, 0.8), 1000); cl.mood('happy');
+  good('參數、回傳值有 type（int、float…）', -3.4, 4.2, 0.8);
   cap('重點：input、output 的 argument 有 data type', '不只是一堆 bytes（3、4 是示意）');
   await step(tok);                                   // 766 programmer 不用管在哪台電腦
   cap('programmer 不用管它在哪台電腦、哪個 process', '就像 call 一個 function 一樣溝通');
@@ -2914,19 +2942,19 @@ FRAG.push(['proc-8d-shm', 'Shared memory：create、attach、synchronization', a
   const reg = bx('shared region', CO.gold, 0, 0.3, -1.4, 2.0, 0.5, 1.2); reg.visible = false;
   cap('唯一的條件', '要 create 一塊 process 和 OS 都知道可以共用的 region');
   await step(tok);                                   // 825 by default 不會發生：protection
-  bad('protection：不同 process 不會有共用的 region', 0, 2.8);
+  const pr = bad('protection：不同 process 不會有共用的 region', 0, 2.8);
   cap('by default 不會發生', '因為 OS 的 protection 機制');
   await step(tok);                                   // 848 process 自己 call system call create region
   const os = pal('OS', '', CO.os, 0, 0, 2.4, 0.6);
-  bub('shmget()：create region', 0, 1.5, 2.4);
+  remove(pr); const sg = bub('shmget()：create region', 0, 2.1, 2.4);
   reg.visible = true;
   cap('要溝通的 process 自己 call system call', '請 OS 幫忙 create 這塊 region');
   await step(tok);                                   // 863 再 call attach
-  arr(-3.8, 0.8, -1.1, 0.4, CO.gold, -1.0); arr(3.8, 0.8, 1.1, 0.4, CO.gold, -1.0);
+  remove(sg); arr(-3.8, 0.8, -1.1, 0.4, CO.gold, -1.0); arr(3.8, 0.8, 1.1, 0.4, CO.gold, -1.0);
   bub('attach！', -4.6, 1.6, 0.6); bub('attach！', 4.6, 1.6, 0.6);
   cap('用這塊 region 的 process 還要 call attach', '告訴 OS：我要用這塊空間');
   await step(tok);                                   // 881 之後 OS 什麼都不管；自己說好怎麼用
-  os.mood('calm'); idx('OS：裡面放什麼我不管', 0, 1.0, 2.4);
+  os.mood('calm'); idx('OS：裡面放什麼我不管', 0, -0.5, 2.4);
   note('放什麼 data structure，兩邊自己說好', 0, 3.6);
   cap('create 完之後 OS 什麼事也不幫你', '就是一堆 bytes，怎麼用兩邊自己決定');
   await step(tok);                                   // 922 synchronization：兩個同時 write
@@ -2952,14 +2980,14 @@ FRAG.push(['proc-8d-buffer', 'Producer–consumer：shared memory 的 bounded bu
   let inI = 0, outI = 0; const items = Array(N).fill(null);
   let inL, outL;
   const place = () => { if (inL) { inL.position.x = X(inI); outL.position.x = X(outI); } };
-  const prod = async (v) => { const m = cube(String(v), PC[v % 8], [0.6, 0.5, 0.6], -5.4, 1.4, 0); await slide(tok, m, X(inI), 0.35, 0, 450); items[inI] = m; inI = (inI + 1) % N; place(); };
-  const cons = async () => { const m = items[outI]; items[outI] = null; outI = (outI + 1) % N; place(); await slide(tok, m, 5.4, 1.4, 0, 450); kill(m); };
+  const prod = async (v) => { const m = cube(String(v), PC[v % 8], [0.6, 0.5, 0.6], -4.2, 1.4, 0); await slide(tok, m, X(inI), 0.35, 0, 400); items[inI] = m; inI = (inI + 1) % N; place(); };
+  const cons = async () => { const m = items[outI]; items[outI] = null; outI = (outI + 1) % N; place(); await slide(tok, m, 4.2, 1.4, 0, 350); kill(m); };
   await step(tok);                                   // 1012 標準例子：producer、consumer
-  hd('producer–consumer', 0, 4.6);
+  const t1 = hd('producer–consumer', 0, 4.6);
   cap('shared memory programming 的標準例子', 'producer 產生資料，consumer 把它拿掉');
   await step(tok);                                   // 1033 兩支程式共用一塊 buffer
   for (let k = 0; k < N; k++) { ctx.tile(V3(X(k), 0.04, 0), 0.9, 0.9, '#f3e6c8'); idx('[' + k + ']', X(k), 0, 0.8); }
-  hd('shared buffer（BUFFER_SIZE = 5，示意）', 0, 3.8);
+  const t2 = hd('shared buffer（BUFFER_SIZE = 5，示意）', 0, 3.8);
   cap('兩支不同的程式', '共用這塊 memory buffer（create 的方法跳過）');
   await step(tok);                                   // 1051 producer 一直放
   await prod(1); await prod(2);
@@ -2968,16 +2996,16 @@ FRAG.push(['proc-8d-buffer', 'Producer–consumer：shared memory 的 bounded bu
   await cons();
   cap('consumer 把資料讀出來', '一個一個拿掉');
   await step(tok);                                   // 1073 size 有限
-  note('難在 buffer 的 size 有限', 0, 2.6);
+  const hard = note('難在 buffer 的 size 有限', 0, 2.6);
   cap('難就難在 buffer 的 size 有限制', '');
   await step(tok);                                   // 1103 in 給 producer、out 給 consumer
-  inL = hot('in', X(inI), 0, -0.9); outL = hot('out', X(outI), 0, -1.5);
+  remove(hard); inL = hot('in', X(inI), 1.15, 0); outL = hot('out', X(outI), 1.85, 0);
   cap('in：producer 知道要寫到哪', 'out：consumer 知道從哪讀');
   await step(tok);                                   // 1125 要知道 empty：consumer 要等
-  co.mood('sad'); bub('空的就不能拿，要等', 5.4, 1.6);
+  co.mood('sad'); bub('空的就不能拿，要等', 5.4, 2.0);
   cap('要知道什麼時候 buffer 是 empty', '空的話 consumer 不能拿，要等 producer');
   await step(tok);                                   // 1145 要知道 full：producer 不能覆蓋
-  pr.mood('sad'); bub('滿了再寫會覆蓋資料！', -5.4, 1.6);
+  pr.mood('sad'); bub('滿了再寫會覆蓋資料！', -5.4, 2.0);
   cap('也要知道什麼時候是 full', '滿了還寫，會 override 原來的資料');
   await step(tok);                                   // 1188 empty：in == out
   await cons();
@@ -2989,26 +3017,29 @@ FRAG.push(['proc-8d-buffer', 'Producer–consumer：shared memory 的 bounded bu
   good('full：(in + 1) % BUFFER_SIZE == out', 0, -2.5, 1.2);
   cap('一直加、繞回來（circular）', 'full 的判斷：(in + 1) % size == out');
   await step(tok);                                   // 1232 這一格永遠空著：不然 in == out 分不出
-  glow(P.cube('', '#ffffff', [0.3, 0.3, 0.3], X(inI), 0.9, 0), null);
-  bad('這一格永遠空著：全填滿的話 in == out，分不出空或滿', 0, 2.6);
+  glow(P.cube('', '#ffffff', [0.3, 0.3, 0.3], X(inI), 0.35, 0), null);
+  const keep = lines2(bad('這一格永遠空著：\n全填滿的話 in == out，分不出空或滿', 0, 2.75));
   cap('所以永遠有一格是空的', '真的寫滿，in 又等於 out，分不出 empty 還是 full');
   await step(tok);                                   // 1284 犧牲一格；之後 locking 解決
-  note('犧牲一個空間；之後學 locking 就能解決', 0, 3.2);
+  gone(t1, t2); const lose = note('犧牲一個空間；之後學 locking 就能解決', 0, 3.75);
   cap('為了 synchronize 犧牲一個儲存空間', '之後介紹 locking 就能解決');
   await step(tok);                                   // 1335 producer：while (full) ; busy waiting
-  const pc = code(['while (true) {', '  while (((in + 1) % BUFFER_SIZE) == out)', '    ;   /* do nothing */', '  buffer[in] = item;', '  in = (in + 1) % BUFFER_SIZE;', '}'], -3.4, 7.4, 0.36);
+  // the two loops take turns at the top (side by side they would not fit the stage)
+  remove(lose);
+  const pc = codeL(['while (true) {', '  while (((in + 1) % BUFFER_SIZE) == out)', '    ;   /* do nothing */', '  buffer[in] = item;', '  in = (in + 1) % BUFFER_SIZE;', '}'], -4.2, 6.9, 0.52);
   pc.hl(1);
   cap('producer：一直寫', '滿了就卡在 while 那行（分號）：busy waiting');
   await step(tok);                                   // 1362 consumer：while (in == out) ;
-  const cc = code(['while (true) {', '  while (in == out)', '    ;   /* do nothing */', '  item = buffer[out];', '  out = (out + 1) % BUFFER_SIZE;', '}'], 3.6, 7.4, 0.36);
+  pc.kill();
+  const cc = codeL(['while (true) {', '  while (in == out)', '    ;   /* do nothing */', '  item = buffer[out];', '  out = (out + 1) % BUFFER_SIZE;', '}'], -4.2, 6.9, 0.52);
   cc.hl(1);
   cap('consumer：in == out 就是 empty', '注意分號：卡在這行，直到不空才讀');
   await step(tok);                                   // 1393 shared region 存 buffer、in、out
-  good('shared region 裡：buffer、in、out', 0, 4.4);
+  good('shared region 裡：buffer、in、out', 0, 3.75);
   cap('shared memory region 裡', '除了 buffer，還要存 in 和 out');
   await step(tok);                                   // 1417 沒有 locking：第七章再看
-  pc.hl(-1); cc.hl(-1);
-  idx('這裡沒有 locking；同步章節再回來看', 0, 2.0, 1.2);
+  cc.hl(-1); remove(keep);
+  idx('這裡沒有 locking；同步章節再回來看', 0, 2.75);
   cap('這個例子沒有任何 locking', '之後的同步章節會用 lock 重新看，用滿整個 buffer');
 }]);
 
@@ -3021,7 +3052,7 @@ FRAG.push(['proc-9a-recap', '回顧：circular buffer 與 shared memory 的同�
   const put = (v) => { items[inI] = cube(String(v), PC[v % 8], [0.6, 0.5, 0.6], X(inI), 0.35, 0, 1.5); inI = (inI + 1) % N; place(); };
   const take = () => { kill(items[outI]); items[outI] = null; outI = (outI + 1) % N; place(); };
   await step(tok);                                   // 1 上次的 shared memory 例子
-  hd('shared memory 的標準例子：buffer', 0, 4.4);
+  const t1 = hd('shared memory 的標準例子：buffer', 0, 4.4);
   cap('上次下課前講的 shared memory', '有同學又來問，再提醒一下');
   await step(tok);                                   // 3 共用的是 buffer 這個 array
   for (let k = 0; k < N; k++) { ctx.tile(V3(X(k), 0.04, 0), 0.9, 0.9, '#f3e6c8'); idx('[' + k + ']', X(k), 0, 0.8); }
@@ -3029,17 +3060,17 @@ FRAG.push(['proc-9a-recap', '回顧：circular buffer 與 shared memory 的同�
   cap('共用的 memory content', '就是 buffer 這個 array');
   await step(tok);                                   // 43 producer、consumer 各用一個 pointer
   pal('producer', '', CO.user, -5.4, 0, 0, 0.65); pal('consumer', '', CO.cpu, 5.4, 0, 0, 0.65);
-  inL = hot('in', X(0), 0, -0.9); outL = hot('out', X(0), 0, -1.5);
+  inL = hot('in', X(0), 1.15, 0); outL = hot('out', X(0), 1.85, 0);
   cap('producer、consumer 各用一個 pointer', '來操作這塊記憶體');
   await step(tok);                                   // 52 空間有限 → reuse：circular buffer
   put(1); put(2); put(3); take(); take();
   cap('空間是有限的', '要不斷輸出、輸入，就得 reuse：circular buffer');
   await step(tok);                                   // 79 mod：折回來
   put(4); put(5); await wt(tok, 300); put(6);
-  note('in = (in + 1) % 5：寫到底就折回來', 0, 2.6);
+  const wrap = note('in = (in + 1) % 5：寫到底就折回來', 0, 2.6);
   cap('所以程式裡都有 mod', '寫到最後一格就折回前面');
   await step(tok);                                   // 106 programmer 要負責 synchronization
-  bad('滿了還寫 → overwrite 還沒讀的資料', 0, 3.2);
+  const over = bad('滿了還寫 → overwrite 還沒讀的資料', 0, 3.2);
   cap('programmer 必須負責 synchronization', '例：buffer 滿了，producer 不能再寫');
   await step(tok);                                   // 142 要有 condition 判斷滿；in、out 共用
   cap('要有一個 condition 描述「滿」', 'in、out 兩個變數是共用的，大家都看得到');
@@ -3047,13 +3078,14 @@ FRAG.push(['proc-9a-recap', '回顧：circular buffer 與 shared memory 的同�
   good('full：(in + 1) % 5 == out', 0, -2.2, 1.2);
   cap('(in + 1) % size == out 就叫滿', '可是看起來還有一格空的？');
   await step(tok);                                   // 196 真的寫滿：in == out，跟空分不出
-  const g = cube('?', '#ffffff', [0.6, 0.5, 0.6], X(inI), 1.4, 0); g.material.transparent = true; g.material.opacity = 0.5;
-  bad('寫滿的話 in == out，跟 empty 一樣！', 0, 2.0);
+  const g = cube('?', '#ffffff', [0.6, 0.5, 0.6], X(inI), 0.35, 0); g.material.transparent = true; g.material.opacity = 0.5;
+  bad('寫滿的話 in == out，跟 empty 一樣！', 0, -1.5, 1.2);
   cap('只用 in、out 判斷', '真的寫滿的話 in 又等於 out，分不出滿還空');
   await step(tok);                                   // 230 犧牲一格
   kill(g);
   cap('所以犧牲掉一格', '只剩一格時就先定義為滿');
   await step(tok);                                   // 238 while loop 就是在做同步
+  gone(t1, wrap, over);
   code(['while (((in + 1) % 5) == out) ;', 'while (in == out) ;'], 0, 6.2, 0.45);
   cap('這兩個 while loop', '其實就是在做 synchronization；寫錯整個會亂掉');
   await step(tok);                                   // 275 怎麼用這塊空間由 programmer 決定
@@ -3091,7 +3123,7 @@ FRAG.push(['proc-9a-mp', 'Message passing：send / receive 本身就有同步', 
   cap('blocking 就像打電話', '另一邊要接起來，你們才能開始對話');
   await step(tok);                                   // 477 包含同步
   P2.mood('happy'); bub('喂？', 4.6, 1.8, 0.6);
-  const m = pkt('message', -3.6, 1.2, 0.8); await travel(tok, m, V3(-3.6, 1.2, 0.8), V3(3.6, 1.2, 0.8), 900);
+  const m = pkt('message', -2.6, 1.2, 0.8); await travel(tok, m, V3(-2.6, 1.2, 0.8), V3(2.6, 1.2, 0.8), 600);
   good('接起來 = 同步：兩邊確定此刻一起做事', 0, 3.6);
   cap('所以它還包含同步的概念', '你知道對方現在在跟你講話');
   await step(tok);                                   // 507 shared memory 的溝通本身做不到同步
@@ -3160,14 +3192,14 @@ FRAG.push(['proc-9a-direct', 'Direct communication：指名道姓', async (tok) 
   hd('direct communication', 0, 5.8);
   cap('先看 direct 和 indirect', '它們在管理上的差別');
   await step(tok);                                   // 946 直接指定對方：像打電話
-  bub('☎ 撥給 Q', -4.6, 1.8, 0.6);
+  const call = bub('☎ 撥給 Q', -4.6, 1.8, 0.6);
   cap('direct：必須指定溝通的對象是誰', '像打電話：按了號碼就是那個人');
   await step(tok);                                   // 959 send(Q, msg) / receive(P, msg)
   code(['send(Q, message);'], -4.6, 3.0, 0.45); code(['receive(P, message);'], 4.6, 3.0, 0.45);
   cap('send 要指定 receiver', 'receive 要指定 sender（P、Q 能 identify 對方就好）');
   await step(tok);                                   // 995 link 自動建立
   const link = ln(-3.8, 0.6, 3.8, 0.6, 0.6, '#c08a1f');
-  good('一 call send 就自動建 link', 0, 1.3, 0.6);
+  good('一 call send 就自動建 link', 0, 0.2, 1.4);
   cap('已經指定是誰跟誰', 'link 通常不用另外 init，一 call 就自動建立');
   await step(tok);                                   // 1044 one-to-one
   const R = pal('R', '', PC[2], 0, 0, -1.6, 0.55); R.mood('sad');
@@ -3185,7 +3217,7 @@ FRAG.push(['proc-9a-direct', 'Direct communication：指名道姓', async (tok) 
   P1.mood('happy'); Q.mood('happy');
   cap('兩邊都是 blocking', '送一個、收一個才能再送：自然被 synchronize');
   await step(tok);                                   // 1162 太 synchronous：sender 端可能爆掉
-  P1.mood('sad'); bad('太同步：很多人要寫時，等太久 buffer 會爆', -4.6, 1.8, 0.6);
+  remove(call); P1.mood('sad'); bad('太同步：很多人要寫時，等太久 buffer 會爆', -4.6, 1.8, 0.6);
   cap('但太 synchronous 也有缺點', '很多人要寫、一直等，source 端可能 out of memory');
   await step(tok);                                   // 1203 缺點：對象不能換，要重建連線
   const C = pal('C', '', PC[3], 4.6, 0, -1.6, 0.55);
@@ -3205,16 +3237,16 @@ FRAG.push(['proc-9a-indirect', 'Indirect communication：mailbox', async (tok) =
   await step(tok);                                   // 1293 放進另一個 system 管理的地方
   cap('寄信時信封上雖然寫了人', '但不是直接送到對方手上，而是放進另一個系統');
   await step(tok);                                   // 1325 只放進 mailbox，要的人自己拿
-  const m = pkt('msg', -4.2, 1.4, 0.6); await travel(tok, m, V3(-4.2, 1.4, 0.6), V3(0, 1.6, -0.2), 900);
+  const m = pkt('msg', -4.2, 1.4, 0.6); await travel(tok, m, V3(-4.2, 1.4, 0.6), V3(0, 2.1, -0.2), 600);
   code(['send(A, message);'], -5.0, 3.0, 0.45);
   cap('不指定 receiver 是誰', '只是把 message 放進 mailbox，要的人自己去拿');
   await step(tok);                                   // 1342 Q 去 A 拿，不知道是誰送的
-  await travel(tok, m, V3(0, 1.6, -0.2), V3(4.2, 1.4, 0.6), 900);
+  await travel(tok, m, V3(0, 2.1, -0.2), V3(4.2, 1.4, 0.6), 600);
   code(['receive(A, message);'], 5.0, 3.0, 0.45);
-  bub('這是誰寄的？不知道', 5.0, 1.8, 0.6);
+  const who = bub('這是誰寄的？不知道', 5.0, 1.8, 0.6);
   cap('Q 自己去 mailbox A 拿', '不知道是誰送的；sender 也不用 care receiver');
   await step(tok);                                   // 1372 像一個 port
-  remove(m); idx('mailbox 也可以說是一個 port', 0, 2.2, 0.6);
+  remove(m); remove(who); const port = idx('mailbox 也可以說是一個 port', 0, 2.2, 0.6);
   cap('mailbox 也可以說像一個 port', '透過它溝通，不知道對方是誰');
   await step(tok);                                   // 1389 mailbox 要 programmer 先建立
   note('mailbox 要先建立，大家才能溝通', 0, 4.6);
@@ -3222,16 +3254,16 @@ FRAG.push(['proc-9a-indirect', 'Indirect communication：mailbox', async (tok) =
   await step(tok);                                   // 1404 many-to-many
   const others = [[-5.0, -1.8], [5.0, -1.8], [-2.6, 2.2], [2.6, 2.2]].map(([x, z], i) => pal('', '', PC[i + 2], x, 0, z, 0.45));
   others.forEach((o) => o.mood('happy'));
-  good('many-to-many；也可以像海報一樣大家都讀', 0, 1.0, 2.2);
+  lines2(good('many-to-many\n也可以像海報一樣大家都讀', 0, 1.0, 2.2));
   cap('最主要特色：many-to-many', '很 general 的溝通方式');
   await step(tok);                                   // 1448 mailbox 由第三方（OS process）管理
-  const os = pal('OS', '', CO.os, 0, 0, -2.4, 0.55);
-  idx('用 kernel 的 memory 保存 message', 0, 0.3, -3.2);
+  const os = pal('OS', '', CO.os, -2.2, 0, -2.4, 0.55);
+  idx('用 kernel 的 memory 保存 message', 0, 3.1, -2.4);
   cap('保管 message 的是獨立的第三支程式', 'OS 提供的 mailbox：用 kernel memory，使用者需要時 copy 出來');
   await step(tok);                                   // 1503 多人同時 receive：誰拿到？
-  gone(...others);
+  gone(...others, port);
   const P2 = pal('P2', '', PC[4], 3.8, 0, 1.8, 0.5), P3 = pal('P3', '', PC[5], 5.4, 0, 1.8, 0.5);
-  const one = pkt('只有 1 個 message', 0, 1.6, -0.2);
+  const one = pkt('只有 1 個 message', 0, 2.4, -0.2);
   P2.mood('wow'); P3.mood('wow');
   cap('很多人同時 receive 同一個 message', '應該只有一個人拿到：P2 還是 P3？同步問題');
   await step(tok);                                   // 1561 解法 1：一個 link 只能兩個 process
@@ -3242,7 +3274,7 @@ FRAG.push(['proc-9a-indirect', 'Indirect communication：mailbox', async (tok) =
   cap('解法二：用 locking', '同一時間只允許一個人 call receive');
   await step(tok);                                   // 1649 解法 3：mailbox 偵測、決定、通知
   kill(lock); P2.mood('happy'); P3.mood('sad');
-  bub('你可以來拿了（notify）', 3.8, 1.4, 1.8);
+  bub('你可以來拿了（notify）', 3.6, 1.9, 1.8);
   cap('解法三：mailbox 自己偵測同時 receive', '決定給誰、notify 那個人來拿：像加簽');
   await step(tok);                                   // 1722 要分清 direct / indirect、何時用
   good('分清 direct / indirect，知道什麼時候用哪個', 0, 6.6);
@@ -3257,18 +3289,18 @@ FRAG.push(['proc-9a-block', 'Blocking vs Non-blocking（synchronous vs asynchron
   hd('blocking vs non-blocking', 0, 5.8);
   cap('一定要知道的基本觀念', 'blocking 和 non-blocking 的差別');
   await step(tok);                                   // 1753 blocking = synchronous
-  good('blocking = synchronous（同步）', -3.4, 4.8);
+  lines2(good('blocking\n= synchronous（同步）', -3.4, 4.8));
   cap('send、receive 都可以 blocking 或 non-blocking', 'blocking 通常對應 synchronous 的溝通');
   await step(tok);                                   // 1764 non-blocking = asynchronous：email
-  good('non-blocking = asynchronous（非同步）', 3.4, 4.8);
+  lines2(good('non-blocking\n= asynchronous（非同步）', 3.4, 4.8));
   const em = pkt('✉ email', -4.0, 1.4, 0.6); await travel(tok, em, V3(-4.0, 1.4, 0.6), V3(0, 1.4, 0.6), 700);
-  S.mood('happy'); bub('寄出去我就 move on', -5.0, 1.8, 0.6);
+  S.mood('happy'); const mv = bub('寄出去我就 move on', -5.0, 1.8, 0.6);
   cap('non-blocking 不知道對方是否立刻收到', '又叫 asynchronous，像 email');
   await step(tok);                                   // 1788 可能被 drop；比較複雜但有效率
   tx(em, '✉（被 drop？）');
   cap('對方可能根本沒收到', '比較複雜，但通常比較有效率：不用等');
   await step(tok);                                   // 1808 send、receive 都有兩種版本，可以混搭
-  remove(em);
+  remove(em); remove(mv);
   ['blocking send', 'non-blocking send'].forEach((n, i) => bx(n, CO.user, -3.4, 3.6 - i * 0.6, 0, 2.8, 0.45, 0.8, 2));
   ['blocking receive', 'non-blocking receive'].forEach((n, i) => bx(n, CO.cpu, 3.4, 3.6 - i * 0.6, 0, 2.8, 0.45, 0.8, 2));
   cap('send、receive 都有兩種 version', '不一定要配對（blocking 配 blocking 比較常見）');
@@ -3294,10 +3326,10 @@ FRAG.push(['proc-9a-block', 'Blocking vs Non-blocking（synchronous vs asynchron
   const buf = [0, 1, 2].map((k) => bx('msg', CO.gold, -0.8 + k * 0.8, 0.85, -1.2, 0.7, 0.4, 0.6, 2));
   cap('non-blocking：sender 可能送了好幾個', '中間的 service 要 maintain 一個 buffer 給兩人');
   await step(tok);                                   // 2064 blocking 通常也有 buffer，size 1
-  idx('blocking：buffer size 1（或 0）', 0, 1.6, -1.2);
+  idx('blocking：buffer size 1（或 0）', 0, -0.3, -1.2);
   cap('blocking 通常也有 buffer', '但 size 就是 1，空的就把 receiver 擋住');
   await step(tok);                                   // 2090 0 / 1 / bounded / unbounded
-  note('buffer：0 / 1 → blocking；bounded：滿了就擋或回 error；unbounded：一直 allocate 到 out of memory', 0, 6.6);
+  lines2(note('buffer：0 / 1 → blocking\nbounded：滿了就擋或回 error\nunbounded：一直 allocate 到 out of memory', 0, 7.0));
   cap('buffer 大小決定行為', 'bounded 滿了變 blocking 或回 error；unbounded 一直長');
   void os; void buf;
 }]);
@@ -3317,13 +3349,13 @@ FRAG.push(['proc-9b-socket', 'Socket programming 的流程', async (tok) => {
   sl('bind(port)', 1, 4.8); const port = prop('lock', 6.4, 0, 1.0, 0.6); idx('port', 6.4, 1.0, 1.0);
   cap('socket 只是 logical 的 channel', '要 bind 到一個 port，OS 才知道誰用這個 port');
   await step(tok);                                   // 79 server 先 listen
-  sl('listen()', 2, 4.8); sv.mood('calm'); bub('等有沒有人進來…', 4.8, 1.8, -0.4);
+  sl('listen()', 2, 4.8); sv.mood('calm'); const wait = bub('等有沒有人進來…', 4.8, 1.8, -0.4);
   cap('server 要先 listen', '像 web server 要先上線，使用者才能連');
   await step(tok);                                   // 93 client 開 socket、call connect
   sl('socket()', 0, -4.8); sl('connect()', 1, -4.8);
   cap('client 端同樣開一個 socket', '然後 call connect 連過去');
   await step(tok);                                   // 100 server block 到有人來 → accept，link 建立
-  sl('accept()', 3, 4.8); sv.mood('happy');
+  sl('accept()', 3, 4.8); sv.mood('happy'); remove(wait);
   const link = ln(-3.8, 0.7, 3.8, 0.7, -0.4, '#c08a1f');
   cap('server 一直 block 等到有人連過來', '就 accept：兩邊的 link 真的建起來');
   await step(tok);                                   // 115 read / write
@@ -3332,12 +3364,12 @@ FRAG.push(['proc-9b-socket', 'Socket programming 的流程', async (tok) => {
   cap('建起來之後', '就可以透過這個 channel read / write');
   await step(tok);                                   // 122 close
   sl('close()', 5, 4.8); sl('close()', 3, -4.8);
-  note('server close：連 port 都關掉，沒人能再連進來', 0, 3.0, -0.4);
+  const sc = lines2(note('server close：連 port 都關掉\n沒人能再連進來', 0, 3.6, -0.4));
   cap('最後雙方都可以 close', 'client 只關 socket；server 關掉的話整個 port 都關了');
   await step(tok);                                   // 141 single thread 只能服務一個人
-  kill(link);
+  kill(link); remove(sc);
   const us = [-5.8, -4.6, -3.4].map((x, i) => pal('', '', PC[i + 3], x, 0, 1.8, 0.4)); us.forEach((u) => u.mood('sad'));
-  bad('single thread：一次只能 handle 一個使用者', 0, 3.6, -0.4);
+  const one = lines2(bad('single thread：\n一次只能 handle 一個使用者', 0, 3.6, -0.4));
   cap('web server 希望很多人連進來', '如果是 single thread，只能 handle 一個使用者');
   await step(tok);                                   // 174 accept 之後 create 一個 thread（共享資訊）
   const th = pal('thread', '', PC[5], 3.0, 0, 1.6, 0.45); th.mood('happy');
@@ -3348,10 +3380,10 @@ FRAG.push(['proc-9b-socket', 'Socket programming 的流程', async (tok) => {
   bub('我繼續 listen 下一個', 4.8, 1.8, -0.4);
   cap('main thread 不會被擋住', '交給新 thread 後又回去 listen，等下一個人');
   await step(tok);                                   // 230 這就是 socket programming
-  good('web server = multi-thread programming', 0, 3.6, -0.4);
+  remove(one); lines2(good('web server\n= multi-thread programming', 0, 3.6, -0.4));
   cap('所以 web server 都是 multi-thread', '網路很基本，建議要會 socket programming');
   await step(tok);                                   // 252 unstructured string of bytes；parsing 自己來
-  bub('HTTP body：一串 bytes，自己 parse', 0, 4.4, -0.4);
+  lines2(bub('HTTP body：一串 bytes\n自己 parse', 0, 5.1, -0.4));
   cap('溝通的特色：unstructured string of bytes', 'parsing 由 programmer 負責，socket 只建 channel');
   void port;
 }]);
@@ -3388,23 +3420,23 @@ FRAG.push(['proc-9b-rpc', 'RPC：stub、skeleton 與 parameter marshalling', asy
   const be = code(['big endian:    12 34 56 78', 'little endian: 78 56 34 12'], 0, 4.4, 0.42);
   cap('RPC 的特色是可以跨電腦', '電腦設定可能不同：big endian 和 little endian');
   await step(tok);                                   // 447 int 有的 16 bit、有的 32 bit
-  note('int：有的電腦 16 bit、有的 32 bit', 0, 3.4);
+  const intn = note('int：有的電腦 16 bit、有的 32 bit', 0, 3.4);
   cap('或 int 的大小', '有些電腦 16 bit、有些 32 bit，單純 copy bytes 會出錯');
   await step(tok);                                   // 473 marshalling 負責處理這些
   glow(stub, '#3a2a00'); glow(sk, '#3a2a00');
-  good('marshalling：轉成雙方都懂的格式', 0, 2.6, 0.6);
+  const mg = good('marshalling：轉成雙方都懂的格式', 3.4, 2.4, 0.6);
   cap('marshalling 要處理這些繁瑣的事', '由它負責，不讓使用者自己處理');
   await step(tok);                                   // 498 其他就像 blocking call
-  sv.mood('happy'); cl.mood('happy');
+  sv.mood('happy'); cl.mood('happy'); be.kill(); remove(intn);
   const r = pkt('return 7', 4.4, 1.6, 0.6); await travel(tok, r, V3(4.4, 1.6, 0.6), V3(-4.4, 1.6, 0.6), 900);
   cap('後面就單純了', 'caller 像 blocking call 一樣等結果傳回來');
   await step(tok);                                   // 526 傳 pointer：指的是 local memory，到別台沒意義
   remove(r);
-  const ptr = pkt('pointer → 0x7ffc…', -4.4, 2.6, 0.6); await travel(tok, ptr, V3(-4.4, 2.6, 0.6), V3(4.4, 2.6, 0.6), 900);
+  remove(mg); const ptr = pkt('pointer → 0x7ffc…', -4.4, 3.2, 0.6); await travel(tok, ptr, V3(-4.4, 3.2, 0.6), V3(4.4, 3.2, 0.6), 600);
   tx(ptr, '0x7ffc… 在這台沒有意義 ✗'); setCls(ptr, 'bad');
   cap('要傳 data structure、尤其 pointer 很累', 'pointer 指的是 local memory，傳到別台沒意義');
   await step(tok);                                   // 569 小的、well-defined 會幫你 copy；pointer 不支援
-  good('完整、大小確定的 data structure：幫你 copy', -2.4, 4.4, 0.6);
+  lines2(good('完整、大小確定的 data structure\n幫你 copy', 1.8, 4.6, 0.6));
   cap('大小確定的 data structure 會幫你 copy', '但 pointer 不知道要 copy 多少，大多不 support');
   void be; void sk2;
 }]);
@@ -3434,10 +3466,10 @@ FRAG.push(['proc-9b-sum', '溝通方式總結：各領域會用到哪一種', as
 
 // ════════ IFEFVXvjiHY（Neso Academy：fork() and exec()）：定義、Linux 實機示範 ════════
 // a little terminal: monospace lines appended at (x, yTop)
-function term(x, yTop, w = 26) {
-  const head = tag('$ terminal'.padEnd(w, ' '), 'idx', x, yTop + 0.5); Object.assign(head.element.style, P.MONO);
+function term(x, yTop) {
+  const head = tag('$ terminal', 'idx', x, yTop + 0.5); Object.assign(head.element.style, P.MONO); head.center.set(0, 0.5);
   const ls = [];
-  return { add(t, cls = '') { const l = tag(t.padEnd(w, ' '), cls, x, yTop - ls.length * 0.42); Object.assign(l.element.style, P.MONO); ls.push(l); return l; }, ls };
+  return { add(t, cls = '') { const l = tag(t, cls, x, yTop - ls.length * 0.55); Object.assign(l.element.style, P.MONO); l.center.set(0, 0.5); ls.push(l); return l; }, ls };
 }
 FRAG.push(['proc-neso-def', 'fork() 與 exec() 的定義', async (tok) => {
   fresh([0, 5, 14], [0, 2.4, 0]);
@@ -3476,21 +3508,21 @@ FRAG.push(['proc-neso-def', 'fork() 與 exec() 的定義', async (tok) => {
 FRAG.push(['proc-neso-fork1', '實機示範：加一個 fork()，印兩次', async (tok) => {
   fresh([0, 5, 14], [0, 2.6, 0]);
   await step(tok);                                   // 214 在 Linux 上寫 C 程式來看
-  prop('monitor', 4.2, 0, -1.0, 1.4, 'Linux Mint');
+  prop('monitor', 4.2, 0, -1.0, 1.4); tag('Linux Mint', 'say', 5.8, 3.6, -1.0);
   cap('用 C 寫程式、在 Linux 上跑', '看 fork、exec 實際怎麼運作');
   await step(tok);                                   // 255 fex1.c：印 Hello + PID
-  const cd = code(['#include <stdio.h>', '#include <unistd.h>', 'int main() {', '  printf("Hello Neso Academy! PID = %d\\n", getpid());', '  return 0;', '}'], -3.2, 5.8, 0.45);
+  const cd = codeL(['#include <stdio.h>', '#include <unistd.h>', 'int main() {', '  printf("Hello Neso Academy! PID = %d\\n", getpid());', '  return 0;', '}'], -7.2, 5.8, 0.45);
   cd.hl(3);
   cap('fex1.c：印出 Hello Neso Academy', '再用 getpid() 印出 process ID');
   await step(tok);                                   // 317 gcc fex1.c → a.out
-  const T = term(3.4, 3.0);
-  T.add('$ gcc fex1.c'); prop('file', 6.0, 0, 1.4, 0.6, 'a.out');
+  const T = term(0.4, 2.6);
+  T.add('$ gcc fex1.c'); prop('file', -1.0, 0, 2.4, 0.6, 'a.out');
   cap('gcc 是 Linux 的 C compiler', 'gcc fex1.c 會產生執行檔 a.out');
   await step(tok);                                   // 371 ./a.out → PID 5824
   T.add('$ ./a.out'); T.add('Hello Neso Academy! PID = 5824', 'good');
   cap('執行 ./a.out', '印出一行，PID = 5824');
   await step(tok);                                   // 394 加上 fork()
-  const cd2 = code(['  fork();'], -3.2, 4.45, 0.45); cd2.hl(0);
+  const cd2 = codeL(['  fork();'], -7.2, 4.45, 0.45); cd2.hl(0);
   cd.ls.slice(3).forEach((l) => { l.position.y -= 0.45; });
   cap('回到程式加一個 fork()', '存檔');
   await step(tok);                                   // 434 重新編譯執行：印兩次
@@ -3507,8 +3539,8 @@ FRAG.push(['proc-neso-fork1', '實機示範：加一個 fork()，印兩次', asy
 
 FRAG.push(['proc-neso-fork3', '三個 fork()：印 8 次', async (tok) => {
   fresh([0, 4, 14.5], [0, 3.0, 0]);
-  const cd = code(['int main() {', '  fork();', '  fork();', '  fork();', '  printf("Hello… PID = %d\\n", getpid());', '}'], -4.8, 6.4, 0.45);
-  const pos = { 1: [1.0, 5.8], 2: [4.4, 4.2], 3: [-1.6, 4.2], 4: [5.6, 2.6], 5: [-2.6, 2.6], 6: [3.2, 2.6], 7: [5.6, 1.0], 8: [-1.0, 2.6] };
+  const cd = codeL(['int main() {', '  fork();', '  fork();', '  fork();', '  printf("Hello… PID = %d\\n", getpid());', '}'], -7.2, 7.6, 0.45);
+  const pos = { 1: [1.6, 5.0], 2: [5.0, 3.4], 3: [-1.0, 3.4], 4: [6.2, 1.8], 5: [-2.0, 1.8], 6: [3.8, 1.8], 7: [6.2, 0.2], 8: [-0.4, 1.8] };
   const par = { 2: 1, 3: 1, 4: 2, 5: 1, 6: 2, 7: 4, 8: 3 };
   const N = {};
   const node = (k) => { const [x, y] = pos[k]; if (par[k]) ln(pos[par[k]][0], pos[par[k]][1] - 0.25, x, y + 0.25, 0, '#8a7a5c'); N[k] = bx('P' + k, PC[k % 8], x, y, 0, 0.9, 0.5, 0.7, 2); };
@@ -3536,17 +3568,17 @@ FRAG.push(['proc-neso-fork3', '三個 fork()：印 8 次', async (tok) => {
   cap('最後一個 fork：4 個 process 各生一個', 'P1→P5、P2→P6、P4→P7、P3→P8');
   await step(tok);                                   // 694 8 個 process → 印 8 次
   cd.hl(4); Object.values(N).forEach((m) => glow(m, '#3a2a00'));
-  good('2³ = 8 個 process：內容相同、PID 不同', 1.0, 0.2, 1.2);
+  good('2³ = 8 個 process：內容相同、PID 不同', 1.0, -0.6, 1.2);
   cap('總共建立 8 個 process', '所以 Hello 印了 8 次：內容相同、PID 不同');
 }]);
 
 FRAG.push(['proc-neso-exec', '實機示範：execv() 換掉內容，PID 不變', async (tok) => {
   fresh([0, 5, 14.5], [0, 2.6, 0]);
   await step(tok);                                   // 725 exec 資料夾：ex1.c、ex2.c
-  prop('file', -4.4, 5.0, 0, 0.6, 'ex1.c'); prop('file', 3.0, 5.0, 0, 0.6, 'ex2.c');
+  prop('file', 5.0, 4.0, 0, 0.6, 'ex1.c'); prop('file', 6.6, 4.0, 0, 0.6, 'ex2.c');
   cap('接著看 exec', '資料夾裡有兩個程式：ex1.c 和 ex2.c');
   await step(tok);                                   // 755 ex1.c：印自己的 PID
-  const A = code(['int main(int argc, char *argv[]) {', '  printf("PID of ex1.c = %d\\n", getpid());', '  char *args[] = {"Hello", "Neso", "Academy", NULL};', '  execv("./ex2", args);', '  printf("Back to ex1.c");', '  return 0;', '}'], -3.4, 4.2, 0.45);
+  const A = codeL(['int main(int argc, char *argv[]) {', '  printf("PID of ex1.c = %d\\n", getpid());', '  char *args[] = {"Hello", "Neso", "Academy", NULL};', '  execv("./ex2", args);', '  printf("Back to ex1.c");', '  return 0;', '}'], -7.2, 6.6, 0.45);
   A.hl(1);
   cap('ex1.c：先印出自己的 PID', '用 getpid()');
   await step(tok);                                   // 782 宣告字元陣列 Hello Neso Academy NULL
@@ -3559,11 +3591,11 @@ FRAG.push(['proc-neso-exec', '實機示範：execv() 換掉內容，PID 不變',
   A.hl(4);
   cap('後面還有一行 printf', '「Back to ex1.c」，然後 return 0');
   await step(tok);                                   // 841 ex2.c：印 We are in ex2.c 和 PID
-  const B = code(['int main(int argc, char *argv[]) {', '  printf("We are in ex2.c\\n");', '  printf("PID of ex2.c = %d\\n", getpid());', '}'], 3.6, 4.2, 0.45);
+  const B = codeL(['int main(int argc, char *argv[]) {', '  printf("We are in ex2.c\\n");', '  printf("PID of ex2.c = %d\\n", getpid());', '}'], -7.2, 3.3, 0.55);
   B.hl(1);
   cap('ex2.c：印「We are in ex2.c」', '再印出它的 PID');
   await step(tok);                                   // 878 用 -o 指定輸出檔名，避免都叫 a.out
-  const T = term(0, 1.4, 30);
+  const T = term(2.4, 2.4);
   T.add('$ gcc ex1.c -o ex1'); T.add('$ gcc ex2.c -o ex2');
   cap('兩個都 compile', '用 -o 指定檔名，不然都叫 a.out 會互相覆蓋');
   await step(tok);                                   // 1008 只執行 ./ex1
@@ -3581,13 +3613,13 @@ FRAG.push(['proc-neso-exec', '實機示範：execv() 換掉內容，PID 不變',
   B.hl(2); T.add('PID of ex2.c = 5962', 'good'); p.mood('wow');
   cap('ex2 的 PID 是多少？', '一樣是 5962');
   await step(tok);                                   // 1081 不是跳過去，是內容被取代
-  good('不是「跳過去」：同一個 process 的內容被換掉', 0, 6.4);
+  const jump = lines2(good('不是「跳過去」：\n同一個 process 的內容被換掉', 4.9, 6.9));
   cap('其實不是跳過去', '是第一個 process 的內容被第二個取代；PID 不變');
   await step(tok);                                   // 1139 Back to ex1.c 沒有印出來
-  A.hl(4); bad('「Back to ex1.c」沒有印！', -3.4, 0.6, 1.2);
+  A.hl(4); bad('「Back to ex1.c」沒有印！', -1.6, 0.6, 1.2);
   cap('ex1.c 還有一行 Back to ex1.c 沒印', '因為內容被換掉了，控制權永遠回不來');
   await step(tok);                                   // 1183 總結
-  note('fork：新 process、PID 不同、內容相同　exec：同一個 process、PID 相同、內容換掉', 0, 7.1);
+  remove(jump); lines2(note('fork：新 process、PID 不同、內容相同\nexec：同一個 process、PID 相同、內容換掉', 4.4, 6.95));
   cap('fork：建立 duplicate 的 child，PID 不同', 'exec：取代整個 process，PID 不變');
 }]);
   }

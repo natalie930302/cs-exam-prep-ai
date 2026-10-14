@@ -279,11 +279,14 @@ export default function (ctx) {
     const H = Math.min(0.5, 4.5 / Math.max(...am.bars.map(({ n }) => speed(am.S, n))));
     am.bars.forEach(({ n, b, l }) => { const s = speed(am.S, n); const h = s * H; b.scale.y = h; b.position.y = h / 2; txt(l, '×' + s.toFixed(2)); l.position.y = h + 0.4; glow(b, n === am.N ? GOLD : null); });
     const lim = am.S > 0 ? 1 / am.S : Infinity;
-    am.cap.position.y = (isFinite(lim) ? Math.min(lim * H, 5) : 5) - 1; am.capL.position.y = am.cap.position.y + 1.4; txt(am.capL, isFinite(lim) ? '上限 ×' + lim.toFixed(2) : '無上限（S = 0）');
+    am.cap.position.y = (isFinite(lim) ? Math.min(lim * H, 5) : 5) - 1; am.capL.position.x = -5.2; am.capL.position.y = am.cap.position.y + 1.35; txt(am.capL, isFinite(lim) ? '上限 ×' + lim.toFixed(2) : '無上限（S = 0）');
     // time bar: total length 6 at N = 1
     const L = 6, ls = am.S * L, lp = (1 - am.S) * L / am.N;
     am.timeS.scale.x = Math.max(0.01, ls); am.timeS.position.x = -3 + ls / 2;
     am.timeP.scale.x = Math.max(0.01, lp); am.timeP.position.x = -3 + ls + lp / 2;
+    // short bar: keep the bar's own name beside it instead of on top of its neighbour
+    am.timeS.userData.lbl.position.x = ls < 1.2 ? -(ls / 2 + 0.5) / Math.max(0.01, ls) : 0;
+    am.timeP.userData.lbl.position.x = lp < 1.4 ? (lp / 2 + 0.75) / Math.max(0.01, lp) : 0;
     const s = speed(am.S, am.N);
     setState('Amdahl\'s law', [['S（serial）', am.S.toFixed(2)], ['N（cores）', String(am.N)], ['speedup', '×' + s.toFixed(2)], ['N → ∞ 上限', isFinite(lim) ? '×' + lim.toFixed(2) : '∞']],
       'speedup = 1 / (' + am.S.toFixed(2) + ' + ' + (1 - am.S).toFixed(2) + ' / ' + am.N + ') = <span class="ok">' + s.toFixed(2) + '</span><br>serial 部分不會因為加核心而變短');
@@ -403,7 +406,8 @@ export default function (ctx) {
     fresh([0, 5, 14], [0, 2.4, 0]);
     const app = cube('你的程式碼', COL.user, [3, 0.7, 1], 0, 5.2, 0);
     const api = cube('POSIX API（相同 interface）', COL.gold, [9, 0.7, 1.2], 0, 3.9, 0);
-    const oss = [['Linux', -3.2], ['Mac', 0], ['UNIX', 3.2]].map(([n, x]) => cube(n + '：自己的 kernel、system call', COL.os, [3, 0.9, 1], x, 2.3, 0));
+    const oss = [['Linux', -3.2], ['Mac', 0], ['UNIX', 3.2]].map(([n, x]) => cube(n, COL.os, [3, 0.9, 1], x, 2.3, 0));
+    tag('各自有自己的 kernel、system call', 'idx', 0, 1.5);
     say('Portability：換平台只要 recompile，不用改 code', '');
     await W(tok, 2400);
     say('作法：OS 上面一層 API layer', '下面怎麼用 system call 實作，各 OS 自己決定');
@@ -456,7 +460,7 @@ export default function (ctx) {
       ts.push(m); say('create T' + t + '：arg = (void *)' + t, '傳進去前轉成 void*，function 裡再 cast 回來'); await W(tok, 900);
     }
     cd.hl(-1);
-    for (let t = 0; t < 4; t++) { tag('Hello from ' + t, 'idx', -0.6 + t * 1.6, 2.9 + (t % 2) * 0.35); }
+    for (let t = 0; t < 4; t++) { tag('Hello from ' + t, 'idx', -0.6 + t * 1.6, 1.55 - (t % 2) * 0.4); }
     say('同一個 function，不同的 thread ID', '執行順序不一定');
     await W(tok, 2600);
     cd.hl(5);
@@ -496,11 +500,11 @@ export default function (ctx) {
     await W(tok, 1800);
     const t1 = cube('t', TC[2], [0.6, 0.45, 0.5], 0, 5.4, 0.8), t2 = cube('t', TC[2], [0.6, 0.45, 0.5], 0, 5.4, 0.8);
     say('中間隔一層 virtual machine：JVM', '裝哪個平台的 JVM 就對到哪個平台');
-    move(t1, -3, 4.0, 0.8); move(t2, 3, 4.0, 0.8); await W(tok, 1600);
-    move(t1, -3, 2.6, 0.8); move(t2, 3, 2.6, 0.8);
+    move(t1, -5.0, 4.0, 0.8); move(t2, 5.0, 4.0, 0.8); await W(tok, 1600);
+    move(t1, -5.0, 2.6, 0.8); move(t2, 5.0, 2.6, 0.8);
     say('Windows → Win32 thread；UNIX → pthread', '同一份 Java 程式兩邊都能跑');
     await W(tok, 2600);
-    move(t1, -3, 1.2, 0.8); move(t2, 3, 1.2, 0.8);
+    move(t1, -5.0, 1.2, 0.8); move(t2, 5.0, 1.2, 0.8);
     say('pthread 不能跑在 Windows，Java 可以', 'portability 比其他語言好');
     await W(tok, 2600);
     say('對到哪種 model 依 OS 而定', 'one-to-one 或 many-to-many；' + 'JVM 控制（pthread 由 programmer 用 attr 控制）');
@@ -661,6 +665,8 @@ const tx = (l, t) => P.txt(l, t);
 async function slide(tok, o, x, y, z = 0, ms = 700) { const a = o.position.clone(); await travel(tok, o, a, V3(x, y, z), ms); }
 const pal = (name, v, color, x, y = 0, z = 0, s = 0.7) => buddy(name, v, color, x, y, z, s);
 const gone = (...os) => os.forEach((o) => { if (!o) return; if (o.g) kill(o.g); else if (o.ls) o.kill(); else if (o.userData && o.userData.name) remove(o); else kill(o); });
+// move a zone's name label (kit puts it on the back edge, where it lands behind the buddies' name tags)
+const zname = (zn, x, y, z, left = true) => { const l = zn.userData.name; l.position.set(x, y, z); l.center.set(left ? 0 : 0.5, 0.5); };
 // a label flying from a to b (a message, a request, a byte), removed on arrival unless keep
 async function fly(tok, kind, text, a, b, ms = 800, keep = false) { const l = tag(text, kind, a.x, a.y, a.z); await travel(tok, l, a, b, ms); if (!keep) remove(l); return l; }
 const TH = ['#4b9ee2', '#e55a9b', '#2fc092', '#c08a1f', '#31aab0', '#dd8238', '#5c7a4a', '#9b7ef4'];
@@ -687,6 +693,8 @@ function mapRig(nu, nk, map, o = {}) {
 function fig41(x, n, name, w0) {
   const w = w0 || Math.max(3.6, n * 1.45 + 0.7);
   const z = zone(name, x, 0.02, 0, w, 3.4, '#f3e6c8');
+  // name beside the code / data / files row (outer side), not on the back edge behind the T labels
+  z.userData.name.position.set(x < 0 ? x - w / 2 - 0.15 : x + w / 2 + 0.15, 4.3, -0.6); z.userData.name.center.set(x < 0 ? 1 : 0, 0.5);
   const sw = (w - 0.5) / 3;
   const sh = [['code', CO.code], ['data', CO.data], ['files', CO.files]].map(([t, c], i) => bx(t, c, x - w / 2 + 0.25 + sw * (i + 0.5), 4.3, -0.6, sw - 0.08, 0.55, 0.8));
   const cols = [];
@@ -745,7 +753,7 @@ FRAG.push(['thr-15a-what', '什麼是 thread：lightweight process', async (tok)
   await step(tok);                                   // @192.9 又叫 lightweight process
   const p = pal('process', '', CO.proc, -3.2, 0, 0, 1.1);
   const t = pal('thread', '', TH[0], 3.2, 0, 0, 0.7); t.mood('happy');
-  hot('lightweight process（輕量的 process）', 3.2, 2.0);
+  const lw = hot('lightweight process（輕量的 process）', 3.2, 2.0);
   cap('thread 又叫 lightweight process', '');
   await step(tok);                                   // @198.4 界線其實蠻模糊
   const fz = note('界線蠻模糊：不是完全不同的東西', 0, 3.6);
@@ -754,13 +762,13 @@ FRAG.push(['thr-15a-what', '什麼是 thread：lightweight process', async (tok)
   remove(fz);
   const parts = ['code', 'data', 'files', 'stack'].map((n, i) => bx(n, [CO.code, CO.data, CO.files, CO.stack][i], -3.2, 1.6 + i * 0.6, 0.2, 1.6, 0.5, 0.6));
   for (let i = 0; i < 3; i++) { await slide(tok, parts[i], -0.6, 1.6 + i * 0.6, 0.2, 350); }
-  idx('拿掉／共用', -0.6, 3.6);
+  const rm = idx('拿掉／共用', -0.6, 3.6);
   cap('把完整 process 的一些東西拿掉', '或跟其他 thread 共用 → thread');
   await step(tok);                                   // @231.0 process 有點像容器而已
   p.mood('calm'); bub('process 比較像「容器」', -3.2, 4.2);
   cap('所有電腦系統裡', 'process 有點像裝 thread 的容器');
   await step(tok);                                   // @238.7 thread 才是真的在使用 CPU core 的基本單位
-  gone(...parts); kill(t.g);
+  gone(...parts, lw, rm); kill(t.g);
   const core = prop('cpu', 3.4, 0, 0, 1.3); idx('CPU core', 3.4, -0.2, 1.2);
   cap('真正在使用 CPU core 計算的', '是 thread');
   await step(tok);                                   // @246.8 process 可以 breakdown 成很多 thread
@@ -782,7 +790,8 @@ FRAG.push(['thr-15a-shared', '共用的 memory content：code、data、resources
   cap('什麼叫 lightweight？', '最重要的觀點：memory content');
   await step(tok);                                   // @272.3 process 的 code segment、data segment…
   const z1 = zone('process 的 memory', -3.3, 0.02, 0, 4.2, 3.6, '#f3e6c8');
-  const segs = [['code', CO.code], ['data', CO.data], ['resource（files）', CO.files], ['stack', CO.stack]].map(([n, c], i) => bx(n, c, -3.3, 0.4 + i * 0.75, 0, 3.2, 0.6, 0.9));
+  z1.userData.name.position.z = 2.0;                 // name on the front edge, clear of the code block
+  const segs = [['code', CO.code], ['data', CO.data], ['resource（files）', CO.files], ['stack', CO.stack]].map(([n, c], i) => bx(n, c, -3.3, 0.9 + i * 0.75, 0, 3.2, 0.6, 0.9));
   cap('process 的重點是它的 memory content', 'code segment、data segment…');
   await step(tok);                                   // @286.0 thread：code、data、resource section 是 shared
   for (let i = 0; i < 3; i++) glow(segs[i], GOLD);
@@ -790,19 +799,19 @@ FRAG.push(['thr-15a-shared', '共用的 memory content：code、data、resources
   cap('thread 的定義：code、data、resource', '這三塊 memory content 是 shared');
   await step(tok);                                   // @295.0 同一 process 的不同 thread，這三個是 minimum
   const ta = pal('T1', '', TH[0], 2.2, 0, 0.6, 0.55), tb = pal('T2', '', TH[1], 4.4, 0, 0.6, 0.55);
-  const la = ln(2.2, 0.6, -1.7, 1.1, 0.3), lb = ln(4.4, 0.6, -1.7, 2.3, 0.3);
+  const la = ln(2.2, 0.6, -1.7, 1.6, 0.3), lb = ln(4.4, 0.6, -1.7, 2.8, 0.3);
   cap('同一個 process 裡的不同 threads', '至少（minimum）共用這三塊');
   await step(tok);                                   // @311.0 學過 segmentation：segment table 一個個 entry
   gone(la, lb);
-  const tb1 = code(['T1 的 segment table', ' code  → 0x1000', ' data  → 0x4000', ' files → 0x7000'], 1.4, 5.0, 0.42);
+  const tb1 = code(['T1 的 segment table', ' code  → 0x1000', ' data  → 0x4000', ' files → 0x7000'], 0.1, 4.55, 0.42);
   cap('學過 segmentation 就知道', '這些是不同 segment，table 裡一個個 entry');
   await step(tok);                                   // @322.2 create thread = 把這些 segment 做 sharing
-  const tb2 = code(['T2 的 segment table', ' code  → 0x1000', ' data  → 0x4000', ' files → 0x7000'], 4.3, 5.0, 0.42);
+  const tb2 = code(['T2 的 segment table', ' code  → 0x1000', ' data  → 0x4000', ' files → 0x7000'], 4.8, 4.55, 0.42);
   tb2.ls.slice(1).forEach((l) => { l.element.className = 'lab-label ptr alt'; });
-  idx('（位址示意）', 4.3, 3.0);
+  idx('（位址示意）', 4.8, 2.75);
   cap('create thread：把這些 segment 拿來 share', '就可以了');
   await step(tok);                                   // @337.7 有 sharing 所以省掉那些部分
-  good('不用另外複製 → 省掉 → lightweight', 2.8, 1.8);
+  good('不用另外複製 → 省掉 → lightweight', 3.9, 1.6);
   ta.mood('happy'); tb.mood('happy');
   cap('因為共用，就省掉了那些部分', '所以叫 lightweight');
   void z1; void tb1;
@@ -834,11 +843,11 @@ FRAG.push(['thr-15a-private', '每個 thread 自己擁有的：TCB、ID、PC、r
   B.cols.forEach((c, k) => c.t.set('id ' + (k + 1)));
   cap('control block 管一個執行的 entity', '每個 thread 有自己獨立的 ID');
   await step(tok);                                   // @455.0 program counter 獨立：執行位置可以不同
-  const pcs = B.cols.map((c, k) => hot('PC → 第 ' + [3, 7, 12][k] + ' 行', c.cx, -0.5, 1.2));
-  idx('（行號示意）', 2.6, -1.1, 1.2);
+  const pcs = B.cols.map((c, k) => hot('PC → 第 ' + [3, 7, 12][k] + ' 行', c.cx, -0.5 - (k % 2) * 0.6, 1.2));
+  idx('（行號示意）', 2.6, -1.75, 1.2);
   cap('program counter 是獨立的', '每個 thread 執行的位置可以不一樣');
   await step(tok);                                   // @476.4 各自獨立執行不同 instruction、不同 function
-  B.cols.forEach((c) => c.t.mood('happy')); await B.cols[0].t.hop(tok);
+  B.cols.forEach((c) => c.t.mood('happy'));
   cap('每個 thread 可以完全獨立', '執行不同的 instruction、不同的 function');
   await step(tok);                                   // @492.0 所以 register 也獨立
   B.cols.forEach((c) => glow(c.reg, '#7a1040'));
@@ -849,17 +858,18 @@ FRAG.push(['thr-15a-private', '每個 thread 自己擁有的：TCB、ID、PC、r
   cap('data 包括 global variable', '還有 heap 上 dynamic allocate 的，都 share');
   await step(tok);                                   // @517.3 不 share 的：stack
   B.cols.forEach((c) => glow(c.st, '#5a1aa0'));
-  bad('stack 不 share！', 6.0, 2.55);
+  bad('stack 不 share！', 6.9, 2.55);
   cap('有一種 variable 不 share', '就是 stack 裡的');
   await step(tok);                                   // @520.0 stack 存 local variable：名字相同，位址不同
-  B.cols.forEach((c, k) => idx('int i @' + ['0x7f10', '0x7e10', '0x7d10'][k], c.cx, 2.0, 0.4));
+  tcb.forEach(kill);                                 // TCB 已講完，讓出位置給 local variable 的位址
+  B.cols.forEach((c, k) => idx('int i @' + ['0x7f10', '0x7e10', '0x7d10'][k], c.cx, 2.0 - (k % 2) * 0.5, 0.4));
   idx('（位址示意）', -3.6, 2.0, 0.4);
   cap('stack 存 local variable', '程式裡名字相同，其實是不同 memory address');
   await step(tok);                                   // @537.3 function return 就沒了；每個 thread 一個 stack
   pcs.forEach(remove);
   good('每個 thread = 一個自己的 stack', 2.6, -0.6, 1.2);
   cap('function return 東西就沒了（temporary）', '每個 thread 都有自己獨立的 stack');
-  void A; void tcb;
+  void A;
 }]);
 
 FRAG.push(['thr-15a-progview', '寫程式時：local 私有、global / malloc 共用', async (tok) => {
@@ -899,22 +909,22 @@ FRAG.push(['thr-15a-apps', '為什麼要 thread：browser、web server、RPC', a
   await step(tok);                                   // @632.0 每個 object 用不同 thread 獨立 download
   const ts = [0, 1, 2].map((i) => pal('T' + (i + 1), '', TH[i], 0.4 + i * 1.5, 0, 0.6, 0.5));
   for (let i = 0; i < 3; i++) await fly(tok, 'pkt', ['文字', '圖片 1', '圖片 2'][i], V3(0.4 + i * 1.5, 1.2, 0.8), V3(-3.6, 1.7, 0.4), 420);
-  idx('圖片 ✓', -3.1, 1.6, 0.3);
+  const tx2 = idx('圖片 ✓', -3.1, 1.6, 0.3);
   cap('browser 用不同 thread', '各自獨立 download 每個 object');
   await step(tok);                                   // @650.6 web server（socket programming 講過）
-  gone(mon, tx1, ...ts);
+  gone(mon, tx1, tx2, ...ts);
   const srv = pal('server', '', CO.os, -1.0, 0, 0, 0.95);
   const cl = [0, 1, 2].map((i) => pal('client', '', TH[i + 3], -5.2, 3.6 - i * 1.7, 0, 0.45));
   cap('例 2：web server', '講 socket programming 時看過');
   await step(tok);                                   // @668.5 request 都很小；main thread 一直在等
-  srv.g.children; const m = hot('main thread：一直在等', -1.0, 2.0);
+  srv.g.children; const m = hot('main thread：一直在等', 0.6, 2.4);
   cap('server 要接很多 request', '每個都很小；main thread 一直在等');
   await step(tok);                                   // @684.4 接到 connect 就 create 一個 thread 去 handle
-  await fly(tok, 'pkt', 'request', V3(-4.6, 3.8, 0), V3(-1.0, 1.2, 0.6), 700);
+  await fly(tok, 'pkt', 'request', V3(-4.6, 3.8, 0), V3(-1.0, 0.5, 0.6), 700);
   const w1 = pal('thread', '', TH[0], 2.4, 0, 0.6, 0.5); w1.mood('happy');
   cap('一接到 connection', '就 create 一個 thread 去 handle 這個 request');
   await step(tok);                                   // @692.1 main thread 繼續等下一個 request
-  await fly(tok, 'pkt', 'request', V3(-4.6, 2.1, 0), V3(-1.0, 1.2, 0.6), 600);
+  await fly(tok, 'pkt', 'request', V3(-4.6, 2.1, 0), V3(-1.0, 0.5, 0.6), 600);
   const w2 = pal('thread', '', TH[1], 4.2, 0, 0.6, 0.5); w2.mood('happy');
   cap('main thread 馬上回去', '繼續等下一個 request');
   await step(tok);                                   // @703.4 沒用 thread：一個 request 卡住所有人 → 連不進去
@@ -923,10 +933,10 @@ FRAG.push(['thr-15a-apps', '為什麼要 thread：browser、web server、RPC', a
   cap('不用 multithreading 的話', '一個 request 就卡住所有使用者，連不進去');
   await step(tok);                                   // @728.7 RPC 也一樣有 server
   srv.mood('happy');
-  note('RPC（remote procedure call）server 也一樣', 0, 5.4);
+  note('RPC（remote procedure call）server 也一樣', 0.6, 3.85);
   cap('例 3：RPC 也是一個 server', '很多人同時 remote call 上面的 function');
   await step(tok);                                   // @755.0 client 連進來由新 thread 接，main thread loop 等待
-  await fly(tok, 'pkt', 'call', V3(-4.6, 0.4, 0), V3(-1.0, 1.2, 0.6), 600);
+  await fly(tok, 'pkt', 'call', V3(-4.6, 0.4, 0), V3(-1.0, 0.5, 0.6), 600);
   pal('thread', '', TH[2], 6.0, 0, 0.6, 0.5);
   cap('新 thread 接 request，main thread loop 等下一個', '處理慢沒關係，connection 要馬上接起來');
   void cl;
@@ -977,7 +987,7 @@ FRAG.push(['thr-15a-benefit12', '好處 1、2：Responsiveness、Resource sharin
 FRAG.push(['thr-15a-benefit34', '好處 3、4：用上多核心、Economy', async (tok) => {
   fresh([0, 5, 14], [0, 2.2, 0]);
   await step(tok);                                   // @911.8 第三：現在的硬體都是 multi-core
-  hd('③ 用上 multi-core（scalability）', 0, 5.3);
+  const h3 = hd('③ 用上 multi-core（scalability）', 0, 5.3);
   const cores = [0, 1, 2, 3].map((i) => prop('cpu', -4.5 + i * 3, 0, 0, 1.0));
   cap('第三：現在所有硬體都是 multi-core', '');
   await step(tok);                                   // @926.5 多核心、多 CPU、雲端多台
@@ -988,7 +998,7 @@ FRAG.push(['thr-15a-benefit34', '好處 3、4：用上多核心、Economy', asyn
   ts.forEach((t) => t.mood('happy'));
   cap('要把這些資源用滿，一定要靠 thread', '不用 thread 就浪費掉了');
   await step(tok);                                   // @962.5 也可以用 process 嗎？
-  cores.forEach((c) => kill(c)); ts.forEach((t) => kill(t.g));
+  cores.forEach((c) => kill(c)); ts.forEach((t) => kill(t.g)); remove(h3);
   hd('④ Economy（便宜）', 0, 5.3);
   cap('那我用 process 也可以吧？', 'process 跟 thread 最大差別是什麼');
   await step(tok);                                   // @969.4 process cost 比較高：凡事透過 OS、memory content 多
@@ -1000,10 +1010,10 @@ FRAG.push(['thr-15a-benefit34', '好處 3、4：用上多核心、Economy', asyn
   bx('registers+stack', CO.stack, 3.4, 1.6, 0, 2.0, 0.4, 0.6);
   cap('create process 的時間遠比 create thread 長', '要準備的 data structure 多很多');
   await step(tok);                                   // @1004.8 這就是 Economy
-  good('Economy：能用 thread 就不用 process', 0, 4.4);
+  const eco = good('Economy：能用 thread 就不用 process', 0, 4.4);
   cap('能用 thread 就不用 process', '程式更快、系統 loading 更輕：Economy');
   await step(tok);                                   // @1021.2 實驗：fork vs pthread_create 快 20 幾倍到 50 倍
-  kill(pr.g); kill(th.g);
+  kill(pr.g); kill(th.g); remove(eco);
   const b1 = bx('fork()', CO.bad, -1.0, 1.2, 0, 5.0, 0.5, 0.6), b2 = bx('pthread_create', CO.data, -3.25, 0.5, 0, 0.5, 0.5, 0.6);
   hot('快 20 幾倍到 50 倍', 3.3, 0.9);
   cap('實驗：fork vs pthread_create', 'thread 快了 20 幾倍到 50 倍');
@@ -1071,7 +1081,7 @@ FRAG.push(['thr-15a-challenges', 'Multicore programming 的挑戰', async (tok) 
   fresh([0, 5.2, 14], [0, 2.2, 0]);
   await step(tok);                                   // @1354.6 thread programming 是 parallel programming 的一種
   hd('Parallel programming 的挑戰', 0, 5.4);
-  idx('兩種：shared memory（thread）、message passing', 0, 4.8);
+  const two = idx('兩種：shared memory（thread）、message passing', 0, 4.8);
   cap('thread programming 是平行程式的一種', '另一種是 message passing；問題相同、技巧不同');
   await step(tok);                                   // @1395.1 ① dividing activities
   const job = bx('一件大工作', CO.files, 0, 3.4, 0, 4, 0.6, 0.9);
@@ -1082,10 +1092,10 @@ FRAG.push(['thr-15a-challenges', 'Multicore programming 的挑戰', async (tok) 
   const ws = [0, 1, 2, 3].map((i) => pal('T' + (i + 1), '', TH[i], -4.5 + i * 3, 1.4, 0, 0.45));
   cap('像大家寫作業要先分配', '你寫 report、我寫 code…');
   await step(tok);                                   // @1425.8 不是所有問題都能拆；拆不好會卡在某個人
-  ws[2].mood('sad'); note('拆不好：卡在某一個人身上', 1.5, 2.4);
+  ws[2].mood('sad'); const stuck = note('拆不好：卡在某一個人身上', 1.5, 0.6, 0.6);
   cap('不是所有問題都能這樣拆', '怎麼拆影響很大');
   await step(tok);                                   // @1439.6 ② data splitting：計算要拆，data 也要拆
-  tasks.forEach(kill); ws.forEach((w) => kill(w.g));
+  tasks.forEach(kill); ws.forEach((w) => kill(w.g)); remove(stuck);
   cap('② Data splitting', '電腦就是 compute on data：計算拆、data 也要拆');
   await step(tok);                                   // @1463.4 例：平行 sorting，10 個 element、5 個 thread
   const arrB = [];
@@ -1094,11 +1104,12 @@ FRAG.push(['thr-15a-challenges', 'Multicore programming 的挑戰', async (tok) 
   const w5 = [0, 1, 2, 3, 4].map((k) => pal('T' + (k + 1), '', TH[k], -4.0 + k * 2, 1.1, 0, 0.42));
   cap('例：平行 sorting，10 個 element、5 個 thread', '每人各兩個？');
   await step(tok);                                   // @1496.4 平分不一定最好；Graph 怎麼切？
-  note('平分不一定最好：每個 data 計算量不同', 0, 5.0);
-  idx('Graph：vertex 數一樣？edge 數一樣？', 0, 0.0, 1.0);
+  remove(two);
+  const even = note('平分不一定最好：每個 data 計算量不同', 0, 5.0);
+  const gph = idx('Graph：vertex 數一樣？edge 數一樣？', 0, 0.0, 1.0);
   cap('平分不一定最好', '像 graph 要怎麼 partition 更不單純');
   await step(tok);                                   // @1530.0 ③ data dependency
-  arrB.forEach(kill); w5.forEach((w) => kill(w.g));
+  arrB.forEach(kill); w5.forEach((w) => kill(w.g)); gone(even, gph);
   const d = bx('shared data', CO.data, 0, 1.0, 0, 2.4, 0.6, 0.8);
   const a = pal('T1', '', TH[0], -3.4, 0, 0.6, 0.5), b = pal('T2', '', TH[1], 3.4, 0, 0.6, 0.5);
   arr(-2.8, 0.8, -1.3, 1.0, '#d64545', 0.4); arr(2.8, 0.8, 1.3, 1.0, '#d64545', 0.4);
@@ -1110,10 +1121,10 @@ FRAG.push(['thr-15a-challenges', 'Multicore programming 的挑戰', async (tok) 
   hot('等最慢的那個', 1.4, 2.8);
   cap('④ Load balancing', '程式什麼時候結束，取決於最慢的那個');
   await step(tok);                                   // @1615.4 很多執行時間是跑了才知道
-  note('執行時間常常跑了才知道，很難事先預測', 0, 4.6);
+  const late = note('執行時間常常跑了才知道，很難事先預測', 0, 4.6);
   cap('很多執行時間跑了才發現', '不容易事先預測、達到最好效果');
   await step(tok);                                   // @1627.0 最後：testing 跟 debugging
-  bars.forEach(kill);
+  bars.forEach(kill); remove(late);
   const dbg = pal('debugger', '', CO.os, 0, 0, 0, 0.7);
   cap('最後一個幾乎無解：testing 跟 debugging', '');
   await step(tok);                                   // @1661.0 GDB 等工具只適用 sequential code
@@ -1175,10 +1186,10 @@ FRAG.push(['thr-15b-fastblock', 'User thread 快、kernel thread 互不影響', 
   cap('User thread 就是這些 thread library', '也就是 API');
   await step(tok);                                   // @191.6 很快：user level，不用 interrupt、不用跟 OS 溝通
   R.U.forEach((u) => u.mood('happy'));
-  good('不用 interrupt、不用找 OS → 快', 0, 5.0);
+  const fast = good('不用 interrupt、不用找 OS → 快', 0, 5.0);
   cap('通常很快：它在 OS 上面（user level）', 'API 只是 user level，不用進 kernel');
   await step(tok);                                   // @222.6 create 快、好 manage；那為什麼要 kernel thread？
-  hot('那為什麼要 kernel thread？', 4.2, 1.4);
+  const why = hot('那為什麼要 kernel thread？', 4.2, 1.4);
   cap('create 快、也容易 manage', '那問題是什麼？為什麼還要 kernel thread');
   await step(tok);                                   // @234.0 kernel 只有一個 thread 時，user 很多 thread 沒用
   cap('如果 kernel 只有一個 thread', 'user level 再多 thread 其實沒用');
@@ -1187,14 +1198,15 @@ FRAG.push(['thr-15b-fastblock', 'User thread 快、kernel thread 互不影響', 
   cap('因為它們全部 bind 到', '同一個 kernel thread');
   await step(tok);                                   // @252.4 一個 user thread call I/O 或 sleep → block
   R.U[0].mood('sad'); R.U[0].glow('#5a1010'); R.K[0].glow('#5a1010');
-  note('call I/O 或 sleep → block', R.ux(0), 4.9);
+  remove(fast);
+  const blk = note('call I/O 或 sleep → block', R.ux(0), 4.9);
   cap('只要一個 user thread call I/O 或 sleep', '把自己 block 住');
   await step(tok);                                   // @263.0 大家都 bind 同一個 → 都不能動；只是假象
   R.U.forEach((u) => u.mood('sad'));
-  bad('大家都卡住：多 thread 只是假象', 0, 1.6, 1.0);
+  const fake = bad('大家都卡住：多 thread 只是假象', 0, 1.6, 1.0);
   cap('大家都 bind 同一個，就沒人能用它', '以為 create 很多 thread，其實只是假象');
   await step(tok);                                   // @287.0 kernel thread：OS 最基本 utilize CPU 的 entity
-  R.clear();
+  R.clear(); gone(why, blk, fake);
   const R2 = mapRig(4, 4, [0, 1, 2, 3]);
   cap('Kernel thread', 'OS 裡最基本 utilize CPU 的 entity');
   await step(tok);                                   // @297.6 在 kernel 裡，經過 protection 等機制 → 比較慢
@@ -1239,7 +1251,7 @@ FRAG.push(['thr-15b-m1', 'Many-to-One', async (tok) => {
   bad('4 個 core，只有 1 個在用', 0, -0.6, 2.6);
   cap('電腦有 4 個 core、create 4 個 thread', '它們從來沒有同時執行過（要排隊）');
   await step(tok);                                   // @420.2 但可以用 global variable sharing、做到 responsiveness
-  good('仍可：global variable sharing、responsiveness', 0, 1.6, 1.2);
+  good('仍可：global variable sharing、responsiveness', 0, -1.5, 2.6);
   cap('不過還是可以用 global variable 做 sharing', 'responsiveness 也做得到，用途不同');
   void z;
 }]);
@@ -1268,9 +1280,9 @@ FRAG.push(['thr-15b-o1', 'One-to-One', async (tok) => {
   idx('開 file 也有上限', 5.0, -0.6, 1.6);
   cap('就像在電腦上開 file', '數量也有 limit，怕影響整個系統');
   await step(tok);                                   // @507.0 programmer 以為能開無限 thread → 系統卡住
-  const extra = [0, 1].map((i) => pal('U' + (5 + i), '', TH[(4 + i) % 8], -5.6 + i * 0.9, 4.9, 0, 0.42));
+  const extra = [0, 1].map((i) => pal('U' + (5 + i), '', TH[(4 + i) % 8], 4.9 + i * 0.9, 3.3, 0, 0.42));
   extra.forEach((e) => e.mood('wow')); R.K.forEach((k) => k.mood('sad'));
-  bad('一直開 thread → 整個系統卡住', 0, 1.6, 1.0);
+  bad('一直開 thread → 整個系統卡住', 0, -1.6, 1.0);
   cap('使用者以為可以開無限的 thread', '有事沒事就開一個，可能把整個系統卡住');
   void f;
 }]);
@@ -1298,10 +1310,10 @@ FRAG.push(['thr-15b-mm', 'Many-to-Many', async (tok) => {
   R.remap(1, 2); R.remap(3, 1); R.U[1].mood('happy'); R.U[2].mood('happy');
   cap('剩下三個人 share 另外兩個', '輪流使用，繼續執行');
   await step(tok);                                   // @577.2 最有彈性，最不容易互相卡住
-  good('最有彈性、最不容易互卡', 0, 1.6, 1.0);
+  good('最有彈性、最不容易互卡', 0, -0.5, 1.4);
   cap('最有彈性', '最不容易碰到互相卡住的問題');
   await step(tok);                                   // @584.0 kernel 可以自己決定需要幾個 kernel thread
-  note('loading 輕 → 全部交給一個 kernel thread 也行', 0, -0.6, 1.4);
+  note('loading 輕 → 全部交給一個 kernel thread 也行', 0, -1.4, 1.4);
   cap('kernel 也可以自己決定要幾個 kernel thread', 'user thread loading 很輕就全用一個處理');
   await step(tok);                                   // @598.0 管理複雜 → overhead；情境單純反而划不來
   os.mood('sad');
@@ -1399,10 +1411,10 @@ FRAG.push(['thr-16a-intro', '本講預告：pthread、Java thread、Linux 怎麼
   cap('Java 不用講', '它有 Thread class，可能更容易用');
   await step(tok);                                   // @20.7 OS 部分主要講 Linux；Windows 較複雜看課本
   const lx = pal('Linux', 'kernel', CO.os, 3.4, 0, 0, 0.75);
-  note('Windows 比較複雜：有興趣看課本', 3.4, 2.4);
+  const win = note('Windows 比較複雜：有興趣看課本', 3.4, 2.4);
   cap('OS 的部分主要講 Linux 怎麼處理 thread', 'Windows 比較複雜，有興趣看課本');
   await step(tok);                                   // @63.1 Linux 不做區隔：把 process 當 thread 來管
-  lx.mood('happy'); hot('process ＝ thread 一起管', 3.4, 2.4);
+  lx.mood('happy'); remove(win); hot('process ＝ thread 一起管', 3.4, 2.4);
   cap('Linux 沒做區隔', '就把 process 當作 thread 來管理');
   await step(tok);                                   // @70.2 programmer 要明確區隔；OS 可以用相同 data structure
   note('programmer：完全不同的東西　OS：同一套 data structure 管理', 0, -0.6, 1.4);
@@ -1422,7 +1434,7 @@ FRAG.push(['thr-shm-concept', 'Shared-memory programming：共用與私有', asy
   glow(L1, GOLD); kill(L2);
   cap('thread 屬於 shared memory programming', '讀寫大家都看得到的 variable 來溝通');
   await step(tok);                                   // @144.7 架構：一塊共用 memory＋各自 private 空間
-  const sh = bx('shared memory（大家都讀得到）', CO.data, 0, 2.6, 0, 7, 0.6, 1);
+  const sh = bx('shared memory（大家都讀得到）', CO.data, 0, 3.3, 0, 7, 0.6, 1);
   const ts = [0, 1, 2].map((i) => pal('T' + (i + 1), '', TH[i], -3.2 + i * 3.2, 0, 0.6, 0.55));
   const pv = [0, 1, 2].map((i) => bx('private', CO.stack, -3.2 + i * 3.2, 1.55, -0.6, 1.6, 0.45, 0.6));
   cap('一塊所有 thread 都讀得到的 memory', '加上每個 thread 自己 private 的空間');
@@ -1433,16 +1445,16 @@ FRAG.push(['thr-shm-concept', 'Shared-memory programming：共用與私有', asy
   pv.forEach((b) => P.relabel(b, 'stack：local'));
   cap('private 的是 local variable', '也就是 function 在 stack 裡的變數，別人拿不到');
   await step(tok);                                   // @184.7 透過 global 或 malloc 的 pointer 溝通
-  await fly(tok, 'pkt', 'x = 5', V3(-3.2, 1.0, 0.8), V3(0, 2.6, 0.6), 600);
-  await fly(tok, 'pkt', '讀 x', V3(0, 2.6, 0.6), V3(3.2, 1.0, 0.8), 600);
+  await fly(tok, 'pkt', 'x = 5', V3(-3.2, 2.75, 0.9), V3(-0.8, 2.75, 0.9), 600);   // 在 private 與 shared 之間的高度移動，不穿過名牌
+  await fly(tok, 'pkt', '讀 x', V3(0.8, 2.75, 0.9), V3(3.2, 2.75, 0.9), 600);
   cap('通常用 global variable', '或 malloc 出來的 pointer 讀寫來溝通');
   await step(tok);                                   // @195.7 比 message passing 快：不用 memory copy
-  good('不用 memory copy → 快', 0, 3.4);
+  const fastL = good('不用 memory copy → 快', 0, -0.8, 1.2);
   cap('跟 message passing 比通常比較快', '因為不用做 memory copy');
   await step(tok);                                   // @210.2 缺點：同時寫 → 覆蓋、順序不同結果不同、deadlock
-  const ws = ts.map((t, i) => fly(tok, 'pkt', 'write', V3(-3.2 + i * 3.2, 1.0, 0.8), V3(-0.6 + i * 0.6, 2.6, 0.6), 600));
-  await Promise.all(ws); glow(sh, RED); ts.forEach((t) => t.mood('wow'));
-  bad('覆蓋、順序不同結果不同、deadlock', 0, 3.4);
+  const ws = ts.map((t, i) => fly(tok, 'pkt', 'write', V3(-3.2 + i * 3.2, 2.75, 0.9), V3(-1.6 + i * 1.6, 2.75, 0.9), 600));
+  await Promise.all(ws); remove(fastL); glow(sh, RED); ts.forEach((t) => t.mood('wow'));
+  bad('覆蓋、順序不同結果不同、deadlock', 0, -0.8, 1.2);
   cap('缺點：大家隨時能寫同一塊 memory', '會覆蓋、順序不同結果不同（synchronization 章）');
   await step(tok);                                   // @235.3 為正確花的時間可能比好處多；通常仍較快
   glow(sh, null); ts.forEach((t) => t.mood('calm'));
@@ -1497,7 +1509,7 @@ FRAG.push(['thr-shm-ways', 'Shared-memory programming 的三種方式', async (t
 FRAG.push(['thr-posix', 'POSIX：portability 與 pthread 的 P', async (tok) => {
   fresh([0, 5.2, 14], [0, 2.2, 0]);
   await step(tok);                                   // @417.8 Linux（POSIX）平台；API 與 system call 的概念
-  hd('POSIX 平台上的 thread', 0, 5.6);
+  const ttl = hd('POSIX 平台上的 thread', 0, 5.6);
   cap('先回想 introduction 講過的', 'API 跟 system call 的概念');
   await step(tok);                                   // @431.5 programmer 喜歡 portability：只 recompile 不改 code
   const app = bx('你的程式碼', CO.data, 0, 4.6, 0, 3, 0.6, 0.9);
@@ -1528,7 +1540,7 @@ FRAG.push(['thr-posix', 'POSIX：portability 與 pthread 的 P', async (tok) => 
   bad('搬到 Windows：可能整個重寫', 4.2, 0.9, 1.4);
   cap('可是搬到 Windows 就不一樣', '可能要整個重寫');
   await step(tok);                                   // @546.0 C library 屬於 POSIX；pthread 的 P 就是 POSIX
-  pg.mood('happy');
+  pg.mood('happy'); remove(ttl);
   good('pthread 的 p = POSIX', 0, 5.6, 0.4);
   cap('C library 屬於 POSIX', 'Pthread 的 P 就是 POSIX：這個 standard 下的 thread API');
   void app;
@@ -1571,14 +1583,14 @@ FRAG.push(['thr-pt-args', 'pthread_create 的四個參數', async (tok) => {
   cap('來看 pthread_create 的 argument', '');
   await step(tok);                                   // @686.0 ① pointer：回傳 thread ID（token）
   cd.hl(1);
-  const tk = bx('tid = 7', CO.code, 4.4, 4.6, 0, 1.8, 0.5, 0.6); idx('（ID 值示意）', 4.4, 5.2);
+  const tk = bx('tid = 7', CO.code, 4.4, 4.6, 0, 1.8, 0.5, 0.6); const tkN = idx('（ID 值示意）', 4.4, 5.2);
   cap('① 一個 pointer：回傳這個 thread 的 ID', '像拿到一個 token');
   await step(tok);                                   // @700.2 之後用 token 指定是哪個 thread
   const th = pal('thread 7', '', TH[0], 4.4, 2.4, 0, 0.5);
   arr(4.4, 4.3, 4.4, 3.4, '#c08a1f');
   cap('之後就用這個 token', '指定要對哪一個 thread 做動作（例如 join）');
   await step(tok);                                   // @707.7 ② attribute：細部控制
-  cd.hl(2); kill(tk); kill(th.g);
+  cd.hl(2); kill(tk); kill(th.g); remove(tkN);
   cap('② attribute', 'create 之後行為的細部控制選項');
   await step(tok);                                   // @720.7 例：綁在某個 core，L1 cache 不 share → hit rate
   const cores = [0, 1].map((k) => prop('cpu', 2.6 + k * 3, 0, 0, 0.9));
@@ -1586,13 +1598,13 @@ FRAG.push(['thr-pt-args', 'pthread_create 的四個參數', async (tok) => {
   const t = pal('T', '', TH[1], 2.6, 1.6, 0.4, 0.4); t.mood('happy');
   cap('例：把 thread 綁在某個 core 上', '不同 core 的 L1 cache 不 share → 提高 hit rate');
   await step(tok);                                   // @751.0 OS 預設有空就跑；想給 hint 用 attribute
-  note('OS 預設：哪個 core 有空就跑', 4.1, -0.5, 1.2);
+  const dflt = note('OS 預設：哪個 core 有空就跑', 4.1, -0.5, 1.2);
   cap('OS 預設不限制，有空的 core 就跑', '想給 OS hint，就透過 attribute');
   await step(tok);                                   // @765.1 attribute 就是 integer，每個 bit 代表 enable/disable
   const bits = code(['attr = 0 1 0 0 1 …（示意）'], 4.1, 3.2, 0.5); bits.hl(0);
   cap('attribute 其實只是個 integer', '每個 bit 代表某個行為 enable 或 disable');
   await step(tok);                                   // @796.6 ③ function pointer
-  cd.hl(3); cores.forEach(kill); l1.forEach(kill); kill(t.g); bits.kill();
+  cd.hl(3); cores.forEach(kill); l1.forEach(kill); kill(t.g); bits.kill(); remove(dflt);
   const fn = bx('void *work(void *)', CO.code, 4.0, 3.6, 0, 3.2, 0.55, 0.8);
   cap('③ function pointer', '告訴它要執行哪一個 function');
   await step(tok);                                   // @809.0 ④ function 的 argument
@@ -1633,15 +1645,15 @@ FRAG.push(['thr-pt-hello', 'Hello world：for 迴圈 create，再 join', async (
   await step(tok);                                   // @991.1 用 array 存 thread ID，可 create 任意數量
   cd.hl(0);
   const slots = [0, 1, 2, 3].map((k) => bx('–', '#efe7d8', 2.6 + k * 0.9, 1.9, 0, 0.8, 0.4, 0.5));
-  idx('threads[ ]', 1.6, 1.9);
+  idx('threads[ ]', 0.9, 1.9);
   cap('用一個 array 存 thread ID', '可以 create 任意數量的 thread');
   await step(tok);                                   // @998.5 user thread 多，不代表 map 到不同 kernel thread
-  note('user thread 多 ≠ kernel thread 多', 4.0, 1.1);
+  const many = note('user thread 多 ≠ kernel thread 多', 4.0, 1.1);
   cap('user thread 通常可以很多', '不代表會 map 到不同的 kernel thread');
   await step(tok);                                   // @1012.5 for loop create 很多 thread
-  cd.hl(2);
+  cd.hl(2); remove(many);
   const ts = [];
-  for (let k = 0; k < 4; k++) { const b = pal('T' + k, '', TH[k], -5.0, 0, 0.8, 0.45); ts.push(b); P.relabel(slots[k], k); await slide(tok, b.g, -1.0 + k * 1.6, 0, 0.8, 360); }
+  for (let k = 0; k < 4; k++) { const b = pal('T' + k, '', TH[k], -2.6 + k * 1.6, 0.6, 0.8, 0.45); ts.push(b); P.relabel(slots[k], k); await slide(tok, b.g, -2.6 + k * 1.6, 0, 0.8, 360); }
   cap('用 for loop', 'create 出很多 thread');
   await step(tok);                                   // @1021.8 argument 傳 thread ID，要轉成 void* 傳入
   cd.hl(3);
@@ -1652,7 +1664,7 @@ FRAG.push(['thr-pt-hello', 'Hello world：for 迴圈 create，再 join', async (
   ts.forEach((b, k) => b.set('tid=' + k));
   cap('讀進 function 時', '要把它 cast 回來；pthread 一定要這麼做');
   await step(tok);                                   // @1042.5 每個 thread 執行同一行，但 thread ID 不同
-  ts.forEach((b, k) => { b.mood('happy'); bub('Hello World! ' + k, -1.0 + k * 1.6, 1.6 + (k % 2) * 0.5, 0.8); });
+  ts.forEach((b, k) => { b.mood('happy'); bub('Hello World! ' + k, 5.0, 1.2 - k * 0.8, 0.8); });   // 印出來的一行行輸出，排在右邊
   cap('每個 thread 都執行這一行', '但印出來的 thread ID 不同');
   await step(tok);                                   // @1057.3 基本上就是 create 然後 join 回來
   cd.hl(-1);
@@ -1662,7 +1674,7 @@ FRAG.push(['thr-pt-hello', 'Hello world：for 迴圈 create，再 join', async (
   cap('join 最主要的目的', '把 thread 的 return 值讀回來');
   await step(tok);                                   // @1079.0 for loop 一個一個 join
   cd.hl(6);
-  for (let k = 0; k < 4; k++) { await slide(tok, ts[k].g, -5.0 + 0.4 * k, 1.2, 0.8, 300); kill(ts[k].g); }
+  for (let k = 0; k < 4; k++) { await slide(tok, ts[k].g, -5.0 + 0.4 * k, 0, 0.8, 300); kill(ts[k].g); }
   main.mood('happy');
   cap('寫一個 for loop 一個一個 join', '把每個 thread 的 return 值讀回來');
   await step(tok);                                   // @1088.3 model：main thread 執行非平行部分
@@ -1694,19 +1706,20 @@ FRAG.push(['thr-pt-detach', '不 join 就要 detach', async (tok) => {
   cap('意思是告訴 thread library', '這個 thread 結束後，resource 直接 free 掉');
   await step(tok);                                   // @1145.6 不 call：OS 不知道未來會不會 join
   c.hl(-1); a.set('結束了'); a.mood('wow');
-  hot('之後會有人 join 我嗎？', 0, 2.0);
+  const ask = hot('之後會有人 join 我嗎？', 0, 2.0);
   cap('不 call 的話，程式在 run time', 'OS 不知道你未來會不會 join');
   await step(tok);                                   // @1154.6 一直 hang 著、keep return 值；program 無法結束
   a.glow('#5a1010'); a.mood('sad'); main.mood('sad');
   bad('一直 hang 著 → program 結束不了', 0, 3.0);
   cap('結束的 thread 一直 hang 在那裡', 'return 值一直 keep 著，program 也結束不了');
   await step(tok);                                   // @1167.4 好習慣：create 後要嘛 join，要嘛立刻 detach
-  kill(a.g);
+  kill(a.g); remove(ask);
   const b = pal('T1', '', TH[1], 0, 0, 0.6, 0.6); c.hl(0);
   good('create 之後：要嘛 join，要嘛立刻 detach', 0, 4.4, 0.4);
   cap('比較好的 programming 習慣', 'create 完要嘛 join，不 join 就立刻 detach');
   await step(tok);                                   // @1183.9 結束後 OS 立刻把 memory 清乾淨
   b.set('結束'); await wt(tok, 300);
+  b.g.traverse((o) => { if (o.element) o.element.style.visibility = 'hidden'; });   // 名牌先收起來，縮小時才不會疊在一起
   await anim(tok, 700, (u) => { b.g.scale.setScalar(Math.max(0.01, 1 - u)); }); kill(b.g);
   cap('它結束之後', 'OS 立刻把它用到的 memory 清乾淨');
   await step(tok);                                   // @1192.3 detach 了就永遠不能 join
@@ -1748,16 +1761,16 @@ FRAG.push(['thr-java', 'Java thread：經由 JVM 對到各 OS 的 thread', async
   cap('安裝時選 Windows 的 Java machine', '或是 Linux（POSIX）的 Java machine');
   await step(tok);                                   // @1323.1 Windows JVM：Java thread → Win32 thread
   const lw = bx('Win32 thread', CO.files, -3.2, 2.55, 0, 3.0, 0.55, 0.9);
-  const t1 = pal('t', '', TH[2], 0, 5.0, 0.9, 0.35);
-  await slide(tok, t1.g, -3.2, 2.9, 0.9, 900);
+  const t1 = pal('t', '', TH[2], -6.1, 5.2, 0.9, 0.35);
+  await slide(tok, t1.g, -6.1, 2.9, 0.9, 900);
   cap('Windows 的 JVM', 'Java 的 thread 會對到 Win32 thread');
   await step(tok);                                   // @1331.7 UNIX：對到 pthread
   const ll = bx('pthread', CO.files, 3.2, 2.55, 0, 3.0, 0.55, 0.9);
-  const t2 = pal('t', '', TH[2], 0, 5.0, 0.9, 0.35);
-  await slide(tok, t2.g, 3.2, 2.9, 0.9, 900);
+  const t2 = pal('t', '', TH[2], 6.1, 5.2, 0.9, 0.35);
+  await slide(tok, t2.g, 6.1, 2.9, 0.9, 900);
   cap('UNIX（Linux）的 JVM', '就對到 pthread');
   await step(tok);                                   // @1342.4 Java thread → user thread library → kernel
-  await Promise.all([slide(tok, t1.g, -3.2, 1.3, 0.9, 700), slide(tok, t2.g, 3.2, 1.3, 0.9, 700)]);
+  await Promise.all([slide(tok, t1.g, -6.1, 1.3, 0.9, 700), slide(tok, t2.g, 6.1, 1.3, 0.9, 700)]);
   cap('Java 上 create 一個 thread', '先對到那個 OS 的 user thread library，再到 kernel');
   await step(tok);                                   // @1349.2 pthread 不能跑在 Windows，Java 可以
   bad('pthread 程式 ✗ Windows', -3.2, -0.2, 1.2); good('Java 程式 ✓ 兩邊都行', 3.2, -0.2, 1.2);
@@ -1803,7 +1816,7 @@ FRAG.push(['thr-clone', 'Linux：thread 就是 clone() 出來的 process', async
   cps.forEach(kill);
   cap('pthread 要的是很特別的 process', '有些 memory 是 shared 的');
   await step(tok);                                   // @1489.5 Linux 另外提供 system call：clone
-  const cl = bx('clone()', CO.gold, 0, 0.3, 1.2, 1.8, 0.5, 0.7); glow(cl, GOLD);
+  const cl = bx('clone()', CO.gold, 2.4, 0.3, 1.2, 1.8, 0.5, 0.7); glow(cl, GOLD);
   cap('Linux 另外提供一個 system call', '叫做 clone，一樣是 create process');
   await step(tok);                                   // @1501.0 引數控制哪些 segment shared、哪些不 share
   cap('clone 有比較多的 argument', '可以控制哪些 segment shared、哪些不 share');
@@ -1818,13 +1831,13 @@ FRAG.push(['thr-clone', 'Linux：thread 就是 clone() 出來的 process', async
   bx('signal（copy）', CO.reg, 4.4, 1.8, 0, 2.8, 0.6, 0.9);
   cap('memory space 要不要 share、signal 呢', '這些 resource 各有一個 flag');
   await step(tok);                                   // @1556.7 用 0、1 控制，create 出新的 process
-  code(['flags = FS:1 VM:1 SIG:0（示意）'], 0, -0.4, 0.5).hl(0);
+  code(['flags = FS:1 VM:1 SIG:0（示意）'], 0, -1.3, 0.5).hl(0);
   cap('用 0、1 控制每個 flag', 'create 出一個新的 process');
   await step(tok);                                   // @1568.0 這就是 create thread 的方式
   good('很多 memory content 都 share → 這就是 thread', 0, 5.0, 0.4);
   cap('很多 memory content share', '這就是 Linux create thread 的方式');
   await step(tok);                                   // @1574.3 kernel 不必另外寫 code 管 thread
-  note('kernel 不另外管 thread：process ＋ 不同的 share 設定', 0, 0.8, 1.6);
+  note('kernel 不另外管 thread：process ＋ 不同的 share 設定', 0, -2.1, 1.6);
   cap('kernel 不需要另外寫 code 管理 thread', '它就是 process，只是 share 設定不同');
 }]);
 
@@ -1833,7 +1846,7 @@ FRAG.push(['thr-16b-intro', 'Threading issues：thread 都屬於同一個 proces
   fresh([0, 5, 14], [0, 2.2, 0]);
   await step(tok);                                   // @16.4 create thread 之後，和 process 不同的細節
   hd('Threading issues', 0, 5.3);
-  const z = zone('同一個 process', 2.6, 0.02, 0, 5.4, 2.6, '#f3e6c8');
+  const z = zone('同一個 process', 2.6, 0.02, 0, 5.4, 2.6, '#f3e6c8'); zname(z, 5.45, 0.05, 0);
   const ts = [0, 1, 2].map((i) => pal('T' + (i + 1), '', TH[i], 1.0 + i * 1.6, 0, 0.2, 0.55));
   cap('create 了 thread 之後', '有些行為跟 process 不一樣，要注意');
   await step(tok);                                   // @17.4 process 之間沒關聯；thread 屬於同一個 process
@@ -1860,11 +1873,11 @@ FRAG.push(['thr-16b-fork', '在 thread 裡呼叫 fork()', async (tok) => {
   hot('兩種可能？', 0, 3.2);
   cap('有兩種可能', '');
   await step(tok);                                   // @72.2 ① fork 針對整個 process：新 process 也兩個 thread
-  const z1 = zone('新 process（複製全部）', 2.0, 0.02, -1.4, 3.4, 2.0, '#d6e6f6');
+  const z1 = zone('新 process（複製全部）', 2.0, 0.02, -1.4, 3.4, 2.0, '#d6e6f6'); zname(z1, 2.0, 1.5, -2.5, false);
   const c1 = pal('T1′', '', TH[0], 1.2, 0, -1.2, 0.45), c2 = pal('T2′', '', TH[1], 2.8, 0, -1.2, 0.45);
   cap('第一種：fork 針對整個 process', '原本兩個 thread，新的也要兩個');
   await step(tok);                                   // @91.0 ② 只複製 call fork 的那個 thread
-  const z2 = zone('新 process（只有呼叫者）', 5.2, 0.02, 1.4, 2.6, 2.0, '#d8e6cf');
+  const z2 = zone('新 process（只有呼叫者）', 5.2, 0.02, 1.4, 2.6, 2.0, '#d8e6cf'); zname(z2, 5.2, 0.05, 2.7, false);
   const c3 = pal('T2′', '', TH[1], 5.2, 0, 1.6, 0.45); c3.mood('happy');
   cap('第二種：只在一個 thread 裡 call fork', '新 process 只包含原來那個 thread');
   await step(tok);                                   // @105.0 Linux 比較容易這麼做：本來就把 thread 當 process
@@ -1885,7 +1898,7 @@ FRAG.push(['thr-16b-exec', 'exec()：整個 process 換掉', async (tok) => {
   fresh([0, 5, 14], [0, 2.2, 0]);
   await step(tok);                                   // @180.0 exec 比較沒問題
   hd('exec()', 0, 5.3);
-  const z = zone('process', 0, 0.02, 0, 5, 2.6, '#f3e6c8');
+  const z = zone('process', 0, 0.02, 0, 5, 2.6, '#f3e6c8'); zname(z, 2.65, 0.05, 0);
   const ts = [0, 1, 2].map((i) => pal('T' + (i + 1), '', TH[i], -1.6 + i * 1.6, 0, 0.2, 0.55));
   cap('exec 就比較沒有問題', '');
   await step(tok);                                   // @185.2 exec 是 replace：整個 process 換掉
@@ -1950,38 +1963,40 @@ FRAG.push(['thr-16b-signal', 'Signal handling：signal 給哪個 thread？', asy
   fresh([0, 5.2, 14], [0, 2.2, 0]);
   await step(tok);                                   // @393.8 第三：signal handling
   hd('Signal handling', 0, 5.6);
-  const z = zone('process', 0, 0.02, 0, 9.4, 2.4, '#f3e6c8');
+  const z = zone('process', 0, 0.02, 0, 9.4, 2.4, '#f3e6c8'); zname(z, 4.85, 0.05, 0);
   const ts = [0, 1, 2, 3].map((i) => pal(i === 0 ? 'main' : 'T' + i, '', i === 0 ? CO.data : TH[i], -3.3 + i * 2.2, 0, 0.2, 0.55));
   cap('第三個：signal handling', '');
   await step(tok);                                   // @401.2 例：thread 呼叫 sleep 10 秒，之後 signal 通知
-  bub('sleep(10)', ts[1].g.position.x, 1.6, 0.4); ts[1].mood('calm');
+  const slp = bub('sleep(10)', ts[1].g.position.x, 1.6, 0.4); ts[1].mood('calm');
   cap('例：一個 thread 呼叫 sleep 10 秒', '10 秒後會有 signal 跑出來 notify 它');
   await step(tok);                                   // @418.2 process 有很多 thread：給指定的還是全部？
   const sig = pkt('signal', 0, 4.4, 0);
-  hot('給誰？', 0, 3.6);
+  const who = hot('給誰？', 0, 3.6);
   cap('一個 process 有很多 threads', 'signal 是給指定的 thread，還是全部？');
   await step(tok);                                   // @495.4 general form：先送到 process level，再決定
   await travel(tok, sig, V3(0, 4.4, 0), V3(0, 2.0, 0.6), 700);
   cap('一般的形式：signal 先送到 process level', '再由 process 決定怎麼 handle；下面四種');
   await step(tok);                                   // @511.3 ① 給當初產生它的 thread（sleep）
-  await fly(tok, 'pkt', '①', V3(0, 2.0, 0.6), V3(ts[1].g.position.x, 1.0, 0.6), 600);
+  await fly(tok, 'pkt', '①', V3(0, 2.0, 0.6), V3(ts[1].g.position.x + 0.75, 0.45, 0.6), 600);
   ts[1].mood('happy'); await ts[1].hop(tok);
   cap('① 送給當初產生它的那個 thread', '像 sleep：只有它被叫醒');
   await step(tok);                                   // @518.1 ② 給所有 thread：例如 terminate process（exit）
-  await Promise.all(ts.map((t) => fly(tok, 'pkt', '②', V3(0, 2.0, 0.6), V3(t.g.position.x, 1.0, 0.6), 600)));
+  remove(slp);
+  await Promise.all(ts.map((t) => fly(tok, 'pkt', '②', V3(0, 2.0, 0.6), V3(t.g.position.x + 0.75, 0.45, 0.6), 600)));
   ts.forEach((t) => t.mood('wow'));
   cap('② 送給所有 thread', '例如有 thread 直接 terminate process（exit）：全部 kill');
   await step(tok);                                   // @538.5 ③ 給指定的某個 thread：有 thread ID 就能互傳
   ts.forEach((t) => t.mood('calm'));
-  await fly(tok, 'pkt', '③ → T3', V3(ts[1].g.position.x, 1.2, 0.6), V3(ts[3].g.position.x, 1.2, 0.6), 800);
+  await fly(tok, 'pkt', '③ → T3', V3(ts[1].g.position.x, 0.45, 0.6), V3(ts[3].g.position.x, 0.45, 0.6), 800);
   ts[3].mood('happy');
   cap('③ 送給某個指定的 thread', 'thread 之間有 thread ID 就能互傳 signal');
   await step(tok);                                   // @566.4 ④ 沒指定：由特定的 thread（main thread）處理
   ts[3].mood('calm');
-  await fly(tok, 'pkt', '④', V3(0, 2.0, 0.6), V3(ts[0].g.position.x, 1.0, 0.6), 600);
+  await fly(tok, 'pkt', '④', V3(0, 2.0, 0.6), V3(ts[0].g.position.x + 0.75, 0.45, 0.6), 600);
   ts[0].mood('happy'); ts[0].glow('#0d3d20');
   cap('④ 沒說誰處理：指定一個 thread 專門接', '例如 by default 由 main thread 來 handle');
   await step(tok);                                   // @597.0 OS 要判斷：broadcast、指定、或 main thread
+  remove(who);
   note('OS 要判斷：broadcast 全部？指定 thread？main thread？', 0, 3.4);
   cap('丟出 signal 時，OS 要判斷', 'broadcast 給全部、給指定的、或由 main thread 處理');
   void z;
@@ -1998,10 +2013,10 @@ FRAG.push(['thr-16b-pool', 'Thread pool：先建好一池 thread 重複使用', 
   cap('原本的概念：需要平行時', '動態產生一個 thread，不要時再 delete');
   await step(tok);                                   // @665.0 不斷 create / delete → 不 efficient
   await anim(tok, 500, (u) => t.g.scale.setScalar(Math.max(0.01, 1 - u))); kill(t.g);
-  bad('一直 create、delete → 不 efficient', -3.6, 1.0);
+  const ineff = bad('一直 create、delete → 不 efficient', -3.6, 1.0);
   cap('壞處：一直 create、一直 delete', '比較不 efficient');
   await step(tok);                                   // @674.1 web server：一開始就 create 一堆 thread（pool）
-  const pool = zone('pool of threads', 2.6, 0.02, 0, 6.2, 2.6, '#d6e6f6');
+  const pool = zone('pool of threads', 2.6, 0.02, 0, 6.2, 2.6, '#d6e6f6'); zname(pool, 5.85, 0.05, 0); remove(ineff);
   const ws = [];
   for (let i = 0; i < 6; i++) ws.push(pal('', '', TH[i % 8], 0.4 + (i % 3) * 2.2, 0, -0.6 + Math.floor(i / 3) * 1.3, 0.42));
   cap('像 web server：一開始就 create 一堆 thread', '放在一個 pool 裡');
@@ -2060,7 +2075,7 @@ FRAG.push(['thr-neso-intro', '三種 multithreading model 與 user / kernel thre
   hd('Multithreading models', 0, 5.3);
   cap('今天討論 multithreading model', '');
   await step(tok);                                   // @6.8 三種：many-to-one、one-to-one、many-to-many
-  code(['① many-to-one', '② one-to-one', '③ many-to-many'], 0, 4.4, 0.5);
+  code(['① many-to-one', '② one-to-one', '③ many-to-many'], 4.7, 4.8, 0.5);
   cap('一共三種 model', 'many-to-one、one-to-one、many-to-many');
   await step(tok);                                   // @15.7 像 process 有 user/kernel mode，thread 也有 user/kernel thread
   const R = mapRig(3, 2, [null, null, null], { yU: 2.6 });
@@ -2088,7 +2103,7 @@ FRAG.push(['thr-neso-m1', 'Many-to-One：快，但一個 block 全部 block', as
   cap('從這個 thread 換到那個：有 context switching', '但沒有 mode switching');
   await step(tok);                                   // @62.7 優點：creation、context switch 很快
   R.U.forEach((u) => u.mood('happy'));
-  good('優點：create、切換都很快（不用 system call）', 0, 5.0, -0.4);
+  good('優點：create、切換都很快（不用 system call）', 0, -1.4, 1.2);
   cap('優點：thread creation、context switching 很快', '在 user space 做，不需要 system call');
   await step(tok);                                   // @74.4 缺點：blocking issue，一個 block 整個 process block
   R.U[0].mood('sad'); R.U[0].glow('#5a1010'); R.K[0].glow('#5a1010');
@@ -2112,14 +2127,15 @@ FRAG.push(['thr-neso-o1', 'One-to-One：真平行，但成本高、有上限', a
   for (let i = 0; i < 4; i++) { R.remap(i, i); await wt(tok, 200); }
   cap('one-to-one：每個 thread', '都有一個專屬的 kernel thread');
   await step(tok);                                   // @145.0 each user thread maps to exactly one kernel thread
-  hot('exactly one', 4.8, 1.6);
+  const ex1 = hot('exactly one', 4.8, 1.6);
   cap('每個 user thread', '剛好對到一個 kernel thread');
   await step(tok);                                   // @163.4 優點：true parallelism，各自分開執行
   R.U.forEach((u) => u.mood('happy')); R.K.forEach((k) => k.mood('happy'));
-  good('優點：true parallelism（可同時跑在多核心）', 0, 5.0, -0.4);
+  good('優點：true parallelism（可同時跑在多核心）', 0, -1.4, 1.2);
   cap('優點：parallelism', '每一個都可以分開、同時執行');
   await step(tok);                                   // @172.0 no blocking issue
   R.U[1].mood('sad'); R.U[1].glow('#5a1010'); R.K[1].glow('#5a1010');
+  remove(ex1);
   good('一個 block，其他照跑', 3.4, 1.6, 0.8);
   cap('沒有 blocking issue', '一個 thread block 了，其他不受影響（各有 kernel thread）');
   await step(tok);                                   // @183.3 缺點：higher overhead，kernel 參與
@@ -2145,11 +2161,11 @@ FRAG.push(['thr-neso-mm', 'Many-to-Many：彈性最好，但最複雜', async (t
   [0, 1, 2, 0].forEach((j, i) => R.remap(i, j));
   cap('多個 user thread map 到', '較少或相等數量的 kernel thread');
   await step(tok);                                   // @263.6 kernel thread 不會比 user thread 多
-  idx('kernel thread 數 ≤ user thread 數', 0, -0.6, 1.2);
+  const le = idx('kernel thread 數 ≤ user thread 數', 0, -0.6, 1.2);
   cap('kernel thread 的數量', '不會比 user thread 多');
   await step(tok);                                   // @271.0 優點：true parallelism，多核心
   R.K.forEach((k) => k.mood('happy'));
-  good('優點：true parallelism', 0, 5.0, -0.4);
+  good('優點：true parallelism', 0, -1.4, 1.2);
   cap('優點：true parallelism', '多個 thread 可以跑在多個 core 上');
   await step(tok);                                   // @281.2 no blocking issue：其他用別的 kernel thread
   R.U[1].mood('sad'); R.U[1].glow('#5a1010'); R.K[1].glow('#5a1010');
@@ -2160,6 +2176,7 @@ FRAG.push(['thr-neso-mm', 'Many-to-Many：彈性最好，但最複雜', async (t
   R.remap(3, 0, '#c08a1f'); await wt(tok, 300); R.remap(3, 2, '#c08a1f');
   cap('scalability 比 one-to-one 好', '一個 thread 可以被 assign 到任何一個 kernel thread');
   await step(tok);                                   // @303.0 缺點：設計實作複雜、scheduling 難
+  remove(le);
   bad('缺點：設計、實作複雜；scheduling 難', 0, -0.6, 1.2);
   cap('缺點：設計與實作比較複雜', 'thread scheduling 也比較難');
   await step(tok);                                   // @310.8 creation、context switching 仍貴

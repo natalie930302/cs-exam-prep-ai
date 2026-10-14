@@ -14,7 +14,7 @@
 // look and behave alike. ?stage=1 is the study-room mode: no chrome, one
 // caption + one formula line, scenes driven by postMessage from study.html
 // ({type:'scene', scene, params} or {type:'tour'}).
-import { THREE, createLab, colorFor } from './lab-engine.js?v=24';
+import { THREE, createLab, colorFor } from './lab-engine.js?v=25';
 
 const q = new URLSearchParams(location.search);
 const CH = (q.get('ch') || 'ds-2').replace(/[^\w-]/g, '');
@@ -112,7 +112,7 @@ function makeCtx() {
 }
 
 const ctx = makeCtx();
-const mod = await import('./chapters/' + CH + '.js?v=17');
+const mod = await import('./chapters/' + CH + '.js?v=18');
 const def = mod.default(ctx);
 const modes = def.modes || [];
 // the lab is for trying things by hand; quizzes live in the study room
