@@ -1439,7 +1439,7 @@ scene('io-26b-spare', 'Sector sparing：spare 頂替 sector 4', CAM, [
     cap('方法一：forwarding（remap）', 'sector 4 壞了，最後面有空的位置');
   },
   async (tok, S) => {                                   // 544 spare 當 sector 4
-    glow(S.M[4], null); await slide(tok, S.M[4], sx(NS), 0.2, 0, 900); tint(S.M[4], MC.green);
+    glow(S.M[4], null); await slide(tok, S.M[4], sx(4), 1.7, 0, 300); await slide(tok, S.M[4], sx(NS), 1.7, 0, 600); await slide(tok, S.M[4], sx(NS), 0.2, 0, 300); tint(S.M[4], MC.green); // hops over the other sectors
     S.x = bx('✕', MC.red, sx(4), 0.2, 0, 0.8, 0.4, 1.0);
     good('瞬間解決', sx(NS), 1.5, 0);
     cap('把後面的空位當 sector 4 來用', '很快，瞬間就解決');
@@ -2233,7 +2233,7 @@ scene('io-26d-mmio', 'Port-mapped vs memory-mapped I/O', CAMW, [
     cap('寫 memory 怎麼會寫到 device？', '事先把 controller 的 buffer map 到 memory');
   },
   async (tok, S) => {                                   // 837 寫那段 memory = 寫到 port
-    const pk = bx('data', MC.orange, -4.0, 4.6, 0.8, 1.0, 0.4, 0.5); await slide(tok, pk, 0, 4.6, 0.8, 600); await slide(tok, pk, 4.4, 1.4, 0.8, 700);
+    const pk = bx('data', MC.orange, -4.0, 4.6, 0.8, 1.0, 0.4, 0.5); await slide(tok, pk, 0, 3.95, 0.8, 600); await slide(tok, pk, 4.4, 2.05, 0.8, 700); // lands on top of the controller, not on its name
     cap('寫到那段 memory', '就等於寫到那個 port 上的 buffer');
   },
   async (tok, S) => {                                   // 862 好處：大量資料
@@ -2372,7 +2372,7 @@ scene('io-26d-dmastep', 'DMA 一步一步：讀 100 MB 的檔案', CAMW, [
     cap('④ disk controller 請 DMA controller 搬', '提供來源、目的位址（initiate 一個 I/O）');
   },
   async (tok, S) => {                                   // 1399 ⑤ buffer 只有 4 bytes → 一次 4 bytes
-    for (let k = 0; k < 3; k++) { const b = bx('4B', MC.gold, -3.4, 1.6, 1.0, 0.6, 0.35, 0.4); await slide(tok, b, 2.4, 2.8, 1.0, 400); await slide(tok, b, 4.2, 4.8, 1.0, 350); kill(b); }
+    for (let k = 0; k < 3; k++) { const b = bx('4B', MC.gold, -3.4, 1.6, 1.0, 0.6, 0.35, 0.4); await slide(tok, b, 2.4, 2.8, 1.0, 400); await slide(tok, b, 4.2, 4.3, 1.0, 350); kill(b); } // each 4 bytes stops just under buffer X (its name stays clear)
     sm('controller buffer 只有 4 bytes（示意）→ 來回非常多次，全由 DMA 執行', 1.0, 0.6, 1.8);
     cap('⑤ controller 的 buffer 假設只有 4 bytes', '就 4 bytes 4 bytes 慢慢搬，DMA 一直來回');
   },

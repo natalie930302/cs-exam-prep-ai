@@ -3465,9 +3465,12 @@ async function ab2Phone(tok) {
     near: async () => { item(20000, C.gold, 0); mark('大約 20,000', 'say', -5.6, 1.6, 2.0); you.mood('happy'); S2('「大約 20,000」：最接近的答案 → 像 Θ', ''); await you.hop(tok); },
     close: () => { mark.clear(); item(18000, C.purple, 1.2); item(19000, C.purple, 2.2); item(21000, C.green, 1.2); item(24000, C.green, 2.2); S2('最少 18k、19k；最多 21k、24k：都還接近', '接近的下界與上界'); },
     far1: async () => {
-      max = 210000; drawTicks(); items.forEach((m) => move(m, X(m.userData.v), 0.5 + m.userData.h, 0));
+      // the scale grows: 18k–24k now sit on one spot, so they stack into one column (by value)
+      max = 210000; drawTicks();
+      const near = items.slice().sort((a, b) => a.userData.v - b.userData.v);
+      near.forEach((m, k) => { m.userData.h = k * 0.8; move(m, X(20000), 0.5 + m.userData.h, 0); });
       await beat(tok, 700);
-      item(2000, C.purple, 3.4); item(3000, C.purple, 4.4); mark('對，但沒用', 'bad', -3.6, 5.6); you.mood('sad');
+      item(2000, C.purple, 4.1); item(3000, C.purple, 4.9); mark('對，但沒用', 'bad', -2.6, 5.6); you.mood('sad');
       S2('最少 2,000、3,000：沒錯，但對我沒用', '太遠的下界 Ω');
     },
     far2: () => { item(100000, C.green, 1.2); item(200000, C.green, 2.4); mark('對，但沒意義', 'bad', 3.6, 4.0); S2('最多 1 lakh、2 lakh：也對，但沒意義', '太遠的上界 O（1 lakh = 10 萬）'); },
@@ -3765,11 +3768,11 @@ async function ab2LinearSearch(tok) {
   const xs = (i) => -5.4 + i * 1.2;
   let cs = [];
   const mark = AB2_marks();
-  const list = () => { cs = AB2_LS.map((v, i) => { tag(String(i), 'idx', xs(i), -0.25, 0.8); return cube(v, C.blue, [1, 0.8, 1], xs(i), 0.4, 0, 2); }); };
+  const list = () => { cs = AB2_LS.map((v, i) => { tag(String(i), 'idx', xs(i), -0.25, 0.8); return cube(v, C.blue, [1, 0.8, 1], xs(i), 0.4, 0); }); }; // placed (not dropped): nothing falls through the key's height
   if (cases) list();
   let kb = null;
   const reset = () => cs.forEach((m) => { tint(m, C.blue); glow(m, null); });
-  const keyAt = (i) => V3(xs(i), 0.85, 1.5);
+  const keyAt = (i) => V3(xs(i), 1.35, 1.5); // above the row so the key never sits on a value
   // the key walks along the list, comparing one cell at a time
   const scan = async (from, to, msEach, key) => {
     for (let i = from; i <= to; i++) {
@@ -3860,7 +3863,7 @@ async function ab2BstCases(tok) {
   const BAL = [[20, 0, 6.2], [10, -2.4, 4.6, 20], [30, 2.4, 4.6, 20], [5, -3.6, 3.0, 10], [15, -1.2, 3.0, 10], [25, 1.2, 3.0, 30], [40, 3.6, 3.0, 30]];
   const mark = AB2_marks();
   let M = null, kb = null;
-  const near = (v) => M[v].position.clone().add(V3(0.95, -0.45, 0.4));
+  const near = (v) => M[v].position.clone().add(V3(0, 0.75, 0.3)); // the key stands on top of the node, clear of its value
   const go = (v, ms = 800) => travel(tok, kb.g, kb.g.position.clone(), near(v), ms);
   if (!skew) {
     const A = {
@@ -3871,10 +3874,10 @@ async function ab2BstCases(tok) {
       right: async () => { S2('15 > 10 → 往右：找到 15！', ''); await go(15); glow(M[15], GOLD); tint(M[15], C.green); kb.mood('happy'); await kb.hop(tok); },
       cnt: () => { mark('比較 3 次', 'good', 5.4, 6.4); S2('總共比較 3 次', '20、10、15'); },
       h: () => { line(5.0, 6.2, 5.0, 3.0, 0, '#c08a1f'); mark('= 樹高', 'note', 5.8, 4.6); S2('3 次剛好等於樹的高度', ''); },
-      logn: () => { mark('7 個 ≈ 8 個：log 8 = 3', 'note', 5.0, 2.2); S2('樹高約 log n：7 個元素 ≈ 8，log 8 = 3', '花的時間 = log n'); },
+      logn: () => { mark('7 個 ≈ 8 個：log 8 = 3', 'note', 5.0, 1.7); S2('樹高約 log n：7 個元素 ≈ 8，log 8 = 3', '花的時間 = log n'); },
       bw: () => { mark.clear(); [20, 10, 15].forEach((v) => { glow(M[v], null); tint(M[v], C.blue); }); kb.mood('calm'); S2('那 best case、worst case 呢？', ''); },
       best: async () => { tint(M[20], C.green); kb.set(20); S2('best case：要找的就在 root', ''); await go(20); },
-      B1: async () => { mark('B(n) = 1', 'good', 0, 7.2); kb.mood('happy'); S2('找 20：看 root 一次就找到 → B(n) = 1', ''); await kb.hop(tok); },
+      B1: async () => { mark('B(n) = 1', 'good', -3.0, 7.0); kb.mood('happy'); S2('找 20：看 root 一次就找到 → B(n) = 1', ''); await kb.hop(tok); },
       worst: () => { kb.mood('calm'); S2('worst case：要找的在 leaf（最底下那層）', ''); },
       leaves: async () => { for (const v of [5, 15, 25, 40]) { tint(M[v], C.red); await beat(tok, 250); } S2('leaf 是 5、15、25、40', '找它們要比最多次'); },
       W: () => { mark('W(n) = 樹高 = log n', 'good', 0, 1.6); S2('worst case 時間 = 樹高 = log n', ''); },
@@ -4552,7 +4555,12 @@ function A3stage(tok) {
   S.board = (x = -7.2, y = 7.5, dy = 0.6, z = 0) => { S.b = { x, y, dy, z, ls: [], n: 0 }; };
   S.eq = (t, cls = 'ptr alt') => {
     const b = S.b; b.ls.forEach((l) => { if (l.userData.live) { l.element.className = 'lab-label ptr'; l.userData.live = false; } });
-    const l = S.L(t, cls, b.x, b.y - b.n * b.dy, b.z); l.userData.live = cls === 'ptr alt'; b.ls.push(l); b.n++; return l;
+    // a long board scrolls: the oldest line goes, the rest move up (b.max is set where the space below is taken)
+    if (b.max && b.ls.length && b.n + 1 > b.max) {
+      remove(b.ls.shift()); const d = b.ls.length ? b.ls[0].userData.slot : b.n;
+      b.ls.forEach((o) => { o.userData.slot -= d; o.position.y = b.y - o.userData.slot * b.dy; }); b.n -= d;
+    }
+    const l = S.L(t, cls, b.x, b.y - b.n * b.dy, b.z); l.userData.live = cls === 'ptr alt'; l.userData.slot = b.n; b.ls.push(l); b.n++; return l;
   };
   S.gap = (k = 0.5) => { S.b.n += k; };
   // ── a friendly guide in the front-left corner who reacts to each step ──
@@ -4565,7 +4573,17 @@ function A3stage(tok) {
     S.c = { ls, x, y, dy, hl(i) { ls.forEach((l, k) => { l.element.className = 'lab-label' + (k === i ? ' ptr alt' : ''); }); } };
     return S.c;
   };
-  S.cost = (i, t, x = -1.9, cls = 'pkt') => tag(t, cls, x, S.c.y - i * S.c.dy);
+  // the cost sits at the end of its own code line (one chip per line; a new cost replaces the old one),
+  // so it can never cover the code whatever the zoom
+  const A3_COST = { 'ptr alt': ['#a8730f', '#fff'], pkt: ['#a8730f', '#fff'], note: ['#fff1a6', '#4a3a00'], good: ['#e3f3ea', '#0f5a3a'], bad: ['#fde8e6', '#7a1010'] };
+  S.cost = (i, t, x, cls = 'pkt') => {
+    const el = S.c.ls[i].element;
+    let s = el.querySelector('.a3cost');
+    if (!s) { s = document.createElement('span'); s.className = 'a3cost'; el.appendChild(s); }
+    const [bg, fg] = A3_COST[cls] || A3_COST.pkt;
+    Object.assign(s.style, { display: 'inline-block', marginLeft: '8px', padding: '0 7px', borderRadius: '999px', background: bg, color: fg, fontFamily: 'system-ui, sans-serif', fontWeight: '800', whiteSpace: 'nowrap' });
+    s.textContent = t; return s;
+  };
   // ── tree nodes (drop in) with an edge to the parent ──
   S.node = (key, label, x, y, pkey, color = A3.blue, w = 1.3) => {
     const m = cube(label, color, [w, 0.5, 0.6], x, y, 0, 1.0);
@@ -4584,12 +4602,15 @@ function A3stage(tok) {
       return { x, top, m, l };
     });
     S.w = buddy('T', '', A3.blue, S.st[0].x, S.st[0].top, 0, 0.55); S.wi = 0;
+    // with the stairs in frame the stage is zoomed out: board lines need ~0.88 apart to stay readable,
+    // and the board stops above the stairs (older lines scroll away)
+    if (S.b) { S.b.dy = 0.88; S.b.max = Math.floor((S.b.y - 4.0) / S.b.dy) + 1; }
   };
   S.walk = async (i, ms = 800) => {
     const a = S.w.g.position.clone(), b = V3(S.st[i].x, S.st[i].top, 0); S.wi = i;
     await anim(tok, ms, (u) => { S.w.g.position.lerpVectors(a, b, u); S.w.g.position.y += Math.sin(u * Math.PI) * 0.6; });
   };
-  S.coin = (t, color = A3.gold) => { const k = S.coins.length; const c = cube(t, color, [1.15, 0.3, 0.8], 6.7, 0.15 + k * 0.32, 2.1, 2.5); S.coins.push(c); return c; };
+  S.coin = (t, color = A3.gold) => { const k = S.coins.length; const c = cube(t, color, [1.15, 0.7, 0.8], 7.0, 0.35 + k * 0.78, 2.1, 2.5); S.coins.push(c); return c; };
   // ── balance scale for the Master Theorem: left pan = log_b a (the recursion), right pan = k (f(n)) ──
   S.scale = (x = 2.6, y = 3.0) => {
     const post = lab.box('#a9865a', [0.22, y, 0.22]); post.position.set(x, y / 2, 0); lab.world.add(post);
@@ -4601,7 +4622,12 @@ function A3stage(tok) {
   S.pans = (l, r) => { txt(S.sc.l, l); txt(S.sc.r, r); };
   S.tilt = async (d) => { const g = S.sc.g, a = g.rotation.z, b = Math.max(-0.28, Math.min(0.28, d * 0.12)); await anim(tok, 700, (u) => { g.rotation.z = a + (b - a) * u; }); };
   S.hist0 = (x = -7.2, y = 7.5, dy = 0.56) => { S.hb = { x, y, dy }; };
-  S.histAdd = (t) => { const h = S.hb; S.hist.forEach((l) => { l.element.className = 'lab-label ptr'; }); const l = S.L(t, 'ptr alt', h.x, h.y - S.hist.length * h.dy); S.hist.push(l); return l; };
+  // the history keeps its newest 6 lines (older ones scroll off), so it never reaches the balance below
+  S.histAdd = (t) => {
+    const h = S.hb; S.hist.forEach((l) => { l.element.className = 'lab-label ptr'; });
+    if (S.hist.length >= 6) { remove(S.hist.shift()); S.hist.forEach((l, k) => { l.position.y = h.y - k * h.dy; }); }
+    const l = S.L(t, 'ptr alt', h.x, h.y - S.hist.length * h.dy); S.hist.push(l); return l;
+  };
   return S;
 }
 function sc(id, title, setup, steps) {
@@ -4667,7 +4693,7 @@ sc('algbari3-trace-test3', 'test(3) 的 tracing tree：呼叫 4 次、印 3 次'
   async (S) => { tag('f(n) = n + 1 → O(n)', 'good', -3.4, 2.35); say('時間看呼叫次數：f(n) = n + 1', 'O(n)，也可寫 Θ(n)、Ω(n)'); await S.talk('線性時間！', 'happy', true); },
   async (S) => { txt(S.tt, 'tracing tree = recursive tree（遞迴樹）'); say('也叫 recursive tree（遞迴樹）', ''); },
 ]);
-sc('algbari3-rr-dec1', '寫出 T(n) = T(n−1) + 1', (S) => { S.cam(); S.guide(); S.board(0.6, 7.5, 0.62); say('從程式寫出遞迴式', ''); }, [
+sc('algbari3-rr-dec1', '寫出 T(n) = T(n−1) + 1', (S) => { S.cam(); S.guide(); S.board(2.0, 7.5, 0.62); say('從程式寫出遞迴式', ''); }, [
   async (S) => { S.code(A3_CODE1); say('從程式寫出遞迴式', ''); await S.talk('一行一行看花多少時間'); },
   async (S) => { S.c.hl(0); S.cost(0, 'T(n)', -1.9, 'ptr alt'); say('整個函式的時間記作 T(n)', '遞迴式習慣用 T 而不是 f'); },
   async (S) => { S.c.hl(2); S.cost(1, '先不算', -1.9, 'note'); S.cost(2, '1'); say('先忽略 if；printf 花 1 單位', ''); },
@@ -4697,7 +4723,7 @@ sc('algbari3-bs-dec1', 'Back substitution：T(n) = T(n−1) + 1', (S) => { S.cam
 
 // ═══════════ IawM82BQ4II：2.1.2 T(n) = T(n−1) + n ═══════════
 const A3_CODE2 = ['void Test(int n) {', '  if (n > 0) {', '    for (i = 0; i < n; i++)', '      printf("%d", n);', '    Test(n - 1);', '  }', '}'];
-sc('algbari3-rr-dec-n', '寫出 T(n) = T(n−1) + n', (S) => { S.cam(); S.guide(); S.board(0.6, 7.5, 0.62); say('有迴圈的遞迴函式', ''); }, [
+sc('algbari3-rr-dec-n', '寫出 T(n) = T(n−1) + n', (S) => { S.cam(); S.guide(); S.board(3.0, 7.5, 0.62); say('有迴圈的遞迴函式', ''); }, [
   async (S) => { S.code(A3_CODE2); say('Test(n)：一個 for 迴圈，再呼叫 Test(n − 1)', ''); await S.talk('這次多了迴圈'); },
   async (S) => { S.c.hl(0); S.cost(0, 'T(n)', -1.6, 'ptr alt'); say('整個函式花 T(n)', ''); },
   async (S) => { S.c.hl(1); S.cost(1, '1'); say('if 判斷：1 單位', ''); },
@@ -4725,7 +4751,7 @@ sc('algbari3-tree-dec-n', '遞迴樹：n + (n−1) + … + 1', (S) => { S.cam();
   async (S) => { tag('⋮', 'ptr', chX(3.6), chY(3.6)); tag('每次少 1，到 0 才停', 'say', 2.6, 6.5); say('n 每次少 1，一直到 0', 'T(0) = 1 是已知的最小值'); },
   async (S) => { await chainNode(S, 4, 'T(2)'); chainCost(S, 4, '2'); await chainNode(S, 5, 'T(1)'); chainCost(S, 5, '1'); await chainNode(S, 6, 'T(0)', null, A3.orange); say('…T(2) 花 2、T(1) 花 1、T(0) 停', ''); },
   async (S) => { ['n', 'n−1', 'n−2', 'n−3', '2', '1', '0'].forEach((t, i) => S.side(chY(i), t, 5.6)); say('把每一層的時間列出來', 'n、n − 1、n − 2、…、2、1、0'); },
-  async (S) => { S.sum = S.L('0 + 1 + 2 + … + (n−1) + n', 'ptr alt', -5.0, 0.9, 1.2); say('全部加起來', '0 + 1 + 2 + … + n'); },
+  async (S) => { S.sum = S.L('0 + 1 + 2 + … + (n−1) + n', 'ptr alt', -5.0, 0.2, 1.2); say('全部加起來', '0 + 1 + 2 + … + n'); },
   async (S) => { txt(S.sum, '0 + 1 + … + n = n(n + 1)/2'); say('= n(n + 1)/2', '前 n 個自然數的和'); await S.talk('等差級數！'); },
   async (S) => { tag('T(n) = n(n + 1)/2 → Θ(n²)', 'good', 2.6, 7.3); say('T(n) = n(n + 1)/2 → n²', 'Θ(n²)'); await S.talk('平方時間', 'happy', true); },
   async (S) => { await S.talk('練熟了直接看出答案！', 'happy', true); say('多練幾題就能直接寫答案', '申論題才要寫完整步驟'); },
@@ -4735,7 +4761,7 @@ sc('algbari3-bs-dec-n', 'Back substitution：T(n) = T(n−1) + n', (S) => { S.ca
   async (S) => { S.eq('T(n−1) = T(n−2) + (n−1)', 'note'); say('把 n 換成 n − 1', 'T(n − 1) = T(n − 2) + (n − 1)'); },
   async (S) => { S.eq('T(n) = [T(n−2) + (n−1)] + n'); await S.walk(2); S.coin('n−1'); say('代回去', ''); },
   async (S) => { S.eq('② T(n) = T(n−2) + (n−1) + n'); say('打開括號', 'T(n) = T(n − 2) + (n − 1) + n'); },
-  async (S) => { S.warn = tag('別合併成 2n − 1！', 'bad', -1.6, 4.5); say('不要把 (n − 1) + n 加成 2n − 1', '留著才看得出規律'); S.w.mood('wow'); },
+  async (S) => { S.warn = tag('別合併成 2n − 1！', 'bad', 3.8, 4.4); say('不要把 (n − 1) + n 加成 2n − 1', '留著才看得出規律'); S.w.mood('wow'); },
   async (S) => { remove(S.warn); S.w.mood('happy'); S.eq('T(n−2) = T(n−3) + (n−2)', 'note'); say('再把 n 換成 n − 2', ''); },
   async (S) => { S.eq('T(n) = [T(n−3) + (n−2)] + (n−1) + n'); await S.walk(3); S.coin('n−2'); say('代回去', ''); },
   async (S) => { S.eq('③ T(n) = T(n−3) + (n−2) + (n−1) + n'); say('第三式', ''); },
@@ -4749,10 +4775,10 @@ sc('algbari3-bs-dec-n', 'Back substitution：T(n) = T(n−1) + n', (S) => { S.ca
 
 // ═══════════ MhT7XmxhaCE：2.1.3 T(n) = T(n−1) + log n ═══════════
 const A3_CODE3 = ['void Test(int n) {', '  if (n > 0) {', '    for (i = 1; i < n; i = i * 2)', '      printf("%d", i);', '    Test(n - 1);', '  }', '}'];
-sc('algbari3-rr-dec-log', '寫出 T(n) = T(n−1) + log n', (S) => { S.cam(); S.guide(); S.board(0.9, 4.0, 0.62); say('i 每次乘 2 的迴圈', ''); }, [
+sc('algbari3-rr-dec-log', '寫出 T(n) = T(n−1) + log n', (S) => { S.cam(); S.guide(); S.board(-3.0, 3.7, 0.62); say('i 每次乘 2 的迴圈', ''); }, [
   async (S) => { S.code(A3_CODE3); say('Test(n)：迴圈 i 每次乘 2，再呼叫 Test(n − 1)', ''); },
   async (S) => { S.c.hl(0); S.cost(0, 'T(n)', -0.9, 'ptr alt'); say('整個函式花 T(n)', ''); },
-  async (S) => { S.c.hl(2); const xs = [1, 2, 4, 8]; for (let k = 0; k < 4; k++) { const p = tag('i = ' + xs[k], 'pkt', 1.6 + k * 1.3, 6.6); await travel(S.tok, p, V3(1.6, 7.2, 0), V3(1.6 + k * 1.3, 6.6, 0), 350); } say('i = 1、2、4、8…每次乘 2', ''); await S.talk('翻倍跳！'); },
+  async (S) => { S.c.hl(2); const xs = [1, 2, 4, 8]; for (let k = 0; k < 4; k++) { const p = tag('i = ' + xs[k], 'pkt', 1.6 + k * 1.3, 8.5); await travel(S.tok, p, V3(1.6, 9.1, 0), V3(1.6 + k * 1.3, 8.5, 0), 350); } say('i = 1、2、4、8…每次乘 2', ''); await S.talk('翻倍跳！'); },
   async (S) => { S.c.hl(3); S.cost(3, 'log n', -0.9); say('跳到 n 只要 log n 次 → printf 執行 log n 次', ''); },
   async (S) => { S.cost(1, '1', -0.9, 'note'); S.cost(2, 'log n + 1', -0.9, 'note'); say('其他行加上去：2 log n + 2', '取最高階 → 還是 log n'); },
   async (S) => { S.c.hl(4); S.cost(4, 'T(n−1)', -0.9); say('遞迴呼叫：T(n − 1)', ''); },
@@ -4766,7 +4792,7 @@ sc('algbari3-tree-dec-log', '遞迴樹：log n + … + log 1 = log n!', (S) => {
   async (S) => { chainCost(S, 2, 'log(n−2)'); await chainNode(S, 3, 'T(n−3)'); say('再下一層 log(n − 2)', ''); },
   async (S) => { tag('⋮', 'ptr', chX(3.6), chY(3.6)); await chainNode(S, 4, 'T(2)', 'log 2'); await chainNode(S, 5, 'T(1)', 'log 1'); await chainNode(S, 6, 'T(0)', null, A3.orange); say('…T(2) 花 log 2、T(1) 花 log 1、T(0) 停', ''); },
   async (S) => { ['log n', 'log(n−1)', 'log(n−2)', '…', 'log 2', 'log 1'].forEach((t, i) => S.side(chY(i < 3 ? i : i + 1), t, 5.6)); say('每一層的時間', ''); },
-  async (S) => { S.sum = S.L('log n + log(n−1) + … + log 2 + log 1', 'ptr alt', -5.0, 0.9, 1.2); say('全部加起來', ''); },
+  async (S) => { S.sum = S.L('log n + log(n−1) + … + log 2 + log 1', 'ptr alt', -5.0, 0.2, 1.2); say('全部加起來', ''); }, // the sum sits under the chain's last costs
   async (S) => { txt(S.sum, '= log[n·(n−1)·…·2·1]'); say('log 相加 = 乘起來再取 log', 'log a + log b = log(ab)'); await S.talk('log 的乘法規則'); },
   async (S) => { txt(S.sum, '= log n!'); say('n·(n − 1)·…·1 = n!', '所以總和 = log n!'); },
   async (S) => { tag('n! ≤ nⁿ → log n! ≤ n log n', 'ptr alt', 2.6, 6.6); say('n! 的上界是 nⁿ', 'log nⁿ = n log n'); },
@@ -4811,7 +4837,7 @@ sc('algbari3-dec-times-n', '遞減型直接寫答案：f(n) × n', (S) => { S.ca
 
 // ═══════════ JvcqtZk2mng：2.1.4 T(n) = 2T(n−1) + 1 ═══════════
 const A3_CODE4 = ['void Test(int n) {', '  if (n > 0) {', '    printf("%d", n);', '    Test(n - 1);', '    Test(n - 1);', '  }', '}'];
-sc('algbari3-rr-2t', '寫出 T(n) = 2T(n−1) + 1', (S) => { S.cam(); S.guide(); S.board(0.6, 7.5, 0.62); say('呼叫自己兩次', ''); }, [
+sc('algbari3-rr-2t', '寫出 T(n) = 2T(n−1) + 1', (S) => { S.cam(); S.guide(); S.board(2.0, 7.5, 0.62); say('呼叫自己兩次', ''); }, [
   async (S) => { S.code(A3_CODE4); S.c.hl(0); S.cost(0, 'T(n)', -1.9, 'ptr alt'); say('Test(n) 花 T(n)', ''); await S.talk('注意：呼叫兩次'); },
   async (S) => { S.c.hl(2); S.cost(2, '1'); say('printf：1 單位', ''); },
   async (S) => { S.c.hl(3); S.cost(3, 'T(n−1)'); S.cost(4, 'T(n−1)'); say('兩次 Test(n − 1)：各花 T(n − 1)', ''); },
@@ -4906,7 +4932,7 @@ sc('algbari3-bs-half', 'Back substitution：T(n) = T(n/2) + 1', (S) => { S.cam()
 
 // ═══════════ 1K9ebQJosvo：2.3.3 T(n) = 2T(n/2) + n ═══════════
 const A3_CODE6 = ['void Test(int n) {', '  if (n > 1) {', '    for (i = 0; i < n; i++)', '      stmt;', '    Test(n / 2);', '    Test(n / 2);', '  }', '}'];
-sc('algbari3-rr-2half', '寫出 T(n) = 2T(n/2) + n', (S) => { S.cam(); S.guide(); S.board(0.8, 7.5, 0.62); say('迴圈 + 兩次對半呼叫', ''); }, [
+sc('algbari3-rr-2half', '寫出 T(n) = 2T(n/2) + n', (S) => { S.cam(); S.guide(); S.board(3.2, 7.5, 0.62); say('迴圈 + 兩次對半呼叫', ''); }, [
   async (S) => { S.code(A3_CODE6); S.c.hl(0); S.cost(0, 'T(n)', -1.5, 'ptr alt'); say('Test(n) 花 T(n)', ''); },
   async (S) => { S.c.hl(3); S.cost(3, 'n', -1.5); say('迴圈裡的敘述執行 n 次', ''); },
   async (S) => { S.c.hl(4); S.cost(4, 'T(n/2)', -1.5); S.cost(5, 'T(n/2)', -1.5); say('兩次 Test(n/2)：各 T(n/2)', ''); },
@@ -5007,11 +5033,11 @@ sc('algbari3-mt-div-rules', 'Master Theorem（除法型）：比 log_b a 與 k',
   async (S) => { S.eq('　p < 0 → O(nᵏ)'); say('p < 0 → O(nᵏ)', 'log 丟掉'); await S.talk('接著看例題', 'happy', true); },
 ]);
 sc('algbari3-mt-c1', 'Master Theorem Case 1 例題', mtSetup('Case 1：log_b a > k'), [
-  async (S) => { txt(S.sc.card, 'T(n) = 2T(n/2) + 1'); S.L('a = 2，b = 2，f(n) = Θ(1)', 'note', -2.0, 6.9); say('2T(n/2) + 1：a = 2、b = 2', 'f(n) = Θ(1)'); },
-  async (S) => { S.L('Θ(1) = n⁰ log⁰ n → k = 0，p = 0', 'note', -2.0, 6.3); say('Θ(1) = n⁰·log⁰ n', 'k = 0、p = 0'); },
+  async (S) => { txt(S.sc.card, 'T(n) = 2T(n/2) + 1'); S.n1 = S.L('a = 2，b = 2，f(n) = Θ(1)', 'note', -7.2, 6.9); say('2T(n/2) + 1：a = 2、b = 2', 'f(n) = Θ(1)'); },
+  async (S) => { S.n2 = S.L('Θ(1) = n⁰ log⁰ n → k = 0，p = 0', 'note', -7.2, 6.3); say('Θ(1) = n⁰·log⁰ n', 'k = 0、p = 0'); },
   async (S) => { S.pans('log₂2 = 1', 'k = 0'); say('log₂2 = 1，k = 0', ''); },
   async (S) => { await S.tilt(1); txt(S.sc.cs, 'Case 1：遞迴那邊重'); txt(S.sc.ans, 'Θ(n¹) = Θ(n)'); S.histAdd('2T(n/2) + 1 → Θ(n)'); say('1 > 0 → Case 1 → Θ(n^(log_b a)) = Θ(n)', ''); await S.talk('答案是 n'); },
-  async (S) => { txt(S.sc.card, 'T(n) = 4T(n/2) + n'); S.pans('log₂4 = 2', 'k = 1'); txt(S.sc.ans, ' '); say('4T(n/2) + n：log₂4 = 2，k = 1', ''); },
+  async (S) => { remove(S.n1); remove(S.n2); txt(S.sc.card, 'T(n) = 4T(n/2) + n'); S.pans('log₂4 = 2', 'k = 1'); txt(S.sc.ans, ' '); say('4T(n/2) + n：log₂4 = 2，k = 1', ''); },
   async (S) => { await S.tilt(1); txt(S.sc.ans, 'Θ(n²)'); S.histAdd('4T(n/2) + n → Θ(n²)'); say('2 > 1 → Case 1 → Θ(n²)', ''); },
   mtStep('8T(n/2) + n', '3', '1', 'Θ(n³)', { why: 'log₂8 = 3 > 1' }),
   mtStep('8T(n/2) + n²', '3', '2', 'Θ(n³)', { why: '3 > 2：還是 Case 1' }),
@@ -5032,10 +5058,10 @@ sc('algbari3-mt-c2', 'Master Theorem Case 2：再乘 log n', mtSetup('Case 2：l
 ]);
 sc('algbari3-mt-c2p', 'Case 2：p = −1 與 p < −1', mtSetup('Case 2：p 是負的'), [
   async (S) => { txt(S.sc.card, 'T(n) = 2T(n/2) + n/log n'); S.pans('log₂2 = 1', 'k = 1'); await S.tilt(0); txt(S.sc.cs, 'Case 2：一樣重'); say('2T(n/2) + n/log n：1 = 1', 'p 是多少？'); },
-  async (S) => { S.L('log n 在分母 → p = −1', 'note', -2.0, 6.9); say('log 在分母 → p = −1', ''); },
-  async (S) => { S.L('× log n 會抵消 → 不能這樣做', 'bad', -2.0, 6.3); say('乘 log n 會抵消：不能這樣', ''); await S.talk('方法不一樣', 'wow'); },
+  async (S) => { S.n1 = S.L('log n 在分母 → p = −1', 'note', -7.2, 6.9); say('log 在分母 → p = −1', ''); },
+  async (S) => { S.n2 = S.L('× log n 會抵消 → 不能這樣做', 'bad', -7.2, 6.3); say('乘 log n 會抵消：不能這樣', ''); await S.talk('方法不一樣', 'wow'); },
   async (S) => { txt(S.sc.ans, 'Θ(n log log n)'); S.histAdd('2T(n/2) + n/log n → Θ(n log log n)'); say('p = −1 → Θ(n log log n)', ''); },
-  async (S) => { txt(S.sc.card, 'T(n) = 2T(n/2) + n/log² n'); txt(S.sc.ans, ' '); S.L('分母 log² n → p = −2 < −1', 'note', -2.0, 5.7); say('分母是 log² n → p = −2', ''); },
+  async (S) => { txt(S.sc.card, 'T(n) = 2T(n/2) + n/log² n'); txt(S.sc.ans, ' '); remove(S.n1); remove(S.n2); S.L('分母 log² n → p = −2 < −1', 'note', -7.2, 6.3); say('分母是 log² n → p = −2', ''); },
   async (S) => { txt(S.sc.ans, 'Θ(n)'); S.histAdd('2T(n/2) + n/log² n → Θ(n)'); say('p < −1 → 連 log log n 都不要', 'Θ(n)'); await S.talk('只剩 n', 'happy', true); },
 ]);
 sc('algbari3-mt-c3', 'Master Theorem Case 3：直接取 f(n)', mtSetup('Case 3：log_b a < k'), [
@@ -5091,7 +5117,7 @@ sc('algbari3-root-bs', '代入：T(n^(1/2ᵏ)) + k', (S) => { S.cam(); S.board(-
   async (S) => { S.eq('k：T(n) = T(n^(1/2ᵏ)) + k'); await S.walk(4); S.coin('… k 個', A3.orange); say('代 k 次：T(n^(1/2ᵏ)) + k', ''); },
 ]);
 const A3_ST_2M = ['2¹⁶', '2⁸', '2⁴', '2²', '2¹ = 2'];
-sc('algbari3-root-2m', '設 n = 2ᵐ → k = log log n', (S) => { S.cam(); S.board(-7.3, 7.6, 0.6); S.stairs(A3_ST_2M, 1.4, 1.25, 0.55); tag('示意：n = 2¹⁶ = 65536', 'note', 3.9, 4.2); say('換成 2 的次方', ''); }, [
+sc('algbari3-root-2m', '設 n = 2ᵐ → k = log log n', (S) => { S.cam(); S.board(-7.3, 7.6, 0.6); S.stairs(A3_ST_2M, 1.4, 1.25, 0.55); tag('示意：n = 2¹⁶ = 65536', 'note', 4.6, 3.6); say('換成 2 的次方', ''); }, [
   async (S) => { S.eq('最小值是 2 → 假設 n = 2ᵐ'); say('最小值是 2：假設 n = 2ᵐ', ''); },
   async (S) => { S.eq('T(n) = T(2^(m/2ᵏ)) + k'); say('n^(1/2ᵏ) = (2ᵐ)^(1/2ᵏ) = 2^(m/2ᵏ)', ''); await S.walk(1); await S.walk(2); },
   async (S) => { S.eq('假設 T(2^(m/2ᵏ)) 到了 T(2)'); await S.walk(3); await S.walk(4); S.w.mood('happy'); say('一直開根號到 2 為止', ''); },
@@ -5203,9 +5229,9 @@ sc('algbari3-hanoi-code', 'TOH(n, A, B, C)：n 個盤子的遞迴演算法', (S)
   async (S) => { S.code(['TOH(n, A, B, C) {', '  if (n > 0) {', '    TOH(n-1, A, C, B);', '    printf("Move %c to %c", A, C);', '    TOH(n-1, B, A, C);', '  }', '}'], 0.4, 7.5, 0.55); say('演算法 TOH(n, A, B, C)', ''); await S.talk('對照三步看'); },
   async (S) => { S.c.hl(0); tag('來源　中繼　目的地', 'note', 3.0, 8.1); say('n 個盤子，三根柱子 A、B、C', ''); },
   async (S) => { S.c.hl(1); say('n > 0 才做', ''); },
-  async (S) => { S.c.hl(2); tag('C 在中間 = using', 'pkt', 6.0, 6.4); say('TOH(n−1, A, C, B)：C 在中間 → using C', '從 A 搬到 B'); },
+  async (S) => { S.c.hl(2); S.cost(2, 'C 在中間 = using'); say('TOH(n−1, A, C, B)：C 在中間 → using C', '從 A 搬到 B'); },
   async (S) => { S.c.hl(3); say('printf：Move A → C', ''); },
-  async (S) => { S.c.hl(4); tag('A 在中間 = using', 'pkt', 6.0, 5.3); say('TOH(n−1, B, A, C)：B → C，A 當中繼', ''); await S.talk('三步全對上', 'happy', true); },
+  async (S) => { S.c.hl(4); S.cost(4, 'A 在中間 = using'); say('TOH(n−1, B, A, C)：B → C，A 當中繼', ''); await S.talk('三步全對上', 'happy', true); },
 ]);
 const A3_TX = [-6.0, -3.6, -1.2, 1.2, 3.6, 6.0];
 sc('algbari3-hanoi-trace', '追蹤 TOH(3, 1, 2, 3)', (S) => { S.cam(); say('追蹤 TOH(3, 1, 2, 3)', ''); }, [
@@ -5925,15 +5951,15 @@ FRAG.push(['algjiang1-swap-time', '時間分析：每個敘述 1 單位，f(n) =
   say('如果呼叫了另一個演算法', '那就要再去詳細分析它');
   await step(tok);                                    // 378.6 each single statement: one unit
   const fq = [];
-  for (let k = 0; k < 3; k++) { cd.hl(k + 2); fq.push(tag('1', 'pkt', -0.4, 6.2 - (k + 2) * 0.55)); cube('1', J.blue, [1, 0.4, 1], 4.6, 0.2 + k * 0.45, 0.6, 2.5); await beat(tok, 350); }
+  for (let k = 0; k < 3; k++) { cd.hl(k + 2); fq.push(tag('1', 'pkt', -0.4, 6.2 - (k + 2) * 0.55)); cube('1', J.blue, [1, 0.4, 1], 5.6, 0.2 + k * 0.45, 0.6, 2.5); await beat(tok, 350); }
   cd.hl(-1);
   say('Swap 的三個敘述：各 1 單位', '');
   await step(tok);                                    // 386.0 total time 3: f(n) = 3
-  const tot = bub('f(n) = 3', 4.6, 2.0, 0.6);
+  const tot = bub('f(n) = 3', 5.6, 2.0, 0.6);
   say('總共 3 單位：f(n) = 3', '');
   await step(tok);                                    // 393.0 constant: 3 or 30
   txt(tot, 'f(n) = 3 → 常數');
-  ok('3 或 30 都是常數', 4.6, 2.8, 0.6);
+  ok('3 或 30 都是常數', 5.6, 2.8, 0.6);
   say('得到的是常數', '跟 n 無關：3 或 30 都一樣是常數');
   await step(tok);                                    // 421.8 x = 5 * a + 6 * b
   remove(call);
@@ -5944,7 +5970,7 @@ FRAG.push(['algjiang1-swap-time', '時間分析：每個敘述 1 單位，f(n) =
   say('一樣只算 1 單位時間', '敘述再長都一樣');
   await step(tok);                                    // 445.8 machine code: 2 multiplications, 1 addition, 1 assignment
   const MC = ['MUL t1, 5, a', 'MUL t2, 6, b', 'ADD t3, t1, t2', 'STORE x, t3'];
-  for (let i = 0; i < 4; i++) { jCard(MC[i], '#e8e2d6', 1.0 + (i % 2) * 3.0, 1.4 - Math.floor(i / 2) * 0.7, 2.8, 2.8, 2, 0.5); await beat(tok, 300); }
+  for (let i = 0; i < 4; i++) { jCard(MC[i], '#e8e2d6', 0.2 + (i % 2) * 3.0, 1.4 - Math.floor(i / 2) * 0.7, 2.8, 2.8, 2, 0.5); await beat(tok, 300); }
   say('真的變成機器碼，大約 4 個指令', '2 個乘法、1 個加法、1 個存回');
   await step(tok);                                    // 459.2 we don't go into that detail
   glow(st, GOLD); txt(rule, '不深入機器碼：每個敘述 1 單位');
@@ -16318,7 +16344,7 @@ FRAG.push(['algmit3-resize-cost', 'Resize 成本：滿或空都是 Θ(m)', async
   say('m 次 index、0 次搬移', '→ O(m)');
   await step(tok);                                   // 199.7 full table: m indices and m moves
   const f = tag('index 0・move 0', 'ptr alt', 3.6, 1.3, 3.0);
-  for (let i = 0; i < m; i++) { move(cur, X(i), 1, 1.6); move(full[i], NX((i * 5) % 15), 2.95, 1.6); txt(f, 'index ' + (i + 1) + '・move ' + (i + 1)); await beat(tok, 280); }
+  for (let i = 0; i < m; i++) { move(cur, X(i), 1, 1.6); move(full[i], NX([6, 0, 10, 4, 14, 2, 12, 8][i]), 2.95, 1.6); txt(f, 'index ' + (i + 1) + '・move ' + (i + 1)); await beat(tok, 280); }
   say('滿 table：m 次 index、m 次搬移', '');
   await step(tok);                                   // 215.8 O(2m) = O(m)
   B2('滿：m + m = 2m = O(m)');
@@ -16748,7 +16774,7 @@ FRAG.push(['algmit3-bunker-2d', 'Hash of hashes：直向 rolling hash', async (t
   B('想法：每一欄先算成一個 hash');
   say('怎麼做到 O(1)？', '把每一欄先 hash 起來');
   await step(tok);                                   // 2006.1 the hashes of the bunker's three columns
-  ['p₀', 'p₁', 'p₂'].forEach((s, c) => cube(s, M3.purple, [0.55, 0.35, 0.5], 4.6 + c * 0.65, 1.6, -3, 1));
+  ['p₀', 'p₁', 'p₂'].forEach((s, c) => cube(s, M3.purple, [0.55, 0.35, 0.5], 4.6 + c * 0.65, 0.95, -3, 1));
   say('bunker 的 3 欄各算一個 hash', '');
   await step(tok);                                   // 2040.7 hash all these columns
   band = ghostBox(M3.teal, 8.2, 0.4, 2); band.position.set(0, 0.25, -1.5);
@@ -17405,7 +17431,7 @@ FRAG.push(['algmit3-heap-trunc', '只留前 k 層：O(k²)', async (tok) => {
   await step(tok);                                   // 1443.3 min-heap: on any root-to-leaf path values increase
   for (let d = 0; d < 4; d++) glow(slabs[d], null);
   const pth = [];
-  [2, 5, 6, 11].forEach((v, d) => pth.push(cube(v, M3.gold, [0.45, 0.4, 0.4], -0.6 + d * 0.5, 6.6 - d * 0.62, 0.7)));
+  [2, 5, 6, 11].forEach((v, d) => pth.push(cube(v, M3.gold, [0.45, 0.4, 0.4], -1.4 - d * 0.5, 6.6 - d * 0.62, 0.7))); // beside the level names
   say('min-Heap：沿任一路徑往下', '數字只會變大');
   await step(tok);                                   // 1455.2 as I go down, numbers go up
   tag('2 → 5 → 6 → 11：一路變大', 'note', 3.6, 6.0);

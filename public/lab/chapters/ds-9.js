@@ -1245,17 +1245,17 @@ FRAG.push(['btree-ab-index', 'Dense index：4 + 1 = 5 次 block 存取', async (
   fresh([0, 9, 9.5], [0, 0, 0.4]);
   const tb = blockGrid(25, 5, 0.6, -1.6, 1.3, 0.95, '#f0a030'); tag('table：25 blocks', 'ptr', 3.2, 1.2, -2.6);
   await step(tok);                                   // 9:46 index 存 key 和 pointer
-  const ent = []; for (let i = 0; i < 5; i++) ent.push(cube('eid ' + (i + 1), '#9b7ef4', [1.4, 0.3, 0.45], -4.8, 0.2, -2.6 + i * 0.55));
+  const ent = []; for (let i = 0; i < 5; i++) ent.push(cube('eid ' + (i + 1), '#9b7ef4', [1.4, 0.3, 0.45], -4.8, 0.2, -2.6 + i * 0.75));
   say('幫這張表建 index', '每個 entry = key（employee ID）+ pointer');
   await step(tok);                                   // 9:55 eid 1 在這、eid 2 在這…
-  const ars = [0, 1, 2].map((i) => arrow(V3(-4.1, 0.3, -2.6 + i * 0.55), V3(0.6 + i * 1.3, 0.35, -1.6), 0x6e5f49));
+  const ars = [0, 1, 2].map((i) => arrow(V3(-4.1, 0.3, -2.6 + i * 0.75), V3(0.6 + i * 1.3, 0.35, -1.6), 0x6e5f49));
   say('eid 1 在這個 block、eid 2 在那裡…', '每個 entry 都有一根指標指過去');
   await step(tok);                                   // 10:19 record pointer
   ars.forEach((a) => a.setColor(new THREE.Color(0x2fc092)));
   pkt('record pointer', -2.0, 1.2, -1.8);
   say('指向 record 的指標叫 record pointer', '指到 disk 上某個 block 裡那筆 record');
   await step(tok);                                   // 10:26 每筆都有 entry → dense index
-  good('每筆 record 一個 entry → dense index', -3.6, 0.7, 0.6);
+  good('每筆 record 一個 entry → dense index', -3.6, 0.7, 1.5);
   say('每一筆 record 在 index 裡都有一個 entry', '這種 index 叫 dense index');
   await step(tok);                                   // 10:34 index 也存在 disk 上
   ent.forEach(kill); ars.forEach(kill);

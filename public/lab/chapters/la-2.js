@@ -1702,9 +1702,9 @@ scene('mx-l20-volume', 'L20：|det A| = 盒子的體積', [
 const QA = matMul([[1, 0, 0], [0, Math.cos(0.5), -Math.sin(0.5)], [0, Math.sin(0.5), Math.cos(0.5)]], [[Math.cos(0.7), -Math.sin(0.7), 0], [Math.sin(0.7), Math.cos(0.7), 0], [0, 0, 1]]);
 scene('mx-l20-cube', 'L20：I、Q 的盒子都是單位立方體', [
   (tok, S) => { S.M = mview(idn(3), -4.6, 4.6, { name: 'A = I', s: 0.65, hideZero: true }); S.sp = space([1.6, 1.4, 0], 1.25, 2); [0, 1, 2].forEach((k) => vec3(S.sp, [COL.a, COL.b, COL.c][k], idn(3)[k], 0.05)); cap('特例：A = I', '三列 = 三個座標軸方向'); },
-  (tok, S) => { S.box = pbox(S.sp, ...idn(3)); ok(detN(idn(3)) === 1, '單位立方體：體積 1 = det I ✓', -4.6, 2.6); cap('盒子是單位立方體', '體積 1 = det I'); },
-  (tok, S) => { sm('策略：體積也滿足 det 的三個性質 → 體積 = det', -2.6, 6.2); cap('證明策略', '體積也滿足定義 det 的三個性質'); },
-  (tok, S) => { gone(S.M); S.M = mview(QA, -4.6, 4.6, { name: 'Q（示意）', s: 0.65 }); hot('Q：orthonormal columns', -4.6, 2.0); cap('再看 orthogonal matrix Q', '行是互相垂直的單位向量'); },
+  (tok, S) => { S.box = pbox(S.sp, ...idn(3)); ok(detN(idn(3)) === 1, '單位立方體：體積 1 = det I ✓', -4.6, 2.55); cap('盒子是單位立方體', '體積 1 = det I'); },
+  (tok, S) => { sm('策略：體積也滿足 det 的三個性質 → 體積 = det', 1.6, 6.6); cap('證明策略', '體積也滿足定義 det 的三個性質'); },
+  (tok, S) => { gone(S.M); S.M = mview(QA, -4.6, 4.5, { name: 'Q（示意）', s: 1.05 }); hot('Q：orthonormal columns', -4.6, 2.0); cap('再看 orthogonal matrix Q', '行是互相垂直的單位向量'); },
   async (tok, S) => {
     const Rz = (t) => [[Math.cos(0.7 * t), -Math.sin(0.7 * t), 0], [Math.sin(0.7 * t), Math.cos(0.7 * t), 0], [0, 0, 1]];
     const Rx = (t) => [[1, 0, 0], [0, Math.cos(0.5 * t), -Math.sin(0.5 * t)], [0, Math.sin(0.5 * t), Math.cos(0.5 * t)]];

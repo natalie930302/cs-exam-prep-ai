@@ -4997,7 +4997,7 @@ FRAG.push(['sortmit-count-time', 'Counting Sort 的時間：O(n + k)', async (to
   tag('O(k)', 'ptr alt', 0, 1.2, -2.6);
   say('建 k 個空 list：每個 O(1)', '共 O(k)');
   await step(tok);                                   // 43:13 each append is constant → n appends
-  for (const v of vals) { L[v].push(cube(v, mCol(v), [0.8, 0.6, 0.8], x0 + v * dx, 0.45, -0.6 + L[v].length * 0.85, 2)); tally.set(++s); await beat(tok, 300); }
+  for (const v of vals) { L[v].push(cube(v, mCol(v), [0.8, 0.6, 0.8], x0 + v * dx, 0.45, -0.1 + L[v].length * 0.85, 2)); tally.set(++s); await beat(tok, 300); }
   tag('O(n)', 'ptr alt', -3.6, 1.2, 2.2);
   gd.mood('wow');
   say('append 一次 O(1)（key 是一個 word）', 'n 次 → O(n)');
@@ -7706,7 +7706,8 @@ FRAG.push(['sortpeng-parallel', 'MapReduce：多台機器一起排', async (tok)
   await step(tok);                                   // 110:27 a bucket (or a group of buckets) per machine
   parts.forEach(kill);
   const groups = [[0, 1, 2, 3], [4, 5, 6], [7, 8, 9]];
-  groups.forEach((g, i) => g.forEach((b, k) => { const m = cube(String(b), colorFor(b), [0.8, 0.5, 0.8], mx(i) - (g.length - 1) * 0.45 + k * 0.9, 1.0, 0, 1.5); relabel(m, 'bucket ' + b); }));
+  // one name per machine ('bucket 0–3'); the cubes keep just their number, so neighbours never cover each other
+  groups.forEach((g, i) => { g.forEach((b, k) => cube(String(b), colorFor(b), [0.8, 0.5, 0.8], mx(i) - (g.length - 1) * 0.45 + k * 0.9, 1.0, 0, 1.5)); tag('bucket ' + g[0] + '–' + g[g.length - 1], 'ptr', mx(i), 1.85, 0); });
   say('每個 bucket（或一群 bucket）', '交給一台 machine 執行');
   await step(tok);                                   // 110:41 many machines sort together
   boxes.forEach((b) => bob(b, 0.06, 6));

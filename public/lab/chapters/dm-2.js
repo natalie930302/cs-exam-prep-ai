@@ -1244,7 +1244,7 @@ scene('pfA-l3-likes', '巢狀量詞：L(x, y)「x 喜歡 y」', [
     cap('L(x, y)：x 喜歡 y', 'x、y 都是教室裡的人');
   },
   async (tok, S) => { // 2583.5 ∀x∀y
-    S.b = board(-6.6, 5.6, 0.62);
+    S.b = board(-6.6, 5.7, 0.66);
     S.b.ln('∀x ∀y L(x, y)', 'say');
     cap('第一句：∀x ∀y L(x, y)', '');
   },
@@ -1286,11 +1286,11 @@ scene('pfA-l3-likes', '巢狀量詞：L(x, y)「x 喜歡 y」', [
     cap('∃x ∀y L(x, y)', '有一個人喜歡每一個人');
   },
   async (tok, S) => { // 2894.2 不要亂換
-    T('∀ 和 ∃ 混在一起：順序不能亂換！', 'bad', 3.6, 1.8);
+    S.c.kill(); T('∀ 和 ∃ 混在一起：順序不能亂換！', 'bad', 3.9, 5.0); // the loop picture is done: the warning takes its place
     cap('四種意思都不一樣', '∀、∃ 混用時順序不要亂換');
   },
   async (tok, S) => { // 2934.2 怎麼讀
-    T('∀y ∃x L(x, y) = ∀y ( ∃x L(x, y) )：從後往前讀', 'ptr', 3.6, 1.1);
+    T('∀y ( ∃x L(x, y) )：從後往前讀', 'ptr', 3.9, 4.3);
     cap('量詞像負號，是一元運算子', '加括號：∀y ( ∃x L(x, y) )');
   },
 ]);
@@ -5126,7 +5126,7 @@ scene('pfC-12-power', '|P(S)| = 2^|S|：對集合大小歸納', [
 
 scene('pfC-12-harm', '調和數 H_{2ⁿ} ≥ 1 + n/2', [
   async (tok, S) => { // 2380.6
-    S.B = board(-6.6, 6.4); S.B.add('另一種數列：不是 1, 2, 3, 4 一個一個');
+    S.B = board(-6.6, 6.4, 0.7, 5); S.B.add('另一種數列：不是 1, 2, 3, 4 一個一個');
     cap('這次的數列不是一個接一個', '');
   },
   async (tok, S) => { // 2402.6
@@ -5149,7 +5149,7 @@ scene('pfC-12-harm', '調和數 H_{2ⁿ} ≥ 1 + n/2', [
     cap('要證 H_{2ⁿ} ≥ 1 + n/2', '');
   },
   async (tok, S) => { // 2468.8
-    T('一直加會越來越大、不會收斂（像 log）', 'idx', 3.9, 3.5);
+    T('越加越大、不會收斂（像 log）', 'idx', 4.5, 3.05);
     cap('意思：這個數列會越加越大', '跟 log 一樣不會停在某個值');
   },
   async (tok, S) => { // 2532.3
@@ -5171,7 +5171,7 @@ scene('pfC-12-harm', '調和數 H_{2ⁿ} ≥ 1 + n/2', [
   async (tok, S) => { // 2602.8
     S.B.add('後段每一項 ≥ 1/2ᵏ⁺¹（分母最大的最小）');
     [4, 5, 6, 7].forEach((i) => glow(S.bar[i], HL));
-    T('示意 k = 2：1/5…1/8 都 ≥ 1/8', 'idx', 3.8, 2.5);
+    T('示意 k = 2：1/5…1/8 都 ≥ 1/8', 'idx', 4.4, 1.6);
     cap('後面那些數字誰最小？分母最大的', '全部換成最小的，只會變小');
   },
   async (tok, S) => { // 2633.6
@@ -5580,7 +5580,7 @@ scene('pfC-13-seq', '遞迴定義數列：首項 + 遞迴式', [
 
 scene('pfC-13-fib', 'Fibonacci 與 fₙ < 2ⁿ（強歸納）', [
   async (tok, S) => { // 268.2
-    S.B = board(-6.6, 6.4); S.B.add('Fibonacci：fₙ = fₙ₋₁ + fₙ₋₂');
+    S.B = board(-6.6, 6.4, 0.7, 5); S.B.add('Fibonacci：fₙ = fₙ₋₁ + fₙ₋₂');
     cap('Fibonacci 數列', '這一項 = 前兩項相加');
   },
   async (tok, S) => { // 283.0
@@ -5590,16 +5590,16 @@ scene('pfC-13-fib', 'Fibonacci 與 fₙ < 2ⁿ（強歸納）', [
   async (tok, S) => { // 296.7
     S.B.add('f₀ = 0，f₁ = 1');
     S.v = [0, 1, 1, 2, 3, 5, 8]; S.c = [];
-    for (let i = 0; i < 2; i++) { S.c.push(chip(String(S.v[i]), FC.blue, 1.0 + i * 0.95, 5.2, 0.8, 0.6, 1)); T('f' + '₀₁₂₃₄₅₆'[i], 'idx', 1.0 + i * 0.95, 4.6); }
+    for (let i = 0; i < 2; i++) { S.c.push(chip(String(S.v[i]), FC.blue, 1.0 + i * 0.95, 2.9, 0.8, 0.6, 1)); T('f' + '₀₁₂₃₄₅₆'[i], 'idx', 1.0 + i * 0.95, 2.35); }
     cap('首項 f₀ = 0，f₁ = 1', '');
   },
   async (tok, S) => { // 299.8
-    S.c.push(chip('1', FC.green, 1.0 + 2 * 0.95, 5.2, 0.8, 0.6, 1)); T('f₂', 'idx', 1.0 + 2 * 0.95, 4.6);
+    S.c.push(chip('1', FC.green, 1.0 + 2 * 0.95, 2.9, 0.8, 0.6, 1)); T('f₂', 'idx', 1.0 + 2 * 0.95, 2.35);
     S.B.add('f₂ = f₀ + f₁ = 1', 'say');
     cap('f₂ = 0 + 1 = 1', '');
   },
   async (tok, S) => { // 302.1
-    for (let i = 3; i < 7; i++) { S.c.push(chip(String(S.v[i]), FC.green, 1.0 + i * 0.95, 5.2, 0.8, 0.6, 1)); T('f' + '₀₁₂₃₄₅₆'[i], 'idx', 1.0 + i * 0.95, 4.6); await wt(tok, 150); }
+    for (let i = 3; i < 7; i++) { S.c.push(chip(String(S.v[i]), FC.green, 1.0 + i * 0.95, 2.9, 0.8, 0.6, 1)); T('f' + '₀₁₂₃₄₅₆'[i], 'idx', 1.0 + i * 0.95, 2.35); await wt(tok, 150); }
     S.B.add('f₃ = f₁ + f₂ = 2，f₄ = 3，f₅ = 5，…', 'say');
     cap('f₃ = 1 + 1 = 2，這樣推下來', '');
   },
@@ -5609,7 +5609,7 @@ scene('pfC-13-fib', 'Fibonacci 與 fₙ < 2ⁿ（強歸納）', [
   },
   async (tok, S) => { // 333.4
     S.B.add('估計大小：證明 fₙ < 2ⁿ');
-    ['1', '2', '4', '8', '16', '32', '64'].forEach((t, i) => T('2ⁿ=' + t, 'idx', 1.0 + i * 0.95, 3.9));
+    ['1', '2', '4', '8', '16', '32', '64'].forEach((t, i) => T('2ⁿ=' + t, 'idx', 1.0 + i * 0.95, 1.85));
     cap('不知道 fₙ 確切多少，先估計', '至少知道不會超過 2ⁿ');
   },
   async (tok, S) => { // 374.1
@@ -5641,12 +5641,12 @@ scene('pfC-13-fib', 'Fibonacci 與 fₙ < 2ⁿ（強歸納）', [
     cap('把 2ⁿ⁻² 放大成 2ⁿ⁻¹', '兩個相加就是 2ⁿ');
   },
   async (tok, S) => { // 482.8
-    T('記得照 ① ② ③ 標準順序寫', 'note', 3.8, 2.8);
+    T('記得照 ① ② ③ 標準順序寫', 'note', 3.8, 1.0);
     cap('證明結束', '記得 1、2、3 照順序寫');
   },
   async (tok, S) => { // 491.1
-    T('練習：n ≥ 3 時 fₙ > αⁿ⁻²，α = (1+√5)/2', 'say', 3.0, 2.0);
-    T('basis 要驗 n = 3、4', 'idx', 3.0, 1.4);
+    T('練習：n ≥ 3 時 fₙ > αⁿ⁻²，α = (1+√5)/2', 'say', 3.0, 0.3);
+    T('basis 要驗 n = 3、4', 'idx', 3.0, -0.3);
     cap('練習：同樣技巧證 fₙ > αⁿ⁻²', 'basis 驗第 3、4 項');
   },
 ]);
@@ -5685,17 +5685,17 @@ scene('pfC-13-lame', 'Lamé 定理：輾轉相除法的次數', [
 
 scene('pfC-13-set3', '遞迴定義集合：3 ∈ S；x, y ∈ S → x + y ∈ S', [
   async (tok, S) => { // 769.6
-    S.B = board(-6.6, 6.4); S.B.add('遞迴不只定義數列：大的東西拆成小的來說');
+    S.B = board(-6.6, 6.4, 0.7, 4); S.B.add('遞迴不只定義數列：大的東西拆成小的來說');
     cap('不一定是數列', '大東西不好講，就拆成小的');
   },
   async (tok, S) => { // 791.3
     S.B.add('定義一個集合 S（沒直接說它是什麼）');
-    S.z = zone('S', 3.6, 2.0, 0, 5.4, 3.0);
+    S.z = zone('S', 3.6, 1.2, 0, 5.4, 3.0);
     cap('定義一個集合 S', '題目只給幾條簡單的 rule');
   },
   async (tok, S) => { // 812.4
     S.B.add('① 起始：3 ∈ S');
-    S.n3 = chip('3', FC.blue, 1.6, 2.4, 0.8, 0.6, 1.5);
+    S.n3 = chip('3', FC.blue, 1.6, 1.6, 0.8, 0.6, 1.5);
     cap('集合裡有一個數字 3', '這是起始條件');
   },
   async (tok, S) => { // 820.2
@@ -5707,21 +5707,21 @@ scene('pfC-13-set3', '遞迴定義集合：3 ∈ S；x, y ∈ S → x + y ∈ S'
     cap('這就是遞迴的定義', '用已知的生出新的');
   },
   async (tok, S) => { // 897.4
-    T('只有一個 3，找不到第二個數？', 'bad', 3.6, 4.2);
+    T('只有一個 3，找不到第二個數？', 'bad', 3.6, 3.4);
     cap('x + y 要兩個數', '可是只給了一個 3');
   },
   async (tok, S) => { // 930.3
     S.B.add('x、y 可以一樣！x = y = 3 → 6 ∈ S');
-    chip('6', FC.green, 2.8, 2.4, 0.8, 0.6, 1.5);
+    chip('6', FC.green, 2.8, 1.6, 0.8, 0.6, 1.5);
     cap('沒說 x 和 y 要不一樣', '3 + 3 = 6');
   },
   async (tok, S) => { // 962.4
     S.B.add('x = 3，y = 6 → 9 ∈ S', 'say');
-    chip('9', FC.green, 4.0, 2.4, 0.8, 0.6, 1.5);
+    chip('9', FC.green, 4.0, 1.6, 0.8, 0.6, 1.5);
     cap('3 + 6 = 9', '');
   },
   async (tok, S) => { // 972.7
-    chip('12', FC.green, 5.2, 2.4, 0.8, 0.6, 1.5); chip('15', FC.green, 1.6, 1.4, 0.8, 0.6, 1.5); T('…', 'say', 2.8, 1.4);
+    chip('12', FC.green, 5.2, 1.6, 0.8, 0.6, 1.5); chip('15', FC.green, 1.6, 0.6, 0.8, 0.6, 1.5); T('…', 'say', 2.8, 0.6);
     cap('一直這樣加下去', '');
   },
   async (tok, S) => { // 981.2
@@ -6262,7 +6262,7 @@ scene('pfC-3a-prin', '數學歸納法的原理：basis、hypothesis、step', [
 
 scene('pfC-3a-4i3', '例：Σ(4i + 3) = 2n² + 5n', [
   async (tok, S) => { // 292.2
-    S.B = board(-6.6, 6.4); S.B.add('對所有自然數 n（1, 2, 3, …）');
+    S.B = board(-6.6, 6.4, 0.7, 6); S.B.add('對所有自然數 n（1, 2, 3, …）');
     cap('看一個例子', '自然數從 1 開始');
   },
   async (tok, S) => { // 304.7
@@ -6365,7 +6365,7 @@ scene('pfC-3a-cube', '例：Σ i³ = [n(n+1)/2]²', [
 
 scene('pfC-3a-rec', '不知道答案時：recurrence relation', [
   async (tok, S) => { // 840.8
-    S.B = board(-6.6, 6.4, 0.6, 7); S.B.add('用歸納法證明：必須先知道答案');
+    S.B = board(-6.6, 6.4, 0.7, 6); S.B.add('用歸納法證明：必須先知道答案');
     cap('要證這個，得先知道右邊是什麼', '證明都是這樣');
   },
   async (tok, S) => { // 860.6
@@ -6456,7 +6456,7 @@ scene('pfC-3b-gen', '廣義的歸納法：從 n₀ 開始、可用前面全部',
 
 scene('pfC-3b-rec2', 'second-order 遞迴：aₙ = 3ⁿ − 2ⁿ', [
   async (tok, S) => { // 197.4
-    S.B = board(-6.6, 6.4, 0.6, 8); S.B.add('second-order recurrence：跟前兩項有關');
+    S.B = board(-6.6, 6.4, 0.7, 6); S.B.add('second-order recurrence：跟前兩項有關');
     cap('second order recurrence relation', '剛才那個只跟前一項有關：first order');
   },
   async (tok, S) => { // 215.8
@@ -6587,7 +6587,7 @@ scene('pfC-3b-rich', '「定理」：everybody is rich', [
 // ── 3C ──
 scene('pfC-3c-bug', '錯在哪裡：S(1) ⇏ S(2)', [
   async (tok, S) => { // 4.3
-    S.B = board(-6.6, 6.4); S.B.add("what's wrong with the proof?");
+    S.B = board(-6.6, 6.5, 0.7, 3); S.B.add("what's wrong with the proof?");
     cap('這個證明有什麼問題？', '');
   },
   async (tok, S) => { // 35.5
@@ -6624,7 +6624,7 @@ scene('pfC-3c-bug', '錯在哪裡：S(1) ⇏ S(2)', [
   },
   async (tok, S) => { // 175.7
     S.D.ms[1].position.x += 0.9; await S.D.fall(tok, 0, 400);
-    T('S(1) ⇏ S(2)：第一張推不倒第二張', 'bad', 3.6, 5.0);
+    T('S(1) ⇏ S(2)：第一張推不倒第二張', 'bad', 3.6, -0.7);
     cap('問題在：S(1) 推不到 S(2)', '2 不成立，後面都沒辦法');
   },
   async (tok, S) => { // 236.1
@@ -6639,12 +6639,12 @@ scene('pfC-3c-bug', '錯在哪裡：S(1) ⇏ S(2)', [
 
 scene('pfC-3c-func', '函式 f : A → B：domain、codomain、range', [
   async (tok, S) => { // 321.3
-    S.B = board(-6.6, 6.4); S.B.add('函式（function）的定義');
+    S.B = board(-6.6, 6.5, 0.7, 3); S.B.add('函式（function）的定義');
     cap('歸納法講完，接著看函式', '');
   },
   async (tok, S) => { // 329.2
     S.B.add('A、B：兩個非空集合（nonempty set）');
-    oval(1.6, 2.6, 1.3, 2.0); oval(5.4, 2.6, 1.3, 2.0); T('A', 'ptr', 1.6, 5.0); T('B', 'ptr', 5.4, 5.0);
+    oval(1.6, 1.9, 1.3, 2.0); oval(5.4, 1.9, 1.3, 2.0); T('A', 'ptr', 1.6, 4.3); T('B', 'ptr', 5.4, 4.3);
     cap('兩個集合 A、B', '都不是空集合');
   },
   async (tok, S) => { // 336.6
@@ -6653,21 +6653,21 @@ scene('pfC-3c-func', '函式 f : A → B：domain、codomain、range', [
   },
   async (tok, S) => { // 346.5
     S.B.add('A 的每一個元素 → B 裡「唯一」一個元素');
-    S.A = [3.8, 2.6, 1.4].map((y, i) => dot(['a₁', 'a₂', 'a₃'][i], FC.blue, 1.6, y));
-    S.Bp = [4.0, 3.0, 2.0, 1.0].map((y, i) => dot(['b₁', 'b₂', 'b₃', 'b₄'][i], FC.orange, 5.4, y));
+    S.A = [3.1, 1.9, 0.7].map((y, i) => dot(['a₁', 'a₂', 'a₃'][i], FC.blue, 1.6, y));
+    S.Bp = [3.3, 2.3, 1.3, 0.3].map((y, i) => dot(['b₁', 'b₂', 'b₃', 'b₄'][i], FC.orange, 5.4, y));
     cap('A 裡每一個 element', '都對應到 B 裡唯一的一個');
   },
   async (tok, S) => { // 367.6
-    arr([2.0, 3.8], [5.0, 4.0]); arr([2.0, 2.6], [5.0, 3.0]); arr([2.0, 1.4], [5.0, 3.0]);
-    T('示意圖', 'idx', 3.5, 0.2);
+    arr([2.0, 3.1], [5.0, 3.3]); arr([2.0, 1.9], [5.0, 2.3]); arr([2.0, 0.7], [5.0, 2.3]);
+    T('示意圖', 'idx', 3.5, -0.5);
     cap('通常這樣畫（示意圖）', '');
   },
   async (tok, S) => { // 380.2
-    S.B.add('A = domain（定義域）'); T('domain', 'idx', 1.6, 0.3);
+    S.B.add('A = domain（定義域）'); T('domain', 'idx', 1.6, -0.4);
     cap('A 叫 domain，定義域', '裡面每個 element 都要有定義');
   },
   async (tok, S) => { // 403.0
-    S.B.add('B = codomain（對應域）'); T('codomain', 'idx', 5.4, 0.3);
+    S.B.add('B = codomain（對應域）'); T('codomain', 'idx', 5.4, -0.4);
     cap('B 叫 codomain', '對應過去的那個集合');
   },
   async (tok, S) => { // 424.4
@@ -6676,7 +6676,7 @@ scene('pfC-3c-func', '函式 f : A → B：domain、codomain、range', [
   },
   async (tok, S) => { // 459.2
     S.B.add('一個 a 對到兩個 b → 不是 well-defined', 'bad');
-    S.badArr = arr([2.0, 1.4], [5.0, 2.0], 0xd64545);
+    S.badArr = arr([2.0, 0.7], [5.0, 1.3], 0xd64545);
     cap('結果不是唯一', '這個函式就不是 well-defined');
   },
   async (tok, S) => { // 464.4
@@ -6697,8 +6697,8 @@ scene('pfC-3c-func', '函式 f : A → B：domain、codomain、range', [
 
 scene('pfC-3c-inj', 'one-to-one（injective）與 onto', [
   async (tok, S) => { // 577.4
-    S.B = board(-6.6, 6.4); S.B.add('有些特別的函式');
-    oval(1.6, 2.6, 1.3, 2.2); oval(5.4, 2.6, 1.3, 2.2); T('A', 'ptr', 1.6, 5.2); T('B', 'ptr', 5.4, 5.2);
+    S.B = board(-6.6, 6.5, 0.7, 3); S.B.add('有些特別的函式');
+    oval(1.6, 1.7, 1.3, 2.2); oval(5.4, 1.7, 1.3, 2.2); T('A', 'ptr', 1.6, 4.3); T('B', 'ptr', 5.4, 4.3);
     cap('我們有興趣的函式', '常有一些特別的性質');
   },
   async (tok, S) => { // 593.9
@@ -6718,13 +6718,13 @@ scene('pfC-3c-inj', 'one-to-one（injective）與 onto', [
     cap('injective 是形容詞', '名詞是 injection');
   },
   async (tok, S) => { // 696.3
-    [4.0, 3.0, 2.0, 1.0].forEach((y, i) => { dot('a' + (i + 1), FC.blue, 1.6, y); arr([2.0, y], [5.0, y + 0.25]); });
-    [4.25, 3.25, 2.25, 1.25, 0.5].forEach((y, i) => dot('b' + (i + 1), FC.orange, 5.4, y));
+    [3.1, 2.1, 1.1, 0.1].forEach((y, i) => { dot('a' + (i + 1), FC.blue, 1.6, y); arr([2.0, y], [5.0, y + 0.25]); });
+    [3.35, 2.35, 1.35, 0.35, -0.4].forEach((y, i) => dot('b' + (i + 1), FC.orange, 5.4, y));
     cap('例：A 有四個元素', '全部對到不同的 → 一對一');
   },
   async (tok, S) => { // 735.5
     S.B.add('onto：一般 f(A) 只是 B 的一部分');
-    T('b5 沒被對到', 'idx', 5.4, -0.1);
+    T('b5 沒被對到', 'idx', 5.4, -1.0);
     cap('再來叫 onto', '一般值域只是 B 的一部分');
   },
   async (tok, S) => { // 756.3
@@ -6736,7 +6736,7 @@ scene('pfC-3c-inj', 'one-to-one（injective）與 onto', [
 // ── 3D ──
 scene('pfC-3d-onto', 'onto（surjective）與 bijective', [
   async (tok, S) => { // 4.3
-    S.B = board(-6.6, 6.4, 0.6, 5); S.B.add('onto：f 的 range 就是 codomain，f(A) = B');
+    S.B = board(-6.6, 6.5, 0.7, 3); S.B.add('onto：f 的 range 就是 codomain，f(A) = B');
     oval(1.6, 1.6, 1.2, 1.8); oval(5.4, 1.6, 1.2, 1.8);
     [2.8, 1.6, 0.4].forEach((y, i) => dot('a' + (i + 1), FC.blue, 1.6, y));
     [2.5, 0.7].forEach((y, i) => dot('b' + (i + 1), FC.orange, 5.4, y));

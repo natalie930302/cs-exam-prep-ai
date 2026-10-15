@@ -2167,7 +2167,7 @@ FRAG.push(['np1-j-bsearch', '只有判定版：二分搜 bound 找最佳值', as
   for (const [k, y] of [[312, 1], [281, 0], [296, 0], [304, 1]]) { const d = ask(k, Q.length); await beat(tok, 250); ans(d, k, y); await beat(tok, 250); }
   say('這樣問幾次之後', '會收斂到某一個值');
   await step(tok);                                   // 19:05 a bit smaller: no; a bit bigger: yes
-  const fin = bx('≈300', C.Y, X(300), 0.3, 2.6 - 0.9, 0.7, 3, 0.45, 0.5); glow(fin, GOLD);
+  const fin = bx('≈300', C.Y, X(300) + 1.7, 0.3, 1.97, 0.7, 3, 0.45, 0.5); glow(fin, GOLD); // beside the 296 / 304 pair it sits between
   say('小一點點就找不到', '大一點點一定找得到');
   await step(tok);                                   // 19:13 that bound is the optimum value
   good('那個 bound = 最佳解的值（示意 ≈ 300）', 0, 0.4, 3.9);
@@ -2424,7 +2424,7 @@ FRAG.push(['np1-j-verifier-mst', '驗證演算法 V(instance, solution)', async 
   await step(tok);                                   // 39:25 NP: verify time is polynomial
   say('NP 探討的是：驗證的時間是 polynomial');
   await step(tok);                                   // 39:35 a verification algorithm answers yes / no
-  const V = pal('verification 演算法', '', '#9b7ef4', 0, -3.0, 0.9);
+  const V = pal('verification 演算法', '', '#9b7ef4', -5.0, -3.0, 0.9); // left of the graph: its answer never sits on node b
   say('驗證也要交給一個演算法', '它會回答 yes / no');
   await step(tok);                                   // 39:46 it takes two arguments
   const s1 = note('① ?', -2.0, 2.4, -3.0), s2 = note('② ?', 2.0, 2.4, -3.0);

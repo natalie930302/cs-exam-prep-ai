@@ -1645,8 +1645,10 @@ scene('reA-7a-flock', '7A：equivalence classes 的直觀——物以類聚', [
     S.B.add('A 裡每個元素都有自己的 equivalence class'); cap('整個集合 A，每個元素都有 class', '');
   },
   async (tok, S) => { // @1081.7
-    const to = (v) => [-5.6 + md(v, 3) * 2.2, 5.3 - Math.floor(v / 3) * 1.3];
-    await anim(tok, 1500, (u) => A9.forEach((v) => S.v[v].position.set(FL[v][0] + (to(v)[0] - FL[v][0]) * u, FL[v][1] + (to(v)[1] - FL[v][1]) * u, 0)));
+    const row = (v) => A9.filter((w) => md(w, 3) === md(v, 3) && FL[w][1] > FL[v][1]).length;
+    const to = (v) => [-5.6 + md(v, 3) * 2.2, 5.3 - row(v) * 1.3];
+    const part = (u, c) => Math.min(1, Math.max(0, u * 3 - c));
+    await anim(tok, 1800, (u) => A9.forEach((v) => { const k = part(u, md(v, 3)); S.v[v].position.set(FL[v][0] + (to(v)[0] - FL[v][0]) * k, FL[v][1] + (to(v)[1] - FL[v][1]) * k, 0); }));
     S.bl = [0, 1, 2].map((r) => blob(-5.6 + r * 2.2, 4.0, 0.75, 2.0, BLK[r], 0.2)); A9.forEach((v) => paint(S.v[v], BLK[md(v, 3)]));
     S.B.add('互相 equivalent 的 → 同一個 class'); cap('equivalent 的就聚在同一個 class', '');
   },
@@ -1964,7 +1966,7 @@ const stHome = (s) => [-6.0 + ((s - 1) % 6) * 1.05, 5.4 - Math.floor((s - 1) / 6
 scene('reA-7c-class', '7C：分班就是 partition', [
   async (tok, S) => { // @470.1
     S.v = {}; ST.forEach((s) => { S.v[s] = dot(String(s), ...stHome(s)); }); S.n = note('示意：老師說全班 174 人，這裡用 12 個學號', -3.4, 6.6);
-    S.B = board(0.8, 4.0); S.B.add('大一必修課人很多，要分班'); cap('以前大一要分班', '');
+    S.B = board(0.8, 4.4, 0.7); S.B.add('大一必修課人很多，要分班'); cap('以前大一要分班', '');
   },
   async (tok, S) => { // @487.7
     const to = (s) => [-6.0 + Math.floor((s - 1) / 2) * 1.0, s % 2 ? 3.4 : 1.9];
@@ -1975,7 +1977,7 @@ scene('reA-7c-class', '7C：分班就是 partition', [
   async (tok, S) => { // @491.3
     gone(S.lb); const to = (s) => [-6.0 + Math.floor((s - 1) / 3) * 1.0, 3.9 - md(s, 3) * 1.25];
     const fr = ST.map((s) => S.v[s].position.clone());
-    await anim(tok, 1200, (u) => ST.forEach((s, i) => { const b = to(s); S.v[s].position.set(fr[i].x + (b[0] - fr[i].x) * u, fr[i].y + (b[1] - fr[i].y) * u, 0); }));
+    await anim(tok, 1200, (u) => ST.forEach((s, i) => { const b = to(s), sw = Math.sign(b[1] - fr[i].y) * 0.45 * Math.sin(Math.PI * u); S.v[s].position.set(fr[i].x + (b[0] - fr[i].x) * u + sw, fr[i].y + (b[1] - fr[i].y) * u, 0); }));
     ST.forEach((s) => paint(S.v[s], BLK[md(s, 3) + 2]));
     S.lb = [0, 1, 2].map((r) => sm('3n' + (r ? '+' + r : ''), -0.7, 3.9 - r * 1.25));
     S.B.add('3n、3n+1、3n+2：mod 3 → 三班'); cap('mod 3 分三班', '');
@@ -2311,7 +2313,7 @@ const LEQ_P = propsOf(Z11, relOf(Z11, (a, b) => +a <= +b));
 const D6_TOT = propsOf(D6, D6R).tot;
 scene('reA-8a-recap', '8A：複習——partial order 與 Hasse diagram', [
   async (tok, S) => { // @4.2
-    S.B = board(-6.3, 6.3); S.B.add('partial order：集合 A 上的 relation R，三個條件', 'ptr'); cap('複習 partial order 的定義', '');
+    S.B = board(-6.3, 6.4, 0.7); S.B.add('partial order：集合 A 上的 relation R，三個條件', 'ptr'); cap('複習 partial order 的定義', '');
   },
   async (tok, S) => { // @7.6
     S.B.add('① reflexive：a R a'); cap('自己跟自己', 'reflexive');
@@ -2326,7 +2328,7 @@ scene('reA-8a-recap', '8A：複習——partial order 與 Hasse diagram', [
     S.B.add('有順序（前後、左右），但不是所有都能排 → partial'); cap('有順序，但只有部分能排', '');
   },
   async (tok, S) => { // @64.2
-    S.H = hasse(HP6, D6C); S.t = hd('6 的因數、整除', -4.2, 7.3); S.B.add('可以用 Hasse diagram 畫出整個 partial order'); cap('用 Hasse diagram 描述', '');
+    S.H = hasse({ 1: [4.8, 0.6], 2: [3.6, 2.3], 3: [6.0, 2.3], 6: [4.8, 4.0] }, D6C); S.t = hd('6 的因數、整除', 4.8, 5.0); S.B.add('可以用 Hasse diagram 畫出整個 partial order'); cap('用 Hasse diagram 描述', '');
   },
   async (tok, S) => { // @82.0
     S.B.add('兩個例子：整除（因數關係）、⊆（包含於）'); cap('兩個例子：整除與 ⊆', '');
@@ -2338,13 +2340,13 @@ scene('reA-8a-recap', '8A：複習——partial order 與 Hasse diagram', [
 
 scene('reA-8a-total', '8A：total order——任兩個都能比', [
   async (tok, S) => { // @137.7
-    S.B = board(-6.3, 6.3, 0.55); S.B.add('特別的 partial order：total order（全序）', 'ptr'); cap('特別的一種：total order', 'partial 這名字的來源');
+    S.B = board(-6.3, 6.5, 0.68, 8); S.B.add('特別的 partial order：total order（全序）', 'ptr'); cap('特別的一種：total order', 'partial 這名字的來源');
   },
   async (tok, S) => { // @156.6
     S.B.add('條件：A 裡任何兩個 element 都 comparable'); cap('任何兩個都可以比', '');
   },
   async (tok, S) => { // @170.6
-    S.B.add('comparable：a ≼ b 或 b ≼ a（不是 a 在前，就是 b 在前）'); cap('comparable：一定分得出前後', '');
+    S.B.add('comparable：a ≼ b 或 b ≼ a（總分得出前後）'); cap('comparable：一定分得出前後', '');
   },
   async (tok, S) => { // @200.4
     S.B.add('一般的 partial order：兩個拿出來不一定能比'); cap('一般的不一定能比', '');
@@ -2357,7 +2359,7 @@ scene('reA-8a-total', '8A：total order——任兩個都能比', [
     gone(S.d, S.x); S.B.add('例：≤（less than or equal to）在 Z 上', 'ptr alt'); cap('例子：整數上的 ≤', '');
   },
   async (tok, S) => { // @280.2
-    S.B.add('≤ 是 partial order：a ≤ a；a ≤ b、b ≤ a ⇒ a = b；可傳遞' + ck(LEQ_P.po)); cap('≤ 是 partial order', '');
+    S.B.add('≤ 是 partial order：三個條件都成立' + ck(LEQ_P.po)); cap('≤ 是 partial order', '');
   },
   async (tok, S) => { // @297.6
     S.B.add('而且任何兩個整數都能比 → total order' + ck(LEQ_P.tot), 'good'); cap('任兩個整數都能比大小', '所以是 total order');
@@ -2366,12 +2368,12 @@ scene('reA-8a-total', '8A：total order——任兩個都能比', [
     S.B.add('total order 的 Hasse diagram 長什麼樣？'); cap('它的 Hasse diagram？', '');
   },
   async (tok, S) => { // @359.5
-    const ch = ['−2', '−1', '0', '1', '2', '3'], pos = {}; ch.forEach((n, i) => { pos[n] = [4.0, 0.4 + i * 1.15]; });
-    S.H = hasse(pos, ch.slice(1).map((n, i) => [ch[i], n])); S.n = sm('（示意：Z 的一段）', 5.6, 0.4);
+    const ch = ['−2', '−1', '0', '1', '2', '3'], pos = {}; ch.forEach((n, i) => { pos[n] = [5.8, 0.4 + i * 1.15]; });
+    S.H = hasse(pos, ch.slice(1).map((n, i) => [ch[i], n])); S.n = sm('（示意：Z 的一段）', 5.8, -0.3);
     S.B.add('排成一條線往上', 'good'); cap('排成一條直線', '');
   },
   async (tok, S) => { // @423.3
-    S.B.add('像排名次：每個人都能比，才能排 1 2 3 …；partial order 不行'); cap('排名次要 total order', '');
+    S.B.add('排名次（1 2 3 …）要 total order；partial 不行'); cap('排名次要 total order', '');
   },
 ]);
 
@@ -2675,7 +2677,7 @@ const NB = 400, BV = Array.from({ length: NB }, (_, i) => 1 / (i + 1));
 const LUBQ = Math.max(...BV), EPS = 0.05, NEPS = Math.floor(1 / EPS) + 1;
 scene('reA-8b-q', '8B：例子——B = {1/n} 的 lub 與 glb', [
   async (tok, S) => { // @627.6
-    S.B = board(-6.3, 6.4, 0.52, 7); S.B.add('例子：A = Q（有理數，rational numbers）', 'ptr'); cap('A 是所有有理數', '');
+    S.B = board(-6.3, 6.6, 0.68, 6); S.B.add('例子：A = Q（有理數，rational numbers）', 'ptr'); cap('A 是所有有理數', '');
   },
   async (tok, S) => { // @637.0
     S.B.add('可以寫成分數的數'); cap('有理數：可以寫成分數', '');
@@ -2699,7 +2701,7 @@ scene('reA-8b-q', '8B：例子——B = {1/n} 的 lub 與 glb', [
     S.B.add('upper bound：要比 B 裡每一個都大（≥）'); cap('upper bound 要 ≥ 每一個', '');
   },
   async (tok, S) => { // @718.3
-    S.lub = good('lub = 1（1 就在 B 裡；前 ' + NB + ' 項最大值 = ' + LUBQ + ck(LUBQ === 1) + '）', QX(1) - 1.4, 2.4);
+    S.lub = good('lub = 1 ∈ B（max = ' + LUBQ + ck(LUBQ === 1) + '）', QX(1) - 0.8, 2.3);
     S.B.add('比 1 小就不是 upper bound → lub = 1', 'good'); cap('lub = 1', '');
   },
   async (tok, S) => { // @746.0
@@ -2712,14 +2714,14 @@ scene('reA-8b-q', '8B：例子——B = {1/n} 的 lub 與 glb', [
     S.z = dot('0', QX(0), 1.0, TC.green, 0.5); S.B.add('答案是 0（學過極限就知道）'); cap('答案是 0', '');
   },
   async (tok, S) => { // @771.0
-    S.e = dot(null, QX(EPS), 1.0, TC.hot, 0.45); S.et = bad('ε > 0 都會被某個 1/n 超過', QX(EPS) + 1.6, 2.0);
-    S.B.add('任何 ε > 0 都有 1/n < ε（例：ε = ' + EPS + '，n = ' + NEPS + '：1/' + NEPS + ' < ε' + ck(1 / NEPS < EPS) + '）→ ε 不是 lower bound'); cap('任何正數都不是 lower bound', '');
+    S.e = dot(null, QX(EPS), 1.0, TC.hot, 0.45); S.et = bad('ε > 0 都會被某個 1/n 超過', QX(EPS) + 2.2, 2.3);
+    S.B.add('任何 ε > 0 都不是 lower bound（例：1/' + NEPS + ' < ' + EPS + ck(1 / NEPS < EPS) + '）'); cap('任何正數都不是 lower bound', '');
   },
   async (tok, S) => { // @799.6
     gone(S.e, S.et); S.B.add('0 ≤ 每個 1/n，而且沒有更大的 lower bound → glb = 0', 'good'); cap('glb = 0', '');
   },
   async (tok, S) => { // @814.2
-    S.gl = good('glb = 0：不在 B 裡（1/n > 0' + ck(BV.every((v) => v > 0)) + '）', QX(0) + 1.6, 2.4);
+    S.gl = good('glb = 0 ∉ B（1/n > 0' + ck(BV.every((v) => v > 0)) + '）', QX(0) + 1.6, 2.3);
     S.B.add('lub、glb 不一定在 B 裡，但一定在 A 裡'); cap('glb 不一定在 B 裡', '');
   },
   async (tok, S) => { // @860.6

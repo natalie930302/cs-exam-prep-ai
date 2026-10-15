@@ -440,7 +440,7 @@ export default function (ctx) {
         const out = d(t[s - 1]), inn = d(t[s + m - 1]);
         h = ((((h - out * bm) % q) + q) % q * b + inn) % q;
       }
-      clearMarks(); slideTo(s, 1.1);
+      clearMarks(); slideTo(s);   // no lift: lifted, the pattern row lands right on top of the text row on screen
       ST.pB.forEach((bd) => bd.obj.traverse((o) => { if (o.material && o.material.transparent === false) { o.material.transparent = true; o.material.opacity = 0.35; } }));
       for (let k = 0; k < m; k++) glow(ST.tB[s + k], '#3a2f10');
       hashBlock(s, h, h === hp);
@@ -1797,7 +1797,7 @@ FRAG.push(['strm-mit-lowbits', 'mod 2^w 只看低位元', async (tok) => {
   say('真實世界很多序列都有這種規律', '');
   await step(tok);                                   // 12:26 a non-random property reflected in the output: bad
   rows.forEach((row) => row.slice(0, 5).forEach((c) => tint(c, GRAY)));
-  for (let r = 0; r < 3; r++) { cube(vals[r], '#dd8238', [0.62, 0.3, 0.6], xs(4), 0.25 + r * 0.32, -2.0, 3); await beat(tok, 300); }
+  for (let r = 0; r < 3; r++) { cube(vals[r], '#dd8238', [0.62, 0.55, 0.6], xs(4), 0.38 + r * 0.6, -2.0, 3); await beat(tok, 300); }
   G.mood('sad');
   say('mod 8 只看低 3 bit：三個全進第 4 格', 'input 的規律原封不動留在 output：壞 hash');
   await step(tok);                                   // 12:39 mod 2^n: just truncate the bits on the left

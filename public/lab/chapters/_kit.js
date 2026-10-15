@@ -90,7 +90,14 @@ export default function kit(ctx) {
   async function travel(tok, l, a, b, ms = 900) {
     await anim(tok, ms, (u) => l.position.lerpVectors(a, b, u));
   }
-  function remove(l) { if (l) { lab.world.remove(l); if (l.element) l.element.remove(); if (l.userData && l.userData.name) remove(l.userData.name); } }
+  // take an object off the stage together with every label nested in it
+  // (a group's name/value labels would otherwise stay on the page)
+  function remove(l) {
+    if (!l) return;
+    if (l.parent) l.parent.remove(l); else lab.world.remove(l);
+    if (l.traverse) l.traverse((c) => { if (c.element) c.element.remove(); }); else if (l.element) l.element.remove();
+    if (l.userData && l.userData.name) remove(l.userData.name);
+  }
   // ── cute characters and props (friendly pictures instead of bare blocks) ──
   const mat = (c, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.55 }, o));
   const SPH = new THREE.SphereGeometry(1, 20, 14);

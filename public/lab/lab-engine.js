@@ -325,7 +325,9 @@ export function createLab(container) {
   // else moves around them, up / down first, then sideways.
   // Goals are recomputed every few frames and eased into, so nothing jumps.
   const nudge = new Map();          // element → current / goal offset and scale
-  const TR = /translate\(([-\d.e]+)px,\s*([-\d.e]+)px\)\s*$/;
+  // CSS2D sets 'translate(-cx%, -cy%) translate(Xpx, Ypx)': (X, Y) is the
+  // anchor, cx/cy where the anchor sits inside the label (0.5 = centred)
+  const TR = /translate\(([-\d.e]+)%,\s*([-\d.e]+)%\)\s*translate\(([-\d.e]+)px,\s*([-\d.e]+)px\)\s*$/;
   let dcCount = 0;
   function declutter(dt, snap = false) {
     const items = [];
@@ -335,10 +337,10 @@ export function createLab(container) {
       if (!el.textContent || st.display === 'none' || st.visibility === 'hidden' || st.opacity === '0' || !el.isConnected) return;
       const m = TR.exec(st.transform);
       if (!m) return;
-      items.push({ el, x: +m[1], y: +m[2] });
+      items.push({ el, ax: +m[3], ay: +m[4], fx: -m[1] / 100, fy: -m[2] / 100 });
     });
     if (snap || dcCount++ % 6 === 0) {
-      for (const it of items) { it.w = it.el.offsetWidth; it.h = it.el.offsetHeight; it.fixed = it.el.classList.contains('val') || it.el.classList.contains('icon'); }
+      for (const it of items) { it.w = it.el.offsetWidth; it.h = it.el.offsetHeight; it.x = it.ax + (0.5 - it.fx) * it.w; it.y = it.ay + (0.5 - it.fy) * it.h; it.fixed = it.el.classList.contains('val') || it.el.classList.contains('icon'); }
       items.sort((a, b) => (b.fixed - a.fixed) || (a.y - b.y));
       const placed = [];
       const hits = (x, y, w, h) => placed.some((p) => {

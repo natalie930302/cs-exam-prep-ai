@@ -2385,7 +2385,7 @@ FRAG.push(['graphjiang1-bfs', 'BFS：像水波一圈一圈往外擴散', async (
   say('先選一個點當起點', '這裡選 1');
   await step(tok); // 4019 滴下一滴水滴
   const drop = icon('💧', '', P13[1][0], 7.4, 0.5);
-  await travel(tok, drop, drop.position.clone(), V3(P13[1][0], P13[1][1] + 0.4, 0.5), 700);
+  await travel(tok, drop, drop.position.clone(), V3(P13[1][0], P13[1][1] + 1.5, 0.5), 600); // the drop vanishes just above '起點' (never on the node's number)
   remove(drop);
   say('想像在起點滴下一滴水', '');
   await step(tok); // 4035 一圈一圈的漣漪
@@ -5508,7 +5508,7 @@ FRAG.push(['graphmisc-bd-bfscheck', '判斷 BFS 是否合法', async (tok) => {
   const cand = (label) => { if (row) { row.clear(); remove(row.lbl); } G.reset(); row = gmRow(0.6, 1.0, label); };
   const add = async (list, from) => { for (const v of list) { if (from) await G.hop(tok, from, v, '→', 260); G.color(v, GM.vis); row.push(v); } };
   const verdict = (ok, text) => { tag((ok ? '✔ ' : '✘ ') + text, ok ? 'good' : 'bad', 3.2, 0.1, -3.0 + hist * 0.55); hist++; };
-  const nt = (t, cls = 'note') => { remove(n); n = tag(t, cls, 3.2, 1.6, 2.4); };
+  const nt = (t, cls = 'note') => { remove(n); n = tag(t, cls, 3.2, 2.6, 2.4); }; // above the row's name, not on it
   await gmSeq(tok, [
     () => { nt('練習：寫出別的 BFS'); say('練習：再寫幾個 BFS'); },
     async () => { cand('從 1 開始'); await add([1]); await add([4, 2], 1); say('從 1 開始：這次先 4，再 2'); },
@@ -5545,7 +5545,7 @@ FRAG.push(['graphmisc-bd-dfs', 'DFS：遇到新點就暫停，把目前的點放
   const vis = async (u, v) => { await X.visit(tok, u, v, false); X.explore(v); await G.go(tok, v, 350); };
   await gmSeq(tok, [
     () => { nt('DFS：depth first search'); say('接下來是 DFS'); },
-    () => { res = gmRow(0.6, 2.6, '拜訪順序'); S = gmStack(2.4, 0.0, 'stack'); X = bdKit(G, res, null); say('一樣：寫拜訪順序，加一個資料結構'); },
+    () => { res = gmRow(0.6, 3.2, '拜訪順序'); S = gmStack(2.4, 0.0, 'stack'); X = bdKit(G, res, null); say('一樣：寫拜訪順序，加一個資料結構'); },
     async () => { await G.go(tok, 1); await X.visit(tok, null, 1, false); say('從 1 開始：拜訪 1'); },
     () => { S.push(1); say('1 放進 stack'); },
     () => { S.pop(); X.explore(1); say('取出 1，開始探索 1'); },
@@ -5770,6 +5770,8 @@ FRAG.push(['graphmisc-scc-why', '為什麼可行：把每個 SCC 縮成一點，
   const SP = [[-5.2, 0.0], [-1.6, 0.0], [2.4, 0.0], [5.6, 0.0]], NM = ['ABC', 'DEF', 'GHIJ', 'K'];
   const big = [], es = {};
   let bad = null, stk = null;
+  // the letters of the points being merged go quiet while they slide together (the big block names them after)
+  const mute = (vs) => vs.forEach((v) => G.vs[v].children.forEach((c) => { if (c.isCSS2DObject) c.visible = false; }));
   const bigE = (a, b, c = GM.edge) => { const p = V3(SP[a][0], 0.45, SP[a][1]), q = V3(SP[b][0], 0.45, SP[b][1]); es[a + '' + b] = gmRod(p, q, { directed: true, gap: 0.85, color: c, r: 0.07 }); };
   await gmSeq(tok, [
     () => { nt('為什麼可行？（嚴格證明在 CLRS）'); say('為什麼這樣做是對的？', '看直覺'); },
@@ -5777,12 +5779,14 @@ FRAG.push(['graphmisc-scc-why', '為什麼可行：把每個 SCC 縮成一點，
     async () => {
       const from = {}; for (const k in G.vs) from[k] = G.vs[k].position.clone();
       for (const k in G.es) gmKill(G.es[k]);
+      mute(SC_COMP[0].concat(SC_COMP[1]));
       await anim(tok, 900, (u) => SC_COMP.forEach((c, i) => c.forEach((v) => { if (i < 2) G.vs[v].position.lerpVectors(from[v], V3(SP[i][0], 0.3, SP[i][1]), u); })));
       [0, 1].forEach((i) => { SC_COMP[i].forEach((v) => { G.vs[v].visible = false; }); big[i] = cube(NM[i], SC_CC[i], [1.3, 0.9, 1.3], SP[i][0], 0.45, SP[i][1]); });
       say('ABC 變成一個點，DEF 變成一個點');
     },
     async () => {
       const from = {}; for (const k in G.vs) from[k] = G.vs[k].position.clone();
+      mute(SC_COMP[2].concat(SC_COMP[3]));
       await anim(tok, 900, (u) => SC_COMP.forEach((c, i) => c.forEach((v) => { if (i >= 2) G.vs[v].position.lerpVectors(from[v], V3(SP[i][0], 0.3, SP[i][1]), u); })));
       [2, 3].forEach((i) => { SC_COMP[i].forEach((v) => { G.vs[v].visible = false; }); big[i] = cube(NM[i], SC_CC[i], [1.3, 0.9, 1.3], SP[i][0], 0.45, SP[i][1]); });
       say('GHIJ 一個點，K 一個點');
@@ -8209,7 +8213,7 @@ FRAG.push(['graphmit-l13-cube', 'Pocket cube：configuration graph 與 diameter'
 FRAG.push(['graphmit-l13-adj', 'Adjacency lists：Adj[u] 與 implicit graph', async (tok) => {
   gmFresh(GM_CAM, [0.4, 0, -0.3]);
   await step(tok);                                   // 1224.5 graph representation: the input
-  const D = gmG(GM_L13D, { dx: -4.2, dz: -0.8, scale: 0.8 });
+  const D = gmG(GM_L13D, { dx: -5.4, dz: -0.8, scale: 0.8 }); // left of the Adj column (b used to sit on Adj[a])
   const me = gmHost(-6.3, 3.9);
   say('要探索一張圖，先知道輸入長什麼樣', '');
   await step(tok);                                   // 1243.6 adjacency lists: array Adj of size V

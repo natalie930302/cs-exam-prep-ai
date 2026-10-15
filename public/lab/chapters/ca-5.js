@@ -480,8 +480,10 @@ export default function (ctx) {
     }
     say('目標：容量像最底層、速度像最上層', '靠 locality：常用的資料放在上層');
     await beat(tok, 2400);
-    const blk = cube('block', '#e55a9b', [0.9, 0.5, 0.7], 0, 1.6, 1.0);
-    for (let i = 2; i >= 0; i--) { move(blk, 0, 6.1 - i * 1.5 + 0.1, 1.0); say('資料只在相鄰兩層之間搬，單位是 block', i ? '往上一層複製' : '到了 cache：之後 CPU 直接在這裡 hit'); await beat(tok, 1100); }
+    // the block climbs along the right ends of the levels (its name just above it), never over a level's name
+    const bx = (i) => LV[i][3] / 2 + 0.6;
+    const blk = cube('block', '#e55a9b', [0.9, 0.5, 0.7], bx(3), 1.6, 1.0); blk.userData.lbl.position.y = 0.5;
+    for (let i = 2; i >= 0; i--) { move(blk, bx(i), 6.1 - i * 1.5 + 0.1, 1.0); say('資料只在相鄰兩層之間搬，單位是 block', i ? '往上一層複製' : '到了 cache：之後 CPU 直接在這裡 hit'); await beat(tok, 1100); }
     say('階層越上層，存的是下層的子集', 'hit：上層找到；miss：去下層拿 block');
     await beat(tok, 2600);
   }
@@ -1368,7 +1370,7 @@ scene('mh-22a-locality', 'Principle of locality：90/10 rule', [
   },
   async (tok, S) => { // @1339.3 ~好這principle locality
     S.cache = bx('cache', NC.green, 4.6, 4.4, 0, 1.6, 0.6);
-    const g = bx('10%', NC.orange, -5.0 + 6 * 1.1, 4.4, 0.5, 1.0, 0.5); await slide(tok, g, 4.6, 4.4, 0.6, 800);
+    const g = bx('10%', NC.orange, -5.0 + 6 * 1.1, 4.4, 0.5, 1.0, 0.5); await slide(tok, g, 4.6, 3.7, 0.6, 800); // lands just under the cache box (its name stays readable)
     cap('只要把那 10% 搬進最靠近的地方', '放在 cache，大部分時間都找得到');
   },
   async (tok, S) => { // @1361.7 ~它用到時候再搬進來
@@ -1486,10 +1488,11 @@ scene('mh-22a-terms', 'Hit、hit rate、hit time、miss rate、miss penalty', [
   async (tok, S) => { // @2054.8 ~有一些Terminology
     S.up = bx('upper level', NC.green, -3.4, 4.8, 0, 2.6, 1.6); S.lo = bx('lower level', NC.blue, 2.6, 4.8, 0, 3.4, 2.2);
     S.cpu = bx('CPU', NC.teal, -6.2, 4.8, 0, 1.0, 0.7);
+    S.up.userData.lbl.position.y = 0.55; S.lo.userData.lbl.position.y = 0.8; // level names at the top: blocks sit below them
     cap('一些 terminology 要記', 'hit、hit time、miss rate、miss penalty');
   },
   async (tok, S) => { // @2080.7 ~因為東西不一定
-    S.x = bx('X', NC.pink, 2.6, 4.8, 1.2, 0.6, 0.5);
+    S.x = bx('X', NC.pink, 2.6, 4.45, 1.2, 0.6, 0.5);
     cap('東西不一定全部都在 upper level', '');
   },
   async (tok, S) => { // @2083.5 ~當你要去找它可能
@@ -1497,7 +1500,7 @@ scene('mh-22a-terms', 'Hit、hit rate、hit time、miss rate、miss penalty', [
     cap('要找的不在 upper level', '就叫 miss');
   },
   async (tok, S) => { // @2089.3 ~那如果在那邊就是Hit
-    S.y = bx('Y', NC.green, -3.4, 4.8, 1.0, 0.6, 0.5); good('在 upper → hit', -3.4, 3.2);
+    S.y = bx('Y', NC.green, -4.0, 4.45, 1.0, 0.6, 0.5); good('在 upper → hit', -3.4, 3.2);
     cap('在那邊就是 hit', '');
   },
   async (tok, S) => { // @2091.4 ~我們說有一個hit rate
@@ -1514,7 +1517,7 @@ scene('mh-22a-terms', 'Hit、hit rate、hit time、miss rate、miss penalty', [
   },
   async (tok, S) => { // @2146.7 ~包括它整個是叫包括replace
     hd('miss penalty = 換掉 upper 的 block + 把 block 送給 processor', -1.0, 0.6);
-    await slide(tok, S.x, -3.4, 4.6, 1.2, 900);
+    await slide(tok, S.x, -2.75, 4.45, 1.2, 900);
     cap('miss penalty 包括', 'replace upper level 的 block，再把 block 送到 processor 的時間');
   },
   async (tok, S) => { // @2179.3 ~Lentency
@@ -2123,12 +2126,12 @@ scene('mh-22b-write', 'Write hit：write-through、write-back 與 write buffer',
     cap('write 比較麻煩', 'write hit、write miss 都麻煩');
   },
   async (tok, S) => { // @2397.9 ~麻煩呢因為就是consistency
-    const g = bx('sw X=7', NC.pink, -5.6, 5.4, 0.6, 1.1, 0.45); await slide(tok, g, -2.6, 5.4, 0.6, 600); kill(g);
+    const g = bx('sw X=7', NC.pink, -5.6, 5.4, 0.6, 1.1, 0.45); await slide(tok, g, -4.4, 5.4, 0.6, 600); kill(g); // stops at the cache's edge, not on its name
     relabel(S.c, 'cache：X = 7'); bad('兩份 copy 不一樣了（consistency）', 0.8, 4.5);
     cap('為什麼麻煩？consistency', 'cache 一份 copy、lower level 一份 copy');
   },
   async (tok, S) => { // @2412.8 ~你要把它維持一致性呢
-    const g = bx('7', NC.pink, -2.6, 5.4, 0.6, 0.6, 0.45); await slide(tok, g, 4.0, 5.4, 0.6, 700); kill(g); relabel(S.mm, 'memory：X = 7');
+    const g = bx('7', NC.pink, -1.0, 5.4, 0.6, 0.6, 0.45); await slide(tok, g, 1.7, 5.4, 0.6, 700); kill(g); relabel(S.mm, 'memory：X = 7');
     hd('write-through：每次寫 cache 也寫 memory', 0, 3.8);
     cap('維持一致：每次 write cache', '都寫到 memory 去：write-through');
   },
@@ -2236,7 +2239,7 @@ scene('mh-23a-dmreview', '複習：block、direct-mapped、tag', [
     cap('兩層的 memory structure', '靠近 processor 叫 high（upper），遠一點叫 lower');
   },
   async (tok, S) => { // @382.1 ~那一個High Level跟Low Level
-    const g = bx('block', NC.pink, 3.0, 6.3, 0.6, 1.0, 0.45); await slide(tok, g, -2.6, 6.3, 0.6, 700);
+    const g = bx('block', NC.pink, 3.0, 6.95, 0.3, 1.0, 0.45); await slide(tok, g, -0.6, 6.95, 0.3, 700); // rides on top of the bars, clear of their names
     sm('一塊一塊整個移：cache 叫 block，virtual memory 叫 page', 0, 5.6);
     cap('移動的基本單位叫 block', '在 virtual memory 叫 page');
   },
@@ -2695,7 +2698,7 @@ scene('mh-23b-memorg', 'Memory 組織與 miss penalty：65、17、20 cycles', [
     cap('第二種：wide memory', '一次 access 四個 word，bus 也這麼寬，同時傳');
   },
   async (tok, S) => { // @247.6 ~然後同時傳到放到我的cash裡面 那第三種
-    seg(4.6, 5.9, 4.6, 4.9, '#8a7a5c'); seg(3.75, 4.9, 5.45, 4.9, '#8a7a5c'); S.m3 = [0, 1, 2, 3].map((k) => bx('bank ' + k, NC.blue, 3.75 + k * 0.57, 4.2, 0, 0.52, 0.6)); hd('③ interleaved（4 banks）', 4.6, 3.5);
+    seg(4.6, 5.9, 4.6, 4.9, '#8a7a5c'); seg(3.75, 4.9, 5.45, 4.9, '#8a7a5c'); S.m3 = [0, 1, 2, 3].map((k) => bx(String(k), NC.blue, 3.75 + k * 0.57, 4.2, 0, 0.52, 0.6)); hd('③ interleaved（4 banks）', 4.6, 3.5); // narrow banks: just the bank number (the title says banks)
     cap('第三種：interleaved', '分四塊 bank 可以同時 access，但 bus 還是一個 word 寬');
   },
   async (tok, S) => { // @273.1 ~這個之前我要先講一下
@@ -3347,8 +3350,8 @@ scene('mh-24a-tagsize', '8 個 block 的四種組織：index 少 1 bit、tag 多
       gone(S.cur); const [w, n] = S.org[k], sets = 8 / w; S.cur = [];
       S.cur.push(hd(n + '：' + sets + ' 個 set', -2.0, 6.7));
       for (let s = 0; s < sets; s++) for (let c = 0; c < w; c++) {
-        const x = -6.0 + c * 1.55, y = 6.0 - s * 0.55;
-        S.cur.push(bx('tag', NC.lilac, x, y, 0, 0.6, 0.42, 0.6), bx('data', NC.sky, x + 0.75, y, 0, 0.85, 0.42, 0.6));
+        const x = -6.0 + c * 1.7, y = 6.0 - s * 0.55; // tag and data a bit apart so their names don't touch
+        S.cur.push(bx('tag', NC.lilac, x, y, 0, 0.6, 0.42, 0.6), bx('data', NC.sky, x + 0.85, y, 0, 0.85, 0.42, 0.6));
       }
       for (let s = 0; s < sets; s++) S.cur.push(sm(sets > 1 ? 'set ' + s : '', -6.95, 6.0 - s * 0.55));
     };
@@ -3694,7 +3697,7 @@ scene('mh-24a-multi', 'Multilevel cache：L1 求快、L2 求少 miss', [
     cap('另一層 cache 做大一點', '目的是降低 miss rate');
   },
   async (tok, S) => { // @2795.9 ~attached到cpu 更小更快 那Level 2
-    const g = bx('L1 miss', NC.pink, -4.0, 4.6, 0.6, 1.0, 0.4); await slide(tok, g, -2.0, 4.6, 0.6, 700);
+    const g = bx('L1 miss', NC.pink, -4.0, 4.6, 0.6, 1.0, 0.4); await slide(tok, g, -2.0, 4.6, 0.6, 600); kill(g); glow(S.L[1], HL); // the request reaches L2 and L2 lights up (no token left on its name)
     sm('L1 miss 先找 L2，不直接去 memory', -1.0, 3.3);
     cap('L1 miss 時', 'L2 來 serve，不直接去花更久的 memory');
   },
@@ -3798,11 +3801,11 @@ scene('mh-24b-multi', 'P&H 例：加一層 L2，CPI 9 → 3.4', [
     cap('L2 比較大、比較慢', '5 ns，但比去 memory 的 100 ns 快很多');
   },
   async (tok, S) => { // @383.6 ~access它的時候 它的cache miss是多少
-    const g = bx('2%', NC.pink, -4.2, 6.2, 0.6, 0.8, 0.4); await slide(tok, g, -1.6, 6.2, 0.6, 700);
+    const g = bx('2%', NC.pink, -4.2, 6.95, 0.6, 0.8, 0.4); await slide(tok, g, -1.6, 6.95, 0.6, 700); // rides above the boxes: their names stay readable
     cap('L1 miss 的那 2%', '不直接去 main memory，先去 access L2');
   },
   async (tok, S) => { // @418.0 ~你要去access 第二個L2的cache
-    const g = bx('0.5%', NC.red, -1.6, 6.2, 0.6, 0.9, 0.4); await slide(tok, g, 2.6, 6.2, 0.6, 700);
+    const g = bx('0.5%', NC.red, -0.5, 6.95, 0.6, 0.9, 0.4); await slide(tok, g, 2.6, 6.95, 0.6, 700);
     S.g.add('L2 也 miss、要去 memory：0.5%（global）');
     cap('L2 也 miss 的', '才去 main memory：只剩 0.5%');
   },
@@ -4074,7 +4077,7 @@ scene('mh-24b-terms', 'Page、page fault、frame 與 demand load', [
     cap('physical 的那一塊', '叫 frame');
   },
   async (tok, S) => { // @1841.6 ~就是我physical的切成一塊一塊跟
-    const g = bx('page 5', NC.sky, -4.4, 6.0 - 5 * 0.5, 0.5, 2.0, 0.42); await slide(tok, g, 2.6, 6.0 - 2 * 0.5, 0.5, 700); kill(g); relabel(S.f[2], 'frame 2 ← page 5'); tint(S.f[2], NC.sky);
+    const g = bx('page 5', NC.sky, -4.4, 6.0 - 5 * 0.5, 0.5, 2.0, 0.42); await slide(tok, g, 0.4, 6.0 - 2 * 0.5, 0.5, 600); kill(g); relabel(S.f[2], 'frame 2 ← page 5'); tint(S.f[2], NC.sky); // the copy stops at the frame's edge and the frame takes the name
     cap('一個 page 要 map 到一個 frame', 'frame 和 page 一樣大，一起搬進搬出');
   },
   async (tok, S) => { // @1866.1 ~第一個size的問題這個block size

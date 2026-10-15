@@ -65,7 +65,7 @@ export default function (ctx) {
   }
   async function ioPath(type, L, tok) {
     const top = L.a[0].position.y;
-    const x = L.a[0].position.x;
+    const x = -6.3; // the request walks down the left edge of the stack (the layer names are centred and wide)
     const ball = cube('I/O', C.red, [0.7, 0.4, 0.4], x, top + 0.6, 1.3);
     const ys = type === 1 ? [[L.g[0], 'guest OS 的 driver 下指令'], [L.vmm, 'privileged → trap 到 VMM'], [L.hw, 'VMM 直接操作硬體']] : [[L.g[0], 'guest OS 的 driver 下指令'], [L.vmm, 'trap 到 VMM（只是一個 process）'], [L.host, 'VMM 再呼叫 host OS 的 system call'], [L.hw, 'host OS 的 driver 才碰到硬體']];
     for (const [m, cap] of ys) {
@@ -436,8 +436,10 @@ export default function (ctx) {
     fresh([0, 4.5, 11], [0, 2.2, 0]);
     say('課本：buffer overflow', 'stack smashing：C 的 strcpy 不檢查長度');
     const frame = [['buffer[8]', C.guest, 0.3], ['saved frame pointer', C.gray, 1.0], ['return address', C.app, 1.7], ['caller frame', C.gray, 2.4]];
-    const F = frame.map(([n, c, y]) => cube(n, c, [4, 0.6, 1.4], -2.5, y, 0));
-    tag('stack 往高位址 ↑', 'idx', -5.6, 2.8, 0);
+    const F = frame.map(([n, c, y]) => cube(n, c, [4, 0.6, 1.4], -1.5, y, 0));
+    // the slot names sit left of the stack, so the overflowing input can cover the slots and both stay readable
+    F.forEach((m) => { m.userData.lbl.center.set(1, 0.5); m.userData.lbl.position.set(-2.1, 0, 0); });
+    tag('stack 往高位址 ↑', 'idx', -4.8, 3.3, 0);
     await beat(tok, 2600);
     const pay = [];
     for (let k = 0; k < 3; k++) {
@@ -445,7 +447,7 @@ export default function (ctx) {
       await beat(tok, 500);
     }
     say('輸入比 buffer 長，一路往上蓋', '');
-    for (let k = 0; k < 3; k++) { move(pay[k], -2.5, 0.3 + k * 0.7, 0.8); await beat(tok, 700); glow(F[k], RED); }
+    for (let k = 0; k < 3; k++) { move(pay[k], -1.5, 0.3 + k * 0.7, 0.8); await beat(tok, 700); glow(F[k], RED); }
     say('return address 被改成攻擊碼', '函式 return 時就跳去執行它');
     await beat(tok, 3000);
     say('防護：檢查長度、stack 不可執行（NX）', '還有 canary、ASLR');

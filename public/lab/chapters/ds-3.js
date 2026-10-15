@@ -2814,18 +2814,19 @@ export default function (ctx) {
         ['level', 'Level order：一層一層', 'level', levelorder(root)],
       ];
       for (let k = 0; k < 4; k++) {
-        const [nm, cap, tg, seq] = ords[k], z = 1.2 + k * 0.85;
-        rowLabel(nm, z);
+        // the four rows are stacked as shelves (y), not in depth: seen from the front, depth rows print over each other
+        const [nm, cap, tg, seq] = ords[k], z = 1.8, y = 0.3 + (3 - k) * 0.7;
+        rowLabel(nm, z).position.y = y + 0.05;
         say(cap, '…');
         for (let i = 0; i < seq.length; i++) {
           const n = seq[i];
           cursorTo(cur, n.pos);
           const b = lab.addBody(block(n.label, SMALL, depthColor(n.depth)));
-          b.obj.position.copy(n.pos); lab.springTo(b, rowPos(i, z));
+          b.obj.position.copy(n.pos); lab.springTo(b, V(ROW_X0 + i * ROW_DX, y, z));
           say(cap, seq.slice(0, i + 1).map((x) => x.label).join(''));
           await beat(tok, 260);
         }
-        tag(tg, 'ptr alt', 2.0, 0.35, z);
+        tag(tg, 'ptr alt', 2.0, y + 0.05, z);
         await beat(tok, 1300);
       }
       cur.obj.visible = false;
@@ -9736,16 +9737,17 @@ FRAG.push(['treeb-expr4', '運算式樹 A/B*C*D+E：四種 traversal', async (to
   let root;
   const cur = makeCursor();
   const runRow = async (k, nm, seq, tg) => {
-    const z = 1.2 + k * 0.85;
-    rowLabel(nm, z);
+    // rows stacked as shelves (y), not in depth: seen from the front, depth rows print over each other
+    const z = 1.8, y = 0.3 + (3 - k) * 0.7;
+    rowLabel(nm, z).position.y = y + 0.05;
     for (let i = 0; i < seq.length; i++) {
       const n = seq[i];
       cursorTo(cur, n.pos);
       const b = lab.addBody(block(n.label, SMALL, depthColor(n.depth)));
-      b.obj.position.copy(n.pos); lab.springTo(b, rowPos(i, z));
+      b.obj.position.copy(n.pos); lab.springTo(b, V(ROW_X0 + i * ROW_DX, y, z));
       await go(tok, 200);
     }
-    tag(tg, 'ptr alt', 2.0, 0.35, z);
+    tag(tg, 'ptr alt', 2.0, y + 0.05, z);
   };
   await step(tok);                                   // 3946.4 以 A/B*C*D+E 為例
   tag('A / B * C * D + E', 'ptr alt', 0, 7.8);
@@ -12880,8 +12882,10 @@ FRAG.push(['treec-p16algo', 'Huffman 演算法：while 迴圈五步', async (tok
   say('z.freq = left 的 freq + right 的 freq', '1 + 1 = 2');
   await step(tok);                                   // 8:47 新 node insert 回 queue
   cd.hl(5);
-  await fling(tok, 'z (2)', V(3.6, 6.3, 0), V(-3.2, 1.2, 2.4), 900);
-  cube('2', INC, LSZ, -3.4 + 0.95, 0.4, 2.4, 1.5);
+  // 2 goes in after r2: ␣4 and e8 step aside so it gets its own place in the queue
+  lab.springTo(rb[5], V(-5.6 + 4 * 0.95, 0.4, 2.4)); lab.springTo(rb[6], V(-5.6 + 5 * 0.95, 0.4, 2.4));
+  await fling(tok, 'z (2)', V(3.6, 6.3, 0), V(-2.75, 1.2, 2.4), 900);
+  cube('2', INC, LSZ, -5.6 + 3 * 0.95, 0.4, 2.4, 1.5);
   say('最後把 z insert 回 priority queue', '它代表一棵小 subtree');
   await step(tok);                                   // 8:56 直到 while 不成立
   cd.hl(0);
@@ -13613,7 +13617,7 @@ FRAG.push(['treec-p16lose', 'Loser tree：node 存輸家，只跟 parent 比', a
 FRAG.push(['treec-p16ext', '為什麼要 winner tree：記憶體放不下的排序', async (tok) => {
   fresh(); lab.frameCamera([0, 5.0, 13.5], [0, 2.6, 0.6]);
   const stu = buddy('同學', '?', '#7cb8ee', -6.0, 0, 2.2, 0.75);
-  const mem = zone('memory（記憶體）', -1.0, 0, 0, 4.4, 2.6, '#cfe3d4');
+  const mem = zone('memory（記憶體）', -1.0, 0, 0, 5.8, 2.6, '#cfe3d4');
   let cs = [];
   await step(tok);                                   // 54:45 為什麼要 winner tree？
   say('想一想：為什麼要 winner tree？', '');
@@ -13621,7 +13625,7 @@ FRAG.push(['treec-p16ext', '為什麼要 winner tree：記憶體放不下的排�
   stu.mood('wow');
   say('把數字從小排到大，直接 sort 不就好了？', '');
   await step(tok);                                   // 55:18 全部 run 的數字拿去 sort
-  cs = [...Array(16)].map((_, k) => cube(String((k * 7) % 23), GRAYC, [0.42, 0.42, 0.42], -2.6 + (k % 8) * 0.45, 0.3 + Math.floor(k / 8) * 0.5, 0, 2));
+  cs = [...Array(16)].map((_, k) => cube(String((k * 7) % 23), GRAYC, [0.5, 0.5, 0.5], -3.31 + (k % 8) * 0.66, 0.3 + Math.floor(k / 8) * 0.62, 0, 2));
   say('上面那些 run 頂多十幾個數字', '全部放進 memory 排一排就好了');
   await step(tok);                                   // 56:24 memory 放不下怎麼辦
   const big = prop('disk', 4.6, 0, 0, 1.6, '超多數字（memory 放不下）'); bob(big, 0.04);
@@ -13694,11 +13698,11 @@ FRAG.push(['treec-p16forest', 'Forest：轉成 binary tree 與 traversal', async
   say('轉換不是重點，跳過；接著看 forest traversal', '');
   await step(tok);                                   // 64:00 preorder：每棵樹的 preorder 接起來
   const pre = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
-  for (let k = 0; k < 9; k++) { cursorTo(cur, find(bt, pre[k]).pos); cube(pre[k], ORANGE, SMALL, -3.2 + k * 0.8, 0.35, 2.2, 1.5); await wait(tok, 220); }
+  for (let k = 0; k < 9; k++) { cursorTo(cur, find(bt, pre[k]).pos); cube(pre[k], ORANGE, SMALL, -3.2 + k * 0.8, 1.05, 2.6, 1.5); await wait(tok, 220); }
   say('forest 的 preorder = 每棵樹的 preorder 依序接起來', 'A B C D | E F | G H I');
   await step(tok);                                   // 64:10 inorder 也一樣
   const ino = ['B', 'C', 'D', 'A', 'F', 'E', 'H', 'I', 'G'];
-  for (let k = 0; k < 9; k++) { cursorTo(cur, find(bt, ino[k]).pos); cube(ino[k], PURPLE, SMALL, -3.2 + k * 0.8, 0.35, 3.2, 1.5); await wait(tok, 220); }
+  for (let k = 0; k < 9; k++) { cursorTo(cur, find(bt, ino[k]).pos); cube(ino[k], PURPLE, SMALL, -3.2 + k * 0.8, 0.35, 2.6, 1.5); await wait(tok, 220); }
   cur.obj.visible = false;
   say('inorder 也一樣，是各棵樹 inorder 的組合', 'B C D A | F E | H I G');
 }]);

@@ -918,6 +918,8 @@ function venn(cx, cy, r = 1.9, d = 1.05) {
   return V;
 }
 const num = (v, x, y, c = C.blue, s = 0.62, drop = 1.4) => cube(String(v), c, [s, s, s], x, y, 0.3, drop);
+// stop a dropped block's physics before a hand-made anim() moves it (otherwise a block still falling is pulled back)
+const hold = (os) => os.forEach((o) => { for (const b of lab.bodies) if (b.obj === o) { b.mode = 'rest'; b.vel.set(0, 0, 0); } });
 
 // ════════ A_NNGOqui7s（趙啟超 1A：課程內容） ════════
 const TABS = ['① Fundamentals', '② Enumeration', '③ Graph Theory'];
@@ -1675,6 +1677,7 @@ scene('lg-1c-set', '1C：集合、元素與兩種寫法', CAM, [
   },
   async (tok, S) => { // 1008.3 順序無關
     const order = [1, 2, 3, 4, 5, 6, 7, 0];
+    hold(S.ns);
     await anim(tok, 900, (u) => order.forEach((k, i) => { const x0 = -4.6 + k * 0.98, x1 = -4.6 + i * 0.98; S.ns[k].position.x = x0 + (x1 - x0) * u; S.ns[k].position.y = 4.4 + Math.sin(Math.PI * u) * (k === 0 ? 0.55 : -0.15); }));
     S.l2 = sm('{2, 3, 4, 5, 6, 7, 8, 1} 也是同一個 A', 4.6, 3.7);
     cap('寫成 2、3、…、8、1 也一樣', '跟順序無關，只說裡面有這些東西');
@@ -1793,12 +1796,14 @@ scene('lg-1c-comp', '1C：補集 complement 與 universe', CAM, [
   },
   async (tok, S) => { // 1491.0 A = {2..6}
     const inA = [2, 3, 4, 5, 6];
-    await anim(tok, 1000, (u) => inA.forEach((v, i) => { const m = S.ns[v - 1]; const x0 = -4.4 + (v - 1) * 0.98, y0 = 3.8; const x1 = -1.6 + (i % 3 - 1) * 0.8, y1 = 1.9 - Math.floor(i / 3) * 0.8; m.position.x = x0 + (x1 - x0) * u; m.position.y = y0 + (y1 - y0) * u; }));
+    hold(inA.map((v) => S.ns[v - 1]));
+    await anim(tok, 1000, (u) => inA.forEach((v, i) => { const m = S.ns[v - 1]; const x0 = -4.4 + (v - 1) * 0.98, y0 = 3.8; const x1 = -2.6 + i * 0.5, y1 = i % 2 ? 1.1 : 1.9; m.position.x = x0 + (x1 - x0) * u; m.position.y = y0 + (y1 - y0) * u; }));
     sm('A = {2, 3, 4, 5, 6}', -1.6, 0.0);
     cap('假設 A 是 2、3、4、5、6', '');
   },
   async (tok, S) => { // 1502.6 Ā = {1, 7, 8, 9, 10}
     const out = [1, 7, 8, 9, 10];
+    hold(out.map((v) => S.ns[v - 1]));
     await anim(tok, 1000, (u) => out.forEach((v, i) => { const m = S.ns[v - 1]; const x0 = -4.4 + (v - 1) * 0.98, y0 = 3.8; const x1 = 1.4 + (i % 3) * 1.1, y1 = 2.2 - Math.floor(i / 3) * 0.9; m.position.x = x0 + (x1 - x0) * u; m.position.y = y0 + (y1 - y0) * u; }));
     out.forEach((v) => { tint(S.ns[v - 1], C.orange); glow(S.ns[v - 1], HL); });
     card('Ā = {1, 7, 8, 9, 10}', C.peach, 3.0, -0.4, 4.4, 0.6);
@@ -2559,7 +2564,8 @@ scene('lg-01-prec', 'Lec01：運算子的優先權', CAM, [
   },
   async (tok, S) => { // 3471.2 排順序
     const order = [2, 0, 1, 3, 4];
-    await anim(tok, 900, (u) => order.forEach((k, i) => { const x0 = -4 + k * 2, x1 = -4 + i * 2; S.ops[k].position.x = x0 + (x1 - x0) * u; }));
+    hold(S.ops);
+    await anim(tok, 900, (u) => order.forEach((k, i) => { const x0 = -4 + k * 2, x1 = -4 + i * 2; S.ops[k].position.x = x0 + (x1 - x0) * u; S.ops[k].position.y = 3.9 - (k === 2 ? Math.sin(Math.PI * u) * 1.2 : 0); }));
     ['1', '2', '3', '4', '5'].forEach((t, i) => sm('第 ' + t, -4 + i * 2, 3.0)); glow(S.ops[2], HL);
     cap('照課本的表：¬ 最優先', '然後 ∧、∨、→，↔ 最後');
   },

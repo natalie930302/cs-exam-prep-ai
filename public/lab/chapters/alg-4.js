@@ -260,9 +260,9 @@ export default function (ctx) {
   }
   async function scMcLoops(tok) {
     fresh([0, 4.4, 14], [0, 3.6, 0]);
-    const cd = code(['for l = 2 to n            // 鏈長', '  for i = 1 to n − l + 1', '    j = i + l − 1;  m[i][j] = ∞', '    for k = i to j − 1', '      q = m[i][k] + m[k+1][j] + p[i−1]·p[k]·p[j]', '      if q < m[i][j]: m[i][j] = q; s[i][j] = k'], 0, 7.6, 0.45);
+    const cd = code(['for l = 2 to n            // 鏈長', '  for i = 1 to n − l + 1', '    j = i + l − 1;  m[i][j] = ∞', '    for k = i to j − 1', '      q = m[i][k] + m[k+1][j] + p[i−1]·p[k]·p[j]', '      if q < m[i][j]: m[i][j] = q; s[i][j] = k'], 0, 8.4, 0.62);
     dimsRow(MC_P4, 4.6);
-    const g = mcmGrid(MC_P4, -2.2, 3.2, 1.45, 0.78);
+    const g = mcmGrid(MC_P4, -2.2, 2.7, 1.45, 0.78); // code, matrix names and table each get their own band
     say('A1 5×4、A2 4×6、A3 6×2、A4 2×7', 'm[i][j] = Aᵢ…Aⱼ 最少的乘法次數');
     await wait(tok, 2600);
     cd.hl(2); say('對角線 m[i][i] = 0', '單一矩陣不用乘');
@@ -1144,15 +1144,15 @@ FRAG.push(['dp4bari-derive', '從 40 和 36 兩個算式推出 C(i,j) 公式', a
   const seq = prm().seq || ['c13', 'C12', 'C33', 'd023', 'k', 'full', 'min'];
   fresh([0, 4.4, 14.5], [0, 3.8, 0]);
   const gd = guide(-6.5, 1.8, 0.6), sb = slot(3.8, 0.4);
-  const d = [2, 3, 4, 2], X = [-2.4, 0, 2.4], PX = [-3.0, -0.4, 2.4];
+  const d = [2, 3, 4, 2], X = [-2.4, 0, 2.4], PX = [-3.3, -0.3, 3.0]; // terms far enough apart that the '+' signs stay clear
   X.forEach((x, k) => { cube('A' + (k + 1), k % 2 ? PURPLE : BLUE, [1.4, 0.5, 0.45], x, 7.4); tag(d[k] + '×' + d[k + 1], 'idx', x, 8.0); });
   const dT = d.map((v, k) => tag('d' + k + '=' + v, 'idx', -3.6 + k * 2.4, 6.8));
   let head = null, r1 = [], r2 = [], g = [], gLbl = null;
   const row = (y, lbl, vals) => {
     tag(lbl, 'ptr', -5.3, y);
     const ps = vals.slice(0, 3).map((v, t) => cube(String(v), [BLUE, PURPLE, ORANGE][t], [2.1, 0.55, 0.45], PX[t], y, 0, 1.0));
-    tag('+', 'val', -1.7, y); tag('+', 'val', 1.0, y);
-    ps.res = tag('= ' + vals[3], 'ptr alt', 4.6, y);
+    tag('+', 'val', -1.8, y); tag('+', 'val', 1.35, y);
+    ps.res = tag('= ' + vals[3], 'ptr alt', 5.4, y);
     return ps;
   };
   const hi = (ks) => dT.forEach((l, k) => setCls(l, ks.includes(k) ? 'ptr alt' : 'idx'));
@@ -1173,16 +1173,16 @@ FRAG.push(['dp4bari-derive', '從 40 和 36 兩個算式推出 C(i,j) 公式', a
     k: () => {
       gLbl = tag('C(i,j) = min', 'ptr alt', -5.3, 2.2);
       g = ['C(i,k)', 'C(k+1,j)'].map((s, t) => cube(s, [BLUE, PURPLE][t], [2.1, 0.55, 0.45], PX[t], 2.2, 0, 1.0));
-      tag('+', 'val', -1.7, 2.2);
+      tag('+', 'val', -1.8, 2.2);
       tag('k=2', 'idx', -5.3, 4.55); tag('k=1', 'idx', -5.3, 3.25);
       say('中間切開的地方叫 k', '左邊 C(i,k)、右邊 C(k+1,j)');
     },
     dk: () => { hi([1, 2]); sb('中間的維度 d(k)：k=2 → d2、k=1 → d1'); say('中間那個維度就是 d(k)', 'k = 2 用 d2，k = 1 用 d1'); },
     full: () => {
-      hi([]); g.push(cube('d(i−1)·d(k)·d(j)', ORANGE, [2.1, 0.55, 0.45], PX[2], 2.2, 0, 1.0)); tag('+', 'val', 1.0, 2.2);
+      hi([]); g.push(cube('d(i−1)·d(k)·d(j)', ORANGE, [2.6, 0.55, 0.45], PX[2] + 0.85, 2.2, 0, 1.0)); tag('+', 'val', 1.15, 2.2);
       sb(''); gd.mood('happy'); say('公式：左邊 + 右邊 + 合併', 'C(i,k) + C(k+1,j) + d(i−1)·d(k)·d(j)');
     },
-    krange: () => { tag('i ≤ k < j', 'ptr', 4.6, 2.2); say('k 從 i 試到 j − 1', '例子裡 k = 1、2'); },
+    krange: () => { tag('i ≤ k < j', 'ptr', 3.85, 1.35); say('k 從 i 試到 j − 1', '例子裡 k = 1、2'); },
     min: () => { r2.forEach((m) => glow(m, GREEN)); setCls(r2.res, 'good'); txt(head, 'C(1,3) = min { 40, 36 } = 36'); say('兩個裡面取最小', 'min{40, 36} = 36'); },
     idea: async () => {
       r2.forEach((m) => glow(m, null));
@@ -4098,11 +4098,19 @@ function qPad(cx, cy, s = 1.0, big = 0.8) {
   for (const k in P) m[k] = qBox(QDIR[k], k === 'C' ? Q.paper : Q.sand, P[k][0], P[k][1], big, big, 0.16);
   return { P, m };
 }
+// Feet on the pad. A pad is too small for two labels, so the pad a foot stands on hides its arrow and the
+// foot reads "L↑" (left foot on ↑); two feet on one pad stand one above the other.
 function qFeet(pad, l, r) {
-  const at = (k, dx) => [pad.P[k][0] + dx, pad.P[k][1]];
-  const a = at(l, l === r ? -0.18 : 0), b = at(r, l === r ? 0.18 : 0);
-  const L = qBox('L', Q.pink, a[0], a[1], 0.36, 0.36, 0.3, 0, 0.3), R = qBox('R', Q.blue, b[0], b[1], 0.36, 0.36, 0.3, 0, 0.3);
-  return { L, R, put(l2, r2) { const p = at(l2, l2 === r2 ? -0.18 : 0), q = at(r2, l2 === r2 ? 0.18 : 0); move(L, p[0], p[1], 0.3); move(R, q[0], q[1], 0.3); } };
+  const s = Math.abs(pad.P.U[1] - pad.P.C[1]) || 1;
+  const at = (k, dy) => [pad.P[k][0], pad.P[k][1] + dy];
+  const L = qBox('L', Q.pink, 0, 0, 0.36, 0.36, 0.3, 0, 0.3), R = qBox('R', Q.blue, 0, 0, 0.36, 0.36, 0.3, 0, 0.3);
+  const mark = (l2, r2) => {
+    for (const k in pad.m) { const lb = pad.m[k] && pad.m[k].userData.lbl; if (lb) lb.visible = k !== l2 && k !== r2; }
+    relabel(L, 'L' + QDIR[l2]); relabel(R, 'R' + QDIR[r2]);
+  };
+  const spot = (l2, r2) => { const d = l2 === r2 ? s * 0.27 : 0; return [at(l2, d), at(r2, -d)]; };
+  { const [p, q] = spot(l, r); L.position.set(p[0], p[1], 0.3); R.position.set(q[0], q[1], 0.3); mark(l, r); }
+  return { L, R, put(l2, r2) { const [p, q] = spot(l2, r2); move(L, p[0], p[1], 0.3); move(R, q[0], q[1], 0.3); mark(l2, r2); } };
 }
 const DDR_SHEET = ['↑', '↑↓', '↓', '↑↓', '↑', '↑↓', '←→', '←', '←→', '→'];
 
@@ -4341,14 +4349,14 @@ FRAG.push(['dp4mit-ddr-direct', 'DDR：最佳走法併進 δ，一步就夠', as
   you.mood('sad');
   say('寫演算法的人會很不安', '中間要幾個 move？圖會不會爆大？');
   await step(tok);                                   // 945.8 from up-down to left-right
-  A = qPad(-4.3, 4.6, 0.7, 0.55); B = qPad(4.3, 4.6, 0.7, 0.55);
-  qFeet(A, 'U', 'D'); tag('↑↓', 'ptr', -4.3, 5.8);
-  qFeet(B, 'L', 'R'); tag('←→', 'ptr', 4.3, 5.8);
+  A = qPad(-4.3, 4.5, 0.85, 0.7); B = qPad(4.3, 4.5, 0.85, 0.7);
+  qFeet(A, 'U', 'D'); tag('↑↓', 'ptr', -4.3, 6.1);
+  qFeet(B, 'L', 'R'); tag('←→', 'ptr', 4.3, 6.1);
   you.mood('calm');
   say('例子：從 ↑↓ 換到 ←→');
   await step(tok);                                   // 953.8 directly, or up-right first, then left-right
-  arrow(V3(-3.3, 5.0, 0.4), V3(3.3, 5.0, 0.4), Q.gold); tag('直接', 'idx', 0, 5.4);
-  M = qPad(0, 3.0, 0.6, 0.5); qFeet(M, 'U', 'R'); tag('↑→', 'ptr', 0.9, 2.2);
+  arrow(V3(-3.2, 5.0, 0.4), V3(3.2, 5.0, 0.4), Q.gold); tag('直接', 'idx', 0, 5.4);
+  M = qPad(0, 2.6, 0.8, 0.65); qFeet(M, 'U', 'R'); tag('↑→', 'ptr', 1.4, 1.5);
   arrow(V3(-3.6, 4.0, 0.4), V3(-0.8, 3.2, 0.4), Q.purple); arrow(V3(0.8, 3.2, 0.4), V3(3.6, 4.0, 0.4), Q.purple);
   say('直接跳過去？', '還是先到 ↑→，再到 ←→？');
   await step(tok);                                   // 972.8 moves independent → the better way is always better
@@ -4390,7 +4398,7 @@ FRAG.push(['dp4mit-ddr-center', 'DDR：回到中間要一個中間 state', async
   for (let i = 0; i < 2; i++) { glow(ns[i], GOLD); ft.put(i ? 'C' : 'L', i ? 'R' : 'C'); await beat(tok, 450); glow(ns[i], null); ft.put('C', 'C'); await beat(tok, 350); }
   say('有些人喜歡：一有空檔就回中間');
   await step(tok);                                   // 1143.8 need at least one state in between
-  tag('note 之間至少要一個 state', 'note', 2.4, 5.2);
+  const need = tag('note 之間至少要一個 state', 'note', 2.4, 5.2);
   say('那 note 之間至少要一個 state', '讓腳可以回中間');
   await step(tok);                                   // 1154.8 otherwise: stuck on ← →, jump every note
   ft.put('L', 'R');
@@ -4408,9 +4416,11 @@ FRAG.push(['dp4mit-ddr-center', 'DDR：回到中間要一個中間 state', async
   await step(tok);                                   // 1219.8 one move per note → stuck
   say('每個 note 只給一個 move', '就會卡在剛剛那種跳法');
   await step(tok);                                   // 1231.8 one intermediary state is enough
-  ns.forEach((m, i) => move(m, X(0) + i * 0.75 - 0.3, 6.2));
-  for (let i = 0; i < 5; i++) qBox('·', Q.teal, X(0) + i * 0.75 + 0.07, 6.2, 0.3, 0.3, 0.3, 1.2);
-  tag('每兩個 note 之間：一個中間 state', 'good', 2.4, 5.2);
+  // the notes spread out so a middle state fits between each pair
+  const NX = (i) => 2.4 + (i - 2.5) * 1.25;
+  ns.forEach((m, i) => move(m, NX(i), 6.2));
+  for (let i = 0; i < 5; i++) qBox('·', Q.teal, NX(i) + 0.625, 6.2, 0.3, 0.3, 0.3, 1.2);
+  remove(need); tag('每兩個 note 之間：一個中間 state', 'good', 2.4, 5.2);
   you.mood('happy');
   say('每兩個 note 之間加一個中間 state', '一個就夠了');
   await step(tok);                                   // 1259.8 enough to re-center: what a beginner does

@@ -417,9 +417,10 @@ export default function (ctx) {
     await beat(tok, 2400);
     pr.forEach((m) => glow(m, null));
     const caps = [['IF：用 PC 讀指令，PC + 4', 'lw $1, 100($0)'], ['ID：讀暫存器、sign-extend', '讀 $0、立即值 100'], ['EX：ALU 算位址', '0 + 100 = 100'], ['MEM：讀 Mem[100]', ''], ['WB：寫回 $1', '寫在 cycle 前半，ID 讀在後半']];
-    const tk = cube('lw', '#c08a1f', [0.9, 0.5, 0.5], xs[0] - 1.6, 2.4, 0.7);
+    // the instruction walks just under the units, so it never hides their names
+    const tk = cube('lw', '#c08a1f', [0.9, 0.5, 0.5], xs[0] - 1.6, 1.45, 0.7);
     for (let i = 0; i < 5; i++) {
-      move(tk, xs[i], 2.4, 0.7);
+      move(tk, xs[i], 1.45, 0.7);
       say(caps[i][0], caps[i][1]);
       await beat(tok, 2000);
     }
@@ -5630,15 +5631,15 @@ scene('ppB-21b-dual', '21B：MIPS dual issue：ALU/branch + load/store', [
     cap('一個 packet 兩個指令', '一個 ALU 或 branch，一個 load/store');
   },
   async (tok, S) => { // 385.4
-    sm('每個指令 32 bit → 一包 64 bit（64-bit aligned），一次 fetch 64 bit', -0.2, 3.8);
+    S.t1 = sm('每個指令 32 bit → 一包 64 bit（64-bit aligned），一次 fetch 64 bit', -0.2, 3.8);
     cap('每個 32 bit', '一包 64 bit，一次 fetch 64 bit');
   },
   async (tok, S) => { // 396.6
-    sm('實在沒辦法 pack → 放 nop（簡化 hardware）', -0.2, 3.2);
+    S.t2 = sm('實在沒辦法 pack → 放 nop（簡化 hardware）', -0.2, 3.2);
     cap('沒辦法 pack 就 pack 一個 no-op', '這是為了簡化 hardware');
   },
   async (tok, S) => { // 445.2
-    gone(S.a, S.b);
+    gone(S.a, S.b, S.t1, S.t2); // the pipeline chart takes this space (the same points come back below it)
     S.G = grid(['ALU / branch', 'load / store', 'ALU / branch', 'load / store', 'ALU / branch', 'load / store'], 8, { y: 2.6, x0: -1.4, dy: 0.42, fs: 9 });
     [0, 1].forEach((k) => S.G.row(k, 1, FIVE));
     cap('pipeline 圖', '同一個時間，兩個指令一起進來');

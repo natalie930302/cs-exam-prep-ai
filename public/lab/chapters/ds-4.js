@@ -3488,7 +3488,8 @@ function show63(st, spec, drop) {
   for (const v of Object.keys(st.cubes)) if (!seen.has(+v)) { fly(st.cubes[v]); delete st.cubes[v]; }
 }
 const glowK63 = (st, ks, c) => ks.forEach((k) => { if (st.cubes[k]) glow(st.cubes[k], c); });
-const toNode = (tok, b, st, n, ms = 700) => hop63(tok, b, st.at[n].x, st.at[n].y + 0.45, ms);
+// the seeker stands a little above the node, so the number it carries never prints over the node's keys
+const toNode = (tok, b, st, n, ms = 700) => hop63(tok, b, st.at[n].x, st.at[n].y + 0.7, ms);
 const DEL0 = { n: 'A', k: [50, 80], c: [{ n: 'B', k: [10, 20] }, { n: 'C', k: [60, 70] }, { n: 'D', k: [90, 95] }] };
 
 // 78:17 2-3 tree 與 search
@@ -8260,7 +8261,7 @@ FRAG.push(['bstc-bari-ll-general', 'LL 一般形：B 的右子樹接到 A 的左
   await step(tok);                                   // 1573.0 對它做 LL rotation
   say('要對 A 做 LL rotation', '');
   await step(tok);                                   // 1594.0 只看 A、B、C：B 上、C 左、A 右
-  R.place({ B: [0.6, 6.2], C: [-0.9, 4.9], A: [2.2, 4.9], CL: [-1.7, 3.6], CR: [-0.1, 3.6], AR: [3.0, 3.6] });
+  R.place({ B: [0.6, 6.2], C: [-0.9, 4.9], A: [2.2, 4.9], CL: [-1.7, 3.6], CR: [-0.1, 3.6], AR: [3.0, 3.6], BR: [0.9, 2.3] });   // B_R steps down, out of C_R's new place
   R.wire([['B', 'C'], ['B', 'A'], ['B', 'BR'], ['A', 'AR'], ['C', 'CL'], ['C', 'CR']]);
   KG(R.m.A, null);
   say('別的先不看，只看 A、B、C', 'B 升上來，C 在左、A 在右');
@@ -8568,7 +8569,8 @@ const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
 const okT = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
 const noT = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
 const RIDER = '#f4a56a';
-const rider = (v, p, size = 0.5) => buddy(null, v, RIDER, p.x, p.y, p.z || 0, size);
+// the key a rider carries floats over its head: on its belly it would print over the node it stands on
+const rider = (v, p, size = 0.5) => { const b = buddy(null, v, RIDER, p.x, p.y, p.z || 0, size); b.val.position.set(0, size + 0.25, 0); return b; };
 const hopTo = (tok, b, p, ms = 420) => travel(tok, b.g, b.g.position.clone(), p, ms);
 async function hops(tok, b, ps, ms = 380) { for (const p of ps) await hopTo(tok, b, p, ms); }
 // several objects slide together (one animation, so the step's motion stays short)

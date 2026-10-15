@@ -187,10 +187,11 @@ export default function (ctx) {
     for (let j = 0; j < mv.C; j++) {
       const g = lab.box(COL.hot, [mv.s * 0.6, mv.s * 0.6, 0.22]);
       g.add(lab.label(fmt(cl(k * mv.v[s][j])), 'val'));
-      g.position.set(mv.X(j), mv.Y(s), mv.z + 0.42); lab.world.add(g); gh.push(g);
+      // the copy rides half a cell above its row, so both numbers stay readable
+      g.position.set(mv.X(j), mv.Y(s) + mv.s * 0.5, mv.z + 0.42); lab.world.add(g); gh.push(g);
     }
     await W(tok, ms * 0.35);
-    gh.forEach((g, j) => move(g, mv.X(j), mv.Y(t), mv.z + 0.42));
+    gh.forEach((g, j) => move(g, mv.X(j), mv.Y(t) + mv.s * 0.5, mv.z + 0.42));
     await W(tok, ms * 0.45);
     gh.forEach(kill);
     for (let j = 0; j < mv.C; j++) mv.set(t, j, mv.v[t][j] - k * mv.v[s][j]);

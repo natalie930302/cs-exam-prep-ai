@@ -1726,7 +1726,7 @@ scene('fs-23b-raw', 'Raw partition：database、swap space 不用 format', CAM, 
     cap('database 很多直接用 raw partition', '不做 formatting，直接建 database');
   },
   async (tok, S) => { // 302.6 table 每個 row 大小固定
-    S.rows = [0, 1, 2, 3, 4, 5].map((i) => bx('row', FC.purple, -1.0 + i * 0.95, 1.0, 0.6, 0.85, 0.5, 0.3));
+    S.rows = [0, 1, 2, 3, 4, 5].map((i) => bx('row', FC.purple, -1.0 + i * 0.95, 1.75, 0, 0.85, 0.5, 0.3)); // rows sit on top of the partition, its name stays readable
     cap('傳統 database 用 table：每個 row 大小已知', '何必還要管 file？直接切來用');
   },
   async (tok, S) => { // 329.8 swap space 也是

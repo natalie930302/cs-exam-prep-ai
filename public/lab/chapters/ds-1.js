@@ -2231,8 +2231,8 @@ FRAG.push(['cplx-peng2-bsearch', 'Binary search：left、right 與遞迴呼叫',
   await run(tok, [
     () => { arr = row(V, -4.0, 1.2, 1.0); say('Binary search：對一串數字找東西'); },
     async () => { tgt = pkt('找 13', -5.6, 1.4, 1.2); await lift(tok, arr[4], true, 0.5); M = ptr('中間', at(4), 2.3, 1.2); say('假設已經排序過', '每次比中間，切一半'); },
-    () => { cdI = code(['while (left <= right) {', '  middle = (left + right) / 2;', '  switch (COMPARE(list[middle], x)) {', '    ...  left = middle + 1 / right = middle − 1'], -1.6, 5.2, 0.46, -1.6); say('第一種寫法：while 迴圈', '沒有用到遞迴'); },
-    () => { cdR = code(['binsearch(list, x, left, right):', '  case <: return binsearch(..., middle+1, right)', '  case =: return middle', '  case >: return binsearch(..., left, middle−1)'], 2.4, 3.2, 0.46, -0.4); say('接下來看遞迴版', 'function 叫 binsearch'); },
+    () => { cdI = code(['while (left <= right) {', '  middle = (left + right) / 2;', '  switch (COMPARE(list[middle], x)) {', '    ...  left = middle + 1 / right = middle − 1'], -1.6, 5.7, 0.42, -1.6); say('第一種寫法：while 迴圈', '沒有用到遞迴'); },
+    () => { cdR = code(['binsearch(list, x, left, right):', '  case <: return binsearch(..., middle+1, right)', '  case =: return middle', '  case >: return binsearch(..., left, middle−1)'], 2.0, 4.0, 0.42, -1.6); say('接下來看遞迴版', 'function 叫 binsearch'); },
     () => { L = tag('left', 'ptr', at(0), -0.2, 2.1); R = tag('right', 'ptr', at(8), -0.2, 2.1); say('兩個重要的指標', 'left 和 right'); },
     () => { note('調整 left、right → 決定要搜尋哪一段', -1.6, 0.1, 3.0); say('它們是數列最左、最右的邊界', '調整邊界就決定搜哪一段'); },
     () => { cdR.hl(1); say('用 compare 搭配 switch-case', '判斷往左半還是右半'); },
@@ -2285,12 +2285,12 @@ FRAG.push(['cplx-peng2-permloop', '不用遞迴：三層迴圈，再去掉重複
   let cd, grid = [], st;
   await run(tok, [
     () => { T('不用遞迴，怎麼解 permutation？', 0, 4.8, -1.6); say('再問一個問題', '不用遞迴，怎麼產生排列？'); },
-    () => { ['第 1 位', '第 2 位', '第 3 位'].forEach((t, i) => { idx(t, -4.0 + i * 1.6, -0.1, 0.4); }); ['a', 'b', 'c'].forEach((ch, r) => { for (let i = 0; i < 3; i++) grid.push(cube(ch, C_ROW, [0.6, 0.45, 0.6], -4.0 + i * 1.6, 0.25, -1.2 + r * 0.7)); }); say('每個位置都可以是 a、b、c'); },
+    () => { ['第 1 位', '第 2 位', '第 3 位'].forEach((t, i) => { idx(t, -5.6 + i * 1.7, -0.1, 1.3); }); ['a', 'b', 'c'].forEach((ch, r) => { for (let i = 0; i < 3; i++) grid.push(cube(ch, C_ROW, [0.6, 0.45, 0.6], -5.6 + i * 1.7, 0.25 + (2 - r) * 0.6, -1.4 + r * 0.9)); }); say('每個位置都可以是 a、b、c'); },
     () => { cd = code(['for x in {a,b,c}', '  for y in {a,b,c}', '    for z in {a,b,c}', '      output x y z'], 3.2, 3.4, 0.46, -1.0); say('用多層 for 迴圈', '一層管一個位置'); },
-    () => { st = list(3.2, 1.2, 0.8); st.add('aaa, aab, aac, aba, abb, abc …（27 種）'); say('不用遞迴也做得到'); },
+    () => { st = list(3.6, 1.2, 0.8); st.add('aaa, aab, aac, aba, abb, abc …（27 種）'); say('不用遞迴也做得到'); },
     () => { st.add('aaa、aab… 有重複字元 → 偵測後排除', 'bad'); say('但會產生字元重複的組合', '要偵測已經出現過的，排掉'); },
     () => { st.add('考試不一定考；重點：解法不只一種', 'good'); say('同一個問題', '不只一種 solution'); },
-    () => { buddy('你', '💡', C_B, -4.0, 0, 2.6, 0.8).mood('happy'); say('做研究沒有標準答案', '鼓勵多想自己的解法'); },
+    () => { buddy('你', '💡', C_B, -1.2, 0, 3.8, 0.8).mood('happy'); say('做研究沒有標準答案', '鼓勵多想自己的解法'); },
   ]);
 }]);
 
@@ -2612,8 +2612,8 @@ FRAG.push(['cplx-peng1-seltrace', 'Selection sort 實際跑一次', async (tok) 
   const X = (i) => -2.5 + i;
   const swapAt = async (i, j) => {
     if (i === j) return;
-    const mi = arr[i], mj = arr[j], xi = mi.position.x, xj = mj.position.x;
-    await anim(tok, 500, (u) => { mi.position.x = xi + (xj - xi) * u; mj.position.x = xj + (xi - xj) * u; mi.position.y = mj.position.y = 0.32 + Math.sin(u * Math.PI) * 0.7; });
+    const mi = arr[i], mj = arr[j], xi = mi.position.x, xj = mj.position.x, mz = mj.position.z;
+    await anim(tok, 500, (u) => { mi.position.x = xi + (xj - xi) * u; mj.position.x = xj + (xi - xj) * u; mi.position.y = 0.32 + Math.sin(u * Math.PI) * 1.1; mj.position.z = mz + Math.sin(u * Math.PI) * 1.0; });
     arr[i] = mj; arr[j] = mi; [a[i], a[j]] = [a[j], a[i]];
   };
   const mark = (i) => { tint(arr[i], '#9fd8b0'); ul.push(line(X(i) - 0.4, 0.02, X(i) + 0.4, 0.02, 0.6, '#0f5a3a')); };
@@ -2709,17 +2709,17 @@ FRAG.push(['cplx-peng1-bspseudo', 'Binary search 的 pseudocode：left、right�
   P.fresh([0, 6.5, 13], [0, 1.2, 0]);
   const V = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28];
   const X = (i) => -6.3 + i * 0.9;
-  let arr, ps, L, R, M;
+  let arr, ps, L, R, M, hd;
   await run(tok, [
     () => { arr = row(V, -6.3, 1.6, 0.9, C_ROW, 0.7); say('演算法：先排序、找中間、切一半'); },
-    () => { T('想好了 → 下一步：怎麼 implement', 0, 5.0, -1.6); say('知道演算法之後', '下一階段：怎麼 implement'); },
-    () => { ps = code(['while (還有數字沒檢查) {', '  middle = (left + right) / 2;', '  if (searchnum < list[middle])', '    right = middle − 1;', '  else if (searchnum == list[middle])', '    return middle;', '  else left = middle + 1;', '}'], 0, 4.4, 0.4, -1.6); say('implement 之前', '先寫 pseudocode'); },
+    () => { hd = T('想好了 → 下一步：怎麼 implement', 0, 5.0, -1.6); say('知道演算法之後', '下一階段：怎麼 implement'); },
+    () => { ps = code(['while (還有數字沒檢查) {', '  middle = (left + right) / 2;', '  if (searchnum < list[middle])', '    right = middle − 1;', '  else if (searchnum == list[middle])', '    return middle;', '  else left = middle + 1;', '}'], 3.3, 5.5, 0.34, -1.6); remove(hd); say('implement 之前', '先寫 pseudocode'); },
     () => { ps.hl(0); L = ptr('left', X(0), -0.1, 2.5); R = ptr('right', X(14), -0.1, 2.5); say('while：中間還有數字沒檢查'); },
-    async () => { ps.hl(1); M = ptr('middle', X(7), 2.6, 1.6); await lift(tok, arr[7], true, 0.4); say('middle = (left + right) / 2', '中位數的位置'); },
-    () => { ps.hl(2); pkt('searchnum = 6', 5.4, 2.4, 1.6); say('searchnum 比 list[middle] 小', '就找左半邊'); },
+    async () => { ps.hl(1); M = ptr('middle', X(7), 2.15, 1.6); await lift(tok, arr[7], true, 0.4); say('middle = (left + right) / 2', '中位數的位置'); },
+    () => { ps.hl(2); pkt('searchnum = 6', -4.4, 3.2, 1.6); say('searchnum 比 list[middle] 小', '就找左半邊'); },
     async () => { ps.hl(3); for (let i = 7; i < 15; i++) tint(arr[i], '#d8cfc0'); await travel(tok, R, R.position.clone(), V3(X(6), -0.1, 2.5), 700); say('左半邊怎麼表示？', '把 right 設成 middle − 1（12 那格）'); },
     () => { ps.hl(5); say('如果剛好等於 list[middle]', '直接 return 它的位置'); },
-    () => { ps.hl(6); note('否則往右：left = middle + 1', -3.0, 3.2, 1.6); say('不是的話就往右', 'left 設成 middle + 1'); },
+    () => { ps.hl(6); note('否則往右：left = middle + 1', -3.6, 4.3, 1.6); say('不是的話就往右', 'left 設成 middle + 1'); },
     () => { ps.hl(-1); ok('寫成 C／C++ 就能跑：只是換成語言的格式', 0, 0.6, 3.4); say('最後真的 implement 出來', '就是換成能跑的語言格式'); },
   ]);
 }]);

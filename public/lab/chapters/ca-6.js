@@ -103,6 +103,8 @@ export default function (ctx) {
       M.tlb.forEach((e) => { relabel(e.mesh, e.v ? '1   ' + e.vpn + '   ' + e.ppn : '0   ' + e.vpn + '   ' + e.ppn); tint(e.mesh, e.v ? colOf(e.vpn) : GRAY); });
       M.pt.forEach((e, p) => { relabel(e.mesh, e.v ? 'V PPN ' + e.ppn + (e.dirty ? ' D' : '') : '0 disk'); tint(e.mesh, e.v ? colOf(p) : GRAY); });
       M.frames.forEach((f, k) => { relabel(f.mesh, f.vpn >= 0 ? 'VP ' + f.vpn : '空'); tint(f.mesh, f.vpn >= 0 ? colOf(f.vpn) : '#efe6d6'); });
+      // 16 rows 0.36 apart: the row labels use a compact font so neighbours don't print over each other
+      [...M.pt.map((e) => e.mesh), ...M.frames.map((f) => f.mesh)].forEach((m) => Object.assign(m.userData.lbl.element.style, { fontSize: '9px', lineHeight: '1.15', padding: '0 4px' }));
       txt(M.statL, 'TLB hit ' + M.tlbHit + ' · miss ' + M.tlbMiss + ' · fault ' + M.faults);
     };
     M.unglow = () => { [...M.tlb.map((e) => e.mesh), ...M.pt.map((e) => e.mesh), ...M.frames.map((f) => f.mesh)].forEach((m) => glow(m, null)); };
@@ -882,6 +884,7 @@ scene('dram-rate', '2,133 MT/s：每個 word 不到半奈秒', [
     S.cpu = prop('cpu', -5.0, 3.9, 0, 1.2, 'CPU + MC');
     S.d = dimm(3.6, 5.6, { s: 0.45 });
     S.db = bx('data bus（64 bits）', NC.green, -0.3, 4.2, 0, 7.4, 0.3, 0.3);
+    S.db.userData.lbl.position.y = -0.42; // the bus's name under it: the words run along the top
     S.h = hot('有效頻率 2,133 MHz（每秒 2,133 百萬次傳輸，MT/s）', 0, 6.6);
     cap('memory channel 的有效頻率', '通常是 2,133 MHz');
   },
@@ -1297,6 +1300,7 @@ scene('dram-bankint', '關 row 要 18 cycles；bank interleaving 讓 bus 不停'
 scene('dram-banks', '要放幾個 bank：速度 vs 容量', [
   async (tok, S) => { // @652 ~This chip has 8 banks
     S.chip = zone('chip（8 banks）', -3.2, 2.0, 0, 5.0, 3.6, '#e2d6c0');
+    S.chip.userData.name.position.set(-5.6, 6.15, 0); // chip name above the banks, clear of the long notes on the right
     S.b8 = []; for (let i = 0; i < 8; i++) S.b8.push(bx('bank ' + i, NC.sky, -4.95 + (i % 4) * 1.17, 4.7 - Math.floor(i / 4) * 1.4, 0, 1.05, 1.2, 0.3));
     S.L = list(3.4, 5.6, 0.5); S.L.push(sm('這顆晶片 8 個 bank（也有更多或更少）', 3.4, 5.6));
     cap('這顆晶片有 8 個 bank', '也有的多、有的少');
@@ -1609,8 +1613,9 @@ scene('dram-ilv-low', '例子：4 個 bank 的 low-order interleaving', [
   },
   async (tok, S) => { // @365 ~lower bits ... select the bank and the remaining higher bits ... word
     S.cpu = prop('cpu', -5.2, 5.1, 0, 0.8, 'CPU');
-    S.F = [bx('word', NC.lilac, 0.0, 5.4, 0, 1.4, 0.5, 0.4), bx('bank', NC.orange, 1.45, 5.4, 0, 1.4, 0.5, 0.4)];
-    S.Fl = [sm('高位', 0.0, 5.85), sm('低位', 1.45, 5.85)];
+    // wide fields: they later read 'word（2 bits）' / 'bank（2 bits）'
+    S.F = [bx('word', NC.lilac, -0.75, 5.4, 0, 2.5, 0.5, 0.4), bx('bank', NC.orange, 1.8, 5.4, 0, 2.5, 0.5, 0.4)];
+    S.Fl = [sm('高位', -0.75, 5.85), sm('低位', 1.8, 5.85)];
     cap('CPU 送出位址：低位 bits 選 bank', '其餘高位 bits 選要拿的 word');
   },
   async (tok, S) => { // @374 ~four banks, so two bits will be required to select the bank
@@ -2726,6 +2731,7 @@ scene('cvm-25b-tlbmore', 'TLB 細節：MMU、hit rate、dirty bit、兩種 TLB m
   async (tok, S) => { // @1665 ~就是一些常常用的PageTable的Entry
     S.cpu = bx('CPU', NC.teal, -5.0, 5.4, 0, 1.4, 0.8); S.tlb = bx('TLB', NC.blue, -2.8, 5.4, 0, 1.6, 0.8);
     S.mem = bx('Main memory', NC.tan, 3.0, 4.6, 0, 3.0, 2.6); S.pt = bx('page table', NC.lilac, 3.0, 5.4, 0.6, 2.4, 0.5);
+    S.mem.userData.lbl.center.set(0, 0.5); S.mem.userData.lbl.position.set(1.6, -1.0, 0); // name beside the box's lower right: its contents fill the box
     cap('TLB：常用的 page table entry', '放在 CPU 旁邊');
   },
   async (tok, S) => { // @1683 ~所以這樣的話去Memory Reference就reduce了一個
@@ -3037,7 +3043,7 @@ scene('cvm-26a-vcache', 'Virtually addressed cache：快，但有兩個問題', 
     cap('解法：每個 process 有 ID', '把 ID 加進 tag，就知道是誰的');
   },
   async (tok, S) => { // @569 ~還有第二個問題是什麼因為physical address可能被shared
-    gone(S.k, S.tg, S.a); S.ph = bx('同一個 physical location', NC.tan, 2.6, 4.9, 0, 3.2, 0.6);
+    gone(S.k, S.tg, S.a); S.vc.position.set(3.4, 6.4, 0); S.ph = bx('同一個 physical location', NC.tan, 2.6, 4.9, 0, 3.2, 0.6); // the cache moves up to make room
     lk(-3.6, 5.6, 1.0, 5.0); lk(-3.6, 4.2, 1.0, 4.8);
     cap('問題二：physical address 可能被 shared', '兩個 virtual address map 到同一個 physical');
   },

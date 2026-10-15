@@ -2982,7 +2982,7 @@ scene('mem-11b-flow', 'TLB 與 page table 一起用：hit / miss', CAMW, [
     glow(S.tlb[2], null);
     const pk = pkt('(2, d)', MC.orange, -6.0, 1.9);
     await slide(tok, pk, -5.6, 3.5, 0.8, 500); glow(S.tlb[2], OKG);
-    relabel(pk, '(6, d)'); tint(pk, MC.green); await slide(tok, pk, 5.0, 6.0 - 6 * 0.56 + 0.4, 0.8, 700); glow(S.fm[6], OKG);
+    relabel(pk, ''); tint(pk, MC.green); await slide(tok, pk, 5.0, 6.0 - 6 * 0.56 + 0.4, 0.8, 700); relabel(pk, '(6, d)'); glow(S.fm[6], OKG); // crosses the TLB rows unlabelled, named on arrival
     txt(S.cnt, 'TLB hit：1 次 memory access'); S.pk = pk;
     cap('每次 translation 先查 TLB', 'hit：直接拿到 f，只碰 memory 一次');
   },

@@ -653,12 +653,12 @@ export default function (ctx) {
     tag('MERGE-SORT(A, p, r)：q = ⌊(p + r)/2⌋，排左、排右、MERGE', 'ptr', 0, 7.6);
     const levelY = [6.4, 4.8, 3.2, 1.6, 0.3];
     say('CLRS 的遞迴版：先一路切到長度 1', 'A = [5, 2, 4, 7, 1, 3, 2, 6]');
-    const segs = [[A.slice()]];
+    const segs = [[A.slice()]], split = [[], [], [], []];
     for (let d = 0; d <= 3; d++) {
       const parts = []; for (const s of segs[d]) { if (s.length === 1) { parts.push(s); continue; } parts.push(s.slice(0, s.length / 2), s.slice(s.length / 2)); }
       segs.push(parts);
       let i0 = 0;
-      for (const s of segs[d]) { const w = s.length * 1.5 - 0.3; cube(s.join(' '), C.blue, [w, 0.45, 0.8], X(i0) + (s.length - 1) * 0.75, levelY[d], 0, 1.2); i0 += s.length; }
+      for (const s of segs[d]) { const w = s.length * 1.5 - 0.3; split[d].push(cube(s.join(' '), C.blue, [w, 0.45, 0.8], X(i0) + (s.length - 1) * 0.75, levelY[d], 0, 1.2)); i0 += s.length; }
       await beat(tok, 900);
     }
     say('長度 1 已經排好；開始往上 MERGE', '');
@@ -667,7 +667,8 @@ export default function (ctx) {
     for (let d = 0; d < 3; d++) {
       const nx = []; for (let i = 0; i < cur.length; i += 2) nx.push([...cur[i], ...cur[i + 1]].sort((p, q) => p - q));
       let i0 = 0;
-      for (const s of nx) { const w = s.length * 1.5 - 0.3; const m = cube(s.join(' '), C.green, [w, 0.45, 0.8], X(i0) + (s.length - 1) * 0.75, levelY[2 - d] + 0.0, 1.4, 1.2); i0 += s.length; }
+      split[2 - d].forEach(kill); // the merged run takes the place of the unsorted run it came from
+      for (const s of nx) { const w = s.length * 1.5 - 0.3; const m = cube(s.join(' '), C.green, [w, 0.45, 0.8], X(i0) + (s.length - 1) * 0.75, levelY[2 - d], 0, 1.2); i0 += s.length; }
       say('第 ' + (d + 1) + ' 輪 MERGE：' + nx.map((s) => '[' + s.join(',') + ']').join(' '), '每一層 merge 的總成本 Θ(n)');
       cur = nx;
       await beat(tok, 1800);
@@ -890,20 +891,21 @@ export default function (ctx) {
 
   // ─── 課本補充（CLRS 9.3）：median of medians 線性時間選擇 ───
   async function scSelectMoM(tok) {
-    fresh([0, 6, 13.5], [0, 2, 0]);
+    fresh([0, 4.2, 13.5], [0, 2.3, 0]);
     const vals = [37, 4, 61, 22, 49, 13, 70, 1, 31, 58, 25, 67, 10, 43, 16, 52, 7, 73, 34, 19, 64, 28, 46, 55, 40];
     const groups = []; for (let g = 0; g < 5; g++) groups.push(vals.slice(g * 5, g * 5 + 5));
-    const X = (g) => -4.4 + g * 2.2, Z = (r) => -2.4 + r * 1.2;
-    let ms = groups.map((G, g) => G.map((v, r) => cube(v, C.blue, [1, 0.5, 0.9], X(g), 0.25, Z(r), 1.5)));
+    // groups stand as columns (smallest on top) so no value hides behind another row
+    const X = (g) => -4.4 + g * 2.2, Y = (r) => 0.3 + (4 - r) * 0.9;
+    let ms = groups.map((G, g) => G.map((v, r) => cube(v, C.blue, [1, 0.5, 0.9], X(g), Y(r), 0, 1.5)));
     say('SELECT 第 i 小：先把 n 個數分成 ⌈n/5⌉ 組，每組 5 個', '例：25 個數 → 5 組');
     await beat(tok, 2600);
-    groups.forEach((G, g) => { const s = G.map((v, r) => ({ v, m: ms[g][r] })).sort((a, b) => a.v - b.v); s.forEach((o, r) => move(o.m, X(g), 0.25, Z(r))); groups[g] = s.map((o) => o.v); ms[g] = s.map((o) => o.m); });
+    groups.forEach((G, g) => { const s = G.map((v, r) => ({ v, m: ms[g][r] })).sort((a, b) => a.v - b.v); s.forEach((o, r) => move(o.m, X(g), Y(r), 0)); groups[g] = s.map((o) => o.v); ms[g] = s.map((o) => o.m); });
     say('每組排序（5 個，常數時間），取中位數', '');
     await beat(tok, 1600);
     ms.forEach((col) => { tint(col[2], C.gold); });
     await beat(tok, 1400);
     const order = [0, 1, 2, 3, 4].sort((a, b) => groups[a][2] - groups[b][2]);
-    order.forEach((g, pos) => ms[g].forEach((m, r) => move(m, X(pos), 0.25, Z(r))));
+    order.forEach((g, pos) => ms[g].forEach((m, r) => move(m, X(pos), Y(r), 0)));
     const G2 = order.map((g) => groups[g]), M2 = order.map((g) => ms[g]);
     say('依中位數把各組排好；遞迴找「中位數的中位數」x', 'x = ' + G2[2][2]);
     await beat(tok, 2200);
@@ -949,10 +951,11 @@ export default function (ctx) {
   async function scMatMul2(tok) {
     fresh([0, 6, 14], [0, 2.4, 0]);
     const A = [[1, 2], [3, 4]], B = [[5, 6], [7, 8]];
-    const grid = (M, cx, col, nm) => { tag(nm, 'ptr', cx, 1.9, -1.2); return M.map((r, i) => r.map((v, j) => cube(v, col, [0.9, 0.5, 0.9], cx - 0.5 + j, 0.25, -1.7 + i))); };
+    // matrices stand upright (row i at height RY(i)) so the rows never print over each other
+    const RY = (i) => 1.35 - i * 0.9;
+    const grid = (M, cx, col, nm) => { tag(nm, 'ptr', cx, 2.3, -1.2); return M.map((r, i) => r.map((v, j) => cube(v, col, [0.9, 0.5, 0.9], cx - 0.5 + j, RY(i), -1.2))); };
     const am = grid(A, -4.4, C.blue, 'A'), bm = grid(B, -1.2, C.purple, 'B');
-    tag('×', 'val', -2.8, 0.4, -1.2); tag('=', 'val', 0.7, 0.4, -1.2);
-    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) ctx.tile(V3(2 + j, 0.04, -1.7 + i), 0.9, 0.9);
+    tag('×', 'val', -2.8, 0.9, -1.2); tag('=', 'val', 0.7, 0.9, -1.2);
     const cd = code(['for (i = 0; i < n; i++)', '  for (j = 0; j < n; j++) {', '    C[i][j] = 0;', '    for (k = 0; k < n; k++)', '      C[i][j] += A[i][k] * B[k][j];', '  }'], 4.4, 6.8, 0.44);
     const cnt = tag('乘法 0 次', 'ptr alt', 4.4, 3.8);
     say('一般矩陣乘法：C[i][j] = Σ A[i][k]·B[k][j]', '三層迴圈 → n³（n = 2 時 8 次乘法）');
@@ -963,7 +966,7 @@ export default function (ctx) {
       cd.hl(4);
       [0, 1].forEach((k) => { glow(am[i][k], GOLD); glow(bm[k][j], GOLD); });
       const v = A[i][0] * B[0][j] + A[i][1] * B[1][j]; c += 2; txt(cnt, '乘法 ' + c + ' 次');
-      cube(v, C.green, [0.9, 0.5, 0.9], 2 + j, 0.25, -1.7 + i, 2);
+      cube(v, C.green, [0.9, 0.5, 0.9], 2 + j, RY(i), -1.2, 2);
       say(F[i * 2 + j], A[i][0] + '×' + B[0][j] + ' + ' + A[i][1] + '×' + B[1][j] + ' = ' + v);
       await beat(tok, 2200);
       [0, 1].forEach((k) => { glow(am[i][k], null); glow(bm[k][j], null); });
@@ -1020,7 +1023,7 @@ export default function (ctx) {
     const G = [['C11 = P + S − T + V', s.P + ' + ' + s.S + ' − ' + s.T + ' + (' + s.V + ') = ' + s.C[0][0], ['P', 'S', 'T', 'V']], ['C12 = R + T', '(' + s.R + ') + ' + s.T + ' = ' + s.C[0][1], ['R', 'T']], ['C21 = Q + S', s.Q + ' + ' + s.S + ' = ' + s.C[1][0], ['Q', 'S']], ['C22 = P + R − Q + U', s.P + ' + (' + s.R + ') − ' + s.Q + ' + ' + s.U + ' = ' + s.C[1][1], ['P', 'R', 'Q', 'U']]];
     for (let q = 0; q < 4; q++) {
       G[q][2].forEach((k) => glow(pm[k], GOLD));
-      cube(s.C[q >> 1][q & 1], C.green, [0.9, 0.5, 0.9], 3 + (q & 1), 0.25, -1.6 + (q >> 1), 2);
+      cube(s.C[q >> 1][q & 1], C.green, [0.9, 0.5, 0.9], 3 + (q & 1), 1.35 - (q >> 1) * 0.9, -1.6, 2); // upright: rows apart
       say(G[q][0], G[q][1]);
       await beat(tok, 2000);
       G[q][2].forEach((k) => glow(pm[k], null));
@@ -1360,7 +1363,7 @@ FRAG.push(['dcbari-dac-code', 'Algorithm DAC(P)：一般方法', async (tok) => 
   await step(tok);                                   // 5:45 combine
   cd.hl(6);
   ps.forEach((m) => tint(m, PC.green)); await beat(tok, 500);
-  ps.forEach((m) => move(m, 2.4, 2.2, 0)); await beat(tok, 700); ps.forEach(kill);
+  ps.forEach((m) => { relabel(m, ''); move(m, 2.4, 2.2, 0); }); await beat(tok, 700); ps.forEach(kill); // names off while they merge into P
   tint(bp, PC.green); relabel(bp, 'S（原問題的解）'); glow(bp, GREEN);
   gd.mood('happy');
   say('return combine(DAC(P1), …, DAC(Pk))', '把各個子解合起來');
@@ -2851,12 +2854,14 @@ FRAG.push(['dcbari-qs-best', 'Quick sort best case：每次切在中間', async 
   fresh([0, 5, 14.5], [0, 3.2, 0]);
   const gd = guide(-6.6, 2.4);
   const W = 12, unit = W / 15, x0 = -5.6;
+  const segs = {};
   const seg = (l, h, d, drop) => {
     const y = 6.4 - d * 1.6, xl = x0 + (l - 1) * unit, w = (h - l + 1) * unit;
     if (l === h) cube(String(l), PC.purple, [unit * 0.85, 0.5, 0.8], xl + w / 2, y, 0, drop);
-    else cube(l + '～' + h, PC.blue, [w - 0.12, 0.5, 0.8], xl + w / 2, y, 0, drop);
+    else segs[l + '-' + h] = cube(l + '～' + h, PC.blue, [w - 0.12, 0.5, 0.8], xl + w / 2, y, 0, drop);
   };
-  const piv = (l, h, d) => { const m = (l + h) >> 1; cube(m, PC.gold, [unit * 0.8, 0.52, 0.85], x0 + (m - 0.5) * unit, 6.4 - d * 1.6, 0.1); };
+  // the pivot lands in the middle of its range, where the range's name was: the bar keeps the colour, the pivot the label
+  const piv = (l, h, d) => { const m = (l + h) >> 1; if (segs[l + '-' + h]) relabel(segs[l + '-' + h], ''); cube(m, PC.gold, [unit * 0.8, 0.52, 0.85], x0 + (m - 0.5) * unit, 6.4 - d * 1.6, 0.1); };
   const split = (l, h, d, drop) => { const m = (l + h) >> 1; piv(l, h, d); seg(l, m - 1, d + 1, drop); seg(m + 1, h, d + 1, drop); };
   const leaves = [[1, 3], [5, 7], [9, 11], [13, 15]];
   if (part === 'build') {
@@ -3094,9 +3099,11 @@ FRAG.push(['dcbari-qs-stack', 'Quick sort 的 stack：log n ～ n', async (tok) 
 
 // ═════════ 0oJyNmEbS4w：Strassen 矩陣乘法 ═════════
 // A、B 是 2×2；格子只寫名稱（影片只用符號，不代數字）
-function mmGrid(pre, cx, col, z0 = -1.7) {
+// the grids stand upright (row i at MMY(i)) so the two rows never print over each other
+const MMY = (i) => 1.5 - i * 1.0;
+function mmGrid(pre, cx, col, z0 = -1.2) {
   const g = [];
-  for (let i = 0; i < 2; i++) { g.push([]); for (let j = 0; j < 2; j++) g[i].push(cube(pre + (i + 1) + (j + 1), col, [0.95, 0.5, 0.9], cx - 0.5 + j, 0.25, z0 + i)); }
+  for (let i = 0; i < 2; i++) { g.push([]); for (let j = 0; j < 2; j++) g[i].push(cube(pre + (i + 1) + (j + 1), col, [1.05, 0.5, 0.9], cx - 0.6 + j * 1.2, MMY(i), z0)); }
   return g;
 }
 // 0:00 一般矩陣乘法：三層迴圈
@@ -3105,30 +3112,31 @@ FRAG.push(['dcbari-mm-loops', '一般矩陣乘法：三層迴圈 n³', async (to
   const gd = guide(-6.6, 2.4);
   let am, bm, cd;
   await step(tok);                                   // 0:00 Strassen：divide and conquer
-  bubble('Strassen 矩陣乘法：divide and conquer', 0, 6.6);
+  const intro = bubble('Strassen 矩陣乘法：divide and conquer', 0, 6.6);
   say('主題：Strassen 矩陣乘法', '屬於 divide and conquer');
   await step(tok);                                   // 0:17 三件事
-  ['① 一般的矩陣乘法', '② 用 divide and conquer 做', '③ Strassen 的改進'].forEach((s, i) => note(s, -3.6 + i * 3.6, 5.6));
+  const plan = ['① 一般的矩陣乘法', '② 用 divide and conquer 做', '③ Strassen 的改進'].map((s, i) => note(s, 0, 5.7 - i * 0.7));
   gd.mood('wow');
   say('分三步看：一般乘法 → 用分治做 → Strassen 怎麼改進', '');
   await step(tok);                                   // 0:35 兩個 2×2 矩陣
   am = mmGrid('a', -4.6, PC.blue); bm = mmGrid('b', -1.6, PC.purple);
-  tag('A（2×2）', 'ptr', -4.6, 1.9, -1.2); tag('B（2×2）', 'ptr', -1.6, 1.9, -1.2);
-  tag('×', 'val', -3.1, 0.4, -1.2);
+  tag('A（2×2）', 'ptr', -4.6, -0.35, -1.2); tag('B（2×2）', 'ptr', -1.6, -0.35, -1.2); // names under the grids: the code goes above
+  tag('×', 'val', -3.1, 0.9, -1.2);
   gd.mood('calm');
   say('先拿兩個 2×2 的矩陣 A、B', '');
   await step(tok);                                   // 0:52 A 的行數 = B 的列數；C 也是 2×2
-  tag('=', 'val', 0.1, 0.4, -1.2);
-  for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) ctx.tile(V3(1.2 + j, 0.04, -1.7 + i), 0.9, 0.9);
-  tag('C（2×2）', 'ptr alt', 1.7, 1.9, -1.2);
+  tag('=', 'val', 0.1, 0.9, -1.2);
+  for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) cube('', '#efe6d2', [1.0, 0.5, 0.2], 1.2 + j * 1.2, MMY(i), -1.55);
+  tag('C（2×2）', 'ptr alt', 1.8, -0.35, -1.2);
   say('能相乘：A 的行數 = B 的列數', '結果 C 也是 2×2');
   await step(tok);                                   // 1:18 C[i][j] = Σ A[i][k]·B[k][j]
-  pkt('C[i][j] = Σ A[i][k] · B[k][j]（k = 1…n）', 0, 4.4);
+  remove(intro); pkt('C[i][j] = Σ A[i][k] · B[k][j]（k = 1…n）', 0, 7.1);
   [0, 1].forEach((k) => { glow(am[0][k], GOLD); glow(bm[k][0], GOLD); });
   say('C 的每一格：A 的一列 × B 的一行，加起來', 'C[i][j] = Σ A[i][k]·B[k][j]');
   await step(tok);                                   // 2:14 程式：for i、for j
   [0, 1].forEach((k) => { glow(am[0][k], null); glow(bm[k][0], null); });
-  cd = code(['for (i = 0; i < n; i++)', '  for (j = 0; j < n; j++) {', '    C[i][j] = 0;', '    for (k = 0; k < n; k++)', '      C[i][j] += A[i][k] * B[k][j];', '  }'], 4.6, 3.4, 0.44);
+  cd = code(['for (i = 0; i < n; i++)', '  for (j = 0; j < n; j++) {', '    C[i][j] = 0;', '    for (k = 0; k < n; k++)', '      C[i][j] += A[i][k] * B[k][j];', '  }'], 0.3, 6.45, 0.72);
+  cd.ls.forEach((l) => l.center.set(0, 0.5)); plan.forEach(remove); // left-anchored panel where the plan was
   cd.hl(0);
   say('寫成程式：for i、for j', '');
   await step(tok);                                   // 2:35 C[i][j] = 0；for k …
@@ -3136,11 +3144,11 @@ FRAG.push(['dcbari-mm-loops', '一般矩陣乘法：三層迴圈 n³', async (to
   say('C[i][j] = 0，再用 for k 累加', 'C[i][j] += A[i][k] * B[k][j]');
   await step(tok);                                   // 3:06 兩層走訪，一層做一列乘一行
   cd.hl(1);
-  note('兩層：走過 C 的每一格　第三層：一列乘一行', 0, 3.3, 1.4);
+  note('兩層：走過 C 的每一格　第三層：一列乘一行', 0, -1.0, 0.6);
   say('兩層迴圈走過每一格', '第三層把一列和一行相乘再相加');
   await step(tok);                                   // 3:34 三層 n 次 → n³
   cd.hl(-1);
-  good('三層迴圈 → O(n³)', -2.6, 1.6, 1.6);
+  good('三層迴圈 → O(n³)', -4.0, 2.6, -1.2);
   gd.mood('happy');
   say('最內層的敘述在三層 n 次迴圈裡', '時間 = O(n³)');
 }]);
@@ -3155,26 +3163,26 @@ FRAG.push(['dcbari-mm-small', 'Small problem：2×2 的四個公式', async (tok
   const bb = bubble('用 divide and conquer 做矩陣乘法', 0, 6.6);
   say('來看 divide and conquer 怎麼用在矩陣乘法', '大就切成子問題、解、再合併');
   await step(tok);                                   // 4:23 先定義 small problem
-  note('先定義：什麼是 small problem？', 0, 5.7);
+  const nDef = note('先定義：什麼是 small problem？', 0, 5.7);
   gd.mood('wow');
   say('一直切下去，總要有一個「小到直接解」的大小', '先定義 small problem');
   await step(tok);                                   // 4:48 2×2 是 small
   am = mmGrid('a', -4.6, PC.blue); bm = mmGrid('b', -1.6, PC.purple);
-  tag('×', 'val', -3.1, 0.4, -1.2); tag('=', 'val', 0.1, 0.4, -1.2);
-  for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) ctx.tile(V3(1.2 + j, 0.04, -1.7 + i), 0.9, 0.9);
-  good('2×2 = small：直接算', -3.1, 1.9, -1.2);
+  tag('×', 'val', -3.1, 0.9, -1.2); tag('=', 'val', 0.1, 0.9, -1.2);
+  for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) cube('', '#efe6d2', [1.0, 0.5, 0.2], 1.2 + j * 1.2, MMY(i), -1.55);
+  good('2×2 = small：直接算', -3.1, 2.5, -1.2);
   gd.mood('calm');
   say('兩個 2×2 矩陣相乘 = small problem', '直接解');
   await step(tok);                                   // 5:07 4×4、8×8 → 切
-  note('4×4、8×8…… → 切成子問題', 3.2, 4.6);
+  note('4×4、8×8…… → 切成子問題', -3.1, 3.4, -1.2);
   say('比 2×2 大（4×4、8×8……）', '就用 divide and conquer 切成子問題');
-  const cd = code(MMF, 4.2, 3.4, 0.5);
+  remove(nDef); const cd = code(MMF, 3.6, 5.8, 0.75); // the four formulas get the space the question had
   for (let q = 0; q < 4; q++) {
     await step(tok);                                 // 5:32 C11 · 5:55 C12 · 6:19 C21 · 6:36 C22
     const i = q >> 1, j = q & 1;
     cd.hl(q);
     [0, 1].forEach((k) => { glow(am[i][k], GOLD); glow(bm[k][j], GOLD); });
-    cs.push(cube('C' + (i + 1) + (j + 1), PC.green, [0.9, 0.5, 0.9], 1.2 + j, 0.25, -1.7 + i, 1.5));
+    cs.push(cube('C' + (i + 1) + (j + 1), PC.green, [1.0, 0.5, 0.9], 1.2 + j * 1.2, MMY(i), -1.2, 1.5));
     say(MMF[q], '第 ' + (i + 1) + ' 列 × 第 ' + (j + 1) + ' 行');
     await beat(tok, 900);
     [0, 1].forEach((k) => { glow(am[i][k], null); glow(bm[k][j], null); });
@@ -3256,7 +3264,7 @@ FRAG.push(['dcbari-mm-algo', 'Algorithm MM(A, B, n)：8 次遞迴', async (tok) 
   const gd = guide(-6.6, 2.6);
   const cd = code(['Algorithm MM(A, B, n) {', '  if (n <= 2)', '    C = 四個公式;', '  else {', '    mid = n / 2;', '    C11 = MM(A11, B11, n/2) + MM(A12, B21, n/2);', '    C12 = MM(A11, B12, n/2) + MM(A12, B22, n/2);', '    C21 = MM(A21, B11, n/2) + MM(A22, B21, n/2);', '    C22 = MM(A21, B12, n/2) + MM(A22, B22, n/2);', '  }', '}'], -1.0, 7.3, 0.46);
   const calls = [['11', '11'], ['12', '21'], ['11', '12'], ['12', '22'], ['21', '11'], ['22', '21'], ['21', '12'], ['22', '22']];
-  const callBox = (k) => cube('A' + calls[k][0] + '·B' + calls[k][1], k < 4 ? PC.blue : PC.purple, [1.3, 0.45, 0.8], -4.9 + (k % 4) * 1.45 + (k % 4 > 1 ? 0.3 : 0), 0.25, k < 4 ? 0.6 : 2.0, 1.2);
+  const callBox = (k) => cube('A' + calls[k][0] + '·B' + calls[k][1], k < 4 ? PC.blue : PC.purple, [1.7, 0.45, 0.8], -5.4 + (k % 4) * 1.9 + (k % 4 > 1 ? 0.4 : 0), 0.25, k < 4 ? 0.6 : 2.0, 1.2);
   await step(tok);                                   // 11:25 MM(A, B, n)
   cd.hl(0);
   say('Algorithm MM(A, B, n)', '只是想法，不是能直接執行的程式');
@@ -7009,7 +7017,7 @@ FRAG.push(['dcmit-ptr-vs-bsearch', '兩指標 vs binary search：L₁ + L₂', a
   const stu = buddy('同學', '為什麼不 binary search？', STU, 5.6, 0, -2.6, 0.6); stu.mood('wow');
   say('同學問：為什麼不用 binary search 找？');
   await step(tok); // @2960.2 one step at a time is optimal
-  bub('一格一格走，才是最佳', -2.0, 3.0, -2);
+  bub('一格一格走，才是最佳', -2.0, 3.0, -2); stu.set(''); // answered: the question bubble goes before list L₁ arrives beside it
   say('因為那樣分析就不快了', '一格一格走反而是最佳');
   await step(tok); // @2968.5 example: both lists 1 … 10,000
   move(p, X(0), 1.0, 0.6);
@@ -7457,6 +7465,7 @@ FRAG.push(['dcmit-int-precision', '除法靠乘法；精度用整數表示', asy
   txt(dT, '事先知道 d：42？125？RSA 1024、2048 位元');
   say('d 可能是 42、125', 'RSA 作業是 1024 或 2048 位元');
   await step(tok); // @1903.1 integer ⌊10^d √2⌋
+  kill(me.g); // the hand-calculator is done; the digits take its place
   const digs = '1414213562'.split('').map((c, i) => cube(c, DB, [0.42, 0.42, 0.5], 2.2 + i * 0.46, 0.25, 1.8, 1));
   tag('d = 9：⌊10⁹ · √2⌋ = 1414213562', 'ptr alt', 4.3, 1.0, 1.8);
   say('要的是整數 ⌊10^d · √2⌋', '小數點往右移 d 位，再取整');

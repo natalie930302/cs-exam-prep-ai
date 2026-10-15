@@ -4124,8 +4124,8 @@ FRAG.push(['arrpeng12-poly-class', 'Term 與 Polynomial 類別（static）', scP
 // ── 用 termArray 做加法：C.start = free，NewTerm 寫在 free 再 free++ ──
 async function scPaddGlobal(tok) {
   const recap = P().recap;
-  fresh([0, 7.5, 13], [0, 1.6, 0.6]);
-  const cd = code(['C.start = free; a = start; b = B.start;', 'while (a <= finish && b <= B.finish)', '  switch (compare(termArray[a].exp, termArray[b].exp)) {', '   case \'=\': c = 兩 coef 相加; if (c) NewTerm(c, exp); a++; b++;', '   case \'<\': NewTerm(b 的 coef, exp); b++;', '   case \'>\': NewTerm(a 的 coef, exp); a++;', '  }', 'for (; a <= finish; a++) NewTerm(…);', 'for (; b <= B.finish; b++) NewTerm(…);', 'C.finish = free − 1;'], 0, 8.4, 0.44);
+  fresh([0, 7.0, 15.5], [0, 3.2, 0.6]);
+  const cd = code(['C.start = free; a = start; b = B.start;', 'while (a <= finish && b <= B.finish)', '  switch (compare(termArray[a].exp, termArray[b].exp)) {', '   case \'=\': c = 兩 coef 相加; if (c) NewTerm(c, exp); a++; b++;', '   case \'<\': NewTerm(b 的 coef, exp); b++;', '   case \'>\': NewTerm(a 的 coef, exp); a++;  }', 'for (; a <= finish; a++) NewTerm(…);', 'for (; b <= B.finish; b++) NewTerm(…);', 'C.finish = free − 1;'], 0, 8.7, 0.4, -3.2);
   const X = taFrame(11, -5.5, 1.1, 0.95);
   const all = [...TA_A, ...TA_B];
   const cells = all.map(([c, e], i) => taCell(i, c, e, X, i < 2 ? BLUE : ORANGE, 0));
@@ -4168,7 +4168,7 @@ async function scPaddGlobal(tok) {
     cd.hl(-1);
     say('a 超過 finish → A 都檢查完了', '');
     await step(tok);                                   // 13:36 copy what is left of B
-    cd.hl(8);
+    cd.hl(7);
     say('B 還有剩：用 for 迴圈把剩下的項 copy 過去', '這個例子 A、B 剛好同時走完');
     return;
   }
@@ -4179,11 +4179,11 @@ async function scPaddGlobal(tok) {
   tiles(5, X(6), 1.1, 0.05, 0.5, 0.95, 2.1, '#f6efe2');
   say('結果放在 termArray，從 free 開始', '');
   await step(tok);                                     // 1:15:41 Polynomial C
-  tag('Polynomial C', 'ptr alt', X(8), 3.0, -0.4);
+  const polyC = tag('Polynomial C', 'ptr alt', X(6), 3.0, -0.4);
   say('宣告 Polynomial C 放結果', '');
   await step(tok);                                     // 1:16:09 C.start = free
   cd.hl(0);
-  tag('C.start', 'ptr alt', X(6), 2.3, -0.4);
+  txt(polyC, 'C.start（Polynomial C）');
   say('C.start = free = 6', 'a = A.start = 0，b = B.start = 2');
   await step(tok);                                     // 1:16:37 while: compare the leading exponents
   cd.hl(2); hi(true);
@@ -4208,10 +4208,10 @@ async function scPaddGlobal(tok) {
   await step(tok);                                     // 1:18:59 then free++
   say('寫完 free++：移到下一個沒用的空間', 'free = ' + free);
   await step(tok);                                     // 1:19:28 free beyond MaxTerms
-  tag('free ≥ MaxTerms → 放不下', 'note', X(8), 3.6, -0.4);
+  tag('free ≥ MaxTerms → 放不下', 'note', X(10.2), 3.0, -0.4);
   say('要檢查：free 超過 MaxTerms 就放不下', '');
   await step(tok);                                     // 1:19:54 then bail out
-  cd.hl(9);
+  cd.hl(8);
   tag('C：6 … ' + (free - 1), 'ptr', X(8), 2.3, -0.4);
   say('放不下就跳出；這裡放得下', 'C(x) = 2x¹⁰⁰⁰ + x⁴ + 10x³ + 3x² + 2');
 }
@@ -4421,13 +4421,15 @@ FRAG.push(['arrpeng12-reuse', '回收 termArray 的空間', scReuse]);
 // ── Sparse matrix：6 × 6、36 格只有 8 個非 0 ──
 const SM = [[0, 0, 15], [0, 3, 22], [0, 5, -15], [1, 1, 11], [1, 2, 3], [2, 3, -6], [4, 0, 91], [5, 2, 28]];
 function smGrid(cx, cz, s, h, zeroH = 0.12) {
-  const ms = {};
+  const ms = {}, zeros = {};
   for (let r = 0; r < 6; r++) for (let c = 0; c < 6; c++) {
     const x = cx + (c - 2.5) * s, z = cz + (r - 2.5) * s;
     const hit = SM.find((t) => t[0] === r && t[1] === c);
     if (hit) ms[r + ',' + c] = cube(String(hit[2]), colorFor(Math.abs(hit[2])), [s * 0.85, h, s * 0.85], x, h / 2, z, 0);
-    else cube('0', '#efe6d6', [s * 0.85, zeroH, s * 0.85], x, zeroH / 2, z);
+    else zeros[r + ',' + c] = cube('0', '#efe6d6', [s * 0.85, zeroH, s * 0.85], x, zeroH / 2, z);
   }
+  // the zero tiles, kept out of Object.values(ms): a transpose swaps them too
+  Object.defineProperty(ms, 'zeros', { value: zeros });
   return ms;
 }
 async function scSparse2d(tok) {
@@ -4474,7 +4476,7 @@ async function scSparseAdt(tok) {
   cd.hl(2);
   say('Transpose：矩陣的轉置', 'Aᵀ');
   await step(tok);                                     // 37:32 rows become columns
-  for (const [r, c] of SM) { if (r === c) continue; const m = ms[r + ',' + c]; glow(m, GOLD); move(m, (r - 2.5) * 1.2, 0.3, 0.4 + (c - 2.5) * 1.2); }
+  for (const [r, c] of SM) { if (r === c) continue; const m = ms[r + ',' + c]; glow(m, GOLD); move(m, (r - 2.5) * 1.2, 0.3, 0.4 + (c - 2.5) * 1.2); const zt = ms.zeros[c + ',' + r]; if (zt) move(zt, (c - 2.5) * 1.2, 0.06, 0.4 + (r - 2.5) * 1.2); }
   await beat(tok, 900);
   say('row 變 column、column 變 row', '(i, j, v) → (j, i, v)');
   await step(tok);                                     // 37:40 Add
@@ -5124,10 +5126,13 @@ FRAG.push(['arrpeng34-rowmajor', 'Row major 與 Column major', async (tok) => {
   glow(G[1][2], GOLD);
   say('第 i 個 row 前面已經有 i · u2 個', '補充：a[1][2] 在 α + 1·4 + 2 = α + 6');
   await step(tok);                                     // 32:36 n-dimensional: a formula (for reference)
-  tag('n 維：a[i1][i2]…[in] 也有公式（參考即可）', 'note', 0, 0.2, 2.4);
+  tag('n 維：a[i1][i2]…[in] 也有公式（參考即可）', 'note', 0, 0.2, 4.7);
   say('可以推廣到 n 維 array', '起始位置套公式，參考就好');
   await step(tok);                                     // 32:55 column major
   glow(G[1][2], null);
+  // back to the 2-D grid first, so the blocks never slide through each other in the row
+  for (let i = 0; i < U1; i++) for (let j = 0; j < U2; j++) move(G[i][j], -1.5 + j * 1.0, 0.2, 0.6 + i * 1.0);
+  await beat(tok, 700);
   for (let j = 0; j < U2; j++) { for (let i = 0; i < U1; i++) move(G[i][j], LX(j * U1 + i), 0.2, -3.3); await beat(tok, 500); }
   glow(G[1][2], GOLD);
   say('Column major：先存 column 0，再 column 1、2…', '補充：a[1][2] 變成 α + 2·3 + 1 = α + 7');
@@ -11498,7 +11503,7 @@ function eqRun(seq) {
 function eqStage(o = {}) {
   const S = { slots: [], lists: Array.from({ length: EQN }, () => []), arr: Array.from({ length: EQN }, () => []), outs: [], stack: [], lines: [] };
   for (let i = 0; i < EQN; i++) {
-    tag('[' + i + ']', 'idx', EQX(i), 0, EQ_SLOT_Z - 0.75);
+    tag('[' + i + ']', 'idx', EQX(i), 0, EQ_SLOT_Z - (o.idxDz || 0.75));
     S.slots.push(cube('0', '#e9dcc4', [0.8, 0.4, 0.8], EQX(i), 0.2, EQ_SLOT_Z));
   }
   tag('seq', 'ptr', -6.5, 0.3, EQ_SLOT_Z);
@@ -11778,27 +11783,26 @@ FRAG.push(['llpeng34-phase1-code', 'Phase 1 的程式', async (tok) => {
 // zLuuRC56uvI 19:30：Phase 2 的 stack
 const EQ_CODE2 = [
   'for (i = 0; i < n; i++) if (!out[i]) {',
-  '  cout << i;  out[i] = true;',
-  '  x = seq[i];  top = 0;                  // stack 清空',
+  '  cout << i;  out[i] = true;  x = seq[i];  top = 0;',
   '  while (1) {',
   '    while (x) { j = x->data;',
   '      if (!out[j]) { cout << j; out[j] = true; push x; }',
   '      x = x->link; }',
-  '    if (!top) break;                     // stack 空 → class 結束',
-  '    x = seq[top->data];  pop;            // 換走 stack 頂端那個數字的 list',
-  '  } }',
+  '    if (!top) break;  x = seq[top->data];  pop;  } }',
 ];
 FRAG.push(['llpeng34-phase2-stack', 'Phase 2：用 stack 走訪', async (tok) => {
-  fresh([0, 9.5, 10.5], [0, 2.4, -0.5]);
-  const cd = code(EQ_CODE2, 0, 8.2, 0.52, -2.6);
-  const S = eqStage({ out: true, stack: true });
+  fresh([0, 9.0, 9.0], [0, 2.9, -0.7]);
+  const cd = code(EQ_CODE2, 0, 7.6, 0.46, -3.4);
+  const S = eqStage({ out: true, stack: true, idxDz: 1.15 });
   eqBuild(S, EQP);
+  // every seq[i] here has a list, and its arrow already shows the pointer: a '•' on each slot would sit on the index row
+  S.slots.forEach((m) => relabel(m, ''));
   const ring = ringAt(0.48);
   const outL = tag('New class:', 'ptr alt', 0, 0.2, 3.0);
   const pr = [];
   const at = (i, k) => { ring.visible = true; ring.position.set(EQX(i), 0.03, eqZ(k)); };
   const print = (v) => { pr.push(v); eqSetOut(S, v); txt(outL, 'New class: ' + pr.join(', ')); };
-  const push = (v) => { const s = cube(v, colorFor(v), [0.75, 0.45, 0.75], EQ_STK_X, 0.25 + 0.5 * S.stack.length, EQ_OUT_Z, 3); s.userData.v = v; S.stack.push(s); };
+  const push = (v) => { const s = cube(v, colorFor(v), [0.75, 0.75, 0.75], EQ_STK_X, 0.4 + 0.8 * S.stack.length, EQ_OUT_Z, 3); s.userData.v = v; S.stack.push(s); };
   const pop = () => { const s = S.stack.pop(); if (s) fly(s, V3(2, 7, 3)); };
   await step(tok);                                   // 19:30 想法簡單、實作難
   say('Phase 2：想法很簡單，實作出來還蠻難的', '');
@@ -11808,7 +11812,7 @@ FRAG.push(['llpeng34-phase2-stack', 'Phase 2：用 stack 走訪', async (tok) =>
   say('先把跟 0 直接相關的數字都印出來', '暫時不去看它們自己的 list');
   await step(tok);                                   // 20:06 0 看到 11，印 11
   cd.hl(1); print(0); glow(S.slots[0], GOLD);
-  cd.hl(5); at(0, 0); print(11);
+  cd.hl(4); at(0, 0); print(11);
   say('印出 0；看 0 的 list：看到 11 → 印出 11', '');
   await step(tok);                                   // 20:13 看到 4，印 4
   at(0, 1); print(4);
@@ -11823,19 +11827,19 @@ FRAG.push(['llpeng34-phase2-stack', 'Phase 2：用 stack 走訪', async (tok) =>
   push(4);
   say('4 印出來，也丟進 stack', 'stack：11、4');
   await step(tok);                                   // 21:03 0 的 list 到 null
-  cd.hl(7);
+  cd.hl(6);
   say('看完 4：0 的 list 走到 null 了', '');
   await step(tok);                                   // 21:33 pop 出 4
-  cd.hl(8); pop(); glow(S.slots[0]); glow(S.slots[4], GOLD);
+  cd.hl(6); pop(); glow(S.slots[0]); glow(S.slots[4], GOLD);
   say('從 stack pop 出 4', '去看 4 對應的 link list');
   await step(tok);                                   // 21:48 7：印出、push
-  cd.hl(5); at(4, 0); print(7); push(7);
+  cd.hl(4); at(4, 0); print(7); push(7);
   say('4 跟 7 有關：印出 7，push 進 stack', 'stack：11、7');
   await step(tok);                                   // 21:56 0 已經 true
   at(4, 1); glow(S.outs[0], RED);
   say('再看到 0：out[0] 已經是 true', '印過了，不用管它');
   await step(tok);                                   // 22:06 4 的 list 到 null → pop
-  glow(S.outs[0]); ring.visible = false; cd.hl(8);
+  glow(S.outs[0]); ring.visible = false; cd.hl(6);
   say('4 的 list 到 null', '從 stack pop 出下一個數字，再拜訪它的 list');
   await step(tok);                                   // 22:28 pop 7：只有 4，已印過
   pop(); glow(S.slots[4]); glow(S.slots[7], GOLD);
@@ -11846,7 +11850,7 @@ FRAG.push(['llpeng34-phase2-stack', 'Phase 2：用 stack 走訪', async (tok) =>
   at(11, 0); await beat(tok, 450);
   at(11, 1); print(2); push(2); await beat(tok, 450);
   pop(); glow(S.slots[11]); at(2, 0);
-  cd.hl(7);
+  cd.hl(6);
   say('stack 只剩 11：pop 出來，看到 2 → 印出', '第一個 class：0, 11, 4, 7, 2');
 }]);
 
@@ -12801,7 +12805,7 @@ function mazeStage(cam) {
       boxes.forEach(kill); boxes = [];
       list.slice(-9).forEach((k, i) => boxes.push(kind === 'queue'
         ? cube(lbl(k), TODO, [1.25, 0.4, 0.5], 6.3, 0.2, -3.6 + i * 0.6)
-        : cube(lbl(k), TODO, [1.25, 0.4, 0.8], 6.3, 0.2 + i * 0.45, 2.6)));
+        : cube(lbl(k), TODO, [1.25, 0.3, 0.55], 7.0, 0.15, 2.9 - i * 0.7)));   // grows away from the camera: seen from above, a tower in y would squash
     },
     visit(key) { if (cur) paint(cur, '#cfe8dc'); cur = key; paint(key, OKC); },
     path(par, goal) { let len = 0; for (let k = goal; k; k = par[k]) { paint(k, '#c08a1f'); len++; } return len - 1; },
@@ -13710,10 +13714,12 @@ FRAG.push(['sqlin-maze-problem', '迷宮問題：從入口走得到出口嗎', a
 }]);
 
 // ── 116:30 遞迴走迷宮 ──
+// seen more from above, so the 16 frames of the system stack (a row in depth) stay apart
+const REC_CAM = [1, 14, 5.5];
 const recPlayer = () => {
   const evs = mazeRecEvents(), frames = [];
-  const fz = (k) => 4.4 - k * 0.42;
-  tag('system stack', 'ptr', 6, 0.4, 5.2);
+  const fz = (k) => 4.7 - k * 0.58;
+  tag('system stack', 'ptr', 6, 0.4, 5.4);
   const apply = (e) => {
     if (e.type === 'visit') { paint(e.key, OKC); frames.push(cube('(' + e.key + ')', '#9b7ef4', [1.3, 0.3, 0.36], 6, 0.15, fz(frames.length))); }
     else if (e.type === 'back') { paint(e.key, '#e9c9c0'); kill(frames.pop()); }
@@ -13722,7 +13728,7 @@ const recPlayer = () => {
   return { evs, frames, apply };
 };
 FRAG.push(['sqlin-maze-rec', '遞迴走迷宮：system stack 上是一條路', async (tok) => {
-  mazeStage();
+  mazeStage(REC_CAM);
   const R = recPlayer();
   const half = R.evs.findIndex((e, i) => e.type === 'back' && i > 4);
   await step(tok);                                   // 116:47 現在在 (i,j)
@@ -14115,7 +14121,7 @@ FRAG.push(['sqlin-tree-bfs', 'Queue 版：Breadth First Search', async (tok) => 
 
 // ── 174:40 Q&A：recursive 版也是 DFS ──
 FRAG.push(['sqlin-maze-rec-qa', 'Q&A：Recursive 版也是 DFS', async (tok) => {
-  mazeStage();
+  mazeStage(REC_CAM);
   const R = recPlayer();
   await step(tok);                                   // 174:41 recursive 也是 DFS？
   await chunk(tok, R.evs, 0, R.evs.length, R.apply, 120);
@@ -14123,7 +14129,7 @@ FRAG.push(['sqlin-maze-rec-qa', 'Q&A：Recursive 版也是 DFS', async (tok) => 
   await step(tok);                                   // 174:52 是的
   say('是的：recursive 也有', 'DFS 的 behavior');
   await step(tok);                                   // 174:59 記的東西不一樣
-  tag('system stack：一條路', 'ptr', -3, 1.6, -5.3); tag('自己的 stack：待探索的點', 'ptr alt', 3, 1.6, -5.3);
+  tag('system stack：一條路', 'ptr', -3.9, 1.6, -5.3); tag('自己的 stack：待探索的點', 'ptr alt', 3.9, 1.6, -5.3);
   say('但記在 system stack 上的', '和記在自己 stack 上的不太一樣');
   await step(tok);                                   // 175:10 寫得出一樣的
   say('不過可以寫出某個 stack 版本', '做出 exactly 一樣的 DFS behavior');
@@ -15903,7 +15909,7 @@ FRAG.push(['sqpeng-multistack', 'Multiple stacks 與 Stack ≠ Array', async (to
     const small = [['n²', -4.6], ['n', 4.2], ['1', 5.8]].map(([t, x]) => cube(t, B_, [1.0, 0.6, 1.0], x, 0.3, 0, 5));
     say('多項式：最後只留最大項', '例：n³ + n² + n + 1');
     await step(tok);                                   // 119:33 其他項被吞掉
-    for (const s of small) { move(s, 0, 1.2, 0); await beat(tok, 450); kill(s); }
+    for (const s of small) { s.userData.lbl.element.style.visibility = 'hidden'; move(s, 0, 1.2, 0); await beat(tok, 450); kill(s); }   // its name goes first, so it never prints over n³
     say('其他項都被比較大的項吞掉', '');
     await step(tok);                                   // 119:47 秦吞六國
     glow(big, GOLD);
@@ -16541,7 +16547,8 @@ FRAG.push(['ptrwhy-memory', '程式在記憶體裡：code、stack、heap', async
 // 2:31 用途一：存取 heap
 FRAG.push(['ptrwhy-heap', '用途一：透過指標存取 heap', async (tok) => {
   P.fresh([0, 7.5, 12], [0.2, 0.5, 0.5]);
-  memory();
+  const M = memory();
+  M.code.userData.name.position.z = 2.4;   // the code area's name at its front edge: p's name sits right above its back edge
   const cd = code(['int *p;', 'p = malloc(10);'], -4.2, 1.1, 0.55, 1.0);
   prop('cpu', -7.0, 0, 1.6, 0.9, 'CPU（執行程式）');
   say('用途一：存取 heap');
@@ -16592,7 +16599,8 @@ FRAG.push(['ptrwhy-swapval', '用途二（上）：call by value 換不了', asy
   tag('用途 ②', 'say', -6.4, 2.4, -1.2);
   const cd = code(['void swap(int x, int y) {', '  int t = x; x = y; y = t;', '}', 'swap(a, b);'], -5.2, 3.6, 0.5, -1.5);
   await step(tok);                                   // 3:57 main is having two variables
-  zone('stack 區・每個函式一塊', 1.6, 0, 0.6, 6.4, 4.4, C_STACK);
+  const stk = zone('stack 區・每個函式一塊', 1.6, 0, 0.6, 6.4, 4.4, C_STACK);
+  stk.userData.name.position.z = 3.1;   // front edge: swap's x, y, t stand on the back edge
   tag('main', 'say', -2.9, 0.5, 2.0);
   const a = vbox('a', 10, -1.2, 2.0, C_MAIN), b = vbox('b', 20, 0.0, 2.0, C_MAIN);
   say('main 有 a、b，想交換它們');

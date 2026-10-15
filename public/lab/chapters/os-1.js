@@ -3294,7 +3294,7 @@ FRAG.push(['osA-comp', '電腦的組成：user、application、OS、hardware', a
   say('自動駕駛：車子要跟很多 device、別的車溝通', '它的 user 就是別的自動駕駛車');
   await step(tok);                                   // 399.8 in the OS world, hardware = resources
   gone(car1, car2);
-  if (hw.userData.lbl) txt(hw.userData.lbl, 'Hardware ＝ 資源（resources）');
+  if (hw.userData.lbl) { txt(hw.userData.lbl, 'Hardware ＝ 資源（resources）'); hw.userData.lbl.position.y = 0.72; } // name moves to the top edge: the resource blocks go on its face
   say('OS 的世界裡，hardware 被說成「資源」', '不管哪個 device，只管有什麼、有多少、怎麼分配');
   await step(tok);                                   // 418.5 some resources go whole, some can be split
   A(note('有的要整個獨占，有的可以切細分配', 0, -0.4, 1.4));
@@ -4699,14 +4699,15 @@ FRAG.push(['osB-cli-gui', 'User interface：CLI 與 GUI', async (tok) => {
   hot('CLI：command line', -3.4, 2.6);
   sayc('第一種：CLI', 'command line interface，下指令');
   await step(tok);                                   // 7:35 GUI: graphic user interface
-  const mon2 = prop('monitor', 3.4, 0, 0, 1.0); icon('🗂️', '', 3.0, 1.05, 0.2, 'sm'); icon('🖱️', '', 3.9, 1.0, 0.2, 'sm');
-  hot('GUI：graphic user interface', 3.4, 2.6);
+  const mon2 = prop('monitor', 3.4, 0, 0, 1.0); const ic = [icon('🗂️', '', 3.0, 1.05, 0.2, 'sm'), icon('🖱️', '', 3.9, 1.0, 0.2, 'sm')];
+  const gui = hot('GUI：graphic user interface', 3.4, 2.6);
   sayc('第二種：GUI', '圖形介面（Microsoft 靠它崛起）');
   await step(tok);                                   // 8:00 from this course on, use the CLI
   bub('這堂課開始：login 到 Linux server 用 CLI', -3.4, 3.4);
   sayc('從這堂課開始', '希望大家用 CLI');
   await step(tok);                                   // 8:15 GUI is built on the CLI
-  await slide(tok, mon2, 3.4, 1.3, 0, 600);
+  // the whole GUI (screen, its icons and its name) lifts up onto the CLI block
+  await Promise.all([slide(tok, mon2, 3.4, 1.3, 0, 600), slide(tok, ic[0], 3.0, 2.35, 0.2, 600), slide(tok, ic[1], 3.9, 2.3, 0.2, 600), slide(tok, gui, 3.4, 3.9, 0, 600)]);
   bx('CLI', COL.user, 3.4, 0.6, 0, 2.2, 0, 0.5, 1.0);
   sayc('GUI 是架在 CLI 上面', 'GUI 做得到的 CLI 全做得到');
   await step(tok);                                   // 8:34 software stacks: programs talk via commands

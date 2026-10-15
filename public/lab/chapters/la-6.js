@@ -2082,7 +2082,7 @@ scene('l24-props', 'L24：Markov 矩陣的兩個性質', [
 ]);
 
 scene('l24-keys', 'L24：λ = 1 與其他 |λ| < 1', [
-  async (tok, S) => { cap('欄和 = 1 保證 λ = 1 是特徵值', '不用算 det(A − λI)'); mtx(MK, -4.8, 5.4); hd('A', -4.8, 6.5); S.st = stack(-2.4, 6.3, 0.5); S.st.ok(near(detN(shift(MK, 1)), 0, 1e-12), 'det(A − I) = 0 ✓：λ = 1 真的是特徵值'); },
+  async (tok, S) => { cap('欄和 = 1 保證 λ = 1 是特徵值', '不用算 det(A − λI)'); mtx(MK, -4.8, 5.4); hd('A', -4.8, 6.5); S.st = stack(-1.6, 6.5, 0.66); S.st.ok(near(detN(shift(MK, 1)), 0, 1e-12), 'det(A − I) = 0 ✓：λ = 1 真的是特徵值'); },
   async (tok, S) => { cap('重點 1：λ = 1 是特徵值', ''); S.st.add('重點 1：λ₁ = 1', 'ptr'); },
   async (tok, S) => {
     S.ev = realEigs(MK); const oth = S.ev.filter((l) => !near(l, 1, 1e-6)); S.oth = oth;
@@ -2091,7 +2091,7 @@ scene('l24-keys', 'L24：λ = 1 與其他 |λ| < 1', [
     S.st.ok(oth.length === 2 && oth.every((l) => Math.abs(l) < 1), 'λ₂ ≈ ' + nf(oth[0], 3) + '、λ₃ ≈ ' + nf(oth[1], 3) + '：|λ| < 1 ✓');
   },
   async (tok, S) => { cap('特例：可能另有 |λ| = 1', '但絕不會 |λ| &gt; 1'); S.st.add('（特例可能有 |λ| = 1，但絕不會 > 1）', 'idx'); },
-  async (tok, S) => { cap('一直乘 A：u_k = Aᵏu₀', '考試很可能要你算 Aᵏ 或 Aᵏu₀'); S.st.add('u_k = Aᵏ u₀'); },
+  async (tok, S) => { cap('一直乘 A：u_k = Aᵏu₀', '考試很可能要你算 Aᵏ 或 Aᵏu₀'); S.st.clear(); S.st.add('λ₁ = 1；其他 |λ| < 1', 'ptr'); S.st.add('u_k = Aᵏ u₀'); },
   async (tok, S) => { cap('一般公式：每個特徵向量各乘 λᵏ', 'u_k = c₁λ₁ᵏx₁ + c₂λ₂ᵏx₂ + c₃λ₃ᵏx₃'); S.st.add('= c₁λ₁ᵏx₁ + c₂λ₂ᵏx₂ + c₃λ₃ᵏx₃', 'ptr'); },
   async (tok, S) => { cap('前提：要有完整的一組特徵向量', '不然 u₀ 拆不成特徵向量的組合'); S.st.add('前提：3 個獨立特徵向量（才拆得開 u₀）', 'note'); },
   async (tok, S) => {
@@ -2107,13 +2107,14 @@ scene('l24-keys', 'L24：λ = 1 與其他 |λ| < 1', [
   async (tok, S) => {
     const x1 = eigInfo(MK).groups.find((g) => near(g.re, 1, 1e-6)).vecs[0], sx = x1.reduce((a, b) => a + b, 0), xn = x1.map((v) => v / sx);
     cap('特徵向量 x₁ 的分量全都 ≥ 0', '從平均分配開始一直乘 A：收斂到 x₁');
-    const xs = [1.2, 2.8, 4.4], H = 1.5;
+    const xs = [3.4, 4.8, 6.2], H = 1.5;
     const bs = xs.map((x, i) => { const m = lab.box([COL.b, COL.a, COL.c][i], [1.0, 1, 1.0]); m.position.set(x, 0.5, 0); lab.world.add(m); sm('狀態 ' + (i + 1), x, -0.35); return m; });
     const ls = xs.map((x) => sm('', x, 1));
     const show = (v) => v.forEach((p, i) => { const h = Math.max(0.02, p * H); bs[i].scale.y = h; bs[i].position.y = h / 2; ls[i].position.y = h + 0.3; txt(ls[i], nf(p * 100, 1) + '%'); });
     const us = [[1 / 3, 1 / 3, 1 / 3]]; for (let k = 0; k < 20; k++) us.push(mulMV(MK, us[k]));
     await anim(tok, 2400, (u) => { const t = u * 20, k = Math.min(19, Math.floor(t)), f = t - k; show(us[k].map((v, i) => v + (us[k + 1][i] - v) * f)); });
-    S.st.ok(x1.every((v) => v * sx >= -1e-9) && nearV(xn, [0.6, 33, 0.7].map((v) => v / 34.3), 1e-6) && nearV(us[20], xn, 1e-2), 'x₁ ∝ (0.6, 33, 0.7)：分量都 ≥ 0 ✓');
+    const okx = x1.every((v) => v * sx >= -1e-9) && nearV(xn, [0.6, 33, 0.7].map((v) => v / 34.3), 1e-6) && nearV(us[20], xn, 1e-2);
+    S.st.ok(okx, 'x₁ ∝ (0.6, 33, 0.7)：分量都 ≥ 0 ✓');
   },
 ]);
 
@@ -2140,28 +2141,29 @@ scene('l24-why', 'L24：為什麼 λ = 1：A − I 是奇異的', [
 ]);
 
 scene('l24-trans', 'L24：A 與 Aᵀ 特徵值相同；解出 x₁', [
-  async (tok, S) => { cap('A 和 Aᵀ 的特徵值有什麼關係？', '答案：一樣'); S.st = stack(-6.2, 6.4, 0.52); S.st.add('A 和 Aᵀ 的特徵值相同', 'ptr alt'); },
+  async (tok, S) => { cap('A 和 Aᵀ 的特徵值有什麼關係？', '答案：一樣'); S.st = stack(-6.2, 6.7, 0.46); S.st.add('A 和 Aᵀ 的特徵值相同', 'ptr alt'); },
   async (tok, S) => { cap('A 的特徵值：det(A − λI) = 0', ''); S.st.add('det(A − λI) = 0'); },
   async (tok, S) => { cap('行列式性質 10：det Mᵀ = det M', '把整個矩陣轉置'); S.st.add('⇔ det((A − λI)ᵀ) = 0　（性質 10）'); },
   async (tok, S) => { const a = charPoly(MK), b = charPoly(T(MK)); cap('(λI)ᵀ 還是 λI', '⇒ det(Aᵀ − λI) = 0：同一組 λ'); S.st.add('⇔ det(Aᵀ − λI) = 0'); S.st.ok(nearV(a, b, 1e-12), 'A、Aᵀ 的特徵多項式完全相同 ✓'); },
   async (tok, S) => { const r = mulMV(T(MK), [1, 1, 1]); cap('Aᵀ 的 λ = 1 特徵向量是 (1, 1, 1)', 'A 的 λ = 1 特徵向量是另一個（null space ≠ left null space）'); S.st.ok(nearV(r, [1, 1, 1], 1e-12), 'Aᵀ(1, 1, 1) = (1, 1, 1) ✓；A 的 x₁ 要另外找'); },
   async (tok, S) => {
-    S.AI = shift(MK, 1); S.g = mgrid(S.AI.map((r) => r.map((v) => Math.round(v * 100) / 100)), -6.0, 2.4, 0, { size: 0.68, gap: 0.82, color: () => '#e7dcc8' }); sm('A − I', -5.2, 3.05);
-    S.x = [cube('0.6', COL.d, [0.68, 0.68, 0.3], -3.0, 2.4, 0, 1), cube('?', COL.d, [0.68, 0.68, 0.3], -3.0, 1.58, 0, 1), cube('0.7', COL.d, [0.68, 0.68, 0.3], -3.0, 0.76, 0, 1)]; sm('x₁', -3.0, 3.05);
+    S.st.clear(); S.st.add('A、Aᵀ 特徵值相同；Aᵀ 的 λ = 1 特徵向量是 (1, 1, 1)', 'ptr alt');
+    S.AI = shift(MK, 1); S.g = mgrid(S.AI.map((r) => r.map((v) => Math.round(v * 100) / 100)), -6.4, 1.8, 0, { size: 0.68, gap: 0.82, widths: [0.92, 0.82, 0.92], color: () => '#e7dcc8' }); sm('A − I', -5.2, 2.45);
+    S.x = [cube('0.6', COL.d, [0.68, 0.68, 0.3], -3.0, 1.8, 0, 1), cube('?', COL.d, [0.68, 0.68, 0.3], -3.0, 0.98, 0, 1), cube('0.7', COL.d, [0.68, 0.68, 0.3], -3.0, 0.16, 0, 1)]; sm('x₁', -3.0, 2.45);
     const r3 = S.AI[2][0] * 0.6 + S.AI[2][2] * 0.7;
     cap('先放 0.6 和 0.7：第 3 列就成立', '0.7·0.6 + 0·x₂ − 0.6·0.7 = 0');
-    S.c3 = slot(-2.3, 0.76).ok(near(r3, 0, 1e-12) && S.AI[2][1] === 0, '第 3 列：0.42 − 0.42 = 0 ✓'); S.c3.center.set(0, 0.5);
+    S.c3 = slot(-2.3, 0.16).ok(near(r3, 0, 1e-12) && S.AI[2][1] === 0, '第 3 列：0.42 − 0.42 = 0 ✓'); S.c3.center.set(0, 0.5);
   },
   async (tok, S) => {
     const x2 = -(S.AI[0][0] * 0.6 + S.AI[0][2] * 0.7) / S.AI[0][1]; S.x2 = x2;
     cap('第 1 列：−0.54 + 0.01·x₂ + 0.21 = 0', '−0.33 + 0.01·x₂ = 0 → x₂ = 33');
     relabel(S.x[1], fmt(Math.round(x2 * 1e6) / 1e6)); glow(S.x[1], GOLD);
-    const l = slot(-2.3, 2.4).ok(near(x2, 33, 1e-9), '第 1 列：x₂ = 0.33 / 0.01 = 33 ✓'); l.center.set(0, 0.5);
+    const l = slot(-2.3, 1.8).ok(near(x2, 33, 1e-9), '第 1 列：x₂ = 0.33 / 0.01 = 33 ✓'); l.center.set(0, 0.5);
   },
   async (tok, S) => {
     const x = [0.6, S.x2, 0.7], r = mulMV(S.AI, x);
     cap('x₁ = (0.6, 33, 0.7)：分量全是正的', '跟理論預測的一樣');
-    const l = slot(-2.3, 1.58).ok(r.every((v) => near(v, 0, 1e-9)), '第 2 列也 = 0 ✓'); l.center.set(0, 0.5);
+    const l = slot(-2.3, 0.98).ok(r.every((v) => near(v, 0, 1e-9)), '第 2 列也 = 0 ✓'); l.center.set(0, 0.5);
     S.st.ok(r.every((v) => near(v, 0, 1e-9)) && x.every((v) => v > 0), '(A − I)(0.6, 33, 0.7) = 0 ✓，分量都 > 0');
   },
 ]);
@@ -2234,8 +2236,8 @@ scene('l24-calmass', 'L24：加州／麻州人口流動', [
 scene('l24-ortho', 'L24：標準正交基底展開 xᵢ = qᵢᵀv', [
   async (tok, S) => {
     cap('標準正交基底 q₁, …, qₙ', 'qᵢᵀqⱼ = 0（i ≠ j）、qᵢᵀqᵢ = 1');
-    S.Sp = space3(0, 2.4, 0, 1, 2.4); const R = rodrigues([1, 2, 2], 0.7); S.q = [0, 1, 2].map((j) => R.map((r) => r[j]));
-    S.qa = S.q.map((v, i) => S.Sp.arrow(v, [COL.d, COL.r, COL.a][i], 'q' + '₁₂₃'[i])); S.st = stack(-4.4, 6.6, 0.5);
+    S.Sp = space3(2.6, 2.4, 0, 1, 2.4); const R = rodrigues([1, 2, 2], 0.7); S.q = [0, 1, 2].map((j) => R.map((r) => r[j]));
+    S.qa = S.q.map((v, i) => S.Sp.arrow(v, [COL.d, COL.r, COL.a][i], 'q' + '₁₂₃'[i])); S.st = stack(-6.6, 6.6, 0.5);
   },
   async (tok, S) => { S.v = [1.2, 0.8, 1.6]; S.Sp.arrow(S.v, COL.k, 'v'); cap('任何向量 v 都能用這組基底展開', 'v = x₁q₁ + x₂q₂ + x₃q₃'); S.st.add('v = x₁q₁ + x₂q₂ + x₃q₃', 'ptr'); },
   async (tok, S) => { cap('x₁ 是多少？', '基底是標準正交 → 應該有很簡單的公式'); S.st.add('x₁ = ?', 'ptr alt'); },
@@ -2251,7 +2253,7 @@ scene('l24-ortho', 'L24：標準正交基底展開 xᵢ = qᵢᵀv', [
   async (tok, S) => { cap('矩陣語言：Qx = v', 'Q 的欄就是 q₁, q₂, q₃'); S.st.add('矩陣：Q x = v'); },
   async (tok, S) => { S.Q = T(S.q); cap('x = Q⁻¹v，而 Q⁻¹ 就是 Qᵀ', '欄標準正交 ⇒ QᵀQ = I：不必真的求反矩陣'); S.st.add('x = Q⁻¹v = Qᵀv', 'ptr'); S.st.ok(nearM(mm(T(S.Q), S.Q), I3, 1e-12), 'QᵀQ = I ✓'); },
   async (tok, S) => { const x = mulMV(T(S.Q), S.v); cap('x 的第一個分量 = Qᵀ 第一列 · v', '= q₁ᵀv：跟剛剛一樣'); S.st.ok(near(x[0], S.x[0], 1e-12), '(Qᵀv)₁ = q₁ᵀv = ' + nf(x[0]) + ' ✓'); },
-], { cam: [[0, 0, 0], [0, 2.4, 0]], init: () => cam(30, 22, 10.5, [0, 2.4, 0]) });
+], { cam: [[0, 0, 0], [0, 2.4, 0]], init: () => cam(30, 22, 11.5, [0, 2.4, 0]) });
 
 const FX0 = -5.6, FSX = 11.2 / (2 * Math.PI), FY0 = 2.4, FSY = 0.75;
 const fp = (x, y) => V3(FX0 + x * FSX, FY0 + y * FSY, 0);
@@ -2349,7 +2351,7 @@ scene('qr-proj', 'L24b：投影到直線 a = (2, 1, 2)', [
 ], { cam: [[3.5, 5.0, 10.5], [0, 2.4, 0]] });
 
 scene('qr-iter', 'L24b：u_{k+1} = P u_k', [
-  async (tok, S) => { cap('解 u_{k+1} = P u_k，u₀ = (9, 9, 0)', '求 u_k'); S.Sp = space3(0, 1.6, 0, 0.28, 3.4); S.Sp.line(QA, COL.g, 12); S.Sp.arrow(QA, COL.g, 'a'); S.Sp.arrow([9, 9, 0], COL.k, 'u₀'); S.st = stack(-6.4, 6.4, 0.52); },
+  async (tok, S) => { cap('解 u_{k+1} = P u_k，u₀ = (9, 9, 0)', '求 u_k'); S.Sp = space3(3.4, 0.8, 0, 0.28, 3.4); S.Sp.line(QA, COL.g, 12); S.Sp.arrow(QA, COL.g, 'a'); S.Sp.arrow([9, 9, 0], COL.k, 'u₀'); S.st = stack(-6.4, 6.4, 0.52); },
   async (tok, S) => {
     const u1 = mulMV(QP, [9, 9, 0]); S.u1 = u1; cap('u₁ = P u₀ = a (aᵀu₀) / (aᵀa)', 'aᵀu₀ = 18 + 9 = 27、aᵀa = 9 → 3a = (6, 3, 6)');
     const a = S.Sp.arrow(scl(u1, 0.001), COL.b, 'u₁'); await anim(tok, 1200, (t) => S.Sp.set(a, scl(u1, t))); rod(COL.r, 0.02).setW(S.Sp.w([9, 9, 0]), S.Sp.w(u1));
@@ -2362,7 +2364,7 @@ scene('qr-iter', 'L24b：u_{k+1} = P u_k', [
   async (tok, S) => {
     const X = [[1, 1, 2], [-2, 0, 1], [0, -1, 2]], c = mulMV(invN(X), [9, 9, 0]);
     cap('投影矩陣：λ = 0, 0, 1', '兩個 λ = 0 的項直接丟掉，只剩 c₃x₃ = 3a = (6, 3, 6)');
-    S.st.add('x₁ = (1, −2, 0)、x₂ = (1, 0, −1)（λ = 0）、x₃ = a（λ = 1）');
+    S.st.add('λ = 0：x₁ = (1, −2, 0)、x₂ = (1, 0, −1)'); S.st.add('λ = 1：x₃ = a');
     S.st.ok(nearV(c, [-3, 6, 3], 1e-9), 'u₀ = −3x₁ + 6x₂ + 3a ✓ → u_k = 3a = (6, 3, 6)');
   },
 ], { cam: [[3.5, 5.0, 10.5], [0, 2.4, 0]] });
@@ -2390,7 +2392,7 @@ scene('qr-lsq', 'L24b：最小平方——過原點的直線', [
 ]);
 
 scene('qr-gs', 'L24b：Gram–Schmidt：a₁ = (1, 2, 3)、a₂ = (1, 1, 1)', [
-  async (tok, S) => { cap('Gram–Schmidt：兩個向量變正交', 'a₁ = (1, 2, 3)、a₂ = (1, 1, 1)：在它們張成的平面裡找兩個正交向量'); S.Sp = space3(0, 1.6, 0, 0.62, 2.6); S.a1 = S.Sp.arrow([1, 2, 3], COL.d, 'a₁'); S.Sp.arrow([1, 1, 1], COL.a, 'a₂'); S.st = stack(-6.4, 6.4, 0.52); },
+  async (tok, S) => { cap('Gram–Schmidt：兩個向量變正交', 'a₁ = (1, 2, 3)、a₂ = (1, 1, 1)：在它們張成的平面裡找兩個正交向量'); S.Sp = space3(4.0, 0.8, 0, 0.62, 2.6); S.a1 = S.Sp.arrow([1, 2, 3], COL.d, 'a₁'); S.Sp.arrow([1, 1, 1], COL.a, 'a₂'); S.st = stack(-6.4, 6.4, 0.52); },
   async (tok, S) => { cap('兩個向量張成一個平面 = A 的欄空間', '要找這個平面的正交基底'); S.Sp.plane([1, 2, 3], [1, 1, 1], COL.c, 0.16); S.st.add('平面 = C(A)，A = [a₁ a₂]'); },
   async (tok, S) => { S.a1.glow(GOLD); cap('答案不只一個；Gram–Schmidt：第一個留著', '先保留 a₁'); S.st.add('第一個向量：a₁ 不動'); },
   async (tok, S) => { cap('第二個：a₂ 減掉它在 a₁ 方向的投影', 'B = a₂ − (a₁ᵀa₂ / a₁ᵀa₁) a₁'); S.st.add('B = a₂ − (a₁ᵀa₂ / a₁ᵀa₁) a₁', 'ptr'); },
@@ -2849,11 +2851,11 @@ scene('tr-pauli', '3B1B 15：Pauli 自旋矩陣', [
 ]);
 
 scene('tr-quad', '3B1B 15：mean–product 公式與二次方程式', [
-  async (tok, S) => { cap('這跟解特徵多項式本質上一樣', '畢竟是同一個問題'); S.st = stack(-6.0, 6.3, 0.58); S.st.add('本質：解同一個二次方程式', 'ptr'); },
+  async (tok, S) => { cap('這跟解特徵多項式本質上一樣', '畢竟是同一個問題'); S.st = stack(-6.0, 6.6, 0.5); S.st.add('本質：解同一個二次方程式', 'ptr'); },
   async (tok, S) => { cap('mean–product 公式可以解任何二次方程式', ''); S.st.add('mean–product 公式 = 解二次方程式的方法'); },
   async (tok, S) => { cap('求二次式的根：其實是知道兩根的和與積', '要找回那兩個數'); S.st.add('二次式：已知兩根的「和」與「積」'); },
   async (tok, S) => { cap('首項係數 1 時：平均 = −½ × 一次項係數', '（示意 x² − 10x + 21）m = 5'); S.st.add('（示意）x² − 10x + 21：m = −½(−10) = 5'); },
-  async (tok, S) => { cap('乘積就是常數項', 'p = 21 → 5 ± √(25 − 21) = 7、3'); S.X = nline(0, 10, 1.2); await mpSpread(tok, S.X, 5, 2, 1.2); const r = roots([1, -10, 21]); S.st.ok(r.every((z) => near(z[1], 0)) && nearV(r.map((z) => z[0]).sort((a, b) => b - a), [7, 3], 1e-6), 'x = 7、3 ✓（7 + 3 = 10、7 × 3 = 21）'); },
+  async (tok, S) => { cap('乘積就是常數項', 'p = 21 → 5 ± √(25 − 21) = 7、3'); S.X = nline(0, 10, 0.5); await mpSpread(tok, S.X, 5, 2, 0.5); const r = roots([1, -10, 21]); S.st.ok(r.every((z) => near(z[1], 0)) && nearV(r.map((z) => z[0]).sort((a, b) => b - a), [7, 3], 1e-6), 'x = 7、3 ✓（7 + 3 = 10、7 × 3 = 21）'); },
   async (tok, S) => { cap('像是輕量版的二次公式', '好處：每個符號都有意義'); S.st.add('比二次公式少記，而且每個符號有意義'); },
   async (tok, S) => { cap('矩陣直接讀出 m、p', '跳過寫特徵多項式這一步'); S.st.add('矩陣 → 直接讀 m、p → 寫出 λ', 'ptr alt'); },
   async (tok, S) => { cap('順便複習：trace = 和、det = 積', ''); S.st.add('trace = λ₁ + λ₂、det = λ₁λ₂', 'ptr'); },

@@ -1738,9 +1738,9 @@ scene('dt-cr-rule', '3B1B Cramer：面積都乘上 det A → Cramer 法則', [
 
 const A3C = [[1, 0, 0.5], [0.5, 1, 0], [0, 0, 1.5]], X3 = [1, 1, 1];   // 示意
 scene('dt-cr-3d', '3B1B Cramer：推廣到 3D（自己想）', [
-  async (tok, S) => { S.sp = space([0, 1.2, 0], 1.1, 2.2); cap('3 維以上也類似', '先暫停想一想'); S.n = note('示意', -3.6, 5.8); },
+  async (tok, S) => { S.sp = space([0, 1.2, 0], 1.1, 2.2); cap('3 維以上也類似', '先暫停想一想'); S.n = note('示意', -3.6, 6.95); },
   async (tok, S) => {
-    S.b = A3C.map((r) => dot3(r, X3)); S.m = mview(A3C, -3.6, 4.2, { s: 0.5, name: 'A（示意）' });
+    S.b = A3C.map((r) => dot3(r, X3)); S.m = mview(A3C, -3.6, 4.35, { s: 1.0, name: 'A（示意）' });
     S.ab = arw(CO, 0.06); setArrow(S.ab, S.sp.P(0, 0, 0), S.sp.P(...S.b)); sm('b = ' + v2s(S.b), ...S.sp.P(S.b[0], S.b[1], S.b[2] + 0.35).toArray()); cap('已知 3×3 的變換和輸出 b', '要找哪個輸入落到 b');
   },
   async (tok, S) => { S.pp = ppiped(YEL); const d = setPP(S.pp, S.sp, [1, 0, 0], [0, 1, 0], X3); cap('把 z 座標想成 î、ĵ 和輸入向量的體積', ''); S.k = ok(near(d, X3[2]), 'det[î ĵ x] = ' + fmt(d) + ' = z ✓', -3.6, 2.4); },

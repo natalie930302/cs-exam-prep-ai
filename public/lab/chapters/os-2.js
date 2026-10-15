@@ -1782,11 +1782,11 @@ FRAG.push(['proc-6a-micro', 'Microkernel 與 modular OS', async (tok) => {
   cap('Microkernel：一定要知道', '只把 OS 最核心、必要的部分當 kernel');
   await step(tok);                                   // 100 其他變成可替換的 module
   const M = ['file system', 'device driver', 'memory 管理'].map((n, i) => bx(n, PC[i + 2], -3.6 + (i - 1) * 2.2, 0.5, 0.6, 2.0, 0.5, 0.8, 0));
-  M.forEach((m) => { m.position.y = 0.4; m.position.z = 1.8; });
-  const cfg = good('configurable：module 可以替換', -3.6, 1.6, 2.6);
+  M.forEach((m) => { m.position.y = 1.45; m.position.z = 1.8; }); // a row above the kernel's name, not on it
+  const cfg = good('configurable：module 可以替換', -3.6, -0.6, 2.4);
   cap('其他部分盡量變成一堆 module', '可以替換 → OS 是 configurable');
   await step(tok);                                   // 116 module run 在 user space
-  for (const [i, m] of M.entries()) { await slide(tok, m, -3.6 + (i - 1) * 2.2, 2.9, -0.4, 500); }
+  await Promise.all(M.map((m, i) => slide(tok, m, -3.6 + (i - 1) * 2.2, 2.9, -0.4, 600)));
   hot('module 放在 user space！', -3.6, 4.0, -0.4);
   cap('非常重要：這些 module run 在 user space', '要分清 kernel space 和 user space');
   await step(tok);                                   // 134 用 message passing 溝通
@@ -3511,19 +3511,19 @@ FRAG.push(['proc-neso-fork1', '實機示範：加一個 fork()，印兩次', asy
   prop('monitor', 4.2, 0, -1.0, 1.4); tag('Linux Mint', 'say', 5.8, 3.6, -1.0);
   cap('用 C 寫程式、在 Linux 上跑', '看 fork、exec 實際怎麼運作');
   await step(tok);                                   // 255 fex1.c：印 Hello + PID
-  const cd = codeL(['#include <stdio.h>', '#include <unistd.h>', 'int main() {', '  printf("Hello Neso Academy! PID = %d\\n", getpid());', '  return 0;', '}'], -7.2, 5.8, 0.45);
+  const cd = codeL(['#include <stdio.h>', '#include <unistd.h>', 'int main() {', '  printf("Hello Neso Academy! PID = %d\\n", getpid());', '  return 0;', '}'], -7.2, 5.8, 0.55);
   cd.hl(3);
   cap('fex1.c：印出 Hello Neso Academy', '再用 getpid() 印出 process ID');
   await step(tok);                                   // 317 gcc fex1.c → a.out
-  const T = term(0.4, 2.6);
+  const T = term(0.4, 1.8); // under the code: the printf line is long
   T.add('$ gcc fex1.c'); prop('file', -1.0, 0, 2.4, 0.6, 'a.out');
   cap('gcc 是 Linux 的 C compiler', 'gcc fex1.c 會產生執行檔 a.out');
   await step(tok);                                   // 371 ./a.out → PID 5824
   T.add('$ ./a.out'); T.add('Hello Neso Academy! PID = 5824', 'good');
   cap('執行 ./a.out', '印出一行，PID = 5824');
   await step(tok);                                   // 394 加上 fork()
-  const cd2 = codeL(['  fork();'], -7.2, 4.45, 0.45); cd2.hl(0);
-  cd.ls.slice(3).forEach((l) => { l.position.y -= 0.45; });
+  const cd2 = codeL(['  fork();'], -7.2, 5.8 - 3 * 0.55, 0.55); cd2.hl(0);
+  cd.ls.slice(3).forEach((l) => { l.position.y -= 0.55; });
   cap('回到程式加一個 fork()', '存檔');
   await step(tok);                                   // 434 重新編譯執行：印兩次
   T.add('$ ./a.out'); T.add('Hello Neso Academy! PID = 5837', 'good'); T.add('Hello Neso Academy! PID = 5838', 'good');
@@ -3533,7 +3533,7 @@ FRAG.push(['proc-neso-fork1', '實機示範：加一個 fork()，印兩次', asy
   await slide(tok, b.g, -3.4, 0, 1.4, 700); a.mood('happy'); b.mood('happy');
   cap('因為 fork 建立了自己的 child process', '程式被執行兩次：parent 一次、child 一次');
   await step(tok);                                   // 488 PID 不同、內容相同
-  good('PID 不同，內容一模一樣', -4.2, 2.4, 1.4);
+  good('PID 不同，內容一模一樣', -4.2, 1.9, 1.4);
   cap('process ID 不一樣', '但內容完全相同，所以印出同樣的字');
 }]);
 
@@ -3575,10 +3575,11 @@ FRAG.push(['proc-neso-fork3', '三個 fork()：印 8 次', async (tok) => {
 FRAG.push(['proc-neso-exec', '實機示範：execv() 換掉內容，PID 不變', async (tok) => {
   fresh([0, 5, 14.5], [0, 2.6, 0]);
   await step(tok);                                   // 725 exec 資料夾：ex1.c、ex2.c
-  prop('file', 5.0, 4.0, 0, 0.6, 'ex1.c'); prop('file', 6.6, 4.0, 0, 0.6, 'ex2.c');
+  const files = [prop('file', 1.0, 3.9, 0, 0.6, 'ex1.c'), prop('file', 2.6, 3.9, 0, 0.6, 'ex2.c')];
   cap('接著看 exec', '資料夾裡有兩個程式：ex1.c 和 ex2.c');
   await step(tok);                                   // 755 ex1.c：印自己的 PID
-  const A = codeL(['int main(int argc, char *argv[]) {', '  printf("PID of ex1.c = %d\\n", getpid());', '  char *args[] = {"Hello", "Neso", "Academy", NULL};', '  execv("./ex2", args);', '  printf("Back to ex1.c");', '  return 0;', '}'], -7.2, 6.6, 0.45);
+  files.forEach((f) => kill(f)); // the files give way to their code
+  const A = codeL(['int main(int argc, char *argv[]) {', '  printf("PID of ex1.c = %d\\n", getpid());', '  char *args[] = {"Hello", "Neso", "Academy", NULL};', '  execv("./ex2", args);', '  printf("Back to ex1.c");', '  return 0;', '}'], -7.2, 6.9, 0.55);
   A.hl(1);
   cap('ex1.c：先印出自己的 PID', '用 getpid()');
   await step(tok);                                   // 782 宣告字元陣列 Hello Neso Academy NULL
@@ -3591,16 +3592,16 @@ FRAG.push(['proc-neso-exec', '實機示範：execv() 換掉內容，PID 不變',
   A.hl(4);
   cap('後面還有一行 printf', '「Back to ex1.c」，然後 return 0');
   await step(tok);                                   // 841 ex2.c：印 We are in ex2.c 和 PID
-  const B = codeL(['int main(int argc, char *argv[]) {', '  printf("We are in ex2.c\\n");', '  printf("PID of ex2.c = %d\\n", getpid());', '}'], -7.2, 3.3, 0.55);
+  const B = codeL(['int main(int argc, char *argv[]) {', '  printf("We are in ex2.c\\n");', '  printf("PID of ex2.c = %d\\n", getpid());', '}'], -7.2, 2.9, 0.55);
   B.hl(1);
   cap('ex2.c：印「We are in ex2.c」', '再印出它的 PID');
   await step(tok);                                   // 878 用 -o 指定輸出檔名，避免都叫 a.out
-  const T = term(2.4, 2.4);
+  const T = term(3.6, 2.4);
   T.add('$ gcc ex1.c -o ex1'); T.add('$ gcc ex2.c -o ex2');
   cap('兩個都 compile', '用 -o 指定檔名，不然都叫 a.out 會互相覆蓋');
   await step(tok);                                   // 1008 只執行 ./ex1
   T.add('$ ./ex1');
-  const p = pal('ex1', '', PC[0], -5.8, 0, 1.6, 0.55);
+  const p = pal('ex1', '', PC[0], 1.7, 0, 0.8, 0.55); // between the code and the terminal
   cap('只執行第一個：./ex1', '');
   await step(tok);                                   // 1026 印出 PID of ex1.c = 5962
   A.hl(1); T.add('PID of ex1.c = 5962', 'good'); p.set('5962');
@@ -3613,13 +3614,13 @@ FRAG.push(['proc-neso-exec', '實機示範：execv() 換掉內容，PID 不變',
   B.hl(2); T.add('PID of ex2.c = 5962', 'good'); p.mood('wow');
   cap('ex2 的 PID 是多少？', '一樣是 5962');
   await step(tok);                                   // 1081 不是跳過去，是內容被取代
-  const jump = lines2(good('不是「跳過去」：\n同一個 process 的內容被換掉', 4.9, 6.9));
+  const jump = lines2(good('不是「跳過去」：\n同一個 process 的內容被換掉', 4.4, 7.6));
   cap('其實不是跳過去', '是第一個 process 的內容被第二個取代；PID 不變');
   await step(tok);                                   // 1139 Back to ex1.c 沒有印出來
-  A.hl(4); bad('「Back to ex1.c」沒有印！', -1.6, 0.6, 1.2);
+  A.hl(4); bad('「Back to ex1.c」沒有印！', 4.4, 4.0, 0);
   cap('ex1.c 還有一行 Back to ex1.c 沒印', '因為內容被換掉了，控制權永遠回不來');
   await step(tok);                                   // 1183 總結
-  remove(jump); lines2(note('fork：新 process、PID 不同、內容相同\nexec：同一個 process、PID 相同、內容換掉', 4.4, 6.95));
+  remove(jump); lines2(note('fork：新 process、PID 不同、內容相同\nexec：同一個 process、PID 相同、內容換掉', 4.4, 7.6));
   cap('fork：建立 duplicate 的 child，PID 不同', 'exec：取代整個 process，PID 不變');
 }]);
   }

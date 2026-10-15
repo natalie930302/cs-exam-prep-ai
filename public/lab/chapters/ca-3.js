@@ -158,8 +158,17 @@ export default function (ctx) {
     const pts = names.flatMap((n) => WIRES[n]);
     names.forEach((n) => { if (D.w[n]) D.w[n].material.color.set(WON); });
     const m = cube(text, color || '#c08a1f', [0.32, 0.22, 0.32], pts[0][0], pts[0][1], 0.35);
-    if (m.userData.lbl) small(m.userData.lbl, 9);
-    await anim(tok, ms, (f) => { const [x, y] = polyAt(pts, f); m.position.set(x, y, 0.35); });
+    // the token rests part-way along its wire with its value just above it, so it never covers the
+    // name of the block the wire runs into
+    // a value through the ALUSrc mux waits just before the mux (the M / ALU names are tight there)
+    const viaMux = names.length > 1 && names[names.length - 1] === 'ma_alu';
+    const below = viaMux || names[names.length - 1] === 'wr'; // the write-register number goes under its wire (Registers' name is above)
+    if (m.userData.lbl) { small(m.userData.lbl, 9); m.userData.lbl.position.y = below ? -0.36 : 0.36; }
+    const len = (ps) => { let l = 0; for (let i = 1; i < ps.length; i++) l += Math.hypot(ps[i][0] - ps[i - 1][0], ps[i][1] - ps[i - 1][1]); return l; };
+    const L = Math.max(len(pts), 0.01), last = len(WIRES[names[names.length - 1]]);
+    // stop ~1.3 units before the block it feeds, but stay on the last wire (not on a mux on the way)
+    const end = viaMux ? Math.max(0.35, (len(names.slice(0, -1).flatMap((n) => WIRES[n])) - 0.6) / L) : Math.max(0.35, Math.max(L - 1.3, L - last * 0.5) / L);
+    await anim(tok, ms, (f) => { const [x, y] = polyAt(pts, f * end); m.position.set(x, y, 0.35); });
     return m;
   }
   const lit = (D, ks) => ks.forEach((k) => D.c[k] && glow(D.c[k], GOLD));
@@ -1097,7 +1106,7 @@ scene('cpu-perf', '14A：CPU time = IC × CPI × cycle time', [
     cap('general-purpose processor：一直重複同一件事', 'fetch 一個 instruction → decode → execute → 再 fetch');
     const pos = [[-3.0, 5.6], [3.0, 5.6], [0, 3.6]];
     S.st = ['Fetch', 'Decode', 'Execute'].map((t, i) => bx(t, [CC.blue, CC.purple, CC.orange][i], pos[i][0], pos[i][1], 2.2, 0.7));
-    const m = await flow(tok, [[-3.0, 5.6], [3.0, 5.6], [0, 3.6], [-3.0, 5.6]], 'instr', CC.gold, 1800);
+    const m = await flow(tok, [[-1.8, 5.6], [1.8, 5.6], [1.6, 4.5], [-1.6, 4.5], [-1.8, 5.3]], 'instr', CC.gold, 1800); // runs between the boxes, not over their names
     kill(m);
   },
   async (tok, S) => {   // 2 performance 公式
@@ -1295,7 +1304,7 @@ scene('cpu-elems', '14A：基本元件：wire、bus、combinational element', [
   async (tok, S) => {   // 5 sequential element：存起來
     cap('Sequential element：把東西存起來', '時間切成一個一個 cycle，一次做一件事，做完要存');
     S.r = bx('Register', CC.gold, 4.6, 2.6, 1.6, 1.0);
-    const m = await flow(tok, [[2.8, 2.6], [3.8, 2.6]], '9', CC.mint, 600); kill(m); relabel(S.r, 'Register：9');
+    const m = await flow(tok, [[2.8, 2.6], [3.3, 2.6]], '9', CC.mint, 600); kill(m); relabel(S.r, 'Register：9');
   },
   async (tok, S) => {   // 6 combinational 有哪些
     cap('combinational：AND、adder、ALU、mux', '這些前面都講過');
@@ -1374,7 +1383,7 @@ scene('cpu-clockm', '14A：clocking methodology 與 critical path', [
   },
   async (tok, S) => {   // 2 edge：新 data 進來，開始算
     cap('clock transition：新 data 進 state element', 'combinational logic 只要 input 變就開始算');
-    glow(S.s1, HL); S.v = await flow(tok, [[-4.4, 4.6], [0, 4.6]], 'data', CC.green, 900); glow(S.cl, HL);
+    glow(S.s1, HL); S.v = await flow(tok, [[-4.4, 4.6], [-2.5, 4.6], [-2.5, 5.5]], 'data', CC.green, 900); glow(S.cl, HL); // waits above the wire, not on a block's name
   },
   async (tok, S) => {   // 3 path delay
     cap('經過 AND gate、OR gate… 要時間：path delay', '算完才會到 output');
@@ -1383,7 +1392,7 @@ scene('cpu-clockm', '14A：clocking methodology 與 critical path', [
   },
   async (tok, S) => {   // 4 delay < clock period
     cap('這段 delay 一定要小於 clock period', '太長的話 clock 已經 transition 了，latch 到錯的 data');
-    kill(S.v); S.v = await flow(tok, [[0, 4.6], [4.4, 4.6]], 'data', CC.green, 800); glow(S.s2, HL);
+    kill(S.v); S.v = await flow(tok, [[0, 4.6], [2.5, 4.6], [2.5, 5.5]], 'data', CC.green, 800); glow(S.s2, HL);
     S.r = mt('combinational delay < clock period', 0, 1.9, 13, 'ptr alt');
   },
   async (tok, S) => {   // 5 critical path
@@ -1643,12 +1652,12 @@ scene('cpu-rtlsw', '14B：Store、addi、beq 的 RTL', [
   },
   async (tok, S) => {   // 4 16 bits 是 signed
     cap('這 16 bits 是 signed 還是 unsigned？', '加的 constant 有正有負 → signed number');
-    S.c = mt('constant：−32768 ～ ' + (2 ** 15 - 1), 3.6, 4.0, 12, 'note');
+    S.c = mt('constant：−32768 ～ ' + (2 ** 15 - 1), -3.4, 1.55, 12, 'note'); // notes stay under the RTL list (its lines are long)
   },
   async (tok, S) => {   // 5 一樣要 sign extension
     const v = -50;
     cap('所以 immediate 也一定要 sign extension', '示意：−50 補 1 才對；補 0 就變成 ' + fromU(toB(v, 16)));
-    S.k = ok(fromS(toB(v, 16).padStart(32, '1')) === v, '示意：SignExt(−50) = −50', 3.6, 3.3);
+    S.k = ok(fromS(toB(v, 16).padStart(32, '1')) === v, '示意：SignExt(−50) = −50', 3.4, 1.55);
   },
   async (tok, S) => {   // 6 beq：比較
     cap('beq：把 rs、rt 拿出來比較', '相等才跳');
@@ -1656,7 +1665,7 @@ scene('cpu-rtlsw', '14B：Store、addi、beq 的 RTL', [
   },
   async (tok, S) => {   // 7 PC + 4 已經先加了
     cap('不管是不是 branch，hardware 一開始就先做 PC + 4', '所以跳的基準是 PC + 4');
-    S.n = note('PC + 4 一定先算好', 3.6, 1.5);
+    S.n = note('PC + 4 一定先算好', -3.4, 0.85);
   },
   async (tok, S) => {   // 8 target = PC + 4 + SignExt(imm)‖00
     cap('target = PC + 4 + SignExt(imm16) ‖ 00', '後面補兩個 0（× 4）');
@@ -1665,7 +1674,7 @@ scene('cpu-rtlsw', '14B：Store、addi、beq 的 RTL', [
   },
   async (tok, S) => {   // 9 先算好，比較結果決定跳不跳
     cap('target 可以先算好', '要不要跳，由比較的結果決定');
-    S.d = hot('先算好 target，比較結果決定選哪個', 0, 0.3);
+    S.d = hot('先算好 target，比較結果決定選哪個', 0, 0.1);
   },
 ]);
 
@@ -2413,12 +2422,12 @@ scene('cpu-lwtime', '15A：critical path：load', [
   async (tok, S) => {   // 5 setup time
     S.t3 = S.t2 + TD.dm;
     cap('setup time：clock 來之前 data 要先準備好', '不能 clock 來的時候才急急忙忙在變');
-    S.b3 = tbars([['setup', S.t3, TD.setup, CC.pink]], S.x0, 5.6, S.sc);
+    S.b3 = tbars([['setup', S.t3, TD.setup, CC.pink, -1]], S.x0, 5.6, S.sc); // thin bars: one row up each, so their names don't stack
   },
   async (tok, S) => {   // 6 clock skew
     S.t4 = S.t3 + TD.setup;
     cap('clock skew：clock 有的先到有的後到', '用最壞的狀況，再把 clock 拉長一點');
-    S.b4 = tbars([['skew', S.t4, TD.skew, CC.red]], S.x0, 5.6, S.sc);
+    S.b4 = tbars([['skew', S.t4, TD.skew, CC.red, -2]], S.x0, 5.6, S.sc);
   },
   async (tok, S) => {   // 7 總和 = clock period
     const tot = TD.clkq + TD.im + TD.reg + TD.alu + TD.dm + TD.setup + TD.skew;

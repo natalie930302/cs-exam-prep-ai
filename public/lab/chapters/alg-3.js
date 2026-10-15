@@ -1623,7 +1623,7 @@ FRAG.push(['dpbari3-fib-table', 'Tabulation：迴圈 bottom-up 填 F[0..5]', asy
   const g = grid({ rows: 1, cols: 6, cw: 1.25, ch: 0.9, x0: -1.25 * 2.5, y0: 3.0, colHdr: Array.from({ length: 6 }, (_, k) => 'F[' + k + ']') });
   let cd;
   await step(tok);                                   // 11:50 iterative function using loop
-  cd = code(['fib(n):', '  if n <= 1: return n', '  F[0] = 0; F[1] = 1', '  for i = 2 to n:', '    F[i] = F[i-2] + F[i-1]', '  return F[n]'], 0, 7.4, 0.45);
+  cd = code(['fib(n):', '  if n <= 1: return n', '  F[0] = 0; F[1] = 1', '  for i = 2 to n:', '    F[i] = F[i-2] + F[i-1]', '  return F[n]'], 0, 8.0, 0.6);
   say('Tabulation：用迴圈寫的同一個函式', '不呼叫自己');
   await step(tok);                                   // 11:59 same formula n−2 and n−1
   cd.hl(4);
@@ -2416,7 +2416,8 @@ FRAG.push(['dpbari3-knap-brute', '0/1 knapsack：一連串決策、2ⁿ 種解',
   const grow = (d) => {
     const i = 4 - d, sp = 11.2 / 2 ** (d + 1), nx = [];
     lvl.forEach((n) => [0, 1].forEach((b) => {
-      const x = n.x + (b ? 1 : -1) * sp / 2, y = 7.0 - (d + 1) * 1.3;
+      // the 16 leaves are only 0.7 apart: every other one sits a little lower so their bit strings never touch
+      const x = n.x + (b ? 1 : -1) * sp / 2, y = 7.0 - (d + 1) * 1.3 - (d === 3 && nx.length % 2 ? 0.5 : 0);
       rod(V3(n.x, n.y - 0.2, -0.05), V3(x, y + 0.2, -0.05), b ? ORANGE : GRAY, 0.022);
       const c = { x, y, bits: [b].concat(n.bits), w: n.w + b * KP[i - 1].w };
       c.m = cube(d === 3 ? c.bits.join('') : b, b ? ORANGE : GRAY, [d === 3 ? 0.62 : 0.4, 0.36, 0.36], x, y, 0, 1);
@@ -4345,10 +4346,11 @@ FRAG.push(['dpjiang1-dc-review', 'Divide & Conquer 回顧：拆、遞迴解、�
   say('拆到 simple enough 就停', '答案一眼就看得出來');
   await step(tok);                                   // 299.0 combine：把小答案兜回大答案
   tag('combine', 'ptr alt', -5.4, 5.6);
+  lv2.forEach((m) => relabel(m, '')); // names off while the pieces merge back
   for (let k = 0; k < 2; k++) { move(lv2[2 * k], lv1[k].position.x - 0.3, 5.6, 0); move(lv2[2 * k + 1], lv1[k].position.x + 0.3, 5.6, 0); }
   await beat(tok, 800);
   lv2.forEach(kill); e2.forEach(kill); lv1.forEach((m) => tint(m, C.teal));
-  lv1.forEach((m) => move(m, 0, 7.2, 0));
+  lv1.forEach((m) => { relabel(m, ''); move(m, 0, 7.2, 0); });
   await beat(tok, 800);
   lv1.forEach(kill); e1.forEach(kill); tint(top, C.teal);
   say('最後 combine：小答案兜回大問題的答案', '');
@@ -9748,7 +9750,7 @@ FRAG.push(['dpmit1-bj-rules', 'Blackjack 規則：Victor 上台示範', async (t
   txt(pv, '18：stand'); vic.mood('calm');
   say('標準策略：stand');
   await step(tok);                                   // 2433.8 my cards flip over: 17
-  remove(cs[3]); cs[3] = cardM(7, DXp + 0.4, CY, 0);
+  kill(cs[3]); cs[3] = cardM(7, DXp + 0.4, CY, 0);
   dv = tag('10 + 7 = 17', 'ptr alt', DXp, CY + 1.0);
   say('莊家翻牌：17');
   await step(tok);                                   // 2442.8 I hit … and lose (a slip)
@@ -9765,7 +9767,7 @@ FRAG.push(['dpmit1-bj-rules', 'Blackjack 規則：Victor 上台示範', async (t
   vic.mood('happy');
   say('莊家：< 17 就一定再拿一張');
   await step(tok);                                   // 2470.8 deal again
-  cs.forEach((m) => fly(m)); cs = []; remove(pv); remove(dv);
+  cs.forEach((m) => kill(m)); cs = []; remove(pv); remove(dv); // cleared at once: the new hand is dealt on the same spots
   await deal([10, 8], [10, 10]);
   say('再來一局：再發一次牌');
   await step(tok);                                   // 2475.6 you have 18 again
@@ -9775,7 +9777,7 @@ FRAG.push(['dpmit1-bj-rules', 'Blackjack 規則：Victor 上台示範', async (t
   txt(pv, '18：stand');
   say('照策略：stand');
   await step(tok);                                   // 2490.8 I have 20: I win
-  remove(cs[3]); cs[3] = cardM(10, DXp + 0.4, CY, 0);
+  kill(cs[3]); cs[3] = cardM(10, DXp + 0.4, CY, 0);
   dv = tag('10 + 10 = 20', 'ptr alt', DXp, CY + 1.0);
   prof.mood('happy'); vic.mood('sad');
   say('莊家 20', '這局莊家贏');

@@ -889,6 +889,14 @@ export default function (ctx) {
 
   // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
   const K = kit(ctx);
+  // remove() also takes buddy / prop groups here: their name and value labels
+  // are nested CSS2D children, so drop every nested element, not just the root
+  K.remove = function remove(l) {
+    if (!l) return;
+    if (l.parent) l.parent.remove(l);
+    if (l.traverse) l.traverse((c) => { if (c.element) c.element.remove(); }); else if (l.element) l.element.remove();
+    if (l.userData && l.userData.name) remove(l.userData.name);
+  };
   const FRAG = [];
   // ═══ hasha.js ═══
   {
@@ -3949,7 +3957,7 @@ FRAG.push(['hashlin2-ads', 'Bloom filter 應用：1532 人看紅色廣告', asyn
 
 // 77:11 方法 1：fixed array per bucket（一個櫃子切成小櫃子）
 FRAG.push(['hashlin2-fixed', '方法 1：每個 bucket 一個固定 array', async (tok) => {
-  fresh([0, 7.5, 12], [0, 0.6, 0.3]);
+  fresh([0, 10, 8], [0, 0.3, 0.6]);   // more from above: the four little drawers of a bucket lie in depth
   const T = hlRow(5, 2.2, -2.6, null, -0.85);
   const ks = [];
   const put = (j) => { const [x, y, z] = cpos(T, 3, j); ks.push(cube('k' + SUB(j + 1), C8[j], [1.3, 0.6, 0.65], x, y, z, 3)); };
@@ -3970,8 +3978,8 @@ FRAG.push(['hashlin2-fixed', '方法 1：每個 bucket 一個固定 array', asyn
   await step(tok);                                   // 77:49 hash 不好、分布特別
   say('hash function 設計得不夠好', '或 data 的分布有點特別');
   await step(tok);                                   // 77:55 四個都滿
-  const k5 = cube('k₅', C8[4], [1.3, 0.6, 0.65], T.xs[3], 1.4, T.z + 4.6, 3); glow(k5, RED);
-  no('滿了！', T.xs[3] + 1.6, 1.6, T.z + 4.6);
+  const k5 = cube('k₅', C8[4], [1.3, 0.6, 0.65], T.xs[3], 0.35, T.z + 5.4, 3); glow(k5, RED);   // waits in front of the full bucket, clear of k₄
+  no('滿了！', T.xs[3] + 1.7, 0.6, T.z + 5.4);
   say('切成 4 個小櫃子，4 個都滿了', '第 5 個放不下');
   await step(tok);                                   // 78:00 發生不多就是簡單方法
   say('如果不常發生：這是一個簡單的方法');
@@ -4809,7 +4817,7 @@ FRAG.push(['hashlin2-cost', 'Partial rebuild：k + n/k 比 n 小', async (tok) =
   cube('n/k', C8[2], [1.4, 0.6, 1.2], 2.2, 0.9, 0.6, 3); tag('拆 overflow 的那條', 'idx', 2.2, 1.7, 1.8);
   say('n/k 的力氣：把 overflow 的那條分家', '一條大約 n/k 個');
   await step(tok);                                   // 148:02 比 n 小
-  cube('n', C8[4], [1.4, 4.0, 1.2], -2.2, 2.0, 0.6, 0); tag('full rebuild', 'ptr', -2.2, 4.6, 0.6); tag('partial', 'ptr', 2.2, 2.2, 0.6);
+  cube('n', C8[4], [1.4, 4.0, 1.2], -4.9, 2.0, 0.6, 0); tag('full rebuild', 'ptr', -4.9, 4.6, 0.6); tag('partial', 'ptr', 2.2, 2.2, 0.6);
   nt('例：n = 10000、k = 100 → 10000 vs 200', 0, 0.3, 3.4);
   say('k + n/k 可能比 n 小很多', 'n 不少的時候');
   await step(tok);                                   // 148:09 Extendable Hash Table
@@ -6152,7 +6160,7 @@ FRAG.push(['hashpeng-dirless', 'Directoryless：位址直接當 bucket，overflo
   const keys = { '00': ['A0', 'B0'], '01': ['A1', 'B1'], '10': ['C2'], '11': ['C3'] };
   let dir, n;
   await step(tok);                                   // 79:49 is there something faster?
-  dir = [...Array(4)].map((_, i) => cube(ad[i], '#d8c29b', [1.0, 0.4, 0.5], -6.4, 0.2, -2.4 + i * 0.6));
+  dir = [...Array(4)].map((_, i) => cube(ad[i], '#d8c29b', [1.0, 0.4, 0.5], -6.4, 0.2, -2.6 + i * 0.95));
   say('還有沒有更快的？');
   await step(tok);                                   // 80:00 pointers are troublesome
   bad('pointer 還要記 memory address，好麻煩', -4.4, 1.4, -3.4);

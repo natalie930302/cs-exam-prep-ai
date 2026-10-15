@@ -1147,6 +1147,7 @@ scene('nuA-1a-nmos', 'Transistor：NMOS 怎麼當開關', [
   },
   async (tok, S) => { // 305.2 形成 channel
     S.ch = bx('channel', '#6fb3f0', 0, 1.2, 0.85, 3.2, 0.14, 0.2);
+    S.ch.userData.lbl.position.set(0, -0.42, 0.1); // name under the strip: the electrons sit on it
     cap('electron 在 drain 和 source 之間', '形成一條 channel');
   },
   async (tok, S) => { // 321.0 加電位差 → 電流 → 開
@@ -1280,7 +1281,7 @@ scene('nuA-1a-org', '基本架構：processor（datapath + control）、memory�
   },
   async (tok, S) => { // 748.0 控制訊號 → 暫存器 → 運算 → 存回
     S.alu = bx('ALU', NC.purple, 3.2, 2.6, 0, 1.6, 0.9, 0.9); lk(1.6, 4.85, 3.0, 3.1, 0xdd8238); lk(1.6, 4.85, 0.0, 3.05, 0xdd8238);
-    await runDot(tok, 'data', [[0.6, 2.6], [2.4, 2.6]], 600, 'val'); await runDot(tok, '結果', [[3.2, 2.0], [-0.4, 2.0]], 700, 'good');
+    gone(await runDot(tok, 'data', [[0.6, 2.6], [2.4, 2.6]], 600, 'val')); gone(await runDot(tok, '結果', [[3.2, 2.0], [-0.4, 2.0]], 700, 'good')); // the dots are delivered, then gone (they sat on ALU / register file)
     cap('控制訊號：從暫存器拿 data、運算', '再存回暫存器');
   },
   async (tok, S) => { // 761.9 processor = datapath + control
@@ -2905,7 +2906,9 @@ scene('nuA-9a-pseudo', 'Pseudo-instruction 與 $at', [
     cap('要找一個沒用到的 register', '但 assembler 不知道 programmer 用了哪些');
   },
   async (tok, S) => { // 300.8 $at = register 1
-    S.regs = []; for (let i = 0; i < 32; i++) S.regs.push(cube(String(i), i === 1 ? NC.gold : i === 0 ? NC.gray : NC.off, [0.33, 0.33, 0.33], -5.6 + (i % 16) * 0.38, -1.1 - Math.floor(i / 16) * 0.42, 0.6));
+    // 32 tiny cells: only 0, 1 and 31 are numbered (0 below, 1 above), so the numbers never sit on each other
+    S.regs = []; for (let i = 0; i < 32; i++) S.regs.push(cube(i <= 1 || i === 31 ? String(i) : '', i === 1 ? NC.gold : i === 0 ? NC.gray : NC.off, [0.33, 0.33, 0.33], -5.6 + (i % 16) * 0.38, -1.1 - Math.floor(i / 16) * 0.42, 0.6));
+    S.regs[0].userData.lbl.position.y = -0.62; S.regs[1].userData.lbl.position.y = 0.42;
     hot('register 1 ＝ $at：保留給 assembler，user 不准用', 3.6, -1.2);
     cap('所以 register 1 叫 $at', '保留給 assembler，user 的程式不能用');
   },
@@ -5342,7 +5345,7 @@ scene('nuB-12a-divi', "12A：div t1, t2；MIPS 不檢查 overflow 與除以 0", 
 ]);
 scene('nuB-12a-paperdiv', "12A：0111 ÷ 10（示意）", CAM, [
   async (tok, S) => {
-          S.dd = digits('0111', -0.4, 5.2, FC.blue, 0.8); hd('dividend（被除數）', -4.6, 5.2); S.dv = digits('10', -2.6, 5.2, FC.orange, 0.8); hd('divisor', -4.6, 4.4);
+          S.dd = digits('0111', -0.4, 5.2, FC.blue, 0.8); hd('dividend（被除數）', -4.6, 5.2); S.dv = digits('10', -2.6, 4.4, FC.orange, 0.8); hd('divisor', -4.6, 4.4); // on its own row: shifting right slides it under the dividend, not onto it
           S.q = sm('quotient：', -4.6, 6.2); S.qd = []; cap('dividend、divisor、quotient', '示意：0111 ÷ 10');
         },
   async (tok, S) => {

@@ -1806,7 +1806,7 @@ FRAG.push(['grbari-hf-fixed', 'Fixed size code：60 + 55 = 115 bits', async (tok
   fresh([0, 4.2, 14], [0, 3.0, 0]);
   const ms = hMsg(6.2);
   await step(tok);                                   // 169.1 可以用自己的 code，不用 ASCII？只有 5 個字母
-  note('只用到 A～E 五個字母', 0, 7.0);
+  const only5 = note('只用到 A～E 五個字母', 0, 7.0);
   say('能不能不用 ASCII，用自己的 code？', '只有 5 個字母，不需要 8 bits');
   await step(tok);                                   // 212.0 每個字母出現幾次：A3 B5 C6 D4 E2
   const cnt = [['A', 3], ['B', 5], ['C', 6], ['D', 4], ['E', 2]];
@@ -1828,7 +1828,9 @@ FRAG.push(['grbari-hf-fixed', 'Fixed size code：60 + 55 = 115 bits', async (tok
   void codes;
   say('3 bits：8 種組合，取 5 個', 'A 000、B 001、C 010、D 011、E 100');
   await step(tok);                                   // 331.0 用這些 code 編碼：B 寫 001、C 寫 010 …
-  ms.forEach((m, k) => { relabel(m, ['000', '001', '010', '011', '100']['ABCDE'.indexOf(HMSG[k])]); tint(m, GB.teal); });
+  // 3-bit codes are wider than letters: the message re-flows into two rows of 10
+  remove(only5);
+  ms.forEach((m, k) => { relabel(m, ['000', '001', '010', '011', '100']['ABCDE'.indexOf(HMSG[k])]); tint(m, GB.teal); m.scale.x = 2; move(m, -5.6 + (k % 10) * 1.24, k < 10 ? 7.1 : 6.25, 0); });
   say('照表編碼：B → 001、C → 010…', '每個字母都換成 3 bits');
   await step(tok);                                   // 342.1 訊息大小 20 × 3 = 60 bits
   good('訊息：20 × 3 = 60 bits', 2.6, 1.2);
@@ -6559,6 +6561,7 @@ FRAG.push(['grjiang3-kruskal-code', 'Kruskal pseudocode：排序、T = ∅、lin
   const G = g3Graph(G3P, G3E, { sx: 0.55, sy: 0.5, dx: 3.6, dy: -0.7, size: 0.5, th: 0.08 });
   for (const e of G.E) cls3(e.lb, 'idx');
   for (const e of G.E) eOff(e);
+  { const l = G.e('D', 'E').lb; l.position.y -= 0.7; } // small graph: DE's weight goes under its edge, away from BD's
   const F = g3Forest(G);
   const Tt = tag('', 'ptr', -3.2, 2.4);
   const kr = pal3('Kruskal', -6.4, -1.3, '#7cd1a8');
@@ -6613,6 +6616,7 @@ FRAG.push(['grjiang3-disjoint-set', 'Disjoint set：每個 set 有代表人（�
   fresh([0, 3.6, 14], [0, 2.6, 0]);
   const title = tag('', 'ptr alt', 0, 7.0);
   const zs = [zone('set 1', -4.6, 0.95, 0, 3.6, 2.2), zone('set 2', 0, 0.95, 0, 3.6, 2.2), zone('set 3', 4.6, 0.95, 0, 3.6, 2.2)];
+  zs.forEach((z) => z.userData.name.position.set(z.position.x - 1.6, 0.45, 1.25)); // set names under the front edge, clear of the members
   const COL = ['#e57373', '#64b5f6', '#81c784'];
   const SP = [[[-5.6, 0.2], [-4.6, -0.5], [-3.6, 0.3]], [[-0.8, -0.2], [0.8, 0.2]], [[3.8, 0.1], [5.4, -0.3]]];
   const VAL = [['1', '5', '7'], ['2', '6'], ['3', '4']];

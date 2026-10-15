@@ -3931,9 +3931,10 @@ FRAG.push(['syn-20c-deadlock', 'wait / signal 順序寫錯：deadlock 與 starva
 function monStage() {
   room(0.6, 1.1, -0.8, 5.6, 2.2, 3.0, '#9b7ef4');
   tag('monitor（object）', 'ptr', 0.6, 2.6, -0.8);
-  const sd = bx('shared data（private）', SC.mem, -0.8, 0.3, -1.6, 2.4, 0.6, 1.0);
+  const sd = bx('shared data\n（private）', SC.mem, -0.8, 0.3, -1.6, 2.4, 0.6, 1.0);
+  Object.assign(sd.userData.lbl.element.style, { whiteSpace: 'pre', textAlign: 'center', lineHeight: '1.15' }); // two short lines: clear of the methods and the entry queue
   const ms = ['method A()', 'method B()'].map((n, k) => bx(n, '#4b9ee2', 2.4, 0.25, -1.6 + k * 1.1, 1.8, 0.5, 0.8));
-  zone('entry queue', -5.0, 0.02, -0.8, 3.0, 1.6, '#f6e2d6');
+  zone('entry queue', -5.0, 0.02, -0.8, 3.0, 1.6, '#f6e2d6').userData.name.position.z = 0.3; // name on the front edge, below the waiting threads
   return { sd, ms };
 }
 FRAG.push(['syn-21a-monitor', 'Monitor：一次只有一個 active 的 thread', async (tok) => {
@@ -4243,6 +4244,7 @@ FRAG.push(['syn-21b-atomic', 'Atomic transaction：all or nothing、commit / rol
   cap('不只 database，也可以想成整個 file system', '跳電重開機變慢，就是在檢查 file system 的 state');
   await step(tok);                                   // 812 一般作法：commit / abort（two-phase）
   logZ = zone('stable storage：log', 0, 0.02, 3.6, 6.0, 1.2, '#e8e1d6');
+  logZ.userData.name.center.set(1, 0.5); logZ.userData.name.position.set(-3.2, 0.07, 3.6); // name just left of the strip (its back edge runs under the banks)
   cap('保證 atomic transaction 的傳統作法', '透過 commit / abort（two-phase 的動作）');
   await step(tok);                                   // 842 最後一定要 commit；沒 commit 就 rollback（像 git commit）
   const cm = bx('commit', SC.cs, -1.6, 0.3, 1.6, 1.8, 0.5, 0.8, 1.2), ab = bx('abort → rollback', SC.bad, 1.6, 0.3, 1.6, 2.6, 0.5, 0.8, 1.2);
@@ -4280,6 +4282,7 @@ FRAG.push(['syn-csneso-coop', 'Independent process vs cooperative process', asyn
   cap('新主題：process synchronization', 'OS 裡的 process 怎麼同步');
   await step(tok);                                   // 12 依同步分成兩種：independent、cooperative
   L = zone('independent process', -3.6, 0.02, 0.4, 5.6, 3.6, '#d8e6cf'); R = zone('cooperative process', 3.6, 0.02, 0.4, 5.6, 3.6, '#f6e2d6');
+  [L, R].forEach((z) => { z.userData.name.position.z = 2.45; }); // names on the front edge: the processes stand at the back
   cap('從 synchronization 的角度', 'process 分成兩種：independent 和 cooperative');
   await step(tok);                                   // 51 independent：彼此沒有關係
   const a = pal('P1', '', PCS[0], -5.0, 0, 0.4, 0.6), b = pal('P2', '', PCS[1], -2.2, 0, 0.4, 0.6);

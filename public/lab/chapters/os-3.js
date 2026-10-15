@@ -1037,6 +1037,7 @@ FRAG.push(['thr-15a-hwsw', 'Software × Hardware：multithreaded programming 與
   fresh([0, 5, 14], [0, 2.2, 0]);
   await step(tok);                                   // @1151.6 可以從 software 和 hardware 兩個角度看
   const zs = zone('Software', -3.2, 0.02, 0, 5.4, 3.2, '#d6e6f6'), zh = zone('Hardware', 3.2, 0.02, 0, 5.4, 3.2, '#d8e6cf');
+  zh.userData.name.position.set(3.6, 0.07, 1.85); // front edge: threads later stand at the back of this zone
   cap('thread programming 可以從兩個角度看', 'software 跟 hardware');
   await step(tok);                                   // @1159.4 software：multithreaded programming（Pthread、Java thread）
   code(['pthread_create(...)', 'new Thread(...)'], -3.2, 2.4, 0.5);
@@ -1069,7 +1070,7 @@ FRAG.push(['thr-15a-hwsw', 'Software × Hardware：multithreaded programming 與
   note('Hyper-Threading：一個 core 讓兩個 thread 同時跑', 0, 5.0, 1);
   cap('Intel 的 Hyper-Threading', '一個 core 可以讓兩個 thread 同時跑');
   await step(tok);                                   // @1311.0 CPU、core 內部也在做 hardware scheduling
-  idx('OS 排 → CPU 排 → core 內部也排', 3.2, -0.4, 1.6);
+  idx('OS 排 → CPU 排 → core 內部也排', 3.2, -0.9, 1.6);
   cap('scheduling 更複雜了', '不只 OS，CPU 和 core 內部也在 schedule');
   await step(tok);                                   // @1333.2 中間有好幾個 layer，像 virtual → physical address
   good('像 virtual → physical address：中間有好幾層', -2.6, 3.2);

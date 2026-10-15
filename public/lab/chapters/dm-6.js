@@ -690,7 +690,8 @@ export default function (ctx) {
       parts[i].forEach((set, j) => {
         const x = px + (j ? 0.75 : -0.75);
         g.crates.push(crate(x, pz, 1.3, 1.3, 0.35, '#c9a878'));
-        set.split('').forEach((ch, k) => { const p = slotIn(x, pz, k, 0.25, 0.32, 0.22); g.balls.push(ball(ch, LC[ch], 0.19, p.x, p.y, p.z, 2.5)); });
+        set.split('').forEach((ch, k) => { const p = slotIn(x, pz, k, 0.25, 0.32, 0.22); g.balls.push(ball('', LC[ch], 0.19, p.x, p.y, p.z, 2.5)); });
+        tag(set.split('').join(' '), 'val', x, 0.1, pz + 0.85); // one name per crate (letters on the balls would sit on each other)
       });
       groups.push(g);
       say(i < 4 ? '一個自己一箱，其他三個一箱' : '兩個兩個分', '第 ' + (i + 1) + ' 種：{' + parts[i][0] + '} {' + parts[i][1] + '}');
@@ -1329,15 +1330,15 @@ scene('acA-16-lhrr', 'Lec16：線性齊次常係數遞迴關係式', [
     cap('什麼叫齊次？沒有常數項', '');
   },
   async (tok, S) => { // 968.7
-    S.h1 = card('Hₙ = 2Hₙ₋₁ + 1', C.rose, -3.2, 0.3, 3.4); bad('有常數 1 → 非齊次', -3.2, -0.4);
+    S.h1 = card('Hₙ = 2Hₙ₋₁ + 1', C.rose, -3.2, 0.3, 3.4); S.h1b = bad('有常數 1 → 非齊次', -3.2, -0.4);
     cap('例如河內塔：後面有常數 1', '這就是非齊次');
   },
   async (tok, S) => { // 986.2
-    S.h2 = card('Pₙ = R·Pₙ₋₁', C.mint, 3.0, 0.3, 2.8); good('後面沒有 → 齊次', 3.0, -0.4);
+    S.h2 = card('Pₙ = R·Pₙ₋₁', C.mint, 3.0, 0.3, 2.8); S.h2b = good('後面沒有 → 齊次', 3.0, -0.4);
     cap('前面複利的式子後面沒有東西', '這就是齊次');
   },
   async (tok, S) => { // 1024.4
-    dark(S.w); lit(S.w[3]);
+    dark(S.w); lit(S.w[3]); gone(S.h1, S.h1b, S.h2, S.h2b);
     S.l.add('常係數：c₁ … cₖ 是常數（5、3、1、1.2、0 都可以）', C.peach);
     cap('constant coefficient：係數是常數', '放 5、放 3、放 1.2、放 0 都 OK');
   },
@@ -2681,11 +2682,12 @@ const isAnti = (r) => r.every(([a, b]) => a === b || !hasP(r, b, a));
 const isTrans = (r) => r.every(([a, b]) => r.every(([c, d]) => c !== b || hasP(r, a, d)));
 const pairs = (r) => '{' + r.map(([a, b]) => '(' + a + ',' + b + ')').join(' ') + '}';
 // a table: rows of relation names with ✓/✘ per property (pairs written compactly: 12 = (1,2))
-const COLX = (i) => 0.9 + i * 1.0;
+// R₁…R₆ table: name, its pairs (left-aligned), then one ✓/✘ column per property (columns clear of the longest pair list)
+const COLX = (i) => 2.9 + i * 1.3, ROWH = 0.95;
 function propTable(names, tests, x0, y0) {
   const all = [];
-  names.forEach((nm, i) => { all.push(hd(nm.replace('R', 'R') , -6.2, y0 - i * 0.62)); const l = tag(RS[nm].map(([a, b]) => '' + a + b).join(' '), 'idx', -5.5, y0 - i * 0.62); l.center.set(0, 0.5); all.push(l); });
-  return { all, mark(col, fn) { names.forEach((nm, i) => all.push((fn(RS[nm]) ? good : bad)(fn(RS[nm]) ? '✓' : '✘', COLX(col), y0 - i * 0.62))); } };
+  names.forEach((nm, i) => { all.push(hd(nm.replace('R', 'R') , -6.3, y0 - i * ROWH)); all.push(tag(RS[nm].map(([a, b]) => '' + a + b).join(' '), 'idx', -2.0, y0 - i * ROWH)); }); // pairs centred in their column
+  return { all, mark(col, fn) { names.forEach((nm, i) => all.push((fn(RS[nm]) ? good : bad)(fn(RS[nm]) ? '✓' : '✘', COLX(col), y0 - i * ROWH))); } };
 }
 // a little digraph on nodes 1..4 placed on a square
 const DG = { 1: [-1, 1], 2: [1, 1], 3: [-1, -1], 4: [1, -1] };
@@ -2880,11 +2882,11 @@ scene('acA-19-der', 'Lec19：derangement（錯排）', [
   },
   async (tok, S) => { // 722.0
     S.d = card('derangement：i 不能在第 i 個位置', C.lilac, 0, 2.5, 5.6); lit(S.d);
-    sm('上面的示意 3 1 2 5 4：沒有人在原位 ✓', 0, 1.8);
+    S.dn = sm('上面的示意 3 1 2 5 4：沒有人在原位 ✓', 0, 1.8);
     cap('derangement：比重排更嚴格', '1 不在第 1 個、…、5 不在第 5 個');
   },
   async (tok, S) => { // 764.0
-    dark(S.d); gone(S.top, S.bot);
+    gone(S.d, S.dn, S.top, S.bot); // the derivation list takes this space
     S.c = chain(0, 5.0, 0.68, 7.6);
     S.c.add('排除法：Pᵢ = i 在第 i 個位置的排列', C.lemon);
     cap('做法跟剛才一樣：排除法', 'Pᵢ：i 剛好在第 i 個位置');
@@ -3313,7 +3315,7 @@ scene('acA-19-irr', 'Lec19：反反身性（irreflexive）與 R₁…R₆', [
     cap('剛才的 R：有 (3,3)', '不是反身，也不是反反身');
   },
   async (tok, S) => { // 3200.0
-    note('不是二選一：可能兩者都不是', 0, 4.3);
+    S.n = note('不是二選一：可能兩者都不是', 0, 4.3);
     cap('兩個不是一分為二', '可能兩者都不是');
   },
   async (tok, S) => { // 3216.0
@@ -3321,19 +3323,19 @@ scene('acA-19-irr', 'Lec19：反反身性（irreflexive）與 R₁…R₆', [
     cap('小於是反反身', '它的補集是大於等於，有反身性');
   },
   async (tok, S) => { // 3244.0
-    gone(S.e, S.lt);
-    S.T = propTable(['R1', 'R2', 'R3', 'R4', 'R5', 'R6'], [], -5.0, 2.6);
-    sm('反身', COLX(0), 3.2); sm('（12 表示 (1,2)）', -3.6, 3.3);
+    gone(S.e, S.lt, S.n);
+    S.T = propTable(['R1', 'R2', 'R3', 'R4', 'R5', 'R6'], [], -5.0, 4.0);
+    sm('反身', COLX(0), 4.75); sm('（12 表示 (1,2)）', -2.0, 4.75);
     S.T.mark(0, (r) => isRefl(r));
     cap('判斷 R₁…R₆ 有沒有反身性', '要有 (1,1)、(2,2)、(3,3)、(4,4)');
   },
   async (tok, S) => { // 3290.0
-    sm('反反身', COLX(1), 3.2);
+    sm('反反身', COLX(1), 4.75);
     S.T.mark(1, (r) => isIrr(r));
     cap('反反身：一個 (a, a) 都不能有', 'R₄、R₆ 有反反身性');
   },
   async (tok, S) => { // 3338.0
-    note('真正二選一的是：reflexive vs. not reflexive', 0, -1.5);
+    note('真正二選一的是：reflexive vs. not reflexive', 0, -1.8);
     cap('跟反身性二選一的', '其實是 not reflexive');
   },
 ]);
@@ -3363,18 +3365,18 @@ scene('acA-19-sym', 'Lec19：對稱與反對稱', [
   async (tok, S) => { // 3534.0
     dark(S.d2);
     S.g = digraph([[1, 2], [2, 4], [3, 3]], -3.6, 2.2, 0.9);
-    sm('兩點之間最多單向（只去不回）；自己繞圈不管（示意）', 1.6, 2.6);
+    S.s1 = sm('兩點之間最多單向（只去不回）；自己繞圈不管（示意）', 1.6, 2.6);
     cap('圖上：兩個人之間只能二選一', '只去不回；自己到自己不管');
   },
   async (tok, S) => { // 3625.0
-    sm('集合檢查：看到 (1,2) 就不能有 (2,1)', 1.6, 2.0);
+    S.s2 = sm('集合檢查：看到 (1,2) 就不能有 (2,1)', 1.6, 2.0);
     cap('用集合檢查', '有 (1,2) 就絕對不能有 (2,1)');
   },
   async (tok, S) => { // 3677.0
-    gone(S.g, S.lt, S.mr);
-    S.T = propTable(['R1', 'R2', 'R3', 'R4', 'R5', 'R6'], [], -5.0, 2.6);
-    sm('對稱', COLX(0), 3.2); sm('反對稱', COLX(1), 3.2); sm('（12 表示 (1,2)）', -3.6, 3.3);
-    S.show = (i) => { const nm = 'R' + (i + 1), r = RS[nm]; const y = 2.6 - i * 0.62; (isSym(r) ? good : bad)(isSym(r) ? '✓' : '✘', COLX(0), y); (isAnti(r) ? good : bad)(isAnti(r) ? '✓' : '✘', COLX(1), y); };
+    gone(S.g, S.lt, S.mr, S.s1, S.s2); S.d2.position.y = 5.3; for (const b of lab.bodies) if (b.obj === S.d2) b.target.y = 5.3;
+    S.T = propTable(['R1', 'R2', 'R3', 'R4', 'R5', 'R6'], [], -5.0, 3.4);
+    sm('對稱', COLX(0), 4.15); sm('反對稱', COLX(1), 4.15); sm('（12 表示 (1,2)）', -2.0, 4.15);
+    S.show = (i) => { const nm = 'R' + (i + 1), r = RS[nm]; const y = 3.4 - i * ROWH; (isSym(r) ? good : bad)(isSym(r) ? '✓' : '✘', COLX(0), y); (isAnti(r) ? good : bad)(isAnti(r) ? '✓' : '✘', COLX(1), y); };
     S.show(0);
     cap('R₁：有 (3,4) 沒有 (4,3) → 不對稱', '有 (1,2) 又有 (2,1) → 不反對稱');
   },
@@ -3407,25 +3409,25 @@ scene('acA-19-trans', 'Lec19：遞移性（transitive）', [
     cap('像朋友圈：我認識你、你認識他', '我也要認識他');
   },
   async (tok, S) => { // 3875.0
-    S.T = propTable(['R1', 'R2', 'R3', 'R4', 'R5', 'R6'], [], -5.0, 4.8);
-    sm('遞移', COLX(0), 5.4); sm('（12 表示 (1,2)）', -3.6, 5.5);
-    const r = RS.R1; (isTrans(r) ? good : bad)(isTrans(r) ? '✓' : '✘', COLX(0), 4.8);
-    S.w = card('R₁：(3,4)、(4,1) 但沒有 (3,1) → 不遞移', C.rose, 0, 0.6, 6.4);
+    S.T = propTable(['R1', 'R2', 'R3', 'R4', 'R5', 'R6'], [], -5.0, 4.6);
+    sm('遞移', COLX(0), 5.35); sm('（12 表示 (1,2)）', -2.0, 5.35);
+    const r = RS.R1; (isTrans(r) ? good : bad)(isTrans(r) ? '✓' : '✘', COLX(0), 4.6);
+    S.w = card('R₁：(3,4)、(4,1) 但沒有 (3,1) → 不遞移', C.rose, 0, -1.2, 6.4);
     cap('R₁：(3,4) 和 (4,1)', '(3,1) 卻沒有 → 沒有遞移性');
   },
   async (tok, S) => { // 3927.0
-    sm('要把所有「接得起來」的配對一個一個對過去', 0, -0.1);
+    sm('要把所有「接得起來」的配對一個一個對過去', 0, -1.9);
     cap('比較討厭：必須一個一個對', '所有配對都要看過');
   },
   async (tok, S) => { // 3942.0
     gone(S.w);
-    const r = RS.R2; (isTrans(r) ? good : bad)(isTrans(r) ? '✓' : '✘', COLX(0), 4.8 - 0.62);
-    S.w = card('R₂：(2,1)、(1,2) ⇒ 需要 (2,2)，R₂ 沒有 → ✘（課本的 R₂）', C.peach, 0, 0.6, 7.6);
+    const r = RS.R2; (isTrans(r) ? good : bad)(isTrans(r) ? '✓' : '✘', COLX(0), 4.6 - ROWH);
+    S.w = card('R₂：(2,1)、(1,2) ⇒ 需要 (2,2)，R₂ 沒有 → ✘（課本的 R₂）', C.peach, 0, -1.2, 7.6);
     cap('再對下一個：一對一對檢查', '（課本的 R₂ 缺 (2,2)，所以不遞移）');
   },
   async (tok, S) => { // 3972.0
-    ['R3', 'R4', 'R5', 'R6'].forEach((nm, i) => (isTrans(RS[nm]) ? good : bad)(isTrans(RS[nm]) ? '✓' : '✘', COLX(0), 4.8 - (i + 2) * 0.62));
-    note('最常用的三個：反身、對稱、遞移', 0, -0.4);
+    ['R3', 'R4', 'R5', 'R6'].forEach((nm, i) => (isTrans(RS[nm]) ? good : bad)(isTrans(RS[nm]) ? '✓' : '✘', COLX(0), 4.6 - (i + 2) * ROWH));
+    note('最常用的三個：反身、對稱、遞移', 0, -2.6);
     cap('其他的自己 check', '反身、對稱、遞移最常用');
   },
 ]);

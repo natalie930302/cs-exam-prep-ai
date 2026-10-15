@@ -3787,7 +3787,10 @@ FRAG.push(['heapur-pq-line', 'Priority Queue：數字越小越優先', async (to
   await step(tok);                                   // 5:51 這就是 priority queue：照 priority 站
   qs.forEach((l) => remove(l));
   const sorted = all.slice().sort((a, b) => a.p - b.p);
-  await Promise.all(sorted.map((e, k) => walk(tok, e.b, X(k), 0, 1200)));
+  // whoever moves forward in the line walks in front of the others (z = 1.5), then steps back in: nobody walks through anybody
+  const lane = sorted.map((e, k) => (e.b.g.position.x > X(k) + 0.1 ? 1.5 : 0));
+  await Promise.all(sorted.map((e, k) => walk(tok, e.b, X(k), lane[k], 900)));
+  await Promise.all(sorted.map((e, k) => (lane[k] ? walk(tok, e.b, X(k), 0, 300) : Promise.resolve())));
   say('照 priority 排好的 queue', '= priority queue');
   await step(tok);                                   // 5:56 top 不是最先來的，是最優先的
   sorted[0].b.glow(GOLD); await sorted[0].b.hop(tok);

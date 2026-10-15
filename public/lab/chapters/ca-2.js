@@ -209,7 +209,7 @@ export default function (ctx) {
     fact: { name: 'fact(3)：遞迴 procedure', regs: { $sp: 1000 }, win: 968,
       src: '  addi $a0, $zero, 3  # n = 3\n  jal  fact           # 呼叫 fact(3)\n  j    Done\nfact:\n  addi $sp, $sp, -8   # 挪 2 個 word\n  sw   $ra, 4($sp)    # 存返回位址\n  sw   $a0, 0($sp)    # 存 n\n  slti $t0, $a0, 1    # n < 1 ?\n  beq  $t0, $zero, L1 # n ≥ 1 → 去 L1\n  addi $v0, $zero, 1  # 回傳 1\n  addi $sp, $sp, 8    # 彈出\n  jr   $ra            # 返回\nL1:\n  addi $a0, $a0, -1   # n − 1\n  jal  fact           # 呼叫 fact(n − 1)\n  lw   $a0, 0($sp)    # 還原 n\n  lw   $ra, 4($sp)    # 還原返回位址\n  addi $sp, $sp, 8    # 彈出\n  mul  $v0, $a0, $v0  # n × fact(n − 1)\n  jr   $ra            # 返回' + '\nDone:' },
   };
-  const RX = (c) => -0.4 + c * 0.98, RY = (r) => 6.3 - r * 0.95;
+  const RX = (c) => -0.55 + c * 1.18, RY = (r) => 6.3 - r * 0.95; // wide enough for 4–5-digit values (1000, 80052)
   function buildSim(key, over) {
     const P = PRESETS[key];
     const { prog, labels, disp } = parseProg(P.src);
@@ -235,9 +235,16 @@ export default function (ctx) {
     }
     small(tag('Memory（byte address）', 'ptr', RX(3.5), 2.0), 10);
     V.sp = tag('$sp', 'ptr alt', 0, 0.15);
-    const px = disp.length > 12 ? 10 : 11, dy = disp.length > 12 ? 0.36 : 0.46;
-    V.code = code(disp, -4.6, 6.6, dy, 0, px);
-    V.pcTag = tag('', 'ptr', -4.6, 7.25);
+    // a long program shows a window of 10 lines that follows the PC (22 lines never fit the stage)
+    const WIN = disp.length > 12 ? 10 : disp.length, dy = disp.length > 12 ? 0.5 : 0.46;
+    V.code = code(disp, -5.2, 6.6, dy, 0, 11);
+    const hl0 = V.code.hl;
+    V.code.hl = (c) => {
+      hl0(c);
+      const n = disp.length, st = Math.max(0, Math.min(n - WIN, (c < 0 ? n : c) - 4));
+      V.code.ls.forEach((l, i) => { l.visible = i >= st && i < st + WIN; l.position.y = 6.6 - (i - st) * dy; });
+    };
+    V.pcTag = tag('', 'ptr', -5.2, 7.25);
     V.refresh = () => {
       V.regs.forEach((m, i) => relabel(m, S.reg[i]));
       V.mem.forEach((m, k) => relabel(m, S.mem[V.win[k]] || 0));
@@ -271,9 +278,12 @@ export default function (ctx) {
     }
     if (talk) say(ins.cap || ins.text, out.desc);
     log(ins.text + '　→　' + out.desc);
-    await W(tok, pace * 0.45);
+    await W(tok, pace * 0.3);
+    if (mc) relabel(mc, ''); // arriving: the token's number gives way to the cell's own (refreshed just after)
+    await W(tok, pace * 0.15);
     V.refresh();
-    out.writes.forEach((i) => { glow(V.regs[i], GREEN); const m = V.regs[i]; const p = m.position.clone(); m.position.y += 0.5; move(m, p.x, p.y, p.z); });
+    // a written register hops and springs back to its own slot (not to wherever an earlier hop left it)
+    out.writes.forEach((i) => { glow(V.regs[i], GREEN); const m = V.regs[i]; m.position.y = RY(Math.floor(i / 8)) + 0.5; move(m, RX(i % 8), RY(Math.floor(i / 8)), 0); });
     if (mc) kill(mc);
     await W(tok, pace * 0.55);
     V.regs.forEach((m) => glow(m, null)); V.mem.forEach((m) => glow(m, null));
@@ -1107,7 +1117,9 @@ function mach(o) {
     else if (out.writes.length) { from = V3(0, 2.2, 0.6); to = posR(out.writes[0]); v = M.reg[out.writes[0]]; }
     if (from && to) {
       const t = cube(String(v), FC.gold, [0.8, 0.4, 0.4], from.x, from.y, 0.7);
-      await travel(tok, t, V3(from.x, from.y, 0.7), V3(to.x, to.y, 0.7), 700); kill(t);
+      // the token's number goes quiet for the last stretch: the cell it lands on still shows its old value until the refresh
+      const a = V3(from.x, from.y, 0.7), b = V3(to.x, to.y, 0.7), mid = a.clone().lerp(b, 0.72);
+      await travel(tok, t, a, mid, 500); relabel(t, ''); await travel(tok, t, mid, b, 200); kill(t);
     }
     M.refresh();
     out.writes.forEach((i) => { const n = Object.keys(M.R).find((k) => rIdx(k) === i); if (n) glow(M.R[n], OKG); });
@@ -4471,7 +4483,7 @@ scene('isB-7a-leafc', 'leaf_example：需要哪些特別的 register', CAM, [
   },
 ]);
 
-const RGRID = (S) => { S.g = RN.map((n, i) => { const x = RX(i % 8) - 3.0, y = RY(Math.floor(i / 8)) - 0.6; const m = cube(i, '#e6dfd2', [0.86, 0.48, 0.6], x, y, 0); small(m.userData.lbl, 10); const l = small(sm(n, x, y + 0.44), 9); return { m, l }; }); };
+const RGRID = (S) => { S.g = RN.map((n, i) => { const x = -0.4 + (i % 8) * 0.98 - 3.0, y = RY(Math.floor(i / 8)) - 0.6; const m = cube(i, '#e6dfd2', [0.86, 0.48, 0.6], x, y, 0); small(m.userData.lbl, 10); const l = small(sm(n, x, y + 0.44), 9); return { m, l }; }); };
 const lightRegs = (S, ids, c) => ids.forEach((i) => { tint(S.g[i].m, c); glow(S.g[i].m, HL); });
 const dimRegs = (S) => S.g.forEach((r) => glow(r.m, null));
 scene('isB-7a-regmap', '32 個 register 的分工（register convention）', [[0, 3.6, 13.5], [0, 3.6, 0]], [
@@ -6132,7 +6144,7 @@ scene('isB-8a-modes', 'MIPS 的五種 addressing mode', [[0, 3.4, 13], [0, 3.0, 
 scene('isB-8a-trans', 'C program 怎麼變成 memory 裡的 0101', CAM, [
   async (tok, S) => { // translate
     S.c = cube('C program', FC.sky, [2.0, 0.6, 0.6], -5.0, 6.0, 0);
-    S.m = cube('memory 裡的 0101', FC.paper, [2.4, 0.6, 0.6], 4.6, 0.6, 0);
+    S.m = cube('memory 裡的 0101', FC.paper, [2.4, 0.6, 0.6], 5.0, 2.4, 0); // up right: the loader gets its own spot below
     cap('C program 怎麼變成 memory 裡的 0101？', '開始執行之前');
   },
   async (tok, S) => { // 很多 system program
@@ -6164,7 +6176,7 @@ scene('isB-8a-trans', 'C program 怎麼變成 memory 裡的 0101', CAM, [
     cap('linker 把很多 module 連起來', '補上還沒決定的跳躍位址（label）');
   },
   async (tok, S) => { // loader
-    S.ld = cube('loader', FC.orange, [1.6, 0.5, 0.6], 3.2, 0.6, 0); arrow(V3(2.1, 1.0, 0), V3(2.5, 0.7, 0)); arrow(V3(4.0, 0.6, 0), V3(3.4, 0.6, 0.3));
+    S.ld = cube('loader', FC.orange, [1.6, 0.5, 0.6], 3.2, 0.6, 0); arrow(V3(2.1, 1.0, 0), V3(2.5, 0.7, 0)); arrow(V3(3.8, 0.9, 0), V3(4.5, 2.05, 0));
     cap('loader 把程式放進 memory', '放好後絕對位址就確定了');
   },
   async (tok, S) => { // virtual memory

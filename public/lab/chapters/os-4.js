@@ -1158,7 +1158,7 @@ const CAMG = [[0, 7, 12.5], [0, 1.2, 0.2]];
 //   B.arrive(id, v) puts a buddy at the end of the queue; await B.run(tok, id, s, e) walks it to the CPU and grows its block;
 //   await B.back(tok, id) returns it to the queue end; await B.done(tok, id) sends it off; B.set(id, v) changes its belly number.
 function board(T, o = {}) {
-  zone(o.qname || 'ready queue', -2.4, 0, -2.6, 7.6, 1.5).userData.name.position.set(-6.0, 0.05, -1.5);   // name on the front edge, clear of the buddies' names
+  { const l = zone(o.qname || 'ready queue', -2.4, 0, -2.6, 7.6, 1.5).userData.name; l.center.set(1, 0.5); l.position.set(-6.35, 0.3, -2.6); }   // name just left of the queue's head, level with the buddies (never under their names or bars)
   const cpu = prop('cpu', 5.3, 0, -2.6, 0.9, 'CPU');
   const B = { G: chart(T, { z: o.gz === undefined ? 2.0 : o.gz, w: o.w || 11.4, x0: o.x0, title: o.title }), b: {}, q: [], cur: null, cpu };
   const qx = (k) => -5.6 + k * 1.2;
@@ -2580,12 +2580,12 @@ scene('sch-17a-sum', '本章重點', CAM, () => ({}), [
 // ════════ G4v9HUllv-Q（第 17B 講 Special Scheduling Issues） ════════
 scene('sch-17b-layers', '軟體排程與硬體排程：兩層', CAM, () => ({}), [
   async (tok, S) => {                                   // 18 前面談的都是 software level 的 ready queue
-    zone('software：OS 的 ready queue', 0, 0, -3.0, 12.0, 1.4);
+    zone('software：OS 的 ready queue', 0, 0, -3.0, 12.0, 1.4).userData.name.position.set(0.0, 0.9, -3.0); // name right of the queue (raised), clear of the buddies and the cores' labels
     S.q = ['P1', 'P2', 'P3', 'P4'].map((n, i) => pal(n, '', PC[n], -4.6 + i * 1.3, -3.0, 0.5));
     sayc('剛剛談的 scheduling', '都在 software level：OS 的 ready queue');
   },
   async (tok, S) => {                                   // 21 下面還有 hardware
-    zone('hardware', 0, 0, 0.6, 12.0, 3.2, '#e3d3b6');
+    zone('hardware', 0, 0, 0.6, 12.0, 3.2, '#e3d3b6').userData.name.position.set(6.1, 0.05, 0.6); // at the right end: the cores' thread labels fill the middle
     sayc('不要忘記', '下面還有真正的 computer hardware');
   },
   async (tok, S) => {                                   // 45 multiprocessor：主機板兩個 CPU 插槽
@@ -2597,7 +2597,7 @@ scene('sch-17b-layers', '軟體排程與硬體排程：兩層', CAM, () => ({}),
     sayc('買來的一顆 CPU 裡', '又是 multicore：手機八核心、四核心');
   },
   async (tok, S) => {                                   // 73 一個 core 跑兩個 thread（hyper-threading）；GPU 更多
-    S.cores.forEach((c) => { const t = sm('2 thread', c.position.x, 1.1, 0.6); });
+    S.cores.forEach((c) => { sm('×2', c.position.x, 1.1, 0.6); }); // 2 threads per core (short: the cores are close together)
     note('Intel hyper-threading：一個 physical core 跑 2 個 thread；GPU 一個 core 十幾、二十幾個', 0, 0.3, 2.6);
     sayc('甚至一個 core 可以跑兩個 thread', 'Intel hyper-threading；GPU 一個 core 的 thread 更多');
   },
@@ -2640,14 +2640,14 @@ scene('sch-17b-smp', 'Asymmetric vs symmetric multiprocessing', [[0, 7, 12.5], [
     sayc('asymmetric：其中一顆是 master', 'OS 選中的全交給 master，再由它分配到哪顆 processor');
   },
   async (tok, S) => {                                   // 249 symmetric：沒有 master，大家搶同一個 queue
-    S.q = [0, 1, 2, 3].map((k) => bx('P' + (k + 1), PCOL[k], 2.4 + k * 0.8, 0.25, -1.4, 0.6, 0, 0.5, 0.6));
+    S.q = [0, 1, 2, 3].map((k) => bx('P' + (k + 1), PCOL[k], 2.1 + k * 1.05, 0.25, -1.4, 0.6, 0, 0.5, 0.6)); // spaced so the names don't touch
     S.cp = [0, 1, 2].map((k) => pal('CPU' + (k + 1), '', CPUC, 2.0 + k * 1.6, 0.8, 0.5));
     sm('同一個 ready queue，不屬於任何人', 3.6, 0, -0.6);
     sayc('symmetric：沒有 master', '所有 CPU 去競爭同一個 queue');
   },
   async (tok, S) => {                                   // 265 dequeue 要 synchronization
     S.lock = prop('lock', 3.6, 0.6, -1.4, 0.7);
-    for (let k = 0; k < 3; k++) { S.cp[k].mood('wow'); await slide(tok, S.q[k], 2.0 + k * 1.6, 1.2, 0.8, 420); S.cp[k].mood('happy'); }
+    for (let k = 0; k < 3; k++) { S.cp[k].mood('wow'); await slide(tok, S.q[k], 2.0 + k * 1.6, 1.9, 0.8, 420); S.cp[k].mood('happy'); } // each P is held up above its CPU, clear of the queue behind
     sayc('一個 process 不能同時跑在兩顆 CPU', 'dequeue 時要確保只有一個人拿到 → synchronization');
   },
   async (tok, S) => {                                   // 288 所以稍微慢一點點
@@ -2851,6 +2851,7 @@ scene('sch-18a-lb', 'Locality vs load balancing：push 與 pull', [[0, 6.5, 12.5
 scene('sch-18a-stall', 'Multicore 與 memory stall', [[0, 6, 12.5], [0, 1.2, 0]], () => ({}), [
   async (tok, S) => {                                   // 593 更深入：單一顆 CPU 有多個 core
     S.cpu = bx('一顆 CPU', '#5d6b7a', 0, 0.15, -3.0, 6.0, 0, 0.3, 1.6);
+    S.cpu.userData.lbl.center.set(0, 0.5); S.cpu.userData.lbl.position.set(3.2, 0, 0); // the chip's name at its right end: cores on top, timelines in front
     [-2, 0, 2].forEach((x) => bx('core', CPUC, x, 0.5, -3.0, 1.4, 1.2, 0.4, 1.0));
     sayc('再深入一點，單一顆 CPU', '現在基本上都是多核心');
   },

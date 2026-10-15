@@ -1417,6 +1417,7 @@ scene('cpar-am-limit', '處理器再多，執行時間也會停在序列部分',
   },
   async (tok, S) => { // @376.9
     S.u = hb('#9aa0a6', BX, 5.6, 0.1 * BW, '序列'); S.e = hb('#4b9ee2', BX + 0.1 * BW, 5.6, 0.9 * BW, '可平行 0.9');
+    S.e.userData.lbl.position.y = -0.9; // the parallel part shrinks to a sliver beside the serial part: its name sits under it
     await anim(tok, 1200, (u) => setW(S.e, BX + 0.1 * BW, 0.9 * BW * (1 - u * (1 - 1 / 1000))));
     S.n = note('serial（序列）的那段：和舊 CPU 花一樣的時間', 0, 0.4);
     cap('序列的部分', '和舊 CPU 花一樣久');

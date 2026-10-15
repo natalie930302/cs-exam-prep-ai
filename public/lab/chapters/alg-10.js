@@ -1871,7 +1871,8 @@ FRAG.push(['bt-gc-types', '回溯：m-coloring 判定 / 最佳化', async (tok) 
 FRAG.push(['bt-gc-treesize', '回溯：著色樹 1+3+…+3⁴ 個節點', async (tok) => {
   fresh([0, 4.6, 15], [0.6, 3.4, 0]);
   const cols = ['R', 'G', 'B'];
-  const SQ = { 1: [-6.4, 0.4, 2.6], 2: [-5.2, 0.4, 2.6], 3: [-5.2, 0.4, 3.8], 4: [-6.4, 0.4, 3.8] };
+  // the square stands upright (the camera is nearly level, so a square on the floor would collapse to a line)
+  const SQ = { 1: [-6.9, 1.5, 3.2], 2: [-5.7, 1.5, 3.2], 3: [-5.7, 0.4, 3.2], 4: [-6.9, 0.4, 3.2] };
   const lvl = (d) => {
     const cnt = Math.pow(3, d), y = 6.6 - d * 1.45, Wd = 11.2, cx = 1.0;
     const w = Math.min(0.55, Wd / cnt * 0.82);
@@ -2436,7 +2437,8 @@ FRAG.push(['bt-tsp-problem', '分支界限 TSP：問題與成本矩陣', async (
 // 0:46 先用 4 個頂點：狀態空間樹
 FRAG.push(['bt-tsp-small', '分支界限 TSP：4 城市的狀態空間樹', async (tok) => {
   fresh([0, 4.4, 14.5], [0, 3.2, 0]);
-  const P = { 1: [-6.0, 0.3, 1.4], 2: [-4.0, 0.3, 1.4], 3: [-4.0, 0.3, 3.2], 4: [-6.0, 0.3, 3.2] };
+  // the 4 cities stand upright (a square on the floor collapses to a line from this nearly level camera)
+  const P = { 1: [-7.0, 1.4, 2.0], 2: [-5.6, 1.4, 2.0], 3: [-5.6, 0.3, 2.0], 4: [-7.0, 0.3, 2.0] };
   let g = null;
   const root = mkT('1', null, { path: [1] });
   (function grow(n) { for (const v of [2, 3, 4]) if (!n.path.includes(v)) grow(mkT(String(v), n, { path: [...n.path, v] })); })(root);
@@ -2451,7 +2453,7 @@ FRAG.push(['bt-tsp-small', '分支界限 TSP：4 城市的狀態空間樹', asyn
   glow(g.N[1], GOLD);
   sayc('推銷員從頂點 1 出發');
   await step(tok);                                   // 1:03 around all, back to 1, minimum cost
-  note('繞完所有頂點、回到 1，成本最小', -5.0, 0.4, 4.4);
+  note('繞完所有頂點、回到 1，成本最小', -5.0, -0.2, 3.6);
   sayc('走過所有頂點再回到 1', '要成本最小的那條');
   await step(tok);                                   // 1:09 1 → 2 → 3 → 4 → 1
   await showTour([1, 2, 3, 4, 1]);

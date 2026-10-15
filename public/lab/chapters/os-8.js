@@ -1332,12 +1332,12 @@ scene('vm-13b-pager', 'Swapper（process 為單位）vs pager（page 為單位�
   },
   async (tok, S) => {                                   // 225.7 swapper：以 process 為單位
     hd('swapper：整個 process', -2.6, 3.2);
-    await anim(tok, 900, (u) => S.p1.forEach((m, i) => m.position.set(-4.2 + i * 1.0 + (3.4 + i * 0.4 - (-4.2 + i * 1.0)) * u, 0.5 + 1.6 * u, 0)));
+    await anim(tok, 900, (u) => S.p1.forEach((m, i) => m.position.set(-4.2 + i * 1.0 + (3.2 - (-4.2 + i * 1.0)) * u, 0.5 + (1.4 + i * 0.6) * u, 0))); // stacked by the disk's left
     cap('swapper 以 process 為單位', '把整個 process swap 出去');
   },
   async (tok, S) => {                                   // 233.7 pager：以 page 為單位
     hd('pager：一次一個 page', -2.6, 3.9);
-    await slide(tok, S.p2[2], 4.4, 2.3, 0.6, 700);
+    await slide(tok, S.p2[2], 5.6, 1.9, 0.6, 700); // the single page goes by the disk's right
     cap('demand paging 是 pager 做的事', '以 page 為單位，不會一次放整個 process');
   },
   async (tok, S) => {                                   // 259.3 部分在 disk，process 仍可運作
