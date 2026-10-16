@@ -11,15 +11,15 @@
    },
    "cues": [
     0,
-    44.8,
-    50.8,
-    60.8,
-    68.8,
-    82.8,
-    108.8,
-    122.8,
-    161.8,
-    221.8
+    45.73,
+    51.66,
+    61.51,
+    69.67,
+    83.47,
+    109.63,
+    123.25,
+    162.59,
+    225.71
    ],
    "points": [
     {
@@ -28,31 +28,31 @@
     },
     {
      "text": "P 和 T 某個字不 match 時，希望 P 能 shift 多一點，不要每次一格。",
-     "t": 51
+     "t": 51.66
     },
     {
      "text": "怎麼達成？兩個步驟。",
-     "t": 66
+     "t": 65.64
     },
     {
      "text": "Phase 1：針對 pattern 自己跟自己比，產生 fail function。",
-     "t": 69
+     "t": 69.67
     },
     {
      "text": "目的：知道 pattern 裡有哪些重複（相同）的 substring。",
-     "t": 108
+     "t": 108.97
     },
     {
      "text": "Phase 2：透過 fail function，讓比對能快速移動。",
-     "t": 125
+     "t": 124.97
     },
     {
      "text": "不 match 時看 j−1 的 fail，下一個從 P[f(j−1)+1] 開始比。",
-     "t": 174
+     "t": 176.22
     },
     {
      "text": "總結：Phase 1 造 fail function，Phase 2 用它決定怎麼移動。",
-     "t": 225
+     "t": 226.31
     }
    ],
    "explain": [
@@ -72,43 +72,43 @@
    "title": "C++ template：KeyType",
    "scene": "arrpeng34-template",
    "cues": [
-    256.8,
-    278.8,
-    301.8,
-    318.8,
-    326.8,
-    340.8,
-    351.8,
-    370.8
+    257.43,
+    279.31,
+    302.79,
+    319.73,
+    327.13,
+    340.97,
+    351.95,
+    369.87
    ],
    "points": [
     {
      "text": "進入 Stack 和 Queue 之前，先看 template。",
-     "t": 254
+     "t": 254.03
     },
     {
      "text": "Template：把某些 data type 寫成一個待定的型態，換成 int 或 float 方法本身都適用。",
-     "t": 260
+     "t": 264.56
     },
     {
      "text": "寫法：template <class KeyType>，KeyType 是什麼型態要等宣告時才決定。",
-     "t": 281
+     "t": 281.57
     },
     {
      "text": "例子 void sort(KeyType *a, int n) 是一個簡單的 sort，裡面沒寫是 int 還是 float。",
-     "t": 300
+     "t": 300.09
     },
     {
      "text": "真正執行時才決定：float farray 是 float 陣列。",
-     "t": 327
+     "t": 327.13
     },
     {
      "text": "int intarray 開 200 格、型態是 integer，兩者都能套用同一個 sort。",
-     "t": 338
+     "t": 338.64
     },
     {
      "text": "課本後面幾個章節的資料型態都叫 KeyType，用 template 代表。",
-     "t": 371
+     "t": 370.49
     }
    ],
    "explain": [
@@ -126,45 +126,45 @@
    "title": "Stack：Last In First Out",
    "scene": "arrpeng34-stack-abcde",
    "cues": [
-    386,
-    406.8,
-    411.8,
-    419.8,
-    427.8,
-    435.8,
-    443.8,
-    457.8,
-    467.8,
-    477.8
+    389.89,
+    407.05,
+    412.29,
+    419.63,
+    428.07,
+    436.47,
+    444.35,
+    458.02,
+    468.68,
+    476.75
    ],
    "points": [
     {
      "text": "Stack 是一種 data structure，符合 LIFO：最後進去的第一個被拿出來。",
-     "t": 386
+     "t": 389.89
     },
     {
      "text": "Stack 有一個指標叫 top。",
-     "t": 409
+     "t": 408.77
     },
     {
      "text": "A 先進來，接著 B 進來。",
-     "t": 416
+     "t": 416.83
     },
     {
      "text": "top 永遠指向 stack 最上面的 element；C、D、E 進來 top 就往上。",
-     "t": 431
+     "t": 430.87
     },
     {
      "text": "從 stack 取東西叫 pop：拿 top 所指的元素。",
-     "t": 448
+     "t": 447.7
     },
     {
      "text": "拿出來後 top 要減，指向下一個 element。",
-     "t": 466
+     "t": 466.65
     },
     {
      "text": "E 最後被丟進去，卻是第一個被取出來 → LIFO。",
-     "t": 474
+     "t": 473.47
     }
    ],
    "explain": [
@@ -184,34 +184,34 @@
    "title": "Stack 的應用：迷宮與 function call",
    "scene": "arrpeng34-callstack",
    "cues": [
-    513.8,
-    525.8,
-    542.8,
-    554.8,
-    575.8,
-    582.8,
-    598.8
+    512.49,
+    526.29,
+    545.54,
+    554.56,
+    578.73,
+    586.83,
+    602.28
    ],
    "points": [
     {
      "text": "Stack 用處很多，後面會有迷宮老鼠的程式。",
-     "t": 508
+     "t": 508.39
     },
     {
      "text": "機器人在有障礙的迷宮裡 try and error，最後走到出口，就會用到 stack。",
-     "t": 528
+     "t": 528.14
     },
     {
      "text": "Function call：procedure A 呼叫 B 時，要把 A 用到的東西存下來。",
-     "t": 545
+     "t": 549.53
     },
     {
      "text": "例如 main 呼叫 A1，就把 A1 這層的 local 變數、return address、pointer 存起來。",
-     "t": 573
+     "t": 578.13
     },
     {
      "text": "這只是說明 stack 很重要。",
-     "t": 599
+     "t": 602.71
     }
    ],
    "explain": [
@@ -228,44 +228,44 @@
    "title": "Stack 的 ADT",
    "scene": "arrpeng34-stack-adt",
    "cues": [
-    612,
-    625.8,
-    655.8,
-    675.8,
-    693.8,
-    701.8,
-    714.8,
-    729.8,
-    754.8
+    612.63,
+    627.08,
+    657.39,
+    675.77,
+    694.45,
+    701.97,
+    715.24,
+    729.6,
+    754.59
    ],
    "points": [
     {
      "text": "Stack ADT：a finite ordered list with zero or more elements。",
-     "t": 612
+     "t": 612.63
     },
     {
      "text": "finite（有限）不是亂寫的：stack 的大小有限制。",
-     "t": 643
+     "t": 645.23
     },
     {
      "text": "反映在 constructor：MaxStackSize = DefaultSize，是最多能容納的大小。",
-     "t": 658
+     "t": 658.55
     },
     {
      "text": "既然有限就會滿，所以要有 IsFull。",
-     "t": 676
+     "t": 675.77
     },
     {
      "text": "Add 就是 push，要給放進來的 item，型態是 KeyType（template）。",
-     "t": 694
+     "t": 694.45
     },
     {
      "text": "IsEmpty：pop 時要先檢查是不是空的，空了再怎麼抓也抓不到。",
-     "t": 721
+     "t": 720.87
     },
     {
      "text": "Delete 就是 pop：Add = push、Delete = pop，只是不同說法。",
-     "t": 758
+     "t": 758.01
     }
    ],
    "explain": [
@@ -284,51 +284,51 @@
    "title": "用陣列實作 Stack",
    "scene": "arrpeng34-stack-array",
    "cues": [
-    799.8,
-    819.8,
-    855.8,
-    893.8,
-    903.8,
-    917.8,
-    927.8,
-    957.8,
-    973.8,
-    990.8,
-    1022.8,
-    1028.8
+    800.71,
+    820.09,
+    860.81,
+    893.63,
+    904.39,
+    917.93,
+    928.65,
+    958.41,
+    974.65,
+    991.47,
+    1022.59,
+    1028.95
    ],
    "points": [
     {
      "text": "邏輯上 stack 是一個容器，實際上可以用 array 實作：stack[0] … stack[n−1]。",
-     "t": 797
+     "t": 797.47
     },
     {
      "text": "Array 不是唯一的實作方式。",
-     "t": 820
+     "t": 820.09
     },
     {
      "text": "Stack::Stack 的兩個冒號表示 class 的 member function。",
-     "t": 868
+     "t": 869.23
     },
     {
      "text": "一個冒號是在初始化 MaxStackSize = MaxSize。",
-     "t": 894
+     "t": 893.63
     },
     {
      "text": "new 一個 KeyType 陣列，top 一開始等於 −1，因為還沒有資料；IsEmpty 就是 top == −1。",
-     "t": 920
+     "t": 919.14
     },
     {
      "text": "Add(x)：先判斷 IsFull（top == MaxStackSize − 1），沒滿才做。",
-     "t": 962
+     "t": 962.81
     },
     {
      "text": "沒滿就 stack[++top] = x：top 從 −1 加到 0，stack[0] 放 A。",
-     "t": 993
+     "t": 992.57
     },
     {
      "text": "Delete：先判斷 empty；不空就回報 top 所指的 element，再把 top 減 1。",
-     "t": 1021
+     "t": 1019.79
     }
    ],
    "explain": [
@@ -350,34 +350,34 @@
    "title": "Queue：First In First Out",
    "scene": "arrpeng34-queue-abcd",
    "cues": [
-    1065.8,
-    1079.8,
-    1087.8,
-    1101.8,
-    1115.8,
-    1127.8,
-    1134.8
+    1071.17,
+    1079.73,
+    1088.03,
+    1102.73,
+    1115.67,
+    1127.67,
+    1135.03
    ],
    "points": [
     {
      "text": "Queue 的特性是 First In First Out：第一個來的第一個出去。",
-     "t": 1064
+     "t": 1065.42
     },
     {
      "text": "為了做到 FIFO，有兩個變數：front 指向第一個，rear 指向尾巴。",
-     "t": 1086
+     "t": 1085.1
     },
     {
      "text": "加入 A、B、C、D：front 指向 A，rear 指向 D。",
-     "t": 1110
+     "t": 1110.97
     },
     {
      "text": "從 queue 抓一個出來，就是 front 所指的 A。",
-     "t": 1116
+     "t": 1115.91
     },
     {
      "text": "這時 front 改指向 B，人數變少。",
-     "t": 1132
+     "t": 1132.39
     }
    ],
    "explain": [
@@ -395,45 +395,45 @@
    "title": "Queue 的應用：job scheduling 與 priority queue",
    "scene": "arrpeng34-jobq",
    "cues": [
-    1145.8,
-    1162.8,
-    1185.8,
-    1194.8,
-    1226.8,
-    1260.8,
-    1268.8,
-    1285.8,
-    1322.8,
-    1346.8
+    1146.39,
+    1163.4,
+    1185.96,
+    1195.15,
+    1227.93,
+    1261.03,
+    1270.54,
+    1287.5,
+    1327.2,
+    1348.36
    ],
    "points": [
     {
      "text": "Queue 很符合現實：郵局、買可麗餅排隊，先來先服務。",
-     "t": 1141
+     "t": 1142.7
     },
     {
      "text": "OS 的 job scheduling：電腦同時有 J1、J2、J3 等很多 job。",
-     "t": 1169
+     "t": 1170.04
     },
     {
      "text": "最笨的方法：誰先進來就先做。",
-     "t": 1200
+     "t": 1201.25
     },
     {
      "text": "例如先開 Word、再開 PowerPoint、PDF，進 queue 的時間決定順序。",
-     "t": 1227
+     "t": 1227.93
     },
     {
      "text": "FIFO 好嗎？不見得：前面的人買 50 個可麗餅，後面的人可能等一小時。",
-     "t": 1261
+     "t": 1261.03
     },
     {
      "text": "解法是設定 priority，例如快上課的同學 priority 較高，先服務。",
-     "t": 1289
+     "t": 1289.39
     },
     {
      "text": "這就是後面會看到的 priority queue。",
-     "t": 1350
+     "t": 1350.9
     }
    ],
    "explain": [
@@ -453,27 +453,27 @@
    "title": "Queue 的 ADT",
    "scene": "arrpeng34-queue-adt",
    "cues": [
-    1368,
-    1378.8,
-    1392.8,
-    1408.8
+    1369.19,
+    1379.74,
+    1393.33,
+    1411.96
    ],
    "points": [
     {
      "text": "Queue 的 ADT 跟 stack 很像，看起來都像一個容器。",
-     "t": 1368
+     "t": 1369.19
     },
     {
      "text": "差別在 queue 有兩個變數：front 和 rear。",
-     "t": 1386
+     "t": 1388.44
     },
     {
      "text": "Member function 都很像：IsFull、IsEmpty、加一個元素、刪一個元素。",
-     "t": 1391
+     "t": 1391.46
     },
     {
      "text": "這些簡單的 function 請回去自己看，頂多參數上有些調整。",
-     "t": 1414
+     "t": 1417.06
     }
    ],
    "explain": [

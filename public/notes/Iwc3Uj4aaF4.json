@@ -7,16 +7,16 @@
    "title": "最大流問題與兩個限制",
    "scene": "flow-v1-problem",
    "cues": [
-    9.4,
-    17.6,
-    27.2,
-    55.5,
-    77.7,
-    108.5,
-    124.8,
-    141,
-    171,
-    188.8
+    9.39,
+    18.38,
+    26.91,
+    55.44,
+    78.25,
+    108.63,
+    125.2,
+    141.67,
+    171.35,
+    189.23
    ],
    "explain": [
     "這支影片要解的是「[[maximum flow]]（最大流）問題」。想像一張由水管組成的網路：水從一個起點流進去、從一個終點流出來，問題是：整個網路最多能讓多少水通過？",
@@ -33,27 +33,27 @@
    "points": [
     {
      "text": "Maximum flow problem：在 flow network 上求從 source 到 sink 的最大流量。",
-     "t": 9
+     "t": 9.39
     },
     {
      "text": "Flow network 是有向加權圖（weighted digraph），每條邊的整數權重就是 capacity，流量不能超過它。",
-     "t": 27
+     "t": 26.67
     },
     {
      "text": "兩個特別的點：source s（flow 的起點）與 sink t（flow 的終點）。",
-     "t": 56
+     "t": 55.89
     },
     {
      "text": "限制 1：每條邊上的 flow 不能超過該邊的 capacity。",
-     "t": 105
+     "t": 105.07
     },
     {
      "text": "限制 2：除了 s、t 以外，每個點 inflow = outflow；source 只流出、sink 只流入。",
-     "t": 126
+     "t": 126.45
     },
     {
      "text": "影片的例子：A 是 source、F 是 sink，每條邊都有方向。",
-     "t": 171
+     "t": 171.35
     }
    ],
    "trap": "補充：守恆只要求中間的點；source 沒有流入、sink 沒有流出，不必（也不會）守恆。"
@@ -62,16 +62,16 @@
    "title": "Residual capacity 與 bottleneck",
    "scene": "flow-v1-acdf",
    "cues": [
-    198.8,
-    210.8,
-    235.4,
-    251.8,
-    273.5,
-    287.5,
-    298.8,
-    305.6,
-    315,
-    340
+    199.46,
+    211.53,
+    236.43,
+    252.6,
+    273.09,
+    288.25,
+    299.09,
+    305.95,
+    315.68,
+    340.36
    ],
    "explain": [
     "第一個名詞：residual graph（剩餘圖）。residual 是「剩下來」的意思：這張圖記錄的是每條邊「還能再加多少流量」。",
@@ -88,23 +88,23 @@
    "points": [
     {
      "text": "Residual graph 表示還能增加多少 flow：只要 s 到 t 有一條路徑、每條邊都還有剩，就能再加流。",
-     "t": 198
+     "t": 198.71
     },
     {
      "text": "Residual capacity = 原本的 capacity − 目前的 flow。",
-     "t": 236
+     "t": 236.77
     },
     {
      "text": "Bottleneck capacity 決定一條 augmenting path 最多能送多少。",
-     "t": 252
+     "t": 252.6
     },
     {
      "text": "路徑 A → C → D → F 的 capacity 是 11、9、11，最多只能送 9。",
-     "t": 276
+     "t": 276.27
     },
     {
      "text": "送 9 之後，三條邊的 residual capacity 分別是 2、0、2。",
-     "t": 314
+     "t": 314.69
     }
    ],
    "trap": "影片把 bottleneck 叫做 minimal cut，這是用語錯誤：min cut 是把頂點分成兩邊的切割（max-flow min-cut theorem 的那個 cut）；一條路徑上最小的剩餘容量應叫 bottleneck capacity。"
@@ -113,13 +113,13 @@
    "title": "第二條路徑與 augmenting path 的兩種邊",
    "scene": "flow-v1-acbef",
    "cues": [
-    359.4,
-    374.6,
-    389.5,
-    400.8,
-    415.5,
+    359.9,
+    374.73,
+    389.44,
+    400.62,
+    415.52,
     424.4,
-    434.3
+    434.36
    ],
    "explain": [
     "因為還有邊沒滿，可以再找一條路：A → C → B → E → F。邊上現在標的是剩餘容量。",
@@ -133,23 +133,23 @@
    "points": [
     {
      "text": "再看路徑 A → C → B → E → F。",
-     "t": 359
+     "t": 358.99
     },
     {
      "text": "沿途剩餘容量 2、10、9、2，bottleneck = 2。",
-     "t": 383
+     "t": 383.38
     },
     {
      "text": "沿這條路再送 2：A → C 變 11（滿了），總 flow 變 11。",
-     "t": 401
+     "t": 400.62
     },
     {
      "text": "Augmenting path 可以用兩種邊：non-full forward edges（還沒滿的順向邊）。",
-     "t": 422
+     "t": 422.24
     },
     {
      "text": "以及 non-empty backward edges（已有 flow 的反向邊，代表把流退回去），下一支影片舉例。",
-     "t": 433
+     "t": 433.14
     }
    ]
   },
@@ -157,15 +157,15 @@
    "title": "Ford-Fulkerson 三步驟",
    "scene": "flow-v1-algo",
    "cues": [
-    444.3,
-    456.2,
-    464.3,
-    468.2,
-    483.6,
-    492,
-    503.1,
-    506.8,
-    518.8
+    444.22,
+    456.28,
+    464.41,
+    468.43,
+    484.64,
+    491.92,
+    503.76,
+    507.54,
+    519.12
    ],
    "explain": [
     "Ford-Fulkerson 演算法的想法其實很簡單，只有三個步驟。下面的四行就是它的流程。",
@@ -181,19 +181,19 @@
    "points": [
     {
      "text": "Ford-Fulkerson 的想法很簡單，共三步。",
-     "t": 444
+     "t": 444.22
     },
     {
      "text": "Step 1：初始 flow = 0。",
-     "t": 457
+     "t": 457.08
     },
     {
      "text": "Step 2：只要還有 s 到 t 的 augmenting path，就把該路徑的 flow 加進總 flow（0 → 9 → 11）。",
-     "t": 487
+     "t": 487.86
     },
     {
      "text": "Step 3：做到沒有 augmenting path 為止，回傳的 flow 就是最大流。",
-     "t": 516
+     "t": 516.54
     }
    ]
   },
@@ -203,7 +203,7 @@
    "points": [
     {
      "text": "下一支影片用完整例子示範演算法。",
-     "t": 528
+     "t": 528.2
     }
    ]
   }

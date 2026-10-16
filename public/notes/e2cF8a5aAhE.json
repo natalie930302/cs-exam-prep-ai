@@ -13,7 +13,7 @@
     },
     {
      "text": "不要趕時間看，準備好了再看。",
-     "t": 14
+     "t": 14.24
     }
    ]
   },
@@ -23,47 +23,47 @@
    "points": [
     {
      "text": "這個主題和研究有關。",
-     "t": 26
+     "t": 26.36
     },
     {
      "text": "已學過的演算法分兩類：polynomial time 和 exponential time。",
-     "t": 42
+     "t": 42.38
     },
     {
      "text": "Searching：linear search n、binary search log n；sorting n²、merge sort n log n。",
-     "t": 54
+     "t": 54.75
     },
     {
      "text": "0/1 knapsack、traveling salesperson 等都寫成 2ⁿ，代表指數（實際可能是 n·2ⁿ、nⁿ）。",
-     "t": 71
+     "t": 71.55
     },
     {
      "text": "研究：想要比 binary search 更快的 O(1) 搜尋、比 merge sort 更快的 O(n) 排序。",
-     "t": 117
+     "t": 116.99
     },
     {
      "text": "對指數時間的問題想要 polynomial time 演算法：n¹⁰ 甚至 n¹⁰⁰，n 夠大時都比 2ⁿ 小。",
-     "t": 139
+     "t": 138.47
     },
     {
      "text": "一直研究都沒有找到 → 需要研究的框架：NP-hard 和 NP-complete。",
-     "t": 187
+     "t": 187.55
     }
    ],
    "trap": "補充：比較型排序的下界是 Ω(n log n)，「O(n) 的比較排序」不可能；這裡只是說明研究動機。",
    "cues": [
-    26.5,
-    41.8,
-    58.8,
-    67.6,
-    70.8,
-    80.1,
-    107.8,
-    126.8,
-    138.8,
-    158.8,
-    192.8,
-    214.8
+    26.36,
+    42.38,
+    59.47,
+    67.59,
+    71.55,
+    80.67,
+    108.32,
+    127.02,
+    138.28,
+    158.56,
+    193.27,
+    214.64
    ],
    "explain": [
     "Bari 先說：這個主題其實是一個「研究」主題。中間的小人就是在做研究的人。",
@@ -86,29 +86,29 @@
    "points": [
     {
      "text": "整個主題就建立在兩點上。",
-     "t": 235
+     "t": 235.85
     },
     {
      "text": "① 解不出 poly 演算法時，至少證明問題之間相似：解一個就全部解。",
-     "t": 245
+     "t": 245.63
     },
     {
      "text": "不要各做各的（你做 knapsack、我做 graph coloring），要集體關聯起來。",
-     "t": 268
+     "t": 268.5
     },
     {
      "text": "② 寫不出 deterministic 的 poly 演算法，就寫 non-deterministic 的 poly 演算法。",
-     "t": 301
+     "t": 301.95
     }
    ],
    "cues": [
-    234.8,
-    244.8,
-    265.8,
-    273.8,
-    278.8,
-    300.8,
-    311.8
+    235.85,
+    244.94,
+    266.51,
+    273.91,
+    279.57,
+    301.95,
+    312.51
    ],
    "explain": [
     "整個 NP-hard、NP-complete 的主題，就建立在接下來這兩點上。",
@@ -126,54 +126,54 @@
    "points": [
     {
      "text": "平常寫的是 deterministic：每個敘述怎麼運作我們都清楚。",
-     "t": 332
+     "t": 332.47
     },
     {
      "text": "想寫 0/1 knapsack 的 poly 演算法時，有些敘述不知道怎麼做成 poly → 先留空，稱為 non-deterministic。",
-     "t": 362
+     "t": 362.39
     },
     {
      "text": "這樣研究成果能保存，將來別人可以把那部分變成 deterministic。",
-     "t": 401
+     "t": 402.23
     },
     {
      "text": "例：non-deterministic search；choice、success、failure 是 non-deterministic 敘述，假設都花 O(1)。",
-     "t": 429
+     "t": 429.53
     },
     {
      "text": "整個演算法看起來是 O(1)，比 binary search 的 log n 還快。",
-     "t": 474
+     "t": 475.09
     },
     {
      "text": "choice() 直接給出 key 所在的 index j；A[j] = key 就 write(j)、success，否則 failure（key 真的不在陣列中）。",
-     "t": 501
+     "t": 502.31
     },
     {
      "text": "例：key = 9，choice 直接給 index 4，不用任何搜尋邏輯。",
-     "t": 566
+     "t": 566.86
     },
     {
      "text": "不知道怎麼運作的叫 magic；知道之後就變成 technique，變成 deterministic。",
-     "t": 614
+     "t": 614.69
     }
    ],
    "cues": [
-    334.7,
-    350.0,
-    361.8,
-    395.8,
-    409.6,
-    424.0,
-    434.2,
-    463.3,
-    493.8,
-    510.8,
-    518.8,
-    537.7,
-    566.4,
-    589.8,
-    614.6,
-    640.0
+    335.11,
+    350.59,
+    362.19,
+    396.18,
+    410.29,
+    423.95,
+    434.31,
+    463.15,
+    494.31,
+    511.63,
+    519.03,
+    538.07,
+    567.26,
+    590.03,
+    615.31,
+    640.63
    ],
    "explain": [
     "我們平常寫的演算法都是 deterministic：每一行在做什麼、怎麼運作，我們都很清楚（每行都打勾）。",
@@ -200,36 +200,36 @@
    "points": [
     {
      "text": "P：deterministic、polynomial time 的演算法，例如 linear／binary search、bubble／merge sort、單源最短路徑、MST、Huffman coding。",
-     "t": 671
+     "t": 672.77
     },
     {
      "text": "NP：non-deterministic、polynomial time 的演算法；我們想為指數時間的問題寫這種。",
-     "t": 704
+     "t": 704.35
     },
     {
      "text": "著名的圖：P 是 NP 的子集。",
-     "t": 735
+     "t": 735.53
     },
     {
      "text": "例：以前不知道 merge sort 時，它對我們是 non-deterministic；找到後變成 deterministic。",
-     "t": 753
+     "t": 752.81
     },
     {
      "text": "今天 deterministic 的昨天是 non-deterministic；今天 ND 的，明天可能變成 deterministic。",
-     "t": 809
+     "t": 809.43
     }
    ],
    "trap": "補充：Bari 的「non-deterministic = 我們還不知道怎麼做」是直覺說法；正式定義中 NP 是 nondeterministic TM poly time 可決定（等價於 poly time 可驗證）的 decision problem，和人類知不知道解法無關。",
    "cues": [
-    670.8,
-    703.8,
-    716.3,
-    737.8,
-    753.8,
-    771.8,
-    803.9,
-    814.8,
-    819.0
+    672.77,
+    704.15,
+    716.76,
+    738.43,
+    754.24,
+    772.57,
+    804.11,
+    814.73,
+    819.65
    ],
    "explain": [
     "定義兩個類別。P：deterministic、polynomial time 的演算法，例如 linear／binary search、bubble sort、最短路徑、MST、Huffman coding。",
@@ -249,43 +249,43 @@
    "points": [
     {
      "text": "要把問題關聯起來，需要一個 base problem：satisfiability。",
-     "t": 827
+     "t": 827.81
     },
     {
      "text": "CNF（propositional calculus）公式，使用 boolean 變數 x1、x2、x3。",
-     "t": 875
+     "t": 875.35
     },
     {
      "text": "例：(x1 ∨ ¬x2 ∨ x3) ∧ (¬x1 ∨ x2 ∨ ¬x3)；子句 C1、C2 內用 ∨，子句之間用 ∧。",
-     "t": 899
+     "t": 899.51
     },
     {
      "text": "Satisfiability：找出哪些 xi 的值讓公式為真。",
-     "t": 928
+     "t": 928.81
     },
     {
      "text": "每個變數 0 或 1：3 個變數 8 種、n 個變數 2ⁿ 種 → 指數時間。",
-     "t": 958
+     "t": 958.7
     },
     {
      "text": "可以畫成 state space tree，root 到 leaf 的一條路就是一組 (x1, x2, x3)。",
-     "t": 1007
+     "t": 1007.59
     }
    ],
    "cues": [
-    826.7,
-    864.6,
-    874.0,
-    886.8,
-    897.8,
-    917.3,
-    928.0,
-    945.8,
-    958.1,
-    977.8,
-    1004.2,
-    1028.5,
-    1069.6
+    827.81,
+    864.71,
+    874.31,
+    887.71,
+    897.77,
+    916.99,
+    928.81,
+    945.91,
+    958.8,
+    978.03,
+    1004.59,
+    1029.25,
+    1070.39
    ],
    "explain": [
     "研究框架的第一部分（寫 non-deterministic 演算法）講完了，接著是第二部分：把問題關聯起來。",
@@ -309,35 +309,35 @@
    "points": [
     {
      "text": "例：0/1 knapsack，3 個物品各有 profit 與 weight，背包容量 8。",
-     "t": 1104
+     "t": 1104.51
     },
     {
      "text": "解寫成 (x1, x2, x3)，每個是 0 或 1 → 一樣 2³ 種，n 個物品 2ⁿ 種。",
-     "t": 1129
+     "t": 1129.41
     },
     {
      "text": "和 SAT 一樣逐一嘗試：SAT 看公式是否為真，knapsack 看 profit 是否最大。",
-     "t": 1153
+     "t": 1153.31
     },
     {
      "text": "拿掉兩個題目：這棵 state space tree 屬於誰？兩個都是。",
-     "t": 1179
+     "t": 1179.73
     },
     {
      "text": "這棵樹能 poly time 解，兩個問題就都能 poly time 解 → 這樣把它們關聯起來。",
-     "t": 1202
+     "t": 1203.11
     }
    ],
    "trap": "補充：Bari 板書上的 profit／weight 數字沒有唸出來，動畫只畫出共用的樹。",
    "cues": [
-    1104.6,
-    1116.6,
-    1122.8,
-    1142.8,
-    1152.8,
-    1179.2,
-    1190.8,
-    1205.0
+    1104.51,
+    1117.59,
+    1122.49,
+    1143.45,
+    1152.53,
+    1180.51,
+    1191.29,
+    1205.95
    ],
    "explain": [
     "用 0/1 knapsack 來說明。3 個物品，每個有 profit（價值）和 weight（重量），背包容量是 8。",
@@ -356,47 +356,47 @@
    "points": [
     {
      "text": "把 SAT 也列進指數時間的問題；先稱 SAT 為 NP-hard，其他叫 hard problem。",
-     "t": 1227
+     "t": 1228.02
     },
     {
      "text": "關聯的方法是 reduction：satisfiability reduces to 0/1 knapsack。",
-     "t": 1271
+     "t": 1271.2
     },
     {
      "text": "拿 SAT 的一個公式（instance），轉成 0/1 knapsack 的 instance。",
-     "t": 1306
+     "t": 1306.04
     },
     {
      "text": "若 knapsack 能 poly time 解，同一個演算法也能 poly time 解 SAT。",
-     "t": 1319
+     "t": 1319.92
     },
     {
      "text": "轉換本身只能花 polynomial time，花 exponential time 就沒有用。",
-     "t": 1360
+     "t": 1360.42
     },
     {
      "text": "SAT ∝ L 被證明，L 也變成 NP-hard。",
-     "t": 1400
+     "t": 1400.1
     },
     {
      "text": "Reduction 有遞移性：SAT ∝ L1、L1 ∝ L2 → L2 也 NP-hard（例：0/1 → graph coloring → sum of subsets／Hamiltonian）。",
-     "t": 1430
+     "t": 1430.74
     }
    ],
    "cues": [
-    1227.6,
-    1232.0,
-    1247.6,
-    1271.0,
-    1288.0,
-    1299.1,
-    1319.5,
-    1344.2,
-    1359.8,
-    1379.5,
-    1425.3,
-    1442.3,
-    1469.6
+    1228.02,
+    1232.62,
+    1248.1,
+    1271.2,
+    1288.08,
+    1298.9,
+    1320.39,
+    1343.62,
+    1360.42,
+    1380.2,
+    1425.65,
+    1442.7,
+    1470.16
    ],
    "explain": [
     "把 SAT 也加進指數時間問題的清單。",
@@ -420,45 +420,45 @@
    "points": [
     {
      "text": "另一件事：這些 NP-hard 問題，有沒有 non-deterministic polynomial time 演算法？",
-     "t": 1487
+     "t": 1488.18
     },
     {
      "text": "SAT 有 non-deterministic polynomial time 演算法。",
-     "t": 1500
+     "t": 1500.64
     },
     {
      "text": "SAT 既是 NP-hard，也有 ND poly 演算法 → NP-complete。",
-     "t": 1515
+     "t": 1515.82
     },
     {
      "text": "SAT ∝ 你的問題 → NP-hard；再寫出 ND poly 演算法 → NP-complete。",
-     "t": 1533
+     "t": 1533.44
     },
     {
      "text": "研究新問題要做兩件事：① 證明它直接或間接被 SAT 歸約 ② 寫出 ND 演算法。",
-     "t": 1560
+     "t": 1560.57
     },
     {
      "text": "圖：NP-hard 集合裡有 SAT、0/1 knapsack、graph coloring…。",
-     "t": 1611
+     "t": 1611.43
     },
     {
      "text": "NP-hard 和 NP 的交集叫 NP-complete。",
-     "t": 1667
+     "t": 1667.2
     }
    ],
    "trap": "補充：Bari 用「有 non-deterministic poly 演算法」表示屬於 NP；正式條件是 L ∈ NP（有 poly time verifier）。",
    "cues": [
-    1487.1,
-    1498.8,
-    1510.8,
-    1532.8,
-    1544.3,
-    1560.8,
-    1609.4,
-    1650.8,
-    1660.8,
-    1677.6
+    1488.18,
+    1498.98,
+    1511.32,
+    1533.24,
+    1544.93,
+    1560.57,
+    1610.17,
+    1650.76,
+    1660.96,
+    1677.67
    ],
    "explain": [
     "回到第二件事（寫 non-deterministic 演算法）：這些 NP-hard 問題裡，有沒有哪一個已經有 non-deterministic polynomial time 演算法？",
@@ -479,37 +479,37 @@
    "points": [
     {
      "text": "P 是今天會的 deterministic；我們相信 P 會越長越大，最後等於 NP。",
-     "t": 1695
+     "t": 1695.75
     },
     {
      "text": "如果 ND 永遠變不成 deterministic，研究就白做了 → 需要證明 P = NP。",
-     "t": 1747
+     "t": 1747.61
     },
     {
      "text": "證明 P = NP，代表解法已經存在，只是還沒被發現。",
-     "t": 1810
+     "t": 1810.73
     },
     {
      "text": "Cook's theorem：satisfiability ∈ P ⇔ P = NP。",
-     "t": 1849
+     "t": 1849.95
     },
     {
      "text": "Cook 沒有證出 SAT ∈ P，只說誰證出來，我們的工作就是對的。",
-     "t": 1883
+     "t": 1883.03
     }
    ],
    "trap": "補充：Cook–Levin 定理的正式內容是「SAT 是 NP-complete」；「SAT ∈ P ⇔ P = NP」是它的推論。",
    "cues": [
-    1694.8,
-    1707.3,
-    1735.8,
-    1746.5,
-    1762.8,
-    1782.7,
-    1816.8,
-    1845.1,
-    1863.9,
-    1878.9
+    1695.75,
+    1707.38,
+    1736.61,
+    1747.61,
+    1763.41,
+    1782.67,
+    1817.59,
+    1845.67,
+    1864.67,
+    1879.69
    ],
    "explain": [
     "圖上還有 P：今天已經知道的 deterministic polynomial time 演算法。",
@@ -530,11 +530,11 @@
    "points": [
     {
      "text": "以上就是 NP-hard 與 NP-complete 的討論。",
-     "t": 1898
+     "t": 1898.35
     },
     {
      "text": "之後會再做 NP-hard graph problem 的影片。",
-     "t": 1905
+     "t": 1904.57
     }
    ]
   }

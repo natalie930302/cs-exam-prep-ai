@@ -12,25 +12,25 @@
      "text": "System call 提供一個 interface，讓程式使用 OS 提供的 services。"
     },
     {
-     "t": 29,
+     "t": 28.68,
      "text": "程式有兩種執行 mode：user mode 不能直接存取 memory、hardware；kernel mode 可以（privileged mode）。"
     },
     {
-     "t": 81,
+     "t": 81.12,
      "text": "kernel mode 的程式 crash 會讓整個系統當掉；user mode crash 不會 → user mode 較安全，大部分程式在 user mode 執行。"
     }
    ],
    "cues": [
     0.1,
-    8.7,
-    29,
-    52.5,
-    62.8,
-    71.8,
-    81.2,
-    97.8,
-    110.8,
-    119.8
+    8.76,
+    28.68,
+    52.64,
+    62.72,
+    72.0,
+    81.12,
+    97.98,
+    110.36,
+    120.66
    ],
    "explain": [
     "這一講介紹 system call（系統呼叫）：它是什麼、拿來做什麼。",
@@ -50,24 +50,24 @@
    "scene": "osA-syscall",
    "points": [
     {
-     "t": 128,
+     "t": 128.18,
      "text": "user mode 的程式需要資源時，呼叫 OS，瞬間從 user mode 切到 kernel mode，用完再切回來。"
     },
     {
-     "t": 187,
+     "t": 186.84,
      "text": "這個呼叫就是 system call：程式向 OS kernel 請求 service 的 programmatic 方式，通常是 C / C++ 寫的 routine。"
     }
    ],
    "trap": "Neso 把 user↔kernel 的切換稱為 context switch；課本（Silberschatz）稱為 mode switch，context switch 指 CPU 換到另一個 process（要存取 PCB）。考試請用課本說法。",
    "cues": [
-    128,
-    136.8,
-    146.8,
-    159.8,
-    186.8,
-    199.4,
-    217.1,
-    239
+    128.18,
+    136.96,
+    147.36,
+    160.54,
+    186.84,
+    199.66,
+    217.2,
+    238.8
    ],
    "explain": [
     "程式在 user mode 執行時，可能需要用到 memory、hardware 之類的資源，但它不能直接碰。",
@@ -85,42 +85,42 @@
    "scene": "osA-copy",
    "points": [
     {
-     "t": 248,
+     "t": 247.86,
      "text": "例子：把 source 檔案複製到 destination 檔案。"
     },
     {
-     "t": 287,
+     "t": 286.88,
      "text": "取得 input 檔名、顯示提示、接收輸入，每一步都是 system call（用到螢幕、鍵盤滑鼠等 hardware）；output 檔名同樣三步。"
     },
     {
-     "t": 460,
+     "t": 460.6,
      "text": "開啟 input 檔（不存在就 abort）、建立 output 檔（已存在就 abort），都要 system call。"
     },
     {
-     "t": 593,
+     "t": 593.1,
      "text": "loop：讀 input、寫 output 直到 read fails；出錯就 abort；最後 close、顯示完成訊息、terminate normally。"
     }
    ],
    "cues": [
-    257.3,
-    286.9,
-    312.8,
-    327,
-    332.8,
-    341.8,
-    386.8,
-    398.8,
-    418.7,
+    257.48,
+    286.88,
+    313.06,
+    327.0,
+    333.02,
+    341.74,
+    387.26,
+    398.58,
+    418.56,
     460.6,
-    481.8,
-    503.8,
-    514.8,
-    592.8,
-    622.9,
-    633.8,
-    641.1,
-    653.3,
-    665.8
+    482.02,
+    504.18,
+    515.66,
+    593.1,
+    623.18,
+    634.04,
+    640.94,
+    653.36,
+    666.35
    ],
    "explain": [
     "用一個簡單的例子看 system call 怎麼被使用：把一個檔案（source）的內容，複製到另一個檔案（destination）。左邊列出所需的 system call 序列。",
@@ -149,19 +149,19 @@
    "scene": "osA-sysum",
    "points": [
     {
-     "t": 673,
+     "t": 673.16,
      "text": "連複製檔案這種簡單的事都要很多 system call；有些程式每秒執行上千個。"
     },
     {
-     "t": 712,
+     "t": 711.44,
      "text": "OS 的 services 透過 system call 提供給程式：程式需要 service 或 resource 時就發出 system call。"
     }
    ],
    "cues": [
-    673,
-    691.8,
-    712,
-    729.1
+    673.16,
+    691.94,
+    711.44,
+    729.28
    ],
    "explain": [
     "只是複製一個檔案這麼簡單的事，就執行了一大堆 system call。",
