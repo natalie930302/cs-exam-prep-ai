@@ -1152,8 +1152,8 @@ FRAG.push(['syn-18c-linux', 'Active / expired array：H（quantum 10）與 L（q
   fresh([0, 6.5, 13], [0, 1.2, 0]);
   const x0 = -4.2, sx = 0.022;
   await step(tok);                                   // 17 兩個 process：H 高 priority、quantum 10；L 低、200
-  const H = pal('H', 'q = 10', PCS[0], -6.4, 0, -4.6, 0.7), L = pal('L', 'q = 200', PCS[1], -4.6, 0, -4.6, 0.7);
-  H.mood('happy'); idx('priority 高', -6.4, 1.6, -4.6); idx('priority 低', -4.6, 1.6, -4.6);
+  const H = pal('H', 'q = 10', PCS[0], -6.4, 0, -4.6, 0.7), L = pal('L', 'q = 200', PCS[1], -3.2, 0, -4.6, 0.7);
+  H.mood('happy'); idx('priority 高', -6.4, 1.6, -4.6); idx('priority 低', -3.2, 1.6, -4.6);
   cap('H：priority 高、quantum 10', 'L：priority 低、quantum 200，同時進系統');
   const seg = timeline(x0, sx, [['沒有 active array', -1.4], ['有 active array', 1.8]]);
   await step(tok);                                   // 43 沒有 active array：H 先做 10

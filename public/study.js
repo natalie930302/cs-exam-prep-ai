@@ -14,7 +14,9 @@
     try { localStorage.setItem('yt-pos-' + params.get('v'), String(Math.max(0, Number(params.get('at')) || 0))); } catch (e) {}
   }
   const pathParts = location.pathname.split('/').filter(Boolean);
-  const subject = SUBJECTS.find(function(s){ return s.id === pathParts[1]; }) || SUBJECTS[0];
+  // an address with an unknown subject (a typo, an old link) goes to 六科 instead of opening some other subject
+  if (!SUBJECTS.some(function(s){ return s.id === pathParts[1]; })) { location.replace('/subjects'); return; }
+  const subject = SUBJECTS.find(function(s){ return s.id === pathParts[1]; });
   const chIndex = Math.max(0, Math.min(subject.chapters.length - 1, (Number(pathParts[2]) || 1) - 1));
   const chapter = subject.chapters[chIndex];
   const chKey = subject.id + '-' + stableTaskKey(chapter.t);
@@ -470,6 +472,9 @@
   }, 200);
   function seek(t){
     if (!playerReady) return;
+    // never past the end: YouTube treats that as a restart from 0:00
+    let len = 0; try { len = player.getDuration() || 0; } catch (e) {}
+    t = Math.max(0, len ? Math.min(t, len - 1) : t);
     player.seekTo(t, true);
     player.playVideo();
     syncNotes(t, true);
@@ -763,6 +768,13 @@
     $('timeline').querySelectorAll('.st-seg').forEach(function(b){ b.onclick = function(){
       if (walk) { const i = wSteps.findIndex(function(x){ return x.si === Number(b.dataset.sec); }); if (i >= 0) { wi = i; renderWalk(); } return; }
       seek(Number(b.dataset.t));
+      // the jump can change the panels' height: keep the video's top out from under the sticky header
+      setTimeout(function(){
+        const head = document.querySelector('.st-top'), wrap = document.querySelector('.st-player-wrap');
+        if (!head || !wrap) return;
+        const top = wrap.getBoundingClientRect().top, h = head.offsetHeight;
+        if (top < h) window.scrollBy({top: top - h - 8, behavior: 'smooth'});
+      }, 120);
     }; });
     renderWalkBtn();
   }
@@ -974,6 +986,19 @@
     }
     function next(){
       const nxt = s && s.options[idx + 1];
+      // the last video of the list, but earlier ones are not watched yet
+      const unwatched = !nxt && s ? s.options.map(function(o, i){ return i; }).filter(function(i){
+        const vid = youtubeId(s.options[i].url);
+        return i !== idx && vid && !done.has('vid-' + vid);
+      }) : [];
+      if (!nxt && unwatched.length) {
+        const first = unwatched[0];
+        end.innerHTML = '<div class="st-end-box"><span class="st-end-sub">這章還有 ' + unwatched.length + ' 支沒看完</span><b>' + esc(s.options[first].label) + '</b>'
+          + '<div class="st-end-row"><button class="st-btn st-btn-watch st-end-go">去看這支</button><button class="st-btn st-end-close">留在這裡</button></div></div>';
+        end.querySelector('.st-end-go').onclick = function(){ end.fadeRemove(); playVideo(current.seriesIdx, first, true); };
+        end.querySelector('.st-end-close').onclick = function(){ end.fadeRemove(); };
+        return;
+      }
       if (!nxt) {
         end.innerHTML = '<div class="st-end-box"><b>這章的影片看完了</b>'
           + (chIndex + 1 < subject.chapters.length ? '<a class="st-btn" href="' + studyRoomUrl(subject.id, chIndex + 1) + '">下一章：' + esc(subject.chapters[chIndex + 1].t) + ' ›</a>' : '')

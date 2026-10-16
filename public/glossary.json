@@ -1230,7 +1230,8 @@
  "rotation": {
   "zh": "旋轉",
   "what": "調整樹中幾個節點的父子關係來降低高度，同時保持 BST 的大小順序。AVL 有 LL、RR、LR、RL 四種。",
-  "subj": "ds"
+  "subj": "ds",
+  "only": true
  },
  "red-black tree": {
   "zh": "紅黑樹",
@@ -3737,7 +3738,9 @@
  "word": {
   "en": "word（字組）",
   "what": "處理器一次自然處理的資料大小。MIPS 的 word 是 32 bit（4 byte），暫存器、指令、lw/sw 的單位都是一個 word。",
-  "like": "搬家時一次搬一整箱，而不是一件一件拿。"
+  "like": "搬家時一次搬一整箱，而不是一件一件拿。",
+  "subj": "ca",
+  "only": true
  },
  "指令": {
   "en": "instruction",
@@ -3830,7 +3833,9 @@
  "Map": {
   "en": "Map（映射 / 對照表）",
   "what": "一種資料結構，存放「key → value」的配對；給一個 key 就能找到它對應的 value，key 不能重複。常用雜湊表或平衡搜尋樹實作。",
-  "like": "字典：用單字（key）查到解釋（value）。"
+  "like": "字典：用單字（key）查到解釋（value）。",
+  "subj": "ds",
+  "only": true
  },
  "暴力法": {
   "en": "brute force",

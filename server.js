@@ -188,6 +188,7 @@ app.put('/api/state/:key', (req, res) => {
 // Built once (lazily) from public/notes and public/transcripts; each hit is
 // a video id + second, so the page can open the study room right there.
 let SEARCH_INDEX = null;
+let KEYMAP = null;
 function buildSearchIndex() {
   const rows = [];
   const read = (dir) => { try { return fs.readdirSync(path.join(PUBLIC_DIR, dir)).filter((f) => /^[\w-]{11}\.json$/.test(f)); } catch (e) { return []; } };
@@ -231,7 +232,8 @@ function synonyms() {
   [['前綴樹', 'trie'], ['字首樹', 'trie'], ['銀行家', "banker"], ['鴿籠', 'pigeonhole'], ['死結', 'deadlock'], ['分頁', 'paging'],
    ['快取', 'cache'], ['雜湊', 'hash'], ['堆疊', 'stack'], ['佇列', 'queue'], ['鏈結串列', 'linked list'], ['二元樹', 'binary tree'],
    ['動態規劃', 'dynamic programming'], ['貪婪', 'greedy'], ['特徵值', 'eigenvalue'], ['行列式', 'determinant'], ['生成樹', 'spanning tree'],
-   ['最短路徑', 'shortest path'], ['排程', 'scheduling'], ['號誌', 'semaphore'], ['補數', "complement"], ['管線', 'pipeline']]
+   ['最短路徑', 'shortest path'], ['排程', 'scheduling'], ['號誌', 'semaphore'], ['補數', "complement"], ['管線', 'pipeline'],
+   ['分解', 'factorization'], ['分解', 'decomposition'], ['主定理', 'master theorem']]
     .forEach(([a, b]) => link(a, b));
   return (SYNONYMS = map);
 }
@@ -251,14 +253,34 @@ app.get('/api/search', (req, res) => {
   const syn = synonyms();
   // the whole query may itself be a known term with a translation
   const whole = syn.get(q);
-  const groups = (whole ? [q] : q.split(/\s+/).filter(Boolean)).map((w) =>
+  // 「lu分解」 is two words: English and Chinese written together are split
+  const words = q.split(/\s+/).filter(Boolean).flatMap((w) => w.match(/[\x00-\x7f]+|[^\x00-\x7f]+/g) || []);
+  const groups = (whole ? [q] : words).map((w) =>
     [w].concat(Array.from(syn.get(w) || [])).map(termTest));
-  const hits = [];
+  const hits = [], perVid = new Map();
   for (const r of SEARCH_INDEX) {
     if (!groups.every((g) => g.some((test) => test(r.low)))) continue;
-    // section titles first, then key points, then subtitles; exact phrase bonus
-    const score = (r.title ? 3 : r.src === 'note' ? 2 : 1) + (r.low.includes(q) ? 0.5 : 0);
-    hits.push({ r, score });
+    hits.push({ r, score: 0 });
+    perVid.set(r.vid, (perVid.get(r.vid) || 0) + 1);
+  }
+  // section titles first, then key points, then subtitles; exact phrase
+  // bonus; and a lecture that keeps coming back to the term (the one that
+  // teaches it) before one that mentions it in passing
+  // a chapter goal that names the term (public/keymap.json) points at the
+  // video parts that teach it: those come first
+  const goalHit = new Map();
+  try {
+    if (!KEYMAP) KEYMAP = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'keymap.json'), 'utf8'));
+    const tests = groups.map((g) => (low) => g.some((test) => test(low)));
+    for (const ch of Object.values(KEYMAP)) for (const p of ch.points || []) {
+      if (!tests.every((t) => t(String(p.point).toLowerCase()))) continue;
+      for (const w of p.where || []) goalHit.set(w.video, Math.min(goalHit.get(w.video) || Infinity, w.t));
+    }
+  } catch (e) { /* no keymap: no goal boost */ }
+  for (const h of hits) {
+    const r = h.r;
+    h.score = (r.title ? 3 : r.src === 'note' ? 2 : 1) + (r.low.includes(q) ? 0.5 : 0) + Math.min(2, Math.log2(1 + perVid.get(r.vid)) / 2)
+      + (goalHit.has(r.vid) ? 2 : 0);
   }
   hits.sort((a, b) => b.score - a.score);
   const out = [], perVideo = new Map();

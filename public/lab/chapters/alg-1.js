@@ -5594,7 +5594,7 @@ FRAG.push(['algjiang1-lab-recipe', '化學實驗、物理實驗、食譜都是 p
 
 // ════════ 0IAPZzGSbME（Abdul Bari 1：Introduction）— Algorithm vs Program 對照表 ════════
 const AVP = [['Design time', 'Implementation time'], ['懂 domain 的人', 'Programmer'], ['任何語言、數學符號', 'C / C++ / Java / Python'], ['與 HW、OS 無關', '依賴 HW、OS'], ['Analyze（分析）', 'Testing（測試）']];
-const avpY = (r) => 6.2 - r * 0.62;
+const avpY = (r) => 6.3 - r * 0.72;
 // the table so far: headers + finished rows (gray); returns a fill(r) that writes row r
 function avpTable(done) {
   tag('Algorithm', 'ptr', -3.6, 6.9, -1.5); tag('Program', 'ptr alt', 3.6, 6.9, -1.5);
@@ -5677,12 +5677,12 @@ FRAG.push(['algjiang1-avp-who', 'Algorithm vs Program：誰來寫', async (tok) 
   note('domain knowledge', -3.6, 1.9, 1.6);
   say('要有 domain knowledge 的人', '懂這個問題、也知道怎麼解');
   await step(tok);                                    // 426.8 accounting → accountant
-  const ac = buddy('會計師', '', C_PPL, -5.6, 0, 3.6, 0.7); ac.mood('happy');
-  note('會計軟體', -5.6, 1.5, 3.6);
+  const ac = buddy('會計師', '', C_PPL, -6.4, 0, 3.6, 0.7); ac.mood('happy');
+  note('會計軟體', -6.4, 1.5, 3.6);
   say('寫會計軟體？', '會計師最懂會計');
   await step(tok);                                    // 436.0 hospital → doctors, admin staff
-  const dr = buddy('醫師', '', C_PPL, -1.8, 0, 3.6, 0.7); dr.mood('happy');
-  note('醫院系統', -1.8, 1.5, 3.6);
+  const dr = buddy('醫師', '', C_PPL, -0.8, 0, 3.6, 0.7); dr.mood('happy');
+  note('醫院系統', -0.8, 1.5, 3.6);
   say('醫院的系統？', '醫師、行政人員比 programmer 更懂');
   await step(tok);                                    // 447.0 the one with domain knowledge writes it
   T.fill(0); await hops(tok, ds, ac, dr);

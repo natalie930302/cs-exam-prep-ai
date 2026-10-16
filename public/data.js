@@ -995,7 +995,6 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
   {n:"主題3",t:"集合與函數",sub:"Set Operations、Functions、Bijection、Cardinality",pri:"hi",hrs:"7.5hr",wk:12,
    key:"集合運算（聯集/交集/差集/補集）的性質、函數的單射/滿射/雙射定義、Cantor對角線論證（可數vs不可數）",
    mats:[
-    {type:"vid",text:"清大OCW 趙啟超《離散數學》第2B講 Logic and Set Theory",url:"https://www.youtube.com/watch?v=BxbJxYFSOdo",dur:"18:35"},
     {type:"vid",text:"交大OCW 易志偉《離散數學》Lec05 Sets, Functions, Sequences, and Sums (1/3)",url:"https://www.youtube.com/watch?v=8_bLOJfZW6g",dur:"35:28"},
     {type:"vid",text:"交大OCW 易志偉《離散數學》Lec06 Sets, Functions, Sequences, and Sums (2/3)",url:"https://www.youtube.com/watch?v=6U8lGu2pZyM",dur:"1:13:55"},
     {type:"vid",text:"交大OCW 易志偉《離散數學》Lec07 Sets, Functions, Sequences, and Sums (3/3)",url:"https://www.youtube.com/watch?v=yR-nZxFS8Hk",dur:"1:21:01"},
