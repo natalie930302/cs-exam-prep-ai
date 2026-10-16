@@ -1417,7 +1417,9 @@ scene('cpar-am-limit', '處理器再多，執行時間也會停在序列部分',
   },
   async (tok, S) => { // @376.9
     S.u = hb('#9aa0a6', BX, 5.6, 0.1 * BW, '序列'); S.e = hb('#4b9ee2', BX + 0.1 * BW, 5.6, 0.9 * BW, '可平行 0.9');
-    S.e.userData.lbl.position.y = -0.9; // the parallel part shrinks to a sliver beside the serial part: its name sits under it
+    // the parallel part shrinks to a sliver beside the serial part: its name moves under it as a separate label
+    // (a label offset inside a bar squeezed to 0.02 wide does not stay put)
+    S.e.userData.lbl.element.style.visibility = 'hidden'; S.el = tag('可平行 0.9', 'val', BX + 0.1 * BW + 0.4, 4.55, 0.4);
     await anim(tok, 1200, (u) => setW(S.e, BX + 0.1 * BW, 0.9 * BW * (1 - u * (1 - 1 / 1000))));
     S.n = note('serial（序列）的那段：和舊 CPU 花一樣的時間', 0, 0.4);
     cap('序列的部分', '和舊 CPU 花一樣久');
@@ -1427,7 +1429,7 @@ scene('cpar-am-limit', '處理器再多，執行時間也會停在序列部分',
     cap('處理器多到某個數量後', '執行時間變成常數');
   },
   async (tok, S) => { // @400.5
-    gone(S.c, S.u, S.e);
+    gone(S.c, S.u, S.e, S.el);
     S.ax = [wire(-5.0, 0.9, 5.4, 0.9, '#6e5f49', 0.05), wire(-5.0, 0.9, -5.0, 5.9, '#6e5f49', 0.05)];
     S.yl = sm('執行時間（ms）', -5.0, 6.25); S.xl = sm('處理器數（對數）', 2.6, 0.45);
     S.X = (n) => -5.0 + Math.log2(n) / 10 * 10.2; S.Y = (t) => 0.9 + t * 4.6;

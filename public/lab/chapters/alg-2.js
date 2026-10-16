@@ -990,11 +990,11 @@ export default function (ctx) {
     say('把每個子矩陣當成一個「元素」', '就變成 2×2 乘法：套用同樣四個公式');
     await beat(tok, 2400);
     const calls = [['11', '11'], ['12', '21'], ['11', '12'], ['12', '22'], ['21', '11'], ['22', '21'], ['21', '12'], ['22', '22']];
-    tag('MM(A, B, 4)', 'ptr alt', 3.6, 6.4);
-    for (let k = 0; k < 8; k++) {
-      const x = 2.1 + (k % 4) * 1.05, y = 4.6 - Math.floor(k / 4) * 1.1;
-      cube('A' + calls[k][0] + 'B' + calls[k][1], k < 4 ? C.blue : C.purple, [0.98, 0.5, 0.8], x, y, 0, 1.5);
-      line(3.6, 6.1, x, y + 0.3);
+    tag('MM(A, B, 4)', 'ptr alt', 3.6, 6.9);
+    for (let k = 0; k < 8; k++) { // one row per C block: its two calls side by side
+      const x = 2.3 + (k % 2) * 2.6, y = 5.6 - Math.floor(k / 2) * 1.05;
+      cube('A' + calls[k][0] + 'B' + calls[k][1], k < 4 ? C.blue : C.purple, [1.4, 0.5, 0.8], x, y, 0, 1.5);
+      line(3.6, 6.6, x, y + 0.3);
       say('C' + ['11', '11', '12', '12', '21', '21', '22', '22'][k] + ' 需要 MM(A' + calls[k][0] + ', B' + calls[k][1] + ', n/2)', '第 ' + (k + 1) + ' 次遞迴呼叫');
       await beat(tok, 750);
     }

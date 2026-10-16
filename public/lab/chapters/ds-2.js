@@ -11503,7 +11503,8 @@ function eqRun(seq) {
 function eqStage(o = {}) {
   const S = { slots: [], lists: Array.from({ length: EQN }, () => []), arr: Array.from({ length: EQN }, () => []), outs: [], stack: [], lines: [] };
   for (let i = 0; i < EQN; i++) {
-    tag('[' + i + ']', 'idx', EQX(i), 0, EQ_SLOT_Z - (o.idxDz || 0.75));
+    const il = tag('[' + i + ']', 'idx', EQX(i), 0, EQ_SLOT_Z - (o.idxDz || 0.75));
+    if (il && il.element) il.element.style.padding = '0 1px'; // 12 index labels 0.95 apart: without the chip padding they don't touch
     S.slots.push(cube('0', '#e9dcc4', [0.8, 0.4, 0.8], EQX(i), 0.2, EQ_SLOT_Z));
   }
   tag('seq', 'ptr', -6.5, 0.3, EQ_SLOT_Z);
@@ -15891,7 +15892,7 @@ FRAG.push(['sqpeng-multistack', 'Multiple stacks 與 Stack ≠ Array', async (to
     say('log n 漲得比 n² 慢', 'log n = O(n²)');
     await step(tok);                                   // 117:48 f₁ + f₂ = O(n²)
     glow(f1, null); glow(f2, null);
-    move(f2, -3, 1.2, 0); kill(t2);
+    f2.userData.lbl.element.style.visibility = 'hidden'; move(f2, -3, 1.2, 0); kill(t2);   // its name goes first, so it never prints over f₁
     await beat(tok, 800);
     kill(f2);
     say('合起來被大的那個壓住', 'f₁ + f₂ = O(n²)');

@@ -8265,6 +8265,248 @@ scene('acD-ins-count', '17D：Insertion sort 的 worst case 與 n log n', [
   },
 ]);
   }
+  // ═══ bs (Mathemaniac Burnside's Lemma, 6kfbotHL0fs) ═══
+  {
+const { V3, tag, cube, kill, glow, tint, anim, arrow, step, fresh } = K;
+const wt = (tok, ms) => ctx.beat(tok, ms);
+const cap = (a, b = '') => say(a, b);
+const T = (t, c, x, y, z = 0) => tag(t, c, x, y, z);
+const L = (t, c, x, y, z = 0) => { const l = tag(t, c, x, y, z); if (l.center) l.center.set(0, 0.5); return l; };
+const cls = (l, c) => { if (l && l.element) l.element.className = 'lab-label ' + c; };
+const setT = (l, t) => { if (l && l.element) l.element.textContent = t; };
+const CAM = [[0, 4.2, 14], [0, 3.0, 0]];
+const FC = { blue: '#4b9ee2', orange: '#dd8238', green: '#2fc092', purple: '#9b7ef4', red: '#d64545', sand: '#e9dcc4', gold: '#c08a1f', gray: '#cfc6b6' };
+const OKG = '#0f5a3a', NG = '#7a1010', HL = '#6a4a00';
+const COL = { R: '#d64545', G: '#2fc092', B: '#4b9ee2', N: '#e9dcc4' };
+function scene(id, title, steps, cam = CAM) {
+  FRAG.push([id, title, async (tok) => {
+    fresh(cam[0], cam[1]);
+    const S = {};
+    for (const f of steps) { await step(tok); await f(tok, S); }
+  }]);
+}
+function board(x, yTop, dy = 0.7) {
+  const ls = []; let last = null;
+  return {
+    add(t, c = 'note') {
+      if (last && last.userData.hot) { cls(last, 'say'); last.userData.hot = false; }
+      const l = L(t, c, x, yTop - ls.length * dy); ls.push(l); l.userData.hot = c === 'note'; last = l; return l;
+    },
+  };
+}
+// a cube whose 6 faces can be coloured: order +x, −x, +y, −y, +z, −z (letters R/G/B/N)
+function fcube(x, y, s = 2.0, faces = 'NNNNNN') {
+  const mats = [...faces].map((c) => new THREE.MeshStandardMaterial({ color: COL[c] || c, roughness: 0.55 }));
+  const m = new THREE.Mesh(new THREE.BoxGeometry(s, s, s), mats);
+  m.position.set(x, y, 0); m.rotation.set(0.35, -0.6, 0); m.castShadow = true;
+  lab.world.add(m); m.userData.base = m.quaternion.clone(); return m;
+}
+const paint = (m, faces) => [...faces].forEach((c, i) => m.material[i].color.set(COL[c] || c));
+// spin cube m about its own axis (local) by angle, starting from its base orientation
+async function spin(tok, m, axis, angle, ms = 900) {
+  const q0 = m.quaternion.clone(), a = axis.clone().normalize(), q = new THREE.Quaternion();
+  await anim(tok, ms, (u) => { q.setFromAxisAngle(a, angle * u); m.quaternion.copy(q0).multiply(q); });
+}
+const reset = (m) => m.quaternion.copy(m.userData.base);
+// a thin rod along local axis dir through cube m (child, so it turns with the cube)
+function rod(m, dir, len = 3.4) {
+  const r = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, len, 8), new THREE.MeshStandardMaterial({ color: '#6a4a00' }));
+  r.quaternion.setFromUnitVectors(V3(0, 1, 0), dir.clone().normalize()); m.add(r); return r;
+}
+const pair = (a, b, x, y) => [cube('', COL[a], [0.5, 0.5, 0.4], x - 0.27, y, 0), cube('', COL[b], [0.5, 0.5, 0.4], x + 0.27, y, 0)];
+
+scene('bs-cube', '立方體塗色：旋轉後一樣的算一種', [
+  async (tok, S) => { // 0.5
+    S.B = board(-6.6, 6.4);
+    S.B.add('紅綠藍塗立方體 6 個面');
+    S.A = fcube(2.2, 3.2);
+    ['R', 'G', 'B'].forEach((c, i) => cube('', COL[c], [0.5, 0.5, 0.5], 1.4 + i * 0.8, 5.6, 0, 1));
+    cap('三種顏色塗立方體的 6 個面', '有幾種塗法？');
+  },
+  async (tok, S) => { // 10.0
+    const f = 'RBGRGB';
+    for (let i = 1; i <= 6; i++) { paint(S.A, f.slice(0, i) + 'NNNNNN'.slice(i)); await wt(tok, 160); }
+    S.B.add('每面 3 種：3⁶ = 729');
+    cap('每個面 3 種選擇', '3⁶ = 729');
+  },
+  async (tok, S) => { // 17.5
+    await spin(tok, S.A, V3(0, 1, 0), Math.PI * 2, 1600);
+    S.B.add('但立方體可以旋轉');
+    cap('立方體可以轉', '轉了以後顏色換位置');
+  },
+  async (tok, S) => { // 25.0
+    S.Bc = fcube(5.6, 3.2, 2.0, 'GBGRBR');
+    T('看起來不同？', 'say', 5.6, 1.4);
+    await wt(tok, 800);
+    await spin(tok, S.A, V3(0, 1, 0), Math.PI / 2, 1200);
+    T('A 轉 90° = B', 'good', 2.2, 1.4);
+    S.B.add('轉得過去 → 算同一種', 'good');
+    cap('A 轉 90° 就變成 B', '所以算同一種');
+  },
+  async (tok, S) => { // 40.0
+    S.B.add('要數的是「軌道」（orbit）');
+    cap('考慮對稱的計數', '先複習 orbit-stabilizer 定理');
+  },
+]);
+
+scene('bs-orbit', '軌道與穩定子：|Orb(x)|·|Stab(x)| = |G|', [
+  async (tok, S) => { // 91.5
+    S.B = board(-6.6, 6.4);
+    S.B.add('群 G 作用在集合 X');
+    S.d = [];
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) S.d.push(cube('', FC.gray, [0.4, 0.4, 0.4], 1.6 + c * 1.3, 4.4 - r * 1.3, 0));
+    T('X（示意：12 個元素）', 'idx', 3.55, 5.4);
+    S.orb = [0, 2, 5, 11]; S.orb2 = [1, 3, 4, 6, 8, 9]; S.orb3 = [7, 10];
+    cap('X 的元素畫成點', 'G 是一組對稱');
+  },
+  async (tok, S) => { // 104.0
+    S.px = T('x', 'ptr', S.d[0].position.x - 0.55, S.d[0].position.y);
+    for (const i of S.orb) { tint(S.d[i], FC.gold); await wt(tok, 200); }
+    S.B.add('Orb(x)：x 能到的元素');
+    cap('亮的點：x 的軌道 Orb(x)', 'x 被對稱送到的地方');
+  },
+  async (tok, S) => { // 118.0
+    glow(S.d[0], HL);
+    S.B.add('Stab(x)：讓 x 不動的對稱');
+    T('3 個對稱讓 x 不動（示意）', 'idx', 3.55, 0.4);
+    cap('讓 x 留在原地的對稱', '構成穩定子 Stab(x)');
+  },
+  async (tok, S) => { // 126.0
+    S.B.add('|Orb(x)|·|Stab(x)| = |G|', 'good');
+    T('4 × 3 = 12 = |G|', 'good', 3.55, -0.3);
+    cap('Orbit-stabilizer 定理', '|Orb(x)| · |Stab(x)| = |G|');
+  },
+  async (tok, S) => { // 155.0
+    S.ps = T('x*', 'ptr alt', S.d[11].position.x + 0.6, S.d[11].position.y);
+    cap('軌道裡另一個點 x*', '它能到哪裡？');
+  },
+  async (tok, S) => { // 162.0
+    const p = (i) => S.d[i].position;
+    S.a1 = arrow(p(11).clone(), p(0).clone(), 0x6a4a00); await wt(tok, 500);
+    S.a2 = arrow(p(0).clone(), p(5).clone(), 0x0f5a3a);
+    S.B.add('x* → 退回 x → 到任何亮點');
+    cap('先退回 x，再走到想去的亮點', 'Orb(x*) 包含所有亮點');
+  },
+  async (tok, S) => { // 198.0
+    const p = (i) => S.d[i].position;
+    S.a3 = arrow(p(11).clone(), p(7).clone(), 0x7a1010); glow(S.d[7], NG);
+    T('✗', 'bad', p(7).x, p(7).y + 0.55);
+    S.B.add('暗點去不了 → Orb(x*) = Orb(x)', 'bad');
+    cap('暗點：x* 到得了，x 也就到得了', '矛盾，所以去不了');
+  },
+  async (tok, S) => { // 220.0
+    [S.a1, S.a2, S.a3].forEach(kill); glow(S.d[7], '#000000'); glow(S.d[0], '#000000');
+    for (const i of S.orb2) tint(S.d[i], FC.green);
+    for (const i of S.orb3) tint(S.d[i], FC.purple);
+    S.B.add('每個元素恰在一個軌道', 'good');
+    cap('軌道把 X 分成不重疊的幾塊', 'partition');
+  },
+]);
+
+scene('bs-count', '兩種數法：Σ|Fix(g)| = 軌道數 × |G|', [
+  async (tok, S) => { // 227.5
+    S.B = board(-6.6, 6.4);
+    S.B.add('一個軌道 = 一種塗色');
+    S.B.add('相異塗色數 = 軌道數');
+    cap('同軌道的塗色互相轉得到', '要數的是軌道數');
+  },
+  async (tok, S) => { // 295.5
+    S.B.add('示意：2 格、紅/藍，轉 180°');
+    S.g = [cube('e', FC.sand, [0.8, 0.7, 0.5], 1.4, 4.6, 0, 1), cube('r', FC.sand, [0.8, 0.7, 0.5], 1.4, 2.2, 0, 1)];
+    S.xs = [['R', 'R'], ['R', 'B'], ['B', 'R'], ['B', 'B']];
+    S.xy = [5.2, 4.0, 2.8, 1.6]; S.xx = 5.0;
+    S.xs.forEach(([a, b], i) => pair(a, b, S.xx, S.xy[i]));
+    T('G', 'idx', 1.4, 5.5); T('X', 'idx', 5.0, 6.0);
+    cap('G = {e, r}，X = 四種塗法', '示意的小例子');
+  },
+  async (tok, S) => { // 315.0
+    S.ln = [];
+    const link = (gi, xi) => S.ln.push(K.line(1.8, [4.6, 2.2][gi], S.xx - 0.6, S.xy[xi], 0, '#6e5f49'));
+    for (let i = 0; i < 4; i++) { link(0, i); await wt(tok, 150); }
+    link(1, 0); await wt(tok, 150); link(1, 3);
+    S.B.add('g 固定 x 就連一條線');
+    cap('g·x = x 就連線', 'e 固定全部，r 只固定紅紅、藍藍');
+  },
+  async (tok, S) => { // 336.5
+    T('|Fix(e)| = 4', 'ptr', 1.4, 3.85);
+    T('|Fix(r)| = 2', 'ptr', 1.4, 1.4);
+    S.B.add('依 g 數：Σ|Fix(g)| = 4 + 2 = 6');
+    cap('依 g 數：每個 g 連出 |Fix(g)| 條', '4 + 2 = 6');
+  },
+  async (tok, S) => { // 381.0
+    S.st = [2, 1, 1, 2].map((v, i) => T(String(v), 'ptr alt', S.xx + 1.0, S.xy[i]));
+    S.B.add('依 x 數：每個 x 收到 |Stab(x)|');
+    cap('依 x 數：x 收到 |Stab(x)| 條', '紅紅 2、紅藍 1、藍紅 1、藍藍 2');
+  },
+  async (tok, S) => { // 415.0
+    T('{紅紅} 2　{藍藍} 2　{紅藍, 藍紅} 1 + 1', 'say', 3.2, 0.5);
+    S.B.add('每個軌道小計 = |G| = 2');
+    cap('同一軌道分批加：小計都是 |G|', '|Orb| · |Stab| = |G|');
+  },
+  async (tok, S) => { // 463.0
+    S.B.add('總數 = 軌道數 × |G| = 3 × 2');
+    cap('總線數 = 軌道數 × |G|', '3 × 2 = 6，跟依 g 數一樣');
+  },
+  async (tok, S) => { // 475.0
+    S.B.add('軌道數 = (1/|G|) Σ|Fix(g)|', 'good');
+    T('= 6 / 2 = 3 種', 'good', 3.2, -0.3);
+    cap('Burnside 引理', '軌道數 = (1/|G|) Σ |Fix(g)|');
+  },
+]);
+
+scene('bs-cube57', '立方體：|G| = 24，Σ|Fix| = 1368，答案 57', [
+  async (tok, S) => { // 486.5
+    S.B = board(-6.6, 6.4);
+    S.B.add('N = (1/|G|) Σ|Fix(g)|');
+    S.A = fcube(3.8, 3.4, 2.2, 'NNNNNN');
+    cap('要算 |G| 和每個 g 的 |Fix(g)|', '');
+  },
+  async (tok, S) => { // 524.0
+    paint(S.A, ['N', 'N', FC.gold, 'N', 'N', 'N']);
+    S.r = rod(S.A, V3(0, 1, 0));
+    for (let k = 0; k < 4; k++) { await spin(tok, S.A, V3(0, 1, 0), Math.PI / 2, 450); await wt(tok, 120); }
+    S.B.add('|G| = 6 × 4 = 24（面的軌道 × 穩定子）');
+    S.t = T('上面可到 6 個面；固定它的旋轉 4 個', 'idx', 3.8, 0.9);
+    cap('上面可以轉到 6 個面，固定它的有 4 個', '|G| = 6 × 4 = 24');
+  },
+  async (tok, S) => { // 559.5
+    kill(S.t); paint(S.A, 'RBGRGB'); reset(S.A);
+    S.B.add('恆等 ×1：3⁶ = 729');
+    cap('不轉：每種塗色都被固定', '3⁶ = 729');
+  },
+  async (tok, S) => { // 592.0
+    paint(S.A, 'GGRBGG');
+    await spin(tok, S.A, V3(0, 1, 0), Math.PI / 2, 1100);
+    S.B.add('面軸 ±90° ×6：3³ = 27');
+    cap('轉 90°：四個側面要同色', '上、下自由 → 3³');
+  },
+  async (tok, S) => { // 662.0
+    reset(S.A); paint(S.A, 'GGRBRR');
+    await spin(tok, S.A, V3(0, 1, 0), Math.PI, 1300);
+    S.B.add('面軸 180° ×3：3⁴ = 81');
+    cap('轉 180°：側面兩兩對調', '上、下、兩組側面 → 3⁴');
+  },
+  async (tok, S) => { // 684.0
+    kill(S.r); reset(S.A); paint(S.A, 'RGRGRG');
+    S.r = rod(S.A, V3(1, 1, 1), 4.2);
+    await spin(tok, S.A, V3(1, 1, 1), Math.PI * 2 / 3, 1300);
+    S.B.add('頂點軸 ±120° ×8：3² = 9');
+    cap('繞長對角線轉 120°', '頂點周圍三個面同色 → 3²');
+  },
+  async (tok, S) => { // 712.0
+    kill(S.r); reset(S.A); paint(S.A, 'RGRGBB');
+    S.r = rod(S.A, V3(1, 1, 0), 4.0);
+    await spin(tok, S.A, V3(1, 1, 0), Math.PI, 1300);
+    S.B.add('邊軸 180° ×6：3³ = 27');
+    cap('繞對邊中點轉 180°', '面兩兩對調成 3 組 → 3³');
+  },
+  async (tok, S) => { // 740.0
+    S.B.add('1368 / 24 = 57 種', 'good');
+    T('729 + 6·27 + 3·81 + 8·9 + 6·27 = 1368', 'say', 3.8, 0.9);
+    cap('加總 1368，除以 24', '答案 57 種');
+  },
+]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

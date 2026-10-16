@@ -989,6 +989,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
     {type:"vid",text:"交大OCW 易志偉《離散數學》Lec11 Algorithms and the Integers (4/4) / Induction and Recur (1/4)",url:"https://www.youtube.com/watch?v=IlMZbpJW1ek",dur:"45:10"},
     {type:"vid",text:"交大OCW 易志偉《離散數學》Lec12 Induction and Recur (2/4)",url:"https://www.youtube.com/watch?v=R29RKSmZCnM",dur:"1:14:15"},
     {type:"vid",text:"交大OCW 易志偉《離散數學》Lec13 Induction and Recur (3/4)",url:"https://www.youtube.com/watch?v=5QtHzN4SRZc",dur:"59:03"},
+    {type:"vid",text:"MIT OCW 6.042J：Well Ordering Principle（良序原理）",url:"https://www.youtube.com/watch?v=fV3v6qQ3w4A",dur:"5:38"},
     {type:"ex",text:"數學歸納法完整證明 × 3 題（寫出 Base Case + Inductive Step）"}
    ]},
   {n:"主題3",t:"集合與函數",sub:"Set Operations、Functions、Bijection、Cardinality",pri:"hi",hrs:"7.5hr",wk:12,
@@ -1035,7 +1036,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
     {type:"ex",text:"排列組合應用題 × 10 題（課本 Ch5 全做）"}
    ]},
   {n:"主題6",t:"進階計數",sub:"容斥原理、Generating Function、Burnside引理／玻里亞計數",pri:"hi",hrs:"14hr",wk:13,
-   key:"容斥原理公式與應用、常用生成函數、Burnside引理與玻里亞計數；掌握基礎公式，深入題型列為選讀",
+   key:"容斥原理公式與應用、常用生成函數、Burnside引理與玻里亞計數——掌握基礎公式即可，深入題型列為選讀",
    peerNote:"同儕筆記地雷：H_r^n（相同物放相異箱）、S(m,n)（相異物到相同箱）、onto(m,n)（相異物放相異箱不允許空）三種計數公式最常被搞混，要先分清題型再套公式；第二類史特林數的求和上界公式在某份筆記裡疑似不夠精確，跟課本對不上時以課本為準。",
    mats:[
     {type:"vid",text:"The Principle of Inclusion-Exclusion",url:"https://www.youtube.com/watch?v=YlKDp03Kg68",dur:"17:35"},
@@ -1062,6 +1063,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
     {type:"vid",text:"清大OCW 趙啟超《離散數學》第17B講 Generating Functions and Complexity of Algorithms",url:"https://www.youtube.com/watch?v=p7fXiuokfWs",dur:"13:00"},
     {type:"vid",text:"清大OCW 趙啟超《離散數學》第17C講 Generating Functions and Complexity of Algorithms",url:"https://www.youtube.com/watch?v=XVt8JJgj8JE",dur:"23:14"},
     {type:"vid",text:"清大OCW 趙啟超《離散數學》第17D講 Generating Functions and Complexity of Algorithms",url:"https://www.youtube.com/watch?v=cM8ymJ355fc",dur:"21:48"},
+    {type:"vid",text:"Mathemaniac：Burnside's Lemma（Burnside 引理）",url:"https://www.youtube.com/watch?v=6kfbotHL0fs",dur:"13:45"},
     {type:"ex",text:"容斥原理應用題 × 5 題（離散上冊 Ch6 習題）"}
    ]},
   {n:"主題7",t:"圖論（基礎）",sub:"圖的定義、Walk/Path/Cycle、Euler/Hamilton路徑",pri:"must",hrs:"6.5hr",wk:14,
@@ -1121,6 +1123,7 @@ tip:"計數題需要大量練習；圖論可與資料結構的圖演算法一起
     {type:"vid",text:"清大OCW 趙啟超《離散數學》第32A講 Maximum Flow Problem",url:"https://www.youtube.com/watch?v=ZCOlf1NFPA4",dur:"24:30"},
     {type:"vid",text:"清大OCW 趙啟超《離散數學》第32B講 Maximum Flow Problem",url:"https://www.youtube.com/watch?v=oFStjKYt8b4",dur:"22:57"},
     {type:"vid",text:"Math at Andrews：Cayley's Tree Theorem（生成樹計數）",url:"https://www.youtube.com/watch?v=Wi8IvnlMNxs",dur:"11:17"},
+    {type:"vid",text:"Numberphile：The Four Color Map Theorem（四色定理）",url:"https://www.youtube.com/watch?v=NgbK43jB4rQ",dur:"14:18"},
     {type:"ex",text:"Euler 公式（v-e+f=2）判斷平面圖 × 3 題"}
    ]},
   {n:"主題9",t:"二元關係",sub:"Equivalence Relation、Partial Order、Poset、Hasse Diagram",pri:"must",hrs:"6.5hr",wk:15,

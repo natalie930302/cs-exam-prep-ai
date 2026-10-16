@@ -256,7 +256,7 @@
     if (!s) { $('chProg').innerHTML = ''; return; }
     const w = s.options.filter(function(o){ return done.has(vidTask(youtubeId(o.url))); }).length;
     const leftSec = s.options.filter(function(o){ return !done.has(vidTask(youtubeId(o.url))); }).reduce(function(a, o){ return a + durToSec(o.dur); }, 0);
-    $('chProg').innerHTML = '<span class="st-pill' + (w === s.options.length ? ' ok' : '') + '">影片 ' + w + '/' + s.options.length + (leftSec ? '・還剩 ' + hm(leftSec) : '') + '</span>';
+    $('chProg').innerHTML = '<span class="st-pill' + (w === s.options.length ? ' ok' : '') + '"><span class="pl-long">影片 </span>' + w + '/' + s.options.length + (leftSec ? '<span class="pl-long">・還剩 ' + hm(leftSec) + '</span>' : '') + '</span>';
   }
 
   // ── Video list ──

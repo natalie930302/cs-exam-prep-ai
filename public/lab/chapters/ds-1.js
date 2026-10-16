@@ -579,9 +579,9 @@ export default function (ctx) {
     await beat(tok, 3400);
   }
   async function scMatrixAdd(tok) {
-    fresh([0, 6.5, 12], [0, 1.4, 0]);
+    fresh([0, 10, 9.5], [0, 1.6, 0]); // looking down more steeply so the three rows of each matrix stay apart on screen
     const A = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 1, 2, 3]], B = [[2, 0, 1, 3], [1, 4, 2, 0], [3, 2, 5, 1]];
-    const cell = (cx, i, j) => [cx + (j - 1.5) * 0.72, 0.15, (i - 1) * 0.72];
+    const cell = (cx, i, j) => [cx + (j - 1.5) * 0.82, 0.15, (i - 1) * 1.0];
     const am = A.map((r, i) => r.map((v, j) => cube(v, '#4b9ee2', [0.6, 0.3, 0.6], ...cell(-4.4, i, j))));
     const bm = B.map((r, i) => r.map((v, j) => cube(v, '#9b7ef4', [0.6, 0.3, 0.6], ...cell(0, i, j))));
     for (let i = 0; i < 3; i++) for (let j = 0; j < 4; j++) { const [x, , z] = cell(4.4, i, j); ctx.tile(V3(x, 0.04, z), 0.6, 0.6); }

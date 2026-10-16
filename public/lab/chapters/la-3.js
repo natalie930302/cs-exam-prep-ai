@@ -187,10 +187,16 @@ export default function (ctx) {
       g.add(lab.label(fmt(cl(k * mv.v[s][j])), 'val'));
       g.position.set(mv.X(j), mv.Y(s), mv.z + 0.42); lab.world.add(g); gh.push(g);
     }
+    // the ghost row covers a row of the matrix: that row's values step aside while it is there (no two numbers printed on each other)
+    const hideRow = (i, on) => mv.cells[i].forEach((m) => { if (m.userData.lbl) m.userData.lbl.element.style.visibility = on ? 'hidden' : ''; });
+    hideRow(s, true);
     await W(tok, ms * 0.35);
+    hideRow(t, true);
     gh.forEach((g, j) => move(g, mv.X(j), mv.Y(t), mv.z + 0.42));
-    await W(tok, ms * 0.45);
-    gh.forEach(kill);
+    await W(tok, ms * 0.2);
+    hideRow(s, false);
+    await W(tok, ms * 0.25);
+    gh.forEach(kill); hideRow(t, false);
     for (let j = 0; j < mv.C; j++) mv.set(t, j, mv.v[t][j] - k * mv.v[s][j]);
     mv.glowRow(s, null); mv.glowRow(t, GREEN);
     await W(tok, ms * 0.4);

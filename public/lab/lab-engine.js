@@ -135,10 +135,12 @@ export function createLab(container) {
       if (_q.z > 1 || _q.z < -1) continue;
       r.ax += (_q.x + 1) / 2 * W; r.ay += (1 - _q.y) / 2 * H; r.an++;
     }
-    const add = (p, hw, hh) => {
+    // (cx, cy: where the anchor sits inside a label, 0.5 = centred; a label
+    // anchored at its left edge reaches its full width to the right)
+    const add = (p, hw, hh, cx = 0.5, cy = 0.5) => {
       _q.copy(p).project(camera);
       if (_q.z > 1 || _q.z < -1) return;
-      const sx = (_q.x + 1) / 2 * W, sy = (1 - _q.y) / 2 * H;
+      const sx = (_q.x + 1) / 2 * W + (0.5 - cx) * 2 * hw, sy = (1 - _q.y) / 2 * H + (0.5 - cy) * 2 * hh;
       r.x0 = Math.min(r.x0, sx - hw); r.x1 = Math.max(r.x1, sx + hw);
       r.y0 = Math.min(r.y0, sy - hh); r.y1 = Math.max(r.y1, sy + hh);
       r.n++;
@@ -151,7 +153,7 @@ export function createLab(container) {
           const el = o.element, st = el.style;
           if (!el.textContent || st.visibility === 'hidden' || st.opacity === '0') return;
           o.getWorldPosition(_p); if (d) _p.add(d);
-          add(_p, el.offsetWidth / 2, el.offsetHeight / 2);
+          add(_p, el.offsetWidth / 2, el.offsetHeight / 2, o.center ? o.center.x : 0.5, o.center ? o.center.y : 0.5);
           return;
         }
         if (!o.isMesh || !o.geometry || o.userData.noFit) return;
@@ -518,7 +520,9 @@ export function createLab(container) {
   function stepAppears(dt) {
     for (const [o, a] of appears) {
       if (!o.parent || (a.last && !o.scale.equals(a.last))) { // removed, or the scene set the scale itself
-        if (o.parent && a.last && o.scale.equals(a.last)) o.scale.copy(a.base);
+        // the scene may have set only one axis (a bar's length): the axes it
+        // left alone go back to full size instead of staying collapsed
+        if (o.parent && a.last) for (const k of ['x', 'y', 'z']) if (o.scale[k] === a.last[k]) o.scale[k] = a.base[k];
         appears.delete(o); continue;
       }
       a.t += dt;

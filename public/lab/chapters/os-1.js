@@ -1871,12 +1871,12 @@ FRAG.push(['osA-hand', 'Handheld / embedded system', async (tok) => {
   await send(tok, '計算 → 雲端', 'pkt', V3(0, 2.6, 0), V3(-4.4, 5, 0), 900, true);
   say('memory 比較小、processor 比較慢', '所以把計算丟到雲端去做');
   await step(tok);                                   // 700 Pokemon Go: everyone bought power banks
-  const bat = blk('🔋', COL.user, 4.4, 0.5, 1, 0.7, 1, 0.5);
+  const bat = blk('🔋', COL.user, -3.6, 0.5, 1, 0.7, 1, 0.5); // the left side is free again; on the right it sat on the module blocks
   void bat;
-  bub('Pokémon Go：大家先去買行動電源', 3.6, 1.8, 1);
+  bub('Pokémon Go：大家先去買行動電源', -3.4, 1.8, 1);
   say('Pokémon Go 一出來，大家先買行動電源', '電力非常 critical');
   await step(tok);                                   // 709.6 how to display / I/O keeps improving
-  note('display、I/O 也要不斷改善', 0, 4.8);
+  note('display、I/O 也要不斷改善', 1.3, 4.8); // a little right: the「計算 → 雲端」packet stays up on the left
   say('怎麼 display、做 I/O', '也一直需要改善');
 }]);
 

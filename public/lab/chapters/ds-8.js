@@ -5054,10 +5054,10 @@ FRAG.push(['sortmit-radix-idea', 'Radix Sort：拆位數、從最低位排', asy
   fresh([0, 9, 10], [0, 0, 0.3]);
   const gd = guide(-6.0, 2.6, 0.6);
   await step(tok);                                   // 44:45 radix sort uses counting sort as a subroutine
-  bubble('Radix sort：用 counting sort 當副程式', 0, 2.4, -4.4);
+  bubble('Radix sort：用 counting sort 當副程式', 0, 2.4, -5.3); // both top lines sit above the digit table's column names
   say('radix sort 拿 counting sort 當副程式', '能處理大得多的 k');
   await step(tok);                                   // 45:09 k can be polynomial: up to n^100, still linear
-  note('key 到 n¹⁰⁰ 也還是線性時間！', 0, 1.6, -4.4);
+  note('key 到 n¹⁰⁰ 也還是線性時間！', 0, 1.6, -5.0);
   gd.mood('wow');
   say('k 可以是 n 的多項式', '例如 key 在 0 … n¹⁰⁰，仍是線性時間');
   await step(tok);                                   // 45:38 the spreadsheet approach: break each integer into columns
@@ -5072,10 +5072,10 @@ FRAG.push(['sortmit-radix-idea', 'Radix Sort：拆位數、從最低位排', asy
   M.off();
   say('最低位、次低位、……一串位數');
   await step(tok);                                   // 46:18 max value k → d = log_b k digits
-  bubble('位數 d = log_b k（+1）', 4.4, 1.6, -2.6);
+  bubble('位數 d = log_b k（+1）', 5.3, 1.6, -2.0); // right of the digit table, clear of its column names
   say('最大值是 k → 位數 d = log_b k', '+1 之類的不用太精確');
   await step(tok);                                   // 46:51 we won't actually compute the base-b representation
-  note('不必先轉成 base b（那要 n log k 時間）', 4.4, 1.6, 0.2);
+  note('不必先轉成 base b（那要 n log k 時間）', 4.6, 1.6, 0.9);
   say('不必真的先算出 base b 表示法', '那要 n·log k 時間');
   await step(tok);                                   // 47:08 sort all integers by the least significant digit
   M.col(3, GOLD);

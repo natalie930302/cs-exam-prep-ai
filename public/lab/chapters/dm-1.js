@@ -1804,7 +1804,8 @@ scene('lg-1c-comp', '1C：補集 complement 與 universe', CAM, [
   async (tok, S) => { // 1502.6 Ā = {1, 7, 8, 9, 10}
     const out = [1, 7, 8, 9, 10];
     hold(out.map((v) => S.ns[v - 1]));
-    await anim(tok, 1000, (u) => out.forEach((v, i) => { const m = S.ns[v - 1]; const x0 = -4.4 + (v - 1) * 0.98, y0 = 3.8; const x1 = 1.4 + (i % 3) * 1.1, y1 = 2.2 - Math.floor(i / 3) * 0.9; m.position.x = x0 + (x1 - x0) * u; m.position.y = y0 + (y1 - y0) * u; }));
+    // bottom row (9, 10) moves first, then the top row (1, 7, 8): their paths never cross
+    await anim(tok, 1400, (u0) => out.forEach((v, i) => { const u = Math.min(1, Math.max(0, i >= 3 ? u0 * 2 : u0 * 2 - 1)); const m = S.ns[v - 1]; const x0 = -4.4 + (v - 1) * 0.98, y0 = 3.8; const x1 = 1.4 + (i % 3) * 1.1, y1 = 2.2 - Math.floor(i / 3) * 0.9; m.position.x = x0 + (x1 - x0) * u; m.position.y = y0 + (y1 - y0) * u; }));
     out.forEach((v) => { tint(S.ns[v - 1], C.orange); glow(S.ns[v - 1], HL); });
     card('Ā = {1, 7, 8, 9, 10}', C.peach, 3.0, -0.4, 4.4, 0.6);
     cap('不在 A 裡的：1、7、8、9、10', '就是 A 的 complement');

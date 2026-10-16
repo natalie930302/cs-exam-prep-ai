@@ -3721,7 +3721,7 @@ scene('cvm-26b-snoop', 'Coherence protocol：directory 與 snooping（write inva
     cap('Invalidating snooping protocol', '要 write 的 cache 一定要拿到 exclusive access');
   },
   async (tok, S) => { // @1378 ~然後同時你要invalidate這個message在bus上面
-    S.msg = bx('invalidate X', NC.red, -4, 2.2, 0.5, 1.8, 0.4); await slide(tok, S.msg, 4, 2.2, 0.5, 900);
+    S.msg = bx('invalidate X', NC.red, -4, 1.45, 0.5, 1.8, 0.4); await slide(tok, S.msg, 4, 1.45, 0.5, 900); // runs just under the bus, not over its label
     cap('同時在 bus 上 broadcast invalidate', '其他 cache 看到就把自己的 copy 變 invalid');
   },
   async (tok, S) => { // @1410 ~那這個這邊有一個例子就是說假如catch A去讀X

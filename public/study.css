@@ -688,6 +688,9 @@ a { color: inherit; }
   .st-top h1 { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; display: block !important; -webkit-line-clamp: unset !important; font-size: 15px !important; }
   .st-chprog { flex: 0 0 auto !important; }
   .st-chprog .st-pill { font-size: 11px !important; padding: 2px 8px !important; white-space: nowrap; }
+  /* the title gets the room: the pill shows only 3/12, the back button only ← */
+  .st-top .pl-long { display: none; }
+  .st-top .st-back { padding: 0 12px !important; }
 }
 
 /* 手機分頁列：五個分頁平均排滿一行；放不下時也只能左右滑，不會上下晃 */

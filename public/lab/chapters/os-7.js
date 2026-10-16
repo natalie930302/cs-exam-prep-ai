@@ -2836,7 +2836,7 @@ scene('mem-11b-ptbr', 'Page table 在 memory：PTBR 隨 context switch 載入', 
   async (tok, S) => {                                   // 172 context switch 時 load 到 MMU register
     txt(S.run, '切換到：P2'); glow(S.p2, HL);
     const c = pkt('0x9000', MC.purple, -4.6, 4.6);
-    await slide(tok, c, 0, 2.3, 0.7, 800); gone(c);
+    await slide(tok, c, 0, 3.0, 0.7, 800); gone(c); // stops on top of the register, not over its「PTBR = …」
     relabel(S.reg, 'PTBR = 0x9000'); tint(S.reg, MC.purple); glow(S.p2, null);
     cap('context switch：PTBR 也重新 load', '不只 CPU register，MMU register 也要換');
   },

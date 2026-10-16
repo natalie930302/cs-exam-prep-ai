@@ -5,9 +5,9 @@ UsersNatalieAppDataLocalGoogleChromeUser Data/
 .claude/scheduled_tasks.lock
 # Personal study data: database, backups, study log, transcripts, screenshots, reports
 data/
-tools/codex-cli/
 tools/.runtime/
 
 # Lecture subtitles exported from the transcription pipeline (third-party
 # lecture text: kept local, not committed).
 public/transcripts/
+review/

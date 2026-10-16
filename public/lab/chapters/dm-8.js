@@ -3139,7 +3139,8 @@ scene('g8a-petersen', 'Petersen graph 不是 planar', [
   async (tok, S) => {
     S.p.E.forEach((e) => e.show(false)); S.d3.forEach(kill);
     const ks = Object.keys(PET0);
-    await anim(tok, 1500, (u) => ks.forEach((n) => { const [x, z] = lerpP(PET0[n], PET1[n], u); S.p.move(n.toUpperCase(), x, z); }));
+    // H takes a bend to the right so it does not run over G on the way
+    await anim(tok, 1500, (u) => ks.forEach((n) => { const [x, z] = lerpP(PET0[n], PET1[n], u); S.p.move(n.toUpperCase(), x + (n === 'h' ? Math.sin(Math.PI * u) * 1.3 : 0), z); }));
     petDraw(S, PET1);
     ['C', 'F', 'J', 'E', 'G', 'H'].forEach((n) => S.p.vc(n, 'CFJ'.includes(n) ? GC.blue : GC.pink)); ['A', 'B', 'D', 'I'].forEach((n) => S.p.vc(n, GC.ok));
     cap('換一種畫法', '同一張圖，點的位置換一下');
@@ -11439,6 +11440,309 @@ scene('g8g-iso-conn', '同構的圖：連通性也一樣', [
     ['d', 'e'].forEach((v) => { vcol(S.g1, v, COL.orange); vcol(S.g2, ISOF[v], COL.orange); });
     tag('a 到 d 沒有路 ↔ 3 到 2 也沒有' + (no1 && no2 ? ' ✓' : ' ✗') + '；component 都是 ' + c1 + (c1 === c2 ? ' ✓' : ' ✗'), 'good', 0, 0.3, -3.6);
     cap('連不連通、有沒有路徑', 'isomorphic 的兩張圖都一模一樣，不會變');
+  },
+]);
+  }
+  // ═══ fc (Numberphile The Four Color Map Theorem, NgbK43jB4rQ) ═══
+  {
+const { V3, tag, cube, kill, glow, tint, anim, arrow, step, fresh, fly } = K;
+const wt = (tok, ms) => ctx.beat(tok, ms);
+const cap = (a, b = '') => say(a, b);
+const T = (t, c, x, y, z = 0) => tag(t, c, x, y, z);
+const L = (t, c, x, y, z = 0) => { const l = tag(t, c, x, y, z); if (l.center) l.center.set(0, 0.5); return l; };
+const cls = (l, c) => { if (l && l.element) l.element.className = 'lab-label ' + c; };
+const setT = (l, t) => { if (l && l.element) l.element.textContent = t; };
+const CAM = [[0, 4.2, 14], [0, 3.0, 0]];
+const FC = { blue: '#4b9ee2', orange: '#dd8238', green: '#2fc092', purple: '#9b7ef4', pink: '#e55a9b', teal: '#31aab0', red: '#d64545', sand: '#e9dcc4', gold: '#c08a1f', gray: '#cfc6b6' };
+const OKG = '#0f5a3a', NG = '#7a1010', HL = '#6a4a00';
+const PALE = ['#efe6d4', '#e2d6c0', '#d6c9b0', '#ece0c8', '#ddd2bd', '#e6dcca'];
+function scene(id, title, steps, cam = CAM) {
+  FRAG.push([id, title, async (tok) => {
+    fresh(cam[0], cam[1]);
+    const S = {};
+    for (const f of steps) { await step(tok); await f(tok, S); }
+  }]);
+}
+function board(x, yTop, dy = 0.7) {
+  const ls = []; let last = null;
+  return {
+    add(t, c = 'note') {
+      if (last && last.userData.hot) { cls(last, 'say'); last.userData.hot = false; }
+      const l = L(t, c, x, yTop - ls.length * dy); ls.push(l); l.userData.hot = c === 'note'; last = l; return l;
+    },
+  };
+}
+// a map drawn as a grid of tiles; rows = strings, one letter per country
+function gmap(rows, x0, y0, cs = 0.85) {
+  const tiles = {}, cells = {};
+  rows.forEach((row, r) => [...row].forEach((k, c) => {
+    const x = x0 + c * cs, y = y0 - r * cs;
+    (tiles[k] = tiles[k] || []).push(cube('', PALE[Object.keys(tiles).length % PALE.length], [cs - 0.06, cs - 0.06, 0.3], x, y, 0));
+    (cells[k] = cells[k] || []).push([x, y]);
+  }));
+  const paint = (k, c) => tiles[k].forEach((m) => tint(m, c));
+  const mid = (k) => { const p = cells[k]; return [p.reduce((s, q) => s + q[0], 0) / p.length, p.reduce((s, q) => s + q[1], 0) / p.length]; };
+  return { tiles, paint, mid, all: () => Object.values(tiles).flat() };
+}
+const W5 = ['11122', '1CCC2', '5CCC3', '5CCC3', '54443'];
+const K4 = ['AAAA', 'ACCB', 'DCCB', 'DDBB'];
+const node = (t, c, x, y) => cube(t, c, [0.42, 0.42, 0.42], x, y, 0.2);
+const edge = (a, b, color = '#6e5f49') => K.line(a[0], a[1], b[0], b[1], 0.2, color);
+const ring = (cx, cy, r, n, a0 = Math.PI / 2) => Array.from({ length: n }, (_, i) => [cx + r * Math.cos(a0 + i * 2 * Math.PI / n), cy + r * Math.sin(a0 + i * 2 * Math.PI / n)]);
+
+scene('fc-try', '四色定理：動手塗地圖', [
+  async (tok, S) => { // 4.5
+    S.B = board(-6.6, 6.4);
+    S.B.add('四色定理：');
+    S.B.add('相鄰國家不同色，4 色一定夠');
+    cap('每張地圖都能用 4 色著色', '相鄰（有共同邊界）的國家不同色');
+  },
+  async (tok, S) => { // 57.0
+    S.B.add('1852 提出 → 1976 證明');
+    cap('1852 年有人替英國各郡著色時提出', '經 De Morgan 傳開，1976 年才證明');
+  },
+  async (tok, S) => { // 130.0
+    S.M = gmap(W5, 2.2, 5.3);
+    await wt(tok, 300);
+    S.M.paint('C', FC.orange);
+    T('自己畫的地圖（示意）', 'idx', 3.9, 6.2);
+    cap('中間的國家先塗橘色', '');
+  },
+  async (tok, S) => { // 148.0
+    const cs = [FC.purple, FC.blue, FC.purple, FC.blue];
+    for (let i = 0; i < 4; i++) { S.M.paint(String(i + 1), cs[i]); await wt(tok, 450); }
+    S.B.add('外圍輪流用紫、藍');
+    cap('外圍都碰到橘色', '輪流塗紫、藍');
+  },
+  async (tok, S) => { // 184.0
+    S.M.tiles['5'].forEach((m) => glow(m, HL)); await wt(tok, 500);
+    S.M.paint('5', FC.pink); S.M.tiles['5'].forEach((m) => glow(m, '#000000'));
+    S.B.add('最後一國碰到三色 → 第 4 色', 'bad');
+    cap('最後一國碰到紫、藍、橘', '只好用第 4 色粉紅');
+  },
+  async (tok, S) => { // 208.0
+    S.M.all().forEach(kill);
+    S.K = gmap(K4, 2.4, 5.2, 0.9);
+    S.B.add('4 國兩兩相鄰的地圖');
+    cap('只有 4 個國家', '但每兩國都有共同邊界');
+  },
+  async (tok, S) => { // 218.0
+    S.K.paint('C', FC.orange); await wt(tok, 400);
+    S.K.paint('A', FC.purple); await wt(tok, 400);
+    S.K.paint('B', FC.blue);
+    cap('前三國用掉橘、紫、藍', '');
+  },
+  async (tok, S) => { // 230.0
+    S.K.paint('D', FC.pink);
+    S.B.add('一定要 4 色：4 不能再少', 'good');
+    cap('第 4 國碰到另外三國', '有些地圖真的要 4 色');
+  },
+]);
+
+scene('fc-graph', '地圖 → 網路：平面圖', [
+  async (tok, S) => { // 239.5
+    S.B = board(-6.6, 6.4);
+    S.B.add('把地圖變成網路');
+    S.K = gmap(K4, 2.4, 5.2, 0.9);
+    S.K.paint('A', FC.purple); S.K.paint('B', FC.blue); S.K.paint('C', FC.orange); S.K.paint('D', FC.pink);
+    cap('拿剛才 4 國兩兩相鄰的地圖', '');
+  },
+  async (tok, S) => { // 250.0
+    for (const k of 'ACBD') { const [x, y] = S.K.mid(k); node(k, FC.sand, x, y); await wt(tok, 200); }
+    S.B.add('每個國家放一個點');
+    cap('每個國家中間放一個點', '');
+  },
+  async (tok, S) => { // 259.0
+    const pr = ['AB', 'AC', 'AD', 'BC', 'BD', 'CD'];
+    for (const [a, b] of pr) { edge(S.K.mid(a), S.K.mid(b), '#3b2f20'); await wt(tok, 200); }
+    S.K.all().forEach((m) => { m.scale.z = 0.3; m.material.transparent = true; m.material.opacity = 0.35; });
+    S.B.add('有共同邊界 → 連一條線');
+    cap('相鄰就連線：地圖變成網路（圖）', '著色 = 相連的點不同色');
+  },
+  async (tok, S) => { // 299.5
+    S.B.add('不同地圖 → 可能同一個網路');
+    T('像手提包的地圖也給出這個網路', 'idx', 3.75, 0.9);
+    cap('形狀不同的地圖，網路可能一樣', '研究網路 = 一次研究很多地圖');
+  },
+  async (tok, S) => { // 344.5
+    lab.clear(); S.B = board(-6.6, 6.4);
+    S.B.add('不是每個網路都來自地圖');
+    S.p5 = ring(3.8, 3.3, 1.9, 5);
+    S.p5.forEach(([x, y], i) => node(String(i + 1), FC.sand, x, y));
+    for (let i = 0; i < 5; i++) for (let j = i + 1; j < 5; j++) { edge(S.p5[i], S.p5[j]); await wt(tok, 120); }
+    T('K₅：5 國兩兩相鄰', 'say', 3.8, 0.7);
+    cap('5 個國家兩兩相鄰（K₅）', '');
+  },
+  async (tok, S) => { // 365.0
+    lab.clear(); S.B = board(-6.6, 6.4);
+    S.B.add('K₅ 怎麼畫都有交叉', 'bad');
+    S.p5.forEach(([x, y], i) => node(String(i + 1), FC.sand, x, y));
+    for (let i = 0; i < 5; i++) for (let j = i + 1; j < 5; j++) edge(S.p5[i], S.p5[j], (j - i === 2 || j - i === 3) ? '#c03030' : '#6e5f49');
+    T('K₅ 不是平面圖', 'bad', 3.8, 0.7);
+    cap('不管怎麼畫，K₅ 一定有線交叉', '畫不成地圖');
+  },
+  async (tok, S) => { // 385.5
+    lab.clear(); S.B = board(-6.6, 6.4);
+    S.B.add('交叉有時只是畫法不好');
+    S.q = [[2.2, 4.9], [5.4, 4.9], [5.4, 1.7], [2.2, 1.7]];
+    S.n = S.q.map(([x, y], i) => node('abcd'[i], FC.sand, x, y));
+    S.e = [];
+    for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) S.e.push(edge(S.q[i], S.q[j], (i === 0 && j === 2) || (i === 1 && j === 3) ? '#c03030' : '#6e5f49'));
+    cap('K₄ 這樣畫，對角線交叉了', '');
+  },
+  async (tok, S) => { // 400.0
+    const from = S.q[3].slice(), to = [(2.2 + 5.4 + 5.4) / 3, (4.9 + 4.9 + 1.7) / 3];
+    await anim(tok, 1000, (u) => { S.q[3] = [from[0] + (to[0] - from[0]) * u, from[1] + (to[1] - from[1]) * u]; S.n[3].position.set(S.q[3][0], S.q[3][1], 0.2); });
+    S.e.forEach(kill); S.e = [];
+    for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) S.e.push(edge(S.q[i], S.q[j], OKG));
+    S.B.add('能畫成不交叉 = 平面圖', 'good');
+    T('planar graph', 'good', 3.8, 0.7);
+    cap('把 d 移進來，交叉解開了', '邊不交叉的圖叫平面圖');
+  },
+]);
+
+scene('fc-deg5', '每張地圖都有鄰國 ≤ 5 的國家', [
+  async (tok, S) => { // 413.5
+    S.B = board(-6.6, 6.4);
+    S.B.add('任何地圖都有一國 A：');
+    S.cx = [-5.4, -3.25, -1.1, 1.05, 3.2, 5.35];
+    S.star = (k) => {
+      const cx = S.cx[k], cy = 2.6;
+      if (k) ring(cx, cy, 0.8, k).forEach((p) => { edge([cx, cy], p); node('', FC.sand, p[0], p[1]); });
+      node('A', FC.orange, cx, cy);
+      T(k ? k + ' 個' : '0（島）', 'idx', cx, 1.2);
+    };
+    S.star(0);
+    cap('看地圖裡的某個國家 A', '它可能是一座島');
+  },
+  async (tok, S) => { // 430.0
+    S.star(1); await wt(tok, 400); S.star(2);
+    cap('A 可能有 1 個或 2 個鄰國', '');
+  },
+  async (tok, S) => { // 441.0
+    S.star(3); cap('或 3 個鄰國', '');
+  },
+  async (tok, S) => { // 449.0
+    S.star(4); cap('或 4 個鄰國', '');
+  },
+  async (tok, S) => { // 460.0
+    S.star(5);
+    S.B.add('鄰國數是 0、1、2、3、4、5 之一');
+    cap('或 5 個鄰國', '每張地圖至少有一國長這樣');
+  },
+  async (tok, S) => { // 468.0
+    S.B.add('每國都 ≥ 6 個鄰國？不可能', 'bad');
+    T('每個國家都 ≥ 6 鄰國 → 網路解不開', 'bad', 0, 0.4);
+    cap('不可能每國都有 6 個以上鄰國', '那樣的網路一定有交叉');
+  },
+  async (tok, S) => { // 483.0
+    S.B.add('e ≤ 3v − 6 → 平均度數 < 6', 'good');
+    T('所以一定有頂點度數 ≤ 5', 'good', 0, -0.4);
+    cap('課本：簡單平面圖 e ≤ 3v − 6', '2e ≤ 6v − 12 → 有頂點度數 ≤ 5');
+  },
+]);
+
+scene('fc-six', '六色定理：拿掉 A、著色、放回 A', [
+  async (tok, S) => { // 498.5
+    S.B = board(-6.6, 6.4);
+    S.B.add('先證：6 色一定夠');
+    cap('先證弱一點的版本', '沒有地圖需要 7 色');
+  },
+  async (tok, S) => { // 527.0
+    S.B.add('假設：最小的「要 7 色」地圖');
+    S.c = [3.8, 3.2];
+    S.p = ring(3.8, 3.2, 1.9, 5);
+    S.ex = [[6.4, 5.4], [6.6, 1.0], [1.0, 1.0]];
+    for (let i = 0; i < 5; i++) edge(S.p[i], S.p[(i + 1) % 5]);
+    edge(S.p[0], S.ex[0]); edge(S.p[4], S.ex[0]); edge(S.p[3], S.ex[1]); edge(S.p[2], S.ex[2]); edge(S.p[1], S.ex[2]);
+    S.exN = S.ex.map(([x, y]) => node('', FC.gray, x, y));
+    S.nb = S.p.map(([x, y]) => node('', FC.gray, x, y));
+    S.sp = S.p.map((p) => edge(S.c, p));
+    S.A = node('A', FC.gray, S.c[0], S.c[1]);
+    T('示意：地圖的一部分', 'idx', 3.8, 6.1);
+    cap('假設有地圖非 7 色不可', '取國家數最少的那張');
+  },
+  async (tok, S) => { // 540.0
+    glow(S.A, HL);
+    S.B.add('它有一國 A，鄰國 ≤ 5');
+    cap('它一定有一國 A，鄰國 ≤ 5 個', '上一段的結論');
+  },
+  async (tok, S) => { // 550.0
+    S.sp.forEach(kill); fly(S.A, V3(0, 6, 4));
+    S.B.add('拿掉 A → 地圖變小');
+    cap('把 A 拿掉', '少了一國');
+  },
+  async (tok, S) => { // 560.0
+    S.pal = [FC.red, FC.orange, FC.green, FC.blue, FC.purple];
+    for (let i = 0; i < 5; i++) { tint(S.nb[i], S.pal[i]); await wt(tok, 200); }
+    [FC.blue, FC.red, FC.blue].forEach((c, i) => tint(S.exN[i], c));
+    S.B.add('比最小還小 → 6 色可著色');
+    T('最壞：5 個鄰國用了 5 種色', 'idx', 3.8, 0.3);
+    cap('比最小的還小 → 6 色塗得完', '最壞情況：5 個鄰國 5 種顏色');
+  },
+  async (tok, S) => { // 571.0
+    S.A = node('A', FC.teal, S.c[0], S.c[1]);
+    S.sp = S.p.map((p) => edge(S.c, p));
+    S.B.add('放回 A：第 6 色空著 → 矛盾', 'good');
+    cap('放回 A：鄰國最多占 5 色', '第 6 色給 A → 6 色就夠，矛盾');
+  },
+  async (tok, S) => { // 591.0
+    tint(S.A, FC.gray); glow(S.A, NG);
+    S.q = T('5 色時：A 沒有空色？', 'bad', 3.8, -0.4);
+    S.B.add('換 5 色：5 鄰國 5 種色就卡住', 'bad');
+    cap('換成 5 色', '5 個鄰國剛好 5 種色就沒空位');
+  },
+  async (tok, S) => { // 605.0
+    tint(S.nb[0], FC.green); await wt(tok, 500);
+    tint(S.A, FC.red); glow(S.A, '#000000'); setT(S.q, '示意：Kempe chain 互換兩色，騰出紅色'); cls(S.q, 'good');
+    S.B.add('先換色（Kempe chain）騰出一色');
+    cap('先把某些國家換色，騰出一種顏色', '五色定理：多這一步');
+  },
+]);
+
+scene('fc-proof', '四色定理：Appel 與 Haken 的電腦證明', [
+  async (tok, S) => { // 624.5
+    S.B = board(-6.6, 6.4);
+    S.B.add('6 色 ✓　5 色 ✓　4 色 ？');
+    cap('同樣的論證用在 4 色不夠強', '');
+  },
+  async (tok, S) => { // 640.0
+    cube('1879 Kempe', FC.sand, [2.2, 0.6, 0.4], 1.8, 5.6, 0, 1);
+    cube('1890 找到錯', FC.red, [2.2, 0.6, 0.4], 4.6, 5.6, 0, 1);
+    S.B.add('證明被接受約十年才發現錯');
+    cap('1879 年的證明被接受了約十年', '1890 年 Heawood 找到錯誤');
+  },
+  async (tok, S) => { // 658.5
+    cube('1976 Appel & Haken', FC.green, [3.2, 0.6, 0.4], 3.2, 4.6, 0, 1);
+    S.B.add('1976：伊利諾大學 Appel & Haken');
+    cap('1976 年 Appel 與 Haken', '想法和剛才的證明類似');
+  },
+  async (tok, S) => { // 673.0
+    S.cf = [];
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 8; c++) S.cf.push(cube('', PALE[(r + c) % 6], [0.5, 0.5, 0.3], 1.0 + c * 0.75, 3.4 - r * 0.75, 0));
+    S.lt = T('unavoidable set：每張地圖必含其一', 'say', 3.6, 1.0);
+    S.B.add('組態清單：每張地圖必含其一');
+    cap('一份組態清單', '每張地圖至少含其中一個');
+  },
+  async (tok, S) => { // 687.0
+    for (const m of S.cf) { tint(m, FC.green); await wt(tok, 60); }
+    S.B.add('每個組態都可 4 色（reducible）', 'good');
+    cap('每個組態都證明能 4 色著色', 'reducible');
+  },
+  async (tok, S) => { // 711.0
+    setT(S.lt, '組態近兩千個（文獻常記 1,936）→ 電腦檢查');
+    S.B.add('清單太長 → 交給電腦');
+    cap('清單太長，只能交給電腦', '影片說 1,938 個');
+  },
+  async (tok, S) => { // 720.0
+    S.B.add('第一個電腦輔助證明（有爭議）');
+    cap('第一個重要的電腦輔助證明', '當時很多人有疑慮');
+  },
+  async (tok, S) => { // 758.0
+    for (let i = S.cf.length - 1; i >= 12; i--) { fly(S.cf[i]); await wt(tok, 40); }
+    setT(S.lt, '1996 Robertson 等人：633 個，仍需電腦');
+    S.B.add('窮舉有效，但不說明「為什麼」', 'bad');
+    cap('清單後來縮短，但仍要電腦', '還不是「漂亮」的證明');
   },
 ]);
   }

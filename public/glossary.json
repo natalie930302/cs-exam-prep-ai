@@ -709,7 +709,7 @@
   "subj": "alg"
  },
  "pivot": {
-  "zh": "樞紐、基準值",
+  "zh": "樞紐、基準值、主元",
   "what": "快速排序中拿來切分的那個元素；線性代數高斯消去中則指每列第一個非零的「主元」。",
   "subj": "alg"
  },
@@ -1251,7 +1251,8 @@
  "union-find": {
   "zh": "聯集-查找",
   "what": "disjoint set 的另一個名字：union 合併集合、find 找代表元素。",
-  "subj": "ds"
+  "subj": "ds",
+  "en": "union-find / disjoint set"
  },
  "hash table": {
   "zh": "雜湊表",
@@ -1388,7 +1389,7 @@
   "subj": "ds"
  },
  "connected": {
-  "zh": "連通的",
+  "zh": "連通（的）",
   "what": "圖中任兩個頂點之間都有路徑可以到達。",
   "subj": "ds"
  },
@@ -2030,7 +2031,8 @@
  "buffering": {
   "zh": "緩衝",
   "what": "在兩個速度不同的裝置之間用記憶體暫存資料。",
-  "subj": "os"
+  "subj": "os",
+  "en": "buffering / buffer"
  },
  "virtual machine": {
   "zh": "虛擬機器",
@@ -2081,7 +2083,7 @@
   "subj": "la"
  },
  "span": {
-  "zh": "生成（張成）",
+  "zh": "生成／張成",
   "what": "一組向量所有線性組合構成的集合；這些向量「能到達的所有地方」。",
   "subj": "la"
  },
@@ -2183,12 +2185,12 @@
   "subj": "la"
  },
  "invertible": {
-  "zh": "可逆的",
+  "zh": "可逆",
   "what": "有反矩陣的；方陣可逆 ⇔ 行列式不為 0。",
   "subj": "la"
  },
  "singular": {
-  "zh": "奇異的（不可逆）",
+  "zh": "奇異（不可逆）",
   "what": "沒有反矩陣的方陣，行列式為 0。",
   "subj": "la"
  },
@@ -2233,7 +2235,7 @@
   "subj": "la"
  },
  "orthogonal": {
-  "zh": "正交的",
+  "zh": "正交",
   "what": "互相垂直的；兩個向量內積為 0。",
   "subj": "la"
  },
@@ -2243,7 +2245,7 @@
   "subj": "la"
  },
  "orthonormal": {
-  "zh": "單範正交的",
+  "zh": "單範正交",
   "what": "兩兩垂直、而且每個長度都是 1。",
   "subj": "la"
  },
@@ -2284,7 +2286,7 @@
   "subj": "la"
  },
  "least squares": {
-  "zh": "最小平方法",
+  "zh": "最小平方（法）",
   "what": "方程組無解時，找讓誤差平方和最小的近似解；用來做直線擬合。",
   "subj": "la"
  },
@@ -2325,8 +2327,8 @@
   "subj": "la"
  },
  "characteristic equation": {
-  "zh": "特徵方程式",
-  "what": "det(A − λI) = 0，解出來就是特徵值。",
+  "zh": "特徵方程式／特徵方程",
+  "what": "線代裡是 det(A − λI) = 0；遞迴式裡把 aₙ 換成 rⁿ 得到的方程，根決定通解的形式。",
   "subj": "la"
  },
  "diagonalization": {
@@ -2456,7 +2458,7 @@
   "subj": "la"
  },
  "homogeneous": {
-  "zh": "齊次的",
+  "zh": "齊次",
   "what": "方程右邊為 0（Ax = 0）；遞迴式中則指沒有額外常數項。",
   "subj": "la"
  },
@@ -2611,7 +2613,7 @@
   "subj": "dm"
  },
  "reflexive": {
-  "zh": "自反的",
+  "zh": "自反",
   "what": "每個元素都和自己有關係（a R a）。",
   "subj": "dm"
  },
@@ -2621,7 +2623,7 @@
   "subj": "dm"
  },
  "transitive": {
-  "zh": "遞移的",
+  "zh": "遞移",
   "what": "a R b 且 b R c，就一定 a R c。",
   "like": "A 比 B 高、B 比 C 高，所以 A 比 C 高。",
   "subj": "dm"
@@ -2664,7 +2666,7 @@
   "subj": "dm"
  },
  "bijection": {
-  "zh": "雙射（一一對應）",
+  "zh": "雙射／對射（一一對應）",
   "what": "同時是一對一又映成的函數，存在反函數。",
   "like": "座位和學生剛好一人一位、沒有空位。",
   "subj": "dm"
@@ -3744,7 +3746,7 @@
   "basic": true
  },
  "funct": {
-  "en": "function field",
+  "en": "function field / function code",
   "what": "R-format 指令最後 6 bit 的欄位。R-format 的 op 都是 0，由 funct 決定到底是 add、sub、and、or、slt 等哪一個運算。",
   "like": "同一張點餐單上的「口味」欄：主餐一樣，靠這格分辨。"
  },
@@ -3958,7 +3960,8 @@
   "what": "佇列中加入元素的那一端叫 rear，取出元素的那一端叫 front。",
   "like": "排隊時新來的人站到隊尾，結帳從隊頭。",
   "basic": false,
-  "subj": "ds"
+  "subj": "ds",
+  "only": true
  },
  "circular queue": {
   "en": "circular queue",
@@ -4079,7 +4082,8 @@
   "what": "中序轉後序時，運算子已在堆疊裡的優先權；左括號在堆疊內最低。",
   "like": "已經坐在候位區的人的順位。",
   "basic": false,
-  "subj": "ds"
+  "subj": "ds",
+  "only": true
  },
  "ICP": {
   "en": "in-coming priority",
@@ -4087,7 +4091,8 @@
   "what": "中序轉後序時剛讀到的運算子的優先權；左括號剛進來最高。堆疊頂 isp ≥ icp 就先彈出。",
   "like": "剛走進門的客人的順位。",
   "basic": false,
-  "subj": "ds"
+  "subj": "ds",
+  "only": true
  },
  "expression tree": {
   "en": "expression tree",
@@ -4284,16 +4289,8 @@
  "Catalan": {
   "en": "Catalan number",
   "zh": "卡特蘭數",
-  "what": "C(n) = C(2n, n) / (n+1)，可算 n 個節點有幾種不同形狀的二元樹、合法括號有幾組等。",
+  "what": "第 n 個卡特蘭數是 C(2n, n)/(n+1)，可算 n 個節點的二元樹有幾種形狀、n 對括號有幾種合法排法。",
   "like": "算 n 對括號能排出幾種合法組合。",
-  "basic": false,
-  "subj": "ds"
- },
- "disjoint set": {
-  "en": "disjoint set",
-  "zh": "互斥集合（不相交集合）",
-  "what": "彼此沒有共同元素的幾個集合；常用 union-find 做合併與查詢「屬於哪一組」。",
-  "like": "全班分組，每人只會在一組。",
   "basic": false,
   "subj": "ds"
  },
@@ -4430,7 +4427,7 @@
   "en": "Bloom filter",
   "zh": "布隆過濾器",
   "what": "用位元陣列加多個雜湊函數判斷「可能在」或「一定不在」集合中，很省空間但會誤判。",
-  "like": "快篩陰性一定沒事，陽性還要再確認。",
+  "like": "門口保全看名單：說「沒來過」就一定沒來過，說「好像來過」可能認錯人。",
   "basic": false,
   "subj": "ds"
  },
@@ -4480,7 +4477,8 @@
   "what": "拿掉後會讓圖變得不連通的那條邊。",
   "like": "連接兩座島唯一的那座橋。",
   "basic": false,
-  "subj": "ds"
+  "subj": "ds",
+  "only": true
  },
  "DFS tree": {
   "en": "DFS tree",
@@ -4502,7 +4500,7 @@
   "en": "activity on edge network",
   "zh": "AOE 網路",
   "what": "邊代表工作（權重是工期）、頂點代表事件的有向圖，用來算最短完工時間和關鍵路徑。",
-  "like": "專案甘特圖，每條線是一項工作要幾天。",
+  "like": "專案流程圖：每條箭頭是一項工作，標著要做幾天。",
   "basic": false,
   "subj": "ds"
  },
@@ -4760,7 +4758,8 @@
   "what": "DP 經典題：在成本限制下決定每一級放幾台備援裝置，使整個系統可靠度最高。",
   "like": "預算有限，決定每個關鍵零件要備幾份。",
   "basic": false,
-  "subj": "alg"
+  "subj": "alg",
+  "only": true
  },
  "subset sum": {
   "en": "subset sum problem",
@@ -4996,7 +4995,8 @@
   "what": "攤銷分析法之一：先算 n 個操作的總成本 T(n)，每個操作平均分攤 T(n)/n。",
   "like": "一個月總電費除以天數，算每天平均。",
   "basic": false,
-  "subj": "alg"
+  "subj": "alg",
+  "only": true
  },
  "accounting method": {
   "en": "accounting method",
@@ -5120,7 +5120,8 @@
   "what": "硬碟所有盤面上、同一半徑位置的磁軌合起來，形成一個圓柱。讀寫頭不用移動就能讀同一磁柱的資料。",
   "like": "大樓每一層同一個位置的房間，搭電梯不用橫移就到。",
   "basic": false,
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "sector": {
   "en": "sector",
@@ -5128,7 +5129,8 @@
   "what": "磁軌再切成的一小段，是硬碟讀寫的最小單位（常見 512 B 或 4 KB）。",
   "like": "圓形跑道切成一段段，每段標號。",
   "basic": false,
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "track": {
   "en": "track",
@@ -5136,7 +5138,8 @@
   "what": "硬碟盤面上一圈一圈的同心圓，資料就沿著圓圈存。",
   "like": "黑膠唱片上一圈圈的紋路（但磁軌是同心圓不是螺旋）。",
   "basic": false,
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "seek time": {
   "en": "seek time",
@@ -5184,7 +5187,8 @@
   "what": "發生中斷時 OS 跳去執行的那段程式，處理完再回到原本被打斷的地方。",
   "like": "門鈴響了，專門負責去開門處理的人。",
   "basic": false,
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "boot": {
   "en": "boot / bootstrap",
@@ -5192,7 +5196,8 @@
   "what": "電腦通電後，由 ROM 裡的 bootstrap 程式把作業系統核心載入記憶體並開始執行的過程。",
   "like": "早上起床後，先照固定順序把自己「開機」上工。",
   "basic": false,
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "timer": {
   "en": "timer",
@@ -5200,7 +5205,8 @@
   "what": "硬體計時器在時間到時送中斷給 CPU，讓 OS 能拿回控制權，避免某個程式霸占 CPU 不放。",
   "like": "上課鬧鐘：時間到就一定會響，不管你玩到多投入。",
   "basic": false,
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "dual mode": {
   "en": "dual mode / dual-mode operation",
@@ -5216,7 +5222,8 @@
   "what": "控制程式和使用者只能存取被允許的資源，讓一個程式出錯不會害到別人或 OS。和「抵擋外部攻擊」的 security 不同。",
   "like": "宿舍每間房只能用自己的鑰匙開。",
   "basic": false,
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "monitor": {
   "en": "monitor",
@@ -5233,7 +5240,8 @@
   "what": "保護共享資源的同步工具：進入臨界區前先拿鎖（acquire），出來時釋放（release），同時只有一人拿得到。",
   "like": "廁所門鎖：有人在裡面，別人就打不開。",
   "basic": false,
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "bounded buffer": {
   "en": "bounded buffer",
@@ -5353,7 +5361,8 @@
   "what": "防止飢餓的技巧：行程等越久，就把它的優先權慢慢調高，最後一定輪得到。",
   "like": "排隊越久越被禮遇，最後一定輪到你。",
   "basic": false,
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "turnaround time": {
   "en": "turnaround time",
@@ -5514,7 +5523,8 @@
   "what": "呼叫後立刻回來，不等動作完成，程式可以先做別的事。",
   "like": "傳訊息：送出就去忙別的，對方什麼時候讀都行。",
   "basic": false,
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "IPC": {
   "en": "interprocess communication",
@@ -5578,7 +5588,8 @@
   "what": "置換「未來最久不會再被用到」的 page，page fault 最少，但要預知未來，實際做不到，只能當比較基準。",
   "like": "開了天眼，知道哪本書以後最久不會用就先還。",
   "basic": false,
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "second chance": {
   "en": "second-chance algorithm / clock algorithm",
@@ -5804,7 +5815,8 @@
   "what": "鏈結配置的變形：把所有「下一個區塊」指標集中放在磁碟開頭的一張表，DOS / Windows 早期使用。",
   "like": "把所有尋寶紙條收集成一張總表，不用一站站跑。",
   "basic": false,
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "bit vector": {
   "en": "bit vector / bitmap",
@@ -5850,7 +5862,7 @@
  "C-LOOK": {
   "en": "circular LOOK",
   "zh": "循環 LOOK",
-  "what": "C-SCAN 的改良：讀寫頭只走到最遠的請求就折返起點，不必真的掃到磁碟盡頭。",
+  "what": "C-SCAN 的改良：讀寫頭只走到該方向最遠的請求，就直接跳回另一端最前面的請求，不必掃到磁碟盡頭。",
   "like": "公車到最後一個有人下車的站就回頭，不開到總站。",
   "basic": false,
   "subj": "os"
@@ -5925,7 +5937,8 @@
   "what": "讓使用者輸入指令的程式，負責解讀指令並請 OS 執行，例如 bash。",
   "like": "餐廳的點餐櫃台，把你說的話轉給廚房。",
   "basic": false,
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "cluster": {
   "en": "cluster / clustered system",
@@ -5933,7 +5946,8 @@
   "what": "多台電腦用網路連在一起協同工作，一台故障其他台可以接手，提高可靠度和效能。",
   "like": "好幾台收銀機一起服務，壞一台其他照常。",
   "basic": false,
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "Nachos": {
   "en": "Nachos",
@@ -5957,7 +5971,8 @@
   "what": "早期系統把性質相近的工作收集成一批一起執行，執行中不和使用者互動。",
   "like": "洗衣店把收到的衣服湊成一批再一起洗。",
   "basic": false,
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "volatile": {
   "en": "volatile",
@@ -5981,7 +5996,8 @@
   "what": "分頁或快取要置換時，被選中踢出去的那一個 page 或區塊。",
   "like": "位子不夠時被請出去讓位的那個人。",
   "basic": false,
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "user space": {
   "en": "user space",
@@ -6005,15 +6021,8 @@
   "what": "CPU 晶片裡能獨立執行指令的單元，多核心 CPU 等於一顆晶片裡有好幾個處理器。",
   "like": "一間廚房裡有好幾位廚師同時做菜。",
   "basic": false,
-  "subj": "os"
- },
- "buffer": {
-  "en": "buffer",
-  "zh": "緩衝區",
-  "what": "在速度不同的兩端之間暫存資料的記憶體區域，讓一方不必等另一方。",
-  "like": "水塔：自來水慢慢進，用水時一次大量取。",
-  "basic": false,
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "GPU": {
   "en": "graphics processing unit",
@@ -6094,7 +6103,8 @@
   "what": "除法 A ÷ B 中被分的那個數 A。",
   "like": "要分給大家的那一盒糖。",
   "basic": false,
-  "subj": "ca"
+  "subj": "ca",
+  "only": true
  },
  "divisor": {
   "en": "divisor",
@@ -6102,7 +6112,8 @@
   "what": "除法 A ÷ B 中拿來分的那個數 B。",
   "like": "要分給幾個人。",
   "basic": false,
-  "subj": "ca"
+  "subj": "ca",
+  "only": true
  },
  "quotient": {
   "en": "quotient",
@@ -6110,7 +6121,8 @@
   "what": "除法的結果整數部分；硬體除法會一位一位產生商。",
   "like": "每人分到幾顆糖。",
   "basic": false,
-  "subj": "ca"
+  "subj": "ca",
+  "only": true
  },
  "remainder": {
   "en": "remainder",
@@ -6118,7 +6130,8 @@
   "what": "除法除不盡剩下的部分。MIPS 除法把餘數放在 Hi，商放在 Lo。",
   "like": "分完後剩下沒得分的糖。",
   "basic": false,
-  "subj": "ca"
+  "subj": "ca",
+  "only": true
  },
  "mantissa": {
   "en": "mantissa / significand / fraction",
@@ -6142,7 +6155,8 @@
   "what": "運算結果的位數比能存的多時，決定怎麼丟掉多出來的位數；IEEE 754 預設是捨入到最近的偶數。",
   "like": "四捨五入。",
   "basic": false,
-  "subj": "ca"
+  "subj": "ca",
+  "only": true
  },
  "denormalized": {
   "en": "denormalized number",
@@ -6216,21 +6230,14 @@
   "basic": false,
   "subj": "ca"
  },
- "function code": {
-  "en": "function code (funct)",
-  "zh": "功能碼",
-  "what": "R 型指令最後 6 位元，和 opcode 一起決定到底是 add、sub、and 還是其他運算。",
-  "like": "同一個窗口（opcode）再看細項代碼辦不同業務。",
-  "basic": false,
-  "subj": "ca"
- },
  "stall": {
   "en": "stall",
   "zh": "停頓",
   "what": "管線遇到危障時，讓後面的指令原地等一個或多個週期，等資料準備好再繼續。",
   "like": "生產線上游缺料，下游只好先停下來等。",
   "basic": false,
-  "subj": "ca"
+  "subj": "ca",
+  "only": true
  },
  "load-use": {
   "en": "load-use hazard",
@@ -6286,7 +6293,8 @@
   "what": "後面的指令要寫某暫存器，前面的指令還沒讀它。亂序執行時才會出問題，可用暫存器重新命名解決。",
   "like": "別人還沒抄完白板，你就把它擦掉寫新的。",
   "basic": false,
-  "subj": "ca"
+  "subj": "ca",
+  "only": true
  },
  "WAW": {
   "en": "write after write (WAW)",
@@ -6310,7 +6318,8 @@
   "what": "在還不確定結果時（例如分支方向）先猜一個方向執行，猜對賺到時間，猜錯再取消。",
   "like": "先猜客人會點招牌菜，提早備料。",
   "basic": false,
-  "subj": "ca"
+  "subj": "ca",
+  "only": true
  },
  "multiple issue": {
   "en": "multiple issue",
@@ -6350,7 +6359,8 @@
   "what": "CPU 內部執行指令時發生的意外事件，例如溢位、未定義指令，會打斷正常流程交給 OS 處理。",
   "like": "上課時學生突然身體不舒服，要先處理。",
   "basic": false,
-  "subj": "ca"
+  "subj": "ca",
+  "only": true
  },
  "EPC": {
   "en": "exception program counter",
@@ -6382,7 +6392,8 @@
   "what": "快取每組有幾格可以放同一個區塊，例如 4-way 就是 4。越高衝突越少，但比對硬體越多。",
   "like": "同一排鞋櫃有幾格可以選。",
   "basic": false,
-  "subj": "ca"
+  "subj": "ca",
+  "only": true
  },
  "block offset": {
   "en": "block offset",
@@ -6648,7 +6659,8 @@
   "what": "資料的位址必須是它大小的整數倍，例如字組位址要是 4 的倍數，硬體讀起來才簡單。",
   "like": "停車要停在格子線內，不能跨兩格。",
   "basic": false,
-  "subj": "ca"
+  "subj": "ca",
+  "only": true
  },
  "base addressing": {
   "en": "base addressing / displacement addressing",
@@ -6764,46 +6776,16 @@
   "subj": "ca",
   "only": true
  },
- "特徵值": {
-  "en": "eigenvalue",
-  "what": "滿足 Av = λv 的數 λ：矩陣作用在特徵向量上，只把它伸縮 λ 倍。由 det(A − λI) = 0 解出。",
-  "like": "彈簧被拉長的倍數：方向不變，只看拉了幾倍。",
-  "basic": false
- },
- "特徵向量": {
-  "en": "eigenvector",
-  "what": "乘上矩陣 A 之後方向不變（只被伸縮）的非零向量，滿足 Av = λv。",
-  "like": "風吹過麥田，順著風向的那排麥子只是被推遠，不會轉向。",
-  "basic": false
- },
  "特徵多項式": {
   "en": "characteristic polynomial",
   "what": "det(A − λI) 展開後得到的 λ 的多項式，它的根就是 A 的所有特徵值。",
   "like": "一把鎖的密碼式，解出的根就是能開鎖的特徵值。",
   "basic": false
  },
- "特徵方程": {
-  "en": "characteristic equation",
-  "what": "線代裡是 det(A − λI) = 0；遞迴式裡把 aₙ 換成 rⁿ 得到的方程，根決定通解的形式。",
-  "like": "先找出「基本節奏」，整首曲子都由這些節奏組成。",
-  "basic": false
- },
  "重根": {
   "en": "repeated root",
   "what": "多項式的同一個根出現兩次以上。特徵值重根時矩陣可能不能對角化；遞迴式重根時通解要乘上 n。",
-  "like": "同一個答案被兩題共用。",
-  "basic": false
- },
- "基底": {
-  "en": "basis",
-  "what": "一組線性獨立、又能生成整個空間的向量；空間中每個向量都能唯一寫成它們的線性組合。",
-  "like": "樂高的基本積木：夠用來拼出一切，又沒有多餘的。",
-  "basic": false
- },
- "標準基底": {
-  "en": "standard basis",
-  "what": "ℝⁿ 中只有一個分量是 1、其餘是 0 的那組向量 e₁, e₂, …, eₙ。",
-  "like": "地圖上的「往東一步、往北一步」。",
+  "like": "兩條路線剛好落在同一個終點，算一個點卻數兩次。",
   "basic": false
  },
  "正交基底": {
@@ -6812,268 +6794,10 @@
   "like": "十字路口的兩條路互相垂直，報方位最方便。",
   "basic": false
  },
- "行列式": {
-  "en": "determinant",
-  "what": "方陣對應的一個數，代表線性變換把面積或體積放大幾倍；為 0 表示矩陣不可逆。",
-  "like": "影印機的縮放比例，0 代表整張被壓扁成一條線。",
-  "basic": false
- },
- "餘因子": {
-  "en": "cofactor",
-  "what": "刪去第 i 列第 j 行後子矩陣的行列式，再乘上 (−1)^(i+j) 的正負號；用來展開行列式和求反矩陣。",
-  "like": "拿掉一排一列後剩下的小棋盤分數，再配上棋盤格的正負色。",
-  "basic": false
- },
- "正交": {
-  "en": "orthogonal",
-  "what": "兩向量內積為 0，也就是互相垂直；推廣到子空間時表示其中任兩向量都垂直。",
-  "like": "東西向和南北向的兩條路。",
-  "basic": false
- },
- "正交矩陣": {
-  "en": "orthogonal matrix",
-  "what": "各行是單位長且兩兩垂直的方陣 Q，滿足 QᵀQ = I，所以 Q⁻¹ = Qᵀ；只做旋轉或鏡射，不改變長度。",
-  "like": "把模型轉個方向，形狀和大小都不變。",
-  "basic": false
- },
- "單範正交": {
-  "en": "orthonormal",
-  "what": "一組向量兩兩垂直、且每個長度都是 1（又稱標準正交）。",
-  "like": "一把直角尺的兩邊，各刻好一單位長。",
-  "basic": false
- },
- "投影": {
-  "en": "projection",
-  "what": "把向量 b 沿垂直方向壓到某條直線或子空間上，得到最接近 b 的那一點 p。",
-  "like": "正午太陽下，竿子在地上的影子。",
-  "basic": false
- },
- "投影矩陣": {
-  "en": "projection matrix",
-  "what": "乘上任何向量就得到它在某子空間上投影的矩陣 P；滿足 P² = P 且 Pᵀ = P。",
-  "like": "一台只會「照出影子」的投影機，照兩次影子不變。",
-  "basic": false
- },
- "最小平方": {
-  "en": "least squares",
-  "what": "Ax = b 無解時，改找讓誤差 ‖Ax − b‖² 最小的 x，解 AᵀAx̂ = Aᵀb；常用於直線擬合。",
-  "like": "一堆散點中畫出一條「最不冤枉大家」的直線。",
-  "basic": false
- },
- "零空間": {
-  "en": "null space",
-  "what": "所有滿足 Ax = 0 的向量 x 所成的子空間，記作 N(A)；它的維度 = 行數 − 秩。",
-  "like": "投進去會被機器「吃掉」變成 0 的那些輸入。",
-  "basic": false
- },
- "左零空間": {
-  "en": "left null space",
-  "what": "滿足 Aᵀy = 0（即 yᵀA = 0）的所有 y，記作 N(Aᵀ)；四個基本子空間之一。",
-  "like": "從列的那一側看過去的零空間。",
-  "basic": false
- },
- "行空間": {
-  "en": "column space",
-  "what": "A 各行向量所有線性組合構成的空間 C(A)；Ax = b 有解若且唯若 b 在行空間裡。",
-  "like": "用手上幾種顏料能調出來的所有顏色。",
-  "basic": false
- },
- "列空間": {
-  "en": "row space",
-  "what": "A 各列向量所有線性組合構成的空間，等於 Aᵀ 的行空間；和零空間互相垂直。",
-  "like": "把表格橫著讀能組出的所有組合。",
-  "basic": false
- },
- "子空間": {
-  "en": "subspace",
-  "what": "向量空間裡的一個子集合，本身含零向量，且對加法和純量乘法封閉。",
-  "like": "大城市裡一條通過市中心、可以無限延伸的直路。",
-  "basic": false
- },
- "向量空間": {
-  "en": "vector space",
-  "what": "一群可以相加、也可以乘上純量，結果仍留在裡面的物件，並滿足一組運算規則。",
-  "like": "一個封閉的遊樂園：怎麼玩都出不了園區。",
-  "basic": false
- },
- "維度": {
-  "en": "dimension",
-  "what": "向量空間中任一組基底的向量個數，代表需要幾個獨立方向才能描述這個空間。",
-  "like": "描述位置需要幾個座標：線 1 個、平面 2 個。",
-  "basic": false
- },
- "秩": {
-  "en": "rank",
-  "what": "矩陣中線性獨立的行（或列）的最大個數，也等於消去後的主元個數；行秩恆等於列秩。",
-  "like": "一支隊伍裡真正有用、不能被別人取代的人數。",
-  "basic": false
- },
- "滿秩": {
-  "en": "full rank",
-  "what": "秩等於行數與列數中較小的那個，沒有浪費的行或列。方陣滿秩就等於可逆。",
-  "like": "球隊每個人都是不可取代的主力。",
-  "basic": false
- },
- "反矩陣": {
-  "en": "inverse matrix",
-  "what": "滿足 AA⁻¹ = A⁻¹A = I 的方陣 A⁻¹，能把 A 做的變換完全復原；只有 det ≠ 0 才存在。",
-  "like": "按下「復原」鍵，把剛剛的動作撤銷。",
-  "basic": false
- },
- "虛反矩陣": {
-  "en": "pseudo-inverse",
-  "what": "任何矩陣（含非方陣、不可逆）都有的廣義反矩陣 A⁺，可由 SVD 求出，給出最小平方且長度最短的解。",
-  "like": "沒有完美復原鍵時，退而求其次的「盡量復原」。",
-  "basic": false
- },
- "可逆": {
-  "en": "invertible",
-  "what": "存在反矩陣；等價於 det ≠ 0、滿秩、Ax = 0 只有零解。",
-  "like": "拍照前後都有底片，可以還原回原本的樣子。",
-  "basic": false
- },
- "奇異矩陣": {
-  "en": "singular matrix",
-  "what": "行列式為 0、不可逆的方陣；它會把空間壓扁到較低維度，資訊無法還原。",
-  "like": "把三維物體壓成一張紙，再也回不去。",
-  "basic": false
- },
- "轉置": {
-  "en": "transpose",
-  "what": "把矩陣的列和行互換：Aᵀ 的第 i 列第 j 行 = A 的第 j 列第 i 行。",
-  "like": "把成績表的「學生 × 科目」翻成「科目 × 學生」。",
-  "basic": false
- },
- "內積": {
-  "en": "inner product / dot product",
-  "what": "兩向量對應分量相乘再相加得到一個數；可用來算長度、夾角，為 0 表示垂直。",
-  "like": "購物車：每樣商品數量乘單價再加總。",
-  "basic": false
- },
- "外積": {
-  "en": "cross product / outer product",
-  "what": "ℝ³ 的外積 u × v 給出同時垂直兩者的向量；矩陣裡 uvᵀ 也叫外積，得到秩 1 矩陣。",
-  "like": "用右手定則找出垂直於兩根手指的大拇指方向。",
-  "basic": false
- },
- "單位向量": {
-  "en": "unit vector",
-  "what": "長度為 1 的向量，只用來表示方向；把向量除以自己的長度就能得到。",
-  "like": "指南針的指針，只告訴你方向。",
-  "basic": false
- },
- "單位矩陣": {
-  "en": "identity matrix",
-  "what": "對角線全是 1、其他都是 0 的方陣 I；任何矩陣乘上它都不變。",
-  "like": "數字乘法裡的 1。",
-  "basic": false
- },
- "方陣": {
-  "en": "square matrix",
-  "what": "列數和行數相同的矩陣（n × n）；只有方陣才談行列式、反矩陣和特徵值。",
-  "like": "座位表剛好排成正方形。",
-  "basic": false
- },
- "對稱矩陣": {
-  "en": "symmetric matrix",
-  "what": "滿足 Aᵀ = A 的方陣，對角線兩邊鏡像相同；特徵值都是實數，且可用正交矩陣對角化。",
-  "like": "兩人互相的距離表，A 到 B 和 B 到 A 一樣。",
-  "basic": false
- },
- "對角矩陣": {
-  "en": "diagonal matrix",
-  "what": "只有主對角線上可以不是 0 的方陣；乘法、次方都只要處理對角線上的數。",
-  "like": "每個人只管自己的那一格，互不干擾。",
-  "basic": false
- },
- "三角矩陣": {
-  "en": "triangular matrix",
-  "what": "主對角線一側全為 0 的方陣（上三角或下三角）；行列式就是對角線相乘。",
-  "like": "樓梯：一邊有台階，一邊是空的。",
-  "basic": false
- },
- "置換矩陣": {
-  "en": "permutation matrix",
-  "what": "把單位矩陣的列重新排列得到的矩陣；乘上去就是交換列的順序。",
-  "like": "洗牌：只換順序，不改牌面。",
-  "basic": false
- },
- "相似矩陣": {
-  "en": "similar matrices",
-  "what": "若 B = M⁻¹AM，則 A、B 相似；它們是同一個線性變換換了基底的樣子，特徵值相同。",
-  "like": "同一張地圖，一張用公里、一張用英里。",
-  "basic": false
- },
- "對角化": {
-  "en": "diagonalization",
-  "what": "把 A 寫成 SΛS⁻¹，Λ 是特徵值對角矩陣、S 的各行是特徵向量；需要 n 個獨立特徵向量。",
-  "like": "找到最順手的觀察角度，讓複雜的動作只剩各自伸縮。",
-  "basic": false
- },
- "線性變換": {
-  "en": "linear transformation",
-  "what": "保持加法和純量乘法的函數：T(u+v) = T(u)+T(v)、T(cv) = cT(v)；每個都能用矩陣表示。",
-  "like": "放大鏡：整張圖一起放大，直線還是直線。",
-  "basic": false
- },
- "線性組合": {
-  "en": "linear combination",
-  "what": "把幾個向量各乘上一個數再相加，例如 c₁v₁ + c₂v₂。",
-  "like": "用不同份量的米、豆、麥混出一包雜糧。",
-  "basic": false
- },
- "張成": {
-  "en": "span",
-  "what": "一組向量所有線性組合構成的集合，也稱生成；代表這些向量「能到達的所有地方」。",
-  "like": "手上幾種顏料能調出的全部顏色。",
-  "basic": false
- },
  "線性獨立": {
   "en": "linearly independent",
   "what": "沒有任何一個向量能用其他向量的線性組合表示；c₁v₁+…+cₙvₙ = 0 只有全 0 解。",
   "like": "每個隊員都有別人沒有的專長。",
-  "basic": false
- },
- "線性相依": {
-  "en": "linearly dependent",
-  "what": "至少有一個向量能由其他向量的線性組合表示，也就是存在不全為 0 的係數使組合等於 0。",
-  "like": "隊裡有人的工作完全能被其他人合起來取代。",
-  "basic": false
- },
- "座標": {
-  "en": "coordinates",
-  "what": "向量在某組基底下的組合係數；換一組基底，同一個向量的座標就跟著改變。",
-  "like": "同一個地點，用經緯度或門牌號碼來描述。",
-  "basic": false
- },
- "自由變數": {
-  "en": "free variable",
-  "what": "消去後沒有主元的那些變數，可以任意取值；有幾個自由變數，零空間就有幾維。",
-  "like": "填表時可以自己隨便選的欄位。",
-  "basic": false
- },
- "主元": {
-  "en": "pivot",
-  "what": "消去法中每一列第一個非零的那個數，用來消掉它下方的元素；主元個數就是秩。",
-  "like": "拔河隊伍站在最前面帶頭用力的人。",
-  "basic": false
- },
- "列運算": {
-  "en": "row operation",
-  "what": "消去法用的三種動作：交換兩列、某列乘非零常數、某列加上另一列的倍數；不改變解。",
-  "like": "整理帳本：換行、整行乘倍數、把一行加到另一行。",
-  "basic": false
- },
- "列梯形": {
-  "en": "row echelon form",
-  "what": "消去後的形狀：每列第一個非零數都在上一列主元的右邊，零列在最下面，像階梯。",
-  "like": "往右下走的樓梯。",
-  "basic": false
- },
- "簡化列梯形": {
-  "en": "reduced row echelon form",
-  "what": "列梯形再進一步：每個主元都是 1，且主元所在行的其他元素全為 0；簡稱 RREF。",
-  "like": "樓梯整理到每一階都乾乾淨淨。",
   "basic": false
  },
  "高斯消去法": {
@@ -7082,52 +6806,10 @@
   "like": "逐步拆鷹架：先消掉一個未知數，再消下一個。",
   "basic": false
  },
- "正定": {
-  "en": "positive definite",
-  "what": "對所有非零 x 都有 xᵀAx > 0 的對稱矩陣；等價於所有特徵值都是正數。",
-  "like": "一個碗：不管往哪個方向走，高度都往上。",
-  "basic": false
- },
- "半正定": {
-  "en": "positive semidefinite",
-  "what": "對所有 x 都有 xᵀAx ≥ 0 的對稱矩陣；特徵值都 ≥ 0，允許有 0。",
-  "like": "碗底有一段平的溝，可以走平但不會往下。",
-  "basic": false
- },
- "奇異值": {
-  "en": "singular value",
-  "what": "AᵀA 特徵值的平方根 σ，代表矩陣在各個主方向上把向量拉長的倍數；永遠 ≥ 0。",
-  "like": "照片中最重要的幾種「成分」各有多強。",
-  "basic": false
- },
- "奇異值分解": {
-  "en": "singular value decomposition",
-  "what": "任何矩陣都能寫成 A = UΣVᵀ：轉一下、各軸伸縮、再轉一下；簡稱 SVD，可用於影像壓縮。",
-  "like": "任何動作都拆成「轉身、拉伸、再轉身」。",
-  "basic": false
- },
  "旋轉矩陣": {
   "en": "rotation matrix",
   "what": "把平面向量轉 θ 角的矩陣 [cosθ −sinθ; sinθ cosθ]；是正交矩陣，行列式為 1。",
   "like": "轉盤：所有東西一起轉，大小不變。",
-  "basic": false
- },
- "交集": {
-  "en": "intersection",
-  "what": "同時屬於 A 和 B 的元素所成的集合，記作 A ∩ B。",
-  "like": "兩個社團都有參加的同學。",
-  "basic": false
- },
- "補集": {
-  "en": "complement",
-  "what": "在宇集中不屬於 A 的所有元素，記作 Aᶜ 或 Ā。",
-  "like": "班上沒有參加社團的同學。",
-  "basic": false
- },
- "空集合": {
-  "en": "empty set",
-  "what": "一個元素都沒有的集合，記作 ∅；它是任何集合的子集合。",
-  "like": "空的便當盒，盒子在，裡面沒東西。",
   "basic": false
  },
  "宇集": {
@@ -7140,18 +6822,6 @@
   "en": "proposition",
   "what": "一個可以明確判斷真或假的敘述句，例如「2 是質數」；問句和命令句不是命題。",
   "like": "是非題：一定答得出對或錯。",
-  "basic": false
- },
- "真值表": {
-  "en": "truth table",
-  "what": "列出所有變數真假組合，以及每種組合下式子結果的表格；n 個變數有 2ⁿ 列。",
-  "like": "電燈開關所有開關組合對應燈亮不亮。",
-  "basic": false
- },
- "否定": {
-  "en": "negation",
-  "what": "把命題的真假反過來，記作 ¬p；p 真則 ¬p 假。",
-  "like": "把「下雨」改成「沒下雨」。",
   "basic": false
  },
  "邏輯等價": {
@@ -7172,58 +6842,10 @@
   "like": "填空題：空格填進去才知道對不對。",
   "basic": false
  },
- "反證法": {
-  "en": "proof by contradiction",
-  "what": "先假設結論不成立，推出矛盾，因此原結論必定成立。",
-  "like": "假設嫌犯在場，卻推出他同時在兩地，所以他不在場。",
-  "basic": false
- },
- "歸納假設": {
-  "en": "induction hypothesis",
-  "what": "數學歸納法中假設 P(k) 成立的那一步，再用它去證明 P(k+1)。",
-  "like": "假設第 k 張骨牌已倒下。",
-  "basic": false
- },
- "自反": {
-  "en": "reflexive",
-  "what": "關係 R 中每個元素都和自己有關係：對所有 a，(a, a) ∈ R。",
-  "like": "每個人都和自己同年。",
-  "basic": false
- },
- "遞移": {
-  "en": "transitive",
-  "what": "若 a R b 且 b R c，則 a R c。",
-  "like": "小明比小華高、小華比小強高，小明就比小強高。",
-  "basic": false
- },
  "反對稱": {
   "en": "antisymmetric",
   "what": "若 a R b 且 b R a，則 a = b；不同的兩元素不能互相有關係。",
   "like": "「小於等於」：互相 ≤ 只可能是同一個數。",
-  "basic": false
- },
- "等價關係": {
-  "en": "equivalence relation",
-  "what": "同時滿足自反、對稱、遞移的關係，會把集合切成一塊塊不重疊的等價類。",
-  "like": "「同一個班」的關係。",
-  "basic": false
- },
- "等價類": {
-  "en": "equivalence class",
-  "what": "在等價關係下和某元素 a 有關係的所有元素，記作 [a]；各等價類互不重疊、合起來是全集。",
-  "like": "全校學生按班級分組，每班就是一類。",
-  "basic": false
- },
- "定義域": {
-  "en": "domain",
-  "what": "函數允許輸入的所有值所成的集合。",
-  "like": "販賣機能接受的所有投入選項。",
-  "basic": false
- },
- "對應域": {
-  "en": "codomain",
-  "what": "函數宣告的輸出範圍；實際被取到的輸出（值域）只是它的子集合。",
-  "like": "菜單上列的所有餐點。",
   "basic": false
  },
  "值域": {
@@ -7232,64 +6854,10 @@
   "like": "今天真的有人點過的餐點。",
   "basic": false
  },
- "一對一": {
-  "en": "one-to-one / injective",
-  "what": "不同輸入一定得到不同輸出，又稱單射。注意「一對一對應」指的是雙射。",
-  "like": "每個人一個學號，不會兩人共用。",
-  "basic": false
- },
- "映成": {
-  "en": "onto / surjective",
-  "what": "對應域中每個元素都至少被一個輸入對到，又稱滿射；值域等於對應域。",
-  "like": "每個座位都至少坐了一個人。",
-  "basic": false
- },
- "對射": {
-  "en": "bijection",
-  "what": "同時一對一且映成的函數，兩集合元素一一配對，所以元素個數相同，也有反函數。",
-  "like": "舞會上每人剛好一個舞伴，沒人落單。",
-  "basic": false
- },
  "反函數": {
   "en": "inverse function",
   "what": "把 f 的輸入輸出對調得到的函數 f⁻¹；只有一對一且映成的函數才有。",
   "like": "把翻譯的句子再翻回原文。",
-  "basic": false
- },
- "鴿籠原理": {
-  "en": "pigeonhole principle",
-  "what": "n+1 個物品放進 n 個箱子，必有一箱至少兩個；推廣為至少 ⌈N/k⌉ 個。",
-  "like": "13 個人中至少兩人同月生日。",
-  "basic": false
- },
- "排容原理": {
-  "en": "inclusion-exclusion principle",
-  "what": "算聯集大小時先全加、扣掉重複算的交集、再加回扣太多的部分：|A∪B| = |A|+|B|−|A∩B|。",
-  "like": "點名時同時在兩份名單上的人只能算一次。",
-  "basic": false
- },
- "二項式定理": {
-  "en": "binomial theorem",
-  "what": "(x+y)ⁿ 展開後 xᵏyⁿ⁻ᵏ 的係數是 C(n, k)。",
-  "like": "把 n 個括號各挑 x 或 y，數有幾種挑法。",
-  "basic": false
- },
- "生成函數": {
-  "en": "generating function",
-  "what": "把數列 a₀, a₁, a₂, … 當成冪級數 Σaₙxⁿ 的係數，用代數運算來解計數和遞迴問題。",
-  "like": "把一整列數字裝進一條「晒衣繩」，每個夾子一個係數。",
-  "basic": false
- },
- "冪級數": {
-  "en": "power series",
-  "what": "形如 a₀ + a₁x + a₂x² + … 的無窮多項式；生成函數就是用它來表示數列。",
-  "like": "無限長的多項式。",
-  "basic": false
- },
- "齊次": {
-  "en": "homogeneous",
-  "what": "方程沒有「常數項」：線代的 Ax = 0，或遞迴式中每項都含某個 aₙ。",
-  "like": "天平兩邊都沒放額外砝碼。",
   "basic": false
  },
  "非齊次": {
@@ -7304,46 +6872,16 @@
   "like": "先不管外力，看系統自己怎麼動。",
   "basic": false
  },
- "特解": {
-  "en": "particular solution",
-  "what": "滿足非齊次方程的某一個解；通解 = 特解 + 齊次解。",
-  "like": "先找到一條能到目的地的路，其他路再從它偏移。",
-  "basic": false
- },
  "通解": {
   "en": "general solution",
   "what": "包含所有解的式子，帶有待定常數，再用初始條件把常數決定出來。",
   "like": "萬用公式，代入條件才變成某一題的答案。",
   "basic": false
  },
- "初始條件": {
-  "en": "initial condition",
-  "what": "遞迴或微分方程開頭給定的值，例如 a₀ = 1，用來決定通解中的常數。",
-  "like": "骨牌第一張由誰推倒。",
-  "basic": false
- },
- "河內塔": {
-  "en": "Tower of Hanoi",
-  "what": "把 n 個圓盤從一柱搬到另一柱、大盤不能壓小盤的問題；最少步數 2ⁿ − 1。",
-  "like": "搬家時大箱子永遠要在小箱子下面。",
-  "basic": false
- },
  "整除": {
   "en": "divides",
   "what": "a 整除 b（記作 a | b）表示 b 是 a 的整數倍，也就是 b ÷ a 沒有餘數。",
   "like": "12 顆糖平分給 3 人剛好分完。",
-  "basic": false
- },
- "互質": {
-  "en": "relatively prime",
-  "what": "兩整數的最大公因數是 1，除了 1 以外沒有共同因數。",
-  "like": "兩個齒輪齒數互質，要轉很多圈才回到原位。",
-  "basic": false
- },
- "最大公因數": {
-  "en": "greatest common divisor",
-  "what": "能同時整除 a 和 b 的最大正整數，記作 gcd(a, b)，可用輾轉相除法求得。",
-  "like": "把兩條緞帶剪成等長小段，每段最長能多長。",
   "basic": false
  },
  "最小公倍數": {
@@ -7362,12 +6900,6 @@
   "en": "congruence",
   "what": "a ≡ b (mod n) 表示 a 和 b 除以 n 的餘數相同，也就是 n 整除 a − b。",
   "like": "時鐘上 13 點和 1 點指的是同一格。",
-  "basic": false
- },
- "乘法反元素": {
-  "en": "multiplicative inverse",
-  "what": "在 mod n 下滿足 a·b ≡ 1 的 b；只有 gcd(a, n) = 1 時存在。",
-  "like": "在時鐘算術裡能把 a「乘回」1 的那個數。",
   "basic": false
  },
  "反元素": {
@@ -7391,61 +6923,7 @@
  "結合律": {
   "en": "associative law",
   "what": "(a ∘ b) ∘ c = a ∘ (b ∘ c)：連續運算時先算哪一對都一樣。",
-  "like": "三人接力傳球，先誰傳誰結果相同。",
-  "basic": false
- },
- "交換律": {
-  "en": "commutative law",
-  "what": "a ∘ b = b ∘ a：兩個運算對象交換位置，結果不變。",
-  "like": "先穿左襪或右襪都一樣。",
-  "basic": false
- },
- "頂點": {
-  "en": "vertex",
-  "what": "圖中的點，代表一個物件；頂點之間用邊相連。",
-  "like": "地圖上的城市。",
-  "basic": false
- },
- "生成樹": {
-  "en": "spanning tree",
-  "what": "包含圖中所有頂點、又沒有環的子圖；n 個頂點的生成樹恰好有 n − 1 條邊。",
-  "like": "用最少電線讓所有房子都通電。",
-  "basic": false
- },
- "連通圖": {
-  "en": "connected graph",
-  "what": "任兩個頂點之間都有路徑可以走到的圖。",
-  "like": "任何兩個車站都能轉乘到達的捷運網。",
-  "basic": false
- },
- "二分圖": {
-  "en": "bipartite graph",
-  "what": "頂點能分成兩群，所有的邊都只連接不同群的頂點；等價於沒有奇數長度的環。",
-  "like": "舞會只在男生和女生之間配對。",
-  "basic": false
- },
- "完全圖": {
-  "en": "complete graph",
-  "what": "任兩個不同頂點之間都有一條邊的簡單圖，記作 Kₙ，共 n(n−1)/2 條邊。",
-  "like": "班上每兩個人都互相握過手。",
-  "basic": false
- },
- "子圖": {
-  "en": "subgraph",
-  "what": "從原圖挑出部分頂點與部分邊組成的圖，挑的邊兩端都必須在挑的頂點中。",
-  "like": "從全國地圖剪下北部的那一塊。",
-  "basic": false
- },
- "同構": {
-  "en": "isomorphism",
-  "what": "兩個圖之間存在頂點的一一對應，並保留所有邊的相連關係；看起來不同，其實是同一張圖。",
-  "like": "同一張人際關係圖，只是換了名字和畫法。",
-  "basic": false
- },
- "著色": {
-  "en": "graph coloring",
-  "what": "替圖的頂點塗色，使相鄰頂點顏色不同；用來排課、排考等避免衝突的問題。",
-  "like": "排考試：有共同學生的科目不能同一節。",
+  "like": "1 + 2 + 3：先算 1 + 2 或先算 2 + 3，總和都一樣。",
   "basic": false
  },
  "流量守恆": {
@@ -7455,7 +6933,7 @@
   "basic": false
  },
  "高斯符號": {
-  "en": "floor / ceiling function",
+  "en": "floor & ceiling function",
   "what": "⌊x⌋ 取不大於 x 的最大整數（下高斯），⌈x⌉ 取不小於 x 的最小整數（上高斯）。",
   "like": "搭電梯：⌈⌉ 是不夠就多搭一趟。",
   "basic": false
@@ -7472,7 +6950,9 @@
   "zh": "行列式",
   "what": "determinant 的縮寫，det(A) 是方陣 A 的行列式：面積或體積的放大倍數，為 0 就不可逆。",
   "like": "影印機的縮放比例。",
-  "basic": false
+  "basic": false,
+  "subj": "la",
+  "only": true
  },
  "big formula": {
   "en": "big formula",
@@ -7570,14 +7050,18 @@
   "zh": "QR 分解",
   "what": "把 A 寫成 Q 乘 R：Q 的各行單範正交，R 是上三角；由 Gram-Schmidt 得到，常用來解最小平方。",
   "like": "把歪斜的座標軸先扶正，再記下怎麼扶的。",
-  "basic": false
+  "basic": false,
+  "subj": "la",
+  "only": true
  },
  "LU": {
   "en": "LU",
   "zh": "LU 分解",
   "what": "把方陣 A 寫成 L 乘 U：L 是記錄乘數的下三角、U 是消去後的上三角，可重複用來解多個 b。",
   "like": "把消去法的整個過程存檔，下次直接套用。",
-  "basic": false
+  "basic": false,
+  "subj": "la",
+  "only": true
  },
  "FFT": {
   "en": "FFT",
@@ -7591,7 +7075,9 @@
   "zh": "座標",
   "what": "向量在某組基底下的組合係數；換一組基底，同一個向量的座標就會改變。",
   "like": "同一個地點，用經緯度或門牌號描述。",
-  "basic": false
+  "basic": false,
+  "subj": "la",
+  "only": true
  },
  "zero vector": {
   "en": "zero vector",
@@ -7602,28 +7088,21 @@
  },
  "surjective": {
   "en": "surjective",
-  "zh": "映成的（滿射）",
+  "zh": "映成（滿射）",
   "what": "對應域中每個元素都至少被一個輸入對到的函數，也就是值域等於對應域。",
   "like": "每個座位都至少坐了一個人。",
   "basic": false
  },
- "injection": {
-  "en": "injection",
-  "zh": "單射",
-  "what": "一對一的函數：不同輸入一定得到不同輸出。",
-  "like": "每人一個學號，不會兩人共用。",
-  "basic": false
- },
  "left inverse": {
   "en": "left inverse",
-  "zh": "左反元素",
+  "zh": "左逆（左反矩陣）",
   "what": "滿足 g ∘ f = 恆等（或 BA = I）的 g 或 B；函數一對一、矩陣行滿秩時才存在。",
   "like": "能把翻譯從右邊「還原」回原文的那一本字典。",
   "basic": false
  },
  "right inverse": {
   "en": "right inverse",
-  "zh": "右反元素",
+  "zh": "右逆（右反矩陣）",
   "what": "滿足 f ∘ g = 恆等（或 AB = I）的 g 或 B；函數映成、矩陣列滿秩時才存在。",
   "like": "先查字典再翻譯，保證每句都翻得到。",
   "basic": false
@@ -7682,7 +7161,9 @@
   "zh": "行跡",
   "what": "邊不重複的 walk，頂點可以重複經過。",
   "like": "散步時每條小路只走一次，路口可以再經過。",
-  "basic": false
+  "basic": false,
+  "subj": "dm",
+  "only": true
  },
  "closed walk": {
   "en": "closed walk",
@@ -7703,13 +7184,6 @@
   "zh": "割的容量",
   "what": "把網路切成含源點的 S 和含匯點的 T 後，所有從 S 指向 T 的邊容量總和；最大流 ≤ 任一割的容量。",
   "like": "切斷兩座城之間所有道路的總車流上限。",
-  "basic": false
- },
- "f-augmenting path": {
-  "en": "f-augmenting path",
-  "zh": "f-擴增路徑",
-  "what": "在目前流量 f 下，從源點到匯點還能再加流量的路徑：前向邊未滿、後向邊有流量可退。",
-  "like": "水管系統中還有餘裕可以多送水的一條路線。",
   "basic": false
  },
  "alternating tree": {
@@ -7805,7 +7279,7 @@
  },
  "multinomial": {
   "en": "multinomial",
-  "zh": "多項式係數",
+  "zh": "多項係數",
   "what": "n 個物品分成大小 n₁, …, nₖ 各組的方法數 n!/(n₁!…nₖ!)，也是 (x₁+…+xₖ)ⁿ 展開的係數。",
   "like": "排列 MISSISSIPPI 這種有重複字母的字串。",
   "basic": false
@@ -7866,13 +7340,6 @@
   "like": "每個學生都分到一個實習位置。",
   "basic": false
  },
- "max-flow min-cut theorem": {
-  "en": "max-flow min-cut theorem",
-  "zh": "最大流最小割定理",
-  "what": "網路中的最大流量恰好等於最小割的容量。",
-  "like": "水管系統的最大送水量，就是最窄那一刀的總寬度。",
-  "basic": false
- },
  "inclusion-exclusion": {
   "en": "inclusion-exclusion",
   "zh": "排容原理",
@@ -7882,7 +7349,7 @@
  },
  "commutative": {
   "en": "commutative",
-  "zh": "可交換的",
+  "zh": "交換律／可交換",
   "what": "運算滿足 a ∘ b = b ∘ a，交換順序結果不變。",
   "like": "先穿左襪或右襪都一樣。",
   "basic": false

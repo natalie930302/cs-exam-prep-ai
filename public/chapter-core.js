@@ -15,6 +15,9 @@ function stableTaskKey(value){
 }
 // The YouTube channel of videos whose title names no teacher or course.
 const VIDEO_CHANNEL = {
+  'fV3v6qQ3w4A':"MIT OCW 6.042J",
+  '6kfbotHL0fs':"Mathemaniac",
+  'NgbK43jB4rQ':"Numberphile",
   'V42FBiohc6c':"mycodeschool",
   'akErwS16DUg':"Hacktrickz",
   '-b2lciNd2L4':"Jenny's Lectures CS IT",

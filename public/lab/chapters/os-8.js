@@ -1859,7 +1859,7 @@ scene('vm-14a-code', 'File system 讀寫 vs memory-mapped file', CAMW, [
     cap('寫下去只是改自己的 memory content', '兩邊還沒 sync，這時斷電資料就沒了');
   },
   async (tok, S) => {                                   // 1511.8 munmap 時整段寫回 file
-    gone(S.ns); S.c2.hl(3); const a = pkt('整段寫回', MC.tlb, 0.6, 5.35, 0.8, 1.4); await slide(tok, a, 4.6, 5.35, 0.8, 800); gone(a);
+    gone(S.ns); S.c2.hl(3); const a = pkt('整段寫回', MC.tlb, 0.6, 5.35, 0.8, 1.4); await slide(tok, a, 3.2, 5.35, 0.8, 800); gone(a); // stops at the disk block's edge, not over its「4 KB」
     glow(S.mp[1], null); glow(S.df[1], HL);
     cap('只有 call munmap 時才寫下來', '不知道你改了哪裡，就整段 dump 回 file');
   },
@@ -2435,8 +2435,8 @@ scene('vm-14c-approx', 'LRU 的變形：additional-reference-bits、second chanc
   async (tok, S) => {                                   // 1095.8 second chance：給第二次機會
     const pts = [[0, 3.7], [2.0, 2.4], [0, 1.1], [-2.0, 2.4]];
     S.ring = [[2, 1], [5, 1], [1, 0], [4, 1]].map(([p, r], i) => ({ p: bx('page ' + p, pc(p), pts[i][0], pts[i][1], 0, 1.5, 0.5, 0.7), r: bx(String(r), r ? MC.mint : '#f3c9c9', pts[i][0] + 1.45, pts[i][1], 0, 0.45, 0.45, 0.5) }));
-    S.ptr = hot('▶ 指標', -2.0, 3.7); sm('（課本版 clock，示意）', 0, 0.3);
-    S.nw = pkt('page 6', pc(6), 4.8, 2.4, 0.6, 1.2);
+    S.ptr = hot('▶ 指標', -2.0, 3.7); sm('（課本版 clock，示意）', -4.8, -0.1);
+    S.nw = pkt('page 6', pc(6), 4.6, 0.2, 0.6, 1.2); // waits low on the right, away from the ring's bits
     cap('second chance：被選中時給第二次機會', '課本做法：FIFO 加一個 reference bit（clock）');
   },
   async (tok, S) => {                                   // 1114.4 被踢出來先降級（bit 1 → 0，跳過）
@@ -2444,7 +2444,7 @@ scene('vm-14c-approx', 'LRU 的變形：additional-reference-bits、second chanc
     cap('被踢出來的先放到低 priority', 'clock：reference bit 是 1 就清成 0、跳過，給第二次機會');
   },
   async (tok, S) => {                                   // 1123.8 真正被踢的是 low priority 裡的
-    glow(S.ring[2].p, NG); await wt(tok, 300); kill(S.ring[2].p); await slide(tok, S.nw, 0, 1.1, 0.6, 700); relabel(S.ring[2].r, '1'); tint(S.ring[2].r, MC.mint);
+    glow(S.ring[2].p, NG); await wt(tok, 300); kill(S.ring[2].p); await slide(tok, S.nw, 0, 0.2, 0.6, 450); await slide(tok, S.nw, 0, 1.1, 0.6, 300); relabel(S.ring[2].r, '1'); tint(S.ring[2].r, MC.mint);
     cap('真正要踢的，從 low priority 裡挑', 'bit 是 0 的 page 1 被換成 page 6');
   },
   async (tok, S) => {                                   // 1155.2 都是 LRU 的變形

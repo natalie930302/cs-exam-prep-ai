@@ -6853,6 +6853,205 @@ scene('pfC-3d-gen', '一般情況：|A| = m，|B| = n', [
   },
 ]);
   }
+  // ═══ wo-mit (MIT OCW 6.042J Well Ordering Principle, fV3v6qQ3w4A) ═══
+  {
+const { V3, tag, cube, kill, glow, tint, anim, arrow, step, fresh } = K;
+const wt = (tok, ms) => ctx.beat(tok, ms);
+const cap = (a, b = '') => say(a, b);
+const T = (t, c, x, y, z = 0) => tag(t, c, x, y, z);
+const L = (t, c, x, y, z = 0) => { const l = tag(t, c, x, y, z); if (l.center) l.center.set(0, 0.5); return l; };
+const cls = (l, c) => { if (l && l.element) l.element.className = 'lab-label ' + c; };
+const setT = (l, t) => { if (l && l.element) l.element.textContent = t; };
+const CAM = [[0, 4.2, 14], [0, 3.0, 0]];
+const FC = { blue: '#4b9ee2', orange: '#dd8238', green: '#2fc092', purple: '#9b7ef4', red: '#d64545', sand: '#e9dcc4', gold: '#c08a1f', gray: '#cfc6b6' };
+const OKG = '#0f5a3a', NG = '#7a1010', HL = '#6a4a00';
+function scene(id, title, steps, cam = CAM) {
+  FRAG.push([id, title, async (tok) => {
+    fresh(cam[0], cam[1]);
+    const S = {};
+    for (const f of steps) { await step(tok); await f(tok, S); }
+  }]);
+}
+// proof board on the left: one line per add(), newest line highlighted
+function board(x, yTop, dy = 0.7) {
+  const ls = []; let last = null;
+  return {
+    add(t, c = 'note') {
+      if (last && last.userData.hot) { cls(last, 'say'); last.userData.hot = false; }
+      const l = L(t, c, x, yTop - ls.length * dy); ls.push(l); l.userData.hot = c === 'note'; last = l; return l;
+    },
+  };
+}
+// a number line of small cubes: values vals at x0 + i*dx on height y, numbers underneath
+function nline(vals, x0, dx, y, col = FC.sand) {
+  const ms = vals.map((v, i) => cube('', col, [0.42, 0.42, 0.42], x0 + i * dx, y, 0));
+  const ls = vals.map((v, i) => T(String(v), 'idx', x0 + i * dx, y - 0.6));
+  return { ms, ls, X: (i) => x0 + i * dx };
+}
+
+scene('wo-mit-stmt', '良序原理：非空的非負整數集合有最小元素', [
+  async (tok, S) => { // 0.5
+    S.B = board(-6.6, 6.4);
+    S.B.add('良序原理（Well-Ordering）');
+    S.N = nline([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 0.6, 0.68, 2.6);
+    T('非負整數 0, 1, 2, …', 'idx', 3.7, 5.5);
+    cap('主角：非負整數 0, 1, 2, …', '');
+  },
+  async (tok, S) => { // 22.5
+    S.B.add('非空的非負整數集合');
+    S.B.add('一定有最小元素');
+    S.in = [3, 5, 8, 9];
+    for (const v of S.in) { tint(S.N.ms[v], FC.orange); await wt(tok, 150); }
+    T('S = {3, 5, 8, 9}（示意）', 'say', 3.7, 4.6);
+    cap('S 非空 ⇒ S 有最小元素', 'least element');
+  },
+  async (tok, S) => { // 44.0
+    S.p = T('0 ∈ S？', 'ptr', S.N.X(0), 3.5);
+    glow(S.N.ms[0], NG);
+    S.r = T('不在，下一個', 'bad', 3.7, 1.0);
+    cap('從 0 開始問：0 在 S 裡嗎？', '不在 → 問 1');
+  },
+  async (tok, S) => { // 51.0
+    for (const v of [1, 2]) {
+      glow(S.N.ms[v - 1], '#000000'); glow(S.N.ms[v], NG);
+      setT(S.p, v + ' ∈ S？'); S.p.position.x = S.N.X(v);
+      await wt(tok, 500);
+    }
+    cap('1 不在、2 也不在', '一個一個往上問');
+  },
+  async (tok, S) => { // 59.0
+    glow(S.N.ms[2], '#000000'); glow(S.N.ms[3], OKG);
+    setT(S.p, '3 ∈ S ✓'); S.p.position.x = S.N.X(3); cls(S.p, 'ptr alt');
+    setT(S.r, '最小元素 = 3'); cls(S.r, 'good');
+    S.B.add('S 非空 → 總會停下來', 'good');
+    cap('S 不是空的，總會碰到第一個', '最小元素 = 3');
+  },
+]);
+
+scene('wo-mit-cond', '條件不能少：有理數、負整數', [
+  async (tok, S) => { // 69.5
+    S.B = board(-6.6, 6.4);
+    S.B.add('條件：非空、非負、整數');
+    S.c = ['非空', '非負', '整數'].map((t, i) => cube(t, FC.green, [1.3, 0.6, 0.5], 1.6 + i * 1.8, 5.6, 0, 1));
+    cap('良序原理有三個條件', '少一個會怎樣？');
+  },
+  async (tok, S) => { // 84.0
+    tint(S.c[2], FC.red); setT(S.c[2].userData.lbl, '有理數');
+    S.B.add('換成非負有理數？');
+    cap('把「整數」換成「有理數」', '每個非空子集都有最小元素嗎？');
+  },
+  async (tok, S) => { // 93.5
+    S.ax = K.line(0.4, 3.4, 6.6, 3.4, 0, '#8a7a60');
+    T('0', 'idx', 0.6, 2.8);
+    S.d = [];
+    for (let n = 1; n <= 9; n++) { S.d.push(cube('', FC.orange, [0.16, 0.36, 0.16], 0.6 + 6 / n, 3.4, 0)); await wt(tok, 90); }
+    T('1', 'idx', 6.6, 2.8); T('1/2', 'idx', 3.6, 2.8); T('1/3', 'idx', 2.6, 2.8);
+    T('{1, 1/2, 1/3, 1/4, …}', 'say', 3.6, 4.4);
+    cap('看集合 {1, 1/2, 1/3, …}', '一直往 0 靠近');
+  },
+  async (tok, S) => { // 102.5
+    S.d.forEach((m) => glow(m, NG));
+    T('1/n 後面還有更小的 1/(n+1)', 'bad', 3.6, 2.0);
+    S.B.add('沒有最小元素（0 不在裡面）', 'bad');
+    cap('每個 1/n 都有更小的 1/(n+1)', '0 又不在集合裡 → 沒有最小');
+  },
+  async (tok, S) => { // 111.0
+    tint(S.c[2], FC.green); setT(S.c[2].userData.lbl, '整數'); tint(S.c[1], FC.red); setT(S.c[1].userData.lbl, '可為負');
+    S.N = nline([-5, -4, -3, -2, -1, 0, 1, 2, 3], 0.6, 0.75, 1.0, FC.blue);
+    S.B.add('換成所有整數？');
+    cap('再把「非負」拿掉：所有整數', '有最小整數嗎？');
+  },
+  async (tok, S) => { // 119.0
+    for (let i = 4; i >= 0; i--) { glow(S.N.ms[i], NG); await wt(tok, 160); }
+    arrow(V3(0.8, -0.2, 0), V3(-0.4, -0.2, 0), 0x7a1010);
+    S.B.add('−1、−2、… 沒有最小整數', 'bad');
+    S.B.add('「非負」「整數」都不能少', 'good');
+    cap('−1 不是最小、−2 也不是…', '兩個條件都需要');
+  },
+]);
+
+scene('wo-mit-use', '最小值一定存在：年齡、硬幣與 ℕ', [
+  async (tok, S) => { // 125.5
+    S.B = board(-6.6, 6.4);
+    S.B.add('最年輕的 MIT 畢業生幾歲？');
+    S.B.add('神經元最少的動物？');
+    cube('年齡 ∈ ℕ', FC.blue, [1.9, 0.6, 0.5], 2.2, 5.4, 0, 1);
+    cube('神經元數 ∈ ℕ', FC.blue, [2.3, 0.6, 0.5], 5.0, 5.4, 0, 1);
+    T('答案不知道，但一定存在', 'good', 3.6, 4.5);
+    cap('答案不知道，但一定存在', '因為都是非負整數');
+  },
+  async (tok, S) => { // 150.5
+    S.B.add('湊出 $1.17 最少幾枚硬幣？');
+    ['25¢', '10¢', '5¢', '1¢'].forEach((t, i) => cube(t, FC.gold, [0.9, 0.9, 0.25], 1.6 + i * 1.3, 3.2, 0, 1.2));
+    cap('$1.17 最少要幾枚硬幣？', '不用擔心「最少」存不存在');
+  },
+  async (tok, S) => { // 156.0
+    T('117 枚 1¢ 一定湊得出 → 集合非空', 'say', 3.6, 2.1);
+    T('良序 ⇒ 最少枚數存在', 'good', 3.6, 1.3);
+    S.B.add('{可行的枚數} ≠ ∅ → 有最小', 'good');
+    cap('可行的枚數組成非空集合', '良序原理保證有最小值');
+  },
+  async (tok, S) => { // 164.5
+    S.B.add('之後「數」= 非負整數');
+    S.n = T('ℕ = {0, 1, 2, 3, …}', 'say', 3.6, 0.3);
+    cap('記號 ℕ：非負整數', '有雙線的 N');
+  },
+  async (tok, S) => { // 185.0
+    S.B.add('0 ∈ ℕ（本課、Rosen）', 'good');
+    cls(S.n, 'good');
+    cap('0 算不算自然數？書不同', '這門課的 ℕ 包含 0');
+  },
+]);
+
+scene('wo-mit-lowest', '良序原理證明：分數都能化成最簡分數', [
+  async (tok, S) => { // 199.5
+    S.B = board(-6.6, 6.4);
+    S.B.add('回顧：√2 是無理數');
+    cap('√2 無理數的證明裡藏著良序原理', '');
+  },
+  async (tok, S) => { // 211.5
+    S.B.add('假設 √2 = m/n（m, n 正整數）');
+    S.m = cube('m', FC.blue, [0.9, 0.7, 0.5], 2.4, 4.6, 0, 1);
+    K.line(1.8, 4.0, 3.0, 4.0, 0, '#6e5f49');
+    S.n = cube('n', FC.blue, [0.9, 0.7, 0.5], 2.4, 3.4, 0, 1);
+    T('= √2', 'say', 3.8, 4.0);
+    cap('假設 √2 = m/n', 'm、n 是正整數');
+  },
+  async (tok, S) => { // 226.0
+    S.B.add('可以假設已是最簡分數？為什麼？');
+    cap('「可以化成最簡分數」', '為什麼一定可以？');
+  },
+  async (tok, S) => { // 264.0
+    S.B.add('分子集合 C ≠ ∅ → 取最小的 m');
+    T('C = {m : √2 = m/n}', 'say', 3.6, 2.5);
+    S.cs = ['m', '·', '·', '·'].map((t, i) => cube(t === 'm' ? 'm 最小' : '', i ? FC.sand : FC.green, [i ? 0.6 : 1.3, 0.6, 0.5], 1.6 + i * 1.3 + (i ? 0.4 : 0), 1.5, 0, 1));
+    cap('所有可行分子組成非空集合', '良序：取最小的 m');
+  },
+  async (tok, S) => { // 284.0
+    S.B.add('假設 c > 1 同時整除 m、n');
+    glow(S.m, HL); glow(S.n, HL);
+    T('c | m，c | n', 'ptr', 2.4, 5.5);
+    cap('假設 m、n 有公因數 c > 1', '');
+  },
+  async (tok, S) => { // 293.0
+    S.m2 = cube('m/c', FC.purple, [1.0, 0.7, 0.5], 5.6, 4.6, 0, 1);
+    K.line(5.0, 4.0, 6.2, 4.0, 0, '#6e5f49');
+    cube('n/c', FC.purple, [1.0, 0.7, 0.5], 5.6, 3.4, 0, 1);
+    T('也 = √2', 'say', 6.6, 4.0);
+    cap('m/c、n/c 都是整數', '(m/c)/(n/c) 還是 √2');
+  },
+  async (tok, S) => { // 303.0
+    glow(S.m2, NG);
+    S.B.add('m/c < m：比最小還小，矛盾', 'bad');
+    cap('m/c 比 m 小', '和「m 最小」矛盾');
+  },
+  async (tok, S) => { // 312.0
+    glow(S.m, OKG); glow(S.n, OKG);
+    S.B.add('m、n 沒有公因數 → 最簡分數', 'good');
+    cap('所以 m/n 是最簡分數', '任何分數都適用');
+  },
+]);
+  }
   // @@FRAGMENTS@@
   FRAG.forEach(([id, title, play]) => { scenes[id] = { title, play }; });
 

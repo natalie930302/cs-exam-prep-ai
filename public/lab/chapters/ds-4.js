@@ -8907,6 +8907,7 @@ FRAG.push(['bstlin-skip-15', 'Skip list：特快車 → 快車 → 普通車，�
   say('要去某個地方：先坐特快車', '接近了換快車，再接近換普通車');
   await step(tok);                                   // 37:38 找 15：特快車到 9，還在後面
   const r = rider('15', s.at(2, 'H'));
+  r.val.position.set(0.55, 0.55, 0); // beside its head: above it, the label would sit on the node of the row above
   await hopTo(tok, r, s.at(2, 9), 600); glow(s.get(2, 9), GOLD);
   say('search 15：特快車先到 9', '15 > 9，還在後面');
   await step(tok);                                   // 37:46 跟 20 比：過頭，往下一層
