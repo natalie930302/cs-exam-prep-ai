@@ -735,8 +735,8 @@ export default function (ctx) {
     const P = [
       { q: 'Matrix-chain 的 DP 時間與空間複雜度？', opts: ['Θ(n³) 時間、Θ(n²) 空間', 'Θ(n²) 時間、Θ(n) 空間', 'Θ(2ⁿ) 時間', 'Θ(n log n) 時間'], ans: 'Θ(n³) 時間、Θ(n²) 空間', why: 'Θ(n²) 格，每格試 O(n) 個 k。' },
       { q: 'm[i][j] 的遞迴式是？', opts: ['min_k (m[i][k] + m[k+1][j] + pᵢ₋₁pₖpⱼ)', 'min_k (m[i][k] + m[k][j] + pᵢpₖpⱼ)', 'max_k (m[i][k] + m[k+1][j])', 'm[i][j−1] + pᵢ₋₁pⱼ₋₁pⱼ'], ans: 'min_k (m[i][k] + m[k+1][j] + pᵢ₋₁pₖpⱼ)', why: 'Aᵢ…Aₖ 是 pᵢ₋₁×pₖ、Aₖ₊₁…Aⱼ 是 pₖ×pⱼ，最後一次相乘成本 pᵢ₋₁pₖpⱼ。' },
-      { q: 'Matrix-chain 填表的順序？', opts: ['依鏈長 l = 2…n 由短到長（一條一條對角線）', '一列一列由上到下', '一行一行由左到右', '任意順序都可以'], ans: '依鏈長 l = 2…n 由短到長（一條一條對角線）', why: 'm[i][j] 要用到 m[i][k] 與 m[k+1][j]，它們的鏈都比較短。' },
-      { q: 'Optimal BST 中，以 k_r 為 root 時 e[i][j] 為什麼要加 w(i,j)？', opts: ['左右子樹每個節點都深了一層，期望成本各多一次機率總和', '因為要加上 root 自己的機率而已', '為了把機率正規化', 'w 是 root 的深度'], ans: '左右子樹每個節點都深了一層，期望成本各多一次機率總和', why: 'e[i][j] = p_r + (e[i][r−1] + w(i,r−1)) + (e[r+1][j] + w(r+1,j)) = e[i][r−1] + e[r+1][j] + w(i,j)。' },
+      { q: 'Matrix-chain 填表的順序？', opts: ['依鏈長 l 由短到長', '一列一列：i = 1, 2, … 由上到下', '依切點 k 由小到大', '任意順序都可以'], ans: '依鏈長 l 由短到長', why: 'm[i][j] 要用到 m[i][k] 與 m[k+1][j]，它們的鏈都比較短；第 1 列先算會用到還沒算的 m[2][j]。' },
+      { q: 'Optimal BST 中，以 k_r 為 root 時 e[i][j] 為什麼要加 w(i,j)？', opts: ['左右子樹的節點都深一層，各多比一次', '只是要加上 root 自己被搜尋的機率', '為了把所有機率正規化成總和 1', 'w(i,j) 代表 root 在樹裡的深度'], ans: '左右子樹的節點都深一層，各多比一次', why: 'e[i][j] = p_r + (e[i][r−1] + w(i,r−1)) + (e[r+1][j] + w(r+1,j)) = e[i][r−1] + e[r+1][j] + w(i,j)。' },
       { q: 'CLRS 例子（p = .15 .10 .05 .10 .20，q = .05 .10 .05 .05 .05 .10）最佳 BST 的期望搜尋成本？', opts: ['2.75', '2.80', '3.00', '2.35'], ans: '2.75', why: 'root = k2，右子樹 root = k5；那棵看起來平衡的樹 (a) 是 2.80。' },
       { q: '最佳 BST 的 root 一定是機率最大的 key 嗎？', opts: ['不一定', '一定是', '一定是中位數', '一定是最小的 key'], ans: '不一定', why: 'CLRS 例子機率最大的是 k5（0.20），但最佳 root 是 k2。' },
       { q: '硬幣 1、3、4 湊 6 元，greedy（先拿大面額）會用幾枚？最佳呢？', opts: ['3 枚；最佳 2 枚', '2 枚；最佳 2 枚', '3 枚；最佳 3 枚', '4 枚；最佳 2 枚'], ans: '3 枚；最佳 2 枚', why: 'greedy：4+1+1；最佳：3+3。這組面額 greedy 不正確，要用 DP。' },
@@ -1211,7 +1211,7 @@ FRAG.push(['dp4bari-mc-count', '四個矩陣 5 種括法：Catalan 數', async (
     },
     ask: () => { sb('先找出最省力的括法'); say('有哪些相乘的方法？', '真的乘之前先知道哪種最省'); },
     p1: () => { addP(); say('A1 乘上 A2(A3A4) 的結果', ALL4[0]); },
-    p2: () => { addP(); say('A3 先乘 A2，再乘 A4，最後 A1', ALL4[1]); },
+    p2: () => { addP(); say('A2A3 先乘，再乘 A4，最後 A1', ALL4[1]); },
     p34: () => { addP(); addP(); say('(A1A2)(A3A4)，或 A4 留到最後', ALL4[2] + '、' + ALL4[3]); },
     p5: () => { addP(); say('從左一路乘到右', ALL4[4]); },
     five: () => { tag('共 5 種', 'good', -3.0, 2.6); gd.mood('calm'); say('4 個矩陣有 5 種括法', ''); },
@@ -1496,7 +1496,7 @@ FRAG.push(['dp4bari-mc-time', '填表時間：n² 格 × 每格 ≤ n 個 k', as
       say('只填半張表', n + ' + … + 1 = n(n+1)/2 格');
       for (let l = 1; l <= n; l++) {
         for (let i = 0; i + l - 1 < n; i++) { g.set(i, i + l - 1, '', l === 1 ? GRAY : TEAL, 1.2); cnt++; }
-        txt(cl, cnt + ' 格 = ' + n + '·' + (n + 1) + '/2'); await beat(tok, 450);
+        txt(cl, cnt + ' 格' + (l === n ? ' = ' + n + '·' + (n + 1) + '/2' : '')); await beat(tok, 450);
       }
     },
     diag0: () => { for (let i = 0; i < n; i++) glow(g.get(i, i), GOLD); sb('對角線都是 0：算不算都行'); say('對角線都是 0', 'n(n+1)/2 或 n(n−1)/2 都可以'); },
@@ -3842,11 +3842,13 @@ FRAG.push(['dp4mit-tetris-skyline', 'Tetris 子問題：suffix + skyline', async
   tag('只在乎每一欄多高', 'note', 3.9, 4.3);
   say('從頂端落下、又不消列', '只在乎每一欄疊多高');
   await step(tok);                                   // 2331.5 the skyline of the board
-  H.forEach((h, c) => line(TX(c) - 0.3, h * TS, TX(c) + 0.3, h * TS, 0.3, Q.gold));
+  // column 2 is still empty here: its skyline rises to 2 only after the next piece leaves a hole under it
+  const sky = H.map((h, c) => (c === 2 ? null : line(TX(c) - 0.3, h * TS, TX(c) + 0.3, h * TS, 0.3, Q.gold)));
   top('skyline：每欄的高度');
   say('這叫盤面的 skyline（天際線）');
   await step(tok);                                   // 2338.0 there might be holes
   cells.push(qCell(2, 1, Q.teal, 3));
+  sky[2] = line(TX(2) - 0.3, H[2] * TS, TX(2) + 0.3, H[2] * TS, 0.3, Q.gold);
   await beat(tok, 500);
   hole = tag('洞', 'bad', TX(2), TY(0));
   say('實際上盤面可能有洞');
@@ -4829,8 +4831,8 @@ FRAG.push(['dp4mit-ddr-dagsp', 'DDR：source、sink 與 DAG 最短路徑', async
   glow(t, GOLD);
   say('答案：都不用', '這是 DAG → 照拓撲順序 relax 一次就好');
   await step(tok);                                   // 3176.8 every DP is a DAG shortest path
-  top('DP ⟷ DAG 最短路徑');
-  say('每次做 DP', '其實都是在跑 DAG 最短路徑');
+  top('DP 常常就是 DAG 最短路徑');
+  say('助教：做 DP 就是在跑 DAG 最短路徑', '大多如此；但 L21 的括號 DP 就不是');
 }]);
 
 // ════════════════ ocZMDMZwhCY（MIT 6.006 L21：DP III） ════════════════
@@ -5554,7 +5556,7 @@ FRAG.push(['dp4mit-l21-knap-setup', 'Knapsack：選物品，大小 ≤ S、價�
   tag('S = 7', 'ptr alt', 5.0, 2.9);
   say('背包總大小 S');
   await step(tok);                                   // 2685.1 choose a subset of the items
-  for (const i of [0, 1, 3]) glow(its[i], GOLD);
+  for (const i of [1, 2, 3]) glow(its[i], GOLD);   // 2 + 4 + 1 = 7 ≤ S, value 3 + 5 + 2 = 10 (the best subset)
   say('選一部分物品帶走');
   await step(tok);                                   // 2693.2 total size ≤ S, maximize sum of values
   tag('Σ sᵢ ≤ S，讓 Σ vᵢ 最大', 'good', -0.6, 2.6);

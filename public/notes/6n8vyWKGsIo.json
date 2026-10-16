@@ -132,7 +132,7 @@
     "再用 network flow 的 Ford-Fulkerson 演算法找到解。",
     "找到解之後，再翻譯回 bipartite matching 的 solution 長相，就結束了。",
     "這代表：新問題可以被 efficient 解掉，而且用的是舊的、已知的演算法。",
-    "同時也隱含：新問題的難度比較低，沒有 network flow 那麼難（network flow 比較強，能解很多事）。",
+    "同時也隱含：新問題不會比 network flow 難（頂多一樣難；network flow 比較強，能解很多事）。",
     "實際上文獻裡，bipartite matching 有自己的演算法，複雜度比 network flow 再低一些，也印證了這點。"
    ]
   },

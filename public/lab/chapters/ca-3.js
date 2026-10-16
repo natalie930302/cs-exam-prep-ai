@@ -463,7 +463,7 @@ export default function (ctx) {
       await beat(tok, 1600);
       kill(v); [s1, cl, s2].forEach((m) => glow(m, null));
     }
-    say('同一個 cycle 可以「讀舊值、寫新值」', '例：add $t0, $t0, 1 讀的是舊的 $t0');
+    say('同一個 cycle 可以「讀舊值、寫新值」', '例：addi $t0, $t0, 1 讀的是舊的 $t0');
     await beat(tok, 3000);
   }
   async function scBuild(tok) {

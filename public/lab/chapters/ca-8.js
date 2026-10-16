@@ -1176,7 +1176,7 @@ scene('cpar-snoop', 'Snooping：write update vs write invalidate（× write-thro
   },
   async (tok, S) => { // @623.1
     gone(S.r);
-    S.grid = [['update + write-through', -2.6, 3.95], ['update + write-back', 2.6, 3.95], ['invalidate + write-through', -2.6, 3.4], ['invalidate + write-back', 2.6, 3.4]].map(([t, x, y]) => hot(t, x, y));
+    S.grid = [['update + write-through', -4.4, 1.95], ['update + write-back', 4.4, 1.95], ['invalidate + write-through', -4.4, 1.35], ['invalidate + write-back', 4.4, 1.35]].map(([t, x, y]) => hot(t, x, y));
     S.r = ok(S.grid.length === 2 * 2, 0, 0.95, '2 種做法 × 2 種寫入策略 = 4 種 ✓');
     txt(S.n, 'snooping 共四種組合');
     cap('snooping 共四種', 'update／invalidate × WT／WB');

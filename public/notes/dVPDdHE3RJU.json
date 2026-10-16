@@ -25,7 +25,7 @@
     68.63
    ],
    "explain": [
-    "這部影片用 substitution method（代換法，也叫迭代法）解一個遞迴式。這是第 3 題。",
+    "這部影片用 substitution method 解一個遞迴式（講者的「代換法」是一路往回代，課本多叫 iteration method 迭代法；CLRS 的 substitution method 則是「先猜答案、再用數學歸納法證明」，考試要分清楚）。這是第 3 題。",
     "題目：求演算法 REC(n) 的 time complexity（時間複雜度，也就是「輸入大小是 n 時，大約要做多少步」）。左邊是它的程式。",
     "仔細看：REC(n) 在自己的身體裡又呼叫了 REC(n − 1)，所以是 recursive algorithm（遞迴演算法）。",
     "遞迴演算法的時間怎麼算？第一步：寫出「時間」的 recurrence relation（遞迴式）。",

@@ -525,7 +525,7 @@ export default function (ctx) {
     if (t === 0) { const n = 6 + rnd(10), k = 2 + rnd(5); if ((n * k) % 2) return genQ(); const ans = n * k / 2; return { q: '一個圖有 ' + n + ' 個頂點、每個頂點的度數都是 ' + k + '，共有幾條邊？', opts: uniq(ans, [n * k, n + k, n * (n - 1) / 2]), ans: String(ans), why: '握手定理：Σdeg = 2|E| → ' + n + '×' + k + ' = 2|E| → |E| = ' + ans + '。' }; }
     if (t === 1) {
       const seqs = [['3,3,3,3,2', false], ['3,3,2,2,2', true], ['4,3,3,2,2,1', false], ['3,3,3,3,3,3', true], ['5,3,3,3', true], ['2,2,2,1', false]];
-      const [s, ok] = seqs[rnd(seqs.length)]; const sum = s.split(',').map(Number).reduce((a, b) => a + b, 0);
+      const [s] = seqs[rnd(seqs.length)]; const sum = s.split(',').map(Number).reduce((a, b) => a + b, 0), ok = sum % 2 === 0;
       return { q: '度數序列 (' + s + ') 能不能是某個圖（允許重邊）的度數？看奇偶就好。', opts: ['可以：總和為偶數', '不行：總和為奇數', '不行：一定要每點度數相同', '可以：只要最大度數 < 頂點數'], ans: ok ? '可以：總和為偶數' : '不行：總和為奇數', why: '總和 = ' + sum + '；握手定理要求總和 = 2|E| 為偶數，奇數度頂點必須有偶數個。' };
     }
     if (t === 2) { const n = 3 + rnd(8); const ans = n * (n - 1) / 2; return { q: '完全圖 K' + n + ' 有幾條邊？', opts: uniq(ans, [n * (n - 1), n, n * n]), ans: String(ans), why: '任兩點都連：C(' + n + ',2) = ' + ans + '。' }; }
@@ -540,7 +540,7 @@ export default function (ctx) {
       const [g, a, why] = G[rnd(G.length)];
       return { q: g + ' 有沒有 Hamilton 迴路？', opts: ['有', '沒有', '要看畫法', '和 Euler 迴路一樣用奇點判斷'], ans: a, why };
     }
-    if (t === 6) { const v = 5 + rnd(10), f = 3 + rnd(8), e = v + f - 2; return { q: '一個連通平面圖有 ' + v + ' 個頂點、' + f + ' 個面（含外面），有幾條邊？', opts: uniq(e, [v + f, v + f + 2, v * f / 2 | 0]), ans: String(e), why: 'Euler 公式 v − e + f = 2 → e = v + f − 2 = ' + e + '。' }; }
+    if (t === 6) { const v = 5 + rnd(10), f = 3 + rnd(Math.min(8, 2 * v - 6)), e = v + f - 2; /* f ≤ 2v − 4 keeps e ≤ 3v − 6 */ return { q: '一個連通平面圖有 ' + v + ' 個頂點、' + f + ' 個面（含外面），有幾條邊？', opts: uniq(e, [v + f, v + f + 2, v * f / 2 | 0]), ans: String(e), why: 'Euler 公式 v − e + f = 2 → e = v + f − 2 = ' + e + '。' }; }
     if (t === 7) {
       const G = [['K₅', '不是平面圖', 'e = 10 > 3v − 6 = 9'], ['K₃,₃', '不是平面圖', '沒有三角形 → e ≤ 2v − 4 = 8，但 e = 9'], ['K₄', '是平面圖', '把一點拉到三角形裡面就沒交叉'], ['Q₃', '是平面圖', '外框大正方形、內框小正方形'], ['K₂,₅', '是平面圖', 'e = 10 ≤ 2v − 4 = 10，而且畫得出來']];
       const [g, a, why] = G[rnd(G.length)];
@@ -1228,7 +1228,7 @@ scene('gr-18b-petersen', 'Petersen graph：10 點、15 邊、每點 3 度', [
   async (tok, S) => { T('|V| = ' + S.G.V.length, 'ptr alt', -3.3, 3.6, -1.5); cap('有幾個端點？' + S.G.V.length + ' 個', ''); },
   async (tok, S) => { T('|E| = 5 + 5 + 5 = ' + S.G.E.length, 'ptr alt', -3.3, 3.0, -1.5); [0, 1, 2, 3, 4].forEach((k) => paintE(S.G.E[k], COL.blue, true)); [5, 6, 7, 8, 9].forEach((k) => paintE(S.G.E[k], COL.gold, true)); [10, 11, 12, 13, 14].forEach((k) => paintE(S.G.E[k], COL.pink, true)); cap('邊：外 5、內 5、中間 5', '共 ' + S.G.E.length + ' 條'); },
   async (tok, S) => { showDeg(S.G); S.B.add('每個端點都連 3 條邊（3 度）'); cap('每個端點都有 3 條邊相連', '非常對稱'); },
-  async (tok, S) => { S.G.E.forEach((e) => paintE(e, COL.edge, false)); plainLab(S.G); T('G₂', 'ptr', -3.3, 0.1, 2.6); cap('這是其中一個圖', ''); },
+  async (tok, S) => { S.G.E.forEach((e) => paintE(e, COL.edge, false)); plainLab(S.G); T('G₁', 'ptr', -3.3, 0.1, 2.6); cap('這是其中一個圖', ''); },
   async (tok, S) => {
     S.H = petH(3.4, '#f2c6da'); petEdgesH().forEach(([p, q]) => ge(S.H, p, q)); DEMO(3.4, 0.4, 3.2); showDeg(S.H);
     cap('另一個圖：也是 ' + S.H.V.length + ' 點、' + S.H.E.length + ' 邊', '每個端點也是 3 度');
@@ -1658,8 +1658,8 @@ scene('gr-l22-hasse', '從關係圖化簡成 Hasse diagram', [
   async (tok, S) => { S.B.add('Hasse diagram', 'good'); cap('最後這個就是 Hasse diagram', ''); },
 ], CAMW);
 
-const HX = [['2', -0.4, 0.8], ['3', 3.4, 0.8], ['4', -1.6, 3.6], ['10', 0.4, 3.6], ['6', 2.0, 3.6], ['9', 4.2, 3.6]];
-const HX0 = [['2', -0.8, 1.0], ['3', 1.4, 1.0], ['4', 3.6, 1.0], ['6', -0.8, 3.2], ['9', 1.4, 3.2], ['10', 3.6, 3.2]];
+const HX = [['2', 1.4, 0.8], ['3', 4.6, 0.8], ['4', 0.4, 3.6], ['6', 2.2, 3.6], ['10', 4.0, 3.6], ['9', 5.8, 3.6]];
+const HX0 = [['2', 1.0, 1.0], ['3', 3.2, 1.0], ['4', 5.4, 1.0], ['6', 1.0, 3.2], ['9', 3.2, 3.2], ['10', 5.4, 3.2]];
 scene('gr-l22-hasse-ex', '例：A = {2,3,4,6,9,10} 的整除 Hasse diagram', [
   async (tok, S) => { S.B = board(-6.8, 5.0, 0.5, -2.6, 7); S.B.add('A = {2, 3, 4, 6, 9, 10}，整除'); cap('例：A = {2, 3, 4, 6, 9, 10}', '關係是整除'); },
   async (tok, S) => { S.B.add('先寫出所有有關係的配對'); cap('第一件事：寫出所有配對', '哪些整除？'); },
@@ -1672,16 +1672,16 @@ scene('gr-l22-hasse-ex', '例：A = {2,3,4,6,9,10} 的整除 Hasse diagram', [
   async (tok, S) => { for (const q of ['4', '6', '10']) { ge(S.G, '2', q, { dir: true }); await wt(tok, 250); } cap('2 ≼ 4、2 ≼ 6、2 ≼ 10', '這裡 ≼ 就是整除'); },
   async (tok, S) => { for (const q of ['6', '9']) { ge(S.G, '3', q, { dir: true }); await wt(tok, 250); } cap('3 ≼ 6、3 ≼ 9', ''); },
   async (tok, S) => { S.loops.forEach((e) => removeEdge(S.G, e)); S.B.add('化簡①：擦掉圈'); cap('開始化簡：先擦掉圈', ''); },
-  async (tok, S) => { S.B.add('化簡②：沒有遞移邊（沒有 a≺b≺c）'); cap('再擦遞移邊', '2→10、4→6、3→6…沒有可以推出來的：這關自動過'); },
+  async (tok, S) => { S.B.add('化簡②：沒有遞移邊（沒有 a≺b≺c）'); cap('再擦遞移邊：沒有 a→b→c 這種兩段的鏈', '沒有邊是推出來的：這關自動過'); },
   async (tok, S) => {
     const t = S.G.V.map((v) => { const h = HX.find(([n]) => n === v.name); return V3(h[1], h[2], 0); });
     await mv(tok, S.G, t, 1500); S.B.add('化簡③：2、3 在下面，大的放上面'); cap('像抓粽子：2、3 寫在底下', '比它們大的 4、6、9、10 放上面');
   },
   async (tok, S) => { const ed = S.G.E.map((e) => [S.G.V[e.u].name, S.G.V[e.v].name]); S.G.E.slice().forEach((e) => removeEdge(S.G, e)); ed.forEach(([p, q]) => ge(S.G, p, q)); S.B.add('化簡④：箭頭不要'); cap('箭頭都由下往上', '所以箭頭也不要'); },
-  async (tok, S) => { paintE(findE(S.G, '2', '6'), COL.gold, true); paintE(findE(S.G, '3', '6'), COL.gold, true); cap('線可以交叉嗎？', '沒關係，不會被誤解'); },
+  async (tok, S) => { paintE(findE(S.G, '2', '10'), COL.gold, true); paintE(findE(S.G, '3', '6'), COL.gold, true); cap('線可以交叉嗎？（2–10 和 3–6 交叉）', '沒關係，不會被誤解'); },
   async (tok, S) => { S.G.E.forEach((e) => paintE(e, COL.edge, false)); S.B.add('Hasse diagram 完成', 'good'); cap('考試可能的考題之一', '照步驟做就好'); },
-  async (tok, S) => { T('上面比較大', 'ptr', 1.4, 4.6, 0); cap('在上面的比較大', '線把小的牽上去'); },
-  async (tok, S) => { vglow(S.G, '4', RED); vglow(S.G, '9', RED); T('4、9 沒有線連：不能比', 'bad', 1.4, 2.3, 1.0); cap('沒有上下線連著的', '例如 4 和 9：不能比大小'); },
+  async (tok, S) => { T('上面比較大', 'ptr', 3.1, 4.6, 0); cap('在上面的比較大', '線把小的牽上去'); },
+  async (tok, S) => { vglow(S.G, '4', RED); vglow(S.G, '9', RED); T('4、9 沒有線連：不能比', 'bad', 3.1, 2.3, 1.0); cap('沒有上下線連著的', '例如 4 和 9：不能比大小'); },
 ], CAMW);
 
 const MX = [['1', -1.4, 0.7], ['2', 1.0, 0.7], ['3', 3.4, 0.7], ['4', -0.2, 2.5], ['5', 2.2, 2.5], ['6', -1.2, 4.3], ['7', 1.2, 4.3]];
@@ -2051,7 +2051,7 @@ scene('gr-l23-mat', 'Adjacency matrix、incidence matrix、Aᵏ 數路徑', [
   async (tok, S) => { S.Mx.kill(); lab.clear(); S.B = board(-6.8, 5.0, 0.5, -2.6, 3); S.B.add('incidence matrix（關聯矩陣）'); S.G = gnew([['v1', 1.0, -1.6], ['v2', 3.4, -2.0], ['v3', 2.0, 0.6], ['v4', 5.2, -0.4], ['v5', -0.2, 2.6], ['v6', 4.0, 2.4]]); DEMO(3.0, 0.3, 3.3); cap('另一種：incidence matrix', '物件不一樣'); },
   async (tok, S) => { cap('這個圖有 ' + S.G.V.length + ' 個節點', 'v1～v6'); },
   async (tok, S) => { S.IE = [['v1', 'v2'], ['v1', 'v3'], ['v2', 'v4'], ['v3', 'v5'], ['v3', 'v6']]; S.IE.forEach(([p, q], k) => eTag(ge(S.G, p, q), 'e' + (k + 1))); cap('5 條邊', '（e3～e5 的位置是示意）'); },
-  async (tok, S) => { S.H = M('     v1 v2 v3 v4 v5 v6', -6.6, 2.55, -2.6, 'say'); cap('矩陣 5 列 6 行', '列是邊、行是節點'); },
+  async (tok, S) => { S.H = M('     v1 v2 v3 v4 v5 v6', -6.6, 2.55, -2.6, 'say'); T('Rosen 課本是轉置：列是節點、行是邊', 'idx', -3.6, 3.2, -2.6); cap('矩陣 5 列 6 行', '列是邊、行是節點（老師的寫法）'); },
   async (tok, S) => { S.IE.forEach(([p, q], k) => { if (k) return; M('e' + (k + 1) + ' │ ' + S.G.V.map((v) => (v.name === p || v.name === q ? ' 1' : ' 0')).join(' '), -6.6, 1.9 - k * 0.62, -2.6, 'note'); }); paintE(S.G.E[0], COL.gold, true); cap('e1 從 v1 連到 v2', 'v1、v2 那兩格是 1'); },
   async (tok, S) => { S.B.add('每一列恰好兩個 1', 'good'); cap('特色：每一列只有兩個 1', '一條邊兩個端點'); },
   async (tok, S) => { S.IE.forEach(([p, q], k) => { if (!k) return; M('e' + (k + 1) + ' │ ' + S.G.V.map((v) => (v.name === p || v.name === q ? ' 1' : ' 0')).join(' '), -6.6, 1.9 - k * 0.62, -2.6, k === 1 ? 'note' : 'say'); }); paintE(S.G.E[0], COL.edge, false); paintE(S.G.E[1], COL.gold, true); cap('e2 從 v1 連到 v3', ''); },
@@ -2105,7 +2105,7 @@ scene('gr-l23-inv', '怎麼判斷不同構：節點數、邊數、degree', [
   async (tok, S) => { S.G1 = gnew(IA, { color: '#bcd3ee' }); ges(S.G1, IAE); S.G2 = gnew(IB, { color: '#f2c6da' }); ges(S.G2, IAE); DEMO(0, 0.3, 3.2); cap('例一：兩個圖長得不太一樣', '要證明一樣就給對應'); },
   async (tok, S) => { showDeg(S.G1); showDeg(S.G2); ['c', 'd'].forEach((n) => { vcol(S.G1, n, COL.orange); vcol(S.G2, n, COL.orange); }); cap('看 degree 3 的點', '兩邊都只有兩個，要互相對應'); },
   async (tok, S) => { ['b', 'e'].forEach((n) => { vcol(S.G1, n, COL.purple); vcol(S.G2, n, COL.purple); }); ['a', 'f'].forEach((n) => { vcol(S.G1, n, COL.green); vcol(S.G2, n, COL.green); }); cap('degree 4 的兩個、degree 2 的兩個', '也各自對應'); },
-  async (tok, S) => { cap('a 對 a、b 對 b、d 對 d、e 對 e、f 對 f', '（名字相同的對應）'); T('同名對應', 'ptr', 0, 2.6, -2.4); },
+  async (tok, S) => { cap('a→a、b→b、c→c、d→d、e→e、f→f', '（名字相同的對應）'); T('同名對應', 'ptr', 0, 2.6, -2.4); },
   async (tok, S) => { await mv(tok, S.G2, S.G1.V.map((v) => v.p.clone().add(V3(6.6, 0, 0))), 700); T('翻一翻：一模一樣 ✔', 'good', 3.0, 1.6, 2.8); cap('雖然長得不一樣', '對應之後一模一樣'); },
   async (tok, S) => { lab.clear(); S.B = board(-6.8, 5.2, 0.48, -3.4, 4); S.P = gnew([['a', -5.4, -1.4], ['b', -2.4, -1.4], ['c', -1.2, 1.0], ['d', -3.9, 2.4], ['e', -5.8, 0.8]], { color: '#bcd3ee' }); ges(S.P, 'ab bc cd de ea ac bd'); S.Q = gnew([['p', 1.8, -1.4], ['q', 5.4, -1.4], ['r', 1.4, 1.6], ['s', 3.6, 2.2], ['t', 5.8, 1.6]], { color: '#f2c6da' }); ges(S.Q, 'pq pr ps pt qr qs qt'); DEMO(0, 0.3, 3.2); cap('例二：這兩個', ''); },
   async (tok, S) => { T('5 點、' + S.P.E.length + ' 邊', 'ptr', -3.6, 3.4, -2.4); T('5 點、' + S.Q.E.length + ' 邊', 'ptr alt', 3.6, 3.4, -2.4); cap('都是 5 個節點', '邊數 ' + S.P.E.length + ' 和 ' + S.Q.E.length + '：一樣'); },

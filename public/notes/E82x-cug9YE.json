@@ -255,7 +255,7 @@
     "真正要傳的時候，DMA 先透過 memory bus 要一個 memory cycle（使用 bus 的一小段時間），這個請求叫 bus request。",
     "請求被允許（bus grant）後，DMA 就直接把第一個 word 寫進 memory 的 A000，暫存器裡的位址往後移一格、剩餘數量減 1。",
     "這時 CPU 如果也想讀 memory，只要稍等一個 cycle 就好。課本把這種做法叫 cycle stealing（偷 cycle）：DMA 偷用 bus 一下，CPU 只延後一點點。上方時間條的金色小格就是被偷的那個 cycle。",
-    "剩下的 word 也一樣：每傳一個就偷一個 cycle。程式檢查：4 個 word 依序寫進 A000～A003，剩餘數量歸零。",
+    "剩下的 word 也一樣：每傳一個就偷一個 cycle。程式檢查：4 個 word 依序寫進 A000～A003（這裡位址以 word 為單位，示意），剩餘數量歸零。",
     "在 DMA 傳輸的那一刻，bus 由 DMA controller 掌控（bus 變成綠色），CPU 沒有 memory bus 的控制權。",
     "整體來看：DMA 只在開頭設定（10 cycles）、每個 word 偷 1 cycle、結束時中斷一次（6 cycles），8 個 word 共 24 cycles，CPU 有 85% 的時間是自由的。課本另外提到 burst mode：DMA 一次佔住 bus 把整塊傳完。"
    ]

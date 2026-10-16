@@ -118,7 +118,7 @@
     },
     {
      "t": 576,
-     "text": "sub 的結果 cycle 3 就算好，但要在第 5 段才寫：cycle 5 它在 MEM 不做事，cycle 6 才寫回。"
+     "text": "sub 的結果 cycle 4（它的 EX）就算好，但要在第 5 段才寫：cycle 5 它在 MEM 不做事，cycle 6 才寫回。"
     }
    ],
    "cues": [
@@ -540,12 +540,12 @@
   {
    "q": "寫回 register 時用的 destination 號碼來自哪裡？",
    "opts": [
-    "跟著該指令一路存在 pipeline register 裡傳過來的 rt / rd",
-    "IF/ID 裡目前正在 decode 的那條新指令的 rd 欄位（rs / rt）",
+    "該指令自己的 rt / rd，隨 pipeline register 傳來",
+    "IF/ID 裡正在 decode 的那條新指令的 rd 欄位",
     "永遠是 rt",
     "ALU 的輸出結果"
    ],
-   "ans": "跟著該指令一路存在 pipeline register 裡傳過來的 rt / rd",
+   "ans": "該指令自己的 rt / rd，隨 pipeline register 傳來",
    "why": "IF/ID 裡是新進來的指令；寫回要用原本那條指令的 destination（R-type 選 rd、lw 選 rt），所以要一路帶著走。"
   },
   {

@@ -425,11 +425,11 @@ export default function (ctx) {
     say('共 ' + L.edges.length + ' 條邊；x1–¬x1 這種矛盾的不連', '問：有沒有大小 k = 3（子句數）的 clique？');
     await wait(tok, 3200);
     const asg = [false, false, true];
-    say('取一組滿足 φ 的賦值：x2 = 0、x3 = 1（x1 任意）', '');
+    say('取一組滿足 φ 的賦值：' + asg.map((v, i) => 'x' + (i + 1) + ' = ' + (v ? 1 : 0)).join('、'), '');
     await wait(tok, 2200);
     const pick = PHI3.map((c, r) => r + '.' + c.findIndex((l) => litVal(l, asg)));
     for (const id of pick) { tint(g.N[id], C.G); glow(g.N[id], GREEN); move(g.N[id], L.pos[id][0], 0.7, L.pos[id][2]); await wait(tok, 700); }
-    say('每個子句挑一個為真的文字：¬x2、x3、x3', '');
+    say('每個子句挑一個為真的文字：' + pick.map((id) => { const [r, i] = id.split('.').map(Number); return lit(PHI3[r][i]); }).join('、'), '');
     await wait(tok, 2000);
     for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) g.E[ek(pick[i], pick[j])].material.color.set(C.Y);
     say('三個都兩兩相連 → 3-clique', '都為真 → 不可能互相矛盾 → 一定有邊');
@@ -701,7 +701,8 @@ export default function (ctx) {
     }
     if (t === 4) {
       const n = 6 + rnd(8), k = 2 + rnd(n - 3);
-      return { q: '圖 G 有 ' + n + ' 個頂點，且有大小 ' + k + ' 的 clique。則補圖 Ḡ 一定有多大的 vertex cover？', opts: [String(n - k), String(k), String(n - k + 1), String(2 * k)], ans: String(n - k), why: 'clique V\' 在 Ḡ 是獨立集，Ḡ 的每條邊至少一端在 V − V\'，所以 V − V\' 是大小 |V| − k 的 cover。' };
+      const o4 = [...new Set([n - k, k, n - k + 1, 2 * k, n - k - 1, n].map(String))].slice(0, 4);
+      return { q: '圖 G 有 ' + n + ' 個頂點，且有大小 ' + k + ' 的 clique。則補圖 Ḡ 一定有多大的 vertex cover？', opts: o4, ans: String(n - k), why: 'clique V\' 在 Ḡ 是獨立集，Ḡ 的每條邊至少一端在 V − V\'，所以 V − V\' 是大小 |V| − k 的 cover。' };
     }
     if (t === 5) {
       return { q: '如果有人找到某個 NP-complete 問題的多項式時間演算法，可以推出？', opts: ['P = NP', 'P ≠ NP', '只有這個問題在 P', 'NP-hard 問題都可判定'], ans: 'P = NP', why: '所有 NP 問題都能多項式歸約到任一 NPC 問題，所以全部都能多項式時間解。' };
@@ -2742,7 +2743,7 @@ FRAG.push(['np1-j-three-cases', 'Reduction 的三種用法', async (tok) => {
     await step(tok);                                 // 8:06 and it's no harder than network flow
     bY.scale.set(1.25, 1.25, 1.25);
     note('左邊不比 network flow 難', 0, 4.6);
-    say('也隱含：新問題比較簡單', '沒有 network flow 那麼難');
+    say('也隱含：新問題不比 network flow 難', '頂多一樣難');
     await step(tok);                                 // 8:46 literature: a dedicated faster algorithm
     note('文獻：matching 有自己更快的演算法', -3.4, 0.2, 2.0);
     say('文獻上 matching 有自己的演算法', '複雜度比 network flow 再低一些');
@@ -4104,8 +4105,8 @@ FRAG.push(['np2-3partition', '3-Partition → Tetris：證明 Tetris 很難', as
   }
   say('分成 n/3 組，每組三個', '這裡每組都 = 12');
   await step(tok);                                   // 2834.1 sounds easy, but NP-complete (Karp)
-  tag('Karp：NP-complete', 'ptr', -4.6, 2.2);
-  say('聽起來簡單，其實是 NP-complete', 'Karp 很早就證明了');
+  tag('NP-complete（Garey & Johnson 1975）', 'ptr', -4.6, 2.2);
+  say('聽起來簡單，其實是 NP-complete', '老師說是 Karp，其實是 Garey & Johnson 證的');
   await step(tok);                                   // 2856.7 just show Tetris is harder than 3-Partition
   pa.mood('sad');
   bub('只要證明：Tetris 比 3-Partition 難', 0, 2.2);

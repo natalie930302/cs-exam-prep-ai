@@ -251,9 +251,9 @@
    "q": "NP 是什麼的縮寫？",
    "opts": [
     "Nondeterministic Polynomial time",
-    "Not Polynomial time（不是多項式時間）",
+    "Not Polynomial time（不能在多項式時間解）",
     "Non-P",
-    "New Polynomial"
+    "Numerical Polynomial time（數值多項式）"
    ],
    "ans": "Nondeterministic Polynomial time",
    "why": "最常見的誤解就是把 NP 當成 not polynomial。"

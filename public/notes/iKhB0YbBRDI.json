@@ -1033,7 +1033,7 @@
     3824.24
    ],
    "explain": [
-    "先看 line 1：從小排到大。上次學過 Heap 這個資料結構（一棵完全二元樹，最小值永遠在最上面），用 Heap 就能排序，這叫 heapsort。",
+    "先看 line 1：從小排到大。上次學過 Heap 這個資料結構（一棵 complete binary tree；heapsort 用 max heap，最大值永遠在 root），用 Heap 就能排序，這叫 heapsort。",
     "heapsort 的 complexity 是 n log n，但要注意這裡被排序的是 edge，不是點。如果有 m 條 edge，排序要 O(m log m)。",
     "m 的 upper bound（上界）是 n²（任兩點最多一條 edge）。log n² = 2 log n，常數 2 可以提出來，所以排序可以寫成 O(m log n)。",
     "接下來是 line 3–5 的 iteration。在這之前先準備好：T 是空集合，每個點都 MAKE-SET 一次，做出 n 個 set。",

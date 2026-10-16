@@ -100,7 +100,7 @@
    "points": [
     {
      "t": 260,
-     "text": "ENIAC：第一部全電子、可程式、general purpose 的電腦，1943 年 U Penn 開始、1946 年完成，因二次大戰破解密碼需要大量運算。"
+     "text": "ENIAC：第一部全電子、可程式、general purpose 的電腦，1943 年 U Penn 開始、1946 年完成；老師說是為了二次大戰破解密碼，史實上 ENIAC 是美國陸軍用來計算火砲彈道射表（破解密碼的是英國的 Colossus）。"
     },
     {
      "t": 322,
@@ -114,7 +114,7 @@
    "explain": [
     "下一個問題：第一部「全電子、可程式、一般用途」的電腦是什麼時候做出來的？",
     "答案是 ENIAC。它是 University of Pennsylvania 在 1943 年開始的計畫，一直到 1946 年才完成。下面的時間軸標出這兩個年份。",
-    "為什麼那時候要做電腦？1939 到 1945 年正在打第二次世界大戰。戰爭需要破解對方的密碼，要非常大量的運算，所以才有這個計畫。",
+    "為什麼那時候要做電腦？1939 到 1945 年正在打第二次世界大戰，戰爭需要非常大量的運算。老師舉的例子是破解密碼；史實上 ENIAC 是美國陸軍為了計算火砲的彈道射表而做的（破解密碼用的是英國的 Colossus），但「戰爭需要大量運算」這個重點不變。",
     "ENIAC 有多大？長 25 公尺。上面那條長條是 100 公尺的跑道，ENIAC 就是它的四分之一，非常長。",
     "它高 2.5 公尺，比一個 170 公分的人還高 80 公分。",
     "ENIAC 用真空管（vacuum tube）當 switch（開關）。switch 是組成電腦最重要的元件。",
@@ -267,7 +267,7 @@
     },
     {
      "t": 1101,
-     "text": "Moore's Law：每一年半，一顆 chip 上的 transistor double；同樣面積、同樣成本有更強的 computation power。"
+     "text": "Moore's Law：每一年半，一顆 chip 上的 transistor double；同樣面積、同樣成本有更強的 computation power（課本：每 18～24 個月）。"
     }
    ],
    "explain": [
@@ -309,7 +309,7 @@
     },
     {
      "t": 1444,
-     "text": "Moore（Intel co-founder）1965 年預測：每 18 個月 transistor double。"
+     "text": "Moore（Intel co-founder）1965 年的預測；老師的說法是每 18 個月 transistor double（Moore 原本說每年、1975 年改為每兩年，課本寫每 18～24 個月）。"
     }
    ],
    "trap": "28 nm = 0.028 µm（1 µm = 1000 nm），不是 0.28 µm。",
@@ -326,7 +326,7 @@
     "transistor 做得這麼窄、這麼小，一顆 chip 上就能放非常非常多個。",
     "老師的圖：橫軸是時間，縱軸是一顆 microprocessor 裡的 transistor 數量，越來越多。",
     "Moore's Law 其實是一個預測。Gordon Moore 是 Intel 的共同創辦人，他在 1965 年寫了一篇 paper，觀察前十多年半導體的發展做出預測。",
-    "他預測：因為 feature size 越縮越小，大約每 18 個月（1.5 年）transistor 數量就會 double。人家問你 Moore's Law，就要答得出這一句。"
+    "他預測：因為 feature size 越縮越小，transistor 數量會定期 double。老師講的是大約每 18 個月（1.5 年）；更精確地說，Moore 1965 年原本說每年加倍，1975 年改成每兩年，課本寫「每 18～24 個月」。考試答「每 18～24 個月 transistor 數量加倍」最保險。"
    ]
   },
   {
@@ -538,7 +538,7 @@
     "每 18 個月價格 double"
    ],
    "ans": "每 18 個月，一顆 chip 上的 transistor 數量 double",
-   "why": "Moore（Intel co-founder）1965 年預測：feature size 越縮越小，每 18 個月 transistor 數 double。"
+   "why": "老師的說法：每 18 個月 transistor 數 double（課本：每 18～24 個月；Moore 1965 年原說每年、1975 年改每兩年）。不是 clock rate 或價格加倍。"
   },
   {
    "q": "Desktop、server、embedded 三類電腦中，server 最重視的是？",

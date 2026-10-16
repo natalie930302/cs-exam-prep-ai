@@ -187,7 +187,7 @@ export default function (ctx) {
   async function charRun(tok) {
     if (busy) return;
     const S = solveChar(ch.c1, ch.c2, ch.a0, ch.a1);
-    if (S.kind === 'complex' || S.kind === 'zero') { log(S.kind === 'complex' ? '複數根：Rosen 的 Theorem 1、4 只處理實根；這組請換數字。' : '退化的情況，換一組。', true); return null; }
+    if (S.kind === 'complex' || S.kind === 'zero') { log(S.kind === 'complex' ? '複數根（解法見第 12C 講：λⁿ(β₁cos nθ + β₂sin nθ)）：本模式只畫實根，這組請換數字。' : '退化的情況，換一組。', true); return null; }
     busy = true;
     const w = W(tok);
     try {
@@ -406,14 +406,15 @@ export default function (ctx) {
       const w1 = r1 === r2 ? 'aₙ = ' + minus(al1) + '·' + R(r1) + 'ⁿ + ' + minus(al2) + '·' + R(r1) + 'ⁿ' : 'aₙ = ' + minus(al2) + '·' + R(r1) + 'ⁿ + ' + minus(al1) + '·' + R(r2) + 'ⁿ';
       const w2 = 'aₙ = ' + minus(al1) + '·' + R(-r1) + 'ⁿ + ' + minus(al2) + '·' + R(-r2) + 'ⁿ';
       const w3 = 'aₙ = ' + minus(a0) + '·' + R(r1) + 'ⁿ';
-      const rec = 'aₙ = ' + minus(c1) + 'aₙ₋₁ ' + (c2 < 0 ? '− ' + -c2 : '+ ' + c2) + 'aₙ₋₂';
+      const cf = (c, v, first) => (c === 0 ? '' : (first ? (c < 0 ? '−' : '') : (c < 0 ? ' − ' : ' + ')) + (Math.abs(c) === 1 ? '' : Math.abs(c)) + v);
+      const rec = 'aₙ = ' + (cf(c1, 'aₙ₋₁', true) + cf(c2, 'aₙ₋₂', !c1) || '0');
       const T4 = [ans, w1, w2, w3].map(tidy);
-      return { q: rec + '，a₀ = ' + minus(a0) + '，a₁ = ' + minus(a1) + '。解為？', opts: T4, ans: T4[0], why: '特徵方程 ' + charEq(c1, c2) + ' → r = ' + (r1 === r2 ? minus(r1) + '（重根，要多乘 n）' : minus(r1) + '、' + minus(r2)) + '，再用 a₀、a₁ 解 α。注意根的正負號：r² − c₁r − c₂ 的根和係數符號相反。' };
+      return { q: rec + '，a₀ = ' + minus(a0) + '，a₁ = ' + minus(a1) + '。解為？', opts: T4, ans: T4[0], why: '特徵方程 ' + charEq(c1, c2) + ' → r = ' + (r1 === r2 ? minus(r1) + '（重根，要多乘 n）' : minus(r1) + '、' + minus(r2)) + '，再用 a₀、a₁ 解 α。注意正負號：r² − c₁r − c₂ = 0 的兩根和 = c₁、兩根積 = −c₂。' };
     }
     if (k < 0.32) {
-      const n = 2 + Math.floor(Math.random() * 9);
+      const n = 3 + Math.floor(Math.random() * 8);
       const v = Math.pow(2, n) - 1;
-      return { q: 'Tower of Hanoi 有 ' + n + ' 個盤子，最少要搬幾次？', opts: [v, Math.pow(2, n), 2 * n - 1, n * n].map(String), ans: String(v), why: 'Hₙ = 2Hₙ₋₁ + 1，H₁ = 1 → Hₙ = 2ⁿ − 1 = ' + v + '。' };
+      return { q: 'Tower of Hanoi 有 ' + n + ' 個盤子，最少要搬幾次？', opts: [v, Math.pow(2, n), Math.pow(2, n - 1), 2 * n - 1].map(String), ans: String(v), why: 'Hₙ = 2Hₙ₋₁ + 1，H₁ = 1 → Hₙ = 2ⁿ − 1 = ' + v + '。' };
     }
     if (k < 0.46) {
       const items = [
@@ -439,8 +440,8 @@ export default function (ctx) {
     }
     if (k < 0.86) {
       const n = 3 + Math.floor(Math.random() * 6);
-      const a = [0, 2, 3]; for (let i = 3; i <= n; i++) a[i] = a[i - 1] + a[i - 2];
-      return { q: '長度 ' + n + '、不含連續兩個 0 的 bit string 有幾個？', opts: [a[n], a[n - 1], Math.pow(2, n) - a[n], a[n] + 1].map(String), ans: String(a[n]), why: '結尾 1：前面任意合法 n−1 字串；結尾 10：前面合法 n−2 字串 → aₙ = aₙ₋₁ + aₙ₋₂，a₁ = 2，a₂ = 3。' };
+      const a = [0, 2, 3]; for (let i = 3; i <= n + 1; i++) a[i] = a[i - 1] + a[i - 2];
+      return { q: '長度 ' + n + '、不含連續兩個 0 的 bit string 有幾個？', opts: [...new Set([a[n], a[n - 1], Math.pow(2, n) - a[n], a[n + 1], a[n] + 1].map(String))].slice(0, 4), ans: String(a[n]), why: '結尾 1：前面任意合法 n−1 字串；結尾 10：前面合法 n−2 字串 → aₙ = aₙ₋₁ + aₙ₋₂，a₁ = 2，a₂ = 3。' };
     }
     const c = pick([2, 3, 4]), d = pick([1, 2, 3, 5]), a0 = pick([0, 1, 2]);
     const n = 3 + Math.floor(Math.random() * 3);
@@ -875,7 +876,7 @@ scene('rr-12a-fib', "Fibonacci：Fₙ = Fₙ₋₁ + Fₙ₋₂，F₀ = 0、F�
   },
   // 124.47
   async (tok, S) => {
-    S.R.hi(-1); note('看到遞迴式：先檢查起始值夠不夠', 0, 2.6); cap('先 check initial condition 夠不夠', '後面每一項都有定義嗎？');
+    S.R.hi(-1); note('看到遞迴式：先檢查起始值夠不夠', 1.6, 3.3); cap('先 check initial condition 夠不夠', '後面每一項都有定義嗎？');
   },
 ]);
 scene('rr-12a-goal', "解遞迴：把 Fₙ 寫成只跟 n 有關的式子", [
@@ -927,7 +928,7 @@ scene('rr-12a-hrr', "k-th order linear homogeneous recurrence relation with cons
   },
   // 262.06
   async (tok, S) => {
-    S.st = strip('a', 0, 7, -3.0, 1.2); for (let n = 0; n < 4; n++) S.st.put(n, '?', FC.orange); sm('k 個 initial conditions（示意 k = 4）', -1.7, 2.1); cap('跟前 k 個有關 → 要 k 個 initial condition', 'a₀, a₁, …, aₖ₋₁');
+    S.st = strip('a', 0, 7, -3.0, 1.2); for (let n = 0; n < 4; n++) S.st.put(n, '?', FC.orange); S.kl = sm('k 個 initial conditions（示意 k = 4）', -1.7, 2.1); cap('跟前 k 個有關 → 要 k 個 initial condition', 'a₀, a₁, …, aₖ₋₁');
   },
   // 287.52
   async (tok, S) => {
@@ -959,27 +960,27 @@ scene('rr-12a-hrr', "k-th order linear homogeneous recurrence relation with cons
   },
   // 434.02
   async (tok, S) => {
-    gone(S.st, S.n1, S.n2, S.n3, S.n4, S.n5); good('Fₙ − Fₙ₋₁ − Fₙ₋₂ = 0：k = 2（second order）', 0, 1.6); cap('剛才的 Fibonacci 就是二階的', 'k = 2');
+    gone(S.st, S.kl, S.n1, S.n2, S.n3, S.n4, S.n5); good('Fₙ − Fₙ₋₁ − Fₙ₋₂ = 0：k = 2（second order）', 0, 2.2); cap('剛才的 Fibonacci 就是二階的', 'k = 2');
   },
   // 452.04
   async (tok, S) => {
-    note('又叫 difference equation（差分方程）', 0, 0.9); cap('又叫 difference equation', '差分方程');
+    S.d1 = note('又叫 difference equation（差分方程）', 0, 1.55); cap('又叫 difference equation', '差分方程');
   },
   // 479.05
   async (tok, S) => {
-    pl('離散（discrete）→ difference equation；連續 → differential equation', 0, 0.2); cap('離散叫 difference，連續叫 differential', '');
+    S.d2 = pl('離散（discrete）→ difference equation；連續 → differential equation', 0, 0.9); cap('離散叫 difference，連續叫 differential', '');
   },
   // 487.54
   async (tok, S) => {
-    sm('後面老師用縮寫代替這串長名字（例如 HRR）', 0, -0.5); cap('名字太長，後面用縮寫', '');
+    S.d3 = sm('後面老師用縮寫代替這串長名字（例如 HRR）', 0, 0.25); cap('名字太長，後面用縮寫', '');
   },
   // 514.41
   async (tok, S) => {
-    good('a₀, …, aₖ₋₁ 叫 initial conditions', 0, -1.2); cap('a₀ 到 aₖ₋₁ 叫 initial conditions', '');
+    gone(S.d1, S.d2, S.d3); good('a₀, …, aₖ₋₁ 叫 initial conditions', 0, 1.55); cap('a₀ 到 aₖ₋₁ 叫 initial conditions', '');
   },
   // 533.25
   async (tok, S) => {
-    bad('k 階就要 k 個，否則不是 well-defined', 0, -1.9); cap('k 階就必須有 k 個 initial condition', '少了就算不下去');
+    bad('k 階就要 k 個，否則不是 well-defined', 0, 0.9); cap('k 階就必須有 k 個 initial condition', '少了就算不下去');
   },
   // 554.69
   async (tok, S) => {
@@ -1543,19 +1544,19 @@ scene('rr-12c-real', "換參數：β₁ = α₁ + α₂、β₂ = j(α₁ − α
   },
   // 450.73
   async (tok, S) => {
-    S.B.hi(-1); bad('α₁、α₂ 一般可能是複數', -3.2, 2.9); cap('α₁、α₂ in general 可能是複數', '');
+    S.B.hi(-1); S.x1 = bad('α₁、α₂ 一般可能是複數', -3.2, 2.9); cap('α₁、α₂ in general 可能是複數', '');
   },
   // 465.87
   async (tok, S) => {
-    good('aₙ 一定是實數：實數加減乘還是實數', 3.2, 2.9); cap('但 aₙ always 是實數', 'a₀、a₁ 是實數，一直代還是實數');
+    S.x2 = good('aₙ 一定是實數：實數加減乘還是實數', 3.2, 2.9); cap('但 aₙ always 是實數', 'a₀、a₁ 是實數，一直代還是實數');
   },
   // 487.11
   async (tok, S) => {
-    note('用複數係數寫是對的，但比較不好', 0, 2.25); cap('寫成複數係數是對的', '但比較不好用');
+    S.x3 = note('用複數係數寫是對的，但比較不好', 0, 2.25); cap('寫成複數係數是對的', '但比較不好用');
   },
   // 508.86
   async (tok, S) => {
-    S.C = board(0, 1.5, 0.6); S.C.add('令 β₁ = α₁ + α₂', 'good'); cap('把係數換一換', '定義 β₁ = α₁ + α₂');
+    gone(S.x1, S.x2, S.x3); S.C = board(0, 2.9, 0.6); S.C.add('令 β₁ = α₁ + α₂', 'good'); cap('把係數換一換', '定義 β₁ = α₁ + α₂');
   },
   // 533.83
   async (tok, S) => {
@@ -1567,15 +1568,15 @@ scene('rr-12c-real', "換參數：β₁ = α₁ + α₂、β₂ = j(α₁ − α
   },
   // 571.48
   async (tok, S) => {
-    S.C.hi(-1); good('β₁、β₂ 一定是實數', 0, -0.35); cap('這個形式比較好', 'β₁、β₂ 一定是實數');
+    S.C.hi(-1); good('β₁、β₂ 一定是實數', 0, 1.05); cap('這個形式比較好', 'β₁、β₂ 一定是實數');
   },
   // 598.06
   async (tok, S) => {
-    note('代初始條件：cos、sin、aₙ 都是實數 → 聯立方程全實數', 0, -0.95); cap('用 initial condition 決定 β', '聯立方程的係數全是實數');
+    note('代初始條件：cos、sin、aₙ 都是實數 → 聯立方程全實數', 0, 0.45); cap('用 initial condition 決定 β', '聯立方程的係數全是實數');
   },
   // 615.78
   async (tok, S) => {
-    note('Gaussian elimination／Cramer 都只用加減乘除 → 解是實數', 0, -1.55); cap('解聯立只用加減乘除', '實數加減乘除還是實數');
+    note('Gaussian elimination／Cramer 都只用加減乘除 → 解是實數', 0, -0.15); cap('解聯立只用加減乘除', '實數加減乘除還是實數');
   },
   // 643.72
   async (tok, S) => {
@@ -1941,7 +1942,7 @@ scene('rr-13a-review', "複習：非齊次 = 齊次通解 + 猜一個特解", [
 scene('rr-13a-trial', "Trial sequence：常數、多項式、λⁿ、cos／sin", [
   // 92.6
   async (tok, S) => {
-    hot('要怎麼猜？', 0, 7.2); S.h1 = hd('f(n) 長這樣', -2.8, 6.3); S.h2 = hd('試解 pₙ 設成', 2.8, 6.3); S.L = board(-2.8, 5.6, 0.6); S.R = board(2.8, 5.6, 0.6); cap('要怎麼猜？', '');
+    hot('要怎麼猜？', 0, 7.2); S.h1 = hd('f(n) 長這樣', -2.8, 6.3); S.h2 = hd('試解 pₙ 設成', 2.8, 6.3); S.L = board(-2.8, 5.6, 0.46); S.R = board(2.8, 5.6, 0.46); cap('要怎麼猜？', '');
   },
   // 95.7
   async (tok, S) => {
@@ -1949,7 +1950,7 @@ scene('rr-13a-trial', "Trial sequence：常數、多項式、λⁿ、cos／sin",
   },
   // 125.62
   async (tok, S) => {
-    S.t1 = note('試的數列叫 trial sequence', 0, -0.3); cap('這叫 trial sequence', '再把它帶進去');
+    S.t1 = note('試的數列叫 trial sequence', 0, 1.35); cap('這叫 trial sequence', '再把它帶進去');
   },
   // 135.32
   async (tok, S) => {
@@ -1961,7 +1962,7 @@ scene('rr-13a-trial', "Trial sequence：常數、多項式、λⁿ、cos／sin",
   },
   // 183.28
   async (tok, S) => {
-    S.t2 = bad('f(n) 只有 b₁n 也要設 B₁n + B₀', 0, -1.0); cap('就算只有 b₁n', '兩個係數都要設');
+    gone(S.t1); S.t2 = bad('f(n) 只有 b₁n 也要設 B₁n + B₀', 0, 1.35); cap('就算只有 b₁n', '兩個係數都要設');
   },
   // 208.82
   async (tok, S) => {
@@ -1977,7 +1978,7 @@ scene('rr-13a-trial', "Trial sequence：常數、多項式、λⁿ、cos／sin",
   },
   // 294.17
   async (tok, S) => {
-    S.t3 = sm('例：f(n) = 2ⁿ → 設 B·2ⁿ', 0, -1.6); cap('例如 2ⁿ', '就設 B·2ⁿ');
+    gone(S.t2); S.t3 = sm('例：f(n) = 2ⁿ → 設 B·2ⁿ', 0, 1.35); cap('例如 2ⁿ', '就設 B·2ⁿ');
   },
   // 304.55
   async (tok, S) => {
@@ -2001,15 +2002,15 @@ scene('rr-13a-trial', "Trial sequence：常數、多項式、λⁿ、cos／sin",
   },
   // 470.76
   async (tok, S) => {
-    S.R.hi(-1); gone(S.t1, S.t2, S.t3); good('原則：f(n) 什麼樣子，試解就設什麼樣子', 0, -0.3); cap('基本上就是', '它什麼樣子就設什麼樣子');
+    S.R.hi(-1); gone(S.t1, S.t2, S.t3); good('原則：f(n) 什麼樣子，試解就設什麼樣子', 0, 1.35); cap('基本上就是', '它什麼樣子就設什麼樣子');
   },
   // 486.73
   async (tok, S) => {
-    note('只要找到一個 particular solution 就好', 0, -1.0); cap('只要找一個 particular solution', '任何一個都 OK');
+    S.t4 = note('只要找到一個 particular solution 就好', 0, 0.85); cap('只要找一個 particular solution', '任何一個都 OK');
   },
   // 495.41
   async (tok, S) => {
-    sm('f(n) 不只這些，但常見的大都在表裡', 0, -1.6); cap('f(n) 當然不只這些', '常見的大概都在這裡');
+    gone(S.t4); note('只要找一個特解；f(n) 不只這些，但常見的大都在表裡', 0, 0.85); cap('f(n) 當然不只這些', '常見的大概都在這裡');
   },
 ]);
 scene('rr-13a-ex', "一階非齊次：aₙ − 2aₙ₋₁ = n，設 pₙ = B₁n + B₀", [
@@ -2019,7 +2020,7 @@ scene('rr-13a-ex', "一階非齊次：aₙ − 2aₙ₋₁ = n，設 pₙ = B₁
   },
   // 555.79
   async (tok, S) => {
-    S.B = board(-3.0, 6.2, 0.62); S.B.add('aₙ − 2aₙ₋₁ = n，a₀ = 1', 'ptr'); cap('First order 的 non-homogeneous', '一個 initial condition：a₀ = 1');
+    S.B = board(-3.0, 6.2, 0.5); S.B.add('aₙ − 2aₙ₋₁ = n，a₀ = 1', 'ptr'); cap('First order 的 non-homogeneous', '一個 initial condition：a₀ = 1');
   },
   // 564.13
   async (tok, S) => {
@@ -2087,11 +2088,11 @@ scene('rr-13a-ex', "一階非齊次：aₙ − 2aₙ₋₁ = n，設 pₙ = B₁
   },
   // 885.89
   async (tok, S) => {
-    S.B.hi(-1); gone(S.st); S.A = seq(0, [1], (a, n) => 2 * a[n - 1] + n, 6); S.Bf = {}; for (let n = 0; n <= 6; n++) S.Bf[n] = 3 * Math.pow(2, n) - n - 2; S.c = cmp([0, 1, 2, 3, 4, 5, 6], S.A, S.Bf, -2.0, -0.4, '遞迴', '公式'); cap('n 從 0 開始', '後面所有的 n 都滿足');
+    S.B.clear(); gone(S.st); S.B.add('aₙ = 3·2ⁿ − n − 2（n ≥ 0）', 'ptr alt'); S.A = seq(0, [1], (a, n) => 2 * a[n - 1] + n, 6); S.Bf = {}; for (let n = 0; n <= 6; n++) S.Bf[n] = 3 * Math.pow(2, n) - n - 2; S.c = cmp([0, 1, 2, 3, 4, 5, 6], S.A, S.Bf, -1.6, 3.4, '遞迴', '公式'); cap('n 從 0 開始', '後面所有的 n 都滿足');
   },
   // 895.97
   async (tok, S) => {
-    note('非齊次多的部分：找 particular solution', 3.0, 5.0); cap('多的部分就是', '找一個 particular solution');
+    note('非齊次多的部分：找 particular solution', 0, 0.9); cap('多的部分就是', '找一個 particular solution');
   },
 ]);
 
@@ -2507,7 +2508,7 @@ scene('rr-sub-solve', "n − k = 1 → T(n) = n(n + 1)/2 = O(n²)", [
   },
   // 603.97
   async (tok, S) => {
-    S.B.add('n − (k − 1) = n − (n − 2) = 2'); S.B.last(); S.T2 = row(-3.6, 0.7, [2], FC.purple); cap('n − k − 1 那一項', 'n − (n − 2) = 2');
+    S.B.add('n − (k − 1) = n − (n − 2) = 2'); S.B.last(); S.T2 = row(-3.6, 0.7, [2], FC.purple); cap('n − (k − 1) 那一項', 'n − (n − 2) = 2');
   },
   // 631.92
   async (tok, S) => {
@@ -2527,7 +2528,7 @@ scene('rr-sub-solve', "n − k = 1 → T(n) = n(n + 1)/2 = O(n²)", [
   },
   // 699.09
   async (tok, S) => {
-    S.B.clear(); S.B.add('T(n) = 1 + 2 + … + n = n(n + 1)/2', 'ptr'); S.r = board(-2.2, 5.3, 0.6); S.r.add('Big-O：常數不重要 → 去掉 /2'); cap('用 asymptotic notation', '常數不重要，分母 2 拿掉');
+    gone(S.tri, S.c); S.B.clear(); S.B.add('T(n) = 1 + 2 + … + n = n(n + 1)/2', 'ptr'); S.r = board(-2.2, 5.3, 0.6); S.r.add('Big-O：常數不重要 → 去掉 /2'); cap('用 asymptotic notation', '常數不重要，分母 2 拿掉');
   },
   // 713.59
   async (tok, S) => {
@@ -2797,7 +2798,7 @@ scene('rr-gf-conv', "A(x)B(x)：dᵣ = a₀bᵣ + a₁bᵣ₋₁ + … + aᵣb�
   },
   // 945.01
   async (tok, S) => {
-    S.B.add('合併同類項（同樣 x 次方）'); S.B.last(); note('同顏色的斜線 = 同一個 x 次方', 3.6, 0.6); cap('把 like terms 合併', '同次方的放一起');
+    S.B.add('合併同類項（同樣 x 次方）'); S.B.last(); note('同顏色的斜線 = 同一個 x 次方', 3.6, 6.0); cap('把 like terms 合併', '同次方的放一起');
   },
   // 949.8
   async (tok, S) => {
@@ -2825,7 +2826,7 @@ scene('rr-gf-conv', "A(x)B(x)：dᵣ = a₀bᵣ + a₁bᵣ₋₁ + … + aᵣb�
   },
   // 1127.76
   async (tok, S) => {
-    note('這叫 convolution', -1.2, 0.3); cap('這個性質叫 convolution', '');
+    note('這叫 convolution（卷積）', 3.4, 0.2); cap('這個性質叫 convolution', '');
   },
   // 1148.57
   async (tok, S) => {

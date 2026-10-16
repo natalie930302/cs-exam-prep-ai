@@ -2775,7 +2775,7 @@ scene('g8a-case2', 'Case 2：拿掉後變兩個 component', [
   async (tok, S) => { S.B.add('e₁ + e₂ = (k+1) − 1 = k', 'good'); cap('只拿掉一條邊', 'e₁ + e₂ = k（3 + 3 = 7 − 1）'); },
   async (tok, S) => {
     S.ab.show(true); S.ab.paint(GC.purple); S.out = T('ab 兩側都是外面那塊', 'bad', 3.0, 1.0);
-    cap('被拿掉的 ab，兩側都是外面那個 region', '如果它在裡面，拿掉就不會斷開');
+    cap('被拿掉的 ab，兩側是同一個 region（這裡是外面那塊）', '兩側若是不同 region，ab 在某個 cycle 上，拿掉不會斷開');
   },
   async (tok, S) => {
     S.ab.show(false); kill(S.out);
@@ -3464,7 +3464,7 @@ scene('g8b-pf1', '23A：證明性質 1——兩點之間的 path 唯一', [
     S.t = pl('T 是 connected → a、b 之間至少一條 path', 0, 0.8); cap('T connected', '所以至少有一條 path');
   },
   async (tok, S) => { // @672.0
-    sm('要證「只有一條」：用反證——假設不只一條，推出矛盾', 0, 0.2); cap('證只有一條：反證法', '若非 Q 則非 P');
+    sm('要證「只有一條」：用反證——假設不只一條，推出矛盾', 0, 0.2); cap('證只有一條：反證法', '假設結論不成立，推出矛盾');
   },
   async (tok, S) => { // @700.7
     S.q = bub('假設：a、b 之間不只一條 path', 0, -0.5); cap('假設有不只一條 path', '');
@@ -4635,7 +4635,7 @@ scene('g8c-polish', '25A：preorder → Polish notation', [
   },
   async (tok, S) => { // @500.3
     const r = postIds('r').map((id) => EXL[id]).join(' ');
-    S.rp = pl('reverse Polish（postorder）：' + r, 0, -2.0); cap('reverse Polish notation 用 postorder', '只是順序反過來');
+    S.rp = pl('reverse Polish（postorder）：' + r, 0, -2.0); cap('reverse Polish notation 用 postorder', '不是倒過來寫；計算時改成從左往右');
   },
 ]);
 
@@ -9871,7 +9871,7 @@ scene('g8g-st-dfs-code', 'Tree edge、back edge 與 DFS 虛擬碼', [
     cap('DFS 的虛擬碼（Rosen）', '');
   },
   async (tok, S) => {
-    S.code.hl(5);
+    S.code.hl(6);
     cap('加了邊 {v,w} 之後', '先把 w 探索完，才回到 v 看下一個鄰居');
   },
   async (tok, S) => {
@@ -10438,7 +10438,7 @@ scene('g8g-col-poly', 'Chromatic polynomial：地圖例（含勘誤）', [
   async (tok, S) => { S.lab('A', 'λ'); cap('A：λ 種顏色都可以', ''); },
   async (tok, S) => { S.lab('B', 'λ−1'); cap('B：除了 A 用掉的那色', 'λ − 1 種'); },
   async (tok, S) => { S.lab('C', 'λ−2'); cap('C 碰到 A 和 B', 'λ − 2 種'); },
-  async (tok, S) => { S.lab('D', 'λ−1'); cap('D 只碰到 C', 'λ − 1 種'); },
+  async (tok, S) => { S.lab('D', 'λ−1'); cap('D 在已塗的 A、B、C 中只碰到 C', 'λ − 1 種（E 還沒塗）'); },
   async (tok, S) => { S.lab('E', 'λ−3'); cap('E 碰到 B、C、D', '影片寫 λ − 3'); },
   async (tok, S) => { S.B.add('影片：P = λ(λ−1)(λ−2)(λ−1)(λ−3)'); cap('相乘就是影片的 chromatic polynomial', '不用展開'); },
   async (tok, S) => { S.B.add('用法：5 色有幾種塗法？→ λ = 5'); cap('怎麼用：5 色有幾種塗法？', ''); },
@@ -10721,7 +10721,7 @@ scene('g8g-dj-setup', 'Dijkstra 演算法：起始條件', [
   async (tok, S) => { S.B.add('S：已經「確定」最短距離的點', 'say'); cap('S 放的是已經確定最短距離的城市', '就像剛才桃園 30 確定後寫在旁邊'); },
   async (tok, S) => { S.B.add('迴圈：每次挑「不在 S、L 最小」的點'); cap('接著是一個迴圈', '每次挑還沒確定、但距離最近的那一個'); },
   async (tok, S) => { S.tb = tag('表：A B C D E F 各一格 L，外加集合 S', 'idx', 2.4, 0.3, -3.3); cap('我們列一個表來追蹤', '每個點目前的最短距離，和集合 S'); },
-  async (tok, S) => { G_all(S, Infinity); cap('第一步：除了起點，全部設成 ∞', '（老師口誤說 0，馬上改成無窮大）'); },
+  async (tok, S) => { G_all(S, Infinity); cap('第一步：全部先設成 ∞', '（老師口誤說 0，馬上改成無窮大）'); },
   async (tok, S) => { S.D.L.A = 0; S.D.show('A'); cap('第二步：A 自己寫 0', 'S 目前是空的'); },
   async (tok, S) => { S.B.add('如果 F 已經在 S → 停（已找到）'); cap('要找到高雄（F）', '迴圈先檢查 F 在不在 S 裡'); },
   async (tok, S) => { S.B.add('否則：從不在 S 的點裡找 L 最小的 u', 'good'); cap('還沒找到就繼續', '從不在 S 的點裡挑 L 最小的'); },
@@ -10914,7 +10914,7 @@ scene('g8g-euler', '一筆畫：Euler path 與 Euler circuit', [
   async (tok, S) => { set(S.t, '起點 = 終點（circuit）：那一點也一進一出 → 偶數'); cap('如果同一點出發、同一點結束', '那一點也成對 → 偶數'); },
   async (tok, S) => { S.r1 = tag('Euler path：中間都偶數，頭尾是奇數', 'good', 0, 0.3, 2.9); cap('結論：Euler path', '中間的點偶數、頭尾兩點奇數'); },
   async (tok, S) => { S.r2 = tag('Euler circuit：所有點都是偶數', 'good', 0, 0.3, 3.5); cap('Euler circuit', '所有點的連線數都是偶數'); },
-  async (tok, S) => { set(S.t, '反過來也成立（可以證明）'); cap('反過來也對', '度數符合，就一定有 Euler path／circuit'); },
+  async (tok, S) => { set(S.t, '反過來也成立（圖要連通）'); cap('反過來也對', '連通、度數又符合，就一定有 Euler path／circuit'); },
   async (tok, S) => { kill(S.w); kill(S.r1); kill(S.r2); glow(S.gv.vm.q, null); calm(S.gv); S.dt = degTags(S.gv); set(S.t, '連線數：1（奇）、3（奇）、2、2、2'); cap('例：這個 1 是奇數、這個 3 是奇數', '其他都是 2，偶數'); },
   async (tok, S) => {
     const seq = ['p', 'q', 'r', 's', 't', 'q']; S.w = ball(S.gv.pos('p'));
@@ -11038,7 +11038,7 @@ scene('g8g-ham', 'Hamilton path 與 Hamilton circuit', [
     set(S.t, '每個「節點」恰好經過一次：Hamilton path ' + (ok ? '✓' : '✗'));
     cap('一筆畫把每一個「節點」走過一遍', '走過就不能再回來');
   },
-  async (tok, S) => { tag('比 Euler 難很多：NP 類的難題', 'bad', 0, 0.3, 3.0); cap('這比 Euler 的問題難很多', '是 NP 類的問題，電腦也不太會算'); },
+  async (tok, S) => { tag('比 Euler 難很多：NP-complete 難題', 'bad', 0, 0.3, 3.0); cap('這比 Euler 的問題難很多', 'NP-complete：沒有已知的有效率演算法'); },
   async (tok, S) => { cap('不管怎樣：每個節點只能經過一次', '問的是這樣的路存不存在'); },
   async (tok, S) => {
     await walk(tok, S.w, S.gv, ['s', 'p'], 450, COL.orange);

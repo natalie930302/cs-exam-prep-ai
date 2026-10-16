@@ -600,9 +600,9 @@
    "q": "SPEC power benchmark 在 0% load 仍量到不少 power，主要原因是？",
    "opts": [
     "static power（leakage）",
-    "dynamic power（充放電）",
+    "dynamic power（0、1 切換時的充放電）",
     "clock rate 太高",
-    "benchmark 量錯"
+    "capacitive load 太大"
    ],
    "ans": "static power（leakage）",
    "why": "電晶體關不緊會漏電，不運算也耗電。"

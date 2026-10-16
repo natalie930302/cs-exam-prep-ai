@@ -1362,7 +1362,8 @@ export default function (ctx) {
     if (t === 4) {
       const n = 3 + rnd(4), m = 2 + rnd(3);
       const tot = (Math.pow(m, n + 1) - 1) / (m - 1);
-      return { q: 'Graph coloring：' + n + ' 個頂點、' + m + ' 種顏色，不加任何 bounding 的狀態空間樹共有幾個節點（含 root）？', opts: [String(tot), String(Math.pow(m, n)), String(Math.pow(n, m)), String(tot - 1)], ans: String(tot), why: '1 + m + m² + … + mⁿ = (m^(n+1) − 1)/(m − 1)。' };
+      const o4 = [...new Set([tot, Math.pow(m, n), tot - 1, Math.pow(n, m), Math.pow(m, n + 1), m * n + 1].map(String))].slice(0, 4);
+      return { q: 'Graph coloring：' + n + ' 個頂點、' + m + ' 種顏色，不加任何 bounding 的狀態空間樹共有幾個節點（含 root）？', opts: o4, ans: String(tot), why: '1 + m + m² + … + mⁿ = (m^(n+1) − 1)/(m − 1)。' };
     }
     if (t === 5) {
       return { q: 'Backtracking 與 Branch & Bound 產生狀態空間樹的方式？', opts: ['回溯 DFS、分支界限 BFS', '回溯 BFS、分支界限 DFS', '兩者都 DFS', '兩者都 BFS'], ans: '回溯 DFS、分支界限 BFS', why: '回溯一路往下、不行再退；分支界限取出一個節點就把它的孩子全部產生（FIFO/LIFO/LC 只差下一個挑誰）。' };
@@ -1379,7 +1380,8 @@ export default function (ctx) {
     if (t === 7) {
       const n = 4 + rnd(4);
       const f = (k) => (k <= 1 ? 1 : k * f(k - 1));
-      return { q: n + ' 個城市的 TSP，固定從城市 1 出發，狀態空間樹有幾片葉子（幾條環路）？', opts: [String(f(n - 1)), String(f(n)), String(Math.pow(2, n)), String(n * n)], ans: String(f(n - 1)), why: '起點固定，其餘 ' + (n - 1) + ' 個城市任意排列 → (n−1)!。' };
+      const o7 = [...new Set([f(n - 1), f(n), Math.pow(2, n), n * n, f(n - 2), Math.pow(2, n - 1)].map(String))].slice(0, 4);
+      return { q: n + ' 個城市的 TSP，固定從城市 1 出發，狀態空間樹有幾片葉子（幾條環路）？', opts: o7, ans: String(f(n - 1)), why: '起點固定，其餘 ' + (n - 1) + ' 個城市任意排列 → (n−1)!。' };
     }
     const nm = [[2, 4, 1, 3], [3, 1, 4, 2]][rnd(2)];
     return { q: '4-Queens 用 (x1, x2, x3, x4) 表示（第 i 列的皇后在第 xi 行），下列哪一組是解？', opts: ['(' + nm.join(', ') + ')', '(1, 3, 2, 4)', '(2, 3, 1, 4)', '(1, 4, 2, 3)'], ans: '(' + nm.join(', ') + ')', why: '4-Queens 只有 (2,4,1,3) 和 (3,1,4,2) 兩組；其他選項都有兩個皇后在同一條斜線。' };
@@ -1828,7 +1830,7 @@ FRAG.push(['bt-gc-types', '回溯：m-coloring 判定 / 最佳化', async (tok) 
   W.wipe(); txt(mt, 'm = 4'); kill(no2);
   sayc('給 4 色（多一個黃色）？');
   await step(tok);                                   // 3:04 yes
-  fill(['R', 'G', 'Y', 'R', 'B']);
+  fill(['R', 'G', 'Y', 'G', 'B']);
   sayc('可以塗', '顏色多了不一定全部用到');
   await step(tok);                                   // 3:10 graph + colours: can it be coloured?
   const t2 = bx('m 色塗得完嗎？', C.B, px, 0.3, -1.4, 3.6, 2, 0.5, 0.8);
@@ -4329,8 +4331,8 @@ FRAG.push(['bt-ap-opt', '近似演算法：最佳化問題與 NP-hard', async (t
   tag('所有 feasible（可行）解 → 挑最好的', 'idx', -0.9, 3.0);
   sayc('目標：在所有可行解裡找最好的');
   await step(tok);                                   // 0:54 exponential time, NP-hard
-  bad('很多是指數時間：NP-hard', 3.2, 3.8);
-  sayc('很多最佳化問題要指數時間', '稱為 NP-hard');
+  bad('很多要指數時間：多半是 NP-hard', 3.2, 3.8);
+  sayc('很多最佳化問題要指數時間', '它們多半是 NP-hard');
   await step(tok);                                   // 1:01 TSP, 0/1 knapsack, vertex cover
   ['TSP', '0/1 knapsack', 'vertex cover'].forEach((t, i) => note(t, -3.4 + i * 3.4, 0.4, 2.0));
   sayc('例：TSP、0/1 knapsack、vertex cover');
@@ -6670,7 +6672,7 @@ FRAG.push(['bt-mit24r-wood', '期末複習：切木頭問題', async (tok) => {
   note('考試常給執行時間 → 用它刪去不符合的方法', 0, 4.2);
   sayc('考試通常會給執行時間', '先用它刪掉不相符的方法');
   await step(tok);                                   // 2:57 all marks get cut; the order matters
-  sayc('每個記號最後都要切', '切的順序會影響花費');
+  sayc('老師說：切的順序會影響花費', '（成本 L1 × L2 時總和其實固定，見補充）');
   await step(tok);                                   // 3:04 cut at 3 first: 3 × (L − 3)
   const a = pkt('先切 3：3 × 7 = 21', bX(3), 2.6);
   sayc('先在 3 切：付 3 × (L − 3) = 3 × 7');

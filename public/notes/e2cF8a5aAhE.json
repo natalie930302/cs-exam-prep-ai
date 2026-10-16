@@ -514,7 +514,7 @@
    "explain": [
     "圖上還有 P：今天已經知道的 deterministic polynomial time 演算法。",
     "今天 non-deterministic 的，明天可能變成 deterministic、進到 P 裡。所以我們相信 P 會越長越大（綠圈在變大）。",
-    "甚至相信總有一天，P 會長到跟 NP 一樣大。",
+    "甚至相信總有一天，P 會長到跟 NP 一樣大。（這是 Bari 的說法；其實多數學者相信 P ≠ NP。）",
     "但還有一個大問題：這個想法真的行得通嗎？",
     "如果 non-deterministic 永遠變不成 deterministic，那我們寫的這些 non-deterministic 演算法，研究就都白做了。",
     "所以至少要證明這條路是對的：證明 P = NP。",

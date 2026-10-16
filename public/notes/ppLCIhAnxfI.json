@@ -137,7 +137,7 @@
     "− 的 left subtree 是 x。",
     "最後 − 的 right subtree：先 ↑，再 y、z。整棵 tree 走完。",
     "得到的整串 + t / * u v + w − x ↑ y z，就是這個 expression 的 Polish notation（共 13 個符號）。",
-    "如果改用 postorder（root 最後），得到的叫 reverse Polish notation，順序剛好反過來用。"
+    "如果改用 postorder（root 最後），得到的叫 reverse Polish notation：t u v * w x y z ↑ − + / +。它不是把 Polish notation 倒過來寫，而是計算時方向反過來（從左往右算）。"
    ]
   },
   {

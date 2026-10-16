@@ -275,12 +275,12 @@ export default function (ctx) {
   const CONCEPT = [
     { q: 'Programmed I/O 最主要的缺點？', opts: ['CPU busy waiting，一直 polling 浪費時間', '需要 DMA controller，成本高', '會造成 cache coherence 問題', '一定要有中斷優先權電路'], ans: 'CPU busy waiting，一直 polling 浪費時間', why: '影片：CPU 持續監看裝置是否 ready，這段時間什麼都不能做；優點是簡單、硬體少。' },
     { q: 'Interrupt-initiated I/O 中，是誰持續監看裝置？', opts: ['I/O interface（裝置介面）', 'CPU', 'DMA controller', 'Memory controller'], ans: 'I/O interface（裝置介面）', why: '介面監看裝置，裝置 ready 時發 interrupt request；CPU 平常做別的事，收到中斷才停下來服務、再回原工作。' },
-    { q: 'DMA 傳輸期間，CPU 與 bus 的關係？', opts: ['DMA controller 掌控 bus，CPU 只是延後自己的記憶體存取', 'CPU 逐一搬每個 word', 'CPU 一直 polling DMA controller', 'CPU 和 DMA 同時寫同一個位址'], ans: 'DMA controller 掌控 bus，CPU 只是延後自己的記憶體存取', why: 'CPU 只在開頭給起始位址、長度等，之後 DMA 直接在記憶體與裝置間傳（cycle stealing），結束時再中斷 CPU。' },
-    { q: 'Programmed I/O 與 interrupt I/O 共同的缺點（影片）？', opts: ['每筆資料都要 CPU 執行指令搬，傳輸率受限於 CPU', '需要額外的 DMA controller', '無法處理鍵盤', '會讓 cache 永遠 miss'], ans: '每筆資料都要 CPU 執行指令搬，傳輸率受限於 CPU', why: '兩者資料都經過 CPU；DMA 才讓裝置直接和記憶體傳。' },
-    { q: 'DMA 的缺點（影片）？', opts: ['需要 DMA controller，系統成本增加，且可能有 cache coherence 問題', 'CPU 必須 busy waiting', '每個 word 都要中斷一次', '傳輸率受 CPU 速度限制'], ans: '需要 DMA controller，系統成本增加，且可能有 cache coherence 問題', why: 'DMA 直接改記憶體，cache 裡可能還留著舊資料；輸出時記憶體也可能還沒拿到 write-back cache 的新值。' },
+    { q: 'DMA 傳輸期間，CPU 與 bus 的關係？', opts: ['DMA controller 掌控 bus，CPU 只是延後自己的記憶體存取', 'CPU 仍要逐一執行 lw／sw 搬每個 word', 'CPU 一直 polling DMA controller 是否完成', 'CPU 和 DMA 輪流各用半個 clock 的 bus'], ans: 'DMA controller 掌控 bus，CPU 只是延後自己的記憶體存取', why: 'CPU 只在開頭給起始位址、長度等，之後 DMA 直接在記憶體與裝置間傳（cycle stealing），結束時再中斷 CPU。' },
+    { q: 'Programmed I/O 與 interrupt I/O 共同的缺點（影片）？', opts: ['每筆資料都要 CPU 執行指令搬，傳輸率受限於 CPU', '需要額外的 DMA controller，系統成本增加', '只能接鍵盤這類慢速裝置，不能接磁碟', '裝置直接改記憶體，造成 cache coherence 問題'], ans: '每筆資料都要 CPU 執行指令搬，傳輸率受限於 CPU', why: '兩者資料都經過 CPU；DMA 才讓裝置直接和記憶體傳。' },
+    { q: 'DMA 的缺點（影片）？', opts: ['需要 DMA controller，系統成本增加，且可能有 cache coherence 問題', 'CPU 必須 busy waiting，一直 polling 裝置', '每傳一個 word 都要中斷 CPU 一次', '每筆資料仍經過 CPU，傳輸率受 CPU 限制'], ans: '需要 DMA controller，系統成本增加，且可能有 cache coherence 問題', why: 'DMA 直接改記憶體，cache 裡可能還留著舊資料；輸出時記憶體也可能還沒拿到 write-back cache 的新值。' },
     { q: 'MIPS 發生 arithmetic overflow 例外時，EPC 存的是？', opts: ['發生 overflow 的那個指令的位址', '下一個指令的位址 PC + 4', 'handler 的位址 0x80000180', 'Cause register 的值'], ans: '發生 overflow 的那個指令的位址', why: 'P&H：EPC 記錄受影響（出事）的指令位址，Cause 記錄原因，然後跳到 0x80000180 的 handler。' },
-    { q: 'P&H 的術語中，exception 與 interrupt 的差別？', opts: ['Interrupt 來自處理器外部（例如 I/O）；exception 泛指控制流程的意外改變（含內部的 overflow）', '兩者完全相同', 'Exception 只來自 I/O 裝置', 'Interrupt 只來自未定義指令'], ans: 'Interrupt 來自處理器外部（例如 I/O）；exception 泛指控制流程的意外改變（含內部的 overflow）', why: 'MIPS 慣例：exception 指任何意外的控制流程改變，interrupt 專指外部事件造成的。處理流程要分開記。' },
-    { q: 'Daisy chain bus arbitration 的特性？', opts: ['越靠近 arbiter 的裝置優先權越高，遠端可能 starvation', '所有裝置完全公平輪流', '每個裝置都有獨立的 grant 線', '不需要 arbiter'], ans: '越靠近 arbiter 的裝置優先權越高，遠端可能 starvation', why: 'grant 依序往下傳，第一個有請求的裝置會攔下來。' },
+    { q: 'P&H 的術語中，exception 與 interrupt 的差別？', opts: ['Interrupt 來自處理器外部（例如 I/O）；exception 泛指控制流程的意外改變（含內部的 overflow）', '兩者完全相同，只是不同教科書的叫法', 'Exception 來自外部 I/O；interrupt 專指內部的 overflow', 'Interrupt 只來自未定義指令；exception 只來自 I/O'], ans: 'Interrupt 來自處理器外部（例如 I/O）；exception 泛指控制流程的意外改變（含內部的 overflow）', why: 'MIPS 慣例：exception 指任何意外的控制流程改變，interrupt 專指外部事件造成的。處理流程要分開記。' },
+    { q: 'Daisy chain bus arbitration 的特性？', opts: ['越靠近 arbiter 的裝置優先權越高，遠端可能 starvation', '所有裝置依 round-robin 完全公平輪流', '每個裝置都有自己獨立的 request／grant 線', '不需要 arbiter，由裝置自己偵測碰撞'], ans: '越靠近 arbiter 的裝置優先權越高，遠端可能 starvation', why: 'grant 依序往下傳，第一個有請求的裝置會攔下來。' },
   ];
   function genQ() {
     const p = Math.random();
@@ -630,7 +630,7 @@ export default function (ctx) {
     txt(parts, '4 + 2 + 0.005 + 0.2');
     await beat(tok, 2600);
     txt(parts, '= 6.2 ms');
-    say('平均讀取時間 ≈ 6.2 ms', '若 seek 實際只有 1/3：1.3 + 2 + 0.005 + 0.2 ≈ 3.5 ms');
+    say('平均讀取時間 ≈ 6.2 ms', '若實測 seek 只有標示的 25%：1 + 2 + 0.005 + 0.2 ≈ 3.2 ms');
     await beat(tok, 3400);
   }
   async function scMemMappedIO(tok) {

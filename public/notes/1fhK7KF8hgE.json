@@ -238,7 +238,7 @@
    ],
    "explain": [
     "再看一個例子：依序 access block 0、8、0、6、8。分別用 direct-mapped、2-way、fully associative 會怎樣？",
-    "Cache 只有 4 個 block：direct-mapped 有 4 個位置（0 到 3）；2-way 只有 2 個 set；fully associative 沒有地址，只有一個 set。",
+    "Cache 只有 4 個 block：direct-mapped 有 4 個位置（0 到 3）；2-way 只有 2 個 set；fully associative 沒有 index，只有一個 set（4 格都在裡面）。",
     "先看 direct-mapped，access 順序從上到下。",
     "Access 0：0 mod 4 = 0，map 到 index 0。裡面沒東西，miss，把 block 0 放進去。",
     "Access 8：8 mod 4 = 0，又是同一個位置。Direct-mapped 只有一個位置，0 被踢出去，8 進來，miss。",

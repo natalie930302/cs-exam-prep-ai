@@ -1160,7 +1160,7 @@
    "scene": "graphjiang2-l9-ds-time",
    "points": [
     {
-     "text": "每個點最多 order 一次（n）；update in-degree 剛好 m 次；每個點進出 S 各一次 → overall O(n + m)。",
+     "text": "每個點最多 order 一次（n）；update in-degree 剛好 m 次；每個點進出 S 各一次（共 n 次） → overall O(n + m)。",
      "t": 5176.69
     },
     {
@@ -1180,7 +1180,7 @@
    "explain": [
     "Overall 來看要花多少時間？每個點最多 order 一次，總共 n 次。",
     "另一個重點是 update in-degree 欄位的時間：有 m 條 edge，每條 edge 剛好被用來扣一次，總共 update 剛好 m 次。",
-    "過程中一共會有 n 次，某個點的 in-degree 降到 0，被放進 S。",
+    "每個點都剛好被放進 S 一次：一開始 in-degree 就是 0 的在初始化時放進去，其他的在 in-degree 降到 0 時放進去，總共 n 次。",
     "因為每個點最多進出 S 一次：進去一次、pop 一次。",
     "所以 overall 來說，complexity 可以放在 O(n + m) 之內。",
     "為什麼要做這麼細的分析？procedure 寫出來很簡單，但沒想太多、用一開始的方法寫，就是 n²；想清楚一點，馬上變 n + m。",

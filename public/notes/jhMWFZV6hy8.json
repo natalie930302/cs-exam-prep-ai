@@ -164,7 +164,7 @@
     "機器只認得 0 和 1。要加 5，就需要 5 的 bit pattern（000…0101）。這個 pattern 要從哪裡來？不能憑空生出來。",
     "最直覺的做法：把常用的常數先存在 memory，要用的時候 load 進來。但這樣每次加個 5 都要多一個 load，很浪費時間。",
     "這種情況又佔了 50%，依照 make the common case fast 的原則，要讓它快：直接把常數放進指令裡面。",
-    "這種指令在名字後面加一個 i，例如 addi（add immediate）：把第 29 個 register（$sp）加 4，4 這個 pattern 就放在指令裡。讀出指令時，常數也一起拿到了。",
+    "這種指令在名字後面加一個 i，例如 addi（add immediate）：把 29 號 register（$sp）加 4，4 這個 pattern 就放在指令裡。讀出指令時，常數也一起拿到了。",
     "例子：f = g + 10，f、g 分別在 $s0、$s1，寫成 addi $s0, $s1, 10。",
     "常數可以是正的也可以是負的，所以 MIPS 不需要「減常數」的指令：要減 1，就加 −1，寫成 addi $s2, $s1, -1。",
     "另一個常數：0。0 太常用了（等於 0、大於 0、小於 0……），所以 MIPS 直接把第 0 個 register 用硬體接死成 0，叫 hard-wired，要用 0 就讀 $zero。",
@@ -265,8 +265,8 @@
     "如果指令沒用到 shift（像 add），這個 field 就填 0。",
     "來看例子：add $t0, $s1, $s2，意思是把 $s1 和 $s2 加起來放到 $t0。",
     "它是 R-type，所以 op 一律是 0；它是加法，funct 是 32。",
-    "第一個 source rs 是 $s1，也就是第 17 個 register；第二個 source rt 是 $s2，第 18 個。",
-    "destination rd 是 $t0，第 8 個 register；不是 shift，shamt 填 0。所以六個欄位的十進位是 0 17 18 8 0 32。",
+    "第一個 source rs 是 $s1，也就是 17 號 register；第二個 source rt 是 $s2，18 號。",
+    "destination rd 是 $t0，8 號 register；不是 shift，shamt 填 0。所以六個欄位的十進位是 0 17 18 8 0 32。",
     "把每個欄位換成 binary：op 6 bits 是 000000、rs 5 bits 是 10001……接起來就是機器真正看到的 32 個 bits。",
     "這串 0101 跟一般 data 長得一模一樣，當成數字也能讀出一個值。差別只在：告訴機器這是 instruction，它就照指令的格式去解釋。",
     "知道這是 R-type 指令，硬體就照格式切開：前 6 個是 op code，再來 5、5、5、5、6 個 bits 一段一段拿出來，組合起來就知道要做什麼。",
@@ -330,7 +330,7 @@
     "注意順序：assembly 先寫 destination（21），再寫 source（22）；但在格式裡 rs（source，22）排前面、rt（destination，21）排後面。",
     "最後 16 bits 放 −50（用二補數表示）。整個指令：8、22、21、−50，換成 binary 再換成 hex 是 0x22D5FFCE。",
     "Load、store 也是 I-type。例如 lw $t0, 1200($t1)：lw 的 op code 是 35。",
-    "rs 放 base register $t1（第 9 個），rt 放目的地 $t0（第 8 個），16 bits 放 offset 1200。所以是 35 9 8 1200，編成 0x8D2804B0。",
+    "rs 放 base register $t1（9 號），rt 放目的地 $t0（8 號），16 bits 放 offset 1200。所以是 35 9 8 1200，編成 0x8D2804B0。",
     "lw/sw 的 16 bits 當 offset 用，同樣是 signed、要 sign extension。所以 offset 不能任意大，只能在 base 的 ±2¹⁵ bytes 範圍內；超過的話，就得把 base 改到別的位置。"
    ]
   }
@@ -352,8 +352,8 @@
    "opts": [
     "32-bit 資料最多 shift 31 次，0～31 用 5 bits 表示",
     "因為 MIPS 有 32 個 register，編號剛好需要用 5 bits",
-    "因為 op code 是 5 bits，要對齊",
-    "因為 shift 只能做 5 次"
+    "因為 shift 最多只能移 16 位（半個 word）",
+    "因為一個指令最多只能 shift 5 個 bit"
    ],
    "ans": "32-bit 資料最多 shift 31 次，0～31 用 5 bits 表示",
    "why": "shift 32 以上就全是 0，沒有意義；2⁵ = 32 種剛好。"
@@ -408,7 +408,7 @@
     "Make the common case fast",
     "Smaller is faster",
     "Simplicity favors regularity",
-    "Amdahl 的 parallelism"
+    "Good design demands good compromise"
    ],
    "ans": "Make the common case fast",
    "why": "約 50% 的 operand 是常數，放 memory 每次都要 load 太慢。"

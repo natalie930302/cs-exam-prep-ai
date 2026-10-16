@@ -102,7 +102,7 @@
     "Bari 把 greedy 的做法寫成一個通用的[[演算法]]（general method），任何 greedy 題目都長這個樣子。",
     "Greedy 把問題分成好幾個 stage（階段），每個階段只看一個 input（輸入）。下面這排藍色方塊就是 inputs，金色的是現在正在看的那個。",
     "看完這個 input，如果它 feasible（放進去不會違反限制），就把它放進右邊的 Solution。這裡用「總和不能超過 15」當示意的限制。",
-    "一個階段一個階段做下去，把所有 feasible 的 input 收進來，最後就得到 optimal solution。",
+    "一個階段一個階段做下去，把所有 feasible 的 input 收進來，最後就得到 optimal solution。前提是 Select 的規則選對了：規則要能證明一定得到最佳解，否則只是一個「還不錯」的解。",
     "程式的開頭 Greedy(a, n)：a 是裝著所有 input 的[[陣列]]，n 是 input 的個數，這裡有 6 個。",
     "for i = 1 to n 是一個[[迴圈]]：i 從 1 數到 n，每數一次就是一個 stage。",
     "x = Select(a)：從 a 裡依照某個規則選出一個 input，叫它 x。這裡示意的規則是「挑最大的」，所以先選 9。規則怎麼訂，就是每一題 greedy 的關鍵。",

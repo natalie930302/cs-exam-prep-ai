@@ -946,7 +946,7 @@ scene('ppA-17b-lwsub', '17B：lw 與 sub 一個 cycle 一個 cycle 走過 datapa
     cap('cycle 5：lw 做 write back', '把讀到的資料寫回 $10');
   },
   async (tok, S) => { // @576.1
-    S.n2 = bub('sub 的結果其實 cycle 3 就算好了，可不可以現在就寫？', 1.4, 0.2);
+    S.n2 = bub('sub 的結果其實 cycle 4（它的 EX）就算好了，可不可以現在就寫？', 1.4, 0.2);
     cap('sub 的 data 早就算完了', '理論上下一個 cycle 就能寫回……');
   },
   async (tok, S) => { // @598.2
@@ -1039,7 +1039,7 @@ scene('ppA-17b-ctl', '17B：pipelined control：signal 一樣，只是用的時�
   async (tok, S) => { // @888.9
     txt(S.t2, 'R-type 在 EX：ALUSrc = 0（第二個運算元來自 rt）—— 和 single cycle 一樣');
     S.d.hot(2);
-    cap('R-type 在 EX 要做 ALU 運算', '第二個 operand 從 rt 來：設法和 single cycle 一樣');
+    cap('R-type 在 EX 要做 ALU 運算', '第二個 operand 從 rt 來：和 single cycle 一樣');
   },
   async (tok, S) => { // @920.8
     S.d.cool(); S.d.hot(4);
@@ -1894,12 +1894,12 @@ scene('ppA-18a-time', '18A：時序圖：sub $2 寫回之前，誰讀到舊的 $
   },
   async (tok, S) => { // @1641.2
     S.g.hot(4, 6, '#0f5a3a');
-    gone(S.t2); S.t2 = ok(RD_CYC[3] > WB2, 0.6, 1.6, 'cycle 6 讀（add）：$2 已經寫好 → 正確 ✓');
+    gone(S.t2); S.t2 = ok(RD_CYC[3] > WB2, 0.6, 1.6, 'cycle 6 讀（sw）：$2 已經寫好 → 正確 ✓');
     cap('到這個 register 是正確資料了', '第五個 cycle 已經寫下去');
   },
   async (tok, S) => { // @1656.6
     S.g.hot(3, 5, '#0f5a3a');
-    S.t3 = ok(RD_CYC[2] === WB2, 0.6, 1.0, 'cycle 5 讀（or）：同一個 cycle 寫與讀 → internal forwarding（前半寫、後半讀）也 OK ✓');
+    S.t3 = ok(RD_CYC[2] === WB2, 0.6, 1.0, 'cycle 5 讀（add）：同一個 cycle 寫與讀 → internal forwarding（前半寫、後半讀）也 OK ✓');
     cap('cycle 5 有沒有問題？', '有 internal forwarding 的話就沒問題');
   },
   async (tok, S) => { // @1668.5
@@ -2413,7 +2413,7 @@ scene('ppA-19a-nop', '19A：compiler 插 no-op（軟體解法）', [
     txt(S.t, 'software solution：sub 之後要用 $2，至少等兩個 clock cycle');
     DEP.forEach((t, k) => S.g.add(k, t, L5(k + 1))); S.g.upto(99);
     S.g.hot(0, 5, COL.gold); S.g.hot(1, 3, '#7a1010'); S.g.hot(2, 4, '#7a1010');
-    cap('先看 software solution', '這個 data 出來，要用 2 至少要等');
+    cap('先看 software solution', '要用 $2，至少要等兩個 cycle');
   },
   async (tok, S) => { // @1343.5
     S.t2 = note('and 要在 cycle 5（sub 寫回的那個 cycle，前寫後讀）才讀得到 → 要往後挪 2 個 cycle', 0.6, 2.1);
@@ -2758,7 +2758,7 @@ scene('ppA-19a-double', '19A：兩個都要寫同一個 register：forward 最�
   },
   async (tok, S) => { // @2896.4
     const C2 = FW('add $1, $1, $2', 'add $5, $6, $7', 'add $1, $1, $4');
-    S.c = ok(C_DBL.FA === '10' && C2.FA === '01', 2.2, 6.3, '前一個不寫 R3 時才選 MEM/WB：01 ✓（兩個都寫時仍是 10）');
+    S.c = ok(C_DBL.FA === '10' && C2.FA === '01', 2.2, 6.3, '例：前一個不寫 $1 時才選 MEM/WB：01 ✓（兩個都寫 $1 時仍是 10）');
     cap('前一個的 rd 跟 rs 不一樣', '才去 check 前兩個 → forward 01');
   },
   async (tok, S) => { // @2950.0
@@ -3005,7 +3005,7 @@ scene('ppA-19b-loaduse', '19B：load-use：forwarding 救不了，一定要 stal
   },
   async (tok, S) => { // @652.6
     S.g.hot(2, 3, COL.gold); S.g.hot(2, 4, COL.gold);
-    txt(S.t3, 'insert 一個 no-op = 這個 instruction「再執行一遍」：再 fetch／decode 同一個（ID 做兩次）');
+    txt(S.t3, 'insert 一個 no-op = 這個 instruction「再執行一遍」：同一個再 decode 一次（ID 做兩次），後面那個也再 fetch 一次');
     cap('insert no-op 的意思', '就是這個 instruction 再執行一遍');
   },
   async (tok, S) => { // @687.2
@@ -3667,7 +3667,7 @@ scene('ppA-19b-predict', '19B：dynamic branch prediction：1-bit 錯兩次、2-
   async (tok, S) => { // @2903.1
     glow(S.st[2], COL.gold);
     gone(S.k); S.k = ok(P2w === 1 && P2[0].ok, 0.6, 2.2, 'predictRun（2-bit）：要連錯兩次才改預測 → 出口錯 1 次後只降到「弱 T」，下一趟第一次仍猜對：每趟只錯 ' + P2w + ' 次 ✓');
-    cap('連續兩次才改變狀態', '否則就維持原狀');
+    cap('連錯兩次才改變預測', '只錯一次仍維持原來的預測');
   },
   async (tok, S) => { // @2925.2
     txt(S.t2, 'prediction 很重要，所以才有這些比較複雜的 predictor —— 下次繼續');
@@ -4632,7 +4632,7 @@ scene('ppB-20a-handle', '20A：處理 exception：EPC、Cause、entry point', [
   },
   async (tok, S) => { // 2893.1
     relabel(S.cz, 'Cause = 0 / 1'); sm('0：undefined opcode　1：overflow', -4.8, 0.5);
-    cap('MIPS 只有兩種 exception', 'undefined opcode 記 0、overflow 記 1');
+    cap('這個簡化的例子只有兩種 exception', 'undefined opcode 記 0、overflow 記 1');
   },
   async (tok, S) => { // 2927.2
     sm('exception（不是 interrupt）：不會把這個指令執行完', 1.8, 1.0);
@@ -5024,7 +5024,7 @@ scene('ppB-21a-multi', '21A：multiple exceptions：precise 與 imprecise', [
     cap('發生在不同 stage', '應該處理誰的？');
   },
   async (tok, S) => { // 1162.0
-    sm('← 越右邊的 stage 越早進來（最早執行）', 2.2, 5.6);
+    sm('越右邊的 stage 越早進來（最早執行）→', 2.2, 5.6);
     cap('處理「最前面」的那一個', '也就是在 pipeline 最後面 stage 的');
   },
   async (tok, S) => { // 1189.7
@@ -5256,7 +5256,7 @@ scene('ppB-21a-static', '21A：static vs dynamic multiple issue', [
   },
   async (tok, S) => { // 2365.7
     S.pk = [0, 1, 2, 3].map((i) => card('指令', FC.blue, -5.0 + i * 1.1, 3.6, 1.0, 0.5, 0.5, 9)); sm('pack 成一個 issue packet（4-way）', -3.4, 2.9);
-    cap('group 起來成一個 issue slot', '4-way 就 4 個、2-way 就 2 個');
+    cap('group 起來成一個 issue packet', '4-way 就 4 個、2-way 就 2 個');
   },
   async (tok, S) => { // 2379.9
     sm('compiler 要 detect and avoid hazard；猜錯要有 fix 的 routine', -3.4, 2.2);
@@ -5847,7 +5847,7 @@ scene('ppB-21b-sched-ex', '21B：scheduling 例子：4 個 cycle 做 5 個指令
   },
   async (tok, S) => { // 1313.2
     S.c.hl(3); sm('寫回去；$s1 減 4 → 下一個 element', 1.8, 4.0);
-    cap('sw 寫回，addi 把 $s1 減 4', '例如第 100 個 element 變第 96 個');
+    cap('sw 寫回，addi 把 $s1 減 4', '例如位址 100 變 96（往前一個 word）');
   },
   async (tok, S) => { // 1331.7
     S.c.hl(4); sm('$s1 = 0 時結束', 1.8, 3.4);

@@ -44,7 +44,7 @@
     232.2
    ],
    "explain": [
-    "上一講學了函數的定義，以及三種特別的函數：one-to-one（injective，單射，不同的輸入對到不同的輸出）、onto（surjective，滿射，每個輸出都有人對到）、兩個都滿足的 one-to-one correspondence（bijective，雙射）。",
+    "上一講學了函數的定義，以及三種特別的函數：one-to-one（injective，一對一／嵌射：不同的輸入對到不同的輸出）、onto（surjective，映成／蓋射：每個輸出都有人對到）、兩個都滿足的 one-to-one correspondence（bijective，對射）。",
     "今天先講兩個函數之間的「運算」：合成。第一個函數 f 從 A 對到 B：A 叫 domain（定義域），B 叫 codomain（對應域）。箭頭表示每個元素對到哪裡（元素是示意）。",
     "另一個函數 g 從 B 對到 C。注意 g 的 domain 剛好是 f 的 codomain B，兩個才接得起來。",
     "把兩個接起來就得到合成函數 g ∘ f（讀作「g 圈 f」），它還是一個函數，從 A 直接對到 C。",
@@ -130,7 +130,7 @@
     "接著看合成的幾個性質。設定一樣：f 從 A 到 B，g 從 B 到 C。",
     "第一：如果 f 和 g 都是 injective（一對一），合成以後 g ∘ f 還是一對一。",
     "第二：如果 f 和 g 都是 surjective（onto，蓋滿），合成以後還是 onto。",
-    "第三：如果兩個都是 bijective（雙射），合成以後還是 bijective。接下來一條一條證。"
+    "第三：如果兩個都是 bijective（對射），合成以後還是 bijective。接下來一條一條證。"
    ]
   },
   {

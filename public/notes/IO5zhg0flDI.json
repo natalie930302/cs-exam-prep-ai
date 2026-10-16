@@ -393,8 +393,8 @@
     "sub 要寫回 R2（$2），要到第 5 個 clock cycle 的 WB 才寫回。",
     "後面四個指令都要 access R2，分別在第 2 段讀，也就是 clock 3、4、5、6。程式從排程算出來，和老師說的一樣。",
     "在 cycle 5 寫回之前去讀的，拿到的都是還沒寫回的舊資料。可是照程式的意思，它們要的是新的 $2。",
-    "cycle 6 讀的那個（add）就沒問題了，因為 cycle 5 已經寫下去了。",
-    "cycle 5 那個呢？讀和寫在同一個 cycle。如果 register file 有 internal forwarding（前半段寫、後半段讀），它也能讀到新值。",
+    "cycle 6 讀的那個（sw）就沒問題了，因為 cycle 5 已經寫下去了。",
+    "cycle 5 讀的那個（add）呢？讀和寫在同一個 cycle。如果 register file 有 internal forwarding（前半段寫、後半段讀），它也能讀到新值。",
     "所以剩下 and、or 這兩個會讀錯，這就是 data hazard。"
    ]
   },

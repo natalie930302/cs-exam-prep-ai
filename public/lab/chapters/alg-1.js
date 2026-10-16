@@ -77,7 +77,7 @@ export default function (ctx) {
   const LOOPS = {
     inc: { name: 'i++', code: ['for (i = 0; i < n; i++)', '  stmt;'], run: (n) => { const s = []; for (let i = 0; i < n; i++) s.push(i); return s; }, big: 'O(n)', why: 'i 一次加 1，走 n 步' },
     dec: { name: 'i--', code: ['for (i = n; i > 0; i--)', '  stmt;'], run: (n) => { const s = []; for (let i = n; i > 0; i--) s.push(i); return s; }, big: 'O(n)', why: '從 n 走回 1，步數一樣是 n' },
-    step2: { name: 'i += 2', code: ['for (i = 0; i < n; i += 2)', '  stmt;'], run: (n) => { const s = []; for (let i = 0; i < n; i += 2) s.push(i); return s; }, big: 'O(n)', why: 'n/2 次，次數仍是 1' },
+    step2: { name: 'i += 2', code: ['for (i = 0; i < n; i += 2)', '  stmt;'], run: (n) => { const s = []; for (let i = 0; i < n; i += 2) s.push(i); return s; }, big: 'O(n)', why: 'n/2 次，n 的最高次方仍是 1' },
     dbl: { name: 'i *= 2', code: ['for (i = 1; i < n; i *= 2)', '  stmt;'], run: (n) => { const s = []; for (let i = 1; i < n; i *= 2) s.push(i); return s; }, big: 'O(log n)', why: '2ᵏ ≥ n 時停 → ⌈log₂ n⌉ 次' },
     half: { name: 'i /= 2', code: ['for (i = n; i >= 1; i = i / 2)', '  stmt;'], run: (n) => { const s = []; for (let i = n; i >= 1; i = Math.floor(i / 2)) s.push(i); return s; }, big: 'O(log n)', why: 'n/2ᵏ < 1 時停 → ⌊log₂ n⌋ + 1 次' },
     sq: { name: 'i*i < n', code: ['for (i = 0; i * i < n; i++)', '  stmt;'], run: (n) => { const s = []; for (let i = 0; i * i < n; i++) s.push(i); return s; }, big: 'O(√n)', why: 'i² ≥ n 時停 → ⌈√n⌉ 次' },
@@ -583,7 +583,7 @@ export default function (ctx) {
         const [nm, c, col] = L[r];
         for (let k = 0; k < c; k++) { cube('', col, [0.24, 0.3, 0.6], -5.2 + k * 0.28, 0.15, -2.4 + r * 1.6, 2); if (k % 4 === 3) await beat(tok, 40); }
         tag(c + ' 次', 'ptr alt', 6.4, 0.3, -2.4 + r * 1.6);
-        say(nm + '：' + c + ' 次', r === 1 ? '1 → 10 和 10 → 1 步數一樣' : r >= 2 ? 'n/' + (r === 2 ? 2 : 20) + '：次數仍是 1' : '');
+        say(nm + '：' + c + ' 次', r === 1 ? '1 → 10 和 10 → 1 步數一樣' : r >= 2 ? 'n/' + (r === 2 ? 2 : 20) + '：n 的次方仍是 1' : '');
         await beat(tok, 1200);
       }
       say('四種都是 O(n)', 'n、n/2、n/20 都是 n 的一次式');
@@ -615,7 +615,7 @@ export default function (ctx) {
     }
     say('0 + 1 + … + (n−1) = n(n−1)/2 = 15', '影片近似成 1 + 2 + … + n = n(n+1)/2');
     await beat(tok, 2800);
-    say('(n² + n)/2 的次數是 2 → O(n²)', '只有一半，但同階');
+    say('(n² + n)/2 的最高次方是 2 → O(n²)', '只有一半，但同階');
     await beat(tok, 2800);
   }
 
@@ -753,7 +753,7 @@ export default function (ctx) {
   async function scLoopSummary(tok) {
     fresh([0, 5, 14.5], [0, 3, 0]);
     const n = 64;
-    const R = [['i++', 64, 'O(n)', C.blue], ['i += 2', 32, 'O(n)', C.blue], ['i--', 64, 'O(n)', C.blue], ['i *= 2', 6, 'O(log₂ n)', C.green], ['i *= 3', 4, 'O(log₃ n)', C.green], ['i /= 2', 7, 'O(log₂ n)', C.green]];
+    const R = [['i++', 64, 'O(n)', C.blue], ['i += 2', 32, 'O(n)', C.blue], ['i--', 64, 'O(n)', C.blue], ['i *= 2', 6, 'O(log₂ n)', C.green], ['i *= 3', 4, 'O(log₃ n)', C.green], ['i /= 2', 6, 'O(log₂ n)', C.green]];
     say('n = 64：常見迴圈各跑幾次', '');
     await beat(tok, 1600);
     for (let r = 0; r < R.length; r++) {
@@ -762,10 +762,10 @@ export default function (ctx) {
       const m = bar(col, 1.3, 1.3, x, 0); await growBar(tok, m, 0.15 + c * 0.085, 500);
       tag(c + ' 次', 'idx', x, 0.4 + c * 0.085);
       tag(big, 'ptr alt', x, 1.1 + c * 0.085);
-      say(nm + '：' + c + ' 次 → ' + big, r === 1 ? 'n/2 也是 O(n)' : r === 4 ? 'log₃ 64 ≈ 3.8 → 4 次' : '');
+      say(nm + '：' + c + ' 次 → ' + big, r === 1 ? 'n/2 也是 O(n)' : r === 4 ? 'log₃ 64 ≈ 3.8 → 4 次' : r === 5 ? 'i 從 64 開始除 2，i > 1 就繼續' : '');
       await beat(tok, 1300);
     }
-    say('加減 → O(n)；乘除 → O(log n)', 'O 寫的是次數：n/2、n/200 都是 O(n)');
+    say('加減 → O(n)；乘除 → O(log n)', 'O 只看 n 的最高次方：n/2、n/200 都是 O(n)');
     await beat(tok, 3200);
   }
 
@@ -1700,11 +1700,11 @@ FRAG.push(['algbari1-loop-variants', 'i++、i--、i += 2 都是 O(n)；巢狀 n�
   say('只跑一半：n/2 次', '每次跳兩格');
   await step(tok);                                   // 104.8 n/2: degree is 1 → O(n)
   txt(c2, 'n/2 → O(n)');
-  say('n/2 的次數還是 1 → O(n)', 'O 不寫係數');
+  say('n/2 的最高次方還是 1 → O(n)', 'O 不寫係數');
   await step(tok);                                   // 120.4 i += 20: still O(n)
   show(['for (i = 1; i < n; i += 20)', '  stmt;']); name(3, 'i += 20');
   await row(3, [0, 20], AB.orange, 600); cntT(3, 'n/20 → O(n)');
-  say('每次加 20 也一樣：n/20 → O(n)', '加多少都不改變次數');
+  say('每次加 20 也一樣：n/20 → O(n)', '加多少都只改變係數');
   await step(tok);                                   // 139.8 two nested loops
   fresh([0, 7, 12], [0, 1, 0]); cd = null;
   show(['for (i = 0; i < n; i++)', '  for (j = 0; j < n; j++)', '    stmt;'], -2.6, 6.4);
@@ -3429,7 +3429,7 @@ async function ab2Factorial(tok) {
       S2('老師：每個因數換成 log n', '乘起來其實是 (log n)ⁿ，不是 n log n');
     },
     Wn: () => { mark('Ω(n log n)、Ω(n) 也對', 'good', 3.6, 0.3); S2('n! ≥ n log n、n! ≥ n 都成立', 'Ω(n log n)、Ω(n) 都對'); },
-    noT2: () => { mark('沒有 Θ', 'bad', 5.6, Y.mid); S2('nⁿ ≠ 1、nⁿ ≠ n log n → n! 沒有 Θ', ''); },
+    noT2: () => { mark('表上沒有 Θ', 'bad', 5.6, Y.mid); S2('nⁿ ≠ 1、nⁿ ≠ n log n → 類別表上找不到 n! 的 Θ', '補充：Stirling 公式給得出 n! = Θ(√n·(n/e)ⁿ)'); },
     tightDef: () => { mark('tight bound：O 與 Ω 相同', 'note', -1.8, 7.2); S2('tight bound 要 O 和 Ω 是同一個', '有些函數只找得到上界、下界'); },
   };
   await AB2_run(tok, plan, A);
@@ -4066,7 +4066,7 @@ const AB2_RT = {
   n: { lv: [['T(n)', 'n', 1], ['T(n−1)', 'n−1', 0.86], ['T(n−2)', 'n−2', 0.72], ['…', '…', null], ['T(2)', '2', 0.2], ['T(1)', '1', 0.1], ['T(0)', '0', 0]],
     end: [['每層的時間加起來', '0 + 1 + 2 + … + n'], ['= n(n + 1)/2', '三角形面積 ≈ n²/2'], ['T(n) = Θ(n²)', '']] },
   logn: { lv: [['T(n)', 'log n', 1], ['T(n−1)', 'log(n−1)', 0.97], ['T(n−2)', 'log(n−2)', 0.94], ['…', '…', null], ['T(2)', 'log 2', 0.3], ['T(1)', 'log 1', 0.02], ['T(0)', '', 0]],
-    end: [['加起來：log n + … + log 1', '= log(n·(n−1)·…·1) = log n!'], ['log n! ≤ log nⁿ = n log n', '上界'], ['T(n) = O(n log n)', '']] },
+    end: [['加起來：log n + … + log 1', '= log(n·(n−1)·…·1) = log n!'], ['log n! ≤ log nⁿ = n log n', '上界'], ['T(n) = O(n log n)', '其實 log n! = Θ(n log n)，所以也是 Θ(n log n)']] },
   half1: { lv: [['T(n)', '1', 0.22], ['T(n/2)', '1', 0.22], ['T(n/2²)', '1', 0.22], ['T(n/2³)', '1', 0.22], ['…', '…', null], ['T(n/2ᵏ)', '1', 0.22]],
     end: [['一直除到 1：n/2ᵏ = 1', 'n = 2ᵏ → k = log₂ n（像 2⁵ = 32 ⇔ 5 = log₂ 32）'], ['每層 1，共 k 層', 'T(n) = k = log n'], ['T(n) = Θ(log n)', '']] },
   halfn: { lv: [['T(n)', 'n', 1], ['T(n/2)', 'n/2', 0.5], ['T(n/2²)', 'n/2²', 0.25], ['T(n/2³)', 'n/2³', 0.125], ['…', '…', null], ['T(n/2ᵏ)', 'n/2ᵏ', 0.03]],
@@ -5155,7 +5155,7 @@ sc('algbari3-half-circle', '½ + ¼ + ⅛ + … = 一個圓', (S) => { S.cam(); 
   async (S) => { S.p.push(a3Slice(3.2, 4.0, 2.0, Math.PI, Math.PI / 2, A3.blue)); tag('¼', 'ptr alt', 2.4, 4.9, 0.3); say('¼：四分之一', ''); },
   async (S) => { S.p.push(a3Slice(3.2, 4.0, 2.0, Math.PI * 1.5, Math.PI / 4, A3.green)); S.p.push(a3Slice(3.2, 4.0, 2.0, Math.PI * 1.75, Math.PI / 8, A3.purple)); tag('⅛　1/16…', 'ptr alt', 0.6, 2.6, 0.3); say('⅛、1/16…', ''); },
   async (S) => { let a = Math.PI * 1.875, d = Math.PI / 16; for (let i = 0; i < 4; i++) { S.p.push(a3Slice(3.2, 4.0, 2.0, a, d, [A3.pink, A3.teal, A3.gold, A3.red][i])); a += d; d /= 2; } say('一直加到無窮多塊 → 剛好一個圓', '½ + ¼ + ⅛ + … = 1'); await S.talk('拼回一整個！', 'wow', true); },
-  async (S) => { S.eq('≈ 1 → n × 1 → O(n)', 'good'); say('約等於 1 → n·1 → O(n)', ''); },
+  async (S) => { S.eq('括號 = 1 + (½ + ¼ + …) ≈ 2 → O(n)', 'good'); say('級數加起來是有限的常數（約 2）', 'n × 常數 → O(n)'); },
 ]);
 const A3_ST_HN = ['n', 'n/2', 'n/2²', 'n/2³', '…', '1'];
 sc('algbari3-bs-halfn', '代入法：T(n) = T(n/2) + n', (S) => { S.cam(); S.board(-7.3, 7.6, 0.6); S.stairs(A3_ST_HN); say('代入法', ''); }, [
@@ -6739,7 +6739,7 @@ FRAG.push(['algjiang1-swap-cycle', '直覺法：有 unstable 就 swap → 可能
   glow(B.ML.Z.B, GOLD); glow(B.WL.B.Z, GOLD);
   say('運氣不好：裡面有 unstable pair', 'Z 比較愛 B，B 也比較愛 Z');
   await step(tok);                                    // 1320.0 swap them
-  kill(l1); B.off(); k = -1; await swap('Z', 'B', 200);
+  kill(l1); B.off(); await swap('Z', 'B', 200);
   say('那就 swap 一下', 'Z–B 配在一起，Y 改配 C');
   await step(tok);                                    // 1337.8 repeat until nothing is unstable
   cd.hl(2);
@@ -12829,13 +12829,13 @@ FRAG.push(['algmit2-heap-checkri', 'Max Heap 的 insert 與 checkRI 除錯', asy
   tag('update：insert、extract max', 'ptr alt', 4.6, 7.0);
   say('update：insert、extract max');
   await step(tok); // 1351 conceptually a full binary tree
-  say('長相：一棵 full binary tree', '最後會存成 array');
+  say('長相：一棵 complete binary tree（老師口語說 full）', '最後會存成 array');
   await step(tok); // 1357 binary: each node has at most two children
   note('binary：每個節點最多 2 個孩子', -4.6, 7.0);
   say('binary tree：每個節點最多兩個孩子');
   await step(tok); // 1361 full: every level except the last is full
   const full = ghostBox(M2.gold, 11, 3.2, 1.0); full.position.set(0, 4.7, 0);
-  say('full：除了最後一層，每層都填滿', '最後一層從左邊開始放');
+  say('complete：除了最後一層，每層都填滿', '最後一層從左邊開始放');
   await step(tok); // 1389 RI for a max heap
   kill(full);
   glow(ns[0], GOLD); glow(ns[1], GREEN); glow(ns[2], GREEN);
@@ -12874,8 +12874,8 @@ FRAG.push(['algmit2-heap-checkri', 'Max Heap 的 insert 與 checkRI 除錯', asy
   tag('insert = O(高度)', 'ptr', -4.6, 7.0);
   say('insert = O(樹高)');
   await step(tok); // 1458 a full binary tree has height log n
-  tag('full → 高度 = log n', 'ptr alt', -4.6, 6.4);
-  say('full binary tree 的高度一定是 log n', 'n = 節點數 → insert = O(log n)');
+  tag('complete → 高度 = ⌊log n⌋', 'ptr alt', -4.6, 6.4);
+  say('complete binary tree 的高度是 ⌊log n⌋', 'n = 節點數 → insert = O(log n)');
   await step(tok); // 1486 in an array, the parent is index / 2
   const AX = (i) => -4.2 + i * 1.2, ac = [];
   for (let i = 0; i < 8; i++) { ac.push(cube(v[i], M2.purple, [1.0, 0.6, 0.6], AX(i), 0.3, 2.2)); tag(String(i + 1), 'idx', AX(i), -0.2, 2.9); }
@@ -13955,7 +13955,7 @@ FRAG.push(['algmit2-multiplication', 'Multiplication method：取乘積中間的
   glow(pm[0], null);
   say('a 要是奇數', '不然會丟掉資訊');
   await step(tok); // 2857 not very close to a power of 2
-  say('a 不要太靠近 2 的次方', '介於 2^(r−1) 和 2ʳ 之間');
+  say('a 不要太靠近 2 的次方', '介於 2^(w−1) 和 2ʷ 之間（老師口誤說 r）');
   await step(tok); // 2872 theoretically this can be bad
   noT('理論上：還是找得到壞的 key', 0, 3.4);
   say('理論上這還是可能很糟', '老師留作練習：找出壞的 key');
@@ -13992,7 +13992,7 @@ FRAG.push(['algmit2-universal', 'Universal hashing：((ak + b) mod p) mod m', as
   let c = 0, t = 0;
   for (let aa = 1; aa < p; aa++) for (let bb = 0; bb < p; bb++) { t++; if (H(aa, bb, k1) === H(aa, bb, k2)) c++; }
   pkt('Pr[h(k1) = h(k2)] ≤ 1/m', 0, 0.4);
-  say('兩個不同的 key 撞在一起的機率 = 1/m');
+  say('兩個不同的 key 撞在一起的機率 ≤ 1/m');
   await step(tok); // 3004 what is the probability over? what's random?
   say('這個機率是對什麼取的？', '什麼東西是隨機的？');
   await step(tok); // 3012 a and b: the choice of the hash function
@@ -15167,7 +15167,7 @@ FRAG.push(['algmit2-linear-probing', 'Linear probing 與 clustering', async (tok
   cube('k', M2.orange, [0.5, 0.4, 0.5], X(17), 0.32, 0, 2);
   say('而且放進去之後，cluster 又長了一格');
   await step(tok); // 2091 α < 0.99 → clusters of size Θ(log n)
-  say('在合理的機率假設下', 'α = n/m < 0.99 時就會有 Θ(log n) 長的 cluster');
+  say('在合理的機率假設下', '0.01 < α = n/m < 0.99 時就會有 Θ(log n) 長的 cluster');
   await step(tok); // 2136 the problem is the linear probing itself, not h′
   note("就算 h′ 很完美也一樣：問題在「線性」", 0, 2.4, 1.8);
   say("問題不在 h′ 選得好不好", '而在「一格一格往下」這個做法');
@@ -16166,8 +16166,8 @@ FRAG.push(['algmit3-amort-chop', 'Table doubling：把大成本切開攤平', as
   say('切完重新分配：每塊一樣大', '');
   await step(tok);                                   // 3323.0 the costs look like 3 or something
   bars.forEach((b) => { if (b) tint(b, M3.blue); });
-  tag('攤平後每次 ≈ 3', 'say', X(8), 3 * H + 0.6, 0);
-  say('攤平後每次大約 3', '');
+  tag('攤平後每次 ≤ 3', 'say', X(8), 3 * H + 0.6, 0);
+  say('攤平後每次最多約 3', '實際平均 31/16 ≈ 1.9');
   await step(tok);                                   // 3333.0 CPU time doesn't change
   B('CPU 實際花的時間沒變，變的是「怎麼算帳」');
   say('真正的執行時間沒變', '');
@@ -16507,7 +16507,7 @@ FRAG.push(['algmit3-coin-a', '假硬幣：天平的三種結果', async (tok) =>
   const q = tag('最少要秤幾次？', 'pkt', 4.6, 4.6, -1);
   say('最少要秤幾次才找得到假幣？', '');
   await step(tok);                                   // 930.0 log n with binary search?
-  await weigh([0, 1, 2, 3], [4, 5, 6, 7], -1);
+  await weigh([0, 1, 2, 3], [4, 5, 6, 7], 1);
   B('二分法：一半放左、一半放右 → log₂ n 次？');
   say('學生：binary search，log n 次？', '');
   await step(tok);                                   // 941.4 one side is always heavier — never "equal"
@@ -17167,8 +17167,8 @@ FRAG.push(['algmit3-shift-two-bs', '知道 k：兩段各做 binary search', asyn
   const cur = tag('找 6', 'pkt', m3SX(3), 1.7, 0);
   say('例：找 6', '');
   await step(tok);                                   // 472.9 access middle + k instead of the middle
-  tag('想像中的已排序陣列：第 mid 個 = A[(mid + k) mod n]', 'note', 0, 2.6, 0);
-  say('binary search 時改看 mid + k', '');
+  tag('想像中的已排序陣列：第 mid 個 = A[(mid + n − k) mod n]', 'note', 0, 2.6, 0);
+  say('binary search 時改看平移後的位置', '老師口頭說 mid + k；這裡是 (mid + n − k) mod n');
   await step(tok);                                   // 481.1 the problem: it's hard to rewrite binary search
   tag('要重寫 binary search，容易寫錯 ✗', 'bad', 0, 3.4, 0);
   say('可行，但難寫', '');
@@ -17212,8 +17212,8 @@ FRAG.push(['algmit3-shift-findk', 'Binary search 找 k：跟第一個元素比',
   say('那就用 binary search', '');
   await step(tok);                                   // 581.0 if you knew where the min is, that's k
   tint(bars[3], M3.green);
-  tag('最小值的位置 = k', 'good', m3SX(3), 1.5, 0.6);
-  say('最小值 1 的位置就是 k', '');
+  tag('最小值的位置 = n − k', 'good', m3SX(3), 1.5, 0.6);
+  say('找到最小值 1 的位置就知道 k', 'index 3 = n − k → k = 7 − 3 = 4');
   await step(tok);                                   // 609.0 a discontinuity here
   tag('斷崖（discontinuity）', 'bad', (m3SX(2) + m3SX(3)) / 2, 5.6, 0);
   say('12 → 1：這裡有個斷崖', '');
@@ -17250,8 +17250,8 @@ FRAG.push(['algmit3-shift-findk', 'Binary search 找 k：跟第一個元素比',
   line(-5, 6.5 * 0.4, 5, 6.5 * 0.4, 0.5, '#d64545');
   say('畫一條水平線', '左段全在上面、右段全在下面');
   await step(tok);                                   // 754.0 k is where the discontinuity is
-  tag('k', 'pkt', m3SX(3), 1.2, 0.8);
-  say('k 就在斷崖的地方', '');
+  tag('n − k', 'pkt', m3SX(3), 1.2, 0.8);
+  say('斷崖的位置決定 k', '斷崖後第一格 = index n − k');
   await step(tok);                                   // 759.5 a guess below the line: too big
   cur.position.x = m3SX(3); txt(cur, 'mid = 3：1 < 7 → 在線下 → 猜太大'); tint(bars[3], M3.gold);
   say('猜到線下：猜太大', '往左半邊');
@@ -17263,8 +17263,8 @@ FRAG.push(['algmit3-shift-findk', 'Binary search 找 k：跟第一個元素比',
   cur.position.x = m3SX(2); txt(cur, 'mid = 2：12 ≥ 7 → 猜太小'); tint(bars[2], M3.gold);
   await beat(tok, 1000);
   tint(bars[2], M3.blue); tint(bars[3], M3.green);
-  txt(cur, 'k = 3 ✓');
-  say('猜到線上：猜太小', '往右半邊 → 找到 k = 3');
+  txt(cur, '斷崖在 index 3 → k = 7 − 3 = 4 ✓');
+  say('猜到線上：猜太小', '往右半邊 → 斷崖在 index 3，k = 4');
   await step(tok);                                   // 776.4 who says the line? the first element
   tag('這條線 = A[0] = 7', 'ptr alt', 5.6, 6.5 * 0.4 + 0.3, 0.5);
   say('線的高度：第一個元素', 'A[0] = 7');

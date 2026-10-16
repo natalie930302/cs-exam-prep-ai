@@ -1584,7 +1584,7 @@ FRAG.push(['dcbari-bs-tree', 'Binary search 的比較樹：最多 log n 次', as
   say('介於 55 和 62 之間的值，停在 15 的左邊', '每個「不存在的範圍」都是一個 external node');
   await step(tok);                                   // 17:45 找不到也最多 4 次
   note('unsuccessful search：最多 4 次', 0, 7.2);
-  say('不成功的搜尋：1、2、3、4 次就停', '最多也是 4 次比較');
+  say('不成功的搜尋：走到 external node 就停', 'n = 15 時每條路剛好比 4 次 → 最多 4 次');
   await step(tok);                                   // 17:57 最少 1 次：O(1)
   clear(); await path([8], GREEN); gd.mood('happy');
   say('最少：key 剛好在正中間（29）', '1 次比較 → O(1)');
@@ -4119,8 +4119,8 @@ FRAG.push(['dcjiang-bsearch-halving', '每比一次砍一半：log n 次', async
   glow(R.m[a], GOLD);
   say('一半、一半、再一半……', 'worst case：比到最後一個人才分出結果');
   await step(tok);                                   // 1458.8 最多 log n 次
-  tag('16 → 8 → 4 → 2 → 1：log₂16 = 4 層', 'ptr alt', 0, 3.2);
-  say('最多需要多少次比較？', '每次砍一半 → 最多 log n 次');
+  tag('16 → 8 → 4 → 2 → 1：砍 log₂16 = 4 次，再比最後 1 人 → 最多 5 次', 'ptr alt', 0, 3.2);
+  say('最多需要多少次比較？', '每次砍一半 → 約 log n 次（⌊log₂ n⌋ + 1）');
   await step(tok);                                   // 1480.8 O(n) → O(log n)
   bad('一一比對：O(n)', -3.0, 4.3); good('binary search：O(log n)', 2.4, 4.3);
   await me.hop(tok);
@@ -7403,8 +7403,8 @@ FRAG.push(['dcmit-newton-digits', 'Newton 求 √2：正確位數每次翻倍', 
   await anim(tok, 900, (u) => bars.forEach(([b, g]) => hSet(b, g * 0.32 * u)));
   say('二次收斂：正確位數每次約翻倍', '綠條 = 對的位數');
   await step(tok); // @1612.0 1 digit … 8 digits
-  note('1 位 → 3 位 → 6 位 → 10 位…', 3.2, 4.6, 0);
-  say('從約 1 位，到 4 位、8 位…', '越來越快');
+  note('1 位 → 3 位 → 6 位 → 12 位…', 3.2, 4.6, 0);
+  say('從約 1 位，到 3 位、6 位、12 位…', '越來越快（畫面只列 10 位）');
   await step(tok); // @1659.8 only a logarithmic number of iterations
   ok('d 位精度只要約 log d 次迭代', 3.2, 1.0, 1);
   say('算到百萬位也不可怕', '只要對數次迭代');

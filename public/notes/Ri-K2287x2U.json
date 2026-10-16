@@ -375,12 +375,12 @@
   {
    "q": "為什麼 lw/sw 用 base register + offset，而不把位址直接寫進指令？",
    "opts": [
-    "32-bit 位址太長，指令放不下；指定 register 只要 5 bits",
-    "因為 memory 是 word address，offset 要乘 4 才能放進指令",
-    "因為 register 比較便宜",
-    "因為 offset 一定是 0"
+    "32-bit 位址放不進指令，指定 register 只要 5 bits",
+    "memory 是 word address，offset 要先乘 4 才放得進指令",
+    "register 比 memory 便宜，可以減少硬體成本",
+    "offset 一定是 0，只寫 base 就能找到資料"
    ],
-   "ans": "32-bit 位址太長，指令放不下；指定 register 只要 5 bits",
+   "ans": "32-bit 位址放不進指令，指定 register 只要 5 bits",
    "why": "base register 裡放完整的 32-bit 起點，指令只需 5 bits 指定它加一個小 offset。"
   },
   {

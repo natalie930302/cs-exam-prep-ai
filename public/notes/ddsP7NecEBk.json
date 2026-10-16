@@ -463,11 +463,11 @@
      "t": 1238.54
     },
     {
-     "text": "老師把每個因數換成 log n，得到 Ω(n log n)。",
+     "text": "老師把每個因數換成 log n，寫出 Ω(n log n)（乘起來其實是 (log n)ⁿ；但 n! ≥ n log n 確實成立）。",
      "t": 1265.9
     },
     {
-     "text": "n! 只有上界、下界，沒有 tight bound；tight bound 要 O 與 Ω 相同。",
+     "text": "在常用類別表上找不到 n! 的 tight bound，只能給上界、下界；tight bound 要 O 與 Ω 相同。",
      "t": 1320.99
     }
    ],

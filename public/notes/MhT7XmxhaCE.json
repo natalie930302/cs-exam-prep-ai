@@ -90,7 +90,7 @@
     "log 有個規則：log a + log b = log(a × b)。所以一串 log 相加，等於把裡面全部乘起來再取 log。",
     "n × (n − 1) × … × 2 × 1 就是 n!（[[階乘]]），所以總和 = log n!。",
     "n! 是 n 個不超過 n 的數相乘，一定 ≤ nⁿ，所以 log n! ≤ log nⁿ = n log n，這是[[上界]]。",
-    "所以 T(n) = O(n log n)。補充：老師說 log n! 沒有 tight bound，其實有，log n! = Θ(n log n)，答案也可以寫 Θ(n log n)。"
+    "所以 T(n) = O(n log n)，更精確地說是 Θ(n log n)。補充：老師說 log n! 沒有 tight bound，其實有，log n! = Θ(n log n)，答案也可以寫 Θ(n log n)。"
    ],
    "points": [
     {
@@ -114,11 +114,11 @@
      "t": 242
     },
     {
-     "text": "log n! 沒有 tight bound，但上界是 log nⁿ = n log n。",
+     "text": "老師取上界 log n! ≤ log nⁿ = n log n（他說 log n! 沒有 tight bound；其實 log n! = Θ(n log n)）。",
      "t": 273.55
     },
     {
-     "text": "T(n) = O(n log n)。",
+     "text": "T(n) = O(n log n)，更精確地說是 Θ(n log n)。",
      "t": 298
     }
    ],

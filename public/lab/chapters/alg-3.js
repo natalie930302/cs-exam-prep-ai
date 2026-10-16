@@ -1223,8 +1223,8 @@ export default function (ctx) {
   // ───────────────────────── 小測驗 ─────────────────────────
   function mkOpts(ans, cands) {
     const o = [String(ans)];
-    for (const c of cands) { const s = String(c); if (!o.includes(s)) o.push(s); if (o.length === 4) break; }
-    let k = 1; while (o.length < 4) { const s = String(Number(ans) + k * (k % 2 ? 1 : -1) + (k > 2 ? 3 : 0)); if (!o.includes(s)) o.push(s); k++; }
+    for (const c of cands) { const s = String(c); if (Number(c) >= 0 && !o.includes(s)) o.push(s); if (o.length === 4) break; }
+    let k = 1; while (o.length < 4) { const x = Number(ans) + k * (k % 2 ? 1 : -1) + (k > 2 ? 3 : 0), s = String(x); if (x >= 0 && !o.includes(s)) o.push(s); k++; }
     return o;
   }
   function genQ() {
@@ -2115,7 +2115,7 @@ FRAG.push(['dpbari3-msgp-data', '多段圖程式：c[9][9]、cost、d、p', asyn
   say('cost 陣列：每個頂點到 sink 的成本', '');
   await step(tok);                                   // 1:48 d array
   for (let k = 1; k < 9; k++) G.g.mark(1, k, '#efe6d2');
-  say('d 陣列：最短路徑經過哪個頂點', 'd 就是 distance 的下一站');
+  say('d 陣列：最短路徑經過哪個頂點', 'd[i]：從 i 出發，最短那條路的下一站');
   await step(tok);                                   // 1:52 p array for the path
   const P = grid({ rows: 1, cols: 5, cw: 0.74, ch: 0.5, x0: -5.4, y0: 1.2, colHdr: [0, 1, 2, 3, 4], rowHdr: ['p'], rowDx: 0.5 });
   say('最後還要一個 p 陣列', '存找到的路徑');
@@ -3047,7 +3047,7 @@ FRAG.push(['dpbari3-knapp-row34', '0/1 knapsack 程式：第 3、4 列與答案'
   await step(tok);                                   // 12:37 fourth row: weight 5
   C.I.set(4); C.I.mood('wow');
   txt(f, 'i = 4：物品 4（p = 6、wt = 5）— 不用公式直接填');
-  say('第 4 列：物品 4 重 5', '每次都是第二或第三種情況');
+  say('第 4 列：物品 4 重 5', 'w ≥ 1 時只會走第二或第三種情況');
   await step(tok);                                   // 12:45 till 5 as it is; 5 → 6; 6 → 6
   await kpCells(tok, g, cd, C, 4, [0, 1, 2, 3, 4, 5, 6], 300);
   g.clearArrows(); g.unglow();
@@ -3716,9 +3716,9 @@ FRAG.push(['dpbari3-tsp-sub1', 'TSP：改用表格，先算最小的值', async 
   say('g(2, ∅) = 5、g(3, ∅) = 6、g(4, ∅) = 8', '');
   await step(tok);                                   // 12:20 programming = tabular values
   L4.forEach((n) => glow(n.m, null));
-  bub('Dynamic Programming 的 programming = 表格，不是寫程式', 0, 8.3);
+  bub('講者：programming 指表格，不是寫程式（原意是規劃／最佳化）', 0, 8.3);
   D.mood('wow');
-  say('DP 的 programming 指的是表格', '動態產生的表格，不是寫程式');
+  say('講者：DP 的 programming 指表格', '不是寫程式；原意是「規劃」，靠動態填表完成');
   await step(tok);                                   // 12:36 not like recursion: smaller values first
   D.mood('happy');
   say('不照遞迴的方式算', '先算小的值，才能算依賴它的大值');
@@ -4462,14 +4462,14 @@ FRAG.push(['dpjiang1-wis-greedy', 'Weighted interval scheduling：greedy 失效�
   await step(tok);                                   // 878.0 有 weight；request 有 start / finish
   remove(ind);
   line(X(0) - 0.3, 2.0, X(8) + 0.3, 2.0, 0, C.brown); tag('time', 'idx', X(8) + 0.6, 2.0);
-  const R0 = [[0, 2, 5.6], [1, 4, 4.8], [3, 6, 4.0], [5, 8, 3.2]].map(([s, f, y], k) => box(' ', C.gray, (X(s) + X(f)) / 2, y, X(f) - X(s) - 0.06, 0.45, 0.4, 1.0));
+  const R0 = [[0, 2, 5.6], [0.5, 4.8, 4.8], [2.2, 4.4, 4.0], [5, 8, 3.2]].map(([s, f, y], k) => box(' ', C.gray, (X(s) + X(f)) / 2, y, X(f) - X(s) - 0.06, 0.45, 0.4, 1.0));
   say('每個 request 有 start 和 finish time', '占用一段 interval');
   await step(tok);                                   // 922.0 single core 一次一個；以前要做最多個
   [0, 2, 3].forEach((k) => tint(R0[k], C.blue));
   const cnt = tag('以前：做越多個越好（例：12、13、16 三個）', 'ptr', 0, 7.2);
   say('一次只能做一個 request', '以前的目標：個數最多');
   await step(tok);                                   // 947.0 每個 request 做完有 value
-  R0.forEach((m, k) => relabel(m, 'v=' + [3, 26, 2, 16][k]));
+  R0.forEach((m, k) => relabel(m, 'v=' + [12, 26, 13, 16][k]));
   say('現在：每個 request 做完會得到 value', '');
   await step(tok);                                   // 969.0 最佳解只要兩個：26 + 16 = 42
   R0.forEach((m) => tint(m, C.gray)); [1, 3].forEach((k) => { tint(R0[k], C.orange); glow(R0[k], GREEN); });
@@ -6042,7 +6042,7 @@ FRAG.push(['dpjiang1-aug-t', '加新點 t：每個點都連 0 的 edge', async (
   say('對原來的 input graph', '做一個小小的手腳');
   await step(tok);                                   // 2075.0 一個隨意的 directed graph
   for (const [k, p] of Object.entries(P)) N[k] = box(k, C.teal, p[0], p[1], 0.7, 0.55, 0.5, 1.2);
-  [['a', 'b'], ['b', 'c'], ['d', 'a'], ['e', 'd'], ['c', 'e'], ['c', 'f']].forEach(([x, y]) => { E[x + y] = link(P[x], P[y], C.brown, 0.4); });
+  [['a', 'b'], ['b', 'c'], ['d', 'a'], ['e', 'd'], ['c', 'e'], ['f', 'c']].forEach(([x, y]) => { E[x + y] = link(P[x], P[y], C.brown, 0.4); });
   say('假設 input graph 長這樣', '隨便畫的 directed graph');
   await step(tok);                                   // 2102.0 隨便選一個點當 destination
   glow(N.f, GOLD);
@@ -6051,7 +6051,7 @@ FRAG.push(['dpjiang1-aug-t', '加新點 t：每個點都連 0 的 edge', async (
   await step(tok);                                   // 2113.0 不保險：不是每條都經過那個 cycle
   ['ab', 'bc', 'ce', 'ed', 'da'].forEach((k) => E[k].setColor && E[k].setColor(0xd64545));
   ['a', 'b', 'c', 'e', 'd'].forEach((k) => tint(N[k], C.red));
-  bad('到 f 的最短路不一定經過這個 cycle', 1.0, 8.4);
+  bad('這個 cycle 走不到 f → 算到 f 的最短路抓不到它', 1.0, 8.4);
   me.mood('sad');
   say('這樣不保險：可能漏抓', '不是所有到那個點的最短路徑都會經過 negative cycle');
   await step(tok);                                   // 2134.0 加一個新的點 t
@@ -10620,7 +10620,7 @@ FRAG.push(['dpmit1-knap-table', '答案在哪、拓樸順序、初始條件', as
   say('空的 suffix：不用任何物品', '賺 0 元');
 }]);
 
-// 42:22 填表：鋼筆欄 0 0 0 7 7 7、水晶球欄 0 0 4 7 7 11、雕像欄 0 0 0 0 10 11
+// 42:22 填表：鋼筆欄 0 0 0 7 7 7、水晶球欄 0 0 4 7 7 11、雕像欄 0 0 4 7 10 11
 FRAG.push(['dpmit1-knap-fill', '填表：dp(0, 5) = 11', async (tok) => {
   fresh([0, 4.0, 14], [0, 3.8, 0]);
   const Nb = board(4.9, 4.4, 0.4, 'note'), Fm = board(0, 0.6, 0.6, 'ptr alt');
@@ -10668,7 +10668,7 @@ FRAG.push(['dpmit1-knap-fill', '填表：dp(0, 5) = 11', async (tok) => {
   await step(tok);                                   // 2654.3 the last column: 0, 0 …
   Nb('雕像欄（i = 0，4 磅）');
   for (let j = 0; j <= 3; j++) await put(0, j);
-  say('最後一欄：雕像', '前幾格都是 0（4 磅放不下）');
+  say('最後一欄：雕像', 'j < 4 放不下雕像，照抄右邊：0、0、4、7');
   await step(tok);                                   // 2672.1 it needs to be 11
   await put(0, 4); await put(0, 5);
   glow(cells['0,5'], GREEN);
@@ -10801,8 +10801,8 @@ FRAG.push(['dpmit1-pseudo-bits', '32-bit vs 64-bit：為什麼是 pseudo', async
   say('每個重量 64 bits', '輸入只變 2 倍');
   await step(tok);                                   // 3297.9 S ≈ 1.6×10¹⁹ → 10²¹ operations
   const hi = bar(4.3, 21.2 * 0.3, C.red, '≈ 10²¹ 次'); glow(hi, RED);
-  note('S ≈ 1.6×10¹⁹', 6.0, 2.4);
-  say('S ≈ 1.6 × 10¹⁹', '運算 ≈ 10²¹');
+  note('S ≈ 2⁶⁴ ≈ 1.8×10¹⁹', 6.0, 2.4);
+  say('S ≈ 1.8 × 10¹⁹（老師說 1.6）', '運算 ≈ 10²¹');
   await step(tok);                                   // 3315.1 I increased the word size
   glow(hi, null);
   Nb('只是把 word size 加大（紅柱是 log 刻度）');
@@ -10867,7 +10867,7 @@ FRAG.push(['dpmit1-pseudo-trap', 'Pseudo-polynomial 的意思：小心陷阱', a
   Nb('「S 是常數」？那宇宙原子 10⁸⁰ 也是常數 → 什麼都 O(1)，分析就沒意義');
   say('不能說 S 是常數', '不然什麼演算法都是 O(1)');
   await step(tok);                                   // 3518.6 draw a line: it depends on the field size
-  say('要畫一條線', '時間跟數字寬度有關，就能 scale');
+  say('要畫一條線', '時間跟數字寬度有關，就要把寬度當成會變大的量');
   await step(tok);                                   // 3528.8 asymptotics: how do algorithms scale?
   Nb('漸近分析：資料變大時，時間怎麼成長？');
   say('漸近分析看的是', '資料越來越大時時間怎麼成長');
@@ -12217,8 +12217,8 @@ FRAG.push(['dpmit2-bj-dag', 'Blackjack 圖是 DAG：拓撲排序 + relax，O(V+E
   mid('邊的權重 = −O[1]：贏 $1 → −1');
   say('換成最短路徑：權重放 −O[1]', '贏錢的邊變成負的');
   await step(tok);                                   // 835.0 Dijkstra: add one to everything
-  tag('全部 +1 → 權重 0、1、2 都不負 → Dijkstra', 'say', 0, 5.5, 0.3);
-  say('也可以每條邊都 +1，讓權重不是負的', '然後用 Dijkstra');
+  tag('全部 +1 再用 Dijkstra？✗ 局數多的路被加得多', 'bad', 0, 5.5, 0.3);
+  say('學生：每條邊都 +1 再用 Dijkstra？', '老師：不行，每條路的邊數不同，加 1 會改變誰最短');
   await step(tok);                                   // 851.3 negative cycles? no, everything goes right
   arcs.forEach((a) => mCol(a, M.gold));
   mid('有負的邊，但沒有負環：邊全都往右');
@@ -12836,7 +12836,7 @@ FRAG.push(['dpmit2-lis-run', 'LIS 實跑：dp 由右往左 = 3 4 3 4 3 2 2 1', a
   await step(tok);                                   // 3118.3 3 and 8: same idea
   focus(1); setd(1); await beat(tok, 600);
   focus(0); setd(0);
-  chb('8：choices = [1, 2, 2] → 3');
+  chb('8：choices = [1, 3, 2] → 3');
   low('3 和 8 同樣算：dp[1] = 4、dp[0] = 3（老師留給大家算）');
   you.mood('happy');
   say('3 和 8 也一樣算', 'dp = [3, 4, 3, 4, 3, 2, 2, 1]');

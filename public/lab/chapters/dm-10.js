@@ -312,7 +312,7 @@ export default function (ctx) {
     if (r < 0.6) { const n = pick([7, 9, 10, 11, 12, 13, 14, 15]); const us = range(n).filter((a) => a > 1 && gcd(a, n) === 1); const a = pick(us); const inv = range(n).find((b) => mod(a * b, n) === 1); return { q: '在 (ℤ' + sub(n) + '*, ×) 中，' + a + ' 的反元素是？', opts: [...new Set([inv, n - a, mod(inv + 1, n) || 2, a].map(String))].concat(['1']).slice(0, 4), ans: String(inv), why: a + ' × ' + inv + ' = ' + a * inv + ' ≡ 1 (mod ' + n + ')。' }; }
     if (r < 0.72) {
       const n = 5 + rnd(3); const p = range(n).map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]);
-      return { q: 'σ = (' + oneLine(p) + ')（one-line）寫成 cycle 是？order？', opts: [...new Set([cycStr(p) + '，order ' + ordOf(p), cycStr(p) + '，order ' + cycles(p).reduce((s, c) => s + c.length, 0), cycStr(range(n).map((i) => p.indexOf(i))) + '，order ' + ordOf(p), cycStr(p) + '，order ' + n, cycStr(p) + '，order ' + ordOf(p) * 2, cycStr(range(n).map((i) => p.indexOf(i))) + '，order ' + n])].slice(0, 4), ans: cycStr(p) + '，order ' + ordOf(p), why: '從 1 開始追 1 → σ(1) → …；order = 各 cycle 長度的 lcm（不是和）。' + (cycles(p).length ? '' : '') };
+      return { q: 'σ 的 one-line notation 是「' + oneLine(p) + '」（σ(1), σ(2), … 依序列出），寫成 cycle 是？order？', opts: [...new Set([cycStr(p) + '，order ' + ordOf(p), cycStr(p) + '，order ' + cycles(p).reduce((s, c) => s + c.length, 0), cycStr(range(n).map((i) => p.indexOf(i))) + '，order ' + ordOf(p), cycStr(p) + '，order ' + n, cycStr(p) + '，order ' + ordOf(p) * 2, cycStr(range(n).map((i) => p.indexOf(i))) + '，order ' + n])].slice(0, 4), ans: cycStr(p) + '，order ' + ordOf(p), why: '從 1 開始追 1 → σ(1) → …；order = 各 cycle 長度的 lcm（不是和）。' + (cycles(p).length ? '' : '') };
     }
     if (r < 0.86) {
       const qs2 = [["x + xy = ？", ['x', 'xy', 'y', '1'], 'x', '吸收律：x + xy = x(1 + y) = x。'], ["(xy)' = ？", ["x' + y'", "x'y'", "x + y", "xy'"], "x' + y'", 'De Morgan：(xy)\' = x\' + y\'。'], ["x(x' + y) = ？", ['xy', 'x', 'y', '0'], 'xy', "xx' + xy = 0 + xy = xy。"], ["x + x'y = ？", ['x + y', 'y', 'xy', '1'], 'x + y', "分配律：x + x'y = (x + x')(x + y) = x + y。"], ["xy + xy' = ？", ['x', 'y', '1', 'xy'], 'x', "x(y + y') = x·1 = x：方塊上相鄰兩頂點合成一條邊。"], ["x + 1 = ？", ['1', 'x', '0', "x'"], '1', 'Boundedness（Dominance）：x + 1 = 1。'], ["x + yz 的 dual 是？", ['x(y + z)', "x' + y'z'", 'x + y + z', 'xyz'], 'x(y + z)', 'Dual：+ ↔ ·、0 ↔ 1，變數不取補。']];
@@ -482,11 +482,11 @@ export default function (ctx) {
     const turn = async (axis, ang, hop) => { const q0 = tri.quaternion.clone(); await anim(tok, 900, (u) => { tri.quaternion.copy(q0).premultiply(new THREE.Quaternion().setFromAxisAngle(axis, ang * u)); if (hop) tri.position.y = 0.2 + Math.sin(u * Math.PI) * 1.2; }); };
     const rot = (deg) => turn(V3(0, 1, 0), deg * Math.PI / 180, false);
     const flip = () => turn(V3(0, 0, 1), Math.PI, true);
-    say('r：轉 120°', 'r = (1 2 3)'); await rot(120); txt(out, 'r'); await beat(tok, 1200);
+    say('r：轉 120°（頂點 1 → 位置 2）', 'r = (1 2 3)'); await rot(-120); txt(out, 'r'); await beat(tok, 1200);
     say('f：沿過頂點 1 的軸翻面', 'f = (2 3)'); await flip(); txt(out, 'f∘r（先 r 再 f）'); await beat(tok, 1600);
     say('先 r 再 f：得到的是一個翻轉', 'f∘r = (1 3)'); await beat(tok, 2200);
     tri.quaternion.identity(); tri.position.y = 0.2; txt(out, ''); await beat(tok, 800);
-    say('換順序：先 f 再 r', ''); await flip(); await rot(120); txt(out, 'r∘f（先 f 再 r）');
+    say('換順序：先 f 再 r', ''); await flip(); await rot(-120); txt(out, 'r∘f（先 f 再 r）');
     say('結果是另一個翻轉', 'r∘f = (1 2) ≠ f∘r'); await beat(tok, 2600);
     say('S₃ 不交換：最小的 non-abelian group', '一般 n ≥ 3 時 Sₙ 都不交換');
     await beat(tok, 3200);
@@ -731,7 +731,7 @@ scene('ab-ring', 'Ring（環）：兩個運算的公理', [
   async (tok, S) => { setCls(S.l3, 'ptr alt'); cap('注意這一條：乘法單位元', ''); },
   async (tok, S) => { S.r1 = sm('有些人研究「其他都有、就是沒有 1」的結構：rng（ring 去掉 i）', 2.6, 0.6); cap('沒有 1 的叫 rng', ''); },
   async (tok, S) => { S.r2 = sm('也有人叫它 rong（"wrong"）：沒有 1 不太對', 2.6, 0.0); cap('也有人叫 rong', ''); },
-  async (tok, S) => { setCls(S.l3, 'good'); S.r3 = good('標準定義：ring 要有乘法單位元 1', -3.8, 0.6); cap('標準的 ring 要有 1', ''); },
+  async (tok, S) => { setCls(S.l3, 'good'); S.r3 = good('本片的標準定義：ring 要有乘法單位元 1', -3.8, 0.6); S.r4 = sm('（Grimaldi 的 ring 不要求 1；有 1 的叫 ring with unity）', -3.8, 0.0); cap('標準的 ring 要有 1', ''); },
 ]);
 scene('ab-ringex', 'Ring 的例子：ℤ、ℤ_n、2×2 矩陣、多項式', [
   async (tok, S) => { S.t = hd('Ring 的例子', 0, 7.0); S.a = pl('要有加法和乘法，而且要滿足很多性質', 0, 6.1); cap('ring 要有加法和乘法', ''); },

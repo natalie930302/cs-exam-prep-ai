@@ -607,7 +607,7 @@ export default function (ctx) {
     for (const [n, b, c] of segs) { const w = Math.max(0.2, b * k); cube('', c, [w, 0.5, 0.7], x + w / 2, 1.3, 0, 2); tag(n, 'idx', x + w / 2, 1.3, 0.7); x += w; await beat(tok, 700); }
     say('每一格 = 1 + 18 + 128 = 147 bits', '× 1024 格 = 147 Kibit ≈ 18.4 KiB');
     await beat(tok, 3000);
-    say('實際要 18.4 KiB，比 16 KiB 資料多約 1.15 倍', 'tag 與 valid bit 是額外的成本');
+    say('實際要 18.4 KiB，約是 16 KiB 資料的 1.15 倍', 'tag 與 valid bit 是額外的成本');
     await beat(tok, 2800);
     st.kill();
   }
@@ -1215,7 +1215,7 @@ scene('mh-22a-cost', '2008 年：存取時間與價錢，以及我們想要的 m
   },
   async (tok, S) => { // @639.4 ~magnetic disk 更便宜
     S.p2 = sm('$0.20–2', 3.8, 3.9);
-    cap('magnetic disk 更便宜', '每 GB 兩三塊美金以下');
+    cap('magnetic disk 更便宜', '每 GB 約 0.2 到 2 美金');
   },
   async (tok, S) => { // @657.0 ~那我們到底用哪一種
     hot('要用哪一種 technology 做 memory 系統？', 0, 1.8);
@@ -3413,9 +3413,10 @@ scene('mh-24a-058', 'P&H 例：0, 8, 0, 6, 8 → 5、4、3 次 miss', [
     ];
     hd('direct-mapped（4 set）', -5.0, 6.2); hd('2-way（2 set）', -1.0, 6.2); hd('fully（1 set）', 3.6, 6.2);
     S.R = [csim(SEQ058, 4, 1), csim(SEQ058, 2, 2), csim(SEQ058, 1, 4)];
-    S.L = [list(-5.0, 3.0, 0.5), list(-1.0, 3.0, 0.5), list(3.6, 3.0, 0.5)];
+    S.L = [list(-5.6, 3.5, 0.4), list(-0.6, 3.5, 0.4), list(4.4, 3.5, 0.4)];
+    // each column ends with its own summary line; one shared info line under the columns changes text
     S.go = (o, k) => { const r = S.R[o][k]; S.T[o].calm(); if (!r.hit) S.T[o].put(r.s, r.way, 'M[' + r.b + ']', colOf(r.b)); S.T[o].fl(r.s, r.way, r.hit ? OKG : NG); S.seq.forEach((l, j) => { l.element.className = 'lab-label ' + (j === k ? 'ptr alt' : 'idx'); }); S.L[o].add(r.b + '：' + (r.hit ? 'hit' : 'miss') + (r.victim !== null ? '（踢掉 ' + r.victim + '）' : ''), r.hit ? 'good' : 'bad'); return r; };
-    cap('cache 只有 4 個 block', 'direct-mapped 4 個位置；2-way 2 個 set；fully 沒有地址');
+    cap('cache 只有 4 個 block', 'direct-mapped 4 個位置；2-way 2 個 set；fully 只有 1 個 set、沒有 index');
   },
   async (tok, S) => { // @1407.7 ~就幾個地址兩個set而已就只有
     S.T[0].cells.flat().forEach((m) => glow(m, HL)); await wt(tok, 400); S.T[0].calm();
@@ -3437,7 +3438,7 @@ scene('mh-24a-058', 'P&H 例：0, 8, 0, 6, 8 → 5、4、3 次 miss', [
     S.go(0, 4); cap('再 access 8：同一個位置', '又把 0 踢出去：miss');
   },
   async (tok, S) => { // @1496.3 ~exit都是catch miss
-    ok(S.R[0].filter((r) => !r.hit).length === 5, 'direct：全 miss ✓', -5.0, 0.35);
+    { const g = S.R[0].filter((r) => !r.hit).length === 5; if (!g) log('CHECK FAILED: direct', true); S.L[0].add(g ? 'direct：5 miss ✓' : 'direct ✘', g ? 'good' : 'bad'); }
     cap('每一次都是 cache miss', '0、8 交替，同一個位置只能放一個：限制太大');
   },
   async (tok, S) => { // @1523.0 ~好 那我如果two-way set associative
@@ -3454,31 +3455,31 @@ scene('mh-24a-058', 'P&H 例：0, 8, 0, 6, 8 → 5、4、3 次 miss', [
     S.go(1, 2); cap('再 access 0', '還在裡面：hit！');
   },
   async (tok, S) => { // @1589.94 ~再來6 又map到為什麼
-    const r = S.go(1, 3); ok(r.victim === 8, '6 → set 0，LRU 換掉 8 ✓', -1.0, 0.35);
+    const r = S.go(1, 3); S.L[1].add(r.victim === 8 ? '↳ LRU 換掉 8 ✓' : '↳ LRU ✘', r.victim === 8 ? 'good' : 'bad');
     cap('6 mod 2 = 0：set 變少，6 也擠到 set 0', '只有兩個 entry，把最不常用的 8 換出去');
   },
   async (tok, S) => { // @1630.1 ~有一個replacement的機制
     S.go(1, 4); cap('8 又來了：剛剛被搬出去', 'miss，位置不夠，把 0 換出去');
   },
   async (tok, S) => { // @1658.5 ~雖然它裡面增加兩個entry
-    sm('set 內 entry 變多，但 set 數變少 → 更多人搶', -1.0, -0.35);
+    S.info = note('set 內 entry 變多，但 set 數變少 → 更多人搶同一個 set', 0, 0.6);
     cap('雖然一個 set 有兩個 entry', '但 set 變少，更多人 map 到這裡搶位置');
   },
   async (tok, S) => { // @1669.8 ~我們就幾個就有一個Hit
-    ok(S.R[1].filter((r) => r.hit).length === 1, '2-way：1 hit、4 miss ✓', -1.0, -0.9);
+    { const g = S.R[1].filter((r) => r.hit).length === 1; S.L[1].add(g ? '2-way：4 miss ✓' : '2-way ✘', g ? 'good' : 'bad'); }
     cap('2-way 的結果', '1 個 hit、4 個 miss');
   },
   async (tok, S) => { // @1675.2 ~空位我就進來
     for (let k = 0; k < 5; k++) { S.go(2, k); await wt(tok, 350); }
-    ok(S.R[2].filter((r) => !r.hit).length === 3, 'fully：3 miss（0、8、6）✓', 3.8, 0.35);
+    { const g = S.R[2].filter((r) => !r.hit).length === 3; S.L[2].add(g ? 'fully：3 miss ✓' : 'fully ✘', g ? 'good' : 'bad'); }
     cap('fully associative：有空位就進來', '0、8 放進來；0 hit；6 再放進來；8 hit');
   },
   async (tok, S) => { // @1694.8 ~8又再 hit 所以它有兩個 hit
-    note('miss：5 → 4 → 3（associativity ↑，miss rate ↓）', 0, -1.6);
+    txt(S.info, 'miss：5 → 4 → 3（associativity ↑，miss rate ↓）');
     cap('fully 有兩個 hit', 'miss rate 最小，但成本最貴');
   },
   async (tok, S) => { // @1705.5 ~因為它每一次比對要幾個
-    sm('每次比對：fully 4 個 comparator、2-way 2 個、direct 1 個', 0, -2.2);
+    txt(S.info, '每次比對：direct 1 個、2-way 2 個、fully 4 個 comparator');
     cap('每次找要比對幾個？', 'fully 要 4 個；2-way 2 個；direct-mapped 只要 1 個');
   },
 ]);

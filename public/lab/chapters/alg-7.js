@@ -2296,8 +2296,8 @@ FRAG.push(['spbari-bf-relax', 'Bellman-Ford：所有邊 relax n − 1 次', asyn
   await step(tok); // longest path has 6 edges
   const lp = [0, 3, 2, 1, 4, 6];
   sbPath(lp, C.hot, 2);
-  pk = await sbWalk(tok, '最多 6 條邊', lp, 380);
-  say('從 1 到 7 的路徑，最多 6 條邊', '');
+  pk = await sbWalk(tok, '5 條邊（≤ 6）', lp, 380);
+  say('7 個頂點：任何路徑最多 6 條邊', '這張圖最長的一條走了 5 條');
   await step(tok); // covers all paths
   kill(pk); sbPath(lp, C.edge, 1);
   board('relax 6 次 → 連最長的路徑也涵蓋');
@@ -3121,7 +3121,7 @@ FRAG.push(['spmit1-two-algos', 'L15：Dijkstra 與 Bellman-Ford', async (tok) =>
   await step(tok);                                   // @426.0 V cubed
   txt(t4, 'O(VE)：E = V² 時是 O(V³)');
   bf.mood('sad');
-  say('E 可以到 V²，所以是 O(V³)', 'O(V³) 對上 O(V log V)');
+  say('E 可以到 V²，所以是 O(V³)', '同樣的圖 Dijkstra 只要 O(V log V + E) = O(V²)');
   await step(tok);                                   // @437.0 when you have a chance, use Dijkstra
   dj.mood('happy'); await dj.hop(tok);
   say('有機會就用 Dijkstra', '');
@@ -4943,7 +4943,7 @@ FRAG.push(['spmit1-wrongw', 'L18：w 不一定在最短路徑上', async (tok) =
   smPath([0, 5, 3], C.edge, 1);
   note('終止條件沒錯：交替做，w 兩邊都取出就停');
   g.mood('calm');
-  say('終止條件是對的', '拿到 cushion 的同學答得沒錯');
+  say('終止條件是對的', '剛才同學答的條件沒錯');
   await step(tok);                                   // @1552.0 what's wrong: using w to build the path
   note('錯的是：直接拿 w 來組路徑');
   say('錯的是用 w 來組最短路徑', '停下後要再多做一點事');
@@ -5349,7 +5349,7 @@ FRAG.push(['spmit1-landmark', 'L18：用 landmark 算位能', async (tok) => {
   for (let v = 0; v < 5; v++) { nodeTag(v, 'δ(·,L) ' + dl[v]); await beat(tok, 300); }
   say('對所有 u 預先算 δ(u, L)', '');
   await step(tok);                                   // @3136.7 for the given t: δ(t, L), just once
-  const pk = await walk(tok, '4 + … → 2', [3, 4], 600);
+  const pk = await walk(tok, 'δ(t, L) = 2', [3, 4], 600);
   kill(pk);
   note('給定 t：δ(t, L) = 2，只算一次');
   say('對給定的 t 算 δ(t, L)', '只有一個 t，算一次就好');
@@ -6966,7 +6966,7 @@ FRAG.push(['spmit2-r18-integer-land', 'R18：只用整數算 ∛2 到小數 d �
   const pt = cube('.', C.pq, [0.4, 0.5, 0.8], -1.95, 0.25, 1.0, 3);
   for (const [i, c] of [[0, '1'], [1, '2'], [2, '5']]) cube(c, '#bfe8d6', [0.8, 0.5, 0.8], i === 0 ? -2.5 : -1.4 + (i - 1) * 1.0, 0.25, 1.0, 3);
   g.mood('happy'); g.talk('1.25！');
-  say('希望演算法回傳整數 125', '再除以 100（右移）→ 1.25：兩位精度');
+  say('希望演算法回傳整數 125', '再除以 100（小數點左移兩格）→ 1.25：兩位精度');
   await step(tok);                                   // 22:28 整數演算法給的是 floor
   glow(pt, GOLD);
   tag('⌊∛2 · 100⌋ = 125', 'pkt', 0, 0.3, 2.3);
@@ -6980,7 +6980,7 @@ FRAG.push(['spmit2-r18-integer-land', 'R18：只用整數算 ∛2 到小數 d �
   say('b^d 要放進立方根裡', '要變成 b^{3d}：算 ⌊∛(2 · 10⁶)⌋ = 125');
   await step(tok);                                   // 23:25 最後右移 d 位
   g.mood('happy'); g.talk('兩位精度');
-  say('算完右移 d 位', '就得到 d 位精度的答案');
+  say('算完把小數點左移 d 位', '就得到 d 位精度的答案');
 }]);
 
 // 23:38 好的初始值：位數對、第一位用 binary search；何時停

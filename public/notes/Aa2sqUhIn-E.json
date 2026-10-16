@@ -126,7 +126,7 @@
     "很多情況下 E 比 V 大很多，主導了執行時間；而 Dijkstra 對邊數是線性的，所以很划算。",
     "第二個演算法是 Bellman-Ford，正的、負的權重都能處理。",
     "Bellman-Ford 的複雜度是 O(VE)，也就是頂點數乘上邊數。",
-    "因為 E 最多到 V²，所以 Bellman-Ford 最壞是 O(V³)，和 Dijkstra 的 O(V log V) 差非常多。",
+    "因為 E 最多到 V²，所以 Bellman-Ford 最壞是 O(V³)；同樣的稠密圖上 Dijkstra 的 O(V log V + E) 只是 O(V²)，差非常多。",
     "結論：有機會就用 Dijkstra，因為它快很多。",
     "只有當圖裡有負權重的邊、Dijkstra 不能用時，才改用 Bellman-Ford。",
     "負權重真正的麻煩是「負權重 cycle」：cycle 是繞一圈會回到原點的路，如果繞一圈的權重總和是負的，就會打亂最短路徑。演算法得把它找出來。",

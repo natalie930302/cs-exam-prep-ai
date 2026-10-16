@@ -490,7 +490,7 @@
    "q": "Cache size 固定，block size 一直加大，miss rate 最後反而上升，主因是？",
    "opts": [
     "block 數變少，conflict 增加",
-    "spatial locality 消失，tag 變長",
+    "spatial locality 消失，相鄰資料不再一起搬進來",
     "tag 變長",
     "hit time 變短"
    ],

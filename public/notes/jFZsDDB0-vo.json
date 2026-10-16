@@ -322,7 +322,7 @@
     "永遠不是，因為 root 沒有 parent"
    ],
    "ans": "DFS 樹中 root 有兩個以上 child",
-   "why": "影片最後講的 root 特殊條件。"
+   "why": "root 的兩個子樹之間沒有別的路（否則 DFS 會把它們放在同一支），拿掉 root 就斷開；只有一個 child 時拿掉 root 不會斷。"
   },
   {
    "q": "影片中消除 articulation point 3 的方法是？",

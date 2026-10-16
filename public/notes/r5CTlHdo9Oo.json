@@ -616,7 +616,7 @@
      "t": 2954.31
     },
     {
-     "text": "相關問題：把 directed graph 拆成（最大的）SCC，複雜度一樣，可用兩次 DFS 或兩次 BFS 做到。",
+     "text": "相關問題：把 directed graph 拆成（最大的）SCC，複雜度一樣（O(n + m)）；老師說兩次 DFS 或兩次 BFS 都行，但 linear time 的標準做法是 Kosaraju 的兩次 DFS（第一次要用 DFS 的結束順序）。",
      "t": 3014.57
     }
    ],
@@ -672,7 +672,7 @@
     "於是在翻轉的 graph 上做 BFS 就能找到對方，最後再測試兩個 set 是不是一模一樣就結束了。",
     "很相關的問題：給一個 directed graph，能不能把它拆成一些 strongly connected component？當然可以。",
     "這門課沒有特別講這個 procedure，大家可以回去想。記得要拆成最大（maximal）的形式。",
-    "它的複雜度跟這個一樣，概念上可以用兩次 DFS 做到，也可以用兩次 BFS 做到。"
+    "它的複雜度跟這個一樣，老師說概念上可以用兩次 DFS 做到，也可以用兩次 BFS 做到。補充：要在 linear time 拆出所有 SCC，標準做法是 Kosaraju 的兩次 DFS（第一次 DFS 的結束順序決定第二次的起點順序）；只用 BFS 的話，一次 G 加一次 G^rev 只能找出「包含 s 的那一個」SCC（R ∩ R^rev）。"
    ]
   }
  ],

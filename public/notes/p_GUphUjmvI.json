@@ -160,7 +160,7 @@
     "所以不是永遠都能 forward（cannot always forward）：load 後面馬上讀它的結果，一定要停下來。",
     "停一個 cycle，等於加一個 no-op（nop）在中間。讀的人的 EX 延到 cycle 5，這時資料已經在 MEM/WB，再 forward 就好。程式排程驗算：stall 1 個 cycle、EX 在 cycle 5。",
     "如果用 software，也許就由 compiler 插一個 no-op；如果不靠 software，就要在 run time（執行時）用 hardware 的 hazard detection 自己偵測。",
-    "什麼叫 insert 一個 no-op？意思是這個 instruction「再執行一遍」：偵測到它依賴上面的 load，就先不要往下走，再 fetch、再 decode 同一個 instruction（ID 做了兩次）。",
+    "什麼叫 insert 一個 no-op？意思是這個 instruction「再執行一遍」：偵測到它依賴上面的 load，就先不要往下走，下一個 cycle 再 decode 同一個 instruction 一次（ID 做了兩次），它後面那個指令也再 fetch 一次。",
     "第一次 decode 出來的那份不要用，就把它的 control 全部給 0。全部是 0 的 control 往下傳，就是一個什麼都不做的 nop，也叫 bubble（氣泡）。",
     "所以要做兩件事：第一，要有一個 detection 的 controller 去偵測這種情況；第二，datapath 要能真的停下來（stall）。"
    ]
@@ -533,7 +533,7 @@
     "等 outer loop 做完一圈又回到 inner loop：第一個 iteration 實際要跳（taken），卻被猜成 not taken，又錯一次。",
     "所以連錯兩次：最後一次和下一趟的第一次剛好都錯。程式用本章的 predictor 模擬，每趟 inner loop 錯 2 次。",
     "改進方法：不要只看一次，看兩次，也就是 2-bit predictor，有四個狀態（強 N、弱 N、弱 T、強 T）。",
-    "要連續兩次結果都一樣（例如連續兩次 taken）才改變預測，否則維持原狀。迴圈出口錯一次只會從「強 T」降到「弱 T」，下一趟第一次仍然猜 taken，猜對。程式模擬：每趟只錯 1 次。",
+    "要連續猜錯兩次才改變預測；只錯一次，預測維持原狀。迴圈出口錯一次只會從「強 T」降到「弱 T」，下一趟第一次仍然猜 taken，猜對。程式模擬：每趟只錯 1 次。",
     "prediction 很重要，所以才要做這些比較複雜的 predictor。老師說下次再繼續介紹。"
    ]
   }

@@ -46,7 +46,7 @@
      "t": 76.79
     },
     {
-     "text": "Max flow 的值可以從 source 送出的總量量，也可以從 sink 收到的總量量。",
+     "text": "Flow 的值可以從 source 送出的總量來量，也可以從 sink 收到的總量來量。",
      "t": 108.85
     }
    ]
@@ -474,7 +474,7 @@
     "worst case：每一輪只增加 1（整數最小就是 1），1、2、3、4……",
     "所以最多經過 C 個 iteration，一定會停下來。",
     "每一輪要花多少時間？先要 construct residual graph，跟邊的數量有關。",
-    "再找 augmenting path：任何找路的演算法都可以，例如 [[BFS]]，甚至 [[Dijkstra]]，大約跟邊數成線性。",
+    "再找 augmenting path：任何找路的演算法都可以。用 [[BFS]] 或 DFS 就是 O(m)，跟邊數成線性（老師也提到 [[Dijkstra]]，但它要 O(m log n)，比較慢）。",
     "最後沿路灌水，最多也就走過所有的邊。",
     "所以每一輪是 O(m)，m 是邊（edge）的數量。",
     "有 C 輪，乘起來總時間是 O(m · C)。"
@@ -497,7 +497,7 @@
      "t": 2180.23
     },
     {
-     "text": "每輪要建 G_f、找 path（任何找路演算法皆可，如 Dijkstra）、灌水，都是 O(m)。",
+     "text": "每輪要建 G_f、找 path（用 BFS 或 DFS 即可）、灌水，都是 O(m)。",
      "t": 2219.57
     },
     {

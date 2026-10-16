@@ -395,11 +395,11 @@
    "q": "為什麼定理要先排除 isolated vertices？",
    "opts": [
     "因為它們會讓 degree 變奇數，破壞「每個 degree 都是偶數」的條件",
-    "因為它們沒有邊、不需要走到，留著會讓「connected」條件寫起來很麻煩",
+    "它們沒有邊、不必走到，卻會讓圖不 connected",
     "因為 multigraph 不允許",
     "因為它們一定是起點"
    ],
-   "ans": "因為它們沒有邊、不需要走到，留著會讓「connected」條件寫起來很麻煩",
+   "ans": "它們沒有邊、不必走到，卻會讓圖不 connected",
    "why": "isolated vertex 的 degree 是 0（偶數），但它讓圖不 connected；拿掉它不影響有沒有 Euler circuit。"
   }
  ]

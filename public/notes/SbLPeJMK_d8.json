@@ -472,7 +472,7 @@
     "MIPS 的選擇：32 個 register，每個 32 bits。資料和指令也都是 32 bits。",
     "為什麼不要 64、128 個？除了指令變長，register file 越大，速度就越慢。這是第二個 design principle：Smaller is faster——越小越快。",
     "32 個 bits 合起來叫一個 word（字組）。不管去 register 還是 memory 存取，基本上都以一個 word 為單位。",
-    "每個 register 可以用編號稱呼（$0～$31），也可以用名字，寫程式比較好讀。例如 $s0 就是第 16 個 register。",
+    "每個 register 可以用編號稱呼（$0～$31），也可以用名字，寫程式比較好讀。例如 $s0 就是 16 號 register（$16）。",
     "16 到 23 號叫 $s0～$s7，用來放程式裡一般的 variable。",
     "8 到 15 號叫 $t0～$t7，放 temporary（暫時的）值，例如算到一半的結果。",
     "0 號 register 很特別：裡面永遠是 0。因為 0 太常用了（比較是不是 0、清成 0），乾脆用硬體固定一個。",
@@ -564,9 +564,9 @@
    "q": "電腦在 0% load（什麼都不做）時仍消耗不少 power，主要因為？",
    "opts": [
     "leakage（static power）",
-    "clock rate 太高（dynamic power）",
-    "dynamic power 充放電",
-    "benchmark 量錯"
+    "dynamic power（0、1 切換時的充放電）",
+    "clock rate 太高",
+    "fan-out 太大造成的 capacitive load"
    ],
    "ans": "leakage（static power）",
    "why": "電晶體關不緊會漏電，idle 不等於 low power。"

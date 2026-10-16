@@ -620,7 +620,7 @@ export default function (ctx) {
     tag('Operation', 'idx', 2.2, 1.0); tag('CarryIn', 'idx', -2, 0.9);
     const res = tag('Result = ?', 'ptr alt', 5, 3.6);
     line([[2.7, 3.6, 0], [4, 3.6, 0]]);
-    say('1-bit ALU：AND、OR、加法器 + MUX', '附錄 B（5 版為附錄 C）的設計');
+    say('1-bit ALU：AND、OR、加法器 + MUX', '課本附錄 B（第 4 版為附錄 C）的設計');
     await beat(tok, 2600);
     const a = 1, b = 0, vals = [a & b, a | b, a ^ b];
     const names = ['AND', 'OR', 'add'];
@@ -913,12 +913,12 @@ export default function (ctx) {
     const t = R(0, 9);
     if (t === 0) {
       const v = R(16, 255), h = '0x' + v.toString(16).toUpperCase().padStart(2, '0');
-      return { q: '十進位 ' + v + ' 的 8-bit 二進位與 hex 是？', opts: uniq(grp(bin(v, 8)) + ' = ' + h, [grp(bin(v ^ 1, 8)) + ' = 0x' + (v ^ 1).toString(16).toUpperCase().padStart(2, '0'), grp(bin(v, 8).split('').reverse().join('')) + ' = 0x' + uval(bin(v, 8).split('').reverse().join('')).toString(16).toUpperCase().padStart(2, '0'), grp(bin(v + 16, 8)) + ' = 0x' + ((v + 16) & 255).toString(16).toUpperCase().padStart(2, '0')]), ans: grp(bin(v, 8)) + ' = ' + h, why: '用權重 128、64、…、1 拆，再 4 bits 一組換成 hex。' };
+      return { q: '十進位 ' + v + ' 的 8-bit 二進位與 hex 是？', opts: uniq(grp(bin(v, 8)) + ' = ' + h, [grp(bin(v ^ 1, 8)) + ' = 0x' + (v ^ 1).toString(16).toUpperCase().padStart(2, '0'), grp(bin(v, 8).split('').reverse().join('')) + ' = 0x' + uval(bin(v, 8).split('').reverse().join('')).toString(16).toUpperCase().padStart(2, '0'), grp(bin(v + 16, 8)) + ' = 0x' + ((v + 16) & 255).toString(16).toUpperCase().padStart(2, '0'), grp(bin(v ^ 0x80, 8)) + ' = 0x' + (v ^ 0x80).toString(16).toUpperCase().padStart(2, '0')]), ans: grp(bin(v, 8)) + ' = ' + h, why: '用權重 128、64、…、1 拆，再 4 bits 一組換成 hex。' };
     }
     if (t === 1) {
       const v = -R(1, 127);
       const ans = grp(bin(v, 8));
-      return { q: v + ' 的 8-bit 2\'s complement 是？', opts: uniq(ans, [grp(inv(bin(-v, 8))), grp('1' + bin(-v, 7)), grp(bin(-v, 8))]), ans, why: '|' + v + '| = ' + grp(bin(-v, 8)) + '，反相得 ' + grp(inv(bin(-v, 8))) + '（1\'s complement），再 +1。' };
+      return { q: v + ' 的 8-bit 2\'s complement 是？', opts: uniq(ans, [grp(inv(bin(-v, 8))), grp('1' + bin(-v, 7)), grp(bin(-v, 8)), grp(bin(v + 1, 8))]), ans, why: '|' + v + '| = ' + grp(bin(-v, 8)) + '，反相得 ' + grp(inv(bin(-v, 8))) + '（1\'s complement），再 +1。' };
     }
     if (t === 2) {
       const a = R(-128, 127), b = R(-128, 127), s = a + b, w = sval(bin(s, 8)), ov = s > 127 || s < -128;
@@ -941,12 +941,12 @@ export default function (ctx) {
     if (t === 5) {
       const IC = R(2, 20), CPI = pickOne([0.8, 1, 1.2, 1.5, 2, 2.5]), G = pickOne([1, 2, 2.5, 4]);
       const T = +(IC * CPI / G).toFixed(3);
-      return { q: '程式有 ' + IC + '×10⁹ 個指令，CPI = ' + CPI + '，clock rate ' + G + ' GHz，CPU time 是？', opts: uniq(T + ' s', [+(IC * CPI * G).toFixed(3) + ' s', +(IC / (CPI * G)).toFixed(3) + ' s', +(IC * G / CPI).toFixed(3) + ' s']), ans: T + ' s', why: 'CPU time = IC × CPI ÷ clock rate = ' + IC + '×10⁹ × ' + CPI + ' ÷ ' + G + '×10⁹ = ' + T + ' s。' };
+      return { q: '程式有 ' + IC + '×10⁹ 個指令，CPI = ' + CPI + '，clock rate ' + G + ' GHz，CPU time 是？', opts: uniq(T + ' s', [+(IC * CPI * G).toFixed(3) + ' s', +(IC / (CPI * G)).toFixed(3) + ' s', +(IC * G / CPI).toFixed(3) + ' s', +(IC / G).toFixed(3) + ' s', +(IC * CPI).toFixed(3) + ' s', +(T * 2).toFixed(3) + ' s']), ans: T + ' s', why: 'CPU time = IC × CPI ÷ clock rate = ' + IC + '×10⁹ × ' + CPI + ' ÷ ' + G + '×10⁹ = ' + T + ' s。' };
     }
     if (t === 6) {
       const f = pickOne([0.5, 0.6, 0.75, 0.8, 0.9]), s = pickOne([2, 4, 5, 10]);
       const sp = +(1 / (1 - f + f / s)).toFixed(2);
-      return { q: '程式有 ' + f * 100 + '% 的時間可以加速 ' + s + ' 倍，整體 speedup 約多少？', opts: uniq(sp + '×', [s + '×', +(f * s).toFixed(2) + '×', +(1 / (1 - f)).toFixed(2) + '×']), ans: sp + '×', why: 'Amdahl：1 / ((1 − ' + f + ') + ' + f + '/' + s + ') = ' + sp + '；上限是 1/(1 − f) = ' + +(1 / (1 - f)).toFixed(2) + '。' };
+      return { q: '程式有 ' + f * 100 + '% 的時間可以加速 ' + s + ' 倍，整體 speedup 約多少？', opts: uniq(sp + '×', [s + '×', +(f * s).toFixed(2) + '×', +(1 / (1 - f)).toFixed(2) + '×', +(1 + f * (s - 1)).toFixed(2) + '×', +((1 - f) + f / s).toFixed(2) + '×']), ans: sp + '×', why: 'Amdahl：1 / ((1 − ' + f + ') + ' + f + '/' + s + ') = ' + sp + '；上限是 1/(1 − f) = ' + +(1 / (1 - f)).toFixed(2) + '。' };
     }
     if (t === 7) {
       const c = pickOne([['00000000', '全 0', '±0'], ['00000000', '不是 0', 'denormalized number'], ['11111111', '全 0', '±∞'], ['11111111', '不是 0', 'NaN'], ['10000010', '任意', 'normalized number']]);
@@ -1603,8 +1603,8 @@ scene('nuA-2a-eniac', 'ENIAC：第一部全電子、可程式的通用電腦', [
   },
   async (tok, S) => { // 290.2 二次大戰
     S.w = bx('第二次世界大戰 1939–1945', NC.rose, (S.X(1939) + S.X(1945)) / 2, 2.4, 0, S.X(1945) - S.X(1939), 0.4, 0.5);
-    sm('破解密碼需要大量運算', S.X(1942), 3.1);
-    cap('那時候正在打二次世界大戰', '要破解別人的密碼，需要很大的運算');
+    sm('老師：破解密碼要大量運算（ENIAC 實際是算火砲射表）', S.X(1942), 3.1);
+    cap('那時候正在打二次世界大戰', '戰爭需要大量運算（ENIAC 原本是算彈道射表）');
   },
   async (tok, S) => { // 322.4 25 公尺
     gone(S.w, S.e1, S.e2); S.track = vbar(NC.tan, 0, 0.15, 12.0, 4.6, 0.4); sm('100 m 跑道', -5.2, 5.1);
@@ -1811,50 +1811,50 @@ scene('nuA-2a-moore', '後 PC 時代與 Moore\'s Law', [
 
 scene('nuA-2a-feature', 'Feature size：transistor 越縮越小', [
   async (tok, S) => { // 1175.9 為什麼可以 double？
-    mos(S, 0, 0.2); hot('為什麼 transistor 數量可以 double？', 0, 6.4);
+    mos(S, 0, 0.2); S.t1 = hot('為什麼 transistor 數量可以 double？', 0, 6.4);
     cap('為什麼可以 double？', '回到一開始的 transistor');
   },
   async (tok, S) => { // 1192.2 gate 電壓 → channel
-    S.ch = bx('channel', '#6fb3f0', 0, 1.15, 0.85, 3.2, 0.14, 0.2); hd('source', -2.4, 2.2); hd('drain', 2.4, 2.2);
+    S.ch = bx('channel', '#6fb3f0', 0, 1.15, 0.85, 3.2, 0.14, 0.2); S.L = [hd('source', -2.4, 2.2), hd('drain', 2.4, 2.2)];
     cap('gate 有電壓，下面形成 channel', 'source、drain 之間就有電流：開');
   },
   async (tok, S) => { // 1217.0 距離越短越快
-    S.ar = lk(-1.55, 0.45, 1.55, 0.45, 0xd64545, 0.9); S.ar2 = lk(1.55, 0.45, -1.55, 0.45, 0xd64545, 0.9); hot('這段距離越短 → 開關越快', 0, -0.5);
+    S.ar = lk(-1.55, 0.45, 1.55, 0.45, 0xd64545, 0.9); S.ar2 = lk(1.55, 0.45, -1.55, 0.45, 0xd64545, 0.9); S.L.push(hot('這段距離越短 → 開關越快', 0, -0.5));
     cap('開和關要從這邊到那邊', '距離越短，開關就越快');
   },
   async (tok, S) => { // 1241.3 跟 technology 有關
-    sm('能做多短？看 technology', 0, 3.4);
+    S.L.push(sm('能做多短？看 technology', 0, 3.4));
     cap('當然希望越短越好', '可是能做多短，跟 technology 有關');
   },
   async (tok, S) => { // 1258.4 feature size
-    good('這個最短長度 ＝ feature size（line width）', 0, 4.0);
+    S.L.push(good('這個最短長度 ＝ feature size（line width）', 0, 4.0));
     cap('這個距離叫 feature size', '也叫 line width');
   },
   async (tok, S) => { // 1305.8 一直減小
-    gone(S.body, S.bodyL, S.ns, S.ox, S.gate, S.ch, S.ar, S.ar2);
-    S.fs = [100, 50, 10, 1, 0.25, 0.028].map((um, i) => { const h = Math.max(0.15, Math.log10(um * 100) * 0.9); const b = vbar(NC.orange, -4.8 + i * 1.6, h, 0.9, 0.0); sm(um + ' µm', -4.8 + i * 1.6, h + 0.4); return b; });
-    sm('（log 刻度，中間幾代為示意）', 0, -0.5);
+    gone(S.body, S.bodyL, S.ns, S.ox, S.gate, S.ch, S.ar, S.ar2, S.L); S.L = [];
+    S.fs = [100, 50, 10, 1, 0.25, 0.028].map((um, i) => { const h = Math.max(0.15, Math.log10(um * 100) * 0.9); const b = vbar(NC.orange, -4.8 + i * 1.6, h, 0.9, 0.0); S.L.push(sm(um + ' µm', -4.8 + i * 1.6, h + 0.4)); return b; });
+    S.L.push(sm('（log 刻度，中間幾代為示意）', 0, -0.5));
     cap('隨 technology 進步，feature size 一直減小', '從最早的 100 micron 一路往下');
   },
   async (tok, S) => { // 1314.6 台積電 28 nm
-    glow(S.fs[5], HL); hot('台積電量產：28 nm', 3.2, 3.6);
+    glow(S.fs[5], HL); S.L.push(hot('台積電量產：28 nm', 3.2, 4.4));
     cap('台積電已宣佈可以量產', '28 奈米（nm）');
   },
   async (tok, S) => { // 1355.4 0.028 micron
-    ok(Math.abs(28 / 1000 - 0.028) < 1e-12, '28 nm = 28 ÷ 1000 µm = 0.028 µm ✓', 3.2, 3.0);
+    S.L.push(ok(Math.abs(28 / 1000 - 0.028) < 1e-12, '28 nm = 28 ÷ 1000 µm = 0.028 µm ✓', 3.2, 3.8));
     cap('28 nm 是多少 micron？', '0.028 micron');
   },
   async (tok, S) => { // 1365.8 頭髮 100 micron
-    const r = Math.round(100 / 0.028); ok(r === 3571, '頭髮約 100 µm：100 ÷ 0.028 ≈ ' + fmtN(r) + ' 倍 ✓', 3.2, 2.4);
+    const r = Math.round(100 / 0.028); S.L.push(ok(r === 3571, '頭髮約 100 µm：100 ÷ 0.028 ≈ ' + fmtN(r) + ' 倍 ✓', 3.2, 3.2));
     cap('一根頭髮大約 100 micron', '0.028 micron 細了三千多倍');
   },
   async (tok, S) => { // 1404.1 放很多 transistor
-    sm('這麼小 → 一個 chip 放很多很多 transistor', 0, 6.4);
+    gone(S.t1); S.L.push(sm('這麼小 → 一個 chip 放很多很多 transistor', 0, 6.4));
     cap('transistor 這麼小', '一顆 chip 可以放非常多個');
   },
   async (tok, S) => { // 1431.9 transistor 數量圖
-    S.tc = []; let v = 1; for (let k = 0; k < 6; k++) { S.tc.push(cube('', NC.blue, [0.5, 0.5, 0.5], -5 + k * 2, 5.4, 0)); v *= 2; }
-    sm('時間 → 一顆 microprocessor 的 transistor 越來越多', 0, 4.8);
+    gone(S.fs, S.L); S.tc = []; let v = 1; for (let k = 0; k < 6; k++) { S.tc.push(vbar(NC.blue, -5 + k * 2, 0.15 * v, 0.8, 0.3)); v *= 2; }
+    S.tc.push(sm('時間 → 一顆 microprocessor 的 transistor 越來越多（示意）', 0, -0.3));
     cap('這張圖：橫軸時間、縱軸 transistor 數', '越來越多 transistor 放進一顆 chip');
   },
   async (tok, S) => { // 1444.9 1965 Moore
@@ -1863,7 +1863,8 @@ scene('nuA-2a-feature', 'Feature size：transistor 越縮越小', [
   },
   async (tok, S) => { // 1476.5 每 18 個月
     const m = 18; ok(m / 12 === 1.5, "Moore's Law：每 18 個月（1.5 年）transistor double ✓", 0, 4.6);
-    cap('每 18 個月 transistor 就 double', 'microprocessor capacity 每 1.5 年加倍');
+    sm('（Moore 1965 年原本說每年加倍，1975 年改成每兩年；課本寫每 18～24 個月）', 0, 3.9);
+    cap('每 18 個月 transistor 就 double', '老師的說法；課本：每 18～24 個月');
   },
 ]);
 
@@ -4415,7 +4416,7 @@ scene('nuB-10a-eq', "10A：c(i+1) = gi + pi·ci 全部展開", CAM, [
           cap('G3 + P3G2 + P3P2G1 + P3P2P1G0', '+ P3P2P1P0C0');
         },
   async (tok, S) => {
-          const a = '1011', b = '0110', L = claC(a, b, 0), R = rippleC(a, b, 0); S.L = L;
+          const a = '1011', b = '0110', L = claC(a, b, 0, true), R = rippleC(a, b, 0); S.L = L;
           S.c.top.forEach((l, i) => setL(l, 'g' + i + '=' + L.g[i] + ' p' + i + '=' + (L.p[i])));
           S.c.out.forEach((l, i) => setL(l, 'c' + (i + 1) + '=' + L.c[i + 1])); sm('示意：a = 1011、b = 0110、c0 = 0', 0.6, 4.6);
           ok(L.c.join('') === R.join(''), 0.6, 0.8, '展開式算的 c1..c4 = 一級一級算的 ' + R.slice(1).join('') + ' ✓'); cap('generate，後面幫它 propagate', '依此類推全部做出來');
@@ -4546,7 +4547,7 @@ scene('nuB-10a-ml', "10A：先算 C4、C8、C12，再各塊同時算；delay ∝
         },
   async (tok, S) => {
           S.blk.forEach((m) => glow(m, null));
-          const a = '1011011001011101', b = '0100100110110011', L = claC(a, b, 0), R = rippleC(a, b, 0);
+          const a = '1011011001011101', b = '0100100110110011', L = claC(a, b, 0, true), R = rippleC(a, b, 0);
           const PG = [0, 1, 2, 3].map((k) => { const g = L.g.slice(4 * k, 4 * k + 4), p = L.p.slice(4 * k, 4 * k + 4); return { P: p[0] & p[1] & p[2] & p[3], G: g[3] | (p[3] & g[2]) | (p[3] & p[2] & g[1]) | (p[3] & p[2] & p[1] & g[0]) }; });
           const C = [0]; for (let k = 0; k < 4; k++) C.push(PG[k].G | (PG[k].P & C[k]));
           S.blk.forEach((m, i) => relbl(m, 'P' + i + '=' + PG[i].P + ' G' + i + '=' + PG[i].G));
@@ -4718,7 +4719,7 @@ scene('nuB-11a-paper', "11A：1000 × 1001（課本例）", CAM, [
           cap('先複習紙跟筆怎麼乘', '第一個 version 就直接搬過去');
         },
   async (tok, S) => {
-          sm('① unsigned　② signed（two\'s complement）', 4.4, 4.8); cap('onsign 跟 sign 兩部分', '先看 unsigned');
+          sm('① unsigned　② signed（two\'s complement）', 4.4, 4.8); cap('分 unsigned 跟 signed 兩部分', '先看 unsigned');
         },
   async (tok, S) => {
           S.x0 = -2.2; S.mc = digits('1000', S.x0, 6.0, FC.blue); S.mp = digits('1001', S.x0, 5.3, FC.orange); hd('× ', S.x0 - 0.9, 5.3);
@@ -4746,7 +4747,7 @@ scene('nuB-11a-paper', "11A：1000 × 1001（課本例）", CAM, [
 ]);
 scene('nuB-11a-v1', "11A：第一版（64-bit multiplicand、64-bit ALU）跑 0010 × 0011", CAM, [
   async (tok, S) => {
-          S.R = buildRegs(V1); S.S = multV1(2, 3); showStep(S.R, V1, S.S[0], false); cap('第一個 version', 'multiplicant 擺在 64-bit 的最右邊');
+          S.R = buildRegs(V1); S.S = multV1(2, 3); showStep(S.R, V1, S.S[0], false); cap('第一個 version', 'multiplicand 擺在 64-bit 的最右邊');
         },
   async (tok, S) => {
           S.R.Multiplier.row.ms.forEach((m, i) => glow(m, i === 3 ? HL : null)); cap('看 multiplier 最右邊的 bit', '告訴我要不要加進去');
@@ -4934,7 +4935,7 @@ scene('nuB-11a-signed', "11A：signed multiplication 的兩種做法", CAM, [
 scene('nuB-11a-tc', "11A：(−7) × (−7) = 49", CAM, [
   async (tok, S) => {
           S.rule = code(['規則 1：sign extension', '規則 2：最後要 subtract'], -3.6, 6.6); S.rule.ls.forEach((l, k) => { if (k) l.element.style.visibility = 'hidden'; });
-          cap('tooth complement 的乘法', '先記規則，再看為什麼');
+          cap('two\'s complement 的乘法', '先記規則，再看為什麼');
         },
   async (tok, S) => {
           S.rule.hl(0); cap('第一：做 sign extension', '正的補 0、負的補 1');
@@ -4985,7 +4986,7 @@ scene('nuB-11a-why', "11A：B = −b₃·2³ + b₂·2² + b₁·2 + b₀", CAM,
   async (tok, S) => {
           S.e3 = code(['signed：B = −b₃·2³ + b₂·2² + b₁·2¹ + b₀·2⁰'], 0, 4.8); S.e3.hl(0);
           let all = true; for (let v = 0; v < 16; v++) { const b = bin(v, 4).split('').map(Number); all = all && (-b[0] * 8 + b[1] * 4 + b[2] * 2 + b[3]) === sval(bin(v, 4)); }
-          ok(all, 0, 0.6, '16 種 4-bit pattern：公式值 = two\'s complement 值 ✓'); cap('sin bit 的意思', '它代表 −2³');
+          ok(all, 0, 0.6, '16 種 4-bit pattern：公式值 = two\'s complement 值 ✓'); cap('sign bit 的意思', '它代表 −2³');
         },
   async (tok, S) => {
           S.b = reg('1001', 4, 0, 3.4, { w: 0.8, bits: '1001' }); S.b.val('= −8 + 0 + 0 + 1 = ' + sval('1001')); S.b.hi(0, 1, '#7a1010'); cap('sign bit 是 1', '就要把 2³ 減掉');
@@ -5029,7 +5030,7 @@ scene('nuB-11a-booth', "11A：0011 1110 = 0100 0000 − 0000 0010（示意）", 
           cap('中間的 1', '不做任何動作');
         },
   async (tok, S) => {
-          S.m.ms.forEach((m, k) => glow(m, k === 1 ? OKG : null)); setL(S.act, '1 結束 → 加'); S.act.position.x = S.m.xs[1]; cap('1 結束了', '加 1（做加）');
+          S.m.ms.forEach((m, k) => glow(m, k === 1 ? OKG : null)); setL(S.act, '1 結束 → 加'); S.act.position.x = S.m.xs[1]; cap('一串 1 結束了', '做加（加回 multiplicand）');
         },
   async (tok, S) => {
           bub('一邊掃乘數、一邊決定加／減／不做', 0.6, 0.6); cap('從這邊就可以判斷要做什麼', '這就是 Booth multiply 的精神');
@@ -5349,7 +5350,7 @@ scene('nuB-12a-paperdiv', "12A：0111 ÷ 10（示意）", CAM, [
           S.q = sm('quotient：', -4.6, 6.2); S.qd = []; cap('dividend、divisor、quotient', '示意：0111 ÷ 10');
         },
   async (tok, S) => {
-          S.cur = 0; S.rem = 0; S.pos = 0; cap('device 放在下面', '減一下看夠不夠減');
+          S.cur = 0; S.rem = 0; S.pos = 0; cap('divisor 放在下面', '減一下看夠不夠減');
         },
   async (tok, S) => {
           const dd = '0111'; let r = 0; S.qs = '';
@@ -5373,7 +5374,7 @@ scene('nuB-12a-div1', "12A：Divisor 放左半往右移、Remainder 64 bits（7 
           S.R = buildRegs('div'); S.S = divV1(7, 2); showStep(S.R, 'div', S.S[0], false); cap('跟乘法器一樣', 'divisor 一開始擺在最左邊');
         },
   async (tok, S) => {
-          S.R.Divisor.row.ms.forEach((m, i) => glow(m, i < 4 ? HL : null)); cap('device 擺最左邊', 'shift right');
+          S.R.Divisor.row.ms.forEach((m, i) => glow(m, i < 4 ? HL : null)); cap('divisor 擺最左邊', '每輪 shift right');
         },
   async (tok, S) => {
           S.R.Divisor.row.clearGlow(); showStep(S.R, 'div', S.S[1], true); cap('跟 remainder 做減', '第 1 輪：減出來是負的');
@@ -5396,7 +5397,7 @@ scene('nuB-12a-div1', "12A：Divisor 放左半往右移、Remainder 64 bits（7 
 scene('nuB-12a-div2', "12A：Divisor 32 bits、ALU 32 bits、Remainder／Quotient 共用", CAM, [
   async (tok, S) => {
           S.d = reg('Divisor', 8, 1.0, 5.6, { w: 0.6, bits: '00100000' }); for (let k = 1; k <= 3; k++) { S.d.set(bin(2 << (4 - k), 8), true); await wt(tok, 300); }
-          cap('device 從最左邊往右移', '中間只有 32 bits 用到');
+          cap('divisor 從最左邊往右移', '中間只有 32 bits 用到');
         },
   async (tok, S) => {
           bad('一半都是 0 → 浪費', 1.0, 6.6); cap('前跟後都是 0', '減也只減中間那塊');
@@ -5570,7 +5571,7 @@ scene('nuB-12b-why', "12B：整數表示法的範圍、科學記號、小數點�
           S.l = [bx('unsigned：0 ～ 255', FC.sky, -2.6, 5.6, 0, 4.4, 0.6)]; sm('示意：n = 8', 3.4, 5.6); cap('n 個 bit 當 unsigned', '0 到 2ⁿ − 1');
         },
   async (tok, S) => {
-          S.l.push(bx('two\'s complement：−128 ～ 127', FC.pink, -2.6, 4.8, 0, 4.4, 0.6)); ok(-(2 ** 7) === -128 && 2 ** 7 - 1 === 127, 3.4, 4.8, '−2⁷ ～ 2⁷ − 1 ✓'); cap('tooth complement', '在正負之間');
+          S.l.push(bx('two\'s complement：−128 ～ 127', FC.pink, -2.6, 4.8, 0, 4.4, 0.6)); ok(-(2 ** 7) === -128 && 2 ** 7 - 1 === 127, 3.4, 4.8, '−2⁷ ～ 2⁷ − 1 ✓'); cap('two\'s complement', '有正有負：−2ⁿ⁻¹ ～ 2ⁿ⁻¹ − 1');
         },
   async (tok, S) => {
           S.l.push(bx('1\'s complement：−127 ～ 127', FC.mint, -2.6, 4.0, 0, 4.4, 0.6)); S.l.push(bx('excess（bias）：看 bias', FC.lilac, -2.6, 3.2, 0, 4.4, 0.6)); cap('one\'s complement、excess', '各有一個 range');
@@ -5731,7 +5732,7 @@ scene('nuB-12b-cmp', "12B：比大小先比 sign、再比 exponent；comparator 
           S.e1.hi(0, 1, '#7a1010'); ok(uval(bin(-1, 8)) > uval(bin(1, 8)) && -1 < 1, 1.0, 1.4, '當 pattern 比：1111 1111 > 0000 0001，但 −1 < 1 → 比錯 ✓'); cap('直接比：這個比較大', '可是它其實是 −1');
         },
   async (tok, S) => {
-          good('→ 用 biased notation', 1.0, 0.6); cap('不用 once、twos complement', '用 biased notation');
+          good('→ 用 biased notation', 1.0, 0.6); cap('不用 1\'s、2\'s complement', '改用 biased notation');
         },
   async (tok, S) => {
           cap('看到 number 馬上比大小', '小就是小、大就是大');

@@ -779,9 +779,9 @@
    "q": "為什麼 non-leaf procedure 一定要把 $ra 存到 stack？",
    "opts": [
     "它用 jal 呼叫別人時會覆寫 $ra",
-    "因為 jr 會把 $ra 清成 0，回來時就找不到位址",
-    "因為 jr 只能讀 stack",
-    "因為 $sp 會被清成 0"
+    "jr 會把 $ra 清成 0，回來時就找不到位址",
+    "$sp 改變之後，jr $ra 會跳到錯的位址",
+    "$ra 屬於 $t 類，callee 一定會把它清掉"
    ],
    "ans": "它用 jal 呼叫別人時會覆寫 $ra",
    "why": "不先存，自己做完就回不到 caller。"

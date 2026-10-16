@@ -853,7 +853,7 @@ export default function (ctx) {
       ];
       return P[rnd(P.length)];
     }
-    const sets = [[1, 3, 4, 6], [1, 5, 6, 10], [1, 3, 4, 7]];
+    const sets = [[1, 3, 4, 6], [1, 5, 6, 10], [1, 4, 5, 8]];
     const [a, b, c, A] = sets[rnd(sets.length)];
     const coins = [a, b, c];
     const dp = [0]; for (let x = 1; x <= A; x++) dp[x] = 1 + Math.min(...coins.filter((y) => y <= x).map((y) => dp[x - y]));
@@ -3500,7 +3500,7 @@ FRAG.push(['grjiang1-same-deadline', '同 deadline 的順序不影響 L', async 
   line(LX(9), 5.0, LX(9), 1.8, 0, '#d64545'); tag('d = 9', 'ptr', LX(9) - 0.5, 5.4);
   say('同 deadline 的這一坨', 'lateness 看最後做完的那個');
   await step(tok);                                   // 4155.0 一定是最晚做的那個
-  glow(A[3], RED); glow(B[2], RED);
+  glow(A[3], RED); glow(B[3], RED);
   say('最晚做的那個 lateness 最大', '甲是 J4、乙是 J3');
   await step(tok);                                   // 4191.4 ABC 或 CBA，整坨結束時間一樣
   note('整坨都在 5 到 10：10 − 9 = 1', LX(7.5), 0.1);
@@ -4099,11 +4099,11 @@ FRAG.push(['grjiang2-dijkstra-observe', 'Dijkstra 的觀察：d 只降不升、�
   bars = [mk('x', -4.0, Infinity, J2.blue), mk('y', -2.6, Infinity, J2.blue), mk('z', -1.2, Infinity, J2.blue)];
   say('剩下的人還不確定：想成 ∞', '');
   await step(tok);                                   // 1563 d 值不斷下降
-  await to(bars[0], 4); await to(bars[1], 4); await to(bars[2], 5);
-  say('運算過程中 d 值會不斷下降', '經過 u、v：x 4、y 4、z 5');
+  await to(bars[0], 4); await to(bars[0], 2); await to(bars[1], 4); await to(bars[2], 5);
+  say('運算過程中 d 值會不斷下降', 'x：經 s 是 4、經 u 降到 2；y 4、z 5');
   await step(tok);                                   // 1572 新 explore 的點帶來更近的走法
-  await to(bars[0], 2); await to(bars[1], 3); await to(bars[2], 4);
-  say('新 explore 的點帶來更近的走法', '經過 x：x 2、y 3、z 4');
+  await to(bars[1], 3); await to(bars[2], 4);
+  say('新 explore 的點帶來更近的走法', '經過 x：y 降到 3、z 降到 4');
   await step(tok);                                   // 1589 放進 S 就 freeze
   for (const { b } of [s, ...bars]) tint(b, J2.ice);
   note('降到最短距離 → freeze', -3.2, 6.2);
@@ -4762,7 +4762,7 @@ FRAG.push(['grjiang2-pq-costs', 'Min-priority queue：操作次數與 array／bi
   await step(tok);                                   // 1161 Dijkstra 的 min-PQ 用 binary heap
   tag('O((n+m) log n)', 'ptr alt', cols[3], 1.1);
   dj.mood('happy');
-  say('Dijkstra 的 min-PQ 也能用 binary heap 做', '總共 (n + m) log n（課本寫 O(m log n)）');
+  say('Dijkstra 的 min-PQ 也能用 binary heap 做', '總共 O((n + m) log n)；點都走得到時 = O(m log n)');
 }]);
 
 // 19:51 priority queue：max／min 與四種操作（OS process 例子）
@@ -4907,7 +4907,7 @@ FRAG.push(['grjiang2-heap-array', 'Heap 存在 array：小孩 2i、2i+1，parent
   await step(tok);                                   // 1903 反過來：parent = 除以 2
   H.unhi(); H.hi(4, GOLD); H.hi(2, RED);
   txt(rule, '小孩：2i、2i+1　parent：i / 2');
-  say('反過來，8 號的 parent？', '自己的 index 除以 2');
+  say('反過來，4 號的 parent？', '自己的 index 除以 2：4 ÷ 2 = 2');
   await step(tok);                                   // 1918 5 號的 parent 也是 2 → 取下限
   H.unhi(); H.hi(5, GOLD); H.hi(2, RED);
   txt(rule, '小孩：2i、2i+1　parent：⌊i/2⌋');
@@ -5269,18 +5269,19 @@ FRAG.push(['grjiang2-build-heap-cost', 'Build heap 的時間：每點最多換�
   for (let i = 1; i <= 10; i++) tag('h=' + hgt(i), 'idx', HX(i) + 0.65, HY(i) + 0.4);
   say('算法：看每一層', '每個點下面有幾層（高度 h）');
   await step(tok);                                   // 3451 leaf 的 parent 最多換一次
-  for (const i of [4, 5]) H.hi(i, GOLD);
-  txt(sl, '換 1 次的：2 個點');
+  const byH = [1, 2, 3].map((h) => [1, 2, 3, 4, 5].filter((i) => hgt(i) === h));
+  for (const i of byH[0]) H.hi(i, GOLD);
+  txt(sl, '換 1 次的：' + byH[0].length + ' 個點');
   say('leaf 的 parent 下面只有一層', '最多換 1 次');
   await step(tok);                                   // 3465 上面一層最多換兩次、三次…
-  for (const i of [2, 3]) H.hi(i, RED);
-  H.hi(1, GREEN);
-  txt(sl, '換 1 次：2 個　換 2 次：2 個　換 3 次：1 個');
+  for (const i of byH[1]) H.hi(i, RED);
+  for (const i of byH[2]) H.hi(i, GREEN);
+  txt(sl, byH.map((g, k) => '換 ' + (k + 1) + ' 次：' + g.length + ' 個').join('　'));
   say('再上一層最多 2 次，再上去 3 次…', '');
   await step(tok);                                   // 3474 每種各有多少 node
   say('分別數：換 1 次的有幾個 node', '換 2 次、3 次的又有幾個');
   await step(tok);                                   // 3481 一路算到 root
-  txt(sl, '總共 ≤ 1×2 + 2×2 + 3×1 = 9 次交換');
+  txt(sl, '總共 ≤ ' + byH.map((g, k) => (k + 1) + '×' + g.length).join(' + ') + ' = ' + byH.reduce((s, g, k) => s + (k + 1) * g.length, 0) + ' 次交換');
   say('一路算到 root', '把每層的交換次數加起來');
   await step(tok);                                   // 3488 加總：n log n
   H.unhi();

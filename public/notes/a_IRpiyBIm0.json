@@ -375,8 +375,8 @@
    "opts": [
     "A 也有 poly time 解",
     "A 沒有 poly 解",
-    "B 是 NPC",
-    "什麼都推不出（方向反了）"
+    "B 一定是 NP-complete",
+    "什麼都推不出，因為 reduction 的方向反了"
    ],
    "ans": "A 也有 poly time 解",
    "why": "Poly 轉換 ＋ poly 解 B = poly。"

@@ -845,9 +845,9 @@
    "q": "Linear programming 中的「programming」是什麼意思？",
    "opts": [
     "最佳化（mathematical programming）",
-    "寫程式",
-    "寫成可執行程式（computer programming）",
-    "排程"
+    "寫程式（computer programming）",
+    "列出所有可能的解（enumeration）",
+    "排程（scheduling，安排工作順序）"
    ],
    "ans": "最佳化（mathematical programming）",
    "why": "和 dynamic programming 的 programming 一樣，指最佳化。"
@@ -890,11 +890,11 @@
    "opts": [
     "min 200y1 + 300y2 + 400y3，s.t. y1 + y3 ≥ 1、y2 + y3 ≥ 6、y ≥ 0",
     "max 200y1 + 300y2 + 400y3，s.t. y1 + y3 ≤ 1、y2 + y3 ≤ 6、y ≥ 0",
-    "min x1 + 6x2",
-    "max y1 + 6y2"
+    "min 200y1 + 300y2 + 400y3，s.t. y1 + y2 ≥ 1、y2 + y3 ≥ 6、y ≥ 0",
+    "min y1 + 6y2，s.t. y1 + y3 ≥ 200、y2 + y3 ≥ 300、y ≥ 0"
    ],
    "ans": "min 200y1 + 300y2 + 400y3，s.t. y1 + y3 ≥ 1、y2 + y3 ≥ 6、y ≥ 0",
-   "why": "multiplier 組合出 x1、x2 的係數要蓋過 1、6，右邊的上界要最小。"
+   "why": "multiplier 組合出 x1 的係數 y1 + y3（來自 ① 和 ③）要 ≥ 1、x2 的係數 y2 + y3 要 ≥ 6；右邊的上界 200y1 + 300y2 + 400y3 要最小。"
   },
   {
    "q": "Duality theorem 說的是？",

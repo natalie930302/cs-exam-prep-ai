@@ -923,9 +923,9 @@ FRAG.push(['flow-l20-apps', 'Lec20：flow network 的應用與 1955 鐵路問題
   NOTE('每段：能運多少人次 = capacity', 0, 4.6);
   say('每段鐵路能運多少人次', '= capacity');
   await step(tok);                                   // 372.8 maximum ≈ 163,000
-  tag('最大運輸量 ≈ 163,000 人次', 'ptr alt', 0, 0.3, 0.3);
+  tag('最大運輸量 ≈ 163,000（原始研究：每天的噸數）', 'ptr alt', 0, 0.3, 0.3);
   await travel(tok, w.g, V3(-5, 0.8, 4.2), V3(5, 0.8, 4.2), 1600); w.mood('happy');
-  say('算出整個網路的最大運輸量', '約 163,000 人次');
+  say('算出整個網路的最大運輸量', '約 163,000（老師說人次；原研究是噸）');
 }]);
 
 // 06:49 定義：directed graph、capacity、source 水龍頭、sink 水桶、internal node
@@ -2289,7 +2289,7 @@ FRAG.push(['flow-l21-runtime', 'Lec21：最多 C 輪、每輪 O(m) → O(mC)', a
   txt(N, '每輪①：construct residual graph — 跟邊數 m 有關');
   say('每輪要做什麼？', '先建 residual graph');
   await step(tok);                                   // 2232.3 find a path: any algorithm, linear in m
-  txt(N, '每輪②：找 augmenting path — 任何找路演算法都行（BFS、Dijkstra），約 O(m)');
+  txt(N, '每輪②：找 augmenting path — 用 BFS 或 DFS 就是 O(m)');
   say('找 augmenting path', '找路演算法跟邊數成線性');
   await step(tok);                                   // 2269.6 pour along it: at most all edges
   txt(N, '每輪③：沿路灌水 — 最多走過所有邊');

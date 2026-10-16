@@ -481,7 +481,7 @@ export default function (ctx) {
     if (k < 0.86) {
       const a = 1 + Math.floor(Math.random() * 4), b = Math.floor(Math.random() * 6), c = 1 + Math.floor(Math.random() * 4), d = Math.floor(Math.random() * 6);
       const ans = 'f∘g(x) = ' + a * c + 'x + ' + (a * d + b);
-      return { q: 'f(x) = ' + a + 'x + ' + b + '，g(x) = ' + c + 'x + ' + d + '。f∘g(x) = ?', opts: [ans, 'f∘g(x) = ' + a * c + 'x + ' + (c * b + d), 'f∘g(x) = ' + (a + c) + 'x + ' + (b + d), 'f∘g(x) = ' + a * c + 'x + ' + b * d], ans, why: 'f∘g(x) = f(g(x)) = ' + a + '(' + c + 'x + ' + d + ') + ' + b + '；先做 g 再做 f。第二個選項是 g∘f。' };
+      return { q: 'f(x) = ' + a + 'x + ' + b + '，g(x) = ' + c + 'x + ' + d + '。f∘g(x) = ?', opts: [ans, 'f∘g(x) = ' + a * c + 'x + ' + (c * b + d), 'f∘g(x) = ' + (a + c) + 'x + ' + (b + d), 'f∘g(x) = ' + a * c + 'x + ' + b * d], ans, why: 'f∘g(x) = f(g(x)) = ' + a + '(' + c + 'x + ' + d + ') + ' + b + '；先做 g 再做 f。' + a * c + 'x + ' + (c * b + d) + ' 是 g∘f(x)。' };
     }
     const items = [['ℤ', '可數'], ['正有理數 ℚ⁺', '可數'], ['(0, 1) 的實數', '不可數'], ['所有有限長度的二進位字串', '可數'], ['ℕ 的所有子集 P(ℕ)', '不可數'], ['ℤ × ℤ', '可數'], ['無理數', '不可數']];
     const [s, a] = pick(items);
@@ -2325,8 +2325,8 @@ scene('sfB-l5-fermat', 'Lec05：猜想 conjecture 與費馬最後定理', [
     cap('n = 2 就是畢氏定理', '3、4、5 馬上給你一組解，所以排除 2');
   },
   async (tok, S) => { // 1000.2 被證出來 → 不再是猜想
-    glow(S.h, null); good('前幾年被證出來 → 就不再是 conjecture', -3.4, 1.1);
-    cap('這個定理放了一百多年', '被證出來後，就不再是猜想了');
+    glow(S.h, null); good('後來被證出來（1994）→ 就不再是 conjecture', -3.4, 1.1);
+    cap('1637 年提出，1994 年才被證出', '被證出來後，就不再是猜想了');
   },
 ]);
 
@@ -2477,7 +2477,7 @@ scene('sfB-l5-builder', 'Lec05：set builder 寫法與常用集合', [
     cap('Q 是有理數', '能寫成兩個整數相除的數');
   },
   async (tok, S) => { // 1503.4 Q⁺
-    S.b.add('Q⁺ = { x ∈ R | x = p/q 且 x > 0 }：正有理數', C.mint);
+    S.b.add('Q⁺ = { x ∈ R | x = p/q（p, q ∈ Z）且 x > 0 }：正有理數', C.mint);
     cap('上面加個 + 號：正的', '兩個條件用 and，都要符合');
   },
   async (tok, S) => { // 1528.3 Z⁺ Z⁻ N

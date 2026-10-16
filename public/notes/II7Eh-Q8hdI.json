@@ -805,7 +805,7 @@
     },
     {
      "t": 2873,
-     "text": "原因記在 Cause：MIPS 只有 undefined opcode（0）和 overflow（1）；exception 不把指令做完，馬上跳到唯一的 entry point 8000 0180，再判斷是哪一種。"
+     "text": "原因記在 Cause：老師的簡化例子只有 undefined opcode（0）和 overflow（1）；exception 不把指令做完，馬上跳到唯一的 entry point 8000 0180，再判斷是哪一種。"
     }
    ],
    "cues": [

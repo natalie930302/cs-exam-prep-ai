@@ -1949,7 +1949,7 @@ scene('isA-4b-amdahl', "4B：Amdahl's law（台北→高雄、乘法 80 s）", [
     S.e = hot('80 ÷ n + 20 = 20  →  80 ÷ n = 0', 0, 1.9);
     for (const n of [2, 4, 10, 100]) { S.m.scale.x = 1 / n; S.m.position.x = -5.0 + 3.2 / n; await wt(tok, 300); }
     const best = 80 / 1e9 + 20;
-    S.x = bad('乘法再快，總時間也 > 20 s（n = 10⁹ 時還是 ' + best.toFixed(6) + ' s）→ 做不到', 0, 1.2);
+    S.x = bad('乘法再快，總時間也 > 20 s（n = 10⁹ 時還是 ' + best.toFixed(8) + ' s）→ 做不到', 0, 1.2);
     cap('那 20 秒不是乘法，改不了', '乘法再怎麼快，都達不到 5 倍');
   },
   async (tok, S) => { // 833 make the common case fast
@@ -2289,7 +2289,7 @@ scene('isA-4b-mregs', '4B：MIPS 的 32 個 register 與用途', [
   },
   async (tok, S) => { // 2631 編號 0～31 或名字
     gone(S.t, S.t2, S.t3, S.t4, S.t5);
-    S.n = note('可以用編號 $0～$31，也可以用名字（$s0 就是第 16 個）', 0, 0.4);
+    S.n = note('可以用編號 $0～$31，也可以用名字（$s0 就是 16 號）', 0, 0.4);
     cap('用 0 到 31 號稱呼', '也可以給名字');
   },
   async (tok, S) => { // 2656.9 $s0～$s7 = 16～23
@@ -2769,7 +2769,7 @@ scene('isA-5a-array', '5A：g = h + A[8] 與 A[12] = h + A[8]', [
 ]);
 
 // ════════ jhMWFZV6hy8（第 6A 講：base + offset 回顧、byte address／alignment／endian、spilling、immediate、R／I format） ════════
-// 老師的例子：g = h + A[8]、A[12] = h + A[8]、addi 加 4（第 29 個 register）、f = g + 10、加 −1、move 用 add $zero、
+// 老師的例子：g = h + A[8]、A[12] = h + A[8]、addi 加 4（29 號 register）、f = g + 10、加 −1、move 用 add $zero、
 // add $t0, $s1, $s2 → 0 17 18 8 0 32、hex 例 eca8 6420、addi $21, $22, −50、lw $t0, 1200($t1)。
 // register 的值、0x12345678 的 endian 例子是示意。所有 bits／hex 由 assemble()／bitsOf()／hex8() 算出。
 // reveal some fields of a fieldRow (k in on → show the field's bits)
@@ -2955,7 +2955,7 @@ scene('isA-6a-imm', '6A：Immediate operand：addi、$zero、move', [
     cap('50% 都是這種，要讓它快', 'make the common case fast：常數建進指令');
   },
   async (tok, S) => { // 1095.4 addi $sp, $sp, 4
-    S.e1 = mt('addi $sp, $sp, 4    # 第 29 個 register 加 4', 1.4, 2.1, 12);
+    S.e1 = mt('addi $sp, $sp, 4    # 29 號 register 加 4', 1.4, 2.1, 12);
     const o = await S.M.run(tok, 'addi $sp, $sp, 4');
     S.o1 = ok(S.M.reg[29] === 1004, 1.4, 1.5, o.desc + ' ✓');
     cap('add 後面加一個 i：addi', '讀出指令時，常數 4 就在裡面');
@@ -3085,13 +3085,13 @@ scene('isA-6a-rfmt', '6A：R-format：add $t0, $s1, $s2 → 0x02324020', [
   },
   async (tok, S) => { // 2092.1 rs = 17、rt = 18
     reveal(S.F, [0, 1, 2, 5]); S.F.label(1, '$s1 = 17'); S.F.label(2, '$s2 = 18');
-    cap('rs = $s1 = 第 17 個', 'rt = $s2 = 第 18 個');
+    cap('rs = $s1 = 17 號', 'rt = $s2 = 18 號');
   },
   async (tok, S) => { // 2100.9 rd = 8、shamt 0
     reveal(S.F, [0, 1, 2, 3, 4, 5]); S.F.label(3, '$t0 = 8'); S.F.label(4);
     const d = S.F.e.fields.map((f) => f[2]).join(' ');
     S.dec = ok(d === '0 17 18 8 0 32', 0, 0.6, '十進位：' + d + ' ✓');
-    cap('rd = $t0 = 第 8 個；shamt = 0', '欄位：0 17 18 8 0 32');
+    cap('rd = $t0 = 8 號；shamt = 0', '欄位：0 17 18 8 0 32');
   },
   async (tok, S) => { // 2111.1 binary
     S.bn = mt(S.F.e.fields.map(([, w, v]) => bin(v, w)).join(' '), 0, 0.0, 13);
