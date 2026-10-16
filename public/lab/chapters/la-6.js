@@ -538,15 +538,20 @@ export default function (ctx) {
     const k = Math.random();
     if (k < 0.16) {
       let l1 = ri(-3, 5), l2 = ri(-3, 5); if (l1 === l2) l2++;
-      const a = ri(-2, 4), d = l1 + l2 - a, bc = a * d - l1 * l2; // 選 b、c 使 bc 符合
+      let a = ri(-2, 4); while (a === l1 || a === l2) a++; // a 不能剛好是特徵值，不然 {a, d} 也會是對的答案
+      const d = l1 + l2 - a, bc = a * d - l1 * l2; // 選 b、c 使 bc 符合
       const b = pick([1, -1, 2, -2].filter((x) => bc % x === 0)) || 1, c = bc / b;
-      const ans = '{' + Math.max(l1, l2) + ', ' + Math.min(l1, l2) + '}';
-      return { q: 'A = [' + a + ' ' + b + '; ' + c + ' ' + d + ']，特徵值是？', opts: [...new Set([ans, '{' + a + ', ' + d + '}', '{' + (l1 + 1) + ', ' + (l2 - 1) + '}', '{' + (-l1) + ', ' + (-l2) + '}'])], ans, why: 'λ₁ + λ₂ = trace = ' + (a + d) + '，λ₁λ₂ = det = ' + (a * d - b * c) + ' → λ² − ' + (a + d) + 'λ + ' + (a * d - b * c) + ' = 0。' };
+      const pair = (x, y) => '{' + Math.max(x, y) + ', ' + Math.min(x, y) + '}'; // 一律大的在前，同一組數字只會有一種寫法
+      const ans = pair(l1, l2);
+      const opts = [ans]; for (const o of [pair(a, d), pair(l1 + 1, l2 - 1), pair(-l1, -l2), pair(l1 + 2, l2), pair(l1, l2 - 2)]) if (!opts.includes(o) && opts.length < 4) opts.push(o);
+      return { q: 'A = [' + a + ' ' + b + '; ' + c + ' ' + d + ']，特徵值是？', opts, ans, why: 'λ₁ + λ₂ = trace = ' + (a + d) + '，λ₁λ₂ = det = ' + (a * d - b * c) + ' → λ² − (' + (a + d) + ')λ + (' + (a * d - b * c) + ') = 0。' };
     }
     if (k < 0.28) {
       const a = ri(-3, 4), d = ri(-3, 4), f = ri(-3, 4), b = ri(-5, 5), c = ri(-5, 5), e = ri(-5, 5);
-      const ans = '{' + [a, d, f].join(', ') + '}';
-      return { q: '上三角矩陣 [' + a + ' ' + b + ' ' + c + '; 0 ' + d + ' ' + e + '; 0 0 ' + f + '] 的特徵值是？', opts: [...new Set([ans, '{' + [b, c, e].join(', ') + '}', '{' + [a + b + c, d + e, f].join(', ') + '}', '{' + [a, d + e, f].join(', ') + '}'])], ans, why: '三角矩陣的 det(A − λI) = (a − λ)(d − λ)(f − λ)，特徵值就在對角線上。' };
+      const set3 = (v) => '{' + v.slice().sort((x, y) => y - x).join(', ') + '}'; // 同一組數字只會有一種寫法
+      const ans = set3([a, d, f]);
+      const opts = [ans]; for (const o of [set3([b, c, e]), set3([a + b + c, d + e, f]), set3([a, d + e, f]), set3([a + 1, d, f - 1]), set3([-a, -d, -f])]) if (!opts.includes(o) && opts.length < 4) opts.push(o);
+      return { q: '上三角矩陣 [' + a + ' ' + b + ' ' + c + '; 0 ' + d + ' ' + e + '; 0 0 ' + f + '] 的特徵值是？', opts, ans, why: '三角矩陣的 det(A − λI) = (a − λ)(d − λ)(f − λ)，特徵值就在對角線上。' };
     }
     if (k < 0.4) {
       const l = pick([2, 3, -2, -3, 4]), p = ri(2, 4), c = ri(1, 5);
@@ -563,7 +568,7 @@ export default function (ctx) {
     if (k < 0.68) {
       const a = pick([0.9, 0.8, 0.7, 0.6, 0.5]), b = pick([0.9, 0.8, 0.7, 0.6]);
       const s1 = (1 - b) / (2 - a - b), N = 1000, ans = String(Math.round(s1 * N));
-      return { q: 'Markov 矩陣 A = [' + a + ' ' + fmt(Math.round((1 - b) * 10) / 10) + '; ' + fmt(Math.round((1 - a) * 10) / 10) + ' ' + b + ']，總人口 1000。長期下來第一個狀態有幾人（四捨五入）？', opts: [...new Set([ans, String(Math.round((1 - a) / (2 - a - b) * N)), '500', String(Math.round(a * N))])], ans, why: '穩定狀態 = λ = 1 的特徵向量 ∝ (' + fmt(Math.round((1 - b) * 10) / 10) + ', ' + fmt(Math.round((1 - a) * 10) / 10) + ')，再縮放成總和 1000。另一個特徵值 = trace − 1 = ' + fmt(Math.round((a + b - 1) * 10) / 10) + '。' };
+      return { q: 'Markov 矩陣 A = [' + a + ' ' + fmt(Math.round((1 - b) * 10) / 10) + '; ' + fmt(Math.round((1 - a) * 10) / 10) + ' ' + b + ']，總人口 1000。長期下來第一個狀態有幾人（四捨五入）？', opts: [...new Set([ans, String(Math.round((1 - a) / (2 - a - b) * N)), '500', String(Math.round(a * N)), String(Math.round(b * N)), String(Math.round((1 - a) * N))])].slice(0, 4), ans, why: '穩定狀態 = λ = 1 的特徵向量 ∝ (' + fmt(Math.round((1 - b) * 10) / 10) + ', ' + fmt(Math.round((1 - a) * 10) / 10) + ')，再縮放成總和 1000。另一個特徵值 = trace − 1 = ' + fmt(Math.round((a + b - 1) * 10) / 10) + '。' };
     }
     if (k < 0.8) {
       const S = [['相似矩陣 B = M⁻¹AM 和 A 有相同的特徵值', '對'], ['列運算（例如 R2 − 2R1）不會改變特徵值', '錯'], ['A 和 Aᵀ 有相同的特徵值', '對'], ['A 和 Aᵀ 有相同的特徵向量', '錯'], ['特徵值都相異 ⇒ 特徵向量線性獨立', '對'], ['有重根 ⇒ 一定不能對角化', '錯'], ['Markov 矩陣一定有 λ = 1', '對'], ['實數矩陣的特徵值一定是實數', '錯']];
@@ -942,7 +947,7 @@ export default function (ctx) {
     await beat(tok, 2000);
   }
 
-  // ─── 課本補充（沒有逐字稿的影片：L21、3Blue1Brown、L28）───
+  // ─── 課本補充（L21、3Blue1Brown、L28 的例子）───
   async function scEigenIntro(tok) {
     fresh([0, 10.5, 7.8], [0, 0, -0.4]);
     const F = flat2(0.62, 6, 8), G = F.grid(COL.a, 0.8), M = [[3, 1], [0, 2]];
@@ -981,7 +986,7 @@ export default function (ctx) {
     }
     say('det(A − λI) = (3 − λ)(2 − λ) = 0', '特徵多項式的根 = 特徵值：λ = 2、3');
     await beat(tok, 3000);
-    say('地雷：不能先列運算再求特徵值', '列運算會改變特徵值（det 只看倍率，不看 λ）');
+    say('地雷：不能先列運算再求特徵值', '消去（R2 − ℓR1）不改 det，卻會改特徵值');
     await beat(tok, 2600);
   }
   async function scRotation(tok) {
@@ -1057,7 +1062,7 @@ export default function (ctx) {
     await beat(tok, 3200);
     say('特徵向量不同：B 的特徵向量 = M⁻¹ × A 的特徵向量', '可對角化 = 跟 Λ 相似');
     await beat(tok, 3000);
-    say('（課本補充：Strang L28 的內容，影片無逐字稿）', '');
+    say('（Strang L28 的例子）', '');
     await beat(tok, 1600);
     void gB;
   }
@@ -1097,7 +1102,7 @@ export default function (ctx) {
     R.row(1, RED);
     say('特徵值變了！列運算會改變特徵值', '<span class="no">一定要直接解 det(A − λI) = 0</span>');
     await beat(tok, 3000);
-    say('列運算只保留 det 的資訊（甚至會變號）', 'trace、特徵值都不保留');
+    say('消去（R2 − ℓR1）只保留 det', 'trace、特徵值都會變');
     await beat(tok, 2600);
   }
 

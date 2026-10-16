@@ -833,7 +833,7 @@ export default function (ctx) {
       await beat(tok, 3000);
       say('find 4：4 → 5 → 6（空）', '撞進群聚就要一路走到底');
       await oaSearch(4);
-      say('群聚越大，越容易被撞到、又越長越大', 'linear：失敗 ≈ ½[1 + 1/(1−α)²]，λ 要 < 0.5');
+      say('群聚越大，越容易被撞到、又越長越大', 'linear：失敗 ≈ ½[1 + 1/(1−α)²]，λ 最好 < 0.5');
       await beat(tok, 3000);
     } },
     'quadratic-and-double': { title: '換掉 f(i)：quadratic 與 double hashing', play: async (tok) => {
@@ -1170,8 +1170,8 @@ FRAG.push(['hasha-cvo', 'Open addressing 對照 separate chaining', async (tok) 
   old.forEach(kill); remove(t3);
   say('今天的方法：不用表以外的任何記憶體');
   await step(tok);                                   // 0:52 requires a bigger table, load factor below 0.5
-  bub('代價：表要大一點，load factor λ < 0.5', 0, 2.6, 0.4);
-  say('但表要夠大：load factor λ 最好低於 0.5', 'λ = 資料筆數 ÷ 表的格數');
+  bub('代價：表要大一點，load factor λ 越小越快', 0, 2.6, 0.4);
+  say('但表要夠大：λ = 資料筆數 ÷ 表的格數，越小越快', '老師說 λ < 0.5；那其實是 quadratic probing 的保證條件');
   await step(tok);                                   // 1:13 like 10, 20, 30, 40, 50 with h(x) = x mod 10
   tmp.forEach(kill); T.keys.fill(null); T.vals.fill(null); remove(g1);
   note('例：10, 20, 30, 40, 50，h(x) = x mod 10 → 全到 [0]', 0, 1.2, 1.6);
@@ -1414,8 +1414,8 @@ FRAG.push(['hasha-cluster', 'Clustering：撞進群聚就要走到底', async (t
   glow(T.slots[3], GREEN);
   say('hash 到這一塊的任何位置，都要一路走到底', '例：hash 到 8 → 第 6 次才到空格 [3]');
   await step(tok);                                   // 13:13 λ should be less than 0.5
-  bub('所以 λ 要 < 0.5：空格夠多，cluster 才不會太長', 0, 1.2, 2.6);
-  say('所以 load factor λ 要小於 0.5');
+  bub('λ 最好 < 0.5：空格夠多，cluster 才不會太長', 0, 1.2, 2.6);
+  say('老師：load factor λ 最好小於 0.5', '這是讓 cluster 不太長的經驗值，不是硬性條件');
 }]);
 
 // 13:20 表大小 11：成功搜尋平均 15/8、失敗搜尋要走到空格
@@ -1485,7 +1485,7 @@ FRAG.push(['hasha-search-cmp', 'Linear search O(n) vs Binary search O(log n)', a
   await step(tok);                                   // 0:17 linear search: elements in any order
   top = BARI.map((v, i) => cube(v, haCol(v), [1.1, 0.7, 1.0], xs[i], 0.35, -2.2, 3));
   tag('linear search：隨便排', 'ptr', -6.0, 0.9, -2.2);
-  say('先複習 [[線性搜尋]]：元素在陣列裡隨便排');
+  say('先複習線性搜尋（linear search）', '元素在陣列裡隨便排');
   await step(tok);                                   // 0:29 time for searching is order of n
   note('O(n)', 5.6, 1.2, -2.2);
   say('搜尋時間 O(n)');
@@ -1496,7 +1496,7 @@ FRAG.push(['hasha-search-cmp', 'Linear search O(n) vs Binary search O(log n)', a
   const srt = [...BARI].sort((a, b) => a - b);
   bot = srt.map((v, i) => cube(v, haCol(v), [1.1, 0.7, 1.0], xs[i], 0.35, 1.8, 3));
   tag('binary search：要先排序', 'ptr', -6.0, 0.9, 1.8);
-  say('[[二分搜尋]]：元素必須先由小到大排好');
+  say('二分搜尋（binary search）', '元素必須先由小到大排好');
   await step(tok);                                   // 0:59 look in the middle; larger → right, smaller → left
   cur.position.set(xs[2], 1.6, 1.8); txt(cur, 'mid'); glow(bot[2], GOLD); await beat(tok, 700);
   for (let i = 0; i <= 2; i++) tint(bot[i], GRAY);
@@ -1678,8 +1678,8 @@ FRAG.push(['hasha-bari-chain', 'Chaining：8, 3, 13, 6, 4, 10', async (tok) => {
   bub('chain 上可能不只一個 → 要搜整條', 3.4, 1.6, 0.6);
   say('一條 chain 可能有好幾個，要搜整條 linked list');
   await step(tok);                                   // 9:31 not O(1), but faster than log n
-  good('不是 O(1)，但比 O(log n) 快（平均）', 3.4, 0.6, 2.2);
-  say('時間不再是 O(1)，但比 log n 快');
+  good('平均 O(1 + α)；最壞全擠一條 O(n)', 3.4, 0.6, 2.2);
+  say('老師：不是 O(1)，但比 log n 快', '只在 α 小時的平均成立：O(1 + α)；最壞 O(n)');
 }]);
 
 // 09:51 linear probing：8, 3, 13, 6, 4, 10；search 4、24；clustering
@@ -1744,8 +1744,8 @@ FRAG.push(['hasha-bari-lp', 'Linear probing：search 4 與 24', async (tok) => {
   bub('搜尋規則：找到它，或遇到空格才停', 0, 1.2, 2.8);
   say('搜尋：從 h(x) 開始往後找，直到找到或遇到空格');
   await step(tok);                                   // 13:28 not O(1), but better than log n
-  good('不是 O(1)，但通常比 O(log n) 快', 0, 0.5, 3.6);
-  say('時間不是 O(1)，但比 log n 好');
+  good('表不太滿時平均很快；最壞 O(n)', 0, 0.5, 3.6);
+  say('老師：不是 O(1)，但通常比 log n 好', '這是表不太滿時的平均情況；最壞可到 O(n)');
   await step(tok);                                   // 13:41 problem: clustering of elements
   for (const i of [3, 4, 5, 6]) glow(T.keys[i], GOLD);
   tag('cluster', 'ptr', T.xs[4] + 0.6, 1.5, T.z - 1.3);
@@ -3341,8 +3341,8 @@ FRAG.push(['hashlin2-two-step', 'h = compress(hashcode(key))', async (tok) => {
   bub('複雜的都放這裡', -2.4, 2.8, -2.6);
   say('比較複雜的方法：等於把計算塞進 hash code');
   await step(tok);                                   // 28:14 真正 compress 的只有 division
-  bub('這裡只要 division', 2.4, 2.8, -2.6);
-  say('真正做 compress 的只有 division 這一步');
+  bub('這裡只要 division（除數取質數）', 2.4, 2.8, -2.6);
+  say('老師：compress 只要 division 這一步', '課本還有 mid-square、folding 等；mod 的除數最好取質數');
 }]);
 
 // 28:45 Summation hash code：ABC 與 ACB 一樣
@@ -5345,7 +5345,7 @@ FRAG.push(['hashpeng-midsq-div', 'Mid-square 與 division：除以 2ⁱ 只看�
   [2, 5].forEach((i) => glow(bs[i], GOLD));
   say('取幾個 bit 不限定', '取 4 個：1010₂ → bucket 10（表就要 2⁴ = 16 格）');
   await step(tok);                                   // 20:57 …then square
-  bad('老師口述「取中間再平方」；課本是「先平方再取中間」', 0.6, 2.4, -1.0);
+  bad('老師口述「取中間再平方」；課本是「先平方再取中間」', 1.8, 2.4, -1.0);
   say('注意順序：課本是先平方，再取中間');
   await step(tok);                                   // 21:08 second: division, mod
   tag('② division', 'ptr alt', -4.6, 1.2, 0.2);
@@ -5368,8 +5368,8 @@ FRAG.push(['hashpeng-midsq-div', 'Mid-square 與 division：除以 2ⁱ 只看�
   bad('很快就滿：有用 hash 跟沒用差不多', 4.0, 2.6, 3.4);
   say('M = 2 只有兩個 bucket，很快就滿', '有用 hash 跟沒用差不多');
   await step(tok);                                   // 22:29 M need not be a power of 2: 10, 15 …
-  good('M 不必是 2 的倍數：10、15 …（通常選質數）', 0, 3.4, -0.6);
-  say('M 不一定要是 2 的倍數，可以用 10、15 ……', '（實務上常選[[質數]]）');
+  note('老師：M 也可以用 10、15｜課本：M 選質數', 0, 3.4, -0.6);
+  say('老師說 M 不必是 2 的次方，也可用 10、15', '但 10、15 有小質因數；課本建議 M 選質數');
 }]);
 
 // ════════ 22:58 folding：shift 與 boundary ════════

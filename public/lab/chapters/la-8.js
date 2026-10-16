@@ -1,6 +1,6 @@
 // 線性代數 第8章：對稱矩陣與二次型（Spectral theorem、正交對角化、xᵀAx 曲面、正定判斷、主軸）。
 // Chapter module for lab-shell.js — see the contract at the top of lab-shell.js.
-// 本章影片（MIT 18.06 L25–L27）尚無逐字稿，所有場景以 Strang 例題建立（標題標「課本」）：
+// 標「課本」的場景以 Strang 例題建立；跟著影片的場景在下面的 sp 片段（MIT 18.06 L25–L27）：
 //   S = [1 2; 2 4]、[2 1; 1 2]、f = 2x² + 12xy + cy²（c = 20 / 18 / 7）、5x² + 8xy + 5y² = 1、[2 −1 0; −1 2 −1; 0 −1 2]。
 import kit from './_kit.js';
 
@@ -720,7 +720,9 @@ const cNear = (a, b, e = 1e-9) => Math.abs(a.re - b.re) < e && Math.abs(a.im - b
 function cs(a) {
   const r = Math.abs(a.re) < 1e-9 ? 0 : a.re, m = Math.abs(a.im) < 1e-9 ? 0 : a.im;
   if (m === 0) return frac(r);
-  const mag = Math.abs(m), I = (near(mag, 1) ? '' : frac(mag)) + 'i';
+  const mag = Math.abs(m), fm = frac(mag), sl = fm.indexOf('/');
+  // 分數寫成 i/2、3i/2，不寫 1/2i（容易誤讀成 1/(2i)）
+  const I = near(mag, 1) ? 'i' : sl < 0 ? fm + 'i' : (fm.slice(0, sl) === '1' ? '' : fm.slice(0, sl)) + 'i' + fm.slice(sl);
   if (r === 0) return (m < 0 ? '−' : '') + I;
   return frac(r) + (m < 0 ? '−' : '+') + I;
 }
@@ -802,16 +804,16 @@ scene('sp-l25-facts', 'L25：對稱矩陣的兩大事實', [
     const { vals, vecs } = symEig(A3); S.vecs = vecs; S.vals = vals;
     const y = 1.3, x0 = -3.2, sc = 0.42; S.y = y; S.x0 = x0;
     rod('#9c8d70', 0.02).set(V3(-5.6, y, 0), V3(2.4, y, 0)); sm('實數線', 2.9, y);
-    for (let k = -1; k <= 11; k += 3) sm(String(k).replace('-', '−'), x0 + sc * k, y - 0.35);
-    for (let k = 0; k < 3; k++) { const b = ball(V3(x0 + sc * vals[k], y + 1.2, 0), C.p, 0.12); await anim(tok, 350, (t) => { b.position.y = y + 1.2 * (1 - t); }); sm('λ ≈ ' + f2(vals[k]), x0 + sc * vals[k] + (k === 2 ? -0.5 : k === 1 ? 0.35 : 0), y + 0.4 + (k === 1 ? 0.35 : 0)); }
+    for (const k of [0, 4, 8, 12]) { rod('#9c8d70', 0.012).set(V3(x0 + sc * k, y - 0.1, 0), V3(x0 + sc * k, y + 0.1, 0)); sm(String(k), x0 + sc * k, y - 0.35); }
+    for (let k = 0; k < 3; k++) { const b = ball(V3(x0 + sc * vals[k], y + 1.2, 0), C.p, 0.12); await anim(tok, 350, (t) => { b.position.y = y + 1.2 * (1 - t); }); sm('λ ≈ ' + f2(vals[k]), x0 + sc * vals[k] + (k === 2 ? -0.75 : k === 1 ? 0.7 : 0), y + 0.4); }
     ok(residualOK(A3, vals, vecs), '三個 λ 都落在實數線上 ✓', -1.6, 0.4);
     txt(S.q1, '① 特徵值都是實數');
     cap('事實一：對稱矩陣的特徵值都是實數', '程式算：Ax = λx 驗證過');
   },
   (tok, S) => {
     const R = [[0, -1], [1, 0]], i = cx(0, 1), chk = [i, cx(0, -1)].every((l) => cNear(cAdd(cMul(l, l), cx(1)), cx(0)));
-    ball(V3(S.x0, S.y + 0.75, 0), C.e, 0.1); ball(V3(S.x0, S.y - 0.75, 0), C.e, 0.1);
-    sm('i', S.x0 + 0.3, S.y + 0.75); sm('−i', S.x0 + 0.35, S.y - 0.75);
+    ball(V3(S.x0, S.y + 0.95, 0), C.e, 0.1); ball(V3(S.x0, S.y - 0.95, 0), C.e, 0.1);
+    sm('i', S.x0 - 0.3, S.y + 0.95); sm('−i', S.x0 - 0.35, S.y - 0.95);
     ok(chk, '對照：旋轉 [0 −1; 1 0] 的 λ² + 1 = 0 → λ = ±i ✓（不在線上）', -2.4, 2.75);
     void R; cap('旋轉矩陣的特徵值是複數', '對稱矩陣不會發生這種事');
   },
@@ -833,7 +835,7 @@ const DIRS = [[1, 0.3, 0.2], [-0.4, 1, 0.5], [0.3, -0.6, 1], [0.8, 0.8, -0.4], [
 scene('sp-l25-chosen', 'L25：特徵向量「可以選成」互相垂直', [
   (tok, S) => {
     S.T = space3(V3(0.8, 2.8, 0), 1.5, 1.5);
-    sm('I =', -5.6, 5.6); S.m = mtag([[1, 0, 0], [0, 1, 0], [0, 0, 1]], -4.5, 5.6, 0, 'ptr');
+    S.iL = sm('I =', -5.6, 5.6); S.m = mtag([[1, 0, 0], [0, 1, 0], [0, 0, 1]], -4.5, 5.6, 0, 'ptr');
     S.c = sm('λ = 1, 1, 1：全部是實數', -4.5, 4.5);
     cap('例：單位矩陣 I 也是對稱的', '特徵值全是 1');
   },
@@ -852,16 +854,16 @@ scene('sp-l25-chosen', 'L25：特徵向量「可以選成」互相垂直', [
   },
   async (tok, S) => {
     gone(S.ax, S.m, S.c);
-    S.m = mtag(A3, -4.5, 5.6, 0, 'ptr'); nt('示意 A', -5.9, 5.6);
+    S.m = mtag(A3, -4.5, 5.6, 0, 'ptr'); txt(S.iL, '示意 A =');
     const { vals, vecs } = symEig(A3);
     S.lines = vecs.map((v, k) => rod([C.a, C.b, C.q][k], 0.025).set(S.T(mul(-1.3, v)), S.T(mul(1.3, v))));
-    vecs.forEach((v, k) => sm('λ ≈ ' + f2(vals[k]), ...S.T(mul(1.5, v)).toArray()));
+    S.ll = vecs.map((v, k) => sm('λ ≈ ' + f2(vals[k]), ...S.T(mul(1.5, v)).toArray()));
     ok(residualOK(A3, vals, vecs) && near(dot(vecs[0], vecs[1]), 0) && near(dot(vecs[1], vecs[2]), 0), '三個不同 λ → 三條互相垂直的直線 ✓', -4.3, 2.7);
     cap('一般情況：特徵值都不同', '每個 λ 一條特徵向量直線，三條互相垂直');
   },
   async (tok, S) => {
-    gone(S.lines, S.m);
-    S.m = mtag(B3, -4.5, 5.6, 0, 'ptr'); nt('示意 A', -5.9, 5.6);
+    gone(S.lines, S.m, S.ll);
+    S.m = mtag(B3, -4.5, 5.6, 0, 'ptr');
     const ev = symEig(B3).vals, u = unit([1, -1, 0]), w = [0, 0, 1], q = unit([1, 1, 0]); S.u = u; S.w = w; S.q = q;
     S.line = rod(C.b, 0.025).set(S.T(mul(-1.4, q)), S.T(mul(1.4, q))); sm('λ = 4', ...S.T(mul(1.6, q)).toArray());
     S.pl = planeOf(S.T, u, w, 1.25, C.q);
@@ -957,7 +959,7 @@ scene('sp-l25-real', 'L25：為什麼對稱矩陣的特徵值是實數', [
   },
   (tok, S) => {
     S.l = ball(W2(S.Pc, [0.6, 0.7]), C.e, 0.11); S.lt = sm('λ？', ...W2(S.Pc, [0.85, 0.95]).toArray());
-    nt('示意：還不知道 λ 在哪', 3.9, 0.7);
+    S.nt = nt('示意：還不知道 λ 在哪', 3.9, 0.7);
     cap('目前 λ 可能是複數，x 也可能是', '要證明：λ 其實是實數');
   },
   async (tok, S) => {
@@ -981,7 +983,7 @@ scene('sp-l25-real', 'L25：為什麼對稱矩陣的特徵值是實數', [
   (tok, S) => { hl(S.ln[5], 'ptr alt'); hl(S.ln[6], 'ptr alt'); S.put(7, '(6) λ x̄ᵀx = λ̄ x̄ᵀx  左邊一樣'); cap('(4)、(5) 左邊一模一樣', '所以右邊也相等'); },
   (tok, S) => { hl(S.ln[5], 'idx'); hl(S.ln[6], 'idx'); S.put(8, '(7) x̄ᵀx ≠ 0 ⇒ λ = λ̄', 'ptr'); cap('x̄ᵀx 不是 0，可以約掉', 'λ = λ̄'); },
   async (tok, S) => {
-    gone(S.dash, S.lt, S.lbt);
+    gone(S.dash, S.lt, S.lbt, S.nt);
     await anim(tok, 900, (t) => { S.l.position.copy(W2(S.Pc, [0.6, 0.7 * (1 - t)])); S.lb.position.copy(W2(S.Pc, [0.6, -0.7 * (1 - t)])); });
     good('λ = λ̄：虛部是 0 → λ 是實數 ✓', 3.9, 5.3);
     cap('一個數等於自己的共軛 → 它是實數', '對稱矩陣的 λ 都是實數');
@@ -1056,7 +1058,7 @@ scene('sp-l25-proj', 'L25：A = λ₁q₁q₁ᵀ + λ₂q₂q₂ᵀ（投影的�
     txt(S.F, 'A = λ₁q₁q₁ᵀ + λ₂q₂q₂ᵀ');
     const q1 = unit([1, 1]), q2 = unit([1, -1]); S.q1 = q1; S.q2 = q2;
     S.P1 = [[q1[0] * q1[0], q1[0] * q1[1]], [q1[1] * q1[0], q1[1] * q1[1]]]; S.P2 = [[q2[0] * q2[0], q2[0] * q2[1]], [q2[1] * q2[0], q2[1] * q2[1]]];
-    sm('3', -5.6, 3.8); mtag(S.P1, -4.6, 3.8, 0, 'ptr'); sm('+ 1', -3.3, 3.8); mtag(S.P2, -2.1, 3.8, 0, 'ptr');
+    hd('3 ·', -6.1, 3.45); mtag(S.P1, -4.8, 3.8, 0, 'ptr'); hd('+ 1 ·', -3.25, 3.45); mtag(S.P2, -1.7, 3.8, 0, 'ptr');
     const sum = S.P1.map((r, i) => r.map((v, j) => 3 * v + S.P2[i][j]));
     ok(eqM(sum, S2), '= [2 1; 1 2] ✓', -3.4, 2.9);
     cap('行 × 列：一次一項', 'λ₁q₁q₁ᵀ + λ₂q₂q₂ᵀ');
@@ -1092,39 +1094,39 @@ scene('sp-l25-proj', 'L25：A = λ₁q₁q₁ᵀ + λ₂q₂q₂ᵀ（投影的�
 const B3s = [[1, 2, 0], [2, 1, 0], [0, 0, 3]]; // 示意
 scene('sp-l25-signs', 'L25：pivots 的正負號 = 特徵值的正負號', [
   (tok, S) => { S.F = hot('λ 是實數 → 正的還是負的？', -2.4, 6.0); cap('λ 是實數，接著問：正或負？', ''); },
-  (tok, S) => { sm('微分方程：λ 的正負決定穩定或不穩定', -2.4, 5.4); cap('微分方程裡，這決定穩不穩定', ''); },
+  (tok, S) => { S.t2 = sm('微分方程：λ 的正負決定穩定或不穩定', -2.4, 5.4); cap('微分方程裡，這決定穩不穩定', ''); },
   (tok, S) => {
     S.g = []; for (let k = 0; k < 50; k++) S.g.push(cube('', C.gray, [0.32, 0.32, 0.32], -4.5 + (k % 10) * 0.42, 3.9 - Math.floor(k / 10) * 0.42, 0));
-    sm('50×50：50 個特徵值', -2.6, 1.6);
+    S.t50 = sm('50×50：50 個特徵值', -2.6, 1.6);
     cap('50×50 的矩陣：要算 50 個特徵值', '手算是一輩子的工作');
   },
-  (tok, S) => { bad('det(A − λI) = 0：50 次多項式求根 → 很不穩定 ✘', 2.6, 4.4); cap('解 50 次多項式？', '很糟、很不穩定的方法'); },
-  (tok, S) => { good('消去法求 50 個 pivots：又快又穩 ✓', 2.6, 3.7); cap('但 MATLAB 很樂意算 50 個 pivots', 'pivots ≠ 特徵值，可是……'); },
+  (tok, S) => { S.bd = bad('det(A − λI) = 0：50 次多項式求根 → 很不穩定 ✘', 2.6, 4.4); cap('解 50 次多項式？', '很糟、很不穩定的方法'); },
+  (tok, S) => { S.gd = good('消去法求 50 個 pivots：又快又穩 ✓', 2.6, 3.7); cap('但 MATLAB 很樂意算 50 個 pivots', 'pivots ≠ 特徵值，可是……'); },
   async (tok, S) => {
     for (let k = 0; k < 50; k++) { S.g[k].material.color.set(k < 28 ? C.p : C.e); if (k % 10 === 9) await wt(tok, 60); }
-    sm('28 個 pivots > 0、22 個 < 0 ⇒ 28 個 λ > 0、22 個 λ < 0', -2.6, 1.0);
+    S.t28 = sm('28 個 pivots > 0、22 個 < 0 ⇒ 28 個 λ > 0、22 個 λ < 0', -2.6, 1.0);
     cap('28 個正 pivots → 28 個正特徵值', '22 個負的 → 22 個負的');
   },
   (tok, S) => {
-    gone(S.g);
+    gone(S.g, S.t50, S.bd, S.gd, S.t28, S.t2);
     const pv = pivots(B3s), ev = symEig(B3s).vals; S.pv = pv; S.ev = ev;
     mtag(B3s, -4.6, 3.9, 0, 'ptr'); nt('示意 A', -4.6, 2.9);
-    pv.forEach((v, k) => bar(-2.6 + k * 0.75, 1.9, v, frac(v))); sm('pivots', -1.85, 0.2);
-    ev.forEach((v, k) => bar(0.2 + k * 0.75, 1.9, v, f2(v))); sm('特徵值', 0.95, 0.2);
+    pv.forEach((v, k) => bar(-2.6 + k * 0.75, 2.3, v, frac(v))); sm('pivots', -1.85, 0.2);
+    ev.forEach((v, k) => bar(0.2 + k * 0.75, 2.3, v, f2(v))); sm('特徵值', 0.95, 0.2);
     const cnt = (a) => a.filter((v) => v > 1e-9).length;
     ok(cnt(pv) === cnt(ev) && pv.length - cnt(pv) === ev.length - cnt(ev), '正的個數 2 = 2、負的個數 1 = 1 ✓', -0.8, -0.5);
     cap('對稱矩陣：pivots 的正負號 = λ 的正負號', '數值不同，個數相同');
   },
   (tok, S) => {
     const sh = B3s.map((r, i) => r.map((v, j) => v - (i === j ? 2 : 0))), pv = pivots(sh);
-    pv.forEach((v, k) => bar(3.0 + k * 0.75, 1.9, v, frac(v))); sm('A − 2I 的 pivots', 3.75, 0.2);
+    pv.forEach((v, k) => bar(3.0 + k * 0.75, 2.3, v, frac(v))); sm('A − 2I 的 pivots', 3.75, 0.2);
     const neg = pv.filter((v) => v < -1e-9).length, below = S.ev.filter((v) => v < 2).length;
     ok(neg === below, '1 個負 pivot ⇒ A 有 1 個 λ < 2 ✓', 3.75, 4.5); nt('老師說移 7I；這裡用 2I 示意', 3.75, 5.0);
     cap('把 A 移成 A − 7I（這裡用 2I）', '數 pivots 就知道幾個 λ 比 7 小');
   },
   (tok, S) => {
     const pp = S.pv.reduce((a, b) => a * b, 1), pe = S.ev.reduce((a, b) => a * b, 1);
-    ok(near(pp, det(B3s)) && near(pe, det(B3s), 1e-8), 'pivots 乘積 = λ 乘積 = det = ' + frac(det(B3s)) + ' ✓', -0.8, 4.5);
+    ok(near(pp, det(B3s)) && near(pe, det(B3s), 1e-8), 'pivots 乘積 = λ 乘積 = det = ' + frac(det(B3s)) + ' ✓', -1.6, 5.35);
     cap('乘積一樣：都等於 det', '但正負號的事實多告訴我們每一個的符號');
   },
 ]);
@@ -1137,7 +1139,7 @@ scene('sp-l25-pd', 'L25：正定矩陣入門：[5 2; 2 3]', [
   (tok, S) => { cube('對稱矩陣（好）', C.a, [4.2, 0.5, 0.5], 3.0, 5.5, 0, 2); cube('正定（最棒）', C.p, [2.4, 0.5, 0.5], 3.0, 4.9, 0, 2); cap('對稱矩陣是好的', '正定是其中最棒的一群'); },
   (tok, S) => { S.t1 = sm('① 所有特徵值 > 0', -2.8, 4.7); cap('測試一：所有 λ > 0', ''); },
   (tok, S) => { S.t2 = sm('② 所有 pivots > 0 ？', -2.8, 4.15); cap('pivots 呢？', ''); },
-  (tok, S) => { sm('A =', -5.6, 3.1); mtag(A5, -4.6, 3.1, 0, 'ptr'); ok(eqM(A5, tr(A5)), '對稱 ✓', -4.6, 2.3); cap('例子：A = [5 2; 2 3]', '對稱，λ 一定是實數'); },
+  (tok, S) => { sm('A =', -5.6, 3.1); mtag(A5, -4.6, 3.1, 0, 'ptr'); ok(eqM(A5, tr(A5)), '對稱 ✓', -5.9, 2.5); cap('例子：A = [5 2; 2 3]', '對稱，λ 一定是實數'); },
   (tok, S) => { txt(S.t2, '② 所有 pivots > 0（和 λ 同號）'); cap('pivot 和 λ 同號', '所以 λ 全正 ⇔ pivots 全正'); },
   (tok, S) => { S.pv = pivots(A5); S.b1 = bar(-2.4, 1.0, S.pv[0], '5'); sm('pivots', -2.0, 0.3); cap('第一個 pivot：5', ''); },
   (tok, S) => {
@@ -1151,7 +1153,7 @@ scene('sp-l25-pd', 'L25：正定矩陣入門：[5 2; 2 3]', [
     ok(near(ev[0], 4 + Math.sqrt(5)) && near(ev[1], 4 - Math.sqrt(5)), 'λ = 4 ± √5 ≈ ' + f2(ev[0]) + '、' + f2(ev[1]) + ' 都 > 0 ✓', 2.4, -0.4);
     cap('λ = 4 ± √5，都是正的', '算起來不漂亮，pivots 簡單多了');
   },
-  (tok, S) => { sm('微分方程：知道 λ 的正負 → 知道穩不穩定', 2.4, 2.8); cap('微分方程最想要的就是這種矩陣', ''); },
+  (tok, S) => { sm('微分方程：知道 λ 的正負 → 知道穩不穩定', 2.4, 4.05); cap('微分方程最想要的就是這種矩陣', ''); },
 ]);
 
 // 10 steps
@@ -1162,9 +1164,9 @@ scene('sp-l25-dets', 'L25：行列式測試要看「每個左上角」', [
   (tok, S) => { sm('B =', 1.2, 4.9); mtag(BN, 2.3, 4.9, 0, 'ptr alt'); cap('可是看這個：B = [−1 0; 0 −3]', ''); },
   (tok, S) => { ok(det(BN) === 3, 'det B = 3 > 0 ✓', 2.3, 4.0); cap('B 的行列式也是正的：3', ''); },
   (tok, S) => {
-    pivots(BN).forEach((v, k) => bar(1.5 + k * 0.7, 2.4, v, frac(v))); sm('pivots', 1.85, 3.2);
-    symEig(BN).vals.forEach((v, k) => bar(3.4 + k * 0.7, 2.4, v, frac(v))); sm('特徵值', 3.75, 3.2);
-    bad('pivots、λ 都是負的 → 不是正定 ✘', 2.6, 0.2);
+    pivots(BN).forEach((v, k) => bar(1.5 + k * 0.7, 2.9, v, frac(v))); sm('pivots', 1.85, 3.45);
+    symEig(BN).vals.forEach((v, k) => bar(3.4 + k * 0.7, 2.9, v, frac(v))); sm('特徵值', 3.75, 3.45);
+    bad('pivots、λ 都是負的 → 不是正定 ✘', 2.6, 0.75);
     cap('B 的 pivots 和 λ 都是負的', '只看整個 det 不夠');
   },
   (tok, S) => { sm('還要看左上角的小行列式：1×1、2×2', -3.0, 3.3); cap('要檢查左上角的「子行列式」', '從左上往下'); },
@@ -1250,7 +1252,6 @@ scene('sp-l26-herm', 'L26：Hermitian（Aᴴ = A）與 unitary（QᴴQ = I）', 
   (tok, S) => { const h = cHerm(HM2).every((r, i) => r.every((z, j) => cNear(z, HM2[i][j]))); ok(h, 'Aᴴ = A ✓：Hermitian 矩陣', -4.2, 2.5); cap('這種矩陣叫 Hermitian', 'Aᴴ = A'); },
   (tok, S) => {
     const t = 7, d = cMul(HM2[0][0], HM2[1][1]).re - cAbs2(HM2[0][1]), r = Math.sqrt(t * t - 4 * d); S.ev = [(t + r) / 2, (t - r) / 2];
-    S.ev.forEach((v, k) => bar(-4.8 + k * 0.8, 0.6, v, 'λ = ' + frac(v)));
     ok(near(S.ev[0], 7) && near(S.ev[1], 0), 'λ² − 7λ + 0 = 0 → λ = 7、0：實數 ✓（程式算）', -2.2, 1.8);
     cap('Hermitian 矩陣的特徵值是實數', '');
   },
@@ -1704,23 +1705,23 @@ scene('sp-l27-hess', 'L27：二階導數矩陣（Hessian）要正定', [
 
 // 13 steps
 scene('sp-l27-k3', 'L27：3×3：[2 −1 0; −1 2 −1; 0 −1 2]', [
-  (tok, S) => { hot('3×3 的例子', -3.4, 6.0); cap('3×3 的例子', ''); },
-  (tok, S) => { sm('A =', -5.6, 4.9); S.m = mtag(K3, -4.3, 4.9, 0, 'ptr'); cap('老朋友：[2 −1 0; −1 2 −1; 0 −1 2]', ''); },
-  (tok, S) => { sm('問題：正定嗎？xᵀAx 是什麼？原點是最小值嗎？幾何？', 0.8, 5.6); cap('要問的事：', '正定？xᵀAx？最小值？幾何？'); },
-  (tok, S) => { S.dm = minors(K3); bar(-5.0, 1.6, S.dm[0], '2'); sm('左上行列式', -4.3, 0.3); ok(near(S.dm[0], 2), '1×1：2 ✓', 0.8, 4.9); cap('先算行列式：1×1 是 2', ''); },
-  (tok, S) => { bar(-4.3, 1.6, S.dm[1], '3'); ok(near(S.dm[1], 3), '2×2：4 − 1 = 3 ✓', 0.8, 4.4); cap('2×2：3', ''); },
-  (tok, S) => { bar(-3.6, 1.6, S.dm[2], '4'); ok(near(S.dm[2], 4), '3×3：4 ✓（2、3、4 線性增加）', 0.8, 3.9); cap('3×3：4', '這類矩陣的行列式 2、3、4…'); },
-  (tok, S) => { S.pv = pivots(K3); ['2', '3/2', '4/3'].forEach((t, k) => bar(-2.2 + k * 0.7, 1.6, S.pv[k], t)); sm('pivots', -1.5, 0.3); ok(near(S.pv[1], 1.5) && near(S.pv[2], 4 / 3), 'pivots = 2、3/2、4/3 ✓', 0.8, 3.4); cap('pivots：2、3/2、4/3', ''); },
-  (tok, S) => { ok(near(S.pv[0] * S.pv[1], 3) && near(S.pv[0] * S.pv[1] * S.pv[2], 4), 'pivot 乘積 = 2、3、4 = 行列式 ✓', 0.8, 2.9); cap('前幾個 pivot 相乘 = 行列式', ''); },
-  (tok, S) => { sm('特徵值：要解三次方程式', 0.8, 2.4); cap('特徵值：三次方程式', ''); },
-  (tok, S) => { sm('相信：全部 > 0', 0.8, 1.9); cap('今天的結論：它們全是正的', ''); },
+  (tok, S) => { hot('3×3 的例子', -3.4, 6.6); cap('3×3 的例子', ''); },
+  (tok, S) => { sm('A =', -5.9, 5.9); S.m = mtag(K3, -4.3, 5.9, 0, 'ptr'); cap('老朋友：[2 −1 0; −1 2 −1; 0 −1 2]', ''); },
+  (tok, S) => { sm('問題：正定嗎？xᵀAx 是什麼？原點是最小值嗎？幾何？', 2.6, 6.2); cap('要問的事：', '正定？xᵀAx？最小值？幾何？'); },
+  (tok, S) => { S.dm = minors(K3); bar(-5.6, 1.6, S.dm[0], '2'); sm('左上行列式', -5.0, 0.3); ok(near(S.dm[0], 2), '1×1：2 ✓', 3.0, 5.4); cap('先算行列式：1×1 是 2', ''); },
+  (tok, S) => { bar(-5.0, 1.6, S.dm[1], '3'); ok(near(S.dm[1], 3), '2×2：4 − 1 = 3 ✓', 3.0, 4.9); cap('2×2：3', ''); },
+  (tok, S) => { bar(-4.4, 1.6, S.dm[2], '4'); ok(near(S.dm[2], 4), '3×3：4 ✓（2、3、4 線性增加）', 3.0, 4.4); cap('3×3：4', '這類矩陣的行列式 2、3、4…'); },
+  (tok, S) => { S.pv = pivots(K3); ['2', '3/2', '4/3'].forEach((t, k) => bar(-3.6 + k * 0.6, 1.6, S.pv[k], t)); sm('pivots', -3.0, 0.3); ok(near(S.pv[1], 1.5) && near(S.pv[2], 4 / 3), 'pivots = 2、3/2、4/3 ✓', 3.0, 3.9); cap('pivots：2、3/2、4/3', ''); },
+  (tok, S) => { ok(near(S.pv[0] * S.pv[1], 3) && near(S.pv[0] * S.pv[1] * S.pv[2], 4), 'pivot 乘積 = 2、3、4 = 行列式 ✓', 3.0, 3.4); cap('前幾個 pivot 相乘 = 行列式', ''); },
+  (tok, S) => { sm('特徵值：要解三次方程式', 3.0, 2.9); cap('特徵值：三次方程式', ''); },
+  (tok, S) => { sm('相信：全部 > 0', 3.0, 2.4); cap('今天的結論：它們全是正的', ''); },
   (tok, S) => {
-    S.ev = symEig(K3).vals.slice().reverse(); ['2−√2', '2', '2+√2'].forEach((t, k) => bar(0.4 + k * 0.7, 1.6, S.ev[k], t)); sm('特徵值', 1.1, 0.3);
-    ok(near(S.ev[0], 2 - Math.SQRT2) && near(S.ev[1], 2) && near(S.ev[2], 2 + Math.SQRT2), 'λ = 2 − √2、2、2 + √2 ✓', 3.6, 1.0);
+    S.ev = symEig(K3).vals.slice().reverse(); ['2−√2', '2', '2+√2'].forEach((t, k) => bar(-1.6 + k * 0.6, 1.6, S.ev[k], t)); sm('特徵值', -1.0, 0.3);
+    ok(near(S.ev[0], 2 - Math.SQRT2) && near(S.ev[1], 2) && near(S.ev[2], 2 + Math.SQRT2), 'λ = 2 − √2、2、2 + √2 ✓', 3.0, 1.75);
     cap('λ = 2 − √2、2、2 + √2', '');
   },
-  (tok, S) => { ok(near(S.ev.reduce((a, b) => a + b, 0), 6), '檢查 trace：和 = 6 = 2 + 2 + 2 ✓', 3.6, 0.45); cap('檢查一：trace = 6', ''); },
-  (tok, S) => { ok(near((2 - Math.SQRT2) * 2 * (2 + Math.SQRT2), 4), '檢查 det：(4 − 2)·2 = 4 ✓', 3.6, -0.1); cap('檢查二：乘積 = det = 4', ''); },
+  (tok, S) => { ok(near(S.ev.reduce((a, b) => a + b, 0), 6), '檢查 trace：和 = 6 = 2 + 2 + 2 ✓', 3.0, 1.2); cap('檢查一：trace = 6', ''); },
+  (tok, S) => { ok(near((2 - Math.SQRT2) * 2 * (2 + Math.SQRT2), 4), '檢查 det：(4 − 2)·2 = 4 ✓', 3.0, 0.65); cap('檢查二：乘積 = det = 4', ''); },
 ]);
 
 // 16 steps

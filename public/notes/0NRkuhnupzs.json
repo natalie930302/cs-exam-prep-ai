@@ -108,7 +108,7 @@
     "一開始程式被放在哪個 core，可能是隨機的。可是一旦在那裡跑了，就建立了資料、有了 cache，之後就會想綁在那裡。",
     "結果那顆 core（core 0）要執行的工作越疊越多，大家的 wait time 都變久；別的 core（core 3）卻很閒。這就是不平衡。",
     "所以 locality（資料存取的區域性）和整個系統的 load balancing，往往是 trade-off：綁得越緊，越不平衡。",
-    "在硬體層面，一顆 CPU 內部通常一定會實作 load balancing 機制，讓每個 core 的工作量差不多，減少大家的等待時間。",
+    "老師說：一顆 CPU 內部通常一定會實作 load balancing 機制，讓每個 core 的工作量差不多，減少大家的等待時間。（課本把它放在 SMP 的 OS 排程裡講：例如 Linux 的 scheduler 定期檢查、做 push 與 pull。）",
     "怎麼做 load balancing？一般分成 push（推）和 pull（拉）兩種。",
     "push：由工作量重的人主動發起，把自己的工作推給工作量輕的人。core 0 把一塊磚推給了 core 3。",
     "搬工作（migration）一定有來源（source）和目的地（destination）。差別只在「誰先發起」，就分成這兩種 model。",
@@ -127,7 +127,7 @@
     },
     {
      "t": 336,
-     "text": "hardware level 的 CPU 內部通常都有 load balancing 機制，讓每個 core loading 差不多；分 push 與 pull。"
+     "text": "load balancing 讓每個 core 的 loading 差不多（老師說 CPU 內部通常會做；課本放在 SMP 的 OS 排程，例如 Linux）；分 push 與 pull。"
     },
     {
      "t": 362,
@@ -236,7 +236,7 @@
     "要保證趕上 deadline，這種工作必須很有規律。如果完全沒有規律，根本沒辦法排程，一預測錯就 miss 了。",
     "所以 real-time 的 CPU burst 會規律地一直重複出現。例子：period 10、execution 4，代表每 10 個時間單位來一個 burst（金色柱子是到達時間），每次要執行 4 個單位（藍色）。",
     "每一次都必須在下一個 burst 到來之前（也就是 10、20、30）把這 4 個單位做完。",
-    "hard real-time 更難，有很多研究，演算法可能非常複雜。這裡介紹的兩個常見的基本做法，只能用在 soft real-time，也就是盡量滿足 deadline。"
+    "hard real-time 更難，有很多研究，演算法可能非常複雜。老師說這裡介紹的兩個基本做法只能用在 soft real-time。補充課本的說法：RM 在 CPU 使用率 ≤ n(2^{1/n} − 1) 時保證趕上 deadline，EDF 在使用率 ≤ 1 時理論上保證，所以 hard real-time 也會用它們。"
    ],
    "points": [
     {
@@ -257,7 +257,7 @@
     },
     {
      "t": 1157,
-     "text": "這裡介紹的兩個演算法用在 soft real-time。"
+     "text": "老師說這裡介紹的兩個演算法用在 soft real-time；課本則用它們分析 hard real-time：使用率夠低時可以保證不 miss。"
     }
    ]
   },
@@ -281,17 +281,17 @@
     "它是一個 static（靜態）的 priority scheduling：把每個工作的優先順序固定下來，依據的是 period（週期）。",
     "period 越短，代表下一個 burst 越快就來，越趕、越急，所以 priority 越高。就像寫作業，越急的先做。這裡 period 4 的最優先。",
     "period 是事先給定的常數，所以 priority 在執行時不會改變，這就是 static。",
-    "名字的意思：rate 指的就是 period；monotonic 是單調的意思，把工作照 period 由短到長排好。",
+    "名字的意思：rate 是工作出現的頻率（1/period），monotonic 是單調的意思：rate 越高（period 越短）priority 越高，等於把工作照 period 由短到長排好。",
     "另一個更常被用到的，是 dynamic（動態）的方法：earliest deadline first（EDF，最早截止期限優先）。",
     "大家寫作業都在用這個演算法：看哪個作業 deadline 最近，剩三天的先做再說，因為任何一個做不完都會被當。",
     "注意：period 長不代表 deadline 遠。很早就公布、期限很長的作業，放著放著也會變成只剩兩天。兩者沒有直接關係。",
     "所以 EDF 看的是「當下」誰的 deadline 最近，priority 一直在變，是 dynamic priority 演算法。",
-    "有趣的是，EDF 可以用數學證明：它 miss deadline 的比例最高不會超過多少。所以 EDF 是不錯的演算法，但不保證完全不會 miss。"
+    "老師說：EDF 可以用數學證明它 miss deadline 的比例最高不會超過多少，是不錯的演算法。課本的結論更強：只要 CPU 使用率 ≤ 100%（不計 context switch 等成本），EDF 理論上能讓每個工作都趕上 deadline；只有超載時才會 miss。"
    ],
    "points": [
     {
      "t": 1165,
-     "text": "Rate-Monotonic 是 static priority scheduling：依 period 排，period 越短越急、priority 越高，run time 不變（rate = period，monotonic = 單調排序）。"
+     "text": "Rate-Monotonic 是 static priority scheduling：依 period 排，period 越短越急、priority 越高，run time 不變（rate 是週期出現的頻率 1/period，monotonic = priority 隨 rate 單調排序）。"
     },
     {
      "t": 1230,
@@ -299,7 +299,7 @@
     },
     {
      "t": 1287,
-     "text": "EDF 可以被證明 missed deadline rate 的上界，是不錯的演算法，但不能保證不 miss。"
+     "text": "老師：EDF 可以證明 missed deadline rate 的上界，是不錯的演算法。課本：CPU 使用率 ≤ 1（不計 overhead）時，EDF 理論上每個工作都趕得上；超載時才會 miss。"
     }
    ],
    "trap": "補充：RM 保證可排程的 CPU 使用率上界是 n(2^{1/n} − 1)；EDF 理論上只要使用率 ≤ 1 就排得完（不計 overhead）。"

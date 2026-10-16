@@ -1,7 +1,7 @@
 // 計算機組織 第1章：數字系統與運算（二進位／十六進位、2's complement、加減法與 overflow、
 // ALU、乘法器、除法器、IEEE 754、浮點加法與捨入、CPU time、Amdahl's law）。
 // 課本：Patterson & Hennessy, Computer Organization and Design (MIPS)，第 1、3 章與附錄 B/C。
-// 本章影片目前都還沒有逐字稿，場景全部依例題（數字照課本），名稱標「課本」。
+// 前段場景依課本例題（數字照課本），名稱標「課本」；各支影片另有一組逐句同步的場景（nuA-*、nuB-*，在檔案後段）。
 // Chapter module for lab-shell.js — see the contract at the top of lab-shell.js.
 import kit from './_kit.js';
 
@@ -921,7 +921,7 @@ export default function (ctx) {
       return { q: v + ' 的 8-bit 2\'s complement 是？', opts: uniq(ans, [grp(inv(bin(-v, 8))), grp('1' + bin(-v, 7)), grp(bin(-v, 8)), grp(bin(v + 1, 8))]), ans, why: '|' + v + '| = ' + grp(bin(-v, 8)) + '，反相得 ' + grp(inv(bin(-v, 8))) + '（1\'s complement），再 +1。' };
     }
     if (t === 2) {
-      const a = R(-128, 127), b = R(-128, 127), s = a + b, w = sval(bin(s, 8)), ov = s > 127 || s < -128;
+      const a = R(-128, 127), b = R(-127, 127), s = a + b, w = sval(bin(s, 8)), ov = s > 127 || s < -128;
       const ans = ov ? '會 overflow，bits 讀起來是 ' + w : '不會，結果 ' + s;
       return { q: '8-bit 2\'s complement：' + a + ' + ' + b + ' 會 overflow 嗎？', opts: uniq(ans, [ov ? '不會，結果 ' + s : '會 overflow，bits 讀起來是 ' + (s - 256), '會 overflow，結果是 0', ov ? '會 overflow，bits 讀起來是 ' + (-w) : '會 overflow，bits 讀起來是 ' + (s + 1)]), ans, why: '真正的和 ' + s + (ov ? ' 超出 −128 ～ 127；同號相加結果變號。' : ' 在 −128 ～ 127 內。') + (a * b < 0 ? '異號相加永遠不會 overflow。' : '') };
     }
@@ -1457,9 +1457,9 @@ scene('nuA-1a-isas', 'Intel（CISC）和 ARM（RISC）', [
     cap('instruction set architecture 很多種', '現在最 popular 的是 Intel 和 ARM');
   },
   async (tok, S) => { // 1489.0 Intel 版本
-    S.x = ['286', '386', '486', '…', 'IA-64'].map((t, i) => bx(t, NC.sky, -5.2 + i * 1.2, 4.6, 0, 1.0, 0.5, 0.7));
+    S.x = ['286', '386', '486', '…', 'x86-64'].map((t, i) => bx(t, NC.sky, -5.2 + i * 1.2, 4.6, 0, 1.0, 0.5, 0.7));
     sm('Intel：每一版加更多 instruction（也就要加 hardware）', -2.8, 3.9);
-    cap('Intel：PC 常用，286、386 到 IA-64', '每一版加更多 instruction');
+    cap('Intel：PC 常用，286、386 一路到 64-bit', '老師口說 IA-64；PC 用的是 x86-64（IA-64 是 Itanium）');
   },
   async (tok, S) => { // 1509.0 ARM
     S.arm = bx('ARM（已到第 8 版）', NC.mint, 3.6, 4.6, 0, 3.0, 0.5, 0.7); sm('手機裡大概 90% 都是 ARM', 3.6, 3.9);

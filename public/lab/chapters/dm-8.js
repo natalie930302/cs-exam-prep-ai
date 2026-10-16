@@ -634,7 +634,9 @@ export default function (ctx) {
     if (r < 0.64) { const n = 3 + rnd(4), L = n + rnd(3); const v = fallF(L, n); return { q: '用 ' + L + ' 種顏色合法塗 K' + n + '，有幾種塗法？', opts: [String(v), String(Math.pow(L, n)), String(L * Math.pow(L - 1, n - 1)), String(v / 2)], ans: String(v), why: 'P(K' + n + ',λ) = λ(λ−1)…(λ−' + (n - 1) + ')，代 λ = ' + L + '。' }; }
     if (r < 0.72) { const n = 4 + rnd(4), L = 2 + rnd(3); const v = L * Math.pow(L - 1, n - 1); return { q: n + ' 個頂點的樹，用 ' + L + ' 色合法著色有幾種？', opts: [String(v), String(fallF(L, Math.min(L, n))), String(Math.pow(L, n)), String(L * (L - 1))], ans: String(v), why: '任何 n 點樹：P(T,λ) = λ(λ−1)^(n−1)。' }; }
     if (r < 0.82) {
-      const degs = Array.from({ length: 5 }, () => 1 + rnd(5)); let odd = degs.filter((d) => d % 2).length; if (odd % 2) { degs[0]++; odd = degs.filter((d) => d % 2).length; }
+      // 5 個點要連通至少 4 條邊：度數和 ≥ 8 才是連通多重圖可能有的度數序列
+      let degs; do { degs = Array.from({ length: 5 }, () => 1 + rnd(5)); if (degs.reduce((s, d) => s + d, 0) % 2) degs[0]++; } while (degs.reduce((s, d) => s + d, 0) < 8);
+      const odd = degs.filter((d) => d % 2).length;
       const ans = odd === 0 ? '有 Euler circuit' : odd === 2 ? '有 Euler trail 但沒有 circuit' : '兩者都沒有';
       return { q: '連通多重圖的度數序列 ' + degs.join(', ') + '，下列何者正確？', opts: ['有 Euler circuit', '有 Euler trail 但沒有 circuit', '兩者都沒有', '無法判斷'], ans, why: '奇度點 ' + odd + ' 個：0 個 → circuit；2 個 → trail（從一個奇點走到另一個）；其他 → 都沒有。' };
     }
@@ -1002,7 +1004,7 @@ export default function (ctx) {
     say('（課本）Königsberg 七橋：每座橋走恰一次？', '陸地 = 頂點、橋 = 邊（multigraph）');
     await beat(tok, 3000);
     KB.V.forEach((v) => vcol(gv, v, COL.hot));
-    say('四個點度數 3, 5, 3, 3 全是奇數 → 不可能', 'Euler circuit ⇔ 連通且全偶；Euler trail ⇔ 恰 0 或 2 個奇點');
+    say('四個點度數 3, 3, 5, 3 全是奇數 → 不可能', 'Euler circuit ⇔ 連通且全偶；Euler trail（不回起點）⇔ 連通且恰 2 個奇點');
     await beat(tok, 3400);
     lab.clear();
     const K5 = parseG(ringP(['a', 'b', 'c', 'd', 'e'], 2.8), 'a-b a-c a-d a-e b-c b-d b-e c-d c-e d-e');
@@ -6708,8 +6710,8 @@ scene('g8d-mst-cost', '28B：Prim 與 Kruskal 的複雜度', [
     const pos = (i) => { const d = Math.floor(Math.log2(i + 1)), k = i + 1 - (1 << d); const w = 4.4 / (1 << d); return [-5.2 + w / 2 + k * w - 1.0, 5.6 - d * 1.3]; };
     HEAP.forEach((v, i) => { if (i) { const [x1, y1] = pos((i - 1) >> 1), [x2, y2] = pos(i); seg(x1, y1, x2, y2); } });
     S.hp = HEAP.map((v, i) => { const [x, y] = pos(i); const m = new THREE.Mesh(NG, new THREE.MeshStandardMaterial({ color: TC.node })); m.position.set(x, y, 0); m.add(lab.label(String(v), 'val')); lab.world.add(m); return m; });
-    note('示意', -5.8, 6.4); ln(S, 3, 'binary heap：complete binary tree，parent ≤ children ' + (HEAP_OK ? '✓' : '✘'), HEAP_OK ? 'good' : 'bad');
-    cap('binary heap：parent 比 children 小', '是一棵 complete binary tree');
+    note('示意', -5.8, 6.4); ln(S, 3, 'binary heap：每層由左到右填滿，parent ≤ children ' + (HEAP_OK ? '✓' : '✘'), HEAP_OK ? 'good' : 'bad');
+    cap('binary heap：parent 比 children 小', '每層由左到右填滿（≠ Grimaldi 的 complete）');
   },
   async (tok, S) => { // @1284.4
     ln(S, 4, 'Kruskal：用 union-find 資料結構 → O(e log₂ e)'); cap('Kruskal：union-find，O(e log e)', '');
@@ -10425,8 +10427,8 @@ scene('g8g-col-cn', 'Cycle graph 的 chromatic number', [
 scene('g8g-col-poly', 'Chromatic polynomial：地圖例（含勘誤）', [
   async (tok, S) => {
     S.B = board(0.9, -3.4);
-    S.B.add('這部分課本沒有（影片補充）', 'say');
-    cap('換個問題（課本沒有）', '');
+    S.B.add('影片的課本沒有（Grimaldi 11.6 有）', 'say');
+    cap('換個問題（影片補充）', '');
   },
   async (tok, S) => { S.B.add('chromatic polynomial P(G,λ)：用 λ 色有幾種塗法'); cap('不是問最少幾色', '而是給 λ 種顏色，有幾種塗法'); },
   async (tok, S) => {
@@ -10470,7 +10472,7 @@ scene('g8g-col-k4', '練習：P(G,λ) 與 P(G,6)', [
   },
   async (tok, S) => { S.l = (v, s) => { const p = S.gv.pos(v); tag(s, 'ptr alt', p.x, p.y + 0.85, p.z); vcol(S.gv, v, COL.vis); }; S.l('A', 'λ'); cap('從一個頂點開始：A 標 λ', ''); },
   async (tok, S) => { S.l('B', 'λ−1'); cap('B 不能用 A 的顏色', 'λ − 1'); },
-  async (tok, S) => { S.l('C', 'λ−2'); cap('C：λ − 2', '（場景用 A、B、C、D 兩兩相鄰的 K₄）'); },
+  async (tok, S) => { S.l('C', 'λ−2'); cap('C 碰到 A 和 B：λ − 2', '（老師口誤說 C 不鄰 A；場景用 K₄）'); },
   async (tok, S) => { S.l('D', 'λ−3'); cap('D 和 A、B、C 都相鄰', 'λ − 3'); },
   async (tok, S) => { S.B.add('P(G,λ) = λ(λ−1)(λ−2)(λ−3)'); cap('相乘得到 P(G,λ)', ''); },
   async (tok, S) => { S.B.add('只要多項式 → λ 保留；題目要 λ = 6', 'say'); cap('如果只問多項式，λ 留著就好', '題目要的是 6 色'); },

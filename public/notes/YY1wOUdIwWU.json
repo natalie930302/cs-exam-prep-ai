@@ -351,7 +351,7 @@
    "points": [
     {
      "t": 1473,
-     "text": "最 popular 的 ISA：Intel（PC，286、386… IA-64，一直加 instruction）與 ARM（手機裡大多是 ARM）。"
+     "text": "最 popular 的 ISA：Intel（PC 的 x86：286、386 一路到 64-bit，一直加 instruction；老師口說 IA-64，但 IA-64 其實是 Intel 另一套 Itanium 架構）與 ARM（手機裡大多是 ARM）。"
     },
     {
      "t": 1535,
@@ -364,7 +364,7 @@
    ],
    "explain": [
     "instruction set 有很多種，以前發展過不少，現在最 popular 的兩個是 Intel 和 ARM。",
-    "Intel 的 processor 是 PC 上常用的，從 286、386 一路到 IA-64，有很多版本。每一版都隨需求加更多 instruction、更強，加 instruction 當然也要加 hardware。",
+    "Intel 的 processor 是 PC 上常用的，從 286、386 一路演進到 64-bit，有很多版本（老師說到「IA-64」；PC 用的 64-bit 其實是 x86-64，IA-64 是 Intel 另一套 Itanium 架構）。每一版都隨需求加更多 instruction、更強，加 instruction 當然也要加 hardware。",
     "ARM 已經發展到第 8 版。它用在哪？手機！你的手機用的不是 Intel 的 x86，大概 90% 都是 ARM 的核心。",
     "這兩個也代表兩大陣營：Intel 是 CISC（Complex Instruction Set Computer，指令多又複雜），ARM 是 RISC（Reduced Instruction Set Computer，指令精簡）。我們課上用的 MIPS 也屬於 RISC 這一類，只是細節不同。",
     "為什麼要學？基本架構雖然一樣，但應用一變就要加新東西，變化很快；而且到處都需要 processor。學完這門課，你就有能力設計一個 processor。"

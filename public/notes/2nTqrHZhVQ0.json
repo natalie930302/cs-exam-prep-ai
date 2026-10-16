@@ -137,7 +137,7 @@
     "所以要讓 CPU 和 I/O 能多工，第一個先決條件就是 Spooling 的概念。",
     "例子：從 disk 搬一個 1 GB 的檔案到 memory，要花很久。Spooling 的意思是：這段時間裡 CPU 完全不用參與，可以去做自己的計算（CPU 發亮代表它在做別的事）。",
     "I/O 做完了，再 notify（通知）CPU，CPU 才回來處理剩下的事。",
-    "於是 disk 和 CPU 可以同時運作，這種系統概念就叫做 Spooling。",
+    "於是 disk 和 CPU 可以同時運作，這種系統概念就叫做 Spooling（Simultaneous Peripheral Operation On-Line；課本的例子是先把要印的資料放到 disk 的 buffer，印表機慢慢印，CPU 繼續做別的事）。",
     "Spooling 只是一個「概念」。真正實現它的機制叫 interrupt（中斷），下一章會詳細講，整個 OS 可以說是被 interrupt 驅動的。",
     "總結：Multiprogramming 的先決條件，除了在系統裡放很多 program，還要靠 spooling 讓 CPU 和 I/O 的時間重疊：做 I/O 時 CPU 不用介入，結束時被通知就好。"
    ]

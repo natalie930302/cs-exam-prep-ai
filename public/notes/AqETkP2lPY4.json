@@ -85,7 +85,7 @@
    "explain": [
     "看三個 partial order 的例子，都用 Hasse diagram 畫。",
     "(a) 是 1、2、4、8 排成一條線；(b) 是 2、3、5、7 四個點都不連；(c) 有九個元素。三張都是合法的 Hasse diagram。(c) 的連線是依老師說的答案重建成整除關係的示意。",
-    "對每個例子問四件事：哪些是 maximal、minimal、greatest、least？表格的每一列對應一個問題。",
+    "對每個例子問四件事：哪些是 maximal、minimal、greatest、least？答案會依序寫在每張圖的下面。",
     "(a) 的 maximal：沒有人比它大的，就是最上面的 8。",
     "(a) 的 minimal：沒有人比它小的，是最下面的 1。",
     "(a) 的 greatest：比所有人都大的，還是 8，因為從 8 往下走得到每一個點。",

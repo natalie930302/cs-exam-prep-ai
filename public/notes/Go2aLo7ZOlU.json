@@ -501,12 +501,12 @@
   {
    "q": "x、y 在 row space 且 Ax = Ay，為什麼 x = y？",
    "opts": [
-    "x − y 同時在 row space 與 null space，只能是 0",
-    "因為 A 一定可逆，兩邊同乘 A⁻¹ 就直接得到 x = y",
-    "因為 x、y 正交",
-    "因為 Ax 在 column space"
+    "x − y 同在 row space 與 null space，只能是 0",
+    "因為 A 一定可逆，兩邊同乘 A⁻¹ 即可",
+    "因為 x、y 在 row space 裡一定互相正交",
+    "因為 Ax 和 Ay 都落在 column space"
    ],
-   "ans": "x − y 同時在 row space 與 null space，只能是 0",
+   "ans": "x − y 同在 row space 與 null space，只能是 0",
    "why": "row space 與 null space 是正交補，交集只有零向量。"
   },
   {

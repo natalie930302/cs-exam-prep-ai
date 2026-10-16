@@ -588,7 +588,7 @@
     "最下層 leaf 裡的數字後面有個 *，例如 63*：這個 * 代表一個 pointer。",
     "假設 key 是每個人的年紀，我們用「年紀」這個欄位建一個 index structure。",
     "63* 告訴你：年紀 63 的那個人，資料放在這個 pointer 指到的地方——disk 上的某一筆 record。",
-    "上面 internal node 裡的 63 只是拿來比大小、指路用的鍵值，真正的資料不在那裡。上面所有的數字，在 leaf 都會有對應的 pointer。",
+    "上面 internal node 裡的 63 只是拿來比大小、指路用的鍵值，真正的資料不在那裡。在這個例子裡，上面所有的數字在 leaf 都有對應的 pointer（資料的 pointer 全都在 leaf）。",
     "最下面這層叫 leaf node，它們用 doubly linked list（雙向鏈結串列）串起來，往前、往後都能走。這就是之前學的 linked list 和 tree 混搭。",
     "這樣有什麼好處？年紀小於 40 的值，全部都在 root 左邊這棵 subtree 裡，搜尋範圍一下就被限定住了。",
     "大於等於 40 的值，都在右邊那棵 subtree。",
@@ -797,7 +797,7 @@
      "t": 1975.77
     }
    ],
-   "trap": "影片 32:07 口誤說「先找到 5」，應是找 15。 ｜ 老師在 31:05 說 15～24 的範圍查詢要「做兩次 search」，但正確是只要 search 一次找到 15 所在的 leaf，再沿 leaf 的 linked list 往右掃到大於 24 為止（課本：B+ tree range search）。",
+   "trap": "影片 32:07 口誤說「先找到 5」，應是找 15。 ｜ 老師在 32:05 說 15～24 的範圍查詢要「做兩次 search」，其實只要 search 一次找到 15 所在的 leaf，再沿 leaf 的 linked list 往右掃到大於 24 為止（課本：B+ tree range search）。",
    "cues": [
     1828.9,
     1839.18,

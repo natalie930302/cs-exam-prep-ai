@@ -26,8 +26,8 @@
     "甚至一個 core 可以同時跑兩個 thread，例如 Intel 的 hyper-threading；GPU 一個 core 能跑的 thread 更多，十幾、二十幾個以上。",
     "所以硬體這邊也是一層一層的：CPU 裡有 core，core 裡有 hardware thread，數量可能非常多。",
     "OS 這邊在乎的只是「排順序」：硬體告訴它「我有 slot 空了，給我一個 process」，OS 就從 ready queue 選一個交出去。",
-    "至於這個 process 最後跑在哪一顆 CPU、哪一個 core、跟哪些 hyper-thread 擠在一起，全是硬體決定的，不是 OS。",
-    "所以其實有兩層 scheduling：OS（軟體）一層、CPU（硬體）一層。剛才講的演算法都只是 OS 那一層。",
+    "老師說：這個 process 最後跑在哪、跟哪些 hyper-thread 擠在同一個 core，是硬體決定的。課本講得更精確：OS 會決定把哪個 thread 放到哪個 hardware thread（每個 hardware thread 在 OS 看來就是一顆 logical CPU，affinity 也是 OS 在管）；硬體負責的是下一層：一個 core 此刻要執行它的哪一個 hardware thread。",
+    "所以其實有兩層 scheduling：OS（軟體）一層、core 內部（硬體）一層。剛才講的演算法都只是 OS 那一層。",
     "最後還會講 real-time（即時）排程：它的重點是趕上 deadline，排程設計不好就會 miss deadline，所以演算法要非常嚴謹。"
    ],
    "points": [
@@ -41,7 +41,7 @@
     },
     {
      "t": 103,
-     "text": "OS 只排順序；被選中的 process 實際跑在哪顆 CPU、哪個 core、跟誰共用，是 hardware 的決定 → 兩層 scheduling。"
+     "text": "老師：OS 只排順序，實際跑在哪、跟誰共用 core 由 hardware 決定 → 兩層 scheduling。課本的兩層：OS 決定哪個 thread 放到哪個 hardware thread（logical CPU），core 再決定此刻跑它的哪個 hardware thread。"
     },
     {
      "t": 156,
@@ -104,8 +104,8 @@
    "explain": [
     "另一個硬體層面、而且跟排程關係很大的概念：affinity（親和性）。",
     "affinity 的意思：把一個程式綁在指定的 CPU core 上。它一定要在那個 core 跑；如果那個 core 被別人佔著，就只能等。",
-    "好處是 cache 可以重複使用（reuse）。最底層的 L1 cache 每個 core 各自一份、不共用；P 一直在 core 0 跑，core 0 的 cache 裡都是它的資料，跑起來更快。",
-    "所以很講求效能、而且能控制要跑幾個 process 的時候，大家都會用 affinity：下一個指令告訴 OS，OS 再告訴硬體，把它綁在這個 core 上。",
+    "好處是 cache 可以重複使用（reuse）。最靠近 core 的 L1 cache 每個 core 各自一份、不共用；P 一直在 core 0 跑，core 0 的 cache 裡都是它的資料，跑起來更快。",
+    "所以很講求效能、而且能控制要跑幾個 process 的時候，大家都會用 affinity：用指令（system call）告訴 OS，OS 再告訴硬體，把它綁在這個 core 上。",
     "這等於是在排程上加一個限制：scheduler 只能把它排到這個 core。affinity 就是透過 scheduler 來控制的。",
     "soft affinity（軟性）：如果那個 core 太忙、或 P 等太久了，還是可以把它排到別的 core。缺點是新 core 的 cache 裡沒有它的資料，要重新抓（舊的變灰）。",
     "hard affinity（硬性）：無論如何都只能在這個 core，寧可等，也不排到別的地方。"
@@ -117,7 +117,7 @@
     },
     {
      "t": 347,
-     "text": "好處：cache 可以 reuse，因為最底層的 L1 cache 各 core 分開，所以跑得更快。"
+     "text": "好處：cache 可以 reuse，因為最靠近 core 的 L1 cache 各 core 分開，所以跑得更快。"
     },
     {
      "t": 361,
@@ -184,18 +184,18 @@
     "沒有差別"
    ],
    "ans": "hard 寧可等也不換 core；soft 太忙時可以換",
-   "why": "17B 的定義。"
+   "why": "soft affinity 只是「盡量」留在原 core；hard affinity 是保證只在指定的 core 上跑。"
   },
   {
-   "q": "被 OS 選中的 process 實際跑在哪一個 core、跟哪個 hyper-thread 共用，由誰決定？",
+   "q": "在 multithreaded multicore 處理器上，一個 core 有兩個 hardware thread，此刻由哪一個實際執行，由誰決定？",
    "opts": [
-    "hardware",
+    "core 本身（hardware）",
     "OS 的 CPU scheduler",
     "dispatcher",
     "使用者程式"
    ],
    "ans": "hardware",
-   "why": "OS 只排順序；兩層 scheduling 的下層是硬體。"
+   "why": "兩層排程：OS 決定哪個 thread 放到哪個 hardware thread（logical CPU）；core 再決定此刻跑它的哪個 hardware thread。"
   }
  ]
 }

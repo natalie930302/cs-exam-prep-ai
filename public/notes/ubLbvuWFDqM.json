@@ -705,7 +705,7 @@
      "t": 2850.49
     },
     {
-     "text": "例句共 26 個字元，用 Huffman 只需 73 bits；用 ASCII 每字 8 bits 需 26 × 8 = 208 bits。",
+     "text": "例句共 26 個字元，投影片說用 Huffman 只需 73 bits（依頻率表實算最佳為 84 bits）；用 ASCII 每字 8 bits 需 26 × 8 = 208 bits。",
      "t": 2888.95
     },
     {
@@ -806,7 +806,7 @@
    "why": "n 次 insert 與 n 次 delete，每次 O(log n)。"
   },
   {
-   "q": "影片例句有 26 個字元，Huffman 編碼需 73 bits；若用每字 8 bits 的 ASCII 需要多少 bits？",
+   "q": "影片例句有 26 個字元，若用每字 8 bits 的 ASCII 儲存，需要多少 bits？",
    "opts": [
     "208",
     "182",

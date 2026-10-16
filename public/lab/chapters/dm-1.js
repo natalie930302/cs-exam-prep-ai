@@ -444,8 +444,8 @@ export default function (ctx) {
       if (!opts.includes(ans)) opts[0] = ans;
       return { q: '前提：' + R.prem.map((p) => p[0]).join('；') + '。結論：' + R.concl[0] + '。這個論證？', opts, ans, why: v ? '前提全真的列結論都真。' : '存在前提全真、結論假的列（例如 p=F、q=T）。' };
     }
-    const n = 2 + Math.floor(Math.random() * 4);
-    return { q: '含 ' + n + ' 個命題變數的複合命題，真值表共有幾列？', opts: [String(1 << n), String(2 * n), String(n * n), String((1 << n) - 1)], ans: String(1 << n), why: '每個變數 T/F 兩種，乘法原理 2^' + n + '。' };
+    const n = pick([3, 5, 6]); // 這三個 n 讓 2ⁿ、2n、n²、2ⁿ⁺¹ 四個選項都不一樣
+    return { q: '含 ' + n + ' 個命題變數的複合命題，真值表共有幾列？', opts: [String(1 << n), String(2 * n), String(n * n), String(1 << (n + 1))], ans: String(1 << n), why: '每個變數 T/F 兩種，乘法原理 2^' + n + ' = ' + (1 << n) + '。' };
   }
   let qs = { score: 0, total: 0 };
   function renderQuiz(el) {
@@ -1308,7 +1308,7 @@ scene('lg-1b-eleph', '1B：大象會飛的例子', CAM, [
   },
   async (tok, S) => { // 1141.0 因為大象不會飛
     S.el.mood('sad'); S.el.set('不會飛');
-    note('premise「大象會飛」= 0 → 0 → 1 與 0 → 0 都是 1', 0.6, 1.2);
+    note('premise「大象會飛」是 0：0 → 1、0 → 0 都是 1', 1.8, 1.2);
     cap('因為沒辦法證明它錯', '要證明它錯，得先讓大象飛起來');
     await S.el.hop(tok);
   },
@@ -2601,7 +2601,7 @@ scene('lg-01-tt3', 'Lec01：(p ∨ q) → (p ∧ r) 的 8 列真值表', CAMW, [
     cap('4 個變數就要 2⁴ 排，5 個要 2⁵', '多一個變數就翻一倍');
   },
   async (tok, S) => { // 3598.7 只能處理小事情
-    kill(S.q); bad('變數一多，真值表就不切實際', 4.2, 7.6);
+    kill(S.q); bad('變數一多，真值表就不切實際', 4.2, 8.25);
     cap('真值表只能處理小事情', '但它可以幫助我們學習');
   },
   async (tok, S) => { // 3615.0 畫 p q r

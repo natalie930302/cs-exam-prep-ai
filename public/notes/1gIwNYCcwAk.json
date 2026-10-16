@@ -31,7 +31,7 @@
     },
     {
      "t": 127,
-     "text": "最有效的演算法之一：earliest deadline first（最早要交的作業先寫），直覺有效但不保證不 miss。"
+     "text": "最有效的演算法之一：earliest deadline first（最早要交的作業先寫）；工作量超過 CPU 負荷時仍會 miss。"
     },
     {
      "t": 161,
@@ -59,7 +59,7 @@
     "所以 real-time 系統裡最關鍵（critical）的是 scheduler（排程器）：它要決定執行順序，讓每個工作都在自己的 deadline 前完成。",
     "這就像大家寫作業。如果照拿到的順序寫（A→B→C），寫完 A 才寫 B，B 就遲交了（打叉）。",
     "最有效的 real-time 排程演算法之一叫 Earliest Deadline First（EDF）：誰的 deadline 最早就先做誰。照 B→C→A 的順序，三份都準時交。",
-    "EDF 很直覺也很有效，通常效果不錯，但不能保證永遠不 miss deadline；要真的保證就沒那麼簡單（之後 CPU scheduling 章節再講）。",
+    "EDF 很直覺也很有效：單一 CPU、可 preempt 時，只要有任何排法能讓全部趕上，EDF 也一定趕得上；但工作量超過 CPU 負荷時誰都保證不了（之後 CPU scheduling 章節再講）。",
     "deadline 不是隨便訂的，是使用者定義的：使用者可以接受的 response time（反應時間）或 reaction time。",
     "也可能是做出某個決定的 critical point（關鍵時間點），在那之前完成就好。所以 deadline 通常不會很寬鬆。"
    ]

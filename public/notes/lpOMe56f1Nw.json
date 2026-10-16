@@ -20,7 +20,7 @@
     },
     {
      "t": 165,
-     "text": "特性：是 software interrupt、一定進 kernel mode；用 assembly 寫以求效能（作業一的 .S 檔）。"
+     "text": "特性：是 software interrupt、一定進 kernel mode；進入 system call 的那一小段（放編號、執行 trap 指令）用 assembly 寫（作業一的 .S 檔）。"
     }
    ],
    "scene": "osB-syscall-props",
@@ -51,7 +51,7 @@
     "因為它跟 OS 緊緊連在一起，所以它是 part of OS：OS 最外層 interface 的定義。既然是 OS，就要講求效能，不能顧及所有人的方便。",
     "system call 跟其他 function 最不一樣的第一點：它就是一個 software interrupt（[[trap]]）。",
     "因為只有 interrupt 才能改變 user mode 和 kernel mode：call 了 system call，就一定進入 [[kernel mode]]、離開 [[user mode]]，只有 system call 有這個特性。",
-    "第二點：為了效能，system call 通常用 [[assembly language]]（組合語言）寫，才夠快。",
+    "第二點：system call 的入口那一小段（把 system call 編號放進 register、執行 trap 指令）一定要用 [[assembly language]]（組合語言）寫，因為 C 沒辦法直接下 trap 指令；kernel 裡真正做事的 service routine 則多半是 C。",
     "system call 是大家共用的，所以效能優先，不管方不方便；方便性交給上面的 shell，以及等一下要講的 API。",
     "這也是為什麼作業一 trace code 時，有一個要改的檔案是 .S 檔：它就是定義 system call interface 的 assembly 檔。",
     "可是 assembly 大部分人都沒寫過，老師自己也說不太會寫。那要怎麼在上面寫程式？這就需要下一層概念：API。"
@@ -406,7 +406,7 @@
     "一對多：每個 API 各自對到十幾個 system call"
    ],
    "ans": "多對一：兩個 API 都 call brk",
-   "why": "課堂例子：只是參數不同（增加或減少）。"
+   "why": "課堂例子：只是參數不同（增加或減少）。實際上 free 常常只是把空間還給 malloc 自己管理的 heap，不一定會 call brk。"
   },
   {
    "q": "math library 的 abs() 說明了 API 與 system call 的哪種關係？",

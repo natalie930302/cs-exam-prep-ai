@@ -334,7 +334,7 @@
      "t": 1123.32
     },
     {
-     "text": "(2, 5)：−4 vs −2，rank（點數）大的當 parent → parent[5] = 1，parent[1] = −6。",
+     "text": "(2, 5)：−4 vs −2，點數（weight）大的當 parent → parent[5] = 1，parent[1] = −6。",
      "t": 1188.54
     },
     {
@@ -381,7 +381,7 @@
     "邊 (2, 4)：find(2)：parent[2] = 1，再看 parent[1] 是負的，所以 root 是 1。find(4)：parent[4] = 3，parent[3] 是負的，root 是 3。root 不同 → union。",
     "選 1 當 parent：parent[3] = 1，root 的點數相加：parent[1] = −2 + (−2) = −4，表示這個集合有 4 個點。",
     "邊 (2, 5)：find(2) 一步就到 root 1（−4）；find(5) 本身是 root（−2）。只走一兩步，Bari 把它當成常數時間。",
-    "誰當 parent？比 |−4| 和 |−2|：1 的點數（rank）比較大，讓 5 當 1 的 child：parent[5] = 1，parent[1] = −4 + (−2) = −6。",
+    "誰當 parent？比 |−4| 和 |−2|：1 的點數（weight，影片說 rank）比較大，讓 5 當 1 的 child：parent[5] = 1，parent[1] = −4 + (−2) = −6。",
     "邊 (1, 3)：find(1) = 1，find(3)：parent[3] = 1 → root 1。root 相同 → 同一集合 → cycle，不加這條邊。",
     "邊 (6, 8)：find(6)：6 → 5 → 1，root 是 1；find(8)：8 → 7，root 是 7。不同集合。",
     "比點數：root 1 有 6 個點，root 7 只有 2 個，所以 parent[7] = 1，parent[1] = −6 + (−2) = −8。影片說「−8 比較大」，其實比的是合併前的 6 和 2。",
@@ -444,7 +444,7 @@
     1530.48
    ],
    "explain": [
-    "回顧：剛才 union 時，root 存的是點數（weight，也叫 rank），點數大的當 parent。這個技巧叫 weighted union。",
+    "回顧：剛才 union 時，root 存的是點數（weight），點數大的當 parent。這個技巧叫 weighted union。（影片說 weight 也叫 rank；但 CLRS 的 rank 是樹高的上界，不是點數。）",
     "還有另一個讓 find 更快的技巧，叫 collapsing find（也叫 path compression，路徑壓縮）。",
     "先看 find(2)、find(3)：parent 就是 1，1 是 root，兩步就找到了。",
     "但 find(4)：4 → 3 → 1，要一層一層往上走。樹越高，find 走得越久。",
@@ -453,7 +453,7 @@
     "下次再 find(6)：看 parent[6] = 1，parent[1] 是負的，一步就到，常數時間。",
     "這種「找完之後，把路上的點直接接到 root」的作法就叫 collapsing find。第一次會多花一點時間，之後同一個點就很快。",
     "同樣地 find(8)：8 → 7 → 1，走了兩步才到 root。",
-    "找到了就把 parent[8] 直接改成 1。weighted union 加上 collapsing find，find 幾乎都是常數時間。",
+    "找到了就把 parent[8] 直接改成 1。weighted union 加上 collapsing find，一連串操作攤銷起來每次幾乎是常數時間（O(α(n))）。",
     "除了陣列，也可以用 linked list 實作：每個 node 存自己的值和一個指向 parent 的[[指標]]，影片把這部分留給大家自己研究。"
    ]
   }
@@ -490,7 +490,7 @@
     "集合 1 被刪除 6 次"
    ],
    "ans": "1 是 root，集合裡有 6 個點",
-   "why": "負號表示 root，絕對值是點數（weight／rank）。"
+   "why": "負號表示 root，絕對值是點數（weight）。"
   },
   {
    "q": "weighted union 時，兩棵樹點數為 4 和 2，誰當 parent？",

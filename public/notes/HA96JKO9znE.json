@@ -298,7 +298,7 @@
     "但為了保護，平常每個程式都有自己的範圍，共用區不會憑空出現：process 之間要先透過 [[system call]] 請 OS 建立（create）這塊共用空間。",
     "那什麼時候「預設」就有共用？multi-thread programming。[[thread]] 的定義就是：建立 thread 時，部分記憶體 by default 就是共用的，不用另外跟 OS 講，所以 thread 之間可以直接溝通。",
     "注意兩種方式都要透過 OS。message passing 的壞處很明顯：要做 memory copy，所以通常比較慢。",
-    "shared memory 的壞處則是後面第 7、8 章的 [[synchronization]]（同步）和 [[deadlock]]（死結）：大家同時存取同一塊記憶體，會冒出很多不可預期的問題。"
+    "shared memory 的壞處則是後面同步、死結兩章（老師的投影片編號是第 7、8 章）的 [[synchronization]]（同步）和 [[deadlock]]（死結）：大家同時存取同一塊記憶體，會冒出很多不可預期的問題。"
    ]
   }
  ],

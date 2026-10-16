@@ -340,7 +340,7 @@
    "scene": "engmisc-node-malloc",
    "points": [
     {
-     "text": "node 必須建在 Heap，所以先宣告 pointer：struct Node *p;",
+     "text": "node 要在執行時動態建在 Heap，所以先宣告 pointer：struct Node *p;",
      "t": 960.72
     },
     {
@@ -348,7 +348,7 @@
      "t": 995.53
     },
     {
-     "text": "malloc 回傳 void *，要強制轉型成 struct Node *。",
+     "text": "malloc 回傳 void *，影片強制轉型成 struct Node *（C 可省略，C++ 必須轉）。",
      "t": 1020.95
     },
     {
@@ -385,11 +385,11 @@
    ],
    "explain": [
     "怎麼建立一個 node？首先需要一個[[指標]]。",
-    "因為 node 一定要建在 [[heap]]，而 heap 只能透過指標存取，所以先宣告 struct Node *p;（p 本身在 stack）。",
+    "因為 node 要在執行時動態建在 [[heap]]，而 heap 只能透過指標存取，所以先宣告 struct Node *p;（p 本身在 stack）。",
     "在 C 語言裡，向 heap 要記憶體用 [[malloc]] 函式。",
     "要幾個 bytes？data 2 + next 2 = 4 bytes。",
     "與其自己算 4，可以寫 sizeof(struct Node)，讓編譯器算出 node 的大小，換電腦也不會錯。",
-    "malloc 回傳的是 void *（不知道型別的指標），所以要強制轉型成 struct Node *，才能指定給 p。這行很長，是 C 的標準寫法。",
+    "malloc 回傳的是 void *（不知道型別的指標）。影片把它強制轉型成 struct Node * 再指定給 p；其實在 C 裡 void * 會自動轉換，轉型可以省略（C++ 才一定要轉）。",
     "C++ 簡單多了：p = new Node; 一行搞定。",
     "執行後，heap 裡就建出一個新的 node，有 data 和 next 兩格。",
     "假設這個 node 在位址 500，p 裡就存 500，所以 p 指向這個 node。",
@@ -631,7 +631,7 @@
     "struct Node"
    ],
    "ans": "void *",
-   "why": "所以影片寫 (struct Node *)malloc(sizeof(struct Node)) 做轉型。"
+   "why": "void * 是不知道型別的指標。影片寫成 (struct Node *)malloc(sizeof(struct Node)) 強制轉型；C 可以省略這個轉型，C++ 則必須寫。"
   }
  ]
 }

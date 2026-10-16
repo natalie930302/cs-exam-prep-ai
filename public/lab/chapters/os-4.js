@@ -492,7 +492,7 @@ export default function (ctx) {
       { q: 'Priority scheduling 的 starvation 用什麼解決？', opts: ['aging', '加大 time quantum', '改用 FCFS', 'processor affinity'], ans: 'aging', why: '等越久就把 priority 調高，遲早輪得到。' },
       { q: 'RR 的 time quantum 設得非常大，結果會像？', opts: ['FCFS', 'SJF', 'SRTF', 'Priority'], ans: 'FCFS', why: 'q 大過所有 CPU burst，每個人都一次做完 → 就是 FCFS。' },
       { q: 'MLFQ 與 MLQ 最大的差別是？', opts: ['process 可以在 queue 之間移動', 'MLFQ 只有一個 queue', 'MLQ 不能用 RR', 'MLFQ 不會 starvation 所以不需要 aging'], ans: 'process 可以在 queue 之間移動', why: 'feedback：依 run time 行為升降級；MLQ 的 process 永遠留在分配到的 queue。' },
-      { q: '17A 的 MLFQ（Q0 RR 8、Q1 RR 16、Q2 FCFS），什麼時候會被降到下一層？', opts: ['把該層 quantum 全部用完', '做了一次 I/O', '等太久', '一進系統就降'], ans: '把該層 quantum 全部用完', why: '用完 8 ms 還沒做完 → 判定 CPU burst 長 → 往下踢；等太久則是 aging 往上提。' },
+      { q: 'MLFQ（Q0 RR 8、Q1 RR 16、Q2 FCFS）中，process 什麼時候會被降到下一層？', opts: ['把該層 quantum 全部用完', '做了一次 I/O', '等太久', '一進系統就降'], ans: '把該層 quantum 全部用完', why: '用完 8 ms 還沒做完 → 判定 CPU burst 長 → 往下踢；等太久則是 aging 往上提。' },
       { q: 'FCFS 中短工被一個長工卡在後面的現象叫？', opts: ['convoy effect', 'starvation', 'priority inversion', 'thrashing'], ans: 'convoy effect', why: '24、3、3 依序到：平均 WT 17；短的先做只要 3。' },
       { q: 'Rate-Monotonic 的 priority 依據？', opts: ['period 越短越高（固定）', 'deadline 越近越高（動態）', 'execution time 越短越高', '到達順序'], ans: 'period 越短越高（固定）', why: '18A：RM 是 static priority，只看 period；EDF 才看當下的 deadline。' },
       { q: 'Processor affinity 的主要好處？', opts: ['重用 cache（提高 hit rate）', '讓 load 更平均', '避免 deadlock', '減少 I/O'], ans: '重用 cache（提高 hit rate）', why: '17B/18A：L1 cache 各 core 分開；綁在同一 core 可重用 cache，代價是 load balancing 變差。' },
@@ -653,8 +653,8 @@ export default function (ctx) {
     say('timer 響了，換 P2 也去改 count', '兩邊都改同一塊 shared data');
     await beat(tok, 1600);
     relabel(mem, 'count = 6'); await beat(tok, 900);
-    glow(p2, null); glow(p1, GOLD); relabel(mem, 'count = 4'); glow(mem, RED);
-    say('結果亂掉 → synchronization 問題（第 5 章）', 'kernel 自己的程式也會被打斷');
+    glow(p2, null); glow(p1, GOLD); relabel(mem, 'count = 6'); glow(mem, RED);
+    say('P1 回來把自己算的 6 寫回：加了兩次卻只有 6', 'synchronization 問題（下一章）；kernel 自己的程式也會被打斷');
     await beat(tok, 2800);
     glow(mem, null); relabel(mem, 'count = 5');
     const lock = cube('timer interrupt 關閉', '#5c7a4a', [3.4, 0.4, 0.8], 0, 0.2, 3.3, 2);
@@ -903,7 +903,7 @@ export default function (ctx) {
   // ───────────────────────── 場景：17B / 18A 多處理器 ─────────────────────────
   async function scSMP(tok) {
     fresh([0, 7, 12.5], [0, 0.8, 0]);
-    say('OS 排順序，放哪顆 CPU 由硬體決定', '軟體 + 硬體：兩層 scheduling');
+    say('多處理器：OS 要把 ready 的 process 分給好幾顆 CPU', '兩種做法：asymmetric 與 symmetric（SMP）');
     await beat(tok, 2800);
     tag('Asymmetric', 'ptr', -3.6, 0.2, -3.6);
     const master = cube('master', '#9b7ef4', [1.6, 0.7, 1.1], -3.6, 0.35, -2.4);
@@ -1473,7 +1473,7 @@ scene('sch-16c-sync', 'Preemptive 的代價：synchronization', CAM, () => ({}),
   },
   async (tok, S) => {                                   // 1193 解法二（Linux）：跑 kernel 時把 timer interrupt disable
     hot('解法二：跑 kernel 時 disable timer interrupt', 3.0, 1.2, 3.4); S.k.mood('happy');
-    sayc('解法二（大部分 Linux 的作法）', '執行 kernel process 時，把 timer interrupt disable');
+    sayc('解法二（老師說的常見作法）', '執行 kernel 程式時，把 timer interrupt disable');
   },
   async (tok, S) => {                                   // 1213 kernel 沒有 time sharing → 變成 non-preemptive，一次做完
     S.k.glow('#0f5a3a'); good('kernel 一口氣做完 = non-preemptive', 5.4, 2.7, 1.6);
@@ -1736,7 +1736,7 @@ scene('sch-16d-sjf', 'SJF（non-preemptive）：P1 7、P2 4、P3 1、P4 4', CAMG
   async (tok, S) => {                                   // 1000 平均 = 4：non-preemptive 裡最小
     S.t.set(2, 'P2   2    4   6  (8−2)'); S.t.set(4, 'P4   5    4   7  (12−5)');
     hot('平均 WT = (0 + 6 + 3 + 7) / 4 = 4', 3.8, 2.8, -3.8);
-    sayc('平均就是 4', '任何 non-preemptive algorithm 都不可能比 4 更小');
+    sayc('平均就是 4', 'CPU 不空等的 non-preemptive 排法裡，沒有比 4 更小的');
   },
   async (tok, S) => {                                   // 1016 不代表最好：可能犧牲 response / turnaround
     note('最小的只是「平均 waiting time」，可能犧牲 response、turnaround', 0, 0.3, 4.2);
@@ -2112,7 +2112,7 @@ scene('sch-17a-predict', '預測 burst：exponential decay', [[0, 5.5, 13.5], [0
   },
   async (tok, S) => {                                   // 388 程式有規律（for loop）→ burst 很穩定
     for (let k = 3; k < S.T.length; k++) { await rise(tok, S.x(k) - 0.28, 1.4, S.tau[k] * 0.3, '#bfb3a0', 160, 0.5, 0.5); await rise(tok, S.x(k) + 0.28, 1.4, S.T[k] * 0.3, CPUC, 160, 0.5, 0.5); }
-    sm('實際穩定在 13 → 預測 5、9、11、12 一路追上', S.x(5), 4.6, 1.4);
+    sm('實際 4 之後跳到 13 並穩定 → 預測 5、9、11（下一個 12）一路追上', S.x(5), 4.6, 1.4);
     sayc('程式通常有規律', '像 for loop 每次做的事都一樣，burst time 很穩定');
   },
   async (tok, S) => {                                   // 407 逼近之後，猜中的就是最小的 job
@@ -2387,7 +2387,7 @@ scene('sch-17a-mlfq', 'Multilevel feedback queue：在 queue 之間移動', [[0,
   },
   async (tok, S) => {                                   // 1197 OS 每次選最上面 queue 的 process
     gone(S.eye); S.M.b.P1.glow('#6a4a00'); await walk(tok, S.M.b.P1, 5.3, -1.2, 600);
-    sayc('OS 每次都選最上面 queue 的 process', '跟 MLQ 看起來很像，運作卻剛好顛倒');
+    sayc('OS 每次都選最上面 queue 的 process', '跟 MLQ 看起來很像，選 queue 的方式卻完全不同');
   },
   async (tok, S) => {                                   // 1219 很多事 run time 才知道；沒有 hint
     S.u = pal('user 程式', '?', '#9b7ef4', -5.4, 1.4, 0.55);
@@ -2611,8 +2611,8 @@ scene('sch-17b-layers', '軟體排程與硬體排程：兩層', CAM, () => ({}),
     sayc('OS 這邊只是排順序', 'hardware 說有 slot 空了，OS 就選一個 process 給它');
   },
   async (tok, S) => {                                   // 120 跑在哪個 CPU、哪個 core、跟誰共用：hardware 決定
-    gone(S.slot); hot('跑在哪顆 CPU、哪個 core、跟誰 hyper-thread：hardware 決定', 0, 3.2, 0.6);
-    sayc('被選中的跑在哪顆 CPU、哪個 core', '跟哪些 hyper-thread 混在一起：全是 hardware 決定');
+    gone(S.slot); hot('core 裡的 hardware thread 誰在跑：hardware 決定', 0, 3.2, 0.6);
+    sayc('老師：跑在哪、跟誰共用 core，由 hardware 決定', '課本：OS 把 thread 放到 logical CPU；core 再決定跑哪個 hardware thread');
   },
   async (tok, S) => {                                   // 135 兩層 scheduling
     good('兩層 scheduling：OS（software）＋ CPU（hardware）', 0, 4.0, -3.0);
@@ -2680,7 +2680,7 @@ scene('sch-17b-affinity', 'Processor affinity：cache reuse，soft / hard', [[0,
   async (tok, S) => {                                   // 348 好處：cache reuse（L1 各 core 分開）
     await S.fill(tok, 0, 8, '#e55a9b');
     good('cache 裡都是 P 的資料 → reuse，跑更快', S.core[0], 2.6, -1.2);
-    sayc('好處：cache 可以 reuse', '最底層的 L1 cache 各 core 分開，所以跑得更快');
+    sayc('好處：cache 可以 reuse', '最靠近 core 的 L1 cache 各 core 分開，所以跑得更快');
   },
   async (tok, S) => {                                   // 361 很講求效能、process 數可控 → 大家都用
     S.u = pal('使用者', '', '#c08a1f', 0, 1.2, 0.5); bub('下指令：把 P 綁在 core 0', 0, 1.9, 2.4);
@@ -2800,8 +2800,8 @@ scene('sch-18a-lb', 'Locality vs load balancing：push 與 pull', [[0, 6.5, 12.5
     sayc('locality data access', '跟整體系統的 load balancing 往往是 trade-off');
   },
   async (tok, S) => {                                   // 336 hardware 內部通常有 load balancing
-    sm('CPU 內部（hardware level）通常會 implement load balancing', 0, 0.3, 3.1);
-    sayc('hardware level 的 CPU', '內部通常一定會 implement load balancing，讓每個 core 差不多');
+    sm('load balancing：讓每個 core 的工作量差不多（課本：SMP 的 OS scheduler 做）', 0, 0.3, 3.1);
+    sayc('老師：CPU 內部通常會 implement load balancing', '課本把它放在 SMP 的 OS 排程裡講（例如 Linux）');
   },
   async (tok, S) => {                                   // 356 分成 push 與 pull
     sayc('怎麼做 load balancing', '通常分成 push 跟 pull 兩種');
@@ -2979,8 +2979,8 @@ scene('sch-18a-rt', 'Real-time：deadline 與 (period, execution)', [[0, 6.5, 12
     sayc('每一次都必須', '在下一次 burst 來之前把它做完');
   },
   async (tok, S) => {                                   // 1157 這裡介紹的兩個用在 soft real-time
-    hot('接下來兩個基本演算法：用在 soft real-time', 0, 5.6, -3.6);
-    sayc('hard 更難、研究很多', '這裡介紹的兩個常見基本做法，只能用在 soft real-time');
+    hot('接下來兩個基本演算法：RM 與 EDF', 0, 5.6, -3.6);
+    sayc('老師說這兩個用在 soft real-time', '課本：使用率夠低時它們能保證趕上 deadline（hard 也用）');
   },
 ]);
 
@@ -3003,8 +3003,8 @@ scene('sch-18a-rmedf', 'Rate-Monotonic（static）與 EDF（dynamic）', CAM, ()
     sayc('period 是 given constant', '所以 priority 在 run time 不會變動');
   },
   async (tok, S) => {                                   // 1219 名字：rate = period，monotonic = 單調排序
-    sm('rate = period；monotonic = 照 period 單調排序', -3.4, 1.8, -2.0);
-    sayc('名字的意思', 'rate 就是 period，monotonic 是照它單調排序');
+    sm('rate = 出現頻率（1 / period）；monotonic = 單調：rate 越高 priority 越高', -3.4, 1.8, -2.0);
+    sayc('名字的意思', 'rate 是出現的頻率（1/period）；priority 隨 rate 單調排序');
   },
   async (tok, S) => {                                   // 1231 EDF：dynamic
     hot('② EDF（Earliest Deadline First）：dynamic', 3.4, 3.6, -2.0);
@@ -3024,8 +3024,8 @@ scene('sch-18a-rmedf', 'Rate-Monotonic（static）與 EDF（dynamic）', CAM, ()
     sayc('所以 EDF 是 dynamic priority', 'deadline depends on 目前的狀態');
   },
   async (tok, S) => {                                   // 1295 可證明 miss rate 的上界；不錯但不保證不 miss
-    note('EDF 可證明 miss deadline rate 的上界：是不錯的演算法，但仍可能 miss', 0, 0.3, 2.6);
-    sayc('EDF 可以被證明', 'miss deadline rate 最高不會超過多少；不錯，但不保證不會 miss');
+    note('課本：CPU 使用率 ≤ 100%（不計 overhead）時，EDF 理論上全部趕上；超載才會 miss', 0, 0.3, 2.6);
+    sayc('老師：EDF 可以證明 miss rate 的上界', '課本：使用率 ≤ 1 就排得完，超載才會 miss');
   },
 ]);
 

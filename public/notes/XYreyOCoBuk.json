@@ -262,7 +262,7 @@
     "real-time（16～31）",
     "normal",
     "idle",
-    "above normal（10～15）"
+    "above normal"
    ],
    "ans": "real-time（16～31）",
    "why": "其他 class 會在自己的 7 個數字內依 CPU / I/O 行為升降。"

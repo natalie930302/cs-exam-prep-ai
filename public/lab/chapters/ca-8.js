@@ -1,7 +1,7 @@
 // 計算機組織 第8章：平行與多核（Amdahl's law、strong/weak scaling、Flynn 分類、hardware multithreading、
 // shared-memory multiprocessor、cache coherence（snooping、MSI/MESI）、GPU 基礎）。
 // 影片 2dYV_lADfFI（Amdahl's Law）有字幕：場景 amdahl-intro、amdahl-split、amdahl-formula、amdahl-limit、amdahl-fp 依它的順序與數字。
-// Cache Coherence 影片沒有逐字稿；其餘場景依 Patterson & Hennessy（MIPS 版）第 5、6 章。
+// 兩支影片各有一組逐句同步的場景（cpar-*，在檔案後段）；其餘場景依 Patterson & Hennessy（MIPS 版）第 5、6 章。
 import kit from './_kit.js';
 
 export default function (ctx) {

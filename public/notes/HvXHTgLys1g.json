@@ -132,7 +132,7 @@
      "text": "實作：假設同意，跑 circle detection；有 circle 就維持 request、等狀態改變才 assign。"
     }
    ],
-   "trap": "老師在 L399 一度說成「P2 要 R1」，指的是 P2 要 R2。avoidance 會拒絕「資源明明有空」的 request，這是它和一般配置最大的不同。",
+   "trap": "老師一度口誤說成「P2 要 R1」，指的是 P2 要 R2。avoidance 會拒絕「資源明明有空」的 request，這是它和一般配置最大的不同。",
    "cues": [
     461.6,
     471.2,

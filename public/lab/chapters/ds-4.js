@@ -665,7 +665,7 @@ export default function (ctx) {
       if (!x) x = t.root;
       const s = minNode(x.right), p = maxNode(x.left);
       return { q: '依序插入 ' + seq.join(', ') + ' 建成 BST。刪除 ' + x.key + '（有兩個子節點，用 inorder successor 取代），誰會補到它的位置？', ans: String(s.key),
-        opts: fill([String(p.key), String(x.right.key), String(x.left.key)], String(s.key), [String(x.parent ? x.parent.key : t.root.key)]),
+        opts: fill([String(p.key), String(x.right.key), String(x.left.key)], String(s.key), [String(x.parent ? x.parent.key : t.root.key), ...seq.map(String)]),
         why: 'successor = 右子樹的最小值：先往右到 ' + x.right.key + '，再一直往左 → ' + s.key + '。（若用 predecessor 則是左子樹最大 ' + p.key + '）' };
     }
     if (kind === 2) {
@@ -689,7 +689,7 @@ export default function (ctx) {
     if (kind === 4) {
       const h = 3 + rnd(5); const N = [0, 1, 2]; for (let i = 3; i <= h; i++) N[i] = N[i - 1] + N[i - 2] + 1;
       return { q: '高度 h = ' + h + '（以層數計，root 那層算 1）的 AVL Tree 最少有幾個節點？', ans: String(N[h]),
-        opts: fill([String((1 << h) - 1), String(1 << (h - 1)), String(N[h - 1] + N[h - 2])], String(N[h]), [String(h)]),
+        opts: fill([String((1 << h) - 1), String(1 << (h - 1)), String(N[h - 1] + N[h - 2])], String(N[h]), [String(h), String(N[h] + 1), String(N[h] - 1)]),
         why: 'N(h) = N(h−1) + N(h−2) + 1，N(1) = 1、N(2) = 2 → ' + N.slice(1, h + 1).join(', ') + '。（MIT L6 的推導：像 Fibonacci，所以 h < 1.44 log₂ n）' };
     }
     if (kind === 5) {
@@ -1505,13 +1505,13 @@ FRAG.push(['avllin-demo-delete', 'AVL removal demo：刪 1、2、15，刪 13 找
   await step(tok);                                   // 1:11:13 左子樹最右邊 = 最大
   clr();
   tmp.push(bubble('左子樹裡最大的（最右邊）', tv.P.get(5).x, tv.P.get(5).y + 1.0));
-  say('去哪找？左子樹裡最右邊的 leaf', '= 左子樹最大的：數字上最接近 13');
+  say('去哪找？左子樹裡最右邊的 node', '= 左子樹最大的：數字上最接近 13（這裡剛好是 leaf）');
   await step(tok);                                   // 1:11:43 幾乎只是移除一個 leaf
   clr(); glow(tv.c(5), null);
-  say('補位後，幾乎就只是移除那個 leaf', '再檢查跟它有關的 subtree 高度');
+  say('補位後，改成刪掉那個最大 node', '它最多只有一個左小孩：是 leaf 就拿掉，否則把小孩接上；再檢查 subtree 高度');
   await step(tok);                                   // 1:12:18 不是 leaf → 抓 leaf 補位
-  good('不是 leaf → 抓一個 leaf 來補位', 0, 6.7);
-  say('BST 的 removal：移掉 leaf 最容易', '不是 leaf → 抓一個 leaf 來補位');
+  good('兩個小孩 → 左子樹最大（或右子樹最小）來補位', 0, 6.7);
+  say('BST 的 removal：移掉 leaf 最容易；一個小孩就讓小孩頂上', '兩個小孩 → 左子樹最大（或右子樹最小）補位，再刪掉它');
 }]);
 // Q&A：一定要往左邊抓嗎？（6 steps）
 FRAG.push(['avllin-pick-side', 'Q&A：補位一定要往左邊抓嗎？左子樹最大或右子樹最小', async (tok) => {
@@ -1546,7 +1546,7 @@ FRAG.push(['avllin-pick-side', 'Q&A：補位一定要往左邊抓嗎？左子樹
   remove(pl); remove(pr); glow(tv.c(14), null); glow(tv.c(13), null);
   const n13 = findN(t, 13); delLeaf(t, 5); n13.k = 5; tv.sync(); glow(tv.c(5), GREEN);
   q.mood('happy'); await q.hop(tok);
-  say('抓一個上來以後', '問題就變成 remove a leaf');
+  say('抓一個上來以後', '問題就變成刪掉補位的那個 node（最多一個小孩；這裡 5 是 leaf）');
 }]);
 
 // ═════════ 10. AVL vs 紅黑樹（12 steps）═════════
@@ -4326,6 +4326,7 @@ FRAG.push(['bsta-heap', 'Min-heap：插入 25 不會檢查到 23 那邊', async 
   await step(tok);                                   // 19:34 start flipping
   glow(n, GOLD); glow(N[30], GOLD);
   move(n, ...P.c); move(N[30], ...P.f);
+  move(arr[5], -1.4, 0.2, 0.8); move(arr[2], 1.0, 0.2, 0.8);   // the array view swaps too: 21 23 25 24 28 30
   cap('25 < 30 → 往上交換', '');
   await step(tok);                                   // 19:48 a legitimate min heap
   glow(N[30], null); glow(N[21], GREEN);
@@ -5462,7 +5463,7 @@ FRAG.push(['bstb-avl-algo', 'AVL insert 的流程', async (tok) => {
   talk(g, '要看怎麼用', 'calm');
   await step(tok);                                   // 23:01 總結：每 insert 一個 node
   tmp.forEach(kill);
-  const cd = code(['1. insert 一個 node（叫 Y）', '2. 算現在所有 node 的 BF', '3. Y 往 root 走：第一個違規 = A', '4. 判斷 LL / LR / RR / RL', '5. 照圖調整（依樣畫葫蘆）'], -3.6, 6.6, 0.62);
+  const cd = code(['1. insert 一個 node（叫 Y）', '2. 沿 Y 往 root 的路徑更新 BF', '3. Y 往 root 走：第一個違規 = A', '4. 判斷 LL / LR / RR / RL', '5. 照圖調整（依樣畫葫蘆）'], -3.6, 6.6, 0.62);
   const t = bbTree(['MAR', 'AUG', 'NOV', 'APR', 'JAN', 'DEC'], { gap: 1.05, top: 6.2, dy: 1.25, x0: 3.0, info: 'bf' });
   bbAvlSilent(t, ['MAR', 'AUG', 'NOV', 'APR', 'JAN']); t.warn = false; await bbLay(t, tok, 0, 0); bbShow(t, true);
   cd.hl(0);
@@ -5470,7 +5471,7 @@ FRAG.push(['bstb-avl-algo', 'AVL insert 的流程', async (tok) => {
   say('總結：每 insert 一個 node', '例：insert DEC');
   await step(tok);                                   // 23:09 對整棵樹算 BF
   glow(n.m, null); cd.hl(1); bbShow(t, true);
-  say('對整棵樹現在所有的 node 算 BF', '');
+  say('沿著插入路徑往上更新 BF', '只有這條路上的高度會變（老師說成算整棵樹）');
   await step(tok);                                   // 23:18 判斷是哪一種情況
   say('然後判斷是四種情況的哪一種', '怎麼判斷？靠 Y 和 A');
   await step(tok);                                   // 23:26 新 node 叫 Y
@@ -6303,8 +6304,8 @@ FRAG.push(['bstb-mit-half', '簡單版：h < 2 log n', async (tok) => {
   say('丟掉 +1 只會讓右邊變小', 'N_h > 2 N_{h−2}');
   await step(tok);                                   // 27:23 像 2 的幾次方？2^{h/2}
   await nhBars(tok, 8, '#2fc092', (h) => Math.pow(2, h / 2), 0.6, 0.3, 0);
-  txt(f, 'N_h = Θ(2^{h/2})');
-  say('看起來像 2 的某次方：2^{h/2}', '綠色細長條就是 2^{h/2}');
+  txt(f, 'N_h = Ω(2^{h/2})（至少這麼多）');
+  say('看起來像 2 的某次方：2^{h/2}', '綠色細長條就是 2^{h/2}，藍色一直比它高');
   await step(tok);                                   // 27:35 每兩層翻一倍
   say('h 每增加 2，node 數至少翻一倍', '');
   talk(g, '兩層翻倍', 'happy');
@@ -6575,7 +6576,7 @@ FRAG.push(['bstb-mit-walkup', '往上走更新高度，找最低的違規 node',
   await bbLay(t, tok, 0, 0);
   const n = bbPut(t, bbNode(55)); t.hide = true; await bbLay(t, tok, 0, 0);
   const x = bbFind(t, 65);
-  const cd = code(['fix AVL(from changed node up):', '  x = 最低的不 AVL node', '  修好 x，再往上'], -3.8, 7.8, 0.55);
+  const cd = code(['fix AVL(from changed node up):', '  x = 最低的不 AVL node', '  修好 x（delete 才要再往上）'], -3.8, 7.8, 0.55);
   await step(tok);                                   // 40:20 fix AVL property
   cd.hl(0);
   say('一般的 AVL insert：fix AVL property', '');
@@ -6584,16 +6585,16 @@ FRAG.push(['bstb-mit-walkup', '往上走更新高度，找最低的違規 node',
   say('從剛剛改到的 node 開始，往上做', '');
   await step(tok);                                   // 40:42 可能要轉不只兩次
   glow(n.m, null);
-  say('例子沒呈現的是：可能要轉不只兩次', '');
+  say('例子沒呈現的是一般寫法', '程式會從改到的 node 沿路往上檢查');
   await step(tok);                                   // 40:48 修最低的違規
   say('剛才的做法：找到最低的違規點，修好它', '');
   await step(tok);                                   // 40:52 上面可能還有違規（高度都變了）
   for (let c = n; c; c = c.p) glow(c.m, '#4a3600');
-  say('加一個 node，整條路徑上的 subtree 高度都可能變', '所以上面可能還有違規');
+  say('加一個 node，整條路徑上的 subtree 高度都可能變', '所以要沿路往上更新高度、找違規點');
   await step(tok);                                   // 41:04 例子裡修一個就好，一般可能好幾個
   for (let c = n; c; c = c.p) glow(c.m, null);
-  say('例子裡修一個就全好了', '一般情況可能一路上去有好幾個');
-  talk(g, '要繼續往上');
+  say('老師說修好後上面可能還有違規', 'insert 修好最低的一個就夠；delete 才可能一路往上');
+  talk(g, 'insert 修一次');
   await step(tok);                                   // 41:25 x = 最低的不 AVL node
   cd.hl(1);
   say('令 x = 最低的、不符合 AVL 的 node', '');
@@ -6692,10 +6693,10 @@ FRAG.push(['bstb-mit-case1', 'Case 1：y 右重或平衡 → 一次旋轉', asyn
   say('x：k − 3 對 k − 3；y：k − 2 對 k − 2', '兩個都平衡了');
   talk(g, '平衡 ✓', 'happy');
   await step(tok);                                   // 46:53 y 的 parent 可能壞掉 → 繼續往上
-  const up = tag('↑ 繼續檢查 y 的 parent', 'pkt', 3.3, 8.2, 0); void up;
-  say('root 的高度變了，y 的 parent 可能壞掉', '所以接著往 y 的 parent 繼續檢查');
+  const up = tag('insert：高度回到 k − 1，停', 'pkt', 2.6, 0.5, 1.6); void up;
+  say('這塊的高度變成 k − 1 = insert 前的高度', 'insert 可以停；delete 時高度可能少 1，才往 y 的 parent 檢查');
   await step(tok);                                   // 47:08 y 平衡的情況也成立
-  say('y 平衡（—）的情況也一樣成立', '時間關係請看講義');
+  say('y 平衡（—）的情況也一樣成立（請看講義）', '這種情況只會在 delete 出現');
 }]);
 
 // 47:18 case 2
@@ -6994,7 +6995,7 @@ FRAG.push(['bstc-height', '高度 h = max(h_L, h_R) + 1，NULL 算 −1', async 
 }]);
 
 FRAG.push(['bstc-avl-invariant', 'AVL 看高度差，不看節點數', async (tok) => {
-  const t = stageT([5, 3, 7, 2, 1]);
+  const t = stageT([5, 3, 8, 2, 7, 9, 1]);   // only node 3 breaks the rule (root: 2 vs 1)
   const g = pal();
   const n3 = nodeOf(t, 3);
   await step(tok);                                   // 436.0 這是 AVL 嗎？
@@ -7006,7 +7007,7 @@ FRAG.push(['bstc-avl-invariant', 'AVL 看高度差，不看節點數', async (to
   glow(n3, REDG);
   say('這個 node（3）不平衡', '');
   await step(tok);                                   // 480.0 學生：這邊 2、這邊 0
-  const c1 = tag('2 個節點', 'pkt', n3.pos.x - 1.6, n3.pos.y - 0.2), c2 = tag('0 個', 'pkt', n3.pos.x + 1.2, n3.pos.y - 0.2);
+  const c1 = tag('2 個節點', 'pkt', n3.pos.x - 2.0, n3.pos.y + 0.1), c2 = tag('0 個', 'pkt', n3.pos.x + 0.75, n3.pos.y - 0.9);
   say('學生先說：這邊 2、這邊 0', '');
   await step(tok);                                   // 491.0 高度：這邊 1、這邊 −1
   txt(c1, 'h = 1'); txt(c2, 'h = −1'); hTags(t);
@@ -7436,7 +7437,7 @@ FRAG.push(['bstc-carrot', '依序插入 4,5,3,6,2,7,1：root 平衡但不是 AVL
   say('3 的右邊沒東西：高度 −1', '<span class="no">差 2</span>');
   await step(tok);                                   // 1858.0 從 root 看兩邊很平衡
   glow(t.root, OKG);
-  say('只看 root：左右都高 1，看起來平衡', '');
+  say('只看 root：左右都高 2，看起來平衡', '');
   await step(tok);                                   // 1868.0 AVL：每個節點都要成立
   glow(nodeOf(t, 5), REDG); setTag(nodeOf(t, 5), 'h_L −1、h_R 1', true);
   say('AVL 的條件要每個節點都成立', '5 也是左 −1、右 1');
@@ -7554,7 +7555,7 @@ FRAG.push(['bstc-qa-lopsided', 'Q&A：子樹也是歪的，只有兄弟要差 �
   await step(tok);                                   // 2221.0 不是同一層都要一樣高，只看兄弟
   say('不是同一層的節點都要一樣高', '只有同一個 parent 的兩個 children 要比');
   await step(tok);                                   // 2227.0 同一層的兩個可以差 1
-  say('同一層的兩個節點，高度可以差 1', '但不能超過 1');
+  say('同一個 parent 的兩個 children：高度可以差 1', '但不能超過 1（老師說成「同一層」，指的是兄弟）');
   await step(tok);                                   // 2234.0 差超過 1 就可能變 linked list
   KG(T4.l.m, null); KG(T4.r.m, null);
   say('如果可以差超過 1', '整棵就可能退化成 linked list');
@@ -7565,7 +7566,7 @@ FRAG.push(['bstc-qa-lopsided', 'Q&A：子樹也是歪的，只有兄弟要差 �
   await step(tok);                                   // 2272.0 常數比 1 大
   say('這個常數比 1 大', '（上課證過：約 1.44）');
   await step(tok);                                   // 2288.0 沒有演算法專門蓋出這種樹
-  say('這種樹只是畫在板子上好看', '一般的 insert / delete 不會刻意蓋出它');
+  say('完美的樹只是畫在板子上好看', '沒有演算法能在一連串 insert / delete 中有效率地一直維持它');
 }]);
 
 // 一直線：一次旋轉
@@ -9814,7 +9815,7 @@ FRAG.push(['bstlin-rr-general', 'AVL 的 RR：rotate(A, B) 只改兩個 pointer'
   say('先看不變的', 'AL 還在 A 的左邊、BR 還在 B 的右邊');
   await step(tok);                                   // 2:27:16 變的只有兩個 link
   k.edges(['BA', 'ABL']);
-  say('變的只有兩個 link（紅線）', '其實只換了兩張小紙條');
+  say('A、B 之間只變了兩個 link（紅線）', '另外原本指向 A 的那張紙條（A 的 parent）要改指向 B');
   await step(tok);                                   // 2:27:39 A.right = B.left
   const cd = code(['A.right = B.left;', 'B.left  = A;'], 4.4, 1.6, 0.56);
   cd.hl(0);
@@ -9954,7 +9955,7 @@ FRAG.push(['bstlin-rr-height', 'RR 為什麼一次就夠：高度 10、11 的數
   say('不像 complete（strict）那樣', '只轉一次，其他 subtree 都不動：沒有一對一對應 array，有自由度');
   await step(tok);                                   // 2:37:53 一個步驟、兩個 pointer
   k.edges(['BA', 'ABL']);
-  say('只需要一個修改步驟', '而且只是兩個 pointer（兩張小紙條）的改變');
+  say('只需要一個修改步驟', '只改常數張小紙條：兩個 link，加上 parent 指向新的 root');
   await step(tok);                                   // 2:38:18 成本跟樹高有關：從下往上找
   tag('↓ insertion：從上往下', 'ptr', -5.0, 2.6, 0); tag('↑ 維護：從下往上找第一個', 'ptr alt', -5.0, 2.0, 0);
   say('便宜：力氣只花在樹裡上上下下', 'insert 從上往下；維護從下往上，找到第一個要修的地方轉回來');
@@ -11050,7 +11051,7 @@ FRAG.push(['rblin-case3-red-sibling', 'Case 3：紅兄弟是假兄弟 → 先 ro
   Bb(null);
   R.set(['B', 'B', ['A', 'R', ['x', 'B'], ['y', 'B']], ['z', 'B']]);
   glowAll(R, ['A', 'B'], GOLD);
-  say('先轉一轉：B 上去、A 下來', '234 完全沒變，只是換個畫法');
+  say('先轉一轉：B 上去（塗黑）、A 下來（塗紅）', '234 完全沒變，只是換個畫法');
   await step(tok);                                   // 122:14 真兄弟黑色帶頭
   glowAll(R, ['A', 'B'], null);
   Bb('x 的兄弟變成黑色的 y', ...above(R.P.get('y'), 0.9));

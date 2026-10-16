@@ -1374,7 +1374,7 @@ scene('vm-13b-vbit', 'Valid-invalid bit', CAM, [
     cap('access 時看到 0 → page fault', 'OS 接到 fault，把這個 page 搬進 memory');
   },
   async (tok, S) => {                                   // 362.0 pure demand paging：一開始全部 0
-    [0, 2, 3, 4].forEach((i) => { S.t.set(i, null, 'i'); glow(S.t.cells[i][2], NG); });
+    [0, 1, 2, 3, 4].forEach((i) => { S.t.set(i, null, 'i'); glow(S.t.cells[i][2], NG); });
     note('pure demand paging：一開始所有 bit 都是 i', -0.6, 1.8);
     cap('pure demand paging 一開始沒有 page 在 memory', '所以所有 bit 都設成 0（i）');
   },
@@ -1859,9 +1859,9 @@ scene('vm-14a-code', 'File system 讀寫 vs memory-mapped file', CAMW, [
     cap('寫下去只是改自己的 memory content', '兩邊還沒 sync，這時斷電資料就沒了');
   },
   async (tok, S) => {                                   // 1511.8 munmap 時整段寫回 file
-    gone(S.ns); S.c2.hl(3); const a = pkt('整段寫回', MC.tlb, 0.6, 5.35, 0.8, 1.4); await slide(tok, a, 3.2, 5.35, 0.8, 800); gone(a); // stops at the disk block's edge, not over its「4 KB」
+    gone(S.ns); S.c2.hl(3); const a = pkt('dirty page 寫回', MC.tlb, 0.6, 5.35, 0.8, 1.4); await slide(tok, a, 3.2, 5.35, 0.8, 800); gone(a); // stops at the disk block's edge, not over its「4 KB」
     glow(S.mp[1], null); glow(S.df[1], HL);
-    cap('只有 call munmap 時才寫下來', '不知道你改了哪裡，就整段 dump 回 file');
+    cap('要到 munmap（或 msync）時才寫回', '不知道改了哪個 byte：改過的 page 整頁寫回');
   },
   async (tok, S) => {                                   // 1562.5 例子：顯示卡、螢幕 pixel
     S.mon = prop('monitor', 4.6, 0.2, 0, 0.9, '顯示卡／螢幕');

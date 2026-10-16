@@ -1338,7 +1338,7 @@ function gbLayout(order, par) {
 function gbArc(a, b, color = '#d64545') {
   const T = ctx.THREE, p = V3(a[0], a[1], GB_TZ), q = V3(b[0], b[1], GB_TZ);
   const mid = p.clone().add(q).multiplyScalar(0.5), d = q.clone().sub(p);
-  mid.add(V3(-d.y, d.x, 0).normalize().multiplyScalar(0.45));
+  mid.add(V3(-d.y, d.x, 0).normalize().multiplyScalar(0.35 + 0.3 * d.length())); // longer spans bend wider, clear of the nodes in between
   const geo = new T.BufferGeometry().setFromPoints(new T.QuadraticBezierCurve3(p, mid, q).getPoints(16));
   const l = new T.Line(geo, new T.LineDashedMaterial({ color, dashSize: 0.14, gapSize: 0.1 }));
   l.computeLineDistances(); lab.world.add(l); return l;
@@ -1453,7 +1453,7 @@ FRAG.push(['graphbari-small-bfs', '小例子 BFS：1 2 4 5 7 3 6', async (tok) =
   const r = await gbRun(tok, G, { kind: 'bfs', s: 1, pref: { 1: [2, 4, 5], 2: [7, 3, 6] }, gap: 450, at: {
     0: [() => { glow(G.vs[1], GOLD); n1 = gbNote(G, 1, '起點：任選，這裡選 1'); say('BFS：起點可以任選', '這裡選 1'); }, () => { remove(n1); glow(G.vs[1], null); }],
     1: [null],
-    2: [() => { n2 = tag('2、4、5 誰先？順序任意', 'note', -3.6, 1.6, 1.2); say('1 的鄰居：5、4、2', '拜訪的順序可以任意'); }, () => remove(n2)],
+    2: [() => { n2 = tag('2、4、5 誰先？順序任意', 'note', -3.6, 1.6, 1.2); say('1 的鄰居：2、4、5', '拜訪的順序可以任意'); }, () => remove(n2)],
     6: [() => { n2 = tag('下一個要探索的點？已拜訪：1 2 4 5', 'note', 2.6, 1.6, -1.4); say('1 探索完，挑下一個要探索的點'); }, () => remove(n2)],
     7: [null],
     11: [null],

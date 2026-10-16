@@ -368,7 +368,7 @@
     "也各有 2 次乘法。",
     "運算量一模一樣，所以兩種方法一樣有效率，[[編譯器]]用哪一種都可以。",
     "如果你要自己設計編譯器或新語言，任選一種就行。",
-    "C 語言和整個 C 家族（C++、Java…）都採用 row-major。補充：Fortran、MATLAB 用 column-major，考題常要你兩種都會算。"
+    "C、C++ 都採用 row-major（Java 的二維陣列是 array of arrays，每列各自一塊，但也是一列一列存）。補充：Fortran、MATLAB 用 column-major，考題常要你兩種都會算。"
    ]
   }
  ],

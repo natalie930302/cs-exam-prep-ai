@@ -2,8 +2,8 @@
 // 子群、陪集與 Lagrange 定理、置換群 S₃／cycle notation、ring 與 field（ℤₙ 的零因子）、Boolean algebra 化簡。
 // Chapter module for lab-shell.js — see public/lab/README-labs.md.
 //
-// 本章唯一的影片（Algebraic Structures: Groups, Rings, and Fields）還沒有逐字稿，所有場景依課本
-// （Grimaldi 第 16 章 Groups／Rings、第 15 章 Boolean Algebra；Rosen 第 12 章）標準例子製作，標題前註明（課本）。
+// 下面標（課本）的場景依課本（Grimaldi 第 16 章 Groups／Rings、第 15 章 Boolean Algebra；Rosen 第 12 章）
+// 標準例子製作；本章影片（Algebraic Structures: Groups, Rings, and Fields）逐句對應的場景在檔尾 FRAG（ab-*）。
 // 慣例：置換合成 σ∘τ = 先做 τ 再做 σ；Cayley 表第 a 列第 b 行放 a∘b；Boolean：x' 表補數、xy 表 AND、x + y 表 OR。
 import kit from './_kit.js';
 
@@ -672,7 +672,7 @@ scene('ab-group', 'Group（群）的定義：結合律、單位元、反元素',
   async (tok, S) => { ladder(S, 4.6, 6.2); S.ladOn(0, AC.g); S.n = sm('依性質由少到多排列', 4.6, 3.2); cap('順序：性質最少的到最多的', ''); },
   async (tok, S) => { S.G = cube('', '#efe5d3', [4.4, 2.2, 0.1], -3.0, 4.3, -0.3); S.gl = pl('G：物件的集合', -3.0, 5.7); S.e = ['a', 'b', 'c', 'g'].map((t, i) => blk(t, AC.g, -4.5 + i * 1.0, 4.3)); cap('G 是物件的集合', ''); },
   async (tok, S) => { S.op = hot('運算 ⊕（可以是 +、×、或別的）', -3.0, 2.6); S.cl = sm('（課本把「a ⊕ b 仍在 G 裡」= closure 封閉性列為第一條）', -1.0, 1.9); cap('運算故意用陌生的符號 ⊕', ''); },
-  async (tok, S) => { S.p = lines(['① associativity', '② identity', '③ inverse'], 3.2, 5.8, 0.7); cap('三個性質', ''); },
+  async (tok, S) => { gone(S.lad, S.n); S.p = lines(['① associativity', '② identity', '③ inverse'], 3.2, 5.6, 0.75); cap('三個性質', ''); },
   async (tok, S) => { setCls(S.p[0], 'ptr alt'); S.f1 = pl('(a ⊕ b) ⊕ c = a ⊕ (b ⊕ c)', 0, 0.9); cap('結合律：怎麼分組都一樣', ''); },
   async (tok, S) => {
     S.br = sm('先算 b ⊕ c，再接 a　＝　先算 a ⊕ b，再接 c', 0, 0.2);
@@ -710,10 +710,10 @@ scene('ab-more', '更多 group：ℤ_n、ℚ、ℝ*、可逆函數、可逆矩�
   async (tok, S) => { gone(S.tb, S.tl); S.e = pl('可逆函數，運算是合成 ∘', -3.6, 6.1); cap('另一種：可逆函數與合成', ''); },
   async (tok, S) => { S.e2 = sm('f ∘ (g ∘ h) = (f ∘ g) ∘ h：結合', -3.6, 5.4); cap('函數合成有結合律', ''); },
   async (tok, S) => { S.e3 = sm('可逆 ⇒ 有反函數；單位元 I(x) = x', -3.6, 4.8); cap('單位元是 I(x) = x', ''); },
-  async (tok, S) => { gone(S.a, S.b, S.c, S.d); S.m = pl('2 × 2 可逆矩陣，運算是矩陣乘法', 2.4, 6.1); S.m0 = sm('示意：A = ' + mS(MA) + '，B = ' + mS(MB) + '（det = ' + det(MA) + '、' + det(MB) + '）', 2.4, 5.4); cap('2×2 可逆矩陣與乘法', ''); },
-  async (tok, S) => { S.m1 = sm('單位元：I = [1 0 ; 0 1]', 2.4, 4.8); cap('單位元是單位矩陣', ''); },
-  async (tok, S) => { const AB = mm(MA, MB), BA = mm(MB, MA); S.m2 = ok(!mEq(AB, BA), 'AB = ' + mS(AB) + ' ≠ BA = ' + mS(BA) + ' ✓', 1.2, 3.9); cap('AB 不一定等於 BA', ''); },
-  async (tok, S) => { S.m3 = ok(mEq(mm(mm(MA, MB), MC), mm(MA, mm(MB, MC))), '但 (AB)C = A(BC) = ' + mS(mm(MA, mm(MB, MC))) + ' ✓（結合）', 1.2, 3.1); cap('但矩陣乘法有結合律', ''); },
+  async (tok, S) => { gone(S.a, S.b, S.c, S.d, S.e, S.e2, S.e3); S.m = pl('2 × 2 可逆矩陣，運算是矩陣乘法', 0, 6.1); S.m0 = sm('示意：A = ' + mS(MA) + '，B = ' + mS(MB) + '（det = ' + det(MA) + '、' + det(MB) + '）', 0, 5.4); cap('2×2 可逆矩陣與乘法', ''); },
+  async (tok, S) => { S.m1 = sm('單位元：I = [1 0 ; 0 1]', 0, 4.8); cap('單位元是單位矩陣', ''); },
+  async (tok, S) => { const AB = mm(MA, MB), BA = mm(MB, MA); S.m2 = ok(!mEq(AB, BA), 'AB = ' + mS(AB) + ' ≠ BA = ' + mS(BA) + ' ✓', 0, 3.9); cap('AB 不一定等於 BA', ''); },
+  async (tok, S) => { S.m3 = ok(mEq(mm(mm(MA, MB), MC), mm(MA, mm(MB, MC))), '但 (AB)C = A(BC) = ' + mS(mm(MA, mm(MB, MC))) + ' ✓（結合）', 0, 3.1); cap('但矩陣乘法有結合律', ''); },
   async (tok, S) => { S.ab = hot('若一定有 a ⊕ b = b ⊕ a：commutative / abelian group', 0, 2.0); S.ab2 = sm('group 本身不要求交換律', 0, 1.35); cap('會交換的叫 abelian group', ''); },
   async (tok, S) => {
     const Z5 = zGroup(5); S.y = good('abelian：ℤ、ℤ_n' + (Z5.com ? '' : '?') + '、ℚ、ℝ*', -2.6, 0.5); S.nn = bad('不是 abelian：可逆函數、2×2 可逆矩陣', 2.8, 0.5); cap('有些例子會交換，有些不會', '');
@@ -721,7 +721,7 @@ scene('ab-more', '更多 group：ℤ_n、ℚ、ℝ*、可逆函數、可逆矩�
 ]);
 scene('ab-ring', 'Ring（環）：兩個運算的公理', [
   async (tok, S) => { S.t = hd('下一種：ring（環）', 0, 7.0); ladder(S, 4.6, 6.2); S.ladOn(0, AC.g); S.ladOn(1, AC.r); cap('比 group 複雜一點：ring', ''); },
-  async (tok, S) => { S.o = hot('兩個運算：⊕（加法）、★（乘法）', -2.4, 6.1); cap('兩個運算：加法、乘法', ''); },
+  async (tok, S) => { gone(S.lad); S.o = hot('兩個運算：⊕（加法）、★（乘法）', -2.4, 6.1); cap('兩個運算：加法、乘法', ''); },
   async (tok, S) => { S.q = pl('要成為 ring 需要：', -2.4, 5.3); cap('ring 需要什麼？', ''); },
   async (tok, S) => { S.l1 = pl('① (R, ⊕) 是 abelian group：0、加法反元素、結合、交換', -1.2, 4.6); S.l1n = sm('（講者口誤說 commutative ring，意思是加法交換群）', -1.2, 4.05); cap('對加法是交換群', ''); },
   async (tok, S) => { S.l2 = pl('② ★ 結合：(a ★ b) ★ c = a ★ (b ★ c)', -1.2, 3.4); cap('乘法要結合', ''); },
@@ -729,9 +729,9 @@ scene('ab-ring', 'Ring（環）：兩個運算的公理', [
   async (tok, S) => { S.l4 = pl('④ 分配律：a★(b⊕c) = a★b ⊕ a★c、(b⊕c)★a = b★a ⊕ c★a', -1.2, 2.1); cap('分配律：左分配、右分配', ''); },
   async (tok, S) => { S.l5 = note('★ 不必交換：a ★ b 不一定等於 b ★ a（所以左右分配律都要寫）', -1.2, 1.35); cap('乘法不一定交換', ''); },
   async (tok, S) => { setCls(S.l3, 'ptr alt'); cap('注意這一條：乘法單位元', ''); },
-  async (tok, S) => { S.r1 = sm('有些人研究「其他都有、就是沒有 1」的結構：rng（ring 去掉 i）', 2.6, 0.6); cap('沒有 1 的叫 rng', ''); },
-  async (tok, S) => { S.r2 = sm('也有人叫它 rong（"wrong"）：沒有 1 不太對', 2.6, 0.0); cap('也有人叫 rong', ''); },
-  async (tok, S) => { setCls(S.l3, 'good'); S.r3 = good('本片的標準定義：ring 要有乘法單位元 1', -3.8, 0.6); S.r4 = sm('（Grimaldi 的 ring 不要求 1；有 1 的叫 ring with unity）', -3.8, 0.0); cap('標準的 ring 要有 1', ''); },
+  async (tok, S) => { S.r1 = sm('有些人研究「其他都有、就是沒有 1」的結構：rng（ring 去掉 i）', 0, 0.65); cap('沒有 1 的叫 rng', ''); },
+  async (tok, S) => { S.r2 = sm('也有人叫它 rong（"wrong"）：沒有 1 不太對', 0, 0.05); cap('也有人叫 rong', ''); },
+  async (tok, S) => { setCls(S.l3, 'good'); gone(S.r1, S.r2); S.r3 = good('本片的標準定義：ring 要有乘法單位元 1', 0, 0.65); S.r4 = sm('（Grimaldi 的 ring 不要求 1；有 1 的叫 ring with unity）', 0, 0.05); cap('標準的 ring 要有 1', ''); },
 ]);
 scene('ab-ringex', 'Ring 的例子：ℤ、ℤ_n、2×2 矩陣、多項式', [
   async (tok, S) => { S.t = hd('Ring 的例子', 0, 7.0); S.a = pl('要有加法和乘法，而且要滿足很多性質', 0, 6.1); cap('ring 要有加法和乘法', ''); },
@@ -809,7 +809,7 @@ scene('ab-vspace', 'Vector space（向量空間）：兩個集合、純量乘法
   async (tok, S) => { S.f = sm('ℝ → ℝ 的函數：兩個函數可以相加，也可以乘上純量', 0, 0.3); cap('函數也可以是向量', ''); },
   async (tok, S) => { S.g = sm('ℂ 可以看成 ℝ 上的向量空間（忽略兩個複數相乘）', 0, -0.25); cap('ℂ 當向量空間：忽略乘法', ''); },
   async (tok, S) => { S.h = sm('ℚ[√2] 也一樣：當向量空間時不看向量之間的乘法', 0, -0.8); cap('ℚ[√2] 也可以', ''); },
-  async (tok, S) => { S.i = note('接下去是 basis、dimension：線性代數的內容', 3.6, 6.2); cap('接著是基底與維度：線代', ''); },
+  async (tok, S) => { txt(S.t, '接下去：basis、dimension（線性代數的內容）'); cap('接著是基底與維度：線代', ''); },
 ]);
   }
   // @@FRAGMENTS@@

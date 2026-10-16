@@ -445,7 +445,7 @@ export default function (ctx) {
       ['查詢', res ? 'i = ' + res.i + '：p=' + (res.p || '—') + '，L=' + (res.l || '—') + '，R=' + (res.r || '—') : '—'],
     ], 'parent(i) = ⌊i/2⌋、left(i) = 2i、right(i) = 2i+1<br>'
       + '若改用 0-based：parent = ⌊(i−1)/2⌋、left = 2i+1、right = 2i+2<br>'
-      + (maxI === n ? '<span class="ok">完全二元樹：一格都不浪費</span>' : '<span class="no">不是完全二元樹：粉紅色格子是空著的</span>（偏斜樹深度 k 要 2^k − 1 格）'));
+      + (maxI === n ? '<span class="ok">完全二元樹：一格都不浪費</span>' : '<span class="no">不是完全二元樹：粉紅色格子是空著的</span>（深度 k 的右偏斜樹要開到 2^k − 1 格）'));
   }
 
   // ───────────────────────── 由 Inorder + Preorder／Postorder 重建 ─────────────────────────
@@ -704,6 +704,22 @@ export default function (ctx) {
     await beat(tok, 3000);
   }
 
+  // 畫線法的線：pre 沿著子樹的左緣、post 沿著右緣往下繞到底線（祖先繞在外圈），in 從正下方直接往下，所以線彼此不交叉
+  function flagPath(root, n, kind, bx, by, dx = 0.45, dyIn = 0.36) {
+    const side = kind === 'pre' ? -1 : kind === 'post' ? 1 : 0;
+    if (!side) return [V(n.pos.x, n.pos.y - dyIn, 0), V(bx, by, 0)];
+    const maxD = Math.max(...levelorder(root).map((m) => m.depth));
+    const off = dx + 0.22 * (maxD - n.depth), sub = levelorder(n);
+    const pts = [V(n.pos.x + side * dx, n.pos.y, 0)];
+    for (let d = n.depth + 1; d <= maxD; d++) {
+      const lv = sub.filter((m) => m.depth === d);
+      if (!lv.length) break;
+      const xs = lv.map((m) => m.pos.x);
+      pts.push(V((side < 0 ? Math.min(...xs) : Math.max(...xs)) + side * off, lv[0].pos.y, 0));
+    }
+    pts.push(V(bx, by, 0));
+    return pts;
+  }
   // Abdul Bari 的畫線法：從每個節點的左邊／正下方／右邊拉線到底線，由左往右讀
   async function scTravFlags(tok) {
     const P = ctx.params || {};
@@ -730,7 +746,8 @@ export default function (ctx) {
         const k = out.length;
         out.push(s.n.label);
         glow(s.n, GOLD);
-        seg(p, V(bx(k), 0.95, 0));
+        const fp = flagPath(root, s.n, kind, bx(k), 0.95, 0.62, 0.5);
+        for (let i = 0; i + 1 < fp.length; i++) seg(fp[i], fp[i + 1]);
         const b = cube(s.n.label, depthColor(s.n.depth), SMALL, bx(k), 0.33, 0.9, 2);
         say('沿著樹的外圍走，碰到 ' + s.n.label + ' 的' + where + ' → 落到底線', out.join(' '));
         await beat(tok, 1000);
@@ -1394,7 +1411,7 @@ export default function (ctx) {
       }
       await beat(tok, 1200);
       Object.values(B).forEach((b) => lit(b, GREEN));
-      say('算進 NULL：每個 node 都剛好 2 條', 'degree = 2，只是其中可能指向空');
+      say('算進 NULL：每個 node 都有 2 個連結位置', '但 degree 只算非空子樹：leaf 的 degree 仍是 0');
       await beat(tok, 2800);
       Object.values(B).forEach((b) => lit(b));
       say('9 個 node：18 條連結、8 條真的', '補充：n 個 node 的 binary tree 有 n + 1 條 NULL link');
@@ -2609,12 +2626,12 @@ export default function (ctx) {
         await beat(tok, 1500);
         lit(nb[d]);
       }
-      tiles.forEach((t, k) => { if (!idx.includes(k + 1)) t.material.color.set('#f4b8a8'); });
-      say('深度 5 要 31 格，只用到 5 格', '<span class="no">26 格空著沒用</span>');
+      tiles.forEach((t, k) => { if (!idx.includes(k + 1)) t.material.color.set(k + 1 > 16 ? '#ddd6ca' : '#f4b8a8'); });
+      say('要開到 [16]，只用到 5 格', '<span class="no">[1]..[16] 有 11 格空著</span>（右歪會開到 [31]）');
       await beat(tok, 3000);
       say('優點：找 parent／child 只要算術', '⌊i/2⌋、2i、2i+1，一步到位');
       await beat(tok, 2600);
-      say('缺點：不夠 complete 就浪費空間', '深度 k 的 skewed tree 要 2^k − 1 格');
+      say('缺點：不夠 complete 就浪費空間', '深度 k 的右歪斜樹要 2^k − 1 格');
       await beat(tok, 3000);
     } };
 
@@ -5129,7 +5146,7 @@ export default function (ctx) {
         if (n.ch) tag(String(n.f), 'idx', n.pos.x, n.pos.y - 0.5, 0.4);
       }
       edgeLines(() => { const out = []; for (const n of gAll(root)) for (const k of n.kids) if (n.body && k.body) out.push([n.body.obj.position, k.body.obj.position]); return out; }, 0.27);
-      if (bits) for (const n of gAll(root)) n.kids.forEach((k, j) => tag(String(j), 'ptr', (n.pos.x + k.pos.x) / 2 + (j ? 0.22 : -0.22), (n.pos.y + k.pos.y) / 2 + 0.1, 0.2));
+      if (bits) for (const n of gAll(root)) n.kids.forEach((k, j) => { const l = tag(String(j), 'idx', (n.pos.x + k.pos.x) / 2 + (j ? 0.26 : -0.26), (n.pos.y + k.pos.y) / 2 + 0.05, 0.2); Object.assign(l.element.style, { color: j ? '#b5651d' : '#1f8a5a', fontWeight: '800', fontSize: '13px' }); });
       return root;
     }
     const cursorAt = (cur, p) => cursorTo(cur, p.clone().add(V(0, -0.02, 0)));
@@ -7014,7 +7031,7 @@ const BX = (k) => -4.8 + k * 1.6, BASE_Y = 1.2;
 function bariTree() { const r = bTree(BARI, { topY: 6.4, minY: 3.4 }, 0.62); return r; }
 const bariOrder = (r, kind) => travSteps(r, kind).filter((s) => s.emit).map((s) => s.n);
 function baseLine() { const l = K.line(-6.2, BASE_Y, 6.2, BASE_Y, 0, '#5a4a32'); tag('底線', 'idx', -6.3, BASE_Y + 0.35); return l; }
-function flag(n, kind, k) { const [dx, dy] = BARI_AT[kind]; return K.line(n.pos.x + dx, n.pos.y + dy, BX(k), BASE_Y, 0.1, '#c08a1f'); }
+function flag(n, kind, k, r) { const pts = flagPath(r, n, kind, BX(k), BASE_Y, Math.abs(BARI_AT.pre[0]), -BARI_AT.in[1]); const ls = []; for (let i = 0; i + 1 < pts.length; i++) ls.push(K.line(pts[i].x, pts[i].y, pts[i + 1].x, pts[i + 1].y, 0.1, '#c08a1f')); return ls; }
 async function bariLabels(tok, ord) {
   const out = [];
   for (let k = 0; k < ord.length; k++) { out.push(cube(ord[k].label, depthColor(ord[k].depth), SMALL, BX(k), BASE_Y - 0.6, 0.2, 1.5)); await beat(tok, 220); }
@@ -7033,10 +7050,10 @@ async function bariFlagScene(tok, kind, name, res) {
   baseLine();
   say(name + '：一樣在樹的底下畫一條線', '同一棵樹 3(6(5,2),4(9,8))');
   await step(tok);                                   // from every node, from its <where>
-  for (let k = 0; k < ord.length; k++) { flag(ord[k], kind, k); ord[k].bd.glow(GOLD); await beat(tok, 260); }
+  for (let k = 0; k < ord.length; k++) { flag(ord[k], kind, k, r); ord[k].bd.glow(GOLD); await beat(tok, 260); }
   say('從每個 node 的「' + where + '」拉線到底線', '一個 node 一條線');
   await step(tok);                                   // make sure they are not intersecting
-  okT('線彼此不交叉 ✓', 4.6, 2.3);
+  okT('線彼此不交叉 ✓', 4.6, 6.9);
   levelorder(r).forEach((n) => { n.bd.glow(); n.bd.mood('happy'); });
   say('注意：線彼此不能交叉', '交叉的話，讀出的順序就錯了');
   await step(tok);                                   // the nodes we are getting
@@ -7067,10 +7084,10 @@ FRAG.push(['treea-b-pre', '畫線法求 Pre-order：3 6 5 2 4 9 8', async (tok) 
   baseLine();
   say('在樹的底部畫一條直線', '');
   await step(tok);                                   // 2:41 from the left-hand side of a node
-  flag(ord[0], 'pre', 0); ord[0].bd.glow(GOLD);
+  flag(ord[0], 'pre', 0, r); ord[0].bd.glow(GOLD);
   say('從 node 的「左邊」拉一條線', '接到底線上（先畫 3 的）');
   await step(tok);                                   // 2:49 for every node, from the left
-  for (let k = 1; k < ord.length; k++) { flag(ord[k], 'pre', k); ord[k].bd.glow(GOLD); await beat(tok, 260); }
+  for (let k = 1; k < ord.length; k++) { flag(ord[k], 'pre', k, r); ord[k].bd.glow(GOLD); await beat(tok, 260); }
   levelorder(r).forEach((n) => { n.bd.glow(); });
   say('每個 node 都從左邊拉一條線', '線彼此不交叉');
   await step(tok);                                   // 3:09 this is for 3, 6, 5, 2, 4, 9, 8
@@ -7743,14 +7760,15 @@ FRAG.push(['treea-lin-null', 'Binary tree 的條件與 NULL link', async (tok) =
   cam([0, 4.6, 13.5], [0, 3.6, 0]);
   const { B } = lcrsTree();
   await step(tok);                                   // 96:46 未來好幾講都鎖定 binary tree
-  bub('接下來好幾講：先搞懂 binary tree', -3.8, 7.3);
+  const nb = bub('接下來好幾講：先搞懂 binary tree', -3.8, 7.3);
   say('接下來好幾講：先鎖定 binary tree', '有的結果可以再推廣到 general tree');
   await step(tok);                                   // 97:31 條件一：degree 最多是 2
-  tag('binary tree 的條件', 'ptr', -5.2, 6.2);
-  tag('① degree ≤ 2', 'ptr alt', -5.2, 5.6);
+  kill(nb);
+  tag('binary tree 的條件', 'ptr', -5.4, 6.9);
+  tag('① degree ≤ 2', 'ptr alt', -5.4, 6.3);
   say('條件一：tree 的 degree 最多是 2', '老師先寫「= 2」，再改成「≤ 2」');
   await step(tok);                                   // 97:48 條件二：左右有差別
-  tag('② 有順序：左右不一樣', 'ptr alt', -5.2, 5.0);
+  tag('② 有順序：左右不一樣', 'ptr alt', -5.4, 5.7);
   say('條件二：要有 order', '左邊、右邊是有差別的');
   await step(tok);                                   // 98:17 剛才畫了空的小紙條
   const nulls = [];
@@ -7764,12 +7782,12 @@ FRAG.push(['treea-lin-null', 'Binary tree 的條件與 NULL link', async (tok) =
   say('畫出那些「指向空」的小紙條', '長到尾巴、不再長的地方');
   await step(tok);                                   // 98:25 沒存資料 → 以後不畫
   nulls.forEach((o) => { if (o.material) { o.material.transparent = true; o.material.opacity = 0.3; } else if (o.element) o.element.style.opacity = '0.35'; });
-  note('沒存資料 → 以後畫圖不畫（自行腦補）', 3.6, 7.3);
+  note('沒存資料 → 以後畫圖不畫（自行腦補）', -4.9, 3.0);
   say('它們沒有真的存資料', '以後畫圖不畫；需要時自己腦補');
   await step(tok);                                   // 98:57 算進空紙條：每個 degree = 2
   nulls.forEach((o) => { if (o.material) o.material.opacity = 1; else if (o.element) o.element.style.opacity = ''; });
   Object.values(B).forEach((b) => lit(b, GREEN));
-  say('把空紙條也算進去', '每個 node 的 degree 都剛好 = 2');
+  say('把空紙條也算進去：每個 node 都有兩個連結位置', '但 degree 只算非空的子樹：leaf 的 degree 仍是 0');
   await step(tok);                                   // 99:32 每個 node 左右兩邊，一邊可能空
   Object.values(B).forEach((b) => lit(b));
   okT('每個 node 都有左、右兩邊，只是某邊可能是空的', 0, 0.0);
@@ -9003,7 +9021,7 @@ FRAG.push(['treeb-kary', 'k-ary tree：固定 k 個 pointer 很浪費', async (t
   say('以課本樹示意：n = 12、k = 3', '總 pointer 數 = n·k = 36');
   await step(tok);                                   // 990.8 除了 root 沒人指到它
   gLit(root, GOLD);
-  tag('沒人指到 root', 'note', root.pos.x + 1.8, root.pos.y + 0.4);
+  tag('沒人指到 root', 'note', root.pos.x - 2.0, root.pos.y + 0.4);
   say('除了 root 以外……', 'root 沒有人指到它');
   await step(tok);                                   // 1000.9 其他 node 恰被一個指到 → n − 1
   let used = 0;
@@ -9516,8 +9534,8 @@ FRAG.push(['treeb-skew', 'Array 表示 skewed tree 的空間浪費', async (tok)
   put(4);
   say('E 是 D 的 left child', '2 × 8 = 16');
   await step(tok);                                   // 3117.8 很多空間空著沒用
-  tiles.forEach((t, k) => { if (!idx.includes(k + 1)) t.material.color.set('#f4b8a8'); });
-  say('很多空間空在那邊沒用到', '補充：深度 5 要 31 格，只用 5 格');
+  tiles.forEach((t, k) => { if (!idx.includes(k + 1)) t.material.color.set(k + 1 > 16 ? '#ddd6ca' : '#f4b8a8'); });
+  say('很多空間空在那邊沒用到', '要開到 [16] 才放得下，只用 5 格（右歪的話要開到 [31]）');
   talk(g, '好浪費…', 'sad');
   await step(tok);                                   // 3129.8 好處：找 parent / child 一步到
   tag('優點：⌊i/2⌋、2i、2i+1 一步到位', 'good', 0, 1.3, 2.8);
@@ -11082,7 +11100,7 @@ FRAG.push(['treeb3-fields', 'LeftThread／RightThread 欄位與 head node', asyn
   await step(tok);                                   // 1108.8 每條 link 都指到某個 node
   say('現在每條 link 都會指到一個 node', 'tree 要做什麼修改？');
   await step(tok);                                   // 1126.8 判別：真的 tree node 還是 thread？
-  tag('真的 child？還是 thread？', 'note', 0, 6.9);
+  tag('真的 child？還是 thread？', 'note', -4.6, 6.9);
   say('要能判別：這條 link 指的是', '真正的 tree node，還是 thread？');
   talk(g, '分得出來嗎？', 'wow');
   await step(tok);                                   // 1144.8 I 的 left、right 都是虛線 → 都是 thread
@@ -11668,7 +11686,7 @@ FRAG.push(['treeb3-pqimpl', 'Priority queue 實作方式比較', async (tok) => 
   y = 3.8;
   const s100 = cube(100, TEAL, [0.9, 0.5, 0.6], NX[0], y, 0, 2); await go(tok, 500);
   lab.springTo(s100, V(NX[1], y, 0)); cube(1, TEAL, [0.9, 0.5, 0.6], NX[0], y, 0, 2); arrow(V(NX[0] + 0.5, y, 0), V(NX[1] - 0.5, y, 0), '#c08a1f');
-  say('sorted linked list：每次 insert 都排序', '先放 1，再放 100');
+  say('sorted linked list：每次 insert 都排序', '先放 100，再放 1 時 1 排到前面：1 → 100');
   await step(tok);                                   // 3728.0 sorted array
   y = 2.4;
   NX.forEach((x, k) => tag('a[' + k + ']', 'idx', x, y - 0.55, 0.4));
@@ -12090,7 +12108,7 @@ function hufShow(root, o, bits, drop = 0) {
   if (bits) hufBits(root);
   return root;
 }
-function hufBits(root) { for (const n of gAll(root)) n.kids.forEach((k, j) => tag(String(j), 'ptr', (n.pos.x + k.pos.x) / 2 + (j ? 0.24 : -0.24), (n.pos.y + k.pos.y) / 2 + 0.1, 0.2)); }
+function hufBits(root) { for (const n of gAll(root)) n.kids.forEach((k, j) => { const l = tag(String(j), 'idx', (n.pos.x + k.pos.x) / 2 + (j ? 0.26 : -0.26), (n.pos.y + k.pos.y) / 2 + 0.05, 0.2); Object.assign(l.element.style, { color: j ? '#b5651d' : '#1f8a5a', fontWeight: '800', fontSize: '13px' }); }); }
 const hLeaf = (root, ch) => gAll(root).find((n) => n.ch === ch);
 
 // ═══════════ ubLbvuWFDqM：Lec15（priority queue、max heap insert／delete、heap sort、Huffman 入門） ═══════════
@@ -13502,7 +13520,7 @@ FRAG.push(['treec-p16win', 'Winner tree：像賽程表，小的勝出', async (t
   sayT('selection tree', 0, 8.4);
   say('接下來是一種很好玩的 tree：selection tree', '');
   await step(tok);                                   // 48:34 winner tree 和 loser tree
-  tag('① winner tree', 'ptr', -2.4, 7.8); tag('② loser tree', 'ptr alt', 2.4, 7.8);
+  tag('① winner tree', 'ptr', -3.2, 7.7); tag('② loser tree', 'ptr alt', 3.2, 7.7);
   say('有兩種：winner tree 和 loser tree', '先看 winner tree');
   await step(tok);                                   // 48:41 8 個 queue：run1..run8
   S = selB(7.0, 1.3, false);
@@ -13653,7 +13671,7 @@ FRAG.push(['treec-p16ext', '為什麼要 winner tree：記憶體放不下的排�
   say('這對應到 external sort', 'sorting 分成 internal sort 和 external sort');
   await step(tok);                                   // 58:08 memory 放不下就用 external；分散式 node
   [-2, 0, 2].forEach((x) => prop('monitor', x + 3.2, 0, 3.6, 0.5));
-  say('memory 放不下全部資料時，就用 external sort', '也可以讓很多台電腦（node）各算一點');
+  say('memory 放不下全部資料時，就用 external sort', '資料放磁碟、分段排好再合併（老師順口提的多台電腦是分散式排序）');
 }]);
 
 // 61:29 Forest
@@ -14017,8 +14035,8 @@ FRAG.push(['treec-p17line', 'union(0,1)…union(n−2,n−1)：變成一直線',
   noT('n 次 find → O(n²)', 4.0, 2.4);
   say('但這串 find 的總時間是 O(n²)', '');
   await step(tok);                                   // 11:12 Σ i（i = 2..n）
-  sayT('2 + 3 + … + n = Σ i ≈ n²/2', 0, 1.4);
-  say('find(0) 走 n、find(1) 走 n−1……加起來是 Σ i', '所以是 O(n²)');
+  sayT('n + (n−1) + … + 1 ≈ n²/2', 0, 1.4);
+  say('find(0) 經過 n 個 node、find(1) n−1 個……加起來 ≈ n²/2', '所以是 O(n²)（課本寫成 Σ i，i = 2..n）');
   await step(tok);                                   // 11:44 find 的 cost 太高
   say('照這樣做，find 的 cost 太高了', '要想辦法讓樹不要長成一直線');
 }]);
@@ -14275,7 +14293,7 @@ FRAG.push(['treec-p17eq', 'Equivalence class：每對 i ≡ j 做一次 union', 
 // 34:05 array 實作的方便與兩種解法比較
 FRAG.push(['treec-p17eqarr', 'Array 查 root 很快；兩種解法比一比', async (tok) => {
   fresh(); lab.frameCamera([0, 4.8, 13.5], [0, 3.4, 0.8]);
-  const par = [-1, 3, -1, -1, 0, -1, -1, -1, -1, -1, -1, -1];
+  const par = [-1, 3, -1, -1, 0, -1, -1, -1, -1, 8, 6, -1];
   const A = PArr(par, { x0: -5.5, dx: 0.95, z: 2.4 });
   tag('parent', 'ptr', -6.6, 0.35, 3.3);
   const cur = makeCursor(); cur.obj.scale.set(0.6, 0.6, 0.6);

@@ -499,7 +499,7 @@
    "q": "Java 的 just-in-time compile 主要在做什麼？",
    "opts": [
     "把翻譯過的指令記下來重複使用",
-    "把 Java 直接編成 x86",
+    "執行前就把整個程式一次編成 x86 執行檔",
     "讓 bytecode 不需要 translation",
     "讓 Java 比 C 快"
    ],

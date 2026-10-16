@@ -235,7 +235,7 @@
      "text": "最後 Work 回到 Total (10,5,7)，可以拿來驗算；得到 safe sequence P2 → P4 → P5 → P1 → P3。"
     }
    ],
-   "trap": "判斷條件是 Need ≤ Work（每一種都要），更新是 Work += Allocation（不是加 Need）。影片在 L186 把 P5 持有說成「0, 1, 2」，但加的是 (0,0,2)；P5 的 Allocation 是 (0,0,2)。",
+   "trap": "判斷條件是 Need ≤ Work（每一種都要），更新是 Work += Allocation（不是加 Need）。影片一度口誤把 P5 持有說成「0, 1, 2」，但加的是 (0,0,2)；P5 的 Allocation 是 (0,0,2)。",
    "cues": [
     705.6,
     716.1,

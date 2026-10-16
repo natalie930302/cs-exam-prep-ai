@@ -424,7 +424,7 @@ export default function (ctx) {
       return { q: '「' + ev[0] + '」屬於哪一種中斷？', opts: ['hardware interrupt（signal）', 'software interrupt（trap）', '不是中斷，是一般 function call', 'polling'], ans: ev[1], why: '外部裝置產生的是 hardware interrupt（周志遠課堂稱 signal）；程式自己的錯誤或 system call 是 software interrupt（trap）。' };
     }
     if (r < 0.28) {
-      const s = pick(INSTR.concat([{ name: 'read the clock', priv: false }, { name: 'switch from user to kernel mode（system call）', priv: false }, { name: 'clear memory', priv: true }, { name: 'turn off interrupts', priv: true }]));
+      const s = pick(INSTR.concat([{ name: 'read the clock', priv: false }, { name: 'issue a trap instruction（system call）', priv: false }, { name: 'clear memory', priv: true }, { name: 'turn off interrupts', priv: true }]));
       return { q: '「' + s.name + '」應該是特權指令嗎？', opts: ['是，只能在 kernel mode 執行', '不是，user mode 也能執行', '只有在開機時才能執行', '要看 compiler'], ans: s.priv ? '是，只能在 kernel mode 執行' : '不是，user mode 也能執行', why: s.priv ? '會影響整個系統（I/O、timer、中斷、memory 管理）的指令都是特權指令。' : '讀時鐘、一般運算不會傷害別人；進入 kernel 的唯一合法方法正是 system call（trap）。' };
     }
     if (r < 0.44) {
@@ -612,7 +612,7 @@ export default function (ctx) {
   async function scRealtimeEdf(tok) {
     fresh([0, 5.5, 14.5], [0, 2.2, 0]);
     // 補充：課堂只用「寫作業」比喻，數字是自訂的
-    const T = [['作業 A', 3, 9], ['作業 B', 2, 4], ['作業 C', 2, 6]];
+    const T = [['作業 A', 3, 9], ['作業 B', 2, 4], ['作業 C', 2, 7]];
     say('Real-time ≠ 很快', '慢慢做沒關係，但要在 deadline 前做完');
     await W(tok, 2600);
     const unit = 0.9, x0 = -4.6;
@@ -636,7 +636,7 @@ export default function (ctx) {
     say('Earliest Deadline First：最早 deadline 的先做', '就像寫作業：最快要交的先寫');
     await lane(1.6, [1, 2, 0], 'EDF');
     await W(tok, 1200);
-    say('EDF 讓三份都準時交', '直覺、有效，但不保證永遠不 miss');
+    say('EDF 讓三份都準時交', '直覺、有效；工作量超過負荷時仍會 miss');
     await W(tok, 3000);
     say('real-time 系統裡最 critical 的是 scheduler', 'deadline = 使用者能接受的反應時間');
     await W(tok, 2600);
@@ -1659,7 +1659,7 @@ FRAG.push(['osA-rt', 'Real-time：deadline 與 EDF', async (tok) => {
   void q;
   await step(tok);                                   // 94.6 each job has a deadline
   const unit = 0.85, x0 = -3.4;
-  const T = [['作業 A', 3, 9], ['作業 B', 2, 4], ['作業 C', 2, 6]];
+  const T = [['作業 A', 3, 9], ['作業 B', 2, 4], ['作業 C', 2, 7]];
   for (const [n, , dl] of T) { line(x0 + dl * unit, 0.6, 0, x0 + dl * unit, 3.6, 0, '#d64545'); idx(n.slice(-1) + ' 的 deadline', x0 + dl * unit, n.endsWith('C') ? 4.65 : 3.9); }
   say('每個工作都有一個 deadline', '（作業長度、deadline 是示意數字）');
   await step(tok);                                   // 103 the scheduler is the most critical part
@@ -1685,9 +1685,9 @@ FRAG.push(['osA-rt', 'Real-time：deadline 與 EDF', async (tok) => {
   hot('Earliest Deadline First', 3.6, 0.6);
   say('EDF：最早 deadline 的先做', '先寫最快要交的作業');
   await step(tok);                                   // 141 intuitive but effective — no guarantee
-  note('直覺、有效，但不保證不 miss', -3.8, 4.65);
+  note('直覺、有效；超過負荷仍會 miss', -3.8, 4.65);
   sch.mood('happy');
-  say('很直覺也很有效', '但不能保證任何事（之後 CPU scheduling 再談）');
+  say('很直覺也很有效', '工作量超過 CPU 負荷時，誰都保證不了（CPU scheduling 再談）');
   await step(tok);                                   // 161 the deadline is defined by the user
   bub('deadline = 使用者能接受的 response time', 0, -0.6, 1.4);
   say('deadline 是使用者定義的', '可以接受的 response / reaction time');
@@ -2759,7 +2759,7 @@ FRAG.push(['osA-numa', 'UMA vs NUMA：memory access time 相不相同', async (t
   bad('remote：先找那塊的 controller → 間接', 3.3, 2.2, -1.2);
   say('也連得到 remote memory', '但要先跟它的 controller 溝通：間接');
   await step(tok);                                   // 563.1 benefit: hierarchy → can build much bigger machines
-  good('好處：hierarchy → 可以 scale 很大（4 → 16 個 CPU）', 0, 4.6);
+  good('好處：hierarchy → 可以 scale 很大（4 區可能就有 16 個 CPU）', 0, 4.6);
   say('好處：hierarchy 可以建更大的電腦', '這裡 4 區，每區又有好幾個 CPU');
   await step(tok);                                   // 578.8 drawback: remote is slower → non-uniform
   note('local 快、remote 慢 → non-uniform', 0, 3.8);
@@ -3563,8 +3563,8 @@ FRAG.push(['osA-goals', 'OS 的目標：convenience vs efficiency（trade-off）
   conv.g.position.y = 1.0;
   say('使用者通常希望兩件事', '第一件：convenience（方便）');
   await step(tok);                                   // 1413.7 Windows rose as the first GUI
-  A(note('Windows 崛起：第一個圖形介面', -3.6, 3.4));
-  say('Microsoft Windows 為什麼崛起？', '它是第一個圖形介面，大家覺得很方便');
+  A(note('Windows 崛起：把 GUI 帶給大眾', -3.6, 3.4));
+  say('Microsoft Windows 為什麼崛起？', '它把圖形介面帶給一般人，大家覺得很方便');
   await step(tok);                                   // 1435.3 second: efficiency / performance (games, programs)
   const eff = pal('Efficiency', '⚡', COL.cpu, 3.6, 0, 0.8);
   eff.g.position.y = 1.0;
@@ -3671,7 +3671,7 @@ FRAG.push(['osA-oslist', '形形色色的 OS：PC、手機、embedded', async (t
   const front = (zn) => { zn.userData.name.position.z = 1.75; return zn; };
   front(zone('x86 PC', -4.2, 0, 0, 3.6, 3, '#d6e6f6'));
   pkt('Windows', -5, 1.4); pkt('Linux', -3.4, 1.4);
-  say('早期 x86：不外乎 Windows', '還有歷史最久的 Linux');
+  say('早期 x86：不外乎 Windows', '另外一直都有 Linux');
   await step(tok);                                   // 1946.1 users like Windows; big important systems choose Linux (open source)
   idx('一般使用者：Windows　大型重要系統：Linux', -4.2, 2.6);
   say('一般使用者喜歡 Windows', '大型、重要的系統多選 Linux：跟 open source 很有關');
@@ -4139,10 +4139,10 @@ FRAG.push(['osB-hw-flow', 'Hardware interrupt：interrupt vector → service rou
   await step(tok);                                   // 23:40 the flow; hardware vs software handling
   sayc('仔細看流程', 'hardware 和 software 的處理有點不同');
   await step(tok);                                   // 23:49 resident monitor = memory; user side and OS side
-  zone('resident monitor（memory）', 0, 0, 0, 13, 3.6, '#f1eadb');
-  hd('user program', -4.0, 3.9); hd('OS', 4.4, 3.9);
+  zone('memory', 0, 0, 0, 13, 3.6, '#f1eadb');
+  hd('user program', -4.0, 3.9); hd('OS（常駐：resident monitor）', 4.4, 3.9);
   const pc = code(['i1: load', 'i2: add ', 'i3: mul ', 'i4: store'], -4.6, 3.1, 0.5, 0.2);
-  sayc('resident monitor 就是 memory', '左邊 user program、右邊 OS');
+  sayc('整塊是 memory', '左邊 user program、右邊常駐的 OS');
   await step(tok);                                   // 24:17 the user moves the mouse
   icon('🖱️', '動滑鼠', -6.3, 0.9, 1.4, 'sm');
   pc.hl(1);
@@ -5010,7 +5010,7 @@ FRAG.push(['osB-cso-busy', 'Busy waiting：一直等 buffer 有位置', async (t
   await step(tok);                                   // 6:43 p++, poke: write it into the buffer
   cd.hl(2); remove(str[0]);
   await fly(tok, 'pkt', 'H', V3(-6.4, 2.4, 1.2), V3(1.4, 0.6, 1.25), 600); R.buf.fill(1, COL.disk);
-  sayc('p++，再用 poke', '把值寫出去到 buffer');
+  sayc('用 poke 把字元寫到 buffer', '再 p++ 指向下一個字元');
   await step(tok);                                   // 6:55 actual writing is not all the time
   sayc('做 I/O 時', '真正在寫的時間只有一點點');
   await step(tok);                                   // 7:08 I/O takes, say, 10 ms…
@@ -5601,14 +5601,14 @@ FRAG.push(['osB-syscall-props', 'System call：OS 唯一的介面，software int
   const mb = bx('mode：user → kernel', COL.os, -4.4, 3.4, 0, 2.6, 0, 0.5, 0.8);
   sayc('call 了就一定進 kernel mode', '離開 user mode：只有 system call 有這特性');
   await step(tok);                                   // 3:08 written in assembly language to be fast
-  note('用 assembly language 寫 → 才夠快', 4.6, 3.4);
-  sayc('特性二：為了效能', '通常用 assembly language 寫');
+  note('入口那一小段用 assembly 寫（trap 指令）', 4.6, 3.4);
+  sayc('特性二：進 system call 的那一小段', '要用 assembly 寫（C 下不了 trap 指令）');
   await step(tok);                                   // 3:30 performance first; convenience is for upper layers
   good('效能優先，大家共用', 4.6, 4.0);
   sayc('OS 講求效能優先', '方便性交給上層（shell、API）');
   await step(tok);                                   // 3:48 that's why homework 1 edits a .S file
   sm('作業一要改的 .S 檔：定義 system call 的 interface', 0, -0.6, 1.0);
-  sayc('所以作業一有一個 .S 檔要改', '它就是 system call');
+  sayc('所以作業一有一個 .S 檔要改', '它就是 system call 的 assembly 入口');
   await step(tok);                                   // 4:06 but nobody writes assembly
   bad('可是大家都不會寫 assembly…', 0, -1.3, 1.0);
   sayc('可是 assembly 大家（老師也）不太會寫', '怎麼在上面寫 program？');
@@ -6067,8 +6067,8 @@ FRAG.push(['osB-layered', 'Layered OS：只能往下 call', async (tok) => {
   for (let i = 3; i > 0; i--) await fly(tok, 'pkt', 'pack', V3(-4.4, 0.32 + i * 0.7 + 0.4, 0.8), V3(-4.4, 0.32 + (i - 1) * 0.7 + 0.4, 0.8), 260);
   sayc('像網路 socket 那樣', '一層層 package、unpack，很多 memory copy');
   await step(tok);                                   // 10:45 early Linux was more like this
-  sm('早期 Linux 比較像 layered', 0, -0.5, 1.0);
-  sayc('這是傳統的 layer', '早期 Linux 比較像這樣');
+  sm('經典例子：THE 系統（課本把傳統 UNIX / Linux 歸為 monolithic）', 0, -0.5, 1.0);
+  sayc('這是傳統的 layer', '老師說早期 Linux 比較像這樣');
 }]);
 
 // 11:03 microkernel

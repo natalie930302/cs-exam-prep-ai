@@ -296,7 +296,7 @@
     "既然 preemptive 會在中途打斷，寫程式的人就得自己處理 synchronization，這很花時間、也很容易寫錯。",
     "更麻煩的是：被打斷的不只是使用者的程式，連 kernel（作業系統核心）自己的程式也是被排程的對象之一，也可能改到一半被打斷。",
     "解法一：kernel 程式裡，每次碰到共享的資料結構就自己加鎖（lock）、解鎖（unlock）。這可以解決，但 OS 會寫得很囉嗦、很複雜。",
-    "解法二（大部分 Linux 系統的作法）：執行 kernel 的程式時，把 timer 的 interrupt 關掉（disable）。timer 不響，就不會有人來打斷。",
+    "解法二（老師說的常見作法）：執行 kernel 的程式時，把 timer 的 interrupt 關掉（disable）。早期的 non-preemptive kernel 就是這個想法；Linux 2.6 之後的 kernel 改成可搶佔，只在持有 lock 等關鍵區段暫時關掉搶佔（見易錯點）。timer 不響，就不會有人來打斷。",
     "沒有 timer 打斷，kernel 跑的時候就沒有 time sharing，它會一口氣做完，對 kernel 來說排程等於變成 non-preemptive，自然不會有 synchronization 問題。",
     "所以一般作業系統的做法是：平常用 preemptive scheduler（效能好），但 kernel 在執行時不讓它被打斷，減少寫 kernel 的負擔。",
     "這也是為什麼 kernel 程式要寫得很精簡：如果寫得又臭又長，interrupt 就被關很久，其他事情都要等，整個系統的反應就會變慢。"
@@ -316,7 +316,7 @@
     },
     {
      "t": 1193,
-     "text": "解法二（Linux 常見作法）：執行 kernel 程式時把 timer interrupt disable，等於 kernel 變成 non-preemptive，一次做完。"
+     "text": "解法二（老師說的常見作法）：執行 kernel 程式時把 timer interrupt disable，等於 kernel 變成 non-preemptive，一次做完。"
     },
     {
      "t": 1254,
@@ -414,7 +414,7 @@
     "發生 deadlock"
    ],
    "ans": "preemptive scheduling",
-   "why": "16C：CPU burst 中途換人就是 preemptive。"
+   "why": "CPU burst 中途換人就是 preemptive；每段都是完整的 burst 才是 non-preemptive。"
   },
   {
    "q": "實際執行 context switch 的是？",
@@ -428,7 +428,7 @@
    "why": "scheduler 只決定選誰，dispatcher 負責換人。"
   },
   {
-   "q": "課堂提到 Linux 執行 kernel 程式時常用什麼方法避免 synchronization 問題？",
+   "q": "課堂提到：執行 kernel 程式時，常用什麼簡單方法避免被打斷造成的 synchronization 問題？",
    "opts": [
     "把 timer interrupt disable",
     "改用 FCFS",

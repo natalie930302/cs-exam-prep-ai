@@ -1,6 +1,6 @@
 // 計算機組織 第5章：記憶體層次與 Cache（locality、direct-mapped / set-associative / fully-associative、
 // tag/index/offset、LRU、write-through / write-back、AMAT、multi-level cache、3C）。
-// 本章的黃婷婷 22A–24B 講與 AMAT 影片目前都沒有逐字稿，場景全部依 Patterson & Hennessy（MIPS 版）第 5 章的例題重現。
+// 前段場景依 Patterson & Hennessy（MIPS 版）第 5 章的例題重現；黃婷婷 22A–24B 講與 AMAT 影片各有一組逐句同步的場景（mh-*，在檔案後段）。
 import kit from './_kit.js';
 
 export default function (ctx) {
@@ -464,7 +464,7 @@ export default function (ctx) {
     });
   }
 
-  // ───────────────────────── 場景（依 P&H 第 5 章例題；本章影片尚無逐字稿） ─────────────────────────
+  // ───────────────────────── 場景（依 P&H 第 5 章例題） ─────────────────────────
   async function scHierarchy(tok) {
     fresh([0, 4.5, 15], [0, 3.2, 0]);
     const LV = [['SRAM（cache）', '0.5–2.5 ns', '$500–1000/GiB', 2.2, '#2fc092'], ['DRAM（主記憶體）', '50–70 ns', '$10–20/GiB', 4.2, '#4b9ee2'], ['Flash', '5,000–50,000 ns', '$0.75–1/GiB', 6.2, '#9b7ef4'], ['Magnetic disk', '5–20 ms', '$0.05–0.1/GiB', 8.2, '#dd8238']];
@@ -664,11 +664,13 @@ export default function (ctx) {
     const buf = []; for (let k = 0; k < 4; k++) buf.push(cube('', '#efe6d6', [0.8, 0.5, 0.8], 0.2 + k * 0.9, 2.2, 0));
     tag('write buffer', 'ptr', 1.55, 1.3);
     await beat(tok, 2000);
-    let used = 0;
+    // the buffer is a FIFO: the memory always finishes the OLDEST store first, the rest move up one slot
+    const q = [];
+    const drawQ = () => buf.forEach((b, j) => { tint(b, j < q.length ? '#e55a9b' : '#efe6d6'); relabel(b, q[j] || ''); });
     for (let k = 0; k < 6; k++) {
-      if (used < 4) { tint(buf[used], '#e55a9b'); relabel(buf[used], 'w' + (k + 1)); used++; }
-      say('store w' + (k + 1) + '：放進 buffer，CPU 不等', 'buffer：' + used + ' / 4');
-      if (k % 2 === 1 && used) { await beat(tok, 500); used--; for (let j = 0; j < 4; j++) { tint(buf[j], j < used ? '#e55a9b' : '#efe6d6'); } glow(m, GOLD); say('記憶體寫完一筆，buffer 空出一格', ''); await beat(tok, 500); glow(m, null); }
+      if (q.length < 4) { q.push('w' + (k + 1)); drawQ(); }
+      say('store w' + (k + 1) + '：放進 buffer，CPU 不等', 'buffer：' + q.length + ' / 4');
+      if (k % 2 === 1 && q.length) { await beat(tok, 500); const done = q.shift(); drawQ(); glow(m, GOLD); say('記憶體寫完最早的 ' + done + '，buffer 空出一格', 'FIFO：先進先出'); await beat(tok, 500); glow(m, null); }
       await beat(tok, 700);
     }
     say('store 太密集、buffer 滿了 → 才需要 stall', 'buffer 只能平滑短時間的高峰');
@@ -3741,8 +3743,8 @@ scene('mh-24b-blockaddr', 'Byte address → block address：先去掉 block 內�
     cap('block 2 個 word、word 4 個 byte', '一個 block 8 個 byte，後面 3 個 bit 可以 ignore');
   },
   async (tok, S) => { // @130.0 ~八個byte嘛所以八個byte的話
-    S.by.forEach((m, a) => { tint(m, a < 8 ? NC.sky : NC.mint); relabel(m, b2(a, 4)); });
-    S.bl = [hd('block 0（???0 xxx）', -3.2, 6.05), hd('block 1', 3.2, 6.05)];
+    S.by.forEach((m, a) => { tint(m, a < 8 ? NC.sky : NC.mint); relabel(m, b2(a, 4)); if (m.userData.lbl) m.userData.lbl.element.style.fontSize = '9px'; }); // 4-digit names on narrow cells: all the same small size
+    S.bl = [hd('block 0（0xxx）', -3.2, 6.05), hd('block 1（1xxx）', 3.2, 6.05)];
     cap('8 個 byte 綁成一體', '這是第 0 個 block、第 1 個 block……後 3 個 bit 不理它');
   },
   async (tok, S) => { // @146.3 ~所以當你在做這個mapping的時候

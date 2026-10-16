@@ -53,7 +53,7 @@
     },
     {
      "t": 26,
-     "text": "上一講的 separate chaining（open hashing）每格掛 linked list，會長到比表的格數還多。"
+     "text": "上一講的 separate chaining（open hashing）每格掛 linked list，存的資料數可以比表的格數還多。"
     },
     {
      "t": 52,
@@ -329,7 +329,7 @@
     "壞消息是：找的時間會變長，可能要走好多格才遇到空格。",
     "這就叫 clustering problem。看剛才那張表：連續被佔的一大塊格子。",
     "[8]、[9]、[0]、[1]、[2] 連成一整塊，叫做 cluster。任何 key 只要 hash 到這一塊裡面，就得一路走到這塊的尾端才有空位；而新資料又會接在尾端，讓 cluster 越長越大。這叫 primary clustering（主要群聚）。",
-    "所以 linear probing 要求 load factor λ 小於 0.5：表至少一半是空的，cluster 才不容易變長。"
+    "所以老師說 load factor λ 最好小於 0.5：表至少一半是空的，cluster 才不容易變長。這是經驗值，linear probing 只要表沒滿就放得進去，只是 λ 越大越慢。"
    ],
    "points": [
     {
@@ -346,7 +346,7 @@
     },
     {
      "t": 793,
-     "text": "所以 λ 要小於 0.5。"
+     "text": "所以老師說 λ 最好小於 0.5（經驗值，不是硬性條件）。"
     }
    ]
   },

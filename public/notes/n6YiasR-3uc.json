@@ -217,7 +217,7 @@
    "why": "all or nothing：不會一邊握著一邊等。代價是資源利用率低。"
   },
   {
-   "q": "CPU 用 context switch 避免 deadlock，破壞的是哪個條件？",
+   "q": "CPU 可以靠 context switch 被搶走（存好 state 再換人），這破壞了 deadlock 的哪個條件？",
    "opts": [
     "no preemption",
     "mutual exclusion",

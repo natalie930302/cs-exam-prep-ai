@@ -118,7 +118,7 @@
     },
     {
      "t": 581,
-     "text": "缺點：layer 很難定義；效能較差（一層層 call、package / unpack、memory copy）；早期 Linux 較像這樣。"
+     "text": "缺點：layer 很難定義；效能較差（一層層 call、package / unpack、memory copy）。"
     }
    ],
    "scene": "osB-layered",
@@ -156,7 +156,7 @@
     "缺點一：怎麼定義 layer 很 arbitrary（主觀），有時根本切不好；像剛說的 I/O 和 memory 會互相 call，切不好效能就會很差。",
     "缺點二：效能比較差，因為要一層一層往下 call。",
     "就像網路的 socket programming：好幾層，一層一層 package、unpack，會有很多 memory copy、一大堆 function call，沒辦法直接跳到某一層。",
-    "這就是傳統的 layer 架構，知道「切 layer」的概念就好。早期的 Linux 比較像這樣。"
+    "這就是傳統的 layer 架構，知道「切 layer」的概念就好。老師說早期 Linux 比較像這樣；課本則把傳統 UNIX / Linux 歸為 monolithic（整塊 kernel）架構，分層的經典例子是 THE 系統。"
    ]
   },
   {

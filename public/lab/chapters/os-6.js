@@ -1,7 +1,7 @@
 // 作業系統 第6章：死鎖 Deadlock（四個必要條件、Resource-allocation graph、prevention、Banker's algorithm、detection、recovery）。
 // Chapter module for lab-shell.js — see the contract at the top of lab-shell.js.
-// Banker 例題取自 Gate Smashers「Banker Algorithm」影片（P1–P5，即恐龍書 P0–P4 的同一題）；
-// 清大周志遠 22A–22D 講尚未轉錄，其餘內容以恐龍書補上。
+// 模式與補充場景的 Banker 例題取自 Gate Smashers「Banker Algorithm」影片（P1–P5；跟恐龍書 P0–P4 那題只差 P4、P5 的 Max）；
+// 清大周志遠 22A–22D 講的場景在下方 FRAG（用恐龍書原題）。
 import kit from './_kit.js';
 
 export default function (ctx) {
@@ -62,7 +62,7 @@ export default function (ctx) {
   const sub = (a, b) => a.map((x, k) => x - b[k]);
 
   // ───────────────────────── Banker 演算法核心 ─────────────────────────
-  // 影片例子（P1–P5，A/B/C 共 10/5/7）＝恐龍書 P0–P4 的經典題
+  // 影片例子（P1–P5，A/B/C 共 10/5/7）：仿恐龍書 P0–P4 的經典題，但 P4、P5 的 Max 不同
   const VIDEO = {
     names: ['P1', 'P2', 'P3', 'P4', 'P5'], res: ['A', 'B', 'C'], total: [10, 5, 7],
     alloc: [[0, 1, 0], [2, 0, 0], [3, 0, 2], [2, 1, 1], [0, 0, 2]],
@@ -352,7 +352,7 @@ export default function (ctx) {
         setState('Resource-request：' + S.names[i] + ' 要 ' + vec(R), [['Request ≤ Need', '✓'], ['Request ≤ Available', '✓'], ['假設配給後', r.safe ? 'safe' : 'unsafe']], r.safe ? '<span class="ok">配給</span>' : '<span class="no">不配給，等待</span>');
       } finally { busy = false; }
     });
-    log('課本三題：P2 要 (1,0,2) → 給；接著 P5 要 (3,3,0) → 不夠；P1 要 (0,2,0) → unsafe 不給。（影片 P1–P5 = 課本 P0–P4）');
+    log('仿課本三題：P2 要 (1,0,2) → 給；接著 P5 要 (3,3,0) → 不夠；P1 要 (0,2,0) → unsafe 不給。（這裡用影片 P1–P5 的數字；跟課本 P0–P4 那題只差 P4、P5 的 Max）');
     setState('Resource-request algorithm', [['Available', vec(av)]], '① Request ≤ Need？② Request ≤ Available？③ 假裝配給 ④ safety 檢查');
   }
 
@@ -681,7 +681,7 @@ export default function (ctx) {
     say('Max：最多需要多少。P3 是 (9, 0, 2)', '「給我這麼多，我就能做完並結束」');
     await beat(tok, 3000);
     B.clearHl();
-    say('影片的 P1–P5 就是課本的 P0–P4', '同一題，只差編號');
+    say('影片的 P1–P5 很像課本 P0–P4 那題', '但 P4、P5 的 Max 不同（課本 P3 (2,2,2)、P4 (4,3,3)），答案也不同');
     await beat(tok, 2800);
   }
   async function scBankerAvailable(tok) {
@@ -764,7 +764,7 @@ export default function (ctx) {
   async function scBankerRequest(tok) {
     fresh([0, 3.2, 14], [0, 2.4, 0]);
     const S = cloneS(VIDEO);
-    say('Resource-request（補充：課本）：P2 請求 (1, 0, 2)', '課本是 P1，同一題');
+    say('Resource-request（補充：課本）：P2 請求 (1, 0, 2)', '課本是 P1 提出同一個 request；這裡用影片的數字');
     let B = board(S); B.pushWork(avail0(S), 'Available');
     B.hlRow('Need', 1, GOLD);
     await beat(tok, 3000);

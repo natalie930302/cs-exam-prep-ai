@@ -396,7 +396,7 @@
    "points": [
     {
      "t": 1420,
-     "text": "流程圖：resident monitor（memory）裡有 user program 與 OS。"
+     "text": "流程圖：memory 裡有 user program 與 OS（常駐 memory 的 OS 部分舊稱 resident monitor）。"
     },
     {
      "t": 1457,
@@ -448,7 +448,7 @@
    ],
    "explain": [
     "接著仔細看處理流程，也會看到 hardware 和 software 在處理上的不同。",
-    "圖中整塊是 memory（老師說 resident monitor 是它的別名）。左邊放使用者的程式，右邊是 OS 的一大堆程式碼。",
+    "圖中整塊是 memory。左邊放使用者的程式，右邊是 OS 的一大堆程式碼（老師把整塊說成 resident monitor；課本的 resident monitor 指的是常駐在 memory 裡的那部分 OS，不是 memory 的別名）。",
     "hardware interrupt 是被動的：例如你的程式正在跑，使用者突然動了一下滑鼠，碰到了 device。",
     "這時不管程式執行到哪一行，都會被打斷：任何兩行指令之間都有可能。",
     "偵測到這個 hardware signal 的是硬體（主機板），跟軟體無關。",

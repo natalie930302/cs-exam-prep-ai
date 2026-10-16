@@ -663,7 +663,7 @@
     "所以可以有巢狀的 generator：外層呼叫 next，會觸發內層 next，形成一整串動作。畫面用 evens(fib()) 示範：內層產生 Fibonacci 數，外層只交出偶數。",
     "generator 回傳的是 iterator；不同的是，呼叫 next 時它會解凍那段程式、讓它往下跑。",
     "iterator 本身很單純：只要有 next 和 iter 這兩個方法，就是 iterator。",
-    "generator 則是 Python 的魔法，讓你用更短的程式（3 行對 13 行）寫出 iterator，而且只用常數記憶體。",
+    "generator 則是 Python 的魔法，讓你用更短的程式（3 行對 12 行）寫出 iterator，而且只用常數記憶體。",
     "同學問：怎麼知道 iterator 裡有幾個東西？答案是不知道，iterator 沒有 len，只能一路走訪。",
     "而且有些 iterator 永遠不會結束，例如從網路一直傳來的資料。",
     "又例如 Fibonacci 數列，它是無限序列，len 根本沒有定義。",
@@ -703,7 +703,7 @@
      "t": 2433
     }
    ],
-   "trap": "補充：畫面的 GATTACA / TACAGAT、k = 3 是示範序列。",
+   "trap": "補充：畫面的 GATTACA / TACAGATAC、k = 3 是示範序列。",
    "cues": [
     2268,
     2283.8,

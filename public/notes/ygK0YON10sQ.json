@@ -31,7 +31,7 @@
      "t": 70.47
     },
     {
-     "text": "Code 放指令；Stack 放函式的變數（data）；Heap 給動態配置；另有一小塊（屬於 code）放 global／static 變數。",
+     "text": "Code 放指令；Stack 放函式的變數（data）；Heap 給動態配置；另有一小塊放 global／static 變數（老師畫在 Code 區；教科書稱 data segment，和放指令的 text 區分開）。",
      "t": 93.16
     },
     {
@@ -75,7 +75,7 @@
     "[[程式碼區]]（Code）：放程式的指令。",
     "[[stack]]：放[[函式]]的變數，也就是 data。",
     "[[heap]]：給動態配置記憶體用（執行時才向它要）。",
-    "另外還有一小塊（其實屬於 Code 區）放 global（全域）和 static（靜態）變數。",
+    "另外還有一小塊放 global（全域）和 static（靜態）變數。老師把它畫在 Code 區裡；教科書通常叫它 data segment（資料區），和放指令的 text 區分開。",
     "執行程式時，程式的機器碼被載入 Code 區。",
     "main 的變數 x 在 stack 上配置空間。",
     "stack 上屬於 main 的這一塊，叫 main 的 [[activation record]]。",

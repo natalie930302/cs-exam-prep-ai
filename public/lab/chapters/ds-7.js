@@ -169,9 +169,11 @@ export default function (ctx) {
   // ───────────────────────── 表示法：Matrix ↔ List 同步 ─────────────────────────
   const rep = { V: 6, directed: false, letters: false, view: 'adj', M: [], order: [], verts: [], edgeG: [], panel: null, cells: [], lists: [], heads: [], arrows: [], busy: false, sideTitle: null };
   const REP_DEF = { u: [[0, 1], [0, 2], [1, 3], [2, 3], [3, 4], [4, 5]], d: [[0, 1], [1, 2], [2, 0], [2, 3], [3, 4], [5, 4]] };
-  const RC = 0.56;
+  // cell pitch grows for small graphs, so the 0/1 labels stay on their own row on the small stage
+  // (at 0.56 the stage's label de-overlap pushed them down a row, under the wrong row name)
+  const rcOf = () => (rep.V <= 3 ? 0.95 : rep.V <= 4 ? 0.75 : 0.56);
   const vn = (i) => (rep.letters ? 'ABCDEF'[i] : String(i));
-  const rowZ = (i) => (i - (rep.V - 1) / 2) * RC + 0.3;
+  const rowZ = (i) => (i - (rep.V - 1) / 2) * rcOf() + 0.3;
   const listPos = (i, t) => V3(2.85 + 0.78 * t, 0.2, rowZ(i)); // t = 0 是 head
   const repVPos = (i) => { const [x, z] = ringXY(rep.V, rep.V <= 3 ? 1.6 : 2.1)[i]; return V3(x - 4.5, 0.3, z + 0.3); };
   const eName = (u, v) => (rep.directed ? '⟨' + vn(u) + ',' + vn(v) + '⟩' : '(' + vn(u) + ',' + vn(v) + ')');
@@ -315,6 +317,7 @@ export default function (ctx) {
     rep.panel = g; rep.cells = [];
     const inc = rep.view === 'inc';
     const cols = inc ? rep.order.length : rep.V;
+    const RC = rcOf();
     const cw = inc ? Math.min(RC, 3.4 / Math.max(1, cols)) : RC;
     const x0 = -0.95;
     const cellAt = (i, j) => V3(x0 + j * cw, 0.05, rowZ(i));
@@ -327,23 +330,24 @@ export default function (ctx) {
           if (rep.directed) val = i === a ? -1 : i === b ? 1 : 0;
           else val = i === a || i === b ? 1 : 0;
         } else val = rep.M[i][j];
-        const m = lab.box(val === 1 ? COL.one : val === -1 ? COL.neg : (!inc && i === j) ? COL.diag : COL.zero, [cw - 0.06, 0.1, 0.5]);
+        const m = lab.box(val === 1 ? COL.one : val === -1 ? COL.neg : (!inc && i === j) ? COL.diag : COL.zero, [cw - 0.06, 0.1, Math.min(0.8, RC - 0.06)]);
         const p = cellAt(i, j);
         if (val) { m.scale.y = 3; p.y = 0.15; }
         m.position.copy(p);
-        const l = lab.label(val === -1 ? '−1' : String(val), 'idx'); l.position.set(0, 0.12, 0); m.add(l);
+        // values are 'val' chips: the stage keeps them on their cell (an 'idx' label got pushed a row down)
+        const l = lab.label(val === -1 ? '−1' : String(val), 'val'); l.position.set(0, 0.12, 0); m.add(l);
         const isHot = hl && (inc ? j === rep.order.length - 1 && val !== 0
           : (i === hl[0] && j === hl[1]) || (!rep.directed && i === hl[1] && j === hl[0]));
         if (isHot) glow(m, '#6a4a00');
         g.add(m); rep.cells[i].push(m);
       }
-      const rl = lab.label(vn(i), 'idx'); rl.position.copy(cellAt(i, 0)).add(V3(-0.5, 0, 0)); g.add(rl);
+      const rl = lab.label(vn(i), 'idx'); rl.position.copy(cellAt(i, 0)).add(V3(-(cw * 0.5 + 0.3), 0, 0)); g.add(rl);
     }
     for (let j = 0; j < cols; j++) {
-      const cl = lab.label(inc ? 'e' + (j + 1) : vn(j), 'idx'); cl.position.copy(cellAt(0, j)).add(V3(0, 0, -0.5)); g.add(cl);
+      const cl = lab.label(inc ? 'e' + (j + 1) : vn(j), 'idx'); cl.position.copy(cellAt(0, j)).add(V3(0, 0, -(RC * 0.5 + 0.3))); g.add(cl);
     }
     rep.sideTitle.element.textContent = inc ? 'Incidence Matrix' : 'Adjacency Matrix';
-    rep.sideTitle.position.copy(cellAt(0, Math.max(0, (cols - 1) / 2))).add(V3(0, 0, -0.95));
+    rep.sideTitle.position.copy(cellAt(0, Math.max(0, (cols - 1) / 2))).add(V3(0, 0, -(RC * 0.5 + 0.8)));
     if (inc && !cols) rep.sideTitle.element.textContent = 'Incidence Matrix（還沒有邊）';
     lab.world.add(g);
   }
@@ -1218,7 +1222,7 @@ function gbLayout(order, par) {
 function gbArc(a, b, color = '#d64545') {
   const T = ctx.THREE, p = V3(a[0], a[1], GB_TZ), q = V3(b[0], b[1], GB_TZ);
   const mid = p.clone().add(q).multiplyScalar(0.5), d = q.clone().sub(p);
-  mid.add(V3(-d.y, d.x, 0).normalize().multiplyScalar(0.45));
+  mid.add(V3(-d.y, d.x, 0).normalize().multiplyScalar(0.35 + 0.3 * d.length())); // longer spans bend wider, clear of the nodes in between
   const geo = new T.BufferGeometry().setFromPoints(new T.QuadraticBezierCurve3(p, mid, q).getPoints(16));
   const l = new T.Line(geo, new T.LineDashedMaterial({ color, dashSize: 0.14, gapSize: 0.1 }));
   l.computeLineDistances(); lab.world.add(l); return l;
@@ -1333,7 +1337,7 @@ FRAG.push(['graphbari-small-bfs', '小例子 BFS：1 2 4 5 7 3 6', async (tok) =
   const r = await gbRun(tok, G, { kind: 'bfs', s: 1, pref: { 1: [2, 4, 5], 2: [7, 3, 6] }, gap: 450, at: {
     0: [() => { glow(G.vs[1], GOLD); n1 = gbNote(G, 1, '起點：任選，這裡選 1'); say('BFS：起點可以任選', '這裡選 1'); }, () => { remove(n1); glow(G.vs[1], null); }],
     1: [null],
-    2: [() => { n2 = tag('2、4、5 誰先？順序任意', 'note', -3.6, 1.6, 1.2); say('1 的鄰居：5、4、2', '拜訪的順序可以任意'); }, () => remove(n2)],
+    2: [() => { n2 = tag('2、4、5 誰先？順序任意', 'note', -3.6, 1.6, 1.2); say('1 的鄰居：2、4、5', '拜訪的順序可以任意'); }, () => remove(n2)],
     6: [() => { n2 = tag('下一個要探索的點？已拜訪：1 2 4 5', 'note', 2.6, 1.6, -1.4); say('1 探索完，挑下一個要探索的點'); }, () => remove(n2)],
     7: [null],
     11: [null],
@@ -1636,7 +1640,7 @@ FRAG.push(['graphpeng-konigsberg', '七橋問題：degree 全是奇數', async (
   for (const [, u, v, off] of br) E.push(gpE(V[u], V[v], { off, gap: 0.6, color: '#8a5a2a' }));
   say('歐洲小鎮 Königsberg：河上有七座橋');
   await step(tok);                                   // 0:39 the land is marked with points
-  for (const n of Object.keys(P)) relabel(V[n], n);
+  for (const n of Object.keys(P)) { const l = ctx.lab.label(n, 'val'); V[n].userData.lbl = l; V[n].add(l); } // the blocks were created unlabelled
   say('每塊陸地標上一個點：A、B、C、D');
   await step(tok);                                   // 0:52 A is an island
   glow(V.A, GOLD);
@@ -1964,7 +1968,7 @@ FRAG.push(['graphpeng-path', 'Path、simple path、cycle、DAG', async (tok) => 
   await step(tok);                                   // 28:56 a graph without cycles: DAG
   gpGraph({ a: [3.6, 1.8], b: [5.6, 3.0], c: [3.6, 3.8] }, [['a', 'b'], ['b', 'c'], ['a', 'c']], { dir: true, dropH: 3, color: '#dd8238', size: [0.6, 0.45, 0.6], gap: 0.4 });
   tag('DAG', 'ptr', 5.8, 0.3, 4.2);
-  say('沒有 cycle 的 graph 常叫 DAG');
+  say('沒有 cycle 的有向圖叫 DAG', '右下角：a→b→c、a→c，繞不回起點');
   await step(tok);                                   // 29:18 DAG: directed, no cycle
   tag('directed acyclic graph', 'good', 4.6, 1.2, 2.6);
   say('DAG = directed acyclic graph', '有方向、沒有 cycle');
@@ -2016,7 +2020,7 @@ FRAG.push(['graphpeng-complete-count', 'Complete graph 有幾條邊', async (tok
     await anim(tok, 300, () => {});
   }
   tag('directed：n(n−1)', 'good', 3.8, 1.0, 3.8);
-  say('它到它、它到它不一樣 → 乘 2', 'n(n−1) = 4·3 = 12 條');
+  say('u→v 和 v→u 是兩條不同的邊 → 乘 2', 'n(n−1) = 4·3 = 12 條');
 }]);
 
 // 31:34 subgraph：(i)–(iv) 都是 G1 的 subgraph（子圖依影片口述重畫）
@@ -2739,7 +2743,7 @@ FRAG.push(['graphpeng-network', 'Network：有權重的 graph', async (tok) => {
   kill(E.SA);
   const e1 = gpE(V.S, V.A, { dir: true, off: 0.18, color: GPC.hot }), e2 = gpE(V.A, V.S, { dir: true, off: 0.18, color: GPC.hot });
   const c = await gpWalk(tok, '車', V.S, V.A, 600); txt(c, '車'); await travel(tok, c, c.position.clone(), V3(-5.4, 1.1, 0), 600); remove(c);
-  say('道路有雙向：去也過、回也過', 'road network 是 directed graph');
+  say('道路有單行道、也有雙向道', 'road network 是 directed graph：雙向道 = 兩條反向的邊');
   await step(tok);                                   // 28:03 the cost of a segment = its real distance
   for (const [u, v, w] of W) txt(Lb[u + v], w + ' km');
   say('路段的 cost = 實際的距離（physical distance）', '數字為示意');

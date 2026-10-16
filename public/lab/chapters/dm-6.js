@@ -526,7 +526,7 @@ export default function (ctx) {
     }
     if (t === 6) {
       const n = 3 + rnd(5), ans = catalan(n);
-      return { q: '從 (0,0) 走到 (' + n + ',' + n + ')，每步往東或往北，且不可走到 y = x 上方，有幾條路徑？', opts: uniq(ans, [Cb(2 * n, n), Cb(2 * n, n + 1), Cb(2 * n, n) / n]), ans: String(ans), why: 'Catalan 數 C' + n + ' = C(' + 2 * n + ',' + n + ')/(' + (n + 1) + ') = ' + ans + '；壞路徑反射後對應到 (' + (n - 1) + ',' + (n + 1) + ')，有 C(' + 2 * n + ',' + (n + 1) + ') 條。' };
+      return { q: '從 (0,0) 走到 (' + n + ',' + n + ')，每步往東或往北，且不可走到 y = x 上方，有幾條路徑？', opts: uniq(ans, [Cb(2 * n, n), Cb(2 * n, n + 1), Cb(2 * n, n) / 2]), ans: String(ans), why: 'Catalan 數 C' + n + ' = C(' + 2 * n + ',' + n + ')/(' + (n + 1) + ') = ' + ans + '；壞路徑反射後對應到 (' + (n - 1) + ',' + (n + 1) + ')，有 C(' + 2 * n + ',' + (n + 1) + ') 條。' };
     }
     if (t === 7) {
       const n = 3 + rnd(4), k = 2 + rnd(2);
@@ -1958,7 +1958,7 @@ scene('acA-17-nh2', 'Lec17：二階非齊次，A = 4、B = 57/4', [
   async (tok, S) => { // 1863.0
     gone(S.n1, S.n2);
     S.R = card('aₙ = 7aₙ₋₁ − 10aₙ₋₂ + 16n + 5', C.sky, 0, 5.2, 6.0); lit(S.R);
-    sm('（尾巴依老師算出的 A = 4、B = 57/4 對回去）', 0, 4.6);
+    sm('（尾巴 16n + 5：代回去正好得到老師算的 A = 4、B = 57/4）', 0, 4.6);
     cap('再講一次：aₙ⁽ʰ⁾ 齊次、aₙ⁽ᵖ⁾ 特殊', 'p 是 particular');
   },
   async (tok, S) => { // 1876.0

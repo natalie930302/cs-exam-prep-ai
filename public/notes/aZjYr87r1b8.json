@@ -216,7 +216,7 @@
      "t": 695
     },
     {
-     "text": "100 / 32 ≈ 3.x，所以 index 要 4 個 block。",
+     "text": "100 / 32 = 3.125，所以 index 要 4 個 block。",
      "t": 715.83
     },
     {
@@ -252,7 +252,7 @@
     "index 會佔多大？先算一個 entry 多大：employee ID 是 10 bytes。",
     "record pointer 假設佔 6 bytes，所以一個 entry = 10 + 6 = 16 bytes。100 筆 record 就有 100 個 entry。",
     "一個 block 512 bytes ÷ 每個 entry 16 bytes = 32，一個 block 能放 32 個 entry。",
-    "100 個 entry ÷ 32 ≈ 3.2，三個 block 放不下。",
+    "100 個 entry ÷ 32 = 3.125（老師說約 3.2），三個 block 放不下。",
     "block 只能整個整個用，所以進位成 4 個 block。index 只要 4 個 block，比整張表的 25 個小很多。",
     "查詢時先在 index 裡找 key，最多讀 4 個 index block 就一定找得到。",
     "找到那個 entry 後，用它的 record pointer 直接去讀資料所在的那 1 個 block。",
@@ -567,7 +567,7 @@
      "t": 1641.97
     },
     {
-     "text": "規則一：每個 node 至少要有 ⌈m/2⌉ 個 child（取 ceiling）。",
+     "text": "規則一：每個非 root 的 internal node 至少要有 ⌈m/2⌉ 個 child（取 ceiling）。",
      "t": 1663.37
     },
     {
@@ -600,7 +600,7 @@
    ],
    "explain": [
     "B-tree 就是「加上規則的 m-way search tree」。來看有哪些規則（右邊這棵 degree 4 的樹符合全部規則）。",
-    "規則一：每個 node 至少要填一半——degree 是 m，就至少要有 ⌈m/2⌉ 個 child。",
+    "規則一：每個 node 至少要填一半——degree 是 m，非 root 的 internal node 就至少要有 ⌈m/2⌉ 個 child。",
     "m/2 要取 ceiling（無條件進位），不是 floor（無條件捨去）。例如 ⌈5/2⌉ = 3。",
     "例如 degree 10：每個非 root 的 internal node 隨時都要至少有 5 個 child（至少半滿）。老師說成「先有 5 個 child 才能開新的 node」，這不是建立的順序，而是每個 node 都要遵守的下限；leaf 沒有 child，不受這條限制。",
     "規則二：這條「至少一半」能套在 root 上嗎？不行，否則第一個 key 插進去時 root 只有 1 個 key，就違規了。",
@@ -955,7 +955,7 @@
   {
    "q": "下列何者不是 B-tree 的規則？",
    "opts": [
-    "非 root node 至少 ⌈m/2⌉ 個 child",
+    "非 root 的 internal node 至少 ⌈m/2⌉ 個 child",
     "root 至少 2 個 child（除非它是 leaf）",
     "所有 leaf 在同一層",
     "每個 node 都必須剛好 m − 1 個 key"

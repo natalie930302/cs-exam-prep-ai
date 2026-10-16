@@ -234,7 +234,7 @@
      "t": 807
     },
     {
-     "text": "Complete binary tree 的高度最小，等於 log n：一層沒填滿不會往下一層長。",
+     "text": "Complete binary tree 的高度最小，等於 ⌊log₂ n⌋：一層沒填滿不會往下一層長。",
      "t": 822
     }
    ],
@@ -641,7 +641,7 @@
     "Max Heap 建好了：40, 30, 15, 10, 20。每個元素都是先放在下一個空位，再往上調。",
     "時間：n 個元素，每個最多往上爬樹高 log n，所以建 Heap 是 O(n log n)。"
    ],
-   "trap": "老師在 30:50–41:20 說 heap sort 的第一步是「一個一個插入建 heap」（O(n log n)），但正確是課本的 heap sort 用 adjust 由下往上建 heap（heapify，O(n)），兩種建法得到的 heap 可能不同；題目寫 heap sort 或 bottom-up 時要用 heapify 的結果手算（課本：Horowitz 7.6 heap sort）。"
+   "trap": "老師在 30:50–41:20 示範的第一步是「一個一個 insert 建 heap」（O(n log n)），這樣做也對，只是比較慢。課本（Horowitz 7.6）的 heap sort 是用 adjust 由下往上建 heap（heapify，O(n)）；兩種建法得到的 heap 可能不同，題目寫 heap sort 或 bottom-up 時要用 heapify 的結果手算。"
   },
   {
    "title": "Heap sort 第二步：全部 delete",

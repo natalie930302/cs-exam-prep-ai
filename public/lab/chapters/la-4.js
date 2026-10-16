@@ -454,10 +454,10 @@ export default function (ctx) {
       const w = dep ? addv(scl(u, a), scl(v, b)) : [ri(-3, 3), ri(-3, 3), ri(-3, 3)];
       const r = rrefSteps(T([u, v, w])).rank;
       const ans = r === 3 ? '線性獨立，span = R³' : r === 2 ? '相依，span 是平面' : '相依，span 是直線';
-      return { q: 'u = ' + vstr(u) + '、v = ' + vstr(v) + '、w = ' + vstr(w) + '：', opts: ['線性獨立，span = R³', '相依，span 是平面', '相依，span 是直線', '線性獨立，span 是平面'], ans, why: '把三個向量排成矩陣算 rank = ' + r + (dep ? '；w = ' + a + 'u + ' + b + 'v。' : '。') };
+      return { q: 'u = ' + vstr(u) + '、v = ' + vstr(v) + '、w = ' + vstr(w) + '：', opts: ['線性獨立，span = R³', '相依，span 是平面', '相依，span 是直線', '線性獨立，span 是平面'], ans, why: '把三個向量排成矩陣算 rank = ' + r + (dep ? '；w = ' + (a === 1 ? '' : a === -1 ? '−' : String(a).replace('-', '−')) + 'u ' + (b < 0 ? '− ' : '+ ') + (Math.abs(b) === 1 ? '' : Math.abs(b)) + 'v。' : '。') };
     }
     if (k < 0.6) {
-      const n = ri(4, 9), mm = ri(Math.max(3, n - 3), n + 4);
+      const n = ri(4, 9), mm = ri(n, n + 4); // 連通圖至少要 n − 1 條邊；取 m ≥ n 讓迴圈數 ≥ 1
       const ans = String(mm - n + 1);
       return { q: '一個連通圖有 ' + n + ' 個節點、' + mm + ' 條邊。incidence matrix 的 dim N(Aᵀ)（獨立迴圈數）= ？', opts: [...new Set([ans, String(mm - n), String(mm - n + 2), String(n - 1)])], ans, why: 'rank = n − 1 = ' + (n - 1) + '（N(A) 只有常數向量）；dim N(Aᵀ) = m − r = ' + mm + ' − ' + (n - 1) + ' = ' + ans + '。也就是 Euler：節點 − 邊 + 迴圈 = 1。' };
     }

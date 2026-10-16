@@ -1956,7 +1956,7 @@ function qG(n, dx = 2.6, maxBit = n) {
 function qBit(tok, G, n, bit) { const D = qn(n); return D.edges.filter(([u, v]) => Math.log2(u ^ v) === bit).map(([u, v]) => addEdge(G, u, v, 0, COL.gold)); }
 scene('gr-l23-qn', 'n-cube Qₙ：遞迴定義與邊數', [
   async (tok, S) => { S.B = board(-6.8, 5.0, 0.5, -2.6, 7); S.B.add('Qₙ：遞迴定義'); cap('cube 是遞迴式的定義', ''); },
-  async (tok, S) => { S.G = qG(3, 2.6, 2); cap('Q₃ 是兩個 Q₂', '前面一個、後面一個'); },
+  async (tok, S) => { S.G = qG(3, 2.6, 2); cap('Q₃ 是兩個 Q₂', '一份在上、一份在下'); },
   async (tok, S) => { for (const e of qBit(tok, S.G, 3, 2)) { await wt(tok, 120); } S.B.add('Q₃ = 兩個 Q₂ + 對應點連邊'); cap('相對應的節點之間', '各連上一條邊 → Q₃'); },
   async (tok, S) => { gkill(S.G); S.G = qG(4, 2.6, 3); S.B.add('Q₄：Q₃ 複製兩份'); cap('Q₄ 從 Q₃ 來', '把它複製兩份'); },
   async (tok, S) => { for (const e of qBit(tok, S.G, 4, 3)) { await wt(tok, 80); } cap('同樣位置的節點兩兩連上一條邊', '這就是 Q₄'); },
@@ -2060,7 +2060,7 @@ scene('gr-l23-mat', 'Adjacency matrix、incidence matrix、Aᵏ 數路徑', [
   async (tok, S) => { S.B.add('布林運算（1+1=1）：有沒有長度 3 的路'); cap('用布林代數 1 + 1 = 1', 'A³ 某格是 1 ⇔ 有長度 3 的 walk'); },
   async (tok, S) => { S.A3 = matMul(matMul(S.A, S.A), S.A); S.B.add('一般加法：A³ 的數字 = 長度 3 的 walk 條數', 'good'); cap('用一般加法 1 + 1 = 2', 'A³ 的數字 = 長度 3 的 walk 有幾條'); },
   async (tok, S) => {
-    const n = S.A3[0][2]; T('A³[A][C] = ' + n, 'good', 3.0, 3.2, -2.4);
+    const n = S.A3[0][2]; T('A³[A][C] = ' + n, 'good', 6.4, 3.2, -2.4);
     const ws = []; const ix = (c) => 'ABCDEF'.indexOf(c);
     for (const x of 'ABCDEF') for (const y of 'ABCDEF') if (S.A[0][ix(x)] && S.A[ix(x)][ix(y)] && S.A[ix(y)][2]) ws.push('A' + x + y + 'C');
     T(ws.join('、'), 'say', 3.0, 2.6, -2.4); cap('例：A 到 C 長度 3 的 walk 有 ' + n + ' 條（示意圖）', 'A⁴ 就是長度 4 的條數');

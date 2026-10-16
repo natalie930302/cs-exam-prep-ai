@@ -1026,7 +1026,7 @@ FRAG.push(['arrlin-op-overload', 'Operator Overloading', async (tok) => {
   say('如果 a、b、c 是剛才定義的複數呢？', '（數值為示意）');
   await step(tok);                                   // 38:38 C 只能寫 c = plus(a, b)
   txt(st, 'C：c = plus(a, b);');
-  const cd = code(['Complex plus(Complex a, Complex b) {', '  c.real = a.real + b.real;', '  c.imag = a.imag + b.imag;', '}'], 0, 7.0, 0.5, -2.6);
+  const cd = code(['Complex plus(Complex a, Complex b) {', '  Complex c;  c.real = a.real + b.real;', '  c.imag = a.imag + b.imag;  return c;', '}'], 0, 7.0, 0.5, -2.6);
   cd.hl(0);
   say('在 C 只能寫 c = plus(a, b)', '要另外寫一個函式');
   await step(tok);                                   // 38:50 實數加實數、虛數加虛數
@@ -6399,10 +6399,10 @@ async function scHeap2D(tok) {
   const lv = tag('2D 陣列要用哪種指標？', 'ptr alt', -3, 6.4, 0);
   await step(tok);                                   // 4:02 1D single pointer, 2D double pointer
   txt(lv, '1D → *p　　2D → **p');
-  say('一維用單指標，二維要用 double pointer');
+  say('老師：一維用單指標，二維用 double pointer（**p）', '小心：宣告的 int a[3][4]，a 是 int (*)[4]，不是 int **');
   await step(tok);                                   // 4:28 3D triple; as many levels as dimensions
-  txt(lv, '1D → *　2D → **　3D → ***');
-  say('三維用 triple pointer', '幾維就要幾層指標');
+  txt(lv, '1D → *　2D → **　3D → ***（僅限動態建法）');
+  say('三維用 triple pointer', '「幾維就幾層指標」只對下面這種動態建法成立');
   await step(tok);                                   // 4:42 create the 2D array in heap
   kill(lv);
   const cd = code(['int **p;', 'p = new int*[3];', 'p[0] = new int[4];', 'p[1] = new int[4];', 'p[2] = new int[4];'], 4.6, 6.6, 0.5);
@@ -7660,7 +7660,7 @@ FRAG.push(['contlin-deque-blocks', '把小 array 用 linked list 串起來', asy
     arrow(V3(bx[b] + 1.85, 0.55, 0), V3(bx[b + 1] - 1.85, 0.55, 0));
     arrow(V3(bx[b + 1] - 1.85, 0.2, 0), V3(bx[b] + 1.85, 0.2, 0), A_GOLD);
   }
-  say('C++ STL 的 deque 正是這樣', '一堆小 array 用 linked list 連在一起');
+  say('C++ STL 的 deque 就是一堆小 array', '老師說用 linked list 串；實際 STL 用指標陣列（map）記每塊');
   await step(tok);                                   // 116:33 memory 集中：cache 效率好
   blocks.forEach((bl) => bl.forEach((m) => glow(m, GOLD)));
   say('每塊小 array 的記憶體是集中的', 'cache efficiency 比較好');
@@ -7670,7 +7670,7 @@ FRAG.push(['contlin-deque-blocks', '把小 array 用 linked list 串起來', asy
   await step(tok);                                   // 116:50 index access 沒那麼快
   cur = tag('block', 'ptr alt', bx[0], 1.8, 0);
   for (let b = 0; b < 3; b++) { cur.position.x = bx[b]; await beat(tok, 500); }
-  say('要第 9 個：先一塊一塊走過去', '跨 block 時 random access 就沒那麼快');
+  say('用 linked list 串的話，要第 9 個得一塊一塊走', 'STL 用指標陣列，第幾塊可直接算 → 仍 O(1)');
   await step(tok);                                   // 116:59 自己範圍內 random access 快
   glow(blocks[2][1], GOLD);
   say('在一塊之內，random access 是快的', '9 = 第 2 塊的第 1 格');
@@ -8152,7 +8152,7 @@ FRAG.push(['engmisc-ll-relink', '改 link 就能刪除與插入', async (tok) =>
   say('整理：陣列可以建在 Stack 或 Heap');
   await step(tok);                                   // 8:52 linked list: always in heap
   region('Heap', C_HEAP, -0.5, 11.4, 1.4, 5.4, 0.8);
-  say('Linked List 一律建在 Heap', '建在 Stack 沒有意義');
+  say('Linked List 通常建在 Heap', '老師說「一律」太絕對：node 也可以是區域變數，只是個數就固定了');
   await step(tok);                                   // 9:01 each element allocated separately; size variable
   say('每個元素各自配置記憶體', '移除就釋放：大小是可變的');
 }]);
@@ -8273,7 +8273,7 @@ FRAG.push(['engmisc-node-malloc', '建立 node 與存取成員', async (tok) => 
   await step(tok);                                   // 16:07 nodes must be in heap: struct Node *p
   const cd = code(['struct Node *p;', 'p = malloc( ? );', 'p = new Node;          // C++', 'p->data = 10;', 'p->next = 0;            // NULL'], -2.6, 6.0);
   cd.hl(0);
-  say('node 一定要建在 Heap', '所以先宣告 struct Node *p;');
+  say('node 要動態建在 Heap', '所以先宣告 struct Node *p;');
   await step(tok);                                   // 16:36 C function: malloc
   cd.hl(1);
   say('C 用 malloc 在 Heap 配置');
@@ -8285,7 +8285,7 @@ FRAG.push(['engmisc-node-malloc', '建立 node 與存取成員', async (tok) => 
   say('也可以寫 sizeof(struct Node)', '讓編譯器幫你算大小');
   await step(tok);                                   // 17:01 malloc returns void *: typecast
   txt(cd.ls[1], 'p = (struct Node *)malloc(sizeof(struct Node));');
-  say('malloc 回傳 void *', '要強制轉型成 struct Node *');
+  say('malloc 回傳 void *，影片強制轉型成 struct Node *', 'C 可省略（void * 會自動轉）；C++ 必須轉');
   await step(tok);                                   // 17:31 C++: p = new Node
   cd.hl(2);
   say('C++ 簡單多了：p = new Node;');
@@ -8663,7 +8663,7 @@ FRAG.push(['engmisc-rec-memory', 'Main memory 與 activation record', async (tok
   say('Heap：動態配置記憶體用');
   await step(tok);                                   // 2:03 a small portion for global / static
   cube('global/static', '#e0a64a', [2.2, 0.5, 1.6], -1.75, 4.6, 0);
-  say('還有一小塊屬於 Code', '放 global、static 變數');
+  say('另一小塊放 global、static 變數', '老師說屬於 Code；教科書叫 data segment');
   await step(tok);                                   // 2:33 machine code loaded into code
   relabel(ins, 'main 機器碼');
   say('執行時：機器碼載入 Code 區');
@@ -11611,7 +11611,7 @@ FRAG.push(['llpeng34-equiv-problem', 'Equivalence class 問題', async (tok) => 
   [1, 3, 5].forEach((i) => glow(cs[i]));
   say('注意 symmetric：x ≡ y ⇒ y ≡ x', '');
   await step(tok);                                   // 4:19 考試可能改 asymmetric
-  say('考試可能改成 asymmetric', 'x ≡ y 不代表 y ≡ x');
+  say('考試可能改成不對稱（not symmetric）', 'x ≡ y 不一定有 y ≡ x（離散的 asymmetric 更強）');
 }]);
 
 // zLuuRC56uvI 05:03：兩個 phase、兩個 array
@@ -15699,7 +15699,7 @@ FRAG.push(['sqpeng-multistack', 'Multiple stacks 與 Stack ≠ Array', async (to
     say('左半邊都不是要的：先丟掉', '每次至少丟掉一半');
     await step(tok);                                   // 87:21 8 → 4 → 2 → 1
     await round(); await round(); await round();
-    say('第 3 輪剩 4、第 4 輪剩 2、最後剩 1', '');
+    say('第 2 輪剩 4、第 3 輪剩 2、第 4 輪剩 1', '');
     await step(tok);                                   // 87:29 其實更 aggressive
     say('其實每輪還多丟掉中間那一個', '保守一點：說它至少砍一半');
     await step(tok);                                   // 87:50 中間有幾個箭頭

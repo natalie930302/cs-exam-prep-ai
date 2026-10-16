@@ -374,7 +374,7 @@ export default function (ctx) {
     if (t === 0) {
       const n = 5 + rnd(5), r = 2 + rnd(3);
       const ans = Pn(n, r);
-      return { q: n + ' 位同學選出正、副班長和風紀股長共 ' + r + ' 個不同職位（一人一職），有幾種選法？', opts: uniq(ans, [Cb(n, r), n ** r, Cb(n + r - 1, r)]), ans: String(ans), why: '職位不同 → 有順序：P(' + n + ',' + r + ') = ' + Array.from({ length: r }, (_, i) => n - i).join('×') + ' = ' + ans + '。只選人不分職位才是 C(n,r)。' };
+      return { q: '從 ' + n + ' 位同學選出 ' + r + ' 個不同的幹部職位（一人最多一職），有幾種選法？', opts: uniq(ans, [Cb(n, r), n ** r, Cb(n + r - 1, r)]), ans: String(ans), why: '職位不同 → 有順序：P(' + n + ',' + r + ') = ' + Array.from({ length: r }, (_, i) => n - i).join('×') + ' = ' + ans + '。只選人不分職位才是 C(n,r)。' };
     }
     if (t === 1) {
       const n = 6 + rnd(5), r = 2 + rnd(4);
@@ -465,7 +465,7 @@ export default function (ctx) {
     tag('共 57 個', 'ptr alt', 0, 1.2, 1.8);
     say('加法原理：互斥的情況相加', '23 + 15 + 19 = 57');
     await w(2600);
-    say('若有專題同時出現在兩份清單 → 會重複算', '要扣掉重疊 → 第 6 章的排容原理');
+    say('若有專題同時出現在兩份清單 → 會重複算', '要扣掉重疊 → 排容原理');
     for (let i = 0; i < 4; i++) glow(all[i * 9], RED);
     await w(3000);
   }
@@ -1581,7 +1581,7 @@ scene('ct-pc-sb12', '星棒法：x₁+x₂+x₃ = 12 → C(14,2) = 91', [
 
 scene('ct-pc-sblow', '每個 xᵢ ≥ 2：先放下限 → C(8,2) = 28', [
   async (tok, S) => { [0, 1, 2].forEach((b) => crate((b - 1) * 3, -2.6, 2.2, 1.4, 0.4, '#c9a878', 'x' + (b + 1))); S.B = board(-6.6, 5.8, 0.7, 4); S.B.add('x₁ + x₂ + x₃ = 12，每個 xᵢ ≥ 2'); cap('加條件：每個箱子至少 2 個', ''); },
-  async (tok, S) => { S.B.add('換變數：影片寫 x₁′ = x₁ + 2'); cap('做變數代換', '把問題改寫'); },
+  async (tok, S) => { S.B.add('換變數：令 yᵢ = xᵢ − 2（影片寫成 x₁′ = x₁ + 2）'); cap('做變數代換', '「至少 2 的量」＝「至少 0 的量」+ 2'); },
   async (tok, S) => { S.B.add('目標：變回「≥ 0」的標準題'); cap('我們只會算 ≥ 0 的', '把下限移到 0'); },
   async (tok, S) => {
     for (let b = 0; b < 3; b++) { for (let i = 0; i < 2; i++) cube('', FC.orange, [0.45, 0.4, 0.45], (b - 1) * 3 + (i ? 0.35 : -0.35), 0.25, -2.6, 3); await wt(tok, 300); }
@@ -2233,16 +2233,16 @@ const tri = (p, q, r, col = '#6e5f49') => [line(p.x, 0.06, p.z, q.x, 0.06, q.z, 
 const TPTS = [[0.15, 0.2], [0.55, 0.25], [0.3, 0.55], [0.75, 0.15], [0.6, 0.3]]; // 示意 barycentric-ish spots
 scene('ct-z5-tri', '等邊三角形放 5 點：必有兩點距離 < ½', [
   async (tok, S) => { tri(TA, TC, TE); T('A', 'ptr', TA.x - 0.4, 0.3, TA.z + 0.3); T('C', 'ptr', TC.x + 0.4, 0.3, TC.z + 0.3); T('E', 'ptr', TE.x, 0.3, TE.z - 0.4); T('AC = 1', 'idx', 0, 0.2, 2.6); cap('三角形 ACE 是等邊三角形', 'AC 長度 1'); },
-  async (tok, S) => { T('每個角 60°', 'say', 0, 0.6, 0.6); cap('三個邊一樣 → 三個角一樣', '每個角 60 度'); },
-  async (tok, S) => { S.pt = []; const u = [[0.2, 0.15], [0.45, 0.2], [0.35, 0.45], [0.7, 0.1], [0.62, 0.28]]; u.forEach(([a, b]) => { const p = TA.clone().add(TC.clone().sub(TA).multiplyScalar(a)).add(TE.clone().sub(TA).multiplyScalar(b)); S.pt.push(ball('', FC.blue, 0.13, p.x, 0.18, p.z, 2)); }); cap('從三角形內部挑 5 個點', '（點的位置是示意）'); },
+  async (tok, S) => { T('每個角 60°', 'say', -4.4, 0.6, -0.8); cap('三個邊一樣 → 三個角一樣', '每個角 60 度'); },
+  async (tok, S) => { S.pt = []; const u = [[0.2, 0.15], [0.45, 0.2], [0.25, 0.55], [0.7, 0.1], [0.62, 0.28]]; /* 示意：A 角、中間、E 角各一點，C 角兩點（只有這一對同區） */ u.forEach(([a, b]) => { const p = TA.clone().add(TC.clone().sub(TA).multiplyScalar(a)).add(TE.clone().sub(TA).multiplyScalar(b)); S.pt.push(ball('', FC.blue, 0.13, p.x, 0.18, p.z, 2)); }); cap('從三角形內部挑 5 個點', '（點的位置是示意）'); },
   async (tok, S) => { T('interior：只有內部，不含邊', 'idx', 4.4, 0.3, -0.6); cap('interior 是內部', '外框上的點不算'); },
   async (tok, S) => { T('⇒ 至少兩點距離 < ½', 'note', 0, 2.0, -3.6); cap('要證：至少有兩點', '距離小於二分之一'); },
   async (tok, S) => { cap('鴿子就是這 5 個點', '籠子要自己做出來'); },
   async (tok, S) => { cap('目標：把三角形切成 4 塊', '每一塊裡任兩點距離都 < ½'); },
   async (tok, S) => { S.m1 = mid(TA, TC); S.m2 = mid(TC, TE); S.m3 = mid(TE, TA); tri(S.m1, S.m2, S.m3, FC.gold); T('½', 'idx', -1.5, 0.2, 2.4); T('½', 'idx', 1.5, 0.2, 2.4); cap('連三邊中點', '切成 4 個邊長 ½ 的等邊三角形'); },
   async (tok, S) => { cap('同一個小三角形裡的兩點', '距離都 < ½（頂點不算在內部）'); },
-  async (tok, S) => { T('R1', 'ptr', -1.5, 0.3, 1.2); T('R2', 'ptr', 1.5, 0.3, 1.2); T('R3', 'ptr', 0, 0.3, -1.4); T('R4', 'ptr', 0, 0.3, 0.6); cap('這 4 個區域就是 4 個籠子', 'R1、R2、R3、R4'); },
-  async (tok, S) => { glw(S.pt[3], NG); glw(S.pt[4], NG); cap('5 個點、4 個區域', '至少兩點落在同一區域'); },
+  async (tok, S) => { T('R1', 'ptr', -3.5, 0.3, 1.0); T('R2', 'ptr', 3.5, 0.3, 1.0); T('R3', 'ptr', 1.0, 0.3, -2.4); T('R4', 'ptr', 0, 0.3, 0.0); cap('這 4 個區域就是 4 個籠子', 'R1、R2、R3、R4'); },
+  async (tok, S) => { [3, 4].forEach((i) => { tint(S.pt[i], FC.red); glw(S.pt[i], NG); }); cap('5 個點、4 個區域', '至少兩點落在同一區域'); },
   async (tok, S) => { cap('一定在內部，不會剛好在端點', '所以距離 < ½，證完'); },
   async (tok, S) => { cap('大部分題目：鴿子很清楚', '重點是想出籠子'); },
   async (tok, S) => { cap('沒有萬用方法', '見招拆招'); },
@@ -2420,7 +2420,7 @@ scene('ct-z9-perm', 'permutation = 從 A 到 A 的 bijection', [
 scene('ct-z9-group', '題外：permutation 與群', [
   async (tok, S) => { S.B = board(-6.6, 6.0, 0.62); S.B.add('數學系代數：group（群）'); cap('數學系的代數一開始教 group', '常用 permutation 當例子'); },
   async (tok, S) => { S.B.add('兩個 permutation 可以定義運算'); cap('兩個 permutation 之間', '可以定義一個運算'); },
-  async (tok, S) => { S.B.add('封閉、結合、單位元素、反元素 → 群；不滿足交換律 → non-Abelian', 'say'); cap('滿足群的四個條件', '但不滿足交換律：non-Abelian group'); },
+  async (tok, S) => { S.B.add('封閉、結合、單位元素、反元素 → 群；n ≥ 3 時不滿足交換律 → non-Abelian', 'say'); cap('滿足群的四個條件', '但（n ≥ 3 時）不滿足交換律：non-Abelian group'); },
   async (tok, S) => { T('只寫下面那列：2 4 5 1 3', 'note', 1.6, 2.4); cap('有時只寫下面那一列', '上面固定是 1 2 3 4 5'); },
 ]);
 
@@ -2472,7 +2472,7 @@ scene('ct-z9-binom', 'binomial coefficient 的定義', [
   async (tok, S) => { S.B.add('同一組的不同順序有 m! 種'); cap('拿出來的 m 個東西', '排列有 m! 種'); },
   async (tok, S) => { S.B.add('每 m! 個只算一個 → 除以 m!', 'good'); cap('每這麼多個只能算一個', '所以除掉 m!'); },
   async (tok, S) => { S.B.add('定義 (n m) = n(n−1)…(n−m+1) / m!'); T('(n m)：binomial coefficient', 'note', 3.0, 3.6); cap('這個符號叫 binomial coefficient', '二項式係數'); },
-  async (tok, S) => { S.B.add('組合數：n、m 正整數，n ≥ m'); cap('當作組合數時', 'n、m 都是正整數'); },
+  async (tok, S) => { S.B.add('組合數：n、m 非負整數，n ≥ m'); cap('當作組合數時', 'n、m 都是非負整數'); },
   async (tok, S) => { S.B.add('但定義本身不要求 n ≥ m'); cap('這個定義並沒要求大小順序', '後面會看到好處'); },
   async (tok, S) => { S.B.add('之後推廣：n 可以是負數、實數', 'say'); cap('之後推廣：extended binomial coefficient', 'n 可以是負整數、甚至實數'); },
   async (tok, S) => { S.B.add('念法：n 取 m', 'say'); cap('通常唸成「n 取 m」', '不用高中的 C 符號'); },
@@ -2502,7 +2502,7 @@ scene('ct-z9-pid', 'Pascal identity 的組合式證明', [
   async (tok, S) => { S.B.add('含 n：剩 n − 1 個選 r − 1 → (n−1 r−1)', 'good'); cap('子集合裡有 n', '剩 n − 1 個選 r − 1 個'); },
   async (tok, S) => { glw(S.el[5], NG); S.B.add('不含 n：從 n − 1 個選 r → (n−1 r)', 'good'); cap('子集合裡沒有 n', '從 1～n−1 選 r 個'); },
   async (tok, S) => { S.B.add('兩種 disjoint → 加法原理'); cap('不是有 n 就是沒有 n', '交集是空集合：相加'); },
-  async (tok, S) => { S.B.add('不要硬背，想一想就知道', 'say'); cap('不要印記硬背', '知道道理，忘了就想一想'); },
+  async (tok, S) => { S.B.add('不要硬背，想一想就知道', 'say'); cap('不要硬背', '知道道理，忘了就想一想'); },
   async (tok, S) => { S.B.add('左右兩邊數同一個東西，數法不同 → 相等', 'note'); cap('combinatorial proof', '兩種方法數同一個東西'); },
 ], [[0, 4.4, 13.5], [0, 2.8, 0]]);
 

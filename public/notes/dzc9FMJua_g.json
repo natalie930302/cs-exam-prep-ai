@@ -80,7 +80,7 @@
    "points": [
     {
      "t": 482,
-     "text": "數學系代數教 group（群）時常用 permutation 當例子；兩個 permutation 的合成不滿足交換律（non-Abelian group）。"
+     "text": "數學系代數教 group（群）時常用 permutation 當例子；兩個 permutation 的合成不滿足交換律（n ≥ 3）（non-Abelian group）。"
     },
     {
      "t": 549,
@@ -97,7 +97,7 @@
    "explain": [
     "題外話：去學數學系的代數，一開始教 group（群），很多例子就是用 permutation。",
     "兩個 permutation 之間可以定義一個運算（合成）。",
-    "它滿足群的四個條件（封閉、結合、單位元素、反元素），但不滿足交換律，所以是 non-Abelian group。",
+    "它滿足群的四個條件（封閉、結合、單位元素、反元素），但 n ≥ 3 時不滿足交換律，所以是 non-Abelian group。",
     "寫法上，因為上面固定是 1 2 3 4 5，有人只寫下面那列 2 4 5 1 3。"
    ]
   },

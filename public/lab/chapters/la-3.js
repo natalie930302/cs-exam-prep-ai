@@ -1385,7 +1385,7 @@ scene('dt-l19-trirec', 'L19：|Aₙ| = |Aₙ₋₁| − |Aₙ₋₂|，週期 6'
   async (tok, S) => {
     while (S.seq.length < 12) S.seq.push(S.seq[S.seq.length - 1] - S.seq[S.seq.length - 2]);
     cap('1, 0, −1, −1, 0, 1 之後開始重複', '週期 6');
-    for (let n = 1; n <= 12; n++) { const v = S.seq[n - 1], x = -4.6 + (n - 1) * 0.5, h = Math.max(0.05, Math.abs(v) * 0.9); const m = lab.box(v > 0 ? COL.c : v < 0 ? COL.red : '#c9b48e', [0.38, h, 0.38]); m.position.set(x, 1.3 + (v >= 0 ? h / 2 : -h / 2), 0); lab.world.add(m); sm(String(n), x, 0.15); }
+    for (let n = 1; n <= 12; n++) { const v = S.seq[n - 1], x = -5.2 + (n - 1) * 0.45, h = Math.max(0.05, Math.abs(v) * 0.9); const m = lab.box(v > 0 ? COL.c : v < 0 ? COL.red : '#c9b48e', [0.38, h, 0.38]); m.position.set(x, 1.3 + (v >= 0 ? h / 2 : -h / 2), 0); lab.world.add(m); sm(String(n), x, 0.15); }
   },
   async (tok, S) => {
     let a = 1, b = 0; for (let n = 3; n <= 61; n++) { const c = b - a; a = b; b = c; }
@@ -1438,8 +1438,8 @@ scene('dt-3b-values', '3B1B：det = 3、½、0 是什麼意思', [
   async (tok, S) => { showM(S, [[3, 0], [0, 1]], '示意'); cap('det = 3：面積放大 3 倍', ''); await S.L.to(tok, [[3, 0], [0, 1]], 1400); detTag(S, det2(S.L.M)); chk(S, near(det2(S.L.M), 3), '面積 1 → 3 ✓'); },
   async (tok, S) => { showM(S, [[0.5, 0], [0, 1]], '示意'); cap('det = ½：所有面積縮成一半', ''); await S.L.to(tok, [[0.5, 0], [0, 1]], 1400); detTag(S, det2(S.L.M)); chk(S, near(det2(S.L.M), 0.5), '面積 1 → ½ ✓'); },
   async (tok, S) => { const M = [[2, 1], [1, 0.5]]; showM(S, M, '示意'); cap('det = 0：整個平面被壓到一條線上', '兩行共線'); await S.L.to(tok, M, 1600); detTag(S, det2(S.L.M)); chk(S, near(det2(M), 0), '2·½ − 1·1 = 0 ✓'); },
-  async (tok, S) => { showM(S, [[0, 0], [0, 0]], '示意'); cap('甚至壓到一個點', '任何區域的面積都變成 0'); await S.L.to(tok, [[0, 0], [0, 0]], 1400); detTag(S, 0); },
-  async (tok, S) => { cap('檢查 det 是不是 0', '就知道這個變換有沒有把空間壓到更低的維度'); hot('det = 0 ⇔ 壓扁（降維）', 0, 6.1); await S.L.to(tok, [[1, 0], [0, 1]], 1200); },
+  async (tok, S) => { showM(S, [[0, 0], [0, 0]], '示意'); cap('甚至壓到一個點', '任何區域的面積都變成 0'); await S.L.to(tok, [[0, 0], [0, 0]], 1400); detTag(S, 0); chk(S, near(det2([[0, 0], [0, 0]]), 0), '整個平面壓成一點：面積 0 ✓'); },
+  async (tok, S) => { cap('檢查 det 是不是 0', '就知道這個變換有沒有把空間壓到更低的維度'); hot('det = 0 ⇔ 壓扁（降維）', 0, 6.1); if (S.mx) S.mx.kill(); S.mx = null; remove(S.ck); S.ck = null; remove(S.dt); S.dt = null; await S.L.to(tok, [[1, 0], [0, 1]], 1200); },
 ], { cam: CAM2, init: async (tok, S) => { S.L = lin2(0, 3.2, 0.55, 4); } });
 
 // a sheet of paper: yellow front, red back — turns over to show "orientation flipped"
@@ -1464,7 +1464,7 @@ scene('dt-3b-neg', '3B1B：負的 det = 空間翻面（orientation）', [
     txt(S.o, 'det 越來越接近 0');
   },
   async (tok, S) => { cap('î 和 ĵ 完全對齊', 'det = 0'); await anim(tok, 900, (u) => { const th = (0.4 + 0.1 * u) * Math.PI; const d = S.L.set([[Math.cos(th), 0], [Math.sin(th), 1]]); detTag(S, d); }); chk(S, near(det2([[0, 0], [1, 1]]), 0), '共線 → det = 0 ✓'); },
-  async (tok, S) => { cap('î 繼續往前走', 'det 自然地繼續變小，變成負數'); await anim(tok, 1500, (u) => { const th = (0.5 + 0.25 * u) * Math.PI; const d = S.L.set([[Math.cos(th), 0], [Math.sin(th), 1]]); detTag(S, d); }); txt(S.o, '越過去 → det < 0（翻面）'); },
+  async (tok, S) => { remove(S.ck); S.ck = null; cap('î 繼續往前走', 'det 自然地繼續變小，變成負數'); await anim(tok, 1500, (u) => { const th = (0.5 + 0.25 * u) * Math.PI; const d = S.L.set([[Math.cos(th), 0], [Math.sin(th), 1]]); detTag(S, d); }); txt(S.o, '越過去 → det < 0（翻面）'); },
 ], { cam: CAM2, init: async (tok, S) => { S.L = lin2(0, 3.2, 0.62, 3); } });
 
 const MW = [[1, 0, 0.5], [0.5, 1, 0], [0, 0.5, 1]];   // 示意：三個行向量（每個是一行）
@@ -1724,7 +1724,7 @@ scene('dt-cr-rule', '3B1B Cramer：面積都乘上 det A → Cramer 法則', [
   async (tok, S) => { cap('它的面積是多少？', '它就是剛才那個平行四邊形變換後的樣子'); },
   async (tok, S) => { const a = det2(cols2([2, 0], CB)); cap('面積 = det A × y', ''); txt(S.y, '面積 = det A · y = ' + fmt(a)); S.k = ok(near(a, det2(CA) * CX[1]), fmt(a) + ' = ' + fmt(det2(CA)) + ' × ' + fmt(CX[1]) + ' ✓', 3.6, 4.4); },
   async (tok, S) => { remove(S.k); cap('所以 y = 新面積 ÷ det A', ''); S.k = ok(near(det2(cols2([2, 0], CB)) / det2(CA), CX[1]), 'y = ' + fmt(det2(cols2([2, 0], CB))) + ' / ' + fmt(det2(CA)) + ' = ' + fmt(CX[1]) + ' ✓', 3.6, 4.4); },
-  async (tok, S) => { cap('新面積怎麼算？做一個新矩陣', '第 1 行照舊，第 2 行換成輸出 b'); S.my = mview(cols2([2, 0], CB), 3.6, 3.0, { s: 0.55, name: 'det = ' + fmt(det2(cols2([2, 0], CB))) }); },
+  async (tok, S) => { cap('新面積怎麼算？做一個新矩陣', '第 1 行照舊，第 2 行換成輸出 b'); S.my = mview(cols2([2, 0], CB), 2.9, 1.5, { s: 0.55, name: 'det[col₁ b] = ' + fmt(det2(cols2([2, 0], CB))) }); },
   async (tok, S) => { cap('只用輸出那一側的資料', '（矩陣的行、b）就拿回 y：解了一半'); },
   async (tok, S) => {
     remove(S.k); cap('x 也一樣：看 (x, y) 和 ĵ 的平行四邊形', '回到輸入空間：面積 = x');
@@ -1736,7 +1736,7 @@ scene('dt-cr-rule', '3B1B Cramer：面積都乘上 det A → Cramer 法則', [
     const a = det2(cols2(CB, [-1, 1])); txt(S.y, '面積 = det A · x = ' + fmt(a)); S.k = ok(near(a, det2(CA) * CX[0]), fmt(a) + ' = ' + fmt(det2(CA)) + ' × ' + fmt(CX[0]) + ' ✓', 3.6, 4.4);
   },
   async (tok, S) => { remove(S.k); cap('x = 新面積 ÷ det A', ''); S.k = ok(near(det2(cols2(CB, [-1, 1])) / det2(CA), CX[0]), 'x = ' + fmt(det2(cols2(CB, [-1, 1]))) + ' / ' + fmt(det2(CA)) + ' = ' + fmt(CX[0]) + ' ✓', 3.6, 4.4); },
-  async (tok, S) => { cap('新矩陣：第 1 行換成 b，第 2 行照舊', ''); S.mx2 = mview(cols2(CB, [-1, 1]), 3.6, 1.2, { s: 0.55, name: 'det = ' + fmt(det2(cols2(CB, [-1, 1]))) }); },
+  async (tok, S) => { cap('新矩陣：第 1 行換成 b，第 2 行照舊', ''); S.mx2 = mview(cols2(CB, [-1, 1]), 5.2, 1.5, { s: 0.55, name: 'det[b col₂] = ' + fmt(det2(cols2(CB, [-1, 1]))) }); },
   async (tok, S) => { remove(S.k); cap('這就是 Cramer 法則', 'x = det[b col₂] / det A、y = det[col₁ b] / det A'); S.k = hot('Cramer：x = det[b col₂] / det A，y = det[col₁ b] / det A', -0.6, 6.2); },
   async (tok, S) => { const n = det2(cols2(CB, [-1, 1])); cap('驗算：上面的 det = 4 + 2 = 6', '下面 det A = 2 → x = 3'); S.k2 = ok(n === 4 + 2 && n / det2(CA) === CX[0], 'x = 6 / 2 = 3 ✓（輸入的 x 就是 3）', 3.6, 4.4); },
   async (tok, S) => { const n = det2(cols2([2, 0], CB)); cap('y = 4 / 2 = 2', '輸入的 y 確實是 2'); remove(S.k2); ok(n / det2(CA) === CX[1], 'y = 4 / 2 = 2 ✓（輸入的 y 就是 2）', 3.6, 4.4); },
@@ -1785,8 +1785,8 @@ scene('dt-l18-p12', 'L18：性質 1 det I = 1、性質 2 換列變號', [
     S.P1 = [[0, 1, 0], [1, 0, 0], [0, 0, 1]]; S.P2 = [[0, 1, 0], [0, 0, 1], [1, 0, 0]];
     S.m1 = mview(S.P1, -4.0, 4.0, { s: 0.6, name: '換 1 次' }); S.m2 = mview(S.P2, -1.4, 4.0, { s: 0.6, name: '換 2 次' });
   },
-  async (tok, S) => { cap('permutation 的 det = 1 或 −1', '換偶數次 +1、奇數次 −1'); ok(det(S.P1) === -1, 'det = −1 ✓', -4.0, 2.8); ok(det(S.P2) === 1, 'det = +1 ✓', -1.4, 2.8); },
-  async (tok, S) => { S.m1.kill(); S.m2.kill(); cap('2×2：性質 1 說這個是 1', ''); mview([[1, 0], [0, 1]], -3.6, 1.2, { s: 0.55 }); ok(det([[1, 0], [0, 1]]) === 1, '= 1 ✓', -2.5, 1.2); },
+  async (tok, S) => { cap('permutation 的 det = 1 或 −1', '換偶數次 +1、奇數次 −1'); S.pk = [ok(det(S.P1) === -1, 'det = −1 ✓', -4.0, 2.8), ok(det(S.P2) === 1, 'det = +1 ✓', -1.4, 2.8)]; },
+  async (tok, S) => { S.m1.kill(); S.m2.kill(); (S.pk || []).forEach(remove); cap('2×2：性質 1 說這個是 1', ''); mview([[1, 0], [0, 1]], -3.6, 1.2, { s: 0.55 }); ok(det([[1, 0], [0, 1]]) === 1, '= 1 ✓', -2.5, 1.2); },
   async (tok, S) => { cap('性質 2 說這個是 −1', ''); mview([[0, 1], [1, 0]], -0.4, 1.2, { s: 0.55 }); ok(det([[0, 1], [1, 0]]) === -1, '= −1 ✓', 0.7, 1.2); },
   async (tok, S) => { cap('最終要得到大家都知道的 ad − bc', '每個性質都可以拿它來檢查'); mview(SYM2, 2.6, 3.4, { s: 0.6 }); hot('= ad − bc', 4.2, 3.4); },
 ]);
@@ -1890,11 +1890,12 @@ scene('dt-l18-p9', 'L18：性質 9——det(AB) = det A · det B', [
   async (tok, S) => { remove(S.k2); cap('例如：det(A⁻¹) 是多少？', '用性質 9'); },
   async (tok, S) => { cap('A⁻¹A = I，兩邊取 det', 'det(A⁻¹)·det(A) = det I = 1'); S.t = hd('det(A⁻¹)·det A = det I = 1', 2.8, 4.4); },
   async (tok, S) => { cap('所以 det(A⁻¹) = 1 / det A', ''); txt(S.t, 'det(A⁻¹) = 1 / det A'); },
-  async (tok, S) => { const D = [[2, 0], [0, 3]], Di = [[1 / 2, 0], [0, 1 / 3]]; cap('對角矩陣檢查：diag(2, 3)', '反矩陣 diag(½, ⅓)：det 6 和 1/6'); mview(D, 2.0, 3.0, { s: 0.55 }); mview(Di, 3.9, 3.0, { s: 0.55 }); ok(near(det(D), 6) && near(det(Di), 1 / 6), '6 和 1/6 ✓', 2.9, 2.0); },
-  async (tok, S) => { const D2 = [[4, 0], [0, 9]]; cap('det(A²) = (det A)²', '矩陣平方 → det 也平方'); ok(near(det(D2), 36), 'det(diag(2,3)²) = 36 = 6² ✓', 2.9, 1.4); },
+  async (tok, S) => { const D = [[2, 0], [0, 3]], Di = [[1 / 2, 0], [0, 1 / 3]]; cap('對角矩陣檢查：diag(2, 3)', '反矩陣 diag(½, ⅓)：det 6 和 1/6'); S.dm = [mview(D, 2.0, 3.0, { s: 0.55 }), mview(Di, 3.9, 3.0, { s: 0.55 })]; S.dk = [ok(near(det(D), 6) && near(det(Di), 1 / 6), '6 和 1/6 ✓', 2.9, 2.0)]; },
+  async (tok, S) => { const D2 = [[4, 0], [0, 9]]; cap('det(A²) = (det A)²', '矩陣平方 → det 也平方'); S.dk.push(ok(near(det(D2), 36), 'det(diag(2,3)²) = 36 = 6² ✓', 2.9, 1.4)); },
   async (tok, S) => { cap('把整個矩陣乘 2，det 變幾倍？', '不是 2 倍：是 2ⁿ 倍'); S.t2 = hot('det(2A) = 2ⁿ det A', -2.4, 0.4); },
   async (tok, S) => { cap('因為每一列都提出一個 2', 'n 列 → n 個 2'); },
   async (tok, S) => {
+    S.dm.forEach((m) => m.kill()); S.dk.forEach(remove); remove(S.t);
     cap('就像體積：盒子每邊放大 2 倍', '3D：體積 × 8'); S.sp = space([5.0, 0.9, 0], 0.55, 2.2); S.pp = ppiped(); setPP(S.pp, S.sp, [1, 0, 0], [0, 1, 0], [0, 0, 1]);
     await anim(tok, 1500, (u) => { const t = 1 + u; setPP(S.pp, S.sp, [t, 0, 0], [0, t, 0], [0, 0, t]); });
     S.k3 = ok(near(det([[2, 0, 0], [0, 2, 0], [0, 0, 2]]), 8), 'det(2I₃) = 2³ = 8 ✓', 5.0, 3.4);

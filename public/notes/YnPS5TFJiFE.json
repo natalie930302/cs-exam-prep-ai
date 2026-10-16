@@ -122,7 +122,7 @@
    "explain": [
     "F2 的 value 是 10。還記得前面算過一個 capacity 是 10 的 cut 嗎？",
     "就是 S = {s, b}，T = {a, c, d, t}。",
-    "從這邊切下來，S 到 T 的邊是 (s,a)、(s,c)、(b,d)，capacity 5 + 2 + 3 = 10。",
+    "從這邊切下來，S 到 T 的邊是 (s,a)、(b,d)、(s,c)，capacity 5 + 2 + 3 = 10。",
     "前面證過：任何 flow 的 value 都 ≤ 任何 cut 的 capacity。",
     "現在 F2 的 value 剛好等於這個 cut 的 capacity 10，已經頂到上限，不可能更大了。",
     "所以 F2 是 maximum flow：它滿足 feasibility、conservation，而且 value 最大。程式也確認這張圖 16 個 cut 中最小的就是 10。"

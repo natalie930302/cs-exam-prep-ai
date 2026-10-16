@@ -654,7 +654,7 @@ export default function (ctx) {
       + '<table class="lab-table"><tbody>'
       + '<tr><th>每個節點最多</th><td>m 個子節點、m−1 個 key</td></tr>'
       + '<tr><th>非根節點最少</th><td>⌈m/2⌉ 個子節點、⌈m/2⌉−1 個 key</td></tr>'
-      + '<tr><th>根最少</th><td>2 個子節點（只有根一個節點時可以只有 1 個 key）</td></tr>'
+      + '<tr><th>根最少</th><td>1 個 key；不是葉子時至少 2 個子節點</td></tr>'
       + '<tr><th>高度 h 最多幾個 key</th><td>m<sup>h</sup> − 1</td></tr>'
       + '<tr><th>高度 h 最少幾個 key</th><td>2⌈m/2⌉<sup>h−1</sup> − 1</td></tr>'
       + '</tbody></table>'
@@ -1011,14 +1011,14 @@ FRAG.push(['btree-hi-split5', '插入 5 3 21，再插 9 第一次分裂', async 
   let ch = [];
   await cIns(tok, 9, { split: async () => {          // 2:43 9 沒位置
     await step(tok);                                 // 2:49 兩個中間值可選
-    ch = [bubble('5 往上？（偏左）', -2.2, 3.6), bubble('9 往上？（偏右）', 2.2, 3.6)];
+    ch = [bubble('5 往上？', -2.2, 3.6), bubble('9 往上？', 2.2, 3.6)];
     say('3, 5, 9, 21：偶數個，中間有兩個', '選 5 或 9 往上都可以 → left / right biased');
     await step(tok);                                 // 3:19 老師讓 5 往上
     ch.forEach(kill); setCls(row[3], 'idx');
   } });
   await step(tok);                                   // 3:33 右邊是 9, 21
   ringN(BT.root.kids[1]);
-  say('5 的左邊 [3]、右邊 [9, 21]', '左半只有 1 個 key，右半 2 個（偏左選法）');
+  say('5 的左邊 [3]、右邊 [9, 21]', '送第 2 個 key 上去：左半 1 個 key，右半 2 個');
 }]);
 FRAG.push(['btree-hi-split9', '插入 1 13 2 7：9 往上', async (tok) => {
   fresh([0, 5.2, 14.5], [0, 2.6, 0]);
@@ -1272,11 +1272,11 @@ FRAG.push(['btree-ab-index', 'Dense index：4 + 1 = 5 次 block 存取', async (
   const per = note('512 ÷ 16 = 32 entries / block', -1.6, 1.8, 3.4);
   say('512 / 16 = 32', '一個 block 放 32 個 entry');
   await step(tok);                                   // 11:55 100 / 32 = 3.x
-  txt(per, '100 ÷ 32 ≈ 3.2');
-  say('100 個 entry / 32 ≈ 3.2', '三個多 block');
+  txt(per, '100 ÷ 32 = 3.125');
+  say('100 個 entry / 32 = 3.125（老師說約 3.2）', '三個多 block');
   await step(tok);                                   // 12:15 → 4 個 block
   ib.forEach((b) => { b.visible = true; });
-  txt(per, '3.2 → 進位成 4 blocks');
+  txt(per, '3.x → 進位成 4 blocks');
   say('index 要 4 個 block', '比表的 25 個小很多');
   await step(tok);                                   // 12:24 在 index 裡找：最多 4 個 block
   await anim(tok, 1600, (t) => { const k = Math.floor(t * 4.99); ib.forEach((b, i) => glow(b, i <= k ? GOLD : null)); });
@@ -1521,17 +1521,17 @@ FRAG.push(['btree-ab-rules', 'B-tree 的四條規則', async (tok) => {
   await step(tok);                                   // 27:26 B-tree = 有規則的 m-way
   say('B-tree = 有規則的 m-way search tree', '規則是什麼？');
   await step(tok);                                   // 27:32 規則一：至少 ⌈m/2⌉ 個 child
-  note('① 每個 node 至少 ⌈m/2⌉ 個 child', -3.4, 5.4);
-  say('① 每個 node 至少填一半', 'degree m → 至少 ⌈m/2⌉ 個 child');
+  note('① 非 root 的內部 node ≥ ⌈m/2⌉ 個 child', -3.9, 5.4);
+  say('① 每個 node 至少填一半', 'degree m → 非 root 的 internal node 至少 ⌈m/2⌉ 個 child');
   await step(tok);                                   // 27:43 取 ceiling
   say('m/2 取 ceiling（上取整），不是 floor', '⌈4/2⌉ = 2、⌈5/2⌉ = 3');
   await step(tok);                                   // 27:51 degree 10 → 5 個 child
-  say('例如 degree 10：要先有 5 個 child', '才能考慮開新 node → 控制樹高');
+  say('例如 degree 10：每個這種 node 至少 5 個 child', '是隨時都要滿足的下限（不是建立順序）→ 控制樹高');
   await step(tok);                                   // 28:11 root 呢？
   ringN(BT.root);
   say('② 這條規則能套用在 root 嗎？', '不行，否則連第一個值都插不進去');
   await step(tok);                                   // 28:25 root 至少 2 個 child
-  note('② root 至少 2 個 child（可只有 1 個 key）', 3.0, 5.4);
+  note('② root 至少 2 個 child（可只有 1 個 key）', 3.4, 6.7);
   say('root 至少 2 個 child 就好', 'root 可以只有 1 個 key');
   await step(tok);                                   // 28:53 所有 leaf 在同一層
   if (BT.view.ring) BT.view.ring.visible = false;
@@ -2165,11 +2165,12 @@ FRAG.push(['btree-p-bp-d2-range', 'Range query：≥ 24、< 24、15 ～ 24', asy
   for (let n = leaf24; n; n = n.next) { bpRing(v, n); n.keys.filter((k) => k >= 24).forEach((k) => hl.add('L' + k)); bpLit(v, hl); await beat(tok, 700); }
   say('沿著 linked list 往右走', '');
   await step(tok);                                   // 31:19 null → 停
-  bad('null → 停', 6.0, 0.4);
-  good('24, 27, 29, 33, 34, 38, 39', 2.6, 3.6);
+  const nullT = bad('null → 停', 6.0, 0.4);
+  const allT = good('24, 27, 29, 33, 34, 38, 39', 2.6, 3.6);
   say('後面是 null：停止', '一下子就拿到所有 ≥ 24 的資料');
   await step(tok);                                   // 31:26 < 24 呢？
   hl.clear(); bpLit(v, hl); v.links.forEach((a) => a.setColor(new THREE.Color(0x2fc092)));
+  kill(nullT); kill(allT);
   bpRing(v, leaf24);
   say('那 < 24 的呢？', '一樣先找到 24');
   await step(tok);                                   // 31:37 往左走
@@ -2181,11 +2182,11 @@ FRAG.push(['btree-p-bp-d2-range', 'Range query：≥ 24、< 24、15 ～ 24', asy
   await step(tok);                                   // 32:03 search 兩次
   const l15 = bpDescend(root, 15).pop();
   bpRing(v, l15);
-  pkt('search 15', v.pos.get(l15).x, v.pos.get(l15).y + 0.8); pkt('search 24', v.pos.get(leaf24).x, v.pos.get(leaf24).y + 0.8);
-  say('做兩次 search', '一次找 15 的位置、一次找 24（老師口誤說成 5）');
+  pkt('search 15', v.pos.get(l15).x, v.pos.get(l15).y + 0.8);
+  say('其實只要 search 一次：找 15 所在的 leaf', '老師說要 search 兩次（還口誤說成 5），找 24 那次可以省掉');
   await step(tok);                                   // 32:25 從 15 走到 24
   for (let n = l15; n; n = n.next) { bpRing(v, n); let stop = false; for (const k of n.keys) { if (k > 24) { stop = true; break; } if (k >= 15) hl.add('L' + k); } bpLit(v, hl); await beat(tok, 700); if (stop || n.keys.includes(24)) break; }
-  say('從 15 的位置往右一直走到 24', '');
+  say('從 15 的位置沿 link 往右走', '看到 27 > 24 就停');
   await step(tok);                                   // 32:40 夾在中間的都符合
   good('16, 19, 20, 22, 24', -2.4, 3.6);
   say('夾在中間的 leaf 都符合條件', '16, 19, 20, 22, 24');

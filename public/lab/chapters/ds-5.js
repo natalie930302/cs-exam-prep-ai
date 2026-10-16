@@ -3489,7 +3489,7 @@ FRAG.push(['heaplin-last-node', '下一個插入點：第 n + 1 格', async (tok
   for (let i = 1; i <= 10; i++) S.put(i, i);
   await step(tok);                                   // @9180 只有一個孩子也還是 complete
   S.hl([5, 10], GOLD);
-  say('5 號只有一個孩子，也還是 complete', '重點是：上到下、左到右的順序完整');
+  say('有 node 只有一個孩子（像這裡的 5 號），也還是 complete', '重點是：上到下、左到右的順序完整');
   await step(tok);                                   // @9236.8 關鍵步驟都不難
   S.off();
   const rc = note('root 最好找 → 最大放 root → subtree 也一樣 → 限制 complete', 0, 7.2, 0);
@@ -3736,7 +3736,7 @@ FRAG.push(['heapur-recap', '回顧：array/list → stack/queue → search tree'
   say('tree：順序是隱含的', '看你用哪一種 traversal');
   await step(tok);                                   // 2:31 search tree：log n
   for (const k of [0, 1, 3]) { glow(ns[k], GOLD); await beat(tok, 350); }
-  say('search tree：操作是 O(log n)', '找最小要往左走到底');
+  say('search tree：操作是 O(h)，平衡時 O(log n)', '找最小要往左走到底');
   await step(tok);                                   // 2:46 再加限制：拿最優先的變常數時間
   [0, 1].forEach((k) => glow(ns[k], null)); glow(ns[3], GREEN);
   const want = tag('想要：拿「最優先」的只要 O(1)', 'pkt', 3.8, 0.5, 1.2);
@@ -3844,7 +3844,7 @@ FRAG.push(['heapur-cpu-sched', '單核 CPU：高 priority 的工作先做', asyn
   await step(tok);                                   // 8:08 real-time：task 有不同 priority 層級
   const cpu = prop('cpu', 4.2, 0, 0, 1.4, 'CPU'); bob(cpu, 0.03);
   sayT('即時系統：task 可以有不同 priority', -1.5, 3.4, 0);
-  say('task 可以設定不同的 priority 層級', 'real-time system');
+  say('task 可以設定不同的 priority 層級', 'realtime、high、normal、low…');
   await step(tok);                                   // 8:42 system task 的 priority 很高
   K.zone('系統工作（你看不到）', -4.4, 0, -1.4, 4.2, 1.8, '#f3dcc0');
   K.zone('使用者工作（你看得到）', -4.4, 0, 1.4, 4.2, 1.8, '#cfe3d4');
@@ -4060,7 +4060,7 @@ FRAG.push(['heapur-pop-hole', 'top O(1)；pop：較小的孩子一層層補上',
   await step(tok);                                   // 29:15 36 沒有理由上去
   S.hl([9], GREEN);
   at(9, '36 不用動');
-  say('36 沒有理由往上', '它跟 33 沒有比較的必要');
+  say('19 底下的 33、36：33 比較小，33 上去', '36 沒有理由往上，留在原地');
 }]);
 
 // 29:28 push 17：放在葉子，往上浮
@@ -4175,11 +4175,11 @@ FRAG.push(['heapur-floors-cost', '每層像樓層；find-min：heap O(1) vs BST 
   ['頂樓（最小）', '2 樓', '3 樓'].forEach((t, d) => tag(t, 'idx', -6, UY[d], 0));
   say('像樓層：頂樓最小，往下越來越大', '同一層彼此沒有關係');
   await step(tok);                                   // 40:42 一年級在上，二年級在下
-  const g1 = sayT('一年級', 5.6, UY[1], 0), g2 = sayT('二年級', 5.6, UY[2], 0);
-  say('像一年級排在上面、二年級在下面', '跨年級才有先後');
+  const g1 = sayT('第一學期', 5.6, UY[1], 0), g2 = sayT('第二學期', 5.6, UY[2], 0);
+  say('像第一學期排在上面、第二學期在下面', '跨學期才有先後');
   await step(tok);                                   // 40:50 二年級裡有大有小
   S.hl([4, 5], GOLD);
-  say('二年級裡面有人大、有人小', '36 在 33 左邊也沒關係');
+  say('第二學期裡面有人大、有人小', '36 在 33 左邊也沒關係');
   await step(tok);                                   // 40:54 最大的錯誤；剛才那叫 percolate down
   S.off(); kill(g1); kill(g2);
   tag('最大的錯：以為同層有順序', 'bad', 0, 8.1, 0);
@@ -4195,7 +4195,7 @@ FRAG.push(['heapur-floors-cost', '每層像樓層；find-min：heap O(1) vs BST 
   say('要找最小：一路往左走到底', '33 → 17 → 15');
   await step(tok);                                   // 41:36 要 log n 次 = height；heap 是常數
   tag('走了一個 height：O(log n)', 'note', -2.2, 1.6, 0.4);
-  say('BST：find-min 要 log n（一個高度）', 'heap：最小的就在 root，O(1)');
+  say('BST：find-min 要走一個高度（平衡時 log n）', 'heap：最小的就在 root，O(1)');
   await step(tok);                                   // 42:13 我只要最上面那個
   B.off(); B.hl([4], GREEN);
   sayT('heap 只回答一件事：「誰最急？」', 0, 8.2, 0);

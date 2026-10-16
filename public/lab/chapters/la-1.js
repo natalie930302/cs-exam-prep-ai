@@ -8,7 +8,6 @@
 //     2x − y = 0、−x + 2y = 3 的 row / column picture；3×3 的三平面與 column picture；
 //     A = [1 2 1; 3 8 1; 0 4 1]、b = (2, 12, 2) 的消去與回代；elementary matrix；pivot 為 0 的換列與失敗；
 //     A = [1 2 2 2; 2 4 6 8; 3 6 8 10] 的 RREF 與自由變數；解的三種情況。
-// 注意：本章影片清單裡的 3Blue1Brown「Essence of calculus」系列是微積分，不屬於線性代數，沒有做任何場景。
 import kit from './_kit.js';
 
 export default function (ctx) {
@@ -1469,8 +1468,8 @@ sc('ls-l1-matvec', 'L1：矩陣乘向量——用行、用列', [
     sym('1 ·', -4.8, 1.6); mview([[2], [1]], -3.9, 1.6, { s: 0.7 }); sym('+  2 ·', -2.9, 1.6); mview([[5], [3]], -1.9, 1.6, { s: 0.7 });
     cap('1 個第 1 行 + 2 個第 2 行', '');
   },
-  async (tok, S) => { S.A.unglow(); S.r.set(0, 0, AxM[0]); S.r.glowCell(0, 0, GREEN); sm('2 + 10 = 12', -0.8, 1.9); cap('第一個分量：2 + 10 = 12', ''); },
-  async (tok, S) => { S.r.glowCell(0, 0, null); S.r.set(1, 0, AxM[1]); S.r.glowCell(1, 0, GREEN); sm('1 + 6 = 7', -0.8, 1.3); ok(same(AxM, [12, 7]), 'Ax = (12, 7) ✓', 0.7, 2.7); cap('第二個分量：1 + 6 = 7', 'Ax = (12, 7)'); },
+  async (tok, S) => { S.A.unglow(); S.r.set(0, 0, AxM[0]); S.r.glowCell(0, 0, GREEN); sm('2 + 10 = 12', 0.5, 1.9); cap('第一個分量：2 + 10 = 12', ''); },
+  async (tok, S) => { S.r.glowCell(0, 0, null); S.r.set(1, 0, AxM[1]); S.r.glowCell(1, 0, GREEN); sm('1 + 6 = 7', 0.5, 1.3); ok(same(AxM, [12, 7]), 'Ax = (12, 7) ✓', 0.7, 2.7); cap('第二個分量：1 + 6 = 7', 'Ax = (12, 7)'); },
   async (tok, S) => { S.r.unglow(); S.A.glowRow(0, GOLD); S.r.glowCell(0, 0, GOLD); const d = dotp(AM[0], xM); ok(d === 12, '一次一列：2·1 + 5·2 = ' + d + ' ✓', 3.8, 4.8); cap('另一種：一次一列（dot product）', '第 1 列 · x'); },
   async (tok, S) => { S.A.unglow(); S.r.unglow(); S.A.glowRow(1, GOLD); S.r.glowCell(1, 0, GOLD); const d = dotp(AM[1], xM); ok(d === 7, '1·1 + 3·2 = ' + d + ' ✓', 3.8, 4.0); cap('第 2 列 · x = 7', ''); },
   async (tok, S) => { S.A.unglow(); S.r.unglow(); hot('Ax = A 的行的線性組合', 3.0, 1.0); cap('重點：Ax 是 A 的行的組合', '以後請這樣想'); },
@@ -1524,7 +1523,7 @@ sc('ls-l2-elim2', 'L2：(3,1) 已經是 0，第二個 pivot 2，R₃ − 2R₂ �
   async (tok, S) => { S.A.glowCell(1, 1, null); S.A.glowCell(2, 1, REDG); S.t = ok(L32 === 2, 'ℓ₃₂ = 4 ÷ 2 = ' + fmt(L32) + ' ✓', -2.6, S.A.Y(2) - 0.6); cap('目標：消掉 (3,2) 位置的 4', 'multiplier = 4 ÷ 2 = 2'); },
   async (tok, S) => { S.A.glowCell(2, 1, null); await rowOp(tok, S.A, 2, 1, L32, 1300); cap('R₃ − 2·R₂ → (0, 0, 5)', '1 − 2·(−2) = 5'); },
   async (tok, S) => { gone(S.t); S.A.pivot(2, 2); S.A.glowCell(2, 2, GOLD); hot('第 3 個 pivot', -2.4, S.A.Y(2)); ok(U2_OK && same(S.A.v, U2), 'pivots 1、2、5 ✓', 0.6, 0.6); cap('第三個 pivot：5', '三個 pivot 都框起來'); },
-  async (tok, S) => { S.A.glowCell(2, 2, null); S.A.glowCell(1, 2, GOLD); note('板書一度寫成 −1，更正為 −2', 4.0, 2.4); cap('老師黑板上一度寫錯：應是 −2', '1 − 3·1 = −2；因此第三個 pivot 是 5'); },
+  async (tok, S) => { S.A.glowCell(2, 2, null); S.A.glowCell(1, 2, GOLD); note('板書一度寫成 −1，更正為 −2', 0.6, 0.0); cap('老師黑板上一度寫錯：應是 −2', '1 − 3·1 = −2；因此第三個 pivot 是 5'); },
 ]);
 
 sc('ls-l2-u', 'L2：U 是上三角，pivots 1、2、5，det = 10', [
@@ -1552,11 +1551,11 @@ sc('ls-l2-fail', 'L2：消去什麼時候失敗——暫時失敗（換列）與
     note('示意', -5.6, 5.8);
     S.M = mview(A0, -3.4, 3.6, { name: '若左上角是 0', s: 0.8 }); S.M.glowCell(0, 0, REDG);
     await wt(tok, 700); await swapRows(tok, S.M, 0, 1, 1000); S.M.pivot(0, 0);
-    ok(S.M.v[0][0] !== 0, '換列 R₁ ↔ R₂ → pivot ' + fmt(S.M.v[0][0]) + ' ✓', -3.4, 1.2);
+    S.k0 = ok(S.M.v[0][0] !== 0, '換列 R₁ ↔ R₂ → pivot ' + fmt(S.M.v[0][0]) + ' ✓', -3.4, 1.2);
     cap('第一個數是 0：交換兩列就好', '不說「zero pivot」，是「pivot 位置是 0」');
   },
   async (tok, S) => {
-    gone(S.M); S.M = mview(A6, -3.4, 3.6, { name: '若 8 改成 6', s: 0.8 }); S.M.glowCell(1, 1, GOLD);
+    gone(S.M, S.k0); S.M = mview(A6, -3.4, 3.6, { name: '若 8 改成 6', s: 0.8 }); S.M.glowCell(1, 1, GOLD);
     await wt(tok, 500); S.M.pivot(0, 0); await rowOp(tok, S.M, 1, 0, 3, 1000);
     S.M.glowCell(1, 1, REDG); ok(A6a[1][1] === 0, '6 − 3·2 = ' + fmt(A6a[1][1]) + '：第 2 個 pivot 位置是 0 ✓', -3.4, 1.2);
     cap('若 8 改成 6：第二個 pivot 位置變 0', '');
@@ -1868,14 +1867,14 @@ const VE = mm(V32, mm(V31, V21)), V21i = inv(V21), V32i = inv(V32), VL = mm(V21i
 sc('ls-l4-evl', 'L4：為什麼用 L——E 裡冒出 10，L 裡沒有', [
   async (tok, S) => { cap('為什麼反矩陣的乘積比較好？', '要 3×3 才看得出來'); },
   async (tok, S) => { S.e21 = mview(V21, -2.6, 4.6, { name: 'E₂₁', s: 0.72, color: COL.hot }); S.e21.glowCell(1, 0, GOLD); cap('E₂₁ 裡是 −2', 'multiplier 2'); },
-  async (tok, S) => { S.e21.unglow(); note('E₃₁ = I（(3,1) 已經是 0）', 4.4, 6.2); cap('E₃₁ 就是 identity', '那個位置本來就是 0'); },
+  async (tok, S) => { S.e21.unglow(); S.n31 = note('E₃₁ = I（(3,1) 已經是 0）', 4.4, 6.2); cap('E₃₁ 就是 identity', '那個位置本來就是 0'); },
   async (tok, S) => { S.e32 = mview(V32, -5.2, 4.6, { name: 'E₃₂', s: 0.72, color: COL.hot }); S.e32.glowCell(2, 1, GOLD); cap('E₃₂ 裡是 −5', 'multiplier 5'); },
   async (tok, S) => { S.e32.unglow(); sym('=', -1.0, 4.6); S.E = mview(blankM(3, 3), 0.7, 4.6, { name: 'E', s: 0.72, color: COL.a }); cap('把它們乘起來：E = E₃₂E₂₁', ''); },
   async (tok, S) => { [[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2]].forEach(([i, j]) => S.E.set(i, j, VE[i][j])); cap('對角線 1、上方全 0', '只把上面的列減到下面的列'); },
   async (tok, S) => { S.E.set(1, 0, VE[1][0]); S.E.glowRow(1, GOLD); cap('第 2 列：−2 1 0', ''); },
   async (tok, S) => { S.E.unglow(); S.E.set(2, 0, VE[2][0]); S.E.glowCell(2, 0, REDG); tint(S.E.cells[2][0], COL.red); cap('(3,1) 冒出一個 10！', ''); },
   async (tok, S) => { S.E.set(2, 1, VE[2][1]); tint(S.E.cells[2][0], COL.red); ok(same(VE, [[1, 0, 0], [-2, 1, 0], [10, -5, 1]]), 'E = ' + ms(VE) + ' ✓', 0.7, 2.9); cap('(3,2) 是 −5', ''); },
-  async (tok, S) => { note('2 × 5 = 10：row 1 經 row 2 進到 row 3', 4.0, 5.4); cap('10 怎麼來的？', 'row 1 經由 row 2 影響到 row 3'); },
+  async (tok, S) => { gone(S.n31); note('2 × 5 = 10：row 1 經 row 2 進到 row 3', 4.0, 5.8); cap('10 怎麼來的？', 'row 1 經由 row 2 影響到 row 3'); },
   async (tok, S) => { sym('=', -1.0, 1.7); S.L = mview(blankM(3, 3), 0.7, 1.7, { name: 'L', s: 0.72, nameCls: 'ptr alt', colorOf: (v, i, j) => (v === '' ? COL.zero : i > j && Math.abs(v) > 1e-9 ? COL.l : i === j ? '#e9dcc4' : COL.zero) }); cap('反方向：反矩陣、反順序', 'E₂₁⁻¹E₃₂⁻¹'); },
   async (tok, S) => { S.i21 = mview(V21i, -5.2, 1.7, { name: 'E₂₁⁻¹', s: 0.72, nameCls: 'ptr alt' }); S.i21.glowCell(1, 0, GREEN); ok(same(mm(V21i, V21), eye(3)), 'E₂₁⁻¹：+2 ✓', -5.2, 0.2); cap('E₂₁⁻¹：把 2 倍 row 1 加回 row 2', '同一個矩陣，正號'); },
   async (tok, S) => { S.i21.unglow(); S.i32 = mview(V32i, -2.6, 1.7, { name: 'E₃₂⁻¹', s: 0.72, nameCls: 'ptr alt' }); S.i32.glowCell(2, 1, GREEN); ok(same(mm(V32i, V32), eye(3)), 'E₃₂⁻¹：+5 ✓', -2.6, 0.2); cap('E₃₂⁻¹：把 5 加回去', ''); },
@@ -1889,10 +1888,10 @@ sc('ls-l4-evl', 'L4：為什麼用 L——E 裡冒出 10，L 裡沒有', [
     ok(same(VL, [[1, 0, 0], [2, 1, 0], [0, 5, 1]]), 'L = ' + ms(VL) + ' ✓', 0.7, 0.0);
     cap('乘出來：L = [1 0 0; 2 1 0; 0 5 1]', '');
   },
-  async (tok, S) => { S.L.unglow(); hd('EA = U　⇔　A = LU', 4.2, 3.6); cap('E 放在 A 左邊；L 放在 U 左邊', 'EA = U，A = LU'); },
-  async (tok, S) => { S.L.glowCell(2, 0, GREEN); ok(VL[2][0] === 0, 'L 的 (3,1) = 0：沒有 10 ✓', 4.2, 2.8); cap('2 和 5 互不干擾，沒有 10', ''); },
-  async (tok, S) => { S.L.unglow(); S.L.glowCell(1, 0, GOLD); S.L.glowCell(2, 1, GOLD); hot('不換列：multipliers 直接放進 L', 4.2, 2.0); cap('不換列時，multipliers 直接放進 L', '完全不用計算'); },
-  async (tok, S) => { S.L.unglow(); note('存下 U 的新列 + 用過的 multipliers，A 可以丟掉', 3.2, 0.9); cap('消去時只要存 U 和 multipliers', '原本的 A 可以丟了'); },
+  async (tok, S) => { S.L.unglow(); hd('EA = U　⇔　A = LU', 4.8, 3.6); cap('E 放在 A 左邊；L 放在 U 左邊', 'EA = U，A = LU'); },
+  async (tok, S) => { S.L.glowCell(2, 0, GREEN); ok(VL[2][0] === 0, 'L 的 (3,1) = 0：沒有 10 ✓', 4.8, 2.8); cap('2 和 5 互不干擾，沒有 10', ''); },
+  async (tok, S) => { S.L.unglow(); S.L.glowCell(1, 0, GOLD); S.L.glowCell(2, 1, GOLD); hot('不換列：multipliers 直接放進 L', 4.8, 2.0); cap('不換列時，multipliers 直接放進 L', '完全不用計算'); },
+  async (tok, S) => { S.L.unglow(); note('存下 U 的新列 + 用過的 multipliers，A 可以丟掉', 4.6, 1.0); cap('消去時只要存 U 和 multipliers', '原本的 A 可以丟了'); },
   async (tok, S) => { S.E.cells.flat().forEach((m) => glow(m, REDG)); S.L.cells.flat().forEach((m) => glow(m, GREEN)); cap('E 不好看；L 直接冒出來', '這就是用矩陣看消去的新收穫'); },
 ]);
 
@@ -1908,11 +1907,11 @@ sc('ls-l4-cost', 'L4：消去的運算量 ≈ n³/3', [
   },
   async (tok, S) => { S.q = hd('n × n：n = 1000？一百萬？', -3.6, 5.4); cap('n×n 的矩陣，n 越大越精確', '但也越貴'); },
   async (tok, S) => { txt(S.q, 'n = 100'); cap('假設 n = 100，而且沒有 0', ''); },
-  async (tok, S) => { sm('第一步後：第 1 行 pivot 下面全 0，剩 99×99', -3.6, 4.7); cap('第一步：把第一行 pivot 下面清成 0', '剩下 99×99 的問題'); },
+  async (tok, S) => { S.s1 = sm('第一步後：第 1 行 pivot 下面全 0，剩 99×99', -3.6, 4.7); cap('第一步：把第一行 pivot 下面清成 0', '剩下 99×99 的問題'); },
   async (tok, S) => { S.opt = sm('n 加倍時：×2？×4？×8？還是 n!？', -3.6, 4.0); cap('跟 n、n²、n³ 還是 n! 成正比？', ''); },
-  async (tok, S) => { note('一次運算 = 乘一次 + 減一次', -3.6, 3.2); cap('一次「運算」：乘一個 ℓ、再減掉', 'multiply-subtract'); },
+  async (tok, S) => { S.s3 = note('一次運算 = 乘一次 + 減一次', -3.6, 3.2); cap('一次「運算」：乘一個 ℓ、再減掉', 'multiply-subtract'); },
   async (tok, S) => {
-    const { n, u } = S; S.cnt = hot('100² = ' + 100 * 100, -3.6, 2.4);
+    const { n, u } = S; gone(S.s1, S.opt); S.cnt = hot('100² = ' + 100 * 100, -3.6, 2.4);
     const slab = lab.box(COL.a, [n * u, u * 0.92, n * u]); slab.position.set(0, u / 2 + 3, 0); lab.dropTo(lab.addBody(slab), V3(0, u / 2, 0));
     cap('第一步：幾乎每個數都改 ≈ 100²', '');
   },
@@ -1926,13 +1925,13 @@ sc('ls-l4-cost', 'L4：消去的運算量 ≈ n³/3', [
     for (let k = n - 2; k >= 1; k--) { const y = (n - k) * u + u / 2; const slab = lab.box('#6fa8dc', [k * u, u * 0.92, k * u]); slab.position.set((k - n) * u / 2, y + 3, (k - n) * u / 2); lab.dropTo(lab.addBody(slab), V3((k - n) * u / 2, y, (k - n) * u / 2)); await wt(tok, 150); }
     txt(S.cnt, '… + 2² + 1²'); cap('98²、97²……一直到 1²', '');
   },
-  async (tok, S) => { hd('n² + (n−1)² + … + 1²', 3.6, 4.6); cap('總數 ≈ n² + (n−1)² + … + 1²', ''); },
-  async (tok, S) => { bad('不是 n', 3.6, 3.9); bad('不是 n!（那是行列式公式）', 3.6, 3.3); cap('不是 n，也不是 n!', 'n! 是行列式展開公式的量'); },
-  async (tok, S) => { hot('是 n³ 等級', 3.6, 2.6); cap('n 項、最大一項 n² → 最多 n³', ''); },
+  async (tok, S) => { S.r = [hd('n² + (n−1)² + … + 1²', 3.6, 4.6)]; cap('總數 ≈ n² + (n−1)² + … + 1²', ''); },
+  async (tok, S) => { S.r.push(bad('不是 n', 3.6, 3.9), bad('不是 n!（那是行列式公式）', 3.6, 3.3)); cap('不是 n，也不是 n!', 'n! 是行列式展開公式的量'); },
+  async (tok, S) => { S.r.push(hot('是 n³ 等級', 3.6, 2.6)); cap('n 項、最大一項 n² → 最多 n³', ''); },
   async (tok, S) => { ok(SUM100 === 338350 && Math.abs(SUM100 / (100 ** 3 / 3) - 1) < 0.02, 'n = 100：' + SUM100 + ' ≈ 100³/3 ≈ 333333 ✓', 3.6, 1.9); cap('大約 n³/3', '因為問題越來越小'); },
   async (tok, S) => { sm('∫₀ⁿ x² dx = n³/3', 3.6, 1.2); cap('像微積分：∫x² dx = x³/3', '加總 ≈ 積分'); },
   async (tok, S) => {
-    const { u } = S; for (let k = 1; k <= 8; k++) cube('', COL.u, [u * 0.9, u * 0.9, u * 0.9], 2.6, (k - 0.5) * u, 2.4, 0);
+    const { u } = S; gone(S.r, S.s3); for (let k = 1; k <= 8; k++) cube('', COL.u, [u * 0.9, u * 0.9, u * 0.9], 2.6, (k - 0.5) * u, 2.4, 0);
     sm('b：一行', 2.6, 8 * u + 0.4, 2.4); cap('右邊的 b 要花多少？', '');
   },
   async (tok, S) => { hot('每個 b ≈ n²', -3.6, 1.5); cap('每個右邊 b 只要 ≈ n²', '消去 + 回代'); },
@@ -1976,7 +1975,7 @@ sc('ls-l4-perm', 'L4：3×3 的 6 個 permutation matrix，P⁻¹ = Pᵀ', [
 const QA = [[1, 2], [3, 4]], QB = [[5, 6], [7, 8]], QAB = mm(QA, QB);
 const QE = [[2, 1], [1, 2]], QV = [1, 1], QEv = mv3(QE, QV);
 sc('ls-3b-compute', '3B1B：會算，但不知道為什麼', [
-  async (tok, S) => { hd('Essence of linear algebra', 0, 6.4); cap('接下來的系列：線性代數', ''); },
+  async (tok, S) => { S.ttl = hd('Essence of linear algebra', 0, 6.4); cap('接下來的系列：線性代數', ''); },
   async (tok, S) => { note('示意', -6.0, 5.6); cap('幾乎每個技術領域都要用到', '但第一次學的人常常沒真正懂'); },
   async (tok, S) => {
     mview(QA, -5.0, 4.2, { s: 0.6 }); sym('×', -4.0, 4.2); mview(QB, -3.0, 4.2, { s: 0.6, color: COL.b }); sym('=', -2.0, 4.2);
@@ -1996,7 +1995,7 @@ sc('ls-3b-compute', '3B1B：會算，但不知道為什麼', [
     S.k.push(ok(same(QEv, QV.map((v) => 3 * v)), '特徵值：Av = 3v ✓', -3.0, 0.5));
     cap('學會算特徵值（eigenvalue）', '');
   },
-  async (tok, S) => { bub('為什麼這樣定義？', -3.0, 6.1); bub('跟行列式有什麼關係？', 3.2, 6.1); bub('到底代表什麼？', -3.0, -0.2); cap('卻不懂為什麼', '為什麼乘法這樣定義？特徵值代表什麼？'); },
+  async (tok, S) => { remove(S.ttl); bub('為什麼這樣定義？', -3.0, 6.3); bub('跟行列式有什麼關係？', 3.2, 6.3); bub('到底代表什麼？', -3.0, -0.2); cap('卻不懂為什麼', '為什麼乘法這樣定義？特徵值代表什麼？'); },
   async (tok, S) => { cap('數字很熟，幾何直覺很模糊', ''); },
 ]);
 
@@ -2005,11 +2004,11 @@ sc('ls-3b-geo', '3B1B：數值理解 vs 幾何理解', [
   async (tok, S) => {
     note('示意', -6.0, 6.0);
     S.M = mview(SH, -4.4, 4.4, { name: '數字：矩陣', s: 0.8 });
-    S.bd = board(2.4, 3.2, 0.42, 5);
-    S.g = []; for (let k = -3; k <= 3; k++) { S.g.push([[k, -3], [k, 3], rod('#9fb7d0', 0.02)]); S.g.push([[-3, k], [3, k], rod('#9fb7d0', 0.02)]); }
+    S.bd = board(2.4, 3.2, 0.6, 4);
+    S.g = []; for (let k = -2; k <= 2; k++) { S.g.push([[k, -2], [k, 2], rod('#9fb7d0', 0.02)]); S.g.push([[-2, k], [2, k], rod('#9fb7d0', 0.02)]); }
     S.draw = (u) => { const Mt = [[1, u * SH[0][1]], [u * SH[1][0], 1]]; S.g.forEach(([a, b, r]) => setRod(r, S.bd.P(...mv3(Mt, a)).setZ(0.05), S.bd.P(...mv3(Mt, b)).setZ(0.05))); };
     S.draw(0);
-    S.i = vArrow(COL.c, 0.05); S.j = vArrow(COL.red, 0.05); setArrow(S.i, S.bd.P(0, 0).setZ(0.1), S.bd.P(1, 0).setZ(0.1)); setArrow(S.j, S.bd.P(0, 0).setZ(0.1), S.bd.P(0, 1).setZ(0.1));
+    S.i = vArrow(COL.c, 0.065); S.j = vArrow(COL.red, 0.065); setArrow(S.i, S.bd.P(0, 0).setZ(0.1), S.bd.P(1, 0).setZ(0.1)); setArrow(S.j, S.bd.P(0, 0).setZ(0.1), S.bd.P(0, 1).setZ(0.1));
     cap('數值的理解 vs 幾何的理解', '左邊是數字，右邊是圖');
   },
   async (tok, S) => {
@@ -2030,11 +2029,11 @@ const sinTerms = [1, 2, 3, 4].map((n) => { let s = 0; for (let k = 0; k < n; k++
 const SIN1 = Math.sin(1);
 sc('ls-3b-sine', '3B1B：sin 的無窮多項式比喻', [
   async (tok, S) => { note('類比', -6.0, 6.2); S.h = hd('sin x = x − x³/3! + x⁵/5! − x⁷/7! + …', -1.6, 6.2); cap('類比：第一次學 sin 時只看到這個', '一個無窮多項式'); },
-  async (tok, S) => { sm('計算機就是這樣算 sin', -1.6, 5.5); cap('計算機確實這樣算 sin', ''); },
+  async (tok, S) => { sm('計算機也用多項式近似來算 sin', -1.6, 5.6); cap('計算機也是用多項式近似算 sin', '只用加減乘除'); },
   async (tok, S) => {
-    S.bars = sinTerms.map((v, i) => { const h = v * 4; const m = cube('', i === 3 ? COL.c : COL.a, [0.6, h, 0.6], -5.0 + i * 0.9, h / 2, 0); const l = lab.label(v.toFixed(4), 'val'); l.position.set(0, h / 2 + 0.25, 0); m.add(l); return m; });
-    sm('x = 1，前 1～4 項', -3.6, -0.4);
-    ok(Math.abs(sinTerms[3] - SIN1) < 1e-3, '4 項 = ' + sinTerms[3].toFixed(6) + ' ≈ sin 1 = ' + SIN1.toFixed(6) + ' ✓', -3.6, 4.6);
+    S.bars = sinTerms.map((v, i) => { const h = v * 3.2; const m = cube('', i === 3 ? COL.c : COL.a, [0.6, h, 0.6], -5.0 + i * 1.4, h / 2, 0); const l = lab.label(v.toFixed(4), 'val'); l.position.set(0, h / 2 + 0.25, 0); m.add(l); return m; });
+    sm('x = 1，前 1～4 項', -2.9, -0.4);
+    ok(Math.abs(sinTerms[3] - SIN1) < 1e-3, '4 項 = ' + sinTerms[3].toFixed(6) + ' ≈ sin 1 = ' + SIN1.toFixed(6) + ' ✓', -2.9, 4.4);
     cap('作業：代數字進去、截斷到某一項', '例如 x = 1');
   },
   async (tok, S) => {
@@ -2048,9 +2047,9 @@ sc('ls-3b-sine', '3B1B：sin 的無窮多項式比喻', [
     cap('其實 sin 跟三角形有關', '角度 1 弧度時的高度');
   },
   async (tok, S) => { bub('物理課上大家一眼就看出來？', 3.2, -0.3); cap('後來上物理課會很挫折', '別人像有電腦腦袋'); },
-  async (tok, S) => { note('線性代數也一樣：靠幾個視覺直覺', -1.6, 5.5); cap('線性代數也一樣', '底下有幾個關鍵的視覺直覺'); },
+  async (tok, S) => { note('線性代數也一樣：靠幾個視覺直覺', 3.2, 5.5); cap('線性代數也一樣', '底下有幾個關鍵的視覺直覺'); },
   async (tok, S) => { cap('計算和圖像的連結很直接', '弄懂之後，細節就合理多了'); },
-  async (tok, S) => { sm('數字交給電腦，人負責概念', 3.2, 5.3); cap('很多課花太多時間在數值計算', '現在計算多半交給電腦'); },
+  async (tok, S) => { sm('數字交給電腦，人負責概念', -2.9, 5.0); cap('很多課花太多時間在數值計算', '現在計算多半交給電腦'); },
 ]);
   }
   // @@FRAGMENTS@@

@@ -560,10 +560,10 @@ export default function (ctx) {
     }
     const bank = [
       { q: 'KMP 字串比對（含建 failure function）的時間複雜度？', a: 'O(n + m)', d: ['O(nm)', 'O(n log m)', 'O(m²)'] },
-      { q: 'KMP 為什麼比對階段只要 O(n)？', a: 'text 的指標 i 從不倒退，每次比較不是 i 前進就是 pattern 右移', d: ['因為 failure function 是 O(1) 查表', '因為只比較 pattern 的最後一個字元', '因為每次都右移 m 格'] },
-      { q: 'Rolling hash 為什麼不建議用 2^w 當模數？（MIT 6.006 Rec 9b）', a: '輸入有規律（例如字元編碼都是偶數）時 hash 也有同樣規律，分布不均勻', d: ['2^w 不能算 mod', '2^w 會讓 hash 溢位', '2^w 沒有乘法反元素所以一定錯'] },
-      { q: 'Rabin-Karp 的 hash 值相同時要做什麼？', a: '逐字比較確認，因為可能是 collision（假警報）', d: ['直接回報找到', '換一個模數重算', '跳過這個位置'] },
-      { q: 'Boyer-Moore 在什麼情況下特別快？', a: '字母表大、pattern 長，壞字元常常不在 pattern 裡', d: ['字母表只有 0 和 1', 'text 和 pattern 幾乎全部相同', 'pattern 只有 1 個字元'] },
+      { q: 'KMP 為什麼比對階段只要 O(n)？', a: 'text 的指標 i 從不倒退，每次比較後 i 前進或 pattern 右移', d: ['failure function 可以 O(1) 查表，所以每個字元只要比一次', '只比較 pattern 的最後一個字元，其餘字元直接跳過', '每次 mismatch 都把 pattern 右移 m 格，跳過已比過的部分'] },
+      { q: 'Rolling hash 為什麼不建議用 2^w 當模數？（MIT 6.006 Rec 9b）', a: '輸入有規律（如編碼全是偶數）時 hash 也有同樣規律，分布不均', d: ['2^w 不是質數，在 mod 2^w 下完全不能做減法和乘法', '2^w 太小，任何長度的字串算出來的 hash 都會溢位', '2^w 下 base 一定沒有乘法反元素，rolling 更新會算錯'] },
+      { q: 'Rabin-Karp 的 hash 值相同時要做什麼？', a: '逐字比較確認，因為可能是 collision（假警報）', d: ['直接回報找到，hash 相同就代表字串一定相同', '換一個模數重新計算 hash，直到兩者不同', '跳過這個位置，hash 相同多半只是 collision'] },
+      { q: 'Boyer-Moore 在什麼情況下特別快？', a: '字母表大、pattern 長，壞字元常常不在 pattern 裡', d: ['字母表只有 0 和 1，壞字元幾乎都在 pattern 裡', 'text 和 pattern 幾乎全部相同，每次都比到最左邊', 'pattern 只有 1 個字元，每個位置都只比一次'] },
     ];
     const b = bank[Math.floor(Math.random() * bank.length)];
     return { q: b.q, opts: [b.a, ...b.d], ans: b.a, why: '答案：' + b.a + '。' };
@@ -806,7 +806,7 @@ FRAG.push(['strm-naive-backtrack', '暴力法例二：i 一直倒退', async (to
   far = bad('i 曾走到 8', T.at(7), 1.9, -1.4);
   N.align(5);
   await travel(tok, N.ip, V3(T.at(7), 1.1, -1.4), V3(T.at(5), 1.1, -1.4), 900);
-  say('i 從 8 退回 6', '已經比過 3 個字母，又要退 3 格');
+  say('i 從 8 退回 6', '這一輪比過 3 個字母，又要退回去重比');
   await step(tok);                                   // 4:19 we are checking them again: the drawback
   for (let k = 5; k <= 6; k++) glow(T.cs[k], GOLD);
   G.mood('sad');
@@ -1226,7 +1226,7 @@ FRAG.push(['strm-rk-sum-aab', 'Rabin-Karp 基本想法：aaaaab 找 aab', async 
   say('text 前 3 個：1 + 1 + 1 = 3', '一次取 m = 3 個字母');
   await step(tok);                                   // 3:26 3 ≠ 4: no need to check characters
   bad('3 ≠ 4', T.at(1), 2.0, -0.9);
-  say('3 ≠ 4：不用比字元', '算 hash 是常數時間');
+  say('3 ≠ 4：不用比字元', '比兩個數只要常數時間');
   await step(tok);                                   // 3:38 slide to the next three: 3 again
   W.at(1, 3);
   say('滑到下一組 aaa = 3', '3 ≠ 4');
@@ -1412,7 +1412,7 @@ FRAG.push(['strm-rk-base10', 'Rabin-Karp hash：dba = 421', async (tok) => {
   await step(tok);                                   // 12:59 you can define your own hash function
   say('懂 hashing，也可以自己設計 hash function', '字串的話，他們建議用這種寫法');
   await step(tok);                                   // 13:10 26 letters → 26; all ASCII → 127
-  note('26 個英文字母 → base 26；全部 ASCII → base 127', 4.0, 0.3, -3.6);
+  note('base 26（英文字母）；全部 ASCII：127（嚴格說 128）', 1.2, 0.3, -4.6);
   say('字母多，base 就跟著變大', '26 個字母用 26，全部字元用 127');
   await step(tok);                                   // 13:41 400 + 20 + 1 = 421
   arrow(V3(1.8, 0.3, 0.6), V3(3.4, 0.3, 0.6));
@@ -2132,7 +2132,7 @@ FRAG.push(['strm-mit-geninf', 'Generator 串接與無限序列', async (tok) => 
   say('iterator 就只有 next 和 iter', '有這兩個方法就是 iterator');
   await step(tok);                                   // 34:02 a generator: magic for shorter iterators
   pkt('generator = 寫短一點的 iterator', 4.0, 1.6, 3.2);
-  say('generator：用更短的程式寫 iterator', '3 行對 13 行');
+  say('generator：用更短的程式寫 iterator', '3 行對 12 行');
   await step(tok);                                   // 34:56 do I have len? no
   bubble('有幾個？沒有 len！', -4.0, 1.6, 3.2);
   G.mood('wow');

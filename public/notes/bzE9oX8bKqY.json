@@ -324,7 +324,7 @@
    "points": [
     {
      "t": 1383,
-     "text": "使用者對 OS 要兩件事：convenience（Windows 靠 GUI 崛起）與 efficiency / performance。"
+     "text": "使用者對 OS 要兩件事：convenience（Windows 靠 GUI 普及而崛起）與 efficiency / performance。"
     },
     {
      "t": 1506,
@@ -351,7 +351,7 @@
    "explain": [
     "如果要自己開發或選擇一個作業系統，要考量什麼？",
     "從使用者的角度，通常希望兩件事。第一件：convenience（方便），越是商業產品、越接近人的產品越重要。",
-    "這也是 Microsoft Windows 崛起的原因：它是第一個圖形介面，那時很多人不是 CS 背景、只是想用，覺得非常方便。",
+    "這也是 Microsoft Windows 崛起的原因：它把圖形介面帶給大眾的 PC，那時很多人不是 CS 背景、只是想用，覺得非常方便。（老師說「第一個圖形介面」是口誤：更早已有 Xerox Alto、Apple Macintosh 的 GUI。）",
     "第二個角度：efficiency（效率），也可以說 performance。跑 game 總希望不要一直 delay，跑程式越快完成越好。",
     "早期的作業系統比較偏向 efficiency。像這門課用 Linux 的 command line，效能是重要原因之一：不必每個人都把圖形 display 到自己電腦，浪費資源。",
     "兩件事我們都想要，但很不幸，它們一定是 contradict（互相矛盾）的。",
@@ -448,7 +448,7 @@
    ],
    "explain": [
     "所以 OS 是形形色色的。",
-    "早期 x86 的電腦，不外乎大家熟悉的 Windows，另外 Linux 其實是歷史最久的。",
+    "早期 x86 的電腦，不外乎大家熟悉的 Windows，另外一直都有 Linux（老師說它「歷史最久」：Linux 1991 年才出現，比 Windows 晚；歷史最久的是它的前身 UNIX，1969 年）。",
     "一般使用者喜歡 Windows，但真的大型、重要的系統，大家多半還是選 Linux，這跟它是 open source 有很大的關係。",
     "Apple 則是自己來，它的作業系統比較不一樣。",
     "隨著時代改變有了手機：Android、iOS。Windows 也做調整，有 Windows 10，也有修改過、能跑在手機上的 Windows 10 Mobile。",

@@ -109,7 +109,7 @@
     "但 y 同時在 Aᵢ 和 Aⱼ 裡，所以它們的交集不是空的。",
     "partition 規定不同塊的交集一定是空的，所以 Aᵢ 和 Aⱼ 只能是同一塊，否則就矛盾。",
     "既然是同一塊，x 和 z 都在 Aᵢ 裡，所以 x R z，遞移性成立。",
-    "三個條件都證完，這個 relation 是 equivalence relation。畫面上也用程式檢查了示意例子。"
+    "三個條件都證完，這個 relation 是 equivalence relation。畫面上的示意例子也逐一檢查過。"
    ]
   },
   {
@@ -151,7 +151,7 @@
     "兩邊之間有一個 bijection：左邊每一個 relation 對到右邊一個 partition，反過來也一樣，一個對一個。",
     "兩個有限集合之間有 bijection，元素個數就一定一樣多。A = {1,2,3} 時兩邊都是 5 個。",
     "這很有用：如果要數 A 上有幾個 equivalence relation，可以改去數 partition，通常比較好數。",
-    "例如四個元素的集合，就去數它有幾種 partition。程式算出來兩邊都是 15 個。"
+    "例如四個元素的集合，就去數它有幾種 partition。數出來兩邊都是 15 個。"
    ]
   }
  ],

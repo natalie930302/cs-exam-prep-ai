@@ -1393,7 +1393,7 @@
     9545.86
    ],
    "explain": [
-    "回答問題：5 號只有一個孩子，也還是 complete。complete 的重點是 node 從上到下、從左到右的順序是完整的。",
+    "回答問題：heap 14 12 9 4 8 8.5 裡的 9 只有一個孩子（8.5），也還是 complete（動畫的 10 個 node 裡，5 號也只有一個孩子）。complete 的重點是 node 從上到下、從左到右的順序是完整的。",
     "老師說：今天的關鍵步驟其實都不難——root 最好找 → 最大放 root → subtree 也一樣 → 再限制 complete。我們不一定想不到。",
     "同學問：做 insertion 時，怎麼知道最後一個節點在哪裡？",
     "如果 complete binary tree 是放在 array 裡，就很簡單：只要記住 tree 裡 node 的數量。",

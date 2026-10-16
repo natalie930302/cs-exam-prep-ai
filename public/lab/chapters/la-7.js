@@ -977,7 +977,7 @@ export default function (ctx) {
 
   // ───────────────────────── 小測驗 ─────────────────────────
   const qs = { score: 0, total: 0 };
-  const opt4 = (ans, wrongs) => { const o = [ans]; for (const w of wrongs) if (!o.includes(w) && o.length < 4) o.push(w); let k = 1; while (o.length < 4) { const f = ans + ' '.repeat(k++); o.push(f); } return o; };
+  const opt4 = (ans, wrongs) => { const o = [ans]; for (const w of wrongs) if (!o.includes(w) && o.length < 4) o.push(w); return o; };   // 重複的錯誤選項直接略過（不要補「看起來一樣」的選項）
   function genQ() {
     const kind = rnd(0, 5);
     if (kind === 0) {
@@ -997,6 +997,7 @@ export default function (ctx) {
     }
     if (kind === 3) {
       const b = [rnd(0, 6), rnd(0, 6), rnd(0, 6)];
+      if (2 * b[1] === b[0] + b[2]) return genQ();   // 三點共線時「過頭尾的線」就是最小平方解，換一題
       const f = lsq([[0, b[0]], [1, b[1]], [2, b[2]]]);
       const ans = 'C = ' + frac(f.C) + '，D = ' + frac(f.D);
       return { q: '用 b = C + Dt 擬合 (0, ' + b[0] + ')、(1, ' + b[1] + ')、(2, ' + b[2] + ') 的最小平方解：', opts: opt4(ans, ['C = ' + frac(b[0]) + '，D = ' + frac((b[2] - b[0]) / 2), 'C = ' + frac((b[0] + b[1] + b[2]) / 3) + '，D = 0', 'C = ' + frac(f.C + 1) + '，D = ' + frac(f.D)]), ans, why: 'AᵀA = [3 3; 3 5]，Aᵀb = (' + (b[0] + b[1] + b[2]) + ', ' + (b[1] + 2 * b[2]) + ')，解 normal equation。只過頭尾兩點的直線不是最小平方解。' };
@@ -2479,7 +2480,7 @@ scene('or-l15-pline', 'L15：投影矩陣 P = aaᵀ / aᵀa', CAM3, async (tok, 
   },
   async (tok, S) => {
     const a2 = mul(2, LA), p2 = mul(dot(a2, LB) / dot(a2, a2), a2);
-    cap('a 變兩倍 → p 完全不變', '直線沒變；上面多 2、下面多 4，消掉');
+    cap('a 變兩倍 → p 完全不變', '直線沒變；上面多 4、下面也多 4，消掉');
     await anim(tok, 900, (t) => S.A.set(S.sp.O, S.sp.W(mul(1 + t, LA))));
     S.k2 = ok(same(p2, S.proj(LB)), -4.6, 5.0, '投影到 2a：p 一樣 ✓');
     await anim(tok, 600, (t) => S.A.set(S.sp.O, S.sp.W(mul(2 - t, LA))));
@@ -3188,11 +3189,11 @@ scene('or-3b-proj', '3B1B：內積 = 投影長度 × 長度（順序無所謂）
   S.W = vec(C.b, 0.06).set(S.P(0, 0), W2(S.P, DW)).label('w', 'ptr alt');
   S.pr = rod(C.p, 0.07); S.dl = seg(S.P(0, 0), S.P(0, 0), '#8a7a5c', true);
   S.read = sm('', 3.0, 6.2);
-  S.show = (v, w, onto = 'v') => {
+  S.show = (v, w, onto = 'v', vn = 'v') => {   // vn：第一個向量的名字（放大後是 2v）
     const base = onto === 'v' ? v : w, other = onto === 'v' ? w : v;
     const s = dot(v, w) / norm(base), foot = mul(s, unit(base));
     S.pr.set(S.P(0, 0), W2(S.P, foot)); S.pr.material.color.set(s < -1e-6 ? C.e : C.p); S.dl.setPts(W2(S.P, other), W2(S.P, foot));
-    txt(S.read, '投影長 ' + f2(s) + ' × ‖' + onto + '‖ ' + f2(norm(base)) + ' = ' + f2(s * norm(base)) + '；v·w = ' + f2(dot(v, w)));
+    txt(S.read, '投影長 ' + f2(s) + ' × ‖' + (onto === 'v' ? vn : 'w') + '‖ ' + f2(norm(base)) + ' = ' + f2(s * norm(base)) + '；' + (vn === 'v' ? 'v' : '(' + vn + ')') + '·w = ' + f2(dot(v, w)));
     return s * norm(base);
   };
   S.pr.visible = false;
@@ -3254,12 +3255,12 @@ scene('or-3b-proj', '3B1B：內積 = 投影長度 × 長度（順序無所謂）
     S.V.label('2v', 'ptr');
   },
   async (tok, S) => {
-    const r = S.show(S.V2, DW, 'v');
-    cap('w 投影到 2v：投影長不變，被投影的向量變 2 倍', '內積變 2 倍');
+    const r = S.show(S.V2, DW, 'v', '2v');
+    cap('w 投影到 2v：投影長不變，當尺的 2v 變 2 倍長', '內積變 2 倍');
     S.k = ok(Math.abs(r - 2 * dot(DV, DW)) < 1e-9, 3.0, 5.6, '(2v)·w = 2(v·w) ✓');
   },
   async (tok, S) => {
-    const r = S.show(S.V2, DW, 'w');
+    const r = S.show(S.V2, DW, 'w', '2v');
     cap('2v 投影到 w：投影長變 2 倍，w 不變', '');
     S.k2 = ok(Math.abs(r - 2 * dot(DV, DW)) < 1e-9, 3.0, 5.0, '投影長 × ‖w‖ 也 = 2(v·w) ✓');
   },

@@ -127,7 +127,7 @@
     },
     {
      "t": 1255,
-     "text": "binary heap：complete binary tree，而且 parent 比它的 children 小（min-heap）。"
+     "text": "binary heap：資料結構課說的 complete binary tree（一層一層由左到右填滿；和前面 Grimaldi「每個 internal 都剛好 2 個 children」的 complete 意思不同），而且 parent 比它的 children 小（min-heap）。"
     },
     {
      "t": 1284,
@@ -148,7 +148,7 @@
     "最後稍微看一下複雜度，只講結果，不詳細推導。",
     "Prim 其實跟 Dijkstra 很像（都是一個一個點加進來、每次挑最小的），所以直接實作的 worst case 也是 O(n²)，n 是端點數。",
     "用好一點的 data structure——priority queue，用 binary heap 實作——可以降到 O(e log n)，e 是邊數。邊不多時比 n² 小很多。",
-    "binary heap 是一棵 complete binary tree（一層一層從左到右填滿），而且每個 parent 都比它的 children 小。畫面上是示意的例子，程式檢查過 ✓。",
+    "binary heap 是資料結構課說的 complete binary tree：一層一層從左到右填滿（注意：這和前面 Grimaldi「每個 internal vertex 都剛好 2 個 children」的 complete 不一樣，畫面上的 2 就只有一個 child），而且每個 parent 都比它的 children 小。畫面上是示意的例子，程式檢查過 ✓。",
     "Kruskal 的話，用一種叫 union-find 的資料結構來判斷「加這條邊會不會形成 cycle」，複雜度是 O(e log e)。",
     "這些資料結構的細節屬於資料結構課，這門離散數學就不深入了。",
     "總結：我們學了兩個找 minimal spanning tree 的 greedy algorithm——Prim 和 Kruskal，兩個都保證找到 MST。"
@@ -203,13 +203,13 @@
   {
    "q": "binary heap（min-heap）滿足什麼性質？",
    "opts": [
-    "complete binary tree，且 parent ≤ children",
+    "每層由左到右填滿的 binary tree，且 parent ≤ children",
     "每個節點恰有兩個 children，且 parent ≤ children",
     "binary tree，且 left child ≤ parent ≤ right child",
     "所有 leaf 都在同一層"
    ],
-   "ans": "complete binary tree，且 parent ≤ children",
-   "why": "left ≤ parent ≤ right 是 binary search tree 的性質。"
+   "ans": "每層由左到右填滿的 binary tree，且 parent ≤ children",
+   "why": "heap 的「complete」是每層由左到右填滿，不要求每個 internal 都剛好 2 個 children；left ≤ parent ≤ right 是 binary search tree 的性質。"
   }
  ]
 }

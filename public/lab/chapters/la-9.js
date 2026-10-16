@@ -1451,12 +1451,12 @@ scene('sv-f8-sigma', 'SVD 結構（一）：Σ 是伸縮', [
     cap('σᵢ = √λᵢ', 'AᵀA 和 AAᵀ 都對稱，非零特徵值相同');
   },
   async (tok, S) => { // @113.5
-    S.g1 = grid([['σ₁', '0'], ['0', 'σ₂'], ['0', '0']], -6.2, 1.8, VC.g, 0.48); sm('m > n：多出 m − r 列 0', -5.7, 0.05);
-    cap('A 的列比行多', 'Σ 下面多出 m − r 列 0');
+    S.g1 = grid([['σ₁', '0'], ['0', 'σ₂'], ['0', '0']], -6.2, 1.8, VC.g, 0.48); sm('m > n：多 m − n 列 0', -5.7, 0.05);
+    cap('A 的列比行多', 'Σ 下面多出 m − n 列 0（r = n 時就是 m − r）');
   },
   async (tok, S) => { // @127.6
-    S.g2 = grid([['σ₁', '0', '0'], ['0', 'σ₂', '0']], -3.6, 1.8, VC.g, 0.48); sm('m < n：多出 n − r 行 0', -3.1, 0.05);
-    cap('行比列多', 'Σ 右邊多出 n − r 行 0');
+    S.g2 = grid([['σ₁', '0', '0'], ['0', 'σ₂', '0']], -3.6, 1.8, VC.g, 0.48); sm('m < n：多 n − m 行 0', -3.1, 0.05);
+    cap('行比列多', 'Σ 右邊多出 n − m 行 0（r = m 時就是 n − r）');
   },
   async (tok, S) => { // @140.3
     S.g3 = grid([['σ₁', '0', '0'], ['0', 'σ₂', '0'], ['0', '0', '0']], -0.9, 1.8, VC.g, 0.48); sm('方陣、rank 2：m − r 列、n − r 行 0', -0.4, -0.5);
@@ -2815,71 +2815,71 @@ scene('sv-l33-cases', 'L33：四個子空間與 two-sided inverse', [
 scene('sv-l33-left', 'L33：Full column rank —— left inverse (AᵀA)⁻¹Aᵀ', [
   async (tok, S) => { // @233.5
     S.sp = space3(0.7, V3(0, 2.5, 0), 2.6);
-    hd('第三章：不一定 full rank —— full column rank', -2.6, 7.0);
+    hd('第三章：不一定 full rank —— full column rank', 0, 7.2);
     cap('第三章：任意 rank', '先看 full column rank');
   },
   async (tok, S) => { // @262.8
-    sm('這種情形有 left inverse', -2.6, 6.4);
+    sm('這種情形有 left inverse', -4.6, 6.5);
     cap('這種情形有 left inverse', '');
   },
   async (tok, S) => { // @303.5
-    pl('r = n', -5.0, 5.7);
+    pl('r = n（full column rank）', -4.6, 6.0);
     cap('full column rank：r = n', '');
   },
   async (tok, S) => { // @306.7
-    sm('A =', -5.0, 4.9); mx(AL, -4.0, 4.9, 'ptr'); sm('（示意：3 × 2）', -4.0, 3.9);
+    sm('A =', -5.5, 5.0); mx(AL, -4.6, 5.0, 'ptr'); sm('（示意：3 × 2）', -4.6, 4.05);
     S.pl = plane3(S.sp);
     cap('n 個 columns 獨立', '通常列比較多（示意 3 × 2）');
   },
   async (tok, S) => { // @347.0
-    ok(rank(AL) === 2 && rref(AL).piv.length === AL[0].length, -2.6, 3.3, 'null space 只有零向量');
+    ok(rank(AL) === 2 && rref(AL).piv.length === AL[0].length, -4.6, 3.5, 'N(A) = {0}');
     cap('null space = {0}', 'columns 獨立：只有零組合得到 0');
   },
   async (tok, S) => { // @403.1
-    sm('沒有 null space ⇒ row space 就是整個 ℝⁿ', -2.6, 2.75);
+    sm('row space = 整個 ℝⁿ', -4.6, 3.0);
     cap('row space 是整個 ℝⁿ', '');
   },
   async (tok, S) => { // @429.5
     const x = [1, 2], b = mv(AL, x);
-    S.ab = arrow(VC.a, 0.05); await grow(tok, S.ab, S.sp.O, S.sp.W(b)); S.ab.label('b = A(1, 2) 在平面上', 'ptr');
-    sm('Ax = b：0 或 1 個解（沒有 null space 可以加）', -2.6, 2.2);
+    S.ab = arrow(VC.a, 0.05); await grow(tok, S.ab, S.sp.O, S.sp.W(b)); S.ab.label('b = A(1, 2)', 'ptr');
+    sm('Ax = b：0 或 1 個解', -4.6, 2.5);
     cap('Ax = b 有 0 或 1 個解', '有解時只有一個');
   },
   async (tok, S) => { // @465.5
-    S.bb = arrow(VC.b, 0.05); await grow(tok, S.bb, S.sp.O, S.sp.W([1, 2, 4])); S.bb.label('b = (1, 2, 4) 不在平面上', 'ptr alt');
-    sm('rows 不獨立：有些 b 消去後出現 0 = 非零 → 無解', -2.6, 1.65);
+    S.bb = arrow(VC.b, 0.05); await grow(tok, S.bb, S.sp.O, S.sp.W([1, 2, 4])); S.bb.label('b = (1, 2, 4)', 'ptr alt');
+    sm('有些 b 無解（0 = 非零）', -4.6, 2.0);
     cap('rows 可能不獨立', '有些 b 根本無解');
   },
   async (tok, S) => { // @491.0
     const M = mm(tr(AL), AL);
-    ok(isSym(M) && near(det2(M), 3), -2.6, 1.05, 'AᵀA = [2 1; 1 2]：n × n、對稱、可逆（det 3）');
+    ok(isSym(M) && near(det2(M), 3), -4.6, 1.4, 'AᵀA = [2 1; 1 2] 可逆（det 3）');
     cap('AᵀA：n × n、對稱、full rank', 'rank n ⇒ AᵀA 可逆');
   },
   async (tok, S) => { // @548.0
-    pl('A⁻¹_left = (AᵀA)⁻¹Aᵀ =', 2.2, 6.4); mx(msc(ALl, 3), 3.4, 5.6, 'ptr alt'); sm('× 1/3', 5.0, 5.6);
+    pl('A⁻¹_left = (AᵀA)⁻¹Aᵀ =', 4.2, 6.5); mx(msc(ALl, 3), 3.9, 5.75, 'ptr alt'); sm('× 1/3', 5.5, 5.75);
     cap('left inverse = (AᵀA)⁻¹Aᵀ', '');
   },
   async (tok, S) => { // @581.0
-    ok(eqM(mm(ALl, AL), eye(2)), 3.4, 4.7, '(AᵀA)⁻¹AᵀA = I（n × n）');
+    ok(eqM(mm(ALl, AL), eye(2)), 4.2, 5.0, '(AᵀA)⁻¹AᵀA = I（n × n）');
     cap('乘在 A 的左邊：得到 I', '括號一放就看出來');
   },
   async (tok, S) => { // @597.9
     const xh = mv(ALl, [1, 2, 4]), p = mv(AL, xh);
     const d = seg(S.sp.W([1, 2, 4]), S.sp.W([1, 2, 4]), '#6e5f49', true);
     await anim(tok, 1000, (k) => d.setPts(S.sp.W([1, 2, 4]), S.sp.W(lerpV([1, 2, 4], p, k))));
-    ok(eqV(xh, [4 / 3, 7 / 3]), 3.4, 4.1, '最小平方：x̂ = A⁻¹_left b = (4/3, 7/3)');
+    ok(eqV(xh, [4 / 3, 7 / 3]), 4.2, 4.4, '最小平方：x̂ = (4/3, 7/3)');
     cap('這正是最小平方的關鍵', 'normal equation 的係數 AᵀA 可逆');
   },
   async (tok, S) => { // @630.4
-    sm('換邊乘？A 是 m × n、A⁻¹_left 是 n × m、I 是 n × n', 2.2, 3.4);
+    sm('換邊乘：(m × n)(n × m) = m × m', 4.2, 3.8);
     cap('反過來乘呢？', '尺寸：m × n、n × m');
   },
   async (tok, S) => { // @686.8
-    ok(near(det3(mm(AL, tr(AL))), 0), 2.2, 2.8, 'AAᵀ（3 × 3）singular：這裡壞掉');
+    ok(near(det3(mm(AL, tr(AL))), 0), 4.2, 3.2, 'AAᵀ（3 × 3）singular');
     cap('AᵀA 好，AAᵀ 壞', 'AAᵀ 不可逆');
   },
   async (tok, S) => { // @701.6
-    bad('長方形矩陣不可能有 two-sided inverse：A 或 Aᵀ 一定有 null space', 0, -0.4);
+    bad('長方形：沒有 two-sided inverse', 4.2, 2.6);
     cap('長方形矩陣沒有 two-sided inverse', 'm ≠ n ⇒ 一定有 free variable');
   },
 ], { cam: CAM3 });

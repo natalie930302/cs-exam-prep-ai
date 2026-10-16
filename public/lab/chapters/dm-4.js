@@ -398,7 +398,9 @@ export default function (ctx) {
     if (k < 0.18) {
       // 隨機挑兩個整數根，造出遞迴式
       let r1 = pick([-3, -2, -1, 1, 2, 3, 4]), r2 = pick([-3, -2, -1, 1, 2, 3, 4]);
-      const al1 = pick([1, 2, 3, -1]), al2 = pick([1, 2, -1, -2]);
+      const al1 = pick([1, 2, 3, -1]); let al2 = pick([1, 2, -1, -2]);
+      while (al2 === al1) al2 = pick([1, 2, -1, -2]);  // 相等時「α 對調」的選項會跟正解一樣
+      if (r1 === -r2) r2 = r1 === 4 ? 3 : r1 + 1 === 0 ? 2 : r1 + 1;  // r₁ = −r₂ 時「根變號」的選項會跟「α 對調」一樣
       const c1 = r1 + r2, c2 = -r1 * r2;
       const a0 = r1 === r2 ? al1 : al1 + al2, a1 = r1 === r2 ? (al1 + al2) * r1 : al1 * r1 + al2 * r2;
       const R = (r) => (r < 0 ? '(' + minus(r) + ')' : String(r));
@@ -429,7 +431,7 @@ export default function (ctx) {
       return { q: '非齊次遞迴，' + s + '。particular solution 的試解形式？', opts: [ans, ...wr], ans, why: 'F(n) = (多項式)·sⁿ：試 (同次多項式)·sⁿ；若 s 是重數 m 的特徵根，再乘 nᵐ（Rosen Theorem 6）。' };
     }
     if (k < 0.6) {
-      const c = pick([2, 3, 4, 5]), a0 = pick([1, 2, 3]), K = 2 + Math.floor(Math.random() * 3);
+      const c = pick([2, 3, 4, 5]), a0 = pick([2, 3, 5]), K = 2 + Math.floor(Math.random() * 3);
       const v = a0 * Math.pow(c, K);
       return { q: '用生成函數解 aₖ = ' + c + 'aₖ₋₁，a₀ = ' + a0 + '。G(x) 與 a' + sub(K) + ' 為？', opts: ['G(x) = ' + a0 + '/(1 − ' + c + 'x)，a' + sub(K) + ' = ' + v, 'G(x) = ' + a0 + '/(1 + ' + c + 'x)，a' + sub(K) + ' = ' + minus(a0 * Math.pow(-c, K)), 'G(x) = 1/(1 − ' + c + 'x)，a' + sub(K) + ' = ' + Math.pow(c, K), 'G(x) = ' + a0 + 'x/(1 − ' + c + 'x)，a' + sub(K) + ' = ' + a0 * Math.pow(c, K - 1)], ans: 'G(x) = ' + a0 + '/(1 − ' + c + 'x)，a' + sub(K) + ' = ' + v, why: 'G(x) − ' + c + 'xG(x) = a₀（k ≥ 1 的項全消掉）→ G = ' + a0 + '/(1 − ' + c + 'x) = Σ ' + a0 + '·' + c + 'ᵏxᵏ。漏掉 a₀ 會得到錯的分子。' };
     }
@@ -994,7 +996,7 @@ scene('rr-12a-char', "特徵方程：aₙ₊₁ − 5aₙ + 6aₙ₋₁ = 0 → 
   },
   // 585.5
   async (tok, S) => {
-    S.B = board(-3.3, 6.2); S.B.add('aₙ₊₁ − 5aₙ + 6aₙ₋₁ = 0，n ≥ 2', 'ptr alt'); S.B.add('a₁ = 1，a₂ = 5'); cap('aₙ₊₁ − 5aₙ + 6aₙ₋₁ = 0', 'a₁ = 1、a₂ = 5');
+    S.B = board(-3.3, 6.2, 0.75); S.B.add('aₙ₊₁ − 5aₙ + 6aₙ₋₁ = 0，n ≥ 2', 'ptr alt'); S.B.add('a₁ = 1，a₂ = 5'); cap('aₙ₊₁ − 5aₙ + 6aₙ₋₁ = 0', 'a₁ = 1、a₂ = 5');
   },
   // 595.92
   async (tok, S) => {
@@ -1030,7 +1032,7 @@ scene('rr-12a-char', "特徵方程：aₙ₊₁ − 5aₙ + 6aₙ₋₁ = 0 → 
   },
   // 724.41
   async (tok, S) => {
-    S.B.add('試 aₙ = rⁿ', 'ptr alt'); S.B.last(); cap('這裡就試 aₙ = rⁿ', '');
+    S.B.clear(); S.B.add('aₙ₊₁ − 5aₙ + 6aₙ₋₁ = 0', 'ptr'); S.B.add('試 aₙ = rⁿ', 'ptr alt'); S.B.last(); cap('這裡就試 aₙ = rⁿ', '');
   },
   // 749.8
   async (tok, S) => {
@@ -1326,7 +1328,7 @@ scene('rr-12b-double', "重根 r = 2：2ⁿ 與 n·2ⁿ", [
   },
   // 541.61
   async (tok, S) => {
-    S.B = board(-2.4, 6.2, 0.66); S.B.add('aₙ − 4aₙ₋₁ + 4aₙ₋₂ = 0', 'ptr'); cap('aₙ − 4aₙ₋₁ + 4aₙ₋₂ = 0', 'homogeneous');
+    S.B = board(-3.0, 6.2, 0.72); S.B.add('aₙ − 4aₙ₋₁ + 4aₙ₋₂ = 0', 'ptr'); cap('aₙ − 4aₙ₋₁ + 4aₙ₋₂ = 0', 'homogeneous');
   },
   // 546.21
   async (tok, S) => {
@@ -1358,7 +1360,7 @@ scene('rr-12b-double', "重根 r = 2：2ⁿ 與 n·2ⁿ", [
   },
   // 695.82
   async (tok, S) => {
-    gone(S.bb); relabel(S.s2, 'n·2ⁿ ?'); tint(S.s2, FC.orange); S.B.add('試 aₙ = n·2ⁿ 帶回去'); S.B.last(); cap('n·2ⁿ 也是解？', '帶回去看看');
+    gone(S.bb); relabel(S.s2, 'n·2ⁿ ?'); tint(S.s2, FC.orange); S.B.clear(); S.B.add('aₙ − 4aₙ₋₁ + 4aₙ₋₂ = 0', 'ptr'); S.B.add('(r − 2)² = 0 → r = 2 是 double root'); S.B.add('試 aₙ = n·2ⁿ 帶回去'); S.B.last(); cap('n·2ⁿ 也是解？', '帶回去看看');
   },
   // 708.28
   async (tok, S) => {
@@ -1374,15 +1376,15 @@ scene('rr-12b-double', "重根 r = 2：2ⁿ 與 n·2ⁿ", [
   },
   // 781.6
   async (tok, S) => {
-    S.B.hi(-1); note('一般：(r − r₀)² 時 n·r₀ⁿ 也是解', 3.9, 1.0); cap('in general 都是這樣', '重根 r₀ → n·r₀ⁿ 也是解');
+    S.B.hi(-1); S.n1 = note('一般：(r − r₀)² 時 n·r₀ⁿ 也是解', 3.6, 1.9); cap('in general 都是這樣', '重根 r₀ → n·r₀ⁿ 也是解');
   },
   // 801.12
   async (tok, S) => {
-    note('2ⁿ 與 n·2ⁿ 獨立', 3.9, 0.45); cap('這兩個解是獨立的', '');
+    S.n2 = note('2ⁿ 與 n·2ⁿ 獨立', 3.6, 1.2); cap('這兩個解是獨立的', '');
   },
   // 812.08
   async (tok, S) => {
-    S.B.add('通解 aₙ = α₁2ⁿ + α₂n·2ⁿ', 'ptr alt'); S.B.last(); S.A = seq(0, [1, 4], (a, n) => 4 * a[n - 1] - 4 * a[n - 2], 5); S.Bf = {}; for (let n = 0; n <= 5; n++) S.Bf[n] = Math.pow(2, n) + n * Math.pow(2, n); S.c = cmp([0, 1, 2, 3, 4, 5], S.A, S.Bf, -2.2, -0.3, '遞迴', '2ⁿ + n2ⁿ'); sm('示意：α₁ = α₂ = 1', 4.4, -0.3); cap('general solution', 'α₁2ⁿ + α₂n2ⁿ');
+    gone(S.n1, S.n2); S.B.clear(); S.B.add('aₙ − 4aₙ₋₁ + 4aₙ₋₂ = 0', 'ptr'); S.B.add('通解 aₙ = α₁2ⁿ + α₂n·2ⁿ', 'ptr alt'); S.B.last(); S.A = seq(0, [1, 4], (a, n) => 4 * a[n - 1] - 4 * a[n - 2], 5); S.Bf = {}; for (let n = 0; n <= 5; n++) S.Bf[n] = Math.pow(2, n) + n * Math.pow(2, n); S.c = cmp([0, 1, 2, 3, 4, 5], S.A, S.Bf, -2.2, 3.2, '遞迴', '2ⁿ + n2ⁿ'); sm('示意：α₁ = α₂ = 1', 0, 4.5); cap('general solution', 'α₁2ⁿ + α₂n2ⁿ');
   },
 ]);
 scene('rr-12b-multi', "多重根：r₀ⁿ、n r₀ⁿ、n² r₀ⁿ、…", [
@@ -1462,7 +1464,7 @@ scene('rr-12c-cplx', "複數根：實係數多項式的根共軛成對", [
 scene('rr-12c-ex', "r² − 2r + 2 = 0 → r = 1 ± j = √2 e^(±jπ/4)", [
   // 127.52
   async (tok, S) => {
-    hot('例：特徵方程有複數根', 0, 7.2); S.B = board(-3.2, 6.2, 0.6); S.B.add('aₙ − 2aₙ₋₁ + 2aₙ₋₂ = 0，n ≥ 2', 'ptr'); S.B.add('a₀ = 1，a₁ = 2'); cap('看一個例子', 'aₙ − 2aₙ₋₁ + 2aₙ₋₂ = 0');
+    hot('例：特徵方程有複數根', 0, 7.2); S.B = board(-3.2, 6.2, 0.72); S.B.add('aₙ − 2aₙ₋₁ + 2aₙ₋₂ = 0，n ≥ 2', 'ptr'); S.B.add('a₀ = 1，a₁ = 2'); cap('看一個例子', 'aₙ − 2aₙ₋₁ + 2aₙ₋₂ = 0');
   },
   // 140.67
   async (tok, S) => {
@@ -1494,7 +1496,7 @@ scene('rr-12c-ex', "r² − 2r + 2 = 0 → r = 1 ± j = √2 e^(±jπ/4)", [
   },
   // 224.13
   async (tok, S) => {
-    note('工程用 j，數學用 i（同一個 √−1）', -3.2, 0.05); cap('工程都喜歡用 j', '數學都用 i，講清楚就好');
+    S.jn = note('工程用 j，數學用 i（同一個 √−1）', -3.2, 1.1); cap('工程都喜歡用 j', '數學都用 i，講清楚就好');
   },
   // 228.25
   async (tok, S) => {
@@ -1506,11 +1508,11 @@ scene('rr-12c-ex', "r² − 2r + 2 = 0 → r = 1 ± j = √2 e^(±jπ/4)", [
   },
   // 257.08
   async (tok, S) => {
-    S.B.add('e^(jθ) = cos θ + j sin θ'); S.B.last(); cap('e^(jθ) = cos θ + j sin θ', '');
+    gone(S.jn); S.B.clear(); S.B.add('r = 1 ± j（j = √−1）', 'good'); S.B.add('e^(jθ) = cos θ + j sin θ'); S.B.last(); cap('e^(jθ) = cos θ + j sin θ', '');
   },
   // 295.86
   async (tok, S) => {
-    S.B.add('1 ± j = √2(cos π/4 ± j sin π/4) = √2 e^(±jπ/4)'); S.B.last(); sm('長度 √2', S.OX + 0.15, S.OY + S.U + 0.35); sm('角度 π/4', S.OX + 0.95, S.OY + 0.3); cap('把 √(1² + 1²) = √2 提出來', '1 ± j = √2 e^(±jπ/4)');
+    S.B.add('1 ± j = √2(cos π/4 ± j sin π/4)'); S.B.add('= √2 e^(±jπ/4)'); S.B.last(); sm('長度 √2', S.OX + 0.15, S.OY + S.U + 0.35); sm('角度 π/4', S.OX + 0.95, S.OY + 0.3); cap('把 √(1² + 1²) = √2 提出來', '1 ± j = √2 e^(±jπ/4)');
   },
   // 316.18
   async (tok, S) => {
@@ -1518,7 +1520,7 @@ scene('rr-12c-ex', "r² − 2r + 2 = 0 → r = 1 ± j = √2 e^(±jπ/4)", [
   },
   // 332.71
   async (tok, S) => {
-    S.B.hi(-1); note('到這裡都跟實數根一樣', -3.2, -0.6); cap('到現在為止', '做法都跟實數根一樣');
+    S.B.hi(-1); note('到這裡都跟實數根一樣', -3.2, 2.2); cap('到現在為止', '做法都跟實數根一樣');
   },
 ]);
 scene('rr-12c-real', "換參數：β₁ = α₁ + α₂、β₂ = j(α₁ − α₂)", [
@@ -1636,7 +1638,7 @@ scene('rr-12c-rule', "複數根的通解與所有根的情況整理", [
   },
   // 910.58
   async (tok, S) => {
-    S.t = [fbox('實根・單根：rⁿ', FC.blue, -4.0, 0.0, 2.9), fbox('實根・重根：乘 n、n²…', FC.purple, 0, 0.0, 3.6), fbox('複數根：λⁿcos／sin', FC.pink, 4.0, 0.0, 3.1)]; cap('實根：單根、重根；複數根：成對', '每種都知道怎麼處理');
+    S.t = [fbox('實單根：rⁿ', FC.blue, -4.7, 0.0, 3.0), fbox('實重根：乘 n、n²', FC.purple, 0, 0.0, 3.6), fbox('複數根：λⁿcos、sin', FC.pink, 4.7, 0.0, 3.6)]; cap('實根：單根、重根；複數根：成對', '每種都知道怎麼處理');
   },
   // 932.02
   async (tok, S) => {
@@ -1690,7 +1692,7 @@ scene('rr-12d-space', "解集合 = 子空間 + 一個固定向量（示意）", 
   },
   // 162.56
   async (tok, S) => {
-    bad('≠ 0：解集合不是 subspace', 2.8, -0.6); cap('右邊不是 0', 'solution space 就不是 subspace');
+    bad('≠ 0：解集合不是 subspace', 3.3, 4.6); cap('右邊不是 0', 'solution space 就不是 subspace');
   },
   // 170.69
   async (tok, S) => {
@@ -1698,7 +1700,7 @@ scene('rr-12d-space', "解集合 = 子空間 + 一個固定向量（示意）", 
   },
   // 177.79
   async (tok, S) => {
-    note('把子空間搬離原點', 3.0, 3.4); cap('就是把它搬離原點', '');
+    note('把子空間搬離原點', 4.1, 0.2); cap('就是把它搬離原點', '');
   },
 ]);
 scene('rr-12d-thm1', "aₙ、pₙ 都是解 ⇒ zₙ = aₙ − pₙ 是 homogeneous 的解", [
@@ -1920,11 +1922,11 @@ scene('rr-13a-review', "複習：非齊次 = 齊次通解 + 猜一個特解", [
   },
   // 35.8
   async (tok, S) => {
-    S.f1 = fbox('① HRR 通解 zₙ', FC.sky, -3.4, 3.4, 3.0); cap('先解 homogeneous 的 general solution', '');
+    S.f1 = fbox('① HRR 通解 zₙ', FC.sky, -4.3, 3.4, 3.4); cap('先解 homogeneous 的 general solution', '');
   },
   // 42.58
   async (tok, S) => {
-    S.f2 = fbox('② 猜一個特解 pₙ', FC.sand, 0.4, 3.4, 3.0); S.f3 = fbox('③ aₙ = zₙ + pₙ', FC.mint, 4.0, 3.4, 2.6); cap('再猜一個 particular solution', '兩個加起來就是 general solution');
+    S.f2 = fbox('② 猜一個特解 pₙ', FC.sand, 0, 3.4, 3.6); S.f3 = fbox('③ aₙ = zₙ + pₙ', FC.mint, 4.3, 3.4, 3.4); cap('再猜一個 particular solution', '兩個加起來就是 general solution');
   },
   // 56.46
   async (tok, S) => {
@@ -1942,7 +1944,7 @@ scene('rr-13a-review', "複習：非齊次 = 齊次通解 + 猜一個特解", [
 scene('rr-13a-trial', "Trial sequence：常數、多項式、λⁿ、cos／sin", [
   // 92.6
   async (tok, S) => {
-    hot('要怎麼猜？', 0, 7.2); S.h1 = hd('f(n) 長這樣', -2.8, 6.3); S.h2 = hd('試解 pₙ 設成', 2.8, 6.3); S.L = board(-2.8, 5.6, 0.46); S.R = board(2.8, 5.6, 0.46); cap('要怎麼猜？', '');
+    S.T = hot('要怎麼猜？', 0, 7.2); S.h1 = hd('f(n) 長這樣', -2.8, 6.3); S.h2 = hd('試解 pₙ 設成', 2.8, 6.3); S.L = board(-2.8, 5.6, 0.46); S.R = board(2.8, 5.6, 0.46); cap('要怎麼猜？', '');
   },
   // 95.7
   async (tok, S) => {
@@ -2002,7 +2004,7 @@ scene('rr-13a-trial', "Trial sequence：常數、多項式、λⁿ、cos／sin",
   },
   // 470.76
   async (tok, S) => {
-    S.R.hi(-1); gone(S.t1, S.t2, S.t3); good('原則：f(n) 什麼樣子，試解就設什麼樣子', 0, 1.35); cap('基本上就是', '它什麼樣子就設什麼樣子');
+    S.R.hi(-1); gone(S.t1, S.t2, S.t3); txt(S.T, '原則：f(n) 什麼樣子，試解就設什麼樣子'); S.T.element.className = 'lab-label good'; cap('基本上就是', '它什麼樣子就設什麼樣子');
   },
   // 486.73
   async (tok, S) => {
@@ -2544,7 +2546,7 @@ scene('rr-sub-solve', "n − k = 1 → T(n) = n(n + 1)/2 = O(n²)", [
   },
   // 734.21
   async (tok, S) => {
-    note('Big-O：worst case time complexity', 2.6, 2.6); cap('寫的是 worst case', '通常最在意 worst case，用 Big-O');
+    note('Big-O 是上界；這題每次都剛好 n(n+1)/2 步，也是 Θ(n²)', 2.6, 2.6); cap('講者說用 Big-O 寫 worst case', 'Big-O 是上界，這題其實也是 Θ(n²)');
   },
   // 751.87
   async (tok, S) => {
@@ -2656,11 +2658,11 @@ scene('rr-gf-binom', "Σ C(n,r)xʳ = (1 + x)ⁿ（二項式定理）", [
   },
   // 398.22
   async (tok, S) => {
-    S.B = board(-2.6, 6.1, 0.56); S.B.add('數列：C(n,0), C(n,1), C(n,2), …, C(n,n), 0, 0, …', 'ptr'); cap('例：C(n,0), C(n,1), …, C(n,n)', '後面都是 0');
+    S.B = board(-2.6, 6.35, 0.72); S.B.add('數列：C(n,0), C(n,1), C(n,2), …, C(n,n), 0, 0, …', 'ptr'); cap('例：C(n,0), C(n,1), …, C(n,n)', '後面都是 0');
   },
   // 403.98
   async (tok, S) => {
-    S.r = rack([1, 4, 6, 4, 1, 0, 0], -2.4, 0.9, FC.blue, 'n = 4'); for (let i = 5; i < 7; i++) tint(S.r.cells[i], FC.gray); sm('（示意 n = 4）', 4.7, 0.9); cap('有限數列', '補 0 就變成無限數列');
+    S.r = rack([1, 4, 6, 4, 1, 0, 0], -2.4, 2.0, FC.blue, 'n = 4'); for (let i = 5; i < 7; i++) tint(S.r.cells[i], FC.gray); sm('（示意 n = 4）', 4.7, 2.0); cap('有限數列', '補 0 就變成無限數列');
   },
   // 416.76
   async (tok, S) => {
@@ -2680,7 +2682,7 @@ scene('rr-gf-binom', "Σ C(n,r)xʳ = (1 + x)ⁿ（二項式定理）", [
   },
   // 490.4
   async (tok, S) => {
-    S.B.add('= Σ(r=0..n) C(n,r)xʳ + Σ(r=n+1..∞) 0·xʳ'); S.B.last(); cap('把總和拆成兩段', 'r = 0..n 和 r = n+1..∞');
+    S.B.clear(); S.B.add('A(x) = Σ aᵣxʳ', 'ptr'); S.B.add('= Σ(r=0..n) C(n,r)xʳ + Σ(r=n+1..∞) 0·xʳ'); S.B.last(); cap('把總和拆成兩段', 'r = 0..n 和 r = n+1..∞');
   },
   // 519.05
   async (tok, S) => {
@@ -2692,15 +2694,15 @@ scene('rr-gf-binom', "Σ C(n,r)xʳ = (1 + x)ⁿ（二項式定理）", [
   },
   // 541.19
   async (tok, S) => {
-    S.B.add('(1 + x)ⁿ = Σ(r=0..n) C(n,r)xʳ', 'ptr alt'); S.B.last(); sm('(1 + x)⁴ = 1 + 4x + 6x² + 4x³ + x⁴', 0.6, 0.0); cap('(1 + x)ⁿ = Σ C(n,r)xʳ', '');
+    S.B.add('(1 + x)ⁿ = Σ(r=0..n) C(n,r)xʳ', 'ptr alt'); S.B.last(); sm('(1 + x)⁴ = 1 + 4x + 6x² + 4x³ + x⁴', 0.6, 1.25); cap('(1 + x)ⁿ = Σ C(n,r)xʳ', '');
   },
   // 562.28
   async (tok, S) => {
-    S.B.hi(-1); good('(1 + x)ⁿ 就是這個數列的 generating function', -0.6, -0.7); cap('(1 + x)ⁿ 就是 generating function', '');
+    S.B.hi(-1); good('(1 + x)ⁿ 就是這個數列的 generating function', -0.6, 0.5); cap('(1 + x)ⁿ 就是 generating function', '');
   },
   // 572.16
   async (tok, S) => {
-    note('任何有限數列：後面補 0 就能寫生成函數', -0.6, -1.4); cap('任何有限數列', '把其餘項當 0 就變無限數列');
+    note('任何有限數列：後面補 0 就能寫生成函數', -0.6, -0.2); cap('任何有限數列', '把其餘項當 0 就變無限數列');
   },
 ]);
 scene('rr-gf-xn', "0, 0, …, 1（第 n 項）, 0, … → xⁿ", [
@@ -2740,15 +2742,15 @@ scene('rr-gf-sum', "A(x) + B(x)：cᵣ = aᵣ + bᵣ", [
   },
   // 726.22
   async (tok, S) => {
-    S.B = board(-2.6, 6.1, 0.55); S.B.add('A(x)：(aᵣ) 的生成函數；B(x)：(bᵣ) 的生成函數', 'ptr'); cap('兩個生成函數', 'A(x) 給 (aᵣ)，B(x) 給 (bᵣ)');
+    S.B = board(-3.6, 6.2, 0.72); S.B.add('A(x)：(aᵣ)；B(x)：(bᵣ)', 'ptr'); cap('兩個生成函數', 'A(x) 給 (aᵣ)，B(x) 給 (bᵣ)');
   },
   // 745.13
   async (tok, S) => {
-    S.B.add('A(x) = a₀ + a₁x + a₂x² + … = Σ aᵣxʳ'); S.B.last(); S.ra = rack([1, 1, 1, 1], -1.4, 2.3, FC.blue, 'aᵣ'); cap('A(x) = Σ aᵣxʳ', '');
+    S.B.add('A(x) = a₀ + a₁x + a₂x² + … = Σ aᵣxʳ'); S.B.last(); S.ra = rack([1, 1, 1, 1], 1.9, 4.7, FC.blue, 'aᵣ'); cap('A(x) = Σ aᵣxʳ', '');
   },
   // 758.96
   async (tok, S) => {
-    S.B.add('B(x) = b₀ + b₁x + b₂x² + … = Σ bᵣxʳ'); S.B.last(); S.rb = rack([1, 2, 3, 4], -1.4, 1.1, FC.purple, 'bᵣ'); sm('（示意數字）', 3.6, 1.1); cap('B(x) = Σ bᵣxʳ', '');
+    S.B.add('B(x) = b₀ + b₁x + b₂x² + … = Σ bᵣxʳ'); S.B.last(); S.rb = rack([1, 2, 3, 4], 1.9, 3.3, FC.purple, 'bᵣ'); sm('（示意數字）', 3.2, 1.05); cap('B(x) = Σ bᵣxʳ', '');
   },
   // 777.44
   async (tok, S) => {
@@ -2756,11 +2758,11 @@ scene('rr-gf-sum', "A(x) + B(x)：cᵣ = aᵣ + bᵣ", [
   },
   // 783.46
   async (tok, S) => {
-    S.B.add('同次方的係數相加（component-wise）'); S.B.last(); cap('兩個 power series 相加', '同樣 x 次方的係數加起來');
+    S.B.add('同次方的係數相加'); S.B.last(); cap('兩個 power series 相加', '同樣 x 次方的係數加起來');
   },
   // 799.04
   async (tok, S) => {
-    S.B.add('A + B = (a₀+b₀) + (a₁+b₁)x + (a₂+b₂)x² + …'); S.B.last(); S.rc = rack([2, 3, 4, 5], -1.4, -0.1, FC.green, 'cᵣ'); cap('(a₀ + b₀) + (a₁ + b₁)x + …', '');
+    S.B.add('A + B = (a₀+b₀) + (a₁+b₁)x + …'); S.B.last(); S.rc = rack([2, 3, 4, 5], 1.9, 1.9, FC.green, 'cᵣ'); cap('(a₀ + b₀) + (a₁ + b₁)x + …', '');
   },
   // 818.07
   async (tok, S) => {
@@ -2768,7 +2770,7 @@ scene('rr-gf-sum', "A(x) + B(x)：cᵣ = aᵣ + bᵣ", [
   },
   // 841.38
   async (tok, S) => {
-    S.B.hi(-1); good('C(x) = A(x) + B(x) 是 (cᵣ) 的生成函數', -0.4, -1.2); cap('C(x) 是 (cᵣ) 的 generating function', '');
+    S.B.hi(-1); good('C(x) = A(x) + B(x) 是 (cᵣ) 的生成函數', -1.0, 0.2); cap('C(x) 是 (cᵣ) 的 generating function', '');
   },
 ]);
 scene('rr-gf-conv', "A(x)B(x)：dᵣ = a₀bᵣ + a₁bᵣ₋₁ + … + aᵣb₀", [
@@ -2852,23 +2854,23 @@ scene('rr-gf-genbin', "C(α, r) = α(α − 1)…(α − r + 1)/r!", [
   },
   // 1250.67
   async (tok, S) => {
-    S.B = board(-2.4, 6.1, 0.58); S.B.add('generalized binomial coefficient（廣義二項式係數）', 'ptr'); cap('先定義廣義二項式係數', '');
+    S.B = board(-3.3, 6.35, 0.72); S.B.add('generalized binomial coefficient', 'ptr'); cap('先定義廣義二項式係數', 'generalized binomial coefficient');
   },
   // 1259.66
   async (tok, S) => {
-    S.B.add('(1 + x)ⁿ，n 正整數 → 有限多項'); S.B.last(); cap('次方在分子、n 是正的', '展開是有限的');
+    S.B.add('(1 + x)ⁿ，n 正整數 → 有限項'); S.B.last(); cap('次方在分子、n 是正的', '展開是有限的');
   },
   // 1273.24
   async (tok, S) => {
-    S.B.add('1/(1 − x)⁴ = (1 − x)⁻⁴ → 無限多項'); S.B.last(); cap('次方在分母', '(1 − x)⁻⁴ 展開是無限的');
+    S.B.add('1/(1 − x)⁴ = (1 − x)⁻⁴ → 無限項'); S.B.last(); cap('次方在分母', '(1 − x)⁻⁴ 展開是無限的');
   },
   // 1287.7
   async (tok, S) => {
-    S.B.add('α ∈ ℝ（可為負數），r ∈ ℕ'); S.B.last(); cap('α 是實數、r 是自然數', 'α 可以是負的');
+    S.B.add('α ∈ ℝ（可為負），r ∈ ℕ'); S.B.last(); cap('α 是實數、r 是自然數', 'α 可以是負的');
   },
   // 1305.94
   async (tok, S) => {
-    S.B.add('C(α, r) = α(α − 1)(α − 2)…(α − r + 1) / r!', 'ptr alt'); S.B.last(); cap('α 乘 α − 1 乘…乘 α − r + 1', '再除以 r!');
+    S.B.add('C(α, r) = α(α−1)…(α−r+1) / r!', 'ptr alt'); S.B.last(); cap('α 乘 α − 1 乘…乘 α − r + 1', '再除以 r!');
   },
   // 1337.9
   async (tok, S) => {
@@ -2876,7 +2878,7 @@ scene('rr-gf-genbin', "C(α, r) = α(α − 1)…(α − r + 1)/r!", [
   },
   // 1340.19
   async (tok, S) => {
-    S.r = rack([0, 1, 2, 3, 4].map((r) => C(-2, r)), -1.4, -0.6, FC.purple, 'C(−2, r)'); sm('例 α = −2：(−2)(−3)/2! = 3、(−2)(−3)(−4)/3! = −4', 0.4, -1.4); cap('例如 α = −2', '−2、−3、−4 一直乘下去');
+    S.B.hi(-1); sm('α = −2：C(−2, r)，r = 0, 1, 2, 3, 4', 3.6, 4.7); S.r = rack([0, 1, 2, 3, 4].map((r) => C(-2, r)), 1.9, 3.4, FC.purple); sm('(−2)(−3)/2! = ' + fmt(C(-2, 2)), 3.6, 2.6); sm('(−2)(−3)(−4)/3! = ' + fmt(C(-2, 3)), 3.6, 2.0); cap('例如 α = −2', '−2、−3、−4 一直乘下去');
   },
   // 1352.58
   async (tok, S) => {
@@ -2888,21 +2890,21 @@ scene('rr-gf-genbin', "C(α, r) = α(α − 1)…(α − r + 1)/r!", [
   },
   // 1399.52
   async (tok, S) => {
-    S.B.hi(-1); note('α 是正整數 → 回到原本的二項式公式', 2.6, 0.6); cap('代特定的值', '會回到原本的 binomial 公式');
+    S.B.hi(-1); note('α 是正整數 → 回到原本的二項式公式', 3.9, 1.0); cap('代特定的值', '會回到原本的 binomial 公式');
   },
   // 1409.36
   async (tok, S) => {
-    note('Pascal identity：C(α, r) = C(α − 1, r) + C(α − 1, r − 1)', 0, -2.1); cap('還有 Pascal identity', '也常用到');
+    note('Pascal identity：C(α, r) = C(α − 1, r) + C(α − 1, r − 1)', 0, 0.1); cap('還有 Pascal identity', '也常用到');
   },
 ]);
 scene('rr-gf-std', "1/(1 − x)ⁿ = Σ C(n + r − 1, r)xʳ", [
   // 1432.16
   async (tok, S) => {
-    hot('三個要記的展開', 0, 7.2); S.B = board(-2.2, 6.1, 0.66); S.B.add('1/(1 − x) = (1 − x)⁻¹ = 1 + x + x² + …', 'ptr'); S.r1 = rack([1, 1, 1, 1, 1], 2.0, 2.5, FC.blue, '1/(1−x)'); cap('1/(1 − x)：α = −1', '生成全 1 的數列');
+    hot('三個要記的展開', 0, 7.2); S.B = board(-2.2, 6.3, 0.66); S.B.add('1/(1 − x) = (1 − x)⁻¹ = 1 + x + x² + …', 'ptr'); S.r1 = rack([1, 1, 1, 1, 1], 2.0, 2.7, FC.blue, '1/(1−x)'); cap('1/(1 − x)：α = −1', '生成全 1 的數列');
   },
   // 1453.08
   async (tok, S) => {
-    S.B.add('1/(1 − x)² = 1 + 2x + 3x² + 4x³ + …'); S.B.last(); S.r2 = rack([0, 1, 2, 3, 4].map((r) => C(-2, r) * Math.pow(-1, r)), 2.0, 1.3, FC.purple, '1/(1−x)²'); cap('1/(1 − x)²', '1 + 2x + 3x² + 4x³ + …');
+    S.B.add('1/(1 − x)² = 1 + 2x + 3x² + 4x³ + …'); S.B.last(); S.r2 = rack([0, 1, 2, 3, 4].map((r) => C(-2, r) * Math.pow(-1, r)), 2.0, 1.35, FC.purple, '1/(1−x)²'); S.r2.all.splice(1, 5).forEach((l) => remove(l));  // 次方標籤同上排，只留第一排 cap('1/(1 − x)²', '1 + 2x + 3x² + 4x³ + …');
   },
   // 1477.04
   async (tok, S) => {
@@ -2914,37 +2916,37 @@ scene('rr-gf-std', "1/(1 − x)ⁿ = Σ C(n + r − 1, r)xʳ", [
   },
   // 1502.74
   async (tok, S) => {
-    S.B.add('= Σ C(n + r − 1, r) xʳ', 'ptr alt'); S.B.last(); S.r3 = rack([0, 1, 2, 3, 4].map((r) => C(-3, r) * Math.pow(-1, r)), 2.0, 0.1, FC.teal, '1/(1−x)³'); S.chk = [0, 1, 2, 3, 4].every((r) => Math.abs(C(-3, r) * Math.pow(-1, r) - C(3 + r - 1, r)) < 1e-9); sm(S.chk ? 'n = 3：C(r + 2, r) = 1, 3, 6, 10, 15 ✓' : '✘', 3.4, -0.6); cap('寫成二項式係數', 'C(n + r − 1, r)');
+    S.B.add('= Σ C(n + r − 1, r) xʳ', 'ptr alt'); S.B.last(); S.r3 = rack([0, 1, 2, 3, 4].map((r) => C(-3, r) * Math.pow(-1, r)), 2.0, 0.0, FC.teal, '1/(1−x)³'); S.r3.all.splice(1, 5).forEach((l) => remove(l)); S.chk = [0, 1, 2, 3, 4].every((r) => Math.abs(C(-3, r) * Math.pow(-1, r) - C(3 + r - 1, r)) < 1e-9); sm(S.chk ? 'n = 3：C(r + 2, r) ✓' : '✘', 3.8, -0.65); cap('寫成二項式係數', 'C(n + r − 1, r)');
   },
   // 1527.41
   async (tok, S) => {
-    S.B.hi(-1); note('跟「分配問題」（重複組合）有關', -2.6, -1.3); cap('這跟 distribution problem 有關', '之前的影片講過');
+    S.B.hi(-1); note('跟「分配問題」（重複組合）有關', -3.9, 0.7); cap('這跟 distribution problem 有關', '之前的影片講過');
   },
   // 1549.53
   async (tok, S) => {
-    good('左邊 closed form = 右邊數列的生成函數', -0.4, -2.0); cap('左邊的 closed form', '就是右邊係數數列的生成函數');
+    good('左邊 closed form = 右邊數列的生成函數', -3.4, -0.65); cap('左邊的 closed form', '就是右邊係數數列的生成函數');
   },
 ]);
 scene('rr-gf-deriv', "d/dx：1/(1 − x) → 1/(1 − x)²，係數 1, 2, 3, …", [
   // 1590.01
   async (tok, S) => {
-    hot('例：1/(1 − x)² 生成什麼？', 0, 7.2); S.B = board(-2.4, 6.1, 0.56); S.B.add('1/(1 − x)² = 1 + 2x + 3x² + …（用二項式）', 'ptr'); cap('1/(1 − x)² 展開', '1 + 2x + 3x² + …');
+    hot('例：1/(1 − x)² 生成什麼？', 0, 7.2); S.B = board(-3.4, 6.3, 0.75); S.B.add('1/(1 − x)² = 1 + 2x + 3x² + …', 'ptr'); cap('1/(1 − x)² 展開', '1 + 2x + 3x² + …');
   },
   // 1617.12
   async (tok, S) => {
-    S.q = bub('忘了公式怎麼辦？', 3.2, 4.6); cap('如果不記得公式', '怎麼推出 1, 2, 3？');
+    S.q = bub('忘了公式怎麼辦？', 3.6, 5.0); cap('如果不記得公式', '怎麼推出 1, 2, 3？');
   },
   // 1631.84
   async (tok, S) => {
-    gone(S.q); S.B.add('全 1：1 + x + x² + … = 1/(1 − x)'); S.B.last(); S.r = rack([1, 1, 1, 1, 1], -1.6, 1.1, FC.blue, 'f(x)'); cap('先記住幾個基本數列', '全 1 的生成函數是 1/(1 − x)');
+    gone(S.q); S.B.add('全 1：1 + x + x² + … = 1/(1 − x)'); S.B.last(); S.r = rack([1, 1, 1, 1, 1], 2.6, 5.3, FC.blue, 'f(x)'); cap('先記住幾個基本數列', '全 1 的生成函數是 1/(1 − x)');
   },
   // 1667.18
   async (tok, S) => {
-    S.B.add('f(x) = Σ xⁿ（n = 0..∞）= 1/(1 − x)'); S.B.last(); cap('寫成 Σ xⁿ', '每個係數都是 1');
+    S.B.add('f(x) = Σ xⁿ = 1/(1 − x)'); S.B.last(); cap('寫成 Σ xⁿ', '每個係數都是 1');
   },
   // 1701.04
   async (tok, S) => {
-    S.B.add('兩邊對 x 微分'); S.B.last(); cap('兩邊對 x 微分', '假設級數收斂');
+    S.B.clear(); S.B.add('f(x) = Σ xⁿ = 1/(1 − x)', 'ptr'); S.B.add('兩邊對 x 微分'); S.B.last(); cap('兩邊對 x 微分', '假設級數收斂');
   },
   // 1723.72
   async (tok, S) => {
@@ -2956,23 +2958,23 @@ scene('rr-gf-deriv', "d/dx：1/(1 − x) → 1/(1 − x)²，係數 1, 2, 3, …
   },
   // 1756.48
   async (tok, S) => {
-    S.d = rack([0, 1, 2, 3, 4], -1.6, -0.3, FC.purple, '逐項微分'); for (let i = 0; i < 5; i++) S.d.all.push(sm(['0', '1', '2x', '3x²', '4x³'][i], -1.6 + i * 0.86, -0.95)); cap('右邊逐項微分', '1 → 0、x → 1、x² → 2x、x³ → 3x²');
+    S.d = rack([0, 1, 2, 3, 4], 2.6, 3.4, FC.purple, '逐項微分'); for (let i = 0; i < 5; i++) S.d.all.push(sm(['0', '1', '2x', '3x²', '4x³'][i], 2.6 + i * 0.86, 2.75)); cap('右邊逐項微分', '1 → 0、x → 1、x² → 2x、x³ → 3x²');
   },
   // 1785.12
   async (tok, S) => {
-    glow(S.d.cells[0], NG); S.B.add('= 1 + 2x + 3x² + 4x³ + …'); S.B.last(); cap('重寫一下', '0 那項不見，其他往前移一格');
+    glow(S.d.cells[0], NG); S.B.add('右邊 = 1 + 2x + 3x² + 4x³ + …'); S.B.last(); cap('重寫一下', '0 那項不見，其他往前移一格');
   },
   // 1802.52
   async (tok, S) => {
-    S.n = rack([1, 2, 3, 4, 5], -1.6, -2.1, FC.green, '新數列'); cap('得到的數列', '1, 2, 3, 4, …');
+    S.n = rack([1, 2, 3, 4, 5], 2.6, 1.0, FC.green, '新數列'); cap('得到的數列', '1, 2, 3, 4, …');
   },
   // 1829.24
   async (tok, S) => {
-    S.B.add('1/(1 − x)² 是自然數 1, 2, 3, … 的生成函數', 'ptr alt'); S.B.last(); cap('closed form 1/(1 − x)²', '就是自然數數列的生成函數');
+    S.B.add('1/(1 − x)² ↔ 1, 2, 3, …（自然數）', 'ptr alt'); S.B.last(); cap('closed form 1/(1 − x)²', '就是自然數數列的生成函數');
   },
   // 1853.92
   async (tok, S) => {
-    S.B.hi(-1); note('微分：從標準數列推出另一個數列', 3.4, 4.4); cap('用微分這個性質', '從一個標準數列得到另一個');
+    S.B.hi(-1); note('微分：從標準數列推出另一個數列', -3.4, 1.5); cap('用微分這個性質', '從一個標準數列得到另一個');
   },
 ]);
   }

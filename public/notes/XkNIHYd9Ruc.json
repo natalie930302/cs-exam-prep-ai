@@ -300,7 +300,7 @@
      "t": 2885.32
     }
    ],
-   "trap": "老師把 root 定為 level 0（depth 0）；洪逸／Horowitz 課本 root 為 level 1，考試請依課本：此樹在課本中有 4 個 level，height（depth）= 4。",
+   "trap": "老師把 root 定為 level 0（depth 0）；洪逸／Horowitz 課本 root 為 level 1，考試請依課本：加上下一段的 K、L、M 後，這棵樹在課本中有 4 個 level，height（depth）= 4。",
    "explain": [
     "在學樹的演算法之前，先認識一些名詞。一開始記不起來沒關係，上課時老師會順口一直用。",
     "老師先畫出一棵樹，從最上面的 A 開始。",

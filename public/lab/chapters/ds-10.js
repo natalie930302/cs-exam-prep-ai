@@ -1412,7 +1412,7 @@ FRAG.push(['galgo-aoe-ee', 'AOE 最早時間 ee：用 stack 做 topological orde
   const settle = (u) => { for (const e of G.E) if (e.u === String(u)) e.set(GC.tree, 1.3); glow(G.N[u], null); };
   await step(tok);                                   // 18:11 每個 activity 最早完成時間
   for (let v = 0; v <= 8; v++) ET.push(gTag(G.N[v], v ? 'ee=?' : 'ee=0', 'ptr'));
-  say('算每個 activity 最早完成的時間', 'ee（earliest）');
+  say('算每個事件（頂點）最早發生的時間', 'ee（earliest event time）');
   await step(tok);                                   // 18:48 例：a1；時間從 0 開始
   glow(G.N[0], GOLD); G.E[0].set(GC.hot, 1.8);
   say('例：a1 最早什麼時候完成？', '時間從 0 開始');
@@ -1473,7 +1473,7 @@ FRAG.push(['galgo-aoe-ee', 'AOE 最早時間 ee：用 stack 做 topological orde
   say('一直重複到 stack 空為止', 'ee(8) = 18：project 最早第 18 天完成');
   await step(tok);                                   // 25:02 總結：最早到達時間
   await b.hop(tok);
-  say('ee 就是每個 edge 指到的頂點', '最早的到達時間（多條路取最大）');
+  say('ee(v)：事件 v 最早發生的時間', '指向 v 的 activity 全做完（多條路取最大）');
 }]);
 
 // 課堂第二例（另一本課本）：依講解重建的 AOE；6′、7′、10′ 是 sync 點，細線是 0 時間的 dummy
@@ -1575,7 +1575,7 @@ FRAG.push(['galgo-le-min', 'le 往左推：分岔點取 min', async (tok) => {
   const show = (ks, es) => { for (const e of G.E) if (e.rod.material.color.getHexString() === 'd64545') e.set(GC.pq, 1.3); for (const k of Object.keys(BPOS)) glow(G.N[k], null); for (const [u, v] of es) G.e(u, v).set(GC.bad, 1.8); for (const k of ks) { txt(LT[k], 'le=' + BLE[k]); glow(G.N[k], GOLD); } };
   await step(tok);                                   // 33:40 最晚什麼時候要完成
   for (const k of Object.keys(BPOS)) LT[k] = gTag(G.N[k], 'le=?', 'ptr alt');
-  say('也可以算：每個 activity 最晚要多晚完成', 'le（latest）');
+  say('也可以算：每個事件最晚要多晚發生', 'le（latest）');
   await step(tok);                                   // 34:25 ee 左→右，le 右→左
   const dir = tag('ee：左 → 右　le：右 → 左', 'note', 0, 0.3, -4.4);
   say('ee 由左往右算', 'le 由右往左算');
@@ -1638,11 +1638,11 @@ FRAG.push(['galgo-critical-path', 'Critical path：ee = le、不能 delay', asyn
   const slackK = Object.keys(BPOS).filter((k) => BLE[k] > BEE[k]);
   for (const k of slackK) gCls(TG[k], 'idx');
   for (const k of BCRIT) glow(G.N[k], GOLD);
-  say('ee − le = 0 的點', '最早 = 最晚：一點空間都沒有');
+  say('ee − le = 0 的點：一點空間都沒有', '正式要看邊：e(i) = l(i) 的 activity');
   await step(tok);                                   // 40:46 X → 2 → 4 → 7 → 10′ → 10
   await anim(tok, 1800, (u) => { const n = Math.ceil(u * BCRIT.length); for (let i = 0; i < n; i++) { G.N[BCRIT[i]].material.color.set(GC.crit); gCls(TG[BCRIT[i]], 'ptr alt'); if (i) G.e(BCRIT[i - 1], BCRIT[i]).set(GC.crit, 2.4); } });
   for (const k of BCRIT) glow(G.N[k], null);
-  say('連起來：紅色的 critical path', 'X → 2 → 4 → 7 → 10′ → 10');
+  say('連起來：紅色的 critical path', 'X → 2 → 4 → 7′ → 7 → 10′ → 10');
   await step(tok);                                   // 40:53 不能延誤
   b.mood('sad');
   say('這條路上的點完全不能延誤', '最早和最晚相減是 0');
@@ -1652,7 +1652,7 @@ FRAG.push(['galgo-critical-path', 'Critical path：ee = le、不能 delay', asyn
   say('想一想：critical path 一定存在嗎？', '（會：起點到終點最長的那條路）');
   await step(tok);                                   // 41:36 怎麼找出所有 critical path？
   txt(q, '思考：怎麼找出所有的 critical path？');
-  say('想一想：怎麼找出 critical path？', '算完 ee、le 後，挑相減為 0 的');
+  say('想一想：怎麼找出 critical path？', '算完 ee、le 後，把 e(i) = l(i) 的 activity 連起來');
   await step(tok);                                   // 42:04 今天的重點
   txt(q, 'topological order → AOV、AOE → critical path');
   b.mood('happy'); await b.hop(tok);
@@ -1739,7 +1739,7 @@ FRAG.push(['galgo-8v-kruskal', 'Kruskal：邊由小到大，不成 cycle 才選'
   for (const [x, y] of [[3, 4], [4, 8], [3, 7]]) G.e(x, y).set(GC.hot, 2.2);
   txt(row, '11：3–4–8–7 會繞成一圈 → 不選');
   b.mood('sad');
-  say('下一條 11 會跟 3–4–8 形成 cycle', '不能有 cycle → 丟掉');
+  say('下一條 11（7–8）：3–4–8 和 3–7 已選', '會形成 cycle 3→4→8→7→3 → 丟掉');
   await step(tok);                                   // 5:31 跟已選的邊一起不成 cycle → 選
   for (const [x, y] of [[3, 4], [4, 8], [3, 7]]) G.e(x, y).set(GC.tree, 2.2);
   G.e(7, 8).set(GC.dim, 0.5);
@@ -2591,7 +2591,7 @@ FRAG.push(['galgo-ds-array', 'Disjoint set 的陣列：parent[ ]', async (tok) =
   await step(tok);                                   // 19:48 點數多的當 parent
   pk.splice(0).forEach(kill); clr(); unite(5, 1);
   bd.mood('happy'); await bd.hop(tok);
-  say('|−4| > |−2|：1 的 rank 大，當 parent', 'parent[5] = 1，parent[1] = −6');
+  say('|−4| > |−2|：1 的點數（weight）大，當 parent', 'parent[5] = 1，parent[1] = −6');
   await step(tok);                                   // 20:37 (1, 3) → cycle
   clr(); bd.mood('wow');
   pk.push((await find(1)).p, (await find(3)).p);
@@ -2623,7 +2623,7 @@ FRAG.push(['galgo-ds-collapse', 'Collapsing find：找到 root 就直接掛上�
   const reset = () => { ps.forEach(kill); ps = []; clr(); };
   await step(tok);                                   // 23:00 weighted union
   const nt = tag('依點數（weight）合併 = weighted union', 'note', 0, 6.4, 0);
-  say('剛才 union 時比點數（rank）', '這叫 weighted union');
+  say('剛才 union 時比點數（weight）', '這叫 weighted union');
   await step(tok);                                   // 23:14 collapsing find
   txt(nt, '再來一招：collapsing find');
   say('另一個技巧', 'collapsing find');
@@ -3782,7 +3782,7 @@ FRAG.push(['gpeng20-ap-steps', '找 articulation point 的四個步驟', async (
   say('步驟四：判斷 articulation point', '有兩種判斷');
   await step(tok);                                   // 1:09:47 root
   tint(g.nodes[3], PC.bad);
-  say('root：有兩個 child 就是 AP', '3 有 4、5 兩個 child');
+  say('root：有 ≥ 2 個 child 就是 AP', '3 有 4、5 兩個 child');
   await step(tok);                                   // 1:09:53 low(w) ≥ dfn(u)
   steps.hl(4);
   for (const v of [1, 5, 7]) { tint(g.nodes[v], PC.bad); await beat(tok, 350); }
@@ -3881,7 +3881,7 @@ FRAG.push(['gpeng20-sssp-problem', 'Single source 最短路徑：0 到每個點'
   await step(tok);                                   // 1:16:50 往頭份是錯的
   glow(cs[0], null); tint(cs[0], PC.bad);
   bub('偏離台北的方向', C[0][1], C[0][2], 1.6);
-  say('往頭份走是錯的', '它偏離了台北的方向');
+  say('老師說往頭份走是錯的（偏離台北）', '但 Dijkstra 不看方向：只挑目前距離最短的點');
   await step(tok);                                   // 1:16:59 從竹北再往前到楊梅
   glow(cs[2], null); tint(cs[1], PC.ok);
   await walkTo(tok, car.g, C[2][1], 0.4, C[2][2], 900); tint(cs[2], PC.ok);
@@ -4017,7 +4017,7 @@ FRAG.push(['gpeng20-boston-run', 'Dijkstra 例：依序選 5、6、3、7、2、1
   sel(7); d[0] = 3350; b.show('4', d, S); ecol(b.g.E(7, 0), PC.tree); await beat(tok, 800);
   sel(2); d[1] = 3250; b.show('5', d, S); ecol(b.g.E(2, 1), PC.tree); await beat(tok, 800);
   sel(0); b.show('6', d, S);
-  say('每次從剩下的頂點選 cost 最小的', '7（LA 3350）→ 2（SF 3250）→ …');
+  say('每次從剩下的頂點選 cost 最小的', '選 7（N.Orleans）→ LA 3350；選 2（Denver）→ SF 3250');
   await step(tok);                                   // 1:26:25 最後一列就是答案
   sel(1); b.show('6', d, S);
   say('所有點都選完：最下面那一列就是答案', 'LA 3350　SF 3250　Denver 2450　Chicago 1250');
@@ -4405,7 +4405,7 @@ FRAG.push(['gpeng20-recap', '最短路徑總結：Dijkstra、Bellman-Ford、all-
   say('再來是 all pairs shortest path', '');
   await step(tok);                                   // 1:55:58 蠻暴力的
   note('暴力：把經過所有點的 path 都找出來', 4.2, 3.0, 0.6);
-  say('老師覺得它蠻暴力的', '要把經過所有點的 path 都找出來');
+  say('老師覺得它蠻暴力的', '其實 Floyd 是 O(n³) 動態規劃，不用列舉 path');
 }]);
 
 // 1:56:23 AOV network：vertex = activity，edge = 先後關係（擋修）（10 steps）

@@ -932,7 +932,7 @@ export default function (ctx) {
     c0.forEach((m, i) => move(m, mv.X(1), mv.Y(i), 0)); c1.forEach((m, i) => move(m, mv.X(0), mv.Y(i), 0));
     txt(mv.nameL, 'P₁₂AP₁₂');
     await W(tok, 1400);
-    mview(P, 3.6, 3.4, { name: 'PᵀP = I', nameCls: 'ptr alt', s: 0.8, hideZero: true, colorOf: (v) => (v ? COL.l : '#ece3d3') });
+    mview(matMul(T2(P), P), 3.6, 3.4, { name: 'PᵀP = I', nameCls: 'ptr alt', s: 0.8, hideZero: true, colorOf: (v) => (v ? COL.l : '#ece3d3') });
     say('P⁻¹ = Pᵀ', '有換列時：PA = LU');
     await W(tok, 3000);
   }
@@ -1207,7 +1207,7 @@ scene('mx-l3-outer', 'L3：第四種：行 × 列', [
   (tok, S) => { S.P.unglow(); S.P.glowCol(0, GOLD); S.P.glowCol(1, GOLD); sm('×1', S.P.X(0), S.P.Y(0) + 0.65); sm('×6', S.P.X(1), S.P.Y(0) + 0.65); cap('每一行都是 (2, 3, 4) 的倍數', '第 1 行 = 1·(2,3,4)，第 2 行 = 6·(2,3,4)'); },
   (tok, S) => { S.P.unglow(); [0, 1, 2].forEach((i) => { S.P.glowRow(i, COL.l); sm('×' + OC[i], S.P.X(1) + 0.75, S.P.Y(i)); }); cap('每一列都是 (1, 6) 的倍數', '第 i 列 = cᵢ·(1, 6)'); },
 ]);
-// 6 steps
+// 7 steps
 const O2A = [[2, 7], [3, 8], [4, 9]], O2B = [[1, 6], [0, 0]];
 scene('mx-l3-outer-sum', 'L3：AB = Σ（第 k 行）（第 k 列）', [
   (tok, S) => { S.f = hot('AB = (A 第 1 行)(B 第 1 列) + (A 第 2 行)(B 第 2 列) + ⋯', 0, 5.9); cap('第四種：行 × 列，再全部加起來', ''); },

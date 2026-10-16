@@ -336,7 +336,7 @@
     "例：1.3 × 2⁵ 加 1.3 × 2⁻⁵，可以直接把 mantissa 相加嗎？不行！",
     "要先把兩個 exponent 變成一樣，也就是讓小數點對在同一個位置。",
     "要移哪一個？用十進位想：要把小的那個變成 0.34 這種（往右移），再去跟大的相加。",
-    "兩個 exponent 不一樣（例如 2⁵ 和 2⁻³），就把指數小的那個數右移到 2⁵ 的位置——right shift。",
+    "兩個 exponent 不一樣（例如 2⁵ 和 2⁻⁵），就把指數小的那個數右移到 2⁵ 的位置——right shift。",
     "小數點對齊之後，就可以把 mantissa 相加。",
     "加完就結束了嗎？不行，結果可能不是 normalized form，要再 normalize（並且檢查 overflow／underflow）。",
     "normalize 時 shift 來 shift 去，significand 可能變很長，但格式固定只有 23 bits：放不下怎麼辦？直接截掉（truncation）或四捨五入——rounding。",

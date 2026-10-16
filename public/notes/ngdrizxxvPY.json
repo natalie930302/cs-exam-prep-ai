@@ -247,7 +247,7 @@
     "換成 memory-mapped file：一樣先 open，然後告訴 OS 要把檔案的哪一段 map 到記憶體，它回傳一個 pointer（指標）p，本質上就是一個 byte array。",
     "接著不用 read、write 這些 file system 的呼叫，直接用 pointer 操作，例如 p[1000]++，這就等於一次 write，而且可以直接跳到任何位置。",
     "但寫下去只是改了自己的記憶體內容，跟 disk 上的檔案還沒同步。這時候斷電，資料就沒了，也沒人保護你。",
-    "只有呼叫 munmap（取消映射）時，才把資料寫回去；而且它不知道你改了哪裡，就把整段重新寫一遍。",
+    "要到呼叫 munmap（取消映射，或用 msync 強迫同步）時，才把資料寫回去；而且 OS 不知道你改了哪個 byte，只能以 page 為單位，把被改過（dirty）的 page 整頁重寫一遍。",
     "最好的例子是顯示卡：螢幕上的畫面就是一堆 pixel，也就是記憶體裡的一個 byte array。用 mmap 把它對到記憶體，一次整個寫完再 flush，非常快。"
    ],
    "points": [
@@ -269,7 +269,7 @@
     },
     {
      "t": 1484,
-     "text": "寫下去只改 memory、尚未 sync（斷電會遺失）；munmap 時整段寫回 file。"
+     "text": "寫下去只改 memory、尚未 sync（斷電會遺失）；munmap（或 msync）時才把改過的 page 整頁寫回 file。"
     },
     {
      "t": 1562,

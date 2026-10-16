@@ -567,7 +567,7 @@
      "t": 1789.18
     },
     {
-     "text": "老師說三個都是 greedy，所以沒辦法保證是 optimal。",
+     "text": "老師說三個都是 greedy、沒辦法保證 optimal；更正：對 MST 這三個都保證 cost 最小，只是樹可能不唯一。",
      "t": 1802.57
     },
     {
@@ -873,7 +873,7 @@
    "scene": "gpeng20-ap-step12",
    "points": [
     {
-     "text": "老師說 root 一定是 articulation point，因為它有兩個 child。",
+     "text": "老師說 root 一定是 articulation point；更正：DFS 樹的 root 要有 ≥ 2 個 child 才是（本例 3 有 4、5 兩個 child）。",
      "t": 3084.39
     },
     {
@@ -1101,7 +1101,7 @@
      "t": 3875.94
     },
     {
-     "text": "u 是 root：老師說它一定有兩個 child，當然是 articulation point。",
+     "text": "u 是 root：DFS 樹裡有 ≥ 2 個 child 才是 articulation point（老師講得像 root 一定是）。",
      "t": 3883.41
     },
     {
@@ -1178,7 +1178,7 @@
      "t": 4164.63
     },
     {
-     "text": "步驟四：root（兩個 child）或 low(w) ≥ dfn(u) 就是 articulation point。",
+     "text": "步驟四：root 有 ≥ 2 個 child，或非 root 的 u 有 child w 使 low(w) ≥ dfn(u)，就是 articulation point。",
      "t": 4176.19
     },
     {
@@ -1208,7 +1208,7 @@
     "方法就是套公式：自己的 dfn、child 的 low、back edge 那端的 dfn，三個數值裡選最小。",
     "計算時要注意順序：下面的要先算。先算 0、8、9，再算 1、7，一路往上。",
     "步驟四：判斷 articulation point，有兩種判斷。",
-    "第一種很直接：root 有兩個（以上）child，就是 articulation point，例如 3。",
+    "第一種很直接：root 在 DFS 樹裡有兩個（以上）child，就是 articulation point，例如 3。",
     "第二種：看有沒有 child w 讓 low(w) ≥ dfn(u)。有的話 u 就是 AP，所以 1、5、7 也是。",
     "反過來想：如果 u 底下的點能跳過 u，它的 low 就會比 dfn(u) 小，u 就不是。例如 2：low(1) = 1 < dfn(2) = 3。"
    ]
@@ -1478,7 +1478,7 @@
     "1150 最小，所以下一回合選 6（Miami）。",
     "6 被選取後，它只能飛到 7：1150 + 1000 = 2150，比原本的 1650 大，所以不用改。",
     "4、5、6 都選走了，剩下最小的是 Chicago（1250），選進來。從 Chicago 飛 Denver：1250 + 1200 = 2450。",
-    "每一次都從剩下的頂點選 cost 最少的納進來，再更新它鄰近點的 cost：接著選 7（LA 變 3350）、2（SF 變 3250）……",
+    "每一次都從剩下的頂點選 cost 最少的納進來，再更新它鄰近點的 cost：接著選 7（N.Orleans，讓 LA 變 3350）、2（Denver，讓 SF 變 3250）……",
     "所有點都選完以後，答案就在最下面那一列：從 Boston 到每個城市的最短距離。"
    ]
   },
@@ -1561,7 +1561,7 @@
      "t": 5514.53
     },
     {
-     "text": "還希望沒有 cycle：負的邊多繞幾次，cost 會一直變小。",
+     "text": "還要求沒有負的 cycle：繞一圈 cost 變小的話，多繞幾次就一直變小，最短路徑沒有定義。",
      "t": 5520.71
     }
    ],

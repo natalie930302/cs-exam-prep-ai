@@ -1636,7 +1636,7 @@ FRAG.push(['cplx-lin-spaceloop', '迴圈加總的額外空間：固定 24 bytes'
       await travel(tok, tot, V3(-4.2, 1.4, -1.4), V3(2.4, 1.4, -1.4), 1400);
       say('把裡面所有數字加起來', '算總和');
     },
-    () => { dl = note('資料已經放在那裡（20 個櫃子）', -0.9, 0.0, -0.3); say('算空間時：資料已經給你、放好了'); },
+    () => { dl = note('資料已經放在那裡（例如 20 個櫃子）', -0.9, 0.0, -0.3); say('算空間時：資料已經給你、放好了'); },
     () => { say('在那 20 個櫃子之外', '這段演算法還要多花多少空間？'); T('額外要多少空間？', -0.9, 2.4, 0.6); },
     () => { say('幾乎就只看：宣告了多少變數'); cd.hl(-1); },
     () => { V('total', '', -5.0); cd.hl(0); say('total：暫存總和'); },
@@ -1867,12 +1867,14 @@ FRAG.push(['cplx-intro-invariant', 'Loop invariant：每輪結束都成立的性
     () => { txt(claim, 'arr[m] ≤ 任何其他 arr[j]'); glow(arr[5], '#5a3a00'); say('m 的性質：arr[m] 不比任何 arr[j] 大', '也就是最小值'); },
     () => { note('len = 1000 要跑 1000 步…不好直接證', 0, 3.6, -1.4); say('跑了上千步', '乍看不容易證明'); },
     () => { inv = T('改證：第 k 輪結束時…', 0, 2.8, 1.6); glow(arr[5], null); say('改成看迴圈的每一輪', '每一輪結束時發生什麼事'); },
-    () => {
+    async () => {
       box = P.ghostBox('#e8b04a', 1, 1.2, 1.2); box.position.set(-3.5, 0.5, 0);
-      kL = ptr('', -3.5, 1.5, 0); cover(1); hand.set('0'); glow(arr[0], '#5a3a00');
+      kL = ptr('', -3.5, 1.5, 0); cover(0); hand.set('0'); glow(arr[0], '#5a3a00');
       say('一開始抓住第 0 個', '第 1 輪：比第 1 個和第 0 個');
+      await wait(tok, 700);
+      cover(1); glow(arr[0], null); glow(arr[1], '#5a3a00'); hand.set('1');
     },
-    async () => { glow(arr[0], null); glow(arr[1], '#5a3a00'); hand.set('1'); cover(2); await wait(tok, 400); say('第 2 輪：第 2 個跟目前比較小的比', '每輪多檢查一個'); },
+    async () => { cover(2); await wait(tok, 400); say('第 2 輪：第 2 個跟目前比較小的比', '9 比 4 大 → m 還是 1；每輪多檢查一個'); },
     () => { txt(inv, '第 k 輪結束：m 存的是 arr[0..k] 的最小值'); say('第 k 輪結束時', 'm 存的是 0 到 k 範圍內的最小值'); },
     () => { ok('k = 1 成立：容易驗證', -4.6, 3.4, 1.6); say('i = 1 時不難證明'); },
     () => { ok('假設 k 成立 → 證 k+1 也成立', 0, 3.4, 2.6); say('假設 i = k 對', '證明 i = k+1 也對 → 數學歸納法'); },
@@ -2495,7 +2497,7 @@ FRAG.push(['cplx-peng1-docs', '別忘了：document、error code、comment', asy
   await run(tok, [
     () => { prop('file', -3.6, 0, 0, 1.2, 'document'); l = list(2.4, 3.6, 0); l.add('寫 document（常被忽略）'); say('最後一步常被忽略', '要寫 document'); },
     () => { l.add('出錯要回傳 error code'); say('出錯時，程式要寫 error code'); },
-    () => { e = tag('401 ／ 連不上', 'bad', -3.6, 2.6, 0); icon('🌐', 'browser', -5.4, 0.6, 1.2); say('像 browser 連到不見的 server', '會回傳 error code'); },
+    () => { e = tag('404 Not Found', 'bad', -3.6, 2.6, 0); icon('🌐', 'browser', -5.4, 0.6, 1.2); say('像 browser 連到不見的網頁', '會回傳 error code（404）'); },
     () => { l.add('程式幾千行 → error code 方便 debug', 'good'); say('系統動輒幾千行', 'error code 方便 debug'); },
     () => { l.add('程式碼要寫 comment', 'ptr'); say('還有：code 裡要寫 comment'); },
   ]);
@@ -2576,7 +2578,7 @@ FRAG.push(['cplx-peng1-algo', '演算法：input、output、有限、有效率',
     () => { out = prop('parcel', 4.6, 0, 0, 0.8, 'output：要吐回的答案'); say('output 是要吐回去的答案', 'input、output 反映你要解的問題'); },
     () => { l.add('真的能解決問題：給 input 得到 output', 'good'); say('設計的方法要真的能解決問題'); },
     () => { l.add('有限步驟內跑完、會停止', 'good'); say('在有限的步驟內跑完', '會停止'); },
-    () => { l.add('有效率，不是暴力法', 'good'); say('有效率的演算法', '不是暴力法'); },
+    () => { l.add('Effectiveness：每一步都是做得到的基本操作', 'good'); no('「要有效率、不能暴力法」✗ 暴力法也是演算法', 0, 0.6, 2.4); say('課本第五條：effectiveness', '每一步都做得到；暴力法也算演算法'); },
     () => { T('最簡單的例子：排序（sort）', 0, 5.6, -1.6); say('最簡單的例子：排序'); },
     () => { inp.userData.label.element.textContent = 'input：一堆數字 5 3 8 1'; out.userData.label.element.textContent = 'output：一堆數字'; say('input 是一堆數字', 'output 也是一堆數字'); },
     () => { out.userData.label.element.textContent = 'output：1 3 5 8（從小到大）'; say('output 要符合條件', '從小到大（或從大到小）'); },
@@ -2642,8 +2644,8 @@ FRAG.push(['cplx-peng1-sorts', '排序演算法有很多種：誰最快？', asy
     () => { q = T('最快的 sort 是哪個？', 0, 3.7, -1.4); names.forEach((n) => n.mood('wow')); say('那最快的 sort 是什麼？'); },
     () => { txt(q, '最快可以達到 n log n'); say('最快可以達到 n log n'); },
     () => { l = list(0, 3.0, 1.4); l.add('comparison-based：兩兩比大小'); say('這是基於 comparison', '也就是兩兩比大小'); },
-    async () => { names[2].mood('happy'); await names[2].hop(tok); l.add('comparison-based 裡：quick sort 最快', 'good'); say('comparison-based 裡', 'quick sort 最快（名字取得好）'); },
-    () => { icon('🪣', 'radix／bucket／hash：不用兩兩比', 4.6, 0.6, 2.6); say('不是 comparison-based 的', 'radix、bucket、用 hash 丟進 bucket'); },
+    async () => { names[2].mood('happy'); await names[2].hop(tok); l.add('quick sort 平均最快，但最壞 O(n²)', 'good'); l.add('最壞也保證 n log n：merge、heap sort'); say('quick sort 平均最快', '但最壞 O(n²)；最壞也 n log n 的是 merge、heap sort'); },
+    () => { icon('🪣', 'radix／bucket：依位數分到 bucket，不用兩兩比', 4.6, 0.6, 2.6); say('不是 comparison-based 的', 'radix、bucket sort：分進 bucket 再收回來'); },
     () => { l.add('不比較的方法 → 可以更快', 'ptr'); say('不用兩兩比較', '所以可以更快'); },
   ]);
 }]);
@@ -2751,7 +2753,7 @@ FRAG.push(['cplx-peng1-lang', '演算法才是根本：語言只是查表換格�
 FRAG.push(['cplx-peng1-kth', 'Selection problem：找第 k 大', async (tok) => {
   P.fresh([0, 6.5, 13], [0, 1.2, 0]);
   const N = [12, 45, 7, 33, 90, 21, 58, 3];
-  let arr, l, kb = [], a1, a2;
+  let arr, l, kb = [], a1, a2, cmpT;
   const X = (i) => -5.6 + i * 0.85;
   await run(tok, [
     () => { T('第三個例子：Selection problem', 0, 5.2, -1.6); say('第三個例子', 'selection problem'); },
@@ -2785,9 +2787,9 @@ FRAG.push(['cplx-peng1-kth', 'Selection problem：找第 k 大', async (tok) => 
       glow(kb[2].body, '#0f5a3a');
       say('比較大的就有機會進來', '放到對的位置 → 最後一個就是答案 45');
     },
-    () => { tag('一個排 n 個，一個只排 k 個', 'ptr alt', 0, 1.6, 3.2); say('兩個都能找到第 k 大', '一個排 n 個、一個只排 k 個'); },
-    () => { no('n 遠大於 k：方法一一定比較差', -2.6, 2.4, 3.2); say('n 遠遠超過 k 的話', '方法一一定比方法二差'); },
-    () => { ok('方法二：排完 k 個後只要做比較', 3.0, 2.4, 3.2); say('方法二排完 k 個', '後面只要做 comparison'); },
+    () => { cmpT = tag('一個排 n 個，一個只排 k 個', 'ptr alt', 0, 1.6, 3.2); say('兩個都能找到第 k 大', '一個排 n 個、一個只排 k 個'); },
+    () => { note('老師：n ≫ k 時方法一一定比較差（方法二後面只做比較）', 0, 2.4, 3.2); say('老師說 n 遠超過 k 時', '方法一一定比方法二差'); },
+    () => { kill(cmpT); ok('要看 k：方法二最壞 O(nk)，k 小才贏 O(n log n)', 0, 1.6, 3.2); say('其實要看 k：方法二最壞約 O(nk)', 'k 很小時才比排序的 O(n log n) 快'); },
     () => { note('selection problem ≠ sorting problem', 0, 5.9, -1.6); say('selection 和 sorting', '不是同一個問題'); },
     () => { note('但可以借 sorting 的方法來解 → 知識', 0, 6.5, -1.6); say('但可以用 sorting 的方法來解', '學過的東西會變成你的知識'); },
     () => { buddy('你', '💡', C_B, -5.6, 0, 2.6, 0.75).mood('happy'); say('遇到新問題', '回想學過的哪些知識可以用'); },
@@ -2803,7 +2805,7 @@ FRAG.push(['cplx-peng1-rec', '遞迴演算法：n! 與 boundary condition', asyn
   await run(tok, [
     () => { T('Recursive algorithm：自己呼叫自己', 0, 5.2, -1.6); say('演算法裡還有一種', 'recursive algorithm'); },
     () => { buddy('f', '', C_A, -5.2, 0, 0.6, 0.75); note('f 呼叫 f：direct', -5.2, 2.0, 0.6); say('function 呼叫自己', '叫 direct recursive'); },
-    () => { buddy('f1', '', C_B, -3.2, 0, 1.6, 0.6); buddy('f2', '', C_C, -1.8, 0, 1.6, 0.6); note('f1 → f2 → f2…：f1 也算 recursive', -2.5, 1.6, 2.4); say('function 1 呼叫 function 2', '透過別的函式產生遞迴'); },
+    () => { buddy('f1', '', C_B, -3.2, 0, 1.6, 0.6); buddy('f2', '', C_C, -1.8, 0, 1.6, 0.6); note('f1 → f2 → f1（繞回來）：indirect', -2.5, 1.6, 2.4); say('A 呼叫 B，B 再呼叫回 A', '呼叫形成環 → indirect recursive'); },
     () => { tag('C(n, m) = C(n−1, m) + C(n−1, m−1)', 'ptr alt', 0, 4.4, -1.6); say('例：n 個取 m 個的組合數', '可以拆成兩個 n−1 的問題'); },
     () => { no('不要讓它無限呼叫下去', 0, 3.7, -1.6); say('設計遞迴時', '不要讓它進入無限的呼叫'); },
     () => { note('演算法要會停止', 0, 3.1, -1.6); say('演算法有個條件', '要讓它停止'); },
