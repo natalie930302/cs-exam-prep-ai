@@ -177,7 +177,7 @@ export default function (ctx) {
     let r = 0;
     for (let c = 0; c < n && r < m; c++) {
       let p = -1; for (let i = r; i < m; i++) if (Math.abs(A[i][c]) > EPS) { p = i; break; }
-      if (p < 0) { steps.push({ text: '第 ' + (c + 1) + ' 欄在第 ' + (r + 1) + ' 列以下全是 0 → 自由欄', A: snap(), row: -1, col: c }); continue; }
+      if (p < 0) { steps.push({ text: '第 ' + (c + 1) + ' 行在第 ' + (r + 1) + ' 列以下全是 0 → 自由行', A: snap(), row: -1, col: c }); continue; }
       if (p !== r) { [A[r], A[p]] = [A[p], A[r]]; steps.push({ text: '交換 R' + (r + 1) + ' ↔ R' + (p + 1), A: snap(), row: r, col: c }); }
       const pv = A[r][c];
       if (Math.abs(pv - 1) > EPS) { for (let j = 0; j < n; j++) A[r][j] /= pv; steps.push({ text: 'R' + (r + 1) + ' ÷ ' + fmt(pv) + '：pivot 變 1', A: snap(), row: r, col: c }); }
@@ -261,7 +261,7 @@ export default function (ctx) {
     fresh([0, 3.4, 13], [0, 3.2, 0]);
     controls('<label>A = <input id="rrA" value="' + rr.src + '" style="width:210px"></label>'
       + '<button id="rrLoad">載入</button><button class="primary" id="rrStep">下一步</button><button id="rrAll">做到底</button>');
-    on('rrLoad', () => { const A = parseM($('rrA').value); if (!A) { log('格式：同一列用空白或逗號，列之間用分號，例如 1 2; 3 4', true); return; } if (A.length > 4 || A[0].length > 5) { log('最多 4 列 × 5 欄，畫面才放得下。', true); return; } rr.src = $('rrA').value; loadRref(A); });
+    on('rrLoad', () => { const A = parseM($('rrA').value); if (!A) { log('格式：同一列用空白或逗號，列之間用分號，例如 1 2; 3 4', true); return; } if (A.length > 4 || A[0].length > 5) { log('最多 4 列 × 5 行，畫面才放得下。', true); return; } rr.src = $('rrA').value; loadRref(A); });
     on('rrStep', () => stepRref());
     on('rrAll', () => { let g = 0; while (rr.E && rr.k < rr.E.steps.length && g++ < 60) stepRref(true); stepRref(); });
     loadRref(parseM(rr.src));
@@ -285,7 +285,7 @@ export default function (ctx) {
     rr.g.clearGlow(); rr.g.setAll(s.A);
     if (s.row >= 0) rr.g.row(s.row, GOLD);
     if (!quiet) log(s.text);
-    setState('列運算中', [['步驟', rr.k + ' / ' + E.steps.length], ['剛做', s.text]], 'pivot 欄：' + (E.piv.filter((c) => c <= s.col).map((c) => 'x' + (c + 1)).join('、') || '—'));
+    setState('列運算中', [['步驟', rr.k + ' / ' + E.steps.length], ['剛做', s.text]], 'pivot 行：' + (E.piv.filter((c) => c <= s.col).map((c) => 'x' + (c + 1)).join('、') || '—'));
     if (rr.k >= E.steps.length && !quiet) finishRref();
     void m; void n;
   }
@@ -295,13 +295,13 @@ export default function (ctx) {
     for (let j = 0; j < n; j++) rr.g.paintCol(j, E.piv.includes(j) ? COL.a : '#e7dcc8');
     showL(rr.info, true); showL(rr.info2, true);
     const free = A[0].map((_, j) => j).filter((j) => !E.piv.includes(j));
-    txt(rr.info, 'rank r = ' + Q.rank); txt(rr.info2, 'pivot 欄 ' + (E.piv.map((c) => 'x' + (c + 1)).join(',') || '無') + '；自由欄 ' + (free.length ? free.map((j) => 'x' + (j + 1)).join(',') : '無'));
+    txt(rr.info, 'rank r = ' + Q.rank); txt(rr.info2, 'pivot 行 ' + (E.piv.map((c) => 'x' + (c + 1)).join(',') || '無') + '；自由行 ' + (free.length ? free.map((j) => 'x' + (j + 1)).join(',') : '無'));
     const b = (vs) => vs.length ? vs.map(vstr).join(' ') : '∅（只有 0）';
     setState('四個基本子空間（m = ' + m + ', n = ' + n + ', r = ' + Q.rank + '）', [
       ['C(A) ⊂ R' + m, 'dim ' + Q.rank], ['N(A) ⊂ R' + n, 'dim ' + (n - Q.rank)], ['C(Aᵀ) ⊂ R' + n, 'dim ' + Q.rank], ['N(Aᵀ) ⊂ R' + m, 'dim ' + (m - Q.rank)]],
-      'C(A) 基底（原矩陣的 pivot 欄）：' + b(Q.col) + '<br>N(A) 基底（special solutions）：' + b(Q.null) + '<br>C(Aᵀ) 基底（R 的非零列）：' + b(Q.row) + '<br>N(Aᵀ) 基底：' + b(Q.left)
+      'C(A) 基底（原矩陣的 pivot 行）：' + b(Q.col) + '<br>N(A) 基底（special solutions）：' + b(Q.null) + '<br>C(Aᵀ) 基底（R 的非零列）：' + b(Q.row) + '<br>N(Aᵀ) 基底：' + b(Q.left)
       + '<br><span class="ok">r + (n − r) = ' + n + '</span>；<span class="ok">r + (m − r) = ' + m + '</span>');
-    log('完成：rank ' + Q.rank + '。C(A) 要拿「原矩陣」的 pivot 欄，不是 R 的欄（列運算會改變 column space）。');
+    log('完成：rank ' + Q.rank + '。C(A) 要拿「原矩陣」的 pivot 行，不是 R 的行（列運算會改變 column space）。');
   }
 
   // ───────────────────────── 模式 3：四個子空間 3D ─────────────────────────
@@ -468,7 +468,7 @@ export default function (ctx) {
     if (k < 0.84) {
       const u = [ri(1, 3), ri(-3, 3)], v = [ri(1, 4), ri(-2, 5), ri(-3, 3)];
       const i = ri(0, 1), j = ri(0, 2), ans = String(u[i] * v[j]);
-      return { q: 'rank 1 矩陣 A = u vᵀ，u = ' + vstr(u) + '、v = ' + vstr(v) + '。A 的第 ' + (i + 1) + ' 列第 ' + (j + 1) + ' 欄 = ？', opts: [...new Set([ans, String(u[i] + v[j]), String(u[1 - i] * v[j]), String(u[i] * v[(j + 1) % 3])])], ans, why: '(u vᵀ)ᵢⱼ = uᵢ vⱼ = ' + u[i] + ' × ' + v[j] + '。每一列都是 vᵀ 的倍數，所以 rank 1。' };
+      return { q: 'rank 1 矩陣 A = u vᵀ，u = ' + vstr(u) + '、v = ' + vstr(v) + '。A 的第 ' + (i + 1) + ' 列第 ' + (j + 1) + ' 行 = ？', opts: [...new Set([ans, String(u[i] + v[j]), String(u[1 - i] * v[j]), String(u[i] * v[(j + 1) % 3])])], ans, why: '(u vᵀ)ᵢⱼ = uᵢ vⱼ = ' + u[i] + ' × ' + v[j] + '。每一列都是 vᵀ 的倍數，所以 rank 1。' };
     }
     const cases = [['r = m = n', '恰一解'], ['r = n < m', '0 或 1 個解'], ['r = m < n', '無限多解（一定有解）'], ['r < m 且 r < n', '0 或無限多解']];
     const [c, a] = pick(cases);
@@ -567,21 +567,21 @@ export default function (ctx) {
   async function scColspaceDef(tok) {
     fresh([0, 3.4, 13.5], [0.5, 3, 0]);
     const g = aMatrix(-5.6, 5.4);
-    const cb = A6c.map((c, j) => { const B = bars(c, -1.6 + j * 2.2, 2.4, 0, [COL.a, COL.b, COL.c][j]); tag('第 ' + (j + 1) + ' 欄', 'idx', B.mid, 1.6); return B; });
-    say('A 的每一欄都是 R⁴ 的向量（4 個分量）', 'C(A) ⊂ R⁴，因為 A 是 4×3');
+    const cb = A6c.map((c, j) => { const B = bars(c, -1.6 + j * 2.2, 2.4, 0, [COL.a, COL.b, COL.c][j]); tag('第 ' + (j + 1) + ' 行', 'idx', B.mid, 1.6); return B; });
+    say('A 的每一行都是 R⁴ 的向量（4 個分量）', 'C(A) ⊂ R⁴，因為 A 是 4×3');
     for (let j = 0; j < 3; j++) { g.col(j, GOLD); cb[j].glow(GOLD); await beat(tok, 900); g.col(j, null); cb[j].glow(null); }
-    say('只放三個欄還不是子空間', '要把所有線性組合都放進來');
+    say('只放三個行還不是子空間', '要把所有線性組合都放進來');
     await beat(tok, 2200);
     const res = bars([0, 0, 0, 0], 5, 2.4, 0, COL.g); tag('b = Ax', 'ptr alt', res.mid, 1.6);
     const xl = tag('', 'ptr', 5.6, 5.6);
     for (const x of [[1, 0, 0], [0, 1, 0], [1, 1, 0], [2, -1, 0.5]]) {
       txt(xl, 'x = ' + vstr(x));
       const tgt = mulMV(A6, x), from = res.vals.slice();
-      say('x = ' + vstr(x) + ' → ' + x.map((c, j) => fmt(c) + '·欄' + (j + 1)).join(' + '), 'Ax = ' + vstr(tgt));
+      say('x = ' + vstr(x) + ' → ' + x.map((c, j) => fmt(c) + '·行' + (j + 1)).join(' + '), 'Ax = ' + vstr(tgt));
       await tw(tok, 900, (t) => res.set(from.map((v, i) => v + (tgt[i] - v) * t)));
       await beat(tok, 1500);
     }
-    say('C(A) = 所有 Ax = 所有欄的線性組合', '三個 R⁴ 向量的組合填不滿整個 R⁴');
+    say('C(A) = 所有 Ax = 所有行的線性組合', '三個 R⁴ 向量的組合填不滿整個 R⁴');
     await beat(tok, 3000);
   }
   async function scColspaceSolvable(tok) {
@@ -594,7 +594,7 @@ export default function (ctx) {
     const tl = tag('目標 b', 'ptr alt', 5.17, 1.6);
     say('Ax = b：4 個方程式、3 個未知數', '是不是每個 b 都有解？');
     await beat(tok, 2400);
-    const tries = [[[0, 0, 0, 0], [0, 0, 0], 'b = 0：x = 0 一定行'], [[1, 2, 3, 4], [1, 0, 0], 'b = 第 1 欄：x = (1, 0, 0)'], [[1, 1, 1, 1], [0, 1, 0], 'b = 全 1：x = (0, 1, 0)']];
+    const tries = [[[0, 0, 0, 0], [0, 0, 0], 'b = 0：x = 0 一定行'], [[1, 2, 3, 4], [1, 0, 0], 'b = 第 1 行：x = (1, 0, 0)'], [[1, 1, 1, 1], [0, 1, 0], 'b = 全 1：x = (0, 1, 0)']];
     for (const [b, x, cap] of tries) {
       tg.set(b); res.set([0, 0, 0, 0]); txt(tl, '目標 b = ' + vstr(b));
       say(cap, '先想好 x，再看 b = Ax 是什麼');
@@ -604,11 +604,11 @@ export default function (ctx) {
       res.glow(GREEN); await beat(tok, 1300); res.glow(null);
     }
     tg.set([1, 0, 0, 0]); res.set([0, 0, 0, 0]); txt(tl, '目標 b = (1, 0, 0, 0)');
-    say('b = (1, 0, 0, 0)：試不出來', '它不是三個欄的組合');
+    say('b = (1, 0, 0, 0)：試不出來', '它不是三個行的組合');
     for (const x of [[1, -1, 0], [0.5, 0, 0], [-1, 1, 0.5]]) { const tgt = mulMV(A6, x); await tw(tok, 500, (t) => res.set(scl(tgt, t))); await beat(tok, 350); }
     res.glow(RED);
     await beat(tok, 1200);
-    say('Ax = b 有解 ⇔ b 在 column space 裡', '<span class="ok">b ∈ C(A)</span>：b 是欄的組合，組合係數就是 x');
+    say('Ax = b 有解 ⇔ b 在 column space 裡', '<span class="ok">b ∈ C(A)</span>：b 是行的組合，組合係數就是 x');
     await beat(tok, 3200);
     void cb;
   }
@@ -616,26 +616,26 @@ export default function (ctx) {
     fresh([0, 3.4, 12.5], [0, 3, 0]);
     const g = aMatrix(-5.6, 5.4);
     const c1 = bars(A6c[0], -1.4, 2.4, 0, COL.a), c2 = bars(A6c[1], 1.0, 2.4, 0, COL.b), c3 = bars(A6c[2], 3.6, 2.4, 0, COL.c);
-    tag('欄 1', 'idx', c1.mid, 1.6); tag('欄 2', 'idx', c2.mid, 1.6); tag('欄 3', 'idx', c3.mid, 1.6);
-    say('能不能丟掉一欄，column space 不變？', '每一欄都有貢獻新的方向嗎？');
+    tag('行 1', 'idx', c1.mid, 1.6); tag('行 2', 'idx', c2.mid, 1.6); tag('行 3', 'idx', c3.mid, 1.6);
+    say('能不能丟掉一行，column space 不變？', '每一行都有貢獻新的方向嗎？');
     await beat(tok, 2400);
     g.col(2, GOLD); c3.glow(GOLD);
-    say('看第 3 欄：(2, 3, 4, 5)', '= (1, 2, 3, 4) + (1, 1, 1, 1)');
+    say('看第 3 行：(2, 3, 4, 5)', '= (1, 2, 3, 4) + (1, 1, 1, 1)');
     await beat(tok, 1600);
-    // 把欄 1 和欄 2 疊起來
+    // 把行 1 和行 2 疊起來
     const s = bars([0, 0, 0, 0], 3.6, 2.4, 0.35, COL.g, { noNum: true });
     await tw(tok, 900, (t) => s.set(scl(A6c[0], t)));
     await tw(tok, 900, (t) => s.set(addv(A6c[0], scl(A6c[1], t))));
     s.glow(GREEN);
-    say('欄 1 + 欄 2 疊起來 = 欄 3', '第 3 欄沒有帶來新東西 → 相依（dependent）');
+    say('行 1 + 行 2 疊起來 = 行 3', '第 3 行沒有帶來新東西 → 相依（dependent）');
     await beat(tok, 2600);
     g.col(2, null); c3.glow(null);
     g.paintCol(2, '#e7dcc8');
-    say('pivot 欄：第 1、2 欄；第 3 欄不是 pivot 欄', '慣例：從左邊開始保留獨立的欄');
+    say('pivot 行：第 1、2 行；第 3 行不是 pivot 行', '慣例：從左邊開始保留獨立的行');
     await beat(tok, 2600);
-    say('其實丟掉第 1 欄也行（欄 1 = 欄 3 − 欄 2）', '');
+    say('其實丟掉第 1 行也行（行 1 = 行 3 − 行 2）', '');
     await beat(tok, 2200);
-    say('C(A) 是 R⁴ 裡的 2 維子空間', 'dim C(A) = 2 = 獨立欄的個數');
+    say('C(A) 是 R⁴ 裡的 2 維子空間', 'dim C(A) = 2 = 獨立行的個數');
     await beat(tok, 3000);
   }
   async function scNullspaceLine(tok) {
@@ -648,7 +648,7 @@ export default function (ctx) {
     say('x = 0 一定是解', 'A·0 = 0');
     const o = S.ball([0, 0, 0], COL.g, 0.13);
     await beat(tok, 1600);
-    say('再找一個：x = (1, 1, −1)', '欄 1 + 欄 2 − 欄 3 = 0');
+    say('再找一個：x = (1, 1, −1)', '行 1 + 行 2 − 行 3 = 0');
     const res = bars([0, 0, 0, 0], -2.5, 1.0, 0.3, COL.g, { k: 0.28 }); tag('Ax', 'ptr alt', res.mid, 0.25);
     await tw(tok, 800, (t) => res.set(scl(A6c[0], t)));
     await tw(tok, 800, (t) => res.set(addv(A6c[0], scl(A6c[1], t))));
@@ -677,10 +677,10 @@ export default function (ctx) {
     say('x = 0 不是解（A·0 = 0 ≠ b）', '<span class="no">連 0 都不在 → 不是子空間</span>');
     await beat(tok, 2400); z.visible = false;
     const a = S.ball([1, 0, 0], COL.b, 0.13); const al = S.w([1, 0, 0.35]); tag('(1, 0, 0)', 'ptr alt', al.x, al.y, al.z);
-    say('一個解：x = (1, 0, 0)', 'b 就是第 1 欄');
+    say('一個解：x = (1, 0, 0)', 'b 就是第 1 行');
     await beat(tok, 1800);
     const b = S.ball([0, -1, 1], COL.b, 0.13); const bl = S.w([0, -1, 1.35]); tag('(0, −1, 1)', 'ptr alt', bl.x, bl.y, bl.z);
-    say('另一個：x = (0, −1, 1)', '−欄 2 + 欄 3 = (1, 2, 3, 4)');
+    say('另一個：x = (0, −1, 1)', '−行 2 + 行 3 = (1, 2, 3, 4)');
     await beat(tok, 2000);
     const Ls = S.line([1, 1, -1], COL.b, 2.4, [0, 0, 0], 0.045);
     await tw(tok, 1500, (t) => S.setLine(Ls, [1, 1, -1], 2.4, [t, 0, 0]));
@@ -702,8 +702,8 @@ export default function (ctx) {
     g.row(0, GOLD); g.row(1, GOLD); await beat(tok, 1300); g.clearGlow(); g.row(2, GREEN); await beat(tok, 1500); g.clearGlow();
     const steps = [
       [1, [0, 0, 2, 4, 'b2−2b1'], 'R2 − 2·R1', '左右兩邊做一樣的事'],
-      [2, [0, 0, 2, 4, 'b3−3b1'], 'R3 − 3·R1', '第 1 欄消完；第 1 個 pivot = 1'],
-      [2, [0, 0, 0, 0, 'b3−b2−b1'], 'R3 − R2', '第 2 個 pivot 在第 3 欄（= 2）'],
+      [2, [0, 0, 2, 4, 'b3−3b1'], 'R3 − 3·R1', '第 1 行消完；第 1 個 pivot = 1'],
+      [2, [0, 0, 0, 0, 'b3−b2−b1'], 'R3 − R2', '第 2 個 pivot 在第 3 行（= 2）'],
     ];
     for (const [r, row, op, cap] of steps) {
       g.row(r, GOLD);
@@ -746,7 +746,7 @@ export default function (ctx) {
     say('b = (1, 5, 6) 消去完：0 = 0 ✓', '接下來找一個特解 x_p');
     await beat(tok, 2200);
     g.paintCol(0, COL.a); g.paintCol(2, COL.a);
-    say('pivot 欄：x₁、x₃；自由欄：x₂、x₄', '自由變數沒有 pivot，可以隨便給值');
+    say('pivot 行：x₁、x₃；自由行：x₂、x₄', '自由變數沒有 pivot，可以隨便給值');
     await beat(tok, 2400);
     g.paintCol(1, '#eee4d2'); g.paintCol(3, '#eee4d2');
     const xs = ['?', '0', '?', '0'].map((v, i) => cube(v, i % 2 ? '#eee4d2' : COL.a, [0.62, 0.62, 0.3], 3.4, 5.4 - i * 0.78, 0, 2));
@@ -801,7 +801,7 @@ export default function (ctx) {
     fresh([0, 3.4, 13], [0.3, 3.2, 0]);
     const A = [[1, 3], [2, 1], [6, 1], [5, 1]];
     const g = mgrid(A, -6, 5.4, 0, { color: (i, j) => [COL.a, COL.b][j] }); tag('A（4×2）', 'ptr', -5.6, 6.15);
-    say('r = n：每一欄都有 pivot（full column rank）', '又高又瘦的矩陣，例如 4×2');
+    say('r = n：每一行都有 pivot（full column rank）', '又高又瘦的矩陣，例如 4×2');
     await beat(tok, 2400);
     const R = mgrid([[1, 0], [0, 1], [0, 0], [0, 0]], -3.4, 5.4, 0, { color: (i, j) => (i === j ? COL.a : '#e7dcc8') }); tag('R', 'ptr', -3.0, 6.15);
     say('R = [I; 0]：上面單位矩陣、下面全 0', '沒有自由變數 → N(A) = {0}');
@@ -809,7 +809,7 @@ export default function (ctx) {
     const c1 = bars([1, 2, 6, 5], -0.6, 2.2, 0, COL.a, { k: 0.3 }), c2 = bars([3, 1, 1, 1], 1.4, 2.2, 0, COL.b, { k: 0.3 });
     const tg = bars([4, 3, 7, 6], 3.8, 2.2, 0, COL.k, { k: 0.3 }); tg.ghost(); tag('b = (4, 3, 7, 6)', 'ptr alt', 4.37, 1.4);
     const res = bars([0, 0, 0, 0], 3.8, 2.2, 0.01, COL.g, { k: 0.3, noNum: true });
-    say('b = (4, 3, 7, 6) = 欄 1 + 欄 2', '');
+    say('b = (4, 3, 7, 6) = 行 1 + 行 2', '');
     await tw(tok, 800, (t) => res.set(scl([1, 2, 6, 5], t)));
     await tw(tok, 800, (t) => res.set(addv([1, 2, 6, 5], scl([3, 1, 1, 1], t))));
     res.glow(GREEN);
@@ -828,7 +828,7 @@ export default function (ctx) {
     say('r = m：每一列都有 pivot（full row rank）', '又矮又胖：2×4，rank 2');
     await beat(tok, 2400);
     const R = mgrid([[1, 0, -4 / 5, -3 / 5], [0, 1, 17 / 5, 14 / 5]], 0.4, 5.2, 0, { gap: 0.95, size: 0.82, color: (i, j) => (j < 2 ? (i === j ? COL.d : '#e7dcc8') : '#f0d9a8') }); tag('R = [I  F]', 'ptr alt', 1.8, 6.0);
-    say('R = [I F]：沒有全 0 的列', '前兩欄是 pivot 欄，F 是自由欄的部分');
+    say('R = [I F]：沒有全 0 的列', '前兩行是 pivot 行，F 是自由行的部分');
     await beat(tok, 2800);
     say('沒有 0 = (…) 的條件 → 每個 b 都有解', 'Ax = b 一定可解（existence）');
     R.row(0, GREEN); R.row(1, GREEN); await beat(tok, 2200); R.clearGlow();
@@ -945,7 +945,7 @@ export default function (ctx) {
     A.row(0, GOLD); await beat(tok, 1400); A.clearGlow(); A.col(0, GOLD); await beat(tok, 1400); A.clearGlow();
     const vr = v.map((x, j) => cube(x, COL.b, [0.62, 0.62, 0.3], 0.8 + j * 0.78, 5.8, 0, 2)), uc = u.map((x, i) => cube(x, COL.c, [0.62, 0.62, 0.3], 0, 4.8 - i * 0.78, 0, 2));
     tag('vᵀ', 'ptr alt', 3.4, 5.8); tag('u', 'ptr alt', -0.6, 3.5);
-    say('A = u vᵀ：一欄 × 一列', '(2×1)(1×3) = 2×3');
+    say('A = u vᵀ：一行 × 一列', '(2×1)(1×3) = 2×3');
     await beat(tok, 1600);
     for (let i = 0; i < 2; i++) for (let j = 0; j < 3; j++) {
       glow(uc[i], GOLD); glow(vr[j], GOLD);
@@ -1048,7 +1048,7 @@ export default function (ctx) {
     say('N(A) = { c·(1, 1, 1, 1) }，dim 1', '電位只決定到「差一個常數」');
     await beat(tok, 2600);
     show([3, 1, 2, 0]); glow(G.nb[3], GREEN);
-    say('接地（ground）：令 x₄ = 0', '拿掉第 4 欄，剩下 3 欄獨立');
+    say('接地（ground）：令 x₄ = 0', '拿掉第 4 行，剩下 3 行獨立');
     await beat(tok, 2600);
     say('rank = n − 1 = 3', '任何 3 個電位都是好的未知數');
     await beat(tok, 2800);
@@ -1088,7 +1088,7 @@ export default function (ctx) {
     const G = drawG();
     say('row space 的維度 = rank = 3', 'A 的 5 列裡只有 3 列獨立');
     await beat(tok, 2400);
-    say('Aᵀ 的 pivot 欄 = 邊 1、2、4', '邊 3 = 邊 1 + 邊 2（來自迴圈），所以不是 pivot');
+    say('Aᵀ 的 pivot 行 = 邊 1、2、4', '邊 3 = 邊 1 + 邊 2（來自迴圈），所以不是 pivot');
     [0, 1, 3].forEach((i) => { G.ea[i].color(COL.g); G.ea[i].glow(GREEN); });
     [2, 4].forEach((i) => G.ea[i].color('#ddd2c0'));
     await beat(tok, 3000);
@@ -1236,7 +1236,7 @@ export default function (ctx) {
     say('column space C(A)：dim r = 2', '');
     await beat(tok, 1800);
     R.line([-2, 1, 0], COL.c, 3.2, [0, 0, 0], 0.045);
-    say('left null space N(Aᵀ)：dim m − r = 1', '(−2, 1, 0) ⊥ 每一欄');
+    say('left null space N(Aᵀ)：dim m − r = 1', '(−2, 1, 0) ⊥ 每一行');
     await beat(tok, 2600);
     const x = [1, 1, 1], b = mulMV(A, x);
     const ax = L.arrow(x, COL.k, 'x');
@@ -1258,14 +1258,14 @@ export default function (ctx) {
     for (const s of E.steps) { g.clearGlow(); g.setAll(s.A); if (s.row >= 0) g.row(s.row, GOLD); say(s.text, ''); await beat(tok, 1100); }
     g.clearGlow();
     g.paintCol(0, COL.a); g.paintCol(2, COL.a); g.paintCol(1, COL.b); g.paintCol(3, COL.b);
-    say('pivot 欄 2 個（藍）、自由欄 2 個（橘）', 'rank r = 2，nullity = 2');
+    say('pivot 行 2 個（藍）、自由行 2 個（橘）', 'rank r = 2，nullity = 2');
     await beat(tok, 2600);
     const N = nullBasis(E.R, E.piv, 4);
     N.forEach((x, k) => x.forEach((v, i) => cube(fmt(v), COL.b, [0.62, 0.62, 0.3], 2.4 + k * 1.0, 5.4 - i * 0.78, 0, 2)));
     tag('s₁', 'ptr alt', 2.4, 6.1); tag('s₂', 'ptr alt', 3.4, 6.1);
     say('每個自由變數給一個 special solution', 'N(A) 的基底：(−2, 1, 0, 0)、(2, 0, −2, 1)');
     await beat(tok, 2800);
-    say('Rank-Nullity：r + dim N(A) = n', '2 + 2 = 4（欄數）');
+    say('Rank-Nullity：r + dim N(A) = n', '2 + 2 = 4（行數）');
     await beat(tok, 3200);
   }
   async function scChangeBasis(tok) {
@@ -1307,7 +1307,7 @@ export default function (ctx) {
     say('C(A) 由 (1, 2) 張成；C(R) 由 (1, 0) 張成', '<span class="no">C(A) ≠ C(R)</span>');
     await beat(tok, 3000);
     g.col(0, GREEN);
-    say('C(A) 的基底：回到「原矩陣 A」拿 pivot 欄', '列運算只用來找「哪幾欄」是 pivot');
+    say('C(A) 的基底：回到「原矩陣 A」拿 pivot 行', '列運算只用來找「哪幾行」是 pivot');
     await beat(tok, 2800);
     R.row(0, GREEN);
     say('row space 不變：可以直接用 R 的非零列', 'C(Aᵀ) = C(Rᵀ)，N(A) = N(R)');
@@ -1318,9 +1318,9 @@ export default function (ctx) {
   const scenes = {
     'subspace-plane-line': { title: '子空間：過原點的平面與直線', play: scSubspace },
     'union-intersect': { title: 'P ∪ L 不是子空間，P ∩ L 是', play: scUnionIntersect },
-    'colspace-def': { title: 'Column space：A 的欄的所有組合', play: scColspaceDef },
+    'colspace-def': { title: 'Column space：A 的行的所有組合', play: scColspaceDef },
     'colspace-solvable': { title: 'Ax = b 有解 ⇔ b ∈ C(A)', play: scColspaceSolvable },
-    'colspace-dependent': { title: '第 3 欄 = 第 1 欄 + 第 2 欄：C(A) 是 2 維', play: scColspaceDependent },
+    'colspace-dependent': { title: '第 3 行 = 第 1 行 + 第 2 行：C(A) 是 2 維', play: scColspaceDependent },
     'nullspace-line': { title: 'Null space：c(1, 1, −1) 是一條線', play: scNullspaceLine },
     'shifted-line': { title: 'Ax = b 的解：不過原點，不是子空間', play: scShiftedLine },
     'elim-augmented': { title: '增廣矩陣 [A | b] 消去：0 = b₃ − b₂ − b₁', play: scElimAug },
@@ -1347,7 +1347,7 @@ export default function (ctx) {
     'four-subspaces': { title: '（課本）四個基本子空間與正交', play: scFourSub },
     'rank-nullity': { title: '（課本）Rank-Nullity：r + dim N(A) = n', play: scRankNullity },
     'change-of-basis-grid': { title: '（課本）換基底：同一向量、不同座標', play: scChangeBasis },
-    'colspace-trap': { title: '（課本）地雷：C(A) 要用原矩陣的 pivot 欄', play: scOpsTrap },
+    'colspace-trap': { title: '（課本）地雷：C(A) 要用原矩陣的 pivot 行', play: scOpsTrap },
   };
 
 
@@ -1414,8 +1414,8 @@ async function grow(tok, S, a, v, from, ms = 700) { await anim(tok, ms, (t) => S
 const flash = async (tok, m, c = GOLD, n = 2) => { for (let i = 0; i < n; i++) { glow(m, c); await wt(tok, 220); glow(m, null); await wt(tok, 160); } glow(m, c); };
 
 // ════════ 8o5Cmfpeo6g（L6）：子空間、column space、null space ════════
-// 老師的矩陣 A = [1 1 2; 2 1 3; 3 1 4; 4 1 5]（la-4 的 A6），第 3 欄 = 第 1 欄 + 第 2 欄。
-const C6 = T(A6);                              // 三個欄（R⁴ 的向量）
+// 老師的矩陣 A = [1 1 2; 2 1 3; 3 1 4; 4 1 5]（la-4 的 A6），第 3 行 = 第 1 行 + 第 2 行。
+const C6 = T(A6);                              // 三個行（R⁴ 的向量）
 const N6 = subspaces(A6);                      // rank、null space 基底
 const V6 = { cam: [[0, 4, 11], [0, 2.4, 0]], view: [30, 22, 11, [0, 2.4, 0]] };
 const PU = [1, 0, 0.3], PV = [0, 1, 0.5], PN = cross(PU, PV);   // 平面 P：z = 0.3x + 0.5y
@@ -1587,36 +1587,36 @@ scene('vsA-l6-union', 'L6：P ∪ L 不是子空間，交集一定是', [
   const d = cross(PN, S.tn); S.dd = scl(d, 1 / norm(d));
 } }));
 
-scene('vsA-l6-colspace', 'L6：Column space C(A) = 欄的所有組合', [
+scene('vsA-l6-colspace', 'L6：Column space C(A) = 行的所有組合', [
   async (tok, S) => { cap('接下來：矩陣 A 的 column space', '記號 C(A)'); },
   async (tok, S) => {
-    cap('例子：A 有三個欄', '(1,2,3,4)、(1,1,1,1)、(2,3,4,5)');
+    cap('例子：A 有三個行', '(1,2,3,4)、(1,1,1,1)、(2,3,4,5)');
     S.g = mgrid(A6, -6.4, 5.6, 0, { color: (i, j) => [COL.a, COL.b, COL.c][j] });
     hd('A（4×3）', -5.6, 6.35);
     await wt(tok, 300);
   },
   async (tok, S) => {
-    cap('這三個欄，每一個都是向量', '');
-    S.cb = C6.map((c, j) => { const B = bar(c, -2.4 + j * 1.9, 2.0, 0, [COL.a, COL.b, COL.c][j], { k: 0.38 }); sm('欄 ' + (j + 1), B.mid, 1.2); return B; });
+    cap('這三個行，每一個都是向量', '');
+    S.cb = C6.map((c, j) => { const B = bar(c, -2.4 + j * 1.9, 2.0, 0, [COL.a, COL.b, COL.c][j], { k: 0.38 }); sm('行 ' + (j + 1), B.mid, 1.2); return B; });
     await wt(tok, 300);
   },
   async (tok, S) => { cap('C(A) 是 R 幾的子空間？', ''); S.q = hot('R？', 3.6, 5.6); },
   async (tok, S) => {
-    cap('R⁴：每個欄有 4 個分量', '');
+    cap('R⁴：每個行有 4 個分量', '');
     txt(S.q, 'C(A) ⊂ R⁴'); S.cb.forEach((B) => B.glow(GOLD)); await wt(tok, 600); S.cb.forEach((B) => B.glow(null));
   },
   async (tok, S) => {
-    cap('因為 A 是 4×3：4 列 → 欄有 4 個分量', 'm = 4 決定在哪個空間');
+    cap('因為 A 是 4×3：4 列 → 行有 4 個分量', 'm = 4 決定在哪個空間');
     for (let i = 0; i < 4; i++) { S.g.row(i, GOLD); await wt(tok, 250); S.g.row(i, null); }
   },
   async (tok, S) => {
-    cap('三個欄當然都在 C(A) 裡', '');
+    cap('三個行當然都在 C(A) 裡', '');
     for (let j = 0; j < 3; j++) { S.g.col(j, GOLD); S.cb[j].glow(GOLD); await wt(tok, 350); S.g.col(j, null); S.cb[j].glow(null); }
   },
   async (tok, S) => { cap('但只放三個向量，不是子空間', '要能相加、乘常數'); S.no = bad('只有 3 個向量 ≠ 子空間', 3.6, 4.9); },
   async (tok, S) => {
     gone(S.no);
-    cap('把所有線性組合放進來', 'C(A) = 所有 x₁·欄1 + x₂·欄2 + x₃·欄3');
+    cap('把所有線性組合放進來', 'C(A) = 所有 x₁·行1 + x₂·行2 + x₃·行3');
     S.res = bar([0, 0, 0, 0], 4.0, 2.0, 0, COL.g, { k: 0.38 }); hot('組合 Ax', S.res.mid, 1.2);
     S.xl = pl('x = (1, 1, 0)', 4.6, 5.0);
     const t1 = mulMV(A6, [1, 1, 0]); await anim(tok, 800, (t) => S.res.set(scl(t1, t)));
@@ -1628,7 +1628,7 @@ scene('vsA-l6-colspace', 'L6：Column space C(A) = 欄的所有組合', [
     await anim(tok, 800, (t) => S.res.set(addv(a, scl(addv(c, scl(a, -1)), t))));
     S.k = ok(same(addv(a, b), c), 4.6, 4.4, 'A(1,1,0) + A(0,1,1) = A(1,2,1) ✓');
   },
-  async (tok, S) => { gone(S.k); cap('C(A)：含這三個欄的「最小」子空間', '一定要有的都放了，就停在這裡'); },
+  async (tok, S) => { gone(S.k); cap('C(A)：含這三個行的「最小」子空間', '一定要有的都放了，就停在這裡'); },
   async (tok, S) => { cap('C(A) 有多大？會是整個 R⁴ 嗎？', ''); txt(S.q, 'C(A) = R⁴ ？'); },
   async (tok, S) => {
     cap('不會：三個向量的組合填不滿 R⁴', '只是 R⁴ 裡比較小的子空間');
@@ -1646,19 +1646,19 @@ scene('vsA-l6-solvable', 'L6：Ax = b 有解 ⇔ b 在 C(A) 裡', [
     for (let i = 0; i < 4; i++) { S.g.row(i, GOLD); await wt(tok, 250); S.g.row(i, null); }
   },
   async (tok, S) => {
-    cap('Ax = x₁·欄1 + x₂·欄2 + x₃·欄3', '要湊出右邊的 b');
+    cap('Ax = x₁·行1 + x₂·行2 + x₃·行3', '要湊出右邊的 b');
     ['x₁ ·', 'x₂ ·', 'x₃ ·'].forEach((t, j) => hot(t, S.cb[j].mid, 4.4));
   },
-  async (tok, S) => { cap('三個欄的組合：R⁴ 裡一小片', '像 R⁴ 裡的一個平面'); },
+  async (tok, S) => { cap('三個行的組合：R⁴ 裡一小片', '像 R⁴ 裡的一個平面'); },
   async (tok, S) => { cap('但有些 b 解得出來', '哪些 b 可以？'); },
   async (tok, S) => {
     await S.run(tok, [0, 0, 0, 0], [0, 0, 0], 'b = 0：x = 0 一定行');
   },
   async (tok, S) => {
-    cap('b = (1, 2, 3, 4)：解得出來嗎？', '它就是第 1 欄');
+    cap('b = (1, 2, 3, 4)：解得出來嗎？', '它就是第 1 行');
     S.tg.set([1, 2, 3, 4]); S.res.set([0, 0, 0, 0]); txt(S.tl, 'b = (1, 2, 3, 4)'); S.res.glow(null); gone(S.k);
   },
-  async (tok, S) => { await S.run(tok, [1, 2, 3, 4], [1, 0, 0], 'x = (1, 0, 0)：一倍的第 1 欄'); },
+  async (tok, S) => { await S.run(tok, [1, 2, 3, 4], [1, 0, 0], 'x = (1, 0, 0)：一倍的第 1 行'); },
   async (tok, S) => {
     cap('b = (1, 1, 1, 1) 呢？', '');
     S.tg.set([1, 1, 1, 1]); S.res.set([0, 0, 0, 0]); txt(S.tl, 'b = (1, 1, 1, 1)'); S.res.glow(null); gone(S.k);
@@ -1671,11 +1671,11 @@ scene('vsA-l6-solvable', 'L6：Ax = b 有解 ⇔ b 在 C(A) 裡', [
   },
   async (tok, S) => {
     gone(S.sy, S.k);
-    cap('Ax = b 有解 ⇔ b 在 column space 裡', 'b 是欄的組合，係數就是 x');
+    cap('Ax = b 有解 ⇔ b 在 column space 裡', 'b 是行的組合，係數就是 x');
     good('Ax = b 可解 ⇔ b ∈ C(A)', 1.6, 6.3);
   },
   async (tok, S) => {
-    cap('b 不是欄的組合 → 找不到 x', '示意：b = (1, 0, 0, 0)');
+    cap('b 不是行的組合 → 找不到 x', '示意：b = (1, 0, 0, 0)');
     S.tg.set([1, 0, 0, 0]); S.res.set([0, 0, 0, 0]); txt(S.tl, 'b = (1, 0, 0, 0)'); sy(0, 5.6, 1.2);
     S.k = ok(!inSpan(C6, [1, 0, 0, 0]), 4.4, 5.6, 'b ∉ C(A) → 無解 ✓');
     S.res.glow(RED);
@@ -1693,13 +1693,13 @@ scene('vsA-l6-solvable', 'L6：Ax = b 有解 ⇔ b 在 C(A) 裡', [
   };
 } });
 
-scene('vsA-l6-dependent', 'L6：第 3 欄 = 第 1 欄 + 第 2 欄，C(A) 是 2 維', [
-  async (tok, S) => { cap('這個例子：三個欄的組合是什麼？', ''); },
-  async (tok, S) => { cap('三個欄獨立嗎？', '每一欄都帶來新東西嗎？'); },
-  async (tok, S) => { cap('能不能丟掉某一欄，C(A) 不變？', '答案：可以'); },
-  async (tok, S) => { cap('丟哪一欄？第 3 欄最自然', ''); S.g.col(2, GOLD); S.cb[2].glow(GOLD); },
+scene('vsA-l6-dependent', 'L6：第 3 行 = 第 1 行 + 第 2 行，C(A) 是 2 維', [
+  async (tok, S) => { cap('這個例子：三個行的組合是什麼？', ''); },
+  async (tok, S) => { cap('三個行獨立嗎？', '每一行都帶來新東西嗎？'); },
+  async (tok, S) => { cap('能不能丟掉某一行，C(A) 不變？', '答案：可以'); },
+  async (tok, S) => { cap('丟哪一行？第 3 行最自然', ''); S.g.col(2, GOLD); S.cb[2].glow(GOLD); },
   async (tok, S) => {
-    cap('欄 3 = 欄 1 + 欄 2', '它沒有帶來新方向');
+    cap('行 3 = 行 1 + 行 2', '它沒有帶來新方向');
     S.st = bar([0, 0, 0, 0], S.cb[2].ms[0].position.x, 2.2, 0.36, COL.g, { noNum: true, k: 0.38 });
     await anim(tok, 700, (t) => S.st.set(scl(C6[0], t)));
     await anim(tok, 700, (t) => S.st.set(addv(C6[0], scl(C6[1], t))));
@@ -1707,22 +1707,22 @@ scene('vsA-l6-dependent', 'L6：第 3 欄 = 第 1 欄 + 第 2 欄，C(A) 是 2 �
   },
   async (tok, S) => {
     gone(S.st); S.g.col(2, null); S.cb[2].glow(null);
-    cap('第 1、2 欄叫 pivot columns', '第 3 欄不是 pivot 欄');
+    cap('第 1、2 行叫 pivot columns', '第 3 行不是 pivot 行');
     S.g.paintCol(2, '#e7dcc8'); S.cb[0].glow(GREEN); S.cb[1].glow(GREEN);
-    S.k2 = ok(same(N6.piv, [0, 1]), 3.8, 5.6, 'pivot 欄 = 第 1、2 欄 ✓');
+    S.k2 = ok(same(N6.piv, [0, 1]), 3.8, 5.6, 'pivot 行 = 第 1、2 行 ✓');
   },
   async (tok, S) => {
-    cap('丟掉第 1 欄可以嗎？也可以', '欄 1 = 欄 3 − 欄 2');
+    cap('丟掉第 1 行可以嗎？也可以', '行 1 = 行 3 − 行 2');
     S.k3 = ok(same(addv(C6[2], scl(C6[1], -1)), C6[0]), 3.8, 5.0, '(2,3,4,5) − (1,1,1,1) = (1,2,3,4) ✓');
   },
-  async (tok, S) => { cap('慣例：從左邊開始，保留不相依的欄', '第 3 欄和前兩欄在同一個平面上'); },
+  async (tok, S) => { cap('慣例：從左邊開始，保留不相依的行', '第 3 行和前兩行在同一個平面上'); },
   async (tok, S) => {
     cap('C(A) 是 R⁴ 裡的 2 維子空間', '');
     S.k4 = ok(N6.rank === 2, 3.8, 4.4, 'rank = 2 → dim C(A) = 2 ✓');
   },
 ], { cam: [[0, 3.6, 13], [0, 3.4, 0]], setup: async (tok, S) => {
   S.g = mgrid(A6, -6.6, 5.6, 0, { color: (i, j) => [COL.a, COL.b, COL.c][j] }); hd('A', -5.8, 6.35);
-  S.cb = C6.map((c, j) => { const B = bar(c, -2.6 + j * 2.0, 2.2, 0, [COL.a, COL.b, COL.c][j], { k: 0.38 }); sm('欄 ' + (j + 1), B.mid, 1.4); return B; });
+  S.cb = C6.map((c, j) => { const B = bar(c, -2.6 + j * 2.0, 2.2, 0, [COL.a, COL.b, COL.c][j], { k: 0.38 }); sm('行 ' + (j + 1), B.mid, 1.4); return B; });
 } });
 
 scene('vsA-l6-null', 'L6：Null space N(A) = c(1, 1, −1)', [
@@ -1744,7 +1744,7 @@ scene('vsA-l6-null', 'L6：Null space N(A) = c(1, 1, −1)', [
     S.k0 = ok(isZ(mulMV(A6, [0, 0, 0])), -1.6, 6.3, 'A·0 = 0 ✓');
   },
   async (tok, S) => {
-    cap('再一個：x = (1, 1, −1)', '欄 1 + 欄 2 − 欄 3 = 0');
+    cap('再一個：x = (1, 1, −1)', '行 1 + 行 2 − 行 3 = 0');
     S.res = bar([0, 0, 0, 0], -5.4, 1.4, 0.3, COL.g, { k: 0.26 }); sm('Ax', S.res.mid, 0.7);
     await anim(tok, 600, (t) => S.res.set(scl(C6[0], t)));
     await anim(tok, 600, (t) => S.res.set(addv(C6[0], scl(C6[1], t))));
@@ -1809,7 +1809,7 @@ scene('vsA-l6-nullwhy', 'L6：為什麼 N(A) 是子空間', [
 scene('vsA-l6-shifted', 'L6：Ax = (1, 2, 3, 4) 的解不是子空間', [
   async (tok, S) => { cap('右邊改成 b = (1, 2, 3, 4)', '4 個方程式、3 個未知數'); },
   async (tok, S) => {
-    cap('有一個解：x = (1, 0, 0)', 'b 剛好是第 1 欄');
+    cap('有一個解：x = (1, 0, 0)', 'b 剛好是第 1 行');
     S.a = S.S.ball([1, 0, 0], COL.b, 0.13); const p = S.S.w([1, 0, 0.4]); hot('(1, 0, 0)', p.x, p.y, p.z);
     ok(same(mulMV(A6, [1, 0, 0]), S.b), -5.2, 6.2, 'A(1, 0, 0) = b ✓');
   },
@@ -1820,7 +1820,7 @@ scene('vsA-l6-shifted', 'L6：Ax = (1, 2, 3, 4) 的解不是子空間', [
     ok(!same(mulMV(A6, [0, 0, 0]), S.b), -5.2, 5.6, 'A·0 ≠ b → 0 不是解 ✓');
   },
   async (tok, S) => {
-    cap('另一個解：x = (0, −1, 1)', '−欄 2 + 欄 3 = (1, 2, 3, 4)');
+    cap('另一個解：x = (0, −1, 1)', '−行 2 + 行 3 = (1, 2, 3, 4)');
     S.c = S.S.ball([0, -1, 1], COL.b, 0.13); const p = S.S.w([0, -1, 1.4]); hot('(0, −1, 1)', p.x, p.y, p.z);
     ok(same(mulMV(A6, [0, -1, 1]), S.b), -5.2, 5.0, 'A(0, −1, 1) = b ✓');
   },
@@ -1859,11 +1859,11 @@ function rowSwap(S, i, j) { [S.M[i], S.M[j]] = [S.M[j], S.M[i]]; S.g.clearGlow()
 const eqU = (M) => sameM(M.map((r) => r.map((x) => (Math.abs(x) < 1e-12 ? 0 : x))), M);
 
 scene('vsA-l7-elim', 'L7：消去法把 A 化成 echelon form U', [
-  async (tok, S) => { cap('例子：A 有 3 列、4 欄', '第 2 列 (2,4,6,8)、第 3 列 (3,6,8,10)'); S.g = mgrid(S.M, -4.6, 5.4, 0); XN.forEach((n, j) => sm(n, S.g.xs[j], 6.1)); },
+  async (tok, S) => { cap('例子：A 有 3 列、4 行', '第 2 列 (2,4,6,8)、第 3 列 (3,6,8,10)'); S.g = mgrid(S.M, -4.6, 5.4, 0); XN.forEach((n, j) => sm(n, S.g.xs[j], 6.1)); },
   async (tok, S) => {
-    cap('一眼看出：欄 2 = 2 × 欄 1', '欄 2 不是獨立的');
+    cap('一眼看出：行 2 = 2 × 行 1', '行 2 不是獨立的');
     S.g.col(0, GOLD); S.g.col(1, GOLD);
-    S.k1 = ok(same(colOf(A8, 1), scl(colOf(A8, 0), 2)), 1.8, 6.0, '欄 2 = 2·欄 1 ✓');
+    S.k1 = ok(same(colOf(A8, 1), scl(colOf(A8, 0), 2)), 1.8, 6.0, '行 2 = 2·行 1 ✓');
   },
   async (tok, S) => {
     S.g.clearGlow();
@@ -1879,15 +1879,15 @@ scene('vsA-l7-elim', 'L7：消去法把 A 化成 echelon form U', [
     [0, 1, 2].forEach((i) => cube('0', '#efe6d4', [0.5, 0.5, 0.25], -1.25, 5.4 - i * 0.78, 0)); sm('= 0', -1.25, 6.1);
   },
   async (tok, S) => { cap('第一個 pivot：左上角的 1', ''); glow(S.g.c[0][0], GREEN); tint(S.g.c[0][0], COL.a); },
-  async (tok, S) => { cap('R2 − 2·R1 → (0, 0, 2, 4)', '第 2 欄也變 0：麻煩的訊號'); rowOp(S, 1, 2, 0); },
-  async (tok, S) => { cap('R3 − 3·R1 → (0, 0, 2, 4)', '第 1 欄處理完'); rowOp(S, 2, 3, 0); },
+  async (tok, S) => { cap('R2 − 2·R1 → (0, 0, 2, 4)', '第 2 行也變 0：麻煩的訊號'); rowOp(S, 1, 2, 0); },
+  async (tok, S) => { cap('R3 − 3·R1 → (0, 0, 2, 4)', '第 1 行處理完'); rowOp(S, 2, 3, 0); },
   async (tok, S) => {
     S.g.clearGlow();
-    cap('第 2 欄：pivot 位置是 0，下面也是 0', '沒得交換 → 這欄沒有 pivot');
+    cap('第 2 行：pivot 位置是 0，下面也是 0', '沒得交換 → 這行沒有 pivot');
     S.g.col(1, RED);
   },
-  async (tok, S) => { cap('代表欄 2 和前面的欄相依', '不用停下來想，直接往下一欄'); },
-  async (tok, S) => { S.g.clearGlow(); cap('第 3 欄：第二個 pivot = 2', ''); tint(S.g.c[1][2], COL.a); glow(S.g.c[1][2], GREEN); },
+  async (tok, S) => { cap('代表行 2 和前面的行相依', '不用停下來想，直接往下一行'); },
+  async (tok, S) => { S.g.clearGlow(); cap('第 3 行：第二個 pivot = 2', ''); tint(S.g.c[1][2], COL.a); glow(S.g.c[1][2], GREEN); },
   async (tok, S) => { cap('R3 − 1·R2 → 整列都是 0', ''); rowOp(S, 2, 1, 1); },
   async (tok, S) => {
     S.g.clearGlow();
@@ -1904,11 +1904,11 @@ scene('vsA-l7-elim', 'L7：消去法把 A 化成 echelon form U', [
 
 scene('vsA-l7-special', 'L7：pivot 變數、free 變數、special solutions', [
   async (tok, S) => { cap('改解 Ux = 0：解完全一樣', '同一個 null space'); },
-  async (tok, S) => { cap('pivot 欄：第 1、3 欄', '有 pivot 的欄'); S.g.paintCol(0, COL.a); S.g.paintCol(2, COL.a); },
+  async (tok, S) => { cap('pivot 行：第 1、3 行', '有 pivot 的行'); S.g.paintCol(0, COL.a); S.g.paintCol(2, COL.a); },
   async (tok, S) => {
-    cap('free 欄：第 2、4 欄', '沒有 pivot 的欄');
+    cap('free 行：第 2、4 行', '沒有 pivot 的行');
     S.g.paintCol(1, COL.b); S.g.paintCol(3, COL.b);
-    S.k = ok(same(E8.piv, [0, 2]), -1.6, 6.3, 'pivot 欄 = 1、3 ✓');
+    S.k = ok(same(E8.piv, [0, 2]), -1.6, 6.3, 'pivot 行 = 1、3 ✓');
   },
   async (tok, S) => {
     gone(S.k);
@@ -1929,7 +1929,7 @@ scene('vsA-l7-special', 'L7：pivot 變數、free 變數、special solutions', [
     S.s1 = bar(S.N[0], 1.2, 1.6, 0, COL.c, { k: 0.4 }); hot('s₁', S.s1.mid, 3.0);
     S.k1 = ok(isZ(mulMV(A8, S.N[0])) && same(S.N[0], [-2, 1, 0, 0]), 1.2, 0.5, 'A s₁ = 0 ✓');
   },
-  async (tok, S) => { glow(S.x[0], null); cap('意思是：−2·欄 1 + 1·欄 2 = 0', '欄 2 正好是欄 1 的兩倍'); S.k1b = ok(isZ(addv(scl(colOf(A8, 0), -2), colOf(A8, 1))), 1.2, -0.1, '−2(1,2,3) + (2,4,6) = 0 ✓'); },
+  async (tok, S) => { glow(S.x[0], null); cap('意思是：−2·行 1 + 1·行 2 = 0', '行 2 正好是行 1 的兩倍'); S.k1b = ok(isZ(addv(scl(colOf(A8, 0), -2), colOf(A8, 1))), 1.2, -0.1, '−2(1,2,3) + (2,4,6) = 0 ✓'); },
   async (tok, S) => { gone(S.k1b); cap('它的任何倍數 c·s₁ 也在 N(A)', '一條 R⁴ 裡的直線'); await anim(tok, 900, (t) => S.s1.set(scl(S.N[0], 1 - 1.5 * Math.sin(Math.PI * t)))); },
   async (tok, S) => { cap('這樣就是整個 null space 嗎？不是', '還有另一個 free 變數'); },
   async (tok, S) => { cap('另一種選擇：x₂ = 0、x₄ = 1', ''); S.x.forEach((m, i) => relabel(m, ['?', 0, '?', 1][i])); S.cd.hl(-1); },
@@ -1941,7 +1941,7 @@ scene('vsA-l7-special', 'L7：pivot 變數、free 變數、special solutions', [
     S.s2 = bar(S.N[1], 3.6, 1.6, 0, COL.d, { k: 0.4 }); hot('s₂', S.s2.mid, 3.0);
     S.k2 = ok(isZ(mulMV(A8, S.N[1])) && same(S.N[1], [2, 0, -2, 1]), 3.6, 0.5, 'A s₂ = 0 ✓');
   },
-  async (tok, S) => { glow(S.x[0], null); cap('2·欄 1 − 2·欄 3 + 欄 4 = 0', ''); S.k2b = ok(isZ(addv(addv(scl(colOf(A8, 0), 2), scl(colOf(A8, 2), -2)), colOf(A8, 3))), 3.6, -0.1, '2(1,2,3) − 2(2,6,8) + (2,8,10) = 0 ✓'); },
+  async (tok, S) => { glow(S.x[0], null); cap('2·行 1 − 2·行 3 + 行 4 = 0', ''); S.k2b = ok(isZ(addv(addv(scl(colOf(A8, 0), 2), scl(colOf(A8, 2), -2)), colOf(A8, 3))), 3.6, -0.1, '2(1,2,3) − 2(2,6,8) + (2,8,10) = 0 ✓'); },
   async (tok, S) => { gone(S.k2b); cap('這兩個叫 special solutions', 'free 變數給特別的值 1 和 0'); S.s1.glow(GOLD); S.s2.glow(GOLD); },
   async (tok, S) => {
     S.s1.glow(null); S.s2.glow(null);
@@ -1978,9 +1978,9 @@ scene('vsA-l7-rref', 'L7：Reduced row echelon form R', [
     S.k = ok(sameM(S.M, E8.R), 1.4, 6.0, 'R = rref(A) ✓');
   },
   async (tok, S) => { cap('MATLAB：rref(A) 直接算出 R', ''); S.ml = code(['>> R = rref(A)'], 1.4, 5.3, 0.6); },
-  async (tok, S) => { gone(S.ml); cap('pivot 列：1、2；pivot 欄：1、3', ''); S.g.row(0, GOLD); S.g.row(1, GOLD); await wt(tok, 500); S.g.clearGlow(); S.g.paintCol(0, COL.a); S.g.paintCol(2, COL.a); },
+  async (tok, S) => { gone(S.ml); cap('pivot 列：1、2；pivot 行：1、3', ''); S.g.row(0, GOLD); S.g.row(1, GOLD); await wt(tok, 500); S.g.clearGlow(); S.g.paintCol(0, COL.a); S.g.paintCol(2, COL.a); },
   async (tok, S) => {
-    cap('pivot 列 × pivot 欄 = 2×2 單位矩陣 I', '');
+    cap('pivot 列 × pivot 行 = 2×2 單位矩陣 I', '');
     [[0, 0], [0, 2], [1, 0], [1, 2]].forEach(([i, j]) => glow(S.g.c[i][j], GREEN)); hot('I', -6.9, 5.0);
   },
   async (tok, S) => { cap('下面的 0 列：原本那列是別列的組合', ''); S.g.row(2, RED); },
@@ -1992,7 +1992,7 @@ scene('vsA-l7-rref', 'L7：Reduced row echelon form R', [
   },
   async (tok, S) => {
     gone(S.cd, S.k2);
-    cap('free 欄裡看到：(2, 0) 和 (−2, 2)', '');
+    cap('free 行裡看到：(2, 0) 和 (−2, 2)', '');
     S.g.paintCol(1, COL.b); S.g.paintCol(3, COL.b); [[0, 1], [1, 1], [0, 3], [1, 3]].forEach(([i, j]) => glow(S.g.c[i][j], GOLD));
   },
   async (tok, S) => {
@@ -2009,15 +2009,15 @@ scene('vsA-l7-rref', 'L7：Reduced row echelon form R', [
 
 scene('vsA-l7-block', 'L7：R = [I F; 0 0] 與 null space matrix N = [−F; I]', [
   async (tok, S) => {
-    cap('假設 pivot 欄排在前面', 'R = [I F; 0 0]');
+    cap('假設 pivot 行排在前面', 'R = [I F; 0 0]');
     S.I = cube('I', COL.a, [1.6, 1.6, 0.3], -5.0, 5.0, 0, 2); S.F = cube('F', COL.b, [2.0, 1.6, 0.3], -3.1, 5.0, 0, 2);
     S.Z = cube('0', '#e7dcc8', [3.8, 0.9, 0.3], -4.0, 3.6, 0, 2); hd('R =', -6.5, 5.0);
   },
   async (tok, S) => {
-    cap('I：r×r（r 個 pivot 列、r 個 pivot 欄）', 'F：n − r 個 free 欄');
-    sm('r 欄', -5.0, 6.1); sm('n − r 欄', -3.1, 6.1); sm('r 列', -6.4, 4.4); sm('m − r 列', -6.4, 3.6);
+    cap('I：r×r（r 個 pivot 列、r 個 pivot 行）', 'F：n − r 個 free 行');
+    sm('r 行', -5.0, 6.1); sm('n − r 行', -3.1, 6.1); sm('r 列', -6.4, 4.4); sm('m − r 列', -6.4, 3.6);
   },
-  async (tok, S) => { cap('null space matrix N', '每一欄都是一個 special solution'); hd('N =', 0.2, 5.0); },
+  async (tok, S) => { cap('null space matrix N', '每一行都是一個 special solution'); hd('N =', 0.2, 5.0); },
   async (tok, S) => { cap('要 R·N = 0', ''); },
   async (tok, S) => {
     cap('N = [−F; I]', 'free 部分放 I，pivot 部分放 −F');
@@ -2040,22 +2040,22 @@ scene('vsA-l7-ex2', 'L7：第二個例子：Aᵀ 的 null space 是一條線', [
   async (tok, S) => { cap('再做一個例子', ''); },
   async (tok, S) => { cap('取上一個 A 的轉置：4×3', '[1 2 3; 2 4 6; 2 6 8; 2 8 10]'); S.g = mgrid(S.M, -6.4, 5.8, 0); ['x₁', 'x₂', 'x₃'].forEach((n, j) => sm(n, S.g.xs[j], 6.5)); },
   async (tok, S) => {
-    cap('會有幾個 pivot？欄 3 = 欄 1 + 欄 2', '所以不會有 3 個');
-    S.g.col(2, GOLD); S.k = ok(same(addv(colOf(A8t, 0), colOf(A8t, 1)), colOf(A8t, 2)), -2.6, 6.6, '欄 3 = 欄 1 + 欄 2 ✓');
+    cap('會有幾個 pivot？行 3 = 行 1 + 行 2', '所以不會有 3 個');
+    S.g.col(2, GOLD); S.k = ok(same(addv(colOf(A8t, 0), colOf(A8t, 1)), colOf(A8t, 2)), -2.6, 6.6, '行 3 = 行 1 + 行 2 ✓');
   },
-  async (tok, S) => { S.g.clearGlow(); gone(S.k); cap('預期：欄 1、2 是 pivot 欄，欄 3 是 free 欄', '消去法應該會發現'); },
+  async (tok, S) => { S.g.clearGlow(); gone(S.k); cap('預期：行 1、2 是 pivot 行，行 3 是 free 行', '消去法應該會發現'); },
   async (tok, S) => { cap('第一個 pivot；R2 − 2·R1 → 整列 0', ''); tint(S.g.c[0][0], COL.a); rowOp(S, 1, 2, 0); },
   async (tok, S) => { cap('R3 − 2·R1 → (0, 2, 2)', ''); rowOp(S, 2, 2, 0); },
-  async (tok, S) => { cap('R4 − 2·R1 → (0, 4, 4)', '第 1 欄處理完'); rowOp(S, 3, 2, 0); },
-  async (tok, S) => { cap('第 2 欄 pivot 位置是 0，下面有 2', '交換 R2 ↔ R3'); rowSwap(S, 1, 2); },
+  async (tok, S) => { cap('R4 − 2·R1 → (0, 4, 4)', '第 1 行處理完'); rowOp(S, 3, 2, 0); },
+  async (tok, S) => { cap('第 2 行 pivot 位置是 0，下面有 2', '交換 R2 ↔ R3'); rowSwap(S, 1, 2); },
   async (tok, S) => { cap('R4 − 2·R2 → 整列 0', '得到 U'); tint(S.g.c[1][1], COL.a); rowOp(S, 3, 2, 1); hd('U', -6.9, 4.4); },
   async (tok, S) => {
     S.g.clearGlow();
-    cap('第 3 欄：pivot 位置 0、下面全 0 → 停', 'rank 還是 2');
+    cap('第 3 行：pivot 位置 0、下面全 0 → 停', 'rank 還是 2');
     S.k = ok(E8t.rank === 2 && sameM(S.M, [[1, 2, 3], [0, 2, 2], [0, 0, 0], [0, 0, 0]]), -2.6, 6.6, 'U 正確、rank = 2 ✓');
   },
-  async (tok, S) => { cap('A 和 Aᵀ 的 pivot 欄個數一樣', '大事實：rank(A) = rank(Aᵀ)'); S.k2 = ok(E8.rank === E8t.rank, -2.6, 6.0, 'rank(A) = rank(Aᵀ) = 2 ✓'); },
-  async (tok, S) => { gone(S.k, S.k2); cap('free 欄：3 − 2 = 1 個', 'x₃ 是 free 變數'); S.g.paintCol(2, COL.b); },
+  async (tok, S) => { cap('A 和 Aᵀ 的 pivot 行個數一樣', '大事實：rank(A) = rank(Aᵀ)'); S.k2 = ok(E8.rank === E8t.rank, -2.6, 6.0, 'rank(A) = rank(Aᵀ) = 2 ✓'); },
+  async (tok, S) => { gone(S.k, S.k2); cap('free 行：3 − 2 = 1 個', 'x₃ 是 free 變數'); S.g.paintCol(2, COL.b); },
   async (tok, S) => {
     cap('free 變數 x₃ 設成 1', '設 0 只會得到全 0');
     S.x = ['?', '?', '1'].map((v, i) => cube(v, i === 2 ? COL.b : COL.a, [0.6, 0.6, 0.3], -2.6, 4.6 - i * 0.74, 0)); hot('x', -2.6, 5.3);
@@ -2066,7 +2066,7 @@ scene('vsA-l7-ex2', 'L7：第二個例子：Aᵀ 的 null space 是一條線', [
   },
   async (tok, S) => {
     glow(S.x[1], null);
-    cap('x₁ = −1：−欄1 − 欄2 + 欄3 = 0', '');
+    cap('x₁ = −1：−行1 − 行2 + 行3 = 0', '');
     relabel(S.x[0], -1); glow(S.x[0], GOLD);
     S.k = ok(isZ(mulMV(A8t, [-1, -1, 1])) && same(Q8t.null[0], [-1, -1, 1]), -2.6, 1.6, 'Aᵀ(−1, −1, 1) = 0 ✓');
   },
@@ -2142,7 +2142,7 @@ scene('vsA-l8-aug', 'L8：增廣矩陣 [A | b] 消去：0 = b₃ − b₂ − b�
   },
   async (tok, S) => { cap('R2 − 2·R1', '右邊變成 b₂ − 2b₁'); augOp(S, 1, 2, 0); },
   async (tok, S) => { cap('R3 − 3·R1', '右邊變成 b₃ − 3b₁'); augOp(S, 2, 3, 0); },
-  async (tok, S) => { S.g.clearGlow(); cap('pivot 在第 1、3 欄', ''); tint(S.g.c[0][0], COL.a); tint(S.g.c[1][2], COL.a); },
+  async (tok, S) => { S.g.clearGlow(); cap('pivot 在第 1、3 行', ''); tint(S.g.c[0][0], COL.a); tint(S.g.c[1][2], COL.a); },
   async (tok, S) => { cap('R3 − R2：左邊整列 0', '右邊 = b₃ − b₂ − b₁'); augOp(S, 2, 1, 1); },
   async (tok, S) => {
     S.g.clearGlow(); S.bg.clearGlow(); S.g.row(2, RED); glow(S.bg.c[2][0], RED);
@@ -2166,8 +2166,8 @@ scene('vsA-l8-solv', 'L8：可解條件的兩種說法', [
   async (tok, S) => { cap('可解性：右邊 b 要滿足什麼？', ''); S.g.row(2, RED); },
   async (tok, S) => { S.g.clearGlow(); cap('之前的答案：b 在 column space 裡', 'Ax = b 可解 ⇔ b ∈ C(A)'); good('Ax = b 可解 ⇔ b ∈ C(A)', 2.6, 6.3); },
   async (tok, S) => {
-    cap('b 必須是欄的組合', '例：(1, 5, 6) 是欄的組合');
-    S.k = ok(same(mulMV(A8, XP8), B8), 2.6, 5.7, '−2·欄1 + (3/2)·欄3 = (1, 5, 6) ✓');
+    cap('b 必須是行的組合', '例：(1, 5, 6) 是行的組合');
+    S.k = ok(same(mulMV(A8, XP8), B8), 2.6, 5.7, '−2·行1 + (3/2)·行3 = (1, 5, 6) ✓');
   },
   async (tok, S) => {
     cap('另一種說法：若列的某個組合 = 0 列', '列 1 + 列 2 − 列 3 = 0');
@@ -2191,11 +2191,11 @@ scene('vsA-l8-xp', 'L8：特解 x_p：free 變數設 0', [
   async (tok, S) => { cap('把所有 free 變數設成 0', '它們可以隨便給，0 最方便'); },
   async (tok, S) => { cap('再解出 pivot 變數', '剩下一定只有一種解法'); },
   async (tok, S) => {
-    cap('x₂ = 0、x₄ = 0（沒有 pivot 的欄）', '');
+    cap('x₂ = 0、x₄ = 0（沒有 pivot 的行）', '');
     S.g.paintCol(1, '#eee4d2'); S.g.paintCol(3, '#eee4d2'); relabel(S.x[1], 0); relabel(S.x[3], 0);
   },
   async (tok, S) => {
-    cap('剩下：x₁ + 2x₃ = 1、2x₃ = 3', '只用 pivot 欄');
+    cap('剩下：x₁ + 2x₃ = 1、2x₃ = 3', '只用 pivot 行');
     S.cd = code(['x₁ + 2x₃ = 1', '     2x₃ = 3'], -3.0, 2.2, 0.6);
   },
   async (tok, S) => { cap('回代：x₃ = 3/2', ''); S.cd.hl(1); relabel(S.x[2], '3/2'); glow(S.x[2], GOLD); },
@@ -2272,7 +2272,7 @@ scene('vsA-l8-complete', 'L8：完整解 x = x_p + x_n', [
 ], { cam: [[0, 3.6, 13], [0, 3.0, 0]], setup: async (tok, S) => { S.N = Q8.null; S.u = [1.2, -0.6, 0.2]; S.v = [0.3, 1.1, -0.4]; S.xp = [0.4, -0.3, 1.6]; } });
 
 scene('vsA-l8-rankbound', 'L8：rank 的範圍：r ≤ m、r ≤ n', [
-  async (tok, S) => { cap('一般的 m×n 矩陣，rank r', '例：A 是 3×4，r = 2'); sm('n = 4 欄', -2.9, 6.3); sm('m = 3 列', -6.6, 4.6); },
+  async (tok, S) => { cap('一般的 m×n 矩陣，rank r', '例：A 是 3×4，r = 2'); sm('n = 4 行', -2.9, 6.3); sm('m = 3 列', -6.6, 4.6); },
   async (tok, S) => {
     cap('rank 的定義：pivot 的個數', '');
     S.g.setAll(E8.R); E8.piv.forEach((c, k) => { tint(S.g.c[k][c], COL.a); glow(S.g.c[k][c], GREEN); }); hd('R', -1.4, 5.4);
@@ -2285,7 +2285,7 @@ scene('vsA-l8-rankbound', 'L8：rank 的範圍：r ≤ m、r ≤ n', [
     S.k2 = ok(E8.rank <= 3, 1.4, 5.4, 'r = 2 ≤ m = 3 ✓');
   },
   async (tok, S) => {
-    cap('r ≤ n：每一欄最多一個 pivot', '');
+    cap('r ≤ n：每一行最多一個 pivot', '');
     for (let j = 0; j < 4; j++) { S.g.col(j, GOLD); await wt(tok, 250); S.g.col(j, null); }
     E8.piv.forEach((c, k) => glow(S.g.c[k][c], GREEN));
     S.k3 = ok(E8.rank <= 4, 1.4, 4.8, 'r = 2 ≤ n = 4 ✓');
@@ -2296,7 +2296,7 @@ scene('vsA-l8-rankbound', 'L8：rank 的範圍：r ≤ m、r ≤ n', [
 const AC = [[1, 3], [2, 1], [6, 1], [5, 1]], EC = rrefSteps(AC);
 scene('vsA-l8-fullcol', 'L8：full column rank r = n：0 或 1 個解', [
   async (tok, S) => { cap('full column rank：r = n', ''); hd('r = n', -5.0, 6.4); },
-  async (tok, S) => { cap('每一欄都有 pivot', ''); S.g.c.forEach((r, i) => r.forEach((m, j) => { if (i === j) { tint(m, COL.a); relabel(m, '■'); } })); },
+  async (tok, S) => { cap('每一行都有 pivot', ''); S.g.c.forEach((r, i) => r.forEach((m, j) => { if (i === j) { tint(m, COL.a); relabel(m, '■'); } })); },
   async (tok, S) => { cap('沒有 free 變數', 'n 個變數全是 pivot 變數'); },
   async (tok, S) => { cap('N(A) 只有零向量', '沒有 free 變數可以給 1'); good('N(A) = {0}', -1.4, 6.4); },
   async (tok, S) => { cap('完整解就只有 x = x_p', '沒有 null space 可以加'); },
@@ -2305,13 +2305,13 @@ scene('vsA-l8-fullcol', 'L8：full column rank r = n：0 或 1 個解', [
     cap('例子：又高又瘦的 4×2 矩陣', '[1 3; 2 1; 6 1; 5 1]');
     S.g.c.forEach((r) => r.forEach((m) => tint(m, '#d9cbb2'))); S.g.setAll(AC); S.g.paintCol(0, COL.a); S.g.paintCol(1, COL.b);
   },
-  async (tok, S) => { cap('rank = 2：兩欄方向不同', ''); S.k = ok(EC.rank === 2, 0.6, 4.6, 'rank = 2 = n ✓'); },
+  async (tok, S) => { cap('rank = 2：兩行方向不同', ''); S.k = ok(EC.rank === 2, 0.6, 4.6, 'rank = 2 = n ✓'); },
   async (tok, S) => {
     cap('R = [I; 0]：上面 2×2 單位矩陣、下面全 0', '');
     S.R = mgrid(EC.R, -3.4, 5.4, 0, { color: (i, j) => (i === j ? COL.a : '#e7dcc8') }); hd('R', -3.0, 6.2);
     S.k2 = ok(sameM(EC.R, [[1, 0], [0, 1], [0, 0], [0, 0]]), 0.6, 4.0, 'R = [I; 0] ✓');
   },
-  async (tok, S) => { cap('N(A) 只有 0：只有 0·欄1 + 0·欄2 = 0', ''); S.k3 = ok(nullBasis(EC.R, EC.piv, 2).length === 0, 0.6, 3.4, 'N(A) = {0} ✓'); },
+  async (tok, S) => { cap('N(A) 只有 0：只有 0·行1 + 0·行2 = 0', ''); S.k3 = ok(nullBasis(EC.R, EC.piv, 2).length === 0, 0.6, 3.4, 'N(A) = {0} ✓'); },
   async (tok, S) => { gone(S.k, S.k2, S.k3); cap('4 個方程式、2 個未知數', '不是每個 b 都有解'); },
   async (tok, S) => {
     cap('隨便挑 b：通常無解', '示意：b = (1, 0, 0, 0)');
@@ -2319,12 +2319,12 @@ scene('vsA-l8-fullcol', 'L8：full column rank r = n：0 或 1 個解', [
   },
   async (tok, S) => { cap('b = 0：當然有解 x = 0', ''); },
   async (tok, S) => {
-    cap('b = (4, 3, 7, 6) = 欄 1 + 欄 2', '唯一解 x = (1, 1)');
+    cap('b = (4, 3, 7, 6) = 行 1 + 行 2', '唯一解 x = (1, 1)');
     const E = rrefSteps(AC.map((r, i) => [...r, [4, 3, 7, 6][i]]));
     S.k2 = ok(same(mulMV(AC, [1, 1]), [4, 3, 7, 6]) && E.rank === 2 && !E.piv.includes(2), 0.6, 4.0, 'x = (1, 1) 是唯一解 ✓');
   },
 ], { cam: [[0, 3.4, 12.5], [0, 3.6, 0]], setup: async (tok, S) => {
-  S.g = mgrid([['', ''], ['', ''], ['', ''], ['', '']], -6.2, 5.4, 0); sm('示意：每欄一個 pivot', -5.6, 1.9);
+  S.g = mgrid([['', ''], ['', ''], ['', ''], ['', '']], -6.2, 5.4, 0); sm('示意：每行一個 pivot', -5.6, 1.9);
 } });
 
 const AR = [[1, 2, 6, 5], [3, 1, 1, 1]], ER = rrefSteps(AR);
@@ -2339,9 +2339,9 @@ scene('vsA-l8-fullrow', 'L8：full row rank r = m：每個 b 都有解', [
     S.g.c.forEach((r) => r.forEach((m) => tint(m, '#d9cbb2'))); S.g.setAll(AR);
   },
   async (tok, S) => { cap('rank = 2', ''); S.k = ok(ER.rank === 2, 0.6, 4.6, 'rank = 2 = m ✓'); },
-  async (tok, S) => { cap('pivot 欄：第 1、2 欄', ''); S.g.paintCol(0, COL.a); S.g.paintCol(1, COL.a); S.k2 = ok(same(ER.piv, [0, 1]), 0.6, 4.0, 'pivot 欄 = 1、2 ✓'); },
+  async (tok, S) => { cap('pivot 行：第 1、2 行', ''); S.g.paintCol(0, COL.a); S.g.paintCol(1, COL.a); S.k2 = ok(same(ER.piv, [0, 1]), 0.6, 4.0, 'pivot 行 = 1、2 ✓'); },
   async (tok, S) => {
-    cap('R = [I F]：F 是 free 欄的部分', '');
+    cap('R = [I F]：F 是 free 行的部分', '');
     S.R = mgrid(ER.R, -6.4, 3.4, 0, { gap: 0.95, size: 0.82, color: (i, j) => (j < 2 ? (i === j ? COL.a : '#e7dcc8') : '#f0d9a8') }); hd('R', -6.9, 3.4);
     S.k3 = ok(sameM(ER.R, [[1, 0, -4 / 5, -3 / 5], [0, 1, 17 / 5, 14 / 5]]), 0.6, 3.4, 'R = [1 0 −4/5 −3/5; 0 1 17/5 14/5] ✓');
   },
@@ -2405,7 +2405,7 @@ async function chain(tok, Sp, vecs, cs, colors, ms = 450) {
 scene('vsA-l9-free', 'L9：未知數比方程式多 ⇒ Ax = 0 有非零解', [
   async (tok, S) => { cap('先講一個很重要的事實', ''); },
   async (tok, S) => {
-    cap('A 的欄比列多：n > m', '方程式少、未知數多');
+    cap('A 的行比列多：n > m', '方程式少、未知數多');
     S.g = mgrid(A2, -5.6, 5.2, 0); hd('A：m = 2、n = 3', -4.0, 6.0); sy(0, -4.4, 3.4);
   },
   async (tok, S) => { cap('結論：N(A) 裡有非零的 x', '也就是 Ax = 0 有 special solutions'); },
@@ -2480,7 +2480,7 @@ scene('vsA-l9-r2', 'L9：R² 的例子：v 和 2v、零向量、三個向量', [
   async (tok, S) => { gone(S.k); cap('再放進第三個向量 v₃', '三個向量在平面上'); S.a3 = S.S.arrow([0, 0, 0], COL.c, 'v₃'); await grow(tok, S.S, S.a3, W3); },
   async (tok, S) => { cap('相依！', '為什麼一定相依？'); },
   async (tok, S) => {
-    cap('把它們放進矩陣的欄：A 是 2×3', 'v₁ ≈ (2, 1)、v₂ ≈ (1, 2)、v₃ ≈ (2.5, −1)');
+    cap('把它們放進矩陣的行：A 是 2×3', 'v₁ ≈ (2, 1)、v₂ ≈ (1, 2)、v₃ ≈ (2.5, −1)');
     S.g = mgrid(A2, 2.6, 5.6, 0, { color: (i, j) => [COL.a, COL.b, COL.c][j] }); hd('A', 3.4, 6.3);
   },
   async (tok, S) => { cap('2×3：未知數比方程式多 → 有 free 變數', '就是剛剛那個重要事實'); S.k = ok(Q2.rank < 3, 2.0, 3.4, 'rank 2 < 3 → 有非零的 c ✓'); },
@@ -2492,25 +2492,25 @@ scene('vsA-l9-r2', 'L9：R² 的例子：v 和 2v、零向量、三個向量', [
   },
 ], Object.assign({}, V2D, { setup: async (tok, S) => { S.S = space3(0, 2.4, 0, 0.9, 2.8, ['x', 'y', '']); } }));
 
-scene('vsA-l9-nullind', 'L9：欄獨立 ⇔ N(A) = {0}', [
-  async (tok, S) => { cap('把 v₁, …, vₙ 放成矩陣 A 的欄', '用矩陣回答獨立 / 相依'); },
+scene('vsA-l9-nullind', 'L9：行獨立 ⇔ N(A) = {0}', [
+  async (tok, S) => { cap('把 v₁, …, vₙ 放成矩陣 A 的行', '用矩陣回答獨立 / 相依'); },
   async (tok, S) => {
     cap('獨立 ⇔ N(A) 只有零向量', '');
     S.k = ok(Q2i.null.length === 0, -4.8, 2.4, 'N([v₁ v₂]) = {0} → 獨立 ✓');
   },
   async (tok, S) => {
-    cap('相依 ⇔ 有非零的 c 讓 Ac = 0', '某個組合得到零欄');
+    cap('相依 ⇔ 有非零的 c 讓 Ac = 0', '某個組合得到零行');
     S.k2 = ok(Q2.null.length > 0, 2.2, 2.4, 'A(−2, 1.5, 1) = 0 → 相依 ✓');
   },
   async (tok, S) => {
-    cap('獨立時：每欄都是 pivot 欄，rank = n', '沒有 free 變數');
+    cap('獨立時：每行都是 pivot 行，rank = n', '沒有 free 變數');
     tint(S.gi.c[0][0], COL.a); tint(S.gi.c[1][1], COL.a); S.k3 = ok(Q2i.rank === 2, -4.8, 1.8, 'rank = n = 2 ✓');
   },
   async (tok, S) => {
-    cap('相依時：rank < n，有 free 變數', 'free 欄是前面欄的組合');
+    cap('相依時：rank < n，有 free 變數', 'free 行是前面行的組合');
     S.gd.paintCol(2, COL.b); S.k4 = ok(Q2.rank === 2 && Q2.rank < 3, 2.2, 1.8, 'rank = 2 < n = 3 ✓');
   },
-  async (tok, S) => { cap('定義本身不需要矩陣', '但最常見的是「欄向量」，就回到 null space'); },
+  async (tok, S) => { cap('定義本身不需要矩陣', '但最常見的是「行向量」，就回到 null space'); },
 ], { cam: [[0, 3.4, 12], [0, 3.6, 0]], setup: async (tok, S) => {
   S.gi = mgrid([[2, 1], [1, 2]], -5.6, 5.2, 0, { color: (i, j) => [COL.a, COL.b][j] }); hd('[v₁ v₂]', -5.2, 6.0);
   S.gd = mgrid(A2, 1.2, 5.2, 0, { color: (i, j) => [COL.a, COL.b, COL.c][j] }); hd('[v₁ v₂ v₃]', 2.0, 6.0);
@@ -2518,14 +2518,14 @@ scene('vsA-l9-nullind', 'L9：欄獨立 ⇔ N(A) = {0}', [
 
 scene('vsA-l9-span', 'L9：span：所有線性組合', [
   async (tok, S) => { cap('一群向量「張成」（span）一個空間', '是什麼意思？'); S.a = S.S.arrow(S.u, COL.a, 'v₁'); S.b = S.S.arrow(S.v, COL.b, 'v₂'); sy(0, -4.6, 6.2); },
-  async (tok, S) => { cap('其實見過了：欄的所有組合 = column space', ''); },
+  async (tok, S) => { cap('其實見過了：行的所有組合 = column space', ''); },
   async (tok, S) => {
     cap('span：空間裡就是這些向量的所有組合', '');
     S.c = S.S.arrow([0, 0, 0], COL.g, 'c₁v₁ + c₂v₂'); let cur = [0, 0, 0];
     for (const [a, b] of [[1, 1], [-1, 0.6], [0.7, -1.1]]) { const tg = addv(scl(S.u, a), scl(S.v, b)), fr = cur; await anim(tok, 500, (t) => S.S.set(S.c, addv(fr, scl(addv(tg, scl(fr, -1)), t)))); cur = tg; }
     S.P = S.S.plane(S.u, S.v, COL.b, 0); await anim(tok, 500, (t) => S.P.fade(0.22 * t));
   },
-  async (tok, S) => { gone(S.c); cap('所以「欄 span 出 column space」', ''); },
+  async (tok, S) => { gone(S.c); cap('所以「行 span 出 column space」', ''); },
   async (tok, S) => { cap('span = 含這些向量的最小空間', '要有它們，就一定要有所有組合'); },
   async (tok, S) => {
     cap('它們獨立嗎？不一定', '示意：再加一個在平面上的 v₃');
@@ -2553,7 +2553,7 @@ scene('vsA-l9-r3', 'L9：R³ 的基底；(3, 3, 8) 其實不行', [
   },
   async (tok, S) => { cap('獨立：c₁e₁ + c₂e₂ + c₃e₃ = 0 ⇒ c 全為 0', ''); },
   async (tok, S) => {
-    cap('寫成矩陣就是 I：N(I) = {0}', '所以欄獨立');
+    cap('寫成矩陣就是 I：N(I) = {0}', '所以行獨立');
     S.k = ok(rrefSteps([[1, 0, 0], [0, 1, 0], [0, 0, 1]]).rank === 3, -4.4, 6.4, 'N(I) = {0} ✓');
   },
   async (tok, S) => { gone(S.e, S.k); cap('但基底不只一組', ''); },
@@ -2579,7 +2579,7 @@ scene('vsA-l9-r3', 'L9：R³ 的基底；(3, 3, 8) 其實不行', [
     note('老師這裡口誤，下一講開頭更正', -4.4, 4.6);
   },
   async (tok, S) => {
-    cap('檢驗法：放進矩陣的欄，做消去', '有 free 變數嗎？');
+    cap('檢驗法：放進矩陣的行，做消去', '有 free 變數嗎？');
     S.g = mgrid(T([VB1, VB2, [3, 3, 8]]), 2.6, 1.6, 0, { color: (i, j) => [COL.a, COL.b, COL.c][j], gap: 0.66, size: 0.54 });
     S.k4 = ok(rk([VB1, VB2, [3, 3, 8]]) === 2, 2.2, -0.5, 'rank 2 → 有 free 變數 → 不是基底 ✓');
   },
@@ -2598,7 +2598,7 @@ scene('vsA-l9-r3', 'L9：R³ 的基底；(3, 3, 8) 其實不行', [
 scene('vsA-l9-dim', 'L9：每組基底的個數都一樣：dimension', [
   async (tok, S) => { cap('基底不唯一', ''); },
   async (tok, S) => {
-    cap('任何可逆的 3×3 矩陣，欄都是 R³ 的基底', '示意：[1 0 1; 1 1 0; 0 1 1]');
+    cap('任何可逆的 3×3 矩陣，行都是 R³ 的基底', '示意：[1 0 1; 1 1 0; 0 1 1]');
     const M = [[1, 0, 1], [1, 1, 0], [0, 1, 1]], cols = T(M); sy(0, -4.6, 6.2);
     await anim(tok, 900, (t) => S.as.forEach((a, i) => S.S.set(a, addv(scl(S.E[i], 1 - t), scl(cols[i], t)))));
     S.as.forEach((a, i) => a.tag('b' + '₁₂₃'[i]));
@@ -2619,40 +2619,40 @@ scene('vsA-l9-dim', 'L9：每組基底的個數都一樣：dimension', [
 scene('vsA-l9-colbasis', 'L9：C(A) 的基底與 rank = dim C(A)', [
   async (tok, S) => { cap('例子：某個矩陣的 column space', ''); },
   async (tok, S) => {
-    cap('A = [1 2 3 1; 1 1 2 1; 1 2 3 1]', '欄 3 = 欄 1 + 欄 2，欄 4 = 欄 1');
+    cap('A = [1 2 3 1; 1 1 2 1; 1 2 3 1]', '行 3 = 行 1 + 行 2，行 4 = 行 1');
     S.g = mgrid(A9, -6.6, 5.6, 0, { color: (i, j) => [COL.a, COL.b, COL.c, COL.d][j] }); hd('A', -6.0, 6.3);
-    S.as = C9.map((c, j) => S.S.arrow([0, 0, 0], [COL.a, COL.b, COL.c, COL.d][j], '欄' + (j + 1)));
+    S.as = C9.map((c, j) => S.S.arrow([0, 0, 0], [COL.a, COL.b, COL.c, COL.d][j], '行' + (j + 1)));
     await anim(tok, 700, (t) => S.as.forEach((a, j) => S.S.set(a, scl(C9[j], t))));
   },
-  async (tok, S) => { cap('四個欄 span C(A) 嗎？當然', 'C(A) 就是這樣定義的'); },
+  async (tok, S) => { cap('四個行 span C(A) 嗎？當然', 'C(A) 就是這樣定義的'); },
   async (tok, S) => { cap('它們是 C(A) 的基底嗎？不是：不獨立', 'null space 裡有東西'); },
   async (tok, S) => {
-    cap('N(A) 裡有 (−1, −1, 1, 0)', '欄 3 = 欄 1 + 欄 2');
+    cap('N(A) 裡有 (−1, −1, 1, 0)', '行 3 = 行 1 + 行 2');
     S.k = ok(isZ(mulMV(A9, [-1, -1, 1, 0])), -4.6, 1.4, 'A(−1, −1, 1, 0) = 0 ✓');
   },
   async (tok, S) => {
-    cap('C(A) 的基底：pivot 欄 1、2', '最自然的答案');
+    cap('C(A) 的基底：pivot 行 1、2', '最自然的答案');
     S.g.paintCol(2, '#e7dcc8'); S.g.paintCol(3, '#e7dcc8'); S.as[2].glow(null);
-    S.k2 = ok(same(E9.piv, [0, 1]), -4.6, 0.8, 'pivot 欄 = 1、2 ✓');
+    S.k2 = ok(same(E9.piv, [0, 1]), -4.6, 0.8, 'pivot 行 = 1、2 ✓');
   },
   async (tok, S) => { cap('rank = 2', ''); S.k3 = ok(E9.rank === 2, -4.6, 0.2, 'rank(A) = 2 ✓'); },
   async (tok, S) => {
-    cap('rank(A) = dim C(A)', 'pivot 欄的個數 = column space 的維度');
+    cap('rank(A) = dim C(A)', 'pivot 行的個數 = column space 的維度');
     S.P = S.S.plane(C9[0], C9[1], COL.a, 0); await anim(tok, 700, (t) => S.P.fade(0.22 * t));
     const p = S.S.w(addv(C9[0], C9[1])); hd('C(A)：2 維平面', p.x, p.y + 0.4, p.z);
   },
   async (tok, S) => { cap('說法要對：矩陣有 rank，空間有 dimension', '不說「A 的維度」'); },
   async (tok, S) => {
-    cap('別的基底：欄 1、3；欄 2、3；欄 2、4…', '');
+    cap('別的基底：行 1、3；行 2、3；行 2、4…', '');
     S.k4 = ok([[0, 2], [1, 2], [1, 3]].every(([i, j]) => rk([C9[i], C9[j]]) === 2), -4.6, -0.4, '每一對都獨立、都在 C(A) ✓');
   },
   async (tok, S) => {
-    cap('或用不是欄的向量：(2,2,2)、(7,5,7)', '');
+    cap('或用不是行的向量：(2,2,2)、(7,5,7)', '');
     S.x1 = S.S.arrow([2, 2, 2], COL.g, '(2,2,2)'); S.x2 = S.S.arrow([0, 0, 0], COL.r, '(7,5,7)'); S.S.set(S.x2, scl([7, 5, 7], 0.5)); S.x2.tag('(7,5,7)（畫一半長）');
     S.k5 = ok(inSpan(C9, [2, 2, 2]) && inSpan(C9, [7, 5, 7]) && rk([[2, 2, 2], [7, 5, 7]]) === 2, -4.6, -1.0, '都在 C(A)、彼此獨立 ✓');
   },
   async (tok, S) => { cap('知道 dim = 2：任兩個獨立向量自動是基底', '數量對、又獨立，就一定 span'); },
-], { cam: [[0, 3.6, 13.5], [0, 3.0, 0]], setup: async (tok, S) => { S.S = space3(3.4, 2.2, 0, 0.42, 2.6, ['b₁', 'b₂', 'b₃'], 'R³（欄住的地方）'); } });
+], { cam: [[0, 3.6, 13.5], [0, 3.0, 0]], setup: async (tok, S) => { S.S = space3(3.4, 2.2, 0, 0.42, 2.6, ['b₁', 'b₂', 'b₃'], 'R³（行住的地方）'); } });
 
 scene('vsA-l9-nulldim', 'L9：dim N(A) = n − r', [
   async (tok, S) => { cap('換 null space：它的維度是多少？', ''); },
@@ -2662,14 +2662,14 @@ scene('vsA-l9-nulldim', 'L9：dim N(A) = n − r', [
   },
   async (tok, S) => { cap('只有它一個 span 不出整個 N(A)', '至少還要一個'); },
   async (tok, S) => {
-    cap('free 變數 x₃、x₄：給 (0, 1)', '欄 4 = 欄 1 → s₂ = (−1, 0, 0, 1)');
+    cap('free 變數 x₃、x₄：給 (0, 1)', '行 4 = 行 1 → s₂ = (−1, 0, 0, 1)');
     S.b2 = bar(Q9.null[1], 1.4, 2.2, 0, COL.d, { k: 0.6 }); hot('s₂', S.b2.mid, 3.6);
     S.k = ok(same(Q9.null[0], [-1, -1, 1, 0]) && same(Q9.null[1], [-1, 0, 0, 1]) && Q9.null.every((x) => isZ(mulMV(A9, x))), -0.2, 5.6, 'A s₁ = A s₂ = 0 ✓');
   },
-  async (tok, S) => { cap('null space 告訴我們：欄怎樣相依', ''); },
+  async (tok, S) => { cap('null space 告訴我們：行怎樣相依', ''); },
   async (tok, S) => { cap('s₁、s₂ 是 N(A) 的基底嗎？是', 'N(A) 是 2 維'); S.k2 = ok(rk(Q9.null) === 2, -0.2, 5.0, 's₁、s₂ 獨立 ✓'); },
   async (tok, S) => { cap('dim N(A) = free 變數的個數', ''); },
-  async (tok, S) => { cap('n − r = 4 − 2 = 2', 'n 欄、r 個 pivot 欄'); S.k3 = ok(Q9.null.length === 4 - E9.rank, -0.2, 4.4, 'dim N(A) = n − r = 2 ✓'); },
+  async (tok, S) => { cap('n − r = 4 − 2 = 2', 'n 行、r 個 pivot 行'); S.k3 = ok(Q9.null.length === 4 - E9.rank, -0.2, 4.4, 'dim N(A) = n − r = 2 ✓'); },
 ], { cam: [[0, 3.4, 12], [0, 3.4, 0]], setup: async (tok, S) => {
   S.g = mgrid(A9, -6.6, 5.6, 0, { gap: 0.66, size: 0.54 }); hd('A', -6.0, 6.2); sm('x₃、x₄ free', -5.6, 3.2);
 } });
@@ -2699,14 +2699,14 @@ scene('vsA-l10-fix', 'L10：更正上一講：(3, 3, 8) 不獨立', [
   async (tok, S) => { cap('下課後學生說：(3, 3, 8) 不獨立！', ''); bad('(3,3,8) 不獨立', -4.0, 6.6); },
   async (tok, S) => {
     cap('她沒去找組合，而是看矩陣：不可逆', '兩列一模一樣');
-    S.g = mgrid(M338, -6.4, 4.8, 0, { color: (i, j) => [COL.a, COL.b, COL.c][j] }); hd('[三個欄]', -5.6, 5.5);
+    S.g = mgrid(M338, -6.4, 4.8, 0, { color: (i, j) => [COL.a, COL.b, COL.c][j] }); hd('[三個行]', -5.6, 5.5);
     S.g.row(0, GOLD); S.g.row(1, GOLD);
     S.k = ok(same(M338[0], M338[1]), -4.0, 1.8, '第 1 列 = 第 2 列 ✓');
   },
-  async (tok, S) => { cap('列相依 → 欄也相依', '方陣不可逆'); S.k2 = ok(rk(M338) === 2, -4.0, 1.2, 'rank = 2 < 3 ✓'); },
+  async (tok, S) => { cap('列相依 → 行也相依', '方陣不可逆'); S.k2 = ok(rk(M338) === 2, -4.0, 1.2, 'rank = 2 < 3 ✓'); },
   async (tok, S) => { S.g.clearGlow(); cap('今天的結論會把 column space 和 row space 連起來', ''); },
   async (tok, S) => {
-    cap('rank 只有 2 → 只有 2 個欄獨立', '(3, 3, 8) 就在那個平面上');
+    cap('rank 只有 2 → 只有 2 個行獨立', '(3, 3, 8) 就在那個平面上');
     S.P = S.S.plane(VB1, VB2, COL.b, 0); await anim(tok, 700, (t) => S.P.fade(0.22 * t));
     S.k3 = ok(same(addv(scl(VB1, -1), scl(VB2, 2)), [3, 3, 8]), -4.0, 0.6, '(3,3,8) = −(1,1,2) + 2·(2,2,5) ✓');
   },
@@ -2714,7 +2714,7 @@ scene('vsA-l10-fix', 'L10：更正上一講：(3, 3, 8) 不獨立', [
 
 scene('vsA-l10-four', 'L10：四個基本子空間是哪四個', [
   async (tok, S) => { cap('一個矩陣帶來四個基本子空間', '用 A = [1 2 3 1; 1 1 2 1; 1 2 3 1] 對照'); },
-  async (tok, S) => { cap('① column space C(A)', '欄的所有組合'); S.card(0); for (let j = 0; j < 4; j++) { S.g.col(j, GOLD); await wt(tok, 200); S.g.col(j, null); } },
+  async (tok, S) => { cap('① column space C(A)', '行的所有組合'); S.card(0); for (let j = 0; j < 4; j++) { S.g.col(j, GOLD); await wt(tok, 200); S.g.col(j, null); } },
   async (tok, S) => { cap('② null space N(A)', 'Ax = 0 的所有解'); S.card(1); },
   async (tok, S) => { cap('③ row space：列的所有組合', '新的子空間'); S.card(2); for (let i = 0; i < 3; i++) { S.g.row(i, GOLD); await wt(tok, 250); S.g.row(i, null); } },
   async (tok, S) => {
@@ -2723,7 +2723,7 @@ scene('vsA-l10-four', 'L10：四個基本子空間是哪四個', [
   },
   async (tok, S) => {
     S.g.clearGlow(); gone(S.k);
-    cap('老師想用欄向量：把 A 轉置', 'row space = C(Aᵀ)');
+    cap('老師想用行向量：把 A 轉置', 'row space = C(Aᵀ)');
     S.gt = mgrid(T(A9), -2.6, 5.2, 0, { gap: 0.6, size: 0.48, color: () => '#cfe1f3' }); hd('Aᵀ', -2.2, 5.8);
   },
   async (tok, S) => { cap('④ null space of Aᵀ：N(Aᵀ)', ''); S.card(3); },
@@ -2751,7 +2751,7 @@ function bigPicture(S) {
 scene('vsA-l10-where', 'L10：四個子空間住在哪裡：Rⁿ 與 Rᵐ', [
   async (tok, S) => { cap('A 是 m×n：四個空間各住在哪？', ''); },
   async (tok, S) => { cap('N(A)：x 有 n 個分量 → 在 Rⁿ', ''); S.t[0] = pl('N(A) ⊂ Rⁿ', -3.5, -0.2); },
-  async (tok, S) => { cap('C(A)：欄有 m 個分量 → 在 Rᵐ', ''); S.t[1] = pl('C(A) ⊂ Rᵐ', 3.5, -0.2); },
+  async (tok, S) => { cap('C(A)：行有 m 個分量 → 在 Rᵐ', ''); S.t[1] = pl('C(A) ⊂ Rᵐ', 3.5, -0.2); },
   async (tok, S) => { cap('C(Aᵀ)：A 的列有 n 個分量 → 在 Rⁿ', ''); S.t[2] = pl('C(Aᵀ) ⊂ Rⁿ', -3.5, -0.8); },
   async (tok, S) => { cap('N(Aᵀ)：在 Rᵐ', '第四個空間不該被冷落'); S.t[3] = pl('N(Aᵀ) ⊂ Rᵐ', 3.5, -0.8); },
   async (tok, S) => {
@@ -2766,16 +2766,16 @@ scene('vsA-l10-dims', 'L10：四個子空間的維度', [
   async (tok, S) => { cap('先給簡短的答案：維度', '例：A 是 3×4、r = 2'); },
   async (tok, S) => { cap('dim C(A) = r', ''); await S.draw(tok, S.R, FQ.col, COL.d, 'C(A)', 'dim r'); },
   async (tok, S) => {
-    cap('basis：原矩陣 A 的 pivot 欄', '有 r 個 → dim = r');
-    S.k = ok(E9.piv.length === E9.rank && same(E9.piv, [0, 1]), 0, 0.2, '例：pivot 欄 1、2，dim C(A) = 2 ✓');
+    cap('basis：原矩陣 A 的 pivot 行', '有 r 個 → dim = r');
+    S.k = ok(E9.piv.length === E9.rank && same(E9.piv, [0, 1]), 0, 0.2, '例：pivot 行 1、2，dim C(A) = 2 ✓');
   },
   async (tok, S) => { cap('row space 的維度也是 r', '很美妙的事實'); await S.draw(tok, S.L, FQ.row, COL.a, 'C(Aᵀ)', 'dim r'); S.k2 = ok(rk(T(A9)) === E9.rank, 0, -0.4, '例：dim C(Aᵀ) = 2 = r ✓'); },
-  async (tok, S) => { cap('上一講的錯就是這樣看出來的', '兩列相同 → row space 2 維 → 欄只有 2 個獨立'); S.k3 = ok(rk(M338) === 2, 0, -1.0, '[1 2 3; 1 2 3; 2 5 8]：rank 2 ✓'); },
+  async (tok, S) => { cap('上一講的錯就是這樣看出來的', '兩列相同 → row space 2 維 → 行只有 2 個獨立'); S.k3 = ok(rk(M338) === 2, 0, -1.0, '[1 2 3; 1 2 3; 2 5 8]：rank 2 ✓'); },
   async (tok, S) => { gone(S.k, S.k2, S.k3); cap('N(A) 的 basis：special solutions', '每個 free 變數一個'); },
   async (tok, S) => { cap('共 n − r 個 → dim N(A) = n − r', ''); await S.draw(tok, S.L, FQ.null, COL.r, 'N(A)', 'dim n − r'); },
   async (tok, S) => { cap('Rⁿ 裡：r + (n − r) = n', 'pivot 變數 + free 變數 = 全部變數'); S.k = ok(E9.rank + Q9.null.length === 4, -3.5, 0.2, '例：2 + 2 = 4 = n ✓'); },
   async (tok, S) => { cap('dim N(Aᵀ) = m − r', ''); await S.draw(tok, S.R, FQ.left, COL.c, 'N(Aᵀ)', 'dim m − r'); },
-  async (tok, S) => { cap('Aᵀ 有 m 欄：r + (m − r) = m', 'Aᵀ 也是一個好好的矩陣'); S.k2 = ok(E9.rank + Q9.left.length === 3, 3.5, 0.2, '例：2 + 1 = 3 = m ✓'); },
+  async (tok, S) => { cap('Aᵀ 有 m 行：r + (m − r) = m', 'Aᵀ 也是一個好好的矩陣'); S.k2 = ok(E9.rank + Q9.left.length === 3, 3.5, 0.2, '例：2 + 1 = 3 = m ✓'); },
 ], Object.assign({}, V4, { setup: async (tok, S) => { bigPicture(S); sy(0, 0, 6.8); } }));
 
 scene('vsA-l10-rowbasis', 'L10：row space 的基底：R 的前 r 列', [
@@ -3341,7 +3341,7 @@ scene('vsB-l11-rank1', 'L11：Rank 1 矩陣 = u vᵀ', [
   },
   async (tok, S) => { // @1217
     sm('m × n 矩陣：r ≤ m，r ≤ n', 0, 6.6);
-    cap('rank 不會比列數 m 大，也不會比欄數 n 大', '');
+    cap('rank 不會比列數 m 大，也不會比行數 n 大', '');
   },
   async (tok, S) => { // @1230
     S.t = hot('rank 1 的矩陣：應該很簡單', 0, 6.0);
@@ -3369,14 +3369,14 @@ scene('vsB-l11-rank1', 'L11：Rank 1 矩陣 = u vᵀ', [
   },
   async (tok, S) => { // @1364
     const c2 = col(R1, 1), c3 = col(R1, 2);
-    ok(eqV(c2, scl(u1, 4)) && eqV(c3, scl(u1, 5)), -5.0, 0.6, '第 2 欄 = 4·(1, 2)，第 3 欄 = 5·(1, 2) ✓');
-    cap('其他欄都是第一欄 (1, 2) 的倍數', '');
+    ok(eqV(c2, scl(u1, 4)) && eqV(c3, scl(u1, 5)), -5.0, 0.6, '第 2 行 = 4·(1, 2)，第 3 行 = 5·(1, 2) ✓');
+    cap('其他行都是第一行 (1, 2) 的倍數', '');
   },
   async (tok, S) => { // @1380
     S.A.clearGlow();
-    S.u = u1.map((x, i) => cube(x, VC.c, [0.62, 0.62, 0.3], 0.6, 4.8 - i * 0.78, 0, 1.5)); sm('u（pivot 欄）', 0.6, 3.5);
+    S.u = u1.map((x, i) => cube(x, VC.c, [0.62, 0.62, 0.3], 0.6, 4.8 - i * 0.78, 0, 1.5)); sm('u（pivot 行）', 0.6, 3.5);
     S.v = v1.map((x, j) => cube(x, VC.b, [0.62, 0.62, 0.3], 1.8 + j * 0.78, 5.8, 0, 1.5)); sm('vᵀ', 4.4, 5.8);
-    cap('把 A 寫成：pivot 欄 (1, 2) 乘上一列 (1, 4, 5)', '一欄 × 一列');
+    cap('把 A 寫成：pivot 行 (1, 2) 乘上一列 (1, 4, 5)', '一行 × 一列');
   },
   async (tok, S) => { // @1401
     for (let i = 0; i < 2; i++) for (let j = 0; j < 3; j++) { glow(S.u[i], GOLD); glow(S.v[j], GOLD); cube(UVT[i][j], VC.g, [0.62, 0.62, 0.3], 1.8 + j * 0.78, 4.8 - i * 0.78, 0, 1.2); await wt(tok, 200); glow(S.u[i], null); glow(S.v[j], null); }
@@ -3385,7 +3385,7 @@ scene('vsB-l11-rank1', 'L11：Rank 1 矩陣 = u vᵀ', [
   },
   async (tok, S) => { // @1418
     S.f = hot('每個 rank 1 矩陣都長這樣：A = u vᵀ', 2.6, 1.6);
-    cap('每個 rank 1 矩陣 = 某一欄 × 某一列', 'u、v 都是 column vector，vᵀ 變成一列');
+    cap('每個 rank 1 矩陣 = 某一行 × 某一列', 'u、v 都是 column vector，vᵀ 變成一列');
   },
   async (tok, S) => { // @1462
     note('rank 1 矩陣是組成所有矩陣的積木', 2.6, 0.8);
@@ -3425,7 +3425,7 @@ scene('vsB-l11-notsub', 'L11：rank 4（或 rank 1）的矩陣不構成子空間
     g3(show(A4), -6.4, 3.0, VC.a, { size: 0.36, gap: 0.42 }); sm('A：rank ' + RA4, -5.6, 0.6);
     pl('+', -4.0, 2.2); g3(show(B4), -3.4, 3.0, VC.b, { size: 0.36, gap: 0.42 }); sm('B：rank ' + RB4, -2.6, 0.6);
     pl('=', -1.0, 2.2); g3(show(AB4), -0.4, 3.0, VC.r, { size: 0.36, gap: 0.42 }); sm('A + B', 0.4, 0.6);
-    sm('（只畫前 5 欄，其餘 12 欄全是 0；示意）', -2.6, 0.1);
+    sm('（只畫前 5 行，其餘 12 行全是 0；示意）', -2.6, 0.1);
     ok(RA4 === 4 && RB4 === 4 && RAB4 === 5, 4.2, 2.6, 'rank(A + B) = ' + RAB4 + ' ✓');
     cap('通常不會：rank 可能變成 5', '');
   },
@@ -3511,7 +3511,7 @@ scene('vsB-l11-four1', 'L11：S = N([1 1 1 1]) 與它的四個子空間', [
   },
   async (tok, S) => { // @1999
     ok(Q14.null.length === 3, -4.8, 2.9, 'n = 4，r = 1 → 4 − 1 = ' + Q14.null.length + ' ✓');
-    cap('n = 4 欄，r = 1', 'null space 是 3 維');
+    cap('n = 4 行，r = 1', 'null space 是 3 維');
   },
   async (tok, S) => { // @2036
     S.A.row(0, GOLD); sm('row space：(1,1,1,1) 的倍數，1 維', -4.8, 2.2);
@@ -3537,7 +3537,7 @@ scene('vsB-l11-four1', 'L11：S = N([1 1 1 1]) 與它的四個子空間', [
     cap('第三個：x₄ = 1', '這 3 個就是 S 的基底');
   },
   async (tok, S) => { // @2155
-    S.c = sm('C(A) ⊂ R¹：每一欄只有 1 個分量 → C(A) = R¹', 2.0, 2.2);
+    S.c = sm('C(A) ⊂ R¹：每一行只有 1 個分量 → C(A) = R¹', 2.0, 2.2);
     cap('column space：在 R¹ 裡', '1 的所有倍數 = 整個 R¹');
   },
   async (tok, S) => { // @2223
@@ -3678,7 +3678,7 @@ scene('vsB-l12-graph', 'L12：一張圖、4 個節點、5 條有方向的邊', [
   },
   async (tok, S) => { // @210
     hot('n = 4 個節點', 2.6, 5.2);
-    cap('n = 4', '節點數 → 矩陣的欄數');
+    cap('n = 4', '節點數 → 矩陣的行數');
   },
   async (tok, S) => { // @221
     hot('m = ' + EDGES.length + ' 條邊 → 每條邊是矩陣的一列', 2.6, 4.4);
@@ -3711,7 +3711,7 @@ scene('vsB-l12-inc', 'L12：incidence matrix 與迴圈', [
   },
   async (tok, S) => { // @360
     S.g.rl.forEach((l) => setCls(l, 'ptr alt'));
-    cap('每一列對應一條邊', '5 條邊 → 5 列；4 個節點 → 4 欄');
+    cap('每一列對應一條邊', '5 條邊 → 5 列；4 個節點 → 4 行');
   },
   async (tok, S) => { // @372
     S.g.rl.forEach((l) => setCls(l, 'idx')); S.G.ea[0].glow(GOLD); fillRow(S.g, 0);
@@ -3723,7 +3723,7 @@ scene('vsB-l12-inc', 'L12：incidence matrix 與迴圈', [
   },
   async (tok, S) => { // @441
     S.G.ea[1].glow(GOLD); fillRow(S.g, 1);
-    cap('邊 2：節點 2 → 3', '第 2、3 欄是 −1、+1');
+    cap('邊 2：節點 2 → 3', '第 2、3 行是 −1、+1');
   },
   async (tok, S) => { // @450
     S.G.ea[1].glow(null); S.G.ea[2].glow(GOLD); fillRow(S.g, 2);
@@ -3772,7 +3772,7 @@ scene('vsB-l12-null', 'L12：N(A)：電位與電位差', [
   },
   async (tok, S) => { // @652
     [0, 1, 2, 3].forEach((j) => S.g.col(j, GOLD));
-    cap('等於問：這 4 欄獨立嗎？', '獨立的話，null space 只有零向量');
+    cap('等於問：這 4 行獨立嗎？', '獨立的話，null space 只有零向量');
   },
   async (tok, S) => { // @705
     S.g.clearGlow(); S.x = [0, 1, 2, 3].map((j) => sm(xx(j), S.g.xs[j], 2.0)); S.eqs = [];
@@ -3839,8 +3839,8 @@ scene('vsB-l12-null', 'L12：N(A)：電位與電位差', [
   async (tok, S) => { // @1096
     const A3 = INC.map((r) => r.slice(0, 3));
     gone(S.g.c.map((r) => r[3]), S.g.hdr[3], S.x[3]);
-    ok(rk(A3) === 3, -3.2, -1.2, '去掉第 4 欄：剩下 3 欄獨立（rank ' + rk(A3) + '）✓');
-    cap('x₄ 不再是未知數，第 4 欄消失', '剩下 3 欄是獨立的');
+    ok(rk(A3) === 3, -3.2, -1.2, '去掉第 4 行：剩下 3 行獨立（rank ' + rk(A3) + '）✓');
+    cap('x₄ 不再是未知數，第 4 行消失', '剩下 3 行是獨立的');
   },
   async (tok, S) => { // @1138
     ok(QI.rank === 3, 4.4, -1.8, 'rank A = ' + QI.rank + ' ✓（5 × 4，null space 1 維 → 4 − 1）');
@@ -3861,15 +3861,15 @@ scene('vsB-l12-at', 'L12：Aᵀ 與 dim N(Aᵀ) = m − r', [
   async (tok, S) => { // @1259
     S.g = mgrid(AT, -3.2, 5.0, 0, { color: (i, j) => (!AT[i][j] ? '#e7dcc8' : AT[i][j] > 0 ? COL.d : COL.b), size: 0.6, gap: 0.72 });
     ['y₁', 'y₂', 'y₃', 'y₄', 'y₅'].forEach((n, j) => sm(n, S.g.xs[j], 5.6)); sm('Aᵀ：4 × 5（n × m）', -1.8, 1.6);
-    cap('Aᵀ 是 n × m = 4 × 5', 'A 的欄變成 Aᵀ 的列');
+    cap('Aᵀ 是 n × m = 4 × 5', 'A 的行變成 Aᵀ 的列');
   },
   async (tok, S) => { // @1276
-    S.g.row(0, GOLD); pl('第 1 列 = ' + vstr(AT[0]) + '（A 的第 1 欄）', 3.6, 5.0);
-    cap('A 的第一欄 → Aᵀ 的第一列', '(−1, 0, −1, −1, 0)');
+    S.g.row(0, GOLD); pl('第 1 列 = ' + vstr(AT[0]) + '（A 的第 1 行）', 3.6, 5.0);
+    cap('A 的第一行 → Aᵀ 的第一列', '(−1, 0, −1, −1, 0)');
   },
   async (tok, S) => { // @1284
     for (let i = 1; i < 4; i++) { S.g.clearGlow(); S.g.row(i, GOLD); await wt(tok, 450); }
-    S.g.clearGlow(); cap('第 2、3、4 欄也一樣變成列', '');
+    S.g.clearGlow(); cap('第 2、3、4 行也一樣變成列', '');
   },
   async (tok, S) => { // @1308
     pl('乘上 y = (y₁, y₂, y₃, y₄, y₅)', 3.6, 4.2);
@@ -3881,7 +3881,7 @@ scene('vsB-l12-at', 'L12：Aᵀ 與 dim N(Aᵀ) = m − r', [
   },
   async (tok, S) => { // @1381
     pl('dim N(Aᵀ) = m − r', 3.6, 3.2);
-    cap('dim N(Aᵀ) = m − r', 'Aᵀ 有 m 欄，其中 r 欄是 pivot，剩下 m − r 個自由');
+    cap('dim N(Aᵀ) = m − r', 'Aᵀ 有 m 行，其中 r 行是 pivot，剩下 m − r 個自由');
   },
   async (tok, S) => { // @1408
     ok(QI.left.length === 5 - 3, 3.6, 2.4, 'm − r = 5 − 3 = ' + QI.left.length + ' ✓');
@@ -4051,20 +4051,20 @@ scene('vsB-l12-tree', 'L12：row space 與樹（沒有迴圈的圖）', [
   },
   async (tok, S) => { // @2199
     [0, 1, 2].forEach((j) => S.g.col(j, GOLD));
-    cap('Aᵀ 的前三欄獨立嗎？', '不是');
+    cap('Aᵀ 的前三行獨立嗎？', '不是');
   },
   async (tok, S) => { // @2216
-    ok(eqV(addv(col(AT, 0), col(AT, 1)), col(AT, 2)), 4.6, 4.2, '欄 1 + 欄 2 = 欄 3 ✓（來自迴圈）');
-    cap('欄 1 + 欄 2 = 欄 3', '因為邊 1、2、3 是一個迴圈');
+    ok(eqV(addv(col(AT, 0), col(AT, 1)), col(AT, 2)), 4.6, 4.2, '行 1 + 行 2 = 行 3 ✓（來自迴圈）');
+    cap('行 1 + 行 2 = 行 3', '因為邊 1、2、3 是一個迴圈');
   },
   async (tok, S) => { // @2227
     S.g.clearGlow(); QT.piv.forEach((j) => S.g.paintCol(j, COL.g));
-    ok(eqV(QT.piv, TREE), 4.6, 3.4, 'pivot 欄 = ' + QT.piv.map((j) => j + 1).join('、') + ' ✓（程式消去得到）');
-    cap('pivot 欄：第 1、2、4 欄', '第 3 欄不是');
+    ok(eqV(QT.piv, TREE), 4.6, 3.4, 'pivot 行 = ' + QT.piv.map((j) => j + 1).join('、') + ' ✓（程式消去得到）');
+    cap('pivot 行：第 1、2、4 行', '第 3 行不是');
   },
   async (tok, S) => { // @2245
     TREE.forEach((i) => { S.G.ea[i].color(COL.g); S.G.ea[i].glow(GREEN); }); [2, 4].forEach((i) => S.G.ea[i].color('#ddd2c0'));
-    cap('Aᵀ 的欄對應邊', '邊 1、2、4（綠色加粗）');
+    cap('Aᵀ 的行對應邊', '邊 1、2、4（綠色加粗）');
   },
   async (tok, S) => { // @2265
     pl('同樣 4 個節點、只有 3 條邊的小圖', 2.4, 1.6);
@@ -4105,7 +4105,7 @@ scene('vsB-l12-euler', 'L12：Euler 公式：節點 − 邊 + 迴圈 = 1', [
   },
   async (tok, S) => { // @2418
     pl('r = n − 1（因為 (1,1,1,1) 在 N(A) 裡）', 2.6, 4.5);
-    cap('rank 是多少？n − 1', '4 欄裡有一個相依：(1, 1, 1, 1)');
+    cap('rank 是多少？n − 1', '4 行裡有一個相依：(1, 1, 1, 1)');
   },
   async (tok, S) => { // @2484
     S.f = hot('節點 − 邊 + 迴圈 = 1', 2.6, 3.6);
@@ -4256,15 +4256,15 @@ scene('vsB-l13-u', 'L13：5×3 的 U（rank 3）、[U; 2U]、[U U; U 0]', [
     hd('U：5 × 3、echelon form、3 個 pivot', 0, 7.2);
     S.u = mgrid(U53, -6.2, 5.8, 0, { color: (i, j) => (i === j && i < 3 ? COL.g : U53[i][j] ? COL.a : '#e7dcc8'), size: 0.5, gap: 0.6 }); sm('U（數字示意）', -5.6, 2.6);
     ok(RU === 3, -5.6, 2.0, 'rank = ' + RU + ' ✓');
-    cap('5 × 3 的矩陣 U，echelon form，r = 3', '形狀：3 欄、5 列');
+    cap('5 × 3 的矩陣 U，echelon form，r = 3', '形狀：3 行、5 列');
   },
   async (tok, S) => { // @180
     S.q = hot('N(U) = ？', 0, 5.6);
     cap('U 的 null space 是什麼？', '要用題目給的資訊回答，不是背定義');
   },
   async (tok, S) => { // @222
-    ok(nullBasis(rrefSteps(U53).R, rrefSteps(U53).piv, 3).length === 0, 0, 4.9, 'rank 3 = 欄數 → 3 欄獨立 → N(U) = {(0, 0, 0)} ✓');
-    cap('只有零向量', 'rank 3，3 個欄都獨立');
+    ok(nullBasis(rrefSteps(U53).R, rrefSteps(U53).piv, 3).length === 0, 0, 4.9, 'rank 3 = 行數 → 3 行獨立 → N(U) = {(0, 0, 0)} ✓');
+    cap('只有零向量', 'rank 3，3 個行都獨立');
   },
   async (tok, S) => { // @258
     fresh(LCAM[0], LCAM[1]); hd('B = [U; 2U]：10 × 3', -3.6, 7.2);
@@ -4313,7 +4313,7 @@ scene('vsB-l13-u', 'L13：5×3 的 U（rank 3）、[U; 2U]、[U U; U 0]', [
   },
   async (tok, S) => { // @570
     txt(S.n, 'C 是 10 × 6：m = 10');
-    cap('C 是 10 × 6', 'Cᵀ 有 10 欄');
+    cap('C 是 10 × 6', 'Cᵀ 有 10 行');
   },
   async (tok, S) => { // @604
     ok(NCT === 4, 0, -0.2, 'dim N(Cᵀ) = m − r = 10 − 6 = ' + NCT + ' ✓');
@@ -4322,7 +4322,7 @@ scene('vsB-l13-u', 'L13：5×3 的 U（rank 3）、[U; 2U]、[U U; U 0]', [
 ], { cam: LCAM });
 
 const XP3 = [2, 0, 0], N31 = [1, 1, 0], N32 = [0, 0, 1], B3 = [2, 4, 2];
-const c1 = scl(B3, 1 / 2), c3 = [0, 0, 0], c2 = scl(c1, -1);   // 依老師的推理：A·x_p = 2·第一欄；(0,0,1) ∈ N → 第三欄 0；(1,1,0) ∈ N → 第二欄 = −第一欄
+const c1 = scl(B3, 1 / 2), c3 = [0, 0, 0], c2 = scl(c1, -1);   // 依老師的推理：A·x_p = 2·第一行；(0,0,1) ∈ N → 第三行 0；(1,1,0) ∈ N → 第二行 = −第一行
 const A3 = [0, 1, 2].map((i) => [c1[i], c2[i], c3[i]]);
 const A3_OK = eqV(mulMV(A3, XP3), B3) && isZero(mulMV(A3, N31)) && isZero(mulMV(A3, N32)) && rk(A3) === 1;
 scene('vsB-l13-back', 'L13：從完整解反推矩陣 A', [
@@ -4337,7 +4337,7 @@ scene('vsB-l13-back', 'L13：從完整解反推矩陣 A', [
   },
   async (tok, S) => { // @723
     S.g = mgrid([['?', '?', '?'], ['?', '?', '?'], ['?', '?', '?']], -6.0, 5.0, 0, { color: () => '#e7dcc8' });
-    sm('b 有 3 個分量 → 3 列；x 有 3 個分量 → 3 欄', -2.0, 4.4);
+    sm('b 有 3 個分量 → 3 列；x 有 3 個分量 → 3 行', -2.0, 4.4);
     cap('先看形狀', 'b 和 x 都有 3 個分量 → 3 × 3');
   },
   async (tok, S) => { // @773
@@ -4354,19 +4354,19 @@ scene('vsB-l13-back', 'L13：從完整解反推矩陣 A', [
   },
   async (tok, S) => { // @863
     c1.forEach((v, i) => { S.g.set(i, 0, v); tint(S.g.c[i][0], COL.a); });
-    sm('A(2,0,0) = 2 × 第一欄 = (2,4,2) → 第一欄 (1,2,1)', 0.8, 2.3);
-    cap('A 乘 (2, 0, 0) 只用到第一欄', '2 × 第一欄 = (2, 4, 2) → 第一欄 = (1, 2, 1)');
+    sm('A(2,0,0) = 2 × 第一行 = (2,4,2) → 第一行 (1,2,1)', 0.8, 2.3);
+    cap('A 乘 (2, 0, 0) 只用到第一行', '2 × 第一行 = (2, 4, 2) → 第一行 = (1, 2, 1)');
   },
   async (tok, S) => { // @905
     c3.forEach((v, i) => { S.g.set(i, 2, v); tint(S.g.c[i][2], '#e7dcc8'); });
-    sm('(0,0,1) ∈ N(A) → 第三欄 = 0', 0.8, 1.7);
-    cap('(0, 0, 1) 在 null space', '→ 第三欄是 0');
+    sm('(0,0,1) ∈ N(A) → 第三行 = 0', 0.8, 1.7);
+    cap('(0, 0, 1) 在 null space', '→ 第三行是 0');
   },
   async (tok, S) => { // @929
     c2.forEach((v, i) => { S.g.set(i, 1, v); tint(S.g.c[i][1], COL.b); });
-    sm('(1,1,0) ∈ N(A) → 第一欄 + 第二欄 = 0', 0.8, 1.1);
+    sm('(1,1,0) ∈ N(A) → 第一行 + 第二行 = 0', 0.8, 1.1);
     ok(A3_OK, -4.2, 1.6, 'A x_p = b ✓　A·(1,1,0) = 0 ✓　A·(0,0,1) = 0 ✓');
-    cap('(1, 1, 0) 在 null space', '→ 第二欄 = (−1, −2, −1)');
+    cap('(1, 1, 0) 在 null space', '→ 第二行 = (−1, −2, −1)');
   },
   async (tok, S) => { // @951
     fresh(LCAM[0], LCAM[1]); hd('哪些 b 能讓 Ax = b 有解？', 0, 7.2);
@@ -4448,11 +4448,11 @@ scene('vsB-l13-tf1', 'L13：是非題：N(A)、可逆矩陣、B² = 0', [
   },
 ], { cam: LCAM });
 
-scene('vsB-l13-indepq', 'L13：n × n、欄獨立：Ax = b 一定有解？（題目）', [
+scene('vsB-l13-indepq', 'L13：n × n、行獨立：Ax = b 一定有解？（題目）', [
   async (tok, S) => { // @1327
-    hd('n 個方程、n 個未知數，欄獨立', 0, 7.2);
+    hd('n 個方程、n 個未知數，行獨立', 0, 7.2);
     S.A = mgrid([[2, 1, 0], [1, 3, 1], [0, 1, 2]], -1.2, 5.6, 0, { color: (i, j) => [COL.a, COL.b, COL.c][j] }); sm('（示意）', 1.6, 5.6);
-    cap('n × n 矩陣，欄都獨立', '');
+    cap('n × n 矩陣，行都獨立', '');
   },
   async (tok, S) => { // @1350
     hot('Ax = b 對每個 b 都有解嗎？', 0, 2.6);
@@ -4461,12 +4461,12 @@ scene('vsB-l13-indepq', 'L13：n × n、欄獨立：Ax = b 一定有解？（題
 ], { cam: LCAM });
 
 const AI3 = [[2, 1, 0], [1, 3, 1], [0, 1, 2]];
-scene('vsB-l13-indepa', 'L13：n × n、欄獨立 ⇒ 可逆 ⇒ 一定有解', [
+scene('vsB-l13-indepa', 'L13：n × n、行獨立 ⇒ 可逆 ⇒ 一定有解', [
   async (tok, S) => { // @1492
-    hd('欄獨立 ⇒ rank = n', 0, 7.2);
+    hd('行獨立 ⇒ rank = n', 0, 7.2);
     S.A = mgrid(AI3, -1.2, 5.6, 0, { color: (i, j) => [COL.a, COL.b, COL.c][j] });
     ok(rk(AI3) === 3, 0, 2.6, 'rank = ' + rk(AI3) + ' = n ✓（示意矩陣）');
-    cap('欄獨立，表示 rank 就是 n', '');
+    cap('行獨立，表示 rank 就是 n', '');
   },
   async (tok, S) => { // @1499
     ok(det3(AI3) !== 0, 0, 1.9, '方陣 + rank n → 可逆（det = ' + det3(AI3) + '）✓');
@@ -4506,11 +4506,11 @@ scene('vsB-l13-cd', 'L13：B = C D：C 可逆，不改變 null space', [
   async (tok, S) => { // @1714
     S.C.clearGlow(); S.C.col(1, GOLD); glow(S.C.c[1][1], GREEN);
     const only2 = CC[1][1] !== 0 && CC[1][0] === 0 && CC[1][2] === 0;
-    ok(only2, 2.4, 4.9, '第 2 欄 (1,1,0)：第 2 個位置只有它不是 0 → 組合成 0 時不能用到它 ✓');
-    cap('看第 2 欄：第 2 個位置別的欄都是 0，只有它是 1', '組合成 0 就不能用到它；剩下兩欄同理');
+    ok(only2, 2.4, 4.9, '第 2 行 (1,1,0)：第 2 個位置只有它不是 0 → 組合成 0 時不能用到它 ✓');
+    cap('看第 2 行：第 2 個位置別的行都是 0，只有它是 1', '組合成 0 就不能用到它；剩下兩行同理');
   },
   async (tok, S) => { // @1737
-    S.C.clearGlow(); ok(det3(CC) !== 0, 2.4, 4.2, 'C 的欄獨立，det C = ' + det3(CC) + ' → 可逆 ✓');
+    S.C.clearGlow(); ok(det3(CC) !== 0, 2.4, 4.2, 'C 的行獨立，det C = ' + det3(CC) + ' → 可逆 ✓');
     cap('C 是可逆的方陣', '');
   },
   async (tok, S) => { // @1776
@@ -4523,8 +4523,8 @@ scene('vsB-l13-cd', 'L13：B = C D：C 可逆，不改變 null space', [
   },
   async (tok, S) => { // @1868
     S.D.clearGlow(); RD.piv.forEach((j) => S.D.col(j, GREEN));
-    ok(RD.rank === 2, 2.4, 2.1, '2 個 pivot 欄 → rank 2 ✓');
-    cap('D 有兩個 pivot 欄', 'rank 2，要找兩個 special solutions');
+    ok(RD.rank === 2, 2.4, 2.1, '2 個 pivot 行 → rank 2 ✓');
+    cap('D 有兩個 pivot 行', 'rank 2，要找兩個 special solutions');
   },
   async (tok, S) => { // @1877
     S.b1 = bars(NBD[0], -6.2, 0.9, 0, COL.b, { k: 0.45, gap: 0.45 }); sm('s₁ = ' + vstr(NBD[0]), -5.6, -0.4);
@@ -4545,8 +4545,8 @@ scene('vsB-l13-cd', 'L13：B = C D：C 可逆，不改變 null space', [
     cap('下一題：解 Bx = (1, 0, 1)', '');
   },
   async (tok, S) => { // @1979
-    ok(eqV(col(BB, 0), [1, 0, 1]), 2.4, -0.2, 'B 的第一欄 = C·(1,0,0) = (1, 0, 1) = 右邊 ✓ → x_p = (1, 0, 0, 0)');
-    cap('B 的第一欄剛好就是右邊', '特解取 (1, 0, 0, 0)');
+    ok(eqV(col(BB, 0), [1, 0, 1]), 2.4, -0.2, 'B 的第一行 = C·(1,0,0) = (1, 0, 1) = 右邊 ✓ → x_p = (1, 0, 0, 0)');
+    cap('B 的第一行剛好就是右邊', '特解取 (1, 0, 0, 0)');
   },
   async (tok, S) => { // @2002
     S.full = pl('x = (1, 0, 0, 0) + c·s₁ + d·s₂', 2.4, -0.9);
@@ -4567,8 +4567,8 @@ scene('vsB-l13-xp', 'L13：特解只要「一個」，選最方便的', [
   },
   async (tok, S) => { // @2061
     S.B.col(0, GOLD);
-    ok(eqV(mulMV(BB, XPB), [1, 0, 1]), 0.6, 5.0, 'B·(1,0,0,0) = B 的第一欄 = (1, 0, 1) ✓');
-    cap('乘 (1, 0, 0, 0) 就是取出第一欄', '它剛好等於右邊 (1, 0, 1)');
+    ok(eqV(mulMV(BB, XPB), [1, 0, 1]), 0.6, 5.0, 'B·(1,0,0,0) = B 的第一行 = (1, 0, 1) ✓');
+    cap('乘 (1, 0, 0, 0) 就是取出第一行', '它剛好等於右邊 (1, 0, 1)');
   },
   async (tok, S) => { // @2115
     S.B.clearGlow(); hot('特解只有一個嗎？不，完全不是', 0.6, 4.2);
@@ -4647,8 +4647,8 @@ scene('vsB-l13-tf2', 'L13：是非題：row space 與 column space、四個子�
     cap('row space 和 null space 不變', '');
   },
   async (tok, S) => { // @2636
-    ok(!eqV(col(SW, 0), col(SWP, 0)), 2.2, 4.2, '欄向量的分量順序換了 → column space 一般會變 ✓');
-    cap('column space 是錯的答案', '欄裡的分量被交換了');
+    ok(!eqV(col(SW, 0), col(SWP, 0)), 2.2, 4.2, '行向量的分量順序換了 → column space 一般會變 ✓');
+    cap('column space 是錯的答案', '行裡的分量被交換了');
   },
 ], { cam: LCAM });
 
@@ -4788,27 +4788,27 @@ scene('vsB-rec-third', 'Recitation：第三個向量：(6, 3, 5) 相依、(1, 0,
   },
 ], { cam: [[0, 3, 12], [0, 2.6, 0]] });
 
-scene('vsB-rec-def', 'Recitation：獨立的欄 ⇔ N(A) = {0}；R³ 的子空間', [
+scene('vsB-rec-def', 'Recitation：獨立的行 ⇔ N(A) = {0}；R³ 的子空間', [
   async (tok, S) => { // @334
     hd('獨立（independent）的定義', 0, 7.2);
     cap('把「獨立」寫成定義', '');
   },
   async (tok, S) => { // @352
-    pl('A 的欄獨立 ⇔ Av = 0 的唯一解是 v = 0', 0, 6.5);
-    cap('A 的欄獨立', 'Av = 0 只有 v = 0 這個解');
+    pl('A 的行獨立 ⇔ Av = 0 的唯一解是 v = 0', 0, 6.5);
+    cap('A 的行獨立', 'Av = 0 只有 v = 0 這個解');
   },
   async (tok, S) => { // @371
-    sm('欄獨立 → null space 只有零向量', 0, 5.9);
-    cap('欄獨立，就沒有（非零的）null space', '');
+    sm('行獨立 → null space 只有零向量', 0, 5.9);
+    cap('行獨立，就沒有（非零的）null space', '');
   },
   async (tok, S) => { // @386
     S.g = mgrid(RMAT, -6.0, 5.0, 0, { color: (i, j) => [COL.a, COL.b, COL.c][j] }); ['a₁', 'a₂', 'a₃'].forEach((n, j) => sm(n, S.g.xs[j], 5.6));
-    cap('例：A = [a₁ a₂ a₃]', '欄是剛剛的 (2,1,5)、(4,2,0)、(1,0,0)');
+    cap('例：A = [a₁ a₂ a₃]', '行是剛剛的 (2,1,5)、(4,2,0)、(1,0,0)');
   },
   async (tok, S) => { // @401
     const Q = subspaces(RMAT);
     ok(Q.rank === 3 && Q.null.length === 0, -2.0, 4.2, 'rank 3 → C(A) = 整個 R³ ✓　N(A) = {0} ✓');
-    cap('欄獨立：column space 是整個 R³', 'null space 只有零向量');
+    cap('行獨立：column space 是整個 R³', 'null space 只有零向量');
   },
   async (tok, S) => { // @419
     hot('基底 = 一組獨立、而且張成整個空間的向量', 0, 2.8);
@@ -4913,7 +4913,7 @@ scene('vsB-rec-dim', 'Recitation：維度 = 基底的向量個數', [
 
 // ════════ fNk_zzaMoSs（3Blue1Brown 第 1 集：Vectors） ════════
 const PX = -1.8, PY = 3.2, PS = 0.55;
-const TX3 = 3.6;   // 右側文字欄
+const TX3 = 3.6;   // 右側文字行
 scene('vsB-v-views', '3B1B 1：向量的三種觀點', [
   async (tok, S) => { // @11
     hd('線性代數最基本的積木：向量（vector）', 0, 7.2);
@@ -5496,8 +5496,8 @@ scene('vsB-i-inv', '3B1B 7：det ≠ 0：倒帶找 x、逆矩陣 A⁻¹', [
   },
   async (tok, S) => { // @308
     S.i = S.G.vec([1, 0], VC.d, 'î'); S.j = S.G.vec([0, 1], VC.r, 'ĵ');
-    sm('identity：î、ĵ 不動 → 欄是 (1,0)、(0,1)', TX3, 0.5);
-    cap('什麼都不做的變換叫 identity', 'î、ĵ 都留在原地，欄是 (1,0) 和 (0,1)');
+    sm('identity：î、ĵ 不動 → 行是 (1,0)、(0,1)', TX3, 0.5);
+    cap('什麼都不做的變換叫 identity', 'î、ĵ 都留在原地，行是 (1,0) 和 (0,1)');
   },
   async (tok, S) => { // @320
     gone(S.i, S.j); S.v = S.G.vec(VI, VC.r, 'v'); S.x = S.G.vec(mulMV(inv2(AI), VI), VC.a, 'x = A⁻¹v');
@@ -5577,20 +5577,20 @@ scene('vsB-i-rank', '3B1B 7：det = 0：壓扁、rank、column space', [
     cap('所有可能輸出的集合（線、面、整個空間）', '叫做這個矩陣的 column space');
   },
   async (tok, S) => { // @546
-    S.cs = [0, 1, 2].map((j) => S.Sp.arrow(col(M3R2, j), [VC.a, VC.b, VC.c][j], '第' + (j + 1) + '欄'));
-    cap('名字的由來：矩陣的欄', '告訴你基底向量 î、ĵ、k̂ 落在哪裡');
+    S.cs = [0, 1, 2].map((j) => S.Sp.arrow(col(M3R2, j), [VC.a, VC.b, VC.c][j], '第' + (j + 1) + '行'));
+    cap('名字的由來：矩陣的行', '告訴你基底向量 î、ĵ、k̂ 落在哪裡');
   },
   async (tok, S) => { // @556
-    ok(eqV(col(M3R2, 2), addv(col(M3R2, 0), col(M3R2, 1))), -3.4, 4.8, 'column space = 欄的 span（第 3 欄 = 第 1 + 第 2 欄）✓');
-    cap('變換後基底向量的 span = 所有輸出', 'column space 就是欄的 span');
+    ok(eqV(col(M3R2, 2), addv(col(M3R2, 0), col(M3R2, 1))), -3.4, 4.8, 'column space = 行的 span（第 3 行 = 第 1 + 第 2 行）✓');
+    cap('變換後基底向量的 span = 所有輸出', 'column space 就是行的 span');
   },
   async (tok, S) => { // @564
     sm('rank = column space 的維度', -3.4, 4.2);
     cap('更精確的 rank 定義', 'column space 的維度');
   },
   async (tok, S) => { // @570
-    sm('rank = 欄數：full rank', -3.4, 3.6);
-    cap('rank 最大、等於欄數時', '叫做 full rank');
+    sm('rank = 行數：full rank', -3.4, 3.6);
+    cap('rank 最大、等於行數時', '叫做 full rank');
   },
 ]);
 
@@ -5879,8 +5879,8 @@ scene('vsB-a-deriv', '3B1B 16：用矩陣表示微分', [
   },
   async (tok, S) => { // @631
     for (let j = 1; j < 8; j++) { S.D.col(j, GOLD); await wt(tok, 200); S.D.clearGlow(); }
-    ok(DM_OK, 2.8, 2.9, '第 j 欄 = (xʲ)′ = j·xʲ⁻¹ 的座標 ✓（逐欄驗證）');
-    cap('怎麼做出這個矩陣？', '把每個基底函數微分，結果的座標放進對應的欄');
+    ok(DM_OK, 2.8, 2.9, '第 j 行 = (xʲ)′ = j·xʲ⁻¹ 的座標 ✓（逐行驗證）');
+    cap('怎麼做出這個矩陣？', '把每個基底函數微分，結果的座標放進對應的行');
   },
   async (tok, S) => { // @660
     note('矩陣乘向量、微分：其實是同一家族', 2.8, 2.1);

@@ -1191,7 +1191,8 @@ FRAG.push(['syn-18c-linux', 'Active / expired array：H（quantum 10）與 L（q
   act.userData.name.position.set(5.4, 0.07, 1.2); exp.userData.name.position.set(5.4, 0.07, 3.4);   // names beside the zones
   cap('有 active array：第一個 burst 跟剛才一樣', 'H 先、L 後');
   await step(tok);                                   // 87 H 把 quantum 用完 → expired
-  await slide(tok, H.g, 4.4, 0, 3.4, 900);
+  // H goes round behind L (straight across it pushed L's name onto its quantum)
+  await slide(tok, H.g, -6.4, 0, -6.2, 200); await slide(tok, H.g, 4.4, 0, -6.2, 400); await slide(tok, H.g, 4.4, 0, 3.4, 400);
   cap('H 把 quantum 用完了', '→ 放進 expired array');
   await step(tok);                                   // 92 L 只用 100 → 留在 active
   await slide(tok, L.g, 2.6, 0, 1.2, 900); L.set('剩 100'); L.mood('calm');

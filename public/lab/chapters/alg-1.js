@@ -3863,7 +3863,7 @@ async function ab2BstCases(tok) {
   const BAL = [[20, 0, 6.2], [10, -2.4, 4.6, 20], [30, 2.4, 4.6, 20], [5, -3.6, 3.0, 10], [15, -1.2, 3.0, 10], [25, 1.2, 3.0, 30], [40, 3.6, 3.0, 30]];
   const mark = AB2_marks();
   let M = null, kb = null;
-  const near = (v) => M[v].position.clone().add(V3(0, 0.75, 0.3)); // the key stands on top of the node, clear of its value
+  const near = (v) => M[v].position.clone().add(V3(-0.95, 0.35, 0.3)); // the key stands at the node's upper left, clear of its value and of the parent above
   const go = (v, ms = 800) => travel(tok, kb.g, kb.g.position.clone(), near(v), ms);
   if (!skew) {
     const A = {
@@ -4085,7 +4085,7 @@ async function ab2RTree(tok) {
       for (let i = 0; i < cnt; i++) {
         const x = -1.4 - 4.4 + w * (i + 0.5);
         const m = cube(d ? 'n−' + d : 'n', C.blue, [Math.min(1.0, w * 0.85), 0.5, 0.7], x, y, 0, 2);
-        if (d) { const pp = prev[i >> 1]; line(pp.position.x, pp.position.y - 0.25, x, y + 0.25); }
+        if (d) { const pp = K.land(prev[i >> 1]); line(pp.x, pp.y - 0.25, x, y + 0.25); }
         cur.push(m);
       }
       tag(cnt + ' = 2' + ['⁰', '¹', '²', '³'][d], 'ptr alt', 5.0, y);
@@ -4270,7 +4270,7 @@ async function ab2MtTree(tok) {
     for (let i = 0; i < cnt; i++) {
       const x = -1.6 - 4.5 + w * (i + 0.5);
       const m = cube(NM[d], d === 3 ? C.purple : C.blue, [Math.min(1.6, w * 0.85), 0.5, 0.8], x, y, 0, 2);
-      if (d) { const pp = prev[i >> 1]; line(pp.position.x, pp.position.y - 0.25, x, y + 0.25); }
+      if (d) { const pp = K.land(prev[i >> 1]); line(pp.x, pp.y - 0.25, x, y + 0.25); }
       cur.push(m);
     }
     tag('這層 ' + SUM[d], 'ptr alt', 5.2, y);
@@ -4478,9 +4478,9 @@ async function ab2HanoiTrace(tok) {
     return;
   }
   fresh([0, 4.8, 14.5], [0, 3.6, 0]);
-  const NODE = (l, x, y, par) => { const m = cube(l, C.blue, [1.7, 0.5, 0.6], x, y, 0, 2); if (par) line(par.position.x, par.position.y - 0.25, x, y + 0.25); return m; };
+  const NODE = (l, x, y, par) => { const m = cube(l, C.blue, [1.7, 0.5, 0.6], x, y, 0, 2); if (par) { const p = K.land(par); line(p.x, p.y - 0.25, x, y + 0.25); } return m; };
   const PR = [], row = [];
-  const PRT = async (l, x, y, par) => { const m = cube(l, C.gold, [0.9, 0.45, 0.6], x, y, 0, 2); line(par.position.x, par.position.y - 0.25, x, y + 0.22); PR.push(m); say('印出 ' + l, '收集到第 ' + PR.length + ' 步'); await B(900); };
+  const PRT = async (l, x, y, par) => { const m = cube(l, C.gold, [0.9, 0.45, 0.6], x, y, 0, 2); const p = K.land(par); line(p.x, p.y - 0.25, x, y + 0.22); PR.push(m); say('印出 ' + l, '收集到第 ' + PR.length + ' 步'); await B(900); };
   say('追蹤 TOH(3, 1, 2, 3)', '每個呼叫展開成：左呼叫、印、右呼叫');
   const r = NODE('TOH(3,1,2,3)', 0, 6.8, null); await B(1600);
   const L1 = NODE('TOH(2,1,3,2)', -3.4, 5.2, r); say('TOH(n−1, A, C, B) = TOH(2,1,3,2)', ''); await B(1300);
@@ -17625,7 +17625,7 @@ FRAG.push(['algmit3-heap-horizon-code', 'Horizon pseudocode：O(k log k)', async
 const M3R = [6, 7, 2, 5, 3, 8, 9, 4];
 const m3RX = (i) => -4.55 + i * 1.3;
 FRAG.push(['algmit3-rmq-tradeoff', 'Range minimum：全部預算 vs 每次現算', async (tok) => {
-  fresh([0, 6.5, 12], [0, 1.4, 0]);
+  fresh([0, 10.5, 8.5], [0, 1.0, 0.6]);               // from higher up: the min(i..j) table's rows stay apart
   const B = m3Board(0, 4.4, -2.4);
   let ms = [];
   await step(tok);                                   // 2583.1 an array of random numbers: no order
@@ -17641,37 +17641,38 @@ FRAG.push(['algmit3-rmq-tradeoff', 'Range minimum：全部預算 vs 每次現算
   say('問：第 i 到第 j 個的最小值', '');
   await step(tok);                                   // 2627.8 two phases: preprocessing, then querying
   for (let i = 1; i <= 4; i++) glow(ms[i], null);
-  const pre = prop('cpu', -5.6, 0, 1.4, 0.8, '① 預處理'); const qq = prop('file', -3.4, 0, 1.6, 0.8, '② 回答查詢'); bob(qq, 0.05);
+  const pre = prop('cpu', -6.0, 0, 1.4, 0.8, '① 預處理'); const qq = prop('file', -3.4, 0, 1.6, 0.8, '② 回答查詢'); bob(qq, 0.05);
   say('兩個階段', '先預處理，再回答很多次查詢');
   await step(tok);                                   // 2656.6 unlimited preprocessing: precompute all answers
   B('預處理時間不限 → 把所有答案都先算好？');
   say('預處理時間不限的話', '全部先算好');
   await step(tok);                                   // 2702.3 sorting first? not valid
-  tag('先 sort？位置就亂了 ✗', 'bad', 3.6, 1.2, -1.0);
+  const tSort = tag('先 sort？位置就亂了 ✗', 'bad', 3.6, 1.2, -1.0);
   say('學生想先 sort', '但查詢看的是原本的位置');
   await step(tok);                                   // 2723.1 if it stops making sense, back out
-  tag('想不通就退回來，換方向', 'note', 3.6, 1.9, -1.0);
+  const tBack = tag('想不通就退回來，換方向', 'note', 3.6, 1.9, -1.0);
   say('想一陣子不合理', '就退回來');
   await step(tok);                                   // 2754.9 a hash of all intervals (i, j)
-  const S = 0.5;
+  const S = 0.8, SZ = 0.72;
   const tbl = [];
-  tag('min(i..j) 表', 'ptr', 2.9, 0.3, 1.6);
-  for (let i = 0; i < 8; i++) for (let j = i; j < 8; j++) tbl.push(cube('', M3.teal, [0.45, 0.2, 0.45], -1.75 + j * S, 0.1, 0 + i * S));
+  kill(tSort); kill(tBack);                          // the table takes their place
+  tag('min(i..j) 表', 'ptr', 4.6, 0.3, 0.4);
+  for (let i = 0; i < 8; i++) for (let j = i; j < 8; j++) tbl.push(cube('', M3.teal, [0.45, 0.2, 0.45], -2.8 + j * S, 0.1, -0.8 + i * SZ));
   say('把每個區間 (i, j) 存進 hash', '');
   await step(tok);                                   // 2778.1 store the min; a hash lookup is O(1)
   B('每格存 min(i..j)：查詢 = hash 查表 O(1)');
   say('查詢只要 O(1)', '');
   await step(tok);                                   // 2790.6 how much storage? n²
-  tag('空間 ≈ n²', 'bad', 2.9, 0.3, 2.5);
+  tag('空間 ≈ n²', 'bad', 4.6, 0.3, 1.4);
   say('要存多少格？', '約 n² 格');
   await step(tok);                                   // 2814.3 brute force each: n³
-  tag('每格各自掃 → 建表 O(n³)', 'bad', 2.9, 0.3, 3.3);
+  tag('每格各自掃 → 建表 O(n³)', 'bad', 4.6, 0.3, 2.4);
   say('每格各掃一次', 'n² 格 × O(n) = O(n³)');
   await step(tok);                                   // 2832.9 grow each interval by one: compare old min with the next
   tbl.forEach(kill);
   for (let i = 0; i < 8; i++) {
     let mn = Infinity;
-    for (let j = i; j < 8; j++) { mn = Math.min(mn, M3R[j]); cube(mn, j === i ? M3.blue : M3.teal, [0.45, 0.2, 0.45], -1.75 + j * S, 0.1, 0 + i * S); }
+    for (let j = i; j < 8; j++) { mn = Math.min(mn, M3R[j]); cube(mn, j === i ? M3.blue : M3.teal, [0.45, 0.2, 0.45], -2.8 + j * S, 0.1, -0.8 + i * SZ); }
     await beat(tok, 200);
   }
   say('從 [i, i] 往右長一格', '新 min = min(舊 min, 下一個) → O(n²)');

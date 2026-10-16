@@ -4943,14 +4943,14 @@ async function bbLay(t, tok, ms = 700, drop = 3) {
 // 顯示 / 隱藏 bf（「插進去」和「算 bf」分成兩句時用）
 function bbShow(t, on) { t.hide = !on; bbInfo(t); bbEdges(t); }
 function bbNote(n, s, cls) { if (!n.tg) n.tg = tag(s, cls || 'idx', 0, 0, 0); else txt(n.tg, s); n.tg.element.className = 'lab-label ' + (cls || 'idx'); n.tg.element.style.visibility = ''; }
-function bbCursor(n, s) { return tag(s || '▼', 'pkt', n.m.position.x, n.m.position.y + 1.0, 0); }
-function bbAt(cur, n) { cur.position.set(n.m.position.x, n.m.position.y + 1.0, 0); }
+function bbCursor(n, s) { const p = K.land(n.m); return tag(s || '▼', 'pkt', p.x, p.y + 1.0, 0); }
+function bbAt(cur, n) { const p = K.land(n.m); cur.position.set(p.x, p.y + 1.0, 0); }
 // 游標沿著節點走（每個節點 ms 毫秒，總長要短）
 async function bbRun(tok, cur, nodes, ms = 160, onEach) {
   for (let i = 0; i < nodes.length; i++) { const n = nodes[i]; bbAt(cur, n); glow(n.m, GOLD); if (onEach) onEach(n, i); await beat(tok, ms); glow(n.m, null); }
 }
 // 在節點旁邊掛一個標籤（A、Y、B、C …）
-function bbPin(n, s, cls = 'ptr alt', dx = -0.62) { return tag(s, cls, n.m.position.x + dx, n.m.position.y + 0.98, 0); }
+function bbPin(n, s, cls = 'ptr alt', dx = -0.62) { const p = K.land(n.m); return tag(s, cls, p.x + dx, p.y + 0.98, 0); }
 // 把舊樹的方塊搬到新樹（同 key 共用方塊），用來示範「同一群 key 換成另一個形狀」
 async function bbMorph(oldT, newT, tok, ms = 900) {
   const byK = new Map(bbList(oldT).map((n) => [n.k, n]));
@@ -5522,7 +5522,7 @@ FRAG.push(['bstb-ll-general', 'LL 通式：B 上提、B_R 給 A', async (tok) =>
   await step(tok);                                   // 24:24 一般化的示意圖：A、B
   bbList(t); // 算 depth；先只畫 A、B 兩個 node
   for (const n of [G.A, G.B]) { const [x, y] = bbPos(t, n); n.m = cube(n.lab, bbCol(n.k), [0.95, 0.8, 0.9], x, y, 0, 3); }
-  t.edges.push(line(G.A.m.position.x, G.A.m.position.y - 0.4, G.B.m.position.x, G.B.m.position.y + 0.4));
+  { const a = K.land(G.A.m), b = K.land(G.B.m); t.edges.push(line(a.x, a.y - 0.4, b.x, b.y + 0.4)); }
   say('更一般的圖：A、B 是兩個 node', '');
   talk(g, '這次用通式');
   await step(tok);                                   // 24:36 B_L、B_R、A_R 是 subtree
@@ -5654,7 +5654,7 @@ FRAG.push(['bstb-lr-general', 'LR 通式：C 拉上來，四塊照順序接', as
   const G = lrGenTree(false, 'b', 2.4), t = G.t;
   bbList(t);
   for (const n of [G.A, G.B, G.C]) { const [x, y] = bbPos(t, n); n.m = cube(n.lab, bbCol(n.k), [0.95, 0.8, 0.9], x, y, 0, 3); }
-  t.edges.push(line(G.A.m.position.x, G.A.m.position.y - 0.4, G.B.m.position.x, G.B.m.position.y + 0.4), line(G.B.m.position.x, G.B.m.position.y - 0.4, G.C.m.position.x, G.C.m.position.y + 0.4));
+  { const a = K.land(G.A.m), b = K.land(G.B.m), c = K.land(G.C.m); t.edges.push(line(a.x, a.y - 0.4, b.x, b.y + 0.4), line(b.x, b.y - 0.4, c.x, c.y + 0.4)); }
   say('再看一般的圖：三個 node A、B、C', '');
   await step(tok);                                   // 31:18 B_L、C_L、C_R、A_R 四塊 subtree
   await bbLay(t, tok, 700, 3);
@@ -6412,7 +6412,7 @@ FRAG.push(['bstb-mit-rotate', 'Rotation：O(1) 改指標、inorder 不變', asyn
   await step(tok);                                   // 33:12 x 和 y
   bbList(t);
   for (const n of [X, Y]) { const [px, py] = bbPos(t, n); n.m = cube(n.lab, bbCol(n.k), [0.95, 0.8, 0.9], px, py, 0, 3); }
-  t.edges.push(line(X.m.position.x, X.m.position.y - 0.4, Y.m.position.x, Y.m.position.y + 0.4));
+  { const a = K.land(X.m), b = K.land(Y.m); t.edges.push(line(a.x, a.y - 0.4, b.x, b.y + 0.4)); }
   say('兩個 node：x，和它的右 child y', '');
   await step(tok);                                   // 33:21 left rotate(x)
   const lab1 = tag('left rotate(x) →', 'ptr alt', 0, 7.6, 0);
@@ -9048,10 +9048,10 @@ FRAG.push(['bstlin-skip-impl', 'Skip list 怎麼實作，insert 卡在哪', asyn
 const SL2 = [2, 3, 5, 6, 8, 9, 10, 13];
 const SL2LV = () => [[2, 3, 5, 8, 9, 10, 13], [3, 8, 13], [8]];
 FRAG.push(['bstlin-skip-search-9-6', 'Skip list：找 9（找到）與找 6（找不到）', async (tok) => {
-  fresh([0, 5.5, 13], [0, 1.8, 0]);
+  fresh([0, 5.5, 13], [0, 2.2, 0]);
   say('第二個例子', '');
   await step(tok);                                   // 1:02:59 底層：2 3 5 8 9 10 13
-  const s = SL(SL2, [SL2LV()[0]], ['L1', 'L2', 'L3'], { drop: true });
+  const s = SL(SL2, [SL2LV()[0]], ['L1', 'L2', 'L3'], { drop: true, dy: 1.85 });   // taller levels: the rider's key over its head stays clear of the level above
   say('底層排好：2 3 5 8 9 10 13', '');
   await step(tok);                                   // 1:03:08 快一點的 list：3 → 8 → 13
   for (const k of [3, 8, 13]) s.add(1, k, true);
@@ -9064,27 +9064,29 @@ FRAG.push(['bstlin-skip-search-9-6', 'Skip list：找 9（找到）與找 6（�
   await step(tok);                                   // 1:03:55 也可以用雙箭頭
   glow(s.get(0, 3), null); glow(s.get(1, 3), null); kill(v3);
   const back = [arrow(V3(s.X(8) - 0.4, s.Y(1) - 0.18, 0), V3(s.X(3) + 0.4, s.Y(1) - 0.18, 0), 0x2f7fc0), arrow(V3(s.X(13) - 0.4, s.Y(1) - 0.18, 0), V3(s.X(8) + 0.4, s.Y(1) - 0.18, 0), 0x2f7fc0)];
-  bub('雙箭頭：好做，但更吃記憶體', s.X(8), s.Y(1) + 0.8);
+  const dbl = bub('雙箭頭：好做，但更吃記憶體', s.X(8), s.Y(1) + 0.8);
   say('圖上畫單箭頭', '也可以用雙箭頭：能走回頭，但多佔記憶體');
   await step(tok);                                   // 1:04:15 四個一跳：最上層只有 8
-  back.forEach(kill);
+  back.forEach(kill); kill(dbl);
   s.add(2, 8, true); s.links();
   say('再上去：四個四個跳', '最上層只有 8 → 這就是一個 skip list');
   await step(tok);                                   // 1:04:37 找 9：從 8 進來，右邊沒了
   const r = rider('9', s.at(2, 'H'));
+  // going down a level: step off to the node's right, drop, then on to dest (straight down, the key over the rider's head crossed the number above)
+  const down = async (lt, k, lb, dest) => { const x = s.X(k) + 0.68; await hopTo(tok, r, V3(x, s.at(lt, k).y, 0), 200); await hopTo(tok, r, V3(x, s.at(lb, k).y, 0), 300); await hopTo(tok, r, dest, 250); };
   await hopTo(tok, r, s.at(2, 8), 600); glow(s.get(2, 8), GOLD); r.look(1);
   const nb = bub('9 > 8 往右……沒路了', s.X(10), s.Y(2) + 0.6);
   say('search 9：從 8 進來', '9 比 8 大要往右，但右邊沒東西 → 下一層');
   await step(tok);                                   // 1:04:47 下一層：往右看
   kill(nb); glow(s.get(2, 8), null);
-  await hopTo(tok, r, s.at(1, 8), 450);
+  await down(2, 8, 1, s.at(1, 8));
   say('到下一層，一樣往右看', '');
   await step(tok);                                   // 1:04:52 13 過頭了
   glow(s.get(1, 13), RED); r.mood('wow');
   say('13 太過頭了', '不用往 13 走');
   await step(tok);                                   // 1:04:56 在 8 再往下 → 找到 9
   glow(s.get(1, 13), null); r.mood('calm');
-  await hops(tok, r, [s.at(0, 8), s.at(0, 9)], 450);
+  await down(1, 8, 0, s.at(0, 9));
   glow(s.get(0, 9), GREEN); r.mood('happy');
   say('在 8 再往下一層', '往右一步就找到 9');
   await step(tok);                                   // 1:05:15 找 6：一樣從 8 進來
@@ -9096,10 +9098,10 @@ FRAG.push(['bstlin-skip-search-9-6', 'Skip list：找 9（找到）與找 6（�
   glow(s.get(2, 8), RED); r.mood('wow');
   await anim(tok, 400, () => {});
   glow(s.get(2, 8), null);
-  await hopTo(tok, r, s.at(1, 3), 700); r.mood('calm');
+  await hopTo(tok, r, V3(s.X(3), s.Y(2) + 0.2, 0), 420); await hopTo(tok, r, s.at(1, 3), 380); r.mood('calm');   // back along the top level, then down onto 3 (a diagonal hop dragged the 6 across 3's number)
   say('6 < 8：8 已經過頭了', '回到 3 這站');
   await step(tok);                                   // 1:05:33 從 3 找下來：3 → 5
-  await hops(tok, r, [s.at(0, 3), s.at(0, 5)], 450); glow(s.get(0, 5), GOLD);
+  await down(1, 3, 0, s.at(0, 5)); glow(s.get(0, 5), GOLD);
   say('從 3 往下一層', '往前到 5');
   await step(tok);                                   // 1:05:42 下一個已經是 8：沒有 6
   glow(s.get(0, 8), RED); r.mood('sad');

@@ -6160,7 +6160,7 @@ FRAG.push(['hashpeng-dirless', 'Directoryless：位址直接當 bucket，overflo
   const keys = { '00': ['A0', 'B0'], '01': ['A1', 'B1'], '10': ['C2'], '11': ['C3'] };
   let dir, n;
   await step(tok);                                   // 79:49 is there something faster?
-  dir = [...Array(4)].map((_, i) => cube(ad[i], '#d8c29b', [1.0, 0.4, 0.5], -6.4, 0.2, -2.6 + i * 0.95));
+  dir = [...Array(4)].map((_, i) => cube(ad[i], '#d8c29b', [1.0, 0.4, 0.5], -6.4, 1.85 - i * 0.5, -2.0));   // stacked upright: laid out in depth the four names printed over each other
   say('還有沒有更快的？');
   await step(tok);                                   // 80:00 pointers are troublesome
   bad('pointer 還要記 memory address，好麻煩', -4.4, 1.4, -3.4);

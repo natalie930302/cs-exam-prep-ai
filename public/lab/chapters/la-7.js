@@ -1095,7 +1095,7 @@ const isI = (M) => M.every((r, i) => r.every((x, j) => Math.abs(x - (i === j ? 1
 const sameM = (A, B) => A.length === B.length && A.every((r, i) => same(r, B[i]));
 const mv = (A, x) => A.map((r) => dot(r, x));
 const inv2 = (M) => { const d = M[0][0] * M[1][1] - M[0][1] * M[1][0]; return [[M[1][1] / d, -M[0][1] / d], [-M[1][0] / d, M[0][0] / d]]; };
-const projM = (A) => { const At = tr(A); return mm(mm(A, inv2(mm(At, A))), At); }; // A 有兩欄
+const projM = (A) => { const At = tr(A); return mm(mm(A, inv2(mm(At, A))), At); }; // A 有兩行
 const ms = (M) => '[' + M.map((r) => r.map(frac).join(' ')).join('; ') + ']';
 const vv = (u) => vs(u);
 // 3D 向量箭頭（同模組 arrow 的做法）

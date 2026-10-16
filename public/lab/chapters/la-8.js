@@ -892,7 +892,7 @@ const S2 = [[2, 1], [1, 2]]; // 示意
 scene('sp-l25-qlq', 'L25：A = QΛQᵀ（譜定理）', [
   (tok, S) => {
     S.F = hot('A = S Λ S⁻¹', -3.4, 6.0);
-    sm('S 的欄 = 特徵向量，Λ = 特徵值', -3.4, 5.4);
+    sm('S 的行 = 特徵向量，Λ = 特徵值', -3.4, 5.4);
     S.P = board2(3.2, 3.0, 0.95, [-2.4, 2.4], [-2.3, 2.3]);
     cap('一般矩陣（有完整特徵向量）', 'A = SΛS⁻¹');
   },
@@ -919,11 +919,11 @@ scene('sp-l25-qlq', 'L25：A = QΛQᵀ（譜定理）', [
   (tok, S) => {
     txt(S.F, 'A = Q Λ Q⁻¹');
     sm('Q =', -5.6, 2.6); S.Q = [[1 / Math.SQRT2, 1 / Math.SQRT2], [1 / Math.SQRT2, -1 / Math.SQRT2]]; mtag(S.Q, -4.2, 2.6, 0, 'ptr');
-    cap('特徵向量矩陣改叫 Q', 'Q 的欄 = orthonormal 的特徵向量');
+    cap('特徵向量矩陣改叫 Q', 'Q 的行 = orthonormal 的特徵向量');
   },
   (tok, S) => {
     ok(eqM(mm(tr(S.Q), S.Q), [[1, 0], [0, 1]]), 'QᵀQ = I ✓ ⇒ Q⁻¹ = Qᵀ', -3.4, 1.6);
-    cap('Q 的反矩陣就是 Qᵀ', 'orthonormal 的欄 ⇒ QᵀQ = I');
+    cap('Q 的反矩陣就是 Qᵀ', 'orthonormal 的行 ⇒ QᵀQ = I');
   },
   (tok, S) => {
     txt(S.F, 'A = Q Λ Qᵀ');
@@ -1061,7 +1061,7 @@ scene('sp-l25-proj', 'L25：A = λ₁q₁q₁ᵀ + λ₂q₂q₂ᵀ（投影的�
     hd('3 ·', -6.1, 3.45); mtag(S.P1, -4.8, 3.8, 0, 'ptr'); hd('+ 1 ·', -3.25, 3.45); mtag(S.P2, -1.7, 3.8, 0, 'ptr');
     const sum = S.P1.map((r, i) => r.map((v, j) => 3 * v + S.P2[i][j]));
     ok(eqM(sum, S2), '= [2 1; 1 2] ✓', -3.4, 2.9);
-    cap('欄 × 列：一次一項', 'λ₁q₁q₁ᵀ + λ₂q₂q₂ᵀ');
+    cap('行 × 列：一次一項', 'λ₁q₁q₁ᵀ + λ₂q₂q₂ᵀ');
   },
   (tok, S) => { sm('每個對稱矩陣都拆成這樣的小塊', -3.4, 2.3); cap('每個對稱矩陣都能這樣拆', '實數 λ × orthonormal 特徵向量'); },
   async (tok, S) => {
@@ -1199,7 +1199,7 @@ scene('sp-l26-intro', 'L26：複數進場：Fourier 矩陣與 FFT', [
     sm('n×n 全滿 → 乘一次要 n² = 64 次乘法', -3.7, 0.15);
     cap('乘一個 n×n 的滿矩陣：n² 次乘法', '這裡 n = 8：64 個');
   },
-  (tok, S) => { good('而且它的欄（columns）互相正交 ✓', -2.6, -0.45); cap('它的欄互相正交', '幾乎是「最好的矩陣」'); },
+  (tok, S) => { good('而且它的行（columns）互相正交 ✓', -2.6, -0.45); cap('它的行互相正交', '幾乎是「最好的矩陣」'); },
   async (tok, S) => {
     const keep = 8 * Math.log2(8);
     for (let k = keep; k < 64; k++) { S.g[k].material.color.set('#ece3d3'); if (k % 8 === 7) await wt(tok, 60); }
@@ -1275,28 +1275,28 @@ scene('sp-l26-herm', 'L26：Hermitian（Aᴴ = A）與 unitary（QᴴQ = I）', 
     cap('實數 ↔ 複數 的對照字典', '');
   },
   (tok, S) => { sm('正交 QᵀQ = I', 2.2, 1.4); sm('→', 3.5, 1.4); hot('unitary QᴴQ = I', 4.9, 1.4); cap('orthogonal 也改名：unitary', ''); },
-  (tok, S) => { good('unitary：方陣、欄互相垂直、長度 1（用共軛算）', 3.4, 0.7); cap('unitary 矩陣', '就是複數版的正交矩陣'); },
+  (tok, S) => { good('unitary：方陣、行互相垂直、長度 1（用共軛算）', 3.4, 0.7); cap('unitary 矩陣', '就是複數版的正交矩陣'); },
 ]);
 
 // 10 steps
 const W6 = cExp((2 * Math.PI) / 6);
 scene('sp-l26-fourier', 'L26：Fourier 矩陣 (F)ⱼₖ = wʲᵏ', [
-  (tok, S) => { S.F = hot('Fourier 矩陣：最有名的複數矩陣', 3.4, 6.0); cap('最有名的複數矩陣', '它的欄互相正交'); },
+  (tok, S) => { S.F = hot('Fourier 矩陣：最有名的複數矩陣', 3.4, 6.0); cap('最有名的複數矩陣', '它的行互相正交'); },
   (tok, S) => {
     S.c = []; for (let j = 0; j < 6; j++) { S.c.push([]); for (let k = 0; k < 6; k++) S.c[j].push(cube('', '#e6dccb', [0.62, 0.62, 0.3], -3.4 + k * 0.72, 5.0 - j * 0.72, 0)); }
     nt('n = 6 示意', -1.6, 0.4);
     cap('先看 n×n 的情況', '');
   },
-  (tok, S) => { for (let j = 0; j < 6; j++) { relabel(S.c[j][0], '1'); glow(S.c[j][0], '#3a2a00'); } cap('第一欄：全部是 1', ''); },
-  (tok, S) => { for (let k = 0; k < 6; k++) { sm(String(k), -3.4 + k * 0.72, 5.6); sm(String(k), -4.1, 5.0 - k * 0.72); } sm('從 0 開始數（電機系習慣）', 3.4, 5.4); cap('電機系從 0 開始數', '第 0 欄、第 1 欄 … 第 n−1 欄'); },
-  (tok, S) => { for (let j = 0; j < 6; j++) { glow(S.c[j][0], null); relabel(S.c[j][1], j ? 'w' + (j > 1 ? sup(j) : '') : '1'); glow(S.c[j][1], '#3a2a00'); } cap('第 1 欄：1, w, w², …, wⁿ⁻¹', 'w 的次方'); },
-  (tok, S) => { for (let j = 0; j < 6; j++) { glow(S.c[j][1], null); relabel(S.c[j][2], j ? 'w' + sup(2 * j) : '1'); glow(S.c[j][2], '#3a2a00'); } cap('第 2 欄：w² 的次方', '1, w², w⁴, w⁶, …'); },
+  (tok, S) => { for (let j = 0; j < 6; j++) { relabel(S.c[j][0], '1'); glow(S.c[j][0], '#3a2a00'); } cap('第一行：全部是 1', ''); },
+  (tok, S) => { for (let k = 0; k < 6; k++) { sm(String(k), -3.4 + k * 0.72, 5.6); sm(String(k), -4.1, 5.0 - k * 0.72); } sm('從 0 開始數（電機系習慣）', 3.4, 5.4); cap('電機系從 0 開始數', '第 0 行、第 1 行 … 第 n−1 行'); },
+  (tok, S) => { for (let j = 0; j < 6; j++) { glow(S.c[j][0], null); relabel(S.c[j][1], j ? 'w' + (j > 1 ? sup(j) : '') : '1'); glow(S.c[j][1], '#3a2a00'); } cap('第 1 行：1, w, w², …, wⁿ⁻¹', 'w 的次方'); },
+  (tok, S) => { for (let j = 0; j < 6; j++) { glow(S.c[j][1], null); relabel(S.c[j][2], j ? 'w' + sup(2 * j) : '1'); glow(S.c[j][2], '#3a2a00'); } cap('第 2 行：w² 的次方', '1, w², w⁴, w⁶, …'); },
   (tok, S) => {
     for (let j = 0; j < 6; j++) { glow(S.c[j][2], null); for (let k = 0; k < 6; k++) relabel(S.c[j][k], j * k ? 'w' + (j * k > 1 ? sup(j * k) : '') : '1'); }
     const F = fourier(6); ok(F.every((r, j) => r.every((z, k) => cNear(z, F[k][j]))), 'Fᵀ = F ✓（對稱，但不是 Hermitian）', 3.4, 4.8);
     cap('沿著列看也一樣：F 是對稱的', '數字是複數，所以不是 Hermitian');
   },
-  (tok, S) => { glow(S.c[2][3], '#5a1a00'); hot('(F)ⱼₖ = wʲᵏ（j, k 從 0 到 n−1）', 3.4, 4.2); sm('例：第 2 列、第 3 欄 = w⁶', 3.4, 3.6); cap('第 j 列、第 k 欄的元素 = w 的 jk 次方', ''); },
+  (tok, S) => { glow(S.c[2][3], '#5a1a00'); hot('(F)ⱼₖ = wʲᵏ（j, k 從 0 到 n−1）', 3.4, 4.2); sm('例：第 2 列、第 3 行 = w⁶', 3.4, 3.6); cap('第 j 列、第 k 行的元素 = w 的 jk 次方', ''); },
   (tok, S) => { ok(cNear(cPow(W6, 6), cx(1)), 'wⁿ = 1 ✓（n = 6：w⁶ = 1）', 3.4, 2.9); cap('w 是 n 次方等於 1 的那個特別的數', ''); },
   (tok, S) => { hd('w = e^(i·2π/n)', 3.4, 2.2); cap('w = e 的 i 乘 2π/n 次方', '角度 2π/n'); },
 ]);
@@ -1347,13 +1347,13 @@ scene('sp-l26-roots', 'L26：單位根：w⁶ = 1、F₄ 的 w = i', [
 
 // 14 steps
 const F4 = fourier(4);
-scene('sp-l26-f4', 'L26：F₄ 的欄互相正交，反矩陣 = 共軛轉置', [
+scene('sp-l26-f4', 'L26：F₄ 的行互相正交，反矩陣 = 共軛轉置', [
   (tok, S) => {
     S.c = []; for (let j = 0; j < 4; j++) { S.c.push([]); for (let k = 0; k < 4; k++) S.c[j].push(cube(j * k ? 'i' + (j * k > 1 ? sup(j * k) : '') : '1', '#e6dccb', [0.75, 0.75, 0.3], -4.6 + k * 0.88, 4.8 - j * 0.88, 0)); }
     sm('F₄ =', -5.9, 3.5);
     cap('寫出 4×4 的 Fourier 矩陣', 'w = i');
   },
-  (tok, S) => { for (let k = 0; k < 4; k++) { sm(String(k), -4.6 + k * 0.88, 5.5); sm(String(k), -5.25, 4.8 - k * 0.88); } hot('次方 = 列號 × 欄號（從 0 數）', -3.3, 0.9); cap('指數 = 列號 × 欄號', '例如右下角 i⁹'); },
+  (tok, S) => { for (let k = 0; k < 4; k++) { sm(String(k), -4.6 + k * 0.88, 5.5); sm(String(k), -5.25, 4.8 - k * 0.88); } hot('次方 = 列號 × 行號（從 0 數）', -3.3, 0.9); cap('指數 = 列號 × 行號', '例如右下角 i⁹'); },
   (tok, S) => {
     for (let j = 0; j < 4; j++) for (let k = 0; k < 4; k++) relabel(S.c[j][k], cs(F4[j][k]));
     const o = cx(1), m = cx(-1), p = I_, q = cx(0, -1), want = [[o, o, o, o], [o, p, m, q], [o, m, o, m], [o, q, m, p]];
@@ -1361,14 +1361,14 @@ scene('sp-l26-f4', 'L26：F₄ 的欄互相正交，反矩陣 = 共軛轉置', [
     cap('代入數字', '1、i、−1、−i');
   },
   (tok, S) => { sm('y = F₄x：四點 Fourier 轉換；反轉換乘 F₄⁻¹', 2.8, 5.6); cap('四點 Fourier 轉換：乘 F₄', '逆轉換：乘 F₄⁻¹'); },
-  (tok, S) => { sm('Fourier 知道反矩陣：因為欄互相正交', 2.8, 5.0); cap('反矩陣很好算', '因為欄互相正交'); },
+  (tok, S) => { sm('Fourier 知道反矩陣：因為行互相正交', 2.8, 5.0); cap('反矩陣很好算', '因為行互相正交'); },
   (tok, S) => { sm('Fourier 沒發現：F 能拆成很多 0 的因子 → FFT', 2.8, 4.4); cap('他沒注意到的：可以拆成很多 0 的因子', '乘起來非常快'); },
-  (tok, S) => { const g = (k, c) => S.c.forEach((r) => glow(r[k], c)); g(0, '#3a2a00'); g(1, '#3a2a00'); ok(cNear(cdotH(colC(F4, 0), colC(F4, 1)), cx(0)), '第 0 欄 · 第 1 欄 = 1 + i − 1 − i = 0 ✓', 2.8, 3.6); S.g = g; cap('檢查欄互相正交', ''); },
-  (tok, S) => { S.g(1, null); S.g(2, '#3a2a00'); ok(cNear(cdotH(colC(F4, 0), colC(F4, 2)), cx(0)), '第 0 欄 · 第 2 欄 = 1 − 1 + 1 − 1 = 0 ✓', 2.8, 3.0); cap('第 0 欄和第 2 欄也正交', ''); },
-  (tok, S) => { S.g(0, null); S.g(2, null); S.g(1, '#5a1a00'); S.g(3, '#5a1a00'); const t = cdotT(colC(F4, 1), colC(F4, 3)); ok(false, '第 1 欄 × 第 3 欄，不取共軛：1 + 1 + 1 + 1 = ' + cs(t) + ' ≠ 0', 2.8, 2.4); cap('第 1 欄和第 3 欄：直接乘', '1·1 + i·(−i) + … = 4？'); },
+  (tok, S) => { const g = (k, c) => S.c.forEach((r) => glow(r[k], c)); g(0, '#3a2a00'); g(1, '#3a2a00'); ok(cNear(cdotH(colC(F4, 0), colC(F4, 1)), cx(0)), '第 0 行 · 第 1 行 = 1 + i − 1 − i = 0 ✓', 2.8, 3.6); S.g = g; cap('檢查行互相正交', ''); },
+  (tok, S) => { S.g(1, null); S.g(2, '#3a2a00'); ok(cNear(cdotH(colC(F4, 0), colC(F4, 2)), cx(0)), '第 0 行 · 第 2 行 = 1 − 1 + 1 − 1 = 0 ✓', 2.8, 3.0); cap('第 0 行和第 2 行也正交', ''); },
+  (tok, S) => { S.g(0, null); S.g(2, null); S.g(1, '#5a1a00'); S.g(3, '#5a1a00'); const t = cdotT(colC(F4, 1), colC(F4, 3)); ok(false, '第 1 行 × 第 3 行，不取共軛：1 + 1 + 1 + 1 = ' + cs(t) + ' ≠ 0', 2.8, 2.4); cap('第 1 行和第 3 行：直接乘', '1·1 + i·(−i) + … = 4？'); },
   (tok, S) => { ok(cNear(cdotH(colC(F4, 1), colC(F4, 3)), cx(0)), '先取共軛：1 − 1 + 1 − 1 = 0 ✓', 2.8, 1.8); cap('內積要先取共軛', 'i 變 −i，結果就是 0'); },
-  (tok, S) => { S.g(1, null); S.g(3, null); ok([0, 1, 2, 3].every((k) => cNear(cdotH(colC(F4, k), colC(F4, k)), cx(4))), '每一欄：長度² = 4，長度 = 2 ✓', 2.8, 1.2); cap('每一欄長度是 2', '還不是單位長度'); },
-  (tok, S) => { for (let j = 0; j < 4; j++) for (let k = 0; k < 4; k++) relabel(S.c[j][k], cs(cMul(F4[j][k], cx(0.5)))); sm('除以 2：½F₄ 的欄 orthonormal', 2.8, 0.6); cap('全部除以 2', '欄變成 orthonormal'); },
+  (tok, S) => { S.g(1, null); S.g(3, null); ok([0, 1, 2, 3].every((k) => cNear(cdotH(colC(F4, k), colC(F4, k)), cx(4))), '每一行：長度² = 4，長度 = 2 ✓', 2.8, 1.2); cap('每一行長度是 2', '還不是單位長度'); },
+  (tok, S) => { for (let j = 0; j < 4; j++) for (let k = 0; k < 4; k++) relabel(S.c[j][k], cs(cMul(F4[j][k], cx(0.5)))); sm('除以 2：½F₄ 的行 orthonormal', 2.8, 0.6); cap('全部除以 2', '行變成 orthonormal'); },
   (tok, S) => { const H = F4.map((r) => r.map((z) => cMul(z, cx(0.5)))); ok(cEye(cmm(cHerm(H), H)), '(½F₄)ᴴ(½F₄) = I ✓', 2.8, 0.0); cap('共軛轉置 × 自己 = I', ''); },
   (tok, S) => { const H = F4.map((r) => r.map((z) => cMul(z, cx(0.5)))); ok(cEye(cmm(H, cHerm(H))), '反矩陣 = 共軛轉置 ✓（像正交矩陣的 Q⁻¹ = Qᵀ）', 2.8, -0.6); cap('反矩陣 = 共軛轉置', 'F 的好性質，反矩陣也都有'); },
 ]);
@@ -1450,7 +1450,7 @@ scene('sp-l26-count', 'L26：遞迴到底：½ n log₂ n', [
   (tok, S) => { ok(1024 * 1024 === 1048576 && 1048576 > 1e6, 'n² = 1,048,576（超過一百萬）', 3.6, 1.95); cap('n² 超過一百萬', ''); },
   (tok, S) => { ok(0.5 * 1024 * 10 === 5120, '½ · 1024 · 10 = 5 × 1024 = 5120 ✓', 3.6, 1.4); cap('½ n log₂ n = 5 × 1024', ''); },
   (tok, S) => { const r = (1024 * 1024) / 5120; ok(near(r, 204.8), '1024² ÷ 5120 = ' + r + ' ≈ 200 倍 ✓', 3.6, 0.85); cap('快了大約 200 倍', '只是把矩陣拆對了'); },
-  (tok, S) => { good('關鍵：F 是欄 orthonormal 的特殊矩陣', 3.6, 0.3); cap('一切都靠 F 的特殊結構', '欄互相正交'); },
+  (tok, S) => { good('關鍵：F 是行 orthonormal 的特殊矩陣', 3.6, 0.3); cap('一切都靠 F 的特殊結構', '行互相正交'); },
 ]);
 
 // ═════════════════════════ MIT 18.06 L27：Positive Definite Matrices and Minima ═════════════════════════

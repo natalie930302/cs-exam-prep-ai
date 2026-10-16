@@ -2185,7 +2185,7 @@ scene('io-26d-port', 'Port-mapped I/O：I/O instruction 寫到 port', CAMW, [
     cap('controller 上有幾個 register', 'data、command（control）、status');
   },
   async (tok, S) => {                                   // 646 寫 register → 做 I/O
-    const pk = bx('寫 command', MC.orange, -3.6, 4.2, 0.8, 1.6, 0.4, 0.5); await slide(tok, pk, 3.2, 4.8, 0.8, 900); kill(pk); glow(S.reg[3], HL);
+    const pk = bx('寫 command', MC.orange, -3.6, 4.2, 0.8, 1.6, 0.4, 0.5); await slide(tok, pk, 0.3, 4.8, 0.8, 900); kill(pk); glow(S.reg[3], HL);   // stops at the register's edge, clear of its name
     cap('把值寫進這些 register', '要 read 還是 write、多少資料 → 就開始做 I/O');
   },
   async (tok, S) => {                                   // 658 I/O instruction：欄位是 port address

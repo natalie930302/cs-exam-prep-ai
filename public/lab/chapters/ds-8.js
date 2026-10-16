@@ -5030,7 +5030,7 @@ const RX_NUMS = ['2341', '1432', '2413', '1243', '2143', '1234'];
 function mRadix(nums, o = {}) {
   const X = [-2.1, -0.7, 0.7, 2.1], z0 = o.z0 === undefined ? -3 : o.z0, dz = 1.15;
   const M = { rows: [], z: (r) => z0 + r * dz, X };
-  for (let c = 0; c < 4; c++) tag(['千', '百', '十', '個'][c] + '位', 'idx', X[c], 0.05, z0 - 0.9);
+  for (let c = 0; c < 4; c++) tag(['千', '百', '十', '個'][c] + '位', 'idx', X[c], o.hy ?? 0.05, z0 - 0.9);
   nums.forEach((s, r) => {
     const m = s.split('').map((d, c) => cube(d, colorFor(+d), [1.0, 0.7, 0.9], X[c], 0.4, M.z(r), o.drop ? 2 + r * 0.3 : 0));
     M.rows.push({ s, m });
@@ -5863,14 +5863,15 @@ FRAG.push(['sortmit-rec-stable-why', '穩定性：radix 為什麼需要、誰穩
   gd.mood('calm');
   say('穩定：兩個相等的 key', '輸入裡先出現的，輸出也先出現');
   await step(tok);                                   // 47:55 keys may be complex objects mapped to integers
-  bubble('key 可能是複雜物件（__int__ 轉成整數）', 0, 2.2, -2.6);
+  const kObj = bubble('key 可能是複雜物件（__int__ 轉成整數）', 0, 2.2, -2.6);
   say('key 不一定是整數', '可能是有 __int__ 方法的複雜物件');
   await step(tok);                                   // 48:11 the sort only sees a 3
   say('排序法只看到它對應的整數', '例如兩個不同的物件都只是「3」');
   await step(tok);                                   // 48:21 the first one in the input must come out first
   say('輸入裡先出現的那個', '輸出也必須在前面');
   await step(tok);                                   // 48:41 second round: counting sort sees only the tens digit
-  M = mRadix(['2341', '1432', '2413', '1243', '2143', '1234'], { z0: -1.6, drop: true });
+  kill(kObj);                                        // the digit table's column names take its place
+  M = mRadix(['2341', '1432', '2413', '1243', '2143', '1234'], { z0: -1.6, drop: true, hy: 0.9 });
   M.col(2, GOLD);
   say('回到 radix 的第 2 回合', 'counting sort 只看得到十位');
   await step(tok);                                   // 48:58 this looks like 3; these three look like 4

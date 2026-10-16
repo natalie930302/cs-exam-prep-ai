@@ -189,7 +189,8 @@ export default function (ctx) {
     rep.M = Array.from({ length: rep.V }, () => new Array(rep.V).fill(0));
     rep.order = []; rep.verts = []; rep.edgeG = []; rep.panel = null; rep.cells = [];
     rep.lists = Array.from({ length: rep.V }, () => []); rep.heads = []; rep.arrows = [];
-    lab.frameCamera([0, 9.5, 8.6], [0, 0, 0.4]);
+    // 5–6 vertices: rows are only 0.56 apart, so look from higher up or the rows' values print over each other
+    lab.frameCamera(rep.V >= 5 ? [0, 12.5, 4.6] : [0, 9.5, 8.6], [0, 0, 0.4]);
     for (let i = 0; i < rep.V; i++) {
       rep.verts.push(vertexMesh(vn(i), repVPos(i), colorFor(i)));
       const h = lab.box(colorFor(i), [0.5, 0.4, 0.5]);

@@ -454,7 +454,7 @@ export default function (ctx) {
     log(rt.algo === 'RM' ? 'RM：priority 只看 period（越短越高），固定不變。' : 'EDF：每次都挑 absolute deadline 最近的，priority 隨時在變。');
     log(res.misses.length ? 'miss deadline：' + res.misses.map((m) => m.id + '@' + fmt(m.t / 10)).join('、') : '沒有任何 task miss deadline。', !!res.misses.length);
     setState((rt.algo === 'RM' ? 'Rate-Monotonic' : 'EDF') + '（preemptive）', rt.tasks.map((k, i) => ['T' + (i + 1), 'period ' + k.p + '、execution ' + k.e + '、U = ' + fmt(k.e / k.p)]),
-      'CPU 使用率 U = ' + fmt(U) + '<br>RM 保證可排的上界 n(2^{1/n} − 1) = ' + fmt(bound) + '；EDF 只要 U ≤ 1' + (res.misses.length ? '<br><span class="no">有 ' + res.misses.length + ' 次 miss</span>' : '<br><span class="ok">全部趕上 deadline</span>'));
+      'CPU 使用率 U = ' + fmt(U) + '<br>RM 保證可排的上界 n(2^(1/n) − 1) =' + fmt(bound) + '；EDF 只要 U ≤ 1' + (res.misses.length ? '<br><span class="no">有 ' + res.misses.length + ' 次 miss</span>' : '<br><span class="ok">全部趕上 deadline</span>'));
   }
 
   // ───────────────────────── 小測驗 ─────────────────────────
@@ -1164,7 +1164,7 @@ function board(T, o = {}) {
   const qx = (k) => -5.6 + k * 1.2;
   B.arrive = (id, v = '', color) => { const b = pal(id, v, color || PC[id] || '#bfb3a0', qx(B.q.length), -2.6, 0.55); B.b[id] = b; B.q.push(id); return b; };
   B.layout = async (tok) => { for (let k = 0; k < B.q.length; k++) { const g = B.b[B.q[k]].g; if (Math.abs(g.position.x - qx(k)) > 0.01 || Math.abs(g.position.z + 2.6) > 0.01) await walk(tok, B.b[B.q[k]], qx(k), -2.6, 220); } };
-  B.toCPU = async (tok, id) => { B.q = B.q.filter((x) => x !== id); B.cur = id; const b = B.b[id]; b.mood('happy'); b.glow('#3a2a00'); await walk(tok, b, 5.3, -1.0, 500); b.glow(null); await B.layout(tok); };
+  B.toCPU = async (tok, id) => { B.q = B.q.filter((x) => x !== id); B.cur = id; const b = B.b[id]; b.mood('happy'); b.glow('#3a2a00'); await walk(tok, b, b.g.position.x, -1.0, 180); await walk(tok, b, 5.3, -1.0, 420); b.glow(null); await B.layout(tok); };   // steps out of the queue first, so it never walks over the others' names
   B.run = async (tok, id, s, e, ms = 650) => { if (B.cur !== id) await B.toCPU(tok, id); return B.G.add(tok, id, s, e, ms); };
   B.back = async (tok, id) => { const b = B.b[id]; b.mood('sad'); B.q.push(id); B.cur = null; await walk(tok, b, qx(B.q.length - 1), -2.6, 450); };
   B.done = async (tok, id) => { const b = B.b[id]; if (!b) return; b.mood('happy'); await b.hop(tok); kill(b.g); delete B.b[id]; if (B.cur === id) B.cur = null; B.q = B.q.filter((x) => x !== id); };
@@ -3344,7 +3344,7 @@ scene('sch-18b-linux', 'Linux：0～140、active / expired array', [[0, 6.2, 12.
   },
   async (tok, S) => {                                   // 652 每個 priority 對應一個 time quantum
     S.t = table(['priority   用途              quantum', '0 ~ 99     real-time task    長（最高 200 ms）', '100 ~ 140  other（user）      短（最低 10 ms）'], 0, 4.3, -3.6);
-    sm('恐龍書：Linux 給高 priority 較「長」的 quantum（跟 Solaris 相反）', 0, 2.8, -3.6);
+    S.dino = sm('恐龍書：Linux 給高 priority 較「長」的 quantum（跟 Solaris 相反）', 0, 2.8, -3.6);
     sayc('每個 priority 對應一個 time quantum', '恐龍書：priority 越高的 quantum 越長（200 ms），最低 10 ms');
   },
   async (tok, S) => {                                   // 676 0～99：real-time / system，priority 固定
@@ -3356,12 +3356,13 @@ scene('sch-18b-linux', 'Linux：0～140、active / expired array', [[0, 6.2, 12.
     sayc('priority 比較低的是 user process', 'run time 依 quantum 有沒有 expire、有沒有 call I/O 去調整');
   },
   async (tok, S) => {                                   // 713 特點：active 與 expired 兩個 array
+    gone(...S.t.ls, S.dino);                            // the quantum table is done: the two arrays and their tasks take the stage
     S.A = zone('active array', -3.0, 0, 0, 5.4, 1.6); S.E = zone('expired array', 3.4, 0, 0, 4.6, 1.6, '#e3d3b6');
-    S.T = ['T1', 'T2', 'T3'].map((n, k) => pal(n, '200', PC['P' + (k + 1)], -4.8 + k * 1.3, 0, 0.5));
+    S.T = ['T1', 'T2', 'T3'].map((n, k) => pal(n, '200', PC['P' + (k + 1)], -5.0 + k * 1.6, 0, 0.5));   // 1.6 apart: T1's '100 → 40' needs the room
     sayc('Linux 的特點', '把所有 process 放在兩個 list：active array 與 expired array');
   },
   async (tok, S) => {                                   // 732 每個 task 有 priority 與 quantum（例如 200）
-    sm('每個 task：一個 priority ＋ 一個 time quantum（例：200）', -1.4, 0.2, 1.4);
+    S.each = sm('每個 task：一個 priority ＋ 一個 time quantum（例：200）', -1.4, 0.2, 1.4);
     sayc('每個 task 有一個 priority', '和一個 time quantum，比如說 200');
   },
   async (tok, S) => {                                   // 750 其他 OS：burst 短於 quantum 就浪費掉，回隊尾
@@ -3378,7 +3379,7 @@ scene('sch-18b-linux', 'Linux：0～140、active / expired array', [[0, 6.2, 12.
     sayc('如果你用完了', '就把你放到 expired array');
   },
   async (tok, S) => {                                   // 801 執行時間 weighted by quantum
-    sm('每輪都真的用滿自己的 quantum → 執行時間依 quantum 加權', -1.4, 0.2, 2.0);
+    gone(S.each); sm('每輪都真的用滿自己的 quantum → 執行時間依 quantum 加權', -1.4, 0.2, 1.4);
     sayc('每次輪到都真的可以用 200', '執行時間等於是 weighted by 它的 time quantum');
   },
   async (tok, S) => {                                   // 838 priority 只在「一個 burst 就超過 quantum」才降

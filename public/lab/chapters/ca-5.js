@@ -2428,12 +2428,12 @@ scene('mh-23a-writehit', 'Write hit：write-through 與 write-back（dirty bit�
     cap('write 也分 hit 和 miss', 'write hit：data 在 cache 裡');
   },
   async (tok, S) => { // @1495.6 ~因為你要寫嘛不是把你的data改變
-    const g = bx('7', NC.pink, -5.8, 5.6, 0.6, 0.6, 0.45); await slide(tok, g, -2.8, 5.6, 0.6, 600); kill(g); relabel(S.c, 'cache：X = 7');
+    const g = bx('7', NC.pink, -5.8, 5.6, 0.6, 0.6, 0.45); await slide(tok, g, -4.5, 5.6, 0.6, 600); kill(g); relabel(S.c, 'cache：X = 7');   // the 7 stops at the box's edge, clear of its name
     bad('cache 與 memory 不一樣了', 0.4, 4.8);
     cap('write 會改 cache 的 data', 'read 做 100 次都沒事，write 一次 memory 和 cache 就不一樣');
   },
   async (tok, S) => { // @1520.1 ~他說有兩種policy
-    const g = bx('7', NC.pink, -2.8, 5.6, 0.6, 0.6, 0.45); await slide(tok, g, 3.6, 5.6, 0.6, 700); kill(g); relabel(S.mm, 'memory：X = 7');
+    const g = bx('7', NC.pink, -0.9, 5.6, 0.6, 0.6, 0.45); await slide(tok, g, 1.1, 5.6, 0.6, 700);   // stops before memory's name kill(g); relabel(S.mm, 'memory：X = 7');
     hd('write-through：每次 update cache 都寫回 memory', 0, 4.2);
     cap('兩種 policy：write-through', '永遠維持 cache 跟 memory 一致');
   },

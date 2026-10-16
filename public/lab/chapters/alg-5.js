@@ -6872,7 +6872,7 @@ FRAG.push(['grjiang3-kruskal-sort', 'Kruskal 的排序：heapsort O(m log n)', a
   const cd = code(KCODE, -2.6, 6.8, 0.56);
   const kr = pal3('Kruskal', -6.4, -1.3, '#7cd1a8');
   const hp = [[3.6, 2.4], [2.6, 1.4], [4.6, 1.4], [2.1, 0.4], [3.1, 0.4]].map(([x, y], i) => cube([5, 6, 5, 7, 7][i], C3.S, [0.6, 0.5, 0.5], x, y, 0, 1));
-  hp.slice(1).forEach((c, i) => { const p = hp[[0, 0, 1, 1][i]]; line(p.position.x, p.position.y - 0.25, c.position.x, c.position.y + 0.25, -0.1); });
+  hp.slice(1).forEach((c, i) => { const p = K.land(hp[[0, 0, 1, 1][i]]), q = K.land(c); line(p.x, p.y - 0.25, q.x, q.y + 0.25, -0.1); });
   const ht = tag('', 'ptr', 3.6, 3.2);
   let r1 = null;
   await step(tok);                                   // 3733 line 1：用 Heap 做 heapsort

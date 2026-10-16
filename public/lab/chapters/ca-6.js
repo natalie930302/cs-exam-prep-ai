@@ -1656,8 +1656,8 @@ scene('dram-ilv-high', '例子：4 個 bank 的 high-order interleaving', [
   },
   async (tok, S) => { // @416 ~most significant two bits will select the bank
     S.cpu = prop('cpu', -5.2, 5.1, 0, 0.8, 'CPU');
-    S.F = [bx('bank（2 bits）', NC.orange, 0.0, 5.4, 0, 1.4, 0.5, 0.4), bx('word（2 bits）', NC.lilac, 1.45, 5.4, 0, 1.4, 0.5, 0.4)];
-    S.Fl = [sm('高位（MSB）', 0.0, 5.85), sm('低位', 1.45, 5.85)];
+    S.F = [bx('bank', NC.orange, -1.25, 5.4, 0, 2.4, 0.5, 0.4), bx('word', NC.lilac, 1.25, 5.4, 0, 2.4, 0.5, 0.4)];
+    S.Fl = [sm('高位 2 bits（MSB）', -1.5, 5.9), sm('低位 2 bits', 1.4, 5.9)];
     cap('CPU 送出位址', '最高的 2 個 bit 選 bank');
   },
   async (tok, S) => { // @423 ~MSB ... 00 will select bank 0 ... lower order bits ... word

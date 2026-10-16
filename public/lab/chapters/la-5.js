@@ -177,7 +177,7 @@ export default function (ctx) {
     let r = 0;
     for (let c = 0; c < n && r < m; c++) {
       let p = -1; for (let i = r; i < m; i++) if (Math.abs(A[i][c]) > EPS) { p = i; break; }
-      if (p < 0) { steps.push({ text: '第 ' + (c + 1) + ' 欄在第 ' + (r + 1) + ' 列以下全是 0 → 自由欄', A: snap(), row: -1, col: c }); continue; }
+      if (p < 0) { steps.push({ text: '第 ' + (c + 1) + ' 行在第 ' + (r + 1) + ' 列以下全是 0 → 自由行', A: snap(), row: -1, col: c }); continue; }
       if (p !== r) { [A[r], A[p]] = [A[p], A[r]]; steps.push({ text: '交換 R' + (r + 1) + ' ↔ R' + (p + 1), A: snap(), row: r, col: c }); }
       const pv = A[r][c];
       if (Math.abs(pv - 1) > EPS) { for (let j = 0; j < n; j++) A[r][j] /= pv; steps.push({ text: 'R' + (r + 1) + ' ÷ ' + fmt(pv) + '：pivot 變 1', A: snap(), row: r, col: c }); }
@@ -316,7 +316,7 @@ export default function (ctx) {
     $('t2P').onchange = (e) => { t2.key = e.target.value; enterT2(); };
     on('t2Go', safe(() => goT2()));
     on('t2Back', safe(() => animT2(I2)));
-    log('矩陣的兩個欄 = î、ĵ 變換後落在哪裡。所有格線跟著走：保持平行、等距，原點不動。');
+    log('矩陣的兩個行 = î、ĵ 變換後落在哪裡。所有格線跟著走：保持平行、等距，原點不動。');
     stateT2(I2);
   }
   function readM2() {
@@ -341,7 +341,7 @@ export default function (ctx) {
   }
   function stateT2(M) {
     const d = det2(M), r = rrefSteps(M).rank;
-    setState('M = ' + mstr(M), [['î → 第 1 欄', vstr(M.map((x) => x[0]))], ['ĵ → 第 2 欄', vstr(M.map((x) => x[1]))], ['det（面積倍率）', fmt(Math.round(d * 1000) / 1000)], ['rank', String(r)], ['dim ker', String(2 - r)]],
+    setState('M = ' + mstr(M), [['î → 第 1 行', vstr(M.map((x) => x[0]))], ['ĵ → 第 2 行', vstr(M.map((x) => x[1]))], ['det（面積倍率）', fmt(Math.round(d * 1000) / 1000)], ['rank', String(r)], ['dim ker', String(2 - r)]],
       r === 2 ? '<span class="ok">可逆</span>：kernel = {0}，image = 整個 R²' : r === 1 ? '<span class="no">壓成一條線</span>：kernel 是一條線，image 是一條線（1 + 1 = 2）' : '全部壓到原點');
   }
 
@@ -370,7 +370,7 @@ export default function (ctx) {
     $('t3P').onchange = (e) => { t3.key = e.target.value; enterT3(); };
     on('t3Go', safe(() => goT3()));
     on('t3Back', safe(() => animT3(I3)));
-    log('三個欄 = î、ĵ、k̂ 的落點；紫色單位方塊變成平行六面體，體積倍率 = det。');
+    log('三個行 = î、ĵ、k̂ 的落點；紫色單位方塊變成平行六面體，體積倍率 = det。');
     stateT3(I3);
   }
   async function animT3(M, tok) {
@@ -502,7 +502,7 @@ export default function (ctx) {
     if (k < 0.3) {
       const a = [ri(-3, 3), ri(-3, 3)], b = [ri(-3, 3), ri(-3, 3)], v = [ri(-2, 3), ri(-2, 3)];
       const ans = vstr(addv(scl(a, v[0]), scl(b, v[1])));
-      return { q: '線性變換把 î 送到 ' + vstr(a) + '、ĵ 送到 ' + vstr(b) + '。v = ' + vstr(v) + ' 被送到哪裡？', opts: [...new Set([ans, vstr(addv(scl(a, v[1]), scl(b, v[0]))), vstr([dot(a, v), dot(b, v)]), vstr(addv(a, b))])], ans, why: 'T(v) = ' + v[0] + '·T(î) + ' + v[1] + '·T(ĵ)。矩陣的欄就是 T(î)、T(ĵ)。' };
+      return { q: '線性變換把 î 送到 ' + vstr(a) + '、ĵ 送到 ' + vstr(b) + '。v = ' + vstr(v) + ' 被送到哪裡？', opts: [...new Set([ans, vstr(addv(scl(a, v[1]), scl(b, v[0]))), vstr([dot(a, v), dot(b, v)]), vstr(addv(a, b))])], ans, why: 'T(v) = ' + v[0] + '·T(î) + ' + v[1] + '·T(ĵ)。矩陣的行就是 T(î)、T(ĵ)。' };
     }
     if (k < 0.44) {
       const A = [[ri(-2, 2), ri(-2, 2)], [ri(-2, 2), ri(-2, 2)]], B = [[ri(-2, 2), ri(-2, 2)], [ri(-2, 2), ri(-2, 2)]];
@@ -656,7 +656,7 @@ export default function (ctx) {
     for (const [i, a, b, rows] of terms) {
       g.clearGlow(); glow(g.c[i][0], GOLD); rows.forEach((r) => { glow(g.c[r][1], GREEN); glow(g.c[r][2], GREEN); });
       lines.push(mono(tag(a + '  ' + b, '', 2.6, 5.2 - i * 0.7)));
-      say('沿第 1 欄展開', a + ' ' + b);
+      say('沿第 1 行展開', a + ' ' + b);
       await beat(tok, 2000);
     }
     g.clearGlow();
@@ -664,7 +664,7 @@ export default function (ctx) {
     say('x、y、z 前面的係數就是 p 的座標', 'p = (−2, −2, 4)');
     await beat(tok, 2600);
     ['î', 'ĵ', 'k̂'].forEach((s, i) => relabel(g.c[i][0], s));
-    say('把 î、ĵ、k̂ 塞進第 1 欄：只是提醒「係數要讀成向量」', '−2î − 2ĵ + 4k̂ = v × w');
+    say('把 î、ĵ、k̂ 塞進第 1 行：只是提醒「係數要讀成向量」', '−2î − 2ĵ + 4k̂ = v × w');
     await beat(tok, 3200);
     void lines;
   }
@@ -707,9 +707,9 @@ export default function (ctx) {
     const M = [[1, 3], [-2, 0]];
     await tw(tok, 2200, (t) => { const N = lerpM(I2, M, t); G.setM(N); F.set(ai, mulMV(N, [1, 0])); F.set(aj, mulMV(N, [0, 1])); F.set(av, mulMV(N, [-1, 2])); });
     ai.tag('î → (1, −2)'); aj.tag('ĵ → (3, 0)'); av.tag('v → (5, 2)');
-    say('î → (1, −2)、ĵ → (3, 0)', '矩陣 [1 3; −2 0]：欄 = î、ĵ 的落點');
+    say('î → (1, −2)、ĵ → (3, 0)', '矩陣 [1 3; −2 0]：行 = î、ĵ 的落點');
     await beat(tok, 2800);
-    say('v → −1·(1, −2) + 2·(3, 0) = (5, 2)', '矩陣 × 向量 = 欄的線性組合');
+    say('v → −1·(1, −2) + 2·(3, 0) = (5, 2)', '矩陣 × 向量 = 行的線性組合');
     await beat(tok, 3000);
     say('（課本補充：3Blue1Brown 第 3 集的例子）', '');
     await beat(tok, 1600);
@@ -726,7 +726,7 @@ export default function (ctx) {
       await go(M); await beat(tok, 1700);
       await go(I2); await beat(tok, 300);
     }
-    say('綠色方塊的面積 = |det|', '每個矩陣的欄都告訴你 î、ĵ 去哪');
+    say('綠色方塊的面積 = |det|', '每個矩陣的行都告訴你 î、ĵ 去哪');
     await beat(tok, 2400);
   }
   async function scLinearity(tok) {
@@ -779,7 +779,7 @@ export default function (ctx) {
     const ar = [[1, 0, 0], [0, 1, 0], [0, 0, 1]].map((e, j) => S.arrow(e, [COL.d, COL.r, COL.a][j], ['î', 'ĵ', 'k̂'][j]));
     let cur = I3;
     const go = async (M) => { const C0 = cur; await tw(tok, 1600, (t) => { const N = lerpM(C0, M, t); G.setM(N); C.set(...[0, 1, 2].map((j) => N.map((r) => r[j]))); ar.forEach((a, j) => S.set(a, N.map((r) => r[j]))); }); cur = M; };
-    say('3D 一樣：三個欄 = î、ĵ、k̂ 的落點', '3×3 矩陣');
+    say('3D 一樣：三個行 = î、ĵ、k̂ 的落點', '3×3 矩陣');
     await beat(tok, 2200);
     const M = [[1, 0, 0.5], [0.5, 1, 0], [0, 0.5, 1]];
     await go(M);
@@ -825,7 +825,7 @@ export default function (ctx) {
     const I32 = [[1, 0], [0, 1], [0, 0]];
     await tw(tok, 2000, (t) => { const N = lerpM(I32, M, t); G.setM(N); S.set(ai, N.map((r) => r[0])); S.set(aj, N.map((r) => r[1])); });
     ai.tag('î → (2, −1, −2)'); aj.tag('ĵ → (0, 1, 1)');
-    say('整個平面被送進 R³ 裡的一個平面', 'Image = 欄張成的 2 維子空間');
+    say('整個平面被送進 R³ 裡的一個平面', 'Image = 行張成的 2 維子空間');
     await orbit(tok, 2800, 30, 75, 22, 10.5, [0, 2.4, 0]);
     lab.clear(); cam(30, 30, 10.5, [0, 2.4, 0]);
     const S2 = space3(0, 2.6, 0, 1, 2.5);
@@ -857,7 +857,7 @@ export default function (ctx) {
     await tw(tok, 1500, (t) => { const N = lerpM(I2, Pm, t); G.setM(N); F.set(ai, mulMV(N, [1, 0])); F.set(aj, mulMV(N, [0, 1])); });
     say('用標準基底：T(î) = T(ĵ) = (½, ½)', '矩陣 = [½ ½; ½ ½]');
     await beat(tok, 2800);
-    say('同一個 T，基底不同 → 矩陣不同', '矩陣的第 j 欄 = T(第 j 個基底) 的座標');
+    say('同一個 T，基底不同 → 矩陣不同', '矩陣的第 j 行 = T(第 j 個基底) 的座標');
     await beat(tok, 3000);
   }
   async function scChangeBasis(tok) {
@@ -875,7 +875,7 @@ export default function (ctx) {
     await tw(tok, 900, (t) => F.set(p1, scl([2, 1], -t)));
     await tw(tok, 900, (t) => F.set(p2, scl([-1, 1], 2 * t), [-2, -1]));
     F.arrow([-4, 1], COL.g, '我們說 (−4, 1)');
-    say('翻譯成我們的語言：B[−1, 2] = (−4, 1)', 'B = [2 −1; 1 1]，欄 = 她的基底');
+    say('翻譯成我們的語言：B[−1, 2] = (−4, 1)', 'B = [2 −1; 1 1]，行 = 她的基底');
     await beat(tok, 2800);
     say('反過來翻譯：乘 B⁻¹', 'B⁻¹ = (1/3)[1 1; −1 2]');
     await beat(tok, 2400);
@@ -1099,7 +1099,7 @@ function house(F, color = COL.b) {
   H.setM(I2); return H;
 }
 
-// 左側說明欄（平面場景）：第 i 行文字；同一行再寫一次就換字
+// 左側說明行（平面場景）：第 i 行文字；同一行再寫一次就換字
 function pane(S, i, t, cls = 'ptr') {
   S.pn = S.pn || [];
   if (cls === 'good' && /✘/.test(t)) log('check failed: ' + t, true);
@@ -1258,7 +1258,7 @@ sc('lt-k-ijhat', '3B1B 第 3 集：只要知道 î、ĵ 落在哪裡', async (to
 ]);
 
 const KA = [[3, 2], [-2, 1]], KX = [5, 7];     // 示意：矩陣乘向量的例子
-sc('lt-k-matrix', '3B1B 第 3 集：2×2 矩陣的欄 = î、ĵ 的落點', async (tok, S) => {
+sc('lt-k-matrix', '3B1B 第 3 集：2×2 矩陣的行 = î、ĵ 的落點', async (tok, S) => {
   fresh(CAMB[0], CAMB[1]);
 }, [
   async (tok, S) => {
@@ -1269,14 +1269,14 @@ sc('lt-k-matrix', '3B1B 第 3 集：2×2 矩陣的欄 = î、ĵ 的落點', asyn
     cap('把這 4 個數字裝進 2×2 的方格', '叫做 2×2 矩陣');
     S.g = mgrid(KM, -4.6, 5.3, 0, { color: (i, j) => (j === 0 ? COL.d : COL.r) }); hd('M =', -5.6, 4.9);
   },
-  async (tok, S) => { cap('讀法：第 1 欄 = î 的落點，第 2 欄 = ĵ 的落點', ''); sm('î 落點', -4.6, 3.6); sm('ĵ 落點', -3.8, 3.2); },
+  async (tok, S) => { cap('讀法：第 1 行 = î 的落點，第 2 行 = ĵ 的落點', ''); sm('î 落點', -4.6, 3.6); sm('ĵ 落點', -3.8, 3.2); },
   async (tok, S) => {
     cap('給一個矩陣和一個向量：它被送到哪？', '例（示意）：[3 2; −2 1] 乘 (5, 7)');
     S.g2 = mgrid(KA, 0.6, 5.3, 0, { color: (i, j) => (j === 0 ? COL.d : COL.r) });
     S.x = mgrid([[KX[0]], [KX[1]]], 2.4, 5.3, 0, { color: () => COL.g });
     note('示意', 3.6, 6.2);
   },
-  async (tok, S) => { cap('向量的座標分別乘上對應的欄', ''); S.l1 = mono(hd('5·(3, −2) + 7·(2, 1)', 1.8, 3.4)); },
+  async (tok, S) => { cap('向量的座標分別乘上對應的行', ''); S.l1 = mono(hd('5·(3, −2) + 7·(2, 1)', 1.8, 3.4)); },
   async (tok, S) => {
     const r = lin(KX, [colOf(KA, 0), colOf(KA, 1)]);
     cap('再加起來', '= (15 + 14, −10 + 7)');
@@ -1288,8 +1288,8 @@ sc('lt-k-matrix', '3B1B 第 3 集：2×2 矩陣的欄 = î、ĵ 的落點', asyn
     cap('最一般的情況：矩陣 [a b; c d]', '');
     S.G = mgrid([['a', 'b'], ['c', 'd']], -4.6, 2.2, 0, { color: (i, j) => (j === 0 ? COL.d : COL.r) });
   },
-  async (tok, S) => { cap('第 1 欄 (a, c) = 第一個基底向量的落點', ''); S.G.col(0, GOLD); sm('(a, c) = î 落點', -4.6, 0.5); },
-  async (tok, S) => { cap('第 2 欄 (b, d) = 第二個基底向量的落點', ''); S.G.clearGlow(); S.G.col(1, GOLD); sm('(b, d) = ĵ 落點', -2.4, 0.5); },
+  async (tok, S) => { cap('第 1 行 (a, c) = 第一個基底向量的落點', ''); S.G.col(0, GOLD); sm('(a, c) = î 落點', -4.6, 0.5); },
+  async (tok, S) => { cap('第 2 行 (b, d) = 第二個基底向量的落點', ''); S.G.clearGlow(); S.G.col(1, GOLD); sm('(b, d) = ĵ 落點', -2.4, 0.5); },
   async (tok, S) => { S.G.clearGlow(); cap('作用在 (x, y) 上', '= x·(a, c) + y·(b, d)'); mono(hd('x·(a, c) + y·(b, d)', 1.8, 1.8)); },
   async (tok, S) => {
     cap('整理起來 = (ax + by, cx + dy)', '');
@@ -1298,7 +1298,7 @@ sc('lt-k-matrix', '3B1B 第 3 集：2×2 矩陣的欄 = î、ĵ 的落點', asyn
   },
   async (tok, S) => { cap('這就可以當成「矩陣乘向量」的定義', '矩陣寫在左邊，像函數 f(x) 一樣'); hot('M v ＝ 把變換 M 作用在 v 上', 1.8, 0.3); },
   async (tok, S) => {
-    cap('與其死背公式，不如把欄看成「變換後的基底向量」', '結果 = 它們適當的線性組合');
+    cap('與其死背公式，不如把行看成「變換後的基底向量」', '結果 = 它們適當的線性組合');
     S.G.col(0, GOLD); S.G.col(1, GOLD); S.g.col(0, GOLD); S.g.col(1, GOLD);
   },
 ]);
@@ -1312,7 +1312,7 @@ sc('lt-k-examples', '3B1B 第 3 集：旋轉、shear、由矩陣看變換、壓�
   async (tok, S) => { cap('î 落在 (0, 1)', ''); S.ai.tag('î → ' + vs(colOf(R90, 0))); },
   async (tok, S) => { cap('ĵ 落在 (−1, 0)', ''); S.aj.tag('ĵ → ' + vs(colOf(R90, 1))); },
   async (tok, S) => {
-    cap('矩陣的兩欄就是這兩個落點', '[0 −1; 1 0]');
+    cap('矩陣的兩行就是這兩個落點', '[0 −1; 1 0]');
     const T2 = fromCols(mulMV(rot2(90), [1, 0]), mulMV(rot2(90), [0, 1]));
     pane(S, 0, '旋轉 90°：' + ms(T2) + (eqv(T2, R90) ? ' ✓' : ' ✘'), 'good');
   },
@@ -1325,11 +1325,11 @@ sc('lt-k-examples', '3B1B 第 3 集：旋轉、shear、由矩陣看變換、壓�
     S.untrack(S.v); S.ai.tag('î'); S.aj.tag('ĵ');
     await S.go(tok, I2, 700); await S.go(tok, SH, 1600);
   },
-  async (tok, S) => { cap('î 不動 → 第 1 欄是 (1, 0)', ''); S.ai.tag('î → (1, 0)'); },
-  async (tok, S) => { cap('ĵ 移到 (1, 1) → 第 2 欄', ''); S.aj.tag('ĵ → ' + vs(colOf(SH, 1))); },
+  async (tok, S) => { cap('î 不動 → 第 1 行是 (1, 0)', ''); S.ai.tag('î → (1, 0)'); },
+  async (tok, S) => { cap('ĵ 移到 (1, 1) → 第 2 行', ''); S.aj.tag('ĵ → ' + vs(colOf(SH, 1))); },
   async (tok, S) => { cap('shear 對某個向量做什麼？就是矩陣乘那個向量', ''); pane(S, 1, 'shear：' + ms(SH)); },
   async (tok, S) => {
-    cap('反過來：給矩陣，想像它的變換', '欄是 (1, 2) 和 (3, 1)');
+    cap('反過來：給矩陣，想像它的變換', '行是 (1, 2) 和 (3, 1)');
     S.ai.tag('î'); S.aj.tag('ĵ'); await S.go(tok, I2, 700);
     pane(S, 2, '給定矩陣 ' + ms(KC));
   },
@@ -1351,7 +1351,7 @@ sc('lt-k-examples', '3B1B 第 3 集：旋轉、shear、由矩陣看變換、壓�
 const M3 = [[1, 0, 0.5], [0.5, 1, 0], [0, 0.5, 1]];   // 示意：老師沒講數字的 3D 變換
 const RY = [[0, 0, 1], [0, 1, 0], [-1, 0, 0]];          // 繞 y 軸轉 90°（老師給的三個落點）
 const RV = [2, 1, 1];                                    // 示意向量
-sc('lt-r-3d', '3B1B：3×3 矩陣的三欄 = î、ĵ、k̂ 的落點', async (tok, S) => {
+sc('lt-r-3d', '3B1B：3×3 矩陣的三行 = î、ĵ、k̂ 的落點', async (tok, S) => {
   space(S);
 }, [
   async (tok, S) => { cap('3D 向量 → 3D 向量的線性變換', '輸入、輸出都是三維'); },
@@ -1380,7 +1380,7 @@ sc('lt-r-3d', '3B1B：3×3 矩陣的三欄 = î、ĵ、k̂ 的落點', async (to
     S.ar.forEach((a, j) => a.tag(['î', 'ĵ', 'k̂'][j] + ' → ' + vs(colOf(M3, j))));
   },
   async (tok, S) => {
-    cap('把三組座標記成 3×3 矩陣的三個欄', '');
+    cap('把三組座標記成 3×3 矩陣的三個行', '');
     S.P = code(M3.map((r) => '[ ' + r.map((x) => fmt(x).padStart(4)).join(' ') + ' ]'), -4.3, 6.0);
   },
   async (tok, S) => { cap('只用 9 個數字就完全描述這個變換', ''); S.n9 = sm('3 × 3 = ' + 3 * 3 + ' 個數字', -4.3, 4.1); },
@@ -1394,7 +1394,7 @@ sc('lt-r-3d', '3B1B：3×3 矩陣的三欄 = î、ĵ、k̂ 的落點', async (to
   async (tok, S) => { cap('ĵ 不動，還在 (0, 1, 0)', ''); S.ar[1].tag('ĵ → ' + vs(colOf(S.M, 1))); },
   async (tok, S) => { cap('k̂ 移到 x 軸上的 (1, 0, 0)', ''); S.ar[2].tag('k̂ → ' + vs(colOf(S.M, 2))); },
   async (tok, S) => {
-    cap('三組座標當成欄 → 這個旋轉的矩陣', '[0 0 1; 0 1 0; −1 0 0]');
+    cap('三組座標當成行 → 這個旋轉的矩陣', '[0 0 1; 0 1 0; −1 0 0]');
     S.P = code(RY.map((r) => '[ ' + r.map((x) => fmt(x).padStart(3)).join(' ') + ' ]'), -4.3, 6.0);
     ok(eqv(S.M, RY) && eqv(rotY(90), RY), '= R_y(90°) ✓', -4.3, 4.1);
   },
@@ -1411,7 +1411,7 @@ sc('lt-r-3d', '3B1B：3×3 矩陣的三欄 = î、ĵ、k̂ 的落點', async (to
   },
   async (tok, S) => {
     const r = lin(RV, [0, 1, 2].map((j) => colOf(RY, j)));
-    cap('所以：座標乘上對應的欄，三個結果加起來', '2·(0, 0, −1) + 1·(0, 1, 0) + 1·(1, 0, 0)');
+    cap('所以：座標乘上對應的行，三個結果加起來', '2·(0, 0, −1) + 1·(0, 1, 0) + 1·(1, 0, 0)');
     ok(eqv(r, mulMV(RY, RV)) && eqv(r, mulMV(S.M, RV)), '= ' + vs(r) + ' ✓', -4.3, 3.4);
     S.vv.tag('v → ' + vs(r));
   },
@@ -1432,13 +1432,13 @@ sc('lt-r-compose', '3B1B：3×3 矩陣相乘 = 先做右邊、再做左邊', asy
     const Pm = mm(RX, RY);
     cap('數值上的乘法跟 2D 差不多', 'M₂M₁ = [0 0 1; 1 0 0; 0 1 0]');
     S.Q = code(Pm.map((r) => '[ ' + r.map((x) => fmt(x).padStart(3)).join(' ') + ' ]'), -4.3, 5.0);
-    ok(eqv(Pm, S.M), '欄 = 三個箭頭現在的位置 ✓', -4.3, 3.2);
+    ok(eqv(Pm, S.M), '行 = 三個箭頭現在的位置 ✓', -4.3, 3.2);
     S.ar.forEach((a, j) => a.tag(['î', 'ĵ', 'k̂'][j] + ' → ' + vs(colOf(Pm, j))));
   },
   async (tok, S) => {
-    cap('自我測驗：想想看乘法的每一欄怎麼來', 'M₂M₁ 的第 j 欄 = M₂ ×（M₁ 的第 j 欄）');
+    cap('自我測驗：想想看乘法的每一行怎麼來', 'M₂M₁ 的第 j 行 = M₂ ×（M₁ 的第 j 行）');
     const Pm = mm(RX, RY);
-    ok([0, 1, 2].every((j) => eqv(colOf(Pm, j), mulMV(RX, colOf(RY, j)))), '第 j 欄 = M₂·(M₁ 第 j 欄) ✓', -4.3, 2.6);
+    ok([0, 1, 2].every((j) => eqv(colOf(Pm, j), mulMV(RX, colOf(RY, j)))), '第 j 行 = M₂·(M₁ 第 j 行) ✓', -4.3, 2.6);
   },
 ]);
 
@@ -1461,11 +1461,11 @@ sc('lt-v-3x2', '3B1B：3×2 矩陣 = 把 2D 送進 3D', async (tok, S) => {
     cap('這次不畫「輸入移到輸出」', '2D 的輸入和 3D 的輸出住在兩個不相連的空間');
     note('兩個不同的空間', 0, 6.4);
   },
-  async (tok, S) => { cap('編碼成矩陣：一樣看每個基底向量落在哪', '落點座標寫成矩陣的欄'); S.ai.glow(GOLD); S.aj.glow(GOLD); },
+  async (tok, S) => { cap('編碼成矩陣：一樣看每個基底向量落在哪', '落點座標寫成矩陣的行'); S.ai.glow(GOLD); S.aj.glow(GOLD); },
   async (tok, S) => { cap('î 落在 (2, −1, −2)', ''); S.ai.glow(null); S.o1 = S.Sp.arrow(colOf(VM, 0), COL.d, 'î → ' + vs(colOf(VM, 0))); },
   async (tok, S) => { cap('ĵ 落在 (0, 1, 1)', ''); S.aj.glow(null); S.o2 = S.Sp.arrow(colOf(VM, 1), COL.r, 'ĵ → ' + vs(colOf(VM, 1))); },
   async (tok, S) => {
-    cap('這個矩陣有 3 列、2 欄', '標準說法：3×2 矩陣');
+    cap('這個矩陣有 3 列、2 行', '標準說法：3×2 矩陣');
     S.P = code(VM.map((r) => '[ ' + r.map((x) => fmt(x).padStart(3)).join(' ') + ' ]'), -4.3, 6.4);
     sm(VM.length + ' × ' + VM[0].length, -4.3, 4.6);
   },
@@ -1478,7 +1478,7 @@ sc('lt-v-3x2', '3B1B：3×2 矩陣 = 把 2D 送進 3D', async (tok, S) => {
     cap('但它仍是 full rank', 'column space 的維度 = 輸入空間的維度 = 2');
     ok(r === 2, 'rank = ' + r + ' = 輸入維度 ✓', -4.3, 4.0);
   },
-  async (tok, S) => { cap('看到 3×2 矩陣：就是把 2D 送到 3D', '2 欄 → 輸入空間有 2 個基底向量'); S.ai.glow(GOLD); S.aj.glow(GOLD); },
+  async (tok, S) => { cap('看到 3×2 矩陣：就是把 2D 送到 3D', '2 行 → 輸入空間有 2 個基底向量'); S.ai.glow(GOLD); S.aj.glow(GOLD); },
   async (tok, S) => { cap('3 列 → 每個落點要用 3 個座標描述', ''); S.o1.glow(GOLD); S.o2.glow(GOLD); },
 ]);
 
@@ -1491,10 +1491,10 @@ sc('lt-v-2x3', '3B1B：2×3 矩陣 = 把 3D 壓到 2D', async (tok, S) => {
   S.ar = [[1, 0, 0], [0, 1, 0], [0, 0, 1]].map((e, j) => S.Sp.arrow(e, [COL.d, COL.r, COL.a][j], ['î', 'ĵ', 'k̂'][j]));
 }, [
   async (tok, S) => {
-    cap('那 2×3 矩陣（2 列、3 欄）是什麼意思？', '例（示意）：[1 0 1; 0 1 1]');
+    cap('那 2×3 矩陣（2 列、3 行）是什麼意思？', '例（示意）：[1 0 1; 0 1 1]');
     S.P = code(VQ.map((r) => '[ ' + r.map((x) => fmt(x).padStart(2)).join(' ') + ' ]'), 0.4, 6.4);
   },
-  async (tok, S) => { cap('3 欄 → 輸入空間有 3 個基底向量', '所以從 3D 出發'); S.ar.forEach((a) => a.glow(GOLD)); },
+  async (tok, S) => { cap('3 行 → 輸入空間有 3 個基底向量', '所以從 3D 出發'); S.ar.forEach((a) => a.glow(GOLD)); },
   async (tok, S) => { cap('2 列 → 每個基底向量的落點只用 2 個座標', ''); S.ar.forEach((a) => a.glow(null)); },
   async (tok, S) => {
     cap('所以落點都在 2D 平面上', '');
@@ -1547,11 +1547,11 @@ sc('lt-v-1x2', '3B1B：1×2 矩陣 = 把 2D 送到數線', async (tok, S) => {
     ok(gaps.every((g) => Math.abs(g - gaps[0]) < 1e-9), '間距都是 ' + fmt(gaps[0]) + ' ✓', NL(4).x, 2.5);
   },
   async (tok, S) => {
-    cap('這種變換用 1×2 矩陣表示', '兩個欄，每欄只有一個數');
+    cap('這種變換用 1×2 矩陣表示', '兩個行，每行只有一個數');
     S.P = mono(hd('[ ' + VL.join('  ') + ' ]', -3.8, 6.0)); note('示意', -2.6, 6.0);
   },
   async (tok, S) => {
-    cap('兩個欄 = 兩個基底向量落在數線上的哪個數', 'î → 2、ĵ → 1');
+    cap('兩個行 = 兩個基底向量落在數線上的哪個數', 'î → 2、ĵ → 1');
     [[VL[0], 'î → ' + VL[0], COL.d], [VL[1], 'ĵ → ' + VL[1], COL.r]].forEach(([x, t, c], i) => { const b = dotBall(c, 0.14); b.position.copy(NL(x)); tag(t, 'ptr', NL(x).x, 0.25 - i * 0.0, 0.3); });
     S.ai.glow(GOLD); S.aj.glow(GOLD);
   },
@@ -1689,7 +1689,7 @@ sc('lt-p-translate', '3B1B 換基底：用 A = [b₁ b₂] 把她的座標翻成
     pane(S, 3, '= ' + vs(r) + (eqv(r, [-4, 1]) ? ' ✓' : ' ✘'), 'good');
   },
   async (tok, S) => {
-    cap('這就是矩陣乘向量', '矩陣的欄 = 用我們的語言寫的 b₁、b₂');
+    cap('這就是矩陣乘向量', '矩陣的行 = 用我們的語言寫的 b₁、b₂');
     pane(S, 4, 'A = ' + ms(JA) + '：A·(−1, 2) = ' + vs(mulMV(JA, [-1, 2])) + (eqv(mulMV(JA, [-1, 2]), [-4, 1]) ? ' ✓' : ' ✘'), 'good');
   },
   async (tok, S) => {
@@ -1744,7 +1744,7 @@ sc('lt-p-inverse', '3B1B 換基底：反方向用 A⁻¹', async (tok, S) => {
   },
   async (tok, S) => { cap('實際上（尤其超過二維時）', '通常交給電腦算反矩陣'); },
   async (tok, S) => {
-    cap('這裡 A⁻¹ 的兩欄是 (1/3, −1/3) 和 (1/3, 2/3)', '');
+    cap('這裡 A⁻¹ 的兩行是 (1/3, −1/3) 和 (1/3, 2/3)', '');
     const want = fromCols([1 / 3, -1 / 3], [1 / 3, 2 / 3]);
     pane(S, 1, 'A⁻¹ = ' + ms(JAi) + (eqv(JAi, want) && eqv(mm(JA, JAi), I2) ? ' ✓' : ' ✘'), 'good');
   },
@@ -1768,7 +1768,7 @@ sc('lt-p-rotation', '3B1B 換基底：旋轉 90° 在 Jennifer 的語言 = A⁻�
   async (tok, S) => { cap('我們用矩陣表示它時，追蹤 î、ĵ 去哪', ''); S.ai.glow(GOLD); S.aj.glow(GOLD); },
   async (tok, S) => { cap('î 到了 (0, 1)', ''); S.ai.tag('î → ' + vs(colOf(JM, 0))); },
   async (tok, S) => { cap('ĵ 到了 (−1, 0)', ''); S.aj.tag('ĵ → ' + vs(colOf(JM, 1))); },
-  async (tok, S) => { cap('這兩組座標變成矩陣的欄', ''); pane(S, 0, '我們的 M = ' + ms(JM)); },
+  async (tok, S) => { cap('這兩組座標變成矩陣的行', ''); pane(S, 0, '我們的 M = ' + ms(JM)); },
   async (tok, S) => { cap('這個表示法跟我們選的基底綁在一起', '追蹤的是 î、ĵ，記錄也用我們的座標'); },
   async (tok, S) => {
     cap('Jennifer 會怎麼描述同一個 90° 旋轉？', '');
@@ -1779,11 +1779,11 @@ sc('lt-p-rotation', '3B1B 換基底：旋轉 90° 在 Jennifer 的語言 = A⁻�
   },
   async (tok, S) => {
     const naive = fromCols(mulMV(JAi, colOf(JM, 0)), mulMV(JAi, colOf(JM, 1)));
-    cap('直接把 M 的欄翻成她的語言？', '不對！');
-    pane(S, 1, '只翻譯 M 的欄 = ' + ms(naive) + (eqv(naive, JMB) ? '' : ' ✘'), 'bad');
+    cap('直接把 M 的行翻成她的語言？', '不對！');
+    pane(S, 1, '只翻譯 M 的行 = ' + ms(naive) + (eqv(naive, JMB) ? '' : ' ✘'), 'bad');
   },
   async (tok, S) => {
-    cap('那些欄是「我們的」基底去哪', '她要的是「她的」b₁、b₂ 落在哪，而且用她的語言');
+    cap('那些行是「我們的」基底去哪', '她要的是「她的」b₁、b₂ 落在哪，而且用她的語言');
     S.r1 = S.F.arrow(mulMV(JM, JB1), COL.c, '轉後的 b₁'); S.r2 = S.F.arrow(mulMV(JM, JB2), COL.b, '轉後的 b₂');
   },
   async (tok, S) => {
@@ -1811,7 +1811,7 @@ sc('lt-p-rotation', '3B1B 換基底：旋轉 90° 在 Jennifer 的語言 = A⁻�
   async (tok, S) => { cap('任何她的向量都能這樣做', '三個矩陣合成 A⁻¹MA = 她語言裡的變換矩陣'); pane(S, 6, 'A⁻¹ M A：先翻譯、再轉、再翻回'); },
   async (tok, S) => {
     const want = fromCols([1 / 3, 5 / 3], [-2 / 3, -1 / 3]);
-    cap('這個例子算出來：欄是 (1/3, 5/3) 和 (−2/3, −1/3)', '');
+    cap('這個例子算出來：行是 (1/3, 5/3) 和 (−2/3, −1/3)', '');
     pane(S, 7, 'A⁻¹MA = ' + ms(JMB) + (eqv(JMB, want) ? ' ✓' : ' ✘'), 'good');
   },
   async (tok, S) => {
@@ -1851,11 +1851,11 @@ sc('lt-c-recap', '叉積回顧：怪行列式算法 + 長度 = 面積、方向 �
 }, [
   async (tok, S) => { cap('上次說到：三維叉積 v × w 怎麼算', 'v = (2, 0, 1)、w = (0, 2, 1)（示意）'); },
   async (tok, S) => {
-    cap('寫一個矩陣：第 2 欄放 v、第 3 欄放 w', '');
+    cap('寫一個矩陣：第 2 行放 v、第 3 行放 w', '');
     S.P = code(['[ ?  ' + CV[0] + '  ' + CW[0] + ' ]', '[ ?  ' + CV[1] + '  ' + CW[1] + ' ]', '[ ?  ' + CV[2] + '  ' + CW[2] + ' ]'], -4.4, 6.2);
   },
   async (tok, S) => {
-    cap('第 1 欄放的卻是符號 î、ĵ、k̂', '計算時假裝它們是數字');
+    cap('第 1 行放的卻是符號 î、ĵ、k̂', '計算時假裝它們是數字');
     ['î', 'ĵ', 'k̂'].forEach((s, i) => txt(S.P.ls[i], '[ ' + s + '  ' + CV[i] + '  ' + CW[i] + ' ]'));
   },
   async (tok, S) => { cap('拿這個怪矩陣去算行列式', ''); S.P.ls.forEach((l) => setCls(l, 'ptr alt')); hd('det', -5.6, 5.6); },
@@ -1900,7 +1900,7 @@ sc('lt-c-dual', '對偶性：R³ → 數線的線性變換 = 跟向量 p 做內�
   },
   async (tok, S) => { cap('做這個變換 = 跟那個向量做內積', ''); },
   async (tok, S) => {
-    cap('數值上：這種變換是只有一列的矩陣', '每一欄 = 一個基底向量落在哪個數（示意 [2 1 2]）');
+    cap('數值上：這種變換是只有一列的矩陣', '每一行 = 一個基底向量落在哪個數（示意 [2 1 2]）');
     S.P = mono(hd('[ 2  1  2 ]', -4.4, 6.0)); sm('î ↦ 2、ĵ ↦ 1、k̂ ↦ 2', -4.4, 5.4);
   },
   async (tok, S) => {
@@ -1927,7 +1927,7 @@ sc('lt-c-det', '行列式 = 有向面積 / 有向體積', async (tok, S) => {
   S.v = [2, 1, 0]; S.w = [0.5, 1.5, 0];
   S.av = S.Sp.arrow(S.v, COL.a, 'v'); S.aw = S.Sp.arrow(S.w, COL.b, 'w');
 }, [
-  async (tok, S) => { cap('回想 2D 版的「叉積」', 'v 的座標當第 1 欄、w 當第 2 欄（示意 v = (2, 1)、w = (0.5, 1.5)）'); },
+  async (tok, S) => { cap('回想 2D 版的「叉積」', 'v 的座標當第 1 行、w 當第 2 行（示意 v = (2, 1)、w = (0.5, 1.5)）'); },
   async (tok, S) => {
     const d = det2([[2, 0.5], [1, 1.5]]);
     cap('算行列式：就是一個普通的數字', 'det[2 0.5; 1 1.5] = 3 − 0.5');
@@ -1942,7 +1942,7 @@ sc('lt-c-det', '行列式 = 有向面積 / 有向體積', async (tok, S) => {
     cap('可能是負的：看兩個向量的方向（定向）', '把 v、w 順序對調');
     ok(d === -2.5, 'det[w v] = ' + fmt(d) + ' ✓', -4.4, 5.4);
   },
-  async (tok, S) => { cap('如果硬要推廣到 3D…', '三個 3D 向量 u、v、w 當 3×3 矩陣的欄，再取行列式'); },
+  async (tok, S) => { cap('如果硬要推廣到 3D…', '三個 3D 向量 u、v、w 當 3×3 矩陣的行，再取行列式'); },
   async (tok, S) => {
     const u0 = [0.3, 0.4, 1.6];
     cap('第 5 集：這是 u、v、w 張成的平行六面體體積', '');
@@ -1970,7 +1970,7 @@ sc('lt-c-func', '把第一個向量換成變數：f(x) = det[x v w] 是線性函
   async (tok, S) => { cap('把第一個向量 u 換成變數 (x, y, z)', 'v、w 保持固定'); },
   async (tok, S) => { cap('這樣得到一個函數：三維 → 數線', ''); },
   async (tok, S) => {
-    cap('輸入 (x, y, z)，輸出一個數', '= 第 1 欄是 (x, y, z)、另兩欄是 v、w 的行列式');
+    cap('輸入 (x, y, z)，輸出一個數', '= 第 1 行是 (x, y, z)、另兩行是 v、w 的行列式');
     S.P = mono(hd('f(x, y, z) = det[ (x,y,z)  v  w ]', -3.6, 6.2));
     S.ax = arrow(COL.k); S.ax.tag('(x, y, z)'); S.box = ppiped(S.Sp, [0, 0, 0.01], CV, CW, COL.c, 0.16);
     S.out = hot(' ', 3.6, 5.6); S.cur = [0, 0, 0.01]; S.Sp.set(S.ax, S.cur);
@@ -2013,7 +2013,7 @@ sc('lt-c-comp', '計算面：展開行列式，係數就是 p 的座標', async 
 }, [
   async (tok, S) => { cap('先從計算的角度想', 'v = (2, 0, 1)、w = (0, 2, 1)（示意）'); },
   async (tok, S) => { cap('左邊：p·(x, y, z) = p₁x + p₂y + p₃z', '係數就是 p 的座標'); mono(hd('p·(x,y,z) = p₁x + p₂y + p₃z', 2.6, 6.3)); },
-  async (tok, S) => termStep(S, 0, 'x·(' + CV[1] + '·' + CW[2] + ' − ' + CW[1] + '·' + CV[2] + ')', '沿第 1 欄展開：x 的係數'),
+  async (tok, S) => termStep(S, 0, 'x·(' + CV[1] + '·' + CW[2] + ' − ' + CW[1] + '·' + CV[2] + ')', '沿第 1 行展開：x 的係數'),
   async (tok, S) => termStep(S, 1, '− y·(' + CV[0] + '·' + CW[2] + ' − ' + CW[0] + '·' + CV[2] + ')', 'y 的係數（注意負號）'),
   async (tok, S) => termStep(S, 2, '+ z·(' + CV[0] + '·' + CW[1] + ' − ' + CW[0] + '·' + CV[1] + ')', 'z 的係數'),
   async (tok, S) => {
@@ -2025,7 +2025,7 @@ sc('lt-c-comp', '計算面：展開行列式，係數就是 p 的座標', async 
   },
   async (tok, S) => { cap('做過叉積計算的人，應該覺得很眼熟', ''); },
   async (tok, S) => {
-    cap('把 x、y、z 前面的係數收集起來', '跟「第 1 欄塞進 î、ĵ、k̂」完全一樣');
+    cap('把 x、y、z 前面的係數收集起來', '跟「第 1 行塞進 î、ĵ、k̂」完全一樣');
     ['î', 'ĵ', 'k̂'].forEach((s, i) => relabel(S.g.c[i][0], s)); S.g.col(0, GOLD);
   },
   async (tok, S) => { cap('塞 î、ĵ、k̂ 只是提醒：', '這些係數要讀成一個向量的座標'); hot('−2î − 2ĵ + 4k̂ = v × w', 2.6, 1.5); },
@@ -2478,21 +2478,21 @@ sc('lt-m-projstd', 'MIT L30：同一個投影用標準基底——P = [½ ½; ½
 ]);
 
 const GA = [['a₁₁', 'a₁₂', '…'], ['a₂₁', 'a₂₂', '…'], ['⋮', '⋮', ''], ['aₘ₁', 'aₘ₂', '…']];
-sc('lt-m-rule', 'MIT L30：找矩陣的規則——第 j 欄 = T(vⱼ) 用輸出基底的係數', async (tok, S) => {
+sc('lt-m-rule', 'MIT L30：找矩陣的規則——第 j 行 = T(vⱼ) 用輸出基底的係數', async (tok, S) => {
   fresh(CAMB[0], CAMB[1]);
   S.g = mgrid(GA.map((r) => r.map(() => '')), -5.4, 5.6, 0, { widths: [0.8, 0.8, 0.8], color: () => '#e9dcc4' });
   hd('A =', -6.3, 4.4);
 }, [
   async (tok, S) => { cap('把找矩陣 A 的規則寫下來', ''); },
   async (tok, S) => { cap('給定輸入基底 v₁…vₙ、輸出基底 w₁…wₘ', '沒有基底就沒辦法建矩陣'); hd('給定：v₁…vₙ（輸入）、w₁…wₘ（輸出）', 2.0, 6.6); },
-  async (tok, S) => { cap('A 的第一欄：看第一個基底向量 v₁ 發生什麼事', '把 T 作用在 v₁ 上'); S.g.col(0, GOLD); },
+  async (tok, S) => { cap('A 的第一行：看第一個基底向量 v₁ 發生什麼事', '把 T 作用在 v₁ 上'); S.g.col(0, GOLD); },
   async (tok, S) => {
-    cap('T(v₁) 在輸出空間：是 w 們的組合', '組合的係數就放進第一欄');
+    cap('T(v₁) 在輸出空間：是 w 們的組合', '組合的係數就放進第一行');
     mono(hd('T(v₁) = a₁₁w₁ + a₂₁w₂ + … + aₘ₁wₘ', 2.0, 5.6));
     GA.forEach((r, i) => S.g.set(i, 0, r[0]));
   },
   async (tok, S) => {
-    cap('第二欄：取 v₂，作用 T，用輸出基底展開', '係數放進第二欄');
+    cap('第二行：取 v₂，作用 T，用輸出基底展開', '係數放進第二行');
     S.g.clearGlow(); S.g.col(1, GOLD);
     mono(hd('T(v₂) = a₁₂w₁ + a₂₂w₂ + … + aₘ₂wₘ', 2.0, 4.9));
     GA.forEach((r, i) => S.g.set(i, 1, r[1]));
@@ -2501,9 +2501,9 @@ sc('lt-m-rule', 'MIT L30：找矩陣的規則——第 j 欄 = T(vⱼ) 用輸出
   async (tok, S) => { cap('照矩陣乘法的規則：', 'A ×（輸入座標）就正確地得到（輸出座標）'); hot('A ·（輸入座標）=（輸出座標）', 2.0, 3.9); },
   async (tok, S) => {
     const A = [[2, -1, 0], [1, 3, 5]];   // 示意的數字矩陣
-    cap('檢查第一欄：輸入座標 (1, 0, …, 0) 就是 v₁', 'A 乘它 = A 的第一欄 = T(v₁) 的輸出座標');
+    cap('檢查第一行：輸入座標 (1, 0, …, 0) 就是 v₁', 'A 乘它 = A 的第一行 = T(v₁) 的輸出座標');
     S.g.col(0, GOLD);
-    ok(eqv(mulMV(A, [1, 0, 0]), colOf(A, 0)), 'A·(1, 0, 0) = A 的第 1 欄 ✓（示意數字驗證）', 2.0, 3.1);
+    ok(eqv(mulMV(A, [1, 0, 0]), colOf(A, 0)), 'A·(1, 0, 0) = A 的第 1 行 ✓（示意數字驗證）', 2.0, 3.1);
   },
   async (tok, S) => { cap('每個基底向量都對了', '由線性，每個向量都對'); S.g.clearGlow(); },
 ]);
@@ -2664,7 +2664,7 @@ sc('lt-g-jpeg', 'MIT L31：JPEG——換基底（不失真）→ 丟掉小係數
 
 const HW = [[1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, -1, -1, -1, -1], [1, 1, -1, -1, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, -1, -1],
   [1, -1, 0, 0, 0, 0, 0, 0], [0, 0, 1, -1, 0, 0, 0, 0], [0, 0, 0, 0, 1, -1, 0, 0], [0, 0, 0, 0, 0, 0, 1, -1]];   // 8 個 Haar 小波（當列寫）
-const WM = T(HW);                     // 欄 = 小波
+const WM = T(HW);                     // 行 = 小波
 const P8 = [121, 124, 126, 127, 127, 125, 122, 120];   // 示意像素
 const WC = mulMV(inv(WM), P8);
 const wrow = (S, i) => { S.wr = S.wr || []; S.wr[i] = bar8(HW[i], -5.4, 6.4 - i * 0.68, { k: 0.24, gap: 0.27, w: 0.19, color: COL.c, noNum: true }); sm('w' + SUB(i + 1), -6.1, 6.4 - i * 0.68); };
@@ -2703,9 +2703,9 @@ const WN = HW.map((r) => scl(r, 1 / norm(r)));   // 正規化（當列）
 sc('lt-g-wmatrix', 'MIT L31：c = W⁻¹p；好基底要「快」又要「少數幾項就夠」', async (tok, S) => {
   fresh(CAMB[0], CAMB[1]);
 }, [
-  async (tok, S) => { cap('寫成矩陣：p = 小波矩陣的欄的組合', ''); },
+  async (tok, S) => { cap('寫成矩陣：p = 小波矩陣的行的組合', ''); },
   async (tok, S) => {
-    cap('W 的 8 個欄 = 8 個小波', 'p = W c');
+    cap('W 的 8 個行 = 8 個小波', 'p = W c');
     S.g = mgrid(WM, -6.3, 6.5, 0, { size: 0.38, gap: 0.45, color: (i, j) => (WM[i][j] > 0 ? COL.d : WM[i][j] < 0 ? COL.r : '#e9dcc4') });
     hd('W', -6.8, 4.9);
   },
@@ -2730,7 +2730,7 @@ sc('lt-g-wmatrix', 'MIT L31：c = W⁻¹p；好基底要「快」又要「少數
   },
   async (tok, S) => {
     const Wn = T(WN);
-    cap('欄正規正交 ⇒ 反矩陣 = 轉置', '第 4.4 節');
+    cap('行正規正交 ⇒ 反矩陣 = 轉置', '第 4.4 節');
     ok(eqv(mm(T(Wn), Wn).map((r) => r.map((x) => Math.round(x * 1e9) / 1e9)), Array.from({ length: 8 }, (_, i) => Array.from({ length: 8 }, (_, j) => (i === j ? 1 : 0)))), 'W⁻¹ = Wᵀ（正規化後）✓', 2.4, 2.9);
   },
   async (tok, S) => { cap('第二個要求：好不好用？', '最快的其實是根本不換基底'); hd('② 少數幾個基底向量就接近原圖', 2.4, 2.3); },
@@ -2756,7 +2756,7 @@ sc('lt-g-cob', 'MIT L31：換基底 x = W c', async (tok, S) => {
   async (tok, S) => { cap('回到數學：複習換基底', '（示意：2D 的例子）'); },
   async (tok, S) => { cap('同一個向量，從一組基底換到另一組', ''); S.x = S.F.arrow(JV, COL.g, 'x = (3, 2)（舊基底）'); },
   async (tok, S) => {
-    cap('讓 W 的欄 = 新的基底向量', '');
+    cap('讓 W 的行 = 新的基底向量', '');
     S.F.arrow(JB1, COL.c, 'w₁'); S.F.arrow(JB2, COL.b, 'w₂'); pane(S, 0, 'W = [w₁ w₂] = ' + ms(JA));
   },
   async (tok, S) => { cap('換基底要用到 W⁻¹', ''); pane(S, 1, 'W⁻¹ = ' + ms(JAi)); },
@@ -2789,7 +2789,7 @@ sc('lt-g-similar', 'MIT L31：同一個 T、兩組基底 → 相似矩陣 B = M�
     cap('答案：A 和 B 相似（similar）', 'B = M⁻¹ A M');
     pane(S, 2, 'M⁻¹AM = ' + ms(GBm) + (eqv(GBm, S.B) ? ' = B ✓' : ' ✘'), 'good');
   },
-  async (tok, S) => { cap('這個 M 就是換基底矩陣', 'M 的欄 = 新基底（這裡 M = W）'); pane(S, 3, 'M = W = ' + ms(GB)); },
+  async (tok, S) => { cap('這個 M 就是換基底矩陣', 'M 的行 = 新基底（這裡 M = W）'); pane(S, 3, 'M = W = ' + ms(GB)); },
   async (tok, S) => {
     cap('換基底時兩件事一起發生：', '每個向量有新座標、每個變換有新（相似的）矩陣');
     ok(Math.abs(det2(GAm) - det2(GBm)) < 1e-9 && Math.abs(GAm[0][0] + GAm[1][1] - GBm[0][0] - GBm[1][1]) < 1e-9, '相似：det、trace 都一樣 ✓', 3.0, 0.5, -4.3);
@@ -2797,7 +2797,7 @@ sc('lt-g-similar', 'MIT L31：同一個 T、兩組基底 → 相似矩陣 B = M�
 ]);
 
 function grid8(S, x0 = -2.2, y0 = 6.2) { S.g = mgrid(Array.from({ length: 8 }, () => Array(8).fill('')), x0, y0, 0, { size: 0.5, gap: 0.56, color: () => '#e9dcc4' }); hd('A =', x0 - 0.9, y0 - 2.0); }
-sc('lt-g-recipe', 'MIT L31：T 的矩陣 A——第 j 欄 = T(vⱼ) 用 v 展開的係數', async (tok, S) => {
+sc('lt-g-recipe', 'MIT L31：T 的矩陣 A——第 j 行 = T(vⱼ) 用 v 展開的係數', async (tok, S) => {
   fresh(CAMB[0], CAMB[1]); grid8(S);
 }, [
   async (tok, S) => { cap('A 是什麼？用基底 v₁ … v₈', ''); },
@@ -2806,11 +2806,11 @@ sc('lt-g-recipe', 'MIT L31：T 的矩陣 A——第 j 欄 = T(vⱼ) 用 v 展開
   async (tok, S) => { cap('由線性：', 'T(x) = c₁T(v₁) + … + c₈T(v₈)'); mono(hd('T(x) = c₁T(v₁) + … + c₈T(v₈)', -4.6, 0.6)); },
   async (tok, S) => { cap('但這些輸出也要用這組基底寫', ''); },
   async (tok, S) => {
-    cap('T(v₁) = a₁₁v₁ + a₂₁v₂ + … + a₈₁v₈', '這些數放進第一欄');
+    cap('T(v₁) = a₁₁v₁ + a₂₁v₂ + … + a₈₁v₈', '這些數放進第一行');
     for (let i = 0; i < 8; i++) S.g.set(i, 0, 'a' + SUB(i + 1) + '₁'); S.g.col(0, GOLD);
   },
   async (tok, S) => {
-    cap('T(v₂) 展開的係數放進第二欄', '一欄一欄建出 A');
+    cap('T(v₂) 展開的係數放進第二行', '一行一行建出 A');
     S.g.clearGlow(); for (let i = 0; i < 8; i++) S.g.set(i, 1, 'a' + SUB(i + 1) + '₂'); S.g.col(1, GOLD);
   },
   async (tok, S) => {
@@ -2828,11 +2828,11 @@ sc('lt-g-eigen', 'MIT L31：特徵向量基底 → 對角矩陣 Λ', async (tok,
   async (tok, S) => { cap('A 是什麼？一起走一遍', ''); },
   async (tok, S) => { cap('第一個基底向量 v₁', 'T 作用後 = λ₁v₁'); S.g.col(0, GOLD); },
   async (tok, S) => {
-    cap('λ₁v₁ 用基底寫：λ₁ 乘 v₁、其他都 0', '第一欄 = (λ₁, 0, …, 0)');
+    cap('λ₁v₁ 用基底寫：λ₁ 乘 v₁、其他都 0', '第一行 = (λ₁, 0, …, 0)');
     for (let i = 0; i < 8; i++) S.g.set(i, 0, i === 0 ? 'λ₁' : '0');
   },
   async (tok, S) => {
-    cap('v₂ → λ₂v₂', '第二欄 = (0, λ₂, 0, …, 0)');
+    cap('v₂ → λ₂v₂', '第二行 = (0, λ₂, 0, …, 0)');
     S.g.clearGlow(); S.g.col(1, GOLD); for (let i = 0; i < 8; i++) S.g.set(i, 1, i === 1 ? 'λ₂' : '0');
   },
   async (tok, S) => {
@@ -2859,7 +2859,7 @@ sc('lt-c-sum', '叉積總結：算法的 p ＝ 幾何的 p', async (tok, S) => {
   },
   async (tok, S) => {
     const p = cof1(CV, CW);
-    cap('計算面：第 1 欄放 î、ĵ、k̂，算行列式', '得到 p = (−2, −2, 4)');
+    cap('計算面：第 1 行放 î、ĵ、k̂，算行列式', '得到 p = (−2, −2, 4)');
     ok(eqv(p, CP) && eqv(p, [-2, -2, 4]), '算法：det[ î ĵ k̂ | v | w ] → p = (−2, −2, 4) ✓', -4.6, 0.0);
   },
   async (tok, S) => {
@@ -2878,7 +2878,7 @@ sc('lt-c-sum', '叉積總結：算法的 p ＝ 幾何的 p', async (tok, S) => {
 
 // 3B1B 第 3 集（kYB8IZa5AuE）總結：變換 ↔ 矩陣
 const SUMA = [[1, -1], [0.5, 1]], SUMV = [1.5, 1];
-sc('lt-k-sum', '總結：矩陣的欄 = î、ĵ 的落點，矩陣 = 空間的變換', async (tok, S) => {
+sc('lt-k-sum', '總結：矩陣的行 = î、ĵ 的落點，矩陣 = 空間的變換', async (tok, S) => {
   plane(S);
 }, [
   async (tok, S) => {
@@ -2892,8 +2892,8 @@ sc('lt-k-sum', '總結：矩陣的欄 = î、ĵ 的落點，矩陣 = 空間的�
     pane(S, 1, 'î → (1, 0.5)、ĵ → (−1, 1)');
   },
   async (tok, S) => {
-    cap('矩陣的欄就是這些座標', 'A = [1 −1; 0.5 1]');
-    ok(eqv(colOf(SUMA, 0), [1, 0.5]) && eqv(colOf(SUMA, 1), [-1, 1]), 'A 的欄 = î、ĵ 的落點 ✓', -5.0, 0.5, -3.3 + 2 * 0.62);
+    cap('矩陣的行就是這些座標', 'A = [1 −1; 0.5 1]');
+    ok(eqv(colOf(SUMA, 0), [1, 0.5]) && eqv(colOf(SUMA, 1), [-1, 1]), 'A 的行 = î、ĵ 的落點 ✓', -5.0, 0.5, -3.3 + 2 * 0.62);
   },
   async (tok, S) => {
     const r = mulMV(SUMA, SUMV);

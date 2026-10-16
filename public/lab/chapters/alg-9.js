@@ -3617,7 +3617,7 @@ FRAG.push(['np2-problems-r', '決策問題 = 無限 bit 串 = 實數', async (to
   const progs = [0, 1, 2].map((i) => { const b = pal('程式 ' + (i + 1), '', NC.NP, -5.0, 1.6 + i * 1.5, 0, 0.5); b.mood('happy'); return b; });
   const probs = [];
   for (let i = 0; i < 12; i++) probs.push(cube(null, i % 4 === 0 ? NC.P : NC.BAD, [0.4, 0.4, 0.4], -0.4 + (i % 6) * 0.9, 2.0 + Math.floor(i / 6) * 1.6, 0, 2));
-  [0, 4, 8].forEach((k, i) => arrow(V3(-4.4, 1.9 + i * 1.5, 0), V3(probs[k].position.x - 0.3, probs[k].position.y, 0)));
+  [0, 4, 8].forEach((k, i) => { const p = K.land(probs[k]); arrow(V3(-4.4, 1.9 + i * 1.5, 0), V3(p.x - 0.3, p.y, 0)); });
   note('每支程式只解一個問題；剩下的沒人解', 1.8, 4.6);
   say('每支程式只解一個問題', '程式根本不夠分');
   await step(tok);                                   // 1085.2 yet most problems we think about are computable?

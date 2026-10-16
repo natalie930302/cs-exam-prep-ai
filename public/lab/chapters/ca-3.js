@@ -1222,7 +1222,7 @@ scene('cpu-overview', '14A：datapath 概觀：共用的路要靠 mux', [
   async (tok, S) => {   // 1 PC 放位址
     S.D = dpAdd(dpNew(), ['PC', 'IM'], ['pc_im']);
     cap('概觀：Program Counter 放 32 bits 的位址', '例如 1000：就到 instruction memory 的 1000 拿');
-    const m = await flow(tok, WIRES.pc_im, '1000', CC.gold, 700); kill(m);
+    const m = await flow(tok, [[-6.3, 4.0], [-5.1, 4.0]], '1000', CC.gold, 700); kill(m);   // rides above the PC → IM wire: on it, it covered the 'PC' and 'Instr Mem' names
   },
   async (tok, S) => {   // 2 跳到 10000
     cap('如果要跳到 10000', 'PC 就放 10000，下一個就去 10000 拿');
@@ -3214,7 +3214,8 @@ scene('cpu-jump', '17A：加入 jump：shift 2、接 PC 的前 4 bits、多一�
     cap('選 1 的這條 path：instr[25:0] shift 兩個 bits', '再和 PC + 4 的前 4 bits concatenate');
     S.i26 = bx('instr[25:0]', CC.gold, -3.6, 1.8, 1.8, 0.6); S.s2 = bx('<<2', CC.teal, -1.4, 1.8, 0.8, 0.5); S.cat = bx('{PC+4[31:28], ·}', CC.blue, 1.2, 1.8, 2.2, 0.6);
     line([[-2.7, 1.8], [-1.8, 1.8]], WCOL); line([[-1.0, 1.8], [0.1, 1.8]], WCOL); S.w5 = line([[2.3, 1.8], [3.0, 1.8], [3.0, 3.8], [3.8, 3.8]], WON);
-    const m = await flow(tok, [[-2.7, 1.8], [-1.0, 1.8], [2.3, 1.8], [3.0, 1.8], [3.0, 3.8], [3.8, 3.8]], 'jaddr', CC.gold, 1300); kill(m);
+    // the packet runs on the wires between the boxes and is hidden while it passes through them (their names stay readable)
+    for (const [pts, ms] of [[[[-2.45, 1.8], [-1.95, 1.8]], 300], [[[-0.85, 1.8], [-0.05, 1.8]], 350], [[[2.45, 1.8], [3.0, 1.8], [3.0, 3.8], [3.6, 3.8]], 650]]) { const m = await flow(tok, pts, 'jaddr', CC.gold, ms); kill(m); }
   },
   async (tok, S) => {   // 10 第一個 mux / 第二個 mux
     cap('第一個 mux：PC + 4（sequential）或 branch', '第二個 mux：前面的結果或 jump target');

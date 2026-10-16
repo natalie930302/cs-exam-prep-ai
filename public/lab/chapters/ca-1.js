@@ -1680,7 +1680,7 @@ scene('nuA-2a-ic', '50 年代商品化、IBM、Integrated Circuit', [
   },
   async (tok, S) => { // 550.0 single semiconductor
     S.chip = bx('IC chip：全部做在一塊半導體上', NC.metal, 3.6, 4.0, 0, 3.4, 0.4, 1.6);
-    for (const m of S.dc) { const x0 = m.position.x; await slide(tok, m, 3.0 + (x0 + 5.4) * 0.3, 4.4, 0, 160); m.scale.set(0.35, 0.35, 0.35); }
+    for (const m of S.dc) { const x0 = m.position.x; await slide(tok, m, 3.0 + (x0 + 5.4) * 0.3, 4.8, 0, 160); m.scale.set(0.35, 0.35, 0.35); }
     cap('IC：transistor、電阻、電容', '全部做在一個 single semiconductor 上');
   },
   async (tok, S) => { // 571.5 shrink

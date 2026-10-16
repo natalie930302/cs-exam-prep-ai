@@ -2636,7 +2636,7 @@ FRAG.push(['dl-f-limits', 'Safe sequence 不唯一；Banker 的限制', async (t
   let row = [];
   await step(tok); // @1319.0 不唯一：P3 也可以更早
   row = order.map((p, k) => bx(p, PCOL[Number(p[1]) - 1], -4.4 + k * 2.2, 0.35, -1.2, 1.6, 0.6, 0.9));
-  const alt = ['P2', 'P4', 'P3', 'P5', 'P1'].map((p, k) => bx(p, PCOL[Number(p[1]) - 1], -4.4 + k * 2.2, 0.35, 1.0, 1.6, 0.6, 0.9, 2));
+  const alt = ['P2', 'P4', 'P3', 'P5', 'P1'].map((p, k) => bx(p, PCOL[Number(p[1]) - 1], -4.4 + k * 2.2, 0.35, 1.0, 1.6, 0.6, 0.9));   // no drop: falling from above, its names crossed the first row's
   glow(alt[2], GOLD);
   idx('也可以：P2 → P4 → P3 → …（P4 之後 Work (7,4,3) ≥ P3 的 (6,0,0)）', 0, -0.4, 2.2);
   cap('第一：safe sequence 不是唯一的', '例如 P3 也可以排更前面');

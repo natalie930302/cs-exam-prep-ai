@@ -177,18 +177,20 @@ export default function (ctx) {
     mv.kill = () => { mv.cells.flat().forEach(kill); mv.extra.forEach(kill); };
     return mv;
   }
-  // R_t ← R_t − k·R_s : a pink copy of k·(row s) flies onto row t, then row t updates
+  // R_t ← R_t − k·R_s : a pink copy of k·(row s) flies toward row t, then row t updates
   async function rowOp(tok, mv, t, s, k, ms = 1100) {
     if (Math.abs(k) < 1e-12) return;
     mv.glowRow(s, GOLD);
     const gh = [];
+    // the k·(row s) chips ride in the gaps between rows (just past row s → just before row t): on a row they printed over its numbers
+    const sg = Math.sign(mv.Y(t) - mv.Y(s)) || 1, y0 = mv.Y(s) + sg * 0.4 * mv.s, y1 = mv.Y(t) - sg * 0.4 * mv.s;
     for (let j = 0; j < mv.C; j++) {
       const g = lab.box(COL.hot, [mv.s * 0.6, mv.s * 0.6, 0.22]);
       g.add(lab.label(fmt(cl(k * mv.v[s][j])), 'val'));
-      g.position.set(mv.X(j), mv.Y(s), mv.z + 0.42); lab.world.add(g); gh.push(g);
+      g.position.set(mv.X(j), y0, mv.z + 0.42); lab.world.add(g); gh.push(g);
     }
     await W(tok, ms * 0.35);
-    gh.forEach((g, j) => move(g, mv.X(j), mv.Y(t), mv.z + 0.42));
+    gh.forEach((g, j) => move(g, mv.X(j), y1, mv.z + 0.42));
     await W(tok, ms * 0.45);
     gh.forEach(kill);
     for (let j = 0; j < mv.C; j++) mv.set(t, j, mv.v[t][j] - k * mv.v[s][j]);
@@ -1653,6 +1655,7 @@ scene('mx-l20-cramer', "L20：Cramer's rule xⱼ = det Bⱼ / det A", [
   (tok, S) => { sm('x₂ = det(B₂) / det A', 2.4, 3.2); cap('x₂ 也一樣：det(B₂) / det A', ''); },
   async (tok, S) => {
     S.B1 = mview(CRA, -3.2, 1.3, { name: 'B₁：第 1 行換成 b', s: 0.8 }); S.B1.glowCol(0, GOLD);
+    [0, 1].forEach((i) => txt(S.B1.cells[i][0].userData.lbl, ''));   // the column empties while b's numbers fly in (no two numbers on one cell)
     await Promise.all([0, 1].map((i) => ghostFly(tok, CRb[i], S.b.X(0), S.b.Y(i), S.B1.X(0), S.B1.Y(i), 900, 0.5, COL.b)));
     [0, 1].forEach((i) => S.B1.set(i, 0, CRb[i]));
     cap('B₁ = 把 A 的第 1 行換成 b', '其他行不變');

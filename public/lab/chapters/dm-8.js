@@ -3141,6 +3141,8 @@ scene('g8a-petersen', 'Petersen graph 不是 planar', [
   async (tok, S) => {
     S.p.E.forEach((e) => e.show(false)); S.d3.forEach(kill);
     const ks = Object.keys(PET0);
+    // the names fade while the points glide (paths cross, and letters passing over each other are unreadable); petDraw brings them back
+    Object.values(S.p.V).forEach((m) => { const l = m.userData.lbl; if (l && l.element) l.element.style.opacity = '0.15'; });
     // H takes a bend to the right so it does not run over G on the way
     await anim(tok, 1500, (u) => ks.forEach((n) => { const [x, z] = lerpP(PET0[n], PET1[n], u); S.p.move(n.toUpperCase(), x + (n === 'h' ? Math.sin(Math.PI * u) * 1.3 : 0), z); }));
     petDraw(S, PET1);

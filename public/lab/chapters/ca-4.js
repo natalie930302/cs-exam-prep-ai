@@ -1134,7 +1134,7 @@ scene('ppA-17b-dst', '17B：要寫哪個 register？destination 也要跟著傳'
   },
   async (tok, S) => { // @1441.4
     glow(S.d.regs[0], null); S.d.cool(); gone(S.t3, S.old, S.nw);
-    S.ins = S.d.chip('add $5, …', 1); S.rd = cube('rd = $5', '#f3d36b', [0.9, 0.36, 0.4], S.d.rx(0), S.d.y - 0.35, 0.45); small(S.rd.userData.lbl, 9);
+    S.ins = S.d.chip('add $5, …', 1); S.rd = cube('rd = $5', '#f3d36b', [0.9, 0.3, 0.4], S.d.rx(0), S.d.y - 0.68, 0.45); small(S.rd.userData.lbl, 9);
     for (let i = 2; i <= 4; i++) {
       await S.d.go(tok, [[S.ins, i]], 450);
       await anim(tok, 300, (u) => { S.rd.position.x = S.d.rx(i - 2) + (S.d.rx(i - 1) - S.d.rx(i - 2)) * u; });

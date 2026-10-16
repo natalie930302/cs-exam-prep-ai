@@ -1965,6 +1965,7 @@ scene('reA-7c-modclass', '7C：congruence modulo n 的 equivalence classes', [
 // 分班（示意：12 個學號）
 const ST = Array.from({ length: 12 }, (_, i) => i + 1);
 const stHome = (s) => [-6.0 + ((s - 1) % 6) * 1.05, 5.4 - Math.floor((s - 1) / 6) * 1.1];
+const fadeNo = (S, on) => ST.forEach((s) => { const l = S.v[s].userData.lbl; if (l && l.element) l.element.style.opacity = on ? '0.2' : ''; });
 scene('reA-7c-class', '7C：分班就是 partition', [
   async (tok, S) => { // @470.1
     S.v = {}; ST.forEach((s) => { S.v[s] = dot(String(s), ...stHome(s)); }); S.n = note('示意：老師說全班 174 人，這裡用 12 個學號', -3.4, 6.6);
@@ -1972,14 +1973,19 @@ scene('reA-7c-class', '7C：分班就是 partition', [
   },
   async (tok, S) => { // @487.7
     const to = (s) => [-6.0 + Math.floor((s - 1) / 2) * 1.0, s % 2 ? 3.4 : 1.9];
+    // the numbers fade while the dots cross each other's paths, and come back in their new rows
+    fadeNo(S, true);
     await anim(tok, 1200, (u) => ST.forEach((s) => { const a = stHome(s), b = to(s); S.v[s].position.set(a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, 0); }));
+    fadeNo(S, false);
     ST.forEach((s) => paint(S.v[s], BLK[s % 2])); S.lb = [sm('mod 2 = 1（單號）', -6.6 + 3.4, 4.0), sm('mod 2 = 0（雙號）', -6.6 + 3.4, 1.3)];
     S.B.add('單雙號：學號 mod 2 是 0 還是 1 → 兩班'); cap('單雙號分兩班', 'mod 2');
   },
   async (tok, S) => { // @491.3
     gone(S.lb); const to = (s) => [-6.0 + Math.floor((s - 1) / 3) * 1.0, 3.9 - md(s, 3) * 1.25];
     const fr = ST.map((s) => S.v[s].position.clone());
+    fadeNo(S, true);
     await anim(tok, 1200, (u) => ST.forEach((s, i) => { const b = to(s), sw = Math.sign(b[1] - fr[i].y) * 0.45 * Math.sin(Math.PI * u); S.v[s].position.set(fr[i].x + (b[0] - fr[i].x) * u + sw, fr[i].y + (b[1] - fr[i].y) * u, 0); }));
+    fadeNo(S, false);
     ST.forEach((s) => paint(S.v[s], BLK[md(s, 3) + 2]));
     S.lb = [0, 1, 2].map((r) => sm('3n' + (r ? '+' + r : ''), -0.7, 3.9 - r * 1.25));
     S.B.add('3n、3n+1、3n+2：mod 3 → 三班'); cap('mod 3 分三班', '');

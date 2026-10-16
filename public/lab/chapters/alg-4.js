@@ -2130,7 +2130,7 @@ FRAG.push(['dp4bari-rel-sets', 'Reliability design：(r, cost) 有序對集合',
     tag('D' + (s + 1) + ' × ' + z.m, 'ptr alt', m.position.x, m.position.y - 0.45, 0.4);
     say('D' + (s + 1) + ' 買 ' + z.m + ' 份', fr(z.prev.r) + ' × ' + fr(1 - Math.pow(1 - RD.r[s], z.m)) + ' = ' + fr(z.r));
     await beat(tok, 2000);
-    if (s > 0) { const pm = cols[s - 1].find((q) => q.userData.z === z.prev); arrow(V3(m.position.x - 0.9, m.position.y, 0.3), V3(pm.position.x + 0.9, pm.position.y, 0.3)); }
+    if (s > 0) { const pm = K.land(cols[s - 1].find((q) => q.userData.z === z.prev)), mp = K.land(m); arrow(V3(mp.x - 0.9, mp.y, 0.3), V3(pm.x + 0.9, pm.y, 0.3)); }
     z = z.prev;
   }
   say('D1×1、D2×2、D3×2', '0.9 × 0.96 × 0.75 = 0.648，\u002430 + 30 + 40 = 100');
@@ -2204,7 +2204,7 @@ function miniTree(spec, cx, yTop, dy, all, s = 0.5) {
   const nd = {};
   for (const [k, dx, d, par] of spec) {
     const x = cx + dx, y = yTop - d * dy;
-    if (par) all.push(line(nd[par].position.x, nd[par].position.y, x, y, 0, LINEC));
+    if (par) { const p = K.land(nd[par]); all.push(line(p.x, p.y, x, y, 0, LINEC)); }
     nd[k] = cube(k, BLUE, [s, s, s], x, y, 0, 0.8); all.push(nd[k]);
   }
   return nd;
@@ -3086,7 +3086,7 @@ FRAG.push(['dp4bari2-rel-merge', '合併 S3 並刪除被支配的', async (tok) 
 FRAG.push(['dp4bari2-rel-back', '回溯：每種裝置買幾份', async (tok) => {
   K.fresh([0, 4.4, 13.5], [0, 3.6, 0]);
   const c1 = setCol('S1', [[0.9, 30], [0.99, 60]], -4.6, 5.6), c2 = setCol('S2', [[0.72, 45], [0.864, 60], [0.8928, 75]], 0, 5.6), c3 = setCol('S3', [[0.36, 65], [0.432, 80], [0.54, 85], [0.648, 100]], 4.6, 5.6);
-  const ar = (a, b) => K.arrow(V3(a.position.x - 0.95, a.position.y, 0.3), V3(b.position.x + 0.95, b.position.y, 0.3), 0x0f5a3a);
+  const ar = (a, b) => { a = K.land(a); b = K.land(b); return K.arrow(V3(a.x - 0.95, a.y, 0.3), V3(b.x + 0.95, b.y, 0.3), 0x0f5a3a); };
   await run(tok, [
     () => { tag('每種裝置該買幾份？', 'say', 0, 7.2); say('答案 (0.648, 100)：每種買幾份？'); },
     () => { glow(c3[3], GREEN); tag('D3 × 2', 'ptr alt', 4.6, 2.6); say('(0.648, 100) 是 D3 買 2 份得到的'); },
@@ -4060,7 +4060,7 @@ FRAG.push(['dp4mit-mario-graph', 'Mario：configuration 圖上的 DP', async (to
   say('每個點：我能做什麼？', '按 A、放 A、按 B、放 B、按方向鍵');
   await step(tok);                                   // 2875.0 constant choices → constant out-degree
   for (let c = 0; c < 4; c++) {
-    N[c].forEach((a, i) => N[c + 1].forEach((b, j) => { if (Math.abs(i - j) <= 1 || N[c].length === 1 || N[c + 1].length === 1) line(a.position.x, a.position.y, b.position.x, b.position.y, 0, Q.sand); }));
+    N[c].forEach((a, i) => N[c + 1].forEach((b, j) => { if (Math.abs(i - j) <= 1 || N[c].length === 1 || N[c + 1].length === 1) { const p = K.land(a), q = K.land(b); line(p.x, p.y, q.x, q.y, 0, Q.sand); } }));
     tag(btn[c], 'idx', (X(c) + X(c + 1)) / 2, 4.9);
     await beat(tok, 300);
   }
@@ -4670,8 +4670,8 @@ FRAG.push(['dp4mit-ddr-admit', 'DDR 的點：note 允許哪些腳位', async (to
   A = [qBox('L← R→', Q.sand, -4.4, 3.9, 1.5, 0.5, 0.3, 1.3), qBox('L→ R←', Q.sand, -4.4, 2.3, 1.5, 0.5, 0.3, 1.3)];
   G = qGrid(5, 5, 0.5, 0.5, 0, 3.1, Q.teal, null, 0.32);
   B = [qBox('L↑ R↓', Q.sand, 4.4, 3.9, 1.5, 0.5, 0.3, 1.3), qBox('L↓ R↑', Q.sand, 4.4, 2.3, 1.5, 0.5, 0.3, 1.3)];
-  for (const a of A) for (let c = 0; c < 5; c++) for (let r = 0; r < 5; r++) line(a.position.x + 0.75, a.position.y, G.X(c), G.Y(r), 0, Q.sand);
-  for (const b of B) for (let c = 0; c < 5; c++) for (let r = 0; r < 5; r++) line(G.X(c), G.Y(r), b.position.x - 0.75, b.position.y, 0, Q.sand);
+  for (const a of A.map(K.land)) for (let c = 0; c < 5; c++) for (let r = 0; r < 5; r++) line(a.x + 0.75, a.y, G.X(c), G.Y(r), 0, Q.sand);
+  for (const b of B.map(K.land)) for (let c = 0; c < 5; c++) for (let r = 0; r < 5; r++) line(G.X(c), G.Y(r), b.x - 0.75, b.y, 0, Q.sand);
   top('像一個亂掉的 sorting network');
   say('出度很大 → 中間一大片 → 入度很大', '像一個亂掉的 sorting network');
   await step(tok);                                   // 2423.8 notes are constraints
@@ -4744,8 +4744,9 @@ FRAG.push(['dp4mit-ddr-edges', 'DDR 的邊：權重 δ((L,R), (Lj,Rj))', async (
   await step(tok);                                   // 2919.8 left and right after the jump
   cd.hl(1);
   for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
-    arrow(V3(-2.8, A[i].position.y, 0.3), V3(2.8, B[j].position.y, 0.3), Q.gold);
-    ws.push(tag('?', 'idx', -0.6 + j * 1.2, (A[i].position.y * 0.6 + B[j].position.y * 0.4) + 0.2));
+    const ay = K.land(A[i]).y, by = K.land(B[j]).y;
+    arrow(V3(-2.8, ay, 0.3), V3(2.8, by, 0.3), Q.gold);
+    ws.push(tag('?', 'idx', -0.6 + j * 1.2, (ay * 0.6 + by * 0.4) + 0.2));
     glow(A[i], GOLD); glow(B[j], GOLD); await beat(tok, 300); glow(A[i], null); glow(B[j], null);
   }
   say('Lj、Rj：跳完之後左右腳的位置', '對所有 note i+1 允許的 (Lj, Rj)');
@@ -4779,7 +4780,7 @@ FRAG.push(['dp4mit-ddr-dagsp', 'DDR：source、sink 與 DAG 最短路徑', async
   let N = [], s = null, t = null;
   await step(tok);                                   // 3020.8 source and destination nodes
   N = cols.map((n, c) => Array.from({ length: n }, (_, r) => qBox('', Q.sand, X(c), Y(n, r), 0.42, 0.42, 0.3, 1.2)));
-  for (let c = 1; c < 3; c++) N[c].forEach((a) => N[c + 1].forEach((b) => line(a.position.x, a.position.y, b.position.x, b.position.y, 0, Q.sand)));
+  for (let c = 1; c < 3; c++) N[c].forEach((a) => N[c + 1].forEach((b) => { const p = K.land(a), q = K.land(b); line(p.x, p.y, q.x, q.y, 0, Q.sand); }));
   top('起點（source）和終點（destination）呢？');
   say('最後：source 和 destination 怎麼設？');
   await step(tok);                                   // 3031.8 start at the first note, but in which position?
@@ -4792,11 +4793,11 @@ FRAG.push(['dp4mit-ddr-dagsp', 'DDR：source、sink 與 DAG 最短路徑', async
   tag('note 0', 'idx', X(0), 5.4);
   say('加一個 note 0', '讓我們自己選起始站姿');
   await step(tok);                                   // 3062.8 note 0 has every foot position
-  N[0].forEach((a) => N[1].forEach((b) => line(a.position.x, a.position.y, b.position.x, b.position.y, 0, Q.sand)));
+  N[0].forEach((a) => N[1].forEach((b) => { const p = K.land(a), q = K.land(b); line(p.x, p.y, q.x, q.y, 0, Q.sand); }));
   say('note 0 放所有可能的腳位');
   await step(tok);                                   // 3070.8 connected to a source by weight-0 edges
   s = qBox('s', Q.gold, -6.0, 3.2, 0.6, 0.6, 0.4, 1.4);
-  N[0].forEach((m) => line(-6.0, 3.2, m.position.x, m.position.y, 0, Q.gold));
+  N[0].forEach((m) => { const p = K.land(m); line(-6.0, 3.2, p.x, p.y, 0, Q.gold); });
   tag('0', 'idx', -5.2, 4.3);
   say('source s 用權重 0 的邊', '連到 note 0 的每個點');
   await step(tok);                                   // 3077.8 I get to choose my starting position
@@ -4810,7 +4811,7 @@ FRAG.push(['dp4mit-ddr-dagsp', 'DDR：source、sink 與 DAG 最短路徑', async
   say('終點呢？最後一個 note');
   await step(tok);                                   // 3113.8 every node of note n → destination, weight 0
   t = qBox('t', Q.gold, 6.0, 3.2, 0.6, 0.6, 0.4, 1.4);
-  N[3].forEach((m) => line(m.position.x, m.position.y, 6.0, 3.2, 0, Q.gold));
+  N[3].forEach((m) => { const p = K.land(m); line(p.x, p.y, 6.0, 3.2, 0, Q.gold); });
   tag('0', 'idx', 5.2, 4.3);
   say('最後一個 note 的每個點', '用權重 0 的邊連到終點 t');
   await step(tok);                                   // 3128.8 or treat them all as destinations, pick the best
