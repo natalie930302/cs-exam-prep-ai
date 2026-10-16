@@ -92,7 +92,7 @@
     "更重要的是下一章 virtual memory 非常依賴這個 bit：invalid 告訴 OS「這個 page 存在，所以在 page table 裡有，但它現在被 swap 到 disk 上了」。這是最常見的情況。",
     "看例子：早期做法是根據 page number 的長度，先靜態配置整張 page table。page number 只有 3 bits，最多 8 個 page，就先建 8 個 entry。",
     "但程式會長，一開始可能只用了 6 個。所以前面都標 v（valid），最後兩個 6、7 還沒配置，就標 i（invalid）。",
-    "如果 pointer 不小心指到 page 6 或 7，查 page table 時立刻就被擋掉，OS 丟出一個 fault（老師說程式常見的 segmentation fault，這裡其實是 page fault 類的錯誤），阻止這次存取。"
+    "如果 pointer 不小心指到 page 6 或 7，查 page table 時立刻被擋掉：硬體 trap 給 OS（老師補一句「其實這裡是 page fault」，指的是這個 trap），OS 確認是非法存取就終止程式，使用者看到的就是常見的 segmentation fault。"
    ],
    "points": [
     {
@@ -147,14 +147,14 @@
     },
     {
      "t": 755,
-     "text": "PTLR 記錄 table 長度，只配置需要的 entry，超過就擋；而且 length 能精確到 byte，valid bit 只能以 page 為單位。"
+     "text": "PTLR 記錄 table 長度，只配置需要的 entry，超過就擋；老師說 length 能精確到 byte，valid bit 只能以 page 為單位（課本的 PTLR 以 entry 數計，見陷阱）。"
     },
     {
      "t": 984,
      "text": "Valid bit 仍需要：(1) 在長度內的 page 可能被 swap 到 disk；(2) heap、stack 之間可能有沒配置的 page。"
     }
    ],
-   "trap": "length 比 valid bit 精細（到 byte），但兩者都需要。"
+   "trap": "老師的說法是 length 可以精確到 byte、valid bit 只能以 page 為單位，所以兩者都需要。課本的 PTLR 則是記 page table 的長度（有幾個 entry），以 page 為單位擋掉超出範圍的 page number；最後一個 page 裡沒用到的 byte 屬於 internal fragmentation。"
   },
   {
    "title": "Shared pages：reentrant code",

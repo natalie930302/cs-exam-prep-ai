@@ -179,7 +179,7 @@ export default function (ctx) {
   function ringRule(cpl, act, tgt) {
     if (act === 'priv') return cpl === 0 ? [true, '只有 ring 0 能執行 privileged 指令'] : [false, 'ring ' + cpl + ' 執行 privileged 指令 → general protection fault（trap 給 OS）'];
     if (act === 'data') return tgt >= cpl ? [true, '可存取同層或權限更低（號碼更大）的資料'] : [false, 'ring ' + cpl + ' 不能直接碰 ring ' + tgt + ' 的資料'];
-    if (act === 'gate') return [true, '透過 gate（system call / interrupt）進入 ring ' + Math.min(tgt, cpl) + '，入口由 OS 決定'];
+    if (act === 'gate') return tgt <= cpl ? [true, '透過 gate（system call / interrupt）進入 ring ' + tgt + '，入口由 OS 決定'] : [false, 'gate 只能通往同層或權限更高的 ring；要回到 ring ' + tgt + ' 用 return / iret'];
     if (tgt === cpl) return [true, '同一個 ring 內的 jump 可以'];
     return tgt < cpl ? [false, '不能直接 jump 進更高權限的 code，要經 gate'] : [false, 'x86 也不能直接 jump 到較低權限的 code（只能 return / iret 回去）'];
   }
@@ -439,7 +439,7 @@ export default function (ctx) {
     const F = frame.map(([n, c, y]) => cube(n, c, [4, 0.6, 1.4], -1.5, y, 0));
     // the slot names sit left of the stack, so the overflowing input can cover the slots and both stay readable
     F.forEach((m) => { m.userData.lbl.center.set(1, 0.5); m.userData.lbl.position.set(-2.1, 0, 0); });
-    tag('stack 往高位址 ↑', 'idx', -4.8, 3.3, 0);
+    tag('高位址 ↑（stack 往下長，溢位往上蓋）', 'idx', -4.8, 3.3, 0);
     await beat(tok, 2600);
     const pay = [];
     for (let k = 0; k < 3; k++) {
@@ -622,15 +622,16 @@ scene('hv-pros', 'Hypervisor 的優缺點', CAM, [
   },
   async (tok, S) => {                                   // 135 缺點二：較不安全（依賴 host OS）
     S.os = bx('host OS', MC.host, 3.4, 0.4, 1.2, 4.4, 0.6, 1.0);
+    S.t2 = bx('Type 2 hypervisor', MC.vmm, 3.4, 0.95, 1.2, 3.4, 0.5, 0.9);
     bad('② 依賴 host OS → host 有漏洞，VM 也跟著曝險', 3.4, 5.3);
     cap('缺點二：比較不安全', 'hypervisor 依賴 host OS 時，整個系統就暴露在風險中');
   },
   async (tok, S) => {                                   // 143 缺點三：host OS 壞了全倒
-    tint(S.os, MC.red); bad('③ host OS 掛掉 → hypervisor 和上面的 VM 全部掛', 3.4, 6.0);
+    tint(S.os, MC.red); tint(S.t2, MC.red); bad('③ host OS 掛掉 → hypervisor 和上面的 VM 全部掛', 3.4, 6.0);
     cap('缺點三：比較不可靠', 'host OS 一掛，上面的 hypervisor 和 VM 全掛');
   },
   async (tok, S) => {                                   // 150 缺點四：資源受限
-    tint(S.os, MC.host); sm('④ 要跟 host OS 分 CPU、storage → 拿不到全部資源', 3.4, -0.4, 1.6);
+    tint(S.os, MC.host); tint(S.t2, MC.vmm); sm('④ 要跟 host OS 分 CPU、storage → 拿不到全部資源', 3.4, -0.4, 1.6);
     cap('缺點四：資源受限', '要跟 host OS 共用 CPU、storage，拿不到完全控制');
   },
   async (tok, S) => {                                   // 164 缺點五：不是給個人電腦用（影片說法）

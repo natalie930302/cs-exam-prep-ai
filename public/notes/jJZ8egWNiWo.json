@@ -102,7 +102,7 @@
    "points": [
     {
      "t": 272,
-     "text": "TLB 是 page table 的 cache；page table 有很多個、TLB 只有一個，所以要 flush。"
+     "text": "TLB 是 page table 的 cache；每個 process 各有一張 page table、TLB 只有一個，所以 context switch 時要 flush。"
     },
     {
      "t": 288,

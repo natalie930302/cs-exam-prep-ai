@@ -558,10 +558,13 @@ export default function (ctx) {
     if (kind === 0) {
       let a, b, c, d; do { a = rint(-3, 3); b = rint(-3, 3); c = rint(-3, 3); d = rint(-3, 3); } while (a * d - b * c === 0);
       const x = rint(-3, 3), y = rint(-3, 3), e = a * x + b * y, f = c * x + d * y;
-      const ans = '(' + x + ', ' + y + ')';
-      const opts = [...new Set([ans, '(' + y + ', ' + x + ')', '(' + (-x) + ', ' + y + ')', '(' + x + ', ' + (-y) + ')', '(' + (x + 1) + ', ' + y + ')'])].slice(0, 4);
+      const pt = (p, q) => '(' + fmt(p) + ', ' + fmt(q) + ')';
+      const ans = pt(x, y);
+      const opts = [...new Set([ans, pt(y, x), pt(-x, y), pt(x, -y), pt(x + 1, y)])].slice(0, 4);
       if (!opts.includes(ans)) opts[0] = ans;
-      return { q: '解方程組：\n' + a + 'x + ' + b + 'y = ' + e + '\n' + c + 'x + ' + d + 'y = ' + f, opts, ans, why: '代回檢查：' + a + '·' + x + ' + ' + b + '·' + y + ' = ' + e + '，' + c + '·' + x + ' + ' + d + '·' + y + ' = ' + f + '。det = ' + (a * d - b * c) + ' ≠ 0，唯一解。' };
+      const eqs = (p, q, r) => eqStr([p, q, 0, r]);   // "2x − 3y = 5"（係數 0 的項省略）
+      const pr = (n) => (n < 0 ? '(' + fmt(n) + ')' : fmt(n));
+      return { q: '解方程組：\n' + eqs(a, b, e) + '\n' + eqs(c, d, f), opts, ans, why: '代回檢查：' + fmt(a) + '·' + pr(x) + ' + ' + pr(b) + '·' + pr(y) + ' = ' + fmt(e) + '，' + fmt(c) + '·' + pr(x) + ' + ' + pr(d) + '·' + pr(y) + ' = ' + fmt(f) + '。det = ' + fmt(a * d - b * c) + ' ≠ 0，唯一解。' };
     }
     if (kind === 1) {
       const n = pick([4, 5, 6]), r = rint(1, Math.min(3, n - 1));
@@ -576,8 +579,9 @@ export default function (ctx) {
     if (kind === 3) {
       const a = pick([1, 2, 3]), k = pick([2, 3, 4, -2]), b = rint(1, 4), d = rint(1, 9);
       const c = k * a, u22 = d - k * b;
-      const ans = 'L₂₁ = ' + k + '，U₂₂ = ' + u22;
-      return { q: 'A = [' + a + ' ' + b + '; ' + c + ' ' + d + ']，不換列做 A = LU。L₂₁ 與 U₂₂ 是？', opts: [ans, 'L₂₁ = ' + (-k) + '，U₂₂ = ' + u22, 'L₂₁ = ' + k + '，U₂₂ = ' + (d + k * b), 'L₂₁ = ' + c + '，U₂₂ = ' + d], ans, why: 'multiplier ℓ = ' + c + ' ÷ ' + a + ' = ' + k + ' 直接放進 L（正號）；U₂₂ = ' + d + ' − ' + k + '·' + b + ' = ' + u22 + '。E₂₁ 才是 −' + k + '。' };
+      const opt = (l, u) => 'L₂₁ = ' + fmt(l) + '，U₂₂ = ' + fmt(u), pr = (n) => (n < 0 ? '(' + fmt(n) + ')' : fmt(n));
+      const ans = opt(k, u22);
+      return { q: 'A = [' + fmt(a) + ' ' + fmt(b) + '; ' + fmt(c) + ' ' + fmt(d) + ']，不換列做 A = LU。L₂₁ 與 U₂₂ 是？', opts: [ans, opt(-k, u22), opt(k, d + k * b), opt(c, d)], ans, why: 'multiplier ℓ = ' + fmt(c) + ' ÷ ' + fmt(a) + ' = ' + fmt(k) + ' 直接放進 L（正號）；U₂₂ = ' + fmt(d) + ' − ' + pr(k) + '·' + fmt(b) + ' = ' + fmt(u22) + '。E₂₁ 裡放的才是 ' + fmt(-k) + '。' };
     }
     if (kind === 4) {
       const n = pick([100, 200, 300, 1000]);

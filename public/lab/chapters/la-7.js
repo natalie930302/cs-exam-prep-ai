@@ -1328,7 +1328,7 @@ scene('or-l17-examples', 'L17：orthogonal matrix 的例子', [[0, 3.6, 12], [0,
     gone(S.k, S.rk);
     S.rot(0, true); S.c1.set(S.P(0, 0), S.P(1, 1)); S.c2.set(S.P(0, 0), S.P(1, -1)); S.c1.label('(1, 1)', 'ptr'); S.c2.label('(1, −1)', 'ptr alt');
     txt(S.m, 'Q = [ 1   1 ]\n    [ 1  −1 ]');
-    cap('Q = [1 1; 1 −1]：columns 垂直，但不是單位長', '');
+    cap('例 3：Q = [1 1; 1 −1]', 'columns 垂直，但長度不是 1');
     S.k = ok(Z(dot([1, 1], [1, -1])), 3.6, 3.8, '(1,1)·(1,−1) = 0 ✓'); S.k2 = tag('長度 = √2 ≠ 1 ✘', 'bad', 3.6, 3.1);
   },
   async (tok, S) => {
@@ -1348,7 +1348,7 @@ scene('or-l17-examples', 'L17：orthogonal matrix 的例子', [[0, 3.6, 12], [0,
     S.H = [[1, 1, 1, 1], [1, -1, 1, -1], [1, 1, -1, -1], [1, -1, -1, 1]];
     S.cells = S.H.map((r, i) => r.map((v, j) => cube(v > 0 ? '+1' : '−1', v > 0 ? C.a : C.b, [1, 0.3, 1], -1.65 + j * 1.1, 0.15, -1.65 + i * 1.1)));
     hd('[1 1; 1 −1] 重複，右下取負號', 0, 0.3, 3.0);
-    cap('例 3：把 2×2 的 pattern 長成 4×4', '全是 ±1');
+    cap('例 4：把 2×2 的 pattern 長成 4×4', '全是 ±1');
   },
   async (tok, S) => {
     cap('任兩個 column 的內積：兩正兩負 → 0', '');

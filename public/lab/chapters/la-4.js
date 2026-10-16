@@ -932,7 +932,7 @@ export default function (ctx) {
       await tw(tok, 800, (t) => { c1 = a0 + (a - a0) * t; c2 = b0 + (b - b0) * t; const pts = []; for (let k = 0; k <= 120; k++) { const x = k / 120 * 2 * Math.PI; pts.push(V3(X0 + x * sx, Y0 + (c1 * Math.cos(x) + c2 * Math.sin(x)) * sy, 0)); } comb.geometry.setFromPoints(pts); txt(cl, 'c₁ = ' + c1.toFixed(1) + '、c₂ = ' + c2.toFixed(1)); });
       await beat(tok, 700);
     }
-    say('基底 {cos x, sin x}，dimension = 2', '二階方程 → 2 維；e^{ix}、e^{−ix} 也是一組基底');
+    say('基底 {cos x, sin x}，dimension = 2', '二階方程 → 2 維；eⁱˣ、e⁻ⁱˣ 也是一組基底');
     await beat(tok, 3200);
   }
   async function scRankOne(tok) {
@@ -3295,8 +3295,8 @@ scene('vsB-l11-ode', 'L11：y″ + y = 0 的解空間', [
     cap('y = sin x 也是解', '');
   },
   async (tok, S) => { // @932
-    S.ei = note('e^{ix} 也是解，但 e^{ix} = cos x + i sin x，本來就在裡面', 0, 0.9);
-    cap('e^{ix} 也是解', '但它已經是 cos 和 sin 的組合');
+    S.ei = note('eⁱˣ 也是解，但 eⁱˣ = cos x + i sin x，本來就在裡面', 0, 0.9);
+    cap('eⁱˣ 也是解', '但它已經是 cos 和 sin 的組合');
   },
   async (tok, S) => { // @945
     gone(S.ei); hot('解的集合 = 這個微分方程的 null space', 0, 0.9);
@@ -3323,8 +3323,8 @@ scene('vsB-l11-ode', 'L11：y″ + y = 0 的解空間', [
     cap('基底裡有幾個？2 個', '解空間是 2 維');
   },
   async (tok, S) => { // @1112
-    txt(S.b, '另一組基底：{ e^{ix}, e^{−ix} }');
-    cap('基底不只一組', 'e^{ix}、e^{−ix} 也是一組基底');
+    txt(S.b, '另一組基底：{ eⁱˣ, e⁻ⁱˣ }');
+    cap('基底不只一組', 'eⁱˣ、e⁻ⁱˣ 也是一組基底');
   },
   async (tok, S) => { // @1157
     bub('它們看起來是「函數」，但能相加、能乘常數 → 就能當向量', 0, 7.0);
@@ -3687,7 +3687,7 @@ scene('vsB-l12-graph', 'L12：一張圖、4 個節點、5 條有方向的邊', [
   async (tok, S) => { // @242
     gone(S.rods, S.nb); S.G = drawG();
     sm(EDGES.map(([s, t]) => (s + 1) + '→' + (t + 1)).join('、'), 2.6, 3.6);
-    cap('每條邊給一個方向（箭頭）', '1→2、1→3、2→3、1→4、3→4');
+    cap('每條邊給一個方向（箭頭）', 'e1：1→2、e2：2→3、e3：1→3、e4：1→4、e5：3→4');
   },
   async (tok, S) => { // @264
     note('順著箭頭算 +、逆著箭頭算 −；方向是隨便指定的', 2.6, 2.8);
@@ -4504,9 +4504,10 @@ scene('vsB-l13-cd', 'L13：B = C D：C 可逆，不改變 null space', [
     cap('先看前面那個方陣 C：可逆嗎？', '');
   },
   async (tok, S) => { // @1714
-    S.C.clearGlow(); S.C.col(2, GOLD);
-    sm('第 3 欄 (0,0,1)：其他欄在那個位置都是 0 → 它一定要用到', 2.4, 4.9);
-    cap('看第 3 欄：在一個別人都是 0 的位置有 1', '組合成 0 不能用到它');
+    S.C.clearGlow(); S.C.col(1, GOLD); glow(S.C.c[1][1], GREEN);
+    const only2 = CC[1][1] !== 0 && CC[1][0] === 0 && CC[1][2] === 0;
+    ok(only2, 2.4, 4.9, '第 2 欄 (1,1,0)：第 2 個位置只有它不是 0 → 組合成 0 時不能用到它 ✓');
+    cap('看第 2 欄：第 2 個位置別的欄都是 0，只有它是 1', '組合成 0 就不能用到它；剩下兩欄同理');
   },
   async (tok, S) => { // @1737
     S.C.clearGlow(); ok(det3(CC) !== 0, 2.4, 4.2, 'C 的欄獨立，det C = ' + det3(CC) + ' → 可逆 ✓');

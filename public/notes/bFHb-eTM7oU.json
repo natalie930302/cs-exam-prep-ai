@@ -265,7 +265,7 @@
     "fragmentation 分成兩種：external（外部）和 internal（內部）。",
     "external 照英文解釋就好，意思是「在程式外面」。左邊這些洞都在程式中間，例如 P1 和 P2 中間。",
     "如果現在有一個程式 P4 要執行，卻塞不進任何一個洞——明明有空的地方卻沒辦法擺程式，這就叫 external fragmentation，浪費在任何 process 之外。",
-    "這只會在 variable size 發生。fixed size 大家都切好格子，只要有 process 來，一定找得到一格停進去。",
+    "這只會在 variable size 發生。fixed size 大家都切好格子，只要還有空格、程式又塞得進一格，就停得進去，不會有「洞加起來夠卻放不下」的問題。",
     "internal 則是右邊 fixed partition 會發生的事：每個 process 需要的空間都不一樣。",
     "但 fixed partition 不管，就給你一整格。配給你的空間裡，沒用到的部分就浪費了，這叫 internal fragmentation，就像重型機車佔一整格，別人看了很眼紅。",
     "internal 沒什麼好的解法，唯一辦法是把車位切得更小——這就是下一次要講的 paging 想解決的問題。",

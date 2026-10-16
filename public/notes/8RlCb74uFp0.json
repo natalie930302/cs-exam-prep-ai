@@ -364,7 +364,7 @@
     },
     {
      "t": 835,
-     "text": "但 response time 非常好：輪流做，最多等 process 數 × quantum 就輪到你。"
+     "text": "但 response time 非常好：輪流做，最多等 (n − 1) × quantum 就輪到你（n = process 數）。"
     },
     {
      "t": 866,

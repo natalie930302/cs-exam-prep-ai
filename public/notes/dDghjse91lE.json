@@ -189,7 +189,7 @@
     },
     {
      "t": 994,
-     "text": "link 通常自動建立；一定是 one-to-one（不能 broadcast），link 通常是單向的。"
+     "text": "link 通常自動建立；一定是 one-to-one（不能 broadcast），link 通常是單向的（沒有規定）。"
     },
     {
      "t": 1096,

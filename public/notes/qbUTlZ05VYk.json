@@ -211,7 +211,7 @@
     "難點又回到最基本的 user space 和 kernel space。kernel 運作時假設自己在 kernel space（kernel mode），所以它才可以執行 privileged instruction（特權指令，只有 kernel 能執行的指令）。",
     "可是在 VM 裡，這個 guest kernel 對最底層的系統而言，其實是 run 在 user space 的。我們必須騙它，讓它以為自己在 kernel space。",
     "問題來了：當它執行 privileged instruction 時，因為實際上在 user space，這個指令就沒辦法執行，會 fail。所以 VM 不是單純翻譯指令這麼簡單。",
-    "第一代 VM 的解法很快就想到了：還記得 [[interrupt]] 嗎？privileged instruction 在 user space 執行是非法的，電腦會丟出一個 signal，說這是 exception（非法指令）。",
+    "第一代 VM 的解法很快就想到了：還記得 [[interrupt]] 嗎？privileged instruction 在 user space 執行是非法的，CPU 會產生一個 trap，說這是 exception（非法指令）。",
     "這個 interrupt 會先回到下面那個 OS（VM 管理層），由它接到。",
     "它一接到就知道：原來上面那位想執行 privileged instruction，但它在 user space 不能執行。好吧，我知道它是 VM，就在 kernel space 幫它再執行一次，這次就會過了。",
     "所以 VM 能運作的重要概念是：攔截 interrupt，再幫它執行一次。看起來是 user space 做了 kernel space 的事，實際上是下面的人代勞。",

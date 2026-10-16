@@ -254,7 +254,7 @@
   {
    "q": "Static linking 的 binary 為什麼比較大？",
    "opts": [
-    "加了 stub",
+    "把 heap 和 stack 的空間預先放進 binary",
     "Library 的 code 被一起綁進 binary",
     "binary 內多放了 dynamic linking 用的 stub",
     "包含 swap space"

@@ -469,8 +469,11 @@ export default function (ctx) {
         return { q: '以下狀態中，' + S.names[i] + ' 的 Need 是？\n' + body, opts: [ans, vec(S.max[i]), vec(add(S.max[i], S.alloc[i])), vec(av)].filter((v, k, a) => a.indexOf(v) === k).concat([vec(need[(i + 1) % 5])]).filter((v, k, a) => a.indexOf(v) === k).slice(0, 4), ans, why: 'Need = Max − Allocation = ' + vec(S.max[i]) + ' − ' + vec(S.alloc[i]) + ' = ' + ans + '。' };
       }
       const ans = res.safe ? 'safe，例如 ' + res.seq.map((i) => S.names[i]).join(' → ') : 'unsafe';
-      const wrongSeq = 'safe，例如 ' + [0, 1, 2, 3, 4].map((i) => S.names[i]).join(' → ');
-      return { q: '用 Banker\'s safety algorithm 判斷：\n' + body + '\n（Available = Total − ΣAllocation）', opts: [ans, res.safe ? 'unsafe' : wrongSeq, '一定已經 deadlock', 'safe，例如 ' + [4, 3, 2, 1, 0].map((i) => S.names[i]).join(' → ')].filter((v, k, a) => a.indexOf(v) === k), ans,
+      // a distractor sequence must really fail the safety check, or the question would have two right answers
+      const seqOk = (ord) => { let w = av.slice(); for (const i of ord) { if (!le(need[i], w)) return false; w = add(w, S.alloc[i]); } return true; };
+      const cands = [[0, 1, 2, 3, 4], [4, 3, 2, 1, 0], [2, 0, 4, 1, 3], [3, 4, 0, 2, 1], [1, 0, 3, 2, 4], [0, 2, 4, 3, 1]];
+      const wrong = cands.filter((o) => !res.safe || !seqOk(o)).slice(0, 2).map((o) => 'safe，例如 ' + o.map((i) => S.names[i]).join(' → '));
+      return { q: '用 Banker\'s safety algorithm 判斷：\n' + body + '\n（Available = Total − ΣAllocation）', opts: [ans, res.safe ? 'unsafe' : wrong.shift(), '一定已經 deadlock'].concat(wrong).filter((v, k, a) => v && a.indexOf(v) === k).slice(0, 4), ans,
         why: 'Available = ' + vec(av) + '；' + res.steps.filter((s) => s.ok).map((s) => S.names[s.i] + ' 做完 → Work ' + vec(s.after)).join('；') + (res.safe ? '。' : '；之後沒有人的 Need ≤ Work → unsafe。') };
     }
     if (r < 0.5) {
@@ -2560,8 +2563,8 @@ FRAG.push(['dl-f-safety', 'Safety check：P2 → P4 → P5 → P1 → P3', async
   cap('P1 要 A 7 個，只有 3；B 要 4，只有 3；C 要 3，只有 2', '不能 fulfill → P1 先不放進 sequence');
   await step(tok); // @749.9 下一個 P2；若全部都不行 → deadlock
   B.clearHl();
-  const allNo = note('如果所有 process 都 fulfill 不了 → deadlock（unsafe）', -1.5, 0.5, 1.2);
-  cap('接著檢查 P2', '如果每個 process 的 need 都無法 fulfill，就會 deadlock');
+  const allNo = note('如果所有 process 都 fulfill 不了 → unsafe（可能 deadlock）', -1.5, 0.5, 1.2);
+  cap('接著檢查 P2', '如果每個 process 的 need 都無法 fulfill → unsafe（影片說會 deadlock，精確說是「可能」）');
   await step(tok); // @765.2 P2：1 ≤ 3、2 ≤ 3、2 ≤ 2 → 可以
   judge(B, 'Need', 1, need[1], w);
   cap('P2：A 要 1 有 3、B 要 2 有 3、C 要 2 有 2', '可以 fulfill P2 的 remaining need');
@@ -2641,8 +2644,8 @@ FRAG.push(['dl-f-limits', 'Safe sequence 不唯一；Banker 的限制', async (t
   note('考題可能給一個 sequence 問你對不對 → 每一步都驗算', 0, 3.4);
   cap('考題可能問：哪一個是 safe sequence', '要小心設計、逐步驗算');
   await step(tok); // @1340.3 只有沒有任何人能 fulfill 時才 deadlock
-  bad('某一步沒有任何 process 能 fulfill → deadlock（unsafe）', 0, 4.2);
-  cap('某一步沒有人的 need 能 fulfill → deadlock', '只要有一個可以，它就排進 sequence');
+  bad('某一步沒有任何 process 能 fulfill → unsafe（可能 deadlock）', 0, 4.2);
+  cap('某一步沒有人的 need 能 fulfill → unsafe（可能 deadlock）', '只要有一個可以，它就排進 sequence');
   await step(tok); // @1352.5 avoidance：事先 feed Max
   [...row, ...alt].forEach(kill); lab.world.children.filter((o) => o.element).forEach((o) => kill(o));
   hd('Deadlock avoidance：事先 feed Max', 0, 4.6);

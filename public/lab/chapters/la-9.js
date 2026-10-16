@@ -301,7 +301,7 @@ export default function (ctx) {
     av2.glow('#6a4a00');
     say('null space 的 v₂ 被送到 0', 'A = σ₁u₁v₁ᵀ：rank 1 只要一項');
     await beat(tok, 3200);
-    say('SVD 一次給出四個子空間的正交基', 'v₁…v_r｜v_{r+1}…v_n｜u₁…u_r｜u_{r+1}…u_m');
+    say('SVD 一次給出四個子空間的正交基', 'v₁…vᵣ｜vᵣ₊₁…vₙ｜u₁…uᵣ｜uᵣ₊₁…uₘ');
     await beat(tok, 3000);
     void A; void av1;
   }
@@ -360,7 +360,7 @@ export default function (ctx) {
       await anim(tok, 900, (t) => g.set(prev.map((row, i) => row.map((v, j) => v + (next[i][j] - v) * t))));
       const err = d.sig.slice(k).reduce((s, x) => s + x * x, 0);
       txt(cap, 'A_' + k + '：前 ' + k + ' 項');
-      say('加上第 ' + k + ' 項 σ' + k + 'u' + k + 'v' + k + 'ᵀ（σ' + k + ' = ' + f2(d.sig[k - 1]) + '）', '剩下的誤差 ‖A − A_k‖²_F = σ²_{k+1} + … = ' + f2(err) + '（總能量 ' + f2(total) + '）');
+      say('加上第 ' + k + ' 項 σ' + k + 'u' + k + 'v' + k + 'ᵀ（σ' + k + ' = ' + f2(d.sig[k - 1]) + '）', '剩下的誤差 ‖A − Aₖ‖²_F = σ²ₖ₊₁ + … = ' + f2(err) + '（總能量 ' + f2(total) + '）');
       await beat(tok, k <= 2 ? 2400 : 1500);
     }
     say('Eckart–Young：A_k 是所有 rank k 矩陣中最接近 A 的', '存 k 項只要 k(m + n + 1) 個數，不用 mn 個');
@@ -726,7 +726,7 @@ export default function (ctx) {
       const s = [rnd(4, 9), rnd(2, 3), rnd(1, 1), 0].sort((a, b) => b - a), k = rnd(1, 2);
       const err = s.slice(k).reduce((a, x) => a + x * x, 0);
       const ans = String(err);
-      return { q: 'σ = ' + s.join('、') + '。rank ' + k + ' 最佳近似 A_' + k + ' 的 ‖A − A_' + k + '‖²_F = ？', opts: [ans, String(s[k]), String(s.slice(k).reduce((a, x) => a + x, 0)), String(s[0] * s[0])].filter((x, i, a) => a.indexOf(x) === i).concat(['0', '1', '100']).filter((x, i, a) => a.indexOf(x) === i).slice(0, 4), ans, why: 'Eckart–Young：誤差平方 = 捨棄的 σ² 之和 = ' + s.slice(k).map((x) => x + '²').join(' + ') + '。（2-norm 的誤差則是 σ_{k+1}。）' };
+      return { q: 'σ = ' + s.join('、') + '。rank ' + k + ' 最佳近似 A_' + k + ' 的 ‖A − A_' + k + '‖²_F = ？', opts: [ans, String(s[k]), String(s.slice(k).reduce((a, x) => a + x, 0)), String(s[0] * s[0])].filter((x, i, a) => a.indexOf(x) === i).concat(['0', '1', '100']).filter((x, i, a) => a.indexOf(x) === i).slice(0, 4), ans, why: 'Eckart–Young：誤差平方 = 捨棄的 σ² 之和 = ' + s.slice(k).map((x) => x + '²').join(' + ') + '。（2-norm 的誤差則是 σₖ₊₁。）' };
     }
     if (kind === 4) {
       const a = rnd(2, 6), b = rnd(2, 5);
@@ -1053,9 +1053,9 @@ scene('sv-l29-null', 'L29：null space 的部分只補上 0', [
     cap('談兩句 null space', '');
   },
   async (tok, S) => { // @655.4
-    S.vn = ['v_{r+1}', '⋯', 'v_n'].map((t, k) => cube(t, VC.b, [0.8, 1.8, 0.3], -3.4 + k * 0.88, 5.0, 0));
+    S.vn = ['vᵣ₊₁', '⋯', 'v_n'].map((t, k) => cube(t, VC.b, [0.8, 1.8, 0.3], -3.4 + k * 0.88, 5.0, 0));
     sm('null space 的 orthonormal basis', -2.5, 3.85);
-    cap('補上 null space 的基底 v_{r+1} … v_n', 'n − r 維');
+    cap('補上 null space 的基底 vᵣ₊₁ … vₙ', 'n − r 維');
   },
   async (tok, S) => { // @675.2
     S.s = grid([['σ₁', '0', '0', '0'], ['0', 'σ_r', '0', '0'], ['0', '0', '0', '0'], ['0', '0', '0', '0']], 0.9, 5.9, VC.g, 0.55);
@@ -1063,7 +1063,7 @@ scene('sv-l29-null', 'L29：null space 的部分只補上 0', [
     cap('它們在 Σ 上只得到 0', '');
   },
   async (tok, S) => { // @684.3
-    S.u = ['u₁', '⋯', 'u_r', 'u_{r+1}', '⋯', 'u_m'].map((t, k) => cube(t, k < 3 ? VC.d : VC.c, [0.62, 1.8, 0.3], 3.6 + k * 0.62, 5.0, 0));
+    S.u = ['u₁', '⋯', 'u_r', 'uᵣ₊₁', '⋯', 'u_m'].map((t, k) => cube(t, k < 3 ? VC.d : VC.c, [0.62, 1.8, 0.3], 3.6 + k * 0.62, 5.0, 0));
     sm('U：補成 ℝᵐ 的 orthonormal basis', 5.1, 3.85);
     note('V 補成 ℝⁿ、U 補成 ℝᵐ 的 orthonormal basis；null space 完全不是問題', 0, 2.8);
     cap('V、U 都補成整個空間的基底', 'null space 只會配到 0');
@@ -1381,12 +1381,12 @@ scene('sv-l29-four', 'L29：SVD = 四個子空間的正交基', [
     cap('u₁ … u_r：column space 的基底', 'orthonormal basis');
   },
   async (tok, S) => { // @2289.1
-    tint(S.nul.m, VC.b); pl('v_{r+1} … v_n', -3.6, 1.8);
-    cap('v_{r+1} … v_n：null space', '');
+    tint(S.nul.m, VC.b); pl('vᵣ₊₁ … vₙ', -3.6, 1.8);
+    cap('vᵣ₊₁ … vₙ：null space', '');
   },
   async (tok, S) => { // @2305.4
-    tint(S.lnul.m, VC.c); pl('u_{r+1} … u_m', 3.6, 1.8);
-    cap('u_{r+1} … u_m：N(Aᵀ)', '左零空間');
+    tint(S.lnul.m, VC.c); pl('uᵣ₊₁ … uₘ', 3.6, 1.8);
+    cap('uᵣ₊₁ … uₘ：N(Aᵀ)', '左零空間');
   },
   async (tok, S) => { // @2335.0
     arrow(VC.k, 0.06).set(V3(-1.9, 4.6, 0), V3(1.9, 4.6, 0)).label('A vᵢ = σᵢ uᵢ', 'ptr');
@@ -1871,7 +1871,7 @@ scene('sv-q3-ode', 'L32：du/dt = Au，A 是反對稱矩陣', [
     cap('3 × 3，形狀很特別', '對角線 0，上方 −1，下方 +1');
   },
   async (tok, S) => { // @311.9
-    pl('u(t) = c₁e^{λ₁t}x₁ + c₂e^{λ₂t}x₂ + c₃e^{λ₃t}x₃', 1.6, 6.3);
+    pl('u(t) = c₁e^(λ₁t)x₁ + c₂e^(λ₂t)x₂ + c₃e^(λ₃t)x₃', 1.6, 6.3);
     cap('一般解：三個純指數解的組合', 'c₁、c₂、c₃ 留給初始條件');
   },
   async (tok, S) => { // @382.5
@@ -1910,8 +1910,8 @@ scene('sv-q3-ode', 'L32：du/dt = Au，A 是反對稱矩陣', [
     cap('λ² = −2', 'λ = ±√2 i');
   },
   async (tok, S) => { // @600.6
-    hot('u(t) = c₁x₁ + c₂e^{√2 i t}x₂ + c₃e^{−√2 i t}x₃', -2.0, 0.6);
-    cap('代回一般解', 'e^{0t} = 1');
+    hot('u(t) = c₁x₁ + c₂e^(√2 i t)x₂ + c₃e^(−√2 i t)x₃', -2.0, 0.6);
+    cap('代回一般解', 'e⁰ᵗ = 1');
   },
 ]);
 
@@ -1926,8 +1926,8 @@ scene('sv-q3-period', 'L32：解不衰減也不爆炸，週期 T = π√2', [
   },
   async (tok, S) => { // @634.5
     await S.mv(tok, 1.4, 1500);
-    S.lb = pl('e^{i√2 t}：大小永遠是 1，在單位圓上繞', 0, 0.3);
-    cap('e^{i√2 t} 的大小是 1', '只是在單位圓上繞');
+    S.lb = pl('e^(i√2 t)：大小永遠是 1，在單位圓上繞', 0, 0.3);
+    cap('e^(i√2 t) 的大小是 1', '只是在單位圓上繞');
   },
   async (tok, S) => { // @651.3
     note('不會爆炸，也不會變成 0', -4.6, 4.8);
@@ -1939,15 +1939,15 @@ scene('sv-q3-period', 'L32：解不衰減也不爆炸，週期 T = π√2', [
   },
   async (tok, S) => { // @709.7
     await S.mv(tok, 2 * Math.PI, 1500);
-    pl('e^{2πi} = 1：繞一整圈回到原點', -4.6, 3.4);
-    cap('e^{2πi} = 1', '繞完一圈就回來');
+    pl('e^(2πi) = 1：繞一整圈回到原點', -4.6, 3.4);
+    cap('e^(2πi) = 1', '繞完一圈就回來');
   },
   async (tok, S) => { // @726.3
     pl('√2 · T = 2π', -4.6, 2.7);
     cap('√2 T = 2π', '');
   },
   async (tok, S) => { // @744.3
-    ok(EAT_OK, -4.0, 2.0, 'T = π√2；程式算 e^{A·π√2} = I');
+    ok(EAT_OK, -4.0, 2.0, 'T = π√2；程式算 e^(A·π√2) = I');
     cap('T = π√2', '所有解都在 T 回到起點');
   },
 ]);
@@ -1991,14 +1991,14 @@ scene('sv-q3-normal', 'L32：特徵向量正交 ⇔ AAᵀ = AᵀA', [
   },
 ]);
 
-scene('sv-q3-expat', 'L32：e^{At} = S e^{Λt} S⁻¹', [
+scene('sv-q3-expat', 'L32：e^(At) = S e^(Λt) S⁻¹', [
   async (tok, S) => { // @954.4
-    hd('怎麼求 e^{At}？', 0, 7.2);
-    cap('矩陣指數 e^{At} 怎麼算？', '');
+    hd('怎麼求 e^(At)？', 0, 7.2);
+    cap('矩陣指數 e^(At) 怎麼算？', '');
   },
   async (tok, S) => { // @990.1
-    pl('u(t) = e^{At} u(0)', 0, 6.3);
-    cap('微分方程的關鍵矩陣', 'u(t) = e^{At} u(0)');
+    pl('u(t) = e^(At) u(0)', 0, 6.3);
+    cap('微分方程的關鍵矩陣', 'u(t) = e^(At) u(0)');
   },
   async (tok, S) => { // @1027.7
     note('如果 A 可以對角化：A = SΛS⁻¹（不一定有足夠的特徵向量！）', 0, 5.5);
@@ -2009,13 +2009,13 @@ scene('sv-q3-expat', 'L32：e^{At} = S e^{Λt} S⁻¹', [
     cap('這個例子特徵向量夠', '');
   },
   async (tok, S) => { // @1053.7
-    hot('e^{At} = S e^{Λt} S⁻¹', 0, 4.0);
-    cap('e^{At} = S e^{Λt} S⁻¹', 'S 在最前面，S⁻¹ 在最後面');
+    hot('e^(At) = S e^(Λt) S⁻¹', 0, 4.0);
+    cap('e^(At) = S e^(Λt) S⁻¹', 'S 在最前面，S⁻¹ 在最後面');
   },
   async (tok, S) => { // @1069.6
-    S.g = grid([['e^{λ₁t}', '0', '0'], ['0', 'e^{λ₂t}', '0'], ['0', '0', 'e^{λ₃t}']], -1.3, 3.0, VC.g, 1.0);
-    ok(EAT_OK, 0, -0.2, '上一題的 A：程式算出 e^{A·π√2} = I（週期 π√2）');
-    cap('e^{Λt}：對角線放 e^{λt}', '');
+    S.g = grid([['e^(λ₁t)', '0', '0'], ['0', 'e^(λ₂t)', '0'], ['0', '0', 'e^(λ₃t)']], -1.3, 3.0, VC.g, 1.0);
+    ok(EAT_OK, 0, -0.2, '上一題的 A：程式算出 e^(A·π√2) = I（週期 π√2）');
+    cap('e^(Λt)：對角線放 e^(λt)', '');
   },
 ]);
 
@@ -3484,7 +3484,7 @@ scene('sv-xy-trunc', '截斷 SVD：最佳 rank-r 近似（Eckart–Young）', [
     const e = fro(madd(XX, msc(Xsum([0, 1]), -1)));
     S.L.add('Eckart–Young（1936）：rank r 的矩陣裡，‖X − X̃‖_F 最小的就是截斷 SVD', 'ptr alt');
     ok(near(e, Math.sqrt(XS[2] ** 2 + XS[3] ** 2)), 5.0, 4.2, '誤差 = √(σ₃² + σ₄²) = ' + f2(e));
-    cap('Eckart–Young 定理', 'argmin_{rank X̃ = r} ‖X − X̃‖_F = ŨΣ̃Ṽᵀ');
+    cap('Eckart–Young 定理', 'argmin over rank X̃ = r ‖X − X̃‖_F = ŨΣ̃Ṽᵀ');
   },
   async (tok, S) => { // @687.4
     const other = Xsum([0, 2]), eo = fro(madd(XX, msc(other, -1))), e = fro(madd(XX, msc(Xsum([0, 1]), -1)));

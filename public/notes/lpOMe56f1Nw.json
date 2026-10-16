@@ -158,7 +158,7 @@
     "最好每個 system call 之間完全沒有交集，每個只做一件事，單純、好 debug、互不干擾。",
     "所以方便的 API 往下常常對到好幾個 system call。例如 fopen 是 API，它背後至少要三四個以上的 system call 才能完成。",
     "還有一個有趣的例子：malloc（要記憶體）和 free（還記憶體），大家都用過，它們是不一樣的 API。",
-    "可是它們 call 的 system call 其實是同一個，叫 brk，只是參數不同（增加或減少）。這就是多對一：為了方便區隔，API 做成兩個 function。",
+    "可是它們 call 的 system call 其實是同一個，叫 brk，只是參數不同（增加或減少）。這就是多對一：為了方便區隔，API 做成兩個 function。（實際上 free 多半只是把空間還給 malloc 管理的 heap，不一定會 call brk；老師用它說明「多對一」的概念。）",
     "所以一對多、多對一、不同 API 對到同一個 system call 都有，沒有限制，看需求。",
     "另一個大差別：call API 並不是 interrupt，它本身不會產生 interrupt；是 API 裡面 call 到 system call 時，才產生 interrupt。",
     "所以 call API 不會進 kernel mode；只有它裡面 call 了 system call，才間接進到 OS 請它完成。",

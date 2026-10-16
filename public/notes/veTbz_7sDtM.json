@@ -384,8 +384,8 @@
    "q": "Peer-to-peer 相較 client-server 最大的優點是？",
    "opts": [
     "沒有 single point of failure",
-    "比較容易建置與管理，不需要協調",
-    "有集中控制，資料一致性較好",
+    "比較容易建置與管理，不需要任何 protocol",
+    "有 server 集中控制，資料一致性較好",
     "server 計算力強，回應時間較穩定"
    ],
    "ans": "沒有 single point of failure",

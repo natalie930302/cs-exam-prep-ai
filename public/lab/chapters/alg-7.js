@@ -6847,11 +6847,11 @@ FRAG.push(['spmit2-r18-newton-6006', 'R18：Newton 法求 ∛6006', async (tok) 
   await step(tok);                                   // 10:08 理由二：Newton 要算的東西好算
   say('理由二：Newton 要算的東西好算', '要算什麼？看公式');
   await step(tok);                                   // 10:23 公式
-  const f = tag('x_{i+1} = x_i ＋ f(x_i) / f′(x_i) ?', 'ptr', 2.6, 0.3, -1.8);
+  const f = tag('xᵢ₊₁ = xᵢ ＋ f(xᵢ) / f′(xᵢ) ?', 'ptr', 2.6, 0.3, -1.8);
   g.talk('抄在小抄上！');
-  say('Newton 公式：從 x_i 算 x_{i+1}', '這條一定要寫在小抄上');
+  say('Newton 公式：從 xᵢ 算 xᵢ₊₁', '這條一定要寫在小抄上');
   await step(tok);                                   // 11:06 是減號
-  txt(f, 'x_{i+1} = x_i − f(x_i) / f′(x_i)');
+  txt(f, 'xᵢ₊₁ = xᵢ − f(xᵢ) / f′(xᵢ)');
   g.mood('wow'); g.talk('是減號！');
   say('是減號，不是加號', '公式抄錯，答案就錯');
   await step(tok);                                   // 11:29 換成 f(x) = x − ∛6006？
@@ -6905,7 +6905,7 @@ FRAG.push(['spmit2-r18-newton-guess', 'R18：quadratic convergence 與初始值'
   say('Newton 保證的是 quadratic convergence', '中文叫二次收斂');
   await step(tok);                                   // 16:15 x_i = x*(1 + ε_i)，誤差每步平方
   tag('x_i = x*(1 + ε_i)', 'ptr', -3, 0.3, -3.5);
-  tag('ε_{i+1} ≈ ε_i²', 'ptr alt', 3, 0.3, -3.5);
+  tag('εᵢ₊₁ ≈ εᵢ²', 'ptr alt', 3, 0.3, -3.5);
   const good = [0.5, 0.25, 0.0625, 0.0039];
   for (let i = 0; i < 4; i++) { s2Bar('ε' + i + ' = ' + good[i], C.ok, good[i] * 4, -5 + i * 1.5, -1.4, 0.8); await beat(tok, 400); }
   say('寫成 x_i = 真答案 × (1 + ε_i)', 'ε = 相對誤差，每一步平方：0.5 → 0.25 → 0.06…');
@@ -6975,9 +6975,9 @@ FRAG.push(['spmit2-r18-integer-land', 'R18：只用整數算 ∛2 到小數 d �
   await step(tok);                                   // 22:50 每步取 floor 也會收斂
   say('每一步都取 floor', '有個漂亮的證明：Newton 還是會收斂');
   await step(tok);                                   // 23:06 b^d 放進根號 → b^{3d}
-  tag('∛(2 · b^{3d}) = ∛2 · b^d', 'ptr alt', 0, 0.3, 3.4);
+  tag('∛(2 · b³ᵈ) = ∛2 · bᵈ', 'ptr alt', 0, 0.3, 3.4);
   g.mood('wow'); g.talk('根號裡要 3d');
-  say('b^d 要放進立方根裡', '要變成 b^{3d}：算 ⌊∛(2 · 10⁶)⌋ = 125');
+  say('b^d 要放進立方根裡', '要變成 b³ᵈ：算 ⌊∛(2 · 10⁶)⌋ = 125');
   await step(tok);                                   // 23:25 最後右移 d 位
   g.mood('happy'); g.talk('兩位精度');
   say('算完把小數點左移 d 位', '就得到 d 位精度的答案');
@@ -6998,7 +6998,7 @@ FRAG.push(['spmit2-r18-first-digit', 'R18：好的初始值與停止條件', asy
   say('數量級對 = 位數對', '花俏一點的說法');
   await step(tok);                                   // 24:49 r 是一位數；答案約 d + 1 位
   tag('r 是 base b 的一位數（0 ≤ r < b）', 'idx', 0, 0.3, -3.6);
-  say('假設 r 是 base b 的一位數', '∛(r · b^{3d}) 大約 d + 1 位');
+  say('假設 r 是 base b 的一位數', '∛(r · b³ᵈ) 大約 d + 1 位');
   await step(tok);                                   // 25:28 1 後面接 d 個 0
   const g0 = tag('初值：1 後面 d 個 0（d = 2 → 100）', 'ptr', 0, 0.3, -2.8);
   g.mood('happy'); g.talk('100');
@@ -7025,7 +7025,7 @@ FRAG.push(['spmit2-r18-first-digit', 'R18：好的初始值與停止條件', asy
   g.mood('wow'); g.talk('什麼時候停？');
   say('依序算 x0、x1、x2 …', '什麼時候停？');
   await step(tok);                                   // 28:10 相鄰兩個一樣就停
-  tag('x_i = x_{i+1} 就停', 'ptr alt', 0, 0.3, 3.4);
+  tag('xᵢ = xᵢ₊₁ 就停', 'ptr alt', 0, 0.3, 3.4);
   g.mood('calm'); g.talk('一樣就停');
   say('某一個近似值和下一個一樣', '就停');
   await step(tok);                                   // 28:19 都是整數，之後永遠一樣
@@ -7049,9 +7049,9 @@ FRAG.push(['spmit2-r18-newton-vs-bs', 'R18：Newton 比 binary search 快在哪'
   g.mood('wow'); g.talk('binary search 呢？');
   say('不用 Newton，改用 binary search？', '也可以：猜一個數，用 g³ 比大小');
   await step(tok);                                   // 29:32 大 R = r · b^{3d}
-  tag('R = r · b^{3d}', 'note', 3.4, 0.3, -4.2);
+  tag('R = r · b³ᵈ', 'note', 3.4, 0.3, -4.2);
   g.mood('calm');
-  say('在 0 到 R 之間猜', '大 R = 小 r · b^{3d}');
+  say('在 0 到 R 之間猜', '大 R = 小 r · b³ᵈ');
   await step(tok);                                   // 30:02 猜 log R 次
   say('binary search 要猜 log R 次', '每猜一次，範圍砍半');
   await step(tok);                                   // 30:50 log r + 3d log b → O(d)

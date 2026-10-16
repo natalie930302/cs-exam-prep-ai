@@ -426,7 +426,7 @@
      "t": 1669.0
     },
     {
-     "text": "例如剩 51 64 34：最小 34 跟 51 交換就結束。",
+     "text": "例如剩 51 64 34：最小 34 跟 51 交換。",
      "t": 1728.54
     },
     {
@@ -1017,7 +1017,7 @@
     "資料量很大時可以多選一些，這叫 sampling（取樣），資料探勘（data mining）常用。",
     "例如 100 萬個數字裡抽 1000 個，先把這 1000 個排序、取中位數，再拿它當 pivot 去排那 100 萬個。"
    ],
-   "trap": "老師在 59:58 說用中位數當 pivot，但「選完中位數就正好排完序」，但正確是中位數可以用 O(n) 的 selection（median of medians）求出，不必先排序；這樣 quick sort 最壞也是 O(n log n)，只是常數大（課本：CLRS 9.3 selection in worst-case linear time）。"
+   "trap": "老師在 59:58 說用中位數當 pivot 時「找到中位數就等於排完序了」；其實中位數可以用 O(n) 的 selection（median of medians）求出，不必先排序，這樣 quick sort 最壞也是 O(n log n)，只是常數大、實務上很少用（課本：CLRS 9.3 selection in worst-case linear time）。"
   },
   {
    "title": "課本例子：每次遞迴的 left、right",
@@ -2212,7 +2212,7 @@
     "64 8 27 0 1 125 216 343 512 729"
    ],
    "ans": "0 1 512 343 64 125 216 27 8 729",
-   "why": "依個位數丟進 bucket 0..9，再從 bucket 0 讀到 9；第三個選項是第二輪（十位數）的結果。"
+   "why": "依個位數丟進 bucket 0..9，再從 bucket 0 讀到 9；「0 1 8 512 216 125 27 729 343 64」是第二輪（十位數）的結果。"
   },
   {
    "q": "External merge 時四個 run 有 2、4、5、15 個 block，最小的 weighted external path length 是？",

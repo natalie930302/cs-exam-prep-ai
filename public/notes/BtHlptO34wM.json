@@ -332,7 +332,7 @@
     "能觸發 [[interrupt]] 的方式很多，但最大的分法就兩種：software 產生的，和 hardware 產生的，兩者處理起來差很多。",
     "hardware 的意思是：由任何 device（鍵盤、硬碟、滑鼠……）產生的，只要不是使用者程式裡的指令產生的，都算 hardware interrupt。",
     "課堂上給 hardware 產生的 interrupt 一個特別的名字：signal（訊號），就像 device 打了一個訊號跟 OS 說「有事要處理了」。",
-    "要特別記住：signal 一定是 hardware 產生的，不可能是 software 產生的，這樣就能清楚區分。"
+    "要特別記住：signal 一定是 hardware 產生的，不可能是 software 產生的，這樣就能清楚區分。（這是課堂的用詞；UNIX 裡的 signal 是另一個東西：kernel 送給 process 的軟體通知，例如 kill 指令送的 SIGKILL。）"
    ]
   },
   {
@@ -344,7 +344,7 @@
     },
     {
      "t": 1152,
-     "text": "第一種：程式錯誤（除以零、segmentation fault），OS 偵測後 throw interrupt 處理，系統不 crash。"
+     "text": "第一種：程式錯誤（除以零、segmentation fault），CPU 偵測到錯誤 → trap 給 OS 處理，系統不 crash。"
     },
     {
      "t": 1250,
@@ -380,7 +380,7 @@
     "第一種情況是「不預期的」：你的程式碼裡有錯誤（error），寫程式時幾乎天天發生。",
     "例如除以 0，或是常見的 segmentation fault（存取了不該碰的記憶體）。",
     "這時原本的程式已經沒辦法繼續執行了。那為什麼整台電腦不會跟著當掉（crash），還能好好印出錯誤訊息？",
-    "因為 OS 偵測到錯誤時，會丟出（throw）一個 [[interrupt]]，由 OS 接手處理：例如把 [[program counter]] 移到印錯誤訊息的地方，不再往下跑。",
+    "因為 CPU 執行到錯誤時會產生一個 software [[interrupt]]（trap），由 OS 接手處理：例如把 [[program counter]] 移到印錯誤訊息的地方，不再往下跑。",
     "又像你的程式去存取別人的記憶體，OS 會把你擋下來，丟一個錯誤訊息給你。這些都是 OS 幫你處理，系統才不會整個掛掉。",
     "第二種情況最常見：[[system call]]，也就是使用者程式請 OS 幫忙做事時呼叫的 OS 介面（API）。",
     "system call 和一般的 [[函式]]呼叫最大的不同：一般 function call 只是把 program counter 跳過去；system call 則一定要透過 interrupt。",
@@ -509,7 +509,7 @@
     "跟剛才一樣，先記下自己目前執行到的位置，然後 [[trap]] 進 OS。",
     "不一樣的是：OS 這邊用的是 switch-case（依編號分流），而不是一個固定的陣列。",
     "為什麼？因為這是軟體，有無限的可能：一個 OS 可以定義 100 個 system call，另一個定義 1000 個，甚至一萬個也行，跟硬體無關。",
-    "也就是說 system call 的數量是 unbounded（沒有上限），不可能像 interrupt vector 那樣做成燒死的固定陣列。",
+    "也就是說 system call 的數量是 unbounded（沒有上限），不可能像 interrupt vector 那樣做成燒死的固定陣列。（恐龍書的說法：trap 本身也是經 interrupt vector 的一格進入 kernel，再用 system call 編號去查 OS 自己的 system-call table；老師強調的是這張表由軟體定義、可以擴充。）",
     "你甚至可以載入（load）一個 [[kernel]] module，就能任意新增新的 system call，靠的就是 switch-case 可以一直加。",
     "每個 system call 都有自己的編號（number），OS 依編號比對，找到對應的 routine 開始執行。",
     "執行完一樣 return，回到剛剛呼叫 system call 的那個程式身上。",
@@ -602,7 +602,7 @@
    "why": "handler 大小不一，所以 vector 只存固定大小（4 bytes）的 pointer。"
   },
   {
-   "q": "System call 的處理為何用 switch-case 而不是固定 array？",
+   "q": "課堂說 system call 用 OS 自己寫的 switch-case（軟體）分派，而不是像 interrupt vector 那樣固定在硬體，原因是？",
    "opts": [
     "system call 是軟體定義的，數量不受硬體限制",
     "switch-case 一定比 array 查表快，可以少一次記憶體存取",

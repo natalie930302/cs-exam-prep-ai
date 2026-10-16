@@ -193,12 +193,12 @@
   {
    "q": "Program 和 process 的差別，何者正確？",
    "opts": [
-    "program 是 disk 上的 passive binary，process 是 memory 中執行的 active entity",
+    "program 在 disk 上、passive；process 在 memory 中執行、active",
     "兩者只是中英文翻譯不同，指的都是存在 disk 上、可以直接被 CPU 執行的 binary 檔",
     "process 存在 disk 上，program 是載入 memory 後實際執行中的 active entity",
     "program 有自己的 program counter"
    ],
-   "ans": "program 是 disk 上的 passive binary，process 是 memory 中執行的 active entity",
+   "ans": "program 在 disk 上、passive；process 在 memory 中執行、active",
    "why": "課堂強調 passive vs active，以及位置 disk vs memory（CPU 只能 access memory）。"
   },
   {

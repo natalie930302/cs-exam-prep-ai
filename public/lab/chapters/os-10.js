@@ -480,7 +480,7 @@ export default function (ctx) {
       return { q: rpm + ' RPM、平均 seek ' + seek + ' ms，忽略傳輸時間，平均 access time？', opts: [...new Set([ans, (seek + 2 * rot).toFixed(2) + ' ms', seek + ' ms', (seek + rot / 2).toFixed(2) + ' ms'])], ans, why: '平均 rotational latency = 半圈 = 60000 ÷ ' + rpm + ' ÷ 2 = ' + rot.toFixed(2) + ' ms。' };
     }
     const qset = [
-      { q: '傳一大塊資料時，哪種方式 CPU 被 interrupt 的次數最少？', opts: ['DMA', 'Interrupt-driven I/O', 'Polling', '三者相同'], ans: 'DMA', why: 'DMA 整塊搬完才 interrupt 一次（polling 雖不 interrupt，但 CPU 一直 busy-wait）。' },
+      { q: '傳一大塊資料時，哪種方式最省 CPU 的時間？', opts: ['DMA', 'Interrupt-driven I/O', 'Polling（busy-waiting）', '三者一樣'], ans: 'DMA', why: 'DMA 由 DMA controller 搬資料，整塊搬完才 interrupt CPU 一次；interrupt-driven 每個字都要 CPU 處理一次 interrupt；polling 則讓 CPU 一直 busy-wait。' },
       { q: 'Sector sparing 與 slipping 比較，何者處理快但會讓 physical 位置不連續？', opts: ['Sector sparing', 'Sector slipping', '兩者都會', '兩者都不會'], ans: 'Sector sparing', why: 'sparing 直接拿 spare 頂替；slipping 要搬動後面所有資料。' },
       { q: '哪種磁碟排程可能造成 starvation？', opts: ['SSTF', 'FCFS', 'C-SCAN', 'C-LOOK'], ans: 'SSTF', why: '一直有靠近 head 的新請求時，遠處的請求永遠輪不到。' },
       { q: 'C-SCAN 相對 SCAN 的好處？', opts: ['等待時間比較平均', '總移動距離一定比較短', '不需要知道方向', '不會走到底'], ans: '等待時間比較平均', why: '只單向服務，兩端的請求不會等特別久。' },
@@ -664,7 +664,7 @@ export default function (ctx) {
   }
   async function scRaidWhy(tok) {
     fresh([0, 5.5, 11.5], [0, 1.2, 0]);
-    say('RAID：用很多便宜硬碟湊起來', 'Redundant Arrays of Inexpensive Disks');
+    say('RAID：用很多便宜硬碟湊起來', 'Redundant Arrays of Inexpensive（課本今稱 Independent）Disks');
     const ds = [];
     for (let i = 0; i < 4; i++) { ds.push(cube('便宜 disk', C.gray, [1.8, 1, 1.2], -4.5 + i * 3, 0.5, -1, 3)); await beat(tok, 300); }
     await beat(tok, 1600);
@@ -1207,8 +1207,8 @@ scene('io-26a-compare', 'LOOK 的缺點與各演算法比較', CAM, [
   },
   async (tok, S) => {                                   // 1090 LOOK 像 SSTF 但沒有 starvation
     glow(S.rows[0], null); glow(S.rows[3], OKG);
-    good('LOOK：像 SSTF，但只往單側 → 解決 starvation', -1.6, 1.6);
-    cap('LOOK 像 SSTF', '但只往單側移動，不會被困住 → 沒有 starvation');
+    good('LOOK：像 SSTF，但一次只往一個方向、到頭才回頭 → 不會 starvation', -1.6, 1.6);
+    cap('LOOK 像 SSTF', '但一次只往一個方向，到最遠的 request 才回頭，不會被困住 → 沒有 starvation');
   },
 ]);
 
@@ -1627,8 +1627,8 @@ scene('io-26b-raidwhy', 'RAID 的目的與三個技巧', CAM, [
   },
   async (tok, S) => {                                   // 1242 ≈ 昂貴硬碟；名稱
     good('≈ 一顆昂貴硬碟的可靠度 / 效能，甚至更好', 0, 2.6, -1);
-    hot('Redundant Arrays of Inexpensive Disks', 0, 5.2);
-    cap('達到跟昂貴硬碟一樣、甚至更好', 'RAID = Redundant Arrays of Inexpensive Disks');
+    hot('Redundant Arrays of Inexpensive（課本：Independent）Disks', 0, 5.2);
+    cap('達到跟昂貴硬碟一樣、甚至更好', 'RAID = Redundant Arrays of Inexpensive Disks（課本今稱 Independent）');
   },
   async (tok, S) => {                                   // 1267 reliability
     S.r1 = bx('目的一：reliability', MC.purple, -3.0, 4.2, 0, 4.4, 0.6, 0.8);

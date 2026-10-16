@@ -446,12 +446,12 @@ export default function (ctx) {
     }
     const items = [
       { q: '哪一個置換演算法可能發生 Belady\'s anomaly？', opts: ['FIFO', 'LRU', 'OPT', '以上皆不會'], ans: 'FIFO', why: 'LRU 和 OPT 是 stack algorithm：n 個 frame 裡的 page 集合永遠是 n + 1 個 frame 的子集合，所以 frame 變多 fault 不會變多。' },
-      { q: 'Thrashing 的主要原因是？', opts: ['process 分到的 frame 少於它的 working set，一直 page fault', 'CPU 太快', 'TLB 太大', 'disk 空間不夠'], ans: 'process 分到的 frame 少於它的 working set，一直 page fault', why: '大家都在等 paging device，CPU 使用率掉下來；OS 若再提高 multiprogramming 反而更糟。解法：working set、PFF、降低 degree of multiprogramming。' },
-      { q: 'fork() 之後使用 copy-on-write，什麼時候才真的複製 page？', opts: ['parent 或 child 要寫入那個 page 時', 'fork() 一呼叫就全部複製', 'child 呼叫 exec() 時', '永遠不複製'], ans: 'parent 或 child 要寫入那個 page 時', why: '一開始共用、標成 copy-on-write；誰先寫就複製一份給誰。只讀的 page 一直共用。' },
-      { q: '選 victim 時 modify（dirty）bit 的用途是？', opts: ['dirty = 0 的 page 不用寫回 disk，少一次 I/O', '決定 page 是否合法', '記錄 page 被參考幾次', '標示 page 是否共用'], ans: 'dirty = 0 的 page 不用寫回 disk，少一次 I/O', why: '沒被改過的 page 在 disk 上的副本還是對的，直接覆蓋即可。' },
+      { q: 'Thrashing 的主要原因是？', opts: ['process 分到的 frame 少於它的 working set，一直 page fault', 'CPU 太快，I/O 跟不上，所以 CPU 一直在等', 'TLB 太小，每次 memory access 都要查 page table', 'disk 的 swap space 不夠，放不下被換出的 page'], ans: 'process 分到的 frame 少於它的 working set，一直 page fault', why: '大家都在等 paging device，CPU 使用率掉下來；OS 若再提高 multiprogramming 反而更糟。解法：working set、PFF、降低 degree of multiprogramming。' },
+      { q: 'fork() 之後使用 copy-on-write，什麼時候才真的複製 page？', opts: ['parent 或 child 要寫入那個 page 時', 'fork() 一呼叫就把所有 page 全部複製', 'child 呼叫 exec() 載入新程式的時候', 'parent 或 child 第一次讀取那個 page 時'], ans: 'parent 或 child 要寫入那個 page 時', why: '一開始共用、標成 copy-on-write；誰先寫就複製一份給誰。只讀的 page 一直共用。' },
+      { q: '選 victim 時 modify（dirty）bit 的用途是？', opts: ['dirty = 0 的 page 不用寫回 disk，少一次 I/O', '判斷這次存取的位址是否合法（valid）', '記錄 page 最近被參考了幾次，供 LFU 使用', '標示 page 是否被多個 process 共用'], ans: 'dirty = 0 的 page 不用寫回 disk，少一次 I/O', why: '沒被改過的 page 在 disk 上的副本還是對的，直接覆蓋即可。' },
       { q: 'Enhanced second-chance 中，最優先被換掉的是 (reference, modify) =？', opts: ['(0, 0)', '(0, 1)', '(1, 0)', '(1, 1)'], ans: '(0, 0)', why: '最近沒用又沒改過：換掉最便宜。順序 (0,0) → (0,1) → (1,0) → (1,1)。' },
       { q: 'Page-fault frequency（PFF）策略中，fault rate 高於上界時怎麼做？', opts: ['多給這個 process frame', '拿走這個 process 的 frame', '換成 FIFO', '關掉 TLB'], ans: '多給這個 process frame', why: '高於上界：frame 不夠，給它更多；低於下界：frame 太多，拿走一些。沒有 free frame 時就暫停某個 process。' },
-      { q: 'Local replacement 和 global replacement 的差別？', opts: ['local 只能換自己的 frame；global 可以搶別的 process 的', 'local 用 LRU、global 用 FIFO', 'local 只用在 kernel', '兩者一樣'], ans: 'local 只能換自己的 frame；global 可以搶別的 process 的', why: 'global 通常 throughput 較好，但一個 process 的 fault rate 會受別人影響。' },
+      { q: 'Local replacement 和 global replacement 的差別？', opts: ['local 只能換自己的 frame；global 可以搶別的 process 的', 'local 用 LRU 選 victim；global 用 FIFO 選 victim', 'global 只能換自己的 frame；local 可以搶別的 process 的', 'local 只換 kernel 的 page；global 只換 user 的 page'], ans: 'local 只能換自己的 frame；global 可以搶別的 process 的', why: 'global 通常 throughput 較好，但一個 process 的 fault rate 會受別人影響。' },
     ];
     return pick(items);
   }
@@ -1379,7 +1379,7 @@ scene('vm-13b-vbit', 'Valid-invalid bit', CAM, [
     cap('pure demand paging 一開始沒有 page 在 memory', '所以所有 bit 都設成 0（i）');
   },
   async (tok, S) => {                                   // 390.4 read/write 權限在 segmentation
-    note('read／write 等 permission：在 segment level 做', -0.6, 1.2);
+    note('read／write 權限：老師說在 segment 層做（page table 也可有 protection bit）', -0.6, 1.2);
     cap('那 read、write 權限呢？', '通常在 segmentation 那層做；paging 只管在 disk 還是 memory');
   },
   async (tok, S) => {                                   // 410.2 swap 到 backing store（swap space）
@@ -3099,8 +3099,8 @@ scene('vm-pf-eat', 'EAT 計算題：91 ms', CAM, [
     cap('page fault overhead', '發生 page fault 時，多做 step 2～6 的額外時間');
   },
   async (tok, S) => {                                   // 560.0 題目數字
-    S.g = [bx('memory access = 100 ms', MC.tlb, -4.0, 3.4, 0, 3.4, 0.55, 0.7), bx('overhead = 10 ms', '#f3c9c9', 0, 3.4, 0, 2.8, 0.55, 0.7), bx('10 次有 1 次 fault → p = 0.1', MC.sand, 4.2, 3.4, 0, 3.6, 0.55, 0.7)];
-    sm('（影片的題目數字）', 0, 2.85);
+    S.g = [bx('memory access 100 ms', MC.tlb, -4.9, 3.4, 0, 3.8, 0.55, 0.7), bx('overhead 10 ms', '#f3c9c9', 0.3, 3.4, 0, 3.0, 0.55, 0.7), bx('p = 1/10 = 0.1', MC.sand, 4.6, 3.4, 0, 3.2, 0.55, 0.7)];
+    sm('（影片自訂的數字；實際上 page fault 遠比 memory access 慢）', 0, 2.85);
     cap('題目：memory access 100 ms、overhead 10 ms', '10 次 access 有 1 次 page fault：p = 1/10');
   },
   async (tok, S) => {                                   // 592.4 代入 (1 − 0.1) × 100

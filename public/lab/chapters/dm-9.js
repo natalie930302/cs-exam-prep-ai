@@ -531,7 +531,7 @@ export default function (ctx) {
       const [a, b] = k.split(',');
       for (const k2 of S) { const [b2, c] = k2.split(','); if (b2 !== b) continue; SR.add(P(a, c)); arrow(V3(pos(0, a).x, 0.9, pos(0, a).z), V3(pos(2, c).x, 0.9, pos(2, c).z), { color: COL.gold }); say(a + ' →R ' + b + ' →S ' + c + ' ⇒ (' + a + ',' + c + ') ∈ S∘R', ''); await beat(tok, 1600); }
     }
-    say('S∘R = {' + [...SR].sort().map((k) => '(' + k + ')').join(',') + '}', '矩陣：M_{S∘R} = M_R ⊙ M_S（Boolean 乘法）');
+    say('S∘R = {' + [...SR].sort().map((k) => '(' + k + ')').join(',') + '}', '矩陣：M(S∘R) = M_R ⊙ M_S（Boolean 乘法）');
     await beat(tok, 3200);
     say('Rⁿ = R∘R∘…∘R：走 n 步可到', 'R 遞移 ⇔ Rⁿ ⊆ R（n ≥ 1）');
     await beat(tok, 3000);
@@ -1692,7 +1692,7 @@ scene('reA-7a-partition', '7A：集合的 partition', [
     S.B.add('i ∈ I，I 是 index set（例：A₁、A₃、A₅，不一定連續）'); cap('用 index set 編號', '');
   },
   async (tok, S) => { // @1237.7
-    S.B.add('① ⋃_{i∈I} Aᵢ = A：全部 union 起來是 A', 'ptr alt'); cap('條件一：union 是原來的集合', '');
+    S.B.add('① ⋃ over i∈I Aᵢ = A：全部 union 起來是 A', 'ptr alt'); cap('條件一：union 是原來的集合', '');
   },
   async (tok, S) => { // @1245.6
     S.B.add('② i ≠ j ⇒ Aᵢ ∩ Aⱼ = ∅：兩兩 disjoint', 'ptr alt'); cap('條件二：兩兩交集是空集合', '');
@@ -2977,7 +2977,7 @@ scene('reB-l20-comp', 'Lec20：合成關係 S∘R 與 Boolean 矩陣乘法', [
     gone(S.d); S.d = lines(['Boolean：0·0 = 0，0·1 = 0，1·1 = 1', '加法用 OR：1 + 1 = 1'], 1.8, 2.2, 0.6); cap('乘法 = AND，加法 = OR', '');
   },
   async (tok, S) => {
-    S.MX = mkM(L20A, L20C, 4.8, 5.8, 0.66, 'M_{S∘R}'); S.MX.blank(); cap('結果是 4×3：列 = A，行 = C', '');
+    S.MX = mkM(L20A, L20C, 4.8, 5.8, 0.66, 'M(S∘R)'); S.MX.blank(); cap('結果是 4×3：列 = A，行 = C', '');
   },
   async (tok, S) => {
     S.MR.hiRow('1'); S.MS.hiCol('x'); S.MX.set('1', 'x', '?', TC.yel);
@@ -3006,7 +3006,7 @@ scene('reB-l20-comp', 'Lec20：合成關係 S∘R 與 Boolean 矩陣乘法', [
   },
   async (tok, S) => {
     let okM = true; for (const p of L20A) for (const r of L20C) { let v = 0; for (const q of L20B) if (L20R.has(kp(p, q)) && L20S.has(kp(q, r))) v = 1; if (v !== (L20SR.has(kp(p, r)) ? 1 : 0)) okM = false; }
-    S.ck = ok(okM, 'M_{S∘R} = M_R ⊙ M_S ✓（和逐對檢查一樣）', 1.8, 0.7); cap('合成關係 = 兩個矩陣的 Boolean 乘法', '');
+    S.ck = ok(okM, 'M(S∘R) = M_R ⊙ M_S ✓（和逐對檢查一樣）', 1.8, 0.7); cap('合成關係 = 兩個矩陣的 Boolean 乘法', '');
   },
   async (tok, S) => {
     S.w = bad('M_S ⊙ M_R：3×3 乘 4×3，對不起來 ✘', 1.8, 0.0); cap('順序：R 在前、S 在後，不能顛倒', '');
@@ -3024,15 +3024,15 @@ scene('reB-l20-power', 'Lec20：R on A、M_R 是方陣、R² 與 R³ 的矩陣',
   async (tok, S) => { S.M1 = mkM(L20A, L20A, -2.2, 5.9, 0.58, 'M_R'); S.M1.load(L20Q); cap('列、行都是 A：n × n 的方陣', ''); },
   async (tok, S) => { S.d = pl('R 可以和自己合成：R∘R = R²', 1.6, 2.3); cap('R 自己跟自己合成', ''); },
   async (tok, S) => {
-    S.M2 = mkM(L20A, L20A, 1.0, 5.9, 0.58, 'M_{R²}'); S.M2.load(pow(L20Q, 2));
+    S.M2 = mkM(L20A, L20A, 1.0, 5.9, 0.58, 'M(R²)'); S.M2.load(pow(L20Q, 2));
     let okM = true; for (const i of L20A) for (const j of L20A) { const v = L20A.some((q) => L20Q.has(kp(i, q)) && L20Q.has(kp(q, j))); if (v !== pow(L20Q, 2).has(kp(i, j))) okM = false; }
-    S.c2 = ok(okM, 'M_{R²} = M_R ⊙ M_R ✓', 1.6, 1.6); cap('M_{R²} = M_R ⊙ M_R', '');
+    S.c2 = ok(okM, 'M(R²) = M_R ⊙ M_R ✓', 1.6, 1.6); cap('M(R²) = M_R ⊙ M_R', '');
   },
   async (tok, S) => {
-    S.M3 = mkM(L20A, L20A, 4.2, 5.9, 0.58, 'M_{R³}'); S.M3.load(pow(L20Q, 3));
-    S.c3 = pl('R 連續合成三次：M_{R³} = M_R ⊙ M_R ⊙ M_R', 1.6, 0.9); cap('合成三次 = 矩陣的三次方', '');
+    S.M3 = mkM(L20A, L20A, 4.2, 5.9, 0.58, 'M(R³)'); S.M3.load(pow(L20Q, 3));
+    S.c3 = pl('R 連續合成三次：M(R³) = M_R ⊙ M_R ⊙ M_R', 1.6, 0.9); cap('合成三次 = 矩陣的三次方', '');
   },
-  async (tok, S) => { S.c4 = note('簡寫：Rⁿ = R 自己合成 n 次，M_{Rⁿ} = M_R^[n]', 1.6, 0.2); cap('記號：R 的 n 次方', ''); },
+  async (tok, S) => { S.c4 = note('簡寫：Rⁿ = R 自己合成 n 次，M(Rⁿ) = M_R^[n]', 1.6, 0.2); cap('記號：R 的 n 次方', ''); },
 ]);
 
 // ── transitive ⇔ Rⁿ ⊆ R ──
@@ -3269,7 +3269,7 @@ scene('reB-l21-paths', 'Lec21：路徑、長度，R² = 剛好長度 2，R³ = �
     S.g.paint(); S.g.path(['D', 'C', 'B'], TC.orange); txt(S.d, '(D, B) ∈ R²：D→C→B'); txt(S.d2, 'R² 的 1 = 長度 2 的路徑');
     S.ck = ok(G72.has('D>B'), '(D, B) 在 R² 裡 ✓', 2.6, 4.8); cap('D 有長度 2 的路到 B', '');
   },
-  async (tok, S) => { gone(S.d, S.d2, S.ck, S.t); S.g.paint(); S.M = M7('M_{R²}：走剛好兩步'); S.M.blank(); cap('用「走兩步」來寫 R² 的矩陣', ''); },
+  async (tok, S) => { gone(S.d, S.d2, S.ck, S.t); S.g.paint(); S.M = M7('M(R²)：走剛好兩步'); S.M.blank(); cap('用「走兩步」來寫 R² 的矩陣', ''); },
   async (tok, S) => { S.M.hiRow('A', TC.yel); await wt(tok, 500); S.M.load(new Set()); for (const r of V7.slice(1)) for (const c of V7) S.M.set(r, c, null); S.d = pl('A：' + rowTxt(G72, 'A') + '（沒有人跟它有關係）', 2.5, 2.0); cap('A 兩步可以到哪？沒有', ''); },
   async (tok, S) => { for (const c of V7) S.M.set('B', c, G72.has(kp('B', c)) ? 1 : 0); txt(S.d, 'B：' + rowTxt(G72, 'B') + '（B 沒有路出去）'); S.g.vcol('B', TC.hot); cap('B 沒有路出去', ''); },
   async (tok, S) => {
@@ -3293,7 +3293,7 @@ scene('reB-l21-paths', 'Lec21：路徑、長度，R² = 剛好長度 2，R³ = �
     txt(S.d, 'G：' + rowTxt(G72, 'G') + '（G→F→F、G→F→D）'); S.ck = ok(said && bm, '和 M_R ⊙ M_R 一樣、和老師逐列講的一樣 ✓', 2.5, 1.3); cap('G 兩步到 F、到 D', '');
   },
   async (tok, S) => {
-    gone(S.ck, S.M); S.g.paint(); S.M = M7('M_{R³}：走剛好三步'); S.M.blank(); for (const a of 'ABC') for (const c of V7) S.M.set(a, c, G73.has(kp(a, c)) ? 1 : 0);
+    gone(S.ck, S.M); S.g.paint(); S.M = M7('M(R³)：走剛好三步'); S.M.blank(); for (const a of 'ABC') for (const c of V7) S.M.set(a, c, G73.has(kp(a, c)) ? 1 : 0);
     txt(S.d, 'A、B、C 走三步：全部 0'); cap('R³：A、B、C 都是 0', '');
   },
   async (tok, S) => { for (const c of V7) S.M.set('D', c, G73.has(kp('D', c)) ? 1 : 0); txt(S.d, 'D：一步、兩步之後就走不動 → 0'); cap('D 三步：沒有', ''); },
@@ -3306,7 +3306,7 @@ scene('reB-l21-paths', 'Lec21：路徑、長度，R² = 剛好長度 2，R³ = �
   async (tok, S) => {
     S.g.paint(); S.M.load(G73, new Set(rowOf(G73, V7, 'G').map((b) => kp('G', b))));
     const said = Object.keys(SAID_R3).every((a) => rowOf(G73, V7, a).join('') === SAID_R3[a]);
-    txt(S.d, 'G：' + rowTxt(G73, 'G') + '（自己找找看）'); S.ck = ok(said && same(G73, comp(G72, G7)), 'M_{R³} = M_{R²} ⊙ M_R ✓', 2.5, 1.3); cap('G 也可以透過 F 到一些地方', '');
+    txt(S.d, 'G：' + rowTxt(G73, 'G') + '（自己找找看）'); S.ck = ok(said && same(G73, comp(G72, G7)), 'M(R³) = M(R²) ⊙ M_R ✓', 2.5, 1.3); cap('G 也可以透過 F 到一些地方', '');
   },
   async (tok, S) => { gone(S.ck); txt(S.d, 'R²：剛好長度 2 的路；R³：剛好長度 3 的路'); cap('這就是合成的具體意義', ''); },
 ]);
@@ -3321,7 +3321,7 @@ scene('reB-l21-tclo', 'Lec21：遞移閉包：所有到得了的地方都拉一�
     S.g.paint(); S.g.col('G', 'D', TC.green); S.g.path(['D', 'C'], TC.orange); S.g.add('G', 'C', TC.green);
     S.d2 = pl('加了 G→D，又有 G→D→C → 再補 G→C…要一直重複', 2.6, 5.5); cap('加上去的線也要考慮：一直重複', '');
   },
-  async (tok, S) => { S.f = hot('R* = R ∪ R² ∪ R³ ∪ … = ⋃_{i=1}^{∞} Rⁱ', 2.6, 4.7); cap('遞移閉包 = 所有 Rⁱ 聯集起來', ''); },
+  async (tok, S) => { S.f = hot('R* = R ∪ R² ∪ R³ ∪ … = ⋃ᵢ₌₁^∞ Rⁱ', 2.6, 4.7); cap('遞移閉包 = 所有 Rⁱ 聯集起來', ''); },
   async (tok, S) => { S.g.paint(); S.g.path(['G', 'F', 'D', 'C', 'B'], TC.orange); S.d3 = pl('G→F→D→C→B 長度 4：也要補 G→B', 2.6, 3.9); cap('不管這條路多長，到得了就補', ''); },
   async (tok, S) => {
     S.g.paint(); minus(G7T, G7).forEach((k) => { const [a, b] = k.split('>'); S.g.add(a, b, TC.green); });
@@ -3329,9 +3329,9 @@ scene('reB-l21-tclo', 'Lec21：遞移閉包：所有到得了的地方都拉一�
   },
 ]);
 
-const BCODE = ['A := M_R；B := A', 'for i := 2 to n:', '  A := A ⊙ M_R    // 長度 i', '  B := B ∨ A      // 聯集', 'return B         // = M_{R*}'];
+const BCODE = ['A := M_R；B := A', 'for i := 2 to n:', '  A := A ⊙ M_R    // 長度 i', '  B := B ∨ A      // 聯集', 'return B         // = M(R*)'];
 scene('reB-l21-brute', 'Lec21：路徑、cycle、connected 的名詞；照定義算遞移閉包', [
-  async (tok, S) => { S.g = g7(); S.t = hd('長度 n 的路徑：a→x₁→x₂→…→x_{n−1}→b', 0.8, 7.0); S.d = pl('共 n 個有序對，長度就是 n', 2.6, 6.2); cap('長度為 n 的路徑', ''); },
+  async (tok, S) => { S.g = g7(); S.t = hd('長度 n 的路徑：a→x₁→x₂→…→xₙ₋₁→b', 0.8, 7.0); S.d = pl('共 n 個有序對，長度就是 n', 2.6, 6.2); cap('長度為 n 的路徑', ''); },
   async (tok, S) => { txt(S.d, 'directed graph（有向圖）、edge（邊）、path（路徑）'); cap('名詞：有向圖、邊、路徑', ''); },
   async (tok, S) => { S.g.path(['F', 'F'], TC.orange); S.d2 = pl('從自己出發、回到自己：cycle（圖上只有 F→F）', 2.6, 5.5); cap('從自己走回自己：cycle', ''); },
   async (tok, S) => {
@@ -3352,7 +3352,7 @@ scene('reB-l21-brute', 'Lec21：路徑、cycle、connected 的名詞；照定義
   async (tok, S) => { gone(S.g, S.d, S.d2, S.d3, S.t); S.c = code(BCODE, -4.6, 6.4, 0.6); S.c.hl(0); cap('最簡單的演算法：照定義', ''); },
   async (tok, S) => { S.c.hl(2); S.d = pl('Boolean 乘法：1 + 1 = 1', -3.6, 2.6); cap('矩陣乘法裡 1 + 1 = 1', ''); },
   async (tok, S) => { S.c.hl(3); S.d2 = pl('∨（join）：兩個矩陣對應格子做 OR', -3.6, 1.9); cap('聯集 = 對應格子 OR 起來', ''); },
-  async (tok, S) => { S.c.hl(2); S.M = M7('i = 2：B = M_R ∨ M_{R²}', 1.6, 6.5); S.M.load(uni(G7, G72), minus(G72, G7)); cap('i = 2：加進長度 2 可以到的', ''); },
+  async (tok, S) => { S.c.hl(2); S.M = M7('i = 2：B = M_R ∨ M(R²)', 1.6, 6.5); S.M.load(uni(G7, G72), minus(G72, G7)); cap('i = 2：加進長度 2 可以到的', ''); },
   async (tok, S) => {
     S.c.hl(4); let A = new Set(G7), B = new Set(G7); for (let i = 2; i <= 7; i++) { A = comp(A, G7); B = uni(B, A); }
     S.M.load(B, minus(B, G7)); S.ck = ok(same(B, G7REACH), 'i = 3 … 7 做完：B = 遞移閉包 ✓', 3.1, 1.2); cap('一直做到 n：全部找出來', '');

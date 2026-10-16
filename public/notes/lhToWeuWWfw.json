@@ -13,7 +13,7 @@
     },
     {
      "t": 28.68,
-     "text": "程式有兩種執行 mode：user mode 不能直接存取 memory、hardware；kernel mode 可以（privileged mode）。"
+     "text": "程式有兩種執行 mode：user mode 不能直接存取 hardware、也不能碰 OS 或別的程式的 memory（自己的可以）；kernel mode 可以（privileged mode）。"
     },
     {
      "t": 81.12,
@@ -36,7 +36,7 @@
     "這一講介紹 system call（系統呼叫）：它是什麼、拿來做什麼。",
     "system call 提供一個 interface（介面），讓程式能使用作業系統提供的各種 services（服務），例如讀檔、用 I/O、要 memory。",
     "在細講之前，要先懂程式執行時的兩種 mode（模式）：user mode（使用者模式）和 kernel mode（核心模式）。",
-    "在 user mode 執行的程式，不能直接存取 memory、hardware 這類資源。",
+    "在 user mode 執行的程式，不能直接存取 hardware，也不能碰受保護的 memory（OS 或別的程式的；自己程式的變數當然可以讀寫）。",
     "在 kernel mode 執行的程式，則可以直接存取 memory 和 hardware。",
     "因為能直接動很多資源，kernel mode 又叫 privileged mode（特權模式）。",
     "但問題是：在 kernel mode 執行的程式如果 crash，整個系統都會跟著 crash 或停擺。",
@@ -198,9 +198,9 @@
    "q": "複製檔案的例子中，「在螢幕上顯示提示」為什麼需要 system call？",
    "opts": [
     "要存取 monitor 這個 output device（hardware）",
-    "因為要建立新檔案",
+    "因為要先建立一個新檔案來存放提示文字",
     "因為要切換到另一個 process 來負責顯示這段提示",
-    "其實不需要 system call"
+    "其實不需要，user mode 程式可以直接寫螢幕"
    ],
    "ans": "要存取 monitor 這個 output device（hardware）",
    "why": "user mode 程式不能直接碰 hardware，顯示、輸入、讀寫檔案都要透過 system call。"

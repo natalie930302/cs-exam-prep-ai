@@ -2448,7 +2448,7 @@ export default function (ctx) {
           say('level ' + (d + 1) + '：最多 2^(' + (d + 1) + '−1) = ' + c + ' 個', d < 3 ? '每往下一層 ×2' : '第 i 層最多 2^(i−1)');
           await beat(tok, 1800);
         }
-        say('深度 k 最多幾個 node？每層加起來', 'Σ_{i=1..k} 2^(i−1) = 2^k − 1');
+        say('深度 k 最多幾個 node？每層加起來', 'Σ over i=1..k 2^(i−1) = 2ᵏ − 1');
         await beat(tok, 3200);
         say('k = 4：1 + 2 + 4 + 8 = 15', '= 2⁴ − 1 ✓');
         await beat(tok, 3000);
@@ -6293,7 +6293,7 @@ export default function (ctx) {
       cursorTo(cur, B[n - 1].obj.position.clone());
       say('find(' + (n - 1) + ')：自己就是 root，一步', '越往下的 find 越貴');
       await beat(tok, 2000);
-      say('find(0)…find(n−1) 總成本', '<span class="no">Σ_{i=2}^{n} i = O(n²)</span>');
+      say('find(0)…find(n−1) 總成本', '<span class="no">Σᵢ₌₂ⁿ i = O(n²)</span>');
       await beat(tok, 3200);
     } };
 
@@ -9273,8 +9273,8 @@ FRAG.push(['treeb-lemma', 'Lemma 5.2：每層與整棵樹的最大 node 數', as
   tag('max nodes = 2^k − 1', 'good', 0, 0.6, 1.0);
   say('答案：2^k − 1', '');
   await step(tok);                                   // 1726.8 summation
-  tag('Σ_{i=1..k} 2^(i−1)', 'note', 0, 1.4, 1.0);
-  say('就是每層的最大值加起來', 'Σ_{i=1..k} 2^(i−1)');
+  tag('Σ over i=1..k 2^(i−1)', 'note', 0, 1.4, 1.0);
+  say('就是每層的最大值加起來', 'Σ over i=1..k 2^(i−1)');
   await step(tok);                                   // 1748.7 加起來 = 2^k − 1
   tag('k = 4：1 + 2 + 4 + 8 = 15 = 2⁴ − 1', 'ptr alt', 0, 2.2, 1.0);
   say('加起來就是 2^k − 1', 'k = 4：1 + 2 + 4 + 8 = 15');

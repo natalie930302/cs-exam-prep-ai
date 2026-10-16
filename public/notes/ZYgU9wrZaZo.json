@@ -21,7 +21,7 @@
     },
     {
      "t": 219,
-     "text": "File control block（FCB）：存 file 的 metadata（location、size、name…），不是 content；每個 file 一個，像 PCB。Directory structure 描述 tree / acyclic graph。"
+     "text": "File control block（FCB）：存 file 的 metadata（location、size、權限…；UNIX 的檔名記在 directory），不是 content；每個 file 一個，像 PCB。Directory structure 描述 tree / acyclic graph。"
     },
     {
      "t": 284,
@@ -52,7 +52,7 @@
     "裡面存著 booting 需要的 information，例如要開機的 file system 在哪；甚至存最基本的 instruction，不用透過 file system，像 hard code 一樣直接 load 進 memory、讓 CPU 開始跑，再慢慢把整個系統 boot 起來（因為 load 整個 file system 很費工）。",
     "再來是 partition control block。partition 切好之後，要知道它在整顆硬碟上從哪到哪（range）、有多少 space。OS boot 起來後就能知道這個 partition 的範圍、硬碟有幾個 partition。",
     "有了 partition 資訊，接著要知道裡面有哪些 file，靠的是 file control block（FCB，檔案控制區塊）。注意：它不是 file 的 content，只是存 file 的 metadata（描述資料）。",
-    "FCB 存檔案內容實際所在的 location，還有 size、name 等。每個 file 都有一個，就像每個 process 都有一個 process control block。",
+    "FCB 存檔案內容實際所在的 location，還有 size、name 等（補充：UNIX 的 inode 其實不存檔名，檔名記在 directory entry 裡）。每個 file 都有一個，就像每個 process 都有一個 process control block。",
     "除了 file，為了管理這些 file，還有 directory structure，描述那棵 tree 或 acyclic graph 的資訊。這些合起來就是 on-disk 必須存的 structure。",
     "所以當你切完 partition，就會 create 這個 partition control block。",
     "但如果沒有對它 formatting，directory 和 FCB 這兩個就不存在，它就是一個 raw partition（原始分割區）。",
@@ -425,7 +425,7 @@
     "per-process open-file table 的 entry",
     "disk 上該檔案第一個 data block 的位址",
     "superblock 中該檔案的欄位",
-    "boot control block 的 entry"
+    "system-wide open-file table 裡的 FCB"
    ],
    "ans": "per-process open-file table 的 entry",
    "why": "從 entry 得到 permission、position，再指到 system-wide 的 FCB。"

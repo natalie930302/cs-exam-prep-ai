@@ -354,7 +354,7 @@ export default function (ctx) {
   // ───────────────────────── 模式 5：OS 結構 ─────────────────────────
   const STRUCT = {
     mono: { name: 'Monolithic（傳統 UNIX）', crossings: 2, msgs: 0, note: '全部服務都在 kernel 裡：呼叫快，但一個 bug 可能拖垮整個 kernel' },
-    layer: { name: 'Layered', crossings: 2, msgs: 0, note: '第 i 層只用第 i−1 層的服務：好除錯，但每層都要過一次，比較慢' },
+    layer: { name: 'Layered', crossings: 2, msgs: 0, note: '第 i 層只用比它低的層（0 ～ i−1）的服務：好除錯，但要一層層往下，比較慢' },
     micro: { name: 'Microkernel（Mach）', crossings: 4, msgs: 2, note: 'kernel 只留通訊、排程、記憶體；file server 在 user space，用 message passing' },
     module: { name: 'Loadable modules（Linux、Solaris）', crossings: 2, msgs: 0, note: '核心小、模組可在執行時載入；模組之間直接呼叫，像 monolithic 一樣快' },
   };
@@ -437,15 +437,15 @@ export default function (ctx) {
       return { q: '某硬體支援 ' + n + ' 種 interrupt，interrupt vector 每格存一個 32-bit function pointer，vector 共多大？', opts: [n * 4 + ' bytes', n + ' bytes', n * 32 + ' bytes', '不固定，看 handler 程式碼多長'], ans: n * 4 + ' bytes', why: 'vector 只放 function pointer（4 bytes），不放 handler 本身，所以每格大小固定：' + n + ' × 4 = ' + n * 4 + '。' };
     }
     if (r < 0.68) {
-      const q = pick([['哪一層是 CPU 能直接存取的最後一層？', 'main memory', ['main memory', 'cache', 'hard disk', 'SSD']], ['下列何者是 volatile？', 'cache', ['cache', 'SSD', 'hard disk', 'tape']], ['main memory 通常用哪種技術做？', 'DRAM（1 個電晶體，便宜、省電、較慢）', ['DRAM（1 個電晶體，便宜、省電、較慢）', 'SRAM（快但貴）', 'flash', 'tape']], ['real-time system 通常避免使用哪一種儲存？', 'secondary storage（存取時間難掌握）', ['secondary storage（存取時間難掌握）', 'register', 'cache', 'main memory']]]);
+      const q = pick([['哪一層是 CPU 能直接存取的最後一層？', 'main memory', ['main memory', 'cache', 'hard disk', 'SSD']], ['下列何者是 volatile？', 'cache', ['cache', 'SSD', 'hard disk', 'tape']], ['main memory 通常用哪種技術做？', 'DRAM（1 個電晶體，便宜、省電、較慢）', ['DRAM（1 個電晶體，便宜、省電、較慢）', 'SRAM（多個電晶體，快但貴、耗電）', 'flash（non-volatile，斷電資料還在）', 'tape（便宜、容量大，循序存取）']], ['real-time system 通常避免使用哪一種儲存？', 'secondary storage（存取時間難掌握）', ['secondary storage（存取時間難掌握）', 'register（數量太少）', 'cache（容量太小）', 'main memory（容量有限）']]]);
       return { q: q[0], opts: q[2], ans: q[1], why: '儲存階層：越上層越快越貴越小；memory 以上是 volatile；CPU 只能直接讀 memory，secondary storage 要先搬進 memory。' };
     }
     if (r < 0.8) {
-      const q = pick([['哪一種結構把 file system 等服務放在 user space，靠 message passing 溝通？', 'Microkernel'], ['哪一種結構「第 i 層只能用第 i−1 層的服務」？', 'Layered'], ['哪一種結構把所有服務放進同一個大 kernel，效能好但難維護？', 'Monolithic'], ['Linux 可以在執行時載入 driver，屬於哪種設計？', 'Loadable kernel modules']]);
+      const q = pick([['哪一種結構把 file system 等服務放在 user space，靠 message passing 溝通？', 'Microkernel'], ['哪一種結構「第 i 層只能用比它低的層（0 ～ i−1）的服務」？', 'Layered'], ['哪一種結構把所有服務放進同一個大 kernel，效能好但難維護？', 'Monolithic'], ['Linux 可以在執行時載入 driver，屬於哪種設計？', 'Loadable kernel modules']]);
       return { q: q[0], opts: ['Microkernel', 'Layered', 'Monolithic', 'Loadable kernel modules'], ans: q[1], why: 'Microkernel 可靠但 message 多所以慢；layered 好除錯但層層呼叫慢；monolithic 快但耦合高；modules 兼顧彈性與效能。' };
     }
     if (r < 0.9) {
-      return { q: '用 message passing 在同一台電腦的兩個 process 間送一份資料，資料至少被 copy 幾次？', opts: ['2 次（sender → kernel → receiver）', '1 次', '0 次', '看 message 大小'], ans: '2 次（sender → kernel → receiver）', why: '因為 protection，process 不能直接寫別人的 memory，要先 copy 到 kernel 再 copy 給對方；shared memory 建好之後就不用 copy，但要自己處理 synchronization。' };
+      return { q: '用 message passing 在同一台電腦的兩個 process 間送一份資料，資料至少被 copy 幾次？', opts: ['2 次（sender → kernel → receiver）', '1 次（sender 直接寫進 receiver）', '0 次（兩邊共用同一塊 memory）', '3 次（sender → kernel → disk → receiver）'], ans: '2 次（sender → kernel → receiver）', why: '因為 protection，process 不能直接寫別人的 memory，要先 copy 到 kernel 再 copy 給對方；shared memory 建好之後就不用 copy，但要自己處理 synchronization。' };
     }
     const q = pick([['Multiprogramming 的主要目的？', '提高 CPU（資源）使用率', ['提高 CPU（資源）使用率', '縮短 response time、可互動', '保證 deadline', '省電']], ['Time sharing 的主要目的？', '縮短 response time、可互動', ['提高 CPU（資源）使用率', '縮短 response time、可互動', '保證 deadline', '省電']], ['Real-time system 的定義？', '在 deadline 之前完成', ['在 deadline 之前完成', '越快越好', '一次一個 job', '一定要用 GPU']]]);
     return { q: q[0], opts: q[2], ans: q[1], why: 'Multiprogramming 從系統角度（讓 CPU 不 idle）；time sharing 從使用者角度（互動、很多人共用）；real-time 只要求 deadline 前完成。' };
@@ -702,7 +702,7 @@ export default function (ctx) {
   }
   async function scBusyWait(tok) {
     fresh([0, 5.5, 14], [0, 2.2, 0]);
-    const cd = code(['while (*p != EOF) {', '  while (peek(status) == BUSY)', '    ;  // 一直檢查', '  poke(data, *p++);', '}'], -3.4, 5.2, 0.55);
+    const cd = code(['while (*p != \'\\0\') {', '  while (peek(status) == BUSY)', '    ;  // 一直檢查', '  poke(data, *p++);', '}'], -3.4, 5.2, 0.55);
     const cpu = cube('CPU', COL.cpu, [1.8, 1, 1.2], -3.4, 0.5, 0);
     const ctl = cube('controller', COL.os, [2.2, 1, 1.2], 3.8, 0.5, 0);
     const st = tag('status = BUSY', 'ptr', 3.8, 1.6);
@@ -1049,7 +1049,7 @@ export default function (ctx) {
     say('課本：硬體提供 mode bit', '1 = user mode、0 = kernel mode');
     await W(tok, 2600);
     for (const id of ['add', 'io']) { await dualExec(INSTR.find((s) => s.id === id)); say(id === 'add' ? '一般指令：user mode 可以執行' : '特權指令在 user mode → trap 給 OS', id === 'io' ? 'I/O、set timer、關中斷都是特權指令' : ''); await W(tok, 2200); }
-    await dualSys(); say('system call：trap 讓 mode bit 變 0', '進入 kernel 的唯一合法入口'); await W(tok, 2200);
+    await dualSys(); say('system call：trap 讓 mode bit 變 0', 'user program 主動進 kernel 的合法入口'); await W(tok, 2200);
     await dualExec(INSTR.find((s) => s.id === 'io')); say('kernel mode 才能執行特權指令', ''); await W(tok, 2000);
     await dualRet(); say('return 前把 mode bit 設回 1', ''); await W(tok, 2000);
     say('Timer：防止 user program 無窮迴圈霸佔 CPU', '時間到 → interrupt → OS 拿回控制權');
@@ -1097,7 +1097,7 @@ export default function (ctx) {
     say('課本：一個 byte 一個 interrupt，大量資料時太多', '例：搬一個 block 共 8 個 word');
     await W(tok, 2400);
     let n = 0;
-    for (let k = 0; k < 4; k++) { const d = cube('', COL.disk, [0.35, 0.3, 0.4], 5.4, 1.2, 0.8); move(d, -1.4 + (k - 2) * 0.4, 1.2, 0.8); n++; txt(cnt, 'interrupt ' + n + ' 次'); glow(cpu, RED); await W(tok, 450); glow(cpu, null); await W(tok, 200); }
+    for (let k = 0; k < 8; k++) { const d = cube('', COL.disk, [0.35, 0.3, 0.4], 5.4, 1.2, 0.8); move(d, -1.4 + (k - 4) * 0.35, 1.2, 0.8); n++; txt(cnt, 'interrupt ' + n + ' 次'); glow(cpu, RED); await W(tok, 320); glow(cpu, null); await W(tok, 150); }
     say('每個 word 都打斷 CPU 一次', '');
     await W(tok, 1600);
     say('DMA：CPU 只交代「來源、目的、長度」', 'controller 直接把整個 block 搬進 memory');
@@ -2639,7 +2639,7 @@ FRAG.push(['osA-many', 'Many-core：GPGPU 與 SIMD', async (tok) => {
   await step(tok);                                   // 1336.3 Intel's answer: Xeon Phi (~50 cores, in between)
   G.forEach((m) => glow(m, null)); D.forEach(kill);
   A.clear();
-  A(pkt('Intel Xeon Phi：約 50 個 core', 0, 4.4));
+  A(pkt('Intel Xeon Phi：數十個 core', 0, 4.4));
   A(idx('介於傳統 CPU 與 SIMD 的 GPU 之間，比較 flexible', 0, 3.6));
   say('Intel 也做了 Xeon Phi', '介於傳統 CPU 和 GPU 之間');
   await step(tok);                                   // 1380.7 the trend: more cores, packed tightly
@@ -3036,8 +3036,8 @@ FRAG.push(['osA-modes', 'User mode vs Kernel mode', async (tok) => {
   hd('User mode', -3.4, 5.4); hd('Kernel mode', 3.4, 5.4);
   say('先懂程式執行的兩種 mode', 'user mode 和 kernel mode');
   await step(tok);                                   // 52.7 user mode: no direct access to memory, hardware
-  A(bad('不能直接碰 memory、hardware', -3.4, 4.5));
-  say('User mode：程式不能直接存取', 'memory、hardware 這類資源');
+  A(bad('不能直接碰 hardware 等資源', -3.4, 4.5));
+  say('User mode：程式不能直接存取', 'hardware、受保護的 memory（自己的可以）');
   await step(tok);                                   // 63 kernel mode: direct access
   A(good('可以直接存取 memory、hardware', 3.4, 4.5));
   say('Kernel mode：可以直接存取', 'memory 和 hardware');
@@ -3048,12 +3048,12 @@ FRAG.push(['osA-modes', 'User mode vs Kernel mode', async (tok) => {
   say('所以 kernel mode 是 privileged mode', '能直接動很多資源');
   await step(tok);                                   // 81.4 a crash in kernel mode → the whole system crashes
   glow(os.body, RED); os.mood('sad');
-  A(bad('在 kernel mode crash → 整個系統當掉', 3.4, -0.8, 1.6));
+  A(bad('kernel mode crash → 整個當掉', 3.4, -0.8, 1.6));
   say('問題：在 kernel mode 執行的程式 crash', '整個系統會 crash、停擺');
   await step(tok);                                   // 98 a crash in user mode → the system survives
   glow(os.body, null); os.mood('calm');
   app.mood('sad');
-  A(good('在 user mode crash → 系統還好好的', -3.4, -0.8, 1.6));
+  A(good('user mode crash → 系統沒事', -3.4, -0.8, 1.6));
   say('在 user mode 執行的程式 crash', '整個系統不會跟著當掉');
   await step(tok);                                   // 111 user mode is safer
   app.mood('happy');
@@ -4077,7 +4077,7 @@ FRAG.push(['osB-signal', 'Hardware interrupt 叫 signal', async (tok) => {
   await step(tok);                                   // 18:25 hardware interrupt has a special name: signal
   await fly(tok, 'bad', 'signal', V3(-3.4, 1.2, 0.6), V3(-3.4, 2.4, 0.6), 500, true);
   hot('Hardware interrupt ＝ signal', -3.4, 1.8, 1.4);
-  sayc('hardware 產生的 interrupt', '特別叫做 signal');
+  sayc('課堂上把 hardware 產生的 interrupt', '特別叫做 signal（UNIX 的 signal 另有所指）');
   await step(tok);                                   // 18:49 a signal can never come from software
   bad('signal 不會由 software 產生', 3.4, 2.2);
   sayc('signal 一定是 hardware 產生', '不可能是 software');
@@ -4103,7 +4103,7 @@ FRAG.push(['osB-trap-kinds', 'Software interrupt（trap）：error 與 system ca
   await step(tok);                                   // 19:52 the OS throws an interrupt and handles it
   await fly(tok, 'bad', 'interrupt', V3(-2.6, 1.2, 0), V3(1.4, 1.2, 0), 800);
   os.mood('calm'); const resetBub = bub('reset PC → 印出 error message', 3.6, 2.4);
-  sayc('OS 偵測到 error，throw interrupt', '把 PC 移去印訊息，不再往下跑');
+  sayc('CPU 偵測到 error → trap 給 OS 處理', '把 PC 移去印訊息，不再往下跑');
   await step(tok);                                   // 20:19 e.g. accessing another program's memory
   remove(e); bad('碰別人的 memory → 擋下', -3.4, 2.4);
   sayc('像存取別人的 memory', 'OS 擋下來、丟 error message');
@@ -5077,15 +5077,15 @@ FRAG.push(['osB-hdd', 'Hard drive：機械式，位置不同時間不同', async
   sm('資料越多 → transfer 越長', 4.4, 3.1);
   sayc('transfer time', '只跟資料量有關');
   await step(tok);                                   // 1:56 seek time: finding the position — not uniform
-  sm('seek：找位置，時間不固定', 5.4, 2.6);
-  sayc('positioning 要 seek（找位置）', '所以時間不 uniform');
+  sm('seek ＋ 等轉到：時間不固定', 5.4, 2.6);
+  sayc('positioning ＝ seek（移磁頭）＋ 等磁盤轉到', '跟磁頭位置有關，所以時間不 uniform');
   await step(tok);                                   // 2:04 so not random access
   bad('不是 random access', 4.6, 1.9);
   sayc('所以 hard drive 不叫 random access', '也沒辦法有效率地 random access');
   await step(tok);                                   // 2:14 7200 / 3600 rpm: faster spin, shorter seek, pricier
   await anim(tok, 900, (u) => { H.plat.rotation.y = u * Math.PI * 4; });
   note('7200 轉 / 3600 轉：轉越快越貴', -1.2, 4.9);
-  sayc('買硬碟看轉速（7200、3600 轉）', '越快 seek 越短，也越貴');
+  sayc('買硬碟看轉速（7200、3600 轉）', '轉越快，等磁盤轉過來的時間越短，也越貴');
   void tb; void pb;
 }]);
 
@@ -5315,7 +5315,7 @@ FRAG.push(['osB-dual-mode', 'Dual mode：user mode / monitor（kernel）mode', a
   sayc('到底怎麼區分？', '意外的簡單');
   await step(tok);                                   // 7:33 one bit on the motherboard
   const mb = modeBit(0, 0.25, 2.2);
-  sayc('主機板上用一個 bit', '兩個 mode 一個 bit 就夠');
+  sayc('硬體上用一個 bit（mode bit，在 CPU 裡）', '兩個 mode 一個 bit 就夠');
   await step(tok);                                   // 7:42 normally user mode: 1
   sayc('平常是 user mode', '例如值是 1');
   await step(tok);                                   // 7:48 an interrupt flips it to 0

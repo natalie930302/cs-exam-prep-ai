@@ -239,7 +239,7 @@ export default function (ctx) {
       say('n = ' + n + '：' + v + ' 種', '高度用對數尺度');
       await wait(tok, 520);
     }
-    say('Catalan 數：Ω(4ⁿ / n^{3/2})，指數成長', '暴力法不可行 → 用 DP');
+    say('Catalan 數：Ω(4ⁿ / n^(3/2))，指數成長', '暴力法不可行 → 用 DP');
     await wait(tok, 3200);
   }
   async function playMcmStepDetail(g, st, p, tok, ms) {
@@ -1404,7 +1404,7 @@ FRAG.push(['dp4bari-mc-fill', 'Matrix chain 填表：成本表 + 切點表（逐
   if (P.built !== false) { ops.dims(); ops.mgrid(); ops.kgrid(); }
   if (gm && P.zeros !== false) for (let i = 0; i < n; i++) gm.set(i, i, 0, GRAY, 0);
   for (const [i, j] of P.pre || []) { const st = stp(i, j); gm.set(i - 1, j - 1, st.v, TEAL, 0); gk.set(i - 1, j - 1, st.bk, PURPLE, 0); }
-  say(cn + ' 表與 ' + kn + ' 表', cn + '(i,j) = min{' + cn + '(i,k) + ' + cn + '(k+1,j) + d_{i−1}d_k d_j}');
+  say(cn + ' 表與 ' + kn + ' 表', cn + '(i,j) = min{' + cn + '(i,k) + ' + cn + '(k+1,j) + dᵢ₋₁dₖ dⱼ}');
   await runSeq(tok, seq, ops);
 }]);
 
@@ -4007,8 +4007,8 @@ FRAG.push(['dp4mit-mario-config', 'Mario 的 configuration 數', async (tok) => 
   tint(G.g[3][1], Q.gold); tint(G.g[4][1], Q.orange);
   say('? 箱頂過了沒？金幣、香菇拿了沒？');
   await step(tok);                                   // 2740.1 something like c^{w·h}
-  fac('c^{w·h}', true);
-  say('大概是 c^{w·h} 種', '每一格常數種狀態');
+  fac('c^(w·h)', true);
+  say('大概是 c^(w·h) 種', '每一格常數種狀態');
   await step(tok);                                   // 2752.1 each square: brick? hard brick? destroyed? monster? Mario?
   for (let c = 0; c < W; c++) { tint(G.g[c][0], Q.brown); }
   tint(G.g[1][3], Q.pink); tint(G.g[5][2], GRAY);

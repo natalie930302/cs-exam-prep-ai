@@ -1043,7 +1043,7 @@ FRAG.push(['grapha-matrix', 'Adjacency Matrix：A–B、B–C', async (tok) => {
   for (let j = 0; j < 3; j++) glow(rep.cells[1][j], null);
   glow(rep.heads[1], null);
   tag('3 × 3 → 3 個 node', 'ptr alt', -0.4, 1.0, -1.7);
-  say('3 × 3 的矩陣 → graph 有 3 個 node', '<span class="ok">無向圖的矩陣左右對稱</span>');
+  say('3 × 3 的矩陣 → graph 有 3 個 node', '<span class="ok">無向圖的矩陣沿對角線對稱</span>');
 }]);
 
 // 02:40 adjacency matrix（有向）— cued copy of directed-matrix

@@ -270,7 +270,7 @@
     "要它做不一樣的事，就是讓它執行不同的 binary code，也就是另一支程式。",
     "execlp 就是做這件事：你給它一個 binary file（一個 program，例如 /bin/ls）。",
     "它會把新 process 的 code segment 整個 replace（替換）成這支新程式的程式碼。",
-    "然後把 heap、stack 全部清空，program counter 設成 0（從頭開始）。也就是把這個 process reset。",
+    "然後把 heap、stack 全部清空，program counter 設到新程式的起點（從頭開始）。也就是把這個 process reset。",
     "這樣一來，新的 child process 就等於在執行一支完全不一樣的程式（變成 ls 了）。",
     "注意：execlp 只是把 memory content 重設。那既然內容要整個重來，為什麼還要先 fork（create）呢？",
     "因為 create 這個動作本身還是需要的：要跟 OS 註冊一個 PID、跟 OS 要一塊 memory space。這些登記手續 exec 不會幫你做。",

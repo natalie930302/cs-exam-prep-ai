@@ -4212,7 +4212,7 @@ FRAG.push(['hashlin2-oa-steps', 'Open addressing：insert 與 get 的步驟', as
   cd.hl(1);
   say('耐心只有 m 次', '第 0、1、2、…、m−1 順位');
   await step(tok);                                   // 90:06 re-insert 到 h0 … h_{m−1}
-  say('依序試 h₀、h₁、…、h_{m−1}');
+  say('依序試 h₀、h₁、…、hₘ₋₁');
   await step(tok);                                   // 90:32 declare failure
   cd.hl(4); no('全部有人 → declare failure', 0, 3.4, T.z);
   say('還是不行：雙手一攤，declare failure');
@@ -4236,7 +4236,7 @@ FRAG.push(['hashlin2-oa-steps', 'Open addressing：insert 與 get 的步驟', as
   cd.hl(2);
   say('h₀ 用原來的 hash function 算：這沒問題');
   await step(tok);                                   // 93:15 H1…H(m−1) 怎麼算
-  say('那 h₁、h₂、…、h_{m−1} 怎麼算？', '文獻裡有幾種方式');
+  say('那 h₁、h₂、…、hₘ₋₁ 怎麼算？', '文獻裡有幾種方式');
 }]);
 
 // 93:28 Linear probing：hᵢ = h₀ + i（找隔壁）、clustering

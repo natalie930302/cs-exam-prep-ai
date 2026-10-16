@@ -596,7 +596,7 @@ export default function (ctx) {
       ['2 猜', '不用猜（1 種）', '最後一條邊（indeg+1 種）'],
       ['3 遞迴式', 'Fₙ = Fₙ₋₁ + Fₙ₋₂', 'min{δₖ₋₁(s,u) + w(u,v)}'],
       ['4 順序／時間', '由小到大：Θ(n)', 'k 外 v 內：Θ(VE)'],
-      ['5 原問題', 'Fₙ', 'δ_{V−1}(s,v)，每個 v'],
+      ['5 原問題', 'Fₙ', 'δₖ(s,v)，k = V−1，每個 v'],
     ];
     tag('Fibonacci', 'ptr', -0.4, 7.2); tag('最短路徑', 'ptr', 4.0, 7.2);
     say('DP 的五個步驟', '用上一講的兩個例子對照');
@@ -3371,14 +3371,14 @@ FRAG.push(['dpbari3-tsp-formula', 'TSP：g(i, S) 遞迴公式', async (tok) => {
   F.show(F.kids[1]); await beat(tok, 500); F.show(F.kids[2]);
   say('走過的 k 要從集合拿掉', 'k = 2、3、4 每一個都試');
   await step(tok);                                   // 9:00 k ∈ {2,3,4}
-  txt(f, 'g(1,{2,3,4}) = min_{k∈{2,3,4}} { c(1,k) + g(k, {2,3,4} − {k}) }');
+  txt(f, 'g(1,{2,3,4}) = min over k∈{2,3,4} { c(1,k) + g(k, {2,3,4} − {k}) }');
   say('三種 k 取最小', 'k ∈ {2, 3, 4}');
   await step(tok);                                   // 9:13 formula for start 1, four vertices
   note('這是「起點 1、共 4 個頂點」的版本', 0, 2.8);
   say('這是起點 1、4 個頂點時的式子', '');
   await step(tok);                                   // 9:27 general formula g(i, S)
-  const gen = mono(tag('g(i, S) = min_{k∈S} { c(i,k) + g(k, S − {k}) }', 'good', 0, 2.0));
-  say('一般式', 'g(i, S) = min_{k∈S} { c(i,k) + g(k, S − {k}) }');
+  const gen = mono(tag('g(i, S) = min over k∈S { c(i,k) + g(k, S − {k}) }', 'good', 0, 2.0));
+  say('一般式', 'g(i, S) = min over k∈S { c(i,k) + g(k, S − {k}) }');
   await step(tok);                                   // 9:47 the general formula of DP
   F.kids.forEach((o) => tint(o.m, TEAL));
   say('這就是 DP 用的一般公式', '接下來看 DP 怎麼用它算');
@@ -3387,7 +3387,7 @@ FRAG.push(['dpbari3-tsp-formula2', 'TSP：公式 g(1, {2,3,4})', async (tok) => 
   fresh([0, 4.4, 14], [0, 4.4, 0]);
   let F, f;
   await step(tok);                                   // 1:11 DP formula, general form
-  f = mono(tag('g(i, S) = min_{k∈S} { c(i,k) + g(k, S − {k}) }', 'say', 0, 8.0));
+  f = mono(tag('g(i, S) = min over k∈S { c(i,k) + g(k, S − {k}) }', 'say', 0, 8.0));
   say('這是 DP 的公式（一般式）', '');
   await step(tok);                                   // 1:19 write it for these four vertices
   txt(f, 'g( 1 , {2,3,4} ) = ?');
@@ -6630,7 +6630,7 @@ FRAG.push(['dpjiang2-opt-form', '最佳化問題 = objective function + constrai
   await step(tok);                                   // 528.0 Subset Sum：塞得越滿越好
   say('Subset Sum：塞進去的東西', '越多（越滿）越好');
   await step(tok);                                   // 543.0 maximize Σ_{i∈S} wᵢ
-  f = tag('maximize Σ_{i∈S} wᵢ（S：選出的 item）', 'ptr alt', 0, 0.6);
+  f = tag('maximize Σ over i∈S wᵢ（S：選出的 item）', 'ptr alt', 0, 0.6);
   say('objective：maximize Σ wᵢ', 'S 是最後選出來的 item');
   await step(tok);                                   // 564.0 constraints：限制條件
   hl(t1, false); hl(t2, true);
@@ -6648,10 +6648,10 @@ FRAG.push(['dpjiang2-opt-form', '最佳化問題 = objective function + constrai
   glow(dots[5], GOLD); tint(dots[5], C.gold);
   say('在合理解當中', '挑讓 objective function 最好的那個');
   await step(tok);                                   // 596.0 這題的 constraint：包包不能破
-  txt(f, 'max Σ_{i∈S} wᵢ   s.t.  Σ_{i∈S} wᵢ < W');
+  txt(f, 'max Σ over i∈S wᵢ   s.t.  Σ over i∈S wᵢ < W');
   say('這題的 constraint 很簡單：包包不能破', '選出的 S 總重量不能超過 W');
   await step(tok);                                   // 621.0 加上等號：≤
-  txt(f, 'max Σ_{i∈S} wᵢ   s.t.  Σ_{i∈S} wᵢ ≤ W');
+  txt(f, 'max Σ over i∈S wᵢ   s.t.  Σ over i∈S wᵢ ≤ W');
   say('加上等號比較合適', '可以剛好 reach capacity');
   await step(tok);                                   // 634.0 標準的最佳化 formulation
   hl(t2, false); hl(f, false);
@@ -6703,10 +6703,10 @@ FRAG.push(['dpjiang2-subset-cases', '第一版：OPT(i)，第 n 個 item 選或�
   txt(def, 'OPT(i)：前 i 個 item、包包不破的最佳解');
   say('OPT(i)：前 i 個 item 當中', '放進包包又不破的最佳解');
   await step(tok);                                   // 801.0 找一個 S，讓 Σ wⱼ 最大
-  const sdef = tag('OPT(i) = max Σ_{j∈S} wⱼ', 'ptr alt', 0, 5.6);
+  const sdef = tag('OPT(i) = max Σ over j∈S wⱼ', 'ptr alt', 0, 5.6);
   say('也就是找一個 set S', '讓 Σ wⱼ 越大越好');
   await step(tok);                                   // 824.0 S 是 {1..i} 的 subset，不爆掉
-  txt(sdef, 'OPT(i) = max Σ_{j∈S} wⱼ，S ⊆ {1..i}，Σ ≤ W');
+  txt(sdef, 'OPT(i) = max Σ over j∈S wⱼ，S ⊆ {1..i}，Σ ≤ W');
   say('S 是從 1 到 i 裡選的 subset', '全選也可以，只要不爆掉');
   await step(tok);                                   // 848.0 最後目標：OPT(n)
   await anim(tok, 800, (e) => { const w = (4 + e * 2) * 1.6; ov.scale.set(w, 1, 1); ov.position.set(-4 - 0.8 + w / 2, 7.0, 0); });
@@ -8361,8 +8361,8 @@ FRAG.push(['dpmit1-fib-naive', 'Naive 遞迴 fib：T(n) ≥ 2T(n−2) → 指數
   for (let d = 0; d <= 3; d++) { tag('×' + 2 ** d, 'idx', 6.5, 6.2 - d * 1.45); await anim(tok, 300, () => {}); }
   say('每往下一層乘 2、n 減 2');
   await step(tok);                                   // 626.8 n/2 times → 2^{n/2}
-  F('T(n) ≥ c·2^{n/2} → 指數');
-  say('n 可以減 2 共 n/2 次', 'T(n) = Ω(2^{n/2})');
+  F('T(n) ≥ c·2^(n/2) → 指數');
+  say('n 可以減 2 共 n/2 次', 'T(n) = Ω(2^(n/2))');
   await step(tok);                                   // 650.8 the right base is φ
   F('精確來說：T(n) = Θ(φⁿ)');
   say('真正的底數是 φ', '總之：很糟的演算法');
@@ -8991,7 +8991,7 @@ FRAG.push(['dpmit1-layers', '分層：δₖ(s,v) 讓依賴無環 → Bellman-For
   await step(tok);                                   // 3033.8 the goal: δ_{V−1}(s,v)
   VS.forEach((u) => glow(L[3][u], GOLD));
   tag('V−1 層', 'ptr alt', 6.1, Y(3));
-  say('目標：δ_{V−1}(s,v)', '這張圖 V = 4 → 最後一層 k = 3');
+  say('目標：k = V−1 的 δₖ(s,v)', '這張圖 V = 4 → 最後一層 k = 3');
   await step(tok);                                   // 3045.8 simple paths only, no negative weight cycles
   note('沒有負環 → 只需 simple path（≤ V−1 條邊）', -2.4, 7.3);
   say('假設沒有負環', '最短路徑是 simple path，最多 V−1 條邊');
@@ -9364,8 +9364,8 @@ FRAG.push(['dpmit1-dag-b', '拓樸順序、總時間、原問題', async (tok) =
   say('Fibonacci：答案就是 Fₙ', '它本身就是子問題之一');
   await step(tok);                                   // 962.1 shortest paths: δ_{V−1}(s,v) for all v
   g[3].forEach((m) => glow(m, GREEN));
-  ok('答案：δ_{V−1}(s,v)，每個 v', 5.2, GY(3));
-  say('最短路徑：每個 v 的 δ_{V−1}(s,v)', '沒有負環時就是答案');
+  ok('答案：δₖ(s,v)，k = V−1，每個 v', 5.2, GY(3));
+  say('最短路徑：每個 v 的 δₖ(s,v)，k = V−1', '沒有負環時就是答案');
   await step(tok);                                   // 976.8 sometimes combining takes extra time
   note('有時要花額外時間把子問題的解組合起來', -3.4, 0.2);
   say('有時要額外時間組合答案', '這兩個例子直接就有');
@@ -11827,7 +11827,7 @@ FRAG.push(['dpmit2-layers-build', '拆環：d_k(S,v) 用剛好 k 條邊，建分
   fm('新的：d_k(S,v) = 剛好用 k 條邊走到 v 的最短距離');
   say('新的定義：d_k(S, v)', '剛好用 k 條邊，從 S 走到 v');
   await step(tok);                                   // 2501.7 from s to u using k − 1, plus the weight of uv
-  fm2('d_k(S,v) = min over (u,v)  d_{k−1}(S,u) + w(u,v)');
+  fm2('dₖ(S,v) = min over (u,v)  dₖ₋₁(S,u) + w(u,v)');
   say('走到 u 用了 k − 1 條邊', '再走 (u,v) 這一條，剛好 k 條');
   await step(tok);                                   // 2521.0 this will always decrease
   const kc = tag('k = 3', 'pkt', 4.6, 3.6, 0.4);

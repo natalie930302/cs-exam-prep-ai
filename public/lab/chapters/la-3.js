@@ -523,17 +523,18 @@ export default function (ctx) {
 
   // ───────────────────────── 小測驗 ─────────────────────────
   const qs = { score: 0, total: 0 };
+  const pr = (n) => (n < 0 ? '(' + fmt(n) + ')' : fmt(n));
   const uniq4 = (ans, cands) => { const o = [...new Set([ans, ...cands.map(String)])].slice(0, 4); return o; };
   function genQ() {
     const kind = rnd(8);
     if (kind === 0) {
       const A = [[rint(-4, 6), rint(-4, 6)], [rint(-4, 6), rint(-4, 6)]], d = det(A);
-      return { q: 'det ' + mstr(A) + ' = ？', opts: uniq4(String(d), [A[0][0] * A[1][1] + A[0][1] * A[1][0], -d, A[0][0] * A[1][0] - A[0][1] * A[1][1], d + 2]), ans: String(d), why: 'ad − bc = ' + A[0][0] + '·' + A[1][1] + ' − ' + A[0][1] + '·' + A[1][0] + ' = ' + d + '。' };
+      return { q: 'det ' + mstr(A) + ' = ？', opts: uniq4(fmt(d), [A[0][0] * A[1][1] + A[0][1] * A[1][0], -d, A[0][0] * A[1][0] - A[0][1] * A[1][1], d + 2].map(fmt)), ans: fmt(d), why: 'ad − bc = ' + pr(A[0][0]) + '·' + pr(A[1][1]) + ' − ' + pr(A[0][1]) + '·' + pr(A[1][0]) + ' = ' + fmt(d) + '。' };
     }
     if (kind === 1) {
       const A = [0, 1, 2].map(() => [rint(-2, 3), rint(-2, 3), rint(-2, 3)]), d = det(A);
       const diag = A[0][0] * A[1][1] * A[2][2], plus = diag + A[0][1] * A[1][2] * A[2][0] + A[0][2] * A[1][0] * A[2][1];
-      return { q: 'det ' + mstr(A) + ' = ？', opts: uniq4(String(d), [-d, diag, plus, d + 1, d - 3]), ans: String(d), why: '沿第 1 列展開：' + [0, 1, 2].map((j) => A[0][j] + '·(' + fmt(cof(A, 0, j)) + ')').join(' + ') + ' = ' + d + '（六項：三正三負）。' };
+      return { q: 'det ' + mstr(A) + ' = ？', opts: uniq4(fmt(d), [-d, diag, plus, d + 1, d - 3].map(fmt)), ans: fmt(d), why: '沿第 1 列展開：' + [0, 1, 2].map((j) => pr(A[0][j]) + '·(' + fmt(cof(A, 0, j)) + ')').join(' + ') + ' = ' + fmt(d) + '（六項：三正三負）。' };
     }
     if (kind === 2) {
       const d = pick([2, 3, -2, 4, 5]), n = 3;
@@ -550,13 +551,15 @@ export default function (ctx) {
     }
     if (kind === 3) {
       const A = [0, 1, 2].map(() => [rint(-2, 4), rint(-2, 4), rint(-2, 4)]), i = rnd(3), j = rnd(3), c = cof(A, i, j), m = det(minor(A, i, j));
-      return { q: 'A = ' + mstr(A) + '，cofactor C' + sub(i + 1) + sub(j + 1) + ' = ？', opts: uniq4(String(c), [-c, A[i][j] * c, m + 1, c + 2]), ans: String(c), why: '拿掉第 ' + (i + 1) + ' 列、第 ' + (j + 1) + ' 行，minor = ' + m + '；符號 (−1)^' + (i + j + 2) + ' = ' + ((i + j) % 2 ? '−' : '+') + ' → C = ' + c + '。' };
+      return { q: 'A = ' + mstr(A) + '，cofactor C' + sub(i + 1) + sub(j + 1) + ' = ？', opts: uniq4(fmt(c), [-c, A[i][j] * c, m + 1, c + 2].map(fmt)), ans: fmt(c), why: '拿掉第 ' + (i + 1) + ' 列、第 ' + (j + 1) + ' 行，minor = ' + fmt(m) + '；符號 (−1)^' + (i + j + 2) + ' = ' + ((i + j) % 2 ? '−' : '+') + ' → C = ' + fmt(c) + '。' };
     }
     if (kind === 4) {
       let A; do { A = [[rint(1, 4), rint(-2, 3)], [rint(-2, 3), rint(1, 4)]]; } while (Math.abs(det(A)) < 1);
       const x = [rint(-2, 3), rint(-2, 3)], b = [A[0][0] * x[0] + A[0][1] * x[1], A[1][0] * x[0] + A[1][1] * x[1]], k = rnd(2);
       const Bk = k === 0 ? [[b[0], A[0][1]], [b[1], A[1][1]]] : [[A[0][0], b[0]], [A[1][0], b[1]]];
-      return { q: '用 Cramer 法則解 ' + A[0][0] + 'x₁ + ' + A[0][1] + 'x₂ = ' + b[0] + '、' + A[1][0] + 'x₁ + ' + A[1][1] + 'x₂ = ' + b[1] + '，x' + sub(k + 1) + ' = ？', opts: uniq4(String(x[k]), [x[1 - k], -x[k], det(Bk), x[k] + 1]), ans: String(x[k]), why: 'x' + sub(k + 1) + ' = det B' + sub(k + 1) + ' / det A = ' + det(Bk) + ' / ' + det(A) + ' = ' + x[k] + '（B' + sub(k + 1) + '：第 ' + (k + 1) + ' 行換成 b）。' };
+      const term = (c, v, first) => (c === 0 ? '' : (c < 0 ? (first ? '−' : ' − ') : (first ? '' : ' + ')) + (Math.abs(c) === 1 ? '' : Math.abs(c)) + v);
+      const eq = (r, rhs) => { const t1 = term(r[0], 'x₁', true); return t1 + term(r[1], 'x₂', !t1) + ' = ' + fmt(rhs); };
+      return { q: '用 Cramer 法則解 ' + eq(A[0], b[0]) + '、' + eq(A[1], b[1]) + '，x' + sub(k + 1) + ' = ？', opts: uniq4(fmt(x[k]), [x[1 - k], -x[k], det(Bk), x[k] + 1].map(fmt)), ans: fmt(x[k]), why: 'x' + sub(k + 1) + ' = det B' + sub(k + 1) + ' / det A = ' + fmt(det(Bk)) + ' / ' + fmt(det(A)) + ' = ' + fmt(x[k]) + '（B' + sub(k + 1) + '：第 ' + (k + 1) + ' 行換成 b）。' };
     }
     if (kind === 5) {
       const n = rint(5, 70), seq = [1, 0, -1, -1, 0, 1], v = seq[(n - 1) % 6];
@@ -568,8 +571,8 @@ export default function (ctx) {
     }
     const a = pick([2, 3, -1]), b = pick([2, 5, -3]);
     const c = pick([['det(AB)', a * b, 'det(AB) = det A · det B'], ['det(A + B)', null, '行列式沒有加法性質，不能只從 det A、det B 決定']]);
-    if (c[1] === null) return { q: 'det A = ' + a + '、det B = ' + b + '（都是 3×3）。' + c[0] + ' = ？', opts: uniq4('無法只由 det A、det B 決定', [a + b, a * b, a * b * 8, a - b]), ans: '無法只由 det A、det B 決定', why: c[2] + '。例：A = I、B = −I 時 det(A + B) = 0。' };
-    return { q: 'det A = ' + a + '、det B = ' + b + '（都是 3×3）。' + c[0] + ' = ？', opts: uniq4(String(c[1]), [a + b, a * b * 8, -a * b]), ans: String(c[1]), why: c[2] + '。' };
+    if (c[1] === null) return { q: 'det A = ' + fmt(a) + '、det B = ' + fmt(b) + '（都是 3×3）。' + c[0] + ' = ？', opts: uniq4('無法只由 det A、det B 決定', [a + b, a * b, a * b * 8, a - b].map(fmt)), ans: '無法只由 det A、det B 決定', why: c[2] + '。例：A = I、B = −I 時 det(A + B) = 0。' };
+    return { q: 'det A = ' + fmt(a) + '、det B = ' + fmt(b) + '（都是 3×3）。' + c[0] + ' = ？', opts: uniq4(fmt(c[1]), [a + b, a * b * 8, -a * b].map(fmt)), ans: fmt(c[1]), why: c[2] + '。' };
   }
 
   // ═════════════════════════ 場景：課本補充（Strang Ch5；18.06 L18、3B1B 尚無字幕） ═════════════════════════
@@ -1416,20 +1419,20 @@ scene('dt-3b-area', '3B1B：det = 面積被放大的倍數', [
     cap('一個格子怎麼變，每個格子都一樣', '格線變換後還是平行、等距');
     S.cs = cells(S.L.bd, [[1, 1], [-2, 0], [0, -2], [-1, 2]], 1, '#9b7ef4');
     await S.L.to(tok, MG, 1600, () => moveCells(S.L.bd, S.cs, S.L.M));
-    chk(S, near(det2(MG), 1.5), '每格都 × ' + fmt(det2(MG)) + ' ✓');
+    detTag(S, det2(MG)); chk(S, near(det2(MG), 1.5), '每格都 × ' + fmt(det2(MG)) + ' ✓');
   },
   async (tok, S) => {
-    S.cs.forEach(kill); await S.L.to(tok, [[1, 0], [0, 1]], 500);
+    S.cs.forEach(kill); await S.L.to(tok, [[1, 0], [0, 1]], 500); remove(S.ck); S.ck = null;
     cap('任何形狀都能用很小的格子拼出來', '格子越小越準（示意：一個圓）');
     const h = 0.25, list = []; for (let x = -2.75; x < 0.6; x += h) for (let y = -0.75; y < 2.6; y += h) if (Math.hypot(x + h / 2 + 1.1, y + h / 2 - 0.9) < 1.5) list.push([x, y]);
     S.blob = cells(S.L.bd, list, h, '#e55a9b'); S.n = list.length; S.a0 = S.n * h * h;
-    txt(S.a1, S.n + ' 小格 ≈ 面積 ' + fmt(Math.round(S.a0 * 100) / 100));
+    txt(S.a1, S.n + ' 小格 ≈ 面積 ' + S.a0.toFixed(2));
   },
   async (tok, S) => {
     cap('每個小格都被放大同一個倍數', '所以整塊的面積也放大同一個倍數');
     await S.L.to(tok, MG, 1800, () => moveCells(S.L.bd, S.blob, S.L.M));
     const h = 0.25, cellA = Math.abs(det2(cols2(mul2(MG, [h, 0]), mul2(MG, [0, h])))), a1 = S.n * cellA;
-    txt(S.a1, '面積 ' + fmt(Math.round(S.a0 * 100) / 100) + ' → ' + fmt(Math.round(a1 * 100) / 100)); chk(S, near(a1 / S.a0, det2(MG)), '比值 = ' + fmt(det2(MG)) + ' = det ✓');
+    txt(S.a1, '面積 ' + S.a0.toFixed(2) + ' → ' + a1.toFixed(2)); chk(S, near(a1 / S.a0, det2(MG)), '比值 = ' + fmt(det2(MG)) + ' = det ✓');
   },
   async (tok, S) => { cap('這個特別的倍數就叫 determinant', '線性變換把任何面積放大的倍數'); hot('determinant = 面積縮放倍數', 0, 6.1); },
 ], { cam: CAM2, init: async (tok, S) => { S.L = lin2(0, 3.2, 0.55, 4); } });
@@ -1447,11 +1450,11 @@ function paper(x, y) { const g = new THREE.Group(); g.position.set(x, y, 0); con
 scene('dt-3b-neg', '3B1B：負的 det = 空間翻面（orientation）', [
   async (tok, S) => { cap('其實 det 可以是負的', '面積放大「負的倍數」是什麼意思？'); },
   async (tok, S) => {
-    cap('跟「方向」（orientation）有關', '像把一張紙翻到背面'); S.pp = paper(-4.3, 1.6); sm('一張紙（示意）', -4.3, 0.6);
+    cap('跟「方向」（orientation）有關', '像把一張紙翻到背面'); S.pp = paper(-4.3, 1.6); S.ppl = sm('一張紙（示意）', -4.3, 0.6);
     await anim(tok, 1800, (u) => { S.pp.rotation.y = Math.PI * u; S.L.set(lerpM([[1, 0], [0, 1]], [[-1, 0], [0, 1]], u)); });
   },
   async (tok, S) => { cap('這種變換叫做「反轉空間的方向」', 'invert the orientation'); S.o = hd('orientation 反轉', 3.4, 5.6); },
-  async (tok, S) => { await S.L.to(tok, [[1, 0], [0, 1]], 800); txt(S.o, '一開始：ĵ 在 î 的左邊'); cap('另一個看法：看 î 和 ĵ', '一開始 ĵ 在 î 的左邊（逆時針那一側）'); },
+  async (tok, S) => { kill(S.pp); remove(S.ppl); await S.L.to(tok, [[1, 0], [0, 1]], 800); txt(S.o, '一開始：ĵ 在 î 的左邊'); cap('另一個看法：看 î 和 ĵ', '一開始 ĵ 在 î 的左邊（逆時針那一側）'); },
   async (tok, S) => { cap('變換後 ĵ 跑到 î 的右邊', '→ 方向被翻過來了'); await S.L.to(tok, [[1, 2], [1, -1]], 1700); txt(S.o, '變換後：ĵ 在 î 的右邊'); },
   async (tok, S) => { cap('只要方向翻轉，det 就是負的', '正方形變成紅色'); detTag(S, det2(S.L.M)); },
   async (tok, S) => { cap('|det| 還是面積放大的倍數', '負號只負責說「翻面了」'); },
@@ -1508,7 +1511,7 @@ scene('dt-3b-formula', '3B1B：ad − bc 從哪裡來', [
     const bd = S.L.bd, cs = [[0, 0], [a + b, 0], [a + b, c + d], [0, c + d], [0, 0]];
     S.box = new THREE.Line(new THREE.BufferGeometry().setFromPoints(cs.map((p) => bd.P(...p).setZ(0.06))), new THREE.LineBasicMaterial({ color: '#6a4a00' })); lab.world.add(S.box);
     const big = (a + b) * (c + d), rest = big - 2 * (a * c / 2) - 2 * (b * d / 2) - 2 * (b * c);
-    pre(sm('(a+b)(c+d) = ' + fmt(big) + '\n− 2·½ac − 2·½bd − 2bc\n= ' + fmt(rest), 4.0, 2.0)); chk(S, near(rest, a * d - b * c), '= ad − bc = ' + fmt(a * d - b * c) + ' ✓', 4.0, 0.9);
+    pre(sm('(a+b)(c+d) = ' + fmt(big) + '\n− 2·½ac − 2·½bd − 2bc\n= ' + fmt(rest), 4.7, 2.0)); chk(S, near(rest, a * d - b * c), '= ad − bc = ' + fmt(a * d - b * c) + ' ✓', 4.7, 0.9);
   },
 ], { cam: CAM2, init: async (tok, S) => { S.L = lin2(0, 3.2, 0.55, 4); } });
 
@@ -1615,7 +1618,7 @@ scene('dt-cx-formula', '3B1B：用 3×3 行列式記外積公式', [
   async (tok, S) => {
     S.v = [2, 0, 1]; S.w = [0, 1, 1]; S.sp = space([2.6, 1.0, 0], 0.9, 2.4); S.O = S.sp.P(0, 0, 0);
     setArrow(arw(CV), S.O, S.sp.P(...S.v)); setArrow(arw(CW), S.O, S.sp.P(...S.w)); sm('v = (2, 0, 1)', ...S.sp.P(2.3, 0, 1.3).toArray()); sm('w = (0, 1, 1)', ...S.sp.P(0, 1.3, 1.4).toArray());
-    cap('一般的計算：記一個「3D 行列式」的步驟', '（示意：v = (2, 0, 1)、w = (0, 1, 1)）'); S.n = note('示意', -3.6, 6.1);
+    cap('一般的計算：記一個「3D 行列式」的步驟', '（示意：v = (2, 0, 1)、w = (0, 1, 1)）'); S.n = note('示意', -1.5, 4.4);
   },
   async (tok, S) => { cap('寫一個 3×3 矩陣', '第 2、3 行放 v、w 的座標'); S.m = mview([['', 2, 0], ['', 0, 1], ['', 1, 1]], -3.6, 4.4, { s: 0.75, name: '' }); },
   async (tok, S) => { cap('第 1 行放基底向量 î、ĵ、k̂', '「把向量放進矩陣」看起來很怪'); S.m.kill(); S.m = mview([['î', 2, 0], ['ĵ', 0, 1], ['k̂', 1, 1]], -3.6, 4.4, { s: 0.75, name: 'v × w = det' }); S.m.glowCol(0, GOLD); },
@@ -1724,7 +1727,7 @@ scene('dt-cr-rule', '3B1B Cramer：面積都乘上 det A → Cramer 法則', [
   async (tok, S) => { cap('它的面積是多少？', '它就是剛才那個平行四邊形變換後的樣子'); },
   async (tok, S) => { const a = det2(cols2([2, 0], CB)); cap('面積 = det A × y', ''); txt(S.y, '面積 = det A · y = ' + fmt(a)); S.k = ok(near(a, det2(CA) * CX[1]), fmt(a) + ' = ' + fmt(det2(CA)) + ' × ' + fmt(CX[1]) + ' ✓', 3.6, 4.4); },
   async (tok, S) => { remove(S.k); cap('所以 y = 新面積 ÷ det A', ''); S.k = ok(near(det2(cols2([2, 0], CB)) / det2(CA), CX[1]), 'y = ' + fmt(det2(cols2([2, 0], CB))) + ' / ' + fmt(det2(CA)) + ' = ' + fmt(CX[1]) + ' ✓', 3.6, 4.4); },
-  async (tok, S) => { cap('新面積怎麼算？做一個新矩陣', '第 1 行照舊，第 2 行換成輸出 b'); S.my = mview(cols2([2, 0], CB), 2.9, 1.5, { s: 0.55, name: 'det[col₁ b] = ' + fmt(det2(cols2([2, 0], CB))) }); },
+  async (tok, S) => { cap('新面積怎麼算？做一個新矩陣', '第 1 行照舊，第 2 行換成輸出 b'); S.my = mview(cols2([2, 0], CB), 2.4, 1.5, { s: 0.55, name: 'det[col₁ b] = ' + fmt(det2(cols2([2, 0], CB))) }); },
   async (tok, S) => { cap('只用輸出那一側的資料', '（矩陣的行、b）就拿回 y：解了一半'); },
   async (tok, S) => {
     remove(S.k); cap('x 也一樣：看 (x, y) 和 ĵ 的平行四邊形', '回到輸入空間：面積 = x');
@@ -1736,7 +1739,7 @@ scene('dt-cr-rule', '3B1B Cramer：面積都乘上 det A → Cramer 法則', [
     const a = det2(cols2(CB, [-1, 1])); txt(S.y, '面積 = det A · x = ' + fmt(a)); S.k = ok(near(a, det2(CA) * CX[0]), fmt(a) + ' = ' + fmt(det2(CA)) + ' × ' + fmt(CX[0]) + ' ✓', 3.6, 4.4);
   },
   async (tok, S) => { remove(S.k); cap('x = 新面積 ÷ det A', ''); S.k = ok(near(det2(cols2(CB, [-1, 1])) / det2(CA), CX[0]), 'x = ' + fmt(det2(cols2(CB, [-1, 1]))) + ' / ' + fmt(det2(CA)) + ' = ' + fmt(CX[0]) + ' ✓', 3.6, 4.4); },
-  async (tok, S) => { cap('新矩陣：第 1 行換成 b，第 2 行照舊', ''); S.mx2 = mview(cols2(CB, [-1, 1]), 5.2, 1.5, { s: 0.55, name: 'det[b col₂] = ' + fmt(det2(cols2(CB, [-1, 1]))) }); },
+  async (tok, S) => { cap('新矩陣：第 1 行換成 b，第 2 行照舊', ''); S.mx2 = mview(cols2(CB, [-1, 1]), 5.6, 1.5, { s: 0.55, name: 'det[b col₂] = ' + fmt(det2(cols2(CB, [-1, 1]))) }); },
   async (tok, S) => { remove(S.k); cap('這就是 Cramer 法則', 'x = det[b col₂] / det A、y = det[col₁ b] / det A'); S.k = hot('Cramer：x = det[b col₂] / det A，y = det[col₁ b] / det A', -0.6, 6.2); },
   async (tok, S) => { const n = det2(cols2(CB, [-1, 1])); cap('驗算：上面的 det = 4 + 2 = 6', '下面 det A = 2 → x = 3'); S.k2 = ok(n === 4 + 2 && n / det2(CA) === CX[0], 'x = 6 / 2 = 3 ✓（輸入的 x 就是 3）', 3.6, 4.4); },
   async (tok, S) => { const n = det2(cols2([2, 0], CB)); cap('y = 4 / 2 = 2', '輸入的 y 確實是 2'); remove(S.k2); ok(n / det2(CA) === CX[1], 'y = 4 / 2 = 2 ✓（輸入的 y 就是 2）', 3.6, 4.4); },
@@ -1815,7 +1818,7 @@ scene('dt-l18-p3', 'L18：性質 3——對每一列是線性的', [
 
 const M7 = [[2, 1, 0, 3, 1, 0, 2], [1, 0, 2, 1, 3, 1, 0], [2, 1, 0, 3, 1, 0, 2], [0, 3, 1, 1, 0, 2, 1], [1, 1, 2, 0, 1, 3, 0], [3, 0, 1, 2, 2, 1, 1], [0, 2, 1, 1, 0, 1, 3]];
 scene('dt-l18-p4', 'L18：性質 4——兩列相同 → det = 0', [
-  async (tok, S) => { cap('性質 4：有兩列相同 → det = 0', ''); hd('性質 4：兩列相同 → det = 0', 0, 6.0); },
+  async (tok, S) => { cap('性質 4：有兩列相同 → det = 0', ''); hd('性質 4：兩列相同 → det = 0', 2.8, 6.0); },
   async (tok, S) => { const A = [[2, 5], [2, 5]]; cap('2×2 很好檢查', '|a b; a b| = ab − ba = 0'); S.m2 = mview(A, 3.6, 4.2, { s: 0.6, name: '示意' }); S.k = ok(near(det(A), 0), '2·5 − 5·2 = 0 ✓', 3.6, 3.0); },
   async (tok, S) => { S.m2.kill(); remove(S.k); cap('n×n 為什麼也對？', '例：7×7，第 1 列 = 第 3 列（示意）'); S.m = mview(M7, -2.2, 3.4, { s: 0.48, name: '示意 7×7' }); S.m.glowRow(0, GOLD); S.m.glowRow(2, GOLD); },
   async (tok, S) => { cap('只能用性質 1、2、3：做一次換列', '交換第 1、3 列'); await swapRows(tok, S.m, 0, 2, 1500); S.m.glowRow(0, GOLD); S.m.glowRow(2, GOLD); },
@@ -1933,7 +1936,7 @@ scene('dt-l18-parity', 'L18：排列一定是奇或偶（det 才定義得好）'
     S.order = [0, 1, 2]; S.order.forEach((c, k) => P.move(S.c[c], -1.5 + k * 1.5, 3.6, 0));
     await S.sw(0, 1, 1); await S.sw(0, 2, 2); await S.sw(0, 1, 3); await S.sw(0, 1, 4);
     const p = S.order; S.r2 = sm('走法二：4 次 → ' + p.map((c) => c + 1).join(' '), 0, 1.6);
-    const Pm = p.map((c) => [0, 1, 2].map((j) => (j === c ? 1 : 0))); ok(sgnP(p) === 1 && det(Pm) === 1, '反序數 2 → 偶排列，det P = +1 ✓', 0, 1.0);
+    const Pm = p.map((c) => [0, 1, 2].map((j) => (j === c ? 1 : 0))); ok(sgnP(p) === 1 && det(Pm) === 1, '逆序數 2 → 偶排列，det P = +1 ✓', 0, 1.0);
   },
   async (tok, S) => { cap('所以 det 被性質 1、2、3 唯一決定', '並且有性質 4 到 10'); hd('性質 1–3 定義 det → 推出 4–10', 0, 0.3); },
 ]);

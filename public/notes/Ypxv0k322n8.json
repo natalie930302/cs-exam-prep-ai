@@ -180,7 +180,7 @@
     "因為已經登記好「這段 memory 就是某個 device 的 buffer」，寫到這段 memory，就等於寫到那個 port 上。對寫程式的人來說只是在寫 memory，所以叫 memory-mapped I/O。",
     "好處：很適合大量資料。CPU 是最快的元件，我們不希望它為了 I/O 在那邊空等。",
     "CPU 只要把資料寫進 memory 就不管了，剩下的交給 DMA 或 controller 去搬，CPU 馬上空出來做別的事。資料量大、I/O 很久的時候特別有效率。",
-    "缺點（老師說的）：跟 memory-mapped file 一樣，第一是比較不 reliable，一 crash，還沒真正送出去的資料可能就遺失；第二是資料量小的時候，光做 map、setup 的時間就浪費不少。",
+    "缺點（老師說的）：跟 memory-mapped file 一樣，第一是比較不 reliable，一 crash，還沒真正送出去的資料可能就遺失；第二是資料量小的時候，光做 map、setup 的時間就浪費不少。（課本的定義：memory-mapped I/O 是把 device 的 control register 對應到 CPU 的位址空間，用一般的讀寫指令存取；它的風險是程式用錯指標、寫錯位址時，可能意外改到 device register。）",
     "最好的例子是顯示卡：螢幕畫面是大量資料，全部適合用 memory-mapped I/O。檔案很大時也會這樣做。",
     "資料很小的就不適合，例如 keyboard 一次只送一個 byte，為它 map 一段 memory 很不划算，用 port-mapped 比較好。要看 I/O 的特性選方式。"
    ]

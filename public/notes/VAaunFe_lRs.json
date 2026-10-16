@@ -137,7 +137,7 @@
     "如果是 0（i），在這裡代表：這一頁是有效的，只是目前不在記憶體。",
     "存取時看到 0，就產生 page fault（缺頁錯誤）。OS 接到後把那一頁從 disk 搬進記憶體，填上 frame 號碼、把 bit 改成 v。",
     "pure demand paging 一開始一頁都沒有在記憶體，所以所有 bit 都設成 0，等著被搬。",
-    "那可讀、可寫這些權限呢？通常在 segmentation 那層管；paging 這層只需要知道這頁在 disk 還是 memory。",
+    "那可讀、可寫這些權限呢？老師說通常在 segmentation 那層管，paging 這層只需要知道這頁在 disk 還是 memory。（恐龍書：page table 的每一格也可以有 protection bit，例如標成 read-only。）",
     "page 被 swap 到的地方叫 backing store（swap space，置換空間），它跟一般存檔案的 file system 是不同的東西。"
    ],
    "points": [

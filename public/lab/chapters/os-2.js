@@ -743,7 +743,7 @@ export default function (ctx) {
     say('code segment 整個換成新的 binary', '');
     await W(tok, 1800);
     for (const k of [1, 2, 3]) { tint(C[k], COL.idle); relabel(C[k], ['', 'data（重設）', 'heap（清空）', 'stack（清空）'][k]); }
-    txt(pc, 'PC = 0（從頭開始）');
+    txt(pc, 'PC → ls 的起點');
     say('heap、stack 清空，PC 設回起點', '等於 reset：跑一支完全不同的程式');
     await W(tok, 2800);
     say('為什麼不直接 load？還是要先 create', '要先跟 OS 註冊 PID、配置 memory space');
@@ -793,7 +793,7 @@ export default function (ctx) {
     say('run time 有人改共用的值，才真的 copy', 'A\' 慢慢長大，最後大小一樣但內容不同');
     await W(tok, 2800);
     kill(link); txt(cl, '');
-    tint(C, COL.disk); relabel(C, 'C：exec 了新程式');
+    tint(C, COL.disk); relabel(C, "A'：exec 了新程式");
     say('child 呼叫 execlp：整塊換掉', '大小、內容都跟 A 完全脫鉤');
     await W(tok, 3000);
     void A;
@@ -1603,7 +1603,7 @@ FRAG.push(['proc-8b-fork', 'fork()：duplicate + concurrent，回傳 PID / 0', a
   void cpu; void os;
 }]);
 
-FRAG.push(['proc-8b-exec', 'execlp：換掉 code、清空 heap 與 stack、PC 歸零', async (tok) => {
+FRAG.push(['proc-8b-exec', 'execlp：換掉 code、清空 heap 與 stack、PC 重設', async (tok) => {
   fresh([0, 5, 14.5], [0, 2.4, 0]);
   const mk = (x, col) => ['code', 'data', 'heap', 'stack'].map((n, i) => bx(n, col, x, 0.4 + i * 0.7, 0, 2.2, 0.6, 1));
   hd('parent', -3.6, 3.6); const C = mk(3.6, PC[0]); mk(-3.6, PC[0]); const cn = hd('child', 3.6, 3.6);
@@ -1628,8 +1628,8 @@ FRAG.push(['proc-8b-exec', 'execlp：換掉 code、清空 heap 與 stack、PC �
   cap('新 process 的 code segment', '整個 replace 掉');
   await step(tok);                                   // 871 heap、stack 清空，PC = 0
   for (const k of [1, 2, 3]) { C[k].material.color.set(CO.idle); P.relabel(C[k], ['', 'data（重設）', 'heap（清空）', 'stack（清空）'][k]); }
-  hot('PC = 0', 5.6, 3.0);
-  cap('heap、stack 全部清空，PC 設成 0', '也就是 reset');
+  hot('PC → 新程式起點', 5.6, 3.0);
+  cap('heap、stack 全部清空，PC 設回起點', '也就是 reset');
   await step(tok);                                   // 881 child 執行完全不一樣的程式
   tx(cn, 'child：現在是 ls');
   cap('新的 child process', '等於在執行完全不一樣的一支程式');
@@ -1734,7 +1734,7 @@ FRAG.push(['proc-8b-cow', 'Duplicate 的實作：copy-on-write', async (tok) => 
   note('使用者看到：一模一樣；OS 偷偷省 memory', 0.6, 5.0);
   cap('對使用者看到的 process 而言', '內容一模一樣，OS 偷偷省 memory');
   await step(tok);                                   // 1284 call execlp：整個換掉
-  C.material.color.set(CO.disk); P.relabel(C, 'C：execlp 新程式'); remove(chg);
+  C.material.color.set(CO.disk); P.relabel(C, "A'：execlp 新程式"); remove(chg);
   cap('想讓新 process 跑不同程式', 'call execlp：code 換掉、heap 等 reset');
   await step(tok);                                   // 1304 大小、內容跟 A 脫鉤
   await anim(tok, 800, (u) => { C.scale.y = 2.4 - u * 1.0; C.position.y = 0.5 * (2.4 - u * 1.0); });

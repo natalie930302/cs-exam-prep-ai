@@ -2601,7 +2601,7 @@ FRAG.push(['flow-l21-weak', 'Lec21：weak duality，內部的邊一加一減', a
   nodeTag(1, '出 − 進 = 0'); nodeTag(3, '出 − 進 = 0');
   say('再加一些 0 的項', 'A 中其他點：出 − 進 = 0（守恆）');
   await step(tok);                                   // 3662.0 expand
-  txt(VT, 'v(f) = Σ_{v ∈ A}（v 的出 − v 的進）');
+  txt(VT, 'v(f) = Σ over v ∈ A（v 的出 − v 的進）');
   say('展開這個 summation', '');
   await step(tok);                                   // 3686.1 = every node in A: out − in
   [0, 1, 3].forEach((v) => nodeColor(v, C.hot, 0.3));

@@ -6428,13 +6428,13 @@ FRAG.push(['bt-mit24-dp', '研究主題：migration 的 DP，O(n q²)', async (t
   pn.add('子問題數：n × q');
   sayc('子問題有幾個？n × q');
   await step(tok);                                   // 22:38 case 1: stay at p_j, remote access
-  pn.add('pⱼ ≠ p(m_{k+1})：DP[k][pⱼ] + access(pⱼ, p(m_{k+1}))');
+  pn.add('pⱼ ≠ p(mₖ₊₁)：DP[k][pⱼ] + access(pⱼ, p(mₖ₊₁))');
   sayc('情況一：pⱼ 不是資料所在處', '留在 pⱼ，做一次遠端存取');
   await step(tok);                                   // 23:13 the new access is not in p_j's cache
   rod(V3(cx(1), cy(1), 0.3), V3(cx(2), cy(1), 0.3), C.B, 0.05);
-  sayc('從「停在 pⱼ」的最佳解出發', '加上遠端存取 m_{k+1} 的成本');
+  sayc('從「停在 pⱼ」的最佳解出發', '加上遠端存取 mₖ₊₁ 的成本');
   await step(tok);                                   // 23:36 case 2: migrate from p_i
-  pn.add('pⱼ = p(m_{k+1})：minᵢ DP[k][pᵢ] + migrate(pᵢ, pⱼ)');
+  pn.add('pⱼ = p(mₖ₊₁)：minᵢ DP[k][pᵢ] + migrate(pᵢ, pⱼ)');
   for (let p = 0; p < Q; p++) rod(V3(cx(1), cy(p), 0.3), V3(cx(2), cy(1), 0.3), C.O, 0.03);
   sayc('情況二：pⱼ 就是資料所在處', '從某個 pᵢ 搬過來，再做本地存取');
   await step(tok);                                   // 24:16 two cases: migrate + local, or stay + remote
@@ -6715,7 +6715,7 @@ FRAG.push(['bt-mit24r-sub', '期末複習：切木頭的子問題 dp[i][j]', asy
   await step(tok);                                   // 7:14 fake markings M0 = 0, Mn+1 = L
   fake.forEach((t) => showL(t, true));
   txt(fake[0], 'M0 = 0'); txt(fake[1], 'M4 = L');
-  sayc('加兩個假記號：M0 = 0、M_{n+1} = L', '整根木頭就是 dp[0][n+1]');
+  sayc('加兩個假記號：M0 = 0、Mₙ₊₁ = L', '整根木頭就是 dp[0][n+1]');
   await step(tok);                                   // 7:21 not evenly spaced: real numbers
   sayc('記號不一定等距', '它們只是一些實數');
   await step(tok);                                   // 7:49 write this definition on your exam
@@ -6774,7 +6774,7 @@ FRAG.push(['bt-mit24r-rec', '期末複習：切木頭的遞迴式（O(n³)）', 
   bad('k = i：遞迴到自己 → 無窮遞迴', 0, 4.1);
   sayc('k = i 的話會遞迴到同一個子問題', '執行時間變成無限');
   await step(tok);                                   // 14:09 k from i + 1 to j − 1
-  show('dp[i][j] = min_{i<k<j} { dp[i][k] + dp[k][j] + (M_k − M_i)(M_j − M_k) }');
+  show('dp[i][j] = min over i<k<j { dp[i][k] + dp[k][j] + (Mₖ − Mᵢ)(Mⱼ − Mₖ) }');
   sayc('k 從 i + 1 到 j − 1');
   await step(tok);                                   // 14:20 k is a marking: the only discrete things
   sayc('i、j、k 都是「第幾個記號」', '木頭上的位置是實數，記號給我們整數');
@@ -6991,8 +6991,8 @@ FRAG.push(['bt-mit24r-bloom', '期末複習：Bloom filter 的 false positive', 
   await step(tok);                                   // 42:38 all independent: replace n with nk
   sayc('每次設哪一格都互相獨立', '把剛才答案的 n 換成 nk 就好');
   await step(tok);                                   // 43:26 (1 − (1 − 1/m)^{nk})^k
-  pn.add('P(fp) = (1 − (1 − 1/m)^{nk})ᵏ', 'good');
-  sayc('P(fp) = (1 − (1 − 1/m)^{nk})^k');
+  pn.add('P(fp) = (1 − (1 − 1/m)ⁿᵏ)ᵏ', 'good');
+  sayc('P(fp) = (1 − (1 − 1/m)ⁿᵏ)ᵏ');
   await step(tok);                                   // 43:47 one element sets k (not necessarily distinct) bits
   sayc('一個元素設 k 個位元（可能重複）', 'n 個元素共設 nk 次');
   await step(tok);                                   // 44:44 the hardest hashing problem; the exam is easier
@@ -7005,7 +7005,7 @@ FRAG.push(['bt-mit24r-use', '期末複習：獨立性假設與 Bloom filter 的�
   fresh([0, 3.6, 12], [0, 2.4, 0]);
   const pn = panel(0, 6.0, 0.62);
   await step(tok);                                   // 45:18 inside: the previous answer with n → nk
-  pn.add('1 − (1 − 1/m)^{nk}：一格是 1 的機率（n 換成 nk）');
+  pn.add('1 − (1 − 1/m)ⁿᵏ：一格是 1 的機率（n 換成 nk）');
   sayc('括號裡就是上一題的答案', '只是 n 換成 nk');
   await step(tok);                                   // 45:36 query: hash through k functions, check k bits
   pn.add('查詢要檢查 k 個位元');

@@ -292,7 +292,7 @@
     "但這個 instruction 可以同時套用到不同的 data 上，所以一次就把每個數字都乘以 2。",
     "這非常適合 array、matrix 的計算（線性代數）：同樣的運算放到不同的 row、column 上，可以同時算，所以非常快。",
     "可是一般程式很複雜，有很多 if else 條件，同一時間各自要做不同的事，這種計算就沒辦法放在 GPU 上。",
-    "GPU 流行之後，Intel 也推出 Xeon Phi：大約塞 50 個 core，介於傳統 CPU 和 SIMD 的 GPU 之間，比較 flexible，不一定要用 SIMD，但 core 數沒有 GPU 那麼多。",
+    "GPU 流行之後，Intel 也推出 Xeon Phi：可以塞進數十個 core（老師說約 50 個；實際產品約 60～72 個），介於傳統 CPU 和 SIMD 的 GPU 之間，比較 flexible，不一定要用 SIMD，但 core 數沒有 GPU 那麼多。",
     "重點是：現在設計 processor 的想法和以前很不一樣，都希望增加 core 的數量、緊密地放在一起，讓大量 thread 或 process 同時執行。"
    ]
   },

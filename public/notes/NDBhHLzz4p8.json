@@ -284,7 +284,7 @@
     },
     {
      "t": 1031,
-     "text": "Linux 用 ln -s 建 symbolic link，分 hard 與 soft；同一個 file 可有多個 absolute path。"
+     "text": "Linux 用 ln 建 link：ln 建 hard link，ln -s 建 symbolic（soft）link；同一個 file 可有多個 absolute path。"
     },
     {
      "t": 1097,
@@ -313,8 +313,8 @@
     "但實際應用時，慢慢會有一些情況是：希望不同的人 share 相同的檔案。",
     "所以可以這樣建：/dict/count 和 /spell/count 是兩個不同的檔案名字，但其實對到同一個 file 的內容。金色的線就是多加的那條 edge。",
     "這就是 acyclic graph：稍微放鬆，可以加 edge；但不能讓它形成 cycle（繞一圈回到自己）。",
-    "怎麼加？在 Linux 裡可以自己玩玩看，用 symbolic link 的指令：ln -s。",
-    "link 分 hard 和 soft，差別在刪掉其中一個名字時：是整個內容就真的刪掉，還是要全部名字都刪掉，內容才消失。所以有不同的 option。",
+    "怎麼加？在 Linux 裡可以自己玩玩看：ln -s 建 symbolic（soft）link；不加 -s 的 ln 則建 hard link。",
+    "link 分 hard 和 soft，差別在刪掉其中一個名字時內容會不會消失：soft link 只記原檔的路徑，原檔一刪內容就沒了（soft link 變成指向不存在的路徑）；hard link 是同一個檔案的另一個名字，要所有名字都刪掉，內容才消失。所以有不同的 option。",
     "這樣同一個檔案就會有 multiple absolute path（多個絕對路徑）。很多軟體因為設計需求會這樣用。",
     "為什麼不直接 copy 一份？跟 copy 最大的差別：第一，copy 真的會浪費儲存空間。",
     "第二，就是前面講過的：資料本來應該只有一份，你把它 duplicate，要怎麼維持資料一致性？非常麻煩。",
@@ -423,12 +423,12 @@
   {
    "q": "Acyclic graph 中，什麼時候才真的刪除共享檔案？",
    "opts": [
-    "reference counter 變成 0",
+    "counter 變成 0",
     "任何一個名字被刪時就立即刪除",
     "每次開機時由 fsck 統一清除",
     "永遠不刪，只移除 link"
    ],
-   "ans": "reference counter 變成 0",
+   "ans": "counter 變成 0",
    "why": "每多一個名字 counter +1，刪名字 −1，變 0 才 remove。"
   }
  ]

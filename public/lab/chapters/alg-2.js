@@ -1123,7 +1123,7 @@ export default function (ctx) {
     tag('√2', 'idx', X(Math.SQRT2), Y(0) - 0.4);
     const xs = [1, 1.5, 17 / 12, 577 / 408, 665857 / 470832];
     const dot = cube('', C.gold, [0.22, 0.22, 0.22], X(1), Y(0), 0);
-    say('Newton：x_{i+1} = (x_i + a/x_i)/2，x₀ = 1', '沿切線走到和 x 軸的交點');
+    say('Newton：xᵢ₊₁ = (xᵢ + a/xᵢ)/2，x₀ = 1', '沿切線走到和 x 軸的交點');
     await beat(tok, 2400);
     for (let q = 0; q < 3; q++) {
       const x = xs[q], fx = x * x - a, nx = xs[q + 1];
@@ -1140,7 +1140,7 @@ export default function (ctx) {
       tag(d.toFixed(1), 'idx', 2.8 + q * 0.95, d * 0.42 + 0.3, 2.2);
     }
     tag('正確位數', 'ptr alt', 4.7, 0.2, 3.2);
-    say('正確位數 0.5 → 1.2 → 2.8 → 5.8 → 11.9：每次約翻倍', 'ε_{n+1} = ε_n² / (2(1 + ε_n))');
+    say('正確位數 0.5 → 1.2 → 2.8 → 5.8 → 11.9：每次約翻倍', 'εₙ₊₁ = εₙ² / (2(1 + εₙ))');
     await beat(tok, 3200);
     say('d 位精度只要 log d 次迭代', 'quadratic convergence');
     await beat(tok, 2600);
@@ -1149,7 +1149,7 @@ export default function (ctx) {
   // ─── 2YeJ-5UAke8：Newton 求 R/b：2¹⁶/5 ───
   async function scNewtonRecip(tok) {
     fresh([0, 5, 14], [0, 3, 0]);
-    const cd = code(['f(x) = 1/x − b/R，根在 x = R/b', 'x_{i+1} = 2x_i − b·x_i²/R'], -1, 7.2, 0.55);
+    const cd = code(['f(x) = 1/x − b/R，根在 x = R/b', 'xᵢ₊₁ = 2xᵢ − b·xᵢ²/R'], -1, 7.2, 0.55);
     const tgt = 65536 / 5, H = (v) => v / 16384 * 5.6;
     const wl = lab.box(C.green, [10.5, 0.05, 0.05]); wl.position.set(0.2, H(tgt), 0); lab.world.add(wl);
     tag('R/b = 13107.2', 'ptr alt', 5.8, H(tgt) + 0.3);
@@ -7241,7 +7241,7 @@ FRAG.push(['dcmit-catalan-rules', 'Catalan：平衡括號的兩條規則', async
 }]);
 
 // 10:55 Catalan 遞迴：C₀ = 1、C₂ = C₀C₁ + C₁C₀、C_{n+1} = Σ C_k C_{n−k}
-FRAG.push(['dcmit-catalan-recur', 'Catalan 遞迴：C_{n+1} = Σ C_k C_{n−k}', async (tok) => {
+FRAG.push(['dcmit-catalan-recur', 'Catalan 遞迴：Cₙ₊₁ = Σ Cₖ Cₙ₋ₖ', async (tok) => {
   fresh([0, 5, 13], [0, 2.8, 0]);
   await step(tok); // @655.0 C_n = # strings with n pairs
   tag('C_n = 恰有 n 對括號的平衡字串個數', 'ptr', 0, 6.6, 0);
@@ -7250,8 +7250,8 @@ FRAG.push(['dcmit-catalan-recur', 'Catalan 遞迴：C_{n+1} = Σ C_k C_{n−k}',
   const r0 = dBox('C₀ = 1：λ', -4.6, 5.6, 0, 2.4, MINT, 1);
   say('C₀ = 1：空字串也算一個', 'base case');
   await step(tok); // @697.0 want an equation for C_{n+1}
-  const q = bub('C_{n+1} 怎麼用比較小的 C 算？', 2.6, 5.6, 0);
-  say('想要 C_{n+1} 的式子', '用之前產生過的字串，唯一地組出來');
+  const q = bub('Cₙ₊₁ 怎麼用比較小的 C 算？', 2.6, 5.6, 0);
+  say('想要 Cₙ₊₁ 的式子', '用之前產生過的字串，唯一地組出來');
   await step(tok); // @774.0 C1 = 1
   dBox('C₁ = 1：()', -4.6, 4.9, 0, 2.4, MINT, 1);
   say('C₁ = 1', '只有 () 一種');
@@ -7272,8 +7272,8 @@ FRAG.push(['dcmit-catalan-recur', 'Catalan 遞迴：C_{n+1} = Σ C_k C_{n−k}',
   say('答案都是 2', '但這個式子才是對的');
   await step(tok); // @949.0 general: Σ C_k C_{n-k}
   kill(stu.g);
-  tag('C_{n+1} = Σ_{k=0..n} C_k · C_{n−k}（n ≥ 0）', 'ptr', 0, 3.3, 0);
-  say('一般式：α 有 k 對、β 有 n − k 對', 'C_{n+1} = Σ C_k C_{n−k}');
+  tag('Cₙ₊₁ = Σ over k=0..n Cₖ · Cₙ₋ₖ（n ≥ 0）', 'ptr', 0, 3.3, 0);
+  say('一般式：α 有 k 對、β 有 n − k 對', 'Cₙ₊₁ = Σ Cₖ Cₙ₋ₖ');
   await step(tok); // @992.0 the Catalan numbers on the board
   const Cs = [1, 1, 2, 5, 14, 42, 132, 429, 1430, 4862], bars = [];
   for (let n = 0; n < Cs.length; n++) {
@@ -7682,7 +7682,7 @@ FRAG.push(['dcmit2-nested-q', '本講目標：√ → ÷ → × 兩層計算', a
   say('上次的問題：√2 的第一百萬位');
   await step(tok);                                   // 47.2 high-precision arithmetic + Newton
   const s = box('√a：Newton 迭代', -1.2, 5.6, 0, 3.6, B1, 1.2);
-  say('用高精度運算 + Newton 法開根號', 'x_{i+1} = (x_i + a/x_i)/2');
+  say('用高精度運算 + Newton 法開根號', 'xᵢ₊₁ = (xᵢ + a/xᵢ)/2');
   await step(tok);                                   // 61.9 we don't know division yet
   arrow(V3(-1.2, 5.2, 0), V3(-1.2, 4.4, 0));
   const d = box('÷：怎麼做？', -1.2, 3.9, 0, 3.6, P1, 1.2);
@@ -7720,9 +7720,9 @@ FRAG.push(['dcmit2-sqrt-review', '回顧：Newton 求 √2，位數翻倍', asyn
   tag('目標：√2 的第一百萬位', 'say', -1.5, 7.2, 0);
   say('目標：√2 的第一百萬位');
   await step(tok);                                   // 146.1 integers: floor of √(2·10^{2d})
-  box('⌊√(2·10^{2d})⌋', -3.4, 6.2, 0, 3.4, MINT, 1);
+  box('⌊√(2·10²ᵈ)⌋', -3.4, 6.2, 0, 3.4, MINT, 1);
   tag('例 d = 3：⌊√2000000⌋ = 1414 → 1.414', 'note', 2.6, 6.2, 0);
-  say('全部用整數：算 ⌊√(2·10^{2d})⌋', 'd = 想要的精度位數');
+  say('全部用整數：算 ⌊√(2·10²ᵈ)⌋', 'd = 想要的精度位數');
   await step(tok);                                   // 212.0 start with x0 = 1
   line(X(0.3), Y(0), X(2.2), Y(0), 0, BROWN);
   curve(f, 0.75, 2.15, X, Y);
@@ -7731,8 +7731,8 @@ FRAG.push(['dcmit2-sqrt-review', '回顧：Newton 求 √2，位數翻倍', asyn
   const g = buddy('x', '1', BUTTER, X(1), Y(0), 0.4, 0.45);
   say('從 x₀ = 1 出發', 'Newton：一步一步改進猜測');
   await step(tok);                                   // 219.2 x_{i+1} = (x_i + a/x_i)/2
-  tag('x_{i+1} = (x_i + a/x_i) / 2', 'ptr alt', 3.6, 4.6, 0);
-  say('迭代式：x_{i+1} = (x_i + a/x_i)/2');
+  tag('xᵢ₊₁ = (xᵢ + a/xᵢ) / 2', 'ptr alt', 3.6, 4.6, 0);
+  say('迭代式：xᵢ₊₁ = (xᵢ + a/xᵢ)/2');
   await step(tok);                                   // 230.7 this requires division
   tag('a/x_i 要做除法！', 'bad', 3.6, 3.9, 0);
   g.mood('wow');
@@ -7761,7 +7761,7 @@ FRAG.push(['dcmit2-sqrt-review', '回顧：Newton 求 √2，位數翻倍', asyn
 }]);
 
 // 05:10 誤差分析：x_n = √a(1 + ε_n) → ε_{n+1} = ε_n² / (2(1 + ε_n))
-FRAG.push(['dcmit2-eps-derive', '誤差分析：ε_{n+1} ≈ ε_n²', async (tok) => {
+FRAG.push(['dcmit2-eps-derive', '誤差分析：εₙ₊₁ ≈ εₙ²', async (tok) => {
   fresh([0, 4.6, 13], [0, 3.0, 0]);
   const NX = (e) => e * 14;   // ε → x on the number line
   await step(tok);                                   // 309.8 error analysis of Newton's method
@@ -7770,7 +7770,7 @@ FRAG.push(['dcmit2-eps-derive', '誤差分析：ε_{n+1} ≈ ε_n²', async (tok
   tag('√a（正確答案）', 'good', 0, 1.9, 0.2);
   say('對 Newton 法做誤差分析', 'error analysis');
   await step(tok);                                   // 326.1 x_n = √a (1 + ε_n)
-  const cd = code(['x_n = √a (1 + ε_n)', 'x_{n+1} = (x_n + a/x_n) / 2', '  = √a [(1 + ε_n) + 1/(1 + ε_n)] / 2', '  = √a [1 + ε_n² / (2(1 + ε_n))]', 'ε_{n+1} = ε_n² / (2(1 + ε_n))'], -2.4, 6.8, 0.55);
+  const cd = code(['x_n = √a (1 + ε_n)', 'xₙ₊₁ = (xₙ + a/xₙ) / 2', '  = √a [(1 + ε_n) + 1/(1 + ε_n)] / 2', '  = √a [1 + ε_n² / (2(1 + ε_n))]', 'εₙ₊₁ = εₙ² / (2(1 + εₙ))'], -2.4, 6.8, 0.55);
   cd.hl(0);
   const g = buddy('x_n', '', BUTTER, NX(0.3), 0.6, 0.6, 0.55);
   const eps = tag('ε_n', 'pkt', NX(0.15), 0.3, 1.3);
@@ -7795,7 +7795,7 @@ FRAG.push(['dcmit2-eps-derive', '誤差分析：ε_{n+1} ≈ ε_n²', async (tok
   say('化簡：多出一項 ε_n² / (2(1 + ε_n))', '（老師跳過一步代數）');
   await step(tok);                                   // 481.8 ε_{n+1} vs ε_n
   cd.hl(4);
-  say('ε_{n+1} = ε_n² / (2(1 + ε_n))', '新誤差 ≈ 舊誤差的平方');
+  say('εₙ₊₁ = εₙ² / (2(1 + εₙ))', '新誤差 ≈ 舊誤差的平方');
   await step(tok);                                   // 504.0 this part is essentially 1
   tag('ε_n 很小時 1 + ε_n ≈ 1', 'note', 4.2, 4.4, 0);
   await walk(tok, g, NX(0.08), 0.6, 900); g.mood('happy');
@@ -7967,8 +7967,8 @@ FRAG.push(['dcmit2-logstar', 'log* n：連續取 log 到 ≤ 1', async (tok) => 
   tag('理論上的突破', 'say', 6.2, 1.9, 2.4);
   say('理論突破：Fürer 的演算法');
   await step(tok);                                   // 1164.3 n log n · 2^{O(log* n)}
-  const fm = tag('n log n · 2^{O(log* n)}', 'ptr', 0, 7.6, 0);
-  say('時間：n log n · 2^{O(log* n)}', 'O 是上界');
+  const fm = tag('n log n · 2^(O(log* n))', 'ptr', 0, 7.6, 0);
+  say('時間：n log n · 2^(O(log* n))', 'O 是上界');
   await step(tok);                                   // 1187.0 n log n is like sorting
   tag('n log n：跟排序一樣', 'note', -4.2, 7.0, 0);
   say('n log n 這部分像排序');
@@ -7996,8 +7996,8 @@ FRAG.push(['dcmit2-logstar', 'log* n：連續取 log 到 ≤ 1', async (tok) => 
   tag('log*(2⁵⁰) = 5', 'good', 5, 2.0, 1.3);
   say('取 5 次就 ≤ 1', 'log*(2⁵⁰) = 5');
   await step(tok);                                   // 1300.7 2 raised to a pretty small number
-  tag('2^{O(log* n)} 幾乎是常數', 'ptr alt', 0, 6.3, -1.5);
-  say('log* n 很小，2^{O(log* n)} 幾乎是常數', '2¹⁰ 也才 1000');
+  tag('2^(O(log* n)) 幾乎是常數', 'ptr alt', 0, 6.3, -1.5);
+  say('log* n 很小，2^(O(log* n)) 幾乎是常數', '2¹⁰ 也才 1000');
   await step(tok);                                   // 1313.2 asymptotically the winner
   fu.mood('wow'); await fu.hop(tok);
   tag('理論冠軍', 'good', 6.2, 2.6, 2.4);
@@ -8072,7 +8072,7 @@ FRAG.push(['dcmit2-shift-div', '除以 R = 2ᵏ：只是 shift', async (tok) => 
 FRAG.push(['dcmit2-recip-derive', 'Newton 求 R/b：只剩乘法', async (tok) => {
   fresh([0, 4.4, 13], [0, 3.0, 0]);
   const f = (x) => 1 / x - 0.5, X = (x) => 1.2 + x * 1.25, Y = (v) => 1.6 + v * 1.3;
-  const cd = code(['f(x) = 1/x − b/R', 'f′(x) = −1/x²', 'x_{i+1} = x_i − f(x_i)/f′(x_i)', '  = x_i − (1/x_i − b/R)/(−1/x_i²)', '  = x_i + x_i²(1/x_i − b/R)', '  = 2x_i − b·x_i²/R'], -3.0, 6.9, 0.52);
+  const cd = code(['f(x) = 1/x − b/R', 'f′(x) = −1/x²', 'xᵢ₊₁ = xᵢ − f(xᵢ)/f′(xᵢ)', '  = x_i − (1/x_i − b/R)/(−1/x_i²)', '  = x_i + x_i²(1/x_i − b/R)', '  = 2x_i − b·x_i²/R'], -3.0, 6.9, 0.52);
   cd.ls.forEach((l) => { l.element.style.visibility = 'hidden'; });
   const show = (i) => { cd.ls[i].element.style.visibility = ''; cd.hl(i); };
   await step(tok);                                   // 1595.8 Newton again (1/x is nonlinear)
@@ -8112,7 +8112,7 @@ FRAG.push(['dcmit2-recip-derive', 'Newton 求 R/b：只剩乘法', async (tok) =
   say('畫切線，交 x 軸的點 = 下一個 x', '和上一講一樣');
   await step(tok);                                   // 1756.3 x_{i+1} = x_i − f/f′
   show(2);
-  say('Newton：x_{i+1} = x_i − f(x_i)/f′(x_i)');
+  say('Newton：xᵢ₊₁ = xᵢ − f(xᵢ)/f′(xᵢ)');
   await step(tok);                                   // 1781.8 plug in f and f′
   show(3);
   say('把 f 和 f′ 代進去');
@@ -8123,7 +8123,7 @@ FRAG.push(['dcmit2-recip-derive', 'Newton 求 R/b：只剩乘法', async (tok) =
   show(5);
   tag('關鍵！', 'good', 1.6, 4.3, 0);
   nw.mood('wow');
-  say('x_{i+1} = 2x_i − b·x_i²/R', '這一行是關鍵');
+  say('xᵢ₊₁ = 2xᵢ − b·xᵢ²/R', '這一行是關鍵');
   await step(tok);                                   // 1836.8 2 times: doesn't scare us
   const ops = [['2x_i：乘 2', MINT], ['x_i²：乘法', OR], ['÷R：shift', MINT]];
   const ob = [];
@@ -8157,7 +8157,7 @@ FRAG.push(['dcmit2-nested-mid', '兩層 Newton：√ 叫 ÷，÷ 叫 ×', async 
   tag('開根號的整體結構', 'say', 0, 7.0, 0);
   say('先看整體結構：怎麼算 √a');
   await step(tok);                                   // 1888.7 Newton for √a, iteratively
-  const s = N.s(); tag('迭代 x_i → x_{i+1}', 'idx', 1.6, 5.8, 0);
+  const s = N.s(); tag('迭代 xᵢ → xᵢ₊₁', 'idx', 1.6, 5.8, 0);
   say('外層：用 Newton 迭代算 √a');
   await step(tok);                                   // 1899.7 each iteration needs a reciprocal 1/x_i
   arrow(V3(-2.4, 5.4, 0), V3(-2.4, 4.5, 0));
@@ -8172,9 +8172,9 @@ FRAG.push(['dcmit2-nested-mid', '兩層 Newton：√ 叫 ÷，÷ 叫 ×', async 
   const m = N.m();
   say('第二層的迭代只做乘法', '2x_i − b·x_i²/R');
   await step(tok);                                   // 1936.6 x_{i+1}, x_{i+2}, x_{i+3}, …
-  for (const t of ['x_{i+1}', 'x_{i+2}', 'x_{i+3}']) { const p = tag(t, 'pkt', 1.0, 3.8, 0.6); await travel(tok, p, V3(1.0, 3.8, 0.6), V3(1.0, 2.3, 0.6), 500); remove(p); }
+  for (const t of ['xᵢ₊₁', 'xᵢ₊₂', 'xᵢ₊₃']) { const p = tag(t, 'pkt', 1.0, 3.8, 0.6); await travel(tok, p, V3(1.0, 3.8, 0.6), V3(1.0, 2.3, 0.6), 500); remove(p); }
   glow(m, GOLD);
-  say('一次又一次做乘法', 'x_{i+1}、x_{i+2}、x_{i+3}…');
+  say('一次又一次做乘法', 'xᵢ₊₁、xᵢ₊₂、xᵢ₊₃…');
   await step(tok);                                   // 1943.8 the complete picture later
   tag('講完除法的複雜度再回來', 'note', 3.6, 2.2, 0);
   say('完整的圖等講完除法複雜度再看');
@@ -8187,7 +8187,7 @@ FRAG.push(['dcmit2-recip-example', 'Newton 求 R/b：2¹⁶/5 的迭代', async 
   const tgt = 65536 / 5, H = (v) => v / 16384 * 4.6;
   const xb = buddy('x_i', '', BUTTER, -6.2, 0, 1.6, 0.6);
   await step(tok);                                   // 1956.8 convergence of this scheme
-  tag('x_{i+1} = 2x_i − b·x_i²/R', 'ptr alt', -1, 7.0, 0);
+  tag('xᵢ₊₁ = 2xᵢ − b·xᵢ²/R', 'ptr alt', -1, 7.0, 0);
   say('這個除法 Newton 收斂得多快？');
   await step(tok);                                   // 1962.1 an example first
   tag('先看例子，再談證明', 'note', 4.0, 7.0, 0);
@@ -8383,12 +8383,12 @@ FRAG.push(['dcmit2-nested-end', '開根號 = 除法 = 乘法：Θ(n^α)', async 
   s = N.s();
   say('我們要算 √a');
   await step(tok);                                   // 2891.8 10^{2d}·a, run Newton on it
-  tag('算 √(10^{2d}·a)', 'idx', 1.8, 5.8, 0);
-  say('實際算 √(10^{2d}·a)：外層 Newton');
+  tag('算 √(10²ᵈ·a)', 'idx', 1.8, 5.8, 0);
+  say('實際算 √(10²ᵈ·a)：外層 Newton');
   await step(tok);                                   // 2906.4 x_{i+1} = (x_i + a/x_i)/2
-  tag('x_{i+1} = (x_i + a/x_i)/2', 'ptr alt', 1.8, 5.1, 0);
+  tag('xᵢ₊₁ = (xᵢ + a/xᵢ)/2', 'ptr alt', 1.8, 5.1, 0);
   tag('黑板漏了 /2', 'note', 4.8, 5.1, 0);
-  say('外層迭代：x_{i+1} = (x_i + a/x_i)/2', '（黑板少寫了 /2）');
+  say('外層迭代：xᵢ₊₁ = (xᵢ + a/xᵢ)/2', '（黑板少寫了 /2）');
   await step(tok);                                   // 2924.7 each iteration calls a division
   arrow(V3(-2.4, 5.4, 0), V3(-2.4, 4.5, 0)); d = N.d();
   for (let k = 0; k < 2; k++) { const p = tag('呼叫 ÷', 'pkt', 0.4, 5.6, 0.6); await travel(tok, p, V3(0.4, 5.6, 0.6), V3(0.4, 4.0, 0.6), 500); remove(p); }
@@ -8517,11 +8517,11 @@ FRAG.push(['dcmit2-abcd', 'A B C D：硬算要 4 次乘法', async (tok) => {
   const cnt = tag('乘法 0 次', 'ptr alt', 5.4, 4.6);
   say('兩半分別叫 A、B 和 C、D');
   await step(tok);                                   // 380.8 (10^{n/2}A + B)(10^{n/2}C + D)
-  tag('(10^{n/2}·A + B) · (10^{n/2}·C + D)', 'pkt', -0.6, 5.6);
-  say('硬算：(10^{n/2}·A + B)(10^{n/2}·C + D)', '以 10 為基底');
+  tag('(10^(n/2)·A + B) · (10^(n/2)·C + D)', 'pkt', -0.6, 5.6);
+  say('硬算：(10^(n/2)·A + B)(10^(n/2)·C + D)', '以 10 為基底');
   await step(tok);                                   // 400.8 = 10ⁿAC + 10^{n/2}(AD + BC) + BD
-  tag('= 10ⁿ·AC + 10^{n/2}·(AD + BC) + BD', 'ptr alt', -0.6, 4.9);
-  say('展開', '10ⁿ·AC + 10^{n/2}·(AD + BC) + BD');
+  tag('= 10ⁿ·AC + 10^(n/2)·(AD + BC) + BD', 'ptr alt', -0.6, 4.9);
+  say('展開', '10ⁿ·AC + 10^(n/2)·(AD + BC) + BD');
   await step(tok);                                   // 416.8 multiplication × 4
   const P = [[A, C, 'AC'], [A, D, 'AD'], [B, C, 'BC'], [B, D, 'BD']], pb = [];
   for (let k = 0; k < 4; k++) { const [p, q, t] = P[k]; glow(p, GOLD); glow(q, GOLD); pb.push(box(t, -4.5 + k * 1.9, 3.9, 0, 1.6, OR, 1)); txt(cnt, '乘法 ' + (k + 1) + ' 次'); await ctx.beat(tok, 450); glow(p, null); glow(q, null); }
@@ -8553,8 +8553,8 @@ FRAG.push(['dcmit2-abcd', 'A B C D：硬算要 4 次乘法', async (tok) => {
   pb.forEach((b) => glow(b, RED));
   say('補 0 是 O(n)：免費', '貴的是那 4 次乘法');
   await step(tok);                                   // 558.8 10^{n/2} shifts left by n/2 digits
-  tag('10^{n/2}·A：A 往左移 n/2 位', 'note', 2.6, 1.5, 1.4);
-  say('10^{n/2}·A：把 A 往左移 n/2 位', '再加上 B');
+  tag('10^(n/2)·A：A 往左移 n/2 位', 'note', 2.6, 1.5, 1.4);
+  say('10^(n/2)·A：把 A 往左移 n/2 位', '再加上 B');
   await step(tok);                                   // 565.8 left half, right half — same number
   glow(A, GOLD); glow(B, GOLD);
   say('只是在說：A 是左半、B 是右半', '還是同一個數');
@@ -8836,8 +8836,8 @@ FRAG.push(['dcmit2-cuberoot', '∛a：f(x) = x³ − a', async (tok) => {
   const t = box('10^d · ∛a', -4.4, 5.8, 0, 2.6, MINT, 1);
   say('乘上 10^d：小數點右移 d 位');
   await step(tok);                                   // 1926.8 10^d inside the root: 10^{3d}·a
-  txt(t.userData.lbl, '10^d · ∛a = ∛(10^{3d} · a)');
-  say('把 10^d 搬進根號', '變成 ∛(10^{3d} · a)');
+  txt(t.userData.lbl, '10ᵈ · ∛a = ∛(10³ᵈ · a)');
+  say('把 10^d 搬進根號', '變成 ∛(10³ᵈ · a)');
   await step(tok);                                   // 1932.8 don't forget this 3
   glow(t, GOLD); tag('別忘了這個 3！', 'bad', -1.2, 5.8, 0);
   say('別忘了這個 3', '漏掉就算錯東西');
@@ -8848,8 +8848,8 @@ FRAG.push(['dcmit2-cuberoot', '∛a：f(x) = x³ − a', async (tok) => {
   show(0);
   say('f(x) = x³ − a');
   await step(tok);                                   // 1982.8 10^{3d}·a becomes the new a
-  tag('a ← 10^{3d}·a（整數）', 'pkt', 3.8, 4.9, 0);
-  say('把 10^{3d}·a 當成新的 a', '它是整數，不用再除 R');
+  tag('a ← 10³ᵈ·a（整數）', 'pkt', 3.8, 4.9, 0);
+  say('把 10³ᵈ·a 當成新的 a', '它是整數，不用再除 R');
   await step(tok);                                   // 2003.8 f′(x) = 3x²
   show(1);
   say("f′(x) = 3x²");
@@ -8893,12 +8893,12 @@ FRAG.push(['dcmit2-init-mag', '初始猜測：數量級', async (tok) => {
   tag('∛a 的位數 ≈ n/3', 'ptr alt', -2.6, 4.4, 0);
   say('立方根的位數約是 n/3');
   await step(tok);                                   // 2174.8 something × 10^{n/3}
-  tag('∛a ≈ ? · 10^{n/3}', 'ptr alt', 2.6, 4.4, 0);
-  say('所以 ∛a ≈ 某數 × 10^{n/3}');
+  tag('∛a ≈ ? · 10^(n/3)', 'ptr alt', 2.6, 4.4, 0);
+  say('所以 ∛a ≈ 某數 × 10^(n/3)');
   await step(tok);                                   // 2185.8 say that something is 1
-  g.set('1·10^{n/3}'); g.mood('happy');
+  g.set('1·10^(n/3)'); g.mood('happy');
   tag('數量級對了', 'good', -6.0, 1.6, 2.2);
-  say('先猜 1 · 10^{n/3}', '數量級正確');
+  say('先猜 1 · 10^(n/3)', '數量級正確');
   await step(tok);                                   // 2209.8 order of magnitude + maybe the first digit
   glow(ds[0], GOLD);
   tag('再拿到第一位更好', 'note', 0, 3.6, 0);
@@ -8926,7 +8926,7 @@ FRAG.push(['dcmit2-init-mag', '初始猜測：數量級', async (tok) => {
 // 38:38 初始猜測：基底 2¹⁶ 時對第一位做 binary search（猜³ 比大小）
 FRAG.push(['dcmit2-init-bsearch', '初始猜測：對第一位 binary search', async (tok) => {
   fresh([0, 4.2, 13], [0, 3.2, 0]);
-  const g = buddy('x₀', '1·10^{n/3}', BUTTER, -6.0, 0, 2.2, 0.7);
+  const g = buddy('x₀', '1·10^(n/3)', BUTTER, -6.0, 0, 2.2, 0.7);
   const cs = [];
   await step(tok);                                   // 2317.8 base 10: a table is great
   tag('基底 10：查表就好', 'good', -2.4, 7.0, 0);
@@ -9014,8 +9014,8 @@ FRAG.push(['dcmit2-cube-iter', '整數迭代：x 不變就停', async (tok) => {
   await put(3);
   say('答案：再迭代一次，數字不變', '就停');
   await step(tok);                                   // 2693.8 we compute ∛(10^{3d}·a) with integers
-  tag('算的是 ∛(10^{3d}·a)：只用整數', 'note', 3.6, 5.8, 0);
-  say('算 ∛(10^{3d}·a)，只用整數');
+  tag('算的是 ∛(10³ᵈ·a)：只用整數', 'note', 3.6, 5.8, 0);
+  say('算 ∛(10³ᵈ·a)，只用整數');
   await step(tok);                                   // 2707.8 only d digits; the rest discarded
   tag('多的位數自動丟掉', 'note', 3.6, 5.2, 0);
   say('整數只有 d 位精度', '後面的位數自動被丟掉');
@@ -9046,11 +9046,11 @@ FRAG.push(['dcmit2-eps-zeros', 'ε 平方：0 的個數每步翻倍', async (tok
   prop('file', 5.6, 0, 1.6, 0.9, '講義：八行推導');
   say('推導有八行，在講義裡');
   await step(tok);                                   // 2768.8 x_{i+1} = x(1 + c·ε_i²)
-  tag('x_{i+1} = x(1 + c·ε_i²)', 'ptr alt', 2.4, 6.2);
-  say('結果：x_{i+1} = x(1 + 常數 · ε_i²)');
+  tag('xᵢ₊₁ = x(1 + c·εᵢ²)', 'ptr alt', 2.4, 6.2);
+  say('結果：xᵢ₊₁ = x(1 + 常數 · εᵢ²)');
   await step(tok);                                   // 2799.8 ε_{i+1} ≈ ε_i²
-  tag('ε_{i+1} ≈ ε_i²', 'good', 2.4, 5.5);
-  say('所以 ε_{i+1} ≈ ε_i²');
+  tag('εᵢ₊₁ ≈ εᵢ²', 'good', 2.4, 5.5);
+  say('所以 εᵢ₊₁ ≈ εᵢ²');
   await step(tok);                                   // 2811.8 quadratic convergence
   say('這就是 quadratic convergence', '平方收斂');
   await step(tok);                                   // 2838.8 want (1 + ε) → 1, ε → 0
@@ -9072,8 +9072,8 @@ FRAG.push(['dcmit2-eps-zeros', 'ε 平方：0 的個數每步翻倍', async (tok
   tag('第 i 步 ≈ 2^i 位正確', 'good', -1.4, 1.0, 0.6);
   say('第 i 步大約有 2^i 位正確', '1 → 2 → 4 → 8');
   await step(tok);                                   // 2966.8 x_{i+1} − x_i = x(ε_{i+1} − ε_i)
-  tag('x_{i+1} − x_i = x(ε_{i+1} − ε_i)', 'ptr', 3.2, 4.4);
-  say('相鄰兩次的差', 'x_{i+1} − x_i = x(ε_{i+1} − ε_i)');
+  tag('xᵢ₊₁ − xᵢ = x(εᵢ₊₁ − εᵢ)', 'ptr', 3.2, 4.4);
+  say('相鄰兩次的差', 'xᵢ₊₁ − xᵢ = x(εᵢ₊₁ − εᵢ)');
   await step(tok);                                   // 3003.8 floor → 0: done
   tag('整數取 floor：差變 0 就停', 'note', 3.2, 3.8);
   say('整數取 floor 後，差變成 0 就結束');
@@ -9089,7 +9089,7 @@ FRAG.push(['dcmit2-eps-zeros', 'ε 平方：0 的個數每步翻倍', async (tok
   say('0 的個數每步翻倍', '約 log d 步就夠');
   await step(tok);                                   // 3082.8 good initial guess + this factor
   tag('初始猜測夠好 + ε² 這個因子 = 收斂快', 'say', 0, 0.2, 1.8);
-  say('要有好的初始猜測', '再證明 ε_{i+1} ≈ ε_i²');
+  say('要有好的初始猜測', '再證明 εᵢ₊₁ ≈ εᵢ²');
 }]);
 
 // 51:50 問答：對整個答案 binary search 要 log(10^d) ≈ d 步；Newton 只要 log d 步

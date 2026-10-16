@@ -3423,7 +3423,7 @@ scene('pfB-l10-weight', "位權：最高位最重要", CAM, [
 scene('pfB-l10-code', "連除法的 pseudocode", CAM, [
   // 1217.2
   async (tok, S) => {
-          S.c = code(['procedure base b expansion(n, b)', 'q := n', 'k := 0', 'while q ≠ 0', '    a_k := q mod b', '    q := ⌊q / b⌋', '    k := k + 1', 'return (a_{k−1} … a_1 a_0)'], -2.6, 6.6, 0.62); cap('把連除法寫成程式', '');
+          S.c = code(['procedure base b expansion(n, b)', 'q := n', 'k := 0', 'while q ≠ 0', '    a_k := q mod b', '    q := ⌊q / b⌋', '    k := k + 1', 'return (aₖ₋₁ … a₁ a₀)'], -2.6, 6.6, 0.62); cap('把連除法寫成程式', '');
         },
   // 1224.1
   async (tok, S) => {
@@ -4810,7 +4810,7 @@ scene('pfC-12-modexp', '快速冪演算法（modular exponentiation）', [
   },
   async (tok, S) => { // 630.6
     S.B.clear(); S.lad.forEach((m) => kill(m)); kill(S.x); kill(S.bit); S.pw.forEach((l) => kill(l));
-    S.code = code(['procedure modexp(b, n = (a_{k-1}…a₁a₀)₂, m)', 'x := 1', 'power := b mod m', 'for i := 0 to k − 1', '   if aᵢ = 1 then x := (x · power) mod m', '   power := (power · power) mod m', 'return x      { x = bⁿ mod m }'], -2.6, 6.4);
+    S.code = code(['procedure modexp(b, n = (aₖ₋₁…a₁a₀)₂, m)', 'x := 1', 'power := b mod m', 'for i := 0 to k − 1', '   if aᵢ = 1 then x := (x · power) mod m', '   power := (power · power) mod m', 'return x      { x = bⁿ mod m }'], -2.6, 6.4);
     S.code.hl(1); cls(S.code.ls[2], 'ptr alt');
     cap('寫成演算法：x := 1，power := b mod m', '底數太大沒用，先取餘數');
   },
@@ -5124,7 +5124,7 @@ scene('pfC-12-power', '|P(S)| = 2^|S|：對集合大小歸納', [
   },
 ]);
 
-scene('pfC-12-harm', '調和數 H_{2ⁿ} ≥ 1 + n/2', [
+scene('pfC-12-harm', '調和數 H(2ⁿ) ≥ 1 + n/2', [
   async (tok, S) => { // 2380.6
     S.B = board(-6.6, 6.4, 0.7, 5); S.B.add('另一種數列：不是 1, 2, 3, 4 一個一個');
     cap('這次的數列不是一個接一個', '');
@@ -5145,8 +5145,8 @@ scene('pfC-12-harm', '調和數 H_{2ⁿ} ≥ 1 + n/2', [
     cap('只管第 2ⁿ 項', 'n 是自然數，2⁰ = 1');
   },
   async (tok, S) => { // 2455.1
-    S.B.add('證明：H_{2ⁿ} ≥ 1 + n/2');
-    cap('要證 H_{2ⁿ} ≥ 1 + n/2', '');
+    S.B.add('證明：H(2ⁿ) ≥ 1 + n/2');
+    cap('要證 H(2ⁿ) ≥ 1 + n/2', '');
   },
   async (tok, S) => { // 2468.8
     T('越加越大、不會收斂（像 log）', 'idx', 4.5, 3.05);
@@ -5157,15 +5157,15 @@ scene('pfC-12-harm', '調和數 H_{2ⁿ} ≥ 1 + n/2', [
     cap('n = 0：左邊 H₁ = 1，右邊也是 1', '≥ 含等於，所以對');
   },
   async (tok, S) => { // 2565.2
-    S.B.add('② 假設 H_{2ᵏ} ≥ 1 + k/2');
+    S.B.add('② 假設 H(2ᵏ) ≥ 1 + k/2');
     cap('假設 k 的時候對', '');
   },
   async (tok, S) => { // 2579.8
-    S.B.add('H_{2ᵏ⁺¹} = H_{2ᵏ} + [1/(2ᵏ+1) + … + 1/2ᵏ⁺¹]');
+    S.B.add('H(2ᵏ⁺¹) = H(2ᵏ) + [1/(2ᵏ+1) + … + 1/2ᵏ⁺¹]');
     cap('照定義寫開：前面一段 + 後面一段', '');
   },
   async (tok, S) => { // 2593.3
-    S.B.add('前段 H_{2ᵏ} ≥ 1 + k/2　← 用假設');
+    S.B.add('前段 H(2ᵏ) ≥ 1 + k/2　← 用假設');
     cap('前面那段套用假設', '');
   },
   async (tok, S) => { // 2602.8
@@ -5179,7 +5179,7 @@ scene('pfC-12-harm', '調和數 H_{2ⁿ} ≥ 1 + n/2', [
     cap('一共 2ᵏ 項，每項至少 1/2ᵏ⁺¹', '乘起來是 1/2');
   },
   async (tok, S) => { // 2664.7
-    S.B.add('H_{2ᵏ⁺¹} ≥ 1 + k/2 + 1/2 = 1 + (k+1)/2 ✓', 'good');
+    S.B.add('H(2ᵏ⁺¹) ≥ 1 + k/2 + 1/2 = 1 + (k+1)/2 ✓', 'good');
     cap('兩段加起來：k+1 也對', '常常就是這樣「換小」');
   },
 ]);
@@ -5195,12 +5195,12 @@ scene('pfC-12-demorgan', '推廣的 De Morgan 定律', [
     cap('手上有兩個工具', '兩個集合的公式、k 個集合的假設');
   },
   async (tok, S) => { // 2723.3
-    S.B.add('k+1 個看成兩塊：B = A₁ ∩ … ∩ A_k，和 A_{k+1}');
-    S.b1 = chip('B = A₁ ∩ … ∩ A_k', FC.blue, 2.4, 2.0, 2.6, 0.7, 1); S.b2 = chip('A_{k+1}', FC.orange, 5.4, 2.0, 1.4, 0.7, 1);
-    cap('換個心態：前面 k 個當成一個集合 B', '後面一個 A_{k+1}');
+    S.B.add('k+1 個看成兩塊：B = A₁ ∩ … ∩ Aₖ，和 Aₖ₊₁');
+    S.b1 = chip('B = A₁ ∩ … ∩ A_k', FC.blue, 2.4, 2.0, 2.6, 0.7, 1); S.b2 = chip('Aₖ₊₁', FC.orange, 5.4, 2.0, 1.4, 0.7, 1);
+    cap('換個心態：前面 k 個當成一個集合 B', '後面一個 Aₖ₊₁');
   },
   async (tok, S) => { // 2756.9
-    S.B.add('(B ∩ A_{k+1})ᶜ = Bᶜ ∪ A_{k+1}ᶜ　← 兩個集合版');
+    S.B.add('(B ∩ Aₖ₊₁)ᶜ = Bᶜ ∪ Aₖ₊₁ᶜ　← 兩個集合版');
     cap('先用兩個集合的 De Morgan', '');
   },
   async (tok, S) => { // 2776.8
@@ -5209,7 +5209,7 @@ scene('pfC-12-demorgan', '推廣的 De Morgan 定律', [
     cap('Bᶜ 是 k 個集合交集的補集', '可以套用假設');
   },
   async (tok, S) => { // 2800.9
-    S.B.add('連集結合律 → A₁ᶜ ∪ … ∪ A_kᶜ ∪ A_{k+1}ᶜ ✓', 'good');
+    S.B.add('連集結合律 → A₁ᶜ ∪ … ∪ Aₖᶜ ∪ Aₖ₊₁ᶜ ✓', 'good');
     cap('全部都是連集，用結合律合在一起', '就是 k+1 個的公式');
   },
   async (tok, S) => { // 2817.1
@@ -5224,7 +5224,7 @@ scene('pfC-12-incl', '排容原理的歸納證明', [
     cap('Inclusion–exclusion principle', '算連集裡有幾個東西');
   },
   async (tok, S) => { // 2867.9
-    S.B.add('= Σ|Aᵢ| − Σ_{i<j}|Aᵢ ∩ Aⱼ| + Σ_{i<j<l}|Aᵢ ∩ Aⱼ ∩ A_l| − …');
+    S.B.add('= Σ|Aᵢ| − Σ over i<j |Aᵢ ∩ Aⱼ| + Σ over i<j<l |Aᵢ ∩ Aⱼ ∩ Aₗ| − …');
     S.ex = T('加個別 → 減兩兩（加過頭）→ 加回三個（減過頭）…', 'idx', 0.4, 4.6);
     cap('先加個別的，加過頭就減掉兩兩的', '減過頭再把三個的加回去');
   },
@@ -6266,11 +6266,11 @@ scene('pfC-3a-4i3', '例：Σ(4i + 3) = 2n² + 5n', [
     cap('看一個例子', '自然數從 1 開始');
   },
   async (tok, S) => { // 304.7
-    S.B.add('Σ_{i=1}^{n}：i 從 1 帶到 n，全部加起來', 'say');
+    S.B.add('Σᵢ₌₁ⁿ：i 從 1 帶到 n，全部加起來', 'say');
     cap('summation 符號', 'i 從 1 一直帶到 n，再加起來');
   },
   async (tok, S) => { // 318.0
-    S.B.add('Σ_{i=1}^{n} (4i + 3) = 2n² + 5n');
+    S.B.add('Σᵢ₌₁ⁿ (4i + 3) = 2n² + 5n');
     cap('要證：Σ(4i + 3) = 2n² + 5n', '');
   },
   async (tok, S) => { // 337.1
@@ -6290,15 +6290,15 @@ scene('pfC-3a-4i3', '例：Σ(4i + 3) = 2n² + 5n', [
     cap('主要的證明都在 induction step', '');
   },
   async (tok, S) => { // 405.9
-    S.B.add('hypothesis：Σ_{i=1}^{k} (4i + 3) = 2k² + 5k');
+    S.B.add('hypothesis：Σᵢ₌₁ᵏ (4i + 3) = 2k² + 5k');
     cap('假設 n = k 時成立', '這是 induction hypothesis');
   },
   async (tok, S) => { // 428.3
-    S.B.add('要證：Σ_{i=1}^{k+1} (4i + 3) = 2(k+1)² + 5(k+1)');
+    S.B.add('要證：Σᵢ₌₁ᵏ⁺¹ (4i + 3) = 2(k+1)² + 5(k+1)');
     cap('要證 n = k+1 時成立', '目標寫清楚');
   },
   async (tok, S) => { // 462.3
-    S.B.add('= Σ_{i=1}^{k} (4i + 3) + [4(k+1) + 3]', 'say');
+    S.B.add('= Σᵢ₌₁ᵏ (4i + 3) + [4(k+1) + 3]', 'say');
     cap('拆成兩項：加到 k 的部分', '加上 i = k+1 那一項');
   },
   async (tok, S) => { // 476.0
@@ -6334,15 +6334,15 @@ scene('pfC-3a-cube', '例：Σ i³ = [n(n+1)/2]²', [
     cap('n = 1：左邊 1，右邊 1', '相等');
   },
   async (tok, S) => { // 682.5
-    S.B.add('step：假設 Σ_{i=1}^{k} i³ = [k(k+1)/2]²');
+    S.B.add('step：假設 Σᵢ₌₁ᵏ i³ = [k(k+1)/2]²');
     cap('假設 induction hypothesis 成立', '');
   },
   async (tok, S) => { // 697.9
-    S.B.add('要證：Σ_{i=1}^{k+1} i³ = [(k+1)(k+2)/2]²');
+    S.B.add('要證：Σᵢ₌₁ᵏ⁺¹ i³ = [(k+1)(k+2)/2]²');
     cap('要證 n = k+1', '');
   },
   async (tok, S) => { // 711.5
-    S.B.add('= Σ_{i=1}^{k} i³ + (k+1)³', 'say');
+    S.B.add('= Σᵢ₌₁ᵏ i³ + (k+1)³', 'say');
     cap('一樣拆成兩項', '加到 k 的、再加 (k+1)³');
   },
   async (tok, S) => { // 739.0
@@ -6381,7 +6381,7 @@ scene('pfC-3a-rec', '不知道答案時：recurrence relation', [
     cap('用 recurrence relation', '');
   },
   async (tok, S) => { // 932.0
-    S.B.add('aₙ = Σ_{i=1}^{n} i³');
+    S.B.add('aₙ = Σᵢ₌₁ⁿ i³');
     cap('把整個和叫做 aₙ', '跟 n 有關');
   },
   async (tok, S) => { // 944.4
@@ -6486,15 +6486,15 @@ scene('pfC-3b-rec2', 'second-order 遞迴：aₙ = 3ⁿ − 2ⁿ', [
     cap('n = 2：9 − 4 = 5', '剛好是 a₂');
   },
   async (tok, S) => { // 346.1
-    S.B.add('hypothesis：公式對 a_k、a_{k−1} 都成立');
-    cap('只需要前面兩個', '所以只假設 a_k、a_{k−1}');
+    S.B.add('hypothesis：公式對 aₖ、aₖ₋₁ 都成立');
+    cap('只需要前面兩個', '所以只假設 aₖ、aₖ₋₁');
   },
   async (tok, S) => { // 366.3
-    S.B.add('要證：a_{k+1} = 3^{k+1} − 2^{k+1}');
-    cap('要證 a_{k+1}', '');
+    S.B.add('要證：aₖ₊₁ = 3ᵏ⁺¹ − 2ᵏ⁺¹');
+    cap('要證 aₖ₊₁', '');
   },
   async (tok, S) => { // 377.2
-    S.B.add('a_{k+1} = 5a_k − 6a_{k−1} = 5(3ᵏ − 2ᵏ) − 6(3ᵏ⁻¹ − 2ᵏ⁻¹)', 'say');
+    S.B.add('aₖ₊₁ = 5aₖ − 6aₖ₋₁ = 5(3ᵏ − 2ᵏ) − 6(3ᵏ⁻¹ − 2ᵏ⁻¹)', 'say');
     cap('用 recurrence relation', '再把前面兩個帶進來');
   },
   async (tok, S) => { // 393.4
@@ -6543,7 +6543,7 @@ scene('pfC-3b-rich', '「定理」：everybody is rich', [
     cap('Induction step', '假設任何 k 個人都滿足');
   },
   async (tok, S) => { // 695.6
-    S.B.add('k+1 個人 α₁, …, α_{k+1}；不失一般性 α₁ 有錢');
+    S.B.add('k+1 個人 α₁, …, αₖ₊₁；不失一般性 α₁ 有錢');
     S.p = ['α₁', 'α₂', 'α₃', 'α₄', 'α₅'].map((n, i) => buddy(n, i ? '' : '$', i ? FC.gray : FC.gold, 1.2 + i * 1.3, 0.2));
     T('示意：k+1 = 5', 'idx', 3.8, -0.4);
     cap('k+1 個人，有一個有錢', '叫他 α₁（不失一般性）');
@@ -6552,13 +6552,13 @@ scene('pfC-3b-rich', '「定理」：everybody is rich', [
     S.B.add('第一組 α₁ … α_k（k 個人，含 α₁）→ 依 S(k) 全有錢', 'say');
     S.g1 = T('第一組：α₁ … α_k', 'ptr', 3.15, 2.9);
     for (let i = 1; i < 4; i++) { tint(S.p[i].body, FC.gold); S.p[i].set('$'); }
-    cap('先把 α_{k+1} 拿掉，剩 k 個人', '裡面有 α₁ 有錢 → 全部有錢');
+    cap('先把 αₖ₊₁ 拿掉，剩 k 個人', '裡面有 α₁ 有錢 → 全部有錢');
   },
   async (tok, S) => { // 797.1
-    S.B.add('第二組 α₁, …, α_{k−1}, α_{k+1}（拿掉 α_k）→ 也全有錢', 'say');
-    kill(S.g1); S.g2 = T('第二組：拿掉 α_k，放進 α_{k+1}', 'ptr', 3.8, 2.9);
+    S.B.add('第二組 α₁, …, αₖ₋₁, αₖ₊₁（拿掉 αₖ）→ 也全有錢', 'say');
+    kill(S.g1); S.g2 = T('第二組：拿掉 αₖ，放進 αₖ₊₁', 'ptr', 3.8, 2.9);
     tint(S.p[4].body, FC.gold); S.p[4].set('$'); await S.p[4].hop(tok);
-    cap('再找 k 個人：拿掉 α_k、放進 α_{k+1}', '裡面還是有 α₁ → 全部有錢');
+    cap('再找 k 個人：拿掉 αₖ、放進 αₖ₊₁', '裡面還是有 α₁ → 全部有錢');
   },
   async (tok, S) => { // 846.9
     S.B.add('⇒ S(k+1)；by induction S(n) 對所有 n 成立', 'say');

@@ -5085,7 +5085,7 @@ FRAG.push(['arrpeng34-matmul', '矩陣相乘 R = A × B', async (tok) => {
   say('A 是 m×n、B 是 n×p，結果叫 R（Result）', '這裡 m = 2、n = 3、p = 2');
   await step(tok);                                     // 29:26 R[i][j] formula
   tag('R[i][j] = Σ a[i][k] · b[k][j]，k = 0 … n−1', 'note', 0, 0.2, 2.4);
-  say('R[i][j] 的值怎麼算', 'R[i][j] = Σ_{k=0}^{n−1} a[i][k] · b[k][j]');
+  say('R[i][j] 的值怎麼算', 'R[i][j] = Σₖ₌₀ⁿ⁻¹ a[i][k] · b[k][j]');
   await step(tok);                                     // 29:36 one element = one for k loop
   await calc(0, 0, 450);
   say('算一個 element 就是一個 for k 迴圈', 'R[0][0] = a00·b00 + a01·b10 + a02·b20');

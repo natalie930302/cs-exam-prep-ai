@@ -4905,7 +4905,7 @@ scene('acB-phigen', '11B：一般的 n：φ(n) = n ∏(1 − 1/p)', [
   },
   async (tok, S) => { // 1117.3
     glow(S.g, null);
-    S.m = card('φ 滿足的性質（課本）：Σ_{d | n} φ(d) = n', C.peach, 0, 2.7, 6.6);
+    S.m = card('φ 滿足的性質（課本）：Σ over d | n φ(d) = n', C.peach, 0, 2.7, 6.6);
     sm('示意 n = 6：φ(1) + φ(2) + φ(3) + φ(6) = 1 + 1 + 2 + 2 = 6', 0, 2.0);
     cap('另一種方法：φ(n) 滿足一些式子', '');
   },
@@ -5465,7 +5465,7 @@ scene('acC-gf-fderiv', '14A：formal derivative', [
     cap('常數項不見，n 乘到前面', 'x 的次數少一個');
   },
   async (tok, S) => { // 827.6
-    S.lim = card("微積分：f′(x) = lim_{h→0} [f(x + h) − f(x)] / h", C.rose, 0, 0.9); glow(S.lim, NG);
+    S.lim = card("微積分：f′(x) = lim h→0 [f(x + h) − f(x)] / h", C.rose, 0, 0.9); glow(S.lim, NG);
     cap('原本的微分是極限定義', '');
   },
   async (tok, S) => { // 850.0
@@ -6799,13 +6799,13 @@ scene('acC-cnt-gfab', '15C：集合的生成函數，相乘就得到 G(x)', [
     cap('不一個一個算 gₙ', '直接算 G(x)，展開就全部知道');
   },
   async (tok, S) => { // 593.8
-    S.ga = card('G_A(x) = Σ_{a ∈ A} xᵃ', C.sky, -3.3, 4.7, 4.6); glow(S.ga, HL);
+    S.ga = card('G_A(x) = Σ over a ∈ A xᵃ', C.sky, -3.3, 4.7, 4.6); glow(S.ga, HL);
     sm('A 的每個元素 a → 取 xᵃ 加起來', -3.3, 4.0);
     cap('定義 A 集合的生成函數', '每個元素 a 取 x 的 a 次方，加起來');
   },
   async (tok, S) => { // 641.1
     glow(S.ga, null);
-    S.gb = card('G_B(x) = Σ_{b ∈ B} xᵇ', C.peach, 3.3, 4.7, 4.6); glow(S.gb, HL);
+    S.gb = card('G_B(x) = Σ over b ∈ B xᵇ', C.peach, 3.3, 4.7, 4.6); glow(S.gb, HL);
     sm('B 也一樣：取 xᵇ 加起來', 3.3, 4.0);
     cap('B 集合也一樣', '');
   },
@@ -6842,7 +6842,7 @@ scene('acC-cnt-gen', '15C：推廣到很多個變數', [
   },
   async (tok, S) => { // 948.7
     glow(S.e, null);
-    S.g = card('G(x) = G_{A₁}(x) · G_{A₂}(x) ⋯ G_{A_m}(x)', C.lemon, 0, 4.6); glow(S.g, OKG);
+    S.g = card('G(x) = G_A₁(x) · G_A₂(x) ⋯ G_Aₘ(x)', C.lemon, 0, 4.6); glow(S.g, OKG);
     cap('gₙ 的生成函數', '把每個集合的生成函數乘在一起');
   },
   async (tok, S) => { // 989.2
@@ -6931,7 +6931,7 @@ scene('acC-cnt-rep', '15D：z₁ + ⋯ + z_m = n — 用生成函數重算重複
   },
   async (tok, S) => { // 147.4
     glow(S.A, null);
-    S.g1 = card('G_{Aᵢ}(x) = x⁰ + x¹ + x² + ⋯ = 1/(1 − x)', C.mint, 0, 2.95); glow(S.g1, OKG);
+    S.g1 = card('G_Aᵢ(x) = x⁰ + x¹ + x² + ⋯ = 1/(1 − x)', C.mint, 0, 2.95); glow(S.g1, OKG);
     cap('每個集合的生成函數', '只要算一次：1/(1 − x)');
   },
   async (tok, S) => { // 184.1

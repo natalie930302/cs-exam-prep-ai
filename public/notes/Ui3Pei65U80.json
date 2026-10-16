@@ -447,7 +447,7 @@
     },
     {
      "t": 1059,
-     "text": "SCAN 不會 starvation；C-SCAN、C-LOOK 等待時間平均；SSTF 可能卡在某區造成 starvation；LOOK 只往單側，解決了 starvation。"
+     "text": "SCAN 不會 starvation；C-SCAN、C-LOOK 等待時間平均；SSTF 可能卡在某區造成 starvation；LOOK 一次只往一個方向、到頭才回頭，不會 starvation。"
     }
    ],
    "explain": [
@@ -464,7 +464,7 @@
     "SCAN 乖乖一步一步讀，每個位置一定會被掃到，所以不會有 [[starvation]]（某個 request 永遠輪不到）。",
     "C-SCAN 和 C-LOOK 因為只單方向服務，大家的等待時間都很平均。",
     "SSTF 永遠先做最近的，如果某一區一直有新 request 進來，磁頭就會一直卡在那一區；另一側很遠的 request 可能等非常非常久，這就是 starvation。",
-    "LOOK 的行為像 SSTF，但它只往單一方向移動，不會被困在某個區間，所以解決了 starvation 的問題。"
+    "LOOK 的行為像 SSTF，但它一次只往一個方向移動，走到該方向最遠的 request 才回頭，不會被困在某個區間，所以不會有 starvation。"
    ]
   },
   {

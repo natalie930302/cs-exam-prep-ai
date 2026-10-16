@@ -124,7 +124,7 @@
     "第一點：page fault 的機率 p 介於 0 到 1 之間。記憶體快滿時很多 page 在 main memory 和硬碟間來回，某些 page 不在就會 fault。",
     "第二點：EAT（effective access time，有效存取時間）= (1 − p) × 記憶體存取時間 + p × page fault overhead。1 − p 是沒發生 page fault 的機率。",
     "page fault overhead 是發生 page fault 時，多做 step 2 到 6 的額外時間；沒發生就從 step 1 直接到 step 6。",
-    "題目：記憶體存取 100 ms，page fault overhead 10 ms，10 次存取有 1 次 page fault，也就是 p = 1/10 = 0.1。（這是影片自訂的題目數字。）",
+    "題目：記憶體存取 100 ms，page fault overhead 10 ms，10 次存取有 1 次 page fault，也就是 p = 1/10 = 0.1。（這是影片自訂的題目數字，只為了練習代公式；實際上 page fault 要讀硬碟，時間是 ms 等級，遠大於 ns 等級的記憶體存取。）",
     "代入公式：先算 (1 − 0.1) × 100。",
     "提醒：題目可能給 ms、µs 或 ns，計算前要先換成同一個單位。",
     "再加上 p × overhead，也就是 0.1 × 10。",

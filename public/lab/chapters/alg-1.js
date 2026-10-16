@@ -1069,7 +1069,7 @@ export default function (ctx) {
     tag('T(n) = aT(n/b) + f(n)：比 n^(log_b a) 與 f(n)', 'ptr', 0, 7.4);
     const CASES = [
       ['9T(n/3) + n', 9, 3, 1, 'case 1：越往下越大，葉子主導', 'n^(log₃9) = n² 比 f = n 大多項式倍', 'Θ(n²)'],
-      ['T(2n/3) + 1', 1, 1.5, 0, 'case 2：每層一樣', 'n^(log_{3/2}1) = 1 與 f 同階 → 乘 lg n', 'Θ(lg n)'],
+      ['T(2n/3) + 1', 1, 1.5, 0, 'case 2：每層一樣', 'n^(log₃/₂ 1) = 1 與 f 同階 → 乘 lg n', 'Θ(lg n)'],
       ['3T(n/4) + n lg n', 3, 4, 1.05, 'case 3：越往下越小，根主導', 'f 比 n^0.79 大，且 3(n/4)lg(n/4) ≤ ¾·n lg n', 'Θ(n lg n)'],
       ['2T(n/2) + n lg n', 2, 2, 1.0001, 'gap：落在 case 2 與 3 之間', 'n lg n 只比 n 大 lg n 倍，不是多項式倍', 'Master 不適用（Θ(n lg² n)）'],
     ];
@@ -1130,9 +1130,9 @@ export default function (ctx) {
       await beat(tok, 1500);
       segs = segs.flatMap(([s, w]) => [[s, w / 3], [s + w / 3, 2 * w / 3]]);
     }
-    say('最短路徑一直走 1/3：log₃ n 層', '最長路徑一直走 2/3：log_{3/2} n 層');
+    say('最短路徑一直走 1/3：log₃ n 層', '最長路徑一直走 2/3：log₃/₂ n 層');
     await beat(tok, 3000);
-    say('總和 ≤ cn × log_{3/2} n → O(n lg n)', '再用 substitution 驗證猜測');
+    say('總和 ≤ cn × log₃/₂ n → O(n lg n)', '再用 substitution 驗證猜測');
     await beat(tok, 3000);
   }
 

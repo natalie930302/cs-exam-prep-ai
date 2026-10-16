@@ -4926,8 +4926,8 @@ function bbInfo(t) {
 function bbEdges(t) {
   t.edges.forEach(kill); t.edges = [];
   for (const n of bbList(t)) {
-    const q = n.m.position;
-    if (n.p && n.p.m) { const pp = n.p.m.position; t.edges.push(line(pp.x, pp.y - 0.4, q.x, q.y + 0.4)); }
+    const q = K.land(n.m); // landing spots: a node still dropping or moving gets its edge where it will rest
+    if (n.p && n.p.m) { const pp = K.land(n.p.m); t.edges.push(line(pp.x, pp.y - 0.4, q.x, q.y + 0.4)); }
     if (n.tg) n.tg.position.set(q.x + 0.5, q.y + 0.62, 0);
   }
 }
@@ -6153,7 +6153,7 @@ FRAG.push(['bstb-mit-avl-prop', 'AVL：每個 node |h_L − h_R| ≤ 1', async (
 }]);
 
 // 14:38 最糟的 AVL：每個 node 右邊比左邊高 1；N_h = 1 + N_{h−1} + N_{h−2}
-FRAG.push(['bstb-mit-sparse', '最稀疏的 AVL：N_h = 1 + N_{h−1} + N_{h−2}', async (tok) => {
+FRAG.push(['bstb-mit-sparse', '最稀疏的 AVL：Nₕ = 1 + Nₕ₋₁ + Nₕ₋₂', async (tok) => {
   fresh([0, 4.2, 13], [0, 3.6, 0]);
   const g = pal(6.2, 2.8, '#9fd3f0', 0.55, 'Erik');
   const claim = note('Claim：AVL tree 是 balanced', 0, 7.6, 0);
@@ -6194,21 +6194,21 @@ FRAG.push(['bstb-mit-sparse', '最稀疏的 AVL：N_h = 1 + N_{h−1} + N_{h−2
   await step(tok);                                   // 20:45 遞迴式
   say('怎麼算 N_h？寫遞迴式（recurrence）', '');
   await step(tok);                                   // 21:16 N_{h−1} + N_{h−2}
-  txt(nh, 'N_h = N_{h−1} + N_{h−2} ？');
-  say('學生：N_{h−1} + N_{h−2}', '');
+  txt(nh, 'Nₕ = Nₕ₋₁ + Nₕ₋₂ ？');
+  say('學生：Nₕ₋₁ + Nₕ₋₂', '');
   await step(tok);                                   // 21:25 再加 1：N_h = 1 + N_{h−1} + N_{h−2}
-  txt(nh, 'N_h = 1 + N_{h−1} + N_{h−2}');
-  say('兩個學生的答案合起來', 'N_h = 1 + N_{h−1} + N_{h−2}');
+  txt(nh, 'Nₕ = 1 + Nₕ₋₁ + Nₕ₋₂');
+  say('兩個學生的答案合起來', 'Nₕ = 1 + Nₕ₋₁ + Nₕ₋₂');
   talk(g, '合作成功', 'happy');
   await step(tok);                                   // 21:37 為什麼：整棵高度 h
   glow(t.root.m, GOLD);
   say('為什麼？整棵樹高度是 h', '');
   await step(tok);                                   // 21:52 比較高的一邊是 h − 1
   const t2 = tag('h − 1', 'pkt', 2.2, 1.6, 0);
-  say('高度是兩邊取 max 再 + 1', '所以比較高的那邊是 h − 1 → N_{h−1} 個 node');
+  say('高度是兩邊取 max 再 + 1', '所以比較高的那邊是 h − 1 → Nₕ₋₁ 個 node');
   await step(tok);                                   // 22:06 另一邊少 1：h − 2
   const t1 = tag('h − 2', 'pkt', -3.6, 3.2, 0);
-  say('另一邊再少 1：h − 2', '→ N_{h−2} 個 node');
+  say('另一邊再少 1：h − 2', '→ Nₕ₋₂ 個 node');
   await step(tok);                                   // 22:17 再加上 root 這一個 node
   void t1; void t2;
   say('最後加上 root 自己這 1 個', '這個 +1 很小，主要影響 base case');
@@ -6239,7 +6239,7 @@ FRAG.push(['bstb-mit-fib', 'Fibonacci 下界：h < 1.44 log n', async (tok) => {
   const g = pal(6.2, 2.4, '#9fd3f0', 0.5, 'Erik');
   nhAxis(true);
   await nhBars(tok, 8, '#4b9ee2', (h) => NH[h]);
-  const f = note('N_h = 1 + N_{h−1} + N_{h−2}', -1.6, 7.6, 0);
+  const f = note('Nₕ = 1 + Nₕ₋₁ + Nₕ₋₂', -1.6, 7.6, 0);
   await step(tok);                                   // 23:07 像 Fibonacci
   say('這個遞迴式長得像什麼？', '學生：Fibonacci！');
   talk(g, 'Fibonacci！', 'wow');
@@ -6282,30 +6282,30 @@ FRAG.push(['bstb-mit-half', '簡單版：h < 2 log n', async (tok) => {
   const g = pal(6.2, 2.4, '#9fd3f0', 0.5, 'Erik');
   nhAxis(true);
   await nhBars(tok, 8, '#4b9ee2', (h) => NH[h]);
-  const f = note('N_h = 1 + N_{h−1} + N_{h−2}', -1.6, 7.6, 0);
+  const f = note('Nₕ = 1 + Nₕ₋₁ + Nₕ₋₂', -1.6, 7.6, 0);
   await step(tok);                                   // 26:09 這個遞迴式
   say('同一個遞迴式，換個解法', '');
   await step(tok);                                   // 26:16 電腦科學家的解法：不管常數
   say('理論電腦科學家的解法：不在乎常數', '只要證明是「某個常數 × log n」');
   talk(g, '不管常數');
   await step(tok);                                   // 26:30 一個 h−1、一個 h−2：不對稱
-  say('N_{h−1} 和 N_{h−2} 不一樣，很難算', '想辦法讓它們對稱');
+  say('Nₕ₋₁ 和 Nₕ₋₂ 不一樣，很難算', '想辦法讓它們對稱');
   await step(tok);                                   // 26:39 都換成 h−1，還是 h−2？
-  say('兩個都換成 N_{h−1}？還是都換成 N_{h−2}？', '');
+  say('兩個都換成 Nₕ₋₁？還是都換成 Nₕ₋₂？', '');
   await step(tok);                                   // 26:47 換成 h−2 才對（要下界）
-  say('要換成 N_{h−2}', '我們要證「N_h 大於某個東西」，只能換成比較小的');
+  say('要換成 Nₕ₋₂', '我們要證「N_h 大於某個東西」，只能換成比較小的');
   await step(tok);                                   // 26:57 ≥ 1 + 2 N_{h−2}
-  txt(f, 'N_h > 1 + 2 N_{h−2}');
-  say('N_{h−1} ≥ N_{h−2}，所以 N_h > 1 + 2 N_{h−2}', '');
+  txt(f, 'Nₕ > 1 + 2 Nₕ₋₂');
+  say('Nₕ₋₁ ≥ Nₕ₋₂，所以 Nₕ > 1 + 2 Nₕ₋₂', '');
   await step(tok);                                   // 27:10 高度大 node 就多（歸納法）
-  say('為什麼 N_{h−1} ≥ N_{h−2}？', '高度越大，需要的 node 越多（歸納法很好證）');
+  say('為什麼 Nₕ₋₁ ≥ Nₕ₋₂？', '高度越大，需要的 node 越多（歸納法很好證）');
   await step(tok);                                   // 27:15 把 1 丟掉：> 2 N_{h−2}
-  txt(f, 'N_h > 2 N_{h−2}');
-  say('丟掉 +1 只會讓右邊變小', 'N_h > 2 N_{h−2}');
+  txt(f, 'Nₕ > 2 Nₕ₋₂');
+  say('丟掉 +1 只會讓右邊變小', 'Nₕ > 2 Nₕ₋₂');
   await step(tok);                                   // 27:23 像 2 的幾次方？2^{h/2}
   await nhBars(tok, 8, '#2fc092', (h) => Math.pow(2, h / 2), 0.6, 0.3, 0);
-  txt(f, 'N_h = Ω(2^{h/2})（至少這麼多）');
-  say('看起來像 2 的某次方：2^{h/2}', '綠色細長條就是 2^{h/2}，藍色一直比它高');
+  txt(f, 'Nₕ = Ω(2^(h/2))（至少這麼多）');
+  say('看起來像 2 的某次方：2^(h/2)', '綠色細長條就是 2^(h/2)，藍色一直比它高');
   await step(tok);                                   // 27:35 每兩層翻一倍
   say('h 每增加 2，node 數至少翻一倍', '');
   talk(g, '兩層翻倍', 'happy');

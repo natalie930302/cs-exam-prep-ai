@@ -485,12 +485,12 @@
   {
    "q": "FAT 改善 linked allocation random access 的關鍵是？",
    "opts": [
-    "pointer 集中成表並在 mount 時載入 memory",
+    "pointer 集中成表載入 memory",
     "每塊多加一個 back pointer，可以雙向走訪",
     "改成連續存放，直接用 offset 計算每塊位置",
     "使用 bit vector 記錄每塊的下一塊"
    ],
-   "ans": "pointer 集中成表並在 mount 時載入 memory",
+   "ans": "pointer 集中成表載入 memory",
    "why": "沿鏈走的動作在 memory 完成，不需 disk I/O。"
   },
   {

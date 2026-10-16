@@ -40,7 +40,7 @@
      "text": "不完全看 priority，還要看 quantum 剩多少；保護 quantum 長但 priority 低的程式，比較 fair。"
     }
    ],
-   "trap": "補充：這是 Linux 2.6 早期的 O(1) scheduler 設計；2.6.23 之後改成 CFS（Completely Fair Scheduler）。",
+   "trap": "補充：老師例子裡「priority 高、quantum 短」的數字只是假設；恐龍書寫的 Linux O(1) scheduler 其實相反，priority 越高、quantum 越長（約 200 ms 到 10 ms）。另外這是 Linux 2.6 早期的設計，2.6.23 之後改成 CFS（Completely Fair Scheduler）。",
    "explain": [
     "先複習上一章的 Linux scheduler。兩個 process 同時進系統：H 的 priority（優先權）高，但每次只給 10 單位的 time quantum（可以連續用 CPU 的時間）；L 的 priority 低，但 quantum 有 200。",
     "上面那一排是「沒有 active array」的作法：誰的 priority 高誰先做，所以 H 先跑完它的 10。",
@@ -222,7 +222,7 @@
     },
     {
      "t": 809,
-     "text": "所以 OS 在 kernel 裡的作法是把 interrupt disable，換成 non-preemptive。"
+     "text": "所以有些 OS 在 kernel 裡的作法，是把 interrupt disable，暫時變成 non-preemptive。"
     }
    ],
    "explain": [

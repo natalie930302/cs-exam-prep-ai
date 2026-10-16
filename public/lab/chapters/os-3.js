@@ -477,7 +477,7 @@ export default function (ctx) {
     say('不想讀回結果，就不會 call join', '那結束的 thread 怎麼辦？');
     await W(tok, 2400);
     tint(a, COL.idle); relabel(a, 'T0 結束了…');
-    say('library 不知道你未來會不會 join', '資源一直 hang 著，program 也結束不了');
+    say('library 不知道你未來會不會 join', '結束的 thread 資源一直 hang 著，沒被釋放');
     for (let k = 0; k < 3; k++) { glow(a, k % 2 ? null : RED); await W(tok, 600); }
     await W(tok, 1200);
     say('好習慣：不 join 就立刻 pthread_detach', '結束時 OS 馬上把它的 memory 清乾淨');
@@ -1602,8 +1602,8 @@ FRAG.push(['thr-pt-args', 'pthread_create 的四個參數', async (tok) => {
   const dflt = note('OS 預設：哪個 core 有空就跑', 4.1, -0.5, 1.2);
   cap('OS 預設不限制，有空的 core 就跑', '想給 OS hint，就透過 attribute');
   await step(tok);                                   // @765.1 attribute 就是 integer，每個 bit 代表 enable/disable
-  const bits = code(['attr = 0 1 0 0 1 …（示意）'], 4.1, 3.2, 0.5); bits.hl(0);
-  cap('attribute 其實只是個 integer', '每個 bit 代表某個行為 enable 或 disable');
+  const bits = code(['attr = 0 1 0 0 1 …（老師的比喻）'], 4.1, 3.2, 0.5); bits.hl(0);
+  cap('老師：attribute 像一串 bit，各代表一個選項', '實際是 pthread_attr_t，用 pthread_attr_set… 設定；NULL = 預設');
   await step(tok);                                   // @796.6 ③ function pointer
   cd.hl(3); cores.forEach(kill); l1.forEach(kill); kill(t.g); bits.kill(); remove(dflt);
   const fn = bx('void *work(void *)', CO.code, 4.0, 3.6, 0, 3.2, 0.55, 0.8);
@@ -1711,8 +1711,8 @@ FRAG.push(['thr-pt-detach', '不 join 就要 detach', async (tok) => {
   cap('不 call 的話，程式在 run time', 'OS 不知道你未來會不會 join');
   await step(tok);                                   // @1154.6 一直 hang 著、keep return 值；program 無法結束
   a.glow('#5a1010'); a.mood('sad'); main.mood('sad');
-  bad('一直 hang 著 → program 結束不了', 0, 3.0);
-  cap('結束的 thread 一直 hang 在那裡', 'return 值一直 keep 著，program 也結束不了');
+  bad('一直 hang 著 → 資源沒被釋放', 0, 3.0);
+  cap('結束的 thread 一直 hang 在那裡', 'return 值一直 keep 著，資源要等 join 才釋放');
   await step(tok);                                   // @1167.4 好習慣：create 後要嘛 join，要嘛立刻 detach
   kill(a.g); remove(ask);
   const b = pal('T1', '', TH[1], 0, 0, 0.6, 0.6); c.hl(0);

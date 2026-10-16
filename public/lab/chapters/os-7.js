@@ -2334,7 +2334,7 @@ scene('mem-10d-frag', 'External vs internal fragmentation', CAMW, [
   },
   async (tok, S) => {                                   // 1237 只在 variable size 發生
     sm('只在 variable size 發生', -3.4, -0.2);
-    cap('只在 variable size 發生', 'fixed size 切好格子，來一個一定找得到位置');
+    cap('只在 variable size 發生', 'fixed size 切好格子：只要還有空格，塞得進一格就放得下');
   },
   async (tok, S) => {                                   // 1267 internal：fixed partition 時
     S.ps = [1.0, 0.6, 1.3].map((h, i) => bx('P' + (i + 5), [MC.blue, MC.orange, MC.purple][i], 3.6, 5.6 - i * 1.6 + 0.75 - h / 2, 0.1, 2.15, h, 0.9));
@@ -2750,7 +2750,7 @@ scene('mem-11a-psize', 'Page size 怎麼選', CAMW, [
     glow(S.sizes[4], null); glow(S.sizes[0], NG);
     S.tb = bx('page table', MC.sand, -4.4, 1.6, 0, 1.6, 0.4, 0.8);
     await anim(tok, 800, (u) => { S.tb.scale.y = 1 + 5 * u; S.tb.position.y = 1.4 + 1.0 * u; });
-    cap('調小呢？memory 越來越大、64-bit', '不是 page size 大，就是 page number 多：table 變很大');
+    cap('調小呢？memory 越來越大、64-bit', 'page 越小 → page number 越多 → page table 變很大');
   },
   async (tok, S) => {                                   // 1447 每個 process 都要存 → 浪費 OS memory
     bad('每個 process 一張大 table → 浪費 OS 的 memory', -3.0, 4.0);
@@ -3870,8 +3870,8 @@ scene('mem-12b-pentium', 'Intel Pentium 的位址轉換', CAMW, [
     cap('這 1 個 bit', '標示 local（private）還是 share 的 segment');
   },
   async (tok, S) => {                                   // 2119 2 bits：protection
-    glow(S.g, null); glow(S.pp, HL); sm('2 bits：protection（read / write / execute）', -2.2, 4.0);
-    cap('後面還有 protection bit', '用兩個 bit 區分 read only、write、executable');
+    glow(S.g, null); glow(S.pp, HL); sm('2 bits：protection（x86 實際是 privilege level 0–3）', -2.2, 4.0);
+    cap('後面 2 bits 是 protection', '老師說成 read / write / execute；x86 實際上是 privilege level（ring 0–3）');
   },
   async (tok, S) => {                                   // 2129 2¹⁴ 個 segment，一半 share
     glow(S.pp, null); hot('最多 2¹⁴ 個 segment（一半 share、一半 private），每個最多 4 GB', 0, 3.3);
@@ -4008,7 +4008,7 @@ scene('mem-pg-why', '為什麼需要 paging：RAM 不夠用', CAMW, [
   },
   async (tok, S) => {                                   // 283 不是真的加 RAM
     good('沒有真的加 RAM，而是借用 disk 的空間', 0, 0.0, 1.6);
-    cap('不是實體地加 RAM', '而是用一部分 secondary memory：這就是 paging 的核心想法');
+    cap('不是實體地加 RAM', '而是借用一部分 secondary memory（嚴格說這是 virtual memory 的做法）');
   },
 ]);
 

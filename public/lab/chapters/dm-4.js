@@ -2983,7 +2983,7 @@ scene('rr-gf-deriv', "d/dx：1/(1 − x) → 1/(1 − x)²，係數 1, 2, 3, …
 
   return {
     kicker: '離散數學・第 4 章',
-    title: '遞推關係',
+    title: '遞迴關係',
     color: 'var(--dm)',
     modes: [
       { id: 'unfold', name: '遞迴展開', enter: enterUnfold },

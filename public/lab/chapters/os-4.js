@@ -1009,7 +1009,7 @@ export default function (ctx) {
       const pin = lab.box('#c08a1f', [0.06, 1.2, 0.06]); pin.position.set(x0 + r * sx, 0.6, -0.6); lab.world.add(pin);
       tag('到達 ' + r, 'idx', x0 + r * sx, 1.4, -0.6);
       say('每 ' + 10 + ' 單位來一個 CPU burst，要做 4', '下一個 burst 到來之前就是 deadline');
-      cube('e=4', '#4b9ee2', [4 * sx, 0.5, 0.8], x0 + (r + 1 + 2) * sx, 0.25, 0.4, 2);
+      cube('e=4', '#4b9ee2', [4 * sx, 0.5, 0.8], x0 + (r + 2) * sx, 0.25, 0.4, 2);
       tag('deadline ' + (r + 10), 'idx', x0 + (r + 10) * sx - 0.3, 0, 1.3);
       await beat(tok, 1500);
     }
@@ -1823,7 +1823,7 @@ scene('sch-16d-predict', '預測下一個 CPU burst：exponential average', [[0,
   },
   async (tok, S) => {                                   // 1303 不知道 burst time：排程發生在執行之前
     S.p = pal('P', '?', '#e55a9b', -4.8, -2.0, 0.8); S.p.mood('wow');
-    sm('排程時還沒開始跑 → 不知道這次 CPU burst 多長', -2.0, 0.3, -0.6);
+    S.unk = sm('排程時還沒開始跑 → 不知道這次 CPU burst 多長', -2.0, 0.3, -0.6);
     sayc('因為我們根本不知道 burst time', 'schedule 發生在執行之前');
   },
   async (tok, S) => {                                   // 1321 approximate SJF：用過去的歷史猜
@@ -1849,7 +1849,7 @@ scene('sch-16d-predict', '預測下一個 CPU burst：exponential average', [[0,
     sayc('作業三', '就是要去 implement 這個');
   },
   async (tok, S) => {                                   // 1467 圖：真正的 burst vs 預測的線
-    gone(S.p);
+    gone(S.p, S.unk);
     hd('灰 = 預測 τ　藍 = 實際 t', -5.6, 0.3, 1.6);
     S.x = (k) => -4.6 + k * 2.2;
     sayc('一條是真正的 CPU burst，一條是預測', '不會一模一樣，但 hopefully 會貼近');
@@ -1859,16 +1859,16 @@ scene('sch-16d-predict', '預測下一個 CPU burst：exponential average', [[0,
     sayc('一開始根本不知道', '只能隨便猜：先猜 10');
   },
   async (tok, S) => {                                   // 1566 跑下去才發現只跑了 6
-    await rise(tok, S.x(0) + 0.3, 1.6, 6 * 0.3, CPUC, 500); sm('t₁ = 6', S.x(0) + 0.3, 6 * 0.3 + 0.35, 1.6);
+    await rise(tok, S.x(0) + 0.3, 1.6, 6 * 0.3, CPUC, 500); sm('t₀ = 6', S.x(0) + 0.3, 6 * 0.3 + 0.35, 1.6);
     sayc('schedule 下去跑完', '才發現它居然只跑了 6 個 cycle');
   },
   async (tok, S) => {                                   // 1589 平均一下 → 8；接著實際掉到 4
-    await rise(tok, S.x(1) - 0.3, 1.6, 8 * 0.3, '#bfb3a0', 500); sm('τ = (6 + 10)/2 = 8', S.x(1) - 0.3, 8 * 0.3 + 0.35, 1.6);
-    await rise(tok, S.x(1) + 0.3, 1.6, 4 * 0.3, CPUC, 500); sm('t₂ = 4', S.x(1) + 0.3, 4 * 0.3 + 0.35, 1.6);
+    await rise(tok, S.x(1) - 0.3, 1.6, 8 * 0.3, '#bfb3a0', 500); sm('τ₁ = (6 + 10)/2 = 8', S.x(1) - 0.3, 8 * 0.3 + 0.35, 1.6);
+    await rise(tok, S.x(1) + 0.3, 1.6, 4 * 0.3, CPUC, 500); sm('t₁ = 4', S.x(1) + 0.3, 4 * 0.3 + 0.35, 1.6);
     sayc('平均一下，下一次猜 8', '結果實際又掉到 4');
   },
   async (tok, S) => {                                   // 1610 再修正成 6
-    await rise(tok, S.x(2) - 0.3, 1.6, 6 * 0.3, '#bfb3a0', 500); sm('τ = (4 + 8)/2 = 6', S.x(2) - 0.3, 6 * 0.3 + 0.35, 1.6);
+    await rise(tok, S.x(2) - 0.3, 1.6, 6 * 0.3, '#bfb3a0', 500); sm('τ₂ = (4 + 8)/2 = 6', S.x(2) - 0.3, 6 * 0.3 + 0.35, 1.6);
     sayc('剛才猜得還不夠低', '再修正：(4 + 8) / 2 = 6');
   },
   async (tok, S) => {                                   // 1621 這裡 α = 0.5
@@ -1876,8 +1876,8 @@ scene('sch-16d-predict', '預測下一個 CPU burst：exponential average', [[0,
     sayc('這個簡單例子 α = 0.5', '歷史和上一次觀察各一半，除以 2 就好');
   },
   async (tok, S) => {                                   // 1638 實際 6、猜 6 → 繼續猜 6
-    await rise(tok, S.x(2) + 0.3, 1.6, 6 * 0.3, CPUC, 500); sm('t₃ = 6', S.x(2) + 0.3, 6 * 0.3 + 0.35, 1.6);
-    await rise(tok, S.x(3) - 0.3, 1.6, 6 * 0.3, '#bfb3a0', 500); sm('τ = 6', S.x(3) - 0.3, 6 * 0.3 + 0.35, 1.6);
+    await rise(tok, S.x(2) + 0.3, 1.6, 6 * 0.3, CPUC, 500); sm('t₂ = 6', S.x(2) + 0.3, 6 * 0.3 + 0.35, 1.6);
+    await rise(tok, S.x(3) - 0.3, 1.6, 6 * 0.3, '#bfb3a0', 500); sm('τ₃ = 6', S.x(3) - 0.3, 6 * 0.3 + 0.35, 1.6);
     sayc('實際 6、預測 6 剛好一樣', '所以繼續猜 6（之後還可能變化）');
   },
   async (tok, S) => {                                   // 1659 趨勢穩定就會猜中
@@ -2080,7 +2080,7 @@ scene('sch-17a-srtf', 'Preemptive SJF：response 與 waiting 不同', CAMG, () =
   },
   async (tok, S) => {                                   // 333 preemptive 比 non-preemptive 好
     good('平均 WT：preemptive 3 ≤ non-preemptive 4', 3.8, 4.0, -3.8);
-    sayc('preemptive 一定比 non-preemptive 好', '（這個例子平均 WT 3 vs 4）');
+    sayc('整體來說 preemptive 比 non-preemptive 好', '（這個例子平均 WT 3 vs 4）');
   },
   async (tok, S) => {                                   // 338 但 burst 中途 context switch → synchronization
     bad('代價：burst 中途 context switch → synchronization（下一章）', 0, -0.6, 4.4);
@@ -2291,7 +2291,7 @@ scene('sch-17a-rrtrade', 'RR：turnaround 較長、response 較好', [[0, 6, 13]
   },
   async (tok, S) => {                                   // 847 最多等 process 數 × quantum
     good('最多等 (n − 1) × q 就輪到你（這裡 3 × 20 = 60）', 3.0, 3.6, 0);
-    sayc('RR 保證輪流', '最多等 process 數量 × quantum 就輪到你');
+    sayc('RR 保證輪流', '最多等（process 數 − 1）× quantum 就輪到你');
   },
   async (tok, S) => {                                   // 867 演算法沒有好壞，看使用者需求
     hot('沒有最好的演算法：看系統要的 metric', 0, 5.2, 0);
@@ -2373,12 +2373,12 @@ scene('sch-17a-mlfq', 'Multilevel feedback queue：在 queue 之間移動', [[0,
     sayc('另一個比較複雜的做法', 'multilevel feedback queue：不只多個 queue，還會 feedback');
   },
   async (tok, S) => {                                   // 1134 上下有意義：第一個 queue 空了才去第二個
-    S.M.add('P1', 0); S.M.add('P2', 1); S.M.add('P3', 2);
+    S.M.add('P1', 0); S.M.add('P2', 1); S.M.add('P3', 1);
     S.ar = arrow(V3(5.0, 1.4, -4.2), V3(5.0, 1.4, -0.2), 0xc08a1f); sm('上面的一定先做', 5.6, 2.0, -2.0);
     sayc('這裡的上下有意義', '上面的一定先做；第一個 queue 做空了才去第二個拿 job');
   },
   async (tok, S) => {                                   // 1161 process 可以在 queue 之間移動
-    await S.M.to(tok, 'P3', 1); await S.M.to(tok, 'P3', 2);
+    await S.M.to(tok, 'P3', 2);
     sayc('相對地', '放進這些 queue 的 process 可以在 queue 之間移動');
   },
   async (tok, S) => {                                   // 1180 run time 觀察行為，再決定在第幾層
@@ -3382,8 +3382,8 @@ scene('sch-18b-linux', 'Linux：0～140、active / expired array', [[0, 6.2, 12.
     sayc('每次輪到都真的可以用 200', '執行時間等於是 weighted by 它的 time quantum');
   },
   async (tok, S) => {                                   // 838 priority 只在「一個 burst 就超過 quantum」才降
-    note('分好幾次才用完：priority 不受影響；一個 CPU burst 就超過 quantum → priority 才降', 0, 0.3, 2.8);
-    sayc('priority 要降低', '是一個 CPU burst 就超過 quantum 才降；分四五次才用完不受影響');
+    note('老師：一個 CPU burst 就超過 quantum 才降 priority（課本：移到 expired 時依互動程度重算 priority）', 0, 0.3, 2.8);
+    sayc('老師：priority 要一個 CPU burst 就超過 quantum 才降', '課本：task 移到 expired array 時，依 sleep 時間（互動程度）重算 priority');
   },
   async (tok, S) => {                                   // 864 每次只從 200 扣掉，剩下的繼續在 active
     S.T[0].set('100 → 40');

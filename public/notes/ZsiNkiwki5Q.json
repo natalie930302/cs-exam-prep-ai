@@ -16,11 +16,11 @@
     },
     {
      "t": 97,
-     "text": "讀取時間 = transfer time（只跟資料量有關）+ positioning time（seek，時間不 uniform）。"
+     "text": "讀取時間 = transfer time（只跟資料量有關）+ positioning time（seek time 移動磁頭 ＋ rotational latency 等磁盤轉到；時間不 uniform）。"
     },
     {
      "t": 124,
-     "text": "所以 hard drive 不是 random access；轉速（7200、3600 轉）越快 seek 越短、越貴。"
+     "text": "所以 hard drive 不是 random access；轉速（7200、3600 轉）越快，等磁盤轉過來的 rotational latency 越短，也越貴。"
     }
    ],
    "scene": "osB-hdd",
@@ -46,9 +46,9 @@
     "如果很不幸，資料剛好在磁頭的對面，就要等磁盤轉過來才能讀，多花一段時間。",
     "所以硬碟的讀取時間會切成兩塊：transfer time（傳輸時間）和 positioning time（定位時間）。",
     "transfer time 只跟資料量有關：資料越多，要讀的越多，花的時間越長，這很直觀。",
-    "positioning time 則要 seek（找到資料所在的位置），跟磁頭目前在哪有關，所以時間不固定（不 uniform）。",
+    "positioning time 包含 seek time（把磁頭移到資料所在的磁軌）和 rotational latency（等磁盤把資料轉到磁頭下面），跟磁頭目前在哪有關，所以時間不固定（不 uniform）。",
     "因此我們不會說硬碟是 random access：讀不同位置花的時間不同，也沒辦法很有效率地隨機讀取。",
-    "買硬碟會看到 7200 轉、3600 轉這種規格：轉得越快，seek 越短、讀取越快，價錢也越高。RAM 就沒有這段，所以時間才能一致。"
+    "買硬碟會看到 7200 轉、3600 轉這種規格：轉得越快，等磁盤轉過來的時間（rotational latency）越短、讀取越快，價錢也越高。RAM 就沒有這段，所以時間才能一致。"
    ]
   },
   {
@@ -212,12 +212,12 @@
   {
    "q": "hard drive 的讀取時間可以拆成哪兩部分？",
    "opts": [
-    "transfer time + positioning（seek）time",
+    "transfer time + positioning time（seek ＋ 旋轉）",
     "cache lookup time + memory（DRAM）access time",
     "CPU time + I/O waiting time",
     "boot time + run time"
    ],
-   "ans": "transfer time + positioning（seek）time",
+   "ans": "transfer time + positioning time（seek ＋ 旋轉）",
    "why": "transfer 只跟資料量有關；positioning 跟磁頭位置有關，時間不固定。"
   },
   {

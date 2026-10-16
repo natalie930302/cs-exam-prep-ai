@@ -455,15 +455,28 @@ export default function (ctx) {
     return V;
   }
   // 一個哲學家「做一步」：依策略決定拿哪支
+  // monitor 解法的 test(k)：左右鄰居都不在吃、k 自己是 hungry → k 一次拿兩支開始吃（等於 self[k].signal()）
+  function dpTest(V, k) {
+    const S = V.S;
+    if (S.state[(k + DPN - 1) % DPN] !== 'eating' && S.state[k] === 'hungry' && S.state[(k + 1) % DPN] !== 'eating') { V.take(k, V.left(k)); V.take(k, V.right(k)); S.state[k] = 'eating'; return true; }
+    return false;
+  }
+  function dpPutdown(V, i) { V.put(i); V.S.eaten[i]++; }
   function dpAct(V, i, strat) {
     const S = V.S, L = V.left(i), Rr = V.right(i);
-    if (S.state[i] === 'eating') { V.put(i); S.eaten[i]++; return '哲' + i + ' 吃完，放下兩支筷子'; }
-    if (S.state[i] === 'thinking') S.state[i] = 'hungry';
     if (strat === 'monitor') {
-      const nl = (i + 1) % DPN, nr = (i + DPN - 1) % DPN;
-      if (S.state[nl] !== 'eating' && S.state[nr] !== 'eating' && S.holder[L] < 0 && S.holder[Rr] < 0) { V.take(i, L); V.take(i, Rr); S.state[i] = 'eating'; return '哲' + i + '：test() 兩邊鄰居都沒在吃 → 一次拿兩支，開始吃'; }
+      if (S.state[i] === 'eating') {
+        dpPutdown(V, i);
+        const woke = [(i + DPN - 1) % DPN, (i + 1) % DPN].filter((k) => dpTest(V, k));
+        return '哲' + i + '：putdown → test 左右鄰居' + (woke.length ? '，叫醒哲' + woke.join('、哲') + ' 開始吃' : '，沒有人可以吃');
+      }
+      if (S.state[i] === 'hungry') return '哲' + i + '：還在 self[' + i + '].wait()，要等鄰居 putdown 時 test 它';
+      S.state[i] = 'hungry';
+      if (dpTest(V, i)) return '哲' + i + '：test() 兩邊鄰居都沒在吃 → 一次拿兩支，開始吃';
       return '哲' + i + '：鄰居在吃 → self[' + i + '].wait()（不拿任何筷子）';
     }
+    if (S.state[i] === 'eating') { V.put(i); S.eaten[i]++; return '哲' + i + ' 吃完，放下兩支筷子'; }
+    if (S.state[i] === 'thinking') S.state[i] = 'hungry';
     const first = strat === 'asym' && i % 2 === 1 ? Rr : L, second = first === L ? Rr : L;
     if (!V.holds(i, first)) return V.take(i, first) ? '哲' + i + ' 拿起筷子 ' + first : '哲' + i + ' 等筷子 ' + first + '（被哲' + S.holder[first] + ' 拿著）';
     if (!V.holds(i, second)) {
@@ -835,7 +848,7 @@ export default function (ctx) {
     await beat(tok, 3000);
     semWait('P1'); say('P1：wait(S)，S = 1 > 0 → 減成 0，進去', ''); await beat(tok, 2200);
     semWait('P2'); say('P2：wait(S)，S = 0 → 在迴圈裡一直等', 'while (S <= 0) ;'); await beat(tok, 2600);
-    semSignal('P1'); say('P1 出來：signal(S)，S 加回 1', 'P2 下次檢查就能進去'); await beat(tok, 2600);
+    semSignal('P1'); say('P1 出來：signal(S)，S 加回 1', 'P2 再檢查時 S > 0 → 減回 0，進去'); await beat(tok, 2600);
     semSignal('P2');
     say('初值 1：一次只有一個人 → 像 mutex lock', '');
     await beat(tok, 2400);
@@ -847,7 +860,7 @@ export default function (ctx) {
     await beat(tok, 2400);
     for (const n of ['P1', 'P2', 'P3']) { semWait(n); say(n + '：wait(S)，S 減成 ' + sm.S, ''); await beat(tok, 1300); }
     semWait('P4'); say('P4：S = 0 → 等', ''); await beat(tok, 2200);
-    semSignal('P2'); say('P2 出來：signal(S) → S 變 1', 'P4 可以進去了'); await beat(tok, 2800);
+    semSignal('P2'); say('P2 出來：signal(S) → S 變 1', 'P4 檢查到 S > 0 → 減回 0，進去'); await beat(tok, 2800);
     say('初值 > 1 → counting；只有 0 / 1 → binary', '補充：binary 是指值域只有 0、1，不是「初值等於 1」');
     await beat(tok, 3200);
   }
@@ -1343,7 +1356,7 @@ FRAG.push(['syn-18c-outcomes', 'Race 的結果可能是 4、5、6', async (tok) 
   cap('non-preemptive 就沒有這個問題', 'memory 的操作不會做到一半被人改掉');
   await step(tok);                                   // 809 OS kernel：disable interrupt
   bad('kernel：disable interrupt → 變 non-preemptive', 0, 6.6, -2.6);
-  cap('所以 OS 在 kernel 裡的作法', '把 interrupt disable，換成 non-preemptive');
+  cap('所以 OS 在 kernel 裡的一種作法', '把 interrupt disable，換成 non-preemptive');
   void cpu;
 }]);
 
@@ -4043,9 +4056,20 @@ FRAG.push(['syn-21a-cv', 'Monitor ＋ condition variable；CV 和 semaphore 的 
   void cq;
 }]);
 
-const DPC = ['monitor DP {', '  enum {THINKING, HUNGRY, EATING} state[5];', '  condition self[5];', '  void pickup(int i) {', '    state[i] = HUNGRY;', '    test(i);', '    if (state[i] != EATING) self[i].wait();', '  }', '  void putdown(int i) {', '    state[i] = THINKING;', '    test((i + 4) % 5);  test((i + 1) % 5);', '  }', '  void test(int k) {', '    if (state[(k+4)%5] != EATING && state[k] == HUNGRY', '        && state[(k+1)%5] != EATING) {', '      state[k] = EATING;  self[k].signal();', '    }', '  }', '  init: state[i] = THINKING;', '}'];
+// compact monitor code (short lines, so the column fits beside the table on the small stage)
+const DPC = ['monitor DP {', '  state[5]: THINKING / HUNGRY / EATING', '  condition self[5];', '  pickup(i) {', '    state[i] = HUNGRY;  test(i);', '    if (state[i] != EATING)', '      self[i].wait(); }', '  putdown(i) {', '    state[i] = THINKING;', '    test((i+4)%5);  test((i+1)%5); }', '  test(k) {', '    if (state[(k+4)%5] != EATING &&', '        state[(k+1)%5] != EATING &&', '        state[k] == HUNGRY) {', '      state[k] = EATING;  self[k].signal(); } }', '  init: state[i] = THINKING;', '}'];
+// one label for the whole listing (lines stacked as separate labels get pushed apart on the small stage)
+function codeBlock(lines, x, y, z) {
+  const l = tag(lines[0], '', x, y, z); l.center.set(0, 0.5);   // anchored at its left edge
+  Object.assign(l.element.style, MONO, { fontSize: '10px', lineHeight: '1.3', textAlign: 'left' });
+  const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const hl = (i) => { l.element.innerHTML = lines.map((t, k) => (k === i ? '<span style="background:#c08a1f;color:#fff;border-radius:3px">' + esc(t) + '</span>' : esc(t))).join(String.fromCharCode(10)); };
+  hl(-1);
+  return { ls: [l], hl, kill() { remove(l); } };
+}
+const DPH = { state: 1, self: 2, pickup: 3, hungry: 4, wait: 6, putdown: 9, test: 10, cond: 11, eat: 14, init: 15 };
 FRAG.push(['syn-21a-dining', 'Dining philosophers 的 monitor 解法', async (tok) => {
-  fresh([2.2, 10, 10], [2.2, 1.0, 0]);
+  fresh([3.4, 9, 9], [3.4, 0.4, 0]);
   let V, cd;
   const dpUp = () => V.update();
   await step(tok);                                   // 750 用 monitor 解 dining philosophers
@@ -4054,70 +4078,70 @@ FRAG.push(['syn-21a-dining', 'Dining philosophers 的 monitor 解法', async (to
   await step(tok);                                   // 755 N 個人、筷子在中間；同時拿左邊 → deadlock
   cap('N 個人用餐要兩根筷子，筷子放在每兩人中間', '沒有同步，大家同時拿左邊就 deadlock');
   await step(tok);                                   // 786 用 monitor：把 method 定義出來
-  cd = code(DPC, 7.2, 7.2, 0.36, -3.6);
+  cd = codeBlock(DPC, 4.2, 1.0, 0);
   cap('只用 monitor：OO 的概念把 method 定義出來', '就不用去想什麼會造成 race condition');
   await step(tok);                                   // 804 state 陣列：記錄每個人的狀態
-  cd.hl(1);
+  cd.hl(DPH.state);
   cap('monitor 裡的變數：state', '這個例子五個人，array 記錄每個人目前的狀態');
   await step(tok);                                   // 823 thinking / hungry / eating
   cap('thinking：沒要吃；hungry：想吃但還沒拿到筷子', 'eating：左邊跟右邊的筷子都在他手上');
   await step(tok);                                   // 850 不能憑空多出筷子
-  bad('筷子就是 5 根：不能憑空變出 10 根', 0, 1.2, 0);
+  const aside = bad('筷子就是 5 根：不能憑空變出 10 根', 0, 1.6, 0);
   cap('解法不能憑空多出筷子', '寫錯的同步跑一跑「大家都吃到了」，卻用了十根，不行');
   await step(tok);                                   // 877 global shared state 看得到別人 → 比較好解（分散式更難）
-  idx('補充：看得到別人的 state 已經是很大的 assumption；fully distributed 更難', 0, 0.2, 4.4);
+  remove(aside); const aside2 = idx('看得到別人的 state 是很大的假設；分散式更難', 0, 1.6, 0);
   cap('用 global shared variable 讓大家看到彼此的狀態', '這樣比較好解；看不到別人 state 的分散式問題更難');
   await step(tok);                                   // 945 state 本身不能 race：誰會寫它？
-  note('state 是 shared 的：要確認它本身不會 race（monitor 裡一次只有一個 active）', 0, 2.0, 0);
+  remove(aside2); const aside3 = note('state 是 shared：monitor 裡一次只有一個 active → 不會 race', 0, 1.6, 0);
   cap('要 check 這個 shared state 本身會不會 race', '只有一個人會寫、其他人 read only 就不會');
   await step(tok);                                   // 985 self[i]：condition variable，拿不到筷子就等
-  cd.hl(2);
+  remove(aside3); cd.hl(DPH.self);
   cap('接著是 self：condition variable', '想吃（hungry）卻拿不到筷子時，就在自己的 queue 裡等');
   await step(tok);                                   // 1032 動作：pickup、putdown，再加一個 test
-  cd.hl(3);
+  cd.hl(DPH.pickup);
   cap('動作切成 pickup(i)、putdown(i)', '再多加一個 test：吃之前試試看左右筷子是不是都沒人用');
   await step(tok);                                   // 1079 initialization：大家都是 thinking
-  cd.hl(18);
+  cd.hl(DPH.init);
   cap('最後 initialization', '一開始大家都是 thinking');
   await step(tok);                                   // 1107 pickup：state = HUNGRY → test(i) → 失敗就 wait
-  cd.hl(5);
+  cd.hl(DPH.hungry);
   dpAct(V, 0, 'monitor'); dpUp();
   cap('pickup(i)：i 要吃了 → state 設成 hungry', '先 test：哲0 左右都沒人在吃 → eating');
   await step(tok);                                   // 1168 test 失敗 → self[i].wait()，等鄰居叫
-  cd.hl(6);
+  cd.hl(DPH.wait);
   dpAct(V, 1, 'monitor'); dpUp();
   cap('test 失敗（不是 eating）：哲1 的鄰居哲0 在吃', '就 self[1].wait()：把自己 suspend，等鄰居放下筷子叫他');
   await step(tok);                                   // 1213 putdown：thinking，test 左右鄰居
-  cd.hl(10);
-  dpAct(V, 0, 'monitor'); dpUp();
+  cd.hl(DPH.putdown);
+  dpPutdown(V, 0); dpUp();
   cap('putdown(i)：放下筷子，state 變 thinking', '然後 test 左邊 (i+4)%5 和右邊 (i+1)%5 的人');
   await step(tok);                                   // 1288 test(k)：被測試的不一定是 call 的人
-  cd.hl(12);
+  cd.hl(DPH.test);
   cap('test 測的那個人', '不一定是 call 這個 function 的人：可能是之前被 suspend 的鄰居');
   await step(tok);                                   // 1332 條件：左右都不在吃
-  cd.hl(13);
+  cd.hl(DPH.cond);
   cap('怎麼樣可以吃？左邊的人不在吃、右邊的人也不在吃', '代表兩邊的筷子都沒被拿起來');
   await step(tok);                                   // 1390 還要自己是 hungry（可能在幫別人測）
   cap('還要加上：自己是 hungry', '因為可能在幫別人測試，有筷子也不代表他想吃');
   await step(tok);                                   // 1424 → state = EATING，self[k].signal() 叫醒鄰居
-  cd.hl(15);
-  dpAct(V, 1, 'monitor'); dpUp();
+  cd.hl(DPH.eat);
+  dpTest(V, 1); dpUp();
   cap('三個條件都成立 → state 換成 eating', '再 self[k].signal()：把在等的鄰居叫起來，完成 pickup');
   await step(tok);                                   // 1473 queue 是空的也沒關係
   cap('鄰居可能根本沒在等，queue 是空的', 'signal 空的 queue 沒有任何負面影響');
   await step(tok);                                   // 1552 三個 function 描述行為 → 問題解掉
   cd.hl(-1);
-  good('pickup、putdown、test：照行為描述出來就解掉了', 0, 1.2, 0);
+  good('pickup、putdown、test：照行為描述出來就解掉了', 0, 1.6, 0);
   cap('把這三個 function 按照行為描述出來', '整個問題就解掉了');
 }]);
 
 // ════════ SNwNax1Wz7k（第 21B 講）：dining philosophers 跑一次、Java synchronized、atomic transaction ════════
 FRAG.push(['syn-21b-trace', 'Monitor 解法跑一次：P1 吃、P2 等、P1 放下叫醒 P2', async (tok) => {
-  fresh([2.2, 10, 10], [2.2, 1.0, 0]);
+  fresh([3.4, 9, 9], [3.4, 0.4, 0]);
   let V, cd;
   await step(tok);                                   // 2 跟 low level 想 race 的方式完全不同
   V = dpView();
-  cd = code(DPC, 7.2, 7.2, 0.36, -3.6);
+  cd = codeBlock(DPC, 4.2, 1.0, 0);
   cap('跟之前想哪些 variable 會 race 完全不同', '從 method、programming 的角度解：好寫、會對');
   await step(tok);                                   // 44 monitor 保證一次一個人 call，最後都輪得到
   cap('monitor 本身保證一次一個人去 call', 'eventually 都會 call 到');
@@ -4127,32 +4151,32 @@ FRAG.push(['syn-21b-trace', 'Monitor 解法跑一次：P1 吃、P2 等、P1 放�
   await step(tok);                                   // 97 左右鄰居不能同時吃
   cap('重點：左邊、右邊的人不能同時吃', 'pickup 完成才能開始吃，吃完 putdown');
   await step(tok);                                   // 116 一開始大家都是 thinking
-  cd.hl(18);
+  cd.hl(DPH.init);
   cap('一開始就像我們說的', '全部都是 thinking');
   await step(tok);                                   // 120 P1 先來：變 hungry，test
-  cd.hl(4);
+  cd.hl(DPH.hungry);
   cap('假設 P1 先來，他要吃', 'state 變成 hungry，然後 test 是不是可以吃');
   await step(tok);                                   // 130 第一個人一定成功：左右都 thinking → eating
-  cd.hl(15); dpAct(V, 1, 'monitor'); V.update();
+  cd.hl(DPH.eat); dpAct(V, 1, 'monitor'); V.update();
   cap('第一個人測試一定成功：左右都在 thinking', 'state 改成 eating，也不用 wait → 去吃');
   await step(tok);                                   // 163 P1 還沒 putdown，P2 來 pickup：test 失敗
-  cd.hl(6); dpAct(V, 2, 'monitor'); V.update();
+  cd.hl(DPH.wait); dpAct(V, 2, 'monitor'); V.update();
   cap('P1 還在吃，P2 就進來 pickup', '變成 hungry，test 失敗（鄰居 P1 在吃）→ 放進 waiting list');
   await step(tok);                                   // 186 P2 在 monitor 裡卡住，直到有人 signal
-  bad('P2 卡在 self[2].wait()', 0, 1.2, 0);
+  const p2w = bad('P2 卡在 self[2].wait()', 0, 1.2, 0);
   cap('P2 在 monitor 裡被卡住', '一直到有人 signal、把它叫起來');
   await step(tok);                                   // 202 P1 putdown：thinking，先測左邊 P0
-  cd.hl(10); dpAct(V, 1, 'monitor'); V.update();
+  cd.hl(DPH.putdown); dpPutdown(V, 1); dpTest(V, 0); V.update();
   cap('什麼時候叫起來？等 P1 call putdown', '自己改回 thinking，幫左邊 P0 測：P0 沒 hungry，沒事');
   await step(tok);                                   // 224 測 P2：條件都符合 → eating + signal
-  cd.hl(15); dpAct(V, 2, 'monitor'); V.update();
+  cd.hl(DPH.eat); dpTest(V, 2); V.update(); remove(p2w);
   cap('再測右邊 P2：所有條件都符合', 'test 裡做兩件事：state 改成 eating、signal P2');
   await step(tok);                                   // 253 P2 進去吃
   cd.hl(-1);
   good('P1 putdown 結束後，P2 開始吃', 0, 1.8, 0);
   cap('P1 的 putdown 結束後', 'P2 就可以進到 eat：大家同步了');
   await step(tok);                                   // 265 只有 DP object 是 monitor；P1、P2 是 application
-  idx('只有 DiningPhilosophers 這個 object 是 monitor；P1、P2 只是使用它的 application', 0, 0.2, 4.4);
+  idx('只有 DiningPhilosophers 這個 object 是 monitor；P1、P2 只是使用它的 application', 0, 2.6, 0);
   cap('只有 DP 這個 object 是 monitor', 'P1、P2 只是 application，用 class 的 method 解問題');
 }]);
 

@@ -408,12 +408,12 @@
   {
    "q": "FAT 讓 linked allocation 的 random access 變快的關鍵是？",
    "opts": [
-    "整張表 mount 時 load 到 memory，在 memory 裡 lookup",
+    "整張表在 mount 時載入 memory 查表",
     "每個 block 存兩個 pointer，可往前也可往後走，跳得比較快",
     "檔案改成連續擺放",
     "使用 bit vector 記錄 free block"
    ],
-   "ans": "整張表 mount 時 load 到 memory，在 memory 裡 lookup",
+   "ans": "整張表在 mount 時載入 memory 查表",
    "why": "查表免 disk I/O，找到 block ID 後只需 1 次 I/O。"
   },
   {

@@ -407,10 +407,11 @@ export default function (ctx) {
         while (q.length) { const u = q.shift(); glow(DR.G.M[u], GREEN); await sleep(350); for (const [a, b] of S.edges) if (a === u && !seen.has(b)) { seen.add(b); q.push(b); } }
         const dead = Object.keys(N).filter((id) => !seen.has(id));
         if (!dead.length) { log('全部都 reachable，沒有東西要回收。'); return; }
+        const deadNames = dead.map((id) => N[id].name);
         await sleep(500);
         dead.forEach((id) => { fly(DR.G.M[id]); delete N[id]; });
         S.edges = S.edges.filter(([a, b]) => N[a] && N[b]);
-        log('Garbage collection：從 root 標記走得到的，沒被標記的（' + dead.map((id) => N[id].name).join('、') + '）回收。');
+        log('Garbage collection：從 root 標記走得到的，沒被標記的（' + deadNames.join('、') + '）回收。');
       }
     } finally { busy = false; }
   }
@@ -560,7 +561,7 @@ export default function (ctx) {
     if (t < 0.6) {
       const k = rnd(3, 12), m = pickOne(['Contiguous', 'Linked', 'Indexed']);
       const ans = { Contiguous: '1 次', Linked: k + ' 次', Indexed: '2 次' }[m];
-      return { q: m + ' allocation，FCB 已在 memory（index block 不在），讀檔案第 ' + k + ' 塊要幾次 disk I/O？', opts: ['1 次', '2 次', k + ' 次', (k - 1) + ' 次'], ans, why: { Contiguous: 'start + k − 1 直接算出位置。', Linked: '前 ' + (k - 1) + ' 塊都得讀出來拿 pointer，再讀第 ' + k + ' 塊。', Indexed: '先讀 index block，再讀資料塊。' }[m] };
+      return { q: m + ' allocation，FCB 已在 memory（index block 不在），讀檔案第 ' + k + ' 塊要幾次 disk I/O？', opts: [...new Set(['1 次', '2 次', k + ' 次', (k - 1) + ' 次', (k + 1) + ' 次'])].slice(0, 4), ans, why: { Contiguous: 'start + k − 1 直接算出位置。', Linked: '前 ' + (k - 1) + ' 塊都得讀出來拿 pointer，再讀第 ' + k + ' 塊。', Indexed: '先讀 index block，再讀資料塊。' }[m] };
     }
     if (t < 0.75) {
       const d = [rnd(4, 7), rnd(0, 7), rnd(0, 7)];
@@ -1964,7 +1965,7 @@ scene('fs-23b-acyclic', 'Acyclic-graph directory：link 共享同一份', DCAM, 
     cap('Linux 可以自己玩：symbolic link', 'ln -s 這樣子');
   },
   async (tok, S) => { // 1044.1 hard 與 soft
-    sm('hard link / soft link：刪一個名字時，檔案要不要消失？', 0, -0.2);
+    sm('ln：hard link；ln -s：soft（symbolic）link → 刪一個名字時，內容要不要消失？', 0, -0.2);
     cap('分 hard 和 soft', '刪掉一個名字時，內容要不要跟著消失');
   },
   async (tok, S) => { // 1076.1 multiple absolute path
@@ -2801,7 +2802,7 @@ scene('fs-24a-ondisk', 'On-disk structures：boot、partition control block、FC
     cap('再來要知道有哪些 file：file control block', '注意：不是 file content，只存 metadata');
   },
   async (tok, S) => { // 245.2 每個 file 一個，像 PCB
-    S.f = stack(1.0, 5.6, ['location', 'size', 'name…'], { w: 2.2, c: FC.lilac, title: 'FCB' });
+    S.f = stack(1.0, 5.6, ['location', 'size', '權限、時間…'], { w: 2.2, c: FC.lilac, title: 'FCB' });
     cap('每個 file 都有一個 FCB', '就像每個 process 有 process control block');
   },
   async (tok, S) => { // 257.6 directory structure
@@ -3301,7 +3302,7 @@ scene('fs-24b-contigpc', 'Contiguous 的好處與 external fragmentation', TOP, 
     cap('檔案來來去去', 'fragment 越來越多：剩下的空位東一塊、西一塊');
   },
   async (tok, S) => { // 378.4 檔案增長：要整個搬走
-    glow(S.M.tr[2], NG); S.x = tag('tr 要長大？後面 19 被 mail 佔了', 'ptr alt', 0, 1.0, 2.9);
+    glow(S.M.tr[2], NG); S.x = tag('tr 長到 17、18 之後就卡住：19 已被 mail 佔了', 'ptr alt', 0, 1.0, 2.9);
     cap('更糟：檔案會增長', '用完後面的空間就長不了：要整個 file 搬到別處');
   },
   async (tok, S) => { // 403.8 disk 使用率下降
@@ -4184,8 +4185,8 @@ scene('fs-25b-clv', 'CLV：外圈轉慢、內圈轉快（CD / DVD）', CAM, [
     cap('如果要維持相同的讀取速度', '');
   },
   async (tok, S) => { // 312.4 外圈：轉一小段就夠 → 轉慢一點
-    S.arc = ring(S.cx, S.cy, 2.6, '#d64545', 0, Math.PI / 6, 0.1);
-    S.sp = sm('外圈：轉 30°（示意）就讀到需要的量 → 可以轉慢', 2.6, 5.0);
+    S.arc = ring(S.cx, S.cy, 2.6, '#d64545', 0, Math.PI * 2 * 6 / 16, 0.1);
+    S.sp = sm('外圈轉 135° = 6 個 sector → 可以轉慢', 4.0, 5.0);
     cap('讀外圈時資料量多', '可能轉一小段角度就夠：不用轉那麼快');
   },
   async (tok, S) => { // 328.9 內圈 sector 少

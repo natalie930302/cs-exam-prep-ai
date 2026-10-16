@@ -313,7 +313,7 @@
     "後面 32 bits 是 segment 的 offset，代表一個 segment 最多只能長到 4GB。這就是早期記憶體配置只能到 4GB 的原因：不是整個程式不能超過 4GB，而是你的 heap 或 stack 這種單一 segment 不能超過 4GB。",
     "前面是 16 bits 的 selector。商業產品比較複雜：其中只有 13 bits 是 segment number，代表程式最多可以有 2¹³ 個 segment。",
     "接著有一個 bit，表示這是 local（private）的 segment 還是 shared 的 segment。一開始宣告 private，之後想 share 出去，OS 也做不到，這個 bit 會擋掉，是比較好的 protection。",
-    "後面還有 protection bits，就是 read、write、execute 那些：用兩個 bit 區分這個 segment 是 read only、write 還是 executable。",
+    "後面還有 2 個 protection bit。老師說是用來區分 read only、write、executable；課本只說這 2 bits 跟 protection 有關，實際上 x86 這 2 bits 是 privilege level（ring 0～3），不是 rwx。",
     "真正有意義的是那 13 bits，加上 share 那一個 bit，其實是 2¹⁴ 個 segment，一半 share、一半不 share。所以一個程式最多 2¹⁴ 個 segment、每個最多 4GB，在設計上就限制住了。",
     "做 translation 時，策略是先不要把兩個混在一起，一步一步做。先做 segmentation：share 和 private 是兩張完全不同的 segment table，不會亂用。假設這是 share 的，就去找 shared segment table。",
     "用 13 bits 當 index 讀出那個 segment 的 base address，再跟 offset 相加，就得到一串數字，叫 linear address。base 是 32 bits，所以 linear address 也是 32 bits。",

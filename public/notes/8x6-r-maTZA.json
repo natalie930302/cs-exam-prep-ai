@@ -204,7 +204,7 @@
     },
     {
      "t": 707,
-     "text": "② attribute：細部控制，例如把 thread 綁在某個 core（L1 cache 不共用，可提高 hit rate）；本質是每個 bit 一個選項的 integer。"
+     "text": "② attribute：細部控制，例如把 thread 綁在某個 core（L1 cache 不共用，可提高 hit rate）；老師比喻成「每個 bit 一個選項的 integer」，實際上是 pthread_attr_t，用 pthread_attr_set… 函式設定，傳 NULL 就用預設值。"
     },
     {
      "t": 796,
@@ -240,7 +240,7 @@
     "第二個 argument 是 attribute（屬性）：一些比較細的設定，控制 thread 被 create 之後的行為。",
     "例如在 multi-core 系統上，有時想把 thread 綁在某一個 core 上。因為不同 core 的 L1 [[cache]] 不共用，綁在同一個 core 可以提高 cache 的 hit rate（命中率）。",
     "OS 預設不會幫你限制，哪個 core 有空就跑；如果想告訴 OS 這些 hint（提示），就透過 attribute。",
-    "attribute 其實只是一個 integer（整數），每個 bit 代表某個行為 enable 或 disable，照 API 的定義去設定就好。bit 內容是示意。",
+    "老師說 attribute 可以想成一個 integer（整數），每個 bit 代表某個行為 enable 或 disable，照 API 的定義去設定就好（bit 內容是示意）。補充：實際上 pthread_attr_t 是一個結構，要用 pthread_attr_init、pthread_attr_set… 這些函式設定；不需要時傳 NULL，就用預設值。",
     "第三個是 function pointer（函式指標），告訴它這個 thread 要執行哪一個 function。",
     "最後一個是 function 的 argument。它的行為就像拿這個 argument 去 call 那個 function。",
     "可是 function 通常不只一個參數。API 為了越簡潔、越 general 越好，不可能定義一個參數版、兩個參數版……所以只給你一個 argument。",
@@ -310,7 +310,7 @@
     },
     {
      "t": 1145,
-     "text": "否則 library 不知道會不會有人 join，結束的 thread 一直 hang 著，program 也無法結束。"
+     "text": "否則 library 不知道會不會有人 join，結束的 thread 資源與 return 值一直 hang 著不釋放（老師說 program 會無法結束；其實 main 結束時整個 process 仍會結束，問題是資源一直被占用）。"
     },
     {
      "t": 1167,
@@ -339,7 +339,7 @@
     "可是不 call join 的話，大部分 thread library 會要求你去 call pthread_detach。",
     "意思是告訴 thread library：這個 thread 結束之後，直接把它的 resource free（釋放）掉就好。",
     "如果不 call，程式畢竟是 run time 在跑，OS 也不知道未來會不會有人 join 它。",
-    "所以結束掉的 thread 會一直 hang 在那裡，它的 return 值一直被 keep 著，你的 program 也就無法結束，因為不知道你什麼時候會 join。",
+    "所以結束掉的 thread 會一直 hang 在那裡，它的 return 值和資源一直被 keep 著、不會釋放，因為不知道你什麼時候會 join。（老師說 program 也會無法結束；更精確地說，main 結束時整個 process 還是會結束，真正的問題是這些資源一直被占用，像記憶體洩漏。）",
     "比較好的 programming 習慣是：create 完之後，要嘛會去 join；不 join 的話就立刻 detach。",
     "這樣它結束之後，OS 就會立刻把它用到的記憶體空間清乾淨，也不會有 hang 在那邊的問題。",
     "當然，一旦 detach 了，就永遠不能再 join，定義就是這樣。",

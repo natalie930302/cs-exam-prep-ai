@@ -60,7 +60,7 @@
     },
     {
      "t": 428,
-     "text": "主機板上用一個 mode bit：平常 1（user），interrupt 時 flip 成 0（monitor），return 時 flip 回來。"
+     "text": "硬體上用一個 mode bit（在 CPU 的狀態暫存器裡）：平常 1（user），interrupt 時 flip 成 0（monitor），return 時 flip 回來。"
     }
    ],
    "trap": "課本：mode bit 0 = kernel（monitor）mode、1 = user mode；trap / interrupt 會切到 kernel mode，return-from-trap 切回 user mode。",
@@ -90,7 +90,7 @@
     "為什麼一定要透過 OS？因為螢幕只有一個、I/O device 只有一個，必須由 OS 統一管理，不能讓使用者想印什麼就直接印。",
     "不然你 output、我也 output，上一講看到的 device controller buffer 就會亂掉，造成一團混亂。",
     "那到底怎麼區分是誰在執行？答案意外地簡單。",
-    "主機板上就用一個 bit（mode bit）：兩個 mode，一個 bit 就夠了，這是 hardware 上的東西。",
+    "硬體上就用一個 bit（mode bit）：兩個 mode，一個 bit 就夠了。老師說「主機板上」，精確說它在 CPU 的狀態暫存器裡。",
     "平常是 user mode，例如這個 bit 的值是 1。",
     "當你呼叫 [[interrupt]] 時，它就 flip（翻轉）成 0。因為呼叫 interrupt 就代表在呼叫 system call，而 system call 就是要執行 OS 的 service routine。",
     "不只 system call：程式出錯（fault）、或 hardware 送來 signal 打斷使用者程式時也一樣，處理 interrupt 的第一件事就是把這個 bit 翻過來。",
@@ -247,7 +247,7 @@
     "都通過了，才會把這個指令送上 memory bus，請 memory controller 存取資料。注意：base、limit 都只是兩個值而已。",
     "那請問：修改這兩個 register 值的那個指令，應不應該是 privileged instruction？這是關鍵。",
     "如果不是，整套機制就沒用了：使用者偷偷用那個指令把自己的 limit 擴大一倍，就能越界亂來。所以這些載入 base、limit 的指令全部都是 privileged。",
-    "當你呼叫 malloc 時，裡面（經由 OS）做的事情就是修改 limit register，所以你才能用到新的空間。"
+    "當你呼叫 malloc 時，裡面（經由 OS）做的事情就是修改 limit register，所以你才能用到新的空間。（這是 base／limit 這個簡化模型下的說法；實際上 malloc 多半先在程式已有的 heap 裡分配，不夠時才用 system call 請 OS 擴大。）"
    ]
   },
   {

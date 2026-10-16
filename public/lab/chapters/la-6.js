@@ -725,7 +725,7 @@ export default function (ctx) {
     fresh([0, 10.5, 7.8], [0, 0, -0.4]);
     const F = flat2(0.62, 6, 8), M = [[1, 0.5], [0.5, 1]];
     eigLine(F, [1, 1], COL.d); eigLine(F, [1, -1], COL.r);
-    say('差分方程 u_{k+1} = A u_k', '答案：u_k = Aᵏu₀，但怎麼真的算出來？');
+    say('差分方程 uₖ₊₁ = A uₖ', '答案：u_k = Aᵏu₀，但怎麼真的算出來？');
     await beat(tok, 2800);
     const u0 = [1, 0.2], c1 = 0.6, c2 = 0.4;
     F.arrow(u0, COL.g, 'u₀');
@@ -745,18 +745,18 @@ export default function (ctx) {
   async function scFibMatrix(tok) {
     fresh([0, 3.4, 13], [0, 3.6, 0]);
     const F = [0, 1, 1, 2, 3, 5, 8, 13];
-    say('Fibonacci：0, 1, 1, 2, 3, 5, 8, 13, …', 'F_{k+2} = F_{k+1} + F_k；F₁₀₀ 是多少？長多快？');
+    say('Fibonacci：0, 1, 1, 2, 3, 5, 8, 13, …', 'Fₖ₊₂ = Fₖ₊₁ + Fₖ；F₁₀₀ 是多少？長多快？');
     const cs = [];
     for (let k = 0; k < F.length; k++) { cs.push(cube(F[k], COL.a, [0.7, 0.7, 0.7], -6 + k * 0.9, 6.0, 0, 2)); tag('F' + k, 'idx', -6 + k * 0.9, 5.3); await beat(tok, 380); }
     await beat(tok, 1200);
-    say('二階的純量方程 → 一階的 2×2 系統', '令 u_k = (F_{k+1}, F_k)，補一條 F_{k+1} = F_{k+1}');
-    mono(tag('[F_{k+2}]   [1 1] [F_{k+1}]', '', -2.6, 4.1)); mono(tag('[F_{k+1}] = [1 0] [F_k    ]', '', -2.6, 3.55));
+    say('二階的純量方程 → 一階的 2×2 系統', '令 uₖ = (Fₖ₊₁, Fₖ)，補一條 Fₖ₊₁ = Fₖ₊₁');
+    mono(tag('[Fₖ₊₂]   [1 1] [Fₖ₊₁]', '', -2.6, 4.1)); mono(tag('[Fₖ₊₁] = [1 0] [Fₖ    ]', '', -2.6, 3.55));
     await beat(tok, 3200);
     const g = mgrid([[1, 1], [1, 0]], 2.6, 4.2, 0, { color: () => COL.b }); tag('A', 'ptr', 3.0, 4.9);
-    say('A = [1 1; 1 0]，u_{k+1} = A u_k', 'A 對稱 → 特徵值是實數');
+    say('A = [1 1; 1 0]，uₖ₊₁ = A uₖ', 'A 對稱 → 特徵值是實數');
     await beat(tok, 2600);
     mono(tag('det(A − λI) = λ² − λ − 1 = 0', 'ptr', 0, 2.5));
-    say('跟遞迴式 F_{k+2} − F_{k+1} − F_k = 0 長得一樣', '');
+    say('跟遞迴式 Fₖ₊₂ − Fₖ₊₁ − Fₖ = 0 長得一樣', '');
     await beat(tok, 2600);
     mono(tag('λ = (1 ± √5) / 2 ≈ 1.618、−0.618', 'ptr alt', 0, 1.8));
     say('二次公式：λ₁ ≈ 1.618、λ₂ ≈ −0.618', '檢查：λ₁ + λ₂ = 1 = trace，λ₁λ₂ = −1 = det');
@@ -930,7 +930,7 @@ export default function (ctx) {
     curve(f, COL.k); tag('f(x)', 'ptr', X0 + 0.4, Y0 + f(0) * sy + 0.4);
     say('向量 → 函數；R^n → 無限維的函數空間', '（示範用 f = 0.5 + 1.2cos x + 0.8sin x + 0.4cos 2x）');
     await beat(tok, 2800);
-    say('函數的內積：把 Σ vᵢwᵢ 換成 ∫₀^{2π} f(x)g(x) dx', '週期 2π');
+    say('函數的內積：把 Σ vᵢwᵢ 換成 ∫₀^(2π) f(x)g(x) dx', '週期 2π');
     await beat(tok, 2600);
     // sin x · cos x 的面積：正負抵消
     const barsG = [];
@@ -941,7 +941,7 @@ export default function (ctx) {
     area((x) => f(x) * Math.cos(x), COL.d, COL.r);
     say('求 a₁：兩邊乘 cos x 再積分', '其他項全部正交消失，只剩 a₁∫cos²x dx = a₁π');
     await beat(tok, 3200);
-    say('a₁ = (1/π)∫₀^{2π} f(x) cos x dx = 1.2', '跟 x₁ = q₁ᵀv 完全同一個想法');
+    say('a₁ = (1/π)∫₀^(2π) f(x) cos x dx = 1.2', '跟 x₁ = q₁ᵀv 完全同一個想法');
     await beat(tok, 2800);
     say('a₀ = f 的平均值', '');
     await beat(tok, 2000);
@@ -1019,7 +1019,7 @@ export default function (ctx) {
     as[4].glow(GOLD);
     say('旋轉軸上的向量不動：特徵值 λ = 1', '旋轉的特徵向量 = 旋轉軸');
     await orbit(tok, 3000, 30, 90, 20, 10.5, [0, 2.4, 0]);
-    say('另外兩個特徵值是複數 e^{±2πi/3}', '三個特徵值乘積 = det = 1，和 = trace = 0');
+    say('另外兩個特徵值是複數 e^(±2πi/3)', '三個特徵值乘積 = det = 1，和 = trace = 0');
     await beat(tok, 3000);
   }
   async function scTrick(tok) {
@@ -1113,7 +1113,7 @@ export default function (ctx) {
     'distinct-eigen': { title: '相異特徵值 ⇒ 獨立特徵向量；I 的重根', play: scDistinct },
     'defective': { title: '[2 1; 0 2]：代數重數 2、幾何重數 1', play: scDefective },
     'uk-expansion': { title: 'u_k = c₁λ₁ᵏx₁ + c₂λ₂ᵏx₂', play: scUkExpansion },
-    'fibonacci-matrix': { title: 'Fibonacci 化成 u_{k+1} = Au_k', play: scFibMatrix },
+    'fibonacci-matrix': { title: 'Fibonacci 化成 uₖ₊₁ = Auₖ', play: scFibMatrix },
     'fibonacci-growth': { title: 'Fibonacci 的成長率 = 1.618', play: scFibGrowth },
     'markov-props': { title: 'Markov 矩陣：非負、欄和 = 1', play: scMarkovProps },
     'markov-steady': { title: 'λ = 1 → 穩定狀態', play: scMarkovSteady },
@@ -1650,9 +1650,9 @@ async function moveTo(tok, F, a, v, ms = 700) { const v0 = a.v.slice(); await an
 {
   const A = [[1, 0.5], [0.5, 1]], Sm = [[1, 1], [1, -1]], u0 = [1, 0.2], c = mulMV(inv2(Sm), u0), lam = [1.5, 0.5];
   const uk = (k) => addv(scl([1, 1], c[0] * lam[0] ** k), scl([1, -1], c[1] * lam[1] ** k));
-  scene('l22-uk', 'L22：u_{k+1} = Au_k → u_k = c₁λ₁ᵏx₁ + c₂λ₂ᵏx₂', [
+  scene('l22-uk', 'L22：uₖ₊₁ = Auₖ → uₖ = c₁λ₁ᵏx₁ + c₂λ₂ᵏx₂', [
     async (tok, S) => { cap('可以對角化的重要情況', '來解一個方程式'); S.F = plane2(); S.F.line([1, 1], COL.d); S.F.line([1, -1], COL.r); row(sm, '示意 A = [1 0.5; 0.5 1]', 0); },
-    async (tok, S) => { cap('從 u₀ 開始，每一步乘 A', 'u_{k+1} = Au_k'); S.au = S.F.arrow(u0, COL.k, 'u₀'); row(hd, 'u_{k+1} = A u_k', 1); },
+    async (tok, S) => { cap('從 u₀ 開始，每一步乘 A', 'uₖ₊₁ = Auₖ'); S.au = S.F.arrow(u0, COL.k, 'u₀'); row(hd, 'uₖ₊₁ = A uₖ', 1); },
     async (tok, S) => {
       cap('u₁ = Au₀、u₂ = A²u₀ …', 'u_k = Aᵏu₀'); let u = u0;
       for (let k = 1; k <= 2; k++) { const v = mulMV(A, u), f = u.slice(); await anim(tok, 700, (t) => S.F.set(S.au, addv(f, scl(addv(v, scl(f, -1)), t)))); u = v; S.F.dot(u, COL.k, 0.06); }
@@ -1685,7 +1685,7 @@ async function moveTo(tok, F, a, v, ms = 700) { const v0 = a.v.slice(); await an
   const A = [[1, 1], [1, 0]], l1 = (1 + Math.sqrt(5)) / 2, l2 = (1 - Math.sqrt(5)) / 2;
   const fib = [0, 1]; for (let k = 2; k <= 40; k++) fib.push(fib[k - 1] + fib[k - 2]);
   const ctr = (f, t, y) => f(t, 0, y);
-  scene('l22-fib1', 'L22：Fibonacci 化成 u_{k+1} = Au_k；λ = (1 ± √5)/2', [
+  scene('l22-fib1', 'L22：Fibonacci 化成 uₖ₊₁ = Auₖ；λ = (1 ± √5)/2', [
     async (tok, S) => { cap('例子：Fibonacci 數列', ''); S.cs = []; },
     async (tok, S) => { cap('F₀ = 0、F₁ = 1', ''); for (let k = 0; k < 2; k++) { S.cs.push(cube(fib[k], COL.a, [0.7, 0.7, 0.7], -6 + k * 0.9, 6.0, 0, 2)); sm('F' + k, -6 + k * 0.9, 5.3); } },
     async (tok, S) => { cap('下一個 = 前兩個相加', '0 + 1 = 1'); S.cs.push(cube(1, COL.a, [0.7, 0.7, 0.7], -6 + 2 * 0.9, 6.0, 0, 2)); sm('F2', -6 + 1.8, 5.3); },
@@ -1694,18 +1694,18 @@ async function moveTo(tok, F, a, v, ms = 700) { const v0 = a.v.slice(); await an
     async (tok, S) => { cap('F₁₀₀ 是多少？', ''); hot('F₁₀₀ = ?', 2.0, 6.0); },
     async (tok, S) => { cap('長得多快？一定在長', '不穩定：特徵值不會都小於 1'); },
     async (tok, S) => { cap('答案在特徵值裡：先找出矩陣', ''); },
-    async (tok, S) => { cap('F_{k+2} = F_{k+1} + F_k', '一條方程式、二階'); S.e1 = ctr(hd, 'F_{k+2} = F_{k+1} + F_k　（純量、二階）', 4.4); },
-    async (tok, S) => { cap('小技巧：令 u_k = (F_{k+1}, F_k)', '把未知數變成向量'); ctr(pl, 'u_k = (F_{k+1}, F_k)', 3.7); },
-    async (tok, S) => { cap('再加一條：F_{k+1} = F_{k+1}', '得到 2×2 的一階系統'); ctr(pl, '補一條：F_{k+1} = F_{k+1}', 3.0); },
+    async (tok, S) => { cap('Fₖ₊₂ = Fₖ₊₁ + Fₖ', '一條方程式、二階'); S.e1 = ctr(hd, 'Fₖ₊₂ = Fₖ₊₁ + Fₖ　（純量、二階）', 4.4); },
+    async (tok, S) => { cap('小技巧：令 uₖ = (Fₖ₊₁, Fₖ)', '把未知數變成向量'); ctr(pl, 'uₖ = (Fₖ₊₁, Fₖ)', 3.7); },
+    async (tok, S) => { cap('再加一條：Fₖ₊₁ = Fₖ₊₁', '得到 2×2 的一階系統'); ctr(pl, '補一條：Fₖ₊₁ = Fₖ₊₁', 3.0); },
     async (tok, S) => {
-      cap('矩陣 A = [1 1; 1 0]', 'u_{k+1} = Au_k'); S.g = mgrid(A, 3.6, 4.6, 0, { color: () => COL.b }); tag('A', 'ptr', 4.0, 5.3);
+      cap('矩陣 A = [1 1; 1 0]', 'uₖ₊₁ = Auₖ'); S.g = mgrid(A, 3.6, 4.6, 0, { color: () => COL.b }); tag('A', 'ptr', 4.0, 5.3);
       const u6 = mulMV(powM(A, 6), [1, 0]); ok(nearV(u6, [fib[7], fib[6]]), 'A⁶(1, 0) = (13, 8) ✓', 4.0, 3.1);
     },
     async (tok, S) => { cap('二階純量 → 一階 2×2 系統', ''); },
     async (tok, S) => { cap('A 對稱 → 特徵值是實數', '特徵向量互相垂直'); ctr(sm, 'A 對稱 → λ 實數、特徵向量垂直', 2.3); },
     async (tok, S) => { cap('λ₁ + λ₂ = trace = 1', 'λ₁λ₂ = det = −1'); ctr(pl, 'λ₁ + λ₂ = trace = ' + fmt(trM(A)) + '　λ₁λ₂ = det = ' + fmt(det2(A)), 1.6); },
     async (tok, S) => { cap('det(A − λI) = λ² − λ − 1', ''); ctr((t, x, y) => ok(nearV(charPoly(A), [1, -1, -1]), t, x, y), 'det(A − λI) = λ² − λ − 1 ✓', 0.9); },
-    async (tok, S) => { cap('跟遞迴式長得一樣', 'F_{k+2} − F_{k+1} − F_k = 0'); S.g.c.forEach((r) => r.forEach((m) => glow(m, GOLD))); ctr(note, 'λ² − λ − 1 ↔ F_{k+2} − F_{k+1} − F_k', 0.2); },
+    async (tok, S) => { cap('跟遞迴式長得一樣', 'Fₖ₊₂ − Fₖ₊₁ − Fₖ = 0'); S.g.c.forEach((r) => r.forEach((m) => glow(m, GOLD))); ctr(note, 'λ² − λ − 1 ↔ Fₖ₊₂ − Fₖ₊₁ − Fₖ', 0.2); },
     async (tok, S) => {
       S.g.clearGlow(); cap('二次公式：λ = (1 ± √5)/2', ''); const rs = roots(charPoly(A)).map((z) => z[0]).sort((a, b) => b - a);
       ok(near(rs[0], l1, 1e-6) && near(rs[1], l2, 1e-6), 'λ = (1 ± √5)/2 ✓', 4.0, 2.4);
@@ -1762,9 +1762,9 @@ const ctr = (f, t, y, x = 0) => f(t, x, y);
 // L23-1：開場
 scene('l23-intro', 'L23：微分方程 du/dt = Au：解是指數', [
   async (tok, S) => { cap('這講：解線性微分方程組', 'du/dt = Au（常係數）'); ctr(hd, 'du/dt = Au', 5.6); },
-  async (tok, S) => { cap('關鍵：解是指數函數 e^{λt}', '要找的是指數上的 λ 和前面的向量'); ctr(hot, '找 u = e^{λt}x', 4.6); },
-  async (tok, S) => { cap('完全平行於矩陣的冪次', '上一講：Aᵏ、A¹⁰⁰'); ctr(pl, '上一講：u_{k+1} = Au_k → λᵏ', 3.4, -3); ctr(pl, '這一講：du/dt = Au → e^{λt}', 3.4, 3); },
-  async (tok, S) => { cap('不是次方，而是指數', '微分方程自然的東西'); ctr(note, 'λᵏ（次方） ↔ e^{λt}（指數）', 2.2); },
+  async (tok, S) => { cap('關鍵：解是指數函數 e^(λt)', '要找的是指數上的 λ 和前面的向量'); ctr(hot, '找 u = e^(λt)x', 4.6); },
+  async (tok, S) => { cap('完全平行於矩陣的冪次', '上一講：Aᵏ、A¹⁰⁰'); ctr(pl, '上一講：uₖ₊₁ = Auₖ → λᵏ', 3.4, -3); ctr(pl, '這一講：du/dt = Au → e^(λt)', 3.4, 3); },
+  async (tok, S) => { cap('不是次方，而是指數', '微分方程自然的東西'); ctr(note, 'λᵏ（次方） ↔ e^(λt)（指數）', 2.2); },
 ]);
 // L23-2：例子：特徵值、特徵向量
 scene('l23-eig', 'L23：例子 A = [−1 2; 1 −2]：λ = 0、−3', [
@@ -1781,7 +1781,7 @@ scene('l23-eig', 'L23：例子 A = [−1 2; 1 −2]：λ = 0、−3', [
   async (tok, S) => { cap('trace = −3 → 另一個 λ = −3', '0 + λ₂ = −3'); row(ok, trM(A23) === -3, 'trace = −1 − 2 = −3 → λ₂ = −3 ✓', 5); },
   async (tok, S) => { cap('照算：det(A − λI) = λ² + 3λ', ''); row(ok, nearV(charPoly(A23), [1, 3, 0]), 'det(A − λI) = λ² + 3λ ✓', 6); },
   async (tok, S) => { const rs = roots(charPoly(A23)).map((z) => z[0]).sort((a, b) => b - a); cap('λ(λ + 3)：λ₁ = 0、λ₂ = −3', ''); row(ok, nearV(rs, [0, -3]), 'λ(λ + 3) = 0 → λ₁ = 0、λ₂ = −3 ✓', 7); },
-  async (tok, S) => { cap('e^{−3t} 會消失、e^{0t} = 1 不動', '→ 穩定狀態（steady state）'); S.nt = note('e^{−3t} → 0；e^{0t} = 1', 5.5, R(1)); },
+  async (tok, S) => { cap('e⁻³ᵗ 會消失、e⁰ᵗ = 1 不動', '→ 穩定狀態（steady state）'); S.nt = note('e⁻³ᵗ → 0；e⁰ᵗ = 1', 5.5, R(1)); },
   async (tok, S) => {
     cap('λ = 0 的特徵向量：null space', 'x₁ = (2, 1)'); S.F.line(X1, COL.d); S.F.arrow(X1, COL.d, 'x₁');
     wipe(S.n1); row(hot, 'λ₁ = 0、λ₂ = −3', 3); row(ok, nearV(mulMV(A23, X1), [0, 0]), 'x₁ = (2, 1)：Ax₁ = 0 ✓', 4);
@@ -1794,46 +1794,46 @@ scene('l23-eig', 'L23：例子 A = [−1 2; 1 −2]：λ = 0、−3', [
   async (tok, S) => { cap('第一件工作完成', '特徵值已經告訴我們最重要的資訊'); },
 ]);
 // L23-3：解 u(t) = c₁e^{λ₁t}x₁ + c₂e^{λ₂t}x₂
-scene('l23-sol', 'L23：u(t) = ⅓(2, 1) + ⅓e^{−3t}(1, −1)', [
+scene('l23-sol', 'L23：u(t) = ⅓(2, 1) + ⅓e⁻³ᵗ(1, −1)', [
   async (tok, S) => { cap('答案 u(t) 是什麼？', ''); S.F = plane2(-3.4, 3.0, 0.8, 3); S.F.line(X1, COL.d); S.F.line(X2, COL.r); },
-  async (tok, S) => { cap('兩個純指數解', 'e^{λ₁t}x₁ 和 e^{λ₂t}x₂'); S.n = mark(); row(hd, '純解：e^{λ₁t}x₁、e^{λ₂t}x₂', 0); },
-  async (tok, S) => { cap('一般解：兩個的組合', ''); row(hot, 'u(t) = c₁e^{λ₁t}x₁ + c₂e^{λ₂t}x₂', 1); },
-  async (tok, S) => { cap('檢查：代進 du/dt = Au', '試 u = e^{λ₁t}x₁'); row(pl, '代入 du/dt = Au', 2); },
+  async (tok, S) => { cap('兩個純指數解', 'e^(λ₁t)x₁ 和 e^(λ₂t)x₂'); S.n = mark(); row(hd, '純解：e^(λ₁t)x₁、e^(λ₂t)x₂', 0); },
+  async (tok, S) => { cap('一般解：兩個的組合', ''); row(hot, 'u(t) = c₁e^(λ₁t)x₁ + c₂e^(λ₂t)x₂', 1); },
+  async (tok, S) => { cap('檢查：代進 du/dt = Au', '試 u = e^(λ₁t)x₁'); row(pl, '代入 du/dt = Au', 2); },
   async (tok, S) => {
     const t = 0.4, u = scl(X2, Math.exp(-3 * t)), lhs = scl(u, -3), rhs = mulMV(A23, u);
     cap('左邊：微分拿下一個 λ₁；右邊 Ax₁ = λ₁x₁', '兩邊一樣');
-    row(ok, nearV(lhs, rhs, 1e-12), '例 e^{−3t}x₂：d/dt = −3e^{−3t}x₂ = A(e^{−3t}x₂) ✓', 3);
+    row(ok, nearV(lhs, rhs, 1e-12), '例 e⁻³ᵗx₂：d/dt = −3e⁻³ᵗx₂ = A(e⁻³ᵗx₂) ✓', 3);
   },
-  async (tok, S) => { cap('類比上一講的純冪次', 'λ₁ᵏx₁ ↔ e^{λ₁t}x₁'); row(note, '差分：λᵏx　微分：e^{λt}x', 4); },
+  async (tok, S) => { cap('類比上一講的純冪次', 'λ₁ᵏx₁ ↔ e^(λ₁t)x₁'); row(note, '差分：λᵏx　微分：e^(λt)x', 4); },
   async (tok, S) => { cap('c₁、c₂ 是多少？', ''); },
-  async (tok, S) => { cap('代入這個例子', 'λ₁ = 0：e^{0t} = 1；λ₂ = −3'); row(pl, 'u(t) = c₁·1·(2, 1) + c₂e^{−3t}(1, −1)', 5); },
+  async (tok, S) => { cap('代入這個例子', 'λ₁ = 0：e⁰ᵗ = 1；λ₂ = −3'); row(pl, 'u(t) = c₁·1·(2, 1) + c₂e⁻³ᵗ(1, −1)', 5); },
   async (tok, S) => { cap('c 由初始條件決定', 'u(0) = (1, 0)'); },
   async (tok, S) => { cap('t = 0：c₁(2, 1) + c₂(1, −1) = (1, 0)', ''); row(pl, 't = 0：c₁(2, 1) + c₂(1, −1) = (1, 0)', 6); },
   async (tok, S) => { const c = mulMV(inv2(S23), [1, 0]); cap('都是 1 → (3, 0)；所以各取 1/3', 'c₁ = c₂ = 1/3'); row(ok, nearV(c, [1 / 3, 1 / 3]), 'c₁ = 1/3、c₂ = 1/3 ✓', 7); },
   async (tok, S) => {
-    cap('答案：u(t) = ⅓(2, 1) + ⅓e^{−3t}(1, −1)', ''); const okk = [0, 0.3, 1].every((t) => nearV(du23(t), mulMV(A23, u23(t)), 1e-12)) && nearV(u23(0), [1, 0], 1e-12);
-    wipe(S.n); row(hot, 'u(t) = ⅓(2, 1) + ⅓e^{−3t}(1, −1)', 0); row(ok, okk, 'u(0) = (1, 0)、du/dt = Au ✓', 1);
+    cap('答案：u(t) = ⅓(2, 1) + ⅓e⁻³ᵗ(1, −1)', ''); const okk = [0, 0.3, 1].every((t) => nearV(du23(t), mulMV(A23, u23(t)), 1e-12)) && nearV(u23(0), [1, 0], 1e-12);
+    wipe(S.n); row(hot, 'u(t) = ⅓(2, 1) + ⅓e⁻³ᵗ(1, −1)', 0); row(ok, okk, 'u(0) = (1, 0)、du/dt = Au ✓', 1);
   },
   async (tok, S) => {
     cap('從 (1, 0) 出發，慢慢流向 u₂', '一部分「人」搬過去'); S.au = S.F.arrow(u23(0), COL.k, 'u(t)');
     await anim(tok, 2400, (s) => { const t = s * 2; S.F.set(S.au, u23(t)); });
     S.au.tag('u(2)');
   },
-  async (tok, S) => { const ui = [2 / 3, 1 / 3]; cap('t → ∞：e^{−3t} 消失', '穩定狀態 u(∞) = (2/3, 1/3)'); S.F.dot(ui, COL.g, 0.12); row(ok, nearV(u23(40), ui, 1e-12), 'u(∞) = ⅓(2, 1) = (2/3, 1/3) ✓', 2); },
+  async (tok, S) => { const ui = [2 / 3, 1 / 3]; cap('t → ∞：e⁻³ᵗ 消失', '穩定狀態 u(∞) = (2/3, 1/3)'); S.F.dot(ui, COL.g, 0.12); row(ok, nearV(u23(40), ui, 1e-12), 'u(∞) = ⅓(2, 1) = (2/3, 1/3) ✓', 2); },
 ]);
 // L23-4：穩定、穩定狀態、爆掉（複數平面）
 scene('l23-stab', 'L23：穩定 ⇔ Re λ < 0（複數平面）', [
   async (tok, S) => { cap('不一定有穩定狀態', '可能趨近 0，也可能爆掉'); S.F = plane2(-3.4, 3.0, 0.3, 7.5); S.F.lab('Re', [7.4, -0.6]); S.F.lab('Im', [0.7, 7.2]); },
   async (tok, S) => { cap('穩定：u(t) → 0', '不管初始條件'); row(hd, '穩定：u(t) → 0', 0); },
-  async (tok, S) => { cap('負的特徵值', 'e^{λt} → 0'); S.F.dot([-3, 0], COL.d, 0.13); row(pl, 'λ < 0：e^{λt} → 0', 1); },
+  async (tok, S) => { cap('負的特徵值', 'e^(λt) → 0'); S.F.dot([-3, 0], COL.d, 0.13); row(pl, 'λ < 0：e^(λt) → 0', 1); },
   async (tok, S) => { cap('如果 λ 是複數呢？', ''); },
   async (tok, S) => { cap('例：λ = −3 + 6i', ''); S.F.dot([-3, 6], COL.c, 0.13); S.F.lab('−3 + 6i', [-3, 6.9], 'ptr'); },
   async (tok, S) => {
     const t = 0.5, re = Math.exp(-3 * t) * Math.cos(6 * t), im = Math.exp(-3 * t) * Math.sin(6 * t);
-    cap('|e^{(−3+6i)t}| = e^{−3t}', '虛部不影響大小'); row(ok, near(Math.hypot(re, im), Math.exp(-3 * t), 1e-12), 't = 0.5：|e^{(−3+6i)t}| = e^{−1.5} ✓', 2);
+    cap('|e^((−3+6i)t)| = e⁻³ᵗ', '虛部不影響大小'); row(ok, near(Math.hypot(re, im), Math.exp(-3 * t), 1e-12), 't = 0.5：|e^((−3+6i)t)| = e^(−1.5) ✓', 2);
   },
   async (tok, S) => {
-    cap('e^{6it} = cos 6t + i sin 6t', '在單位圓上繞，大小永遠 1'); const c = new THREE.Mesh(new THREE.RingGeometry(1 * S.F.s - 0.012, 1 * S.F.s + 0.012, 48), new THREE.MeshBasicMaterial({ color: COL.k })); c.position.copy(S.F.w([0, 0], 0.02)); lab.world.add(c);
+    cap('e⁶ⁱᵗ = cos 6t + i sin 6t', '在單位圓上繞，大小永遠 1'); const c = new THREE.Mesh(new THREE.RingGeometry(1 * S.F.s - 0.012, 1 * S.F.s + 0.012, 48), new THREE.MeshBasicMaterial({ color: COL.k })); c.position.copy(S.F.w([0, 0], 0.02)); lab.world.add(c);
     const d = S.F.dot([1, 0], COL.b, 0.1); await anim(tok, 2000, (s) => d.position.copy(S.F.w([Math.cos(6 * s), Math.sin(6 * s)], 0.08)));
     row(ok, near(Math.cos(6) ** 2 + Math.sin(6) ** 2, 1), 'cos² + sin² = 1 ✓', 3);
   },
@@ -1842,8 +1842,8 @@ scene('l23-stab', 'L23：穩定 ⇔ Re λ < 0（複數平面）', [
   async (tok, S) => { cap('穩定狀態：λ₁ = 0、其他 Re λ < 0', '剛才的例子：0 和 −3'); S.F.dot([0, 0], COL.g, 0.15); row(pl, '穩定狀態：λ₁ = 0，其他 Re λ < 0', 6); },
   async (tok, S) => { cap('任何一個 Re λ > 0 → 爆掉', ''); rect(S.F, [0, -7.5], [7.5, 7.5], COL.r, 0.1); row(bad, '有 Re λ > 0 → 爆掉', 7); },
   async (tok, S) => {
-    const E = eigInfo(sclM(A23, -1)).groups.map((g) => g.re); cap('把 A 全部變號：特徵值也變號', '−A：λ = 0、+3 → e^{3t} 爆掉');
-    S.F.dot([3, 0], COL.r, 0.13); row(ok, nearV(E, [3, 0]), '−A 的 λ = 3、0 ✓ → e^{3t} 爆掉', 5);
+    const E = eigInfo(sclM(A23, -1)).groups.map((g) => g.re); cap('把 A 全部變號：特徵值也變號', '−A：λ = 0、+3 → e³ᵗ 爆掉');
+    S.F.dot([3, 0], COL.r, 0.13); row(ok, nearV(E, [3, 0]), '−A 的 λ = 3、0 ✓ → e³ᵗ 爆掉', 5);
   },
 ]);
 // L23-5：2×2：trace < 0 且 det > 0
@@ -1854,7 +1854,7 @@ scene('l23-tr', 'L23：2×2 穩定 ⇔ trace < 0 且 det > 0', [
   async (tok, S) => { cap('複數時：+6i、−6i 相加抵消', ''); row(ok, (-3 + -3) === -6, '(−3 + 6i) + (−3 − 6i) = −6 ✓', 2); },
   async (tok, S) => { cap('trace < 0 就夠了嗎？不夠', ''); },
   async (tok, S) => {
-    const B = [[-2, 0], [0, 1]], E = eigInfo(B).groups.map((g) => g.re); cap('[−2 0; 0 1]：trace = −1', '但 λ = 1 → e^{t} 爆掉');
+    const B = [[-2, 0], [0, 1]], E = eigInfo(B).groups.map((g) => g.re); cap('[−2 0; 0 1]：trace = −1', '但 λ = 1 → eᵗ 爆掉');
     S.F.dot([trM(B), det2(B)], COL.r, 0.14); S.F.lab('[−2 0; 0 1]', [trM(B), det2(B) - 0.9], 'bad');
     row(ok, trM(B) < 0 && nearV(E, [1, -2]), 'trace = −1 < 0，λ = 1、−2 → 不穩定 ✓', 3);
   },
@@ -1867,7 +1867,7 @@ scene('l23-tr', 'L23：2×2 穩定 ⇔ trace < 0 且 det > 0', [
   },
 ]);
 // L23-6：u = Sv：特徵向量把方程式解耦
-scene('l23-uncouple', 'L23：u = Sv：解耦 → u(t) = Se^{Λt}S⁻¹u(0)', [
+scene('l23-uncouple', 'L23：u = Sv：解耦 → u(t) = Se^(Λt)S⁻¹u(0)', [
   async (tok, S) => { cap('核心步驟：解這個系統', '找 λ、找 x、找 c'); ctr(hd, '找 λ → 找 x → 找 c', 6.0); },
   async (tok, S) => { cap('求 c 的那兩條方程式', '寫成矩陣形式'); ctr(pl, 'c₁(2, 1) + c₂(1, −1) = (1, 0)', 5.3); },
   async (tok, S) => { cap('矩陣就是 S：特徵向量矩陣', 'Sc = u(0)'); ctr((t, x, y) => ok(nearV(mulMV(S23, [1 / 3, 1 / 3]), [1, 0]), t, x, y), 'S = [2 1; 1 −1]：Sc = u(0)，c = (1/3, 1/3) ✓', 4.6); },
@@ -1877,19 +1877,19 @@ scene('l23-uncouple', 'L23：u = Sv：解耦 → u(t) = Se^{Λt}S⁻¹u(0)', [
   async (tok, S) => { cap('S 是常數：S dv/dt = ASv', ''); ctr(pl, 'S dv/dt = A S v', 2.6); },
   async (tok, S) => { cap('左乘 S⁻¹：dv/dt = S⁻¹ASv = Λv', ''); ctr((t, x, y) => ok(nearM(mm(inv2(S23), mm(A23, S23)), diagM([0, -3])), t, x, y), 'dv/dt = S⁻¹AS v = Λv，Λ = diag(0, −3) ✓', 2.0); },
   async (tok, S) => { cap('dv₁/dt = λ₁v₁、…：彼此不相連', ''); ctr(pl, 'dv₁/dt = λ₁v₁　dv₂/dt = λ₂v₂', 1.4); },
-  async (tok, S) => { cap('每條都好解：v(t) = e^{Λt}v(0)', ''); ctr(pl, 'v(t) = e^{Λt} v(0)', 0.8); },
+  async (tok, S) => { cap('每條都好解：v(t) = e^(Λt)v(0)', ''); ctr(pl, 'v(t) = e^(Λt) v(0)', 0.8); },
   async (tok, S) => {
-    cap('u(t) = Se^{Λt}S⁻¹u(0)', ''); const okk = [0.2, 1].every((t) => nearV(mulMV(eAt(t), [1, 0]), u23(t), 1e-12));
-    ok(okk, 'u(t) = S e^{Λt} S⁻¹ u(0) ✓', 3.6, 0.1);
+    cap('u(t) = Se^(Λt)S⁻¹u(0)', ''); const okk = [0.2, 1].every((t) => nearV(mulMV(eAt(t), [1, 0]), u23(t), 1e-12));
+    ok(okk, 'u(t) = S e^(Λt) S⁻¹ u(0) ✓', 3.6, 0.1);
   },
-  async (tok, S) => { cap('Se^{Λt}S⁻¹ 就是 e^{At}', ''); hot('e^{At} = S e^{Λt} S⁻¹', -3.6, 0.1); },
+  async (tok, S) => { cap('Se^(Λt)S⁻¹ 就是 e^(At)', ''); hot('e^(At) = S e^(Λt) S⁻¹', -3.6, 0.1); },
   async (tok, S) => { cap('可是「e 的矩陣次方」是什麼意思？', '接下來定義它'); },
 ]);
 // L23-7：e^{At} 的級數
-scene('l23-exp', 'L23：e^{At} = I + At + (At)²/2! + … = Se^{Λt}S⁻¹', [
-  async (tok, S) => { cap('矩陣的指數是什麼？', ''); ctr(hd, 'e^{At} = ?', 6.1); },
+scene('l23-exp', 'L23：e^(At) = I + At + (At)²/2! + … = Se^(Λt)S⁻¹', [
+  async (tok, S) => { cap('矩陣的指數是什麼？', ''); ctr(hd, 'e^(At) = ?', 6.1); },
   async (tok, S) => { cap('回到冪級數', 'e^x = 1 + x + x²/2 + x³/6 + …'); ctr(pl, 'eˣ = 1 + x + x²/2 + x³/6 + …', 5.5); },
-  async (tok, S) => { cap('換成矩陣：1 → I、x → At', ''); ctr(hot, 'e^{At} = I + At + (At)²/2 + (At)³/6 + …', 4.9); },
+  async (tok, S) => { cap('換成矩陣：1 → I、x → At', ''); ctr(hot, 'e^(At) = I + At + (At)²/2 + (At)³/6 + …', 4.9); },
   async (tok, S) => { cap('一般項 (At)ⁿ / n!', '分母是階乘'); ctr(sm, '一般項：(At)ⁿ / n!', 4.3); },
   async (tok, S) => { cap('另一個漂亮的級數：幾何級數', '1 + x + x² + … = 1/(1 − x)'); S.g1 = ctr(pl, '1 + x + x² + x³ + … = 1/(1 − x)', 3.6, -3); },
   async (tok, S) => { cap('矩陣版：(I − At)⁻¹ = I + At + (At)² + …', ''); S.g2 = ctr(pl, '(I − At)⁻¹ = I + At + (At)² + …', 3.0, -3); },
@@ -1902,33 +1902,33 @@ scene('l23-exp', 'L23：e^{At} = I + At + (At)²/2! + … = Se^{Λt}S⁻¹', [
     cap('指數級數永遠收斂', '除以越來越大的 n!'); ctr((a, x, y) => ok(terms[14] < 1e-3 && terms[14] < terms[7], a, x, y), 't = 1：第 15 項最大只剩 ' + terms[14].toExponential(1) + ' ✓', 3.6, 3);
   },
   async (tok, S) => { cap('幾何級數可能發散', 'At 的特徵值要小於 1'); ctr(note, '幾何級數：要 |λ(At)| < 1', 3.0, 3); },
-  async (tok, S) => { [S.g1, S.g2, S.g3].forEach(ln); cap('主角是 e^{At}', '怎麼看出它 = Se^{Λt}S⁻¹？'); },
+  async (tok, S) => { [S.g1, S.g2, S.g3].forEach(ln); cap('主角是 e^(At)', '怎麼看出它 = Se^(Λt)S⁻¹？'); },
   async (tok, S) => { cap('用這章的基本公式 A = SΛS⁻¹', 'At = SΛS⁻¹t'); ctr(pl, 'At = SΛS⁻¹ t', 2.2, -3); },
   async (tok, S) => { cap('A²t²/2 = SΛ²S⁻¹ t²/2', 'S⁻¹S 消掉'); ctr(pl, '(At)²/2 = SΛ²S⁻¹ t²/2', 1.6, -3); },
   async (tok, S) => { cap('把 S 拉到左邊、S⁻¹ 拉到右邊', 'I 寫成 SS⁻¹'); ctr(pl, 'I = SS⁻¹', 1.0, -3); },
   async (tok, S) => {
-    const t = 0.5, lhs = expSeries(sclM(A23, t)), rhs = eAt(t); cap('中間剩 I + Λt + (Λt)²/2 + … = e^{Λt}', 'e^{At} = Se^{Λt}S⁻¹');
-    ctr((a, x, y) => ok(nearM(lhs, rhs, 1e-10), a, x, y), 't = 0.5：級數 = S e^{Λt} S⁻¹ ✓', 1.6, 3);
+    const t = 0.5, lhs = expSeries(sclM(A23, t)), rhs = eAt(t); cap('中間剩 I + Λt + (Λt)²/2 + … = e^(Λt)', 'e^(At) = Se^(Λt)S⁻¹');
+    ctr((a, x, y) => ok(nearM(lhs, rhs, 1e-10), a, x, y), 't = 0.5：級數 = S e^(Λt) S⁻¹ ✓', 1.6, 3);
   },
   async (tok, S) => { cap('這個公式永遠成立嗎？', '前提：A 可以對角化'); ctr(note, '前提：n 個獨立特徵向量', 1.0, 3); },
   async (tok, S) => { cap('特徵向量不夠的矩陣：S⁻¹ 不存在', '只能化成三角形（之後講）'); ctr(sm, '級數定義永遠可用；SΛS⁻¹ 版本不一定', 0.3); },
 ]);
 // L23-8：e^{Λt}、穩定區域
-scene('l23-region', 'L23：e^{Λt} 是對角的；穩定區域：左半平面 vs 單位圓', [
-  async (tok, S) => { cap('e^{Λt} 是什麼？', ''); S.F = plane2(-3.4, 3.0, 0.62, 3.8); S.F.lab('Re', [3.7, -0.4]); S.F.lab('Im', [0.4, 3.6]); },
+scene('l23-region', 'L23：e^(Λt) 是對角的；穩定區域：左半平面 vs 單位圓', [
+  async (tok, S) => { cap('e^(Λt) 是什麼？', ''); S.F = plane2(-3.4, 3.0, 0.62, 3.8); S.F.lab('Re', [3.7, -0.4]); S.F.lab('Im', [0.4, 3.6]); },
   async (tok, S) => { cap('Λ 是對角矩陣：λ₁ … λₙ', ''); row(hd, 'Λ = diag(λ₁, …, λₙ)', 0); },
   async (tok, S) => {
-    const t = 0.7, E = expSeries(sclM(diagM([0, -3]), t)); cap('對角矩陣的指數：各自取指數', 'e^{Λt} = diag(e^{λ₁t}, …)');
-    row(ok, nearM(E, diagM([1, Math.exp(-3 * t)]), 1e-12), '例 Λ = diag(0, −3)：e^{Λt} = diag(1, e^{−3t}) ✓', 1);
+    const t = 0.7, E = expSeries(sclM(diagM([0, -3]), t)); cap('對角矩陣的指數：各自取指數', 'e^(Λt) = diag(e^(λ₁t), …)');
+    row(ok, nearM(E, diagM([1, Math.exp(-3 * t)]), 1e-12), '例 Λ = diag(0, −3)：e^(Λt) = diag(1, e⁻³ᵗ) ✓', 1);
   },
   async (tok, S) => { cap('就是前半堂具體例子的公式版', ''); },
-  async (tok, S) => { cap('e^{At} 什麼時候 → 0？', 'S、S⁻¹ 不動，看 e^{Λt}'); },
-  async (tok, S) => { cap('每個 e^{λt} 都要 → 0', '所有 Re λ < 0'); row(hot, 'e^{At} → 0 ⇔ 所有 Re λ < 0', 2); },
+  async (tok, S) => { cap('e^(At) 什麼時候 → 0？', 'S、S⁻¹ 不動，看 e^(Λt)'); },
+  async (tok, S) => { cap('每個 e^(λt) 都要 → 0', '所有 Re λ < 0'); row(hot, 'e^(At) → 0 ⇔ 所有 Re λ < 0', 2); },
   async (tok, S) => { cap('畫出複數平面', '橫軸實部、縱軸虛部'); },
   async (tok, S) => { cap('微分方程的穩定區域：左半平面', 'Re λ < 0'); rect(S.F, [-3.8, -3.8], [0, 3.8], COL.d, 0.18); row(pl, '微分方程：左半平面 Re λ < 0', 3); },
   async (tok, S) => { cap('冪次的穩定區域：單位圓內', '|λ| < 1'); disk(S.F, 1, COL.b, 0.3); row(pl, '冪次 Aᵏ：單位圓內 |λ| < 1', 4); },
   async (tok, S) => {
-    cap('|λ| < 1 → Aᵏ → 0；Re λ < 0 → e^{At} → 0', '兩個平行的故事');
+    cap('|λ| < 1 → Aᵏ → 0；Re λ < 0 → e^(At) → 0', '兩個平行的故事');
     const P = [[-0.5, 0.5], [0.6, 0]]; P.forEach((p) => S.F.dot(p, COL.k, 0.08));
     row(ok, Math.hypot(...P[0]) < 1 && P[0][0] < 0 && Math.hypot(...P[1]) < 1 && P[1][0] > 0, '示意 0.6：|λ| < 1 但 Re λ > 0 ✓', 5);
   },
@@ -1948,7 +1948,7 @@ scene('l23-second', 'L23：y″ + by′ + ky = 0 → 2×2 一階系統', [
     cap('特徵值自然地連到原方程', '示意 b = 3、k = 2：λ² + 3λ + 2 = 0');
     ctr((t, x, y) => ok(nearV(charPoly(A), [1, b, k]) && nearV(rs, [-1, -2]), t, x, y), '示意 [−3 −2; 1 0]：λ² + 3λ + 2 → λ = −1、−2 ✓', 2.0);
   },
-  async (tok, S) => { cap('次方 ↔ 指數：平行的兩講', '現在也會做指數了'); ctr(note, 'Aᵏ ↔ e^{At}', 1.2); },
+  async (tok, S) => { cap('次方 ↔ 指數：平行的兩講', '現在也會做指數了'); ctr(note, 'Aᵏ ↔ e^(At)', 1.2); },
 ]);
   }
 
@@ -2081,7 +2081,7 @@ scene('l24-props', 'L24：Markov 矩陣的兩個性質', [
   },
   async (tok, S) => { cap('A² 的每一欄也加起來 = 1', 'A 的冪次全都是 Markov 矩陣'); const cs = colSums(S.A2); cs.forEach((s, j) => cube('Σ ' + ff(s), COL.g, [0.9, 0.45, 0.3], S.g2.xs[j], 2.5, 0, 1.2)); S.st.ok(cs.every((s) => near(s, 1)), 'A² 的每一欄和也 = 1 ✓'); },
   async (tok, S) => { cap('要看特徵值、特徵向量和穩定狀態', 'u_k = Aᵏu₀：一直乘下去會停在哪？'); S.st.add('問題：u_k = Aᵏu₀ 最後停在哪？（steady state）', 'ptr'); },
-  async (tok, S) => { cap('回想微分方程：λ = 0 給穩定狀態', 'e^{0t} = 1，一直不變'); S.st.add('微分方程：λ = 0 → e⁰ᵗ = 1 不變 → 穩定'); },
+  async (tok, S) => { cap('回想微分方程：λ = 0 給穩定狀態', 'e⁰ᵗ = 1，一直不變'); S.st.add('微分方程：λ = 0 → e⁰ᵗ = 1 不變 → 穩定'); },
   async (tok, S) => { cap('矩陣冪次：λ = 0 那一份一步就消失', '0ᵏ = 0（k ≥ 1）'); S.st.add('冪次 Aᵏ：λ = 0 → 0ᵏ = 0，一步就消失', 'bad'); },
   async (tok, S) => { cap('冪次裡真正重要的是 λ = 1', '1ᵏ = 1 永遠留著 → 穩定狀態 = λ = 1 的特徵向量'); S.st.add('λ = 1 → 1ᵏ = 1 → 穩定狀態 = 它的特徵向量', 'ptr alt'); },
 ]);
@@ -2174,7 +2174,7 @@ scene('l24-trans', 'L24：A 與 Aᵀ 特徵值相同；解出 x₁', [
 ]);
 
 scene('l24-calmass', 'L24：加州／麻州人口流動', [
-  async (tok, S) => { cap('Markov 矩陣從哪裡來？', 'u_{k+1} = A u_k，A 是 Markov'); S.s = [slot(-3.3, 5.8, 'ptr'), slot(-3.3, 5.1), slot(-3.3, 4.4), slot(-3.3, 3.7)]; S.s[0].set('u_{k+1} = A u_k，A 是 Markov 矩陣'); },
+  async (tok, S) => { cap('Markov 矩陣從哪裡來？', 'uₖ₊₁ = A uₖ，A 是 Markov'); S.s = [slot(-3.3, 5.8, 'ptr'), slot(-3.3, 5.1), slot(-3.3, 4.4), slot(-3.3, 3.7)]; S.s[0].set('uₖ₊₁ = A uₖ，A 是 Markov 矩陣'); },
   async (tok, S) => {
     cap('兩個狀態：California、Massachusetts', '看兩州的人口');
     S.H = 0.0032; const mk = (x, c) => { const m = lab.box(c, [1.5, 1, 1.3]); m.position.set(x, 0.01, 0); m.scale.y = 0.02; lab.world.add(m); return m; };
@@ -2291,14 +2291,14 @@ scene('l24-fourier', 'L24：Fourier 級數＝函數空間的正交展開', [
   async (tok, S) => { cap('每個 x 都乘 f(x)g(x)，再把「加總」換成積分', 'f·g = ∫ f(x) g(x) dx'); S.s[1].set('每個 x 相乘 f(x)g(x)，加總 → 積分'); S.s[2].set('f·g = ∫ f(x) g(x) dx', 'ptr alt'); },
   async (tok, S) => {
     cap('sin、cos 的週期都是 2π → 從 0 積到 2π', 'f(x + 2π) = f(x)');
-    S.s[2].set('f·g = ∫₀^{2π} f(x) g(x) dx（週期 2π）', 'ptr alt');
+    S.s[2].set('f·g = ∫₀^(2π) f(x) g(x) dx（週期 2π）', 'ptr alt');
     S.rods = [rod(COL.g, 0.03).setW(fp(0, -2.4), fp(0, 2.6)), rod(COL.g, 0.03).setW(fp(2 * Math.PI, -2.4), fp(2 * Math.PI, 2.6))];
   },
   async (tok, S) => {
     [S.cf, S.cg, S.lf, S.lg].forEach((o) => kill(o));
-    cap('檢查：∫₀^{2π} sin x cos x dx', '= [½ sin²x]₀^{2π} = 0：正負面積抵消');
+    cap('檢查：∫₀^(2π) sin x cos x dx', '= [½ sin²x]₀^(2π) = 0：正負面積抵消');
     S.c1 = fcurve(Math.sin, COL.r); S.c2 = fcurve(Math.cos, COL.d); S.ar = farea((x) => Math.sin(x) * Math.cos(x), COL.d, COL.r);
-    S.s[1].ok(near(integ((x) => Math.sin(x) * Math.cos(x)), 0, 1e-9), '∫₀^{2π} sin x cos x dx = 0 ✓ → 正交');
+    S.s[1].ok(near(integ((x) => Math.sin(x) * Math.cos(x)), 0, 1e-9), '∫₀^(2π) sin x cos x dx = 0 ✓ → 正交');
   },
   async (tok, S) => {
     cap('其他每一對也都正交', '（用三角恆等式就能算）');
@@ -2313,9 +2313,9 @@ scene('l24-fourier', 'L24：Fourier 級數＝函數空間的正交展開', [
     S.s[1].set('a₁ = ？（f 裡有多少 cos x）'); S.s[2].ok(near(a0, 0.5, 1e-9), 'a₀ = (1/2π)∫ f dx = 0.5 = 平均值 ✓');
   },
   async (tok, S) => { cap('跟向量一樣：整條式子跟 cos x 做內積', '乘上 cos x，再從 0 積到 2π'); S.ar = farea((x) => F24(x) * Math.cos(x), COL.d, COL.r); S.s[1].set('兩邊乘 cos x，再積分'); },
-  async (tok, S) => { const c2 = integ((x) => Math.cos(x) ** 2); cap('其他項全是 0，只剩 a₁∫cos²x dx', '∫₀^{2π} cos²x dx = π（cos x 長度的平方）'); S.s[2].ok(near(c2, Math.PI, 1e-9), '∫₀^{2π} cos²x dx = π ✓'); },
-  async (tok, S) => { const a1 = integ((x) => F24(x) * Math.cos(x)) / Math.PI; cap('a₁ = (1/π)∫₀^{2π} f(x) cos x dx', '這個示意例子算出 ' + nf(a1, 4) + '：正是 cos x 前面的係數'); S.s[1].set('a₁ = (1/π)∫₀^{2π} f(x) cos x dx', 'ptr alt'); S.s[2].ok(near(a1, 1.2, 1e-9), 'a₁ = 1.2 ✓（示意 f 裡 cos x 的係數）'); },
-  async (tok, S) => { cap('就是標準正交基底的展開', '跟 x₁ = q₁ᵀv 完全同一招'); S.s[0].set('Fourier 係數 = 正交展開：xᵢ = qᵢᵀv 的函數版', 'ptr alt'); },
+  async (tok, S) => { const c2 = integ((x) => Math.cos(x) ** 2); cap('其他項全是 0，只剩 a₁∫cos²x dx', '∫₀^(2π) cos²x dx = π（cos x 長度的平方）'); S.s[2].ok(near(c2, Math.PI, 1e-9), '∫₀^(2π) cos²x dx = π ✓'); },
+  async (tok, S) => { const a1 = integ((x) => F24(x) * Math.cos(x)) / Math.PI; cap('a₁ = (1/π)∫₀^(2π) f(x) cos x dx', '這個示意例子算出 ' + nf(a1, 4) + '：正是 cos x 前面的係數'); S.s[1].set('a₁ = (1/π)∫₀^(2π) f(x) cos x dx', 'ptr alt'); S.s[2].ok(near(a1, 1.2, 1e-9), 'a₁ = 1.2 ✓（示意 f 裡 cos x 的係數）'); },
+  async (tok, S) => { cap('就是正交基底的展開', '同 x₁ = q₁ᵀv；cos x 長度² 是 π，所以除以 π'); S.s[0].set('Fourier 係數 = 正交展開（再除以基底長度²）', 'ptr alt'); },
 ]);
 
 // ═════════════════════════ MIT 18.06 L24b（sFxA8eIS6tA）Quiz 2 Review ═════════════════════════
@@ -2355,8 +2355,8 @@ scene('qr-proj', 'L24b：投影到直線 a = (2, 1, 2)', [
   async (tok, S) => { S.a.glow(GOLD); cap('λ = 1 的特徵向量：不會動的那個 = a', 'Pa = a aᵀa / aᵀa = a'); S.st.ok(nearV(mulMV(QP, QA), QA, 1e-12), 'Pa = a ✓ → a 是 λ = 1 的特徵向量'); },
 ], { cam: [[3.5, 5.0, 10.5], [0, 2.4, 0]] });
 
-scene('qr-iter', 'L24b：u_{k+1} = P u_k', [
-  async (tok, S) => { cap('解 u_{k+1} = P u_k，u₀ = (9, 9, 0)', '求 u_k'); S.Sp = space3(3.4, 0.8, 0, 0.28, 3.4); S.Sp.line(QA, COL.g, 12); S.Sp.arrow(QA, COL.g, 'a'); S.Sp.arrow([9, 9, 0], COL.k, 'u₀'); S.st = stack(-6.4, 6.4, 0.52); },
+scene('qr-iter', 'L24b：uₖ₊₁ = P uₖ', [
+  async (tok, S) => { cap('解 uₖ₊₁ = P uₖ，u₀ = (9, 9, 0)', '求 u_k'); S.Sp = space3(3.4, 0.8, 0, 0.28, 3.4); S.Sp.line(QA, COL.g, 12); S.Sp.arrow(QA, COL.g, 'a'); S.Sp.arrow([9, 9, 0], COL.k, 'u₀'); S.st = stack(-6.4, 6.4, 0.52); },
   async (tok, S) => {
     const u1 = mulMV(QP, [9, 9, 0]); S.u1 = u1; cap('u₁ = P u₀ = a (aᵀu₀) / (aᵀa)', 'aᵀu₀ = 18 + 9 = 27、aᵀa = 9 → 3a = (6, 3, 6)');
     const a = S.Sp.arrow(scl(u1, 0.001), COL.b, 'u₁'); await anim(tok, 1200, (t) => S.Sp.set(a, scl(u1, t))); rod(COL.r, 0.02).setW(S.Sp.w([9, 9, 0]), S.Sp.w(u1));
@@ -2429,16 +2429,16 @@ scene('qr-eig4', 'L24b：4×4 矩陣的特徵值', [
 const TRI = (n) => Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (Math.abs(i - j) <= 1 ? 1 : 0)));
 scene('qr-tri', 'L24b：三對角全 1 矩陣的行列式', [
   async (tok, S) => { cap('行列式題：三對角、全是 1', 'A₄ = 對角線、上下各一條都是 1'); S.g = mgrid(TRI(4), -6.2, 6.2, 0, { size: 0.55, gap: 0.66, color: () => COL.a }); hd('A₄', -5.2, 6.8); S.st = stack(-3.4, 6.3, 0.52); },
-  async (tok, S) => { cap('用 cofactor 找出遞迴式', 'D_n = a·D_{n−1} + b·D_{n−2}，找出 a、b（D_n = det A_n）'); S.st.add('D_n = a·D_{n−1} + b·D_{n−2}：a, b = ?', 'ptr'); },
-  async (tok, S) => { cap('沿第一列展開：1 × 它的 cofactor', '刪掉第 1 列第 1 欄 → 剩下就是 D_{n−1}'); glow(S.g.c[0][0], GOLD); for (let i = 1; i < 4; i++) for (let j = 1; j < 4; j++) glow(S.g.c[i][j], GREEN); S.st.add('第 1 項：1 · D_{n−1}'); },
-  async (tok, S) => { S.g.clearGlow(); glow(S.g.c[0][1], RED); cap('(1, 2) 位置：cofactor 要帶負號', '(−1)^{1+2} = −1'); S.st.add('第 2 項：(1, 2) 的 cofactor 帶「−」'); },
+  async (tok, S) => { cap('用 cofactor 找出遞迴式', 'Dₙ = a·Dₙ₋₁ + b·Dₙ₋₂，找出 a、b（Dₙ = det Aₙ）'); S.st.add('Dₙ = a·Dₙ₋₁ + b·Dₙ₋₂：a, b = ?', 'ptr'); },
+  async (tok, S) => { cap('沿第一列展開：1 × 它的 cofactor', '刪掉第 1 列第 1 欄 → 剩下就是 Dₙ₋₁'); glow(S.g.c[0][0], GOLD); for (let i = 1; i < 4; i++) for (let j = 1; j < 4; j++) glow(S.g.c[i][j], GREEN); S.st.add('第 1 項：1 · Dₙ₋₁'); },
+  async (tok, S) => { S.g.clearGlow(); glow(S.g.c[0][1], RED); cap('(1, 2) 位置：cofactor 要帶負號', '(−1)¹⁺² = −1'); S.st.add('第 2 項：(1, 2) 的 cofactor 帶「−」'); },
   async (tok, S) => {
-    cap('那個小行列式再沿第一欄展開', '只剩 1 × D_{n−2}，整體是負的');
+    cap('那個小行列式再沿第一欄展開', '只剩 1 × Dₙ₋₂，整體是負的');
     const ok = [3, 4, 5, 6].every((n) => near(detN(TRI(n)), detN(TRI(n - 1)) - detN(TRI(n - 2)), 1e-9));
-    S.st.add('D_n = D_{n−1} − D_{n−2}（a = 1、b = −1）', 'ptr alt'); S.st.ok(ok, 'n = 3…6 直接算行列式驗證 ✓');
+    S.st.add('Dₙ = Dₙ₋₁ − Dₙ₋₂（a = 1、b = −1）', 'ptr alt'); S.st.ok(ok, 'n = 3…6 直接算行列式驗證 ✓');
   },
   async (tok, S) => { S.g.clearGlow(); cap('起點：D₁ = 1、D₂ = 0', '|1 1; 1 1| = 0'); S.st.ok(near(detN(TRI(1)), 1) && near(detN(TRI(2)), 0), 'D₁ = 1、D₂ = 0 ✓'); },
-  async (tok, S) => { cap('寫成一階系統', '[D_n; D_{n−1}] = [1 −1; 1 0][D_{n−1}; D_{n−2}]'); S.st.add('[D_n; D_{n−1}] = [1 −1; 1 0] [D_{n−1}; D_{n−2}]'); },
+  async (tok, S) => { cap('寫成一階系統', '[Dₙ; Dₙ₋₁] = [1 −1; 1 0][Dₙ₋₁; Dₙ₋₂]'); S.st.add('[Dₙ; Dₙ₋₁] = [1 −1; 1 0] [Dₙ₋₁; Dₙ₋₂]'); },
   async (tok, S) => { const cp = charPoly([[1, -1], [1, 0]]); cap('特徵值：det [1−λ −1; 1 −λ] = 0', 'λ² − λ + 1 = 0'); S.st.ok(nearV(cp, [1, -1, 1]), 'λ² − λ + 1 = 0 ✓'); },
   async (tok, S) => { cap('不是 Fibonacci（多了一個負號）', 'D_n 會變大？趨近 0？還是繞圈？'); S.st.add('穩定？爆掉？週期？→ 看 |λ|', 'idx'); },
   async (tok, S) => {
@@ -2454,9 +2454,9 @@ scene('qr-tri', 'L24b：三對角全 1 矩陣的行列式', [
     S.r.forEach((z) => { const b = dotBall(COL.r, 0.12); b.position.copy(pt(z)); }); S.pt = pt;
     S.st.ok(S.r.every((z) => near(Math.hypot(z[0], z[1]), 1, 1e-6)), '|λ|² = 1/4 + 3/4 = 1 ✓');
   },
-  async (tok, S) => { cap('λ = cos θ ± i sin θ，θ = 60° = π/3', 'λ = e^{±iπ/3}'); S.st.ok(near(Math.atan2(Math.abs(S.r[0][1]), S.r[0][0]), Math.PI / 3, 1e-6), 'θ = π/3（60°）✓'); sm('60°', S.O[0] + 0.55, S.O[1] + 0.3); },
+  async (tok, S) => { cap('λ = cos θ ± i sin θ，θ = 60° = π/3', 'λ = e^(±iπ/3)'); S.st.ok(near(Math.atan2(Math.abs(S.r[0][1]), S.r[0][0]), Math.PI / 3, 1e-6), 'θ = π/3（60°）✓'); sm('60°', S.O[0] + 0.55, S.O[1] + 0.3); },
   async (tok, S) => {
-    cap('六次方：轉 6 個 60° = 360°', 'λ⁶ = e^{2πi} = 1');
+    cap('六次方：轉 6 個 60° = 360°', 'λ⁶ = e^(2πi) = 1');
     const z = S.r.find((w) => w[1] > 0), d = dotBall(COL.b, 0.15);
     await anim(tok, 2400, (u) => { const a = u * 2 * Math.PI; d.position.copy(S.pt([Math.cos(a + Math.PI / 3), Math.sin(a + Math.PI / 3)])); });
     const z6 = cpow(z, 6); S.st.ok(near(z6[0], 1, 1e-6) && near(z6[1], 0, 1e-6), 'λ⁶ = 1 ✓');

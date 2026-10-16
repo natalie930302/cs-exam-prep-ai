@@ -40,9 +40,10 @@
   "like": "攤在桌上的食譜。"
  },
  "stack": {
-  "en": "stack（堆疊區）",
-  "what": "主記憶體裡放「函式執行時用的變數」的區域。函式開始時配空間，結束時自動收回。程式可以直接存取這裡的變數。",
-  "like": "一疊辦公桌：每個函式開工就加一張桌子，下班就收掉最上面那張。"
+  "en": "stack",
+  "what": "① 記憶體的 stack 區：放函式的區域變數，函式結束自動收回。② 資料結構「堆疊」：後進先出（LIFO），只能從頂端 push、pop。",
+  "like": "一疊盤子：新的疊在最上面，也只能先拿最上面那個。",
+  "zh": "堆疊、堆疊區"
  },
  "heap": {
   "en": "heap（兩種意思）",
@@ -56,15 +57,16 @@
   "basic": true
  },
  "函式": {
-  "en": "function",
+  "en": "function / procedure",
   "what": "把一段工作包起來、取個名字，可以被呼叫的程式片段，例如 main、swap。",
   "like": "一個專門負責某件事的員工，叫他一聲他就做。",
   "basic": true
  },
  "activation record": {
-  "en": "activation record（活動紀錄 / stack frame）",
+  "en": "activation record / stack frame",
   "what": "函式執行時，在 stack 上替它劃出的那一整塊空間，裝它自己的變數。每次呼叫都有一塊，彼此不能直接碰。",
-  "like": "每個員工自己的辦公桌：桌上的東西只有他自己能動。"
+  "like": "每個員工自己的辦公桌：桌上的東西只有他自己能動。",
+  "zh": "活動紀錄"
  },
  "malloc": {
   "en": "memory allocation",
@@ -105,7 +107,7 @@
  },
  "檔案": {
   "en": "file",
-  "what": "存在硬碟（磁碟）上的資料，關機也不會消失。不在 stack 裡，程式要透過指標存取。",
+  "what": "存在硬碟（磁碟）上的資料，關機也不會消失。C 語言用 FILE * 檔案指標來讀寫。",
   "like": "放在書櫃裡的資料夾。",
   "basic": true
  },
@@ -122,7 +124,7 @@
  },
  "printf": {
   "en": "printf / scanf",
-  "what": "C 語言內建函式：printf 把文字印到螢幕，scanf 從鍵盤讀入。它們內部用指標存取裝置。",
+  "what": "C 語言內建函式：printf 把文字印到螢幕，scanf 從鍵盤讀入（要傳變數位址，例如 &a）。",
   "like": "幫你跑腿的櫃台人員，你不用自己進倉庫。",
   "basic": true
  },
@@ -169,12 +171,6 @@
   "en": "loop",
   "what": "會重複執行的一段程式，例如 for、while。",
   "like": "操場跑圈：跑完一圈再一圈，直到條件達成。",
-  "basic": true
- },
- "編譯器": {
-  "en": "compiler",
-  "what": "把我們寫的程式碼翻譯成電腦看得懂的機器碼的工具。",
-  "like": "把中文食譜翻成廚師母語的翻譯員。",
   "basic": true
  },
  "數學歸納法": {
@@ -238,9 +234,10 @@
   "basic": true
  },
  "線性搜尋": {
-  "en": "linear search",
+  "en": "linear search / sequential search",
   "what": "從第一格開始一格一格比，直到找到要的值或比完全部；最壞要比 n 次。",
-  "like": "在一疊沒排序的考卷裡從上往下一張張翻找自己的名字。"
+  "like": "在一疊沒排序的考卷裡從上往下一張張翻找自己的名字。",
+  "zh": "循序搜尋"
  },
  "最好情況": {
   "en": "best case",
@@ -264,12 +261,12 @@
  },
  "上界": {
   "en": "upper bound",
-  "what": "一個永遠不會被超過的值或函數。",
+  "what": "一個永遠不會被超過的值或函數；Big-O 給的就是成長速度的上界。",
   "like": "電梯的載重上限：最多就到這裡。"
  },
  "下界": {
   "en": "lower bound",
-  "what": "一個永遠不會低於它的值或函數。",
+  "what": "一個保證「至少要」的值或函數；例如比較排序的下界是 n log n 次比較。",
   "like": "地板：再怎麼掉也掉不到它下面。"
  },
  "Ω": {
@@ -281,12 +278,6 @@
   "en": "Big-Theta",
   "what": "f(n) 被 g(n) 的兩個倍數上下夾住，代表兩者是同一個成長等級。",
   "like": "三明治：上下兩片麵包把餡料夾住。"
- },
- "對數": {
-  "en": "logarithm (log)",
-  "what": "log₂ n 是「2 要乘幾次方才等於 n」，也就是 n 一直對半切、切幾次會剩 1。",
-  "like": "一疊 16 張紙一直對折剪半，剪 4 次就剩 1 張。",
-  "basic": true
  },
  "等差級數": {
   "en": "arithmetic series",
@@ -311,29 +302,25 @@
   "basic": true
  },
  "遞迴": {
-  "en": "recursion",
+  "en": "recursion / recursive",
   "what": "函式在執行時呼叫自己，去解一個小一號、長得一樣的問題。",
   "like": "排隊時問前面的人「你是第幾號」，他再往前問，一路問到第一個人再傳回來。"
  },
  "終止條件": {
   "en": "terminating / boundary condition",
   "what": "遞迴裡不再呼叫自己、直接給答案的情況。",
-  "like": "俄羅斯娃娃最裡面那個打不開的小娃娃。"
+  "like": "俄羅斯娃娃最裡面那個打不開的小娃娃。",
+  "zh": "邊界條件"
  },
  "二分搜尋": {
   "en": "binary search",
-  "what": "在已經排好序的資料裡找東西：每次看中間那個，再丟掉不可能的一半。",
+  "what": "在已經排好序的資料裡找東西：每次看中間那個，再丟掉不可能的一半，O(log n)。",
   "like": "翻字典找字：先翻中間，太前面就往後翻、太後面就往前翻。"
  },
  "排列": {
   "en": "permutation",
   "what": "把幾個東西排成所有可能的順序；n 個不同的東西有 n! 種排法。",
   "like": "三個人排隊拍照，站位一共有 6 種排法。"
- },
- "邊界條件": {
-  "en": "boundary / terminating condition",
-  "what": "遞迴函式裡「不再呼叫自己、直接給答案」的情況，讓遞迴能停下來。",
-  "like": "俄羅斯娃娃拆到最小那一個，就沒有東西可以再拆了。"
  },
  "呼叫堆疊": {
   "en": "call stack",
@@ -344,11 +331,6 @@
   "en": "tail recursion（尾端遞迴）",
   "what": "呼叫自己是函式最後一個動作的遞迴；有些語言能把它變成迴圈，不必一直疊堆疊。",
   "like": "交接工作時把事情全部交出去就下班，不用留在座位上等結果。"
- },
- "遞迴關係式": {
-  "en": "recurrence relation",
-  "what": "用比較小的自己來描述自己的式子，例如 T(n) = T(n/2) + 1，再加上起點 T(1)。",
-  "like": "高中的遞迴數列 aₙ = aₙ₋₁ + 2：知道前一項就能算下一項。"
  },
  "反覆代換": {
   "en": "repeated substitution / iteration method",
@@ -376,7 +358,8 @@
   "like": "確認每一代都比上一代少一定比例，家族的總人數才會由第一代決定。"
  },
  "asymptotic": {
-  "zh": "漸近的",
+  "en": "asymptotic analysis / asymptotic complexity",
+  "zh": "漸近的、漸近分析、漸近複雜度",
   "what": "看「n 變得非常大時」的趨勢，忽略常數和小項，只比較誰長得快。",
   "like": "比賽跑步只看長距離誰會贏，不計較起跑那幾步。",
   "subj": "alg"
@@ -386,25 +369,11 @@
   "what": "用 O、Ω、Θ 這類符號描述演算法在輸入很大時的成長速度。",
   "subj": "alg"
  },
- "asymptotic complexity": {
-  "zh": "漸近複雜度",
-  "what": "輸入很大時，執行時間或空間隨 n 成長的「級別」，例如 n²、n log n。",
-  "subj": "alg"
- },
- "asymptotic analysis": {
-  "zh": "漸近分析",
-  "what": "只看 n 很大時的成長趨勢來比較演算法快慢的方法。",
-  "subj": "alg"
- },
  "amortized": {
-  "zh": "攤銷的、均攤的",
-  "what": "偶爾有一次很貴的操作，但平均分攤到很多次操作後，每次的成本仍然很小。",
+  "en": "amortized analysis",
+  "zh": "攤銷的、均攤的、攤銷分析",
+  "what": "把一連串操作的總成本平均分到每一次：偶爾一次很貴，攤下來每次仍很便宜；這是保證，不靠機率。",
   "like": "一年繳一次保險費很痛，但攤到每個月其實不多。",
-  "subj": "alg"
- },
- "amortized analysis": {
-  "zh": "攤銷分析",
-  "what": "分析「一連串操作的總成本」再除以次數，得到每次操作的平均保證成本（不是靠機率的平均）。",
   "subj": "alg"
  },
  "invariant": {
@@ -418,24 +387,9 @@
   "what": "資料結構內部永遠要維持的規則，例如二元搜尋樹「左小右大」。每次修改後都要恢復它。",
   "subj": "alg"
  },
- "recurrence": {
-  "zh": "遞迴式、遞迴關係",
-  "what": "用「較小輸入的答案」來表示「大輸入的答案」的式子，例如 T(n)=2T(n/2)+n。",
-  "subj": "alg"
- },
- "recurrence relation": {
-  "zh": "遞迴關係式",
-  "what": "把 T(n) 用 T(更小的 n) 表示的等式，常用來算遞迴演算法的時間；離散數學中也用來定義數列。",
-  "subj": "alg"
- },
  "substitution method": {
   "zh": "代換法",
   "what": "先猜遞迴式的答案，再用數學歸納法證明猜對了。",
-  "subj": "alg"
- },
- "recursion tree": {
-  "zh": "遞迴樹",
-  "what": "把遞迴每一層拆出的子問題畫成樹，把每層成本加總來估算總時間。",
   "subj": "alg"
  },
  "heuristic": {
@@ -514,13 +468,8 @@
  "naive": {
   "zh": "樸素的、最直覺的",
   "what": "最直接、沒有優化的做法，通常正確但比較慢。",
-  "subj": "alg"
- },
- "brute force": {
-  "zh": "暴力法",
-  "what": "把所有可能都試一遍再挑答案。簡單但通常很慢。",
-  "like": "密碼鎖從 000 一路轉到 999。",
-  "subj": "alg"
+  "subj": "alg",
+  "only": true
  },
  "divide and conquer": {
   "zh": "分治法",
@@ -528,36 +477,10 @@
   "like": "一大疊考卷分給幾個人各排一疊，最後再合併。",
   "subj": "alg"
  },
- "greedy": {
-  "zh": "貪婪（貪心）",
-  "what": "每一步都選「當下看起來最好」的選項，不回頭。有些問題這樣剛好能得到最佳解。",
-  "like": "找零錢時永遠先拿最大面額的硬幣。",
-  "subj": "alg"
- },
- "greedy algorithm": {
-  "zh": "貪婪演算法",
-  "what": "每一步都做局部最佳選擇的演算法；要先證明正確才能用。",
-  "subj": "alg"
- },
- "greedy method": {
-  "zh": "貪婪法",
-  "what": "同 greedy algorithm：每一步挑當下最好的。",
-  "subj": "alg"
- },
- "dynamic programming": {
-  "zh": "動態規劃（DP）",
-  "what": "把問題拆成會重複出現的子問題，每個只算一次並記下來，再組出大問題的答案。",
-  "like": "算過的題目寫在小抄上，下次直接抄。",
-  "subj": "alg"
- },
  "memoization": {
+  "en": "memoize",
   "zh": "記憶化",
   "what": "遞迴時把算過的結果存起來，下次遇到同一個子問題直接查表。（拼法沒有 r，不是 memorization）",
-  "subj": "alg"
- },
- "memoize": {
-  "zh": "記憶化（動詞）",
-  "what": "把函式算過的結果存起來，之後同樣輸入直接回傳。",
   "subj": "alg"
  },
  "bottom-up": {
@@ -606,11 +529,6 @@
   "what": "搜尋時直接放棄確定不會有答案（或不會更好）的分支，省時間。",
   "subj": "alg"
  },
- "optimal": {
-  "zh": "最佳的",
-  "what": "在所有可行解中最好（成本最小或利益最大）的。",
-  "subj": "alg"
- },
  "optimal solution": {
   "zh": "最佳解",
   "what": "所有可行解中，目標值最好的那一個。",
@@ -642,11 +560,6 @@
   "like": "數獨很難解，但別人給你答案，你很快就能檢查對不對。",
   "subj": "alg"
  },
- "NP-complete": {
-  "zh": "NP 完全",
-  "what": "NP 裡「最難」的一群問題：只要其中一個有多項式解法，所有 NP 問題都有。",
-  "subj": "alg"
- },
  "NP-hard": {
   "zh": "NP 困難",
   "what": "至少和 NP 中最難的問題一樣難的問題；它不一定是決策問題，也不一定在 NP 裡。",
@@ -655,7 +568,8 @@
  "reduction": {
   "zh": "歸約",
   "what": "把問題 A 轉換成問題 B 來解；若 A 能歸約到 B，代表 B 至少和 A 一樣難。",
-  "subj": "alg"
+  "subj": "alg",
+  "only": true
  },
  "satisfiability": {
   "zh": "可滿足性（SAT）",
@@ -728,11 +642,6 @@
   "what": "排好序後在正中間的值。",
   "subj": "alg"
  },
- "fast Fourier transform": {
-  "zh": "快速傅立葉轉換（FFT）",
-  "what": "在 O(n log n) 時間做多項式乘法（或訊號轉換）的分治演算法。",
-  "subj": "alg"
- },
  "Fibonacci": {
   "zh": "費氏數列",
   "what": "1, 1, 2, 3, 5, 8…每項是前兩項相加；常用來示範遞迴與 DP 的差別。",
@@ -741,16 +650,6 @@
  "knapsack problem": {
   "zh": "背包問題",
   "what": "容量有限的背包，挑物品讓總價值最大。0/1 背包用 DP，分數背包用貪婪。",
-  "subj": "alg"
- },
- "longest common subsequence": {
-  "zh": "最長共同子序列（LCS）",
-  "what": "兩個字串都含有、順序相同（不必連續）的最長序列。經典 DP 題。",
-  "subj": "alg"
- },
- "subsequence": {
-  "zh": "子序列",
-  "what": "從序列中刪掉一些元素後、保持原順序剩下的部分，不需要連續。",
   "subj": "alg"
  },
  "substring": {
@@ -766,7 +665,7 @@
  },
  "parenthesization": {
   "zh": "加括號方式",
-  "what": "一串運算先算哪一對的括號安排；矩陣鏈乘法就是在找最好的加法。",
+  "what": "一串運算先算哪一對的括號安排；矩陣鏈乘法就是在找成本最低的加括號方式。",
   "subj": "alg"
  },
  "optimal binary search tree": {
@@ -777,11 +676,6 @@
  "interval scheduling": {
   "zh": "區間排程",
   "what": "從許多時段中挑出最多個互不重疊的；貪婪地每次選最早結束的即可。",
-  "subj": "alg"
- },
- "traveling salesman problem": {
-  "zh": "旅行推銷員問題（TSP）",
-  "what": "走遍所有城市各一次再回到起點，求最短總路程。NP 困難。",
   "subj": "alg"
  },
  "string matching": {
@@ -795,32 +689,19 @@
   "what": "視窗往右移一格時，用 O(1) 更新雜湊值、不必重算。Rabin-Karp 字串比對就靠它。",
   "subj": "alg"
  },
- "graph traversal": {
-  "zh": "圖的走訪",
-  "what": "有系統地拜訪圖中每個頂點，例如 BFS、DFS。",
-  "subj": "alg"
- },
- "breadth-first search": {
-  "zh": "廣度優先搜尋（BFS）",
-  "what": "從起點開始，先拜訪所有一步可到的點，再拜訪兩步的，一圈一圈往外擴。",
-  "like": "丟石頭進水裡，漣漪一圈圈擴散。",
-  "subj": "alg"
- },
- "depth-first search": {
-  "zh": "深度優先搜尋（DFS）",
-  "what": "一路往深處走到底，走不下去才退回上一個岔路換方向。",
-  "like": "走迷宮時一路走到底，碰壁再回頭。",
-  "subj": "alg"
- },
  "BFS": {
+  "en": "breadth-first search",
   "zh": "廣度優先搜尋",
-  "what": "Breadth-First Search 的縮寫：一層一層往外拜訪頂點。",
-  "subj": "alg"
+  "what": "從起點開始，先拜訪所有一步可到的點，再拜訪兩步的，一圈一圈往外擴。",
+  "subj": "alg",
+  "like": "丟石頭進水裡，漣漪一圈圈擴散。"
  },
  "DFS": {
+  "en": "depth-first search",
   "zh": "深度優先搜尋",
-  "what": "Depth-First Search 的縮寫：先一路走到底再回頭。",
-  "subj": "alg"
+  "what": "一路往深處走到底，走不下去才退回上一個岔路換方向。",
+  "subj": "alg",
+  "like": "走迷宮時一路走到底，碰壁再回頭。"
  },
  "frontier": {
   "zh": "邊界（待探索集合）",
@@ -848,19 +729,10 @@
   "subj": "alg"
  },
  "topological sort": {
-  "zh": "拓撲排序",
+  "en": "topological order",
+  "zh": "拓撲排序、拓撲順序",
   "what": "把有向無環圖的頂點排成一列，讓每條邊都從前面指向後面。",
   "like": "排課表：先修課一定排在進階課之前。",
-  "subj": "alg"
- },
- "topological order": {
-  "zh": "拓撲順序",
-  "what": "滿足「所有邊都由前指向後」的頂點排列。",
-  "subj": "alg"
- },
- "shortest path": {
-  "zh": "最短路徑",
-  "what": "兩點之間總權重（距離）最小的路徑。",
   "subj": "alg"
  },
  "single source shortest path": {
@@ -889,14 +761,10 @@
   "subj": "alg"
  },
  "relaxation": {
+  "en": "relax",
   "zh": "鬆弛",
   "what": "若「經過 u 再到 v」比目前記錄的 v 距離更短，就更新 v 的距離。最短路徑演算法的核心步驟。",
   "like": "發現抄捷徑更近，就改記新路線。",
-  "subj": "alg"
- },
- "relax": {
-  "zh": "鬆弛（動詞）",
-  "what": "檢查一條邊 (u,v) 能不能讓 v 的距離變短，能就更新。",
   "subj": "alg"
  },
  "negative cycle": {
@@ -930,12 +798,6 @@
   "what": "順序中排在某元素後一個的；BST 中指比它大的最小鍵。",
   "subj": "alg"
  },
- "minimum spanning tree": {
-  "zh": "最小生成樹（MST）",
-  "what": "連通所有頂點、沒有環、且邊權重總和最小的樹。",
-  "like": "用最少的電線把所有房子都接上電。",
-  "subj": "alg"
- },
  "spanning tree": {
   "zh": "生成樹",
   "what": "包含圖中所有頂點、連通且沒有環的子圖。",
@@ -958,13 +820,9 @@
   "subj": "alg"
  },
  "maximum flow": {
+  "en": "max flow",
   "zh": "最大流",
   "what": "從源點到匯點能送出的最大流量。",
-  "subj": "alg"
- },
- "max flow": {
-  "zh": "最大流",
-  "what": "maximum flow 的簡寫。",
   "subj": "alg"
  },
  "min cut": {
@@ -1097,14 +955,10 @@
   "what": "每個節點最多有兩個孩子（左、右）的樹。",
   "subj": "ds"
  },
- "binary search tree": {
-  "zh": "二元搜尋樹（BST）",
-  "what": "左子樹的值都比節點小、右子樹都比節點大的二元樹，搜尋時每次可丟掉一半。",
-  "subj": "ds"
- },
  "BST": {
+  "en": "binary search tree",
   "zh": "二元搜尋樹",
-  "what": "Binary Search Tree 的縮寫：左小右大的二元樹。",
+  "what": "左子樹的值都比節點小、右子樹都比節點大的二元樹，搜尋時每次可丟掉一半。",
   "subj": "ds"
  },
  "complete binary tree": {
@@ -1118,28 +972,15 @@
   "subj": "ds"
  },
  "subtree": {
-  "zh": "子樹",
+  "en": "left subtree / right subtree",
+  "zh": "子樹、左子樹、右子樹",
   "what": "樹中某個節點連同它所有後代構成的小樹。",
   "subj": "ds"
  },
- "left subtree": {
-  "zh": "左子樹",
-  "what": "一個節點左孩子底下的整棵子樹。",
-  "subj": "ds"
- },
- "right subtree": {
-  "zh": "右子樹",
-  "what": "一個節點右孩子底下的整棵子樹。",
-  "subj": "ds"
- },
  "leaf": {
-  "zh": "樹葉（葉節點）",
+  "en": "leaf node",
+  "zh": "樹葉、葉節點",
   "what": "沒有孩子的節點，在樹的最底端。",
-  "subj": "ds"
- },
- "leaf node": {
-  "zh": "葉節點",
-  "what": "沒有任何子節點的節點。",
   "subj": "ds"
  },
  "internal node": {
@@ -1247,7 +1088,8 @@
   "zh": "字典樹（Trie）",
   "what": "依字元逐層分支存字串的樹，適合找前綴。",
   "like": "手機輸入法打幾個字就跳出候選字。",
-  "subj": "ds"
+  "subj": "ds",
+  "only": true
  },
  "union-find": {
   "zh": "聯集-查找",
@@ -1275,16 +1117,13 @@
   "zh": "碰撞",
   "what": "兩個不同的鍵被雜湊到同一個位置。",
   "like": "兩個人被分到同一個置物櫃。",
-  "subj": "ds"
+  "subj": "ds",
+  "only": true
  },
  "chaining": {
-  "zh": "鏈結法",
+  "en": "separate chaining",
+  "zh": "鏈結法、分離鏈結法",
   "what": "處理碰撞的方法：每個位置掛一條鏈結串列，碰撞的元素都串在一起。",
-  "subj": "ds"
- },
- "separate chaining": {
-  "zh": "分離鏈結法",
-  "what": "同 chaining：每個 bucket 用自己的串列存碰撞的元素。",
   "subj": "ds"
  },
  "open addressing": {
@@ -1307,7 +1146,8 @@
  "bucket": {
   "zh": "桶",
   "what": "雜湊表中的一格（可能存一個或多個元素）。",
-  "subj": "ds"
+  "subj": "ds",
+  "only": true
  },
  "rehash": {
   "zh": "重新雜湊",
@@ -1324,21 +1164,12 @@
   "what": "假設每個鍵等機率被雜湊到任何一格，用來分析平均效能。",
   "subj": "ds"
  },
- "abstract data type": {
-  "zh": "抽象資料型別（ADT）",
-  "what": "只規定「能做哪些操作、結果如何」，不管內部怎麼實作的資料型別。",
-  "like": "遙控器只給你按鈕，不用知道裡面電路。",
-  "subj": "ds"
- },
  "ADT": {
+  "en": "abstract data type",
   "zh": "抽象資料型別",
-  "what": "Abstract Data Type 的縮寫。",
-  "subj": "ds"
- },
- "adjacency matrix": {
-  "zh": "鄰接矩陣",
-  "what": "用 V×V 的表格記錄圖：第 i 列第 j 行為 1 代表 i 到 j 有邊。",
-  "subj": "ds"
+  "what": "只規定「能做哪些操作、結果如何」，不管內部怎麼實作的資料型別。",
+  "subj": "ds",
+  "like": "遙控器只給你按鈕，不用知道裡面電路。"
  },
  "adjacency list": {
   "zh": "鄰接串列",
@@ -1363,25 +1194,15 @@
   "like": "城市之間的道路。",
   "subj": "ds"
  },
- "directed graph": {
-  "zh": "有向圖",
-  "what": "每條邊有方向（A→B 不代表 B→A）的圖。",
-  "like": "單行道地圖。",
-  "subj": "ds"
- },
  "undirected graph": {
   "zh": "無向圖",
   "what": "邊沒有方向、兩端可以互通的圖。",
   "subj": "ds"
  },
- "directed acyclic graph": {
-  "zh": "有向無環圖（DAG）",
-  "what": "有方向、但沒有任何環的圖；可以做拓撲排序。",
-  "subj": "ds"
- },
  "DAG": {
+  "en": "directed acyclic graph",
   "zh": "有向無環圖",
-  "what": "Directed Acyclic Graph 的縮寫。",
+  "what": "有方向、但沒有任何環的圖；可以做拓撲排序。",
   "subj": "ds"
  },
  "acyclic": {
@@ -1398,11 +1219,6 @@
   "zh": "連通元件",
   "what": "圖中彼此能互相到達的一整群頂點（且不能再擴大）。",
   "like": "一座座互不相通的島。",
-  "subj": "ds"
- },
- "strongly connected component": {
-  "zh": "強連通元件",
-  "what": "有向圖中，彼此都能互相到達的最大頂點群。",
   "subj": "ds"
  },
  "articulation point": {
@@ -1435,11 +1251,6 @@
   "what": "元素或邊很多，接近全滿。",
   "subj": "ds"
  },
- "sequential search": {
-  "zh": "循序搜尋",
-  "what": "從頭到尾一個一個比對直到找到。",
-  "subj": "ds"
- },
  "iterator": {
   "zh": "迭代器",
   "what": "一個「指著目前元素、可以往下一個移動」的物件，用來依序走訪容器。",
@@ -1448,12 +1259,14 @@
  "container": {
   "zh": "容器",
   "what": "裝一群元素的資料結構，例如 list、set、map。",
-  "subj": "ds"
+  "subj": "ds",
+  "only": true
  },
  "dictionary": {
   "zh": "字典",
   "what": "用「鍵」查「值」的資料結構，常用雜湊表實作。",
-  "subj": "ds"
+  "subj": "ds",
+  "only": true
  },
  "tuple": {
   "zh": "元組",
@@ -1495,7 +1308,8 @@
  "trap": {
   "zh": "陷阱（軟體中斷）",
   "what": "程式主動或因錯誤觸發、讓 CPU 切換到核心模式交給 OS 處理的事件。",
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "interrupt": {
   "zh": "中斷",
@@ -1524,16 +1338,12 @@
   "what": "CPU 快速輪流服務多個使用者或程式，讓大家都感覺自己獨占電腦。",
   "subj": "os"
  },
- "process control block": {
-  "zh": "行程控制區塊（PCB）",
-  "what": "OS 為每個行程保存的資料：狀態、程式計數器、暫存器、記憶體資訊等。",
-  "like": "每個病人的病歷表。",
-  "subj": "os"
- },
  "PCB": {
+  "en": "process control block",
   "zh": "行程控制區塊",
-  "what": "Process Control Block 的縮寫。",
-  "subj": "os"
+  "what": "OS 為每個行程保存的資料：狀態、程式計數器、暫存器、記憶體資訊等。",
+  "subj": "os",
+  "like": "每個病人的病歷表。"
  },
  "process id": {
   "zh": "行程識別碼（PID）",
@@ -1612,7 +1422,8 @@
   "subj": "os"
  },
  "preemptive": {
-  "zh": "可搶占的",
+  "en": "preemption",
+  "zh": "可搶占的、搶占",
   "what": "排程器可以在行程還沒做完時，強制把 CPU 搶過來給別人。",
   "subj": "os"
  },
@@ -1621,12 +1432,8 @@
   "what": "行程一旦拿到 CPU，就一直用到它自己完成或去等 I/O 才放手。",
   "subj": "os"
  },
- "preemption": {
-  "zh": "搶占",
-  "what": "強制中斷目前正在執行的行程，把 CPU 給別的行程。",
-  "subj": "os"
- },
  "first come first serve": {
+  "en": "first-come first-served",
   "zh": "先到先服務（FCFS）",
   "what": "誰先到就先執行，不插隊。簡單但短工作可能被長工作卡很久。",
   "subj": "os"
@@ -1690,13 +1497,9 @@
   "subj": "os"
  },
  "concurrency": {
+  "en": "concurrent",
   "zh": "並行（共時）",
   "what": "多個工作在同一段時間內交錯進行（不一定真的同時）。",
-  "subj": "os"
- },
- "concurrent": {
-  "zh": "並行的",
-  "what": "多個執行流程的執行時間互相重疊。",
   "subj": "os"
  },
  "parallelism": {
@@ -1737,14 +1540,10 @@
   "subj": "os"
  },
  "mutex": {
+  "en": "mutex lock",
   "zh": "互斥鎖",
   "what": "一把鎖：拿到鎖才能進臨界區，用完要解鎖。",
   "like": "廁所門鎖。",
-  "subj": "os"
- },
- "mutex lock": {
-  "zh": "互斥鎖",
-  "what": "同 mutex：acquire 拿鎖、release 放鎖。",
   "subj": "os"
  },
  "spinlock": {
@@ -1856,13 +1655,9 @@
   "subj": "os"
  },
  "MMU": {
+  "en": "memory management unit",
   "zh": "記憶體管理單元",
-  "what": "Memory Management Unit：在執行時把虛擬位址轉成實體位址的硬體。",
-  "subj": "os"
- },
- "memory management unit": {
-  "zh": "記憶體管理單元（MMU）",
-  "what": "負責位址轉換和記憶體保護的硬體。",
+  "what": "在執行時把虛擬（邏輯）位址轉成實體位址、並做記憶體保護的硬體。",
   "subj": "os"
  },
  "base register": {
@@ -1900,7 +1695,8 @@
  "page number": {
   "zh": "頁碼",
   "what": "邏輯位址中用來查分頁表的高位部分。",
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "page offset": {
   "zh": "頁內偏移",
@@ -2002,7 +1798,8 @@
  "pipe": {
   "zh": "管道",
   "what": "單向傳資料的行程間通訊管道，一端寫、一端讀。",
-  "subj": "os"
+  "subj": "os",
+  "only": true
  },
  "socket": {
   "zh": "通訊端",
@@ -2039,11 +1836,6 @@
   "zh": "虛擬機器",
   "what": "用軟體模擬一整台電腦，在上面可以跑另一個作業系統。",
   "subj": "os"
- },
- "linear algebra": {
-  "zh": "線性代數",
-  "what": "研究向量、矩陣和線性方程組的數學。",
-  "subj": "la"
  },
  "vector": {
   "zh": "向量",
@@ -2086,7 +1878,8 @@
  "span": {
   "zh": "生成／張成",
   "what": "一組向量所有線性組合構成的集合；這些向量「能到達的所有地方」。",
-  "subj": "la"
+  "subj": "la",
+  "only": true
  },
  "linearly dependent": {
   "zh": "線性相依",
@@ -2094,15 +1887,12 @@
   "subj": "la"
  },
  "basis": {
+  "en": "basis vector",
   "zh": "基底",
   "what": "一組線性獨立、而且能生成整個空間的向量；空間中每個向量都能用它唯一表示。",
   "like": "地圖上的「東」和「北」兩個方向。",
-  "subj": "la"
- },
- "basis vector": {
-  "zh": "基底向量",
-  "what": "基底中的一個向量。",
-  "subj": "la"
+  "subj": "la",
+  "only": true
  },
  "standard basis": {
   "zh": "標準基底",
@@ -2163,7 +1953,8 @@
  "rank": {
   "zh": "秩",
   "what": "矩陣中線性獨立的行（或列）的最多個數，也等於 pivot 的個數。",
-  "subj": "la"
+  "subj": "la",
+  "only": true
  },
  "full rank": {
   "zh": "滿秩",
@@ -2183,7 +1974,8 @@
  "inverse": {
   "zh": "反矩陣（逆）",
   "what": "A⁻¹ 滿足 A⁻¹A = I，能把 A 的作用「抵銷」。不是每個矩陣都有。",
-  "subj": "la"
+  "subj": "la",
+  "only": true
  },
  "invertible": {
   "zh": "可逆",
@@ -2193,7 +1985,8 @@
  "singular": {
   "zh": "奇異（不可逆）",
   "what": "沒有反矩陣的方陣，行列式為 0。",
-  "subj": "la"
+  "subj": "la",
+  "only": true
  },
  "non-singular": {
   "zh": "非奇異的",
@@ -2236,7 +2029,8 @@
   "subj": "la"
  },
  "orthogonal": {
-  "zh": "正交",
+  "en": "orthogonality",
+  "zh": "正交、正交性",
   "what": "互相垂直的；兩個向量內積為 0。",
   "subj": "la"
  },
@@ -2250,24 +2044,16 @@
   "what": "兩兩垂直、而且每個長度都是 1。",
   "subj": "la"
  },
- "orthogonality": {
-  "zh": "正交性",
-  "what": "互相垂直的性質。",
-  "subj": "la"
- },
  "perpendicular": {
   "zh": "垂直的",
   "what": "夾角 90 度。",
-  "subj": "la"
+  "subj": "la",
+  "only": true
  },
  "dot product": {
-  "zh": "內積（點積）",
+  "en": "inner product",
+  "zh": "內積、點積",
   "what": "兩向量對應位置相乘再相加，結果是一個數；為 0 代表垂直。",
-  "subj": "la"
- },
- "inner product": {
-  "zh": "內積",
-  "what": "dot product 的一般化說法。",
   "subj": "la"
  },
  "cross product": {
@@ -2299,11 +2085,6 @@
  "Gram-Schmidt": {
   "zh": "Gram-Schmidt 正交化",
   "what": "把一組獨立向量逐一扣掉在前面向量上的投影，變成兩兩垂直的單位向量。",
-  "subj": "la"
- },
- "determinant": {
-  "zh": "行列式",
-  "what": "方陣算出的一個數，代表它把面積或體積放大幾倍；為 0 代表矩陣不可逆。",
   "subj": "la"
  },
  "cofactor expansion": {
@@ -2338,9 +2119,10 @@
   "subj": "la"
  },
  "trace": {
-  "zh": "跡（主對角線和）",
-  "what": "方陣對角線元素的總和，等於所有特徵值的和。（演算法課裡 trace 則是「追蹤」程式一步步怎麼執行。）",
-  "subj": "la"
+  "zh": "跡",
+  "what": "方陣主對角線元素的總和，等於所有特徵值的和。",
+  "subj": "la",
+  "only": true
  },
  "positive definite": {
   "zh": "正定",
@@ -2352,14 +2134,10 @@
   "what": "xᵀAx ≥ 0 的對稱矩陣；特徵值都 ≥ 0。",
   "subj": "la"
  },
- "singular value decomposition": {
-  "zh": "奇異值分解（SVD）",
-  "what": "任何矩陣都能寫成 UΣVᵀ：旋轉、沿軸伸縮、再旋轉。",
-  "subj": "la"
- },
  "SVD": {
+  "en": "singular value decomposition",
   "zh": "奇異值分解",
-  "what": "Singular Value Decomposition 的縮寫。",
+  "what": "任何矩陣都能寫成 UΣVᵀ：旋轉、沿軸伸縮、再旋轉。",
   "subj": "la"
  },
  "singular value": {
@@ -2375,7 +2153,8 @@
  "elimination": {
   "zh": "消去",
   "what": "用一列減去另一列的倍數，讓某些位置變 0，逐步化簡方程組。",
-  "subj": "la"
+  "subj": "la",
+  "only": true
  },
  "back substitution": {
   "zh": "回代",
@@ -2388,18 +2167,14 @@
   "subj": "la"
  },
  "row echelon form": {
-  "zh": "列梯形",
+  "en": "echelon form",
+  "zh": "列梯形、階梯形",
   "what": "每列第一個非零元素（pivot）都比上一列的更靠右，像樓梯一樣。",
   "subj": "la"
  },
  "reduced row echelon form": {
   "zh": "簡化列梯形（RREF）",
   "what": "列梯形再化簡到每個 pivot 都是 1、且 pivot 所在行其他位置都是 0。",
-  "subj": "la"
- },
- "echelon form": {
-  "zh": "梯形（階梯形）",
-  "what": "矩陣化簡後像樓梯的形狀。",
   "subj": "la"
  },
  "row operation": {
@@ -2428,7 +2203,7 @@
   "subj": "la"
  },
  "special solution": {
-  "zh": "特解（零空間基底）",
+  "zh": "特殊解（零空間基底）",
   "what": "Strang 課中把一個自由變數設 1、其他設 0 得到的 Ax = 0 的解。",
   "subj": "la"
  },
@@ -2440,7 +2215,8 @@
  "factorization": {
   "zh": "分解",
   "what": "把矩陣（或數）寫成幾個較簡單東西的乘積。",
-  "subj": "la"
+  "subj": "la",
+  "only": true
  },
  "linear transformation": {
   "zh": "線性變換",
@@ -2497,7 +2273,8 @@
  "conditional": {
   "zh": "條件句",
   "what": "「若 p 則 q」形式的命題；在程式裡則指 if 判斷。",
-  "subj": "dm"
+  "subj": "dm",
+  "only": true
  },
  "tautology": {
   "zh": "恆真式",
@@ -2507,7 +2284,8 @@
  "contradiction": {
   "zh": "矛盾式",
   "what": "永遠為假的式子；證明中「導出矛盾」代表假設錯了。",
-  "subj": "dm"
+  "subj": "dm",
+  "only": true
  },
  "truth table": {
   "zh": "真值表",
@@ -2550,11 +2328,6 @@
  "lemma": {
   "zh": "引理",
   "what": "為了證明主要定理而先證明的小結果。",
-  "subj": "dm"
- },
- "theorem": {
-  "zh": "定理",
-  "what": "已經被證明為真的重要數學敘述。",
   "subj": "dm"
  },
  "subset": {
@@ -2662,24 +2435,16 @@
   "subj": "dm"
  },
  "injective": {
+  "en": "one-to-one",
   "zh": "單射（一對一）",
   "what": "不同輸入一定有不同輸出。",
   "subj": "dm"
  },
  "bijection": {
+  "en": "bijective",
   "zh": "雙射／對射（一一對應）",
   "what": "同時是一對一又映成的函數，存在反函數。",
   "like": "座位和學生剛好一人一位、沒有空位。",
-  "subj": "dm"
- },
- "bijective": {
-  "zh": "雙射的",
-  "what": "一對一且映成的。",
-  "subj": "dm"
- },
- "one-to-one": {
-  "zh": "一對一",
-  "what": "不同的輸入對應到不同的輸出（單射）。",
   "subj": "dm"
  },
  "codomain": {
@@ -2690,7 +2455,8 @@
  "domain": {
   "zh": "定義域",
   "what": "函數可以接受的所有輸入。",
-  "subj": "dm"
+  "subj": "dm",
+  "only": true
  },
  "pigeonhole principle": {
   "zh": "鴿籠原理",
@@ -2701,7 +2467,8 @@
  "combination": {
   "zh": "組合",
   "what": "從 n 個中選 k 個、不管順序的方法數 C(n,k)。",
-  "subj": "dm"
+  "subj": "dm",
+  "only": true
  },
  "binomial coefficient": {
   "zh": "二項式係數",
@@ -2749,19 +2516,9 @@
   "what": "兩數的最大公因數是 1。",
   "subj": "dm"
  },
- "greatest common divisor": {
-  "zh": "最大公因數（GCD）",
-  "what": "同時整除兩數的最大整數，可用輾轉相除法求。",
-  "subj": "dm"
- },
  "multiplicative inverse": {
   "zh": "乘法反元素",
   "what": "在 mod n 下乘上它得 1 的數；a 和 n 互質才存在。",
-  "subj": "dm"
- },
- "graph theory": {
-  "zh": "圖論",
-  "what": "研究點和邊所組成結構的數學。",
   "subj": "dm"
  },
  "simple graph": {
@@ -2774,12 +2531,8 @@
   "what": "每兩個頂點之間都有邊的圖，記為 Kₙ。",
   "subj": "dm"
  },
- "bipartite": {
-  "zh": "二分的",
-  "what": "頂點可以分成兩群，所有邊都跨在兩群之間，同群內沒有邊。",
-  "subj": "dm"
- },
  "bipartite graph": {
+  "en": "bipartite",
   "zh": "二分圖",
   "what": "頂點分兩群、邊只連接不同群的圖；等價於沒有奇數長度的環。",
   "like": "男生和女生的舞伴配對圖。",
@@ -2806,16 +2559,12 @@
   "what": "每個頂點恰好經過一次再回起點的環；判斷是否存在是 NP 完全。",
   "subj": "dm"
  },
- "isomorphic": {
-  "zh": "同構的",
-  "what": "兩個圖只是畫法或頂點名字不同，結構完全一樣。",
-  "like": "同一張關係圖換了人名。",
-  "subj": "dm"
- },
  "isomorphism": {
+  "en": "isomorphic",
   "zh": "同構",
   "what": "兩個結構之間保持關係的一一對應。",
-  "subj": "dm"
+  "subj": "dm",
+  "like": "同一張關係圖換了人名。"
  },
  "subgraph": {
   "zh": "子圖",
@@ -2824,7 +2573,7 @@
  },
  "degree": {
   "zh": "分支度（度數）",
-  "what": "圖中連到某頂點的邊數；在多項式中則指最高次方。",
+  "what": "圖中連到某頂點的邊數；樹中指一個節點的子節點數；多項式中則是最高次方。",
   "subj": "dm"
  },
  "handshaking lemma": {
@@ -2894,11 +2643,6 @@
   "what": "圖中從一點出發、沿邊走、不重複邊，最後回到起點的路徑。（計算機組織裡的 clock cycle 則是時脈週期。）",
   "subj": "dm"
  },
- "computer organization": {
-  "zh": "計算機組織",
-  "what": "研究 CPU、記憶體、I/O 等硬體元件如何組成並合作執行指令。",
-  "subj": "ca"
- },
  "computer architecture": {
   "zh": "計算機結構",
   "what": "程式設計師看得到的硬體設計，例如指令集；也泛指整台電腦的設計。",
@@ -2921,13 +2665,9 @@
   "subj": "ca"
  },
  "machine code": {
-  "zh": "機器碼",
+  "en": "machine language",
+  "zh": "機器碼、機器語言",
   "what": "CPU 直接執行的 0 和 1 指令。",
-  "subj": "ca"
- },
- "machine language": {
-  "zh": "機器語言",
-  "what": "由二進位指令組成、CPU 能直接執行的語言。",
   "subj": "ca"
  },
  "assembly language": {
@@ -2960,21 +2700,6 @@
   "what": "指令要運算的對象（暫存器、常數或記憶體位址）。",
   "subj": "ca"
  },
- "R-type": {
-  "zh": "R 型指令",
-  "what": "MIPS 中三個暫存器運算的指令格式（如 add rd, rs, rt）。",
-  "subj": "ca"
- },
- "I-type": {
-  "zh": "I 型指令",
-  "what": "MIPS 中含一個立即值（常數）的指令格式（如 addi、lw、beq）。",
-  "subj": "ca"
- },
- "J-type": {
-  "zh": "J 型指令",
-  "what": "MIPS 中的跳躍指令格式（如 j、jal）。",
-  "subj": "ca"
- },
  "instruction format": {
   "zh": "指令格式",
   "what": "一條機器指令的位元如何分成各欄位。",
@@ -2983,7 +2708,8 @@
  "immediate": {
   "zh": "立即值",
   "what": "直接寫在指令裡的常數。",
-  "subj": "ca"
+  "subj": "ca",
+  "only": true
  },
  "register": {
   "zh": "暫存器",
@@ -3005,11 +2731,6 @@
   "zh": "程式計數器（PC）",
   "what": "存放下一條要執行的指令位址的暫存器。",
   "like": "書籤：記錄讀到第幾行。",
-  "subj": "ca"
- },
- "return address": {
-  "zh": "返回位址",
-  "what": "函式呼叫結束後要回去繼續執行的位址；MIPS 存在 $ra。",
   "subj": "ca"
  },
  "caller": {
@@ -3071,7 +2792,8 @@
  "bias": {
   "zh": "偏移值",
   "what": "浮點數指數儲存時加上的固定值（單精度為 127），讓指數不用存負數。",
-  "subj": "ca"
+  "subj": "ca",
+  "only": true
  },
  "normalized": {
   "zh": "正規化的",
@@ -3134,21 +2856,18 @@
   "zh": "時脈",
   "what": "週期性的訊號，讓所有電路依同一個節拍更新。",
   "like": "划龍舟的鼓聲。",
-  "subj": "ca"
+  "subj": "ca",
+  "only": true
  },
  "clock cycle": {
-  "zh": "時脈週期",
-  "what": "時脈一次完整的高低變化，也是 CPU 最小的時間單位。",
+  "en": "clock period / clock cycle time",
+  "zh": "時脈週期、時脈週期時間",
+  "what": "時脈一次完整的高低變化，是 CPU 動作的最小時間單位；它的長度叫 clock period（時脈週期時間）。",
   "subj": "ca"
  },
  "clock rate": {
   "zh": "時脈頻率",
   "what": "每秒時脈週期的次數，例如 3 GHz；= 1 / 時脈週期時間。",
-  "subj": "ca"
- },
- "clock period": {
-  "zh": "時脈週期時間",
-  "what": "一個時脈週期的長度。",
   "subj": "ca"
  },
  "CPI": {
@@ -3234,13 +2953,9 @@
   "subj": "ca"
  },
  "control hazard": {
-  "zh": "控制危障",
+  "en": "branch hazard",
+  "zh": "控制危障、分支危障",
   "what": "遇到分支時，還不知道下一條該抓哪條指令。",
-  "subj": "ca"
- },
- "branch hazard": {
-  "zh": "分支危障",
-  "what": "同 control hazard：分支結果未定造成的危障。",
   "subj": "ca"
  },
  "data dependency": {
@@ -3257,17 +2972,14 @@
  "bubble": {
   "zh": "氣泡",
   "what": "管線停頓時插入的空指令（nop），像管子裡的空泡。（和 bubble sort 氣泡排序是不同的東西。）",
-  "subj": "ca"
+  "subj": "ca",
+  "only": true
  },
  "flush": {
   "zh": "清除（管線）",
   "what": "分支預測錯誤時，把已經進入管線的錯誤指令丟掉。",
-  "subj": "ca"
- },
- "branch instruction": {
-  "zh": "分支指令",
-  "what": "依條件決定是否跳到別處執行的指令，例如 beq、bne。",
-  "subj": "ca"
+  "subj": "ca",
+  "only": true
  },
  "branch prediction": {
   "zh": "分支預測",
@@ -3339,7 +3051,8 @@
  "tag": {
   "zh": "標籤",
   "what": "快取中記錄「這一格目前放的是哪個記憶體區塊」的位址高位部分。",
-  "subj": "ca"
+  "subj": "ca",
+  "only": true
  },
  "valid bit": {
   "zh": "有效位元",
@@ -3367,7 +3080,8 @@
   "zh": "匯流排",
   "what": "連接 CPU、記憶體、I/O 裝置傳送資料的共用線路。",
   "like": "大家共用的公車道。",
-  "subj": "ca"
+  "subj": "ca",
+  "only": true
  },
  "bandwidth": {
   "zh": "頻寬",
@@ -3395,78 +3109,11 @@
   "what": "晶片運作時消耗的電力；限制了時脈無法無限提高。",
   "subj": "ca"
  },
- "recursion": {
-  "zh": "遞迴",
-  "what": "函式在自己裡面呼叫自己，把問題一層層拆成更小的同類問題，直到 base case 直接回答。",
-  "like": "俄羅斯娃娃：打開一個裡面還有一個更小的。",
-  "subj": "alg"
- },
- "recursive": {
-  "zh": "遞迴的",
-  "what": "會呼叫自己的（函式或定義）。",
-  "subj": "alg"
- },
- "time complexity": {
-  "zh": "時間複雜度",
-  "what": "演算法執行步驟數隨輸入大小 n 成長的速度，通常用 Big-O 表示。",
-  "subj": "alg"
- },
- "space complexity": {
-  "zh": "空間複雜度",
-  "what": "演算法需要的額外記憶體隨 n 成長的速度。",
-  "subj": "alg"
- },
- "worst case": {
-  "zh": "最壞情況",
-  "what": "在所有大小為 n 的輸入中，讓演算法跑最久的那種情況。",
-  "subj": "alg"
- },
- "average case": {
-  "zh": "平均情況",
-  "what": "對所有可能輸入（依某機率分布）平均起來的執行時間。",
-  "subj": "alg"
- },
- "upper bound": {
-  "zh": "上界",
-  "what": "保證「不會超過」的值；Big-O 給的就是成長速度的上界。",
-  "subj": "alg"
- },
- "lower bound": {
-  "zh": "下界",
-  "what": "保證「至少要」的值；例如比較排序的下界是 n log n。",
-  "subj": "alg"
- },
- "merge sort": {
-  "zh": "合併排序",
-  "what": "把陣列切兩半各自排序，再把兩個排好的半邊合併；O(n log n)。",
-  "subj": "alg"
- },
- "binary search": {
-  "zh": "二分搜尋",
-  "what": "在排好序的資料中，每次和中間比，丟掉一半，O(log n)。",
-  "like": "猜數字遊戲每次猜中間值。",
-  "subj": "alg"
- },
- "pseudocode": {
-  "zh": "虛擬碼",
-  "what": "介於中文說明和真正程式之間、用來描述演算法步驟的寫法，不必符合任何語言的語法。",
-  "subj": "alg"
- },
- "permutation": {
-  "zh": "排列",
-  "what": "把一群元素排成某個順序；n 個相異元素有 n! 種排列。",
-  "subj": "dm"
- },
  "logarithm": {
   "zh": "對數",
   "what": "log₂ n 表示「n 要除以 2 幾次才會變成 1」；資工課的 log 通常以 2 為底。",
-  "subj": "alg"
- },
- "mathematical induction": {
-  "zh": "數學歸納法",
-  "what": "先證最小情況成立，再證「k 成立 ⇒ k+1 成立」，就得到所有情況都成立。",
-  "like": "推倒第一張骨牌，每張又會推倒下一張。",
-  "subj": "dm"
+  "subj": "alg",
+  "like": "一疊 16 張紙一直對折剪半，剪 4 次就剩 1 張。"
  },
  "overhead": {
   "zh": "額外開銷",
@@ -3488,7 +3135,8 @@
  "compiler": {
   "zh": "編譯器",
   "what": "把高階語言（如 C）整個翻成機器碼的程式。",
-  "subj": "ca"
+  "subj": "ca",
+  "like": "把中文食譜翻成廚師母語的翻譯員。"
  },
  "graph": {
   "en": "graph（圖）",
@@ -3503,7 +3151,9 @@
  "distance": {
   "en": "distance（距離）",
   "what": "圖上從頂點 u 走到頂點 v 的最短路徑長度；沒有權重時就是最少要走幾條邊。BFS 一層一層往外走，第 k 層的頂點距離起點剛好是 k。",
-  "like": "從家到同學家最少要轉幾次車。"
+  "like": "從家到同學家最少要轉幾次車。",
+  "subj": "alg",
+  "only": true
  },
  "pixel": {
   "en": "pixel（像素）",
@@ -3512,19 +3162,22 @@
   "basic": true
  },
  "R-format": {
-  "en": "R-format（暫存器格式）",
+  "en": "R-format / R-type",
   "what": "MIPS 指令格式之一，給運算元全在暫存器裡的指令（如 add、sub、and、sll）。32 個 bit 分成 op(6)、rs(5)、rt(5)、rd(5)、shamt(5)、funct(6)；op 都是 0，靠 funct 分辨是哪個運算。",
-  "like": "一張固定欄位的表單：兩個來源、一個目的地，再勾選要做哪種運算。"
+  "like": "一張固定欄位的表單：兩個來源、一個目的地，再勾選要做哪種運算。",
+  "zh": "暫存器格式、R 型指令"
  },
  "I-format": {
-  "en": "I-format（立即值格式）",
+  "en": "I-format / I-type",
   "what": "MIPS 指令格式之一，給需要一個常數的指令（addi、lw、sw、beq、bne 等）。32 個 bit 分成 op(6)、rs(5)、rt(5)、immediate(16)，16 bit 的常數直接寫在指令裡。",
-  "like": "表單上留了一格可以直接填數字，不必另外去查。"
+  "like": "表單上留了一格可以直接填數字，不必另外去查。",
+  "zh": "立即值格式、I 型指令"
  },
  "J-format": {
-  "en": "J-format（跳躍格式）",
+  "en": "J-format / J-type",
   "what": "MIPS 指令格式之一，給 j 和 jal 用。32 個 bit 分成 op(6) 和 address(26)，26 bit 盡量留給跳躍目標位址。",
-  "like": "一張只寫「目的地」的車票，其他欄位都省了。"
+  "like": "一張只寫「目的地」的車票，其他欄位都省了。",
+  "zh": "跳躍格式、J 型指令"
  },
  "beq": {
   "en": "branch if equal",
@@ -3539,7 +3192,9 @@
  "label": {
   "en": "label（標籤）",
   "what": "組合語言裡替某一行指令取的名字（如 L1、Loop、Exit），讓分支或跳躍指令可以寫「跳到 L1」。組譯器會把它換成真正的位址或位移數字。",
-  "like": "書裡夾的便利貼：寫「看這頁」，比記頁碼方便。"
+  "like": "書裡夾的便利貼：寫「看這頁」，比記頁碼方便。",
+  "subj": "ca",
+  "only": true
  },
  "PC-relative addressing": {
   "en": "PC-relative addressing（相對於 PC 定址）",
@@ -3573,9 +3228,10 @@
   "like": "爬樓梯時在每一階記下「到這裡有幾種走法」，往上算時直接查，不必從頭數。"
  },
  "貪婪法": {
-  "en": "greedy method",
+  "en": "greedy method / greedy algorithm / greedy",
   "what": "每一步都挑「眼前看起來最好」的選擇，選了就不反悔。只有在問題具備貪婪選擇性質時才保證得到最佳解，例如 Kruskal、Prim、Dijkstra。",
-  "like": "找零錢時每次都先拿面額最大的硬幣。"
+  "like": "找零錢時每次都先拿面額最大的硬幣。",
+  "zh": "貪婪、貪心"
  },
  "最小生成樹": {
   "en": "minimum spanning tree (MST)",
@@ -3588,9 +3244,10 @@
   "like": "導航 App 幫你找花最少時間到目的地的路線。"
  },
  "遞迴關係": {
-  "en": "recurrence relation",
+  "en": "recurrence relation / recurrence",
   "what": "用較小輸入的答案來定義較大輸入答案的式子，例如 F(n) = F(n−1) + F(n−2)。DP 的核心就是先寫出遞迴關係。",
-  "like": "「今天存款 = 昨天存款 + 今天存入」，每天都靠前一天算出來。"
+  "like": "「今天存款 = 昨天存款 + 今天存入」，每天都靠前一天算出來。",
+  "zh": "遞迴關係式、遞迴式"
  },
  "重疊子問題": {
   "en": "overlapping subproblems",
@@ -3608,14 +3265,15 @@
   "like": "轉機旅行：每一段只能從這一站飛到下一站，要挑總票價最便宜的組合。"
  },
  "有向圖": {
-  "en": "directed graph (digraph)",
+  "en": "directed graph / digraph",
   "what": "每條邊都有方向的圖，邊 (u, v) 表示只能從 u 走到 v，不一定能反過來走。",
   "like": "單行道組成的路網。"
  },
  "graph search": {
-  "en": "graph search（圖的搜尋 / 走訪）",
+  "en": "graph search / graph traversal",
   "what": "按某種規則有系統地拜訪圖中的頂點，每個頂點只拜訪一次。最基本的兩種是 BFS（一層一層往外）和 DFS（一路走到底再回頭）。",
-  "like": "在一棟陌生大樓裡有計畫地逛完每個房間，不重複也不漏掉。"
+  "like": "在一棟陌生大樓裡有計畫地逛完每個房間，不重複也不漏掉。",
+  "zh": "圖的搜尋、圖的走訪"
  },
  "edge classification": {
   "en": "edge classification（邊的分類）",
@@ -3623,9 +3281,12 @@
   "like": "整理家族關係：親子、往回連到祖先、跳代連到孫輩、旁支親戚。"
  },
  "process": {
-  "en": "process（行程 / 程序）",
+  "en": "process",
   "what": "正在執行中的程式。除了程式碼，還包含自己的記憶體空間、暫存器內容、程式計數器和狀態（new、ready、running、waiting、terminated），由 OS 管理。",
-  "like": "食譜是程式；廚師正照著食譜做菜的這件事，才是 process。"
+  "like": "食譜是程式；廚師正照著食譜做菜的這件事，才是 process。",
+  "zh": "行程",
+  "subj": "os",
+  "only": true
  },
  "degree of multiprogramming": {
   "en": "degree of multiprogramming（多工程度）",
@@ -3638,9 +3299,10 @@
   "like": "裁判比較兩人身高，左邊比較矮就舉 1 號牌，不然舉 0 號牌。"
  },
  "$sp": {
-  "en": "stack pointer register",
-  "what": "MIPS 的 29 號暫存器，存目前 stack 頂端的位址。MIPS 的 stack 往低位址長：push 時先把 $sp 減掉要用的大小再存資料，pop 時讀完再加回去。",
-  "like": "一疊盤子最上面那個盤子的位置標記。"
+  "en": "stack pointer",
+  "what": "MIPS 的 29 號暫存器，指向 stack 目前頂端。stack 往低位址長：push 先把 $sp 減掉再存，pop 讀完再加回去。",
+  "like": "一疊盤子最上面那個盤子的位置標記。",
+  "zh": "堆疊指標"
  },
  "callee": {
   "en": "callee（被呼叫者）",
@@ -3679,12 +3341,6 @@
   "what": "用 V × V 的二維陣列表示圖：A[i][j] = 1（或邊的權重）代表有邊從 i 到 j，否則為 0（或 ∞）。查兩點是否相鄰只要 O(1)，但空間固定是 O(V²)。",
   "like": "城市間的直飛航班表：橫列出發、直行抵達，有航班就打勾。"
  },
- "procedure": {
-  "en": "procedure（程序 / 函式）",
-  "what": "一段被包起來、可以被呼叫的程式，也就是 C 語言的 function。執行時要：放參數、跳過去、配空間、做事、放回傳值、跳回來。",
-  "like": "公司裡可以隨時找來幫忙的專員。",
-  "basic": true
- },
  "RISC": {
   "en": "Reduced Instruction Set Computer",
   "what": "精簡指令集的設計理念：指令種類少、格式固定長度、只用 load/store 存取記憶體，讓硬體簡單又能做 pipeline。MIPS、ARM、RISC-V 都屬於 RISC；相對的是 CISC（如 x86）。",
@@ -3706,9 +3362,10 @@
   "like": "把桌上的東西收回置物櫃指定的格子。"
  },
  "$ra": {
-  "en": "return address register",
+  "en": "return address register / return address",
   "what": "MIPS 的 31 號暫存器，存函式結束後要回去的位址。jal 會自動把 PC + 4 存進 $ra，函式最後用 jr $ra 回去。",
-  "like": "出門辦事前在門口留的紙條：「辦完回這裡」。"
+  "like": "出門辦事前在門口留的紙條：「辦完回這裡」。",
+  "zh": "返回位址"
  },
  "$zero": {
   "en": "zero register",
@@ -3719,11 +3376,6 @@
   "en": "jump and link",
   "what": "MIPS 呼叫函式的指令 jal ProcedureAddress：先把下一行指令的位址（PC + 4）存進 $ra，再跳到函式開頭。屬於 J-format。",
   "like": "出門前先記下自己家地址，再出發去辦事。"
- },
- "stack pointer": {
-  "en": "stack pointer（堆疊指標）",
-  "what": "指向 stack 目前頂端的指標；在 MIPS 就是 $sp。函式要暫存資料時移動它來配置或釋放 stack 空間。",
-  "like": "疊盤子時標記「目前最上面在哪」的那支夾子。"
  },
  "leaf procedure": {
   "en": "leaf procedure（葉函式）",
@@ -3759,9 +3411,12 @@
   "like": "用一排開關一個一個對照著決定開或關。"
  },
  "branch": {
-  "en": "branch（分支）",
+  "en": "branch instruction / conditional branch",
   "what": "依條件決定要不要跳到別處執行的指令，例如 MIPS 的 beq、bne；條件不成立就照順序執行下一行。if 和迴圈都靠它實作。",
-  "like": "岔路口的路標：符合條件往左，不符合直走。"
+  "like": "岔路口的路標：符合條件往左，不符合直走。",
+  "zh": "分支、分支指令、條件分支",
+  "subj": "ca",
+  "only": true
  },
  "bitwise": {
   "en": "bitwise（逐位元）",
@@ -3781,7 +3436,9 @@
  "nor": {
   "en": "NOR（反或）",
   "what": "MIPS 指令 nor rd, rs, rt：先逐 bit 做 OR 再取反，結果放 rd。MIPS 沒有 NOT 指令，用 nor $t0, $t1, $zero 就等於 NOT $t1。",
-  "like": "「兩個人都沒舉手」才算成立。"
+  "like": "「兩個人都沒舉手」才算成立。",
+  "subj": "ca",
+  "only": true
  },
  "shift amount": {
   "en": "shamt（shift amount）",
@@ -3796,24 +3453,9 @@
  "mask": {
   "en": "mask（遮罩）",
   "what": "一個特別設計的位元樣式，和資料做 AND（或 OR）來保留、清除或設定指定位置的 bit。AND 時，mask 是 1 的位置保留原值，是 0 的位置清成 0。",
-  "like": "噴漆用的鏤空模板：只有挖空的地方會被噴到。"
- },
- "loop": {
-  "en": "loop（迴圈）",
-  "what": "重複執行同一段程式，直到條件滿足才停止，例如 for、while。在組合語言裡用 branch 跳回開頭來實作。",
-  "like": "跑操場：還沒跑滿 10 圈就繼續跑。",
-  "basic": true
- },
- "conditional branch": {
-  "en": "conditional branch（條件分支）",
-  "what": "先檢查一個條件，成立才跳到指定位置，不成立就執行下一行。MIPS 的 beq、bne 都是；j 是不看條件的無條件跳躍。",
-  "like": "「下雨就搭公車，沒下雨就騎車」。"
- },
- "array": {
-  "en": "array（陣列）",
-  "what": "一排連續、從 0 開始編號的格子。在記憶體裡元素連續存放，所以 A[i] 的位址 = 起點位址 + i × 每格大小（MIPS 的 int 陣列每格 4 byte）。",
-  "like": "一排有號碼的置物櫃。",
-  "basic": true
+  "like": "噴漆用的鏤空模板：只有挖空的地方會被噴到。",
+  "subj": "ca",
+  "only": true
  },
  "basic block": {
   "en": "basic block（基本區塊）",
@@ -3826,16 +3468,17 @@
   "like": "只有正數刻度的尺。"
  },
  "旅行推銷員問題": {
-  "en": "traveling salesperson problem (TSP)",
+  "en": "traveling salesperson problem / traveling salesman problem (TSP)",
   "what": "給一張有權重的圖，從某城市出發，每個城市恰好拜訪一次再回到起點，求總成本最小的路線。屬於 NP-hard，DP 解法時間是 O(n²·2^n)。",
   "like": "外送員要繞完所有訂單再回店裡，怎麼排路線最省時間。"
  },
  "Map": {
-  "en": "Map（映射 / 對照表）",
+  "en": "Map",
   "what": "一種資料結構，存放「key → value」的配對；給一個 key 就能找到它對應的 value，key 不能重複。常用雜湊表或平衡搜尋樹實作。",
   "like": "字典：用單字（key）查到解釋（value）。",
   "subj": "ds",
-  "only": true
+  "only": true,
+  "zh": "映射、對照表"
  },
  "暴力法": {
   "en": "brute force",
@@ -3843,9 +3486,10 @@
   "like": "忘記密碼鎖時從 000 試到 999。"
  },
  "0/1 knapsack": {
-  "en": "0/1 knapsack problem（0/1 背包問題）",
+  "en": "0-1 knapsack problem",
   "what": "有 n 件物品，各有重量和價值，背包容量有限；每件物品只能「整件拿」或「不拿」，求總價值最大的裝法。用 DP 可在 O(nW) 時間解（W 為容量）。",
-  "like": "行李限重 20 公斤，要挑哪些東西帶，讓帶走的總價值最高。"
+  "like": "行李限重 20 公斤，要挑哪些東西帶，讓帶走的總價值最高。",
+  "zh": "0/1 背包問題"
  },
  "diameter": {
   "en": "diameter（直徑）",
@@ -6951,7 +6595,7 @@
   "basic": false
  },
  "det": {
-  "en": "det",
+  "en": "det / determinant",
   "zh": "行列式",
   "what": "determinant 的縮寫，det(A) 是方陣 A 的行列式：面積或體積的放大倍數，為 0 就不可逆。",
   "like": "影印機的縮放比例。",
@@ -7069,7 +6713,7 @@
   "only": true
  },
  "FFT": {
-  "en": "FFT",
+  "en": "FFT / fast Fourier transform",
   "zh": "快速傅立葉轉換",
   "what": "Fast Fourier Transform：利用傅立葉矩陣的結構，把 n² 次乘法降到約 n log n 次。",
   "like": "把一首歌快速拆成各個音高的音量。",
@@ -7311,7 +6955,7 @@
   "basic": false
  },
  "gcd": {
-  "en": "gcd",
+  "en": "gcd / greatest common divisor",
   "zh": "最大公因數",
   "what": "greatest common divisor：同時整除 a 和 b 的最大正整數，可用輾轉相除法求。",
   "like": "兩條緞帶剪成等長小段，每段最長多長。",

@@ -469,7 +469,7 @@
     "無法 traverse 進入該目錄",
     "無法執行目錄內的程式但可進入",
     "無法看到目錄名稱",
-    "沒有影響"
+    "沒有影響，x 只對檔案有意義"
    ],
    "ans": "無法 traverse 進入該目錄",
    "why": "路徑上任一層 parent 缺 x 都會 permission denied。"

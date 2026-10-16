@@ -2514,7 +2514,7 @@ scene('g8a-k5-more', '方向無關；K5 之後更不是', [
   async (tok, S) => { S.B.add('K₆、K₇…邊更多 → 也不是', 'say'); cap('K₆ 以後邊更多', '當然也不是 planar'); },
 ]);
 
-scene('g8a-bip', 'Bipartite graph 與 complete bipartite K_{m,n}', [
+scene('g8a-bip', 'Bipartite graph 與 complete bipartite Kₘ,ₙ', [
   async (tok, S) => { S.B = board(-7, -4.8, 0.56); S.B.add('另一類圖：bipartite graph'); cap('再介紹另一類圖', 'bipartite graph'); },
   async (tok, S) => {
     S.g = quick({ ox: 3.0, oz: 0.4 }, { a: [-1.8, -2], b: [-1.8, 0], c: [-1.8, 2], x: [1.8, -2], y: [1.8, 0], z: [1.8, 2] }, 'a-x a-y b-y b-z c-x c-z');
@@ -2537,7 +2537,7 @@ scene('g8a-bip', 'Bipartite graph 與 complete bipartite K_{m,n}', [
     cap('V₁ 的端點之間沒有邊', 'V₂ 的端點之間也沒有');
   },
   async (tok, S) => { kill(S.no); S.B.add('這叫 bipartition；matching 時還會再看到', 'say'); cap('這樣的分法叫 bipartition', '後面講 matching problem 還會用到'); },
-  async (tok, S) => { S.B.add('Complete bipartite graph K_{m,n}'); cap('接著介紹 complete bipartite graph', 'K_{m,n}'); },
+  async (tok, S) => { S.B.add('Complete bipartite graph Kₘ,ₙ'); cap('接著介紹 complete bipartite graph', 'Kₘ,ₙ'); },
   async (tok, S) => { S.B.add('V₁ 有 m 個端點、V₂ 有 n 個端點', 'say'); cap('一邊有 m 個端點，一邊有 n 個', '這裡 m = n = 3'); },
   async (tok, S) => {
     [['a', 'z'], ['b', 'x'], ['c', 'y']].forEach(([u, v]) => S.g.e(u, v, { c: GC.gold }));
@@ -8402,22 +8402,22 @@ scene('g8f-cutproof', '證明：val(f) = 流過去 − 流回來（只用 conser
   async (tok, S) => {
     S.N = mkNet({ s: 0.62, ox: 3.4, oy: 0.6 }); S.N.setF(F8); S.N.cut(CUT1); // picture lower right, the derivation above it, the worked example on the left
     S.L = board({ x: -0.6, max: 3 });
-    S.L.add('要證：val(f) = Σ_{x∈S,y∈T} f(x,y) − Σ_{u∈T,v∈S} f(u,v)');
+    S.L.add('要證：val(f) = Σ over x∈S,y∈T f(x,y) − Σ over u∈T,v∈S f(u,v)');
     S.n = lb('右邊用例子對照：S = ' + setS(CUT1) + '（示意對照）', 'idx', -3.2, 3.7);
     cap('要證的式子', '從定義開始');
   },
   async (tok, S) => {
-    S.L.add('val(f) = Σ_{y∈V} f(s, y)　（source 的 outflow）');
+    S.L.add('val(f) = Σ over y∈V f(s, y)　（source 的 outflow）');
     S.r = lb('例：' + outF(F8, 's'), 'ptr', -3.2, 3.0);
     cap('value 是 source 的 outflow', 's 到所有 y 的 flow 加起來');
   },
   async (tok, S) => {
-    S.L.add('　　 − Σ_{u∈V} f(u, s)　（s 的 inflow = 0，多扣 0）');
+    S.L.add('　　 − Σ over u∈V f(u, s)　（s 的 inflow = 0，多扣 0）');
     gone(S.r); S.r = lb('例：' + outF(F8, 's') + ' − ' + inF(F8, 's'), 'ptr', -3.2, 3.0);
     cap('s 的 inflow 是 0', '多扣一個 0 不影響');
   },
   async (tok, S) => {
-    S.L.add('　　 + Σ_{x∈S−{s}} [ Σ_y f(x,y) − Σ_u f(u,x) ]');
+    S.L.add('　　 + Σ over x∈S−{s} [ Σ_y f(x,y) − Σ_u f(u,x) ]');
     const xs = CUT1.filter((v) => v !== 's');
     S.c = xs.map((v, i) => ok(outF(F8, v) === inF(F8, v), v + '：' + outF(F8, v) + ' − ' + inF(F8, v) + ' = 0 ✓', -5.4 + i * 2.5, 1.5));
     cap('把 S 裡其他端點都加進來', '它們都守恆，t 不在 S 裡');
@@ -8429,12 +8429,12 @@ scene('g8f-cutproof', '證明：val(f) = 流過去 − 流回來（只用 conser
   async (tok, S) => {
     gone(S.c);
     const o = CUT1.reduce((s, v) => s + outF(F8, v), 0), i = CUT1.reduce((s, v) => s + inF(F8, v), 0);
-    S.L.add('合併：Σ_{x∈S} Σ_{y∈V} f(x,y) − Σ_{x∈S} Σ_{u∈V} f(u,x)');
+    S.L.add('合併：Σ over x∈S Σ over y∈V f(x,y) − Σ over x∈S Σ over u∈V f(u,x)');
     gone(S.r); S.r = lb('例：' + o + ' − ' + i, 'ptr', -3.2, 3.0); S.oi = [o, i];
     cap('s 那項和其他的合在一起', '變成對整個 S 加總');
   },
   async (tok, S) => {
-    S.L.add('dummy variable 換名字：x → v，後項 = Σ_{v∈S} Σ_{u∈V} f(u,v)', 'say');
+    S.L.add('dummy variable 換名字：x → v，後項 = Σ over v∈S Σ over u∈V f(u,v)', 'say');
     cap('只是把 x 換成 v', '看起來跟後面一致');
   },
   async (tok, S) => {
@@ -8452,7 +8452,7 @@ scene('g8f-cutproof', '證明：val(f) = 流過去 − 流回來（只用 conser
   },
   async (tok, S) => {
     const st = sumF(F8, fwdE(CUT1)), ts = sumF(F8, bwdE(CUT1));
-    S.L.add('剩下：Σ_{x∈S,y∈T} f(x,y) − Σ_{v∈S,u∈T} f(u,v)');
+    S.L.add('剩下：Σ over x∈S,y∈T f(x,y) − Σ over v∈S,u∈T f(u,v)');
     S.N.paintCut(CUT1);
     gone(S.r); S.r = lb('例：' + st + ' − ' + ts, 'ptr', -3.2, 3.0);
     cap('最後剩下兩項', '從 S 流到 T 的、從 T 流到 S 的');

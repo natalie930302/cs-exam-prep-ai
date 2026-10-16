@@ -95,7 +95,7 @@
    "explain": [
     "最後介紹 RPC。socket 只有 bytes、沒有 data structure，所以不好用；我們喜歡的是 call function。",
     "RPC 上次介紹過：透過網路，可以 call 一個 remote 的 function。call 起來還是 function call，但其實在遠端，很貼近大家熟悉的寫程式方式（畫面上的 add(3, 4) 是示意）。",
-    "為什麼做得到？因為提供 RPC 的 library 裡有所謂的 stub：一個小的 daemon（背景小程式），run 在 client 端和 server 端，幫忙處理參數的傳遞。",
+    "為什麼做得到？因為提供 RPC 的 library 裡有所謂的 stub：跟著 client 端和 server 端一起跑的一小段代理程式（老師形容像小 daemon），幫忙處理參數的傳遞。",
     "仔細看：client 端的叫 stub，remote 端的叫 skeleton。這兩支小程式由 library 負責 implement，使用者不需要自己寫。",
     "RPC 跟 socket 其實很接近，差別在於 RPC 的參數有 data type。所以才需要這兩支小程式：負責把 parameter 做 package（打包）和 unpackage（拆包）。",
     "這兩支小程式下面的溝通方式，通常也是透過 socket，這是一種選擇。所以它只是一層包一層，讓 programmer 越來越方便。",
@@ -152,12 +152,12 @@
   {
    "q": "web server accept 一個連線後，通常怎麼服務多個使用者？",
    "opts": [
-    "create 一個 thread 服務該 client，main thread 繼續 listen",
-    "main thread 自己服務，其他人排隊",
+    "create 一個 thread 服務它，main thread 繼續 listen",
+    "main thread 自己服務完這個 client，其他人在 listen 那邊排隊",
     "每次都 fork 一個 process，並讓 main 等它結束再回去 accept",
     "關掉 port 再重開"
    ],
-   "ans": "create 一個 thread 服務該 client，main thread 繼續 listen",
+   "ans": "create 一個 thread 服務它，main thread 繼續 listen",
    "why": "要 share 資訊所以用 thread；web server 是 multi-thread programming。"
   },
   {
@@ -185,12 +185,12 @@
   {
    "q": "socket 傳輸的資料型態是？",
    "opts": [
-    "unstructured string of bytes，由 programmer 自己 parse",
+    "沒有結構的一串 bytes，由 programmer 自己 parse",
     "有型態的參數（int、float 等），由 stub 自動做 marshalling",
     "只能傳 integer",
     "物件（object），由 OS 自動序列化"
    ],
-   "ans": "unstructured string of bytes，由 programmer 自己 parse",
+   "ans": "沒有結構的一串 bytes，由 programmer 自己 parse",
    "why": "socket 只負責建立 channel；要有 data type 就用 RPC。"
   }
  ]

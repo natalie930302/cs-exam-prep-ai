@@ -253,12 +253,12 @@
   {
    "q": "Deferred cancellation 的意思是？",
    "opts": [
-    "target thread 執行到 cancellation point 才安全結束",
+    "執行到 cancellation point 才安全結束",
     "立刻終止 target thread，不等它執行到任何檢查點或釋放資源",
     "取消後由 OS 重新啟動 thread",
     "只能取消 main thread"
    ],
-   "ans": "target thread 執行到 cancellation point 才安全結束",
+   "ans": "執行到 cancellation point 才安全結束",
    "why": "asynchronous 是立刻終止（較危險）；deferred 讓 thread 在安全的點結束。"
   },
   {

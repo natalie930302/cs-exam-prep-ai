@@ -20,6 +20,9 @@ export default function kit(ctx) {
   }
   function bodyOf(o) { for (const b of lab.bodies) if (b.obj === o) return b; return lab.addBody(o); }
   const move = (o, x, y, z = 0) => lab.springTo(bodyOf(o), V3(x, y, z));
+  // where o will rest: the landing / spring target while it is still falling or moving, else its position
+  // (edges drawn right after a drop or move use this, so they meet the node once it lands)
+  function land(o) { for (const b of lab.bodies) if (b.obj === o && (b.mode === 'fall' || b.mode === 'spring')) return b.target; return o.position; }
   const fly = (o, dir) => lab.flyAway(bodyOf(o), dir || V3((Math.random() - 0.5) * 6, 8, 4));
   function kill(o) {
     if (!o) return;
@@ -65,7 +68,7 @@ export default function kit(ctx) {
   // a binary-tree node sphere-ish cube with an edge line to its parent (if given)
   function tnode(v, x, y, z = 0, parent = null, color) {
     const m = cube(v, color || colorFor(v), [0.9, 0.9, 0.9], x, y, z);
-    if (parent) m.userData.edge = line(parent.position.x, parent.position.y, x, y, z);
+    if (parent) { const p = land(parent); m.userData.edge = line(p.x, p.y, x, y, z); }
     return m;
   }
   // ── pictures with a purpose (lecture-synced scenes) ──
@@ -194,5 +197,5 @@ export default function kit(ctx) {
   }
   // a gentle bob for props (things that are "alive" on screen)
   function bob(o, amp = 0.08, speed = 2) { const y0 = o.position.y, t0 = Math.random() * 6; if (lab.onFrame) lab.onFrame((dt, t) => { if (o.parent) o.position.y = y0 + Math.sin((t + t0) * speed) * amp; }); }
-  return { V3, GOLD, GREEN, RED, GRAY, MONO, fresh, tag, cube, bodyOf, move, fly, kill, glow, tint, txt, relabel, showL, code, anim, line, arrow, ghostBox, lnode, tnode, step, icon, rename, dim, zone, travel, remove, buddy, prop, bob };
+  return { V3, GOLD, GREEN, RED, GRAY, MONO, fresh, tag, cube, bodyOf, move, land, fly, kill, glow, tint, txt, relabel, showL, code, anim, line, arrow, ghostBox, lnode, tnode, step, icon, rename, dim, zone, travel, remove, buddy, prop, bob };
 }

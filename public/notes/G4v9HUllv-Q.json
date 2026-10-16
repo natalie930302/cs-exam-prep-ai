@@ -194,7 +194,7 @@
     "dispatcher",
     "使用者程式"
    ],
-   "ans": "hardware",
+   "ans": "core 本身（hardware）",
    "why": "兩層排程：OS 決定哪個 thread 放到哪個 hardware thread（logical CPU）；core 再決定此刻跑它的哪個 hardware thread。"
   }
  ]

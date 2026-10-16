@@ -185,7 +185,7 @@
     "Linux 認為那樣不公平：既然給了你 200，就應該讓你把 200 用完。所以 T1 做完一個 burst 還剩 100（沒用完 budget），它就留在 active array，還可以再被執行。",
     "如果你把 quantum 用完了（T2 剩 0），就把你放到 expired array，這一輪就不能再執行了。",
     "所以每個人每一輪都真的能用滿自己的 quantum，別人才用。等於每個 task 的執行時間，是依照它的 quantum 來分配比例（weighted）。",
-    "priority 什麼時候降？要「一個 CPU burst 就超過 quantum」才降。給你 200，你分四五次才用完，priority 不受影響。",
+    "priority 什麼時候降？老師說要「一個 CPU burst 就超過 quantum」才降；給你 200，你分四五次才用完，priority 不受影響。課本的說法是：task 用完 quantum、移到 expired array 時，依它的互動程度（sleep 時間越長越像 I/O-bound）重新計算 priority（nice 值 ±5）。",
     "每次用完一段 burst，就從 200 裡扣掉用掉的，看還剩多少（T1 剩 40），繼續留在 active queue。",
     "實作很簡單：process 用完就放進其中一個 array。等 active array 全部空了（大家都用完 quantum），只要把兩個 array 的 pointer（指標）交換：expired 就變成新的 active，大家 quantum 重新補滿，開始下一輪。",
     "這就是 Linux 不一樣的地方：不是執行完一個 cycle 就換人，而是希望讓你把 quantum 全部用完。"
@@ -201,7 +201,7 @@
     },
     {
      "t": 838,
-     "text": "一個 CPU burst 就超過 quantum 才降 priority；分次用完不受影響。active 空了就交換兩個 array 的 pointer。"
+     "text": "老師：一個 CPU burst 就超過 quantum 才降 priority，分次用完不受影響（課本：移到 expired 時依互動程度重算 priority）。active 空了就交換兩個 array 的 pointer。"
     },
     {
      "t": 927,
@@ -259,13 +259,13 @@
   {
    "q": "Windows XP 中哪一類 process 的 priority 是 static（不會被調整）？",
    "opts": [
-    "real-time（16～31）",
+    "real-time",
     "normal",
     "idle",
     "above normal"
    ],
-   "ans": "real-time（16～31）",
-   "why": "其他 class 會在自己的 7 個數字內依 CPU / I/O 行為升降。"
+   "ans": "real-time",
+   "why": "real-time class 是 16～31，priority 固定；其他 class 會在自己的 7 個數字內依 CPU / I/O 行為升降。"
   },
   {
    "q": "Linux（2.6）的 active / expired array：task 用完它的 time quantum 後會？",

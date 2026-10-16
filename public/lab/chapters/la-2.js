@@ -1626,7 +1626,7 @@ scene('mx-l20-proof', 'L20：證明 A·Cᵀ = (det A)·I', [
   (tok, S) => { [[0, 2], [2, 0], [0, 1], [1, 0], [1, 2], [2, 1]].forEach(([i, j]) => S.R.glowCell(i, j, REDG)); cap('還差對角線以外：要是 0', ''); },
   (tok, S) => { sm('2×2：(a, b)·(第 2 列的 cofactor −b, a) = −ab + ba = 0', 0, 0.6); cap('2×2：第 1 列 × 第 2 列的 cofactor = 0', ''); },
   (tok, S) => { S.As = mview([['a', 'b'], ['a', 'b']], -4.8, 1.0, { name: 'Aₛ：兩列一樣', s: 0.7, color: COL.red }); cap('理由：其實在算一個「兩列相同」的矩陣的行列式', '這種矩陣 det = 0'); },
-  (tok, S) => { S.As.glowRow(1, GOLD); sm('沿第 2 列展開：a·b + b·(−a) = 0', -4.8, -0.1); cap('沿第 2 列展開', 'a·b + b·(−a) = 0'); },
+  (tok, S) => { S.As.glowRow(1, GOLD); sm('沿第 2 列展開：a·(−b) + b·a = 0', -4.8, -0.1); cap('沿第 2 列展開', 'a·(−b) + b·a = 0'); },
   (tok, S) => { [[0, 2], [2, 0], [0, 1], [1, 0], [1, 2], [2, 1]].forEach(([i, j]) => { S.R.set(i, j, 0); S.R.glowCell(i, j, null); }); sm('n×n：第 i 列 × 第 j 列的 cofactor = 兩列相同的 det = 0', 0, 0.0); cap('n×n 一樣：對角線外全是 0', ''); },
   (tok, S) => { const d = detN(PFA), pr = matMul(PFA, T2(cofMat(PFA))); ok(eqM(pr, scaleM(idn(3), d)), '示意 A = ' + mstr(PFA) + '：A·Cᵀ = ' + d + '·I ✓', 0, -0.6); cap('A·Cᵀ = (det A)·I：A⁻¹ = Cᵀ / det A', ''); },
 ]);

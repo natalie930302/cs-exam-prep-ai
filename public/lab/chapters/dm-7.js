@@ -293,7 +293,7 @@ export default function (ctx) {
   const sp = { kind: 'K', n: 5, m: 3, G: null };
   function enterSpecial() {
     fresh([0, 7, 11], [0, 1.6, 0]);
-    controls('<select id="sK"><option value="K">完全圖 Kₙ</option><option value="C">環 Cₙ</option><option value="W">輪 Wₙ</option><option value="Q">超立方體 Qₙ</option><option value="B">完全二分圖 K_{m,n}</option><option value="P">Petersen 圖</option></select>'
+    controls('<select id="sK"><option value="K">完全圖 Kₙ</option><option value="C">環 Cₙ</option><option value="W">輪 Wₙ</option><option value="Q">超立方體 Qₙ</option><option value="B">完全二分圖 Kₘ,ₙ</option><option value="P">Petersen 圖</option></select>'
       + ' n = <input id="sN" type="number" min="1" max="8" value="' + sp.n + '"> m = <input id="sM" type="number" min="1" max="5" value="' + sp.m + '">'
       + '<button class="primary" id="sBip">檢查二分圖</button>');
     $('sK').value = sp.kind;
@@ -305,7 +305,7 @@ export default function (ctx) {
     else if (sp.kind === 'C') { if (n < 3 || n > 8) return log('Cₙ 至少要 3 個點（n = 3～8）。', true); D = cn(n); info = ['Cₙ', n + ' 點', 'n = ' + n]; }
     else if (sp.kind === 'W') { if (n < 3 || n > 8) return log('Wₙ：n = 3～8（環上 n 點 + 中心 1 點）。', true); D = wn(n); info = ['Wₙ', (n + 1) + ' 點', '2n = ' + 2 * n]; }
     else if (sp.kind === 'Q') { if (n < 1 || n > 4) return log('Qₙ：畫面放得下 n = 1～4。', true); D = qn(n); info = ['Qₙ', (1 << n) + ' 點', 'n·2ⁿ⁻¹ = ' + n * (1 << (n - 1))]; }
-    else if (sp.kind === 'B') { if (n < 1 || n > 5 || m < 1 || m > 5) return log('K_{m,n}：m、n 請用 1～5。', true); D = kmn(m, n); info = ['K_{' + m + ',' + n + '}', (m + n) + ' 點', 'm·n = ' + m * n]; }
+    else if (sp.kind === 'B') { if (n < 1 || n > 5 || m < 1 || m > 5) return log('Kₘ,ₙ：m、n 請用 1～5。', true); D = kmn(m, n); info = ['K' + '₀₁₂₃₄₅'[m] + ',' + '₀₁₂₃₄₅'[n], (m + n) + ' 點', 'm·n = ' + m * n]; }
     else { D = petersen(); info = ['Petersen', '10 點', '15（3-正則）']; }
     sp.G = build(D, { r: sp.kind === 'Q' && n === 4 ? 0.26 : 0.32 });
     const d = deg(sp.G);
@@ -682,7 +682,7 @@ export default function (ctx) {
     let D = kmn(3, 3), G = mkGraph(D.names, D.pos, []);
     G.V.forEach((v, i) => paintV(G, i, i < 3 ? COL.blue : COL.pink));
     for (const [u, v] of D.edges) { addEdge(G, u, v); await w(200); }
-    say('完全二分圖 K₃,₃：V 分兩群，邊只連不同群', 'K_{m,n} 有 m·n 條邊 → 9');
+    say('完全二分圖 K₃,₃：V 分兩群，邊只連不同群', 'Kₘ,ₙ 有 m·n 條邊 → 9');
     await w(2800);
     lab.clear();
     D = cn(6); G = mkGraph(D.names, D.pos, D.edges);
@@ -918,7 +918,7 @@ export default function (ctx) {
     'odd-degree-even': { title: '奇數度的頂點一定有偶數個', play: scOddEven },
     'special-kn': { title: '完全圖 Kₙ：n(n−1)/2 條邊', play: scKn },
     'special-cn-wn-qn': { title: '環 Cₙ、輪 Wₙ、超立方體 Qₙ', play: scCnWnQn },
-    'bipartite-kmn': { title: '二分圖與 K_{m,n}：沒有奇數環', play: scBipartite },
+    'bipartite-kmn': { title: '二分圖與 Kₘ,ₙ：沒有奇數環', play: scBipartite },
     'iso-relabel': { title: '同構：五邊形與五角星重新標號', play: scIsoRelabel },
     'iso-invariants': { title: '不變量不同 → 不同構', play: scIsoInv },
     'konigsberg': { title: 'Königsberg 七橋：4 個奇點 → 不可能', play: scKonig },
@@ -1328,11 +1328,11 @@ scene('gr-19a-parity', '奇數度的端點有偶數個', [
   async (tok, S) => { const d = deg(S.G); d.forEach((x, i) => { if (!(x % 2)) vcol(S.G, i, COL.blue); }); S.B.add('V_E = {v : deg(v) 是偶數}'); cap('V_E：剩下 degree 是偶數（even）的', '藍色'); },
   async (tok, S) => { S.B.add('V_O、V_E 是 V 的一個 partition'); cap('V_O 和 V_E 是 V 的一個 partition', ''); },
   async (tok, S) => { S.B.add('聯集 = V，交集 = ∅'); cap('partition：聯集是 V、交集是空集合', '不是奇數就是偶數'); },
-  async (tok, S) => { S.B.add('Σ_V deg = Σ_{V_O} deg + Σ_{V_E} deg'); cap('degree 總和拆成兩個 sum', ''); },
+  async (tok, S) => { S.B.add('Σ_V deg = Σ over V_O deg + Σ over V_E deg'); cap('degree 總和拆成兩個 sum', ''); },
   async (tok, S) => { S.B.add('= 2|E|'); cap('最後等於 2 × edge 個數', ''); },
   async (tok, S) => { S.B.set(-1, 'good'); cap('2|E| 一定是偶數', ''); },
   async (tok, S) => { const d = deg(S.G); T('V_E 部分：' + d.filter((x) => !(x % 2)).join(' + ') + ' = 偶數', 'say', 2.8, 3.0, -2.6); cap('V_E 那一堆：每個都是偶數', '偶數加偶數還是偶數'); },
-  async (tok, S) => { S.B.add('→ Σ_{V_O} deg 也必須是偶數'); cap('偶數 = ? + 偶數', '所以 V_O 那一堆的和也要是偶數'); },
+  async (tok, S) => { S.B.add('→ Σ over V_O deg 也必須是偶數'); cap('偶數 = ? + 偶數', '所以 V_O 那一堆的和也要是偶數'); },
   async (tok, S) => { const d = deg(S.G); T('V_O 部分：' + d.filter((x) => x % 2).join(' + ') + ' = ' + d.filter((x) => x % 2).reduce((a, b) => a + b, 0), 'say', 2.8, 2.4, -2.6); cap('但 V_O 裡每一個 degree 都是奇數', ''); },
   async (tok, S) => { const n = deg(S.G).filter((x) => x % 2).length; S.B.add('偶數個奇數相加才是偶數 → |V_O| 是偶數', 'good'); cap('奇數要有偶數個，加起來才是偶數', '這裡 |V_O| = ' + n); },
 ], CAMW);
@@ -1868,7 +1868,7 @@ scene('gr-l22-degree', 'Degree、isolated、pendant 與握手定理', [
   async (tok, S) => { ge(S.G, 'D', 'E'); vcol(S.G, 'E', COL.node); S.G.E.forEach((e) => paintE(e, COL.edge, false)); paintE(S.G.E[0], COL.gold, true); vglow(S.G, 'B', GOLD); vglow(S.G, 'C', GOLD); cap('每一條邊都連兩個節點', ''); },
   async (tok, S) => { vglow(S.G, 'B', null); vglow(S.G, 'C', null); T(S.G.E.length + ' 條邊 → ' + 2 * S.G.E.length + ' 個線頭', 'say', 2.8, 2.8, -2.6); cap('一條邊有兩頭', S.G.E.length + ' 條邊總共 ' + 2 * S.G.E.length + ' 個連線點'); },
   async (tok, S) => { cap('換用節點來數', '每個節點數自己身上的線頭'); },
-  async (tok, S) => { S.B.add('Σ_{v∈V} deg(v) = 2|E|', 'good'); cap('所有節點的 degree 加總', '等於兩倍的邊數'); },
+  async (tok, S) => { S.B.add('Σ over v∈V deg(v) = 2|E|', 'good'); cap('所有節點的 degree 加總', '等於兩倍的邊數'); },
   async (tok, S) => { icon('🤝', '舞會握手', 2.8, 3.8, -2.6); cap('像在舞會握手', '握一次手是兩個人的事'); },
   async (tok, S) => { S.G.E.forEach((e, k) => paintE(e, PAL[k % 8], true)); cap('驗證：總共幾條邊？', S.G.E.length + ' 條'); },
   async (tok, S) => { showDeg(S.G); cap('各點 degree', S.G.V.map((v, i) => v.name + '=' + deg(S.G)[i]).join('、')); },
@@ -1982,7 +1982,7 @@ scene('gr-l23-qdef', 'Qₙ 的正式寫法', [
   async (tok, S) => { ge(S.G, 'v1', "v1'", { color: COL.gold }); ge(S.G, 'v2', "v2'", { color: COL.gold }); S.B.add("邊：E ∪ E' ∪ {{vᵢ, vᵢ'}}", 'good'); cap("原來的邊、雙胞胎的邊", "再加上每對 vᵢ、vᵢ' 之間一條"); },
 ], CAMW);
 
-scene('gr-l23-bip', '二分圖與完全二分圖 K_{m,n}', [
+scene('gr-l23-bip', '二分圖與完全二分圖 Kₘ,ₙ', [
   async (tok, S) => { S.B = board(-6.8, 5.0, 0.5, -2.6, 7); S.B.add('二分圖（bipartite graph）'); cap('二分圖', ''); },
   async (tok, S) => { S.B.add('節點分兩堆，邊只在兩堆之間'); cap('節點集合分成兩堆', '邊只存在兩堆之間'); },
   async (tok, S) => { S.B.add('所有可能的邊都加上 → 完全二分圖'); cap('把所有可能的邊都加上', '叫完全二分圖'); },

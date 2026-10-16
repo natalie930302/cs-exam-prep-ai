@@ -2974,7 +2974,7 @@ FRAG.push(['sortlin-bubble-pass', 'Bubble Sort：只跟隔壁比高矮', async (
   await step(tok);                                   // 37:27 三輪、四輪……n 輪之後排好
   await bubblePass(tok, R, 0, n - 3, 1, { ms: 260 }); await bubblePass(tok, R, 0, n - 4, 1, { ms: 260 });
   zone = R.zone(zone, GREEN, 0, n - 1); kill(pl);
-  say('三輪、四輪……', '最多掃 n 輪就排好了');
+  say('三輪、四輪……', '最多掃 n − 1 輪就排好了');
   await step(tok);                                   // 37:36 沒有 disordered pair
   R.m.forEach((m) => mood(m, 'happy'));
   good('沒有大的在前、小的在後', 0, 3.4, 0);
@@ -3003,8 +3003,8 @@ FRAG.push(['sortlin-bubble-stable', 'Bubble Sort：一樣高就不換 → stable
   good('只跟旁邊換位置：不用額外空間', 0, 3.6, 0);
   say('空間：不需要額外空間', '只是跟旁邊的人換位置');
   await step(tok);                                   // 38:45 時間：最多掃 n 輪
-  note('時間：最多掃 n 輪', 0, -0.5, 1.6);
-  say('時間：最多掃 n 輪', '每輪看還有沒有不對的');
+  note('時間：最多掃 n − 1 輪 → O(n²)', 0, -0.5, 1.6);
+  say('時間：最多掃 n − 1 輪（老師說 n 輪）', '每輪讓一個最大的歸位 → O(n²)');
   await step(tok);                                   // 39:04 很容易做到 stable
   R.hl([0, 1], GOLD); await beat(tok, 450); R.hl([0, 1], RED); await R.swap(tok, 0, 1, 900); R.off();
   say('它很容易做到 stable', '先看 3A 和 1：換');
@@ -4660,7 +4660,7 @@ FRAG.push(['sortmit-sort-leaves', '排序的決策樹：葉子是排列', async 
   bubble('排序的決策樹：至少要幾片葉子？', 0, 6.6, 0);
   say('同樣的策略：決策樹是二元的', '問題是要幾片葉子');
   await step(tok);                                   // 21:45 not drawing it: the tree is ginormous
-  const big = note('樹高 n log n → 約 2^{n log n} 個節點，畫不完', 0, 6.0, 0);
+  const big = note('樹高 n log n → 約 2^(n log n) 個節點，畫不完', 0, 6.0, 0);
   gd.mood('wow');
   say('排序的樹太大，不畫完整的例子');
   await step(tok);                                   // 22:20 internal nodes compare two items: ai < aj ?
@@ -4719,7 +4719,7 @@ FRAG.push(['sortmit-logfact', 'log n! = Σ log i = Ω(n log n)', async (tok) => 
   tag('n = 16', 'ptr', -5.6, 5.2, 0);
   say('log 乘積 = log 的總和', 'log n! = log n + log(n−1) + … + log 1');
   await step(tok);                                   // 25:47 summation: Σ log i
-  bubble('log n! = Σ_{i=1..n} log i', 1.5, 5.4, 0);
+  bubble('log n! = Σ over i=1..n log i', 1.5, 5.4, 0);
   say('寫成 Σ log i（i 從 1 到 n）', '每根長條高 = log i');
   await step(tok);                                   // 26:02 at most n log n: easy
   const top = ghostBox(GOLD, n * dx, 0.05, 0.7); top.position.set(x0 + (n - 1) * dx / 2, 4 * S, 0);
@@ -4738,7 +4738,7 @@ FRAG.push(['sortmit-logfact', 'log n! = Σ log i = Ω(n log n)', async (tok) => 
   say('看後一半：每一項都差不多是 log n');
   await step(tok);                                   // 27:21 throw away the first n/2 terms
   for (let i = 1; i < n / 2; i++) tint(bars[i], GRAY);
-  say('丟掉前一半的項', 'Σ_{i=1..n} ≥ Σ_{i=n/2..n} log i');
+  say('丟掉前一半的項', 'Σ over i=1..n ≥ Σ over i=n/2..n log i');
   await step(tok);                                   // 27:24 each term is at least log(n/2)
   const half = ghostBox(GREEN, (n / 2 + 1) * dx, 3 * S, 0.75);
   half.position.set(x0 + (n / 2 - 1) * dx + (n / 2) * dx / 2, 1.5 * S, 0);
@@ -5120,7 +5120,7 @@ FRAG.push(['sortmit-radix-digit', '取第 i 位：(x // bⁱ) mod b', async (tok
   await step(tok);                                   // 49:20 most significant: divide by b^(d−1)
   glow(m[3], null); glow(m[0], GOLD);
   note('2341 // 1000 = 2', X[0], 2.0, 0.8);
-  say('最高位：除以 b^{d−1}', '2341 // 1000 = 2');
+  say('最高位：除以 bᵈ⁻¹', '2341 // 1000 = 2');
   await step(tok);                                   // 49:29 one divide and one mod: constant time
   glow(m[0], null); glow(m[2], GOLD);
   note('(2341 // 10) mod 10 = 4', X[2], 2.9, 0.8);
@@ -6956,8 +6956,8 @@ FRAG.push(['sortpeng-pivot-choice', 'Pivot 怎麼選：random、三數取中、�
   note('中位數 5 當 pivot：左右剛好各一半', 0, 3.6, 0);
   say('有技巧的選法：選中位數', '中位數當 pivot 最好');
   await step(tok);                                   // 60:32 but finding the median = sorting
-  no('要找中位數…就得先排好序 ✗', 0, 4.6, 0);
-  say('可是要找出中位數，你都已經排完了', '所以通常不這樣做');
+  no('找真正的中位數：有 O(n) 方法，但常數大', 0, 4.6, 0);
+  say('老師說：找中位數就等於先排完序', '其實有 O(n) 的 selection，只是常數大，實務很少用');
   await step(tok);                                   // 60:41 pick three at random
   R.off();
   const s3 = [1, 4, 7]; R.hl(s3, GOLD);
