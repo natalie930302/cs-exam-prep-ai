@@ -8403,53 +8403,97 @@ scene('bs-orbit', '軌道與穩定子：|Orb(x)|·|Stab(x)| = |G|', [
   },
 ]);
 
+// the 2-cell strip example: X = 4 colourings (columns), G = {e, r} (rows); a cell is marked when g fixes x
+const BX = [1.7, 3.0, 4.3, 5.6], BY = { e: 3.9, r: 2.7 }, HY = 5.2;
+const BXS = [['R', 'R'], ['R', 'B'], ['B', 'R'], ['B', 'B']];
+const BFIX = { e: [1, 1, 1, 1], r: [1, 0, 0, 1] };
 scene('bs-count', '兩種數法：Σ|Fix(g)| = 軌道數 × |G|', [
   async (tok, S) => { // 227.5
     S.B = board(-6.6, 6.4);
-    S.B.add('一個軌道 = 一種塗色');
-    S.B.add('相異塗色數 = 軌道數');
-    cap('同軌道的塗色互相轉得到', '要數的是軌道數');
+    S.B.add('要數：轉完相異的塗色');
+    S.x = BXS.map(([a, b], i) => pair(a, b, BX[i], HY));
+    S.xl = T('X：2 格塗紅/藍（示意）', 'idx', 3.65, 6.1);
+    cap('G 作用在所有塗色 X 上', 'X 的每個元素是一種塗法');
+  },
+  async (tok, S) => { // 247.8
+    const [l, r] = S.x[1], cx = BX[1];
+    S.ar = arrow(V3(BX[1], HY - 0.55), V3(BX[2], HY - 0.55), 0x6a4a00);
+    S.rl = T('r：轉 180°', 'ptr', 3.65, HY - 1.05);
+    await anim(tok, 1400, (u) => {
+      const th = Math.PI * u;
+      l.position.set(cx - 0.27 * Math.cos(th), HY, 0.27 * Math.sin(th));
+      r.position.set(cx + 0.27 * Math.cos(th), HY, -0.27 * Math.sin(th));
+    });
+    S.x[2].forEach((m) => glow(m, HL));
+    cap('紅藍轉 180° 就變成藍紅', '同一個軌道：轉得過去');
+  },
+  async (tok, S) => { // 268.1
+    const [l, r] = S.x[1], cx = BX[1];
+    await anim(tok, 900, (u) => {
+      const th = Math.PI * (1 + u);
+      l.position.set(cx - 0.27 * Math.cos(th), HY, 0.27 * Math.sin(th));
+      r.position.set(cx + 0.27 * Math.cos(th), HY, -0.27 * Math.sin(th));
+    });
+    kill(S.ar); kill(S.rl); S.x[2].forEach((m) => glow(m, '#000000'));
+    S.orb = [[0, 0, FC.gold], [1, 2, FC.green], [3, 3, FC.purple]].map(([i, j, c]) => {
+      const m = cube('', c, [BX[j] - BX[i] + 1.15, 0.9, 0.1], (BX[i] + BX[j]) / 2, HY, -0.4);
+      m.material.transparent = true; m.material.opacity = 0.45; return m;
+    });
+    kill(S.xl); S.xl = T('3 個軌道 = 3 種塗色', 'good', 3.65, 6.1);
+    S.B.add('塗色數 = 軌道數');
+    cap('整個軌道算同一種塗色', '數塗色 = 數軌道');
   },
   async (tok, S) => { // 295.5
-    S.B.add('示意：2 格、紅/藍，轉 180°');
-    S.g = [cube('e', FC.sand, [0.8, 0.7, 0.5], 1.4, 4.6, 0, 1), cube('r', FC.sand, [0.8, 0.7, 0.5], 1.4, 2.2, 0, 1)];
-    S.xs = [['R', 'R'], ['R', 'B'], ['B', 'R'], ['B', 'B']];
-    S.xy = [5.2, 4.0, 2.8, 1.6]; S.xx = 5.0;
-    S.xs.forEach(([a, b], i) => pair(a, b, S.xx, S.xy[i]));
-    T('G', 'idx', 1.4, 5.5); T('X', 'idx', 5.0, 6.0);
-    cap('G = {e, r}，X = 四種塗法', '示意的小例子');
+    kill(S.xl);
+    S.g = { e: cube('e', FC.sand, [0.7, 0.7, 0.4], 0.4, BY.e, 0, 1), r: cube('r', FC.sand, [0.7, 0.7, 0.4], 0.4, BY.r, 0, 1) };
+    S.cell = {};
+    for (const g of ['e', 'r']) S.cell[g] = BX.map((x) => cube('', '#efe6d4', [1.0, 1.0, 0.12], x, BY[g], -0.15));
+    T('G ＼ X', 'idx', 0.4, HY);
+    cap('把 G 和 X 排成一張表', 'e：不動　r：轉 180°');
   },
   async (tok, S) => { // 315.0
-    S.ln = [];
-    const link = (gi, xi) => S.ln.push(K.line(1.8, [4.6, 2.2][gi], S.xx - 0.6, S.xy[xi], 0, '#6e5f49'));
-    for (let i = 0; i < 4; i++) { link(0, i); await wt(tok, 150); }
-    link(1, 0); await wt(tok, 150); link(1, 3);
-    S.B.add('g 固定 x 就連一條線');
-    cap('g·x = x 就連線', 'e 固定全部，r 只固定紅紅、藍藍');
+    S.dot = { e: [], r: [] };
+    for (const g of ['e', 'r']) for (let i = 0; i < 4; i++) {
+      if (BFIX[g][i]) S.dot[g][i] = cube('', OKG, [0.36, 0.36, 0.36], BX[i], BY[g], 0.15, 1.2);
+      else S.dot[g][i] = T('✗', 'idx', BX[i], BY[g]);
+      await wt(tok, 220);
+    }
+    cap('g·x = x 就打一個 ●（影片的一條線）', 'e 全部打 ●；r 只固定紅紅、藍藍');
   },
   async (tok, S) => { // 336.5
-    T('|Fix(e)| = 4', 'ptr', 1.4, 3.85);
-    T('|Fix(r)| = 2', 'ptr', 1.4, 1.4);
-    S.B.add('依 g 數：Σ|Fix(g)| = 4 + 2 = 6');
-    cap('依 g 數：每個 g 連出 |Fix(g)| 條', '4 + 2 = 6');
+    for (const g of ['e', 'r']) {
+      S.cell[g].forEach((m) => tint(m, '#f3d98a')); await wt(tok, 500);
+      T(String(BFIX[g].reduce((a, b) => a + b)), 'ptr', 6.7, BY[g]);
+      S.cell[g].forEach((m) => tint(m, '#efe6d4'));
+    }
+    S.B.add('橫著數：Σ|Fix(g)| = 6');
+    cap('橫著數：每列是 |Fix(g)|', '4 + 2 = 6');
   },
   async (tok, S) => { // 381.0
-    S.st = [2, 1, 1, 2].map((v, i) => T(String(v), 'ptr alt', S.xx + 1.0, S.xy[i]));
-    S.B.add('依 x 數：每個 x 收到 |Stab(x)|');
-    cap('依 x 數：x 收到 |Stab(x)| 條', '紅紅 2、紅藍 1、藍紅 1、藍藍 2');
+    for (let i = 0; i < 4; i++) {
+      ['e', 'r'].forEach((g) => tint(S.cell[g][i], '#f3d98a')); await wt(tok, 300);
+      T(String(BFIX.e[i] + BFIX.r[i]), 'ptr alt', BX[i], 1.75);
+      ['e', 'r'].forEach((g) => tint(S.cell[g][i], '#efe6d4'));
+    }
+    S.B.add('直著數：Σ|Stab(x)| = 6');
+    cap('直著數：每行是 |Stab(x)|', '2、1、1、2');
   },
   async (tok, S) => { // 415.0
-    T('{紅紅} 2　{藍藍} 2　{紅藍, 藍紅} 1 + 1', 'say', 3.2, 0.5);
-    S.B.add('每個軌道小計 = |G| = 2');
-    cap('同一軌道分批加：小計都是 |G|', '|Orb| · |Stab| = |G|');
+    for (const [i, j, t] of [[0, 0, '2'], [1, 2, '1 + 1 = 2'], [3, 3, '2']]) {
+      for (let k = i; k <= j; k++) glow(S.x[k][0], HL), glow(S.x[k][1], HL);
+      T(t, 'good', (BX[i] + BX[j]) / 2, 0.95); await wt(tok, 600);
+      for (let k = i; k <= j; k++) glow(S.x[k][0], '#000000'), glow(S.x[k][1], '#000000');
+    }
+    cap('一個軌道一個軌道加：小計都是 2', '|Orb| · |Stab| = |G|');
   },
   async (tok, S) => { // 463.0
-    S.B.add('總數 = 軌道數 × |G| = 3 × 2');
-    cap('總線數 = 軌道數 × |G|', '3 × 2 = 6，跟依 g 數一樣');
+    T('3 個軌道 × 2 = 6', 'say', 3.65, 0.15);
+    S.B.add('總數 = 軌道數 × |G|');
+    cap('● 的總數 = 軌道數 × |G|', '3 × 2 = 6，跟橫著數一樣');
   },
   async (tok, S) => { // 475.0
-    S.B.add('軌道數 = (1/|G|) Σ|Fix(g)|', 'good');
-    T('= 6 / 2 = 3 種', 'good', 3.2, -0.3);
+    S.B.add('軌道數 = Σ|Fix(g)| / |G|', 'good');
+    T('6 / 2 = 3 種', 'good', 3.65, -0.75);
     cap('Burnside 引理', '軌道數 = (1/|G|) Σ |Fix(g)|');
   },
 ]);

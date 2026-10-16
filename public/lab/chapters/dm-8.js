@@ -11482,7 +11482,16 @@ function gmap(rows, x0, y0, cs = 0.85) {
   }));
   const paint = (k, c) => tiles[k].forEach((m) => tint(m, c));
   const mid = (k) => { const p = cells[k]; return [p.reduce((s, q) => s + q[0], 0) / p.length, p.reduce((s, q) => s + q[1], 0) / p.length]; };
-  return { tiles, paint, mid, all: () => Object.values(tiles).flat() };
+  // country borders: a dark segment wherever two cells of different countries (or a cell and the outside) meet
+  const at = (r, c) => (rows[r] || '')[c], h = cs / 2, bl = [];
+  rows.forEach((row, r) => [...row].forEach((k, c) => {
+    const x = x0 + c * cs, y = y0 - r * cs;
+    if (at(r, c + 1) !== k) bl.push(K.line(x + h, y - h, x + h, y + h, 0.17, '#3b2f20'));
+    if (at(r + 1, c) !== k) bl.push(K.line(x - h, y - h, x + h, y - h, 0.17, '#3b2f20'));
+    if (c === 0) bl.push(K.line(x - h, y - h, x - h, y + h, 0.17, '#3b2f20'));
+    if (r === 0) bl.push(K.line(x - h, y + h, x + h, y + h, 0.17, '#3b2f20'));
+  }));
+  return { tiles, paint, mid, bl, all: () => Object.values(tiles).flat().concat(bl) };
 }
 const W5 = ['11122', '1CCC2', '5CCC3', '5CCC3', '54443'];
 const K4 = ['AAAA', 'ACCB', 'DCCB', 'DDBB'];
@@ -11490,22 +11499,66 @@ const node = (t, c, x, y) => cube(t, c, [0.42, 0.42, 0.42], x, y, 0.2);
 const edge = (a, b, color = '#6e5f49') => K.line(a[0], a[1], b[0], b[1], 0.2, color);
 const ring = (cx, cy, r, n, a0 = Math.PI / 2) => Array.from({ length: n }, (_, i) => [cx + r * Math.cos(a0 + i * 2 * Math.PI / n), cy + r * Math.sin(a0 + i * 2 * Math.PI / n)]);
 
+const WORLD = ['AABBBC', 'ADDBCC', 'EDDFFC', 'EEGGFC', 'EGGGFF'];
+const WCOL = { D: FC.orange, A: FC.purple, B: FC.blue, F: FC.purple, G: FC.blue, E: FC.pink, C: FC.orange };
+const SW4 = [FC.orange, FC.purple, FC.blue, FC.pink];
 scene('fc-try', '四色定理：動手塗地圖', [
-  async (tok, S) => { // 4.5
+  async (tok, S) => { // 4.6
     S.B = board(-6.6, 6.4);
     S.B.add('四色定理：');
-    S.B.add('相鄰國家不同色，4 色一定夠');
+    S.W = gmap(WORLD, 1.2, 5.4, 0.8);
+    S.sw = SW4.map((c, i) => cube('', c, [0.5, 0.5, 0.5], 6.4, 5.3 - i * 0.75, 0, 1));
+    await wt(tok, 500);
+    for (const k of 'DABFGEC') { S.W.paint(k, WCOL[k]); await wt(tok, 260); }
+    S.B.add('相鄰不同色，4 色一定夠');
     cap('每張地圖都能用 4 色著色', '相鄰（有共同邊界）的國家不同色');
   },
-  async (tok, S) => { // 57.0
-    S.B.add('1852 提出 → 1976 證明');
-    cap('1852 年有人替英國各郡著色時提出', '經 De Morgan 傳開，1976 年才證明');
+  async (tok, S) => { // 21.9
+    S.five = cube('', FC.green, [0.5, 0.5, 0.5], 6.4, 2.3, 0, 1);
+    S.x5 = T('✗', 'bad', 6.4, 1.6);
+    cap('沒有地圖需要第 5 色', '地圖再複雜也一樣');
   },
-  async (tok, S) => { // 130.0
+  async (tok, S) => { // 35.7
+    kill(S.x5); fly(S.five);
+    S.strip = [cube('1852', FC.sand, [1.3, 0.55, 0.3], 1.6, 0.9, 0, 1), cube('1976', FC.green, [1.3, 0.55, 0.3], 5.4, 0.9, 0, 1)];
+    S.strip.push(K.line(2.3, 0.9, 4.7, 0.9, 0, '#6e5f49'), T('約 125 年', 'idx', 3.5, 1.35));
+    S.B.add('1852 提出 → 1976 證明');
+    cap('懸了一百多年，1970 年代才解決', '解法在當時有爭議');
+  },
+  async (tok, S) => { // 57.9
+    S.strip.forEach(kill);
+    S.strip = [T('塗英國各郡的人', 'ptr', 1.4, 1.1), T('弟弟', 'ptr', 4.9, 1.1), T('De Morgan', 'ptr alt', 4.9, 0.0)];
+    S.strip.push(arrow(V3(3.15, 1.1), V3(4.2, 1.1)), arrow(V3(4.9, 0.8), V3(4.9, 0.35)));
+    cap('有人替英國各郡著色，猜 4 色夠', '經弟弟傳到老師 De Morgan');
+  },
+  async (tok, S) => { // 81.0
+    S.strip.forEach(kill);
+    S.strip = [T('每張都 4 色可 → 證明', 'good', 3.5, 1.2), T('一張要 5 色 → 反例', 'bad', 3.5, 0.4)];
+    cap('要嘛證明每張地圖 4 色夠', '要嘛找一張非 5 色不可的地圖');
+  },
+  async (tok, S) => { // 95.0
+    S.strip.forEach(kill); S.strip = [];
+    const pals = [[FC.orange, FC.purple, FC.blue, FC.pink], [FC.blue, FC.orange, FC.pink, FC.purple], [FC.purple, FC.pink, FC.orange, FC.blue]];
+    const idx = { D: 0, A: 1, B: 2, F: 1, G: 2, E: 3, C: 0 };
+    const nm = ['世界', '美國', '其他'];
+    for (let m = 0; m < 3; m++) {
+      const g = gmap(WORLD, 0.5 + m * 2.3, 1.3, 0.3);
+      for (const k in idx) g.paint(k, pals[m][idx[k]]);
+      S.strip.push(...g.all(), T(nm[m] + ' ✓', 'idx', 1.25 + m * 2.3, -0.35));
+      await wt(tok, 350);
+    }
+    S.B.add('真實地圖都 4 色可', 'good');
+    cap('世界、美國、任何真實地圖', '都能用 4 色塗完');
+  },
+  async (tok, S) => { // 116.1
+    S.strip.forEach(kill); S.W.all().forEach(kill); S.sw.forEach(kill);
     S.M = gmap(W5, 2.2, 5.3);
-    await wt(tok, 300);
+    S.q = T('發明怪地圖：要 5 色？', 'say', 3.9, 6.2);
+    cap('那就自己發明一張怪地圖', '說不定要 5 色？');
+  },
+  async (tok, S) => { // 130.7
     S.M.paint('C', FC.orange);
-    T('自己畫的地圖（示意）', 'idx', 3.9, 6.2);
+    kill(S.q); T('自己畫的地圖（示意）', 'idx', 3.9, 6.2);
     cap('中間的國家先塗橘色', '');
   },
   async (tok, S) => { // 148.0
