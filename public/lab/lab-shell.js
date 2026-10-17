@@ -232,4 +232,10 @@ if (STAGE) {
   let start = modes[0] && modes[0].id;
   try { start = localStorage.getItem(KEY) || start; } catch (e) {}
   setTab([...modes, ...pages].some((x) => x.id === start) ? start : modes[0].id);
+  // content is in: show it (embed: inside the study room's frame, which was the
+  // loading placeholder until now) and tell the study room
+  requestAnimationFrame(() => {
+    document.body.classList.add('shown');
+    if (parent !== window) parent.postMessage({ type: 'lab-shown' }, location.origin);
+  });
 }

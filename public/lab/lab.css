@@ -239,3 +239,8 @@ body.embed .lab-formula { margin-top: 8px !important; padding: 8px 12px !importa
 .lab-tabs button { transition: background-color .16s ease, color .16s ease, border-color .16s ease !important; }
 .lab-tabs button:not([aria-selected="true"]):hover { border-color: color-mix(in srgb, var(--subj, var(--ac)) 55%, var(--bd)); color: var(--tx); }
 body.embed .lab-tabs, body.embed .lab-main { max-width: none !important; }
+/* 嵌在學習空間：外框就是載入佔位，內容載好才在框裡淡入（框本身不再進場一次） */
+body.embed { background: transparent !important; }
+body.embed:not(.shown) .lab-tabs, body.embed:not(.shown) .lab-main { visibility: hidden; }
+body.embed.shown .lab-tabs, body.embed.shown .lab-main { animation: m-in .22s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion: reduce) { body.embed.shown .lab-tabs, body.embed.shown .lab-main { animation: none; } }

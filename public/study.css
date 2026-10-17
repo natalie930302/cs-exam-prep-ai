@@ -804,3 +804,8 @@ body:not(.st-booting) .st-top, body:not(.st-booting) .st-main { animation: m-in 
 }
 .st-panel#panel-lab.is-loading::before { margin-top: -6px !important; }
 .st-lab-frame { border-radius: 20px !important; }
+/* 實驗室分頁：外框（iframe）從一開始就在，載入中是淡色底＋轉圈，載好內容在同一個框裡淡入；框本身不再做進場動畫 */
+.st-panel#panel-lab.is-loading::after { content: none !important; display: none !important; }
+#panel-lab > .st-lab-frame { visibility: visible !important; animation: none !important; background: var(--surf) !important; transition: background-color .22s ease !important; }
+#panel-lab.is-loading > .st-lab-frame { background: var(--surf2) !important; }
+.st-panel#panel-lab.is-loading::before { margin-top: -6px !important; }

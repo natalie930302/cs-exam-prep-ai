@@ -154,6 +154,7 @@
     if (e.origin !== location.origin || !e.data) return;
     if (e.data.type === 'lab-ready') { e.data.scenes.forEach(function(x){ stageScenes[x.id] = x; }); stageIsReady(); }
     if (e.data.type === 'stage-settled' && stageReady) showSide();
+    if (e.data.type === 'lab-shown') $('panel-lab').classList.remove('is-loading');
   });
   const stageScenes = {};
   // A video can belong to several chapters; a section may name a different
@@ -1084,7 +1085,9 @@
     // the frame is as tall as the lab's own content, so no blank space below it
     const fr = el.querySelector('iframe');
     fr.addEventListener('load', function(){
-      fr.classList.add('ready'); el.classList.remove('is-loading');
+      fr.classList.add('ready');
+      // the lab says 'lab-shown' when its content is in; this is only the fallback
+      setTimeout(function(){ el.classList.remove('is-loading'); }, 3000);
       try {
         const doc = fr.contentDocument;
         // no scrollbars inside the lab (the frame grows to fit it anyway)
