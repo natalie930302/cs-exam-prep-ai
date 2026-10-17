@@ -224,3 +224,18 @@ body.idle .lab-caption * { text-align: center !important; }
 /* hover 跟全站一樣：框線變科目色，.16s */
 .lab-back, body.stage .lab-handson { transition: border-color .16s ease, color .16s ease, background-color .16s ease, opacity .16s ease !important; }
 .lab-back:hover { border-color: color-mix(in srgb, var(--subj, var(--ac)) 55%, var(--bd)); }
+
+/* ══ 2026-10-17 學習空間「實驗室」分頁（embed）：間距跟全站同一套 ══
+   外框內距 16；模式按鈕之間 8；按鈕列到下面舞台 16；舞台與右側卡片之間 16；
+   卡片內距 16、卡片之間 16；操作列內距 12px 16px、元件之間 8；圓角：內層卡 14、小元件 10。 */
+body.embed .lab-tabs { gap: 8px !important; padding: 16px 16px 0 !important; }
+body.embed .lab-main { gap: 16px !important; padding: 16px !important; }
+body.embed .lab-side { gap: 16px !important; }
+body.embed .lab-card { padding: 16px !important; border-radius: 14px !important; }
+body.embed .lab-stage { border-radius: 14px !important; }
+body.embed .lab-controls { gap: 8px !important; padding: 12px 16px !important; }
+body.embed .lab-card-hd { margin-bottom: 8px !important; }
+body.embed .lab-formula { margin-top: 8px !important; padding: 8px 12px !important; }
+.lab-tabs button { transition: background-color .16s ease, color .16s ease, border-color .16s ease !important; }
+.lab-tabs button:not([aria-selected="true"]):hover { border-color: color-mix(in srgb, var(--subj, var(--ac)) 55%, var(--bd)); color: var(--tx); }
+body.embed .lab-tabs, body.embed .lab-main { max-width: none !important; }
