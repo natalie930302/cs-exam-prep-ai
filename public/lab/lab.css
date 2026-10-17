@@ -21,7 +21,7 @@ h1 { margin: 0; font-size: 20px; }
 .lab-tabs { display: flex; gap: 6px; padding: 8px 20px; max-width: 1280px; margin: 0 auto; overflow-x: auto; }
 .lab-tabs button {
   flex: 0 0 auto; border: 1px solid var(--bd); background: var(--surf); color: var(--mt2);
-  padding: 7px 14px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer;
+  padding: 7px 14px; border-radius: 999px; font: inherit; font-weight: 700; cursor: pointer;
   transition: background .17s var(--ease), color .17s var(--ease);
 }
 .lab-tabs button[aria-selected="true"] { background: var(--subj); border-color: var(--subj); color: #fff; }
@@ -37,7 +37,7 @@ h1 { margin: 0; font-size: 20px; }
 .lab-canvas canvas { display: block; }
 /* CSS2D labels: one consistent, legible chip style for every chapter */
 .lab-label {
-  font-size: 12px; font-weight: 600; line-height: 1.45; color: var(--mt2); letter-spacing: .01em;
+  font-size: 12px; font-weight: 700; line-height: 1.6; color: var(--mt2); letter-spacing: .01em;
   background: rgba(255,253,248,.88); border: 1px solid rgba(216,194,155,.45); border-radius: 6px; padding: 0 6px;
   box-shadow: 0 1px 2px rgba(46,36,24,.08);
   pointer-events: none; white-space: nowrap; font-variant-numeric: tabular-nums;
@@ -46,13 +46,13 @@ h1 { margin: 0; font-size: 20px; }
 /* pointers are secondary: calm brown chips; .alt is how scenes highlight the current one */
 .lab-label.ptr { background: #5c4a33; color: #fffaf0; border-color: #5c4a33; font-weight: 700; }
 .lab-label.ptr.alt { background: #a8730f; border-color: #a8730f; color: #fff; box-shadow: 0 0 0 3px rgba(168,115,15,.18); }
-.lab-label.idx { background: transparent; border: 0; box-shadow: none; color: var(--mt); font-weight: 500; font-size: 11px; opacity: .7; }
+.lab-label.idx { background: transparent; border: 0; box-shadow: none; color: var(--mt); font-weight: 400; font-size: 11px; opacity: .7; }
 /* labels of blocks faded by the engine's focus (another block is highlighted) */
 .lab-label.lab-dim { opacity: .35; }
-.lab-label.val { background: rgba(255,255,255,.9); border: 0; color: #231a10; font-size: 14px; font-weight: 800; padding: 0 6px; min-width: 1.5em; text-align: center; box-shadow: 0 1px 3px rgba(46,36,24,.18); }
+.lab-label.val { background: rgba(255,255,255,.9); border: 0; color: #231a10; font-size: 14px; font-weight: 700; padding: 0 6px; min-width: 1.5em; text-align: center; box-shadow: 0 1px 3px rgba(46,36,24,.18); }
 .lab-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 14px; border-top: 1px solid var(--bd); background: var(--surf2); }
 .lab-controls button {
-  border: 1px solid var(--bd2); background: var(--surf); color: var(--tx); font: inherit; font-weight: 600;
+  border: 1px solid var(--bd2); background: var(--surf); color: var(--tx); font: inherit; font-weight: 700;
   padding: 7px 14px; border-radius: 10px; cursor: pointer;
 }
 .lab-controls button.primary { background: var(--subj); border-color: var(--subj); color: #fff; }
@@ -67,26 +67,26 @@ h1 { margin: 0; font-size: 20px; }
 .lab-state-row:last-child { border-bottom: 0; }
 .lab-state-row span:first-child { color: var(--mt); }
 .lab-state-row b { font-family: ui-monospace, Consolas, monospace; }
-.lab-formula { margin-top: 10px; padding: 8px 10px; border-radius: 10px; background: var(--surf2); font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; line-height: 1.7; }
+.lab-formula { margin-top: 10px; padding: 8px 10px; border-radius: 10px; background: var(--surf2); font-family: ui-monospace, Consolas, monospace; font-size: 12px; line-height: 1.6; }
 .lab-formula .ok { color: var(--grn); font-weight: 700; }
 .lab-formula .no { color: var(--red); font-weight: 700; }
 .lab-log { margin: 0; padding-left: 20px; max-height: 300px; overflow: auto; font-size: 13px; }
 .lab-log li { padding: 3px 0; }
 .lab-log li.warn { color: var(--red); }
-.lab-log li:last-child { font-weight: 600; }
+.lab-log li:last-child { font-weight: 700; }
 .lab-page { background: var(--surf); border: 1px solid var(--bd); border-radius: var(--r); padding: 20px 22px; }
 .lab-page h2 { margin: 0 0 6px; font-size: 18px; }
-.lab-page h3 { margin: 18px 0 6px; font-size: 15px; }
+.lab-page h3 { margin: 18px 0 6px; font-size: 16px; }
 .lab-page p { margin: 6px 0; }
 .lab-page .src { color: var(--mt); font-size: 12px; }
 .lab-page .src a { color: color-mix(in srgb, var(--subj) 75%, var(--tx)); }
-.lab-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13.5px; }
+.lab-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; }
 .lab-table th, .lab-table td { border-bottom: 1px solid var(--bd); padding: 7px 8px; text-align: left; vertical-align: top; }
 .lab-table th { background: var(--surf2); font-weight: 700; }
 .lab-table td.o1 { color: var(--grn); font-weight: 700; font-family: ui-monospace, Consolas, monospace; }
 .lab-table td.on { color: var(--amb); font-weight: 700; font-family: ui-monospace, Consolas, monospace; }
 .lab-trap { border-left: 3px solid var(--amb); background: color-mix(in srgb, var(--amb) 7%, var(--surf)); padding: 8px 12px; border-radius: 0 10px 10px 0; margin: 8px 0; }
-.lab-quiz-q { font-size: 15px; font-weight: 600; margin: 8px 0 12px; }
+.lab-quiz-q { font-size: 16px; font-weight: 700; margin: 8px 0 12px; }
 .lab-quiz-opts { display: grid; gap: 8px; }
 .lab-quiz-opts button { text-align: left; border: 1px solid var(--bd2); background: var(--surf); padding: 10px 12px; border-radius: 10px; font: inherit; cursor: pointer; }
 .lab-quiz-opts button.right { border-color: var(--grn); background: color-mix(in srgb, var(--grn) 12%, var(--surf)); }
@@ -120,7 +120,7 @@ body.embed { background: var(--surf); }
 .lab-caption {
   top: 12px; max-width: min(calc(100% - 200px), 760px);
   display: flex; align-items: baseline; gap: 9px;
-  font-size: clamp(14px, 1.75vw, 18px); font-weight: 700; line-height: 1.45; color: var(--tx);
+  font-size: clamp(14px, 1.75vw, 18px); font-weight: 700; line-height: 1.6; color: var(--tx);
   background: rgba(255,253,248,.93); border: 1px solid rgba(216,194,155,.55); padding: 7px 16px 7px 13px; border-radius: 12px;
   box-shadow: 0 8px 22px -14px rgba(46,36,24,.45);
 }
@@ -133,7 +133,7 @@ body.embed { background: var(--surf); }
 @keyframes cap-in { from { opacity: .25; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 .lab-formula-ov {
   bottom: 12px; max-width: calc(100% - 32px);
-  font-family: ui-monospace, Consolas, monospace; font-size: clamp(12px, 1.5vw, 15px); line-height: 1.5; color: var(--tx);
+  font-family: ui-monospace, Consolas, monospace; font-size: clamp(12px, 1.5vw, 15px); line-height: 1.6; color: var(--tx);
   background: rgba(255,253,248,.93); border: 1px solid rgba(216,194,155,.55); padding: 5px 14px; border-radius: 10px;
 }
 .lab-formula-ov .ok { color: var(--grn); font-weight: 700; }
@@ -157,11 +157,11 @@ body.stage:hover .lab-handson { opacity: .85; }
 body.stage .lab-handson:hover, body.stage .lab-handson:focus-visible { opacity: 1; border-color: var(--subj, var(--bd2)); color: var(--tx); }
 body.stage.hands-on .lab-handson { display: none; }
 @media (max-width: 640px) {
-  .lab-caption { font-size: 13.5px; top: 8px; left: 8px; right: auto; margin: 0; max-width: calc(100% - 96px); padding: 5px 11px 5px 9px; text-align: left; }
+  .lab-caption { font-size: 13px; top: 8px; left: 8px; right: auto; margin: 0; max-width: calc(100% - 96px); padding: 5px 11px 5px 9px; text-align: left; }
   .lab-formula-ov { font-size: 12px; bottom: 8px; max-width: calc(100% - 16px); }
-  body.stage .lab-handson { top: 8px; right: 8px; padding: 3px 10px; font-size: 11.5px; }
-  .lab-label { font-size: 11.5px; padding: 0 5px; }
-  .lab-label.val { font-size: 12.5px; }
+  body.stage .lab-handson { top: 8px; right: 8px; padding: 3px 10px; font-size: 12px; }
+  .lab-label { font-size: 12px; padding: 0 5px; }
+  .lab-label.val { font-size: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .lab-caption.swap { animation: none; }
@@ -172,28 +172,28 @@ body.stage.hands-on .lab-handson { display: none; }
    of a region (memory section, function frame, device); .note = an address on a
    sticky note (what a pointer holds); .pkt = data travelling between places.
    Labels arrive with a short fade so each new step is noticed. */
-.lab-label.icon { background: transparent; border: 0; box-shadow: none; padding: 0; text-align: center; line-height: 1.15; animation: lbl-in .5s var(--ease); }
+.lab-label.icon { background: transparent; border: 0; box-shadow: none; padding: 0; text-align: center; line-height: 1.3; animation: lbl-in .5s var(--ease); }
 .lab-label.icon .g { display: block; font-size: 34px; font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif; filter: drop-shadow(0 3px 4px rgba(46,36,24,.18)); }
 .lab-label.icon .t { display: inline-block; margin-top: 2px; font-size: 12px; font-weight: 700; color: var(--mt2); background: rgba(255,253,248,.85); border-radius: 6px; padding: 0 5px; }
 .lab-label.icon.sm .g { font-size: 24px; }
 .lab-label.icon.lg .g { font-size: 46px; }
 .lab-label.icon.off { opacity: .28; filter: grayscale(1); }
-.lab-label.zone { background: transparent; border: 0; box-shadow: none; font-size: 13px; font-weight: 800; letter-spacing: .06em; color: var(--mt2); animation: lbl-in .5s var(--ease); }
-.lab-label.note { background: #fff1a6; border-color: #e3c75a; color: #4a3a00; font-weight: 800; font-size: 13px; box-shadow: 0 3px 8px -3px rgba(120,90,0,.35); animation: lbl-in .5s var(--ease); }
-.lab-label.pkt { background: #a8730f; border-color: #a8730f; color: #fff; font-weight: 800; border-radius: 999px; padding: 1px 9px; box-shadow: 0 0 0 4px rgba(168,115,15,.18); }
-.lab-label.say { background: #fffdf8; border-color: var(--bd2); color: var(--tx); font-weight: 700; font-size: 12.5px; border-radius: 10px; padding: 2px 9px; animation: lbl-in .5s var(--ease); }
-.lab-label.bad { background: #fde8e6; border-color: #e6a39b; color: #7a1010; font-weight: 800; }
-.lab-label.good { background: #e3f3ea; border-color: #93c9a9; color: #0f5a3a; font-weight: 800; }
+.lab-label.zone { background: transparent; border: 0; box-shadow: none; font-size: 13px; font-weight: 700; letter-spacing: .06em; color: var(--mt2); animation: lbl-in .5s var(--ease); }
+.lab-label.note { background: #fff1a6; border-color: #e3c75a; color: #4a3a00; font-weight: 700; font-size: 13px; box-shadow: 0 3px 8px -3px rgba(120,90,0,.35); animation: lbl-in .5s var(--ease); }
+.lab-label.pkt { background: #a8730f; border-color: #a8730f; color: #fff; font-weight: 700; border-radius: 999px; padding: 1px 9px; box-shadow: 0 0 0 4px rgba(168,115,15,.18); }
+.lab-label.say { background: #fffdf8; border-color: var(--bd2); color: var(--tx); font-weight: 700; font-size: 12px; border-radius: 10px; padding: 2px 9px; animation: lbl-in .5s var(--ease); }
+.lab-label.bad { background: #fde8e6; border-color: #e6a39b; color: #7a1010; font-weight: 700; }
+.lab-label.good { background: #e3f3ea; border-color: #93c9a9; color: #0f5a3a; font-weight: 700; }
 @keyframes lbl-in { from { opacity: 0; filter: blur(3px); } to { opacity: 1; filter: none; } }
 /* idle: the lecturer is not teaching right now — a calm, empty stage */
-body.idle .lab-caption { top: 50%; transform: translateY(-50%); background: transparent; border: 0; box-shadow: none; color: var(--mt); font-weight: 600; font-size: 15px; }
+body.idle .lab-caption { top: 50%; transform: translateY(-50%); background: transparent; border: 0; box-shadow: none; color: var(--mt); font-weight: 700; font-size: 16px; }
 body.idle .lab-caption::before { background: var(--bd2); box-shadow: none; }
 @media (prefers-reduced-motion: reduce) {
   .lab-label.icon, .lab-label.zone, .lab-label.note, .lab-label.say { animation: none; }
 }
 
 /* idle stage: a calm placeholder instead of an empty floor */
-body.idle .lab-caption { left: 50% !important; right: auto !important; margin: 0 !important; transform: translate(-50%, -50%) !important; flex-direction: column; align-items: center; gap: 14px; font-size: 14px; font-weight: 600; color: var(--mt); max-width: 80%; }
+body.idle .lab-caption { left: 50% !important; right: auto !important; margin: 0 !important; transform: translate(-50%, -50%) !important; flex-direction: column; align-items: center; gap: 14px; font-size: 14px; font-weight: 700; color: var(--mt); max-width: 80%; }
 body.idle .lab-caption::before {
   width: 44px; height: 44px; transform: none;
   background: radial-gradient(circle, color-mix(in srgb, var(--subj, var(--ac)) 55%, #fff) 0 30%, color-mix(in srgb, var(--subj, var(--ac)) 18%, transparent) 31% 100%);
@@ -228,19 +228,19 @@ body.idle .lab-caption * { text-align: center !important; }
 /* ══ 2026-10-17 學習空間「實驗室」分頁（embed）：間距跟全站同一套 ══
    外框內距 16；模式按鈕之間 8；按鈕列到下面舞台 16；舞台與右側卡片之間 16；
    卡片內距 16、卡片之間 16；操作列內距 12px 16px、元件之間 8；圓角：內層卡 14、小元件 10。 */
-body.embed .lab-tabs { gap: 8px !important; padding: 16px 16px 0 !important; }
-body.embed .lab-main { gap: 16px !important; padding: 16px !important; }
-body.embed .lab-side { gap: 16px !important; }
-body.embed .lab-card { padding: 16px !important; border-radius: 14px !important; }
-body.embed .lab-stage { border-radius: 14px !important; }
-body.embed .lab-controls { gap: 8px !important; padding: 12px 16px !important; }
-body.embed .lab-card-hd { margin-bottom: 8px !important; }
-body.embed .lab-formula { margin-top: 8px !important; padding: 8px 12px !important; }
+body.embed:not(.stage) .lab-tabs { gap: 8px !important; padding: 16px 16px 0 !important; }
+body.embed:not(.stage) .lab-main { gap: 16px !important; padding: 16px !important; }
+body.embed:not(.stage) .lab-side { gap: 16px !important; }
+body.embed:not(.stage) .lab-card { padding: 16px !important; border-radius: 14px !important; }
+body.embed:not(.stage) .lab-stage { border-radius: 14px !important; }
+body.embed:not(.stage) .lab-controls { gap: 8px !important; padding: 12px 16px !important; }
+body.embed:not(.stage) .lab-card-hd { margin-bottom: 8px !important; }
+body.embed:not(.stage) .lab-formula { margin-top: 8px !important; padding: 8px 12px !important; }
 .lab-tabs button { transition: background-color .16s ease, color .16s ease, border-color .16s ease !important; }
 .lab-tabs button:not([aria-selected="true"]):hover { border-color: color-mix(in srgb, var(--subj, var(--ac)) 55%, var(--bd)); color: var(--tx); }
-body.embed .lab-tabs, body.embed .lab-main { max-width: none !important; }
+body.embed:not(.stage) .lab-tabs, body.embed .lab-main { max-width: none !important; }
 /* 嵌在學習空間：外框就是載入佔位，內容載好才在框裡淡入（框本身不再進場一次） */
-body.embed { background: transparent !important; }
-body.embed:not(.shown) .lab-tabs, body.embed:not(.shown) .lab-main { visibility: hidden; }
-body.embed.shown .lab-tabs, body.embed.shown .lab-main { animation: m-in .22s cubic-bezier(.2,.8,.2,1) both; }
+body.embed:not(.stage) { background: transparent !important; }
+body.embed:not(.stage):not(.shown) .lab-tabs, body.embed:not(.stage):not(.shown) .lab-main { visibility: hidden; }
+body.embed.shown:not(.stage) .lab-tabs, body.embed.shown:not(.stage) .lab-main { animation: m-in .22s cubic-bezier(.2,.8,.2,1) both; }
 @media (prefers-reduced-motion: reduce) { body.embed.shown .lab-tabs, body.embed.shown .lab-main { animation: none; } }
