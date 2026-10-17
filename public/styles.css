@@ -7844,17 +7844,12 @@ body#appRoot #main > .sec.on > * { animation: m-in .24s cubic-bezier(.2,.8,.2,1)
   body#appRoot #main #sec-subjects > #spPanels > .sp.on > .ch-list { margin-top: 16px !important; }
 }
 
-/* 2026-10-16：右上角的日曆／六科／搜尋鈕跟著頁面捲走（不再浮在內容上面蓋住
-   右側的標籤與時數）；電腦版也和平板一樣橫排在大標那一行的右邊 */
-body#appRoot .fab-nav { position: absolute !important; }
+/* 2026-10-17：右上角的日曆／六科／搜尋鈕一直懸浮在畫面上；電腦版是右側直排，
+   內容右邊留出它的寬度，捲動時不會蓋到右側的標籤與時數 */
 @media (min-width: 1100px) {
-  body#appRoot .fab-nav { flex-direction: row !important; top: 24px !important; right: 32px !important; gap: 6px !important; padding: 4px !important; }
-  body#appRoot .sec > .sh { padding-right: 170px; }
+  body#appRoot #main > .sec, body#appRoot #main > #sec-subjects, body#appRoot #main > #sec-schedule { padding-right: 104px !important; }
 }
 /* 平板的日曆：七天平分寬度，最右的「日」不會被切掉 */
 @media (min-width: 641px) {
   body#appRoot .cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; overflow-x: visible !important; }
 }
-/* the buttons no longer float over the calendar: no space kept free for them */
-body#appRoot #sec-schedule .cal-head .cal-nav { margin-right: 0 !important; }
-body#appRoot #sec-schedule .cal-header-card { padding-right: revert !important; }
