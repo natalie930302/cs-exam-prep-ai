@@ -736,7 +736,7 @@ a { color: inherit; }
 .st-timeline:empty::before, .st-now-sec:empty::before, .st-vlist:empty::before { content: none !important; display: none !important; }
 .st-player-wrap.is-loading, .st-side.is-loading, #panel-lab.is-loading { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
 .st-player-wrap.is-loading > *, .st-side.is-loading > *, #panel-lab.is-loading > * { visibility: hidden !important; }
-:is(.st-player-wrap:not(.is-loading), .st-side:not(.is-loading), #panel-lab:not(.is-loading) > .st-lab-frame):not(.m-leave) { animation: m-in .22s cubic-bezier(.2,.8,.2,1) both; }
+:is(.st-player-wrap:not(.is-loading) > #player, .st-side:not(.is-loading) > :is(.st-stage, .st-notes), #panel-lab:not(.is-loading) > .st-lab-frame):not(.m-leave) { animation: m-in .22s cubic-bezier(.2,.8,.2,1) both; }
 .st-lab-frame, .st-lab-frame.ready { opacity: 1 !important; transition: none !important; }
 /* 整頁：資料齊了才一起淡入（標題列、按鈕、段落、影片清單同時出現） */
 body.st-booting .st-top, body.st-booting .st-main { visibility: hidden; }
@@ -775,3 +775,24 @@ body:not(.st-booting) .st-top, body:not(.st-booting) .st-main { animation: m-in 
 @media (prefers-reduced-motion: reduce) {
   :is(.st-btn, .st-back, .st-chbtn, .st-seg, .st-v, .st-res, .st-where-b, .st-pt, .st-check, .st-quiz-opts button, .st-qz-opts button):active { transform: none !important; }
 }
+
+/* ══ 2026-10-17 載入佔位（取代上面的「空白」）══
+   影片、動畫區、實驗室載入中一律同一個樣子：淡色底塊＋中間一個轉圈；載好後內容淡入。 */
+.st-player-wrap.is-loading, .st-side.is-loading, #panel-lab.is-loading {
+  background: var(--surf2) !important; border: 1px solid var(--bd) !important; box-shadow: none !important;
+}
+@media (max-width: 640px) { .st-player-wrap.is-loading { border-width: 0 !important; } }
+.st-player-wrap.is-loading::before, .st-side.is-loading::before, #panel-lab.is-loading::before {
+  content: '' !important; display: block !important; position: absolute; left: 50%; top: 50%; width: 28px; height: 28px; margin: -14px 0 0 -14px; z-index: 4;
+  border-radius: 50%; border: 3px solid color-mix(in srgb, var(--subj, var(--ac)) 20%, transparent); border-top-color: color-mix(in srgb, var(--subj, var(--ac)) 80%, var(--tx));
+  animation: st-spin .8s linear infinite !important; pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) { .st-player-wrap.is-loading::before, .st-side.is-loading::before, #panel-lab.is-loading::before { animation-duration: 2.4s !important; } }
+
+/* 目標分頁：滑過一個目標時，底色涵蓋勾選列＋下面標記影片的小卡（整個目標一起亮） */
+.st-goals > li:has(> .st-check) { border-radius: 10px; padding-bottom: 8px; transition: background-color .16s ease; }
+.st-goals > li:has(> .st-check) .st-where { margin-bottom: 0 !important; }
+.st-goals > li:has(> .st-check):hover { background: var(--surf2); }
+.st-goals > li:has(> .st-check) .st-check:hover { background: none !important; }
+.st-goals > li:has(> .st-check):hover .st-where-b { background: var(--surf); }
+.st-player-wrap, .st-side, #panel-lab { transition: background-color .22s ease, border-color .22s ease; }
