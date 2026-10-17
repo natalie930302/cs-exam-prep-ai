@@ -9,14 +9,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap">
 <link rel="stylesheet" href="theme.css?v=20261007e">
-<link rel="stylesheet" href="study.css?v=20261008ui5">
+<link rel="stylesheet" href="study.css?v=20261017h">
 </head>
-<body>
+<body class="st-booting">
+<script>setTimeout(function(){ document.body.classList.remove('st-booting'); }, 4000);</script>
 <header class="st-top">
   <a class="st-back" href="/" id="backLink" aria-label="回六科">←<span class="pl-long"> 六科</span></a>
   <div class="st-title">
     <div class="st-kicker" id="kicker"></div>
-    <h1 id="chTitle">載入中…</h1>
+    <h1 id="chTitle"></h1>
   </div>
   <div class="st-chprog" id="chProg"></div>
   <nav class="st-chnav">
@@ -29,7 +30,7 @@
   <!-- 影片 ＋ 概念舞台（同樣大小） -->
   <section class="st-duo" id="duo">
     <div class="st-player-wrap is-loading"><div id="player"></div><div class="st-sub" id="subLine" aria-live="off" hidden></div><button class="st-skip" id="skipBtn" type="button" hidden></button></div>
-    <div class="st-side" id="side">
+    <div class="st-side is-loading" id="side">
       <iframe class="st-stage" id="stage" title="概念視覺化" hidden></iframe>
       <div class="st-notes" id="notesSide" hidden>
         <div class="st-notes-hd"><b>重點筆記</b><span class="st-card-sub" id="notesCount"></span></div>
@@ -110,6 +111,6 @@
 <script src="data.js?v=20261008m"></script>
 <script src="video-order.js?v=20261008m"></script>
 <script src="chapter-core.js?v=20261008p"></script>
-<script src="study.js?v=20261008ui5"></script>
+<script src="study.js?v=20261017mo"></script>
 </body>
 </html>

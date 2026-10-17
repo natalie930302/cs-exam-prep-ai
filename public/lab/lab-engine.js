@@ -223,6 +223,9 @@ export function createLab(container) {
       const cap = fit.dist * 0.05;
       if (fit.goalBias.length() > cap) fit.goalBias.setLength(cap);
     } else fit.goalBias.set(0, 0, 0);
+    // the stage's very first framing cuts straight to the fitted view, so the
+    // study room never shows the camera gliding into place while it loads
+    if (!fit.fitted) { fit.fitted = true; fit.fittedFrame = fit.frame; fit.scale = fit.goalScale; fit.shift.copy(fit.goalShift); fit.bias.copy(fit.goalBias); }
   }
   function applyFit(dt) {
     const k = dt >= 1 ? 1 : 1 - Math.exp(-dt * 2.4);
@@ -634,7 +637,10 @@ export function createLab(container) {
     labels.render(scene, camera);
     declutter(0, true);
   }
-  return { onFrame, advance, scene, world, camera, controls, addBody, removeBody, dropTo, springTo, flyAway, clear, label, box, frameCamera, bodies, renderer, setVisible };
+  // true once new blocks have grown in, the camera has made its first fit and
+  // two more fit checks (every 8 frames) have run since, at any frame rate
+  const isSettled = () => !!fit.fitted && !appears.size && fit.frame - fit.fittedFrame >= 17;
+  return { isSettled, onFrame, advance, scene, world, camera, controls, addBody, removeBody, dropTo, springTo, flyAway, clear, label, box, frameCamera, bodies, renderer, setVisible };
 }
 
 // Distinct but harmonious block colours, picked by value so the same

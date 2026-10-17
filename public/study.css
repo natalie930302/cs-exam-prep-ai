@@ -701,3 +701,77 @@ a { color: inherit; }
   .st-tabs button .count { margin-left: 2px; }
 }
 .st-timeline, .st-terms, .st-series { overflow-y: hidden !important; overscroll-behavior-x: contain; touch-action: pan-x pan-y; }
+
+/* ══ 2026-10-17 間距統一（跟首頁同一套 4px 刻度）══
+   列表裡項目之間 8px；區塊之間 16px；大卡片內距 16px；列表列內距 12px 16px；
+   小卡內距 8px 12px；圓角：大卡 20、列 14、小卡 10。左右留白（16／32）不變。 */
+.st-teach, .st-card, .st-nonotes { padding: 16px !important; }
+.st-teach, .st-card, .st-side, .st-player-wrap { border-radius: 20px !important; }
+@media (max-width: 640px) { .st-player-wrap { border-radius: 0 !important; } .st-side { border-radius: 20px !important; } }
+.st-teach-hd { margin-bottom: 8px !important; }
+.st-terms, .st-vlist { gap: 8px !important; }
+.st-goals-panel { gap: 16px !important; }
+@media (max-width: 900px) { .st-terms { gap: 8px !important; } }
+.st-tcard { padding: 8px 12px !important; border-radius: 10px !important; }
+.st-seg { border-radius: 10px !important; }
+.st-v { padding: 12px 16px 28px !important; border-radius: 14px !important; }
+.st-v .st-progress { left: 52px !important; bottom: 12px !important; }
+.st-goals { gap: 4px !important; }
+.st-goal-left { padding: 8px 12px !important; margin-bottom: 0 !important; border-radius: 10px !important; }
+.st-goal-h { margin: 12px 2px 0 !important; }
+.st-goal-h:first-child { margin-top: 0 !important; }
+.st-sec h3 { margin-top: 16px; margin-bottom: 8px; }
+.st-pt { padding: 8px !important; border-radius: 10px !important; }
+.st-trap { padding: 8px 12px !important; margin: 4px 8px 8px 66px !important; }
+@media (max-width: 900px) { .st-trap { margin-left: 8px !important; } }
+.st-top { column-gap: 12px !important; }
+@media (max-width: 640px) { .st-top { gap: 12px !important; } }
+
+/* ══ 2026-10-17 載入、出現、消失統一 ══
+   載入中一律空白：不放骨架色塊、轉圈、沒字的按鈕。頁面資料齊了整頁一起淡入；
+   影片、動畫區、實驗室各自載好時淡入。所有出現都是同一個淡入（m-in .22s），
+   消失都是 motion.js 的淡出（m-out .2s）。 */
+.st-player-wrap.is-loading::after, .st-side.is-loading::after, #panel-lab.is-loading::after,
+.st-player-wrap.is-loading::before, .st-side.is-loading::before, #panel-lab.is-loading::before,
+.st-timeline:empty::before, .st-now-sec:empty::before, .st-vlist:empty::before { content: none !important; display: none !important; }
+.st-player-wrap.is-loading, .st-side.is-loading, #panel-lab.is-loading { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+.st-player-wrap.is-loading > *, .st-side.is-loading > *, #panel-lab.is-loading > * { visibility: hidden !important; }
+:is(.st-player-wrap:not(.is-loading), .st-side:not(.is-loading), #panel-lab:not(.is-loading) > .st-lab-frame):not(.m-leave) { animation: m-in .22s cubic-bezier(.2,.8,.2,1) both; }
+.st-lab-frame, .st-lab-frame.ready { opacity: 1 !important; transition: none !important; }
+/* 整頁：資料齊了才一起淡入（標題列、按鈕、段落、影片清單同時出現） */
+body.st-booting .st-top, body.st-booting .st-main { visibility: hidden; }
+body:not(.st-booting) .st-top, body:not(.st-booting) .st-main { animation: m-in .22s cubic-bezier(.2,.8,.2,1) both; }
+/* 其他出現動畫都換成同一個 */
+:is(.st-stage, .st-panel:not([hidden]), .st-timeline > *, .st-vlist > *, .st-end, .st-qh-item, .st-skip:not([hidden]), .st-teach-body.swap):not(.m-leave) { animation: m-in .22s cubic-bezier(.2,.8,.2,1) both !important; }
+@media (prefers-reduced-motion: reduce) {
+  .st-player-wrap, .st-side, .st-lab-frame, .st-top, .st-main, .st-stage, .st-panel, .st-timeline > *, .st-vlist > *,
+  .st-end, .st-qh-item, .st-skip, .st-teach-body.swap { animation: none !important; }
+}
+/* 小挑戰浮卡：同一個淡入（.22s、上移 5px），收起用 motion.js 的淡出；內距、圓角跟其他大卡一樣 */
+.st-qz:not(.in) { transform: none; }
+.st-qz { translate: 0 5px; transition: opacity .22s cubic-bezier(.2,.8,.2,1), translate .22s cubic-bezier(.2,.8,.2,1) !important; padding: 16px !important; border-radius: 20px !important; }
+.st-qz.in { translate: 0 0; }
+@media (prefers-reduced-motion: reduce) { .st-qz { transition: none !important; translate: none; } }
+/* 目標分頁：勾選列、跳轉小卡跟全站同一套間距（項目間 8px、小卡內距 4px 12px、圓角 10），小卡跟勾選文字左邊對齊 */
+.st-goals { gap: 8px !important; }
+.st-check { padding: 8px !important; border-radius: 10px !important; }
+.st-where { gap: 8px !important; margin: 4px 0 0 36px !important; }
+.st-where-b { border-radius: 10px !important; padding: 4px 12px !important; }
+
+/* ══ 2026-10-17 hover 統一 ══
+   能點的東西滑過去一律同一種反應、同一個速度（.16s），不位移：
+   有框線的（按鈕、卡片、選項、小卡）→ 框線變成科目色；沒框線的（列、清單項目）→ 淡底色；
+   分頁 → 字變深。按下去一律縮一點（.97）。 */
+:is(.st-btn, .st-back, .st-chbtn, .st-seg, .st-v, .st-res, .st-quiz-opts button, .st-qz-opts button, .st-where-b, .st-v-pl,
+  .st-pt, .st-check, .st-tabs button, .st-qh-item, .st-skip) {
+  transition: background-color .16s ease, color .16s ease, border-color .16s ease, box-shadow .16s ease, filter .16s ease, transform .12s ease !important;
+}
+:is(.st-btn, .st-back, .st-chbtn, .st-seg, .st-v, .st-res, .st-quiz-opts button, .st-qz-opts button, .st-where-b, .st-v-pl):not(:disabled):not(.active):not(.current):not(.on):hover {
+  border-color: color-mix(in srgb, var(--subj, var(--ac)) 55%, var(--bd)) !important; color: var(--tx); transform: none;
+}
+:is(.st-pt, .st-check):not(.active):hover { background: var(--surf2) !important; }
+.st-tabs button:not([aria-selected="true"]):hover { color: var(--tx) !important; }
+:is(.st-btn, .st-back, .st-chbtn, .st-seg, .st-v, .st-res, .st-where-b, .st-pt, .st-check, .st-quiz-opts button, .st-qz-opts button):not(:disabled):active { transform: scale(.97) !important; }
+@media (prefers-reduced-motion: reduce) {
+  :is(.st-btn, .st-back, .st-chbtn, .st-seg, .st-v, .st-res, .st-where-b, .st-pt, .st-check, .st-quiz-opts button, .st-qz-opts button):active { transform: none !important; }
+}

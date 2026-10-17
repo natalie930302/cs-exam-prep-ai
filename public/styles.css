@@ -7855,3 +7855,77 @@ body#appRoot .fab-nav { flex-direction: column !important; }
 @media (min-width: 641px) {
   body#appRoot .cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; overflow-x: visible !important; }
 }
+
+/* ══ 2026-10-17 間距統一（一套 4px 刻度）══
+   列表裡項目之間 8px；區塊之間 16px；大卡片內距 16px；列表列內距 12px 16px；
+   小卡內距 8px 12px；圓角：大卡 20、列 14、小卡 10。頁面左右留白（16／32）不變。 */
+body#appRoot { --g: 16px; --card-p: 16px; --gap-i: 8px; --cell-r: 14px; --chip-r: 10px; }
+/* 日曆 */
+body#appRoot #sec-schedule .cal-grid { gap: var(--gap-i) !important; }
+body#appRoot #sec-schedule .cal-head { margin: 0 0 var(--g) !important; }
+body#appRoot .calday { padding: var(--card-p) !important; }
+body#appRoot .calday-hd { gap: var(--gap-i) !important; }
+body#appRoot .calday-list { margin-top: 12px !important; gap: var(--gap-i) !important; }
+body#appRoot .calday-list li a { padding: 8px 12px 8px 40px !important; border-radius: var(--chip-r) !important; }
+/* 六科 */
+body#appRoot .ch-mats { gap: var(--gap-i) !important; }
+body#appRoot .ch-mats > .ch-mat.ch-video { padding: 12px 16px !important; border-radius: var(--cell-r) !important; }
+body#appRoot #main #sec-subjects .sp .ch-head { gap: var(--gap-i) 12px !important; }
+body#appRoot #main #sec-subjects .sp .subject-overview-card .sp-top { gap: var(--g) !important; }
+body#appRoot #main #sec-subjects .sp .ch-study-link { border-radius: var(--chip-r) !important; padding-left: 16px !important; padding-right: 16px !important; }
+@media (min-width: 641px) { body#appRoot #main #sec-subjects .sp .smeta .sm { padding: 8px 0 !important; } }
+body#appRoot #main #sec-subjects .rec-books.rec-series { gap: 12px !important; }
+body#appRoot #main #sec-subjects > #spPanels > .sp.on > .subject-overview-card { border-radius: 20px !important; }
+/* 手機：控制列（月份切換、科目列）按鈕之間與外框內距都是 8px；影片列內距跟電腦一樣 12px 16px */
+@media (max-width: 640px) {
+  :root { --u-control-gap: 8px; --u-control-group-pad: 8px; }
+  body#appRoot #main #sec-subjects .stabs { gap: var(--gap-i) !important; padding: var(--gap-i) !important; }
+  body#appRoot #main #sec-subjects .sp .ch-mat.ch-video { padding: 12px 16px !important; }
+  body#appRoot #main #sec-subjects .sp .ch-row { gap: 12px !important; }
+}
+/* 手機／平板：科目列跟大標一樣在右邊讓出直排懸浮鈕的寬度，不會被蓋住 */
+@media (max-width: 999px) { body#appRoot #main #sec-subjects.on > .stabs { width: calc(100% - 64px) !important; } }
+/* 懸浮鈕：按鈕之間 8px（每種寬度一樣） */
+body#appRoot .fab-nav { gap: var(--gap-i) !important; }
+/* 900–999px：六科跟平板一樣單欄排（原本這個寬度科目列被排到最下面） */
+@media (min-width: 900px) and (max-width: 999px) {
+  body#appRoot #main #sec-subjects.on { display: block !important; }
+  body#appRoot #main #sec-subjects.on > #spPanels { display: block !important; }
+  body#appRoot #main #sec-subjects.on > #spPanels > .sp.on > :is(.subject-overview-card, .sp-rec-row, .ch-list) { margin: 0 !important; }
+}
+
+/* ══ 2026-10-17 載入、出現、消失統一 ══
+   載入中一律空白；資料齊了（body.ui-ready）頁面內容和右上懸浮鈕一起淡入。
+   所有出現都是同一個淡入（m-in .22s），消失是 motion.js 的淡出（m-out .2s）。 */
+body#appRoot:not(.ui-ready) #main, body#appRoot:not(.ui-ready) .fab-nav { visibility: hidden !important; }
+body#appRoot.ui-ready #main, body#appRoot.ui-ready .fab-nav { animation: m-in .22s cubic-bezier(.2,.8,.2,1) both; }
+body#appRoot :is(#main > .sec.on > *, .sp.on .ch-row, .global-search-item):not(.m-leave) { animation: m-in .22s cubic-bezier(.2,.8,.2,1) both !important; }
+body#appRoot .sp.on .ch-row:not(.m-leave) { animation-fill-mode: backwards !important; }
+@media (prefers-reduced-motion: reduce) {
+  body#appRoot.ui-ready #main, body#appRoot.ui-ready .fab-nav, body#appRoot :is(#main > .sec.on > *, .sp.on .ch-row, .global-search-item):not(.m-leave) { animation: none !important; }
+}
+/* 搜尋視窗：開＝同一個淡入（.22s、上移 5px），關＝同一個淡出（.2s） */
+body#appRoot .global-search-panel { transition: opacity .22s cubic-bezier(.2,.8,.2,1), visibility 0s linear 0s !important; }
+body#appRoot .global-search-panel:not(.open) { transition: opacity .2s ease, visibility 0s linear .2s !important; }
+body#appRoot .global-search-dialog { transition: translate .22s cubic-bezier(.2,.8,.2,1), opacity .22s cubic-bezier(.2,.8,.2,1) !important; }
+body#appRoot .global-search-panel:not(.open) .global-search-dialog { transform: none !important; translate: 0 5px; opacity: 0; transition: translate .2s ease, opacity .2s ease !important; }
+@media (prefers-reduced-motion: reduce) { body#appRoot .global-search-panel, body#appRoot .global-search-dialog { transition: none !important; } }
+
+/* ══ 2026-10-17 hover 統一（跟學習空間同一套）══
+   有框線的（日曆格、影片列、按鈕）→ 框線變成主色；沒框線的（科目鈕、懸浮鈕、章節列、搜尋結果）→ 淡底色；
+   實心按鈕（進入學習空間）→ 稍微變亮。同一個速度 .16s，不位移；按下去縮一點（.97）。 */
+body#appRoot :is(.cal-cell, .ch-mat, .calday-list li a, .nav-btn, .collapse-all-btn, .ch-video-pl, .stab, .pill, .fab-btn, .gs-btn,
+  .global-search-item, .ch-head, .ch-study-link, .ui-btn-primary) {
+  transition: background-color .16s ease, color .16s ease, border-color .16s ease, outline-color .16s ease, box-shadow .16s ease, filter .16s ease, transform .12s ease !important;
+}
+body#appRoot :is(.cal-cell, .ch-mat, .calday-list li a, .nav-btn, .collapse-all-btn, .ch-video-pl):not(.on):not(.active):not(.today):hover {
+  border-color: color-mix(in srgb, var(--ac) 55%, var(--bd)) !important; outline-color: transparent !important; transform: none !important;
+}
+body#appRoot :is(.nav-btn, .collapse-all-btn):hover { background: var(--surf) !important; }
+body#appRoot :is(.stab, .pill, .fab-btn, .gs-btn, .global-search-item, .ch-head):not(.on):not(.active):hover { background: var(--surf2) !important; color: var(--tx) !important; }
+body#appRoot .ch-head { border-radius: 10px; }
+body#appRoot :is(.ch-study-link, .ui-btn-primary):hover { filter: brightness(1.06); transform: none !important; }
+body#appRoot :is(.cal-cell, .ch-mat, .calday-list li a, .nav-btn, .collapse-all-btn, .stab, .pill, .fab-btn, .gs-btn, .ch-study-link):active { transform: scale(.97) !important; }
+@media (prefers-reduced-motion: reduce) {
+  body#appRoot :is(.cal-cell, .ch-mat, .calday-list li a, .nav-btn, .collapse-all-btn, .stab, .pill, .fab-btn, .gs-btn, .ch-study-link):active { transform: none !important; }
+}

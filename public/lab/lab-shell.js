@@ -14,7 +14,7 @@
 // look and behave alike. ?stage=1 is the study-room mode: no chrome, one
 // caption + one formula line, scenes driven by postMessage from study.html
 // ({type:'scene', scene, params} or {type:'tour'}).
-import { THREE, createLab, colorFor } from './lab-engine.js?v=27';
+import { THREE, createLab, colorFor } from './lab-engine.js?v=30';
 
 const q = new URLSearchParams(location.search);
 const CH = (q.get('ch') || 'ds-2').replace(/[^\w-]/g, '');
@@ -211,6 +211,21 @@ if (STAGE) {
   };
   // tell the study room which scenes exist (titles for the "now" line)
   if (parent !== window) parent.postMessage({ type: 'lab-ready', scenes: order.map((id) => ({ id, title: scenes[id].title })) }, location.origin);
+  // tell the study room when the first view has stopped moving (camera and
+  // blocks still for 0.4 s), so it can reveal the stage already settled
+  if (parent !== window) {
+    const t0 = performance.now(); let last = null, still = 0;
+    const iv = setInterval(() => {
+      let sig = lab.camera.position.x + lab.camera.position.y * 3 + lab.camera.position.z * 7, n = 0;
+      lab.world.traverse((o) => { if (o.isMesh) { n++; sig += o.position.x + o.position.y * 3 + o.position.z * 7 + o.scale.x * 11; } });
+      still = last !== null && n > 0 && lab.isSettled() && Math.abs(sig - last) < 0.01 ? still + 1 : 0;
+      last = sig;
+      if (still >= 4 || performance.now() - t0 > 3000 || document.body.classList.contains('idle')) {
+        clearInterval(iv);
+        parent.postMessage({ type: 'stage-settled' }, location.origin);
+      }
+    }, 100);
+  }
   if (q.get('scene')) playScene(q.get('scene'));
   else if (parent === window) tour();
 } else {

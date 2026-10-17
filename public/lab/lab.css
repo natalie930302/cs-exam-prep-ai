@@ -218,3 +218,9 @@ html, body, * { scrollbar-width: none; -ms-overflow-style: none; }
 body.idle .lab-caption { text-align: center !important; white-space: nowrap; max-width: 94% !important; width: max-content !important; font-size: 14px !important; }
 body.idle .lab-caption * { text-align: center !important; }
 @media (max-width: 360px) { body.idle .lab-caption { white-space: normal; font-size: 13px !important; } }
+/* 2026-10-17：說明換句時用全站同一個淡入 */
+.lab-caption.swap { animation: m-in .22s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion: reduce) { .lab-caption.swap { animation: none; } }
+/* hover 跟全站一樣：框線變科目色，.16s */
+.lab-back, body.stage .lab-handson { transition: border-color .16s ease, color .16s ease, background-color .16s ease, opacity .16s ease !important; }
+.lab-back:hover { border-color: color-mix(in srgb, var(--subj, var(--ac)) 55%, var(--bd)); }

@@ -45,6 +45,20 @@
   let follow = true;
 
   const $ = function(id){ return document.getElementById(id); };
+  // if YouTube never answers (offline), stop holding the player box blank
+  setTimeout(function(){ document.querySelector('.st-player-wrap').classList.remove('is-loading'); }, 15000);
+  // The page stays blank while it loads and fades in as a whole once the
+  // video list, the subtitle check and the segment list are in, so nothing
+  // pops in piece by piece; 2.5 s at most.
+  (function(){
+    const t0 = performance.now();
+    (function tick(){
+      const el = performance.now() - t0;
+      const ready = $('vlist').children.length && $('subBtn').dataset.checked && ($('timeline').children.length || el > 1200);
+      if (ready || el > 2500) document.body.classList.remove('st-booting');
+      else requestAnimationFrame(tick);
+    })();
+  })();
   const esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
   const fmt = function(t){ t = Math.max(0, Math.floor(t)); const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0'); };
   const store = {
@@ -82,6 +96,7 @@
     $('fullTab').hidden = false;
     $('labTab').hidden = false;
   } else {
+    $('side').classList.remove('is-loading');
     $('notesSide').hidden = false;
   }
   let stageScene = null, stageReady = false, pendingScene = null;
@@ -89,10 +104,14 @@
   // message listener exists). The iframe 'load' event can fire before the
   // chapter module has finished loading, and a scene posted then was lost,
   // leaving the stage empty until the next section change.
+  let sideShowTimer = 0;
+  function showSide(){ clearTimeout(sideShowTimer); $('side').classList.remove('is-loading'); }
   function stageIsReady(){
     if (stageReady) return;
     stageReady = true;
-    $('side').classList.remove('is-loading');
+    // stays blank until lab-shell says the first view has settled ('stage-settled')
+    clearTimeout(sideShowTimer);
+    sideShowTimer = setTimeout(showSide, 3500);
     const p = pendingScene; pendingScene = null;
     if (p && p.idle) postIdle(p.idle);
     else if (p && sceneFor(p)) postScene(p);
@@ -134,6 +153,7 @@
   window.addEventListener('message', function(e){
     if (e.origin !== location.origin || !e.data) return;
     if (e.data.type === 'lab-ready') { e.data.scenes.forEach(function(x){ stageScenes[x.id] = x; }); stageIsReady(); }
+    if (e.data.type === 'stage-settled' && stageReady) showSide();
   });
   const stageScenes = {};
   // A video can belong to several chapters; a section may name a different
@@ -328,6 +348,7 @@
       stageLab = stageUrlFor(id);
       stageReady = false;
       Object.keys(stageScenes).forEach(function(k){ delete stageScenes[k]; });
+      clearTimeout(sideShowTimer);
       $('side').classList.add('is-loading');
       $('stage').src = stageLab + '&stage=1';
     }
@@ -492,6 +513,7 @@
     if (subsFor !== id) return;
     subs = cues && cues.length ? cues : null;
     $('subBtn').hidden = !subs;
+    $('subBtn').dataset.checked = '1';
     renderSubBtn();
   }
   function renderSubBtn(){
