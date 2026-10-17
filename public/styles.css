@@ -7947,3 +7947,5 @@ body#appRoot #main :is(#stabs, .rec-books, .ch-list, .subject-overview-card) { b
 /* 看過的影片：圓圈填滿章節顏色、中間打勾（不只是整列變淺） */
 body#appRoot .ch-mat.done .cb { background: var(--ch-color, var(--ac)) !important; border-color: var(--ch-color, var(--ac)) !important; position: relative; }
 body#appRoot .ch-mat.done .cb::after { content: ''; position: absolute; left: 50%; top: 45%; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: translate(-50%, -50%) rotate(45deg); }
+/* 按下去縮一下只留給小按鈕；日曆格、影片列、清單項目按下去不縮 */
+body#appRoot :is(.cal-cell, .ch-mat, .calday-list li a, .global-search-item):active { transform: none !important; }

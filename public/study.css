@@ -817,3 +817,5 @@ body:not(.st-booting) .st-top, body:not(.st-booting) .st-main { animation: m-in 
 .st-btn-watch.done { border-color: var(--grn) !important; }
 .st-teach, .st-card, .st-side, .st-player-wrap, .st-v, .st-tcard, .st-seg { box-shadow: none !important; }
 .st-qz, .st-skip { box-shadow: var(--float-shadow) !important; }
+/* 按下去縮一下只留給小按鈕；勾選列、段落、影片卡、跳轉小卡這類大一點的東西按下去不縮 */
+:is(.st-check, .st-pt, .st-v, .st-where-b, .st-res, .st-seg, .st-quiz-opts button, .st-qz-opts button):active { transform: none !important; }
