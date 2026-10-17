@@ -7915,15 +7915,14 @@ body#appRoot .global-search-panel:not(.open) .global-search-dialog { transform: 
    有框線的（日曆格、影片列、按鈕）→ 框線變成主色；沒框線的（科目鈕、懸浮鈕、章節列、搜尋結果）→ 淡底色；
    實心按鈕（進入學習空間）→ 稍微變亮。同一個速度 .16s，不位移；按下去縮一點（.97）。 */
 body#appRoot :is(.cal-cell, .ch-mat, .calday-list li a, .nav-btn, .collapse-all-btn, .ch-video-pl, .stab, .pill, .fab-btn, .gs-btn,
-  .global-search-item, .ch-head, .ch-study-link, .ui-btn-primary) {
+  .global-search-item, .ch-study-link, .ui-btn-primary) {
   transition: background-color .16s ease, color .16s ease, border-color .16s ease, outline-color .16s ease, box-shadow .16s ease, filter .16s ease, transform .12s ease !important;
 }
 body#appRoot :is(.cal-cell, .ch-mat, .calday-list li a, .nav-btn, .collapse-all-btn, .ch-video-pl):not(.on):not(.active):not(.today):hover {
   border-color: color-mix(in srgb, var(--ac) 55%, var(--bd)) !important; outline-color: transparent !important; transform: none !important;
 }
 body#appRoot :is(.nav-btn, .collapse-all-btn):hover { background: var(--surf) !important; }
-body#appRoot :is(.stab, .pill, .fab-btn, .gs-btn, .global-search-item, .ch-head):not(.on):not(.active):hover { background: var(--surf2) !important; color: var(--tx) !important; }
-body#appRoot .ch-head { border-radius: 10px; }
+body#appRoot :is(.stab, .pill, .fab-btn, .gs-btn, .global-search-item):not(.on):not(.active):hover { background: var(--surf2) !important; color: var(--tx) !important; }
 body#appRoot :is(.ch-study-link, .ui-btn-primary):hover { filter: brightness(1.06); transform: none !important; }
 body#appRoot :is(.cal-cell, .ch-mat, .calday-list li a, .nav-btn, .collapse-all-btn, .stab, .pill, .fab-btn, .gs-btn, .ch-study-link):active { transform: scale(.97) !important; }
 @media (prefers-reduced-motion: reduce) {
