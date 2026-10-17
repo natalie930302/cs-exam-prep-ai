@@ -7844,11 +7844,8 @@ body#appRoot #main > .sec.on > * { animation: m-in .24s cubic-bezier(.2,.8,.2,1)
   body#appRoot #main #sec-subjects > #spPanels > .sp.on > .ch-list { margin-top: 16px !important; }
 }
 
-/* 2026-10-17：右上角的日曆／六科／搜尋鈕一直懸浮在畫面上；電腦版是右側直排，
-   內容右邊留出它的寬度，捲動時不會蓋到右側的標籤與時數 */
-@media (min-width: 1100px) {
-  body#appRoot #main > .sec, body#appRoot #main > #sec-subjects, body#appRoot #main > #sec-schedule { padding-right: 104px !important; }
-}
+/* 2026-10-17：右上角的日曆／六科／搜尋鈕獨立懸浮在所有內容的最上層（頁面間距不變） */
+body#appRoot .fab-nav { position: fixed !important; z-index: 300 !important; }
 /* 平板的日曆：七天平分寬度，最右的「日」不會被切掉 */
 @media (min-width: 641px) {
   body#appRoot .cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; overflow-x: visible !important; }
