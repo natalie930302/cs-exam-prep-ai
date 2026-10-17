@@ -796,3 +796,10 @@ body:not(.st-booting) .st-top, body:not(.st-booting) .st-main { animation: m-in 
 .st-goals > li:has(> .st-check) .st-check:hover { background: none !important; }
 .st-goals > li:has(> .st-check):hover .st-where-b { background: var(--surf); }
 .st-player-wrap, .st-side, #panel-lab { transition: background-color .22s ease, border-color .22s ease; }
+/* 實驗室分頁的佔位：畫在分頁內容區（分頁列下方 16px 開始），跟分頁列之間的間隔不會被底色吃掉 */
+.st-panel#panel-lab.is-loading { background: none !important; border: 0 !important; }
+.st-panel#panel-lab.is-loading::after {
+  content: '' !important; display: block !important; position: absolute; inset: 16px 0 0 0; z-index: 3; pointer-events: none;
+  background: var(--surf2) !important; border: 1px solid var(--bd); border-radius: 20px; animation: none !important;
+}
+.st-panel#panel-lab.is-loading::before { margin-top: -6px !important; }
