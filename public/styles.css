@@ -7846,6 +7846,11 @@ body#appRoot #main > .sec.on > * { animation: m-in .24s cubic-bezier(.2,.8,.2,1)
 
 /* 2026-10-17：右上角的日曆／六科／搜尋鈕獨立懸浮在所有內容的最上層（頁面間距不變） */
 body#appRoot .fab-nav { position: fixed !important; z-index: 300 !important; }
+/* 每種寬度都直排；大標右邊只留一顆按鈕的寬度 */
+body#appRoot .fab-nav { flex-direction: column !important; }
+@media (max-width: 1099px) { body#appRoot .sec > .sh { padding-right: 64px !important; } }
+/* 手機：月份切換往左讓出直排按鈕的寬度，「下個月」不會被蓋住（平板原本就有） */
+@media (max-width: 759px) { body#appRoot #sec-schedule .cal-head .cal-nav { margin-right: 52px !important; } }
 /* 平板的日曆：七天平分寬度，最右的「日」不會被切掉 */
 @media (min-width: 641px) {
   body#appRoot .cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; overflow-x: visible !important; }
