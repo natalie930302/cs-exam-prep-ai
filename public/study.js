@@ -251,8 +251,7 @@
           ? '<span class="st-where">' + k.where.map(function(w){ return '<button type="button" class="st-where-b" data-v="' + w.video + '" data-t="' + w.t + '"' + (w.ch != null && (w.ch !== chIndex || w.subj) ? ' data-ch="' + w.ch + '" data-subj="' + (w.subj || subject.id) + '"' : '') + '>' + (w.ch != null && (w.ch !== chIndex || w.subj) ? (w.subj ? subjName(w.subj) : '') + '第 ' + (w.ch + 1) + ' 章・' : '') + esc(w.who || '') + ' ' + fmt(w.t) + '・' + esc(w.sec) + '</button>'; }).join('') + '</span>'
           : '<span class="st-where none">影片沒有專門講這一點，請看課本</span>';
         return check('kp-' + chKey + '-' + stableTaskKey(t), esc(t)) .replace('</li>', where + '</li>');
-      }).join('')
-      + '<li class="st-src">「看完要會」：自己覺得做到了再打勾。</li>';
+      }).join('');
     $('goals').querySelectorAll('.st-check').forEach(function(b){
       b.onclick = async function(){ await setTask(b.dataset.task, !done.has(b.dataset.task)); renderGoals(); };
     });
