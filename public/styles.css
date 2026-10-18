@@ -147,35 +147,9 @@ color: var(--tx);
    direct pills — no 更多 dropdown, no bottom quick-access grid; the user
    explicitly didn't want secondary pages tucked away or demoted, so the
    nav just lists everywhere you can go. */
-.brandbar {
-display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 12px 24px;
-  margin: 16px 20px 0;
-  border-radius: 26px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-bd);
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
-  position: sticky;
-  top: 14px;
-  z-index: 60;
-}
-.brand-t {
-font-family: "Noto Sans TC", sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ac);
-  letter-spacing: 0.06em;
-  line-height: 1.3;
-}
-.brand-s {
-font-size: 11px;
-  color: var(--mt);
-  margin-top: 2px;
-}
+
+
+
 .pillnav {
 display: flex;
   align-items: center;
@@ -201,14 +175,7 @@ display: inline-flex;
 background: var(--ac);
   color: var(--on-ac);
 }
-.pill-unread {
-width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: var(--red);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--red) 25%, transparent);
-}
+
 
 /* ── Main ── */
 #main {
@@ -219,31 +186,8 @@ flex: 1;
 }
 
 /* ── Topbar ── */
-.topbar {
-background: var(--glass-bg);
-  border: 1px solid var(--glass-bd);
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
-  padding: 0 24px;
-  height: 52px;
-  margin: 12px 20px 0;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 78px;
-  z-index: 50;
-  gap: 16px;
-}
-.topbar-title {
-font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--mt);
-}
+
+
 
 /* Date nav buttons — all same height */
 .nav-btn {
@@ -316,15 +260,7 @@ height: var(--h-btn);
 }
 
 
-.datebadge {
-font-family: "Noto Sans TC", sans-serif;
-  font-size: 12px;
-  color: var(--mt);
-  background: var(--surf2);
-  border: 1px solid var(--bd);
-  border-radius: var(--r-sm);
-  padding: 4px 10px;
-}
+
 
 /* ── Sections ── */
 .sec {
@@ -356,52 +292,10 @@ font-size: 14px;
    most once per calendar day (see /api/checkin). Deliberately distinct
    from the assistant-hero below it (different accent) so it reads as
    "someone said something to you", not another static stat card. */
-.checkin-banner {
-align-items: flex-start;
-  gap: 12px;
-  background:
-    linear-gradient(
-      165deg,
-      color-mix(in srgb, var(--ac2) 20%, var(--glass-tint)),
-      var(--glass-tint)
-    ),
-    var(--glass-bg);
-  border: 1px solid color-mix(in srgb, var(--ac2) 35%, var(--glass-bd));
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
-  box-shadow: var(--glass-shadow);
-  border-radius: var(--r-lg);
-  padding: 20px 24px;
-  margin-bottom: 20px;
-}
-.checkin-icon {
-width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: color-mix(in srgb, var(--ac2) 18%, transparent);
-  color: var(--ac2);
-}
-.checkin-text {
-flex: 1;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--tx);
-  line-height: 1.6;
-}
-.checkin-dismiss {
-flex-shrink: 0;
-  background: transparent;
-  border: none;
-  color: var(--mt);
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 1;
-  padding: 2px 4px;
-}
+
+
+
+
 
 .cb {
 width: 19px;
@@ -1145,9 +1039,7 @@ display: grid;
   gap: 14px;
   margin: 0 0 22px;
 }
-.ai-daily-brief-btn {
-margin: -10px 0 22px;
-}
+
 .smart-card {
 align-self: start;
   min-width: 0;
@@ -1211,44 +1103,10 @@ color: var(--tx);
 .chapter-learning-flow {
 margin-top: 15px;
 }
-.learning-steps {
-display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  width: auto;
-  padding: 4px;
-  border: 1px solid color-mix(in srgb, #fff 42%, var(--bd));
-  border-radius: 15px;
-  background: color-mix(in srgb, var(--surf2) 42%, transparent);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-.learning-step {
-flex: 0 0 auto;
-  min-width: 92px;
-  height: 34px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 11px;
-  background: transparent;
-  color: var(--mt2);
-  font:
-    700 11px/1 "Noto Sans TC",
-    sans-serif;
-  cursor: pointer;
-  text-align: center;
-  white-space: nowrap;
-}
 
-.learning-step.is-next, .learning-step.is-active {
-background: color-mix(in srgb, var(--ac) 13%, var(--surf));
-  color: var(--ac);
-  box-shadow:
-    0 5px 14px -10px rgba(49, 76, 42, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.55);
-}
+
+
+
 .chapter-tool-modal {
 position: fixed;
   inset: 0;
@@ -1450,68 +1308,17 @@ width: 100%;
 opacity: 0.4;
   cursor: not-allowed;
 }
-.diagnostic-dialog {
-width: min(620px, 100%);
-  max-height: min(760px, 92vh);
-  overflow: auto;
-}
-.diagnostic-body {
-min-height: 280px;
-}
-.diagnostic-loading {
-min-height: 260px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  color: var(--mt);
-  font-size: 12px;
-  text-align: center;
-}
-.diagnostic-loading span {
-width: 28px;
-  height: 28px;
-  border: 3px solid color-mix(in srgb, var(--ac) 18%, transparent);
-  border-top-color: var(--ac);
-  border-radius: 50%;
-}
-.diagnostic-loading p {
-margin: 0;
-}
-.diagnostic-loading small {
-font-size: 11px;
-  color: var(--mt);
-  opacity: 0.78;
-}
 
-.diagnostic-progress {
-height: 5px;
-  border-radius: 999px;
-  background: var(--bd);
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-.diagnostic-progress span {
-display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--ac);
-}
-.diagnostic-count {
-font-size: 11px;
-  font-weight: 700;
-  color: var(--ac);
-  margin-bottom: 10px;
-}
-.diagnostic-question {
-font-size: 16px;
-  font-weight: 700;
-  color: var(--tx);
-  line-height: 1.6;
-  margin-bottom: 17px;
-  white-space: pre-wrap;
-}
+
+
+
+
+
+
+
+
+
+
 .chapter-summary-content {
 text-align: left;
 }
@@ -1542,172 +1349,36 @@ font-size: 13px;
   color: var(--tx);
   line-height: 1.8;
 }
-.diagnostic-question .katex-display, .diagnostic-review .katex-display {
-margin: 0.7em 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 3px 0;
-}
-.diagnostic-question .katex {
-font-size: 1.08em;
-}
-.diagnostic-choice-text {
-min-width: 0;
-  flex: 1;
-  overflow-wrap: anywhere;
-}
-.diagnostic-choice-text .katex {
-font-size: 1.02em;
-}
-.diagnostic-choices {
-display: grid;
-  gap: 8px;
-}
-.diagnostic-choices button {
-display: flex;
-  align-items: flex-start;
-  gap: 11px;
-  width: 100%;
-  padding: 13px 14px;
-  border: 1px solid var(--bd);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--surf2) 78%, transparent);
-  color: var(--mt2);
-  font: inherit;
-  font-size: 12px;
-  line-height: 1.6;
-  text-align: left;
-  cursor: pointer;
-}
 
-.diagnostic-choices button > span:first-child {
-display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  flex: 0 0 auto;
-  border-radius: 8px;
-  background: var(--surf);
-  color: var(--ac);
-  font-size: 11px;
-  font-weight: 700;
-}
-.diagnostic-choice-text {
-display: block;
-  min-width: 0;
-  flex: 1;
-  width: auto;
-  height: auto;
-  color: inherit;
-  line-height: 1.6;
-}
-.diagnostic-error {
-min-height: 250px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  gap: 8px;
-  color: var(--mt);
-}
-.diagnostic-error b {
-font-size: 16px;
-  color: var(--tx);
-}
-.diagnostic-error span {
-font-size: 11px;
-}
-.diagnostic-error button {
-margin-top: 8px;
-  border: 0;
-  border-radius: 12px;
-  padding: 10px 14px;
-  background: var(--ac);
-  color: #fff;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-.diagnostic-result {
-text-align: center;
-}
-.diagnostic-score {
-display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 5px;
-  margin: 4px 0;
-}
-.diagnostic-score b {
-font-size: 48px;
-  line-height: 1;
-  color: var(--ac);
-}
-.diagnostic-score span {
-font-size: 14px;
-  color: var(--mt);
-}
-.diagnostic-result > p {
-font-size: 12px;
-  color: var(--mt2);
-  margin: 10px 0 18px;
-}
-.diagnostic-review-list {
-display: flex;
-  flex-direction: column;
-  gap: 7px;
-  text-align: left;
-}
-.diagnostic-review {
-border: 1px solid var(--bd);
-  border-radius: 13px;
-  background: var(--surf2);
-  overflow: hidden;
-}
-.diagnostic-review summary {
-list-style: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 13px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--tx);
-  cursor: pointer;
-}
-.diagnostic-review summary::-webkit-details-marker {
-display: none;
-}
-.diagnostic-review summary span {
-color: var(--grn);
-}
-.diagnostic-review.wrong summary span {
-color: var(--red);
-}
-.diagnostic-review > div {
-padding: 0 13px 12px 37px;
-  font-size: 11px;
-  color: var(--mt2);
-  line-height: 1.6;
-}
-.diagnostic-review > div b {
-color: var(--tx);
-}
-.diagnostic-review > div p {
-margin: 4px 0 0;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @media (max-width: 480px) {
-.learning-steps {
-gap: 4px;
-    max-width: 100%;
-}
-  .learning-step {
-min-width: 0;
-    height: 33px;
-    padding: 0 11px;
-    font-size: 11px;
-}
+
+  
   .chapter-tool-dialog {
 padding: 20px;
 }
@@ -2099,67 +1770,14 @@ background: var(--bd2);
    message centered nicely) instead of forcing a fixed near-viewport-height
    box — a two-message exchange shouldn't sit in acres of white space. It
    still caps out and scrolls once a conversation actually gets long. */
-.chat-wrap {
-display: flex;
-  flex-direction: column;
-}
-.chat-log {
-max-height: calc(100vh - 280px);
-  min-height: 180px;
-  overflow-y: auto;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-bd);
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
-  box-shadow: var(--glass-shadow);
-  border-radius: var(--r-lg);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.chat-msg {
-max-width: 78%;
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-size: 13px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.chat-msg.user {
-align-self: flex-end;
-  background: var(--ac);
-  color: var(--on-ac);
-  border-bottom-right-radius: 3px;
-}
-.chat-msg.assistant {
-align-self: flex-start;
-  background: var(--surf3);
-  color: var(--tx);
-  border-bottom-left-radius: 3px;
-}
-.chat-msg.system {
-align-self: center;
-  background: color-mix(in srgb, var(--ac2) 10%, transparent);
-  color: var(--ac2);
-  font-size: 12px;
-  border-radius: 20px;
-  padding: 6px 14px;
-}
-.chat-empty {
-color: var(--mt);
-  font-size: 12px;
-  text-align: center;
-  margin: auto;
-}
-.chat-status {
-font-size: 12px;
-  color: var(--mt);
-  min-height: 16px;
-  margin-top: 6px;
-  padding-left: 2px;
-}
+
+
+
+
+
+
+
+
 .quick-actions {
 display: flex;
   gap: 8px;
@@ -2177,42 +1795,11 @@ background: var(--surf2);
   font-family: "Noto Sans TC", sans-serif;
 }
 
-.chat-input-row {
-display: flex;
-  gap: 8px;
-  margin-top: 10px;
-}
-.chat-input {
-flex: 1;
-  height: 40px;
-  background: var(--surf2);
-  border: 1px solid var(--bd2);
-  border-radius: var(--r-sm);
-  color: var(--tx);
-  font-size: 13px;
-  padding: 0 14px;
-  font-family: "Noto Sans TC", sans-serif;
-  outline: none;
-}
-.chat-input:focus {
-border-color: var(--ac);
-}
-.chat-send-btn {
-height: 40px;
-  padding: 0 20px;
-  background: var(--ac);
-  color: var(--on-ac);
-  border: none;
-  border-radius: var(--r-sm);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: "Noto Sans TC", sans-serif;
-}
-.chat-send-btn:disabled {
-opacity: 0.4;
-  cursor: default;
-}
+
+
+
+
+
 
 .memory-panel {
 margin-top: 16px;
@@ -2271,9 +1858,6 @@ padding: 18px 20px;
 /* Live second-level frost for the two explicitly layered surfaces.
    These are the only elements allowed to sample the current content below.
    Their paint is contained and no property on either surface is animated. */
-body#appRoot #main > .brandbar,
-body#appRoot > .ai-context-dock > .ai-context-panel,
-body#appRoot > #globalTimer,
 body#appRoot > .chapter-tool-modal > .chapter-tool-dialog,
 body#appRoot > .global-search-panel > .global-search-dialog {
   isolation: isolate;
@@ -2286,9 +1870,6 @@ body#appRoot > .global-search-panel > .global-search-dialog {
   backdrop-filter: blur(18px) saturate(1.08) !important;
   -webkit-backdrop-filter: blur(18px) saturate(1.08) !important;
 }
-body#appRoot #main > .brandbar::before,
-body#appRoot > .ai-context-dock > .ai-context-panel::before,
-body#appRoot > #globalTimer::before,
 body#appRoot > .chapter-tool-modal > .chapter-tool-dialog::before,
 body#appRoot > .global-search-panel > .global-search-dialog::before {
   content: none !important;
@@ -2489,15 +2070,8 @@ font-size: 12px;
 body {
 flex-direction: column;
 }
-  .brandbar {
-padding: 10px 16px;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin: 10px 10px 0;
-}
-  .brand-s {
-display: none;
-}
+  
+  
   .pillnav {
 gap: 4px;
 }
@@ -2505,7 +2079,7 @@ gap: 4px;
 padding: 6px 11px;
     font-size: 12px;
 }
-  .stat-row, .smeta, .uni-grid {
+  .smeta, .uni-grid {
 grid-template-columns: 1fr 1fr;
 }
   .res-grid {
@@ -2514,9 +2088,7 @@ grid-template-columns: 1fr;
   .rec-row {
 grid-template-columns: 1fr;
 }
-  .slot-grid {
-grid-template-columns: 1fr;
-}
+  
   .wk {
 grid-template-columns: 1fr;
 }
@@ -2526,33 +2098,24 @@ grid-template-columns: repeat(3, 1fr);
   .sec {
 padding: 18px 16px;
 }
-  .topbar {
-padding: 0 16px;
-    margin: 8px 10px 0;
-}
+  
   .date-input {
 max-width: 140px;
 }
-  .dash-row {
-grid-template-columns: 1fr;
-}
+  
   .ring-card {
 flex-direction: row;
     padding: 16px;
 }
-  .stat-strip {
-grid-template-columns: 1fr 1fr;
-}
-  .stat-strip .stat-card:last-child {
-grid-column: 1/-1;
-}
+  
+  
 }
 /* True phone widths — the 900px breakpoint above is really a "tablet still
    has room for 2 columns" tier; below ~640px even 2 columns squeezes
    uni-card/res-card's dense text (dates, exam-format sentences) into an
    unreadably narrow strip, so those go single-column here instead. */
 @media (max-width: 640px) {
-.stat-row, .smeta, .uni-grid {
+.smeta, .uni-grid {
 grid-template-columns: 1fr;
 }
   .sh {
@@ -2580,9 +2143,7 @@ min-height: 52px;
 font-size: 11px;
     padding: 2px 6px;
 }
-  .brandbar {
-gap: 8px;
-}
+  
   .pillnav {
 width: 100%;
 }
@@ -2660,32 +2221,12 @@ width: 100%;
   padding-bottom: 48px;
 }
 
-.brandbar {
-min-height: 72px;
-  gap: 24px;
-  padding: 12px 16px 12px 22px;
-  margin: 18px 24px 0;
-  border-radius: 26px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-bd);
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(26px) saturate(1.25);
-  -webkit-backdrop-filter: blur(26px) saturate(1.25);
-  top: 14px;
-}
+
 .brand {
 min-width: 188px;
 }
-.brand-t {
-font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--tx);
-}
-.brand-s {
-font-size: 12px;
-  color: var(--mt);
-}
+
+
 .pillnav {
 gap: 5px;
   justify-content: center;
@@ -2723,7 +2264,7 @@ font-size: 16px;
   color: var(--mt2);
 }
 
-.cal-header-card, .rec-books, .ch-list, .rc, .uni-card, .chat-wrap, .memory-panel, .sm, .checkin-banner, #date-setup-card, .calweek-col, .cal-cell {
+.cal-header-card, .rec-books, .ch-list, .rc, .uni-card, .memory-panel, .sm, #date-setup-card, .calweek-col, .cal-cell {
 background: var(--glass-bg);
   border: 1px solid var(--glass-bd);
   box-shadow: var(--glass-shadow);
@@ -3092,41 +2633,24 @@ font-size: 12px;
 font-size: 14px;
 }
 
-.chat-wrap {
-padding: 26px;
-  border-radius: 30px;
-}
+
 .memory-panel {
 border-radius: 30px;
 }
 .quick-actions {
 gap: 8px;
 }
-.qa-btn, .chat-send-btn {
+.qa-btn {
 min-height: 40px;
   border-radius: 14px;
 }
-.chat-input {
-min-height: 46px;
-  border-radius: 15px;
-  font-size: 14px;
-}
+
 
 @media (max-width: 900px) {
 #main {
 padding-bottom: 92px;
 }
-  .brandbar {
-position: fixed;
-    left: 12px;
-    right: 12px;
-    top: auto;
-    bottom: 12px;
-    min-height: 64px;
-    margin: 0;
-    padding: 8px 10px;
-    border-radius: 24px;
-}
+  
   .brand {
 display: none;
 }
@@ -3181,16 +2705,12 @@ font-size: 13px;
     line-height: 1.6;
     margin-bottom: 22px;
 }
-  .brandbar {
-left: 8px;
-    right: 8px;
-    bottom: 8px;
-}
+  
   .pill {
 font-size: 11px;
     padding: 7px 4px;
 }
-  .cal-header-card, .rec-books, .ch-list, .rc, .chat-wrap {
+  .cal-header-card, .rec-books, .ch-list, .rc {
 padding: 20px;
     border-radius: 24px;
 }
@@ -3370,34 +2890,10 @@ position: fixed;
 opacity: 1;
   transform: translate(-50%, 0);
 }
-.backup-panel {
-display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  margin-top: var(--space-3);
-  padding: var(--space-4);
-  border-radius: 24px;
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
-  box-shadow: var(--panel-shadow);
-  backdrop-filter: blur(24px);
-}
-.backup-title {
-font-size: 14px;
-  font-weight: 700;
-  color: var(--tx);
-}
-.backup-note {
-font-size: 12px;
-  color: var(--mt);
-  margin-top: 3px;
-}
-.backup-actions {
-display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
+
+
+
+
 .global-search-toggle {
 width: 40px;
   height: 40px;
@@ -3630,17 +3126,9 @@ align-items: flex-start;
   .daily-focus-btn {
 width: 100%;
 }
-  .backup-panel {
-align-items: flex-start;
-    flex-direction: column;
-    padding: var(--space-3);
-}
-  .backup-actions {
-width: 100%;
-}
-  .backup-actions .qa-btn {
-flex: 1;
-}
+  
+  
+  
   .task-toast {
 bottom: 18px;
 }
@@ -3744,15 +3232,13 @@ background:
     radial-gradient(circle at 12% 6%, rgba(255, 255, 255, 0.78), transparent 37%),
     linear-gradient(180deg, rgba(244, 248, 239, 0.46), rgba(232, 240, 222, 0.57));
 }
-.brandbar, .cal-header-card, .rec-books, .ch-list, .rc, .uni-card, .chat-wrap, .memory-panel, .sm, .checkin-banner, #date-setup-card, .calweek-col, .cal-cell, .sp-donut {
+.cal-header-card, .rec-books, .ch-list, .rc, .uni-card, .memory-panel, .sm, #date-setup-card, .calweek-col, .cal-cell, .sp-donut {
 border-color: rgba(255, 255, 255, 0.9);
   box-shadow: var(--glass-shadow);
   backdrop-filter: blur(34px) saturate(1.25);
   -webkit-backdrop-filter: blur(34px) saturate(1.25);
 }
-.brandbar {
-background: rgba(250, 252, 247, 0.7);
-}
+
 .pill.on, .filter-chip.active, .stab.on {
 background:
     radial-gradient(circle at 25% 0%, rgba(255, 255, 255, 0.34), transparent 38%),
@@ -3874,7 +3360,7 @@ background:
 }
 
 /* Borderless glass: depth comes from light and shadow, not white outlines. */
-.brandbar, .cal-header-card, .rec-books, .ch-list, .rc, .uni-card, .chat-wrap, .memory-panel, .sm, .checkin-banner, #date-setup-card, .calweek-col, .cal-cell, .sp-donut, .cal-view-toggle, .stabs, .filter-bar, .cal-nav {
+.cal-header-card, .rec-books, .ch-list, .rc, .uni-card, .memory-panel, .sm, #date-setup-card, .calweek-col, .cal-cell, .sp-donut, .cal-view-toggle, .stabs, .filter-bar, .cal-nav {
 border: none;
 }
 .calweek-col-hd, .calweek-col-hd.today, .calweek-block, .dept-card, .mat-opt, .lbtn, .rc-when, .chip, .filter-chip, .stab, .pill {
@@ -3893,26 +3379,11 @@ display: none;
 #main {
 padding-bottom: 40px;
 }
-  .brandbar {
-position: sticky;
-    left: auto;
-    right: auto;
-    bottom: auto;
-    top: 8px;
-    min-height: 60px;
-    margin: 10px 12px 0;
-    padding: 8px 10px;
-    border-radius: 22px;
-}
+  
 }
 
 @media (max-width: 640px) {
-.brandbar {
-left: auto;
-    right: auto;
-    bottom: auto;
-    margin: 8px 8px 0;
-}
+
   .pillnav {
 width: 100%;
 }
@@ -3938,7 +3409,7 @@ background: url("/assets/rolling-hills-pexels-32821671.jpg") center 48% / cover 
 body::after {
 background: rgba(235, 241, 232, 0.18);
 }
-.brandbar, .cal-header-card, .rec-books, .ch-list, .rc, .uni-card, .chat-wrap, .memory-panel, .sm, .checkin-banner, #date-setup-card, .calweek-col, .cal-cell, .sp-donut, .cal-view-toggle, .stabs, .filter-bar, .cal-nav, .tip {
+.cal-header-card, .rec-books, .ch-list, .rc, .uni-card, .memory-panel, .sm, #date-setup-card, .calweek-col, .cal-cell, .sp-donut, .cal-view-toggle, .stabs, .filter-bar, .cal-nav, .tip {
 background: rgba(249, 251, 247, 0.68) !important;
   border: none !important;
   box-shadow: var(--glass-shadow) !important;
@@ -3981,7 +3452,7 @@ color: var(--tx);
 .cal-cell.today {
 background: rgba(218, 231, 207, 0.78) !important;
 }
-.dept-card, .mat-opt, .lbtn, .rc-when, .chip, .datebadge, .search-input, .chat-input, .qa-btn, .chat-send-btn {
+.dept-card, .mat-opt, .lbtn, .rc-when, .chip, .search-input, .qa-btn {
 background: rgba(250, 251, 248, 0.58) !important;
   border: none !important;
   box-shadow: none !important;
@@ -4334,7 +3805,7 @@ columns: 1;
 
 
 /* Stable motion pass: feedback without moving or resizing any component. */
-.pill, .filter-chip, .stab, .nav-btn, .today-btn, .collapse-all-btn, .qa-btn, .chat-send-btn, .lbtn, .mat-opt, .rc-toggle, .rc, .uni-card, .rec-books, .calweek-col, .cal-cell, .sm, .sp-donut, .cal-header-card, .chat-wrap, .memory-panel, .calweek-block.clickable {
+.pill, .filter-chip, .stab, .nav-btn, .today-btn, .collapse-all-btn, .qa-btn, .lbtn, .mat-opt, .rc-toggle, .rc, .uni-card, .rec-books, .calweek-col, .cal-cell, .sm, .sp-donut, .cal-header-card, .memory-panel, .calweek-block.clickable {
 transform: none !important;
 }
 
@@ -4431,17 +3902,14 @@ max-width: 720px;
   color: var(--mt2);
 }
 
-.brandbar, .cal-header-card, .calweek-col, .cal-cell, .rec-books, .ch-list, .rc, .uni-card, .chat-wrap, .memory-panel, .sm, .sp-donut, .filter-bar, .cal-view-toggle, .cal-nav, .stabs {
+.cal-header-card, .calweek-col, .cal-cell, .rec-books, .ch-list, .rc, .uni-card, .memory-panel, .sm, .sp-donut, .filter-bar, .cal-view-toggle, .cal-nav, .stabs {
 background: var(--panel-bg) !important;
   border: 1px solid var(--panel-border) !important;
   box-shadow: var(--panel-shadow) !important;
   backdrop-filter: blur(24px) saturate(1.12) !important;
   -webkit-backdrop-filter: blur(24px) saturate(1.12) !important;
 }
-.brandbar {
-border-radius: 24px;
-  padding: 12px 18px;
-}
+
 .pillnav {
 gap: 4px;
 }
@@ -4753,7 +4221,7 @@ background: rgba(255, 255, 255, 0.22);
   padding: 13px 14px;
 }
 
-.chat-wrap, .memory-panel {
+.memory-panel {
 border-radius: 24px;
 }
 .memory-panel {
@@ -4779,16 +4247,7 @@ grid-row: span 2;
 padding-top: 86px;
     padding-bottom: var(--space-4);
 }
-  .brandbar {
-position: fixed;
-    z-index: 50;
-    top: 10px;
-    bottom: auto;
-    left: 10px;
-    right: 10px;
-    margin: 0;
-    min-height: 62px;
-}
+  
   .brand {
 display: none;
 }
@@ -4812,13 +4271,7 @@ grid-template-columns: 1fr;
 #main {
 padding-top: 78px;
 }
-  .brandbar {
-top: 8px;
-    left: 8px;
-    right: 8px;
-    padding: 7px 8px;
-    border-radius: 20px;
-}
+  
   .pill {
 min-width: 58px;
     padding: 7px 9px;
@@ -4957,7 +4410,7 @@ background: var(--frost-bg) !important;
 .cal-cell.today, .calweek-col-hd.today {
 background: color-mix(in srgb, var(--ac) 12%, var(--frost-bg)) !important;
 }
-.pill.on, .filter-chip.active, .stab.on, .daily-focus-btn, .chat-send-btn {
+.pill.on, .filter-chip.active, .stab.on, .daily-focus-btn {
 background: var(--ac) !important;
   color: #fff !important;
   border-color: transparent !important;
@@ -5042,248 +4495,64 @@ backdrop-filter: blur(20px) saturate(1.08) !important;
 
 
 /* Context-aware AI — available throughout the site without covering content. */
-.ai-context-dock {
-position: fixed;
-  right: 22px;
-  bottom: 22px;
-  z-index: 90;
-}
-.ai-context-dock.is-hidden {
-display: none;
-}
-.ai-context-trigger {
-width: 52px;
-  height: 52px;
-  border: 1px solid var(--frost-border);
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  color: var(--ac);
-  cursor: pointer;
-  background: var(--frost-bg);
-  box-shadow: var(--frost-shadow);
-  backdrop-filter: blur(22px) saturate(1.1);
-  -webkit-backdrop-filter: blur(22px) saturate(1.1);
-}
 
-.ai-assistant-icon {
-display: block;
-  transform: translateY(-0.5px);
-}
-.ai-context-panel {
-position: absolute;
-  right: 0;
-  bottom: 64px;
-  width: min(330px, calc(100vw - 28px));
-  padding: 17px;
-  border: 1px solid var(--frost-border);
-  border-radius: 22px;
-  color: var(--tx);
-  background: var(--frost-bg);
-  box-shadow:
-    0 22px 50px -28px rgba(25, 39, 24, 0.48),
-    inset 0 1px 0 rgba(255, 255, 255, 0.34);
-  backdrop-filter: blur(26px) saturate(1.12);
-  -webkit-backdrop-filter: blur(26px) saturate(1.12);
-  opacity: 0;
-  transform: translateY(6px);
-  pointer-events: none;
-  transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease);
-}
-.ai-context-dock.open .ai-context-panel {
-opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-.ai-context-eyebrow {
-font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  color: var(--mt);
-  margin-bottom: 4px;
-}
-.ai-context-title {
-font-size: 14px;
-  font-weight: 700;
-  line-height: 1.6;
-  margin-bottom: 12px;
-  overflow-wrap: anywhere;
-}
-.ai-context-nudge {
-  display: block;
-  width: 100%;
-  margin: 0 0 10px;
-  padding: 11px 12px;
-  border: 0;
-  border-radius: var(--ui-radius-section);
-  background: color-mix(in srgb,var(--ac) 9%,var(--frost-inner));
-  color: var(--tx);
-  text-align: left;
-  cursor: pointer;
-}
-.ai-context-nudge b,
-.ai-context-nudge span {display:block;}
-.ai-context-nudge b {font-size:12px;line-height:1.6;}
-.ai-context-nudge span {margin-top:3px;color:var(--mt2);font-size:11px;line-height:1.6;}
-.ai-home-nudge {
-  display: grid;
-  width: 100%;
-  margin-bottom: var(--space-3);
-  padding: 13px 15px;
-  border: 0;
-  border-radius: var(--ui-radius-section);
-  background: color-mix(in srgb,var(--ac) 8%,var(--u-glass-sub));
-  color: var(--tx);
-  text-align: left;
-  cursor: pointer;
-}
-.ai-home-nudge small {color:var(--ac);font-size:11px;font-weight:700;letter-spacing:.06em;}
-.ai-home-nudge b {margin-top:3px;font-size:12px;line-height:1.6;}
-.ai-home-nudge span {margin-top:2px;color:var(--mt2);font-size:11px;line-height:1.6;}
-.ai-energy-check {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: -7px 0 var(--space-3);
-}
-.ai-energy-check > span {margin-right:auto;color:var(--mt);font-size:11px;font-weight:700;}
-.ai-energy-check > div {display:flex;gap:6px;}
-.ai-energy-check button {
-  min-height: 32px;
-  padding: 6px 10px;
-  border: 0;
-  border-radius: var(--ui-radius-control);
-  background: var(--u-glass-control);
-  color: var(--mt2);
-  font: 700 11px/1 "Noto Sans TC",sans-serif;
-  cursor: pointer;
-  transition:background var(--dur-1) var(--ease),color var(--dur-1) var(--ease),filter var(--dur-1) var(--ease);
-}
-.ai-energy-check button:hover {background:var(--ui-hover);color:var(--tx);}
-.ai-energy-check button.active {background:var(--ac);color:#f7fbf4;}
-.ai-energy-check button:active {filter:brightness(.94);}
-.ai-energy-check.compact {margin:0 0 9px;display:block;}
-.ai-energy-check.compact > span {display:block;margin:0 0 6px;}
-.ai-energy-check.compact > div {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}
-.ai-energy-check.compact button {padding-inline:6px;}
-.ai-time-plans {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin: -7px 0 var(--space-3);
-}
-.ai-time-plans > span {margin-right:auto;color:var(--mt);font-size:11px;font-weight:700;}
-.ai-time-plans button {
-  min-height: 34px;
-  padding: 7px 11px;
-  border: 0;
-  border-radius: var(--ui-radius-control);
-  background: var(--u-glass-control);
-  color: var(--mt2);
-  font: 700 11px/1 "Noto Sans TC",sans-serif;
-  cursor: pointer;
-  transition:background var(--dur-1) var(--ease),color var(--dur-1) var(--ease),filter var(--dur-1) var(--ease);
-}
-.ai-time-plans button:hover {background:var(--ui-hover);color:var(--tx);}
-.ai-time-plans button:active {filter:brightness(.94);}
-.ai-time-plans.compact {margin:0 0 10px;}
-.ai-time-plans.compact button {min-height:31px;padding:6px 8px;}
-.ai-followups {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--ui-divider);
-}
-.ai-followups > span {flex:0 0 auto;padding-top:8px;color:var(--mt);font-size:11px;font-weight:700;}
-.ai-followups > div {display:flex;flex-wrap:wrap;gap:7px;}
-.ai-followups button {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  min-height: 34px;
-  padding: 7px 10px;
-  border: 0;
-  border-radius: var(--ui-radius-control);
-  background: var(--u-glass-control);
-  color: var(--mt2);
-  font: 700 11px/1.2 "Noto Sans TC",sans-serif;
-  cursor: pointer;
-  transition:background var(--dur-1) var(--ease),color var(--dur-1) var(--ease),filter var(--dur-1) var(--ease);
-}
-.ai-followups button:hover {background:var(--ui-hover);color:var(--tx);}
-.ai-followups button:active {filter:brightness(.94);}
-.ai-followups svg {color:var(--ac);}
-.ai-context-peek {
-  position: absolute;
-  right: 62px;
-  bottom: 7px;
-  max-width: min(260px,calc(100vw - 100px));
-  padding: 9px 12px;
-  overflow: hidden;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(244,248,239,.94);
-  box-shadow: 0 12px 30px -20px rgba(25,39,24,.58);
-  color: var(--tx);
-  font: 700 11px/1.2 "Noto Sans TC",sans-serif;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.ai-context-peek > span {display:inline-block;width:6px;height:6px;margin-right:7px;border-radius:50%;background:var(--ac);}
-.ai-context-dock.open .ai-context-peek {opacity:0;pointer-events:none;}
-.ai-context-dock.attention .ai-context-peek {animation:ai-peek-attention .55s var(--ease) 2;}
-.ai-context-dock.attention .ai-context-trigger {animation:ai-trigger-attention .55s var(--ease) 2;}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @keyframes ai-peek-attention {
   50% {transform:translateX(-4px);background:color-mix(in srgb,var(--ac) 10%,rgba(244,248,239,.96));}
 }
 @keyframes ai-trigger-attention {
   50% {box-shadow:0 0 0 5px color-mix(in srgb,var(--ac) 12%,transparent),var(--frost-shadow);}
 }
-.ai-context-actions {
-display: grid;
-  gap: 7px;
-}
-.ai-context-actions button, .ai-context-full {
-width: 100%;
-  min-height: 39px;
-  padding: 9px 12px;
-  border: 0;
-  border-radius: 13px;
-  text-align: left;
-  color: var(--tx);
-  background: var(--frost-inner);
-  font:
-    400 12px/1.45 "Noto Sans TC",
-    sans-serif;
-  cursor: pointer;
-}
 
-.ai-context-full {
-margin-top: 8px;
-  color: var(--ac);
-  text-align: center;
-}
-@media (max-width: 640px) {
-.ai-context-dock {
-right: 12px;
-    bottom: 12px;
-}
-  .ai-context-trigger {
-width: 48px;
-    height: 48px;
-}
-  .ai-context-panel {
-right: 0;
-    bottom: 58px;
-    width: calc(100vw - 24px);
-    padding: 15px;
-    border-radius: 20px;
-}
-  .ai-context-peek {right:56px;max-width:calc(100vw - 86px);}
-}
+
+
+
+
 
 /* Global study timer — stays visible while navigating every section. */
 .global-timer {
@@ -5415,9 +4684,7 @@ font-size: 13px;
   .global-timer-actions button {
 padding: 8px 9px;
 }
-  body:has(.global-timer.show) .ai-context-dock {
-bottom: 82px;
-}
+  
   body:has(.global-timer.show) .task-toast {
 bottom: 82px;
 }
@@ -5617,23 +4884,8 @@ background: var(--ac) !important;
   color: #fff !important;
   box-shadow: 0 7px 18px -12px rgba(39, 64, 30, 0.6) !important;
 }
-.learning-steps {
-display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 7px;
-  width: auto;
-  padding: 0;
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-.learning-step {
-min-width: 96px;
-}
+
+
 
 /* No nested blur in the horizontal week scroller: prevents white repaint tiles. */
 :is(.calweek-col, .cal-cell, .calweek-block) {
@@ -5759,16 +5011,16 @@ background: var(--u-group-surface) !important;
 }
 /* Resource types used to carry their own opacity; all material and school
    cards now use the same readable primary glass surface. */
-.rc[data-type="完整課程"], .res-grid .rc, .uni-card, .chat-wrap, .memory-panel, .backup-panel {
+.rc[data-type="完整課程"], .res-grid .rc, .uni-card, .memory-panel {
 background: var(--u-glass-main) !important;
 }
-.chat-wrap, .memory-panel, .backup-panel, .uni-card, .rc {
+.memory-panel, .uni-card, .rc {
 --tx: var(--u-text-strong);
   --mt: var(--u-text-muted);
   --mt2: var(--u-text-muted);
   color: var(--u-text-strong);
 }
-.memory-empty, .backup-copy, .rc-st, .uni-meta {
+.memory-empty, .rc-st, .uni-meta {
 color: var(--mt2) !important;
 }
 /* Switching a whole section with opacity/transform forces Chromium to
@@ -5968,131 +5220,32 @@ font-size: 18px;
     --u-radius-sub: 14px;
     --u-glass-blur: 20px;
 }
-  .learning-steps {
-gap: 6px;
-}
-  .learning-step {
-min-width: 0;
-    padding-inline: 12px;
-}
+  
+  
 }
 
 /* AI composer — one consistent control family. */
-.chat-input-row {
-align-items: stretch;
-  gap: 8px !important;
-}
-.chat-input-row .chat-input, .chat-input-row .voice-input-btn, .chat-input-row .chat-send-btn {
-height: 40px !important;
-  min-height: 40px !important;
-  margin: 0 !important;
-  border: 0 !important;
-  border-radius: 12px !important;
-  box-shadow: none !important;
-  background: var(--u-glass-control) !important;
-}
-.chat-input-row .chat-input {
-min-width: 0;
-  padding: 0 16px !important;
-  color: var(--tx) !important;
-}
-.chat-input-row .voice-input-btn {
-width: 40px !important;
-  flex: 0 0 40px !important;
-  color: var(--ac) !important;
-}
-.chat-input-row .chat-send-btn {
-min-width: 76px;
-  padding: 0 18px !important;
-  color: #f7fbf4 !important;
-  background: var(--ac) !important;
-}
-.chat-input-row .chat-input:focus {
-background: color-mix(in srgb, var(--ac) 8%, var(--u-glass-control)) !important;
-}
-@media (max-width: 560px) {
-.chat-input-row {
-gap: 6px !important;
-}
-  .chat-input-row .chat-send-btn {
-min-width: 64px;
-    padding: 0 13px !important;
-}
-}
+
+
+
+
+
+
+
 
 /* Memory and backup belong to the AI workspace, not separate glass cards. */
-.ai-support-grid {
-display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 16px;
-  margin-top: 18px;
-  padding-top: 18px;
-  border-top: 1px solid color-mix(in srgb, var(--tx) 12%, transparent);
-}
-.ai-support-grid .memory-panel, .ai-support-grid .backup-panel {
-min-width: 0;
-  margin: 0 !important;
-  padding: 14px 16px !important;
-  border: 0 !important;
-  border-radius: 16px !important;
-  background: var(--u-glass-sub) !important;
-  box-shadow: none !important;
-}
-.ai-support-grid .memory-hd {
-margin-bottom: 5px;
-}
-.ai-support-grid .memory-list {
-gap: 5px;
-}
-.ai-support-grid .memory-item {
-padding: 7px 10px;
-}
-.ai-support-grid .backup-panel {
-justify-content: flex-end;
-  gap: 12px;
-}
-.ai-support-grid .backup-title {
-font-size: 12px;
-}
-.ai-support-grid .backup-note {
-font-size: 11px;
-  white-space: nowrap;
-}
-.ai-support-grid .backup-actions {
-flex-wrap: nowrap;
-}
-.ai-support-grid .backup-actions .qa-btn {
-padding: 7px 12px;
-  white-space: nowrap;
-}
-@media (max-width: 760px) {
-.ai-support-grid {
-grid-template-columns: 1fr;
-    align-items: stretch;
-    gap: 14px;
-}
-  .ai-support-grid .backup-panel {
-align-items: center;
-    justify-content: space-between;
-    flex-direction: row;
-}
-  .ai-support-grid .backup-note {
-white-space: normal;
-}
-  .ai-support-grid .backup-actions {
-width: auto;
-}
-  .ai-support-grid .backup-actions .qa-btn {
-flex: 0 0 auto;
-}
-}
-@media (max-width: 480px) {
-.ai-support-grid .backup-panel {
-align-items: flex-start;
-    flex-direction: column;
-}
-}
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* Week calendar: one compact card per day instead of floating white tiles
    on a large glass sheet. Cards size to their own content. */
@@ -6171,19 +5324,8 @@ min-height: 62px;
    from the shared :is(.stabs, .cal-view-toggle, .cal-nav, ...) rules) — its
    nav-btn/collapse-all-btn children are the same quiet secondary buttons as
    everywhere else, not a special larger/differently-shaded variant. */
-.ai-context-trigger {
-width: 54px !important;
-  height: 54px !important;
-  border: 0 !important;
-  border-radius: 18px !important;
-  color: #496b3e !important;
-  background: rgba(244, 248, 239, 0.72) !important;
-  box-shadow: 0 15px 34px -24px rgba(22, 42, 22, 0.62) !important;
-}
-.ai-context-trigger .ai-assistant-icon {
-width: 27px !important;
-  height: 27px !important;
-}
+
+
 
 /* Every green selected state uses the same high-contrast light label. */
 :is(
@@ -6537,16 +5679,7 @@ display: inline-flex !important;
   transform: none !important;
   transition: background var(--dur-1) var(--ease), filter var(--dur-1) var(--ease);
 }
-.chat-reset-link {
-  appearance: none;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--mt);
-  font: inherit;
-  text-decoration: underline;
-  cursor: pointer;
-}
+
 .ui-btn-icon {
 width: 40px !important;
   height: 40px !important;
@@ -6633,16 +5766,8 @@ backdrop-filter: none !important;
 }
 
 /* Give assistant messages a distinct inner surface from the chat workspace. */
-.chat-log {
-background: rgba(255, 255, 255, 0.2) !important;
-  border: 0 !important;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tx) 7%, transparent) !important;
-}
-.chat-msg.assistant {
-background: color-mix(in srgb, var(--ac) 13%, rgba(255, 255, 255, 0.9)) !important;
-  border: 1px solid color-mix(in srgb, var(--ac) 20%, transparent) !important;
-  box-shadow: 0 5px 14px -12px color-mix(in srgb, var(--ac) 55%, transparent) !important;
-}
+
+
 
 /* Timer status and chapter copy need normal reading size and breathing room. */
 .global-timer-copy {
@@ -6758,15 +5883,7 @@ outline-color: transparent !important;
 
 
 /* Final override: chapter actions are separate standard buttons. */
-.learning-steps {
-padding: 0 !important;
-  background: transparent !important;
-  border: 0 !important;
-  outline: 0 !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
+
 
 /* Frosted surfaces are completely static. Button motion remains independent. */
 :is(
@@ -6883,9 +6000,7 @@ box-shadow: var(--u-glass-shadow) !important;
 box-shadow: none !important;
   outline-color: transparent !important;
 }
-.ai-context-trigger {
-box-shadow: var(--frost-shadow) !important;
-}
+
 
 
 /* Smart overview cards are fully static and do not own compositor blur layers. */
@@ -7003,9 +6118,7 @@ background: rgba(255, 255, 255, 0.48) !important;
 }
 
 /* Keep the floating AI/Chat control readable over bright photographs. */
-body#appRoot > .ai-context-dock > .ai-context-trigger {
-background: rgba(244, 248, 239, 0.94) !important;
-}
+
 
 /* Timer positioning is layout, never hover feedback.  Legacy surface rules
    must not clear the horizontal centering transform over the shell padding.
@@ -7013,21 +6126,10 @@ background: rgba(244, 248, 239, 0.94) !important;
    slide-in transition above still has something to animate — a single
    shared value here would silently flatten it, the same way it used to
    before this pair was split back out. */
-body#appRoot > #globalTimer {
-transform: translate(-50%, 10px) !important;
-}
-body#appRoot > #globalTimer.show {
-transform: translate(-50%, 0) !important;
-}
 
-@media (max-width: 640px) {
-body#appRoot > #globalTimer {
-transform: translateY(10px) !important;
-}
-  body#appRoot > #globalTimer.show {
-transform: none !important;
-}
-}
+
+
+
 
 /* The only two motion patterns in the interface. */
 .expand-icon {
@@ -7040,9 +6142,7 @@ transform: none !important;
   }
 }
 
-.diagnostic-loading > span {
-  animation: loading-spin 0.8s linear infinite;
-}
+
 
 /* Text uses the full width offered by its card.  Legacy reading-column caps
    made copy wrap while visible horizontal space was still available. */
@@ -7209,7 +6309,7 @@ body#appRoot #main .subject-overview-card {
 }
 body#appRoot #main #sec-schedule > .cal-header-card > .daily-focus { background: var(--surf2) !important; border: 0 !important; box-shadow: none !important; }
 /* top bar: solid strip */
-body#appRoot :is(.brandbar, .topbar), body#appRoot #main > .brandbar {
+body#appRoot :is(.brandbar, .topbar) {
   background: color-mix(in srgb, var(--bg) 96%, transparent) !important;
   border: 0 !important; border-bottom: 1px solid var(--bd) !important; box-shadow: none !important;
 }
@@ -7223,15 +6323,14 @@ body#appRoot :is(.ch-mat, .ch-mat-group) { background: var(--surf2) !important; 
 body#appRoot .cal-cell { background: var(--surf) !important; border: 1px solid var(--bd) !important; box-shadow: none !important; }
 body#appRoot :is(.cal-cell.today, .calweek-col-hd.today) { background: color-mix(in srgb, var(--ac) 12%, var(--surf)) !important; border-color: color-mix(in srgb, var(--ac) 40%, transparent) !important; }
 body#appRoot .cb { background: var(--surf) !important; border: 1.5px solid var(--bd2) !important; }
-body#appRoot > #globalTimer { background: var(--surf) !important; border: 1px solid var(--bd) !important; }
+
 /* page titles no longer sit on a photo */
 body#appRoot :is(.sh, .ss) { text-shadow: none !important; }
 
 /* ── 主頁只留「日曆」和「六科」：其他分頁、提示卡、浮動助教先收起來 ──
    （程式和資料都還在，要恢復只要刪掉這段。） */
-#appRoot .pill[data-sec="materials"], #appRoot .pill[data-sec="schools"], #appRoot .pill[data-sec="ai"],
-#appRoot #checkinBanner, #appRoot #restartCard, #appRoot #smartOverview, #appRoot #aiDailyBriefBtn,
-#appRoot #calPaceWarning, #appRoot #calNextInfo, #appRoot .ai-context-dock,
+#appRoot .pill[data-sec="materials"], #appRoot .pill[data-sec="schools"], #appRoot .pill[data-sec="ai"], #appRoot #restartCard, #appRoot #smartOverview,
+#appRoot #calPaceWarning, #appRoot #calNextInfo,
 #appRoot .rec-books:not(.rec-series) { display: none !important; }
 
 /* 六科：每章的影片清單，一列一支 */
@@ -7539,34 +6638,26 @@ body#appRoot #sec-schedule > .sh { margin: 0 0 16px !important; }
 
 /* AI 助教回到右上角的懸浮鈕組（第三顆）；分頁本身照常顯示 */
 body#appRoot .fab-nav .fab-btn[data-sec="ai"] { display: grid !important; position: relative; }
-body#appRoot .fab-nav .fab-btn .pill-unread { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--red, #d64545); }
+
 @media (max-width: 759px) { body#appRoot .sec > .sh { padding-right: 176px; } }
 @media (max-width: 759px) { body#appRoot .sec > .sh { font-size: 21px !important; } }
 body#appRoot #sec-ai .ss { display: none !important; }
 body#appRoot #sec-ai > .sh { margin-bottom: 16px !important; }
 
 /* ── AI 助教：懸浮對話框（右上按鈕組左邊展開），只有對話 ── */
-body#appRoot .ai-float {
-  position: fixed; top: 16px; right: 88px; z-index: 70;
-  width: min(380px, calc(100vw - 112px)); height: min(560px, calc(100vh - 32px));
-  display: flex; flex-direction: column; gap: 8px; padding: 12px 12px 12px;
-  background: var(--surf); border: 1px solid var(--bd); border-radius: 20px;
-  box-shadow: 0 12px 40px rgba(46, 36, 24, .18);
-}
-body#appRoot .ai-float[hidden] { display: none !important; }
-body#appRoot .ai-float-hd { display: flex; align-items: center; gap: 8px; padding: 2px 4px 6px; border-bottom: 1px solid var(--bd); }
-body#appRoot .ai-float-hd b { font-size: 16px; margin-right: auto; }
-body#appRoot .ai-float-new { border: 1px solid var(--bd); background: var(--surf); color: var(--mt2, var(--mt)); font-size: 12px; padding: 4px 10px; border-radius: 999px; cursor: pointer; }
-body#appRoot .ai-float-new:hover { color: var(--tx); border-color: var(--bd2, var(--bd)); }
-body#appRoot .ai-float-x { width: 28px; height: 28px; border: 0; background: transparent; font-size: 20px; line-height: 1; color: var(--mt); border-radius: 50%; cursor: pointer; }
-body#appRoot .ai-float-x:hover { background: var(--surf2); color: var(--tx); }
-body#appRoot .ai-float .chat-log { flex: 1; min-height: 0; overflow-y: auto; max-height: none !important; height: auto !important; margin: 0 !important; }
-body#appRoot .ai-float .chat-status:empty { display: none; }
-body#appRoot .ai-float .chat-input-row { display: flex; gap: 8px; margin: 0 !important; }
-body#appRoot .ai-float .chat-input { flex: 1; min-width: 0; }
-@media (max-width: 759px) {
-  body#appRoot .ai-float { top: 64px; right: 8px; left: 8px; width: auto; height: calc(100vh - 80px); }
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* 六科左欄兩張卡＋右邊章節清單：內距統一 16px */
 body#appRoot #main .sp .subject-overview-card { padding: 16px !important; }
@@ -7598,49 +6689,34 @@ body#appRoot #main #sec-subjects .sp .smeta > .sm:first-child { padding-top: 0 !
 body#appRoot #main #sec-subjects .sp .smeta > .sm:last-child { padding-bottom: 0 !important; }
 
 /* ── AI 懸浮對話框：重新整理外觀 ── */
-body#appRoot .ai-float { padding: 0 !important; gap: 0 !important; overflow: hidden; }
-body#appRoot .ai-float-hd { padding: 14px 14px 12px 18px !important; border-bottom: 1px solid var(--bd); }
-body#appRoot .ai-float .chat-log {
-  border: 0 !important; background: transparent !important; box-shadow: none !important; border-radius: 0 !important;
-  padding: 14px 16px !important; display: flex !important; flex-direction: column; gap: 10px;
-}
-body#appRoot .ai-float .chat-msg {
-  margin: 0 !important; max-width: 85% !important; padding: 9px 13px !important; border-radius: 16px !important;
-  font-size: 14px !important; line-height: 1.6 !important; box-shadow: none !important; border: 0 !important; white-space: pre-wrap;
-}
-body#appRoot .ai-float .chat-msg.assistant { align-self: flex-start; background: var(--surf2) !important; color: var(--tx) !important; border-bottom-left-radius: 6px !important; }
-body#appRoot .ai-float .chat-msg.user { align-self: flex-end; background: var(--ac, #5b7a45) !important; color: #fff !important; border-bottom-right-radius: 6px !important; }
-body#appRoot .ai-float .chat-msg.system { align-self: center; background: transparent !important; color: var(--mt) !important; font-size: 12px !important; }
-body#appRoot .ai-float .chat-empty { color: var(--mt); font-size: 13px; text-align: center; margin: auto 0; }
-body#appRoot .ai-float .chat-status:not(:empty) { padding: 0 16px 6px; font-size: 12px; color: var(--mt); }
-body#appRoot .ai-compose {
-  display: flex; align-items: center; gap: 4px; margin: 0 12px 12px; padding: 4px 4px 4px 14px;
-  border: 1px solid var(--bd); border-radius: 999px; background: var(--surf);
-}
-body#appRoot .ai-compose:focus-within { border-color: var(--ac, #5b7a45); }
-body#appRoot .ai-compose-input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 14px; color: var(--tx); padding: 6px 0; }
-body#appRoot .ai-compose button { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; border: 0; border-radius: 50%; cursor: pointer; padding: 0; }
-body#appRoot .ai-compose-mic { background: transparent; color: var(--mt); }
-body#appRoot .ai-compose-mic:hover { background: var(--surf2); color: var(--tx); }
-body#appRoot .ai-compose-mic.listening { background: color-mix(in srgb, #d64545 14%, var(--surf)); color: #d64545; }
-body#appRoot .ai-compose-send { background: var(--ac, #5b7a45); color: #fff; }
-body#appRoot .ai-compose-send:disabled { opacity: .45; cursor: default; }
-body#appRoot .ai-compose-mic::before, body#appRoot .ai-compose-mic::after { content: none !important; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* ── AI 對話：助教訊息改成純文字（無底色），只有使用者是泡泡 ── */
-body#appRoot .ai-float-hd { border-bottom: 0 !important; padding: 14px 12px 6px 20px !important; }
-body#appRoot .ai-float .chat-log { padding: 8px 20px 16px !important; gap: 16px !important; }
-body#appRoot .ai-float .chat-msg.assistant {
-  max-width: 100% !important; background: transparent !important; padding: 0 !important; border-radius: 0 !important;
-  font-size: 14px !important; line-height: 1.6 !important; color: var(--tx) !important;
-}
-body#appRoot .ai-float .chat-msg.user {
-  max-width: 80% !important; background: var(--surf2) !important; color: var(--tx) !important;
-  padding: 8px 14px !important; border-radius: 18px !important; border-bottom-right-radius: 18px !important;
-}
-body#appRoot .ai-compose { margin: 0 12px 12px !important; background: var(--surf2) !important; border-color: transparent !important; }
-body#appRoot .ai-compose:focus-within { background: var(--surf) !important; border-color: var(--bd2, var(--bd)) !important; }
-body#appRoot .ai-compose-send { background: var(--tx) !important; color: var(--surf) !important; }
+
+
+
+
+
+
+
 
 /* ── 全站搜尋 ── */
 body#appRoot .global-search-panel {
