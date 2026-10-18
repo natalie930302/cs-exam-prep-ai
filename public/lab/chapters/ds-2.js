@@ -3171,13 +3171,13 @@ async function scRules(tok) {
   await step(tok);                                     // 7:50 rule 2: polynomial of degree k
   tag('Rule 2：k 次多項式 → O(nᵏ)', 'note', 4.4, 3.6, -1);
   say('Rule 2：T(n) 是 k 次多項式', 'T(n) = O(nᵏ)');
-  await step(tok);                                     // 8:11 rule 3: log n^k, prove it
-  tag('Rule 3：log nᵏ = k·log n = O(log n)', 'note', 4.4, 2.6, -1);
-  say('Rule 3：log nᵏ，請自己證明', '補充：log nᵏ = k·log n = O(log n)');
+  await step(tok);                                     // 8:11 rule 3: (log n)^k = O(n), prove it
+  tag('Rule 3：logᵏ n = O(n)', 'note', 4.4, 2.6, -1);
+  say('Rule 3：logᵏ n（log n 的 k 次方）', 'logᵏ n = O(n)：n 夠大後一定被 n 追過');
   await step(tok);                                     // 8:35 e.g. n^3 + 4
   say('例：n³ + 4，只看最高次', 'n³ + 4 = O(n³)');
   await step(tok);                                     // 8:52 prove: find c and n0
-  say('怎麼證明？照定義找出 c 和 n₀', 'log nᵏ ≤ c·log n（c = k，n ≥ 2）');
+  say('怎麼證明？照定義找出 c 和 n₀', 'logᵏ n ≤ c·n，對所有 n ≥ n₀ 成立');
 }
 FRAG.push(['arrpeng12-rules', '複雜度組合規則', scRules]);
 
