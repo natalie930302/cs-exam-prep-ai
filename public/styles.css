@@ -107,12 +107,7 @@ display: inline-block;
   flex-shrink: 0;
   stroke-width: 1.7 !important;
 }
-.greet-icon {
-display: inline-flex;
-  vertical-align: -4px;
-  margin-right: 6px;
-  color: var(--ac2);
-}
+
 html {
 scroll-behavior: smooth;
 }
@@ -290,74 +285,26 @@ color: var(--tx);
 }
 
 /* ── Schools ── */
-.uni-grid {
-display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  align-items: start;
-}
-.experience-badge {
-  flex: 0 0 auto;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--amb) 13%, transparent);
-  color: color-mix(in srgb, var(--amb) 78%, var(--tx));
-  font-size: 11px;
-  font-weight: 700;
-}
-.uni-card {
-background: var(--glass-bg);
-  border: 1px solid var(--glass-bd);
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
-  border-radius: var(--r-lg);
-  overflow: hidden;
-}
 
-.uni-card.filtered-out {
-display: none;
-}
 
-.uni-name {
-font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-.uni-en {
-font-size: 11px;
-  color: var(--mt);
-  margin-top: 3px;
-}
 
-.uni-body {
-padding: 18px 24px 24px;
-}
+
+
+
+
+
+
+
 
 /* ── Card sections ── each school card is a stack of clearly labeled
    categories (時程 / 考試科目與方式 / 查證備註 / 相關系所), all sharing
    the same header treatment, instead of different content types (subject
    chips, exam format, research flags, warnings) all crammed under one
    "考試科目" label as if they were the same kind of thing. */
-.card-section {
-padding: 12px 0;
-  border-bottom: 1px solid var(--bd);
-}
-.card-section:first-child {
-padding-top: 0;
-}
-.card-section:last-of-type {
-border-bottom: none;
-  padding-bottom: 0;
-}
-.card-section-hd {
-font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--mt);
-  margin-bottom: 8px;
-}
+
+
+
+
 .ir {
 display: flex;
   gap: 10px;
@@ -390,24 +337,9 @@ font-size: 11px;
   color: var(--mt2);
   font-weight: 700;
 }
-.uni-flags {
-display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.uni-flag {
-display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  font-size: 11px;
-  color: var(--mt);
-  line-height: 1.6;
-  opacity: 0.9;
-}
-.uni-flag-icon {
-flex-shrink: 0;
-  line-height: 1.6;
-}
+
+
+
 .warn {
 display: inline-flex;
   align-items: center;
@@ -420,72 +352,22 @@ display: inline-flex;
   color: var(--amb);
   margin-top: 8px;
 }
-.lbtn {
-display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--ac);
-  text-decoration: none;
-  border: 1px solid color-mix(in srgb, var(--ac) 30%, transparent);
-  border-radius: var(--r-sm);
-  padding: 6px 14px;
-  margin-top: 16px;
-}
+
 
 
 /* One small card per department sharing an exam (main 資工所 + any
    relatedDepts) — subjects/weighting/複試 status together per department,
    instead of a subject-chip strip disconnected from which department
    those subjects belong to. */
-.dept-cards {
-display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.dept-card {
-background: color-mix(in srgb, var(--ac) 6%, var(--surf2));
-  border-radius: var(--r-sm);
-  padding: 12px 14px;
-}
-.dept-card-hd {
-display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 6px;
-}
-.dept-card-icon {
-font-size: 12px;
-  line-height: 1;
-}
-.dept-card-name {
-font-size: 12px;
-  font-weight: 700;
-  color: var(--tx);
-}
-.dept-card-subjtext {
-font-size: 12px;
-  color: var(--mt2);
-  line-height: 1.6;
-}
-.dept-card-format {
-font-size: 12px;
-  color: var(--ac);
-  font-weight: 700;
-  margin-top: 8px;
-  letter-spacing: -0.005em;
-}
-.dept-card-oral {
-font-size: 11px;
-  color: var(--mt2);
-  margin-top: 4px;
-}
-.depts-footnote {
-font-size: 11px;
-  color: var(--mt);
-  margin-top: 9px;
-  line-height: 1.6;
-}
+
+
+
+
+
+
+
+
+
 
 /* ── Subjects ── */
 .stabs {
@@ -674,10 +556,7 @@ display: flex;
   gap: 16px;
 }
 
-.ch-mat.mat-flash {
-background: color-mix(in srgb, var(--ac) 13%, var(--surf2));
-  box-shadow: none !important;
-}
+
 .ch-marker {
 display: flex;
   flex-direction: column;
@@ -872,121 +751,25 @@ font-family: "Noto Sans TC", sans-serif;
 
 
 /* ── Calendar header: greeting + pace warning + "現在該做". ── */
-.cal-header-card {
-background: var(--glass-bg);
-  border: 1px solid var(--glass-bd);
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
-  border-radius: var(--r-lg);
-  padding: 24px;
-  margin-bottom: 20px;
-}
-.cal-greet {
-font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin-bottom: 16px;
-}
-.cal-pace-warn {
-font-size: 13px;
-  line-height: 1.6;
-  border-radius: var(--r-sm);
-  padding: 10px 14px;
-  margin-bottom: 16px;
-  max-width: 100%;
-  background: color-mix(in srgb, var(--amb) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--amb) 30%, transparent);
-  color: var(--amb);
-}
-.cal-pace-warn b {
-color: var(--amb);
-}
-.cal-next-info {
-font-size: 13px;
-  color: var(--mt2);
-  line-height: 1.6;
-}
-.cal-next-info b {
-color: var(--tx);
-}
-.cal-next-link {
-cursor: pointer;
-  text-decoration: underline;
-  text-decoration-style: dotted;
-  text-underline-offset: 3px;
-  color: var(--ac);
-  font-weight: 700;
-}
 
-.smart-overview {
-display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
-  align-items: start;
-  gap: 14px;
-  margin: 0 0 22px;
-}
 
-.smart-card {
-align-self: start;
-  min-width: 0;
-  padding: 18px 19px;
-  background: color-mix(in srgb, var(--surf) 62%, transparent);
-  border: 1px solid color-mix(in srgb, #fff 58%, var(--bd));
-  border-radius: 24px;
-  box-shadow:
-    0 16px 38px -24px rgba(31, 48, 30, 0.38),
-    inset 0 1px 0 rgba(255, 255, 255, 0.58);
-  backdrop-filter: blur(22px) saturate(1.08);
-  -webkit-backdrop-filter: blur(22px) saturate(1.08);
-}
 
-.smart-kicker {
-font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  color: var(--mt);
-  margin-bottom: 8px;
-}
-.smart-value {
-font-size: 21px;
-  font-weight: 700;
-  color: var(--tx);
-  line-height: 1.3;
-  margin-bottom: 5px;
-  letter-spacing: -0.02em;
-}
-.smart-copy {
-font-size: 12px;
-  color: var(--mt2);
-  line-height: 1.6;
-  overflow-wrap: anywhere;
-}
-.smart-list {
-display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 11px;
-}
-.smart-item {
-display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 12px;
-  color: var(--mt2);
-  padding-top: 7px;
-  border-top: 1px solid color-mix(in srgb, var(--bd) 50%, transparent);
-}
-.smart-item:first-child {
-border-top: 0;
-  padding-top: 0;
-}
-.smart-item b {
-color: var(--tx);
-  font-weight: 700;
-  text-align: right;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1074,15 +857,7 @@ color: var(--red);
 
 
 
-.tool-voice-btn {
-position: absolute;
-  right: 5px;
-  bottom: 5px;
-  width: 34px;
-  height: 34px;
-  border: 0;
-  background: transparent;
-}
+
 
 
 
@@ -1147,23 +922,8 @@ padding: 20px;
   
   
 }
-@media (max-width: 1000px) {
-.smart-overview {
-grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-}
-@media (max-width: 560px) {
-.smart-overview {
-grid-template-columns: 1fr;
-    gap: 9px;
-}
-  .smart-card {
-padding: 15px;
-}
-  .smart-value {
-font-size: 18px;
-}
-}
+
+
 
 
 
@@ -1286,81 +1046,22 @@ margin-top: 6px;
    an unreadable stack — on narrow viewports the grid scrolls sideways
    inside its own box instead of squeezing text (the page body itself
    never scrolls horizontally). */
-.calweek-grid {
-display: grid;
-  grid-template-columns: repeat(7, minmax(96px, 1fr));
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-.calweek-col {
-display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-bd);
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
-  border-radius: var(--r-lg);
-  padding: 14px;
-}
-.calweek-col-hd {
-text-align: center;
-  padding: 8px 4px;
-  border-radius: var(--r-sm);
-  background: color-mix(in srgb, var(--ac) 8%, transparent);
-}
-.calweek-col-hd.today {
-background: color-mix(in srgb, var(--ac) 14%, transparent);
-}
-.calweek-dow {
-font-size: 11px;
-  color: var(--mt);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.calweek-daynum {
-font-family: "Noto Sans TC", sans-serif;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--tx);
-  margin-top: 2px;
-}
-.calweek-col-hd.today .calweek-daynum {
-color: var(--ac);
-}
-.calweek-col-body {
-display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.calweek-block {
-border-radius: var(--r-sm);
-  padding: 9px 11px;
-  box-shadow: 0 4px 12px -6px rgba(0, 0, 0, 0.3);
-}
-.calweek-block.clickable {
-cursor: pointer;
-}
 
 
-.calweek-block-title {
-font-size: 12px;
-  font-weight: 700;
-  color: var(--blk-color, var(--tx));
-  margin-top: 2px;
-  line-height: 1.3;
-}
+
+
+
+
+
+
+
+
+
+
+
 
 /* ── Materials ── */
-.res-grid {
-display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  align-items: start;
-}
+
 .rc {
 background: var(--glass-bg);
   border: 1px solid var(--glass-bd);
@@ -1375,105 +1076,21 @@ background: var(--glass-bg);
 .rc.filtered-out {
 display: none;
 }
-.rc-type {
-font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--mt);
-  margin-bottom: 8px;
-}
-.rc-name {
-font-size: 13px;
-  font-weight: 700;
-  color: var(--tx);
-  margin-bottom: 4px;
-  line-height: 1.3;
-}
-.rc-st {
-font-size: 12px;
-  color: var(--mt2);
-  margin-bottom: 8px;
-}
-.rc-when {
-font-size: 11px;
-  padding: 3px 10px;
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--ac) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--ac) 22%, transparent);
-  color: var(--ac);
-  display: inline-block;
-  margin-bottom: 10px;
-}
-.rc-how {
-font-size: 12px;
-  color: var(--mt2);
-  line-height: 1.6;
-  border-top: 1px solid var(--bd);
-  padding-top: 10px;
-}
-.rc-links {
-display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
-}
-.rc-links .lbtn {
-margin-top: 0;
-}
-.rc-links-extra {
-display: none;
-  flex-wrap: wrap;
-  gap: 8px;
-  width: 100%;
-}
-.rc-links-extra.open {
-display: flex;
-}
-.rc-insights {
-margin-top: 10px;
-  border-top: 1px solid var(--bd);
-  padding-top: 10px;
-}
-.rc-insights summary {
-display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  cursor: pointer;
-  list-style: none;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--ac);
-}
-.rc-insights summary::-webkit-details-marker {
-display: none;
-}
-.rc-insights ul {
-display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 8px;
-  padding-left: 18px;
-}
-.rc-insights li {
-font-size: 12px;
-  color: var(--mt2);
-  line-height: 1.6;
-}
-.rc-toggle {
-width: 100%;
-  margin-top: 2px;
-  padding: 6px 0;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--ac);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  font-family: "Noto Sans TC", sans-serif;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /* date-setup */
@@ -1685,12 +1302,10 @@ gap: 4px;
 padding: 6px 11px;
     font-size: 12px;
 }
-  .smeta, .uni-grid {
+  .smeta {
 grid-template-columns: 1fr 1fr;
 }
-  .res-grid {
-grid-template-columns: 1fr;
-}
+  
   .rec-row {
 grid-template-columns: 1fr;
 }
@@ -1714,7 +1329,7 @@ padding: 18px 16px;
    uni-card/res-card's dense text (dates, exam-format sentences) into an
    unreadably narrow strip, so those go single-column here instead. */
 @media (max-width: 640px) {
-.smeta, .uni-grid {
+.smeta {
 grid-template-columns: 1fr;
 }
   .sh {
@@ -1750,11 +1365,7 @@ width: 100%;
 /* Wide desktop — 2 columns of uni-card/rc stretch each card so wide that
    the label/value pairs inside float in a sea of empty space. 3 columns
    uses the extra width productively instead of just inflating card interiors. */
-@media (min-width: 1500px) {
-.uni-grid {
-grid-template-columns: repeat(3, 1fr);
-}
-}
+
 /* ═══════════════════════════════════════════════════════════════════════
    2026-08-25 — Grass / jelly-glass visual system
    One shared spacing and surface language across all five sections.
@@ -1863,32 +1474,17 @@ font-size: 16px;
   color: var(--mt2);
 }
 
-.cal-header-card, .rec-books, .ch-list, .rc, .uni-card, .sm, .calweek-col, .cal-cell {
+.rec-books, .ch-list, .rc, .sm, .cal-cell {
 background: var(--glass-bg);
   border: 1px solid var(--glass-bd);
   box-shadow: var(--glass-shadow);
   backdrop-filter: blur(var(--blur)) saturate(1.2);
   -webkit-backdrop-filter: blur(var(--blur)) saturate(1.2);
 }
-.cal-header-card {
-padding: 30px 32px;
-  margin-bottom: 20px;
-  border-radius: 32px;
-}
-.cal-greet {
-font-size: 28px;
-  line-height: 1.3;
-  margin-bottom: 14px;
-}
-.cal-next-info {
-font-size: 14px;
-  line-height: 1.6;
-}
-.cal-pace-warn {
-padding: 12px 16px;
-  margin: 14px 0;
-  font-size: 14px;
-}
+
+
+
+
 
 .stabs, .filter-bar, .cal-nav {
 background: linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(239, 246, 223, 0.5));
@@ -1935,50 +1531,16 @@ width: auto;
   padding: 0 14px;
 }
 
-.calweek-grid {
-align-items: start;
-  grid-template-columns: repeat(7, minmax(124px, 1fr));
-  gap: 12px;
-  padding: 2px 2px 12px;
-  scrollbar-width: thin;
-}
-.calweek-col {
-align-self: start;
-  gap: 10px;
-  min-height: 0;
-  padding: 12px;
-  border-radius: 24px;
-}
-.calweek-col-hd {
-padding: 11px 6px;
-  border-radius: 15px;
-  background: rgba(116, 151, 72, 0.1);
-}
-.calweek-col-hd.today {
-background: linear-gradient(145deg, rgba(141, 177, 92, 0.25), rgba(255, 255, 255, 0.22));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
-}
-.calweek-dow {
-font-size: 11px;
-}
-.calweek-daynum {
-font-size: 16px;
-}
-.calweek-col-body {
-gap: 8px;
-}
-.calweek-block {
-padding: 11px 12px;
-  border-radius: 14px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.34),
-    0 7px 14px -11px rgba(27, 51, 18, 0.62);
-}
 
-.calweek-block-title {
-font-size: 12px;
-  line-height: 1.6;
-}
+
+
+
+
+
+
+
+
+
 
 .cal-grid {
 grid-template-columns: repeat(7, minmax(96px, 1fr));
@@ -2060,7 +1622,7 @@ padding: 26px;
 .rec-books {
 margin-bottom: 20px;
 }
-.rec-books-hd, .card-section-hd, .rc-type {
+.rec-books-hd {
 font-size: 11px;
   letter-spacing: 0.08em;
 }
@@ -2129,55 +1691,25 @@ padding: 10px;
   border-radius: 22px;
   margin-bottom: 22px;
 }
-.res-grid, .uni-grid {
-gap: 20px;
-}
+
 .rc {
 padding: 26px;
   border-radius: 30px;
 }
 
-.rc-name {
-font-size: 16px;
-  line-height: 1.6;
-}
-.rc-st, .rc-how {
-font-size: 13px;
-}
-.rc-when {
-font-size: 12px;
-  padding: 5px 10px;
-}
-.rc-links {
-gap: 9px;
-  margin-top: 14px;
-}
-.lbtn {
-min-height: 38px;
-  padding: 7px 13px;
-  border-radius: 13px;
-  background: rgba(255, 255, 255, 0.22);
-}
 
-.uni-card {
-border-radius: 30px;
-}
 
-.uni-name {
-font-size: 19px;
-}
-.uni-en {
-font-size: 11px;
-}
-.uni-body {
-padding: 20px 26px 26px;
-}
-.card-section {
-padding: 16px 0;
-}
-.card-section-hd {
-margin-bottom: 10px;
-}
+
+
+
+
+
+
+
+
+
+
+
 .ir {
 padding: 6px 0;
   font-size: 13px;
@@ -2189,24 +1721,11 @@ width: 78px;
 .iv {
 line-height: 1.6;
 }
-.dept-cards, .uni-flags {
-gap: 10px;
-}
-.dept-card {
-padding: 14px 16px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.24);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-.dept-card-name {
-font-size: 13px;
-}
-.dept-card-subjtext, .dept-card-oral, .depts-footnote {
-font-size: 12px;
-}
-.dept-card-format {
-font-size: 14px;
-}
+
+
+
+
+
 
 
 
@@ -2244,18 +1763,12 @@ font-size: 28px;
 font-size: 14px;
     margin-bottom: 24px;
 }
-  .res-grid, .uni-grid, .rec-row {
+  .rec-row {
 grid-template-columns: 1fr;
 }
-  .cal-header-card {
-padding: 24px;
-}
-  .cal-greet {
-font-size: 24px;
-}
-  .calweek-grid {
-grid-template-columns: repeat(7, minmax(136px, 1fr));
-}
+  
+  
+  
 }
 @media (max-width: 640px) {
 body {
@@ -2278,13 +1791,11 @@ font-size: 13px;
 font-size: 11px;
     padding: 7px 4px;
 }
-  .cal-header-card, .rec-books, .ch-list, .rc {
+  .rec-books, .ch-list, .rc {
 padding: 20px;
     border-radius: 24px;
 }
-  .cal-greet {
-font-size: 22px;
-}
+  
   .cal-head {
 align-items: flex-start;
 }
@@ -2295,10 +1806,7 @@ font-size: 21px;
   .cal-nav {
 margin-left: auto;
 }
-  .calweek-grid {
-grid-template-columns: repeat(7, minmax(148px, 1fr));
-    gap: 10px;
-}
+  
   .smeta {
 grid-template-columns: 1fr 1fr;
     min-width: 100%;
@@ -2336,9 +1844,7 @@ align-items: flex-start;
 margin-top: 1px;
 }
   
-  .uni-body {
-padding: 18px 20px 22px;
-}
+  
   .ir {
 flex-direction: column;
     gap: 2px;
@@ -2366,72 +1872,16 @@ display: grid;
 }
 
 /* Daily focus, data status and backup controls */
-.daily-focus {
-max-width: 760px;
-  margin: 0 0 var(--space-3);
-  padding: 18px 20px;
-  border-radius: 18px;
-  background: var(--panel-bg-strong);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38);
-}
-.daily-focus:empty {
-display: none;
-}
-.daily-focus-kicker {
-font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--ac);
-  margin-bottom: 8px;
-}
-.daily-focus-row {
-display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-.daily-focus-title {
-font-size: 16px;
-  font-weight: 700;
-  color: var(--tx);
-  line-height: 1.6;
-}
-.daily-focus-meta {
-font-size: 12px;
-  color: var(--mt2);
-  line-height: 1.6;
-  margin-top: 3px;
-}
-.daily-focus-btn {
-flex-shrink: 0;
-  min-height: 42px;
-  padding: 0 17px;
-  border: 0;
-  border-radius: 13px;
-  background: var(--ac);
-  color: #fff;
-  font-weight: 700;
-  cursor: pointer;
-}
-.daily-focus-progress {
-height: 5px;
-  border-radius: 10px;
-  background: var(--bd);
-  overflow: hidden;
-  margin-top: 14px;
-}
-.daily-focus-progress span {
-display: block;
-  height: 100%;
-  background: var(--ac);
-  border-radius: inherit;
-}
-.daily-focus-pct {
-font-size: 11px;
-  color: var(--mt);
-  margin-top: 6px;
-  text-align: right;
-}
+
+
+
+
+
+
+
+
+
+
 .task-toast {
 position: fixed;
   z-index: 100;
@@ -2602,72 +2052,29 @@ min-height: 142px;
   background: color-mix(in srgb, var(--panel-bg) 88%, transparent) !important;
   border-color: color-mix(in srgb, var(--panel-border) 70%, transparent) !important;
 }
-.rc[data-type="完整課程"] .rc-type {
-grid-area: type;
-  margin: 0;
-  font-size: 11px;
-  letter-spacing: 0.11em;
-  color: var(--ac);
-}
-.rc[data-type="完整課程"] .rc-name {
-grid-area: name;
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.6;
-  letter-spacing: -0.015em;
-}
-.rc[data-type="完整課程"] .rc-st {
-grid-area: status;
-  margin: 0;
-  font-size: 12px;
-  color: var(--mt);
-}
-.rc[data-type="完整課程"] .lbtn {
-grid-area: link;
-  align-self: center;
-  margin: 0 !important;
-  min-height: 40px;
-  padding: 0 13px;
-  border-radius: 12px;
-  background: transparent;
-  border-color: color-mix(in srgb, var(--ac) 24%, transparent);
-  white-space: nowrap;
-  font-size: 12px;
-  font-weight: 700;
-}
 
-.rc-links {
-gap: 8px;
-}
-.rc-links .lbtn {
-margin-top: 0 !important;
-}
+
+
+
+
+
+
 @media (max-width: 640px) {
 .rc[data-type="完整課程"] {
 min-height: 128px;
     padding: 18px;
     column-gap: 12px;
 }
-  .rc[data-type="完整課程"] .rc-name {
-font-size: 16px;
-}
-  .rc[data-type="完整課程"] .lbtn {
-padding: 0 11px;
-    font-size: 0;
-}
-  .rc[data-type="完整課程"] .lbtn::after {
-content: "↗";
-    font-size: 16px;
-}
+  
+  
+  
 }
 
 /* Only the outer information group is glass; inner rows stay visually quiet. */
-.rec-book-row, .ch-mat, .dept-card, .ir {
+.rec-book-row, .ch-mat, .ir {
 box-shadow: none !important;
 }
-.uni-flag, .depts-footnote, .rc-how {
-max-width: 68ch;
-}
+
 .sp, .ch-row {
 content-visibility: auto;
   contain-intrinsic-size: auto 90px;
@@ -2677,16 +2084,9 @@ outline: 2px solid var(--ac);
   outline-offset: 3px;
 }
 @media (max-width: 640px) {
-.daily-focus {
-padding: 16px;
-}
-  .daily-focus-row {
-align-items: flex-start;
-    flex-direction: column;
-}
-  .daily-focus-btn {
-width: 100%;
-}
+
+  
+  
   
   
   
@@ -2719,7 +2119,7 @@ min-width: 0;
   min-height: 124px;
   padding: 18px 12px;
 }
-.calweek-grid, .cal-grid {
+.cal-grid {
 width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -2753,7 +2153,7 @@ min-height: 92px;
   .cal-wrap {
 overflow: visible;
 }
-  .calweek-grid, .cal-grid {
+  .cal-grid {
 overflow-x: auto;
     overscroll-behavior-inline: contain;
 }
@@ -2793,7 +2193,7 @@ background:
     radial-gradient(circle at 12% 6%, rgba(255, 255, 255, 0.78), transparent 37%),
     linear-gradient(180deg, rgba(244, 248, 239, 0.46), rgba(232, 240, 222, 0.57));
 }
-.cal-header-card, .rec-books, .ch-list, .rc, .uni-card, .sm, .calweek-col, .cal-cell, .sp-donut {
+.rec-books, .ch-list, .rc, .sm, .cal-cell, .sp-donut {
 border-color: rgba(255, 255, 255, 0.9);
   box-shadow: var(--glass-shadow);
   backdrop-filter: blur(34px) saturate(1.25);
@@ -2809,52 +2209,17 @@ background:
     inset 0 1px 0 rgba(255, 255, 255, 0.58),
     0 10px 24px -14px rgba(45, 72, 38, 0.76);
 }
-.calweek-col {
-background: rgba(251, 253, 247, 0.62);
-}
-.calweek-block {
-position: relative;
-  overflow: hidden;
-  background:
-    radial-gradient(
-      circle at 15% 0%,
-      color-mix(in srgb, var(--task-accent) 18%, transparent),
-      transparent 58%
-    ),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.82), rgba(246, 249, 240, 0.63));
-  border: 1px solid color-mix(in srgb, var(--task-accent) 22%, rgba(255, 255, 255, 0.72));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    0 8px 18px -14px color-mix(in srgb, var(--task-accent) 70%, transparent);
-}
-.calweek-block::before {
-content: "";
-  position: absolute;
-  left: 0;
-  top: 9px;
-  bottom: 9px;
-  width: 3px;
-  border-radius: 0 4px 4px 0;
-  background: var(--task-accent);
-  opacity: 0.78;
-}
 
-.calweek-block-title {
-color: var(--tx);
-  padding-left: 3px;
-}
-.calweek-col-hd {
-background: rgba(255, 255, 255, 0.34);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-}
-.calweek-col-hd.today {
-background: linear-gradient(145deg, rgba(218, 235, 203, 0.68), rgba(255, 255, 255, 0.42));
-  border-color: rgba(255, 255, 255, 0.76);
-}
+
+
+
+
+
+
 .cal-cell.today {
 background: linear-gradient(145deg, rgba(214, 232, 198, 0.76), rgba(255, 255, 255, 0.5));
 }
-.dept-card, .lbtn, .rc-when, .chip {
+.chip {
 background: rgba(255, 255, 255, 0.38);
   border-color: rgba(255, 255, 255, 0.58);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
@@ -2880,11 +2245,11 @@ background:
 }
 
 /* Keep touch / wheel scrolling, hide every visual scrollbar. */
-html, body, .calweek-grid, .cal-grid, .stabs, .pillnav, .rc-links-extra {
+html, body, .cal-grid, .stabs, .pillnav {
 scrollbar-width: none;
   -ms-overflow-style: none;
 }
-html::-webkit-scrollbar, body::-webkit-scrollbar, .calweek-grid::-webkit-scrollbar, .cal-grid::-webkit-scrollbar, .stabs::-webkit-scrollbar, .pillnav::-webkit-scrollbar, .rc-links-extra::-webkit-scrollbar {
+html::-webkit-scrollbar, body::-webkit-scrollbar, .cal-grid::-webkit-scrollbar, .stabs::-webkit-scrollbar, .pillnav::-webkit-scrollbar {
 display: none;
   width: 0;
   height: 0;
@@ -2918,20 +2283,14 @@ background:
 }
 
 /* Borderless glass: depth comes from light and shadow, not white outlines. */
-.cal-header-card, .rec-books, .ch-list, .rc, .uni-card, .sm, .calweek-col, .cal-cell, .sp-donut, .stabs, .filter-bar, .cal-nav {
+.rec-books, .ch-list, .rc, .sm, .cal-cell, .sp-donut, .stabs, .filter-bar, .cal-nav {
 border: none;
 }
-.calweek-col-hd, .calweek-col-hd.today, .calweek-block, .dept-card, .lbtn, .rc-when, .chip, .filter-chip, .stab, .pill {
+.chip, .filter-chip, .stab, .pill {
 border: none;
 }
-.calweek-block {
-box-shadow:
-    inset 3px 0 0 color-mix(in srgb, var(--task-accent) 74%, transparent),
-    0 8px 18px -14px color-mix(in srgb, var(--task-accent) 58%, transparent);
-}
-.calweek-block::before {
-display: none;
-}
+
+
 
 @media (max-width: 900px) {
 #main {
@@ -2967,7 +2326,7 @@ background: url("/assets/rolling-hills-pexels-32821671.jpg") center 48% / cover 
 body::after {
 background: rgba(235, 241, 232, 0.18);
 }
-.cal-header-card, .rec-books, .ch-list, .rc, .uni-card, .sm, .calweek-col, .cal-cell, .sp-donut, .stabs, .filter-bar, .cal-nav, .tip {
+.rec-books, .ch-list, .rc, .sm, .cal-cell, .sp-donut, .stabs, .filter-bar, .cal-nav, .tip {
 background: rgba(249, 251, 247, 0.68) !important;
   border: none !important;
   box-shadow: var(--glass-shadow) !important;
@@ -2985,30 +2344,16 @@ background: rgba(92, 121, 73, 0.92) !important;
   border: none !important;
   box-shadow: 0 7px 18px -12px rgba(39, 64, 30, 0.6) !important;
 }
-.calweek-col-hd, .calweek-col-hd.today {
-background: rgba(238, 243, 233, 0.72) !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-.calweek-col-hd.today {
-background: rgba(218, 231, 207, 0.78) !important;
-}
-.calweek-block {
-background: rgba(250, 251, 248, 0.72) !important;
-  border: none !important;
-  box-shadow: 0 8px 18px -14px rgba(29, 43, 27, 0.38) !important;
-}
-.calweek-block::before {
-display: none !important;
-}
 
-.calweek-block-title {
-color: var(--tx);
-}
+
+
+
+
+
 .cal-cell.today {
 background: rgba(218, 231, 207, 0.78) !important;
 }
-.dept-card, .lbtn, .rc-when, .chip, .search-input {
+.chip, .search-input {
 background: rgba(250, 251, 248, 0.58) !important;
   border: none !important;
   box-shadow: none !important;
@@ -3310,32 +2655,15 @@ grid-template-columns: 1fr !important;
 }
 
 /* Compact material flow — cards of different heights no longer leave empty grid rows. */
-.res-grid {
-display: block !important;
-  columns: 3;
-  column-gap: var(--space-3);
-}
-.res-grid .rc {
-width: 100%;
-  margin: 0 0 var(--space-3);
-  break-inside: avoid;
-  -webkit-column-break-inside: avoid;
-}
-@media (max-width: 1100px) {
-.res-grid {
-columns: 2;
-}
-}
-@media (max-width: 640px) {
-.res-grid {
-columns: 1;
-}
-}
+
+
+
+
 /* Expansion remains instant: avoids the earlier second resize while content loads. */
 
 
 /* Stable motion pass: feedback without moving or resizing any component. */
-.pill, .filter-chip, .stab, .nav-btn, .collapse-all-btn, .lbtn, .rc-toggle, .rc, .uni-card, .rec-books, .calweek-col, .cal-cell, .sm, .sp-donut, .cal-header-card, .calweek-block.clickable {
+.pill, .filter-chip, .stab, .nav-btn, .collapse-all-btn, .rc, .rec-books, .cal-cell, .sm, .sp-donut {
 transform: none !important;
 }
 
@@ -3386,10 +2714,10 @@ margin: 0;
 html {
 scrollbar-width: none;
 }
-html::-webkit-scrollbar, body::-webkit-scrollbar, .calweek-grid::-webkit-scrollbar, .cal-grid::-webkit-scrollbar, .stabs::-webkit-scrollbar, .pillnav::-webkit-scrollbar {
+html::-webkit-scrollbar, body::-webkit-scrollbar, .cal-grid::-webkit-scrollbar, .stabs::-webkit-scrollbar, .pillnav::-webkit-scrollbar {
 display: none;
 }
-.calweek-grid, .cal-grid, .stabs, .pillnav {
+.cal-grid, .stabs, .pillnav {
 scrollbar-width: none;
 }
 
@@ -3415,7 +2743,7 @@ max-width: 720px;
   color: var(--mt2);
 }
 
-.cal-header-card, .calweek-col, .cal-cell, .rec-books, .ch-list, .rc, .uni-card, .sm, .sp-donut, .filter-bar, .cal-nav, .stabs {
+.cal-cell, .rec-books, .ch-list, .rc, .sm, .sp-donut, .filter-bar, .cal-nav, .stabs {
 background: var(--panel-bg) !important;
   border: 1px solid var(--panel-border) !important;
   box-shadow: var(--panel-shadow) !important;
@@ -3437,15 +2765,8 @@ background: var(--ac) !important;
   box-shadow: 0 8px 18px -13px rgba(46, 78, 28, 0.8) !important;
 }
 
-.cal-header-card {
-padding: var(--space-4);
-  border-radius: 26px;
-  margin-bottom: var(--space-3);
-}
-.cal-greet {
-font-size: clamp(22px, 2.4vw, 32px);
-  margin-bottom: var(--space-3);
-}
+
+
 
 .cal-head {
 margin-bottom: var(--space-3);
@@ -3454,20 +2775,9 @@ margin-bottom: var(--space-3);
 padding: 4px;
   border-radius: 16px;
 }
-.calweek-grid {
-gap: var(--space-2);
-  padding: 0 0 var(--space-2);
-}
-.calweek-col {
-padding: var(--space-2);
-  border-radius: 20px;
-  gap: var(--space-2);
-}
-.calweek-block {
-padding: 11px 12px;
-  border-radius: 13px;
-  box-shadow: none;
-}
+
+
+
 .cal-grid {
 gap: var(--space-2);
 }
@@ -3528,7 +2838,7 @@ list-style: none;
   font-size: 13px;
   color: var(--tx);
 }
-.rec-books-hd::-webkit-details-marker, .uni-summary::-webkit-details-marker {
+.rec-books-hd::-webkit-details-marker {
 display: none;
 }
 .rec-books-hd::after {
@@ -3594,146 +2904,55 @@ padding: 13px 14px;
 
 
 
-.res-grid {
-grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-3);
-}
+
 .rc {
 padding: var(--space-4);
   border-radius: 24px;
   min-width: 0;
 }
-.rc-name {
-font-size: 16px;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
-}
-.rc-st, .rc-how {
-font-size: 12px;
-  line-height: 1.6;
-}
-.lbtn {
-margin-top: var(--space-3) !important;
-}
 
-.uni-grid {
-gap: var(--space-3);
-}
-.uni-card {
-border-radius: 24px;
-  overflow: hidden;
-}
-.uni-summary {
-list-style: none;
-  display: grid;
-  grid-template-columns: minmax(160px, 1fr) minmax(200px, 1.2fr) 30px;
-  align-items: center;
-  gap: var(--space-3);
-  cursor: pointer;
-  padding: 20px var(--space-4);
-  background: transparent;
-}
-.uni-summary-facts {
-display: flex;
-  flex-direction: column;
-  gap: 3px;
-  font-size: 11px;
-  color: var(--mt);
-  line-height: 1.6;
-}
-.uni-summary-facts strong {
-font-size: 12px;
-  color: var(--tx);
-  font-weight: 700;
-}
-.uni-summary-chevron {
-font-size: 18px;
-  color: var(--mt);
-}
-.uni-card[open] .uni-summary-chevron {
-transform: rotate(180deg);
-}
-.uni-body {
-padding: 0 var(--space-4) var(--space-4);
-  border-top: 1px solid var(--bd);
-}
-.card-section {
-padding: var(--space-3) 0;
-}
-.school-readiness {
-  margin: 2px 0 var(--space-3);
-  padding: 13px 14px;
-  border-radius: var(--ui-radius-section);
-  background: color-mix(in srgb,var(--ac) 7%,var(--u-glass-sub));
-}
-.school-readiness-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-.school-readiness-head > div {display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 9px;}
-.school-readiness-head strong {color:var(--tx);font-size:12px;}
-.school-readiness-head span,
-.school-readiness-head small {color:var(--mt);font-size:11px;font-weight:700;}
-.school-readiness-track {
-  height: 6px;
-  margin-top: 9px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--bd2);
-}
-.school-readiness-track span {
-  display: block;
-  width: var(--readiness);
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg,var(--ac),color-mix(in srgb,var(--ac) 65%,var(--grn)));
-  transition: width var(--dur-2) var(--ease);
-}
-.school-readiness p {margin:7px 0 0;color:var(--mt2);font-size:11px;line-height:1.6;}
-.school-readiness-next {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-  margin-top: 10px;
-  padding: 9px 10px;
-  border: 0;
-  border-radius: var(--ui-radius-control);
-  background: var(--u-glass-control);
-  color: var(--tx);
-  text-align: left;
-  cursor: pointer;
-}
-.school-readiness-next span {min-width:0;font-size:11px;line-height:1.6;}
-.school-readiness-next b {display:block;color:var(--ac);font-size:11px;letter-spacing:.04em;}
-.school-readiness-next svg {flex:0 0 auto;color:var(--ac);transition:transform var(--dur-1) var(--ease);}
-.school-readiness-next:hover svg {transform:translateX(3px);}
-.readiness-target-flash {animation:readiness-target-pulse 1.2s var(--ease);}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @keyframes readiness-target-pulse {
   0%,100% {background:transparent;}
   30% {background:color-mix(in srgb,var(--ch-color) 12%,transparent);}
 }
-.school-readiness.is-unavailable {background:var(--u-glass-sub);}
-.school-readiness.is-unavailable > div {display:flex;flex-direction:column;gap:3px;}
-.school-readiness.is-unavailable strong {color:var(--tx);font-size:12px;}
-.school-readiness.is-unavailable span {color:var(--mt2);font-size:11px;line-height:1.6;}
-.dept-card {
-background: rgba(255, 255, 255, 0.22);
-  border: 0;
-  padding: 13px 14px;
-}
+
+
+
+
+
 
 
 
 
 
 @media (max-width: 1100px) {
-.res-grid {
-grid-template-columns: repeat(2, minmax(0, 1fr));
-}
+
   .sp-top {
 grid-template-columns: 120px repeat(2, minmax(0, 1fr));
 }
@@ -3762,7 +2981,7 @@ flex: 0 0 auto;
   .sec {
 padding-top: var(--space-4);
 }
-  .uni-grid, .rec-row {
+  .rec-row {
 grid-template-columns: 1fr;
 }
 }
@@ -3786,9 +3005,7 @@ font-size: 27px;
 font-size: 13px;
     margin-bottom: var(--space-3);
 }
-  .res-grid {
-grid-template-columns: 1fr;
-}
+  
   .sp-top {
 grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-2);
@@ -3830,21 +3047,10 @@ padding: 12px;
     align-items: flex-start;
 }
   
-  .uni-summary {
-grid-template-columns: 1fr 30px;
-    padding: 17px var(--space-3);
-}
-  .uni-summary-facts {
-grid-column: 1/-1;
-    grid-row: 2;
-}
-  .uni-summary-chevron {
-grid-column: 2;
-    grid-row: 1;
-}
-  .uni-body {
-padding: 0 var(--space-3) var(--space-3);
-}
+  
+  
+  
+  
 }
 
 /* Final glass system — one material language across every page. */
@@ -3902,20 +3108,18 @@ background: var(--u-glass-control) !important;
 background: var(--frost-bg) !important;
   border-color: var(--frost-border) !important;
 }
-.cal-cell.today, .calweek-col-hd.today {
+.cal-cell.today {
 background: color-mix(in srgb, var(--ac) 12%, var(--frost-bg)) !important;
 }
-.pill.on, .filter-chip.active, .stab.on, .daily-focus-btn {
+.pill.on, .filter-chip.active, .stab.on {
 background: var(--ac) !important;
   color: #fff !important;
   border-color: transparent !important;
 }
-.uni-summary, .rec-books-hd, .card-section, .uni-body {
+.rec-books-hd {
 background: transparent !important;
 }
-.uni-body {
-padding-top: var(--space-3) !important;
-}
+
 .expand-icon {
 position: relative;
   display: inline-grid;
@@ -3938,26 +3142,15 @@ content: "";
   border-bottom: 1.7px solid currentColor;
   transform: translateY(-2px) rotate(45deg);
 }
-.uni-card[open] .uni-summary-chevron, .rec-books[open] .rec-books-chevron, .ch-row:not(.collapsed) .ch-chevron, .rc-toggle.is-open .rc-toggle-icon {
+.rec-books[open] .rec-books-chevron, .ch-row:not(.collapsed) .ch-chevron {
 transform: rotate(180deg) !important;
 }
-.uni-summary-chevron {
-justify-self: end;
-  font-size: 0;
-}
+
 .rec-books-chevron {
 margin-left: 8px;
 }
-.rc-toggle {
-display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-.rc-toggle-icon {
-flex-basis: 24px;
-  width: 24px;
-  height: 24px;
-}
+
+
 @media (max-width: 640px) {
 :is(
     .brandbar,
@@ -4081,17 +3274,8 @@ bottom: 82px;
 
 /* Keep horizontal week scrolling in one compositor layer. Individual
    backdrop-filter layers left white repaint tiles while dragging. */
-.calweek-grid {
-isolation: isolate;
-  contain: paint;
-  background: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-.calweek-col {
-backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
+
+
 
 /* Video alternatives — one task, clearly separated course/teacher series. */
 
@@ -4210,10 +3394,7 @@ background: var(--u-glass-sub) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
-.calweek-block {
-background: var(--u-glass-control) !important;
-  border-radius: var(--u-radius-control) !important;
-}
+
 /* Calendar is one continuous glass surface. Day columns stay transparent so
    horizontal scrolling cannot expose tall rectangular repaint tiles. */
 :is(.cal-header-card, .smart-card, .cal-view-toggle, .cal-nav, .cal-wrap) {
@@ -4225,36 +3406,26 @@ padding: 16px !important;
   border-radius: var(--u-radius-main) !important;
   box-shadow: var(--u-glass-shadow) !important;
 }
-.calweek-col {
-background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-.calweek-col-hd, .cal-cell {
+
+.cal-cell {
 background: var(--u-glass-sub) !important;
 }
-.calweek-block {
-background: rgba(255, 255, 255, 0.72) !important;
-}
+
 :is(.cal-header-card, .cal-wrap, .cal-view-toggle, .cal-nav, .smart-card) {
 --tx: #1b2b22;
   --mt: #526158;
   --mt2: #34483c;
   color: var(--tx);
 }
-.cal-title, .cal-greet, .calweek-daynum, .cal-daynum, .calweek-block-title {
+.cal-title, .cal-daynum {
 color: var(--tx) !important;
 }
-.calweek-dow, .cal-dow {
+.cal-dow {
 color: var(--mt2) !important;
   font-weight: 700 !important;
 }
 
-.calweek-block-title {
-font-size: 12px !important;
-  font-weight: 700 !important;
-  line-height: 1.6 !important;
-}
+
 .cal-cell.out {
 opacity: 0.62 !important;
 }
@@ -4323,18 +3494,16 @@ background: var(--u-group-surface) !important;
 }
 /* Resource types used to carry their own opacity; all material and school
    cards now use the same readable primary glass surface. */
-.rc[data-type="完整課程"], .res-grid .rc, .uni-card {
+.rc[data-type="完整課程"] {
 background: var(--u-glass-main) !important;
 }
-.uni-card, .rc {
+.rc {
 --tx: var(--u-text-strong);
   --mt: var(--u-text-muted);
   --mt2: var(--u-text-muted);
   color: var(--u-text-strong);
 }
-.rc-st {
-color: var(--mt2) !important;
-}
+
 /* Switching a whole section with opacity/transform forces Chromium to
    rebuild every backdrop-filter layer. Keep tab feedback on the buttons,
    but reveal page and subject panels without a compositor animation. */
@@ -4491,65 +3660,16 @@ padding: 0 !important;
 .cal-head {
 margin-bottom: 14px !important;
 }
-.calweek-grid {
-align-items: start !important;
-  gap: 10px !important;
-  padding: 2px 1px 10px !important;
-}
-.calweek-col {
-align-self: start !important;
-  gap: 8px !important;
-  padding: 10px !important;
-  border-radius: 22px !important;
-  background: rgba(255, 255, 255, 0.3) !important;
-  box-shadow: 0 14px 32px -27px rgba(25, 40, 25, 0.52) !important;
-}
-.calweek-col-hd, .calweek-col-hd.today {
-min-height: 62px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 5px !important;
-  border-radius: 15px !important;
-  background: transparent !important;
-}
-.calweek-col-hd.today {
-background: color-mix(in srgb, var(--ac) 12%, transparent) !important;
-}
-.calweek-dow {
-font-size: 11px !important;
-}
-.calweek-daynum {
-font-size: 18px !important;
-  line-height: 1.3 !important;
-}
-.calweek-col-body {
-gap: 7px !important;
-}
-.calweek-block {
-min-height: 66px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 10px 11px !important;
-  border-radius: 15px !important;
-  background: rgba(255, 255, 255, 0.6) !important;
-  box-shadow: none !important;
-}
 
-@media (max-width: 640px) {
-.calweek-grid {
-grid-template-columns: repeat(7, minmax(132px, 1fr)) !important;
-}
-  .calweek-col {
-padding: 9px !important;
-    border-radius: 19px !important;
-}
-  .calweek-block {
-min-height: 62px;
-}
-}
+
+
+
+
+
+
+
+
+
 
 /* .cal-nav is a normal toolbar capsule (background/padding/gap already come
    from the shared :is(.stabs, .cal-view-toggle, .cal-nav, ...) rules) — its
@@ -4773,9 +3893,7 @@ filter: brightness(0.94);
    hover with a uniform brightness lift instead — background and text
    brighten together so the fill/text contrast that was tuned for the
    resting state holds at every point of the transition. */
-.ui-btn-primary:hover:not(:active) {
-filter: brightness(1.08);
-}
+
 :is(.chat-input, .search-input, .tool-field input, .global-search-input-row input) {
 min-height: 44px !important;
   border: 0 !important;
@@ -4918,10 +4036,7 @@ width: 40px !important;
 }
 
 
-.ui-btn-primary {
-background: var(--ac) !important;
-  color: #f7fbf4 !important;
-}
+
 
 /* Button groups reuse the site's existing primary glass material tokens.
    The calendar shell is intentionally excluded. */
@@ -4935,7 +4050,7 @@ background: var(--u-glass-main) !important;
 
 /* The calendar shell stays transparent; its day columns/month cells use the
    same existing glass material as the site's cards. */
-.calweek-col, .cal-grid .cal-cell {
+.cal-grid .cal-cell {
 background: var(--u-glass-main) !important;
   border: 0 !important;
   box-shadow: var(--u-glass-shadow) !important;
@@ -4944,13 +4059,8 @@ background: var(--u-glass-main) !important;
 }
 
 /* Week-view labels stay neutral; subject identity lives on the card outline. */
-.calweek-block-title {
-color: var(--mt2) !important;
-  font-weight: 400 !important;
-}
-.calweek-block {
-border: 1px solid color-mix(in srgb, var(--task-accent, var(--mt)) 42%, transparent) !important;
-}
+
+
 
 /* Single-pass frost: once a primary surface owns the backdrop blur, none of
    its descendants may sample and blur that backdrop a second time. */
@@ -5177,17 +4287,7 @@ box-shadow: none !important;
 
 
 /* Smart overview cards are fully static and do not own compositor blur layers. */
-#smartOverview > .smart-card {
-background: var(--u-glass-main) !important;
-  border: 0 !important;
-  outline: 0 !important;
-  box-shadow: var(--u-glass-shadow) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
 
-  transform: none !important;
-  opacity: 1 !important;
-}
 
 /* High-specificity lock for every in-page glass component previously captured
    by the mixed-specificity canonical :is() motion rule. */
@@ -5262,29 +4362,8 @@ backdrop-filter: none !important;
 
 /* Calendar greeting/primary-task panel is completely static.  Its content is
    refreshed by the planner, so even color-only transitions read as a flash. */
-body #main #sec-schedule > .cal-header-card {
-background: rgba(255, 255, 255, 0.28) !important;
-  border: 0 !important;
-  outline-color: transparent !important;
-  box-shadow: 0 16px 38px -29px rgba(32, 49, 28, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
 
-  transform: none !important;
-  opacity: 1 !important;
-}
-body #main #sec-schedule > .cal-header-card > .daily-focus {
-background: rgba(255, 255, 255, 0.48) !important;
-  border: 0 !important;
-  outline-color: transparent !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
 
-  transform: none !important;
-  opacity: 1 !important;
-}
 
 /* Keep the floating AI/Chat control readable over bright photographs. */
 
@@ -5348,15 +4427,10 @@ body#appRoot :is(
 }
 
 /* Resource descriptions do not use a white section divider. */
-body#appRoot #resGrid .rc-how {
-  border-top: 0 !important;
-  padding-top: 0 !important;
-}
+
 
 /* School cards open without a white divider below the summary row. */
-body#appRoot #uniGrid .uni-body {
-  border-top: 0 !important;
-}
+
 
 /* Users who ask the OS for reduced motion get instant state changes instead
    of the --dur-1/--dur-2 transitions added above. */
@@ -5370,15 +4444,6 @@ body#appRoot #uniGrid .uni-body {
 
 
 /* ── 重啟模式 ─────────────────────────────────────────── */
-.restart-card{background:var(--surf);border:1px solid var(--bd);border-radius:20px;padding:18px 20px;margin:0 0 18px;display:flex;flex-direction:column;gap:12px;}
-.restart-card[hidden]{display:none;}
-.rs-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
-.rs-kicker{font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--ac);}
-.rs-title{font-size:18px;font-weight:700;color:var(--tx);}
-.rs-streak{display:flex;flex-direction:column;align-items:center;min-width:64px;padding:6px 10px;border-radius:14px;background:var(--surf2);border:1px solid var(--bd);}
-.rs-streak b{font-size:22px;line-height:1.3;color:var(--ac);font-variant-numeric:tabular-nums;}
-.rs-streak span{font-size:11px;color:var(--mt);font-weight:700;}
-.rs-sub{font-size:12px;color:var(--mt2);}
 
 
 
@@ -5388,53 +4453,61 @@ body#appRoot #uniGrid .uni-body {
 
 
 
-.rs-goal{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.rs-goal-lbl{font-size:12px;font-weight:700;color:var(--mt2);min-width:56px;}
-
-
-
-
-.rs-walk{font-size:12px;color:var(--mt);font-weight:700;}
-.rs-walk.on{color:var(--grn);}
 
 
 
 
 
-.rs-grid-wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-.rs-grid-lbl,.rs-grid-note{font-size:11px;color:var(--mt);font-weight:700;}
-.rs-grid{display:inline-flex;gap:4px;}
-.rs-cell{width:16px;height:16px;border-radius:4px;background:var(--surf3);border:1px solid var(--bd);}
-.rs-cell.lv1{background:color-mix(in srgb,var(--grn) 40%,var(--surf2));}
-.rs-cell.lv2{background:color-mix(in srgb,var(--grn) 70%,var(--surf2));}
-.rs-cell.lv3{background:var(--grn);}
-.rs-cell.today{outline:2px solid var(--ac);outline-offset:1px;}
-.rs-msg{font-size:12px;color:var(--mt2);}
-@media (max-width:640px){
-.restart-card{padding:14px;}}
 
 
-.restart-card .rs-grid{flex-wrap:wrap;}
 
-.rs-lines{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--tx);}
-.rs-line{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;line-height:1.6;}
-.rs-tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;flex-shrink:0;}
-.rs-tag-exam{background:color-mix(in srgb,var(--ac) 16%,transparent);color:var(--ac);}
-.rs-sep{color:var(--mt);margin:0 2px;}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* 2026/9/25 重啟卡片改純顯示 */
-.rs-today{background:var(--surf2);border:1px solid var(--bd);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;}
-.rs-today-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
-.rs-today-min{font-size:26px;font-weight:700;color:var(--ac);font-variant-numeric:tabular-nums;}
-.rs-today-of{font-size:12px;color:var(--mt);font-weight:700;}
+
+
+
+
 .rs-bar{height:8px;border-radius:99px;background:var(--surf3);overflow:hidden;}
 .rs-bar span{display:block;height:100%;background:var(--grn);border-radius:99px;transition:width .4s;}
-.rs-items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;}
-.rs-items li{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tx);}
-.rs-item-subj{font-size:11px;font-weight:700;color:var(--ac);background:color-mix(in srgb,var(--ac) 12%,transparent);padding:2px 8px;border-radius:99px;white-space:nowrap;}
-.rs-item-min{margin-left:auto;font-size:12px;color:var(--mt2);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}
-.rs-empty{font-size:12px;color:var(--mt);}
-.rs-stats{display:flex;flex-wrap:wrap;gap:4px;font-size:12px;color:var(--mt2);font-weight:700;}
+
+
+
+
+
+
 
 /* Chapter card → chapter study room (public/study.html). */
 .ch-study-link {
@@ -5470,13 +4543,12 @@ body#appRoot *, body#appRoot *::before, body#appRoot *::after {
 body#appRoot :is(.cal-header-card, .rec-books, .ch-list, .rc, .uni-card, .chat-wrap, .memory-panel, .sm, .checkin-banner,
   #date-setup-card, .calweek-col, .sp-donut, .stabs, .filter-bar, .tip, .subject-overview-card, .dept-card,
   .ai-context-panel, .chapter-tool-dialog, .global-search-dialog, .restart-card, .chat-log, .calweek-block),
-body#appRoot #main #sec-schedule > .cal-header-card,
 body#appRoot #main .subject-overview-card {
   background: var(--surf) !important;
   border: 1px solid var(--bd) !important;
   box-shadow: 0 1px 0 rgba(46, 36, 24, .03) !important;
 }
-body#appRoot #main #sec-schedule > .cal-header-card > .daily-focus { background: var(--surf2) !important; border: 0 !important; box-shadow: none !important; }
+
 /* top bar: solid strip */
 body#appRoot :is(.brandbar, .topbar) {
   background: color-mix(in srgb, var(--bg) 96%, transparent) !important;
@@ -5498,8 +4570,7 @@ body#appRoot :is(.sh, .ss) { text-shadow: none !important; }
 
 /* ── 主頁只留「日曆」和「六科」：其他分頁、提示卡、浮動助教先收起來 ──
    （程式和資料都還在，要恢復只要刪掉這段。） */
-#appRoot .pill[data-sec="materials"], #appRoot .pill[data-sec="schools"], #appRoot .pill[data-sec="ai"], #appRoot #restartCard, #appRoot #smartOverview,
-#appRoot #calPaceWarning, #appRoot #calNextInfo,
+#appRoot .pill[data-sec="materials"], #appRoot .pill[data-sec="schools"], #appRoot .pill[data-sec="ai"],
 #appRoot .rec-books:not(.rec-series) { display: none !important; }
 
 /* 六科：每章的影片清單，一列一支 */
@@ -5518,17 +4589,17 @@ body#appRoot :is(.sh, .ss) { text-shadow: none !important; }
 #appRoot .ch-video.done .video-series-label { color: var(--mt); }
 
 /* 今日主任務底下：連續天數＋六科進度條 */
-#appRoot .progress-strip { display: flex; align-items: center; gap: 14px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--bd); }
-#appRoot .ps-streak { display: flex; flex-direction: column; align-items: center; min-width: 52px; color: var(--mt); }
-#appRoot .ps-streak b { font-size: 22px; line-height: 1; color: var(--mt); font-variant-numeric: tabular-nums; }
-#appRoot .ps-streak.on b { color: #d9822b; }
-#appRoot .ps-streak span { font-size: 11px; margin-top: 3px; }
-#appRoot .ps-subjs { flex: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 14px; }
-#appRoot .ps-subj { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--mt); }
-#appRoot .ps-name { flex: 0 0 auto; }
-#appRoot .ps-bar { flex: 1; height: 6px; border-radius: 99px; background: color-mix(in srgb, var(--tx) 12%, transparent); overflow: hidden; }
-#appRoot .ps-bar span { display: block; height: 100%; border-radius: 99px; transition: width .6s cubic-bezier(.2,.8,.2,1); }
-@media (max-width: 520px) { #appRoot .ps-subjs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+
+
+
+
+
+
+
+
+
+
 
 /* 月曆：每天直接寫要學什麼（科目、章、幾支影片、多久）；點一天看清單 */
 .cal-what { margin-top: 4px; font-size: 12px; font-weight: 700; line-height: 1.3; color: var(--tx);
@@ -5632,16 +4703,8 @@ body#appRoot #main .sp .smeta .sm { border-radius: 0 !important; }
 body#appRoot #main .sp .subject-overview-card { min-width: 0; overflow: hidden; }
 
 /* 日曆頂卡：今日主任務撐滿整張卡；寬螢幕時六科進度放右邊，不留一大片空白 */
-body#appRoot #sec-schedule .cal-header-card .daily-focus { max-width: none !important; width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; }
-@media (min-width: 1100px) {
-  body#appRoot #sec-schedule .daily-focus { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(300px, 34%); column-gap: 28px; align-items: start; }
-  body#appRoot #sec-schedule .daily-focus > :not(.progress-strip) { grid-column: 1; }
-  body#appRoot #sec-schedule .daily-focus > .progress-strip {
-    grid-column: 2; grid-row: 1 / span 4; align-self: stretch; margin: 0; padding: 0 0 0 28px;
-    border-top: 0; border-left: 1px solid var(--bd);
-  }
-  body#appRoot #sec-schedule .daily-focus > .progress-strip .ps-subjs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
+
+
 
 /* 六科：不要「全部展開」按鈕；頂列只剩科目列＋進度 */
 body#appRoot #main .sp .filter-bar { display: none !important; }
@@ -5735,18 +4798,18 @@ body#appRoot :is(.cal-header-card, .ch-list, .tip, .calday, .sp .subject-overvie
 }
 body#appRoot :is(.cal-header-card, .ch-list, .tip) { padding: var(--card-p) !important; }
 body#appRoot .calday { padding: 16px var(--card-p) !important; }
-body#appRoot .daily-focus { border-radius: var(--cell-r) !important; }
+
 body#appRoot .cal-cell { border-radius: var(--cell-r) !important; }
 body#appRoot .rec-books.rec-series .rec-books-hd { padding: 18px var(--card-p) 6px !important; }
 body#appRoot .rec-books.rec-series .rec-books-body { padding: 0 var(--card-p) 12px !important; }
 body#appRoot .sp .subject-overview-card { padding: 20px var(--card-p) !important; }
 /* 日曆頁：區塊之間都是 16px */
-body#appRoot #sec-schedule .cal-header-card { margin: 0 0 var(--g) !important; }
+
 body#appRoot #sec-schedule .cal-wrap { margin: 0 !important; }
 body#appRoot #sec-schedule .cal-head { margin: 0 0 12px !important; }
 body#appRoot #sec-schedule .cal-grid { padding: 0 !important; gap: 10px !important; }
 body#appRoot #sec-schedule .calday { margin-top: var(--g) !important; }
-body#appRoot .cal-greet { margin-bottom: 14px !important; }
+
 /* 六科頁：標題下 20px，其餘區塊 16px，左右欄間距 16px */
 @media (min-width: 1000px) {
   body#appRoot #main #sec-subjects.on { column-gap: var(--g) !important; }
@@ -5758,7 +4821,7 @@ body#appRoot .cal-greet { margin-bottom: 14px !important; }
 }
 body#appRoot #sec-subjects .ss { margin-top: 6px !important; }
 /* 懸浮鈕在日曆頂卡的右上方：卡片外緣不變（跟下面月曆對齊），只把卡片裡的內容往左讓開 */
-@media (min-width: 760px) { body#appRoot #sec-schedule .cal-header-card { padding-right: 84px !important; } }
+
 /* 六科：最下面的科目說明（.tip）不要 */
 body#appRoot #main .sp .tip { display: none !important; }
 /* 六科：不要副標；標題和科目列之間 16px */
@@ -5767,7 +4830,7 @@ body#appRoot #sec-subjects .sh { margin-bottom: 0 !important; }
 body#appRoot #main #sec-subjects.on > .stabs { margin-top: 16px !important; }
 @media (min-width: 1000px) { body#appRoot #main #sec-subjects.on > .stabs { margin: 16px 0 0 !important; } }
 /* 日曆：跟六科一樣只放大標，不要問候＋今日主任務卡；標題到月曆 16px */
-body#appRoot #sec-schedule .cal-header-card { display: none !important; }
+
 body#appRoot #sec-schedule > .sh { margin: 0 0 16px !important; }
 @media (min-width: 760px) { body#appRoot #sec-schedule .cal-head .cal-nav { margin-right: 60px !important; } }
 

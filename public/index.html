@@ -11,7 +11,7 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme.css?v=20261007e">
-<link rel="stylesheet" href="styles.css?v=20261018d">
+<link rel="stylesheet" href="styles.css?v=20261019a">
 </head>
 <body id="appRoot">
 <script>setTimeout(function(){ document.body.classList.add('ui-ready'); }, 4000);</script>
@@ -28,45 +28,15 @@
 
   <!-- ══════════ 日曆 ══════════ -->
   <div class="sec on" id="sec-schedule" aria-hidden="false">
-    <section class="restart-card" id="restartCard" aria-label="重啟模式" hidden></section>
-
     <div class="sh">備考日曆</div>
-    <div class="cal-header-card">
-      <div class="cal-greet" id="greetingLine"></div>
-      <div class="daily-focus" id="dailyFocus"></div>
-      <div id="calPaceWarning"></div>
-      <div class="cal-next-info" id="calNextInfo"></div>
-    </div>
-
-    <div class="smart-overview" id="smartOverview"></div>
-
     <div id="calContainer"></div>
   </div>
 
   <!-- ══════════ 六科章節計畫 ══════════ -->
   <div class="sec" id="sec-subjects" aria-hidden="true">
     <div class="sh">六科章節詳細計畫</div>
-    <div class="ss">依章節查看考點、任務與完成進度。</div>
     <div class="stabs" id="stabs" role="tablist" aria-label="六科切換"></div>
     <div id="spPanels"></div>
-  </div>
-
-  <!-- ══════════ 備考素材 ══════════ -->
-  <div class="sec" id="sec-materials" aria-hidden="true">
-    <div class="sh">備考參考資源</div>
-    <div class="ss">完整課程、同儕筆記，以及考古題與複試資源。</div>
-    <div class="filter-bar">
-      <div class="filter-chips" id="matFilterChips"></div>
-    </div>
-    <div class="res-grid" id="resGrid"></div>
-    <div class="filter-empty" id="matEmpty">找不到符合的素材，換個關鍵字試試。</div>
-  </div>
-
-  <!-- ══════════ 各校考試資訊 ══════════ -->
-  <div class="sec" id="sec-schools" aria-hidden="true">
-    <div class="sh">各校招生資訊</div>
-    <div class="ss">更新於2026/9/2：考試入學列115學年度歷史資料，116學年度請以官方簡章為準。</div>
-    <div class="uni-grid" id="uniGrid"></div>
   </div>
 
 </main>
@@ -90,6 +60,6 @@
 <script src="data.js?v=20261008m"></script>
 <script src="video-order.js?v=20261008m"></script>
 <script src="chapter-core.js?v=20261008p"></script>
-<script src="app.js?v=20261008r"></script>
+<script src="app.js?v=20261019a"></script>
 </body>
 </html>

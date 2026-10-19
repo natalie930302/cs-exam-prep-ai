@@ -71,31 +71,6 @@ const SUBJECT_PLAYLISTS = {
     {name:'清大 黃婷婷《計算機結構》',url:'https://www.youtube.com/playlist?list=PLS0SUwlYe8czszh6M74JCU0mIUL_ymBbe'}
   ]
 };
-// Soft target for finishing all foundation content — later than this and
-// there's less runway left for 刷題期 before 收斂期 kicks in. This is a pace
-// warning threshold, not a hard cutoff: the queue itself only hard-stops at
-// EXAM_DATE - CONVERGENCE_DAYS.
-//
-// 2026/8/20: recomputed for the 19-week plan (was 11/18, calibrated to the
-// old 13-week plan). NOT "19 weeks × 7 days" (that assumes a full calendar
-// week of work per queue-week, but most weeks only need ~2.5–3.5 work-days
-// at 6hr/day — using 7 gave an unrealistically loose 46%-of-capacity buffer
-// that would never trigger the pace warning even when genuinely behind).
-// Set to match the illustrative 5-day-per-week calendar in data.js's
-// WK_FOUND (which lands foundation's last block on 11/27–11/30) so the AI
-// card's pace warning and the 日程與時程 reference page agree on when
-// foundation is "supposed to" wrap — both derived from the same ~304.5hr
-// total, giving a comparable buffer to the original 13-week plan.
-// 12/1–12/7 is reserved as a recovery window. If the queue finishes on
-// time, drilling starts immediately; if real life interrupts a few days,
-// foundation can roll into this week without consuming the 10% safety margin.
-//
-// 2026/9/16: recomputed again — nothing had been ticked off since the 8/21
-// start, so the plan was re-anchored to 9/16 with 4-day queue-weeks
-// (was 5-day) to keep ~5 weeks of 刷題期; foundation now targets 11/30,
-// recovery week 12/1–12/7, and daily capacity moved from 5hr to 6hr.
-const FOUNDATION_TARGET_DATE = new Date('2026-12-08');
-
 // ── State ──────────────────────────────────────────────────────────
 // SETTINGS is loaded from the server (SQLite-backed) in init(); everything
 // that used to read localStorage now reads/writes through the API instead.
@@ -104,13 +79,6 @@ let SETTINGS = { start_date: new Date().toISOString().slice(0,10) };
 // and refreshed after every toggle — dayInfo() reads this synchronously,
 // same pattern as SETTINGS.
 let DONE_TASK_IDS = [];
-// { "2026-08-21": ["w1-video-0","w1-book"], ... } — which real calendar date
-// each task was actually completed on. Lets the Today page and calendar show
-// genuine history instead of only the queue's current pointer, which used to
-// make finished tasks disappear the moment the queue advanced past them.
-let TASK_DONE_DATES = {};
-let LEARNING_EVIDENCE = {sessions:[],attempts:[],reviews:[],mastery:[]};
-
 async function fetchSettings(){
   const r = await fetch('/api/settings');
   SETTINGS = await r.json();
@@ -123,22 +91,8 @@ async function fetchDoneTasks(){
   }catch(e){
     DONE_TASK_IDS = [];
   }
-  try{
-    const r2 = await fetch('/api/tasks/done-dates');
-    TASK_DONE_DATES = (await r2.json()).dates || {};
-  }catch(e){
-    TASK_DONE_DATES = {};
-  }
   return DONE_TASK_IDS;
 }
-async function fetchLearningEvidence(){
-  try{
-    const r = await fetch('/api/learning/evidence');
-    if(r.ok) LEARNING_EVIDENCE = await r.json();
-  }catch(e){ LEARNING_EVIDENCE = {sessions:[],attempts:[],reviews:[],mastery:[]}; }
-  return LEARNING_EVIDENCE;
-}
-
 // Queue tasks (w<N>-video) are derived from the per-video marks, never the
 // other way round, so the stored ids are used as they are.
 function expandQueueDoneIds(ids){
@@ -152,10 +106,6 @@ function startDate(){
 function isoDate(d){
   const t = new Date(d); t.setHours(12,0,0,0);
   return t.toISOString().slice(0,10);
-}
-
-function isToday(d){
-  return isoDate(d) === isoDate(new Date());
 }
 
 // ── Day info ──────────────────────────────────────────────────────
@@ -420,288 +370,17 @@ function getFoundationQueueStatus(doneIds){
 }
 
 
-// True once every video of every chapter in that week is done. Used by the
-// 六科 page to light up a chapter's dot once its mapped week is fully done.
-function foundationContentDone(wk){
-  return foundationWeekVideos(wk).every(function(m){ return DONE_TASK_IDS.includes('vid-'+m.videoId); });
-}
-
-// ── Render ─────────────────────────────────────────────────────────
-// Time-of-day greeting — the calendar page's opening line. Always about
-// today specifically (there's no more per-day browsing UI to show a
-// different date's label instead).
-function greetingLine(){
-  const h = new Date().getHours();
-  const g = function(icon, text){ return '<span class="greet-icon">'+svgIcon(icon, 18)+'</span>'+text; };
-  if(h < 5) return g('moon', '這麼晚了，早點休息吧');
-  if(h < 11) return g('sun', '早安，準備好了嗎？');
-  if(h < 14) return g('sun', '午安，繼續加油');
-  if(h < 18) return g('sunset', '下午好，還在狀態內嗎');
-  if(h < 22) return g('sunset', '晚上好，今天辛苦了');
-  return g('moon', '這麼晚了，早點休息吧');
-}
-
-// The single next undone task in queue order — what the calendar header's
-// "現在該做" line points to, and what happens when you click a week-view
-// task block for a foundation-phase day.
+// The single next undone task in queue order — 六科 opens on its subject.
 function nextFoundationTask(doneIds){
   const doneSet = new Set(doneIds || []);
   const queue = buildFoundationTasks();
   return queue.find((t) => !doneSet.has(t.id)) || null;
 }
 
-// Jumps to a subject's own tab on 六科 and, if a foundation week is given,
-// scrolls to + flashes the first chapter mapped to that week (via each
-// chapter's `wk` field) — shared by the header's "現在該做" link and every
-// week-view task block, so both land you in the same place.
-function goSubjWeek(subjName, wk, taskType){
-  const s = SUBJECTS.find(function(x){ return x.name === subjName; });
-  if(!s) return;
-  goSec('subjects', document.querySelector('.pill[data-sec="subjects"]'));
-  const matchingTypes = ['vid'];
-  const candidates = s.chapters.map(function(c,i){ return {chapter:c,index:i}; }).filter(function(x){ return x.chapter.wk === wk; });
-  let targetMaterialId = '';
-  let target = candidates.find(function(x){
-    const mats = chapterDisplayMaterials(x.chapter);
-    const material = mats.find(function(m){
-      const id = chapterMaterialTaskId(s.id,x.chapter,m);
-      return matchingTypes.indexOf(m.type) !== -1 && DONE_TASK_IDS.indexOf(id) === -1;
-    });
-    if(material) targetMaterialId = chapterMaterialTaskId(s.id,x.chapter,material);
-    return !!material;
-  });
-  if(!target){
-    target = candidates.find(function(x){
-      const material = chapterDisplayMaterials(x.chapter).find(function(m){ return DONE_TASK_IDS.indexOf(chapterMaterialTaskId(s.id,x.chapter,m)) === -1; });
-      if(material) targetMaterialId = chapterMaterialTaskId(s.id,x.chapter,material);
-      return !!material;
-    }) || candidates[0];
-  }
-  const idx = target ? target.index : -1;
-  // Resolve the explicit destination after the section becomes visible.
-  setTimeout(function(){
-    const tab = document.querySelector('.stab[data-id="'+s.id+'"]');
-    if(tab) tab.click();
-    if(wk == null || idx === -1) return;
-    const row = document.querySelectorAll('#sp-'+s.id+' .ch-row')[idx];
-    if(!row) return;
-    row.classList.remove('collapsed');
-    const head = row.querySelector('[data-chtoggle]');
-    if(head) head.setAttribute('aria-expanded','true');
-    requestAnimationFrame(function(){ requestAnimationFrame(function(){
-      const materialRow = targetMaterialId ? row.querySelector('[data-material-task="'+targetMaterialId+'"]') : null;
-      (materialRow || row).scrollIntoView({behavior:'auto',block:'center',inline:'nearest'});
-      if(materialRow) materialRow.classList.add('mat-flash');
-      setTimeout(function(){ if(materialRow) materialRow.classList.remove('mat-flash'); },1800);
-    }); });
-  },0);
-}
-
-// Rule-based pace check — no AI call, just arithmetic. Compares remaining
-// foundation workload against how much usable study time is actually left
-// before FOUNDATION_TARGET_DATE, using the same weekly rhythm dayInfo()
-// assumes (Sunday off, Monday ~0hr, everything else 6hr, matching the three
-// visible 2.5hr + 2.5hr + 1hr calendar blocks; was 5hr before the 2026/9/16
-// re-plan). The calendar's
-// dates never get pushed back to hide falling behind (that would just be
-// lying about what's really scheduled) — this is the honest alternative:
-// a warning, not a rewritten schedule.
+// Study hours per weekday, the same rhythm dayInfo() assumes (Sunday off,
+// Monday ~0hr, everything else 6hr). dayPlan() fills each day with this.
 const DAILY_CAPACITY_HOURS = { 0:0, 1:0, 2:6, 3:6, 4:6, 5:6, 6:6 };
-const FORECAST_RESERVE_RATIO = 0.10;
-function foundationForecast(doneIds){
-  const status = getFoundationQueueStatus(doneIds);
-  if(status.undoneCount === 0) return { status, capacityHours: 0, remainingHours: 0, bufferedHours: 0, behind: false, tight: false, deficitHours: 0, spareHours: 0 };
-
-  const today = new Date(); today.setHours(12,0,0,0);
-  let capacityHours = 0;
-  const cursor = new Date(today);
-  while(cursor < FOUNDATION_TARGET_DATE){
-    capacityHours += DAILY_CAPACITY_HOURS[cursor.getDay()] || 0;
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  const remainingHours = Math.round((status.totalRemainingMinutes/60)*10)/10;
-  const bufferedHours = Math.round(remainingHours*(1+FORECAST_RESERVE_RATIO)*10)/10;
-  const deficitHours = Math.round((bufferedHours - capacityHours)*10)/10;
-  const spareHours = Math.round((capacityHours - remainingHours)*10)/10;
-  return { status, capacityHours: Math.round(capacityHours*10)/10, remainingHours, bufferedHours, behind: remainingHours > capacityHours, tight: remainingHours <= capacityHours && deficitHours > 0, deficitHours:Math.max(0,deficitHours), spareHours };
-}
-
-// For a FUTURE date in week-view: projects which foundation week's content
-// would realistically be active by then, by simulating consuming today's
-// real remaining-minutes-per-week (starting at the current effective week)
-// at the same weekly rhythm DAILY_CAPACITY_HOURS assumes, starting today.
-// This is a derived projection, not a stored schedule — falling behind
-// pace automatically pushes later weeks' blocks further out, and catching
-// up automatically pulls them back in, with no separate "reschedule" step
-// and no new persistence (matches "如果隔夜了還沒弄完，順延排到隔天").
-function projectedWeekForDate(d){
-  const status = getFoundationQueueStatus(DONE_TASK_IDS);
-  if(status.undoneCount === 0) return FOUNDATION_WEEKS + 1;
-
-  const today = new Date(); today.setHours(12,0,0,0);
-  const target = new Date(d); target.setHours(12,0,0,0);
-  if(target <= today) return status.effectiveWeek;
-
-  const doneSet = new Set(DONE_TASK_IDS);
-  const remainByWeek = new Map();
-  buildFoundationTasks().forEach(function(t){
-    if(t.week < status.effectiveWeek || doneSet.has(t.id)) return;
-    remainByWeek.set(t.week, (remainByWeek.get(t.week) || 0) + t.estMinutes);
-  });
-  const weeks = Array.from(remainByWeek.keys()).sort(function(a,b){ return a-b; });
-
-  let wi = 0, bankMinutes = 0;
-  const cursor = new Date(today);
-  while(cursor < target && wi < weeks.length){
-    bankMinutes += (DAILY_CAPACITY_HOURS[cursor.getDay()] || 0) * 60;
-    while(wi < weeks.length && bankMinutes >= remainByWeek.get(weeks[wi])){
-      bankMinutes -= remainByWeek.get(weeks[wi]);
-      wi++;
-    }
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return wi < weeks.length ? weeks[wi] : FOUNDATION_WEEKS + 1;
-}
-
-function renderCalPaceWarning(){
-  const el = document.getElementById('calPaceWarning');
-  if(!el) return;
-  const forecast = foundationForecast(DONE_TASK_IDS);
-  const targetLabel = (FOUNDATION_TARGET_DATE.getMonth()+1)+'/'+FOUNDATION_TARGET_DATE.getDate();
-  el.innerHTML = forecast.behind
-    ? '<div class="cal-pace-warn">'+svgIcon('alert-triangle',13)+' 依每天6小時計算，'+targetLabel+'前不足約 <b>'+Math.round((forecast.remainingHours-forecast.capacityHours)*10)/10+'</b> 小時，後續任務會自動順延。</div>'
-    : forecast.tight
-      ? '<div class="cal-pace-warn">'+svgIcon('alert-triangle',13)+' 目前可完成，但機動時間不足10%：只剩約 <b>'+forecast.spareHours+'</b> 小時緩衝。</div>'
-      : '';
-}
-
-// "現在該做" + 目前第幾週/主攻科目 — one line, phase-aware. The link jumps
-// straight to the matching chapter on 六科 (via goSubjWeek).
-function renderCalNextInfo(){
-  const el = document.getElementById('calNextInfo');
-  if(!el) return;
-  const info = dayInfo(new Date());
-  let line = '';
-  if(info.phase === 'foundation'){
-    const next = nextFoundationTask(DONE_TASK_IDS);
-    line = next
-      ? ('基礎期第 <b>'+info.wk+'</b> 週・現在該做：<span class="cal-next-link" onclick="goSubjWeek(\''+next.subject+'\','+info.wk+',\''+next.type+'\')">『'+next.title+'』（'+next.subject+'）↓</span>')
-      : '基礎期內容全部完成了！';
-  } else if(info.phase === 'drilling'){
-    line = '刷題期・今天主攻：'+(info.drillSubj || '複習整理');
-  } else {
-    line = '收斂期・只看錯題本＋速記清單，不看新教材';
-  }
-  el.innerHTML = line;
-}
-
-function renderGreetingHeader(){
-  const gl = document.getElementById('greetingLine');
-  if(gl) gl.innerHTML = greetingLine();
-  renderCalPaceWarning();
-  renderCalNextInfo();
-  renderDailyFocus();
-  renderSmartOverview();
-  refreshSchoolExamReadiness();
-}
-
-function calibratedTimeFactor(){
-  const rows = (LEARNING_EVIDENCE.sessions||[]).filter(function(s){return s.planned_minutes>0&&s.actual_minutes>0;}).slice(0,30);
-  if(rows.length<3) return {factor:1,confidence:'尚在建立'};
-  const ratios=rows.map(function(s){return Math.min(2.5,Math.max(.4,s.actual_minutes/s.planned_minutes));}).sort(function(a,b){return a-b;});
-  return {factor:ratios[Math.floor(ratios.length/2)],confidence:rows.length>=10?'穩定':'初步'};
-}
-function chapterEstimatedMastery(s,c){
-  const mats=chapterDisplayMaterials(c), done=new Set(DONE_TASK_IDS);
-  let available=0,completed=0;
-  mats.forEach(function(m){available+=1;if(done.has(chapterMaterialTaskId(s.id,c,m)))completed+=1;});
-  const base=available?Math.round(completed/available*100):0;
-  const key=stableTaskKey(c.t);
-  const attempt=(LEARNING_EVIDENCE.attempts||[]).find(function(a){return a.subject_id===s.id&&a.chapter_key===key;});
-  const saved=(LEARNING_EVIDENCE.mastery||[]).find(function(a){return a.subject_id===s.id&&a.chapter_key===key;});
-  const evidence=attempt?Math.round(attempt.correct/attempt.total*100):saved?Math.round(saved.correct/saved.total*100):null;
-  return {score:evidence==null?base:Math.round(base*.35+evidence*.65),verified:evidence!=null};
-}
-function subjectMasteryScores(){
-  const out={};SUBJECTS.forEach(function(s){let points=0,weight=0;s.chapters.forEach(function(c){const m=chapterEstimatedMastery(s,c);const w=(parseFloat(c.hrs)||1)*(c.pri==='must'?1.35:c.pri==='hi'?1.15:.8);points+=m.score*w;weight+=w;});out[s.id]=Math.round(points/(weight||1));});return out;
-}
-function schoolExamReadiness(u){
-  const text=(u.subjs||[]).join(' ');
-  if(/不再考六科筆試/.test(text))return null;
-  const subjectRules={
-    ds:/資料結構|資結|\bDS\b|程式設計|計算機科學/i,
-    alg:/演算法|計算機科學|程式設計/i,
-    os:/作業系統|\bOS\b|計算機系統|計算機組織與系統/i,
-    ca:/計算機結構|計算機組織|計算機系統|計算機組織與系統/i,
-    la:/線性代數|線代|計算機數學|數學基礎/i,
-    dm:/離散數學|離散|計算機數學|數學基礎/i
-  };
-  let ids=Object.keys(subjectRules).filter(function(id){return subjectRules[id].test(text);});
-  if(!ids.length)ids=SUBJECTS.map(function(s){return s.id;});
-  const scores=subjectMasteryScores(),weights={};ids.forEach(function(id){weights[id]=1;});
-  if(/資料結構與演算法（加權×1\.5）/.test(text))weights.ds=weights.alg=1.5;
-  if(/計算機系統.*加權×1\.5/.test(text))weights.os=weights.ca=1.5;
-  let points=0,total=0,verified=0,chapterCount=0;
-  ids.forEach(function(id){
-    const s=SUBJECTS.find(function(row){return row.id===id;});
-    const weight=weights[id]||1;points+=(scores[id]||0)*weight;total+=weight;
-    if(s)s.chapters.forEach(function(c){chapterCount++;if(chapterEstimatedMastery(s,c).verified)verified++;});
-  });
-  const score=Math.round(points/(total||1));
-  const candidates=[];
-  ids.forEach(function(id){
-    const s=SUBJECTS.find(function(row){return row.id===id;});if(!s)return;
-    s.chapters.forEach(function(c,index){const m=chapterEstimatedMastery(s,c);candidates.push({subject:s,chapter:c,index:index,score:m.score,verified:m.verified,priority:c.pri});});
-  });
-  candidates.sort(function(a,b){return a.score-b.score||(a.priority==='must'?-1:1)-(b.priority==='must'?-1:1);});
-  return {score:score,ids:ids,verified:verified,chapterCount:chapterCount,weakest:candidates[0]||null,confidence:verified>=Math.max(3,Math.ceil(chapterCount*.25))?'已有題目驗證':verified?'部分題目驗證':'低信心 · 僅依任務完成度'};
-}
-function schoolExamReadinessHtml(u){
-  const d=schoolExamReadiness(u);if(!d)return '<div class="school-readiness is-unavailable" data-school-readiness="'+u.en+'"><div><strong>116筆試準備度不計算</strong><span>一般考試入學已改制，請依最新甄選方式準備</span></div></div>';
-  const names=d.ids.map(function(id){const s=SUBJECTS.find(function(x){return x.id===id;});return s?s.name:id;});
-  return '<div class="school-readiness" data-school-readiness="'+u.en+'" style="--readiness:'+d.score+'%">'
-    +'<div class="school-readiness-head"><div><strong>目前筆試準備度 '+d.score+'%</strong><span>'+d.confidence+'</span></div><small>依115考科參考 · 非錄取率</small></div>'
-    +'<div class="school-readiness-track" role="progressbar" aria-label="'+u.name+'筆試準備度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+d.score+'"><span></span></div>'
-    +'<p>'+names.join('、')+(d.verified?' · '+d.verified+' 個章節已有作答紀錄':' · 完成診斷後會提高判斷可信度')+'</p>'
-    +(d.weakest?'<button class="school-readiness-next ui-btn" type="button" onclick="event.stopPropagation();openReadinessTarget(\''+d.weakest.subject.id+'\','+d.weakest.index+')"><span><b>建議下一步</b>'+d.weakest.subject.name+' · '+d.weakest.chapter.t+(d.weakest.verified?'':'（待題目驗證）')+'</span>'+svgIcon('chevron-right',13)+'</button>':'')
-    +'</div>';
-}
-function refreshSchoolExamReadiness(){
-  document.querySelectorAll('[data-school-readiness]').forEach(function(el){
-    const u=UNIS.find(function(row){return row.en===el.dataset.schoolReadiness;});
-    if(u)el.outerHTML=schoolExamReadinessHtml(u);
-  });
-}
-function openReadinessTarget(subjectId,index){
-  const s=SUBJECTS.find(function(row){return row.id===subjectId;});if(!s)return;
-  goSec('subjects');
-  const tab=document.querySelector('.stab[data-id="'+subjectId+'"]');if(tab)tab.click();
-  setTimeout(function(){
-    const row=document.querySelectorAll('#sp-'+subjectId+' .ch-row')[index];if(!row)return;
-    row.classList.remove('collapsed');const head=row.querySelector('[data-chtoggle]');if(head)head.setAttribute('aria-expanded','true');
-    row.scrollIntoView({behavior:'smooth',block:'center'});row.classList.add('readiness-target-flash');
-    setTimeout(function(){row.classList.remove('readiness-target-flash');},1800);
-  },0);
-}
-function smartOverviewData(){
-  const factor=calibratedTimeFactor();
-  const today=isoDate(new Date()), due=(LEARNING_EVIDENCE.reviews||[]).filter(function(r){return r.due_date<=today;});
-  const currentWeek=getFoundationQueueStatus(DONE_TASK_IDS).effectiveWeek;const weak=[];SUBJECTS.forEach(function(s){s.chapters.forEach(function(c){const m=chapterEstimatedMastery(s,c);if(c.pri==='must'&&m.score<70)weak.push({s:s.name,c:c.t,score:m.score,verified:m.verified,current:c.wk===currentWeek});});});weak.sort(function(a,b){return a.score-b.score||Number(b.current)-Number(a.current);});
-  const recent=(LEARNING_EVIDENCE.attempts||[]).filter(function(a){return new Date(a.created_at+'Z')>=new Date(Date.now()-7*86400000);});
-  const accuracy=recent.length?Math.round(recent.reduce(function(n,a){return n+a.correct;},0)/recent.reduce(function(n,a){return n+a.total;},0)*100):null;
-  const evidencedWeak=weak.find(function(x){return x.verified||x.score>0;});
-  return {factor:factor,due:due,currentWeek:currentWeek,weak:weak,evidencedWeak:evidencedWeak,accuracy:accuracy};
-}
-function renderSmartOverview(){
-  const el=document.getElementById('smartOverview');if(!el)return;
-  const d=smartOverviewData();const cards=[];
-  if(d.due.length)cards.push('<div class="smart-card"><div class="smart-kicker">到期複習</div><div class="smart-value">'+d.due.length+' 個章節</div><div class="smart-list">'+d.due.slice(0,3).map(function(r){const s=SUBJECTS.find(function(x){return x.id===r.subject_id;});const c=s&&s.chapters.find(function(x){return stableTaskKey(x.t)===r.chapter_key;});return '<div class="smart-item"><span>'+(s?s.name:'章節')+'</span><b>'+(c?c.t:'待複習')+'</b></div>';}).join('')+'</div></div>');
-  if(d.evidencedWeak)cards.push('<div class="smart-card"><div class="smart-kicker">優先補強</div><div class="smart-value">'+d.evidencedWeak.c+'</div><div class="smart-copy">'+d.evidencedWeak.s+' · '+d.evidencedWeak.score+'%'+(d.evidencedWeak.verified?'，已有作答證據':'，尚待題目驗證')+'</div></div>');
-  if(d.accuracy!==null||(LEARNING_EVIDENCE.sessions||[]).length)cards.push('<div class="smart-card"><div class="smart-kicker">本週學習</div><div class="smart-value">'+(d.accuracy===null?'時間校準中':d.accuracy+'% 正確率')+'</div><div class="smart-copy">時間校準：'+d.factor.confidence+(d.factor.factor!==1?'（實際約為預估 '+Math.round(d.factor.factor*100)+'%）':'')+'</div></div>');
-  el.innerHTML=cards.join('');el.style.display=cards.length?'grid':'none';
-}
 let activeVoiceRecognition=null;
-function voiceButtonHtml(targetId){return '<button class="voice-input-btn tool-voice-btn" type="button" onclick="startVoiceInput(\''+targetId+'\',this)" aria-label="語音輸入"></button>';}
 function spokenNumber(text){
   const direct=String(text).match(/\d+/);if(direct)return direct[0];
   const map={'零':0,'一':1,'二':2,'兩':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9};let total=0,current=0;
@@ -716,88 +395,11 @@ function startVoiceInput(targetId,button){
   recognition.onerror=function(e){if(e.error!=='aborted')showTaskToast(e.error==='not-allowed'?'請允許麥克風權限後再試':'沒有聽清楚，請再說一次');};
   recognition.onend=function(){button.classList.remove('listening');if(activeVoiceRecognition===recognition)activeVoiceRecognition=null;};recognition.start();
 }
-// Days in a row (ending today, or yesterday if nothing yet today) on which at
-// least one video was checked off — from the real completion dates.
-function studyStreak(){
-  const days = new Set(Object.keys(TASK_DONE_DATES || {}).filter(function(d){
-    return (TASK_DONE_DATES[d] || []).some(function(id){ return id.indexOf('vid-') === 0; });
-  }));
-  const d = new Date(); d.setHours(12,0,0,0);
-  if(!days.has(isoDate(d))) d.setDate(d.getDate()-1);
-  let n = 0;
-  while(days.has(isoDate(d))){ n++; d.setDate(d.getDate()-1); }
-  return n;
-}
-// Streak plus one small bar per subject that fills as its videos are watched.
-function progressStripHtml(doneSet){
-  const streak = studyStreak();
-  const bars = SUBJECTS.map(function(s){
-    const p = subjectVideoProgress(s, doneSet), pct = p.total ? Math.round(p.done/p.total*100) : 0;
-    return '<div class="ps-subj" title="'+s.name+' '+p.done+'/'+p.total+' 支"><span class="ps-name">'+s.name.slice(0,2)+'</span>'
-      +'<span class="ps-bar"><span style="width:'+pct+'%;background:'+s.color+'"></span></span></div>';
-  }).join('');
-  return '<div class="progress-strip"><div class="ps-streak'+(streak?' on':'')+'"><b>'+streak+'</b><span>天連續</span></div><div class="ps-subjs">'+bars+'</div></div>';
-}
-// First unwatched video of a foundation week, in chapter order, with the
-// study-room link that opens it.
 // Total length of a chapter's videos, e.g. "12.5hr".
 function chapterVideoHours(videos){
   const minutes = videos.reduce(function(t,m){ return t + durationToMinutes(m.dur); },0);
   return Math.round(minutes/6)/10+'hr';
 }
-// The site's own chapter number and title for a foundation week (the same
-// numbering the 六科 page and study room use), e.g. "第2章 陣列、Linked List…".
-function weekChapterLabel(wk){
-  for(const sub of SUBJECTS){
-    const i = sub.chapters.findIndex(function(c){ return c.wk === wk; });
-    if(i >= 0){
-      const t = sub.chapters[i].t, more = sub.chapters.filter(function(c){ return c.wk === wk; }).length - 1;
-      return '第'+(i+1)+'章 '+(t.length > 14 ? t.slice(0,13)+'…' : t)+(more > 0 ? ' 等 '+(more+1)+' 章' : '');
-    }
-  }
-  return '';
-}
-// Calendar click: straight into the study room at the week's next video.
-function openWeekVideo(subjName, wk){
-  const v = nextUnwatchedVideo(wk);
-  if(v) location.href = v.href; else goSubjWeek(subjName, wk);
-}
-function nextUnwatchedVideo(wk){
-  const done = new Set(DONE_TASK_IDS);
-  for(const sub of SUBJECTS){
-    for(let i=0;i<sub.chapters.length;i++){
-      const c = sub.chapters[i];
-      if(c.wk !== wk) continue;
-      const v = chapterDisplayMaterials(c).find(function(m){ return !done.has(chapterMaterialTaskId(sub.id,c,m)); });
-      if(v) return {label:v.text, href:studyRoomUrl(sub.id,i,v.videoId)};
-    }
-  }
-  return null;
-}
-function renderDailyFocus(){
-  const el = document.getElementById('dailyFocus');
-  if(!el) return;
-  const info = dayInfo(new Date());
-  const queue = buildFoundationTasks();
-  const done = new Set(DONE_TASK_IDS);
-  const completed = queue.filter(function(t){ return done.has(t.id); }).length;
-  const pct = queue.length ? Math.round(completed/queue.length*100) : 100;
-  if(info.phase === 'foundation'){
-    const next = nextFoundationTask(DONE_TASK_IDS);
-    if(!next){ el.innerHTML = ''; return; }
-    const nextVideo = nextUnwatchedVideo(next.week);
-    const minimum = nextVideo ? '下一支：'+nextVideo.label : '依序看下一支還沒看的影片';
-    el.innerHTML = '<div class="daily-focus-kicker">今日主任務</div>'
-      +'<div class="daily-focus-row"><div><div class="daily-focus-title">'+next.title+'</div><div class="daily-focus-meta">'+next.subject+' · 約 '+Math.max(1,Math.round(next.estMinutes/60*10)/10)+' 小時 · 最小目標：'+minimum+'</div></div>'
-      +(nextVideo?'<a class="daily-focus-btn ui-btn ui-btn-primary" href="'+nextVideo.href+'">開始看</a>':'<button class="daily-focus-btn ui-btn ui-btn-primary" onclick="goSubjWeek(\''+next.subject+'\','+next.week+',\''+next.type+'\')">開始看</button>')+'</div>'
-      +'<div class="daily-focus-progress"><span style="width:'+pct+'%"></span></div><div class="daily-focus-pct">整體 '+pct+'% · '+completed+'/'+queue.length+' 週</div>'
-      +progressStripHtml(done);
-  }else{
-    const title = info.phase === 'drilling' ? (info.drillSubj || '複習整理')+'歷屆試題' : '錯題本與速記清單';
-    el.innerHTML = '<div class="daily-focus-kicker">今日主任務</div><div class="daily-focus-row"><div><div class="daily-focus-title">'+title+'</div><div class="daily-focus-meta">完成今天的主要練習後，再補弱點項目</div></div></div>';
-  }
-}
-
 let toastTimer = null;
 function showTaskToast(message){
   const el = document.getElementById('taskToast');
@@ -835,15 +437,6 @@ function refreshVisibleSubjectProgress(el){
   }
 }
 
-function toggleRcLinks(id, btn){
-  var el = document.getElementById(id);
-  if(!el) return;
-  var open = el.classList.toggle('open');
-  var total = el.children.length;
-  btn.classList.toggle('is-open', open);
-  btn.innerHTML = (open ? '收合' : '展開其餘 '+total+' 個連結')+'<span class="expand-icon rc-toggle-icon" aria-hidden="true"></span>';
-}
-
 // Foundation: task queue, keyed by stable taskId.
 // `el`, if passed, gets its own `.done` class toggled directly (used by
 // callers like the 六科 material checkboxes that don't otherwise re-render).
@@ -860,9 +453,7 @@ async function toggleTask(taskId, el){
   await fetch('/api/tasks/' + encodeURIComponent(taskId) + '/toggle', { method:'POST' });
   await fetchDoneTasks();
   if(chapter && chapter.wk) await syncFoundationWeek(chapter.wk);
-  // Toggling can shift the effective week / change what's done, which
-  // affects the header progress pills and the calendar's per-day tags.
-  renderGreetingHeader();
+  // Toggling changes what's done, which affects the calendar's per-day tags.
   renderCalContainer();
   if(el){
     const isDone = DONE_TASK_IDS.indexOf(taskId) !== -1;
@@ -886,22 +477,9 @@ const SUBJ_COLOR_VAR = {
   '線性代數':'--la', '離散數學':'--dm', '計算機組織':'--ca'
 };
 
-// ── Calendar: 週曆 (time-blocked week agenda) + 月曆 (simple subject/phase
-// grid), toggle between the two — no other view. ──────────────────────
-let calViewMode = 'month';
-let calWeekStart = null; // Date, Sunday of the currently-shown week
+// ── Calendar: 月曆 (subject/phase grid) + the selected day's video list. ──
 let calMonthCursor = null; // Date, first-of-month currently shown
 let pendingCalMotion = 'fade';
-
-function setCalView(mode){
-  noteUiAction();
-  pendingCalMotion = 'fade';
-  calViewMode = mode;
-  const wb = document.getElementById('calViewWeekBtn'), mb = document.getElementById('calViewMonthBtn');
-  if(wb){ wb.classList.toggle('active', mode === 'week'); wb.setAttribute('aria-pressed', String(mode === 'week')); }
-  if(mb){ mb.classList.toggle('active', mode === 'month'); mb.setAttribute('aria-pressed', String(mode === 'month')); }
-  renderCalContainer();
-}
 
 function renderCalContainer(){
   const container = document.getElementById('calContainer');
@@ -910,12 +488,10 @@ function renderCalContainer(){
   void container.offsetWidth;
   container.classList.add('motion-'+pendingCalMotion);
   pendingCalMotion = 'fade';
-  if(calViewMode === 'month') renderCalMonthView(container);
-  else renderCalWeekView(container);
+  renderCalMonthView(container);
 }
 
-// Clicking a day (from month view) jumps straight to that day's week in
-// week view — there's no separate day-detail page anymore.
+// Clicking a day in the month view shows that day's video list below it.
 function goCalDay(iso){
   noteUiAction();
   calSelectedIso = iso;
@@ -1013,8 +589,7 @@ function renderCalDayDetail(iso){
     }).join('')+'</ol>';
 }
 
-// ── Month view: just subject/phase per day, nothing else — the detailed
-// breakdown lives in week view instead. ──────────────────────────────
+// ── Month view: subject/phase per day; the day's list is in renderCalDayDetail. ──
 function buildCalMonthCells(y, m, ctx){
   const startWeekday = (new Date(y, m, 1).getDay() + 6) % 7;   // weeks start on Monday
   const daysInMonth = new Date(y, m+1, 0).getDate();
@@ -1116,117 +691,6 @@ function goCalMonthToday(){
   renderCalContainer();
 }
 
-// ── Week view: what to actually do, per day, per rough time slot —
-// informational (not checkboxes; checking things off happens on 六科). ──
-function buildWeekDayBlocks(d, info){
-  if(d > EXAM_DATE) return [{time:'', title:'複試準備', custom:'#0F7A8C'}];
-  if(info.isRest) return [{time:'全天', title:'休息'}];
-  if(info.isDayOff) return [{time:'全天', title:'打工'}];
-
-  if(info.phase === 'converge'){
-    return [
-      {time:'早上', title:'速記清單', colorVar:'--ac2'},
-      {time:'上午–下午', title:'混搭模擬考', colorVar:'--red'},
-      {time:'晚上', title:'錯題本三刷', colorVar:'--ac2'}
-    ];
-  }
-  if(info.phase === 'drilling'){
-    if(info.dow === 6) return [{time:'全天', title:'模擬考（全科）', colorVar:'--red'}];
-    const subj = info.drillSubj || '複習整理';
-    const cv = SUBJ_COLOR_VAR[subj] || '--ac2';
-    return [
-      {time:'上午–中午', title:subj+' 歷屆試題', colorVar:cv},
-      {time:'下午', title:'對答案＋錯題本', colorVar:cv},
-      {time:'傍晚', title:'補弱點＋筆記', colorVar:cv}
-    ];
-  }
-  // foundation — clickable: opens the week's next unwatched video. Future
-  // dates use a forward projection (projectedWeekForDate) instead of
-  // freezing on today's week, so a day that isn't finished effectively
-  // pushes its content later on the calendar.
-  const today0 = new Date(); today0.setHours(0,0,0,0);
-  const projWk = d > today0 ? projectedWeekForDate(d) : info.wk;
-  const c = FOUNDATION_CONTENT[Math.min(projWk, FOUNDATION_WEEKS)];
-  const subj = c ? c.subj : '複習';
-  const cv = SUBJ_COLOR_VAR[subj] || '--ac2';
-  const chLabel = c ? weekChapterLabel(projWk) : '複習';
-  const click = c ? {subj:subj, wk:projWk} : null;
-  return [
-    {time:subj, title:chLabel, colorVar:cv, click:click}
-  ];
-}
-
-function renderCalWeekView(container){
-  if(!calWeekStart){
-    const d = new Date(); d.setHours(0,0,0,0);
-    calWeekStart = new Date(d); calWeekStart.setDate(d.getDate() - d.getDay());
-  }
-  const s = startDate();
-  const todayIso = isoDate(new Date());
-  const dow7 = ['日','一','二','三','四','五','六'];
-
-  let colsHtml = '';
-  for(let i=0;i<7;i++){
-    const d = new Date(calWeekStart); d.setDate(calWeekStart.getDate()+i);
-    const iso = isoDate(d);
-    const beforeStart = d < s;
-    const isToday_ = iso === todayIso;
-
-    let blocksHtml = '';
-    if(!beforeStart){
-      const blocks = buildWeekDayBlocks(d, dayInfo(d));
-      blocksHtml = blocks.map(function(b){
-        const style = b.custom
-          ? '--task-accent:'+b.custom+';'
-          : b.colorVar
-            ? '--task-accent:var('+b.colorVar+');'
-            : '--task-accent:var(--mt);';
-        const clickAttr = b.click ? ' onclick="openWeekVideo(\''+b.click.subj+'\','+b.click.wk+')"' : '';
-        return '<div class="calweek-block'+(b.click?' clickable':'')+'" style="'+style+'"'+clickAttr+'>'
-          +'<div class="calweek-block-title">'+b.title+'</div>'
-        +'</div>';
-      }).join('');
-    }
-
-    colsHtml += '<div class="calweek-col">'
-      +'<div class="calweek-col-hd'+(isToday_?' today':'')+'">'
-        +'<div class="calweek-dow">週'+dow7[i]+'</div><div class="calweek-daynum">'+d.getDate()+'</div>'
-      +'</div>'
-      +'<div class="calweek-col-body">'+blocksHtml+'</div>'
-    +'</div>';
-  }
-
-  const rangeEnd = new Date(calWeekStart); rangeEnd.setDate(calWeekStart.getDate()+6);
-  const rangeLabel = (calWeekStart.getMonth()+1)+'/'+calWeekStart.getDate()+' – '+(rangeEnd.getMonth()+1)+'/'+rangeEnd.getDate();
-
-  container.innerHTML =
-    '<div class="cal-wrap">'
-    +'<div class="cal-head">'
-      +'<div class="cal-title">'+rangeLabel+'</div>'
-      +'<div class="cal-nav">'
-        +'<button class="nav-btn ui-btn ui-btn-icon" onclick="shiftCalWeek(-1)" aria-label="上一週" title="上一週">'+svgIcon('chevron-left',18)+'</button>'
-        +'<button class="collapse-all-btn ui-btn" onclick="goCalWeekToday()">本週</button>'
-        +'<button class="nav-btn ui-btn ui-btn-icon" onclick="shiftCalWeek(1)" aria-label="下一週" title="下一週">'+svgIcon('chevron-right',18)+'</button>'
-      +'</div>'
-    +'</div>'
-    +'<div class="calweek-grid">'+colsHtml+'</div>'
-    +'</div>';
-}
-function shiftCalWeek(delta){
-  noteUiAction();
-  pendingCalMotion = delta > 0 ? 'next' : 'prev';
-  calWeekStart.setDate(calWeekStart.getDate() + delta*7);
-  renderCalContainer();
-}
-function goCalWeekToday(){
-  noteUiAction();
-  pendingCalMotion = 'fade';
-  const d = new Date(); d.setHours(0,0,0,0);
-  calWeekStart = new Date(d); calWeekStart.setDate(d.getDate() - d.getDay());
-  renderCalContainer();
-}
-
-
 // Segmented ring chart — one arc per foundation week this subject spans,
 // lit in the subject's own color once that week's content is done, muted
 // otherwise. Replaces the old single linear progress bar so completion
@@ -1290,89 +754,9 @@ async function init(){
 
   // Load settings (start date) and the task-queue done-state from the
   // server-backed DB — dayInfo() reads DONE_TASK_IDS synchronously from here on.
-  await Promise.all([fetchSettings(), fetchDoneTasks(), fetchLearningEvidence()]);
+  await Promise.all([fetchSettings(), fetchDoneTasks()]);
 
-  renderGreetingHeader();
   renderCalContainer();
-
-  // Schools (priority schools first)
-  // No more 主力校/有複試 categorization or filter chips — the user
-  // explicitly didn't want schools sorted/tagged into tiers, just clear
-  // per-school facts. Natural UNIS order (by `n`) is used as-is.
-  document.getElementById('uniGrid').innerHTML = UNIS.map(function(u){
-    // One mini-card per department that shares this exam — the school's
-    // own 資工所 program first, then any relatedDepts — each showing what
-    // it tests, weighting if known, and complex/second-stage-exam status,
-    // instead of a flat subject-chip strip disconnected from which
-    // department those subjects actually belong to.
-    // relatedDepts[0] is always the school's own 資工所 program restated in
-    // plain text (tagged "主力" in the source data) — that's the exact same
-    // program the synthesized card above already covers with real chips +
-    // examFormat + oral status, so it's filtered out here to avoid showing
-    // the same department twice.
-    var deptCards = [{
-      name: '資工所', subjs: u.subjs, format: u.examFormat,
-      oralNote: u.oral ? '有複試（'+u.oral+'）' : '目前查無複試，僅筆試'
-    }].concat((u.relatedDepts||[]).filter(function(d){
-      return d.name.indexOf('主力') === -1;
-    }).map(function(d){
-      return {name: d.name, subjs: null, subjsText: d.subjects, format: d.note || null, oralNote: null};
-    }));
-
-    var deptCardsHtml = deptCards.map(function(d, i){
-      var subjsHtml = d.subjs
-        ? '<div class="chips">'+d.subjs.map(function(s){ return '<span class="chip">'+s+'</span>'; }).join('')+'</div>'
-        : '<div class="dept-card-subjtext">'+d.subjsText+'</div>';
-      return '<div class="dept-card">'
-        +'<div class="dept-card-hd"><span class="dept-card-icon">'+svgIcon('book-open',13)+'</span><span class="dept-card-name">'+d.name+'</span></div>'
-        +subjsHtml
-        +(d.format?'<div class="dept-card-format">'+d.format+'</div>':'')
-        +(d.oralNote?'<div class="dept-card-oral">'+d.oralNote+'</div>':'')
-      +'</div>';
-    }).join('');
-
-    return '<details class="uni-card">'
-      +'<summary class="uni-summary">'
-        +'<div><div class="uni-name">'+u.name+'</div><div class="uni-en">'+u.en+' · '+u.loc+'</div></div>'
-      +'<div class="uni-summary-facts">'
-        +'<span class="summary-exam">115考試｜'+u.exam+' · '+u.examFormat+'</span>'
-      +'</div>'
-        +'<span class="expand-icon uni-summary-chevron" aria-hidden="true"></span>'
-      +'</summary>'
-      +'<div class="uni-body">'
-
-      // Section 1 — 115學年度考試入學 historical reference.
-      +'<div class="card-section exam-section">'
-        +'<div class="card-section-hd">115學年度考試入學（歷史參考）</div>'
-        +schoolExamReadinessHtml(u)
-        +'<div class="ir"><span class="il">報名時間</span><span class="iv">114年'+u.reg+'</span></div>'
-        +'<div class="ir"><span class="il">筆試日期</span><span class="iv">115年'+u.exam+'</span></div>'
-        +(u.oral?'<div class="ir"><span class="il">複試日期</span><span class="iv">115年'+u.oral+'</span></div>':'')
-        +'<div class="ir"><span class="il">考試地點</span><span class="iv">'+u.place+'</span></div>'
-        +'<div class="ir"><span class="il">放榜日期</span><span class="iv">115年'+u.result+'</span></div>'
-      +'</div>'
-
-      // Section 3 — 系所與考試方式: one small card per department (this
-      // school's own 資工所 + any relatedDepts), each with its subjects,
-      // weighting/format, and complex-exam status together — instead of a
-      // subject-chip strip disconnected from which department they belong to.
-      +'<div class="card-section">'
-        +'<div class="card-section-hd">系所與考試方式</div>'
-        +'<div class="dept-cards">'+deptCardsHtml+'</div>'
-        +(u.warn?'<div class="warn">'+svgIcon('alert-triangle',11)+' 116學年度考試方式有異動，請以官方公告為準</div>':'')
-        +(u.relatedDeptsFootnote?'<div class="depts-footnote">'+u.relatedDeptsFootnote+'</div>':'')
-      +'</div>'
-
-      // Section 4 — 查證備註: research notes/trends/warnings, its own category.
-      +(u.flags && u.flags.length ?
-        '<div class="card-section">'
-          +'<div class="card-section-hd">重要提醒</div>'
-          +'<div class="uni-flags">'+u.flags.map(function(f){ return '<div class="uni-flag"><span class="uni-flag-icon">'+svgIcon(f.icon,12)+'</span><span>'+f.text+'</span></div>'; }).join('')+'</div>'
-        +'</div>' : '')
-
-      +'<a class="lbtn ui-btn" href="'+u.url+'" target="_blank" rel="noopener">官方簡章 →</a>'
-      +'</div></details>';
-  }).join('');
 
   // Subjects
   var stabs = document.getElementById('stabs');
@@ -1595,118 +979,6 @@ async function init(){
     tabs[next].focus();tabs[next].click();
   });
 
-  // Materials
-  var RC_LINK_LIMIT = 8;
-  var subjectNameById = {ds:'資料結構',alg:'演算法',os:'作業系統',la:'線性代數',dm:'離散數學',ca:'計算機組織'};
-  var playlistByUrl = {};
-  Object.keys(SUBJECT_PLAYLISTS).forEach(function(subjectId){
-    SUBJECT_PLAYLISTS[subjectId].forEach(function(series){
-      if(!playlistByUrl[series.url]){
-        playlistByUrl[series.url] = {name:series.name,url:series.url,subjects:[]};
-      }
-      if(playlistByUrl[series.url].subjects.indexOf(subjectNameById[subjectId]) === -1){
-        playlistByUrl[series.url].subjects.push(subjectNameById[subjectId]);
-      }
-    });
-  });
-  var playlistMaterials = Object.keys(playlistByUrl).map(function(url){
-    var series = playlistByUrl[url];
-    return {
-      type:'完整課程',name:series.name,
-      st:'適用：'+series.subjects.join('、'),
-      url:series.url
-    };
-  });
-  // Books live in 六科; individual videos live in chapter tasks. The material
-  // library therefore keeps only playlist entrances and supporting resources.
-  var supportingMaterials = MATS.filter(function(m){
-    return m.type === '同儕筆記' || m.type === '歷屆試題' || m.type === '複試準備';
-  }).map(function(m){
-    var clean = Object.assign({},m);
-    if(clean.type === '歷屆試題' || clean.type === '複試準備') clean.type = '考古題與複試';
-    if(clean.type === '同儕筆記'){
-      delete clean.st;
-      delete clean.when;
-      delete clean.how;
-    }
-    // A single YouTube watch link belongs in a chapter task, never here.
-    if(clean.url && clean.url.indexOf('youtube.com/watch?') !== -1) delete clean.url;
-    if(clean.urls){
-      clean.urls = clean.urls.filter(function(l){ return !l.url || l.url.indexOf('youtube.com/watch?') === -1; });
-    }
-    return clean;
-  });
-  var materialLibrary = playlistMaterials.concat(supportingMaterials);
-  document.getElementById('resGrid').innerHTML = materialLibrary.map(function(m, mi){
-    var linkHtml;
-    if(m.urls && m.urls.length){
-      var mkLink = function(l){ return '<a class="lbtn ui-btn" href="'+l.url+'" target="_blank" rel="noopener">'+l.label+' →</a>'; };
-      if(m.urls.length > RC_LINK_LIMIT){
-        var shown = m.urls.slice(0, RC_LINK_LIMIT).map(mkLink).join('');
-        var rest = m.urls.slice(RC_LINK_LIMIT).map(mkLink).join('');
-        var restId = 'rc-extra-'+mi;
-        linkHtml = '<div class="rc-links">'+shown
-          +'<div class="rc-links-extra" id="'+restId+'">'+rest+'</div>'
-          +'<button class="rc-toggle ui-btn" onclick="toggleRcLinks(\''+restId+'\', this)">展開其餘 '+(m.urls.length-RC_LINK_LIMIT)+' 個連結<span class="expand-icon rc-toggle-icon" aria-hidden="true"></span></button>'
-          +'</div>';
-      } else {
-        linkHtml = '<div class="rc-links">' + m.urls.map(mkLink).join('') + '</div>';
-      }
-    } else {
-      var linkLabel = m.type === '完整課程' ? '播放清單 ↗' : '前往資源 →';
-      linkHtml = m.url ? '<a class="lbtn ui-btn" href="'+m.url+'" target="_blank" rel="noopener" style="margin-top:10px;">'+linkLabel+'</a>' : '';
-    }
-    var statusHtml = m.st ? '<div class="rc-st">'+m.st+'</div>' : '';
-    var whenHtml = m.when ? '<div class="rc-when">'+m.when+'</div>' : '';
-    var howHtml = m.how ? '<div class="rc-how">'+m.how+'</div>' : '';
-    var insightsHtml = (m.insights && m.insights.length)
-      ? (function(){
-          // Count only the peer-note (HackMD) links, not official portals/
-          // download pages mixed into the same card — those aren't sources
-          // the insights above were cross-referenced against.
-          var noteUrls = (m.urls || []).filter(function(l){ return l.url && l.url.indexOf('hackmd.io') !== -1; });
-          var sourceCount = noteUrls.length || (m.urls && m.urls.length) || 1;
-          var badge = sourceCount > 1 ? sourceCount+'篇交叉' : '單篇個案';
-          return '<details class="rc-insights"><summary>實際重點（已讀過原筆記整理，非目錄臆測）<span class="experience-badge">'+badge+'</span></summary><ul>'
-            + m.insights.map(function(s){ return '<li>'+s+'</li>'; }).join('')
-            + '</ul></details>';
-        })()
-      : '';
-    var typeLabel = m.type === '完整課程' ? '課程播放清單' : m.type;
-    return '<div class="rc" data-type="'+m.type+'"><div class="rc-type">'+typeLabel+'</div><div class="rc-name">'+m.name+'</div>'+statusHtml+whenHtml+howHtml+linkHtml+insightsHtml+'</div>';
-  }).join('');
-
-  (function(){
-    var types = materialLibrary.map(function(m){ return m.type; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
-    var chipsBar = document.getElementById('matFilterChips');
-    chipsBar.innerHTML = '<button class="filter-chip ui-btn active" type="button" data-t="all" aria-pressed="true">全部</button>'
-      + types.map(function(t){ return '<button class="filter-chip ui-btn" type="button" data-t="'+t+'" aria-pressed="false">'+t+'</button>'; }).join('');
-    var cards = document.querySelectorAll('#resGrid .rc');
-    var emptyMsg = document.getElementById('matEmpty');
-    var activeType = 'all';
-    function applyFilter(){
-      var visible = 0;
-      cards.forEach(function(card){
-        var typeOk = activeType === 'all' || card.dataset.type === activeType;
-        var show = typeOk;
-        card.classList.toggle('filtered-out', !show);
-        if(show) visible++;
-      });
-      emptyMsg.classList.toggle('show', visible === 0);
-    }
-    chipsBar.addEventListener('click', function(e){
-      var btn = e.target.closest('.filter-chip');
-      if(!btn) return;
-      chipsBar.querySelectorAll('.filter-chip').forEach(function(b){ b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
-      btn.classList.add('active');
-      btn.setAttribute('aria-pressed','true');
-      activeType = btn.dataset.t;
-      applyFilter();
-    });
-  })();
-
-  // The restart card is hidden on the simplified main page (日曆 + 六科
-  // only), so its 60 s poll isn't started.
   document.body.classList.add('ui-ready');
   // 六科 opens on the subject of the current task, not always the first tab.
   const cur = nextFoundationTask(DONE_TASK_IDS), curSub = cur && SUBJECTS.find(function(s){ return s.name === cur.subject; });
@@ -1722,33 +994,6 @@ init();
 function escapeHtml(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
-async function exportProgressBackup(){
-  try{
-    const r = await fetch('/api/progress/export');
-    if(!r.ok) throw new Error('匯出失敗');
-    const data = await r.json();
-    const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'csie-prep-progress-'+isoDate(new Date())+'.json';
-    document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
-    showTaskToast('進度備份已匯出');
-  }catch(e){ showTaskToast('備份匯出失敗'); }
-}
-async function importProgressBackup(file){
-  if(!file) return;
-  try{
-    const data = JSON.parse(await file.text());
-    if(!confirm('匯入會以備份內容取代目前進度，確定繼續嗎？')) return;
-    const r = await fetch('/api/progress/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-    const result = await r.json();
-    if(!r.ok) throw new Error(result.error || '匯入失敗');
-    showTaskToast('備份已匯入，正在重新載入');
-    setTimeout(function(){ location.reload(); },700);
-  }catch(e){ showTaskToast(e.message || '備份格式錯誤'); }
-}
-
 function globalSearchCatalog(){
   // chapters (open on 六科) and every lecture video (open in the study room)
   const items = [];
@@ -1845,11 +1090,6 @@ function goSearchChapter(subjectName,index){
   const row=document.querySelectorAll('#sp-'+s.id+' .ch-row')[index];if(row){row.classList.remove('collapsed');const h=row.querySelector('[data-chtoggle]');if(h)h.setAttribute('aria-expanded','true');row.scrollIntoView({block:'start'});}
   writeRoute(subjectsRoute(), true);
 }
-function goSearchSchool(index){
-  closeGlobalSearch();goSec('schools');
-  const card=document.querySelectorAll('.uni-card')[index];if(card){card.open=true;card.scrollIntoView({block:'center'});}
-}
-
 document.addEventListener('DOMContentLoaded', function(){
   const globalInput = document.getElementById('globalSearchInput');
   if(globalInput) globalInput.addEventListener('input',function(){renderGlobalSearch(this.value);});
@@ -1876,101 +1116,6 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 });
 
-
-// ── 重啟模式 ─────────────────────────────────────────────────────
-// 只看今天的一小步：今日目標、今天讀了什麼、散步與心情、連續天數與最近
-// 14 天的小格子。純顯示；紀錄由 Claude 寫進 data/study-log.json。
-let restartState = null;
-let restartTimer = null;
-const RESTART_TIMER_KEY = 'restart-timer-end';
-function restartTimerEnd(){ try{ return Number(localStorage.getItem(RESTART_TIMER_KEY)) || 0; }catch(e){ return restartTimerMem || 0; } }
-let restartTimerMem = 0;
-function setRestartTimerEnd(v){ restartTimerMem = v; try{ if(v) localStorage.setItem(RESTART_TIMER_KEY, String(v)); else localStorage.removeItem(RESTART_TIMER_KEY); }catch(e){} }
-setInterval(function(){ if(document.visibilityState==='visible') loadRestart(); }, 60000);
-async function loadRestart(){
-  try{
-    const r = await fetch('/api/restart');
-    if(!r.ok) return;
-    restartState = await r.json();
-    renderRestart();
-  }catch(e){ /* server not running — skip */ }
-}
-async function restartPost(url, body){
-  try{
-    const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body||{}) });
-    if(r.ok){ restartState = await r.json(); renderRestart(); }
-  }catch(e){}
-}
-function restartLog(kind, extra){ return restartPost('/api/restart/log', Object.assign({kind}, extra||{})); }
-function restartUndo(kind){ return restartPost('/api/restart/undo', {kind}); }
-function startRestartTimer(){
-  setRestartTimerEnd(Date.now() + 25*60*1000);
-  tickRestartTimer();
-}
-function cancelRestartTimer(){ setRestartTimerEnd(0); tickRestartTimer(); }
-function tickRestartTimer(){
-  if(restartTimer){ clearInterval(restartTimer); restartTimer = null; }
-  const el = document.getElementById('restartTimerText');
-  const end = restartTimerEnd();
-  const update = () => {
-    const left = end - Date.now();
-    const box = document.getElementById('restartTimerBox');
-    if(!box) return;
-    if(!end){ box.classList.remove('running'); if(el) el.textContent = '25:00'; return; }
-    if(left <= 0){
-      clearInterval(restartTimer); restartTimer = null;
-      setRestartTimerEnd(0);
-      box.classList.remove('running');
-      restartLog('pomodoro');
-      const msg = document.getElementById('restartMsg');
-      if(msg) msg.textContent = '完成一個番茄鐘了，真的很棒。休息 5 分鐘，喝口水。';
-      return;
-    }
-    box.classList.add('running');
-    const m = Math.floor(left/60000), s = Math.floor((left%60000)/1000);
-    const t = document.getElementById('restartTimerText');
-    if(t) t.textContent = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-  };
-  update();
-  if(end) restartTimer = setInterval(update, 1000);
-}
-function renderRestart(){
-  // 2026/9/25：純顯示。紀錄由 Claude 寫進 data/study-log.json，這裡只負責呈現。
-  const card = document.getElementById('restartCard');
-  const st = restartState;
-  if(!card || !st) return;
-  const t = st.todayStats, tg = st.target;
-  const fmtMin = function(m){ m = Math.round(m||0); return m >= 60 ? Math.floor(m/60)+' 小時'+(m%60 ? ' '+(m%60)+' 分' : '') : m+' 分'; };
-  const pct = Math.min(100, Math.round((t.studyMinutes / Math.max(1, tg.minutes)) * 100));
-  const walkOk = t.walk >= tg.walk;
-  const weekLabel = st.week === 0 ? '明天正式開始' : '重啟第 '+st.week+' 週';
-  const cells = st.days.map(function(d){
-    const lv = d.studyMinutes >= 100 ? 3 : d.studyMinutes >= 50 ? 2 : d.studyMinutes >= 20 ? 1 : 0;
-    const isToday = d.date === st.today;
-    const tip = d.date.slice(5).replace('-','/') + '：讀書 '+fmtMin(d.studyMinutes)+(d.walk?'・散步 '+d.walk+' 分':'')+(d.mood?'・心情 '+d.mood:'');
-    return '<span class="rs-cell lv'+lv+(isToday?' today':'')+'" title="'+escapeHtml(tip)+'"></span>';
-  }).join('');
-  const items = (t.items||[]).length
-    ? '<ul class="rs-items">'+t.items.map(function(it){ return '<li><span class="rs-item-subj">'+escapeHtml(it.subject||'')+'</span>'+escapeHtml(it.what||'')+'<span class="rs-item-min">'+fmtMin(it.minutes)+'</span></li>'; }).join('')+'</ul>'
-    : '<div class="rs-empty">今天還沒有紀錄。讀完跟 Claude 說一聲就會出現在這裡。</div>';
-  const done = t.studyMinutes >= tg.minutes;
-  card.innerHTML =
-    '<div class="rs-head"><div><div class="rs-kicker">重啟模式</div><div class="rs-title">今天的一小步</div></div>'
-    + '<div class="rs-streak"><b>'+st.streak+'</b><span>連續天數</span></div></div>'
-    + '<div class="rs-sub">'+escapeHtml(weekLabel)+'・今日目標：'+escapeHtml(tg.label)+'</div>'
-    + '<div class="rs-lines"><div class="rs-line"><span class="rs-tag rs-tag-exam">考科</span>'+escapeHtml(st.examFocus||'')+'</div></div>'
-    + '<div class="rs-today">'
-    +   '<div class="rs-today-top"><span class="rs-goal-lbl">今天讀書</span><b class="rs-today-min">'+fmtMin(t.studyMinutes)+'</b><span class="rs-today-of">／目標 '+fmtMin(tg.minutes)+'</span></div>'
-    +   '<div class="rs-bar"><span style="width:'+pct+'%"></span></div>'
-    +   items
-    +   '<div class="rs-stats"><span class="rs-walk'+(walkOk?' on':'')+'">散步 '+(t.walk ? t.walk+' 分' : '還沒')+'</span>'
-    +   '<span class="rs-sep">・</span><span>心情 '+(t.mood ? t.mood+'／10' : '—')+'</span>'
-    +   '<span class="rs-sep">・</span><span>這 7 天共 '+fmtMin(st.last7Minutes)+'</span></div>'
-    + '</div>'
-    + '<div class="rs-grid-wrap"><span class="rs-grid-lbl">最近 14 天</span><span class="rs-grid">'+cells+'</span><span class="rs-grid-note">這 7 天有讀書 '+st.last7Studied+' 天</span></div>'
-    + '<div class="rs-msg" id="restartMsg">'+(done ? '今天的目標完成了。多讀是加分，不讀也沒關係。' : '讀一小段就算數，不用補昨天的。')+'</div>';
-  card.hidden = false;
-}
 
 // ── Router ──
 // Every view has its own address, so back/forward, refresh and bookmarks
