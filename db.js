@@ -35,7 +35,24 @@ const CLIENT_KEY = /^(qz-history|qz-asked-[\w-]+|yt-pos-[\w-]+)$/;
 async function getClientState() {
   const out = {};
   for (const r of (await run('SELECT key, value FROM client_state')).rows) out[r.key] = r.value;
+  // when progress was last cleared: each browser drops its own copy once (sync.js)
+  const reset = await getReset();
+  if (reset) out.__reset = reset;
   return out;
+}
+async function getReset() {
+  const r = (await run("SELECT value FROM settings WHERE key = 'state_reset'")).rows[0];
+  return r ? r.value : '';
+}
+// 清空進度：finished videos, quiz history, asked quizzes and video positions.
+// Browsers see the new __reset mark on their next load and clear their copies.
+async function resetProgress() {
+  await ready;
+  await client.batch([
+    'DELETE FROM task_done',
+    'DELETE FROM client_state',
+    { sql: "INSERT INTO settings(key, value) VALUES ('state_reset', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", args: [String(Date.now())] },
+  ], 'write');
 }
 async function setClientState(key, value) {
   if (!CLIENT_KEY.test(key)) return false;
@@ -70,4 +87,4 @@ async function setTaskDone(taskId, done) {
   else await run('DELETE FROM task_done WHERE task_id = ?', [taskId]);
 }
 
-module.exports = { client, getClientState, setClientState, getStartDate, setStartDate, getDoneTaskIds, toggleTask, setTaskDone };
+module.exports = { client, getClientState, getReset, resetProgress, setClientState, getStartDate, setStartDate, getDoneTaskIds, toggleTask, setTaskDone };

@@ -15,7 +15,7 @@
   function put(key, value) {
     try {
       fetch('/api/state/' + encodeURIComponent(key), {
-        method: 'PUT', headers: {'Content-Type': 'application/json'},
+        method: 'PUT', headers: {'Content-Type': 'application/json', 'X-Sync-Reset': ls.getItem('sync-reset') || ''},
         body: JSON.stringify({value: value}), keepalive: true,
       }).catch(function () {});
     } catch (e) {}
@@ -30,6 +30,18 @@
     x.send();
     if (x.status === 200) server = JSON.parse(x.responseText) || {};
   } catch (e) { server = {}; }
+  // progress was cleared since this browser last synced: drop its own copy
+  // first, so the old answers and positions are not merged back
+  try {
+    const reset = server.__reset;
+    delete server.__reset;
+    if (reset && ls.getItem('sync-reset') !== reset) {
+      const old = [];
+      for (let i = 0; i < ls.length; i++) { const k = ls.key(i); if (KEY.test(k)) old.push(k); }
+      old.forEach(function (k) { rawRemove.call(ls, k); });
+      rawSet.call(ls, 'sync-reset', reset);
+    }
+  } catch (e) {}
   const toPush = [];
   try {
     const local = {};

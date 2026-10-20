@@ -114,6 +114,9 @@ app.post('/api/tasks/:id/set', route(async (req, res) => {
 // ── Study-room state kept in the browser, mirrored here (see db.js) ──
 app.get('/api/state', route(async (req, res) => res.json(await db.getClientState())));
 app.put('/api/state/:key', route(async (req, res) => {
+  // a page opened before progress was cleared must not write its old copy back
+  const reset = await db.getReset();
+  if (reset && req.get('X-Sync-Reset') !== reset) return res.status(409).json({ ok: false, reset });
   const ok = await db.setClientState(req.params.key, req.body ? req.body.value : null);
   res.status(ok ? 200 : 400).json({ ok });
 }));
