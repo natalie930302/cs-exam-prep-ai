@@ -244,3 +244,21 @@ body.embed:not(.stage) { background: transparent !important; }
 body.embed:not(.stage):not(.shown) .lab-tabs, body.embed:not(.stage):not(.shown) .lab-main { visibility: hidden; }
 body.embed.shown:not(.stage) .lab-tabs, body.embed.shown:not(.stage) .lab-main { animation: m-in .22s cubic-bezier(.2,.8,.2,1) both; }
 @media (prefers-reduced-motion: reduce) { body.embed.shown .lab-tabs, body.embed.shown .lab-main { animation: none; } }
+
+/* ══ 2026-10-21 手機上的課堂動畫：字和標籤縮小 ══
+   鏡頭為了塞進窄畫面會拉遠，方塊跟著變小、標籤的字卻不會，看起來字太大又互相擠。
+   只縮課堂動畫（stage），實驗室分頁不變。 */
+@media (max-width: 640px) {
+  body.stage .lab-label { font-size: 10px; padding: 0 4px; border-radius: 5px; }
+  body.stage .lab-label.val { font-size: 11px; padding: 0 4px; }
+  body.stage .lab-label.idx { font-size: 9px; }
+  body.stage .lab-label.zone, body.stage .lab-label.note { font-size: 11px; }
+  body.stage .lab-label.say { font-size: 10px; padding: 1px 7px; border-radius: 8px; }
+  body.stage .lab-label.pkt { padding: 0 7px; }
+  body.stage .lab-label.icon .g { font-size: 26px; }
+  body.stage .lab-label.icon.sm .g { font-size: 18px; }
+  body.stage .lab-label.icon.lg .g { font-size: 34px; }
+  body.stage .lab-label.icon .t { font-size: 10px; padding: 0 4px; }
+  body.stage .lab-caption { font-size: 12px; padding: 4px 10px 4px 8px; }
+  body.stage .lab-formula-ov { font-size: 11px; }
+}
