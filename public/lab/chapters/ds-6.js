@@ -922,7 +922,6 @@ function haRow(m, dx, z) {
 function haPlace(T, i, k, drop) { const c = cube(k, haCol(k), [T.ks, 0.7, 0.9], T.xs[i], 0.47, T.z, drop ? 3 : 0); T.keys[i] = c; T.vals[i] = k; return c; }
 // a key hovering over slot j (before it is placed): red = that slot is taken
 function haHover(T, j, k) { const c = cube(k, haCol(k), [T.ks, 0.7, 0.9], T.xs[j], 1.5, T.z); return c; }
-const haLin = (i) => i, haQuad = (i) => i * i;
 // one probe: the cursor jumps to slot j; red if taken (returns false), else the key lands (true)
 async function haTry(tok, T, k, j, cur, lbl, ms = 700) {
   cur.position.set(T.xs[j], 2.1, T.z); txt(cur, lbl);

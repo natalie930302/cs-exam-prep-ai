@@ -302,7 +302,6 @@ export default function (ctx) {
 
   // ───────────────────────── 小測驗 ─────────────────────────
   const qs = { score: 0, total: 0 };
-  const phi = (n) => range(n).filter((a) => gcd(a, n) === 1).length;
   function genQ() {
     const r = Math.random();
     if (r < 0.13) { const n = pick([6, 8, 9, 10, 12, 15, 18, 20]), k = 1 + rnd(n - 1), o = n / gcd(n, k); return { q: '在 (ℤ' + sub(n) + ', +) 中，元素 ' + k + ' 的 order 是？', opts: [...new Set([o, n, k, gcd(n, k), n - k].map(String))].slice(0, 4), ans: String(o), why: 'ord(k) = n / gcd(n,k) = ' + n + '/' + gcd(n, k) + ' = ' + o + '。' }; }
@@ -600,7 +599,6 @@ const { txt, relabel } = P;
 // 影片只有投影片，畫面上的公式與例子照講者的順序；所有算式（ℚ[√2] 的加法、FOIL、反元素、ℤ₅ 的群檢查、
 // ℤ₅／ℤ₆ 的乘法反元素、矩陣不交換）都由程式算出來再顯示 ✓。講者沒有給數字的地方（ℤ_n 用 n = 5、
 // 2×2 矩陣、多項式、ℝⁿ 的向量）是自己挑的小例子，畫面標「示意」。
-const wt = (tok, ms) => ctx.beat(tok, ms);
 const cap = (a, b = '') => say(a, b);
 const hd = (t, x, y, z = 0) => tag(t, 'ptr', x, y, z);
 const hot = (t, x, y, z = 0) => tag(t, 'ptr alt', x, y, z);

@@ -792,7 +792,6 @@ const sm = (t, x, y, z = 0) => tag(t, 'idx', x, y, z);
 const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
 const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
 const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
-const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
 const pl = (t, x, y, z = 0) => tag(t, '', x, y, z);
 const ok = (b, x, y, t, z = 0) => { if (!b) log('✘ check failed: ' + t, true); return b ? good('✓ ' + t, x, y, z) : bad('✘ 程式檢查不符：' + t, x, y, z); };
 const gone = (...os) => os.forEach((o) => {

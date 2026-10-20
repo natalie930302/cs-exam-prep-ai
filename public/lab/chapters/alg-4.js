@@ -52,7 +52,6 @@ export default function (ctx) {
   const tint = (m, c) => { if (m && m.material) m.material.color.set(c); };
   const txt = (l, t) => { l.element.textContent = t; };
   const relabel = (m, t) => { if (m.userData.lbl) txt(m.userData.lbl, String(t)); };
-  const showL = (l, v) => { l.element.style.visibility = v ? '' : 'hidden'; };
   const setCls = (l, cls) => { l.element.className = 'lab-label' + (cls ? ' ' + cls : ''); };
   function code(lines, x, yTop, dy = 0.5, z = 0) {
     const w = Math.max(...lines.map((s) => s.length));
@@ -797,33 +796,6 @@ const mono = (l) => { Object.assign(l.element.style, K.MONO); return l; };
 const fr = (x) => String(+x.toFixed(4));
 
 // ── 共用：Matrix chain 的兩張表（成本 C/M 與切點 K/S） ──
-function mcStage(p, cn, kn) {
-  const n = p.length - 1, S = mcmSolve(p);
-  dimsRow(p, 7.6);
-  const gm = mcmGrid(p, -5.0, 5.5, 1.15, 0.8);
-  const gk = grid({ rows: n, cols: n, cw: 0.9, ch: 0.8, x0: 1.9, y0: 5.5, colHdr: Array.from({ length: n }, (_, k) => 'j=' + (k + 1)), rowHdr: Array.from({ length: n }, (_, k) => 'i=' + (k + 1)), rowDx: 0.3 });
-  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (j <= i) gk.mark(i, j, '#ddd2bf');
-  tag(cn + ' 表', 'ptr', -6.5, 6.3); tag(kn + ' 表', 'ptr', 1.0, 6.5);
-  return { n, S, gm, gk };
-}
-async function mcCell(st, o, tok, ms) {
-  const { gm, gk, p, cn, kn } = o;
-  (o.lines || []).forEach(kill); o.lines = [];
-  for (let t = 0; t < st.cands.length; t++) {
-    const x = st.cands[t];
-    gm.clearArrows(); gm.unglow();
-    gm.arrow(st.i - 1, x.k - 1, st.r, st.c, TRY); gm.arrow(x.k, st.j - 1, st.r, st.c, TRY);
-    glow(gm.get(st.i - 1, x.k - 1), GOLD); glow(gm.get(x.k, st.j - 1), GOLD);
-    o.lines.push(mono(tag('k=' + x.k + ': ' + x.a + ' + ' + x.b + ' + ' + p[st.i - 1] + '·' + p[x.k] + '·' + p[st.j] + ' = ' + x.v, '', -2.2, 2.3 - t * 0.5)));
-    say(cn + '(' + st.i + ',' + st.j + ')：k = ' + x.k, cn + '(' + st.i + ',' + x.k + ') + ' + cn + '(' + (x.k + 1) + ',' + st.j + ') + d' + (st.i - 1) + '·d' + x.k + '·d' + st.j + ' = ' + x.v);
-    await beat(tok, ms);
-  }
-  gm.clearArrows(); gm.unglow();
-  setCls(o.lines[st.cands.findIndex((x) => x.k === st.bk)], 'ptr alt');
-  gm.set(st.r, st.c, st.v, TEAL); gk.set(st.r, st.c, st.bk, PURPLE);
-  say(cn + '(' + st.i + ',' + st.j + ') = ' + st.v, (st.cands.length > 1 ? '最小的是 k = ' : 'k = ') + st.bk + ' → 寫進 ' + kn + ' 表');
-  await beat(tok, ms);
-}
 // 依 j−i 由小到大的順序；cells 之前的格子先直接填好
 function prefillOrder(order, cells) {
   const key = (c) => c[0] + ',' + c[1];
@@ -881,28 +853,11 @@ async function exTree(tok, o) {
 }
 
 // ── 共用：MCM 切割樹（依 s 表） ──
-async function mcTree(tok, s, n, xL, yTop, dy, ms, onNode) {
-  const nodes = [];
-  async function walk(i, j, d, par) {
-    const x = (xL(i) + xL(j)) / 2, y = yTop - d * dy;
-    const nd = { i, j, x, y, d, par };
-    nodes.push(nd);
-    if (par) line(par.x, par.y - 0.25, x, y + 0.25);
-    nd.m = i === j ? cube('A' + i, BLUE, [0.8, 0.45, 0.4], x, y, 0, ms ? 1.2 : 0) : cube(i + '..' + j, TEAL, [0.95, 0.45, 0.4], x, y, 0, ms ? 1.2 : 0);
-    if (onNode) await onNode(nd);
-    if (ms) await beat(tok, ms);
-    if (i < j) { nd.L = await walk(i, s[i][j], d + 1, nd); nd.R = await walk(s[i][j] + 1, j, d + 1, nd); }
-    return nd;
-  }
-  const root = await walk(1, n, 0, null);
-  return { root, nodes };
-}
 
 // ═════════ Abdul Bari matrix chain（prx1psByp7U、eKkXU3uu2zk、_WncuhSJZyA）：逐句 cue ═════════
 // 每個場景吃 params.seq：一個元素 = 老師說的一句話（await step(tok) 等到那一刻），元素裡是要做的 ops。
 // 元素可以是字串（一個 op）或陣列（多個 op，每個 op 是字串或 [名稱, 參數…]）。beat 只剩動作本身。
 const { step, buddy, prop, relabel } = K;
-const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
 const nte = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
 const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
 const guide = (x, z, s = 0.7) => buddy('', '', '#ffc56b', x, 0, z, s);
@@ -2272,7 +2227,6 @@ function fillBefore(T, H, stop, wAll, what) {
 }
 const kText = (H, i, j, k, v) => 'k=' + k + ': c(' + i + ',' + (k - 1) + ') + c(' + k + ',' + j + ')' + (v ? ' = ' + H.c[i][k - 1] + ' + ' + H.c[k][j] + ' = ' + (H.c[i][k - 1] + H.c[k][j]) : '');
 const kArrows = (T, i, j, k) => { T.arrow(i, k - 1, i, j); T.arrow(k, j, i, j); };
-const minOf = (H, i, j) => { let b = Infinity; for (let k = i + 1; k <= j; k++) b = Math.min(b, H.c[i][k - 1] + H.c[k][j]); return b; };
 function stageB(H, stop, what) {
   K.fresh([0, 4.4, 15], [0, 3.8, 0]);
   const T = obTable(H.n, {});
@@ -3123,7 +3077,6 @@ function board(x, y, z = 0, cls = 'say') { let l = null; return (t) => { if (l) 
 async function pkt(tok, t, a, b, ms = 700, cls = 'pkt') { const l = tag(t, cls, a.x, a.y, a.z); await travel(tok, l, a, b, ms); return l; }
 // the learner: a little character who watches and reacts
 const me = (x, y, z = 1.2, s = 0.7, name = '你') => buddy(name, '', Q.you, x, y, z, s);
-const strike = (l) => { l.element.style.textDecoration = 'line-through'; l.element.style.opacity = '0.6'; };
 // C columns × R rows of small node cubes; returns { g[c][r], X(c), Y(r) }
 function qGrid(C, R, dx, dy, cx, cy, color, lf, s = 0.5) {
   const X = qX(C, dx, cx), Y = (r) => cy + (R - 1) * dy / 2 - r * dy, g = [];

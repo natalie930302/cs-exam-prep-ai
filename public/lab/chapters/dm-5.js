@@ -63,7 +63,6 @@ export default function (ctx) {
     m.quaternion.setFromUnitVectors(V3(0, 1, 0), n.normalize());
     m.castShadow = true; lab.world.add(m); return m;
   }
-  async function tween(w, ms, fn) { const steps = 12; for (let k = 1; k <= steps; k++) { fn(k / steps); await w(ms / steps); } }
   // waits: scenes use beat(tok), modes use a token that dies when the mode / scene changes
   async function wait(my, ms) { await sleep(ms); if (my !== mtok) throw new Error('stale'); }
   function guard(fn) {

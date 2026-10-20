@@ -26,7 +26,6 @@ export default function (ctx) {
   }
   function bodyOf(o) { for (const b of lab.bodies) if (b.obj === o) return b; return lab.addBody(o); }
   const move = (o, x, y, z = 0) => lab.springTo(bodyOf(o), V3(x, y, z));
-  const fly = (o, dir) => lab.flyAway(bodyOf(o), dir || V3((Math.random() - 0.5) * 6, 8, 4));
   const glow = (m, c) => { m.material.emissive = new THREE.Color(c || '#000000'); };
   const tint = (m, c) => { m.material.color.set(c); };
   const relabel = (m, t) => { if (m.userData.lbl) txt(m.userData.lbl, String(t)); else { m.userData.lbl = lab.label(String(t), 'val'); m.add(m.userData.lbl); } };
@@ -142,26 +141,6 @@ export default function (ctx) {
     };
   }
   // R⁴ 之類的向量畫成一排長條（基準線在 base）
-  function bars(vals, x0, base, z = 0, color = COL.a, o = {}) {
-    const k = o.k || 0.42, w = o.w || 0.3, gap = o.gap || 0.38;
-    const ms = vals.map((v, i) => { const m = lab.box(color, [w, 1, w]); m.position.set(x0 + i * gap, base, z); lab.world.add(m); return m; });
-    const ls = vals.map((v, i) => tag('', 'idx', x0 + i * gap, base, z + 0.3));
-    const plank = new THREE.Mesh(new THREE.BoxGeometry(gap * vals.length, 0.03, 0.5), new THREE.MeshBasicMaterial({ color: '#a8987f' }));
-    plank.position.set(x0 + gap * (vals.length - 1) / 2, base, z); lab.world.add(plank);
-    const B = {
-      ms, ls, vals: vals.slice(),
-      set(v) {
-        B.vals = v.slice();
-        v.forEach((x, i) => { const h = x * k; ms[i].scale.y = Math.max(Math.abs(h), 0.001); ms[i].position.y = base + h / 2; ms[i].visible = Math.abs(h) > 0.002; ls[i].position.set(x0 + i * gap, base + h + (h >= 0 ? 0.22 : -0.22), z + 0.25); txt(ls[i], o.noNum ? '' : fmt(Math.round(x * 100) / 100)); });
-      },
-      color(c) { ms.forEach((m) => tint(m, c)); },
-      glow(c) { ms.forEach((m) => glow(m, c)); },
-      ghost() { ms.forEach((m) => { m.material = m.material.clone(); m.material.transparent = true; m.material.opacity = 0.28; m.material.depthWrite = false; }); },
-      mid: x0 + gap * (vals.length - 1) / 2,
-    };
-    B.set(vals);
-    return B;
-  }
   // 鏡頭繞著 look 轉：angle（度，0 = 正前方）、elev（度）
   function cam(angle, elev, dist, look) {
     const a = angle * Math.PI / 180, e = elev * Math.PI / 180;
@@ -188,18 +167,6 @@ export default function (ctx) {
       piv.push(c); r++;
     }
     return { R: snap(), piv, rank: piv.length, steps };
-  }
-  function nullBasis(R, piv, n) {
-    const free = []; for (let j = 0; j < n; j++) if (!piv.includes(j)) free.push(j);
-    return free.map((f) => { const x = new Array(n).fill(0); x[f] = 1; piv.forEach((pc, k) => { x[pc] = -R[k][f]; }); return x; });
-  }
-  function subspaces(A) {
-    const m = A.length, n = A[0].length, E = rrefSteps(A), Et = rrefSteps(T(A));
-    return {
-      rank: E.rank, piv: E.piv, R: E.R,
-      row: E.R.slice(0, E.rank), null: nullBasis(E.R, E.piv, n),
-      col: E.piv.map((j) => A.map((r) => r[j])), left: nullBasis(Et.R, Et.piv, m), m, n,
-    };
   }
   function parseM(s) {
     const rows = String(s).trim().split(/\s*[;\n]\s*/).filter(Boolean).map((r) => r.split(/[\s,]+/).filter(Boolean).map(Number));
@@ -938,7 +905,6 @@ const P = K; const { V3, tag, cube, kill, glow, code, anim, zone, travel, remove
 // 每個矩陣、落點、換基底結果都由程式算出來，再和老師說的數字比對，畫面顯示 ✓／✘。
 // 老師沒給數字的地方用自己挑的例子，畫面標「示意」。
 const kArrow = P.arrow;
-const wt = (tok, ms) => ctx.beat(tok, ms);
 const cap = (a, b = '') => say(a, b);
 const hd = (t, x, y, z = 0) => tag(t, 'ptr', x, y, z);
 const hot = (t, x, y, z = 0) => tag(t, 'ptr alt', x, y, z);

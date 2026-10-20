@@ -14,7 +14,6 @@ export default function (ctx) {
   const mul = (k, u) => u.map((x) => k * x);
   const norm = (u) => Math.sqrt(dot(u, u));
   const unit = (u) => mul(1 / norm(u), u);
-  const lerpV = (u, v, t) => u.map((x, i) => x + (v[i] - x) * t);
   const mv = (M, u) => M.map((r) => dot(r, u));
   const mm = (A, B) => A.map((r) => B[0].map((_, j) => r.reduce((s, x, k) => s + x * B[k][j], 0)));
   const tr = (A) => A[0].map((_, j) => A.map((r) => r[j]));
@@ -91,7 +90,6 @@ export default function (ctx) {
   async function anim(tok, ms, fn) { const n = Math.max(6, Math.round(ms / 33)); for (let k = 1; k <= n; k++) { fn(ease(k / n)); await beat(tok, ms / n); } }
   function fresh(pos, look) { gen++; lab.clear(); controls(''); lab.frameCamera(pos, look); }
   function tag(text, cls, x, y, z = 0) { const l = lab.label(text, cls || ''); l.position.set(x, y, z); lab.world.add(l); return l; }
-  const tagAt = (text, cls, p) => tag(text, cls, p.x, p.y, p.z);
   const txt = (l, t) => { l.element.textContent = t; };
   function kill(o) { if (!o) return; if (o.kill && o.g) { o.kill(); return; } lab.world.remove(o); o.traverse((c) => { if (c.element) c.element.remove(); }); }
   function mtag(rows, x, y, z = 0, cls = '') {
@@ -765,7 +763,6 @@ function space3(O, s, L = 1.4) {
   });
   return T;
 }
-const vecA = (T, v, color, r = 0.05) => arrow(color, r).set(T([0, 0, 0]), T(v));
 // a translucent plane through the origin spanned by unit u, v (math coords)
 function planeOf(T, u, v, size = 1.3, color = '#9b7ef4') {
   const g = new THREE.BufferGeometry().setFromPoints([[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => T(u.map((x, k) => size * (a * x + b * v[k])))));

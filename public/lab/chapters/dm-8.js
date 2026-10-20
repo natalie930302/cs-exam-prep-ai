@@ -127,7 +127,6 @@ export default function (ctx) {
     e.g.userData.cyl.scale.set(k, 1, k);
   }
   const vcol = (gv, n, c, g) => { gv.vm[n].material.color.set(c); glow(gv.vm[n], g); };
-  function lift(gv, n, h) { const m = gv.vm[n]; m.position.y = (gv.y0 ?? 0.3) + h; }
 
   // 走訪快照（DFS 遞迴 / BFS queue）
   function travSteps(G, root, kind, order) {
@@ -5954,7 +5953,6 @@ scene('g8d-dij-idea', '27A：從頭想一遍——為什麼每次挑 L 最小', 
 ]);
 
 // ════════ 9r_YXw7i_mY（趙啟超 27B：Dijkstra 跑老師的圖、結果是 spanning tree、複雜度） ════════
-const vIdx = (n) => GN.indexOf(n);
 function cmpOp(k, v, extra) {
   return async (tok, S) => {
     const it = DJ.it[k], c = it.ch.find((x) => x.v === v), u = it.u;
@@ -10258,7 +10256,6 @@ scene('g8g-st-ex-a', '練習：指定 a 當根的 DFS', [
 // 地圖照本章 MAP_CELLS／MAPD（邊 A–B A–C B–C B–E C–D C–E D–E，照影片口述）。影片的 greedy 塗出 4 色、
 // P(G,λ) 寫 λ(λ−1)(λ−2)(λ−1)(λ−3)；照這些相鄰關係其實 3 色就夠、P = λ(λ−1)(λ−2)³ —— 場景兩者都演、標出錯在哪。
 const mapCtr = (r, ox, oz, cs) => { const cells = MAP_CELLS[r]; const c = cells.reduce((s, [a, b]) => [s[0] + a / cells.length, s[1] + b / cells.length], [0, 0]); return [ox + (c[0] - 1) * cs, oz + (c[1] - 1) * cs]; };
-const MAPADJ = (u, v) => MAPD.E.some((e) => (e.u === u && e.v === v) || (e.u === v && e.v === u));
 const proper = (G, col) => G.E.every((e) => col[e.u] !== col[e.v]);
 scene('g8g-col-map', '地圖著色：相鄰國家不同色', [
   async (tok, S) => {

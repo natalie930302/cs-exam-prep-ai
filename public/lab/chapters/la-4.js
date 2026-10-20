@@ -1856,7 +1856,6 @@ const XN = ['x₁', 'x₂', 'x₃', 'x₄'];
 function rowOp(S, i, f, j) { S.M[i] = S.M[i].map((x, k) => x - f * S.M[j][k]); S.g.clearGlow(); S.g.setAll(S.M); S.g.row(i, GOLD); }
 function rowDiv(S, i, d) { S.M[i] = S.M[i].map((x) => x / d); S.g.clearGlow(); S.g.setAll(S.M); S.g.row(i, GOLD); }
 function rowSwap(S, i, j) { [S.M[i], S.M[j]] = [S.M[j], S.M[i]]; S.g.clearGlow(); S.g.setAll(S.M); S.g.row(i, GOLD); S.g.row(j, GOLD); }
-const eqU = (M) => sameM(M.map((r) => r.map((x) => (Math.abs(x) < 1e-12 ? 0 : x))), M);
 
 scene('vsA-l7-elim', 'L7：消去法把 A 化成 echelon form U', [
   async (tok, S) => { cap('例子：A 有 3 列、4 行', '第 2 列 (2,4,6,8)、第 3 列 (3,6,8,10)'); S.g = mgrid(S.M, -4.6, 5.4, 0); XN.forEach((n, j) => sm(n, S.g.xs[j], 6.1)); },
@@ -3020,7 +3019,6 @@ function fplot(X, Y, sx, sy, x0, x1, o = {}) {
   return F;
 }
 // 鏡頭繞轉（用 kit 的 anim，快轉時直接跳到終點）
-async function orbitTo(tok, ms, a0, a1, e0, e1, dist, look) { await anim(tok, ms, (u) => cam(a0 + (a1 - a0) * u, e0 + (e1 - e0) * u, dist, look)); }
 
 // ════════ 2IdtqGM6KWU（MIT 18.06 L11：Matrix spaces、rank 1、small world graphs） ════════
 const flat = (M) => M.flat();

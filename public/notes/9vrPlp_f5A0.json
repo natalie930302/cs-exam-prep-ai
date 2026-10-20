@@ -235,6 +235,39 @@
    ],
    "ans": "把 MIPS 指令逐一翻譯成 x86 指令再執行",
    "why": "兩種 ISA 的指令格式不同，x86 CPU 看不懂 MIPS 指令，VM 必須做 instruction set translation（emulation）。"
+  },
+  {
+   "q": "Nachos 的 stub file system 開檔時實際上做了什麼？",
+   "opts": [
+    "直接轉給底下 Linux 的 file system 處理",
+    "在模擬的硬碟上自己配置 block",
+    "把檔案內容全部載入 memory 後關閉",
+    "拒絕所有 open 要求"
+   ],
+   "ans": "直接轉給底下 Linux 的 file system 處理",
+   "why": "stub 沒有真的實作，所以作業一到三在 Nachos 看到的檔案跟 server 上的一模一樣；real file system 到作業四才做。"
+  },
+  {
+   "q": "為什麼測試 Nachos 的 system call 時不能用 printf 輸出？",
+   "opts": [
+    "printf 是 Linux 的 standard I/O，根本沒經過 Nachos",
+    "printf 在 MIPS 上會讓程式當掉",
+    "printf 會讓 counter 歸零",
+    "printf 只能在 kernel 裡使用"
+   ],
+   "ans": "printf 是 Linux 的 standard I/O，根本沒經過 Nachos",
+   "why": "要看 Nachos 自己印出的 counter，才能確定是 Nachos 的 system call 做的。"
+  },
+  {
+   "q": "為什麼一定要用 Nachos 提供的 compile 指令產生 user program？",
+   "opts": [
+    "要產生 MIPS binary，x86 與 MIPS 的 binary 互相看不懂",
+    "因為 gcc 不支援 C++",
+    "因為 Nachos 只接受原始碼",
+    "因為 Linux 的 binary 太大放不進 memory"
+   ],
+   "ans": "要產生 MIPS binary，x86 與 MIPS 的 binary 互相看不懂",
+   "why": "Nachos 模擬的是 MIPS CPU，user program 必須是 MIPS 指令。"
   }
  ]
 }

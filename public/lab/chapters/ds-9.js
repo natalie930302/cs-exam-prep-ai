@@ -52,7 +52,6 @@ export default function (ctx) {
     lab.world.add(r);
     return r;
   }
-  function parseKeys(s) { return (String(s).match(/-?\d+/g) || []).map(Number).filter((x) => x >= 1 && x <= 99); }
   function randInt(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
   function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
@@ -377,7 +376,6 @@ export default function (ctx) {
 
   // ───────────────────────── B+ Tree ─────────────────────────
   const BP = { m: 3, root: null, view: null, hl: new Set() };
-  const bpId = (n, k) => (isLeaf(n) ? 'L' : 'I') + k;
   function bpLeaves() { let n = BP.root; if (!n) return []; while (!isLeaf(n)) n = n.kids[0]; const out = []; while (n) { out.push(n); n = n.next; } return out; }
   function* bpInsert(k) {
     const m = BP.m;
@@ -949,11 +947,6 @@ function bpAt(v, n, k) {
   if (isLeaf(n)) { say('到葉節點 [' + n.keys.join(', ') + ']', n.keys.includes(k) ? '<span class="ok">有 ' + k + ' → hit，跟著 ' + k + '* 去拿 record</span>' : '<span class="no">沒有 ' + k + ' → 找不到</span>'); return; }
   let i = 0; while (i < n.keys.length && k >= n.keys[i]) i++;
   say('比較 ' + k + ' 和 [' + n.keys.join(', ') + ']', i === 0 ? k + ' < ' + n.keys[0] + ' → 最左邊 pointer' : i === n.keys.length ? k + ' ≥ ' + n.keys[i - 1] + ' → 最右邊 pointer' : n.keys[i - 1] + ' ≤ ' + k + ' < ' + n.keys[i] + ' → 第 ' + (i + 1) + ' 個 pointer');
-}
-async function bpWalk(tok, v, root, k, ms = 650) {
-  const path = bpDescend(root, k);
-  for (const n of path) { bpAt(v, n, k); await beat(tok, ms); }
-  return path[path.length - 1];
 }
 
 // ─── IilVRpUsAiQ：B-Tree Insertion（order 4，keys 5 3 21 9 1 13 2 7 10 12 4）───

@@ -33,10 +33,6 @@ export default function (ctx) {
   const glow = (m, c) => { if (m) m.material.emissive = new THREE.Color(c || '#000000'); };
   const tint = (m, c) => { if (m) m.material.color.set(c); };
   const txt = (l, t) => { l.element.textContent = t; };
-  function seg(a, b, color = '#8a7a60') {
-    const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), new THREE.LineBasicMaterial({ color }));
-    lab.world.add(l); return l;
-  }
   async function anim(tok, ms, fn) { const steps = 12; for (let k = 1; k <= steps; k++) { fn(k / steps); if (tok !== undefined) await beat(tok, ms / steps); else await sleep(ms / steps); } }
   const wait = (tok, ms) => (tok !== undefined ? beat(tok, ms) : sleep(ms));
   const pickOne = (a) => a[Math.floor(Math.random() * a.length)];
@@ -507,7 +503,6 @@ const bx = (t, c, x, y, z = 0, w = 2.4, h = 0.6, d = 0.9) => cube(t, c, [w, h, d
 const MC = { hw: '#8a7a60', vmm: '#c08a1f', host: '#31aab0', guest: '#4b9ee2', app: '#2fc092', red: '#d64545', purple: '#9b7ef4', orange: '#dd8238', gray: '#c9bba3', pink: '#e55a9b' };
 const HL = '#6a4a00', OKG = '#0f5a3a', NG = '#5a1010';
 const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.g) kill(o.g); else if (o.element) remove(o); else kill(o); });
-async function slide(tok, o, x, y, z = 0, ms = 600) { const a = o.position.clone(); await travel(tok, o, a, V3(x, y, z), ms); }
 function scene(id, title, cam, steps) {
   FRAG.push([id, title, async (tok) => {
     fresh(cam[0], cam[1]);

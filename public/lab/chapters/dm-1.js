@@ -880,7 +880,7 @@ function TT(vars, cols, o = {}) {
   };
   return T;
 }
-const N_ = (a) => !a, IM = (a, b) => !a || b;
+const IM = (a, b) => !a || b;
 // 真、假兩個小夥伴：結果是真，綠色那隻跳；結果是假，灰色那隻跳
 function duo(S, o = {}) {
   const x = o.x || 6.3;

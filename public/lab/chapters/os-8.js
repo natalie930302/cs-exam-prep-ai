@@ -896,7 +896,6 @@ const { txt, tint, line, relabel } = P;
 // EAT 用老師投影片的數字（200 ns、8 ms、p = 1/1000 → 8.2 µs）；老師沒給的數字標「示意」。
 const wt = (tok, ms) => ctx.beat(tok, ms);
 const cap = (a, b = '') => say(a, b);
-const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
 const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
 const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
 const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);

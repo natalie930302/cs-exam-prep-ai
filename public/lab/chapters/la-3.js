@@ -30,7 +30,6 @@ export default function (ctx) {
     for (let q = 2; q <= 64; q++) { const p = x * q; if (Math.abs(p - Math.round(p)) < 1e-7) return (p < 0 ? '−' : '') + Math.abs(Math.round(p)) + '/' + q; }
     return x.toFixed(2).replace('-', '−');
   }
-  const opStr = (t, s, k) => 'R' + sub(t + 1) + (k >= 0 ? ' − ' + fmt(k) : ' + ' + fmt(-k)) + '·R' + sub(s + 1);
   function fresh(pos, look) { stopTimer(); epoch++; busy = false; lab.clear(); controls(''); lab.frameCamera(pos, look); }
   // wait: in scenes tok is the shell token; in modes tok is undefined and we abort when the mode changes
   async function W(tok, ms) {
@@ -50,7 +49,6 @@ export default function (ctx) {
   const txt = (l, t) => { l.element.textContent = t; };
   function bodyOf(o) { for (const b of lab.bodies) if (b.obj === o) return b; return lab.addBody(o); }
   const move = (o, x, y, z = 0) => lab.springTo(bodyOf(o), V3(x, y, z));
-  const fly = (o, dir) => lab.flyAway(bodyOf(o), dir || V3((Math.random() - 0.5) * 6, 8, 4));
   function kill(o) {
     for (const b of lab.bodies) if (b.obj === o) { lab.removeBody(b); return; }
     if (o.parent) o.parent.remove(o);
@@ -65,7 +63,6 @@ export default function (ctx) {
     else { m.position.set(x, y, z); lab.world.add(m); }
     return m;
   }
-  const relabel = (m, t) => { if (m.userData.lbl) txt(m.userData.lbl, String(t)); };
   function rod(color, r = 0.045) {
     const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 1, 10), new THREE.MeshStandardMaterial({ color, roughness: 0.5 }));
     m.castShadow = true; lab.world.add(m); return m;
@@ -108,15 +105,6 @@ export default function (ctx) {
     return { P, s, ext };
   }
   // the segment of a·x + b·y = c inside the square [−e, e]²
-  function clipLine(a, b, c, e) {
-    const pts = [];
-    if (Math.abs(b) > 1e-9) for (const x of [-e, e]) { const y = (c - a * x) / b; if (Math.abs(y) <= e + 1e-9) pts.push([x, y]); }
-    if (Math.abs(a) > 1e-9) for (const y of [-e, e]) { const x = (c - b * y) / a; if (Math.abs(x) <= e + 1e-9) pts.push([x, y]); }
-    if (pts.length < 2) return null;
-    let best = null, bd = -1;
-    for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) { const d = Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]); if (d > bd) { bd = d; best = [pts[i], pts[j]]; } }
-    return bd > 1e-6 ? best : null;
-  }
   // 3-D math space: math (x, y, z) with z up → three (x, z, −y)
   function space(o, s, ext = 3) {
     const P = (x, y, z) => V3(o[0] + x * s, o[1] + z * s, o[2] - y * s);
@@ -126,17 +114,6 @@ export default function (ctx) {
       const p = P(x * 1.1, y * 1.1, z * 1.1); tag(n, 'idx', p.x, p.y, p.z);
     });
     return { P, D, s };
-  }
-  function plane3(sp, n, d, color, size, focus = [0, 0, 0]) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.MeshStandardMaterial({ color, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false, roughness: 0.8 }));
-    const nn = n[0] * n[0] + n[1] * n[1] + n[2] * n[2];
-    const t = (n[0] * focus[0] + n[1] * focus[1] + n[2] * focus[2] - d) / nn;
-    const c = [focus[0] - n[0] * t, focus[1] - n[1] * t, focus[2] - n[2] * t];
-    m.position.copy(sp.P(...c));
-    m.quaternion.setFromUnitVectors(V3(0, 0, 1), sp.D(...n).normalize());
-    m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color })));
-    lab.world.add(m);
-    return m;
   }
 
   // ── matrix of blocks standing upright; aug = column index where the right-hand side starts ──
@@ -223,36 +200,6 @@ export default function (ctx) {
     mv.glowRow(r, null);
   }
   // elimination plan on the first `nc` columns; full = reduce to RREF (pivots 1, zeros above)
-  function planElim(M0, nc, full) {
-    const M = M0.map((r) => r.slice()), R = M.length, steps = [], piv = [];
-    let r = 0;
-    for (let c = 0; c < nc && r < R; c++) {
-      let p = -1;
-      for (let i = r; i < R; i++) if (Math.abs(M[i][c]) > 1e-9) { p = i; break; }
-      if (p < 0) { steps.push({ t: 'free', c, r }); continue; }
-      if (p !== r) { [M[p], M[r]] = [M[r], M[p]]; steps.push({ t: 'swap', a: r, b: p }); }
-      steps.push({ t: 'pivot', i: r, j: c, v: M[r][c] });
-      piv.push([r, c]);
-      if (full && Math.abs(M[r][c] - 1) > 1e-9) { const k = M[r][c]; M[r] = M[r].map((x) => cl(x / k)); steps.push({ t: 'scale', r, k }); }
-      for (let i = full ? 0 : r + 1; i < R; i++) {
-        if (i === r) continue;
-        const k = M[i][c] / M[r][c];
-        if (Math.abs(k) < 1e-12) continue;
-        M[i] = M[i].map((x, j) => cl(x - k * M[r][j]));
-        steps.push({ t: 'sub', tg: i, s: r, k });
-      }
-      r++;
-    }
-    for (let c = 0; c < nc; c++) if (!piv.some((p) => p[1] === c) && !steps.some((s) => s.t === 'free' && s.c === c)) steps.push({ t: 'free', c, r });
-    return { steps, M, piv, rank: r };
-  }
-  async function doStep(tok, mv, st, ms = 1100) {
-    if (st.t === 'swap') { say('pivot 位置是 0：換列 R' + sub(st.a + 1) + ' ↔ R' + sub(st.b + 1), '換列 = 乘上 permutation matrix'); await swapRows(tok, mv, st.a, st.b, ms); }
-    else if (st.t === 'pivot') { mv.pivot(st.i, st.j); mv.glowCell(st.i, st.j, GOLD); say('pivot = ' + fmt(st.v) + '（第 ' + (st.j + 1) + ' 行）', 'pivot 不能是 0'); await W(tok, ms * 0.7); mv.glowCell(st.i, st.j, null); }
-    else if (st.t === 'scale') { say('整列除以 pivot ' + fmt(st.k), 'R' + sub(st.r + 1) + ' ÷ ' + fmt(st.k)); await scaleRow(tok, mv, st.r, st.k, ms); }
-    else if (st.t === 'sub') { say('multiplier ℓ = ' + fmt(st.k), opStr(st.tg, st.s, st.k)); await rowOp(tok, mv, st.tg, st.s, st.k, ms); }
-    else if (st.t === 'free') { mv.glowCol(st.c, REDG); say('第 ' + (st.c + 1) + ' 行找不到 pivot', '→ x' + sub(st.c + 1) + ' 是 free variable'); await W(tok, ms * 0.8); mv.glowCol(st.c, null); }
-  }
   const matMul = (A, B) => A.map((r) => B[0].map((_, j) => cl(r.reduce((s, a, k) => s + a * B[k][j], 0))));
 
   const T2 = (M) => M[0].map((_, j) => M.map((r) => r[j]));
@@ -1030,7 +977,6 @@ const pre = (l) => { l.element.style.whiteSpace = 'pre'; return l; };
 const near = (a, b) => Math.abs(a - b) < 1e-9;
 // everything added after mark() can be wiped in one go
 const mark = () => lab.world.children.length;
-function wipe(n) { while (lab.world.children.length > n) { const o = lab.world.children[lab.world.children.length - 1]; kill(o); if (o.parent === lab.world) lab.world.remove(o); } }
 // a scene = a list of step functions; each runs when the video reaches its cue
 const CAM = [[0, 3.3, 11.5], [0, 3.1, 0]];
 function scene(id, title, steps, o = {}) {

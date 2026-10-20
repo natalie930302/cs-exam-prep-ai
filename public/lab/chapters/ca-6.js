@@ -1769,7 +1769,6 @@ const sm = (t, x, y, z = 0) => tag(t, 'idx', x, y, z);
 const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
 const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
 const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
-const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
 const ok = (b, t, x, y) => { if (!b) log('CHECK FAILED: ' + t, true); return b ? good(t, x, y) : bad(t.replace(/✓/g, '✘'), x, y); };
 const mono = (l) => { Object.assign(l.element.style, { whiteSpace: 'pre', fontFamily: 'ui-monospace, SFMono-Regular, Consolas, monospace', fontSize: '11px', fontWeight: '600' }); return l; };
 const mt = (t, x, y, cls = '') => mono(tag(t, cls, x, y));

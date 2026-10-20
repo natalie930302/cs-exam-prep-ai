@@ -661,7 +661,6 @@ const idx = (t, x, y, z = 0) => tag(t, 'idx', x, y, z);
 const bx = (t, c, x, y, z = 0, w = 2.4, h = 0.6, d = 0.9, drop = 0) => cube(t, c, [w, h, d], x, y, z, drop);
 const ln = (x1, y1, x2, y2, z = 0, c = '#a99470') => P.line(x1, y1, x2, y2, z, c);
 const arr = (x1, y1, x2, y2, c = '#8a7a5c', z = 0) => arrow(V3(x1, y1, z), V3(x2, y2, z), c);
-const tx = (l, t) => P.txt(l, t);
 async function slide(tok, o, x, y, z = 0, ms = 700) { const a = o.position.clone(); await travel(tok, o, a, V3(x, y, z), ms); }
 const pal = (name, v, color, x, y = 0, z = 0, s = 0.7) => buddy(name, v, color, x, y, z, s);
 const gone = (...os) => os.forEach((o) => { if (!o) return; if (o.g) kill(o.g); else if (o.ls) o.kill(); else if (o.userData && o.userData.name) remove(o); else kill(o); });

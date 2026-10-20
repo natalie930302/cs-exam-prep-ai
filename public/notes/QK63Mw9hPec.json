@@ -240,6 +240,28 @@
    ],
    "ans": "把很多電腦連在一起管理，像一台電腦一樣做事",
    "why": "雲端、巨量資料、IoT 都不是一台電腦做得完的。"
+  },
+  {
+   "q": "為什麼 synchronization 這部分沒有程式作業？",
+   "opts": [
+    "跑一次只是當下的結果，無法證明同步的正確性",
+    "因為同步太簡單不需要練習",
+    "因為 Nachos 不支援多個 thread",
+    "因為同步只會出現在分散式系統"
+   ],
+   "ans": "跑一次只是當下的結果，無法證明同步的正確性",
+   "why": "同步要像演算法一樣嚴謹地證明，測試跑對不代表沒有 race condition。"
+  },
+  {
+   "q": "電腦（與 OS）不可或缺的三個要素是？",
+   "opts": [
+    "CPU（process）、memory、storage（file system）",
+    "CPU、網路、螢幕",
+    "memory、GUI、security",
+    "compiler、linker、loader"
+   ],
+   "ans": "CPU（process）、memory、storage（file system）",
+   "why": "課程前五個 part 就是 overview 加上這三塊。"
   }
  ]
 }

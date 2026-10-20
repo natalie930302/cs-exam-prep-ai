@@ -58,7 +58,6 @@ export default function (ctx) {
   const tint = (m, c) => { m.material.color.set(c); };
   const txt = (l, t) => { l.element.textContent = t; };
   const relabel = (m, t) => { if (m.userData.lbl) txt(m.userData.lbl, String(t)); };
-  const mono = (l) => { Object.assign(l.element.style, MONO); return l; };
   // CSS2D labels ignore a hidden parent, so hide the value label too
   const vis = (m, on) => { m.visible = on; if (m.userData.lbl) m.userData.lbl.visible = on; };
   async function anim(tok, ms, fn) { const steps = 10; for (let k = 1; k <= steps; k++) { fn(k / steps); await wait(tok, ms / steps); } }

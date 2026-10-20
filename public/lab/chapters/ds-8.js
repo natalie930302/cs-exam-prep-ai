@@ -2463,7 +2463,6 @@ const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
 // glow / mood that work for both cubes and buddies (a buddy's group carries userData.bud)
 const gl = (m, c) => { if (!m) return; if (m.userData && m.userData.bud) m.userData.bud.glow(c); else glow(m, c); };
 const mood = (m, s) => { if (m && m.userData && m.userData.bud) m.userData.bud.mood(s); };
-const killAll = (list) => list.forEach((o) => kill(o));
 // a little helper character in a corner that reacts to what happens
 const helper = (x, z, name = '小幫手', s = 0.75) => buddy(name, '', SUN, x, 0, z, s);
 // a row of value cubes (or kids = buddies sized by value); R.v = values, R.m = meshes/groups, slot i at x = R.x(i)

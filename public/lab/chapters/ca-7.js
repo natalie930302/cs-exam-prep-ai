@@ -24,7 +24,6 @@ export default function (ctx) {
   }
   function bodyOf(o) { for (const b of lab.bodies) if (b.obj === o) return b; return lab.addBody(o); }
   const move = (o, x, y, z = 0) => lab.springTo(bodyOf(o), V3(x, y, z));
-  const fly = (o, dir) => lab.flyAway(bodyOf(o), dir || V3((Math.random() - 0.5) * 6, 8, 4));
   function kill(o) {
     for (const b of lab.bodies) if (b.obj === o) { lab.removeBody(b); return; }
     lab.world.remove(o); o.traverse((c) => { if (c.element) c.element.remove(); });

@@ -1453,7 +1453,6 @@ const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel,
 // Every `await step(tok)` waits until the lecturer says that sentence (notes "cues");
 // between steps only short moves (≤ ~2.5 s); nothing loops or replays.
 // Abdul Bari 的例子（3 人 3 椅、5 頂點著色、4-Queens、w = {5,10,12,13,15,18}、m = 30 等）照影片的數字。
-const prm = () => ctx.params || {};
 const wt = (tok, ms) => ctx.beat(tok, ms);
 const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
 const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
@@ -2848,7 +2847,6 @@ function qTree(spec, parent = null) {
   kids.forEach((k) => qTree(k, n));
   return n;
 }
-const qPath = (n) => { const p = []; while (n && n.parent) { p.unshift(+n.label); n = n.parent; } return p; };
 
 // 0:00 問題：4 × 4 棋盤放 4 個皇后
 FRAG.push(['bt-nq-problem', '回溯：N-Queens 問題', async (tok) => {

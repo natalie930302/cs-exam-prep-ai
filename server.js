@@ -62,7 +62,7 @@ app.use('/transcripts', express.static(path.join(PUBLIC_DIR, 'transcripts'), { m
 // revalidate so a new ?v= reference is picked up immediately.
 app.use(express.static(PUBLIC_DIR, {
   maxAge: '30d', etag: true,
-  setHeaders: (res, filePath) => { if (/\.html$|(resources|glossary|skips)\.json$/.test(filePath)) res.setHeader('Cache-Control', 'no-cache'); },
+  setHeaders: (res, filePath) => { if (/\.html$|(glossary|skips)\.json$/.test(filePath)) res.setHeader('Cache-Control', 'no-cache'); },
 }));
 
 const PORT = process.env.PORT || 3210;

@@ -69,17 +69,6 @@ export default function (ctx) {
     for (i = 0; i <= m; i++) { if (shift[i] === 0) shift[i] = j; if (i === j) j = bpos[j]; }
     return shift; // mismatch at j → shift[j + 1]; full match → shift[0]
   }
-  function bmCount(t, p, useGS) {
-    const L = lastOcc(p), gs = goodSuffix(p), m = p.length;
-    let s = 0, c = 0;
-    while (s + m <= t.length) {
-      let j = m - 1;
-      for (;;) { c++; if (t[s + j] !== p[j]) break; if (j === 0) { j = -1; break; } j--; }
-      if (j < 0) s += useGS ? gs[0] : 1;
-      else { const bc = j - (L[t[s + j]] ?? -1); s += useGS ? Math.max(bc, gs[j + 1]) : Math.max(1, bc); }
-    }
-    return c;
-  }
 
   // ───────────────────────── 舞台：text 一排、pattern 一排 ─────────────────────────
   const ST = { text: '', pat: '', cw: 0.8, tB: [], pB: [], s: 0, cmp: 0, iPtr: null, jPtr: null, found: [] };

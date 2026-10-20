@@ -24,9 +24,6 @@ export default function (ctx) {
     else { m.position.set(x, y, z); lab.world.add(m); }
     return m;
   }
-  function bodyOf(o) { for (const b of lab.bodies) if (b.obj === o) return b; return lab.addBody(o); }
-  const move = (o, x, y, z = 0) => lab.springTo(bodyOf(o), V3(x, y, z));
-  const fly = (o, dir) => lab.flyAway(bodyOf(o), dir || V3((Math.random() - 0.5) * 6, 8, 4));
   const glow = (m, c) => { m.material.emissive = new THREE.Color(c || '#000000'); };
   const tint = (m, c) => { m.material.color.set(c); };
   const relabel = (m, t) => { if (m.userData.lbl) txt(m.userData.lbl, String(t)); else { m.userData.lbl = lab.label(String(t), 'val'); m.add(m.userData.lbl); } };
@@ -193,14 +190,6 @@ export default function (ctx) {
     const free = []; for (let j = 0; j < n; j++) if (!piv.includes(j)) free.push(j);
     return free.map((f) => { const x = new Array(n).fill(0); x[f] = 1; piv.forEach((pc, k) => { x[pc] = -R[k][f]; }); return x; });
   }
-  function subspaces(A) {
-    const m = A.length, n = A[0].length, E = rrefSteps(A), Et = rrefSteps(T(A));
-    return {
-      rank: E.rank, piv: E.piv, R: E.R,
-      row: E.R.slice(0, E.rank), null: nullBasis(E.R, E.piv, n),
-      col: E.piv.map((j) => A.map((r) => r[j])), left: nullBasis(Et.R, Et.piv, m), m, n,
-    };
-  }
   function parseM(s) {
     const rows = String(s).trim().split(/\s*[;\n]\s*/).filter(Boolean).map((r) => r.split(/[\s,]+/).filter(Boolean).map(Number));
     if (!rows.length || rows.some((r) => r.length !== rows[0].length || r.some((x) => !isFinite(x)))) return null;
@@ -258,37 +247,7 @@ export default function (ctx) {
     return F;
   }
   // 平行六面體 / 平行四邊形（在 space3 裡）
-  function ppiped(S, a, b, c, color = COL.c, op = 0.22) {
-    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(24), 3));
-    geo.setIndex([0, 1, 3, 0, 3, 2, 4, 5, 7, 4, 7, 6, 0, 1, 5, 0, 5, 4, 2, 3, 7, 2, 7, 6, 0, 2, 6, 0, 6, 4, 1, 3, 7, 1, 7, 5]);
-    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, side: THREE.DoubleSide, depthWrite: false }));
-    const edges = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color }));
-    lab.world.add(m); lab.world.add(edges); m.edges = edges;
-    const E = [[0, 1], [0, 2], [0, 4], [1, 3], [1, 5], [2, 3], [2, 6], [3, 7], [4, 5], [4, 6], [5, 7], [6, 7]];
-    m.set = (a2, b2, c2) => {
-      const P = [0, 1, 2, 3, 4, 5, 6, 7].map((k) => S.w(addv(addv(scl(a2, k & 1), scl(b2, (k >> 1) & 1)), scl(c2, (k >> 2) & 1))));
-      const arr = geo.attributes.position.array; P.forEach((p, i) => { arr[i * 3] = p.x; arr[i * 3 + 1] = p.y; arr[i * 3 + 2] = p.z; });
-      geo.attributes.position.needsUpdate = true; geo.computeBoundingSphere();
-      setPts(edges, E.flatMap(([i, j]) => [P[i], P[j]]));
-    };
-    m.show = (v) => { m.visible = v; edges.visible = v; };
-    m.set(a, b, c); return m;
-  }
-  function pgram(S, a, b, color = COL.g, op = 0.3) {
-    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(12), 3)); geo.setIndex([0, 1, 2, 0, 2, 3]);
-    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, side: THREE.DoubleSide, depthWrite: false }));
-    lab.world.add(m);
-    m.set = (a2, b2) => { const P = [[0, 0, 0], a2, addv(a2, b2), b2].map((p) => S.w(p)); const arr = geo.attributes.position.array; P.forEach((p, i) => { arr[i * 3] = p.x; arr[i * 3 + 1] = p.y; arr[i * 3 + 2] = p.z; }); geo.attributes.position.needsUpdate = true; geo.computeBoundingSphere(); };
-    m.set(a, b); return m;
-  }
   // 3D 格線（xy 平面上的格子，經過 3×3 或 3×2 矩陣）
-  function grid3(S, color, n = 3, op = 0.7) {
-    const l = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color, transparent: true, opacity: op }));
-    lab.world.add(l);
-    l.setM = (M) => { const f = (p) => S.w(M[0].length === 2 ? mulMV(M, p.slice(0, 2)) : mulMV(M, p)); const pts = []; for (let k = -n; k <= n; k++) { pts.push(f([k, -n, 0]), f([k, n, 0]), f([-n, k, 0]), f([n, k, 0])); } setPts(l, pts); };
-    l.setM(I3); return l;
-  }
-  function unitCube(S, color = COL.c) { return ppiped(S, [1, 0, 0], [0, 1, 0], [0, 0, 1], color, 0.2); }
 
   // ── 特徵值計算 ──
   const C_ = { add: (a, b) => [a[0] + b[0], a[1] + b[1]], sub: (a, b) => [a[0] - b[0], a[1] - b[1]], mul: (a, b) => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]], div: (a, b) => { const d = b[0] * b[0] + b[1] * b[1]; return [(a[0] * b[0] + a[1] * b[1]) / d, (a[1] * b[0] - a[0] * b[1]) / d]; } };
@@ -1232,7 +1191,6 @@ async function sweep(tok, F, M, ax, aAx, a0, a1, ms, len = 1.6, k = 1) {
     F.set(ax, x); F.set(aAx, scl(y, k)); const par = isPar(x, y); ax.glow(par ? GOLD : null); aAx.glow(par ? GOLD : null);
   });
 }
-async function moveTo(tok, F, a, v, ms = 700) { const v0 = a.v.slice(); await anim(tok, ms, (u) => F.set(a, addv(v0, scl(addv(v, scl(v0, -1)), u)))); }
 
 // ═════════════════════════ MIT 18.06 L21（cdZnhQjJu4I／lXNXrLcoerU）Eigenvalues and Eigenvectors ═════════════════════════
 // L21-1：什麼是特徵向量
@@ -1973,7 +1931,6 @@ const nearM = (A, B, e = 1e-9) => A.every((r, i) => nearV(r, B[i], e));
 const nf = (x, d = 2) => { let v = Math.round(x * 10 ** d) / 10 ** d; if (Object.is(v, -0)) v = 0; return String(v).replace('-', '−'); };
 const ff = (x) => fmt(Math.abs(x) < 1e-12 ? 0 : x).replace('-', '−');
 const vs = (v) => '(' + v.map(ff).join(', ') + ')';
-const ms2 = (M) => '[' + M.map((r) => r.map((x) => (typeof x === 'string' ? x : ff(x))).join(' ')).join('; ') + ']';
 function mtx(M, x, y, cls = '') {
   const cells = M.map((r) => r.map((v) => (typeof v === 'string' ? v : ff(v))));
   const w = Math.max(...cells.flat().map((s) => s.length));

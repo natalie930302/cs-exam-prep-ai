@@ -164,13 +164,6 @@ export default function (ctx) {
     const tick = () => { if (e !== epoch) return; const st = step(); if (st) timer = setTimeout(tick, Math.max(350, (st.ms || 1000) * 0.8)); };
     tick();
   }
-  async function playAll(tok) {
-    for (;;) {
-      const st = step();
-      if (!st) break;
-      await wait(tok, st.ms || 1000);
-    }
-  }
   function stepControls(extra) {
     controls((extra || '') + '<button class="primary" id="gStep">下一步</button><button id="gAuto">自動播放</button><button id="gReset">重來</button>');
     on('gStep', () => { clearTimeout(timer); if (!step()) log('已經結束了，按「重來」再跑一次。'); });
@@ -1075,7 +1068,6 @@ function gG(nodes, edges, o = {}) {
   return { N, E, e };
 }
 function gTag(m, text, cls, dy = 1.1) { const [x, z] = m.userData.xz; return tag(text, cls || 'ptr', x, dy, z); }
-function gUF(keys) { const p = {}; keys.forEach((k) => { p[k] = k; }); const f = (x) => (p[x] === x ? x : (p[x] = f(p[x]))); return { f, u(a, b) { p[f(a)] = f(b); } }; }
 // 小幫手：一個會呼吸、會跳的小角色（站在地板上）
 function gBud(name, x, z, color = '#f4a56a', size = 0.6) { return buddy(name, '', color, x, 0, z, size); }
 // 一個小封包（'pkt'）從 a 走到 b（Vector3）

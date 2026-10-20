@@ -52,7 +52,6 @@ export default function (ctx) {
     lab.world.add(l); return l;
   }
   function bar(color, w, d, x, z) { const m = lab.box(color, [w, 1, d]); m.scale.y = 0.001; m.position.set(x, 0, z); lab.world.add(m); return m; }
-  function growBar(tok, m, h, ms) { const h0 = m.scale.y; return anim(tok, ms, (t) => { const v = Math.max(0.001, h0 + (h - h0) * t); m.scale.y = v; m.position.y = v / 2; }); }
 
   // bits as a row of small cubes (index 0 = MSB, on the left)
   const BIT1 = '#4b9ee2', BIT0 = '#efe6d6';
@@ -1052,7 +1051,6 @@ function list(x, yTop, dy = 0.55, cls = 'idx') {
 }
 // a horizontal bar sitting on y0 (height h), x-centered
 function vbar(c, x, h, w = 0.7, y0 = 0, d = 0.7) { const m = lab.box(c, [w, 1, d]); m.scale.y = Math.max(0.001, h); m.position.set(x, y0 + Math.max(0.001, h) / 2, 0); lab.world.add(m); return m; }
-function setH(m, h, y0 = 0) { m.scale.y = Math.max(0.001, h); m.position.y = y0 + Math.max(0.001, h) / 2; }
 const dbits = (x) => { const dv = new DataView(new ArrayBuffer(8)); dv.setFloat64(0, x); return dv.getUint32(0).toString(2).padStart(32, '0') + dv.getUint32(4).toString(2).padStart(32, '0'); };
 const fmtN = (n) => n.toLocaleString('en-US');
 function scene(id, title, steps, cam) {
@@ -3425,7 +3423,6 @@ scene('nuA-9a-prin', '四個設計原則', [
 ]);
 
 // ════════ sKxdXfH5qko（IEEE 754 Floating Point Representation：single & double） ════════
-const SCOL = (i, b) => (i === 0 ? (b === '1' ? '#d64545' : '#f2c4c4') : (b === '1' ? '#4b9ee2' : '#c6def5'));
 const hcol = (i, b) => (i === 0 ? (b === '1' ? '#d64545' : '#f2c4c4') : i <= 5 ? (b === '1' ? '#4b9ee2' : '#c6def5') : (b === '1' ? '#2fc092' : '#c2ecdc'));
 const dcolHi = (i, b) => (i === 0 ? (b === '1' ? '#d64545' : '#f2c4c4') : i <= 11 ? (b === '1' ? '#4b9ee2' : '#c6def5') : (b === '1' ? '#2fc092' : '#c2ecdc'));
 const dcolLo = (i, b) => (b === '1' ? '#2fc092' : '#c2ecdc');

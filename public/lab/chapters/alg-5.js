@@ -60,13 +60,6 @@ export default function (ctx) {
     return { ls, hl(i) { ls.forEach((l, k) => setCls(l, k === i ? 'ptr alt' : '')); }, kill() { ls.forEach(kill); } };
   }
   async function anim(tok, ms, fn) { const steps = 10; for (let k = 1; k <= steps; k++) { fn(k / steps); await wait(tok, ms / steps); } }
-  function rod(a, b, color = SAND, r = 0.03) {
-    const d = b.clone().sub(a), len = d.length();
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, Math.max(0.01, len), 8), new THREE.MeshBasicMaterial({ color }));
-    m.position.copy(a).addScaledVector(d, 0.5);
-    m.quaternion.setFromUnitVectors(V3(0, 1, 0), d.normalize());
-    lab.world.add(m); return m;
-  }
   function arrow(a0, b0, color = '#c08a1f', r = 0.035) {
     const A = a0.clone(), B = b0.clone(), d = B.clone().sub(A);
     let len = d.length(); d.normalize();
@@ -79,64 +72,12 @@ export default function (ctx) {
     lab.world.add(g); return g;
   }
   // a curved arrow from a to b bulging h units along y (negative = below)
-  function arc(a, b, h, color = '#c08a1f', r = 0.03) {
-    const mid = a.clone().add(b).multiplyScalar(0.5); mid.y += h;
-    const curve = new THREE.QuadraticBezierCurve3(a.clone(), mid, b.clone());
-    const pts = curve.getPoints(24).slice(2, 23);
-    const path = new THREE.CatmullRomCurve3(pts);
-    const mat = new THREE.MeshBasicMaterial({ color });
-    const g = new THREE.Group();
-    g.add(new THREE.Mesh(new THREE.TubeGeometry(path, 24, r, 6, false), mat));
-    const end = pts[pts.length - 1], tan = curve.getTangent(0.92);
-    const co = new THREE.Mesh(new THREE.ConeGeometry(r * 3.4, 0.24, 12), mat);
-    co.position.copy(end).addScaledVector(tan, 0.08); co.quaternion.setFromUnitVectors(V3(0, 1, 0), tan);
-    g.add(co); lab.world.add(g); return g;
-  }
   function plate(x, y, w, h, color = PAPER, z = -0.05) {
     const t = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.06), new THREE.MeshStandardMaterial({ color, roughness: 1 }));
     t.position.set(x, y, z); t.receiveShadow = true; lab.world.add(t); return t;
   }
   // an upright DP table: cells fall into their slot; arrows show which cells a cell was computed from
-  function grid(o) {
-    const g = { o, cells: {}, plates: {}, arrows: [] };
-    g.pos = (r, c) => V3(o.x0 + c * o.cw, o.y0 - r * o.ch, 0);
-    for (let r = 0; r < o.rows; r++) for (let c = 0; c < o.cols; c++) { const p = g.pos(r, c); g.plates[r + ',' + c] = plate(p.x, p.y, o.cw * 0.94, o.ch * 0.92); }
-    (o.colHdr || []).forEach((t, c) => { if (t !== null && t !== '') tag(String(t), o.colCls || 'idx', g.pos(0, c).x, o.y0 + o.ch * 0.8); });
-    (o.rowHdr || []).forEach((t, r) => { if (t !== null && t !== '') tag(String(t), o.rowCls || 'idx', o.x0 - o.cw * 0.6 - (o.rowDx || 0.45), g.pos(r, 0).y); });
-    g.set = (r, c, v, color = BLUE, dropH = 1.4) => {
-      const k = r + ',' + c; if (g.cells[k]) kill(g.cells[k]);
-      const p = g.pos(r, c);
-      return (g.cells[k] = cube(v, color, [o.cw * 0.8, o.ch * 0.72, 0.32], p.x, p.y, 0.2, dropH));
-    };
-    g.get = (r, c) => g.cells[r + ',' + c];
-    g.arrow = (r1, c1, r2, c2, color) => { const a = g.pos(r1, c1), b = g.pos(r2, c2); a.z = b.z = 0.6; const h = arrow(a, b, color); g.arrows.push(h); return h; };
-    g.arc = (r1, c1, r2, c2, color, below = true) => {
-      const a = g.pos(r1, c1), b = g.pos(r2, c2), s = below ? -1 : 1;
-      a.z = b.z = 0.6; a.y += s * o.ch * 0.3; b.y += s * o.ch * 0.3;
-      const h = arc(a, b, s * (0.3 + 0.16 * Math.abs(c2 - c1)), color); g.arrows.push(h); return h;
-    };
-    g.clearArrows = () => { g.arrows.forEach(kill); g.arrows = []; };
-    g.mark = (r, c, color) => { const p = g.plates[r + ',' + c]; if (p) p.material.color.set(color || PAPER); };
-    g.unglow = () => Object.values(g.cells).forEach((m) => glow(m, null));
-    return g;
-  }
   // play one table step: arrows from the cells it depends on, then the value drops in
-  async function playStep(g, s, tok, ms, quiet) {
-    g.clearArrows(); g.unglow();
-    for (const d of s.deps || []) {
-      const col = d.best ? OKC : TRY;
-      if (d.arc) g.arc(d.r, d.c, s.r, s.c, col, d.arc !== 'up'); else g.arrow(d.r, d.c, s.r, s.c, col);
-      const m = g.get(d.r, d.c); if (m) glow(m, d.best ? GREEN : GOLD);
-    }
-    for (const h of s.hi || []) { const m = g.get(h[0], h[1]); if (m) glow(m, GOLD); }
-    if (!quiet) say(s.cap, s.formula);
-    if (tok === undefined && s.log) log(s.log);
-    await wait(tok, ms * 0.55);
-    g.set(s.r, s.c, s.v, s.color || BLUE);
-    if (s.also) for (const a of s.also) g.set(a[0], a[1], a[2], a[3] || PURPLE);
-    await wait(tok, ms * 0.45);
-  }
-  const fmtV = (v) => (v === Infinity ? '∞' : v === -Infinity ? '−∞' : String(v));
   const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const rnd = (n) => Math.floor(Math.random() * n);
 

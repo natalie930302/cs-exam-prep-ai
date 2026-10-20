@@ -24,7 +24,6 @@ export default function (ctx) {
   }
   function bodyOf(o) { for (const b of lab.bodies) if (b.obj === o) return b; return lab.addBody(o); }
   const move = (o, x, y, z = 0) => lab.springTo(bodyOf(o), V3(x, y, z));
-  const fly = (o, dir) => lab.flyAway(bodyOf(o), dir || V3((Math.random() - 0.5) * 6, 8, 4));
   function kill(o) {
     for (const b of lab.bodies) if (b.obj === o) { lab.removeBody(b); return; }
     lab.world.remove(o); o.traverse((c) => { if (c.element) c.element.remove(); });
@@ -44,7 +43,6 @@ export default function (ctx) {
   function hbar(color, x0, y, w, d = 0.8, h = 0.6, text = '') { const m = cube(text, color, [1, h, d], x0 + w / 2, y, 0); m.scale.x = Math.max(0.01, w); return m; }
   function setH(m, x0, w) { m.scale.x = Math.max(0.01, w); m.position.x = x0 + Math.max(0.01, w) / 2; }
   function bar(color, w, d, x, z = 0) { const m = lab.box(color, [w, 1, d]); m.scale.y = 0.001; m.position.set(x, 0, z); lab.world.add(m); return m; }
-  function growBar(tok, m, h, ms) { const h0 = m.scale.y; return anim(tok, ms, (t) => { const v = Math.max(0.001, h0 + (h - h0) * t); m.scale.y = v; m.position.y = v / 2; }); }
   function polyline(pts, color) { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color })); lab.world.add(l); return l; }
   const r2 = (x) => Math.round(x * 100) / 100;
   const r4 = (x) => Math.round(x * 10000) / 10000;
@@ -315,7 +313,6 @@ export default function (ctx) {
   }
 
   // ───────────────────────── 小測驗 ─────────────────────────
-  const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
   const pickOne = (arr) => arr[Math.floor(Math.random() * arr.length)];
   function opts4(ans, cands) {
     const s = new Set([ans]);

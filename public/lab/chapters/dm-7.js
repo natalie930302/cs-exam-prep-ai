@@ -16,7 +16,6 @@ export default function (ctx) {
   const V3 = (x, y, z = 0) => new THREE.Vector3(x, y, z);
   const UP = V3(0, 1, 0);
   const rnd = (n) => Math.floor(Math.random() * n);
-  const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const COL = { node: '#cdbfa6', edge: '#9c8b70', hot: '#d64545', gold: '#c08a1f', green: '#2fc092', blue: '#4b9ee2', pink: '#e55a9b', purple: '#9b7ef4', orange: '#dd8238', dim: '#e6ddcf' };
   const PAL = ['#4b9ee2', '#e55a9b', '#2fc092', '#dd8238', '#9b7ef4', '#31aab0', '#c08a1f', '#5c7a4a'];
   const GOLD = '#6a4a00', RED = '#5a1010', GREEN = '#0f5a3a';

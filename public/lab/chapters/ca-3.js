@@ -771,7 +771,6 @@ function dpAdd(D, keys = [], wires = []) {
 }
 const dpLit = (D, ks, c = HL) => ks.forEach((k) => D.c[k] && glow(D.c[k], c));
 const wOn = (D, ns, c = WON) => ns.forEach((n) => D.w[n] && D.w[n].material.color.set(c));
-function dpOff(D) { wiresOff(D); }
 // a small control-signal flag next to a mux: name = value
 function flag(D, s, v, x, y) { if (D.sig[s]) remove(D.sig[s]); const l = small(tag(s + ' = ' + v, v === 1 || v === '1' ? 'ptr alt' : 'idx', x, y), 10); D.sig[s] = l; return l; }
 
@@ -1443,7 +1442,6 @@ const CW = {
   wbM: [[5.0, 3.45], [5.5, 3.45], [5.5, 0.2], [-2.0, 0.2], [-2.0, 2.3], [-1.8, 2.3]],
 };
 const cw = (D, n, c = WCOL) => { if (!D.w[n]) D.w[n] = line(CW[n], c); return D.w[n]; };
-async function go1(D, tok, pts, text, color, ms, lightKey) { if (lightKey && D.w[lightKey]) D.w[lightKey].material.color.set(WON); const m = await flow(tok, pts, text, color, ms); return m; }
 // port names around the register file
 function rfPorts(D) { D.ex.push(small(tag('RA', 'idx', -1.55, 4.42), 9), small(tag('RB', 'idx', -1.55, 3.82), 9), small(tag('RW', 'idx', -1.55, 2.77), 9), small(tag('busW', 'idx', -1.4, 2.08), 9), small(tag('busA', 'idx', 0.35, 4.35), 9), small(tag('busB', 'idx', 0.35, 3.25), 9)); }
 

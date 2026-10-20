@@ -1247,9 +1247,6 @@ function paintEdge(g, color, thick) {
   const k = thick ? 1.9 : 1;
   g.userData.cyl.scale.set(k, 1, k);
 }
-function ringXY(V, R) {
-  return Array.from({ length: V }, (_, i) => { const a = Math.PI / 2 - i * 2 * Math.PI / V; return [Math.cos(a) * R, -Math.sin(a) * R]; });
-}
 function adjOf(V, edges) {
   const A = Array.from({ length: V }, () => []);
   edges.forEach(([u, v]) => { A[u].push(v); A[v].push(u); });

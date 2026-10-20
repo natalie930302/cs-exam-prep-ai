@@ -5570,7 +5570,6 @@ FRAG.push(['dcjiang-sort-count-code', 'Sort-and-Count 程式', async (tok) => {
 const CPL = [[-16, 10], [-16, -2], [-4, 0], [-26, -16], [-10, 22], [-8, -20]];
 const CPR = [[4, 0], [26, 8], [26, -13], [8, -24], [6, 22]];
 const W2 = (p) => [p[0] * 0.2, -p[1] * 0.2];
-const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 function cpPoints(list, color) { return list.map((p) => { const [x, z] = W2(p); return cube(null, color, [0.36, 0.36, 0.36], x, 0.2, z); }); }
 function cpSeg(a, b, color) { const [x1, z1] = W2(a), [x2, z2] = W2(b); return seg(V3(x1, 0.2, z1), V3(x2, 0.2, z2), color); }
 

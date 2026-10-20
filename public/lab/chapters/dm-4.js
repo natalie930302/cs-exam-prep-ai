@@ -26,7 +26,6 @@ export default function (ctx) {
   }
   function bodyOf(o) { for (const b of lab.bodies) if (b.obj === o) return b; return lab.addBody(o); }
   const move = (o, x, y, z = 0) => lab.springTo(bodyOf(o), V3(x, y, z));
-  const fly = (o, dir) => lab.flyAway(bodyOf(o), dir || V3((Math.random() - 0.5) * 6, 8, 4));
   const glow = (m, c) => { m.material.emissive = new THREE.Color(c || '#000000'); };
   const tint = (m, c) => { m.material.color.set(c); };
   const txt = (l, t) => { l.element.textContent = t; };
@@ -819,7 +818,6 @@ const C = (n, r) => { if (r < 0) return 0; let v = 1; for (let i = 0; i < r; i++
 const fbox = (t, c, x, y, w = 2.4) => bx(t, c, x, y, 0, w, 0.7, 0.5);
 // a vertical bar standing on y0
 function bar(x, y0, h, c, label, w = 0.5) { const m = cube('', c, [w, Math.max(0.04, h), w], x, y0 + Math.max(0.04, h) / 2, 0); const l = label != null ? sm(label, x, y0 + h + 0.3) : null; return [m, l]; }
-async function slide(tok, o, x, y, z = 0, ms = 600) { const a = o.position.clone(); await travel(tok, o, a, V3(x, y, z), ms); }
 
 
 // ════════ SIJSKBFIMhI（清大OCW 趙啟超《離散數學》第12A講 Recurrence Relations） ════════

@@ -804,7 +804,6 @@ const { txt, tint, relabel, icon, dim } = P;
 // 磁頭順序與總移動都由本模組的 schedule() 算出來（不是手寫），最後再跟 seekTotal() 對一次。老師沒給的數字標「示意」。
 const wt = (tok, ms) => ctx.beat(tok, ms);
 const cap = (a, b = '') => say(a, b);
-const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
 const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
 const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
 const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);

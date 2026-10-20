@@ -5327,7 +5327,6 @@ const bpos = (b, dy = 0.6) => V3(b.g.position.x, b.g.position.y + dy, b.g.positi
 async function pkt(tok, text, a, b, ms = 800, cls = 'pkt') { const l = tag(text, cls, a.x, a.y, a.z); await travel(tok, l, a, b, ms); return l; }
 async function hops(tok, ...bs) { await Promise.all(bs.map((b) => b.hop(tok))); }
 async function walk(tok, b, x, y, z, ms = 900) { const a = b.g.position.clone(), e = V3(x, y, z); await anim(tok, ms, (u) => b.g.position.lerpVectors(a, e, u)); }
-const gone = (b) => kill(b.g);
 function jLine3(x1, y1, z1, x2, y2, z2, color = '#a99470') {
   const T = ctx.THREE; const l = new T.Line(new T.BufferGeometry().setFromPoints([V3(x1, y1, z1), V3(x2, y2, z2)]), new T.LineBasicMaterial({ color }));
   lab.world.add(l); return l;
@@ -12469,7 +12468,6 @@ async function m2go(tok, cur, x, y, ms = 450) {
   await anim(tok, ms, (t) => o.position.lerpVectors(a, b, t));
 }
 async function m2goN(tok, cur, m, ms) { await m2go(tok, cur, m.position.x, m.position.y, ms); }
-async function m2path(tok, cur, nodes, ms = 380) { for (const m of nodes) await m2go(tok, cur, m.position.x, m.position.y, ms); }
 // 一排 hash table 格子（沿 x），回傳 X(i)
 function m2row(m, x0, dx, z, w = 0.9, idx = (i) => String(i)) {
   for (let i = 0; i < m; i++) { cube('', GRAY, [w, 0.12, w], x0 + i * dx, 0.06, z); tag(idx(i), 'idx', x0 + i * dx, 0, z + w / 2 + 0.35); }
@@ -16355,12 +16353,6 @@ FRAG.push(['algmit3-resize-cost', 'Resize 成本：滿或空都是 Θ(m)', async
 }]);
 
 // T(n) = T(√n) + 1：一條鏈的遞迴樹（第一段畫樹、第二段找樹高）
-function m3SqrtLevel(h, label, last) {
-  const y = 6.4 - h * 1.25;
-  const n = cube(label, last ? M3.purple : M3.blue, [2.0, 0.6, 1], -3, y, 0, 1.5);
-  const c = tag('成本 1', 'ptr alt', 0.2, y);
-  return { n, c, y };
-}
 FRAG.push(['algmit3-tree-sqrt-a', 'T(n) = T(√n) + 1：畫遞迴樹', async (tok) => {
   fresh([0, 5, 14], [0, 3.4, 0]);
   const B = m3Board(3.6, 7.6, 0);

@@ -30,7 +30,6 @@ export default function (ctx) {
   }
   function bodyOf(o) { for (const b of lab.bodies) if (b.obj === o) return b; return lab.addBody(o); }
   const move = (o, x, y, z = 0) => lab.springTo(bodyOf(o), V3(x, y, z));
-  const fly = (o, dir) => lab.flyAway(bodyOf(o), dir || V3((Math.random() - 0.5) * 6, 8, 4));
   function kill(o) {
     for (const b of lab.bodies) if (b.obj === o) { lab.removeBody(b); return; }
     lab.world.remove(o); o.traverse((c) => { if (c.element) c.element.remove(); });
@@ -3706,7 +3705,6 @@ const HL = '#6a4a00', OKG = '#0f5a3a', NG = '#5a1010';
 const SC = { IF: '#4b9ee2', ID: '#9b7ef4', EX: '#dd8238', MEM: '#2fc092', WB: '#e55a9b', FI: '#4b9ee2', DI: '#9b7ef4', EI: '#dd8238', WR: '#e55a9b', bubble: '#d8cfc0', nop: '#e4dccd' };
 const FIVE = ['IF', 'ID', 'EX', 'MEM', 'WB'];
 const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.ls && typeof o.kill === 'function') return o.kill(); if (o.cells && o.lbls) return gone(o.lbls, o.extra || [], o.cells.flatMap((r) => Object.values(r))); if (o.bx) return gone(o.bx, o.extra || []); if (o.g) kill(o.g); else if (o.element) remove(o); else kill(o); });
-const setCls = (l, cls) => { l.element.className = 'lab-label' + (cls ? ' ' + cls : ''); };
 const CAM = [[0, 3.4, 14], [0, 3.0, 0]];
 // a scene = list of steps; each step runs when the video reaches its cue
 function scene(id, title, steps, o = {}) {
@@ -3776,7 +3774,6 @@ function table(x, yTop, cols, rows, o = {}) {
   const cells = rows.map((r, i) => r.map((v, j) => { const m = cube(v === '' ? ' ' : v, o.c || FC.paper, [ws[j], dy - 0.08, 0.5], xs[j], yTop - i * dy, 0); fs(m.userData.lbl, 10); return m; }));
   return { cells, lbls, xs, y: (i) => yTop - i * dy, set(i, j, v) { relabel(cells[i][j], v); }, add(r) { const i = cells.length; cells.push(r.map((v, j) => { const m = cube(v === '' ? ' ' : v, o.c || FC.paper, [ws[j], dy - 0.08, 0.5], xs[j], yTop - i * dy, 0); fs(m.userData.lbl, 10); return m; })); return i; } };
 }
-const killT = (t) => gone(t.lbls, t.cells.flat());
 
 // ════════ II7Eh-Q8hdI（第 20A 講：control hazard、flush、branch prediction、delayed branch、exception） ════════
 scene('ppB-20a-recap', '20A：回顧兩種 hazard', [

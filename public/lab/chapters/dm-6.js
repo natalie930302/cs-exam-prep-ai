@@ -7135,7 +7135,6 @@ function rack(vals, x0, y, dx = 0.8, c = FC.blue, label = '') {
   vals.forEach((v, i) => all.push(sm(xp(i), x0 + i * dx, y + 0.5)));
   all.push(...cells); return { all, cells };
 }
-async function slide(tok, o, x, y, ms = 500) { const a = o.position.clone(); await travel(tok, o, a, V3(x, y, 0), ms); }
 async function moveMany(tok, list, ms = 700) { const from = list.map(([o]) => o.position.clone()); await anim(tok, ms, (u) => list.forEach(([o, x, y], i) => { o.position.x = from[i].x + (x - from[i].x) * u; o.position.y = from[i].y + (y - from[i].y) * u; })); }
 
 // ════════ 0aAQE0u0Dq0（趙啟超 16A：換零錢、partition of integers 的生成函數） ════════
@@ -8274,7 +8273,6 @@ const cap = (a, b = '') => say(a, b);
 const T = (t, c, x, y, z = 0) => tag(t, c, x, y, z);
 const L = (t, c, x, y, z = 0) => { const l = tag(t, c, x, y, z); if (l.center) l.center.set(0, 0.5); return l; };
 const cls = (l, c) => { if (l && l.element) l.element.className = 'lab-label ' + c; };
-const setT = (l, t) => { if (l && l.element) l.element.textContent = t; };
 const CAM = [[0, 4.2, 14], [0, 3.0, 0]];
 const FC = { blue: '#4b9ee2', orange: '#dd8238', green: '#2fc092', purple: '#9b7ef4', red: '#d64545', sand: '#e9dcc4', gold: '#c08a1f', gray: '#cfc6b6' };
 const OKG = '#0f5a3a', NG = '#7a1010', HL = '#6a4a00';

@@ -4656,7 +4656,6 @@ const SA = [[0, 0, 15], [0, 3, 22], [0, 5, -15], [1, 1, 11], [1, 2, 3], [2, 3, -
 const SB = [[0, 0, 15], [0, 4, 91], [1, 1, 11], [2, 1, 3], [2, 5, 28], [3, 0, 22], [3, 2, -6], [5, 0, -15]];
 const TRC = ['#4b9ee2', '#9b7ef4', '#2fc092'];
 const RZ = (i) => -3.3 + i * 0.95;
-const tstr = (t) => '(' + t.join(', ') + ')';
 function trip(t, x, z, dropH = 0) {
   const g = new THREE.Group();
   t.forEach((v, k) => { const m = lab.box(TRC[k], [0.8, 0.4, 0.8]); m.position.x = (k - 1) * 0.95; m.add(lab.label(String(v), 'val')); g.add(m); });
@@ -8621,12 +8620,6 @@ FRAG.push(['engmisc-mem-compare', 'Stack 與 Heap 的兩大差異', async (tok) 
 }]);
 
 // ════════ ygK0YON10sQ：Recursion 與 Stack ════════
-function memLayout4() {
-  region('OS', '#9b8b72', -5.25, 2.6, 5.2, 2.4);
-  region('Code', C_CODE, -1.75, 2.6, 5.2, 2.4);
-  region('Stack', C_STACK, 1.75, 2.6, 5.2, 2.4);
-  region('Heap', C_HEAP, 5.25, 2.6, 5.2, 2.4);
-}
 FRAG.push(['engmisc-rec-memory', 'Main memory 與 activation record', async (tok) => {
   fresh([0, 6.5, 14], [0, 2.6, 0]);
   say('先看程式和記憶體');
@@ -9682,7 +9675,6 @@ function plk(g, h, opt = {}) {
 }
 const SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '-': '⁻' };
 const sup = (n) => String(n).split('').map((c) => SUP[c] || c).join('');
-const termStr = (c, e) => (e === 0 ? String(c) : (c === 1 ? '' : String(c)) + 'x' + sup(e));
 
 // ───────── lhXHk8IuFeQ 01:20：Array 的兩個缺點 ─────────
 FRAG.push(['llpeng12-array-cons', 'Array 的缺點：大小固定、要搬資料', async (tok) => {
@@ -11538,7 +11530,6 @@ function eqBuild(S, pairs) {
 }
 function eqClear(S) { for (let i = 0; i < EQN; i++) { S.lists[i].forEach((m) => fly(m)); S.lists[i] = []; eqArrows(S, i); } }
 function eqSetOut(S, i, on = true) { const m = S.outs[i]; if (!m) return; relabel(m, on ? 'T' : 'F'); tint(m, on ? '#2fc092' : GRAY); }
-const eqUnglow = (S) => { S.slots.forEach((m) => glow(m)); S.outs.forEach((m) => glow(m)); S.lists.flat().forEach((m) => glow(m)); };
 
 // zLuuRC56uvI 00:00：三性質
 FRAG.push(['llpeng34-equiv-props', 'Equivalence relation 三性質', async (tok) => {

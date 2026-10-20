@@ -5475,7 +5475,6 @@ async function s2Walk(tok, text, path, ms = 450) {
   for (let i = 1; i < path.length; i++) await travel(tok, pk, s2At(path[i - 1]), s2At(path[i]), ms);
   return pk;
 }
-const s2Show = (l, on) => { l.element.style.display = on ? '' : 'none'; };
 
 // ══════════ L17 Bellman-Ford ══════════
 // 00:31 規格：δ 可能有限、∞ 或 undefined

@@ -51,7 +51,6 @@ export default function (ctx) {
   const tint = (m, c) => { m.material.color.set(c); };
   const txt = (l, t) => { l.element.textContent = t; };
   const relabel = (m, t) => { if (m.userData.lbl) txt(m.userData.lbl, String(t)); };
-  const setCls = (l, cls) => { l.element.className = 'lab-label' + (cls ? ' ' + cls : ''); };
   async function anim(tok, ms, fn) { const steps = 10; for (let k = 1; k <= steps; k++) { fn(k / steps); await wait(tok, ms / steps); } }
   function rod(a, b, color = EDGE, r = 0.05) {
     const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 1, 8), new THREE.MeshStandardMaterial({ color, roughness: 0.6 }));

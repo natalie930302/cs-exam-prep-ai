@@ -1063,11 +1063,6 @@
     store.set('study-tab', tab);
   }
   document.querySelectorAll('.st-tabs button').forEach(function(b){ b.onclick = function(){ setTab(b.dataset.tab); }; });
-  function allVideoIds(){
-    const out = [];
-    series.forEach(function(s){ s.options.forEach(function(o){ out.push(youtubeId(o.url)); }); });
-    return out;
-  }
   function updateCounts(){
     const q = chapterHistory().length;
     document.querySelector('[data-tab=quiz]').innerHTML = '小測驗' + (q ? '<span class="count">' + q + '</span>' : '');

@@ -117,11 +117,6 @@ export default function (ctx) {
     if (xy === 'LR') { if (stage !== 2) rotL(t, p); if (stage !== 1) { rotR(t, g); z.color = 'B'; g.color = 'R'; } return z; }
     if (stage !== 2) rotR(t, p); if (stage !== 1) { rotL(t, g); z.color = 'B'; g.color = 'R'; } return z;
   }
-  function rbInsertRaw(t, key) {
-    let z = attach(t, mk(key)); const cases = []; let d, guard = 0;
-    while ((d = rbNext(t, z)) && guard++ < 40) { cases.push(d.kind); z = rbApply(t, d); }
-    return cases;
-  }
   function rbCheck(t) {
     let redRed = null, bh = null, bhOk = true;
     (function w(n, black) {
@@ -7763,7 +7758,6 @@ FRAG.push(['bstc-rebal-up', 'rebalance 要一路往上到 root', async (tok) => 
 // ═══ Abdul Bari 10.1 AVL Tree ═══
 const palB = () => pal(6.2, 2.7, '#f6c35b', 0.55, 'Bari');
 // 一次 BST 搜尋的一步：游標到 x，回傳下一個 node
-function cmpMsg(k, x) { return k === x.key ? '是 ' + x.key + ' → 找到' : k < x.key ? k + ' < ' + x.key + ' → 往左' : k + ' > ' + x.key + ' → 往右'; }
 FRAG.push(['bstc-bari-search', 'BST 搜尋 30、60、32：比較次數 ≤ 高度', async (tok) => {
   fresh(...CAM);
   const g = palB();
@@ -8095,7 +8089,6 @@ FRAG.push(['bstc-bari-bf', 'Balance factor = h(左) − h(右)', async (tok) => 
 // ── Bari 的 3 個 key 旋轉（LL / LR / RR / RL）與建 AVL：自己控制每一步 ──
 function avlView(seq, o) { fresh(...CAM); const t = view(Object.assign({ kind: 'avl' }, o || {})); if (seq.length) grow(t, seq, false); return t; }
 function avlPut(t, k, showBf = false) { const z = attach(t, mk(k)); t.o.tag = showBf ? 'bf' : 'none'; layout(t); dropIn(z); return z; }
-const sideW = (s) => (s === 'L' ? 'left' : 'right');
 function badOf(t) { return inorder(t.root).filter((n) => Math.abs(bf(n)) > 1); }
 function firstBad(z) { for (let x = z.parent; x; x = x.parent) if (Math.abs(bf(x)) > 1) return x; return null; }
 function rotAll(t, c, stage) { applyAvl(t, c, stage); layout(t); }

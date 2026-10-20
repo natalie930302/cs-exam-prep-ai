@@ -710,7 +710,6 @@ function board(x, yTop, dy = 0.62) {
 const blk = (t, c, x, y, w = 1.5) => cube(t, c, [w, 0.55, 0.7], x, y, 0);
 const pass = (m) => glow(m, '#0f5a3a');
 const fail = (m) => glow(m, '#7a1010');
-async function hopTo(tok, o, x, y, ms = 600) { const a = o.position.clone(); await travel(tok, o, a, V3(x, y, a.z), ms); }
 
 // ════════ _WXIdyyHfqk（Lec03 Logic and Proofs：述詞與量詞） ════════
 scene('pfA-l3-pred', '述詞邏輯：Alice is a girl → P(x)', [
