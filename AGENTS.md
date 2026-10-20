@@ -16,3 +16,10 @@ There is no AI feature in the app.
   videos), `motion.js` (show/hide animations), `lab/` (3D concept labs:
   `lab-engine.js`, `lab-shell.js`, `chapters/*.js`), `notes/`,
   `transcripts/` (subtitles, generated, not in git)
+
+After changing anything, run `npm run check` (`tools/check.mjs`). It checks the
+notes, quizzes and index; loads the main pages at phone and desktop widths and
+looks for errors; confirms the 日曆／六科／搜尋 buttons stay fixed while
+scrolling; and plays every scene of each lab chapter changed in the working
+tree (use `--labs=all` for every chapter, about 20 minutes). It exits non-zero
+on any problem.

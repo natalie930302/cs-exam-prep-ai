@@ -2,10 +2,11 @@
   "name": "csie-prep-hub",
   "version": "1.0.0",
   "private": true,
-  "description": "資工所備考中心 — 動態網頁版（Express + SQLite + AI 助教橋樑）",
+  "description": "資工所備考中心 — 動態網頁版（Express + SQLite）",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "check": "node tools/check.mjs"
   },
   "engines": {
     "node": ">=22.5.0"
