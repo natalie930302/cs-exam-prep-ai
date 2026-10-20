@@ -7287,6 +7287,7 @@ FRAG.push(['rand-lv-mc-choose', 'Las Vegas 還是 Monte Carlo：看重答案還�
       { id: 'queens', name: '回溯：N-Queens', enter: enterQueens },
       { id: 'bnb', name: '分支界限：TSP', enter: enterBnb },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

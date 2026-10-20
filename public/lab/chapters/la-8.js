@@ -1781,6 +1781,7 @@ scene('sp-l27-ellip', 'L27：xᵀAx = 1 是一顆橢球（主軸 = 特徵向量�
       { id: 'spectral', name: '譜分解', enter: () => { spm.stage = 0; enterSpectral(); } },
       { id: 'pd', name: '3×3 正定測試', enter: enterPD },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['sym-real-eig', 'spectral-thm', 'spectral-sum', 'orth-diag', 'quad-surface', 'pd-tests', 'complete-square', 'principal-axes', 'pd-3x3', 'ata-psd'].concat(FRAG.map((f) => f[0])),

@@ -4021,6 +4021,7 @@ scene('cpu-qq-sum', 'Enzo：總結：單週期 → FSM → Pipeline → hazard �
       { id: 'aluctl', name: 'ALU control', enter: enterALU },
       { id: 'timing', name: '單週期 vs 多週期', enter: enterTiming },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['clocking', 'build-datapath', 'fetch', 'r-type-flow', 'lw-flow', 'sw-flow', 'beq-flow', 'control-table', 'alu-control', 'jump-add', 'single-cycle-time', 'multi-cycle'].concat(FRAG.map((f) => f[0])),

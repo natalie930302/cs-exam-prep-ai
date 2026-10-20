@@ -1574,6 +1574,7 @@ scene('cio-indep', 'Independent request：每台各有 request／grant，2N 條�
       { id: 'interrupt', name: '例外與中斷（MIPS）', enter: enterInterrupt },
       { id: 'arb', name: 'Bus arbitration', enter: enterArb },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['three-modes', 'programmed-io', 'interrupt-io', 'pio-limits', 'dma', 'dma-pros-cons',

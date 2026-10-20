@@ -7446,6 +7446,7 @@ FRAG.push(['spmit2-r18-dfs-edge-types', 'R18：DFS 的四種邊', async (tok) =>
       { id: 'floyd', name: 'Floyd-Warshall', enter: enterFloyd },
       { id: 'relax', name: 'Relax 實驗', enter: enterRelax },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

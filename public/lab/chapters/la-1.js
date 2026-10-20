@@ -2070,6 +2070,7 @@ sc('ls-3b-sine', '3B1B：sin 的無窮多項式比喻', [
       { id: 'rref', name: 'RREF 與自由變數', enter: enterRref },
       { id: 'lu', name: 'A = LU', enter: enterLU },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['row-picture-2d', 'column-picture-2d', 'row-picture-3d', 'column-picture-3d', 'elimination-3x3', 'back-substitution', 'elementary-matrix', 'pivot-breakdown', 'rref-free', 'three-cases',

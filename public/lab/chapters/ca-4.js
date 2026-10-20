@@ -6702,6 +6702,7 @@ scene('ppB-cpi-stall', '每 5 台 stall 一次：6 個 cycle 完成 5 台，CPI 
       { id: 'predict', name: 'Branch prediction', enter: enterPredict },
       { id: 'cpi', name: 'CPI 與 stall', enter: enterCPI },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['laundry', 'five-stages', 'pipe-speedup', 'structural-hazard', 'data-hazard', 'forwarding', 'forward-unit', 'load-use', 'reorder-code', 'lw-sw',

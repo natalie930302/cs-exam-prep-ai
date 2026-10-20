@@ -3905,6 +3905,7 @@ scene('cvm-26b-end', '結論：fast 又 large 的 memory 錯覺', [
       { id: 'dram', name: 'DRAM RAS／CAS', enter: enterDram },
       { id: 'bw', name: '記憶體頻寬', enter: enterBW },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['vm-idea', 'va-split', 'page-table', 'page-fault', 'pt-size', 'tlb', 'tlb-seq', 'tlb-cache', 'combos', 'dram-org', 'mem-org-3', 'interleave-map', 'interleave-pipe'].concat(FRAG.map((f) => f[0])),

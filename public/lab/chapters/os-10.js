@@ -2698,6 +2698,7 @@ scene('io-scan2-run', 'SCAN 的服務順序與總移動（236）', CAMD, [
       { id: 'disk', name: '存取時間', enter: () => { clearLog(); enterDisk(); } },
       { id: 'bad', name: '壞軌處理', enter: () => { clearLog(); enterBad(); } },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

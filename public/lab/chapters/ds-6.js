@@ -6507,6 +6507,7 @@ FRAG.push(['qa-insert-cost', 'insert 的成本：先 get，ordered array 還要�
       { id: 'rehash', name: 'Rehashing', enter: () => { T.method = 'linear'; enterOpen({ m: 7, auto: true }); } },
       { id: 'alpha', name: 'α 與探測次數', enter: enterAlpha },
     ],
+    quiz: genQ,
     pages: [
       { id: 'cmp', name: '方法比較', render: renderCmp },
       { id: 'quiz', name: '小測驗', render: renderQuiz },

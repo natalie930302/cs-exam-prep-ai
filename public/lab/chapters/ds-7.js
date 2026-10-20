@@ -3035,6 +3035,7 @@ FRAG.push(['qa-map-graph', '地圖就是 graph：POI 與不完整的圖資', asy
       { id: 'comp', name: '連通元件', enter: () => enterComp(true) },
       { id: 'span', name: '生成樹', enter: () => enterSpan(false) },
     ],
+    quiz: () => GENS[rnd(GENS.length)](),
     pages: [
       { id: 'cmp', name: '表示法比較', render: renderCmp },
       { id: 'quiz', name: '小測驗', render: renderQuiz },

@@ -6199,6 +6199,7 @@ FRAG.push(['osB-modular', 'Modular OS 與 loadable kernel module', async (tok) =
       { id: 'storage', name: '儲存階層', enter: enterStorage },
       { id: 'struct', name: 'OS 結構', enter: enterStruct },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

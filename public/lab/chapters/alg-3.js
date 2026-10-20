@@ -12904,6 +12904,7 @@ FRAG.push(['dpmit2-lis-max', 'LIS 答案 = max(dp) = 4，不是 dp[0]', async (t
       { id: 'rod', name: 'Rod cutting', enter: enterRod },
       { id: 'lis', name: 'LIS', enter: enterLis },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

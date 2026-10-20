@@ -382,7 +382,7 @@ export default function (ctx) {
       return { q: '網路：' + E.map(([u, v, c]) => N[u] + '→' + N[v] + '(' + c + ')').join('、') + '\n最大流是多少？', opts, ans: String(val), why: '最大流 = 最小割；兩個明顯的割：s 的出邊 ' + (E[0][2] + E[1][2]) + '、t 的入邊 ' + (E[3][2] + E[4][2]) + '，還要考慮經過 a→b 的割。答案 ' + val + '。' };
     }
     if (t === 1) {
-      const c = 5 + rnd(10), f = 1 + rnd(c - 1);
+      const c = 5 + rnd(10); let f = 1 + rnd(c - 1); if (2 * f === c) f++;
       return { q: '邊 (u, v) 容量 ' + c + '、目前流量 ' + f + '。殘餘網路中 u→v 與 v→u 的殘餘容量分別是？', opts: [(c - f) + ' 和 ' + f, f + ' 和 ' + (c - f), c + ' 和 0', (c - f) + ' 和 0'], ans: (c - f) + ' 和 ' + f, why: '順向還能再推 c − f = ' + (c - f) + '；反向可以把已推的 ' + f + ' 退回。' };
     }
     if (t === 2) {
@@ -2755,6 +2755,7 @@ FRAG.push(['flow-l21-summary', 'Lec21：定理得證與總結', async (tok) => {
       { id: 'cut', name: '最小割', enter: enterCut },
       { id: 'match', name: '二分圖匹配', enter: () => enterMatch(false) },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['flow-network', 'residual-graph', 'augment-cancel', 'ford-fulkerson', 'ff-bad-case', 'min-cut', 'maxflow-mincut', 'super-source', 'bipartite-matching'].concat(FRAG.map((f) => f[0])),

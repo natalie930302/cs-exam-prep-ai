@@ -4,11 +4,12 @@
 //    notes/index.json 的重點數／題數跟內容一致、每支影片都有筆記、動畫章節語法正確。
 // 2. 頁面檢查（headless 瀏覽器）：主要頁面沒有錯誤訊息；日曆／六科／搜尋鈕
 //    捲動後仍固定在畫面上、蓋在內容上面（這個壞過兩次）。
-// 3. 動畫檢查：每個場景播一下、每個互動模式點一下、每個頁面畫一次，收集錯誤。
+// 3. 動畫檢查：每個場景播一下、每個互動模式點一下、每個頁面畫一次、出題程式抽 30 題，收集錯誤。
 //    預設只跑「還沒 commit 的改動」動到的章節；--labs=all 全部（約 20 分鐘）、
 //    --labs=ds-4,os-1 指定、--labs=none 不跑。
 //
 // 伺服器：先找 http://localhost:3210（或 BASE 環境變數），沒開就自己在 3299 開一個。
+// 檢查雲端版：BASE=https://你的網址 SITE_PASSWORD=密碼 npm run check
 // 瀏覽器：CHROME_PATH 環境變數 → Playwright 的 Chromium → Chrome → Edge。
 import { spawn, execSync, spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, mkdtempSync, rmSync } from 'node:fs';
@@ -85,30 +86,38 @@ const exe = findBrowser();
 if (!exe) { fail('瀏覽器', '找不到 Chrome／Edge，跳過頁面與動畫檢查（可設定 CHROME_PATH）'); finish(); await new Promise(() => {}); }
 PROFILE = mkdtempSync(join(tmpdir(), 'check-'));
 const port = 47000 + Math.floor(Math.random() * 2000);
-browser = spawn(exe, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${PROFILE}`, '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--no-first-run', 'about:blank'], { stdio: 'ignore' });
-let ws;
-for (let i = 0; i < 100 && !ws; i++) { await sleep(300); try { const t = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find((x) => x.type === 'page'); if (t) ws = new WebSocket(t.webSocketDebuggerUrl); } catch (e) {} }
-await new Promise((r) => ws.addEventListener('open', r));
-let seq = 0, logs = [];
-const pend = {};
-ws.addEventListener('message', (m) => {
-  const d = JSON.parse(m.data);
-  if (pend[d.id]) { pend[d.id](d); delete pend[d.id]; }
-  if (d.method === 'Runtime.exceptionThrown') logs.push((d.params.exceptionDetails.exception?.description || d.params.exceptionDetails.text).split('\n')[0]);
-  if (d.method === 'Runtime.consoleAPICalled' && d.params.type === 'error') logs.push(d.params.args.map((a) => a.value ?? a.description).join(' ').split('\n')[0]);
-  if (d.method === 'Network.loadingFailed' && !d.params.canceled && d.params.type !== 'Media') logs.push('載入失敗 ' + d.params.errorText);
-  if (d.method === 'Network.responseReceived' && d.params.response.status >= 400 && d.params.response.url.startsWith(BASE)) logs.push('HTTP ' + d.params.response.status + ' ' + d.params.response.url.slice(BASE.length));
-});
-const call = (method, params = {}) => new Promise((r) => { const i = ++seq; pend[i] = r; ws.send(JSON.stringify({ id: i, method, params })); });
-const evaluate = async (expression) => { const r = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true, timeout: 1800000 }); return r.result.result?.value; };
-const size = (w) => call('Emulation.setDeviceMetricsOverride', { width: w, height: w < 700 ? 812 : 800, deviceScaleFactor: 1, mobile: w < 700 });
-async function open(path, w, settle = 4000) {
-  await size(w);
-  logs = [];
-  await call('Page.navigate', { url: BASE + path });
-  await sleep(settle);
+browser = spawn(exe, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${PROFILE}`, '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--no-first-run', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows', 'about:blank'], { stdio: 'ignore' });
+// 一個分頁一條連線；動畫檢查會多開幾個分頁同時跑
+async function connect(wsUrl) {
+  const ws = new WebSocket(wsUrl);
+  await new Promise((r) => ws.addEventListener('open', r));
+  let seq = 0;
+  const pend = {}, T = { logs: [] };
+  ws.addEventListener('message', (m) => {
+    const d = JSON.parse(m.data);
+    if (pend[d.id]) { pend[d.id](d); delete pend[d.id]; }
+    if (d.method === 'Runtime.exceptionThrown') T.logs.push((d.params.exceptionDetails.exception?.description || d.params.exceptionDetails.text).split('\n')[0]);
+    if (d.method === 'Runtime.consoleAPICalled' && d.params.type === 'error') T.logs.push(d.params.args.map((a) => a.value ?? a.description).join(' ').split('\n')[0]);
+    if (d.method === 'Network.loadingFailed' && !d.params.canceled && d.params.type !== 'Media') T.logs.push('載入失敗 ' + d.params.errorText);
+    if (d.method === 'Network.responseReceived' && d.params.response.status >= 400 && d.params.response.url.startsWith(BASE)) T.logs.push('HTTP ' + d.params.response.status + ' ' + d.params.response.url.slice(BASE.length));
+  });
+  T.call = (method, params = {}) => new Promise((r) => { const i = ++seq; pend[i] = r; ws.send(JSON.stringify({ id: i, method, params })); });
+  T.evaluate = async (expression) => { const r = await T.call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true, timeout: 1800000 }); return r.result.result?.value; };
+  T.size = (w) => T.call('Emulation.setDeviceMetricsOverride', { width: w, height: w < 700 ? 812 : 800, deviceScaleFactor: 1, mobile: w < 700 });
+  T.open = async (path, w, settle = 4000) => { await T.size(w); T.logs = []; await T.call('Page.navigate', { url: BASE + path }); await sleep(settle); };
+  await T.call('Page.enable'); await T.call('Runtime.enable'); await T.call('Network.enable');
+  return T;
 }
-await call('Page.enable'); await call('Runtime.enable'); await call('Network.enable');
+let first;
+for (let i = 0; i < 100 && !first; i++) { await sleep(300); try { first = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find((x) => x.type === 'page'); } catch (e) {} }
+const main = await connect(first.webSocketDebuggerUrl);
+const { call, evaluate, size, open } = main;
+// 雲端版要先登入：SITE_PASSWORD=… BASE=https://… npm run check
+if (process.env.SITE_PASSWORD) {
+  await call('Page.navigate', { url: BASE + '/login' }); await sleep(2000);
+  const r = await evaluate(`fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: ${JSON.stringify(process.env.SITE_PASSWORD)} }) }).then((r) => r.status)`);
+  if (r !== 200) { fail('登入', '密碼不對或登不進去（' + r + '）'); finish(); await new Promise(() => {}); }
+}
 // YouTube 播放器、字型等外部資源在離線時會失敗，不算網站本身的錯
 const external = (l) => /youtube|ytimg|googleapis|gstatic|doubleclick|ERR_INTERNET_DISCONNECTED|ERR_NAME_NOT_RESOLVED|ERR_BLOCKED/i.test(l);
 
@@ -117,12 +126,16 @@ console.log('頁面');
 const PAGES = ['/calendar', '/calendar/2026-10-20', '/subjects', '/subjects/ds/4', '/study/ds/4', '/study/ds/4?t=full', '/study/ds/4?t=quiz', '/study/ds/4?t=goals', '/study/os/1?t=lab'];
 for (const w of [375, 1366]) {
   for (const p of PAGES) {
-    await open(p, w, p.startsWith('/study') ? 7000 : 4000);
-    const r = JSON.parse(await evaluate(`JSON.stringify({
+    await open(p, w, 2000);
+    // 等到載入完成（電腦忙的時候會比較久），最多 20 秒
+    const r = JSON.parse(await evaluate(`(async () => {
+      for (let i = 0; i < 80 && (document.querySelector('.is-loading, [aria-busy="true"]') || document.body.classList.contains('st-booting')); i++) await new Promise((r) => setTimeout(r, 250));
+      return JSON.stringify({
       wide: document.documentElement.scrollWidth > innerWidth + 1,
       loading: document.querySelectorAll('.is-loading, [aria-busy="true"]').length,
-      blank: (document.querySelector('main, .st-main') || document.body).innerText.trim().length < 20 })`));
-    const errs = logs.filter((l) => !external(l));
+      blank: (document.querySelector('main, .st-main') || document.body).innerText.trim().length < 20 });
+    })()`));
+    const errs = main.logs.filter((l) => !external(l));
     if (errs.length) fail(p + ' @' + w, [...new Set(errs)].slice(0, 3).join('；'));
     if (r.wide) fail(p + ' @' + w, '頁面比螢幕寬，會左右捲動');
     if (r.blank) fail(p + ' @' + w, '內容是空的');
@@ -153,6 +166,16 @@ for (const w of [375, 1366]) {
   }
 }
 ok('懸浮按鈕檢查完');
+// 計算練習：小測驗分頁最上面要出現一題（題目來自這章動畫的出題程式）
+for (const p of ['/study/os/7?t=quiz', '/study/ds/3?t=quiz']) {
+  await open(p, 1366, 1000);
+  const r = JSON.parse(await evaluate(`(async () => {
+    for (let i = 0; i < 80 && !document.querySelector('.st-pr .st-qz-opts button'); i++) await new Promise((r) => setTimeout(r, 250));
+    return JSON.stringify({ n: document.querySelectorAll('.st-pr .st-qz-opts button').length });
+  })()`));
+  if (r.n < 2) fail('計算練習 ' + p, '20 秒內沒有出題');
+}
+ok('計算練習會出題');
 
 // ───────────────────────── 3. 動畫 ─────────────────────────
 const all = readdirSync(join(PUB, 'lab/chapters')).filter((f) => f !== '_kit.js' && f.endsWith('.js')).map((f) => f.slice(0, -3));
@@ -164,11 +187,16 @@ if (!labs) {
 }
 const chs = labs === 'all' ? all : labs === 'none' ? [] : labs.split(',').filter(Boolean);
 console.log('動畫（' + (chs.length ? chs.length + ' 章' : '沒有改動，略過；--labs=all 可以全跑') + '）');
-await size(1100);
-for (const ch of chs) {
-  if (!all.includes(ch)) { fail('動畫', '沒有 ' + ch + ' 這一章'); continue; }
-  await open('/lab/lab.html?ch=' + ch + '&stage=1&scene=none', 1100, 1500);
-  const r = JSON.parse(await evaluate(`(async () => {
+// 同時開 4 個分頁，各自從佇列拿章節
+const queue = chs.filter((ch) => all.includes(ch) || (fail('動畫', '沒有 ' + ch + ' 這一章'), false));
+async function worker() {
+  const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json();
+  const T = await connect(target.webSocketDebuggerUrl);
+  for (let ch; (ch = queue.shift());) await labCheck(T, ch);
+}
+async function labCheck(T, ch) {
+  await T.open('/lab/lab.html?ch=' + ch + '&stage=1&scene=none', 1100, 1500);
+  const r = JSON.parse(await T.evaluate(`(async () => {
     const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     const errs = [];
     addEventListener('error', (e) => errs.push(e.message));
@@ -187,14 +215,22 @@ for (const ch of chs) {
       catch (e) { errs.push('模式 ' + md.id + '：' + e); }
     }
     for (const P of C.def.pages || []) { try { P.render(document.getElementById('page') || document.createElement('div')); } catch (e) { errs.push('頁面 ' + P.id + '：' + e); } }
+    // 計算練習的出題程式：抽 30 題，答案要在選項裡、去掉重複後至少兩個選項
+    if (C.def.quiz) for (let i = 0; i < 30; i++) {
+      try {
+        const q = await C.def.quiz();
+        const opts = [...new Set((q.opts || []).map(String))];
+        if (!q.q || !opts.includes(String(q.ans))) errs.push('出題：答案不在選項裡｜' + String(q.q).slice(0, 40));
+      } catch (e) { errs.push('出題：' + e); }
+    } else errs.push('沒有 quiz（計算練習的出題程式）');
     await wait(400);
     return JSON.stringify({ n, errs });
   })()`));
-  const errs = [...new Set([...r.errs, ...logs.filter((l) => !external(l))])];
+  const errs = [...new Set([...r.errs, ...T.logs.filter((l) => !external(l))])];
   if (errs.length) fail('動畫 ' + ch, errs.slice(0, 3).join('；'));
   else ok(ch + '：' + r.n + ' 個場景沒有錯誤');
 }
-
+await Promise.all(Array.from({ length: Math.min(4, queue.length) }, worker));
 finish();
 function finish() {
   try { browser?.kill(); } catch (e) {}

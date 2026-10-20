@@ -3638,6 +3638,7 @@ FRAG.push(['proc-neso-exec', '實機示範：execv() 換掉內容，PID 不變',
       { id: 'fork', name: 'fork() 樹', enter: enterFork },
       { id: 'ipc', name: 'IPC', enter: enterIpc },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

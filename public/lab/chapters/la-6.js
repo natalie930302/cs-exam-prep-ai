@@ -2841,6 +2841,7 @@ scene('tr-quad', '3B1B 15：mean–product 公式與二次方程式', [
       { id: 'markov', name: 'Markov 人口流動', enter: enterMarkov },
       { id: 'diag', name: '對角化檢查', enter: enterDiag },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

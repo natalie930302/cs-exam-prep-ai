@@ -14448,6 +14448,7 @@ FRAG.push(['treec-p17sum', 'Tree 章節重點', async (tok) => {
       { id: 'array', name: '陣列表示法', enter: enterArray },
       { id: 'rebuild', name: '重建二元樹', enter: enterRebuild },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['trav-rules', 'trav-flags', 'tree-terms', 'preorder', 'inorder', 'postorder', 'level-order', 'complete-vs-full', 'array-rep', 'rebuild', ...Object.keys(LECT)].concat(FRAG.map((f) => f[0])),

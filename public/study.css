@@ -753,3 +753,13 @@ body:not(.st-booting) .st-top, body:not(.st-booting) .st-main { animation: m-in 
 .st-qz, .st-skip { box-shadow: var(--float-shadow) !important; }
 /* 按下去縮一下只留給小按鈕；勾選列、段落、影片卡、跳轉小卡這類大一點的東西按下去不縮 */
 :is(.st-check, .st-pt, .st-v, .st-where-b, .st-res, .st-seg, .st-quiz-opts button, .st-qz-opts button):active { transform: none !important; }
+
+/* ══ 2026-10-20 計算練習（小測驗分頁最上面）：題目由這章動畫的出題程式產生 ══ */
+.st-pr { background: var(--surf); border: 1px solid var(--bd); border-radius: 20px; padding: 16px; display: grid; gap: 12px; margin-bottom: 16px; }
+.st-pr > *:not(.m-leave) { animation: m-in .22s cubic-bezier(.2,.8,.2,1) both; }
+.st-pr-hd { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font-size: 12px; line-height: 1.6; color: var(--mt2, var(--mt)); }
+.st-pr-hd b { font-size: 14px; color: var(--subj, var(--ac)); }
+.st-pr-q { font-size: 14px; font-weight: 700; line-height: 1.6; white-space: pre-wrap; overflow-x: auto; }
+.st-pr .st-qz-why, .st-pr .st-qz-go { margin-top: 0; }
+.st-pr-frame { position: fixed; left: -9999px; top: 0; width: 1px; height: 1px; border: 0; opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .st-pr > * { animation: none !important; } }

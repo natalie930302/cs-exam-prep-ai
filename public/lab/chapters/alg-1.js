@@ -17807,6 +17807,7 @@ FRAG.push(['algmit3-rmq-split', 'Partial minima：S(n) = 2S(n/2) + n', async (to
       { id: 'master', name: 'Master Theorem', enter: enterMaster },
       { id: 'amort', name: '攤銷分析', enter: enterAmort },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

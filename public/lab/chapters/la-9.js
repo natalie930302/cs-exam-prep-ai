@@ -3574,6 +3574,7 @@ scene('sv-xy-recap', '總結：full → economy → truncated SVD', [
       { id: 'lowrank', name: '低秩近似', enter: enterLowRank },
       { id: 'pinv', name: 'Pseudo-inverse', enter: enterPinv },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['svd-circle', 'svd-ata', 'svd-subspaces', 'flags-rank', 'low-rank', 'inverse-cases', 'left-inverse', 'right-inverse', 'inverse-projection', 'pinv-map', 'rank-deficient-ls', 'pinv-sigma', 'pinv-svd'].concat(FRAG.map((f) => f[0])),

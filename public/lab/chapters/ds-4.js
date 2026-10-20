@@ -11574,6 +11574,7 @@ FRAG.push(['qa-skiplist-recap', 'Skip List 小結：快慢車 + randomization', 
       { id: 'cmp', name: '退化 BST vs AVL', enter: enterCmp },
       { id: 'rb', name: 'Red-Black Tree', enter: enterRb },
     ],
+    quiz: genQ,
     pages: [
       { id: 'table', name: '比較表', render: renderTable },
       { id: 'quiz', name: '小測驗', render: renderQuiz },

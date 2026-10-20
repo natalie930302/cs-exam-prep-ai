@@ -824,6 +824,7 @@ scene('ab-vspace', 'Vector space（向量空間）：兩個集合、純量乘法
       { id: 'perm', name: '置換群', enter: enterPerm },
       { id: 'bool', name: '布林代數', enter: enterBool },
     ],
+    quiz: () => fixOpts(genQ()),
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['binop-closure', 'group-z4', 'not-group-z6', 'cyclic-rotation', 'lagrange', 'perm-s3', 'cycle-notation', 'ring-field', 'bool-cube', 'bool-laws', 'bool-simplify'].concat(FRAG.map((f) => f[0])),

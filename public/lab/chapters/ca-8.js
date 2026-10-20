@@ -1542,6 +1542,7 @@ scene('cpar-am-fp', '例題：浮點指令占 20%、快 3 倍 → 3 / 2.6 = 1.15
       { id: 'coh', name: 'Cache coherence', enter: enterCoh },
       { id: 'scaling', name: 'Scaling', enter: enterScaling },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['amdahl-intro', 'amdahl-split', 'amdahl-formula', 'amdahl-limit', 'amdahl-fp', 'amdahl-90', 'scaling', 'load-balance',

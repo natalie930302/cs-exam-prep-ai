@@ -150,8 +150,15 @@
     $('side').classList.add('is-idle');
     if (stageReady) postIdle(text); else pendingScene = {idle: text};
   }
+  // 計算練習的隱藏動畫（見小測驗分頁那段）
+  let prFrame = null, prBox = null, prSeq = 0;
+  const prWait = {}, prScore = {ok: 0, all: 0};
   window.addEventListener('message', function(e){
     if (e.origin !== location.origin || !e.data) return;
+    if (prFrame && e.source === prFrame.contentWindow) {
+      if (e.data.type === 'quiz-q' && prWait[e.data.id]) { const done = prWait[e.data.id]; delete prWait[e.data.id]; done(e.data.q); }
+      return;
+    }
     if (e.data.type === 'lab-ready') { e.data.scenes.forEach(function(x){ stageScenes[x.id] = x; }); stageIsReady(); }
     if (e.data.type === 'stage-settled' && stageReady) showSide();
     if (e.data.type === 'lab-shown') $('panel-lab').classList.remove('is-loading');
@@ -1133,11 +1140,83 @@
       questionCard(layer, qs[k].q, function(){ ask(k + 1); }, {vid: qs[k].r.vid, label: qs[k].r.label, at: qs[k].r.at});
     })(0);
   }
+  // ── 計算練習：題目來自這章動畫的出題程式（數字每次都不一樣），放在小測驗分頁最上面；
+  // 不記進作答紀錄（紀錄每題都連回影片的時間點）。動畫在隱藏的 iframe 裡載入，第一題好了才出現。
+  function practiceQuestion(){
+    if (!prFrame) {
+      prFrame = document.createElement('iframe');
+      prFrame.className = 'st-pr-frame';
+      prFrame.setAttribute('aria-hidden', 'true');
+      prFrame.tabIndex = -1;
+      prFrame.src = labUrl + '&stage=1&quiz=1';
+      document.body.appendChild(prFrame);
+    }
+    return new Promise(function(resolve){
+      const id = ++prSeq;
+      prWait[id] = resolve;
+      // the lab may still be loading: ask every half second until it answers
+      (function ask(n){
+        if (!prWait[id]) return;
+        if (n > 60) { delete prWait[id]; resolve(null); return; }
+        try {
+          prFrame.contentWindow.postMessage({type: 'visible', visible: false}, location.origin);
+          prFrame.contentWindow.postMessage({type: 'quiz-q', id: id}, location.origin);
+        } catch (e) {}
+        setTimeout(function(){ ask(n + 1); }, 500);
+      })(0);
+    });
+  }
+  function practiceNext(){
+    (function get(n){
+      practiceQuestion().then(function(q){
+        if (q) showPractice(q);
+        else if (n < 5) get(n + 1);
+      });
+    })(0);
+  }
+  function practiceHeader(){
+    return '題目由這章的動畫隨機出，數字每次都不一樣' + (prScore.all ? '・這次答對 ' + prScore.ok + ' / ' + prScore.all : '');
+  }
+  function showPractice(q){
+    const first = !prBox;
+    if (first) { prBox = document.createElement('div'); prBox.className = 'st-pr'; }
+    const opts = shuffled(q.opts);
+    let answered = false;
+    // the generators write HTML (line breaks, entities, a few tree diagrams), like the lab's own quiz page
+    prBox.innerHTML = '<div class="st-pr-hd"><b>計算練習</b><span>' + practiceHeader() + '</span></div>'
+      + '<div class="st-pr-q">' + q.q + '</div>'
+      + '<div class="st-qz-opts">' + opts.map(function(o, i){ return '<button data-i="' + i + '">' + o + '</button>'; }).join('') + '</div>';
+    prBox.querySelectorAll('.st-qz-opts button').forEach(function(b){
+      b.onclick = function(){
+        if (answered) return; answered = true;
+        const pick = opts[Number(b.dataset.i)], ok = pick === q.ans;
+        prScore.all++; if (ok) prScore.ok++;
+        prBox.querySelectorAll('.st-qz-opts button').forEach(function(x){
+          if (opts[Number(x.dataset.i)] === q.ans) x.classList.add('ok');
+          x.disabled = true;
+        });
+        if (!ok) b.classList.add('no');
+        prBox.querySelector('.st-pr-hd span').textContent = practiceHeader();
+        const why = document.createElement('div');
+        why.className = 'st-qz-why';
+        why.innerHTML = (ok ? '答對！' : '答案是「' + q.ans + '」。') + (q.why ? ' ' + q.why : '');
+        const next = document.createElement('button');
+        next.className = 'st-btn st-btn-watch st-qz-go';
+        next.textContent = '下一題';
+        next.onclick = function(){ next.disabled = true; practiceNext(); };
+        prBox.appendChild(why);
+        prBox.appendChild(next);
+      };
+    });
+    if (first && currentTab === 'quiz') renderQuiz();
+  }
   function renderQuiz(){
     const el = $('panel-quiz');
+    if (labUrl && !prFrame) practiceNext();
     const all = chapterHistory();
     if (!all.length) {
       el.innerHTML = '<div class="st-nonotes">還沒有作答紀錄。看影片時，每講完一段會暫停出一題小挑戰，影片結束時也會出題；答過的題目都會記在這裡。</div>';
+      if (prBox) el.insertBefore(prBox, el.firstChild);
       return;
     }
     const right = all.filter(function(r){ return r.ok; }).length;
@@ -1155,6 +1234,7 @@
             + '</div>';
         }).join('') : '<div class="st-nonotes">沒有答錯的題目。</div>')
       + '</div>';
+    if (prBox) el.insertBefore(prBox, el.firstChild);
     el.querySelectorAll('.st-qh-filter button').forEach(function(b){ b.onclick = function(){ quizFilter = b.dataset.f; renderQuiz(); }; });
     const redo = el.querySelector('.st-qh-redo'); if (redo) redo.onclick = redoWrong;
     el.querySelectorAll('.st-qh-src').forEach(function(b){

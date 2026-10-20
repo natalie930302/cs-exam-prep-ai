@@ -2421,6 +2421,7 @@ FRAG.push(['strm-mit-aggregate', 'Aggregate analysis：加總成本', async (tok
       { id: 'bm', name: 'Boyer-Moore', enter: enterBM },
       { id: 'rk', name: 'Rolling Hash', enter: enterRK },
     ],
+    quiz: genQ,
     pages: [
       { id: 'cmp', name: '演算法對照', render: renderCmp },
       { id: 'quiz', name: '小測驗', render: renderQuiz },

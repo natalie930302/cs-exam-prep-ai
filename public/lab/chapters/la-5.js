@@ -2962,6 +2962,7 @@ sc('lt-g-video', 'L31：FBI 指紋與影片壓縮——選基底、預測 + 修�
       { id: 'basis', name: '換基底', enter: enterBasis },
       { id: 'cross', name: '叉積', enter: enterCross },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

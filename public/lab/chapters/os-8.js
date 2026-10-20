@@ -3166,6 +3166,7 @@ scene('vm-pf-thrash', 'Thrashing：working set 太大時', CAM, [
       { id: 'eat', name: 'EAT 計算', enter: enterEat },
       { id: 'wset', name: 'Working set', enter: enterWset },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

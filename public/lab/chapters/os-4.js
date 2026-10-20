@@ -3547,6 +3547,7 @@ scene('sch-gs-calc', 'SJF 例題：CT、TAT、WT、RT 與平均', CAMG, () => {
       { id: 'mlfq', name: 'MLFQ', enter: enterMLFQ },
       { id: 'rt', name: 'Real-time：RM / EDF', enter: enterRT },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

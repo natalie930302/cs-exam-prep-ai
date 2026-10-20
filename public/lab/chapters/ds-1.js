@@ -2847,6 +2847,7 @@ FRAG.push(['cplx-peng1-mult', '遞迴乘法：mult(a, b) = mult(a, b−1) + a', 
       { id: 'master', name: 'Master Theorem', enter: enterMaster },
       { id: 'recstack', name: '遞迴呼叫堆疊', enter: enterRecStack },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

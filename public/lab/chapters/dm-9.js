@@ -3706,6 +3706,7 @@ scene('reB-eq-sum', '整理：六個例子', [
       { id: 'hasse', name: '偏序與 Hasse 圖', enter: enterHasse },
       { id: 'topo', name: '拓撲排序', enter: enterTopo },
     ],
+    quiz: () => fixOpts(genQ()),
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['rel-arrows-matrix', 'rel-reflexive', 'rel-symmetric', 'rel-antisymmetric', 'rel-transitive', 'rel-composition', 'closure-rs', 'warshall',

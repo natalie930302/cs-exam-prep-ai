@@ -8565,6 +8565,7 @@ scene('bs-cube57', '立方體：|G| = 24，Σ|Fix| = 1368，答案 57', [
       { id: 'catalan', name: 'Catalan 路徑', enter: enterCatalan },
       { id: 'burnside', name: 'Burnside 項鍊', enter: enterBurnside },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

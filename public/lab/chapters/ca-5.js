@@ -4401,6 +4401,7 @@ scene('mh-amat-hier3', '三層 hierarchical', [
       { id: 'write', name: '寫入策略', enter: enterWrite },
       { id: 'amat', name: 'AMAT／CPI', enter: enterAmat },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['hierarchy', 'locality', 'hit-miss', 'dm-mapping', 'dm-sequence', 'addr-1200', 'cache-bits', 'block-size', 'miss-steps',

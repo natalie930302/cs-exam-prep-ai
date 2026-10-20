@@ -7981,6 +7981,7 @@ FRAG.push(['sortpeng-mapreduce', 'External Sort 另一解：多台電腦', async
       { id: 'stable', name: '穩定性', enter: () => enterStab(false) },
       { id: 'lower', name: '下界：決策樹', enter: enterTree },
     ],
+    quiz: () => GENS[rnd(GENS.length)](),
     pages: [
       { id: 'cmp', name: '比較表', render: renderCmp },
       { id: 'quiz', name: '小測驗', render: renderQuiz },

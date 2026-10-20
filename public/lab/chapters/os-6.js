@@ -2677,6 +2677,7 @@ FRAG.push(['dl-f-limits', 'Safe sequence 不唯一；Banker 的限制', async (t
       { id: 'detect', name: 'Deadlock detection', enter: enterDetect },
       { id: 'prevent', name: '四條件與 prevention', enter: enterPrevent },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

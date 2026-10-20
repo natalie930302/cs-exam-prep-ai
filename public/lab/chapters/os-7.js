@@ -455,15 +455,15 @@ export default function (ctx) {
     if (k === 0) {
       const n = pick([8, 9, 10, 11, 12]), psz = 1 << n, pages = 8, pt = [...Array(16).keys()].map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map((p) => p[1]).slice(0, pages);
       const p = rnd(pages), d = rnd(psz), la = p * psz + d, pa = pt[p] * psz + d;
-      return { q: 'page size = ' + psz + ' bytes，page table = [' + pt.join(', ') + ']（index 0 起）。logical address ' + la + ' 的 physical address 是？', opts: [String(pa), String(pt[p] + d), String(p * psz + pt[p]), String(pt[p] * psz + d + psz)], ans: String(pa), why: 'p = ⌊' + la + ' / ' + psz + '⌋ = ' + p + '，d = ' + d + '；frame = ' + pt[p] + ' → ' + pt[p] + ' × ' + psz + ' + ' + d + ' = ' + pa + '。' };
+      return { q: 'page size = ' + psz + ' bytes，page table = [' + pt.join(', ') + ']（index 0 起）。logical address ' + la + ' 的 physical address 是？', opts: [...new Set([String(pa), String(pt[p] + d), String(p * psz + pt[p]), String(pt[p] * psz + d + psz), String(pa + 2 * psz), String(la)])].slice(0, 4), ans: String(pa), why: 'p = ⌊' + la + ' / ' + psz + '⌋ = ' + p + '，d = ' + d + '；frame = ' + pt[p] + ' → ' + pt[p] + ' × ' + psz + ' + ' + d + ' = ' + pa + '。' };
     }
     if (k === 1) {
       const m = pick([16, 20, 24, 32]), n = pick([9, 10, 11, 12, 13]);
-      return { q: m + '-bit logical address、page size ' + fmtB(pow2(n)) + '：page number 和 offset 各幾 bits？', opts: [(m - n) + ' / ' + n, n + ' / ' + (m - n), (m - n + 1) + ' / ' + (n - 1), m + ' / ' + n], ans: (m - n) + ' / ' + n, why: 'page size 2^' + n + ' → offset ' + n + ' bits，剩下 ' + m + ' − ' + n + ' = ' + (m - n) + ' bits 是 page number。' };
+      return { q: m + '-bit logical address、page size ' + fmtB(pow2(n)) + '：page number 和 offset 各幾 bits？', opts: [(m - n) + ' / ' + n, (m === 2 * n ? (n - 1) + ' / ' + (n + 1) : n + ' / ' + (m - n)), (m - n + 1) + ' / ' + (n - 1), m + ' / ' + n], ans: (m - n) + ' / ' + n, why: 'page size 2^' + n + ' → offset ' + n + ' bits，剩下 ' + m + ' − ' + n + ' = ' + (m - n) + ' bits 是 page number。' };
     }
     if (k === 2) {
       const A = pick([32, 32, 36]), P = pick([12, 13, 14]), E = pick([4, 8]), size = Math.pow(2, A - P) * E;
-      return { q: A + '-bit 位址、page ' + fmtB(pow2(P)) + '、每個 entry ' + E + ' bytes，單層 page table 多大？', opts: [fmtB(size), fmtB(size / E), fmtB(size * 2), fmtB(Math.pow(2, A - P))], ans: fmtB(size), why: '2^' + (A - P) + ' 個 entry × ' + E + ' bytes = ' + fmtB(size) + '。' };
+      return { q: A + '-bit 位址、page ' + fmtB(pow2(P)) + '、每個 entry ' + E + ' bytes，單層 page table 多大？', opts: [fmtB(size), fmtB(size / E), fmtB(size * 2), fmtB(size / 2 === size / E ? size * 4 : size / 2)], ans: fmtB(size), why: '2^' + (A - P) + ' 個 entry × ' + E + ' bytes = ' + fmtB(size) + '。' };
     }
     if (k === 3) {
       const t = pick([10, 20, 25]), m = pick([50, 100, 200]), h = pick([70, 80, 90, 95, 98]);
@@ -4154,6 +4154,7 @@ scene('mem-pg-fault', 'Page fault 初探', CAMW, [
       { id: 'seg', name: 'Segmentation', enter: enterSeg },
       { id: 'ptsize', name: 'Page table 大小', enter: enterPtSize },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

@@ -4511,6 +4511,7 @@ FRAG.push(['gpeng20-topo-sort', 'Topological order：輸出 in-degree 0 的點',
       { id: 'bellman', name: 'Bellman-Ford', enter: enterBF },
       { id: 'floyd', name: 'Floyd-Warshall', enter: enterFloyd },
     ],
+    quiz: genQ,
     pages: [
       { id: 'cmp', name: '演算法對照', render: renderCmp },
       { id: 'quiz', name: '小測驗', render: renderQuiz },

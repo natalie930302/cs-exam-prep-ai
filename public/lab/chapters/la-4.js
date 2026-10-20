@@ -468,7 +468,7 @@ export default function (ctx) {
     if (k < 0.84) {
       const u = [ri(1, 3), ri(-3, 3)], v = [ri(1, 4), ri(-2, 5), ri(-3, 3)];
       const i = ri(0, 1), j = ri(0, 2), ans = String(u[i] * v[j]);
-      return { q: 'rank 1 矩陣 A = u vᵀ，u = ' + vstr(u) + '、v = ' + vstr(v) + '。A 的第 ' + (i + 1) + ' 列第 ' + (j + 1) + ' 行 = ？', opts: [...new Set([ans, String(u[i] + v[j]), String(u[1 - i] * v[j]), String(u[i] * v[(j + 1) % 3])])], ans, why: '(u vᵀ)ᵢⱼ = uᵢ vⱼ = ' + u[i] + ' × ' + v[j] + '。每一列都是 vᵀ 的倍數，所以 rank 1。' };
+      return { q: 'rank 1 矩陣 A = u vᵀ，u = ' + vstr(u) + '、v = ' + vstr(v) + '。A 的第 ' + (i + 1) + ' 列第 ' + (j + 1) + ' 行 = ？', opts: [...new Set([ans, String(u[i] + v[j]), String(u[1 - i] * v[j]), String(u[i] * v[(j + 1) % 3]), String(+ans + 1), String(+ans - 1), String(+ans * 2)])].slice(0, 4), ans, why: '(u vᵀ)ᵢⱼ = uᵢ vⱼ = ' + u[i] + ' × ' + v[j] + '。每一列都是 vᵀ 的倍數，所以 rank 1。' };
     }
     const cases = [['r = m = n', '恰一解'], ['r = n < m', '0 或 1 個解'], ['r = m < n', '無限多解（一定有解）'], ['r < m 且 r < n', '0 或無限多解']];
     const [c, a] = pick(cases);
@@ -5961,6 +5961,7 @@ scene('vsB-a-axioms', '3B1B 16：向量空間的八條公理', [
       { id: 'solve', name: 'Ax = b 完整解', enter: enterSolve },
       { id: 'graph', name: '圖與 incidence matrix', enter: enterGraph },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

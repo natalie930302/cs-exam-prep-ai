@@ -112,7 +112,7 @@ function makeCtx() {
 }
 
 const ctx = makeCtx();
-const mod = await import('./chapters/' + CH + '.js?v=20');
+const mod = await import('./chapters/' + CH + '.js?v=21');
 const def = mod.default(ctx);
 const modes = def.modes || [];
 // the lab is for trying things by hand; quizzes live in the study room
@@ -201,6 +201,16 @@ if (STAGE) {
       }
     }
     if (e.data.type === 'tour') tour(e.data.from);
+    // the study room's 計算練習: one fresh question from this chapter's generator
+    if (e.data.type === 'quiz-q') {
+      const reply = (q) => e.source.postMessage({ type: 'quiz-q', id: e.data.id, q }, location.origin);
+      Promise.resolve(def.quiz ? def.quiz() : null).then((p) => {
+        if (!p || !p.q || !Array.isArray(p.opts)) return reply(null);
+        const opts = [...new Set(p.opts.map(String))];
+        if (!opts.includes(String(p.ans))) opts[0] = String(p.ans);
+        reply(opts.length < 2 ? null : { q: String(p.q), opts, ans: String(p.ans), why: String(p.why || '') });
+      }, () => reply(null));
+    }
     if (e.data.type === 'visible') lab.setVisible(e.data.visible);
   });
   if ($('handsOn')) $('handsOn').onclick = () => {

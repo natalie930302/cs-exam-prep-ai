@@ -2127,6 +2127,7 @@ scene('gr-l23-inv', '怎麼判斷不同構：節點數、邊數、degree', [
       { id: 'hamilton', name: 'Hamilton 路徑', enter: enterHamilton },
       { id: 'planar', name: '平面圖與著色', enter: enterPlanar },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

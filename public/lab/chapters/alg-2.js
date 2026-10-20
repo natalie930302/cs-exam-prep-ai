@@ -9804,6 +9804,7 @@ FRAG.push(['sortbari-quick-recursive', 'QuickSort(l, h)：左邊用 pivot 當 �
       { id: 'matrix', name: 'Strassen', enter: () => { clearLog(); enterMatrix(); } },
       { id: 'maxsub', name: '最大子陣列', enter: () => { clearLog(); enterMaxSub(); } },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

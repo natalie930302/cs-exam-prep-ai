@@ -4535,6 +4535,7 @@ FRAG.push(['qa-tree-build-order', '遞迴建樹：先建自己（prefix）或先
       { id: 'sort', name: 'Heap Sort', enter: () => enterSort() },
       { id: 'minmax', name: 'Min-Max Heap', enter: () => enterMinMax() },
     ],
+    quiz: genQ,
     pages: [
       { id: 'cmp', name: '複雜度與重點', render: renderCmp },
       { id: 'quiz', name: '小測驗', render: renderQuiz },

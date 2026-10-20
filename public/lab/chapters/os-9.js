@@ -4436,6 +4436,7 @@ scene('fs-25b-seek', '為什麼 scheduling 要 minimize seek time', CAM, [
       { id: 'free', name: 'Free space', enter: () => { clearLog(); enterFree(); } },
       { id: 'perm', name: '權限 rwx', enter: () => { clearLog(); enterPerm(); } },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

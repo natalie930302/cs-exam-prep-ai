@@ -2990,6 +2990,7 @@ scene('rr-gf-deriv', "d/dx：1/(1 − x) → 1/(1 − x)²，係數 1, 2, 3, …
       { id: 'nonhom', name: '非齊次', enter: enterNonHom },
       { id: 'gf', name: '生成函數', enter: enterGF },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['rec-def', 'iteration', 'compound-interest', 'hanoi', 'fibonacci', 'bit-strings', 'char-intro', 'char-distinct', 'fib-binet', 'char-repeated',

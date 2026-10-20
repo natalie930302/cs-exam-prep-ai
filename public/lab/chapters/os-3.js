@@ -2198,6 +2198,7 @@ FRAG.push(['thr-neso-mm', 'Many-to-Many：彈性最好，但最複雜', async (t
       { id: 'clone', name: 'Linux clone()', enter: enterClone },
       { id: 'amdahl', name: 'Amdahl\'s law', enter: enterAmdahl },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

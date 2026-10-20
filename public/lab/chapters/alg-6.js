@@ -8514,6 +8514,7 @@ FRAG.push(['graphmit-l13-time', 'BFS 的時間：Σ|Adj[v]| = O(E)', async (tok)
       { id: 'scc', name: 'SCC', enter: enterSCC },
       { id: 'ap', name: 'Articulation point', enter: enterAP },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

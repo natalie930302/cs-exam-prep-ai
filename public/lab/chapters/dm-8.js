@@ -11815,6 +11815,7 @@ scene('fc-proof', '四色定理：Appel 與 Haken 的電腦證明', [
       { id: 'planar', name: '平面圖 Euler 公式', enter: enterPlanar },
       { id: 'match', name: '匹配與 Hall', enter: () => enterMatch() },
     ],
+    quiz: () => fixOpts(genQ()),
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

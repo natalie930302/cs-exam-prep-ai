@@ -17,7 +17,7 @@ export default function (ctx) {
   const mods = {};
   async function chapterQuiz(n) {
     if (!mods[n]) {
-      const m = await import('./ds-' + n + '.js?v=15');
+      const m = await import('./ds-' + n + '.js' + new URL(import.meta.url).search);
       mods[n] = m.default(ctx);
     }
     return (mods[n].pages || []).find((p) => /測驗|quiz/i.test(p.id + p.name));
@@ -126,6 +126,7 @@ export default function (ctx) {
     title: '綜合刷題',
     color: 'var(--ds)',
     modes: [{ id: 'map', name: '刷題地圖', enter: enterMap }],
+    quiz: async () => { const n = pickChapter(); await chapterQuiz(n); return mods[n].quiz(); },
     pages: [{ id: 'drill', name: '混合刷題', render: renderDrill }],
     scenes,
     sceneOrder: ['drill-map'],

@@ -6901,6 +6901,7 @@ FRAG.push(['grjiang3-kruskal-total', 'Kruskal 的時間：O(m log n)，排序變
       { id: 'jobs', name: 'Job sequencing', enter: enterJobs },
       { id: 'merge', name: 'Optimal merge', enter: enterMerge },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['feasible-optimal', 'greedy-general', 'greedy-filter', 'activity-select', 'activity-proof', 'activity-wrong-rules', 'huffman-build', 'huffman-cost', 'frac-knapsack', 'knapsack-greedy-fail', 'job-sequencing', 'optimal-merge', 'greedy-or-dp'].concat(FRAG.map((f) => f[0])),

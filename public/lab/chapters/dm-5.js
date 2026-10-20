@@ -2588,6 +2588,7 @@ scene('ct-z9-alt', '加減交錯：Σ (−1)ʳ (n r) = 0', [
       { id: 'pascal', name: '巴斯卡三角形', enter: enterPascal },
       { id: 'pigeon', name: '鴿籠原理', enter: enterPigeon },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

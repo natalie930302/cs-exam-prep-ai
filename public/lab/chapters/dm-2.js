@@ -7065,6 +7065,7 @@ scene('wo-mit-lowest', '良序原理證明：分數都能化成最簡分數', [
       { id: 'wellorder', name: '良序與除法', enter: enterWO },
       { id: 'euclid', name: 'Euclid 鋪磚', enter: enterEuclid },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['direct-proof', 'contraposition', 'sqrt2', 'infinite-primes', 'proof-cases', 'counterexample',

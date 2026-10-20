@@ -5657,6 +5657,7 @@ FRAG.push(['dp4mit-l21-pseudo', 'Knapsack 的 n·S：pseudo-polynomial', async (
       { id: 'obst', name: 'Optimal BST', enter: enterObst },
       { id: 'coin', name: 'Coin change', enter: enterCoin },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['mc-cost', 'mc-count', 'mc-loops', 'mc-table', 'mc-split', 'obst-cost', 'obst-table', 'obst-build', 'obst-success-only', 'coin-greedy-fail', 'coin-min', 'coin-ways'].concat(FRAG.map((f) => f[0])),

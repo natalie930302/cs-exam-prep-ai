@@ -6313,6 +6313,7 @@ scene('nuB-12b-cmpqa', "12B 問答：two's complement 用減法比大小；expon
       { id: 'float', name: 'IEEE 754', enter: enterFloat },
       { id: 'perf', name: 'CPU time / Amdahl', enter: enterPerf },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['bin-hex', 'twos-complement', 'sign-extend', 'ripple-add', 'subtract', 'overflow', 'alu-1bit',

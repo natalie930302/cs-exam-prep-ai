@@ -1901,6 +1901,7 @@ scene('dt-l18-parity', 'L18：排列一定是奇或偶（det 才定義得好）'
       { id: 'cramer', name: 'Cramer 法則', enter: enterCramer },
       { id: 'adj', name: '伴隨矩陣求逆', enter: enterAdj },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['det-area', 'det-volume', 'det-properties', 'det-pivots', 'det-product',

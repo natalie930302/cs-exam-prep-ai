@@ -1881,6 +1881,7 @@ scene('mx-3b-assoc', '3B1B：結合律 (AB)C = A(BC)', [
       { id: 'transpose', name: '轉置與對稱', enter: enterTranspose },
       { id: 'perm', name: 'Permutation', enter: enterPerm },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['mult-entry', 'mult-shapes', 'mult-columns', 'mult-rows', 'mult-outer', 'mult-blocks', 'composition', 'mult-traps',

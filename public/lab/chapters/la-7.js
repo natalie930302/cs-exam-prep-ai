@@ -3475,6 +3475,7 @@ scene('or-3b-sum', '3B1B：總結', CAMB, null, [
       { id: 'gs', name: 'Gram-Schmidt', enter: () => { clearLog(); enterGS(); } },
       { id: 'orth', name: '正交矩陣', enter: () => { om.prev = null; enterOrth(); } },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

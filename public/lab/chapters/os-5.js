@@ -4447,6 +4447,7 @@ FRAG.push(['syn-csneso-struct', 'Entry section 上鎖、exit section 解鎖', as
       { id: 'buffer', name: 'Bounded buffer', enter: enterBuffer },
       { id: 'dining', name: '哲學家用餐', enter: enterDining },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: [

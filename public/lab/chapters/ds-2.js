@@ -17160,6 +17160,7 @@ FRAG.push(['recap-ds-alg', '回顧：資料結構搭配演算法', async (tok) =
       { id: 'postfix', name: 'Postfix', enter: enterPostfix },
       { id: 'maze', name: '迷宮 DFS／BFS', enter: enterMaze },
     ],
+    quiz: genQueueQ,
     pages: [
       { id: 'cmp', name: '複雜度對照', render: renderCmp },
       { id: 'quiz', name: '小測驗', render: renderQuiz },

@@ -4830,6 +4830,7 @@ FRAG.push(['np2-blowup', 'Reduction 不能讓輸入爆炸', async (tok) => {
       { id: 'cvi', name: 'Clique / 獨立集 / VC', enter: enterCvi },
       { id: 'tree', name: '歸約家族樹', enter: enterTree },
     ],
+    quiz: genQ,
     pages: [{ id: 'quiz', name: '小測驗', render: renderQuiz }],
     scenes,
     sceneOrder: ['poly-vs-exp', 'decision-opt', 'sat-verify', 'certificate-verify', 'class-sets', 'reduction-idea', 'cook-levin', 'npc-tree', 'sat-3sat', '3sat-clique', 'clique-is-vc', 'ham-tsp', 'npc-proof-steps'].concat(FRAG.map((f) => f[0])),

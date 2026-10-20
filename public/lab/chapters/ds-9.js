@@ -2426,6 +2426,7 @@ FRAG.push(['trie-hr-incr', '最佳化：記住上次查到的節點', async (tok
       { id: 'bplus', name: 'B+ Tree', enter: () => enterBPlus() },
       { id: 'trie', name: 'Trie', enter: () => enterTrie() },
     ],
+    quiz: genQ,
     pages: [
       { id: 'cmp', name: 'B / B+ / Trie 對照', render: renderCmp },
       { id: 'quiz', name: '小測驗', render: renderQuiz },
