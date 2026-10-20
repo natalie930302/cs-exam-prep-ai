@@ -19,6 +19,8 @@ const client = createClient(process.env.TURSO_DATABASE_URL
   ? { url: process.env.TURSO_DATABASE_URL, authToken: process.env.TURSO_AUTH_TOKEN }
   : { url: localUrl() });
 
+console.log('db:', process.env.TURSO_DATABASE_URL ? 'turso ' + process.env.TURSO_DATABASE_URL.replace(/^\w+:\/\//, '').split(/[/?]/)[0] : 'local ' + localUrl());
+
 const ready = client.batch([
   'CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)',
   "CREATE TABLE IF NOT EXISTS task_done (task_id TEXT PRIMARY KEY, done_at TEXT NOT NULL DEFAULT (datetime('now')))",
