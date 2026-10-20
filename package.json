@@ -12,9 +12,9 @@
     "node": ">=22.5.0"
   },
   "dependencies": {
+    "@libsql/client": "^0.15.15",
     "compression": "^1.8.1",
     "express": "^4.19.2",
-    "katex": "^0.16.22",
     "three": "^0.170.0"
   }
 }

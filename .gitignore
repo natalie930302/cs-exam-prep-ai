@@ -11,3 +11,9 @@ tools/.runtime/
 # lecture text: kept local, not committed).
 public/transcripts/
 review/
+
+# cloud build output and Vercel/Turso settings
+public/vendor/
+.vercel/
+.env*
+tools/autostart/cloud-url.txt

@@ -14,6 +14,18 @@ Set objShell = CreateObject("WScript.Shell")
 Set fso = CreateObject("Scripting.FileSystemObject")
 projectDir = fso.GetParentFolderName(fso.GetParentFolderName(fso.GetParentFolderName(WScript.ScriptFullName)))
 
+' The cloud copy is the one with the progress: when cloud-url.txt (next to
+' this script) holds its address, open that and don't start the local server.
+cloudFile = fso.BuildPath(fso.GetParentFolderName(WScript.ScriptFullName), "cloud-url.txt")
+If fso.FileExists(cloudFile) Then
+  cloudUrl = Trim(fso.OpenTextFile(cloudFile, 1).ReadAll())
+  cloudUrl = Replace(Replace(cloudUrl, vbCr, ""), vbLf, "")
+  If Left(cloudUrl, 8) = "https://" Then
+    objShell.Run cloudUrl, 1, False
+    WScript.Quit
+  End If
+End If
+
 ' True when an HTTP GET to the hub succeeds (see ensure-server.vbs).
 Function ServerUp()
   On Error Resume Next

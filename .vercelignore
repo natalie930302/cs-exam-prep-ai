@@ -1,0 +1,15 @@
+# Upload only what the site needs. public/transcripts IS uploaded (it is not
+# in git, but the cloud copy needs the subtitles); personal data stays local.
+data/
+review/
+docs/
+model-training/
+tools/autostart/
+tools/caption-recorder.py
+tools/.runtime/
+.claude/
+.edge-qa/
+node_modules/
+*.bat
+*.log
+.env*

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "node tools/build.mjs",
+  "outputDirectory": "public",
+  "regions": ["hnd1"],
+  "rewrites": [
+    { "source": "/", "destination": "/api" },
+    { "source": "/login", "destination": "/api" },
+    { "source": "/(calendar|subjects|study)(.*)", "destination": "/api" },
+    { "source": "/(index|study)\\.html", "destination": "/api" },
+    { "source": "/api/(.*)", "destination": "/api" }
+  ],
+  "functions": {
+    "api/index.js": { "includeFiles": "public/{index.html,study.html,login.html,glossary.json,keymap.json,notes/**,transcripts/**}" }
+  }
+}
