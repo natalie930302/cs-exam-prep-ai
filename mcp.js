@@ -30,7 +30,14 @@ const ready = sql.batch([
   "CREATE TABLE IF NOT EXISTS oauth_clients (client_id TEXT PRIMARY KEY, info TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')))",
   'CREATE TABLE IF NOT EXISTS oauth_codes (code TEXT PRIMARY KEY, client_id TEXT NOT NULL, challenge TEXT NOT NULL, redirect_uri TEXT NOT NULL, resource TEXT, scopes TEXT, expires INTEGER NOT NULL)',
   'CREATE TABLE IF NOT EXISTS oauth_tokens (hash TEXT PRIMARY KEY, kind TEXT NOT NULL, client_id TEXT NOT NULL, resource TEXT, scopes TEXT, expires INTEGER NOT NULL)',
-], 'write');
+], 'write').then(async () => {
+  // tokens remember which site password they were granted under (added later: older rows have none)
+  const cols = (await sql.execute('PRAGMA table_info(oauth_tokens)')).rows.map((r) => r.name);
+  if (!cols.includes('pw')) await sql.execute('ALTER TABLE oauth_tokens ADD COLUMN pw TEXT');
+});
+// changing SITE_PASSWORD signs every connected Claude out, like the site login
+const pwMark = () => crypto.createHash('sha256').update('csie-mcp:' + (process.env.SITE_PASSWORD || '')).digest('hex').slice(0, 16);
+const pwOk = (r) => r.pw == null || r.pw === pwMark();
 const q = async (s, args = []) => { await ready; return (await sql.execute({ sql: s, args })).rows; };
 const now = () => Math.floor(Date.now() / 1000);
 const random = () => crypto.randomBytes(32).toString('base64url');
@@ -51,8 +58,9 @@ const clientsStore = {
 async function issueTokens(clientId, resource, scopes) {
   const access = random(), refresh = random();
   await q('DELETE FROM oauth_tokens WHERE expires < ?', [now()]);
-  await q('INSERT INTO oauth_tokens VALUES (?, ?, ?, ?, ?, ?)', [hash(access), 'access', clientId, resource || null, scopes.join(' '), now() + ACCESS_TTL]);
-  await q('INSERT INTO oauth_tokens VALUES (?, ?, ?, ?, ?, ?)', [hash(refresh), 'refresh', clientId, resource || null, scopes.join(' '), now() + REFRESH_TTL]);
+  const ins = 'INSERT INTO oauth_tokens(hash, kind, client_id, resource, scopes, expires, pw) VALUES (?, ?, ?, ?, ?, ?, ?)';
+  await q(ins, [hash(access), 'access', clientId, resource || null, scopes.join(' '), now() + ACCESS_TTL, pwMark()]);
+  await q(ins, [hash(refresh), 'refresh', clientId, resource || null, scopes.join(' '), now() + REFRESH_TTL, pwMark()]);
   return { access_token: access, token_type: 'bearer', expires_in: ACCESS_TTL, refresh_token: refresh, scope: scopes.join(' ') || undefined };
 }
 
@@ -128,14 +136,14 @@ const provider = {
   },
   async exchangeRefreshToken(client, refresh) {
     const r = (await q("SELECT * FROM oauth_tokens WHERE hash = ? AND kind = 'refresh' AND client_id = ? AND expires >= ?", [hash(refresh), client.client_id, now()]))[0];
-    if (!r) throw new InvalidGrantError('refresh token 無效或已過期');
+    if (!r || !pwOk(r)) throw new InvalidGrantError('refresh token 無效或已過期（或網站密碼已更換）');
     await q('DELETE FROM oauth_tokens WHERE hash = ?', [hash(refresh)]); // rotate
     return issueTokens(client.client_id, r.resource, r.scopes ? r.scopes.split(' ') : []);
   },
   async verifyAccessToken(token) {
     const r = (await q("SELECT * FROM oauth_tokens WHERE hash = ? AND kind = 'access'", [hash(token)]))[0];
     // (this message goes into a WWW-Authenticate header: ASCII only)
-    if (!r || r.expires < now()) throw new InvalidTokenError('Invalid or expired token');
+    if (!r || r.expires < now() || !pwOk(r)) throw new InvalidTokenError('Invalid or expired token');
     return { token, clientId: r.client_id, scopes: r.scopes ? r.scopes.split(' ') : [], expiresAt: Number(r.expires), resource: r.resource ? new URL(r.resource) : undefined };
   },
   async revokeToken(client, { token }) {
@@ -309,6 +317,9 @@ function install(app) {
     const server = buildServer();
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
     res.on('close', () => { transport.close(); server.close(); });
+    // one line per call (method + status, no content), to see what clients send
+    const rpc = Array.isArray(req.body) ? req.body.map((m) => m && m.method).join(',') : req.body && req.body.method;
+    res.on('finish', () => console.log('mcp', rpc, req.body && req.body.params && req.body.params.name || '', res.statusCode, 'proto=' + (req.headers['mcp-protocol-version'] || '-'), 'session=' + (req.headers['mcp-session-id'] ? 'yes' : 'no')));
     try {
       await server.connect(transport);
       await transport.handleRequest(req, res, req.body);
