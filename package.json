@@ -13,8 +13,10 @@
   },
   "dependencies": {
     "@libsql/client": "^0.15.15",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "compression": "^1.8.1",
     "express": "^4.19.2",
-    "three": "^0.170.0"
+    "three": "^0.170.0",
+    "zod": "^4.6.7"
   }
 }

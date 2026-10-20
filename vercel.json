@@ -9,9 +9,11 @@
     { "source": "/login", "destination": "/api" },
     { "source": "/(calendar|subjects|study)(.*)", "destination": "/api" },
     { "source": "/(index|study)\\.html", "destination": "/api" },
-    { "source": "/api/(.*)", "destination": "/api" }
+    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/(mcp|authorize|token|register|revoke)", "destination": "/api" },
+    { "source": "/.well-known/(.*)", "destination": "/api" }
   ],
   "functions": {
-    "api/index.js": { "includeFiles": "public/{index.html,study.html,login.html,glossary.json,keymap.json,notes/**,transcripts/**}" }
+    "api/index.js": { "includeFiles": "public/{index.html,study.html,login.html,glossary.json,keymap.json,data.js,video-order.js,chapter-core.js,notes/**,transcripts/**}" }
   }
 }

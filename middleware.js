@@ -1,7 +1,9 @@
 // Vercel Routing Middleware: runs before every request, static files
 // included, so notes, subtitles and labs also need the login cookie.
 // Same check as auth.js (cookie = sha256("csie-prep:" + SITE_PASSWORD)).
-export const config = { matcher: ['/((?!login|api/login|favicon\\.svg|theme\\.css).*)'] };
+// The Claude connector's paths (MCP + OAuth, see mcp.js) check their own
+// tokens instead of the cookie.
+export const config = { matcher: ['/((?!login|api/login|favicon\\.svg|theme\\.css|mcp|authorize|token|register|revoke|\\.well-known/).*)'] };
 
 export default async function middleware(request) {
   const password = process.env.SITE_PASSWORD || '';
