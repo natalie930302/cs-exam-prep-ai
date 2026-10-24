@@ -13,7 +13,7 @@ button { font: inherit; color: inherit; }
   background: color-mix(in srgb, var(--bg) 94%, transparent); border-bottom: 1px solid var(--bd); backdrop-filter: blur(8px);
 }
 .st-back { text-decoration: none; color: var(--mt2); font-size: 13px; font-weight: 700; border: 1px solid var(--bd); background: var(--surf); white-space: nowrap; }
-.st-back:hover { border-color: var(--bd2); }
+@media (hover: hover) { .st-back:hover { border-color: var(--bd2); } }
 .st-title { flex: 1; min-width: 0; }
 .st-kicker { font-size: 12px; font-weight: 700; color: color-mix(in srgb, var(--subj) 72%, var(--tx)); }
 .st-top h1 { margin: 0; font-size: 18px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -63,7 +63,7 @@ button { font: inherit; color: inherit; }
   cursor: pointer; font-size: 13px; line-height: 1.6;
   
 }
-.st-pt:hover { background: var(--surf2); }
+@media (hover: hover) { .st-pt:hover { background: var(--surf2); } }
 .st-pt.past { opacity: .62; }
 .st-pt.active { opacity: 1; background: color-mix(in srgb, var(--subj) 13%, var(--surf)); border-color: color-mix(in srgb, var(--subj) 45%, transparent); }
 .st-pt-t { font-family: var(--mono); font-size: 12px; font-weight: 700; color: color-mix(in srgb, var(--subj) 70%, var(--tx)); padding-top: 2px; }
@@ -95,7 +95,7 @@ button { font: inherit; color: inherit; }
 .st-now-actions .st-btn { padding: 4px 10px; }
 .st-follow { align-items: center; gap: 5px; font-size: 12px; color: var(--mt); cursor: pointer; user-select: none; white-space: nowrap; margin-right: 4px; }
 .st-btn { border: 1px solid var(--bd2); background: var(--surf); font-weight: 700; cursor: pointer; }
-.st-btn:hover { border-color: var(--mt); }
+@media (hover: hover) { .st-btn:hover { border-color: var(--mt); } }
 .st-btn:disabled { opacity: .4; cursor: not-allowed; }
 .st-btn-watch.done { background: color-mix(in srgb, var(--grn) 14%, var(--surf)); border-color: var(--grn); color: color-mix(in srgb, var(--grn) 70%, var(--tx)); }
 
@@ -107,7 +107,7 @@ button { font: inherit; color: inherit; }
   border: 1px solid var(--bd); background: var(--surf); padding: 6px 12px; cursor: pointer; text-align: left;
   
 }
-.st-seg:hover { border-color: var(--bd2); }
+@media (hover: hover) { .st-seg:hover { border-color: var(--bd2); } }
 .st-seg-t { font-family: var(--mono); font-size: 11px; color: var(--mt); }
 .st-seg-name { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 196px; }
 .st-seg.past { opacity: .6; }
@@ -142,7 +142,7 @@ button { font: inherit; color: inherit; }
 .st-series button[aria-pressed="true"] { background: var(--subj); border-color: var(--subj); color: #fff; }
 .st-vlist { list-style: none; margin: 0; padding: 0; display: grid; }
 .st-v { display: grid; gap: 8px; width: 100%; height: 100%; text-align: left; border: 1px solid var(--bd); background: var(--surf); cursor: pointer; }
-.st-v:hover { border-color: var(--bd2); }
+@media (hover: hover) { .st-v:hover { border-color: var(--bd2); } }
 .st-v.current { background: color-mix(in srgb, var(--subj) 11%, var(--surf)); border-color: color-mix(in srgb, var(--subj) 50%, transparent); }
 .st-v-n { font-family: var(--mono); font-size: 12px; color: var(--mt); text-align: center; }
 .st-v.watched .st-v-n { color: var(--grn); font-weight: 700; }
@@ -160,7 +160,7 @@ button { font: inherit; color: inherit; }
 .st-card-sub { font-weight: 400; font-size: 12px; color: var(--mt); }
 .st-goals { list-style: none; margin: 0; padding: 0; display: grid; }
 .st-check { display: grid; grid-template-columns: 20px 1fr; gap: 8px; align-items: start; width: 100%; text-align: left; border: 0; background: none; cursor: pointer; }
-.st-check:hover { background: var(--surf2); }
+@media (hover: hover) { .st-check:hover { background: var(--surf2); } }
 .st-box { width: 18px; height: 18px; margin-top: 2px; border-radius: 5px; border: 1.5px solid var(--bd2); background: var(--surf); display: grid; place-items: center; font-size: 12px; color: #fff; }
 .st-check.done .st-box { background: var(--grn); border-color: var(--grn); }
 .st-check.done .st-check-text { color: var(--mt); }
@@ -219,7 +219,8 @@ button { font: inherit; color: inherit; }
   position: absolute; font-size: 11px; color: var(--mt); text-decoration: none;
   padding: 1px 6px; border-radius: 999px; border: 1px solid transparent;
 }
-.st-v-pl:hover, .st-v-pl:focus-visible { color: var(--tx); border-color: var(--bd); background: var(--surf2); }
+.st-v-pl:focus-visible { color: var(--tx); border-color: var(--bd); background: var(--surf2); }
+@media (hover: hover) { .st-v-pl:hover { color: var(--tx); border-color: var(--bd); background: var(--surf2); } }
 .st-v-teacher { display: block; font-size: 11px; color: var(--mt); margin-top: 1px; }
 
 /* ── 小挑戰：段落結束時右下角浮出一題，不暫停影片 ── */
@@ -237,7 +238,7 @@ button { font: inherit; color: inherit; }
   text-align: left; font: inherit; font-size: 13px; padding: 7px 10px; border-radius: 9px;
   border: 1px solid var(--bd); background: var(--surf2); color: var(--tx); cursor: pointer;
 }
-.st-qz-opts button:hover { border-color: var(--subj, var(--ac)); }
+@media (hover: hover) { .st-qz-opts button:hover { border-color: var(--subj, var(--ac)); } }
 .st-qz-opts button.ok { background: color-mix(in srgb, #2fc092 18%, var(--surf)); border-color: #2fc092; }
 .st-qz-opts button.no { background: color-mix(in srgb, #d9534f 14%, var(--surf)); border-color: #d9534f; }
 .st-qz.right { animation: stQzPop .4s ease; }
@@ -308,7 +309,7 @@ button { font: inherit; color: inherit; }
   text-align: right; animation: skip-in .35s var(--ease); }
 .st-skip[hidden] { display: none; }
 .st-skip b { font-size: 14px; color: color-mix(in srgb, var(--subj) 80%, var(--tx)); }
-.st-skip:hover b { text-decoration: underline; }
+@media (hover: hover) { .st-skip:hover b { text-decoration: underline; } }
 @keyframes skip-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .st-yterr { position: absolute; inset: 0; z-index: 5; display: grid; place-content: center; gap: 12px; text-align: center; padding: 20px; background: #1d1810; color: #f3e9d6; font-size: 16px; }
 .st-yterr[hidden] { display: none; }
@@ -324,7 +325,7 @@ button { font: inherit; color: inherit; }
 .st-where { display: flex; flex-wrap: wrap; }
 .st-where.none { font-size: 12px; color: var(--mt); }
 .st-where-b { border: 1px solid var(--bd); background: var(--surf2); font: inherit; font-size: 12px; color: var(--mt2); cursor: pointer; }
-.st-where-b:hover { border-color: var(--subj); color: var(--tx); }
+@media (hover: hover) { .st-where-b:hover { border-color: var(--subj); color: var(--tx); } }
 
 /* ── 動畫講解 (walkthrough): no video; the stage is large on the left, the
    explanation with the lecturer's sentence and the step buttons on the right ── */
@@ -472,7 +473,7 @@ button { font: inherit; color: inherit; }
 .st-qh-a { font-size: 13px; line-height: 1.6; color: var(--tx); }
 .st-qh-why { font-size: 12px; line-height: 1.6; color: var(--mt2, var(--mt)); }
 .st-qh-src { justify-self: start; border: 0; background: none; padding: 0; font: inherit; font-size: 12px; color: var(--subj, var(--ac)); cursor: pointer; text-align: left; }
-.st-qh-src:hover { text-decoration: underline; }
+@media (hover: hover) { .st-qh-src:hover { text-decoration: underline; } }
 .st-end { z-index: 30 !important; }
 
 /* 手機：標題獨佔第二行，不會被擠成直排；進度膠囊留在第一行 */
@@ -700,11 +701,11 @@ body:not(.st-booting) .st-top, body:not(.st-booting) .st-main { animation: m-in 
   .st-pt, .st-check, .st-tabs button, .st-qh-item, .st-skip) {
   transition: background-color .16s ease, color .16s ease, border-color .16s ease, box-shadow .16s ease, filter .16s ease, transform .12s ease !important;
 }
-:is(.st-btn, .st-back, .st-chbtn, .st-seg, .st-v, .st-res, .st-quiz-opts button, .st-qz-opts button, .st-where-b, .st-v-pl):not(:disabled):not(.active):not(.current):not(.on):hover {
+@media (hover: hover) { :is(.st-btn, .st-back, .st-chbtn, .st-seg, .st-v, .st-res, .st-quiz-opts button, .st-qz-opts button, .st-where-b, .st-v-pl):not(:disabled):not(.active):not(.current):not(.on):hover {
   border-color: color-mix(in srgb, var(--subj, var(--ac)) 55%, var(--bd)) !important; color: var(--tx); transform: none;
-}
-:is(.st-pt, .st-check):not(.active):hover { background: var(--surf2) !important; }
-.st-tabs button:not([aria-selected="true"]):hover { color: var(--tx) !important; }
+} }
+@media (hover: hover) { :is(.st-pt, .st-check):not(.active):hover { background: var(--surf2) !important; } }
+@media (hover: hover) { .st-tabs button:not([aria-selected="true"]):hover { color: var(--tx) !important; } }
 :is(.st-btn, .st-back, .st-chbtn, .st-seg, .st-v, .st-res, .st-where-b, .st-pt, .st-check, .st-quiz-opts button, .st-qz-opts button):not(:disabled):active { transform: scale(.97) !important; }
 @media (prefers-reduced-motion: reduce) {
   :is(.st-btn, .st-back, .st-chbtn, .st-seg, .st-v, .st-res, .st-where-b, .st-pt, .st-check, .st-quiz-opts button, .st-qz-opts button):active { transform: none !important; }
@@ -726,9 +727,9 @@ body:not(.st-booting) .st-top, body:not(.st-booting) .st-main { animation: m-in 
 /* 目標分頁：滑過一個目標時，底色涵蓋勾選列＋下面標記影片的小卡（整個目標一起亮） */
 .st-goals > li:has(> .st-check) { border-radius: 10px; padding-bottom: 8px; transition: background-color .16s ease; }
 .st-goals > li:has(> .st-check) .st-where { margin-bottom: 0 !important; }
-.st-goals > li:has(> .st-check):hover { background: var(--surf2); }
-.st-goals > li:has(> .st-check) .st-check:hover { background: none !important; }
-.st-goals > li:has(> .st-check):hover .st-where-b { background: var(--surf); }
+@media (hover: hover) { .st-goals > li:has(> .st-check):hover { background: var(--surf2); } }
+@media (hover: hover) { .st-goals > li:has(> .st-check) .st-check:hover { background: none !important; } }
+@media (hover: hover) { .st-goals > li:has(> .st-check):hover .st-where-b { background: var(--surf); } }
 .st-player-wrap, .st-side, #panel-lab { transition: background-color .22s ease, border-color .22s ease; }
 /* 實驗室分頁的佔位：畫在分頁內容區（分頁列下方 16px 開始），跟分頁列之間的間隔不會被底色吃掉 */
 .st-panel#panel-lab.is-loading { background: none !important; border: 0 !important; }

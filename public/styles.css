@@ -2582,12 +2582,12 @@ background: transparent !important;
    --ac fill with near-white text, it would swap the background to
    near-white on hover while the text stayed near-white too — unreadable.
    Solid-fill buttons get a brightness lift instead, further down. */
-:is(
+@media (hover: hover) { :is(
   .pill, .filter-chip, .stab, .nav-btn, .collapse-all-btn, .qa-btn, .lbtn,
   .learning-step, .chat-send-btn, .daily-focus-btn, .rc-toggle
 ):not(.on):not(.active):not(.ui-btn-primary):hover {
 background: var(--ui-hover) !important;
-}
+} }
 :is(
   .pill, .filter-chip, .stab, .nav-btn, .collapse-all-btn, .qa-btn, .lbtn,
   .learning-step, .chat-send-btn, .daily-focus-btn, .rc-toggle
@@ -2803,9 +2803,9 @@ transform: none !important;
    card itself, not on a child trigger like .rc-toggle/.uni-summary) gets the
    hover cue — .rc/.uni-card/.smart-card etc. delegate the click affordance
    to their own internal toggle instead. */
-:is(.ch-mat, .cal-cell, .calweek-block.clickable):hover {
+@media (hover: hover) { :is(.ch-mat, .cal-cell, .calweek-block.clickable):hover {
 outline-color: var(--ui-divider);
-}
+} }
 
 /* Final structural-glass override; kept last so legacy component rules cannot win. */
 :is(
@@ -3028,7 +3028,7 @@ body#appRoot :is(
   color: var(--on-ac); background: var(--ch-color, var(--ac)); text-decoration: none;
   
 }
-.ch-study-link:hover { transform: translateY(-1px); }
+@media (hover: hover) { .ch-study-link:hover { transform: translateY(-1px); } }
 
 /* ════════════════════════════════════════════════════════════════════
    Unified theme (2026/10/7) — the whole site now shares the study room's
@@ -3090,13 +3090,13 @@ body#appRoot :is(.sh, .ss) { text-shadow: none !important; }
 #appRoot .ch-video .video-series-label { min-width: 0; }
 #appRoot .ch-video-teacher { font-size: 11px; color: var(--mt); white-space: nowrap; }
 #appRoot .ch-video-pl { font-size: 11px; color: var(--mt); text-decoration: none; white-space: nowrap; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--bd); }
-#appRoot .ch-video-pl:hover { color: var(--tx); background: var(--surf2); }
+@media (hover: hover) { #appRoot .ch-video-pl:hover { color: var(--tx); background: var(--surf2); } }
 @media (max-width: 640px) {
   #appRoot .ch-video { grid-template-columns: auto auto 1fr; }
   #appRoot .ch-video-teacher, #appRoot .ch-video .mat-dur { grid-column: 3; }
 }
 #appRoot .ch-video .video-series-label { color: var(--tx); text-decoration: none; font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#appRoot .ch-video .video-series-label:hover { text-decoration: underline; text-underline-offset: 3px; }
+@media (hover: hover) { #appRoot .ch-video .video-series-label:hover { text-decoration: underline; text-underline-offset: 3px; } }
 #appRoot .ch-video.done .video-series-label { color: var(--mt); }
 
 /* 今日主任務底下：連續天數＋六科進度條 */
@@ -3111,7 +3111,7 @@ body#appRoot :is(.sh, .ss) { text-shadow: none !important; }
 .calday-hd b { font-size: 16px; color: var(--tx); }
 .calday-list { margin: 10px 0 0; padding: 0; list-style: none; display: grid; counter-reset: cd; }
 .calday-list li a { display: grid; gap: 1px; position: relative; background: var(--surf); border: 1px solid var(--bd); text-decoration: none; color: var(--tx); }
-.calday-list li a:hover { border-color: var(--ac); }
+@media (hover: hover) { .calday-list li a:hover { border-color: var(--ac); } }
 .calday-list li a::before { counter-increment: cd; content: counter(cd); position: absolute; left: 12px; top: 10px; width: 20px; height: 20px; border-radius: 50%; background: var(--surf2); font-size: 11px; font-weight: 700; display: grid; place-items: center; color: var(--mt2); }
 .calday-ch { font-size: 12px; font-weight: 700; }
 .calday-title { font-size: 14px; font-weight: 700; line-height: 1.6; }
@@ -3222,7 +3222,7 @@ body#appRoot .fab-nav .fab-btn {
   cursor: pointer;
   
 }
-body#appRoot .fab-nav .fab-btn:hover { background: var(--surf2); color: var(--tx); }
+@media (hover: hover) { body#appRoot .fab-nav .fab-btn:hover { background: var(--surf2); color: var(--tx); } }
 
 body#appRoot .fab-nav .fab-btn:focus-visible { outline: 2px solid var(--ac, #5b7a45); outline-offset: 2px; }
 /* 主要內容讓出右邊一點空間，懸浮鈕不會蓋到卡片的右上角 */
@@ -3237,7 +3237,7 @@ body#appRoot .fab-nav .fab-btn, body#appRoot .fab-nav .fab-btn.pill {
   border: 0 !important; border-radius: 50% !important; background: transparent !important; box-shadow: none !important;
   color: var(--mt) !important; transform: none !important;
 }
-body#appRoot .fab-nav .fab-btn:hover { background: color-mix(in srgb, var(--tx) 6%, transparent) !important; color: var(--tx) !important; }
+@media (hover: hover) { body#appRoot .fab-nav .fab-btn:hover { background: color-mix(in srgb, var(--tx) 6%, transparent) !important; color: var(--tx) !important; } }
 body#appRoot .fab-nav .fab-btn.on { background: var(--ac, #5b7a45) !important; color: #fff !important; }
 body#appRoot .fab-nav .fab-btn .ic { width: 18px; height: 18px; }
 
@@ -3386,7 +3386,8 @@ body#appRoot #main #sec-subjects .rec-books.rec-series .rec-books-hd {
   font-size: 14px !important; font-weight: 700 !important; letter-spacing: 0 !important; color: var(--tx) !important;
 }
 body#appRoot #main #sec-subjects .rec-books.rec-series .rec-count { font-size: 12px !important; font-weight: 400 !important; letter-spacing: 0 !important; color: var(--mt) !important; }
-body#appRoot .ch-study-link, body#appRoot .ch-study-link:hover, body#appRoot .ch-study-link:active { transform: none !important; }
+body#appRoot .ch-study-link, body#appRoot .ch-study-link:active { transform: none !important; }
+@media (hover: hover) { body#appRoot .ch-study-link:hover { transform: none !important; } }
 body#appRoot #main #sec-subjects .rec-books.rec-series .rec-books-hd { padding-bottom: 0 !important; }
 body#appRoot #main #sec-subjects .rec-series .rec-books-body > .rec-series-row:first-child { padding-top: 0 !important; }
 body#appRoot #main #sec-subjects .rec-series .rec-books-body > .rec-series-row:last-child { padding-bottom: 0 !important; }
@@ -3427,7 +3428,7 @@ body#appRoot .gs-btn {
   display: grid; place-items: center; padding: 0 !important; margin: 0 !important;
   border: 0 !important; color: var(--mt); font-size: 20px; line-height: 1; cursor: pointer; box-shadow: none !important;
 }
-body#appRoot .gs-btn:hover { background: var(--surf2) !important; color: var(--tx); }
+@media (hover: hover) { body#appRoot .gs-btn:hover { background: var(--surf2) !important; color: var(--tx); } }
 body#appRoot .gs-btn::before, body#appRoot .gs-btn::after { content: none !important; }
 body#appRoot .gs-btn.listening { background: color-mix(in srgb, #d64545 14%, var(--surf)) !important; color: #d64545; }
 body#appRoot .global-search-results { overflow-y: auto; margin: 0 !important; display: flex; flex-direction: column; }
@@ -3436,7 +3437,8 @@ body#appRoot .global-search-item {
   margin: 0 !important; border: 0 !important; background: transparent !important;
   text-align: left; text-decoration: none; color: var(--tx); font: inherit; cursor: pointer; box-shadow: none !important;
 }
-body#appRoot .global-search-item:hover, body#appRoot .global-search-item.active { background: var(--surf2) !important; }
+body#appRoot .global-search-item.active { background: var(--surf2) !important; }
+@media (hover: hover) { body#appRoot .global-search-item:hover { background: var(--surf2) !important; } }
 
 body#appRoot .global-search-empty { padding: 28px 16px !important; text-align: center; color: var(--mt); font-size: 13px; }
 @media (max-width: 640px) {
@@ -3450,7 +3452,7 @@ body#appRoot .global-search-empty { padding: 28px 16px !important; text-align: c
 body#appRoot #main #sec-subjects .rec-series .rec-book-name {
   font-size: 13px !important; font-weight: 400 !important; color: var(--mt2, var(--mt)) !important; text-decoration: none;
 }
-body#appRoot #main #sec-subjects .rec-series .rec-book-name:hover { color: var(--tx) !important; text-decoration: underline; }
+@media (hover: hover) { body#appRoot #main #sec-subjects .rec-series .rec-book-name:hover { color: var(--tx) !important; text-decoration: underline; } }
 body#appRoot #main #sec-subjects .rec-series .rec-book-note { font-size: 12px !important; color: var(--mt) !important; opacity: .8; }
 body#appRoot #main #sec-subjects .rec-series .rec-books-hd { font-size: 13px !important; color: var(--mt2, var(--mt)) !important; }
 
@@ -3467,7 +3469,8 @@ body#appRoot .gs-btn, body#appRoot .global-search-input-row .voice-input-btn {
   width: 34px !important; height: 34px !important; min-width: 34px !important; min-height: 34px !important; max-height: 34px !important;
   flex: 0 0 34px !important; aspect-ratio: 1; border-radius: 50% !important; background: transparent !important; outline: 0;
 }
-body#appRoot .gs-btn:hover, body#appRoot .gs-btn:focus-visible { background: var(--surf2) !important; }
+body#appRoot .gs-btn:focus-visible { background: var(--surf2) !important; }
+@media (hover: hover) { body#appRoot .gs-btn:hover { background: var(--surf2) !important; } }
 body#appRoot .gs-btn.listening { background: color-mix(in srgb, #d64545 14%, var(--surf)) !important; color: #d64545 !important; }
 
 /* 全站搜尋：外圍留白加大 */
@@ -3658,12 +3661,12 @@ body#appRoot :is(.cal-cell, .ch-mat, .calday-list li a, .nav-btn, .collapse-all-
   .global-search-item, .ch-study-link, .ui-btn-primary) {
   transition: background-color .16s ease, color .16s ease, border-color .16s ease, outline-color .16s ease, box-shadow .16s ease, filter .16s ease, transform .12s ease !important;
 }
-body#appRoot :is(.cal-cell, .ch-mat, .calday-list li a, .nav-btn, .collapse-all-btn, .ch-video-pl):not(.on):not(.active):not(.today):hover {
+@media (hover: hover) { body#appRoot :is(.cal-cell, .ch-mat, .calday-list li a, .nav-btn, .collapse-all-btn, .ch-video-pl):not(.on):not(.active):not(.today):hover {
   border-color: color-mix(in srgb, var(--ac) 55%, var(--bd)) !important; outline-color: transparent !important; transform: none !important;
-}
-body#appRoot :is(.nav-btn, .collapse-all-btn):hover { background: var(--surf) !important; }
-body#appRoot :is(.stab, .pill, .fab-btn, .gs-btn, .global-search-item):not(.on):not(.active):hover { background: var(--surf2) !important; color: var(--tx) !important; }
-body#appRoot :is(.ch-study-link, .ui-btn-primary):hover { filter: brightness(1.06); transform: none !important; }
+} }
+@media (hover: hover) { body#appRoot :is(.nav-btn, .collapse-all-btn):hover { background: var(--surf) !important; } }
+@media (hover: hover) { body#appRoot :is(.stab, .pill, .fab-btn, .gs-btn, .global-search-item):not(.on):not(.active):hover { background: var(--surf2) !important; color: var(--tx) !important; } }
+@media (hover: hover) { body#appRoot :is(.ch-study-link, .ui-btn-primary):hover { filter: brightness(1.06); transform: none !important; } }
 body#appRoot :is(.cal-cell, .ch-mat, .calday-list li a, .nav-btn, .collapse-all-btn, .stab, .pill, .fab-btn, .gs-btn, .ch-study-link):active { transform: scale(.97) !important; }
 @media (prefers-reduced-motion: reduce) {
   body#appRoot :is(.cal-cell, .ch-mat, .calday-list li a, .nav-btn, .collapse-all-btn, .stab, .pill, .fab-btn, .gs-btn, .ch-study-link):active { transform: none !important; }

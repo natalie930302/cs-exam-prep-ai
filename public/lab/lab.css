@@ -15,7 +15,7 @@ body {
 }
 .lab-top { display: flex; align-items: center; gap: 18px; padding: 16px 20px 8px; max-width: 1280px; margin: 0 auto; }
 .lab-back { color: var(--mt2); text-decoration: none; font-size: 13px; padding: 6px 12px; border: 1px solid var(--bd); border-radius: 999px; background: var(--surf); white-space: nowrap; }
-.lab-back:hover { border-color: var(--bd2); }
+@media (hover: hover) { .lab-back:hover { border-color: var(--bd2); } }
 .lab-kicker { font-size: 12px; font-weight: 700; color: color-mix(in srgb, var(--subj) 70%, var(--tx)); letter-spacing: .04em; }
 h1 { margin: 0; font-size: 20px; }
 .lab-tabs { display: flex; gap: 6px; padding: 8px 20px; max-width: 1280px; margin: 0 auto; overflow-x: auto; }
@@ -152,9 +152,10 @@ body.stage .lab-handson {
   font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; opacity: 0; transition: opacity .25s var(--ease), border-color .2s var(--ease);
 }
 /* stage chrome stays out of sight until the pointer is over the stage (touch: faint) */
-body.stage:hover .lab-handson { opacity: .85; }
+@media (hover: hover) { body.stage:hover .lab-handson { opacity: .85; } }
 @media (hover: none) { body.stage .lab-handson { opacity: .45; } }
-body.stage .lab-handson:hover, body.stage .lab-handson:focus-visible { opacity: 1; border-color: var(--subj, var(--bd2)); color: var(--tx); }
+body.stage .lab-handson:focus-visible { opacity: 1; border-color: var(--subj, var(--bd2)); color: var(--tx); }
+@media (hover: hover) { body.stage .lab-handson:hover { opacity: 1; border-color: var(--subj, var(--bd2)); color: var(--tx); } }
 body.stage.hands-on .lab-handson { display: none; }
 @media (max-width: 640px) {
   .lab-caption { font-size: 13px; top: 8px; left: 8px; right: auto; margin: 0; max-width: calc(100% - 96px); padding: 5px 11px 5px 9px; text-align: left; }
@@ -223,7 +224,7 @@ body.idle .lab-caption * { text-align: center !important; }
 @media (prefers-reduced-motion: reduce) { .lab-caption.swap { animation: none; } }
 /* hover 跟全站一樣：框線變科目色，.16s */
 .lab-back, body.stage .lab-handson { transition: border-color .16s ease, color .16s ease, background-color .16s ease, opacity .16s ease !important; }
-.lab-back:hover { border-color: color-mix(in srgb, var(--subj, var(--ac)) 55%, var(--bd)); }
+@media (hover: hover) { .lab-back:hover { border-color: color-mix(in srgb, var(--subj, var(--ac)) 55%, var(--bd)); } }
 
 /* ══ 2026-10-17 學習空間「實驗室」分頁（embed）：間距跟全站同一套 ══
    外框內距 16；模式按鈕之間 8；按鈕列到下面舞台 16；舞台與右側卡片之間 16；
@@ -237,7 +238,7 @@ body.embed:not(.stage) .lab-controls { gap: 8px !important; padding: 12px 16px !
 body.embed:not(.stage) .lab-card-hd { margin-bottom: 8px !important; }
 body.embed:not(.stage) .lab-formula { margin-top: 8px !important; padding: 8px 12px !important; }
 .lab-tabs button { transition: background-color .16s ease, color .16s ease, border-color .16s ease !important; }
-.lab-tabs button:not([aria-selected="true"]):hover { border-color: color-mix(in srgb, var(--subj, var(--ac)) 55%, var(--bd)); color: var(--tx); }
+@media (hover: hover) { .lab-tabs button:not([aria-selected="true"]):hover { border-color: color-mix(in srgb, var(--subj, var(--ac)) 55%, var(--bd)); color: var(--tx); } }
 body.embed:not(.stage) .lab-tabs, body.embed .lab-main { max-width: none !important; }
 /* 嵌在學習空間：外框就是載入佔位，內容載好才在框裡淡入（框本身不再進場一次） */
 body.embed:not(.stage) { background: transparent !important; }
