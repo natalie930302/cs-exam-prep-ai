@@ -3575,7 +3575,9 @@ body#appRoot .sp.on .ch-row:nth-child(15) { animation-delay: 392ms; }
 
 /* ── 六科：平板也用整齊的單欄間距（同手機）；筆電版科目列到下方 16px ── */
 @media (min-width: 641px) and (max-width: 999px) {
-  body#appRoot #main #sec-subjects .stabs { width: 100% !important; max-width: none !important; margin: 0 0 16px !important; box-sizing: border-box; display: flex !important; justify-content: space-between; }
+  body#appRoot #main #sec-subjects .stabs { width: 100% !important; max-width: none !important; margin: 0 0 16px !important; box-sizing: border-box; display: flex !important; }
+  /* 列撐滿時由按鈕變寬來填，按鈕之間維持 8px（space-between 會把空白全塞進間距） */
+  body#appRoot #main #sec-subjects .stabs > .stab { flex: 1 1 auto; }
   body#appRoot #main #sec-subjects > .sh { margin-bottom: 16px !important; }
   body#appRoot #main #sec-subjects #spPanels { margin: 0 !important; padding: 0 !important; }
   body#appRoot #main #sec-subjects #spPanels > .sp.on { display: flex !important; flex-direction: column !important; gap: 16px !important; margin: 0 !important; padding: 0 !important; }
