@@ -26,6 +26,7 @@ const subjects = site.SUBJECTS.map((s) => ({
     title: c.t,
     topics: c.sub || '',
     priority: c.pri || '',
+    week: c.wk || 0,
     videos: site.chapterDisplayMaterials(c).filter((m) => m.videoId).map((m) => ({
       id: m.videoId, title: m.text, teacher: m.series || '', duration: m.dur || '', seconds: seconds(m.dur),
     })),

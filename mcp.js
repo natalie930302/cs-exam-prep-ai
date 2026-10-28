@@ -195,6 +195,54 @@ function buildServer() {
     return json(subject ? out[0] : { subjects: out, note: '給 subject 可以看每一章' });
   });
 
+  server.registerTool('get_today_plan', {
+    title: '今天要看的影片',
+    description: '日曆排給某一天的影片（和網站日曆同一套排法：依週次、科目、章節順序，週二到週六每天 6 小時，週日休息、週一打工）。不給 date 就是今天（台灣時間）。',
+    inputSchema: { date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe('YYYY-MM-DD') },
+    annotations: READ,
+  }, async ({ date }) => {
+    const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);   // Asia/Taipei
+    date = date || today;
+    if (date < today) return fail('只能查今天以後的日子');
+    const done = await doneSet(), state = await db.getClientState();
+    // the unwatched videos in queue order, minus where each was left off (as the calendar does)
+    const queue = [], seen = new Set();
+    for (let wk = 1; wk <= 19; wk++) for (const s of course.subjects) for (const c of s.chapters) {
+      if (c.week !== wk) continue;
+      c.videos.forEach((v, vi) => {
+        if (done.has('vid-' + v.id) || seen.has(v.id)) return;
+        seen.add(v.id);
+        let pos = Number(state['yt-pos-' + v.id]) || 0;
+        if (pos < 30 || pos >= v.seconds - 30) pos = 0;
+        queue.push({ v: { ...v, subject: s.id, chapter: c.n }, s, c, vi, start: pos / 60, min: Math.max(1, (v.seconds - pos) / 60) });
+      });
+    }
+    const CAP = { 0: 0, 1: 0, 2: 6, 3: 6, 4: 6, 5: 6, 6: 6 };
+    const day = new Date(today + 'T12:00:00Z');
+    let i = 0, used = 0;
+    for (let guard = 0; guard < 800; guard++) {
+      const iso = day.toISOString().slice(0, 10), dow = day.getUTCDay();
+      let cap = CAP[dow] * 60;
+      const items = [];
+      let minutes = 0;
+      while (cap > 0 && i < queue.length) {
+        const x = queue[i], left = x.min - used, take = Math.min(left, cap), from = x.start + used;
+        items.push({ subject: x.s.name, chapter: x.c.n, chapter_title: x.c.title, video: `${x.vi + 1}/${x.c.videos.length}`,
+          id: x.v.id, title: x.v.title, teacher: x.v.teacher, duration: x.v.duration,
+          watch: (from > 0 ? `從 ${Math.round(from)} 分處接著看` : '從頭看') + (take < left ? `到 ${Math.round(from + take)} 分處，剩下的下一個讀書日看` : '到結束'),
+          link: link(x.v, from * 60) });
+        cap -= take; used += take; minutes += take;
+        if (used >= x.min) { i++; used = 0; }
+      }
+      if (iso === date) {
+        const kind = dow === 0 ? '休息日' : dow === 1 ? '打工日' : items.length ? '讀書日' : '影片都看完了：做歷屆試題';
+        return json({ date, kind, minutes: Math.round(minutes), videos: items, videos_left_in_course: queue.length });
+      }
+      day.setUTCDate(day.getUTCDate() + 1);
+    }
+    return fail('那天太遠了，排不到');
+  });
+
   server.registerTool('list_chapter_videos', {
     title: '一章的影片',
     description: '某科某章的所有影片（照上課順序）：標題、老師、長度、看完沒、學習空間連結。',
