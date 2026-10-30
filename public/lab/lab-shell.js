@@ -14,7 +14,7 @@
 // look and behave alike. ?stage=1 is the study-room mode: no chrome, one
 // caption + one formula line, scenes driven by postMessage from study.html
 // ({type:'scene', scene, params} or {type:'tour'}).
-import { THREE, createLab, colorFor } from './lab-engine.js?v=30';
+import { THREE, createLab, colorFor } from './lab-engine.js?v=31';
 
 const q = new URLSearchParams(location.search);
 const CH = (q.get('ch') || 'ds-2').replace(/[^\w-]/g, '');
@@ -112,7 +112,7 @@ function makeCtx() {
 }
 
 const ctx = makeCtx();
-const mod = await import('./chapters/' + CH + '.js?v=21');
+const mod = await import('./chapters/' + CH + '.js?v=22');
 const def = mod.default(ctx);
 const modes = def.modes || [];
 // the lab is for trying things by hand; quizzes live in the study room
@@ -182,6 +182,20 @@ async function tour(startId) {
     i = (i + 1) % order.length;
   }
 }
+// ── Arrow keys turn the camera: ↑ / ↓ look from higher / lower, ← / → walk
+// around. Inside the study room ← / → belong to the video (±5 s), so there
+// they and the other video keys are handed back to the study room. ──
+const TURN = 0.14;
+addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey || (e.target && e.target.closest && e.target.closest('input, textarea, select'))) return;
+  const embedded = parent !== window;
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); lab.orbitBy(0, e.key === 'ArrowUp' ? TURN : -TURN); }
+  else if (!embedded && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); lab.orbitBy(e.key === 'ArrowLeft' ? TURN : -TURN, 0); }
+  else if (embedded && /^( |k|ArrowLeft|ArrowRight|\[|\])$/.test(e.key)) {
+    e.preventDefault();
+    parent.postMessage({ type: 'key', key: e.key }, location.origin);
+  }
+});
 if (STAGE) {
   window.addEventListener('message', (e) => {
     if (e.origin !== location.origin || !e.data) return;
@@ -212,6 +226,8 @@ if (STAGE) {
       }, () => reply(null));
     }
     if (e.data.type === 'visible') lab.setVisible(e.data.visible);
+    // ↑ / ↓ pressed in the study room: turn the camera up / down
+    if (e.data.type === 'orbit') lab.orbitBy(+e.data.az || 0, +e.data.pol || 0);
   });
   if ($('handsOn')) $('handsOn').onclick = () => {
     stopAll();

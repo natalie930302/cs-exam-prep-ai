@@ -110,6 +110,27 @@ export default function (ctx) {
     const L = LOOPS[loop.kind];
     log('程式碼：\n' + L.code.replace(/\n/g, '  ⏎ '));
     renderLoopState(0);
+    // on the stage: the code stands behind the grid (its own plane), each row
+    // and column says which i / j it is, and a counter sits beside the grid
+    const cells = loopCells(), rows = Math.max(...cells.map((c) => c.r)) + 1, cols = Math.max(...cells.map((c) => c.c)) + 1;
+    const gx = (c) => (c - (cols - 1) / 2) * 0.9, gz = (r) => (r - (rows - 1) / 2) * 0.9;
+    const lines = L.code.split('\n'), w = Math.max(...lines.map((x) => x.length));
+    lines.forEach((t, i) => { const l = lab.label(t.padEnd(w, ' '), ''); Object.assign(l.element.style, { whiteSpace: 'pre', fontFamily: 'ui-monospace, Consolas, monospace', fontSize: '11px', fontWeight: '600' }); l.position.set(gx(cols - 1) + 1.0, 1.6 - i * 0.5, gz(0)); l.center.set(0, 0.5); lab.world.add(l); });
+    if (rows > 1) for (let r = 0; r < rows; r++) { const l = lab.label('i = ' + r, 'idx'); l.position.set(gx(0) - 0.75, 0.2, gz(r)); l.center.set(1, 0.5); lab.world.add(l); }
+    if (loop.kind === 'nested' || loop.kind === 'tri') for (let c = 0; c < cols; c++) { const l = lab.label('j = ' + c, 'idx'); l.position.set(gx(c), 0.05, gz(rows - 1) + 0.75); lab.world.add(l); }
+    loop.counter = lab.label('sum++ 執行 0 次', 'ptr alt'); loop.counter.position.set(gx(cols - 1) + 1.0, 1.6 - lines.length * 0.5 - 0.2, gz(0)); loop.counter.center.set(0, 0.5); lab.world.add(loop.counter);
+    loop.gx = gx; loop.gz = gz; loop.cells = cells;
+  }
+  // where each sum++ lands: row = i, column = j (one row for single loops)
+  function loopCells() {
+    const n = loop.n, out = [];
+    if (loop.kind === 'nested') for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) out.push({ r: i, c: j });
+    else if (loop.kind === 'tri') for (let i = 0; i < n; i++) for (let j = 0; j < i; j++) out.push({ r: i, c: j });
+    else if (loop.kind === 'double') for (let i = 1, k = 0; i < n; i *= 2, k++) out.push({ r: 0, c: k, t: 'i=' + i });
+    else if (loop.kind === 'sqrt') { let p = 0; for (let i = 1; p < n; i++) { p += i; out.push({ r: 0, c: i - 1, t: 'p=' + p }); } }
+    else for (let i = 0; i < n; i++) out.push({ r: 0, c: i });
+    if (!out.length) out.push({ r: 0, c: 0 });
+    return out;
   }
   function cellPos(i, n) {
     const cols = n;
@@ -128,11 +149,14 @@ export default function (ctx) {
     try {
       for (let k = 0; k < total; k++) {
         const m = lab.box('#4b9ee2', [0.75, 0.6, 0.75]);
-        const p = cellPos(k, Math.max(n, Math.ceil(Math.sqrt(total))));
+        const cell = loop.cells && loop.cells[k];
+        const p = cell ? new THREE.Vector3(loop.gx(cell.c), 0.35, loop.gz(cell.r)) : cellPos(k, Math.max(n, Math.ceil(Math.sqrt(total))));
+        if (cell && cell.t) m.add(lab.label(cell.t, 'val'));
         m.position.set(p.x, 7, p.z);
         const b = lab.addBody(m);
         lab.dropTo(b, p);
         loop.cubes.push(b);
+        if (loop.counter) loop.counter.element.textContent = 'sum++ 執行 ' + (k + 1) + ' 次';
         renderLoopState(k + 1);
         if (tok !== undefined) await beat(tok, delay); else await sleep(delay);
       }
@@ -552,17 +576,22 @@ export default function (ctx) {
     cube('24B', '#9b7ef4', [1.6, 1, 1.4], -4.6, 0.5, 0);
     tag('迴圈版 sum()', 'ptr', -4.6, 1.6); tag('不論 n 多大都 24 bytes', 'idx', -4.6, 0, 1.3);
     tag('遞迴版 rsum 的呼叫', 'ptr alt', 1.8, 6.9);
-    const cnt = tag('擱著的任務：0 bytes', 'ptr', 5.6, 2.6);
+    const cnt = tag('擱著的任務：0 bytes', 'ptr', 4.0, 0.3); cnt.center.set(0, 0.5);
+    let arc = null;
     say('rsum 看起來只有 list、n、回傳值：約 16 bytes', '比迴圈版的 24 bytes 還少？');
     await beat(tok, 2600);
     const frames = [];
     for (let n = 10; n >= 1; n--) {
       const k = 10 - n;
       frames.push(cube('rsum(n=' + n + ')  16B', '#4b9ee2', [3.4, 0.5, 1.4], 1.8, 0.27 + k * 0.56, 0, 3));
+      if (arc) arc.kill();
+      if (k) arc = K.flow(V3(3.55, 0.27 + (k - 1) * 0.56, 0), V3(3.55, 0.27 + k * 0.56, 0), '呼叫 rsum(' + n + ')', { lift: 0.8, bulge: V3(1, 0, 0.4), cls: 'pkt' });
+      cnt.position.y = 0.27 + k * 0.56;
       txt(cnt, '擱著的任務：' + 16 * (k + 1) + ' bytes');
       say(n === 10 ? '10 號任務要等 9 號的結果' : n + ' 號任務開始，' + (n + 1) + ' 號還擱在一邊', '同時存在 ' + (k + 1) + ' 份 × 16 bytes');
       await beat(tok, 750);
     }
+    if (arc) { arc.kill(); arc = null; }
     const base = tag('rsum(n=0) → return 0', 'ptr alt', 1.8, 6.1);
     say('解到 0 號任務前，10～1 號全都擱著', '16 × 10 = 160 bytes（約 16n）');
     await beat(tok, 2800);
@@ -571,10 +600,15 @@ export default function (ctx) {
     for (let n = 1; n <= 10; n++) {
       const prev = ret; ret += RL[n - 1];
       fly(frames.pop(), V3(3, 6, 3));
+      if (arc) { arc.kill(); arc = null; }
+      const top = frames.length;
+      if (top) arc = K.flow(V3(0.05, 0.27 + top * 0.56, 0), V3(0.05, 0.27 + (top - 1) * 0.56, 0), '回傳 ' + ret, { lift: 0.8, bulge: V3(-1, 0, 0.4), cls: 'pkt' });
+      cnt.position.y = 0.27 + Math.max(0, top - 1) * 0.56;
       txt(cnt, '擱著的任務：' + 16 * frames.length + ' bytes');
       say('rsum(' + n + ') 做完，回傳 ' + ret, prev + ' + list[' + (n - 1) + '] = ' + prev + ' + ' + RL[n - 1] + ' = ' + ret);
       await beat(tok, n === 10 ? 1800 : 520);
     }
+    if (arc) { arc.kill(); arc = null; }
     say('n 夠大時，遞迴版反而比迴圈版更耗空間', '遞迴 ≈ 16n bytes → O(n)；迴圈 24 bytes → O(1)');
     await beat(tok, 3400);
   }
@@ -618,25 +652,28 @@ export default function (ctx) {
   // ─── 0J2eLvkuF8k：遞迴、排列、效能評估、program step ───
   async function scRecKinds(tok) {
     fresh([0, 5, 14], [0, 2.6, 0]);
-    tag('Direct recursion', 'ptr', -3.4, 6.2); tag('Indirect recursion', 'ptr alt', 3.4, 6.2);
+    tag('Direct recursion', 'ptr', -3.4, 3.5); tag('Indirect recursion', 'ptr alt', 3.4, 3.5);
     tag('A() { … A(); … }', 'idx', -3.4, 0, 1.4); tag('A() { … B(); … }   B() { … A(); … }', 'idx', 3.4, 0, 1.4);
     say('演算法裡會呼叫自己的步驟 = recursive', '');
     await beat(tok, 1800);
-    const L = [], R = [];
+    const L = [], R = [], calls = [];
     for (let k = 0; k < 4; k++) {
       const last = k === 3;
       L.push(cube(last ? 'A() 停' : 'A()', last ? '#dd8238' : '#4b9ee2', [2.2, 0.6, 1.2], -3.4, 0.32 + k * 0.72, 0, 3));
+      if (k) calls.push(K.flow(V3(-2.3, 0.32 + (k - 1) * 0.72, 0), V3(-2.3, 0.32 + k * 0.72, 0), k === 1 ? '呼叫自己' : '', { lift: 0.7, bulge: V3(1, 0, 0.4) }));
       say(last ? '碰到 boundary condition：不再呼叫' : 'Direct：A 直接呼叫 A 自己', last ? 'boundary condition 成立 → return' : 'A() → A()');
       await beat(tok, 950);
     }
     for (let k = 0; k < 4; k++) {
       const last = k === 3, nm = k % 2 ? 'B()' : 'A()';
       R.push(cube(last ? nm + ' 停' : nm, last ? '#dd8238' : k % 2 ? '#9b7ef4' : '#4b9ee2', [2.2, 0.6, 1.2], 3.4, 0.32 + k * 0.72, 0, 3));
+      if (k) calls.push(K.flow(V3(4.5, 0.32 + (k - 1) * 0.72, 0), V3(4.5, 0.32 + k * 0.72, 0), k % 2 ? 'A 叫 B' : 'B 叫回 A', { lift: 0.7, bulge: V3(1, 0, 0.4) }));
       say(last ? '一樣要有 boundary condition 才會停' : 'Indirect：A 不直接叫自己，經由 B 再叫回 A', 'A() → B() → A() → B()');
       await beat(tok, 950);
     }
     say('寫遞迴的關鍵：boundary condition，確保會停', '停下來之後，一層一層返回');
     await beat(tok, 2000);
+    calls.forEach((c) => c.kill());
     for (let k = 3; k >= 0; k--) { fly(L[k], V3(-2, 6, 3)); fly(R[k], V3(2, 6, 3)); await beat(tok, 450); }
     say('Direct：自己叫自己；Indirect：繞一圈叫回來', '兩種都要 boundary condition');
     await beat(tok, 2600);
@@ -693,12 +730,16 @@ export default function (ctx) {
     const cd = code(['while (left <= right) {', '  middle = (left + right) / 2;', '  switch (COMPARE(list[middle], x)) {', '    case -1: left = middle + 1; break;', '    case  0: return middle;', '    case  1: right = middle - 1;', '  }', '}', 'return -1;'], 0, 6.6, 0.48);
     const Lp = tag('left', 'ptr', xs(0), 0, 1.7), Rp = tag('right', 'ptr', xs(9), 0, 2.4), Mp = tag('middle', 'ptr alt', xs(4), 1.4, 0);
     showL(Mp, false);
+    tag('x = 38', 'pkt', xs(9) + 1.6, 1.2, 0);
+    let cmpA = null;
     say('已排序的陣列中找 x = 38', 'left = 0、right = 9 圍出搜尋範圍');
     await beat(tok, 2400);
     let l = 0, r = 9, cmp = 0;
     while (l <= r) {
       const m = (l + r) >> 1;
       cd.hl(1); showL(Mp, true); move(Mp, xs(m), 1.4, 0); glow(cs[m], GOLD);
+      if (cmpA) cmpA.kill();
+      cmpA = K.flow(cs[m], V3(xs(9) + 1.2, 1.0, 0), A[m] + (A[m] < X ? ' < ' : A[m] > X ? ' > ' : ' = ') + '38', { lift: 1.2, cls: A[m] === X ? 'good' : 'say' });
       say('middle = (' + l + ' + ' + r + ') / 2 = ' + m, 'list[' + m + '] = ' + A[m] + '，跟 38 比');
       await beat(tok, 1400);
       cmp++;
@@ -718,6 +759,7 @@ export default function (ctx) {
       }
       await beat(tok, 1400);
     }
+    if (cmpA) { cmpA.kill(); cmpA = null; }
     cd.hl(3);
     say('遞迴版：不用 while，改成呼叫自己', 'case -1: return binsearch(list, x, middle+1, right);');
     await beat(tok, 3000);
@@ -971,11 +1013,13 @@ export default function (ctx) {
     cd.hl(1); glow(cs[0], GREEN);
     say('先假設第 0 個最小，抓在手上', 'minPos = 0（arr[0] = 7）');
     await beat(tok, 1900);
-    let m = 0;
+    let m = 0, cmp = null;
     for (let i = 1; i < MINA.length; i++) {
+      if (cmp) { cmp.kill(); cmp = null; }
       cd.hl(2); showL(ip, true); move(ip, mx(i), 1.5, 0); glow(cs[i], GOLD);
       await beat(tok, 420);
       cd.hl(3); txt(cnt, '比較 ' + i + ' 次');
+      cmp = K.flow(cs[i], cs[m], MINA[i] + ' < ' + MINA[m] + '？', { lift: 0.9, cls: MINA[i] < MINA[m] ? 'good' : 'bad' });
       if (MINA[i] < MINA[m]) {
         glow(cs[m], null); m = i; glow(cs[m], GREEN); move(mp, mx(m), 0, 1.8); cd.hl(4);
         say('arr[' + i + '] = ' + MINA[i] + ' 比較小：更新', 'minPos = ' + i);
@@ -983,6 +1027,7 @@ export default function (ctx) {
       await beat(tok, 950);
       if (i !== m) glow(cs[i], null);
     }
+    if (cmp) cmp.kill();
     cd.hl(5); showL(ip, false);
     say('回傳 5：最小值 2 在第 5 個位置', '比較了 n − 1 = 7 次');
     await beat(tok, 2600);
@@ -1064,23 +1109,31 @@ export default function (ctx) {
       await beat(tok, 1100);
     }
     cC.kill(); cP.hl(-1);
-    const A = [4, 9, 2, 6], ax = (k) => -5.2 + k * 1.1;
+    // the C version is gone: pseudocode to the middle, the array right under it
+    await anim(tok, 600, (u) => cP.ls.forEach((l) => { l.position.x = 3.4 * (1 - u); }));
+    const A = [4, 9, 2, 6], ax = (k) => -1.65 + k * 1.1;
     const cs = A.map((v, k) => { tag('[' + k + ']', 'idx', ax(k), 0, 0.9); return cube(v, '#4b9ee2', [0.9, 0.7, 0.9], ax(k), 0.35, 0, 3); });
-    const mv = tag('minPos = ?', 'ptr alt', -3.55, 2.9), iv = tag('i = ?', 'ptr', -3.55, 2.2);
+    // the pointers sit on what they point at: minPos above its cube, i below
+    const mv = tag('minPos = ?', 'ptr alt', 0, 1.25, 0.2), iv = tag('i = ?', 'ptr', 0, -0.75, 0.2);
+    const at = (l, k, y) => { l.position.set(ax(k), y, 0.2); };
+    let cmp = null;
     say('拿 A = [4, 9, 2, 6] 一行一行 trace', 'len = 4');
     await beat(tok, 1800);
     const step = async (ln, cap, f, ms = 1150) => { cP.hl(ln); say(cap, f); await beat(tok, ms); };
-    txt(mv, 'minPos = 0'); glow(cs[0], GREEN);
+    txt(mv, 'minPos = 0'); at(mv, 0, 1.25); showL(iv, false); glow(cs[0], GREEN);
     await step(1, 'minPos ← 0', 'A[0] = 4');
     let m = 0;
     for (let i = 1; i < 4; i++) {
-      txt(iv, 'i = ' + i); glow(cs[i], GOLD);
+      txt(iv, 'i = ' + i); at(iv, i, -0.75); showL(iv, true); glow(cs[i], GOLD);
       await step(2, 'for：i ← ' + i, '');
       const yes = A[i] < A[m];
+      if (cmp) cmp.kill();
+      cmp = K.flow(cs[i], cs[m], A[i] + ' < ' + A[m] + '？', { lift: 1.0, cls: yes ? 'good' : 'bad' });
       await step(3, 'A[' + i + '] < A[minPos]？', A[i] + ' < ' + A[m] + ' → ' + (yes ? '是' : '否'));
-      if (yes) { glow(cs[m], null); m = i; glow(cs[m], GREEN); txt(mv, 'minPos = ' + m); await step(4, 'minPos ← ' + i, ''); }
+      if (yes) { glow(cs[m], null); m = i; glow(cs[m], GREEN); txt(mv, 'minPos = ' + m); at(mv, m, 1.25); await step(4, 'minPos ← ' + i, ''); }
       else glow(cs[i], null);
     }
+    showL(iv, false); if (cmp) cmp.kill();
     await step(5, 'return minPos = ' + m, '最小值 ' + A[m] + ' 在位置 ' + m, 1500);
     cP.hl(-1);
     say('意圖清楚：初始化 → 跑迴圈 → 條件成立就更新', 'pseudocode 沒有嚴格語法，重點是表達意圖');
@@ -1433,20 +1486,22 @@ async function curve(tok, f, x0, x1, y0, y1, z, color, ms = 1200) {
 // 0:00 Ram 和 Shyam 的兩種質數判斷法
 FRAG.push(['cplx-bari-prime', '判斷質數：Ram 試到 n−1，Shyam 只試到 √n', async (tok) => {
   P.fresh([0, 6.5, 12], [0, 1.0, 0]);
-  let ram, shy, q, input, defs = [], rl = [], sl = [];
+  let ram, shy, q, input, defs = [], rl = [], sl = [], feeds = [];
   const lineup = (labels, x0, color) => labels.map((s, i) => cube(s, color, [0.9, 0.7, 0.9], x0 + i * 1.05, 0.35, 2.0));
   await run(tok, [
     () => { q = T('時間複雜度是什麼？為什麼重要？', 0, 3.4, -1.5); say('時間複雜度是什麼？', '先看一個例子'); },
     () => {
       ram = buddy('Ram', '', C_A, -4.2, 0, -0.6); shy = buddy('Shyam', '', C_B, 4.2, 0, -0.6);
       input = pkt('輸入 n', 0, 1.6, 0); T('作業：n 是不是質數？', 0, 2.4, -0.6);
+      // the same input goes to both of them
+      feeds = [P.flow(V3(-0.7, 1.4, 0), V3(-3.4, 0.9, -0.6), '', { lift: 0.6 }), P.flow(V3(0.7, 1.4, 0), V3(3.4, 0.9, -0.6), '', { lift: 0.6 })];
       say('同一份作業：判斷 n 是不是質數', '輸入 n → 輸出「是／不是」');
     },
     () => { kill(q); defs.push(T('7 ÷ 1 ✓　7 ÷ 7 ✓　只有這兩個', 0, 3.4, -1.5)); say('質數：剛好能被兩個數整除', '1 和它自己'); },
     () => { defs.push(note('質數：2、3、5、7、11 …', 0, 0.5, 1.6)); say('最小的質數是 2', '3、5、7、11 … 一直下去'); },
     () => { defs.push(no('1 不是質數：只有 1 一個因數', 0, 4.1, -1.5)); say('1 不是質數', '質數要剛好兩個因數'); },
     () => {
-      defs.forEach(kill); defs = [];
+      defs.forEach(kill); defs = []; feeds.forEach((f) => f.kill()); feeds = [];
       rl = lineup(['2', '3', '…', 'n−1'], -6.0, C_A); ram.look(1);
       say('Ram：用 2 一路除到 n−1', '每個 i 都試一次');
     },

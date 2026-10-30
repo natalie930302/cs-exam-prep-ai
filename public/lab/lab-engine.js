@@ -113,6 +113,9 @@ export function createLab(container) {
     bias: new THREE.Vector3(), goalBias: new THREE.Vector3(),
     // where frameCamera() last asked to look from; the camera glides there
     lookGoal: new THREE.Vector3(0, 0, 0), dirGoal: new THREE.Vector3(0, 7, 16).normalize(), distGoal: Math.hypot(7, 16),
+    // the viewer's own turn of the camera (arrow keys): kept across scenes,
+    // added on top of each scene's framing, eased toward its goal
+    az: 0, pol: 0, azGoal: 0, polGoal: 0,
   };
   controls.addEventListener('start', () => { fit.user = true; });
   const _p = new THREE.Vector3(), _q = new THREE.Vector3(), _box = new THREE.Box3(), _size = new THREE.Vector3();
@@ -203,13 +206,16 @@ export function createLab(container) {
     const dist = fit.dist * fit.scale;
     const wpp = 2 * dist * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / H;
     const spillX = cw > sw * 0.98 || r.x0 < s.x0 || r.x1 > s.x1;
+    // content sitting well below (or above) the middle reads as "the animation
+    // is too low", even when nothing is cut off: re-centre vertically too
     const spillY = ch > sh * 0.98 || r.y0 < s.y0 || r.y1 > s.y1;
+    const offY = Math.abs(oy) > sh * 0.08;
     // only re-centre when something is cut off: a lopsided layout is often
     // deliberate (room kept for what the scene adds next)
-    if (spillX || spillY) {
+    if (spillX || spillY || offY) {
       _right.setFromMatrixColumn(camera.matrixWorld, 0);
       _up.setFromMatrixColumn(camera.matrixWorld, 1);
-      const g = fit.shift.clone().addScaledVector(_right, ox * wpp).addScaledVector(_up, -oy * wpp);
+      const g = fit.shift.clone().addScaledVector(_right, spillX || spillY ? ox * wpp : 0).addScaledVector(_up, -oy * wpp);
       const lim = fit.dist * 0.45;
       if (g.length() > lim) g.setLength(lim);
       if (g.distanceTo(fit.goalShift) > fit.dist * 0.02) fit.goalShift.copy(g);
@@ -237,8 +243,32 @@ export function createLab(container) {
     fit.scale += (fit.goalScale - fit.scale) * k;
     fit.shift.lerp(fit.goalShift, k);
     fit.bias.lerp(fit.goalBias, dt >= 1 ? 1 : 1 - Math.exp(-dt * 1.1));
+    fit.az += (fit.azGoal - fit.az) * g; fit.pol += (fit.polGoal - fit.pol) * g;
     controls.target.copy(fit.look).add(fit.shift).add(fit.bias);
-    camera.position.copy(controls.target).addScaledVector(fit.dir, fit.dist * fit.scale);
+    camera.position.copy(controls.target).addScaledVector(turned(fit.dir), fit.dist * fit.scale);
+  }
+  const _sph = new THREE.Spherical(), _dir = new THREE.Vector3();
+  function turned(dir) {
+    if (!fit.az && !fit.pol) return dir;
+    _sph.setFromVector3(dir);
+    _sph.theta += fit.az;
+    _sph.phi = Math.min(controls.maxPolarAngle, Math.max(0.12, _sph.phi - fit.pol));
+    return _dir.setFromSpherical(_sph);
+  }
+  // Arrow keys: turn the camera around what it looks at (up = look from
+  // higher, left / right = walk around). With auto framing on, the turn is
+  // added to every scene's framing so content stays fitted; after the viewer
+  // has dragged the view, the camera itself is turned.
+  function orbitBy(daz, dpol) {
+    if (fit.on && !fit.user && STAGE) {
+      fit.azGoal = Math.max(-1.2, Math.min(1.2, fit.azGoal + daz));
+      fit.polGoal = Math.max(-0.9, Math.min(1.2, fit.polGoal + dpol));
+      return;
+    }
+    _sph.setFromVector3(_dir.copy(camera.position).sub(controls.target));
+    _sph.theta += daz;
+    _sph.phi = Math.min(controls.maxPolarAngle, Math.max(0.12, _sph.phi - dpol));
+    camera.position.copy(controls.target).add(_dir.setFromSpherical(_sph));
   }
   // The shadow-only ground follows the lowest block, so shadows touch the
   // objects that cast them instead of floating as grey strips far below.
@@ -267,6 +297,7 @@ export function createLab(container) {
       top.traverseVisible((o) => {
         const m = o.material;
         if (!o.isMesh || !m || Array.isArray(m) || !m.isMeshStandardMaterial || !m.color) return;
+        if (o.userData.noDim) return; // arrows showing what happens now stay as they are
         meshes.push(o);
         if (isGlowing(m)) {
           glowing++;
@@ -334,6 +365,11 @@ export function createLab(container) {
   // anchor, cx/cy where the anchor sits inside the label (0.5 = centred)
   const TR = /translate\(([-\d.e]+)%,\s*([-\d.e]+)%\)\s*translate\(([-\d.e]+)px,\s*([-\d.e]+)px\)\s*$/;
   let dcCount = 0;
+  // a label pushed away from its spot keeps a thin line back to it, so it
+  // still reads as belonging to what it describes
+  const leaders = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  leaders.setAttribute('class', 'lab-leaders');
+  labels.domElement.appendChild(leaders);
   function declutter(dt, snap = false) {
     const items = [];
     scene.traverseVisible((o) => {
@@ -378,17 +414,30 @@ export function createLab(container) {
         }
         placed.push({ x: it.x + dx, y: it.y + dy, w: (it.w || 0) * sc, h: (it.h || 0) * sc });
         const n = nudge.get(it.el) || { cx: 0, cy: 0, cs: 1, gx: 0, gy: 0, gs: 1 };
-        n.gx = dx; n.gy = dy; n.gs = sc; nudge.set(it.el, n); seen.add(it.el);
+        n.gx = dx; n.gy = dy; n.gs = sc; n.w = it.w; n.h = it.h; nudge.set(it.el, n); seen.add(it.el);
       }
       for (const el of nudge.keys()) if (!seen.has(el)) nudge.delete(el);
     }
     const k = snap ? 1 : Math.min(1, dt * 12);
+    const lines = [];
     for (const it of items) {
       const n = nudge.get(it.el);
       if (!n) continue;
       n.cx += (n.gx - n.cx) * k; n.cy += (n.gy - n.cy) * k; n.cs += (n.gs - n.cs) * k;
       if (Math.abs(n.cx) > 0.3 || Math.abs(n.cy) > 0.3) it.el.style.transform += ' translate(' + n.cx.toFixed(1) + 'px,' + n.cy.toFixed(1) + 'px)';
       if (n.cs < 0.995) it.el.style.transform += ' scale(' + n.cs.toFixed(3) + ')';
+      const far = Math.hypot(n.cx, n.cy);
+      if (far > 16 && n.w) {
+        // from the anchor to the nearest point of the moved label's box
+        const cx = it.ax + (0.5 - it.fx) * n.w + n.cx, cy = it.ay + (0.5 - it.fy) * n.h + n.cy;
+        const ex = Math.max(cx - n.w / 2, Math.min(it.ax, cx + n.w / 2)), ey = Math.max(cy - n.h / 2, Math.min(it.ay, cy + n.h / 2));
+        if (Math.hypot(ex - it.ax, ey - it.ay) > 6) lines.push('M' + it.ax.toFixed(1) + ' ' + it.ay.toFixed(1) + 'L' + ex.toFixed(1) + ' ' + ey.toFixed(1));
+      }
+    }
+    const d = lines.join('');
+    if (leaders.dataset.d !== d) {
+      leaders.dataset.d = d;
+      leaders.innerHTML = d ? '<path d="' + d + '"/>' : '';
     }
   }
 
@@ -612,7 +661,7 @@ export function createLab(container) {
       if (glide) {
         // stay where we are; applyFit() moves us toward the new goal
         controls.target.copy(fit.look).add(fit.shift).add(fit.bias);
-        camera.position.copy(controls.target).addScaledVector(fit.dir, fit.dist * fit.scale);
+        camera.position.copy(controls.target).addScaledVector(turned(fit.dir), fit.dist * fit.scale);
       } else {
         fit.look.copy(fit.lookGoal); fit.dir.copy(fit.dirGoal); fit.dist = d;
         if (fit.on && !fit.user) applyFit(0);
@@ -640,7 +689,7 @@ export function createLab(container) {
   // true once new blocks have grown in, the camera has made its first fit and
   // two more fit checks (every 8 frames) have run since, at any frame rate
   const isSettled = () => !!fit.fitted && !appears.size && fit.frame - fit.fittedFrame >= 17;
-  return { isSettled, onFrame, advance, scene, world, camera, controls, addBody, removeBody, dropTo, springTo, flyAway, clear, label, box, frameCamera, bodies, renderer, setVisible };
+  return { isSettled, orbitBy, onFrame, advance, scene, world, camera, controls, addBody, removeBody, dropTo, springTo, flyAway, clear, label, box, frameCamera, bodies, renderer, setVisible };
 }
 
 // Distinct but harmonious block colours, picked by value so the same

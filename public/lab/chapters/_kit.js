@@ -195,7 +195,61 @@ export default function kit(ctx) {
     if (label) { const l = lab.label(label, 'say'); l.position.set(0, kind === 'monitor' ? 1.8 : 1.3, 0); g.add(l); g.userData.label = l; }
     lab.world.add(g); return g;
   }
+  // ── interaction: who talks to whom, and what each thing is ──
+  const where = (o) => (o && o.isVector3 ? o.clone() : land(o).clone());
+  // half the size of o's blocks (for placing things against its edge)
+  function extent(o) {
+    if (!o || o.isVector3) return V3(0.3, 0.3, 0.3);
+    const b = new THREE.Box3().setFromObject(o);
+    if (b.isEmpty()) return V3(0.3, 0.3, 0.3);
+    return b.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+  }
+  // a curved arrow from a to b (objects or points) that rises out of the
+  // content's plane, so it never runs through the things between them; a dot
+  // keeps travelling along it (data / a message moving). text: a short label
+  // at the top of the arc. Returns { kill(), label }.
+  function flow(a, b, text, o = {}) {
+    const color = o.color || '#a8730f';
+    const p0 = where(a), p2 = where(b);
+    const dir = p2.clone().sub(p0); const len = Math.max(0.3, dir.length()); dir.normalize();
+    // bulge up and toward the viewer (or o.bulge), square to the arrow
+    const want = o.bulge ? o.bulge.clone() : V3(0, 1, 0.8);
+    const side = want.clone().addScaledVector(dir, -want.dot(dir));
+    if (side.lengthSq() < 1e-4) side.set(0, 0, 1);
+    side.normalize();
+    // start / end on the face of each block that points the way the arc
+    // bulges, so the arrow hops over instead of starting inside the block
+    const face = (x) => (x && !x.isVector3 ? Math.abs(side.x) * extent(x).x + Math.abs(side.y) * extent(x).y + Math.abs(side.z) * extent(x).z + 0.06 : 0);
+    p0.addScaledVector(side, face(a)); p2.addScaledVector(side, face(b));
+    const lift = o.lift != null ? o.lift : Math.min(2.2, 0.35 + len * 0.22);
+    const mid = p0.clone().lerp(p2, 0.5).addScaledVector(side, lift);
+    const curve = new THREE.QuadraticBezierCurve3(p0, mid, p2);
+    const g = new THREE.Group();
+    const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 32, 0.05, 8, false), mat(color, { roughness: 0.5 }));
+    tube.userData.noFit = true; g.add(tube);
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.32, 14), mat(color, { roughness: 0.5 }));
+    tip.position.copy(curve.getPoint(1)); tip.quaternion.setFromUnitVectors(V3(0, 1, 0), curve.getTangent(1).normalize()); g.add(tip);
+    const dot = ball('#fff3c4', 0.12, 0, 0, 0, { emissive: '#e0a000', emissiveIntensity: 0.6 }); dot.userData.noFit = true; g.add(dot);
+    tube.userData.noDim = tip.userData.noDim = dot.userData.noDim = true;
+    let l = null;
+    if (text) { l = lab.label(text, o.cls || 'say'); l.position.copy(curve.getPoint(0.5)).addScaledVector(side, 0.35); g.add(l); }
+    lab.world.add(g);
+    const t0 = Math.random();
+    if (lab.onFrame) lab.onFrame((dt, t) => { if (g.parent) dot.position.copy(curve.getPoint(((t * 0.55 + t0) % 1))); });
+    else dot.visible = false;
+    return { g, label: l, kill() { remove(g); } };
+  }
+  // a label right against an object's edge: side 'right' | 'left' | 'top' | 'bottom'
+  function note(text, obj, side = 'right', cls = 'note') {
+    const p = where(obj), e = extent(obj), gap = 0.18;
+    const l = lab.label(text, cls);
+    if (side === 'right') { l.position.set(p.x + e.x + gap, p.y, p.z); l.center.set(0, 0.5); }
+    else if (side === 'left') { l.position.set(p.x - e.x - gap, p.y, p.z); l.center.set(1, 0.5); }
+    else if (side === 'top') { l.position.set(p.x, p.y + e.y + gap, p.z); l.center.set(0.5, 1); }
+    else { l.position.set(p.x, p.y - e.y - gap, p.z); l.center.set(0.5, 0); }
+    lab.world.add(l); return l;
+  }
   // a gentle bob for props (things that are "alive" on screen)
   function bob(o, amp = 0.08, speed = 2) { const y0 = o.position.y, t0 = Math.random() * 6; if (lab.onFrame) lab.onFrame((dt, t) => { if (o.parent) o.position.y = y0 + Math.sin((t + t0) * speed) * amp; }); }
-  return { V3, GOLD, GREEN, RED, GRAY, MONO, fresh, tag, cube, bodyOf, move, land, fly, kill, glow, tint, txt, relabel, showL, code, anim, line, arrow, ghostBox, lnode, tnode, step, icon, rename, dim, zone, travel, remove, buddy, prop, bob };
+  return { V3, GOLD, GREEN, RED, GRAY, MONO, fresh, tag, cube, bodyOf, move, land, fly, kill, glow, tint, txt, relabel, showL, code, anim, line, arrow, ghostBox, lnode, tnode, step, icon, rename, dim, zone, travel, remove, buddy, prop, bob, flow, note };
 }

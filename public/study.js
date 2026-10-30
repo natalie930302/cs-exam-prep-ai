@@ -162,6 +162,8 @@
     if (e.data.type === 'lab-ready') { e.data.scenes.forEach(function(x){ stageScenes[x.id] = x; }); stageIsReady(); }
     if (e.data.type === 'stage-settled' && stageReady) showSide();
     if (e.data.type === 'lab-shown') $('panel-lab').classList.remove('is-loading');
+    // a video key pressed while the animation had focus: same as pressing it here
+    if (e.data.type === 'key' && e.source === $('stage').contentWindow) document.dispatchEvent(new KeyboardEvent('keydown', {key: e.data.key}));
   });
   const stageScenes = {};
   // A video can belong to several chapters; a section may name a different
@@ -386,6 +388,15 @@
   $('prevVid').onclick = function(){ if (current) playVideo(current.seriesIdx, current.idx - 1, true); };
   $('nextVid').onclick = function(){ if (current) playVideo(current.seriesIdx, current.idx + 1, true); };
 
+  // ── ↑ / ↓ turn the animation's camera (while it is on screen) ──
+  document.addEventListener('keydown', function(e){
+    const tag = (e.target && e.target.tagName) || '';
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || (e.target && e.target.isContentEditable)) return;
+    if (e.ctrlKey || e.metaKey || e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+    if (!hasStage || !stageReady || !stageOnScreen || !stageScene) return;
+    e.preventDefault();
+    $('stage').contentWindow.postMessage({type: 'orbit', pol: e.key === 'ArrowUp' ? 0.14 : -0.14}, location.origin);
+  });
   // ── Keyboard: space play/pause, ←/→ 5 s, [ / ] previous / next part ──
   // (not while typing, and not while a quiz card waits for an answer)
   document.addEventListener('keydown', function(e){
