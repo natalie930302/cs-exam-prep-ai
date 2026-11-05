@@ -17,3 +17,4 @@ public/vendor/
 .vercel/
 .env*
 tools/autostart/cloud-url.txt
+public/lessons/audio/

@@ -1,0 +1,5851 @@
+{
+ "chapter": "ds-5",
+ "title": "Heap 與 Priority Queue",
+ "intro": "從「誰最急先處理」的 priority queue 出發，一步步設計出 heap：用陣列存 complete binary tree、insert 和 delete 怎麼調整、O(n) 建 heap、heap sort，再比較各種實作，最後補上 tree traversal。",
+ "parts": [
+  {
+   "title": "從 queue 到 priority queue",
+   "scene": "heapur-recap",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "好，我們先退一步看：array 和 list 的資料一個接一個排好，這叫 explicit linear ordering。",
+     "k": 1,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 58.1
+     }
+    },
+    {
+     "say": "底層完全不變，只在上面加一些使用規則，就變出新的資料結構。",
+     "k": 2,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 73.9
+     }
+    },
+    {
+     "say": "stack 是 LIFO：只能從 top 放、從 top 拿，像一疊盤子。",
+     "k": 3,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 86.5
+     }
+    },
+    {
+     "say": "queue 是 FIFO：一邊進、另一邊出，像排隊。違反規則，就等於沒在用這個資料結構。",
+     "k": 4,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 92.4
+     }
+    },
+    {
+     "say": "tree 就不一樣了，順序不是擺在眼前，要看你用哪種 traversal 去走，這叫 implicit。",
+     "k": 5,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 115.2
+     }
+    },
+    {
+     "say": "search tree 的操作是 O(h)：平衡的 AVL 是 O(log n)，一般 BST 長歪了最差是 O(n)。",
+     "read": "search tree 的操作是大O h：平衡的 AVL 是大O log n，一般 BST 長歪了最差是大O n。",
+     "k": 6,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 152.1
+     }
+    },
+    {
+     "say": "而且在 search tree 裡要找最小值，得從 root 一路往左走到底。",
+     "k": 6
+    },
+    {
+     "say": "今天的目標：整體效能維持 log n，但「拿出最優先的那個」要變成常數時間。",
+     "k": 7,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 172.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "不是先來先服務：priority",
+   "scene": "heapur-pq-line",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "一般 queue 是先來先服務，就像在加油站排隊加油。",
+     "k": 1,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 188.6
+     }
+    },
+    {
+     "say": "可是很多事不能只看先來後到，要看誰比較急，這就是 priority，優先權。",
+     "k": 2,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 222.6
+     }
+    },
+    {
+     "say": "想像一排車塞在路上，後面來了一輛救護車。",
+     "k": 3,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 243.1
+     }
+    },
+    {
+     "say": "大家會讓救護車先過。這種情況下，「插隊」反而是對的。",
+     "k": 4,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 261.8
+     }
+    },
+    {
+     "say": "做法是幫每個元素加一個權重，用它表示這個元素有多優先。",
+     "k": 5,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 272.7
+     }
+    },
+    {
+     "say": "常見慣例是用數字：0 最優先，1 次之，再來是 2、3。",
+     "k": 6,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 320.4
+     }
+    },
+    {
+     "say": "也就是「數字越大，priority 越低」。反過來定也行，自己講清楚就好。",
+     "k": 7,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 342.1
+     }
+    },
+    {
+     "say": "所以 priority queue 的 top 不是最早來的，而是 priority 最高的那個。",
+     "k": 9,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 355.9
+     }
+    },
+    {
+     "say": "插入也一樣：新來的照自己的 priority 站到該站的位置，不是一律排最後面。",
+     "k": 10,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 369
+     }
+    }
+   ]
+  },
+  {
+   "title": "數字本身就是 priority",
+   "scene": "heaphq-pq-priority",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "Abdul Bari 老師也從一般 queue 講起：先來先出，叫 FIFO。",
+     "k": 1,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2822
+     }
+    },
+    {
+     "say": "priority queue 不照先來後到，插入、刪除都看 priority。",
+     "k": 2,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2826.6
+     }
+    },
+    {
+     "say": "刪除的時候，一定拿 priority 最高的那個出來。",
+     "k": 3,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2838.8
+     }
+    },
+    {
+     "say": "他的例子更單純：數字本身就是 priority，8 的 priority 就是 8。",
+     "k": 4,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2855.8
+     }
+    },
+    {
+     "say": "他特別提醒，作業系統裡也有 priority queue，但這裡講的主要用在演算法上。",
+     "k": 5,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2866.8
+     }
+    },
+    {
+     "say": "規則一：數字越小越優先。那 3 最先被刪，再來 6、8。",
+     "k": 6,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2888.8
+     }
+    },
+    {
+     "say": "規則二：數字越大越優先，順序就變成 10、9、8。",
+     "k": 7,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2907.8
+     }
+    },
+    {
+     "say": "兩種都可以，事先說好就行。考試也一樣，先看題目定義的是 min 還是 max。",
+     "k": 8,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2921.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "node 拆成 key 和 data",
+   "scene": "heaplin-key-data",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "林軒田老師換個角度，從需求出發。以前的 node 是 data，加上兩張指向左右的小紙條。",
+     "k": 1,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 3740.1
+     }
+    },
+    {
+     "say": "現在把 data 切一塊出來，叫 key，中文是「檢索鍵」，專門拿來比較和尋找。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 3798.8
+     }
+    },
+    {
+     "say": "在樹裡找東西、把資料整理好，靠的都是 key。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 3818.8
+     }
+    },
+    {
+     "say": "像你的筆記：每頁內容是 data，頁碼是 key，要找哪段就照頁碼翻。",
+     "k": 5,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 3852.8
+     }
+    },
+    {
+     "say": "圖書館也是：書本身是 data，書上的條碼、ID 就是 key。",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 3865.4
+     }
+    },
+    {
+     "say": "很多操作只看 key；data 甚至可以只是一張紙條，指到外面真正存資料的地方。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 3910.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "待辦清單：每次拿最重要的",
+   "scene": "heaplin-todo-pq",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "具體一點：key 表示 priority，data 表示 to-do，也就是要做的事。",
+     "k": 2,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 3950.5
+     }
+    },
+    {
+     "say": "例如 DSA 作業3、DSA Final Project、微積分作業，每件貼一個重要性。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 3985.6
+     }
+    },
+    {
+     "say": "有空就挑最重要的趕快做掉，再找第二重要的。所以「很快找到最大」是關鍵。",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4097.9
+     }
+    },
+    {
+     "say": "林老師自嘲，他的待辦清單就是他的信箱，裡面三百多封信。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4131.9
+     }
+    },
+    {
+     "say": "可是他的信箱其實是 stack：有空就從最上面、最後進來那封開始回，不是最重要的先。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4155.2
+     }
+    },
+    {
+     "say": "有同學問：那不重要的不就一直被壓在下面？老師說，那就是讓它的 priority 自然降低。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5898.6
+     }
+    },
+    {
+     "say": "能輕易找到「最重要的是哪一件」的資料結構，就叫 priority queue。",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4184.7
+     }
+    },
+    {
+     "say": "欸，以前學的 queue 其實是它的特例：越早進去的 priority 越大，所以先進先出。",
+     "k": 10,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4196.1
+     }
+    },
+    {
+     "say": "priority queue 更一般：放進去時可以給任何 key，拿的時候挑最大的那個。",
+     "k": 11,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4224.1
+     }
+    },
+    {
+     "say": "拿東西的方式完全不同：不靠 index、不靠 pointer、也不靠進來的先後，只看 key。",
+     "k": 12,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4238
+     }
+    }
+   ]
+  },
+  {
+   "title": "多層 priority：ordered pair",
+   "scene": "heapur-pairs",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "有時候一個數字分不出先後。投影片上每個元素是一對數字，像 (5,19)、(13,1)，叫 ordered pair。",
+     "read": "有時候一個數字分不出先後。投影片上每個元素是一對數字，像 5 19、13 1，叫 ordered pair。",
+     "k": 1,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 408
+     }
+    },
+    {
+     "say": "第一個數是第一層 priority，第二個數是第二層 priority。",
+     "k": 2,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 416.2
+     }
+    },
+    {
+     "say": "老師舉例：先看是不是長者；長者裡面，生病的人再更優先，一層一層往下細分。",
+     "k": 3,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 437.8
+     }
+    },
+    {
+     "say": "規則還是：數字越小越優先。",
+     "k": 4,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 450.8
+     }
+    },
+    {
+     "say": "先比第一個數：5 < 13，所以 (5,19) 比 (13,1) 優先，後面的 19 根本不用看。",
+     "read": "先比第一個數：5 小於 13，所以 5 19 比 13 1 優先，後面的 19 根本不用看。",
+     "k": 5,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 456
+     }
+    },
+    {
+     "say": "第一個數一樣才比第二個：13 = 13，再比 1 < 24，所以 (13,1) 在 (13,24) 前面。",
+     "read": "第一個數一樣才比第二個：13 等於 13，再比 1 小於 24，所以 13 1 在 13 24 前面。",
+     "k": 6,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 459
+     }
+    },
+    {
+     "say": "那 (13,24) 和 (15,0) 呢？13 已經贏了，0 不用看。這種比法叫字典序，lexicographic。",
+     "read": "那 13 24 和 15 0 呢？13 已經贏了，0 不用看。這種比法叫字典序，lexicographic。",
+     "k": 7,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 463.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "作業系統怎麼排工作",
+   "scene": "heapur-cpu-sched",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "最常見的應用是作業系統。Windows 的工作管理員可以幫程式設 priority：realtime、high、normal、low。",
+     "k": 1,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 474.3
+     }
+    },
+    {
+     "say": "系統工作的 priority 很高，像更新系統時鐘，priority 是 0，最急。",
+     "k": 3,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 526
+     }
+    },
+    {
+     "say": "你點滑鼠要顯示的反應比較低，這裡設成 2。所以 CPU 會先顧時鐘。",
+     "k": 4,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 533.8
+     }
+    },
+    {
+     "say": "為什麼需要 priority？因為核心就那幾個，工作卻一大堆。",
+     "k": 6,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 540.9
+     }
+    },
+    {
+     "say": "簡化一下，假設只有一個單核處理器，一次只能做一件事。",
+     "k": 7,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 549.7
+     }
+    },
+    {
+     "say": "那為什麼感覺很多事同時在跑？因為 time slicing：一點時間給這個、一點給那個，切得很快。",
+     "k": 9,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 560.2
+     }
+    },
+    {
+     "say": "所以你按鍵叫開始選單時，如果 refresh 這種 critical 的工作排在前面，選單就晚一點出來。",
+     "k": 11,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 611
+     }
+    },
+    {
+     "say": "一個服務者、很多請求者，就需要 scheduling。處理器裡負責這件事的，就是 priority queue。",
+     "k": 12,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 621.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "等待區就是 priority queue",
+   "scene": "heaplin-os-sched",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "林老師也拿作業系統來講，但他先問：「拿出 key 最大的」要怎麼做得快？",
+     "k": 1,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4261.2
+     }
+    },
+    {
+     "say": "不在乎快的話很簡單，sequential search 一個一個找，但每次都要全部看一遍。",
+     "k": 2,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4273.7
+     }
+    },
+    {
+     "say": "或者用 ordered array，依 key 排好，最大的就在最後一格。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4283.6
+     }
+    },
+    {
+     "say": "問題是排序本身可能要花太大力氣，先不考慮。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4297.9
+     }
+    },
+    {
+     "say": "注意需求不是只找一次，而是整理好以後要「多次」取用。",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4359.8
+     }
+    },
+    {
+     "say": "取用包括：找到最大的、拿出來處理、放新的進去，而且全程都要維持某種性質。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4387.6
+     }
+    },
+    {
+     "say": "核心空出來時，作業系統要從等待的工作裡，挑一個最需要 CPU 的抓去執行。",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4462.2
+     }
+    },
+    {
+     "say": "時間到了還沒做完，就放回等待區，重新給它一個 priority。",
+     "k": 10,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4477.3
+     }
+    },
+    {
+     "say": "這個等待區，就是我們要的 priority queue。",
+     "k": 11,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4500.9
+     }
+    },
+    {
+     "say": "而且等越久的 priority 要調高，不然有 process 一直輪不到，會餓死，叫 starvation。",
+     "k": 12,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4541.6
+     }
+    },
+    {
+     "say": "林老師說：假設世界上還沒人設計過，我們就自己從頭來。不過先把要做的操作列清楚。",
+     "k": 13,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4577.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "priority queue 要提供的操作",
+   "scene": "heapb-pq-ops",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "MIT 的老師說，heap 是最可愛的小資料結構之一，就是拿來實作 priority queue。",
+     "k": 1,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 22.2
+     }
+    },
+    {
+     "say": "它還能做出一個排序法 heap sort，跟 insertion sort、merge sort 很不一樣。",
+     "k": 2,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 35.1
+     }
+    },
+    {
+     "say": "priority queue 管理一個集合 S，裡面每個元素都帶一個 key。",
+     "k": 3,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 71.4
+     }
+    },
+    {
+     "say": "key 就是優先程度，在 MIT 這堂課裡，數字越大越優先。",
+     "k": 4,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 88.1
+     }
+    },
+    {
+     "say": "每個操作都要快，而「快」是用 O(n) 還是 O(log n) 來衡量。",
+     "read": "每個操作都要快，而「快」是用大O n 還是大O log n 來衡量。",
+     "k": 6,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 137.1
+     }
+    },
+    {
+     "say": "insert(S, x)：把元素 x 放進集合 S。",
+     "read": "insert S x：把元素 x 放進集合 S。",
+     "k": 8,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 211.3
+     }
+    },
+    {
+     "say": "max(S)：回傳 key 最大的元素，但不拿掉它。",
+     "read": "max S：回傳 key 最大的元素，但不拿掉它。",
+     "k": 9,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 226.7
+     }
+    },
+    {
+     "say": "extract_max(S)：回傳最大的，並把它移除，像排第一的人服務完就離開。",
+     "read": "extract max S：回傳最大的，並把它移除，像排第一的人服務完就離開。",
+     "k": 10,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 246.5
+     }
+    },
+    {
+     "say": "increase_key(S, x, k)：把 x 的 key 提高成 k。也可以有 decrease_key。",
+     "read": "increase key S x k：把 x 的 key 提高成 k。也可以有 decrease key。",
+     "k": 11,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 296.6
+     }
+    },
+    {
+     "say": "關鍵在於 heap 要一直維持某個性質，叫 rep invariant，這些操作才會快。",
+     "k": 12,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 346.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "最直接的做法：每個 priority 一條 queue",
+   "scene": "heapur-mqueues",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "先看最直接的做法：假設 priority 只有 4 種，那就開 4 條 queue。",
+     "k": 1,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 653
+     }
+    },
+    {
+     "say": "老師按年齡分：小於 10 歲、10 到 20、20 到 30、30 歲以上，各一條。",
+     "k": 3,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 692.8
+     }
+    },
+    {
+     "say": "同一條裡照到達順序排，像 A、B、C 依序進來，都排在第 1 條。",
+     "k": 4,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 739.2
+     }
+    },
+    {
+     "say": "這時來了一個不到 10 歲的 E，他排進第 0 條，也就是最優先的那條。",
+     "k": 5,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 745.8
+     }
+    },
+    {
+     "say": "pop 從最高的那條開始拿：第 0 條有人，所以 E 先出去。",
+     "k": 6,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 756.9
+     }
+    },
+    {
+     "say": "第 0 條空了，才換第 1 條：A 出去，B、C 往前遞補。",
+     "k": 7,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 773.3
+     }
+    },
+    {
+     "say": "有 M 種 priority，就開大小 M 的 array，每格存一條 queue 的指標，叫 array of pointers。",
+     "k": 8,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 806.9
+     }
+    },
+    {
+     "say": "push 很快：直接接到自己那條的尾巴，Θ(1)。",
+     "read": "push 很快：直接接到自己那條的尾巴，Theta 1。",
+     "k": 10,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 833.6
+     }
+    },
+    {
+     "say": "top 和 pop 最差要一條一條找到非空的，最多看 M 條，所以是 O(M)。",
+     "read": "top 和 pop 最差要一條一條找到非空的，最多看 M 條，所以是大O M。",
+     "k": 11,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 838.4
+     }
+    },
+    {
+     "say": "記憶體要放 M 條 queue 加上 n 個元素，是 Θ(M + n)。",
+     "read": "記憶體要放 M 條 queue 加上 n 個元素，是 Theta M 加 n。",
+     "k": 12,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 852.7
+     }
+    },
+    {
+     "say": "最大的缺點是 priority 只能用事先定好那幾種。priority 是任意數字時，就要用 heap。",
+     "k": 13,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 857.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "第一版設計：最大的放 root",
+   "scene": "heaplin-root-only",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "好，回到林老師的設計。需求是：最大 key 的那個要能很快找到。",
+     "k": 1,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4620.1
+     }
+    },
+    {
+     "say": "在樹裡，你最先碰到的是誰？root。",
+     "k": 2,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4660.3
+     }
+    },
+    {
+     "say": "那就把最大的直接放 root，其他地方不管。例子的 root 放 14。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4676.3
+     }
+    },
+    {
+     "say": "其他位置隨便放：6、8、12、5、9。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4742.4
+     }
+    },
+    {
+     "say": "你可能興沖沖跟同學說：我發明了新資料結構，最大的永遠在最上面，我真是天才！",
+     "k": 5,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4816.6
+     }
+    },
+    {
+     "say": "如果只是常常「看」最大的是誰，每次都是 14，確實很快。",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4851.9
+     }
+    },
+    {
+     "say": "可是 priority queue 還要把 14 拿走。拿走之後呢？",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4867.8
+     }
+    },
+    {
+     "say": "群龍無首。其他地方沒有任何規則，只好把剩下的 node 一個一個找過。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4877.8
+     }
+    },
+    {
+     "say": "找完才發現，最大的 12 躲在最下面。",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4924.4
+     }
+    },
+    {
+     "say": "這就像 selection sort：每一輪都要整個重掃一次，才知道下一個最大的在哪。",
+     "k": 10,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 4972.9
+     }
+    },
+    {
+     "say": "所以第二個需求來了：最大的被拿走時，怎麼很快找到繼承人？",
+     "k": 12,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5032.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Binary Max Tree：每棵 subtree 也是最大在上",
+   "scene": "heaplin-maxtree-def",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "林老師的比喻：最大的放 root，就像黨主席。難的是主席辭職時，誰來接？",
+     "k": 1,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5052.8
+     }
+    },
+    {
+     "say": "binary tree 除了 root 還有兩棵 subtree，我們不想每次都鑽進去找半天。",
+     "k": 2,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5069.2
+     }
+    },
+    {
+     "say": "那乾脆每棵 subtree 的最上面，也放那棵裡最大的：左邊 9、右邊 12。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5094.6
+     }
+    },
+    {
+     "say": "就像兩個副主席，各自把底下的派系管好，而且他們就是派系裡最大的。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5118.9
+     }
+    },
+    {
+     "say": "主席一走，兩個副主席打一架、比大小，馬上知道誰補上來。",
+     "k": 5,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5162.9
+     }
+    },
+    {
+     "say": "這個設計有名字，叫 Binary Max Tree。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5259.7
+     }
+    },
+    {
+     "say": "條件一：root 的 key 大於或等於其他所有 node 的 key。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5274
+     }
+    },
+    {
+     "say": "條件二：每一棵 subtree 也都是 Binary Max Tree，這是遞迴的定義。",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5316.2
+     }
+    },
+    {
+     "say": "遞迴停在單一個 leaf：底下沒有別人，它自己就是最大的。",
+     "k": 10,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5358.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Max Tree 的 remove largest",
+   "scene": "heaplin-maxtree-remove",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "檢查一下例子：root 的 14 比其他都大。",
+     "k": 1,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5425.4
+     }
+    },
+    {
+     "say": "左邊 9 底下有 4，右邊 12 底下有 8、5，每棵 subtree 也都成立。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5458.1
+     }
+    },
+    {
+     "say": "要找最大，直接看 root，不用去別的地方。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5486
+     }
+    },
+    {
+     "say": "麻煩的是 remove largest。14 拿掉了，誰來選新主席？",
+     "k": 5,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5509.5
+     }
+    },
+    {
+     "say": "9 和 12 打一架，12 贏，12 當新的 root。",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5531.9
+     }
+    },
+    {
+     "say": "還沒完：12 原本的位置空了。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5553.6
+     }
+    },
+    {
+     "say": "依樣畫葫蘆：8 和 5 打一架，8 上去補位。8 原本是 leaf，空了就空了。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5596.2
+     }
+    },
+    {
+     "say": "你想想看，這樣為什麼沒問題？8 打贏 5，壓得住 5；12 打贏 9，又是它那派最大的。",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5624.4
+     }
+    },
+    {
+     "say": "再 remove 12：這次 9 和 8 打，9 贏，9 補到 root。",
+     "k": 10,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5681.6
+     }
+    },
+    {
+     "say": "9 的位置空了，底下只有 4，沒有對手，4 直接上來。",
+     "k": 11,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5703.5
+     }
+    },
+    {
+     "say": "原則一句話：replace with larger of sub-roots, recursively。",
+     "k": 12,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5732.6
+     }
+    },
+    {
+     "say": "所以用它做 priority queue：找最大很快，拿走以後補位也很快。",
+     "k": 13,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5786.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "規則與效率：只走一條路",
+   "scene": "heaplin-rule-path",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "林老師強調，這種結構的重點不是資料多少，而是 key 加上規則。",
+     "k": 1,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 5989.5
+     }
+    },
+    {
+     "say": "array 加上「照大小排好」的規則，就是 ordered array。",
+     "k": 2,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 6015.4
+     }
+    },
+    {
+     "say": "tree 加上「大的放上面」的規則，就是 binary max tree。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 6028
+     }
+    },
+    {
+     "say": "規則跟效率常常相反。像整理房間：越整理越好找，但整理也花時間。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 6071.3
+     }
+    },
+    {
+     "say": "所以問題是：加了規則，維護它能不能不要來來回回整理半天？",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 6106.8
+     }
+    },
+    {
+     "say": "看剛才的 remove：只沿一條 root 到 leaf 的路走，14、12、8，別條路都不用看。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 6141.3
+     }
+    },
+    {
+     "say": "所以速度只跟樹高 h 有關，跟 node 的數量沒那麼大關係。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 6167.5
+     }
+    },
+    {
+     "say": "有同學問了個好問題：那 insert 呢？",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 6193.6
+     }
+    },
+    {
+     "say": "老師先破梗：成功的領導人都從基層做起。新來的不知道大不大，先放到 leaf。",
+     "k": 10,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 6218.7
+     }
+    },
+    {
+     "say": "然後跟兄弟、爸爸三個打一架，大的坐上面，小的下去。",
+     "k": 11,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 6277.7
+     }
+    },
+    {
+     "say": "就這樣一路往上爬，像小魚逆流而上，也只走一條路，所以 insert 也是 O(h)。",
+     "read": "就這樣一路往上爬，像小魚逆流而上，也只走一條路，所以 insert 也是大O h。",
+     "k": 12,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 6303.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "反過來：min-heap 的定義",
+   "scene": "heapur-minheap-def",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "同樣的想法反過來，就是 min-heap。Renzym 的老師說，heap 字面上就是「一堆東西」。",
+     "k": 1,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 874.5
+     }
+    },
+    {
+     "say": "heap 有很多種，這裡只講 binary heap，而且 priority 的種類不用事先固定。",
+     "k": 2,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 892.7
+     }
+    },
+    {
+     "say": "定義：root 的 key 小於或等於左右子樹的所有 key，而且左右子樹本身也是 min-heap。",
+     "k": 4,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1075.5
+     }
+    },
+    {
+     "say": "只有一個 node 的樹也算，它自己就是最小的。",
+     "k": 6,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1118.8
+     }
+    },
+    {
+     "say": "重點中的重點：除了 parent 比孩子小，沒有任何其他規則。這是最常搞錯的地方。",
+     "k": 7,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1130.4
+     }
+    },
+    {
+     "say": "它不像 BST 規定右邊比較大。9 在左、99 在右，對調也還是 heap。",
+     "k": 8,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1156.8
+     }
+    },
+    {
+     "say": "看例子：3 比 7、12 小；7 比 9、99 小；9 比 33、19 小。每一對上下都成立。",
+     "k": 10,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1191.2
+     }
+    },
+    {
+     "say": "那同一層的 33、19、32、58 呢？誰大誰小？",
+     "k": 11,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1195.8
+     }
+    },
+    {
+     "say": "答案是：彼此沒有任何關係，33 比 19 大完全沒問題。",
+     "k": 12,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1200.1
+     }
+    },
+    {
+     "say": "所以 min-heap 的 root 一定是整棵樹的最小值，這裡是 3。",
+     "k": 14,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1212.9
+     }
+    },
+    {
+     "say": "數字越小越優先，所以最優先的剛好就在最上面。",
+     "k": 15,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1218.4
+     }
+    },
+    {
+     "say": "處理器只在乎最上面那個：拿最急的去做，做完再拿下一個。",
+     "k": 16,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1224.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "top 與 pop：孩子一層層補上",
+   "scene": "heapur-pop-hole",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "top 只是看一眼 root，不管 heap 多大，都是 O(1)。",
+     "read": "top 只是看一眼 root，不管 heap 多大，都是大O 1。",
+     "k": 2,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1521.2
+     }
+    },
+    {
+     "say": "pop 就要真的把 3 拿走，root 空了。",
+     "k": 3,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1550.1
+     }
+    },
+    {
+     "say": "誰來補？看空位底下的兩個孩子 7 和 12，誰比較小。",
+     "k": 4,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1570.3
+     }
+    },
+    {
+     "say": "7 比較小，7 往上補，7 原本的位置又空了。",
+     "k": 5,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1574.1
+     }
+    },
+    {
+     "say": "再看底下的 9 和 99，9 小，9 往上。",
+     "k": 6,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1582.3
+     }
+    },
+    {
+     "say": "規則就這樣：每次看空位底下兩個孩子，小的往上。",
+     "k": 7,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1629.6
+     }
+    },
+    {
+     "say": "再往下，33 和 19 比，19 小，所以是 19 上去，不是 33。",
+     "k": 8,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1668.9
+     }
+    },
+    {
+     "say": "老師說，一次只走一層，不能從四樓直接跳上去，又不是 Mario 在跳。",
+     "k": 9,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1682.2
+     }
+    },
+    {
+     "say": "注意：最後那個洞跑到了樹的最底下。",
+     "k": 10,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1708.6
+     }
+    },
+    {
+     "say": "再 pop 一次拿走 7：9 上、19 上、33 上，36 留在原地。",
+     "k": 11,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1730.5
+     }
+    },
+    {
+     "say": "你看，樹的形狀越來越不整齊了。",
+     "k": 12,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1760.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "push：放在葉子往上浮",
+   "scene": "heapur-push-17",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "那 push 呢？",
+     "k": 1,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1768.4
+     }
+    },
+    {
+     "say": "先把新元素放在某個 leaf 的位置。",
+     "k": 2,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1784.7
+     }
+    },
+    {
+     "say": "例如插入 17，老師說位置是隨便挑的，這裡放在 88 底下。17 比 88 小，往上換。",
+     "k": 3,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1790.9
+     }
+    },
+    {
+     "say": "17 也比 31 小，再換；但它沒有比 12 小，就停在 12 底下。",
+     "k": 4,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1819.2
+     }
+    },
+    {
+     "say": "這個動作叫 percolation：輕的往上浮，像氣泡在水裡往上冒。",
+     "k": 5,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1844.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "樹會變歪，改用 complete tree",
+   "scene": "heapur-why-complete",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "同學馬上指出問題：位置是亂選的，pop 又在底下留洞，樹會越來越歪。",
+     "k": 1,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1875
+     }
+    },
+    {
+     "say": "結果一棵子樹還是每層全滿，另一棵卻缺一大塊，高度不再保證是 log n。",
+     "k": 2,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1929.9
+     }
+    },
+    {
+     "say": "解法：改存成 complete tree，由上到下、由左到右填，下一個位置永遠只有一個。",
+     "k": 3,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1955.1
+     }
+    },
+    {
+     "say": "這樣高度就合乎 AVL 的平衡要求。但它仍然不是 search tree，左右沒有大小順序。",
+     "k": 4,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 1982
+     }
+    }
+   ]
+  },
+  {
+   "title": "最糟的情況：歪成一條線",
+   "scene": "heaplin-skewed",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "林老師也走到同一個問題。回顧一下：找最大看 root；",
+     "k": 1,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7045.6
+     }
+    },
+    {
+     "say": "移掉最大的，只要沿一條 root 到 leaf 的路，「打架上去、打架上去」。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7066.1
+     }
+    },
+    {
+     "say": "所以最多花樹高 h 那麼多時間。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7089
+     }
+    },
+    {
+     "say": "運氣不好走到最長的路就花 h，運氣好就少一點，但最多就是 h。",
+     "k": 5,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7116.1
+     }
+    },
+    {
+     "say": "那 h 最壞會多大？樹長得歪歪斜斜的時候。",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7156.3
+     }
+    },
+    {
+     "say": "這樣的樹跟 linked list 沒兩樣，h 等於 n。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7175.2
+     }
+    },
+    {
+     "say": "例如 50、49、46、44、21、17、5、3 串成一條，它也是 binary max tree。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7205.1
+     }
+    },
+    {
+     "say": "remove 50 看起來很簡單，不用打架，49 直接上去。",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7218.9
+     }
+    },
+    {
+     "say": "可是接著 46、44、21……每一個都要往上移一格。",
+     "read": "可是接著 46、44、21，每一個都要往上移一格。",
+     "k": 10,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7230.3
+     }
+    },
+    {
+     "say": "有沒有很眼熟？就像在 ordered array 刪掉第一個，後面全部往前移。",
+     "k": 11,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7250.1
+     }
+    },
+    {
+     "say": "最糟要 O(n)，這不太好。",
+     "read": "最糟要大O n，這不太好。",
+     "k": 12,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7260.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "要 h = log n：full 不實際，用 complete",
+   "scene": "heaplin-full-vs-complete",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "所以要讓樹開枝散葉，h 不要跟 n 成線性關係。",
+     "k": 1,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7274.3
+     }
+    },
+    {
+     "say": "15 個 node，最好可以只用幾層？",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7305.5
+     }
+    },
+    {
+     "say": "1 + 2 + 4 + 8 = 15，四層剛好。這就是 h = log n 的最好情況。",
+     "read": "1 加 2 加 4 加 8 等於 15，四層剛好。這就是 h 等於 log n 的最好情況。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7318.3
+     }
+    },
+    {
+     "say": "我們學過、高度大約 log n 的樹有兩種：full 和 complete。",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7341.6
+     }
+    },
+    {
+     "say": "full 每一層都長滿；complete 可以想成 full 的前幾個 node。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7351.6
+     }
+    },
+    {
+     "say": "但 full 不實際：node 數只能是 1、3、7、15……",
+     "read": "但 full 不實際：node 數只能是 1、3、7、15，這幾種。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7373.4
+     }
+    },
+    {
+     "say": "待辦有 13 件呢？沒有任何一棵 full binary tree 剛好 13 個 node。",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7393
+     }
+    },
+    {
+     "say": "所以用 complete binary tree：13 個也放得下，高度還是 log n 級。",
+     "k": 10,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7405.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "用陣列存 binary tree",
+   "scene": "heaphq-array-rep",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "那 complete tree 怎麼存？先看 Bari 老師怎麼用陣列存一棵 binary tree，節點是 A 到 G。",
+     "k": 1,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 151.8
+     }
+    },
+    {
+     "say": "寫程式時陣列從 0 開始，但講樹時習慣從 1 開始，公式比較漂亮，所以 [0] 不用。",
+     "read": "寫程式時陣列從 0 開始，但講樹時習慣從 1 開始，公式比較漂亮，所以第 0 格不用。",
+     "k": 2,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 169.8
+     }
+    },
+    {
+     "say": "存一棵樹要顧兩件事：所有元素，還有誰是 parent、left child、right child。",
+     "k": 3,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 197.8
+     }
+    },
+    {
+     "say": "存法：由上到下、一層一層，每層由左到右放進去，就是 A B C D E F G。",
+     "k": 4,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 215.8
+     }
+    },
+    {
+     "say": "關係靠三個公式：i 的左孩子在 2i，右孩子在 2i+1，parent 在 ⌊i/2⌋。",
+     "read": "關係靠三個公式：i 的左孩子在 2i，右孩子在 2i 加 1，parent 在 i 除以 2 取 floor。",
+     "k": 5,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 230.8
+     }
+    },
+    {
+     "say": "驗證一下：B 在 2，左孩子在 4，[4] 正好是 D。",
+     "read": "驗證一下：B 在 2，左孩子在 4，第 4 格正好是 D。",
+     "k": 6,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 249.8
+     }
+    },
+    {
+     "say": "右孩子在 5，是 E。",
+     "k": 7,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 263.8
+     }
+    },
+    {
+     "say": "C 在 3，孩子在 6 和 7，就是 F、G。",
+     "k": 8,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 269.8
+     }
+    },
+    {
+     "say": "反過來找 parent：F 在 6，6 除以 2 是 3，parent 是 C。",
+     "k": 9,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 289.1
+     }
+    },
+    {
+     "say": "G 在 7，7 除以 2 是 3.5，取 floor 無條件捨去得 3，一樣是 C。",
+     "k": 10,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 297.8
+     }
+    },
+    {
+     "say": "重點：不必每格都算公式。只要照層序填，公式就自動成立。",
+     "k": 11,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 317.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "缺的節點要留空格",
+   "scene": "heaphq-array-gaps",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "換一棵最後一層沒排滿的：A B C D E，一樣照層序填。",
+     "k": 1,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 339.5
+     }
+    },
+    {
+     "say": "B 在 2，孩子 D、E 在 4、5，公式還是對的。",
+     "k": 2,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 347.8
+     }
+    },
+    {
+     "say": "再換一棵：D 是 C 的左孩子，B 卻沒有孩子。這時要小心了。",
+     "k": 3,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 356.8
+     }
+    },
+    {
+     "say": "缺的節點也要佔一個位置。B 的兩個孩子位置空著，也得算進去。",
+     "k": 4,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 371.8
+     }
+    },
+    {
+     "say": "所以陣列是 A B C 空 空 D，D 放在 [6]。",
+     "read": "所以陣列是 A B C 空 空 D，D 放在第 6 格。",
+     "k": 5,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 381.8
+     }
+    },
+    {
+     "say": "檢查：6 除以 2 是 3，parent 是 C，對了。",
+     "k": 6,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 395.8
+     }
+    },
+    {
+     "say": "如果偷懶把 D 放在 [4]，公式會說它是 B 的左孩子，關係就錯了。",
+     "read": "如果偷懶把 D 放在第 4 格，公式會說它是 B 的左孩子，關係就錯了。",
+     "k": 7,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 404.7
+     }
+    },
+    {
+     "say": "結論：元素照原樣存，關係靠公式維持；有缺就一定要留空。",
+     "k": 8,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 420.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Full 與 Complete binary tree",
+   "scene": "heaphq-full-complete",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "高度從 0 開始數：A 到 G 這棵高度 2，已經放了最多的節點，1 + 2 + 4 = 7 個。",
+     "read": "高度從 0 開始數：A 到 G 這棵高度 2，已經放了最多的節點，1 加 2 加 4 等於 7 個。",
+     "k": 2,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 461.8
+     }
+    },
+    {
+     "say": "想再加一個，只能長新的一層，高度變 3。這個高度塞不下更多，就叫 full。",
+     "k": 3,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 473
+     }
+    },
+    {
+     "say": "高度 h 的 full binary tree 有 2^(h+1) − 1 個節點。h = 2 時是 7。",
+     "read": "高度 h 的 full binary tree 有 2 的 h 加 1 次方減 1 個節點。h 等於 2 時是 7。",
+     "k": 4,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 492.8
+     }
+    },
+    {
+     "say": "complete 的判斷法：放進陣列後，第一個到最後一個元素之間沒有任何空格。",
+     "k": 5,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 508.3
+     }
+    },
+    {
+     "say": "例如把 E 拿掉，[5] 變成空格，就不是 complete。",
+     "read": "例如把 E 拿掉，第 5 格變成空格，就不是 complete。",
+     "k": 6,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 528.9
+     }
+    },
+    {
+     "say": "最後一個元素「之後」空著沒關係，陣列開大一點不影響。",
+     "k": 8,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 561.8
+     }
+    },
+    {
+     "say": "每個 full binary tree 一定也是 complete。",
+     "k": 9,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 581
+     }
+    },
+    {
+     "say": "再往下長一層，從左邊開始放 H、I，還是 complete。",
+     "k": 10,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 585.8
+     }
+    },
+    {
+     "say": "但如果只放 I、沒有 H，左邊缺一格，就不是了。",
+     "k": 11,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 598.6
+     }
+    },
+    {
+     "say": "課本的定義：高度 h−1 以上都是 full，最後一層由左往右填。跟「沒空格」是同一件事。",
+     "read": "課本的定義：高度 h 減 1 以上都是 full，最後一層由左往右填。跟「沒空格」是同一件事。",
+     "k": 12,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 630.8
+     }
+    },
+    {
+     "say": "有些作者叫它 almost complete，MIT 叫 nearly complete，考試看到都要認得。",
+     "k": 13,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 678.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "判斷 complete，以及它的高度",
+   "scene": "heaphq-complete-check",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "練習一下：一層一層看，最後一層要從最左邊開始放。",
+     "k": 1,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 701.8
+     }
+    },
+    {
+     "say": "這棵沒缺任何位置，是 complete。",
+     "k": 2,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 715.8
+     }
+    },
+    {
+     "say": "這棵最後一層前兩格空著，第三格卻有節點，左邊缺了，不是。",
+     "k": 4,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 729.8
+     }
+    },
+    {
+     "say": "寫成陣列更清楚：1 2 3 空 空 空 4，中間三個空格，不是 complete。",
+     "k": 6,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 764.8
+     }
+    },
+    {
+     "say": "上一層還沒放滿就往下長，陣列一樣有空格，也不是。",
+     "k": 7,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 780.2
+     }
+    },
+    {
+     "say": "上面三層都滿、最後一層靠左連續，就是 complete。",
+     "k": 9,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 796.8
+     }
+    },
+    {
+     "say": "它的好處是高度一定最小，等於 ⌊log₂ n⌋。10 個節點時 h = 3。",
+     "read": "它的好處是高度一定最小，等於 log 2 n 取 floor。10 個節點時 h 等於 3。",
+     "k": 10,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 816.8
+     }
+    },
+    {
+     "say": "因為上一層沒填滿，就不會長新的一層，樹不會被拉得又細又長。",
+     "k": 11,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 833.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "陣列的細節：空格、奇偶、從 0 開始",
+   "scene": "heapur-array-index",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "Renzym 的老師提醒，heap 也可以用 node 加指標來做，像之前的 linked tree。",
+     "k": 1,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2649.4
+     }
+    },
+    {
+     "say": "記憶體裡也有叫 stack、heap 的區域，但跟這裡的 heap 沒什麼關係。",
+     "k": 2,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2674.5
+     }
+    },
+    {
+     "say": "名字是字面意思：stack 是一疊盤子，heap 是一堆東西，像一小堆土。",
+     "k": 3,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2703.8
+     }
+    },
+    {
+     "say": "只要知道樹是 complete，就能直接放進 array，位置用算的，不用指標。",
+     "k": 6,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2785.4
+     }
+    },
+    {
+     "say": "慣例一樣：root 放 index 1，[0] 空著。",
+     "read": "慣例一樣：root 放 index 1，第 0 格空著。",
+     "k": 7,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2801
+     }
+    },
+    {
+     "say": "例如 i = 3，孩子在 [6] 和 [7]，就是 52 和 58。",
+     "read": "例如 i 等於 3，孩子在第 6 格和第 7 格，就是 52 和 58。",
+     "k": 12,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2844.3
+     }
+    },
+    {
+     "say": "空格要有記號，可是不能用 0，因為 0 本身也可能是一筆資料。",
+     "k": 13,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2874.7
+     }
+    },
+    {
+     "say": "那 parent 呢？可以先用 mod 判斷奇偶：偶數是左孩子，奇數是右孩子。",
+     "k": 15,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2909.4
+     }
+    },
+    {
+     "say": "奇數就先減 1 再除以 2，例如 7 減 1 除以 2 得 3。",
+     "k": 16,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2951.2
+     }
+    },
+    {
+     "say": "其實用整數除法就搞定：7 除以 2 捨去小數是 3，6 除以 2 也是 3，不用分奇偶。",
+     "k": 17,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2971.4
+     }
+    },
+    {
+     "say": "小提醒：如果從 index 0 開始存，公式變成 2i+1、2i+2，parent 是 ⌊(i−1)/2⌋。",
+     "read": "小提醒：如果從 index 0 開始存，公式變成 2i 加 1、2i 加 2，parent 是 i 減 1 除以 2 取 floor。",
+     "k": 17
+    }
+   ]
+  },
+  {
+   "title": "MIT 的看法：陣列就是 nearly complete tree",
+   "scene": "heapb-as-array",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "MIT 的說法更直接：heap 本質上就是一個陣列。",
+     "k": 1,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 371.2
+     }
+    },
+    {
+     "say": "只是把它「看成」一棵 nearly complete binary tree，資料沒變，換個看法而已。",
+     "k": 2,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 390
+     }
+    },
+    {
+     "say": "例子：16, 14, 10, 8, 7, 9, 3, 2, 4, 1，十個元素。",
+     "k": 4,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 424.2
+     }
+    },
+    {
+     "say": "排滿四層要 15 個，這裡只有 10 個，所以叫 nearly complete，任何長度都能用。",
+     "k": 5,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 451.9
+     }
+    },
+    {
+     "say": "index 1 是根，值是 16。",
+     "k": 6,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 473.3
+     }
+    },
+    {
+     "say": "index 2、3 是根的兩個孩子。",
+     "k": 7,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 484.1
+     }
+    },
+    {
+     "say": "4 到 7 是下一層。",
+     "k": 8,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 495.1
+     }
+    },
+    {
+     "say": "8、9、10 是 4 和 5 的孩子。這張「陣列對樹」的圖，要一直放在腦中。",
+     "k": 9,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 506.3
+     }
+    },
+    {
+     "say": "parent(i) = ⌊i/2⌋，例如 5 的 parent 是 2。",
+     "read": "parent i 等於 i 除以 2 取 floor，例如 5 的 parent 是 2。",
+     "k": 10,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 579.8
+     }
+    },
+    {
+     "say": "left(i) = 2i，right(i) = 2i + 1，例如 2 的孩子是 4 和 5。",
+     "read": "left i 等於 2i，right i 等於 2i 加 1，例如 2 的孩子是 4 和 5。",
+     "k": 11,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 592.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Max Heap 與 Min Heap",
+   "scene": "heaphq-max-min",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "好，正式定義 heap。第一個條件：它必須是 complete binary tree。",
+     "k": 1,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 874
+     }
+    },
+    {
+     "say": "看數字：根 50，孩子 30、20 都比它小。",
+     "k": 2,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 878.8
+     }
+    },
+    {
+     "say": "再往下，15、10 比 30 小，8、16 比 20 小。",
+     "k": 3,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 887.2
+     }
+    },
+    {
+     "say": "每個節點都 ≥ 它所有的子孫，根就是最大，這叫 Max Heap。",
+     "read": "每個節點都大於等於它所有的子孫，根就是最大，這叫 Max Heap。",
+     "k": 5,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 900.8
+     }
+    },
+    {
+     "say": "注意是「大於或等於」，所以允許重複的值。",
+     "k": 6,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 916.8
+     }
+    },
+    {
+     "say": "反過來：根 10，下面 30、20，再下面 35、40……每個都 ≤ 子孫。",
+     "read": "反過來：根 10，下面 30、20，再下面 35、40，每個都小於等於子孫。",
+     "k": 7,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 924.8
+     }
+    },
+    {
+     "say": "最小值在根，這叫 Min Heap。",
+     "k": 8,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 939.8
+     }
+    },
+    {
+     "say": "兩種做法一模一樣，只是比較方向相反。接下來多半用 Max Heap 講。",
+     "k": 9,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 964.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "同一層沒有順序",
+   "scene": "heapur-floors-cost",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "有一點 Renzym 的老師說一定要記住。",
+     "k": 1,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2362.8
+     }
+    },
+    {
+     "say": "上下層之間有關係：在 min-heap 裡，上面的一定小於或等於下面的。",
+     "k": 2,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2370.4
+     }
+    },
+    {
+     "say": "把每一層想成一層樓：頂樓最小，往下越來越大。",
+     "k": 3,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2425.4
+     }
+    },
+    {
+     "say": "他的比喻：第一學期的排上面、第二學期的排下面，跨學期才有先後。",
+     "k": 4,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2441.8
+     }
+    },
+    {
+     "say": "第二學期裡誰大誰小沒規定，所以 36 在 33 左邊也沒關係。",
+     "k": 5,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2449.8
+     }
+    },
+    {
+     "say": "以為同一層有順序，是最大的錯誤，千萬別犯。",
+     "k": 6,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2458.6
+     }
+    },
+    {
+     "say": "對照 BST：它有左小右大，但沒有「最小的在 root」這回事。",
+     "k": 7,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2483.8
+     }
+    },
+    {
+     "say": "BST 要找最小，得從 root 一路往左走到底：33、17、15。",
+     "k": 8,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2489.2
+     }
+    },
+    {
+     "say": "這要走一個高度：AVL 是 log n，一般 BST 最差到 n；heap 的最小值就在 root，O(1)。",
+     "read": "這要走一個高度：AVL 是 log n，一般 BST 最差到 n；heap 的最小值就在 root，大O 1。",
+     "k": 9,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2496.4
+     }
+    },
+    {
+     "say": "heap 只回答一件事：現在誰最急？其他怎麼排都不重要。",
+     "k": 10,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2530.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "逐一檢查 max-heap property",
+   "scene": "heapb-maxheap-check",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "MIT 的講法：在 heap 的結構上加條件，就得到 max-heap 或 min-heap。",
+     "k": 1,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 614.7
+     }
+    },
+    {
+     "say": "max-heap property：每個節點的 key ≥ 它孩子的 key，例如 14 ≥ 8、14 ≥ 7。",
+     "read": "max-heap property：每個節點的 key 大於等於它孩子的 key，例如 14 大於等於 8、14 大於等於 7。",
+     "k": 2,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 641.3
+     }
+    },
+    {
+     "say": "每個節點都要成立，不是只有根。",
+     "k": 3,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 665.9
+     }
+    },
+    {
+     "say": "葉子沒有孩子可比，自動成立。",
+     "k": 4,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 678.9
+     }
+    },
+    {
+     "say": "所以檢查剛才 16、14、10 那個例子，只要看有孩子的 index 1 到 4。",
+     "k": 6,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 720.6
+     }
+    },
+    {
+     "say": "還有 index 5：它只有一個孩子 [10]，7 ≥ 1，也成立。",
+     "read": "還有 index 5：它只有一個孩子，第 10 格，7 大於等於 1，也成立。",
+     "k": 7,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 733.7
+     }
+    },
+    {
+     "say": "全部成立，所以它是 max-heap。",
+     "k": 8,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 749.9
+     }
+    },
+    {
+     "say": "min-heap 就把 ≥ 換成 ≤，根是最小值。",
+     "read": "min-heap 就把大於等於換成小於等於，根是最小值。",
+     "k": 9,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 755.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Heap 是部分排序的陣列",
+   "scene": "heaplin-partial-array",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "林老師的說法：complete tree 的每個 node 都能編號，編號就是 array 的 index。",
+     "k": 2,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8382.8
+     }
+    },
+    {
+     "say": "所以不用寫小紙條：2 號的孩子在 4、5 號，關係全藏在 index 裡。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8400
+     }
+    },
+    {
+     "say": "還記得 ordered array 嗎？全部從小排到大。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8415.1
+     }
+    },
+    {
+     "say": "heap 放進 array，得到的叫 partially ordered array，部分排序的陣列。",
+     "k": 5,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8430.4
+     }
+    },
+    {
+     "say": "例如 14 12 9 4 8 8.5。",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8466.9
+     }
+    },
+    {
+     "say": "看起來沒排好：不是從大到小，也不是從小到大。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8488.5
+     }
+    },
+    {
+     "say": "但亂中有序：畫成樹就看得出來，每棵 subtree 最大的都在上面。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8500.7
+     }
+    },
+    {
+     "say": "只看 array 不一定看得出來，要透過樹才好理解。",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8506
+     }
+    }
+   ]
+  },
+  {
+   "title": "insert 的錯誤做法",
+   "scene": "heaphq-insert-wrong",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "來看 insert。Max Heap 是 50, 30, 20, 15, 10, 8, 16。",
+     "k": 1,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 980.8
+     }
+    },
+    {
+     "say": "要插入的是 60。",
+     "k": 3,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1013.8
+     }
+    },
+    {
+     "say": "60 比誰都大，最後一定待在根。",
+     "k": 4,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1026.8
+     }
+    },
+    {
+     "say": "很多人的直覺：直接把 60 塞到根，其他一路往下推。",
+     "k": 5,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1038.8
+     }
+    },
+    {
+     "say": "結果樹往一邊長出一條，陣列中間一大段空格，不是 complete 了。",
+     "k": 6,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1059.8
+     }
+    },
+    {
+     "say": "所以 insert 不能從根放進去。",
+     "k": 7,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1070.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "insert 60：放最後一格，再往上比",
+   "scene": "heaphq-insert-60",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "正確做法：放在陣列的下一個空位，也就是 [8]。",
+     "read": "正確做法：放在陣列的下一個空位，也就是第 8 格。",
+     "k": 1,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1085.8
+     }
+    },
+    {
+     "say": "8 = 2 × 4，所以它是 [4] 那個 15 的左孩子，樹還是 complete。",
+     "read": "8 等於 2 乘 4，所以它是第 4 格那個 15 的左孩子，樹還是 complete。",
+     "k": 2,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1097.8
+     }
+    },
+    {
+     "say": "但 60 當 15 的孩子，違反了 parent ≥ 孩子，要調整。",
+     "read": "但 60 當 15 的孩子，違反了 parent 大於等於孩子，要調整。",
+     "k": 3,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1123.8
+     }
+    },
+    {
+     "say": "跟 parent 比：60 > 15，交換。",
+     "read": "跟 parent 比：60 大於 15，交換。",
+     "k": 4,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1141.2
+     }
+    },
+    {
+     "say": "再跟 30 比，比它大，再換。",
+     "k": 5,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1149.8
+     }
+    },
+    {
+     "say": "再跟 50 比，又換，到了根。",
+     "k": 6,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1152.5
+     }
+    },
+    {
+     "say": "在陣列上看，60 走過 8、4、2、1，每次除以 2，就是 parent 公式。",
+     "k": 7,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1159.8
+     }
+    },
+    {
+     "say": "結果是 60, 50, 20, 30, 10, 8, 16, 15。",
+     "k": 8,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1204.8
+     }
+    },
+    {
+     "say": "交換次數最多就是樹高，complete 的高度是 log n，所以 insert 是 O(log n)。",
+     "read": "交換次數最多就是樹高，complete 的高度是 log n，所以 insert 是大O log n。",
+     "k": 10,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1249.8
+     }
+    },
+    {
+     "say": "如果插入的是 6，比 15 小，一次都不用換，所以最少 O(1)。",
+     "read": "如果插入的是 6，比 15 小，一次都不用換，所以最少大O 1。",
+     "k": 11,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1271.8
+     }
+    },
+    {
+     "say": "記住方向：insert 是從葉子往根，向上調整。",
+     "k": 12,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1310.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "insert 17：從基層浮上來",
+   "scene": "heaplin-insert-17",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "林老師這邊也有同學問：只講了 removal，那 insertion 怎麼辦？",
+     "k": 1,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8152.7
+     }
+    },
+    {
+     "say": "他的原則是：complete 比較難維護，max 比較好修，所以先顧 complete。",
+     "k": 2,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8170.3
+     }
+    },
+    {
+     "say": "現在 heap 是 14 12 9 4 8 8.5。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8189.3
+     }
+    },
+    {
+     "say": "新東西放在下一個空位，第 7 號，放的是 17。從基層做起。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8203.1
+     }
+    },
+    {
+     "say": "它的爸爸 9 壓得住 8.5，但壓不住 17。",
+     "k": 5,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8221.7
+     }
+    },
+    {
+     "say": "勝者為王：17 上來、9 下去。",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8232
+     }
+    },
+    {
+     "say": "9 本來就是那邊最大的，下去以後一定壓得住。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8244.9
+     }
+    },
+    {
+     "say": "接著 17 挑戰爸爸 14：壓不住。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8262.7
+     }
+    },
+    {
+     "say": "17 再浮上去，14 下來，17 到了 root。",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8280.9
+     }
+    },
+    {
+     "say": "所以 insertion 兩步：insert at last，再 float up。",
+     "k": 11,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8300
+     }
+    },
+    {
+     "say": "只跟樹高有關，complete 的高度是 log n，所以是 O(log n)。",
+     "read": "只跟樹高有關，complete 的高度是 log n，所以是大O log n。",
+     "k": 13,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8336
+     }
+    }
+   ]
+  },
+  {
+   "title": "在陣列上 push",
+   "scene": "heapur-arrpush",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "換成 min-heap、在陣列上做也一樣：新元素放 A[size+1]，這裡是 A[8] = 15。",
+     "read": "換成 min-heap、在陣列上做也一樣：新元素放 A size 加 1 這格，這裡是 A 8 等於 15。",
+     "k": 1,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3018.8
+     }
+    },
+    {
+     "say": "parent 在 ⌊8/2⌋ = 4，是 36。",
+     "read": "parent 在 8 除以 2 等於 4，是 36。",
+     "k": 2,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3028.8
+     }
+    },
+    {
+     "say": "比 parent 小就 swap：15 換到 [4]，再換到 [2]，遇到 12 停住。",
+     "read": "比 parent 小就 swap：15 換到第 4 格，再換到第 2 格，遇到 12 停住。",
+     "k": 3,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3035.2
+     }
+    },
+    {
+     "say": "整個 push 就是「跟 parent 比、swap」的迴圈，也可以寫成遞迴。",
+     "k": 4,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3067.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "下一個插入點在哪",
+   "scene": "heaplin-last-node",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "有同學問：9 只有一個孩子，還算 complete 嗎？算，重點是由上到下、由左到右沒缺。",
+     "k": 1,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9182.1
+     }
+    },
+    {
+     "say": "另一個問題：insert 時，怎麼知道最後一個 node 在哪？",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9314.1
+     }
+    },
+    {
+     "say": "存在 array 裡就簡單：只要記住 node 的數量。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9333
+     }
+    },
+    {
+     "say": "已經有 10 個，新的一定放第 11 格。",
+     "k": 5,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9338
+     }
+    },
+    {
+     "say": "真的用 node 加指標做，就要多維護一個指向下一個插入點的指標。",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9356.6
+     }
+    },
+    {
+     "say": "往上浮要找 parent：⌊11/2⌋ = 5。往上往下，都只是 index 的計算。",
+     "read": "往上浮要找 parent：11 除以 2 取 floor 等於 5。往上往下，都只是 index 的計算。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9414.9
+     }
+    },
+    {
+     "say": "一直往右邊丟，會不會退化成 list？不會，因為永遠放在 complete 的下一格。",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9442
+     }
+    },
+    {
+     "say": "用樹實作還有一招：11 寫成二進位 1011，開頭的 1 是 root，接著 0 往左、1 往右、1 往右。",
+     "read": "用樹實作還有一招：11 寫成二進位 1 0 1 1，開頭的 1 是 root，接著 0 往左、1 往右、1 往右。",
+     "k": 10,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9482.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "push 是常數時間嗎？",
+   "scene": "heapur-push-worst",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "Renzym 的課上，有同學說 push 是常數時間，老師反問：為什麼？",
+     "k": 1,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3807.1
+     }
+    },
+    {
+     "say": "新元素放在最後沒錯，但它如果很小，例如 5，就得一路往上浮。",
+     "k": 2,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3832.1
+     }
+    },
+    {
+     "say": "最多浮到 root，交換次數等於樹高，最差是 O(log n)。",
+     "read": "最多浮到 root，交換次數等於樹高，最差是大O log n。",
+     "k": 3,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3839.1
+     }
+    },
+    {
+     "say": "如果它比較大，例如 60，跟 parent 比一次就停，O(1)。",
+     "read": "如果它比較大，例如 60，跟 parent 比一次就停，大O 1。",
+     "k": 4,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3847.8
+     }
+    },
+    {
+     "say": "pop 不一樣：搬到 root 的是最後一個，通常很大，幾乎都沉到底，Θ(log n)。",
+     "read": "pop 不一樣：搬到 root 的是最後一個，通常很大，幾乎都沉到底，Theta log n。",
+     "k": 6,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3873.1
+     }
+    },
+    {
+     "say": "所以 push 平均接近常數，那是隨機插入時的結果；最差還是 log n。pop 是 log n。",
+     "k": 7,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3883.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Complete Max Tree：舊的 remove 會壞掉",
+   "scene": "heaplin-complete-break",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "再來是刪除。林老師的目標是 Complete Binary Max Tree，兩個特性都要。",
+     "k": 1,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7413.9
+     }
+    },
+    {
+     "say": "complete 管形狀：上一層長滿，下一層由左往右長。",
+     "k": 2,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7433.5
+     }
+    },
+    {
+     "say": "max tree 管數字：大的在上面。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7471.1
+     }
+    },
+    {
+     "say": "把剛才的數字排成 complete：14、12、9、4、8、5。",
+     "k": 5,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7541.9
+     }
+    },
+    {
+     "say": "用舊的 remove 試試：14 號辭職了。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7597.3
+     }
+    },
+    {
+     "say": "12 跟 9 打一架，12 補位。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7605.8
+     }
+    },
+    {
+     "say": "12 的位置缺了，8 跟 4 打，8 補位。",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7614.3
+     }
+    },
+    {
+     "say": "糟糕，中間出現一個洞，不是 complete 了。",
+     "k": 10,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7631
+     }
+    },
+    {
+     "say": "只好把最後的 5 拉過來補洞。5 比 8 小，這次剛好沒事。",
+     "k": 11,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7648.7
+     }
+    },
+    {
+     "say": "但如果被拉過來的是 8.5 呢？它在 9 底下原本好好的。",
+     "k": 12,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7678.2
+     }
+    },
+    {
+     "say": "拉到 8 底下，8 壓不住 8.5：complete 有了，max 卻丟了。",
+     "k": 13,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7700.4
+     }
+    },
+    {
+     "say": "又得回頭修，不再是走一條路就結束，維護起來很麻煩。",
+     "k": 14,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7723.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "remove：最後一個上 root 當代理主席",
+   "scene": "heaplin-remove-last",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "換個想法：缺位時先顧 complete。例子是 14 12 9 4 8 8.5。",
+     "k": 1,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7817.5
+     }
+    },
+    {
+     "say": "root 要離開時，先讓最尾巴的 8.5 補上來。",
+     "k": 2,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7848.1
+     }
+    },
+    {
+     "say": "為什麼？complete tree 的順序是固定的，少一個，最後那個位置注定要消失。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7874
+     }
+    },
+    {
+     "say": "反正它要被移走，就叫它先上去撐著，當代理主席。形狀還是 complete。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7888.6
+     }
+    },
+    {
+     "say": "再看 8.5、12、9 誰最大？12。8.5 壓不住，12 換上來。",
+     "k": 5,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7921.2
+     }
+    },
+    {
+     "say": "12 是三個裡最大的，兩邊都壓得住，夠格當領導人。",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7943.4
+     }
+    },
+    {
+     "say": "8.5 下去以後，底下是 4 和 8，壓得住，就停在這裡。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7966.3
+     }
+    },
+    {
+     "say": "所以 remove largest 兩步：最後一個放 root，壓不住就一層一層往下換。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 7983.3
+     }
+    },
+    {
+     "say": "最多換樹高那麼多層，complete 的高度是 O(log n)。",
+     "read": "最多換樹高那麼多層，complete 的高度是大O log n。",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8027.7
+     }
+    },
+    {
+     "say": "最大放 root、subtree 也一樣、再加上 complete，這就是 Heap，精確說是 Max Heap。",
+     "k": 11,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8106.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "delete 只能刪根：水果攤的蘋果",
+   "scene": "heaphq-delete-50",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "Bari 老師也強調：heap 只能刪根，不能指定刪別的。",
+     "k": 2,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1354.8
+     }
+    },
+    {
+     "say": "他的比喻：水果攤把蘋果堆成金字塔，最上面放最漂亮的那顆。",
+     "k": 3,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1374.8
+     }
+    },
+    {
+     "say": "要拿就拿最上面那顆。在 Max Heap 裡，最好的就是最大值 50。",
+     "k": 4,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1411.8
+     }
+    },
+    {
+     "say": "常見錯誤：讓 30 補上去，再讓 15 補 30 的位置……",
+     "read": "常見錯誤：讓 30 補上去，再讓 15 補 30 的位置。",
+     "k": 6,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1446.8
+     }
+    },
+    {
+     "say": "這樣 [4] 空了，陣列中間有洞，不是 complete。",
+     "read": "這樣第 4 格空了，陣列中間有洞，不是 complete。",
+     "k": 7,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1456.8
+     }
+    },
+    {
+     "say": "正確是拿最後一個 16 補到根，空出來的只是最後一格。",
+     "k": 8,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1464.8
+     }
+    },
+    {
+     "say": "16 比孩子小，比較 30、20，和較大的 30 交換。",
+     "k": 10,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1532.8
+     }
+    },
+    {
+     "say": "16 到了 [2]，孩子 15、10 都比它小，停。",
+     "read": "16 到了第 2 格，孩子 15、10 都比它小，停。",
+     "k": 11,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1585.8
+     }
+    },
+    {
+     "say": "結果是 30, 16, 20, 15, 10, 8。",
+     "k": 12,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1615.8
+     }
+    },
+    {
+     "say": "insert 從葉子往上調，delete 從根往下調，方向相反。",
+     "k": 13,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1636.8
+     }
+    },
+    {
+     "say": "往下最多走到葉子，所以 delete 也是 O(log n)。",
+     "read": "往下最多走到葉子，所以 delete 也是大O log n。",
+     "k": 14,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1656.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "程式裡沒有「旁邊」：percolate down",
+   "scene": "heapur-cpop",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "Renzym 的課也碰到同樣的事：讓孩子直接往上補，洞可能出現在任何地方。",
+     "k": 1,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2068.2
+     }
+    },
+    {
+     "say": "例子是 min-heap，把 root 的 12 移除。",
+     "k": 2,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2114.9
+     }
+    },
+    {
+     "say": "同學提議：把某個數拿上去？先記著。",
+     "k": 5,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2164.2
+     }
+    },
+    {
+     "say": "有人問：要不要先做 balancing？老師說不是，最優先的在最上面才是第一順位。",
+     "k": 6,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2199.7
+     }
+    },
+    {
+     "say": "還有人說「把某個數移到旁邊」。圖上很簡單，但程式裡沒有「旁邊」這種操作。",
+     "k": 7,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2247.7
+     }
+    },
+    {
+     "say": "真正的好方法：拿陣列最後一個元素放到 root，再往下調。",
+     "k": 8,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2293
+     }
+    },
+    {
+     "say": "36 搬上去，最後一格空出來，size 從 8 變 7，形狀還是 complete。",
+     "k": 9,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2308.9
+     }
+    },
+    {
+     "say": "36 跟孩子比，小的 15 上來；再跟 17、33 比，17 上來。這叫 percolate down。",
+     "k": 10,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2327.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "再 pop 一次",
+   "scene": "heapur-cpop2",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "再練一次：pop 現在的 root，15。",
+     "k": 1,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2580.7
+     }
+    },
+    {
+     "say": "最後一個 58 搬到 root。",
+     "k": 2,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2584.9
+     }
+    },
+    {
+     "say": "58 跟 17、32 比，17 上來；再跟 36、33 比，33 上來，58 落在 [5]。",
+     "read": "58 跟 17、32 比，17 上來；再跟 36、33 比，33 上來，58 落在第 5 格。",
+     "k": 3,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2598.1
+     }
+    },
+    {
+     "say": "pop 就是這樣，演算法很簡單。",
+     "k": 4,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 2617.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "兩層 priority 的 heap：一個個清空",
+   "scene": "heapur-pairs-heap",
+   "steps": 18,
+   "lines": [
+    {
+     "say": "老師問：當初是為了什麼學 heap？",
+     "k": 1,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3248.7
+     }
+    },
+    {
+     "say": "為了 priority queue。現在就用 heap 來做它。",
+     "k": 2,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3257.5
+     }
+    },
+    {
+     "say": "加上第二層：如果第一層 priority 全都是 2，光看數字分不出誰先。",
+     "k": 3,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3279.7
+     }
+    },
+    {
+     "say": "投影片用顏色分：紅色的 2 先拿，再拿綠色的 2。",
+     "k": 4,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3294.8
+     }
+    },
+    {
+     "say": "沒有顏色呢？就再加一個數，變成 (2, x)，第二個數就是第二層 priority。",
+     "read": "沒有顏色呢？就再加一個數，變成 2 x，第二個數就是第二層 priority。",
+     "k": 5,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3308.6
+     }
+    },
+    {
+     "say": "紅色給 0、綠色 1、藍色 2，接著把這個 heap 一個一個清空。",
+     "k": 7,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3326.9
+     }
+    },
+    {
+     "say": "先移除最優先的 (2,0)，root 空了。",
+     "read": "先移除最優先的 2 0，root 空了。",
+     "k": 8,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3344.3
+     }
+    },
+    {
+     "say": "為了維持 complete，把最後一個 (2,6) 拿到 top。",
+     "read": "為了維持 complete，把最後一個 2 6 拿到 top。",
+     "k": 9,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3366.5
+     }
+    },
+    {
+     "say": "往下沉：看兩個孩子誰比較小。",
+     "k": 11,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3435.5
+     }
+    },
+    {
+     "say": "(2,1) 比 (2,2) 小，(2,1) 上去，(2,6) 下來。",
+     "read": "2 1 比 2 2 小，2 1 上去，2 6 下來。",
+     "k": 12,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3449.1
+     }
+    },
+    {
+     "say": "再看底下：(2,3) 比 (2,4) 小，(2,3) 上去，(2,6) 再下來。",
+     "read": "再看底下：2 3 比 2 4 小，2 3 上去，2 6 再下來。",
+     "k": 13,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3455.8
+     }
+    },
+    {
+     "say": "每一步的選擇都是唯一的。考試常給一個 heap，要你一個個清空、寫出每一步。",
+     "k": 14,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3461.4
+     }
+    },
+    {
+     "say": "現在 top 是 (2,1)。",
+     "read": "現在 top 是 2 1。",
+     "k": 15,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3483.6
+     }
+    },
+    {
+     "say": "接著移除 (2,1)。",
+     "read": "接著移除 2 1。",
+     "k": 17,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3557.3
+     }
+    },
+    {
+     "say": "最後的 (2,5) 搬上來，比下面大，較小的 (2,2) 上來，(2,5) 下去。",
+     "read": "最後的 2 5 搬上來，比下面大，較小的 2 2 上來，2 5 下去。",
+     "k": 18,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3572.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "max-heap：方向反過來",
+   "scene": "heapur-maxheap",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "前面講的是 min-heap，max-heap 也一樣做得出來。",
+     "k": 1,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3171.1
+     }
+    },
+    {
+     "say": "最大的在最上面，這裡 root 是 58。",
+     "k": 2,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3179.9
+     }
+    },
+    {
+     "say": "只是把「parent 小於孩子」換成「parent 大於孩子」，演算法完全一樣。",
+     "k": 3,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3199.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "成本曲線：常數、log n、線性",
+   "scene": "heapur-cost-curves",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "來看成本：交換次數最多是樹高，complete 的高度是 log n。橫軸是 n，縱軸是時間。",
+     "k": 1,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3085.3
+     }
+    },
+    {
+     "say": "白色那條是常數，資料多少都一樣快，最理想。",
+     "k": 2,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3153.4
+     }
+    },
+    {
+     "say": "藍色是 log n：資料變多只慢慢變高，幾乎跟常數一樣平，heap 就是這條。",
+     "k": 3,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3157.7
+     }
+    },
+    {
+     "say": "還有線性的 n：資料多一倍，時間就多一倍，像在沒排序的 list 裡找最小。",
+     "k": 4,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3159.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "max 很簡單，extract_max 不簡單",
+   "scene": "heapb-max-vs-extract",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "回到 MIT 的操作。max 最簡單：最大值就在 A[1]，直接回傳。",
+     "read": "回到 MIT 的操作。max 最簡單：最大值就在 A 1，直接回傳。",
+     "k": 1,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 782.8
+     }
+    },
+    {
+     "say": "extract_max 呢？拿掉根之後，樹要重新整理，沒那麼簡單。",
+     "read": "extract max 呢？拿掉根之後，樹要重新整理，沒那麼簡單。",
+     "k": 2,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 790.1
+     }
+    },
+    {
+     "say": "max 只是回傳，heap 完全沒改，當然還是 max-heap，所以是 O(1)。",
+     "read": "max 只是回傳，heap 完全沒改，當然還是 max-heap，所以是大O 1。",
+     "k": 3,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 807.5
+     }
+    },
+    {
+     "say": "資料結構一定要守住的性質叫 rep invariant，這裡就是 max-heap property。",
+     "k": 4,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 828.8
+     }
+    },
+    {
+     "say": "如果一直做 extract_max：先拿出 16，把剩下的修回 max-heap，",
+     "read": "如果一直做 extract max：先拿出 16，把剩下的修回 max-heap，",
+     "k": 5,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 854.8
+     }
+    },
+    {
+     "say": "再拿 14、再拿 10……",
+     "read": "再拿 14、再拿 10，",
+     "k": 6,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 860.6
+     }
+    },
+    {
+     "say": "拿出來的順序由大到小，這就跟排序連上了。",
+     "k": 7,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 871.8
+     }
+    },
+    {
+     "say": "只要 extract_max 夠快，就得到一個很棒的排序法。",
+     "read": "只要 extract max 夠快，就得到一個很棒的排序法。",
+     "k": 8,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 890.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "從亂序陣列到 max-heap",
+   "scene": "heapb-build-goal",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "所以核心問題是：修改 heap 時，怎麼一直維持 max-heap property？",
+     "k": 1,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 903.8
+     }
+    },
+    {
+     "say": "另外，隨便給一個陣列，例如 2, 4, 1，也能「看成」heap。",
+     "k": 2,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 940.9
+     }
+    },
+    {
+     "say": "但 2 < 4，不是 max-heap；1 < 2，也不是 min-heap。",
+     "read": "但 2 小於 4，不是 max-heap；1 小於 2，也不是 min-heap。",
+     "k": 3,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 945.8
+     }
+    },
+    {
+     "say": "所以還需要一個操作：把亂序陣列建成 max-heap。",
+     "k": 4,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 970.4
+     }
+    },
+    {
+     "say": "這叫 build_max_heap，例如把它變成 4, 2, 1。",
+     "read": "這叫 build max heap，例如把它變成 4, 2, 1。",
+     "k": 6,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1028.6
+     }
+    },
+    {
+     "say": "4, 2, 1 就是 max-heap 了。順序變了，但不一定完全排好。",
+     "k": 7,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1043.8
+     }
+    },
+    {
+     "say": "要做 build_max_heap，得先有最基本的工具：max_heapify。",
+     "read": "要做 build max heap，得先有最基本的工具：max heapify。",
+     "k": 8,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1079.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "max_heapify 的合約",
+   "scene": "heapb-heapify-contract",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "max_heapify 只做一件事：修正某棵子樹「根」上的一個違規。",
+     "read": "max heapify 只做一件事：修正某棵子樹「根」上的一個違規。",
+     "k": 1,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1093.3
+     }
+    },
+    {
+     "say": "它是最基本的積木，build、insert、extract_max、heap sort 都會用到。",
+     "read": "它是最基本的積木，build、insert、extract max、heap sort 都會用到。",
+     "k": 2,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1128
+     }
+    },
+    {
+     "say": "所以輸入不能是任意陣列，只能有一個違規。",
+     "k": 3,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1159.8
+     }
+    },
+    {
+     "say": "前提是：以 left(i) 和 right(i) 為根的子樹，本來就都是 max-heap。",
+     "read": "前提是：以 left i 和 right i 為根的子樹，本來就都是 max-heap。",
+     "k": 4,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1205.5
+     }
+    },
+    {
+     "say": "呼叫方式是 max_heapify(A, i)，i 是要修的那個位置。",
+     "read": "呼叫方式是 max heapify A i，i 是要修的那個位置。",
+     "k": 5,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1235.2
+     }
+    },
+    {
+     "say": "前提不成立，它可以不負責任，結果不保證。",
+     "k": 6,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1247.5
+     }
+    },
+    {
+     "say": "前提成立就保證修好。「你保證前提、我保證結果」，這叫 contract，合約。",
+     "k": 7,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1257
+     }
+    }
+   ]
+  },
+  {
+   "title": "max_heapify(A, 2) 實際跑一次",
+   "scene": "heapb-heapify-2",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "例子：A = 16, 4, 10, 14, 7, 9, 3, 2, 8, 1。",
+     "read": "例子：A 等於 16, 4, 10, 14, 7, 9, 3, 2, 8, 1。",
+     "k": 1,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1293.4
+     }
+    },
+    {
+     "say": "4 < 14，父節點比孩子小，index 2 違規。",
+     "read": "4 小於 14，父節點比孩子小，index 2 違規。",
+     "k": 3,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1341.2
+     }
+    },
+    {
+     "say": "所以呼叫 max_heapify(A, 2)，只看 index 2 這棵子樹。",
+     "read": "所以呼叫 max heapify A 2，只看 index 2 這棵子樹。",
+     "k": 4,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1346.9
+     }
+    },
+    {
+     "say": "先檢查前提：[4]、[5] 底下的子樹都已經是 max-heap，成立。",
+     "read": "先檢查前提：第 4、第 5 格底下的子樹都已經是 max-heap，成立。",
+     "k": 5,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1366.8
+     }
+    },
+    {
+     "say": "實際用的時候多半由下往上：兩個小 max-heap 接上一個根，修一下，就合成大的。",
+     "k": 7,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1394.8
+     }
+    },
+    {
+     "say": "也要記得 heap size，這裡是 10，排序時會越來越小。",
+     "k": 8,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1424.8
+     }
+    },
+    {
+     "say": "max_heapify 只做交換：4 的孩子是 14 和 7，跟「較大的孩子」換。",
+     "read": "max heapify 只做交換：4 的孩子是 14 和 7，跟「較大的孩子」換。",
+     "k": 10,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1446.1
+     }
+    },
+    {
+     "say": "為什麼要較大的？這樣換上來的那個，才會比另一個孩子大。",
+     "k": 10
+    },
+    {
+     "say": "A[2] 和 A[4] 交換：14 上去、4 下來。",
+     "read": "A 2 和 A 4 交換：14 上去、4 下來。",
+     "k": 11,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1455.9
+     }
+    },
+    {
+     "say": "4 在下一層又違規，遞迴呼叫 max_heapify(A, 4)。",
+     "read": "4 在下一層又違規，遞迴呼叫 max heapify A 4。",
+     "k": 12,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1482.8
+     }
+    },
+    {
+     "say": "它的孩子是 A[8] = 2、A[9] = 8，較大的在 A[9]。",
+     "read": "它的孩子是 A 8 等於 2、A 9 等於 8，較大的在 A 9。",
+     "k": 13,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1512.1
+     }
+    },
+    {
+     "say": "老師這裡口誤說跟 A[8] 換，正確是 A[4] 和 A[9] 交換：8 上去、4 下來。",
+     "read": "老師這裡口誤說跟 A 8 換，正確是 A 4 和 A 9 交換：8 上去、4 下來。",
+     "k": 14,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1521.4
+     }
+    },
+    {
+     "say": "4 到了葉子，結束：16, 14, 10, 8, 7, 9, 3, 2, 4, 1。",
+     "k": 15,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1536.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "max_heapify 為什麼是 O(log n)",
+   "scene": "heapb-heapify-logn",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "最壞要一路換到葉子。heap 很大時，要幾步？",
+     "k": 1,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1551.5
+     }
+    },
+    {
+     "say": "課堂上有人答 O(n)，覺得每個節點都可能要動。",
+     "read": "課堂上有人答大O n，覺得每個節點都可能要動。",
+     "k": 3,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1576.1
+     }
+    },
+    {
+     "say": "另一個人答 O(log n)。誰對？",
+     "read": "另一個人答大O log n。誰對？",
+     "k": 4,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1588.8
+     }
+    },
+    {
+     "say": "答案是 O(log n)，理由有兩個。",
+     "read": "答案是大O log n，理由有兩個。",
+     "k": 5,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1651
+     }
+    },
+    {
+     "say": "理由一：heap 是 nearly complete，不會歪向一邊。",
+     "k": 6,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1681
+     }
+    },
+    {
+     "say": "15 個元素剛好是 perfect binary tree，每層全滿，高度 3。",
+     "k": 7,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1697.8
+     }
+    },
+    {
+     "say": "一層最多換一次，所以最多換 3 次。",
+     "k": 8,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1714.8
+     }
+    },
+    {
+     "say": "理由二：前提保證只有一個違規，左右子樹本來就好好的。",
+     "k": 9,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1724
+     }
+    },
+    {
+     "say": "沒有這個前提，問題可能到處都是，那 O(n) 才有可能。",
+     "read": "沒有這個前提，問題可能到處都是，那大O n 才有可能。",
+     "k": 10,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1732.5
+     }
+    },
+    {
+     "say": "有前提，就只沿一條路往下走，步數等於層數，O(log n)。",
+     "read": "有前提，就只沿一條路往下走，步數等於層數，大O log n。",
+     "k": 11,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1764.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "建 heap 方法一：一個一個 insert",
+   "scene": "heaphq-sort-build",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "那亂序陣列怎麼變成 heap？Bari 老師先用最直覺的方法：一個一個 insert。",
+     "k": 1,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1867.9
+     }
+    },
+    {
+     "say": "陣列是 10, 20, 15, 30, 40，heap 就直接建在這個陣列裡。",
+     "k": 3,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1891.8
+     }
+    },
+    {
+     "say": "第一個 10 自己就是 heap。",
+     "k": 4,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1919.8
+     }
+    },
+    {
+     "say": "insert 20：放 [2]，比 10 大，往上換。現在是 20, 10。",
+     "read": "insert 20：放第 2 格，比 10 大，往上換。現在是 20, 10。",
+     "k": 6,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1956.8
+     }
+    },
+    {
+     "say": "insert 15：放 [3]，parent 是 20，15 比較小，不動。",
+     "read": "insert 15：放第 3 格，parent 是 20，15 比較小，不動。",
+     "k": 8,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2009.8
+     }
+    },
+    {
+     "say": "insert 30：放 [4]，先換掉 10，再換掉 20，到了根。",
+     "read": "insert 30：放第 4 格，先換掉 10，再換掉 20，到了根。",
+     "k": 10,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2040.8
+     }
+    },
+    {
+     "say": "insert 40：放 [5]，換掉 20，再換掉 30，到了根。",
+     "read": "insert 40：放第 5 格，換掉 20，再換掉 30，到了根。",
+     "k": 12,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2091.8
+     }
+    },
+    {
+     "say": "建好了：40, 30, 15, 10, 20。",
+     "k": 13,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2120.4
+     }
+    },
+    {
+     "say": "n 個元素，每個最多爬 log n，所以這樣建是 O(n log n)。",
+     "read": "n 個元素，每個最多爬 log n，所以這樣建是大O n log n。",
+     "k": 14,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2138.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "建 heap 方法二：heapify 由右往左",
+   "scene": "heaphq-heapify",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "另一個建法叫 heapify，調整方向不同。",
+     "k": 1,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2503
+     }
+    },
+    {
+     "say": "剛才是放在葉子、往上調。",
+     "k": 2,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2509.8
+     }
+    },
+    {
+     "say": "例子：10, 20, 15, 12, 40, 25, 18。是 complete，但不是 max heap。",
+     "k": 3,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2553.8
+     }
+    },
+    {
+     "say": "heapify 換個方向：由右往左掃陣列，",
+     "k": 5,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2595.8
+     }
+    },
+    {
+     "say": "每個元素「往下」調，用的就是 delete 那套：跟較大的孩子比，必要時交換。",
+     "k": 6,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2604.8
+     }
+    },
+    {
+     "say": "18、25、40、12 都沒有孩子，本來就是 heap。",
+     "k": 7,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2620.4
+     }
+    },
+    {
+     "say": "葉子都不用動，所以其實可以直接從有孩子的節點開始。",
+     "k": 9,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2648.8
+     }
+    },
+    {
+     "say": "15 的孩子是 25、18，較大的 25 上去。",
+     "k": 10,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2656.9
+     }
+    },
+    {
+     "say": "20 的孩子是 12、40，較大的 40 上去。",
+     "k": 11,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2692.8
+     }
+    },
+    {
+     "say": "根 10：孩子 40、25，40 上去，10 到了 [2]。",
+     "read": "根 10：孩子 40、25，40 上去，10 到了第 2 格。",
+     "k": 12,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2717.8
+     }
+    },
+    {
+     "say": "10 還要再往下看：孩子 12、20，20 上去，10 到了 [5]。",
+     "read": "10 還要再往下看：孩子 12、20，20 上去，10 到了第 5 格。",
+     "k": 13,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2728.8
+     }
+    },
+    {
+     "say": "完成：40, 20, 25, 12, 10, 15, 18。",
+     "k": 14,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2743.8
+     }
+    },
+    {
+     "say": "heapify 只要 O(n)，比逐一 insert 的 O(n log n) 快。為什麼是 n？等一下看 MIT 怎麼證。",
+     "read": "heapify 只要大O n，比逐一 insert 的大O n log n 快。為什麼是 n？等一下看 MIT 怎麼證。",
+     "k": 15,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2770.8
+     }
+    },
+    {
+     "say": "考試注意：兩種建法得到的 heap 可能不同。題目寫 heap sort 或 bottom-up，就用 heapify 手算。",
+     "k": 16
+    }
+   ]
+  },
+  {
+   "title": "build_max_heap：從 n/2 做回 1",
+   "scene": "heapb-build",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "MIT 的例子：4, 1, 3, 2, 16, 9, 10, 14, 8, 7。",
+     "k": 2,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1820.7
+     }
+    },
+    {
+     "say": "任何陣列都看得成 heap，但 1 < 16，顯然不是 max-heap。",
+     "read": "任何陣列都看得成 heap，但 1 小於 16，顯然不是 max-heap。",
+     "k": 4,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1851.7
+     }
+    },
+    {
+     "say": "虛擬碼只有兩行：for i 從 ⌊n/2⌋ 倒數到 1，呼叫 max_heapify(A, i)。",
+     "read": "虛擬碼只有兩行：for i 從 n 除以 2 取 floor 倒數到 1，呼叫 max heapify A i。",
+     "k": 5,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1891.1
+     }
+    },
+    {
+     "say": "為什麼從 ⌊n/2⌋ 開始？因為後面全是葉子，n = 10 時就是 A[6] 到 A[10]。",
+     "read": "為什麼從 n 除以 2 取 floor 開始？因為後面全是葉子，n 等於 10 時就是 A 6 到 A 10。",
+     "k": 6,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1924.8
+     }
+    },
+    {
+     "say": "葉子自動是 max-heap，不管 n 多少都一樣。",
+     "k": 7,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1952.6
+     }
+    },
+    {
+     "say": "倒著做，每次呼叫時，孩子底下都已經是 max-heap，前提一定成立。",
+     "k": 8,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 1984.5
+     }
+    },
+    {
+     "say": "從 i = 5 開始：A[5] 只有一個孩子 A[10]，它是葉子。",
+     "read": "從 i 等於 5 開始：A 5 只有一個孩子 A 10，它是葉子。",
+     "k": 9,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2003.2
+     }
+    },
+    {
+     "say": "16 ≥ 7，不用換。",
+     "read": "16 大於等於 7，不用換。",
+     "k": 10,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2029.5
+     }
+    },
+    {
+     "say": "i = 4 和 3：2 和 14 換，3 和 10 換。",
+     "read": "i 等於 4 和 3：2 和 14 換，3 和 10 換。",
+     "k": 11,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2044.7
+     }
+    },
+    {
+     "say": "i = 2：1 先跟 16 換，再跟 7 換。",
+     "read": "i 等於 2：1 先跟 16 換，再跟 7 換。",
+     "k": 12,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2065.5
+     }
+    },
+    {
+     "say": "最後 i = 1，4 一路往下沉。完成：16, 14, 10, 8, 7, 9, 3, 2, 4, 1。",
+     "read": "最後 i 等於 1，4 一路往下沉。完成：16, 14, 10, 8, 7, 9, 3, 2, 4, 1。",
+     "k": 13,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2071.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "粗估是 O(n log n)，但可以更緊",
+   "scene": "heapb-build-naive",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "那 build_max_heap 要多久？",
+     "read": "那 build max heap 要多久？",
+     "k": 1,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2087.8
+     }
+    },
+    {
+     "say": "直接算：呼叫 n/2 次，每次 O(log n)，所以 O(n log n)。",
+     "read": "直接算：呼叫 n 除以 2 次，每次大O log n，所以大O n log n。",
+     "k": 2,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2094.4
+     }
+    },
+    {
+     "say": "能不能更好？注意，演算法不改，只改分析。",
+     "k": 4,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2128.8
+     }
+    },
+    {
+     "say": "剛才的答案沒錯，Big-O 是上界，意思是「不會超過」。",
+     "k": 5,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2149.5
+     }
+    },
+    {
+     "say": "但仔細算，其實是 O(n)。",
+     "read": "但仔細算，其實是大O n。",
+     "k": 6,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2223.5
+     }
+    },
+    {
+     "say": "直覺：葉子根本不用做事，迴圈本來就從 n/2 開始。",
+     "read": "直覺：葉子根本不用做事，迴圈本來就從 n 除以 2 開始。",
+     "k": 7,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2243.8
+     }
+    },
+    {
+     "say": "葉子上一層只要 1 步左右，而這種節點最多。",
+     "k": 8,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2257.8
+     }
+    },
+    {
+     "say": "再上一層，最多 2 步。",
+     "k": 9,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2273.1
+     }
+    },
+    {
+     "say": "越往上步數越多，但節點也越來越少。",
+     "k": 10,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2281.8
+     }
+    },
+    {
+     "say": "根要 log n 步，但只有 1 個。",
+     "k": 11,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2293.1
+     }
+    },
+    {
+     "say": "分析其實就是數數，只是要數得更仔細。",
+     "k": 12,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2322.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "逐層計數",
+   "scene": "heapb-build-cost",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "觀察一：葉子上一層的節點，max_heapify 只要常數時間 c。",
+     "read": "觀察一：葉子上一層的節點，max heapify 只要常數時間 c。",
+     "k": 1,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2346.1
+     }
+    },
+    {
+     "say": "一般來說，在葉子上方 L 層的節點，要 O(L)。",
+     "read": "一般來說，在葉子上方 L 層的節點，要大O L。",
+     "k": 2,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2374.6
+     }
+    },
+    {
+     "say": "觀察二：level 1 大約有 n/4 個節點，差一兩個不要緊。",
+     "read": "觀察二：level 1 大約有 n 除以 4 個節點，差一兩個不要緊。",
+     "k": 3,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2405.2
+     }
+    },
+    {
+     "say": "level 2 大約 n/8 個。",
+     "read": "level 2 大約 n 除以 8 個。",
+     "k": 4,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2426.8
+     }
+    },
+    {
+     "say": "一路往上，到 level log n 只剩 1 個，就是根。",
+     "k": 5,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2435.7
+     }
+    },
+    {
+     "say": "每個節點的工作越來越多，節點數卻越來越少，這就是要仔細數的地方。",
+     "k": 6,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2444.5
+     }
+    },
+    {
+     "say": "加起來：n/4 × 1c + n/8 × 2c + n/16 × 3c，一直加到根的 1 × c log n。",
+     "read": "加起來：n 除以 4 乘 1c，加 n 除以 8 乘 2c，加 n 除以 16 乘 3c，一直加到根的 1 乘 c log n。",
+     "k": 8,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2523.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "級數收斂，所以是 Θ(n)",
+   "scene": "heapb-series",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "為了好算，令 n/4 = 2ᵏ。",
+     "read": "為了好算，令 n 除以 4 等於 2 的 k 次方。",
+     "k": 1,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2556.8
+     }
+    },
+    {
+     "say": "提出 c·2ᵏ，括號裡是 1/2⁰ + 2/2¹ + 3/2² + … + (k+1)/2ᵏ。",
+     "read": "提出 c 乘 2 的 k 次方，括號裡是 1 除以 2 的 0 次方，加 2 除以 2 的 1 次方，加 3 除以 2 的平方，一直加到 k 加 1 除以 2 的 k 次方。",
+     "k": 2,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2570.3
+     }
+    },
+    {
+     "say": "每一項越來越小，總和增加得越來越慢。",
+     "k": 3,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2622.6
+     }
+    },
+    {
+     "say": "有學生說會收斂到 2，老師說差不多，反正是個常數。",
+     "k": 4,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2669.8
+     }
+    },
+    {
+     "say": "其實精確值是 4。課堂上說約 2、小於 3 都不精確，但結論一樣：被常數框住。",
+     "k": 5,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2688.8
+     }
+    },
+    {
+     "say": "剩下 c 乘 2ᵏ，而 2ᵏ = n/4，所以總工作是常數乘 n，Θ(n)。",
+     "read": "剩下 c 乘 2 的 k 次方，而 2 的 k 次方等於 n 除以 4，所以總工作是常數乘 n，Theta n。",
+     "k": 6,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2716.7
+     }
+    },
+    {
+     "say": "寫成符號：∑ i 從 0 到 k，(i+1)/2ⁱ，它有上界。",
+     "read": "寫成符號：總和 i 從 0 到 k，i 加 1 除以 2 的 i 次方，它有上界。",
+     "k": 8,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2814.8
+     }
+    },
+    {
+     "say": "同一個演算法，分析得更仔細，就得到更緊的界：build_max_heap 是 O(n)。",
+     "read": "同一個演算法，分析得更仔細，就得到更緊的界：build max heap 是大O n。",
+     "k": 9,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2841.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "heap sort 的想法：刪掉的放進空格",
+   "scene": "heaphq-delete-store",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "好，heap sort。Bari 老師的觀察：從 max heap 每刪一次，拿到的就是剩下最大的。",
+     "k": 1,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1675.8
+     }
+    },
+    {
+     "say": "50、30、20……一個一個由大到小出來。",
+     "read": "50、30、20，一個一個由大到小出來。",
+     "k": 2,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1686.8
+     }
+    },
+    {
+     "say": "陣列大小還是 7，但刪一個之後，heap size 只剩 6。",
+     "k": 3,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1725.9
+     }
+    },
+    {
+     "say": "所以 [7] 已經不屬於 heap。",
+     "read": "所以第 7 格已經不屬於 heap。",
+     "k": 4,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1731.8
+     }
+    },
+    {
+     "say": "剛刪掉的 50，就放進空出來的 [7]。",
+     "read": "剛刪掉的 50，就放進空出來的第 7 格。",
+     "k": 5,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1746.4
+     }
+    },
+    {
+     "say": "再刪 30：最後的 8 補到根，heap size 變 5。",
+     "k": 6,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1771.8
+     }
+    },
+    {
+     "say": "8 的孩子是 16、20，20 上來，8 到了 [3]。",
+     "read": "8 的孩子是 16、20，20 上來，8 到了第 3 格。",
+     "k": 7,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1780.8
+     }
+    },
+    {
+     "say": "影片說 8 還要跟 10 換，其實不用：heap size 是 5，8 在 [3]，孩子應在 6、7，都超過 5。",
+     "read": "影片說 8 還要跟 10 換，其實不用：heap size 是 5，8 在第 3 格，孩子應在 6、7，都超過 5。",
+     "k": 8,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1787.7
+     }
+    },
+    {
+     "say": "所以 8 沒有孩子，停在原地，正確結果是 20, 16, 8, 15, 10。",
+     "k": 8
+    },
+    {
+     "say": "30 放進 [6]。",
+     "read": "30 放進第 6 格。",
+     "k": 9,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1795.9
+     }
+    },
+    {
+     "say": "一直刪下去：20、16、15、10 依序出來，各自放進剛空出的格子。",
+     "k": 10,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1807.6
+     }
+    },
+    {
+     "say": "最後從左往右讀：8, 10, 15, 16, 20, 30, 50，排好了！",
+     "k": 11,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1827.8
+     }
+    },
+    {
+     "say": "這就是 heap sort：建好 max heap，一直刪根，刪掉的放到尾端。",
+     "k": 12,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 1836.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "heap sort 完整跑一次",
+   "scene": "heaphq-sort-delete",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "用剛才逐一 insert 建好的 40, 30, 15, 10, 20 完整跑一次。",
+     "k": 1,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2182.8
+     }
+    },
+    {
+     "say": "刪 40，最後的 20 補到根，heap size 變 4。",
+     "k": 2,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2191.8
+     }
+    },
+    {
+     "say": "20 的孩子 30、15，30 上來。",
+     "k": 3,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2216.8
+     }
+    },
+    {
+     "say": "20 再跟 10 比，20 比較大，不用換。",
+     "k": 4,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2234.8
+     }
+    },
+    {
+     "say": "40 放進 [5]。",
+     "read": "40 放進第 5 格。",
+     "k": 5,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2254.8
+     }
+    },
+    {
+     "say": "刪 30：10 補到根，heap size 變 3。",
+     "k": 6,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2266.7
+     }
+    },
+    {
+     "say": "孩子 20、15，20 上來。",
+     "k": 7,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2283.1
+     }
+    },
+    {
+     "say": "30 放進 [4]。",
+     "read": "30 放進第 4 格。",
+     "k": 8,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2305.8
+     }
+    },
+    {
+     "say": "刪 20：15 補到根，heap size 變 2。",
+     "k": 9,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2326
+     }
+    },
+    {
+     "say": "15 比孩子 10 大，不用換。",
+     "k": 10,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2343.8
+     }
+    },
+    {
+     "say": "20 放進 [3]。",
+     "read": "20 放進第 3 格。",
+     "k": 11,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2365.4
+     }
+    },
+    {
+     "say": "刪 15：只剩 10，不用調。",
+     "k": 12,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2383.6
+     }
+    },
+    {
+     "say": "15 放進 [2]：10, 15, 20, 30, 40，排好了。",
+     "read": "15 放進第 2 格：10, 15, 20, 30, 40，排好了。",
+     "k": 13,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2403.8
+     }
+    },
+    {
+     "say": "時間：建 heap 是 n log n，",
+     "k": 14,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2452.8
+     }
+    },
+    {
+     "say": "刪 n 次、每次 log n，又是 n log n。",
+     "k": 15,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2462.8
+     }
+    },
+    {
+     "say": "加起來 2n log n，常數不管，heap sort 是 O(n log n)。",
+     "read": "加起來 2n log n，常數不管，heap sort 是大O n log n。",
+     "k": 16,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2471.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "selection sort 的升級版",
+   "scene": "heaplin-selection-vs-heap",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "林老師換個角度看 heap sort：還記得 selection sort 嗎？",
+     "k": 1,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8526.5
+     }
+    },
+    {
+     "say": "每次在 array 裡找最大的，放到後面，一直重複。",
+     "k": 2,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8539.3
+     }
+    },
+    {
+     "say": "每找一次要看全部，花 n，做 n 輪，所以 O(n²)。",
+     "read": "每找一次要看全部，花 n，做 n 輪，所以大O n平方。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8569.5
+     }
+    },
+    {
+     "say": "現在改在 heap 上做 selection sort。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8608.5
+     }
+    },
+    {
+     "say": "找最大只要看 root，常數時間。",
+     "k": 5,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8626.5
+     }
+    },
+    {
+     "say": "拿出來以後要維護 heap，就是 remove largest，花 log n。",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8650.1
+     }
+    },
+    {
+     "say": "所以排序這段只要 n log n。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8674.6
+     }
+    },
+    {
+     "say": "老師後來更正：每一輪是 O(1) 加 O(log n)，是加不是乘。",
+     "read": "老師後來更正：每一輪是大O 1 加大O log n，是加不是乘。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9512.1
+     }
+    },
+    {
+     "say": "前提是 array 已經有 heap 的長相，完全散亂的不行。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8699.7
+     }
+    },
+    {
+     "say": "公平起見，建 heap 的力氣也要算進來。",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8764.1
+     }
+    },
+    {
+     "say": "至少可以用 n 次 insertion，O(n log n)。",
+     "read": "至少可以用 n 次 insertion，大O n log n。",
+     "k": 10,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8802.1
+     }
+    },
+    {
+     "say": "兩段合起來，還是 O(n log n)。",
+     "read": "兩段合起來，還是大O n log n。",
+     "k": 11,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8852.7
+     }
+    },
+    {
+     "say": "先建 heap，再做 n 次 remove largest，這就是 heap sort，從 n² 進步到 n log n。",
+     "read": "先建 heap，再做 n 次 remove largest，這就是 heap sort，從 n平方進步到 n log n。",
+     "k": 12,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8870.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "在同一塊記憶體裡完成",
+   "scene": "heaplin-inplace",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "補充一：建 heap 有比 n 次 insert 更快的方法，就是前面的 heapify，O(n)。",
+     "read": "補充一：建 heap 有比 n 次 insert 更快的方法，就是前面的 heapify，大O n。",
+     "k": 1,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8905.1
+     }
+    },
+    {
+     "say": "補充二：heap 本來就是 partially ordered array，不用另外蓋一棵樹。",
+     "k": 2,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8935.8
+     }
+    },
+    {
+     "say": "原來的 array 分成 heap 區和 array 區，一開始 heap 區是空的。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8962.1
+     }
+    },
+    {
+     "say": "從 array 區一個一個塞進 heap 區，照 insert 的規則往上浮。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8974.5
+     }
+    },
+    {
+     "say": "heap 區越來越大，最後整段都是 heap。",
+     "k": 5,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 8998.3
+     }
+    },
+    {
+     "say": "接著每拿出一個最大的，heap 區就縮一格。",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9016.4
+     }
+    },
+    {
+     "say": "拿出來的最大值，就放到後面空出來的位置。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9033.7
+     }
+    },
+    {
+     "say": "後面的排序區一路擴大，最後得到排好的 array。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9040.6
+     }
+    },
+    {
+     "say": "全程都在同一塊記憶體，沒有真的建樹，只是把那塊記憶體當成 heap 來操作。",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9050.1
+     }
+    },
+    {
+     "say": "可以把它想成 improved selection sort：用 heap 改良的選擇排序。",
+     "k": 10,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9094.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "MIT 的 heap sort 虛擬碼",
+   "scene": "heapb-heapsort-code",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "MIT 把這些串成虛擬碼。",
+     "k": 1,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2872.5
+     }
+    },
+    {
+     "say": "第 1 步：build_max_heap，O(n)。",
+     "read": "第 1 步：build max heap，大O n。",
+     "k": 2,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2899.7
+     }
+    },
+    {
+     "say": "第 2 步：最大值就在 A[1]。",
+     "read": "第 2 步：最大值就在 A 1。",
+     "k": 3,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2912.6
+     }
+    },
+    {
+     "say": "第 3 步：A[1] 和 A[n] 交換，最大值跑到最後，正是它該在的位置。",
+     "read": "第 3 步：A 1 和 A n 交換，最大值跑到最後，正是它該在的位置。",
+     "k": 4,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2929.1
+     }
+    },
+    {
+     "say": "第 4 步：heap size 減 1，把 node n 丟出 heap，之後不再動它。",
+     "k": 5,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2955.5
+     }
+    },
+    {
+     "say": "新的根可能違規，但它的孩子仍是 max-heap，",
+     "k": 6,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 2974.3
+     }
+    },
+    {
+     "say": "正好符合前提，呼叫 max_heapify(A, 1) 修好。",
+     "read": "正好符合前提，呼叫 max heapify A 1 修好。",
+     "k": 7,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 3001.3
+     }
+    },
+    {
+     "say": "根又是剩下的最大值，回到第 2 步，直到 heap 只剩一個。",
+     "k": 8,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 3010.6
+     }
+    },
+    {
+     "say": "用 extract_max 也行，但「換到最後再丟掉」，排好的元素剛好留在尾端。",
+     "read": "用 extract max 也行，但「換到最後再丟掉」，排好的元素剛好留在尾端。",
+     "k": 9,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 3028.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "小例子 4, 2, 1",
+   "scene": "heapb-heapsort-421",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "小例子：4, 2, 1 是 max-heap，heap size 3。",
+     "k": 1,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 3044.8
+     }
+    },
+    {
+     "say": "4 和 1 交換，得到 1, 2, 4。",
+     "k": 2,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 3055.5
+     }
+    },
+    {
+     "say": "heap size 減 1，4 排好了。",
+     "k": 3,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 3067.3
+     }
+    },
+    {
+     "say": "剩下 1, 2 不是 max-heap，",
+     "k": 5,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 3083.8
+     }
+    },
+    {
+     "say": "但孩子是，所以 max_heapify 一下，變成 2, 1。",
+     "read": "但孩子是，所以 max heapify 一下，變成 2, 1。",
+     "k": 6,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 3089.4
+     }
+    },
+    {
+     "say": "2 跟最後一個交換、拿出來，剩一個就完成：1, 2, 4。",
+     "k": 7,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 3097.8
+     }
+    },
+    {
+     "say": "時間：build 只要 O(n)，交換是常數，",
+     "read": "時間：build 只要大O n，交換是常數，",
+     "k": 9,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 3112.9
+     }
+    },
+    {
+     "say": "但 max_heapify 每次 O(log n)、做 n 次，總共 O(n log n)。",
+     "read": "但 max heapify 每次大O log n、做 n 次，總共大O n log n。",
+     "k": 10,
+     "src": {
+      "v": "B7hVxCmfPtM",
+      "t": 3121.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "priority queue：陣列 vs heap",
+   "scene": "heaphq-pq-array-vs-heap",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "最後比較 priority queue 的各種實作。先用一般陣列：insert 直接放最後。",
+     "k": 1,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2935.8
+     }
+    },
+    {
+     "say": "但 delete 要拿最小的 3，得先找到它。",
+     "k": 2,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2941.1
+     }
+    },
+    {
+     "say": "刪掉後，後面全部往前移，最壞移 n 個，O(n)。",
+     "read": "刪掉後，後面全部往前移，最壞移 n 個，大O n。",
+     "k": 3,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2950.7
+     }
+    },
+    {
+     "say": "一直保持排序呢？刪除變快，但 insert 要找位置、挪元素，變成 O(n)。",
+     "read": "一直保持排序呢？刪除變快，但 insert 要找位置、挪元素，變成大O n。",
+     "k": 4,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2968.8
+     }
+    },
+    {
+     "say": "heap 的 insert 和 delete 都只要 O(log n)。",
+     "read": "heap 的 insert 和 delete 都只要大O log n。",
+     "k": 5,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2980.8
+     }
+    },
+    {
+     "say": "數字小的優先用 min heap，數字大的優先用 max heap。",
+     "k": 6,
+     "src": {
+      "v": "HqPJF2L5h9U",
+      "t": 2991.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "trade-off：heap vs linked list",
+   "scene": "heaplin-pq-tradeoff",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "林老師把這叫 trade-off：insert 和 remove largest，各要花多少力氣？",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9640
+     }
+    },
+    {
+     "say": "heap：最後一個叫上來當代理大王，再讓它滑下去，log n。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9656.6
+     }
+    },
+    {
+     "say": "insert 放最後再浮上去，也是 log n。",
+     "k": 5,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9678.4
+     }
+    },
+    {
+     "say": "沒限制成 complete 的 max tree，就變 O(h)，運氣不好很慢。",
+     "read": "沒限制成 complete 的 max tree，就變大O h，運氣不好很慢。",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9695.2
+     }
+    },
+    {
+     "say": "無序的 linked list：insert 隨便塞 head 或 tail，O(1)，像從不整理房間的人。",
+     "read": "無序的 linked list：insert 隨便塞 head 或 tail，大O 1，像從不整理房間的人。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9723.6
+     }
+    },
+    {
+     "say": "但要找最大並移掉，得全部看一遍，O(n)。",
+     "read": "但要找最大並移掉，得全部看一遍，大O n。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9758.1
+     }
+    },
+    {
+     "say": "反過來從大排到小，最大的放 head。",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9779.8
+     }
+    },
+    {
+     "say": "remove largest 就是 remove head，很容易；但 insert 要找位置，最壞 O(n)。",
+     "read": "remove largest 就是 remove head，很容易；但 insert 要找位置，最壞大O n。",
+     "k": 10,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9802.9
+     }
+    },
+    {
+     "say": "所以要看哪種操作用得多、哪種用得少。",
+     "k": 11,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9821.8
+     }
+    },
+    {
+     "say": "heap 是兩邊都 log n 的折衷。",
+     "k": 12,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9853.9
+     }
+    },
+    {
+     "say": "注意課本用 min heap，最小的在上面，概念是對應的。",
+     "k": 13,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9884.7
+     }
+    },
+    {
+     "say": "C++ STL 的 priority_queue，實作就是放在 vector 裡的 heap。",
+     "read": "C++ STL 的 priority queue，實作就是放在 vector 裡的 heap。",
+     "k": 14,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 9911
+     }
+    }
+   ]
+  },
+  {
+   "title": "為什麼不用 AVL tree",
+   "scene": "heapur-avl-qa",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "有同學問：能不能用 multiway tree？老師說那是拿蘋果比橘子，它是為了資料超多時壓低高度。",
+     "k": 1,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3593.8
+     }
+    },
+    {
+     "say": "用 AVL tree 其實也可以。",
+     "k": 2,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3656.7
+     }
+    },
+    {
+     "say": "可是 priority queue 的東西一直進進出出：不斷有 task 插入，也不斷被移除。",
+     "k": 3,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3663.3
+     }
+    },
+    {
+     "say": "處理器每次都要最小的那個；在 AVL 上要一層層走分支才找得到，O(log n)。",
+     "read": "處理器每次都要最小的那個；在 AVL 上要一層層走分支才找得到，大O log n。",
+     "k": 4,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3726.2
+     }
+    },
+    {
+     "say": "heap 的最小值就在 root，O(1) 直接拿，省下處理器的 cycle。",
+     "read": "heap 的最小值就在 root，大O 1 直接拿，省下處理器的 cycle。",
+     "k": 5,
+     "src": {
+      "v": "4tSdhWBVv6A",
+      "t": 3734.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "補充：tree 與 expression tree",
+   "scene": "heaplin-expr-tree",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "最後補上林老師這堂一開始的樹複習。tree 是 hierarchical structure：一個 root 加一堆 subtree。",
+     "k": 1,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 627.5
+     }
+    },
+    {
+     "say": "每個 subtree 自己也是 tree，所以可以遞迴定義。",
+     "k": 2,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 643.7
+     }
+    },
+    {
+     "say": "binary tree：每個 node 最多兩個孩子，而且分左右。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 656
+     }
+    },
+    {
+     "say": "expression tree 就是用一棵樹表示一個算式。",
+     "k": 5,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 733.7
+     }
+    },
+    {
+     "say": "root 和 internal node 放 operator，像 +、×。",
+     "read": "root 和 internal node 放 operator，像加號、乘號。",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 775.7
+     }
+    },
+    {
+     "say": "數字放在 leaf。例子是 3 × (5 + 7)。",
+     "read": "數字放在 leaf。例子是 3 乘以，5 加 7。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 785.8
+     }
+    },
+    {
+     "say": "要先 5 加 7，再跟 3 相乘，所以 + 在下面，× 在最上面。",
+     "read": "要先 5 加 7，再跟 3 相乘，所以加號在下面，乘號在最上面。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 799.5
+     }
+    },
+    {
+     "say": "每棵 subtree 也是一個小算式：左邊是 3，右邊是 5 + 7。",
+     "read": "每棵 subtree 也是一個小算式：左邊是 3，右邊是 5 加 7。",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 825.6
+     }
+    },
+    {
+     "say": "先把兩邊算出來：右邊 12，左邊 3。",
+     "k": 10,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 838.6
+     }
+    },
+    {
+     "say": "都算完，才做上面的運算：3 × 12 = 36。",
+     "read": "都算完，才做上面的運算：3 乘 12 等於 36。",
+     "k": 11,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 846.9
+     }
+    },
+    {
+     "say": "operator 都吃兩個數，所以是 binary tree；有 unary operator 時，node 可能只有一個孩子。",
+     "k": 12,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 859.3
+     }
+    },
+    {
+     "say": "寫法有兩種：infix，operator 在中間，就是平常的 3 × (5 + 7)。",
+     "read": "寫法有兩種：infix，operator 在中間，就是平常的 3 乘以，5 加 7。",
+     "k": 13,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 883.8
+     }
+    },
+    {
+     "say": "postfix：3 5 7 + ×，operator 寫在最後。",
+     "read": "postfix：3 5 7 加 乘，operator 寫在最後。",
+     "k": 14,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 910.3
+     }
+    },
+    {
+     "say": "讀法是先看到數字再決定做什麼：遇到 + 就把 5、7 加成 12，遇到 × 再乘 3。",
+     "read": "讀法是先看到數字再決定做什麼：遇到加號就把 5、7 加成 12，遇到乘號再乘 3。",
+     "k": 15,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 930
+     }
+    },
+    {
+     "say": "infix 對人熟悉，postfix 對電腦方便，用 stack 一路算下去就好。",
+     "k": 17,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 988.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "印出一棵樹：為什麼要 traversal",
+   "scene": "heaplin-visit-all",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "問題：給你這棵樹，要怎麼把它印出來？",
+     "k": 2,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1047.3
+     }
+    },
+    {
+     "say": "順帶一提，這棵樹有 5 個 node：×、3、+、5、7。影片說六個，應該是口誤。",
+     "read": "順帶一提，這棵樹有 5 個 node：乘號、3、加號、5、7。影片說六個，應該是口誤。",
+     "k": 2
+    },
+    {
+     "say": "你可能想：infix 本來就有，是拿來建樹的，為什麼還要反過來印？",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1083.8
+     }
+    },
+    {
+     "say": "想像別的演算法建好一棵樹，你要告訴別人它長什麼樣，就需要印。",
+     "k": 5,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1123.5
+     }
+    },
+    {
+     "say": "要印，就得拜訪每一個 node，一個都不能漏，",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1145.7
+     }
+    },
+    {
+     "say": "而且要照特定的順序。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1157.8
+     }
+    },
+    {
+     "say": "很多事都要拜訪每個 node：比較兩棵樹一不一樣、",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1172
+     }
+    },
+    {
+     "say": "比哪棵 node 比較多、",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1189.6
+     }
+    },
+    {
+     "say": "或找樹裡最大的數字，這裡是 7。",
+     "k": 10,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1197
+     }
+    },
+    {
+     "say": "就像 sequential search，一個一個看過去。",
+     "k": 11,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1213.9
+     }
+    },
+    {
+     "say": "把 tree 當成 container 的話，iterator 也得決定拜訪順序。",
+     "k": 12,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1236
+     }
+    },
+    {
+     "say": "怎麼拜訪每個 node，就叫 traversal，走訪。",
+     "k": 13,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1268.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "infix print 與 in-order",
+   "scene": "heaplin-infix-print",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "先寫 infix print，印出這棵樹的 infix 式子。",
+     "k": 1,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1286.6
+     }
+    },
+    {
+     "say": "第一件事：先把左邊整棵 subtree 印完，就是 infix(T.left)。",
+     "read": "第一件事：先把左邊整棵 subtree 印完，就是 infix T 點 left。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1345.8
+     }
+    },
+    {
+     "say": "再印 T 上的 operator，這裡是 ×。",
+     "read": "再印 T 上的 operator，這裡是乘號。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1372.4
+     }
+    },
+    {
+     "say": "最後印右邊。左、中、右，看起來很簡單。",
+     "k": 5,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1381.1
+     }
+    },
+    {
+     "say": "但有先乘除後加減：5 + 7 沒加括號，3 × 5 + 7 的意思就完全不一樣。",
+     "read": "但有先乘除後加減：5 加 7 沒加括號，3 乘 5 加 7 的意思就完全不一樣。",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1409.8
+     }
+    },
+    {
+     "say": "所以印左右 subtree 時，前後各加一組括號保護起來。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1432.8
+     }
+    },
+    {
+     "say": "這是遞迴，要有兩個部分：怎麼把問題變小，還有什麼時候停。",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1505.3
+     }
+    },
+    {
+     "say": "stopping 是：走到數字，也就是 leaf，就只印那個數字。",
+     "k": 10,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1527.6
+     }
+    },
+    {
+     "say": "跑起來每個數字都被包一層括號，括號很多，但意思是對的。",
+     "k": 12,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1580.6
+     }
+    },
+    {
+     "say": "可以再改進，例如 leaf 不加括號，但這不是重點。",
+     "k": 13,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1611.5
+     }
+    },
+    {
+     "say": "重點是它定義了一種拜訪順序：先左邊全部，再自己，再右邊全部。",
+     "k": 14,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1649.5
+     }
+    },
+    {
+     "say": "自己在中間被拜訪，所以叫 in-order traversal，中序走訪。",
+     "k": 15,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1699.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "postfix print 與 post-order",
+   "scene": "heaplin-postfix-print",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "懂了中序，postfix print 就簡單了：把 infix print 拷貝過來改。",
+     "k": 1,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1747.3
+     }
+    },
+    {
+     "say": "第一，postfix 不需要括號，拿掉。",
+     "k": 2,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1798.7
+     }
+    },
+    {
+     "say": "第二，順序變成先左、再右，最後才印自己。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1809.6
+     }
+    },
+    {
+     "say": "幾乎只是對調幾行程式碼。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1839.9
+     }
+    },
+    {
+     "say": "跑起來：先 3，再 5 7 +，最後 ×，得到 3 5 7 + ×。",
+     "read": "跑起來：先 3，再 5 7 加，最後乘，得到 3 5 7 加 乘。",
+     "k": 5,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1846.9
+     }
+    },
+    {
+     "say": "左、右、自己，這叫 post-order traversal，後序走訪。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1892.4
+     }
+    },
+    {
+     "say": "之前 infix 轉 postfix 用的 stack，其實就是在一棵看不見的 expression tree 上運作。",
+     "k": 9,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 1959.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "prefix：像函式呼叫",
+   "scene": "heaplin-prefix",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "第三種是 prefix：in 在中間、post 在後面，pre 就是 operator 寫在最前面。",
+     "k": 2,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 2003.3
+     }
+    },
+    {
+     "say": "照自己、左、右的順序拜訪，叫 pre-order，得到 × 3 + 5 7。",
+     "read": "照自己、左、右的順序拜訪，叫 pre-order，得到 乘 3 加 5 7。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 2018.7
+     }
+    },
+    {
+     "say": "加上括號後，每組括號裡第一個是要做的事，後兩個是運算對象。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 2040.6
+     }
+    },
+    {
+     "say": "換個寫法：multiply(3, plus(5, 7))。",
+     "read": "換個寫法：multiply 3，plus 5 7。",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 2061.6
+     }
+    },
+    {
+     "say": "這不就是函式呼叫？函式名稱在前，參數在後。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 2074.5
+     }
+    },
+    {
+     "say": "C++ 的 operator overloading 也是這樣：a + b 其實是在呼叫 operator+(a, b)。",
+     "read": "C++ 的 operator overloading 也是這樣：a 加 b 其實是在呼叫 operator 加，a b。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 2111.8
+     }
+    },
+    {
+     "say": "三種寫法各有意念：prefix 像函式呼叫，infix 像四則運算，postfix 像電腦實際的算法。",
+     "k": 10,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 2195
+     }
+    },
+    {
+     "say": "滿是括號的 prefix 寫法，對應到一個很經典的程式語言：Lisp。",
+     "k": 12,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 2231.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "三種 traversal 的用途",
+   "scene": "heaplin-traversal-uses",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "post-order 用在 expression tree 上，就是在算出式子：先算左右，再做自己。",
+     "k": 2,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 2371.3
+     }
+    },
+    {
+     "say": "另一個用途：比較兩棵樹一不一樣。右邊這棵把 + 換成了 −。",
+     "read": "另一個用途：比較兩棵樹一不一樣。右邊這棵把加號換成了減號。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 2382.2
+     }
+    },
+    {
+     "say": "如果先把 subtree 比完，最後才發現自己就不同，下面都白做了。",
+     "k": 4,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 2392.5
+     }
+    },
+    {
+     "say": "所以用 pre-order：先比自己。×、3 都一樣，到 + 和 − 不一樣就停。",
+     "read": "所以用 pre-order：先比自己。乘號、3 都一樣，到加號和減號不一樣就停。",
+     "k": 5,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 2398.5
+     }
+    },
+    {
+     "say": "下面的 5、7 不用再比，省掉白工。",
+     "k": 6,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 2412.2
+     }
+    },
+    {
+     "say": "樹有特別性質時，in-order 還能對應到排序，之後會講。",
+     "k": 7,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 2419.3
+     }
+    },
+    {
+     "say": "pre-order、in-order、post-order 是 binary tree 的基本功，一定要熟。",
+     "k": 8,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 2425.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "遞迴建樹的兩種順序",
+   "scene": "qa-tree-build-order",
+   "steps": 3,
+   "lines": [
+    {
+     "say": "有同學問：遞迴建樹用哪種好？一種是先建自己，再建左右，順序是 A B D E C。",
+     "k": 1,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 2489.5
+     }
+    },
+    {
+     "say": "另一種先建好左右，最後接上自己，順序是 D E B C A。",
+     "k": 2,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 2531.4
+     }
+    },
+    {
+     "say": "正好對應 preorder 和 postorder，兩種寫法都會看到。",
+     "k": 3,
+     "src": {
+      "v": "RjvhXL0WTrY",
+      "t": 2552.2
+     }
+    }
+   ]
+  }
+ ]
+}

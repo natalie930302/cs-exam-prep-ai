@@ -1,0 +1,3481 @@
+{
+ "chapter": "ds-6",
+ "title": "雜湊表 Hash Table",
+ "intro": "從「搜尋要多快」出發，學會 hash function 怎麼設計、collision 和 overflow 怎麼處理、表太滿怎麼長大，再看 dynamic hashing，最後延伸到 AVL 和 binomial heap。",
+ "parts": [
+  {
+   "title": "搜尋要多快：從 O(n) 到 O(1)",
+   "scene": "hasha-search-cmp",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "好，我們先問：hashing 是拿來做什麼的？答案是搜尋。給一個值，要很快知道它在不在、在哪裡。",
+     "k": 1,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 1
+     }
+    },
+    {
+     "say": "最直覺的是 linear search：元素隨便排，從左邊一個一個比，最壞 n 個全看過，O(n)。",
+     "read": "最直覺的是 linear search：元素隨便排，從左邊一個一個比，最壞 n 個全看過，大O n。",
+     "k": 3,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 25
+     }
+    },
+    {
+     "say": "binary search 快一點：先排好序，每次看中間，要找的比較大就往右，比較小就往左。",
+     "k": 5,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 52
+     }
+    },
+    {
+     "say": "每次砍掉一半，所以是 O(log n)。",
+     "read": "每次砍掉一半，所以是 大O log n。",
+     "k": 7,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 70.8
+     }
+    },
+    {
+     "say": "但它有前提：資料要先排序，得多花排序的時間。",
+     "k": 8,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 81
+     }
+    },
+    {
+     "say": "彭老師說得很直接：O(log n) 還是不夠快。我們要的是 O(1)，資料再多也幾步就到。",
+     "read": "彭老師說得很直接：大O log n 還是不夠快。我們要的是 大O 1，資料再多也幾步就到。",
+     "k": 9,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 297.31
+     }
+    },
+    {
+     "say": "從 O(n)、O(log n) 再往前一步，就是這一章的主角：hashing。",
+     "read": "從 大O n、大O log n 再往前一步，就是這一章的主角：hashing。",
+     "k": 10,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 107
+     }
+    }
+   ]
+  },
+  {
+   "title": "要查的表：symbol table、map 與 dictionary",
+   "scene": "hashlin1-map-dict",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "這種「拿 key 查資料」的需求到處都是。彭老師舉 assembler：看到 INT，就去 symbol table 查它的 machine code。",
+     "k": 1,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 118.94
+     }
+    },
+    {
+     "say": "通訊錄、database 也是這種表，都要做 insert、delete、search，其中最頻繁的是 search。",
+     "k": 1,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 245.48
+     }
+    },
+    {
+     "say": "林老師把這種需求叫 map：帶著 key 放進去，之後指定 key 去 get 或 remove，而且要快。",
+     "k": 2,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 7474.03
+     }
+    },
+    {
+     "say": "就像看地圖：地名是 key，用它找到你要的東西在哪。",
+     "k": 4,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 7554.01
+     }
+    },
+    {
+     "say": "map 存的是 key 跟 value 的一對一關係。Paul 的例子就是 key 放名字、value 放電話，做成通訊錄。",
+     "k": 6,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 7579.57
+     }
+    },
+    {
+     "say": "如果一個 key 對到好幾個 value，叫 dictionary，像英文字典一個字有好幾個解釋。",
+     "k": 8,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 7643.69
+     }
+    },
+    {
+     "say": "其實 dictionary 也能用 map 做：value 那格改放一個集合，例如一條 linked list。",
+     "k": 10,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 7670.6
+     }
+    },
+    {
+     "say": "林老師也提醒：priority queue、stack、map 都是「要做到什麼」的性質，用什麼實作是另一回事。",
+     "k": 11,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 7333.7
+     }
+    },
+    {
+     "say": "key 能比大小的叫 ordered map，不管能不能比的叫 unordered。hash table 走的是 unordered 這條路。",
+     "k": 11,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 7839.16
+     }
+    }
+   ]
+  },
+  {
+   "title": "用 list、array 做 map 有多慢",
+   "scene": "hashlin1-list-array-map",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "先用已經會的東西做做看：把 key 和 value 打包，放進 linked list 的 node。",
+     "k": 1,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 7927.6
+     }
+    },
+    {
+     "say": "不管順序，每筆都插在 head，insert 是 O(1)。",
+     "read": "不管順序，每筆都插在 head，insert 是 大O 1。",
+     "k": 3,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 7970.44
+     }
+    },
+    {
+     "say": "可是 get 只能整串掃過去，最壞 O(n)。",
+     "read": "可是 get 只能整串掃過去，最壞 大O n。",
+     "k": 4,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 8003.2
+     }
+    },
+    {
+     "say": "照 key 排好序呢？linked list 不能直接跳到中間，沒有 binary search 可用，get 還是 O(n)。",
+     "read": "照 key 排好序呢？linked list 不能直接跳到中間，沒有 binary search 可用，get 還是 大O n。",
+     "k": 7,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 8020.16
+     }
+    },
+    {
+     "say": "換成 array：不排序就塞在最後，insert 很便宜，但 get 只能 sequential search。",
+     "k": 10,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 8093.4
+     }
+    },
+    {
+     "say": "排好序的 array，insert 要擠進中間，後面的人全部往後挪，O(n)。",
+     "read": "排好序的 array，insert 要擠進中間，後面的人全部往後挪，大O n。",
+     "k": 11,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 8112.66
+     }
+    },
+    {
+     "say": "好處是 get 能用 binary search，O(log n)。所以有同學問 insert 是不是 log n？不是，找位置快，推開很慢。",
+     "read": "好處是 get 能用 binary search，大O log n。所以有同學問 insert 是不是 log n？不是，找位置快，推開很慢。",
+     "k": 12,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 8693.67
+     }
+    },
+    {
+     "say": "remove 也一樣，拿走一個，後面的人要往前補位。",
+     "k": 13,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 8133.28
+     }
+    },
+    {
+     "say": "林老師的標準：跟 n 成正比就算慢，log n 勉強算快，256 筆也才 8 步左右。",
+     "k": 15,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 8170.96
+     }
+    }
+   ]
+  },
+  {
+   "title": "直接拿 key 當 index",
+   "scene": "hasha-direct",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "Abdul Bari 先給最簡單的 hashing：手上有 8、3、13、6、4、10，值是多少就放第幾格。",
+     "k": 1,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 123
+     }
+    },
+    {
+     "say": "林老師的說法是：array 像一排櫃子，key 就是櫃子號碼，打開那格就能放、就能拿。",
+     "k": 2,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 8232.65
+     }
+    },
+    {
+     "say": "所以 8 放第 8 格、3 放第 3 格、13 放第 13 格。",
+     "k": 4,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 144
+     }
+    },
+    {
+     "say": "找 10？直接看第 10 格，有就是有。找 12，第 12 格是空的，就是沒有。",
+     "k": 6,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 170
+     }
+    },
+    {
+     "say": "不管找不找得到，都一步就知道，O(1)。",
+     "read": "不管找不找得到，都一步就知道，大O 1。",
+     "k": 7,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 175.8
+     }
+    },
+    {
+     "say": "問題來了：如果多一個 50，陣列就得開到 51 格，而 50 離其他數字很遠。",
+     "k": 8,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 186
+     }
+    },
+    {
+     "say": "只存 7 個數，卻開一大排櫃子，大部分空著。這是用空間換時間，但換得太貴了。",
+     "k": 9,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 203
+     }
+    }
+   ]
+  },
+  {
+   "title": "Hash function：把 key 算成 index",
+   "scene": "hasha-paul",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "那就別讓 key 直接當 index，中間加一台機器：hash function。",
+     "k": 1,
+     "src": {
+      "v": "MfhjkfocRR0",
+      "t": 86
+     }
+    },
+    {
+     "say": "它看一眼 key，照固定規則算出一個 index，告訴你資料該放哪一格。",
+     "k": 2,
+     "src": {
+      "v": "MfhjkfocRR0",
+      "t": 93
+     }
+    },
+    {
+     "say": "Paul 的示範：hash(\"Paul\") 算出 3，Paul 的名字和電話就放進第 3 格。",
+     "k": 5,
+     "src": {
+      "v": "MfhjkfocRR0",
+      "t": 121
+     }
+    },
+    {
+     "say": "很重要的一點：同一個 key 每次都要算出同一個 index。不然今天放在 3、明天算出 4，就找不到了。",
+     "k": 6,
+     "src": {
+      "v": "MfhjkfocRR0",
+      "t": 138
+     }
+    },
+    {
+     "say": "其他人也一樣，算出 1 放第 1 格、算出 2 放第 2 格，位置全由 hash function 決定。",
+     "k": 11,
+     "src": {
+      "v": "MfhjkfocRR0",
+      "t": 190
+     }
+    },
+    {
+     "say": "Bari 用數學的說法：要存的 key 合起來叫 key space，存放的地方叫 hash table，h 負責對應。",
+     "k": 11,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 233
+     }
+    },
+    {
+     "say": "h(x) = x 是 one-to-one，不會撞，但表太大。換成別的函數，多半會變成 many-to-one。",
+     "read": "h(x) 等於 x 是 one-to-one，不會撞，但表太大。換成別的函數，多半會變成 many-to-one。",
+     "k": 11,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 314
+     }
+    },
+    {
+     "say": "查的時候也一樣：同一個 key 丟進同一個 hash function，就算陣列有一百萬格，也只看那一格。",
+     "k": 11,
+     "src": {
+      "v": "MfhjkfocRR0",
+      "t": 366
+     }
+    }
+   ]
+  },
+  {
+   "title": "兩步走：hash code 再 compress",
+   "scene": "hashlin2-two-step",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "林老師的如意算盤：array 只有 100 格，key 卻有 1 萬種，甚至根本不是整數，怎麼辦？",
+     "k": 1,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 8398.21
+     }
+    },
+    {
+     "say": "把 h 拆成兩步。第一步叫 hash code：把 key 變成一個整數，這個整數不必小。",
+     "k": 2,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 1590.09
+     }
+    },
+    {
+     "say": "例如字串 ABC，可以算出 18273。",
+     "k": 3,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 1621.01
+     }
+    },
+    {
+     "say": "第二步叫 compress：把這個整數壓進 array 放得下的範圍。",
+     "k": 4,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 1638.31
+     }
+    },
+    {
+     "say": "最簡單是取餘數：18273 mod 100 = 73，放第 73 格。餘數一定比除數小，不會出界。",
+     "read": "最簡單是取餘數：18273 mod 100 等於 73，放第 73 格。餘數一定比除數小，不會出界。",
+     "k": 6,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 1659.11
+     }
+    },
+    {
+     "say": "一般來說表有 k 格就 mod k。有了 h，insert 就是 A[h(key)] = value，get 就是去 A[h(key)] 拿。",
+     "read": "一般來說表有 k 格就 mod k。有了 h，insert 就是 A 的 h key 格等於 value，get 就是去 A 的 h key 格拿。",
+     "k": 7,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 8866.75
+     }
+    },
+    {
+     "say": "林老師的建議是：好好設計 hash code，最後 mod 一次就好。補一句課本的提醒：除數最好選質數。",
+     "k": 9,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 1694.37
+     }
+    }
+   ]
+  },
+  {
+   "title": "字串的 hash code：首字與加總",
+   "scene": "hashlin2-sum",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "key 是字串怎麼算？最粗糙的是只看第一個字：apple 和 act 都是 a 開頭，直接撞在一起。",
+     "k": 1,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 9353.63
+     }
+    },
+    {
+     "say": "好一點的是 summation：把每個字元的 ASCII 碼加起來。",
+     "k": 1,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 1735.11
+     }
+    },
+    {
+     "say": "A 是 65、B 是 66、C 是 67，ABC 加起來是 198。",
+     "k": 4,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 1753.55
+     }
+    },
+    {
+     "say": "可是 ACB 也是 198。加法不管順序，字母一樣、位置不同，就撞在一起。",
+     "k": 6,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 1781.52
+     }
+    },
+    {
+     "say": "林老師強調：對位置不敏感不一定是壞事，要看應用。",
+     "k": 7,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 1793.53
+     }
+    },
+    {
+     "say": "它的好處是算得又簡單又快。",
+     "k": 8,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 1815.39
+     }
+    },
+    {
+     "say": "但如果應用裡常打錯字，form 打成 from，這些字就會一直撞，你得一直處理碰撞。",
+     "k": 10,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 1827.04
+     }
+    }
+   ]
+  },
+  {
+   "title": "Polynomial hash code：乘上 16 的 i 次方",
+   "scene": "hashlin2-poly",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "改良：第 i 個位置先乘上 16 的 i 次方，再加起來。",
+     "k": 1,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 1883.1
+     }
+    },
+    {
+     "say": "ABC = 65 + 66×16 + 67×256 = 18273。",
+     "read": "ABC 等於 65 加 66乘16 加 67乘256 等於 18273。",
+     "k": 2,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 1895.89
+     }
+    },
+    {
+     "say": "ACB 換了位置，乘的次方也跟著換：65 + 67×16 + 66×256 = 18033。",
+     "read": "ACB 換了位置，乘的次方也跟著換：65 加 67乘16 加 66乘256 等於 18033。",
+     "k": 3,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 1906.63
+     }
+    },
+    {
+     "say": "兩個結果不一樣，ABC 和 ACB 分開了。",
+     "k": 4,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 1915.85
+     }
+    },
+    {
+     "say": "不過 hash code 不同，compress 之後還是可能撞，例如兩個 mod 10 都是 3。至少第一關分開了。",
+     "k": 5,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 1920.83
+     }
+    },
+    {
+     "say": "16 可以換成任何數 a，這一類統稱 polynomial hash code：字元當係數，把 a 代進多項式。",
+     "k": 7,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 1951.97
+     }
+    },
+    {
+     "say": "為什麼偏偏選 16？因為乘 16 就是左移 4 個 bit，不用真的做乘法，乘 8 就是左移 3 個 bit。",
+     "k": 10,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 1989.14
+     }
+    },
+    {
+     "say": "同學問：乘那麼多次方不會 overflow 嗎？做法是邊算邊 mod 2³²，結果一直留在 32 bit 裡。",
+     "read": "同學問：乘那麼多次方不會 overflow 嗎？做法是邊算邊 mod 2的32次方，結果一直留在 32 bit 裡。",
+     "k": 12,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 2589.06
+     }
+    }
+   ]
+  },
+  {
+   "title": "Cyclic shift：移出去的 bit 補回來",
+   "scene": "hashlin2-cyclic",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "課本的第三種：cyclic shift。",
+     "k": 1,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 2050.89
+     }
+    },
+    {
+     "say": "一般的 shift 每次把結果往左移再加新字元，可是整數只有 32 個 bit，左邊的會被擠掉。",
+     "k": 3,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 2072.18
+     }
+    },
+    {
+     "say": "cyclic 把擠出去的 bit 繞回右邊補上：10110011 左移 4 位變 00111011，資訊沒丟。",
+     "k": 8,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 2112.62
+     }
+    },
+    {
+     "say": "每處理一個字元就轉一次、加一次，迴圈跑完就是 hash code。",
+     "k": 9,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 2124.84
+     }
+    },
+    {
+     "say": "sum、polynomial、cyclic shift，就是從簡單排到複雜。",
+     "k": 10,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 2133.19
+     }
+    }
+   ]
+  },
+  {
+   "title": "越複雜越難猜：one-way",
+   "scene": "hashlin2-oneway",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "sum 一眼就看得出 ABC 和 ACB 會撞。",
+     "k": 2,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 2151.1
+     }
+    },
+    {
+     "say": "cyclic shift 運算複雜，就很難猜到哪兩個 key 會有同樣的 hash code。",
+     "k": 4,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 2177.1
+     }
+    },
+    {
+     "say": "這種「難猜」在密碼學、身分驗證上非常有用。",
+     "k": 5,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 2204.36
+     }
+    },
+    {
+     "say": "好的函數還要 one-way：我告訴你 hash code 是 1126，你很難反推原本的 key。",
+     "k": 9,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 2254.05
+     }
+    },
+    {
+     "say": "不過對一般應用來說，polynomial 或 cyclic shift 多半就夠好了。",
+     "k": 11,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 2306.98
+     }
+    }
+   ]
+  },
+  {
+   "title": "課本的 hash function：mid-square 與 division",
+   "scene": "hashpeng-midsq-div",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "彭老師照課本介紹三種 hash function。第一種 mid-square，key 先寫成二進位。",
+     "k": 1,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1217.58
+     }
+    },
+    {
+     "say": "做法是先平方、再取中間幾個 bit。13 平方是 169，二進位 10101001，取中間那一段。",
+     "k": 3,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1245.12
+     }
+    },
+    {
+     "say": "取幾個 bit 不限定；取 r 個 bit，表就要 2ʳ 個 bucket。",
+     "read": "取幾個 bit 不限定；取 r 個 bit，表就要 2的r次方 個 bucket。",
+     "k": 4,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1250.65
+     }
+    },
+    {
+     "say": "老師口頭說成「先取中間再平方」，順序反了。考試以課本的「先平方、再取中間」為準。",
+     "k": 5,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1257.11
+     }
+    },
+    {
+     "say": "第二種 division：h(x) = x mod M，三種裡最常用。",
+     "read": "第二種 division：h(x) 等於 x mod M，三種裡最常用。",
+     "k": 6,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1271.51
+     }
+    },
+    {
+     "say": "如果 M 取 2，A1、B1、C1 的最後一個 bit 都是 1，通通掉進同一個 bucket。",
+     "k": 9,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1294.16
+     }
+    },
+    {
+     "say": "因為除以 2ⁱ 的餘數就是最右邊 i 個 bit，其他位全被忽略。老師說成最左邊，是口誤。",
+     "read": "因為除以 2的i次方 的餘數就是最右邊 i 個 bit，其他位全被忽略。老師說成最左邊，是口誤。",
+     "k": 9,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1312.77
+     }
+    },
+    {
+     "say": "所以 M 要選質數，或至少沒有小質因數。老師說 10、15 也可以，其實這兩個都不理想。",
+     "k": 11,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1361.06
+     }
+    }
+   ]
+  },
+  {
+   "title": "Folding：shift 699、boundary 897",
+   "scene": "hashpeng-fold",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "第三種 folding：把 key 切成一段一段，再加起來。",
+     "k": 2,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1376.17
+     }
+    },
+    {
+     "say": "例子 12320324111220，每 3 位一段：123、203、241、112、20。",
+     "k": 4,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1406.92
+     }
+    },
+    {
+     "say": "直接對齊相加：123 + 203 + 241 + 112 + 20 = 699，這叫 shift folding。",
+     "read": "直接對齊相加：123 加 203 加 241 加 112 加 20 等於 699，這叫 shift folding。",
+     "k": 6,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1453.33
+     }
+    },
+    {
+     "say": "folding at the boundaries 像摺紙條，沿段與段的邊界來回對折，被翻過去的段會倒過來。",
+     "k": 7,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1475.13
+     }
+    },
+    {
+     "say": "第 2、4 段被翻：203 變 302、112 變 211，241 和 20 不變。老師講的時候一度把 241 說反。",
+     "k": 8,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1547.13
+     }
+    },
+    {
+     "say": "加起來 123 + 302 + 241 + 211 + 20 = 897。",
+     "read": "加起來 123 加 302 加 241 加 211 加 20 等於 897。",
+     "k": 9,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1575.51
+     }
+    },
+    {
+     "say": "同一個 key，兩種折法得到 699 和 897，不一樣。",
+     "k": 10,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1575.51
+     }
+    },
+    {
+     "say": "不過三種裡面最常用的，還是 division。",
+     "k": 11,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1628.79
+     }
+    }
+   ]
+  },
+  {
+   "title": "Collision 躲不掉：鴿籠原理",
+   "scene": "hashlin1-pigeonhole",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "最完美的情況：100 個 key 剛好一對一對到 100 格，叫 perfect hashing，一個空櫃子都沒有。",
+     "k": 1,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 9002.41
+     }
+    },
+    {
+     "say": "可是 key 的範圍是 0 到 1 萬、櫃子只有 100 個，就不可能 perfect。",
+     "k": 5,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 9124.04
+     }
+    },
+    {
+     "say": "鴿籠原理：3 個籠子關 4 隻鴿子，至少兩隻擠同一籠。籠子是格子，鴿子是 key。",
+     "k": 8,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 9156.18
+     }
+    },
+    {
+     "say": "兩個不同的 key 被送到同一格，叫 collision。正式寫法：h(k₁) = h(k₂)，但 k₁ ≠ k₂。",
+     "read": "兩個不同的 key 被送到同一格，叫 collision。正式寫法：h(k一) 等於 h(k二)，但 k一 不等於 k二。",
+     "k": 9,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 3679.31
+     }
+    },
+    {
+     "say": "撞的原因有兩種：hash code 本來就一樣，像 ABC 和 ACB；或 hash code 不同，mod 完才撞。",
+     "k": 9,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 3694.8
+     }
+    },
+    {
+     "say": "所以 hash 有兩個難題：一、找好的 hash function；二、處理 collision。",
+     "k": 10,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 9236.13
+     }
+    }
+   ]
+  },
+  {
+   "title": "好的 hash function：uniform、分散",
+   "scene": "hashpeng-uniform",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "那怎樣算好的 hash function？彭老師說：第一，不要太複雜，算得快。",
+     "k": 1,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1079.1
+     }
+    },
+    {
+     "say": "第二，collision 的機率要小，資料要平均分到每個 bucket。",
+     "k": 3,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1107.82
+     }
+    },
+    {
+     "say": "能做到資料丟進每個 bucket 的機率都是 1/b 的，叫 uniform hash function。",
+     "read": "能做到資料丟進每個 bucket 的機率都是 b 分之 1 的，叫 uniform hash function。",
+     "k": 6,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1150.47
+     }
+    },
+    {
+     "say": "反例：不管什麼 key 都回傳 0。林老師說就像不管記者問什麼，都只回答同一句話。",
+     "k": 7,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 9631.94
+     }
+    },
+    {
+     "say": "結果第 0 格很快 overflow，其他格子閒著，空間全浪費了。",
+     "k": 8,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1173.37
+     }
+    },
+    {
+     "say": "所以目標不是完全不撞，而是盡量分散。分散了，就算撞到也還處理得來。",
+     "k": 10,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 2793.48
+     }
+    }
+   ]
+  },
+  {
+   "title": "口罩分流：只有兩格的 hash",
+   "scene": "hashlin2-mask",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "林老師舉了一個生活例子：口罩實名制的單雙號分流，就是只有兩格的 hash。",
+     "k": 2,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 2826.33
+     }
+    },
+    {
+     "say": "用身分證最後一碼決定：1、3、5 一格，2、4、6 一格。",
+     "k": 4,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 2845.68
+     }
+    },
+    {
+     "say": "最後一碼是檢查碼，由前面的字母和數字加權算出來，很像 polynomial hash。",
+     "k": 6,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 2864.17
+     }
+    },
+    {
+     "say": "政府沒有分成十格，而是 mod 2，把所有人壓成兩格。",
+     "k": 9,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 2918.01
+     }
+    },
+    {
+     "say": "目的就是分散，別把藥局塞爆。hash table 也一樣：別把某一格塞爆。",
+     "k": 11,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 2934.15
+     }
+    }
+   ]
+  },
+  {
+   "title": "Bucket、slot 與 loading density",
+   "scene": "hashpeng-density",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "彭老師用課本的符號：identifier 就是 key，資料 x 放在 h(x) 算出來的 bucket。",
+     "k": 1,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 542.25
+     }
+    },
+    {
+     "say": "知道怎麼放就知道怎麼找：search x 也是算 h(x)，只到那個 bucket 裡找。",
+     "k": 6,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 630.76
+     }
+    },
+    {
+     "say": "每個 bucket 有 s 個 slot，表有 b 個 bucket，h(x) 一定落在 0 到 b−1。",
+     "read": "每個 bucket 有 s 個 slot，表有 b 個 bucket，h(x) 一定落在 0 到 b減1。",
+     "k": 8,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 658.88
+     }
+    },
+    {
+     "say": "identifier density = n / T，T 是所有可能 key 的個數，通常大得嚇人。",
+     "read": "identifier density 等於 n 除以 T，T 是所有可能 key 的個數，通常大得嚇人。",
+     "k": 11,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 699.78
+     }
+    },
+    {
+     "say": "loading density 也叫 loading factor：α = n / (s·b)，表示表被佔用的比例。",
+     "read": "loading density 也叫 loading factor：alpha 等於 n 除以 s 乘 b，表示表被佔用的比例。",
+     "k": 12,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 729.35
+     }
+    },
+    {
+     "say": "例子裡 s = 2、b = 6，最多放 12 筆，現在 4 筆，α = 1/3。α 越大，越容易撞。",
+     "read": "例子裡 s 等於 2、b 等於 6，最多放 12 筆，現在 4 筆，alpha 等於 3分之1。alpha 越大，越容易撞。",
+     "k": 14,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 744.44
+     }
+    }
+   ]
+  },
+  {
+   "title": "Collision 不等於 overflow",
+   "scene": "hashpeng-collide-overflow",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "h(i₁) = h(i₂)，兩筆資料搶同一個 bucket，這是 collision。",
+     "read": "h(i一) 等於 h(i二)，兩筆資料搶同一個 bucket，這是 collision。",
+     "k": 3,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 789.72
+     }
+    },
+    {
+     "say": "但 bucket 還有位子就沒事，兩筆都放得下。",
+     "k": 4,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 838
+     }
+    },
+    {
+     "say": "要放進去時 bucket 已經滿了，資料滿出來，才叫 overflow。",
+     "k": 5,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 848.16
+     }
+    },
+    {
+     "say": "collision 只要用 hash 就一定會發生；overflow 要看 bucket 滿了沒。",
+     "k": 7,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 864.2
+     }
+    },
+    {
+     "say": "特例：s = 1 時，一 collision 就一定 overflow，兩者同時發生。課後有同學問這題，是常考觀念。",
+     "read": "特例：s 等於 1 時，一 collision 就一定 overflow，兩者同時發生。課後有同學問這題，是常考觀念。",
+     "k": 10,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 885.42
+     }
+    },
+    {
+     "say": "彭老師的例子：26 個 bucket、s = 2，A 和 A2 先把 bucket 0 放滿，A1 再來就 overflow。",
+     "read": "彭老師的例子：26 個 bucket、s 等於 2，A 和 A2 先把 bucket 0 放滿，A1 再來就 overflow。",
+     "k": 10,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1010.08
+     }
+    }
+   ]
+  },
+  {
+   "title": "方法 0：不理他",
+   "scene": "hashlin2-dontcare",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "撞了怎麼辦？林老師先講一個講義沒有的方法 0：不理他。",
+     "k": 1,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 3744.28
+     }
+    },
+    {
+     "say": "櫃子打開已經有東西，就把舊的丟掉換新的，或乾脆不放新的。",
+     "k": 3,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 3778.2
+     }
+    },
+    {
+     "say": "有些應用只想留最新的，舊的丟掉沒關係，這樣就可行。",
+     "k": 5,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 3820.06
+     }
+    },
+    {
+     "say": "背後的思維叫 tolerate some errors：容許一些錯誤，換來簡單。",
+     "k": 8,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 3898.77
+     }
+    }
+   ]
+  },
+  {
+   "title": "用 hash 做 Set：0 一定不在、1 可能錯",
+   "scene": "hashlin2-query",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "容錯可以延伸：拿 hash 做一個 set。每格只放一個 bit，有放過就設 1，連 key 都不存。",
+     "k": 1,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 3935.66
+     }
+    },
+    {
+     "say": "查 kᵢ 時一樣算 h，看那一格是 1 還是 0。",
+     "read": "查 k i 時一樣算 h，看那一格是 1 還是 0。",
+     "k": 2,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4145.94
+     }
+    },
+    {
+     "say": "是 0，就能肯定它從沒放進來過，這個答案沒有錯。",
+     "k": 3,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4162.98
+     }
+    },
+    {
+     "say": "是 1 呢？沒有 collision 的話，1 就代表它在。",
+     "k": 8,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4226.38
+     }
+    },
+    {
+     "say": "但有 collision 時，那個 1 可能是另一個撞在同一格的 key 設的。",
+     "k": 9,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4240.39
+     }
+    },
+    {
+     "say": "所以這是一個「說不在一定對、說在可能錯」的資料結構，錯都來自 collision。",
+     "k": 12,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4274.68
+     }
+    }
+   ]
+  },
+  {
+   "title": "Bloom filter",
+   "scene": "hashlin2-bloom",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "好處是超小：只是一個 bit array，沒存 key，也沒有 value。",
+     "k": 1,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4291.14
+     }
+    },
+    {
+     "say": "這就是 Bloom filter 最基本的一塊：把 hash 延伸來做 set。",
+     "k": 5,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4358.37
+     }
+    },
+    {
+     "say": "真正的 Bloom filter 用好幾個 hash function：放 x 時，h₁、h₂、h₃ 算出的三格都設成 1。",
+     "read": "真正的 Bloom filter 用好幾個 hash function：放 x 時，h一、h二、h三 算出的三格都設成 1。",
+     "k": 6,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4365.74
+     }
+    },
+    {
+     "say": "hash function 彼此獨立的話，要全部剛好撞到很難，錯誤率就壓得很低。",
+     "k": 7,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4380.16
+     }
+    },
+    {
+     "say": "查詢時三格只要有一格是 0，就一定不在。",
+     "k": 8
+    },
+    {
+     "say": "三格剛好都被別人設成 1，才會誤報「在」，這就是那一點點錯誤機率。",
+     "k": 9
+    },
+    {
+     "say": "林老師的例子：廣告系統要判斷來的人，是不是那 1532 個特別愛看紅色廣告的人。",
+     "k": 10,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4426.64
+     }
+    },
+    {
+     "say": "一個一個比對，比完秀廣告的機會就沒了。建成 Bloom filter，算幾個 hash 就知道。",
+     "k": 10,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4487.3
+     }
+    },
+    {
+     "say": "說「在」偶爾錯，頂多多給幾個人看紅色廣告；但那 1532 人保證都看得到。",
+     "k": 10,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4509.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "方法 1：每個 bucket 一個小 array",
+   "scene": "hashlin2-fixed",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "比較標準的處理，方法 1：每個 bucket 放一個固定大小的小 array。",
+     "k": 2,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4637.24
+     }
+    },
+    {
+     "say": "就像把一個置物櫃隔成 4 小格，撞在一起的人各放一格。",
+     "k": 3,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4650.74
+     }
+    },
+    {
+     "say": "可是第 5 個人來就放不下，還是會 overflow。",
+     "k": 7,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4674.52
+     }
+    },
+    {
+     "say": "如果這種情況不常發生，它是簡單好用的方法。",
+     "k": 8,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4680.64
+     }
+    }
+   ]
+  },
+  {
+   "title": "方法 2：Chaining",
+   "scene": "hasha-chain3",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "Paul 的影片裡，又一個人 hash 出 3，但第 3 格已經有 Paul 了，collision。",
+     "k": 3,
+     "src": {
+      "v": "MfhjkfocRR0",
+      "t": 227
+     }
+    },
+    {
+     "say": "他的做法是從每一格往下拉一條 linked list。",
+     "k": 5,
+     "src": {
+      "v": "MfhjkfocRR0",
+      "t": 232
+     }
+    },
+    {
+     "say": "新來的人接在第 3 格的串列上，跟 Paul 排在一起，這叫 chaining。",
+     "k": 7,
+     "src": {
+      "v": "MfhjkfocRR0",
+      "t": 261
+     }
+    },
+    {
+     "say": "再有人 hash 到 3，就繼續往後接，資料不會被覆蓋，也不會遺失。",
+     "k": 9,
+     "src": {
+      "v": "MfhjkfocRR0",
+      "t": 272
+     }
+    },
+    {
+     "say": "Bari 的例子也一樣：3 和 13 mod 10 都是 3，13 就接在 3 的後面。",
+     "k": 10,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 514
+     }
+    },
+    {
+     "say": "彭老師的說法：chaining 不佔別人的 bucket，overflow 的資料就在自己這格排隊。",
+     "k": 11,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1684.18
+     }
+    },
+    {
+     "say": "林老師提醒：linked list 要多長就多長，但我們希望每條 chain 都很短。",
+     "k": 11,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4733.16
+     }
+    }
+   ]
+  },
+  {
+   "title": "Chaining 的搜尋成本",
+   "scene": "hashpeng-chain12",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "找 A3：A3 屬於 bucket 0，就從 bucket 0 的頭往下走，完全不碰別的 bucket。",
+     "k": 5,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 2950
+     }
+    },
+    {
+     "say": "彭老師算平均搜尋長度：這 12 個 identifier 每個都找一次，平均要比幾次？",
+     "k": 7,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 3022.72
+     }
+    },
+    {
+     "say": "排在串列第一個的有 6 筆，各比 1 次；要比 2 次的有 3 筆。",
+     "k": 9,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 3041.68
+     }
+    },
+    {
+     "say": "比 3、4、5 次的各一筆。最慘的是 A：它最早進來，被新來的擠到最後，要比 5 次。",
+     "k": 10,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 3057.48
+     }
+    },
+    {
+     "say": "6×1 + 3×2 + 3 + 4 + 5 = 24，平均 24 / 12 = 2 次。",
+     "read": "6 乘 1 加 3 乘 2 加 3 加 4 加 5 等於 24，平均 24 除以 12，等於 2 次。",
+     "k": 11,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 3064.94
+     }
+    },
+    {
+     "say": "所以時間不再是 O(1)。Bari 說它「還是比 log n 快」，那只是平均、表不太滿的情況。",
+     "read": "所以時間不再是 大O 1。Bari 說它「還是比 log n 快」，那只是平均、表不太滿的情況。",
+     "k": 12,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 577
+     }
+    },
+    {
+     "say": "正確說法：平均 O(1 + α)；hash function 太差、全擠成一串，最壞就是 O(n)。",
+     "read": "正確說法：平均 大O 1加alpha；hash function 太差、全擠成一串，最壞就是 大O n。",
+     "k": 14,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 3149.19
+     }
+    }
+   ]
+  },
+  {
+   "title": "Key 要跟 value 一起存",
+   "scene": "hashlin2-store-key",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "下課有同學問：同一格串了好幾個值，怎麼知道哪個是我的？",
+     "k": 1,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 7247.34
+     }
+    },
+    {
+     "say": "沒有 collision 的世界，那格是你專屬的，只存 value 就好。",
+     "k": 4,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 7267.24
+     }
+    },
+    {
+     "say": "有 collision 就得「對證件」，所以一般會把 key 跟 value 一起存起來。",
+     "k": 6,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 7299.76
+     }
+    },
+    {
+     "say": "就像共用櫃子，每樣東西都要貼姓名或學號，拿的時候才不會拿錯。",
+     "k": 9,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 7317.34
+     }
+    }
+   ]
+  },
+  {
+   "title": "方法 3：secondary data structure",
+   "scene": "hashlin2-secondary",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "再進階一點：bucket 裡放任何能動態裝東西的 container，叫 secondary data structure。",
+     "k": 2,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4799.06
+     }
+    },
+    {
+     "say": "例如 100 萬人分流後，每桶還有 1 萬人，那桶子裡可以再用一個 hash。",
+     "k": 6,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4840.25
+     }
+    },
+    {
+     "say": "hash 先分成小包，小包裡再用別的招，這是一種 hierarchical 的設計。",
+     "k": 9,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 9626.86
+     }
+    },
+    {
+     "say": "array、linked list 是基本款；進階款比較合用，但更複雜、更難 maintain。",
+     "k": 11,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4862.71
+     }
+    }
+   ]
+  },
+  {
+   "title": "Open addressing：把表裡的空格用起來",
+   "scene": "hasha-cvo",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "另一大類叫 open addressing：所有資料都放在表本身，不另外接任何東西。",
+     "k": 3,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 15
+     }
+    },
+    {
+     "say": "看 h(x) = x mod 10，放 10、20、30、40、50，餘數全是 0。",
+     "read": "看 h(x) 等於 x mod 10，放 10、20、30、40、50，餘數全是 0。",
+     "k": 8,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 73
+     }
+    },
+    {
+     "say": "用 chaining 的話，第 0 格串成 50→40→30→20→10。",
+     "read": "用 chaining 的話，第 0 格串成 50、40、30、20、10。",
+     "k": 13,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 179
+     }
+    },
+    {
+     "say": "可是第 1 到第 9 格明明都空著，卻另外花了 linked list 的記憶體。",
+     "k": 15,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 196
+     }
+    },
+    {
+     "say": "林老師也說：表裡有的地方很塞、有的很空，能不能把空的回收再利用？",
+     "k": 16,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 4922.89
+     }
+    },
+    {
+     "say": "彭老師解釋名字：open 就是「開放」別的 bucket，給 overflow 的資料住。",
+     "k": 16,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1658.53
+     }
+    },
+    {
+     "say": "注意名詞：chaining 叫 open hashing，probing 叫 closed hashing，卻又叫 open addressing，別搞混。",
+     "k": 16,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 451
+     }
+    }
+   ]
+  },
+  {
+   "title": "找座位：第三排中間",
+   "scene": "hashlin2-seat",
+   "steps": 19,
+   "lines": [
+    {
+     "say": "林老師用找座位來比喻。他當學生時，最愛坐第三排中間。",
+     "k": 2,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5028.8
+     }
+    },
+    {
+     "say": "第一排太認真、壓力大，最後一排像來混的；第三排進可攻、退可守。",
+     "k": 5,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5057.76
+     }
+    },
+    {
+     "say": "可是來晚了，第三排中間已經有人坐。這就是算出來的 bucket 被佔了。",
+     "k": 8,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5108.18
+     }
+    },
+    {
+     "say": "不理他像把同學趕走，切小格像擠同一張椅子，linked list 像大家手牽手串一串，都不實際。",
+     "k": 12,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5132.02
+     }
+    },
+    {
+     "say": "真正會做的是：去第二志願，沒有就第三志願，依序找下去。",
+     "k": 15,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5183.72
+     }
+    },
+    {
+     "say": "耐心有限：找到第十志願都沒位子，就兩手一攤，今天不上了。",
+     "k": 18,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5211.84
+     }
+    },
+    {
+     "say": "這種照志願一個個找位子的方式，就是 open addressing。",
+     "k": 19,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5240.31
+     }
+    }
+   ]
+  },
+  {
+   "title": "Open addressing 的 insert 與 get",
+   "scene": "hashlin2-oa-steps",
+   "steps": 19,
+   "lines": [
+    {
+     "say": "寫成步驟：先用原本的 hash function 算出第一志願 h₀。",
+     "read": "寫成步驟：先用原本的 hash function 算出第一志願 h零。",
+     "k": 5,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5312.38
+     }
+    },
+    {
+     "say": "有人了就試 h₁，再不行就試 h₂，依此類推。",
+     "read": "有人了就試 h一，再不行就試 h二，依此類推。",
+     "k": 8,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5365.74
+     }
+    },
+    {
+     "say": "耐心是 m 次：h₀ 到 h_{m−1}。老師一度寫成 m+1 次，馬上改回 m 次。",
+     "read": "耐心是 m 次：h零 到 h m減1。老師一度寫成 m 加 1 次，馬上改回 m 次。",
+     "k": 10,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5426.52
+     }
+    },
+    {
+     "say": "全部都有人，就 declare failure，insert 失敗，交給呼叫的程式處理。",
+     "k": 12,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5438.44
+     }
+    },
+    {
+     "say": "get 照同樣的順序找，就像同學知道你找座位的順序，照著來找你。",
+     "k": 13,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5482.13
+     }
+    },
+    {
+     "say": "全部順位都找過還沒有，就代表你沒來上課：這個 key 不在表裡。",
+     "k": 17,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5532.94
+     }
+    },
+    {
+     "say": "剩下的問題是：h₁、h₂ 這些後面的志願，要怎麼算？",
+     "read": "剩下的問題是：h一、h二 這些後面的志願，要怎麼算？",
+     "k": 19,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5594.82
+     }
+    }
+   ]
+  },
+  {
+   "title": "Probe 的一般式",
+   "scene": "hashpeng-probe-forms",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "一般式：H_i(k) = (h(k) + f(i)) mod ts。小寫 h 是原本的 hash function。",
+     "read": "一般式：大寫 H i 的 k，等於 h k 加 f i，再 mod ts。小寫 h 是原本的 hash function。",
+     "k": 1,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1998.33
+     }
+    },
+    {
+     "say": "規定 f(0) = 0，第一次一定試 h(k)；之後第 i 次多跳 f(i) 格。",
+     "read": "規定 f(0) 等於 0，第一次一定試 h(k)；之後第 i 次多跳 f(i) 格。",
+     "k": 4,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 373
+     }
+    },
+    {
+     "say": "最後 mod ts，ts 是 bucket 個數，走到表尾就繞回表頭。",
+     "k": 5,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 2074.13
+     }
+    },
+    {
+     "say": "f(i) = i 就是 linear probing，一格一格往下。",
+     "read": "f(i) 等於 i 就是 linear probing，一格一格往下。",
+     "k": 6,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 432
+     }
+    },
+    {
+     "say": "probe 就是去問鄰居：「這裡有人住嗎？」有人住，就問下一家。",
+     "k": 7,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 2110.58
+     }
+    },
+    {
+     "say": "f(i) = i² 是 quadratic probing，跳 1、4、9 格。",
+     "read": "f(i) 等於 i 平方 是 quadratic probing，跳 1、4、9 格。",
+     "k": 8,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 2138.35
+     }
+    },
+    {
+     "say": "用另一個 hash function 決定跳幾格，就是 double hashing。",
+     "k": 10,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 2165.82
+     }
+    }
+   ]
+  },
+  {
+   "title": "Linear probing 實戰：89、18、49、58、9",
+   "scene": "hasha-lp-89",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "表 10 格，hash(x) = x mod 10，依序放 89、18、49、58、9。彭老師也用同一組數字。",
+     "read": "表 10 格，hash(x) 等於 x mod 10，依序放 89、18、49、58、9。彭老師也用同一組數字。",
+     "k": 2,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 450
+     }
+    },
+    {
+     "say": "89 放第 9 格，18 放第 8 格。",
+     "k": 4,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 502
+     }
+    },
+    {
+     "say": "49 mod 10 = 9，撞了。(9 + 1) mod 10 = 0，繞回表頭，放第 0 格。",
+     "read": "49 mod 10 等於 9，撞了。(9 加 1) mod 10 等於 0，繞回表頭，放第 0 格。",
+     "k": 6,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 515
+     }
+    },
+    {
+     "say": "58 從第 8 格開始：8 撞、9 撞、0 也撞。",
+     "k": 9,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 559
+     }
+    },
+    {
+     "say": "(8 + 3) mod 10 = 1，放第 1 格，58 一共試了 4 次。",
+     "read": "(8 加 3) mod 10 等於 1，放第 1 格，58 一共試了 4 次。",
+     "k": 10,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 607
+     }
+    },
+    {
+     "say": "最後 9：9、0、1 都撞。影片這裡口誤說「11 mod 2」，正確是 11 mod 10 = 1。",
+     "read": "最後 9：9、0、1 都撞。影片這裡口誤說「11 mod 2」，正確是 11 mod 10 等於 1。",
+     "k": 12,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 618
+     }
+    },
+    {
+     "say": "(9 + 3) mod 10 = 2，9 放進第 2 格，也試了 4 次。",
+     "read": "(9 加 3) mod 10 等於 2，9 放進第 2 格，也試了 4 次。",
+     "k": 16,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 675
+     }
+    },
+    {
+     "say": "彭老師說，寫程式就是一個 for 迴圈：i 從 0 開始套公式，找到空格就跳出來。",
+     "k": 17,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 2462.38
+     }
+    }
+   ]
+  },
+  {
+   "title": "Find：走同一條路，遇到空格才停",
+   "scene": "hasha-find",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "find 跟 insert 走同一條 probe sequence，因為資料當初就是沿著這條路放的。",
+     "k": 1,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 701
+     }
+    },
+    {
+     "say": "find 58：8 不是、9 不是、0 不是，第 1 格找到，共 4 次 probe。",
+     "k": 6,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 718
+     }
+    },
+    {
+     "say": "find 19：9、0、1、2 都不是，第 5 次看到第 3 格是空的，才確定 19 不在。",
+     "k": 8,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 759
+     }
+    },
+    {
+     "say": "彭老師特別提醒：算出的格子不是它，千萬別馬上說不在，它可能被擠到後面去了。",
+     "k": 8,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 1940.5
+     }
+    },
+    {
+     "say": "規則是：找到了，或遇到空格，才停。",
+     "k": 8,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 773
+     }
+    }
+   ]
+  },
+  {
+   "title": "Primary clustering：擠成一團",
+   "scene": "hashlin2-linear",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "linear probing 就是繞圈圈找隔壁，最多把整個 array 繞一遍。",
+     "k": 5,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5668.55
+     }
+    },
+    {
+     "say": "缺點來了：3、13、23 都想要第 3 格，結果把 4 號、5 號也佔了。",
+     "k": 10,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5707.97
+     }
+    },
+    {
+     "say": "撞了之後佔用相鄰格子、擠成一團，叫 clustering，課本叫 primary clustering。",
+     "k": 12,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5747.06
+     }
+    },
+    {
+     "say": "林老師說，這就像塞車。",
+     "k": 13,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5751.05
+     }
+    },
+    {
+     "say": "更慘的是 14 來了，自己的 4 號被佔，只好去借 6 號；15 也只好去借 7 號。",
+     "k": 15,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5768.32
+     }
+    },
+    {
+     "say": "而且 key 只要掉進這一塊，就得走到尾巴；新資料又接在尾巴，團越滾越大。",
+     "k": 16,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 782
+     }
+    },
+    {
+     "say": "解法很直覺：別只找隔壁，跳遠一點。",
+     "k": 17,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 2611
+     }
+    }
+   ]
+  },
+  {
+   "title": "平均要 probe 幾次",
+   "scene": "hasha-avg11",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "量化一下：表大小 11，hash(x) = x mod 11，放了 8 個 key。",
+     "read": "量化一下：表大小 11，hash(x) 等於 x mod 11，放了 8 個 key。",
+     "k": 1,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 799
+     }
+    },
+    {
+     "say": "find 20、30、2 都一次就中。13 mod 11 = 2，被 2 佔了，往下一格，2 次。",
+     "read": "find 20、30、2 都一次就中。13 mod 11 等於 2，被 2 佔了，往下一格，2 次。",
+     "k": 5,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 845
+     }
+    },
+    {
+     "say": "25 mod 11 是 3 不是 4，影片這裡算錯了；25 被 13 擋住，要 2 次。",
+     "k": 6,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 863.8
+     }
+    },
+    {
+     "say": "再加上 24 要 4 次、10 要 1 次、9 要 3 次，8 個 key 總共 15 次。",
+     "k": 7,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 878.8
+     }
+    },
+    {
+     "say": "成功搜尋平均 15/8，不到 2 次。",
+     "read": "成功搜尋平均 8分之15，不到 2 次。",
+     "k": 8,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 881
+     }
+    },
+    {
+     "say": "失敗搜尋：find 0，第 0 格不是，第 1 格是空格，停，2 次。",
+     "k": 10,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 897
+     }
+    },
+    {
+     "say": "find 4：第 4、5 格都不是，第 6 格空，3 次。",
+     "k": 13,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 950
+     }
+    },
+    {
+     "say": "失敗搜尋一定要走到空格才能停，所以比成功搜尋貴。這張表算下來平均約 2.82 次。",
+     "k": 14,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 970
+     }
+    }
+   ]
+  },
+  {
+   "title": "Quadratic probing：跳 1、4、9",
+   "scene": "hashpeng-qp-89",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "f(i) = i²：第 1 次跳 1 格，第 2 次跳 4 格。指數從 1 變成 2，所以叫 quadratic。",
+     "read": "f(i) 等於 i 平方：第 1 次跳 1 格，第 2 次跳 4 格。指數從 1 變成 2，所以叫 quadratic。",
+     "k": 2,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 2640.32
+     }
+    },
+    {
+     "say": "同一組數字：89、18 不變；49 撞 9，(9 + 1) mod 10 = 0。到這裡跟 linear 一樣。",
+     "read": "同一組數字：89、18 不變；49 撞 9，(9 加 1) mod 10 等於 0。到這裡跟 linear 一樣。",
+     "k": 7,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 2677.55
+     }
+    },
+    {
+     "say": "58：8、9 都撞，i = 2，(8 + 4) mod 10 = 2，直接跳到第 2 格。",
+     "read": "58：8、9 都撞，i 等於 2，(8 加 4) mod 10 等於 2，直接跳到第 2 格。",
+     "k": 9,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 2708.3
+     }
+    },
+    {
+     "say": "linear 時 58 還得多撞第 0 格，quadratic 一次就跳過去。",
+     "k": 10,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 2725.42
+     }
+    },
+    {
+     "say": "69：9、0 都撞，(9 + 4) mod 10 = 3，放第 3 格。",
+     "read": "69：9、0 都撞，(9 加 4) mod 10 等於 3，放第 3 格。",
+     "k": 13,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 2751.64
+     }
+    },
+    {
+     "say": "Bari 的例子也一樣：23 撞 3、撞 4，3 + 4 = 7，落在第 7 格，中間留下空格。",
+     "read": "Bari 的例子也一樣：23 撞 3、撞 4，3 加 4 等於 7，落在第 7 格，中間留下空格。",
+     "k": 14,
+     "src": {
+      "v": "mFY0J5W8Udk",
+      "t": 970
+     }
+    },
+    {
+     "say": "但要小心，它只消除 primary clustering。起點相同的 key 還是走同一條路，叫 secondary clustering。",
+     "k": 14,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 980
+     }
+    },
+    {
+     "say": "而且表大小是質數、α ≤ 0.5，才保證找得到空位。Saurabh 說 λ 要小於 0.5，指的就是這個條件。",
+     "read": "而且表大小是質數、alpha 小於等於 0.5，才保證找得到空位。Saurabh 說 lambda 要小於 0.5，指的就是這個條件。",
+     "k": 14,
+     "src": {
+      "v": "CwM-Cxilk4g",
+      "t": 52
+     }
+    }
+   ]
+  },
+  {
+   "title": "Double hashing：每個 key 步伐不同",
+   "scene": "hashlin2-double",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "linear、quadratic 還是太規律。double hashing 用另一個 hash 來決定步伐。",
+     "k": 1,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5868.43
+     }
+    },
+    {
+     "say": "第二個 hash 例如 7 − (k mod 7)，不同的 key 算出不同步伐，再乘上 i。",
+     "read": "第二個 hash 例如 7 減 k mod 7，不同的 key 算出不同步伐，再乘上 i。",
+     "k": 3,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5890.15
+     }
+    },
+    {
+     "say": "表 11 格，14 mod 11 = 3，撞了；步伐 7 − 0 = 7，跳到第 10 格。",
+     "read": "表 11 格，14 mod 11 等於 3，撞了；步伐 7 減 0 等於 7，跳到第 10 格。",
+     "k": 5
+    },
+    {
+     "say": "25 也從 3 開始，步伐卻是 7 − 4 = 3，跳到第 6 格。同一個起點，走不同的路。",
+     "read": "25 也從 3 開始，步伐卻是 7 減 4 等於 3，跳到第 6 格。同一個起點，走不同的路。",
+     "k": 6
+    },
+    {
+     "say": "林老師說，hash 中文叫雜湊，本來就有「切碎、打散」的意思。",
+     "k": 6,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5925.77
+     }
+    },
+    {
+     "say": "原本的 hash 打散 key，double hashing 連下一個位置也打散。步伐不能是 0，最好跟表大小互質。",
+     "k": 8
+    }
+   ]
+  },
+  {
+   "title": "Rehash：一串 hash function 輪流試",
+   "scene": "hashpeng-rehash-hm",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "彭老師還講了 rehash：準備 h₁ 到 h_m 好幾個 hash function。",
+     "read": "彭老師還講了 rehash：準備 h一 到 h m 好幾個 hash function。",
+     "k": 2,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 2815.94
+     }
+    },
+    {
+     "say": "先用 h₁，bucket 滿了就改用 h₂，再滿就用 h₃，一直試到 h_m。",
+     "read": "先用 h一，bucket 滿了就改用 h二，再滿就用 h三，一直試到 h m。",
+     "k": 4,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 2846.95
+     }
+    },
+    {
+     "say": "老師說考試、考古題都會考。注意這是 Horowitz 的 rehash，跟「表太滿換兩倍大的表」不同。",
+     "k": 6,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 2883.72
+     }
+    }
+   ]
+  },
+  {
+   "title": "刪除：要留墓碑",
+   "scene": "lazy-deletion",
+   "steps": 0,
+   "lines": [
+    {
+     "say": "補一個考試常見的點：open addressing 刪除時，不能直接把格子清空。"
+    },
+    {
+     "say": "假設刪掉第 0 格的 49，再找 58：8、9、0 遇到空格就停了，58 明明在第 1 格卻找不到。"
+    },
+    {
+     "say": "所以要放墓碑，標記「這裡曾經有人」。搜尋經過墓碑繼續找，insert 時墓碑可以重複使用。"
+    }
+   ]
+  },
+  {
+   "title": "哪一種比較好？",
+   "scene": "hashlin2-spectrum",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "那哪一種最好？林老師老實說：不知道，看應用。",
+     "k": 1,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5958.83
+     }
+    },
+    {
+     "say": "做 open addressing 的話，很多時候 quadratic probing 就已經夠好。",
+     "k": 3,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5972.5
+     }
+    },
+    {
+     "say": "實務上是先用簡單的，發現碰撞太嚴重，才往複雜的移。",
+     "k": 4,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 5988.5
+     }
+    },
+    {
+     "say": "hash code 從 sum、polynomial 到 cyclic；open addressing 從 linear、quadratic 到 double。",
+     "k": 6,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 6016.17
+     }
+    },
+    {
+     "say": "概念很簡單，難的是怎麼測試、怎麼確保真的跑得快。",
+     "k": 8,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 6026.93
+     }
+    }
+   ]
+  },
+  {
+   "title": "Load factor：表有多滿",
+   "scene": "hashlin2-load",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "表有 k 格，放了 n 個 key，就看 n / k：平均每格放幾個。",
+     "read": "表有 k 格，放了 n 個 key，就看 n 除以 k：平均每格放幾個。",
+     "k": 5,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 7668.79
+     }
+    },
+    {
+     "say": "這裡 5 個 key、10 格，0.5，不太會撞。",
+     "k": 7,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 7691.34
+     }
+    },
+    {
+     "say": "n / k 就叫 load factor，也就是課本的 α，有些書寫 λ。",
+     "read": "n 除以 k 就叫 load factor，也就是課本的 alpha，有些書寫 lambda。",
+     "k": 9,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 7731.71
+     }
+    },
+    {
+     "say": "n = 100、k = 10，每格 10 個，hash 就不 work 了。",
+     "read": "n 等於 100、k 等於 10，每格 10 個，hash 就不 work 了。",
+     "k": 10,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 7750.11
+     }
+    },
+    {
+     "say": "補一句：open addressing 每格只放一個，所以 α ≤ 1；chaining 每格是一條 list，α 可以大於 1。",
+     "read": "補一句：open addressing 每格只放一個，所以 alpha 小於等於 1；chaining 每格是一條 list，alpha 可以大於 1。",
+     "k": 10
+    },
+    {
+     "say": "另一種壞情況是 non-uniform：100 筆資料只擠在 3 格，每格 30 幾個。",
+     "k": 12,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 7828.19
+     }
+    },
+    {
+     "say": "所以要小心兩件事：n / k 太大，或 hash 不夠均勻。",
+     "read": "所以要小心兩件事：n 除以 k 太大，或 hash 不夠均勻。",
+     "k": 15,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 7834.47
+     }
+    }
+   ]
+  },
+  {
+   "title": "表太滿就長大兩倍",
+   "scene": "hashlin2-grow",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "實際系統裡資料越來越多，表就開始不堪負荷。",
+     "k": 3,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 7994.15
+     }
+    },
+    {
+     "say": "現在 6 個 key 擠 4 格，load factor 1.5，太大了。",
+     "k": 7,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8051.21
+     }
+    },
+    {
+     "say": "東西就是這麼多，只能加格子。甚至常希望格子比資料還多，用空間換時間。",
+     "k": 8,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 7924.6
+     }
+    },
+    {
+     "say": "借 vector 的經驗：別一次只加一點，直接長成兩倍，4 格變 8 格。偶爾搬一次，均攤下來還是便宜。",
+     "k": 10,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8102.63
+     }
+    },
+    {
+     "say": "k 變兩倍，h 的範圍也要從 0 到 k−1 改成 0 到 2k−1，也就是改成 mod 8。",
+     "read": "k 變兩倍，h 的範圍也要從 0 到 k減1 改成 0 到 2k減1，也就是改成 mod 8。",
+     "k": 12,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8119.89
+     }
+    },
+    {
+     "say": "然後 rebuild：建新表，把舊的東西一個個用新的 hash 塞進去，n / k 變成 0.75。",
+     "read": "然後 rebuild：建新表，把舊的東西一個個用新的 hash 塞進去，n 除以 k 變成 0.75。",
+     "k": 14,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8141.28
+     }
+    }
+   ]
+  },
+  {
+   "title": "Full rebuild：關門整理",
+   "scene": "hashlin2-full-cost",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "rebuild 有 n 筆，hash 夠平均的話每筆大約常數時間，整個就是 O(n)。",
+     "read": "rebuild 有 n 筆，hash 夠平均的話每筆大約常數時間，整個就是 大O n。",
+     "k": 2,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8179.54
+     }
+    },
+    {
+     "say": "通常 load factor 超過某個門檻才長大兩倍，不常做，整體還划算。",
+     "k": 8,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8247.69
+     }
+    },
+    {
+     "say": "缺點是整張表搬家，使用者那端要 long waiting。",
+     "k": 12,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8291.64
+     }
+    },
+    {
+     "say": "就像店面說：「等一下，我先關門整理，整理完再開店。」",
+     "k": 14,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8308.86
+     }
+    }
+   ]
+  },
+  {
+   "title": "Partial rebuild 的關鍵：mod k 到 mod 2k",
+   "scene": "hashlin2-mod2k",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "能不能不要整張重建？改做 partial rebuild，只修有問題的地方。",
+     "k": 3,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8349.38
+     }
+    },
+    {
+     "say": "前提是新舊 hash function 要有關係，不然所有位置都亂掉，還是得全搬。",
+     "k": 6,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8393.16
+     }
+    },
+    {
+     "say": "從 mod k 換成 mod 2k：結果不是跟原來一樣，就是原來的值再加 k。",
+     "k": 10,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8455.43
+     }
+    },
+    {
+     "say": "所以落在 0 到 k−1 的不用動，只有變成「原位置 + k」的才要搬。",
+     "read": "所以落在 0 到 k減1 的不用動，只有變成「原位置 加 k」的才要搬。",
+     "k": 12,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8480.65
+     }
+    }
+   ]
+  },
+  {
+   "title": "Partial rebuild 實例：at、eat、egg",
+   "scene": "hashlin2-partial",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "例子：4 格的表，hash code 是開頭字母減 a。at 是 0、eat 是 4，mod 4 都在第 0 格；egg 再來，這條變 3 個。",
+     "k": 1,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8589.42
+     }
+    },
+    {
+     "say": "表長成 8 格。full rebuild 的話每一個都重看一次，eat、egg 搬到 4，good 搬到 6。",
+     "k": 2,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8696.65
+     }
+    },
+    {
+     "say": "partial rebuild：good 那條還沒滿，先不動。",
+     "k": 3,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8742.5
+     }
+    },
+    {
+     "say": "只重建滿出來的第 0 條：eat、egg 拿出來放到第 4 格，at 留著。",
+     "k": 5,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8757.86
+     }
+    },
+    {
+     "say": "可是之後找 good 會從第 6 格進來，因為 good 的 hash code 是 6。",
+     "k": 7,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8774.57
+     }
+    },
+    {
+     "say": "所以把第 6 格的小紙條接到第 2 格原本的 chain，第 7 接第 3、第 5 接第 1。",
+     "k": 8,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8780.86
+     }
+    },
+    {
+     "say": "還沒分家的繼續共用，只有 overflow 的地方才分家。",
+     "k": 10,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8812.38
+     }
+    }
+   ]
+  },
+  {
+   "title": "Partial rebuild 的成本",
+   "scene": "hashlin2-cost",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "成本：花 k 接好小紙條，再花大約 n/k 拆開滿出來的那條。",
+     "read": "成本：花 k 接好小紙條，再花大約 n 除以 k 拆開滿出來的那條。",
+     "k": 5,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8859.24
+     }
+    },
+    {
+     "say": "k + n/k 可能比 n 小很多，例如 n = 10000、k = 100，full 要一萬，partial 大約兩百。",
+     "read": "k 加 n 除以 k 可能比 n 小很多，例如 n 等於一萬、k 等於一百，full 要一萬，partial 大約兩百。",
+     "k": 7,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8886.78
+     }
+    },
+    {
+     "say": "這樣就做出一個可以長大的 extendable hash table。",
+     "k": 8,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8897.48
+     }
+    },
+    {
+     "say": "代價是要多寫程式，記住誰還沒分家、要分家的東西搬去哪。",
+     "k": 13,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 8947.95
+     }
+    }
+   ]
+  },
+  {
+   "title": "Static 與 dynamic hashing",
+   "scene": "hashpeng-static-dynamic",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "到目前講的都是 static hashing：hash function 一旦決定，就一成不變。",
+     "k": 2,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 420.22
+     }
+    },
+    {
+     "say": "不管資料怎麼分布，就算全擠在某一格，也照用同一個。",
+     "k": 3,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 428.74
+     }
+    },
+    {
+     "say": "dynamic hashing 則依資料分布自動調整：bucket 滿了就分裂，hash 的結果跟著變。",
+     "k": 5,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 467
+     }
+    },
+    {
+     "say": "彭老師說，資料庫的資料一直在變，事先選好 static hash function 又很難，所以常用 dynamic。",
+     "k": 10,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 539.36
+     }
+    }
+   ]
+  },
+  {
+   "title": "Trie：從最右邊的 bit 讀起",
+   "scene": "hashpeng-trie6",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "例子：A0、A1、B0、B1、C2、C3 這些 key，先寫成二進位，字母 3 個 bit、數字 3 個 bit。",
+     "k": 1,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 3760.62
+     }
+    },
+    {
+     "say": "課本的編碼是 A = 100、B = 101、C = 110，所以 A0 = 100 000。老師口頭說 A 是 16 進位的 10，以課本為準。",
+     "read": "課本的編碼是 A 等於 100、B 等於 101、C 等於 110，所以 A0 等於 100 000。老師口頭說 A 是 16 進位的 10，以課本為準。",
+     "k": 1,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 3795.57
+     }
+    },
+    {
+     "say": "這個 hash function 長成一棵樹，叫 trie。從最右邊的 bit 往左讀。",
+     "k": 3,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 3892.66
+     }
+    },
+    {
+     "say": "這個例子裡，讀到 0 往上走，讀到 1 往下走。",
+     "k": 4,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 3898.25
+     }
+    },
+    {
+     "say": "A0、B0 最右邊是 0，往上同一桶；A1、B1 往下同一桶。",
+     "k": 7,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 3944.22
+     }
+    },
+    {
+     "say": "每個 bucket 最多放兩筆，滿了就再分一層，最後用最右 2 個 bit 區分。",
+     "k": 9,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 3956.36
+     }
+    },
+    {
+     "say": "這跟彭老師一開始講的 bucket sort 很像：看數字最後幾個 bit，決定丟哪一桶。",
+     "k": 9,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 41.72
+     }
+    },
+    {
+     "say": "找 A0：最後兩個 bit 是 00，往上、往上，到 bucket 裡就找到；B0 也在同一桶。",
+     "k": 13,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 4011
+     }
+    }
+   ]
+  },
+  {
+   "title": "Trie 會長大：overflow 就 split",
+   "scene": "hashpeng-trie-c5",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "接著 insert C5 = 110 101。",
+     "read": "接著 insert C5 等於 110 101。",
+     "k": 1,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 4050.12
+     }
+    },
+    {
+     "say": "右數第一個 bit 是 1 往下，第二個是 0 往上，走到 A1、B1 那一桶。",
+     "k": 3,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 4079.6
+     }
+    },
+    {
+     "say": "這桶已經有兩筆，overflow。",
+     "k": 5,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 4100
+     }
+    },
+    {
+     "say": "那就從這桶長出兩個分支，叫 split。",
+     "k": 6,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 4120.6
+     }
+    },
+    {
+     "say": "再看右數第 3 個 bit 重新分：C5 是 101，進新桶；A1、B1 是 001，留著。",
+     "k": 8,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 4145.97
+     }
+    },
+    {
+     "say": "重點：overflow 就 split，split 完照 bit 重分。整棵 trie 就是 hash function，會隨資料長大。",
+     "k": 9,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 4308.53
+     }
+    },
+    {
+     "say": "缺點是每次存取都要走樹，時間跟樹高有關，資料不好時樹還會歪掉。",
+     "k": 9,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 4363.32
+     }
+    }
+   ]
+  },
+  {
+   "title": "Directory 與 directoryless",
+   "scene": "hashpeng-directory",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "每次走 trie 太慢，改進叫 extendible hashing：建一個 directory。",
+     "k": 2,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 4402.21
+     }
+    },
+    {
+     "say": "trie 末端連到 bucket 的線其實都是 pointer。把每條路徑編號，整棵樹換成一張表。",
+     "k": 5,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 4484.31
+     }
+    },
+    {
+     "say": "trie 最多 4 層，就用 4 個 bit 編號，共 16 個 entry，這個 4 叫 global depth。",
+     "k": 7,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 4560.92
+     }
+    },
+    {
+     "say": "0000、0100、1000、1100 都指到 A0、B0 那桶，因為那桶只看最右 2 個 bit，local depth 是 2。",
+     "k": 9,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 4639.68
+     }
+    },
+    {
+     "say": "彭老師說，最基本要會的是把一組 key 畫成 trie，其他都從 trie 延伸。",
+     "k": 11,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 4736.3
+     }
+    },
+    {
+     "say": "更快的是 directoryless：連 pointer 都不要，右邊幾個 bit 直接當 memory address，overflow 用 chain。",
+     "k": 12,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 4791.11
+     }
+    }
+   ]
+  },
+  {
+   "title": "Hash index：資料庫怎麼找 Chris",
+   "scene": "hashpeng-hash-index",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "回到應用：database 的 table 也是一種 symbol table，每列一筆、每欄一個 attribute。",
+     "k": 3,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 3157.35
+     }
+    },
+    {
+     "say": "要在一萬筆裡找 Chris，可以建 hash index，就像圖書館照書名首字母排書架。",
+     "k": 6,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 3268.26
+     }
+    },
+    {
+     "say": "對 name 建 hash index：Chris 在 C 的 bucket 2，Jones 在 9，Smith 在 18。",
+     "k": 9,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 3319.53
+     }
+    },
+    {
+     "say": "找到 Chris 後，再透過 pointer 到檔案裡抓 login、age、gpa。",
+     "k": 12,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 3382.67
+     }
+    },
+    {
+     "say": "沒建 index 可能要查好幾分鐘，有了幾乎一下就出來。",
+     "k": 13,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 3404.63
+     }
+    },
+    {
+     "say": "順便兩個名詞：cardinality 是列數，degree 是 attribute 的個數。",
+     "k": 14,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 3423.07
+     }
+    }
+   ]
+  },
+  {
+   "title": "整章串起來",
+   "scene": "hashlin2-recap",
+   "steps": 36,
+   "lines": [
+    {
+     "say": "最後把整章串起來。出發點：像 array 一樣，用 index 放 value、取 value。",
+     "k": 2,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 9270.49
+     }
+    },
+    {
+     "say": "可是 key 不是整數、沒有 order，還可長可短，array 沒辦法直接用。",
+     "k": 3,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 9299.63
+     }
+    },
+    {
+     "say": "所以先算 hash code 變成整數，再 compress 到 k 格。",
+     "k": 6,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 9352.31
+     }
+    },
+    {
+     "say": "hash code 最重要的目的是分散：sum、polynomial、cyclic shift；compress 就是 mod k。",
+     "k": 9,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 9371.25
+     }
+    },
+    {
+     "say": "放進去時那格有人了，就是 collision。",
+     "k": 15,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 9461
+     }
+    },
+    {
+     "say": "可以容錯不理他，可以用 array、linked list 這些 secondary 結構裝起來。",
+     "k": 19,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 9564.92
+     }
+    },
+    {
+     "say": "也可以 open addressing 用現成的空格，下一格用 linear、quadratic 或 double hashing 找。",
+     "k": 24,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 9721.88
+     }
+    },
+    {
+     "say": "表太滿就長大兩倍：naive 是 full rebuild，partial 只在滿出來的地方 rebuild。",
+     "k": 32,
+     "src": {
+      "v": "WX-z52QweUs",
+      "t": 9891.02
+     }
+    },
+    {
+     "say": "彭老師那邊再加上課本的三種 hash function、collision 與 overflow，還有 static 與 dynamic hashing。",
+     "k": 36,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 4909.66
+     }
+    }
+   ]
+  },
+  {
+   "title": "延伸：另一種索引 BST",
+   "scene": "hashpeng-bst-jan",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "彭老師最後預告下一章：hash 是建索引的一種方法，另一種是對名字建 binary search tree。",
+     "k": 1,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 3597.15
+     }
+    },
+    {
+     "say": "依字母比大小，小的放左、大的放右。JAN 先進來，就當 root。",
+     "k": 3,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 5297.9
+     }
+    },
+    {
+     "say": "照這個順序長出來，找最深的 NOV 要比 6 次。",
+     "k": 9,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 5347.12
+     }
+    },
+    {
+     "say": "12 個 node 平均 3.5 次。換成 JULY 先進來，最多 4 次、平均 3.1；照字母順序輸入，歪成一條，平均 6.5。",
+     "k": 11,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 5458.39
+     }
+    }
+   ]
+  },
+  {
+   "title": "延伸：AVL tree",
+   "scene": "hashpeng-avl-def",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "BST 好不好看輸入順序的運氣，所以要在輸入時就調整，讓樹 balance。",
+     "k": 2,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 5539.66
+     }
+    },
+    {
+     "say": "AVL tree 就是一種 balanced binary search tree。",
+     "k": 3,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 5563.23
+     }
+    },
+    {
+     "say": "條件：左右子樹都要 balanced，而且高度差的絕對值 |h_L − h_R| ≤ 1。",
+     "read": "條件：左右子樹都要 balanced，而且高度差的絕對值 h L 減 h R 小於等於 1。",
+     "k": 5,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 5596.15
+     }
+    },
+    {
+     "say": "定義 balance factor：BF = 左子樹高度 − 右子樹高度。",
+     "read": "定義 balance factor：BF 等於 左子樹高度 減 右子樹高度。",
+     "k": 7,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 5670.12
+     }
+    },
+    {
+     "say": "每個 node 的 BF 只能是 1、0、−1。JAN 那棵 root 是 −1 看似沒事，但 FEB 是 3，就不是 AVL。",
+     "read": "每個 node 的 BF 只能是 1、0、負1。JAN 那棵 root 是 負1 看似沒事，但 FEB 是 3，就不是 AVL。",
+     "k": 9,
+     "src": {
+      "v": "bULIs7AVDNk",
+      "t": 5684.35
+     }
+    }
+   ]
+  },
+  {
+   "title": "延伸：heap 跟 max tree 差在哪",
+   "scene": "hashlin1-maxtree-vs-heap",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "林老師在進 hash 之前，先補了進階的 heap。先回答一個問題：heap 和 max tree 差在哪？",
+     "k": 1,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 496.25
+     }
+    },
+    {
+     "say": "max tree 只要求每個 node 比下面的大，樹高沒有保證。",
+     "k": 2,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 500.67
+     }
+    },
+    {
+     "say": "最壞會退化成一條 linked list，從 root 走到 leaf 是 O(n)。",
+     "read": "最壞會退化成一條 linked list，從 root 走到 leaf 是 大O n。",
+     "k": 4,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 551.59
+     }
+    },
+    {
+     "say": "heap 多一個限制：一定是 complete binary tree，n 個 node 樹高只有大約 log₂n。",
+     "read": "heap 多一個限制：一定是 complete binary tree，n 個 node 樹高只有大約 log 2 n。",
+     "k": 6,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 561.13
+     }
+    },
+    {
+     "say": "所以 insert 往上 sift up、remove 往下 sift down，都只走樹高那麼多層，O(log n)。",
+     "read": "所以 insert 往上 sift up、remove 往下 sift down，都只走樹高那麼多層，大O log n。",
+     "k": 8,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 1798.05
+     }
+    }
+   ]
+  },
+  {
+   "title": "目標：insert 只花 constant",
+   "scene": "hashlin1-o1-insert",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "新目標：insert 只花 constant 的力氣，又要很快拿到最大值。",
+     "k": 1,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 1834.77
+     }
+    },
+    {
+     "say": "完全不整理最快，但拿最大值時就得全部看過，O(n)。",
+     "read": "完全不整理最快，但拿最大值時就得全部看過，大O n。",
+     "k": 3,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 1845.79
+     }
+    },
+    {
+     "say": "每次只准花固定力氣很難，就像每天只准整理一分鐘，房間永遠整理不完。",
+     "k": 6,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 1963.03
+     }
+    },
+    {
+     "say": "可行的方向是 amortized constant：不是每次都便宜，而是平均下來便宜。",
+     "k": 8,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 1989.55
+     }
+    }
+   ]
+  },
+  {
+   "title": "Amortized：array 一次長兩倍",
+   "scene": "hashlin1-doubling",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "amortized 就是均攤：偶爾一次花很多，平均分給每一次。",
+     "k": 1,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 2017.5
+     }
+    },
+    {
+     "say": "例子是 extendable array：滿了不要只加一格，直接長成兩倍。",
+     "k": 4,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 2064.27
+     }
+    },
+    {
+     "say": "搬家很貴，但偶爾才發生，大部分 insert 都只要一步。",
+     "k": 7,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 2092.71
+     }
+    },
+    {
+     "say": "放 8 個：放東西 8 步，搬家 1 + 2 + 4 = 7 步，共 15 步，平均不到 2 步。",
+     "read": "放 8 個：放東西 8 步，搬家 1 加 2 加 4 等於 7 步，共 15 步，平均不到 2 步。",
+     "k": 8,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 2116.33
+     }
+    }
+   ]
+  },
+  {
+   "title": "Binomial tree",
+   "scene": "hashlin1-binomial-trees",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "想法：大部分時候插進小樹，小樹插入很便宜，小樹滿了才併成大樹。很多棵樹就叫 forest。",
+     "k": 1,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 2254.76
+     }
+    },
+    {
+     "say": "用來組 forest 的是 binomial tree：B₀ 只有一個 node。",
+     "read": "用來組 forest 的是 binomial tree：B零 只有一個 node。",
+     "k": 2,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 2453.44
+     }
+    },
+    {
+     "say": "B₁ 是 root 下面接一棵 B₀；B₂ 是 root 下面接 B₀ 和 B₁。",
+     "read": "B一 是 root 下面接一棵 B零；B二 是 root 下面接 B零 和 B一。",
+     "k": 4,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 2512.4
+     }
+    },
+    {
+     "say": "B₃ 的 root 下面接 B₀、B₁、B₂，有 3 個小孩，所以不是 binary tree。",
+     "read": "B三 的 root 下面接 B零、B一、B二，有 3 個小孩，所以不是 binary tree。",
+     "k": 6,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 2598.42
+     }
+    },
+    {
+     "say": "node 數是 1、2、4、8，B_k 剛好 2ᵏ 個。",
+     "read": "node 數是 1、2、4、8，B k 剛好 2的k次方 個。",
+     "k": 8,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 2731.32
+     }
+    },
+    {
+     "say": "換個角度：兩棵一樣的 B_k 接起來，就是一棵 B_{k+1}。同學說很像玩 2048。",
+     "read": "換個角度：兩棵一樣的 B k 接起來，就是一棵 B k加1。同學說很像玩 2048。",
+     "k": 10,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 2789.51
+     }
+    },
+    {
+     "say": "實作上用 left child, right sibling 存：往左是第一個小孩，往右是下一個兄弟。",
+     "k": 10,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 3849.68
+     }
+    }
+   ]
+  },
+  {
+   "title": "Binomial forest：二進位決定有哪些樹",
+   "scene": "hashlin1-forest-10-17",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "資料不是剛好 2ᵏ 個怎麼辦？用好幾棵樹湊，這就是十進位轉二進位。",
+     "read": "資料不是剛好 2的k次方 個怎麼辦？用好幾棵樹湊，這就是十進位轉二進位。",
+     "k": 1,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 4041.83
+     }
+    },
+    {
+     "say": "規定每種 B_k 最多一棵，正好對應二進位每一位的 0 或 1。",
+     "read": "規定每種 B k 最多一棵，正好對應二進位每一位的 0 或 1。",
+     "k": 2,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 4350.71
+     }
+    },
+    {
+     "say": "10 = 1010₂，就是一棵 B₃ 加一棵 B₁。",
+     "read": "10 等於 二進位 1010，就是一棵 B三 加一棵 B一。",
+     "k": 5,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 4387.85
+     }
+    },
+    {
+     "say": "17 呢？老師一度想說 8 + 9，馬上改口：只能是 16 + 1，一棵 B₄ 加一棵 B₀。",
+     "read": "17 呢？老師一度想說 8 加 9，馬上改口：只能是 16 加 1，一棵 B四 加一棵 B零。",
+     "k": 6,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 4431.58
+     }
+    },
+    {
+     "say": "前面老師也把 9 = 8 + 1 說成 B₃ 和 B₁，其實 1 個 node 的是 B₀。",
+     "read": "前面老師也把 9 等於 8 加 1 說成 B三 和 B一，其實 1 個 node 的是 B零。",
+     "k": 7,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 4065.47
+     }
+    },
+    {
+     "say": "每棵樹再滿足 max tree，root 比整棵子樹都大，這就是 binomial heap。",
+     "k": 9,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 4503.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Insert 5、7、3、2：像二進位加 1",
+   "scene": "hashlin1-insert-5732",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "從空的 max binomial heap 開始。insert 5，就是一棵 B₀。",
+     "read": "從空的 max binomial heap 開始。insert 5，就是一棵 B零。",
+     "k": 3,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 4565.01
+     }
+    },
+    {
+     "say": "insert 7：兩棵 B₀ 打一架，贏的 7 在上、5 掛下面，合成 B₁。",
+     "read": "insert 7：兩棵 B零 打一架，贏的 7 在上、5 掛下面，合成 B一。",
+     "k": 8,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 4717.51
+     }
+    },
+    {
+     "say": "insert 3：3 個 node 是 11₂，3 自己當 B₀ 就好。2 + 1 沒有進位，不用合併。",
+     "read": "insert 3：3 個 node 是 二進位 11，3 自己當 B零 就好。2 加 1 沒有進位，不用合併。",
+     "k": 10,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 5847.03
+     }
+    },
+    {
+     "say": "insert 2：兩棵 B₀ 合成 B₁，又碰上原本的 B₁，像二進位連續進位。",
+     "read": "insert 2：兩棵 B零 合成 B一，又碰上原本的 B一，像二進位連續進位。",
+     "k": 13,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 4859.88
+     }
+    },
+    {
+     "say": "合併兩棵樹只要老大出來單挑：7 和 3 比，下面的小嘍囉不用動。",
+     "k": 15,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 4905.75
+     }
+    },
+    {
+     "say": "7 贏放上面，3 帶著 2 掛到 7 下面，得到一棵 B₂，還是 max tree。",
+     "read": "7 贏放上面，3 帶著 2 掛到 7 下面，得到一棵 B二，還是 max tree。",
+     "k": 17,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 4960.64
+     }
+    }
+   ]
+  },
+  {
+   "title": "Insert 為什麼是 amortized O(1)",
+   "scene": "hashlin1-amortized-counter",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "N 次 insert，光是放 B₀ 就花 N。",
+     "read": "N 次 insert，光是放 B零 就花 N。",
+     "k": 4,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 5042.79
+     }
+    },
+    {
+     "say": "B₀ 合併每 2 輪一次，B₁ 每 4 輪一次，B₂ 每 8 輪一次，越高位越少進位。",
+     "read": "B零 合併每 2 輪一次，B一 每 4 輪一次，B二 每 8 輪一次，越高位越少進位。",
+     "k": 6,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 5058.6
+     }
+    },
+    {
+     "say": "總合併次數 n/2 + n/4 + n/8 + … 不超過 n，所以 N 次 insert 共 O(N)，平均 O(1)。",
+     "read": "總合併次數 n 除以 2，加 n 除以 4，加 n 除以 8，一路加下去不超過 n，所以 N 次 insert 共 大O N，平均 大O 1。",
+     "k": 8,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 5143.64
+     }
+    },
+    {
+     "say": "最貴的是 11111₂ 再加 1，一路連鎖合併 5 次，但很少發生。",
+     "read": "最貴的是 二進位 11111 再加 1，一路連鎖合併 5 次，但很少發生。",
+     "k": 11,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 5180.15
+     }
+    },
+    {
+     "say": "合併真的是 constant 嗎？是：老大打一架，輸的整棵掛到贏的下面。",
+     "k": 14,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 5231.56
+     }
+    },
+    {
+     "say": "把 order 最高的小孩放最左邊，輸的那棵就像插在 linked list 的 head，O(1)。",
+     "read": "把 order 最高的小孩放最左邊，輸的那棵就像插在 linked list 的 head，大O 1。",
+     "k": 16,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 5277.87
+     }
+    }
+   ]
+  },
+  {
+   "title": "合併兩個 binomial heap",
+   "scene": "hashlin1-meld-binary",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "所以 heap 的 merge，道理上就是二進位加法。",
+     "k": 2,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 5375.07
+     }
+    },
+    {
+     "say": "兩個 heap 也能輕鬆合併，就是兩個二進位數相加，像把學校 to-do list 跟約會 to-do list 合成一個。",
+     "k": 4,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 5412.81
+     }
+    },
+    {
+     "say": "在 merge 這件事上，binomial heap 比 complete tree 做的 heap 方便得多。",
+     "k": 6,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 5437.77
+     }
+    }
+   ]
+  },
+  {
+   "title": "getMax 與 removeMax",
+   "scene": "hashlin1-removemax-14",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "getMax：每棵的 root 都是自己那棵的老大，一個個問過就好。",
+     "k": 1,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 5499.41
+     }
+    },
+    {
+     "say": "樹最多 ⌊log₂n⌋ + 1 棵，像 15 = 1111₂ 有 4 棵，所以 getMax 是 O(log n)。",
+     "read": "樹最多 log 2 n 取 floor 再加 1 棵，像 15 等於 二進位 1111 有 4 棵，所以 getMax 是 大O log n。",
+     "k": 1,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 6065.89
+     }
+    },
+    {
+     "say": "removeMax 的例子：14 個 node = 1110₂，最大值 50 在 B₂ 的 root。",
+     "read": "removeMax 的例子：14 個 node 等於 二進位 1110，最大值 50 在 B二 的 root。",
+     "k": 2,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 6241.18
+     }
+    },
+    {
+     "say": "拿掉老大，下面剩一棵 B₁ 和一棵 B₀，本身就是完整的小 binomial tree。",
+     "read": "拿掉老大，下面剩一棵 B一 和一棵 B零，本身就是完整的小 binomial tree。",
+     "k": 5,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 6294.9
+     }
+    },
+    {
+     "say": "再做二進位加法：兩棵 B₁ 打一架，40 贏，合成 B₂，補進空出來的位置。",
+     "read": "再做二進位加法：兩棵 B一 打一架，40 贏，合成 B二，補進空出來的位置。",
+     "k": 8,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 6345.69
+     }
+    },
+    {
+     "say": "1010₂ + 0011₂ = 1101₂ = 13，少一個，沒錯。removeMax 也是 O(log n)。",
+     "read": "二進位 1010 加 二進位 0011 等於 二進位 1101 等於 13，少一個，沒錯。removeMax 也是 大O log n。",
+     "k": 10,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 6364.19
+     }
+    },
+    {
+     "say": "同學問老大一樣大怎麼辦？誰在上面都行。林老師說：沒必要就選最簡單的做法。",
+     "k": 10,
+     "src": {
+      "v": "SBQLkYIDAZI",
+      "t": 7143.73
+     }
+    }
+   ]
+  }
+ ]
+}

@@ -772,10 +772,11 @@
   });
 
   // ── 自製課: one lesson for the whole chapter, written from every teacher's
-  // subtitles (lessons/<subj>-<n>.json). Each line is shown, read aloud by the
-  // device's own voice, and plays step k of its part's scene; while playing,
-  // the next line follows when the voice finishes. A line may name the
-  // sentence it came from, to hear the teacher say it.
+  // subtitles (lessons/<subj>-<n>.json). Each line is shown and plays step k
+  // of its part's scene while it is heard. The audio is read ahead of time,
+  // one mp3 per part (tools/lesson-audio.py; times.json says where each line
+  // starts); without it the device's own voice reads line by line. A line may
+  // name the sentence it came from, to hear the teacher say it.
   let lesson = null, lsOn = false, lsI = 0, lsPlaying = false, lsSeq = 0, lsLines = [], lsTimer = 0;
   const synth = window.speechSynthesis || null;
   const RATES = [0.9, 1, 1.15, 1.3, 1.5];
@@ -799,17 +800,58 @@
       .replace(/≠/g, '不等於').replace(/←/g, '設成').replace(/→/g, '，').replace(/×/g, '乘').replace(/[()（）]/g, ' ');
   }
   // lessons/index.json lists the chapters that have one, so the others ask for nothing
-  fetch('/lessons/index.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : []; }).then(function(have){
-    return have.indexOf(chId) >= 0 ? fetch('/lessons/' + chId + '.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : null; }) : null;
-  }).then(function(l){
-    if (!l || !l.parts || !hasStage) return;
+  // ({"ds-1": {"audio": true}, …}; the audio flag: its mp3s are deployed too)
+  let lsTimes = null, lsAudio = null, lsSpeed = Number(store.get('lesson-speed')) || 1;
+  const lsFirst = [];
+  const getJson = function(u){ return fetch(u, {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : null; }); };
+  getJson('/lessons/index.json').then(function(have){
+    const me = have && have[chId];
+    if (!me || !hasStage) return null;
+    return Promise.all([getJson('/lessons/' + chId + '.json'), me.audio ? getJson('/lessons/audio/' + chId + '/times.json').catch(function(){ return null; }) : null]);
+  }).then(function(got){
+    const l = got && got[0];
+    if (!l || !l.parts) return;
     lesson = l; lsLines = [];
+    if (got[1] && got[1].parts && got[1].parts.length === l.parts.length) lsTimes = got[1];
     l.parts.forEach(function(p, pi){
       let k = 0;
+      lsFirst[pi] = lsLines.length;
       p.lines.forEach(function(x, li){ k = x.k != null ? x.k : li === 0 ? 1 : k + 1; lsLines.push({pi: pi, li: li, k: k, line: x}); });
     });
     $('lessonBtn').hidden = false;
   }).catch(function(){});
+  // the read-ahead audio: play the current line's part from where the line starts
+  function lsAudioStart(){
+    const x = lsLines[lsI], t = lsTimes.parts[x.pi];
+    if (!lsAudio) {
+      lsAudio = new Audio(); lsAudio.preload = 'auto';
+      lsAudio.addEventListener('timeupdate', lsFollow);
+      lsAudio.addEventListener('ended', function(){
+        if (!lsPlaying) return;
+        const pi = Number(lsAudio.dataset.part);
+        if (pi + 1 >= lesson.parts.length) { lsStop(); return; }
+        lsI = lsFirst[pi + 1]; renderLesson(); lsAudioStart();
+      });
+      lsAudio.addEventListener('error', function(){ if (lsPlaying) { lsStop(); lsHint('音檔沒有載入，確認網路之後再按一次「播放」。'); } });
+    }
+    if (lsAudio.dataset.part !== String(x.pi)) { lsAudio.src = '/lessons/audio/' + chId + '/' + t.file; lsAudio.dataset.part = String(x.pi); }
+    const at = t.starts[x.li] || 0;
+    // a seek before the file's length is known is ignored by some browsers
+    if (lsAudio.readyState >= 1) { if (Math.abs(lsAudio.currentTime - at) > 0.4) lsAudio.currentTime = at; }
+    else lsAudio.addEventListener('loadedmetadata', function(){ lsAudio.currentTime = at; }, {once: true});
+    lsAudio.playbackRate = lsSpeed;
+    lsPlaying = true; $('lsPlay').textContent = '⏸ 暫停'; lsHint('');
+    lsAudio.play().catch(function(){ lsStop(); lsHint('瀏覽器擋下了播放，再按一次「播放」。'); });
+  }
+  // the audio moved into the next line: show it and its animation step
+  function lsFollow(){
+    if (!lsPlaying) return;
+    const pi = Number(lsAudio.dataset.part), st = lsTimes.parts[pi].starts, t = lsAudio.currentTime;
+    let li = 0;
+    st.forEach(function(v, j){ if (v <= t + 0.05) li = j; });
+    const i = lsFirst[pi] + li;
+    if (i !== lsI) { lsI = i; renderLesson(); }
+  }
   function enterLesson(){
     if (!lesson) return;
     if (walk) exitWalk(null);
@@ -845,6 +887,7 @@
   function lsStop(){
     lsPlaying = false; lsSeq++; clearTimeout(lsTimer);
     if (synth && (synth.speaking || synth.pending)) synth.cancel();
+    if (lsAudio) lsAudio.pause();
     $('lsPlay').textContent = '▶ 播放';
   }
   function lsGo(i){
@@ -856,6 +899,7 @@
   }
   // read the current line; when it ends, go on to the next one
   function lsStart(){
+    if (lsTimes) { lsAudioStart(); return; }
     lsPlaying = true; $('lsPlay').textContent = '⏸ 暫停';
     const seq = ++lsSeq, x = lsLines[lsI];
     const next = function(){
@@ -920,7 +964,7 @@
     $('lsHear').hidden = !src;
     $('lsPrev').disabled = lsI === 0;
     $('lsNext').disabled = lsI >= lsLines.length - 1;
-    $('lsRate').textContent = lsRate + '×';
+    $('lsRate').textContent = (lsTimes ? lsSpeed : lsRate) + '×';
     $('timeline').querySelectorAll('.st-seg').forEach(function(b){
       const i = Number(b.dataset.part);
       b.classList.toggle('active', i === x.pi); b.classList.toggle('past', i < x.pi);
@@ -933,6 +977,13 @@
   $('lsPrev').onclick = function(){ lsGo(lsI - 1); };
   $('lsNext').onclick = function(){ lsGo(lsI + 1); };
   $('lsRate').onclick = function(){
+    if (lsTimes) {
+      lsSpeed = RATES[(RATES.indexOf(lsSpeed) + 1) % RATES.length] || 1;
+      store.set('lesson-speed', String(lsSpeed));
+      $('lsRate').textContent = lsSpeed + '×';
+      if (lsAudio) lsAudio.playbackRate = lsSpeed;
+      return;
+    }
     lsRate = RATES[(RATES.indexOf(lsRate) + 1) % RATES.length] || 1;
     store.set('lesson-rate', String(lsRate));
     $('lsRate').textContent = lsRate + '×';
