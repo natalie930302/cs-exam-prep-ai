@@ -1,0 +1,5699 @@
+{
+ "chapter": "os-9",
+ "title": "檔案系統",
+ "intro": "從檔案、access method、directory、mounting 和權限，一路走進檔案系統內部：on-disk 與 in-memory 結構、contiguous／linked／indexed 配置、inode、free space，最後下到硬碟的轉速和 access time。",
+ "parts": [
+  {
+   "title": "這一章的地圖",
+   "scene": "fs-23a-intro",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "好，CPU 和 memory 都講完了，作業系統最後一塊要管的資源，就是 storage，儲存。",
+     "k": 1,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 15.3
+     }
+    },
+    {
+     "say": "而儲存最常見的樣子是什麼？就是檔案。所以這一章從「檔案」開始講起。",
+     "k": 1,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 20.3
+     }
+    },
+    {
+     "say": "檔案系統分兩半來看：先講 interface，站在使用者的角度；再講 implementation，看內部怎麼做。",
+     "k": 2,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 51.3
+     }
+    },
+    {
+     "say": "第一個主題是檔案本身和 access method，也就是讀一個檔案有哪幾種方式。",
+     "k": 3,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 96.2
+     }
+    },
+    {
+     "say": "接著是 directory，就是你每天在點的資料夾。",
+     "k": 4,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 130.9
+     }
+    },
+    {
+     "say": "再來是 mounting，把一塊儲存空間「掛」進檔案系統，空間就能動態擴充。",
+     "k": 5,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 139
+     }
+    },
+    {
+     "say": "然後是 sharing。檔案系統存在的一大理由就是共享，現在甚至跨網路，更複雜。",
+     "k": 6,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 153.5
+     }
+    },
+    {
+     "say": "最後是 protection。資料是使用者的，跟 CPU 那種資源很不一樣，一定要保護好。",
+     "k": 7,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 191.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "File 是 logical storage unit",
+   "scene": "fs-23a-logical",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "那先問最基本的：file 到底是什麼？",
+     "k": 1,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 208.3
+     }
+    },
+    {
+     "say": "答案是：file 是一種 logical storage unit，邏輯上的儲存單位，是為了方便人用而定義的。",
+     "k": 2,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 218
+     }
+    },
+    {
+     "say": "對 storage 來說，它根本不在乎你存的是文字還是圖片，反正就是一堆 bytes。",
+     "k": 3,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 225.5
+     }
+    },
+    {
+     "say": "那 physical 的單位呢？這就要看硬體怎麼存了。",
+     "k": 4,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 257.7
+     }
+    },
+    {
+     "say": "現在最主要的儲存裝置還是 hard drive，靠讀寫頭在轉動的盤面上讀寫。",
+     "k": 5,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 284
+     }
+    },
+    {
+     "say": "硬碟裡有好幾片讀寫盤，叫 platter，疊在一起轉。",
+     "k": 6,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 310.5
+     }
+    },
+    {
+     "say": "每片盤面切成一圈一圈的同心圓，每一圈叫 track，磁軌。",
+     "k": 7,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 322.1
+     }
+    },
+    {
+     "say": "每個 track 再切成一段一段，每一段叫 sector，磁區。",
+     "k": 8,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 324.2
+     }
+    },
+    {
+     "say": "sector 才是真正存資料的最小 physical unit，資料最後都落在某個 sector 上。",
+     "k": 9,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 329.9
+     }
+    },
+    {
+     "say": "所以檔案系統的工作，就是把 file 這個邏輯單位，map 到實體的 sector 上。",
+     "k": 10,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 341.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "File 的 attributes",
+   "scene": "fs-23a-attr",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "除了把內容 map 到 device 上，一個檔案還帶著很多 attribute，也就是屬性。",
+     "k": 1,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 361.1
+     }
+    },
+    {
+     "say": "第一個是 name。欸，檔名其實也只是一個屬性，是使用者取來方便自己認的。",
+     "k": 3,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 376.6
+     }
+    },
+    {
+     "say": "真正要唯一的是 identifier，一個人看不懂的 ID。人不愛記數字，所以才另外有檔名。",
+     "k": 4,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 387.8
+     }
+    },
+    {
+     "say": "其他還有 type、location、size，還有 protection，也就是誰可以讀寫。",
+     "k": 5,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 400.6
+     }
+    },
+    {
+     "say": "有些屬性是給使用者方便用的，有些是給 OS 或 file system 自己管理用的。",
+     "k": 6,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 417.9
+     }
+    },
+    {
+     "say": "這些屬性全部都要存起來，屬性加上內容，才構成一個 file。",
+     "k": 7,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 423.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "File operations",
+   "scene": "fs-23a-ops",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "file 支援的 operation 其實不多，大概十個左右。",
+     "k": 1,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 433.6
+     }
+    },
+    {
+     "say": "最常見的是 open、read、write。",
+     "k": 2,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 446.3
+     }
+    },
+    {
+     "say": "還有 create 和 delete，這些你一定都用過。",
+     "k": 3,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 451.5
+     }
+    },
+    {
+     "say": "比較少人注意的是 truncate：從某個位置開始，後面的內容通通不要了。",
+     "k": 5,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 458.8
+     }
+    },
+    {
+     "say": "還有 concatenate，把兩個檔案接在一起，誰在前誰在後都可以。",
+     "k": 7,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 477.6
+     }
+    },
+    {
+     "say": "什麼時候用？像不同 process 各自 dump 了一份 log，要合在一起看才有意義，就把它們接起來。",
+     "k": 8,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 491.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "開檔之後的兩張表",
+   "scene": "fs-23a-tables",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "好，要操作檔案內容，系統需要一些 metadata：檔案存在哪？剛剛操作到哪？",
+     "k": 1,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 522
+     }
+    },
+    {
+     "say": "這些資訊主要放在兩個 data structure 裡。",
+     "k": 2,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 544.1
+     }
+    },
+    {
+     "say": "第一個在 process 這邊：正在操作檔案的 process，會有一張 open-file table。",
+     "k": 3,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 548.8
+     }
+    },
+    {
+     "say": "所以為什麼操作檔案前一定要先 open？因為 open 才會建立這些資訊，沒有它，後面讀寫都做不了。",
+     "k": 4,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 559.2
+     }
+    },
+    {
+     "say": "第二個在 OS 這邊：檔案被開啟時，OS 也把它的資料存進 system-wide table。",
+     "k": 5,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 584.3
+     }
+    },
+    {
+     "say": "system-wide 就是全系統共用：P1、P2 不管誰開了 a.txt，都指到同一個地方。",
+     "k": 6,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 606.6
+     }
+    },
+    {
+     "say": "至於跟「是誰開的」有關、每個 process 可能不同的資訊，就放在各自的 open-file table。",
+     "k": 7,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 624.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Per-process open-file table",
+   "scene": "fs-23a-perproc",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "先看 process 那張表。重點就一句：它是 per process 的，每個 process 各有一張。",
+     "k": 1,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 652
+     }
+    },
+    {
+     "say": "每開一個檔案，表裡就多一個 entry，存只跟這個 process 有關的資訊。",
+     "k": 2,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 660.7
+     }
+    },
+    {
+     "say": "寫過 C 的話，fopen 之後會拿到一個 file handler，大家常叫它 file pointer。",
+     "k": 3,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 688.1
+     }
+    },
+    {
+     "say": "這個 handler，其實就是對到 open-file table 裡某個 entry 的位置。",
+     "k": 4,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 698.5
+     }
+    },
+    {
+     "say": "entry 裡很重要的一項是 position，目前讀寫到哪。剛開檔時是 0。",
+     "k": 5,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 707.9
+     }
+    },
+    {
+     "say": "P1 讀了 4 個 bytes，position 移到 4；P2 也開了 a.txt，它的 position 還是 0。",
+     "k": 7,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 720.4
+     }
+    },
+    {
+     "say": "另一個例子是 access right：同一個檔案，P1 用 read 開、P2 用 write 開，權限就不同。",
+     "k": 8,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 731.4
+     }
+    },
+    {
+     "say": "這種會因 process 而不同的資訊，全都放在 per-process 的 open-file table。",
+     "k": 9,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 748.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "System-wide table 與 data consistency",
+   "scene": "fs-23a-syswide",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "再看 system-wide open-file table。它跨整個 OS，任何 process 開的檔案，在這都有一個 entry。",
+     "k": 1,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 772.2
+     }
+    },
+    {
+     "say": "兩邊是對在一起的：P1、P2 表裡的 a.txt，都指到 system-wide 表裡同一個 a.txt。",
+     "k": 2,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 788.9
+     }
+    },
+    {
+     "say": "那它存什麼？存 process independent 的資訊，不管誰開，看到的都一樣。",
+     "k": 3,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 802.2
+     }
+    },
+    {
+     "say": "像 disk location：檔案只有一份，內容的位置也只有一個。",
+     "k": 4,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 822.5
+     }
+    },
+    {
+     "say": "還有 access date、file size，很多 process 同時開 a.txt，看到的都相同。",
+     "k": 5,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 847.5
+     }
+    },
+    {
+     "say": "那問題來了：為什麼不乾脆每個 process 的表裡都存一份就好？",
+     "k": 6,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 875.3
+     }
+    },
+    {
+     "say": "因為把同一份資料 duplicate 好幾份來維護，在系統設計上很危險。假設兩邊都存 size 100。",
+     "k": 7,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 890.1
+     }
+    },
+    {
+     "say": "P1 一寫，檔案變長，size 改成 120，可是另一份還是 100，兩邊就對不上了。",
+     "k": 8,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 911.1
+     }
+    },
+    {
+     "say": "這就是 data consistency 問題，多個副本要保持一致，通常非常麻煩。",
+     "k": 9,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 929.9
+     }
+    },
+    {
+     "say": "所以大家該看到一樣的，只存一份在 system-wide；會因 process 不同的，才各自存。",
+     "k": 10,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 951.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "副檔名只是 hint",
+   "scene": "fs-23a-type",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "順帶一提，檔案開啟後，屬性會依跟 process 有沒有關，分到這兩張表。",
+     "k": 1,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 994.6
+     }
+    },
+    {
+     "say": "其中有個大家很熟的屬性：file type，也就是副檔名，像 report.docx 的 docx。",
+     "k": 2,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1017.7
+     }
+    },
+    {
+     "say": "要有正確觀念：副檔名對 OS 沒有實質意義，它只是一個 hint。",
+     "k": 3,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1024.5
+     }
+    },
+    {
+     "say": "你點兩下一個檔案，OS 怎麼知道要用哪個程式開？",
+     "k": 4,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1038.2
+     }
+    },
+    {
+     "say": "它就看副檔名，先猜、先試用對應的程式，像 docx 就用 Word。就這樣而已。",
+     "k": 5,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1052.1
+     }
+    },
+    {
+     "say": "所以在 Linux，很多檔案根本沒有副檔名，也完全沒問題。它主要是方便人分辨。",
+     "k": 6,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1067.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Sequential access",
+   "scene": "fs-23a-seq",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "接著看怎麼 access 一個檔案。平常你可能就是開 Word，或寫個 fopen。",
+     "k": 1,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1096.6
+     }
+    },
+    {
+     "say": "回到本質，大致分三大類：sequential、direct、index，其他多半是變化版。",
+     "k": 2,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1122.3
+     }
+    },
+    {
+     "say": "第一種、也是最主要的：sequential access。檔案其實就是一個 array of bytes。",
+     "k": 4,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1139.8
+     }
+    },
+    {
+     "say": "循序就是讀的時候必須連續，所以這種 API 只需要一個 current position。",
+     "k": 5,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1157.9
+     }
+    },
+    {
+     "say": "呼叫 read、write 不用給位置，只要給長度，例如 read(fp, 4)。",
+     "read": "呼叫 read、write 不用給位置，只要給長度，例如 read，參數給 fp 和 4。",
+     "k": 7,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1182
+     }
+    },
+    {
+     "say": "讀完 4 個 bytes，position 就自動往後移 4。這是 implicit 的，library 幫你移。",
+     "k": 8,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1194.2
+     }
+    },
+    {
+     "say": "要跳到別的地方，就要 reset 或 rewind，把 position 移回 0，或移到指定的位置。",
+     "k": 9,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1216.3
+     }
+    },
+    {
+     "say": "C library 的 fopen、fread、fwrite，就都是 sequential access。",
+     "k": 10,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1255.6
+     }
+    },
+    {
+     "say": "為什麼偏好它？檔案多在硬碟上，硬碟循序讀寫遠快於 random，讀寫頭不用一直跳。",
+     "k": 11,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1267.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Direct access",
+   "scene": "fs-23a-direct",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "另一種是 direct access，也就是俗稱的 random access，跳著讀。",
+     "k": 1,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1334
+     }
+    },
+    {
+     "say": "你直接告訴檔案系統要讀哪裡，例如 read(fp, 7, 1)，就直接跳到第 7 格。",
+     "read": "你直接告訴檔案系統要讀哪裡，例如 read，參數給 fp、7 和 1，就直接跳到第 7 格。",
+     "k": 3,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1351.6
+     }
+    },
+    {
+     "say": "所以這種 API 一定要多塞一個 position 參數，不然 library 不知道你要讀哪。",
+     "k": 4,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1370.1
+     }
+    },
+    {
+     "say": "看起來更 powerful 對吧？一個 API 就能讀任何位置。",
+     "k": 5,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1393.5
+     }
+    },
+    {
+     "say": "那為什麼還要 sequential 的 API？因為兩者各有各的好處。",
+     "k": 6,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1404.5
+     }
+    },
+    {
+     "say": "如果本來就要從頭掃到尾，用 sequential 很簡單：reset 之後 read、read、read 就讀完了。",
+     "k": 7,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1426.3
+     }
+    },
+    {
+     "say": "用 direct 也做得到，但每次讀之前，你都要自己把 position 加上去，不直覺也不方便。",
+     "k": 8,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1449
+     }
+    },
+    {
+     "say": "所以要看使用行為來選 API。",
+     "k": 9,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1480
+     }
+    },
+    {
+     "say": "而檔案系統實際看到的，大部分都是 sequential access。",
+     "k": 10,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1507.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Index access",
+   "scene": "fs-23a-index",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "random access 還有一種變形，叫 index access。不用硬背，懂概念就好。",
+     "k": 1,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1524.2
+     }
+    },
+    {
+     "say": "它就像 database：你只會說「我要 John 的資料」，卻不知道它存在哪。",
+     "k": 3,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1557.3
+     }
+    },
+    {
+     "say": "這時你不會想從頭 sequential 找，太慢了，你希望直接把那一筆拉出來。",
+     "k": 4,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1577.4
+     }
+    },
+    {
+     "say": "前面說檔案多半是 sequential，因為一般檔案沒有 structure，就是從頭讀到尾。",
+     "k": 6,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1632.2
+     }
+    },
+    {
+     "say": "但當內容裡有一筆一筆的 record，它還是檔案，讀法就不一樣了。",
+     "k": 7,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1647
+     }
+    },
+    {
+     "say": "這時在 random access 上再建一張 index table：查 John，表上寫 6，直接去第 6 筆。",
+     "k": 8,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1664.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "看 API 參數分辨三種存取",
+   "scene": "fs-23c-access",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "周老師下課又補了一組例子，剛好把三種串起來：sequential 就像 C 的 fread、fwrite。",
+     "k": 1,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 15
+     }
+    },
+    {
+     "say": "index access 就像 database，用一個 key 去查。",
+     "k": 2,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 17.2
+     }
+    },
+    {
+     "say": "那 direct access 呢？比較像高階語言提供的功能。",
+     "k": 3,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 20.2
+     }
+    },
+    {
+     "say": "像 MATLAB：load 一個檔案，每一行當 row，逗號隔開的當 column，變成一張表。",
+     "k": 4,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 45.4
+     }
+    },
+    {
+     "say": "然後你說：給我 A(3,3)，也就是第 3 列第 3 行的資料。",
+     "read": "然後你說：給我 A 3 逗號 3，也就是第 3 列第 3 行的資料。",
+     "k": 5,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 57.1
+     }
+    },
+    {
+     "say": "不用 index、不用名字，直接給座標，這就是 direct access。",
+     "k": 6,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 76.4
+     }
+    },
+    {
+     "say": "所以看 API 的參數就分得出來：沒給 position，一定是 sequential。",
+     "k": 8,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 94.8
+     }
+    },
+    {
+     "say": "給的是位置，像剛剛的 A(3,3)，就是 direct。",
+     "read": "給的是位置，像剛剛的 A 3 逗號 3，就是 direct。",
+     "k": 9,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 103.6
+     }
+    },
+    {
+     "say": "給的是一個名字，像 John 這種自己取的 key，那就是 index access。",
+     "k": 10,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 114.1
+     }
+    },
+    {
+     "say": "實作上，循序的就盡量把資料連著放；會跳著讀、有 index 的，就要建結構來快速找位置。",
+     "k": 12,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 153.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "存取方式要配合儲存裝置",
+   "scene": "fs-23a-impl",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "檔案系統大多是 sequential；database 其實也是一種檔案，但設計很不同。",
+     "k": 1,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1690
+     }
+    },
+    {
+     "say": "前面說過，disk 不喜歡 random access，因為讀寫頭要一直移動。",
+     "k": 2,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1711.7
+     }
+    },
+    {
+     "say": "所以上層要 support random access，通常一定要有 memory cache，先把資料放在 memory。",
+     "k": 3,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1719.5
+     }
+    },
+    {
+     "say": "database 就是這樣：盡量把資料 keep 在 memory，用 memory 的速度撐住 random access。",
+     "k": 4,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1731.1
+     }
+    },
+    {
+     "say": "所以重點是：看應用情境，選比較適合的 access 方式。",
+     "k": 5,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1763.3
+     }
+    },
+    {
+     "say": "對上，選對了可以減少使用者寫程式的 effort。",
+     "k": 6,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1777.9
+     }
+    },
+    {
+     "say": "對下，要讓這種 access pattern 在實體裝置上跑得有效率；不合的時候，就靠中間那層軟體想辦法。",
+     "k": 7,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1783.8
+     }
+    },
+    {
+     "say": "有同學問到這裡，老師說：同樣是 file system，實作也不同，有的適合循序，有的適合 random。",
+     "k": 8,
+     "src": {
+      "v": "xzjOe7-m6qc",
+      "t": 1818.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Partition 與 volume",
+   "scene": "fs-23b-partvol",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "好，檔案一多就要用資料夾管。不過在講 directory 前，先分清兩個詞：partition 和 volume。",
+     "k": 1,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 16.3
+     }
+    },
+    {
+     "say": "volume 就像你電腦裡的 C 槽、D 槽。",
+     "k": 3,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 67.7
+     }
+    },
+    {
+     "say": "partition 則是把一顆硬碟切割，切出來的一塊就叫 partition，這裡切成 P1、P2。",
+     "k": 4,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 72.4
+     }
+    },
+    {
+     "say": "買一顆新硬碟，第一件事通常就是 partition，決定要切多少空間出來。",
+     "k": 6,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 104.8
+     }
+    },
+    {
+     "say": "接著做 formatting。格式化在做什麼？就是在這塊 partition 上建立一個檔案系統。",
+     "k": 7,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 121.7
+     }
+    },
+    {
+     "say": "有了檔案系統，能用檔案的方式存資料，它就從 partition 變成 volume，例如 C 槽。",
+     "k": 8,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 139
+     }
+    },
+    {
+     "say": "現在軟體很有彈性，一個 partition 不一定對到一顆硬碟，也可以是好幾顆組成。",
+     "k": 9,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 169.5
+     }
+    },
+    {
+     "say": "像每顆只有 2T，五顆串起來，就是一個 10T 的 partition，甚至可以透過網路串。",
+     "read": "像每顆只有 2 T，五顆串起來，就是一個 10 T 的 partition，甚至可以透過網路串。",
+     "k": 10,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 190.4
+     }
+    },
+    {
+     "say": "但也受硬體限制，像 floppy、CD-ROM 就是一整個，沒辦法再切。",
+     "k": 11,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 220.2
+     }
+    },
+    {
+     "say": "記住：partition 是 raw 的，format 之後才是 volume，差別就在有沒有 file system。",
+     "k": 12,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 251.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Raw partition：database 與 swap space",
+   "scene": "fs-23b-raw",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "補充一下，database 的角色跟檔案系統很像，只是它要 support random access。",
+     "k": 1,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 262.5
+     }
+    },
+    {
+     "say": "所以很多 database 根本不 format，直接拿一塊 raw partition 來用，它不想用檔案的形式。",
+     "k": 2,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 277
+     }
+    },
+    {
+     "say": "傳統 database 用 table 存，每個 row 多大都知道，何必再透過 file？直接切來用就好。",
+     "k": 3,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 302.6
+     }
+    },
+    {
+     "say": "之前講的 swap space 也一樣，給它一塊 raw partition 就好，沒人規定一定要經過 file system。",
+     "k": 4,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 329.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Directory、partition 和 disk",
+   "scene": "fs-23b-layout",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "回到 directory：它把檔案切割分類，讓你比較容易找到要的檔案。",
+     "k": 1,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 340
+     }
+    },
+    {
+     "say": "注意這裡的位置只是 logical 的，也就是 path，例如 /home/john/a.txt。",
+     "read": "注意這裡的位置只是 logical 的，也就是 path，例如 斜線 home 斜線 john 斜線 a.txt。",
+     "k": 2,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 355.1
+     }
+    },
+    {
+     "say": "下面的 disk 1、disk 2，才是實體的儲存裝置。",
+     "k": 3,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 366
+     }
+    },
+    {
+     "say": "volume 可以在同一顆 disk 上，像 A 和 B；也可以跨兩顆 disk，像 C，沒有一定。",
+     "k": 4,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 375.6
+     }
+    },
+    {
+     "say": "format 之後最大的差別是：檔案系統會記錄 directory 和 file 的 data structure。",
+     "k": 5,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 397
+     }
+    },
+    {
+     "say": "找檔案時，先從 directory 找到它，再看它的內容存在哪裡。",
+     "k": 6,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 408.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Directory 的本意：檔名對到 ID",
+   "scene": "fs-23b-purpose",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "現在大家都知道，directory 是一棵 tree。",
+     "k": 1,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 427.6
+     }
+    },
+    {
+     "say": "但它是一步步演進來的。早期使用者少，檔案也少。",
+     "k": 2,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 435.4
+     }
+    },
+    {
+     "say": "最早可以說沒有資料夾，叫 single-level directory：一個目錄底下就是所有檔名。",
+     "k": 3,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 455.7
+     }
+    },
+    {
+     "say": "每個名字對到一個檔案，而檔案真正的身分，是機器用的 unique ID，人根本記不住。",
+     "k": 5,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 475.7
+     }
+    },
+    {
+     "say": "所以 directory 一開始的目的很單純：把人看得懂的檔名，對到那個唯一的 ID。",
+     "k": 6,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 488.1
+     }
+    },
+    {
+     "say": "但這個 mapping 有個特別之處：file 必須是 persistent 的，斷電也不能丟。",
+     "k": 7,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 506
+     }
+    },
+    {
+     "say": "所以 directory 的資訊也一定要寫到硬碟上；可以在 memory 當 cache，但最後要寫回去。",
+     "k": 8,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 519
+     }
+    },
+    {
+     "say": "運作時才 load 到 memory，放進剛剛那兩張 open-file table，給 process 用。",
+     "k": 9,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 541.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Directory operations 與 list 的瓶頸",
+   "scene": "fs-23b-ops",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "directory 的 operation 更少。",
+     "k": 1,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 560.5
+     }
+    },
+    {
+     "say": "create file 也算，因為要把它加進 directory 的結構，系統才知道它存在。",
+     "k": 2,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 566.2
+     }
+    },
+    {
+     "say": "delete、rename 也都是。",
+     "k": 3,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 578.4
+     }
+    },
+    {
+     "say": "還有一個大家容易忽略的：list directory，像 ls，把資料夾內容列出來。",
+     "k": 4,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 586.6
+     }
+    },
+    {
+     "say": "你可能想不到，在現代檔案系統裡，list 常常是最大的 bottleneck。",
+     "k": 5,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 595
+     }
+    },
+    {
+     "say": "想想看，一個 folder 有一萬個 file，要吃多少 memory、花多少時間，才能全部從 disk 撈出來？",
+     "k": 6,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 610.3
+     }
+    },
+    {
+     "say": "再加上 tree 很深、使用者很多，大型系統隨便一個 ls，都可能卡很久。",
+     "k": 7,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 633.3
+     }
+    },
+    {
+     "say": "另一個設計問題是怎麼找：給一個 path，像 home 底下 john 的 homework1 裡的 a.txt。",
+     "k": 8,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 660
+     }
+    },
+    {
+     "say": "要怎麼很快 traverse 到它？directory 甚至不一定用 tree 存，也可能用 hash。",
+     "k": 9,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 678.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Single-level directory",
+   "scene": "fs-23b-single",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "回到最早的設計，目的就是 mapping：用有意義、可以改的檔名，取代看不懂的 ID。",
+     "k": 1,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 701
+     }
+    },
+    {
+     "say": "single-level 的結構就是一個 root，底下全部是檔名，沒有 folder。",
+     "k": 3,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 728.4
+     }
+    },
+    {
+     "say": "這種架構下，檔名一定要 unique，不然怎麼 mapping？",
+     "k": 4,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 744.7
+     }
+    },
+    {
+     "say": "那問題來了：很多使用者共用一個目錄，大家編譯完都產生 a.out，怎麼辦？",
+     "k": 5,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 759.7
+     }
+    },
+    {
+     "say": "不是把別人的檔案 override 掉，就是系統說已經存在，根本建不了。",
+     "k": 6,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 776.5
+     }
+    },
+    {
+     "say": "還有 list 效率很差：沒有分類，只能把一大堆不是你的檔案全部掃過。",
+     "k": 7,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 784.8
+     }
+    },
+    {
+     "say": "所以早期規模小沒問題，使用者和檔案一多，就撐不住了。",
+     "k": 8,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 800
+     }
+    }
+   ]
+  },
+  {
+   "title": "Two-level 與 tree-structured directory",
+   "scene": "fs-23b-tree",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "很直覺，一層不夠就多層，多層指的就是 folder。",
+     "k": 1,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 816.4
+     }
+    },
+    {
+     "say": "最上層是 MFD，master file directory，底下每個 user 有自己的資料夾。",
+     "k": 2,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 830
+     }
+    },
+    {
+     "say": "第一個好處：list 只會列出你自己的檔案。",
+     "k": 3,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 836.7
+     }
+    },
+    {
+     "say": "第二個好處：可以一層層往下 traverse，path 的概念就出來了，例如 /user1/a。",
+     "read": "第二個好處：可以一層層往下 traverse，path 的概念就出來了，例如 斜線 user1 斜線 a。",
+     "k": 4,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 845.5
+     }
+    },
+    {
+     "say": "不過最終要做的，還是把檔名對到 ID，這才是 directory 的本意。",
+     "k": 5,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 856
+     }
+    },
+    {
+     "say": "既然能兩層，何必固定兩層？乾脆變成 tree，幾層都可以。",
+     "k": 6,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 879.7
+     }
+    },
+    {
+     "say": "每個使用者都能自己建資料夾，這就是現在檔案系統的樣子。",
+     "k": 7,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 892.6
+     }
+    },
+    {
+     "say": "tree 裡有 absolute path，從 root 一路寫下來，例如 /spell/mail/exp。",
+     "read": "tree 裡有 absolute path，從 root 一路寫下來，例如 斜線 spell 斜線 mail 斜線 exp。",
+     "k": 8,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 900.1
+     }
+    },
+    {
+     "say": "也有 relative path，相對於你目前所在的位置。人在 mail 底下，寫 exp 就好。",
+     "k": 9,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 908.1
+     }
+    },
+    {
+     "say": "relative path 是為了方便；系統處理時，多半還是先把它換成 absolute path。",
+     "k": 10,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 943.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Acyclic-graph directory 與 link",
+   "scene": "fs-23b-acyclic",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "有了 tree 之後，為了使用需求再放寬一點，就變成 acyclic graph，無環圖。",
+     "k": 2,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 974
+     }
+    },
+    {
+     "say": "tree 的限制是每個 node 只能有一個 parent，像 count 只屬於 dict。",
+     "k": 3,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 976.6
+     }
+    },
+    {
+     "say": "可是實際上常常希望，不同的人 share 同一個檔案。",
+     "k": 4,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 986.2
+     }
+    },
+    {
+     "say": "所以 /dict/count 和 /spell/count 兩個名字，其實對到同一份內容，多了一條 edge。",
+     "read": "所以 斜線 dict 斜線 count 和 斜線 spell 斜線 count 兩個名字，其實對到同一份內容，多了一條 edge。",
+     "k": 5,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 1002.3
+     }
+    },
+    {
+     "say": "可以加 edge，但有一條規矩：不能形成 cycle，不能繞一圈回到自己。",
+     "k": 6,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 1017.1
+     }
+    },
+    {
+     "say": "Linux 裡可以自己玩：ln 建 hard link，ln -s 建 symbolic link，也叫 soft link。",
+     "read": "Linux 裡可以自己玩：ln 建 hard link，ln 減 s 建 symbolic link，也叫 soft link。",
+     "k": 7,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 1031
+     }
+    },
+    {
+     "say": "差別在刪名字的時候：soft link 只記路徑，原檔一刪，它就指向不存在的地方。",
+     "k": 8,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 1044.1
+     }
+    },
+    {
+     "say": "hard link 是同一個檔案的另一個名字，要所有名字都刪掉，內容才會消失。",
+     "k": 8,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 1044.1
+     }
+    },
+    {
+     "say": "這樣同一個檔案就有 multiple absolute path，很多軟體會這樣用。",
+     "k": 9,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 1076.1
+     }
+    },
+    {
+     "say": "那為什麼不直接 copy 一份？第一，copy 真的浪費空間。",
+     "k": 10,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 1097.7
+     }
+    },
+    {
+     "say": "第二，又是 duplication：資料本來該只有一份，複製了就要煩惱一致性。",
+     "k": 11,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 1106.1
+     }
+    },
+    {
+     "say": "用 link，檔案出現在兩個資料夾，卻是同一份，有人改了，另一邊馬上看到。",
+     "k": 12,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 1120.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Dangling pointer 與 reference count",
+   "scene": "fs-23b-dangle",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "不過資料一份、名字兩個，就像寫程式的 pointer 一樣。",
+     "k": 1,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 1139.3
+     }
+    },
+    {
+     "say": "從一邊把檔案砍掉，另一邊的名字還在，卻指向不存在的東西，這就是 dangling pointer。",
+     "k": 2,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 1154.1
+     }
+    },
+    {
+     "say": "這時去 access 就會出錯，而且不只是找不到：名字在，內容卻 lost 了。",
+     "k": 3,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 1165.7
+     }
+    },
+    {
+     "say": "為什麼先只談 acyclic graph？因為沒有 cycle，這問題比較好解。",
+     "k": 4,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 1189.5
+     }
+    },
+    {
+     "say": "方法就是用 counter，也就是 reference count。",
+     "k": 5,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 1198.3
+     }
+    },
+    {
+     "say": "一個名字指著它，counter 是 1；兩個名字，就是 2。",
+     "k": 6,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 1201.1
+     }
+    },
+    {
+     "say": "刪一個名字減 1，減到 0 才真的從 storage 移除；不是 0，就代表還有人指著它。",
+     "k": 7,
+     "src": {
+      "v": "NDBhHLzz4p8",
+      "t": 1209.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "General graph 與 garbage collection",
+   "scene": "fs-23c-gengraph",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "整理一下：directory 從 single-level、two-level，演進到 tree，再到 acyclic graph。",
+     "k": 1,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 180.3
+     }
+    },
+    {
+     "say": "最一般化的是 general graph：任何位置、任何方向都能加 edge，像 bin 連到 g2 這條。",
+     "k": 2,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 187.6
+     }
+    },
+    {
+     "say": "跟 acyclic 最大的差別：cycle 會跑出來，像 g2 和 t1 互相指著，繞成一圈。",
+     "k": 3,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 203.7
+     }
+    },
+    {
+     "say": "有了 cycle，dangling pointer 就更難處理，跟寫程式處理 pointer 一樣頭痛。",
+     "k": 4,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 212
+     }
+    },
+    {
+     "say": "看例子：把 bin 到 g2 這個 link 刪掉。",
+     "k": 5,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 240.7
+     }
+    },
+    {
+     "say": "這下 g2 和 t1 從 root 已經走不到了，理應刪掉。",
+     "k": 6,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 248.6
+     }
+    },
+    {
+     "say": "可是只看 counter 刪不掉：它們互相 reference，count 還是 1，永遠不會變 0。",
+     "k": 7,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 259.3
+     }
+    },
+    {
+     "say": "一種解法是做 cycle detection。",
+     "k": 8,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 272.3
+     }
+    },
+    {
+     "say": "最常見的是 garbage collection：週期性從 root 往下 label，看哪些 reachable。",
+     "k": 9,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 280.1
+     }
+    },
+    {
+     "say": "沒被 label 到的就是 unreachable，刪掉。兩個 pass，不用管有沒有 cycle。",
+     "k": 10,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 293.4
+     }
+    },
+    {
+     "say": "但檔案系統的使用者和檔案數量都很驚人，週期性這樣掃，overhead 太大。",
+     "k": 11,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 312.3
+     }
+    },
+    {
+     "say": "所以很多檔案系統乾脆不支援 general graph：會造成 cycle 的 link，直接當 invalid 擋掉。",
+     "k": 12,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 328
+     }
+    },
+    {
+     "say": "說到底，directory 就是在做 mapping，幫你找到檔案真正的 ID。",
+     "k": 13,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 360
+     }
+    }
+   ]
+  },
+  {
+   "title": "Mounting 與 mount point",
+   "scene": "fs-23c-mount",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "接著看使用檔案時很常做的事：mounting。",
+     "k": 1,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 373.3
+     }
+    },
+    {
+     "say": "要用一個儲存裝置，第一件事就是把它 mount 進系統，系統才 access 得到上面的資料。",
+     "k": 2,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 389.4
+     }
+    },
+    {
+     "say": "這裡說的是 file system 的 mounting：存取檔案，都要透過 directory structure 去找。",
+     "k": 3,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 412.6
+     }
+    },
+    {
+     "say": "所以 mount 第一件事是決定 mount point：要掛在 tree 的哪個節點？",
+     "k": 4,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 432.4
+     }
+    },
+    {
+     "say": "目錄一定有一個 root，掛上去的那個節點，例如 usr，就是 mount point。",
+     "k": 5,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 455.2
+     }
+    },
+    {
+     "say": "mount 有三種時機。第一是 boot time，一開機就 mount 好，最好的例子是系統槽。",
+     "k": 6,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 471.7
+     }
+    },
+    {
+     "say": "別忘了 OS 本身也存在檔案系統裡，那個 volume 不先 mount，OS 根本 load 不進 memory。",
+     "k": 7,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 480.2
+     }
+    },
+    {
+     "say": "第二是 run time 自動 mount：一插上去就自動偵測，甚至幫你下載 driver。",
+     "k": 8,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 504.4
+     }
+    },
+    {
+     "say": "第三是手動 mount：比較特殊的裝置、找不到 driver，就自己下指令掛。",
+     "k": 9,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 530.3
+     }
+    },
+    {
+     "say": "看個例子：原本只有 local 底下有檔案，usr 和 home 底下都是空的。",
+     "k": 10,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 554.4
+     }
+    },
+    {
+     "say": "把第二個 volume 掛在 usr 下面，usr 就是 mount point，底下換成另一個 file system。",
+     "k": 11,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 568
+     }
+    },
+    {
+     "say": "還可以 recursive：在掛進來的 volume 底下，再掛別的。",
+     "k": 12,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 591
+     }
+    },
+    {
+     "say": "Windows 比較感覺不到，它為了簡單，一掛就是 C 槽、D 槽、E 槽，只能掛在 root 下。",
+     "k": 13,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 604.7
+     }
+    },
+    {
+     "say": "Linux 或 Mac 就可以自己選，只要資料夾存在就行，像把 games 掛在 john 底下。",
+     "k": 14,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 631.1
+     }
+    },
+    {
+     "say": "甚至再切第四個 partition 掛上去也行，tree 可以任意延展。",
+     "k": 15,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 654
+     }
+    }
+   ]
+  },
+  {
+   "title": "Mount table：跨 partition 找檔案",
+   "scene": "fs-23c-mtable",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "那 mount 的時候，metadata 上到底發生了什麼事？",
+     "k": 1,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 674.4
+     }
+    },
+    {
+     "say": "OS 會維護一張 mount table，系統才知道有這個 partition 存在。",
+     "k": 2,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 691.5
+     }
+    },
+    {
+     "say": "假設 root 下有三個 folder，其中 usr、mnt 來自別的 partition，P2 和 P3。",
+     "k": 3,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 714.5
+     }
+    },
+    {
+     "say": "要放在同一個檔案系統下，只要在 usr、mnt 上標一個 m，mark 起來。",
+     "k": 4,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 749.3
+     }
+    },
+    {
+     "say": "現在要找 /usr/hw.c，一樣從 root 開始，也就是系統槽。",
+     "read": "現在要找 斜線 usr 斜線 hw.c，一樣從 root 開始，也就是系統槽。",
+     "k": 5,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 753.3
+     }
+    },
+    {
+     "say": "走到 usr，發現有 m，代表是掛進來的，就去查 mount table。",
+     "k": 6,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 762.8
+     }
+    },
+    {
+     "say": "表裡存著那個 drive 接在哪個 port、用什麼 protocol。",
+     "k": 7,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 769
+     }
+    },
+    {
+     "say": "靠這些資訊切到 P2，P2 的 root 就相當於 usr。",
+     "k": 8,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 777.2
+     }
+    },
+    {
+     "say": "在 P2 裡繼續往下走，找到 hw.c，再把內容讀出來。",
+     "k": 9,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 790.6
+     }
+    },
+    {
+     "say": "總結：directory 上做標記，加上 mount table 和 partition 的資訊，就能跨 partition 找檔案。",
+     "k": 11,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 805
+     }
+    }
+   ]
+  },
+  {
+   "title": "Sharing：owner、group、others",
+   "scene": "fs-23c-share",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "再來是 sharing。檔案系統存在的理由之一，就是讓多個使用者分享資料。",
+     "k": 1,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 832.5
+     }
+    },
+    {
+     "say": "所以 permission 非常重要。你的作業放在工作站上，誰都能看、還會被覆蓋，那就慘了。",
+     "k": 2,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 853.7
+     }
+    },
+    {
+     "say": "第一，要能 identify 使用者，所以每個人都有一個 unique 的 user ID。",
+     "k": 4,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 888.8
+     }
+    },
+    {
+     "say": "另外還有 group ID：一群人需求相同、共用檔案，就放在同一個 group。",
+     "k": 5,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 895
+     }
+    },
+    {
+     "say": "預設你的 group 就是你自己，只有你在裡面，所以平常沒感覺。",
+     "k": 6,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 912.4
+     }
+    },
+    {
+     "say": "管理者可以建一個 students group，把學生都放進去，很好管。",
+     "k": 7,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 930.3
+     }
+    },
+    {
+     "say": "回到檔案：hw.c 的 owner 是 alice，group 是 students。要怎麼決定誰有什麼權限？",
+     "k": 8,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 942.7
+     }
+    },
+    {
+     "say": "分三個 level。第一是 owner，一個檔案只有一個 owner。",
+     "k": 9,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 958.7
+     }
+    },
+    {
+     "say": "第二是 group：你不是 owner，但屬於檔案的 group。像 owner 能讀寫執行，group 只能讀。",
+     "k": 10,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 971.5
+     }
+    },
+    {
+     "say": "最後是 others，其他人全部丟這裡。",
+     "k": 11,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1001.7
+     }
+    },
+    {
+     "say": "任何使用者一定落在其中一個 level，照那個 level 的權限管。",
+     "k": 12,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1014.3
+     }
+    },
+    {
+     "say": "注意：同一個 group 的人，權限全部相同，沒辦法再細分。",
+     "k": 13,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1039.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "ACL 簡化成 rwx 三個 bit",
+   "scene": "fs-23c-acl",
+   "steps": 19,
+   "lines": [
+    {
+     "say": "權限本身只有三種：read、write、execute。",
+     "k": 1,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1072.6
+     }
+    },
+    {
+     "say": "而只有 owner 或 root，可以改檔案的權限和擁有者，其他人只能照規定走。",
+     "k": 2,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1095.8
+     }
+    },
+    {
+     "say": "權限要怎麼描述？這叫 access control 問題，從很早期就在想。",
+     "k": 3,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1135.5
+     }
+    },
+    {
+     "say": "最直覺的是每個檔案一張 list，列出每個使用者有什麼權限，這就是 ACL，access-control list。",
+     "k": 5,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1175.1
+     }
+    },
+    {
+     "say": "可是使用者一直增加，list 要一直改、又很長，還要 load 進 memory 才能判斷，不可行。",
+     "k": 6,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1188.5
+     }
+    },
+    {
+     "say": "所以現在只分三個 class：owner、group、others。",
+     "k": 7,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1217.3
+     }
+    },
+    {
+     "say": "權限也只有 r、w、x：讀、改、執行。",
+     "k": 8,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1229.6
+     }
+    },
+    {
+     "say": "這樣一長串 list，就簡化成每個 class 3 個 bit，總共才 9 個 bit。",
+     "k": 9,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1255
+     }
+    },
+    {
+     "say": "看例子：owner 是 111，三個權利都有；某個 bit 是 0，就代表沒有那個權利。",
+     "read": "看例子：owner 是 1 1 1，三個權利都有；某個 bit 是 0，就代表沒有那個權利。",
+     "k": 10,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1272.6
+     }
+    },
+    {
+     "say": "group 是 110，能讀寫不能執行；others 是 100，只能讀。",
+     "read": "group 是 1 1 0，能讀寫不能執行；others 是 1 0 0，只能讀。",
+     "k": 11,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1289.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "ls -l、資料夾的 x 與 chmod",
+   "scene": "fs-23c-acl",
+   "steps": 19,
+   "lines": [
+    {
+     "say": "回去可以在工作站打 ls -l，前面那串奇怪的符號，就是 access control list。",
+     "read": "回去可以在工作站打 ls 減 l，前面那串奇怪的符號，就是 access control list。",
+     "k": 13,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1327.7
+     }
+    },
+    {
+     "say": "第一個字元說它是 directory 還是 file；後面 9 個分三組，字母是有，dash 是沒有。",
+     "k": 14,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1348.3
+     }
+    },
+    {
+     "say": "像 -rw-rw-r--：owner 能讀寫，group staff 也能讀寫，其他人只能讀。",
+     "read": "像 dash r w dash r w dash r dash dash：owner 能讀寫，group staff 也能讀寫，其他人只能讀。",
+     "k": 15,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1373.1
+     }
+    },
+    {
+     "say": "對 folder 來說，x 的意思是：你能不能 traverse 進去。",
+     "k": 16,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1421
+     }
+    },
+    {
+     "say": "所以遇到 permission denied，要檢查路徑上每一層 parent folder，你有沒有 x。",
+     "k": 17,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1433.2
+     }
+    },
+    {
+     "say": "Windows 也一樣有這套，只是用圖形介面設定。",
+     "k": 18,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1464.7
+     }
+    },
+    {
+     "say": "改權限的指令是 chmod。chmod 644：6 是 110，rw-；4 是 100，r--。",
+     "read": "改權限的指令是 chmod。chmod 六四四：6 是 1 1 0，r w dash；4 是 1 0 0，r dash dash。",
+     "k": 19,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1495.2
+     }
+    },
+    {
+     "say": "所以 644 就是 rw-r--r--。口訣是 r 是 4、w 是 2、x 是 1，加起來就是那個數字。",
+     "read": "所以 六四四 就是 r w dash r dash dash r dash dash。口訣是 r 是 4、w 是 2、x 是 1，加起來就是那個數字。",
+     "k": 19,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1495.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Protection：damage 與 security",
+   "scene": "fs-23c-protect",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "最後是 protection，分兩個層面。",
+     "k": 1,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1524.3
+     }
+    },
+    {
+     "say": "剛才的 ACL 也算 protection：同一個系統裡，你不能隨便看別人的檔案。",
+     "k": 2,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1550
+     }
+    },
+    {
+     "say": "另一塊更重要的是 damage：檔案絕對不能遺失。",
+     "k": 3,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1560.5
+     }
+    },
+    {
+     "say": "怎麼辦？之後會講 RAID：資料 copy 在多顆硬碟上，壞一顆，還能從另一顆讀。",
+     "k": 5,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1581.1
+     }
+    },
+    {
+     "say": "再來是 privacy 跟 security：怎麼不讓資料被偷走，這是很大的獨立領域。",
+     "k": 6,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1600.6
+     }
+    },
+    {
+     "say": "單一系統最基本的就是 password，登入了，就是合法使用者。",
+     "k": 7,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1620.7
+     }
+    },
+    {
+     "say": "系統知道你的 ID 之後，再用 ACL 判斷你能做什麼。",
+     "k": 8,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1633.6
+     }
+    },
+    {
+     "say": "但現在很容易被突破，根本不用 login，透過程式、web 服務就能侵入。",
+     "k": 9,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1654.2
+     }
+    },
+    {
+     "say": "有了網路，你的 password 傳到遠端的路上，封包可能被監聽截走，所以還要加密。",
+     "k": 10,
+     "src": {
+      "v": "0vYydtG1Xi4",
+      "t": 1674.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "進到內部：disk allocation",
+   "scene": "fs-23d-intro",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "好，使用者的角度講完了。接下來進到 file system 內部，看它怎麼設計。",
+     "k": 1,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 16
+     }
+    },
+    {
+     "say": "其中最重要、一定要會的，就是 disk allocation method。",
+     "k": 2,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 43.3
+     }
+    },
+    {
+     "say": "作業系統就是在管資源，file system 管的是 disk 的儲存空間。",
+     "k": 3,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 48.3
+     }
+    },
+    {
+     "say": "舉例：一個 1 GB 的檔案，要擺到硬碟的哪裡？",
+     "k": 4,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 64.2
+     }
+    },
+    {
+     "say": "要整個連續放好嗎？",
+     "k": 5,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 72.1
+     }
+    },
+    {
+     "say": "如果切開放，又怎麼記得每一塊放到哪了？",
+     "k": 6,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 76.4
+     }
+    },
+    {
+     "say": "這就是 disk allocation：決定檔案怎麼 map 到實體位置，是 file system 最核心的管理機制。",
+     "k": 7,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 81.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Block 與 sector",
+   "scene": "fs-23d-block",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "前面說過，file system 主要就是在做 mapping，把資料放到實體裝置上。",
+     "k": 1,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 114.1
+     }
+    },
+    {
+     "say": "file system 對下層讀寫時，有一個最小的單位。",
+     "k": 3,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 141.4
+     }
+    },
+    {
+     "say": "這個單位叫 block，或 data block，是 file system 的最小單位。",
+     "k": 4,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 155.6
+     }
+    },
+    {
+     "say": "但硬碟那邊，實體的最小單位是 sector。",
+     "k": 5,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 168.4
+     }
+    },
+    {
+     "say": "兩者不一定一樣大，通常是倍數。",
+     "k": 6,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 175.6
+     }
+    },
+    {
+     "say": "所以一個 block 可能由好幾個 sector 組成，像這裡 block 0 對到 4 個 sector。",
+     "k": 7,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 187.8
+     }
+    },
+    {
+     "say": "sector 通常是 512 bytes。",
+     "k": 8,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 192.3
+     }
+    },
+    {
+     "say": "block 可能是 1KB，甚至 4KB，4KB 就是 8 個 sector。",
+     "k": 9,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 194.5
+     }
+    },
+    {
+     "say": "但 block 不可能比 sector 小，sector 已經是實體上最小的了。",
+     "k": 10,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 200.4
+     }
+    },
+    {
+     "say": "這章講的都是 block；file system 管到最後，只碰得到以 block 為單位的東西。",
+     "k": 11,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 212.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "一個 OS 可以有多種 file system",
+   "scene": "fs-23d-multi",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "還有一點：一個 OS 不一定只有一個 file system。",
+     "k": 1,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 230.9
+     }
+    },
+    {
+     "say": "不同 volume，像 C 槽、D 槽，可以 format 成不同的檔案系統，只要 OS 支援。",
+     "k": 2,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 248.3
+     }
+    },
+    {
+     "say": "例如 FAT32、NTFS，Mac 也有自己的。",
+     "k": 3,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 269
+     }
+    },
+    {
+     "say": "它們最大的差別，在 disk allocation 的方式，和怎麼 search 檔案結構。",
+     "k": 4,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 285.7
+     }
+    },
+    {
+     "say": "但對上的介面都一樣：都是 file、都支援循序讀寫、都有 directory。",
+     "k": 5,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 305.5
+     }
+    },
+    {
+     "say": "所以為什麼換檔案系統要整個 format、資料清光？因為管理方式完全不同，互相讀不懂。",
+     "k": 7,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 345.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "File system 就是在做 mapping",
+   "scene": "fs-23d-mapping",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "所以 file system 最主要的角色，就是 mapping。",
+     "k": 1,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 366.8
+     }
+    },
+    {
+     "say": "它給你的 API 通常是循序的：一個 file handle、一個 memory 裡的 buffer、一個 size。",
+     "k": 2,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 373.8
+     }
+    },
+    {
+     "say": "要做的事看起來很單純：把 memory 的一個位置，對到 disk 上的一個位置。",
+     "k": 4,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 405.6
+     }
+    },
+    {
+     "say": "再由 driver 下指令，去操作 storage device 的 I/O controller。",
+     "k": 5,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 415.6
+     }
+    },
+    {
+     "say": "最後透過 controller 上的 register，一個一個 byte 寫進裝置。細節在 I/O 那章。",
+     "k": 6,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 428.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Layered file system",
+   "scene": "fs-23d-layers",
+   "steps": 18,
+   "lines": [
+    {
+     "say": "這個 mapping，中間會經過好幾個 layer。",
+     "k": 1,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 438.5
+     }
+    },
+    {
+     "say": "切成很多層，每一層比較 modular，也比較清楚自己該做什麼。",
+     "k": 2,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 456
+     }
+    },
+    {
+     "say": "最上面是 logical file system，最接近使用者。",
+     "k": 3,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 465.8
+     }
+    },
+    {
+     "say": "它決定檔案長什麼樣，像循序存取的那些 API，就是它定義的。",
+     "k": 4,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 481.4
+     }
+    },
+    {
+     "say": "它也負責 resolve permission，剛剛的 ACL 就是這層在管。",
+     "k": 5,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 495
+     }
+    },
+    {
+     "say": "所以要改 ACL 機制、或改 API、加新 method，只動這一層就好。",
+     "k": 7,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 525.5
+     }
+    },
+    {
+     "say": "第二層開始做 mapping，叫 file-organization module。",
+     "k": 8,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 541.1
+     }
+    },
+    {
+     "say": "它把 logical 的位置，轉成「第幾個 block」。",
+     "k": 9,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 558.7
+     }
+    },
+    {
+     "say": "也就是：我知道是 a.txt、position 在哪、要讀多少，那它落在哪一個 data block？",
+     "k": 10,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 580
+     }
+    },
+    {
+     "say": "知道 block 後，還要對到哪顆 disk、哪個 partition、cylinder、track、sector，這層叫 basic file system。",
+     "k": 13,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 643.7
+     }
+    },
+    {
+     "say": "這層很少改，只要是 hard drive 就這樣，除非出現新的儲存裝置。",
+     "k": 14,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 696
+     }
+    },
+    {
+     "say": "各家 file system 最大的差異，就在 file-organization 這層：怎麼分配 disk 空間。",
+     "k": 15,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 726.6
+     }
+    },
+    {
+     "say": "俗稱的 file system，就包含這三層。",
+     "k": 16,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 742.6
+     }
+    },
+    {
+     "say": "真正去做 I/O 的是 driver，它在 file system 外面。",
+     "k": 17,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 787.7
+     }
+    },
+    {
+     "say": "這些名字不用硬背，但要知道分三層、目的各不同，要改什麼，就知道去哪層改。",
+     "k": 18,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 817.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "On-disk structures",
+   "scene": "fs-23d-ondisk",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "接著看實作 mapping 需要哪些 data structure。",
+     "k": 1,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 1018.4
+     }
+    },
+    {
+     "say": "第一類是 on-disk structure，一定要存在 disk 上，因為檔案是永久存在的。",
+     "k": 2,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 1040.3
+     }
+    },
+    {
+     "say": "第一個是 boot control block，顧名思義，開機用的。",
+     "k": 3,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 1058
+     }
+    },
+    {
+     "say": "如果這個 partition 是拿來開機的系統槽，它最前面會先 reserve 一塊。",
+     "k": 4,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 1067.4
+     }
+    },
+    {
+     "say": "再來，每個 partition 都有一個 partition control block，記錄它有多少 block、多少空間。",
+     "k": 7,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 1106.3
+     }
+    },
+    {
+     "say": "切磁區時，第一件事就是建立它，OS 才知道怎麼 access 這個 partition。",
+     "k": 8,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 1122
+     }
+    },
+    {
+     "say": "接著 format，這時才建立 file control block，也就是 FCB，還有 directory。",
+     "k": 9,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 1139.3
+     }
+    },
+    {
+     "say": "directory 存完，剩下的空間全部拿來放檔案的 data blocks。",
+     "k": 10,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 1162.5
+     }
+    },
+    {
+     "say": "boot control block 是 optional 的，不是每個 partition 都拿來開機。",
+     "k": 12,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 1202.8
+     }
+    },
+    {
+     "say": "FCB 存的是檔案的 attribute，概念就跟 process 的 PCB 一樣。",
+     "k": 14,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 1225
+     }
+    },
+    {
+     "say": "開檔時，就把它 load 到 open-file table，開始 access。",
+     "k": 15,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 1237.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "每個 on-disk 結構存什麼",
+   "scene": "fs-24a-ondisk",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "再仔細看每個結構存什麼。關鍵是：檔案是 persistent 的，這些結構不能只放在 memory。",
+     "k": 3,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 65.6
+     }
+    },
+    {
+     "say": "boot control block 存開機要的資訊，甚至最基本的指令，不經過 file system 就能直接 load 進 memory 跑。",
+     "k": 5,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 120.2
+     }
+    },
+    {
+     "say": "partition control block 記錄這個 partition 在硬碟上從哪到哪、有多少空間。",
+     "k": 6,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 170.2
+     }
+    },
+    {
+     "say": "FCB 要注意：它不是檔案內容，只是 metadata。",
+     "k": 7,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 219.1
+     }
+    },
+    {
+     "say": "裡面存內容的 location、size、權限等；每個 file 一個，就像每個 process 一個 PCB。",
+     "k": 8,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 245.2
+     }
+    },
+    {
+     "say": "補充一點：UNIX 的 inode 其實不存檔名，檔名記在 directory 的 entry 裡。",
+     "k": 8,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 245.2
+     }
+    },
+    {
+     "say": "另外還有 directory structure，描述那棵 tree 或 acyclic graph。",
+     "k": 9,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 257.6
+     }
+    },
+    {
+     "say": "切好 partition 但不 format，就沒有 FCB 和 directory，它就是 raw partition。",
+     "k": 11,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 294.7
+     }
+    },
+    {
+     "say": "format 就是選一種 file system，把 FCB、directory 這些基本資訊建起來。",
+     "k": 12,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 299.7
+     }
+    },
+    {
+     "say": "之後在 memory 做的任何修改，最後一定要寫回 on-disk structure，才不會遺失。",
+     "k": 14,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 324.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Partition layout 與 FCB 的 location",
+   "scene": "fs-24a-layout",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "所以一個 partition 的 layout 就是：boot、partition 控制資訊、directory、FCB，然後是 data blocks。",
+     "k": 1,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 338.3
+     }
+    },
+    {
+     "say": "data blocks 才是真正放檔案內容的地方。",
+     "k": 2,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 345
+     }
+    },
+    {
+     "say": "內容可以任意擺，但擺在哪一定要記在 FCB 裡，不然找不到。",
+     "k": 3,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 354.2
+     }
+    },
+    {
+     "say": "所以 FCB 裡最重要的，就是 data blocks 的 location；怎麼擺、怎麼記，就是後面的配置方法。",
+     "k": 4,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 366.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "In-memory structures",
+   "scene": "fs-24a-inmem",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "當檔案系統被 load 起來、開始用，就要把資訊搬進 memory。",
+     "k": 1,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 382
+     }
+    },
+    {
+     "say": "大致都有對應的版本，只有 boot control block 不用，它只是開機用。",
+     "k": 2,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 406.7
+     }
+    },
+    {
+     "say": "第一個是 mount table，也就是 partition 的 table。",
+     "k": 3,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 421.9
+     }
+    },
+    {
+     "say": "所以 mount 到底做了什麼？最主要就是把 partition table load 到 memory。",
+     "k": 4,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 427.7
+     }
+    },
+    {
+     "say": "要用它就要 traverse，所以要 load directory structure。",
+     "k": 5,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 451.2
+     }
+    },
+    {
+     "say": "但只 load 一部分，最近用過的。檔案系統很大、memory 有限，全部搬進來太浪費。",
+     "k": 6,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 463.1
+     }
+    },
+    {
+     "say": "比較合理的是 load 最近常用的，或先 preload 下一層。",
+     "k": 7,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 497.3
+     }
+    },
+    {
+     "say": "真正開檔時，load 的是 system-wide open-file table，裡面其實就是 FCB。",
+     "k": 8,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 524.2
+     }
+    },
+    {
+     "say": "再依 process 記下 handle、position、permission，放在 per-process open-file table。",
+     "k": 9,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 558.6
+     }
+    },
+    {
+     "say": "這張表不存在 disk 上，它是操作過程中才產生的資訊。",
+     "k": 10,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 588.7
+     }
+    },
+    {
+     "say": "四個要記住：mount table、部分 directory、兩張 open-file table。分清楚哪些在 disk、哪些在 memory。",
+     "k": 12,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 611.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "open() 的流程",
+   "scene": "fs-24a-open",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "好，來看這些結構怎麼合作。先看 open 一個檔案時發生什麼事。",
+     "k": 2,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 631.1
+     }
+    },
+    {
+     "say": "位置已經 mount 好了，所以從 root 開始，照 path 一路 traverse，看檔案在不在。",
+     "k": 3,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 642.2
+     }
+    },
+    {
+     "say": "directory 不會全在 memory，走到缺的部分，就去對應的 partition 把它 load 進來。",
+     "k": 4,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 669.1
+     }
+    },
+    {
+     "say": "也就是先看 memory，找不到才去 secondary storage 拿，繼續往下走。",
+     "k": 5,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 689.5
+     }
+    },
+    {
+     "say": "directory 最後指到什麼？其實是 FCB。有了 FCB，就知道檔案的資訊和位置。",
+     "k": 6,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 703
+     }
+    },
+    {
+     "say": "所以 open 就是找到 FCB，把它從 disk load 到 system-wide open-file table。",
+     "k": 7,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 721.4
+     }
+    },
+    {
+     "say": "再依這個 process 的 permission 等，填好 per-process 那張表。",
+     "k": 8,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 739.2
+     }
+    },
+    {
+     "say": "一句話：open 就是找到 FCB，把它搬進 memory。",
+     "k": 9,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 752.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "read() 與 write() 的流程",
+   "scene": "fs-24a-rw",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "接著是 read 和 write，假設檔案已經 open。",
+     "k": 1,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 760.1
+     }
+    },
+    {
+     "say": "為什麼一定要給 file handler？因為它就是 per-process 表裡那個 entry 的 pointer。",
+     "k": 3,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 783.3
+     }
+    },
+    {
+     "say": "透過它，知道檔案有沒有開、用什麼權限開、position 在哪。",
+     "k": 4,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 796.7
+     }
+    },
+    {
+     "say": "如果 permission denied，在這一層就被擋回來了。",
+     "k": 5,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 803.8
+     }
+    },
+    {
+     "say": "真正的位置在 FCB 裡，所以再順著 entry，到 system-wide 那張表去問。",
+     "k": 7,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 825.2
+     }
+    },
+    {
+     "say": "用 FCB 的 location，找到 disk 上的位置，讀出來或寫進去。",
+     "k": 8,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 838.6
+     }
+    },
+    {
+     "say": "補充：檔案很大時，location 本身也可能散在好幾個 block，要分批 load。",
+     "k": 9,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 854.6
+     }
+    },
+    {
+     "say": "所以順序是：per-process 表、system-wide 表、FCB 的 location，完成 mapping。",
+     "k": 10,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 893
+     }
+    }
+   ]
+  },
+  {
+   "title": "create() 的流程與 flush、logging",
+   "scene": "fs-24a-create",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "create 也差不多，你懂每個結構的目的，順序自己都推得出來。",
+     "k": 1,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 911.9
+     }
+    },
+    {
+     "say": "第一件事是建立 FCB。內容還是空的，但有了 FCB，這個檔案才存在。",
+     "k": 2,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 925
+     }
+    },
+    {
+     "say": "接著要把它放進某個 path，所以 directory structure 要更新。",
+     "k": 3,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 941.8
+     }
+    },
+    {
+     "say": "create 可以寫任何 path，所以先確認 path 存在。這就是為什麼有時會說資料夾不存在。",
+     "k": 4,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 954.2
+     }
+    },
+    {
+     "say": "找的過程跟 open 一樣，traverse，不在 memory 就從 disk load。",
+     "k": 5,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 980
+     }
+    },
+    {
+     "say": "然後在那個 directory 底下加上檔名，檔名就像 tree 的 leaf。",
+     "k": 6,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 994.2
+     }
+    },
+    {
+     "say": "再把檔名指到它的 FCB。",
+     "k": 7,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1013.6
+     }
+    },
+    {
+     "say": "注意，到這裡所有改動都只在 memory 裡。",
+     "k": 8,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1026.4
+     }
+    },
+    {
+     "say": "file system 會週期性 flush 回 disk，或關機時一次寫回，下次開機才看得到。",
+     "k": 9,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1037.5
+     }
+    },
+    {
+     "say": "所以跳電會掉資料：只寫到 memory，還來不及寫回 disk。",
+     "k": 10,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1058.3
+     }
+    },
+    {
+     "say": "不只 create，rename 等所有修改都是同一個道理。",
+     "k": 11,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1077.5
+     }
+    },
+    {
+     "say": "所以不正常關機後，系統常會先 scan disk，看資料有沒有對不上。",
+     "k": 12,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1091.1
+     }
+    },
+    {
+     "say": "為什麼會對不上？一個操作改很多地方，可能只 flush 一半就斷電，就像 transaction 沒做完。",
+     "k": 13,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1103.3
+     }
+    },
+    {
+     "say": "所以很多 file system 可以開 logging，把動作也寫成 log。",
+     "k": 14,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1115.5
+     }
+    },
+    {
+     "say": "log 保證真的寫到 disk 上，真的 crash 了，就拿 log 做 recovery。",
+     "k": 15,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1141.1
+     }
+    },
+    {
+     "say": "之後再 write，就只是加 data block，更新 FCB 裡的 pointer。",
+     "k": 17,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1169.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Virtual file system",
+   "scene": "fs-23d-vfs",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "再拉高看整個 OS：它要同時 support 好幾種 file system，還有好幾個儲存裝置。",
+     "k": 1,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 852.8
+     }
+    },
+    {
+     "say": "下面可能有 UNIX file system，也有 NTFS。",
+     "k": 2,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 879.1
+     }
+    },
+    {
+     "say": "可是你寫 fopen 時，就假設只有一個 file system、一個 directory。",
+     "k": 4,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 893.8
+     }
+    },
+    {
+     "say": "事實上，不同 partition 可能 format 成不同的檔案系統。",
+     "k": 5,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 906.6
+     }
+    },
+    {
+     "say": "使用者不需要看見這件事，所以中間要一層 interface，做 abstraction。",
+     "k": 6,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 920.4
+     }
+    },
+    {
+     "say": "至於同一個 file system 用到不同 disk，那靠 driver 就行，file system 不用管。",
+     "k": 7,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 960.1
+     }
+    },
+    {
+     "say": "上面那層叫 virtual file system，VFS，很薄的一層統一介面。",
+     "k": 8,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 987
+     }
+    },
+    {
+     "say": "它看檔案是哪個 file system 管的，就把呼叫轉給那個 file system。",
+     "k": 9,
+     "src": {
+      "v": "TA7728hp_IA",
+      "t": 998.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "VFS 把 mount 起來的樹接在一起",
+   "scene": "fs-24a-vfs",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "mount 進來的每個 volume，都可以由不同的 file system 管。",
+     "k": 1,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1186
+     }
+    },
+    {
+     "say": "為什麼能全部接在一起？就是因為前面那層 unified interface，VFS。",
+     "k": 2,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1202.9
+     }
+    },
+    {
+     "say": "它只是 interface，每個要 mount 進來的 file system，都得把它 implement 出來。",
+     "k": 4,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1229
+     }
+    },
+    {
+     "say": "最大的好處：使用者永遠用同一套 API 寫程式。",
+     "k": 5,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1239.8
+     }
+    },
+    {
+     "say": "而且 traverse 時，tree 是接來接去的，跨到別的 file system，也一樣透過 VFS。",
+     "k": 6,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1251.2
+     }
+    },
+    {
+     "say": "所以這層是必要的。",
+     "k": 7,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1282.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Linux VFS 的四個 object",
+   "scene": "fs-24a-vfsobj",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "看 Linux 的實作，VFS 分四個主要 object。",
+     "k": 1,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1295.6
+     }
+    },
+    {
+     "say": "最常聽到的是 inode，其實就是一個檔案的 FCB。",
+     "k": 2,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1320.6
+     }
+    },
+    {
+     "say": "inode 是 VFS 定義的統稱，各家 file system 去 implement 它的細節。",
+     "k": 3,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1337.5
+     }
+    },
+    {
+     "say": "再來是 file object。差在哪？inode 是 disk 上的 FCB，file object 是 open 之後在 memory 裡的物件。",
+     "k": 4,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1349.6
+     }
+    },
+    {
+     "say": "superblock object 代表整個 file system，對應到 partition control block 的資料。",
+     "k": 5,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1381.3
+     }
+    },
+    {
+     "say": "最後是 dentry，directory entry，代表 directory。",
+     "k": 6,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1401.4
+     }
+    },
+    {
+     "say": "每個 class 都有自己的 method，像 open 就在 file object 裡，各家要 implement。",
+     "k": 8,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1427.3
+     }
+    },
+    {
+     "say": "read 一定是從已經 open 的檔案讀，所以 read 也在 file object 底下。",
+     "k": 9,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1449.6
+     }
+    },
+    {
+     "say": "implement 好之後，上面的 system code 就照 VFS 下指令。",
+     "k": 10,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1465.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "實作的兩大重點",
+   "scene": "fs-24a-keys",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "從實作的角度，最重要的有兩件事。",
+     "k": 1,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1475.3
+     }
+    },
+    {
+     "say": "第一是 directory 怎麼維護：給一個 path，要很快知道它存不存在。",
+     "k": 2,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1488.7
+     }
+    },
+    {
+     "say": "可以用 linked list 把整棵樹串起來，也可以用 hash table 直接 lookup。",
+     "k": 4,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1504.8
+     }
+    },
+    {
+     "say": "選哪種會影響 search time，使用者感受到的效能差很多。",
+     "k": 5,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1513.8
+     }
+    },
+    {
+     "say": "第二件、也是接下來的重頭戲：data block 怎麼擺。",
+     "k": 6,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1523.6
+     }
+    },
+    {
+     "say": "你的讀寫是 random 還是 sequential，效能跟擺法有絕對的關係。",
+     "k": 7,
+     "src": {
+      "v": "ZYgU9wrZaZo",
+      "t": 1528.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Allocation methods 總覽",
+   "scene": "fs-24b-overview",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "好，接下來全力看 allocation method：檔案的內容，要對到哪些 data block？",
+     "k": 1,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 15.6
+     }
+    },
+    {
+     "say": "怎麼放，會影響讀寫頭移動的路徑，也就是效能。",
+     "k": 2,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 42.9
+     }
+    },
+    {
+     "say": "基本做法有三種。",
+     "k": 4,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 61
+     }
+    },
+    {
+     "say": "第一種 contiguous，連續擺。",
+     "k": 5,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 65.9
+     }
+    },
+    {
+     "say": "第二種 linked，像 linked list 一樣把 block 串起來。",
+     "k": 6,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 71.6
+     }
+    },
+    {
+     "say": "第三種 indexed，把每塊的 pointer 收集起來，要找就查表。",
+     "k": 7,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 86
+     }
+    },
+    {
+     "say": "要考慮兩件事。第一，disk 空間有限，檔案長短又會變。",
+     "k": 8,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 107.3
+     }
+    },
+    {
+     "say": "所以找不找得到夠長的連續空間，就是問題。",
+     "k": 9,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 116.1
+     }
+    },
+    {
+     "say": "第二，循序讀和跳著讀，在不同擺法下表現差很多，各有好壞。",
+     "k": 10,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 130.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Contiguous allocation",
+   "scene": "fs-24b-contig",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "先看 contiguous，最直接也最簡單。下面 0 到 31 號格子，是 disk 的 block。",
+     "k": 1,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 141.8
+     }
+    },
+    {
+     "say": "恐龍書的圖有五個檔案：count、f、tr、mail、list，各佔一段連續的 block。",
+     "k": 2,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 154.1
+     }
+    },
+    {
+     "say": "從哪開始擺，後面就必須連著放。像 tr 從 14 開始，就存 14、15、16。",
+     "k": 3,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 172.9
+     }
+    },
+    {
+     "say": "那 FCB 要存什麼，才找得到資料？",
+     "k": 4,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 188.6
+     }
+    },
+    {
+     "say": "假設要找 tr 的第 1000 個 byte，block size 200，1000 除以 200 是 5，在第 5 塊，從 0 算起。",
+     "k": 5,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 198.2
+     }
+    },
+    {
+     "say": "因為連續，只要存兩個值：起點和長度。",
+     "k": 6,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 213.2
+     }
+    },
+    {
+     "say": "起點 14 加 5，就是 19。用算的就找到了。",
+     "k": 7,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 226.7
+     }
+    },
+    {
+     "say": "不過這是示範公式的數字；課本圖裡 tr 只有 3 塊，實際上不能讀超過長度。",
+     "k": 7,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 226.7
+     }
+    },
+    {
+     "say": "那 block 的編號哪來？format 時，file system 就幫這塊空間做好 labeling。",
+     "k": 8,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 238.5
+     }
+    },
+    {
+     "say": "block size 也是 format 時由 file system 決定的。",
+     "k": 9,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 260.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Contiguous 的優缺點",
+   "scene": "fs-24b-contigpc",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "重點來了：好處和壞處。",
+     "k": 1,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 284.6
+     }
+    },
+    {
+     "say": "好處一：找任何位置的 effort 最小，不用 traverse，用算的就知道第幾塊。",
+     "k": 2,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 292.6
+     }
+    },
+    {
+     "say": "算完只要發一個 I/O request，就讀到了。",
+     "k": 3,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 314
+     }
+    },
+    {
+     "say": "所以 seek time 最小，不管 sequential 還是 random，都一樣快。",
+     "k": 4,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 320.4
+     }
+    },
+    {
+     "say": "directory entry 也很小，只要起點和塊數，兩個 integer。",
+     "k": 5,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 344.6
+     }
+    },
+    {
+     "say": "代價呢？external fragmentation，而且很嚴重。",
+     "k": 6,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 361
+     }
+    },
+    {
+     "say": "檔案來來去去，空位就變得東一塊、西一塊。",
+     "k": 7,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 371.6
+     }
+    },
+    {
+     "say": "更糟的是檔案會長大：像 tr 後面緊接著 mail，它就長不了，只能整個搬家。",
+     "k": 8,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 378.4
+     }
+    },
+    {
+     "say": "結果 disk 越來越難用，長不了就 fail，不然就整份 copy，effort 很大。",
+     "k": 9,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 403.8
+     }
+    },
+    {
+     "say": "解法跟 memory 一樣是 compaction，大家說的「整理硬碟」，就是在處理 fragmentation。",
+     "k": 10,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 423.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Extent-based file system",
+   "scene": "fs-24b-extent",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "為了解決長不大的問題，有個折中，叫 extent-based file system。",
+     "k": 1,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 457.3
+     }
+    },
+    {
+     "say": "三種基本做法常常 hybrid，互相補缺點。這個就是 contiguous 加上 linked。",
+     "k": 2,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 466.8
+     }
+    },
+    {
+     "say": "空間不夠時，不是給一個 block，而是一次給一個 extent，一組連續的 block。",
+     "k": 3,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 492.5
+     }
+    },
+    {
+     "say": "用完了？再給一個 extent，可以在別的地方。",
+     "k": 4,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 507.5
+     }
+    },
+    {
+     "say": "然後用 linked list 把它們串起來。",
+     "k": 5,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 516.7
+     }
+    },
+    {
+     "say": "這是 on-disk 的，所以每個 extent 尾巴留 4 個 byte，記下一個 extent 在哪。",
+     "k": 6,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 523.5
+     }
+    },
+    {
+     "say": "一個 extent 要記起點、長度，還有下一個在哪，沒有就寫 null。",
+     "k": 7,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 547.7
+     }
+    },
+    {
+     "say": "它減少了 external fragmentation；但 extent 固定大小，用不完就是 internal fragmentation。",
+     "k": 9,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 586.5
+     }
+    },
+    {
+     "say": "它最主要犧牲的，是 random access。",
+     "k": 10,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 608.4
+     }
+    },
+    {
+     "say": "例如每個 extent 3 塊，要讀第 7 塊，它在第 3 個 extent 裡。",
+     "k": 11,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 618.3
+     }
+    },
+    {
+     "say": "可是第 3 個 extent 在哪？得把前面每個 extent 的尾巴從 disk 讀進來才知道。",
+     "k": 12,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 631
+     }
+    },
+    {
+     "say": "所以要讀第 1 個尾巴、第 2 個尾巴，最後才讀第 7 塊，總共 3 個 I/O。",
+     "k": 13,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 664.3
+     }
+    },
+    {
+     "say": "本來 1 個 I/O 就夠，多了 2 個，random 當然變慢。",
+     "k": 14,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 676.4
+     }
+    },
+    {
+     "say": "總結：extent 就是 contiguous 加 link；固定大小時，內外部碎裂都還可能有。",
+     "k": 15,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 714.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Linked allocation",
+   "scene": "fs-24b-linked",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "第二種是另一個極端：全部用 link。",
+     "k": 1,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 727.6
+     }
+    },
+    {
+     "say": "恐龍書的 jeep 就是：9、16、1、10、25，一路串下去。",
+     "k": 2,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 741
+     }
+    },
+    {
+     "say": "directory 存起點和終點。存終點，是因為知道最後一塊，就不用 traverse 才找到尾巴。",
+     "k": 3,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 755.2
+     }
+    },
+    {
+     "say": "每個 block 最後留幾個 byte，存下一塊的位置。",
+     "k": 4,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 770.5
+     }
+    },
+    {
+     "say": "好處一：size 沒問題，任何一個空的 block 都能接上去，像這個 28。",
+     "k": 5,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 793.9
+     }
+    },
+    {
+     "say": "所以很容易長大縮小，free 掉的 block 也很好 reuse。",
+     "k": 6,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 801
+     }
+    },
+    {
+     "say": "效能呢？sequential 還不錯，順著讀，本來就是在 traverse。",
+     "k": 7,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 816
+     }
+    },
+    {
+     "say": "讀完 16 的 data，下一塊的 pointer 也一起讀進來了，沒有額外的讀取。",
+     "k": 8,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 827
+     }
+    },
+    {
+     "say": "但 random 就很慘：位置越後面，越要先讀一堆你根本不要的 block，只為了拿 pointer。",
+     "k": 9,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 848.6
+     }
+    },
+    {
+     "say": "另一個缺點：每個 block 都要犧牲幾個 byte 存 pointer。",
+     "k": 10,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 875.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Linked 的 random 到底多慘",
+   "scene": "fs-25a-review",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "來算算看。從頭順著讀，沒問題。",
+     "k": 7,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 96.1
+     }
+    },
+    {
+     "say": "但從第 5 塊讀到第 10 塊，前 4 塊還是得先讀，才找得到第 5 塊在哪。",
+     "k": 8,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 104.7
+     }
+    },
+    {
+     "say": "random 更糟：先讀第 8 塊，就要從頭走 8 次。",
+     "k": 9,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 113.7
+     }
+    },
+    {
+     "say": "接著要第 3 塊？又得從頭走，總共 8 加 3，11 次。",
+     "k": 10,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 119.7
+     }
+    },
+    {
+     "say": "根本原因是：pointer 散在 disk 各個 block 裡，每讀一個 pointer，就是一次 I/O。",
+     "k": 11,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 121.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Linked：cluster、reliability 與 O(1) 配置",
+   "scene": "fs-24b-linked2",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "怎麼少走一點？把好幾個 block cluster 成一個單位；link 加 contiguous，其實就是 extent。",
+     "k": 1,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 891.8
+     }
+    },
+    {
+     "say": "linked 還有一個缺點：reliability。",
+     "k": 2,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 926.1
+     }
+    },
+    {
+     "say": "只要中間一個 link 斷了，後面整個檔案就全部 lost。",
+     "k": 3,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 934.2
+     }
+    },
+    {
+     "say": "一個 block 壞掉，或改檔時斷電沒修好 metadata，整個檔案就可能崩掉。",
+     "k": 4,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 943.3
+     }
+    },
+    {
+     "say": "但它也有很大的好處：配置空間非常有效率。",
+     "k": 5,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 950.4
+     }
+    },
+    {
+     "say": "找空間是 O(1)，從 free list 最上面 pop 一塊就好，所以 create 最快。",
+     "read": "找空間是大O 1，從 free list 最上面 pop 一塊就好，所以 create 最快。",
+     "k": 6,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 959.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "FAT：把 pointer 收集成一張表",
+   "scene": "fs-24b-fat",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "linked 在真實世界也看得到，就是有名的 FAT32。目錄記著檔案 test 從 217 開始。",
+     "k": 1,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 976.5
+     }
+    },
+    {
+     "say": "它要解決的，就是 random access 時，得一塊一塊去 disk 查 pointer。",
+     "k": 2,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 992.3
+     }
+    },
+    {
+     "say": "做法很簡單：把所有 pointer 收集成一張表，叫 FAT，File Allocation Table。",
+     "k": 3,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1002.5
+     }
+    },
+    {
+     "say": "217 那格寫 618，618 那格寫 339，339 是 EOF，檔案結束。",
+     "k": 4,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1019
+     }
+    },
+    {
+     "say": "上課時老師口誤講成 168，對照課本的圖，正確是 618。",
+     "k": 4,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1019
+     }
+    },
+    {
+     "say": "注意，這張表裡沒有 data，只有抽出來的 pointer。",
+     "k": 5,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1032.8
+     }
+    },
+    {
+     "say": "mount 時把整張表 load 進 memory。pointer 比 data 小很多，一次循序讀進來。",
+     "k": 6,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1043.2
+     }
+    },
+    {
+     "say": "這樣就算 random access，沿著鏈走也是在 memory 裡走，沒有 disk I/O。",
+     "k": 7,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1070.7
+     }
+    },
+    {
+     "say": "找到真正的 block 號碼，再對 disk 下一次指令，1 次 I/O，跟 contiguous 一樣。",
+     "k": 8,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1082.1
+     }
+    },
+    {
+     "say": "為什麼叫 FAT32？就是表的每個 entry 用 32 個 bit。",
+     "k": 9,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1099
+     }
+    },
+    {
+     "say": "FAT64 也一樣，只是變 64 bit。",
+     "k": 10,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1105.2
+     }
+    },
+    {
+     "say": "至於壞掉怎麼復原，是另一件事，可以靠 log 等做法。",
+     "k": 11,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1121.4
+     }
+    },
+    {
+     "say": "說穿了，FAT 就是 pointer 的 cache，讓 random access 的 seek 降到最低。",
+     "k": 12,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1130.3
+     }
+    },
+    {
+     "say": "補充：FAT 用的是 linked；contiguous 那一派，有個 XFS，用的是 extent。",
+     "k": 13,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1158.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "考試要分清：FAT 不是傳統 linked",
+   "scene": "fs-25a-fat",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "再看一次這張表：FAT 的第 9 格寫 16，意思是 block 9 的下一塊是 16，依此類推。",
+     "k": 2,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 150
+     }
+    },
+    {
+     "say": "這張表就存在前面幾個 block。",
+     "k": 3,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 159.5
+     }
+    },
+    {
+     "say": "mount 時，一開始就 load 進 memory。",
+     "k": 4,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 168.1
+     }
+    },
+    {
+     "say": "沿著鏈走的動作還在，只是在 memory 裡走，不用一直 I/O。",
+     "k": 5,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 173.4
+     }
+    },
+    {
+     "say": "所以讀第 8 塊，只要 1 次 disk I/O。",
+     "k": 6,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 192.5
+     }
+    },
+    {
+     "say": "但周老師特別提醒：這已經不是傳統的 linked list 了，考試問 linked 時要留意。",
+     "k": 7,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 202.3
+     }
+    },
+    {
+     "say": "題目說 linked allocation，通常指 pointer 藏在每個 block 裡的傳統版；FAT 是改善版。",
+     "k": 8,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 210.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Indexed allocation",
+   "scene": "fs-24b-indexed",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "第三種是 indexed。",
+     "k": 1,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1192.7
+     }
+    },
+    {
+     "say": "一樣把 pointer 收集起來，放在 index block，這裡是 block 19。但它跟 FAT 不一樣。",
+     "k": 2,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1201.2
+     }
+    },
+    {
+     "say": "它完全是 lookup，不用沿著鏈走。jeep 的 index block 存著 9、16、1、10、25，後面幾格填 -1。",
+     "read": "它完全是 lookup，不用沿著鏈走。jeep 的 index block 存著 9、16、1、10、25，後面幾格填負 1。",
+     "k": 3,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1221.4
+     }
+    },
+    {
+     "say": "要第 3 塊，直接查第 3 格，是 1，就去 block 1。",
+     "k": 4,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1231.6
+     }
+    },
+    {
+     "say": "index block 只存 pointer，不存內容。",
+     "k": 5,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1240
+     }
+    },
+    {
+     "say": "被它指到的 data block 只有 data，完全沒有 pointer，這是跟 linked 最大的差別。",
+     "k": 6,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1258.5
+     }
+    },
+    {
+     "say": "還有：index block 是每個檔案一個；FAT 是整個 file system 共用一張。",
+     "k": 7,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1274.4
+     }
+    },
+    {
+     "say": "FAT 裡別的 entry，可能是別的檔案的 pointer，而且走的還是 link。別搞混。",
+     "k": 8,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1297.6
+     }
+    },
+    {
+     "say": "indexed 的 FCB，只要存 index block 在哪，就能直接 lookup。",
+     "k": 9,
+     "src": {
+      "v": "UpPyxA0THzU",
+      "t": 1318.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Indexed 的優缺點",
+   "scene": "fs-25a-indexed",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "流程是：directory 存檔名和一個 pointer，指到 index block。",
+     "k": 5,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 275.5
+     }
+    },
+    {
+     "say": "把 index block 讀出來，找到要的那一格，直接 access 那個 data block。",
+     "k": 6,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 286.4
+     }
+    },
+    {
+     "say": "所以 random access 非常有效率，sequential 也一樣，一次就找到位置。",
+     "k": 8,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 320.6
+     }
+    },
+    {
+     "say": "也沒有 external fragmentation，有空位就能用，跟 linked 一樣。",
+     "k": 9,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 333.4
+     }
+    },
+    {
+     "say": "有一個 free list，就能輕鬆 create 或 extend 檔案。",
+     "k": 10,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 340.3
+     }
+    },
+    {
+     "say": "缺點一樣出在 pointer。",
+     "k": 11,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 356.7
+     }
+    },
+    {
+     "say": "要存 pointer，就得賠上一整個 index block。",
+     "k": 12,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 364.3
+     }
+    },
+    {
+     "say": "linked 只是每塊浪費 4 個 byte。",
+     "k": 13,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 370.6
+     }
+    },
+    {
+     "say": "但如果檔案很小，只有 2 塊，只要 2 個 entry，8 個 byte 就夠。",
+     "k": 14,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 390.1
+     }
+    },
+    {
+     "say": "可是 index block 假設是 512 byte，你還是得配一整塊。",
+     "k": 15,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 406.9
+     }
+    },
+    {
+     "say": "剩下 504 byte 全浪費。index 跟 data 完全分開，浪費比 linked 更嚴重。",
+     "k": 16,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 416.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "檔案太大：linked index scheme",
+   "scene": "fs-25a-linkidx",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "小檔案浪費空間，那檔案非常大呢？",
+     "k": 1,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 431.9
+     }
+    },
+    {
+     "say": "pointer 多到一個 block 放不下。",
+     "k": 2,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 446.1
+     }
+    },
+    {
+     "say": "例如 block 512 byte、pointer 4 byte，512 除以 4 是 128，超過 128 塊就放不下。",
+     "k": 3,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 455.3
+     }
+    },
+    {
+     "say": "那就需要好幾個 index block，怎麼延伸？",
+     "k": 4,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 470.9
+     }
+    },
+    {
+     "say": "有三種做法。",
+     "k": 5,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 482.5
+     }
+    },
+    {
+     "say": "第一種叫 linked index scheme。",
+     "k": 6,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 492.4
+     }
+    },
+    {
+     "say": "名字有 link，但要留意，它本質還是 index，只是用 link 解決 index block 不夠大。",
+     "k": 7,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 497.9
+     }
+    },
+    {
+     "say": "一開始只有 index block 19，照傳統做法指到各個 data block。",
+     "k": 8,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 524.9
+     }
+    },
+    {
+     "say": "檔案長到超過了，就 create 一個新的 index block。",
+     "k": 9,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 533.8
+     }
+    },
+    {
+     "say": "兩個要連起來，所以在 index block 之間留一個 pointer，串成 linked list。",
+     "k": 10,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 551.7
+     }
+    },
+    {
+     "say": "檔案一直長，就一直加 index block，一直加 link。",
+     "k": 12,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 584.6
+     }
+    },
+    {
+     "say": "問題是 random 跳到很後面時，要先查好幾個 index block，檔案越大越慢。",
+     "k": 13,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 592.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Multi-level index",
+   "scene": "fs-25a-multilevel",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "第二種，你在 memory 管理學過：multi-level，階層式的 index，跟 page table 的延伸一模一樣。",
+     "k": 2,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 621.7
+     }
+    },
+    {
+     "say": "一開始一個 index block，左邊這個 16，叫 outer index。",
+     "k": 3,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 635.3
+     }
+    },
+    {
+     "say": "但它的 pointer 指到的不是 data block，而是另一個 index block。",
+     "k": 4,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 646.8
+     }
+    },
+    {
+     "say": "這是 2 level，要 3 level 也可以。",
+     "k": 5,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 656.4
+     }
+    },
+    {
+     "say": "16 裡第一格寫 19，19 裡存的還是 index，再往下指到的，才是真正的 data。",
+     "k": 6,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 660.1
+     }
+    },
+    {
+     "say": "最大的好處是什麼？",
+     "k": 7,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 679.1
+     }
+    },
+    {
+     "say": "前面 linked index 要一直走：10 個 index block，就要 lookup 10 次。",
+     "k": 8,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 699.5
+     }
+    },
+    {
+     "say": "所以速度很不平均，檔案前面快、後面慢。",
+     "k": 9,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 709.3
+     }
+    },
+    {
+     "say": "multi-level 就算是很後面，也直接往下跳，層數都一樣。",
+     "k": 10,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 714.9
+     }
+    },
+    {
+     "say": "速度比較穩定，前後都差不多。你說都差不多慢也行，但系統通常 prefer 穩定。",
+     "k": 11,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 737.7
+     }
+    },
+    {
+     "say": "缺點是空間浪費比較嚴重，因為 hierarchy 是指數成長的。",
+     "k": 12,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 741.8
+     }
+    },
+    {
+     "say": "所以真的很大的檔案才用它；中等大小，linked 的做法可能就夠。",
+     "k": 13,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 757.1
+     }
+    },
+    {
+     "say": "記得：只有最底層的 leaf，才是指向 data block 的 pointer。",
+     "k": 14,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 784.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "UNIX inode：combined scheme",
+   "scene": "fs-25a-inode",
+   "steps": 18,
+   "lines": [
+    {
+     "say": "第三種是 combined，也是 UNIX inode 預設的做法。",
+     "k": 1,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 794.5
+     }
+    },
+    {
+     "say": "它也是 multi-level，但看檔案大小：大檔案多幾層，小檔案一兩層就夠。",
+     "k": 2,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 802.7
+     }
+    },
+    {
+     "say": "就像 Intel 的 page table 可以選 4MB 或 4KB 的 page，一種折中，給你選擇。",
+     "k": 3,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 819
+     }
+    },
+    {
+     "say": "檔案小時最好直接指到，這些叫 direct blocks，直接存 data block 的 pointer。",
+     "k": 5,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 850.7
+     }
+    },
+    {
+     "say": "但 inode 也只是一個 data structure，大小有限。",
+     "k": 6,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 874.1
+     }
+    },
+    {
+     "say": "一個 entry 指一個 block，block 4KB，一個 entry 就只管 4KB。",
+     "k": 7,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 886.3
+     }
+    },
+    {
+     "say": "就算有一千個 entry，也才 4MB 左右，根本不夠。",
+     "k": 8,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 896
+     }
+    },
+    {
+     "say": "所以加 single indirect：這個 pointer 指到的不是 data，而是一個 index block。",
+     "k": 9,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 909.3
+     }
+    },
+    {
+     "say": "4KB 除以 4 byte，是 1024 個 entry，每個再管 4KB，就是 4MB。",
+     "k": 10,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 931.1
+     }
+    },
+    {
+     "say": "再不夠，就用 double indirect，兩層。",
+     "k": 11,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 953
+     }
+    },
+    {
+     "say": "還不夠就 triple。這就是 combined：把 multi-level 分成不同層級混著用。",
+     "k": 12,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 987.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "inode 的大小與 trade-off",
+   "scene": "fs-25a-inode",
+   "steps": 18,
+   "lines": [
+    {
+     "say": "好處在效能：小檔案走 direct，一次 lookup 就找到。",
+     "k": 13,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 998.5
+     }
+    },
+    {
+     "say": "層數越多 lookup 越多。inode 在 memory 時，direct 1 次 I/O，single 2 次，double 3 次，triple 4 次。",
+     "k": 14,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1014.1
+     }
+    },
+    {
+     "say": "看大小：12 個 direct，每個 4KB，只有 48KB。",
+     "k": 15,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1023.3
+     }
+    },
+    {
+     "say": "超過就用 single indirect，再多 4MB。",
+     "k": 16,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1042.3
+     }
+    },
+    {
+     "say": "double 是 4GB，triple 是 4TB。最大檔案就是 48KB 加 4MB 加 4GB 加 4TB。",
+     "k": 17,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1062.3
+     }
+    },
+    {
+     "say": "精確來說，double 是 1024 的平方乘 4KB，triple 是 1024 的三次方乘 4KB。",
+     "k": 17,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1062.3
+     }
+    },
+    {
+     "say": "當然還是有極限，檔案真的大到那樣，很多東西都得改寫。",
+     "k": 18,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1080
+     }
+    }
+   ]
+  },
+  {
+   "title": "考題：讀第 10 塊要幾次 I/O",
+   "scene": "fs-25a-summary",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "這幾種配置方式，一定要知道怎麼運作，這是後半章的重點。",
+     "k": 2,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1529.5
+     }
+    },
+    {
+     "say": "而且要會算：不同的 I/O pattern，各要幾個 I/O request 才完成。",
+     "k": 3,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1545.2
+     }
+    },
+    {
+     "say": "例如檔案有 10 塊，要讀第 10 塊的第 3 個 byte。假設 FCB 在 memory，index block 不在。",
+     "k": 4,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1561
+     }
+    },
+    {
+     "say": "contiguous 用算的，1 次；傳統 linked 要先讀前 9 塊，共 10 次。",
+     "k": 4,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1561
+     }
+    },
+    {
+     "say": "FAT 在 memory 查表，1 次；indexed 讀 index block 再讀 data，2 次。",
+     "k": 4,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1561
+     }
+    },
+    {
+     "say": "名字很像，linked、linked index、multi-level，一定要分清楚，才算得對。",
+     "k": 5,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1585.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Free-space management",
+   "scene": "fs-25a-freekinds",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "配置講完，還要管剩下的空間在哪，才有得配置。",
+     "k": 1,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1112.8
+     }
+    },
+    {
+     "say": "做法分四種，前三種名字看起來陌生，其實你都學過了。",
+     "k": 2,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1129.5
+     }
+    },
+    {
+     "say": "linked list 就是 linked allocation：每個空塊存下一個空塊的位置。",
+     "k": 3,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1144.3
+     }
+    },
+    {
+     "say": "grouping 就是 linked index：第一個空塊存 n 個空塊的位址，最後一格指到下一組。",
+     "k": 4,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1146.2
+     }
+    },
+    {
+     "say": "counting 就是 contiguous：記起點和連續幾塊，像從 2 開始，連續 4 塊是空的。",
+     "k": 5,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1149.8
+     }
+    },
+    {
+     "say": "簡單講，把 free space 想成一個檔案，只要支援循序存取：拿第一個空位，用完就換。",
+     "k": 6,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1154.7
+     }
+    },
+    {
+     "say": "名字不用刻意背，知道做法就好。",
+     "k": 7,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1188.5
+     }
+    },
+    {
+     "say": "唯一特別的是 bit vector：不串起來，只用 bit 判斷有沒有空。",
+     "k": 8,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1198.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Bit vector",
+   "scene": "fs-25a-bitvec",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "bit vector 怎麼做？把整個 partition 的 data block 拿來看。",
+     "k": 1,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1223.8
+     }
+    },
+    {
+     "say": "每塊只要知道有沒有被用，就用一個 bit 表示，有幾塊就有幾個 bit。",
+     "k": 2,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1240.5
+     }
+    },
+    {
+     "say": "周老師的慣例是 0 是 free、1 是 occupied；恐龍書剛好相反，1 是 free，考試看題目定義。",
+     "k": 3,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1249.6
+     }
+    },
+    {
+     "say": "找 0 的位置，就知道哪些可以配置。",
+     "k": 4,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1257
+     }
+    },
+    {
+     "say": "它不串起來，就是一串 0101，而且一次能看到很多塊誰空誰不空。",
+     "read": "它不串起來，就是一串 0 1 0 1，而且一次能看到很多塊誰空誰不空。",
+     "k": 5,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1278
+     }
+    },
+    {
+     "say": "好處一，簡單。",
+     "k": 6,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1283.1
+     }
+    },
+    {
+     "say": "好處二，判斷快：電腦本來就是 bit，硬體處理比沿著 link 走快多了。",
+     "k": 7,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1288
+     }
+    },
+    {
+     "say": "而且一次能讀 32 或 64 個 bit，一整排一起看。",
+     "k": 8,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1305.3
+     }
+    },
+    {
+     "say": "缺點是 partition 越大，bit 就越多。",
+     "k": 9,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1315.5
+     }
+    },
+    {
+     "say": "多到塞不進 CPU cache 就變慢。課本例子：1TB、4KB 一塊，是 2 的 28 次方塊，bitmap 要 32MB。",
+     "k": 10,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1328.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "為什麼要知道所有空位",
+   "scene": "fs-25a-nearest",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "那問題來了：隨便找一個空位不就好了？為什麼要一次知道所有 0 在哪？",
+     "k": 1,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1347
+     }
+    },
+    {
+     "say": "第一，contiguous 不能隨便找，它要一串連續的 0，用 bit vector 一眼就看出來。",
+     "k": 2,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1360.3
+     }
+    },
+    {
+     "say": "就算是 linked，同一個檔案放近一點，磁頭移動也會少。",
+     "k": 3,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1383.8
+     }
+    },
+    {
+     "say": "所以不管哪種做法，都希望同一個檔案放在相近的位置。",
+     "k": 4,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1400.6
+     }
+    },
+    {
+     "say": "要知道附近哪裡有空，單純的 linked list 做不到，要有這串 bit。",
+     "k": 5,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1410.8
+     }
+    },
+    {
+     "say": "還可以 load 一段範圍，看看哪裡空，選更近、更好的位置。",
+     "k": 6,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1424
+     }
+    },
+    {
+     "say": "老師看過一些 file system 的 code，前面那三種很少直接用，會切成段，做類似 binary search 的事。",
+     "k": 7,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1442.8
+     }
+    },
+    {
+     "say": "大部分 file system 要的是：給一個 position，很快回答離它最近的 0 在哪。",
+     "k": 8,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1469.4
+     }
+    },
+    {
+     "say": "甚至再加條件：最近，而且大小至少要多少。",
+     "k": 9,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1482
+     }
+    },
+    {
+     "say": "加上這些條件，前面的做法都得修改；bit vector 不用改就能回答。",
+     "k": 10,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1497.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "檔案系統的兩層 mapping",
+   "scene": "fs-25a-summary",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "好，整個 file system 收個尾：最重要的就是 mapping，而且有兩層。",
+     "k": 6,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1599.8
+     }
+    },
+    {
+     "say": "第一層是 namespace：一個 file path，怎麼對到一個 inode，也就是 FCB。",
+     "k": 6,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1608
+     }
+    },
+    {
+     "say": "第二層是 FCB 裡的 location，怎麼 map 到實體位置，也就是剛剛那幾種配置方式。",
+     "k": 7,
+     "src": {
+      "v": "C42WzJATHg0",
+      "t": 1619.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Mass storage：往下走到硬碟",
+   "scene": "fs-25b-intro",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "file system 講完，再往底層走：它下面用的是 storage。",
+     "k": 1,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 17.2
+     }
+    },
+    {
+     "say": "file system 管的是 file 這種 logical 的東西；storage system 管的是實體裝置。",
+     "k": 2,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 21.2
+     }
+    },
+    {
+     "say": "為什麼叫 mass storage？因為要用好幾顆 disk，拼出更 reliable、效能更好的系統。",
+     "k": 3,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 42.7
+     }
+    },
+    {
+     "say": "這個年代就是這樣：用現有的硬體兜起來，靠軟體管理，做出更強或更便宜的系統。",
+     "k": 4,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 66.3
+     }
+    },
+    {
+     "say": "這裡只講 disk，它還是最常見的 storage。",
+     "k": 5,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 86.3
+     }
+    },
+    {
+     "say": "SSD、Flash 這些也很有趣，但先從 hard drive 的構造開始。",
+     "k": 7,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 107.4
+     }
+    },
+    {
+     "say": "接著是 disk scheduling，讀寫頭怎麼移動。",
+     "k": 8,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 117.1
+     }
+    },
+    {
+     "say": "最後是 RAID，非常重要。",
+     "k": 9,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 122.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Disk structure",
+   "scene": "fs-25b-structure",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "前面說 disk 切成 block，是 file system 讀寫的 logical 單位。",
+     "k": 2,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 149.3
+     }
+    },
+    {
+     "say": "block 再 map 到 sector，一個 block 由一個或多個 sector 組成。",
+     "k": 3,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 160.3
+     }
+    },
+    {
+     "say": "一顆 disk 有好幾片 platter，每片有一圈圈 track，track 再切成 sector。",
+     "k": 6,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 174.6
+     }
+    },
+    {
+     "say": "重點是 sector 要有編號，才能做 mapping。",
+     "k": 8,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 183.1
+     }
+    },
+    {
+     "say": "從哪開始編沒規定，sector 0 可能在最外圈，也可能在最內圈。",
+     "k": 9,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 195.5
+     }
+    },
+    {
+     "say": "但編號一定要連續、有關聯。",
+     "k": 10,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 205.5
+     }
+    },
+    {
+     "say": "因為硬碟最好順著移動讀寫，所以編號差，就代表讀寫頭要移動的距離。",
+     "k": 11,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 217.2
+     }
+    },
+    {
+     "say": "之後的 scheduling，就是要 minimize 這個距離，看編號就知道。",
+     "k": 12,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 230.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "CLV：Constant Linear Velocity",
+   "scene": "fs-25b-clv",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "再看盤子怎麼轉。注意：外圈的 sector 比內圈多。",
+     "k": 1,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 251.1
+     }
+    },
+    {
+     "say": "除了 hard drive，CD-ROM、DVD-ROM 也是這類磁碟型裝置。",
+     "k": 2,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 260.7
+     }
+    },
+    {
+     "say": "依轉法分成兩種。",
+     "k": 3,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 277.6
+     }
+    },
+    {
+     "say": "第一種是 CLV，Constant Linear Velocity，固定線速度。",
+     "k": 4,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 283.2
+     }
+    },
+    {
+     "say": "越外圈空間越大，sector 越多，資料也越多。",
+     "k": 5,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 295.2
+     }
+    },
+    {
+     "say": "要每秒讀出一樣多的資料：讀外圈時，轉一小段就有 6 個 sector，不用轉很快。",
+     "k": 7,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 312.4
+     }
+    },
+    {
+     "say": "內圈 sector 少，要讀一樣的 6 個 sector，得轉一整圈。",
+     "k": 9,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 359.1
+     }
+    },
+    {
+     "say": "所以外圈轉慢，讀到內圈就要加速。",
+     "k": 10,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 369.5
+     }
+    },
+    {
+     "say": "放 DVD 時會突然加速、聲音變大，有時又慢下來，聽過吧？",
+     "k": 11,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 383.1
+     }
+    },
+    {
+     "say": "就是這個原因：轉速隨你讀內圈還是外圈在變。",
+     "k": 12,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 418
+     }
+    }
+   ]
+  },
+  {
+   "title": "CAV：Constant Angular Velocity",
+   "scene": "fs-25b-cav",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "第二種是 CAV，Constant Angular Velocity，固定角速度。這片盤每圈都是 8 個 sector。",
+     "k": 1,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 430
+     }
+    },
+    {
+     "say": "不管內外圈，轉過一樣的角度，讀出的資料量就一樣。",
+     "k": 2,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 440.3
+     }
+    },
+    {
+     "say": "轉速永遠固定，例如 7200 轉。",
+     "k": 3,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 463.2
+     }
+    },
+    {
+     "say": "買硬碟除了看等級和容量，一定要看 rotation speed，單位是 RPM，每分鐘幾轉。",
+     "k": 5,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 491.7
+     }
+    },
+    {
+     "say": "不管資料放哪、怎麼用，它都維持這個轉速。",
+     "k": 6,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 501.3
+     }
+    },
+    {
+     "say": "所以存資料時要配合：外圈的 density 比較疏。",
+     "k": 7,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 524.8
+     }
+    },
+    {
+     "say": "外圈的 sector 又長又寬，內圈比較密，這樣同樣角度讀到的量一樣。",
+     "k": 8,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 543.1
+     }
+    },
+    {
+     "say": "對軟體來說，越穩定、越 predictable 越好，硬體就配合做到。",
+     "k": 9,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 552.2
+     }
+    },
+    {
+     "say": "兩種選擇：要嘛改轉速，那是 CLV；要嘛改 density，那是 CAV。",
+     "k": 10,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 567
+     }
+    },
+    {
+     "say": "標準的 hard drive 是 CAV；課本也提到，CD、DVD 用的是 CLV。",
+     "k": 11,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 588.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Disk attachment",
+   "scene": "fs-25b-attach",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "最後要把 disk 接到電腦上，才能做 I/O。",
+     "k": 1,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 601
+     }
+    },
+    {
+     "say": "會透過 controller，分成兩邊。",
+     "k": 3,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 634.5
+     }
+    },
+    {
+     "say": "電腦這邊有 host controller，可能是一張卡、主機板上的晶片，甚至 CPU 直接當。",
+     "k": 4,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 640.6
+     }
+    },
+    {
+     "say": "drive 那邊也有自己的 controller，disk 就是 disk drive controller。",
+     "k": 5,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 654.7
+     }
+    },
+    {
+     "say": "中間的連線，像常見的 SATA 排線，就是 bus。",
+     "k": 7,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 679.1
+     }
+    },
+    {
+     "say": "每種 bus 都有自己的 protocol，兩邊講好才能傳資料。細節到 I/O 那章。",
+     "k": 8,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 688.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Disk scheduling 的目的",
+   "scene": "fs-25b-sched",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "接下來，管 disk 很重要的一件事：disk scheduling。",
+     "k": 1,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 707.9
+     }
+    },
+    {
+     "say": "file system、database，任何軟體都會同時丟一堆 I/O request 給 disk。",
+     "k": 3,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 721.3
+     }
+    },
+    {
+     "say": "disk controller 要決定：照什麼順序處理這些 request？",
+     "k": 4,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 742.4
+     }
+    },
+    {
+     "say": "目的當然就是減少讀寫時間。",
+     "k": 5,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 761.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Disk access time",
+   "scene": "fs-25b-access",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "先看讀寫時間怎麼算，叫 disk access time。",
+     "k": 1,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 766.2
+     }
+    },
+    {
+     "say": "hard drive 的盤子以固定速度 rotate，每圈的 sector 數是固定的。",
+     "k": 3,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 796.1
+     }
+    },
+    {
+     "say": "要讀不同 track，讀寫頭就得往內或往外移。",
+     "k": 4,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 804.4
+     }
+    },
+    {
+     "say": "要讀某個 sector，就要知道它在哪片盤、哪個 track。",
+     "k": 5,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 826.2
+     }
+    },
+    {
+     "say": "第一步，把讀寫頭移到那個 track，叫 seek。",
+     "k": 6,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 841.5
+     }
+    },
+    {
+     "say": "第二步，等盤子轉到那個 sector，這是 rotation。",
+     "k": 7,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 852.3
+     }
+    },
+    {
+     "say": "最後才讀寫。所以 access time 等於 seek time 加 rotation time 加 transfer time。",
+     "k": 8,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 862.2
+     }
+    },
+    {
+     "say": "rotation 看轉速：7200 RPM，一圈是 60 除以 7200 秒，約 8.33 毫秒；平均等半圈，約 4.17 毫秒。",
+     "read": "rotation 看轉速：7200 RPM，一圈是 60 除以 7200 秒，約 8 點 33 毫秒；平均等半圈，約 4 點 17 毫秒。",
+     "k": 10,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 880
+     }
+    },
+    {
+     "say": "transfer time 就是資料量除以 bandwidth。",
+     "k": 11,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 897
+     }
+    },
+    {
+     "say": "反過來，知道傳了多少資料、花了多久，也能算出 bandwidth。",
+     "k": 12,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 917.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "為什麼要 minimize seek time",
+   "scene": "fs-25b-seek",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "這三個時間，哪個能靠 scheduling 改善？",
+     "k": 1,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 933.8
+     }
+    },
+    {
+     "say": "transfer time 不行，它跟資料量和使用者的 I/O pattern 有關，controller 管不到。",
+     "k": 2,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 938.2
+     }
+    },
+    {
+     "say": "rotation time 本來就很快，每分鐘 7200 轉。",
+     "k": 3,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 968.5
+     }
+    },
+    {
+     "say": "轉得快的好處是，資料量大、要轉好幾圈時讀得快，所以它也跟 bandwidth 有關。",
+     "k": 4,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 982.4
+     }
+    },
+    {
+     "say": "真正的大問題是 seek time。",
+     "k": 5,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 1000.2
+     }
+    },
+    {
+     "say": "移動磁頭是機械動作。SSD 為什麼快？因為它根本沒有機械。",
+     "k": 6,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 1016.5
+     }
+    },
+    {
+     "say": "光從最內圈移到最外圈就很久，所以 scheduling 的目標，就是 minimize seek time。",
+     "k": 7,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 1031.1
+     }
+    },
+    {
+     "say": "而且 seek time 不是看單一 request，而是看所有 request 的處理順序。",
+     "k": 8,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 1042.7
+     }
+    },
+    {
+     "say": "如果每個 track 各要讀一塊，依序走跟亂跳，磁頭移動距離差非常多。",
+     "k": 9,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 1055.3
+     }
+    },
+    {
+     "say": "所以 disk scheduling，對整顆 disk 的效能非常重要。",
+     "k": 10,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 1076.6
+     }
+    },
+    {
+     "say": "這只有磁碟這類裝置才有；SSD 的管理，重點就不同了。",
+     "k": 11,
+     "src": {
+      "v": "pb0dALUBDm8",
+      "t": 1094.1
+     }
+    }
+   ]
+  }
+ ]
+}

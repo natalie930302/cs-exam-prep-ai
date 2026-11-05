@@ -1,0 +1,5320 @@
+{
+ "chapter": "os-7",
+ "title": "記憶體管理",
+ "intro": "從 address binding 的三個時間點出發，弄懂 logical 和 physical address、dynamic loading 與 linking、swapping、連續配置和碎裂，再一路學到 paging、TLB、各種 page table 結構，以及 segmentation 和兩者合用。",
+ "parts": [
+  {
+   "title": "這一章要學什麼",
+   "scene": "mem-10a-intro",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "好，這一章周老師說是作業系統最重要的一章：記憶體，也就是 memory，到底怎麼管理。",
+     "k": 1,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 14.74
+     }
+    },
+    {
+     "say": "為什麼重要？因為一個 program 會變成 process，關鍵就在它被 load 進 memory，有了自己的記憶體內容。",
+     "k": 1,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 14.74
+     }
+    },
+    {
+     "say": "我們會先講基本概念：程式跟記憶體到底是怎麼「結合」在一起的。",
+     "k": 2,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 49.1
+     }
+    },
+    {
+     "say": "接著是 swapping，就是把記憶體的內容搬到 disk，要用的時候再搬回來，下一章 virtual memory 會大量用到它。",
+     "k": 3,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 59.2
+     }
+    },
+    {
+     "say": "再來是重頭戲：memory 本身是一整塊連續的空間，那程式的 code、heap、stack，要怎麼 allocate 給程式？",
+     "k": 4,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 85.8
+     }
+    },
+    {
+     "say": "你會看到，為了有效使用實體記憶體，空間其實被切成小塊、散落各地，管理的方法就是 paging 和 segmentation。",
+     "k": 5,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 104.9
+     }
+    },
+    {
+     "say": "所以程式看到的連續空間，其實是假象。OS 會把它 map 到真正的實體記憶體，甚至 map 到硬碟上。",
+     "k": 6,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 124.1
+     }
+    },
+    {
+     "say": "你寫程式 pointer 亂指，拿到的錯誤叫 segmentation fault，就是最貼近程式的 segmentation 那一層抓到你越界。",
+     "k": 7,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 138.5
+     }
+    },
+    {
+     "say": "真實的作業系統是把 paging 和 segmentation 結合起來用。我們先分開學，最後再把它們套在一起。",
+     "k": 8,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 179.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "為什麼 memory 這麼重要",
+   "scene": "mem-10a-bg",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "先想想看，memory 為什麼這麼關鍵？第一，它是 CPU 唯一能「直接」access 的儲存空間。",
+     "k": 1,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 194.8
+     }
+    },
+    {
+     "say": "不管 instruction 還是 data，最後都得放在 memory 裡。中間的 cache 只是加速用的暫存，本體還是在 memory。",
+     "k": 2,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 207.8
+     }
+    },
+    {
+     "say": "CPU 沒辦法直接去讀 disk，資料一定要先搬進 memory，CPU 才拿得到。",
+     "k": 3,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 228.3
+     }
+    },
+    {
+     "say": "再來，為了提高 CPU 使用率，我們用 multiprogramming，同時把很多個 process 放在 memory 裡。",
+     "k": 4,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 235.2
+     }
+    },
+    {
+     "say": "這下就複雜了：每支程式能用多少記憶體？放在哪裡？這些都要 OS 決定。",
+     "k": 5,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 262.2
+     }
+    },
+    {
+     "say": "還要做 protection，你不能隨便去改別人的記憶體。這些都是 memory management 要負責的事。",
+     "k": 6,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 275.9
+     }
+    },
+    {
+     "say": "記憶體畢竟有限，所以現在的電腦有 virtual memory，把 disk 也當成記憶體的一部分，資料在兩邊之間切換。",
+     "k": 7,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 293.8
+     }
+    },
+    {
+     "say": "但不是每台機器都這樣。手機或 embedded system 儲存空間小，可能就直接把 virtual memory 拿掉。",
+     "k": 8,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 321.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Address binding 的三個時間點",
+   "scene": "mem-10a-steps",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "好，第一個主題是 address binding，也就是把程式和記憶體「綁」在一起。",
+     "k": 1,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 355.2
+     }
+    },
+    {
+     "say": "執行程式還有 loading 和 linking 這些過程，很多可以發生在 run time，所以會分成 static 和 dynamic 兩種。",
+     "k": 2,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 364.3
+     }
+    },
+    {
+     "say": "最後才是 swapping、paging、segmentation 這些管理方法，這部分會花最多時間。",
+     "k": 3,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 400.9
+     }
+    },
+    {
+     "say": "那「綁在一起」是什麼意思？你在程式裡寫了很多 variable，每個變數最後都要變成某一個 memory address。",
+     "k": 4,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 414
+     }
+    },
+    {
+     "say": "可是這個位址到底對到 physical memory 的哪裡，不一定 compile 完就知道，有好幾種可能。",
+     "k": 5,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 435.4
+     }
+    },
+    {
+     "say": "依照「什麼時候決定」分成三種。先看程式從寫好到執行的流程：compile、link、load、run。",
+     "k": 6,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 447.9
+     }
+    },
+    {
+     "say": "第一個時間點是 compile time，在編譯程式的時候就決定。",
+     "k": 7,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 460.8
+     }
+    },
+    {
+     "say": "第二個是 load time，就是程式準備放進 memory 的那一刻。",
+     "k": 8,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 475.4
+     }
+    },
+    {
+     "say": "第三個是 execution time，也叫 run time，程式已經在 memory 裡、真的開始跑的時候。",
+     "k": 9,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 494.8
+     }
+    },
+    {
+     "say": "所以流程四步裡，compile time、load time、execution time 這三段，就是三種 binding 的時間點。",
+     "k": 10,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 504.3
+     }
+    },
+    {
+     "say": "順便認識幾個名詞。拿 C library 來說，如果在 link 的時候就把它放進程式裡，這叫 static linking。",
+     "k": 11,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 521
+     }
+    },
+    {
+     "say": "在 load time 一次載入叫 static loading；等到執行時用到了才 load 進 memory，叫 dynamic loading。",
+     "k": 12,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 551.3
+     }
+    },
+    {
+     "say": "同樣地，dynamic linking 也是在 run time 才做。這幾個名詞後面會一個一個講清楚。",
+     "k": 13,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 569.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Compile-time binding：absolute code",
+   "scene": "mem-10a-compile",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "先看一個很簡單的程式，裡面有一個變數 data，它最後一定要 bind 到某個實體位址上。",
+     "k": 1,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 614.1
+     }
+    },
+    {
+     "say": "最早期的做法是在 compile time 就決定：編譯的時候，就直接定好變數放在實體記憶體的哪裡。",
+     "k": 2,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 628.4
+     }
+    },
+    {
+     "say": "為什麼要寫位址？因為機器碼看不懂變數名稱，它吃的是位址，所以 compile 時就寫上 0x1018 這種位置。",
+     "read": "為什麼要寫位址？因為機器碼看不懂變數名稱，它吃的是位址，所以 compile 時就寫上 十六進位一零一八 這種位置。",
+     "k": 3,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 643.1
+     }
+    },
+    {
+     "say": "那問題來了：位置在 compile 時就定死，程式 load 進記憶體時，就一定要放在一模一樣的地方。",
+     "k": 4,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 682.2
+     }
+    },
+    {
+     "say": "例如 compile 時寫 0x1000，意思就是：我假設這個程式執行時，會從 0x1000 開始放。",
+     "read": "例如 compile 時寫 十六進位一零零零，意思就是：我假設這個程式執行時，會從 十六進位一零零零 開始放。",
+     "k": 5,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 704
+     }
+    },
+    {
+     "say": "CPU 只是一行一行讀指令，看到哪個位址就去哪讀。程式真的放在 0x1000，data 就在 0x1018，讀得到。",
+     "read": "CPU 只是一行一行讀指令，看到哪個位址就去哪讀。程式真的放在 十六進位一零零零，data 就在 十六進位一零一八，讀得到。",
+     "k": 6,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 725.3
+     }
+    },
+    {
+     "say": "這就叫 compile-time address binding。",
+     "k": 7,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 740.2
+     }
+    },
+    {
+     "say": "電腦只跑一支程式、又知道記憶體怎麼擺，就能這樣做。早期的 DOS 就是，所以它又叫 absolute code。",
+     "k": 8,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 744.4
+     }
+    },
+    {
+     "say": "好處是非常簡單，執行也快，CPU 要的位置就在那裡，不用再經過任何翻譯。",
+     "k": 9,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 798.4
+     }
+    },
+    {
+     "say": "缺點也很明顯：程式一搬家，例如從 0x1000 搬到 0x2000，它就壞了，因為還是傻傻去讀 0x1018。",
+     "read": "缺點也很明顯：程式一搬家，例如從 十六進位一零零零 搬到 十六進位二零零零，它就壞了，因為還是傻傻去讀 十六進位一零一八。",
+     "k": 10,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 827.8
+     }
+    },
+    {
+     "say": "想搬只能 recompile、重新 load、重新執行，等於把程式整個 kill 掉重來。",
+     "k": 11,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 859.3
+     }
+    },
+    {
+     "say": "簡單的 embedded device 還可以這樣做；但很多人、很多 process 共用記憶體的一般電腦，就很不理想。",
+     "k": 12,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 898.9
+     }
+    },
+    {
+     "say": "程式為什麼會想搬家？記憶體不夠時它被搬到硬碟，回來時原位置可能被佔了，compile-time binding 就只能等。",
+     "k": 13,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 943.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Load-time binding：relocatable code",
+   "scene": "mem-10a-load",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "改善的做法是 load-time binding，把「決定位址」這件事，延後到 load 的時候。",
+     "k": 1,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1004.8
+     }
+    },
+    {
+     "say": "同樣的例子，差別很小，要仔細看：compile 時不再寫死絕對位置。",
+     "k": 2,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1020.9
+     }
+    },
+    {
+     "say": "它留一個 base 當起點，compile 時先不填，留給 loader 去填。",
+     "k": 3,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1041.2
+     }
+    },
+    {
+     "say": "compile 只要管自己程式內部：程式空間是連續的，所以只要算出離開頭多遠，例如 0x18。",
+     "read": "compile 只要管自己程式內部：程式空間是連續的，所以只要算出離開頭多遠，例如 十六進位一八。",
+     "k": 4,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1061.4
+     }
+    },
+    {
+     "say": "等到真的要 load，才去看這台電腦當下記憶體哪裡有空位。",
+     "k": 5,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1087.8
+     }
+    },
+    {
+     "say": "loader 找到空位，例如 0x2000，就知道 base 是多少，把位址改寫成 0x2000 + 0x18 = 0x2018 再放進去。",
+     "read": "loader 找到空位，例如 十六進位二零零零，就知道 base 是多少，把位址改寫成 十六進位二零零零 加 十六進位一八 等於 十六進位二零一八 再放進去。",
+     "k": 6,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1102.8
+     }
+    },
+    {
+     "say": "這種程式叫 relocatable code，compile 完可以放到記憶體任何空位，寫程式的人不必知道哪裡有空。",
+     "k": 7,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1127.1
+     }
+    },
+    {
+     "say": "可是如果程式已經在跑，想換位置呢？例如被 swap 到 disk，回來時原位置被別人佔了。",
+     "k": 8,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1162.9
+     }
+    },
+    {
+     "say": "還是得 reload。因為只有 loader 知道位置，必須把程式 kill 掉、重新 load、再跑一次。",
+     "k": 9,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1178.8
+     }
+    },
+    {
+     "say": "至少不用重新 compile。而且 compile 完常常隔很久才執行，到時再找空間就好，已經有彈性多了。",
+     "k": 10,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1197.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Execution-time binding：MMU 送出前才翻譯",
+   "scene": "mem-10a-exec",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "但前兩種還達不到現代電腦的目標。我們要的是 execution-time binding，才能有 virtual memory。",
+     "k": 1,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1273.9
+     }
+    },
+    {
+     "say": "一樣的例子。這次 compile 之後、load 之後，程式碼都沒變，一直都是相對位置 0x18。",
+     "read": "一樣的例子。這次 compile 之後、load 之後，程式碼都沒變，一直都是相對位置 十六進位一八。",
+     "k": 2,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1303
+     }
+    },
+    {
+     "say": "0x18 的意思是：從這個程式開頭算起第 0x18 個位置。loader 什麼都不改，原封不動放進記憶體。",
+     "read": "十六進位一八 的意思是：從這個程式開頭算起第 十六進位一八 個位置。loader 什麼都不改，原封不動放進記憶體。",
+     "k": 3,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1318.4
+     }
+    },
+    {
+     "say": "欸，重點來了：記憶體裡指令寫的位址，跟資料實際的位置，居然不一樣！前兩種一定會先改成一致的。",
+     "k": 4,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1356
+     }
+    },
+    {
+     "say": "程式實際放在 0x2000，data 真正在 0x2018，但指令裡寫的還是 0x18。",
+     "read": "程式實際放在 十六進位二零零零，data 真正在 十六進位二零一八，但指令裡寫的還是 十六進位一八。",
+     "k": 5,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1379.1
+     }
+    },
+    {
+     "say": "所以 0x18 叫 virtual address，它是假的，連送到 CPU 都還是假的；0x2018 才是 physical address。",
+     "read": "所以 十六進位一八 叫 virtual address，它是假的，連送到 CPU 都還是假的；十六進位二零一八 才是 physical address。",
+     "k": 6,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1394.1
+     }
+    },
+    {
+     "say": "那為什麼還跑得對？因為 CPU 送出位址、到記憶體之前，中間有一個元件叫 MMU，memory management unit。",
+     "k": 7,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1420.8
+     }
+    },
+    {
+     "say": "CPU 渾然不知，以為 0x18 就是對的，就送出去；送到 memory 之前，MMU 才把它轉成 0x2018。這就是 run time。",
+     "read": "CPU 渾然不知，以為 十六進位一八 就是對的，就送出去；送到 memory 之前，MMU 才把它轉成 十六進位二零一八。這就是 run time。",
+     "k": 8,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1445.5
+     }
+    },
+    {
+     "say": "記憶體看不到正確位置，CPU 也不知道，唯一知道的就是 MMU。後面的 paging、segmentation，都實作在 MMU 裡。",
+     "k": 9,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1467.4
+     }
+    },
+    {
+     "say": "程式存取記憶體非常頻繁，每個位址都要翻譯，所以真實電腦把這套翻譯做成 hardware 電路，才夠快。",
+     "k": 10,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1491.8
+     }
+    },
+    {
+     "say": "來看課本的例子：CPU 送出一個 logical address 346，它其實是假的。",
+     "k": 11,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1545.1
+     }
+    },
+    {
+     "say": "最簡單的翻譯是加上 relocation register，也就是 base 的值。程式放在 14000，346 + 14000 = 14346。",
+     "read": "最簡單的翻譯是加上 relocation register，也就是 base 的值。程式放在 14000，346 加 14000 等於 14346。",
+     "k": 12,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1589.8
+     }
+    },
+    {
+     "say": "那 run time 想把程式從 14000 搬到 24000 呢？沒關係。",
+     "k": 13,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1625
+     }
+    },
+    {
+     "say": "還記得 context switch 嗎？程式上 CPU 前，OS 把它的 base 載入 MMU。base 改成 24000，346 就翻成 24346。",
+     "k": 14,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1639.8
+     }
+    },
+    {
+     "say": "MMU 這個名詞要熟記，它是 hardware。後面的 paging、segmentation 一樣是它在翻譯，只是不會只加一個數字這麼簡單。",
+     "k": 15,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1662.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Logical address 和 physical address",
+   "scene": "mem-10a-lp",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "講完三種 binding，最重要的是建立兩個概念：logical address 和 physical address。",
+     "k": 1,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1703
+     }
+    },
+    {
+     "say": "logical address 的標準定義是：從 CPU 送出來的位址。它是假的，所以也叫 virtual address。",
+     "k": 2,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1717.2
+     }
+    },
+    {
+     "say": "physical address 則是真正送到 memory module 的位址。",
+     "k": 3,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1736.3
+     }
+    },
+    {
+     "say": "compile time、load time binding 時，程式放進記憶體就已經是真實位址，所以兩個位址一模一樣。",
+     "k": 4,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1748
+     }
+    },
+    {
+     "say": "只有 execution time binding，兩者才不同，要靠 MMU 在執行時做 address translation。",
+     "k": 5,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1764.6
+     }
+    },
+    {
+     "say": "這設計好在哪？第一，OS 管理實體記憶體非常有彈性，哪裡有空位都能用，靠翻譯對上就好。",
+     "k": 6,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1781.1
+     }
+    },
+    {
+     "say": "第二，寫程式的人和 compiler 只要管 logical address，別的程式、記憶體怎麼管，都可以視而不見。",
+     "k": 7,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1805.1
+     }
+    },
+    {
+     "say": "整個系統的複雜度大幅降低，compiler 受益最大：它跟原本一模一樣，什麼都不用改，全部丟給 MMU。",
+     "k": 8,
+     "src": {
+      "v": "xxwRs_2XjjY",
+      "t": 1841.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Dynamic loading：用到才 load",
+   "scene": "mem-10b-why",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "先預告一下：後面的 paging、segmentation，講的全都是 logical 到 physical address 的翻譯。",
+     "k": 1,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 16.1
+     }
+    },
+    {
+     "say": "在那之前，既然有了「run time 才決定」的概念，就能拿來省記憶體，於是有了 dynamic loading 和 dynamic linking。",
+     "k": 2,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 31.5
+     }
+    },
+    {
+     "say": "先看 loading。loader 的工作，是把程式在硬碟上的 disk image 載入記憶體，或在記憶體裡建立起來。",
+     "k": 3,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 45.4
+     }
+    },
+    {
+     "say": "早期用的是 static loading：程式開始跑之前，把整個程式的記憶體內容全部建好、全部放進 memory。",
+     "k": 4,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 63.3
+     }
+    },
+    {
+     "say": "問題是，整個程式的內容都要 create 出來，而且全部佔住記憶體。",
+     "k": 5,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 76.8
+     }
+    },
+    {
+     "say": "可是你寫過程式就知道，常常 allocate 一大堆卻沒用。像不小心多打幾個 0，array 開了 1 萬格，其實只用 10 格。",
+     "k": 6,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 94.3
+     }
+    },
+    {
+     "say": "對電腦來說，load time 就得把那 1 萬格都佔住給你，浪費一堆根本用不到的記憶體，整體效能就變差。",
+     "k": 7,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 124.3
+     }
+    },
+    {
+     "say": "解法就是 dynamic loading：等你「真的要用」的時候才 load 進記憶體，沒用到就先放著。",
+     "k": 8,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 137.8
+     }
+    },
+    {
+     "say": "變數這種太細的空間 OS 管不到，它做的是 routine 層級，也就是以 function 的程式碼為單位來 load。",
+     "k": 9,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 169.5
+     }
+    },
+    {
+     "say": "意思是某個 function 被 call 到時，它的 code 才 load 進來；沒被 call，它就只是硬碟上的 code。",
+     "k": 10,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 191.8
+     }
+    },
+    {
+     "say": "大家觀察到，一支程式裡有非常多 routine 從來沒用過。程式要考慮各種可能，實際執行只走其中一條路。",
+     "k": 11,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 237.5
+     }
+    },
+    {
+     "say": "到公司寫商業程式更明顯，可能 70% 到 80% 的 function 都在做 error handling，本來就不該常被用到。",
+     "k": 12,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 255.8
+     }
+    },
+    {
+     "say": "周老師分享在 IBM 的經驗：只為了加一個 flag、印一個訊息，就得從頭 test 一遍，花了將近半年。",
+     "k": 13,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 305.3
+     }
+    },
+    {
+     "say": "可見處理錯誤的程式碼有多龐大。",
+     "k": 13,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 305.3
+     }
+    },
+    {
+     "say": "用 dynamic loading，就能避免把這些用不到的 code 載進記憶體。",
+     "k": 14,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 339.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Dynamic loading 怎麼用：dlopen、dlsym",
+   "scene": "mem-10b-dl",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "那什麼時候在 run time 把 function load 進來？OS 有提供這個功能，但它不會主動幫你決定。",
+     "k": 1,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 351.9
+     }
+    },
+    {
+     "say": "現在一般的設計，是交給 programmer 自己決定，哪些 function 要用 dynamic loading。",
+     "k": 2,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 371.8
+     }
+    },
+    {
+     "say": "看 C 的例子。第一步，include dlfcn.h 這個 header，才能用 dynamic loading 的系統函式。",
+     "k": 3,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 381.8
+     }
+    },
+    {
+     "say": "先把要動態載入的 function，自己 compile 成一個 library。library 不需要 main，裡面放很多 function。",
+     "k": 4,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 399.8
+     }
+    },
+    {
+     "say": "程式裡先 define 一個 function pointer，例如叫 cosine，讓程式知道「有這個 function 存在」。",
+     "k": 5,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 449.3
+     }
+    },
+    {
+     "say": "用 dlopen 把 compile 好的 library 開啟、註冊起來，裡面的 function 都是 run time 才會被 access。",
+     "k": 6,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 459.8
+     }
+    },
+    {
+     "say": "再用 dlsym 在 run time 做 binding，告訴程式：cosine 就是那個 library 裡的 cos。",
+     "k": 7,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 486.1
+     }
+    },
+    {
+     "say": "重點是：程式 load 進記憶體時，cos 的 code 根本沒進來；執行到 call cos 那一行，才從 disk 把它 load 進來。",
+     "k": 8,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 514.8
+     }
+    },
+    {
+     "say": "用完再 dlclose 關掉、取消註冊。要用 dynamic loading，就是這幾行。",
+     "k": 9,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 545.5
+     }
+    },
+    {
+     "say": "它的好處，對系統來說是解決記憶體浪費；對 programmer 來說，則是很有彈性。",
+     "k": 10,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 554.9
+     }
+    },
+    {
+     "say": "因為 run time 才 bind，程式可以視情況決定對到 cos，還是更精準的 double 版本。不同系統支援的不一樣，這很好用。",
+     "k": 11,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 576.5
+     }
+    },
+    {
+     "say": "所以現在 programmer 用 dynamic loading，多半不是為了省記憶體，而是想在 run time 決定 call 哪個 function。",
+     "k": 12,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 608.4
+     }
+    },
+    {
+     "say": "用圖來看。左邊是 disk image，也就是 compile 出來的 binary，裡面有 main 和 A、B、C 三個 function。",
+     "k": 13,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 633.3
+     }
+    },
+    {
+     "say": "如果是 static loading，main、A、B、C 全部一起 load 到記憶體。",
+     "k": 14,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 655.3
+     }
+    },
+    {
+     "say": "如果 B、C 定義成 dynamic library，一開始只有 main 和 A 在記憶體；程式 call 了 B，B 才被 load 進來。",
+     "k": 15,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 660.8
+     }
+    },
+    {
+     "say": "call 完它就可以離開，記憶體就這樣被動態地使用。",
+     "k": 16,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 690.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Linking：每支程式都帶一份 library",
+   "scene": "mem-10b-link",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "講完 loading，換 linking。程式裡 call 一個 printf，就代表要去 link C library。",
+     "k": 1,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 730.4
+     }
+    },
+    {
+     "say": "我們 include header，目的就是要 link 某個 library，程式才完整，至少要 link 系統的 library。",
+     "k": 2,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 743.1
+     }
+    },
+    {
+     "say": "電腦上只要是 C 寫的程式，每一支都會 link 到 C library。",
+     "k": 3,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 759.8
+     }
+    },
+    {
+     "say": "那三支用 C library 的程式同時在跑，會怎樣？同一份 library 就被重複 load 進記憶體三次。",
+     "k": 4,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 779
+     }
+    },
+    {
+     "say": "對單一程式來說，它本來就要用、也沒重複；但從 OS 的角度看，跨程式之間一堆 duplicate，就是浪費。",
+     "k": 5,
+     "src": {
+      "v": "Q2-sJ3eYGYE",
+      "t": 800.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Static linking 的問題",
+   "scene": "mem-10c-static",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "我們回到 linking。",
+     "k": 1,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 221.8
+     }
+    },
+    {
+     "say": "一般的 static linking，就是你現在用 gcc 預設的做法，gcc 會去呼叫 linker。",
+     "k": 2,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 231.1
+     }
+    },
+    {
+     "say": "你的程式本來很小，link 完 binary 卻變大了，因為 linker 把 library 的程式碼一起綁了進來。",
+     "k": 3,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 246.8
+     }
+    },
+    {
+     "say": "最後變成一個 single binary，需要的 code 全部放在同一個檔案裡。",
+     "k": 4,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 261.1
+     }
+    },
+    {
+     "say": "loader 拿到的就是一整包，它也不知道怎麼拆，就整包 load 進記憶體。",
+     "k": 5,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 271.1
+     }
+    },
+    {
+     "say": "問題是 library 之所以叫 library，就是大家都要用，尤其 C library，結果每支程式都各帶一份。",
+     "k": 6,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 283.5
+     }
+    },
+    {
+     "say": "library 都不小，記憶體可能就被這些重複的 library 佔滿。",
+     "k": 7,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 296.8
+     }
+    },
+    {
+     "say": "注意，這跟 dynamic loading 是不同的問題。dynamic loading 只管「一支程式」什麼時候用到某段 code。",
+     "k": 8,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 313.8
+     }
+    },
+    {
+     "say": "這裡是跨程式的問題。每支程式終究要用這個 library，所以就算 static linking 加上 dynamic loading，還是各有一份 copy。",
+     "k": 9,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 340.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Dynamic linking：library 只放一份",
+   "scene": "mem-10c-dynlink",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "解法是 dynamic linking。dynamic 的意思是：到 run time，真的 call 到了才去 link。",
+     "k": 1,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 358.5
+     }
+    },
+    {
+     "say": "看圖，程式 load 進記憶體時，可能只有 main program。",
+     "k": 2,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 378.8
+     }
+    },
+    {
+     "say": "C library 其實只需要放一份。因為 library 是 immutable 的，不會被修改，大家可以 share。",
+     "k": 3,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 384.5
+     }
+    },
+    {
+     "say": "程式要 call printf 時，再 link 到 C library 裡 printf 的程式碼就好。",
+     "k": 4,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 399.8
+     }
+    },
+    {
+     "say": "為什麼要等到 run time？假設第一支程式先 call，這時才把 library load 進記憶體。",
+     "k": 5,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 408.8
+     }
+    },
+    {
+     "say": "第二支程式也要 call printf，它先看 library 是不是已經在記憶體裡；在的話直接用，不用自己再 copy 一份。",
+     "k": 6,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 416.4
+     }
+    },
+    {
+     "say": "都沒人用過，當然還是要 load。但 OS 會確保整個系統只有一份 library，就沒有重複的問題。",
+     "k": 7,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 433.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Dynamic library 和 stub",
+   "scene": "mem-10c-stub",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "那要真正做到 dynamic linking，library 在 compile 的時候就有兩種選擇。",
+     "k": 1,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 446.8
+     }
+    },
+    {
+     "say": "一種 compile 成 dynamic library，另一種 compile 成 static library。",
+     "k": 2,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 458
+     }
+    },
+    {
+     "say": "Windows 裡大家很熟的 DLL，dynamic-link library，就是這個。系統資料夾裡一大堆 .dll 檔，全都是。",
+     "k": 3,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 468.1
+     }
+    },
+    {
+     "say": "為了系統效能，通常偏好 dynamic library，run time 有人 call 它，它才被 load 進記憶體。",
+     "k": 4,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 478.5
+     }
+    },
+    {
+     "say": "所以你 compile 自己的程式時，也要給 linker 一個 flag，告訴它這個 library 要用 dynamic 還是 static。",
+     "k": 5,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 494.2
+     }
+    },
+    {
+     "say": "如果是 static，就像剛才看到的，全部綁成一包丟給 loader，binary 裡什麼都有。",
+     "k": 6,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 505.8
+     }
+    },
+    {
+     "say": "如果是 dynamic，library 先 compile 成 dynamic 形式；你的 binary 就比較小，library 的 code 還沒放進去。",
+     "k": 7,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 519.6
+     }
+    },
+    {
+     "say": "怎麼做到的？linker 會幫你偷偷加一段很小的程式，叫 stub。",
+     "k": 8,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 547.8
+     }
+    },
+    {
+     "say": "stub 是 function 層級的。你 call 那個 function，先跑的是 stub，它去問 OS：這個 library 載入了嗎？在哪裡？",
+     "k": 9,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 583.9
+     }
+    },
+    {
+     "say": "被 call 的 library 也要配合，compile 時要說明它是 dynamic library，OS 才能讓它和程式在 run time 溝通。",
+     "k": 10,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 602.8
+     }
+    },
+    {
+     "say": "stub 問到位置，就完成 linking；如果還沒有，就請 OS 先把它 load 進來。這就是 dynamic linking。",
+     "k": 11,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 625.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Dynamic 還是 static：怎麼取捨",
+   "scene": "mem-10c-cmp",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "dynamic linking 跟 dynamic loading 的差別是：它省的是「程式之間」重複的記憶體。",
+     "k": 1,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 637.3
+     }
+    },
+    {
+     "say": "programmer 沒辦法細部控制，只能選 dynamic 或 static library；一旦選了，裡面所有 function 都照那樣 link。",
+     "k": 2,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 650.4
+     }
+    },
+    {
+     "say": "小缺點是多了 stub。執行時要先找 code、問 OS，所以會稍微慢一點，當然沒慢很多。",
+     "k": 3,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 662.4
+     }
+    },
+    {
+     "say": "static 的好處就是比較快，而且不需要 OS 支援。",
+     "k": 4,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 689.8
+     }
+    },
+    {
+     "say": "像 embedded 或越來越多的 IoT 裝置，OS 很陽春，可能根本不支援 dynamic linking，這件事需要 OS 配合。",
+     "k": 5,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 695.8
+     }
+    },
+    {
+     "say": "順帶一提，不管拿來做 dynamic linking 還是 loading，那個 library 都叫 dynamic library，只是用法不同。",
+     "k": 6,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 720.5
+     }
+    },
+    {
+     "say": "static library 就沒得選，兩件事都不能做。記住：linking 是 OS 幫你做，loading 是 programmer 自己做。",
+     "k": 7,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 745.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "前半段整理",
+   "scene": "mem-10c-review",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "好，整理一下前半段。三種 address binding，compile、load、execution time，差別一定要很清楚。",
+     "k": 1,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 765.2
+     }
+    },
+    {
+     "say": "越往下，也就是 execution time，越有彈性，可以在 run time 做很多記憶體管理。",
+     "k": 2,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 773.8
+     }
+    },
+    {
+     "say": "越往上越簡單、通常也越快，沒有 run time 的額外工作。MMU 就算是硬體，翻譯也要時間，所以簡單的裝置可能選上面。",
+     "k": 3,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 781.2
+     }
+    },
+    {
+     "say": "virtual address 是從 CPU 送出來的，physical address 是送進 memory 的，這個區隔要很清楚。",
+     "k": 4,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 804.4
+     }
+    },
+    {
+     "say": "我們寫程式是「對著 CPU 寫」，所以看到的永遠只是 virtual address。",
+     "k": 5,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 825
+     }
+    },
+    {
+     "say": "這兩件事很常見：裝套件常被問要 static 還是 dynamic；遇到 porting 問題，也常靠 dynamic loading 解決。",
+     "k": 6,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 833.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Loader 跟 swapper 不一樣",
+   "scene": "mem-10c-swapper",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "有同學問了一個好問題：load-time binding 是在把 disk image 載入記憶體時做的，那 swapping 呢？",
+     "k": 1,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 15.2
+     }
+    },
+    {
+     "say": "swapping 是 run time 的事：virtual memory 把內容從 disk 搬回來之後，再設定位址、做翻譯。",
+     "k": 2,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 49.8
+     }
+    },
+    {
+     "say": "兩個很像，都是把程式的記憶體內容，從 disk 搬到 memory。",
+     "k": 3,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 68.5
+     }
+    },
+    {
+     "say": "但做事的人不同：一個是 loader，一個是 swapper，它們是不同的系統元件。",
+     "k": 4,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 77.2
+     }
+    },
+    {
+     "say": "loader 假設程式是「重新開始」：要建 PCB、初始化記憶體、建 heap 和 stack，是把 program 變成 process，很複雜。",
+     "k": 5,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 83.1
+     }
+    },
+    {
+     "say": "swapper 就單純多了，只是搬資料：不要了搬到 disk，要了搬回來，就是 memory 和 disk 之間的 data copy。",
+     "k": 6,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 125.8
+     }
+    },
+    {
+     "say": "所以叫 loader 去改程式的位置，意思就是整支程式重跑。",
+     "k": 7,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 164
+     }
+    },
+    {
+     "say": "virtual memory 則是 run time 的機制：把內容搬到某個位置，再改一下對應的值就好。",
+     "k": 8,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 170.8
+     }
+    },
+    {
+     "say": "所以一個叫 load time、一個叫 run time。都跟 disk 有關，但 load 是 program 變 process，swap 只是搬資料。",
+     "k": 9,
+     "src": {
+      "v": "YwPv-XEWDSU",
+      "t": 196.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Swapping 與 swap space",
+   "scene": "mem-10d-swapspace",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "好，正式來看 swapping：已經 load 進記憶體的內容，在 memory 和 disk 之間移動。",
+     "k": 1,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 16.08
+     }
+    },
+    {
+     "say": "搬到 disk 的哪裡？是 disk 上專門留給 OS 用的一塊空間，叫 swap space。",
+     "k": 2,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 44.1
+     }
+    },
+    {
+     "say": "灌過作業系統的人會發現，安裝時會問你要切多少給 swap space，這其實蠻重要的。",
+     "k": 3,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 63.8
+     }
+    },
+    {
+     "say": "因為 swap space 不夠，很快就 out of memory。out of memory 其實是連 swap space 都用完了，不只是實體記憶體滿。",
+     "k": 4,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 72.6
+     }
+    },
+    {
+     "say": "swap space 的標準名詞叫 backing store。它不是檔案系統的空間，在建檔案系統之前就先切出來了。",
+     "k": 5,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 92.2
+     }
+    },
+    {
+     "say": "切它的目的，就是之前學的 midterm scheduling：記憶體不夠時，挑一些 process 整個 swap 出去，讓別人先跑。",
+     "k": 6,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 115.9
+     }
+    },
+    {
+     "say": "下一章會看到，swap 不一定以整個 process 為單位，可以小到一個 4KB 的 page，非常 fine grained。",
+     "k": 7,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 133.3
+     }
+    },
+    {
+     "say": "swap space 裡放的是記憶體內容，不是使用者的檔案，所以不歸 file system 管，由 OS 直接管理。",
+     "k": 8,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 182.8
+     }
+    },
+    {
+     "say": "那為什麼要 swapping？很簡單，要 free out memory。很多記憶體是 run time 動態配置的，會一直長。",
+     "k": 9,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 204.9
+     }
+    },
+    {
+     "say": "有些 process 比較重要，想讓它先跑；不重要的一直佔著記憶體也不好，就先 swap 出去，讓正在跑的有更多記憶體。",
+     "k": 10,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 221
+     }
+    }
+   ]
+  },
+  {
+   "title": "Swapping 要配合 execution-time binding",
+   "scene": "mem-10d-bind",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "swapping 跟 address binding 有什麼關係？其實前面已經偷偷講過了。",
+     "k": 1,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 243.3
+     }
+    },
+    {
+     "say": "如果是 compile time 或 load time binding，也能 swap，但回來時必須回到原來的位置，因為位址寫死了。",
+     "k": 2,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 255.1
+     }
+    },
+    {
+     "say": "你離開的空間會被別人用，等你要回來，佔住那裡的人得先離開。",
+     "k": 3,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 278.1
+     }
+    },
+    {
+     "say": "偏偏把你踢走的那個人可能更重要，它一直站在那裡，你就永遠回不去，只能一直等，非常沒彈性。",
+     "k": 4,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 294.4
+     }
+    },
+    {
+     "say": "換成 execution time binding，MMU 靠 base register 在 run time 決定位置，回來可以換地方。",
+     "k": 5,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 306.8
+     }
+    },
+    {
+     "say": "所以 swapping 一定要跟 execution time binding 一起用才有效，不然效果會很差。",
+     "k": 6,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 335.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "只有 idle 的 process 能 swap",
+   "scene": "mem-10d-io",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "還有一個很重要的觀念：process 暫時不用，想把它 swap 出去，OS 在 swap 之前一定要先檢查。",
+     "k": 1,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 345.1
+     }
+    },
+    {
+     "say": "不是隨時都能 swap，它必須是 idle 的。",
+     "k": 2,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 371.5
+     }
+    },
+    {
+     "say": "idle 是什麼意思？簡單講：它不能正在做 I/O。",
+     "k": 3,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 382.3
+     }
+    },
+    {
+     "say": "還記得嗎？OS 的設計就是讓 CPU 和 I/O overlap，CPU 在算別人的時候，I/O 同時在進行。",
+     "k": 4,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 394.8
+     }
+    },
+    {
+     "say": "在 waiting queue 的 process 雖然沒用 CPU，但如果在等 I/O，device 正透過 memory bus 把資料寫進它的記憶體。",
+     "k": 5,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 403
+     }
+    },
+    {
+     "say": "這時把它 swap 掉就完了：I/O device 會把資料寫到錯的地方，或根本沒地方寫。",
+     "k": 6,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 422
+     }
+    },
+    {
+     "say": "所以在 I/O 的 waiting queue 裡不能 swap；如果是 sleep 的 waiting queue，就可以。",
+     "k": 7,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 459.3
+     }
+    },
+    {
+     "say": "怎麼解？第一招比較硬：程式做 I/O 前設一個 flag，OS 看到就先不 swap，等它做完再說。",
+     "k": 8,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 491.4
+     }
+    },
+    {
+     "say": "第二招比較常用：程式做 I/O 本來就透過 OS，所以 OS 替它開一塊 OS buffer。",
+     "k": 9,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 507.8
+     }
+    },
+    {
+     "say": "I/O 的資料先進 OS 的記憶體，程式自己的記憶體沒被碰到，就能放心被 swap 掉。",
+     "k": 10,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 527.4
+     }
+    },
+    {
+     "say": "等 I/O 做完、程式被 swap 回來，再把 buffer 的內容 copy 到程式的記憶體。",
+     "k": 11,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 545
+     }
+    },
+    {
+     "say": "這就是 buffering。OS 一定待在記憶體、不會被 swap，所以由它開 buffer，使用者程式的記憶體就能清出來給別人。",
+     "k": 12,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 556.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Swapping 有多花時間",
+   "scene": "mem-10d-time",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "swapping 的時間很重要。disk 比 memory 慢很多，至少 100 倍。",
+     "k": 1,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 613.1
+     }
+    },
+    {
+     "say": "而且時間跟搬的大小成正比。一次 swap 整個 process，如果它有 4GB，就要搬 4GB 到 disk，非常久。",
+     "k": 2,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 629.9
+     }
+    },
+    {
+     "say": "所以要搬得越少越好，還有不要搬錯人：把 P1 搬走，使用者馬上又要跑 P1，又得搬回來，那就慘了。",
+     "k": 3,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 650.8
+     }
+    },
+    {
+     "say": "第九章 virtual memory 就在處理這件事：一次只搬一個 4KB 的 page，再用演算法決定 swap 誰。",
+     "k": 4,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 665.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "連續配置：fixed 和 variable partition",
+   "scene": "mem-10d-part",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "接下來進入這章的重點：allocation。先把 disk 丟一邊，只看記憶體要怎麼分給這些程式。",
+     "k": 1,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 700.2
+     }
+    },
+    {
+     "say": "第一種叫 contiguous allocation，簡單講就是給你一整塊「連續」的空間。",
+     "k": 2,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 717.1
+     }
+    },
+    {
+     "say": "比較難的是 discontiguous，也就是不連續的，等一下再講。",
+     "k": 3,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 730
+     }
+    },
+    {
+     "say": "連續比較符合寫程式的直覺，講 code、heap、stack 時，我們都把它畫成連續的一塊。",
+     "k": 4,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 738.5
+     }
+    },
+    {
+     "say": "連續配置的第一種做法叫 fixed partition：先把實體記憶體切成固定大小的區塊。",
+     "k": 5,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 769.2
+     }
+    },
+    {
+     "say": "周老師喜歡用停車場比喻：fixed partition 就像停車場，切成一格一格一樣大的停車格。",
+     "k": 6,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 787.2
+     }
+    },
+    {
+     "say": "一台車只能停一格。切幾格，最多就有幾個程式在記憶體裡，也就是 degree of multiprogramming，很好管理。",
+     "k": 7,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 813.4
+     }
+    },
+    {
+     "say": "問題是，一台小機車只用了四分之一格，整格卻被佔住，旁邊明明還能再停兩三台，很浪費。",
+     "k": 8,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 837.9
+     }
+    },
+    {
+     "say": "所以有 variable size partition：你要多少，就切多少給你，每個人分到的大小都不一樣。",
+     "k": 9,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 865.4
+     }
+    },
+    {
+     "say": "這樣就會出現一些 hole，空著的洞，就像大家亂停車一樣。",
+     "k": 10,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 895.8
+     }
+    },
+    {
+     "say": "為什麼會有洞？process 大小都不同，又會進來、離開，離開就留下洞，而且 run time 一直在變。",
+     "k": 11,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 937.9
+     }
+    },
+    {
+     "say": "那上面一個大洞、下面一個小洞，新程式都塞得下，要塞哪個？這就是接下來的演算法要決定的。",
+     "k": 12,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 964.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "First fit、best fit、worst fit",
+   "scene": "mem-10d-fit",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "最直覺的三種演算法：first fit、best fit、worst fit。假設有 30K、70K、40K、90K 四個洞，要放一個 35K 的程式。",
+     "k": 1,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 993.5
+     }
+    },
+    {
+     "say": "first fit：從頭找，第一個塞得下的就停進去。30K 不夠，70K 夠，放進去剩 35K。",
+     "k": 2,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 997.9
+     }
+    },
+    {
+     "say": "best fit：全部的洞看一遍，挑最剛好的。夠大的有 70K、40K、90K，最小是 40K，放完只剩 5K。",
+     "k": 3,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1010.2
+     }
+    },
+    {
+     "say": "看起來最替別人著想，但結果不一定好：剩下的 5K 小到幾乎沒人能用，反而等於浪費。",
+     "k": 4,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1033.5
+     }
+    },
+    {
+     "say": "worst fit 倒過來想：不跟人家爭，直接挑最大的 90K 來用。",
+     "k": 5,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1052.9
+     }
+    },
+    {
+     "say": "它的想法是，大洞用掉一部分，剩下 55K 還很大，別人還能用。",
+     "k": 6,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1066.8
+     }
+    },
+    {
+     "say": "考試可能給你一連串誰進來、誰離開，要你照這三個規則模擬擺放的位置，課本習題可以練。",
+     "k": 7,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1086.9
+     }
+    },
+    {
+     "say": "那實際上誰最好？其實比較多人用 first fit，因為這三個都是 heuristic，不保證結果一定比較好。",
+     "k": 8,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1109.5
+     }
+    },
+    {
+     "say": "但可以確定的是：first fit 的 average case 最快，找到第一個洞就結束，不用掃完整個 list。",
+     "k": 9,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1125.1
+     }
+    },
+    {
+     "say": "best fit 和 worst fit 一定要全部掃一遍才能決定，比較花時間，效果又沒保證，所以實作上多選 first fit。",
+     "k": 10,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1144.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "External 和 internal fragmentation",
+   "scene": "mem-10d-frag",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "剛才兩種配置，最大的問題是什麼？都可能浪費空間。",
+     "k": 1,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1164.9
+     }
+    },
+    {
+     "say": "這種浪費有個專有名詞，一定要記住：fragmentation，碎裂，指零零碎碎用不到的空間。",
+     "k": 2,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1178.8
+     }
+    },
+    {
+     "say": "fragmentation 分兩種：external 和 internal。",
+     "k": 3,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1192.1
+     }
+    },
+    {
+     "say": "external 照字面，就是「在程式外面」。看左邊，這些洞都夾在程式中間，例如 P1 和 P2 之間。",
+     "k": 4,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1197.7
+     }
+    },
+    {
+     "say": "現在 P4 要進來，卻塞不進任何一個洞。明明有空間卻擺不下，這就叫 external fragmentation。",
+     "k": 5,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1209.8
+     }
+    },
+    {
+     "say": "它只會在 variable size 發生。fixed size 格子都切好了，有空格、程式又塞得進一格，就停得進去。",
+     "k": 6,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1237.2
+     }
+    },
+    {
+     "say": "internal 則是右邊 fixed partition 的問題：每個 process 要的空間都不一樣。",
+     "k": 7,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1267.1
+     }
+    },
+    {
+     "say": "但 fixed partition 不管，就給你一整格，沒用到的部分就浪費了。就像重型機車佔一整格，別人看了很眼紅。",
+     "k": 8,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1287.2
+     }
+    },
+    {
+     "say": "internal 沒什麼好解法，唯一的辦法是把車位切小，這正是 paging 要做的事。",
+     "k": 9,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1311.1
+     }
+    },
+    {
+     "say": "external 呢？解法叫 compaction。",
+     "k": 10,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1343.2
+     }
+    },
+    {
+     "say": "定期整理記憶體，把程式往一邊搬，空間集中成一個大洞，P4 就放得下了。",
+     "k": 11,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1357.8
+     }
+    },
+    {
+     "say": "compaction 在 disk 上更常見。電腦變慢有人叫你做磁碟重組，其實就是在做 compaction。",
+     "k": 12,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1370
+     }
+    },
+    {
+     "say": "記憶體也有這現象，但之後會切成很小的 page，所以問題不大，除非用最傳統的 variable size。",
+     "k": 13,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1400.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "為什麼需要 paging",
+   "scene": "mem-pg-why",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "在看 paging 怎麼做之前，先從整台電腦的角度看它要解決什麼。Simple Snippets 用了一個很生活的例子。",
+     "k": 1,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 52
+     }
+    },
+    {
+     "say": "一台筆電只看三個元件：primary memory，也就是 RAM；secondary memory，也就是硬碟；還有 CPU。",
+     "k": 2,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 59.8
+     }
+    },
+    {
+     "say": "RAM 的容量很有限，大概 4GB 到 128GB；硬碟從 500GB、1TB 起跳，還越來越大。",
+     "k": 3,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 100
+     }
+    },
+    {
+     "say": "同樣的錢，RAM 貴很多，它是高速裝置，而且是 volatile，關機就沒了。程式平常放硬碟，要跑才搬進 RAM。",
+     "k": 4,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 127
+     }
+    },
+    {
+     "say": "可是程式越來越大，RAM 沒變大多少。打開工作管理員，背景就有好幾百個 process。",
+     "k": 5,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 165.6
+     }
+    },
+    {
+     "say": "再開個遊戲、繪圖軟體，RAM 就滿了。這時就需要 memory management，paging 就是其中一種方法。",
+     "k": 6,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 195.8
+     }
+    },
+    {
+     "say": "paging 是由 MMU 來實作的，它是系統裡負責執行這套機制的硬體單元。",
+     "k": 7,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 211
+     }
+    },
+    {
+     "say": "影片說，paging 是拿一部分硬碟當 virtual RAM 來放 page。精確地說，這其實是 virtual memory 的 swap space。",
+     "k": 8,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 228.2
+     }
+    },
+    {
+     "say": "例如 CPU 正在跑兩個 app，另外兩個暫時沒用，就把它們移到硬碟，需要時再搬回 RAM。",
+     "k": 9,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 263.4
+     }
+    },
+    {
+     "say": "課本上，paging 本身是把空間切成等大的 page 和 frame 去對應；把 page 暫存到 disk，是下一章 virtual memory 的事。",
+     "k": 10,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 283.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Paging 入門：page、frame、page table",
+   "scene": "mem-10d-paging",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "好，回到周老師的課堂。paging 跟剛才的配置，差在哪？",
+     "k": 1,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1428.9
+     }
+    },
+    {
+     "say": "剛才講的都是 contiguous。另一種叫 non-contiguous：單一程式的記憶體本身就是不連續的。",
+     "k": 2,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1436.2
+     }
+    },
+    {
+     "say": "不連續也分兩種：variable size 的叫 segmentation，後面講；fixed size 的不連續配置，就是 paging。",
+     "k": 3,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1455.8
+     }
+    },
+    {
+     "say": "怎麼做到不連續？擺放就是 logical 和 physical address 之間的 mapping。之前只切 physical，現在 logical 也切。",
+     "k": 4,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1482.5
+     }
+    },
+    {
+     "say": "physical 這邊切出來的一個個單位叫 frame，就像車位，是一塊實體空間。",
+     "k": 5,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1512.5
+     }
+    },
+    {
+     "say": "logical 這邊切出來的叫 page，你的程式其實就是一堆 page。",
+     "k": 6,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1520.9
+     }
+    },
+    {
+     "say": "嚴格來說兩個詞不能互換：frame 指實體，page 指程式那邊。但它們的 size 完全相同，所以常被混用。",
+     "k": 7,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1540.2
+     }
+    },
+    {
+     "say": "一個程式依大小變成若干個 page，目的就是找到同樣數量的 frame，把它們擺進去。",
+     "k": 8,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1575.8
+     }
+    },
+    {
+     "say": "要做到這件事，OS 第一要知道哪些 frame 是 free 的，才能分配。",
+     "k": 9,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1598
+     }
+    },
+    {
+     "say": "第二件、也是本章重點：page table。它記錄 page number 對到哪個 frame number，其實就是一個 array。",
+     "k": 10,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1609.3
+     }
+    },
+    {
+     "say": "好處一：實體空間可以不連續分配。使用者以為自己的空間是連續的，其實 page 散落在不同 frame。",
+     "k": 11,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1641.8
+     }
+    },
+    {
+     "say": "好處二：page 大小固定，完全沒有 external fragmentation；internal 也能減少，page 越小，最多浪費的就越少。",
+     "k": 12,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1670
+     }
+    },
+    {
+     "say": "不過 page 也不能太小，不然 page table 會很大、很慢，這是一個 tradeoff。",
+     "k": 12,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1641.8
+     }
+    },
+    {
+     "say": "好處三非常重要：share memory。shared library 就是在 page table 動手腳，讓不同程式指到同一個 frame。",
+     "k": 13,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1706.9
+     }
+    },
+    {
+     "say": "為什麼切成 page 才好 share？因為常常只 share code，或 library 的某個 function，切小才能細粒度地 share。",
+     "k": 14,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1740.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page 和 frame 一樣大",
+   "scene": "mem-pg-theory",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "Simple Snippets 也把 paging 的定義列成幾點，我們對照一下。",
+     "k": 1,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 300.5
+     }
+    },
+    {
+     "say": "在這個機制下，OS 以「相同大小的 block」來存取資料，這些 block 叫 pages。",
+     "k": 2,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 337.6
+     }
+    },
+    {
+     "say": "先定好固定大小，例如整塊空間都切成 2KB、2KB、2KB。",
+     "k": 3,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 354.5
+     }
+    },
+    {
+     "say": "因為大家都是一樣大的格子，它可以做 non-contiguous 的配置，也解決了 external fragmentation。",
+     "k": 5,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 380.2
+     }
+    },
+    {
+     "say": "logical address space，也就是程式看到的空間，切成一樣大的 pages。",
+     "k": 6,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 391.4
+     }
+    },
+    {
+     "say": "physical address space，也就是 RAM，切成同樣大小的 frames。",
+     "k": 7,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 416.8
+     }
+    },
+    {
+     "say": "非常重要：frame size 一定等於 page size。page 是 2KB，frame 也是 2KB，一個 page 剛好放進一個 frame。",
+     "k": 8,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 429.8
+     }
+    },
+    {
+     "say": "logical address，也叫 virtual address，是 CPU 產生的；physical address 是 RAM 裡實際的位置。",
+     "k": 9,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 447.5
+     }
+    },
+    {
+     "say": "virtual 到 physical 的 mapping 由 MMU 這個 hardware 完成，這就是 paging technique。",
+     "k": 10,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 467.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page table 圖例：1、4、3、7",
+   "scene": "mem-10d-pt",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "看這張圖就一目瞭然。左邊是程式的 logical memory，切成 page 0 到 page 3。",
+     "k": 1,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1768.3
+     }
+    },
+    {
+     "say": "右邊是實體記憶體，切成一格一格的 frame，大小都一模一樣。",
+     "k": 2,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1781.1
+     }
+    },
+    {
+     "say": "page 0 放到 frame 1，就在 page table 的第 0 格寫 1。",
+     "k": 3,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1791.8
+     }
+    },
+    {
+     "say": "page 1 放到 frame 4……可以隨便亂放，只要 page table 記好：0 對 1、1 對 4、2 對 3、3 對 7。",
+     "k": 4,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1797.3
+     }
+    },
+    {
+     "say": "靠這張 page table，就能做不連續的配置。",
+     "k": 5,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1813.2
+     }
+    },
+    {
+     "say": "page table 是跑程式需要的另一個資料結構，由 OS 配置、維護，使用者不能碰，有點像 PCB。",
+     "k": 6,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1823.8
+     }
+    },
+    {
+     "say": "很重要：每個 process 都有自己的 page table。另一支程式的 page 0 可能在 frame 2，它的表第 0 格就寫 2。",
+     "k": 7,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1844
+     }
+    },
+    {
+     "say": "想 sharing 也簡單：兩張表裡寫同一個 frame number，例如都寫 4，兩個程式就共用那塊記憶體。",
+     "k": 8,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1863.5
+     }
+    },
+    {
+     "say": "protection 也是：表裡只有 1、4、3、7，MMU 翻譯只會碰到這四個 frame，別人的 frame 5 根本指不到。",
+     "k": 9,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1873.1
+     }
+    },
+    {
+     "say": "最後提醒，程式用的是 byte address，要把「某 page 的第幾個 byte」翻成「實體的第幾個 byte」，不只是 page 對 frame。",
+     "k": 10,
+     "src": {
+      "v": "bFHb-eTM7oU",
+      "t": 1913.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "每個 process 一張 page table",
+   "scene": "mem-11a-recap",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "複習一下：為了不浪費記憶體，我們用 discontiguous allocation，只要有空間就能用，中間不留洞。",
+     "k": 1,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 14.82
+     }
+    },
+    {
+     "say": "paging 屬於 fixed allocation：logical 和 physical 兩邊都切成完全一樣大的區塊。",
+     "k": 2,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 43.3
+     }
+    },
+    {
+     "say": "每個程式分到幾個 page，看它多大；程式會長，page 也會一直增加。",
+     "k": 3,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 66.5
+     }
+    },
+    {
+     "say": "兩邊都切，就能任意 mapping，這個對應關係存在 page table。",
+     "k": 4,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 78
+     }
+    },
+    {
+     "say": "表上寫 frame number 比較好懂；實作上存的其實是 frame 的 base address，因為最後要翻出第幾個 byte。",
+     "k": 6,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 122.9
+     }
+    },
+    {
+     "say": "每個 process 都有自己的 page table，所以 OS 要維護非常多張。",
+     "k": 7,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 150.2
+     }
+    },
+    {
+     "say": "所以 process 放進 ready queue 之前，loader 要建 PCB、建 page table、配好記憶體，這才是 loader 最主要的工作。",
+     "k": 8,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 160
+     }
+    }
+   ]
+  },
+  {
+   "title": "Logical address 切成 p 和 d",
+   "scene": "mem-11a-pd",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "進入重點：一次完整的 address translation 到底怎麼做？",
+     "k": 1,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 197
+     }
+    },
+    {
+     "say": "CPU 存取記憶體通常是 byte addressing，每個 address 指到一個 byte，就像每戶人家都有門牌號碼。",
+     "k": 2,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 204.4
+     }
+    },
+    {
+     "say": "但不是每個系統都這樣，有些是 4 個 byte 一個 address。題目沒特別說，就當 byte addressing。",
+     "k": 3,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 247.9
+     }
+    },
+    {
+     "say": "程式裡的 logical address 是一串 bit。有了 paging，我們把它切成兩段。",
+     "k": 4,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 267.2
+     }
+    },
+    {
+     "say": "前面幾個 bit 叫 page number，寫成 p，表示在程式裡的第幾個 page。",
+     "k": 5,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 291.3
+     }
+    },
+    {
+     "say": "後面的 bit 叫 page offset，寫成 d，表示在這個 page 裡的哪個位置，是相對位置。",
+     "k": 6,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 311.8
+     }
+    },
+    {
+     "say": "p 的用途，就是拿去查 page table：它是第幾個 page，就查出它在第幾個 frame。",
+     "k": 7,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 336.8
+     }
+    },
+    {
+     "say": "bit 的長度有意義。page number 有 10 個 bit，最多表示 2¹⁰ 個數字，所以程式最多只能用 1024 個 page。",
+     "read": "bit 的長度有意義。page number 有 10 個 bit，最多表示 2的10次方 個數字，所以程式最多只能用 1024 個 page。",
+     "k": 8,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 360.2
+     }
+    },
+    {
+     "say": "page size 是 4KB 的話，這個程式最多能用 2¹⁰ × 4KB = 2²² bytes，也就是 4MB，超過就沒辦法描述。",
+     "read": "page size 是 4KB 的話，這個程式最多能用 2的10次方 乘 4KB 等於 2的22次方 bytes，也就是 4MB，超過就沒辦法描述。",
+     "k": 9,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 385
+     }
+    },
+    {
+     "say": "這也是為什麼早期 32-bit 的電腦，程式最多只能用 4GB，也就是 2³² bytes，受限於位址的 bit 數。",
+     "read": "這也是為什麼早期 32-bit 的電腦，程式最多只能用 4GB，也就是 2的32次方 bytes，受限於位址的 bit 數。",
+     "k": 10,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 414.4
+     }
+    },
+    {
+     "say": "從 32 bit 換到 64 bit 很麻煩，所有的 address、所有的硬體都得跟著改。",
+     "k": 11,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 431.2
+     }
+    },
+    {
+     "say": "再看 offset：如果 offset 有 n 個 bit，它能描述的範圍就是 2 的 n 次方，也就是一個 page 的大小。",
+     "k": 12,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 458.2
+     }
+    },
+    {
+     "say": "所以 page size 4KB 等於 2¹²，位址裡就要留 12 個 bit 給 offset，剛好指遍整個 page。",
+     "read": "所以 page size 4KB 等於 2的12次方，位址裡就要留 12 個 bit 給 offset，剛好指遍整個 page。",
+     "k": 13,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 486.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Address translation：p 換成 frame，d 照抄",
+   "scene": "mem-11a-xlate",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "p 和 d 合起來，就是一個 logical address。",
+     "k": 1,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 518.1
+     }
+    },
+    {
+     "say": "變成 physical 時，先用 page number 找到 frame，把這個 frame 的 base address 放在前面。",
+     "k": 2,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 525.4
+     }
+    },
+    {
+     "say": "然後接上「同一個」offset。page 和 frame 一樣大，在 page 裡第幾個 byte，在 frame 裡就是第幾個 byte。",
+     "k": 3,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 543.8
+     }
+    },
+    {
+     "say": "看圖比較簡單：位址有很多 bit，現在是 64 個，早期是 32 個。前面一段叫 p，後面叫 d。",
+     "k": 4,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 570.1
+     }
+    },
+    {
+     "say": "切在哪完全由 page size 決定：page 大一點，d 的 bit 就多，p 的 bit 就少，所以各系統的切法可以不同。",
+     "k": 5,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 589.3
+     }
+    },
+    {
+     "say": "p 轉成數字，去 page table 找對應的 entry，裡面存著 frame 的 base address。",
+     "k": 6,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 603
+     }
+    },
+    {
+     "say": "把它直接貼過來，跟 d 接在一起。全部都是 bit operation，不需要真的做乘除法。",
+     "k": 7,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 619.1
+     }
+    },
+    {
+     "say": "接起來，就是真正的 physical address。",
+     "k": 8,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 631.9
+     }
+    },
+    {
+     "say": "來做一題。page size 是 1KB，也就是 2¹⁰，腦袋要馬上想到：offset 是 10 個 bit。",
+     "read": "來做一題。page size 是 1KB，也就是 2的10次方，腦袋要馬上想到：offset 是 10 個 bit。",
+     "k": 9,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 636
+     }
+    },
+    {
+     "say": "給你一串 bit，先把最後 10 個 bit 切出來，那就是 page offset d。",
+     "k": 10,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 654.3
+     }
+    },
+    {
+     "say": "假設前面那段的值是 2，就去看 page table 的 index 2。注意從 0 開始數，所以是第三格。",
+     "k": 11,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 666.5
+     }
+    },
+    {
+     "say": "假設裡面存的是 5，代表這個 page 放在第 5 個 frame。",
+     "k": 12,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 686
+     }
+    },
+    {
+     "say": "每個 frame 大小固定，第 5 個 frame 的 base address 就是 1024 × 5 = 5120。",
+     "read": "每個 frame 大小固定，第 5 個 frame 的 base address 就是 1024 乘 5 等於 5120。",
+     "k": 13,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 693.1
+     }
+    },
+    {
+     "say": "這個位址一共 13 個 bit，後面 10 個是 offset，所以只剩前面 3 個是 page number。",
+     "k": 14,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 717.5
+     }
+    },
+    {
+     "say": "翻譯就是把 page number 的 2，也就是 010，換成 5，也就是 101，offset 照抄。答案是 5120 + d。",
+     "read": "翻譯就是把 page number 的 2，也就是 零一零，換成 5，也就是 一零一，offset 照抄。答案是 5120 加 d。",
+     "k": 15,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 747.9
+     }
+    },
+    {
+     "say": "這個概念非常重要。系統可以改 page size、改 logical address 的 bit 數，但只要用 paging，翻譯原理都不變。",
+     "k": 16,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 761.3
+     }
+    },
+    {
+     "say": "周老師說考前一定要能自己算：給你一個系統，page number 幾個 bit、offset 幾個 bit、page size、table size 是多少。",
+     "k": 17,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 806.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "例子：process X 的 P5 在 frame 21",
+   "scene": "mem-pg-ex",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "再看 Simple Snippets 的例子，把整個流程走一遍。",
+     "k": 1,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 506.4
+     }
+    },
+    {
+     "say": "有一個 process X，切成 P1 到 P5 共 5 個 page。注意課本通常從 page 0 開始編號，這部影片從 1 開始。",
+     "k": 2,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 524.3
+     }
+    },
+    {
+     "say": "為什麼是 5 個？process 有 10KB、page size 是 2KB，10 ÷ 2 = 5，所以切成 5 個 page。",
+     "read": "為什麼是 5 個？process 有 10KB、page size 是 2KB，10 除以 2 等於 5，所以切成 5 個 page。",
+     "k": 3,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 564.9
+     }
+    },
+    {
+     "say": "CPU 產生的 logical address，由 p 和 d 兩部分組成。",
+     "k": 4,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 603.4
+     }
+    },
+    {
+     "say": "p 是 page number，拿來當 page table 的 index。",
+     "k": 5,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 615.6
+     }
+    },
+    {
+     "say": "page table 記錄每個 page 對到哪個 frame。每個 process 都有自己的一張，而且存放在 RAM 裡。",
+     "k": 6,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 638
+     }
+    },
+    {
+     "say": "CPU 知道 page number，假設這次它要找 P5。",
+     "k": 7,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 707.4
+     }
+    },
+    {
+     "say": "MMU 去查 process X 的 page table。它不會一行一行找，而是直接跳到 P5 那一格，因為 page number 就是 index。",
+     "k": 8,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 716.7
+     }
+    },
+    {
+     "say": "那一格寫著 frame 21，所以 page 5 放在 main memory 的 frame 21。",
+     "k": 9,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 745.7
+     }
+    },
+    {
+     "say": "位址的另一部分 d 是 offset，跟 frame 的 base address 組合起來，就得到 physical address。",
+     "k": 10,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 774
+     }
+    },
+    {
+     "say": "假設 d = 3，就是 page 裡的第 3 個位置。offset 在 page 裡和 frame 裡一樣，因為內部位置不會變。",
+     "read": "假設 d 等於 3，就是 page 裡的第 3 個位置。offset 在 page 裡和 frame 裡一樣，因為內部位置不會變。",
+     "k": 11,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 829.7
+     }
+    },
+    {
+     "say": "以 byte 來算，physical address 就是 21 × 2048 + 3 = 43011。CPU 拿到這個位址，就能去讀 P5 的內容。",
+     "read": "以 byte 來算，physical address 就是 21 乘 2048 加 3 等於 43011。CPU 拿到這個位址，就能去讀 P5 的內容。",
+     "k": 12,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 857.7
+     }
+    },
+    {
+     "say": "再強調一次：每個 process 都有自己的 page table，而且 page table 放在 main memory 裡。",
+     "k": 13,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 916.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "例題：32-bit logical、36-bit physical、4KB page",
+   "scene": "mem-11a-calc",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "來一題更完整的：logical address 32 bits、physical address 36 bits、page size 4KB。",
+     "k": 1,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 837.2
+     }
+    },
+    {
+     "say": "欸，兩個 bit 數不一樣可以嗎？可以。真實系統裡兩者沒有關聯，只要每個 logical address 能對到唯一的 physical 就行。",
+     "k": 2,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 846.1
+     }
+    },
+    {
+     "say": "剩下的實體空間給誰？這只是一支程式，剩下的給別人。反過來，有了 virtual memory，logical 也可以比 physical 大。",
+     "k": 3,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 869.5
+     }
+    },
+    {
+     "say": "三個數字能推出很多東西。page table 有幾個 entry？就是有幾個 page：2³² ÷ 2¹² = 2²⁰ 個。",
+     "read": "三個數字能推出很多東西。page table 有幾個 entry？就是有幾個 page：2的32次方 除以 2的12次方 等於 2的20次方 個。",
+     "k": 4,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 915.9
+     }
+    },
+    {
+     "say": "一個程式最多能用多少記憶體？2³² bytes，也就是 4GB，logical address 的 bit 數已經決定了。",
+     "read": "一個程式最多能用多少記憶體？2的32次方 bytes，也就是 4GB，logical address 的 bit 數已經決定了。",
+     "k": 5,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 977.3
+     }
+    },
+    {
+     "say": "這就是早期電腦不能超過 4GB 的原因：沒有位址能描述它，就算有錢一直加硬體也沒用，翻譯不了。",
+     "k": 6,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 992.5
+     }
+    },
+    {
+     "say": "實體記憶體多大？看 physical address：2³⁶ bytes，也就是 64GB。問程式多大，才看 logical。",
+     "read": "實體記憶體多大？看 physical address：2的36次方 bytes，也就是 64GB。問程式多大，才看 logical。",
+     "k": 7,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1009.9
+     }
+    },
+    {
+     "say": "page number 有幾個 bit？32 − 12 = 20 bits。",
+     "read": "page number 有幾個 bit？32 減 12 等於 20 bits。",
+     "k": 8,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1033.1
+     }
+    },
+    {
+     "say": "page table 有幾個 byte？entry 數乘每個 entry 的大小，通常 4 bytes，所以 2²⁰ × 4 bytes = 4MB。",
+     "read": "page table 有幾個 byte？entry 數乘每個 entry 的大小，通常 4 bytes，所以 2的20次方 乘 4 bytes 等於 4MB。",
+     "k": 9,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1046.9
+     }
+    },
+    {
+     "say": "要看清楚題目問的是 entry 數、byte 數還是 bit 數，這是常見陷阱。",
+     "k": 9,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1087.9
+     }
+    },
+    {
+     "say": "frame number 有幾個 bit？要看 physical：36 − 12 = 24 bits，比 page number 多。",
+     "read": "frame number 有幾個 bit？要看 physical：36 減 12 等於 24 bits，比 page number 多。",
+     "k": 10,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1087.9
+     }
+    },
+    {
+     "say": "page offset 最單純：page size 4KB，就是 12 個 bit。",
+     "k": 11,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1113.9
+     }
+    },
+    {
+     "say": "光三個數字就能推出這麼多。不用死背，想清楚運作原理，就知道哪個數字該除以哪個。",
+     "k": 12,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1128.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Free frame list",
+   "scene": "mem-11a-free",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "會翻譯之後，還有一件事：配置的時候，得知道哪些 frame 是空的。",
+     "k": 1,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1162
+     }
+    },
+    {
+     "say": "OS 維護一個 free frame list，很單純，就是一個 linked list，把空的 frame 都串起來。",
+     "k": 2,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1182
+     }
+    },
+    {
+     "say": "page 要找 frame 時，從 list 最上面 pop 一個就好。反正是不連續配置，哪個 frame 都行，寫進 page table 就完成。",
+     "k": 3,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1192.4
+     }
+    },
+    {
+     "say": "所以配置非常快，O(1)，一直 pop 出來就可以。",
+     "read": "所以配置非常快，大O 1，一直 pop 出來就可以。",
+     "k": 4,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1226.4
+     }
+    },
+    {
+     "say": "free 也簡單：程式被 kill 掉時，看它的 page table 用了哪些 frame，全部放回 free frame list 給別人用。",
+     "k": 5,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1232
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page size 怎麼選",
+   "scene": "mem-11a-psize",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "paging 還有一個對效能很關鍵的設定：page size。這是 physical 和 logical 兩邊唯一一定要對上的參數。",
+     "k": 1,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1262
+     }
+    },
+    {
+     "say": "原則一：一定是 2 的次方。翻譯全靠 and、or、shift 這種 bit operation，不然還得十進位、二進位轉來轉去，容易出錯。",
+     "k": 2,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1287.8
+     }
+    },
+    {
+     "say": "一般系統從 512 bytes 到 16MB 都有，最常見的是 4KB 或 8KB，大家說的「4KB 的 page」就是這個。",
+     "k": 3,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1309.3
+     }
+    },
+    {
+     "say": "調大會怎樣？例如 16MB，internal fragmentation 就很嚴重。很多程式才幾 KB，配一個 16MB 的 page，大半都浪費。",
+     "k": 4,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1352.1
+     }
+    },
+    {
+     "say": "那調小呢？位址 bit 數很多、page 又很小，page number 就很多，page table 會變得很大。",
+     "k": 5,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1386
+     }
+    },
+    {
+     "say": "而且每個 process 都要一張，OS 會浪費不少記憶體在存這些表。",
+     "k": 6,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1446.8
+     }
+    },
+    {
+     "say": "還有一點很重要：同樣讀 4KB，page 是 4KB 時一個就夠，1KB 就要碰 4 個 page，每個都要查，還可能一次次從 disk 抓。",
+     "k": 7,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1462.3
+     }
+    },
+    {
+     "say": "效能就會往下掉。所以 page size 通常是 4KB 或 8KB，純粹是經驗法則。",
+     "k": 8,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1510.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Paging 總結與 frame table",
+   "scene": "mem-11a-sum",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "總結 paging：page table 的目的就是做 translation，把 logical 和 physical memory 切開。",
+     "k": 1,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1554.9
+     }
+    },
+    {
+     "say": "使用者看到的 logical space 永遠是連續的，physical 卻可以散落各地。程式不變複雜，實體空間又用得有效率。",
+     "k": 2,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1576.1
+     }
+    },
+    {
+     "say": "代價是 OS 要維護 page table，還要在 run time 翻譯；這很花時間，所以都用 hardware 來做。",
+     "k": 3,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1606.5
+     }
+    },
+    {
+     "say": "那有沒有 frame table？有，剛好倒過來：記錄每個 frame 裡放的是哪個 process 的哪個 page。",
+     "k": 4,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1622.2
+     }
+    },
+    {
+     "say": "在 paging 裡它只是 accounting，記帳用的，不參與 translation。",
+     "k": 5,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1643.4
+     }
+    },
+    {
+     "say": "唯一的特例是 inverted page table，它就是拿 frame table 來翻譯，後面會講為什麼很少用。",
+     "k": 6,
+     "src": {
+      "v": "p7C-ObHrCP8",
+      "t": 1661.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page table 放在哪：PTBR",
+   "scene": "mem-11b-ptbr",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "先建立一個觀念：page table 本身也是 OS 建立的資料，所以它跟別的資料一樣，放在 memory 裡。",
+     "k": 1,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 20.8
+     }
+    },
+    {
+     "say": "那誰在做翻譯？是 MMU。它不是程式，而是一塊硬體電路，CPU 每送出一個位址，它都要馬上翻。",
+     "k": 2,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 47.2
+     }
+    },
+    {
+     "say": "硬體跟 CPU 一樣，只能直接用自己 register 裡的資料，所以 MMU 要先把 page table 的內容從 memory 讀進來。",
+     "k": 3,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 56
+     }
+    },
+    {
+     "say": "那它怎麼知道 page table 在 memory 的哪裡？它需要一個起點位址，存在一個 register 裡。",
+     "k": 4,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 86.4
+     }
+    },
+    {
+     "say": "這個 register 叫 PTBR，page-table base register，記著目前這個 process 的 page table 從哪裡開始。",
+     "k": 5,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 103.1
+     }
+    },
+    {
+     "say": "注意，PTBR 放的是 physical address。讀 page table 的是硬體本身，沒人會再幫它翻譯，必須直接給真正的位置。",
+     "k": 6,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 124.3
+     }
+    },
+    {
+     "say": "每個 process 有自己的 page table，所以 PTBR 的值也是每個 process 一份，存在它的 PCB 裡。",
+     "k": 7,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 158.4
+     }
+    },
+    {
+     "say": "context switch 時，OS 除了換 CPU register，也會把新 process 的 PTBR 值載入 MMU。",
+     "k": 8,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 171.8
+     }
+    },
+    {
+     "say": "這樣 P2 開始跑之後，MMU 用的就是 P2 自己的 page table，不會拿到 P1 的對應表而亂掉。",
+     "k": 9,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 186.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "一次 read 變兩次 memory access",
+   "scene": "mem-11b-two",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "有了 page table，程式讀一筆資料，真正碰到 memory 幾次？我們來數數看。",
+     "k": 1,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 216.5
+     }
+    },
+    {
+     "say": "CPU 送出 p 和 d，MMU 先去 memory 讀 page table，查出 page p 在哪個 frame，這是第 1 次。",
+     "k": 2,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 228.3
+     }
+    },
+    {
+     "say": "翻譯完變成 f 和 d，再去 memory 讀真正要的資料，這是第 2 次。",
+     "k": 3,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 247.2
+     }
+    },
+    {
+     "say": "程式只下了一個 read，使用者也只看到一次，背後卻變成兩次 memory read。",
+     "k": 4,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 262.1
+     }
+    },
+    {
+     "say": "多讀一次，時間就變兩倍。好比花錢買了每秒 100 GB 的記憶體，實際只有 50 GB 的效果，誰會開心？",
+     "k": 5,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 274.4
+     }
+    },
+    {
+     "say": "所以現在的電腦都加了一個機制，叫 TLB，translation look-aside buffer。",
+     "k": 6,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 291.9
+     }
+    },
+    {
+     "say": "TLB 本質是 cache：翻譯過的 page 對 frame 先記起來，下次 hit 了就不用再讀 page table，又回到一次 access。",
+     "k": 7,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 299.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "TLB：associative memory",
+   "scene": "mem-11b-assoc",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "TLB 長什麼樣子？它是 cache，所以本身就是一塊記憶體，一筆一筆存著資料。",
+     "k": 1,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 333.2
+     }
+    },
+    {
+     "say": "但它不是一般的 RAM，而是特別的 associative memory，等一下就知道特別在哪。",
+     "k": 2,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 351.6
+     }
+    },
+    {
+     "say": "每一筆記的是：某個你查過的 page，對到哪個 frame。",
+     "k": 3,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 360.7
+     }
+    },
+    {
+     "say": "它就像 CPU 的 L1、L2 cache，是比較快的記憶體，速度通常比一般 memory 快 10 倍以上。",
+     "k": 4,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 378.8
+     }
+    },
+    {
+     "say": "cache 的另一個特色是沒有順序。page table 要查第 3 頁，直接跳到第 3 格，一步就到。",
+     "k": 5,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 387.7
+     }
+    },
+    {
+     "say": "TLB 裡可能亂亂地放著 page 1、7、5、2。問 page 3 在不在？一般記憶體只能一格一格比，N 筆就要 O(N)。",
+     "read": "TLB 裡可能亂亂地放著 page 1、7、5、2。問 page 3 在不在？一般記憶體只能一格一格比，N 筆就要 大O N。",
+     "k": 6,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 401.3
+     }
+    },
+    {
+     "say": "associative memory 的電路，可以「同時」拿 page 3 跟所有 entry 比，一次就知道有沒有，所以是 O(1)。",
+     "read": "associative memory 的電路，可以「同時」拿 page 3 跟所有 entry 比，一次就知道有沒有，所以是 大O 1。",
+     "k": 7,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 420.3
+     }
+    },
+    {
+     "say": "別誤會，它雖然在 search，但所有 entry 一起比，時間還是 O(1)。換成問 page 5，一次就找到它的 frame。",
+     "read": "別誤會，它雖然在 search，但所有 entry 一起比，時間還是 大O 1。換成問 page 5，一次就找到它的 frame。",
+     "k": 8,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 447.2
+     }
+    },
+    {
+     "say": "這種電路很複雜、很貴，容量做不大，大概幾千筆的等級，再大價錢就一直往上跳。",
+     "k": 9,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 467.5
+     }
+    },
+    {
+     "say": "所以不可能把整張 page table 塞進 TLB，它就跟一般 cache 一樣，只放最常用的一小部分。",
+     "k": 10,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 497
+     }
+    }
+   ]
+  },
+  {
+   "title": "TLB hit 和 miss 的流程",
+   "scene": "mem-11b-flow",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "把 TLB 和 page table 放進同一張圖。左邊紅框是 MMU，裡面藍色幾格是 TLB；中間是 memory 裡的 page table。",
+     "k": 1,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 507
+     }
+    },
+    {
+     "say": "先假裝沒有 TLB：位址 2、d 先去查 page table 第 2 格，得到 frame 6，再去讀 frame 6。兩次 access。",
+     "k": 2,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 525
+     }
+    },
+    {
+     "say": "把 TLB 放回來。紅框裡的 MMU 是 hardware；框外的 page table 和資料都在 memory。",
+     "k": 3,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 544.9
+     }
+    },
+    {
+     "say": "TLB 就是 MMU 的 cache，跟 CPU 的 L1、L2 cache 一樣，放在 MMU 裡面。",
+     "k": 4,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 563.9
+     }
+    },
+    {
+     "say": "注意：每個 process 都有自己的 page table，數量很多；但 TLB 是硬體，整台電腦只有一個，大家共用。",
+     "k": 5,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 574
+     }
+    },
+    {
+     "say": "用法就像 cache：MMU 翻譯完一個位址，就把 p 和 f 存進 TLB。滿了，就踢掉最不常用的那筆。",
+     "k": 6,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 594.8
+     }
+    },
+    {
+     "say": "之後每次翻譯，第一步一定先查 TLB。查到叫 hit，直接拿到 frame 6，加上 d 去讀資料，只碰 memory 一次。",
+     "k": 7,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 622
+     }
+    },
+    {
+     "say": "查完發現沒有，叫 miss，只好走老路：去 memory 讀 page table 得到 frame，再讀資料，共兩次。",
+     "k": 8,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 642.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Context switch：flush TLB 或加 PID",
+   "scene": "mem-11b-flush",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "剛才的 TLB 每筆只記兩個數字：page number 和 frame number。現在裡面裝的是 P1 的對應。",
+     "k": 1,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 668.9
+     }
+    },
+    {
+     "say": "換 P2 上來，問題來了：每個 process 都有 page 0，卻對到不同 frame。P2 問 page 0，TLB 回的是 P1 的 frame。",
+     "k": 2,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 685.4
+     }
+    },
+    {
+     "say": "解法一，也是最常用的：flush TLB。context switch 時整個清空，因為 page table 換人了，舊的都不能用。",
+     "k": 3,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 698.4
+     }
+    },
+    {
+     "say": "解法二：每筆多一個欄位記 process ID。page number 和 PID 都對上才算 hit，P2 就會找到自己的 frame。",
+     "k": 4,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 723
+     }
+    },
+    {
+     "say": "但一般還是選 flush。現在的程式記憶體很大，一跑就把 TLB 塞滿自己的 page，留著別人的也沒什麼用。",
+     "k": 5,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 745.1
+     }
+    },
+    {
+     "say": "而且 TLB 很貴：每筆原本 page 加 frame 共 8 bytes，加 4 bytes 的 PID 變 12 bytes，三分之一都花在 PID 上。",
+     "k": 6,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 766.9
+     }
+    },
+    {
+     "say": "所以把兩件事串起來：context switch 時，除了載入新的 PTBR，還要 flush TLB。",
+     "k": 7,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 785
+     }
+    },
+    {
+     "say": "flush 之後，接下來的存取全部 miss，每次都兩倍時間，直到 TLB 慢慢填回來。這也是 context switch 拖慢效能的一大原因。",
+     "k": 8,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 804.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "EMAT：平均一次存取要多久",
+   "scene": "mem-11b-emat",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "一直說效能，到底怎麼衡量？用 effective memory access time，EMAT，也就是平均每次存取 memory 要多久。",
+     "k": 1,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 843.5
+     }
+    },
+    {
+     "say": "周老師給兩個數字：查 TLB 要 20 ns，讀一次 memory 要 100 ns。",
+     "read": "周老師給兩個數字：查 TLB 要 20 奈秒，讀一次 memory 要 100 奈秒。",
+     "k": 2,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 863.4
+     }
+    },
+    {
+     "say": "先看 hit：查 TLB 20 ns，再讀資料 100 ns，總共 120 ns。",
+     "read": "先看 hit：查 TLB 20 奈秒，再讀資料 100 奈秒，總共 120 奈秒。",
+     "k": 3,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 873.1
+     }
+    },
+    {
+     "say": "miss 呢？TLB 一樣要先查 20 ns，查了才知道沒中；再讀 page table 100 ns、讀資料 100 ns，共 220 ns。",
+     "read": "miss 呢？TLB 一樣要先查 20 奈秒，查了才知道沒中；再讀 page table 100 奈秒、讀資料 100 奈秒，共 220 奈秒。",
+     "k": 4,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 888.1
+     }
+    },
+    {
+     "say": "hit rate 70% 的話：0.7 × 120 + 0.3 × 220 = 84 + 66 = 150 ns。",
+     "read": "hit rate 70% 的話：0.7 乘 120 加 0.3 乘 220 等於 84 加 66 等於 150 奈秒。",
+     "k": 5,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 903.8
+     }
+    },
+    {
+     "say": "hit rate 提升到 98%：0.98 × 120 + 0.02 × 220 = 117.6 + 4.4 = 122 ns。",
+     "read": "hit rate 提升到 98%：0.98 乘 120 加 0.02 乘 220 等於 117.6 加 4.4 等於 122 奈秒。",
+     "k": 6,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 906.3
+     }
+    },
+    {
+     "say": "沒有 TLB 時每次兩次存取，就是 200 ns，所以 98% 的 hit rate 快了將近一倍。",
+     "read": "沒有 TLB 時每次兩次存取，就是 200 奈秒，所以 98% 的 hit rate 快了將近一倍。",
+     "k": 7,
+     "src": {
+      "v": "8RyRHYruy-8",
+      "t": 912.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Hit rate 為什麼這麼高：locality",
+   "scene": "mem-12a-emat",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "提醒一個常見陷阱：就算 miss，查 TLB 的 20 ns 也要算進去，所以是 220，不是 200。",
+     "read": "提醒一個常見陷阱：就算 miss，查 TLB 的 20 奈秒 也要算進去，所以是 220，不是 200。",
+     "k": 3,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 60.9
+     }
+    },
+    {
+     "say": "就算 hit rate 只有 70%，150 ns 跟沒 TLB 的 200 ns 比，也少了 25% 的時間。",
+     "read": "就算 hit rate 只有 70%，150 奈秒 跟沒 TLB 的 200 奈秒 比，也少了 25% 的時間。",
+     "k": 5,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 104
+     }
+    },
+    {
+     "say": "你可能會懷疑：98% 才到 122，真的有這麼高嗎？會不會實際只有 40%？",
+     "k": 7,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 140.9
+     }
+    },
+    {
+     "say": "事實上電腦的 hit rate 常常超過 99%。原因是程式讀資料有很強的 locality，讀的東西有順序、都在附近。",
+     "k": 8,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 159.2
+     }
+    },
+    {
+     "say": "像你的 code 是一個 instruction 接一個 instruction，program counter 每次往下移 4 個 byte。",
+     "k": 9,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 188.8
+     }
+    },
+    {
+     "say": "別忘了 TLB 一筆存的是一整個 page 的翻譯，也就是 4KB。",
+     "k": 10,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 200.9
+     }
+    },
+    {
+     "say": "第一次讀某個 page 會 miss，就把它放進 TLB。接下來 4 byte、4 byte 讀 1000 次，扣掉第一次，剩下 999 次全部 hit。",
+     "k": 11,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 211
+     }
+    },
+    {
+     "say": "或是寫個 for loop，把 array 每個 element 加 1。array 再大也是連續讀，大部分待在同一個 page，自然都 hit。",
+     "k": 12,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 244.3
+     }
+    },
+    {
+     "say": "所以 hit rate 通常很高，98% 就是 122 ns，再高就越來越接近 100 ns。",
+     "read": "所以 hit rate 通常很高，98% 就是 122 奈秒，再高就越來越接近 100 奈秒。",
+     "k": 13,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 281.9
+     }
+    },
+    {
+     "say": "記得 TLB 只是一個最佳化，可以沒有。translation 的過程沒變，只是 mapping 從 TLB 查，還是從記憶體讀 page table。",
+     "k": 14,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 300.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Protection bit：valid 和 invalid",
+   "scene": "mem-12a-valid",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "接下來看 page table 還能做什麼。第一個是 memory protection：每個 process 不能隨意存取別人的記憶體。",
+     "k": 1,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 387.8
+     }
+    },
+    {
+     "say": "所以 page table 的每一格，通常會再加一個 protection bit。",
+     "k": 2,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 406.3
+     }
+    },
+    {
+     "say": "可以表示這個 page 有效或無效，也可以多幾個 bit 表示 read-only、可寫或 executable，存取時就知道能做什麼。",
+     "k": 3,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 420.4
+     }
+    },
+    {
+     "say": "有點像開檔案的 read only 權限，或程式裡宣告成 constant 的變數，assign 之後就不能改。",
+     "k": 4,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 441.3
+     }
+    },
+    {
+     "say": "可能性很多，但一般 OS 在這裡最主要用的，是 valid 和 invalid。",
+     "k": 5,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 503.2
+     }
+    },
+    {
+     "say": "它表示這個 page 現在能不能用。為什麼不能用？例如 OS 先幫你 reserve 很大的空間，但你還沒 malloc、stack 還沒長到那。",
+     "k": 6,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 516.9
+     }
+    },
+    {
+     "say": "更重要的是下一章 virtual memory：invalid 也用來表示「這個 page 存在，但現在被 swap 到 disk 上」。",
+     "k": 7,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 547.4
+     }
+    },
+    {
+     "say": "看例子。早期依 page number 長度先建好整張表：page number 3 bits，最多 8 個 page，就先建 8 個 entry。",
+     "k": 8,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 600.2
+     }
+    },
+    {
+     "say": "但程式一開始只用 6 個，所以 page 0 到 5 標 v，最後的 6、7 還沒配置，標 i。",
+     "k": 9,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 637.3
+     }
+    },
+    {
+     "say": "pointer 不小心指到 page 6，查表立刻被擋，硬體 trap 給 OS，OS 判定非法存取就終止程式，也就是 segmentation fault。",
+     "k": 10,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 660.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Invalid 也可能是 page fault",
+   "scene": "mem-pg-fault",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "Simple Snippets 在影片最後，也用 process X 示範了 invalid 的另一種意思。",
+     "k": 1,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 932.2
+     }
+    },
+    {
+     "say": "這次 CPU 不是要 P5，而是要 process X 的 page 4。",
+     "k": 2,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 950.6
+     }
+    },
+    {
+     "say": "MMU 查 P4 那一格，看到的是 INV，也就是 invalid。",
+     "k": 3,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 957.7
+     }
+    },
+    {
+     "say": "這裡的 invalid 表示：P4 現在不在 RAM 裡，而是放在 secondary storage 上。",
+     "k": 4,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 970.5
+     }
+    },
+    {
+     "say": "這就叫 page fault：要的 page 不在實體記憶體，必須先把它搬進來。怎麼處理是下一章 virtual memory 的主題。",
+     "k": 5,
+     "src": {
+      "v": "pJ6qrCB8pDw",
+      "t": 985.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page table length register（PTLR）",
+   "scene": "mem-12a-ptlr",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "剛才的例子太小了。真實電腦的 page table 絕對不會只有 8 格，可以存取的空間大得多。",
+     "k": 1,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 682
+     }
+    },
+    {
+     "say": "很多程式都很小，可能前十個 entry 是 valid，後面 9000 個全是 invalid。建一張超大的表存一堆 invalid，很浪費。",
+     "k": 2,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 694.3
+     }
+    },
+    {
+     "say": "所以除了 valid bit，還會用一個 page table length register，簡稱 PTLR。",
+     "k": 3,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 726.4
+     }
+    },
+    {
+     "say": "還記得怎麼保護記憶體嗎？base 和 limit，limit 就是一個長度。PTLR 在 page table 這層是同樣的概念。",
+     "k": 4,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 740.8
+     }
+    },
+    {
+     "say": "所以不用一開始就建 8 個 entry。程式用到幾個就建幾個，length 記成 6，page number 超過範圍就直接擋掉。",
+     "k": 5,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 755.4
+     }
+    },
+    {
+     "say": "好處一：table 可以變短，不用存那些沒用的 entry。",
+     "k": 6,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 821.5
+     }
+    },
+    {
+     "say": "周老師還提到一點：valid bit 只能以 page 為單位，但配置是以 byte 為單位，最後一頁可能只用了一半。",
+     "k": 7,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 829
+     }
+    },
+    {
+     "say": "老師說 length 能精確到 byte。不過課本的 PTLR 記的是表有幾個 entry，最後一頁沒用完的，算 internal fragmentation。",
+     "k": 7,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 829
+     }
+    },
+    {
+     "say": "table 也是動態長的：程式長到新的 page，OS 才再加一個 entry，標成 valid。",
+     "k": 8,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 881.2
+     }
+    },
+    {
+     "say": "統整一下，page table 可以加一些屬性 bit，告訴 OS 這個 page 的條件和限制，讓它很快做判斷。",
+     "k": 9,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 983.9
+     }
+    },
+    {
+     "say": "那有了 length，為什麼還要 valid bit？原因一：在長度範圍內的 page，也可能被 swap 到 disk，目前不在記憶體。",
+     "k": 10,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1035.1
+     }
+    },
+    {
+     "say": "原因二：程式不一定一路連續往下長，heap 和 stack 中間可能有沒配置的 page，還是要一個 bit 標出來。",
+     "k": 11,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1057.8
+     }
+    },
+    {
+     "say": "反過來，程式的長度也常常不剛好落在 page 的邊界上。所以 bit 和 length，兩個都需要。",
+     "k": 12,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1119.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Shared pages：reentrant code",
+   "scene": "mem-12a-share",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "有了 page table，第一個好處是能很快判斷記憶體有效無效，不會跟別的程式撞在一起。",
+     "k": 1,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1126.1
+     }
+    },
+    {
+     "say": "第二是反過來，我們有時「刻意」要 share。例如 shared memory programming，或是 thread 本來就要共用記憶體。",
+     "k": 2,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1139.3
+     }
+    },
+    {
+     "say": "或者 create process 時，不必立刻複製整份記憶體，可以用 copy on write：有改的部分才 copy，沒改的先共用。",
+     "k": 3,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1158
+     }
+    },
+    {
+     "say": "更重要的是 shared library：load 進記憶體之後大家一起用，只放一份，這可以用 page table 來實現。",
+     "k": 4,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1183.2
+     }
+    },
+    {
+     "say": "尤其是 code 的部分，但有個條件：它必須是 reentrant code，也叫 pure code。",
+     "k": 5,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1205.3
+     }
+    },
+    {
+     "say": "library 就是典型的 pure code，沒有任何使用者能改它的程式碼，OS 也知道它不會變。",
+     "k": 6,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1223.1
+     }
+    },
+    {
+     "say": "這種 code 很多人要用時，記憶體只要放一份。editor、application、library，都是例子。",
+     "k": 7,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1247
+     }
+    },
+    {
+     "say": "做法很單純：不同 process 的 virtual address，在 page table 裡指到同一個 frame，每個人都以為自己 load 了一份。",
+     "k": 8,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1272.4
+     }
+    },
+    {
+     "say": "paging 的好處是切得細，不必整個程式都 share。library 用到哪幾個 page 就 share 哪幾個，私人資料各用各的。",
+     "k": 9,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1303.5
+     }
+    },
+    {
+     "say": "看課本的例子：三個使用者都在用 editor，它佔三個 page。OS 知道它是 reentrant code，三張表前三格都填 3、4、6。",
+     "k": 10,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1356.9
+     }
+    },
+    {
+     "say": "實體上 editor 只 load 一份，data 卻是三份不同的，分別在 frame 1、7、2，三個人看到的結果都正確。",
+     "k": 11,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1372.3
+     }
+    },
+    {
+     "say": "因為是 pure code，可以把它的 read-only bit 設起來。有人想寫進這塊空間，OS 一看是 read-only，直接丟 fault 擋掉。",
+     "k": 12,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1387.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "為什麼需要不同的 page table 結構",
+   "scene": "mem-12a-why",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "接下來非常重要：不同的 page table structure。",
+     "k": 1,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1434.4
+     }
+    },
+    {
+     "say": "前面的做法很單純，page number 查一次表就好，這叫 one level。但程式和位址空間越來越大，就出問題了。",
+     "k": 2,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1444.8
+     }
+    },
+    {
+     "say": "我們算過：virtual address 要能存取 2³² 也就是 4GB，page 是 4KB，就需要 2²⁰ 個 entry。",
+     "read": "我們算過：virtual address 要能存取 2的32次方 也就是 4GB，page 是 4KB，就需要 2的20次方 個 entry。",
+     "k": 3,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1473.8
+     }
+    },
+    {
+     "say": "每個 entry 4 bytes，光這張 page table 就要 4MB。",
+     "k": 4,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1512.2
+     }
+    },
+    {
+     "say": "而這 4MB 是 MMU 用 physical address 在讀，沒人幫它翻譯，說第 3 格就直接跳過去，所以必須實體上完全連續。",
+     "k": 5,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1519.9
+     }
+    },
+    {
+     "say": "可是實體記憶體早就切成 4KB 的 frame、到處散落，很難找到連續 4MB；要找就得專門保留一大塊，很沒效率。",
+     "k": 6,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1564
+     }
+    },
+    {
+     "say": "所以接下來的結構都在解決同一件事：空間還是很大時，怎麼讓每一張 page table 變小，塞得進零碎的空位。",
+     "k": 7,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1603.4
+     }
+    },
+    {
+     "say": "典型做法有三種：hierarchical、hashed、inverted。注意看每一種，table 的大小怎麼變。",
+     "k": 8,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1624
+     }
+    }
+   ]
+  },
+  {
+   "title": "Hierarchical（two-level）page table",
+   "scene": "mem-12a-hier",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "第一種是 hierarchical，階層式。直覺很簡單：entry 太多，那就把它切成好幾段。",
+     "k": 1,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1643.8
+     }
+    },
+    {
+     "say": "每一段都是一張獨立的小 table，可以塞到實體記憶體裡不同的位置。",
+     "k": 2,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1678.8
+     }
+    },
+    {
+     "say": "可是散在不同地方，就得知道每張小 table 在哪，所以前面再建一張表，記錄它們的位置。這就是 hierarchical。",
+     "k": 3,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1692.4
+     }
+    },
+    {
+     "say": "原本學的叫 one level。我們看 two level 的例子，三層、四層的做法一樣。",
+     "k": 4,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1746.3
+     }
+    },
+    {
+     "say": "一樣是 32-bit 位址。原本前 20 bits 是 page number、後 12 bits 是 offset，page table 非常龐大。",
+     "k": 5,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1764
+     }
+    },
+    {
+     "say": "切成兩層：10 | 10 | 12，三塊。後面 12 bits 完全不變，還是 page offset。",
+     "read": "切成兩層：10、10、12，三塊。後面 12 bits 完全不變，還是 page offset。",
+     "k": 6,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1779.8
+     }
+    },
+    {
+     "say": "前面 20 bits 拆成兩段：外面那段叫 outer page number，裡面那段叫 inner page number。",
+     "k": 7,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1800.4
+     }
+    },
+    {
+     "say": "前 10 bits 是 outer table 的 index，後 10 bits 是 inner table 的 index，合起來還是找得到。",
+     "k": 8,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1818.4
+     }
+    },
+    {
+     "say": "寫程式的人應該很熟：1000 個 element 的 array 要連續 1000 格；寫成 10 個、每個 100 格的二維 array，一樣找得到。",
+     "k": 9,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1848.8
+     }
+    },
+    {
+     "say": "也可以再切成三層，每一層越來越小，完全是 array 怎麼拆的問題。",
+     "k": 10,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1894.8
+     }
+    },
+    {
+     "say": "這樣拆完，最大的一張 page table 只有 2¹⁰ 個 entry。",
+     "read": "這樣拆完，最大的一張 page table 只有 2的10次方 個 entry。",
+     "k": 11,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1915
+     }
+    },
+    {
+     "say": "有同學點出常見誤解：entry 總數沒有變少！小表合起來就是原本那張，還多一張 outer table，總數其實變多。",
+     "k": 12,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1932.1
+     }
+    },
+    {
+     "say": "重點是：原本要 4MB 連續空間，現在每張只要 2¹⁰ × 4 bytes = 4KB，剛好一個 frame，有空 frame 就塞得進去。",
+     "read": "重點是：原本要 4MB 連續空間，現在每張只要 2的10次方 乘 4 bytes 等於 4KB，剛好一個 frame，有空 frame 就塞得進去。",
+     "k": 13,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 1962.3
+     }
+    },
+    {
+     "say": "代價是記憶體存取從兩次變三次。切得越細，要讀的次數越多，所以 TLB 的功用就更大了。",
+     "k": 14,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2063.1
+     }
+    },
+    {
+     "say": "看圖：outer table 有 2¹⁰ 格，存的不是資料的 frame，而是 inner table 放在哪個 frame。",
+     "read": "看圖：outer table 有 2的10次方 格，存的不是資料的 frame，而是 inner table 放在哪個 frame。",
+     "k": 15,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2094.1
+     }
+    },
+    {
+     "say": "inner table 裡存的，才是資料最後所在的 frame number。",
+     "k": 15,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2094.1
+     }
+    },
+    {
+     "say": "為什麼是三次？p1 查 outer table 是第 1 次，p2 查 inner table 是第 2 次，加 offset 不用存取，讀資料是第 3 次。",
+     "k": 16,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2174.1
+     }
+    },
+    {
+     "say": "outer table 在哪？就是 PCB 裡存的 PTBR 直接指到它。後面幾層要一層一層查，inner table 可以放在任何地方。",
+     "k": 17,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2221.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "64-bit：hierarchical 的極限",
+   "scene": "mem-12a-64",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "hierarchical 可以隨便切，三層、四層、五層，每層幾個 bit 也隨你，那只決定每層 table 有幾個 entry。",
+     "k": 1,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2272.1
+     }
+    },
+    {
+     "say": "問題是現在是 64 bits。如果只切 2 level，一種切法是 42 | 10 | 12。",
+     "read": "問題是現在是 64 bits。如果只切 2 level，一種切法是 42、10、12。",
+     "k": 2,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2293.5
+     }
+    },
+    {
+     "say": "outer table 就有 2⁴² 個 entry，每個 4 bytes，是 16 TB。兩層根本不夠。",
+     "read": "outer table 就有 2的42次方 個 entry，每個 4 bytes，是 16 TB。兩層根本不夠。",
+     "k": 3,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2304.2
+     }
+    },
+    {
+     "say": "就算前面對半分，每層還是二十幾個 bit，table 還是非常大。",
+     "k": 4,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2326
+     }
+    },
+    {
+     "say": "每層最好 10 到 12 個 bit，table 才塞得進一個 4KB 的 frame。這樣 64-bit 的位址，大概要切成 5 層。",
+     "k": 5,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2337.2
+     }
+    },
+    {
+     "say": "那總共的 memory access 就是 6 次：5 層 table 各查一次，再讀一次資料，變成 6 倍慢。層數越多越慢。",
+     "k": 6,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2362.3
+     }
+    },
+    {
+     "say": "真實電腦確實這樣做，但大概做到 4 level 就受不了了。總會有 TLB miss 的時候，4 倍是還能接受的範圍。",
+     "k": 7,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2384
+     }
+    }
+   ]
+  },
+  {
+   "title": "Hashed page table",
+   "scene": "mem-12a-hash",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "翻譯本質上是一個 lookup，資料結構學過很多辦法，其中一個就是 hashing。",
+     "k": 1,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2420.2
+     }
+    },
+    {
+     "say": "hashing 的基本做法是分 bucket，先決定要幾個 bucket。",
+     "k": 2,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2442.3
+     }
+    },
+    {
+     "say": "hash 可以很簡單，例如有 5 個 bucket，就 mod 5 看餘數。",
+     "k": 3,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2456.1
+     }
+    },
+    {
+     "say": "我們手上只有 page number，所以就 hash page number：page 3 放 bucket 3，page 6 放 bucket 1。",
+     "k": 4,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2479.1
+     }
+    },
+    {
+     "say": "跟剛才的差別是：bucket 數量很有彈性，跟 virtual address 的 bit 數無關。",
+     "k": 5,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2488.5
+     }
+    },
+    {
+     "say": "bucket 太少，collision 就多，找到 bucket 還要一個一個 search，很慢。像 3、13、23 都擠在 bucket 3。",
+     "k": 6,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2502.2
+     }
+    },
+    {
+     "say": "bucket 建得很多，每個裡面只有一兩筆，很快就找到。要幾個 bucket，是一個 trade-off。",
+     "k": 7,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2514.5
+     }
+    },
+    {
+     "say": "它真正的好處是：程式不會完全連續地用 virtual address，有 heap、有 stack，用到的位置很分散。",
+     "k": 8,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2567.7
+     }
+    },
+    {
+     "say": "範圍也許跨 4TB，真正用到的可能才 4GB。",
+     "k": 8,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2567.7
+     }
+    },
+    {
+     "say": "一般的 page table 跟你用了多少無關：頭尾都用到、中間沒用，中間的 entry 也得全部留著，只能標 invalid。",
+     "k": 9,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2593.8
+     }
+    },
+    {
+     "say": "hash 不一樣：沒用到的 page 根本不會出現在 bucket 裡。用得少又分散時，bucket 不長，實際上比較有效率。",
+     "k": 10,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2647.5
+     }
+    },
+    {
+     "say": "缺點是 pointer 很多。entry 本身只存一個 4 bytes 的 frame 位址，pointer 又用掉 4 bytes，空間多了一倍。",
+     "k": 11,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2695.3
+     }
+    },
+    {
+     "say": "運氣不好要 traverse linked list，每走一個 pointer 就是一次 memory access，跟多層 table 是一樣的問題。",
+     "k": 12,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2720.2
+     }
+    },
+    {
+     "say": "翻譯時用 page number 算出 bucket 再往下走。餘數是 3 的可能是 3、13、23，所以要比對 page 值相同才算找到。",
+     "k": 13,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2737.8
+     }
+    },
+    {
+     "say": "所以每個 element 存三樣東西：page number、frame number、指向下一個的 pointer。對上了就拿 frame 去翻譯。",
+     "k": 14,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2779
+     }
+    }
+   ]
+  },
+  {
+   "title": "Clustered hashed page table",
+   "scene": "mem-12a-cluster",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "補充一下。hashing 要走 linked list，一次只能看一個 entry，不對就要再讀一次記憶體，會很久。",
+     "k": 1,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2795.9
+     }
+    },
+    {
+     "say": "很早就有人提出簡單的改良：每個節點不只放一筆，而是放一組，例如把 23、33、43 包在一起。",
+     "k": 2,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2814.3
+     }
+    },
+    {
+     "say": "它們存在連續的記憶體，像一張小小的 table，可以一次讀進 MMU，一次比對有沒有 hit。",
+     "k": 3,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2840.3
+     }
+    },
+    {
+     "say": "就算還要 scan，至少是一次讀進去，不用來回讀好幾次，linked list 的 traverse 次數就少了。",
+     "k": 4,
+     "src": {
+      "v": "u4zElpAChLM",
+      "t": 2868.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "三種結構，容易混淆的地方",
+   "scene": "mem-12b-review",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "周老師下一堂課開頭特別再整理一次，因為這幾個觀念很容易混淆。第一：切這些結構，是為了讓 page table 變小。",
+     "k": 1,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 55.8
+     }
+    },
+    {
+     "say": "因為 page table 也要放在實體記憶體，而實體記憶體已經切成一格格 4KB 的 frame。",
+     "k": 2,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 72.5
+     }
+    },
+    {
+     "say": "要放一張連續的大表，就得找連續好幾個 frame。找不到就可能回你 out of memory，其實你明明還有記憶體。",
+     "k": 3,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 85.8
+     }
+    },
+    {
+     "say": "第二：hierarchical 的 entry 總數其實變多，只是每張變小；代價是要 lookup 很多次。",
+     "k": 4,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 111.8
+     }
+    },
+    {
+     "say": "第三：hash 的差別。因為有 dynamic allocation、heap、stack，程式用的位址其實是亂跳的。",
+     "k": 5,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 131.1
+     }
+    },
+    {
+     "say": "如果用 table，中間沒用到的 page 也得配置 entry，有 valid bit、length 也沒用，只能標無效。",
+     "k": 6,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 161.4
+     }
+    },
+    {
+     "say": "hash 只把用到的 entry 放進 bucket，沒用到的根本不放，也不用事先配置，因為它本身就是 linked list。",
+     "k": 7,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 204.8
+     }
+    },
+    {
+     "say": "所以空間很大、但真正用到的很分散又不多時，hashing 比較有效率，省掉很多不需要的 entry。",
+     "k": 8,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 241.9
+     }
+    },
+    {
+     "say": "可惜它還是 linked list。改良是 grouping，例如一次讀 4KB，大約 1000 個 entry 一起 load 進 MMU 再找。",
+     "k": 9,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 256.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Inverted page table",
+   "scene": "mem-12b-inv",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "最後一個結構：inverted page table。",
+     "k": 1,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 298.2
+     }
+    },
+    {
+     "say": "顧名思義，不用 page table，改用 frame table。翻譯本來就是一個 mapping，當然可以倒過來做。",
+     "k": 2,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 306.1
+     }
+    },
+    {
+     "say": "frame table 的 index 就是 frame number，跟 page table 倒過來，所以裡面存的是 page number。",
+     "k": 3,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 323.1
+     }
+    },
+    {
+     "say": "但別忘了，frame 只有一個，同號碼的 page 卻很多，每個 process 都有 page 1。所以 entry 還要存 PID。",
+     "k": 4,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 342.8
+     }
+    },
+    {
+     "say": "為什麼要倒過來？為了省記憶體。page table 跟著 process 數量變多，一萬個 process 就一萬張表，還會一直長。",
+     "k": 5,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 376.1
+     }
+    },
+    {
+     "say": "frame 是硬體，數量固定，所以 frame table 可以事先配好，大小不用變，使用率也幾乎是 100%。",
+     "k": 6,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 412.8
+     }
+    },
+    {
+     "say": "它比一張 page table 大，但所有 process 的 page table 加起來一定遠大於它。而且大小固定，用 array 放就好。",
+     "k": 7,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 454.3
+     }
+    },
+    {
+     "say": "但有兩個缺點。第一：translation 比較慢，因為要 search 這張表。",
+     "k": 8,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 490.2
+     }
+    },
+    {
+     "say": "page table 可以直接跳到第 3 格；frame table 沒有順序，讀完 page 3 要讀 page 4，不知道在哪，只能 search。",
+     "k": 9,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 505
+     }
+    },
+    {
+     "say": "第二：sharing 很難。一個 entry 就是一個 frame，只能記一個 page，想讓一個 frame 對到兩個 page 就做不到。",
+     "k": 10,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 528.4
+     }
+    },
+    {
+     "say": "看圖：給你 PID 和 p，就一格一格找，找到符合的是第幾格，就是第幾個 frame，這裡是 frame 5，再接上 offset。",
+     "k": 11,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 560.1
+     }
+    },
+    {
+     "say": "好處是：有 virtual memory，virtual 位址通常遠大於 physical；倒過來後只跟實體記憶體有關，全系統一張就夠。",
+     "k": 12,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 618.8
+     }
+    },
+    {
+     "say": "search 的缺點有辦法：entry 是連續的，可以一次 load 進 MMU 做 linear search，像 hash 的 grouping 一樣。",
+     "k": 13,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 655.9
+     }
+    },
+    {
+     "say": "比較難解的是 page sharing，做法都不太好。sharing 實在太重要，所以這個做法很少見，雖然它真的很省空間。",
+     "k": 14,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 672.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Segmentation：用 programmer 的角度切",
+   "scene": "mem-12b-seg",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "最後來看 segmentation。剛剛一直講 paging，但你寫程式拿到的錯誤，不是 page fault，而是 segmentation fault。",
+     "k": 1,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 760.2
+     }
+    },
+    {
+     "say": "所以 OS 其實兩個都用，離 programmer 比較近的那層是 segmentation。先把 paging 放一邊，最後再合起來。",
+     "k": 2,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 770.8
+     }
+    },
+    {
+     "say": "還記得配置分 fixed-size 和 variable-size 嗎？fixed-size 就是 paging，固定 4KB。",
+     "k": 3,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 796.8
+     }
+    },
+    {
+     "say": "variable-size 用在不連續配置時，名字就叫 segmentation。",
+     "k": 4,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 812.4
+     }
+    },
+    {
+     "say": "它不只是大小不同，更重要的是：它從使用者的角度，去想怎麼切程式的記憶體。",
+     "k": 5,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 820.6
+     }
+    },
+    {
+     "say": "其實很直接，程式本來就是好幾個 segment：code segment、call stack 裡一個個 function、OO 裡的 object。",
+     "k": 6,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 837.3
+     }
+    },
+    {
+     "say": "還有 heap、stack；學過 compiler 就知道，還有一個 symbol table 記錄每個變數放哪。",
+     "k": 7,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 856.2
+     }
+    },
+    {
+     "say": "每一塊大小都不同，stack、heap 還會動態長大，所以都是 variable size。",
+     "k": 8,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 884.5
+     }
+    },
+    {
+     "say": "把程式依內容切成一個個 segment，就叫 segmentation。寫 assembly 時，本來就會寫 code、data segment。",
+     "k": 9,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 914.3
+     }
+    },
+    {
+     "say": "load 時怎麼擺？跟 paging 一樣，用一張 segment table 做翻譯，就能放到實體記憶體任何地方。",
+     "k": 10,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 948.4
+     }
+    },
+    {
+     "say": "比較討厭的是：variable size 會讓 external fragmentation 很嚴重，要找到夠大的空間比 paging 難。",
+     "k": 11,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 964.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Segmentation 的位址轉換：(2, 53) → 4353",
+   "scene": "mem-12b-segx",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "來做 translation。",
+     "k": 1,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 987.8
+     }
+    },
+    {
+     "say": "它的 logical address 跟 paging 很像：前面是 segment number，後面是在這個 segment 裡的 offset。",
+     "k": 2,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 991.8
+     }
+    },
+    {
+     "say": "最大的不同：paging 的 offset 只到一個 page，例如 4KB；segment 卻可以長到任意大。",
+     "k": 3,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1030.1
+     }
+    },
+    {
+     "say": "所以 offset 的 bit 數，取決於系統規定一個 segment 最大多大，例如最大 4GB，offset 就要能描述到 4GB。",
+     "k": 4,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1078
+     }
+    },
+    {
+     "say": "segment table 跟 page table 很像，每個 entry 對到一個 segment，存它的 base address。",
+     "k": 5,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1098.8
+     }
+    },
+    {
+     "say": "但多了一個 limit。segment 長度不固定，每個都要有自己的 limit，才知道 offset 合不合法。",
+     "k": 6,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1116.1
+     }
+    },
+    {
+     "say": "跟 paging 一樣，segment table 的位置存在 PCB，也有長度：最多可以有 1000 個 segment，只用 4 個就寫 4。",
+     "k": 7,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1162.5
+     }
+    },
+    {
+     "say": "最重要的一張圖。課本例子 s = 2，查到第 2 個 segment：limit 400、base 4300。",
+     "read": "最重要的一張圖。課本例子 s 等於 2，查到第 2 個 segment：limit 400、base 4300。",
+     "k": 8,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1199.6
+     }
+    },
+    {
+     "say": "注意這裡是真的「加」。segment 可以從任意 byte 開始，不在 4KB 邊界上，所以 4300 + 53 = 4353。",
+     "read": "注意這裡是真的「加」。segment 可以從任意 byte 開始，不在 4KB 邊界上，所以 4300 加 53 等於 4353。",
+     "k": 9,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1215.3
+     }
+    },
+    {
+     "say": "相加前先檢查 offset 是否小於 limit。53 < 400，合法。",
+     "read": "相加前先檢查 offset 是否小於 limit。53 小於 400，合法。",
+     "k": 10,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1261.3
+     }
+    },
+    {
+     "say": "如果同一個 segment 的 offset 是 500，超過 limit 400，就丟出你天天看到的 segmentation fault。",
+     "k": 10,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1261.3
+     }
+    },
+    {
+     "say": "所以每個 segment 的空間各自獨立控制，heap 可以很大、data 可以很小，還能設 read、write 權限，不對就丟 fault。",
+     "k": 11,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1284
+     }
+    },
+    {
+     "say": "不同 segment 永遠不會 overlap。想共用，就建一個獨立的 segment 讓兩個 process 一起用，不能只共用一部分。",
+     "k": 12,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1330.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Segmentation vs paging：sharing 和 protection",
+   "scene": "mem-12b-segshare",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "整理一下差別。page table entry 存 frame 的 base address；segment entry 除了 base，還有 limit。",
+     "k": 1,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1402.1
+     }
+    },
+    {
+     "say": "第二，segment 的 base 可以在任何位置；page 一定在 frame 邊界上，後面本來都是 0，所以 offset 可以直接接上去。",
+     "k": 2,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1420.8
+     }
+    },
+    {
+     "say": "segment 就要乖乖相加。",
+     "k": 3,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1450.1
+     }
+    },
+    {
+     "say": "實際上，一個 process 的每一塊記憶體內容就是一個 segment，你寫 code 時其實就告訴 OS 有哪些 segment 了。",
+     "k": 4,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1456.4
+     }
+    },
+    {
+     "say": "配置時，用 free list 找夠大的空間，把 base 填進表裡，就是前面教的 variable size allocation，例如 best fit。",
+     "k": 5,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1484
+     }
+    },
+    {
+     "say": "sharing 的概念跟 paging 一樣，為什麼放在 segment 這層做？想想 editor，它跨好幾個 page，最後一頁還沒滿。",
+     "k": 6,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1523.5
+     }
+    },
+    {
+     "say": "但程式本來就是用 segment 寫的，editor 一定是一個 segment；load 一個 library，就是一個新的 segment。",
+     "k": 7,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1550.3
+     }
+    },
+    {
+     "say": "而且長度可以精確控制：editor 剛好 43062 bytes，就 share 這麼多，多一個 byte 都不會。",
+     "k": 8,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1571.2
+     }
+    },
+    {
+     "say": "所以現在的電腦，真正是在 segment 這層做 sharing。",
+     "k": 8,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1571.2
+     }
+    },
+    {
+     "say": "同樣是 editor 的例子：兩個 process 各有一個 editor segment，但指到同一塊實體 segment。",
+     "k": 9,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1601.3
+     }
+    },
+    {
+     "say": "protection 也不同：paging 主要用 valid bit；segment 的 bit 多半拿來做讀、寫、執行權限。",
+     "k": 10,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1616.8
+     }
+    },
+    {
+     "say": "還記得 thread 嗎？heap 共用、stack 不共用。所以 stack segment 設成不 share，heap segment 就能 share。",
+     "k": 11,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1647.8
+     }
+    },
+    {
+     "say": "做法很簡單：兩個 process 的 segment table 裡，base 設成一樣，指到同一個實體位置就好。",
+     "k": 12,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1686.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Segmentation 加 paging：linear address",
+   "scene": "mem-12b-segpage",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "最後把兩個合起來。電腦裡 segmentation 在上面，大家寫程式只用這個概念。",
+     "k": 1,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1716.8
+     }
+    },
+    {
+     "say": "但它很容易有 external fragmentation。",
+     "k": 2,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1727.2
+     }
+    },
+    {
+     "say": "所以電腦其實是在 segmentation 之後，再做一次 paging。有點抽象，看圖比較好懂。",
+     "k": 3,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1734.8
+     }
+    },
+    {
+     "say": "這是一個 process 的記憶體，不同顏色是不同 segment：code、heap、stack。",
+     "k": 4,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1744.1
+     }
+    },
+    {
+     "say": "中間有一個空間叫 linear address space，它根本不存在，只是數字轉換：segment 先 map 到這個大空間，中間有洞也無所謂。",
+     "k": 5,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1756.8
+     }
+    },
+    {
+     "say": "再用 paging 把這個大空間切成固定大小的 page，一個 segment 可能跨三、四個 page。",
+     "k": 6,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1791.2
+     }
+    },
+    {
+     "say": "然後照之前學的 paging，只要實體記憶體有空 frame，就把 page 一個個放上去，翻譯就完成了。",
+     "k": 7,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1811.8
+     }
+    },
+    {
+     "say": "好處是：programmer 用 segment 寫程式很容易；compiler 也只要知道是哪個 segment、哪個位置，不用管實體怎麼擺。",
+     "k": 8,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1830.7
+     }
+    },
+    {
+     "say": "下一層 MMU 再切成小 page，所以完全沒有 external fragmentation，internal 又很少，segment 再大也能分散放。",
+     "k": 9,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1856.1
+     }
+    },
+    {
+     "say": "正式流程是：CPU 送出 logical address，先經過 segmentation，變成 linear address。",
+     "k": 10,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1894.7
+     }
+    },
+    {
+     "say": "linear address 既不是 logical 也不是 physical，再經過 paging 轉一次，才是 physical address。",
+     "k": 10,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1894.7
+     }
+    },
+    {
+     "say": "segmentation unit 和 paging unit 都在 MMU 裡，MMU 先做 segmentation、再做 paging。",
+     "k": 11,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1962.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Intel Pentium 的位址轉換",
+   "scene": "mem-12b-pentium",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "來看真實的例子：早期的 Intel Pentium，怎麼把兩種翻譯結合起來。",
+     "k": 1,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1976.8
+     }
+    },
+    {
+     "say": "logical address 是 48 bits，分成兩部分。",
+     "k": 2,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 1996.2
+     }
+    },
+    {
+     "say": "後面 32 bits 是 segment 的 offset，所以一個 segment 最多 4GB。不是整個程式不能超過 4GB，是單一 segment 不能。",
+     "k": 3,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2014.3
+     }
+    },
+    {
+     "say": "前面是 16 bits 的 selector，其中 13 bits 是 segment number。",
+     "k": 4,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2043.9
+     }
+    },
+    {
+     "say": "接著 1 個 bit，表示這是 private 還是 shared 的 segment，兩者查的是不同的表。",
+     "k": 5,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2069.8
+     }
+    },
+    {
+     "say": "最後 2 個 bit 跟 protection 有關。周老師說是讀寫執行權限，不過在 x86 上，它是 privilege level，ring 0 到 3。",
+     "k": 6,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2119
+     }
+    },
+    {
+     "say": "13 bits 加上 share 那 1 bit，就是 2¹⁴ 個 segment，一半 share、一半不 share，每個最多 4GB。",
+     "read": "13 bits 加上 share 那 1 bit，就是 2的14次方 個 segment，一半 share、一半不 share，每個最多 4GB。",
+     "k": 7,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2129.5
+     }
+    },
+    {
+     "say": "翻譯時一步一步來，先做 segmentation。private 和 shared 是兩張不同的表，假設這是 shared，就查 shared 那張。",
+     "k": 8,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2160.2
+     }
+    },
+    {
+     "say": "用 13 bits 當 index 讀出 base，跟 offset 相加，就是 linear address，跟 base 一樣是 32 bits。",
+     "k": 9,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2196
+     }
+    },
+    {
+     "say": "接著交給 paging。Pentium 用 two-level page table，32 bits 一樣切成 10 | 10 | 12。",
+     "read": "接著交給 paging。Pentium 用 two-level page table，32 bits 一樣切成 10、10、12。",
+     "k": 10,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2279.9
+     }
+    },
+    {
+     "say": "前 10 bits 查 outer table 找到 inner table，後 10 bits 查出 frame，再加 offset，就完成了。",
+     "k": 11,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2304.8
+     }
+    },
+    {
+     "say": "真實系統還有些技巧：Intel 可以同時支援 4KB 和 4MB 的 page。",
+     "k": 12,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2350.5
+     }
+    },
+    {
+     "say": "outer table 查完有一個 bit，如果指到 4MB 的 page，後面 22 bits 就全部當 offset，2²² 剛好 4MB。",
+     "read": "outer table 查完有一個 bit，如果指到 4MB 的 page，後面 22 bits 就全部當 offset，2的22次方 剛好 4MB。",
+     "k": 12,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2350.5
+     }
+    },
+    {
+     "say": "所以實體記憶體裡，可能有 4MB 的大 page，也有 4KB 的小 page。程式大就用大 page，小就用 4KB。",
+     "k": 13,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2434.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "期中考題：segmentation 加 paging",
+   "scene": "mem-12b-exam",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "最後用一題總結。真實系統不用想那麼複雜，把 paging、segmentation 和兩者合起來的轉換搞懂就好。",
+     "k": 1,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2489.9
+     }
+    },
+    {
+     "say": "周老師說前幾年期中考每次都考類似的題目，至少這一題一定要會。",
+     "k": 2,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2516.3
+     }
+    },
+    {
+     "say": "題目說實體記憶體 512 bytes。512 = 2⁹，所以 physical address 是 9 個 bit。",
+     "read": "題目說實體記憶體 512 bytes。512 等於 2的9次方，所以 physical address 是 9 個 bit。",
+     "k": 3,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2524.9
+     }
+    },
+    {
+     "say": "page size 32 bytes = 2⁵，所以 page offset 是 5 個 bit。",
+     "read": "page size 32 bytes 等於 2的5次方，所以 page offset 是 5 個 bit。",
+     "k": 4,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2535.4
+     }
+    },
+    {
+     "say": "一共 8 個 segment = 2³，所以 logical address 前 3 個 bit 是 segment number，其餘是 offset。",
+     "read": "一共 8 個 segment 等於 2的3次方，所以 logical address 前 3 個 bit 是 segment number，其餘是 offset。",
+     "k": 5,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2544.8
+     }
+    },
+    {
+     "say": "給你 logical address 0x448。先換成二進位，一共 12 個 bit：0100 0100 1000。",
+     "read": "給你 logical address 十六進位四四八。先換成二進位，一共 12 個 bit：零一零零、零一零零、一零零零。",
+     "k": 6,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2560.1
+     }
+    },
+    {
+     "say": "前 3 個 bit 是 010，所以是 segment 2；剩下 9 個 bit 是 72，就是 segment offset。",
+     "read": "前 3 個 bit 是 零一零，所以是 segment 2；剩下 9 個 bit 是 72，就是 segment offset。",
+     "k": 7,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2579.5
+     }
+    },
+    {
+     "say": "去 segment table 查第 2 格，讀出這個 segment 的 base，我們叫它 base 2。",
+     "k": 8,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2591.8
+     }
+    },
+    {
+     "say": "base 加上 segment offset，得到 linear address：base 2 加 72。",
+     "k": 9,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2600.4
+     }
+    },
+    {
+     "say": "再做 paging。page offset 5 個 bit，9 bits 剩下的 4 個 bit 是 page number。老師的題目裡算出來是 5。",
+     "k": 10,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2616.4
+     }
+    },
+    {
+     "say": "查 page table 第 5 格，裡面是 2，這就是 frame number。",
+     "k": 11,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2636
+     }
+    },
+    {
+     "say": "把前 4 個 bit 換成 2，也就是 0010，後面 5 bits 照抄：2 × 32，再加 linear 的低 5 bits。",
+     "read": "把前 4 個 bit 換成 2，也就是 零零一零，後面 5 bits 照抄。2 乘 32，再加 linear 的低 5 bits。",
+     "k": 12,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2641
+     }
+    },
+    {
+     "say": "不用擔心翻出來會跟別人撞在一起，那是 MMU 配置時確認過的；offset 超過 segment 長度也會被擋掉。",
+     "k": 13,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2657.4
+     }
+    },
+    {
+     "say": "這一章就到這裡。例子很多，考前一定要自己 go through 一遍，不然題目一變化就轉不過來。",
+     "k": 14,
+     "src": {
+      "v": "PTXHd17_NlU",
+      "t": 2710.9
+     }
+    }
+   ]
+  }
+ ]
+}

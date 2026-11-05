@@ -1,0 +1,4853 @@
+{
+ "chapter": "os-2",
+ "title": "Process管理",
+ "intro": "從 program 和 process 的差別出發，弄懂 process 的 memory、五個狀態、PCB 與 context switch、三種 scheduler、fork／exec／wait，最後學 process 之間怎麼用 shared memory、message passing、socket 和 RPC 溝通。",
+ "parts": [
+  {
+   "title": "Program 與 Process",
+   "scene": "proc-6b-progproc",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "好，這一章的主角是 process。第一件事：process 跟 program 到底差在哪？",
+     "k": 1,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 134.2
+     }
+    },
+    {
+     "say": "中文裡寫程式、執行程式都叫「程式」，所以兩件事很容易混在一起。",
+     "k": 2,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 144.6
+     }
+    },
+    {
+     "say": "英文就分得很清楚：寫出來的東西叫 program，正在執行的那個叫 process。",
+     "k": 3,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 153.04
+     }
+    },
+    {
+     "say": "program 是 passive entity，被動、不會動的東西，像書架上的一本食譜。",
+     "k": 4,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 193.42
+     }
+    },
+    {
+     "say": "在電腦裡，它只是一串 0 和 1 的 binary code，組成一個檔案。",
+     "k": 5,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 200.18
+     }
+    },
+    {
+     "say": "這個檔案放在 disk 上，沒人執行它，它就永遠只是個檔案。",
+     "k": 6,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 217.86
+     }
+    },
+    {
+     "say": "process 是 active entity，是正在 execute 的程式，就像照著食譜正在煮菜的過程。",
+     "k": 7,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 232.02
+     }
+    },
+    {
+     "say": "最關鍵的差別是位置：process 是已經被 load 進 memory、正在跑的 program。",
+     "k": 8,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 241.22
+     }
+    },
+    {
+     "say": "為什麼一定要進 memory？因為 CPU 只能直接存取 memory，disk 上的東西它碰不到。",
+     "k": 9,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 247.24
+     }
+    },
+    {
+     "say": "所以一個在 disk、不會動，一個在 memory、正在跑。考試用字千萬別混。",
+     "k": 10,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 262.34
+     }
+    },
+    {
+     "say": "OS 要管的是 process。program 怎麼寫你學過了，這章要學 OS 怎麼管 process。",
+     "k": 11,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 275.84
+     }
+    }
+   ]
+  },
+  {
+   "title": "Process 的 memory：code、data、stack、heap",
+   "scene": "proc-6b-memory",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "既然 process 在 memory 裡，那它在 memory 裡長什麼樣子？",
+     "k": 1,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 290.98
+     }
+    },
+    {
+     "say": "每個 process 有自己的一塊 address space，從 0 到 max，裡面再切成好幾塊。",
+     "k": 2,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 301.46
+     }
+    },
+    {
+     "say": "第一塊是 code segment，也叫 text，放的就是程式碼。",
+     "k": 3,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 314.38
+     }
+    },
+    {
+     "say": "程式碼原本存在檔案裡，例如 a.out；要執行時，OS 先把它 load 進這一塊。",
+     "k": 4,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 330.84
+     }
+    },
+    {
+     "say": "進來的是一道一道 instruction，等著 CPU 一條一條 fetch 去執行。",
+     "k": 5,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 345.68
+     }
+    },
+    {
+     "say": "注意，這裡放的不是你的 C 原始碼，而是 compiler 編好的機器指令。",
+     "k": 6,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 357.94
+     }
+    },
+    {
+     "say": "接下來三塊都是放變數的。變數會被放在三個不同區域，這點很重要。",
+     "k": 7,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 366.9
+     }
+    },
+    {
+     "say": "第一個是 data section，放 global variable，全域變數。",
+     "k": 8,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 386.3
+     }
+    },
+    {
+     "say": "global variable 在 load 的時候就知道有哪些，一開始就存在，任何 function 都看得到。",
+     "k": 9,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 403.48
+     }
+    },
+    {
+     "say": "欸，這些區塊不會切得剛剛好，因為有些區塊執行中會長大，要預留空間。",
+     "k": 10,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 422.58
+     }
+    },
+    {
+     "say": "第二個是 stack，放 local variable，也就是 function 裡宣告的變數。",
+     "k": 11,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 433.76
+     }
+    },
+    {
+     "say": "function 一 return，這些變數就不要了。stack 後進先出，一次 pop 掉，很有效率。",
+     "k": 12,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 443.32
+     }
+    },
+    {
+     "say": "第三個是 heap，放 dynamic allocation，像用 malloc 在執行時才要來的空間。",
+     "k": 13,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 462.96
+     }
+    },
+    {
+     "say": "heap 最自由，要多少拿多少，但也最容易出錯，所以要最小心。",
+     "k": 14,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 462.96
+     }
+    },
+    {
+     "say": "所以寫程式時，要清楚每個變數在哪一區，因為每一區的管理方式不一樣。",
+     "k": 15,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 476.86
+     }
+    }
+   ]
+  },
+  {
+   "title": "Heap 往上長、Stack 往下長",
+   "scene": "proc-7a-layout",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "heap 的空間由 programmer 自己管：用完要 deallocate，不然就是 memory leak，很嚴重。",
+     "k": 5,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 60.21
+     }
+    },
+    {
+     "say": "來看一種常見的擺法，每個 OS 不太一樣：位址 0 在最下面，先放 text，再放 data。",
+     "k": 9,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 149.29
+     }
+    },
+    {
+     "say": "text 和 data 大小固定；heap 和 stack 在 run time 會變大變小。",
+     "k": 10,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 165.69
+     }
+    },
+    {
+     "say": "所以中間留一段空間，heap 往上長、stack 往下長，整塊空間才用得有效率。",
+     "k": 10,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 180.71
+     }
+    },
+    {
+     "say": "那你 malloc 太多，或 recursive 呼叫太深，讓 stack 一直長，會怎樣？",
+     "k": 11,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 186.87
+     }
+    },
+    {
+     "say": "空間用完，或超過 stack、heap 的大小限制，系統就說 out of memory，不讓你再要了。",
+     "k": 11,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 193.69
+     }
+    }
+   ]
+  },
+  {
+   "title": "Process 的 metadata",
+   "scene": "proc-6b-meta",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "除了 memory 裡這四塊，OS 還得記一些「關於這個 process 的資料」，叫 metadata。",
+     "k": 1,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 495.24
+     }
+    },
+    {
+     "say": "像它現在處在哪個 state，等一下會講五個狀態。",
+     "k": 1,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 76.87
+     }
+    },
+    {
+     "say": "最重要的是 program counter，PC：記錄它現在執行到哪一行指令。",
+     "k": 2,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 499.26
+     }
+    },
+    {
+     "say": "再來是 register 的內容。register 是 CPU 裡超快的小格子，算到一半的值都在裡面。",
+     "k": 3,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 505.52
+     }
+    },
+    {
+     "say": "問題是 CPU 是大家輪流共用的，register 不可能一直留給同一個 process。",
+     "k": 4,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 518.98
+     }
+    },
+    {
+     "say": "所以 process 被換下來時，要把 register 的值存起來，下次才能從原地接著做。",
+     "k": 5,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 520.3
+     }
+    },
+    {
+     "say": "這就是 time sharing 的代價：誰都不能霸佔 CPU，被 switch 走之前得先存檔。",
+     "k": 5,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 93.25
+     }
+    },
+    {
+     "say": "最後是 resource 的狀態：開檔案、用網路時，OS 會給它一個像號碼牌的 reference。",
+     "k": 6,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 530.08
+     }
+    },
+    {
+     "say": "例如開了哪些檔案、用了哪些 socket 的 port，這些都要記下來。",
+     "k": 7,
+     "src": {
+      "v": "FiRH2TYB1Mw",
+      "t": 542.04
+     }
+    },
+    {
+     "say": "這些 metadata 之後會整理成一張表，叫 PCB，等一下就會看到。",
+     "k": 7
+    }
+   ]
+  },
+  {
+   "title": "Process 的五個狀態",
+   "scene": "proc-7a-states",
+   "steps": 18,
+   "lines": [
+    {
+     "say": "好，接下來看 process 的一生。一個 process 被 launch 之後，OS 把它分成五個 state。",
+     "k": 1,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 584.9
+     }
+    },
+    {
+     "say": "第一個是 new：剛被 create。要把 program load 進 memory、配好各個 segment、做初始化。",
+     "k": 2,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 604.72
+     }
+    },
+    {
+     "say": "早期 memory 小的電腦，開太多 process，連 new 都會失敗，直接 out of memory 被 kill。",
+     "k": 3,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 646.72
+     }
+    },
+    {
+     "say": "現在一些 memory 很有限的 embedded device，也還是會這樣。",
+     "k": 3,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 671.14
+     }
+    },
+    {
+     "say": "第二個是 ready。process 要搶的是 CPU 的 core，core 有限，所以先排進 queue 等。",
+     "k": 4,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 685.82
+     }
+    },
+    {
+     "say": "第三個是 running：被選中了，instruction 真的送進 CPU 執行。",
+     "k": 5,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 732.18
+     }
+    },
+    {
+     "say": "執行中程式不只用 CPU，還會做 I/O，像 call printf、scanf。",
+     "k": 6,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 746.16
+     }
+    },
+    {
+     "say": "做 I/O 時不需要 CPU，但也不能馬上往下跑，這時就進入 waiting。",
+     "k": 6,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 759.24
+     }
+    },
+    {
+     "say": "等 I/O 做完、又需要 CPU 了，它就被放回 ready。",
+     "k": 7,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 781.28
+     }
+    },
+    {
+     "say": "最後是 terminated，跟 new 相反：把所有資源 release，還給 OS 給別人用。",
+     "k": 8,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 792.22
+     }
+    },
+    {
+     "say": "把五個 state 畫成圖。new 之後 OS 還要 admit，就是准不准你進來。",
+     "k": 9,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 819.54
+     }
+    },
+    {
+     "say": "memory 不夠，或你沒有執行這個程式的 permission，OS 就把你擋掉。",
+     "k": 9,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 834.58
+     }
+    },
+    {
+     "say": "一切正常就進 ready。ready 其實就是一個 queue，大家在裡面等 scheduling。",
+     "k": 10,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 856.54
+     }
+    },
+    {
+     "say": "輪到你時有兩個動作：schedule 是選人；dispatch 是把選到的人 load 上 CPU，進入 running。",
+     "k": 11,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 874.92
+     }
+    },
+    {
+     "say": "簡單的程式只做計算，像一個 for loop 一直 i++，跑完就 exit，進 terminated。",
+     "read": "簡單的程式只做計算，像一個 for loop 一直 i 加加，跑完就 exit，進 terminated。",
+     "k": 12,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 899.06
+     }
+    },
+    {
+     "say": "但就算純計算，也可能從 running 被打回 ready，原因是 interrupt。",
+     "k": 13,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 912.76
+     }
+    },
+    {
+     "say": "通常是 timer：time sharing 系統每隔幾個 ms，timer 就發 hardware signal，把主控權拿回 OS。",
+     "k": 13,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 929.22
+     }
+    },
+    {
+     "say": "拿回來交給誰？OS 的 scheduler。所以 OS 隨時掌握誰在跑、隨時可以換人。",
+     "k": 14,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 964.54
+     }
+    },
+    {
+     "say": "另一種情況：你自己做 I/O，或 call sleep 這種 system call，就主動放掉 CPU，進 waiting。",
+     "k": 15,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 984.44
+     }
+    },
+    {
+     "say": "等 I/O 完成，或 sleep 10 秒時間到，都靠 interrupt 通知 OS，把你從 waiting 移回 ready。",
+     "k": 16,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1015.44
+     }
+    },
+    {
+     "say": "所以 scheduler 的工作很單純：只從 ready queue 挑人。在 ready，就代表一定能執行。",
+     "k": 17,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1047.92
+     }
+    },
+    {
+     "say": "這張圖非常重要，每個轉換的原因都要記牢。ready 和 waiting 都是用 queue 管理。",
+     "k": 18,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1078.16
+     }
+    },
+    {
+     "say": "考考你：被 timer interrupt 打斷，回 ready；自己 call sleep，進 waiting。",
+     "k": 18
+    }
+   ]
+  },
+  {
+   "title": "PCB：Process Control Block",
+   "scene": "proc-7a-pcb",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "剛剛講的是概念，那 OS 實際上怎麼掌握每一個 process？",
+     "k": 1,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1124.07
+     }
+    },
+    {
+     "say": "靠的是 process control block，簡稱 PCB。",
+     "k": 2,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1138.07
+     }
+    },
+    {
+     "say": "process 一被 create，OS 就幫它 allocate 一張表，記下剛才那些資訊。",
+     "k": 3,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1163.75
+     }
+    },
+    {
+     "say": "PCB 第一個欄位是 pointer。說「把 process 放進 queue」，其實是把它的 PCB 放進去。",
+     "k": 4,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1178.79
+     }
+    },
+    {
+     "say": "OS 不會去搬 process 的 memory，而是用 linked list 把 PCB 一個個串起來。",
+     "k": 4,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1197.93
+     }
+    },
+    {
+     "say": "再來是 process state：new、在 ready queue，還是在 waiting queue。",
+     "k": 5,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1231.39
+     }
+    },
+    {
+     "say": "還有 program counter 和 CPU register，這些是 OS 幫它記的，process 自己的 memory 裡沒有。",
+     "k": 6,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1250.15
+     }
+    },
+    {
+     "say": "其實任何 control、manage 這個 process 要用的資訊，都可以塞進 PCB。",
+     "k": 7,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1285.75
+     }
+    },
+    {
+     "say": "例如 CPU scheduling 的資訊，像 priority 放在哪、怎麼改，就在 PCB 裡。",
+     "k": 8,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1308.99
+     }
+    },
+    {
+     "say": "memory 的資訊：做 memory protection 用的 base register 和 limit register 的值。",
+     "k": 9,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1325.39
+     }
+    },
+    {
+     "say": "hardware 的這種 register 就那幾個，所以平常存在 PCB，輪到它 running 才 load 上去檢查。",
+     "k": 9,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1335.25
+     }
+    },
+    {
+     "say": "I/O 的資訊：它在等哪個 device。每個 device 有自己的 waiting queue，記下來找得快。",
+     "k": 10,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1372.61
+     }
+    },
+    {
+     "say": "還有 accounting，記帳，例如開了幾個 file。系統怎麼知道你開超過 400 個？PCB 記的。",
+     "k": 11,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1392.53
+     }
+    },
+    {
+     "say": "最後記住：PCB 是 OS 的資料，存在 kernel space，也就是 OS 自己的 memory 裡。",
+     "k": 12,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1405.11
+     }
+    }
+   ]
+  },
+  {
+   "title": "Context switch",
+   "scene": "proc-7a-ctx",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "有了 PCB，就能做一件非常重要的事：context switch。這是專有名詞，別亂換說法。",
+     "k": 1,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1419.87
+     }
+    },
+    {
+     "say": "context switch 就是把 CPU 上正在跑的 process，換成另一個 process。CPU 能 share 全靠它。",
+     "k": 2,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1447.53
+     }
+    },
+    {
+     "say": "假設 P0 正在跑，它的狀態全部 load 在 CPU 的 register 裡。",
+     "read": "假設 P零 正在跑，它的狀態全部 load 在 CPU 的 register 裡。",
+     "k": 3,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1476.99
+     }
+    },
+    {
+     "say": "什麼時候會換？一定是有 interrupt，或程式自己呼叫了 system call。",
+     "k": 4,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1490.35
+     }
+    },
+    {
+     "say": "不然 CPU 很單純，就一條一條讀 P0 的 instruction，它會永遠佔著 CPU。",
+     "read": "不然 CPU 很單純，就一條一條讀 P零 的 instruction，它會永遠佔著 CPU。",
+     "k": 5,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1505.05
+     }
+    },
+    {
+     "say": "像程式 call printf，請 OS 幫忙做事；OS 也是一支程式，所以要換過去。",
+     "k": 6,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1518.73
+     }
+    },
+    {
+     "say": "或是有 hardware interrupt 進來，例如有人按了 keyboard。",
+     "k": 6,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1538.65
+     }
+    },
+    {
+     "say": "不管哪一種，P0 被打斷後只能 idle，等 OS 再讓它執行。",
+     "read": "不管哪一種，P零 被打斷後只能 idle，等 OS 再讓它執行。",
+     "k": 7,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1546.61
+     }
+    },
+    {
+     "say": "要讓出 CPU，先把 CPU 裡的 state，像 PC、register，全部存進 P0 的 PCB。",
+     "read": "要讓出 CPU，先把 CPU 裡的 state，像 PC、register，全部存進 P零 的 PCB。",
+     "k": 8,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1566.01
+     }
+    },
+    {
+     "say": "再從 P1 的 PCB 把它的 state load 進來。P1 可能是 OS，也可能是別的 user 的 process。",
+     "read": "再從 P一 的 PCB 把它的 state load 進來。P一 可能是 OS，也可能是別的 user 的 process。",
+     "k": 9,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1583.87
+     }
+    },
+    {
+     "say": "注意：做這些事的時候，P0 跟 P1 都是 idle，CPU 跑的是 OS 做 switch 的程式碼。",
+     "read": "注意：做這些事的時候，P零 跟 P一 都是 idle，CPU 跑的是 OS 做 switch 的程式碼。",
+     "k": 10,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1613.61
+     }
+    },
+    {
+     "say": "switch 完成，P1 才從它的 program counter 那裡開始 fetch 指令。",
+     "read": "switch 完成，P一 才從它的 program counter 那裡開始 fetch 指令。",
+     "k": 11,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1647.01
+     }
+    },
+    {
+     "say": "之後要換回 P0，就反過來：P1 的 state 存進 PCB1，再 load PCB0。這裡總共 switch 了兩次。",
+     "read": "之後要換回 P零，就反過來：P一 的 state 存進 PCB 一，再 load PCB 零。這裡總共 switch 了兩次。",
+     "k": 12,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1671.63
+     }
+    },
+    {
+     "say": "所以 context switch 就是 kernel 透過 PCB 做 save 和 load，讓 process 從上次停下的地方繼續。",
+     "k": 13,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1699.49
+     }
+    }
+   ]
+  },
+  {
+   "title": "Context switch 是 overhead",
+   "scene": "proc-7a-ctxcost",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "那問題來了：switch 期間大家都在 idle，對使用者來說就是浪費 CPU cycle。",
+     "k": 1,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1731.17
+     }
+    },
+    {
+     "say": "所以它是 overhead，純粹為了管理和 sharing 才付出的時間。",
+     "k": 1,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1744.31
+     }
+    },
+    {
+     "say": "能不做就不做？做不到。CPU 要 share、response time 要好，就得靠它，這是 trade-off。",
+     "k": 2,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1762.77
+     }
+    },
+    {
+     "say": "time sharing 每幾 ms 就要 switch 一次，非常頻繁，所以一定要想辦法讓它變快。",
+     "k": 3,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1783.03
+     }
+    },
+    {
+     "say": "第一個方向是 memory 速度：switch 其實就是在 memory 做 save、load，memory 快它就快。",
+     "k": 4,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1798.87
+     }
+    },
+    {
+     "say": "第二個是 register 少一點，要存的就少。",
+     "k": 5,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1814.45
+     }
+    },
+    {
+     "say": "但現代 CPU 不會這樣做，register 越多算得越快、程式越好寫，所以反而越來越多。",
+     "k": 5,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1829.69
+     }
+    },
+    {
+     "say": "software 端：有些 CPU 跟 OS 合作，提供一個 instruction 就把 register 一次 save、load 完。",
+     "k": 6,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1846.95
+     }
+    },
+    {
+     "say": "更常見的是 hardware support：CPU 裡準備好幾組 register set，不只一組。",
+     "k": 7,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1880.03
+     }
+    },
+    {
+     "say": "這樣好幾個程式的狀態都留在 hardware 裡，switch 只是換一組 register，不用寫回 memory。",
+     "k": 8,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1912.53
+     }
+    },
+    {
+     "say": "速度當然快，代價是成本高，因為 register 是很貴的儲存元件。",
+     "k": 8,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1948.41
+     }
+    },
+    {
+     "say": "像教學用的 Nachos 系統，也有 context switch 的 function；它的 PCB 叫 thread control block。",
+     "k": 9,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 1973.31
+     }
+    }
+   ]
+  },
+  {
+   "title": "Thread：lightweight process",
+   "scene": "proc-7a-thread",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "欸，剛剛冒出一個詞：thread，執行緒。它跟 process 很像，但不完全一樣。",
+     "k": 1,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 223.41
+     }
+    },
+    {
+     "say": "thread 又叫 lightweight process，輕量級的 process。",
+     "k": 2,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 244.55
+     }
+    },
+    {
+     "say": "OS 管 thread 的方式跟 process 一樣，差別是：同一個 process 底下的 thread 會共用一些 memory。",
+     "k": 3,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 248.53
+     }
+    },
+    {
+     "say": "所以之後講的 shared memory 溝通，用 thread 寫特別方便，有一塊天生就是共用的。",
+     "k": 3,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 264.81
+     }
+    },
+    {
+     "say": "create thread 時，共用的空間不用重建，parent process 早就配好了，所以說它 lightweight。",
+     "k": 4,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 272.27
+     }
+    },
+    {
+     "say": "而且 CPU 真正執行的基本單位其實是 thread。只有一個 thread 的 process，就是一對一。",
+     "k": 5,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 295.35
+     }
+    },
+    {
+     "say": "process 跟 thread 最大的差別，就在哪些 memory 共用。我們把共用跟不共用分開看。",
+     "k": 6,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 328.85
+     }
+    },
+    {
+     "say": "依定義，同一個 process 的 thread 共用三塊：code section、data section，還有 OS resource。",
+     "k": 7,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 349.59
+     }
+    },
+    {
+     "say": "例如一個 thread open 了 file，另一個 thread 直接拿那個 file pointer 就能 read、write。",
+     "k": 8,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 371.97
+     }
+    },
+    {
+     "say": "但 register 和 stack 不共用，每個 thread 各有一份。",
+     "k": 9,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 385.23
+     }
+    },
+    {
+     "say": "為什麼？因為每個 thread 可能跑在不同位置、甚至不同 function，PC 和狀態都得各自記。",
+     "k": 10,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 393.45
+     }
+    },
+    {
+     "say": "stack 放 function call 跟 local variable；每個 thread 呼叫的 function 不同，彼此看不見。",
+     "k": 11,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 416.71
+     }
+    },
+    {
+     "say": "data section 共用，所以 multi-thread 程式就用 global variable 溝通。",
+     "k": 12,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 437.05
+     }
+    },
+    {
+     "say": "heap 上的東西也一樣，只要有 pointer，哪個 thread 都能讀，因為大家在同一個 memory space。",
+     "k": 12,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 449.99
+     }
+    },
+    {
+     "say": "整理一下，每個 thread 自己有的：program counter、register、thread ID，還有 stack。",
+     "k": 13,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 471.61
+     }
+    },
+    {
+     "say": "管 thread 跟管 process 概念相同，thread 只是 process 下面再一層，所以接下來都講 process。",
+     "k": 14,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 499.52
+     }
+    },
+    {
+     "say": "甚至 Linux 對 OS 來說，每個 process 都當 thread，只看彼此哪些 memory 共用。名字是次要的。",
+     "k": 15,
+     "src": {
+      "v": "f-mBLtGY6Ig",
+      "t": 528.02
+     }
+    }
+   ]
+  },
+  {
+   "title": "Process scheduling 與各種 queue",
+   "scene": "proc-7b-queues",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "知道 process 怎麼換狀態、怎麼上下 CPU 之後，來看 OS 裡的 scheduler。",
+     "k": 1,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 15.33
+     }
+    },
+    {
+     "say": "為什麼 scheduling 在 OS 裡這麼重要？",
+     "k": 2,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 15.33
+     }
+    },
+    {
+     "say": "因為現代系統是 multiprogramming：很多 process 同時放在 memory，才能把 CPU 用到最滿。",
+     "k": 3,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 42.63
+     }
+    },
+    {
+     "say": "而且要很頻繁地 context switch，才做得出 time sharing、可以即時互動的系統。",
+     "k": 4,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 58.61
+     }
+    },
+    {
+     "say": "所以大家要輪流用 CPU，誰先誰後，交給 OS 裡叫 scheduler 的 module 決定。",
+     "k": 5,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 78.31
+     }
+    },
+    {
+     "say": "CPU 空出來，或有人被強迫 context switch，scheduler 就被叫起來挑下一個。",
+     "k": 6,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 89.87
+     }
+    },
+    {
+     "say": "排隊的地方不只 ready queue，還有 job queue 和 device queue。",
+     "k": 7,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 114.93
+     }
+    },
+    {
+     "say": "有 queue 就要 schedule。最主要的是 ready queue：決定誰用 CPU。",
+     "k": 8,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 134.71
+     }
+    },
+    {
+     "say": "早期 memory 小的電腦還有一層 job queue：決定哪個 program 可以 load 進 memory。",
+     "k": 9,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 151.57
+     }
+    },
+    {
+     "say": "從 job queue 被選進 ready queue 之後，還要再被 schedule 一次，才輪得到 CPU。",
+     "k": 10,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 180.99
+     }
+    },
+    {
+     "say": "waiting 的 process 在 device queue。每個 device，disk、印表機、鍵盤，通常各有一條。",
+     "k": 11,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 191.03
+     }
+    },
+    {
+     "say": "像 sleep 這種不是 I/O 的等待，也有另外的 waiting queue。",
+     "k": 11,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 213.43
+     }
+    },
+    {
+     "say": "所以通常是一條 ready queue 給 CPU，加上很多條 I/O queue，全都用 PCB 裡的 pointer 串起來。",
+     "k": 12,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 230.85
+     }
+    },
+    {
+     "say": "有時還記下 head 和 tail，甚至雙向串，方便 scheduler 在 run time 調整順序。",
+     "k": 13,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 248.33
+     }
+    },
+    {
+     "say": "比較複雜的演算法，ready queue 還可能不只一條，分成 level 1、2、3。",
+     "k": 14,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 274.49
+     }
+    }
+   ]
+  },
+  {
+   "title": "Queueing diagram：在 queue 之間移動",
+   "scene": "proc-7b-qdiagram",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "把 queue 跟 state 轉換畫在一起，就是這張 queueing diagram。",
+     "k": 1,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 299.88
+     }
+    },
+    {
+     "say": "process 平常在 ready queue 等，輪到了就上 CPU。",
+     "k": 2,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 315.98
+     }
+    },
+    {
+     "say": "它自己發 I/O request，像 call printf，就被放進螢幕那個 device 的 queue。",
+     "k": 3,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 322.92
+     }
+    },
+    {
+     "say": "I/O 做完，device 丟一個 interrupt，OS 就把它放回 ready queue。",
+     "k": 4,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 333.58
+     }
+    },
+    {
+     "say": "或是 timer 的 alarm 響了，time slice 用完，就從 CPU 直接回 ready queue 尾端。",
+     "k": 5,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 345.66
+     }
+    },
+    {
+     "say": "還有一種：process 自己 create process。process 跟人一樣要被「生」出來，Linux 叫 fork。",
+     "k": 6,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 353.76
+     }
+    },
+    {
+     "say": "生完有兩種設計：parent 繼續跑，或讓 child 先跑；後者 parent 就進 waiting，等 child 跑完。",
+     "k": 7,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 384.56
+     }
+    },
+    {
+     "say": "最後是 wait for interrupt：call sleep(100)，就是請 OS 100 秒後 fire interrupt 叫醒我。",
+     "read": "最後是 wait for interrupt：call sleep 一百，就是請 OS 一百秒後 fire interrupt 叫醒我。",
+     "k": 8,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 414.9
+     }
+    },
+    {
+     "say": "這張圖大概懂就好：被踢出 CPU 的原因很多，OS 通常為不同 event 準備專門的 queue。",
+     "k": 9,
+     "src": {
+      "v": "aKiUuuKXfKY",
+      "t": 449.34
+     }
+    }
+   ]
+  },
+  {
+   "title": "狀態對應位置：disk、memory、CPU",
+   "scene": "proc-8a-stateloc",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "換個角度看狀態。真正能跑程式的 CPU 很少，只有個位數到十幾個 core。",
+     "k": 1,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 15.52
+     }
+    },
+    {
+     "say": "可是 memory 裡等著跑的 process 很多，這就是 multiprogramming。",
+     "k": 2,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 19.22
+     }
+    },
+    {
+     "say": "CPU 少、process 多，只好輪流：P1 上去跑一下，再回 memory 讓別人用。",
+     "read": "CPU 少、process 多，只好輪流：P一 上去跑一下，再回 memory 讓別人用。",
+     "k": 3,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 42.8
+     }
+    },
+    {
+     "say": "disk 上還有更多 program 等著進 memory，可是 memory 也有限。",
+     "k": 4,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 47.94
+     }
+    },
+    {
+     "say": "所以你說要執行一個程式，它不一定馬上進得了 memory，這裡也要排程。",
+     "k": 5,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 61.76
+     }
+    },
+    {
+     "say": "把三個地方對到狀態：在 CPU 上的，叫 running。",
+     "k": 6,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 79.58
+     }
+    },
+    {
+     "say": "在 memory 裡、隨時能上 CPU 的，叫 ready，ready to run。",
+     "k": 7,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 84.98
+     }
+    },
+    {
+     "say": "還在 disk、剛被 create、還沒擠進 memory 的，只能叫 new。",
+     "k": 8,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 93.78
+     }
+    },
+    {
+     "say": "執行完離開，就是 terminated。五個看到四個了。",
+     "k": 9,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 111.8
+     }
+    },
+    {
+     "say": "最特別的是 waiting：它明明在 memory，卻不能上 CPU。",
+     "k": 10,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 117.48
+     }
+    },
+    {
+     "say": "原因可能是在等別的 process、等 interrupt，例如等 I/O 做完，或自己 call 了 sleep。",
+     "k": 11,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 121.86
+     }
+    },
+    {
+     "say": "重點：waiting 就算 CPU 空著也不能跑，這就是它跟 ready 最大的不同。",
+     "k": 12,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 135.02
+     }
+    }
+   ]
+  },
+  {
+   "title": "Long-term 與 Short-term scheduler",
+   "scene": "proc-8a-ltst",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "所以 disk、memory、CPU 每一關都有人在搶位子，搶就需要 scheduler。",
+     "k": 1,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 155.64
+     }
+    },
+    {
+     "say": "memory 到 CPU 的排程叫 CPU scheduling：ready 的 process 裡誰先上 CPU。",
+     "k": 2,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 171.7
+     }
+    },
+    {
+     "say": "disk 到 memory 的排程叫 job scheduling：哪個新程式可以被載入。兩者是不同的 scheduler。",
+     "k": 3,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 172.66
+     }
+    },
+    {
+     "say": "CPU scheduler 又叫 short-term scheduler，照字面理解：它很頻繁、間隔很短。",
+     "k": 4,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 189.78
+     }
+    },
+    {
+     "say": "因為 time sharing，每幾個 ms timer 就響一次，打斷程式、叫 scheduler 起來換人。",
+     "k": 5,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 203.98
+     }
+    },
+    {
+     "say": "每幾毫秒就排一次，頻率超高，所以叫 short-term。",
+     "k": 6,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 215.14
+     }
+    },
+    {
+     "say": "job scheduler 叫 long-term scheduler，可能幾秒、甚至幾分鐘才排一次。",
+     "k": 7,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 225.04
+     }
+    },
+    {
+     "say": "為什麼這麼久？要有人 launch 新程式，它才需要決定能不能進 memory，人的動作很慢。",
+     "k": 8,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 244.32
+     }
+    },
+    {
+     "say": "記住對應：short-term 管 memory 到 CPU；long-term 管 disk 到 memory。",
+     "k": 9,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 270.76
+     }
+    }
+   ]
+  },
+  {
+   "title": "Mid-term scheduler 與 swapping",
+   "scene": "proc-8a-midterm",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "兩者中間還有第三個：mid-term scheduler，它的作用很不一樣。",
+     "k": 1,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 283.86
+     }
+    },
+    {
+     "say": "它決定什麼時候把 process 從 memory 搬「回」disk，方向跟 long-term 相反。",
+     "k": 2,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 294.72
+     }
+    },
+    {
+     "say": "它跟 virtual memory 一起出現：memory 不夠大，就拿 disk 一塊 swap space 當延伸。",
+     "k": 3,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 314.68
+     }
+    },
+    {
+     "say": "memory 不夠用時，mid-term scheduler 就把一些 process 踢回 disk。",
+     "k": 4,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 337.08
+     }
+    },
+    {
+     "say": "這個動作叫 swapping：把 memory 裡的內容整個 dump 到 disk 存起來。",
+     "k": 5,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 346.62
+     }
+    },
+    {
+     "say": "為什麼有東西可以搬？一個程式一開口就能 allocate 1 GB，但它會馬上全用到嗎？通常不會。",
+     "k": 6,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 366.46
+     }
+    },
+    {
+     "say": "這些要了還沒在用的空間，就先搬到 disk，把寶貴的 memory 讓給別人。",
+     "k": 7,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 386.06
+     }
+    },
+    {
+     "say": "被搬到 disk 的 process 不能直接執行，要跑之前得先搬回 memory。",
+     "k": 8,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 409.9
+     }
+    },
+    {
+     "say": "注意，存到 disk 的不是原本的程式檔，而是它在 memory 裡的當下內容：變數的值、stack 這些。",
+     "k": 9,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 442.22
+     }
+    },
+    {
+     "say": "等 memory 有空位，或它被選中要執行，mid-term 先把它 swap in，它才能回 ready。",
+     "k": 10,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 455.2
+     }
+    },
+    {
+     "say": "周老師把被 swap out 的算成 waiting；課本另外叫它 suspended。重點是先 swap in 才能跑。",
+     "k": 10,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 413.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Degree of multiprogramming 與 CPU／I/O mix",
+   "scene": "proc-8a-dopmix",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "三個 scheduler 各有任務。long-term 的任務是控制 degree of multiprogramming。",
+     "k": 1,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 490.86
+     }
+    },
+    {
+     "say": "degree of multiprogramming，就是 memory 裡現在有幾個 process。",
+     "k": 2,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 506.44
+     }
+    },
+    {
+     "say": "long-term 決定 new 的程式能不能進 memory，等於就在控制這個數字。",
+     "k": 3,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 530.32
+     }
+    },
+    {
+     "say": "degree 太低，像早期 batch 系統永遠是 1：它一去等 I/O，CPU 就沒事做。",
+     "k": 4,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 543.08
+     }
+    },
+    {
+     "say": "degree 太高，大家搶有限的 memory，一直在 disk 跟 memory 之間 swapping，這叫 thrashing。",
+     "k": 5,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 557.06
+     }
+    },
+    {
+     "say": "為什麼叫 long-term？頻率低，而且由使用者驅動，沒新 process 它就沒事做。",
+     "k": 6,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 586.28
+     }
+    },
+    {
+     "say": "它不能讓所有人都進來，要挑；挑誰進 memory，很影響效能。",
+     "k": 7,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 604.38
+     }
+    },
+    {
+     "say": "挑的原則來自 multiprogramming 的目的：讓 CPU 時間跟 I/O 時間 overlap，兩邊都有事做。",
+     "k": 8,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 618.7
+     }
+    },
+    {
+     "say": "如果全是 CPU-bound，只做加減乘除，CPU 忙翻，但滑鼠、印表機這些 I/O 全閒著。",
+     "k": 9,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 641.92
+     }
+    },
+    {
+     "say": "反過來全是 I/O-bound，每個都在 printf、scanf，大家等很慢的 I/O，CPU 還是 idle。",
+     "k": 10,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 678
+     }
+    },
+    {
+     "say": "所以要挑出平衡的 mix：CPU-bound 跟 I/O-bound 混著放，兩邊都不 idle，使用率才上得去。",
+     "k": 11,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 703.72
+     }
+    },
+    {
+     "say": "使用者的程式不受控，有時一堆 CPU-bound、有時一堆 I/O-bound，scheduler 要挑出好比例。",
+     "k": 12,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 733.26
+     }
+    },
+    {
+     "say": "不過現在 memory 大、又有 virtual memory，程式一執行就直接進 memory，long-term 已經淡化了。",
+     "k": 13,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 747.06
+     }
+    },
+    {
+     "say": "那挑人的工作交給誰？mid-term：先全部載入，之後再決定把誰 kick out 回 disk。",
+     "k": 14,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 794.94
+     }
+    },
+    {
+     "say": "所以重點不在誰負責，而是 ready queue 裡的 CPU／I/O mix 跟 degree，永遠都重要。",
+     "k": 15,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 818.68
+     }
+    }
+   ]
+  },
+  {
+   "title": "Short-term scheduler 要快又要公平",
+   "scene": "proc-8a-stdesign",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "回到 short-term scheduler：大概每 100 ms 甚至更短就跑一次，基本節奏由 timer 控制。",
+     "k": 1,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 872.08
+     }
+    },
+    {
+     "say": "除了 timer，system call、I/O interrupt 也會把它叫起來，實際頻率更高。",
+     "k": 2,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 894.48
+     }
+    },
+    {
+     "say": "串起來看：long-term 在前面把 process 放進 memory，short-term 在後面把它送上 CPU。",
+     "k": 3,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 920.32
+     }
+    },
+    {
+     "say": "short-term 的核心是 scheduling algorithm，後面有一整章專門講。",
+     "k": 4,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 930.32
+     }
+    },
+    {
+     "say": "它要顧的第一件事是 waiting time，大家平均等多久。像中午排隊買飯，越短越好。",
+     "k": 5,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 943.82
+     }
+    },
+    {
+     "say": "同樣一群人、同樣的到達順序，換個演算法，算出來的平均等待時間就不同。",
+     "k": 6,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 974.74
+     }
+    },
+    {
+     "say": "第二件事是 fairness，公平：大家等的時間盡量差不多。",
+     "k": 7,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 990.94
+     }
+    },
+    {
+     "say": "平均低不代表大家都滿意，就像國家平均收入高，不代表均富。最久的人不能等無限久。",
+     "k": 8,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 1005.82
+     }
+    },
+    {
+     "say": "這些直接影響效能，也影響使用者感受到的 response time，按下去多久有反應。",
+     "k": 9,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 1038.44
+     }
+    },
+    {
+     "say": "偏偏這個演算法自己要非常快。queue 很長時光掃一遍就要時間，要是 n² 就慘了。",
+     "read": "偏偏這個演算法自己要非常快。queue 很長時光掃一遍就要時間，要是 n平方 就慘了。",
+     "k": 10,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 1057.12
+     }
+    },
+    {
+     "say": "周老師的例子：每 100 ms 排一次，演算法每次跑 10 ms，夠短了吧？",
+     "k": 11,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 1096.9
+     }
+    },
+    {
+     "say": "但 overhead 就是 10 除以 100，等於 10%，這段 CPU 完全沒在幫使用者做事。",
+     "read": "但 overhead 就是 10 除以 100，等於百分之十，這段 CPU 完全沒在幫使用者做事。",
+     "k": 11,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 1109.34
+     }
+    },
+    {
+     "say": "要是演算法跑 50 ms，CPU 雖然 100% 在忙，卻有一半時間不在做你的事，當然覺得慢。",
+     "read": "要是演算法跑 50 ms，CPU 雖然百分之百在忙，卻有一半時間不在做你的事，當然覺得慢。",
+     "k": 12,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 1121.16
+     }
+    },
+    {
+     "say": "所以 short-term 的演算法不能太複雜：理論再好，跑太久就不 practical。",
+     "k": 13,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 1165.58
+     }
+    }
+   ]
+  },
+  {
+   "title": "Mid-term：swap out 與 swap in",
+   "scene": "proc-8a-swapio",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "再回頭補 mid-term：它做的是 swap out 和 swap in，在 disk 跟 memory 之間搬 process。",
+     "k": 1,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 1184.4
+     }
+    },
+    {
+     "say": "swap out，是把 process 從 memory 搬回 disk。",
+     "k": 2,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 1206.8
+     }
+    },
+    {
+     "say": "為了控制 degree of multiprogramming，因為 memory 裡太多 process 會 thrashing。",
+     "k": 3,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 1213.72
+     }
+    },
+    {
+     "say": "thrashing 時 CPU 看起來很忙，其實都在忙搬資料，沒在跑你的指令，所以還是很慢。",
+     "k": 4,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 1219.7
+     }
+    },
+    {
+     "say": "swap in：有人被搬走，memory 空出位置，就把等在 disk 的 process 搬回來繼續跑。",
+     "k": 5,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 1230.44
+     }
+    },
+    {
+     "say": "最主要的目的是 improve process mix：調整 CPU-bound 跟 I/O-bound 的比例。",
+     "k": 6,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 1253.02
+     }
+    },
+    {
+     "say": "現在的電腦沒有 long-term，程式來了都先放進來，進來之後就靠 mid-term 管。",
+     "k": 7,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 1271.88
+     }
+    },
+    {
+     "say": "第二個目的是 free 出 memory：把只是在等的 process 搬出去，讓給真正在跑的程式。",
+     "k": 8,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 1283.5
+     }
+    },
+    {
+     "say": "mid-term 都跟 virtual memory 綁在一起，講 virtual memory 時會看得更清楚。",
+     "k": 9,
+     "src": {
+      "v": "AztAXONxs7M",
+      "t": 1315.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "三種 scheduler 一次整理",
+   "scene": "proc-8b-recap",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "整理一下，OS 裡有三種 scheduler，各管一件事。",
+     "k": 1,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 15.86
+     }
+    },
+    {
+     "say": "short-term 管 CPU，執行超頻繁，所以一定要 efficient。",
+     "k": 2,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 15.86
+     }
+    },
+    {
+     "say": "long-term 控制 degree of multiprogramming，也就是 memory 裡放幾個 process。",
+     "k": 3,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 15.86
+     }
+    },
+    {
+     "say": "mid-term 負責 swapping。現代系統會跟別的機制綁在一起，但原則就是這三件事。",
+     "k": 4,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 18.12
+     }
+    }
+   ]
+  },
+  {
+   "title": "PID 與 process tree",
+   "scene": "proc-8b-tree",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "前面都是 OS 怎麼管 process。接下來換個角度，從 programmer 這邊看。",
+     "k": 1,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 50.44
+     }
+    },
+    {
+     "say": "寫程式的人要怎麼 create process？process 之間又怎麼溝通？",
+     "k": 2,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 65.18
+     }
+    },
+    {
+     "say": "每個 process 都是獨立的 entity，要認得它，就得給它一個獨一無二的 ID。",
+     "k": 3,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 80.08
+     }
+    },
+    {
+     "say": "這個 ID 叫 process identifier，PID，就像身分證字號。",
+     "k": 4,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 90.06
+     }
+    },
+    {
+     "say": "process 一被 create，就會被 assign 一個 PID。",
+     "k": 5,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 96.36
+     }
+    },
+    {
+     "say": "而且 process 不是開機就全部出現，是被「生」出來的，有 parent 跟 children，就像人一樣。",
+     "k": 6,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 109.06
+     }
+    },
+    {
+     "say": "一開機，整台電腦只有一個 process，課本圖裡叫 init，PID 是 1。",
+     "k": 7,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 120.38
+     }
+    },
+    {
+     "say": "其他 process 都是它或它的後代一個一個 create 出來的。",
+     "k": 8,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 127.8
+     }
+    },
+    {
+     "say": "所以任何系統、任何時刻，都畫得出一棵 tree of processes，沒有例外。",
+     "k": 9,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 136.76
+     }
+    },
+    {
+     "say": "不會有沒有 parent 的 process，那就像 C 裡的 dangling pointer，OS 不允許。",
+     "k": 10,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 148.1
+     }
+    },
+    {
+     "say": "周老師說 parent 不見了，下面的 process 也會被砍掉，課本叫 cascading termination。",
+     "k": 11,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 166.02
+     }
+    },
+    {
+     "say": "不過有些系統才這樣；Linux 實際上會讓 init 或 systemd 收養孤兒 process，不一定全砍。",
+     "k": 11
+    },
+    {
+     "say": "你可以在 Linux server 上打 ps -ael，它會列出所有 process 和 PID。",
+     "read": "你可以在 Linux server 上打 ps 減 ael，它會列出所有 process 和 PID。",
+     "k": 12,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 178.04
+     }
+    },
+    {
+     "say": "每一行還有它的 parent，PPID。把這些串起來，就能自己重建那棵 tree。",
+     "k": 13,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 199.12
+     }
+    }
+   ]
+  },
+  {
+   "title": "Parent 與 child 的三種關係選擇",
+   "scene": "proc-8b-options",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "process creation，說穿了就是 parent 跟 child 的關係。那它們到底差在哪？",
+     "k": 1,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 231.5
+     }
+    },
+    {
+     "say": "它們是兩支不同的程式，但有關聯，分三個面向：資源、執行順序、memory 內容。",
+     "k": 2,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 251.5
+     }
+    },
+    {
+     "say": "每個面向選哪一種，由設計 OS 的人決定，沒有標準答案。",
+     "k": 3,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 265.62
+     }
+    },
+    {
+     "say": "第一個面向是 resource sharing：parent 開了 a.txt，child 能不能直接用那個 file handler？",
+     "k": 4,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 280.9
+     }
+    },
+    {
+     "say": "process 擁有的東西很多：file handler、memory 空間、global variable、動態配置的變數。",
+     "k": 5,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 300.24
+     }
+    },
+    {
+     "say": "第一種選擇 share all：parent 跟 child 看到的完全一樣。",
+     "k": 6,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 318.8
+     }
+    },
+    {
+     "say": "第二種只 share 一部分，例如 global variable 看得到，動態配置的看不到。",
+     "k": 7,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 326.6
+     }
+    },
+    {
+     "say": "第三種完全不 share：你是你、我是我，給你一份 copy，address 完全不同。",
+     "k": 8,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 337.9
+     }
+    },
+    {
+     "say": "第二個面向是執行順序：parent call system call 生出 child，現在兩個人，CPU 只有一顆，誰先？",
+     "k": 9,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 370.78
+     }
+    },
+    {
+     "say": "一種是 concurrent：當成兩支普通程式，讓 scheduler 決定誰先都行。",
+     "k": 10,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 401.82
+     }
+    },
+    {
+     "say": "另一種是 parent 等 children terminate：child 優先，跑完 parent 才能接著跑。",
+     "k": 11,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 422.64
+     }
+    },
+    {
+     "say": "這樣 parent 一生完就得等，會進 waiting queue。注意，它不是在做 I/O，也不是 sleep。",
+     "k": 12,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 437.44
+     }
+    },
+    {
+     "say": "第三個面向最重要：memory content，也就是 address space，code、data、heap、stack。",
+     "k": 13,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 470.38
+     }
+    },
+    {
+     "say": "一種選擇是 duplicate：把 parent 的內容整份複製給 child，執行碼一模一樣。",
+     "k": 14,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 492.76
+     }
+    },
+    {
+     "say": "另一種是 create 時直接 load 新 program 進 child 的 code section，PC 也重設。",
+     "k": 15,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 515.92
+     }
+    },
+    {
+     "say": "選 duplicate 的話，連 PC 都一樣：parent 在第 3 行生 child，child 也從第 3 行開始。",
+     "k": 16,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 535.62
+     }
+    },
+    {
+     "say": "所以兩支看起來、跑起來都一樣，但 memory address 不同，本質上是兩支程式。",
+     "k": 17,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 558.06
+     }
+    }
+   ]
+  },
+  {
+   "title": "fork()：duplicate，回傳 PID 或 0",
+   "scene": "proc-8b-fork",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "這些選擇很抽象，直接看 Linux、UNIX 怎麼做，Windows 大致也類似。",
+     "k": 1,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 588.48
+     }
+    },
+    {
+     "say": "Linux 要 create process，就 call fork 這個 system call，OS 就幫你生一個 child。",
+     "k": 2,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 603.39
+     }
+    },
+    {
+     "say": "對照剛才的選項：fork 選 duplicate，child 的 memory content 跟 parent 一模一樣。",
+     "k": 3,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 618.88
+     }
+    },
+    {
+     "say": "call fork 之前有哪些 global variable、heap 配了什麼、值是多少，child 全都有。",
+     "k": 4,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 639.72
+     }
+    },
+    {
+     "say": "你有 a，我就有 a；你的 a 是 5，我的 a 也是 5，全部照抄一份變成 child 自己的。",
+     "k": 5,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 658.18
+     }
+    },
+    {
+     "say": "連 program counter 都一樣：兩個都停在 fork 這一行。",
+     "k": 6,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 675.14
+     }
+    },
+    {
+     "say": "執行順序選 concurrent：可能 child 先跑，也可能 parent 先。",
+     "k": 7,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 681.28
+     }
+    },
+    {
+     "say": "由 OS 決定，所以 parent 不用進 waiting。大部分使用者也比較喜歡這樣。",
+     "k": 8,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 698.78
+     }
+    },
+    {
+     "say": "那兩個唯一的不同是什麼？fork 也是 function call，它會 return 一個值。",
+     "k": 9,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 705.4
+     }
+    },
+    {
+     "say": "如果你是 child，fork 回傳 0。",
+     "k": 10,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 729.88
+     }
+    },
+    {
+     "say": "如果你是 parent，fork 回傳的是新 child 的 PID，所以 parent 知道 child 是誰。",
+     "k": 11,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 744.16
+     }
+    },
+    {
+     "say": "這跟人很像：父母一定知道小孩是誰，小孩不一定知道父母是誰。",
+     "k": 12,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 760.1
+     }
+    },
+    {
+     "say": "child 想知道 parent，要另外 call system call 問 OS，例如 getppid()。",
+     "read": "child 想知道 parent，要另外 call system call 問 OS，例如 get pp id。",
+     "k": 13,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 779.28
+     }
+    },
+    {
+     "say": "所以程式就靠回傳值判斷：pid 等於 0 就走 child 的路，否則走 parent 的路。",
+     "k": 14,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 792.64
+     }
+    }
+   ]
+  },
+  {
+   "title": "實機示範：加一個 fork 就印兩次",
+   "scene": "proc-neso-fork1",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "光背定義不夠，Neso Academy 直接在 Linux 上跑給你看。",
+     "k": 1,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 212.08
+     }
+    },
+    {
+     "say": "先寫 fex1.c：main 裡只有一行 printf，印 Hello Neso Academy，再用 getpid() 印 PID。",
+     "read": "先寫 fex1.c：main 裡只有一行 printf，印 Hello Neso Academy，再用 get pid 印 PID。",
+     "k": 2,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 255.46
+     }
+    },
+    {
+     "say": "用 gcc fex1.c 編譯，gcc 是 Linux 的 C compiler，預設產生執行檔 a.out。",
+     "k": 3,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 316.96
+     }
+    },
+    {
+     "say": "執行 ./a.out，印出一行，PID 是 5824。",
+     "read": "執行 點斜線 a.out，印出一行，PID 是 5824。",
+     "k": 4,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 371.06
+     }
+    },
+    {
+     "say": "現在在 printf 前面加一行 fork()，存檔。",
+     "read": "現在在 printf 前面加一行 fork，存檔。",
+     "k": 5,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 391.68
+     }
+    },
+    {
+     "say": "重新編譯、執行，這次印了兩次：PID 5837 一次，5838 一次。",
+     "k": 6,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 431.82
+     }
+    },
+    {
+     "say": "因為 fork 生了 child，後面的程式 parent 跑一次、child 也跑一次。",
+     "k": 7,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 453.94
+     }
+    },
+    {
+     "say": "兩個 PID 不同，內容卻一樣，所以印出一樣的字。這就是 fork。",
+     "k": 8,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 487.88
+     }
+    }
+   ]
+  },
+  {
+   "title": "execlp：換成另一支程式",
+   "scene": "proc-8b-exec",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "Linux 程式 fork 完，下一步通常就 call execlp，exec 家族的其中一個。",
+     "k": 1,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 807.62
+     }
+    },
+    {
+     "say": "為什麼？因為 fork 是 duplicate，連執行碼都一樣。",
+     "k": 2,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 823.28
+     }
+    },
+    {
+     "say": "可是生新 process，總不是要它做同一件事吧？同一件事一個人做就好。",
+     "k": 3,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 835.16
+     }
+    },
+    {
+     "say": "要它做不同的事，就要讓它跑另一份 binary code，也就是另一支程式。",
+     "k": 4,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 848.02
+     }
+    },
+    {
+     "say": "execlp 就是做這個：給它一個 binary file，例如 /bin/ls。",
+     "read": "execlp 就是做這個：給它一個 binary file，例如 bin 目錄下的 ls。",
+     "k": 5,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 854.58
+     }
+    },
+    {
+     "say": "它把這個 process 的 code segment 整個 replace 成新程式的程式碼。",
+     "k": 6,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 865.2
+     }
+    },
+    {
+     "say": "然後 heap、stack 全部清空，program counter 設回新程式的起點，等於 reset。",
+     "k": 7,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 869.66
+     }
+    },
+    {
+     "say": "這樣這個 child 就變成在跑 ls，一支完全不一樣的程式。",
+     "k": 8,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 881.16
+     }
+    },
+    {
+     "say": "那問題來了：既然內容整個重來，幹嘛還要先 fork？",
+     "k": 9,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 891.84
+     }
+    },
+    {
+     "say": "因為 create 本身還是要做：跟 OS 註冊 PID、要一塊 memory space，這些 exec 不管。",
+     "k": 10,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 903.14
+     }
+    },
+    {
+     "say": "所以 fork 完，child 預設跟 parent 做一樣的事；call execlp，它才 reset 去做別的事。",
+     "k": 11,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 924.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "fork 與 exec 的定義對照",
+   "scene": "proc-neso-def",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "Neso Academy 的定義很乾脆：fork 建立一個跟自己一模一樣的 replica。",
+     "k": 3,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 95.36
+     }
+    },
+    {
+     "say": "唯一差別是 PID。呼叫 fork 的叫 parent process，複製出來的叫 child process。",
+     "k": 5,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 120.38
+     }
+    },
+    {
+     "say": "exec 則是用參數指定的 program，取代整個 process，包括它所有的 thread。",
+     "k": 6,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 137.72
+     }
+    },
+    {
+     "say": "所以跟 fork 不同，exec 一定要傳參數，而且這個參數是另一支 program。",
+     "k": 7,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 157.08
+     }
+    },
+    {
+     "say": "重點：exec 不是建立新 process，是替換既有的那一個。",
+     "k": 8,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 178.2
+     }
+    },
+    {
+     "say": "所以 PID 不變，只有內容換了。",
+     "k": 9,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 198.88
+     }
+    }
+   ]
+  },
+  {
+   "title": "為什麼 fork 和 execlp 要分開",
+   "scene": "proc-8c-why",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "周老師說下課很多同學來問：為什麼要先 fork 再 execlp，不一次做完？",
+     "k": 1,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 15.48
+     }
+    },
+    {
+     "say": "先回到根本：每個 OS 都可以 define 自己的 system call，這是 Linux 的決定。",
+     "k": 2,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 27.04
+     }
+    },
+    {
+     "say": "Linux 有 fork，負責 process creation。",
+     "k": 3,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 36.34
+     }
+    },
+    {
+     "say": "另外有 execlp，負責 replace 目前 memory 裡的內容，尤其是程式碼，把 program reset。",
+     "k": 4,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 43.34
+     }
+    },
+    {
+     "say": "Linux 刻意把這兩件事切開，用兩個 system call 來做。",
+     "k": 5,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 60.8
+     }
+    },
+    {
+     "say": "所以你要生一個新 process 去跑另一份 binary，就得先 fork、再 execlp。",
+     "k": 6,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 74.86
+     }
+    },
+    {
+     "say": "這很合理：create 一個 process，跟 reset 它的內容，本來就是兩件不同的事。",
+     "k": 7,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 96.38
+     }
+    },
+    {
+     "say": "create 要 allocate memory，還要建 PCB 這些 metadata、全部 initialize，這是 fork 做的。",
+     "k": 8,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 108.52
+     }
+    },
+    {
+     "say": "生出來之後放什麼變數、PC 多少、code 放什麼，是另一個問題，交給 execlp。",
+     "k": 9,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 145.16
+     }
+    },
+    {
+     "say": "之前討論那麼多 creation 的可能性，就是要你別被綁死：這只是 Linux 的選擇。",
+     "k": 10,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 179.52
+     }
+    },
+    {
+     "say": "真正的考量就三個：執行順序、資源歸誰、memory space 的起始狀態是複製還是重來。",
+     "k": 11,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 199.7
+     }
+    },
+    {
+     "say": "所以新版 Linux 也可以 define 新的 system call，支援別種 creation，沒人說不行。",
+     "k": 12,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 236.9
+     }
+    },
+    {
+     "say": "但 kernel 很複雜，system call 越少越好維護；給你一塊塊 service，自己組合，多寫幾行就好。",
+     "k": 13,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 253.88
+     }
+    }
+   ]
+  },
+  {
+   "title": "wait()：parent 等 child",
+   "scene": "proc-8b-wait",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "第三個常用的 system call 是 wait。",
+     "k": 1,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 940.24
+     }
+    },
+    {
+     "say": "fork 是 concurrent，parent 跟 child 誰先跑，你控制不了。",
+     "k": 2,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 948
+     }
+    },
+    {
+     "say": "想控制的話，就用 wait 這個 system call。",
+     "k": 3,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 963.84
+     }
+    },
+    {
+     "say": "call wait 時，可以指定 parent 要等哪一個 child 結束。",
+     "k": 4,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 969.84
+     }
+    },
+    {
+     "say": "child 結束前，parent 等於把自己放進 waiting queue，CPU 就讓給 child。",
+     "k": 5,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 979.76
+     }
+    },
+    {
+     "say": "注意，這是 programmer 自己下的指令，不是 OS 預設；想讓兩邊 synchronization 就 call wait。",
+     "k": 6,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 986.72
+     }
+    },
+    {
+     "say": "parent 還能對 child 做別的事，像 kill 掉它、suspend 它。",
+     "k": 7,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 997.98
+     }
+    },
+    {
+     "say": "但 fork、exec、wait 這三個最基本，一定要會。",
+     "k": 8,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 1008.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "範例：fork、execlp、wait 的 output",
+   "scene": "proc-8c-example",
+   "steps": 20,
+   "lines": [
+    {
+     "say": "好，三個 system call 寫成程式長什麼樣？考試很愛這種題目。",
+     "k": 1,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 296.04
+     }
+    },
+    {
+     "say": "第一行 call fork。它其實是 C library 的 function，再去 call OS 同名的 system call。",
+     "k": 2,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 309.48
+     }
+    },
+    {
+     "say": "一 call 下去，腦中就要想像旁邊多了一支一模一樣的 process，像雙胞胎，各有自己的 PC。",
+     "k": 3,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 330.34
+     }
+    },
+    {
+     "say": "唯一不同是 return 值：parent 拿到的 a 是 child 的 PID，不可能是 0。",
+     "k": 4,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 354.3
+     }
+    },
+    {
+     "say": "下一行是 if else。parent 走到「a 等於 0 嗎？」不成立，跳去 else。",
+     "k": 5,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 372.02
+     }
+    },
+    {
+     "say": "child 剛好相反，它的 a 是 0，所以進 if。",
+     "k": 6,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 386.68
+     }
+    },
+    {
+     "say": "程式碼一樣、同時在跑，但 trace 起來會走到不同地方，因為各有各的 PC。",
+     "k": 7,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 396.12
+     }
+    },
+    {
+     "say": "child 先印一行：我是 child process。",
+     "k": 8,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 406.24
+     }
+    },
+    {
+     "say": "接著 child call execlp，parent 則去 call wait。",
+     "k": 9,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 427.48
+     }
+    },
+    {
+     "say": "execlp 把原本的程式碼整個覆蓋，child 改去跑 /bin/ls，ls 就是列出資料夾內容的指令。",
+     "read": "execlp 把原本的程式碼整個覆蓋，child 改去跑 bin 目錄下的 ls，ls 就是列出資料夾內容的指令。",
+     "k": 10,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 440.12
+     }
+    },
+    {
+     "say": "child 跑完 ls 就結束了。後面的程式碼它根本看不到，因為它已經是另一支程式。",
+     "k": 11,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 474.58
+     }
+    },
+    {
+     "say": "parent 在 wait。child 內容換了，但還是同一個 process、同一個 PID，parent 等的還是它。",
+     "k": 12,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 491.96
+     }
+    },
+    {
+     "say": "parent 先進 waiting queue；OS 知道 child 結束了，就 signal 它回 ready queue。",
+     "k": 13,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 517.98
+     }
+    },
+    {
+     "say": "重點：最後一行 process end 只有 parent 會印，child 已經變成 ls，看不到它。",
+     "k": 14,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 550.02
+     }
+    },
+    {
+     "say": "看 output：前兩行是 child 跟 parent 各印的那行，順序不一定，因為是 concurrent。",
+     "k": 15,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 573.08
+     }
+    },
+    {
+     "say": "ls 的輸出一定在 process end 之前，因為 parent 有 wait，要等 child 全跑完才往下。",
+     "k": 16,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 596.08
+     }
+    },
+    {
+     "say": "而且 process end 只會出現一行，不可能兩行。",
+     "k": 17,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 661.02
+     }
+    },
+    {
+     "say": "考試給你一段這樣的程式，只要懂 fork、execlp、wait 的意義，就推得出 output。",
+     "k": 18,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 669.68
+     }
+    },
+    {
+     "say": "補充：Linux 的 wait 要你給一個 status 的 pointer，記錄 child 結束時成功還是失敗。",
+     "k": 19,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 710.92
+     }
+    },
+    {
+     "say": "wait 本身回傳的，是它等到的那個 child 的 PID。",
+     "k": 19,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 719.84
+     }
+    },
+    {
+     "say": "這個版本沒指定等誰，生很多 child 時，任何一個結束它就 break。也有能指定的版本。",
+     "k": 20,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 750.02
+     }
+    }
+   ]
+  },
+  {
+   "title": "實機示範：exec 換掉內容，PID 不變",
+   "scene": "proc-neso-exec",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "Neso 也實際跑了一次 exec，用兩個檔案：ex1.c 和 ex2.c。",
+     "k": 1,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 722.82
+     }
+    },
+    {
+     "say": "ex1.c 先用 getpid() 印出自己的 PID。",
+     "read": "ex1.c 先用 get pid 印出自己的 PID。",
+     "k": 2,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 754.75
+     }
+    },
+    {
+     "say": "再宣告一個字元陣列，放 Hello、Neso、Academy，最後一個是 NULL。",
+     "k": 3,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 781.43
+     }
+    },
+    {
+     "say": "然後呼叫 execv，exec 家族的另一個版本，把 ex2 的執行檔當參數傳進去。",
+     "k": 4,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 789.09
+     }
+    },
+    {
+     "say": "execv 後面還有一行 printf，印 Back to ex1.c。",
+     "k": 5,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 832.43
+     }
+    },
+    {
+     "say": "ex2.c 只有兩個 printf：先印 We are in ex2.c，再印自己的 PID。",
+     "k": 6,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 840.77
+     }
+    },
+    {
+     "say": "編譯要用 -o 指定檔名，像 gcc ex1.c -o ex1，不然兩個 a.out 會互相蓋掉。",
+     "read": "編譯要用 減o 指定檔名，像 gcc ex1.c 減o ex1，不然兩個 a.out 會互相蓋掉。",
+     "k": 7,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 877.89
+     }
+    },
+    {
+     "say": "現在只執行 ./ex1。",
+     "read": "現在只執行 點斜線 ex1。",
+     "k": 8,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 1006.15
+     }
+    },
+    {
+     "say": "先印出 ex1.c 的 PID：5962。",
+     "k": 9,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 1025.09
+     }
+    },
+    {
+     "say": "接著 execv 被呼叫，印出 We are in ex2.c，這是 ex2 的內容。",
+     "k": 10,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 1045.77
+     }
+    },
+    {
+     "say": "那 ex2 印出的 PID 是多少？還是 5962。",
+     "k": 11,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 1075.81
+     }
+    },
+    {
+     "say": "所以不是「跳」到另一支程式，而是同一個 process 的內容被 ex2 取代，PID 當然不變。",
+     "k": 12,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 1078.69
+     }
+    },
+    {
+     "say": "那 Back to ex1.c 呢？永遠印不出來，原本的程式碼已經被換掉，回不去了。",
+     "k": 13,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 1138.87
+     }
+    },
+    {
+     "say": "一句話：fork 生出 PID 不同、內容相同的 child；exec 換掉內容、PID 不變。",
+     "k": 14,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 1180.87
+     }
+    }
+   ]
+  },
+  {
+   "title": "Duplicate 的實作：copy-on-write",
+   "scene": "proc-8b-cow",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "回到 fork。duplicate 在 memory 裡到底怎麼做？順便把 fork 和 exec 串起來看。",
+     "k": 1,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 1033.06
+     }
+    },
+    {
+     "say": "畫面上 A 是一支程式的空間，旁邊是別的 user 的程式，右邊是 OS，中間是空的。",
+     "k": 2,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 1053.04
+     }
+    },
+    {
+     "say": "現在 A call fork。",
+     "k": 3,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 1073.1
+     }
+    },
+    {
+     "say": "就生出一個 child，佔一塊空間。同樣顏色代表內容一樣，叫它 A'。",
+     "read": "就生出一個 child，佔一塊空間。同樣顏色代表內容一樣，叫它 A prime。",
+     "k": 4,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 1081.7
+     }
+    },
+    {
+     "say": "你可能注意到 A' 比 A 小一點，因為實作上有兩種做法。",
+     "read": "你可能注意到 A prime 比 A 小一點，因為實作上有兩種做法。",
+     "k": 5,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 1099.22
+     }
+    },
+    {
+     "say": "第一種很 naive，叫 exact copy：A 佔 100 MB，就再要 100 MB，全部 copy 一份。",
+     "k": 6,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 1109.4
+     }
+    },
+    {
+     "say": "很浪費吧？兩份內容一模一樣，何必存兩份。",
+     "k": 7,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 1129.14
+     }
+    },
+    {
+     "say": "實際系統常用的是 copy-on-write，寫入時才複製。",
+     "k": 8,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 1143.56
+     }
+    },
+    {
+     "say": "copy 時只複製一定會改的部分，例如 program counter、執行時必要的基本變數。",
+     "k": 9,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 1155.48
+     }
+    },
+    {
+     "say": "其他部分不複製，用像 pointer 的東西指回 parent。讀 global variable，沒改過就讀 parent 的。",
+     "k": 10,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 1175.16
+     }
+    },
+    {
+     "say": "一開始大家內容相同，所以兩個 process 共用同一份。",
+     "k": 11,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 1196.66
+     }
+    },
+    {
+     "say": "只要 parent 或 child 有人改了共用的值，OS 在 run time 發現，才真的 copy 那塊，兩邊分家。",
+     "k": 12,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 1206.76
+     }
+    },
+    {
+     "say": "所以 A' 會慢慢長大，最後跟 A 一樣大，但值已經不同了。",
+     "read": "所以 A prime 會慢慢長大，最後跟 A 一樣大，但值已經不同了。",
+     "k": 13,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 1228.5
+     }
+    },
+    {
+     "say": "對使用者來說兩個內容就是一模一樣，只是 OS 偷偷省下不必要的 memory。",
+     "k": 14,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 1263.38
+     }
+    },
+    {
+     "say": "要是 child 呼叫 execlp，code segment 換成別的程式，heap 那些也 reset。",
+     "k": 15,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 1284.6
+     }
+    },
+    {
+     "say": "這時那塊空間就跟 A 完全脫鉤。有 copy-on-write，fork 完馬上 exec 也不會白白 copy 一大份。",
+     "k": 16,
+     "src": {
+      "v": "ETPHC9DffdU",
+      "t": 1304.12
+     }
+    }
+   ]
+  },
+  {
+   "title": "for 迴圈裡 fork：畫 process tree",
+   "scene": "proc-8c-forkloop",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "還記得 process 是一棵 tree 嗎？因為 child 也能再生自己的 child。",
+     "k": 1,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 798.06
+     }
+    },
+    {
+     "say": "寫個簡單程式：for 迴圈跑三次，裡面一個 fork。會發生什麼？",
+     "k": 2,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 807.5
+     }
+    },
+    {
+     "say": "fork 完，不管 parent 還是 child，都會進下一圈再 fork，第二代又生第三代。",
+     "k": 3,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 816.68
+     }
+    },
+    {
+     "say": "誰是誰的 parent、各跑到哪？最簡單的方法就是畫 tree，不會迷路。",
+     "k": 4,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 831.64
+     }
+    },
+    {
+     "say": "同一個 process 在圖上重複畫也沒關係，先畫完再精簡，重點是關係要對。",
+     "k": 4,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 878.46
+     }
+    },
+    {
+     "say": "P0 是原本的程式，i 等於 0 時 call fork，生出 P1。",
+     "read": "P零 是原本的程式，i 等於 0 時 call fork，生出 P一。",
+     "k": 5,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 858.57
+     }
+    },
+    {
+     "say": "別忘了 fork 不會 reset PC，所以兩個下一圈的 i 都是 1：P0 生 P2，P1 生 P3。",
+     "read": "別忘了 fork 不會 reset PC，所以兩個下一圈的 i 都是 1：P零 生 P二，P一 生 P三。",
+     "k": 6,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 892.98
+     }
+    },
+    {
+     "say": "現在 4 個 process，最後一圈 i 等於 2，每個再 fork 一次，總共 8 個，2 的 3 次方。",
+     "k": 7,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 916.52
+     }
+    },
+    {
+     "say": "考題可能混 if else 跟 execlp，最好的辦法還是畫 tree。",
+     "k": 8,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 937.2
+     }
+    },
+    {
+     "say": "例如 pid 等於 0 就 execlp：那一支就斷了，被 replace 之後不會再執行後面的 fork。",
+     "k": 9,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 951.04
+     }
+    },
+    {
+     "say": "記住，execlp 只換內容，不會生新 process。",
+     "k": 9,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 964.9
+     }
+    },
+    {
+     "say": "最好的練習：自己出題、在 server 上跑一次，跟你畫的 tree 對照，不 match 就是哪裡漏了。",
+     "k": 10,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 986.48
+     }
+    }
+   ]
+  },
+  {
+   "title": "三個 fork()：印 8 次",
+   "scene": "proc-neso-fork3",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "Neso 也做了同一件事：連寫三個 fork()，後面接 printf。",
+     "read": "Neso 也做了同一件事：連寫三個 fork，後面接 printf。",
+     "k": 1,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 505.62
+     }
+    },
+    {
+     "say": "執行之前先想：print 會跑幾次？",
+     "k": 2,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 534.86
+     }
+    },
+    {
+     "say": "結果印了 8 次，而且 8 個 PID 都不一樣。",
+     "k": 3,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 557.7
+     }
+    },
+    {
+     "say": "一開始只有 P1，它自己只印一次。",
+     "read": "一開始只有 P一，它自己只印一次。",
+     "k": 4,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 589.4
+     }
+    },
+    {
+     "say": "第一個 fork，P1 生出 P2，兩個 process。",
+     "read": "第一個 fork，P一 生出 P二，兩個 process。",
+     "k": 5,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 611.08
+     }
+    },
+    {
+     "say": "第二個 fork，兩個各生一個：P1 生 P3、P2 生 P4，變 4 個。",
+     "read": "第二個 fork，兩個各生一個：P一 生 P三、P二 生 P四，變 4 個。",
+     "k": 6,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 626.84
+     }
+    },
+    {
+     "say": "第三個 fork，4 個再各生一個，P5 到 P8。",
+     "read": "第三個 fork，4 個再各生一個，P五 到 P八。",
+     "k": 7,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 652.8
+     }
+    },
+    {
+     "say": "所以 n 個 fork 就是 2 的 n 次方個 process，這裡 2³ 等於 8，印 8 次。",
+     "read": "所以 n 個 fork 就是 2 的 n 次方個 process，這裡 2 的 3 次方等於 8，印 8 次。",
+     "k": 8,
+     "src": {
+      "v": "IFEFVXvjiHY",
+      "t": 691.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Process termination",
+   "scene": "proc-8c-exit",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "生講完，來講結束，termination。最基本就是呼叫 exit 這個 system call。",
+     "k": 1,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 1042
+     }
+    },
+    {
+     "say": "main return 的時候，其實也會去呼叫 exit。",
+     "k": 2,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 1062.14
+     }
+    },
+    {
+     "say": "exit 會把 file handler、I/O buffer、allocate 的 memory，全部 deallocate 還給 OS。",
+     "k": 3,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 1071.94
+     }
+    },
+    {
+     "say": "parent 也可以強迫 kill 一個 child，用 abort，給它 child 的 PID。",
+     "k": 4,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 1101.14
+     }
+    },
+    {
+     "say": "只能從上往下：kill 自己的 children，不能 kill parent。",
+     "k": 5,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 1123.84
+     }
+    },
+    {
+     "say": "什麼時候用？例如 web server 為不同 client 生了很多 child process。",
+     "k": 6,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 1146.04
+     }
+    },
+    {
+     "say": "某個 client 吃太多資源，可能是 malicious user，或已經斷線，parent 就 abort 那個 child。",
+     "k": 6,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 1168.7
+     }
+    },
+    {
+     "say": "OS 是 tree 的概念：kill 一個 parent，它下面的 children 會一層一層被砍掉。",
+     "k": 7,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 1205.06
+     }
+    },
+    {
+     "say": "你一定用過 Ctrl-C。為什麼有用？console 本身是上層 process，你跑的程式是它的 child。",
+     "k": 8,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 1245.1
+     }
+    },
+    {
+     "say": "周老師說成 console 對 child 下 abort；精確講，是送一個 SIGINT signal 給前景的程式。",
+     "k": 8,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 1286.86
+     }
+    },
+    {
+     "say": "要砍不是你生的程式，例如別人卡住的 web server，就用 kill 指令請 OS 砍，但要有 permission。",
+     "k": 9,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 1311.12
+     }
+    },
+    {
+     "say": "所以 process 之間其實有很嚴謹、一層一層的上下關係，你才能這樣 kill process。",
+     "k": 10,
+     "src": {
+      "v": "RrjOXZ-XzkM",
+      "t": 1358.48
+     }
+    }
+   ]
+  },
+  {
+   "title": "IPC：process 為什麼要溝通",
+   "scene": "proc-8d-ipc",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "這一章最後一塊：interprocess communication，IPC，process 之間的溝通。",
+     "k": 1,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 16.99
+     }
+    },
+    {
+     "say": "會生、會砍之後，真正用起來，process 常常要互相溝通，才兜得成大系統。",
+     "k": 2,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 28.99
+     }
+    },
+    {
+     "say": "IPC 包括 process 甚至 thread 之間的溝通，OS 有時不嚴格區分兩者，統稱 IPC。",
+     "k": 3,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 54.89
+     }
+    },
+    {
+     "say": "不溝通的叫 independent process；要溝通的叫 cooperating process，網路程式全都是。",
+     "k": 4,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 92.17
+     }
+    },
+    {
+     "say": "溝通的目的，第一是 information sharing，而且不限一台電腦，socket 也是 IPC。",
+     "k": 5,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 119.03
+     }
+    },
+    {
+     "say": "第二是平行計算加速：很多 process 一起解同一個問題，難免要溝通。",
+     "k": 6,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 135.75
+     }
+    },
+    {
+     "say": "第三是 convenience：web server 讓每個 user 對到一個 process 或 thread，很好管理。",
+     "k": 7,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 158.65
+     }
+    },
+    {
+     "say": "第四是 modularity，標準例子是 microkernel：component 放 user space，靠 IPC 溝通。",
+     "k": 8,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 180.15
+     }
+    }
+   ]
+  },
+  {
+   "title": "Shared memory 與 Message passing",
+   "scene": "proc-8d-models",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "OS 提供的溝通方式，用 memory 來分只有兩種：shared memory 跟 message passing。",
+     "k": 1,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 207.97
+     }
+    },
+    {
+     "say": "shared memory：有一塊共用空間，兩邊直接用 pointer 讀寫，由 programmer 自己管。",
+     "k": 2,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 236.69
+     }
+    },
+    {
+     "say": "message passing：把資料 copy 給對方，像傳一則訊息；跨電腦就更像 email。",
+     "k": 3,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 252.13
+     }
+    },
+    {
+     "say": "所有網路程式、socket programming，其實都是 message passing。",
+     "k": 4,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 276.29
+     }
+    },
+    {
+     "say": "shared memory 的好處是快，直接用 address 存取；最討厭的是 synchronization。",
+     "k": 5,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 296.69
+     }
+    },
+    {
+     "say": "你自己也分得出來：用 pointer 就是 shared memory；call send、receive 就是 message passing。",
+     "k": 6,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 321.13
+     }
+    },
+    {
+     "say": "message passing 要透過 system call，又要 copy，所以通常比較慢。",
+     "k": 7,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 341.53
+     }
+    },
+    {
+     "say": "但資料很小、又不想碰 locking 那些同步問題時，它有時反而更快。",
+     "k": 8,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 356.77
+     }
+    },
+    {
+     "say": "要跨電腦就沒得選，只能 message passing；同一台的 multi-thread 程式也可以考慮。",
+     "k": 9,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 381.75
+     }
+    },
+    {
+     "say": "原則是：人多、溝通複雜，用 message passing；人少、pattern 簡單，shared memory 可能比較快。",
+     "k": 10,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 400.69
+     }
+    },
+    {
+     "say": "OS 兩種都提供；message passing 通常包成一層層 API，你不會直接 call system call。",
+     "k": 11,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 424.87
+     }
+    }
+   ]
+  },
+  {
+   "title": "Shared memory 的建立與同步問題",
+   "scene": "proc-8d-shm",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "先看 shared memory。它沒什麼 API，就是 direct memory access。",
+     "k": 1,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 788.22
+     }
+    },
+    {
+     "say": "唯一的條件：要有一塊 shared memory region，process 跟 OS 都知道可以共用。",
+     "k": 2,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 809.66
+     }
+    },
+    {
+     "say": "但這 by default 不存在，因為 OS 有 protection，不同 process 不會憑空共用空間。",
+     "k": 3,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 822.58
+     }
+    },
+    {
+     "say": "所以要 call system call 請 OS 建這塊 region，Linux 的例子是 shmget。",
+     "read": "所以要 call system call 請 OS 建這塊 region，Linux 的例子是 shm get。",
+     "k": 4,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 844.36
+     }
+    },
+    {
+     "say": "要用的 process 再 call attach，跟 OS 說我要用這塊。一切都在 OS 管理下。",
+     "k": 5,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 862.68
+     }
+    },
+    {
+     "say": "建好之後 OS 就不管了：放什麼 data structure、怎麼用 pointer，兩邊自己說好。",
+     "k": 6,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 878.92
+     }
+    },
+    {
+     "say": "非常重要的是 synchronization：兩個以上的 process 同時 write，結果就說不準了。",
+     "k": 7,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 921.7
+     }
+    },
+    {
+     "say": "例如共用一個 counter：producer 放東西就 counter++，consumer 拿東西就 counter--。",
+     "read": "例如共用一個 counter：producer 放東西就 counter 加加，consumer 拿東西就 counter 減減。",
+     "k": 8,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 938.76
+     }
+    },
+    {
+     "say": "看起來沒事，5 加 1 變 6，減 1 回 5。可是兩邊同時做，結果可能變 4 或 6。",
+     "k": 9,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 960.08
+     }
+    },
+    {
+     "say": "因為 counter++ 其實是 load、add、store 好幾行 assembly，交錯執行就出錯了。",
+     "read": "因為 counter 加加 其實是 load、add、store 好幾行 assembly，交錯執行就出錯了。",
+     "k": 10,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 990.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "Producer–consumer：bounded buffer",
+   "scene": "proc-8d-buffer",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "最標準的例子是 producer-consumer problem：一支產生資料，一支把它 consume 掉。",
+     "k": 1,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 1012.7
+     }
+    },
+    {
+     "say": "兩支程式共用一塊 buffer，這裡假設 BUFFER_SIZE 是 5。",
+     "read": "兩支程式共用一塊 buffer，這裡假設 buffer size 是 5。",
+     "k": 2,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 1030.86
+     }
+    },
+    {
+     "say": "producer 不斷把東西放進去。",
+     "k": 3,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 1050.74
+     }
+    },
+    {
+     "say": "consumer 則一個一個拿出來。",
+     "k": 4,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 1062.4
+     }
+    },
+    {
+     "say": "難就難在 buffer 大小有限，再大也是有限。",
+     "k": 5,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 1072.86
+     }
+    },
+    {
+     "say": "先定兩個 pointer：in 給 producer，指下一個要寫的位置；out 給 consumer，指下一個要讀的。",
+     "k": 6,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 1100.24
+     }
+    },
+    {
+     "say": "要判斷兩件事。第一，empty：空的時候 consumer 不能再拿，得等 producer。",
+     "k": 7,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 1122.92
+     }
+    },
+    {
+     "say": "第二，full：producer 太快、buffer 滿了還寫，就會 override 沒讀的資料，資料就 lost。",
+     "k": 8,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 1143.54
+     }
+    },
+    {
+     "say": "empty 怎麼判斷？東西拿光時，out 追上 in，兩個在同一格，所以 in 等於 out 就是空。",
+     "k": 9,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 1186.14
+     }
+    },
+    {
+     "say": "in 寫到底會繞回前面，用取餘數做成 circular buffer。in 加 1 再 mod size 等於 out，就是滿。",
+     "k": 10,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 1205.98
+     }
+    },
+    {
+     "say": "為什麼要加 1？如果每格都寫滿，in 又會等於 out，跟空的時候一樣，分不出空還是滿。",
+     "k": 11,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 1230.26
+     }
+    },
+    {
+     "say": "所以只好永遠空一格，犧牲一格空間，這是這個解法的缺點；學了 locking 就能用滿。",
+     "k": 12,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 1283.4
+     }
+    },
+    {
+     "say": "所以 BUFFER_SIZE 是 5 的話，最多只能同時放 4 個，選擇題很愛考。",
+     "read": "所以 buffer size 是 5 的話，最多只能同時放 4 個，選擇題很愛考。",
+     "k": 12
+    },
+    {
+     "say": "看 producer 的程式：先用 while 判斷滿不滿，而且 while 後面直接接分號。",
+     "k": 13,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 1334.68
+     }
+    },
+    {
+     "say": "滿的話就卡在那行一直空轉，這叫 busy waiting；不滿才寫入、移動 in。",
+     "k": 13,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 1343.94
+     }
+    },
+    {
+     "say": "consumer 也一樣：while 判斷 in 等於 out，後面接分號，空的就卡住，有資料才讀、移動 out。",
+     "k": 14,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 1362.22
+     }
+    },
+    {
+     "say": "周老師說這個分號每年都有人問：它就是讓程式原地空轉等待。",
+     "k": 14,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 1373.68
+     }
+    },
+    {
+     "say": "shared region 裡要放三樣共用的東西：buffer 本身，還有 in 和 out。",
+     "k": 15,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 1393.5
+     }
+    },
+    {
+     "say": "這就是標準的 shared memory programming。這裡沒用 locking，同步那章會再回來看。",
+     "k": 16,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 1416.98
+     }
+    }
+   ]
+  },
+  {
+   "title": "Circular buffer 再補幾點",
+   "scene": "proc-9a-recap",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "下一堂周老師又補了幾點。buffer 有限，要一直 reuse，所以它是 circular buffer。",
+     "k": 4,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 50.28
+     }
+    },
+    {
+     "say": "所以程式裡 in、out 加 1 之後都要 mod，把它折回前面。",
+     "k": 5,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 78.88
+     }
+    },
+    {
+     "say": "那兩個 while loop 就是在做 synchronization；哪邊寫錯，例如忘了加 1，就會讀到舊的錯值。",
+     "k": 11,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 235.72
+     }
+    },
+    {
+     "say": "buffer 放什麼型態，integer 還是 floating point，也由 programmer 自己決定。",
+     "k": 12,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 274.66
+     }
+    },
+    {
+     "say": "別小看它，系統裡到處都是：先 compile 再 link，compiler 是 producer，linker 是 consumer。",
+     "k": 14,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 320.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Message passing：send 和 receive 自帶同步",
+   "scene": "proc-9a-mp",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "接著看 message passing，它主要靠 memory copy 溝通。",
+     "k": 1,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 396.65
+     }
+    },
+    {
+     "say": "但它的目的跟 shared memory 不太一樣，不只是「溝通」而已。",
+     "k": 2,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 406.87
+     }
+    },
+    {
+     "say": "最基本的 function 就是 send 和 receive，參數是 message 的 buffer。",
+     "k": 3,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 424.17
+     }
+    },
+    {
+     "say": "一般 function call 是 blocking 的：call 下去，動作沒完成就不會 return。",
+     "k": 4,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 436.51
+     }
+    },
+    {
+     "say": "message passing 的特色是 sender 跟 receiver 兩邊都要 call，對上了才完成。",
+     "k": 5,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 448.75
+     }
+    },
+    {
+     "say": "兩邊都 blocking 的話，就像打電話：對方接起來，你們才開始講。",
+     "k": 6,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 461.25
+     }
+    },
+    {
+     "say": "所以它還多了同步：對方接起電話，你就知道他現在在跟你講話，之前他可能在睡覺。",
+     "k": 7,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 476.45
+     }
+    },
+    {
+     "say": "這種同步，shared memory 本身做不到，剛剛才要另外寫 while 判斷。",
+     "k": 8,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 504.43
+     }
+    },
+    {
+     "say": "所以 message passing 雖然慢，要 copy，但好寫：同步內建，你的 memory 也不會被別人蓋掉。",
+     "k": 9,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 518.21
+     }
+    },
+    {
+     "say": "規模大、溝通的人多時，大家偏好 message passing，比較好 debug、也比較好想清楚。",
+     "k": 10,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 550.95
+     }
+    }
+   ]
+  },
+  {
+   "title": "Link：physical 與 logical",
+   "scene": "proc-9a-link",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "怎麼實現？OS 的 message system 提供 send、receive，幫你做 memory copy，不用 shared variable。",
+     "k": 1,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 574.67
+     }
+    },
+    {
+     "say": "溝通前要先建立一條 link。像寄 email 要透過 internet，再往下其實是網路線。",
+     "k": 2,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 611.93
+     }
+    },
+    {
+     "say": "再透過 send、receive 在這條 link 上交換資料。",
+     "k": 3,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 637.77
+     }
+    },
+    {
+     "say": "這條 link 要拆成兩層看：physical 跟 logical。",
+     "k": 4,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 647.29
+     }
+    },
+    {
+     "say": "physical 是實際的通道：network、同一台電腦的 memory bus，甚至可以用 shared memory。",
+     "k": 5,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 659.31
+     }
+    },
+    {
+     "say": "logical 是 programmer 在意的：send、receive 這些 function 的行為怎麼定義。",
+     "k": 6,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 715.65
+     }
+    },
+    {
+     "say": "第一個特性：direct 還是 indirect，等一下細講。",
+     "k": 7,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 731.73
+     }
+    },
+    {
+     "say": "第二，有沒有方向：建好後雙方都能傳，還是只能我送給你、你不能送給我。",
+     "k": 8,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 750.09
+     }
+    },
+    {
+     "say": "第三，symmetric 或 asymmetric，兩邊角色對不對等，這個比較 minor。",
+     "k": 9,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 776.85
+     }
+    },
+    {
+     "say": "最重要的是 blocking 還是 non-blocking：要等做完才 return，還是 call 下去就 return。",
+     "k": 10,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 794.77
+     }
+    },
+    {
+     "say": "還有實作細節：是真的 copy，還是先送 reference，之後再慢慢 copy。",
+     "k": 11,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 830.87
+     }
+    },
+    {
+     "say": "以及 message 大小固定還是可變。越 low level 越重效能、限制越嚴，像 IP 封包有長度上限。",
+     "k": 12,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 846.55
+     }
+    },
+    {
+     "say": "高階的 API 就比較彈性，像寫 HTTP 時，body 可以是任意大小。",
+     "k": 12,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 903.01
+     }
+    },
+    {
+     "say": "總之，programmer 看得到的那些 behavior 就叫 logical，所以 send、receive 有很多種。",
+     "k": 13,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 919.01
+     }
+    }
+   ]
+  },
+  {
+   "title": "Direct communication：指名道姓",
+   "scene": "proc-9a-direct",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "先看 direct 跟 indirect 差在哪。",
+     "k": 1,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 932.81
+     }
+    },
+    {
+     "say": "direct 要指名道姓，就像打電話，你撥誰的號碼，接的就是那個人。",
+     "k": 2,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 945.03
+     }
+    },
+    {
+     "say": "send 要寫對方是誰，例如 send(Q, message)；receive 也要指定 sender，receive(P, message)。",
+     "read": "send 要寫對方是誰，例如 send Q 逗號 message；receive 也要指定 sender，receive P 逗號 message。",
+     "k": 3,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 957.39
+     }
+    },
+    {
+     "say": "既然指定好誰跟誰，系統就知道要建 link，所以通常一 call send 就自動建好。",
+     "k": 4,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 992.35
+     }
+    },
+    {
+     "say": "最重要的是它一定是 one-to-one，所以不能 broadcast，也不適合對整個 group 傳。",
+     "k": 5,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1042.75
+     }
+    },
+    {
+     "say": "sender、receiver 很清楚，所以 link 通常是單向的，不過沒有硬性規定。",
+     "k": 6,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1072.05
+     }
+    },
+    {
+     "say": "用它寫 producer-consumer 超簡單：一邊 send 下一個，一邊 receive 下一個，不用 while 判斷。",
+     "k": 7,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1097.27
+     }
+    },
+    {
+     "say": "兩邊都 blocking 時，send 要等對方 receive 才 return，自然就同步了，送一個收一個，強同步。",
+     "k": 8,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1127.97
+     }
+    },
+    {
+     "say": "但太 synchronous 也有缺點：很多人要寫時大家都在等，中間的 buffer 可能爆掉。",
+     "k": 9,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1161.75
+     }
+    },
+    {
+     "say": "direct 最大的缺點是對象寫死：A 跟 B 的 channel 不能改成 A 跟 C，換人就得重建連線。",
+     "k": 10,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1202.87
+     }
+    },
+    {
+     "say": "所以它沒有 modularity，是 ad hoc 的寫法；但不需要彈性時，它最簡單也最快。",
+     "k": 10,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1237.79
+     }
+    }
+   ]
+  },
+  {
+   "title": "Indirect communication：mailbox",
+   "scene": "proc-9a-indirect",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "indirect 就想成 email：direct 是打電話，indirect 是寄信，真的有一個 mailbox。",
+     "k": 1,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1265.65
+     }
+    },
+    {
+     "say": "信封上雖然寫了人，但信不是直接交到對方手上，而是先進一個系統，由它轉交。",
+     "k": 2,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1292.73
+     }
+    },
+    {
+     "say": "所以 indirect 不指定 receiver，只把 message 放進 mailbox，例如 send(A, message)。",
+     "read": "所以 indirect 不指定 receiver，只把 message 放進 mailbox，例如 send A 逗號 message。",
+     "k": 3,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1322.71
+     }
+    },
+    {
+     "say": "Q 自己用 receive(A, message) 去拿；Q 不認得 P，P 也不在乎是誰收。",
+     "read": "Q 自己用 receive A 逗號 message 去拿；Q 不認得 P，P 也不在乎是誰收。",
+     "k": 4,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1341.91
+     }
+    },
+    {
+     "say": "mailbox 也可以叫 port，透過它溝通，不用知道對方是誰。",
+     "k": 5,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1371.69
+     }
+    },
+    {
+     "say": "這時 link 就是 mailbox，一定要先被建立，這得由 programmer 自己做。",
+     "k": 6,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1389.09
+     }
+    },
+    {
+     "say": "最大特色是 many-to-many：很多人能去同一個 mailbox 拿，甚至像貼海報，大家都能讀。",
+     "k": 7,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1403.47
+     }
+    },
+    {
+     "say": "mailbox 是第三方的程式，不是 sender 也不是 receiver；OS 提供的話，就用 kernel memory 保管。",
+     "k": 8,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1446.41
+     }
+    },
+    {
+     "say": "那問題來了：很多人同時 receive 同一個 message，P2 拿還是 P3 拿？不該兩個都拿到。",
+     "read": "那問題來了：很多人同時 receive 同一個 message，P二 拿還是 P三 拿？不該兩個都拿到。",
+     "k": 9,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1503.07
+     }
+    },
+    {
+     "say": "解法一：一條 link 只准兩個 process。周老師說這很爛，名義上 indirect，實際就是 direct。",
+     "k": 10,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1559.77
+     }
+    },
+    {
+     "say": "解法二：用 locking，同一時間只准一個人 call receive。",
+     "k": 11,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1602.29
+     }
+    },
+    {
+     "say": "解法三：大家都能 call，mailbox 偵測到搶的時候自己決定給誰，再 notify 被選中的人來拿。",
+     "k": 12,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1649.61
+     }
+    },
+    {
+     "say": "重點是分清 direct 跟 indirect，也知道什麼情況該用哪一種。",
+     "k": 13,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1720.83
+     }
+    }
+   ]
+  },
+  {
+   "title": "Blocking 與 Non-blocking",
+   "scene": "proc-9a-block",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "第二個必懂的觀念：blocking 跟 non-blocking。",
+     "k": 1,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1741.61
+     }
+    },
+    {
+     "say": "send、receive 都可以是 blocking 或 non-blocking。blocking 就是 synchronous，同步。",
+     "k": 2,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1752.29
+     }
+    },
+    {
+     "say": "non-blocking 不知道對方收到沒，所以叫 asynchronous。email 就是：寄出去我就做我的事。",
+     "k": 3,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1763.95
+     }
+    },
+    {
+     "say": "剩下只能希望對方收到，message 也可能被 drop。所以它比較複雜，但不用等，通常更有效率。",
+     "k": 4,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1786.35
+     }
+    },
+    {
+     "say": "send 跟 receive 各有兩種版本，可以混搭；不過同類配對，邏輯上比較 make sense。",
+     "k": 5,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1806.03
+     }
+    },
+    {
+     "say": "blocking send：要等 receiver 真的收到、copy 進它的 buffer，send 才 return。",
+     "k": 6,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1855.55
+     }
+    },
+    {
+     "say": "non-blocking send：送出去就 return，像在 Gmail 按下 send。",
+     "k": 7,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1872.67
+     }
+    },
+    {
+     "say": "blocking receive：一定要拿到 message 才 return，因為對方什麼時候送沒辦法預測。",
+     "k": 8,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1880.61
+     }
+    },
+    {
+     "say": "non-blocking receive 比較特別：立刻 return，buffer 可能根本沒被填。",
+     "k": 9,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1896.47
+     }
+    },
+    {
+     "say": "所以它通常回傳一個 token，讓你事後再檢查到底收到了沒。",
+     "k": 9,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1927.45
+     }
+    },
+    {
+     "say": "實作上 blocking 最簡單：兩邊都 call 了，直接從 sender copy 到 receiver。",
+     "k": 10,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1967.99
+     }
+    },
+    {
+     "say": "non-blocking 呢？receiver 還沒來，sender 已經送好幾個都 return 了，中間的 service 得有 buffer。",
+     "k": 11,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 1998.09
+     }
+    },
+    {
+     "say": "其實 blocking 也可以看成有 buffer，只是 size 是 1，兩種實作很接近。",
+     "k": 12,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 2063.07
+     }
+    },
+    {
+     "say": "buffer 是 0 或 1，就是 blocking；bounded 滿了，原本不等的 send 就被擋住，或回 error。",
+     "k": 13,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 2087.53
+     }
+    },
+    {
+     "say": "unbounded 就一直 allocate 到 out of memory。所以兩者的差別，其實就是 buffer 怎麼控制。",
+     "k": 13,
+     "src": {
+      "v": "dDghjse91lE",
+      "t": 2108.91
+     }
+    }
+   ]
+  },
+  {
+   "title": "Socket：IP 加 port",
+   "scene": "proc-8d-socket",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "message passing 最常見的是 socket；另一個是 RPC。",
+     "k": 1,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 453.11
+     }
+    },
+    {
+     "say": "很多跨電腦的分散式系統是用 RPC 寫的，就像有 socket programming，也有 RPC programming。",
+     "k": 2,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 470.87
+     }
+    },
+    {
+     "say": "socket 很基本，不熟的話，很建議修網路程式設計，自己寫寫看。",
+     "k": 3,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 492.49
+     }
+    },
+    {
+     "say": "socket 認對象的方法是 IP 加 port，純粹網路的角度。",
+     "k": 4,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 504.81
+     }
+    },
+    {
+     "say": "IP 指的就是一台電腦。",
+     "k": 5,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 515.54
+     }
+    },
+    {
+     "say": "port 呢？每種服務有自己的 port number，像 HTTP 是 80、FTP 是 21。",
+     "k": 6,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 520.91
+     }
+    },
+    {
+     "say": "其實 port 指的就是 process：網路程式第一件事就是 bind 到 port，OS 才知道封包交給誰。",
+     "k": 7,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 531.71
+     }
+    },
+    {
+     "say": "所以 IP 加 port，就是哪台 host 上的哪支程式。兩個 process 不能綁同一個 port。",
+     "k": 8,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 555.67
+     }
+    },
+    {
+     "say": "socket 很 low-level：message 就是一串 bytes，沒有資料型態。",
+     "k": 9,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 578.69
+     }
+    },
+    {
+     "say": "所以 sender、receiver 要事先說好怎麼解讀；它不會直接傳 integer 或 data structure 給你。",
+     "k": 10,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 603.23
+     }
+    }
+   ]
+  },
+  {
+   "title": "Socket programming 的流程",
+   "scene": "proc-9b-socket",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "來看 socket programming 的流程，一樣是用 IP 和 port 指定哪台機器上的哪支程式。",
+     "k": 1,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 16.04
+     }
+    },
+    {
+     "say": "server 先開一個 socket，它是用 socket 溝通的一個 entity。",
+     "k": 2,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 42.48
+     }
+    },
+    {
+     "say": "socket 只是 logical 的 channel，所以要 bind 到一個 port，OS 才知道是誰在用。",
+     "k": 3,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 61.22
+     }
+    },
+    {
+     "say": "接著 listen，就像 web server 先上線，等有沒有人連進來。",
+     "k": 4,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 77.18
+     }
+    },
+    {
+     "say": "client 也開一個 socket，然後 call connect 連過去。",
+     "k": 5,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 90.9
+     }
+    },
+    {
+     "say": "server 一直 block 在那等，有人 connect 就 accept，真正的 link 就建起來了。",
+     "k": 6,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 98.84
+     }
+    },
+    {
+     "say": "之後就能 read、write，透過這個 channel 溝通。",
+     "k": 7,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 114.26
+     }
+    },
+    {
+     "say": "最後兩邊都能 close。client close 只關自己的 socket；server close 會連整個 port 都關掉。",
+     "k": 8,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 121.48
+     }
+    },
+    {
+     "say": "web server 希望很多人同時連。如果 server 是 single thread，一次只能服務一個人。",
+     "k": 9,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 138.22
+     }
+    },
+    {
+     "say": "實際上 accept 之後，main thread 會 create 新的 thread 去服務這個 client。",
+     "k": 10,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 172.36
+     }
+    },
+    {
+     "say": "為什麼用 thread 不用 process？因為它們還有很多資訊要 share。",
+     "k": 10,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 189.04
+     }
+    },
+    {
+     "say": "main thread 就不會被擋住，把 client 交出去，自己又回去 listen 下一個。",
+     "k": 11,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 205.84
+     }
+    },
+    {
+     "say": "所以 web server 都是 multi-thread programming。",
+     "k": 12,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 229.66
+     }
+    },
+    {
+     "say": "socket 傳的是 unstructured 的一串 bytes，像 HTTP body 什麼都能放，parsing 歸 programmer。",
+     "k": 13,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 251.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "RPC：像呼叫 function 一樣溝通",
+   "scene": "proc-8d-rpc",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "另一個很重要的是 RPC，remote procedure call，遠端程序呼叫。",
+     "k": 1,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 636.99
+     }
+    },
+    {
+     "say": "socket 很 flexible，但只是一串 bytes。可是我們寫程式最喜歡的是 function call。",
+     "k": 2,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 640.89
+     }
+    },
+    {
+     "say": "兩個 process 要溝通，如果能直接 call 對方的 function，那最好。",
+     "k": 3,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 668.73
+     }
+    },
+    {
+     "say": "所以叫 remote procedure call：你 call 的 function 在另一個 process，甚至另一台電腦上。",
+     "k": 4,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 682.89
+     }
+    },
+    {
+     "say": "RPC 是建在 OS system call 上的一層 API。",
+     "k": 5,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 693.73
+     }
+    },
+    {
+     "say": "server 定義一些 function，透過 RPC library register 哪些可以被 call，也要設定 port。",
+     "k": 6,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 712.99
+     }
+    },
+    {
+     "say": "client 就能直接 call server 上的 function，例如 add(3, 4)。",
+     "read": "client 就能直接 call server 上的 function，例如 add 3 跟 4。",
+     "k": 7,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 740.97
+     }
+    },
+    {
+     "say": "而且參數跟回傳值都有 data type，是 integer 還是 floating point，不只是一串 bytes。",
+     "k": 8,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 745.35
+     }
+    },
+    {
+     "say": "所以 programmer 不用管對方在哪台電腦、哪個 process，就像 call 普通 function。",
+     "k": 9,
+     "src": {
+      "v": "oiB5Oalb8A8",
+      "t": 764.27
+     }
+    }
+   ]
+  },
+  {
+   "title": "RPC 的 stub 與 parameter marshalling",
+   "scene": "proc-9b-rpc",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "RPC 怎麼做到讓遠端的 function，用起來像本地的一樣？",
+     "k": 1,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 271.52
+     }
+    },
+    {
+     "say": "call 起來是 function call，其實是透過網路，在遠端執行。",
+     "k": 2,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 285.88
+     }
+    },
+    {
+     "say": "關鍵在 RPC library 裡的 stub：跟著程式一起跑的小代理程式，周老師形容像小 daemon。",
+     "k": 3,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 302.32
+     }
+    },
+    {
+     "say": "client 端的叫 stub，server 端的叫 skeleton，都由 library 實作，不用自己寫。",
+     "k": 4,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 322.7
+     }
+    },
+    {
+     "say": "RPC 跟 socket 很接近，差別是參數有 data type，所以要靠它們打包和拆包。",
+     "k": 5,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 342.76
+     }
+    },
+    {
+     "say": "它們底下通常還是透過 socket 溝通，只是一層包一層，讓 programmer 更方便。",
+     "k": 6,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 355.34
+     }
+    },
+    {
+     "say": "client 端最重要的動作是把參數打包，這叫 parameter marshalling。",
+     "k": 7,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 389.98
+     }
+    },
+    {
+     "say": "跨電腦不簡單：有的機器 big endian，有的 little endian，數字的 byte 排法不同。",
+     "k": 8,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 412.44
+     }
+    },
+    {
+     "say": "或是 int，有的電腦 16 bit、有的 32 bit，直接 copy bytes 過去可能讀出錯的值。",
+     "k": 9,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 445.64
+     }
+    },
+    {
+     "say": "marshalling 打包拆包時，就把這些繁瑣的轉換處理好，不用使用者操心。",
+     "k": 10,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 472.4
+     }
+    },
+    {
+     "say": "之後 caller 就像一般 blocking function call 一樣，等結果傳回來。",
+     "k": 11,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 494.36
+     }
+    },
+    {
+     "say": "另一個麻煩是 pointer：pointer 指的是 local memory，傳到別台電腦根本沒意義。",
+     "k": 12,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 525.88
+     }
+    },
+    {
+     "say": "要有意義就得把指到的內容全 copy 過去。大小確定的 data structure 可以，pointer 多半不支援。",
+     "k": 13,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 567.22
+     }
+    }
+   ]
+  },
+  {
+   "title": "溝通方式總整理",
+   "scene": "proc-9b-sum",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "最後周老師做了總結：process 怎麼溝通，對之後的學習非常重要。",
+     "k": 1,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 603.6
+     }
+    },
+    {
+     "say": "寫平行程式，會用到 shared memory 跟 message passing。",
+     "k": 2,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 617.98
+     }
+    },
+    {
+     "say": "走網路，會用 socket：IP 加 port 建連線、互傳 bytes。",
+     "k": 3,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 623.04
+     }
+    },
+    {
+     "say": "做分散式系統，會用 RPC：呼叫遠端 function，就像呼叫本地的一樣。",
+     "k": 4,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 626.8
+     }
+    },
+    {
+     "say": "這些方法的觀念，就是這一章從頭到尾講過的內容。",
+     "k": 5,
+     "src": {
+      "v": "iFRv7y8i7Sw",
+      "t": 630.42
+     }
+    }
+   ]
+  }
+ ]
+}

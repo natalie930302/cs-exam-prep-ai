@@ -1,0 +1,3215 @@
+{
+ "chapter": "os-6",
+ "title": "死鎖 Deadlock",
+ "intro": "從 lock 用不好互相卡住開始，弄懂 deadlock 的定義、四個必要條件和 resource-allocation graph，再一路學 prevention、avoidance（Banker's algorithm）、detection 與 recovery 怎麼做、怎麼算。",
+ "parts": [
+  {
+   "title": "從 lock 到 deadlock",
+   "scene": "dl-a-intro",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "好，這一章講 deadlock，中文叫死結。它其實是上一章 synchronization 留下來的問題。",
+     "k": 1,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 14.7
+     }
+    },
+    {
+     "say": "上一章為了保護 critical section，我們用 lock：拿到鎖的人才能用資源，一次只放一個人進去。",
+     "k": 2,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 17.1
+     }
+    },
+    {
+     "say": "可是鎖用不好就出事：P1 拿著一把鎖在等 P2 的鎖，P2 拿著另一把在等 P1 的。",
+     "k": 3,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 49.1
+     }
+    },
+    {
+     "say": "兩邊都在等對方先放手，結果誰也動不了，所有 process 都卡住，這就叫 deadlock。",
+     "k": 4,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 53.3
+     }
+    },
+    {
+     "say": "怎麼解？周志遠老師分兩大類。第一種 prevention：設計系統時就定好規則，讓它根本不可能發生。",
+     "k": 5,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 76.3
+     }
+    },
+    {
+     "say": "第二種 avoidance：程式在跑的時候，系統一直看目前的狀態，發現危險就先避開。",
+     "k": 6,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 98
+     }
+    },
+    {
+     "say": "所以路線是：先把 deadlock 定義清楚，再一個一個看 prevention、avoidance 有哪些做法。",
+     "k": 7,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 123.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Deadlock 的定義",
+   "scene": "dl-e-def",
+   "steps": 3,
+   "lines": [
+    {
+     "say": "那 deadlock 正式怎麼定義？一組 process 都在等資源，而那些資源正被同一組的其他人拿著。",
+     "k": 1,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 37.7
+     }
+    },
+    {
+     "say": "講精確一點：組裡每個 process 都在等一個事件，像是有人放掉資源，而這個事件只有組內別人能觸發。",
+     "k": 2,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 48.4
+     }
+    },
+    {
+     "say": "偏偏組內每個人都在等，沒有人會去觸發。說穿了，它們在等一件永遠不會發生的事。",
+     "k": 3,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 66.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "單線橋",
+   "scene": "dl-e-bridge",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "最經典的畫面是單線橋：橋很窄，一次只能過一台車。",
+     "k": 1,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 77
+     }
+    },
+    {
+     "say": "現在兩邊各開來一台，在橋中間碰頭了。",
+     "k": 2,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 92
+     }
+    },
+    {
+     "say": "只要有一台願意倒車，另一台就過得去；可是兩台都不退，就永遠卡在橋上，這就是 deadlock。",
+     "k": 3,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 104.3
+     }
+    },
+    {
+     "say": "對應到 OS：橋就是一個資源，兩台車就是兩個都想要這個資源的 process。",
+     "k": 4,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 126.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Hold 著資源又在等",
+   "scene": "dl-a-what",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "好，那為什麼會卡住？我們從直覺來看。畫面上有兩個 process，P1 和 P2。",
+     "k": 1,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 137.5
+     }
+    },
+    {
+     "say": "process 執行時要用 resource。這個詞很抽象，可以是一段程式、一塊 memory，甚至 CPU 核心的執行時段。",
+     "k": 2,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 152
+     }
+    },
+    {
+     "say": "總之要先佔有它才能繼續跑。可是資源有限，P1 先拿到 R1，別人想要就只能等。",
+     "k": 3,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 188.3
+     }
+    },
+    {
+     "say": "麻煩的是程式常常要好幾種資源。P2 拿到 R2，兩個人各握一部分，又都在等對方手上那份。",
+     "k": 4,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 197.3
+     }
+    },
+    {
+     "say": "這就是 deadlock 的核心：hold 住一個資源，同時 wait 另一個；等不到又不肯放手，就永遠卡住。",
+     "k": 5,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 219.3
+     }
+    },
+    {
+     "say": "周老師舉了個實體例子：兩台 tape drive，一次只能給一個程式用，而程式要同時寫兩台才做得完。",
+     "k": 6,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 238.9
+     }
+    },
+    {
+     "say": "剛好兩個 process 各搶到一台，又都在等另一台。誰都不退讓，整個系統就像停住一樣。",
+     "k": 7,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 270.2
+     }
+    },
+    {
+     "say": "另一個例子是上一章的 semaphore：左邊程式先 wait A 再 wait B，右邊程式順序反過來。",
+     "k": 8,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 313
+     }
+    },
+    {
+     "say": "如果兩邊都先拿到第一個，左邊握 A 等 B，右邊握 B 等 A，兩個都要齊才放手，就 deadlock 了。",
+     "k": 9,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 324.5
+     }
+    },
+    {
+     "say": "所以結論是：只要程式要同時拿好幾個資源，而它們又被別人拿走，就有可能 deadlock。",
+     "k": 10,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 355
+     }
+    }
+   ]
+  },
+  {
+   "title": "兩個 process、兩個資源",
+   "scene": "dl-e-two",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "我們把這個情況畫成 OS 的樣子：兩個 process P1、P2，兩個資源 R1、R2，各只有一個。",
+     "k": 1,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 137
+     }
+    },
+    {
+     "say": "P1 要同時拿到 R1 和 R2 才做得完。",
+     "k": 2,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 166
+     }
+    },
+    {
+     "say": "P2 也一樣，R1、R2 都要。",
+     "k": 3,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 183.6
+     }
+    },
+    {
+     "say": "time 0 的時候 R1 是空的，系統配給 P1，畫一條綠色的 assignment edge，從 R1 指向 P1。",
+     "k": 4,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 203
+     }
+    },
+    {
+     "say": "同一時間 R2 也空著，配給了 P2。",
+     "k": 5,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 239.7
+     }
+    },
+    {
+     "say": "接著 P1 還缺 R2，就對 R2 發出 request，灰色箭頭從 P1 指向 R2。",
+     "k": 6,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 250.4
+     }
+    },
+    {
+     "say": "P2 也缺 R1，同樣發出 request。",
+     "k": 7,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 264.4
+     }
+    },
+    {
+     "say": "問題來了：P1 拿不到 R2 就不放 R1，P2 拿不到 R1 也不放 R2。",
+     "k": 8,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 270.7
+     }
+    },
+    {
+     "say": "箭頭繞成一圈，這就是 deadlock：每個 process 都在等組內另一個人才能觸發的事件。",
+     "k": 9,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 287.3
+     }
+    },
+    {
+     "say": "P1 等 P2 放掉 R2，P2 等 P1 放掉 R1，完全符合剛才的定義。",
+     "k": 10,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 308.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "四個必要條件",
+   "scene": "dl-a-four",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "好，周老師把 deadlock 整理成四個條件。圖上四個 process 圍成一圈，中間是四個資源。",
+     "k": 1,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 373.6
+     }
+    },
+    {
+     "say": "先記住，這四個是 necessary condition，要同時成立才會 deadlock；反過來，少一個就保證不會。",
+     "k": 2,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 387.6
+     }
+    },
+    {
+     "say": "第一個 mutual exclusion，互斥：一個資源一次只能給一個人用，不能用 shared mode 共用。",
+     "k": 3,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 393
+     }
+    },
+    {
+     "say": "你想想看，如果資源可以 share，大家同時用，根本不用排隊，當然不會 deadlock。",
+     "k": 4,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 404.3
+     }
+    },
+    {
+     "say": "但這個條件很常成立，因為解 critical section 本來就要求一次只有一個人進去。",
+     "k": 5,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 418.2
+     }
+    },
+    {
+     "say": "第二個 hold and wait：手上至少握著一個資源，同時還在等另一個，而且不放手。",
+     "k": 6,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 438
+     }
+    },
+    {
+     "say": "反過來，如果規定拿不到就把手上的全部放掉、重新來過，沒有人邊握邊等，就不會 deadlock。",
+     "k": 7,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 467.2
+     }
+    },
+    {
+     "say": "第三個 no preemption，不可搶奪：資源只能由拿著它的人自願放掉，別人不能逼它交出來。",
+     "k": 8,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 499.5
+     }
+    },
+    {
+     "say": "如果可以 preempt，例如直接把程式 kill 掉，你等的人就會被逼著讓出資源，也就沒人會一直等。",
+     "k": 9,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 518.7
+     }
+    },
+    {
+     "say": "可是很多資源搶不了。印表機印到一半，你不能叫它先停、等一下再接著印，狀態記不下來。",
+     "k": 10,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 546.6
+     }
+    },
+    {
+     "say": "第四個 circular wait：P1 等 P2、P2 等 P3、P3 等 P4，P4 又回頭等 P1，繞成一圈。",
+     "k": 11,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 583.6
+     }
+    },
+    {
+     "say": "如果只是單向排隊，P4 沒在等 P1，最後一個做完放手，前面就依序解開，只是等久一點，不叫 deadlock。",
+     "k": 12,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 600
+     }
+    },
+    {
+     "say": "所以 deadlock 發生時，一定找得到一個繞回原點的等待圈。其實 circular wait 裡也隱含了 hold and wait。",
+     "k": 13
+    }
+   ]
+  },
+  {
+   "title": "交通的例子：四台車卡在路口",
+   "scene": "dl-a-traffic",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "周老師給了一個很好記的例子：十字路口。四個方向的車剛好全擠進路口，沒有一台動得了。",
+     "k": 1,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 633
+     }
+    },
+    {
+     "say": "mutual exclusion：把路口切成四格，每格就是一個資源，一格只能停一台車，不然就撞了。",
+     "k": 2,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 660.4
+     }
+    },
+    {
+     "say": "hold and wait：每台車佔住自己這格，同時在等前面那格空出來。",
+     "k": 3,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 683
+     }
+    },
+    {
+     "say": "欸，這就是為什麼路口要畫黃線、不准停在裡面：一停下來就是 hold and wait。",
+     "k": 4,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 700
+     }
+    },
+    {
+     "say": "no preemption：一般車不能叫前車讓開，只有消防車、救護車這種有特權的，才能搶路權。",
+     "k": 5,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 716.3
+     }
+    },
+    {
+     "say": "circular wait：四台車你等我、我等他繞成一圈；只要有一格沒被佔住，大家最後都能慢慢通過。",
+     "k": 6,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 737.5
+     }
+    },
+    {
+     "say": "電腦裡也一樣，路口那幾格換成 lock、共用的 memory 或實體設備，就是程式在搶的東西。",
+     "k": 7,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 753
+     }
+    },
+    {
+     "say": "四個條件同時存在才 deadlock，解掉任一個就不會。麻煩的是，這四個都是電腦運作常常需要的。",
+     "k": 8,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 778.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "System model：type、instance 與 request、use、release",
+   "scene": "dl-a-model",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "要用演算法處理 deadlock，得先把問題寫成模型。",
+     "k": 1,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 800.7
+     }
+    },
+    {
+     "say": "第一個符號是 resource type，資源的種類：CPU 是一種，memory 是一種，device、lock 也各是一種。",
+     "k": 2,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 822
+     }
+    },
+    {
+     "say": "每種 type 底下可以有好幾個 instance，也就是實際個數，例如 CPU 有 4 個 core、硬碟有 2 顆。",
+     "k": 3,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 845.5
+     }
+    },
+    {
+     "say": "就像上一章的 counting semaphore，代表的是一個數量，不一定只有 0 或 1。",
+     "k": 4,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 868.5
+     }
+    },
+    {
+     "say": "這樣一個程式就能描述成：它要哪些種類的資源、每種要幾個 instance。",
+     "k": 5,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 886
+     }
+    },
+    {
+     "say": "使用資源的過程一直重複三步：request 申請、use 使用、release 用完放掉。",
+     "k": 6,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 905.2
+     }
+    },
+    {
+     "say": "use 的期間資源被這個 process 佔住，別人不能用，process 之間就有了誰等誰的 dependency。",
+     "k": 7,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 917
+     }
+    }
+   ]
+  },
+  {
+   "title": "Resource-allocation graph",
+   "scene": "dl-a-rag",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "誰等誰這種關係，畫成 graph 最清楚。",
+     "k": 1,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 940
+     }
+    },
+    {
+     "say": "這張圖叫 resource-allocation graph，由一組 vertex 和一組 edge 組成，描述系統現在的狀態。",
+     "k": 2,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 963.4
+     }
+    },
+    {
+     "say": "vertex 有兩種。第一種是 process，畫成圓圈，這裡是 P1、P2、P3 三個。",
+     "k": 3,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 974
+     }
+    },
+    {
+     "say": "第二種是 resource，畫成方塊，方塊裡每個點是一個 instance：R1、R3 各 1 個，R2 有 2 個，R4 有 3 個。",
+     "k": 4,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 983
+     }
+    },
+    {
+     "say": "edge 也有兩種。process 想要資源，就畫一條從 P 指向 R 的 request edge：P1 想要 R1，P2 想要 R3。",
+     "k": 5,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1005.7
+     }
+    },
+    {
+     "say": "就像等一把 lock 才能進 critical section，request edge 代表還沒拿到、正在等。",
+     "k": 6,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1037.6
+     }
+    },
+    {
+     "say": "已經拿到的，畫從 R 指向 P 的 assignment edge：R1 給了 P2，R2 一個給 P2、一個給 P1，R3 給了 P3。",
+     "k": 7,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1050.5
+     }
+    },
+    {
+     "say": "周老師提醒，顏色不重要，方向才重要：P 指向 R 是在等，R 指向 P 是已經拿到、正在用。",
+     "k": 8,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1064.6
+     }
+    },
+    {
+     "say": "從圖上直接看得到 hold and wait：P1 握著一個 R2，又在等 R1。",
+     "k": 9,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1101
+     }
+    },
+    {
+     "say": "也能沿著箭頭找有沒有繞成一圈，也就是 circular wait，這樣就能用圖的演算法來處理。",
+     "k": 10,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1125.5
+     }
+    },
+    {
+     "say": "之後就用這張圖判斷兩件事：現在是不是已經 deadlock？答應某個 request 以後會不會有危險？",
+     "k": 11,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1141.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "讀圖練習：沒有 deadlock",
+   "scene": "dl-e-ex1",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "好，拿這張經典的圖來練習，判斷有沒有 deadlock。",
+     "k": 1,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 721.1
+     }
+    },
+    {
+     "say": "這是恐龍書作者之一 Galvin 書上的例子：三個 process、三種資源，其中 R2 有兩個 instance。",
+     "k": 2,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 739
+     }
+    },
+    {
+     "say": "先讀圖。P1 想要 R1，可是 R1 已經配給了 P2。",
+     "k": 3,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 745.2
+     }
+    },
+    {
+     "say": "R2 的兩個 instance，一個在 P1 手上，另一個在 P2 手上。",
+     "k": 5,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 770.3
+     }
+    },
+    {
+     "say": "P2 在 request R3，而 R3 配給了 P3。",
+     "k": 6,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 777.5
+     }
+    },
+    {
+     "say": "那問題來了：這個狀態有沒有 deadlock？",
+     "k": 7,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 794
+     }
+    },
+    {
+     "say": "先看 P3：它沒在要別的資源，靠手上的 R3 就能做完，做完就把 R3 放掉。",
+     "k": 8,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 800.8
+     }
+    },
+    {
+     "say": "R3 空出來，P2 的 request 就變成配置，P2 也能一路跑完。",
+     "k": 9,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 842.4
+     }
+    },
+    {
+     "say": "P2 做完，把 R1、R2、R3 都放掉。P1 只差 R1，現在拿到了，也能做完。",
+     "k": 10,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 879.6
+     }
+    },
+    {
+     "say": "所以這張圖沒有 deadlock：P3 先做完，其他人就跟著依序做完。",
+     "k": 11,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 911.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "P3 也要 R2：真的卡死",
+   "scene": "dl-e-ex2",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "同一張圖只改一個地方：P3 也來 request R2，就是這條黃色箭頭。",
+     "k": 1,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 929.6
+     }
+    },
+    {
+     "say": "R2 在誰手上？P1、P2 各一個，沒有空的。所以 P3 得等 P1 或 P2 先做完。",
+     "k": 2,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 968.6
+     }
+    },
+    {
+     "say": "P2 要 R3，可是 R3 在 P3 手上，所以 P2 也做不完。",
+     "k": 3,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 983.6
+     }
+    },
+    {
+     "say": "P1 要 R1，R1 在 P2 手上，而 P2 又卡在 P3 後面。",
+     "k": 4,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 993.2
+     }
+    },
+    {
+     "say": "每個人都在等另一個人，誰都做不完，這就是 deadlock。",
+     "k": 5,
+     "src": {
+      "v": "XpKrBUZqfGI",
+      "t": 1000.1
+     }
+    },
+    {
+     "say": "仔細數，這張圖有兩個圈：P1、R1、P2、R3、P3、R2 回到 P1；還有 P2、R3、P3、R2 回到 P2。",
+     "k": 6
+    },
+    {
+     "say": "R2 雖然有兩個 instance，但兩個都在圈裡的人手上，沒得繞過去，所以真的卡死。",
+     "k": 6
+    }
+   ]
+  },
+  {
+   "title": "有 cycle 就一定 deadlock 嗎？",
+   "scene": "dl-a-cycle",
+   "steps": 18,
+   "lines": [
+    {
+     "say": "circular wait 是必要條件，所以判斷時第一步就是看圖上有沒有圈。",
+     "k": 1,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1174.1
+     }
+    },
+    {
+     "say": "像第一張圖，沿著箭頭走找不到任何一圈；少了 circular wait，就一定沒有 deadlock。",
+     "k": 2,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1184
+     }
+    },
+    {
+     "say": "那反過來，有圈就一定 deadlock 嗎？不一定。",
+     "k": 3,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1200.1
+     }
+    },
+    {
+     "say": "P3 也要 R2 那張，周老師也拿來講：P1 等 P2、P2 等 P3、P3 又等 P1，有圈而且真的卡死。",
+     "k": 8,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1299
+     }
+    },
+    {
+     "say": "再換一張圖：一樣找得到一圈，P1 到 R1、R1 到 P3、P3 到 R2、R2 再回到 P1。",
+     "k": 9,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1321.4
+     }
+    },
+    {
+     "say": "P1 手上有一個 R2，它要的是 R1；R1 有兩個 instance，在 P2 和 P3 手上。",
+     "k": 10,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1334.3
+     }
+    },
+    {
+     "say": "關鍵是 P2 沒在等任何人，一定做得完；它一做完就放掉 R1，P1 拿到 R1，也能做完。",
+     "k": 11,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1361.6
+     }
+    },
+    {
+     "say": "P3 也一樣，它要的 R2 在 P1 或 P4 手上，而 P4 沒被任何人擋住，做完就會放出一個 R2。",
+     "k": 12,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1383.5
+     }
+    },
+    {
+     "say": "所以這張圖雖然有一圈，卻沒有 deadlock。",
+     "k": 13,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1404.7
+     }
+    },
+    {
+     "say": "整理一下。結論一：圖上沒有 cycle，就一定沒有 deadlock。",
+     "k": 14,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1425
+     }
+    },
+    {
+     "say": "結論二：有 cycle 的時候，要看每種資源有幾個 instance。",
+     "k": 15,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1436.4
+     }
+    },
+    {
+     "say": "如果每種都只有一個 instance，有圈就一定 deadlock，因為你要的那一個一定被圈裡的人拿著。",
+     "k": 16,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1447.3
+     }
+    },
+    {
+     "say": "有多個 instance 時，有圈只是可能 deadlock，要再仔細判斷；把剛才的 R1、R2 改成只有一個，就鐵定卡死。",
+     "k": 17,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1462
+     }
+    },
+    {
+     "say": "之後會用 cycle detection 的演算法來判斷，計算量不小，但判斷得準。",
+     "k": 18,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1490.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "處理 deadlock 的四種方式",
+   "scene": "dl-a-methods",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "好，知道 deadlock 長什麼樣，接著問：怎麼處理它？",
+     "k": 1,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1519
+     }
+    },
+    {
+     "say": "第一種 deadlock prevention：事先把四個條件拿掉一個。這樣不管程式怎麼寫，都絕對不會 deadlock。",
+     "k": 2,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1533.6
+     }
+    },
+    {
+     "say": "第二種 deadlock avoidance：run time 一直盯著資源怎麼分配，判斷現在把這個資源給它安不安全。",
+     "k": 3,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1558.1
+     }
+    },
+    {
+     "say": "這兩個常被搞混。prevention 是事前把條件拆掉；avoidance 是執行中每次分配前先檢查，避開危險。",
+     "k": 4,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1593.2
+     }
+    },
+    {
+     "say": "周老師把 avoidance 說成 run time 的 detection，但課本的 detection 是另一件事：事後找出已經發生的 deadlock。",
+     "k": 4
+    },
+    {
+     "say": "第三種比較消極：先不管，讓系統跑，等 deadlock 真的發生了再 recovery。",
+     "k": 5,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1634.6
+     }
+    },
+    {
+     "say": "這要解兩件事：一是 detection，偵測到已經 deadlock；二是怎麼恢復，例如要 kill 哪個 process 影響最小。",
+     "k": 6,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1660.2
+     }
+    },
+    {
+     "say": "最後一種是 ignore：系統什麼都不做，卡住就卡住。",
+     "k": 7,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1701
+     }
+    },
+    {
+     "say": "為什麼有人選它？因為 detection 和 avoidance 要一直檢查系統，很耗 CPU，會讓系統變慢。",
+     "k": 8,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1717
+     }
+    },
+    {
+     "say": "deadlock 本來就不該常發生，真的發生了，就讓使用者自己按 Ctrl Alt Delete 重開機。你的電腦多半就是這樣。",
+     "k": 9,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1736
+     }
+    },
+    {
+     "say": "但武器控制、核電廠這種重要系統，總不能叫人 reboot，就得用前面的方法。",
+     "k": 10,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1789.6
+     }
+    },
+    {
+     "say": "所以接下來重點放在 prevention 和 avoidance，最後再看 detection 和 recovery。",
+     "k": 11,
+     "src": {
+      "v": "efH4nuwUalA",
+      "t": 1810.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Prevention ①：拿掉 mutual exclusion",
+   "scene": "dl-b-me",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "先看 prevention：不用在執行中一直檢查，而是一開始就讓系統不可能 deadlock。",
+     "k": 1,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 18
+     }
+    },
+    {
+     "say": "deadlock 要四個條件同時成立，所以周老師把四個條件一個一個拿出來，看怎麼讓它不成立。",
+     "k": 2,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 46.3
+     }
+    },
+    {
+     "say": "第一個 mutual exclusion。要拿掉它，就是把 synchronization 用的 lock 抽掉。",
+     "k": 3,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 54.2
+     }
+    },
+    {
+     "say": "這在某些地方真的可行：memory 的資料如果大家都只讀不寫，也就是 read-only，同時讀也不會錯，根本不用鎖。",
+     "k": 4,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 70.7
+     }
+    },
+    {
+     "say": "可是不是每種資源都能這樣。印表機、critical section，本質上一次只能一個人用，一定要互斥。",
+     "k": 5,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 101.3
+     }
+    },
+    {
+     "say": "所以實際做法是先把資源分類，本來就能共用的就別上鎖，這些資源就不會造成 deadlock。",
+     "k": 6,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 125.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Prevention ②：拿掉 hold and wait",
+   "scene": "dl-b-hw",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "第二個 hold and wait：手上握著 R1，又在等 R2、R3。",
+     "k": 1,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 159.4
+     }
+    },
+    {
+     "say": "要拿掉它就得改寫法：要用好幾個資源，就一次全部拿到才往下做。",
+     "k": 2,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 168
+     }
+    },
+    {
+     "say": "課本的另一種講法是：process 開始執行前，就先一次申請好它要的全部資源。",
+     "k": 2
+    },
+    {
+     "say": "只要有一個拿不到，例如 R2 被人用著，就把已經拿到的全部放掉，從頭再來。這樣沒人會握著一個在等。",
+     "k": 3,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 182.2
+     }
+    },
+    {
+     "say": "缺點是資源使用率會變很低，因為要同時全部拿到的機會小很多。",
+     "k": 4,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 220.4
+     }
+    },
+    {
+     "say": "用機率想，數字是示意：每個資源拿到的機率二分之一，三個同時拿到就是八分之一，機率是相乘的。",
+     "k": 5,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 236
+     }
+    },
+    {
+     "say": "結果很多 process 一直拿、放、拿、放，始終跑不起來，資源又常常閒著，整台電腦效能變差。",
+     "k": 6,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 254.7
+     }
+    },
+    {
+     "say": "所以像 CPU 這麼重要的資源不適合，使用率太低會嚴重拖慢執行。",
+     "k": 7,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 276.9
+     }
+    },
+    {
+     "say": "但有些 IO device 本來就很慢，用這招影響不大，可以考慮。",
+     "k": 8,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 295.7
+     }
+    },
+    {
+     "say": "總結：hold and wait 的解法就是 all or nothing。課本也提醒，一直湊不齊資源的 process 可能 starvation。",
+     "k": 9,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 304
+     }
+    }
+   ]
+  },
+  {
+   "title": "Prevention ③：允許 preemption",
+   "scene": "dl-b-np",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "第三個 no preemption。拿掉它就是允許 preemption，前提是能把這個資源目前的 state 記下來。",
+     "k": 1,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 314.5
+     }
+    },
+    {
+     "say": "記得下來，就能隨時喊停、先讓別人用，用完再還你，你從剛剛停的地方接著做。",
+     "k": 2,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 331
+     }
+    },
+    {
+     "say": "CPU 就是標準例子，這正是 CPU 有 context switch 的原因。",
+     "k": 3,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 349
+     }
+    },
+    {
+     "say": "CPU 能被搶，使用率就很高；比較重要的 process 一來，馬上可以把 CPU 讓給它。",
+     "k": 4,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 362.1
+     }
+    },
+    {
+     "say": "代價是要存這些 state：多用一些 memory，多用一些 register，像 PC、SP。",
+     "k": 5,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 371.4
+     }
+    },
+    {
+     "say": "而且不是每種資源都能搶。印表機印到一半，狀態沒辦法記錄，不能說停就停。",
+     "k": 6,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 388
+     }
+    },
+    {
+     "say": "所以這招適合 CPU、memory 這種狀態存得下來的資源，很多 IO device 就做不到，要看是哪種 resource。",
+     "k": 7,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 403.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Prevention ④：total order 拿掉 circular wait",
+   "scene": "dl-b-cw",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "最後一個 circular wait：P1 等 P2、P2 等 P3、P3 等 P4、P4 又等 P1。",
+     "k": 1,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 420.7
+     }
+    },
+    {
+     "say": "拿掉它的方法，是把所有資源排成一個 total order：每個資源一個編號，誰先誰後很清楚。",
+     "k": 2,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 437.4
+     }
+    },
+    {
+     "say": "會繞成圈，是因為等待方向最後繞回來了：最後面的人在等最前面的人，就是黃色這條。",
+     "k": 3,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 445.1
+     }
+    },
+    {
+     "say": "如果分配規則只准一個方向，最後面的人就不會去等最前面的人，黃色這條不存在，圈就斷了。",
+     "k": 4,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 458.1
+     }
+    },
+    {
+     "say": "實際規則是：資源編號 R0、R1、R2，process 要 Rk 時，手上所有編號比 k 大的都要先放掉。",
+     "k": 5,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 513.2
+     }
+    },
+    {
+     "say": "舉例：P 已經有 R0 和 R5，現在想要 R3。要照順序，得先拿 R3 才輪到 R5，所以 R5 要先還回去。",
+     "k": 6,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 540.2
+     }
+    },
+    {
+     "say": "更極端：手上什麼都有了卻要 R0，那就全部放掉，從 R0 開始一步一步重拿。",
+     "k": 7,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 582.5
+     }
+    },
+    {
+     "say": "課本的例子：tape drive 編號 1、disk 編號 5、printer 編號 12，三個都要，就得照 1、5、12 的順序拿。",
+     "k": 8,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 608.9
+     }
+    },
+    {
+     "say": "為什麼這樣保證沒有圈？一個等待圈，一定是一串 hold and wait 接起來的。",
+     "k": 9,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 634.3
+     }
+    },
+    {
+     "say": "要繞回原點變成圈，最後一定有一條：某個 process 拿著編號很大的 Rn，卻在要 R0。",
+     "k": 10,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 689
+     }
+    },
+    {
+     "say": "但拿著高編號、去要低編號，正是規則禁止的，這條根本不會出現，所以圈不可能形成。",
+     "k": 11,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 712.3
+     }
+    },
+    {
+     "say": "恐龍書的寫法是只能照編號遞增的順序 request；要 Rj 時，手上不能有編號大於等於 j 的資源，意思一樣。",
+     "k": 12
+    },
+    {
+     "say": "缺點有點像 hold and wait：越後面的資源越難拿到，因為前面的要先拿齊，等比較久。",
+     "k": 13,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 780.7
+     }
+    },
+    {
+     "say": "如果不規定順序，也許 R5 剛好先空出來，運氣好反而更快；但也就有了 deadlock 的危險。",
+     "k": 14,
+     "src": {
+      "v": "n6YiasR-3uc",
+      "t": 807
+     }
+    }
+   ]
+  },
+  {
+   "title": "系統裡的實例：memory 與 CPU",
+   "scene": "dl-c-memcpu",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "周老師用最熟的兩個資源，CPU 和 memory，說明 prevention 在系統裡實際怎麼做。",
+     "k": 1,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 16.1
+     }
+    },
+    {
+     "say": "memory：系統讓大家共用存取。像 multi-thread 程式的 global memory，所有 thread 都能同時讀寫。",
+     "k": 2,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 18.4
+     }
+    },
+    {
+     "say": "以系統角度，memory 等於拿掉了 mutual exclusion，所以光是 access memory 不會 deadlock。",
+     "k": 3,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 44.6
+     }
+    },
+    {
+     "say": "那上一章的 deadlock 從哪來？是 programmer 為了解 race condition，自己在程式裡加鎖造成的。",
+     "k": 4,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 57
+     }
+    },
+    {
+     "say": "反過來看 CPU，它不能共用，兩個 instruction 不可能混在同一條 pipeline 裡一起跑。",
+     "k": 5,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 91
+     }
+    },
+    {
+     "say": "CPU 不能共用又不想 deadlock，OS 就讓它可以被搶：context switch 把 register 存到 memory，隨時換人用。",
+     "k": 6,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 113.5
+     }
+    },
+    {
+     "say": "剛好是兩個相反的例子：memory 拿掉互斥，CPU 允許搶，所以 CPU 這個資源本身不會造成 deadlock。",
+     "k": 7,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 131
+     }
+    },
+    {
+     "say": "至於 programmer 自己加的 critical section，就得 programmer 自己負責。",
+     "k": 8,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 160
+     }
+    }
+   ]
+  },
+  {
+   "title": "Avoidance：考慮 worst case",
+   "scene": "dl-c-worst",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "好，進到第二大塊：deadlock avoidance。",
+     "k": 1,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 185
+     }
+    },
+    {
+     "say": "這時假設四個條件都可能成立，系統在執行中根據目前狀態，及時避開 deadlock。",
+     "k": 2,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 192
+     }
+    },
+    {
+     "say": "周老師分兩種：每種資源只有一個 instance，用圖找圈；有多個 instance，用 Banker's algorithm。概念一樣。",
+     "k": 3,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 207.6
+     }
+    },
+    {
+     "say": "deadlock 都是程式做了某個資源動作，例如申請資源 R 之後，才發生的。",
+     "k": 4,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 218.1
+     }
+    },
+    {
+     "say": "要事先避免，就得考慮 worst case：假設未來最糟的事都發生，會不會 deadlock？",
+     "k": 5,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 234
+     }
+    },
+    {
+     "say": "只有最壞情況也不會出事，系統才答應這次分配，這樣不管別人之後做什麼都安全。",
+     "k": 6,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 253.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Single instance：claim edge",
+   "scene": "dl-c-claim",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "先看 single instance。回到 resource-allocation graph，它最能描述整個系統。",
+     "k": 1,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 280.4
+     }
+    },
+    {
+     "say": "符號照舊：R1 指向 P1 是 assignment edge；P2 指向 R1 是 request edge，P2 在等。這些都是已經發生的事。",
+     "k": 2,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 297.6
+     }
+    },
+    {
+     "say": "可是 worst case 要求系統也考慮未來可能發生的事。",
+     "k": 3,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 314.7
+     }
+    },
+    {
+     "say": "所以多加一種邊：claim edge，畫成虛線。系統事先知道 P1 未來可能會要 R2。",
+     "k": 4,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 324.3
+     }
+    },
+    {
+     "say": "claim edge 跟 request edge 一樣從 process 指向 resource，虛線表示還沒發生、不一定會發生。P2 也可能要 R2。",
+     "k": 5,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 355
+     }
+    },
+    {
+     "say": "為什麼要標出來？因為最壞情況下它真的發生了：P1 真的提出要求，虛線就變成實線的 request edge。",
+     "k": 6,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 379.1
+     }
+    },
+    {
+     "say": "邊越多，越容易繞成圈。把未來可能的事都當成會發生，這就是 worst case。",
+     "k": 7,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 411.4
+     }
+    },
+    {
+     "say": "不過 claim 跟 request 同方向，虛線變實線，箭頭方向沒變。",
+     "k": 8,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 428.7
+     }
+    },
+    {
+     "say": "所以這一步還不危險，真正要小心的是下一步：資源給出去、箭頭翻過來的那一刻。",
+     "k": 9,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 440.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Request 來了：給還是不給？",
+   "scene": "dl-c-decide",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "真正危險的，是邊變成 assignment edge，也就是資源真的給出去。",
+     "k": 1,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 461.6
+     }
+    },
+    {
+     "say": "假設 P1 的 claim 真的發生了，而 R2 現在沒人在用。",
+     "k": 2,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 471.2
+     }
+    },
+    {
+     "say": "系統要決定給不給。給的話，這條邊就翻成 R2 指向 P1 的 assignment edge。",
+     "k": 3,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 482
+     }
+    },
+    {
+     "say": "不同意，就維持 request，P1 先等著。系統有權做這個決定。",
+     "k": 4,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 497.6
+     }
+    },
+    {
+     "say": "avoidance 的做法：所有可能的邊都畫上去了，所以可以檢查翻過來以後會不會出現圈。",
+     "k": 5,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 505
+     }
+    },
+    {
+     "say": "例如 P1 要 R2，給了它，圖上很明顯沒有圈，可以給。",
+     "k": 6,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 531.5
+     }
+    },
+    {
+     "say": "換個情況，如果是 P2 來要 R2，給了以後：P1 虛線到 R2、R2 到 P2、P2 到 R1、R1 回到 P1，繞成一圈。",
+     "k": 7,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 541.2
+     }
+    },
+    {
+     "say": "雖然 P1 到 R2 現在還只是 claim，但最壞情況下它下一秒就可能成真，到時就真的 deadlock。",
+     "k": 8,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 552
+     }
+    },
+    {
+     "say": "所以 P2 要 R2，系統不答應；同樣的狀態下 P1 要 R2 就答應。周老師這裡一度口誤說成 P2 要 R1，指的是 R2。",
+     "k": 9,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 584.3
+     }
+    },
+    {
+     "say": "重點是：就算資源現在空著，avoidance 也可以擋。這是它跟一般配置最大的不同。",
+     "k": 10,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 612.3
+     }
+    },
+    {
+     "say": "這個決定取決於目前狀態。如果 P1 根本沒拿著 R1，那把 R2 給 P2 也不會有圈。",
+     "k": 11,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 637
+     }
+    },
+    {
+     "say": "所以問題就是：虛線變實線之後，要不要再翻成 assignment？同意了又有圈，下一秒就可能 deadlock。",
+     "k": 12,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 659
+     }
+    },
+    {
+     "say": "實作上，先假設同意，跑一次 cycle detection；有圈就讓它等，等狀態改變、同意也不會有圈，才真的分配。",
+     "k": 13,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 684.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Avoidance 的代價",
+   "scene": "dl-c-cost",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "不管 detection 還是 avoidance，演算法的計算量都不小。",
+     "k": 1,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 720.7
+     }
+    },
+    {
+     "say": "系統拆開來看，資源種類比想像多很多，process 也常常幾千個，n 不會小。",
+     "k": 2,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 726
+     }
+    },
+    {
+     "say": "跑一次找圈，最好的演算法也要 n 平方等級，很花時間。",
+     "k": 3,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 744.2
+     }
+    },
+    {
+     "say": "所以除非真的很怕 deadlock，系統不一定願意付這個代價。",
+     "k": 4,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 750.9
+     }
+    },
+    {
+     "say": "整理成四步：畫上 claim edge；claim 變成 request；假設翻成 assignment 再找圈；有圈就維持 request，沒有才答應。",
+     "k": 5,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 760
+     }
+    }
+   ]
+  },
+  {
+   "title": "Safe、unsafe 與 deadlock",
+   "scene": "dl-c-safe",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "接下來處理每種資源有多個 instance 的情況，用 Banker's algorithm，中文叫銀行家演算法。",
+     "k": 1,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 800.5
+     }
+    },
+    {
+     "say": "多個 instance 不好畫圖，但有個簡單的演算法可以判斷，計算量大約也是 n 平方。",
+     "k": 2,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 807.7
+     }
+    },
+    {
+     "say": "概念跟剛才一樣：把系統所有可能的狀態分成兩區，safe 和 unsafe。",
+     "k": 3,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 825
+     }
+    },
+    {
+     "say": "safe state：絕對不可能發生 deadlock。",
+     "k": 4,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 836.2
+     }
+    },
+    {
+     "say": "unsafe：最壞情況下有可能 deadlock。真正的 deadlock 只是 unsafe 裡面的一小塊。",
+     "k": 5,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 842.4
+     }
+    },
+    {
+     "say": "所以 unsafe 不等於 deadlock。Gate Smashers 的影片說 unsafe 就會 deadlock，精確地說是可能會。",
+     "k": 5,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 357.6
+     }
+    },
+    {
+     "say": "avoidance 就是讓系統一直待在 safe 區，任何會把系統推進 unsafe 的動作都擋掉。",
+     "k": 6,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 858
+     }
+    },
+    {
+     "say": "怎麼判斷 safe？找一個順序，讓所有 process 照順序一個一個都能執行完。",
+     "k": 7,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 896
+     }
+    },
+    {
+     "say": "找得到這個順序，叫 safe sequence，系統就是 safe；找不到，就是 unsafe，有可能 deadlock。",
+     "k": 8,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 928.4
+     }
+    },
+    {
+     "say": "用在 avoidance：先假設答應某個分配，答應後若找不到順序，就擋掉或先 hold 住，等狀態改變再說。",
+     "k": 9,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 959.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Safe sequence：12 台 tape drive",
+   "scene": "dl-c-tape",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "來實際找一次 safe sequence。",
+     "k": 1,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1000.3
+     }
+    },
+    {
+     "say": "先只看一種資源：12 台 tape drive，也就是 12 個 instance。多種資源的做法本質一樣。",
+     "k": 2,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1011.3
+     }
+    },
+    {
+     "say": "三個 process，目前 P0 拿著 5 台、P1 拿著 2 台、P2 拿著 2 台。",
+     "k": 3,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1045.5
+     }
+    },
+    {
+     "say": "每個人還有一個 Max：P0 是 10、P1 是 4、P2 是 9。P0 現在用 5 台，代表它下一秒可能再要 5 台。",
+     "k": 4,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1064.1
+     }
+    },
+    {
+     "say": "Max 是事先給定的，由 compiler 或 programmer 提供。它是某個時刻同時最多要幾台，不是整個程式總共用幾台。",
+     "k": 5,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1105.6
+     }
+    },
+    {
+     "say": "這個例子找得到順序：P1、P0、P2。我們一步一步驗證。",
+     "k": 6,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1133
+     }
+    },
+    {
+     "say": "總共 12 台，已經用了 5 加 2 加 2 等於 9 台，所以現在空著 3 台。",
+     "k": 7,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1159.7
+     }
+    },
+    {
+     "say": "最壞情況，下一秒大家都要到 Max：P0 還要 5 台、P1 還要 2 台、P2 還要 7 台。",
+     "k": 8,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1166
+     }
+    },
+    {
+     "say": "空的 3 台夠 P1，先給它，它就跑得完。跑完它手上的 4 台全部還回來，3 減 2 加 4，變 5 台。",
+     "k": 9,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1183.7
+     }
+    },
+    {
+     "say": "有 5 台，P0 剛好還要 5 台，可以做完。做完還回 10 台，5 減 5 加 10，變 10 台。",
+     "k": 10,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1217.7
+     }
+    },
+    {
+     "say": "有 10 台，P2 只要再 7 台，也做得完，最後 12 台全部回來。",
+     "k": 11,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1236
+     }
+    },
+    {
+     "say": "照 P1、P0、P2 的順序大家都能做完，所以這個狀態是 safe，這個順序就是 safe sequence。",
+     "k": 12,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1242.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "找不到 safe sequence：unsafe",
+   "scene": "dl-c-unsafe",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "那找不到的例子呢？當然有。",
+     "k": 1,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1296
+     }
+    },
+    {
+     "say": "小改一下：P2 多拿一台，從 2 台變 3 台。現在用了 10 台，只剩 2 台。",
+     "k": 2,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1303
+     }
+    },
+    {
+     "say": "找順序時不用煩惱從誰開始，從上往下掃就好。每做完一個，空出來的只會變多，順序不影響找不找得到。",
+     "k": 3,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1317.3
+     }
+    },
+    {
+     "say": "剩 2 台，P1 還要 2 台，可以。做完還回 4 台，變成 4 台。",
+     "k": 4,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1342.2
+     }
+    },
+    {
+     "say": "但只有 4 台，P0 還要 5 台、P2 還要 6 台，都不夠，卡住了，找不到 safe sequence。",
+     "k": 5,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1363.1
+     }
+    },
+    {
+     "say": "所以這個狀態是 unsafe state。",
+     "k": 6,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1373
+     }
+    },
+    {
+     "say": "那它現在 deadlock 了嗎？還沒有。要等最壞情況真的發生，大家真的要到 Max，才會卡死。",
+     "k": 7,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1380.2
+     }
+    },
+    {
+     "say": "avoidance 就是事前考慮最壞情況：答應之後會不會進入 unsafe？會的話就擋。",
+     "k": 8,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1404.3
+     }
+    },
+    {
+     "say": "常犯的錯：process 做完時，加回空位的是它目前拿著的數量，不是 Max。",
+     "k": 9,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1437.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Banker's algorithm 的步驟",
+   "scene": "dl-c-banker",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "知道 safe sequence 以後，看 Banker's 怎麼用它。現在有個 process 送來一個 request。",
+     "k": 1,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1467.3
+     }
+    },
+    {
+     "say": "第一步，先改它目前持有的數字，假裝答應了，但還沒真的把資源給它。",
+     "k": 2,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1478.4
+     }
+    },
+    {
+     "say": "第二步，在這個假設下檢查系統還是不是 safe。不是的話，就不能答應。",
+     "k": 3,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1497.2
+     }
+    },
+    {
+     "say": "整個演算法一開始就假設最壞情況：把每個 process 最多會用的量，也就是 Max，記下來。",
+     "k": 4,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1517
+     }
+    },
+    {
+     "say": "檢查方式就是剛才那套：能滿足的 process 讓它做完、收回資源，再給別人，依序排出 safe sequence。",
+     "k": 5,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1529.5
+     }
+    },
+    {
+     "say": "排得出來，這次分配就沒問題，檢查完才真的答應。",
+     "k": 6,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1552.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Banker's 是 avoidance，不是 detection",
+   "scene": "dl-f-avoid",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "我們換一道 Gate Smashers 的題目來算。先記住，Banker's 是 deadlock avoidance 的演算法。",
+     "k": 1,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 0.5
+     }
+    },
+    {
+     "say": "之所以算 avoidance，是因為要事先告訴 OS：有哪些 process、會要哪些資源、最多要多少，也就是 Max。",
+     "k": 2,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 9.4
+     }
+    },
+    {
+     "say": "OS 根據這些資訊，決定誰先執行、誰要先等。",
+     "k": 3,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 27.1
+     }
+    },
+    {
+     "say": "常考：它屬於 prevention 還是 avoidance？答案是 avoidance。",
+     "k": 4,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 36.3
+     }
+    },
+    {
+     "say": "欸，這支影片接著說它也用在 deadlock detection，這是錯的，Banker's 只用在 avoidance。",
+     "k": 5,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 57.1
+     }
+    },
+    {
+     "say": "deadlock detection 是另一個演算法：比的是目前的 Request，不用 Max，用在 deadlock 已經發生之後。",
+     "k": 6,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 66.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "例題：Total、Allocation、Max",
+   "scene": "dl-f-tables",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "這種題目各種考試都很愛出，印度的研究所考試 GATE 也是。題目會給一個情境。",
+     "k": 1,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 73.6
+     }
+    },
+    {
+     "say": "5 個 process，P1 到 P5，3 種資源 A、B、C。表格先空著，我們一格一格填。",
+     "k": 2,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 80.8
+     }
+    },
+    {
+     "say": "這 3 種是不同 type，可以把 A 想成 CPU、B 想成 memory、C 想成 printer，instance 就是個數。",
+     "k": 3,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 155.8
+     }
+    },
+    {
+     "say": "系統總共有 A 10 個、B 5 個、C 7 個。",
+     "k": 4,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 178.1
+     }
+    },
+    {
+     "say": "第一張表 Allocation：系統目前已經分給每個 process 多少。",
+     "k": 5,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 195.7
+     }
+    },
+    {
+     "say": "P1 拿到 A 0 個、B 1 個、C 0 個，記成 (0, 1, 0)。",
+     "k": 6,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 235.9
+     }
+    },
+    {
+     "say": "P2 是 (2, 0, 0)，P3 是 (3, 0, 2)，P4 是 (2, 1, 1)，P5 是 (0, 0, 2)。",
+     "k": 7,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 251.8
+     }
+    },
+    {
+     "say": "第二張表 Max，maximum need：每個 process 最多需要多少。",
+     "k": 8,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 272.7
+     }
+    },
+    {
+     "say": "重點來了：正因為 process 事先把需求告訴系統，它才叫 avoidance。",
+     "k": 9,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 281.2
+     }
+    },
+    {
+     "say": "P1 事先說，我要 A 7 個、B 5 個、C 3 個，給我這些我就能跑完。P2 的 Max 是 (3, 2, 2)。",
+     "k": 10,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 290.5
+     }
+    },
+    {
+     "say": "P3 的 Max 是 (9, 0, 2)：A 要 9 個，B 不用，C 要 2 個。",
+     "k": 11,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 318.4
+     }
+    },
+    {
+     "say": "P4 是 (4, 2, 2)，P5 是 (5, 3, 3)。",
+     "k": 12,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 340.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Available：總量減掉已配置",
+   "scene": "dl-f-avail",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "第三樣要算 Available，目前還能用的資源。",
+     "k": 1,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 399.4
+     }
+    },
+    {
+     "say": "系統總共有 (10, 5, 7)。",
+     "k": 2,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 407.4
+     }
+    },
+    {
+     "say": "但我們不是從時間 0 看，而是某個時間點，表上的 Allocation 都已經被拿走了。",
+     "k": 3,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 414.7
+     }
+    },
+    {
+     "say": "A 欄加起來：0 加 2 加 3 加 2 加 0，等於 7，A 已經配出 7 個。",
+     "k": 4,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 435.6
+     }
+    },
+    {
+     "say": "B 欄 1 加 1 等於 2，C 欄 2 加 1 加 2 等於 5，總共配出 (7, 2, 5)。",
+     "k": 5,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 451.3
+     }
+    },
+    {
+     "say": "A 總共 10 個給了 7 個，剩 3 個。",
+     "k": 6,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 470.8
+     }
+    },
+    {
+     "say": "B 是 5 減 2 剩 3，C 是 7 減 5 剩 2，所以 Available 是 (3, 3, 2)。",
+     "k": 7,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 487
+     }
+    },
+    {
+     "say": "周老師也特別提醒：是 Total 減 Allocation 那一欄，不是減 Max，也不是減 Need。",
+     "k": 8,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1622.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Need：Max 減 Allocation",
+   "scene": "dl-f-need",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "再來算 remaining need，還需要多少，表格多一欄 Need。",
+     "k": 1,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 509.4
+     }
+    },
+    {
+     "say": "就像小時候的數學題：小孩要 10 顆蘋果，你給了 3 顆，還要再給 7 顆。",
+     "k": 2,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 544.5
+     }
+    },
+    {
+     "say": "公式就是 Need 等於 Max 減 Allocation。",
+     "k": 3,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 579.8
+     }
+    },
+    {
+     "say": "P1 的 A：最多要 7 個，給了 0 個，還要 7。",
+     "k": 4,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 584.6
+     }
+    },
+    {
+     "say": "B：要 5 個給了 1 個，還要 4。",
+     "k": 5,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 596.5
+     }
+    },
+    {
+     "say": "C：要 3 個一個都沒給，還是 3。所以 P1 的 Need 是 (7, 4, 3)。",
+     "k": 6,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 605.1
+     }
+    },
+    {
+     "say": "P2：(3, 2, 2) 減 (2, 0, 0)，等於 (1, 2, 2)。",
+     "k": 7,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 613.8
+     }
+    },
+    {
+     "say": "P3：9 減 3、0 減 0、2 減 2，Need 是 (6, 0, 0)。",
+     "k": 8,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 637.7
+     }
+    },
+    {
+     "say": "小心，A 只能減 A、B 減 B、C 減 C，對錯欄是最常見的計算錯誤。",
+     "k": 9,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 645.8
+     }
+    },
+    {
+     "say": "P4：(4, 2, 2) 減 (2, 1, 1)，等於 (2, 1, 1)。",
+     "k": 10,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 656.7
+     }
+    },
+    {
+     "say": "P5：(5, 3, 3) 減 (0, 0, 2)，C 只剩 1，等於 (5, 3, 1)。",
+     "k": 11,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 665
+     }
+    },
+    {
+     "say": "五個 Need 都齊了：(7, 4, 3)、(1, 2, 2)、(6, 0, 0)、(2, 1, 1)、(5, 3, 1)。",
+     "k": 12,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 678.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Safety algorithm：找出 safe sequence",
+   "scene": "dl-f-safety",
+   "steps": 22,
+   "lines": [
+    {
+     "say": "開始找 safe sequence。右邊多一欄 Work，從目前可用的 (3, 3, 2) 開始。",
+     "k": 1,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 705.6
+     }
+    },
+    {
+     "say": "每一步只問一件事：用目前的 Work，滿不滿足得了某個 process 剩下的 Need？",
+     "k": 2,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 716.1
+     }
+    },
+    {
+     "say": "P1 要 (7, 4, 3)：A 要 7 只有 3，B 要 4 只有 3，C 要 3 只有 2，全部不夠，先跳過。",
+     "k": 3,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 724.2
+     }
+    },
+    {
+     "say": "如果每個 process 都滿足不了，就是 unsafe，可能 deadlock。",
+     "k": 4,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 749.9
+     }
+    },
+    {
+     "say": "看 P2：A 要 1 有 3，B 要 2 有 3，C 要 2 有 2，三欄都夠。",
+     "k": 5,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 765.2
+     }
+    },
+    {
+     "say": "假設 P2 的 A 不是 1 而是 4，就算 B、C 夠也不行。三種資源必須同時都夠，不能只給一部分。",
+     "k": 6,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 782.3
+     }
+    },
+    {
+     "say": "P3 要 (6, 0, 0)，B、C 都不用，看起來好像行，但 A 要 6 只有 3，還是不行。",
+     "k": 7,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 844
+     }
+    },
+    {
+     "say": "所以第一個是 P2。",
+     "k": 8,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 875.1
+     }
+    },
+    {
+     "say": "P2 拿到資源跑完、結束，連同它原本拿著的 Allocation (2, 0, 0) 一起放出來。",
+     "k": 9,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 909
+     }
+    },
+    {
+     "say": "Work 變成 (3, 3, 2) 加 (2, 0, 0)，等於 (5, 3, 2)。注意加的是 Allocation，不是 Need。",
+     "k": 10,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 944.9
+     }
+    },
+    {
+     "say": "再看 P3：要 6 個 A，現在只有 5，還是不夠。",
+     "k": 11,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 985.3
+     }
+    },
+    {
+     "say": "P4：A 要 2 有 5，B 要 1 有 3，C 要 1 有 2，可以，下一個是 P4。",
+     "k": 12,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1009.2
+     }
+    },
+    {
+     "say": "規則就一條：每一種資源，Need 都要小於等於目前的 Work，才能給。",
+     "k": 13,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1040.4
+     }
+    },
+    {
+     "say": "P4 結束，放出 (2, 1, 1)，Work 變 (7, 4, 3)。",
+     "k": 14,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1083.5
+     }
+    },
+    {
+     "say": "照順序往下看 P5，要 (5, 3, 1)，(7, 4, 3) 夠。想先回頭看 P3 或 P1 也行，不影響結果。",
+     "k": 15,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1120
+     }
+    },
+    {
+     "say": "P5 做完放出 (0, 0, 2)，Work 變 (7, 4, 5)。影片這裡一度口誤說成 0、1、2，正確是 (0, 0, 2)。",
+     "k": 16,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1162.1
+     }
+    },
+    {
+     "say": "回頭看 P1：(7, 4, 3) 小於等於 (7, 4, 5)，可以，P1 順利跑完。",
+     "k": 17,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1199.5
+     }
+    },
+    {
+     "say": "收回 P1 原本的 (0, 1, 0)，Work 變 (7, 5, 5)。",
+     "k": 18,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1232.3
+     }
+    },
+    {
+     "say": "只剩 P3：A 要 6 有 7，B、C 也夠。",
+     "k": 19,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1243
+     }
+    },
+    {
+     "say": "P3 結束放出 (3, 0, 2)，Work 變 (10, 5, 7)。",
+     "k": 20,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1268.6
+     }
+    },
+    {
+     "say": "最後剛好等於一開始的總數，所有資源都回來了，這是很好的驗算。",
+     "k": 21,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1283.1
+     }
+    },
+    {
+     "say": "沒有 deadlock，safe sequence 就是 P2、P4、P5、P1、P3。",
+     "k": 22,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1310.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "Safe sequence 不唯一；Banker 的限制",
+   "scene": "dl-f-limits",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "safe sequence 不唯一。做完 P2、P4 時 Work 是 (7, 4, 3)，P3 的 (6, 0, 0) 也夠。",
+     "k": 1,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1319
+     }
+    },
+    {
+     "say": "所以 P2、P4、P3、P5、P1 這個順序也行。",
+     "k": 1,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1319
+     }
+    },
+    {
+     "say": "考題可能直接給一個順序，問它是不是 safe sequence，那就照順序一步步驗算。",
+     "k": 2,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1329
+     }
+    },
+    {
+     "say": "什麼時候 unsafe？只有在某一步，任何一個 process 都滿足不了的時候。只要有一個可以，就能往下排。",
+     "k": 3,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1340.3
+     }
+    },
+    {
+     "say": "而 avoidance 需要事先把資訊交給系統：幾個 process、幾種資源、每個最多要多少。",
+     "k": 4,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1352.5
+     }
+    },
+    {
+     "say": "可是現實中 process 很少事先說出固定的需求，需求是動態的，執行中會增減，所以很難真的照這樣實作。",
+     "k": 5,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1371.2
+     }
+    },
+    {
+     "say": "不過它是很重要的理論基礎，考試也常考，要仔細算。",
+     "k": 6,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1408.8
+     }
+    },
+    {
+     "say": "影片最後又把它叫做 deadlock detection，別被帶走：Banker's 是 avoidance。",
+     "k": 7,
+     "src": {
+      "v": "7gMLNiEz3nw",
+      "t": 1416.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "恐龍書版本：P0 到 P4",
+   "scene": "dl-c-multi",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "周老師用的是恐龍書的版本：一樣是 A、B、C，總量 10、5、7，process 編號是 P0 到 P4。",
+     "k": 1,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1565.5
+     }
+    },
+    {
+     "say": "Allocation 跟剛才那題一樣，只是編號往前移；但 P3、P4 的 Max 是 (2, 2, 2) 和 (4, 3, 3)，跟剛才不同，別混用。",
+     "k": 2
+    },
+    {
+     "say": "Need 算出來：P0 (7, 4, 3)、P1 (1, 2, 2)、P2 (6, 0, 0)、P3 (0, 1, 1)、P4 (4, 3, 1)。",
+     "k": 3,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1594
+     }
+    },
+    {
+     "say": "Available 一樣是 (10, 5, 7) 減 (7, 2, 5)，等於 (3, 3, 2)。",
+     "k": 5,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1614
+     }
+    },
+    {
+     "say": "從上往下掃，A、B、C 三欄要同時都夠。",
+     "k": 7,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1626.1
+     }
+    },
+    {
+     "say": "P0 要 (7, 4, 3)，三欄都不夠，就算全給它也做不完。",
+     "k": 8,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1644
+     }
+    },
+    {
+     "say": "P1 的 (1, 2, 2)、P3 的 (0, 1, 1) 都夠，先給誰都可以，不影響找不找得到。",
+     "k": 9,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1662.4
+     }
+    },
+    {
+     "say": "選 P1，做完還回 (2, 0, 0)，Work 變 (5, 3, 2)。",
+     "k": 11,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1689.5
+     }
+    },
+    {
+     "say": "P3 做完加 (2, 1, 1) 變 (7, 4, 3)，P4 做完加 (0, 0, 2) 變 (7, 4, 5)。",
+     "k": 12,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1699
+     }
+    },
+    {
+     "say": "P2 做完加 (3, 0, 2) 變 (10, 4, 7)，P0 做完加 (0, 1, 0) 變 (10, 5, 7)。",
+     "k": 13,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1702.9
+     }
+    },
+    {
+     "say": "順序 P1、P3、P4、P2、P0，全部做完，是 safe state，最後 Work 也回到總量。",
+     "k": 14,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1708.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Resource-request：P1 再要 (1, 0, 2)",
+   "scene": "dl-c-req1",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "現在用這張表示範 avoidance。原本的狀態已經確認是 safe。",
+     "k": 1,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1728.6
+     }
+    },
+    {
+     "say": "P1 送來一個 request：要再多 1 個 A、2 個 C，也就是 (1, 0, 2)，例如它要 malloc、建立物件。",
+     "k": 2,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1737.5
+     }
+    },
+    {
+     "say": "OS 要決定答不答應。",
+     "k": 3,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1766.4
+     }
+    },
+    {
+     "say": "課本會先檢查兩件事：request 不能超過它的 Need (1, 2, 2)，也不能超過 Available (3, 3, 2)。這題都過。",
+     "k": 3
+    },
+    {
+     "say": "接著是最容易搞混的地方：先假設答應，把 request 加到 Allocation 上，但不是真的給。",
+     "k": 4,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1771
+     }
+    },
+    {
+     "say": "P1 的 Allocation 從 (2, 0, 0) 變 (3, 0, 2)，Need 變 (0, 2, 0)，Available 變 (2, 3, 0)。",
+     "k": 5,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1789.4
+     }
+    },
+    {
+     "say": "在這個假設的狀態下，再跑一次 safety algorithm。",
+     "k": 6,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1804.4
+     }
+    },
+    {
+     "say": "找不到，就代表答應以後可能 deadlock，不能答應。",
+     "k": 7,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1812.6
+     }
+    },
+    {
+     "say": "這題找得到：P1 的 (0, 2, 0) 夠，做完加 (3, 0, 2) 變 (5, 3, 2)；P3 做完變 (7, 4, 3)。",
+     "k": 8,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1820.5
+     }
+    },
+    {
+     "say": "接著 P4 變 (7, 4, 5)，P0 變 (7, 5, 5)，P2 變 (10, 5, 7)。順序是 P1、P3、P4、P0、P2。",
+     "k": 9,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1825.1
+     }
+    },
+    {
+     "say": "找得到 safe sequence，就可以答應。答應後不管未來發生什麼，都還有解。",
+     "k": 10,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1834.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Resource-request：P4 要 (3, 3, 0)",
+   "scene": "dl-c-req2",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "再一個例子，一樣從原本的狀態出發：這次 P4 要 (3, 3, 0)。",
+     "k": 1,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1851.5
+     }
+    },
+    {
+     "say": "先假設答應：P4 的 Allocation 從 (0, 0, 2) 變 (3, 3, 2)，Need 變 (1, 0, 1)。",
+     "k": 2,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1863.7
+     }
+    },
+    {
+     "say": "Available 從 (3, 3, 2) 扣掉 (3, 3, 0)，只剩 (0, 0, 2)。",
+     "k": 2,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1863.7
+     }
+    },
+    {
+     "say": "注意是從原來的狀態出發，剛才 P1 那個 request 並沒有發生。",
+     "k": 3,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1877.3
+     }
+    },
+    {
+     "say": "跑一次：Work 是 (0, 0, 2)，每個 process 的 Need 都至少有一欄比它大，找不到 safe sequence。",
+     "k": 4,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1885.1
+     }
+    },
+    {
+     "say": "你看，(3, 3, 0) 沒超過 Need (4, 3, 1)，也沒超過 Available (3, 3, 2)，資源明明夠，還是不能給。",
+     "k": 4
+    },
+    {
+     "say": "找不到，系統就把這次分配先 hold 住，甚至直接拒絕，這樣就不會進 unsafe state。",
+     "k": 5,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1892
+     }
+    },
+    {
+     "say": "這就是 Banker's：每個 request 先改 Allocation 假設它發生，跑一遍；會進 unsafe 就等，保持 safe 才答應。",
+     "k": 6,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1913.6
+     }
+    },
+    {
+     "say": "欄位千萬別搞錯：Max 永遠不變，它是程式最壞情況的需求，是事先給定的。",
+     "k": 7,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1940.4
+     }
+    },
+    {
+     "say": "Allocation 才記錄目前狀態，會隨分配改變，我們檢查的就是改變之後會不會出問題。",
+     "k": 8,
+     "src": {
+      "v": "HvXHTgLys1g",
+      "t": 1958.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Detection：同一套方法，只看現在",
+   "scene": "dl-d-intro",
+   "steps": 3,
+   "lines": [
+    {
+     "say": "最後一部分：deadlock detection 和 recovery。",
+     "k": 1,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 16.1
+     }
+    },
+    {
+     "say": "會做 avoidance，就能拿同一套演算法來做 detection。",
+     "k": 2,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 16.7
+     }
+    },
+    {
+     "say": "差別是 detection 不管未來，沒有 claim edge、也不用 Max，只看現在；它也不用決定給不給，所以更簡單。",
+     "k": 3,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 19
+     }
+    }
+   ]
+  },
+  {
+   "title": "Single instance：wait-for graph",
+   "scene": "dl-d-single",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "先看 single instance，一樣回到圖。",
+     "k": 1,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 43.7
+     }
+    },
+    {
+     "say": "圖上有 process 也有資源，每種資源只有一個，所以一個方塊一個點。",
+     "k": 2,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 53.1
+     }
+    },
+    {
+     "say": "avoidance 會畫 claim edge，detection 不用，因為它只管現在。",
+     "k": 3,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 64.2
+     }
+    },
+    {
+     "say": "系統狀態一改變就記下來，畫出目前的 request edge 和 assignment edge。",
+     "k": 4,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 72.4
+     }
+    },
+    {
+     "say": "然後跑找圈的演算法。這張圖找到 P1、R1、P2、R2、P3、R3 回到 P1 一圈；single instance 有圈就是 deadlock。",
+     "k": 5,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 93.7
+     }
+    },
+    {
+     "say": "投影片右邊那張圖是簡化版。",
+     "k": 6,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 100
+     }
+    },
+    {
+     "say": "只有一個 instance 時，可以把資源節點拿掉，直接畫 P1 在等 P2 這種箭頭，叫 wait-for graph。",
+     "k": 7,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 117.2
+     }
+    },
+    {
+     "say": "拿掉資源不影響結果，一樣找圈，找到就偵測到 deadlock。記得 wait-for graph 只適用 single instance。",
+     "k": 8,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 131.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Multiple instance：detection algorithm",
+   "scene": "dl-d-multi",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "每種資源有多個 instance 時，就跑剛才那套找順序的演算法來做 detection。",
+     "k": 1,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 153.8
+     }
+    },
+    {
+     "say": "對照一下，single instance 只要有圈，就百分之百是 deadlock。",
+     "k": 2,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 160.2
+     }
+    },
+    {
+     "say": "周老師這裡說，multiple instance 找不到順序不一定 deadlock。這句要小心，那其實是 avoidance 的 unsafe。",
+     "k": 3,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 172.1
+     }
+    },
+    {
+     "say": "課本的 detection 用的是現在的 Request，不是假設；跑完還做不完的 process，就是已經 deadlock 了。",
+     "k": 3
+    },
+    {
+     "say": "做法一樣，但不需要 Max，因為只看目前的狀態。",
+     "k": 4,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 206.8
+     }
+    },
+    {
+     "say": "只要兩張表：Allocation 和 Request。恐龍書的例子，A、B、C 共 7、2、6 個，全配出去了，Available 是 (0, 0, 0)。",
+     "k": 5,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 212
+     }
+    },
+    {
+     "say": "例如 P1 已經卡在那裡，它要 2 個 A、2 個 C 才能跑，Request 是 (2, 0, 2)。",
+     "k": 6,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 228.3
+     }
+    },
+    {
+     "say": "一樣看目前剩多少，能不能滿足某人的 Request。",
+     "k": 7,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 238.5
+     }
+    },
+    {
+     "say": "能滿足的就讓它做完，收回 Allocation。P0 的 Request 是 (0, 0, 0)，馬上做完，Work 變 (0, 1, 0)。",
+     "k": 8,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 245.4
+     }
+    },
+    {
+     "say": "為什麼不用 Max？Need 是假設最多會要多少；Request 是事實，現在就是要這麼多才能跑。",
+     "k": 9,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 253.5
+     }
+    },
+    {
+     "say": "P1 要 (2, 0, 2) 不夠，先等。P2 要 (0, 0, 0)，做完加 (3, 0, 3) 變 (3, 1, 3)。",
+     "k": 10,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 271.3
+     }
+    },
+    {
+     "say": "P3 要 (1, 0, 0) 也夠，做完加 (2, 1, 1) 變 (5, 2, 4)。",
+     "k": 10,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 271.3
+     }
+    },
+    {
+     "say": "P4 要 (0, 0, 2) 可以，變 (5, 2, 6)；回頭 P1 的 (2, 0, 2) 夠了，加 (2, 0, 0) 變 (7, 2, 6)。",
+     "k": 11,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 275.8
+     }
+    },
+    {
+     "say": "全部做得完，Finish 全是 true，目前沒有 deadlock。要是有人始終做不完，就是偵測到 deadlock。",
+     "k": 12,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 280.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "P2 多要一個 C：已經 deadlock",
+   "scene": "dl-d-more",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "同一個例子，原本沒有 deadlock。",
+     "k": 1,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 297.5
+     }
+    },
+    {
+     "say": "現在 P2 又多要一個 C，Request 從 (0, 0, 0) 變 (0, 0, 1)。",
+     "k": 2,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 302.3
+     }
+    },
+    {
+     "say": "沒有 avoidance，程式要什麼系統就給。跑 detection：P0 做完，Work 是 (0, 1, 0)，其他四個都有一欄不夠。",
+     "k": 3,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 309.8
+     }
+    },
+    {
+     "say": "所以系統已經 deadlock：Finish 還是 false 的 P1、P2、P3、P4，就是卡住的 process。",
+     "k": 4,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 318
+     }
+    },
+    {
+     "say": "為什麼 OS 要算這些？卡住的是使用者程式，OS 自己還能跑，它得知道程式不動是不是 deadlock，才能處理。",
+     "k": 5,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 327.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Recovery：砍誰、怎麼砍",
+   "scene": "dl-d-recover",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "偵測到之後，真正麻煩的是 recovery。示意圖上 P1 到 P4 互相等成一圈，P5、P6 沒參與。",
+     "k": 1,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 350.7
+     }
+    },
+    {
+     "say": "最暴力的做法：所有 process 全部 kill，等於 reboot。",
+     "k": 2,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 360.6
+     }
+    },
+    {
+     "say": "好一點：只 kill 圈裡的 P1 到 P4，P5、P6 不受影響。",
+     "k": 3,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 376.6
+     }
+    },
+    {
+     "say": "更溫和：one at a time，一次砍一個，再跑一次 detection 看解開了沒，不行再砍下一個。",
+     "k": 4,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 398.3
+     }
+    },
+    {
+     "say": "問題是先砍誰？也許砍 priority 最低的，但不一定解得開，因為它手上的資源可能很少。",
+     "k": 5,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 420.3
+     }
+    },
+    {
+     "say": "從低 priority 一路砍下去，最後砍掉的反而更多。怎麼做最好，需要很多使用者程式的資訊。",
+     "k": 6,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 437
+     }
+    },
+    {
+     "say": "總之要選一個 victim。如果系統支援 preemption 加 rollback，例如定期做 checkpoint，被砍的可以回到之前的狀態。",
+     "k": 7,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 466
+     }
+    },
+    {
+     "say": "還要看支援程度：能 partial rollback，還是只能 total rollback 整個重來。",
+     "k": 8,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 484.5
+     }
+    },
+    {
+     "say": "還有，會不會老是砍同一個？很可能，它就永遠跑不完，這叫 starvation。所以要把被 rollback 的次數算進 cost。",
+     "k": 9,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 495.5
+     }
+    },
+    {
+     "say": "recovery 多半 case by case。實務上要嘛事先 avoid 或 prevent，要嘛乾脆 ignore，讓使用者自己處理。",
+     "k": 10,
+     "src": {
+      "v": "b2lHjRiLeFE",
+      "t": 518.3
+     }
+    }
+   ]
+  }
+ ]
+}

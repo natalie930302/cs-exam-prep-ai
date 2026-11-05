@@ -1,0 +1,4164 @@
+{
+ "chapter": "os-8",
+ "title": "虛擬記憶體",
+ "intro": "從「為什麼不必把整支程式放進記憶體」出發，弄懂 demand paging、page fault 處理和 EAT，看 copy-on-write 與 memory-mapped file，再練熟 FIFO、optimal、LRU 置換，最後搞懂 frame 分配、thrashing、working set 和 PFF。",
+ "parts": [
+  {
+   "title": "這一章要學什麼",
+   "scene": "vm-13a-plan",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "好，這一章是虛擬記憶體，virtual memory。意思是作業系統管記憶體時，不只用 RAM，還會拉硬碟來幫忙。",
+     "k": 1,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 14.6
+     }
+    },
+    {
+     "say": "上一章學過 paging，把記憶體切成一樣大的 page 來管，這一章會一路沿用。",
+     "k": 2,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 36.2
+     }
+    },
+    {
+     "say": "在 virtual memory 底下做 paging，有個專門的名字，叫 demand paging，需要時才搬進來。",
+     "k": 3,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 44.6
+     }
+    },
+    {
+     "say": "我們也會回頭看 fork：建立 process 其實就是在分配記憶體，它跟這章的機制關係很深。",
+     "k": 4,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 58.1
+     }
+    },
+    {
+     "say": "整章最重要的是 page replacement algorithm，記憶體滿了要請誰出去。演算法不難，但一定要會算。",
+     "k": 5,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 76.8
+     }
+    },
+    {
+     "say": "另一個大重點叫 thrashing。很怪的現象：程式開越多，CPU 使用率居然往下掉。",
+     "k": 6,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 85.8
+     }
+    },
+    {
+     "say": "為什麼會這樣、OS 又怎麼避免它，周志遠老師說這部分非常重要，我們最後會好好講。",
+     "k": 7,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 112
+     }
+    }
+   ]
+  },
+  {
+   "title": "為什麼不必把整支程式放進記憶體",
+   "scene": "vm-13a-why",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "先想一個問題：一個 process 開始跑，我們真的需要把它整支內容都搬進 memory 嗎？",
+     "k": 1,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 122.4
+     }
+    },
+    {
+     "say": "前面學過 dynamic loading，要用某個函式才載入；還有 dynamic linking，執行時才連 library。",
+     "k": 2,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 140.5
+     }
+    },
+    {
+     "say": "這兩招都能省記憶體，而 virtual memory 更積極：讓放進記憶體的東西，每一樣都有意義。",
+     "k": 3,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 150
+     }
+    },
+    {
+     "say": "你想想看，處理錯誤的程式碼，平常根本不會跑到，放在記憶體只是佔位置。",
+     "k": 4,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 171.2
+     }
+    },
+    {
+     "say": "程式裡一堆 if else 分支，有些路徑可能永遠走不到。",
+     "k": 5,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 186.8
+     }
+    },
+    {
+     "say": "共用的 library 呢？交給 dynamic linking，需要時才連過去。",
+     "k": 6,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 198.6
+     }
+    },
+    {
+     "say": "還有一種前面沒解決的：你宣告一個一萬個元素的 array，不小心多打幾個零，結果幾乎沒用到。",
+     "k": 7,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 207.2
+     }
+    },
+    {
+     "say": "virtual memory 可以細到 page 這一層：沒被 access 的 page 就先不放，只搬真的用到的。",
+     "k": 8,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 241.1
+     }
+    },
+    {
+     "say": "目的就是提高 memory utilization。注意，不是看塞了多少，而是放進去的東西有沒有真的被存取。",
+     "k": 9,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 260.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Virtual memory 的四個好處",
+   "scene": "vm-13a-benefit",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "logical address 是程式自己看到的位址，physical address 是 RAM 真正的位置，中間用一張表連起來。",
+     "k": 1,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 287.3
+     }
+    },
+    {
+     "say": "既然切開了，程式的某一頁不一定要對到 RAM，甚至可以對到 disk，放哪裡使用者根本不用管。",
+     "k": 2,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 316.2
+     }
+    },
+    {
+     "say": "好處一：程式可以比實體記憶體還大。RAM 只有 16GB，logical space 照樣可以更大，慢一點但跑得動。",
+     "k": 3,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 338.5
+     }
+    },
+    {
+     "say": "好處二：硬碟也被當成記憶體的一部分，可用空間變大，CPU、I/O 這些資源的使用率就能提高。",
+     "k": 4,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 380.2
+     }
+    },
+    {
+     "say": "空間大就能放更多 process，也就是 degree of multiprogramming 提高，閒著的資源更容易有人用。",
+     "k": 5,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 409
+     }
+    },
+    {
+     "say": "好處三：寫程式變簡單，尤其是 compiler、linker 這層，只管自己的 logical 空間就好。",
+     "k": 6,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 436.6
+     }
+    },
+    {
+     "say": "好處四：程式跑比較快，特別是啟動。沒有 virtual memory，整支程式要先全部 load 進來才能開始。",
+     "k": 7,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 504.6
+     }
+    },
+    {
+     "say": "用 demand paging，一開始什麼都不搬，要哪頁才搬哪頁。一次 4KB，而不是一口氣 10MB。",
+     "k": 8,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 529
+     }
+    },
+    {
+     "say": "這些好處跟上一章 virtual address 有重疊，因為 virtual memory 包含它，而且更進一步用到了 disk。",
+     "k": 9,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 576
+     }
+    }
+   ]
+  },
+  {
+   "title": "為什麼是 paging，不是 segmentation",
+   "scene": "vm-13a-seg",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "做法有兩種：demand paging 以 page 為單位，demand segmentation 以 segment 為單位。",
+     "k": 1,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 605.6
+     }
+    },
+    {
+     "say": "把記憶體內容搬到 disk 時，同一個想法，可以一頁一頁搬，也可以一段一段搬。",
+     "k": 2,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 631.8
+     }
+    },
+    {
+     "say": "那為什麼大家都用 paging？segment 大小不固定，搬回來要找夠大的空洞，像 best fit，最壞 O(n)。",
+     "read": "那為什麼大家都用 paging？segment 大小不固定，搬回來要找夠大的空洞，像 best fit，最壞 大O n。",
+     "k": 3,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 640.6
+     }
+    },
+    {
+     "say": "page 大小固定，有空位就一定放得下，從 free list 拿第一個就好，只要 O(1)。",
+     "read": "page 大小固定，有空位就一定放得下，從 free list 拿第一個就好，只要 大O 1。",
+     "k": 4,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 663.6
+     }
+    },
+    {
+     "say": "兩個同時存在時，是 segmentation 在上、paging 在下。這題以前考過，要記得為什麼。",
+     "k": 5,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 695.7
+     }
+    },
+    {
+     "say": "segmentation 照使用者的角度切：code、heap、stack 各一段，寫程式比較直覺。",
+     "k": 6,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 715
+     }
+    },
+    {
+     "say": "真正放進 physical memory，固定大小的 paging 好管：找空位 O(1)、沒有 external fragmentation。",
+     "read": "真正放進 physical memory，固定大小的 paging 好管：找空位 大O 1、沒有 external fragmentation。",
+     "k": 7,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 736.1
+     }
+    },
+    {
+     "say": "internal fragmentation 也只在 4KB 以內，浪費很小。",
+     "k": 7,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 755.3
+     }
+    },
+    {
+     "say": "所以 demand paging 是在 paging 這層做的，不用管 segmentation，segmentation 主要跟 compiler 有關。",
+     "k": 8,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 796
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page 可以待在 disk",
+   "scene": "vm-13a-map",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "來看圖。左邊是程式的 logical address，一堆 page；中間的 page table 把每頁對到 RAM 的某個 frame。",
+     "k": 1,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 809
+     }
+    },
+    {
+     "say": "virtual memory 多一層：某一頁很久沒被存取，就 swap 到 disk，page table 那格標成不在記憶體。",
+     "k": 2,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 834.7
+     }
+    },
+    {
+     "say": "等 CPU 要存取它，OS 發現它在 disk，就搬回 physical memory，然後照常執行，好像什麼都沒發生。",
+     "k": 3,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 849.1
+     }
+    },
+    {
+     "say": "所以 disk 好像變成記憶體的一部分。但 RAM 大小沒變，而且 CPU 不能直接讀 disk，一定要先搬回來。",
+     "k": 4,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 871
+     }
+    },
+    {
+     "say": "那誰該被踢到 disk？這就是後面的 replacement algorithm。選錯了，就會一直搬來搬去。",
+     "k": 5,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 891
+     }
+    },
+    {
+     "say": "提醒一下，這種搬回來不是 load program。它只是複製 4KB 的 bytes，不會去建 page table 或 PCB。",
+     "k": 6,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 912.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "對照：沒有 virtual memory 時程式怎麼跑",
+   "scene": "vm-13a-novm",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "先複習上一章：程式 compile 完變成 binary，裡面的位址都是 virtual address。",
+     "k": 1,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 949.7
+     }
+    },
+    {
+     "say": "要 run 時，loader 先做準備：建立 PCB，記錄這個 process 的資料，還有它的 page table。",
+     "k": 2,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 989.5
+     }
+    },
+    {
+     "say": "沒有 virtual memory、也沒有 demand paging 的話很單純：一開始全部 load 進去，page table 每格填好。",
+     "k": 3,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 1014.7
+     }
+    },
+    {
+     "say": "記憶體不夠、或某個 process 很久沒跑，就把整個 process 搬到硬碟，這是以 process 為單位的 swapping。",
+     "k": 4,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 1028.4
+     }
+    },
+    {
+     "say": "接著開始執行，每個位址都透過 page table 翻譯成 physical address，再去存取。",
+     "k": 5,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 1046.3
+     }
+    },
+    {
+     "say": "執行中也可能要更多記憶體，像 malloc，OS 就先改 page table 分配好位置，再放資料。",
+     "k": 6,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 1073.6
+     }
+    },
+    {
+     "say": "因為用起來是散落的，page table 要標出哪些格子 valid、哪些 invalid。",
+     "k": 7,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 1101.3
+     }
+    },
+    {
+     "say": "程式結束，就把它的 memory 和 page table 全部 free 掉。等一下換成 demand paging，同一支程式會很不一樣。",
+     "k": 8,
+     "src": {
+      "v": "TnmN_KNIbc4",
+      "t": 1118.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Demand paging：要了才搬",
+   "scene": "vm-13b-what",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "demand 就是「需要」。demand paging 的意思是：你要用了，我才去做。一開始所有 page 都在 disk 上。",
+     "k": 1,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 14.6
+     }
+    },
+    {
+     "say": "不是一次把整支程式的 page 全 load 進來，而是要哪一頁，才搬那一頁。",
+     "k": 2,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 25
+     }
+    },
+    {
+     "say": "好處一：I/O 少，load time 短。一次只搬一個 4KB 的 page，當然比搬 10MB 快。",
+     "k": 3,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 38.2
+     }
+    },
+    {
+     "say": "好處二：記憶體只放要用的東西，使用率提高，剩下的空間可以給別的程式。",
+     "k": 4,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 53
+     }
+    },
+    {
+     "say": "別的程式也進得來，degree of multiprogramming 就跟著提高。",
+     "k": 5,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 70.5
+     }
+    },
+    {
+     "say": "就算沒有 dynamic loading、linking，光看程式怎麼用記憶體，以 page 為單位決定放哪，就是 demand paging。",
+     "k": 6,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 74.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Swapper 和 pager",
+   "scene": "vm-13b-pager",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "這時可以跟之前的 mid-term scheduler 比一比，它俗稱 swapper。現在記憶體裡有 P1、P2 兩個 process。",
+     "k": 1,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 209.3
+     }
+    },
+    {
+     "say": "swapper 以 process 為單位：把整個 P1 一口氣搬到 disk。",
+     "k": 2,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 225.5
+     }
+    },
+    {
+     "say": "demand paging 是 pager 在做的事，以 page 為單位，只搬某一頁，不會整個 process 一起動。",
+     "k": 3,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 233.5
+     }
+    },
+    {
+     "say": "所以一個 process 可以一部分在 disk、一部分在記憶體，照樣繼續跑，不用整個被 suspend。",
+     "k": 4,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 259.1
+     }
+    },
+    {
+     "say": "OS 通常兩個都有，層級不同、不衝突：swapper 決定誰整個留下，pager 再挑留下的人哪些 page 不要。",
+     "k": 5,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 270
+     }
+    }
+   ]
+  },
+  {
+   "title": "無效位址，還是還沒搬進來",
+   "scene": "vm-13b-invalid",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "用了 demand paging，每次存取一個位址，都要先分清楚是哪一種情況。",
+     "k": 1,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 94.7
+     }
+    },
+    {
+     "say": "第一種叫 invalid reference：這個位址根本沒分配給程式，超出範圍，本來就不該碰。",
+     "k": 2,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 108.1
+     }
+    },
+    {
+     "say": "第二種要分開看：位址是有效的，只是那一頁還沒搬進來，因為之前沒人要用。",
+     "k": 3,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 129.9
+     }
+    },
+    {
+     "say": "這種存取一樣會出錯，但這個錯其實是在通知 OS：「demand 來了」，OS 就去把它搬進來。",
+     "k": 4,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 151
+     }
+    },
+    {
+     "say": "極端一點叫 pure demand paging：load process 時只建 page table 和 PCB，記憶體裡一頁都不放。",
+     "k": 5,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 164
+     }
+    },
+    {
+     "say": "真的開始跑、用到哪一頁，才把那一頁放進記憶體。",
+     "k": 6,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 177
+     }
+    },
+    {
+     "say": "實際系統大多不會這麼 pure，可能先 load 一定會用到的部分，省掉開頭一連串的 fault。",
+     "k": 7,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 192
+     }
+    }
+   ]
+  },
+  {
+   "title": "Valid-invalid bit",
+   "scene": "vm-13b-vbit",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "那 OS 怎麼知道一個位址是哪種情況？",
+     "k": 1,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 296.7
+     }
+    },
+    {
+     "say": "靠 page table 每格的 valid-invalid bit。這個 bit 主要就是拿來做 virtual memory 的。",
+     "k": 2,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 312.7
+     }
+    },
+    {
+     "say": "bit 是 v，也就是 1，代表這一頁現在在記憶體裡。",
+     "k": 3,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 325.7
+     }
+    },
+    {
+     "say": "bit 是 i，也就是 0，在這裡的意思是：這頁有效，只是目前不在記憶體。",
+     "k": 4,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 333.5
+     }
+    },
+    {
+     "say": "存取時看到 0，就產生 page fault。OS 把那頁從 disk 搬進來，填上 frame 號碼，再把 bit 改成 v。",
+     "k": 5,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 339.1
+     }
+    },
+    {
+     "say": "pure demand paging 一開始一頁都不在，所以每個 bit 都是 0，等著被搬。",
+     "k": 6,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 361.8
+     }
+    },
+    {
+     "say": "那讀寫權限呢？老師說通常放在 segment 那層管。課本也補充，page table 每格可以有 protection bit。",
+     "k": 7,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 390.2
+     }
+    },
+    {
+     "say": "page 被換出去的地方叫 backing store，也叫 swap space，它跟一般存檔案的 file system 是兩回事。",
+     "k": 8,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 410
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page fault 是什麼",
+   "scene": "vm-pf-what",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "換個角度看。Simple Snippets 舉了 process A：它很大，切成 P1 到 P4 四個 page。",
+     "k": 1,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 41.1
+     }
+    },
+    {
+     "say": "paging 裡，virtual memory 切成 page，main memory 切成 frame，兩個一樣大。",
+     "k": 2,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 60.9
+     }
+    },
+    {
+     "say": "page fault 就是：要用的 page 不在 main memory，而是在 secondary storage，像這裡的 P3。",
+     "k": 3,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 71.5
+     }
+    },
+    {
+     "say": "硬碟留一塊空間放這些 page，main memory 滿了也沒關係，等於把 main memory 擴充了。",
+     "k": 4,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 85.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Pure demand paging 一步步跑",
+   "scene": "vm-13b-run",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "回到剛才那支程式，改成 pure demand paging 來跑。為了好看，假設一頁只放一個指令。",
+     "k": 1,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 423.9
+     }
+    },
+    {
+     "say": "load 時只建 page table，裡面全是 i；PCB 照樣要建，但記憶體裡什麼都沒放。",
+     "k": 2,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 433.6
+     }
+    },
+    {
+     "say": "開始執行第一個指令，要存取記憶體，先去查 page table。",
+     "k": 3,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 446.7
+     }
+    },
+    {
+     "say": "bit 是 invalid，就產生 page fault。這是 paging 的過程，所以叫 page fault，不是 segmentation fault。",
+     "k": 4,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 458.2
+     }
+    },
+    {
+     "say": "fault 是一種 interrupt，會把 OS 叫起來。OS 知道這行指令放在 disk 的哪裡。",
+     "k": 5,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 472
+     }
+    },
+    {
+     "say": "把那一頁從 disk load 進記憶體的某個 frame。",
+     "k": 6,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 486.4
+     }
+    },
+    {
+     "say": "接著 update page table：填上 frame 號碼，把 valid bit 設起來。",
+     "k": 7,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 491.4
+     }
+    },
+    {
+     "say": "欸，這裡有個細節。平常執行完一個指令，PC 會加 4；page fault 處理完，要把 PC 減 4 移回去。",
+     "k": 8,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 503.3
+     }
+    },
+    {
+     "say": "CPU 重新 fetch 同一個指令，這次資料在了，正常執行，結果跟沒發生過一樣。",
+     "k": 9,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 528.1
+     }
+    },
+    {
+     "say": "下一個指令如果在別的 page，就再來一次：fault、搬進來、更新表、重做。右邊的記憶體就慢慢長出來。",
+     "k": 10,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 543.9
+     }
+    },
+    {
+     "say": "那位址有沒有效誰檢查？上一層 segment 有 length，先擋掉越界的；到 paging 這層只看在不在記憶體。",
+     "k": 11,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 579.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page fault 處理步驟",
+   "scene": "vm-13b-steps",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "把流程整理成步驟。左上是 CPU，中間是 page table，page 1 是 i，右邊是記憶體，右下是 disk。",
+     "k": 1,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 618.9
+     }
+    },
+    {
+     "say": "第一步：先存取，看到 invalid，丟出 page fault。它是軟體產生的 interrupt，所以也叫 trap。",
+     "k": 2,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 626
+     }
+    },
+    {
+     "say": "OS 接到後，可能再確認一次：有沒有超過 segment 長度、或 PCB 記的記憶體上限？超過就是真的無效。",
+     "k": 3,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 643.2
+     }
+    },
+    {
+     "say": "有效的話才看 valid bit：在記憶體就直接存取，不在就繼續做 paging。",
+     "k": 4,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 672.3
+     }
+    },
+    {
+     "say": "接著找一個空的 frame，從 free list 拿，O(1) 就找到。",
+     "read": "接著找一個空的 frame，從 free list 拿，大O 1 就找到。",
+     "k": 5,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 698.7
+     }
+    },
+    {
+     "say": "然後做 swapping，把那頁內容從 disk 複製到這個 frame。",
+     "k": 6,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 719.7
+     }
+    },
+    {
+     "say": "再 update page table，填上 frame 號碼，這裡是 9，把 bit 設成 valid。",
+     "k": 7,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 726.1
+     }
+    },
+    {
+     "say": "最後一步千萬別忘：restart。PC 減 4，重新執行剛才那個指令。",
+     "k": 8,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 737.5
+     }
+    },
+    {
+     "say": "整理一下：CPU 不管三七二十一先存取，看到無效就 interrupt，被 OS 的 pager 接住，知道要做 paging。",
+     "k": 9,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 758.3
+     }
+    },
+    {
+     "say": "那頁原本在 disk 哪裡？在 load、或把它搬到 disk 時，OS 就記下來了。",
+     "k": 10,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 780.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "六個步驟再走一次：MMU 和 trap",
+   "scene": "vm-pf-steps",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "用 process A 再走一遍，這次把硬體的角色講清楚。CPU 正在跑 P2，裡面有一個指令 load X。",
+     "k": 1,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 107.2
+     }
+    },
+    {
+     "say": "假設 load X 要用到 P3，CPU 就發出要 P3 的請求。",
+     "k": 2,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 119.6
+     }
+    },
+    {
+     "say": "CPU 自己不知道 P3 在不在，要靠 MMU，記憶體管理單元，去查 process A 的 page table。這是 step 1。",
+     "k": 3,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 128.6
+     }
+    },
+    {
+     "say": "page table 有三欄：page number、frame number，最後是 valid-invalid bit。",
+     "k": 4,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 166.8
+     }
+    },
+    {
+     "say": "P3 那格是 i，代表它不在 main memory。",
+     "k": 5,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 171.8
+     }
+    },
+    {
+     "say": "看 main memory 也對得上：P1、P2 都在，接著直接是 P4，就是沒有 P3。",
+     "k": 6,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 185.2
+     }
+    },
+    {
+     "say": "step 2：發生 page fault，送一個 trap 給 OS，帶著「process A 的 P3 不在」這個資訊。",
+     "k": 7,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 199.3
+     }
+    },
+    {
+     "say": "trap 的優先權很高，OS 不能跳過、也不能忽略，一定要處理。",
+     "k": 8,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 227.9
+     }
+    },
+    {
+     "say": "step 3：OS 到 secondary storage 找到 P3。",
+     "k": 9,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 255.7
+     }
+    },
+    {
+     "say": "step 4：把 P3 帶回 main memory 的空 frame。F34 是空的，page 跟 frame 一樣大，直接放進去。",
+     "k": 10,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 282.2
+     }
+    },
+    {
+     "say": "注意 P1、P2 在 F7、F8，P3 卻在 F34。不連續也沒關係，page table 就像索引，記下每頁在哪。",
+     "k": 11,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 316.7
+     }
+    },
+    {
+     "say": "step 5：update page table，P3 那格填上 F34，改成 valid。",
+     "k": 12,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 367.3
+     }
+    },
+    {
+     "say": "step 6：restart，重新執行 load X，這次查得到 P3，順利跑下去。",
+     "k": 13,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 382.3
+     }
+    },
+    {
+     "say": "如果 P3 本來就在，根本不會 fault：MMU 查到 frame 34，從 step 1 直接跳到 step 6。",
+     "k": 14,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 409.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "沒有 free frame：先做 replacement",
+   "scene": "vm-13b-noframe",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "剛剛都有空 frame，很單純。那如果記憶體四格都滿了，新的 page 6 要進來呢？",
+     "k": 1,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 817
+     }
+    },
+    {
+     "say": "在「找 free frame」這步後面，要多做一件事。",
+     "k": 2,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 825.4
+     }
+    },
+    {
+     "say": "就是強迫某一頁從記憶體 swap 到 disk，清出一個位置。",
+     "k": 3,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 839.2
+     }
+    },
+    {
+     "say": "要踢誰？決定這件事的就叫 replacement algorithm。位置清出來，新的 page 就放進去。",
+     "k": 4,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 852
+     }
+    },
+    {
+     "say": "這步只在必要時觸發：流程還是先找 free frame，真的沒有才呼叫 replacement。",
+     "k": 5,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 863.3
+     }
+    },
+    {
+     "say": "所以整個 page fault 流程快不快，很大程度取決於 replacement algorithm 好不好。",
+     "k": 6,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 882.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Effective access time",
+   "scene": "vm-13b-eat",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "來算 demand paging 讓平均存取變多慢，叫 effective access time，EAT，算法跟 TLB 很像。",
+     "k": 1,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 892.6
+     }
+    },
+    {
+     "say": "用 p 代表 page fault rate：每次存取記憶體，有多少機率發生 page fault，p 介於 0 和 1。",
+     "k": 2,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 911.5
+     }
+    },
+    {
+     "say": "沒發生的機率是 1 − p，這時只花一次記憶體存取時間，記作 ma。",
+     "read": "沒發生的機率是 1 減 p，這時只花一次記憶體存取時間，記作 ma。",
+     "k": 3,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 936
+     }
+    },
+    {
+     "say": "細算的話 ma 不是定值，要看 TLB 有沒有命中，還包括資料從記憶體傳到 CPU 暫存器的時間。",
+     "k": 4,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 957.7
+     }
+    },
+    {
+     "say": "發生的機率是 p，要花 page fault time，把整頁從 disk 搬進來再交給 CPU。兩項加起來就是 EAT。",
+     "k": 5,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 1002.4
+     }
+    },
+    {
+     "say": "代課本的數字：ma 是 200 ns，page fault 要讀 disk，大約 8 ms，也就是 800 萬 ns。",
+     "read": "ma 是 200 奈秒，page fault 要讀 disk，大約 8 毫秒，也就是 800 萬奈秒。",
+     "k": 6,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 1034
+     }
+    },
+    {
+     "say": "整理後 EAT = 200 + p × 7,999,800 ns。前一項幾乎不重要，EAT 跟 p 乘 page fault 時間成正比。",
+     "read": "整理後 EAT 等於 200 加 p 乘 7,999,800 奈秒。前一項幾乎不重要，EAT 跟 p 乘 page fault 時間成正比。",
+     "k": 7,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 1065.4
+     }
+    },
+    {
+     "say": "舉例：1000 次存取只有 1 次 page fault，p = 0.001。",
+     "read": "舉例：1000 次存取只有 1 次 page fault，p 等於 0.001。",
+     "k": 8,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 1097.6
+     }
+    },
+    {
+     "say": "算出 EAT ≈ 8200 ns，也就是 8.2 µs。原本 200 ns，慢了大約 40 倍，不是 40%。",
+     "read": "算出 EAT 約等於 8200 奈秒，也就是 8.2 微秒。原本 200 奈秒，慢了大約 40 倍，不是 40%。",
+     "k": 9,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 1112
+     }
+    },
+    {
+     "say": "老師口頭說成 8.2 毫秒，那是口誤，正確是 8.2 微秒。",
+     "k": 9,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 1127.8
+     }
+    },
+    {
+     "say": "反過來，只願意慢 10%，EAT 要小於 220 ns，解出 p < 0.0000025，大約 40 萬次才能有 1 次 fault。",
+     "read": "反過來，只願意慢百分之10，EAT 要小於 220 奈秒，解出 p 小於 0.0000025，大約 40 萬次才能有 1 次 fault。",
+     "k": 10,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 1136.1
+     }
+    },
+    {
+     "say": "老師當下估成萬分之一，其實還要小得多，是四十萬分之一。數字不必背，記住要極低就好。",
+     "k": 10,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 1140
+     }
+    },
+    {
+     "say": "那為什麼有 virtual memory，電腦卻不覺得慢？跟 TLB 一樣，靠 locality，程式短時間總用附近的資料。",
+     "k": 11,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 1174.1
+     }
+    },
+    {
+     "say": "一次 fault 就搬進一整個 4KB 的 page，像 for loop 一直讀同一個 array，後面都不會再 fault。",
+     "k": 12,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 1189.5
+     }
+    },
+    {
+     "say": "把步驟拆開看，trap、更新 page table 都很快，時間幾乎全花在 disk，所以 fault rate 一定要極低。",
+     "k": 13,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 1247.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "EAT 的實際感受：locality 和 SSD",
+   "scene": "vm-14a-eat",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "下一講一開始，老師先複習 EAT：公式跟 TLB 很像，只是多了要去 disk 拿的那一層。",
+     "k": 1,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 13.8
+     }
+    },
+    {
+     "say": "公式不必死背，重點是結果很兩極：只要有 page fault，時間就被它主宰。",
+     "k": 2,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 19.4
+     }
+    },
+    {
+     "say": "從使用者角度想，一般人大概容忍慢 10%，反推回去，page fault rate 要比 TLB miss rate 低得多。",
+     "k": 4,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 64.6
+     }
+    },
+    {
+     "say": "做得到，是因為一次 fault 搬整頁：通常 4KB，現在也有 8KB，Intel Pentium 甚至能選 4MB 的 page。",
+     "k": 6,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 106
+     }
+    },
+    {
+     "say": "而每次存取只讀 1 到 4 個 byte，搬進一頁之後，接下來在這頁裡都不會再 fault。",
+     "k": 7,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 136.3
+     }
+    },
+    {
+     "say": "但程式跳來跳去、或同時開一堆程式、記憶體不夠，fault 就變多，電腦越來越慢。",
+     "k": 8,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 164
+     }
+    },
+    {
+     "say": "這也是大家建議 OS 裝 SSD 的原因：swap space 在 SSD 上，page fault 處理快很多，整台電腦就變快。",
+     "k": 9,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 192.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "EAT 計算練習",
+   "scene": "vm-pf-eat",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "來做一題常見的小計算。",
+     "k": 1,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 462.3
+     }
+    },
+    {
+     "say": "p 是 page fault 的機率，介於 0 到 1。記憶體快滿、page 來回搬的時候，就容易 fault。",
+     "k": 2,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 475.7
+     }
+    },
+    {
+     "say": "EAT = (1 − p) × 記憶體存取時間 + p × page fault overhead。",
+     "read": "EAT 等於 1 減 p 乘記憶體存取時間，加 p 乘 page fault overhead。",
+     "k": 3,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 501.7
+     }
+    },
+    {
+     "say": "overhead 是發生 fault 時多走 step 2 到 6 的時間；沒 fault 就從 step 1 直接到 step 6。",
+     "k": 4,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 530.8
+     }
+    },
+    {
+     "say": "題目：記憶體存取 100 ms，overhead 10 ms，10 次有 1 次 fault，所以 p = 0.1。",
+     "read": "題目：記憶體存取 100 毫秒，overhead 10 毫秒，10 次有 1 次 fault，所以 p 等於 0.1。",
+     "k": 5,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 559.8
+     }
+    },
+    {
+     "say": "欸，這組數字只是練習代公式。真實的 page fault 要讀硬碟，比記憶體存取慢非常多。",
+     "k": 5
+    },
+    {
+     "say": "代進去，先算 (1 − 0.1) × 100。",
+     "read": "代進去，先算 1 減 0.1，再乘 100。",
+     "k": 6,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 592.2
+     }
+    },
+    {
+     "say": "小提醒：題目可能混著給 ms、µs、ns，先換成同一個單位再算。",
+     "read": "小提醒：題目可能混著給毫秒、微秒、奈秒，先換成同一個單位再算。",
+     "k": 7,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 611.7
+     }
+    },
+    {
+     "say": "再加上 p × overhead，也就是 0.1 × 10。",
+     "read": "再加上 p 乘 overhead，也就是 0.1 乘 10。",
+     "k": 8,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 619.1
+     }
+    },
+    {
+     "say": "0.9 × 100 = 90，0.1 × 10 = 1，所以 EAT = 91 ms。",
+     "read": "0.9 乘 100 等於 90，0.1 乘 10 等於 1，所以 EAT 等於 91 毫秒。",
+     "k": 9,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 637.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Process 跟 virtual memory",
+   "scene": "vm-13b-proc",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "有了 virtual memory，對 process 的管理還有哪些好處？",
+     "k": 1,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 1305
+     }
+    },
+    {
+     "say": "第一個是剛講的 demand paging：load 時間很小，每次 swapping 也很快。",
+     "k": 2,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 1323.3
+     }
+    },
+    {
+     "say": "第二個是 fork。fork 要複製整份記憶體，但可以用 copy-on-write：內容真的不一樣了，才建新的 page。",
+     "k": 3,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 1342.9
+     }
+    },
+    {
+     "say": "第三個是 memory-mapped file。平常讀檔用 fopen、fread，要經過 file system，步驟多所以慢。",
+     "k": 4,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 1371.2
+     }
+    },
+    {
+     "say": "做法是把檔案的 offset 跟記憶體位址綁在一起，直接跳過 file system。",
+     "k": 5,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 1398.3
+     }
+    },
+    {
+     "say": "它跟 virtual memory 剛好倒過來：把 disk 上的檔案當成記憶體來存取。很多人實際上就是這樣讀檔的。",
+     "k": 6,
+     "src": {
+      "v": "VAaunFe_lRs",
+      "t": 1426.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Copy-on-write",
+   "scene": "vm-14a-cow",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "先看 copy-on-write。大部分 OS 用 fork 建 process，預設 child 是 parent 的複製，真的整份 copy 很浪費。",
+     "k": 1,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 297.5
+     }
+    },
+    {
+     "say": "學過 paging 就知道，MMU 做的就是對照。內容一樣，就讓兩邊 page table 指到同一份，叫 sharing。",
+     "k": 2,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 327.5
+     }
+    },
+    {
+     "say": "但它們畢竟是兩個程式，行為不同，只要有一方改了內容，就得拆開。",
+     "k": 3,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 348.2
+     }
+    },
+    {
+     "say": "什麼時候會改？write 的時候。讀沒問題，要寫時 OS 才複製那一頁，這就是 copy-on-write。",
+     "k": 4,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 360.5
+     }
+    },
+    {
+     "say": "好處是建 process 快很多，代價是執行中才 copy，會慢一點點。很多最佳化都是「需要時才做」。",
+     "k": 5,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 383.4
+     }
+    },
+    {
+     "say": "補充：拿 free frame 給新 page 前，通常會先 zero-out 清成 0，不然可能看到前一個 process 的資料。",
+     "k": 6,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 416.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Copy-on-write 例子：parent 改了 page C",
+   "scene": "vm-14a-cowex",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "看例子。fork 剛完成，parent 和 child 的使用者資料一模一樣，只有 OS 自己維護的 PCB 不同。",
+     "k": 1,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 457.3
+     }
+    },
+    {
+     "say": "所以不必複製，把兩邊 page table 設成一樣，共用實體記憶體裡的 page A、B、C。",
+     "k": 2,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 485.8
+     }
+    },
+    {
+     "say": "fork 對 parent 和 child 回傳不同的值，程式就靠它讓兩邊做不一樣的事。",
+     "k": 3,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 500.2
+     }
+    },
+    {
+     "say": "假設 parent 在某個 function 裡新建變數 Test1，它在 stack 上，剛好落在 page C，這就是一次 write。",
+     "k": 4,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 514.1
+     }
+    },
+    {
+     "say": "page C 兩邊不一樣了，於是複製一份 C 給 parent；A、B 還是照樣共用。",
+     "k": 5,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 538.5
+     }
+    },
+    {
+     "say": "誰拿新的、誰拿舊的是實作細節，無所謂。parent 看得到 Test1，child 沒有，兩邊都正常跑。",
+     "k": 6,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 564.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Memory-mapped file 的概念",
+   "scene": "vm-14a-mmap",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "再來是 memory-mapped file。右邊是存在 disk 上的一個檔案。",
+     "k": 1,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 601.9
+     }
+    },
+    {
+     "say": "它的目的是讓程式用存取記憶體的方式，去讀寫檔案。",
+     "k": 2,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 613.4
+     }
+    },
+    {
+     "say": "什麼叫存取記憶體的方式？就是 array。檔案本來就是一串 byte，對到一個 byte array，A[0] 對第 0 個 byte。",
+     "read": "什麼叫存取記憶體的方式？就是 array。檔案本來就是一串 byte，對到一個 byte array，A 零對第 0 個 byte。",
+     "k": 3,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 629.3
+     }
+    },
+    {
+     "say": "只要一個指令，把整個檔案 map 到記憶體某處，之後用 array、pointer 操作，不需要 fread、fwrite。",
+     "k": 4,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 651.4
+     }
+    },
+    {
+     "say": "這跟 virtual memory 是同一個概念：一個記憶體位址，其實對到 disk 上的某個位置。",
+     "k": 5,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 670.7
+     }
+    },
+    {
+     "say": "你把 A[1] 改掉，看起來只改了記憶體，但 OS 知道它對到檔案的哪個 byte，會幫你寫回去。",
+     "read": "你把 A 一改掉，看起來只改了記憶體，但 OS 知道它對到檔案的哪個 byte，會幫你寫回去。",
+     "k": 6,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 708.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Memory-mapped file 的優缺點",
+   "scene": "vm-14a-mmappc",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "最大的好處：完全跳過 file system，因為現在只是存取記憶體。",
+     "k": 1,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 747.4
+     }
+    },
+    {
+     "say": "file system 是一整套系統，隨便一個 fread，都要檢查權限、檔案有沒有打開，呼叫路徑很長。",
+     "k": 2,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 757.4
+     }
+    },
+    {
+     "say": "第二個好處是 sharing：檔案進了記憶體，用 paging 就能讓很多 process 共用同一塊。",
+     "k": 3,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 795.3
+     }
+    },
+    {
+     "say": "file system 很嚴謹，檔案被人用 write 打開，別人就不能同時 write；用 mmap 可以自己寫 locking，控制更細。",
+     "k": 4,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 815.4
+     }
+    },
+    {
+     "say": "缺點也不少。第一，好用也就好弄壞：記憶體只有共不共用，沒有讀、寫、執行這些 access control。",
+     "k": 5,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 885.6
+     }
+    },
+    {
+     "say": "第二，data loss：資料在記憶體，不會隨時寫回 disk，一當機就沒了。",
+     "k": 6,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 953.8
+     }
+    },
+    {
+     "say": "第三，寫程式比較難：只是一個 array，哪幾個 byte 是整數、哪些是字元，都要自己算，錯一個 byte 就毀了。",
+     "k": 7,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 1030
+     }
+    },
+    {
+     "say": "所以它適合資料單純、要快、暫時性的檔案，而且使用者少。一般情況還是交給 file system。",
+     "k": 8,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 1078.2
+     }
+    },
+    {
+     "say": "最常用它的是系統層的軟體，像 swap、virtual memory 本身，就是同樣的機制在搬一塊塊 4KB。",
+     "k": 9,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 1106
+     }
+    }
+   ]
+  },
+  {
+   "title": "讀檔的兩種寫法",
+   "scene": "vm-14a-code",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "這張圖看起來複雜，其實不難：disk 上的檔案也排成一串 byte，一個 page 對到檔案的 4KB。",
+     "k": 1,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 1152.1
+     }
+    },
+    {
+     "say": "很多 process 也能同時 map 到同一個檔案，各自把 page table 設好就行。",
+     "k": 2,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 1184.8
+     }
+    },
+    {
+     "say": "左邊是熟悉的寫法：open 檔案，seek 到某個位置，再 read，全都透過 file system。",
+     "k": 3,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 1202.2
+     }
+    },
+    {
+     "say": "file system 很重要的工作是 buffering：disk 太慢，read 時先 prefetch 一大塊，例如 256 bytes。",
+     "k": 4,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 1239
+     }
+    },
+    {
+     "say": "你其實只要一個 int，4 bytes，它再從 buffer 複製到你的 buf，等於資料被複製了兩次。",
+     "k": 5,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 1293.5
+     }
+    },
+    {
+     "say": "write 也一樣，先寫進 buffer，close 時才 flush。fflush 就是強迫它馬上寫。",
+     "k": 6,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 1325.6
+     }
+    },
+    {
+     "say": "換成 memory-mapped file：一樣先 open，再告訴 OS 要 map 哪一段，它回傳一個 pointer p。",
+     "k": 7,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 1376.8
+     }
+    },
+    {
+     "say": "之後直接用 pointer，像 p[1000]++，就等於一次 write，而且想跳到哪就跳到哪。",
+     "read": "之後直接用 pointer，像 p 一千加加，就等於一次 write，而且想跳到哪就跳到哪。",
+     "k": 8,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 1448.2
+     }
+    },
+    {
+     "say": "但寫下去只改了記憶體，跟 disk 還沒同步，這時斷電，資料就沒了。",
+     "k": 9,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 1484.1
+     }
+    },
+    {
+     "say": "要等 munmap，或用 msync 強迫同步，才寫回去。OS 不知道你改哪個 byte，只能把 dirty 的 page 整頁重寫。",
+     "k": 10,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 1511.6
+     }
+    },
+    {
+     "say": "最好的例子是顯示卡：螢幕畫面就是一堆 pixel，也就是一個 byte array，用 mmap 一次寫完再 flush，非常快。",
+     "k": 11,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 1562.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "三個機制小結",
+   "scene": "vm-14a-recap",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "投影片的程式是 pseudo code，每個系統的 API 都不太一樣，細節不用太在意。",
+     "k": 1,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 1603.5
+     }
+    },
+    {
+     "say": "但要記得：用完要 munmap，也要 close。munmap 解除記憶體的 mapping，close 關掉 file handle。",
+     "k": 2,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 1632.6
+     }
+    },
+    {
+     "say": "整理一下：demand paging 用到才載入，copy-on-write 寫了才複製，memory-mapped file 把檔案映射到記憶體。",
+     "k": 3,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 1667.2
+     }
+    },
+    {
+     "say": "它們都是比較特殊的記憶體操作，而且都跟 disk 有關，知道各在做什麼就好。",
+     "k": 4,
+     "src": {
+      "v": "ngdrizxxvPY",
+      "t": 1676.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page replacement 為什麼重要",
+   "scene": "vm-14b-why",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "好，進入本章重頭戲。page fault 時要找空 frame 放新 page，但四格全滿，就得做 replacement。",
+     "k": 1,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 14.9
+     }
+    },
+    {
+     "say": "要把誰換出去，由 replacement algorithm 決定。",
+     "k": 2,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 20.2
+     }
+    },
+    {
+     "say": "它對效能影響很大，因為它決定 fault 次數。你把等一下要用的 page 2 踢走，它很快又要搬回來。",
+     "k": 3,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 43.9
+     }
+    },
+    {
+     "say": "沒有空 frame 有兩種解法。極端的一種是用 swapper 把整個 process 搬走，但那支程式就完全不能動了。",
+     "k": 4,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 80.4
+     }
+    },
+    {
+     "say": "OS 比較喜歡細緻的做法：在 page 這層，由 pager 只挑一個 page 換出去。",
+     "k": 5,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 120.2
+     }
+    },
+    {
+     "say": "一個程式很多 page 其實沒在用，所以要找一頁來換，並不難。",
+     "k": 6,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 139.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Dirty bit",
+   "scene": "vm-14b-dirty",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "page 被換到 disk 時，有件事很重要。左邊是記憶體裡的三個 page，右邊是 disk。",
+     "k": 1,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 149.2
+     }
+    },
+    {
+     "say": "記憶體的內容本來就是從 disk load 進來的，所以 disk 上原本就有一份 copy。",
+     "k": 2,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 163.6
+     }
+    },
+    {
+     "say": "很多 page 根本沒被改過，像 library 只有讀。沒改還在踢出去時再寫一次，很浪費時間。",
+     "k": 3,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 189.6
+     }
+    },
+    {
+     "say": "所以 page table 每格再多一個 bit，叫 dirty bit，也叫 modify bit。",
+     "k": 4,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 207.9
+     }
+    },
+    {
+     "say": "剛 load 進來是 0，跟硬碟上的一樣；只要被寫過，就設成 1。這裡 data 那頁被寫過了。",
+     "k": 5,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 223.4
+     }
+    },
+    {
+     "say": "換出去時檢查它：是 0，代表沒改過，什麼都不用寫，新的 page 直接蓋過去。",
+     "k": 6,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 244.9
+     }
+    },
+    {
+     "say": "是 1，代表這 4KB 裡有 byte 改過，但不知道是哪個，只好整頁寫回硬碟。",
+     "k": 7,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 264.6
+     }
+    },
+    {
+     "say": "本來一次 fault 要寫出舊的、再讀進新的，兩次 disk 動作；有了 dirty bit，沒改過的就省一半。",
+     "k": 8,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 284.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "兩個問題：給幾個 frame、換掉誰",
+   "scene": "vm-14b-two",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "要做 replacement，其實有兩個問題。系統裡有很多 process。",
+     "k": 1,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 315.7
+     }
+    },
+    {
+     "say": "第一個：記憶體不夠時，每個 process 給幾個 frame？這叫 frame-allocation algorithm。",
+     "k": 2,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 322.1
+     }
+    },
+    {
+     "say": "例如一個程式其實要 100 個 frame，機制可能只給它 10 個，反正不用整支 load 進來。",
+     "k": 3,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 348.3
+     }
+    },
+    {
+     "say": "第二個：在那 10 個 frame 裡，新 page 要進來，換掉誰？這就是 page replacement。",
+     "k": 4,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 359.6
+     }
+    },
+    {
+     "say": "我們先講 replacement，只看單一程式；frame allocation 放到後面。",
+     "k": 5,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 372.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page replacement 的步驟",
+   "scene": "vm-14b-steps",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "流程跟之前一樣。第一步：找到造成 fault 的 page 6 在 disk 哪裡。",
+     "k": 1,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 400
+     }
+    },
+    {
+     "say": "第二步：先看有沒有 free frame，有就先用。",
+     "k": 2,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 410.6
+     }
+    },
+    {
+     "say": "沒有的話，呼叫 replacement algorithm 選一個 victim，把它 swap 到 disk。",
+     "k": 3,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 418.7
+     }
+    },
+    {
+     "say": "第三步：新 page 放進空出來的 frame，update page table。",
+     "k": 4,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 432.7
+     }
+    },
+    {
+     "say": "第四步：重新執行那個指令。就只是多了一個 replace 的動作。",
+     "k": 5,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 437.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Reference string",
+   "scene": "vm-14b-refstr",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "接下來把 replacement 變成一個數學問題，看看有哪些演算法。",
+     "k": 1,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 472.2
+     }
+    },
+    {
+     "say": "目標很明確：page fault 的次數或比率越少越好。",
+     "k": 2,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 484.5
+     }
+    },
+    {
+     "say": "input 叫 reference string：程式執行時，依序存取的記憶體位置記下來的一串。",
+     "k": 3,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 490.6
+     }
+    },
+    {
+     "say": "我們只在乎是第幾個 page，不管確切的 byte 位址，同一頁裡位置不同沒差。",
+     "k": 4,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 515.9
+     }
+    },
+    {
+     "say": "例如 1 2 3 4 1 2 5 1 2 3 4 5，先讀第 1、2、3、4 頁，再回到第 1 頁。等一下都用這串。",
+     "k": 5,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 527.8
+     }
+    },
+    {
+     "say": "基本演算法有三個：FIFO 最直觀，optimal 是理論最佳，最重要的是 LRU，一般系統都在用。",
+     "k": 6,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 545.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "FIFO：3 個 frame",
+   "scene": "vm-14b-fifo",
+   "steps": 19,
+   "lines": [
+    {
+     "say": "先看 FIFO，first in first out。上面這排是 reference string，CPU 依序要這些 page。",
+     "k": 1,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 596.8
+     }
+    },
+    {
+     "say": "第二個要知道的是 frame 數。例子故意很小，只有 3 個。",
+     "k": 2,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 613.8
+     }
+    },
+    {
+     "say": "正在被存取的那頁一定要在裡面，問題是其他位置留給誰、要踢的時候踢誰。",
+     "k": 3,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 645.2
+     }
+    },
+    {
+     "say": "例子通常從全空開始，因為之前發生過什麼我們也不知道。",
+     "k": 4,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 672.8
+     }
+    },
+    {
+     "say": "CPU 要 page 1，有空位直接放。下面紅色的 F，代表一次 page fault。",
+     "k": 5,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 685.6
+     }
+    },
+    {
+     "say": "三格的順序其實不重要，這樣畫是表示 queue：上面最新、下面最舊，用 head、tail 兩個指標就能做。",
+     "k": 6,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 695.2
+     }
+    },
+    {
+     "say": "我們要算的是：這個 input、這麼多 frame，會有幾次 page fault，是哪幾次。",
+     "k": 7,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 726.8
+     }
+    },
+    {
+     "say": "第一次存取一定 fault，跑不掉。實際上有 locality，frame 也有成千上萬個，不會像例子 fault 這麼多。",
+     "k": 8,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 756.2
+     }
+    },
+    {
+     "say": "page 2 第一次用，fault，新的放最上面，舊的往下推。",
+     "k": 9,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 778.6
+     }
+    },
+    {
+     "say": "page 3 也是第一次，fault。queue 現在是 3、2、1。",
+     "k": 10,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 815.5
+     }
+    },
+    {
+     "say": "page 4 來，三格滿了，照 FIFO 踢掉最早進來的 1。前四個都是第一次，任何演算法都救不了。",
+     "k": 11,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 827.3
+     }
+    },
+    {
+     "say": "注意，畫起來好像 page 在移動，其實記憶體沒搬。page 3 一直待在原本的 frame，圖上只是 queue 的順序。",
+     "k": 12,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 861.5
+     }
+    },
+    {
+     "say": "接著 1 又來了！才剛把它踢掉，又是一次 fault，FIFO 的弱點就在這。",
+     "k": 13,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 897.9
+     }
+    },
+    {
+     "say": "2 進來，也很不幸，剛被擠出去，又 fault。",
+     "k": 14,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 916.1
+     }
+    },
+    {
+     "say": "5 也是 fault，把最舊的 4 擠出去。",
+     "k": 15,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 922.4
+     }
+    },
+    {
+     "say": "1 進來是 hit。但 FIFO 只看進來的順序，被用到也不會移動，1 還是下一個被踢的。",
+     "k": 16,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 925.2
+     }
+    },
+    {
+     "say": "2 hit。接著 3 進來，1 雖然剛被用過兩次，因為最早進來，還是被踢掉。",
+     "k": 17,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 936.8
+     }
+    },
+    {
+     "say": "剩下照規則走：4 是 fault，最後的 5 是 hit。",
+     "k": 18,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 949.9
+     }
+    },
+    {
+     "say": "數紅色的 F：FIFO 在 3 個 frame 下，總共 9 次 page fault。",
+     "k": 19,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 957
+     }
+    }
+   ]
+  },
+  {
+   "title": "Belady's anomaly",
+   "scene": "vm-14b-belady",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "FIFO 3 個 frame 是 9 次，顯然還能更低。",
+     "k": 1,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 972.4
+     }
+    },
+    {
+     "say": "FIFO 還有一個更大的問題，叫 anomaly，是 Belady 發現的，所以叫 Belady's anomaly。",
+     "k": 2,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 984.1
+     }
+    },
+    {
+     "say": "一般直覺是：多給 frame，也就是多給資源，page fault 應該變少，電腦跑更快。",
+     "k": 3,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 1006.6
+     }
+    },
+    {
+     "say": "anomaly 指的是：frame 增加了，page fault 卻沒減少，甚至還變多。",
+     "k": 4,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 1023.1
+     }
+    },
+    {
+     "say": "同一串、同樣 FIFO，只把 frame 從 3 改成 4，再跑一次，你也可以自己練習。",
+     "k": 5,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 1036.7
+     }
+    },
+    {
+     "say": "結果是 10 次，比 3 個 frame 的 9 次還多。給得更多，反而更糟。",
+     "k": 6,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 1050.9
+     }
+    },
+    {
+     "say": "畫成圖：橫軸 frame 數、縱軸 fault 次數，正常應該持平或往下，FIFO 卻在 3 到 4 往上跳。",
+     "k": 7,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 1085.6
+     }
+    },
+    {
+     "say": "不是每一串都會這樣，但就是有可能發生。",
+     "k": 7,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 1100
+     }
+    },
+    {
+     "say": "這對系統設計者很討厭：大家調參數都假設資源越多越好，插更多記憶體反而變慢，系統就沒法調。",
+     "k": 8,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 1117.7
+     }
+    },
+    {
+     "say": "所以 FIFO 的問題有兩層：fault 不夠少，更討厭的是 anomaly，讓系統不照常理走。",
+     "k": 9,
+     "src": {
+      "v": "P1MlFqr5VMw",
+      "t": 1170.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Optimal：踢掉最晚才會用到的",
+   "scene": "vm-14c-opt",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "FIFO 有 anomaly，系統設計者不太喜歡。那 replacement 的最佳解長什麼樣？",
+     "k": 1,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 13.8
+     }
+    },
+    {
+     "say": "其實很好描述，這個 optimal 演算法也是 Belady 提出的。",
+     "k": 2,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 19.1
+     }
+    },
+    {
+     "say": "一句話：記憶體裡的 page 中，最晚才會再被用到的那頁，先踢掉。未來依序要 2、1、2、1、3，就踢 3。",
+     "k": 3,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 43.8
+     }
+    },
+    {
+     "say": "很直覺吧？踢別人的話，它們一定比較早被用到，就更早 fault。不得已要踢，當然踢最不會用的。",
+     "k": 4,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 59.5
+     }
+    },
+    {
+     "say": "注意看的是存取順序，不是時間，隔幾毫秒都沒差，只看誰排在最後。",
+     "k": 5,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 90.5
+     }
+    },
+    {
+     "say": "說起來簡單，理論上也好證明，可是做不到，因為前提是你得知道未來整串 reference string。",
+     "k": 6,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 109.6
+     }
+    },
+    {
+     "say": "compiler 也許能預測一部分，但程式有 branch，跑了才知道走哪邊，不可能百分之百知道。",
+     "k": 7,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 141
+     }
+    },
+    {
+     "say": "所以它是理論上的 baseline：告訴我們最少最少會有幾次 fault，其他演算法看能多接近它。",
+     "k": 8,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 163.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Optimal 例子：4 個 frame",
+   "scene": "vm-14c-optex",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "來跑例子，這次 4 個 frame，同一串。圖上每一列是一個固定的 frame。",
+     "k": 1,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 189.9
+     }
+    },
+    {
+     "say": "前四個直接擺進去，全部 fault，就算是 optimal 也一樣。",
+     "k": 2,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 198.2
+     }
+    },
+    {
+     "say": "1 來了。optimal 不在乎過去，它看未來。1 本來就在，hit。",
+     "k": 3,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 208
+     }
+    },
+    {
+     "say": "2 也在，hit，沒什麼好選。",
+     "k": 4,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 231.3
+     }
+    },
+    {
+     "say": "5 來了要換人。往後看：1 下一個就用，接著 2，再來 3，4 最晚，所以踢 4。",
+     "k": 5,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 235.7
+     }
+    },
+    {
+     "say": "接下來 1、2、3 全都 hit。",
+     "k": 6,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 265.7
+     }
+    },
+    {
+     "say": "4 來了，往後只剩一個 5，5 不能丟；1、2、3 以後都不用了，丟誰都一樣，這裡丟最早進來的 1。",
+     "k": 7,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 275.4
+     }
+    },
+    {
+     "say": "考試遇到這種最後的平手，丟誰都算對。但如果後面還有 2、3、1，就要丟最晚用的 1。",
+     "k": 8,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 289.3
+     }
+    },
+    {
+     "say": "就照這條規則走，最後的 5 是 hit。",
+     "k": 9,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 306
+     }
+    },
+    {
+     "say": "總共只有 6 次。FIFO 是 9 次、10 次，最好最好就是 6 次。",
+     "k": 10,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 318.8
+     }
+    },
+    {
+     "say": "做不出來，所以很多研究在想怎麼預測：估每頁下次被 reuse 的距離，把最遠的踢掉，甚至用 learning 去逼近。",
+     "k": 11,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 336.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "LRU：往回看",
+   "scene": "vm-14c-lru",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "optimal 用不了，那實際上大家用什麼？用得最多的是 LRU。",
+     "k": 1,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 378.4
+     }
+    },
+    {
+     "say": "LRU 是 least recently used，一個 heuristic：既然不能看未來，那就往回看過去。",
+     "k": 2,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 390.2
+     }
+    },
+    {
+     "say": "程式有 locality，剛用完的 page 很可能再用，附近的也是。",
+     "k": 3,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 409.4
+     }
+    },
+    {
+     "say": "越久沒用的，越可能不再用，像處理錯誤的函式。所以往回看，最久以前存取的那頁，這裡是 3，先踢。",
+     "k": 4,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 445
+     }
+    },
+    {
+     "say": "實驗證明 LRU 表現不錯，而且它能做到 O(1)。OS 做什麼都要快，像 learning 要訓練就太慢了。",
+     "read": "實驗證明 LRU 表現不錯，而且它能做到 大O 1。OS 做什麼都要快，像 learning 要訓練就太慢了。",
+     "k": 5,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 454.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "LRU 的兩種實作",
+   "scene": "vm-14c-lruimpl",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "LRU 怎麼實作？有兩種。",
+     "k": 1,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 493.7
+     }
+    },
+    {
+     "say": "第一種叫 counter：每頁被存取時，記一個 time stamp，幾點幾分用的。",
+     "k": 2,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 497.1
+     }
+    },
+    {
+     "say": "要找最久沒用的，就得每格掃一遍，O(n)，frame 越多越慢，很不好。",
+     "read": "要找最久沒用的，就得每格掃一遍，大O n，frame 越多越慢，很不好。",
+     "k": 3,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 515.1
+     }
+    },
+    {
+     "say": "實際會用 stack，有點像 FIFO 的 queue：最近用的放最上面，最底下就是下一個要踢的，O(1)。",
+     "read": "實際會用 stack，有點像 FIFO 的 queue：最近用的放最上面，最底下就是下一個要踢的，大O 1。",
+     "k": 4,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 529.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "LRU 例子：4 個 frame",
+   "scene": "vm-14c-lruex",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "一樣 4 個 frame、同一串。1、2、3、4 全部 fault，放進 stack，新的在最上面。",
+     "k": 1,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 546.4
+     }
+    },
+    {
+     "say": "跟 FIFO 不同的地方來了：1 進來，它已經在記憶體，是 hit。",
+     "k": 2,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 553.9
+     }
+    },
+    {
+     "say": "但 1 是剛用過的，不想踢它，所以把它從底部拉回最上面，現在最底下的 2 變成下一個 victim。",
+     "k": 3,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 567
+     }
+    },
+    {
+     "say": "這就是兩者的差別：hit 時要拉到最前面，新來的往下推。最近被存取的永遠在最上面。",
+     "k": 4,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 596.7
+     }
+    },
+    {
+     "say": "2 也在，拉上來，stack 變成 2、1、4、3。",
+     "k": 5,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 614.4
+     }
+    },
+    {
+     "say": "5 進來位置不夠，最底的 3 被踢掉。回去看 FIFO，它會踢 1，不是 3。",
+     "k": 6,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 620
+     }
+    },
+    {
+     "say": "後面照規則：1、2 hit；3 踢 4、4 踢 5、5 踢 1，都是 fault，總共 8 次。",
+     "k": 7,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 637.6
+     }
+    },
+    {
+     "say": "考試時最好用實作的角度，照固定規則在腦中跑一遍，最不會錯。",
+     "k": 8,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 642
+     }
+    }
+   ]
+  },
+  {
+   "title": "LRU 為什麼能 O(1)",
+   "scene": "vm-14c-lruo1",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "為什麼 LRU 能 O(1)？其實不難。",
+     "read": "為什麼 LRU 能 大O 1？其實不難。",
+     "k": 1,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 657.7
+     }
+    },
+    {
+     "say": "用 doubly linked list，每個節點有前後指標，拿出一個節點、插到最前面，都只要 O(1)。",
+     "read": "用 doubly linked list，每個節點有前後指標，拿出一個節點、插到最前面，都只要 大O 1。",
+     "k": 2,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 664.8
+     }
+    },
+    {
+     "say": "你可能會問：1 hit 了，它不一定在最下面，要怎麼馬上知道在哪？一個個找就變 O(n) 了。",
+     "read": "你可能會問：1 hit 了，它不一定在最下面，要怎麼馬上知道在哪？一個個找就變 大O n 了。",
+     "k": 3,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 672.6
+     }
+    },
+    {
+     "say": "再加一個 hash map：用 page 號碼當 key，存它在 list 裡的節點指標，hash 一下就拿到位置。",
+     "k": 4,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 690.6
+     }
+    },
+    {
+     "say": "找到後從原位拿出來，再放到最前面。hash map 加 doubly linked list，平均 O(1)。",
+     "read": "找到後從原位拿出來，再放到最前面。hash map 加 doubly linked list，平均 大O 1。",
+     "k": 5,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 707.4
+     }
+    },
+    {
+     "say": "所以 LRU 好寫、很快、結果也不錯，是最常用的置換演算法，cache 的置換也大多用它。",
+     "k": 6,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 731.7
+     }
+    },
+    {
+     "say": "但它也不是最好：同一串、4 個 frame，LRU 8 次，比 FIFO 的 10 次好，離 optimal 的 6 次還有距離。",
+     "k": 7,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 763.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Stack algorithm：不會有 anomaly",
+   "scene": "vm-14c-stack",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "heuristic 的好壞會隨情況變，系統設計者更在乎可以證明的性質，因為它絕對不會跑掉。",
+     "k": 1,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 779.1
+     }
+    },
+    {
+     "say": "LRU 和 optimal 都屬於一類演算法，叫 stack algorithm。",
+     "k": 2,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 792.1
+     }
+    },
+    {
+     "say": "定義是：某個時間點，用 n 個 frame 時，記憶體裡放著某一組 page。這裡看第 7 個 reference 之後，LRU 用 3 個 frame。",
+     "k": 3,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 813.3
+     }
+    },
+    {
+     "say": "同樣的 input，frame 加 1，同一時間點放更多 page。stack algorithm 保證原來那幾頁都還在，是 superset。",
+     "k": 4,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 838
+     }
+    },
+    {
+     "say": "就像 stack 一直往上疊，越大，越一定包含原來的東西。",
+     "k": 5,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 876.3
+     }
+    },
+    {
+     "say": "為什麼重要？多一個 frame，原來的都還在，只是多放一些。fault 也許不減，但絕不會變多，不會有 anomaly。",
+     "k": 6,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 916
+     }
+    },
+    {
+     "say": "LRU 為什麼是？往回看，記憶體放的就是最近看到的 n 個不同 page；n + 1 個 frame 就看 n + 1 個，當然包含。",
+     "read": "LRU 為什麼是？往回看，記憶體放的就是最近看到的 n 個不同 page；n加1 個 frame 就看 n加1 個，當然包含。",
+     "k": 7,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 961
+     }
+    },
+    {
+     "say": "optimal 道理一樣，只是方向相反：往未來看前 n 個不同的 page。",
+     "k": 8,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 1010.7
+     }
+    },
+    {
+     "say": "FIFO 不是。同一時間點，4 個 frame 的內容沒包含 3 個 frame 的，少了 page 1，所以會有 Belady's anomaly。",
+     "k": 9,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 1044
+     }
+    },
+    {
+     "say": "這是很重要的考點：LRU、optimal 是 stack algorithm，FIFO 不是。",
+     "k": 9,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 1050
+     }
+    }
+   ]
+  },
+  {
+   "title": "LRU 練習：19 個 reference、3 個 frame",
+   "scene": "vm-ex-lru",
+   "steps": 28,
+   "lines": [
+    {
+     "say": "來做一題完整的練習，這是 Jenny's Lectures 的例題，reference string 一共 19 個。",
+     "k": 1,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 0
+     }
+    },
+    {
+     "say": "依序是 3 2 1 3 4 1 6 2 4 3 4 2 1 4 5 2 1 3 4。",
+     "k": 1,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 0
+     }
+    },
+    {
+     "say": "有 3 個 frame，用 LRU 置換，要算 page fault 次數和 hit ratio。",
+     "k": 2,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 14.6
+     }
+    },
+    {
+     "say": "題目可能加一個條件：一開始全空，第一次把 page 放進去也算 fault。",
+     "k": 3,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 27.3
+     }
+    },
+    {
+     "say": "LRU 換掉的是最長一段時間沒被用到的 page。",
+     "k": 4,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 42.1
+     }
+    },
+    {
+     "say": "先要 3，三格都沒有，fault，放進 f1。",
+     "k": 5,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 64
+     }
+    },
+    {
+     "say": "要 2，只有 3 在，fault，載入 2。",
+     "k": 6,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 92.4
+     }
+    },
+    {
+     "say": "要 1，還有一個空 frame，放進去，也是 fault。",
+     "k": 7,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 113.6
+     }
+    },
+    {
+     "say": "要 3，它就在，hit。",
+     "k": 8,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 126.5
+     }
+    },
+    {
+     "say": "要 4，不在，miss，三格都滿了，沒法直接放。",
+     "k": 9,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 133.7
+     }
+    },
+    {
+     "say": "OS 要選一頁 swap out 到硬碟，再把 4 swap in，選誰由 LRU 決定。",
+     "k": 10,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 143.3
+     }
+    },
+    {
+     "say": "小技巧：從 4 的位置往左看，先看到 3、再看到 1，最後才看到 2，所以 2 最久沒用，換掉 2。",
+     "k": 11,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 184.3
+     }
+    },
+    {
+     "say": "要 1，在，hit。",
+     "k": 12,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 227.5
+     }
+    },
+    {
+     "say": "要 6，miss。往左看先是 1、再 4、最後 3，換掉 3。",
+     "k": 13,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 235.1
+     }
+    },
+    {
+     "say": "要 2，miss。往左看 6、1、4，換掉 4。",
+     "k": 14,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 270
+     }
+    },
+    {
+     "say": "要 4，miss。6、2、1 裡，往左最後才出現的是 1，換掉 1。",
+     "k": 15,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 290.7
+     }
+    },
+    {
+     "say": "要 3，miss。往左看 4、2，最左邊是 6，換掉 6。",
+     "k": 16,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 315.1
+     }
+    },
+    {
+     "say": "要 4，hit。",
+     "k": 17,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 339.4
+     }
+    },
+    {
+     "say": "要 2，hit。",
+     "k": 18,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 344
+     }
+    },
+    {
+     "say": "要 1，miss。往左看 2、4、3，換掉 3。",
+     "k": 19,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 346.8
+     }
+    },
+    {
+     "say": "4 又來了，還在，hit。",
+     "k": 20,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 368.4
+     }
+    },
+    {
+     "say": "要 5，miss。往左看 4、1、2，換掉 2。",
+     "k": 21,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 371
+     }
+    },
+    {
+     "say": "要 2，miss。往左看 5、4、1，換掉 1。",
+     "k": 22,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 384.5
+     }
+    },
+    {
+     "say": "要 1，miss。往左看 2、5、4，換掉 4。",
+     "k": 23,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 398
+     }
+    },
+    {
+     "say": "要 3，miss。往左看 1、2、5，換掉 5。",
+     "k": 24,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 405.3
+     }
+    },
+    {
+     "say": "最後要 4，miss。往左看 3、1、2，換掉 2。",
+     "k": 25,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 417.4
+     }
+    },
+    {
+     "say": "數紅色的 F，總共 14 次 page fault。",
+     "k": 26,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 431
+     }
+    },
+    {
+     "say": "hit 有 5 次，hit ratio 是 5/19。影片口誤唸成 5/9，分母應該是總存取數 19。",
+     "read": "hit 有 5 次，hit ratio 是 19分之5。影片口誤唸成 9分之5，分母應該是總存取數 19。",
+     "k": 27,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 439.1
+     }
+    },
+    {
+     "say": "miss ratio 就是 1 − 5/19，也就是 14/19。",
+     "read": "miss ratio 就是 1 減 19分之5，也就是 19分之14。",
+     "k": 28,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 461.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Optimal 練習：同一串、3 個 frame",
+   "scene": "vm-ex-opt",
+   "steps": 25,
+   "lines": [
+    {
+     "say": "同一題改用 optimal，看會有幾次 fault。",
+     "k": 1,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 479
+     }
+    },
+    {
+     "say": "準則是：換掉未來最長一段時間不會被用到的 page，這次看的是未來。",
+     "k": 2,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 495.2
+     }
+    },
+    {
+     "say": "一樣，3、2、1 都不在，三次 miss，三格滿了。",
+     "k": 3,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 517.7
+     }
+    },
+    {
+     "say": "要 3，hit。",
+     "k": 4,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 528.8
+     }
+    },
+    {
+     "say": "要 4，miss，要挑一個 victim。",
+     "k": 5,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 536.1
+     }
+    },
+    {
+     "say": "這次從 4 往右看：接著要 1，不能換；再來要 2；最後才要 3。最右邊的 3 就是 victim。",
+     "k": 6,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 560.1
+     }
+    },
+    {
+     "say": "要 1，hit。",
+     "k": 7,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 631.1
+     }
+    },
+    {
+     "say": "要 6，miss。往右看 2 先出現、再來 4，1 最右，換掉 1。",
+     "k": 8,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 639.5
+     }
+    },
+    {
+     "say": "要 2、要 4，都在，兩次 hit。",
+     "k": 9,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 657.1
+     }
+    },
+    {
+     "say": "要 3，miss。4 和 2 之後都會用，6 再也不會被用到，當然換 6。",
+     "k": 10,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 668.2
+     }
+    },
+    {
+     "say": "接著 4，還在，hit。",
+     "k": 11,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 692.2
+     }
+    },
+    {
+     "say": "2 也在，hit。",
+     "k": 12,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 697.1
+     }
+    },
+    {
+     "say": "要 1，miss。往右看 4 先、再 2，3 最右，換掉 3。",
+     "k": 13,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 706.5
+     }
+    },
+    {
+     "say": "4 又出現，一樣 hit。",
+     "k": 14,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 721.5
+     }
+    },
+    {
+     "say": "要 5，miss。2、1 都會先出現，4 最右，換掉 4。",
+     "k": 15,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 725.4
+     }
+    },
+    {
+     "say": "再來是 2，hit。",
+     "k": 16,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 739.6
+     }
+    },
+    {
+     "say": "1 也還在，hit。",
+     "k": 17,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 743.6
+     }
+    },
+    {
+     "say": "要 3，miss。這時 5、2、1 以後都不會再被要，換哪個都行。",
+     "k": 18,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 746
+     }
+    },
+    {
+     "say": "平手就套 FIFO：三個裡最早進來的是 2，換掉 2。",
+     "k": 19,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 775.2
+     }
+    },
+    {
+     "say": "最後要 4，miss，後面沒有請求了，一樣用 FIFO：5、3、1 裡最早進來的是 1，換掉 1。",
+     "k": 20,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 800.8
+     }
+    },
+    {
+     "say": "數一數：10 次 fault、9 次 hit，hit ratio 9/19，miss ratio 10/19。",
+     "read": "數一數：10 次 fault、9 次 hit，hit ratio 19分之9，miss ratio 19分之10。",
+     "k": 21,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 821.1
+     }
+    },
+    {
+     "say": "optimal 在所有方法裡 fault 最少，但要預測 CPU 未來要哪頁，幾乎不可能，所以無法實作。",
+     "k": 22,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 849.4
+     }
+    },
+    {
+     "say": "那它有什麼用？當 benchmark，拿別的演算法跟它比，就知道誰好誰壞。",
+     "k": 23,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 873.7
+     }
+    },
+    {
+     "say": "同一串的成績：FIFO 13 次、LRU 14 次、optimal 10 次，hit ratio 分別是 6/19、5/19、9/19。",
+     "read": "同一串的成績：FIFO 13 次、LRU 14 次、optimal 10 次，hit ratio 分別是 19分之6、19分之5、19分之9。",
+     "k": 24,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 897.4
+     }
+    },
+    {
+     "say": "欸，這串剛好 FIFO 比 LRU 少，但不能說 FIFO 比較好，換一串可能就反過來，只有 optimal 永遠最少。",
+     "k": 25,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 916.6
+     }
+    },
+    {
+     "say": "它的缺點跟排程的 SJF 一樣：都需要預知未來。",
+     "k": 25,
+     "src": {
+      "v": "DXU7SqsYDvg",
+      "t": 959
+     }
+    }
+   ]
+  },
+  {
+   "title": "近似 LRU：reference bits 與 second chance",
+   "scene": "vm-14c-approx",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "replacement 的演算法還有一大堆，多半是 LRU 的變形，知道概念就好。",
+     "k": 1,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 1069.6
+     }
+    },
+    {
+     "say": "課本的 additional-reference-bits：每頁 8 個 bit，定期把「最近有沒有用」移進最左邊，值越小越久沒用。",
+     "k": 2,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 1089.1
+     }
+    },
+    {
+     "say": "例如 01110111 比 11000100 小，所以它更久沒被用到。",
+     "read": "例如 零一一一零一一一，比 一一零零零一零零 小，所以它更久沒被用到。",
+     "k": 2,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 1089.1
+     }
+    },
+    {
+     "say": "second chance，老師用「兩層」來比喻；課本的做法叫 clock：frame 排成一圈，每頁一個 reference bit。",
+     "k": 3,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 1095.1
+     }
+    },
+    {
+     "say": "指標指到 bit 是 1 的頁，不馬上踢，先清成 0、跳過，給它第二次機會。page 2、page 5 都被跳過。",
+     "k": 4,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 1114.2
+     }
+    },
+    {
+     "say": "指到 bit 已經是 0 的 page 1，才真的把它換成新的 page 6。",
+     "k": 5,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 1123.6
+     }
+    },
+    {
+     "say": "這些基本上都在近似 LRU，因為 LRU 有剛剛講的那些好處。",
+     "k": 6,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 1155
+     }
+    }
+   ]
+  },
+  {
+   "title": "Counting：LFU 和 MFU",
+   "scene": "vm-14c-count",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "前面看的是 recency，多久以前用過；另一類看 frequency，用了幾次。每頁旁邊記一個次數。",
+     "k": 1,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 1174
+     }
+    },
+    {
+     "say": "想法是最常用的留下來，fault 就會少，聽起來蠻合理。",
+     "k": 2,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 1184.7
+     }
+    },
+    {
+     "say": "LFU，least frequently used：次數最少的先踢，這裡是 page 2。",
+     "k": 3,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 1217.1
+     }
+    },
+    {
+     "say": "MFU，most frequently used，剛好相反：用最多次的先踢，這裡是 page 1。",
+     "k": 4,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 1239.1
+     }
+    },
+    {
+     "say": "LFU 的問題是，常用不代表正在用。程式常在某段時間狂用一塊記憶體，次數衝高，之後不用了卻一直佔著。",
+     "k": 5,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 1252.7
+     }
+    },
+    {
+     "say": "MFU 的想法是：被用很多次的，可能已經用完了，像 for loop 處理完的 array。這沒有對錯，只是假設不同。",
+     "k": 6,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 1303.1
+     }
+    },
+    {
+     "say": "但兩個都不受歡迎：每次存取都要加 1，很花時間；次數太多，counter 還會 overflow。",
+     "k": 7,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 1330.9
+     }
+    },
+    {
+     "say": "而 LRU 的結果通常不比它們差，甚至更好。",
+     "k": 8,
+     "src": {
+      "v": "TXcPJuccafA",
+      "t": 1386.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "每個 process 最少要幾個 frame",
+   "scene": "vm-14d-min",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "換第二個問題：所有 process 共用實體記憶體，每個 process 該分幾個 frame？",
+     "k": 1,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 13.8
+     }
+    },
+    {
+     "say": "先知道一件事：要能執行，每個指令都有一個最少需要的 frame 數，給太少就跑不起來。",
+     "k": 2,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 43.3
+     }
+    },
+    {
+     "say": "極端的例子：某台機器光執行一個指令，最壞要同時用到 6 個 frame，OS 不保證 6 個，程式就跑不動。",
+     "k": 3,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 59.7
+     }
+    },
+    {
+     "say": "這是很早期的 IBM 機器，課本寫的是 IBM 370 的 MVC 指令。",
+     "k": 4,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 95.7
+     }
+    },
+    {
+     "say": "這個指令長 6 個 byte，運氣不好剛好跨在兩頁中間，光 fetch 指令就要 2 個 frame。",
+     "k": 5,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 104.7
+     }
+    },
+    {
+     "say": "它是很強的搬移指令，直接記憶體對記憶體搬，很多 CPU 只能記憶體到暫存器。",
+     "k": 6,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 138.8
+     }
+    },
+    {
+     "say": "來源的 base 在某頁裡，長度只要六、八個 byte，就可能跨過頁界，又是 2 頁。",
+     "k": 7,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 200.2
+     }
+    },
+    {
+     "say": "目的地也可能跨兩頁，2 + 2 + 2 = 6，至少要 6 個 frame 才能執行這一個指令。",
+     "read": "目的地也可能跨兩頁，2 加 2 加 2 等於 6，至少要 6 個 frame 才能執行這一個指令。",
+     "k": 8,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 213.4
+     }
+    },
+    {
+     "say": "一般沒這麼誇張，但 2 到 4 個 frame 一定需要。",
+     "k": 9,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 258.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Fixed 和 priority allocation",
+   "scene": "vm-14d-fixed",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "frame allocation 就是決定每個 process 給幾個 frame。",
+     "k": 1,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 274.4
+     }
+    },
+    {
+     "say": "第一類叫 fixed allocation：照 process 一開始的資訊決定，跟 run time 的狀況無關。",
+     "k": 2,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 283.3
+     }
+    },
+    {
+     "say": "例如 equal：100 個 frame、5 個 process，每個 20 個。",
+     "k": 3,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 297.3
+     }
+    },
+    {
+     "say": "或 proportional，照程式大小比例分。課本例子：62 個 frame，兩個 process 10 頁和 127 頁，約分到 4 和 57 個。",
+     "k": 4,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 306.7
+     }
+    },
+    {
+     "say": "另一類是 priority allocation：在 run time 才決定，看每個 process 的 priority。",
+     "k": 5,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 323.1
+     }
+    },
+    {
+     "say": "priority 高的比較重要，就多給。priority 也能在執行中調，像霸佔 CPU 和記憶體太久的，就降它。",
+     "k": 6,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 355.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Local 和 global replacement",
+   "scene": "vm-14d-global",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "另一個分法是 local 和 global。左邊是 process A 的 frame，右邊是 B 的，A 有新 page 要進來。",
+     "k": 1,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 389.4
+     }
+    },
+    {
+     "say": "local replacement：只能換掉自己的 page，通常跟 fixed allocation 綁在一起。",
+     "k": 2,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 408.4
+     }
+    },
+    {
+     "say": "就像你要 100 個，我只給你 10 個，你就只能在這 10 個位置裡搶來搶去。",
+     "k": 3,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 426
+     }
+    },
+    {
+     "say": "local 或 fixed 效果通常不好，因為事前不知道程式會怎麼跑，而程式行為變化又很大。",
+     "k": 4,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 446.2
+     }
+    },
+    {
+     "say": "global replacement：挑 victim 時，任何程式沒在用的 page 都可以拿來換。",
+     "k": 5,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 457
+     }
+    },
+    {
+     "say": "它通常跟 priority allocation 綁在一起：priority 高的一直去搶低的，這裡 A 搶走了 B 一個 frame。",
+     "k": 6,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 477.4
+     }
+    },
+    {
+     "say": "問題是，最弱的那個可能被搶到連最少的 6 個都沒有，所以通常要設一個 minimum。",
+     "k": 7,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 498
+     }
+    },
+    {
+     "say": "更大的問題是 thrashing：frame 很少時也許還能跑，但慢到 CPU 幾乎沒在動。",
+     "k": 8,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 515.1
+     }
+    },
+    {
+     "say": "一般系統一定用 global 加 priority，但它必須解決 thrashing。",
+     "k": 9,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 541.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Thrashing",
+   "scene": "vm-14d-thrash",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "好，thrashing 是什麼？起因就是 page fault。",
+     "k": 1,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 564.6
+     }
+    },
+    {
+     "say": "要用的 page 不在記憶體，就要去 disk 拿，而 disk 很慢。",
+     "k": 2,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 574.6
+     }
+    },
+    {
+     "say": "搬進來之前 CPU 不能繼續，因為正在執行的指令就要這頁。fault 發生在指令中途，沒辦法跟 I/O overlap。",
+     "k": 3,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 584.8
+     }
+    },
+    {
+     "say": "page fault 一頻繁，就有大量 I/O。",
+     "k": 4,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 622.5
+     }
+    },
+    {
+     "say": "之前一直說 degree of multiprogramming 越高越好，能讓 CPU 和 I/O 重疊，所以 OS 喜歡一直加。",
+     "k": 5,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 637.8
+     }
+    },
+    {
+     "say": "綠線就是 CPU 使用率跟著往上升。",
+     "k": 5,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 645
+     }
+    },
+    {
+     "say": "但一直加的結果，每個 process 的 frame 越來越少，fault rate 開始上升，剛用的 page 很容易被踢掉。",
+     "k": 6,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 653.1
+     }
+    },
+    {
+     "say": "page 被踢就要 I/O，CPU 開始閒，使用率整個往下掉，又快又兇，就是那條紅線。",
+     "k": 7,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 666.8
+     }
+    },
+    {
+     "say": "定義很簡單：系統花在 paging 的時間，超過執行使用者指令的時間。",
+     "k": 8,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 696.8
+     }
+    },
+    {
+     "say": "這時一定看得到：degree of multiprogramming 很高，CPU 使用率卻嚴重下滑。",
+     "k": 9,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 720.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Thrashing 的惡性循環",
+   "scene": "vm-14d-cycle",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "為什麼掉得那麼快，不是慢慢降？因為進入了惡性循環，一步步看。",
+     "k": 1,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 735.2
+     }
+    },
+    {
+     "say": "本來就有一些 fault，degree 一直加，fault 的機率就一直升。",
+     "k": 2,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 751.1
+     }
+    },
+    {
+     "say": "fault 產生 I/O，CPU 開始 idle，使用率往下掉。",
+     "k": 3,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 764.6
+     }
+    },
+    {
+     "say": "早期的 OS 自以為聰明：看到 CPU 閒了，以為是 degree of multiprogramming 太低。",
+     "k": 4,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 776
+     }
+    },
+    {
+     "say": "於是讓更多 process 進 ready queue，希望 CPU 和 I/O 能重疊。",
+     "k": 5,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 791.1
+     }
+    },
+    {
+     "say": "新來的也要 frame 才能跑，就去跟原來的 process 搶。",
+     "k": 6,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 802.2
+     }
+    },
+    {
+     "say": "本來 fault 就是因為 frame 不夠，現在更少，fault 更多、I/O 更長，CPU 掉更兇，OS 又加更多 process。",
+     "k": 7,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 823.7
+     }
+    },
+    {
+     "say": "所以 CPU 使用率像懸崖一樣掉下去，I/O 時間遠大於 CPU，系統幾乎不動，不是只慢一兩成。",
+     "k": 8,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 850.8
+     }
+    },
+    {
+     "say": "怎麼解？關鍵是控制正確的 frame 數，也就是 degree。兩個解法：working set 和 page-fault frequency。",
+     "k": 9,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 884.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "從 working set 看 thrashing",
+   "scene": "vm-pf-thrash",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "先用 Simple Snippets 的角度熱身。左邊是 RAM，右邊是硬碟上的 virtual memory。",
+     "k": 1,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 659.9
+     }
+    },
+    {
+     "say": "程式初始化後，大多只用一小部分 code 和 data pages。像大型遊戲，一開始 loading 很久，載入完就順順跑。",
+     "k": 2,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 667.7
+     }
+    },
+    {
+     "say": "最常被存取的那些 pages，就叫 working set。",
+     "k": 3,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 712.3
+     }
+    },
+    {
+     "say": "working set 只占一小部分時，virtual memory 最有效率，不太需要在 RAM 和硬碟間搬來搬去。",
+     "k": 4,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 724.6
+     }
+    },
+    {
+     "say": "working set 變大，RAM 塞滿，有些 page 被搬出去，要用又搬回來。在臨界點之前，還應付得來。",
+     "k": 5,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 758.6
+     }
+    },
+    {
+     "say": "一過臨界點，fault 急遽增加，處理 fault 的時間壓過真正的運算，整個系統變慢，這就是 thrashing。",
+     "k": 6,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 789.1
+     }
+    },
+    {
+     "say": "一句話：thrashing 就是 page 因為 page fault，在 RAM 和 virtual memory 之間失控地來回 swap。",
+     "k": 7,
+     "src": {
+      "v": "Nif2TZ5Cohw",
+      "t": 814.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Working set 的概念",
+   "scene": "vm-14d-ws",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "回到第一個解法 working set，它從 locality 出發。",
+     "k": 1,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 925.7
+     }
+    },
+    {
+     "say": "給一段 window，例如一分鐘，數這個 process 在這段時間用了多少個不同的 page。藍框就是 window。",
+     "k": 2,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 937.7
+     }
+    },
+    {
+     "say": "用了幾個，就給它幾個 frame。給多了它不用，給少了就會 fault，剛好最理想。",
+     "k": 3,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 954
+     }
+    },
+    {
+     "say": "但 locality 會變：程式先處理一個 array，再換另一個，或跑去某段 function，需要的數量也跟著變。",
+     "k": 4,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 972
+     }
+    },
+    {
+     "say": "所以 OS 要一直追蹤，不能算一次就算了。",
+     "k": 4,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 990
+     }
+    },
+    {
+     "say": "working set model：定一個 time window 叫 Δ，數裡面不同 page 的個數，叫 working set size，簡稱 WSS。",
+     "read": "working set model：定一個 time window 叫 delta，數裡面不同 page 的個數，叫 working set size，簡稱 WSS。",
+     "k": 5,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1017.6
+     }
+    },
+    {
+     "say": "每支程式的 WSS 都算出來，照這個分配 frame；真的不夠，再用比例之類的方法。",
+     "k": 6,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1039.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Working set 例子：Δ = 10",
+   "scene": "vm-14d-wsex",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "理論上 window 是一段時間，實作上為了簡單，通常數「最近多少次存取」。上面是課本的 page reference table。",
+     "k": 1,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1059.3
+     }
+    },
+    {
+     "say": "系統一直跑，就一直保留過去 10 次存取的紀錄，這個 Δ = 10 就是 window。",
+     "read": "系統一直跑，就一直保留過去 10 次存取的紀錄，這個 delta 等於 10 就是 window。",
+     "k": 2,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1080
+     }
+    },
+    {
+     "say": "在 t1，過去 10 個是 2 6 1 5 7 7 7 7 5 1，不重複的有 1、2、5、6、7，所以 WSS 是 5。",
+     "k": 3,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1090.7
+     }
+    },
+    {
+     "say": "進到另一個 locality 的 t2，不只 page 換了，數量也變了，只剩 3、4，WSS 變成 2。",
+     "k": 4,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1106
+     }
+    },
+    {
+     "say": "所以 OS 要隨時觀察，把每個 process 的 frame 數調到最合適，這就是 working set。",
+     "k": 5,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1118
+     }
+    }
+   ]
+  },
+  {
+   "title": "總需求 D 和可用的 m",
+   "scene": "vm-14d-wsd",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "把它寫成演算法。WSSi 是第 i 個 process 的 working set size。",
+     "read": "把它寫成演算法。WSS i 是第 i 個 process 的 working set size。",
+     "k": 1,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1129.8
+     }
+    },
+    {
+     "say": "全部加起來就是總需求 D，D = Σ WSSi。有 D 個 frame，大家都能順利跑，不會一直 fault。",
+     "read": "全部加起來就是總需求 D，D 等於所有 WSS i 的總和。有 D 個 frame，大家都能順利跑，不會一直 fault。",
+     "k": 2,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1143.6
+     }
+    },
+    {
+     "say": "小 m 是實際可用的 frame 數，也就是實體記憶體的大小。",
+     "k": 3,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1171.3
+     }
+    },
+    {
+     "say": "OS 算出 D 跟 m 比。D 比 m 大，這裡 11 > 10，就有人會開始 fault，有 thrashing 的危險。",
+     "read": "OS 算出 D 跟 m 比。D 比 m 大，這裡 11 大於 10，就有人會開始 fault，有 thrashing 的危險。",
+     "k": 4,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1188.5
+     }
+    },
+    {
+     "say": "這時 OS 會 suspend 一個 process，例如 priority 最低的，把它整個 swap 到 disk。",
+     "k": 5,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1211.9
+     }
+    },
+    {
+     "say": "這正是 mid-term scheduler 的工作。D 降下來，直到 D ≤ m。",
+     "read": "這正是 mid-term scheduler 的工作。D 降下來，直到 D 小於等於 m。",
+     "k": 5,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1230
+     }
+    },
+    {
+     "say": "反過來 m 遠大於 D，很多 frame 空著，degree 不夠，就啟動新的 process，或把之前被 suspend 的叫回來。",
+     "k": 6,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1244.6
+     }
+    },
+    {
+     "say": "周老師特別提醒：每年很多同學只寫一個 WSS，那是錯的。一定要每個 process 都算、加總，再跟 m 比。",
+     "k": 7,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1294.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page-fault frequency",
+   "scene": "vm-14d-pff",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "working set 能明顯解決 thrashing，通常能讓 CPU 使用率很高。",
+     "k": 1,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1329
+     }
+    },
+    {
+     "say": "缺點是 expensive：每次記憶體存取都要更新計數，每秒幾百萬次，overhead 很高。",
+     "k": 2,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1337.8
+     }
+    },
+    {
+     "say": "更直覺的做法是從 page fault 下手，叫 page-fault frequency，PFF。圖上是 frame 越多、fault rate 越低。",
+     "k": 3,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1384.1
+     }
+    },
+    {
+     "say": "做法是監控每個 process 的 page fault rate，控制在一個範圍中間，例如 5% 到 10%。",
+     "k": 4,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1401.1
+     }
+    },
+    {
+     "say": "為什麼不壓到 0%？0% 代表給了太多閒置的 frame，degree 不夠，也不是好事。",
+     "k": 5,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1425.3
+     }
+    },
+    {
+     "say": "所以有一個 upper bound 和一個 lower bound，範圍設多少沒有標準答案，是 tune 出來的。",
+     "k": 6,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1446.5
+     }
+    },
+    {
+     "say": "跟 working set 最大的差別：只數 page fault 這個事件。fault 很少發生，OS 本來就要處理，順手加 1 就好。",
+     "k": 7,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1474.5
+     }
+    },
+    {
+     "say": "rate 超過上界，代表 frame 不夠，就多給；這些 frame 從低於下界、frame 太多的 process 身上拿。",
+     "k": 8,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1515.5
+     }
+    },
+    {
+     "say": "就這樣一直做 balancing。",
+     "k": 8,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1530
+     }
+    },
+    {
+     "say": "這招成立的前提是：frame 增加，fault 一定減少。所以不能有 anomaly，要用 LRU 這種 stack algorithm。",
+     "k": 9,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1552.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Working set 和 PFF 是同一件事",
+   "scene": "vm-14d-rel",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "最後這張圖說明，兩種方法在解同一個問題，相關性非常高。",
+     "k": 1,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1586.3
+     }
+    },
+    {
+     "say": "從時間軸看 page fault rate，有時高、有時低。",
+     "k": 2,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1600
+     }
+    },
+    {
+     "say": "什麼時候高？進入新的 locality、要重新建立 working set 的時候，rate 衝上去，形成一個 peak。",
+     "k": 3,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1607
+     }
+    },
+    {
+     "say": "兩個 peak 之間就是一段 working set。working set 在 fault 衝高時更新 size，PFF 在超過上界時調整。",
+     "k": 4,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1618.8
+     }
+    },
+    {
+     "say": "從哪個角度做都可以，核心都是 locality。",
+     "k": 4,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1640
+     }
+    },
+    {
+     "say": "locality 會變，所以要在 run time 一直調。working set overhead 高，實務上大家多半觀察 page fault rate。",
+     "k": 5,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1660.7
+     }
+    },
+    {
+     "say": "周老師說，thrashing、working set、PFF 怎麼做，考試很常問，一定要會描述。",
+     "k": 5,
+     "src": {
+      "v": "cfPNAeAatGs",
+      "t": 1675
+     }
+    }
+   ]
+  }
+ ]
+}

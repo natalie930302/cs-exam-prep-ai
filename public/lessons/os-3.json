@@ -1,0 +1,3070 @@
+{
+ "chapter": "os-3",
+ "title": "Thread與並行",
+ "intro": "弄懂 thread 跟 process 共用和私有的東西、為什麼要用 thread，再看 user / kernel thread 與三種 mapping model，最後學 pthread、Java、Linux clone 和 fork、cancellation、signal、thread pool 這些使用上的問題。",
+ "parts": [
+  {
+   "title": "這一章要學什麼",
+   "scene": "thr-15a-map",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "好，這一章講 thread，也就是執行緒。周老師說它是作業系統裡最短、最好讀，卻最常用到的一章。",
+     "k": 1,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 16
+     }
+    },
+    {
+     "say": "為什麼？現在電腦都是多核心，計算量又越來越大，一定要平行，而最容易拿到的平行方式就是 thread。",
+     "k": 1,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 42
+     }
+    },
+    {
+     "say": "先給你一個直覺：thread 就是程式裡一條正在跑的執行路線。",
+     "k": 1,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 111.7
+     }
+    },
+    {
+     "say": "第一件事是搞懂 thread 跟 process 差在哪。老師說這是 101 等級的題目，面試答不出來就不用談了。",
+     "k": 2,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 119.9
+     }
+    },
+    {
+     "say": "再來，很多人沒意識到 thread 分兩層：就像 OS 分 user 跟 kernel，thread 也分 user level 跟 kernel level。",
+     "k": 3,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 138.7
+     }
+    },
+    {
+     "say": "兩層都叫 thread，卻是不同的東西：user thread 是程式設計師建的，kernel thread 才是 OS 真的拿去排程的。",
+     "k": 4,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 157.3
+     }
+    },
+    {
+     "say": "這兩種 thread 執行時是什麼關係、怎麼對應，就是後面要講的 multithreading model。",
+     "k": 5,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 160.4
+     }
+    },
+    {
+     "say": "接著看 thread library，就是一組 API，像 pthread_create 建 thread、pthread_join 等它結束。",
+     "k": 6,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 167
+     }
+    },
+    {
+     "say": "最後談使用上的 issue，因為 thread 畢竟不是 process，有些行為不一樣。",
+     "k": 7,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 178.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Thread 是 lightweight process",
+   "scene": "thr-15a-what",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "好，我們從定義開始：thread 到底是什麼？",
+     "k": 1,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 188.2
+     }
+    },
+    {
+     "say": "它又叫 lightweight process，輕量級的 process。左邊大的是 process，右邊小的是 thread。",
+     "k": 2,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 192.9
+     }
+    },
+    {
+     "say": "光看名字就知道，兩者界線很模糊。thread 不是完全不同的東西，只是比較「輕」。",
+     "k": 3,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 198.4
+     }
+    },
+    {
+     "say": "一個完整的 process 有 code、data、files、stack。把其中一些拿掉，或跟別人共用，就變成 thread。",
+     "k": 4,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 208
+     }
+    },
+    {
+     "say": "所以在電腦裡，process 比較像一個容器，把 thread 裝在裡面。",
+     "k": 5,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 231
+     }
+    },
+    {
+     "say": "那真正在 CPU core 上算東西的是誰？是 thread。core 就是 CPU 裡能獨立執行指令的核心。",
+     "k": 6,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 238.7
+     }
+    },
+    {
+     "say": "因為一個 process 可以拆成很多個 thread，每一個都能被放到 core 上跑。",
+     "k": 7,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 246.8
+     }
+    },
+    {
+     "say": "所以正在用某個 core 的，其實是「某個 process 的某個 thread」，不是 process 本身。",
+     "k": 8,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 250.5
+     }
+    },
+    {
+     "say": "這就是課本那句話：thread 是 basic unit of CPU utilization，使用 CPU 的最基本單位。",
+     "k": 9,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 258.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "同一個 process 的 threads 共用什麼",
+   "scene": "thr-15a-shared",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "那「輕」到底輕在哪？最重要的角度是看 memory content，也就是它在記憶體裡放了什麼。",
+     "k": 1,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 264.5
+     }
+    },
+    {
+     "say": "講 process 時說過，process 的重點是記憶體內容：code segment 放指令，data segment 放全域變數。",
+     "k": 2,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 272.3
+     }
+    },
+    {
+     "say": "thread 的定義很明確：code、data，還有 resource，像開啟的檔案，這三塊是 shared 的。",
+     "k": 3,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 286
+     }
+    },
+    {
+     "say": "同一個 process 裡的 T1、T2 都指向同樣這三塊。這是現代大部分 OS 對 thread 最基本的定義。",
+     "k": 4,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 295
+     }
+    },
+    {
+     "say": "如果你學過 segmentation 會更清楚：這些就是不同的 segment，segment table 裡一個 segment 記一列位置。",
+     "k": 5,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 311
+     }
+    },
+    {
+     "say": "所以 create 一個 thread，只要讓新 thread 的 segment table 指到同樣的 segment，就共用了。",
+     "k": 6,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 322.2
+     }
+    },
+    {
+     "say": "不用另外複製一份，省下這些，所以叫 lightweight。也因此同一個 process 的 threads 關係非常緊密。",
+     "k": 7,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 337.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "每個 thread 自己擁有的東西",
+   "scene": "thr-15a-private",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "來看課本 Fig. 4.1。左邊是 single-threaded process，code、data、files、registers、stack 都只有一份。",
+     "k": 1,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 344.2
+     }
+    },
+    {
+     "say": "右邊在同一個 process 裡 create 了三個 thread，上排的 code、data、files 大家共用。",
+     "k": 2,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 352
+     }
+    },
+    {
+     "say": "但每個 thread 要能獨立執行，所以「執行用的部分」不能共用，下面每一欄的 registers 和 stack 各自一份。",
+     "k": 3,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 364.7
+     }
+    },
+    {
+     "say": "第一個私有的東西是 TCB，thread control block。process 有 PCB 記狀態，thread 也有對應的 TCB。",
+     "k": 4,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 375.7
+     }
+    },
+    {
+     "say": "周老師提到 Nachos 這個教學 OS：trace code 只看得到 thread，看不到 PCB，因為兩者本質相同，用同一種結構管。",
+     "k": 5,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 386.5
+     }
+    },
+    {
+     "say": "Linux 也一樣不特別區分，比較好維護；Windows 就比較複雜，TCB 跟 PCB 的內容不同。",
+     "k": 6,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 407.2
+     }
+    },
+    {
+     "say": "既然 control block 管的是一個執行單位，每個 thread 也就有自己獨立的 thread ID。",
+     "k": 7,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 445
+     }
+    },
+    {
+     "say": "program counter 也是獨立的。PC 記錄下一行要執行哪裡，所以每個 thread 可以跑到不同的位置。",
+     "k": 8,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 455
+     }
+    },
+    {
+     "say": "有自己的 PC，就代表每個 thread 能做完全不同的事；之後會看到，不同 thread 通常在跑不同的 function。",
+     "k": 9,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 476.4
+     }
+    },
+    {
+     "say": "既然各自執行，CPU 裡存中間值的 register 當然也要各自一份。",
+     "k": 10,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 492
+     }
+    },
+    {
+     "say": "那 data 呢？除了 global variable，還有 heap，也就是 malloc 動態配置出來的記憶體，這些都是共用的。",
+     "k": 11,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 503.1
+     }
+    },
+    {
+     "say": "但有一種變數不共用：放在 stack 裡的。",
+     "k": 12,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 517.3
+     }
+    },
+    {
+     "say": "stack 放 local variable。大家跑同一個 function，程式裡都叫 i，其實指到不同的記憶體位址。",
+     "k": 13,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 520
+     }
+    },
+    {
+     "say": "function 一 return，local variable 就沒了，是暫時的。所以每個 thread 都有一個自己的 stack。",
+     "k": 14,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 537.3
+     }
+    },
+    {
+     "say": "考試最愛把 heap 跟 stack 放錯邊。記好：heap 共用、stack 私有，thread ID、PC、registers 也私有。",
+     "k": 14
+    }
+   ]
+  },
+  {
+   "title": "寫程式時怎麼分辨",
+   "scene": "thr-15a-progview",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "這樣你寫程式時其實很好分辨。看這段範例。",
+     "k": 1,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 547
+     }
+    },
+    {
+     "say": "work 裡宣告的 i 是 local variable，在 stack 上，所以每個 thread 各自一份、互不干擾。",
+     "k": 2,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 552
+     }
+    },
+    {
+     "say": "global 的 g，或 malloc 出來的記憶體，thread 之間就是共用的。",
+     "k": 3,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 559
+     }
+    },
+    {
+     "say": "所以把 pointer 傳給別的 thread 用，也不會 segmentation fault，因為 data section 本來就共用，位址有效。",
+     "k": 4,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 567.3
+     }
+    },
+    {
+     "say": "OS 實作上可能用同一套東西管 thread 跟 process，看起來有點混；但對 programmer 來說，兩者完全不同。",
+     "k": 5,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 583.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Thread 用在哪裡",
+   "scene": "thr-15a-apps",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "那為什麼要寫 thread？因為很多事一定要靠 multithreading 才做得到，而且你每天都在用。",
+     "k": 1,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 599
+     }
+    },
+    {
+     "say": "例子一：web browser。開網頁時文字很快就出來，圖片卻過一下子才跳出來，你有注意過嗎？",
+     "k": 2,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 614.3
+     }
+    },
+    {
+     "say": "因為 browser 用了好幾個 thread：文字、每一張圖都各自用一個 thread 下載，下載完再顯示。",
+     "k": 3,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 632
+     }
+    },
+    {
+     "say": "例子二：web server，之前講 socket programming 就拿它當過例子。",
+     "k": 4,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 650.6
+     }
+    },
+    {
+     "say": "server 要接很多 request，每個通常都很小。所以它有一個 main thread，一直在那邊等。",
+     "k": 5,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 668.5
+     }
+    },
+    {
+     "say": "一接到 connection，就 create 一個新的 thread 去處理這個 request，",
+     "k": 6,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 684.4
+     }
+    },
+    {
+     "say": "main thread 自己馬上回去等下一個，所以大家都能不斷連進來。",
+     "k": 7,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 692.1
+     }
+    },
+    {
+     "say": "如果不用 multithreading 呢？一個人的 request 就可能卡住所有人，看起來就像 denial of service。",
+     "k": 8,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 703.4
+     }
+    },
+    {
+     "say": "例子三：RPC，remote procedure call，呼叫別台電腦上的 function，它也有個 server 讓很多人同時呼叫。",
+     "k": 9,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 728.7
+     }
+    },
+    {
+     "say": "client 連進來就用新的 thread 接 request，main thread 繼續 loop 等。處理可以慢，但連線要馬上接起來。",
+     "k": 10,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 755
+     }
+    }
+   ]
+  },
+  {
+   "title": "好處一、二：Responsiveness 與 Resource sharing",
+   "scene": "thr-15a-benefit12",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "整理一下，課本列了四個好處。第一個是 responsiveness，反應快。",
+     "k": 1,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 779.5
+     }
+    },
+    {
+     "say": "從 server 看：它能很快回應每個 connection，不會因為某個 request 把整台卡住，拖慢 response time。",
+     "k": 2,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 788.4
+     }
+    },
+    {
+     "say": "或是寫互動遊戲。老師舉的是「青蛙過河」這種小遊戲。",
+     "k": 3,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 813
+     }
+    },
+    {
+     "say": "一個 thread 控制車流，另一個 thread 接鍵盤輸入。用好幾個 thread，程式很容易就兜出來了。",
+     "k": 4,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 827.5
+     }
+    },
+    {
+     "say": "它們各自獨立、各自很快反應，但必要時又能溝通。比如青蛙被車撞到了，兩邊就得講一下話。",
+     "k": 5,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 845
+     }
+    },
+    {
+     "say": "那要怎麼溝通？這就帶到第二個好處：resource sharing，資源共享。",
+     "k": 6,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 861.8
+     }
+    },
+    {
+     "say": "如果是不同 process，為了 protection，記憶體彼此不共用，要溝通就得透過 OS 轉交，可以，但很慢。",
+     "k": 7,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 871.4
+     }
+    },
+    {
+     "say": "同一個 process 的 thread 就簡單了：直接讀寫共用的 global variable，預設就能共享資料。",
+     "k": 8,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 887
+     }
+    }
+   ]
+  },
+  {
+   "title": "好處三、四：用滿多核心與 Economy",
+   "scene": "thr-15a-benefit34",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "第三個好處：現在的電腦全是 multi-core，一顆 CPU 裡有好幾個核心。",
+     "k": 1,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 911.8
+     }
+    },
+    {
+     "say": "多核心、多顆 CPU，甚至放到 cloud 上，就是好多台電腦。",
+     "k": 2,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 926.5
+     }
+    },
+    {
+     "say": "要把這些資源用滿，就得靠 thread，讓每個 core 都有 thread 在跑；不用 thread，這些 core 就白白浪費。",
+     "k": 3,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 946.3
+     }
+    },
+    {
+     "say": "第四個好處是 Economy。你可能會問：用 process 也能用多核心啊，那兩者最大的差別到底在哪？",
+     "k": 4,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 962.5
+     }
+    },
+    {
+     "say": "差在成本。process 做什麼都要透過 OS，而且它的 memory content 多很多。",
+     "k": 5,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 969.4
+     }
+    },
+    {
+     "say": "所以建 process 比建 thread 慢很多：記憶體要配、管理結構要準備；thread 只要多一組 registers 和 stack。",
+     "k": 6,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 978.2
+     }
+    },
+    {
+     "say": "所以能用 thread 做的，就別用 process：程式比較快，系統負擔也比較輕，這就是 Economy。",
+     "k": 7,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1004.8
+     }
+    },
+    {
+     "say": "老師給過實驗數字：用 fork 建 process 跟用 pthread_create 建 thread 比，thread 快了 20 幾倍到 50 倍。",
+     "k": 8,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1021.2
+     }
+    },
+    {
+     "say": "溝通也差很多。MPI 是 message passing 的 library，process 之間用 send、receive，要做 memory copy。",
+     "k": 9,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1066.1
+     }
+    },
+    {
+     "say": "thread 用 shared memory，寫進 global variable 再讀出來就好。就算在同一台電腦上，效能也能差到 2 倍，甚至 15 倍。",
+     "k": 10,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1093.6
+     }
+    },
+    {
+     "say": "那什麼時候非用 process 不可？當溝通的兩方根本是不同系統、不同 application，不可能混在一起的時候。",
+     "k": 11,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1118.8
+     }
+    },
+    {
+     "say": "如果只是想把自己的工作平行加速，大家本來就在解同一個問題，那就用 thread。",
+     "k": 12,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1133.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "軟體和硬體一起走向多核心",
+   "scene": "thr-15a-hwsw",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "thread 可以從 software 跟 hardware 兩個角度來看。",
+     "k": 1,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1151.6
+     }
+    },
+    {
+     "say": "software 這邊叫 multithreaded programming，用 Pthread、Java thread 這類 library 來寫。",
+     "k": 2,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1159.4
+     }
+    },
+    {
+     "say": "hardware 這邊是 multi-core，多核心、多 CPU。在這種系統上，就需要 thread programming。",
+     "k": 3,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1181.5
+     }
+    },
+    {
+     "say": "兩邊相輔相成：正因為有 thread programming，硬體廠商才會一直加核心，讓一台電腦更 powerful。",
+     "k": 4,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1197
+     }
+    },
+    {
+     "say": "你一定聽過 Death of CPU scaling。以前電腦變快，主要靠把時脈 GHz 一路往上加。",
+     "k": 5,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1212.3
+     }
+    },
+    {
+     "say": "但製程到了瓶頸，時脈加不上去。以前買電腦問時脈多少，現在大家比的是有幾個核心。",
+     "k": 6,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1226
+     }
+    },
+    {
+     "say": "所以手上有多核心，程式卻沒用 thread，你基本上就跑不贏人家。",
+     "k": 7,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1257.1
+     }
+    },
+    {
+     "say": "對 OS 來說，接下來的問題是：thread 要跟哪個 core 做 binding。嚴格說，OS 有些功能已經拆進 CPU 裡了。",
+     "k": 8,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1274.1
+     }
+    },
+    {
+     "say": "像 Intel 的 Hyper-Threading，一個 core 可以讓兩個 thread 同時跑。",
+     "k": 9,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1292.5
+     }
+    },
+    {
+     "say": "所以 scheduling 變得更複雜：不只 OS 在排，CPU 內部、甚至單一 core 也在做硬體層的排程。",
+     "k": 10,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1311
+     }
+    },
+    {
+     "say": "thread 最後會落到最底層某個硬體執行單位上，但中間隔了好幾層，就像 virtual address 要轉成 physical address。",
+     "k": 11,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1333.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "平行程式的五個挑戰",
+   "scene": "thr-15a-challenges",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "thread programming 是 parallel programming 的一種，另一種是 message passing。問題相同，只是技巧不同。",
+     "k": 1,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1354.6
+     }
+    },
+    {
+     "say": "挑戰一：dividing activities，拆分工作。用 thread 就是把一件事拆給很多人做，前提是先拆得開。",
+     "k": 2,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1395.1
+     }
+    },
+    {
+     "say": "就像分組作業：你寫 report、我寫 code、你做 survey、我跑實驗。先拆好，每個 thread 才知道要做什麼。",
+     "k": 3,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1409
+     }
+    },
+    {
+     "say": "但不是每個問題都拆得開，而且拆法影響很大，拆不好就全卡在某一個人身上。",
+     "k": 4,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1425.8
+     }
+    },
+    {
+     "say": "挑戰二：data splitting。電腦做的事說穿了就是 compute on data，計算要拆，資料也得跟著拆。",
+     "k": 5,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1439.6
+     }
+    },
+    {
+     "say": "比如平行排序：10 個 element、5 個 thread，每人平分兩個就好嗎？",
+     "k": 6,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1463.4
+     }
+    },
+    {
+     "say": "不一定，每筆資料的計算量可能不同。換成 graph 更麻煩：要讓每份 vertex 數一樣，還是 edge 數一樣？",
+     "k": 7,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1496.4
+     }
+    },
+    {
+     "say": "挑戰三：data dependency。兩個 thread 要改同一筆資料，或第二個得等第一個改完，這時就很難切，切了還可能算錯。",
+     "k": 8,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1530
+     }
+    },
+    {
+     "say": "挑戰四：load balancing。整個程式什麼時候結束，取決於最後做完的那個人；工作不平均，就等於沒平行。",
+     "k": 9,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1576.2
+     }
+    },
+    {
+     "say": "而且很多執行時間要跑了才知道，事先預測不了，所以很難做到最好。",
+     "k": 10,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1615.4
+     }
+    },
+    {
+     "say": "最後一個幾乎無解：testing 跟 debugging。",
+     "k": 11,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1627
+     }
+    },
+    {
+     "say": "GDB 這類 debugger 可以 watch 變數、一步步 trace，但基本上只適用 sequential code。",
+     "k": 12,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1661
+     }
+    },
+    {
+     "say": "跨 core、跨電腦同時跑，很難一次追蹤全部；每個 thread 都照步驟做，誰先誰後一換，結果就不一樣。",
+     "k": 13,
+     "src": {
+      "v": "iEipIUjbQxk",
+      "t": 1693.1
+     }
+    },
+    {
+     "say": "這個先後順序的麻煩，就是之後 synchronization 那一章要解決的。",
+     "k": 13
+    },
+    {
+     "say": "課本的五個挑戰：identifying tasks、balance、data splitting、data dependency、testing。",
+     "k": 14
+    }
+   ]
+  },
+  {
+   "title": "User thread 與 kernel thread",
+   "scene": "thr-15b-twolevels",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "回到 thread 的管理。它分兩層：上面 user space 是 user thread，下面 kernel space 是 kernel thread。",
+     "k": 1,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 16.1
+     }
+    },
+    {
+     "say": "這就像 process 有 user mode 和 kernel mode，thread 也分 user thread 和 kernel thread。",
+     "k": 1,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 15.7
+     }
+    },
+    {
+     "say": "user thread 就是你平常看到的那些：pthread、Java thread，還有 Windows 上的 Win32 thread。",
+     "k": 2,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 36
+     }
+    },
+    {
+     "say": "它們都是 thread library，放在 API 那一層，屬於 user level。現在的電腦都支援 thread programming。",
+     "k": 3,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 63.3
+     }
+    },
+    {
+     "say": "programmer 寫程式時，直接用的就是這些 user thread 的 library。",
+     "k": 4,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 84.5
+     }
+    },
+    {
+     "say": "kernel thread 則在 OS 裡面，是 OS 真正在管、在排程的單位。前面說「使用 CPU 的最基本單位」，其實就是指它。",
+     "k": 5,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 89.6
+     }
+    },
+    {
+     "say": "每個 OS 都有自己的 kernel thread，就像每個 OS 都有自己定義的 process。",
+     "k": 6,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 108.7
+     }
+    },
+    {
+     "say": "兩者不是一一綁死，而是一種 binding，也叫 mapping 的關係。",
+     "k": 7,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 117.6
+     }
+    },
+    {
+     "say": "你呼叫 API 建的是 user thread；它要執行時，OS 會把它 bind 到某個 kernel thread 上，才真正跑得起來。",
+     "k": 8,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 132
+     }
+    },
+    {
+     "say": "換句話說，任何 user thread 要執行，都一定得掛在某個 kernel thread 上。",
+     "k": 8,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 21.6
+     }
+    },
+    {
+     "say": "而且 binding 在 run time 可以換：它去做 I/O 離開 CPU，回到 ready queue 再被排到時，可能改綁另一個。",
+     "k": 9,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 145.3
+     }
+    },
+    {
+     "say": "programmer 不用管 kernel thread；但設計 OS 的人，管的就是這些 kernel thread。",
+     "k": 10,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 167.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "User thread 快，kernel thread 不互卡",
+   "scene": "thr-15b-fastblock",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "再深入一點。user thread 就是 thread library，也就是 API。",
+     "k": 1,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 184.7
+     }
+    },
+    {
+     "say": "它通常很快：API 在 user level，system call 才進 kernel。不碰 system call，就不用 interrupt、找 OS。",
+     "k": 2,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 191.6
+     }
+    },
+    {
+     "say": "create 快、也好管理。那問題來了：既然這麼好，為什麼還需要 kernel thread？",
+     "k": 3,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 222.6
+     }
+    },
+    {
+     "say": "你想想看，如果 kernel 這邊只有一個 thread，user level 開再多 thread 也沒用。",
+     "k": 4,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 234
+     }
+    },
+    {
+     "say": "因為它們是 binding 的關係：上面 create 了一堆 user thread，全部 bind 到同一個 kernel thread，",
+     "k": 5,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 249
+     }
+    },
+    {
+     "say": "只要其中一個 user thread 進 kernel 做 I/O 或 sleep，把自己 block 住，",
+     "k": 6,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 252.4
+     }
+    },
+    {
+     "say": "大家共用的那個 kernel thread 就被卡死，誰都動不了。你以為開了一堆 thread，其實只是假象，頂多寫程式方便。",
+     "k": 7,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 263
+     }
+    },
+    {
+     "say": "kernel thread 才是 OS 裡真正去用 CPU 的單位。現在換成每個 user thread 各配一個 kernel thread 來比較。",
+     "k": 8,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 287
+     }
+    },
+    {
+     "say": "kernel 裡凡事都要經過 protection 這些複雜機制，所以 kernel thread 一定比較慢。",
+     "k": 9,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 297.6
+     }
+    },
+    {
+     "say": "但好處是每個 kernel thread 都獨立執行，任何一個被 block，其他的照常運作。",
+     "k": 10,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 303.6
+     }
+    },
+    {
+     "say": "就像不同 process 互不影響一樣。這個特性只有 kernel level 的 thread 才有，user level 不一定有。",
+     "k": 11,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 327.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Many-to-One：全部擠一個 kernel thread",
+   "scene": "thr-15b-m1",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "既然有兩層，就得決定怎麼對應。OS 要決定這個 mapping，而且不管怎麼對都得保證正確，所以有幾種 model。",
+     "k": 1,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 334.8
+     }
+    },
+    {
+     "say": "總共三種：many-to-one、one-to-one、many-to-many。",
+     "k": 1,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 6.8
+     }
+    },
+    {
+     "say": "最簡單的第一種：所有 user thread 都對到同一個 kernel thread。",
+     "k": 2,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 360.2
+     }
+    },
+    {
+     "say": "這叫 many-to-one，多對一。不管你 create 幾個 thread，全部對到一個 kernel thread。",
+     "k": 3,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 369
+     }
+    },
+    {
+     "say": "它通常從 process 的角度看：一個 process 開一堆 thread，OS 只看到這個 process，就給它一個 kernel thread。",
+     "k": 4,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 376.5
+     }
+    },
+    {
+     "say": "所以任何一個 thread 在裡面 block 住，同一個 process 的其他 thread 全都不能跑。",
+     "k": 5,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 389.6
+     }
+    },
+    {
+     "say": "這比較像傳統 process 的觀念，只是多了 thread 之間的 resource sharing。",
+     "k": 6,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 395.7
+     }
+    },
+    {
+     "say": "從硬體看更明顯：電腦有 4 個 core，你在同一個 process 開 4 個 thread，它們從來沒有同時跑過，只能排隊。",
+     "k": 7,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 404
+     }
+    },
+    {
+     "say": "不過 global variable 的 sharing 還在，responsiveness 也做得到，所以它的用途不一樣。",
+     "k": 8,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 420.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Many-to-One 快在哪、卡在哪",
+   "scene": "thr-neso-m1",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "GATEHUB 的影片把它講得更細。圖上 4 個 user thread，全部 map 到同一個 kernel thread。",
+     "k": 1,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 26.9
+     }
+    },
+    {
+     "say": "同一時間只能有一個掛上去：先跑這個，再換下一個，輪流使用。",
+     "k": 2,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 35.1
+     }
+    },
+    {
+     "say": "這些 thread 全在 user space 管理、不進 kernel，所以沒有 mode switch，也就是 user、kernel mode 間的切換。",
+     "k": 3,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 38.1
+     }
+    },
+    {
+     "say": "注意，context switch 還是有的：停下這個 thread、改跑那個；只是沒有 mode switch。",
+     "k": 4,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 52.5
+     }
+    },
+    {
+     "say": "優點：thread creation 和 context switch 都非常快，因為不用 system call，也不用 mode switch。",
+     "k": 5,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 62.7
+     }
+    },
+    {
+     "say": "缺點是 blocking：這 4 個 thread 屬於同一個 process，正在跑的 T1 一 block，整個 process 都被 block。",
+     "k": 6,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 74.4
+     }
+    },
+    {
+     "say": "為什麼？因為 kernel 根本不知道這個 process 被分成好幾個 thread，它以為「這就只是一個 process」。",
+     "k": 7,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 107.7
+     }
+    },
+    {
+     "say": "也沒有 parallelism：一次只有一個 thread 能用 kernel，多核心也用不上。",
+     "k": 8,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 119
+     }
+    }
+   ]
+  },
+  {
+   "title": "One-to-One：一人一個 kernel thread",
+   "scene": "thr-15b-o1",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "第二種比較常見：one-to-one，一對一。",
+     "k": 1,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 432
+     }
+    },
+    {
+     "say": "一個 user thread 配一個 kernel thread。因為一對一，你用的時候完全沒感覺。",
+     "k": 2,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 441.2
+     }
+    },
+    {
+     "say": "它們其實是不同的東西，只是 kernel 跟 user 分屬不同層；為了好實作、好管理，就單純地一對一。",
+     "k": 3,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 450
+     }
+    },
+    {
+     "say": "很多 OS 都這麼做，尤其現在資源多，你開一堆 kernel thread，它也 handle 得了。",
+     "k": 4,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 462
+     }
+    },
+    {
+     "say": "壞處是 kernel thread 要有 control block 這些管理資料，所以 OS 通常會限制數量。",
+     "k": 5,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 476.6
+     }
+    },
+    {
+     "say": "就像你在電腦上能開的 file 數量也有上限，不會讓你開無限個，怕影響整個系統。",
+     "k": 6,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 488
+     }
+    },
+    {
+     "say": "很多人以為 thread 可以無限開，有事沒事、或寫錯程式就開一個。在 one-to-one 下這樣做，可能把整個系統卡住。",
+     "k": 7,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 507
+     }
+    }
+   ]
+  },
+  {
+   "title": "One-to-One 的好處與代價",
+   "scene": "thr-neso-o1",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "GATEHUB 的圖一看就懂：每個 thread 都有一個專屬的 kernel thread。",
+     "k": 1,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 128.1
+     }
+    },
+    {
+     "say": "英文定義是 each user thread maps to exactly one kernel thread，每個 user thread 剛好對一個。",
+     "k": 2,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 145
+     }
+    },
+    {
+     "say": "優點是 parallelism：每個 thread 都能分開跑，在多核心上真的同時執行。",
+     "k": 3,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 163.4
+     }
+    },
+    {
+     "say": "也沒有 blocking issue。這個 thread block 了，其他會被拖下水嗎？不會，因為每個都有自己的 kernel thread。",
+     "k": 4,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 172
+     }
+    },
+    {
+     "say": "缺點是 higher overhead due to kernel involvement：建 thread 時 kernel 也得參與，建出對應的那一個。",
+     "k": 5,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 183.3
+     }
+    },
+    {
+     "say": "OS 可能限制 thread 的最大數量。假設最多只能建 100 個 kernel thread，同時就只能跑 100 個 user thread。",
+     "k": 6,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 208.4
+     }
+    },
+    {
+     "say": "thread creation 和 context switch 也比較貴，因為會發生 mode switch，這是 many-to-one 沒有的。",
+     "k": 7,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 231.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Many-to-Many：有空的就拿去用",
+   "scene": "thr-15b-mm",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "第三種，想也知道最複雜：many-to-many，多對多。",
+     "k": 1,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 518.3
+     }
+    },
+    {
+     "say": "沒什麼規則，只要對得上就好，兩邊數量不一定相同，也沒有固定的對應。",
+     "k": 2,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 527.3
+     }
+    },
+    {
+     "say": "要支援它的 OS，實作當然最複雜：得自己在內部管理，執行時確保 mapping 一定正確。",
+     "k": 3,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 532.4
+     }
+    },
+    {
+     "say": "舉例：這四個 user thread，可能只 share 三個 kernel thread。",
+     "k": 4,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 552
+     }
+    },
+    {
+     "say": "假設其中一個被 block，它就占住一個 kernel thread。",
+     "k": 5,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 559
+     }
+    },
+    {
+     "say": "剩下三個 user thread 就輪流用另外兩個 kernel thread，繼續跑。只要不卡在同一個，其他人就能動。",
+     "k": 6,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 564.2
+     }
+    },
+    {
+     "say": "所以它最有彈性，最不容易互相卡住。",
+     "k": 7,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 577.2
+     }
+    },
+    {
+     "say": "kernel 還能自己決定要幾個 kernel thread：很多 user thread 都很輕的話，全交給一個處理，整體效能反而最好。",
+     "k": 8,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 584
+     }
+    },
+    {
+     "say": "反過來說，管理機制一定複雜、overhead 很多。如果使用情境很單純，多花時間管理卻沒換到效能，就不划算。",
+     "k": 9,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 598
+     }
+    }
+   ]
+  },
+  {
+   "title": "Many-to-Many 的優缺點",
+   "scene": "thr-neso-mm",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "GATEHUB 的影片對 many-to-many 有更精確的定義。",
+     "k": 1,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 240.2
+     }
+    },
+    {
+     "say": "它把多個 user thread，對到「較少或相等」數量的 kernel thread。",
+     "k": 2,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 246.6
+     }
+    },
+    {
+     "say": "也就是 kernel thread 的數量會小於或等於 user thread，不會比 user thread 多。",
+     "k": 3,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 263.6
+     }
+    },
+    {
+     "say": "優點一：true parallelism。有好幾個 kernel thread 可以同時執行，多個 thread 就能跑在多個 core 上。",
+     "k": 4,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 271
+     }
+    },
+    {
+     "say": "優點二：沒有 blocking issue。某個 thread 用的 kernel thread 被 block 了，其他 thread 換別的繼續跑。",
+     "k": 5,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 281.2
+     }
+    },
+    {
+     "say": "優點三：scalability 比 one-to-one 好。one-to-one 是一個綁死一個；這裡 thread 可以 assign 給任何一個。",
+     "k": 6,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 290.6
+     }
+    },
+    {
+     "say": "缺點：設計和實作比較複雜，thread scheduling 也比較難，畢竟是多對多。",
+     "k": 7,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 303
+     }
+    },
+    {
+     "say": "而且 creation 跟 context switch 一樣比較貴，因為 kernel 也參與，會有 mode switch。",
+     "k": 8,
+     "src": {
+      "v": "LsgJDGJIrJI",
+      "t": 310.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "三種 model 比一比",
+   "scene": "thr-15b-compare",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "三種看圖就懂，重點是把好處跟壞處記下來，我們整理成一張表。",
+     "k": 1,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 622.4
+     }
+    },
+    {
+     "say": "many-to-one：thread management 在 user space，建 thread 時不會建任何 kernel thread，所以一定快。",
+     "k": 2,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 638.1
+     }
+    },
+    {
+     "say": "問題是 blocking，一個卡住就全卡住。更大的問題是沒辦法利用 multiprocessor，沒有真的平行計算。",
+     "k": 3,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 662.4
+     }
+    },
+    {
+     "say": "one-to-one：前面說過，它是最單純的 case。",
+     "k": 4,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 680.6
+     }
+    },
+    {
+     "say": "問題是 thread 數量常被 kernel 限制，連帶 user 也被限制。從 programmability 看不理想，我們希望寫程式不受限。",
+     "k": 5,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 690.7
+     }
+    },
+    {
+     "say": "好處是 concurrency 一定最高，彼此完全不會互相影響。",
+     "k": 6,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 708.4
+     }
+    },
+    {
+     "say": "缺點是每開一個 user thread 就等於開一個 kernel thread，沒得選，所以至少比 many-to-one 明顯慢。",
+     "k": 7,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 714.4
+     }
+    },
+    {
+     "say": "但 one-to-one 其實最常見：現在資源多，大家更在意好寫跟不互相影響，所以大部分 OS 都用一對一。",
+     "k": 8,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 728.2
+     }
+    },
+    {
+     "say": "OS 本來就不想太複雜：太複雜不好 debug，在一般情況下整體效能反而變慢，違背系統設計的理念。",
+     "k": 9,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 753
+     }
+    },
+    {
+     "say": "many-to-many 最複雜，可以任意 mapping，而且是在 run time、每次 thread 要執行前才決定。",
+     "k": 10,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 764.7
+     }
+    },
+    {
+     "say": "好處是沒有限制，也不太容易被卡住。",
+     "k": 11,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 784
+     }
+    },
+    {
+     "say": "缺點就是 overhead：一般情況下會慢一些，OS 也比較容易出錯。只要懂 user 跟 kernel thread 的差別，這些都推得出來。",
+     "k": 12,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 791
+     }
+    }
+   ]
+  },
+  {
+   "title": "實際的 OS 用哪一種",
+   "scene": "thr-15b-recap",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "回頭看，前半段最重要的是 thread 跟 process 的差別。",
+     "k": 1,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 815.4
+     }
+    },
+    {
+     "say": "再來是為什麼要用 thread，以及 thread programming 會碰到的挑戰。",
+     "k": 2,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 829.9
+     }
+    },
+    {
+     "say": "更重要的是，OS 在管理上把 thread 分成 user 跟 kernel 兩個 layer。",
+     "k": 3,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 836.2
+     }
+    },
+    {
+     "say": "兩層之間有不同的 binding option。課本說 Linux、Windows 都是 one-to-one，也有些系統用 many-to-many。",
+     "k": 4,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 846
+     }
+    },
+    {
+     "say": "many-to-one 比較少見，可能用在 embedded device 這類硬體資源比較有限的地方。",
+     "k": 5,
+     "src": {
+      "v": "GO4Lbeh8M_0",
+      "t": 854.6
+     }
+    },
+    {
+     "say": "課本還有一種 two-level model：基本上是 many-to-many，但允許某個 user thread 直接綁定一個 kernel thread。",
+     "k": 5
+    }
+   ]
+  },
+  {
+   "title": "從觀念到實作",
+   "scene": "thr-16a-intro",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "好，接下來看 thread 實際怎麼用。user thread 這一層就是 thread library，也就是寫程式要用的東西。",
+     "k": 1,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 14.8
+     }
+    },
+    {
+     "say": "我們會看 pthread，在 Linux 上用 C、C++ 寫程式就用它。",
+     "k": 2,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 22
+     }
+    },
+    {
+     "say": "Java 就不用多說，它本來就有 Thread 這個 class，可能更好用。",
+     "k": 3,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 34
+     }
+    },
+    {
+     "say": "OS 的部分講 Linux。Windows 比較複雜，用不同的 data structure 管 thread 跟 process，課本有介紹。",
+     "k": 4,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 42
+     }
+    },
+    {
+     "say": "Linux 沒有特別區隔，直接把 process 當 thread 來管。",
+     "k": 5,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 63.1
+     }
+    },
+    {
+     "say": "對 programmer，process 和 thread 是完全不同的 programming model；對 OS，它們都只是要 core 去跑的執行序。",
+     "k": 6,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 70.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Shared-memory programming",
+   "scene": "thr-shm-concept",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "先建立一個觀念：thread programming 其實就是一種平行程式。",
+     "k": 1,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 99
+     }
+    },
+    {
+     "say": "平行程式最大的差別在怎麼溝通。從記憶體來看分兩種：shared memory 跟 message passing programming。",
+     "k": 2,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 110
+     }
+    },
+    {
+     "say": "thread 屬於 shared memory：大家都能存取一塊共用的記憶體，靠讀寫裡面的 variable 來溝通。",
+     "k": 3,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 127.2
+     }
+    },
+    {
+     "say": "架構就像畫面：有一塊所有 thread 都讀得到的 memory，每個 thread 也有自己 private 的空間。",
+     "k": 4,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 144.7
+     }
+    },
+    {
+     "say": "共用的就是一開始講的 global memory，包括 data segment 跟 heap。",
+     "k": 5,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 161.6
+     }
+    },
+    {
+     "say": "私有的是 local variable，就是 function 在 stack 裡的變數，每個 thread 一份，別人拿不到。",
+     "k": 6,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 173.6
+     }
+    },
+    {
+     "say": "溝通通常用 global variable，或 malloc 出來的 pointer：一個 thread 寫進去，另一個讀出來。",
+     "k": 7,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 184.7
+     }
+    },
+    {
+     "say": "跟 message passing 比通常比較快，因為不用 memory copy，不必把資料複製一份傳過去。",
+     "k": 8,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 195.7
+     }
+    },
+    {
+     "say": "缺點是 synchronization 跟 deadlock：大家隨時都能寫同一塊記憶體，可能互相覆蓋，順序一變結果就變。",
+     "k": 9,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 210.2
+     }
+    },
+    {
+     "say": "有時為了保證程式正確，花的時間比省下的還多。所以誰快要看情形，但通常還是比較好，畢竟不用 memory copy。",
+     "k": 10,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 235.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Shared memory 的三種寫法",
+   "scene": "thr-shm-ways",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "shared memory programming 有很多種寫法，常見的大概三種。",
+     "k": 1,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 258
+     }
+    },
+    {
+     "say": "第一種就是用 thread 做 memory sharing，也是這堂課的重點。",
+     "k": 2,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 265.1
+     }
+    },
+    {
+     "say": "第二種：沒人規定一定要用 thread，process 之間也能做 shared memory。",
+     "k": 3,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 276.4
+     }
+    },
+    {
+     "say": "做法是透過 OS：OS 用 segment 管記憶體，可以在 run time 建一些 segment，告訴 OS 這塊要給多個 process 共用。",
+     "k": 4,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 285.7
+     }
+    },
+    {
+     "say": "但 thread 還是比較快：process 比較 heavy，很多東西要透過 OS 才能共用，thread 預設就共用 global variable。",
+     "k": 5,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 305.3
+     }
+    },
+    {
+     "say": "第三種其實最方便，從 porting 的角度也最多人用：透過 compiler。",
+     "k": 6,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 320.1
+     }
+    },
+    {
+     "say": "在程式碼裡加上 compiler directive，告訴 compiler 這一塊要平行化，它就幫你轉成 thread 的形式。",
+     "k": 7,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 339.5
+     }
+    },
+    {
+     "say": "當然不是任意程式都行，程式碼一定要很有規律，compiler 才認得出來。",
+     "k": 8,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 356
+     }
+    },
+    {
+     "say": "最簡單的例子是 for loop：處理一個很大的 array，就叫 compiler 讓每一圈 iteration 各用一個 thread，同時跑。",
+     "k": 9,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 366.9
+     }
+    },
+    {
+     "say": "compiler 會把它 convert 成 multithreaded program。這樣最省力，但只能用在特定 pattern 的程式碼。",
+     "k": 10,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 390
+     }
+    },
+    {
+     "say": "補充一下，實務上這就是 OpenMP 這一類：在 for loop 前加一行 pragma omp parallel for 就好。",
+     "k": 10
+    },
+    {
+     "say": "這堂課主要講第一種：thread。",
+     "k": 11,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 408.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "POSIX 與 portability",
+   "scene": "thr-posix",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "thread 最常用在 Linux，或說 POSIX 的平台上。先回想第一章講的 API 跟 system call。",
+     "k": 1,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 417.8
+     }
+    },
+    {
+     "say": "programmer 都喜歡 portability：在一個平台寫的程式，換到另一台只要 re-compile，不用改程式碼就能跑。",
+     "k": 2,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 431.5
+     }
+    },
+    {
+     "say": "怎麼做到？靠的就是 OS 上面那一層 API layer。",
+     "k": 3,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 449.3
+     }
+    },
+    {
+     "say": "每個 OS 的 kernel 可以很不一樣，甚至有自己的 system call；但 API 這層大家用相同的 interface，底下各自實現。",
+     "k": 4,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 461
+     }
+    },
+    {
+     "say": "早期 Windows 是一大宗，它當然有自己的 API。",
+     "k": 5,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 483
+     }
+    },
+    {
+     "say": "Windows 以外，尤其 open source 社群，像 Linux、早期的 UNIX，開發者一起訂了一套 API，叫 POSIX。",
+     "k": 6,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 492.1
+     }
+    },
+    {
+     "say": "POSIX 是 Portable Operating System Interface，這些系統的 API 都要符合這個 standard。",
+     "k": 7,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 507.6
+     }
+    },
+    {
+     "say": "照這個 standard 寫，就能跑在很多系統上。Mac 也符合，所以在 Mac、Linux 上 recompile 就能跑。",
+     "k": 8,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 528.7
+     }
+    },
+    {
+     "say": "可是搬到 Windows 就不一樣了，可能得整個重寫。",
+     "k": 9,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 539
+     }
+    },
+    {
+     "say": "C library 也屬於 POSIX 的一部分。pthread 的 p 指的就是 POSIX，它是這個 standard 定義的 thread API。",
+     "k": 10,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 546
+     }
+    }
+   ]
+  },
+  {
+   "title": "pthread 的流程：create、function、join",
+   "scene": "thr-pt-flow",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "pthread 的基本用法其實很單純。",
+     "k": 1,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 587.7
+     }
+    },
+    {
+     "say": "它很有彈性：只讓你 create、terminate thread，再加幾個溝通用的 function；thread 裡做什麼，全由你決定。",
+     "k": 2,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 593.2
+     }
+    },
+    {
+     "say": "流程裡最重要的 call 是 pthread_create，用來 create 一個 thread。",
+     "k": 3,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 615.3
+     }
+    },
+    {
+     "say": "create 出來要做什麼？就是去執行一個 function。大多數 thread library 裡，一個 thread 就是「去跑一個 function」。",
+     "k": 4,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 627.6
+     }
+    },
+    {
+     "say": "所以 function 裡的 local variable 是 private，function 之外的 global variable 是共用的，很好理解。",
+     "k": 5,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 647.1
+     }
+    },
+    {
+     "say": "做完之後用 join，把 thread 的結果帶回 main thread，也就是你的 main program，這樣就完成了。",
+     "k": 6,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 659.9
+     }
+    },
+    {
+     "say": "pthread_create 可以連續 call 很多次，就 create 出很多 thread。",
+     "k": 7,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 674.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "pthread_create 的四個參數",
+   "scene": "thr-pt-args",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "來看 pthread_create 有哪些參數。",
+     "k": 1,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 681.9
+     }
+    },
+    {
+     "say": "第一個其實是「回傳值」：你給它一個 pthread_t 的 pointer，它把這個 thread 的 ID 寫進去，像拿到一張號碼牌。",
+     "k": 2,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 686
+     }
+    },
+    {
+     "say": "之後就用這個 token 指定要對哪個 thread 做事，例如 join 它。",
+     "k": 3,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 700.2
+     }
+    },
+    {
+     "say": "第二個是 attribute，用來做比較細的設定，控制 thread 建好之後的行為。",
+     "k": 4,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 707.7
+     }
+    },
+    {
+     "say": "例如在 multi-core 上把 thread 綁在某個 core。因為各 core 的 L1 cache 不共用，綁住能提高 cache hit rate。",
+     "k": 5,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 720.7
+     }
+    },
+    {
+     "say": "OS 預設不幫你限制，哪個 core 有空就跑；想給 OS 這種 hint，就透過 attribute。",
+     "k": 6,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 751
+     }
+    },
+    {
+     "say": "老師說 attribute 可以想成一個整數，每個 bit 代表一種行為要不要打開。",
+     "k": 7,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 765.1
+     }
+    },
+    {
+     "say": "更精確地說，它是 pthread_attr_t 結構，要用 pthread_attr_init 這類函式設定；不需要就傳 NULL，用預設值。",
+     "k": 7
+    },
+    {
+     "say": "第三個是 function pointer，告訴它這個 thread 要跑哪個 function。",
+     "k": 8,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 796.6
+     }
+    },
+    {
+     "say": "最後一個是傳給 function 的 argument，就像拿它去 call 那個 function。",
+     "k": 9,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 809
+     }
+    },
+    {
+     "say": "可是 function 通常不只一個參數。API 想越簡潔越好，不可能定義一參數版、兩參數版，所以只給你一個。",
+     "k": 10,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 818.5
+     }
+    },
+    {
+     "say": "要傳很多個怎麼辦？很簡單，包進一個 struct，再把這個 struct 的 pointer 傳進去。",
+     "k": 11,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 848.7
+     }
+    },
+    {
+     "say": "到了 function 裡，再自己把 struct 解開，讀出每個 member。",
+     "k": 12,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 868
+     }
+    },
+    {
+     "say": "pthread 幫你做得很少：參數型別是 void pointer，進來後你得自己 cast 成正確型別；cast 錯就讀出亂碼，自己負責。",
+     "k": 13,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 889.5
+     }
+    },
+    {
+     "say": "return 也一樣，不能直接回傳一個值，要像傳參數那樣透過 pointer 傳出來。",
+     "k": 14,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 923.6
+     }
+    },
+    {
+     "say": "要拿回這個值，就得 call join；不 join 就拿不到。",
+     "k": 15,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 945.2
+     }
+    },
+    {
+     "say": "還有，pthread 沒有 delete thread：function 一 return，thread 就結束，main thread 只決定要不要讀回值。",
+     "k": 16,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 967.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Hello world 與 join",
+   "scene": "thr-pt-hello",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "來看個簡單例子：main program create 幾個 thread，每個只印一行 Hello World。",
+     "k": 1,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 982.7
+     }
+    },
+    {
+     "say": "thread ID 用一個 array 存，所以要開幾個都可以，沒有限制。",
+     "k": 2,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 991.1
+     }
+    },
+    {
+     "say": "這些就是 user thread，可以開很多個，但不代表它們會 map 到不同的 kernel thread。",
+     "k": 3,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 998.5
+     }
+    },
+    {
+     "say": "用一個 for loop，就 create 出很多個 thread。",
+     "k": 4,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1012.5
+     }
+    },
+    {
+     "say": "傳進去的 argument 就是 thread 的編號。注意要先轉成 void pointer 才能傳。",
+     "k": 5,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1021.8
+     }
+    },
+    {
+     "say": "進到 function 裡，再把它 cast 回原來的型別。pthread 就是得這樣做。",
+     "k": 6,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1033.8
+     }
+    },
+    {
+     "say": "每個 thread 都執行 printf，但印出來的編號不同，而且誰先印不一定。",
+     "k": 7,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1042.5
+     }
+    },
+    {
+     "say": "所以 pthread 基本要用的就是兩個：create，再 join 回來。",
+     "k": 8,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1057.3
+     }
+    },
+    {
+     "say": "join 最主要的目的，就是把 thread 的 return 值讀回來。",
+     "k": 9,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1066.8
+     }
+    },
+    {
+     "say": "create 了很多 thread，就再寫一個 for loop，一個一個 join 回來。",
+     "k": 10,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1079
+     }
+    },
+    {
+     "say": "所以一般 thread programming 的模式是：一個 main thread 先跑不需要平行的部分。",
+     "k": 11,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1088.3
+     }
+    },
+    {
+     "say": "遇到要平行的部分就 create thread，每個 thread 跑相同或不同的 function，處理不同的 data。",
+     "k": 12,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1098
+     }
+    },
+    {
+     "say": "做完再 join，把結果收回 main thread 繼續往下；之後還可以再 create、再 join，動態重複。",
+     "k": 13,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1106
+     }
+    }
+   ]
+  },
+  {
+   "title": "不 join 就要 detach",
+   "scene": "thr-pt-detach",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "有件事要小心：如果你不需要把資料讀回來，當然就不會 call join。",
+     "k": 1,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1120
+     }
+    },
+    {
+     "say": "可是不 join 的話，大部分 thread library 會要求你 call pthread_detach。",
+     "k": 2,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1131
+     }
+    },
+    {
+     "say": "意思是告訴 library：這個 thread 結束後，直接把它的 resource free 掉。",
+     "k": 3,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1138
+     }
+    },
+    {
+     "say": "不 call 會怎樣？程式是 run time 在跑，系統不知道之後會不會有人來 join 它。",
+     "k": 4,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1145.6
+     }
+    },
+    {
+     "say": "所以結束的 thread 會一直 hang 著，return 值跟資源都留著不放，因為不知道你什麼時候要 join。",
+     "k": 5,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1154.6
+     }
+    },
+    {
+     "say": "老師說這樣程式會結束不了。更精確地說，main 結束時整個 process 還是會結束，真正的問題是資源一直被占著。",
+     "k": 5,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1154.6
+     }
+    },
+    {
+     "say": "好習慣是：create 完，要嘛之後會 join，不 join 就立刻 detach。",
+     "k": 6,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1167.4
+     }
+    },
+    {
+     "say": "這樣它一結束，系統就馬上把它用的記憶體清乾淨，不會 hang 在那邊。",
+     "k": 7,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1183.9
+     }
+    },
+    {
+     "say": "當然，一旦 detach，就永遠不能再 join，定義就是這樣。",
+     "k": 8,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1192.3
+     }
+    },
+    {
+     "say": "detach 之後，main thread 跟這個 worker thread 就沒關係了，除了共用 global variable，不會再會合。",
+     "k": 9,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1198.6
+     }
+    },
+    {
+     "say": "pthread 主要就是這兩件事：create，以及 join 或 detach。真正麻煩的是 synchronization。",
+     "k": 10,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1218.2
+     }
+    },
+    {
+     "say": "pthread 也有 lock、unlock 的 function，什麼時候該鎖、什麼時候該解，等同步那章再回來談。",
+     "k": 11,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1236.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Java thread 與 JVM",
+   "scene": "thr-java",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "Java 有專門的 Thread class，它 implement 了 Runnable 這個 interface。知道就好，要用再查。",
+     "k": 1,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1263.3
+     }
+    },
+    {
+     "say": "Java 的特色是有自己的 virtual machine，也就是 JVM，自己就像一個 OS。",
+     "k": 2,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1287
+     }
+    },
+    {
+     "say": "所以 Java 的 portability 比其他語言都好，因為中間隔了一層 virtual machine。",
+     "k": 3,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1296
+     }
+    },
+    {
+     "say": "寫好一個 Java program，可以放 Windows 上跑，也可以放 Linux 上跑。",
+     "k": 4,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1304
+     }
+    },
+    {
+     "say": "因為裝 JVM 時，你會裝 Windows 版，或 Linux、POSIX 版的。",
+     "k": 5,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1311.7
+     }
+    },
+    {
+     "say": "Windows 版的 JVM，會把 Java thread 對到 Win32 thread。",
+     "k": 6,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1323.1
+     }
+    },
+    {
+     "say": "UNIX、Linux 版的，就對到 pthread。",
+     "k": 7,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1331.7
+     }
+    },
+    {
+     "say": "也就是隔了一層：Java 建一個 thread，先對到那個 OS 的 user thread library，再往下到 kernel。",
+     "k": 8,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1342.4
+     }
+    },
+    {
+     "say": "所以 portability 更好：pthread 沒辦法在 Windows 上跑，Java 可以，因為 JVM 會對到各 OS 的 user thread。",
+     "k": 9,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1349.2
+     }
+    },
+    {
+     "say": "甚至換個 OS，行為就可能不同：可能是 one-to-one，比較複雜的 OS 可能變成 many-to-many。",
+     "k": 10,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1373.5
+     }
+    },
+    {
+     "say": "這是 JVM 幫你控制的；換成 pthread，就是 programmer 自己透過 attribute 去設定。",
+     "k": 11,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1392.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Linux：thread 就是 clone 出來的 process",
+   "scene": "thr-clone",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "最後講 Linux 的 thread。這跟剛剛完全不同，講的是 kernel 怎麼管理 thread。",
+     "k": 1,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1411.1
+     }
+    },
+    {
+     "say": "選 Linux 是因為它很好講：它根本就是 process。",
+     "k": 2,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1424.1
+     }
+    },
+    {
+     "say": "某種程度上，Linux 根本不 support thread，這是對 OS 本身而言。",
+     "k": 3,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1432.1
+     }
+    },
+    {
+     "say": "對 programmer 還是有 thread，因為你用 pthread library，就能在 process 裡 create thread。",
+     "k": 4,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1437.3
+     }
+    },
+    {
+     "say": "但 OS 不是真的把它當 thread 管。在 Linux 裡，你建的每個 thread，它都當成一個 process。",
+     "k": 5,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1457.5
+     }
+    },
+    {
+     "say": "那差別在哪？之前教過，建 process 用 fork，fork 出來的兩個記憶體完全不相通，要 copy 一份。",
+     "k": 6,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1465.4
+     }
+    },
+    {
+     "say": "可是透過 pthread 建出來的，是一種很特別的 process：有些記憶體是共用的。",
+     "k": 7,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1479.5
+     }
+    },
+    {
+     "say": "所以 Linux 另外提供一個 system call，叫 clone。目的一樣是建 process，只是參數多很多。",
+     "k": 8,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1489.5
+     }
+    },
+    {
+     "say": "這些參數讓你控制哪些 segment 共用、哪些不共用，直接把新 process 變成 thread 的樣子。",
+     "k": 9,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1501
+     }
+    },
+    {
+     "say": "clone 的每個 flag 都對應一種資源，例如 file system：parent 跟 child 開的檔案共不共用，你開了別人讀不讀得到。",
+     "k": 10,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1530.3
+     }
+    },
+    {
+     "say": "還有 memory space 要不要共用、signal 處理要不要共用，每種 resource 都有一個 flag。",
+     "k": 11,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1546.2
+     }
+    },
+    {
+     "say": "每個 flag 用 0 或 1 控制，就 create 出一個新的 process。",
+     "k": 12,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1556.7
+     }
+    },
+    {
+     "say": "把很多 memory content 設成共用，這就是 Linux 建 thread 的方式。",
+     "k": 13,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1568
+     }
+    },
+    {
+     "say": "所以 kernel 不必另外寫程式管 thread：它就是 process，只是建的時候用 clone 的參數決定哪些共用。",
+     "k": 14,
+     "src": {
+      "v": "8x6-r-maTZA",
+      "t": 1574.3
+     }
+    },
+    {
+     "say": "考試補充：flag 有 CLONE_VM、CLONE_FS、CLONE_FILES、CLONE_SIGHAND 這些。",
+     "k": 14
+    },
+    {
+     "say": "全部共用，就很像 thread；全部不共用，就很像 fork。Linux 把兩者都叫 task。",
+     "k": 14
+    }
+   ]
+  },
+  {
+   "title": "Threading issues：大家都在同一個 process",
+   "scene": "thr-16b-intro",
+   "steps": 3,
+   "lines": [
+    {
+     "say": "thread 建好之後，有些行為跟 process 不一樣，要稍微注意。",
+     "k": 1,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 16.6
+     }
+    },
+    {
+     "say": "因為 process 彼此沒關聯，thread 卻都屬於同一個 process，所以多了一些小細節。",
+     "k": 2,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 17.4
+     }
+    },
+    {
+     "say": "課本列了六個問題，我們看最基本的四個：fork 和 exec、cancellation、signal handling、thread pool。",
+     "k": 3,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 21
+     }
+    }
+   ]
+  },
+  {
+   "title": "在 thread 裡呼叫 fork",
+   "scene": "thr-16b-fork",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "第一個問題：process 可以 fork，複製出一個新的 process。",
+     "k": 1,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 48.1
+     }
+    },
+    {
+     "say": "那如果一個 process 有兩個 thread，其中一個 call 了 fork，新的 process 該長什麼樣子？",
+     "k": 2,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 56.7
+     }
+    },
+    {
+     "say": "其實有兩種可能。",
+     "k": 3,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 69.6
+     }
+    },
+    {
+     "say": "第一種：fork 針對整個 process。雖然只有一個 thread 呼叫，整個 process 照樣複製，原本兩個 thread，新的也有兩個。",
+     "k": 4,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 72.2
+     }
+    },
+    {
+     "say": "第二種：只有一個 thread 呼叫 fork，新 process 就只包含那一個 thread。",
+     "k": 5,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 91
+     }
+    },
+    {
+     "say": "Linux 比較容易這樣做，因為它本來就把 thread 當 process，fork 時看到的就是那一個 thread。",
+     "k": 6,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 105
+     }
+    },
+    {
+     "say": "process 跟 thread 在 programming 上是兩個 level，所以 fork 可能是左邊那種，也可能是右邊那種。",
+     "k": 7,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 125.1
+     }
+    },
+    {
+     "say": "這沒有對錯，OS 可以兩種都支援讓你選一個當 default，也可以只支援一種，實際上兩種都有。",
+     "k": 8,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 137.7
+     }
+    },
+    {
+     "say": "所以寫程式時要試試看，或查那個 OS 的規格，才知道你的 fork 是哪一種。",
+     "k": 9,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 160
+     }
+    },
+    {
+     "say": "課本補充：有些 UNIX 兩種 fork 都提供。如果 fork 完馬上 exec，只複製呼叫的那個 thread 就夠了。",
+     "k": 9
+    }
+   ]
+  },
+  {
+   "title": "exec：整個 process 換掉",
+   "scene": "thr-16b-exec",
+   "steps": 3,
+   "lines": [
+    {
+     "say": "exec 就沒什麼問題，我們之前教過 fork 跟 exec。",
+     "k": 1,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 180
+     }
+    },
+    {
+     "say": "exec 的定義是 replace：一 call exec，整個 process 就被換成新的程式。",
+     "k": 2,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 185.2
+     }
+    },
+    {
+     "say": "所以原本有幾個 thread 都不重要，整個換掉就對了。這也是 fork 完馬上 exec 時，只複製一個 thread 就夠的原因。",
+     "k": 3,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 195.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Thread cancellation",
+   "scene": "thr-16b-cancel",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "下一個 issue 是 cancellation，取消一個 thread。",
+     "k": 1,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 202.2
+     }
+    },
+    {
+     "say": "一個 thread 被 terminate 掉，會發生什麼事？",
+     "k": 2,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 213.7
+     }
+    },
+    {
+     "say": "照理說，它用過的記憶體這些資源要有人清掉，需要一些動作。",
+     "k": 3,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 227.1
+     }
+    },
+    {
+     "say": "也就是 thread library 必須 clean up 那個被 cancel 的 thread 的 memory content。",
+     "k": 4,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 241.4
+     }
+    },
+    {
+     "say": "做法通常有兩種：asynchronous cancellation 和 deferred cancellation。",
+     "k": 5,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 253.2
+     }
+    },
+    {
+     "say": "課本的定義是：asynchronous 是立刻終止 target thread；deferred 是等它跑到安全的點才結束。",
+     "k": 6
+    },
+    {
+     "say": "老師這段把兩者講得有點混，考試以課本為準。他強調的「等到某個階段才清」，其實就是 deferred 的精神。",
+     "k": 6,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 261.5
+     }
+    },
+    {
+     "say": "deferred 的做法是：target thread 先設好幾個可以被中斷的地方，叫 cancellation point。",
+     "k": 7,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 299.7
+     }
+    },
+    {
+     "say": "所以就算你按 Ctrl-C 要砍它，它還是跑到下一個 checkpoint 才結束，這就叫 defer，延後。",
+     "k": 8,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 320.5
+     }
+    },
+    {
+     "say": "說穿了，這段在處理：被 cancel 的 thread，它的記憶體什麼時候釋放、重新分配。",
+     "k": 9,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 361
+     }
+    },
+    {
+     "say": "為什麼不立刻做？overhead 大，而且 thread 可能做到一半，指令沒做完就砍，會造成 synchronization 問題。",
+     "k": 10,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 378.2
+     }
+    },
+    {
+     "say": "asynchronous 的風險就在這：資源、共享資料可能來不及處理好。所以 Pthreads 預設用的是 deferred。",
+     "k": 10
+    }
+   ]
+  },
+  {
+   "title": "Signal handling",
+   "scene": "thr-16b-signal",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "第三個是 signal handling。signal 是 OS 用來通知 process「某件事發生了」的機制。",
+     "k": 1,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 393.8
+     }
+    },
+    {
+     "say": "例如某個 thread 呼叫 sleep 10 秒，10 秒後會有一個 signal 通知這個 process，讓 thread 繼續跑。",
+     "k": 2,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 401.2
+     }
+    },
+    {
+     "say": "可是一個 process 有很多 thread，OS 第一件事要判斷：這個 signal 是給某一個 thread，還是給全部？",
+     "k": 3,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 418.2
+     }
+    },
+    {
+     "say": "一般的形式是：signal 先送到 process 這一層，再由 process 決定怎麼處理，有四種可能。",
+     "k": 4,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 495.4
+     }
+    },
+    {
+     "say": "第一種：交給產生它的那個 thread。像 sleep，只有那個 thread 去睡，10 秒後也只有它被叫醒。",
+     "k": 5,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 511.3
+     }
+    },
+    {
+     "say": "第二種：交給所有 thread。比如某個 thread 直接 call exit 結束 process，當然所有 thread 都要被 kill 掉。",
+     "k": 6,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 518.1
+     }
+    },
+    {
+     "say": "第三種：給某個指定的 thread。只要有 thread ID，thread 之間也能互傳 signal，交給特定的人處理。",
+     "k": 7,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 538.5
+     }
+    },
+    {
+     "say": "第四種：送出的人沒說誰處理，process 就交給一個特定的 thread，例如 main thread；有些 signal 預設就是它管。",
+     "k": 8,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 566.4
+     }
+    },
+    {
+     "say": "所以 OS 要判斷：要 broadcast 給所有人、給指定的 thread，還是由 main thread 處理。畢竟要知道誰發的、誰來接。",
+     "k": 9,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 597
+     }
+    }
+   ]
+  },
+  {
+   "title": "Thread pool",
+   "scene": "thr-16b-pool",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "下一個是 thread pool，實作上很常用，要好好記。",
+     "k": 1,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 638.4
+     }
+    },
+    {
+     "say": "原本的想法是：需要平行時才動態建一個 thread，不要了再 delete 掉。",
+     "k": 2,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 650.7
+     }
+    },
+    {
+     "say": "壞處是一直 create、delete，不太 efficient。",
+     "k": 3,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 665
+     }
+    },
+    {
+     "say": "所以像 web server，會一開始就建好一堆 thread，叫 pool of threads，一池 thread。",
+     "k": 4,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 674.1
+     }
+    },
+    {
+     "say": "pool 的大小可以控制，例如 20 個還是 100 個。",
+     "k": 5,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 684
+     }
+    },
+    {
+     "say": "執行過程中就一直 reuse 這些 thread，讓它們去跑不同的 function。",
+     "k": 6,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 690.5
+     }
+    },
+    {
+     "say": "好處一：event 進來時不用在 run time 才建 thread，處理 request 更快。",
+     "k": 7,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 705
+     }
+    },
+    {
+     "say": "好處二，也是更主要的：控制 pool size，就是控制這台 server 的資源用量。",
+     "k": 8,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 724.3
+     }
+    },
+    {
+     "say": "你想想看，web server 如果不設限，request 越多 thread 越多，最後 CPU 全被分光，整台可能 hang 住。",
+     "k": 9,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 738
+     }
+    },
+    {
+     "say": "把 pool size 控制在 10 或 100，就知道最多只用這麼多 CPU，剩下的留給系統。",
+     "k": 10,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 753.6
+     }
+    },
+    {
+     "say": "所以 thread pool 是 resource control：看有幾個 core、多少 memory，估每個 thread 吃多少，算出最多開幾個。",
+     "k": 11,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 793.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "這一章的重點",
+   "scene": "thr-16b-recap",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "收個尾。這一章最主要的，是 user thread 跟 kernel thread 的差別。",
+     "k": 1,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 828.1
+     }
+    },
+    {
+     "say": "然後是三種 mapping model：many-to-one 快但會互卡、one-to-one 最常見、many-to-many 最彈性也最複雜。",
+     "k": 2,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 836.4
+     }
+    },
+    {
+     "say": "Pthread、Java thread 跟這些 use case，之後自己寫 thread 程式時可以再練。",
+     "k": 3,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 839.2
+     }
+    },
+    {
+     "say": "最後記得：在 thread 裡 call fork、exec、signal 這些 function，要想到同一個 process 裡還有很多 thread。",
+     "k": 4,
+     "src": {
+      "v": "Z9OPaNpNwXk",
+      "t": 860
+     }
+    }
+   ]
+  }
+ ]
+}

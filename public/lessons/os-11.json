@@ -1,0 +1,296 @@
+{
+ "chapter": "os-11",
+ "title": "虛擬化與安全",
+ "intro": "搞懂 hypervisor（VMM）怎麼讓一台電腦同時跑好幾台 VM，分清楚 Type 1 bare-metal 和 Type 2 hosted，再看它的優缺點各是哪一型的問題。",
+ "parts": [
+  {
+   "title": "Hypervisor 是什麼",
+   "scene": "hv-what",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "好，這一章先從虛擬化開始。virtual machine，VM，就是用軟體模擬出來的一台電腦，裡面可以裝自己的作業系統。",
+     "k": 1
+    },
+    {
+     "say": "那誰來生出這些 VM、管理它們？就是 hypervisor。它是一個軟體，專門用來建立和管理 virtual machine。",
+     "k": 1,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 0
+     }
+    },
+    {
+     "say": "你看畫面，它夾在中間：下面是實體硬體，上面才是一台台 VM。",
+     "k": 1
+    },
+    {
+     "say": "hypervisor 還有另一個名字，叫 virtual machine monitor，簡稱 VMM。考卷上兩個名字都會出現，意思一樣。",
+     "k": 2,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 7.7
+     }
+    },
+    {
+     "say": "有了它，一台實體電腦就能同時跑好幾台虛擬電腦。實體那台叫 host，主人；上面的虛擬電腦叫 guest，客人。",
+     "k": 3,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 10.58
+     }
+    },
+    {
+     "say": "每台 guest 都有自己的作業系統和應用程式。畫面上畫三台只是示意，實際上可以更多。",
+     "k": 3
+    },
+    {
+     "say": "那它怎麼做到的？hypervisor 把實體電腦的 memory 和 processing，也就是記憶體和 CPU 時間，切成好幾份，分給各台 VM。",
+     "k": 4,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 18.14
+     }
+    },
+    {
+     "say": "切開之後，每一份對裡面的作業系統來說，都像一台分開、獨立的電腦，它根本不知道旁邊還有別人。",
+     "k": 5,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 29.44
+     }
+    },
+    {
+     "say": "讓這個假象成立的，就是 hypervisor 的工作。",
+     "k": 5,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 34.38
+     }
+    },
+    {
+     "say": "那問題來了：為什麼需要 hypervisor？因為一台電腦的能力常常用不完，切給好幾台 VM，就能充分利用。",
+     "k": 6,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 37.82
+     }
+    },
+    {
+     "say": "而且要加一台、拿掉一台「電腦」，都只是軟體操作，IT 管理起來彈性大很多。",
+     "k": 6,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 44.82
+     }
+    },
+    {
+     "say": "還有一個好處：VM 不綁定底下的實體硬體，所以可以很輕鬆地從一台 server 搬到另一台，這叫 migrate。",
+     "k": 7,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 49.22
+     }
+    },
+    {
+     "say": "例如這台 server 要維修，就先把上面的 VM 移到隔壁那台，服務不用停太久。",
+     "k": 7
+    }
+   ]
+  },
+  {
+   "title": "Type 1（bare metal）與 Type 2（hosted）",
+   "scene": "hv-types",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "接下來是最常考的：hypervisor 分兩種，Type 1 和 Type 2。不管用哪一種，切資源給 VM 的原理都一樣。",
+     "k": 1,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 57.74
+     }
+    },
+    {
+     "say": "VM 可以建在各式各樣的 hypervisor 上。兩型的差別在哪？就在 hypervisor 自己放在哪一層。",
+     "k": 2,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 67.98
+     }
+    },
+    {
+     "say": "先看左邊的 Type 1。它直接跑在硬體上，中間沒有別的作業系統：最下面 hardware，上面 hypervisor，再上面就是 guest。",
+     "k": 3,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 71.14
+     }
+    },
+    {
+     "say": "所以 Type 1 又叫 bare-metal hypervisor。bare metal 就是「裸機」，直接裝在還沒有作業系統的機器上。",
+     "k": 4,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 76.66
+     }
+    },
+    {
+     "say": "資料中心的 server 常用這種，像 VMware ESXi、Xen 都是 Type 1。",
+     "k": 4
+    },
+    {
+     "say": "在實體 server 上，Type 1 hypervisor 自己就扮演 host 的作業系統，管硬體、分資源都是它在做。",
+     "k": 5,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 79.1
+     }
+    },
+    {
+     "say": "少了一層作業系統，通常效能比較好，能被攻擊的地方也比較少。",
+     "k": 5
+    },
+    {
+     "say": "再看右邊的 Type 2，也叫 hosted hypervisor，「寄居」的意思。一樣從 hardware 開始往上疊。",
+     "k": 6,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 86.9
+     }
+    },
+    {
+     "say": "差別是：Type 2 跑在一個已經裝好的作業系統上面，像 Windows、macOS，就跟一般應用程式一樣。",
+     "k": 7,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 90.68
+     }
+    },
+    {
+     "say": "你在筆電上裝 VirtualBox 或 VMware Workstation 開虛擬機，用的就是 Type 2，guest 再跑在它上面。",
+     "k": 7
+    },
+    {
+     "say": "所以用 Type 2 之前，host 一定要先裝好作業系統。",
+     "k": 8,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 94.12
+     }
+    },
+    {
+     "say": "它的好處是自己的電腦就能用，很方便；代價是多了一層 host OS，效能和安全都受它影響。",
+     "k": 8
+    },
+    {
+     "say": "所以重點是：Type 1 直接在硬體上，hypervisor 就是 host 的 OS；Type 2 寄居在 host OS 上。",
+     "k": 8
+    }
+   ]
+  },
+  {
+   "title": "Hypervisor 的優點與缺點",
+   "scene": "hv-pros",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "好，最後看優缺點。優點一是 quickness，快。要一台新電腦，開一台 VM 比準備一台實體的 bare-metal server 快很多。",
+     "k": 1,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 100.32
+     }
+    },
+    {
+     "say": "這樣遇到複雜的工作，就能很快分到需要的資源。",
+     "k": 1,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 112.12
+     }
+    },
+    {
+     "say": "優點二是 efficiency，效率。一台 server 同時跑好幾台 VM，硬體資源就不會閒在那裡。",
+     "k": 2,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 114.18
+     }
+    },
+    {
+     "say": "接著是缺點。缺點一：要控制 hypervisor，需要一個外部的管理介面，也就是另外一套系統或另一台機器。",
+     "k": 3,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 125.66
+     }
+    },
+    {
+     "say": "缺點二：比較不安全。hypervisor 依賴 host OS 的時候，host OS 一有漏洞，上面的 hypervisor 和 VM 都跟著曝險。",
+     "k": 4,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 134.8
+     }
+    },
+    {
+     "say": "欸，注意「依賴 host OS」這幾個字。這其實就是 Type 2 的情況，Type 1 底下根本沒有 host OS。",
+     "k": 4
+    },
+    {
+     "say": "缺點三：比較不可靠。host OS 一當機，跑在上面的 hypervisor 和所有 VM 全部一起倒。",
+     "k": 5,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 141.36
+     }
+    },
+    {
+     "say": "缺點四：資源受限。hypervisor 得跟 host OS 一起分 CPU 和 storage，永遠拿不到硬體資源的完全控制權。",
+     "k": 6,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 152.54
+     }
+    },
+    {
+     "say": "你想想看，缺點三和缺點四也都是 Type 2 才有的。所以影片列的缺點，大部分是在講 Type 2。",
+     "k": 6
+    },
+    {
+     "say": "缺點五，影片說 hypervisor 不是設計來在個人桌機上跑 VM 的。",
+     "k": 7,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 164.4
+     }
+    },
+    {
+     "say": "這句要小心修正：Type 1 確實多半用在 server，但 Type 2，像 VirtualBox，正是給個人電腦用的。",
+     "k": 7
+    },
+    {
+     "say": "影片最後提到，也有不需要 hypervisor 的虛擬化工具可以當替代方案。",
+     "k": 8,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 173.34
+     }
+    },
+    {
+     "say": "像 container 就是一例，好幾個程式共用同一個作業系統核心，不用每台都裝一整套 OS。",
+     "k": 8
+    },
+    {
+     "say": "所以重點是：hypervisor 也叫 VMM，靠切分資源讓一台 host 跑多台 guest；分 Type 1 和 Type 2，缺點多半出在 Type 2。",
+     "k": 8,
+     "src": {
+      "v": "pS-QM22YXmU",
+      "t": 180.98
+     }
+    }
+   ]
+  }
+ ]
+}

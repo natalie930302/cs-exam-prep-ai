@@ -1,0 +1,7912 @@
+{
+ "chapter": "alg-9",
+ "title": "NP理論",
+ "intro": "從「多項式 vs 指數」出發，弄懂 decision problem、P 與 NP（猜對與驗證）、polynomial time reduction，再看 NP-hard、NP-complete 的定義，最後親手證明 TSP 和 Clique 是 NP-complete。",
+ "parts": [
+  {
+   "title": "有沒有比 polynomial 更久的問題",
+   "scene": "np1-j-two-groups",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "好，這一章要問一個新問題：有沒有一些問題，需要比 polynomial time 更久才做得完？",
+     "k": 1,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 18.95
+     }
+    },
+    {
+     "say": "江蕙如老師說，現在有一大堆問題看起來很難，像 TSP、SAT、Knapsack。",
+     "k": 2,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 32.95
+     }
+    },
+    {
+     "say": "難在哪？到目前為止，沒有人找到 polynomial time 的演算法，能把它們 optimally 解出來。",
+     "k": 3,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 46.39
+     }
+    },
+    {
+     "say": "所以這章有兩個重點：一個是 polynomial time reduction，一個是 NP-completeness。",
+     "k": 4,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 63.52
+     }
+    },
+    {
+     "say": "其實早在 1960 年代，大家就有一個共識。",
+     "k": 5,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 106.98
+     }
+    },
+    {
+     "say": "找得到 polynomial time 演算法，就算 efficient，像 MST、最短路徑、排序，實際上都很好解。",
+     "k": 6,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 118.94
+     }
+    },
+    {
+     "say": "於是科學家想把問題分成兩群：有 poly 演算法的簡單問題，跟不存在 poly 演算法的難問題。",
+     "k": 7,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 159.42
+     }
+    },
+    {
+     "say": "可是分不下去。我們只知道「目前沒人找到」，卻不知道它是不是「真的不存在」。",
+     "k": 8,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 182.76
+     }
+    },
+    {
+     "say": "這件事在 2000 年被列進千禧年大獎難題。Clay 一共列了七題，P vs NP 是其中一題。",
+     "k": 9,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 231.88
+     }
+    },
+    {
+     "say": "老師提醒：這學期每一章都是能 polynomial time 解的問題，很容易以為到處都簡單，其實那只是少數。",
+     "k": 10,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 308.1
+     }
+    },
+    {
+     "say": "後面會看到，這群沒人解得出來的問題有個共同點：它們的難度是同一個等級，被綁在一起。",
+     "k": 11,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 376.4
+     }
+    },
+    {
+     "say": "綁在一起的好處是：哪天有人用 polynomial time 解掉其中一個……",
+     "k": 12,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 389.78
+     }
+    },
+    {
+     "say": "……整個 class 就全部都能用 polynomial time 解掉了。",
+     "k": 13,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 402.7
+     }
+    },
+    {
+     "say": "壞處是，到現在還沒有人找到，所以它們全部看起來都很難。",
+     "k": 14,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 417.42
+     }
+    }
+   ]
+  },
+  {
+   "title": "Polynomial vs exponential",
+   "scene": "np1-b-poly-exp",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "Abdul Bari 開場就說，這其實是一個「研究」的主題。",
+     "k": 1,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 26.36
+     }
+    },
+    {
+     "say": "我們學過的演算法可以分成兩類：polynomial time，像 n、n²；exponential time，像 2ⁿ。",
+     "read": "我們學過的演算法可以分成兩類：polynomial time，像 n、n平方；exponential time，像 2的n次方。",
+     "k": 2,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 42.38
+     }
+    },
+    {
+     "say": "搜尋：linear search 要 n 步，binary search 只要 log n 步，都是 polynomial。",
+     "k": 3,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 59.47
+     }
+    },
+    {
+     "say": "排序：簡單的排序 n²，merge sort 是 n log n，也都是 polynomial。",
+     "read": "排序：簡單的排序 n平方，merge sort 是 n log n，也都是 polynomial。",
+     "k": 4,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 67.59
+     }
+    },
+    {
+     "say": "另一邊是 0/1 knapsack、TSP、sum of subsets、graph coloring、Hamiltonian cycle。",
+     "read": "另一邊是 零一 knapsack、TSP、sum of subsets、graph coloring、Hamiltonian cycle。",
+     "k": 5,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 71.55
+     }
+    },
+    {
+     "say": "它們實際上有的是 n·2ⁿ，有的是 nⁿ，Bari 統一寫成 2ⁿ，意思就是「都是指數」。",
+     "read": "它們實際上有的是 n乘2的n次方，有的是 n的n次方，Bari 統一寫成 2的n次方，意思就是「都是指數」。",
+     "k": 6,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 80.67
+     }
+    },
+    {
+     "say": "研究在做什麼？比方說已經有 log n 的 binary search，還想要更快的 O(1) 搜尋。",
+     "read": "研究在做什麼？比方說已經有 log n 的 binary search，還想要更快的 大O(1) 搜尋。",
+     "k": 7,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 108.32
+     }
+    },
+    {
+     "say": "排序也想要 O(n)。不過補充一下：只靠比較的排序，下界就是 n log n，不可能更快。",
+     "read": "排序也想要 大O(n)。不過補充一下：只靠比較的排序，下界就是 n log n，不可能更快。",
+     "k": 8,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 127.02
+     }
+    },
+    {
+     "say": "對指數時間那一邊，我們最想要的，就是一個 polynomial time 的演算法。",
+     "k": 9,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 138.28
+     }
+    },
+    {
+     "say": "為什麼？因為 n 夠大的時候，就算 n¹⁰、甚至 n¹⁰⁰，都比 2ⁿ 小得多。",
+     "read": "為什麼？因為 n 夠大的時候，就算 n的10次方、甚至 n的100次方，都比 2的n次方 小得多。",
+     "k": 10,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 158.56
+     }
+    },
+    {
+     "say": "可是電腦科學家、數學家研究了這麼久，還是沒找到這些問題的 polynomial 解法。",
+     "k": 11,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 193.27
+     }
+    },
+    {
+     "say": "研究沒結果，至少要讓做過的努力有用，所以有了一套研究框架：NP-hard 和 NP-complete。",
+     "k": 12,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 214.64
+     }
+    }
+   ]
+  },
+  {
+   "title": "輸入加倍：多項式和指數差在哪",
+   "scene": "np2-doubling",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "那多項式到底好在哪？MIT 的助教用「輸入加倍」來比較。先看 EXP，指數時間能解的問題。",
+     "k": 1,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 266.33
+     }
+    },
+    {
+     "say": "EXP 的時間是 2 的 n 的 c 次方。都已經是指數了，上面是 n 還是 n¹⁰⁰，反正都很慘。",
+     "read": "EXP 的時間是 2 的 n 的 c 次方。都已經是指數了，上面是 n 還是 n的100次方，反正都很慘。",
+     "k": 2,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 288.04
+     }
+    },
+    {
+     "say": "指數時間的問題算得出來，但大多數實際的題目，要算到世界末日之後。",
+     "k": 3,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 304.4
+     }
+    },
+    {
+     "say": "中間還有一個 NP，一句話：Nondeterministic Polynomial，等一下會細講。",
+     "k": 4,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 339.83
+     }
+    },
+    {
+     "say": "這學期講的問題幾乎都是多項式的，只有 knapsack 例外。",
+     "k": 5,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 364.14
+     }
+    },
+    {
+     "say": "P 的時間是 T(n) = O(n^c)，就是輸入大小 n 的多項式。",
+     "read": "P 的時間是 T(n) 等於 大O n的c次方，就是輸入大小 n 的多項式。",
+     "k": 6,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 379.82
+     }
+    },
+    {
+     "say": "以 n³ 為例：n = 10 是 1000 步，n = 20 是 8000 步。",
+     "read": "以 n三次方 為例：n 等於 10 是 1000 步，n 等於 20 是 8000 步。",
+     "k": 7,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 399.78
+     }
+    },
+    {
+     "say": "輸入每加倍一次，時間只乘上固定的 2^c，n³ 就是乘 8，不會越變越誇張。",
+     "read": "輸入每加倍一次，時間只乘上固定的 2的c次方，n三次方 就是乘 8，不會越變越誇張。",
+     "k": 8,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 412.05
+     }
+    },
+    {
+     "say": "指數就不一樣了：2ⁿ 在 n = 10 是 1024，n = 20 就變成 1024 的平方，一百多萬！",
+     "read": "指數就不一樣了：2的n次方 在 n 等於 10 是 1024，n 等於 20 就變成 1024 的平方，一百多萬！",
+     "k": 9,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 420.16
+     }
+    },
+    {
+     "say": "輸入加倍，時間直接平方。所以我們喜歡多項式，它們才是「好解」的問題。",
+     "k": 10,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 440.28
+     }
+    }
+   ]
+  },
+  {
+   "title": "難度軸：P、EXP、R",
+   "scene": "np2-axis",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "問題可以照「有多難算」分類，每一類叫一個複雜度類別。MIT 的 Erik Demaine 先介紹三個：P、EXP、R。",
+     "k": 1,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 69.23
+     }
+    },
+    {
+     "say": "P 是多項式時間能解的問題，步數大約是 n 的固定次方，這種演算法算是跑得動。",
+     "k": 2,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 81.1
+     }
+    },
+    {
+     "say": "這學期的排序、最短路徑幾乎都在 P。他說只有一個例外，答案就是 knapsack，它只有 pseudo-polynomial 解。",
+     "k": 3,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 98.25
+     }
+    },
+    {
+     "say": "EXP 是指數時間能解的問題。P 的問題當然也能在指數時間解完，所以 P 整個包在 EXP 裡。",
+     "k": 4,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 121.3
+     }
+    },
+    {
+     "say": "注意，EXP 不只有 2ⁿ：2 的任何多項式次方都算，像 2^(n²)、2^(n³) 也在 EXP。",
+     "read": "注意，EXP 不只有 2的n次方：2 的任何多項式次方都算，像 2的n平方次方、2的n三次方次方 也在 EXP。",
+     "k": 5,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 142.5
+     }
+    },
+    {
+     "say": "幾乎想得到的問題都能在指數時間解，全部試一遍就好。這門課在做的，就是把它們拉進 P。",
+     "k": 6,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 165.26
+     }
+    },
+    {
+     "say": "他把這些類別畫成一條「計算難度」橫軸：越左越簡單、越右越難。這是示意圖，但很好用。",
+     "k": 7,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 192.78
+     }
+    },
+    {
+     "say": "最左邊的刻度是 P，刻度左邊整段都是 P 能解的問題。",
+     "k": 8,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 233.94
+     }
+    },
+    {
+     "say": "往右是 EXP 的刻度。P 跟 EXP 中間先空著，等一下要補上一個很重要的刻度。",
+     "k": 9,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 241.16
+     }
+    },
+    {
+     "say": "再往右，是第三個刻度：R。",
+     "k": 10,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 248.75
+     }
+    },
+    {
+     "say": "R 是「有限時間內能解」的問題：不管跑多久，保證會算完。也叫 decidable，可判定。",
+     "k": 11,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 276.14
+     }
+    },
+    {
+     "say": "R 這個名字來自 recursive，是 1930、40 年代的老用語，記住「R 就是 decidable」就好。",
+     "k": 12,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 289.64
+     }
+    },
+    {
+     "say": "軸的箭頭還往右延伸：R 的右邊，還有根本不可能用程式解的問題。",
+     "k": 13,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 307.69
+     }
+    },
+    {
+     "say": "更沮喪的是，「大部分」問題其實都解不了，而且這件事很好證明，等一下就證。",
+     "k": 14,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 316.37
+     }
+    }
+   ]
+  },
+  {
+   "title": "把問題放上難度軸",
+   "scene": "np2-examples",
+   "steps": 23,
+   "lines": [
+    {
+     "say": "來看幾個例子，把它們放上軸。第一個是學過的：負權環偵測。",
+     "k": 1,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 343.29
+     }
+    },
+    {
+     "say": "給一張有權重的圖，有沒有一個環，繞一圈總和是負的？像 2 加負 4 加 1 等於負 1，就有。",
+     "k": 2,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 352.8
+     }
+    },
+    {
+     "say": "這題在 P：Bellman-Ford，O(VE) 就能判斷。",
+     "read": "這題在 P：Bellman-Ford，大O(VE) 就能判斷。",
+     "k": 3,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 360.21
+     }
+    },
+    {
+     "say": "小細節：加一個新點 s，用權重 0 的邊連到每個點，整張圖就都檢查得到了。",
+     "k": 4,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 369.47
+     }
+    },
+    {
+     "say": "在 P 的問題，當然也在 EXP。",
+     "k": 5,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 378.44
+     }
+    },
+    {
+     "say": "第二個：n × n 的西洋棋，棋盤大小 n 可以變大。",
+     "read": "第二個：n 乘 n 的西洋棋，棋盤大小 n 可以變大。",
+     "k": 6,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 396.94
+     }
+    },
+    {
+     "say": "問題是：給一個盤面，輪到某一方走，白棋最後會不會贏？",
+     "k": 7,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 405.28
+     }
+    },
+    {
+     "say": "把所有走法都下下看就知道，所以在 EXP。",
+     "k": 8,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 414.98
+     }
+    },
+    {
+     "say": "而且已經證明它不在 P。這是我們第一個確定沒辦法多項式時間解的問題。",
+     "k": 9,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 425.62
+     }
+    },
+    {
+     "say": "為什麼看 n × n？因為複雜度看的是 n 變大時怎麼成長，8 × 8 固定大小就沒辦法談。",
+     "read": "為什麼看 n 乘 n？因為複雜度看的是 n 變大時怎麼成長，8 乘 8 固定大小就沒辦法談。",
+     "k": 10,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 443.2
+     }
+    },
+    {
+     "say": "圍棋也一樣：在 EXP、不在 P。很多複雜的遊戲都在這一類。",
+     "k": 11,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 452.18
+     }
+    },
+    {
+     "say": "第三個：Tetris，俄羅斯方塊，照真正的遊戲規則。",
+     "k": 12,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 470.12
+     }
+    },
+    {
+     "say": "唯一的條件是，之後會掉下來的方塊全部事先告訴你。",
+     "k": 13,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 482
+     }
+    },
+    {
+     "say": "問：從這個盤面、拿這串方塊，你活不活得下來？答案是 YES 或 NO。",
+     "k": 14,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 497.94
+     }
+    },
+    {
+     "say": "全部放法試一遍就知道，所以也在 EXP。",
+     "k": 15,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 504.72
+     }
+    },
+    {
+     "say": "它在不在 P？目前不知道，但大家很相信不在。今天上完你就知道為什麼。",
+     "k": 16,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 514
+     }
+    },
+    {
+     "say": "Tetris 其實落在 P 和 EXP 中間的那個刻度上，只是那個刻度，NP，還沒定義。",
+     "k": 17,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 534.88
+     }
+    },
+    {
+     "say": "第四個：Halting problem，停機問題。比 chess 還難，它在軸的最右邊。",
+     "k": 18,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 545.54
+     }
+    },
+    {
+     "say": "給你一支程式，用什麼語言寫都行，問它最後會停下來，還是永遠跑下去？",
+     "k": 19,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 569.02
+     }
+    },
+    {
+     "say": "這很實用：程式跑了 5 小時，到底是無窮迴圈，還是只是慢？有個檢查程式告訴你就好了。",
+     "k": 20,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 593.89
+     }
+    },
+    {
+     "say": "可惜停機問題不在 R，叫 undecidable：不管多少時間、多少電腦、多少錢，都寫不出解它的程式。",
+     "k": 21,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 76.11
+     }
+    },
+    {
+     "say": "有些特例很好判斷，像空程式一定會停，while True 沒有 break 一定不停；難的是「對所有程式都對」。",
+     "k": 22,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 115.17
+     }
+    },
+    {
+     "say": "助教開玩笑：面試官考你停機問題，你可以反問「那你示範看看？」。給無限時間倒是可以，執行等它停就好。",
+     "k": 23,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 153.75
+     }
+    }
+   ]
+  },
+  {
+   "title": "程式是有限 bit 串",
+   "scene": "np2-programs-n",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "停機問題的證明要半小時，Demaine 改證一件更簡單的事：幾乎所有問題都不在 R。",
+     "k": 1,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 661.85
+     }
+    },
+    {
+     "say": "先定義 decision problem，決策問題：答案只有 YES 或 NO 的問題。",
+     "k": 2,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 690.93
+     }
+    },
+    {
+     "say": "剛才的例子全是這種：有負權環嗎？白棋會贏嗎？活得下來嗎？程式會停嗎？",
+     "k": 3,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 697.48
+     }
+    },
+    {
+     "say": "整個計算複雜度理論只研究決策問題，主要是因為方便。",
+     "k": 4,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 708.17
+     }
+    },
+    {
+     "say": "其他問題也能改成決策問題，例如「最短路徑多長」改問「有沒有長度 ≤ k 的路」，難度基本不變。",
+     "read": "其他問題也能改成決策問題，例如「最短路徑多長」改問「有沒有長度 小於等於 k 的路」，難度基本不變。",
+     "k": 5,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 725.03
+     }
+    },
+    {
+     "say": "他的主張是：大部分決策問題都不可計算，只要一點集合論就能證。",
+     "k": 6,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 740.75
+     }
+    },
+    {
+     "say": "一邊是我們想解的「問題」，另一邊是拿來解它的「程式」。",
+     "k": 7,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 749.83
+     }
+    },
+    {
+     "say": "程式很明確：一段程式碼丟進 Python，能跑就是能跑。",
+     "k": 8,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 773.28
+     }
+    },
+    {
+     "say": "程式最後都存在電腦裡，全部是 0 和 1，也就是一串 binary string。",
+     "k": 9,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 788.4
+     }
+    },
+    {
+     "say": "一串 0 和 1 也能看成一個二進位數，例如 10110 就是十進位的 22。",
+     "k": 10,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 804.72
+     }
+    },
+    {
+     "say": "所以每支程式都對應一個自然數。可能大得嚇人，但還是一個整數。",
+     "k": 11,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 821.55
+     }
+    }
+   ]
+  },
+  {
+   "title": "問題比程式多太多",
+   "scene": "np2-problems-r",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "那決策問題呢？它其實是一個函數：給一個輸入，回答 YES 或 NO。",
+     "k": 1,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 846.19
+     }
+    },
+    {
+     "say": "YES、NO 寫成 1、0，輸入也是 0 和 1 的字串，也是自然數。所以決策問題是「自然數 → 0 或 1」。",
+     "read": "YES、NO 寫成 1、0，輸入也是 0 和 1 的字串，也是自然數。所以決策問題是「自然數 到 0 或 1」。",
+     "k": 2,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 873.84
+     }
+    },
+    {
+     "say": "這種函數可以列成一張表：輸入 0 的答案、輸入 1 的答案……像 0、0、1、0、1、1。",
+     "k": 3,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 899.17
+     }
+    },
+    {
+     "say": "輸入有無限多個，每個都要答案，所以這張表是一條無限長的 bit 串。",
+     "k": 4,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 928.05
+     }
+    },
+    {
+     "say": "對照一下：決策問題是「無限長」的 bit 串，程式是「有限長」的 bit 串。",
+     "k": 5,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 943.25
+     }
+    },
+    {
+     "say": "在無限 bit 串前面加一個二進位小數點，它就變成 0 到 1 之間的一個實數。",
+     "k": 6,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 951.91
+     }
+    },
+    {
+     "say": "所以每個決策問題對應一個實數，每支程式對應一個自然數。",
+     "k": 7,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 979.77
+     }
+    },
+    {
+     "say": "自然數是 countable，可以一個一個編號；實數是 uncountable，編號編不完。",
+     "k": 8,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 999.37
+     }
+    },
+    {
+     "say": "壞消息來了：問題的數量，遠遠多過程式的數量。",
+     "k": 9,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1021.11
+     }
+    },
+    {
+     "say": "一支程式只解一個問題，程式根本不夠分，所以絕大多數問題沒有程式能解。",
+     "k": 10,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1060.89
+     }
+    },
+    {
+     "say": "那奇怪了，為什麼我們平常想到的問題，大多都解得出來？",
+     "k": 11,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1085.09
+     }
+    },
+    {
+     "say": "有同學答得很好：我們描述問題的方式本身就很像演算法，所以想到的問題大多在 EXP 裡。",
+     "k": 12,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1115.58
+     }
+    },
+    {
+     "say": "想像一條無限長的線，能解的只有左邊一小段。但演算法研究的，就是這一小段。",
+     "k": 13,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1137.96
+     }
+    }
+   ]
+  },
+  {
+   "title": "Decision 版和 optimization 版",
+   "scene": "np1-h-dec-path",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "好，接下來一個一定要先搞懂的觀念：同一個問題有兩種問法。optimization 要找最好的答案，decision 只問是或不是。",
+     "k": 1,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 72.96
+     }
+    },
+    {
+     "say": "Anand Seetharam 說，證 NP-completeness 時我們看的是 decision 版。為什麼？先看例子。",
+     "k": 2,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 77.57
+     }
+    },
+    {
+     "say": "Optimization 版：在圖上找 s 到 t 的最短路徑，像 2 + 1 + 2 + 3 = 8 這條。",
+     "read": "Optimization 版：在圖上找 s 到 t 的最短路徑，像 2 加 1 加 2 加 3 等於 8 這條。",
+     "k": 3,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 87.15
+     }
+    },
+    {
+     "say": "Decision 版：s 到 t 有沒有長度 ≤ k 的路？它是一個問句。",
+     "read": "Decision 版：s 到 t 有沒有長度 小於等於 k 的路？它是一個問句。",
+     "k": 4,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 103.81
+     }
+    },
+    {
+     "say": "答案只有兩種：yes 或 no。",
+     "k": 5,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 120.71
+     }
+    },
+    {
+     "say": "不用把最短路找出來，只要判斷「有沒有」。",
+     "k": 6,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 121.93
+     }
+    },
+    {
+     "say": "例如 k = 9：有一條長度 8 的路，8 ≤ 9，答案 YES。",
+     "read": "例如 k 等於 9：有一條長度 8 的路，8 小於等於 9，答案 YES。",
+     "k": 7,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 130.47
+     }
+    },
+    {
+     "say": "所以 decision 版不會比 optimization 版難。",
+     "k": 8,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 139.75
+     }
+    },
+    {
+     "say": "那為什麼證明困難時，要專注在比較簡單的 decision 版？",
+     "k": 9,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 175.61
+     }
+    },
+    {
+     "say": "因為如果連 decision 版都是 NP-complete，代表連這個簡單版本都設計不出有效率的演算法。",
+     "k": 10,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 197.69
+     }
+    },
+    {
+     "say": "那要找出最短、最小的 optimization 版，當然更不可能。",
+     "k": 11,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 217.11
+     }
+    },
+    {
+     "say": "所以 optimization 至少跟 decision 一樣難。證明簡單的版本很難，就連帶證了難的版本。",
+     "k": 12,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 245.24
+     }
+    },
+    {
+     "say": "證 NPC 的第一步：手上是 optimization 版，就先改寫成 decision 版。",
+     "k": 13,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 259.07
+     }
+    }
+   ]
+  },
+  {
+   "title": "MST 的兩種形式：decision 一定要給 bound",
+   "scene": "np1-j-mst-dec",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "江老師也特別強調這件事：一個問題可以用 decision 或 optimization 兩種形式定義。",
+     "k": 1,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 437.82
+     }
+    },
+    {
+     "say": "Optimization problem：instance 進來，找一個 solution 讓定義好的 cost 最小或最大，greedy、DP 多半是這種。",
+     "k": 2,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 468.3
+     }
+    },
+    {
+     "say": "它的 formulation 有兩塊：objective function，要最大化或最小化的東西；constraint，解必須遵守的條件。",
+     "k": 3,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 488.16
+     }
+    },
+    {
+     "say": "Decision problem 只問一個是非題，yes 或 no，也常寫成 1 或 0。",
+     "k": 4,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 527.71
+     }
+    },
+    {
+     "say": "例子一：MST。給一張 graph，edge 上有 cost。",
+     "k": 5,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 568.12
+     }
+    },
+    {
+     "say": "Optimization 版：找一棵 cost 總和最低的 spanning tree，這張圖是 1 + 2 + 2 + 4 = 9。",
+     "read": "Optimization 版：找一棵 cost 總和最低的 spanning tree，這張圖是 1 加 2 加 2 加 4 等於 9。",
+     "k": 6,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 601.55
+     }
+    },
+    {
+     "say": "換成 decision 版，就不能問「cost 最小的是哪棵」，它沒辦法回答你。",
+     "k": 7,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 634.11
+     }
+    },
+    {
+     "say": "要多給它一個參考的 bound，叫 k。",
+     "k": 8,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 680.45
+     }
+    },
+    {
+     "say": "問題變成：是否存在一棵 spanning tree，cost 最多是 k？",
+     "k": 9,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 697.91
+     }
+    },
+    {
+     "say": "k = 10，cost 9 的那棵就符合，答 YES。",
+     "read": "k 等於 10，cost 9 的那棵就符合，答 YES。",
+     "k": 10,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 723.03
+     }
+    },
+    {
+     "say": "k = 8 呢？最小也要 9，bound 給太小了，答 NO。",
+     "read": "k 等於 8 呢？最小也要 9，bound 給太小了，答 NO。",
+     "k": 11,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 730.73
+     }
+    },
+    {
+     "say": "所以描述 decision problem 一定要給 bound，不然它沒辦法回答 yes 或 no。",
+     "k": 12,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 769.65
+     }
+    }
+   ]
+  },
+  {
+   "title": "TSP 的兩種形式",
+   "scene": "np1-j-tsp-dec",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "例子二：traveling salesman problem，TSP，旅行推銷員問題。",
+     "k": 1,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 795.27
+     }
+    },
+    {
+     "say": "有一位業務員要去拜訪他的客戶。",
+     "k": 2,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 804.55
+     }
+    },
+    {
+     "say": "幫他規劃路線：從所在城市出發，拜訪所有客戶一圈，再回到原城市，總長越短越好。",
+     "k": 3,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 819.69
+     }
+    },
+    {
+     "say": "輸入是一些 city，以及任兩個 city 之間的距離。",
+     "k": 4,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 848.37
+     }
+    },
+    {
+     "say": "條件一：start 和 end 在同一個 city。",
+     "k": 5,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 879.69
+     }
+    },
+    {
+     "say": "條件二：每個 city 剛好 visit 一次，不用來回走。",
+     "k": 6,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 888.37
+     }
+    },
+    {
+     "say": "這是 optimization 版：試三圈，18、16、14，最短的是 A→B→C→D→A，14。",
+     "read": "這是 optimization 版：試三圈，18、16、14，最短的是 A 到 B 到 C 到 D 到 A，14。",
+     "k": 7,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 906.89
+     }
+    },
+    {
+     "say": "改成 decision 版：input 一樣，但要多給一個 bound B。",
+     "k": 8,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 936.49
+     }
+    },
+    {
+     "say": "問：有沒有一條起訖同城、每城恰一次、總長不超過 B 的 route？B = 15，有 14 那圈，答 YES。",
+     "read": "問：有沒有一條起訖同城、每城恰一次、總長不超過 B 的 route？B 等於 15，有 14 那圈，答 YES。",
+     "k": 9,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 968.43
+     }
+    },
+    {
+     "say": "請特別注意：這一章探討的問題，全部都用 decision problem 的形式來描述。",
+     "k": 10,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 996.25
+     }
+    }
+   ]
+  },
+  {
+   "title": "用 binary search 從 decision 回到 optimization",
+   "scene": "np1-j-bsearch",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "那問題來了：decision 版只說「有解沒超過 bound」，沒說 bound 是不是剛好最佳，最佳值怎麼拿？",
+     "k": 1,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1036.49
+     }
+    },
+    {
+     "say": "江老師的答案：手上只有 decision 版時，用 binary search 決定 bound 該設多少。",
+     "k": 2,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1082.09
+     }
+    },
+    {
+     "say": "先問：有沒有 cost 不超過 1000 的 spanning tree？找得到，YES。",
+     "k": 3,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1097.81
+     }
+    },
+    {
+     "say": "砍一半：500 呢？也是 YES。",
+     "k": 4,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1111.39
+     }
+    },
+    {
+     "say": "再往下：250 呢？",
+     "k": 5,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1125.23
+     }
+    },
+    {
+     "say": "找不到，NO。所以最佳值落在 250 到 500 之間。",
+     "k": 6,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1127.27
+     }
+    },
+    {
+     "say": "在中間卡一個值，例如 375，繼續問。",
+     "k": 7,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1133.63
+     }
+    },
+    {
+     "say": "問幾次之後，範圍越縮越小，最後會收斂到某一個值。",
+     "k": 8,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1140.47
+     }
+    },
+    {
+     "say": "到了那個值：bound 再小一點就找不到，大一點就一定找得到。",
+     "k": 9,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1144.93
+     }
+    },
+    {
+     "say": "那個 bound 就是最佳解的值。cost 是整數時，大約問 log 上界那麼多次就夠了。",
+     "k": 10,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1153.27
+     }
+    },
+    {
+     "say": "所以 decision 和 optimization 可以互相轉換：證明 decision 版很難，optimization 版也就很難。",
+     "k": 11,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1159.59
+     }
+    }
+   ]
+  },
+  {
+   "title": "13509 個城市的 TSP",
+   "scene": "np1-j-tsp-big",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "來看一個真實的例子：美國地圖。",
+     "k": 1,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1175.39
+     }
+    },
+    {
+     "say": "地圖上標出 13509 個城市，任兩個城市的距離都算得出來。",
+     "k": 2,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1191.41
+     }
+    },
+    {
+     "say": "要算的就是這些城市的 TSP：經過所有城市、回到起點的最短路線。",
+     "k": 3,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1207.02
+     }
+    },
+    {
+     "say": "每年都有 TSP 競賽，網站上隨時有新的 instance 可以拿來測。",
+     "k": 4,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1213
+     }
+    },
+    {
+     "say": "老師秀出了這個例子的最佳解，但要算出來，難度非常高。",
+     "k": 5,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1234.04
+     }
+    },
+    {
+     "say": "還記得 DP 那一章也解過 TSP 嗎？",
+     "k": 6,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1245.04
+     }
+    },
+    {
+     "say": "Held-Karp 的 DP 大約 n²·2ⁿ，比暴力的 n! 好，但還是指數，還是很高。",
+     "read": "Held-Karp 的 DP 大約 n平方乘2的n次方，比暴力的 n階乘 好，但還是指數，還是很高。",
+     "k": 7,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1258.1
+     }
+    },
+    {
+     "say": "這章後面就要說明：TSP 的確很難，是 NP-complete 等級的問題。",
+     "k": 8,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1280.46
+     }
+    }
+   ]
+  },
+  {
+   "title": "Class P 與 Class NP 的定義",
+   "scene": "np1-toc-dtm-ntm",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "好，正式進入 P 和 NP。這裡談的全是 decision problem，只回答 YES 或 NO。",
+     "k": 1,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 8.27
+     }
+    },
+    {
+     "say": "P：在 deterministic Turing machine，也就是一般電腦上，poly time 內解得出來的 decision problem。",
+     "k": 2,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 9.58
+     }
+    },
+    {
+     "say": "n 是 input 的大小，時間是 n^O(1)，也就是 n 的某個固定次方，像 n²、n³。",
+     "read": "n 是 input 的大小，時間是 n 的 大O 1 次方，也就是 n 的某個固定次方，像 n平方、n三次方。",
+     "k": 3,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 20.32
+     }
+    },
+    {
+     "say": "接著看 NP。",
+     "k": 4,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 32.83
+     }
+    },
+    {
+     "say": "最常見的誤會：把 NP 當成 Not Polynomial。這是錯的。",
+     "k": 5,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 33.73
+     }
+    },
+    {
+     "say": "NP 是 Nondeterministic Polynomial time，N 是 nondeterministic，不是 not。",
+     "k": 6,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 43.61
+     }
+    },
+    {
+     "say": "非確定型圖靈機可以想成會分身的機器：遇到選擇就同時走所有分支，有一條走到 YES 就答 YES。",
+     "k": 7,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 51.65
+     }
+    },
+    {
+     "say": "換個說法：把猜中的那條路當成一個解交給一般電腦，它能在 polynomial time 內檢查。NP 就是「解能快速驗證」的問題。",
+     "k": 8,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 58.19
+     }
+    }
+   ]
+  },
+  {
+   "title": "P 要對 input size 是 polynomial；NP 只要能驗證",
+   "scene": "np1-j-p-np",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "江老師先強調：這些 class 不是互斥的，只是分類的角度不同。",
+     "k": 1,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1529.61
+     }
+    },
+    {
+     "say": "第一類 class P，P 代表 polynomial。",
+     "k": 2,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1540.3
+     }
+    },
+    {
+     "say": "只要存在 polynomial time 演算法能 solve 它，就屬於 P，像 MST、排序、最短路徑。",
+     "k": 3,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1555.28
+     }
+    },
+    {
+     "say": "注意：這個 polynomial 一定是對 problem size，也就是輸入的大小來說的。",
+     "k": 4,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1569.92
+     }
+    },
+    {
+     "say": "pseudo-polynomial 不算。knapsack 的 DP 是 O(nW)，可是 W 只用 log W 個 bit 表示，對輸入長度來說是指數。",
+     "read": "pseudo-polynomial 不算。knapsack 的 DP 是 大O(nW)，可是 W 只用 log W 個 bit 表示，對輸入長度來說是指數。",
+     "k": 5,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1575.08
+     }
+    },
+    {
+     "say": "subset sum 和 knapsack 其實都是 Karp 最早的 21 個 NP-complete 問題之一，不能算進 P。",
+     "k": 6,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1595.26
+     }
+    },
+    {
+     "say": "還有，P 講的是 solve：真的把解找出來。",
+     "k": 7,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1623.05
+     }
+    },
+    {
+     "say": "第二類是 NP，N 是 non-deterministic，P 是 polynomial。",
+     "k": 8,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1633.44
+     }
+    },
+    {
+     "say": "別誤會：N 不是「非」。屬於 NP，不代表它不屬於 P。",
+     "k": 9,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1646.76
+     }
+    },
+    {
+     "say": "NP 的問題：給一個 solution，可以在 polynomial time 內驗證它是不是合法的解。",
+     "k": 10,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1672.24
+     }
+    },
+    {
+     "say": "它只是 check 解對不對、符不符合條件，不需要自己把解找出來。",
+     "k": 11,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1692.38
+     }
+    },
+    {
+     "say": "老師說 P 和 NP 的包含關係「還不知道」，這要更正：P ⊆ NP 已經證明了，不知道的是兩者相不相等。",
+     "read": "老師說 P 和 NP 的包含關係「還不知道」，這要更正：P 包含於 NP 已經證明了，不知道的是兩者相不相等。",
+     "k": 12,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1730.54
+     }
+    },
+    {
+     "say": "而且 NP 只要求能 poly time 驗證，所以就算很簡單的問題，也符合 NP 的定義。",
+     "k": 13,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1753.82
+     }
+    }
+   ]
+  },
+  {
+   "title": "研究框架的兩個想法",
+   "scene": "np1-b-two-points",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "Bari 從研究者的角度講 NP。他說整個主題建立在兩點上。",
+     "k": 1,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 235.85
+     }
+    },
+    {
+     "say": "第一點：解不出 polynomial 演算法，至少證明這些問題很像，解出一個，其他就跟著解出來。",
+     "k": 2,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 244.94
+     }
+    },
+    {
+     "say": "不要各做各的：我研究 knapsack、你研究 graph coloring，努力就分散了。",
+     "k": 3,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 266.51
+     }
+    },
+    {
+     "say": "要把它們集體關聯起來，找出彼此的關係。",
+     "k": 4,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 273.91
+     }
+    },
+    {
+     "say": "關係建立好，只要有人解出其中一個，全部都跟著解出來。",
+     "k": 5,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 279.57
+     }
+    },
+    {
+     "say": "第二點：寫不出 deterministic 演算法，就先寫 non-deterministic 的，不知道怎麼做的那一行先空著。",
+     "k": 6,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 301.95
+     }
+    },
+    {
+     "say": "重點是寫出 polynomial time 的 non-deterministic 演算法，這是什麼意思？看例子。",
+     "k": 7,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 312.51
+     }
+    }
+   ]
+  },
+  {
+   "title": "Non-deterministic 演算法：NSearch",
+   "scene": "np1-b-nd-search",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "平常寫的都是 deterministic 演算法：每一行在做什麼、怎麼運作，我們都很清楚。",
+     "k": 1,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 335.11
+     }
+    },
+    {
+     "say": "Non-deterministic 演算法的意思是：裡面有些敘述，我們還不知道它是怎麼做到的。",
+     "k": 2,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 350.59
+     }
+    },
+    {
+     "say": "例如想寫 0/1 knapsack 的 poly 演算法，大部分都會寫，就一兩行不知道怎麼變 polynomial，先留白。",
+     "read": "例如想寫 零一 knapsack 的 poly 演算法，大部分都會寫，就一兩行不知道怎麼變 polynomial，先留白。",
+     "k": 3,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 362.19
+     }
+    },
+    {
+     "say": "好處是研究成果保存下來，將來別人可以把留白的那幾行補成 deterministic。",
+     "k": 4,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 396.18
+     }
+    },
+    {
+     "say": "就算花了十幾年還解不出來，做過的工作也不會白費。",
+     "k": 5,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 410.29
+     }
+    },
+    {
+     "say": "來看例子：non-deterministic search，在大小 n 的陣列 A 裡找 key。",
+     "k": 6,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 423.95
+     }
+    },
+    {
+     "say": "choice、success、failure 是 non-deterministic 敘述，假設每個都只花 O(1)。",
+     "read": "choice、success、failure 是 non-deterministic 敘述，假設每個都只花 大O(1)。",
+     "k": 7,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 434.31
+     }
+    },
+    {
+     "say": "整個演算法沒有迴圈，每行 O(1)，所以是 O(1)，比 binary search 的 log n 還快！",
+     "read": "整個演算法沒有迴圈，每行 大O(1)，所以是 大O(1)，比 binary search 的 log n 還快！",
+     "k": 8,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 463.15
+     }
+    },
+    {
+     "say": "第一行 j = choice()：choice 直接告訴你 key 在第 j 格。",
+     "read": "第一行 j 等於 choice()：choice 直接告訴你 key 在第 j 格。",
+     "k": 9,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 494.31
+     }
+    },
+    {
+     "say": "接著檢查 A[j] 是不是 key，是就輸出 j，success。",
+     "read": "接著檢查 A j 是不是 key，是就輸出 j，success。",
+     "k": 10,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 511.63
+     }
+    },
+    {
+     "say": "如果 A[j] 不是 key，代表 key 根本不在陣列裡，輸出 0，failure。不是找不到，是真的不存在。",
+     "read": "如果 A j 不是 key，代表 key 根本不在陣列裡，輸出 0，failure。不是找不到，是真的不存在。",
+     "k": 11,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 519.03
+     }
+    },
+    {
+     "say": "那 choice 怎麼知道 key 在第 j 格？我們不知道，這就是 non-deterministic 的部分。",
+     "k": 12,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 538.07
+     }
+    },
+    {
+     "say": "例如找 key = 9：choice 不做任何搜尋，直接說「在 index 4」，一步就到。",
+     "read": "例如找 key 等於 9：choice 不做任何搜尋，直接說「在 index 4」，一步就到。",
+     "k": 13,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 567.26
+     }
+    },
+    {
+     "say": "今天不知道它怎麼辦到，也許明天有人找到直接得到答案的方法。",
+     "k": 14,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 590.03
+     }
+    },
+    {
+     "say": "Bari 說得很妙：不知道怎麼運作的叫 magic；一旦知道怎麼做，它就變成 technique，變成 deterministic。",
+     "k": 15,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 615.31
+     }
+    },
+    {
+     "say": "所以對那些要指數時間的問題，我們寫的是 polynomial time 的 non-deterministic 演算法。",
+     "k": 16,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 640.63
+     }
+    }
+   ]
+  },
+  {
+   "title": "P ⊆ NP：今天的 deterministic，昨天是 non-deterministic",
+   "scene": "np1-b-p-in-np",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "Bari 的定義：P 是 deterministic、poly time 的演算法，像 merge sort、最短路徑、MST、Huffman coding。",
+     "k": 1,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 672.77
+     }
+    },
+    {
+     "say": "NP 是 non-deterministic、但 polynomial time 的演算法。",
+     "k": 2,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 704.15
+     }
+    },
+    {
+     "say": "這正是我們想替 knapsack、TSP 寫的：不會變 polynomial 的地方先留成 non-deterministic。",
+     "k": 3,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 716.76
+     }
+    },
+    {
+     "say": "那張著名的圖：P 是 NP 的子集，NP 把 P 包起來。",
+     "k": 4,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 738.43
+     }
+    },
+    {
+     "say": "為什麼？以前大家只會 n² 的 bubble sort，那時候 n log n 的排序對我們來說是 non-deterministic。",
+     "read": "為什麼？以前大家只會 n平方 的 bubble sort，那時候 n log n 的排序對我們來說是 non-deterministic。",
+     "k": 5,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 754.24
+     }
+    },
+    {
+     "say": "後來有人找到 merge sort，它就變成 deterministic，搬進 P。",
+     "k": 6,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 772.57
+     }
+    },
+    {
+     "say": "今天 deterministic 的，昨天是 non-deterministic；今天還不會的，明天可能變 deterministic。",
+     "k": 7,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 804.11
+     }
+    },
+    {
+     "say": "不過這是 Bari 的直覺說法。正式定義跟人類知不知道解法無關，看的是能不能 polynomial time 驗證。",
+     "k": 8,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 814.73
+     }
+    },
+    {
+     "say": "還有一個 Cook's theorem 跟 P 是不是等於 NP 有關，我們後面再講。",
+     "k": 9,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 819.65
+     }
+    }
+   ]
+  },
+  {
+   "title": "Lucky 演算法：每次都猜對",
+   "scene": "np2-lucky",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "回到 MIT 的難度軸，補上 P 和 EXP 中間的刻度：NP。",
+     "k": 1,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1153.1
+     }
+    },
+    {
+     "say": "Demaine 說，NP 跟 DP 裡的「猜」很有關係。",
+     "k": 2,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1174.68
+     }
+    },
+    {
+     "say": "一樣先打預防針：NP 不是 Not Polynomial，是 Nondeterministic Polynomial。",
+     "k": 3,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1203.13
+     }
+    },
+    {
+     "say": "定義的前半句跟 P 一樣：多項式時間能解的決策問題。",
+     "k": 4,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1211.93
+     }
+    },
+    {
+     "say": "差別在後半句：用一個 lucky，很幸運的演算法來解。",
+     "k": 5,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1219.51
+     }
+    },
+    {
+     "say": "DP 也會猜，但它不知道哪個對，所以每個選項都試。lucky 演算法只試一個，因為它每次都剛好猜對。",
+     "k": 6,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1240.3
+     }
+    },
+    {
+     "say": "這不是真實的計算方式，而是理論模型，叫 nondeterministic model。",
+     "k": 7,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1255.99
+     }
+    },
+    {
+     "say": "真實電腦做不出來，但這個瘋狂的模型抓到了「哪些問題能解」的核心。",
+     "k": 8,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1274.48
+     }
+    },
+    {
+     "say": "演算法跑著跑著遇到岔路，要走左邊還是右邊？它就猜一個。",
+     "k": 9,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1299.51
+     }
+    },
+    {
+     "say": "注意，不是丟硬幣、不是隨機，是由一種「非確定性的魔法」決定。",
+     "k": 10,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1305.75
+     }
+    },
+    {
+     "say": "往下又遇到岔路就再猜，所以所有可能的執行過程長成一棵樹。",
+     "k": 11,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1316.09
+     }
+    },
+    {
+     "say": "每條路走到底，會輸出 YES 或 NO。",
+     "k": 12,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1337.76
+     }
+    },
+    {
+     "say": "魔法在這：只要樹裡有任何一條路通到 YES，猜測就保證走到 YES。",
+     "k": 13,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1348.04
+     }
+    },
+    {
+     "say": "反過來，每條路都是 NO，那怎麼猜都只能輸出 NO，它不會亂說 YES。",
+     "k": 14,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1392.89
+     }
+    },
+    {
+     "say": "所以 NP 就是：用這種超幸運的演算法，能在多項式時間解出來的決策問題。",
+     "k": 15,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1417.42
+     }
+    }
+   ]
+  },
+  {
+   "title": "Tetris ∈ NP：每個方塊都用猜的",
+   "scene": "np2-tetris-guess",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "Demaine 主張：Tetris，事先知道所有方塊、問能不能活下來，在 NP 裡。",
+     "k": 1,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1433.26
+     }
+    },
+    {
+     "say": "全部放法都試是指數時間，但其實不用全部試。",
+     "k": 2,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1439.89
+     }
+    },
+    {
+     "say": "每個方塊放哪一欄？要不要轉？不知道，就用 nondeterministic 的方式猜。",
+     "k": 3,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1450.91
+     }
+    },
+    {
+     "say": "猜好就放下去，這裡猜最右邊兩欄。",
+     "k": 4,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1462.43
+     }
+    },
+    {
+     "say": "接著照規則模擬：某一列滿了就消掉，這些規則很好寫成程式。",
+     "k": 5,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1466.57
+     }
+    },
+    {
+     "say": "下一個方塊也猜，連最後一刻要不要轉都可以猜。這次又消掉一列。",
+     "k": 6,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1474.23
+     }
+    },
+    {
+     "say": "每個方塊只猜少數幾次，總共多項式個猜測，整體還是多項式時間。",
+     "k": 7,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1484.99
+     }
+    },
+    {
+     "say": "最後判斷：我活下來了嗎？",
+     "k": 8,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1494.63
+     }
+    },
+    {
+     "say": "這很好檢查：看方塊有沒有超過頂端那條線，沒有就是 YES。",
+     "k": 9,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1506.65
+     }
+    },
+    {
+     "say": "只要有任何一種活下來的方法，猜測就會找到它，所以 Tetris 在 NP。",
+     "k": 10,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1510.92
+     }
+    },
+    {
+     "say": "欸，那如果把問題改成「我會不會死」呢？lucky 演算法會去找有沒有任何一種死法，意思完全變了。",
+     "k": 11,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1524.74
+     }
+    },
+    {
+     "say": "所以設定決策問題時，YES 跟 NO 的方向要設對。",
+     "k": 12,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1536.04
+     }
+    },
+    {
+     "say": "「能不能活下來」在 NP；「會不會死」應該不在 NP，只是目前沒人證得出來。",
+     "k": 13,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1543.94
+     }
+    }
+   ]
+  },
+  {
+   "title": "Nondeterministic：丟硬幣永遠丟對",
+   "scene": "np2-coin-proof",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "MIT 助教換個比喻：既然解只有多項式長，如果我運氣非常非常好……",
+     "k": 1,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 664.59
+     }
+    },
+    {
+     "say": "我可以丟硬幣，每次正反面當一個 bit，拼出一份解。通常丟出來都是錯的。",
+     "k": 2,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 674.21
+     }
+    },
+    {
+     "say": "但運氣超好，就剛好丟出正確的那一份。",
+     "k": 3,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 682.07
+     }
+    },
+    {
+     "say": "實際上，丟中的機率幾乎是 0。",
+     "k": 4,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 686.95
+     }
+    },
+    {
+     "say": "可是「概念上」運氣好就拿得到，這正是 Nondeterministic Polynomial 的意思。",
+     "k": 5,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 692.67
+     }
+    },
+    {
+     "say": "想像一台丟硬幣永遠丟對的魔法機器。重點不是隨機，而是只要正確的解存在，就一定猜到。",
+     "k": 6,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 697.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Verifier：只說 YES 沒有用",
+   "scene": "np2-verifier",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "助教給 NP 一個更實用的定義：能寫出一個 verifier，驗證程式。",
+     "k": 1,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 465.99
+     }
+    },
+    {
+     "say": "verifier 吃一個「解」……",
+     "k": 2,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 476.15
+     }
+    },
+    {
+     "say": "……當然也要吃題目本身的輸入。",
+     "k": 3,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 484.24
+     }
+    },
+    {
+     "say": "然後告訴我們，這個解是對的還是錯的。",
+     "k": 4,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 490.15
+     }
+    },
+    {
+     "say": "而且 verifier 本身要在多項式時間跑完，也就是 verifier ∈ P。",
+     "read": "而且 verifier 本身要在多項式時間跑完，也就是 verifier 屬於 P。",
+     "k": 5,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 493.02
+     }
+    },
+    {
+     "say": "有同學問：決策問題的答案不就是 0 或 1 嗎？那「解」有多大？",
+     "k": 6,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 510.42
+     }
+    },
+    {
+     "say": "重點來了：要通過 verifier，不能只報答案，要交出一個能說服它的字串。",
+     "k": 7,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 530.77
+     }
+    },
+    {
+     "say": "例如 3SAT：給一個邏輯式，能不能幫變數選值，讓整個式子為真？",
+     "k": 8,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 559.1
+     }
+    },
+    {
+     "say": "我只說「可以」，這沒有意義，你怎麼知道我說的對？",
+     "k": 9,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 570.82
+     }
+    },
+    {
+     "say": "我必須交出每個變數是 0 還是 1，你代進去，多項式時間就確認了。",
+     "k": 10,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 576.82
+     }
+    },
+    {
+     "say": "所以 verifier 收到的，不只是 YES 或 NO 一個 bit。",
+     "k": 11,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 586.23
+     }
+    },
+    {
+     "say": "這份解的大小也必須是多項式，不然 verifier 光讀它就讀不完。",
+     "k": 12,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 612.54
+     }
+    },
+    {
+     "say": "也就是說，解的長度必須是輸入大小的多項式。",
+     "k": 13,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 631.07
+     }
+    },
+    {
+     "say": "對決策問題，這份能說服 verifier 的解，更嚴謹的名字叫 proof；CLRS 叫它 certificate。",
+     "k": 14,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 649.98
+     }
+    }
+   ]
+  },
+  {
+   "title": "YES 時有一份能快速檢查的證明",
+   "scene": "np2-tetris-check",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "Demaine 也講了這個等價說法，很多人覺得更直覺：不想怎麼解，只想怎麼檢查答案。",
+     "k": 1,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1613.27
+     }
+    },
+    {
+     "say": "檢查答案通常比自己解題容易得多，就像對答案比寫考卷簡單。",
+     "k": 2,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1627.27
+     }
+    },
+    {
+     "say": "正式說法：只要答案是 YES，就能寫出一份證明，別人能在多項式時間檢查它。",
+     "k": 3,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1646.84
+     }
+    },
+    {
+     "say": "想成兩個人的遊戲：一個很會玩 Tetris 的玩家想說服你，你是要被說服的人。",
+     "k": 4,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1688.6
+     }
+    },
+    {
+     "say": "他分享一個故事：辦公室門上貼著一封信，上面寫「I am NP-complete」。",
+     "k": 5,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1712.42
+     }
+    },
+    {
+     "say": "這句話其實沒意義，NP-complete 是在講問題，不是講人。學完你會覺得更好笑。",
+     "k": 6,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1732.56
+     }
+    },
+    {
+     "say": "他翻譯：寫信的人想說的其實是「I am lucky」。那要怎麼證明？",
+     "k": 7,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1759.54
+     }
+    },
+    {
+     "say": "給他一關很難的 Tetris：這些方塊你活得下來嗎？他說：YES。",
+     "k": 8,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1773.34
+     }
+    },
+    {
+     "say": "怎麼證明？直接玩給你看：證明就是一串移動，每個方塊放哪、怎麼轉。",
+     "k": 9,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1781.22
+     }
+    },
+    {
+     "say": "把這串移動交出去，很容易就說服別人。",
+     "k": 10,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1793.34
+     }
+    },
+    {
+     "say": "檢查的人只是普通的多項式時間演算法：照規則跑一遍，看有沒有超過頂端。",
+     "k": 11,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1803.66
+     }
+    },
+    {
+     "say": "Tetris 的規則很好寫成程式；難的是「知道該怎麼走」。",
+     "k": 12,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1811.96
+     }
+    },
+    {
+     "say": "找證明花多久都沒關係，只有「檢查證明」這一步必須是多項式時間。",
+     "k": 13,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1829.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Two-argument 的驗證演算法：MST",
+   "scene": "np1-j-verifier-mst",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "江老師也是這樣講 NP：探討的是「驗證一個解」的時間是 polynomial。",
+     "k": 1,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2366.36
+     }
+    },
+    {
+     "say": "驗證交給一個演算法來做，它會回答 yes 或 no。",
+     "k": 2,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2375.04
+     }
+    },
+    {
+     "say": "這個 verification algorithm 是 two-argument 的，要吃兩個 input。",
+     "k": 3,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2385.67
+     }
+    },
+    {
+     "say": "第一個 input 是 instance，例如 MST decision 版的這張 graph 加上 bound k = 10。",
+     "read": "第一個 input 是 instance，例如 MST decision 版的這張 graph 加上 bound k 等於 10。",
+     "k": 4,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2394.82
+     }
+    },
+    {
+     "say": "第二個 input 是某一個 solution，白話說就是隨便拿一棵 tree 丟給它。",
+     "k": 5,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2416.36
+     }
+    },
+    {
+     "say": "它檢查這是不是 spanning tree：4 條邊、5 個點都連到、沒有環。",
+     "k": 6,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2433.06
+     }
+    },
+    {
+     "say": "再檢查 cost：1 + 2 + 2 + 4 = 9 ≤ 10，回答 YES。這些檢查都很快。",
+     "read": "再檢查 cost：1 加 2 加 2 加 4 等於 9 小於等於 10，回答 YES。這些檢查都很快。",
+     "k": 7,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2439.49
+     }
+    }
+   ]
+  },
+  {
+   "title": "TSP ∈ NP：猜一個 tour 再檢查",
+   "scene": "np1-j-tsp-verify",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "換 TSP。input 是 n 個 city 和兩兩之間的距離。",
+     "k": 1,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2478.47
+     }
+    },
+    {
+     "say": "還要一個 bound，這很重要，用來判斷有沒有超過，這裡設 B = 15。",
+     "read": "還要一個 bound，這很重要，用來判斷有沒有超過，這裡設 B 等於 15。",
+     "k": 2,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2487.46
+     }
+    },
+    {
+     "say": "Decision 版問：有沒有一條 route，起訖同城、每城恰一次，總長 ≤ bound？",
+     "read": "Decision 版問：有沒有一條 route，起訖同城、每城恰一次，總長 小於等於 bound？",
+     "k": 3,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2502.2
+     }
+    },
+    {
+     "say": "問題：TSP 屬於 NP 嗎？",
+     "k": 4,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2538.11
+     }
+    },
+    {
+     "say": "就試試看能不能在 polynomial time 內 verify 一個 solution。",
+     "k": 5,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2551.1
+     }
+    },
+    {
+     "say": "這個拿來驗證的 solution，有個特別的名字：certificate。",
+     "k": 6,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2559.48
+     }
+    },
+    {
+     "say": "先隨便猜一個答案，例如 tour A、B、C、D、再回到 A。",
+     "k": 7,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2591.56
+     }
+    },
+    {
+     "say": "檢查一：起點終點是不是同一城？抓頭尾就知道，都是 A。",
+     "k": 8,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2622.24
+     }
+    },
+    {
+     "say": "檢查二：每個 city 是不是剛好一次？掃一遍就知道。",
+     "k": 9,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2638.72
+     }
+    },
+    {
+     "say": "檢查三：沿著走一圈加距離，3 + 4 + 3 + 4 = 14，14 ≤ 15。",
+     "read": "檢查三：沿著走一圈加距離，3 加 4 加 3 加 4 等於 14，14 小於等於 15。",
+     "k": 10,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2657.9
+     }
+    },
+    {
+     "say": "全部 linear time 做完，驗證是 polynomial time，所以 TSP ∈ NP。",
+     "read": "全部 linear time 做完，驗證是 polynomial time，所以 TSP 屬於 NP。",
+     "k": 11,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2693.38
+     }
+    },
+    {
+     "say": "這一步很簡單但很重要，證 NP-complete 的第一步就是它。注意，不用檢查它是不是最短的。",
+     "k": 12,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2725.66
+     }
+    }
+   ]
+  },
+  {
+   "title": "P ⊆ NP，那 P = NP 嗎？",
+   "scene": "np1-toc-two-worlds",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "好，定義有了，P 跟 NP 是什麼關係？只有兩種可能。",
+     "k": 1,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 68.19
+     }
+    },
+    {
+     "say": "先確定一件事：P 的問題，非確定型機器當然也能 poly time 解，不分身照算就好。所以 P ⊆ NP。",
+     "read": "先確定一件事：P 的問題，非確定型機器當然也能 poly time 解，不分身照算就好。所以 P 包含於 NP。",
+     "k": 2,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 73.68
+     }
+    },
+    {
+     "say": "可能一：P 是 NP 的真子集，NP 裡有些問題真的沒辦法快速解。",
+     "k": 3,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 85.51
+     }
+    },
+    {
+     "say": "可能二：P = NP，所有能快速驗證的問題，也都能快速解。",
+     "read": "可能二：P 等於 NP，所有能快速驗證的問題，也都能快速解。",
+     "k": 4,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 88.3
+     }
+    },
+    {
+     "say": "歷史上真的有問題從外面走進 P：質數判定，2002 年 AKS 證明它在 P。",
+     "k": 5,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 96.49
+     }
+    },
+    {
+     "say": "到底是哪一種？到現在沒人能證明，這就是理論計算機科學最有名的 open problem。",
+     "k": 6,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 103.67
+     }
+    }
+   ]
+  },
+  {
+   "title": "P vs NP：運氣造不出來",
+   "scene": "np2-p-vs-np",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "Demaine 也是這樣說：P 的問題一定能快速檢查，自己解一遍，比對答案就好。",
+     "k": 1,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1846.17
+     }
+    },
+    {
+     "say": "所以 P ⊆ NP。",
+     "read": "所以 P 包含於 NP。",
+     "k": 2,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1856.13
+     }
+    },
+    {
+     "say": "最大的問題來了：P 跟 NP 是不是一樣大？",
+     "k": 3,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1857.94
+     }
+    },
+    {
+     "say": "他說，大多數腦袋正常的人都相信 P ≠ NP。",
+     "read": "他說，大多數腦袋正常的人都相信 P 不等於 NP。",
+     "k": 4,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1865.37
+     }
+    },
+    {
+     "say": "這是千禧年大獎難題之一，證出來有一百萬美元，還會變成全世界最有名的電腦科學家。",
+     "k": 5,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1877.65
+     }
+    },
+    {
+     "say": "P ≠ NP 的意思是：有些問題在 NP 裡，卻不在 P 裡。",
+     "read": "P 不等於 NP 的意思是：有些問題在 NP 裡，卻不在 P 裡。",
+     "k": 6,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1912.9
+     }
+    },
+    {
+     "say": "P 是真正的電腦能解的；NP 是魔法電腦能解的，它每遇到岔路都告訴你正確方向。",
+     "k": 7,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1922.4
+     }
+    },
+    {
+     "say": "魔法電腦顯然比較強，可是很氣人，沒有人證得出來。",
+     "k": 8,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1951.88
+     }
+    },
+    {
+     "say": "他自創的說法：P ≠ NP 就是「you can't engineer luck」，運氣沒辦法用工程造出來。",
+     "read": "他自創的說法：P 不等於 NP 就是「you can't engineer luck」，運氣沒辦法用工程造出來。",
+     "k": 9,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1970.21
+     }
+    },
+    {
+     "say": "另一種說法：解題比檢查答案難；產生一份證明，可能比檢查它難。",
+     "k": 10,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 1993.48
+     }
+    },
+    {
+     "say": "就像數學：證一個定理很難，但檢查寫好的證明，只要確認每一步推得出來。",
+     "k": 11,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2024.58
+     }
+    },
+    {
+     "say": "證定理需要靈感，在這個模型裡，靈感就是運氣，就是猜。",
+     "k": 12,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2039.95
+     }
+    }
+   ]
+  },
+  {
+   "title": "常識論證：冒充銀行",
+   "scene": "np2-rsa-key",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "MIT 助教用這個「永遠猜對」的模型，做了一個 P ≠ NP 的常識論證。",
+     "read": "MIT 助教用這個「永遠猜對」的模型，做了一個 P 不等於 NP 的常識論證。",
+     "k": 1,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 714.94
+     }
+    },
+    {
+     "say": "先說清楚：P ≠ NP 沒有數學證明，P = NP 也沒有，這是開放問題。",
+     "read": "先說清楚：P 不等於 NP 沒有數學證明，P 等於 NP 也沒有，這是開放問題。",
+     "k": 2,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 728.8
+     }
+    },
+    {
+     "say": "他說，能多項式時間解 NP 問題的人，賺的遠遠不只一百萬。為什麼？",
+     "k": 3,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 766.72
+     }
+    },
+    {
+     "say": "假設你想做壞事：冒充一家銀行。純粹舉例！",
+     "k": 4,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 795.4
+     }
+    },
+    {
+     "say": "現在銀行之間不是用卡車運金條，而是透過網路、用加密連線轉帳。",
+     "k": 5,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 808.4
+     }
+    },
+    {
+     "say": "這種連線用的加密演算法叫 RSA。",
+     "k": 6,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 838.45
+     }
+    },
+    {
+     "say": "每家銀行有一把私鑰：兩個很大的質數 p 和 q，各有 n 個 bit。我們用 61 和 53 示意。",
+     "k": 7,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 850.35
+     }
+    },
+    {
+     "say": "銀行公開 N = p × q，這裡 61 × 53 = 3233，全世界都看得到。",
+     "read": "銀行公開 N 等於 p 乘 q，這裡 61 乘 53 等於 3233，全世界都看得到。",
+     "k": 8,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 868.2
+     }
+    },
+    {
+     "say": "一定要公開 N，別人才能用它加密訊息、傳給銀行。",
+     "k": 9,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 886.84
+     }
+    },
+    {
+     "say": "如果你知道 p 和 q，就能解開訊息，假裝自己是那家銀行。",
+     "k": 10,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 900.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Factoring 的 verifier",
+   "scene": "np2-rsa-verify",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "寫成 verifier：做長除法，輸入是公開的 N 和你猜的 p。",
+     "k": 1,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 911.41
+     }
+    },
+    {
+     "say": "它算 N mod p，N 除以 p 的餘數。",
+     "k": 2,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 926.46
+     }
+    },
+    {
+     "say": "餘數是 0，代表 p 整除 N，猜中了，verifier 很開心，你發財了。",
+     "k": 3,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 932.88
+     }
+    },
+    {
+     "say": "餘數不是 0，例如 3233 mod 47 = 37，運氣不好，再猜。",
+     "read": "餘數不是 0，例如 3233 mod 47 等於 37，運氣不好，再猜。",
+     "k": 4,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 941
+     }
+    },
+    {
+     "say": "只要能讓 verifier 開心，你就從公開資訊算出了私密的 p。",
+     "k": 5,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 948.85
+     }
+    },
+    {
+     "say": "這個問題叫 factoring，因數分解。",
+     "k": 6,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 963.28
+     }
+    },
+    {
+     "say": "真實的 p 和 N 大約 1024 bit，丟硬幣猜中的機率是 2 的 1024 次方分之一。",
+     "k": 7,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 974.5
+     }
+    },
+    {
+     "say": "要是有演算法能產生讓 verifier 開心的輸入，全世界的金融系統就會大亂。",
+     "k": 8,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1004.74
+     }
+    },
+    {
+     "say": "可是金融系統還好好的，代表沒人做到。",
+     "k": 9,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1042.43
+     }
+    },
+    {
+     "say": "這裡假設的是一般電腦。夠大的量子電腦會破解 RSA，希望到時已經換了加密方法。",
+     "k": 10,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1059.52
+     }
+    },
+    {
+     "say": "結論：電子商務還能運作，代表沒人能 poly time 解 NP 問題。這是常識論證，不是證明。",
+     "k": 11,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1082.74
+     }
+    }
+   ]
+  },
+  {
+   "title": "Reduction：把 A 轉成會解的 B",
+   "scene": "np2-reduce",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "好，接下來是這章的武器：reduction，歸約。它也回答了「一樣難」到底是什麼意思。",
+     "k": 1,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2435.54
+     }
+    },
+    {
+     "say": "前面一直說「至少一樣難」，其實這是你們早就學過的概念。",
+     "k": 2,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2444.42
+     }
+    },
+    {
+     "say": "Reduction 本來是設計演算法的技巧，這學期一直在用，graph reduction 就是。",
+     "k": 3,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2478.64
+     }
+    },
+    {
+     "say": "把問題轉成圖的問題，再呼叫學過的圖演算法，就做完了。",
+     "k": 4,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2489.6
+     }
+    },
+    {
+     "say": "一般說法：想解 A，就把 A 轉成另一個已經會解的 B，解了 B 就解了 A。",
+     "k": 5,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2497.52
+     }
+    },
+    {
+     "say": "Demaine 說，以後工作遇到不會的問題，第一件事就問：能不能轉成我會解的？",
+     "k": 6,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2511.4
+     }
+    },
+    {
+     "say": "轉過去的解法不一定最好，但至少是一個解法，而且通常是多項式。",
+     "k": 7,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2522.72
+     }
+    },
+    {
+     "say": "簡單例子：無權重的最短路徑，用 BFS，線性時間。",
+     "k": 8,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2572.16
+     }
+    },
+    {
+     "say": "可是假設有人只給你 Dijkstra 的程式碼，你什麼都不想寫。",
+     "k": 9,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2591.23
+     }
+    },
+    {
+     "say": "Dijkstra 解的是有權重的最短路徑，這張圖沒權重，怎麼辦？",
+     "k": 10,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2598.63
+     }
+    },
+    {
+     "say": "把每條邊權重都設成 1 就好！最短就變成邊數最少。很簡單，但這就是 reduction。",
+     "k": 11,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2602.13
+     }
+    },
+    {
+     "say": "設 0 不行：每條路長度都變 0，分不出誰短。",
+     "k": 12,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2623.61
+     }
+    },
+    {
+     "say": "設 2 也可以，任何正數都行，只要全部一樣。",
+     "k": 13,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2627.88
+     }
+    }
+   ]
+  },
+  {
+   "title": "更多 reduction：取 log、取負號、改圖",
+   "scene": "np2-reduce-more",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "再看幾個你們做過的。第一個是 Pset 6 的交朋友問題。",
+     "k": 1,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2633.31
+     }
+    },
+    {
+     "say": "那題要讓路徑上權重的「乘積」最小，不是和。",
+     "k": 2,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2649.44
+     }
+    },
+    {
+     "say": "可是學過的最短路徑，都是讓權重「加起來」最小。",
+     "k": 3,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2657.56
+     }
+    },
+    {
+     "say": "一個字：log！log(a × b) = log a + log b，每個權重取 log，乘積變成和，直接丟 Dijkstra。",
+     "read": "一個字：log！log(a 乘 b) 等於 log a 加 log b，每個權重取 log，乘積變成和，直接丟 Dijkstra。",
+     "k": 4,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2664.28
+     }
+    },
+    {
+     "say": "你也可以改 Dijkstra 的 relax 直接算乘積，但要重新證明正確性，麻煩。",
+     "k": 5,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2672.26
+     }
+    },
+    {
+     "say": "用 reduction，原本的程式一行都不用改。",
+     "k": 6,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2694.32
+     }
+    },
+    {
+     "say": "這就是為什麼 reduction 是最常用的設計技巧：不用每個新問題都重寫。",
+     "k": 7,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2702.68
+     }
+    },
+    {
+     "say": "Quiz 2 的是非題：最長路徑能不能用 Bellman-Ford？",
+     "k": 8,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2716.27
+     }
+    },
+    {
+     "say": "可以：權重全部取負號，最長就變最短。前提是取完沒有負權環；一般圖的最長簡單路徑是 NP-hard。",
+     "k": 9,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2731.28
+     }
+    },
+    {
+     "say": "照指定順序拜訪幾個景點：把圖複製成好幾層，變成一次最短路徑查詢。",
+     "k": 10,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2746.29
+     }
+    },
+    {
+     "say": "漏油油箱也一樣：把油量這種奇怪的條件放進圖裡，又變回最短路徑。",
+     "k": 11,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2769.68
+     }
+    },
+    {
+     "say": "這門課看到的多半是 graph reduction，但這招到處都能用。",
+     "k": 12,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2781.03
+     }
+    }
+   ]
+  },
+  {
+   "title": "老例子：bipartite matching → network flow",
+   "scene": "np1-j-bip-flow",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "江老師也從同一個角度切入 polynomial time reduction。",
+     "k": 1,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3067.43
+     }
+    },
+    {
+     "say": "為什麼要做？因為我們總會遇到新問題。",
+     "k": 2,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3098.79
+     }
+    },
+    {
+     "say": "常常不想發展新演算法，而是想：能不能用現有的演算法去解？",
+     "k": 3,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3118.63
+     }
+    },
+    {
+     "say": "network flow 那章就有例子：用 network flow 解 bipartite matching。",
+     "k": 4,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3128.99
+     }
+    },
+    {
+     "say": "把 bipartite 的圖 transform 成 flow network：加 source s、sink t，capacity 全是 1。",
+     "k": 5,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3152.73
+     }
+    },
+    {
+     "say": "用 Ford-Fulkerson 找最大流，max flow = 3。",
+     "read": "用 Ford-Fulkerson 找最大流，max flow 等於 3。",
+     "k": 6,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3156.79
+     }
+    },
+    {
+     "say": "再翻譯回 matching：有 flow 的邊就是配對，1 配 b、2 配 a、3 配 c。",
+     "k": 7,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3162.89
+     }
+    },
+    {
+     "say": "轉換花多少時間？幾乎完全照抄，多加 s、t 和邊，linear time。",
+     "k": 8,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3178.99
+     }
+    },
+    {
+     "say": "轉換一定要 polynomial time，要是轉換本身花 exponential time，那就白搭了。",
+     "k": 9,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3238.79
+     }
+    },
+    {
+     "say": "而這章是換個方向用 reduction：證明 NP 裡的問題都能 reduce 到那個很難的問題上。",
+     "k": 10,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3265.85
+     }
+    }
+   ]
+  },
+  {
+   "title": "借 B 的演算法解 A：yes 對 yes",
+   "scene": "np1-h-reduce-solve",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "Seetharam 把 reduction 講得很清楚。先看它原本拿來解題的樣子。",
+     "k": 1,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 278.71
+     }
+    },
+    {
+     "say": "假設有一個 decision problem A，想 poly time 解它，但不知道怎麼做。",
+     "k": 2,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 309.79
+     }
+    },
+    {
+     "say": "A 的一個具體輸入叫 instance，叫它 α，例如「這張圖、這兩點、k = 9」。",
+     "read": "A 的一個具體輸入叫 instance，叫它 α，例如「這張圖、這兩點、k 等於 9」。",
+     "k": 3,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 328.53
+     }
+    },
+    {
+     "say": "另外有一個問題 B，我們已經會 poly time 解了。",
+     "k": 4,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 339.13
+     }
+    },
+    {
+     "say": "想法很自然：自己不會解 A，就借 B 的力量。",
+     "k": 5,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 358.17
+     }
+    },
+    {
+     "say": "第一步：把 α 在 polynomial time 內轉成 B 的 instance β，這個轉換就叫 reduction。",
+     "k": 6,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 373.29
+     }
+    },
+    {
+     "say": "流程是：α，轉換，β，交給 B 的演算法。",
+     "k": 7,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 405.35
+     }
+    },
+    {
+     "say": "B 有 polynomial 演算法，把 β 丟進去，很快就有答案。",
+     "k": 8,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 429.98
+     }
+    },
+    {
+     "say": "轉換 polynomial 加上解 B polynomial，加起來還是 polynomial，所以 A 也能 poly time 解。",
+     "k": 9,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 434.52
+     }
+    },
+    {
+     "say": "最重要的條件：A 是 yes，轉出來的 B 也要 yes；no 要對應 no，不然 B 的答案不能當 A 的答案。",
+     "k": 10,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 446.08
+     }
+    },
+    {
+     "say": "整理：想解 A，就轉成會解的 B，借 B 的演算法。這就是 reduction。",
+     "k": 11,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 471.86
+     }
+    }
+   ]
+  },
+  {
+   "title": "X ≤p Y 的定義：可去可回",
+   "scene": "np1-j-reduce-def",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "江老師說 reduction 是很強的武器：能 poly time 解 Y，就想知道還有多少問題能跟著解。",
+     "k": 1,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3291.07
+     }
+    },
+    {
+     "say": "符號寫成 X ≤p Y，讀作「X 可以 polynomial time reduce 到 Y」。",
+     "read": "符號寫成 X 小於等於p Y，讀作「X 可以 polynomial time reduce 到 Y」。",
+     "k": 2,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 43.88
+     }
+    },
+    {
+     "say": "「≤」暗示難度：左邊比較簡單，右邊比較難，或頂多一樣難。",
+     "read": "「 小於等於 」暗示難度：左邊比較簡單，右邊比較難，或頂多一樣難。",
+     "k": 3,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3327.17
+     }
+    },
+    {
+     "say": "右下角的 p：把左邊的 input 轉成右邊的 input，花的時間是 polynomial。",
+     "k": 4,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3334.23
+     }
+    },
+    {
+     "say": "整個流程：X 的 instance，經過轉換 f，進 Y 的演算法，出來 YES 或 NO。",
+     "k": 5,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3376
+     }
+    },
+    {
+     "say": "定義：X 的任何一個 instance x，都能在 poly time 內轉成 Y 的 input f(x)。",
+     "k": 6,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3380.78
+     }
+    },
+    {
+     "say": "不能隨便亂轉：用 Y 解完，答案還要能翻譯回原來的問題。",
+     "k": 7,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3402.7
+     }
+    },
+    {
+     "say": "所以要 if and only if：x 在 X 答 yes，f(x) 在 Y 也要答 yes……",
+     "k": 8,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3417.24
+     }
+    },
+    {
+     "say": "……反過來，Y 那邊答 yes，X 這邊也要答 yes。",
+     "k": 9,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3444.17
+     }
+    },
+    {
+     "say": "老師說這像一對一的對應，可去可回。嚴格說不必真的一對一，只要「yes 若且唯若 yes」成立就夠。",
+     "k": 10,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3451.02
+     }
+    },
+    {
+     "say": "所以證明 X ≤p Y 要做三件事：轉換是 poly time；X yes 推 Y yes；Y yes 推 X yes。",
+     "read": "所以證明 X 小於等於p Y 要做三件事：轉換是 poly time；X yes 推 Y yes；Y yes 推 X yes。",
+     "k": 11,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3494.28
+     }
+    },
+    {
+     "say": "Y 的演算法怎麼做，不用管，當成 black box，假設它存在就能直接用。",
+     "k": 12,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 206.02
+     }
+    },
+    {
+     "say": "重點全放在轉換 f：它能在 polynomial time 內做完就行。",
+     "k": 13,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3548.14
+     }
+    }
+   ]
+  },
+  {
+   "title": "Reduction 不能讓輸入爆炸",
+   "scene": "np2-blowup",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "MIT 助教再補一刀：為什麼解出一個 NP-complete 就解出全部？靠的就是 reduction。",
+     "k": 1,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2725.11
+     }
+    },
+    {
+     "say": "這學期做了很多圖的轉換：recitation、考題、作業都有。",
+     "k": 2,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2739.39
+     }
+    },
+    {
+     "say": "圖的轉換就是 reduction：把看起來很難的問題建成一張圖，跑最短路徑。",
+     "k": 3,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2750.33
+     }
+    },
+    {
+     "say": "再把結果轉回原問題的答案，這就是把原問題歸約到最短路徑。",
+     "k": 4,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2761.21
+     }
+    },
+    {
+     "say": "目標不一定是最短路徑，任何你會解的問題都可以。",
+     "k": 5,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2772.2
+     }
+    },
+    {
+     "say": "最短路徑只是地圖上的一個笑臉，走到任何笑臉都好。",
+     "k": 6,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2784.76
+     }
+    },
+    {
+     "say": "但要小心：轉換的過程中，問題的大小不能爆炸。",
+     "k": 7,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2790.6
+     }
+    },
+    {
+     "say": "例如把 3CNF 式子轉成一張圖，每多一個子句頂點就變 3 倍，最後 3ⁿ 個頂點。",
+     "read": "例如把 3CNF 式子轉成一張圖，每多一個子句頂點就變 3 倍，最後 3的n次方 個頂點。",
+     "k": 8,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2802.03
+     }
+    },
+    {
+     "say": "再跑 Dijkstra，時間至少 3ⁿ，根本不是多項式，這種 reduction 沒用。",
+     "read": "再跑 Dijkstra，時間至少 3的n次方，根本不是多項式，這種 reduction 沒用。",
+     "k": 9,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2811.67
+     }
+    },
+    {
+     "say": "所以做 reduction 要注意：轉換本身要多項式時間，產生的輸入也要多項式大小。",
+     "k": 10,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2816.55
+     }
+    },
+    {
+     "say": "說穿了，計算複雜度理論就是一個「為什麼有些問題我們解不出來」的大理由。",
+     "k": 11,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2824.64
+     }
+    }
+   ]
+  },
+  {
+   "title": "Reduction 用法一：用已知演算法解新問題",
+   "scene": "np1-j-three-cases",
+   "params": {
+    "k": 0
+   },
+   "steps": 13,
+   "lines": [
+    {
+     "say": "江老師覺得這頁非常重要：為什麼要用 reduction？建出 X ≤p Y，代表右邊比較難。",
+     "read": "江老師覺得這頁非常重要：為什麼要用 reduction？建出 X 小於等於p Y，代表右邊比較難。",
+     "k": 1,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 261.32
+     }
+    },
+    {
+     "say": "使用時機分三種。",
+     "k": 2,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 300.34
+     }
+    },
+    {
+     "say": "一定要分清楚，方向弄錯的話，證明就完全沒有作用。",
+     "k": 3,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 307.8
+     }
+    },
+    {
+     "say": "Case 1：遇到一個新問題，想替它設計 efficient algorithm。",
+     "k": 4,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 317.62
+     }
+    },
+    {
+     "say": "但不想從頭設計，而是想用手邊已知的演算法來解。",
+     "k": 5,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 344.88
+     }
+    },
+    {
+     "say": "這時候，新問題放左邊當 X，已知有演算法的問題放右邊當 Y。",
+     "k": 6,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 369.24
+     }
+    },
+    {
+     "say": "例子：bipartite matching ≤p network flow。",
+     "read": "例子：bipartite matching 小於等於p network flow。",
+     "k": 7,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 390.54
+     }
+    },
+    {
+     "say": "把 matching 的圖轉成 network flow 吃的 flow network。",
+     "k": 8,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 426.46
+     }
+    },
+    {
+     "say": "用 Ford-Fulkerson 找到解。",
+     "k": 9,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 440.87
+     }
+    },
+    {
+     "say": "再翻譯回 matching 的 solution，結束。",
+     "k": 10,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 448.5
+     }
+    },
+    {
+     "say": "這代表新問題可以被 efficient 解掉，用的是舊演算法。",
+     "k": 11,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 468.74
+     }
+    },
+    {
+     "say": "同時也隱含：新問題不會比 network flow 難。",
+     "k": 12,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 485.88
+     }
+    },
+    {
+     "say": "實際上文獻裡 bipartite matching 有自己的演算法，複雜度比 network flow 再低一點，剛好印證。",
+     "k": 13,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 526.96
+     }
+    }
+   ]
+  },
+  {
+   "title": "Reduction 用法二：證明新問題很難",
+   "scene": "np1-j-three-cases",
+   "params": {
+    "k": 1
+   },
+   "steps": 13,
+   "lines": [
+    {
+     "say": "Case 2：遇到一個新問題，覺得很難，想說服大家它真的很難。",
+     "k": 1,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 546.98
+     }
+    },
+    {
+     "say": "這叫 intractability。老師口誤說成 poly time solvable；其實 tractable 才是可解，intractable 相反。",
+     "k": 2,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 571.02
+     }
+    },
+    {
+     "say": "一樣建 X ≤p Y。那問題來了：新的難問題要放 X 還是 Y？",
+     "read": "一樣建 X 小於等於p Y。那問題來了：新的難問題要放 X 還是 Y？",
+     "k": 3,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 597.42
+     }
+    },
+    {
+     "say": "答案：新問題放 Y，右邊。我們要建構的是「Y 很難」。",
+     "k": 4,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 619.39
+     }
+    },
+    {
+     "say": "做法：找一個已經知道很難的問題當 X，很多書、很多「字典」裡都查得到。",
+     "k": 5,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 625.59
+     }
+    },
+    {
+     "say": "例如 circuit satisfiability，放左邊。",
+     "k": 6,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 643.63
+     }
+    },
+    {
+     "say": "做成之後：左邊已經是 NP-complete，右邊比它更難或一樣難，所以新問題真的很難。",
+     "k": 7,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 659.99
+     }
+    },
+    {
+     "say": "要是 X、Y 互換，就白做工了。大部分同學第一次證明都錯在這裡。",
+     "k": 8,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 708.13
+     }
+    },
+    {
+     "say": "看看為什麼錯：已知難題放 Y，新問題放 X……",
+     "k": 9,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 729.09
+     }
+    },
+    {
+     "say": "……得到的只是「新問題比一個難題簡單或一樣難」，它可能很簡單，什麼資訊都沒有。",
+     "k": 10,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 762.01
+     }
+    },
+    {
+     "say": "因為任何簡單問題都比難題簡單，排序也能 reduce 到 CIRCUIT-SAT，這說明不了什麼。",
+     "k": 11,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 781.29
+     }
+    },
+    {
+     "say": "所以正確時機是：已知 X 很難，新問題放 Y，才能說服大家 Y 很難。",
+     "k": 12,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 797.67
+     }
+    },
+    {
+     "say": "等一下會用 Hamiltonian cycle ≤p TSP 示範：HC 已知是 NPC，要證 TSP 也很難。",
+     "read": "等一下會用 Hamiltonian cycle 小於等於p TSP 示範：HC 已知是 NPC，要證 TSP 也很難。",
+     "k": 13,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 830.73
+     }
+    }
+   ]
+  },
+  {
+   "title": "Reduction 用法三：證明兩個問題一樣難",
+   "scene": "np1-j-three-cases",
+   "params": {
+    "k": 2
+   },
+   "steps": 8,
+   "lines": [
+    {
+     "say": "Case 3：要建構 equivalence，證明兩個問題一樣難。",
+     "k": 1,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 861.47
+     }
+    },
+    {
+     "say": "做法：X ≤p Y，而且 Y ≤p X，兩個方向都要。",
+     "read": "做法：X 小於等於p Y，而且 Y 小於等於p X，兩個方向都要。",
+     "k": 2,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 879.63
+     }
+    },
+    {
+     "say": "那兩者就是 polynomially equivalent，難度一樣。",
+     "k": 3,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 891.59
+     }
+    },
+    {
+     "say": "常見情況：model 一個新問題，結果發現它跟某個經典問題一體兩面，只是換句話說。",
+     "k": 4,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 908.19
+     }
+    },
+    {
+     "say": "這時就像做一個一對一的對應。",
+     "k": 5,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 927.63
+     }
+    },
+    {
+     "say": "要花的功夫只剩 transformation 的時間，難度是一樣的。",
+     "k": 6,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 934.11
+     }
+    },
+    {
+     "say": "老師再提醒一次：Case 2 是同學最常出錯的地方。",
+     "k": 7,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 959.27
+     }
+    },
+    {
+     "say": "甚至有學位論文把 X、Y 放錯位置，整個證明就沒有作用了。",
+     "k": 8,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 978.31
+     }
+    }
+   ]
+  },
+  {
+   "title": "用反證法證明 B 很難",
+   "scene": "np1-h-contra",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "Seetharam 從反證法的角度講同一件事：把 reduction 拿來證明問題「很難」。",
+     "k": 1,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 490.44
+     }
+    },
+    {
+     "say": "記住，NP-completeness 不是在證明問題簡單，而是證明它很難。",
+     "k": 2,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 505.9
+     }
+    },
+    {
+     "say": "這次主角換成 B。",
+     "k": 3,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 519.28
+     }
+    },
+    {
+     "say": "目標：證明 B 沒有 polynomial time 解。",
+     "k": 4,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 552.1
+     }
+    },
+    {
+     "say": "已知一：A 沒有 polynomial time 解。",
+     "k": 5,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 559.16
+     }
+    },
+    {
+     "say": "已知二：有一個從 A 到 B 的 polynomial time reduction。",
+     "k": 6,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 571.27
+     }
+    },
+    {
+     "say": "方法是反證法：先假設相反的事成立，推出矛盾。",
+     "k": 7,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 601.98
+     }
+    },
+    {
+     "say": "假設 B 有 polynomial time 解。",
+     "k": 8,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 628.48
+     }
+    },
+    {
+     "say": "那 A 的任何 instance 都先 poly 轉成 B，再用 B 快速解掉，A 不就也有 poly 解了？",
+     "k": 9,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 646.32
+     }
+    },
+    {
+     "say": "但已知 A 沒有，矛盾。",
+     "k": 10,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 690.02
+     }
+    },
+    {
+     "say": "所以假設錯了：B 不可能有 polynomial time 解。",
+     "k": 11,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 702.45
+     }
+    },
+    {
+     "say": "補充一句：「A 沒有 poly 解」其實沒人證過，是假設 P ≠ NP；嚴格說法是「B 有 poly 解就推出 P = NP」。",
+     "read": "補充一句：「A 沒有 poly 解」其實沒人證過，是假設 P 不等於 NP；嚴格說法是「B 有 poly 解就推出 P 等於 NP」。",
+     "k": 12,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 714.67
+     }
+    }
+   ]
+  },
+  {
+   "title": "漫畫：不是只有我找不到",
+   "scene": "np1-j-comic",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "為什麼證明「很難」要用這招？江老師放了一則漫畫：老闆交給員工一個 task。",
+     "k": 1,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1012.6
+     }
+    },
+    {
+     "say": "過幾天老闆來問：上次那個問題，解決得怎樣？",
+     "k": 2,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1021.28
+     }
+    },
+    {
+     "say": "第一次，員工老實說，他找不到 efficient 的演算法……",
+     "k": 3,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1032.96
+     }
+    },
+    {
+     "say": "……還說「可能是我太笨了」。",
+     "k": 4,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1049.2
+     }
+    },
+    {
+     "say": "老闆說：沒關係，再多花點時間就好。",
+     "k": 5,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1064.92
+     }
+    },
+    {
+     "say": "又過一週，還是找不到，這次理直氣壯：「找不到，因為根本不存在！」",
+     "k": 6,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1079.5
+     }
+    },
+    {
+     "say": "老闆說：可能只是你找得不夠仔細，找不到不代表不存在。",
+     "k": 7,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1104.42
+     }
+    },
+    {
+     "say": "再過一週，員工很有自信地去找老闆。",
+     "k": 8,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1114.88
+     }
+    },
+    {
+     "say": "「沒錯我找不到，但不是只有我，這些名人、天才們也都找不到！」",
+     "k": 9,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1133.48
+     }
+    },
+    {
+     "say": "NP-complete 就是這一招：證明它跟大家都解不出來的問題一樣難。",
+     "k": 10,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1141.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Base problem：SAT 與 state space tree",
+   "scene": "np1-b-sat-tree",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "有了 reduction，回到 Bari 研究框架的第二部分：把問題關聯起來。",
+     "k": 1,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 827.81
+     }
+    },
+    {
+     "say": "要關聯，就需要一個問題當基準，叫 base problem。",
+     "k": 2,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 864.71
+     }
+    },
+    {
+     "say": "base problem 就是 satisfiability，SAT，用 CNF 公式表示。",
+     "k": 3,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 874.31
+     }
+    },
+    {
+     "say": "公式用 boolean 變數 x1、x2、x3，每個只能是 0 或 1。",
+     "k": 4,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 887.71
+     }
+    },
+    {
+     "say": "例子：F = (x1 ∨ ¬x2 ∨ x3) ∧ (¬x1 ∨ x2 ∨ ¬x3)。∨ 是 or，∧ 是 and，¬ 是相反。",
+     "read": "例子：F 等於 (x1 or not x2 or x3) and (not x1 or x2 or not x3)。or 是 or，and 是 and，not 是相反。",
+     "k": 5,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 897.77
+     }
+    },
+    {
+     "say": "括號裡叫子句 clause，這裡有 C1、C2。子句內用 or，子句之間用 and，這叫 CNF。",
+     "k": 6,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 916.99
+     }
+    },
+    {
+     "say": "Satisfiability 就是問：x1、x2、x3 取什麼值，整個 F 會是真的？",
+     "k": 7,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 928.81
+     }
+    },
+    {
+     "say": "每個變數 0 或 1，三個變數一共 000 到 111，8 種。",
+     "k": 8,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 945.91
+     }
+    },
+    {
+     "say": "全部代進去：010 和 101 會讓某個子句全是 0，F 為假；其他 6 種都為真。",
+     "k": 9,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 958.8
+     }
+    },
+    {
+     "say": "3 個變數試 8 種，n 個變數就要試 2ⁿ 種，SAT 這樣做也是指數時間。",
+     "read": "3 個變數試 8 種，n 個變數就要試 2的n次方 種，SAT 這樣做也是指數時間。",
+     "k": 10,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 978.03
+     }
+    },
+    {
+     "say": "這些組合可以畫成 state space tree：每一層決定一個變數。",
+     "k": 11,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1004.59
+     }
+    },
+    {
+     "say": "root 走到 leaf 的一條路就是一組值，像 1、0、1 就是 101。8 個 leaf 就是 8 種組合。",
+     "k": 12,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1029.25
+     }
+    },
+    {
+     "say": "接下來要說明：這些問題跟 SAT 很像，SAT 能 poly time 解，它們也都能。",
+     "k": 13,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1070.39
+     }
+    }
+   ]
+  },
+  {
+   "title": "0/1 knapsack 用的是同一棵樹",
+   "scene": "np1-b-knap-tree",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "看 0/1 knapsack：3 個物品，各有 profit 和 weight，背包容量 8。",
+     "read": "看 零一 knapsack：3 個物品，各有 profit 和 weight，背包容量 8。",
+     "k": 1,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1104.51
+     }
+    },
+    {
+     "say": "profit 越大越好，但總重不能超過容量。",
+     "k": 2,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1117.59
+     }
+    },
+    {
+     "say": "解寫成 (x1, x2, x3)：1 是放，0 是不放。",
+     "k": 3,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1122.49
+     }
+    },
+    {
+     "say": "放或不放，一樣 2³ = 8 種，畫出來是同一棵 state space tree。",
+     "read": "放或不放，一樣 2的三次方 等於 8 種，畫出來是同一棵 state space tree。",
+     "k": 4,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1143.45
+     }
+    },
+    {
+     "say": "解法也一樣，逐一試每個 leaf：SAT 看公式真不真，knapsack 看 profit 大不大、有沒有超重。",
+     "k": 5,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1152.53
+     }
+    },
+    {
+     "say": "Bari 問：把兩個題目拿掉，只剩這棵樹，它是 SAT 的，還是 knapsack 的？",
+     "k": 6,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1180.51
+     }
+    },
+    {
+     "say": "兩個都是！它們的解長得一模一樣。這是直覺；正式的關聯方法是 reduction。",
+     "k": 7,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1191.29
+     }
+    },
+    {
+     "say": "所以只要能 poly time 解這棵樹，兩個問題就都能 poly time 解。",
+     "k": 8,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1205.95
+     }
+    }
+   ]
+  },
+  {
+   "title": "SAT ∝ L：被 SAT 歸約到的都是 NP-hard",
+   "scene": "np1-b-reduce",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "把 SAT 也加進指數時間問題的清單。",
+     "k": 1,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1228.02
+     }
+    },
+    {
+     "say": "先給這些問題一個名字：hard problems。",
+     "k": 2,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1232.62
+     }
+    },
+    {
+     "say": "SAT 是 base problem，Bari 叫它 NP-hard，其他先叫 hard problems。",
+     "k": 3,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1248.1
+     }
+    },
+    {
+     "say": "怎麼證明其他問題跟 SAT 有關係？用 reduction。",
+     "k": 4,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1271.2
+     }
+    },
+    {
+     "say": "Bari 寫成 SAT ∝ 0/1 knapsack，讀作 satisfiability reduces to 0/1 knapsack。",
+     "read": "Bari 寫成 SAT reduce 到 零一 knapsack，讀作 satisfiability reduces to 零一 knapsack。",
+     "k": 5,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1288.08
+     }
+    },
+    {
+     "say": "做法：拿 SAT 的一個公式，轉成 0/1 knapsack 的一個 instance。",
+     "read": "做法：拿 SAT 的一個公式，轉成 零一 knapsack 的一個 instance。",
+     "k": 6,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1298.9
+     }
+    },
+    {
+     "say": "意思是：有人能 poly time 解 knapsack，先轉換再解，就也能 poly time 解 SAT。",
+     "k": 7,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1320.39
+     }
+    },
+    {
+     "say": "誰先被解出來不重要，重點是它們連在一起，一個解出來另一個自動解出來。",
+     "k": 8,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1343.62
+     }
+    },
+    {
+     "say": "轉換本身只能花 polynomial time，要花 exponential time 就沒用了。",
+     "k": 9,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1360.42
+     }
+    },
+    {
+     "say": "SAT 是 NP-hard，SAT ∝ knapsack，所以 knapsack 也是 NP-hard。",
+     "read": "SAT 是 NP-hard，SAT reduce 到 knapsack，所以 knapsack 也是 NP-hard。",
+     "k": 10,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1380.2
+     }
+    },
+    {
+     "say": "Reduction 有遞移性：SAT ∝ L1，L1 ∝ L2，那 L2 也是 NP-hard。",
+     "read": "Reduction 有遞移性：SAT reduce 到 L1，L1 reduce 到 L2，那 L2 也是 NP-hard。",
+     "k": 11,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1425.65
+     }
+    },
+    {
+     "say": "例如 knapsack 到 graph coloring，再到 sum of subsets、Hamiltonian cycle，不用每個都從 SAT 轉。",
+     "k": 12,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1442.7
+     }
+    },
+    {
+     "say": "結論：SAT 直接或間接 reduce 得到的問題，就是 NP-hard。",
+     "k": 13,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1470.16
+     }
+    }
+   ]
+  },
+  {
+   "title": "NP-hard ∩ NP = NP-complete",
+   "scene": "np1-b-npc-venn",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "那這些 NP-hard 問題裡，有沒有誰已經有 non-deterministic polynomial 演算法？",
+     "k": 1,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1488.18
+     }
+    },
+    {
+     "say": "有：SAT。",
+     "k": 2,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1498.98
+     }
+    },
+    {
+     "say": "SAT 既是 NP-hard，又在 NP，所以它是 NP-complete，落在兩個圈的交集。",
+     "k": 3,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1511.32
+     }
+    },
+    {
+     "say": "換成你的問題：先證 SAT 直接或間接 reduce 到它，它就進了 NP-hard。",
+     "k": 4,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1533.24
+     }
+    },
+    {
+     "say": "再證它在 NP，它就走進交集，成為 NP-complete。",
+     "k": 5,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1544.93
+     }
+    },
+    {
+     "say": "所以研究新問題要做兩件事：被 SAT 歸約、證明在 NP。能直接解出來當然最好。",
+     "k": 6,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1560.57
+     }
+    },
+    {
+     "say": "再看這張圖：紅色是 NP-hard 的集合，有 SAT、0/1 knapsack、graph coloring……",
+     "read": "再看這張圖：紅色是 NP-hard 的集合，有 SAT、零一 knapsack、graph coloring……",
+     "k": 7,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1610.17
+     }
+    },
+    {
+     "say": "藍色是 NP。Bari 說「有 non-deterministic poly 演算法」，正式說法是有 poly time verifier。",
+     "k": 8,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1650.76
+     }
+    },
+    {
+     "say": "SAT 兩個條件都符合，落在交集。",
+     "k": 9,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1660.96
+     }
+    },
+    {
+     "say": "NP-hard 和 NP 的交集，就叫 NP-complete。",
+     "k": 10,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1677.67
+     }
+    }
+   ]
+  },
+  {
+   "title": "NP-complete 的定義與 ≤p 符號",
+   "scene": "np1-j-npc-def",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "江老師給的定義更正式。先說什麼叫「難」：這章要探討 NP-complete 這個 class。",
+     "k": 1,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1763.98
+     }
+    },
+    {
+     "say": "白話說，NP-complete 就是 NP 裡最難的一小撮問題。",
+     "k": 2,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1776.86
+     }
+    },
+    {
+     "say": "假設 problem Y 屬於 NP，而且是 NP-complete。",
+     "k": 3,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1812.52
+     }
+    },
+    {
+     "say": "那 NP 裡任何一個問題 X……",
+     "k": 4,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1818.72
+     }
+    },
+    {
+     "say": "……都可以 reduce 到 Y，用 Y 的演算法去解。",
+     "k": 5,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1826.12
+     }
+    },
+    {
+     "say": "所有 NP 問題都能靠 Y 解，所以 Y 是 NP 裡最難的。",
+     "k": 6,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1844.2
+     }
+    },
+    {
+     "say": "這種轉換寫成 X ≤p Y。",
+     "read": "這種轉換寫成 X 小於等於p Y。",
+     "k": 7,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1862.98
+     }
+    },
+    {
+     "say": "「≤」暗示右邊的 Y 比較難，左邊比較簡單，或一樣難。",
+     "read": "「 小於等於 」暗示右邊的 Y 比較難，左邊比較簡單，或一樣難。",
+     "k": 8,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1866.25
+     }
+    },
+    {
+     "say": "下標 p：額外做的轉換只需要 polynomial time。",
+     "k": 9,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1885.42
+     }
+    },
+    {
+     "say": "為什麼要轉？因為 X 的 input 長得跟 Y 不一樣，要先轉成 Y 的 input。",
+     "k": 10,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1902.72
+     }
+    },
+    {
+     "say": "而且要證明這個轉換 poly time 就做得完。",
+     "k": 11,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1933.98
+     }
+    },
+    {
+     "say": "所以照定義，NP 裡其他所有問題都能花 poly time 轉成這個 NPC 問題，它就是最難的。",
+     "k": 12,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1953.82
+     }
+    }
+   ]
+  },
+  {
+   "title": "NPC 的兩個要件；只滿足第二個叫 NP-hard",
+   "scene": "np1-j-npc-def2",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "江老師在 HC 證完 TSP 之後，把定義收成兩個要件。",
+     "k": 1,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2419.66
+     }
+    },
+    {
+     "say": "NP-complete：NP 這個 class 裡最難的問題。",
+     "k": 2,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2444.5
+     }
+    },
+    {
+     "say": "一個 decision problem L 是 NP-complete，代表兩件事。",
+     "k": 3,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2463.22
+     }
+    },
+    {
+     "say": "第一：L 屬於 NP。說的是 NP 裡最難的，當然要在 NP 裡，缺一不可。",
+     "k": 4,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2470.92
+     }
+    },
+    {
+     "say": "第二：NP 裡任何一個 L′ 都能 polynomial reduce 到 L。",
+     "k": 5,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2490.52
+     }
+    },
+    {
+     "say": "大家都能 reduce 到 L、用 L 的方法解，所以 L 最難。",
+     "k": 6,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2515.54
+     }
+    },
+    {
+     "say": "第二個性質另外有名字：NP-hard。只滿足第二個叫 NP-hard；兩個都滿足才是 NP-complete。",
+     "k": 7,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2531.14
+     }
+    },
+    {
+     "say": "史上第一個 NPC 就是照這個定義證的，很難證。",
+     "k": 8,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2558.08
+     }
+    },
+    {
+     "say": "因為要證「每一個」NP 問題都能 poly reduce 過來。",
+     "k": 9,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2569
+     }
+    },
+    {
+     "say": "Cook 的方法很 tricky：用一個通用的表示法把所有問題表示出來，證明那個表示能轉過來，一次搞定。",
+     "k": 10,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2589.66
+     }
+    }
+   ]
+  },
+  {
+   "title": "NP-hard 與 NP-complete 在難度軸上",
+   "scene": "np2-hard-complete",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "回到 Demaine 的難度軸。他很相信 Tetris 在 NP 但不在 P，也就是 NP − P 這一塊。",
+     "read": "回到 Demaine 的難度軸。他很相信 Tetris 在 NP 但不在 P，也就是 NP 減 P 這一塊。",
+     "k": 1,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2097.87
+     }
+    },
+    {
+     "say": "但這沒被證明：要是 P = NP，NP − P 就是空的。",
+     "read": "但這沒被證明：要是 P 等於 NP，NP 減 P 就是空的。",
+     "k": 2,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2111.15
+     }
+    },
+    {
+     "say": "確定知道的是：只要 NP − P 有任何問題，Tetris 一定也在裡面。",
+     "read": "確定知道的是：只要 NP 減 P 有任何問題，Tetris 一定也在裡面。",
+     "k": 3,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2119.64
+     }
+    },
+    {
+     "say": "某種意義上，Tetris 是 NP 裡最難的之一，這個刻度上還擠著很多問題。",
+     "k": 4,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2140.43
+     }
+    },
+    {
+     "say": "所以只要你相信 P ≠ NP，就能推出 Tetris 不在 P。",
+     "read": "所以只要你相信 P 不等於 NP，就能推出 Tetris 不在 P。",
+     "k": 5,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2159.77
+     }
+    },
+    {
+     "say": "為什麼？因為 Tetris 是 NP-hard。",
+     "k": 6,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2195.42
+     }
+    },
+    {
+     "say": "NP-hard：至少跟 NP 裡每個問題一樣難。是大於等於，不是嚴格大於。",
+     "k": 7,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2207.9
+     }
+    },
+    {
+     "say": "情況一：P = NP，P 的刻度移到 NP 的位置，Tetris 還在最右端，但也在 P 裡。",
+     "read": "情況一：P 等於 NP，P 的刻度移到 NP 的位置，Tetris 還在最右端，但也在 P 裡。",
+     "k": 8,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2243.68
+     }
+    },
+    {
+     "say": "情況二：NP 比 P 大，NP 的最右端在 P 外面，所以 Tetris 不在 P。",
+     "k": 9,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2255.24
+     }
+    },
+    {
+     "say": "Tetris 是 NP-complete，意思是：它是 NP-hard，而且在 NP 裡。NP ∩ NP-hard。",
+     "read": "Tetris 是 NP-complete，意思是：它是 NP-hard，而且在 NP 裡。NP 交集 NP-hard。",
+     "k": 10,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2278.98
+     }
+    },
+    {
+     "say": "NP-hard 是從這個刻度往右的全部：可能剛好在刻度上，也可能更右邊、更難。",
+     "k": 11,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2318.64
+     }
+    },
+    {
+     "say": "Tetris 既在刻度左邊的 NP，又在刻度右邊的 NP-hard，交集剛好落在刻度上。",
+     "k": 12,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2332.06
+     }
+    },
+    {
+     "say": "證出「某某-complete」的好處，就是知道它在難度軸上的確切位置。",
+     "k": 13,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2343.68
+     }
+    }
+   ]
+  },
+  {
+   "title": "EXP-complete：chess 為什麼不在 P",
+   "scene": "np2-exp-chess",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "同一套想法：NP-complete 在 NP 的刻度上，EXP-complete 就在 EXP 的刻度上。",
+     "k": 1,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2352
+     }
+    },
+    {
+     "say": "chess 是 EXP-complete。",
+     "k": 2,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2358.22
+     }
+    },
+    {
+     "say": "EXP-hard：從 EXP 刻度往右的全部。",
+     "k": 3,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2361.44
+     }
+    },
+    {
+     "say": "chess 剛好在交界：它是 EXP 裡最難的問題。",
+     "k": 4,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2367.56
+     }
+    },
+    {
+     "say": "這也是目前唯一知道的、證明 chess 不在 P 的方法。",
+     "k": 5,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2373.87
+     }
+    },
+    {
+     "say": "因為 P ≠ EXP 很好證，早就證出來了。",
+     "read": "因為 P 不等於 EXP 很好證，早就證出來了。",
+     "k": 6,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2377.97
+     }
+    },
+    {
+     "say": "chess 在 EXP 的最右端，最右端一定在 P 外面，所以 chess 不在 P。",
+     "k": 7,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2381.3
+     }
+    },
+    {
+     "say": "那 NP 等不等於 EXP？也不知道。沒有一百萬，但一樣是大問題。",
+     "k": 8,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2398.66
+     }
+    }
+   ]
+  },
+  {
+   "title": "NP-hard 是一大片：連不可判定的都算",
+   "scene": "np1-toc-map",
+   "params": {
+    "stage": "nph"
+   },
+   "steps": 6,
+   "lines": [
+    {
+     "say": "用 Dasari 的地圖再看一次：紅色一大區是 NP-hard，至少跟 NP 裡最難的一樣難。",
+     "k": 1,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 108.71
+     }
+    },
+    {
+     "say": "影片說 NP-hard「永遠不可能在 P」，這要小心：只有在假設 P ≠ NP 時才成立。",
+     "read": "影片說 NP-hard「永遠不可能在 P」，這要小心：只有在假設 P 不等於 NP 時才成立。",
+     "k": 2,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 122.43
+     }
+    },
+    {
+     "say": "NP-hard 範圍很廣，有些連 polynomial time verifier 都沒有，落在 NP 外面。",
+     "k": 3,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 129.91
+     }
+    },
+    {
+     "say": "甚至不可判定的停機問題，也是 NP-hard。",
+     "k": 4,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 135.93
+     }
+    },
+    {
+     "say": "所以說一個問題 NP-hard，只說它至少跟 NP 一樣難，到底多難說得很少。",
+     "k": 5,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 144.5
+     }
+    },
+    {
+     "say": "很多重要的問題其實在 NP 裡，像 TSP 判定版、SAT，所以更值得問的是 NP 裡面的事。",
+     "k": 6,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 147.43
+     }
+    }
+   ]
+  },
+  {
+   "title": "NP-complete：一題有解，全部有解",
+   "scene": "np1-toc-map",
+   "params": {
+    "stage": "npc"
+   },
+   "steps": 9,
+   "lines": [
+    {
+     "say": "更好的問題是：NP 裡，有沒有還不知道能不能 poly time 解的問題？",
+     "k": 1,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 152.32
+     }
+    },
+    {
+     "say": "有，例如 SAT，它在 NP 和 NP-hard 交疊的地方。",
+     "k": 2,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 164.68
+     }
+    },
+    {
+     "say": "1970 年代初，Stephen Cook 和 Leonid Levin 各自發現了一件事。",
+     "k": 3,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 166.52
+     }
+    },
+    {
+     "say": "某些 NP 問題的難度，跟整個 NP 綁在一起。",
+     "k": 4,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 172.18
+     }
+    },
+    {
+     "say": "只要其中任何一個有 polynomial 演算法，所有 NP 問題都能 poly time 解。",
+     "k": 5,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 177.3
+     }
+    },
+    {
+     "say": "因為每個 NP 問題都能 reduce 到這一類，它叫 NP-complete，正好是 NP 和 NP-hard 的交集。",
+     "k": 6,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 189.31
+     }
+    },
+    {
+     "say": "從 NPC 挑一題給出 polynomial 演算法，就能拿千禧年大獎的一百萬美元。",
+     "k": 7,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 201.66
+     }
+    },
+    {
+     "say": "實際上也有用：假設主管要你做一個「即時」解某問題的 app，結果它是 NPC……",
+     "k": 8,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 216.06
+     }
+    },
+    {
+     "say": "你就能有根據地說明：目前最好的 deterministic 方法都要 exponential time，即時求最佳解不實際。",
+     "k": 9,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 234.76
+     }
+    }
+   ]
+  },
+  {
+   "title": "Theorem：NPC 有 poly 解 → P = NP",
+   "scene": "np1-j-pnp-theorem",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "由定義得到一個很重要的定理：Y 是 NP-complete，有一天有人能 poly time 解 Y……",
+     "k": 1,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2001
+     }
+    },
+    {
+     "say": "……那 Y 就屬於 P。",
+     "k": 2,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2020.24
+     }
+    },
+    {
+     "say": "剩下的 NP 問題都能轉成 Y 的 input 去解，所以全部屬於 P。",
+     "k": 3,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2029.42
+     }
+    },
+    {
+     "say": "那 P 到底等不等於 NP？目前不知道，打一個問號。",
+     "k": 4,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2064.82
+     }
+    },
+    {
+     "say": "從 1970 年代到現在，還沒人能 poly time 解任何一個 NPC 問題。",
+     "k": 5,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2077.54
+     }
+    },
+    {
+     "say": "所以大部分人傾向相信 P ≠ NP，但也沒人證得出來。",
+     "read": "所以大部分人傾向相信 P 不等於 NP，但也沒人證得出來。",
+     "k": 6,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2097.32
+     }
+    },
+    {
+     "say": "江老師講了一段故事：2010 年，HP 的 Vinay Deolalikar 想證明 P ≠ NP。",
+     "read": "江老師講了一段故事：2010 年，HP 的 Vinay Deolalikar 想證明 P 不等於 NP。",
+     "k": 7,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2115.91
+     }
+    },
+    {
+     "say": "他寫了一份 81 頁的證明。",
+     "k": 8,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2130.54
+     }
+    },
+    {
+     "say": "放上網讓大家幫忙 debug，引起很大的討論。",
+     "k": 9,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2143.9
+     }
+    },
+    {
+     "say": "後來大家發現證明有瑕疵。",
+     "k": 10,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2157.98
+     }
+    },
+    {
+     "say": "幾個月後就撤下來了，所以到現在還是沒人解決。",
+     "k": 11,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2173.76
+     }
+    },
+    {
+     "say": "整理一下。P：能用 polynomial time solve 的問題。",
+     "k": 12,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2236.48
+     }
+    },
+    {
+     "say": "NP：non-deterministic polynomial，不是 non-polynomial，能 polynomial time verify。",
+     "k": 13,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2247.27
+     }
+    },
+    {
+     "say": "NP-complete：NP 裡最難的一小群，所有 NP 問題都能 poly time reduce 到它。",
+     "k": 14,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2274.93
+     }
+    },
+    {
+     "say": "哪天有人 poly time 解掉一個 NPC，P 和 NP 就合而為一，老師說，世界大同。",
+     "k": 15,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2328.33
+     }
+    }
+   ]
+  },
+  {
+   "title": "P = NP？只有兩種情況",
+   "scene": "np1-j-pnp-cases",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "有了 NPC 問題，最有名的問題就是：P 是否等於 NP？目前沒人能答。",
+     "k": 1,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2619.81
+     }
+    },
+    {
+     "say": "但只有兩種情況：等於，或不等於。",
+     "k": 2,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2628.26
+     }
+    },
+    {
+     "say": "情況一：有人對一個 NPC 問題找到 poly 演算法，它就屬於 P。",
+     "k": 3,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2641.1
+     }
+    },
+    {
+     "say": "所有 NP 問題都能 reduce 到它，它又能 poly time 解，所以 P = NP。",
+     "read": "所有 NP 問題都能 reduce 到它，它又能 poly time 解，所以 P 等於 NP。",
+     "k": 4,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2659.5
+     }
+    },
+    {
+     "say": "情況二：有人證明 NPC 問題不可能有 poly 演算法，那就是 P ≠ NP。",
+     "read": "情況二：有人證明 NPC 問題不可能有 poly 演算法，那就是 P 不等於 NP。",
+     "k": 5,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2675.92
+     }
+    },
+    {
+     "say": "Tractable 就是 polynomial time solvable；intractable 是相反。",
+     "k": 6,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2708.61
+     }
+    },
+    {
+     "say": "NP-complete 到底靠 tractable 還是 intractable 那邊？確實沒人知道。",
+     "k": 7,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2717.76
+     }
+    }
+   ]
+  },
+  {
+   "title": "Cook's theorem 與 P 會不會長大",
+   "scene": "np1-b-cook",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "Bari 的圖上還有 P：今天已經會的 deterministic polynomial 演算法。",
+     "k": 1,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1695.75
+     }
+    },
+    {
+     "say": "今天 non-deterministic 的，明天可能變 deterministic，所以他相信 P 會越長越大。",
+     "k": 2,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1707.38
+     }
+    },
+    {
+     "say": "甚至相信總有一天 P 會跟 NP 一樣大。注意，這是 Bari 的說法；多數學者其實相信 P ≠ NP。",
+     "read": "甚至相信總有一天 P 會跟 NP 一樣大。注意，這是 Bari 的說法；多數學者其實相信 P 不等於 NP。",
+     "k": 3,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1736.61
+     }
+    },
+    {
+     "say": "但大問題來了：這條路真的行得通嗎？",
+     "k": 4,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1747.61
+     }
+    },
+    {
+     "say": "要是 non-deterministic 永遠變不成 deterministic，這些研究就白做了。",
+     "k": 5,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1763.41
+     }
+    },
+    {
+     "say": "所以至少要證明這條路是對的：證明 P = NP。",
+     "read": "所以至少要證明這條路是對的：證明 P 等於 NP。",
+     "k": 6,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1782.67
+     }
+    },
+    {
+     "say": "證出 P = NP，意思是解法其實已經存在，只是還沒被發現。",
+     "read": "證出 P 等於 NP，意思是解法其實已經存在，只是還沒被發現。",
+     "k": 7,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1817.59
+     }
+    },
+    {
+     "say": "Cook 處理這件事，留下著名的 Cook's theorem。",
+     "k": 8,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1845.67
+     }
+    },
+    {
+     "say": "Bari 的版本是：SAT ∈ P 若且唯若 P = NP。SAT 一有 poly 解，P 就撐滿 NP。",
+     "read": "Bari 的版本是：SAT 屬於 P 若且唯若 P 等於 NP。SAT 一有 poly 解，P 就撐滿 NP。",
+     "k": 9,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1864.67
+     }
+    },
+    {
+     "say": "正式的 Cook–Levin 定理說的是「SAT 是 NP-complete」，這句是它的推論。Cook 並沒有證出 SAT ∈ P。",
+     "read": "正式的 Cook Levin 定理說的是「SAT 是 NP-complete」，這句是它的推論。Cook 並沒有證出 SAT 屬於 P。",
+     "k": 10,
+     "src": {
+      "v": "e2cF8a5aAhE",
+      "t": 1879.69
+     }
+    }
+   ]
+  },
+  {
+   "title": "Cook 與 Karp：NPC 的起源",
+   "scene": "np1-j-history",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "問題的難度怎麼分級？故事要追溯到 1970 年代初期。",
+     "k": 1,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1299.14
+     }
+    },
+    {
+     "say": "第一位是 Stephen Cook。",
+     "k": 2,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1307.26
+     }
+    },
+    {
+     "say": "第二位是 Richard Karp。兩位打下 foundation，後人站在巨人的肩膀上。",
+     "k": 3,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1311.36
+     }
+    },
+    {
+     "say": "Cook 在 1971 年證出史上第一個 NP-complete 問題：SAT。",
+     "k": 4,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1338.82
+     }
+    },
+    {
+     "say": "接著 1972 年，Karp 一口氣發表 21 個 NP-complete 問題，不是一個，是 21 個！",
+     "k": 5,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1356.08
+     }
+    },
+    {
+     "say": "所以一開始就有 22 個 NPC 問題。",
+     "k": 6,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1371.04
+     }
+    },
+    {
+     "say": "那個年代，找到新問題並證明它是 NPC，就能寫一篇論文。",
+     "k": 7,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1379.16
+     }
+    },
+    {
+     "say": "還有一本很有名的書，Garey 和 Johnson 的《Computers and Intractability》，等於是 NPC 字典。",
+     "k": 8,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1393.5
+     }
+    },
+    {
+     "say": "遇到新問題，就翻字典，看它是不是 NP-complete。",
+     "k": 9,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1414.3
+     }
+    },
+    {
+     "say": "是的話，就別追 efficient 的最佳解了，改找 heuristic 或 approximation algorithm。",
+     "k": 10,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1427.38
+     }
+    },
+    {
+     "say": "當時各地的人各做各的、各自取名，所以書上常看到意思差不多、名字不同的詞。",
+     "k": 11,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 1493
+     }
+    }
+   ]
+  },
+  {
+   "title": "第一個 NPC 從哪來：Cook–Levin",
+   "scene": "np1-h-bucket",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "Seetharam 點出一個關鍵：reduction 需要一個已知很難的 A，那第一個 A 從哪來？",
+     "k": 1,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 759.22
+     }
+    },
+    {
+     "say": "所以一定要有「第一個」NP-complete 問題。",
+     "k": 2,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 783.08
+     }
+    },
+    {
+     "say": "幸好有 Cook's theorem，也叫 Cook–Levin 定理。",
+     "read": "幸好有 Cook's theorem，也叫 Cook Levin 定理。",
+     "k": 3,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 797.45
+     }
+    },
+    {
+     "say": "他們不靠 reduction，而是從 first principles，直接證明 Boolean satisfiability 是 NP-complete。",
+     "k": 4,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 803.3
+     }
+    },
+    {
+     "say": "於是 SAT 成為第一個放進 NP-complete 籃子的問題。",
+     "k": 5,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 822.68
+     }
+    },
+    {
+     "say": "之後大家用 reduction，從 SAT reduce 到新問題，把它加進籃子。",
+     "k": 6,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 827.06
+     }
+    },
+    {
+     "say": "籃子裡有兩個以後，第三個可以從籃子裡任何一個 reduce 過來。",
+     "k": 7,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 838.06
+     }
+    },
+    {
+     "say": "這也代表：籃子裡任何一個找到 poly 解，透過這些 reduction，全部都被解掉。",
+     "k": 8,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 849.14
+     }
+    },
+    {
+     "say": "它們全部綁在一起：解一個，等於解全部。",
+     "k": 9,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 878.46
+     }
+    }
+   ]
+  },
+  {
+   "title": "CIRCUIT-SAT：電路能不能輸出 1",
+   "scene": "np1-j-circuit-sat",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "江老師說，第一個被證明 NPC 的問題，證明不講，但題目一定要記。",
+     "k": 1,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2760.66
+     }
+    },
+    {
+     "say": "它是 circuit satisfiability，CIRCUIT-SAT，大一邏輯設計就做過很多遍了。",
+     "k": 2,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2776.1
+     }
+    },
+    {
+     "say": "給一個 combinational circuit：左邊是 input x1、x2、x3，右邊是 output。",
+     "k": 3,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2792.5
+     }
+    },
+    {
+     "say": "電路只由 AND、OR、NOT 三種 gate 組成。",
+     "k": 4,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2799.26
+     }
+    },
+    {
+     "say": "倒 V 是 AND：輸入全是 1，輸出才是 1。",
+     "k": 5,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2822.44
+     }
+    },
+    {
+     "say": "正 V 是 OR：有一個輸入是 1，輸出就是 1。",
+     "k": 6,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2826.86
+     }
+    },
+    {
+     "say": "勾勾是 NOT，0 變 1、1 變 0。",
+     "k": 7,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2834.12
+     }
+    },
+    {
+     "say": "問：能不能把 input 設成適當的 0 或 1，讓 output 是 1？",
+     "k": 8,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2865.38
+     }
+    },
+    {
+     "say": "試 000：一路算過去，output 是 0。",
+     "k": 9,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2894
+     }
+    },
+    {
+     "say": "調一下，試 010：output 變 1，這個電路可滿足。",
+     "k": 10,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2908.61
+     }
+    },
+    {
+     "say": "小電路推一推就有，但 n 個 input 有 2ⁿ 種組合。嚴格說 Cook 原本證的是 SAT，CLRS 先證 CIRCUIT-SAT。",
+     "read": "小電路推一推就有，但 n 個 input 有 2的n次方 種組合。嚴格說 Cook 原本證的是 SAT，CLRS 先證 CIRCUIT-SAT。",
+     "k": 11,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2912.73
+     }
+    }
+   ]
+  },
+  {
+   "title": "為什麼每個 NP 問題都能轉成 3SAT",
+   "scene": "np2-verifier-circuit",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "那 Cook 的 tricky 方法長什麼樣？MIT 助教用三分鐘講概念。",
+     "k": 1,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2186.88
+     }
+    },
+    {
+     "say": "拿任何一個 NP 問題的 verifier，它要兩樣東西：題目的輸入，和 proof。",
+     "k": 2,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2198.44
+     }
+    },
+    {
+     "say": "把 verifier 寫成一個電路，由 AND、OR、NOT 組成，輸入和 proof 都變成 bits 送進去。",
+     "k": 3,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2205.64
+     }
+    },
+    {
+     "say": "電路最後算出 true，接受，或 false，不接受。",
+     "k": 4,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2214.82
+     }
+    },
+    {
+     "say": "有了電路，就很好寫成邏輯式：AND 閘變 AND，OR 閘變 OR。",
+     "k": 5,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2222.4
+     }
+    },
+    {
+     "say": "再把邏輯式轉成 3SAT 的格式。會解 3SAT，就能算出 proof 的每個 bit。",
+     "k": 6,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2234.92
+     }
+    },
+    {
+     "say": "verifier 是多項式時間，所以電路大小也是多項式；proof 也是多項式大小，全在多項式的世界裡。",
+     "k": 7,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2280
+     }
+    },
+    {
+     "say": "輸入的 bits 變成布林變數，每個閘變成 AND、OR、NOT 這些布林函數。",
+     "k": 8,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2310.66
+     }
+    },
+    {
+     "say": "布林式轉成 3CNF，每個子句 3 個文字，丟給 3SAT。",
+     "k": 9,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2329.71
+     }
+    },
+    {
+     "say": "助教中途更正：題目的輸入要寫死在電路裡，只有 proof 的 bits 是變數。",
+     "k": 10,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2365.26
+     }
+    },
+    {
+     "say": "3SAT 說可以滿足，它給的變數賦值，就是 proof 的每一個 bit。",
+     "k": 11,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2396.3
+     }
+    },
+    {
+     "say": "把 proof 餵回 verifier，它會接受，原問題就解了。",
+     "k": 12,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2408.67
+     }
+    },
+    {
+     "say": "這對任何 NP 問題都成立，因為每個 NP 問題都有 poly time verifier。",
+     "k": 13,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2415.33
+     }
+    },
+    {
+     "say": "例如 factoring：把「N mod p」寫成電路，p 的 bits 是輸入。",
+     "k": 14,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2424.65
+     }
+    },
+    {
+     "say": "轉成 3CNF 丟給 3SAT，解出來就是 p 的 bits，N 就分解了，你就變富翁。",
+     "k": 15,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2440.55
+     }
+    }
+   ]
+  },
+  {
+   "title": "SAT、CNF 與 k-SAT",
+   "scene": "np2-cnf",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "來細看 SAT，satisfiability，可滿足性。",
+     "k": 1,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1941.07
+     }
+    },
+    {
+     "say": "給一個邏輯式，找出變數的 true、false，讓整個式子為 true。",
+     "k": 2,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1956.08
+     }
+    },
+    {
+     "say": "式子由很多子句組成，子句之間用 AND 連起來。",
+     "k": 3,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1970.54
+     }
+    },
+    {
+     "say": "子句裡面只有變數或加了 NOT 的變數，用 OR 連。",
+     "k": 4,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2001.47
+     }
+    },
+    {
+     "say": "助教板書寫了五個子句，他口頭說四個，其實是五個。",
+     "k": 5,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2008.91
+     }
+    },
+    {
+     "say": "這種「AND 連起一堆 OR 子句」的形式，叫 CNF，conjunctive normal form。",
+     "k": 6,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2029.58
+     }
+    },
+    {
+     "say": "子句之間是 AND，所以每個子句都必須為 true。",
+     "k": 7,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2048.12
+     }
+    },
+    {
+     "say": "子句裡是 OR，所以每個子句至少有一個文字為 true。",
+     "k": 8,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2057.79
+     }
+    },
+    {
+     "say": "有 n 個子句，每個子句最多 k 個變數。",
+     "k": 9,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2066.51
+     }
+    },
+    {
+     "say": "k 看起來只是常數，但重要到放進名字：k-SAT。",
+     "k": 10,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2091.61
+     }
+    },
+    {
+     "say": "最重要的兩個：2SAT 和 3SAT。",
+     "k": 11,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2098.74
+     }
+    },
+    {
+     "say": "2SAT 有多項式解，而且只要線性時間。這個例子每個子句 2 個變數，就是 2SAT。",
+     "k": 12,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2102.38
+     }
+    },
+    {
+     "say": "要「想出」值：令 x4 = T，四個含 x4 的子句都滿足；再令 x1 = T，第一個也滿足。",
+     "read": "要「想出」值：令 x4 等於 T，四個含 x4 的子句都滿足；再令 x1 等於 T，第一個也滿足。",
+     "k": 13,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2123.71
+     }
+    },
+    {
+     "say": "可是 3SAT 是 NP-complete！誰能快速解它，可以拿圖靈獎，或變超有錢。",
+     "k": 14,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2149.12
+     }
+    },
+    {
+     "say": "子句更長的 SAT 都能用合理的 reduction 轉成 3SAT，大小不爆炸，所以 3SAT 就夠代表全部。",
+     "k": 15,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2165.42
+     }
+    }
+   ]
+  },
+  {
+   "title": "2SAT 在 P、3SAT 是 NPC",
+   "scene": "np2-2sat-3sat",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "有同學問：把每個變數都試 true 和 false 呢？",
+     "k": 1,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2467.64
+     }
+    },
+    {
+     "say": "那是 2ⁿ 種組合，n 是變數個數，指數時間。",
+     "read": "那是 2的n次方 種組合，n 是變數個數，指數時間。",
+     "k": 2,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2480
+     }
+    },
+    {
+     "say": "不是多項式，反而讓人放心：不然全世界這麼多年都白忙了。",
+     "k": 3,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2491.59
+     }
+    },
+    {
+     "say": "所以助教提醒：考試、面試有時間壓力，別想當場解這個問題。",
+     "k": 4,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2509.42
+     }
+    },
+    {
+     "say": "總結：解出 3SAT，就解出所有 NP-complete 問題，因為 verifier 都能轉成邏輯式。",
+     "k": 5,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2526.78
+     }
+    },
+    {
+     "say": "而 2SAT 是多項式的。",
+     "k": 6,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2540.62
+     }
+    },
+    {
+     "say": "子句允許 2 個還是 3 個變數，看起來只差一個常數……",
+     "k": 7,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2546.06
+     }
+    },
+    {
+     "say": "2SAT 是 O(n)，在 P 的很左邊。",
+     "read": "2SAT 是 大O(n)，在 P 的很左邊。",
+     "k": 8,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2562.44
+     }
+    },
+    {
+     "say": "3SAT 卻跑到 NP 的最右端，是 NP 裡最難的。",
+     "k": 9,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2567.12
+     }
+    },
+    {
+     "say": "只差一個變數，2 還是 3，天差地遠。",
+     "k": 10,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2582.23
+     }
+    },
+    {
+     "say": "有研究者想把 3SAT 做到像 2 的 0.0001n 次方，還是指數，但能解很多問題。",
+     "k": 11,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2599.78
+     }
+    },
+    {
+     "say": "用暴力法，大約 20 個變數就跑不動了。",
+     "k": 12,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2643.32
+     }
+    },
+    {
+     "say": "最先進的 SAT solver，幾個小時能處理 1000 到 10000 個變數。",
+     "k": 13,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2649.5
+     }
+    },
+    {
+     "say": "靠的是找出能化簡的地方、做推論，再聰明地搜尋。",
+     "k": 14,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2664.46
+     }
+    },
+    {
+     "say": "但還不是多項式：1000 bit 的 factoring 就沒被破解，不然大家早就發現了。",
+     "k": 15,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 2700.44
+     }
+    }
+   ]
+  },
+  {
+   "title": "Factoring 不是最難的；NPC 全部綁在一起",
+   "scene": "np2-npc-hub",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "順帶一提，剛才的 factoring 不是最難的那種 NP 問題，它在 NP 裡的這個位置。",
+     "k": 1,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1093.34
+     }
+    },
+    {
+     "say": "助教一度口誤說它不是 NP 問題，馬上更正：factoring 在 NP 裡，只是一般認為它不是最難的那一類。",
+     "k": 2,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1119.49
+     }
+    },
+    {
+     "say": "剛才的銀行論證，至少說明了沒人知道怎麼 poly time 解 NP 問題。",
+     "k": 3,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1125.7
+     }
+    },
+    {
+     "say": "只看大方向的老闆會問：解是多項式大小、verifier 也快，你們怎麼寫不出快的解題程式？",
+     "k": 4,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1140.71
+     }
+    },
+    {
+     "say": "理論學者已經想這件事 40 多年了。",
+     "k": 5,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1165.07
+     }
+    },
+    {
+     "say": "想不出演算法，就想證明不可能，也就是 P ≠ NP，這也失敗了。",
+     "read": "想不出演算法，就想證明不可能，也就是 P 不等於 NP，這也失敗了。",
+     "k": 6,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1177.2
+     }
+    },
+    {
+     "say": "停機問題不一樣，它已經證明沒人能解；P vs NP 到現在還證不出來。",
+     "k": 7,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1204.32
+     }
+    },
+    {
+     "say": "退而求其次：找出 NP 裡最難的問題來研究，它們就叫 NP-complete。",
+     "k": 8,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1219.74
+     }
+    },
+    {
+     "say": "助教說 factoring 不在這群「酷小孩」裡，雖然它能讓你發財。",
+     "k": 9,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1248.34
+     }
+    },
+    {
+     "say": "NP-complete 問題有好幾百個，很多有實際用途，解出來能幫公司省很多錢。",
+     "k": 10,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1257.18
+     }
+    },
+    {
+     "say": "而且它們全部互相關聯：透過 reduction，解出一個就解出全部。",
+     "k": 11,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1276.28
+     }
+    },
+    {
+     "say": "這麼多人想解，卻沒人解出任何一個，所以大家相信它們真的很難。",
+     "k": 12,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1310.82
+     }
+    },
+    {
+     "say": "要是有人解出一個，其他問題都能轉成它，用同一個解法解決。",
+     "k": 13,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1327.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "NPC 問題才是主流",
+   "scene": "np1-j-mainstream",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "江老師說，NP-complete 問題非常多，各個領域都有。",
+     "k": 1,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2930.8
+     }
+    },
+    {
+     "say": "像電機領域的 VLSI layout，晶片佈局。",
+     "k": 2,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2944.18
+     }
+    },
+    {
+     "say": "還有 RTL 轉成 netlist 那一塊，就有很多很困難的問題。",
+     "k": 3,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2953.38
+     }
+    },
+    {
+     "say": "還有很多驗證，verification 的問題，也都非常難。",
+     "k": 4,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2956.94
+     }
+    },
+    {
+     "say": "後來大家發現：NP-complete 問題才是主流。",
+     "k": 5,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2970.92
+     }
+    },
+    {
+     "say": "你手上的問題，大概 99.9999% 是 NPC 甚至更難，運氣很好才遇到能 poly time 最佳解的。",
+     "k": 6,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 2983.52
+     }
+    },
+    {
+     "say": "課本寫得很厚，但能 polynomial time 最佳解的問題，其實只是很小的 subset。",
+     "k": 7,
+     "src": {
+      "v": "PqN0aJeYtuA",
+      "t": 3005.04
+     }
+    }
+   ]
+  },
+  {
+   "title": "NP-complete 動物園",
+   "scene": "np2-npc-zoo",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "Demaine 列了幾個 NPC 問題。TSP：走過「所有」頂點的最短路線，不是只到一個點。",
+     "k": 1,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2955.77
+     }
+    },
+    {
+     "say": "LCS：兩個字串用 DP 就能解，但 n 個字串的最長共同子序列是 NP-complete。",
+     "k": 2,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2967.81
+     }
+    },
+    {
+     "say": "踩地雷、數獨，大部分有趣的謎題都是 NP-complete。",
+     "k": 3,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2976.98
+     }
+    },
+    {
+     "say": "SAT：給一個布林式，像 x ∨ y ∧ ¬x。",
+     "read": "SAT：給一個布林式，像 x or y and not x。",
+     "k": 4,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2982.77
+     }
+    },
+    {
+     "say": "問有沒有一組變數值，讓整個式子為 true。",
+     "k": 5,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2995.01
+     }
+    },
+    {
+     "say": "SAT 是第一個被證明 NPC 的問題。reduction 總要有起點，SAT 幾乎能直接從 NP 的定義證出來。",
+     "k": 6,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 3001.87
+     }
+    },
+    {
+     "say": "圖的 3 著色：能不能用 3 種顏色著色，讓相鄰的點顏色都不同？",
+     "k": 7,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 3022.75
+     }
+    },
+    {
+     "say": "3D 空間的最短路徑：你會飛，要飛到天花板上某一點，竟然很難。嚴格說是已證明 NP-hard。",
+     "k": 8,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 3024.55
+     }
+    },
+    {
+     "say": "而 2D 平面的最短路徑是多項式。還好我們走在地上。",
+     "k": 9,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 3041.55
+     }
+    },
+    {
+     "say": "Knapsack 也是 NPC，所以學過的 pseudo-polynomial 解法已經是極限，除非 P = NP。",
+     "read": "Knapsack 也是 NPC，所以學過的 pseudo-polynomial 解法已經是極限，除非 P 等於 NP。",
+     "k": 10,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 3053.43
+     }
+    },
+    {
+     "say": "這就是 50 分鐘的計算複雜度：P ⊆ NP ⊆ EXP ⊆ R。",
+     "read": "這就是 50 分鐘的計算複雜度：P 包含於 NP 包含於 EXP 包含於 R。",
+     "k": 11,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 3067.95
+     }
+    }
+   ]
+  },
+  {
+   "title": "Chess：改進常數也逃不掉指數",
+   "scene": "np2-rec-chess",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "MIT 助教提醒，chess 跟 NPC 不是同一類，它在 EXP。",
+     "k": 1,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1368.51
+     }
+    },
+    {
+     "say": "chess 問題：給一個盤面，我能不能贏？",
+     "k": 2,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1390
+     }
+    },
+    {
+     "say": "有這個演算法就太好了：每步只走到「能贏」的盤面，最後就會贏。",
+     "k": 3,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1400.1
+     }
+    },
+    {
+     "say": "可惜沒有，chess 到現在還沒被完整解出來。",
+     "k": 4,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1421.99
+     }
+    },
+    {
+     "say": "指數演算法是有，但要問：對什麼的指數？2ⁿ 而 n = 10，那還好。",
+     "read": "指數演算法是有，但要問：對什麼的指數？2的n次方 而 n 等於 10，那還好。",
+     "k": 5,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1433.1
+     }
+    },
+    {
+     "say": "chess 是對盤面配置的數量取指數，多到沒有電腦算得完。",
+     "k": 6,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1442.34
+     }
+    },
+    {
+     "say": "Deep Blue 大約只往下搜 15 步，能跟人比，但不保證每次都贏。",
+     "k": 7,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1451.84
+     }
+    },
+    {
+     "say": "所以只有 P 以內才算解得快。我們在乎的是 scale：輸入變大還跑不跑得動。",
+     "k": 8,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1468.1
+     }
+    },
+    {
+     "say": "指數演算法在 n = 8、10 還能跑，n 一大就撞牆。",
+     "read": "指數演算法在 n 等於 8、10 還能跑，n 一大就撞牆。",
+     "k": 9,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1481.02
+     }
+    },
+    {
+     "say": "聰明的演算法只是把 2^(cn) 的 c 變小，還是擺脫不了 2ⁿ。",
+     "read": "聰明的演算法只是把 2的cn次方 的 c 變小，還是擺脫不了 2的n次方。",
+     "k": 10,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1509.84
+     }
+    },
+    {
+     "say": "Tetris 則在 NP 那裡。",
+     "k": 11,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1554.83
+     }
+    },
+    {
+     "say": "機器學習的很多問題也在很難的區域，所以不好 scale。",
+     "k": 12,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1586.54
+     }
+    }
+   ]
+  },
+  {
+   "title": "NPC 是解題地圖上的地雷",
+   "scene": "np2-landmines",
+   "steps": 19,
+   "lines": [
+    {
+     "say": "那 NPC 對我們到底有什麼用？助教有個很實際的看法。",
+     "k": 1,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1622.82
+     }
+    },
+    {
+     "say": "想像你在考試或面試，從一個題目出發。",
+     "k": 2,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1631.56
+     }
+    },
+    {
+     "say": "把所有問題想成一張圖，你的題目是起點。",
+     "k": 3,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1633.98
+     }
+    },
+    {
+     "say": "圖上有幾個終點，是笑臉：你會解的問題，像 merge sort。能轉成它就寫答案走人。",
+     "k": 4,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1645.03
+     }
+    },
+    {
+     "say": "轉成 BFS、DFS 的 graph search，也搞定。",
+     "k": 5,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1659.89
+     }
+    },
+    {
+     "say": "轉成最短路徑，也很開心。",
+     "k": 6,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1664.41
+     }
+    },
+    {
+     "say": "轉成學過的 DP 問題，也搞定。",
+     "k": 7,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1671.33
+     }
+    },
+    {
+     "say": "hashing、divide and conquer，也是笑臉。",
+     "k": 8,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1676.29
+     }
+    },
+    {
+     "say": "你要做的，就是靠一連串 reduction，從起點走到任何一個笑臉。",
+     "k": 9,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1686.15
+     }
+    },
+    {
+     "say": "看到三種可能的轉換，沒時間全試，就挑看起來最簡單的先做。",
+     "k": 10,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1695.08
+     }
+    },
+    {
+     "say": "它又能轉成三個新問題，再挑一個有希望的。",
+     "k": 11,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1718.18
+     }
+    },
+    {
+     "say": "reduction、reduction、reduction，走到笑臉，寫下來，解完！",
+     "k": 12,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1729.42
+     }
+    },
+    {
+     "say": "但要是走上另一條路，每一步都離會解的問題越來越遠呢？",
+     "k": 13,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1744.02
+     }
+    },
+    {
+     "say": "你會一直試，直到面試官問「你有什麼問題想問我們？」，或監考說「考卷可以交了嗎？」",
+     "k": 14,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1760.92
+     }
+    },
+    {
+     "say": "現在地圖上多了 NP-complete 問題，你知道它們很難，它們就是地雷。",
+     "k": 15,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1784.98
+     }
+    },
+    {
+     "say": "例如轉到最後變成「用多項式時間解 knapsack」，全世界都解不出來，立刻回頭換方法。",
+     "k": 16,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1805.74
+     }
+    },
+    {
+     "say": "讀 CLRS 的 NP-complete 章，你會認得更多這種哭臉。",
+     "k": 17,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1838.44
+     }
+    },
+    {
+     "say": "知道哪裡不能去，搜尋範圍就小很多，更容易找到通往笑臉的路。",
+     "k": 18,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1851.2
+     }
+    },
+    {
+     "say": "建議：讀懂問題的敘述就好，證明不用管，以後面試會順很多。",
+     "k": 19,
+     "src": {
+      "v": "t5Wxk96QjUk",
+      "t": 1888.22
+     }
+    }
+   ]
+  },
+  {
+   "title": "證明 NP-complete 的兩個步驟",
+   "scene": "np1-h-steps",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "好，來整理怎麼證 NP-complete。L 是你想證明是 NPC 的問題。",
+     "k": 1,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 887.98
+     }
+    },
+    {
+     "say": "L′ 是大家已經知道的 NPC 問題，例如 SAT。",
+     "k": 2,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 903.74
+     }
+    },
+    {
+     "say": "第一步：證明 L ∈ NP，也就是 L 的解能在 polynomial time 內驗證。",
+     "read": "第一步：證明 L 屬於 NP，也就是 L 的解能在 polynomial time 內驗證。",
+     "k": 3,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 913.28
+     }
+    },
+    {
+     "say": "注意：L 和 L′ 都要是 decision 版，不是 optimization 版。",
+     "k": 4,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 923.86
+     }
+    },
+    {
+     "say": "第二步非常重要，很多學生在這裡犯錯。",
+     "k": 5,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 942.14
+     }
+    },
+    {
+     "say": "要把已知 NPC 的 L′ reduce 到 L：L′ ≤p L。",
+     "read": "要把已知 NPC 的 L′ reduce 到 L：L′ 小於等於p L。",
+     "k": 6,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 947.74
+     }
+    },
+    {
+     "say": "方向不能反過來，不是把 L reduce 到 L′。",
+     "k": 7,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 958.66
+     }
+    },
+    {
+     "say": "為什麼反過來沒意義？把自己的問題轉成難題，只代表「這條路很難」，不代表沒有別條簡單的路。",
+     "k": 8,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 971.38
+     }
+    },
+    {
+     "say": "正確方向的意義是：L 要是能快速解，大家都知道很難的 L′ 也能快速解了，這不太可能。",
+     "k": 9,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 996.28
+     }
+    },
+    {
+     "say": "兩步都完成，L 就是 NP-complete。只做第二步，就只證到 NP-hard。",
+     "k": 10,
+     "src": {
+      "v": "a_IRpiyBIm0",
+      "t": 1027.65
+     }
+    }
+   ]
+  },
+  {
+   "title": "Hamiltonian cycle：一筆畫走回起點",
+   "scene": "np1-j-hc-def",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "來看江老師的完整示範：Hamiltonian cycle ≤p TSP。",
+     "read": "來看江老師的完整示範：Hamiltonian cycle 小於等於p TSP。",
+     "k": 1,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1169.8
+     }
+    },
+    {
+     "say": "先接受 HC 是很難的問題。有人叫 Hamiltonian cycle，也有人叫 Hamiltonian circuit，都一樣。",
+     "k": 2,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1198.2
+     }
+    },
+    {
+     "say": "它的 input 是一張 undirected graph。",
+     "k": 3,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1219.66
+     }
+    },
+    {
+     "say": "問題是：能不能拿一支筆，從某一點出發，一筆畫經過所有點，最後回到起點？",
+     "k": 4,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1228.58
+     }
+    },
+    {
+     "say": "筆不離開紙，意思是只能用 input 圖上給的 edge。",
+     "k": 5,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1247.88
+     }
+    },
+    {
+     "say": "左邊這張五角形拼成的圖是特別做的例子，它有 Hamiltonian cycle。",
+     "k": 6,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1273.06
+     }
+    },
+    {
+     "say": "右邊是 bipartite graph，點分兩組，邊只連左右。",
+     "k": 7,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1289.8
+     }
+    },
+    {
+     "say": "這張畫不出來：左右必須交替走，左邊 2 個點、右邊 3 個點，一定有一個點走不到。",
+     "k": 8,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1295.46
+     }
+    },
+    {
+     "say": "Hamiltonian circuit 已經被前人證明是 NP-complete。",
+     "k": 9,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1312.02
+     }
+    }
+   ]
+  },
+  {
+   "title": "目標：HC ≤p TSP",
+   "scene": "np1-j-hc-tsp",
+   "params": {
+    "step": "goal"
+   },
+   "steps": 12,
+   "lines": [
+    {
+     "say": "現在處理 TSP。",
+     "k": 1,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1327.52
+     }
+    },
+    {
+     "say": "回顧：給 n 個 city，任兩個 city 的距離都知道。",
+     "k": 2,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1341.87
+     }
+    },
+    {
+     "say": "找一條 route：出發後經過每個 city 恰好一次，再回到出發點。",
+     "k": 3,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1359.2
+     }
+    },
+    {
+     "say": "而且總長要小於等於給定的 bound，這是 decision 版。",
+     "k": 4,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1387.44
+     }
+    },
+    {
+     "say": "我們想建構的是：TSP 也很難。",
+     "k": 5,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1398
+     }
+    },
+    {
+     "say": "方法：做 HC ≤p TSP。",
+     "read": "方法：做 HC 小於等於p TSP。",
+     "k": 6,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1408.18
+     }
+    },
+    {
+     "say": "HC 已知很難，成功 reduce 到 TSP，就代表 TSP 也很難，這就是 Case 2。",
+     "k": 7,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1429.98
+     }
+    },
+    {
+     "say": "這個 reduction 有兩塊。第一塊：建構 transformation，把 HC 的 input 轉成 TSP 的 input。",
+     "k": 8,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1459.5
+     }
+    },
+    {
+     "say": "而且要 check 這個轉換是 polynomial time。",
+     "k": 9,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1504.34
+     }
+    },
+    {
+     "say": "第二塊：if and only if，左邊 yes 右邊也 yes，右邊 yes 也能轉回左邊。",
+     "k": 10,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1513.4
+     }
+    },
+    {
+     "say": "具體說：HC 的圖找得到 cycle，轉出的 TSP 就要有一條總長 ≤ bound 的 route。",
+     "read": "具體說：HC 的圖找得到 cycle，轉出的 TSP 就要有一條總長 小於等於 bound 的 route。",
+     "k": 11,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1568.92
+     }
+    },
+    {
+     "say": "反過來，TSP 找到符合 bound 的 route，也要能轉回 HC 的 cycle。",
+     "k": 12,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1602.06
+     }
+    }
+   ]
+  },
+  {
+   "title": "轉換：有邊 cost 1、沒邊 cost 2、bound = n",
+   "scene": "np1-j-hc-tsp",
+   "params": {
+    "step": "build"
+   },
+   "steps": 13,
+   "lines": [
+    {
+     "say": "第一塊：transformation 就是一個 mapping，要建一個 function f。",
+     "k": 1,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1644.29
+     }
+    },
+    {
+     "say": "f 的輸入是 HC 的 instance：一張 undirected graph G。",
+     "k": 2,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1662.05
+     }
+    },
+    {
+     "say": "TSP 的 input 是 n 個 city：G 有幾個點，就建幾個 city。",
+     "k": 3,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1682.89
+     }
+    },
+    {
+     "say": "TSP 還要兩兩之間的距離，所以要把 G 的 edge 轉過去。",
+     "k": 4,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1690.41
+     }
+    },
+    {
+     "say": "特別注意：TSP 的圖是 complete graph，原本沒邊的地方也要建一條，給適當的 weight。",
+     "k": 5,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1705.09
+     }
+    },
+    {
+     "say": "原圖有邊的地方，cost 給 1。",
+     "k": 6,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1746.59
+     }
+    },
+    {
+     "say": "原圖沒邊的地方也建，cost 給貴一點：2。",
+     "k": 7,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1761.93
+     }
+    },
+    {
+     "say": "沒邊的地方比較貴，走 TSP 時就不想用它。",
+     "k": 8,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1782.79
+     }
+    },
+    {
+     "say": "那 bound 設多少？",
+     "k": 9,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1798.17
+     }
+    },
+    {
+     "say": "Hamiltonian circuit 要經過全部 n 個點，所以 bound 設 n。",
+     "k": 10,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1824.85
+     }
+    },
+    {
+     "say": "為什麼？只用原圖的邊走完一圈，共 n 條邊，每條 cost 1，加起來剛好 n。",
+     "k": 11,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1847.31
+     }
+    },
+    {
+     "say": "轉換花多少時間？建 n 個點是 O(n)。",
+     "read": "轉換花多少時間？建 n 個點是 大O(n)。",
+     "k": 12,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1889.45
+     }
+    },
+    {
+     "say": "任兩點都有邊，大約 n² 條，整個是 O(V²)，polynomial time。CLRS 用的是 cost 0／1、bound 0 的版本，道理一樣。",
+     "read": "任兩點都有邊，大約 n平方 條，整個是 大O V平方，polynomial time。CLRS 用的是 cost 0 和 1、bound 0 的版本，道理一樣。",
+     "k": 13,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1900.11
+     }
+    }
+   ]
+  },
+  {
+   "title": "HC yes ⇒ TSP yes",
+   "scene": "np1-j-hc-tsp",
+   "params": {
+    "step": "fwd"
+   },
+   "steps": 8,
+   "lines": [
+    {
+     "say": "第二塊：建構 solution 之間的關係。",
+     "k": 1,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1942.35
+     }
+    },
+    {
+     "say": "先證左邊 yes 推出右邊 yes。",
+     "k": 2,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1959.65
+     }
+    },
+    {
+     "say": "假設 G 找得到一個 Hamiltonian circuit。",
+     "k": 3,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 1976.55
+     }
+    },
+    {
+     "say": "它經過所有點，寫成 v1、v2、一直到 vn，再回到 v1。",
+     "k": 4,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2037.88
+     }
+    },
+    {
+     "say": "把同一圈搬到 TSP 的圖上，它也是每點恰一次、回到起點的 route。",
+     "k": 5,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2050.28
+     }
+    },
+    {
+     "say": "這圈經過 n 條邊，全是原圖的邊，所以每條 cost 都是 1。",
+     "k": 6,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2073.96
+     }
+    },
+    {
+     "say": "總長 n × 1 = n，符合 bound n，TSP 答 yes。",
+     "read": "總長 n 乘 1 等於 n，符合 bound n，TSP 答 yes。",
+     "k": 7,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2102.14
+     }
+    },
+    {
+     "say": "左邊有解，右邊就找得到解。",
+     "k": 8,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2144.14
+     }
+    }
+   ]
+  },
+  {
+   "title": "TSP yes ⇒ HC yes",
+   "scene": "np1-j-hc-tsp",
+   "params": {
+    "step": "back"
+   },
+   "steps": 11,
+   "lines": [
+    {
+     "say": "再來：TSP 那邊有人找到解，要能轉回左邊。",
+     "k": 1,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2146.74
+     }
+    },
+    {
+     "say": "江老師說，reduction 證明裡通常回來的方向比較難，常是卡關的地方。",
+     "k": 2,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2163.74
+     }
+    },
+    {
+     "say": "這題回來的方向也難一點，但很直覺，其實好算。",
+     "k": 3,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2193.86
+     }
+    },
+    {
+     "say": "假設 TSP 的圖上找到一條 route，總長 ≤ n。",
+     "read": "假設 TSP 的圖上找到一條 route，總長 小於等於 n。",
+     "k": 4,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2228.37
+     }
+    },
+    {
+     "say": "這個 tour 經過每個點一次，再回到原點，形成一個 cycle。",
+     "k": 5,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2265.53
+     }
+    },
+    {
+     "say": "有 n 個點，所以它用了 n 條邊，總長 ≤ n。",
+     "read": "有 n 個點，所以它用了 n 條邊，總長 小於等於 n。",
+     "k": 6,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2290.43
+     }
+    },
+    {
+     "say": "總長 n 平均分給 n 條邊，每條最多只能是 1。",
+     "k": 7,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2307.82
+     }
+    },
+    {
+     "say": "cost 只有 1 跟 2，沒有 0.5。只要用到一條 cost 2，總長就超過 n，所以每條都是 cost 1。",
+     "k": 8,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2334.37
+     }
+    },
+    {
+     "say": "cost 1 的邊，在原圖上都有對應的 edge。",
+     "k": 9,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2365.15
+     }
+    },
+    {
+     "say": "把這一圈貼回 G，就是一個 Hamiltonian circuit，右邊 yes 推出左邊 yes。",
+     "k": 10,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2380.19
+     }
+    },
+    {
+     "say": "這樣就完成了 Hamiltonian circuit ≤p TSP。",
+     "read": "這樣就完成了 Hamiltonian circuit 小於等於p TSP。",
+     "k": 11,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2404.74
+     }
+    }
+   ]
+  },
+  {
+   "title": "實務證法：TSP 是 NP-complete",
+   "scene": "np1-j-npc-practical",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "總結：遇到一個問題，想證它是 NP-complete，怎麼證？",
+     "k": 1,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2729.28
+     }
+    },
+    {
+     "say": "照定義：一，證明它屬於 NP；二，證明所有 NP 問題都能 poly reduce 到它。",
+     "k": 2,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2735.56
+     }
+    },
+    {
+     "say": "但實務上這樣太難，沒辦法對所有 NP 問題都做 reduction。",
+     "k": 3,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2757.86
+     }
+    },
+    {
+     "say": "所以實務上用一個 theorem。",
+     "k": 4,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2769.48
+     }
+    },
+    {
+     "say": "第一個條件不變：L 屬於 NP。",
+     "k": 5,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2788.1
+     }
+    },
+    {
+     "say": "第二個條件改成：找一個已知是 NP-complete 的 L′。",
+     "k": 6,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2795.24
+     }
+    },
+    {
+     "say": "建構 L′ ≤p L，就證明 L 也很難。一般的證明都用這招。",
+     "read": "建構 L′ 小於等於p L，就證明 L 也很難。一般的證明都用這招。",
+     "k": 7,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2812.68
+     }
+    },
+    {
+     "say": "其實我們已經證完一題：traveling salesman problem is NP-complete。",
+     "k": 8,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2839.88
+     }
+    },
+    {
+     "say": "第一個 property：猜一個 tour、poly time 檢查，所以 TSP ∈ NP。",
+     "read": "第一個 property：猜一個 tour、poly time 檢查，所以 TSP 屬於 NP。",
+     "k": 9,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2846.82
+     }
+    },
+    {
+     "say": "第二個 property：已知 NPC 的 L′ 選 Hamiltonian circuit。",
+     "k": 10,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2877.96
+     }
+    },
+    {
+     "say": "建 reduction function f：cost 1、cost 2、bound n，polynomial time 做得完。",
+     "k": 11,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2896.74
+     }
+    },
+    {
+     "say": "最後證左邊 yes 若且唯若右邊 yes，兩個方向都要。",
+     "k": 12,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2931.48
+     }
+    },
+    {
+     "say": "透過 Hamiltonian circuit 當媒介，證明了 TSP 是 NP-complete。",
+     "k": 13,
+     "src": {
+      "v": "6n8vyWKGsIo",
+      "t": 2977.72
+     }
+    }
+   ]
+  },
+  {
+   "title": "Complete graph 與 clique",
+   "scene": "np1-c-complete",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "再看 Bari 的另一個例子：clique。左邊這張圖有 4 個頂點。",
+     "k": 1,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 41.74
+     }
+    },
+    {
+     "say": "每個頂點都連到其他所有頂點，這種圖叫 complete graph。",
+     "k": 2,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 48.66
+     }
+    },
+    {
+     "say": "n 個頂點的 complete graph 有 n(n−1)/2 條邊，4 個點就是 6 條。",
+     "read": "n 個頂點的 complete graph 有 n 乘 n減1 除以 2 條邊，4 個點就是 6 條。",
+     "k": 3,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 60.46
+     }
+    },
+    {
+     "say": "3 個頂點兩兩相連，也是 complete graph。",
+     "k": 4,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 79.32
+     }
+    },
+    {
+     "say": "2 個頂點、1 條邊，也是。",
+     "k": 5,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 82.79
+     }
+    },
+    {
+     "say": "現在加一個頂點 5，只連兩條邊。",
+     "k": 6,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 94.73
+     }
+    },
+    {
+     "say": "5 只連到 4 和 3，沒連 1、2，所以整張圖不是 complete graph。",
+     "k": 7,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 104.62
+     }
+    },
+    {
+     "say": "但看它的一部分，subgraph：1、2、3、4 和它們之間的邊。",
+     "k": 8,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 114.51
+     }
+    },
+    {
+     "say": "這個 subgraph 本身是 complete graph，這就叫 clique，這是 size 4 的 clique。",
+     "k": 9,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 126.68
+     }
+    },
+    {
+     "say": "另一個例子：3 個點的 complete graph，再加上頂點 4、5 和幾條邊。",
+     "k": 10,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 136.77
+     }
+    },
+    {
+     "say": "有 4 個點的 complete subgraph 嗎？沒有，4 沒連到 1。3 個點的有嗎？有。",
+     "k": 11,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 163.97
+     }
+    },
+    {
+     "say": "所以 {1, 2, 3} 是一個 size 3 的 clique。",
+     "read": "所以 1, 2, 3 是一個 size 3 的 clique。",
+     "k": 12,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 176.06
+     }
+    },
+    {
+     "say": "clique 可以是 2 個、3 個、4 個，一直到 n 個頂點。",
+     "k": 13,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 180.91
+     }
+    }
+   ]
+  },
+  {
+   "title": "在圖上找 clique",
+   "scene": "np1-c-cliques",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "來找這張 6 個頂點的圖 G 裡的 clique。",
+     "k": 1,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 195.6
+     }
+    },
+    {
+     "say": "哪些 subgraph 形成 complete graph？",
+     "k": 2,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 208.32
+     }
+    },
+    {
+     "say": "1、2、3、4 兩兩相連，是 size 4 的 clique。",
+     "k": 3,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 214.29
+     }
+    },
+    {
+     "say": "3、4、5 兩兩相連，是 size 3 的 clique。",
+     "k": 4,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 216.66
+     }
+    },
+    {
+     "say": "換成 1、2、3，也是 size 3。",
+     "k": 5,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 223.5
+     }
+    },
+    {
+     "say": "只看 5 和 6，一條邊就是 size 2 的 clique，最小的。",
+     "k": 6,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 230.74
+     }
+    },
+    {
+     "say": "這張圖最大的 clique 是 size 4。",
+     "k": 7,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 239.46
+     }
+    }
+   ]
+  },
+  {
+   "title": "Clique decision problem",
+   "scene": "np1-c-cliques",
+   "params": {
+    "dec": 1
+   },
+   "steps": 10,
+   "lines": [
+    {
+     "say": "用同一張圖再分一次 decision 和 optimization。",
+     "k": 1,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 250.44
+     }
+    },
+    {
+     "say": "有 size 3 的 clique 嗎？yes。",
+     "k": 2,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 261.24
+     }
+    },
+    {
+     "say": "有 size 2 的嗎？yes。",
+     "k": 3,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 265.95
+     }
+    },
+    {
+     "say": "只回答 yes 或 no 的，就是 decision problem。",
+     "k": 4,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 269.47
+     }
+    },
+    {
+     "say": "有 size 4 的嗎？還是 yes。",
+     "k": 5,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 286.5
+     }
+    },
+    {
+     "say": "optimization 則問：最大的 clique 多大？找過 2、3、4，再上去就沒了，答案是 4。",
+     "k": 6,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 298.5
+     }
+    },
+    {
+     "say": "找最大或最小的是 optimization；問「有沒有 size k 的 clique」是 decision。",
+     "k": 7,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 314.14
+     }
+    },
+    {
+     "say": "Clique decision problem，CDP：給圖 G 和數字 k，G 有沒有 size k 的 clique？",
+     "k": 8,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 329.28
+     }
+    },
+    {
+     "say": "CDP 是一個 graph problem，接下來要證它是 NP-hard。",
+     "k": 9,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 370.95
+     }
+    },
+    {
+     "say": "decision 版是 NP-hard，找最大 clique 的 optimization 版至少一樣難，也是 NP-hard。",
+     "k": 10,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 379.31
+     }
+    }
+   ]
+  },
+  {
+   "title": "證明 NP-hard 的程序",
+   "scene": "np1-c-reduce",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "先看一般程序：怎麼證一個問題是 NP-hard。",
+     "k": 1,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 396.53
+     }
+    },
+    {
+     "say": "要證的問題叫 L2。",
+     "k": 2,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 411.18
+     }
+    },
+    {
+     "say": "找一個已知 NP-hard 的問題，叫 L1。",
+     "k": 3,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 420.91
+     }
+    },
+    {
+     "say": "證明 L1 reduces to L2。",
+     "k": 4,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 424.89
+     }
+    },
+    {
+     "say": "做法：拿 L1 的一個 instance，從它造出 L2 的 instance。",
+     "k": 5,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 438.5
+     }
+    },
+    {
+     "say": "要做到：L2 能 poly time 解，L1 也就能 poly time 解。",
+     "k": 6,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 446.19
+     }
+    },
+    {
+     "say": "而且轉換本身要在 polynomial time 內完成。",
+     "k": 7,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 461.16
+     }
+    },
+    {
+     "say": "套進本題：L2 是 CDP，已知 NP-hard 的 L1 選 SAT。",
+     "k": 8,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 467.07
+     }
+    },
+    {
+     "say": "所以要證 SAT ∝ CDP：拿一個 CNF 公式，造出一張圖。",
+     "read": "所以要證 SAT reduce 到 CDP：拿一個 CNF 公式，造出一張圖。",
+     "k": 9,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 480.29
+     }
+    }
+   ]
+  },
+  {
+   "title": "SAT → CDP：每個 literal 一個頂點",
+   "scene": "np1-c-sat-cdp",
+   "params": {
+    "step": "vert"
+   },
+   "steps": 11,
+   "lines": [
+    {
+     "say": "例子：一個有 3 個變數 x1、x2、x3 的公式。",
+     "k": 1,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 526.17
+     }
+    },
+    {
+     "say": "F = (x1 ∨ x2) ∧ (¬x1 ∨ ¬x2) ∧ (x1 ∨ x3)。",
+     "read": "F 等於 (x1 or x2) and (not x1 or not x2) and (x1 or x3)。",
+     "k": 2,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 534.43
+     }
+    },
+    {
+     "say": "注意子句不一定三個變數都有，這裡每個子句只有兩個。",
+     "k": 3,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 554.47
+     }
+    },
+    {
+     "say": "三個括號就是三個子句：C1、C2、C3。",
+     "k": 4,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 558.33
+     }
+    },
+    {
+     "say": "子句之間用 and 連。一般來說公式有 k 個子句。",
+     "k": 5,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 565.77
+     }
+    },
+    {
+     "say": "目標：造出一張圖，讓圖裡有 size k 的 clique，這裡 k = 3。",
+     "read": "目標：造出一張圖，讓圖裡有 size k 的 clique，這裡 k 等於 3。",
+     "k": 6,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 580.09
+     }
+    },
+    {
+     "say": "造法：每個 literal 變成一個頂點。先放 C1 的 x1、x2。",
+     "k": 7,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 593.28
+     }
+    },
+    {
+     "say": "C2 的 ¬x1、¬x2 另外放，不跟 C1 混在一起。",
+     "read": "C2 的 not x1、not x2 另外放，不跟 C1 混在一起。",
+     "k": 8,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 601.39
+     }
+    },
+    {
+     "say": "C3 的 x1、x3 也分開放。同樣是 x1，在 C1 和 C3 是兩個不同的頂點。",
+     "k": 9,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 616.75
+     }
+    },
+    {
+     "say": "標出每個頂點屬於哪個子句。",
+     "k": 10,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 624.84
+     }
+    },
+    {
+     "say": "頂點寫成 ⟨a, i⟩：a 是 literal，i 是子句編號，像 C2 的 ¬x1 就是 ⟨¬x1, 2⟩。",
+     "read": "頂點寫成 a, i：a 是 literal，i 是子句編號，像 C2 的 not x1 就是 not x1, 2。",
+     "k": 11,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 646.45
+     }
+    }
+   ]
+  },
+  {
+   "title": "連邊的兩個規則",
+   "scene": "np1-c-sat-cdp",
+   "params": {
+    "step": "edge"
+   },
+   "steps": 12,
+   "lines": [
+    {
+     "say": "接著連邊。規則一：同一個子句的頂點不能連，C1 的 x1 和 x2 不連。",
+     "k": 1,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 673.43
+     }
+    },
+    {
+     "say": "C2 的 ¬x1、¬x2 也一樣。",
+     "read": "C2 的 not x1、not x2 也一樣。",
+     "k": 2,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 680.74
+     }
+    },
+    {
+     "say": "不同子句的頂點才可以連。",
+     "k": 3,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 683.79
+     }
+    },
+    {
+     "say": "那 C1 的 x1 連 C2 的 ¬x1 呢？也不行。",
+     "read": "那 C1 的 x1 連 C2 的 not x1 呢？也不行。",
+     "k": 4,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 691.36
+     }
+    },
+    {
+     "say": "規則二：不能連到自己的 negation，x1 和 ¬x1 不可能同時為真。",
+     "read": "規則二：不能連到自己的 negation，x1 和 not x1 不可能同時為真。",
+     "k": 5,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 700.29
+     }
+    },
+    {
+     "say": "x1 到 ¬x2：不同子句、不矛盾，可以連。",
+     "read": "x1 到 not x2：不同子句、不矛盾，可以連。",
+     "k": 6,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 717.57
+     }
+    },
+    {
+     "say": "x2 到 ¬x1：也可以。",
+     "read": "x2 到 not x1：也可以。",
+     "k": 7,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 720.71
+     }
+    },
+    {
+     "say": "x2 到 ¬x2：是自己的 negation，不行。",
+     "read": "x2 到 not x2：是自己的 negation，不行。",
+     "k": 8,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 722.41
+     }
+    },
+    {
+     "say": "正式寫法：⟨a, i⟩ 和 ⟨b, j⟩ 有邊，條件是 i ≠ j，而且 b 不是 a 的相反。",
+     "read": "正式寫法：a, i 和 b, j 有邊，條件是 i 不等於 j，而且 b 不是 a 的相反。",
+     "k": 9,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 730.43
+     }
+    },
+    {
+     "say": "C1 和 C3 之間：x1–x1、x1–x3、x2–x1、x2–x3 都連。",
+     "read": "C1 和 C3 之間：x1 連 x1、x1 連 x3、x2 連 x1、x2 連 x3 都連。",
+     "k": 10,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 767.4
+     }
+    },
+    {
+     "say": "C2 和 C3 之間：¬x1–x1 不連，其他三條都連。",
+     "read": "C2 和 C3 之間：not x1 連 x1 不連，其他三條都連。",
+     "k": 11,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 787.63
+     }
+    },
+    {
+     "say": "這張圖就是 CDP 的一個例子，造圖只花 polynomial time。",
+     "k": 12,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 806.25
+     }
+    }
+   ]
+  },
+  {
+   "title": "k-clique ⇔ 公式可滿足",
+   "scene": "np1-c-sat-cdp",
+   "params": {
+    "step": "clique"
+   },
+   "steps": 17,
+   "lines": [
+    {
+     "say": "公式的子句數 k = 3。",
+     "read": "公式的子句數 k 等於 3。",
+     "k": 1,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 829.79
+     }
+    },
+    {
+     "say": "問題變成：圖裡有沒有 clique？",
+     "k": 2,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 833.38
+     }
+    },
+    {
+     "say": "有，兩個頂點一條邊，就是 size 2。",
+     "k": 3,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 839.57
+     }
+    },
+    {
+     "say": "也有 size 3：C1 的 x2、C2 的 ¬x1、C3 的 x3，兩兩相連成三角形。",
+     "read": "也有 size 3：C1 的 x2、C2 的 not x1、C3 的 x3，兩兩相連成三角形。",
+     "k": 4,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 843.77
+     }
+    },
+    {
+     "say": "size 4 呢？沒有。同子句不相連，一個 clique 每個子句最多取一個，只有 3 個子句。",
+     "k": 5,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 851.77
+     }
+    },
+    {
+     "say": "圖裡還有別的三角形，挑一個就好。",
+     "k": 6,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 860.5
+     }
+    },
+    {
+     "say": "一般來說：公式有 k 個子句又可滿足，圖裡就有 size k 的 clique。",
+     "k": 7,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 878.89
+     }
+    },
+    {
+     "say": "把選到的頂點都當成真。x2 為真，所以 x2 = 1。",
+     "read": "把選到的頂點都當成真。x2 為真，所以 x2 等於 1。",
+     "k": 8,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 903.04
+     }
+    },
+    {
+     "say": "¬x1 為真，表示 x1 = 0。",
+     "read": "not x1 為真，表示 x1 等於 0。",
+     "k": 9,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 917.64
+     }
+    },
+    {
+     "say": "x3 為真，x3 = 1。得到 x1 = 0、x2 = 1、x3 = 1。",
+     "read": "x3 為真，x3 等於 1。得到 x1 等於 0、x2 等於 1、x3 等於 1。",
+     "k": 10,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 923.35
+     }
+    },
+    {
+     "say": "代回去：C1 = 0 或 1 = 1。",
+     "read": "代回去：C1 等於 0 或 1 等於 1。",
+     "k": 11,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 931.17
+     }
+    },
+    {
+     "say": "C2 = ¬x1 或 ¬x2 = 1 或 0 = 1。",
+     "read": "C2 等於 not x1 或 not x2 等於 1 或 0 等於 1。",
+     "k": 12,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 943.14
+     }
+    },
+    {
+     "say": "C3 = 0 或 1 = 1。",
+     "read": "C3 等於 0 或 1 等於 1。",
+     "k": 13,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 960.07
+     }
+    },
+    {
+     "say": "F = 1 且 1 且 1 = 1，公式成立！從 clique 找到了讓公式為真的值。",
+     "read": "F 等於 1 且 1 且 1 等於 1，公式成立！從 clique 找到了讓公式為真的值。",
+     "k": 14,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 962.92
+     }
+    },
+    {
+     "say": "另一個方向影片沒講，補上：每個子句挑一個為真的 literal，它們不同子句又不矛盾，兩兩有邊，就是 k-clique。",
+     "k": 15,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 981.49
+     }
+    },
+    {
+     "say": "所以 CDP 能解，SAT 就能解；SAT 是 NP-hard，CDP 也是 NP-hard。CLRS 用 3-CNF-SAT 做同樣的歸約。",
+     "k": 16,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 994.49
+     }
+    },
+    {
+     "say": "Bari 強調這只證到 NP-hard；要 NPC 還要證 CDP ∈ NP。CDP 其實已知是 NP-complete。",
+     "read": "Bari 強調這只證到 NP-hard；要 NPC 還要證 CDP 屬於 NP。CDP 其實已知是 NP-complete。",
+     "k": 17,
+     "src": {
+      "v": "qZs767KQcvE",
+      "t": 1009.74
+     }
+    }
+   ]
+  },
+  {
+   "title": "3-Partition → Tetris",
+   "scene": "np2-3partition",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "最後回到 Tetris。reduction 也能證明很難，例如證明 Tetris 是 NP-hard。",
+     "k": 1,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2786.68
+     }
+    },
+    {
+     "say": "Demaine 的團隊證明了：一個叫 3-Partition 的問題，可以歸約到 Tetris。",
+     "k": 2,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2797.99
+     }
+    },
+    {
+     "say": "3-Partition：給 n 個數，能不能三個一組分好，每組的和都一樣？例如 9 個數，總和 36。",
+     "k": 3,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2818.6
+     }
+    },
+    {
+     "say": "分成 n/3 組，這裡 3 組，每組都是 12。",
+     "read": "分成 n除以3 組，這裡 3 組，每組都是 12。",
+     "k": 4,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2826.14
+     }
+    },
+    {
+     "say": "聽起來簡單，但它是 NP-complete。他說是 Karp 證的，這是口誤，證明的是 Garey 和 Johnson，1975 年。",
+     "k": 5,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2833.68
+     }
+    },
+    {
+     "say": "站在巨人肩膀上：不用再證 3-Partition 難，只要證 Tetris 至少跟它一樣難。",
+     "k": 6,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2856.62
+     }
+    },
+    {
+     "say": "定義：A 能歸約到 B，就說 B 至少跟 A 一樣難。",
+     "k": 7,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2864.98
+     }
+    },
+    {
+     "say": "因為解 B 就能解 A：先把 A 轉成 B，再用 B 的方法解。",
+     "k": 8,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2880.6
+     }
+    },
+    {
+     "say": "大家相信 3-Partition 不在 P，那 Tetris 最好也不在 P，不然轉成 Tetris 一解，3-Partition 就在 P 了。",
+     "k": 9,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2890.84
+     }
+    },
+    {
+     "say": "其實所有 NP-complete 問題都能互相歸約。",
+     "k": 10,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2910.7
+     }
+    },
+    {
+     "say": "要證你的問題 NPC，就找一個已知 NPC 歸約到你的問題，方向不要弄反！",
+     "k": 11,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2916.01
+     }
+    },
+    {
+     "say": "reduction 兩用：正面設計新演算法，反面證明「這個比那個難」。",
+     "k": 12,
+     "src": {
+      "v": "moPtwq_cVH8",
+      "t": 2927.27
+     }
+    }
+   ]
+  },
+  {
+   "title": "總整理：四個類別",
+   "scene": "np1-toc-map",
+   "params": {
+    "stage": "all"
+   },
+   "steps": 7,
+   "lines": [
+    {
+     "say": "最後用一張圖收尾：P、NP、NP-complete、NP-hard。",
+     "k": 1,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 246.2
+     }
+    },
+    {
+     "say": "大部分理論學者相信 P ≠ NP，所以這張圖照 P ≠ NP 來畫。",
+     "read": "大部分理論學者相信 P 不等於 NP，所以這張圖照 P 不等於 NP 來畫。",
+     "k": 2,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 251.98
+     }
+    },
+    {
+     "say": "最裡面是 P：有 polynomial time 的 decider，能快速回答 YES 或 NO。",
+     "k": 3,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 258.99
+     }
+    },
+    {
+     "say": "外圈是 NP：不一定有快的 decider，但都能 polynomial time 驗證一個解。",
+     "k": 4,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 262.62
+     }
+    },
+    {
+     "say": "NP 裡最難的是 NP-complete。影片說它們「確定沒有」poly decider，要更正：這只是猜測，還沒被證明。",
+     "k": 5,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 272.46
+     }
+    },
+    {
+     "say": "NP-hard 範圍最廣：包含 NPC，也包含很多不在 NP 裡的問題。",
+     "k": 6,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 286.36
+     }
+    },
+    {
+     "say": "影片說 NP-hard 是「所有沒有 poly decider 的問題」，也不對：定義是所有 NP 問題都能 poly reduce 到它。",
+     "k": 7,
+     "src": {
+      "v": "tIE2lkJv20c",
+      "t": 290.92
+     }
+    }
+   ]
+  }
+ ]
+}

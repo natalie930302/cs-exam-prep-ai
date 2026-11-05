@@ -1,0 +1,4019 @@
+{
+ "chapter": "os-4",
+ "title": "CPU排程",
+ "intro": "從 CPU burst 和 I/O burst 出發，弄懂 scheduler 什麼時候選人、怎麼衡量好壞，再一路練 FCFS、SJF、SRTF、Priority、RR、多層佇列的 Gantt chart，最後看多處理器、real-time 和真實 OS 怎麼排程。",
+ "parts": [
+  {
+   "title": "這一章在排什麼",
+   "scene": "sch-16c-intro",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "好，這一章講 CPU scheduling。很多程式都想用 CPU，可是一個 core 一次只能跑一個，總要有人決定現在輪到誰。",
+     "k": 1,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 27.4
+     }
+    },
+    {
+     "say": "雖然課本叫 process scheduling，但這裡 thread 跟 process 不用分那麼細，問的就是：CPU 上的指令來自誰？",
+     "k": 1,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 27
+     }
+    },
+    {
+     "say": "OS 裡其實有好幾種 scheduler，像 job scheduler、midterm scheduler。這章只管一個：CPU scheduler。",
+     "k": 2,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 76
+     }
+    },
+    {
+     "say": "每一種排程方法都分兩個版本：preemptive 可以中途把人換下來，non-preemptive 一跑就讓它跑完這一段。",
+     "k": 3,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 96.1
+     }
+    },
+    {
+     "say": "接著會一個一個看基本演算法：FCFS、SJF、Priority、Round Robin，還有 multilevel queue。",
+     "k": 4,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 114.6
+     }
+    },
+    {
+     "say": "最後看 Solaris、Windows、Linux 這些真實系統，你會發現它們都是把好幾種想法拼在一起用。",
+     "k": 5,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 130.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "CPU burst 與 I/O burst",
+   "scene": "sch-16c-burst",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "先問一個問題：為什麼一定要有 CPU scheduler？",
+     "k": 1,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 166.9
+     }
+    },
+    {
+     "say": "multiprogramming 就是 OS 一次把很多程式放進記憶體，P1 到 P5 都住在 memory 裡，每個都 ready 了。",
+     "k": 2,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 176.5
+     }
+    },
+    {
+     "say": "可是 CPU 的 core 有限，同一時間一個 core 只能跑一個，大家都盯著 CPU，總得有人排順序。",
+     "k": 3,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 185.9
+     }
+    },
+    {
+     "say": "scheduler 的任務：CPU 一空下來，就馬上挑一個 ready 的送上去，讓 CPU 一直有事做，utilization 才會高。",
+     "k": 4,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 188.6
+     }
+    },
+    {
+     "say": "那從程式自己的角度看呢？它任何時刻只做兩件事之一：用 CPU 計算，或者做 I/O。",
+     "k": 5,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 199.3
+     }
+    },
+    {
+     "say": "把指令一條條攤開，連續好幾條都在用 CPU 的那一段，叫 CPU burst，畫成藍色。",
+     "k": 6,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 224.2
+     }
+    },
+    {
+     "say": "連續好幾條都在做 I/O 的那一段，就叫 I/O burst，畫成橘色。",
+     "k": 7,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 235.5
+     }
+    },
+    {
+     "say": "所以任何程式跑起來，都是藍、橘、藍、橘，CPU burst 跟 I/O burst 一直交替。",
+     "k": 8,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 242
+     }
+    },
+    {
+     "say": "欸，注意：連續的 CPU 指令全算同一個 burst，所以兩個 CPU burst 不會相鄰，後面一定接 I/O burst。",
+     "k": 9,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 268.5
+     }
+    },
+    {
+     "say": "程式一開始做 I/O，就被放進 waiting queue 等 I/O 做完，這段時間它根本沒辦法用 CPU。",
+     "k": 10,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 280.5
+     }
+    },
+    {
+     "say": "所以 CPU scheduler 只管 CPU burst。正在做 I/O 的程式，它完全看不見。",
+     "k": 11,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 296
+     }
+    }
+   ]
+  },
+  {
+   "title": "CPU-bound 與 I/O-bound",
+   "scene": "sch-16c-bound",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "系統管理者想把電腦調快，第一個問題是：這支程式主要吃 CPU，還是吃 I/O？",
+     "k": 1,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 317.4
+     }
+    },
+    {
+     "say": "也就是找 bottleneck：是 CPU 算不夠快，還是硬碟、記憶體這些 I/O 太慢，大家都在等？",
+     "k": 2,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 345.8
+     }
+    },
+    {
+     "say": "周老師舉例：一個 for 迴圈從 1 跑到 1 萬，一直 i++，完全不碰 I/O，這就是超長的 CPU burst，叫 CPU-bound。",
+     "read": "周老師舉例：一個 for 迴圈從 1 跑到 1 萬，一直 i 加加，完全不碰 I/O，這就是超長的 CPU burst，叫 CPU-bound。",
+     "k": 3,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 364.9
+     }
+    },
+    {
+     "say": "I/O-bound 剛好相反，它沒有那種很長的 CPU burst。",
+     "k": 4,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 389.2
+     }
+    },
+    {
+     "say": "為什麼？因為 CPU 比 I/O 快太多了，幾條指令一下就做完，接著就要等很久的 I/O。",
+     "k": 5,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 399.8
+     }
+    },
+    {
+     "say": "像 i++ 之後馬上 fread 讀檔、再 write 寫出去，藍色一點點，橘色很長，時間幾乎都在等 I/O。",
+     "read": "像 i 加加之後馬上 fread 讀檔、再 write 寫出去，藍色一點點，橘色很長，時間幾乎都在等 I/O。",
+     "k": 6,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 420.5
+     }
+    },
+    {
+     "say": "哪些算 CPU？從記憶體 load 資料、加減乘除，都是 CPU 的工作；等 I/O 完成才算 I/O。",
+     "k": 7,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 476.3
+     }
+    },
+    {
+     "say": "再看這張 histogram：統計一般程式 CPU burst 的長度，橫軸是毫秒，縱軸是有多少比例。",
+     "k": 8,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 498.7
+     }
+    },
+    {
+     "say": "最左邊最高：幾乎所有 CPU burst 都非常短，通常跑個三四條指令就要去做 I/O 了。",
+     "k": 9,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 525.9
+     }
+    },
+    {
+     "say": "右邊很矮但還是有：少數 burst 非常長，擁有這種長 burst 的，就是 CPU-bound 程式。",
+     "k": 10,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 548.9
+     }
+    },
+    {
+     "say": "所以大部分程式其實卡在 I/O，CPU 常常閒著。這就是 OS 要載入一堆程式、大家輪流用 CPU 的原因。",
+     "k": 11,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 561.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Scheduler 只看 ready queue",
+   "scene": "sch-16c-ready",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "用 process 的五種狀態圖來看：CPU scheduler 只做一件事，從 ready 那群裡挑一個，讓它進 running。",
+     "k": 1,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 588
+     }
+    },
+    {
+     "say": "程式跑到要做 I/O 的地方，是它自己從 running 走到 waiting，這不是 scheduler 決定的。",
+     "k": 2,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 602.2
+     }
+    },
+    {
+     "say": "它在 waiting 裡等 I/O，不在 ready queue，scheduler 根本看不到它，也不用替它排。",
+     "k": 3,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 613.5
+     }
+    },
+    {
+     "say": "等 I/O 做完，它回到 ready queue，這時 scheduler 才會把它當候選人。",
+     "k": 4,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 624.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "四個排程時機",
+   "scene": "sch-16c-four",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "那 preemptive 跟 non-preemptive 到底差在哪？關鍵是：scheduler 什麼時候可以被叫起來重新選人。",
+     "k": 1,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 642.2
+     }
+    },
+    {
+     "say": "從狀態轉換來看，能讓 scheduler 重新決定的時機，最多就四種。一個一個看。",
+     "k": 2,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 657.4
+     }
+    },
+    {
+     "say": "第一種，running 到 waiting：正在跑的程式要做 I/O 了，CPU burst 結束，它自己去 waiting 等。",
+     "k": 3,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 670.3
+     }
+    },
+    {
+     "say": "它一離開，CPU 就空了，scheduler 一定得被叫起來，看誰來接手。",
+     "k": 4,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 687.2
+     }
+    },
+    {
+     "say": "第二種，running 到 ready：程式還在跑卻被踢回 ready。這是 time sharing，timer 每隔一段時間響一次。",
+     "k": 5,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 698.7
+     }
+    },
+    {
+     "say": "周老師舉例每 100 毫秒響一次，OS 拿回控制權重新決定，可能還是選它，也可能換人。",
+     "k": 6,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 727.5
+     }
+    },
+    {
+     "say": "第三種，waiting 到 ready：某個程式 I/O 做完回來了，多了一個新候選人，說不定它很重要。",
+     "k": 7,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 739.4
+     }
+    },
+    {
+     "say": "第四種，running 到 terminate：程式整個跑完了，CPU 空出來，當然要選下一個。",
+     "k": 8,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 769.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "Preemptive 和 non-preemptive",
+   "scene": "sch-16c-preempt",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "non-preemptive 的意思很直白：P1 正在一段 CPU burst 的中間，還能繼續跑，就不要打斷它。",
+     "k": 1,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 786.8
+     }
+    },
+    {
+     "say": "看四個時機。第一種是 P1 自己去做 I/O，burst 已經結束了，沒打斷任何人，所以它也會排程。",
+     "k": 2,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 817
+     }
+    },
+    {
+     "say": "第四種程式都跑完了，一樣沒有打斷的問題。",
+     "k": 3,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 832.4
+     }
+    },
+    {
+     "say": "所以 non-preemptive 只在第一跟第四種時機選人，也就是 CPU burst 自然結束的時候。",
+     "k": 4,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 842.7
+     }
+    },
+    {
+     "say": "preemptive 則是四種全都會重新排程，第二跟第三種是它多出來的機會。",
+     "k": 5,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 852
+     }
+    },
+    {
+     "say": "看第二種：P1 跑到一半 timer 響了。preemptive 可以改選別人，P1 被趕回 ready queue，換 P3 上去。",
+     "k": 6,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 867.5
+     }
+    },
+    {
+     "say": "同樣情況換成 non-preemptive：scheduler 知道 P1 這段還沒跑完、不能打斷，馬上又把 P1 放回去。",
+     "k": 7,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 903.1
+     }
+    },
+    {
+     "say": "第三種：P2 做完 I/O 回來，而且 priority 比較高。preemptive 會叫 P1 立刻讓開，P2 插進來。",
+     "k": 8,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 924.2
+     }
+    },
+    {
+     "say": "non-preemptive 呢？來了更重要的 P2 也先不理，讓 P1 把這段 burst 跑完，P2 才上。",
+     "k": 9,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 959
+     }
+    },
+    {
+     "say": "最簡單的判斷法看 Gantt chart：某個程式的 CPU burst 被切成兩段、中間插了別人，就是 preemptive。",
+     "k": 10,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 987
+     }
+    },
+    {
+     "say": "每一段都剛好是一個完整的 CPU burst，跑完才換人，就是 non-preemptive。考試很愛考這個判斷。",
+     "k": 11,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1011.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Preemptive 的代價",
+   "scene": "sch-16c-sync",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "比一比：preemptive 通常效能比較好，因為它比較 dynamic，隨時能把 CPU 交給更適合的人。",
+     "k": 1,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1036.4
+     }
+    },
+    {
+     "say": "它的排程時機有四個，non-preemptive 只有兩個，前者是後者的 superset，所以 CPU 使用率通常更高。",
+     "k": 2,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1052.2
+     }
+    },
+    {
+     "say": "但缺點是 synchronization。像 P1 要把 count 加 1，剛把 5 讀進暫存器就被打斷了。",
+     "k": 3,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1073.6
+     }
+    },
+    {
+     "say": "P2 把 count 加成 6，P1 回來把它算的 6 寫回去。加了兩次，結果是 6 不是 7。第 6 章會細講。",
+     "k": 3,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1073.6
+     }
+    },
+    {
+     "say": "為什麼只怕 CPU burst 中間被打斷？因為只有 CPU burst 會讀寫記憶體，I/O burst 碰的是裝置。",
+     "k": 4,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1103.6
+     }
+    },
+    {
+     "say": "既然會中途打斷，寫程式的人就得自己處理同步，這很花時間，也很容易寫錯。",
+     "k": 5,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1127.4
+     }
+    },
+    {
+     "say": "更麻煩的是，kernel 自己的程式也是被排程的對象，也可能改資料改到一半被打斷。",
+     "k": 6,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1142.3
+     }
+    },
+    {
+     "say": "解法一：kernel 裡每次碰共享資料就自己 lock、unlock。可以解決，但 OS 會寫得又囉嗦又複雜。",
+     "k": 7,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1166.6
+     }
+    },
+    {
+     "say": "解法二，周老師說的常見作法：跑 kernel 程式時把 timer interrupt 關掉，timer 不響，就沒人來打斷。",
+     "k": 8,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1193.1
+     }
+    },
+    {
+     "say": "這樣 kernel 一口氣做完，對 kernel 來說等於 non-preemptive，自然沒有同步問題。",
+     "k": 9,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1213.2
+     }
+    },
+    {
+     "say": "補充課本：Linux 2.6 之後 kernel 本身也能被搶佔，只在拿著 lock 這類關鍵區段暫時關掉搶佔。",
+     "k": 9
+    },
+    {
+     "say": "所以一般 OS 是平常用 preemptive scheduler 拿效能，kernel 執行時不讓它被打斷，減輕寫 kernel 的負擔。",
+     "k": 10,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1254.5
+     }
+    },
+    {
+     "say": "這也是 kernel 要寫得精簡的原因：寫得又臭又長，interrupt 被關很久，整個系統反應就變慢。",
+     "k": 11,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1266.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Scheduler 選人、dispatcher 換人",
+   "scene": "sch-16c-dispatch",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "scheduler 的工作只有「選」：決定下一個是誰，這裡它選了 P2。",
+     "k": 1,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1288.4
+     }
+    },
+    {
+     "say": "可是光選好不夠，總要有人真的去換。OS 裡負責換人的叫 dispatcher。",
+     "k": 2,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1294.6
+     }
+    },
+    {
+     "say": "scheduler 把「下一個是 P2」這個決定交給 dispatcher，由它執行換人。",
+     "k": 3,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1303.5
+     }
+    },
+    {
+     "say": "之前學的 context switch 就是 dispatcher 在做的事：先把 P1 的暫存器這些狀態存進它的 PCB。",
+     "k": 4,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1314.7
+     }
+    },
+    {
+     "say": "再把 P2 的 program counter、page table pointer 這些載進來，P2 就從上次停的地方繼續跑。",
+     "k": 5,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1328.2
+     }
+    },
+    {
+     "say": "換人不是免費的。從停掉一個程式到啟動下一個花的時間，課本叫 dispatch latency，主要花在 context switch。",
+     "k": 6,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1356.4
+     }
+    },
+    {
+     "say": "另外 interrupt 的 disable、enable 也要花時間。",
+     "k": 7,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1364.8
+     }
+    },
+    {
+     "say": "周老師提醒，trace code 會看到：做 context switch、呼叫 scheduler 之前，會先把 timer 關掉，免得換到一半又被打斷。",
+     "k": 8,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1368.7
+     }
+    },
+    {
+     "say": "所以 dispatcher 是比較大的元件，它先呼叫 scheduler 選人，再完成 dispatch，真正把人換上去。",
+     "k": 9,
+     "src": {
+      "v": "EpZgvKBf5eo",
+      "t": 1388.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "衡量排程好壞的指標",
+   "scene": "sch-16d-metrics",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "好，介紹演算法之前，先講清楚目標是什麼：用什麼標準說一個排程好不好？",
+     "k": 1,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 16.4
+     }
+    },
+    {
+     "say": "效能指標有五個，我們一個一個看。",
+     "k": 2,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 43.4
+     }
+    },
+    {
+     "say": "第一個，CPU utilization。打開 Linux 的 top 或 Windows 工作管理員就看得到，使用率很低電腦卻很慢，就是 OS 沒管好。",
+     "k": 3,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 51.7
+     }
+    },
+    {
+     "say": "理論上是 0% 到 100%，一般系統大概 40% 到 90%，到 90% 就算很高了。",
+     "k": 4,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 83.4
+     }
+    },
+    {
+     "say": "第二個，throughput。CPU 很忙不代表在做有意義的事，所以要看每單位時間完成多少工作。",
+     "k": 5,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 99.4
+     }
+    },
+    {
+     "say": "對 CPU 排程來說，就算完成幾個 process。比如丟進 100 個，看每秒平均能做完幾個。",
+     "k": 6,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 127.9
+     }
+    },
+    {
+     "say": "它跟輸入有關，每個 process 都很大，throughput 自然小，所以只能拿同樣的輸入來比。",
+     "k": 7,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 152.9
+     }
+    },
+    {
+     "say": "接下來三個「時間」跟 scheduler 最密切。看這條時間軸：灰色是在 ready queue 排隊，藍色用 CPU，橘色做 I/O。",
+     "k": 8,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 183.9
+     }
+    },
+    {
+     "say": "turnaround time：從 submit 到整個結束花多久。這是使用者的角度，越短越好，這裡是 9。",
+     "k": 9,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 198.6
+     }
+    },
+    {
+     "say": "waiting time：明明可以跑，卻在 ready queue 裡等的時間總和。紅色兩段 2 加 1，等於 3。做 I/O 的時間不算。",
+     "k": 10,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 233.1
+     }
+    },
+    {
+     "say": "response time：從 submit 到第一個 CPU burst 開始，也就是第一次有反應，這裡是 2。",
+     "k": 11,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 290.5
+     }
+    },
+    {
+     "say": "差在哪？一個程式有好幾個 burst。response 只看第一次開始；waiting 要把每次在 ready queue 等的全加起來。",
+     "k": 12,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 317.6
+     }
+    },
+    {
+     "say": "像打字、點按鈕這種 interactive 系統，最在乎 response time，有回應使用者就覺得它在動。",
+     "k": 13,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 357.8
+     }
+    },
+    {
+     "say": "至於 waiting time，有個演算法可以證明是最小的：Shortest Job First，等一下就會看到。",
+     "k": 14,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 372.5
+     }
+    },
+    {
+     "say": "前兩個是整個系統的角度。比較演算法時，主要看 turnaround、waiting、response 這三個單一 job 的指標。",
+     "k": 15,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 398.1
+     }
+    },
+    {
+     "say": "公式記好：turnaround 等於完成減到達；response 等於第一次上 CPU 減到達。",
+     "k": 15
+    },
+    {
+     "say": "只有一段 burst 時，waiting 等於 turnaround 減 burst；有好幾段，還要再扣掉 I/O 的時間。",
+     "k": 15
+    }
+   ]
+  },
+  {
+   "title": "FCFS：先來先做",
+   "scene": "sch-16d-fcfs",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "第一個演算法：first come, first serve，FCFS，名字就說明了一切。",
+     "k": 1,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 421.6
+     }
+    },
+    {
+     "say": "scheduler 拿到的是 ready queue 裡有誰、這次 CPU burst 要多久。P1 要 24、P2 要 3、P3 要 3，都在第 0 秒到。",
+     "k": 2,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 435.3
+     }
+    },
+    {
+     "say": "P1 只寫一個 24 是簡化。真實程式有很多段 burst，這裡只模擬「現在這一段」。",
+     "k": 3,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 465.4
+     }
+    },
+    {
+     "say": "雖然都在 0 秒到，假設 P1 早一點點，所以 P1 先上 CPU，一路做到 24。",
+     "k": 4,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 529.5
+     }
+    },
+    {
+     "say": "P1 做完換 P2，24 到 27；再換 P3，27 到 30。",
+     "k": 5,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 536.6
+     }
+    },
+    {
+     "say": "換成 preemptive 呢？對 FCFS 沒差，就算能打斷，先來的還是先做，所以兩種結果一樣。",
+     "k": 6,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 544.6
+     }
+    },
+    {
+     "say": "算 waiting time：P1 一來就跑，等 0；P2 要等 P1 做完，等 24；P3 等到 27。",
+     "k": 7,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 573
+     }
+    },
+    {
+     "say": "平均 waiting time 是 0 加 24 加 27，除以 3，等於 17。",
+     "k": 8,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 588.8
+     }
+    },
+    {
+     "say": "response time 也是 0、24、27，因為每人只有一段 burst，第一次開始就等於全部的等待。",
+     "k": 9,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 596.5
+     }
+    },
+    {
+     "say": "那如果 P1 還有第二段？做完 24 去做 I/O 4 秒，第 28 秒回來，可是 P3 跑到 30，它要等到 30。",
+     "k": 10,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 629.2
+     }
+    },
+    {
+     "say": "它這次等了 30 − 28 = 2，不是 30 − 24 = 6，因為 I/O 那 4 秒不算等待。",
+     "read": "它這次等了 30 減 28 等於 2，不是 30 減 24 等於 6，因為 I/O 那 4 秒不算等待。",
+     "k": 10,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 629.2
+     }
+    },
+    {
+     "say": "我們只模擬一個 burst，所以 waiting 剛好等於 response；有好幾個 burst，兩者就不一樣了。",
+     "k": 11,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 689.2
+     }
+    },
+    {
+     "say": "在意平均等待的話 FCFS 很糟：一開始跑個超大的 P1，後面全部從 24 起跳。短工被長工卡住，叫 convoy effect。",
+     "k": 12,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 701.3
+     }
+    },
+    {
+     "say": "同樣三個工作，順序剛好變成 P2、P3、P1：等待變成 0、3、6，平均只剩 3！",
+     "k": 13,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 744.8
+     }
+    },
+    {
+     "say": "所以 FCFS 沒有任何 intelligence，好壞完全看運氣，看工作到達的順序。",
+     "k": 14,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 769
+     }
+    }
+   ]
+  },
+  {
+   "title": "SJF：最短的先做",
+   "scene": "sch-16d-sjf",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "那要讓平均等待最短，答案很直覺：最短的先做。看這兩塊，長的 6 放前面，短的就要等 6。",
+     "k": 1,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 788.5
+     }
+    },
+    {
+     "say": "交換一下，短的放前面，長的只要等 2。可以證明：任兩個換成短的在前，總等待只會變小或不變。",
+     "k": 2,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 798.7
+     }
+    },
+    {
+     "say": "這就是 Shortest Job First，SJF。平均 waiting time 理論上一定最小。",
+     "k": 3,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 811.7
+     }
+    },
+    {
+     "say": "注意「最短」是指已經在 ready queue 裡的人當中最短，還沒到的不算。",
+     "k": 3,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 178.4
+     }
+    },
+    {
+     "say": "SJF 也分 preemptive 和 non-preemptive，到達時間不一樣時，兩種排出來就可能不同。",
+     "k": 4,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 834.6
+     }
+    },
+    {
+     "say": "兩種各自都有最佳解，而且 preemptive 的最佳平均等待一定小於等於 non-preemptive，它選擇的機會比較多。",
+     "k": 5,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 856.1
+     }
+    },
+    {
+     "say": "例子：P1 第 0 秒到要 7，P2 第 2 秒到要 4，P3 第 4 秒到要 1，P4 第 5 秒到要 4。先看 non-preemptive。",
+     "k": 6,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 877.4
+     }
+    },
+    {
+     "say": "第 0 秒只有 P1，沒得選。7 看起來最長，但別人還沒來，只能讓它跑，而且一跑就跑到 7。",
+     "k": 7,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 893.8
+     }
+    },
+    {
+     "say": "到第 7 秒才能重新排。P2 要 4、P3 要 1、P4 要 4 都在排隊，選最短的 P3，跑 7 到 8。",
+     "k": 8,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 926.2
+     }
+    },
+    {
+     "say": "剩 P2 跟 P4，都是 4，這叫 tie，誰先都行。這裡讓 P2 先，8 到 12，再 P4，12 到 16。",
+     "k": 9,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 940.7
+     }
+    },
+    {
+     "say": "算 waiting time：P1 一來就跑，0；P3 第 4 秒到、第 7 秒開始，等了 3。",
+     "k": 10,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 958.1
+     }
+    },
+    {
+     "say": "P2 第 2 秒到、第 8 秒開始，等 6；P4 第 5 秒到、第 12 秒開始，等 7。平均 0 加 6 加 3 加 7，除以 4，等於 4。",
+     "k": 11,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1000.2
+     }
+    },
+    {
+     "say": "CPU 有工作就不讓它閒著的話，任何 non-preemptive 排法都不可能比 4 更小。",
+     "k": 11,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1000.2
+     }
+    },
+    {
+     "say": "但這不代表 SJF 是最好的演算法。它只在平均 waiting time 最好，可能犧牲 response 或 turnaround。",
+     "k": 12,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1016.3
+     }
+    },
+    {
+     "say": "看 response time：P2 第 2 秒到，第 8 秒才開始，等了 6。",
+     "k": 13,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1039
+     }
+    },
+    {
+     "say": "有的系統要 response 最小，有的要 waiting 最小，沒有一定，要看需求選演算法。",
+     "k": 14,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1052.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "「不能打斷」是不打斷一個 burst",
+   "scene": "sch-17a-sjf",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "欸，周老師特別提醒：non-preemptive 說的「不能打斷」，是不打斷這一個 CPU burst，不是整個程式。",
+     "k": 5,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 198
+     }
+    },
+    {
+     "say": "一個程式有很多 burst。像這個 for 迴圈：i++ 是 CPU burst，print(i) 是 I/O burst，繞好幾輪。",
+     "read": "一個程式有很多 burst。像這個 for 迴圈：i 加加是 CPU burst，print i 是 I/O burst，繞好幾輪。",
+     "k": 6,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 207.8
+     }
+    },
+    {
+     "say": "考試可能這樣出：P1 第一個 burst 7，接著一段 I/O，第二個 burst 4，題目會告訴你中間隔多久。",
+     "k": 7,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 222.7
+     }
+    },
+    {
+     "say": "第二個 burst 來的時候，它重新加入 ready queue，跟當時排隊的人一起比、重新排程。",
+     "k": 8,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 250.2
+     }
+    },
+    {
+     "say": "所以 non-preemptive 的 Gantt chart 上，每一段的長度一定剛好等於那個人的 burst 長度。",
+     "k": 9,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 256.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "SJF 例題：從 idle 到平手",
+   "scene": "sch-gs-gantt",
+   "steps": 19,
+   "lines": [
+    {
+     "say": "再練一題考試常見的，Gate Smashers 的例題。P1 在 1 到、burst 3；P2 在 2 到、burst 4。",
+     "k": 1,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 1
+     }
+    },
+    {
+     "say": "P3 在 1 到、burst 2；P4 在 4 到、burst 4。",
+     "k": 1,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 1
+     }
+    },
+    {
+     "say": "題目通常要你算四個：completion time、turnaround time、waiting time、response time。",
+     "k": 2,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 15.3
+     }
+    },
+    {
+     "say": "SJF 選人的 criteria 是 burst time。",
+     "k": 3,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 26.8
+     }
+    },
+    {
+     "say": "burst 最小的 process，最先上 CPU。",
+     "k": 4,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 32.4
+     }
+    },
+    {
+     "say": "這題是 non-preemptive：CPU 一交出去，它就一路跑完。",
+     "k": 5,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 45.4
+     }
+    },
+    {
+     "say": "畫 Gantt chart，時間一定從 0 開始。",
+     "k": 6,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 56.8
+     }
+    },
+    {
+     "say": "站在 t = 0，先檢查：有誰在 0 到？看表格，一個都沒有。",
+     "read": "站在 t 等於 0，先檢查：有誰在 0 到？看表格，一個都沒有。",
+     "k": 7,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 71.3
+     }
+    },
+    {
+     "say": "考試也會出這種，沒關係：沒人，CPU 就 idle，0 到 1 畫成 idle。",
+     "k": 8,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 82
+     }
+    },
+    {
+     "say": "站在 t = 1，第一件事永遠是先看誰到了，burst 等一下再比。P1 和 P3 都在 1 到。",
+     "read": "站在 t 等於 1，第一件事永遠是先看誰到了，burst 等一下再比。P1 和 P3 都在 1 到。",
+     "k": 9,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 97.9
+     }
+    },
+    {
+     "say": "兩個都到了才比 burst：P1 要 3、P3 要 2，P3 比較短，先選 P3。",
+     "k": 10,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 125.9
+     }
+    },
+    {
+     "say": "non-preemptive，P3 跑完 2 個單位：1 加 2 等於 3，P3 在 3 完成。",
+     "k": 11,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 149.1
+     }
+    },
+    {
+     "say": "站在 t = 3：P1 在 1 就到了還沒跑，P2 在 2 也到了，ready queue 裡有 P1、P2。",
+     "read": "站在 t 等於 3：P1 在 1 就到了還沒跑，P2 在 2 也到了，ready queue 裡有 P1、P2。",
+     "k": 12,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 168.2
+     }
+    },
+    {
+     "say": "P1 要 3、P2 要 4，P1 短，跑 3 個單位，P1 在 6 完成。",
+     "k": 13,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 243.1
+     }
+    },
+    {
+     "say": "現在是 6，誰到了？P2 一直在等，P4 在 4 也到了。",
+     "k": 14,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 266.8
+     }
+    },
+    {
+     "say": "P2 要 4，P4 也要 4，一樣長！這題是故意設計的，要讓你看到各種狀況。",
+     "k": 15,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 293.6
+     }
+    },
+    {
+     "say": "平手時退一步看 arrival time：P2 在 2 到，P4 在 4 到，所以選 P2。",
+     "k": 16,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 320.9
+     }
+    },
+    {
+     "say": "要是連到達時間也一樣呢？那就選 process id 比較小的。",
+     "k": 17,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 347.3
+     }
+    },
+    {
+     "say": "P2 跑 4 個單位，6 加 4 等於 10，P2 在 10 完成。",
+     "k": 18,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 359.4
+     }
+    },
+    {
+     "say": "最後只剩 P4，跑到 14 完成，Gantt chart 畫好了。",
+     "k": 19,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 372.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "SJF 例題：算時間與平均",
+   "scene": "sch-gs-calc",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "completion time 看 Gantt chart 每塊的右邊：P1 是 6、P2 是 10、P3 是 3、P4 是 14。",
+     "k": 1,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 380.6
+     }
+    },
+    {
+     "say": "turnaround 等於 CT 減 AT：P1 是 6 − 1 = 5，P2 是 8，P3 是 2，P4 是 14 − 4 = 10。",
+     "read": "turnaround 等於 CT 減 AT：P1 是 6 減 1 等於 5，P2 是 8，P3 是 2，P4 是 14 減 4 等於 10。",
+     "k": 2,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 407.3
+     }
+    },
+    {
+     "say": "waiting 等於 turnaround 減 burst：P1 是 5 − 3 = 2，P2 是 4，P3 是 0，P4 是 10 − 4 = 6。",
+     "read": "waiting 等於 turnaround 減 burst：P1 是 5 減 3 等於 2，P2 是 4，P3 是 0，P4 是 10 減 4 等於 6。",
+     "k": 3,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 426.1
+     }
+    },
+    {
+     "say": "response time 呢？non-preemptive 時不用另外算，它一定等於 waiting time。",
+     "k": 4,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 444.7
+     }
+    },
+    {
+     "say": "真的要算，定義是第一次拿到 CPU 減到達。像 P3 第一次拿到 CPU 是 1，到達也是 1，所以是 0。",
+     "k": 5,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 457.9
+     }
+    },
+    {
+     "say": "為什麼相等？non-preemptive 一拿到 CPU 就跑完，沒有第二次。只有 preemptive 會切開，兩者才可能不同。",
+     "k": 6,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 483.6
+     }
+    },
+    {
+     "say": "平均 turnaround：5 加 8 加 2 加 10 等於 25，除以 4，是 6.25。",
+     "k": 7,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 517.5
+     }
+    },
+    {
+     "say": "平均 waiting：2 加 4 加 0 加 6 等於 12，除以 4，是 3。這就是一題 SJF 的完整解法。",
+     "k": 8,
+     "src": {
+      "v": "VCIVXPoiLpU",
+      "t": 534.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Preemptive SJF：SRTF",
+   "scene": "sch-16d-srtf",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "回到周老師那組 P1 到 P4，改用 preemptive：有新人進 ready queue 就重新比，可以打斷正在跑的。buddy 肚子上的數字是還剩多少。",
+     "k": 1,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1078.3
+     }
+    },
+    {
+     "say": "一開始只有 P1，先讓它跑。",
+     "k": 2,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1083.8
+     }
+    },
+    {
+     "say": "第 2 秒 P2 進來要 4；P1 跑了 2，只剩 5。4 比 5 短，P1 被 preempt，回去排隊，P2 上 CPU。",
+     "k": 3,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1090.9
+     }
+    },
+    {
+     "say": "注意，之後再比的時候，P1 是剩下的 5，不是原本的 7。所以課本叫它 SRTF，shortest remaining time first。",
+     "k": 4,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1131.4
+     }
+    },
+    {
+     "say": "第 4 秒 P3 進來只要 1；P2 剩 2、P1 剩 5。P3 最短，又打斷 P2，P3 跑 4 到 5。",
+     "k": 5,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1137
+     }
+    },
+    {
+     "say": "第 5 秒 P4 到要 4，P3 剛好做完。P2 剩 2 最短，P2 跑 5 到 7 做完。",
+     "k": 6,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1169.3
+     }
+    },
+    {
+     "say": "接著 P4 的 4 比 P1 的 5 短，P4 跑 7 到 11，最後 P1 跑 11 到 16。",
+     "k": 7,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1192
+     }
+    },
+    {
+     "say": "看 Gantt chart，顏色亂掉了，P1、P2 都被切成好幾段，這就是 preemption 的樣子。",
+     "k": 8,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1203.6
+     }
+    },
+    {
+     "say": "平均 waiting：P1 是 9、P2 是 1、P3 是 0、P4 是 2，加起來 12 除以 4，等於 3，比 non-preemptive 的 4 還小。",
+     "k": 9,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1209.6
+     }
+    },
+    {
+     "say": "被打斷的情況 waiting 比較難算。像 P2 一來就跑沒等，但中間被打斷，第 7 秒才結束，不能只看開始時間。",
+     "k": 10,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1224
+     }
+    },
+    {
+     "say": "用公式最穩：waiting 等於 completion 減 arrival 減 burst。P2 是 7 − 2 − 4 = 1。",
+     "read": "用公式最穩：waiting 等於 completion 減 arrival 減 burst。P2 是 7 減 2 減 4 等於 1。",
+     "k": 11,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1252
+     }
+    },
+    {
+     "say": "這是只有一個 burst 的情況；有好幾個 burst，還要再減掉做 I/O 的時間。",
+     "k": 12,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1259.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Response time 不等於 waiting time",
+   "scene": "sch-17a-srtf",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "preemptive 每當有新人進 ready queue，都要重新比一次剩餘時間。",
+     "k": 1,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 264.6
+     }
+    },
+    {
+     "say": "整條 Gantt chart 是 P1、P2、P3、P2、P4、P1，P1 的 CPU burst 被切成兩段。",
+     "k": 2,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 276.3
+     }
+    },
+    {
+     "say": "看 P1：一來就上 CPU，response time 是 0，很快；可是從 2 等到 11，在 ready queue 等了 9。",
+     "k": 3,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 295.4
+     }
+    },
+    {
+     "say": "所以 preemptive 時，response 和 waiting 很容易不一樣，是兩個不同的指標，別混在一起。",
+     "k": 4,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 318
+     }
+    },
+    {
+     "say": "整體來說 preemptive 比較好，這例平均等待 3，比 4 少。",
+     "k": 5,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 333.3
+     }
+    },
+    {
+     "say": "代價就是剛講的：CPU burst 跑到一半 context switch，會帶來 synchronization 問題。",
+     "k": 6,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 337.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "預測下一個 CPU burst",
+   "scene": "sch-16d-predict",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "那問題來了：SJF 理論上最好，就像很多理論上很好的演算法一樣，實際上做不到。",
+     "k": 1,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1284.3
+     }
+    },
+    {
+     "say": "為什麼？排程是在程式開始跑之前決定的，跑之前根本沒人知道這段 burst 多長。",
+     "k": 2,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1303.3
+     }
+    },
+    {
+     "say": "解法是 approximate SJF：看這個程式過去的歷史，猜它下一個 burst 多長，再拿猜的值做 SJF。",
+     "k": 3,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1321.4
+     }
+    },
+    {
+     "say": "每段 burst 的長度排起來，就是一串 time series。我們用前面的 t₁、t₂ 去猜下一個。",
+     "read": "每段 burst 的長度排起來，就是一串 time series。我們用前面的 t1、t2 去猜下一個。",
+     "k": 4,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1342.2
+     }
+    },
+    {
+     "say": "最簡單的是 exponential average：τₙ₊₁ = α × tₙ + (1 − α) × τₙ。",
+     "read": "最簡單的是 exponential average：tau n加1 等於 alpha 乘 t n，加上 1減alpha 乘 tau n。",
+     "k": 5,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1385.2
+     }
+    },
+    {
+     "say": "α 介於 0 到 1，決定你比較相信最近一次的實際值，還是過去的預測。",
+     "read": "alpha 介於 0 到 1，決定你比較相信最近一次的實際值，還是過去的預測。",
+     "k": 5,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1385.2
+     }
+    },
+    {
+     "say": "為什麼叫指數？把式子展開，越久以前的值前面乘越多次 (1 − α)，影響力像指數一樣 decay。",
+     "read": "為什麼叫指數？把式子展開，越久以前的值前面乘越多次 1 減 alpha，影響力像指數一樣 decay。",
+     "k": 6,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1419
+     }
+    },
+    {
+     "say": "兩個極端要記：α = 0 預測永遠不變，只看歷史；α = 1 只看上一次的實際值。",
+     "read": "兩個極端要記：alpha 等於 0 預測永遠不變，只看歷史；alpha 等於 1 只看上一次的實際值。",
+     "k": 6
+    },
+    {
+     "say": "下面兩種柱子：灰色是預測的 τ，藍色是實際跑出來的 t，希望越來越貼近。",
+     "read": "下面兩種柱子：灰色是預測的 tau，藍色是實際跑出來的 t，希望越來越貼近。",
+     "k": 8,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1467.5
+     }
+    },
+    {
+     "say": "一開始完全不知道這程式的行為，只能亂猜：先猜 10。",
+     "k": 9,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1537.3
+     }
+    },
+    {
+     "say": "照這個猜測排下去，跑完才發現它只跑了 6。",
+     "k": 10,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1566.1
+     }
+    },
+    {
+     "say": "套公式：6 加 10 除以 2，等於 8，下次猜 8。結果下一段實際只跑了 4。",
+     "k": 11,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1589
+     }
+    },
+    {
+     "say": "再修正一次：4 加 8 除以 2，等於 6。",
+     "k": 12,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1610.5
+     }
+    },
+    {
+     "say": "這例子 α = 0.5，最近一次跟過去的預測各佔一半，所以直接相加除以 2 就好。",
+     "read": "這例子 alpha 等於 0.5，最近一次跟過去的預測各佔一半，所以直接相加除以 2 就好。",
+     "k": 13,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1621.6
+     }
+    },
+    {
+     "say": "下一段實際跑了 6，跟預測剛好一樣，所以下次繼續猜 6。",
+     "k": 14,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1637.8
+     }
+    },
+    {
+     "say": "只要程式行為有規律、趨勢穩定，像迴圈每次做一樣的事，預測最後就會貼近真實值。",
+     "k": 15,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1659.4
+     }
+    },
+    {
+     "say": "也可以換更複雜的時間序列預測方法，burst 長度有 pattern 的話就猜得更準。",
+     "k": 16,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1669.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "預測追上實際值",
+   "scene": "sch-17a-predict",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "這組其實是恐龍書的例子：τ₀ = 10、α = 1/2，實際 6、4、6，預測一路修正成 8、6、6。",
+     "read": "這組其實是恐龍書的例子：tau 零 等於 10、alpha 等於二分之一，實際 6、4、6，預測一路修正成 8、6、6。",
+     "k": 4,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 379.9
+     }
+    },
+    {
+     "say": "再往後實際值先是 4，接著跳到 13 並穩定下來；預測依序是 5、9、11、12，很快就追上了。",
+     "k": 5,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 387.7
+     }
+    },
+    {
+     "say": "預測準了，你挑中的就真的是最短的 job，自然也就最快。",
+     "k": 6,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 406.8
+     }
+    },
+    {
+     "say": "真實 OS 的想法一樣是 burst 短的優先，只是不一定用這麼複雜的數學，而是用一些直覺的方法，最後會看到。",
+     "k": 7,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 419.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Priority scheduling 與 starvation",
+   "scene": "sch-16d-priority",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "下一個：priority scheduling。每個 process 給一個 priority，buddy 背後金色柱子越高，priority 越高。",
+     "k": 1,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1695
+     }
+    },
+    {
+     "say": "priority 可以一建立就固定，像 OS 自己的最高、使用者的較低；也可以依執行時的行為往上或往下調。",
+     "k": 2,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1705.3
+     }
+    },
+    {
+     "say": "不管會不會變，scheduler 就看「當下」誰最高，挑最高的先做。P1 最高，先上 CPU。",
+     "k": 3,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1732.4
+     }
+    },
+    {
+     "say": "一樣分兩版：跑到一半來了一個 priority 很高的人，preemptive 版就會打斷正在跑的。",
+     "k": 4,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1743.3
+     }
+    },
+    {
+     "say": "其實 SJF 也是 priority scheduling：把 priority 設成 CPU burst time，越短越高，演算法完全一樣。",
+     "k": 5,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1758.7
+     }
+    },
+    {
+     "say": "真實的 OS 全部都是 priority scheduling，因為它最 general，什麼規則都能換算成 priority，只是摻雜很多經驗。",
+     "k": 6,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1797.1
+     }
+    },
+    {
+     "say": "但它有個問題：starvation。P4 priority 很低，又一直有比它高的 P5、P6 插隊，就永遠輪不到。",
+     "k": 7,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1805.2
+     }
+    },
+    {
+     "say": "周老師的比喻：就像貧富不均，窮的人一直翻不了身，最後就餓死了。",
+     "k": 7,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 507.5
+     }
+    },
+    {
+     "say": "課本有個真實故事：一台 IBM 大型主機 1967 年用到 1973 年，退役時才發現有個 process 從沒被執行過，等了六年。",
+     "k": 8,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1819.5
+     }
+    },
+    {
+     "say": "starvation 的定義：想跑卻一直跑不到，超過某個程度，就像餓死一樣。priority scheduling 一定要解決它。",
+     "k": 9,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1853.9
+     }
+    },
+    {
+     "say": "解法很簡單，叫 aging：每過一段時間它都沒被執行，就把它的 priority 往上加。P4 的柱子慢慢長高。",
+     "k": 10,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1866.4
+     }
+    },
+    {
+     "say": "多久加一次、每次加多少只是 policy，看你怎麼 tune。",
+     "k": 10,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 551.5
+     }
+    },
+    {
+     "say": "P4 終於上 CPU 做完了。所以 priority scheduling 一般都會搭配 aging，才不會有人餓死。",
+     "k": 11,
+     "src": {
+      "v": "n2o_WL62D4Q",
+      "t": 1889
+     }
+    },
+    {
+     "say": "還要小心方向：恐龍書慣例是數字越小越優先，但各系統不同，像 Solaris 就是越大越優先，題目先看清楚。",
+     "k": 11
+    }
+   ]
+  },
+  {
+   "title": "Round Robin 與 time quantum",
+   "scene": "sch-17a-rr",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "再來是 Round Robin，RR。示範一組：P1 要 5、P2 要 3、P3 要 4，都在第 0 秒到。",
+     "k": 1,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 581.3
+     }
+    },
+    {
+     "say": "就是大家輪流做，理論上最 fair 的方式。",
+     "k": 2,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 588.6
+     }
+    },
+    {
+     "say": "RR 要控制的是：每次輪到你，最多能做多久，這段時間叫 time quantum。",
+     "k": 3,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 596.8
+     }
+    },
+    {
+     "say": "quantum 可以是 100 毫秒，也可以小一點像 10 毫秒。這裡示範 q = 2。",
+     "read": "quantum 可以是 100 毫秒，也可以小一點像 10 毫秒。這裡示範 q 等於 2。",
+     "k": 4,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 609.6
+     }
+    },
+    {
+     "say": "quantum 固定，不管你 burst 多長，時間一到就讓出來。P1 做 2 就被叫停，剩 3，所以 RR 本質上是 preemptive。",
+     "k": 5,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 620.8
+     }
+    },
+    {
+     "say": "做完一輪的人排到 ready queue 最後面。P2、P3、P1 輪下去，剩不到 2 的就提早結束，像 P2 第二輪只做 1。",
+     "k": 6,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 645
+     }
+    },
+    {
+     "say": "quantum 設得非常大，大過所有 burst，每個人一上去都一次做完，就變成 FCFS 了。",
+     "k": 7,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 654.1
+     }
+    },
+    {
+     "say": "quantum 非常小，例如 1，大家一次做一點點，非常公平。",
+     "k": 8,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 676.6
+     }
+    },
+    {
+     "say": "但每次換人都有成本：q 很大只換 2 次、q = 2 換 6 次、q = 1 要換 11 次，太小 overhead 就很大。",
+     "read": "但每次換人都有成本：q 很大只換 2 次、q 等於 2 換 6 次、q 等於 1 要換 11 次，太小 overhead 就很大。",
+     "k": 9,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 682.1
+     }
+    },
+    {
+     "say": "所以一般系統的 quantum 不會設得非常大，也不會非常小。",
+     "k": 10,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 697.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "RR 例子：q = 20",
+   "scene": "sch-17a-rr20",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "來個正式的例子：q = 20，P1 要 53、P2 要 17、P3 要 68、P4 要 24，都在第 0 秒到。RR 很規律，好模擬。",
+     "read": "來個正式的例子：q 等於 20，P1 要 53、P2 要 17、P3 要 68、P4 要 24，都在第 0 秒到。RR 很規律，好模擬。",
+     "k": 1,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 704.2
+     }
+    },
+    {
+     "say": "每 20 就強迫換人。P1 雖然要 53，做到 20 就得下來，剩 33，回到隊尾。",
+     "k": 2,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 717.5
+     }
+    },
+    {
+     "say": "輪到 P2，它只要 17，所以會提早結束，不會硬做滿 20。",
+     "k": 3,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 726.8
+     }
+    },
+    {
+     "say": "第 37 秒 P2 做完，換 P3。",
+     "k": 4,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 740.2
+     }
+    },
+    {
+     "say": "P3 要 68 也只能先做 20，再換 P4、P1，以此類推。最後 P4 在 121 做完、P1 在 134、P3 在 162。",
+     "k": 5,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 744.6
+     }
+    },
+    {
+     "say": "補算平均等待：P1 是 134 − 53 = 81，P2 是 20，P3 是 162 − 68 = 94，P4 是 121 − 24 = 97，平均 73。",
+     "read": "補算平均等待：P1 是 134 減 53 等於 81，P2 是 20，P3 是 162 減 68 等於 94，P4 是 121 減 24 等於 97，平均 73。",
+     "k": 6,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 755.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "RR 的代價與好處",
+   "scene": "sch-17a-rrtrade",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "經驗上，雖然不能嚴格證明，RR 的平均 turnaround 通常比較高。用 q = 20 那組算，RR 平均是 113.5。",
+     "read": "經驗上，雖然不能嚴格證明，RR 的平均 turnaround 通常比較高。用 q 等於 20 那組算，RR 平均是 113.5。",
+     "k": 1,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 765
+     }
+    },
+    {
+     "say": "複習三個指標：wait time、response time，還有 turnaround time，整個做完花多久。",
+     "k": 2,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 786.6
+     }
+    },
+    {
+     "say": "同一組用 SJF，平均 turnaround 只有 78.5。RR 太公平了，公平的結果就是大家都很慢。",
+     "k": 3,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 793.6
+     }
+    },
+    {
+     "say": "周老師的比喻：1% 的人擁有 50% 的財富，平均財富看起來就很高。平均要拉開，靠的是少數人特別突出。",
+     "k": 4,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 799.9
+     }
+    },
+    {
+     "say": "反過來，RR 完全公平，大家一起被拉長，沒有人特別快，平均 turnaround 就降不下來。",
+     "k": 5,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 819.1
+     }
+    },
+    {
+     "say": "但看 response time，RR 就非常好：RR 平均 28.5，SJF 是 38。",
+     "k": 6,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 835.6
+     }
+    },
+    {
+     "say": "因為 RR 保證輪流：最多等「前面的人數 × quantum」就一定輪到你，這裡最多 3 × 20 = 60。",
+     "read": "因為 RR 保證輪流：最多等「前面的人數 乘 quantum」就一定輪到你，這裡最多 3 乘 20 等於 60。",
+     "k": 7,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 847.1
+     }
+    },
+    {
+     "say": "所以演算法沒有絕對好壞，只看使用者的需求、用哪個 metric 衡量。",
+     "k": 8,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 866.7
+     }
+    },
+    {
+     "say": "要 response 好就用 Round Robin；要平均等待最小就用 SJF。",
+     "k": 9,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 887.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "Multilevel queue",
+   "scene": "sch-17a-mlq",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "前面都是最基本的作法。實際系統會把它們 mix 在一起，再依需求調整。",
+     "k": 1,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 909.8
+     }
+    },
+    {
+     "say": "第一種兜法：ready queue 不只一個，而是很多個，這裡五條排隊道，各有自己的人。",
+     "k": 2,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 922.6
+     }
+    },
+    {
+     "say": "這叫 multilevel queue，MLQ。它有兩種，先講單純的這一種。",
+     "k": 3,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 932.2
+     }
+    },
+    {
+     "say": "每個 queue 放不同類型的工作，重要性不同，管理方式也就不同。",
+     "k": 4,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 942.7
+     }
+    },
+    {
+     "say": "比如 interactive 的工作需要 response 好，就用 Round Robin。",
+     "k": 5,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 960.2
+     }
+    },
+    {
+     "say": "system process 很重要，kernel 程式一定要先跑，就用 priority scheduling。每個 queue 都能選自己的演算法。",
+     "k": 6,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 970.2
+     }
+    },
+    {
+     "say": "可是問題來了：有五個 queue，每一刻還是只能選一個人上 CPU。",
+     "k": 7,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 998.9
+     }
+    },
+    {
+     "say": "周老師講的作法是 weighted：照設定的比例，隨機決定這次從哪個 queue 拿 job。",
+     "k": 8,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1023.5
+     }
+    },
+    {
+     "say": "比如 50% 的機會從 system process 挑，剩下 50% 分成 20%、10%、10%、10%，抽中的 queue 最前面的人上 CPU。",
+     "k": 9,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1039.9
+     }
+    },
+    {
+     "say": "某個 queue 可能空了，像 student 那條，抽到空的就重抽一次。",
+     "k": 10,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1064.8
+     }
+    },
+    {
+     "say": "注意：這種 MLQ 雖然畫成五層，上下沒意義，純看機率。process 也一直待在自己的 queue，不會移動。",
+     "k": 11,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1072.8
+     }
+    },
+    {
+     "say": "補充課本：恐龍書的 MLQ 是 queue 之間 fixed priority，上層有人下層就不能跑；或用 time slice，像前景 80%、背景 20%。",
+     "k": 11
+    },
+    {
+     "say": "周老師這種照權重挑 queue 的，就屬於 time slice 那一類。",
+     "k": 11
+    },
+    {
+     "say": "這樣就能組合不同演算法。OS 其實知道程式的一些 hint，可以管得更符合需求。",
+     "k": 12,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1095.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Multilevel feedback queue",
+   "scene": "sch-17a-mlfq",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "更複雜的一種：multilevel feedback queue，MLFQ。重點在 feedback。",
+     "k": 1,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1119.5
+     }
+    },
+    {
+     "say": "跟剛剛不同，這裡上下有意義：上面的一定先做，第一個 queue 空了才去第二個拿 job。",
+     "k": 2,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1133.8
+     }
+    },
+    {
+     "say": "而且 process 可以在 queue 之間移動，P3 就從 Q1 移到 Q2。",
+     "k": 3,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1160.9
+     }
+    },
+    {
+     "say": "feedback 的意思：OS 在 run time 觀察程式的行為，再決定它該待第幾層。",
+     "k": 4,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1180.4
+     }
+    },
+    {
+     "say": "OS 每次都從最上面的 queue 挑人，P1 在 Q0，所以 P1 上 CPU。MLQ 照機率挑，MLFQ 一律從最上層挑。",
+     "k": 5,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1196.9
+     }
+    },
+    {
+     "say": "為什麼要這樣？很多事要跑了才知道。使用者程式有的一直做 I/O、有的一直算，使用者也不會告訴 OS。",
+     "k": 6,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1219.4
+     }
+    },
+    {
+     "say": "但只要跑過，OS 就知道它的 burst 多長、呼叫了哪些 system call，於是能在 run time 幫它分類。",
+     "k": 7,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1259.5
+     }
+    },
+    {
+     "say": "分類結果：上層放的通常是 I/O-bound 的程式。別想反了，最先跑的反而是常做 I/O 的。",
+     "k": 8,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1287.4
+     }
+    },
+    {
+     "say": "因為 I/O-bound 代表 CPU burst 很短，先做它就等於 shortest job first，平均等待最小。",
+     "k": 9,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1296.7
+     }
+    },
+    {
+     "say": "所以 OS 看到程式呼叫了 I/O 的 system call，或 burst 真的比較短，就把它往上提，P4 從 Q1 升到 Q0。",
+     "k": 10,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1313
+     }
+    },
+    {
+     "say": "反過來，quantum 用完還做不完，代表你 burst 很長、是 CPU-bound，往下踢一層，P1 降到 Q1。",
+     "k": 11,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1345.6
+     }
+    },
+    {
+     "say": "但只從最上層開始跑，其實就是 priority scheduling，一直卡在最下層的 P3 就會 starvation。",
+     "k": 12,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1374.7
+     }
+    },
+    {
+     "say": "所以 MLFQ 一定也有 aging：等太久就往上提一層，讓它比較有機會被執行。",
+     "k": 13,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1402.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "MLFQ 例子：8、16、FCFS",
+   "scene": "sch-17a-mlfq-ex",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "看一個設定：Q0 用 RR、q = 8；Q1 用 RR、q = 16；Q2 用 FCFS。P1 到 P4 的長度是示意。",
+     "read": "看一個設定：Q0 用 RR、q 等於 8；Q1 用 RR、q 等於 16；Q2 用 FCFS。P1 到 P4 的長度是示意。",
+     "k": 1,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1424
+     }
+    },
+    {
+     "say": "前兩層都用 Round Robin，大家輪流，比較不容易 starvation。",
+     "k": 2,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1440.7
+     }
+    },
+    {
+     "say": "quantum 上面小、下面大：Q0 一次最多 8 毫秒，Q1 可以做到 16。",
+     "k": 3,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1451.1
+     }
+    },
+    {
+     "say": "8 毫秒全用完，系統就認定你的 burst 超過 8，往下移。P1 用完 8 還沒做完，降到 Q1。",
+     "k": 4,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1467.8
+     }
+    },
+    {
+     "say": "burst 小於 8 的才能留在第一層，P2 只要 6，在 Q0 就做完了。它們不一定最短，但都比 8 短。",
+     "k": 5,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1479.8
+     }
+    },
+    {
+     "say": "同理 16 以內的中等工作留在第二層。P3 用完 8 降到 Q1；P4 剛到，進 Q0 先做。",
+     "k": 6,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1498.9
+     }
+    },
+    {
+     "say": "第一個 queue 空了，才從第二個找。Q1 的 P1 做了 16 還沒完，再沉到 Q2。",
+     "k": 7,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1508.6
+     }
+    },
+    {
+     "say": "上面兩層都空了，剩下的就是每次 burst 都超過 16 的吃 CPU 程式，全在最下層。",
+     "k": 8,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1522
+     }
+    },
+    {
+     "say": "最下層用 FCFS，先來的先排到，比較不會 starvation，P1 最後也做完了。",
+     "k": 9,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1539.9
+     }
+    },
+    {
+     "say": "這樣拼的好處：執行時自動貼近 SJF，又比較不會 starvation。",
+     "k": 10,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1567
+     }
+    },
+    {
+     "say": "拼法要是反過來，平均等待這些指標就可能變得很差。",
+     "k": 11,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1589.4
+     }
+    },
+    {
+     "say": "有同學問：「留在第一層」是什麼意思？周老師說，程式做完 burst 去 I/O 會離開 ready queue，下次回來放回原本那層。",
+     "k": 12,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1615.5
+     }
+    },
+    {
+     "say": "這些資訊不會遺失，都記在 PCB 裡，PCB 有一塊專門記 scheduling 的資訊。",
+     "k": 13,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1652.6
+     }
+    },
+    {
+     "say": "別忘了，最下層也有機會跑，只要前面的 queue 全空就輪得到。",
+     "k": 14,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1685.3
+     }
+    },
+    {
+     "say": "MLFQ 要設計的有：幾個 queue、每層用什麼演算法、何時 upgrade、何時 downgrade。queue 之間怎麼挑不用設計。",
+     "k": 15,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1714.8
+     }
+    },
+    {
+     "say": "大部分系統都用 feedback queue，因為它在執行時就能分類，不用靠複雜的數學預測，那會有誤差也比較花時間。",
+     "k": 16,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1743.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "怎麼評估排程演算法",
+   "scene": "sch-17a-eval",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "補充一個觀念：不只 OS，任何電腦系統裡，scheduling 都是很 fundamental 的機制。",
+     "k": 1,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1786.8
+     }
+    },
+    {
+     "say": "評估第一步是定義 metric：要 response 最小？waiting 最小？還是 turnaround 最小？應用不同，目標就不同。",
+     "k": 2,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1798
+     }
+    },
+    {
+     "say": "第二步是提出一堆演算法，有的還能證明最好，接著要評估它到底多好。",
+     "k": 3,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1815.3
+     }
+    },
+    {
+     "say": "第一種評估法：deterministic modeling。把輸入全部給定，像我們的例子那樣一步步手動模擬。",
+     "k": 4,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1834.3
+     }
+    },
+    {
+     "say": "缺點是不 general，輸入一改結果就變。像 FCFS 先短後長很好，先長後短就最糟，只能幫你建立直覺。",
+     "k": 5,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1859.6
+     }
+    },
+    {
+     "say": "比較嚴謹的是理論模型：scheduling 本質上就是排隊，可以對應到 queueing theory。",
+     "k": 6,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1897
+     }
+    },
+    {
+     "say": "用機率分析，得到「有多少比例的機會，等待時間是多少」這種結果。",
+     "k": 7,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1931
+     }
+    },
+    {
+     "say": "但常常找不到完全吻合的 model，只好加 assumption，而假設在真實世界不一定成立，結果就有落差。",
+     "k": 8,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1955.9
+     }
+    },
+    {
+     "say": "再來是 simulation：寫一個程式，把演算法放進去模擬執行。",
+     "k": 9,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1974
+     }
+    },
+    {
+     "say": "餵大量的 workload，例如真實系統的 log：什麼時候來了哪些 job、burst 怎麼變，看結果好不好。",
+     "k": 10,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 1999.1
+     }
+    },
+    {
+     "say": "模擬覺得不錯，最後才真的 implement 進系統。",
+     "k": 11,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 2028.6
+     }
+    },
+    {
+     "say": "差別是真實系統有額外 overhead，像 context switch。模擬沒算到，實作才發現 quantum 設太小，切換成本累積很大。",
+     "k": 12,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 2040
+     }
+    },
+    {
+     "say": "課堂上的例題都是 deterministic；如果再收集真實 trace 來跑模擬器，就能更嚴謹地看演算法好不好。",
+     "k": 13,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 2068.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "軟體排程與硬體排程",
+   "scene": "sch-17b-layers",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "好，換到相關議題。前面的排程全在 software level，也就是 OS 管的 ready queue。",
+     "k": 1,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 17.9
+     }
+    },
+    {
+     "say": "可是下面還有真正的硬體。",
+     "k": 2,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 20.8
+     }
+    },
+    {
+     "say": "現在的電腦是 multiprocessor，打開主機板，可能有兩個 CPU 插槽。",
+     "k": 3,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 44.6
+     }
+    },
+    {
+     "say": "一顆 CPU 裡又有好幾個 core，像手機說的八核心、四核心。",
+     "k": 4,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 61.8
+     }
+    },
+    {
+     "say": "甚至一個 core 能同時跑兩個 thread，像 Intel 的 hyper-threading；GPU 一個 core 能跑的更多。",
+     "k": 5,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 73.3
+     }
+    },
+    {
+     "say": "所以硬體也是一層層的：CPU 裡有 core，core 裡有 hardware thread。",
+     "k": 6,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 94.4
+     }
+    },
+    {
+     "say": "OS 在乎的是排順序：硬體說「我有 slot 空了」，OS 就從 ready queue 選一個交出去。",
+     "k": 7,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 103.2
+     }
+    },
+    {
+     "say": "周老師說跑在哪是硬體決定的；課本更精確：OS 決定哪個 thread 放到哪個 hardware thread，也就是 logical CPU。",
+     "k": 8,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 120
+     }
+    },
+    {
+     "say": "硬體負責下一層：一個 core 此刻要執行它的哪一個 hardware thread。",
+     "k": 8
+    },
+    {
+     "say": "所以排程有兩層：OS 一層、core 內部一層。剛才學的演算法都是 OS 那一層。",
+     "k": 9,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 135.1
+     }
+    },
+    {
+     "say": "後面還會講 real-time 排程，重點是趕上 deadline，所以演算法要非常嚴謹。",
+     "k": 10,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 156.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Asymmetric 與 symmetric multiprocessing",
+   "scene": "sch-17b-smp",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "有好幾顆 CPU 時，OS 看到的是：有幾顆 CPU，什麼時候把選好的 process 丟給它。",
+     "k": 1,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 195.4
+     }
+    },
+    {
+     "say": "多處理器分兩種：asymmetric，有一顆角色不同；symmetric，大家角色都一樣。",
+     "k": 2,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 207.6
+     }
+    },
+    {
+     "say": "asymmetric：其中一顆是 master，管所有 process。OS 選中的全交給 master，再由它分到各個 processor。",
+     "k": 3,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 220.3
+     }
+    },
+    {
+     "say": "symmetric，SMP：沒有 master，所有 CPU 一起去拿同一個 ready queue 裡的 process。",
+     "k": 4,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 248.5
+     }
+    },
+    {
+     "say": "問題是一個 process 不能同時在兩顆 CPU 上跑，所以 dequeue 時要 synchronization，確保只有一顆拿到。",
+     "k": 5,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 265.3
+     }
+    },
+    {
+     "say": "大家要透過同步來搶，會慢那麼一點點，真的很小。",
+     "k": 6,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 288.2
+     }
+    },
+    {
+     "say": "asymmetric 的壞處是 master 基本上不跑一般程式，使用率可能很低，所以一般電腦都是 SMP。",
+     "k": 7,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 298.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Processor affinity",
+   "scene": "sch-17b-affinity",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "另一個跟排程很有關的硬體概念：affinity。",
+     "k": 1,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 316.5
+     }
+    },
+    {
+     "say": "affinity 就是把程式綁在指定的 core 上，一定要在那裡跑，那個 core 被佔著就只能等。",
+     "k": 2,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 335.1
+     }
+    },
+    {
+     "say": "好處是 cache 可以 reuse。L1 cache 每個 core 各一份不共用，P 一直在 core 0 跑，cache 裡都是它的資料。",
+     "k": 3,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 347.8
+     }
+    },
+    {
+     "say": "這就提高 cache 的 hit rate，也就是要的資料剛好在 cache 裡的比例，cache 比 main memory 快得多。",
+     "k": 3,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 85.7
+     }
+    },
+    {
+     "say": "所以很講究效能、又能控制要跑幾個 process 時，大家都會用 system call 把程式綁在某個 core。",
+     "k": 4,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 361.4
+     }
+    },
+    {
+     "say": "這等於在排程上加一個限制：scheduler 只能把它排到這個 core，affinity 就是透過 scheduler 控制的。",
+     "k": 5,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 376.9
+     }
+    },
+    {
+     "say": "soft affinity：那個 core 太忙或等太久，還是可以排到別的 core，代價是新 core 的 cache 沒它的資料，要重抓。",
+     "k": 6,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 388.1
+     }
+    },
+    {
+     "say": "hard affinity：無論如何只能在這個 core，寧可等，也不換地方。",
+     "k": 7,
+     "src": {
+      "v": "G4v9HUllv-Q",
+      "t": 397.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "NUMA：排在資料旁邊",
+   "scene": "sch-18a-numa",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "另一個跟記憶體有關的：memory architecture 分 UMA，存取時間均勻，和 NUMA，非均勻。",
+     "k": 1,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 120.5
+     }
+    },
+    {
+     "say": "規模大、processor 多的電腦通常是 NUMA：每顆 CPU 旁邊有一塊比較近的 memory。",
+     "k": 2,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 139.3
+     }
+    },
+    {
+     "say": "資料放在哪個 memory chip，速度就不同：讀自己旁邊的 local 快，讀別人那邊的 remote 慢。",
+     "k": 3,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 159.5
+     }
+    },
+    {
+     "say": "所以排程時希望把 process 排在它資料那一側的 CPU。P 在 CPU 0 建立的資料，就在 memory 0。",
+     "k": 4,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 171.2
+     }
+    },
+    {
+     "say": "資料一建立就待在那裡，要搬到另一邊就是 memory copy，成本很高。",
+     "k": 5,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 182.5
+     }
+    },
+    {
+     "say": "OS 會定期重新排程，要是 P 被排到 CPU 1，每次存取都要跨過去，很慢，所以會希望放回原本那顆。",
+     "k": 6,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 196.5
+     }
+    },
+    {
+     "say": "寫 thread 程式時也能用 flag 給 OS hint，比如要求記憶體一定在 local，或把它綁在同一顆 CPU。",
+     "k": 7,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 224.6
+     }
+    },
+    {
+     "say": "NUMA 是以 CPU 為單位：同一顆 CPU 上跑哪個 core 都沒關係，它們接同一個 memory bank。",
+     "k": 8,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 248.6
+     }
+    },
+    {
+     "say": "所以 NUMA 的擺法也會影響 process scheduling，而且會嚴重影響效能。",
+     "k": 9,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 262.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Load balancing：push 與 pull",
+   "scene": "sch-18a-lb",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "因為資料有 locality，使用者會想把程式指定在某個 processor，代價就是 load balancing。這裡每塊磚是一個工作。",
+     "k": 1,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 277.1
+     }
+    },
+    {
+     "say": "程式一開始放哪個 core 可能是隨機的，可是跑了之後有了資料、有了 cache，就會想綁在那裡。",
+     "k": 2,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 292.8
+     }
+    },
+    {
+     "say": "結果 core 0 的工作越疊越多，大家 wait time 變久；core 3 卻很閒，這就是不平衡。",
+     "k": 3,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 311.6
+     }
+    },
+    {
+     "say": "所以 locality 和 load balancing 往往是 trade-off：綁得越緊，越不平衡。",
+     "k": 4,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 324.3
+     }
+    },
+    {
+     "say": "load balancing 就是讓每個 core 的工作量差不多。課本放在 SMP 的 OS 排程裡講，像 Linux 會定期檢查。",
+     "k": 5,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 336.2
+     }
+    },
+    {
+     "say": "怎麼做？分成 push 和 pull 兩種。",
+     "k": 6,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 356.4
+     }
+    },
+    {
+     "say": "push：工作量重的人主動發起，把工作推給輕的人。core 0 把一塊磚推給 core 3。",
+     "k": 7,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 362.9
+     }
+    },
+    {
+     "say": "搬工作一定有 source 和 destination，差別只在誰先發起。",
+     "k": 8,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 393.9
+     }
+    },
+    {
+     "say": "pull 反過來：自己 queue 空了、甚至 idle 的人主動去找，把工作拉過來。core 1 從 core 0 拉走一塊。",
+     "k": 9,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 414.4
+     }
+    },
+    {
+     "say": "兩種結果一樣，都讓工作平均，只差在設計上誰先發起。",
+     "k": 10,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 432.1
+     }
+    },
+    {
+     "say": "那要選哪種？看整個系統的 loading 是高還是低。",
+     "k": 11,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 451.2
+     }
+    },
+    {
+     "say": "每次問「你能不能接」都是 overhead，所以希望發起的人越少越好。",
+     "k": 12,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 460.6
+     }
+    },
+    {
+     "say": "系統很忙時閒的人少，就用 pull，讓少數真的閒的人去發起；用 push 的話，一堆忙的人搶著找那幾個閒的。",
+     "k": 13,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 490.4
+     }
+    },
+    {
+     "say": "反過來，系統很閒時忙的人少，就用 push，只有少數忙的人發起。",
+     "k": 14,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 531.2
+     }
+    },
+    {
+     "say": "補充：恐龍書只定義 push 和 pull migration，Linux 兩種都用；高負載用 pull 是周老師從發起次數推出來的考量。",
+     "k": 14
+    },
+    {
+     "say": "這段知道就好，比較重要的是 affinity 跟 load balancing 之間的 trade-off。",
+     "k": 15,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 575.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Memory stall 與 hardware thread",
+   "scene": "sch-18a-stall",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "再深入單一顆 CPU，現在的 CPU 基本上都是 multicore。",
+     "k": 1,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 593.4
+     }
+    },
+    {
+     "say": "更低的層次，一個 core 要跑很多 thread 時，還要考慮 memory stall。",
+     "k": 2,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 620.7
+     }
+    },
+    {
+     "say": "修過計組就知道，一條指令分好幾個 cycle，其中很重要的一步是存取記憶體，灰色那段。",
+     "k": 3,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 631.2
+     }
+    },
+    {
+     "say": "很多 core、很多 thread 共用同一條 memory bus，記憶體存取可能撞在一起，就得停下來等，這就是 stall。",
+     "k": 4,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 648.3
+     }
+    },
+    {
+     "say": "stall 的時候 CPU 根本沒在執行指令，只是卡著等記憶體，時間軸上灰色就是在乾等。",
+     "k": 5,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 665.2
+     }
+    },
+    {
+     "say": "所以有了 Intel 的 hyper-threading，或是 GPU，一個 core 有好幾個 hardware thread，甚至 10 個以上。",
+     "k": 6,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 679.4
+     }
+    },
+    {
+     "say": "那為什麼一個 core 跑很多 thread 不會變慢？因為利用了 stall 的空檔：thread 0 在等記憶體，thread 1 拿來算。",
+     "k": 7,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 697
+     }
+    },
+    {
+     "say": "怎麼利用空檔排另一個 thread 進來，這也是排程問題，而且是硬體層級做的。",
+     "k": 8,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 715.4
+     }
+    },
+    {
+     "say": "把執行和等記憶體 overlap 起來，就能塞兩個 thread；再加更多 register，像 GPU，可以塞更多。",
+     "k": 9,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 724.8
+     }
+    },
+    {
+     "say": "這已經是 instruction pipeline 的層次了，換 thread 時，pipeline 裡還有上一個 thread 的東西。",
+     "k": 10,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 754.3
+     }
+    },
+    {
+     "say": "第一種 coarse-grained：把整個 pipeline flush 掉再換 thread，清空很花時間。",
+     "k": 11,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 795.7
+     }
+    },
+    {
+     "say": "第二種 fine-grained：像硬體裡的 context switch，多加 register 保留 pipeline 狀態，直接切去另一個 thread。",
+     "k": 12,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 807.4
+     }
+    },
+    {
+     "say": "簡單講：coarse 會 flush 再換人，fine 保留狀態，去跑沒有 stall 的那個 thread。",
+     "k": 13,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 840.5
+     }
+    },
+    {
+     "say": "補充恐龍書：coarse 只在遇到 memory stall 這種長延遲事件才切；fine 在指令邊界就切，靠額外硬體所以成本低。",
+     "k": 13
+    },
+    {
+     "say": "這些都在硬體層級。整體來看，軟體層級是 OS，管 ready queue 裡 process 的順序。",
+     "k": 14,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 860.8
+     }
+    },
+    {
+     "say": "硬體排程已經做進 CPU 了，OS 只在乎硬體說現在有幾個可執行的位置，然後給出順序。",
+     "k": 15,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 895.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Real-time：deadline 與週期",
+   "scene": "sch-18a-rt",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "最後一個重要主題：real-time 排程。",
+     "k": 1,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 913.2
+     }
+    },
+    {
+     "say": "之前的排程，都用 wait time 或整個系統的效能來衡量。",
+     "k": 2,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 923.9
+     }
+    },
+    {
+     "say": "但 real-time 的定義是：必須在 deadline 之前完成。重點不是越快越好，而是不能超過期限。",
+     "k": 3,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 940
+     }
+    },
+    {
+     "say": "一般排程不知道 deadline；real-time 的工作一定會告訴你 deadline，目標就是在它之前做完。",
+     "k": 4,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 952.3
+     }
+    },
+    {
+     "say": "分兩種：soft 盡量避免 miss deadline；hard 必須有演算法保證不 miss，更嚴格。",
+     "k": 5,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 964.5
+     }
+    },
+    {
+     "say": "像影音串流，有時清楚、有時不太清楚，沒關係，盡量讓你看得到，這是 soft。",
+     "k": 6,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 987.8
+     }
+    },
+    {
+     "say": "hard 很廣，大部分 control system 都是：汽車、武器、核電廠。miss 一次可能就是車子失控，非常嚴重。",
+     "k": 7,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1001.2
+     }
+    },
+    {
+     "say": "這類工作有個通用的描述：用一個三個參數的 tuple。",
+     "k": 8,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1030.3
+     }
+    },
+    {
+     "say": "第一個是 ready time，什麼時候進系統、開始可以執行。",
+     "k": 9,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1050.3
+     }
+    },
+    {
+     "say": "第二個是 execution，就像 CPU burst，每次要跑多久。",
+     "k": 10,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1061.1
+     }
+    },
+    {
+     "say": "第三個是 real-time 才有的 period：多久之後出現下一次 burst，也可以把它想成 deadline。",
+     "k": 11,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1075.8
+     }
+    },
+    {
+     "say": "要保證趕上 deadline，工作必須很有規律；完全沒規律根本沒辦法排，一猜錯就 miss。",
+     "k": 12,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1088.5
+     }
+    },
+    {
+     "say": "例子：period 10、execution 4，每 10 個單位來一個 burst，每次要跑 4。",
+     "k": 13,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1115.3
+     }
+    },
+    {
+     "say": "每一次都要在下一個 burst 來之前，也就是 10、20、30 之前，把這 4 做完。",
+     "k": 14,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1128.3
+     }
+    },
+    {
+     "say": "周老師說這裡兩個基本演算法用在 soft real-time；不過課本也拿它們分析 hard real-time：使用率夠低就保證不 miss。",
+     "k": 15,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1157.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Rate-Monotonic 與 EDF 的想法",
+   "scene": "sch-18a-rmedf",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "第一個演算法：rate monotonic，RM。",
+     "k": 1,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1165.5
+     }
+    },
+    {
+     "say": "它是 static 的 priority scheduling，priority 固定下來，依據的是 period。",
+     "k": 2,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1173.8
+     }
+    },
+    {
+     "say": "period 越短，下一個 burst 越快來，越急，priority 越高。就像寫作業，急的先做。",
+     "k": 3,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1190.8
+     }
+    },
+    {
+     "say": "period 是事先給定的常數，所以 priority 執行時不會變，這就是 static。",
+     "k": 4,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1205.8
+     }
+    },
+    {
+     "say": "名字的意思：rate 是頻率，1/period；monotonic 是單調，rate 越高 priority 越高，等於照 period 由短到長排。",
+     "read": "名字的意思：rate 是頻率，period 分之 1；monotonic 是單調，rate 越高 priority 越高，等於照 period 由短到長排。",
+     "k": 5,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1219.3
+     }
+    },
+    {
+     "say": "另一個更常用的是 dynamic 的：earliest deadline first，EDF。",
+     "k": 6,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1230.9
+     }
+    },
+    {
+     "say": "大家寫作業都在用：看哪份 deadline 最近，剩三天的先做再說，因為哪份沒交都會被當。",
+     "k": 7,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1243.2
+     }
+    },
+    {
+     "say": "注意，period 長不代表 deadline 遠。很早公布、期限很長的作業，放著放著也會只剩兩天。",
+     "k": 8,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1261.4
+     }
+    },
+    {
+     "say": "所以 EDF 看的是「當下」誰的 deadline 最近，priority 一直在變，是 dynamic priority。",
+     "k": 9,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1287.7
+     }
+    },
+    {
+     "say": "課本的結論：只要 CPU 使用率 ≤ 100%，不計 context switch 成本，EDF 理論上每個工作都趕得上。",
+     "read": "課本的結論：只要 CPU 使用率 小於等於 100%，不計 context switch 成本，EDF 理論上每個工作都趕得上。",
+     "k": 10,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1294.8
+     }
+    },
+    {
+     "say": "RM 保證排得完的使用率上界則是 n(2^{1/n} − 1)，三個 task 大約是 78%。",
+     "read": "RM 保證排得完的使用率上界則是 n 乘 2 的 n分之1 次方 減 1，三個 task 大約是 78%。",
+     "k": 10
+    }
+   ]
+  },
+  {
+   "title": "Rate-Monotonic 例子",
+   "scene": "sch-18a-rm",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "直接看 RM 的例子，記住它是 fixed priority。",
+     "k": 1,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1334.9
+     }
+    },
+    {
+     "say": "三個工作，arrival 都從 0。注意 tuple 的順序：剛剛先寫 execution，這題先寫 period 再寫 execution，看仔細。",
+     "k": 2,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1346.1
+     }
+    },
+    {
+     "say": "period 一定比 execution 長；要是 execution 比 period 大，一個週期內根本做不完，一定 miss。",
+     "k": 3,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1365.1
+     }
+    },
+    {
+     "say": "T1 是 (4, 1)：每 4 來一次、做 1；T2 是 (5, 2)；T3 是 (20, 5)。細柱子是每次到達，也就是上次的 deadline。",
+     "read": "T1 是 4 逗點 1：每 4 來一次、做 1；T2 是 5 逗點 2；T3 是 20 逗點 5。細柱子是每次到達，也就是上次的 deadline。",
+     "k": 4,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1372.1
+     }
+    },
+    {
+     "say": "依 period 給 priority：4、5、20，越短越優先，所以 T1 最高、T2 次之、T3 最低。",
+     "k": 5,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1388.9
+     }
+    },
+    {
+     "say": "決定好之後就是 priority scheduling：T1 最高，做 1 個單位就結束。",
+     "k": 6,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1403.9
+     }
+    },
+    {
+     "say": "T1 第 4 秒前不會再來。剩 T2、T3，T2 比較高，做 1 到 3。",
+     "k": 7,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1422.4
+     }
+    },
+    {
+     "say": "ready queue 只剩 T3，輪到它。",
+     "k": 8,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1451.4
+     }
+    },
+    {
+     "say": "這題是 preemptive。第 4 秒 T3 才做 1 個單位，T1 又來了，priority 最高，把 T3 打斷。",
+     "k": 9,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1461
+     }
+    },
+    {
+     "say": "T1 做完，第 5 秒 T2 剛好也來了，還是比 T3 高，做 5 到 7。",
+     "k": 10,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1482.5
+     }
+    },
+    {
+     "say": "7 到 8 剛好空出來，沒有更高的人，讓 T3 做。",
+     "k": 11,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1495.4
+     }
+    },
+    {
+     "say": "第 8 秒又是 T1；T1 做完，T2 要到第 10 秒才來，所以 9 到 10 再讓 T3 做一個單位。",
+     "k": 12,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1503.7
+     }
+    },
+    {
+     "say": "接著 T2 做 10 到 12、T1 做 12 到 13，T3 在 13 到 15 做完 5 個單位，趕上 deadline 20。交錯很多，要小心。",
+     "k": 13,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1521.6
+     }
+    },
+    {
+     "say": "欸，這組使用率是 0.25 加 0.4 加 0.25，等於 0.9，超過 78% 卻還是排得完，因為那個上界只是充分條件。",
+     "k": 13
+    },
+    {
+     "say": "注意 RM 完全不管 execution：就算 T3 的 execution 改成 19，它還是最低，因為只看 period。",
+     "k": 14,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1551.4
+     }
+    },
+    {
+     "say": "因為它是 static，有不少缺點，排出來的結果不一定特別好。",
+     "k": 15,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1567.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "EDF 例子",
+   "scene": "sch-18a-edf",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "再看 EDF。它是 dynamic 的，看起來複雜，其實執行過程比較好想像。",
+     "k": 1,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1575.7
+     }
+    },
+    {
+     "say": "兩個 task，大的數字是 period、小的是 execution：T1 每 2 來一次、做 0.9；T2 每 5 來一次、做 2.3。",
+     "k": 2,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1584.8
+     }
+    },
+    {
+     "say": "第 0 秒先做誰？EDF 不看 period，只看下一個 deadline 是什麼時候。",
+     "k": 3,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1601.8
+     }
+    },
+    {
+     "say": "T1 的 deadline 是 2，T2 是 5，2 比較近，先做紅色 T1，0 到 0.9。",
+     "k": 4,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1609
+     }
+    },
+    {
+     "say": "剩下的時間做橘色 T2，0.9 到 2，做了 1.1，還剩 1.2。",
+     "k": 5,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1617
+     }
+    },
+    {
+     "say": "第 2 秒新的 T1 來了，要不要打斷 T2？新 T1 的 deadline 是 4，T2 還是 5，T1 比較急，先做 2 到 2.9。",
+     "k": 6,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1626.8
+     }
+    },
+    {
+     "say": "T1 做完，繼續做 T2，2.9 到 4，又做了 1.1。",
+     "k": 7,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1654.6
+     }
+    },
+    {
+     "say": "注意第 4 秒：T1 又來了，可是這次倒過來！新 T1 的 deadline 是 6，T2 還是 5，T2 比較早。",
+     "k": 8,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1661.3
+     }
+    },
+    {
+     "say": "所以 T2 繼續做完剩下的 0.1，做到 4.1，T1 才接著做。",
+     "k": 9,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1683.9
+     }
+    },
+    {
+     "say": "這就是 dynamic priority：第 2 秒 T1 比較高，第 4 秒卻換 T2 比較高，完全看當下誰的 deadline 趕。",
+     "k": 10,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1699
+     }
+    },
+    {
+     "say": "後面可以自己繼續模擬，考試特別小心 0.9、1.1、0.1 這些長度的計算。",
+     "k": 11,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1716.1
+     }
+    },
+    {
+     "say": "也別忘了：一個 period 只要做 execution 那麼多，T1 做完 0.9 這一輪就離開 ready queue。",
+     "k": 12,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1739.2
+     }
+    },
+    {
+     "say": "只要有新的 task 進 ready queue，也就是下一個 period 到了，就要重新決定一次 priority。",
+     "k": 13,
+     "src": {
+      "v": "0NRkuhnupzs",
+      "t": 1755.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Solaris 的 priority class",
+   "scene": "sch-18b-solaris",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "最後看 case study：前面學的 priority、shortest job、multilevel，真實 OS 怎麼用？",
+     "k": 1,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 16.3
+     }
+    },
+    {
+     "say": "你會發現大部分真實 OS 都 based on priority，因為它最通用。",
+     "k": 2,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 49.2
+     }
+    },
+    {
+     "say": "第一個是 Solaris，一個很早期的工作站作業系統。",
+     "k": 3,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 56.4
+     }
+    },
+    {
+     "say": "這些系統裡，每個 process 一建立就有 priority。在 Linux 打 top，就看得到每個程式的 priority 或 nice 值。",
+     "k": 4,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 68.5
+     }
+    },
+    {
+     "say": "Solaris 的 priority 從 0 到 169，數字越大越優先，169 最高。不同系統的定義完全不同。",
+     "k": 5,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 87
+     }
+    },
+    {
+     "say": "Solaris 把 process 分成六大類，叫 priority class。",
+     "k": 6,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 103.2
+     }
+    },
+    {
+     "say": "第一類是 interrupt，最重要，160 到 169。",
+     "k": 7,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 112.9
+     }
+    },
+    {
+     "say": "process 不能隨便選 class。建立時 OS 依 policy 或提示決定它屬於哪類，放進去就一直待著。",
+     "k": 8,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 120.6
+     }
+    },
+    {
+     "say": "再來 real-time 是 100 到 159，system 是 60 到 99。",
+     "k": 9,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 138.6
+     }
+    },
+    {
+     "say": "後面四類像 time sharing、interactive，多半是你開的程式，全擠在 0 到 59，所以不同 class 的 priority 可能一樣。",
+     "k": 10,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 156.6
+     }
+    },
+    {
+     "say": "每個 class 對應 priority 範圍裡的一塊，一個 process 只屬於一個 class，不會跳來跳去。",
+     "k": 11,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 168.7
+     }
+    },
+    {
+     "say": "每個 class 有自己的排程演算法，有點像 multilevel queue。",
+     "k": 12,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 191.4
+     }
+    },
+    {
+     "say": "不管 class 內用什麼演算法，結果都轉成「在自己範圍裡升降」，這個 P 就在 0 到 59 裡上下移動。",
+     "k": 13,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 204.5
+     }
+    },
+    {
+     "say": "整個 OS 只看 global priority：數字最大的先做，上面的 class 做完了才輪到下面。",
+     "k": 14,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 216.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Solaris 的 dispatch table",
+   "scene": "sch-18b-soltable",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "60 以上的 system process，priority 一建立就固定，基本上不太變。",
+     "k": 1,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 236.8
+     }
+    },
+    {
+     "say": "使用者的 process 難預測，所以 Solaris 建了一張 dispatch table，每一列是一個 priority。",
+     "k": 2,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 253.3
+     }
+    },
+    {
+     "say": "右邊三欄是：它的 quantum、quantum 用完後變成多少、睡醒回來變成多少。",
+     "k": 2,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 260
+     }
+    },
+    {
+     "say": "首先，每個 priority 都對應一個 time quantum。",
+     "k": 3,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 271.3
+     }
+    },
+    {
+     "say": "同一個 priority 可能有好幾個 process，像 A、B、C 都是 30，它們之間用 Round Robin。",
+     "k": 4,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 279.6
+     }
+    },
+    {
+     "say": "比如 priority 30 這層：每次上 CPU 最多做 80，時間到就換下一個。",
+     "k": 5,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 295.7
+     }
+    },
+    {
+     "say": "看表會發現，priority 越高，quantum 反而越小，59 只有 20。",
+     "k": 6,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 310.8
+     }
+    },
+    {
+     "say": "因為高 priority 的應該是短工作：burst 越短 priority 越高。給你高 priority，但只能做 20 毫秒就換人。",
+     "k": 7,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 320.5
+     }
+    },
+    {
+     "say": "你一次就超過這個 quantum，系統就認為你不夠短，把你從 59 降到 49。",
+     "k": 8,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 334.5
+     }
+    },
+    {
+     "say": "降下去的壞處是比較難輪到；好處是輪到時 quantum 比較長，這正適合 CPU-bound 的程式。",
+     "k": 9,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 356
+     }
+    },
+    {
+     "say": "另一個規則，純粹是系統工程經驗：從 sleep 或 waiting 回到 ready 的，priority 就提高。",
+     "k": 10,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 374.3
+     }
+    },
+    {
+     "say": "為什麼？它待在 waiting 代表沒在用 CPU，很可能是 I/O-bound，這純粹是直覺。",
+     "k": 11,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 390.6
+     }
+    },
+    {
+     "say": "比如原本 priority 20 的 Y，呼叫 sleep 回來，就升到 52，讓它先做。",
+     "k": 12,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 414
+     }
+    },
+    {
+     "say": "總結：超過 quantum 就是 CPU-bound，降；呼叫 I/O 進入等待，升。CPU-bound 慢慢沉下去，I/O-bound 慢慢浮上來。",
+     "k": 13,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 435.4
+     }
+    },
+    {
+     "say": "高 priority 配小 quantum，跟剛才 MLFQ 例子上層 8、下層 16 的設計非常像。",
+     "k": 14,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 470.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Windows XP",
+   "scene": "sch-18b-winxp",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "Windows XP 跟 Solaris 很像，概念大多相同，只是定義有些差別。",
+     "k": 1,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 487.7
+     }
+    },
+    {
+     "say": "它的 priority 只有 0 到 31，一樣是數字越大越高。",
+     "k": 2,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 499.5
+     }
+    },
+    {
+     "say": "它分 6 個 class，像 real-time、high、normal、idle，每個 class 裡再分 7 個 relative priority。",
+     "k": 3,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 521.9
+     }
+    },
+    {
+     "say": "表格裡交叉出來的數字，就是最後的 priority。",
+     "k": 3,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 525
+     }
+    },
+    {
+     "say": "一樣依執行情況調整：CPU 用得多往下降，I/O 做得多往上升，這裡 P 從 10 降到 8。",
+     "k": 4,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 532.8
+     }
+    },
+    {
+     "say": "每個 class 只在自己那七個數字之間跳，唯一不跳的是 real-time。",
+     "k": 5,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 553.5
+     }
+    },
+    {
+     "say": "被認定是 real-time job，priority 就是 static 的，而且最低也有 16。",
+     "k": 6,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 565.3
+     }
+    },
+    {
+     "say": "所以 Solaris 跟 Windows XP 非常像，只是切 priority 範圍的數字不同。",
+     "k": 7,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 583.6
+     }
+    },
+    {
+     "say": "一樣看 global priority，最高的先；priority 相同的放同一個 queue，用 Round Robin 輪流。",
+     "k": 8,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 596.1
+     }
+    },
+    {
+     "say": "不同的大概是 quantum，這裡沒特別說 quantum 會隨 priority 不同，但原則一樣。",
+     "k": 9,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 613.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Linux：active 與 expired array",
+   "scene": "sch-18b-linux",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "最後是 Linux，比較特別一點，這裡講的是 2.6 版的排程器。",
+     "k": 1,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 625.6
+     }
+    },
+    {
+     "say": "Linux 的範圍是 0 到 140，而且數字越小 priority 越高，跟 Solaris、Windows 剛好相反。",
+     "k": 2,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 637.9
+     }
+    },
+    {
+     "say": "每個 priority 也對應一個 quantum。課本寫 Linux 給高 priority 較長的 quantum，最高約 200 毫秒、最低約 10。",
+     "k": 3,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 651.7
+     }
+    },
+    {
+     "say": "這點跟 Solaris 相反，周老師這段口述說得有點混，以課本為準。",
+     "k": 3
+    },
+    {
+     "say": "0 到 99 是 real-time 或 system 的 task，priority 固定。",
+     "k": 4,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 675.6
+     }
+    },
+    {
+     "say": "100 到 140 通常是使用者 process，執行時會調整：看 quantum 有沒有用完、有沒有呼叫 I/O 的 system call。",
+     "k": 5,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 688.2
+     }
+    },
+    {
+     "say": "Linux 的特點是把 process 分成兩個 list：active array 和 expired array。",
+     "k": 6,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 713.3
+     }
+    },
+    {
+     "say": "每個 task 有 priority，也有一個 quantum，比如 200，buddy 肚子上是剩下的 quantum。",
+     "k": 7,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 731.6
+     }
+    },
+    {
+     "say": "前面的 OS 是輪到你就跑一個 burst；給你 200，你這段只做 100，剩下的就浪費，回到隊尾。",
+     "k": 8,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 749.7
+     }
+    },
+    {
+     "say": "Linux 認為不公平：給你 200 就該讓你用完。T1 做完一段還剩 100，就留在 active array，還能再被執行。",
+     "k": 9,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 768.6
+     }
+    },
+    {
+     "say": "quantum 用完了，像 T2 剩 0，就放到 expired array，這一輪不能再跑。",
+     "k": 10,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 792.7
+     }
+    },
+    {
+     "say": "所以每個人每一輪都真的用滿自己的 quantum，等於照 quantum 的比例分配執行時間。",
+     "k": 11,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 801.3
+     }
+    },
+    {
+     "say": "priority 什麼時候變？課本說 task 用完 quantum、移到 expired 時，依它的互動程度重算，sleep 越久越像 I/O-bound。",
+     "k": 12,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 838
+     }
+    },
+    {
+     "say": "每用完一段 burst，就從 200 扣掉用掉的，T1 剩 40，繼續留在 active。",
+     "k": 13,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 864
+     }
+    },
+    {
+     "say": "實作很簡單：等 active 全空了，大家都用完 quantum，就把兩個 array 的 pointer 交換，expired 變成新的 active。",
+     "k": 14,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 888.8
+     }
+    },
+    {
+     "say": "這就是 Linux 不一樣的地方：不是跑完一個 burst 就換人，而是讓你把 quantum 用完。",
+     "k": 15,
+     "src": {
+      "v": "XYreyOCoBuk",
+      "t": 927.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "本章重點",
+   "scene": "sch-17a-sum",
+   "steps": 3,
+   "lines": [
+    {
+     "say": "好，收尾。這章最重要的是每個演算法都要會模擬，尤其 preemptive 跟 non-preemptive，要能自己畫 Gantt chart。",
+     "k": 1,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 2116.2
+     }
+    },
+    {
+     "say": "每到一個時間點，先看誰已經到了，再在到了的人裡面比，這個習慣能救你很多分。",
+     "k": 1
+    },
+    {
+     "say": "還要分清楚：MLFQ 會在 queue 間移動、一律從最上層選；MLQ 固定在一個 queue、照比例挑。",
+     "k": 2,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 2124.2
+     }
+    },
+    {
+     "say": "最後，waiting、response、turnaround 的定義一定要記清楚，記錯了算出來就全錯。",
+     "k": 3,
+     "src": {
+      "v": "8RlCb74uFp0",
+      "t": 2133.1
+     }
+    }
+   ]
+  }
+ ]
+}

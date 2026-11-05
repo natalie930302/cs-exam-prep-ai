@@ -1,0 +1,5631 @@
+{
+ "chapter": "os-5",
+ "title": "同步與互斥",
+ "intro": "從 counter++ 為什麼會算錯出發，弄懂 race condition 和 critical section，再一路學 Peterson、Bakery、硬體指令、mutex、condition variable、semaphore、經典問題、monitor 到 atomic transaction。",
+ "parts": [
+  {
+   "title": "誰會有同步問題：cooperative process",
+   "scene": "syn-csneso-coop",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "好，這一章是 process synchronization，同步。我們先問：什麼樣的 process 才會有同步問題？",
+     "k": 1,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 0
+     }
+    },
+    {
+     "say": "從同步的角度，process 分兩種：independent process 跟 cooperative process。",
+     "k": 2,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 12
+     }
+    },
+    {
+     "say": "independent，獨立的：它跟別人沒有任何依賴，它怎麼跑都不會影響其他人。",
+     "k": 3,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 51
+     }
+    },
+    {
+     "say": "cooperative，合作的：它要依賴別人，彼此之間得互相協調。",
+     "k": 4,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 67.4
+     }
+    },
+    {
+     "say": "所以差別一句話：independent 的執行不影響別人，cooperative 的執行會影響別人。",
+     "k": 5,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 113.3
+     }
+    },
+    {
+     "say": "那同步問題出在哪一種？只會出在 cooperative process。",
+     "k": 6,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 150.6
+     }
+    },
+    {
+     "say": "因為 independent process 不共用東西，每個人用自己的 resource，當然不會打架。",
+     "k": 7,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 158.2
+     }
+    },
+    {
+     "say": "cooperative process 會共用 resource，問題就是從這裡來的。",
+     "k": 8,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 183.6
+     }
+    },
+    {
+     "say": "舉個生活例子：整個社區的人，一起到社區劇場看電影。",
+     "k": 9,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 196.3
+     }
+    },
+    {
+     "say": "大家看同一個螢幕，有人想看 A、有人想看 B，一個人的選擇就會影響別人，這就要協調。",
+     "k": 10,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 221
+     }
+    },
+    {
+     "say": "如果你在家看自己的電視，想看什麼就看什麼，根本不用跟誰商量。",
+     "k": 11,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 256.7
+     }
+    },
+    {
+     "say": "所以記住：同步問題只發生在共用 resource 的 cooperative process 身上。",
+     "k": 12,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 270
+     }
+    }
+   ]
+  },
+  {
+   "title": "問題的根源：共用資料被同時改",
+   "scene": "syn-18c-why",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "周志遠老師說，這是很重要、也很麻煩的一章，我們慢慢來。",
+     "k": 1,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 210.2
+     }
+    },
+    {
+     "say": "其實之前寫 shared memory 或 multi-thread 程式就提過：大家共用一份資料，最大的麻煩就是同步。",
+     "k": 2,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 224
+     }
+    },
+    {
+     "say": "上一章的 CPU scheduling 也是：preemptive 可以中途搶走 CPU，比較好，但同樣會帶來同步問題。",
+     "k": 3,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 235.6
+     }
+    },
+    {
+     "say": "這章的路線：先講 critical section，再講硬體的支援，最後是 semaphore、monitor 這些工具。",
+     "k": 4,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 254.4
+     }
+    },
+    {
+     "say": "問題的根源是一份 shared data。說穿了，data 就是某個記憶體位址裡存的內容。",
+     "k": 5,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 290.9
+     }
+    },
+    {
+     "say": "這份資料被兩個以上的 process 或 thread 同時讀寫，就可能 data inconsistency，大家看到的值不一致。",
+     "k": 6,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 305.2
+     }
+    },
+    {
+     "say": "你想想看，同一支程式，有時跑出 A、有時跑出 B，programmer 根本沒辦法寫程式。",
+     "k": 7,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 338.7
+     }
+    },
+    {
+     "say": "為什麼會這樣？concurrent 的時候兩邊都在改它，先後順序一變，結果就跟著變。",
+     "k": 8,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 356.4
+     }
+    },
+    {
+     "say": "所以解法就是讓它們 cooperate：確保每次執行的順序都一樣，值自然就一樣。",
+     "k": 9,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 378.7
+     }
+    },
+    {
+     "say": "控制執行順序，是 programmer 的責任。能控制順序，就能解掉同步問題。",
+     "k": 10,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 417.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "用 counter 把 buffer 用滿",
+   "scene": "syn-18c-counter",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "好，回到之前學過的 producer–consumer：producer 把東西放進共用的 buffer，consumer 從裡面拿。",
+     "k": 1,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 435.4
+     }
+    },
+    {
+     "say": "之前那個解法沒有同步問題，但永遠要空一格，不然分不出滿還是空，等於浪費一格。",
+     "k": 2,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 448.9
+     }
+    },
+    {
+     "say": "想把每一格都用滿，最直覺的作法：加一個 counter，記錄 buffer 裡現在有幾個東西。",
+     "k": 3,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 461.4
+     }
+    },
+    {
+     "say": "producer 每放一個就 counter++，consumer 每拿一個就 counter--。",
+     "read": "producer 每放一個就 counter 加加，consumer 每拿一個就 counter 減減。",
+     "k": 4,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 476.8
+     }
+    },
+    {
+     "say": "看 counter 就知道滿還是空，看起來又簡單又好懂。",
+     "k": 5,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 480.7
+     }
+    },
+    {
+     "say": "那問題來了：counter 本身也是一塊大家共用的記憶體。",
+     "k": 6,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 495.2
+     }
+    },
+    {
+     "say": "而且兩邊不只讀它，還都要改寫它，一個加、一個減。counter 自己就有同步問題了。",
+     "k": 7,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 509.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "counter++ 被拆開之後",
+   "scene": "syn-18c-race",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "我們寫的 counter++ 只是程式語言裡的一行，到了 CPU 會被拆成好幾個 instruction。",
+     "read": "我們寫的 counter 加加 只是程式語言裡的一行，到了 CPU 會被拆成好幾個 instruction。",
+     "k": 1,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 533.6
+     }
+    },
+    {
+     "say": "counter++ 拆成三步：把 counter 從記憶體 load 進 register、在 register 加 1、再寫回記憶體。",
+     "read": "counter 加加 拆成三步：把 counter 從記憶體 load 進 register、在 register 加 1、再寫回記憶體。",
+     "k": 2,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 541.7
+     }
+    },
+    {
+     "say": "counter-- 也是三步，只是中間改成減 1。兩邊的 register 各自分開，可是 counter 那塊記憶體是共用的。",
+     "read": "counter 減減 也是三步，只是中間改成減 1。兩邊的 register 各自分開，可是 counter 那塊記憶體是共用的。",
+     "k": 3,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 550.1
+     }
+    },
+    {
+     "say": "開始跑。counter 原本是 5，producer 先把 5 讀進 reg1。preemptive 不保證它三步一口氣做完。",
+     "k": 4,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 577.8
+     }
+    },
+    {
+     "say": "producer 做完第二步，reg1 變 6，還沒寫回去，context switch 就發生了。",
+     "k": 5,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 593.8
+     }
+    },
+    {
+     "say": "換 consumer 跑前兩步：它從記憶體讀到的還是 5，減 1 變 4，也還沒寫回。",
+     "k": 6,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 608.7
+     }
+    },
+    {
+     "say": "再切回 producer，把 6 寫回記憶體，counter 變 6。",
+     "k": 7,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 619.5
+     }
+    },
+    {
+     "say": "最後 consumer 把它的 4 寫回去，這一寫就把剛才的 6 蓋掉了。",
+     "k": 8,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 639
+     }
+    },
+    {
+     "say": "整理一下：counter 從 5 被改成 6，又被改成 4。",
+     "k": 9,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 653.1
+     }
+    },
+    {
+     "say": "一次加一、一次減一，小學生都知道答案是 5，照這個順序跑卻是 4。這就是同步問題。",
+     "k": 10,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 664
+     }
+    }
+   ]
+  },
+  {
+   "title": "同一段程式跑出 4、5、6",
+   "scene": "syn-18c-outcomes",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "換個順序：如果最後寫回去的是 producer，答案就變成 6，一樣不對。",
+     "k": 1,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 685.2
+     }
+    },
+    {
+     "say": "只有一邊三個指令全部做完，另一邊再做，才會得到正確的 5。",
+     "k": 2,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 699.3
+     }
+    },
+    {
+     "say": "所以同一段程式，只因為交錯的順序不同，就可能是 4、5、6，只有 5 是對的。",
+     "k": 3,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 705.3
+     }
+    },
+    {
+     "say": "這就是 data 不一致：值跟執行的 ordering 有關。",
+     "k": 4,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 719.9
+     }
+    },
+    {
+     "say": "會發生要兩個先決條件。第一，有共用的記憶體內容。大家沒共用任何東西，就不可能發生。",
+     "k": 5,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 727.6
+     }
+    },
+    {
+     "say": "第二，preemptive scheduling。CPU 能在做到一半時被搶走，才會「讀了還沒寫回就被換掉」。",
+     "k": 6,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 756.2
+     }
+    },
+    {
+     "say": "non-preemptive 的話，一個 CPU burst 會一口氣做完，讀、算、寫回之後才換人。",
+     "k": 7,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 779.6
+     }
+    },
+    {
+     "say": "所以有些 OS 在 kernel 裡，乾脆把 interrupt 關掉，暫時變成 non-preemptive。",
+     "k": 8,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 809.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Race condition",
+   "scene": "syn-18c-racedef",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "剛才 counter 的情況，就是所謂的 synchronization 問題。",
+     "k": 1,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 829.7
+     }
+    },
+    {
+     "say": "還有一個一定要記住的名詞：race condition。最後的值，取決於最後修改它的那個人。",
+     "k": 2,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 841.3
+     }
+    },
+    {
+     "say": "就像賽跑，只是「最後跑完的人贏」：P 先寫 6、C 後寫 4，最後留下 4。誰最後寫，誰決定結果。",
+     "k": 3,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 858.3
+     }
+    },
+    {
+     "say": "同步問題廣義來說還有很多種，race condition 特指這種「值看誰最後執行」的情況。",
+     "k": 4,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 865.8
+     }
+    },
+    {
+     "say": "要避免 race condition，就要讓這些 process synchronize。",
+     "k": 5,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 900.8
+     }
+    },
+    {
+     "say": "最暴力的方法：把 scheduler 用的 interrupt 關掉，系統變 non-preemptive，就不會中途被切走。",
+     "k": 6,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 910
+     }
+    },
+    {
+     "say": "OS 可以這樣做，但一般使用者程式絕對不行：你一關，影響的是整個系統和其他使用者。",
+     "k": 7,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 918.5
+     }
+    },
+    {
+     "say": "OS 敢這樣做，是因為 kernel 的程式碼通常很短、priority 本來就高，關一下影響不大。",
+     "k": 8,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 937.6
+     }
+    },
+    {
+     "say": "那一般程式怎麼辦？標準作法是把它定義成 critical section 問題。",
+     "k": 9,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 961.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Critical section：一次只讓一個人進去",
+   "scene": "syn-csneso-cs",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "好，什麼是 critical section problem？我們先把 critical section 講清楚。",
+     "k": 1,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 287
+     }
+    },
+    {
+     "say": "critical section 沒什麼神秘的，它就是一段 code segment，一段程式碼。",
+     "k": 2,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 317.3
+     }
+    },
+    {
+     "say": "這段程式碼同一時間只能被一個 process 執行。",
+     "k": 3,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 326.2
+     }
+    },
+    {
+     "say": "因為它裡面有 shared variable，要同步，資料才能保持一致。",
+     "k": 4,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 340
+     }
+    },
+    {
+     "say": "用剛才的劇場來想：大家都要用的那個劇場，就是 shared variable。",
+     "k": 5,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 357.3
+     }
+    },
+    {
+     "say": "P1 是一群想看電影 A 的人，P2 想看 B，P3 想看 C，三部片都只能在同一個劇場放。",
+     "k": 6,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 387.2
+     }
+    },
+    {
+     "say": "想看 A 的人先把劇場預約下來，就像在執行 critical section，其他人得等。",
+     "k": 7,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 422.2
+     }
+    },
+    {
+     "say": "A 看完，下一群人進來看，再下一群，一個接一個。",
+     "k": 8,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 445.8
+     }
+    },
+    {
+     "say": "這就是 mutual exclusion 的默契：你先看、我再看。",
+     "k": 9,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 454.6
+     }
+    },
+    {
+     "say": "要是大家同時都想現在用劇場，互相干擾，電影就放不成了，這就是 critical section problem。",
+     "k": 10,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 512
+     }
+    }
+   ]
+  },
+  {
+   "title": "Entry、exit、remainder",
+   "scene": "syn-18c-csstruct",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "critical section 的解法，其實是一套 protocol，一套大家都要遵守的規則。",
+     "k": 1,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 976.8
+     }
+    },
+    {
+     "say": "每個 process 都遵守同一套規則，執行順序就能被控制。",
+     "k": 2,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 985.5
+     }
+    },
+    {
+     "say": "問題的定義很簡單：先要有 N 個 process，才會有同時存取這件事。",
+     "k": 3,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1012.7
+     }
+    },
+    {
+     "say": "再加上一份大家共用的 shared data。兩個條件湊齊，才有這個問題。",
+     "k": 4,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1022
+     }
+    },
+    {
+     "say": "程式可以切成好幾段。存取共用資料、可能發生 race condition 的那段，就叫 critical section。",
+     "k": 5,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1041.6
+     }
+    },
+    {
+     "say": "找到它之後，前面加一段 entry section，後面加一段 exit section。",
+     "k": 6,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1069.8
+     }
+    },
+    {
+     "say": "目的很直接：mutual exclusion，一次只能有一個人在 critical section 裡執行。",
+     "k": 7,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1085
+     }
+    },
+    {
+     "say": "有人在裡面，其他人就進不去，同時存取就不會發生，race condition 的必要條件被拿掉了。",
+     "k": 8,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1102.4
+     }
+    },
+    {
+     "say": "範例通常寫成 do { } while 迴圈，因為同步問題常發生在重複做的事情上。其他程式碼叫 remainder section。",
+     "k": 9,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1130.6
+     }
+    },
+    {
+     "say": "我們真正要設計的，就是 entry 跟 exit 兩段。每個人進去前一定跑 entry，出來一定跑 exit。",
+     "k": 10,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1155.4
+     }
+    },
+    {
+     "say": "接下來整章的各種解法，都在討論 entry、exit 該怎麼寫，才能保證 mutual exclusion。",
+     "k": 11,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1189.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Entry 上鎖、exit 解鎖",
+   "scene": "syn-csneso-struct",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "結構是 do 迴圈：entry、critical section、exit、remainder，while true，一直重複。",
+     "k": 2,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 558
+     }
+    },
+    {
+     "say": "你可以把 critical section 想成一個房間，門上有一把鎖，代表 resource 的 lock。",
+     "k": 3,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 590.6
+     }
+    },
+    {
+     "say": "P1 先進 entry section，條件成立，就拿到鎖、進到 critical section。",
+     "k": 4,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 608.6
+     }
+    },
+    {
+     "say": "在 P1 走到 exit section 之前，其他 process 都不能進去。",
+     "k": 5,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 617.7
+     }
+    },
+    {
+     "say": "P1 做完，經過 exit section，再去做它的 remainder section。remainder 是獨立的，不影響別人。",
+     "k": 6,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 627.1
+     }
+    },
+    {
+     "say": "如果某個 process 這段根本不用 shared variable，就直接做 remainder，不用經過 entry、exit。",
+     "k": 7,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 654.9
+     }
+    },
+    {
+     "say": "所以可以這樣記：entry section 上鎖，exit section 解鎖。",
+     "k": 8,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 660.2
+     }
+    },
+    {
+     "say": "entry 控制誰能進去，並且拿到 resource 的 lock，鎖住了才往下做。",
+     "k": 9,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 686
+     }
+    },
+    {
+     "say": "exit 把 lock 解開，等於通知大家：critical section 空了，可以進來了。",
+     "k": 10,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 734.3
+     }
+    },
+    {
+     "say": "鎖一解開，P2 就知道可以進去用 shared variable；它出來之前，別人一樣不能用。",
+     "k": 11,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 752.6
+     }
+    },
+    {
+     "say": "那如果 P1、P2、P3 同時要進，要讓誰進？這就是我們接下來要解的問題。",
+     "k": 12,
+     "src": {
+      "v": "sEVfeXqWY-s",
+      "t": 784.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "三個條件：mutual exclusion、progress、bounded waiting",
+   "scene": "syn-18c-csreq",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "一個正確的 critical section 解法要滿足幾個條件。第一個當然是 mutual exclusion。",
+     "k": 1,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1204.5
+     }
+    },
+    {
+     "say": "但從寫程式的角度，只顧著互斥還不夠，因為可能又製造出別的問題。",
+     "k": 2,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1225.6
+     }
+    },
+    {
+     "say": "老師用上廁所來比喻，非常好記。",
+     "k": 3,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1245.7
+     }
+    },
+    {
+     "say": "mutual exclusion：上廁所絕對不跟別人共用，A 在裡面，B 就不能進去。",
+     "k": 4,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1259.5
+     }
+    },
+    {
+     "say": "第二個 progress：廁所裡面是空的，想進去的人就一定要進得去，不能掛個「維修中」把你鎖在外面。",
+     "k": 5,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1269.4
+     }
+    },
+    {
+     "say": "放到程式上：不會 race 了，但也不能讓程式卡住。裡面沒人時，要進去的人一定要能進。",
+     "k": 6,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1288.1
+     }
+    },
+    {
+     "say": "第三個 bounded waiting，有限等待，這是大家最容易跟 progress 搞混的。",
+     "k": 7,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1322.5
+     }
+    },
+    {
+     "say": "廁所可能一直有人在用，但不能讓 D 無止境地等，一直被別人插隊。",
+     "k": 8,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1330.5
+     }
+    },
+    {
+     "say": "分清楚：progress 管「空著時有沒有人進得去」，bounded waiting 管「你最多被插隊幾次」。",
+     "k": 9,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1342.2
+     }
+    },
+    {
+     "say": "怎麼做到 bounded waiting？很簡單，排隊，first come, first serve。",
+     "k": 10,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1371.8
+     }
+    },
+    {
+     "say": "等待沒有上限的話，就會 starvation：有人永遠輪不到。",
+     "k": 11,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1401.3
+     }
+    },
+    {
+     "say": "所以正確的解法，三個條件都要滿足。這三個一定要記清楚，也要分得出差別。",
+     "k": 12,
+     "src": {
+      "v": "CNO_I8jhX3I",
+      "t": 1409.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "解法的路線圖",
+   "scene": "syn-18d-plan",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "接下來就是在設計 entry 和 exit section，去滿足這三個條件。",
+     "k": 1,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 16.1
+     }
+    },
+    {
+     "say": "第一類是 software solution：programmer 自己在 multi-thread 程式裡加程式碼來解。",
+     "k": 2,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 26.1
+     }
+    },
+    {
+     "say": "第二類是 hardware：電腦其實提供一些特殊的 instruction，可以拿來解同步問題。",
+     "k": 3,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 40.7
+     }
+    },
+    {
+     "say": "最後是比較 high level 的工具，像 Java 或平行語言都有，直接呼叫 API 就好。",
+     "k": 4,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 58
+     }
+    }
+   ]
+  },
+  {
+   "title": "只靠 turn 輪流",
+   "scene": "syn-18d-turn",
+   "steps": 18,
+   "lines": [
+    {
+     "say": "先從最簡單的情況開始：只有兩個 process，P0 跟 P1。",
+     "k": 1,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 78.4
+     }
+    },
+    {
+     "say": "程式寫成 do-while，代表兩邊不是跑一次就結束，而是不斷地想進 critical section。",
+     "k": 2,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 93
+     }
+    },
+    {
+     "say": "第一個解法：用一個像鑰匙的 token，叫 turn，它是兩邊都看得到的 shared variable。",
+     "k": 3,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 116.3
+     }
+    },
+    {
+     "say": "turn 的值就是 0 或 1。",
+     "k": 4,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 129.1
+     }
+    },
+    {
+     "say": "turn 是 0，P0 可以進去；turn 是 1，P1 可以進去，看 turn 輪流。",
+     "k": 5,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 165.1
+     }
+    },
+    {
+     "say": "turn 不是 0 就是 1，一次只有一個人進得去，所以 mutual exclusion 一定沒問題。",
+     "k": 6,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 180.8
+     }
+    },
+    {
+     "say": "P0 在 while 等到 turn 是 0，進去，做完出來把 turn 改成 1，意思是換 P1。",
+     "k": 7,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 190.6
+     }
+    },
+    {
+     "say": "P1 也一樣：等到 turn 是 1 才進去，做完把 turn 改回 0。",
+     "k": 8,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 200.6
+     }
+    },
+    {
+     "say": "所以 while (turn != i) 這行就是 entry section，turn = j 這行就是 exit section。",
+     "read": "所以 while turn 不等於 i 這行就是 entry section，turn 等於 j 這行就是 exit section。",
+     "k": 9,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 208.5
+     }
+    },
+    {
+     "say": "但這個解法不完美。我們一個一個條件檢查：mutual exclusion，沒問題。",
+     "k": 10,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 221.5
+     }
+    },
+    {
+     "say": "progress 呢？裡面空著時，想進的人要能進。這個程式其實可能做不到。",
+     "k": 11,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 239.7
+     }
+    },
+    {
+     "say": "要注意，沒人規定兩個程式是你一行、我一行地輪著跑。P0 可能跑了很多次，P1 才跑一次。",
+     "k": 12,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 258
+     }
+    },
+    {
+     "say": "假設 P0 進去、做完、出來了，turn 交給 P1，可是 P1 還在 remainder，根本還沒要進。",
+     "k": 13,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 289.1
+     }
+    },
+    {
+     "say": "P0 跑得快，馬上又想進去，卡在 while：turn 是 1，它進不去。",
+     "k": 14,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 293.4
+     }
+    },
+    {
+     "say": "P1 不急，還沒跑到要進去那一行。critical section 明明空著，P0 卻進不去，這就是沒有 progress。",
+     "k": 15,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 307.1
+     }
+    },
+    {
+     "say": "這個解法強迫你做完換我、我做完換你。可是現實裡 P0 很可能要連做兩次，手上卻沒有鑰匙。",
+     "k": 16,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 312.2
+     }
+    },
+    {
+     "say": "bounded waiting 倒是一定符合：你一次我一次，對方進去過一次就一定換你，最多等一次。",
+     "k": 17,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 338.1
+     }
+    },
+    {
+     "say": "結論：有 mutual exclusion、有 bounded waiting，就是沒有 progress。",
+     "k": 18,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 351.7
+     }
+    },
+    {
+     "say": "這個只靠 turn 輪流的寫法，課本叫它 strict alternation，嚴格輪流。",
+     "k": 18
+    }
+   ]
+  },
+  {
+   "title": "Peterson's solution：turn 加上 flag",
+   "scene": "syn-18d-peterson",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "第二個解法叫 Peterson's solution，這才是正確的。老師說不用背程式，記住概念就好。",
+     "k": 1,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 376.4
+     }
+    },
+    {
+     "say": "它延續剛才的想法，一樣用 turn 當 token：turn 等於 i，Pi 手上就有鑰匙。",
+     "k": 2,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 386.5
+     }
+    },
+    {
+     "say": "為了解決 progress，再多加一個 flag，表示這個 process 現在到底想不想進去。",
+     "k": 3,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 398
+     }
+    },
+    {
+     "say": "剛才的問題就出在：我們只是死板地輪流，根本不知道對方想不想進。",
+     "k": 4,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 411.7
+     }
+    },
+    {
+     "say": "flag[0] 表示 P0 想不想進，flag[1] 表示 P1 想不想進，就是 true 跟 false。",
+     "read": "flag 0 表示 P0 想不想進，flag 1 表示 P1 想不想進，就是 true 跟 false。",
+     "k": 5,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 425.8
+     }
+    },
+    {
+     "say": "這樣除了知道鑰匙在誰手上，還知道對方是不是 ready、想進去。",
+     "k": 6,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 446.6
+     }
+    },
+    {
+     "say": "看 entry 的 while：turn == j 代表鑰匙在對方手上。後面那個分號，表示條件成立就卡在這行一直檢查。",
+     "read": "看 entry 的 while：turn 等於 j 代表鑰匙在對方手上。後面那個分號，表示條件成立就卡在這行一直檢查。",
+     "k": 7,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 464.6
+     }
+    },
+    {
+     "say": "但多一個條件：flag[j] 也要是 true 才卡住。對方真的想進、而且有鑰匙，我才等。",
+     "read": "但多一個條件：flag j 也要是 true 才卡住。對方真的想進、而且有鑰匙，我才等。",
+     "k": 8,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 490
+     }
+    },
+    {
+     "say": "所以就算鑰匙在 P1 手上，只要 P1 說不想進，P0 照樣進得去，這就滿足 progress。",
+     "k": 9,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 504.6
+     }
+    },
+    {
+     "say": "進去前把自己的 flag 設成 true，出來時設回 false。",
+     "k": 10,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 527
+     }
+    },
+    {
+     "say": "那兩人都想進呢？P0、P1 都先把自己的 flag 設成 true。",
+     "k": 11,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 544.8
+     }
+    },
+    {
+     "say": "接著兩人都執行 turn = j，把鑰匙交給對方。最後寫 turn 的人等於讓了步：這裡 P1 最後寫，turn 變成 0。",
+     "read": "接著兩人都執行 turn 等於 j，把鑰匙交給對方。最後寫 turn 的人等於讓了步：這裡 P1 最後寫，turn 變成 0。",
+     "k": 12,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 562.1
+     }
+    },
+    {
+     "say": "再各自檢查：P0 看到 turn 是 0，進去；P1 看到 P0 想進、鑰匙也在 P0 那，只好等。",
+     "k": 13,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 617.5
+     }
+    },
+    {
+     "say": "所以 turn = j 要寫在 while 前面：先給對方一次檢查的機會。對方想進，鑰匙就不會還你。",
+     "read": "所以 turn 等於 j 要寫在 while 前面：先給對方一次檢查的機會。對方想進，鑰匙就不會還你。",
+     "k": 14,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 640.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Peterson 不能亂改的地方",
+   "scene": "syn-19a-wrong",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "這只是 Peterson 的一種寫法，不一定要一模一樣，但有些地方不能亂改。",
+     "k": 1,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 127.3
+     }
+    },
+    {
+     "say": "flag 設成 true 的意思是「我要進去了」，所以要寫在進 critical section 之前，緊貼著 while。",
+     "k": 2,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 133.7
+     }
+    },
+    {
+     "say": "如果太早設，例如放到 remainder 裡，自己其實還沒要進，卻先擋住對方，這就違反 progress。",
+     "k": 3,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 150.2
+     }
+    },
+    {
+     "say": "把 turn 交給對方這個動作，寫在進去前或出來後都可以，重點是 token 有在兩人之間交換。",
+     "k": 4,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 171.3
+     }
+    },
+    {
+     "say": "剛才那個只靠 turn 的版本，就是把交換放在出來之後，這是可以的。",
+     "k": 5,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 190.1
+     }
+    },
+    {
+     "say": "但一定要交給對方。寫成 turn 等於自己，等於把 token 搶過來，這個解法一定錯。",
+     "k": 6,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 203.3
+     }
+    },
+    {
+     "say": "我們 trace 一次：P0 舉 flag、把 turn 設成 0，檢查時 flag[1] 還是 false，break 進去。",
+     "read": "我們 trace 一次：P0 舉 flag、把 turn 設成 0，檢查時 flag 1 還是 false，break 進去。",
+     "k": 7,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 217
+     }
+    },
+    {
+     "say": "換 P1：它也把 turn 搶成 1，檢查時 turn 是 1，條件不成立，也進去了。兩人都在裡面，互斥被破壞。",
+     "k": 8,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 227
+     }
+    },
+    {
+     "say": "結論：token 一定要交給對方，flag 這個 ready 狀態也要設好，三個條件才會成立。",
+     "k": 9,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 241.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "證明 Peterson 三個條件都成立",
+   "scene": "syn-18d-proof",
+   "steps": 24,
+   "lines": [
+    {
+     "say": "為什麼 Peterson 能保證三個條件？先看 mutual exclusion。",
+     "k": 1,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 652.3
+     }
+    },
+    {
+     "say": "用反證法：先假設兩個人都已經在 critical section 裡，看會不會矛盾。",
+     "k": 2,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 672.8
+     }
+    },
+    {
+     "say": "要進得去，while 條件就要不成立：對 P0 來說，要嘛 flag[1] 是 false，要嘛 turn 是 0。",
+     "read": "要進得去，while 條件就要不成立：對 P0 來說，要嘛 flag 1 是 false，要嘛 turn 是 0。",
+     "k": 3,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 684.8
+     }
+    },
+    {
+     "say": "兩個都要進去，代表兩人的 flag 都已經是 true，所以「對方 flag 是 false」不可能成立。",
+     "k": 4,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 705.9
+     }
+    },
+    {
+     "say": "flag 那個條件幫不了任何人，能放人進去的只剩 turn。",
+     "k": 5,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 723.1
+     }
+    },
+    {
+     "say": "turn 是用 assign 寫入的，不是 ++ 或 --，所以它一定是 0 或 1，不可能同時是兩個值。",
+     "read": "turn 是用 assign 寫入的，不是加加或減減，所以它一定是 0 或 1，不可能同時是兩個值。",
+     "k": 6,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 745
+     }
+    },
+    {
+     "say": "turn 是 0，P0 可以在裡面，P1 的兩個條件就都不成立，它不可能在裡面。",
+     "k": 7,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 755
+     }
+    },
+    {
+     "say": "turn 是 1 也一樣。兩人都在裡面需要的條件永遠不會同時成立，反證完成。",
+     "k": 8,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 793.3
+     }
+    },
+    {
+     "say": "第二個 progress。周老師說，證 progress 只要檢查兩種情況：只有一個人想進，或兩個人都想進。",
+     "read": "第二個 progress。周老師說，證 progress 只要檢查兩種情況：只有一個人想進，或兩個人都想進。",
+     "k": 9,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 803.6
+     }
+    },
+    {
+     "say": "假設 P0 想進。P1 要嘛在 remainder，要嘛在 while 之前，反正不在裡面。",
+     "k": 10,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 822.6
+     }
+    },
+    {
+     "say": "要證明的是：P0 跑到 while 時，一定能 break 出來，進 critical section。",
+     "k": 11,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 846.2
+     }
+    },
+    {
+     "say": "情況一：P1 做完離開、不想進。flag[1] 一定是 false，P0 的條件不成立，進去。",
+     "read": "情況一：P1 做完離開、不想進。flag 1 一定是 false，P0 的條件不成立，進去。",
+     "k": 12,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 857.9
+     }
+    },
+    {
+     "say": "情況二：P1 做完沒被 context switch，很快又繞回來想進，兩人都舉了 flag、也各自設了 turn。",
+     "k": 13,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 893.4
+     }
+    },
+    {
+     "say": "兩人都 ready，turn 不是 0 就是 1，所以一定有一個人進得去。",
+     "k": 14,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 912.2
+     }
+    },
+    {
+     "say": "兩種情況都有人能進，critical section 不會空著沒人用，progress 成立。兩人都不想進就不用管，那不是 progress 的事。",
+     "k": 15,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 950.7
+     }
+    },
+    {
+     "say": "最後 bounded waiting，這個最 tricky。設定成：P1 在 critical section 裡，P0 在 while 等。",
+     "k": 16,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 976.3
+     }
+    },
+    {
+     "say": "要證的是：P1 剛做完時，下一個一定是 P0。",
+     "k": 17,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 990.1
+     }
+    },
+    {
+     "say": "P1 出來，把 flag[1] 設成 false。如果剛好 context switch，P0 看到 false，馬上進去。",
+     "read": "P1 出來，把 flag 1 設成 false。如果剛好 context switch，P0 看到 false，馬上進去。",
+     "k": 18,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1010.5
+     }
+    },
+    {
+     "say": "常被忘記的情況是：P1 沒被切走，繼續跑下一圈，又想進來，flag[1] 又變成 true。",
+     "read": "常被忘記的情況是：P1 沒被切走，繼續跑下一圈，又想進來，flag 1 又變成 true。",
+     "k": 19,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1058
+     }
+    },
+    {
+     "say": "關鍵就在 turn：P1 進下一輪前，一定要先執行 turn = 0，把鑰匙讓給 P0。",
+     "read": "關鍵就在 turn：P1 進下一輪前，一定要先執行 turn 等於 0，把鑰匙讓給 P0。",
+     "k": 20,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1073.6
+     }
+    },
+    {
+     "say": "P0 一直在等，它的 flag 一直是 true；鑰匙又在 P0 那，所以 P1 卡在 while。",
+     "k": 21,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1088.9
+     }
+    },
+    {
+     "say": "P1 可能連跑很多指令，不是一人一行，但它就是碰不到 critical section，直到 context switch，P0 一換過來就進去。",
+     "k": 22,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1111.5
+     }
+    },
+    {
+     "say": "兩人都 ready 時鑰匙一定交給對方，剛出來的人沒辦法馬上再進，等的人一定先輪到，bounded waiting 成立。",
+     "k": 23,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1141
+     }
+    },
+    {
+     "say": "這就是「把鑰匙交給別人」跟「把鑰匙設給自己」的差別。",
+     "k": 24,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1167.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Critical section 要包多大",
+   "scene": "syn-18d-csrange",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "會寫之後，第一個要注意的是：critical section 到底要定義在哪裡？",
+     "k": 1,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1183
+     }
+    },
+    {
+     "say": "拿 producer–consumer 來看。很直覺的想法是：整段程式都包進去，全部保護應該最安全吧？",
+     "k": 2,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1198.1
+     }
+    },
+    {
+     "say": "答案是錯的！這樣會 deadlock，程式卡住。",
+     "k": 3,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1210
+     }
+    },
+    {
+     "say": "一開始 buffer 是空的，consumer 先被呼叫，順利進了 critical section。",
+     "k": 4,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1223.9
+     }
+    },
+    {
+     "say": "它發現 buffer 是空的，沒東西拿，就在 critical section 裡用迴圈等。",
+     "k": 5,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1238.4
+     }
+    },
+    {
+     "say": "這時 producer 才來，但整段都是 critical section，它被 entry section 擋在外面，沒機會放資料。",
+     "k": 6,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1247.5
+     }
+    },
+    {
+     "say": "consumer 等 producer 生資料，producer 等 consumer 離開，兩個互相等，卡死，這就是下一章的 deadlock。",
+     "k": 7,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1261.8
+     }
+    },
+    {
+     "say": "第二種寫法是對的，但不太好，重點在範圍。",
+     "k": 8,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1290.2
+     }
+    },
+    {
+     "say": "假設程式裡有一些完全獨立的計算，真正會 race 的只有 counter++，卻把計算也一起包進去。",
+     "read": "假設程式裡有一些完全獨立的計算，真正會 race 的只有 counter 加加，卻把計算也一起包進去。",
+     "k": 9,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1309.1
+     }
+    },
+    {
+     "say": "A 在裡面做到一半被 context switch，換到 B，B 也要進 critical section，就卡在 entry。",
+     "k": 10,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1330.2
+     }
+    },
+    {
+     "say": "那些計算本來誰排到誰就能做，包進去之後，變成一定要等 A 全做完，critical section 被拉長了。",
+     "k": 11,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1363
+     }
+    },
+    {
+     "say": "整體 CPU 效率就變差：很多時候輪到你，你卻卡在 entry 做沒意義的等待。",
+     "k": 12,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1384.1
+     }
+    },
+    {
+     "say": "所以原則：critical section 包得越小越好，只包跟 race condition 有關的程式。",
+     "k": 13,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1399.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "N 個 process：抽號碼牌",
+   "scene": "syn-18d-bakery",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "剛剛的解法都只處理兩個 process。",
+     "k": 1,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1419
+     }
+    },
+    {
+     "say": "但大部分的問題，是 N 個 process 之間要同步。",
+     "k": 2,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1428.6
+     }
+    },
+    {
+     "say": "N 個的解法叫 Bakery algorithm，麵包店演算法。",
+     "k": 3,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1438.3
+     }
+    },
+    {
+     "say": "概念就像去郵局或麵包店：只有一個人在幫大家結帳。",
+     "k": 4,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1459.8
+     }
+    },
+    {
+     "say": "大家先抽號碼牌，照號碼一個一個來，人再多，一次也只有一個人在結帳。",
+     "k": 5,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1476.6
+     }
+    },
+    {
+     "say": "抽號碼就是 first come, first serve，所以滿足 bounded waiting。",
+     "k": 6,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1489.5
+     }
+    },
+    {
+     "say": "只要有人抽了號碼，就知道下一個要服務誰，所以也滿足 progress。",
+     "k": 7,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1499.7
+     }
+    },
+    {
+     "say": "放到程式裡：每個 process 進去之前先抽一個號碼，號碼越小越先執行。",
+     "k": 8,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1521.3
+     }
+    },
+    {
+     "say": "但程式比現實麻煩：現實的號碼機一次吐一張，程式裡抽號碼卻是好幾行，兩個人可能抽到一樣的號碼。",
+     "k": 9,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1534.8
+     }
+    },
+    {
+     "say": "所以要一個 tie breaker：號碼一樣就比 process ID，PID 小的先進。",
+     "k": 10,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1565.8
+     }
+    },
+    {
+     "say": "程式裡比較時寫成兩個數一組：先比號碼，號碼一樣再比 PID。",
+     "k": 11,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1595.3
+     }
+    },
+    {
+     "say": "完整的程式看起來比較長，我們一行一行拆開看。",
+     "k": 12,
+     "src": {
+      "v": "IOx8vtDzGO0",
+      "t": 1608.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Bakery 的程式一行一行看",
+   "scene": "syn-19a-bakery",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "先想想，為什麼 Peterson 只能用在兩個人？因為 turn 只有 0 或 1，交給對方非常明確。",
+     "k": 1,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 529.3
+     }
+    },
+    {
+     "say": "N 個 process 的話，token 要設成多少？交給誰？現在誰手上有？全都不知道。",
+     "k": 2,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 539.6
+     }
+    },
+    {
+     "say": "所以 N 個人時，不能再用傳 token 這麼簡單的想法。",
+     "k": 3,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 554.5
+     }
+    },
+    {
+     "say": "改成排隊：像郵局抽號碼牌，號碼小的先辦。",
+     "k": 4,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 563.5
+     }
+    },
+    {
+     "say": "麻煩的是抽號碼本身是好幾個指令，中途可能被切走，所以可能有兩個人都抽到 3。",
+     "k": 5,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 578.2
+     }
+    },
+    {
+     "say": "平手就用 tie breaker 比 PID。每個 process 的 ID 都是獨一無二的，PID 小的先。",
+     "k": 6,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 594.8
+     }
+    },
+    {
+     "say": "程式拆開看就不難。num 是一個 array，num[i] 記第 i 個 process 抽到的號碼，0 代表沒抽。",
+     "read": "程式拆開看就不難。num 是一個 array，num i 記第 i 個 process 抽到的號碼，0 代表沒抽。",
+     "k": 7,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 627.7
+     }
+    },
+    {
+     "say": "num 是共用的，但 num[i] 只有 Pi 自己會寫，別人只會讀。只有一個寫入者，就不會 race。",
+     "read": "num 是共用的，但 num i 只有 Pi 自己會寫，別人只會讀。只有一個寫入者，就不會 race。",
+     "k": 8,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 658.7
+     }
+    },
+    {
+     "say": "Peterson 的 flag 也是同樣道理：只有自己寫、別人只讀，所以不用擔心它被弄亂。",
+     "k": 9,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 685.5
+     }
+    },
+    {
+     "say": "怎麼抽？看目前大家最大的號碼，再加 1。例如看到最大是 5，就抽到 6。",
+     "k": 10,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 696
+     }
+    },
+    {
+     "say": "但 max 看起來是一行，其實是一連串 if-else 比較，是好幾個指令，所以才可能抽到一樣的號碼。",
+     "k": 11,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 714.4
+     }
+    },
+    {
+     "say": "抽完用 for loop 跟每個人比。對方 num 是 0，代表他沒抽、不想進，直接跳過。",
+     "k": 12,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 757.2
+     }
+    },
+    {
+     "say": "對方有抽，才比：先比號碼，一樣再比 PID，程式寫成 (num[j], j) < (num[i], i)。",
+     "read": "對方有抽，才比：先比號碼，一樣再比 PID，程式寫成 num j 逗號 j，小於 num i 逗號 i。",
+     "k": 13,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 792.3
+     }
+    },
+    {
+     "say": "只要有人的號碼加 PID 比你小，你就卡在 while 等。例如 P0 拿 3、P2 拿 6，P2 就要等。",
+     "k": 14,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 818.6
+     }
+    },
+    {
+     "say": "號碼是越抽越大的，號碼小就是比較早抽，先讓他進，這就是 first come, first serve。",
+     "k": 15,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 847.8
+     }
+    },
+    {
+     "say": "能 break 每個人的 while，代表大家都比你大或沒抽，你才進去。離開時把 num[i] 設回 0。",
+     "read": "能 break 每個人的 while，代表大家都比你大或沒抽，你才進去。離開時把 num i 設回 0。",
+     "k": 16,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 895.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "為什麼要 choosing",
+   "scene": "syn-19a-choosing",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "剛才只看了抽號碼的三行，完整的 Bakery 還多三行，跟 choosing 有關。",
+     "k": 1,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 929.7
+     }
+    },
+    {
+     "say": "choosing 就像一把鎖。choosing[i] 告訴大家：Pi 現在是不是正在抽號碼。",
+     "read": "choosing 就像一把鎖。choosing i 告訴大家：Pi 現在是不是正在抽號碼。",
+     "k": 2,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 933.8
+     }
+    },
+    {
+     "say": "抽之前設成 true，抽完設成 false。true 的意思就是「我正在抽，先別跟我比」。",
+     "k": 3,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 943.5
+     }
+    },
+    {
+     "say": "所以跟任何人比之前，都要先多看一眼：他是不是正在抽？",
+     "k": 4,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 956.3
+     }
+    },
+    {
+     "say": "因為他正在抽的話，他的數字正在變：現在是 0，等一下就不是 0 了。",
+     "k": 5,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 970.4
+     }
+    },
+    {
+     "say": "你太早跟他比，看到 0 以為他不進去；結果他雖然比你晚抽，抽完卻可能跟你一樣是 6。",
+     "k": 6,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 987.8
+     }
+    },
+    {
+     "say": "更糟的是，他號碼跟你一樣、PID 又比你小，照規則應該他先。你卻當他沒抽就進去了，這就錯了。",
+     "k": 7,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1004.3
+     }
+    },
+    {
+     "say": "choosing 的目的：有人正在抽，就等他抽完、數字穩定了，再跟他比。",
+     "k": 8,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1022.6
+     }
+    },
+    {
+     "say": "實作就是一個 while：一直等到 Pj 把 choosing[j] 設回 false，才去比它真正的號碼。",
+     "read": "實作就是一個 while：一直等到 Pj 把 choosing j 設回 false，才去比它真正的號碼。",
+     "k": 9,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1048.4
+     }
+    },
+    {
+     "say": "為什麼它是對的？mutual exclusion：一次只有號碼加 PID 最小的人能進，而這組數字獨一無二。",
+     "k": 10,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1084.2
+     }
+    },
+    {
+     "say": "bounded waiting：它是 first come, first serve，先抽先進，不會被無限插隊。",
+     "k": 11,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1102.2
+     }
+    },
+    {
+     "say": "progress：目前號碼加 PID 最小的那個人，一定能 break 兩個 while，進到 critical section。",
+     "k": 12,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1111.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "例子：P1、P4 都抽到 6",
+   "scene": "syn-19a-p1p4",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "用一個例子看 choosing 為什麼非要不可。先看沒有 choosing 的錯誤版本。",
+     "k": 1,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1132.4
+     }
+    },
+    {
+     "say": "假設目前大家抽過的最大號碼是 5。",
+     "k": 2,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1143.3
+     }
+    },
+    {
+     "say": "P1 跟 P4 都要進去。PID 1 比 4 小，所以號碼一樣時，P1 優先。",
+     "k": 3,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1153.3
+     }
+    },
+    {
+     "say": "P1 先開始抽：讀到 max 是 5，還沒把 6 寫回去，就被 context switch，num[1] 還是 0。",
+     "read": "P1 先開始抽：讀到 max 是 5，還沒把 6 寫回去，就被 context switch，num 1 還是 0。",
+     "k": 4,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1168.8
+     }
+    },
+    {
+     "say": "換 P4 抽，而且先抽完：它也看到 5，所以拿到 6。",
+     "k": 5,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1174.3
+     }
+    },
+    {
+     "say": "P4 檢查別人：P1 的號碼還是 0，看起來像沒抽，P4 就直接進去了。",
+     "k": 6,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1180.9
+     }
+    },
+    {
+     "say": "這時 P1 才把號碼寫回去，它剛才讀到的是 5，所以也是 6。",
+     "k": 7,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1191.3
+     }
+    },
+    {
+     "say": "P1 比較：兩人都是 6，比 PID，1 比 4 小，P1 覺得自己優先，也進去了。",
+     "k": 8,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1197.7
+     }
+    },
+    {
+     "say": "兩個人都在 critical section 裡，mutual exclusion 被破壞了。",
+     "k": 9,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1208.5
+     }
+    },
+    {
+     "say": "這就是同步難寫又難驗證的原因：每個指令之間都可能被切，人一多，順序組合多到數不完。",
+     "k": 10,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1223
+     }
+    },
+    {
+     "say": "換成有 choosing 的版本：P1 舉起 choosing，讀了 max 被切走；P4 抽完 6，卻卡在等 P1 抽完。",
+     "k": 11,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1245.6
+     }
+    },
+    {
+     "say": "P1 回來抽完，也是 6，放下 choosing。P4 這才比：P1 是 6 跟 1，比 P4 的 6 跟 4 小，P4 被擋住。",
+     "k": 12,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1251.1
+     }
+    },
+    {
+     "say": "P1 比較時發現沒人比它小，break 進去。PID 小的 P1 先進，這才是對的。",
+     "k": 13,
+     "src": {
+      "v": "6LWj3CuOCPs",
+      "t": 1257.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "Hardware support：atomic instruction",
+   "scene": "syn-19b-hw",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "software 的解法講完了，接下來是 hardware support。",
+     "k": 1,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 572.5
+     }
+    },
+    {
+     "say": "software 解法完全靠寫程式碼，我們可以去證明它對不對，像剛才證 Peterson 那樣。",
+     "k": 2,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 577.6
+     }
+    },
+    {
+     "say": "hardware support 是說：硬體提供一些 special instruction，一次把好幾件事做完，中間保證不被 interrupt。",
+     "k": 3,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 583
+     }
+    },
+    {
+     "say": "一次做完、不被打斷，就沒有同步問題，硬體做的東西不用擔心 race condition。",
+     "k": 4,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 598.6
+     }
+    },
+    {
+     "say": "寫同步解法時直接呼叫這些指令，程式碼就簡化很多。",
+     "k": 5,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 612.1
+     }
+    },
+    {
+     "say": "同步問題是因為 interrupt 會打斷程式。關掉 interrupt 是一種辦法，但會影響到其他程式。",
+     "k": 6,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 623.5
+     }
+    },
+    {
+     "say": "另一種就是用硬體：這種一次執行完、不可分割的指令，叫 atomic instruction。",
+     "k": 7,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 639
+     }
+    },
+    {
+     "say": "一個指令裡可能做了好幾個動作，但不會被打斷，不管邏輯多複雜，只要是硬體做的就沒問題。",
+     "k": 8,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 648.4
+     }
+    },
+    {
+     "say": "接下來看兩個例子：TestAndSet 跟 Swap，看怎麼用它們寫 entry 跟 exit section。",
+     "k": 9,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 664
+     }
+    },
+    {
+     "say": "真實的電腦系統都有提供這類指令。用硬體很快，又能確保沒有同步問題。",
+     "k": 10,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 689
+     }
+    }
+   ]
+  },
+  {
+   "title": "為什麼一定要硬體來做",
+   "scene": "syn-20b-hwrecap",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "你會發現投影片上的 TestAndSet 跟 Swap，看起來都是好幾行程式碼。",
+     "k": 2,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 735.5
+     }
+    },
+    {
+     "say": "像 TestAndSet 有四行。如果它只是一般的 software function，兩個 thread 同時呼叫，它自己就會 race。",
+     "k": 3,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 757
+     }
+    },
+    {
+     "say": "所謂 hardware support，是把這個 function 用邏輯線路燒在硬體裡。線路裡根本沒有 context switch 這回事。",
+     "k": 4,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 766.8
+     }
+    },
+    {
+     "say": "寫出來的四行只是表達概念，實際上它被做成一個 single instruction，不是一行 statement，也不是 function call。",
+     "k": 5,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 787.1
+     }
+    },
+    {
+     "say": "我們就用這種指令來實作 entry section，解 critical section 問題。",
+     "k": 6,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 810.6
+     }
+    },
+    {
+     "say": "好處有兩個：軟體變簡單，更重要的是快，硬體永遠比軟體快。",
+     "k": 7,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 821.3
+     }
+    },
+    {
+     "say": "不像 software 的 entry section 可能七、八行以上，指令越多越慢。",
+     "k": 8,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 836.7
+     }
+    },
+    {
+     "say": "swap 也一樣。自己寫的話，P0、P1 可能都先讀到 lock 是 false，最後兩人都拿到 false，一起進去。",
+     "k": 9,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 859
+     }
+    },
+    {
+     "say": "但硬體的 swap 中間不可能被 context switch，結果就是對的。這是 hardware 跟 software 的重要差別。",
+     "k": 10,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 883.6
+     }
+    },
+    {
+     "say": "這兩個例子都不完美，都不滿足 bounded waiting，但能看出為什麼要硬體支援。",
+     "k": 11,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 900.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "TestAndSet",
+   "scene": "syn-19b-tas",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "第一個硬體指令：TestAndSet。一樣有一個 lock，就是一個 token 的值，一開始是 false，沒鎖。",
+     "k": 1,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 711.3
+     }
+    },
+    {
+     "say": "任何人呼叫它，它會告訴你 lock 目前的值，同時把 lock 設成 true。",
+     "k": 2,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 723
+     }
+    },
+    {
+     "say": "test 的部分：先把 lock 原本的值存到 rv，最後回傳 rv，你就知道鎖原本是什麼狀態。",
+     "k": 3,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 740.6
+     }
+    },
+    {
+     "say": "set 的部分：過程中它一定會把 lock 設成 true，原本的值被蓋掉。",
+     "k": 4,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 766.1
+     }
+    },
+    {
+     "say": "有點像去看門有沒有鎖，但不管看到什麼，都順手把門鎖上。",
+     "k": 5,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 770.6
+     }
+    },
+    {
+     "say": "它其實是三行，但整個是 atomic 的。很多人同時呼叫，也一定是一個做完下一個才做。",
+     "k": 6,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 784.2
+     }
+    },
+    {
+     "say": "有了它，entry 就一行：while (TestAndSet(&lock)); lock 一開始是 false。",
+     "read": "有了它，entry 就一行：while TestAndSet lock，後面接分號。lock 一開始是 false。",
+     "k": 7,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 813.9
+     }
+    },
+    {
+     "say": "第一個呼叫的人一定拿到 false，false 就能 break 出 while，進去。",
+     "k": 8,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 828.7
+     }
+    },
+    {
+     "say": "但它一呼叫，lock 就變 true 了，後面的人再呼叫，拿到的都是 true，全部被卡住。",
+     "k": 9,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 855.5
+     }
+    },
+    {
+     "say": "怎麼解鎖？離開 critical section 時，把 lock 設回 false。",
+     "k": 10,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 883.1
+     }
+    },
+    {
+     "say": "解鎖之後，下一個呼叫的人拿到 false，就能進去了。",
+     "k": 11,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 892
+     }
+    },
+    {
+     "say": "檢查三個條件。mutual exclusion：它是 atomic 的，第一個拿到 false 的人就把它改成 true，不可能兩人都拿到 false。",
+     "k": 12,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 912.2
+     }
+    },
+    {
+     "say": "progress：沒人在裡面時 lock 是 false，第一個呼叫的人一定進得去。而且幾個 process 都能用。",
+     "k": 13,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 941.6
+     }
+    },
+    {
+     "say": "bounded waiting：不符合。你想想看，它有沒有 first come, first serve？沒有，它沒排隊。",
+     "k": 14,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 973
+     }
+    },
+    {
+     "say": "假設有 100 個 process 都在 while 裡一直呼叫，OS 排程不一定輪流，誰剛好先呼叫誰就拿到，等於在搶。",
+     "k": 15,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 989
+     }
+    },
+    {
+     "say": "用搶的就沒有保證，某個 process 可能一直搶不到。",
+     "k": 16,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1021
+     }
+    },
+    {
+     "say": "課本另外加一個 waiting 陣列，出來時把鎖依序交給下一個在等的人，才補上 bounded waiting。",
+     "k": 16
+    },
+    {
+     "say": "很多時候三個條件全做到代價太大，至少先解掉前兩個。電腦卡住，常常就是卡在這種同步問題。",
+     "k": 17,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1025.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Swap",
+   "scene": "syn-19b-swap",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "第二個例子：Swap。給它兩個變數，它把兩個值對調。這裡它是硬體做的，所以是 atomic。",
+     "k": 1,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1051.7
+     }
+    },
+    {
+     "say": "老師的比喻：每個 process 手上都有一顆藍球，只有我手上那顆是紅的。",
+     "k": 2,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1075.5
+     }
+    },
+    {
+     "say": "拿到紅球的人可以進 critical section。我代表「沒人在執行」，大家都想搶這顆紅球。",
+     "k": 3,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1092.7
+     }
+    },
+    {
+     "say": "swap 就像玩大風吹，大家換球，可是全場只有一顆紅球。",
+     "k": 4,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1101.7
+     }
+    },
+    {
+     "say": "每個 process 要進去前，就呼叫 swap 跟我換球，換到紅球就能進去。",
+     "k": 5,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1114.6
+     }
+    },
+    {
+     "say": "紅球代表 false，也就是 lock 的值；藍球代表 true，大家手上的 key 一開始都是 true。",
+     "k": 6,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1123
+     }
+    },
+    {
+     "say": "程式是：key 設成 true，然後只要 key 還是 true，就在 while 裡一直跟 lock 交換。",
+     "k": 7,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1151.4
+     }
+    },
+    {
+     "say": "一開始 lock 是 false。P0 第一個來換，key 變 false，break 進去，這時 lock 變成 true。",
+     "k": 8,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1180.4
+     }
+    },
+    {
+     "say": "出來時把 lock 設回 false，就像把紅球還到我手上。",
+     "k": 9,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1205.5
+     }
+    },
+    {
+     "say": "這個方法一樣能用在 N 個 process，因為大家的程式碼一模一樣，不用分誰是誰。",
+     "k": 10,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1214.2
+     }
+    },
+    {
+     "say": "P1 換到紅球後，P2 怎麼換都只換到藍球，只能在 while 裡一直換，等 P1 出來把 lock 設回 false。",
+     "k": 11,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1228.4
+     }
+    },
+    {
+     "say": "所以它跟 TestAndSet 原則完全一樣：lock 是 false 時，第一個來換的人進去。",
+     "k": 12,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1251.6
+     }
+    },
+    {
+     "say": "mutual exclusion：所有 key 跟 lock 裡，同一時間只會有一個是 false，只有一顆紅球。",
+     "k": 13,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1289.1
+     }
+    },
+    {
+     "say": "progress 也沒問題：lock 是 false 時，第一個呼叫的人一定能 break。",
+     "k": 14,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1313.5
+     }
+    },
+    {
+     "say": "bounded waiting 一樣不滿足：沒有任何排隊規則，先呼叫的先進。",
+     "k": 15,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1320.7
+     }
+    },
+    {
+     "say": "要人多又要 bounded waiting，就得排隊，像 Bakery 那樣比較複雜。不在乎的話，硬體解法非常有效率。",
+     "k": 16,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1327.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Pthread 的 mutex",
+   "scene": "syn-19b-mutex",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "好，自己寫程式時，真的會去寫 Peterson 嗎？大部分不會，大家都用現成的工具。",
+     "k": 1,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 15.9
+     }
+    },
+    {
+     "say": "Pthread 寫 thread 程式常遇到同步問題，它提供的工具就是 mutex。",
+     "k": 2,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 19.4
+     }
+    },
+    {
+     "say": "mutex 是 Pthread 定義好的特殊變數，名字就是 mutual exclusion 的縮寫。",
+     "k": 3,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 44.5
+     }
+    },
+    {
+     "say": "它就是一把鎖。用之前先 declare、再 initialize，因為它其實是一個記錄資訊的資料結構。",
+     "k": 4,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 59.1
+     }
+    },
+    {
+     "say": "對應到 critical section：entry 就是 lock，exit 就是 unlock。",
+     "k": 5,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 75.2
+     }
+    },
+    {
+     "say": "lock、unlock 裡面裝的，就是我們學的那些解法，software 或 hardware 都行，Pthread 只是把它包起來。",
+     "k": 6,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 87
+     }
+    },
+    {
+     "say": "程式裡所有可能 race 的地方，都要呼叫 lock、unlock，而且要用同一個 mutex。",
+     "k": 7,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 110.1
+     }
+    },
+    {
+     "say": "因為 mutex 本身就是大家共用的變數，必須是同一把鎖，才擋得住彼此。",
+     "k": 8,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 127.9
+     }
+    },
+    {
+     "say": "要保護的是互不相關的資料，就可以宣告別的 mutex，等於好幾把不同的鑰匙。",
+     "k": 9,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 133.7
+     }
+    },
+    {
+     "say": "用同一把 mutex 的那些 critical section，彼此之間才互斥。",
+     "k": 10,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 147.4
+     }
+    },
+    {
+     "say": "用完記得 destroy。Pthread 裡最常用的就是 mutex，它其實就是在實作 critical section。",
+     "k": 11,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 162.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Condition variable：等一個事件",
+   "scene": "syn-19b-cond",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "Pthread 還有另一個同步工具，叫 condition variable，條件變數。",
+     "k": 1,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 185
+     }
+    },
+    {
+     "say": "很多程式同時跑時，常需要某個 event 發生，再去 trigger 其他 thread 開始做事。",
+     "k": 2,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 197
+     }
+    },
+    {
+     "say": "condition variable 的用途就是：條件發生時，notify 其他 thread，可以開始下一步了。",
+     "k": 3,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 227.2
+     }
+    },
+    {
+     "say": "最常見的例子：資料還沒載進來，大家沒辦法處理。一個 thread 負責載資料，載完再叫大家一起處理。",
+     "k": 4,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 236.5
+     }
+    },
+    {
+     "say": "用法很單純。wait：等在某個 condition variable 上，沒人 signal，這個 thread 就 block 在那裡。",
+     "k": 5,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 268.9
+     }
+    },
+    {
+     "say": "signal：事件發生了，等在上面的 thread 會有一個被叫醒，通常是最早等的那個，看 library 怎麼做。",
+     "k": 6,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 291.9
+     }
+    },
+    {
+     "say": "要一次叫醒全部，就用 broadcast。",
+     "k": 7,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 310.3
+     }
+    },
+    {
+     "say": "各 thread 跑的順序、時間點不一定，但可以用它控制大家做事的先後。",
+     "k": 8,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 319.7
+     }
+    },
+    {
+     "say": "API 就是 pthread_cond_wait、signal、broadcast，一樣要 init、用完 destroy。",
+     "k": 9,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 343.3
+     }
+    },
+    {
+     "say": "你會發現 cond_wait 的參數還要一把 mutex：condition variable 必須跟 mutex 一起用。",
+     "k": 10,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 364.1
+     }
+    },
+    {
+     "say": "看例子：右邊 counter thread 負責改 x，左邊 action thread 要等 x 變成 0 才能做事。",
+     "k": 11,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 380
+     }
+    },
+    {
+     "say": "action 發現 x 不是 0，就去 wait；counter 發現 x 變成 0，就 signal，action 被叫醒去做事。",
+     "k": 12,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 401.7
+     }
+    },
+    {
+     "say": "這裡一定要配 mutex，把程式包進 critical section。為什麼？",
+     "k": 13,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 417.5
+     }
+    },
+    {
+     "say": "原因一：拿來當條件的 x 通常是共用變數，可能很多 thread 在加加減減，本來就要保護。",
+     "k": 14,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 451.1
+     }
+    },
+    {
+     "say": "原因二：先檢查 x 是 0、再 signal，這是好幾行。中間被切走、x 被改了，signal 時 x 可能已經不是 0。",
+     "k": 15,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 474.8
+     }
+    },
+    {
+     "say": "所以 signal 那邊要在 critical section 裡，wait 那邊也必須在裡面。",
+     "k": 16,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 518.4
+     }
+    },
+    {
+     "say": "這是固定的 design pattern。補充一點：課本建議把 if 寫成 while，被叫醒後要重新檢查條件。",
+     "k": 17,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 542.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "cond_wait 為什麼要傳 mutex",
+   "scene": "syn-19b-condwait",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "那問題來了：兩邊都在 critical section 裡，action 在裡面 wait 睡著，counter 不就進不來，deadlock 了嗎？",
+     "k": 1,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 16
+     }
+    },
+    {
+     "say": "我們一步一步看。counter 要保護 x，放在 critical section 裡，這沒問題。",
+     "k": 2,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1368.3
+     }
+    },
+    {
+     "say": "action 也要放在 critical section，而且要把 mutex 交給 cond_wait，順序才會對。",
+     "k": 3,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1376
+     }
+    },
+    {
+     "say": "假如 action 先進來，它先把 mutex lock 住，鎖在它手上。",
+     "k": 4,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1390
+     }
+    },
+    {
+     "say": "x 不是 0，它去 wait。這時 counter 想進來，但拿不到鎖，被擋在外面。",
+     "k": 5,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1406
+     }
+    },
+    {
+     "say": "action 進入 waiting，被 put to sleep，不會再執行。",
+     "k": 6,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1422.3
+     }
+    },
+    {
+     "say": "可是 counter 要進來才能 signal！所以鎖必須放出來。你沒寫 unlock，但 cond_wait 裡面會幫你 release lock。",
+     "k": 7,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1429
+     }
+    },
+    {
+     "say": "鎖放掉了，counter 才進得來。它把 x 減到 0，條件成立，就 signal。",
+     "k": 8,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1447.8
+     }
+    },
+    {
+     "say": "action 被叫醒了，但手上沒有鎖，鎖在 counter 那，所以它還卡在 cond_wait 這行。",
+     "k": 9,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1465.4
+     }
+    },
+    {
+     "say": "直到 counter unlock 離開，action 才重新拿回鎖，接著做它的事。",
+     "k": 10,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1497.2
+     }
+    },
+    {
+     "say": "所以看起來兩人都在裡面，但真正在執行的人手上一定有鎖：wait 時先 release，醒來 return 前先 reacquire。",
+     "k": 11,
+     "src": {
+      "v": "nNcqTc-00WA",
+      "t": 1526.5
+     }
+    },
+    {
+     "say": "這就是 cond_wait 要傳 mutex 的原因：library 要幫你放鎖、再拿回來，它得知道是哪一把。",
+     "k": 12,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 116
+     }
+    },
+    {
+     "say": "而且要傳 mutex，你自然就會把它寫在 critical section 裡，不會忘。Pthread 乾脆把這寫法規定死。",
+     "k": 13,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 179
+     }
+    }
+   ]
+  },
+  {
+   "title": "同步的兩個目的",
+   "scene": "syn-20a-review",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "好，整理一下。在程式設計裡，synchronization 就是控制 thread 執行的順序，或執行的時間點。",
+     "k": 3,
+     "src": {
+      "v": "jJZ8egWNiWo",
+      "t": 1398
+     }
+    },
+    {
+     "say": "目的第一類是解決 race condition，結果沒辦法預測，這是 programmer 最不想要的。",
+     "k": 4,
+     "src": {
+      "v": "jJZ8egWNiWo",
+      "t": 1410
+     }
+    },
+    {
+     "say": "工具就是 mutex lock：你不用自己寫 entry、exit，它包成函式讓你呼叫。",
+     "k": 5,
+     "src": {
+      "v": "jJZ8egWNiWo",
+      "t": 1424.6
+     }
+    },
+    {
+     "say": "第二類是 condition variable，控制「什麼時候」執行。它就像一個 event waiting queue。",
+     "k": 8,
+     "src": {
+      "v": "jJZ8egWNiWo",
+      "t": 1475.7
+     }
+    },
+    {
+     "say": "很多 shared memory 的平行語言都有 condition variable，實作不同，概念完全一樣。",
+     "k": 9,
+     "src": {
+      "v": "jJZ8egWNiWo",
+      "t": 1517.3
+     }
+    },
+    {
+     "say": "Pthread 要你丟 mutex 給 wait，是因為觸發條件的往往是像 x 這樣的變數，比較它時不希望有人去動。",
+     "k": 11,
+     "src": {
+      "v": "jJZ8egWNiWo",
+      "t": 1586.7
+     }
+    },
+    {
+     "say": "這是 Pthread 規定的 coding style。有同學跟老師說 C++ 的寫法不一樣，沒錯，每個 library 有自己的設計。",
+     "k": 12,
+     "src": {
+      "v": "jJZ8egWNiWo",
+      "t": 1616.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Thread pool",
+   "scene": "syn-20b-pool",
+   "steps": 19,
+   "lines": [
+    {
+     "say": "再看一個 condition variable 的好例子：thread pool，大部分 web server 都這麼做。",
+     "k": 1,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 314
+     }
+    },
+    {
+     "say": "作法是：先把 thread 建好放著，有工作就交給它做，做完不結束，留著等下一件。",
+     "k": 2,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 329.3
+     }
+    },
+    {
+     "say": "thread 不用一直刪掉又重建。更重要的是，可以控制系統總共用了多少 thread。",
+     "k": 3,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 344
+     }
+    },
+    {
+     "say": "不然 request 一多就建一堆 thread，硬體有限，只會一直 context switch，大家都變慢。",
+     "k": 4,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 356.1
+     }
+    },
+    {
+     "say": "所以控制 pool 的大小，就能控制系統效能。",
+     "k": 5,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 372.6
+     }
+    },
+    {
+     "say": "這裡看 thread pool 的一種實作：用 condition variable。",
+     "k": 6,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 381.4
+     }
+    },
+    {
+     "say": "怎麼讓同一個 thread 做不同的工作？塞給它一個 function pointer 跟 argument，照著執行就是在處理 request。",
+     "k": 7,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 392.4
+     }
+    },
+    {
+     "say": "每個 thread 跑的是一個 while loop：等著被叫醒，醒來執行指定的 function，做完再回去等。",
+     "k": 8,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 415.4
+     }
+    },
+    {
+     "say": "它怎麼知道何時醒？所有 thread 都 wait 在同一個 condition variable 上。",
+     "k": 9,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 435.2
+     }
+    },
+    {
+     "say": "前面有一個 master，收到 request 就把 function pointer 和 argument 填好，然後 signal 叫醒一個。",
+     "k": 10,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 452.5
+     }
+    },
+    {
+     "say": "實作上，整個 pool 共用一個 condition variable 和一把 mutex。用 condition variable 就一定要配 mutex。",
+     "k": 11,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 475.3
+     }
+    },
+    {
+     "say": "也記錄 thread count，master 就知道目前有幾個在忙、什麼時候可以 signal。",
+     "k": 12,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 513.1
+     }
+    },
+    {
+     "say": "signal 不在乎叫醒誰，waiting queue 的第一個來做就對了，一次一個。",
+     "k": 13,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 547.6
+     }
+    },
+    {
+     "say": "thread 剛建好時什麼都不做，就在 cond_wait 上睡著，在 queue 裡等。",
+     "k": 14,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 568
+     }
+    },
+    {
+     "say": "被 signal 就醒來，照 data structure 裡的 function 和 argument 去處理工作。",
+     "k": 15,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 603.6
+     }
+    },
+    {
+     "say": "做完 loop 繞回去，又在 cond_wait 等下一件。thread 不會被 terminate，這就是 thread pool。",
+     "k": 16,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 631.5
+     }
+    },
+    {
+     "say": "一樣是先 lock、再 cond_wait、再 unlock，確保一個 job 不會被兩個 thread 同時拿走。",
+     "k": 17,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 662.4
+     }
+    },
+    {
+     "say": "所以同步有兩個層面：一個是解 race condition，一個是控制執行順序，讓程式行為正確。",
+     "k": 19,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 702.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Semaphore：wait 與 signal",
+   "scene": "syn-sem-intro",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "好，接下來是另一個非常好用的同步工具：semaphore，號誌。",
+     "k": 1,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 0
+     }
+    },
+    {
+     "say": "這名字來自鐵路的號誌燈，告訴火車能不能通行，作業系統借來用。",
+     "k": 2,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 3
+     }
+    },
+    {
+     "say": "semaphore 只靠兩個函式：wait 跟 signal。",
+     "k": 3,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 10.8
+     }
+    },
+    {
+     "say": "wait 放在 entry section，signal 放在 exit section。它們也叫 P 跟 V，來自荷蘭文。",
+     "k": 4,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 16
+     }
+    },
+    {
+     "say": "這次不用 lock，而是一個整數變數 S。S 初值是 1，代表現在有 1 個位置能用。",
+     "k": 5,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 26.3
+     }
+    },
+    {
+     "say": "想進 critical section 就呼叫 wait(S)：它檢查 S 是不是小於等於 0，是的話就在 while 裡等。",
+     "read": "想進 critical section 就呼叫 wait S：它檢查 S 是不是小於等於 0，是的話就在 while 裡等。",
+     "k": 6,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 45.7
+     }
+    },
+    {
+     "say": "現在 S 是 1，P1 不用等，跳出迴圈，把 S 減成 0，進去。",
+     "k": 7,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 63.4
+     }
+    },
+    {
+     "say": "P1 做完出來，對同一個 S 呼叫 signal，把 S 加回 1。",
+     "k": 8,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 85.1
+     }
+    },
+    {
+     "say": "可是 P1 還在裡面、S 是 0 的時候，P2 來呼叫 wait，就只能在 while 裡一直轉。",
+     "k": 9,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 97.4
+     }
+    },
+    {
+     "say": "這就是它叫 wait 的原因：P2 等到 P1 signal、S 變回 1，才跳出來、把 S 減成 0，進去。",
+     "k": 10,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 122.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Semaphore 是一個數資源的 counter",
+   "scene": "syn-20b-sem",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "周老師說，semaphore 有點像 condition variable 加上 mutex 的結合。",
+     "k": 2,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 932.4
+     }
+    },
+    {
+     "say": "它跟 condition variable 一樣，是幫我們簡化程式、控制執行順序的工具。",
+     "k": 3,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 954
+     }
+    },
+    {
+     "say": "semaphore 說穿了是一個 counter，裡面存一個 integer。",
+     "k": 4,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 968.2
+     }
+    },
+    {
+     "say": "每個 semaphore 管理某一樣 resource，這個數字就是資源的數量，用計數來同步。",
+     "k": 5,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 980
+     }
+    },
+    {
+     "say": "數量設成 1，代表資源只有一個，值只在 0 跟 1 之間跳，叫 binary semaphore，就像 mutex lock。",
+     "k": 6,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1004.5
+     }
+    },
+    {
+     "say": "mutex 的想法是：把 critical section 當成一種資源，很多人想進，但只能讓一個人進。",
+     "k": 7,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1032.4
+     }
+    },
+    {
+     "say": "semaphore 比 mutex 更 powerful，適合更一般化的情況。只要值是 1，大家通常直接用 mutex。",
+     "k": 8,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1054
+     }
+    },
+    {
+     "say": "它真正的價值是 counting：thread pool 有 10 個 thread，就把它 initialize 成 10，10 個以內都能進。",
+     "k": 9,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1073
+     }
+    },
+    {
+     "say": "初值大於 1 的叫 counting semaphore。電腦裡很多資源本來就是一個數量，不只 true、false。",
+     "k": 10,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1123.7
+     }
+    },
+    {
+     "say": "用法：先初始化成資源數量，要用資源前，先呼叫 wait。",
+     "k": 11,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1155.5
+     }
+    },
+    {
+     "say": "注意，這裡也叫 wait、signal，但千萬別跟 condition variable 的 wait、signal 混在一起，定義完全不同。",
+     "k": 12,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1171.8
+     }
+    },
+    {
+     "say": "semaphore 的 wait 是「我要一個資源」，signal 是「我用完了，還回去」。",
+     "k": 13,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1195.6
+     }
+    },
+    {
+     "say": "離開 wait 代表拿到一個，數字減 1；signal 加 1。所以這個數字就是目前 available 的數量。",
+     "k": 14,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1212.3
+     }
+    },
+    {
+     "say": "數字是 0，代表沒資源了，呼叫 wait 就會卡住，直到數字大於 0。",
+     "k": 15,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1236.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Counting semaphore：S = 3",
+   "scene": "syn-sem-count",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "semaphore 很適合管「好幾個相同的資源」。把 S 初值設成 3，代表有 3 個位置。",
+     "k": 1,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 130.7
+     }
+    },
+    {
+     "say": "P1 呼叫 wait，3 是正的，不用等，S 減成 2，進去。",
+     "k": 2,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 147.7
+     }
+    },
+    {
+     "say": "P2 來，S 是 2，也進去，S 變 1。",
+     "k": 3,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 168.1
+     }
+    },
+    {
+     "say": "P3 來，S 是 1，還是大於 0，減成 0 進去。3 個位置都滿了。",
+     "k": 4,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 179
+     }
+    },
+    {
+     "say": "P4 來，看到 S 是 0，只能等。",
+     "k": 5,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 194.5
+     }
+    },
+    {
+     "say": "P5、P6 再來，也都要等，直到有人出來。",
+     "k": 6,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 201.1
+     }
+    },
+    {
+     "say": "例如 P2 做完出來，呼叫 signal，S 從 0 加成 1，空出一個位置。",
+     "k": 7,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 211
+     }
+    },
+    {
+     "say": "P4 就不用等了，把 S 減回 0，進去。",
+     "k": 8,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 222.3
+     }
+    },
+    {
+     "say": "這種能讓好幾個 process 同時進去的，叫 counting semaphore。",
+     "k": 9,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 236.1
+     }
+    },
+    {
+     "say": "只讓一個進去的叫 binary semaphore，用起來像 mutex lock。",
+     "k": 10,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 239.9
+     }
+    },
+    {
+     "say": "影片說初值 1 就叫 binary，這是簡化。課本是看值域：binary 只有 0、1，counting 可以是任意整數。",
+     "k": 11,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 245.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "最簡單的實作：spinlock",
+   "scene": "syn-20b-semimpl",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "那 wait、signal 怎麼實作？先看最簡單的版本，S 存的就是還剩多少可用。",
+     "k": 1,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1253.3
+     }
+    },
+    {
+     "say": "wait：while S 小於等於 0，後面接分號，就卡在這行一直等。",
+     "k": 2,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1268.1
+     }
+    },
+    {
+     "say": "S 大於 0 就離開迴圈，S 減 1 表示拿走一個，然後繼續往下做。",
+     "k": 3,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1275.2
+     }
+    },
+    {
+     "say": "signal 就是 S 加 1，把資源放出來，正在等的人就有機會 break 出 while。",
+     "k": 4,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1300.2
+     }
+    },
+    {
+     "say": "這裡有兩件很重要的事。第一：wait 跟 signal 必須是 atomic，一次做完、不能被打斷。",
+     "k": 5,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1322.1
+     }
+    },
+    {
+     "say": "用什麼做都行：硬體特殊指令、software 包成 critical section，或 kernel 先關 interrupt 再開。",
+     "k": 6,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1333.4
+     }
+    },
+    {
+     "say": "為什麼？因為 S 是共用變數，一個在加、一個在減，就跟最早的 counter 一樣會 race。",
+     "k": 7,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1375
+     }
+    },
+    {
+     "say": "第二：這種實作叫 spinlock，自旋鎖。等的人一直在 while 裡 spinning，打轉。",
+     "k": 8,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1403.7
+     }
+    },
+    {
+     "say": "卡在 wait 的 thread，看起來沒在做事，對 CPU 來說卻一直在重複執行同樣的指令。",
+     "k": 9,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1423.4
+     }
+    },
+    {
+     "say": "壞處就是浪費 CPU：你看 CPU 百分之百好忙，程式卻都沒在動。",
+     "k": 10,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1440.6
+     }
+    },
+    {
+     "say": "好處是容易實作，一個 while loop 就搞定。",
+     "k": 11,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1458.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "不空轉：block 與 wakeup",
+   "scene": "syn-sem-block",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "所以 semaphore 還有另一種實作。先回頭看原本的 wait，裡面有一個 while 迴圈。",
+     "k": 1,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 465
+     }
+    },
+    {
+     "say": "S 還不是正數，等的人就一直在迴圈裡轉，這叫 busy waiting。",
+     "k": 2,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 471.6
+     }
+    },
+    {
+     "say": "在等的可能不只一個，兩個、三個，全都在原地空轉。",
+     "k": 3,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 496
+     }
+    },
+    {
+     "say": "OS 每次讓它們上 CPU，它們只是跑一個什麼都沒做的迴圈，白白浪費 CPU。",
+     "k": 4,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 517.1
+     }
+    },
+    {
+     "say": "所以改用 OS 提供的兩個 system call：block 跟 wakeup。",
+     "k": 5,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 551.2
+     }
+    },
+    {
+     "say": "還記得 process 等 I/O 的時候嗎？它進入類似睡覺的狀態，不用 CPU。",
+     "k": 6,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 559.4
+     }
+    },
+    {
+     "say": "這裡一樣，只是這次是 process 自己說：我在等 critical section，讓我去睡吧。",
+     "k": 7,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 581.3
+     }
+    },
+    {
+     "say": "block 把 process 放進 waiting queue，OS 不會排它上 CPU。",
+     "k": 8,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 298
+     }
+    },
+    {
+     "say": "wakeup 把它從 waiting queue 拿出來，放回 ready queue，讓它可以再被排程。",
+     "k": 9,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 312
+     }
+    },
+    {
+     "say": "所以 semaphore 的結構變了：除了一個 value，還多一個 waiting queue，叫 S.list。",
+     "k": 10,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 210
+     }
+    },
+    {
+     "say": "新的 wait：一進來先把 S 減 1。S 初值 1，P1 呼叫 wait，S 變 0，不是負的，直接進去。",
+     "k": 11,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 644
+     }
+    },
+    {
+     "say": "P2 來，S 減成 −1，負的，代表沒位置了，P2 把自己加進這個 semaphore 的 waiting list。",
+     "read": "P2 來，S 減成 負1，負的，代表沒位置了，P2 把自己加進這個 semaphore 的 waiting list。",
+     "k": 12,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 653.1
+     }
+    },
+    {
+     "say": "接著呼叫 block，P2 睡著了。P3 也一樣，S 變 −2。S 是負的時候，絕對值就是在等的人數。",
+     "read": "接著呼叫 block，P2 睡著了。P3 也一樣，S 變 負2。S 是負的時候，絕對值就是在等的人數。",
+     "k": 13,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 668
+     }
+    },
+    {
+     "say": "為什麼要先減再睡？因為一呼叫 sleep 就沒機會再做任何事了。也因為先減，條件是小於 0，不是等於 0。",
+     "k": 13,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 343
+     }
+    },
+    {
+     "say": "再看 signal：P1 出來，先把 S 加 1，從 −2 變 −1。",
+     "read": "再看 signal：P1 出來，先把 S 加 1，從 負2 變 負1。",
+     "k": 14,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 699.8
+     }
+    },
+    {
+     "say": "加完如果 S 小於等於 0，代表 list 裡還有人在等。影片這裡說成「0 或大於 0」，那是口誤，以課本為準。",
+     "k": 15,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 706.7
+     }
+    },
+    {
+     "say": "就從 list 移出一個，例如 P2，用 wakeup 叫醒它，P2 就進去了。",
+     "k": 16,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 728.9
+     }
+    },
+    {
+     "say": "整段程式沒有任何 while loop，等的人都在睡，不吃 CPU，這就是 non-busy waiting。",
+     "k": 17,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 499
+     }
+    }
+   ]
+  },
+  {
+   "title": "Spinlock 還是 sleep",
+   "scene": "syn-20c-choose",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "考試常問：既然有兩種實作，是不是都用第二種就好？答案是看情形。",
+     "k": 1,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 516.4
+     }
+    },
+    {
+     "say": "non-busy waiting 不浪費 CPU，但它要呼叫 system call，比 S 減 1 那三、四個指令慢很多。",
+     "k": 2,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 539.2
+     }
+    },
+    {
+     "say": "等待時間很短，就用 busy waiting：while 檢查兩三次就 break，反而比較快。",
+     "k": 3,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 559
+     }
+    },
+    {
+     "say": "可是如果平均要等 5 秒才輪到你，5 秒對 CPU 是超級漫長的時間，你不會想拿來空轉。",
+     "k": 4,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 584.2
+     }
+    },
+    {
+     "say": "那就去睡，把 CPU 讓給別人，等人家 wake up 你。system call 再慢，也就幾個 millisecond。",
+     "k": 5,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 613.3
+     }
+    },
+    {
+     "say": "所以看等待時間：短的用 spinlock，長的用 non-busy waiting。",
+     "k": 6,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 619.2
+     }
+    },
+    {
+     "say": "別忘了 sleep、wakeup 代價很高：要 context switch、要 rescheduling，也不知道何時才輪到你。",
+     "k": 7,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 635.2
+     }
+    },
+    {
+     "say": "現在電腦多半是多核心。你在 busy waiting 時，對方可能正在另一個 core 上跑，很快就放掉，你連 context switch 都不用。",
+     "k": 8,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 650
+     }
+    }
+   ]
+  },
+  {
+   "title": "wait、signal 本身要 atomic",
+   "scene": "syn-20c-atomic",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "不管哪一種實作，都有一個重要條件：wait 跟 signal 必須是 atomic。",
+     "k": 1,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 680.1
+     }
+    },
+    {
+     "say": "這版不只有 value 的加減，還有 queue 的插入、刪除，更不能讓它們同時執行。",
+     "k": 2,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 694
+     }
+    },
+    {
+     "say": "怎麼保證？最暴力的是 OS kernel 會做的：disable interrupt。",
+     "k": 3,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 708
+     }
+    },
+    {
+     "say": "但有好幾顆 CPU 時，只關一顆沒用，得讓整台電腦停下來，非常沒效率。課本說這時通常改用 spinlock 保護這段短程式。",
+     "k": 4,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 715.2
+     }
+    },
+    {
+     "say": "另一種就是剛學的：用 hardware 或 software 寫 entry、exit，把它變成 critical section。",
+     "k": 5,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 732
+     }
+    },
+    {
+     "say": "軟體寫的話，wait、signal 裡面有 if-else，兩條路各要一個 exit section。",
+     "k": 6,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 752.5
+     }
+    },
+    {
+     "say": "但千萬不要把 sleep 跟 wakeup 包進 critical section！一包進去，它就睡在裡面，沒人進得去。",
+     "k": 7,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 775
+     }
+    },
+    {
+     "say": "因為 sleep 只是一個 system call，不像 cond_wait 會幫你放鎖、醒來再拿回來。",
+     "k": 8,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 791.3
+     }
+    },
+    {
+     "say": "反過來，不用擔心大家同時呼叫 sleep、wakeup：它們是 OS 的 system call，OS 會保證它們沒有同步問題。",
+     "k": 9,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 795.2
+     }
+    },
+    {
+     "say": "這樣就做到 atomic 了。至於選哪種實作，就看等待時間長還是短。",
+     "k": 10,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 827
+     }
+    }
+   ]
+  },
+  {
+   "title": "POSIX semaphore",
+   "scene": "syn-20b-posix",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "實際要用 semaphore，去哪找？semaphore 是由 OS 支援的。",
+     "k": 1,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1475.3
+     }
+    },
+    {
+     "say": "它太重要了，kernel 自己很多地方都要用，所以已經做好，成為 API 的一部分。Linux 的 POSIX API 裡就有。",
+     "k": 2,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1485
+     }
+    },
+    {
+     "say": "include semaphore.h，用法跟 mutex 很像，差別是 init 時可以給任意整數當初值。POSIX 的 signal 叫 sem_post。",
+     "k": 3,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1514.3
+     }
+    },
+    {
+     "say": "還有 get value 這類函式，可以看 semaphore 目前的值。",
+     "k": 4,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1545.7
+     }
+    },
+    {
+     "say": "它不屬於 Pthread，不只用在 thread 之間，很多時候是在 process 之間用，尤其在 OS level。",
+     "k": 5,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1553.4
+     }
+    },
+    {
+     "say": "初值設成 1，wait、signal 就像 lock、unlock，一樣能解 critical section。",
+     "k": 6,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1578.4
+     }
+    },
+    {
+     "say": "semaphore 更 powerful，但 mutex 實作簡單。binary 的問題就用 lock，要 counting 才用 semaphore。",
+     "k": 7,
+     "src": {
+      "v": "k0XaqQzTW_I",
+      "t": 1593
+     }
+    }
+   ]
+  },
+  {
+   "title": "用 semaphore 排順序",
+   "scene": "syn-sem-order",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "同步的另一個目的，是控制誰先誰後，semaphore 很常拿來做這件事。",
+     "k": 1,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 851
+     }
+    },
+    {
+     "say": "有兩個 process：上面是 P1，下面是 P2，橫軸是時間。",
+     "k": 2,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 271.9
+     }
+    },
+    {
+     "say": "P1 裡有一行 S1，P2 裡有一行 S2。要求是：S1 一定要在 S2 之前執行。",
+     "k": 3,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 278.5
+     }
+    },
+    {
+     "say": "如果剛好 S1 在第 10 秒、S2 在第 11 秒，S1 在前，很開心。",
+     "k": 4,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 295.6
+     }
+    },
+    {
+     "say": "但也可能 S2 第 10 秒就跑了，S1 第 20 秒才跑，那就不符合要求。",
+     "k": 5,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 310
+     }
+    },
+    {
+     "say": "解法：定義一個 semaphore 叫 sync，初值設 0，代表還沒有通行證。",
+     "k": 6,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 339.7
+     }
+    },
+    {
+     "say": "在 P1 的 S1 後面寫 signal(sync)：S1 做完，就發一張通行證。",
+     "read": "在 P1 的 S1 後面寫 signal sync：S1 做完，就發一張通行證。",
+     "k": 7,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 352.4
+     }
+    },
+    {
+     "say": "在 P2 的 S2 前面寫 wait(sync)：要做 S2 之前，先拿通行證。",
+     "read": "在 P2 的 S2 前面寫 wait sync：要做 S2 之前，先拿通行證。",
+     "k": 8,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 365.2
+     }
+    },
+    {
+     "say": "如果 S2 先到，sync 還是 0，wait 就強迫 P2 停在這行等。",
+     "k": 9,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 375.4
+     }
+    },
+    {
+     "say": "等到第 20 秒，P1 做完 S1、執行 signal，sync 加到 1。",
+     "k": 10,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 397.2
+     }
+    },
+    {
+     "say": "第 21 秒，P2 拿到通行證，sync 減回 0，執行 S2。順序保證是 S1 再 S2，沒有別的可能。",
+     "k": 11,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 417
+     }
+    },
+    {
+     "say": "P2 時間軸上多出來那段，就是它為了等 S1 花的 waiting time。",
+     "k": 12,
+     "src": {
+      "v": "HUA_cVBdLw0",
+      "t": 449
+     }
+    }
+   ]
+  },
+  {
+   "title": "Data flow：每條邊一個 semaphore",
+   "scene": "syn-20c-order",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "再難一點：很多應用是一個 data flow，一堆 process，一個的 output 給另一個，有的還要等兩個人的 output。",
+     "k": 7,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 953.6
+     }
+    },
+    {
+     "say": "原則一樣：每一條 edge 都當成剛才 P1、P2 的例子，各建一個 semaphore，初值都是 0。",
+     "k": 8,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 985.3
+     }
+    },
+    {
+     "say": "P1 最先，直接執行 S1，然後 signal(a)、signal(b)，觸發 P2、P3 開始。",
+     "read": "P1 最先，直接執行 S1，然後 signal a、signal b，觸發 P2、P3 開始。",
+     "k": 9,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 1016.3
+     }
+    },
+    {
+     "say": "規則很好記：有進來的邊就 wait，有出去的邊就 signal。P2 先 wait(a)，做完 signal(c)，讓 P4 開始。",
+     "read": "規則很好記：有進來的邊就 wait，有出去的邊就 signal。P2 先 wait a，做完 signal c，讓 P4 開始。",
+     "k": 10,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 1039.3
+     }
+    },
+    {
+     "say": "P4 wait(c) 等 P2，後面有兩條出去的邊，就 signal 兩個。",
+     "read": "P4 wait c 等 P2，後面有兩條出去的邊，就 signal 兩個。",
+     "k": 11,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 1072.6
+     }
+    },
+    {
+     "say": "P6 要 wait(f) 和 wait(d)，兩個都等到了才開始，做完再 signal(h)。",
+     "read": "P6 要 wait f 和 wait d，兩個都等到了才開始，做完再 signal h。",
+     "k": 12,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 1080.7
+     }
+    },
+    {
+     "say": "這樣就輕鬆控制整個 data flow。semaphore 常被這樣用，而且常常是跨 process 的。",
+     "k": 13,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 1095
+     }
+    }
+   ]
+  },
+  {
+   "title": "寫錯順序：deadlock 與 starvation",
+   "scene": "syn-20c-deadlock",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "同步工具好用，但程式常變得很複雜：一堆 wait、一堆 signal，全由 programmer 自己控制。",
+     "k": 1,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 1119.7
+     }
+    },
+    {
+     "say": "最容易發生的就是：wait、signal 的順序寫得不對，process 互相等，誰都沒辦法前進。",
+     "k": 2,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 1136
+     }
+    },
+    {
+     "say": "最簡單的例子：兩個 semaphore S 和 Q。P0 先 wait S 再 wait Q；P1 反過來，先 wait Q 再 wait S。",
+     "k": 3,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 1148.1
+     }
+    },
+    {
+     "say": "就算 S、Q 初值都是 1，第一步都能過：P0 拿走 S，P1 拿走 Q。",
+     "k": 4,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 1167.6
+     }
+    },
+    {
+     "say": "接著 P0 要 Q，Q 在 P1 手上，卡住；P1 要 S，S 在 P0 手上，也卡住。",
+     "k": 5,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 1182.2
+     }
+    },
+    {
+     "say": "初值要是 0，那更不用說，第一行就卡住了。",
+     "k": 6,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 1199.7
+     }
+    },
+    {
+     "say": "兩個互相等待、沒辦法前進，這就是 deadlock，下一章會專門講。",
+     "k": 7,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 1205
+     }
+    },
+    {
+     "say": "deadlock 的結果是 starvation，但兩者不一樣：starvation 是某個程式永遠沒機會執行。",
+     "k": 8,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 1216.6
+     }
+    },
+    {
+     "say": "原因很多，deadlock 是一種；priority scheduling 裡 priority 太低，也會 starvation。",
+     "k": 9,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 1229
+     }
+    },
+    {
+     "say": "而在同步裡，常常就是 programmer 一不小心寫錯，造成 deadlock，最後變成 starvation。",
+     "k": 10,
+     "src": {
+      "v": "r0h26ioGeG0",
+      "t": 1245.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "三個經典同步問題",
+   "scene": "syn-20d-classic",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "好，critical section 跟 semaphore 這兩種工具都介紹完了。",
+     "k": 1,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 17.8
+     }
+    },
+    {
+     "say": "最後還有一個更 high level 的工具叫 monitor。在那之前，先看幾個經典問題。",
+     "k": 2,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 21.4
+     }
+    },
+    {
+     "say": "同步問題五花八門，怎麼判斷一個解法好不好？大家定義了一組 classical synchronization problems。",
+     "k": 3,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 46.5
+     }
+    },
+    {
+     "say": "系統裡遇到的各種同步問題，幾乎都能 reduce 成這幾個。",
+     "k": 4,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 64.1
+     }
+    },
+    {
+     "say": "所以它們主要是拿來當考題：你寫好的同步程式，用它們檢驗是不是真的對。",
+     "k": 5,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 90.7
+     }
+    },
+    {
+     "say": "最常見三個。第一個 bounded buffer，就是一開始用來講同步問題的 producer–consumer。",
+     "k": 6,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 111.4
+     }
+    },
+    {
+     "say": "第二個 readers-writers，檔案操作常碰到：做 read 的叫 reader，做 write 的叫 writer。",
+     "k": 7,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 135.8
+     }
+    },
+    {
+     "say": "兩個人同時寫同一個檔案，內容會亂掉。所以有人用寫入權限開了檔，別人就不能再用寫入權限開。",
+     "k": 8,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 159.4
+     }
+    },
+    {
+     "say": "但如果只是 read only，大家可以同時開，因為內容不會被改。",
+     "k": 9,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 176.4
+     }
+    },
+    {
+     "say": "第三個更複雜也更有趣：dining philosophers，哲學家用餐。",
+     "k": 10,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 195.5
+     }
+    },
+    {
+     "say": "吃飯要兩支筷子。五個人只有五根，筷子放在人跟人之間，要拿起左右兩支才能吃。",
+     "k": 11,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 215.5
+     }
+    },
+    {
+     "say": "如果大家都先拿起左手邊那支，每個人都只有一支，誰都吃不到。",
+     "k": 12,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 226.9
+     }
+    },
+    {
+     "say": "問題就是：要怎麼拿筷子，才不會卡住、不會 deadlock？",
+     "k": 13,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 236.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Bounded buffer",
+   "scene": "syn-20d-bb",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "bounded buffer 之前講過：producer 把東西放進 buffer，consumer 拿出來。",
+     "k": 1,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 252.5
+     }
+    },
+    {
+     "say": "bounded 就是有上限，buffer 的大小是固定的。",
+     "k": 2,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 260.3
+     }
+    },
+    {
+     "say": "buffer 空的時候，consumer 沒東西拿，只能等。",
+     "k": 3,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 267.2
+     }
+    },
+    {
+     "say": "buffer 滿的時候，producer 沒地方放，也要等。",
+     "k": 4,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 270.6
+     }
+    },
+    {
+     "say": "課本用三個 semaphore 解：mutex 初值 1，empty 初值 n，full 初值 0。",
+     "k": 5,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 277.2
+     }
+    },
+    {
+     "say": "producer 要先 wait empty，再 wait mutex。順序反過來的話，buffer 滿時就會 deadlock。",
+     "k": 5
+    },
+    {
+     "say": "真實系統到處都是：compiler 的輸出交給 linker，linker 再交給 loader，中間都有 buffer。",
+     "k": 6,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 282.8
+     }
+    },
+    {
+     "say": "整個 I/O 系統也是，每一層之間都有 buffer，怎麼用這些空間就是這個問題。",
+     "k": 7,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 298.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Readers-writers 問題",
+   "scene": "syn-20d-rw",
+   "steps": 18,
+   "lines": [
+    {
+     "say": "第二個經典問題：readers-writers。",
+     "k": 1,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 308.8
+     }
+    },
+    {
+     "say": "file system、storage system 都會碰到。reader 只讀，writer 會修改內容。",
+     "k": 2,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 315
+     }
+    },
+    {
+     "say": "為了資料一致，writer 一次只能有一個。",
+     "k": 3,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 332.4
+     }
+    },
+    {
+     "say": "而且有 writer 在寫的時候，其他 reader、writer 全都不能碰，因為他們不知道檔案現在的狀態。",
+     "k": 4,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 340.3
+     }
+    },
+    {
+     "say": "但如果全部都是 reader，就可以一起讀，反正不會改到內容。",
+     "k": 5,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 352.8
+     }
+    },
+    {
+     "say": "這個問題又分好幾個版本，要求一個比一個高。",
+     "k": 6,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 365.4
+     }
+    },
+    {
+     "say": "最簡單的叫 first readers-writers problem：只要保證 writer 用的時候是 exclusive access。",
+     "k": 7,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 378.2
+     }
+    },
+    {
+     "say": "reader 要等多久、什麼時候做，first 版本都不管。",
+     "k": 8,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 407
+     }
+    },
+    {
+     "say": "再進一步是 second readers-writers problem。老師一開始講成 reader 不能 starvation，馬上更正說講反了。",
+     "k": 10,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 429.7
+     }
+    },
+    {
+     "say": "正確是：second 版本要 writer 有比較高的 priority，writer 不能 starvation。",
+     "k": 11,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 463.6
+     }
+    },
+    {
+     "say": "為什麼要這樣？因為 first 版本裡，拿到鎖的 reader 可以把鎖傳給下一個 reader。看時間軸：R1 從 0 秒開始讀 10 秒。",
+     "k": 12,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 470.3
+     }
+    },
+    {
+     "say": "writer 第 2 秒就到了，只比 R1 晚一點。",
+     "k": 13,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 498.4
+     }
+    },
+    {
+     "say": "第 8 秒 R2 來了，R1 還沒讀完，鎖就交給 R2，R2 又讀 10 秒，一直傳下去。",
+     "k": 14,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 516.7
+     }
+    },
+    {
+     "say": "第 2 秒就來的 writer，可能永遠拿不到鎖，這就是 writer starvation。",
+     "k": 15,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 524.1
+     }
+    },
+    {
+     "say": "second 版本要求：writer 一 ready，目前的 reader 做完就要換 writer。",
+     "k": 16,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 535.4
+     }
+    },
+    {
+     "say": "比 writer 晚來的 reader 不能插隊，不然 writer 又會一直被插隊。反過來，這時換 reader 可能 starvation。",
+     "k": 17,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 549.2
+     }
+    },
+    {
+     "say": "其實還有 third readers-writers，要求更多，有興趣可以自己查。",
+     "k": 18,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 567.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "First readers-writers 的 semaphore 解法",
+   "scene": "syn-20d-rwsol",
+   "steps": 23,
+   "lines": [
+    {
+     "say": "我們看 first readers-writers 的解法。second 的解法也不長，老師強烈建議自己找來看，想想為什麼對。",
+     "k": 1,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 583.3
+     }
+    },
+    {
+     "say": "這裡用 semaphore，而且要用計數的概念：數一數現在有幾個 reader 在讀。",
+     "k": 2,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 601.6
+     }
+    },
+    {
+     "say": "只要還有 reader 在讀，鎖就一直在 reader 這邊。",
+     "k": 3,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 614.3
+     }
+    },
+    {
+     "say": "完全沒有 reader 時，鎖才放掉，writer 才有機會。",
+     "k": 4,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 628.2
+     }
+    },
+    {
+     "say": "先看 writer。它要的是 exclusive access，同時只能有它一個。",
+     "k": 5,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 645
+     }
+    },
+    {
+     "say": "準備一個 write lock 叫 wrt。它是只有 0 跟 1 的 binary semaphore，用法就像 mutex。",
+     "k": 6,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 661.3
+     }
+    },
+    {
+     "say": "writer 寫之前 wait wrt 拿鎖，寫完 signal wrt 放鎖，等於把寫入包成 critical section。",
+     "k": 7,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 681.6
+     }
+    },
+    {
+     "say": "再看 reader，跟 writer 很像，差別在 reader 之間可以共用這把鎖。",
+     "k": 8,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 691.5
+     }
+    },
+    {
+     "say": "reader 要讀時，先把 readcount 加 1。R1 來了，readcount 變 1。",
+     "k": 9,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 705.6
+     }
+    },
+    {
+     "say": "加完如果等於 1，你是第一個 reader，就代表大家去 wait wrt 搶鎖。writer 拿著的話就得等。這裡 R1 拿到了。",
+     "k": 10,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 715.2
+     }
+    },
+    {
+     "say": "R2 來，readcount 變 2，不是 1，代表已經有人幫大家拿到鎖，直接去讀。它要是也去 wait，反而卡住自己。",
+     "k": 11,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 736.3
+     }
+    },
+    {
+     "say": "讀完要離開，readcount 減 1。R1 先走，readcount 變 1。",
+     "k": 12,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 765.9
+     }
+    },
+    {
+     "say": "R2 也走，減成 0，它是最後一個 reader，這時才 signal wrt 放鎖，writer 終於可以寫了。",
+     "k": 13,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 772.7
+     }
+    },
+    {
+     "say": "減完不是 0，就不用 signal，鎖繼續留在 reader 這群。",
+     "k": 14,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 782.5
+     }
+    },
+    {
+     "say": "整個想法是以群組為單位：第一個進來的 reader 替大家拿鎖，最後一個離開的替大家還鎖。",
+     "k": 15,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 798.7
+     }
+    },
+    {
+     "say": "但還沒完全對：readcount 自己也是好幾個 reader 共用的變數！",
+     "k": 16,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 811.3
+     }
+    },
+    {
+     "say": "大家可能同時對 readcount 加 1，跟 counter 一樣會 race，所以要再用一個 semaphore 叫 mutex 保護它。",
+     "k": 17,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 830
+     }
+    },
+    {
+     "say": "而且要連後面的 if 一起包進去：改完要馬上檢查，不然值可能又被別人改了。減 1 那段也一樣。",
+     "k": 18,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 861
+     }
+    },
+    {
+     "say": "寫完大架構後，再檢查哪裡會 race、一一保護。有關聯的資料用同一把鎖，沒關聯的用不同的鎖。",
+     "k": 19,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 889.2
+     }
+    },
+    {
+     "say": "這裡 wrt 保護檔案內容，mutex 保護 readcount，兩者無關，所以分開。全用一把，可能出錯又沒效率。",
+     "k": 20,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 924.5
+     }
+    },
+    {
+     "say": "這就是 first readers-writers 的解法：writer 獨佔寫入，reader 可以一起讀。",
+     "k": 21,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 962.8
+     }
+    },
+    {
+     "say": "它的問題是 writer 會 starvation：reader 一直把鎖傳給後來的 reader，後來的 reader 超車先來的 writer。",
+     "k": 22,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 975.3
+     }
+    },
+    {
+     "say": "要解決這個，就是 second readers-writers 的解法，它甚至更短，但要想清楚為什麼對。",
+     "k": 23,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 996.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Dining philosophers",
+   "scene": "syn-20d-dining",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "最後一個經典問題：dining philosophers。圓桌旁坐著五位哲學家。",
+     "k": 1,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1026
+     }
+    },
+    {
+     "say": "筷子跟人一樣多，每根放在兩人中間。",
+     "k": 2,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1039.8
+     }
+    },
+    {
+     "say": "每個人要拿起左右兩支筷子才能吃。",
+     "k": 3,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1049
+     }
+    },
+    {
+     "say": "吃完要放回去，讓別人也能用。",
+     "k": 4,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1055.1
+     }
+    },
+    {
+     "say": "每根筷子都是一個獨立的 resource，就像一塊獨立的記憶體內容，一次只能拿一支。",
+     "k": 5,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1060.3
+     }
+    },
+    {
+     "say": "你不能寫一個神奇的 function，一次把兩支同時拿起來。能的話就根本沒有同步問題了。",
+     "k": 6,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1069.4
+     }
+    },
+    {
+     "say": "而程式常常就是同時需要好幾個資源，左邊的要、右邊的也要，跟這題一模一樣。",
+     "k": 7,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1077.6
+     }
+    },
+    {
+     "say": "寫得不好就 deadlock。例如規定大家都先拿左邊：拿左邊都沒問題，五個人各拿到一支。",
+     "k": 8,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1094.2
+     }
+    },
+    {
+     "say": "要拿右邊時，右邊那支已經被隔壁拿走了，每個人拿著一支、等下一支，永遠等不到。",
+     "k": 9,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1101.2
+     }
+    },
+    {
+     "say": "deadlock 接著造成 starvation，大家都吃不到，使用者就會覺得程式壞了。",
+     "k": 10,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1105.8
+     }
+    },
+    {
+     "say": "要正確解它比較複雜，我們等一下用 monitor 來解。",
+     "k": 11,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1121.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Monitor：把同步交給語言",
+   "scene": "syn-20d-monitor",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "為什麼需要 monitor？",
+     "k": 1,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1141.8
+     }
+    },
+    {
+     "say": "用 semaphore、mutex，你都得自己在程式裡呼叫一堆 wait 跟 signal。",
+     "k": 2,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1143.9
+     }
+    },
+    {
+     "say": "順序一不小心寫錯，就 deadlock，程式卡死。",
+     "k": 3,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1154.4
+     }
+    },
+    {
+     "say": "所以它們是很 low level 的工具，寫程式的小錯誤就會讓它卡住。",
+     "k": 4,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1159.3
+     }
+    },
+    {
+     "say": "monitor 是一種 high-level language construct，說穿了就是物件導向的概念。",
+     "k": 5,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1169.8
+     }
+    },
+    {
+     "say": "把要保護的資源想成 OO 裡的東西：有 class，由 class 產生 object。",
+     "k": 6,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1180.5
+     }
+    },
+    {
+     "say": "一個 monitor，就是一個特殊的 class 產生出來的 object。",
+     "k": 7,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1194.6
+     }
+    },
+    {
+     "say": "會 race、需要保護的變數，就當成這個 object 裡的 local variable。",
+     "k": 8,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1200
+     }
+    },
+    {
+     "say": "所有操作這些變數的動作，都寫成 method。誰想碰這些變數，一定要透過 method。",
+     "k": 9,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1208.4
+     }
+    },
+    {
+     "say": "聽起來就是普通的 OO 嘛。差在哪？只差一點點，但非常重要。",
+     "k": 10,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1222.4
+     }
+    },
+    {
+     "say": "一般 OO 的 method 可以被很多 thread 同時執行，同時執行就會 race。",
+     "k": 11,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1228.6
+     }
+    },
+    {
+     "say": "monitor 多了一個條件：一次只能有一個 method 在執行。T0 在裡面時，其他 thread 在外面等。",
+     "k": 12,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1240.5
+     }
+    },
+    {
+     "say": "很多 thread 同時呼叫也沒關係，語言本身會保護這個 object，這就是 mutual exclusion。",
+     "k": 13,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1252.3
+     }
+    },
+    {
+     "say": "為什麼簡單得多？因為你只要定義行為：哪些變數要保護、對它們有哪些操作，就好了。",
+     "k": 14,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1271.5
+     }
+    },
+    {
+     "say": "這些 method 預設就不能同時執行，所以不會有 critical section 的問題。",
+     "k": 15,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1289.2
+     }
+    },
+    {
+     "say": "每個 thread 只要呼叫這些 method 去操作狀態，就不會出事。",
+     "k": 16,
+     "src": {
+      "v": "48K3qS2531o",
+      "t": 1304.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Monitor 裡只有一個 active",
+   "scene": "syn-21a-monitor",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "再講細一點。monitor 從 OO 的 class 延伸出來。",
+     "k": 2,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 15.6
+     }
+    },
+    {
+     "say": "class 有 private variable，還有 method，method 就是拿來操作這些變數的。",
+     "k": 3,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 43.7
+     }
+    },
+    {
+     "say": "誰會存取這些變數、做什麼動作，都能用 class 清楚定義，這也是大家喜歡 OO 的原因。",
+     "k": 4,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 72.1
+     }
+    },
+    {
+     "say": "monitor 在這之上，解決大家透過不同 method 存取同一個 object 裡共用變數的同步問題。",
+     "k": 5,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 85
+     }
+    },
+    {
+     "say": "解法回到最基本的 mutual exclusion：它的 method 一次只有一個在執行。",
+     "k": 6,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 102.6
+     }
+    },
+    {
+     "say": "可以很多 thread 同時呼叫，但會被 queue 住，排隊一次一個進來，就不會 race。",
+     "k": 7,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 117.7
+     }
+    },
+    {
+     "say": "但大家常忽略一個細節：一次一個，不是只有一個人在呼叫，而是只有一個 active 的 thread。",
+     "k": 8,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 141
+     }
+    },
+    {
+     "say": "還記得 condition variable 嗎？進了 critical section 卻在裡面 wait，睡著了，這叫 inactive。",
+     "k": 9,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 161.3
+     }
+    },
+    {
+     "say": "它在 object 裡做到一半被暫停了，這時可以讓別的 thread 進來，只要維持一個 active 就好。",
+     "k": 10,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 190.4
+     }
+    },
+    {
+     "say": "active 就是能執行裡面的 statement。monitor 保證的是：只有一個 process 是 active 地在裡面。",
+     "k": 11,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 205.7
+     }
+    },
+    {
+     "say": "它跟 mutex、condition variable 一樣是概念，各語言形式不同，Java 這類語言都支援。",
+     "k": 12,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 233.4
+     }
+    },
+    {
+     "say": "它已經融進語言設計，用 object 和 method 做同步，所以說它 high level，是一個 specialized class。",
+     "k": 13,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 282.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Monitor 裡的 condition variable",
+   "scene": "syn-21a-cv",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "看這個圖：一個 monitor class 產生的 object，負責幫我們處理同步。",
+     "k": 1,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 290.6
+     }
+    },
+    {
+     "say": "裡面的 shared data 就是 private variable，只能透過 method 操作，不受外面干擾。",
+     "k": 2,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 308
+     }
+    },
+    {
+     "say": "語言知道它是 monitor，所以呼叫 method 的 thread 會被擋住、排隊，一次一個。",
+     "k": 3,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 347.6
+     }
+    },
+    {
+     "say": "它比 semaphore、mutex、condition variable 都 high level，那些都要自己排 wait、signal 的順序。",
+     "k": 4,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 372.5
+     }
+    },
+    {
+     "say": "往前移一行、往後移一行，結果就不一樣：有時 deadlock，有時還是 race。它們可能比較快，但很容易出錯。",
+     "k": 5,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 393.5
+     }
+    },
+    {
+     "say": "monitor 也能結合 condition variable。condition variable 不是拿來解 race 的，但同步時非常常用。",
+     "k": 6,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 416.6
+     }
+    },
+    {
+     "say": "在 monitor 的 method 裡，可以呼叫 condition variable 的 wait，讓 thread 在裡面等。",
+     "k": 7,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 438.8
+     }
+    },
+    {
+     "say": "每個 condition variable 代表一個獨立的 waiting queue。要等就 wait，要叫醒就 signal。",
+     "k": 8,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 467.4
+     }
+    },
+    {
+     "say": "wait 的意思是 suspend。T0 變 inactive、去 queue 裡等，裡面沒有 active 的了，外面的 T1 就能進來。",
+     "k": 9,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 500.2
+     }
+    },
+    {
+     "say": "signal 會看這個變數的 waiting list 有沒有人，有就叫醒一個。",
+     "k": 10,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 527.4
+     }
+    },
+    {
+     "say": "那跟 semaphore 的 wait、signal 差在哪？semaphore 只要 wait 就減 1，只要 signal 就加 1，呼叫幾次就加減幾次。",
+     "k": 11,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 548.6
+     }
+    },
+    {
+     "say": "condition variable 不是 counter，是 queue：wait 是排進 queue 並 suspend，signal 是拿出一個。",
+     "k": 12,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 587.7
+     }
+    },
+    {
+     "say": "所以 queue 是空的時候 signal，什麼事都不會發生，沒有「負 1 個人」這種事。",
+     "k": 13,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 619.7
+     }
+    },
+    {
+     "say": "semaphore 就算值是 0，你 signal 它還是會加上去，永遠會被改。一個是 queue、一個是 counter，這是最大差別。",
+     "k": 14,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 643.7
+     }
+    },
+    {
+     "say": "合起來看：進來的 thread 呼叫 wait，進 queue、變 inactive，別人才能進來 signal 它，跟 Pthread 的例子一樣。",
+     "k": 15,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 683.3
+     }
+    },
+    {
+     "say": "重點：monitor 裡可以同時有很多 thread，但 active 的只有一個。說 monitor 裡只能有一個 thread，是錯的。",
+     "k": 16,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 723
+     }
+    }
+   ]
+  },
+  {
+   "title": "Dining philosophers 的 monitor 解法",
+   "scene": "syn-21a-dining",
+   "steps": 20,
+   "lines": [
+    {
+     "say": "好，用 monitor 解 dining philosophers。複習一下：沒同步的話，大家同時拿左邊，再拿右邊時全部互相等。",
+     "k": 2,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 755.2
+     }
+    },
+    {
+     "say": "用 monitor 把 method 定義出來，就不用再去想 low level 哪裡會 race。這是課本的解法。",
+     "k": 3,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 786
+     }
+    },
+    {
+     "say": "先看變數。第一個是 state，五個人，用 array 記每個人現在的狀態。",
+     "k": 4,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 803.7
+     }
+    },
+    {
+     "say": "狀態有三種：thinking 是沒要吃；hungry 是想吃但還沒拿到筷子；eating 是左右兩支都在手上。",
+     "k": 5,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 822.6
+     }
+    },
+    {
+     "say": "解法不能憑空變出筷子。有些錯的程式跑一跑大家都吃到了，結果是用了十根筷子，那不行。",
+     "k": 6,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 850
+     }
+    },
+    {
+     "say": "補充：這裡讓大家看得到彼此的狀態，比較好解。看不到別人、fully distributed 的情況又難一層。",
+     "k": 7,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 876.7
+     }
+    },
+    {
+     "say": "state 是共用的，要想它會不會 race。原則：只有一人寫、其他人讀就不會；兩人以上會改就要保護。",
+     "k": 8,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 945
+     }
+    },
+    {
+     "say": "第二個是 self，它是 condition variable。hungry 卻拿不到筷子的人，就放進自己的 queue 等，五個人五個 queue。",
+     "k": 9,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 984.5
+     }
+    },
+    {
+     "say": "動作切成 pickup、putdown，再加一個 test：吃之前試試左右的筷子是不是都沒人用。",
+     "k": 10,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 1031.6
+     }
+    },
+    {
+     "say": "初始化：一開始大家都是 thinking。",
+     "k": 11,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 1079.3
+     }
+    },
+    {
+     "say": "pickup：第 i 個人要吃，先把 state 改成 hungry，再 test 自己。哲0 左右都沒在吃，變成 eating。",
+     "k": 12,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 1107.2
+     }
+    },
+    {
+     "say": "test 結果不是 eating，就 wait：哲1 的鄰居哲0 在吃，所以哲1 呼叫 self[1].wait()，把自己 suspend。",
+     "read": "test 結果不是 eating，就 wait：哲1 的鄰居哲0 在吃，所以哲1 呼叫 self 1 點 wait，把自己 suspend。",
+     "k": 13,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 1168
+     }
+    },
+    {
+     "say": "putdown：放下筷子就變 thinking，然後去 test 左邊跟右邊的人，因為他們現在可能有機會吃了。",
+     "k": 14,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 1213.2
+     }
+    },
+    {
+     "say": "最重要的是 test。注意：test(k) 測的人不一定是呼叫的人，putdown 時測的是鄰居，他們可能正被 suspend。",
+     "read": "最重要的是 test。注意：test k 測的人不一定是呼叫的人，putdown 時測的是鄰居，他們可能正被 suspend。",
+     "k": 15,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 1288.3
+     }
+    },
+    {
+     "say": "怎樣才能吃？左邊的人不在吃，右邊的人也不在吃，兩支筷子都空著。",
+     "k": 16,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 1332
+     }
+    },
+    {
+     "say": "還要第三個條件：這個人自己是 hungry。因為可能在幫別人測，鄰居有筷子不代表他想吃。",
+     "k": 17,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 1389.5
+     }
+    },
+    {
+     "say": "三個都成立，就把他改成 eating，再 self[k].signal()，把可能在 queue 裡等的他叫醒。哲1 終於能吃了。",
+     "read": "三個都成立，就把他改成 eating，再 self k 點 signal，把可能在 queue 裡等的他叫醒。哲1 終於能吃了。",
+     "k": 18,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 1423.7
+     }
+    },
+    {
+     "say": "鄰居根本沒在等也沒關係，condition variable 的 signal 在空 queue 上什麼都不做。",
+     "k": 19,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 1473.2
+     }
+    },
+    {
+     "say": "把 pickup、putdown、test 照行為寫出來，問題就解了。課本補充：它不會 deadlock，但某人仍可能被左右鄰居輪流吃到 starvation。",
+     "k": 20,
+     "src": {
+      "v": "akXZHPecIh4",
+      "t": 1551.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "跑一次 monitor 解法",
+   "scene": "syn-21b-trace",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "這種解法跟之前想「哪些變數會 race、哪裡要包 critical section」完全不同，是從 method 的角度解，好寫又正確。",
+     "k": 1,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 16.3
+     }
+    },
+    {
+     "say": "monitor 保證一次只有一個人在呼叫它的 method。",
+     "k": 2,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 44.4
+     }
+    },
+    {
+     "say": "每個哲學家吃之前呼叫 pickup，吃完呼叫 putdown。",
+     "k": 3,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 64
+     }
+    },
+    {
+     "say": "重點是左右相鄰不能同時吃，所以 pickup 完成才能開始吃。",
+     "k": 4,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 97.4
+     }
+    },
+    {
+     "say": "一開始大家都是 thinking。",
+     "k": 5,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 115.7
+     }
+    },
+    {
+     "say": "P1 先來，呼叫 pickup，state 變 hungry，然後 test 自己。",
+     "k": 6,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 120.4
+     }
+    },
+    {
+     "say": "第一個人一定成功，左右都在 thinking，所以變成 eating，不用 wait，直接吃。",
+     "k": 7,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 129.7
+     }
+    },
+    {
+     "say": "P1 還在吃，P2 來 pickup：變 hungry，但鄰居 P1 在吃，test 失敗，被放進 waiting list。",
+     "k": 8,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 163.4
+     }
+    },
+    {
+     "say": "P2 就卡在 monitor 裡，直到有人 signal 它。",
+     "k": 9,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 186.1
+     }
+    },
+    {
+     "say": "什麼時候？等 P1 呼叫 putdown：先把自己改回 thinking，再幫鄰居 test。P0 只是 thinking，什麼都沒發生。",
+     "k": 10,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 201.7
+     }
+    },
+    {
+     "say": "再測 P2：左右都沒在吃，P2 又是 hungry，條件全符合，把它改成 eating，並 signal 叫醒它。",
+     "k": 11,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 223.7
+     }
+    },
+    {
+     "say": "P1 的 putdown 一結束，P2 就能吃了，大家就這樣同步。",
+     "k": 12,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 253.3
+     }
+    },
+    {
+     "say": "注意：只有 DiningPhilosophers 這個 object 是 monitor，P1、P2 只是呼叫它 method 的程式。",
+     "k": 13,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 265
+     }
+    }
+   ]
+  },
+  {
+   "title": "Java 的 synchronized",
+   "scene": "syn-21b-java",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "這些概念在真實語言裡都包得很好用。像 Java 有 synchronized method。",
+     "k": 1,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 288
+     }
+    },
+    {
+     "say": "它的概念就是 monitor，但更 fine-grained。",
+     "k": 2,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 305.6
+     }
+    },
+    {
+     "say": "不是整個 class 當成一個 monitor，而是 class 裡任何一個 method，都可以在前面加 synchronized。",
+     "k": 3,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 310.5
+     }
+    },
+    {
+     "say": "加上去是告訴 compiler：這幾個 method 有同步問題，不能同時執行。",
+     "k": 4,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 323.4
+     }
+    },
+    {
+     "say": "一個 class 可能有 10 個 method，你自己決定哪些要 synchronized，哪些不用。",
+     "k": 5,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 335.1
+     }
+    },
+    {
+     "say": "但只要加了 synchronized，這些 method 全部互斥，不能像用好幾把 mutex 那樣分成不同組。",
+     "k": 6,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 346.7
+     }
+    },
+    {
+     "say": "實際應用沒那麼單純，不一定每個 method 都要同步，所以這樣比較有彈性。",
+     "k": 7,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 368.6
+     }
+    },
+    {
+     "say": "Java 還有另一種，在 statement 層級，這個比較接近 mutex lock，不太像 monitor。",
+     "k": 8,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 390.6
+     }
+    },
+    {
+     "say": "把一段程式框起來，前面寫 synchronized 加一個變數，告訴 compiler 這個變數是共用的、會 race。",
+     "k": 9,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 412
+     }
+    },
+    {
+     "say": "compile 的時候，它自動幫你在前面加 lock、後面加 unlock。",
+     "k": 10,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 431.9
+     }
+    },
+    {
+     "say": "你自己用 mutex 也可以，只是這樣程式比較乾淨、好懂。",
+     "k": 11,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 447.7
+     }
+    },
+    {
+     "say": "每個語言放這些工具的方式不同：Java 主要是這兩種，Pthread 則提供 mutex、condition variable 的 API。",
+     "k": 13,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 491.5
+     }
+    },
+    {
+     "say": "而 classic synchronization problems，就是大家拿來驗證這些工具好不好用的題目。",
+     "k": 14,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 514.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Atomic transaction",
+   "scene": "syn-21b-atomic",
+   "steps": 19,
+   "lines": [
+    {
+     "say": "這一章最後講 atomic transaction。",
+     "k": 1,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 548
+     }
+    },
+    {
+     "say": "atomic 我們用過好幾次，意思是不可分割。它是形容詞，可以形容 instruction。",
+     "k": 2,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 565
+     }
+    },
+    {
+     "say": "也可以形容 function，像 semaphore 的 wait、signal，反正就是要一次做完。",
+     "k": 2,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 565
+     }
+    },
+    {
+     "say": "這裡形容的是 transaction。最常聽到是在 database，像去 ATM 提款，就是一筆 transaction。",
+     "k": 3,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 601.5
+     }
+    },
+    {
+     "say": "transaction 是一整個流程。像跨行轉帳，可能牽涉兩家銀行的操作，非常冗長，整個包起來叫 transaction。",
+     "k": 4,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 627.5
+     }
+    },
+    {
+     "say": "它當然跟同步有關。兩個人同時轉帳，錢只加了一筆；一個存一個領，餘額變 0，沒解好都可能發生。",
+     "k": 6,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 670.5
+     }
+    },
+    {
+     "say": "transaction 就是一連串 instruction、甚至 function 的集合，把整件事做完的邏輯。",
+     "k": 7,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 698.8
+     }
+    },
+    {
+     "say": "atomic 的意思：要嘛全部做完，要嘛都不做，不能做到一半。做到一半叫 unstable，不知道怎麼接也不知道怎麼恢復。",
+     "k": 8,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 716.5
+     }
+    },
+    {
+     "say": "例如存錢失敗，就是金額完全沒動，不能失敗了卻多出 500 塊。all or nothing，就是 atomic。",
+     "k": 9,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 742.5
+     }
+    },
+    {
+     "say": "不只 database，file system 甚至 OS 也是。跳電後重開機變慢，就是在檢查 file system 的狀態對不對。",
+     "k": 10,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 762.7
+     }
+    },
+    {
+     "say": "傳統作法是 commit 跟 abort，兩階段的動作。",
+     "k": 11,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 812.4
+     }
+    },
+    {
+     "say": "做了很多動作之後，最後一定要 commit。沒 commit，前面看起來做了也全部不算，rollback。用過 git 的 commit 就是這意思。",
+     "k": 12,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 841.9
+     }
+    },
+    {
+     "say": "所以要能 rollback。all 很簡單，難的是 none：做到一半了，要怎麼回到原本的狀態？",
+     "k": 13,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 883.4
+     }
+    },
+    {
+     "say": "一般靠 logging：把每個步驟記在 stable storage，不會遺失的儲存。系統可以 crash，log 絕對不能掉。",
+     "k": 14,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 920.4
+     }
+    },
+    {
+     "say": "log 記什麼？transaction 的名稱、時間、動作，最重要的是資料的舊值跟新值，才知道怎麼改回去。",
+     "k": 15,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 969.1
+     }
+    },
+    {
+     "say": "記哪些是要設計的：記太多，光寫 log 就變慢；記太少，又沒辦法重建。",
+     "k": 16,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 1003.5
+     }
+    },
+    {
+     "say": "另一招是 checkpoint。log 沒有時間觀念，金融系統跑了十年，總不能從第一年開始重建。",
+     "k": 17,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 1027.1
+     }
+    },
+    {
+     "say": "checkpoint 就是系統還原點：記下一個完整、stable 的狀態。壞了就從最近的 checkpoint 接著 log 往下做。",
+     "k": 18,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 1056.4
+     }
+    },
+    {
+     "say": "file system、database 都這樣做。要跑三個月的大氣模擬也會用 checkpoint、rollback、commit 來加快 recovery。",
+     "k": 19,
+     "src": {
+      "v": "SNwNax1Wz7k",
+      "t": 1098
+     }
+    }
+   ]
+  }
+ ]
+}
