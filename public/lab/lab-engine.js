@@ -312,6 +312,8 @@ export function createLab(container) {
       const m = o.material;
       const want = focus && !isGlowing(m) ? 1 : 0;
       let st = m.userData.__dim;
+      // a material cloned from a dimmed one carries a JSON copy of the record
+      if (st && !(st.base && st.base.isColor)) { delete m.userData.__dim; st = null; }
       if (!st) {
         if (!want) continue;
         st = m.userData.__dim = { base: m.color.clone(), t: 0, hex: m.color.getHex() };
@@ -355,21 +357,19 @@ export function createLab(container) {
   function onFrame(fn) { frameFns.add(fn); return () => frameFns.delete(fn); }
   let last = performance.now();
   // ── Labels never sit on each other ──
-  // After the CSS2D pass places every label, labels that would cover another
-  // are nudged up or down on screen (the shortest way clear). Labels on blocks
-  // (values) and icons keep their place (squeezed ones get smaller); everything
-  // else moves around them, up / down first, then sideways.
+  // A label stays at the thing it describes: it is never pushed far away
+  // (a label floating off on a leader line is hard to read). When two labels
+  // would cover each other, the newest one (or the one whose text just
+  // changed) keeps its spot, shifted at most a small step, and the older one
+  // it covers fades back until the spot is free again. Code panels and labels
+  // on blocks keep their place (squeezed block labels get smaller); every
+  // label is kept inside the stage and off the caption / formula.
   // Goals are recomputed every few frames and eased into, so nothing jumps.
-  const nudge = new Map();          // element → current / goal offset and scale
+  const nudge = new Map();          // element → current / goal offset, scale, fade
   // CSS2D sets 'translate(-cx%, -cy%) translate(Xpx, Ypx)': (X, Y) is the
   // anchor, cx/cy where the anchor sits inside the label (0.5 = centred)
   const TR = /translate\(([-\d.e]+)%,\s*([-\d.e]+)%\)\s*translate\(([-\d.e]+)px,\s*([-\d.e]+)px\)\s*$/;
-  let dcCount = 0;
-  // a label pushed away from its spot keeps a thin line back to it, so it
-  // still reads as belonging to what it describes
-  const leaders = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  leaders.setAttribute('class', 'lab-leaders');
-  labels.domElement.appendChild(leaders);
+  let dcCount = 0, born = 0;
   function declutter(dt, snap = false) {
     const items = [];
     scene.traverseVisible((o) => {
@@ -378,12 +378,34 @@ export function createLab(container) {
       if (!el.textContent || st.display === 'none' || st.visibility === 'hidden' || st.opacity === '0' || !el.isConnected) return;
       const m = TR.exec(st.transform);
       if (!m) return;
-      items.push({ el, ax: +m[3], ay: +m[4], fx: -m[1] / 100, fy: -m[2] / 100 });
+      // new text counts as new: the label just updated is the one to read
+      if (el.__t !== el.textContent) { el.__t = el.textContent; el.__born = ++born; }
+      items.push({ el, o, ax: +m[3], ay: +m[4], fx: -m[1] / 100, fy: -m[2] / 100, born: el.__born });
     });
     if (snap || dcCount++ % 6 === 0) {
-      for (const it of items) { it.w = it.el.offsetWidth; it.h = it.el.offsetHeight; it.x = it.ax + (0.5 - it.fx) * it.w; it.y = it.ay + (0.5 - it.fy) * it.h; it.fixed = it.el.classList.contains('val') || it.el.classList.contains('icon'); }
-      items.sort((a, b) => (b.fixed - a.fixed) || (a.y - b.y));
+      for (const it of items) { it.w = it.el.offsetWidth; it.h = it.el.offsetHeight; it.x = it.ax + (0.5 - it.fx) * it.w; it.y = it.ay + (0.5 - it.fy) * it.h; it.fixed = it.el.classList.contains('val') || it.el.classList.contains('icon'); it.code = /mono/i.test(it.el.style.fontFamily); }
+      // a code panel (monospace lines at one x / z in the same parent) is
+      // spread evenly about its middle when its lines would touch, so the
+      // panel stays whole
+      const panels = new Map();
+      for (const it of items) if (it.code && it.w) { const key = it.o.parent.id + ':' + it.o.position.x.toFixed(2) + ':' + it.o.position.z.toFixed(2) + ':' + it.fx; if (!panels.has(key)) panels.set(key, []); panels.get(key).push(it); }
+      for (const ls of panels.values()) {
+        if (ls.length < 2) { ls[0].dy = 0; continue; }
+        ls.sort((a, b) => a.y - b.y);
+        let need = 0;
+        for (let i = 1; i < ls.length; i++) { const gap = ls[i].y - ls[i - 1].y; need = Math.max(need, (ls[i].h + ls[i - 1].h) / 2 + 1 - gap); }
+        ls.forEach((it, i) => { it.dy = need > 0 ? need * (i - (ls.length - 1) / 2) : 0; it.y += it.dy; });
+      }
+      items.sort((a, b) => (b.code - a.code) || (b.fixed - a.fixed) || (b.born - a.born));
       const placed = [];
+      const W = container.clientWidth, H = container.clientHeight, cr = container.getBoundingClientRect();
+      for (const id of ['caption', 'formulaOv']) {
+        const e = document.getElementById(id);
+        if (!e || !e.classList.contains('on') || !e.textContent.trim()) continue;
+        const b = e.getBoundingClientRect();
+        placed.push({ x: (b.left + b.right) / 2 - cr.left, y: (b.top + b.bottom) / 2 - cr.top, w: b.width + 8, h: b.height + 8 });
+      }
+      const inside = (x, y, w, h) => x - w / 2 >= 4 && x + w / 2 <= W - 4 && y - h / 2 >= 4 && y + h / 2 <= H - 4;
       const hits = (x, y, w, h) => placed.some((p) => {
         const ox = Math.min(x + w / 2, p.x + p.w / 2) - Math.max(x - w / 2, p.x - p.w / 2);
         const oy = Math.min(y + h / 2, p.y + p.h / 2) - Math.max(y - h / 2, p.y - p.h / 2);
@@ -391,53 +413,42 @@ export function createLab(container) {
       });
       const seen = new Set();
       for (const it of items) {
-        let dx = 0, dy = 0, sc = 1;
-        if (it.w && hits(it.x, it.y, it.w, it.h)) {
-          if (it.fixed) {
-            // a value on a block keeps its place: shrink it until it fits
-            for (const f of [0.85, 0.72, 0.6]) if (!hits(it.x, it.y, it.w * f, it.h * f)) { sc = f; break; }
-            if (sc === 1) sc = 0.6;
-          } else {
-            // the shortest way clear: up / down first, then sideways
-            const sy = Math.max(6, it.h * 0.5), sx = Math.max(10, it.w * 0.35);
-            let found = false;
-            for (let k = 1; k <= 8 && !found; k++) {
-              for (const d of [-k * sy, k * sy]) if (!hits(it.x, it.y + d, it.w, it.h)) { dy = d; found = true; break; }
-            }
-            for (let k = 1; k <= 6 && !found; k++) {
-              for (const d of [k * sx, -k * sx]) if (!hits(it.x + d, it.y, it.w, it.h)) { dx = d; found = true; break; }
-            }
-            for (let k = 1; k <= 4 && !found; k++) {
-              for (const [ex, ey] of [[k * sx, -k * sy], [-k * sx, -k * sy], [k * sx, k * sy], [-k * sx, k * sy]]) if (!hits(it.x + ex, it.y + ey, it.w, it.h)) { dx = ex; dy = ey; found = true; break; }
+        let dx = 0, dy = 0, sc = 1, under = false;
+        if (it.w && !it.code) {
+          if (!it.fixed && !inside(it.x, it.y, it.w, it.h) && it.w < W - 8 && it.h < H - 8) {
+            // pulled back in from the edge
+            dx = Math.max(4 + it.w / 2 - it.x, Math.min(W - 4 - it.w / 2 - it.x, 0));
+            dy = Math.max(4 + it.h / 2 - it.y, Math.min(H - 4 - it.h / 2 - it.y, 0));
+          }
+          const bx = it.x + dx, by = it.y + dy;
+          if (hits(bx, by, it.w, it.h)) {
+            if (it.fixed) {
+              for (const f of [0.85, 0.72, 0.6]) if (!hits(bx, by, it.w * f, it.h * f)) { sc = f; break; }
+              if (sc === 1) sc = 0.6;
+            } else {
+              // one small step up or down at most; otherwise fade back
+              const sy = Math.max(6, it.h * 0.6);
+              const d = [-sy, sy].find((d) => !hits(bx, by + d, it.w, it.h) && inside(bx, by + d, it.w, it.h));
+              if (d !== undefined) dy += d; else under = true;
             }
           }
         }
-        placed.push({ x: it.x + dx, y: it.y + dy, w: (it.w || 0) * sc, h: (it.h || 0) * sc });
-        const n = nudge.get(it.el) || { cx: 0, cy: 0, cs: 1, gx: 0, gy: 0, gs: 1 };
-        n.gx = dx; n.gy = dy; n.gs = sc; n.w = it.w; n.h = it.h; nudge.set(it.el, n); seen.add(it.el);
+        if (!under) placed.push({ x: it.x + dx, y: it.y + dy, w: (it.w || 0) * sc, h: (it.h || 0) * sc });
+        const n = nudge.get(it.el) || { cx: 0, cy: 0, cs: 1, co: 1, gx: 0, gy: 0, gs: 1, go: 1 };
+        n.gx = dx; n.gy = dy + (it.code ? it.dy || 0 : 0); n.gs = sc; n.go = under ? 0.12 : 1; nudge.set(it.el, n); seen.add(it.el);
       }
-      for (const el of nudge.keys()) if (!seen.has(el)) nudge.delete(el);
+      for (const el of nudge.keys()) if (!seen.has(el)) { if (el.__faded) { el.style.opacity = ''; el.__faded = false; } nudge.delete(el); }
     }
-    const k = snap ? 1 : Math.min(1, dt * 12);
-    const lines = [];
+    const k = snap ? 1 : Math.min(1, dt * 12), ko = snap ? 1 : Math.min(1, dt * 5);
     for (const it of items) {
       const n = nudge.get(it.el);
       if (!n) continue;
-      n.cx += (n.gx - n.cx) * k; n.cy += (n.gy - n.cy) * k; n.cs += (n.gs - n.cs) * k;
+      n.cx += (n.gx - n.cx) * k; n.cy += (n.gy - n.cy) * k; n.cs += (n.gs - n.cs) * k; n.co += (n.go - n.co) * ko;
       if (Math.abs(n.cx) > 0.3 || Math.abs(n.cy) > 0.3) it.el.style.transform += ' translate(' + n.cx.toFixed(1) + 'px,' + n.cy.toFixed(1) + 'px)';
       if (n.cs < 0.995) it.el.style.transform += ' scale(' + n.cs.toFixed(3) + ')';
-      const far = Math.hypot(n.cx, n.cy);
-      if (far > 16 && n.w) {
-        // from the anchor to the nearest point of the moved label's box
-        const cx = it.ax + (0.5 - it.fx) * n.w + n.cx, cy = it.ay + (0.5 - it.fy) * n.h + n.cy;
-        const ex = Math.max(cx - n.w / 2, Math.min(it.ax, cx + n.w / 2)), ey = Math.max(cy - n.h / 2, Math.min(it.ay, cy + n.h / 2));
-        if (Math.hypot(ex - it.ax, ey - it.ay) > 6) lines.push('M' + it.ax.toFixed(1) + ' ' + it.ay.toFixed(1) + 'L' + ex.toFixed(1) + ' ' + ey.toFixed(1));
-      }
-    }
-    const d = lines.join('');
-    if (leaders.dataset.d !== d) {
-      leaders.dataset.d = d;
-      leaders.innerHTML = d ? '<path d="' + d + '"/>' : '';
+      // only touch opacity while fading (scenes may set their own)
+      if (n.co <= 0.99) { it.el.style.opacity = n.co.toFixed(2); it.el.__faded = true; }
+      else if (it.el.__faded) { it.el.style.opacity = ''; it.el.__faded = false; }
     }
   }
 

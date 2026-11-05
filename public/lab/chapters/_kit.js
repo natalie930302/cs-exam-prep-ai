@@ -9,7 +9,26 @@ export default function kit(ctx) {
   const GOLD = '#6a4a00', GREEN = '#0f5a3a', RED = '#7a1010', GRAY = '#d8cfc0';
   const MONO = { whiteSpace: 'pre', fontFamily: 'ui-monospace, SFMono-Regular, Consolas, monospace', fontSize: '11px', fontWeight: '600' };
   function fresh(pos, look) { lab.clear(); if (controls) controls(''); lab.frameCamera(pos, look); }
-  function tag(text, cls, x, y, z = 0) { const l = lab.label(text, cls || ''); l.position.set(x, y, z); lab.world.add(l); return l; }
+  // Side remarks (say / note / good / bad tags) are about what is happening
+  // now: only the latest SIDE_MAX stay on the stage, an older one fades out
+  // when a new one comes in, so explanations never pile up. Changing a
+  // remark's text (txt) brings it back as the latest. keep(l) exempts one
+  // (a list that is the subject itself).
+  const SIDE = /(^|\s)(say|note|good|bad)(\s|$)/, SIDE_MAX = 3, side = [];
+  function sideTouch(l) {
+    const i = side.indexOf(l); if (i >= 0) side.splice(i, 1);
+    side.push(l);
+    if (l.userData.gone) { l.userData.gone = false; l.element.style.opacity = ''; }
+    const live = side.filter((o) => o.parent && !o.userData.gone && !o.userData.keep);
+    side.length = 0; side.push(...live);
+    while (live.length > SIDE_MAX) {
+      const o = live.shift();
+      o.userData.gone = true;
+      Object.assign(o.element.style, { transition: 'opacity .4s', opacity: '0' });
+    }
+  }
+  const keep = (l) => { if (l) { l.userData.keep = true; if (l.userData.gone) sideTouch(l); } return l; };
+  function tag(text, cls, x, y, z = 0) { const l = lab.label(text, cls || ''); l.position.set(x, y, z); lab.world.add(l); if (SIDE.test(cls || '')) sideTouch(l); return l; }
   // a value cube; dropH > 0 makes it fall into place from that height
   function cube(text, color, size, x, y, z = 0, dropH = 0) {
     const m = lab.box(color, size);
@@ -31,7 +50,7 @@ export default function kit(ctx) {
   }
   const glow = (m, c) => { m.material.emissive = new THREE.Color(c || '#000000'); };
   const tint = (m, c) => { m.material.color.set(c); };
-  const txt = (l, t) => { l.element.textContent = t; };
+  const txt = (l, t) => { l.element.textContent = t; if (side.includes(l) || l.userData.gone) sideTouch(l); };
   const relabel = (m, t) => { if (m.userData.lbl) txt(m.userData.lbl, String(t)); };
   const showL = (l, on) => { l.element.style.visibility = on ? '' : 'hidden'; };
   // a code / pseudocode panel: one monospace label per line, hl(i) lights the current line
@@ -247,9 +266,9 @@ export default function kit(ctx) {
     else if (side === 'left') { l.position.set(p.x - e.x - gap, p.y, p.z); l.center.set(1, 0.5); }
     else if (side === 'top') { l.position.set(p.x, p.y + e.y + gap, p.z); l.center.set(0.5, 1); }
     else { l.position.set(p.x, p.y - e.y - gap, p.z); l.center.set(0.5, 0); }
-    lab.world.add(l); return l;
+    lab.world.add(l); if (SIDE.test(cls)) sideTouch(l); return l;
   }
   // a gentle bob for props (things that are "alive" on screen)
   function bob(o, amp = 0.08, speed = 2) { const y0 = o.position.y, t0 = Math.random() * 6; if (lab.onFrame) lab.onFrame((dt, t) => { if (o.parent) o.position.y = y0 + Math.sin((t + t0) * speed) * amp; }); }
-  return { V3, GOLD, GREEN, RED, GRAY, MONO, fresh, tag, cube, bodyOf, move, land, fly, kill, glow, tint, txt, relabel, showL, code, anim, line, arrow, ghostBox, lnode, tnode, step, icon, rename, dim, zone, travel, remove, buddy, prop, bob, flow, note };
+  return { V3, GOLD, GREEN, RED, GRAY, MONO, fresh, tag, cube, bodyOf, move, land, fly, kill, glow, tint, txt, relabel, showL, code, anim, line, arrow, ghostBox, lnode, tnode, step, icon, rename, dim, zone, travel, remove, buddy, prop, bob, flow, note, keep };
 }
