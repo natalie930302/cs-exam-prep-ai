@@ -1,0 +1,4037 @@
+{
+ "chapter": "ds-7",
+ "title": "圖（基礎）",
+ "intro": "從七橋問題認識 graph，學會 path、connected、degree 這些術語和四種存法，再用 queue 和 stack 一步步走 BFS、DFS。",
+ "parts": [
+  {
+   "title": "Graph：點、邊，有向與無向",
+   "scene": "grapha-types",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "好，這一章講 graph。先說清楚：這裡的 graph 不是數學課 y = f(x) 畫出來的曲線，而是一種資料結構。",
+     "read": "好，這一章講 graph。先說清楚：這裡的 graph 不是數學課 y 等於 f of x 畫出來的曲線，而是一種資料結構。",
+     "k": 1,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 5
+     }
+    },
+    {
+     "say": "一個 graph，就是一群東西，加上它們之間的關係。",
+     "k": 2,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 7.8
+     }
+    },
+    {
+     "say": "每個東西叫 node，也叫 vertex，頂點。兩個名字課本和考題都會用，都要認得。",
+     "k": 3,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 11.8
+     }
+    },
+    {
+     "say": "把兩個 node 連起來的線叫 edge，邊。有邊，就代表這兩個點之間有某種關係。",
+     "k": 4,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 16.8
+     }
+    },
+    {
+     "say": "最好懂的例子是社群網路：每個人是一個 node，兩個人是朋友，就連一條 edge。",
+     "k": 5,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 22.2
+     }
+    },
+    {
+     "say": "graph 依照邊有沒有方向，分成兩大類：undirected 無向圖，和 directed 有向圖。",
+     "k": 6,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 30.6
+     }
+    },
+    {
+     "say": "無向圖的邊就是一條普通的線：A 跟 B 連著，從哪一邊看都一樣。",
+     "k": 7,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 35
+     }
+    },
+    {
+     "say": "朋友關係就是無向的：你是小明的朋友，小明當然也是你的朋友。",
+     "k": 9,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 44.2
+     }
+    },
+    {
+     "say": "有向圖的邊畫成箭頭。像網頁和超連結：這頁有連結連到那頁，就是一條有方向的邊。",
+     "k": 10,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 51.8
+     }
+    },
+    {
+     "say": "但頁 1 連到頁 2，不代表頁 2 會連回頁 1。所以在有向圖裡，這是兩條不同的邊。",
+     "k": 11,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 59.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "七橋問題與 degree",
+   "scene": "graphpeng-konigsberg",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "graph 從哪裡來？彭老師從歷史講起：歐洲小鎮 Königsberg 有一條河，河上有七座橋。",
+     "k": 1,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 10.3
+     }
+    },
+    {
+     "say": "河把陸地分成幾塊，每一塊標成一個點：A、B、C、D。",
+     "k": 2,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 39.2
+     }
+    },
+    {
+     "say": "其中 A 是河中間的一個島。",
+     "k": 3,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 51.3
+     }
+    },
+    {
+     "say": "把地圖抽象化：大寫字母代表陸地，在 graph 裡就是 vertex；",
+     "k": 4,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 67.1
+     }
+    },
+    {
+     "say": "小寫字母 a 到 g 是 edge，一條 edge 就是一座橋。整張地圖，只剩下點和線。",
+     "k": 6,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 75.9
+     }
+    },
+    {
+     "say": "那問題來了：能不能從某一點出發，每座橋剛好走一次，最後回到起點？",
+     "k": 7,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 93.4
+     }
+    },
+    {
+     "say": "先學一個詞：degree，分支度，就是一個 vertex 連了幾條邊。",
+     "k": 8,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 117.6
+     }
+    },
+    {
+     "say": "數數看：B 連了 3 座橋，degree 是 3；A 連了 5 座，degree 是 5；C、D 都是 3。",
+     "k": 10,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 133.2
+     }
+    },
+    {
+     "say": "這條路要滿足兩個條件。第一，起點和終點是同一個點；",
+     "k": 11,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 182.7
+     }
+    },
+    {
+     "say": "第二，每一座橋都要走過，而且只能走一次。",
+     "k": 12,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 193.9
+     }
+    },
+    {
+     "say": "數學家 Euler 沒有去一條一條試，而是證明了一個定理。",
+     "k": 13,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 240.6
+     }
+    },
+    {
+     "say": "要有這種路，每個 vertex 的 degree 都必須是偶數。",
+     "k": 14,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 251.8
+     }
+    },
+    {
+     "say": "為什麼？你走進一塊陸地，就得再走出來，進出各用一座橋，所以橋一定成對用掉。",
+     "k": 14
+    },
+    {
+     "say": "七橋圖的 degree 是 5、3、3、3，全是奇數，所以這種走法根本不存在。",
+     "k": 15,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 286.1
+     }
+    },
+    {
+     "say": "這大概是第一個把真實問題 model 成 graph 來解的例子。",
+     "k": 16,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 319
+     }
+    },
+    {
+     "say": "補充考試用語：在連通圖裡，每條邊恰走一次又回到起點，叫 Euler circuit，條件就是 degree 全是偶數。",
+     "k": 16
+    },
+    {
+     "say": "如果不用回到起點，叫 Euler path，奇數 degree 的點要剛好 0 個或 2 個。七橋有 4 個，也不行。",
+     "k": 16
+    }
+   ]
+  },
+  {
+   "title": "Graph 的應用：layout 與 shortest path",
+   "scene": "graphpeng-shortest-space-time",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "彭老師說，graph 很簡單，只有兩個重要元件。",
+     "k": 1,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 338.1
+     }
+    },
+    {
+     "say": "第一個是 vertex 的集合，像這裡的 S、X、Y、D；",
+     "k": 2,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 345.4
+     }
+    },
+    {
+     "say": "第二個是 edge 的集合。只要有這兩樣，就可以叫做 graph。",
+     "k": 3,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 351.3
+     }
+    },
+    {
+     "say": "應用非常廣。第一個是電路的 layout：晶片上的元件怎麼擺、線怎麼拉。",
+     "k": 4,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 370.9
+     }
+    },
+    {
+     "say": "在有限的空間裡，把 gate 用連線，也就是 route，接起來。看起來是硬體，本質其實是演算法問題。",
+     "k": 5,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 380.9
+     }
+    },
+    {
+     "say": "第二個應用是找 shortest path，最短路徑。後面講 graph，會一直回到這個問題。",
+     "k": 6,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 415
+     }
+    },
+    {
+     "say": "像 Google Map 導航：給一個起點 source，一個終點 destination，",
+     "k": 7,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 440.3
+     }
+    },
+    {
+     "say": "它幫你規劃路線，而從起點到終點，通常有好幾種走法。",
+     "k": 8,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 453.5
+     }
+    },
+    {
+     "say": "最常見的需求是走最少的公里數。上面 3 加 4 是 7 公里，比下面 5 加 5 的 10 公里短。",
+     "k": 9,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 468.1
+     }
+    },
+    {
+     "say": "這種用距離算的，叫空間上的 shortest path。",
+     "k": 10,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 495.8
+     }
+    },
+    {
+     "say": "另一種是時間上的 shortest path：一樣給起點、終點，但要找 travel time 最短的路。",
+     "k": 11,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 502.6
+     }
+    },
+    {
+     "say": "欸，空間上很近的路，如果有一段常常塞車，時間就拉長了：上面那條要 30 分鐘。",
+     "k": 12,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 533.5
+     }
+    },
+    {
+     "say": "下面那條雖然比較遠，只要 15 分鐘。所以空間上最短，不一定時間上最短。",
+     "k": 13,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 539.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "地圖就是一張 graph",
+   "scene": "qa-map-graph",
+   "steps": 3,
+   "lines": [
+    {
+     "say": "彭老師講了個小插曲：他把手機升級到 iOS 6，用 Apple Map 找交通大學，結果找到上海的交大。",
+     "k": 1,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 589
+     }
+    },
+    {
+     "say": "為什麼差這麼多？因為地圖其實就是一個 graph，G = (V, E)：V 是地點和路口，E 是道路。",
+     "read": "為什麼差這麼多？因為地圖其實就是一個 graph，G 等於 V 跟 E：V 是地點和路口，E 是道路。",
+     "k": 1,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 621.4
+     }
+    },
+    {
+     "say": "當時 Apple 的圖資不夠充足，該有的點不見了，該有的 POI 也不見了。",
+     "k": 2,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 652
+     }
+    },
+    {
+     "say": "POI 是 Point of Interest，就是景點、餐廳、地標這類點，像交大、小木屋鬆餅。",
+     "k": 2,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 668
+     }
+    },
+    {
+     "say": "大廠都搶著做地圖，因為地圖是手機最常用的 app，從查詢就知道一個區域的人在找什麼。",
+     "k": 2,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 714
+     }
+    },
+    {
+     "say": "所以導航把人帶進深山、帶到山崖邊，多半不是演算法爛，而是圖資不完整。",
+     "k": 3,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 840
+     }
+    },
+    {
+     "say": "真正的近路不在資料裡，找出來的 shortest path 就不是真的最短。要解決，就得把圖資補齊。",
+     "k": 3,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 870
+     }
+    }
+   ]
+  },
+  {
+   "title": "專案規劃與社群網路",
+   "scene": "graphpeng-social",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "再一個應用：project planning。像開發 Windows 8 這種大專案，",
+     "k": 1,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 899.7
+     }
+    },
+    {
+     "say": "會分成很多 component，也就是設計、實作、測試這些部分工作。",
+     "k": 2,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 903
+     }
+    },
+    {
+     "say": "component 的先後關係可以畫成 graph：箭頭表示這個做完，下一個才能開始，",
+     "k": 3,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 907.2
+     }
+    },
+    {
+     "say": "而且下一個 component，必須在某個時間之內完成。",
+     "k": 4,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 912.7
+     }
+    },
+    {
+     "say": "大公司的軟體非常龐大，開發流程通常就畫成 graph，靠它來掌控進度。",
+     "k": 5,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 944.4
+     }
+    },
+    {
+     "say": "graph 在 social science 也很常用，最典型的就是 Facebook。",
+     "k": 6,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 961.3
+     }
+    },
+    {
+     "say": "每個 user 是一個 vertex；兩個人加為朋友，就連一條 edge。",
+     "k": 8,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 980.2
+     }
+    },
+    {
+     "say": "Facebook 推薦你可能認識的人，怎麼做？先看你的鄰居，也就是你的朋友小明、小華；",
+     "k": 9,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 997.1
+     }
+    },
+    {
+     "say": "再看鄰居的鄰居：小明和小華都跟阿強是朋友，你們有 2 位共同朋友，就推薦你加阿強。",
+     "k": 10,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1006.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "正式定義：G = (V, E)",
+   "scene": "graphpeng-g1g2g3",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "好，來看正式定義。graph G = (V, E)，由兩個部分組成。",
+     "read": "好，來看正式定義。graph G 等於 V 跟 E 的組合，由兩個部分組成。",
+     "k": 1,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1029.4
+     }
+    },
+    {
+     "say": "V 是頂點的集合，E 是邊的集合；要強調是哪張圖的，就寫 V(G)、E(G)。",
+     "read": "V 是頂點的集合，E 是邊的集合；要強調是哪張圖的，就寫 V of G、E of G。",
+     "k": 2,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1044.2
+     }
+    },
+    {
+     "say": "邊可以有方向，也可以沒有，看你的需求。",
+     "k": 3,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1065
+     }
+    },
+    {
+     "say": "有方向的叫 directed graph，沒有方向的叫 undirected graph。",
+     "k": 5,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1079.7
+     }
+    },
+    {
+     "say": "一條 edge 有兩個端點，寫成 (u, v)，u 和 v 都來自頂點集合 V。",
+     "read": "一條 edge 有兩個端點，寫成 u 逗號 v，u 和 v 都來自頂點集合 V。",
+     "k": 6,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1094.8
+     }
+    },
+    {
+     "say": "無向圖的邊沒有方向，所以 (u, v) 和 (v, u) 是同一條邊。",
+     "read": "無向圖的邊沒有方向，所以 u v 和 v u 是同一條邊。",
+     "k": 7,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1116.6
+     }
+    },
+    {
+     "say": "有向圖就不同了：u 指向 v 和 v 指向 u 是兩回事。課本把有向邊寫成角括號 ⟨u, v⟩。",
+     "read": "有向圖就不同了：u 指向 v 和 v 指向 u 是兩回事。課本把有向邊寫成角括號 u v。",
+     "k": 8,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1126.2
+     }
+    },
+    {
+     "say": "看幾個例子。G1 是 complete graph，完全圖：每個點都跟其他所有點相連。",
+     "k": 9,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1152.4
+     }
+    },
+    {
+     "say": "它的頂點集合是 {0, 1, 2, 3}，",
+     "read": "它的頂點集合是 0、1、2、3，",
+     "k": 10,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1168.5
+     }
+    },
+    {
+     "say": "總共 6 條邊：(0,1)、(0,2)，依此類推。無向圖裡 (0,1) 跟 (1,0) 是同一條。",
+     "read": "總共 6 條邊：0 1、0 2，依此類推。無向圖裡 0 1 跟 1 0 是同一條。",
+     "k": 11,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1177.5
+     }
+    },
+    {
+     "say": "G2 是一棵 tree。tree 也可以看成 graph：樹的 node 就是 vertex，樹枝就是 edge。",
+     "k": 12,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1201.1
+     }
+    },
+    {
+     "say": "G3 是有向圖，邊上有箭頭。",
+     "k": 13,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1231.4
+     }
+    },
+    {
+     "say": "⟨0,1⟩ 是 0 指向 1，⟨1,0⟩ 是 1 指向 0，兩條不同；另外還有一條 ⟨1,2⟩。",
+     "read": "0 到 1 是 0 指向 1，1 到 0 是 1 指向 0，兩條不同；另外還有一條 1 到 2。",
+     "k": 14,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1243
+     }
+    }
+   ]
+  },
+  {
+   "title": "Self loop 與 multigraph",
+   "scene": "graphpeng-selfloop-multi",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "一般的 graph 有兩個限制。第一個：通常不會有自己連到自己的邊。",
+     "k": 1,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1279.1
+     }
+    },
+    {
+     "say": "如果有，就形成 self loop，也叫 self edge，例如 (0, 0)。",
+     "read": "如果有，就形成 self loop，也叫 self edge，例如 0 到 0。",
+     "k": 2,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1286.6
+     }
+    },
+    {
+     "say": "什麼時候會出現？像 formal language 裡的 finite state machine，有限狀態機。",
+     "k": 3,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1305.4
+     }
+    },
+    {
+     "say": "舉個例子：compiler 要檢查你寫的 C 程式，語法有沒有錯。",
+     "k": 4,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1322.5
+     }
+    },
+    {
+     "say": "它把語法表示成 graph，每個點是一個 token，也就是程式裡的一個字或符號。",
+     "k": 5,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1344
+     }
+    },
+    {
+     "say": "你的程式在這台 FSM 上走得完，就編譯通過；在哪裡走不下去，就在那裡報 error。",
+     "k": 6,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1365.7
+     }
+    },
+    {
+     "say": "這種 graph 裡就會有自己連到自己。所以 self loop 不是不可能，只是一般的 graph 不考慮。",
+     "k": 7,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1385
+     }
+    },
+    {
+     "say": "第二個限制：通常也不會有 multiple edges，就是同兩點之間有好幾條邊。",
+     "k": 8,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1394.4
+     }
+    },
+    {
+     "say": "如果有，就叫 multigraph，多重圖。",
+     "k": 9,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1410.7
+     }
+    },
+    {
+     "say": "像這張：1 到 3 之間有兩條以上的邊，3 到 2 也有好幾條。",
+     "k": 11,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1479.1
+     }
+    },
+    {
+     "say": "什麼時候會有？看應用。假設在 Facebook 上，3 是一個人，2 是另一個人，",
+     "k": 12,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1514.5
+     }
+    },
+    {
+     "say": "邊代表一次互動：3 PO 一篇文，2 回覆或按讚。",
+     "k": 13,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1533.5
+     }
+    },
+    {
+     "say": "3 一個月前 PO、這個月又 PO、上禮拜再 PO，2 每次都回應，每次各留一條邊。",
+     "k": 14,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1540.9
+     }
+    },
+    {
+     "say": "為了保留每次互動的時間，不能只留最後一次，同兩點之間就有很多條邊，形成 multigraph。",
+     "k": 15,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1568.9
+     }
+    },
+    {
+     "say": "考試用的課本，預設討論的 graph 沒有 self loop，也沒有 multiple edges。",
+     "k": 15
+    }
+   ]
+  },
+  {
+   "title": "Adjacent、path、cycle 與 DAG",
+   "scene": "graphpeng-path",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "接著是幾個術語。edge 會表示成一個 pair，一對頂點；",
+     "k": 1,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1600.2
+     }
+    },
+    {
+     "say": "有向圖的 pair 有順序，⟨u, v⟩ 跟 ⟨v, u⟩ 不一樣。",
+     "read": "有向圖的 pair 有順序，u 到 v 跟 v 到 u 不一樣。",
+     "k": 2,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1610.1
+     }
+    },
+    {
+     "say": "adjacent，相鄰：兩點之間有沒有一條邊直接連著。",
+     "k": 3,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1612.8
+     }
+    },
+    {
+     "say": "如果 (0, 1) 屬於 E，就說 0 和 1 是 adjacent。",
+     "read": "如果 0 1 這條邊屬於 E，就說 0 和 1 是 adjacent。",
+     "k": 4,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1621.5
+     }
+    },
+    {
+     "say": "path，路徑：從一個點出發，一路經過哪些點、哪些邊。",
+     "k": 5,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1658
+     }
+    },
+    {
+     "say": "例如從 0 出發，走 0 → 1 → 3 → 2，綠色這條就是一條 path。",
+     "read": "例如從 0 出發，走 0 到 1 到 3 到 2，綠色這條就是一條 path。",
+     "k": 6,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1666.6
+     }
+    },
+    {
+     "say": "path 的 length，是它經過的邊數。這條經過 3 條邊，length 就是 3。",
+     "k": 7,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1689.8
+     }
+    },
+    {
+     "say": "simple path 是一種特別的 path：",
+     "k": 8,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1705.2
+     }
+    },
+    {
+     "say": "除了起點和終點可以相同，其他經過的點都必須 distinct，不能重複。0、1、3、2 每點只出現一次，是 simple path。",
+     "k": 9,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1713.8
+     }
+    },
+    {
+     "say": "cycle，環：走一走又繞回起點，例如 0 → 1 → 2 → 0。",
+     "read": "cycle，環：走一走又繞回起點，例如 0 到 1 到 2，再回到 0。",
+     "k": 10,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1722.1
+     }
+    },
+    {
+     "say": "彭老師說有 cycle 就不是 simple path，這不太精確：課本的 cycle，本身就是起點等於終點的 simple path。",
+     "k": 10,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1728.9
+     }
+    },
+    {
+     "say": "沒有任何 cycle 的有向圖，就叫 DAG。右下角這張，怎麼走都繞不回去。",
+     "k": 11,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1736.8
+     }
+    },
+    {
+     "say": "DAG 就是 directed acyclic graph：有方向，而且沒有環。",
+     "k": 12,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1761.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Connected 與 complete graph 的邊數",
+   "scene": "graphpeng-complete-count",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "connected，連通：給你兩個點，例如 0 和 3，",
+     "k": 1,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1772.2
+     }
+    },
+    {
+     "say": "只要找得到一條 path 把它們接起來，像 0 → 1 → 3，就說它們 connected。",
+     "read": "只要找得到一條 path 把它們接起來，像 0 到 1 到 3，就說它們 connected。",
+     "k": 2,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1781.4
+     }
+    },
+    {
+     "say": "有向圖還有更嚴格的 strongly connected：任兩點都要互相有 path，到得了對方。",
+     "k": 3,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1791.9
+     }
+    },
+    {
+     "say": "注意，彭老師口頭說成「每個點都跟其他點有連線」；要的是互相有 path，不是每兩點都有直接的邊。",
+     "k": 3,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1793.6
+     }
+    },
+    {
+     "say": "complete graph 前面看過了：每個點都跟其他所有點有邊，4 個點共 6 條。",
+     "k": 5,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1815.2
+     }
+    },
+    {
+     "say": "那 n 個頂點的 complete graph，有幾條邊？",
+     "k": 6,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1836.1
+     }
+    },
+    {
+     "say": "無向的話，每兩點一條邊，就是從 n 個點挑 2 個：C(n,2) = n(n−1)/2，n = 4 時是 6。",
+     "read": "無向的話，每兩點一條邊，就是從 n 個點挑 2 個：C n 取 2，等於 n 乘 n減1 除以 2，n 等於 4 時是 6。",
+     "k": 7,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1849.9
+     }
+    },
+    {
+     "say": "那有向圖呢？",
+     "k": 8,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1862.9
+     }
+    },
+    {
+     "say": "u 到 v、v 到 u 是兩條不同的邊，每一對要乘 2，所以是 n(n−1) 條，n = 4 時是 12。",
+     "read": "u 到 v、v 到 u 是兩條不同的邊，每一對要乘 2，所以是 n 乘 n減1 條，n 等於 4 時是 12。",
+     "k": 9,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1877.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Subgraph",
+   "scene": "graphpeng-subgraph",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "subgraph，子圖，就是一個 graph 的子集合。",
+     "k": 1,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1894.5
+     }
+    },
+    {
+     "say": "G′ 是 G 的 subgraph，條件是 V(G′) ⊆ V(G)，而且 E(G′) ⊆ E(G)。",
+     "read": "G prime 是 G 的 subgraph，條件是 G prime 的頂點集合包含於 G 的頂點集合，而且 G prime 的邊集合也包含於 G 的邊集合。",
+     "k": 2,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1908.7
+     }
+    },
+    {
+     "say": "投影片上的 (i) 到 (iv)，這四個都是 G1 的 subgraph。",
+     "read": "投影片上的第一到第四個，這四個都是 G1 的 subgraph。",
+     "k": 3,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1920.6
+     }
+    },
+    {
+     "say": "看第一個：只有一個頂點 0，",
+     "k": 4,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1932.1
+     }
+    },
+    {
+     "say": "邊集合是空的。這樣還算 graph 嗎？算，有點就是 graph；它的 V 是原來的子集合，所以也是 subgraph。",
+     "k": 5,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1940.9
+     }
+    },
+    {
+     "say": "第二個取了三個點：0、1、2，",
+     "k": 6,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1958.9
+     }
+    },
+    {
+     "say": "原本 G1 有 6 條邊，它只留 2 條，一樣是 G1 的 subgraph。",
+     "k": 7,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1966.5
+     }
+    },
+    {
+     "say": "所以重點是：取一部分的點、一部分的邊就行，只要留下的邊，兩端的點也都還在。",
+     "k": 8,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1976.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Connected component",
+   "scene": "graphpeng-g4-components",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "G4 這張圖，有兩個 connected component，連通元件。",
+     "k": 1,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 1982.4
+     }
+    },
+    {
+     "say": "component 就是一塊一塊的元件：G4 分成 H1 和 H2 兩塊。",
+     "k": 2,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2003.2
+     }
+    },
+    {
+     "say": "在 H1 裡，任兩點之間都有 path 串起來，例如 0 → 1 → 3。",
+     "read": "在 H1 裡，任兩點之間都有 path 串起來，例如 0 到 1 到 3。",
+     "k": 3,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2013.4
+     }
+    },
+    {
+     "say": "隨便挑 2 和 1，也有 2 → 0 → 1，所以它們 connected。",
+     "read": "隨便挑 2 和 1，也有 2 到 0 到 1，所以它們 connected。",
+     "k": 4,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2029.6
+     }
+    },
+    {
+     "say": "所以 component 也是一種 subgraph，但多一個條件：裡面任兩點都必須 connected。",
+     "k": 5,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2042.5
+     }
+    },
+    {
+     "say": "嚴格說，它還要是 maximal：再多加任何一個點就不連通了。只取 H1 的 0、1，雖然連通，卻不是 component。",
+     "k": 5
+    },
+    {
+     "say": "H2 也一樣：挑 4 和 7，有 4 → 5 → 6 → 7。",
+     "read": "H2 也一樣：挑 4 和 7，有 4 到 5 到 6 到 7。",
+     "k": 6,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2057.5
+     }
+    },
+    {
+     "say": "所以 G4 可以拆出 2 個 connected component：H1 和 H2。",
+     "k": 7,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2067.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "Strongly connected component",
+   "scene": "graphpeng-scc-g3",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "無向圖只要有一條 path，就是 connected。",
+     "k": 1,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2079.8
+     }
+    },
+    {
+     "say": "strongly 是更強，條件更嚴，發生在有向圖，像 G3。",
+     "k": 2,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2097.5
+     }
+    },
+    {
+     "say": "0 要到得了 1，",
+     "k": 3,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2103.5
+     }
+    },
+    {
+     "say": "1 也要到得了 0，所以要有兩條邊：⟨0,1⟩ 和 ⟨1,0⟩。",
+     "read": "1 也要到得了 0，所以要有兩條邊：0 到 1，和 1 到 0。",
+     "k": 4,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2114
+     }
+    },
+    {
+     "say": "對比無向圖，一條邊就能雙向走；有向圖要更多的邊撐著，兩個方向才都通。",
+     "k": 5,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2127
+     }
+    },
+    {
+     "say": "有向圖裡這種互相到得了的一塊，叫 strongly connected component，SCC。{0, 1} 就是一個。",
+     "read": "有向圖裡這種互相到得了的一塊，叫 strongly connected component，SCC。0、1 這一塊就是一個。",
+     "k": 6,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2153.1
+     }
+    },
+    {
+     "say": "頂點 2 自己也是一個 SCC：從 1 到得了 2，但 2 回不到 1，所以不能跟 0、1 合在一起。",
+     "k": 7,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2163.4
+     }
+    },
+    {
+     "say": "只有自己一個點的 component，常叫 isolated，孤立點。",
+     "k": 8,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2176.3
+     }
+    },
+    {
+     "say": "彭老師開玩笑說，它不做事就不會犯錯，所以符合定義；但很多應用會把孤立點濾掉。",
+     "k": 9,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2191
+     }
+    },
+    {
+     "say": "所以 G3 一共有 2 個 SCC：{0, 1} 和 {2}。",
+     "read": "所以 G3 一共有 2 個 SCC：0、1 一個，2 自己一個。",
+     "k": 9
+    }
+   ]
+  },
+  {
+   "title": "Degree、邊數公式與 Graph ADT",
+   "scene": "graphpeng-degree",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "回到 degree：一個 vertex 連了幾條邊。",
+     "k": 1,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2221.8
+     }
+    },
+    {
+     "say": "G1 每個點都連 3 條，所以 d₀ 到 d₃ 都是 3。",
+     "read": "G1 每個點都連 3 條，所以 d0 到 d3 都是 3。",
+     "k": 2,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2224.5
+     }
+    },
+    {
+     "say": "有向圖的 degree，要分成兩種。",
+     "k": 3,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2234.8
+     }
+    },
+    {
+     "say": "in-degree：指進來的邊數。G3 裡指向 1 的只有 ⟨0,1⟩，所以 1 的 in-degree 是 1。",
+     "read": "in-degree：指進來的邊數。G3 裡指向 1 的只有 0 到 1，所以 1 的 in-degree 是 1。",
+     "k": 4,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2247
+     }
+    },
+    {
+     "say": "out-degree：指出去的邊數。1 指出去有 ⟨1,0⟩、⟨1,2⟩，所以 1 的 out-degree 是 2。",
+     "read": "out-degree：指出去的邊數。1 指出去有 1 到 0、1 到 2，所以 1 的 out-degree 是 2。",
+     "k": 5,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2250
+     }
+    },
+    {
+     "say": "假設 graph 有 n 個頂點、e 條邊，dᵢ 是頂點 i 的 degree，",
+     "read": "假設 graph 有 n 個頂點、e 條邊，d i 是頂點 i 的 degree，",
+     "k": 6,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2257.7
+     }
+    },
+    {
+     "say": "那邊數 e，就等於所有 degree 加起來再除以 2。G1 是 (3+3+3+3)/2 = 6。",
+     "read": "那邊數 e，就等於所有 degree 加起來再除以 2。G1 是 3 加 3 加 3 加 3，除以 2，等於 6。",
+     "k": 7,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2268.5
+     }
+    },
+    {
+     "say": "為什麼除 2？每條邊有兩個端點，在兩端的 degree 各算一次，像 (0,1) 在 d₀、d₁ 各算一次。",
+     "read": "為什麼除 2？每條邊有兩個端點，在兩端的 degree 各算一次，像 0 1 這條邊在 d0、d1 各算一次。",
+     "k": 8,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2274.2
+     }
+    },
+    {
+     "say": "有向圖的話，所有 in-degree 加起來就是 e，out-degree 加起來也是 e，不用除 2。",
+     "k": 8
+    },
+    {
+     "say": "最後是 graph 的 ADT，abstract data type，只說明這個資料結構能做哪些事。",
+     "k": 9,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2303.4
+     }
+    },
+    {
+     "say": "可以加點 InsertVertex、加邊 InsertEdge、刪點 DeleteVertex、刪邊 DeleteEdge，",
+     "k": 10,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2317.3
+     }
+    },
+    {
+     "say": "還有一個 Boolean function IsEmpty，判斷 graph 是不是空的。",
+     "k": 11,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2325.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Adjacency matrix：有邊填 1",
+   "scene": "grapha-matrix",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "好，紙上的 graph 電腦看不懂，得存進程式。最簡單的存法，是 adjacency matrix，鄰接矩陣。",
+     "k": 1,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 108.4
+     }
+    },
+    {
+     "say": "它是一個二維陣列，外層有幾列，每一列就有幾格，所以是一張正方形的表。",
+     "k": 2,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 114.6
+     }
+    },
+    {
+     "say": "例子是 A–B、B–C 兩條邊。A–B 有邊，就在 A 列 B 行、B 列 A 行都填 1。",
+     "read": "例子是 A 連 B、B 連 C 兩條邊。A 連 B 有邊，就在 A 列 B 行、B 列 A 行都填 1。",
+     "k": 3,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 124.3
+     }
+    },
+    {
+     "say": "規則很簡單：有邊填 1，沒邊填 0。B–C 也填兩格 1；A 和 C 之間沒邊，維持 0。",
+     "read": "規則很簡單：有邊填 1，沒邊填 0。B 連 C 也填兩格 1；A 和 C 之間沒邊，維持 0。",
+     "k": 4,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 127.4
+     }
+    },
+    {
+     "say": "表格上方和左側是 node 的名字。要查 i 和 j 有沒有邊，看第 i 列第 j 行那一格，一步就知道。",
+     "k": 5,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 136
+     }
+    },
+    {
+     "say": "寫成 JavaScript，就是陣列裡放陣列。第二列 [1, 0, 1]，表示 B 跟 A、C 都有邊。",
+     "read": "寫成 JavaScript，就是陣列裡放陣列。第二列是 1、0、1，表示 B 跟 A、C 都有邊。",
+     "k": 6,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 143.2
+     }
+    },
+    {
+     "say": "注意，就算沒有邊，每一列也要有 node 個數那麼多格，沒邊的地方填 0。",
+     "k": 7,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 148.6
+     }
+    },
+    {
+     "say": "所以 3 × 3 的矩陣，就代表 3 個 node。你也看到了：無向圖的矩陣，沿著對角線對稱。",
+     "read": "所以 3 乘 3 的矩陣，就代表 3 個 node。你也看到了：無向圖的矩陣，沿著對角線對稱。",
+     "k": 8,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 153.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "有向圖的 matrix 不對稱",
+   "scene": "grapha-directed",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "有向圖也能用 matrix 存。有向邊寫成 ⟨u, v⟩，意思是從 u 指向 v。",
+     "read": "有向圖也能用 matrix 存。有向邊寫成 u 到 v，意思是從 u 指向 v。",
+     "k": 1,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 159.6
+     }
+    },
+    {
+     "say": "B 有一條邊指向 A，就只在 B 列 A 行填 1；A 列 B 行不填，因為 A 沒有指向 B。",
+     "k": 2,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 164.8
+     }
+    },
+    {
+     "say": "C 也指向 A，所以 C 列 A 行填 1。",
+     "k": 3,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 169.6
+     }
+    },
+    {
+     "say": "看出來了嗎？M[B][A] 是 1，M[A][B] 卻是 0，所以有向圖的矩陣通常不對稱。",
+     "read": "看出來了嗎？M 的 B 列 A 行是 1，A 列 B 行卻是 0，所以有向圖的矩陣通常不對稱。",
+     "k": 4,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 172.6
+     }
+    },
+    {
+     "say": "兩條有向邊，整張矩陣就只有兩個 1，不會在反方向自動補 1。",
+     "k": 5,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 179.4
+     }
+    },
+    {
+     "say": "順帶記住：某個點那一列加起來，是它的 out-degree；那一行加起來，是它的 in-degree。",
+     "k": 5
+    }
+   ]
+  },
+  {
+   "title": "7 個點的 matrix 與 O(V²) 空間",
+   "scene": "graphpeng-weiss-matrix",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "彭老師用一張 7 個點的有向圖，再示範一次。",
+     "k": 1,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2346.7
+     }
+    },
+    {
+     "say": "7 個點，就是 7 × 7 的二維 matrix：第 i 列第 j 行，代表 i 有沒有邊到 j。",
+     "read": "7 個點，就是 7 乘 7 的二維 matrix：第 i 列第 j 行，代表 i 有沒有邊到 j。",
+     "k": 3,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2356.2
+     }
+    },
+    {
+     "say": "一樣，有邊填 1，沒邊填 0。",
+     "k": 4,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2367.9
+     }
+    },
+    {
+     "say": "1 連到 2，M[1][2] 就是 1；1 也連到 3，M[1][3] 也是 1；",
+     "read": "1 連到 2，第 1 列第 2 行就是 1；1 也連到 3，第 1 列第 3 行也是 1；",
+     "k": 5,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2377.8
+     }
+    },
+    {
+     "say": "1 連到 4 也是 1，沒連的都是 0。整張填完，共 12 個 1。",
+     "k": 6,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2384.8
+     }
+    },
+    {
+     "say": "那空間要多少？只看頂點個數，跟邊有幾條無關。",
+     "k": 7,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2396.6
+     }
+    },
+    {
+     "say": "space 是 O(V²)：7 × 7 = 49 格，真正是 1 的只有 12 格。",
+     "read": "space 是 大O V平方：7 乘 7 等於 49 格，真正是 1 的只有 12 格。",
+     "k": 8,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2410
+     }
+    },
+    {
+     "say": "如果是無向圖，matrix 是 symmetric：1 連到 2，2 也一定連到 1。這張是有向的，所以 M[2][1] 是 0。",
+     "read": "如果是無向圖，matrix 是 symmetric：1 連到 2，2 也一定連到 1。這張是有向的，所以第 2 列第 1 行是 0。",
+     "k": 9,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2419.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Dense 還是 sparse",
+   "scene": "graphpeng-matrix-review",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "下一堂課彭老師複習時，補了一個觀點：matrix 的大小只跟頂點個數有關，7 個點就是 7 × 7。",
+     "read": "下一堂課彭老師複習時，補了一個觀點：matrix 的大小只跟頂點個數有關，7 個點就是 7 乘 7。",
+     "k": 8,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 96.9
+     }
+    },
+    {
+     "say": "如果 graph 很 dense，稠密，像 complete graph，格子幾乎都有值，用 matrix 存還蠻有效率。",
+     "k": 9,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 102
+     }
+    },
+    {
+     "say": "但這張圖大部分是 0，是 sparse，稀疏，浪費很多空間。所以有第二種存法。",
+     "k": 10,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 120.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Adjacency list：每個點一張鄰居清單",
+   "scene": "grapha-adjlist",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "第二種是 adjacency list，鄰接串列：每個 vertex 記一張清單，寫下跟它直接相連的鄰居。",
+     "k": 2,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 68
+     }
+    },
+    {
+     "say": "一樣是 A–B、B–C。A 只連到 B，所以 A 的清單只有 B；",
+     "read": "一樣是 A 連 B、B 連 C。A 只連到 B，所以 A 的清單只有 B；",
+     "k": 3,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 78.4
+     }
+    },
+    {
+     "say": "B 連到 A 和 C，清單有兩個；",
+     "k": 4,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 79.8
+     }
+    },
+    {
+     "say": "C 只連到 B。三張清單合起來，就把整張圖的邊都記下來了。",
+     "k": 5,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 81.6
+     }
+    },
+    {
+     "say": "JavaScript 可以用物件來寫：key 是頂點的名字，value 是裝著鄰居的陣列。",
+     "k": 6,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 89.6
+     }
+    },
+    {
+     "say": "注意 A 的清單有 B，B 的清單也有 A：同一條邊兩邊各記一次，所以這是無向圖。",
+     "k": 7,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 95.5
+     }
+    },
+    {
+     "say": "把 A、B、C 改成編號 0、1、2，就能直接用陣列裡放陣列，第 1 格放 B 的鄰居 [0, 2]。",
+     "read": "把 A、B、C 改成編號 0、1、2，就能直接用陣列裡放陣列，第 1 格放 B 的鄰居 0 跟 2。",
+     "k": 8,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 100.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "用 linked list 存：O(V + E)",
+   "scene": "graphpeng-weiss-list",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "彭老師說，matrix 很花記憶體，所以改用 linked list 來存。",
+     "k": 1,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2437.4
+     }
+    },
+    {
+     "say": "每個頂點有一個 head，白色這格，後面接著它連到的點。",
+     "k": 2,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2447.9
+     }
+    },
+    {
+     "say": "頂點 1 連到 2、3、4，串列就是 1 → 2 → 3 → 4；",
+     "read": "頂點 1 連到 2、3、4，串列就是 1 接 2 接 3 接 4；",
+     "k": 3,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2463.2
+     }
+    },
+    {
+     "say": "頂點 2 連到 4 和 5，串列是 2 → 4 → 5。",
+     "read": "頂點 2 連到 4 和 5，串列是 2 接 4 接 5。",
+     "k": 4,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2480.7
+     }
+    },
+    {
+     "say": "其他依此類推。6 沒有指出去的邊，就是空串列。",
+     "k": 5,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2491.7
+     }
+    },
+    {
+     "say": "為什麼叫 adjacency？因為每條串列記的，都是跟這個點 adjacent 的點，像 4 記的是 3、6、7。",
+     "k": 6,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2505.9
+     }
+    },
+    {
+     "say": "space 是 O(V + E)：V 個 head 加上 E 個節點，這裡 7 加 12，比 matrix 的 49 格省很多。",
+     "read": "space 是 大O V加E：V 個 head 加上 E 個節點，這裡 7 加 12，比 matrix 的 49 格省很多。",
+     "k": 7,
+     "src": {
+      "v": "0fVJsIC1QXs",
+      "t": 2537.5
+     }
+    },
+    {
+     "say": "如果是無向圖，每條邊會在兩端各記一次，節點數是 2E，但大 O 一樣是 V 加 E。",
+     "k": 7
+    }
+   ]
+  },
+  {
+   "title": "G1 與 G3 的 adjacency list",
+   "scene": "graphpeng-g1g3-lists",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "什麼叫 adjacent node？只經過一條邊，one hop，就到得了的點。從 1 一步就到 2、3、4。",
+     "k": 3,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 156.9
+     }
+    },
+    {
+     "say": "串列裡的順序不重要，寫成 4、3、2 也可以，只要都是鄰居就好。",
+     "k": 5,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 174.2
+     }
+    },
+    {
+     "say": "G1 是 complete graph，每個點都跟其他 3 個點相連，",
+     "k": 8,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 212.9
+     }
+    },
+    {
+     "say": "所以每條串列的節點數一模一樣，都是 3 個。",
+     "k": 9,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 226.4
+     }
+    },
+    {
+     "say": "G3 是有向圖：0 指向 1，所以 0 的串列是 1；",
+     "k": 10,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 257.1
+     }
+    },
+    {
+     "say": "1 指向 0 和 2，串列是 0 → 2；",
+     "read": "1 指向 0 和 2，串列是 0 接 2；",
+     "k": 11,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 258.8
+     }
+    },
+    {
+     "say": "2 沒有指出去任何邊，串列是空的。有向圖的 adjacency list，只記指出去的邊。",
+     "k": 12,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 270.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Inverse adjacency list：誰指向我",
+   "scene": "graphpeng-inverse-list",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "那如果想知道誰指向我呢？這就是 inverse adjacency list，inverse 是顛倒。例子還是 G3。",
+     "k": 2,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 648
+     }
+    },
+    {
+     "say": "原本的 adjacency list 記「我指向誰」，串列長度就是 out-degree；",
+     "k": 3,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 657.2
+     }
+    },
+    {
+     "say": "inverse 反過來，記「誰指向我」，串列長度就是 in-degree。",
+     "k": 4,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 666.1
+     }
+    },
+    {
+     "say": "誰指向 0？是 1，所以 0 的串列放 1。",
+     "k": 5,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 676.5
+     }
+    },
+    {
+     "say": "誰指向 1？是 0。",
+     "k": 6,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 688
+     }
+    },
+    {
+     "say": "誰指向 2？是 1。",
+     "k": 7,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 700.3
+     }
+    },
+    {
+     "say": "跟原本的串列比一比：左邊記我指向誰，右邊記誰指向我，資訊不一樣。",
+     "k": 8,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 704.8
+     }
+    },
+    {
+     "say": "為什麼需要它？假設你只有 adjacency list，我問你：2 的 in-degree 是多少？",
+     "k": 9,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 758.2
+     }
+    },
+    {
+     "say": "最笨的方法是每條串列都 scan 一遍。list[0] 裡沒有 2，",
+     "read": "最笨的方法是每條串列都 scan 一遍。第 0 條串列裡沒有 2，",
+     "k": 10,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 779.8
+     }
+    },
+    {
+     "say": "list[1] 有 2，加 1；",
+     "read": "第 1 條有 2，加 1；",
+     "k": 11,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 788.6
+     }
+    },
+    {
+     "say": "list[2] 是空的。所以 2 的 in-degree 是 1。",
+     "read": "第 2 條是空的。所以 2 的 in-degree 是 1。",
+     "k": 12,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 796.1
+     }
+    },
+    {
+     "say": "只問一個點就要全部掃過；要算所有點的 in-degree，也一樣要全掃，很花時間。",
+     "k": 13,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 816.3
+     }
+    },
+    {
+     "say": "有了 inverse adjacency list，直接數 2 那條串列有幾個節點，答案就出來了。",
+     "k": 14,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 836.9
+     }
+    },
+    {
+     "say": "彭老師這裡順口說成「有 adjacency list 就很快」，他指的其實是 inverse adjacency list。",
+     "k": 14,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 832.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Sequential：只用一維陣列",
+   "scene": "graphpeng-sequential",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "第三種表示法：只用一個一維陣列，就存下整張 graph。",
+     "k": 1,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 287.8
+     }
+    },
+    {
+     "say": "例子是 G4，有兩個 component H1、H2，頂點是 0 到 7。",
+     "k": 2,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 303.2
+     }
+    },
+    {
+     "say": "彭老師口頭說總共 7 個頂點，其實 0 到 7 是 8 個。",
+     "k": 2,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 300.3
+     }
+    },
+    {
+     "say": "陣列前面紅色這段，每格記的是：這個頂點的鄰居，從陣列第幾格開始放。",
+     "k": 3,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 322.1
+     }
+    },
+    {
+     "say": "index 0 到 7，剛好對應 8 個頂點；",
+     "k": 4,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 336
+     }
+    },
+    {
+     "say": "index 8 沒有對應的頂點，只是標示結尾的記號。",
+     "k": 5,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 346
+     }
+    },
+    {
+     "say": "node[0] = 9：跟 0 相連的點，從 index 9 開始放。",
+     "read": "node 0 等於 9：跟 0 相連的點，從 index 9 開始放。",
+     "k": 6,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 360
+     }
+    },
+    {
+     "say": "後面是鄰居區，綠色的 index 9、10，就是 0 的鄰居。",
+     "k": 7,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 365.1
+     }
+    },
+    {
+     "say": "那兩格放的是 2 和 1，所以 0 跟 2、1 相連，對照 H1 沒錯。",
+     "k": 8,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 388
+     }
+    },
+    {
+     "say": "放到哪裡為止？看下一個頂點：node[1] = 11，1 的鄰居從 11 開始。",
+     "read": "放到哪裡為止？看下一個頂點：node 1 等於 11，1 的鄰居從 11 開始。",
+     "k": 9,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 423.3
+     }
+    },
+    {
+     "say": "所以不用另外記終點，下一個頂點的起點減 1 就是。彭老師說，這跟之前 polynomial 的存法很像。",
+     "k": 10,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 462
+     }
+    },
+    {
+     "say": "再看 7：node[7] = 22，",
+     "read": "再看 7：node 7 等於 22，",
+     "k": 11,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 497.4
+     }
+    },
+    {
+     "say": "index 22 放的是 6，所以 7 只跟 6 相連。",
+     "k": 12,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 504
+     }
+    },
+    {
+     "say": "整個陣列多大？n + 1 格起點，加上每條邊記兩次的 2e 格：8 + 1 + 14 = 23，就是 index 0 到 22。",
+     "read": "整個陣列多大？n 加 1 格起點，加上每條邊記兩次的 2e 格：8 加 1 加 14 等於 23，就是 index 0 到 22。",
+     "k": 12
+    },
+    {
+     "say": "缺點呢？彭老師要大家想想：要新增或刪除一個點時，會怎樣？",
+     "k": 13,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 558.8
+     }
+    },
+    {
+     "say": "例如新增 vertex 8、9，它們的起點要放在 index 8、9，",
+     "k": 14,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 573.5
+     }
+    },
+    {
+     "say": "可是 index 9 原本放的是 0 的鄰居，後面整段都得往右 shift。",
+     "k": 15,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 589.5
+     }
+    },
+    {
+     "say": "新增、刪除都要搬動整個陣列，movement cost 很高。",
+     "k": 16,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 602.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Adjacency multilist：每條邊只存一次",
+   "scene": "graphpeng-multilist-why",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "第四種表示法：adjacency multilist，也叫 multi-linked list，很多條串列交織在一起。",
+     "k": 1,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 851.5
+     }
+    },
+    {
+     "say": "先回到 adjacency list，看其中一條邊 (u, v)。",
+     "read": "先回到 adjacency list，看其中一條邊 u v。",
+     "k": 2,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 861.4
+     }
+    },
+    {
+     "say": "在 adjacency list 裡，這條邊被存了兩次：",
+     "k": 3,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 873.1
+     }
+    },
+    {
+     "say": "u 的串列裡有 v，",
+     "k": 4,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 884.9
+     }
+    },
+    {
+     "say": "v 的串列裡也有 u。同一條邊，兩份資訊。",
+     "k": 5,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 893.2
+     }
+    },
+    {
+     "say": "multilist 要做到的，就是一條邊只存一次。",
+     "k": 6,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 914.8
+     }
+    },
+    {
+     "say": "adjacency list 以 vertex 為出發點建串列；",
+     "k": 7,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 925.3
+     }
+    },
+    {
+     "say": "multilist 則以 edge 為出發點。",
+     "k": 8,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 933.9
+     }
+    },
+    {
+     "say": "例子是 complete graph，頂點 0、1、2、3，",
+     "k": 9,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 943.5
+     }
+    },
+    {
+     "say": "共 6 條邊，編成 N0 到 N5：(0,1)、(0,2)、(0,3)、(1,2)、(1,3)、(2,3)。",
+     "read": "共 6 條邊，編成 N0 到 N5：0 1、0 2、0 3、1 2、1 3、2 3。",
+     "k": 10,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 964.5
+     }
+    },
+    {
+     "say": "每條邊用一個 node 表示，(0,1) 就是 N0。",
+     "read": "每條邊用一個 node 表示，0 1 這條邊就是 N0。",
+     "k": 11,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 978.6
+     }
+    },
+    {
+     "say": "node 的第二、第三欄，放這條邊兩端的 vertex，",
+     "k": 12,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 994.8
+     }
+    },
+    {
+     "say": "所以 N0 左邊是 0，右邊是 1。",
+     "k": 13,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1012.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Multilist：沿著 pointer 走",
+   "scene": "graphpeng-multilist",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "後面兩欄是 pointer：link1 跟第一個端點有關，link2 跟第二個端點有關。",
+     "k": 1,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1027.4
+     }
+    },
+    {
+     "say": "看 N0：head 0 先指向 N0，N0 的 link1 寫的是 N1，",
+     "k": 2,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1035.8
+     }
+    },
+    {
+     "say": "意思是：除了 (0,1)，下一條跟 0 有關的邊，存在 N1。",
+     "read": "意思是：除了 0 1，下一條跟 0 有關的邊，存在 N1。",
+     "k": 3,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1044.7
+     }
+    },
+    {
+     "say": "N1 是 (0,2)，",
+     "read": "N1 是 0 2 這條邊，",
+     "k": 4,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1061.5
+     }
+    },
+    {
+     "say": "它的 link1 是 N2：跟 0 有關的，還有 N2，",
+     "k": 5,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1083.7
+     }
+    },
+    {
+     "say": "N2 是 (0,3)。",
+     "read": "N2 是 0 3 這條邊。",
+     "k": 6,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1097.6
+     }
+    },
+    {
+     "say": "N2 的 link1 是 0，代表 null，跟 0 有關的邊到此結束。",
+     "k": 7,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1110.6
+     }
+    },
+    {
+     "say": "所以從 vertex 0 出發，沿 pointer 走就是一條串列：N0 → N1 → N2，",
+     "read": "所以從 vertex 0 出發，沿 pointer 走就是一條串列：N0 接 N1 接 N2，",
+     "k": 8,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1130.7
+     }
+    },
+    {
+     "say": "內容正好是 adjacency list 裡 0 的鄰居：1、2、3。",
+     "k": 9,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1142.8
+     }
+    },
+    {
+     "say": "再看 N0 的 link2：跟 1 有關的下一條邊，在 N3，",
+     "k": 10,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1185.9
+     }
+    },
+    {
+     "say": "N3 是 (1,2)；",
+     "read": "N3 是 1 2 這條邊；",
+     "k": 11,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1198.7
+     }
+    },
+    {
+     "say": "N3 再指向 N4，",
+     "k": 12,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1209.3
+     }
+    },
+    {
+     "say": "N4 是 (1,3)，",
+     "read": "N4 是 1 3 這條邊，",
+     "k": 13,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1217.8
+     }
+    },
+    {
+     "say": "N4 之後是 null。所以 vertex 1 的串列是 N0 → N3 → N4。",
+     "read": "N4 之後是 null。所以 vertex 1 的串列是 N0 接 N3 接 N4。",
+     "k": 14,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1234.5
+     }
+    },
+    {
+     "say": "整理一下：每個 node 記一條邊的兩個頂點，加上兩個 pointer，各串起一端頂點的邊。",
+     "k": 15,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1245.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "四種表示法總整理",
+   "scene": "graphpeng-multilist-sum",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "multilist 的 node 數，就等於 graph 的邊數。",
+     "k": 1,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1281
+     }
+    },
+    {
+     "say": "這張 complete graph 有 6 條邊，就是 6 個 node；adjacency list 要 12 個節點。",
+     "k": 2,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1299.3
+     }
+    },
+    {
+     "say": "怎麼畫？第一步，數 graph 有幾條邊；",
+     "k": 3,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1313
+     }
+    },
+    {
+     "say": "第二步，每條邊編號：先以 0 開頭的 (0,1)、(0,2)、(0,3)，再以 1、以 2 開頭的；",
+     "read": "第二步，每條邊編號：先以 0 開頭的 0 1、0 2、0 3，再以 1、以 2 開頭的；",
+     "k": 4,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1317.2
+     }
+    },
+    {
+     "say": "第三步，把每個 node 的兩個 pointer 填上，就完成了。",
+     "k": 5,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1344.1
+     }
+    },
+    {
+     "say": "很好玩的是，第四章的 linked list，一個 node 只屬於一條 list；",
+     "k": 6,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1369.3
+     }
+    },
+    {
+     "say": "這裡一個 node 有兩個 pointer，同時屬於兩條 list，像 N0 同時在 0 和 1 的串列裡，所以叫 multi-linked list。",
+     "k": 7,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1384.7
+     }
+    },
+    {
+     "say": "小心名字：adjacency list 和 adjacency multilist 只差幾個字母，意思完全不同，",
+     "k": 8,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1404.1
+     }
+    },
+    {
+     "say": "一個以頂點為出發點，一個以邊為出發點。",
+     "k": 9,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1429.1
+     }
+    },
+    {
+     "say": "總結課本的四種表示法：二維 matrix、adjacency list、一維陣列的 sequential、adjacency multilist。",
+     "k": 10,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1440.6
+     }
+    },
+    {
+     "say": "彭老師要大家回去想各自的優缺點。整理一下：matrix 查一條邊一步就知道，但空間是 V²；",
+     "read": "彭老師要大家回去想各自的優缺點。整理一下：matrix 查一條邊一步就知道，但空間是 V 平方；",
+     "k": 11,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1457.5
+     }
+    },
+    {
+     "say": "list 空間只要 V 加 E；sequential 很省，但增刪點要搬整個陣列；multilist 每條邊只存一次。",
+     "k": 11
+    }
+   ]
+  },
+  {
+   "title": "Incidence matrix：列是點、行是邊",
+   "scene": "grapha-incidence",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "freeCodeCamp 的影片還介紹了另一種：incidence matrix，關聯矩陣，記的是哪條邊連著哪個點。",
+     "k": 1,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 184.3
+     }
+    },
+    {
+     "say": "回想 adjacency matrix：列是 node、行也是 node，一定是 V × V 的正方形。",
+     "read": "回想 adjacency matrix：列是 node、行也是 node，一定是 V 乘 V 的正方形。",
+     "k": 4,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 201
+     }
+    },
+    {
+     "say": "incidence matrix 則是：列代表 node，行代表 edge，每一直行就是一條邊。",
+     "k": 5,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 206
+     }
+    },
+    {
+     "say": "列數是點數、行數是邊數，不一定一樣，所以可以是長方形，大小 V × E。",
+     "read": "列數是點數、行數是邊數，不一定一樣，所以可以是長方形，大小 V 乘 E。",
+     "k": 6,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 211.3
+     }
+    },
+    {
+     "say": "這張圖有兩條邊，e1 = (A,B)、e2 = (B,C)，表格就有兩行。",
+     "read": "這張圖有兩條邊，e1 是 A B、e2 是 B C，表格就有兩行。",
+     "k": 7,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 215.3
+     }
+    },
+    {
+     "say": "一條邊連著兩個 node，所以在那一行裡，這兩個 node 各填 1，其他填 0。",
+     "k": 8,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 221.1
+     }
+    },
+    {
+     "say": "看 e1 那一行：A 是 1、B 是 1、C 是 0，表示 e1 連接 A 和 B。",
+     "k": 10,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 233
+     }
+    },
+    {
+     "say": "換成有向圖：e1 是 B 指向 A，e2 是 C 指向 A。",
+     "k": 11,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 243.3
+     }
+    },
+    {
+     "say": "有向圖要分方向：邊離開的點填 −1，進入的點填 +1。所以 e1 那一行，B 是 −1、A 是 +1。",
+     "read": "有向圖要分方向：邊離開的點填負1，進入的點填正1。所以 e1 那一行，B 是負1、A 是正1。",
+     "k": 12,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 246
+     }
+    },
+    {
+     "say": "A 被兩條邊指進來，所以 A 那一列是兩個 +1，正好就是它的 in-degree 2。",
+     "read": "A 被兩條邊指進來，所以 A 那一列是兩個正1，正好就是它的 in-degree 2。",
+     "k": 13,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 253.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Weighted graph：邊上有權重",
+   "scene": "grapha-weights",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "再來，edge 上還可以加一個數字，叫 weight，權重，表示這條邊多遠、多貴、要多久。",
+     "k": 1,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 259.2
+     }
+    },
+    {
+     "say": "前面的例子都是 unweighted，只管有沒有邊，所以只填 1 和 0。",
+     "k": 2,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 264
+     }
+    },
+    {
+     "say": "把 graph 當地圖，weight 就是距離，例如 A–B 4 公里、B–C 2 公里。",
+     "read": "把 graph 當地圖，weight 就是距離，例如 A 到 B 4 公里、B 到 C 2 公里。",
+     "k": 3,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 268
+     }
+    },
+    {
+     "say": "有了 weight，矩陣就直接填權重：A–B 那兩格填 4，B–C 那兩格填 2。",
+     "read": "有了 weight，矩陣就直接填權重：A B 那兩格填 4，B C 那兩格填 2。",
+     "k": 4,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 272
+     }
+    },
+    {
+     "say": "影片說用大於 1 的數表示，這是簡化：權重可以是 0 甚至負數，所以沒邊常改用 ∞ 表示，免得混淆。",
+     "read": "影片說用大於 1 的數表示，這是簡化：權重可以是 0 甚至負數，所以沒邊常改用無限大表示，免得混淆。",
+     "k": 4,
+     "src": {
+      "v": "DBRW8nwZV-g",
+      "t": 268
+     }
+    }
+   ]
+  },
+  {
+   "title": "Network 與 road network",
+   "scene": "graphpeng-network",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "彭老師說，weight 可以代表從一個頂點到另一個頂點，要花的 cost，",
+     "k": 3,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1488.9
+     }
+    },
+    {
+     "say": "也可以是兩點之間的距離。",
+     "k": 4,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1500.1
+     }
+    },
+    {
+     "say": "邊有 weight 的 graph，統稱 network。",
+     "k": 5,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1516.3
+     }
+    },
+    {
+     "say": "注意，這個 network 不是電腦網路、Wi-Fi 那種，而是有權重的 graph。",
+     "k": 6,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1522.3
+     }
+    },
+    {
+     "say": "像 Google Map 的道路網，road network，其實就是一個 graph。",
+     "k": 7,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1553.1
+     }
+    },
+    {
+     "say": "那頂點是什麼？彭老師在課堂上倒數 3、2、1 要大家猜：答案是交叉路口，intersection。",
+     "k": 8,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1575
+     }
+    },
+    {
+     "say": "一條路，例如光復路，被路口切成很多 road segment，路段，每一段就是一條 edge。",
+     "k": 9,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1607
+     }
+    },
+    {
+     "say": "道路通常雙向，去也會過、回也會過，所以 road network 是有向圖，雙向道就是兩條方向相反的邊。",
+     "k": 10,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1661.1
+     }
+    },
+    {
+     "say": "路段的 cost，就是它的實際距離，physical distance。",
+     "k": 11,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1683.3
+     }
+    },
+    {
+     "say": "給一個起點 S、一個終點 D，",
+     "k": 12,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1702.8
+     }
+    },
+    {
+     "say": "找一組路段從 S 接到 D，而且距離總和最小，這就是 shortest path。這裡 S、B、A、C、D 加起來 8 最短。",
+     "k": 13,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1721.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "走訪的兩個動作：visit 與 explore",
+   "scene": "graphbari-terms",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "好，表示法講完，來看走訪。tree 有 traversal，像 pre-order、level order，用來判別結構、複製或比較。",
+     "k": 1,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1755.2
+     }
+    },
+    {
+     "say": "graph 也有兩種 traversal：DFS，depth first search，深度優先；BFS，breadth first search，廣度優先。",
+     "k": 1,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1771.1
+     }
+    },
+    {
+     "say": "Abdul Bari 先用一個小例子。這其實是一棵樹，但樹也是一種 graph。",
+     "k": 2,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 27.8
+     }
+    },
+    {
+     "say": "要看懂走訪，先學兩個詞。第一個是 visit，拜訪：走到某個頂點上，就叫拜訪它。",
+     "k": 3,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 43.9
+     }
+    },
+    {
+     "say": "第二個是 explore，探索：站在這個頂點上，去看它所有的鄰居。",
+     "k": 4,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 49.1
+     }
+    },
+    {
+     "say": "探索 1，就是把 1 的鄰居 2、4、5 都拜訪一遍。BFS 跟 DFS 的差別，就在什麼時候去探索下一個點。",
+     "k": 5,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 53.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "小例子：BFS",
+   "scene": "graphbari-small-bfs",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "先做 BFS。起點可以任選，選 1。",
+     "k": 1,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 65.6
+     }
+    },
+    {
+     "say": "第一步，拜訪 1，寫進結果。",
+     "k": 2,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 71.6
+     }
+    },
+    {
+     "say": "然後探索 1：要把它所有的鄰居，都拜訪一遍。",
+     "k": 3,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 78.8
+     }
+    },
+    {
+     "say": "1 的鄰居是 2、4、5，拜訪順序沒有規定，任意都行。",
+     "k": 4,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 84.4
+     }
+    },
+    {
+     "say": "Bari 選 2、4、5，依序拜訪、寫進結果。",
+     "k": 5,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 90.8
+     }
+    },
+    {
+     "say": "1 探索完了。接下來挑下一個要探索的點，目前拜訪過的是 1、2、4、5。",
+     "k": 6,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 94
+     }
+    },
+    {
+     "say": "BFS 照拜訪的先後來挑：2 最早，所以探索 2。",
+     "k": 7,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 106.9
+     }
+    },
+    {
+     "say": "2 的鄰居有 7、6、3，順序一樣任意，選 7、3、6。",
+     "k": 8,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 115.6
+     }
+    },
+    {
+     "say": "接著探索 4、5、7、3、6，都沒有新鄰居。全部拜訪完，BFS 就是 1 2 4 5 7 3 6。",
+     "k": 9,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 118.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "小例子：DFS",
+   "scene": "graphbari-small-dfs",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "再看 DFS，一樣從 1 開始。",
+     "k": 1,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 126.6
+     }
+    },
+    {
+     "say": "拜訪 1，開始探索 1。",
+     "k": 2,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 130.8
+     }
+    },
+    {
+     "say": "從 1 走到 2，拜訪 2。",
+     "k": 3,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 139.8
+     }
+    },
+    {
+     "say": "重點來了：1 還有 4、5 沒拜訪，但 DFS 先不管。已經到了新頂點 2，就改成探索 2。",
+     "k": 4,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 144.7
+     }
+    },
+    {
+     "say": "2 的鄰居有 7、6、3，先走 3。到了 3 又是新點，6、7 也先放著。",
+     "k": 5,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 159.7
+     }
+    },
+    {
+     "say": "探索 3：除了 2，沒有別的點連著 3。",
+     "k": 6,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 166.1
+     }
+    },
+    {
+     "say": "所以 3 探索完，退回 2，繼續探索 2。",
+     "k": 7,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 175.6
+     }
+    },
+    {
+     "say": "2 還有 6，拜訪 6；6 也沒有鄰居，退回 2。",
+     "k": 8,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 181.9
+     }
+    },
+    {
+     "say": "再拜訪 7，一樣退回 2。2 處理完了，再退回 1。",
+     "k": 10,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 185.7
+     }
+    },
+    {
+     "say": "1 還有 4，拜訪 4，退回；",
+     "k": 12,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 198.1
+     }
+    },
+    {
+     "say": "再拜訪 5，退回 1。全部結束，DFS 是 1 2 3 6 7 4 5。",
+     "k": 14,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 204.6
+     }
+    },
+    {
+     "say": "比一比：同一張圖，BFS 是 1 2 4 5 7 3 6，DFS 是 1 2 3 6 7 4 5。BFS 把一個點探索完，才換下一個；",
+     "k": 15,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 212.3
+     }
+    },
+    {
+     "say": "DFS 則是一拜訪到新點，就把目前的點 suspend，暫停，先去探索新點。",
+     "k": 16,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 219.1
+     }
+    },
+    {
+     "say": "從 1 拿到 2，就暫停 1；從 2 走到 3，就暫停 2。所以 DFS 會一路往深處鑽。",
+     "k": 17,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 231.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "在 binary tree 上：level order 與 pre-order",
+   "scene": "graphbari-tree-level-pre",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "第二個例子是一棵 binary tree，它也是 graph。",
+     "k": 1,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 252.3
+     }
+    },
+    {
+     "say": "對 binary tree 做 BFS，就是一層一層、每層由左到右：",
+     "k": 2,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 260.9
+     }
+    },
+    {
+     "say": "第一層拜訪 1，",
+     "k": 3,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 266.1
+     }
+    },
+    {
+     "say": "探索 1，拜訪 2、3；",
+     "k": 4,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 267.4
+     }
+    },
+    {
+     "say": "再探索 2、3，拜訪 4、5、6、7。結果 1 2 3 4 5 6 7。",
+     "k": 5,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 269
+     }
+    },
+    {
+     "say": "所以在 binary tree 上，BFS 就是 level order traversal。",
+     "k": 6,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 276.8
+     }
+    },
+    {
+     "say": "換 DFS：拜訪 1，",
+     "k": 7,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 283.9
+     }
+    },
+    {
+     "say": "從 1 到 2，暫停 1；從 2 到 4，暫停 2。",
+     "k": 9,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 287.8
+     }
+    },
+    {
+     "say": "4 下面沒東西，退回 2 走到 5；5 也沒有，再退回 1。",
+     "k": 11,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 300
+     }
+    },
+    {
+     "say": "往右邊走 3，再到 6，退回 3 再到 7。",
+     "k": 12,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 305
+     }
+    },
+    {
+     "say": "DFS 是 1 2 4 5 3 6 7，正好是 pre-order：先根、再左子樹、再右子樹。",
+     "k": 13,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 309.2
+     }
+    },
+    {
+     "say": "彭老師也是這樣對照：DFS 像 tree 的 pre-order，BFS 像 level order。",
+     "k": 13,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2238.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "BFS 用 queue",
+   "scene": "graphbari-bfs-queue",
+   "steps": 26,
+   "lines": [
+    {
+     "say": "換一張大一點的圖，10 個頂點、13 條邊，把 BFS 每一步看清楚。",
+     "k": 1,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 320.6
+     }
+    },
+    {
+     "say": "BFS 需要一個資料結構：queue，佇列。就像排隊，先排進去的先出來。",
+     "k": 2,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 337.2
+     }
+    },
+    {
+     "say": "初始步驟：選一個起點，哪個都可以。",
+     "k": 3,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 351.3
+     }
+    },
+    {
+     "say": "選 1：寫進結果、畫在右上方的樹上，也放進 queue。",
+     "k": 4,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 362.8
+     }
+    },
+    {
+     "say": "接下來一直重複：從 queue 取出一個頂點，探索它。",
+     "k": 5,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 373.4
+     }
+    },
+    {
+     "say": "取出 1，它的鄰居是 4 和 2。",
+     "k": 6,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 378
+     }
+    },
+    {
+     "say": "先拜訪 4，再拜訪 2，都寫進結果、放進 queue，樹上接在 1 底下。",
+     "k": 8,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 386.8
+     }
+    },
+    {
+     "say": "再從 queue 取出 4，探索 4。",
+     "k": 9,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 410.8
+     }
+    },
+    {
+     "say": "4 的鄰居 3 還沒拜訪，拜訪 3、放進 queue。",
+     "k": 10,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 418.7
+     }
+    },
+    {
+     "say": "取出 2，它的鄰居有 3、5、7、8。",
+     "k": 11,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 430.4
+     }
+    },
+    {
+     "say": "3 已經拜訪過，跳過。",
+     "k": 12,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 443.3
+     }
+    },
+    {
+     "say": "拜訪 5、8、7，2 探索完。",
+     "k": 15,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 448.1
+     }
+    },
+    {
+     "say": "取出 3，",
+     "k": 16,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 467
+     }
+    },
+    {
+     "say": "鄰居 2 拜訪過了，拜訪 10、9。",
+     "k": 18,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 476
+     }
+    },
+    {
+     "say": "取出 5：8、7 都拜訪過，只剩 6，拜訪 6。",
+     "k": 20,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 488.9
+     }
+    },
+    {
+     "say": "取出 8：鄰居 2、5、7 都拜訪過，沒有新點。",
+     "k": 21,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 510.8
+     }
+    },
+    {
+     "say": "像 8–7 這種連到已拜訪點的邊，不會長出新樹枝，Bari 把它們畫成虛線。",
+     "read": "像 8 到 7 這種連到已拜訪點的邊，不會長出新樹枝，Bari 把它們畫成虛線。",
+     "k": 22,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 516.4
+     }
+    },
+    {
+     "say": "接著取出 7、10、9、6，都沒有新鄰居。",
+     "k": 25,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 522.8
+     }
+    },
+    {
+     "say": "queue 空了，BFS 完成：1 4 2 3 5 8 7 10 9 6。",
+     "k": 26,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 539.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "BFS spanning tree 與兩條規則",
+   "scene": "graphbari-bfs-rules",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "右上方這棵實線組成的樹，叫 BFS spanning tree：用最少的邊把所有頂點連起來，10 個點剛好 9 條邊。",
+     "k": 1,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 547.6
+     }
+    },
+    {
+     "say": "不在樹上的虛線邊，在 BFS 裡叫 cross edge。",
+     "k": 2,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 557.8
+     }
+    },
+    {
+     "say": "整理一下。BFS 有兩個自由：第一，起點任選；",
+     "k": 3,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 567
+     }
+    },
+    {
+     "say": "第二，探索一個點時，鄰居可以用任意順序拜訪。",
+     "k": 4,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 572.4
+     }
+    },
+    {
+     "say": "但也有規則。規則一：選一個點來探索，必須把它的鄰居全拜訪完，才能換下一個點。",
+     "k": 5,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 589
+     }
+    },
+    {
+     "say": "像探索 1 時，4 和 2 都要先拜訪，之後才能去探索 4。",
+     "k": 6,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 601.9
+     }
+    },
+    {
+     "say": "規則二：下一個要探索的點，只能從 queue 取。所以 BFS 會一層一層往外擴。",
+     "k": 7,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 615.4
+     }
+    },
+    {
+     "say": "補一句：無向圖的 BFS，非樹邊兩端的層數最多差 1，所以都是 cross edge。",
+     "k": 7
+    }
+   ]
+  },
+  {
+   "title": "同一張圖，很多種 BFS",
+   "scene": "graphbari-bfs-more",
+   "steps": 19,
+   "lines": [
+    {
+     "say": "只要守住這兩條規則，同一張圖能寫出很多種 BFS。",
+     "k": 1,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 626.8
+     }
+    },
+    {
+     "say": "一樣從 1 開始，這次先拜訪 2、再拜訪 4。",
+     "k": 4,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 644.1
+     }
+    },
+    {
+     "say": "2 先進 queue，所以先探索 2。",
+     "k": 5,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 647.2
+     }
+    },
+    {
+     "say": "2 的鄰居依序拜訪 8、5、7、3。",
+     "k": 6,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 651.2
+     }
+    },
+    {
+     "say": "探索 4，它的鄰居 3 已經拜訪過；",
+     "k": 7,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 658.4
+     }
+    },
+    {
+     "say": "探索 8，5、7 也都拜訪過了。",
+     "k": 8,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 662.7
+     }
+    },
+    {
+     "say": "接著探索 5，拜訪 6。Bari 這裡口誤說成探索 7，照 queue 的順序，其實輪到 5。",
+     "k": 9,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 667.7
+     }
+    },
+    {
+     "say": "再探索 7、3，從 3 拜訪 10、9。",
+     "k": 10,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 670.9
+     }
+    },
+    {
+     "say": "結果 1 2 4 8 5 7 3 6 10 9，也是合法的 BFS。",
+     "k": 11,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 678.3
+     }
+    },
+    {
+     "say": "再一個，這次從 5 開始。",
+     "k": 12,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 682.6
+     }
+    },
+    {
+     "say": "探索 5，拜訪 2、8、7、6；",
+     "k": 13,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 685.7
+     }
+    },
+    {
+     "say": "探索 2，拜訪 3、1；",
+     "k": 14,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 690.5
+     }
+    },
+    {
+     "say": "8、7、6 都沒新點，接著探索 3，拜訪 9、10、4。",
+     "k": 16,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 703.9
+     }
+    },
+    {
+     "say": "5 2 8 7 6 3 1 9 10 4，也是合法的。",
+     "k": 18,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 716.9
+     }
+    },
+    {
+     "say": "起點、鄰居順序都能任選，所以 BFS 答案很多種。考試通常會規定鄰居依編號由小到大，答案才唯一。",
+     "k": 19,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 722.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "DFS 用 stack",
+   "scene": "graphbari-dfs-stack",
+   "steps": 24,
+   "lines": [
+    {
+     "say": "接著是 DFS。它用的資料結構是 stack，堆疊：像一疊盤子，最後放上去的最先拿走。",
+     "k": 1,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 735.1
+     }
+    },
+    {
+     "say": "初始步驟：從 1 開始，拜訪 1，放進 stack。",
+     "k": 2,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 751.9
+     }
+    },
+    {
+     "say": "然後，新拜訪的點就開始探索。1 的鄰居是 4 和 2，",
+     "k": 3,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 765.3
+     }
+    },
+    {
+     "say": "先拜訪 4。",
+     "k": 4,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 768.3
+     }
+    },
+    {
+     "say": "1 還有 2 沒拜訪，但 DFS 的規則是：先放著。",
+     "k": 5,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 779.3
+     }
+    },
+    {
+     "say": "到了新頂點 4，就去探索 4。那 1 呢？暫停，留在 stack 裡，之後才回得來。",
+     "k": 6,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 793.1
+     }
+    },
+    {
+     "say": "探索 4：走到 3，拜訪 3。",
+     "k": 7,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 801.9
+     }
+    },
+    {
+     "say": "暫停 4、探索 3：走到 10，拜訪 10。",
+     "k": 8,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 806.2
+     }
+    },
+    {
+     "say": "10 沒有其他鄰居，探索完，從 stack 拿掉，退回 3。",
+     "k": 9,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 818.3
+     }
+    },
+    {
+     "say": "怎麼知道要退回哪裡？看 stack 頂端就知道，這就是 stack 的用途。",
+     "k": 10,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 822
+     }
+    },
+    {
+     "say": "繼續探索 3：走到 9，9 哪裡都去不了，退回 3。",
+     "k": 12,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 828.6
+     }
+    },
+    {
+     "say": "3 的下一個鄰居是 2，拜訪 2。",
+     "k": 13,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 843.4
+     }
+    },
+    {
+     "say": "暫停 3、探索 2，走到 8；暫停 2、探索 8，走到 7；",
+     "k": 15,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 852.8
+     }
+    },
+    {
+     "say": "暫停 8、探索 7，走到 5；",
+     "k": 16,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 869.4
+     }
+    },
+    {
+     "say": "暫停 7、探索 5，走到 6。",
+     "k": 17,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 879
+     }
+    },
+    {
+     "say": "6 沒有其他鄰居，退回 5。",
+     "k": 18,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 889.3
+     }
+    },
+    {
+     "say": "5 還能去哪？2 和 8 都拜訪過了，沒有新鄰居。",
+     "k": 19,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 891.8
+     }
+    },
+    {
+     "say": "發現了嗎？DFS 一路往深處走，幾乎所有點都先被拜訪，之後才一個一個被探索完。",
+     "k": 20,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 903.6
+     }
+    },
+    {
+     "say": "5 探索完，回到 7；7 能去的 2 已拜訪，再退回 8。",
+     "k": 22,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 912.7
+     }
+    },
+    {
+     "say": "8 退回 2，2 退回 3，再退回 4、退回 1，全部結束。DFS 是 1 4 3 10 9 2 8 7 5 6。",
+     "k": 24,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 925.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "DFS spanning tree 與 back edge",
+   "scene": "graphbari-dfs-tree",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "DFS 走過的實線邊，組成 DFS spanning tree，它又深又窄。",
+     "k": 1,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 944.3
+     }
+    },
+    {
+     "say": "不在樹上的虛線邊，在 DFS 裡叫 back edge，它們都連回祖先。",
+     "k": 2,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 956.2
+     }
+    },
+    {
+     "say": "把這棵樹拿來做 pre-order，先根、再左、再右，",
+     "k": 3,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 962.8
+     }
+    },
+    {
+     "say": "得到 1 4 3 10 9 2 8 7 5 6，正好就是 DFS 的順序。所以 DFS 就像對 graph 做 pre-order。",
+     "k": 4,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 970
+     }
+    },
+    {
+     "say": "記住這個對比：無向圖的 DFS，非樹邊只有 back edge；BFS 的非樹邊，才叫 cross edge。",
+     "k": 4
+    }
+   ]
+  },
+  {
+   "title": "同一張圖，很多種 DFS",
+   "scene": "graphbari-dfs-more",
+   "steps": 22,
+   "lines": [
+    {
+     "say": "DFS 的答案也不唯一，Bari 直接看圖，再寫幾個。",
+     "k": 1,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 984.9
+     }
+    },
+    {
+     "say": "從 1 開始，這次先走 2，",
+     "k": 3,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 998.1
+     }
+    },
+    {
+     "say": "2 到 8、8 到 7、7 到 5、5 到 6。",
+     "k": 5,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 1002
+     }
+    },
+    {
+     "say": "6 走不下去，退回 5；5 處理完，再退回 7、8、2。",
+     "k": 7,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 1012.4
+     }
+    },
+    {
+     "say": "從 2 走到 3，再到 9；",
+     "k": 8,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 1024.6
+     }
+    },
+    {
+     "say": "9 退回 3 走到 10，10 退回 3 走到 4。",
+     "k": 10,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 1027.6
+     }
+    },
+    {
+     "say": "4 的鄰居 1 已拜訪，一路退回，結束。",
+     "k": 11,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 1034.6
+     }
+    },
+    {
+     "say": "1 2 8 7 5 6 3 9 10 4，合法的 DFS。",
+     "k": 12,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 1041.8
+     }
+    },
+    {
+     "say": "再一個，從 3 開始，走到 4，",
+     "k": 14,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 1046.1
+     }
+    },
+    {
+     "say": "再一路到 1、2、5、6；",
+     "k": 15,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 1054.2
+     }
+    },
+    {
+     "say": "6 退回 5，從 5 走到 7、再到 8；",
+     "k": 17,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 1059.3
+     }
+    },
+    {
+     "say": "8 走完了，就一路退回 7、5、2、1、4，回到 3；",
+     "k": 19,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 1068
+     }
+    },
+    {
+     "say": "3 還剩 10 和 9：走到 10、退回、再走到 9。",
+     "k": 20,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 1081.8
+     }
+    },
+    {
+     "say": "3 4 1 2 5 6 7 8 10 9，也合法。",
+     "k": 21,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 1085
+     }
+    },
+    {
+     "say": "起點、鄰居都能任選，唯一的規則：拜訪到新頂點，就暫停目前的點，先探索新點。",
+     "k": 22,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 1091.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "照 adjacency list 做 DFS",
+   "scene": "graphpeng-dfs-book",
+   "steps": 21,
+   "lines": [
+    {
+     "say": "彭老師的講法是：DFS 很像 tree 的 pre-order，有左邊就一直往左走，走到不能走為止。",
+     "k": 4,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1793.5
+     }
+    },
+    {
+     "say": "假設 graph 用 adjacency list 存。右邊是每個頂點的串列，左下是記錄有沒有拜訪過的 visited 陣列。",
+     "k": 5,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1816.2
+     }
+    },
+    {
+     "say": "規則：看目前頂點的串列，第一個沒拜訪過的就去拜訪，然後 recursive 地繼續。",
+     "k": 6,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1834.6
+     }
+    },
+    {
+     "say": "從 0 出發：拜訪 0、輸出 0，visited[0] 變成 1。",
+     "read": "從 0 出發：拜訪 0、輸出 0，visited 0 變成 1。",
+     "k": 7,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1860.6
+     }
+    },
+    {
+     "say": "0 的串列第一個是 1，沒拜訪過，走到 1。",
+     "k": 8,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1873.2
+     }
+    },
+    {
+     "say": "1 的串列第一個是 0，已經輸出過，跳過；",
+     "k": 9,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1893.8
+     }
+    },
+    {
+     "say": "第二個是 3，沒拜訪過，拜訪 3。",
+     "k": 10,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1918.9
+     }
+    },
+    {
+     "say": "3 的串列裡 1 拜訪過了，下一個是 7，拜訪 7。",
+     "k": 12,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1929.5
+     }
+    },
+    {
+     "say": "7 的串列：3 拜訪過，下一個是 4，拜訪 4。",
+     "k": 13,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1950.4
+     }
+    },
+    {
+     "say": "4 的串列裡，1、7 都拜訪過，沒路可走。",
+     "k": 14,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1959.7
+     }
+    },
+    {
+     "say": "就像 recursive 函式 return，回到呼叫它的 7，繼續看：下一個是 5，拜訪 5。",
+     "k": 15,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1980.7
+     }
+    },
+    {
+     "say": "依此類推，5 走到 2，2 走到 6。DFS 是 0 1 3 7 4 5 2 6。",
+     "k": 16,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1988.8
+     }
+    },
+    {
+     "say": "DFS 需要一個 Boolean array，記錄每個 vertex 有沒有拜訪過，",
+     "k": 17,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 1998.7
+     }
+    },
+    {
+     "say": "拜訪過 mark 成 1，沒有就是 0。",
+     "k": 18,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2018.3
+     }
+    },
+    {
+     "say": "給一個點，看它的串列、查 Boolean array，沒拜訪過的就去拜訪、output 出來，",
+     "k": 19,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2047
+     }
+    },
+    {
+     "say": "一直做到所有點都拜訪過為止。",
+     "k": 20,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2064.2
+     }
+    },
+    {
+     "say": "所以 DFS 可以寫成 recursive function：拜訪自己，再對每個沒拜訪過的鄰居呼叫自己。",
+     "k": 21,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2073.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "DFS 不唯一，複雜度看表示法",
+   "scene": "graphpeng-dfs-order-cost",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "彭老師問：DFS 的結果是唯一的嗎？同學有點搖頭。答案是不一定。",
+     "k": 1,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2084.3
+     }
+    },
+    {
+     "say": "串列存的順序不一樣，走出來就不一樣。",
+     "k": 2,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2100.1
+     }
+    },
+    {
+     "say": "像 0 的串列，可以寫 1、2，也可以寫 2、1，",
+     "k": 3,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2108.2
+     }
+    },
+    {
+     "say": "adjacency list 沒規定小的排前面，兩種都對。左邊先走 1，右邊先走 2，順序就不同。",
+     "k": 4,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2112.4
+     }
+    },
+    {
+     "say": "統整：給一個點 v，從 v 的串列看起，沒拜訪過的就 output，然後 recursive 做下去。",
+     "k": 6,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2153.3
+     }
+    },
+    {
+     "say": "所以 DFS 的 complexity，跟邊有關。",
+     "k": 7,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2162.5
+     }
+    },
+    {
+     "say": "用 adjacency list，DFS 要把所有邊掃過，彭老師說是 O(e)；嚴格講還要加上頂點，是 O(n + e)。",
+     "read": "用 adjacency list，DFS 要把所有邊掃過，彭老師說是 大O e；嚴格講還要加上頂點，是 大O n加e。",
+     "k": 8,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2169.6
+     }
+    },
+    {
+     "say": "那用 adjacency matrix 呢？",
+     "k": 9,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2192.8
+     }
+    },
+    {
+     "say": "是 O(n²)：每個點都要掃一整列 n 格才知道鄰居，n 個點就是 n × n。彭老師留給同學證明。",
+     "read": "是 大O n平方：每個點都要掃一整列 n 格才知道鄰居，n 個點就是 n 乘 n。彭老師留給同學證明。",
+     "k": 10,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2199.8
+     }
+    },
+    {
+     "say": "影片這裡聽起來像「一個是 order 1」，那是口誤，adjacency list 那個應該是 O(e)。",
+     "read": "影片這裡聽起來像「一個是 order 1」，那是口誤，adjacency list 那個應該是 大O e。",
+     "k": 10,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2206
+     }
+    }
+   ]
+  },
+  {
+   "title": "BFS：A B D E C",
+   "scene": "graphpeng-bfs-abcde",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "彭老師的 BFS：對應 tree 的 level order traversal，一層一層走。",
+     "k": 1,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2238.8
+     }
+    },
+    {
+     "say": "level order 要用 queue，BFS 也一樣。",
+     "k": 2,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2252.6
+     }
+    },
+    {
+     "say": "看這張圖：第一層 A，第二層 B、D、E，第三層 C。",
+     "k": 3,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2277.8
+     }
+    },
+    {
+     "say": "每層由左到右輸出，BFS 是 A B D E C。彭老師說，考出來是送分題。",
+     "k": 4,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2287.9
+     }
+    },
+    {
+     "say": "可是不只要會考，還要會寫程式。第一個看到的是 A，先輸出 A。",
+     "k": 5,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2308.7
+     }
+    },
+    {
+     "say": "A 跟 B、D、E 有連線，依序放進 queue。",
+     "k": 6,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2315.8
+     }
+    },
+    {
+     "say": "queue 不是空的，就取出第一個：B，輸出 B。",
+     "k": 7,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2325.7
+     }
+    },
+    {
+     "say": "B 跟 C 有連線，把 C 放進 queue。",
+     "k": 8,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2337.4
+     }
+    },
+    {
+     "say": "現在 queue 裡是 D、E、C。",
+     "k": 9,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2357.4
+     }
+    },
+    {
+     "say": "取出 D，輸出 D。",
+     "k": 10,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2364.5
+     }
+    },
+    {
+     "say": "D 也連到 C，但 C 已經在 queue 裡，不用再放。",
+     "k": 11,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2369.8
+     }
+    },
+    {
+     "say": "所以 BFS 要在放進 queue 的時候就做記號，同一個點才不會進兩次。",
+     "k": 11
+    },
+    {
+     "say": "取出 E、輸出 E；E 也連到 C，一樣不用放。",
+     "k": 12,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2386.3
+     }
+    },
+    {
+     "say": "最後取出 C，queue 空了，BFS 完成：A B D E C。",
+     "k": 13,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2395.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "BFS、DFS 的時間複雜度",
+   "scene": "graphbari-complexity",
+   "steps": 2,
+   "lines": [
+    {
+     "say": "Abdul Bari 最後說，BFS 和 DFS 的時間都是 O(n)，n 是頂點數，因為每個點只拜訪一次。",
+     "read": "Abdul Bari 最後說，BFS 和 DFS 的時間都是 大O n，n 是頂點數，因為每個點只拜訪一次。",
+     "k": 1,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 1104.1
+     }
+    },
+    {
+     "say": "這只算了一半。探索時還要檢查每條邊：用 adjacency list 是 O(V + E)，用 matrix 是 O(V²)。",
+     "read": "這只算了一半。探索時還要檢查每條邊：用 adjacency list 是 大O V加E，用 matrix 是 大O V平方。",
+     "k": 2,
+     "src": {
+      "v": "pcKY4hjDrxk",
+      "t": 1107.9
+     }
+    },
+    {
+     "say": "BFS 也一樣：list 讓每個點、每條邊只碰常數次；matrix 每個點都得掃一整列。考試以這個為準。",
+     "k": 2
+    }
+   ]
+  },
+  {
+   "title": "寫法與 connected component",
+   "scene": "graphpeng-cc-program",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "收個尾：DFS 就是 pre-order，串列裡有沒拜訪過的點就去拜訪，會用到 recursive。",
+     "k": 1,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2407.4
+     }
+    },
+    {
+     "say": "DFS 有兩種寫法：寫成 recursive，或不用遞迴，自己用一個 stack 實作。",
+     "k": 2,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2438.5
+     }
+    },
+    {
+     "say": "BFS 很簡單，用 queue 就行。",
+     "k": 3,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2446.7
+     }
+    },
+    {
+     "say": "BFS、DFS 能做很多事，例如算 graph 有幾個 connected component。",
+     "k": 4,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2474.3
+     }
+    },
+    {
+     "say": "課本 Program 6.3：i 從 0 跑到 n−1，遇到沒拜訪過的點就呼叫 dfs(i)。dfs(0) 一次走完整個 H1。",
+     "read": "課本 Program 6.3：i 從 0 跑到 n減1，遇到沒拜訪過的點就呼叫 dfs i。dfs 0 一次走完整個 H1。",
+     "k": 5,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2477.8
+     }
+    },
+    {
+     "say": "i 是 1、2、3 都拜訪過，跳過；i = 4 沒拜訪，dfs(4) 走完 H2。呼叫幾次 dfs，就有幾個 component。",
+     "read": "i 是 1、2、3 都拜訪過，跳過；i 等於 4 沒拜訪，dfs 4 走完 H2。呼叫幾次 dfs，就有幾個 component。",
+     "k": 6,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2486.3
+     }
+    },
+    {
+     "say": "彭老師最後叮嚀：回去一定要 trace code，一步一步追程式，其實還蠻有趣的。",
+     "k": 7,
+     "src": {
+      "v": "Ax1OL2mikJo",
+      "t": 2498.7
+     }
+    }
+   ]
+  }
+ ]
+}

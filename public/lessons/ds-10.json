@@ -1,0 +1,6470 @@
+{
+ "chapter": "ds-10",
+ "title": "圖演算法",
+ "intro": "從 spanning tree 出發，學會 Kruskal、Prim、Sollin 找 MST 和背後的 union-find，再用 dfn、low 找 articulation point，接著是 Dijkstra、Bellman-Ford、Floyd 三種最短路徑，最後用 topological order 推出 AOE 的 critical path。",
+ "parts": [
+  {
+   "title": "先複習：DFS 與 BFS 怎麼走",
+   "scene": "gpeng20-dfs-bfs-recap",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "好，這一章是圖的演算法。先暖身一下：graph 的走訪，traverse，就是每個頂點都拜訪一次。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 10.2
+     }
+    },
+    {
+     "say": "方法有兩種，DFS 深度優先，BFS 廣度優先。彭老師說程式怎麼寫，一定要回去看熟。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 10.2
+     }
+    },
+    {
+     "say": "DFS 會用一個陣列 visited，每格記一個頂點去過沒，一開始全部是 0。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 39.23
+     }
+    },
+    {
+     "say": "從 0 出發，照 adjacency list 的順序找鄰居，碰到還沒去過的，就去 visit 它。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 51.73
+     }
+    },
+    {
+     "say": "visit 在這裡就是把它印出來，同時把 visited 那格改成 1，以後就不會重複拜訪。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 62.81
+     }
+    },
+    {
+     "say": "印完再沿著它的鄰居往下走：0 → 1 → 3 → 7，一路往深處鑽，這就是深度優先。",
+     "read": "印完再沿著它的鄰居往下走：0 到 1 到 3 到 7，一路往深處鑽，這就是深度優先。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 68.75
+     }
+    },
+    {
+     "say": "走到鄰居都去過了，就 return，退回上一層找別條路。最後順序是 0 1 3 7 4 5 2 6。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 83.75
+     }
+    },
+    {
+     "say": "所以 DFS 很自然寫成遞迴：dfs(0) 裡呼叫 dfs(1)，dfs(1) 裡再呼叫 dfs(3)。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 86.31
+     }
+    },
+    {
+     "say": "BFS 就不一樣了，它是 level by level：先 0，再離 0 一步的 1、2，再來 3、4、5、6，最後 7。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 95.95
+     }
+    },
+    {
+     "say": "BFS 用 queue 來做：從前端拿出一個點，把它沒去過的鄰居排到尾端，先排先處理。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 101.26
+     }
+    }
+   ]
+  },
+  {
+   "title": "Connected component 與社群",
+   "scene": "gpeng20-network-community",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "接下來是 connected component，連通元件。畫面上每個小人是一個 vertex。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 112.1
+     }
+    },
+    {
+     "say": "從 A 沿著 edge 走得到 D，表示它們之間有路，這就叫 connected，連通。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 120.01
+     }
+    },
+    {
+     "say": "圖的用途很多。你在 Facebook PO 文、別人按讚，這個互動也能畫成一條 edge。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 141.55
+     }
+    },
+    {
+     "say": "這種描述人跟人互動的圖，大家叫它 social network，不叫 social graph。為什麼？",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 150.82
+     }
+    },
+    {
+     "say": "因為 graph 跟 network 的差別就在 edge 上有沒有 weight，有權重的就叫 network。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 169.73
+     }
+    },
+    {
+     "say": "拿 Line 來說，從 Line 這個服務來看，每個使用者就是一個 vertex。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 217.13
+     }
+    },
+    {
+     "say": "你打給誰、傳了幾次訊息，就是一條帶 weight 的 edge。A 再傳一次給 C，12 就變 13。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 220.49
+     }
+    },
+    {
+     "say": "那「誰跟誰是一群」怎麼找？就是找出彼此有聯絡、連在一起的那群人。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 251.65
+     }
+    },
+    {
+     "say": "連在一起的一群就是 connected component，在 social network 裡叫 community，社群。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 262.95
+     }
+    },
+    {
+     "say": "再進一步還會問：這群人裡誰是 leader？也就是很重要、連最多人的那個。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 279.82
+     }
+    },
+    {
+     "say": "而且 network 會變。這禮拜 C 和 E 開始聯絡，兩個社群就合成一個，這叫 evolving。",
+     "k": 11,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 298.91
+     }
+    },
+    {
+     "say": "做社群行銷的人最愛這個：推新手機時，先找出有影響力的人，叫 seed，種子。",
+     "k": 12,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 352.23
+     }
+    },
+    {
+     "say": "seed 會把影響力沿著 network 一路擴散出去，這就叫 social influence。",
+     "k": 13,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 365.23
+     }
+    }
+   ]
+  },
+  {
+   "title": "PageRank：網頁也是一張圖",
+   "scene": "gpeng20-pagerank-walk",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "再一個應用：網頁。畫面上四個方塊就是四個網頁。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 397.05
+     }
+    },
+    {
+     "say": "Google 剛起家靠的就是 PageRank，一個衡量網頁有多重要的分數。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 403.21
+     }
+    },
+    {
+     "say": "把網頁串起來就是一張 graph，一個網頁就是一個 vertex。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 419.07
+     }
+    },
+    {
+     "say": "網頁怎麼連起來？靠 hyperlink，超連結。每個 hyperlink 就是一條有方向的 edge。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 422.25
+     }
+    },
+    {
+     "say": "HTML 裡的 a href 就是一個 hyperlink，點下去，就從 P1 跳到 P2。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 429.48
+     }
+    },
+    {
+     "say": "Google 的想法是：整個 web 是一個 graph，可以在上面做 random walk，隨機漫步。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 443.34
+     }
+    },
+    {
+     "say": "人在逛網頁，就像在圖上亂走：P3 → P1 → P2 → P3，每停一頁，那頁就記一次。",
+     "read": "人在逛網頁，就像在圖上亂走：P3 到 P1 到 P2 到 P3，每停一頁，那頁就記一次。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 450.76
+     }
+    },
+    {
+     "say": "走久了，停在每一頁的次數比例，就是停在那頁的 probability，機率。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 467.37
+     }
+    },
+    {
+     "say": "機率越高，代表大家越常被吸到那一頁，那頁就越重要，這裡是 P3 最高。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 478.35
+     }
+    },
+    {
+     "say": "所以很多生活問題都能 map 成 graph，圖的基本運算，每個都有實際用途。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 495.39
+     }
+    }
+   ]
+  },
+  {
+   "title": "Spanning tree 是什麼",
+   "scene": "gpeng20-k4-spanning",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "好，進入正題：spanning tree，生成樹。左邊是原來的 graph G，有 4 個頂點。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 501.15
+     }
+    },
+    {
+     "say": "spanning tree 是一棵 tree，tree 也是一種 graph，而且它是 G 的 subgraph，子圖。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 516.12
+     }
+    },
+    {
+     "say": "特性一：頂點集合跟 G 完全一樣，V(G′) = V(G)，一個點都不能少。",
+     "read": "特性一：頂點集合跟 G 完全一樣，V(G prime) = V(G)，一個點都不能少。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 528.41
+     }
+    },
+    {
+     "say": "特性二：edge 比 G 少，只挑其中幾條。所以它叫 subgraph。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 544.09
+     }
+    },
+    {
+     "say": "目標是用最少的 edge，把所有頂點連起來。沿這 3 條邊，從 0 就能走遍每個點。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 552.73
+     }
+    },
+    {
+     "say": "如果 edge 有 weight，而這棵樹的 weight 加起來最小，就叫 minimum cost spanning tree。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 572.9
+     }
+    },
+    {
+     "say": "n 個點要連起來又不形成 cycle，剛好要 n − 1 條邊。少一條會斷，多一條就有 cycle。",
+     "read": "n 個點要連起來又不形成 cycle，剛好要 n 減 1 條邊。少一條會斷，多一條就有 cycle。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 602.47
+     }
+    },
+    {
+     "say": "欸，彭老師口頭說「至少 n − 1 條」，這裡要更正：spanning tree 是剛好 n − 1 條。",
+     "read": "欸，彭老師口頭說「至少 n 減 1 條」，這裡要更正：spanning tree 是剛好 n 減 1 條。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 602.47
+     }
+    },
+    {
+     "say": "再看左邊的 G，它是 complete graph，完全圖：4 個點兩兩都有邊，一共 6 條。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 613.83
+     }
+    },
+    {
+     "say": "旁邊這三個 subgraph 都是它的 spanning tree，每一個都包含全部 4 個頂點。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 619.14
+     }
+    },
+    {
+     "say": "它們的邊都是 G 的邊的 subset，例如 (0,1)、(0,2)、(0,3)，在 G 上都找得到。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 636.08
+     }
+    },
+    {
+     "say": "數一數，每棵都只用 3 條邊，3 = n − 1，這就是連起 4 個點的最少邊數。",
+     "read": "數一數，每棵都只用 3 條邊，3 = n 減 1，這就是連起 4 個點的最少邊數。",
+     "k": 11,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 649.45
+     }
+    }
+   ]
+  },
+  {
+   "title": "Spanning tree 的正式定義",
+   "scene": "galgo-bari-st6",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "Abdul Bari 也從定義講起，我們用他的例子把定義寫得更精確。",
+     "k": 1,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 0.6
+     }
+    },
+    {
+     "say": "一張圖寫成 G = (V, E)。V 是頂點集合，這裡是 1 到 6。",
+     "k": 2,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 11.8
+     }
+    },
+    {
+     "say": "E 是邊的集合，像 (1, 2)、(2, 3)，一條邊用它兩個端點來表示。",
+     "k": 3,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 31.7
+     }
+    },
+    {
+     "say": "spanning tree 是 G 的 subgraph，從原圖裡拿一部分出來。",
+     "k": 4,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 40.8
+     }
+    },
+    {
+     "say": "拿的規則：頂點全部都要，邊只拿一部分。",
+     "k": 5,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 57.8
+     }
+    },
+    {
+     "say": "拿幾條？6 個頂點，就拿 n − 1 = 5 條。",
+     "read": "拿幾條？6 個頂點，就拿 n 減 1 = 5 條。",
+     "k": 6,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 72.1
+     }
+    },
+    {
+     "say": "比如拿前 5 條、不拿 (6, 1)：6 個點全連在一起，只用 5 條邊，這就是一棵。",
+     "k": 7,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 94.8
+     }
+    },
+    {
+     "say": "tree 的特徵是沒有 cycle。少拿了 (6, 1)，原本那個圈就斷開了。",
+     "k": 8,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 104.8
+     }
+    },
+    {
+     "say": "那改成拿 (6, 1)、不拿 (1, 2) 呢？一樣是 spanning tree。",
+     "k": 9,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 121.8
+     }
+    },
+    {
+     "say": "所以拿哪幾條是有選擇的，同一張圖可以有很多棵不同的 spanning tree。",
+     "k": 10,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 131.8
+     }
+    },
+    {
+     "say": "寫成定義：S 是 G 的子圖，S 的頂點集合等於 G 的，S 的邊數等於頂點數減 1。",
+     "k": 11,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 137.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "一張圖有幾棵 spanning tree",
+   "scene": "galgo-bari-count",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "那問題來了：一張圖到底能生出幾棵 spanning tree？",
+     "k": 1,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 171.1
+     }
+    },
+    {
+     "say": "剛剛那張圖有 6 條邊，要選 5 條，就是 6C5。",
+     "k": 2,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 180.8
+     }
+    },
+    {
+     "say": "6C5 = 6。也很直覺：每次少拿一條，就是一棵，共 6 棵，而且都沒有 cycle。",
+     "k": 3,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 199.6
+     }
+    },
+    {
+     "say": "現在多加一條對角線 (2, 5)，變成 7 條邊選 5 條。",
+     "k": 4,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 229.8
+     }
+    },
+    {
+     "say": "可能性變多了，有拿 (2, 5) 的組合也可以是一棵 spanning tree。",
+     "k": 5,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 236.8
+     }
+    },
+    {
+     "say": "7C5 是 21 種組合，但不是每種都合法，因為 (2, 5) 會造成 cycle。",
+     "k": 6,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 252.1
+     }
+    },
+    {
+     "say": "它造成兩個圈：1–2–5–6 和 2–3–4–5。組合裡如果包含整個圈，就不是樹。",
+     "read": "它造成兩個圈：1到2到5到6 和 2到3到4到5。組合裡如果包含整個圈，就不是樹。",
+     "k": 7,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 259.8
+     }
+    },
+    {
+     "say": "Bari 在影片裡的算法是 7C5 − 2，也就是扣掉 cycle 的個數。",
+     "read": "Bari 在影片裡的算法是 7C5 減 2，也就是扣掉 cycle 的個數。",
+     "k": 8,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 271.8
+     }
+    },
+    {
+     "say": "這裡要更正：該扣的是「含有圈的 5 邊組合」。每個 4 邊的圈再配 1 條別的邊，各 3 種。",
+     "k": 9,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 280.8
+     }
+    },
+    {
+     "say": "兩個圈共 6 種，所以答案是 21 − 6 = 15 棵，不是 19。一般的圖要用 matrix-tree theorem 算。",
+     "read": "兩個圈共 6 種，所以答案是 21 減 6 = 15 棵，不是 19。一般的圖要用 matrix-tree theorem 算。",
+     "k": 9
+    }
+   ]
+  },
+  {
+   "title": "用 DFS、BFS 長出 spanning tree",
+   "scene": "gpeng20-dfs-bfs-tree",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "還記得一開始的 DFS、BFS 嗎？回到那張 8 個頂點的圖。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 681.69
+     }
+    },
+    {
+     "say": "把圖走一遍，只留下「走過去時用到的邊」，就會長出一棵 spanning tree。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 692.81
+     }
+    },
+    {
+     "say": "DFS spanning tree 就照拜訪順序連邊。從 0 出發，第一個拜訪 1，0 和 1 連起來。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 705.65
+     }
+    },
+    {
+     "say": "從 1 往下走到 3，1 和 3 連起來。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 710.91
+     }
+    },
+    {
+     "say": "3 再走到 7，7 再走到 4，每走一步就多一條樹邊。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 732.58
+     }
+    },
+    {
+     "say": "到了 4，它跟 1 也有一條邊。這條要不要連？",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 741.37
+     }
+    },
+    {
+     "say": "不行。1 已經去過了，1 和 4 本來就透過 3、7 連通，再連 (1,4) 就成了 cycle。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 745.29
+     }
+    },
+    {
+     "say": "接著往 5、2、6 走。最後剩下的 (0,2)、(6,7) 都多餘。7 條邊，剛好 n − 1。",
+     "read": "接著往 5、2、6 走。最後剩下的 (0,2)、(6,7) 都多餘。7 條邊，剛好 n 減 1。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 766.05
+     }
+    },
+    {
+     "say": "BFS spanning tree 是一層一層長：0 先連 1、2，再連 3、4、5、6，最後連 7。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 788.93
+     }
+    },
+    {
+     "say": "那換起點呢？改從 7 出發做 DFS，長出來的樹就跟剛剛完全不一樣。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 806.57
+     }
+    },
+    {
+     "say": "所以 spanning tree 不唯一：用 DFS 還是 BFS、從哪裡出發，結果都可能不同。",
+     "k": 11,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 817.01
+     }
+    }
+   ]
+  },
+  {
+   "title": "加上權重：哪一棵最便宜",
+   "scene": "galgo-bari-costs",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "現在讓每條邊都有權重，這叫 weighted graph。權重就想成連接兩點的成本。",
+     "k": 1,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 306
+     }
+    },
+    {
+     "say": "來畫幾棵 spanning tree。4 個頂點，每棵要 3 條邊。",
+     "k": 2,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 321.8
+     }
+    },
+    {
+     "say": "第一棵選 5、3、6，cost 是 5 + 3 + 6 = 14。",
+     "k": 3,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 333.8
+     }
+    },
+    {
+     "say": "第二棵選 4、6、3，cost 是 13。",
+     "k": 4,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 346.8
+     }
+    },
+    {
+     "say": "第三棵選 4、2、3，cost 只有 9。",
+     "k": 5,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 363.8
+     }
+    },
+    {
+     "say": "你看，同一張圖的不同 spanning tree，cost 不一樣。",
+     "k": 6,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 384.1
+     }
+    },
+    {
+     "say": "cost 最小的那一棵，就叫 minimum cost spanning tree，簡稱 MST。",
+     "k": 7,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 401.8
+     }
+    },
+    {
+     "say": "最笨的方法是全部列出來再挑最小的。可以，但樹的數量可能多到爆，太花時間。",
+     "k": 8,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 416.8
+     }
+    },
+    {
+     "say": "所以要用聰明的 greedy 方法，不必列出全部就能找到 MST：Prim 和 Kruskal。",
+     "k": 9,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 427
+     }
+    }
+   ]
+  },
+  {
+   "title": "Greedy 的兩種想法：選邊或丟邊",
+   "scene": "galgo-8v-count",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "先講 greedy，貪心法：每一步都先挑眼前看起來最好的。MST 正是用它來解。",
+     "k": 1,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 0.2
+     }
+    },
+    {
+     "say": "對象是 weighted、connected、undirected 的圖：有權重、連通、沒有方向。",
+     "k": 2,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 14.8
+     }
+    },
+    {
+     "say": "spanning tree 把所有頂點連起來又不繞圈，它的 cost 就是選中那些邊的權重和。",
+     "k": 3,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 41.2
+     }
+    },
+    {
+     "say": "注意，這支影片把 MST 講成「從 source 到 destination 的最小 cost」，那其實是最短路徑。",
+     "k": 3,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 44
+     }
+    },
+    {
+     "say": "MST 沒有起點跟終點，它是把所有頂點都連起來、總權重最小的那棵樹。",
+     "k": 3
+    },
+    {
+     "say": "同一張圖有很多棵 spanning tree，我們要的是 cost 最小的。",
+     "k": 4,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 58.98
+     }
+    },
+    {
+     "say": "看例子：這張圖有 8 個頂點，編號 1 到 8。",
+     "k": 5,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 75.58
+     }
+    },
+    {
+     "say": "每條邊旁邊的便條是權重。有權重的圖也常叫 network。",
+     "k": 6,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 95.4
+     }
+    },
+    {
+     "say": "一條一條數，這個 network 一共有 10 條邊。",
+     "k": 7,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 108.36
+     }
+    },
+    {
+     "say": "spanning tree 的邊數是固定的，頂點數減 1。",
+     "k": 8,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 127.06
+     }
+    },
+    {
+     "say": "n = 8，所以要剛好 7 條邊，可是圖上有 10 條。",
+     "k": 9,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 145.51
+     }
+    },
+    {
+     "say": "那就有兩種想法：從 10 條裡「選」7 條，或者「丟掉」3 條。",
+     "k": 10,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 158.91
+     }
+    },
+    {
+     "say": "選邊叫 edge selection，丟邊叫 edge rejection。我們先看選邊。",
+     "k": 10,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 175
+     }
+    }
+   ]
+  },
+  {
+   "title": "Kruskal：全圖最小的邊先選",
+   "scene": "gpeng20-kruskal",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "這張 7 個頂點的圖，每條邊都有 cost。我們要找它的 MCST，也就是 MST。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 838.41
+     }
+    },
+    {
+     "say": "定義再說一次：所有 spanning tree 裡，邊的 cost 加起來最小的那一棵。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 845.73
+     }
+    },
+    {
+     "say": "找 MST 有三個 greedy 演算法：Kruskal、Prim、Sollin。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 880.29
+     }
+    },
+    {
+     "say": "先看 Kruskal。它的精神是：每次選一條邊出來。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 898.93
+     }
+    },
+    {
+     "say": "而且每次都選 cost 最小的那一條。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 917.9
+     }
+    },
+    {
+     "say": "所以很直覺，先把所有邊依 cost 由小到大排序，再一條一條拿來看。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 929.77
+     }
+    },
+    {
+     "say": "但要注意：這條邊雖然最小，選了卻會造成 cycle，那就不選，跳到下一條。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 936.19
+     }
+    },
+    {
+     "say": "一直選到所有頂點都連起來為止，這時剛好 n − 1 條邊。",
+     "read": "一直選到所有頂點都連起來為止，這時剛好 n 減 1 條邊。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 954.53
+     }
+    },
+    {
+     "say": "一開始一條邊都沒選，每個頂點各自一塊，用不同顏色表示。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 984.3
+     }
+    },
+    {
+     "say": "最小的是 10，(0, 5)，選進來，0 和 5 變成同一塊。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 993.51
+     }
+    },
+    {
+     "say": "第二小的 12，(2, 3)，選。",
+     "k": 11,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1021.4
+     }
+    },
+    {
+     "say": "接著 14，(1, 6)，選。到這裡都沒有 cycle。",
+     "k": 12,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1033.66
+     }
+    },
+    {
+     "say": "再來 16，(1, 2)，選。這時 1、2、3、6 已經連成同一塊了。",
+     "k": 13,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1037.3
+     }
+    },
+    {
+     "say": "下一條 18 是 (3, 6)。3 和 6 已經同色，再加就成圈，所以丟掉。",
+     "k": 14,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1044.04
+     }
+    },
+    {
+     "say": "跳到下一條：22 (3,4) 選；24 (4,6) 會成圈，丟；25 (4,5) 選。滿 6 條，停。",
+     "k": 15,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1054.82
+     }
+    },
+    {
+     "say": "選出來的就是 MST，cost = 10 + 12 + 14 + 16 + 22 + 25 = 99。",
+     "k": 16,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1065.2
+     }
+    },
+    {
+     "say": "Abdul Bari 用的也是這張圖，只是頂點從 1 開始編號，他算出來一樣是 99。",
+     "k": 16,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 795
+     }
+    },
+    {
+     "say": "為什麼叫 greedy？因為它每一步只挑眼前最小的邊，就這樣一路挑到底。",
+     "k": 17,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1074.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Kruskal 再跑一次：8 個頂點的例子",
+   "scene": "galgo-8v-kruskal",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "換那張 8 個頂點、10 條邊的圖，再用 Kruskal 跑一次，加深印象。",
+     "k": 1,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 198
+     }
+    },
+    {
+     "say": "這就是選邊法的第一個方法，Kruskal。",
+     "k": 2,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 235.86
+     }
+    },
+    {
+     "say": "一開始先擺好 n 個頂點，一條邊都不連，每個點都孤零零的。",
+     "k": 3,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 245.81
+     }
+    },
+    {
+     "say": "把邊依 cost 由小到大排好，ascending order，從最便宜的開始考慮。",
+     "k": 4,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 279.98
+     }
+    },
+    {
+     "say": "不會跟已選的邊形成 cycle 就選：4、6、7、8、9、10 都沒問題，依序選進來。",
+     "k": 5,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 309.62
+     }
+    },
+    {
+     "say": "下一條 11，是 7–8。可是 3–4–8 跟 3–7 已經連了，再加就繞成一圈，丟掉。",
+     "read": "下一條 11，是 7到8。可是 3到4到8 跟 3到7 已經連了，再加就繞成一圈，丟掉。",
+     "k": 6,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 324.78
+     }
+    },
+    {
+     "say": "再來 12，是 2–6。6 還沒接上任何邊，選！滿 7 條了，cost 是 56。",
+     "read": "再來 12，是 2到6。6 還沒接上任何邊，選！滿 7 條了，cost 是 56。",
+     "k": 7,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 330.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Disjoint sets：沒有共同元素的集合",
+   "scene": "galgo-ds-sets",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "那問題來了：Kruskal 怎麼知道一條邊會不會形成 cycle？靠的是 disjoint sets，又叫 union-find。",
+     "k": 1,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 56.52
+     }
+    },
+    {
+     "say": "先看一張無向、不連通的圖，分成左右兩塊。每一塊叫一個 component，連通塊。",
+     "k": 1,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 70.82
+     }
+    },
+    {
+     "say": "把每個 component 看成一個集合。左邊頂點 1、2、3、4，組成 S1。",
+     "k": 2,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 79.32
+     }
+    },
+    {
+     "say": "右邊 5、6、7、8 組成 S2。兩個 component，就是兩個集合。",
+     "k": 3,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 87.28
+     }
+    },
+    {
+     "say": "仔細看，沒有任何一個頂點同時在 S1 和 S2 裡。",
+     "k": 4,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 99.48
+     }
+    },
+    {
+     "say": "兩個集合的交集是空集合，S1 ∩ S2 = ∅。這種沒有共同元素的集合，就叫 disjoint sets。",
+     "read": "兩個集合的交集是空集合，S1 交集 S2 = 空集合。這種沒有共同元素的集合，就叫 disjoint sets。",
+     "k": 5,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 106.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "find 與 union：同一集合就有 cycle",
+   "scene": "galgo-ds-find-union",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "對 disjoint sets 只做兩種操作：find，查元素在哪個集合；union，把兩個集合合併。",
+     "k": 1,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 119.26
+     }
+    },
+    {
+     "say": "find(5)：5 屬於哪個集合？5 在右邊，所以 find(5) = S2。",
+     "k": 2,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 135.2
+     }
+    },
+    {
+     "say": "find 其實就是 set membership，成員資格的查詢。",
+     "k": 3,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 144.2
+     }
+    },
+    {
+     "say": "find(7) 呢？7 也在右邊，一樣是 S2。",
+     "k": 4,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 157.98
+     }
+    },
+    {
+     "say": "find(3) = S1。概念就這麼簡單，等一下再看怎麼用資料結構做出來。",
+     "k": 5,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 165.9
+     }
+    },
+    {
+     "say": "接著看 union。在兩塊之間加一條邊 (4, 8)。",
+     "k": 6,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 185.32
+     }
+    },
+    {
+     "say": "加邊時，先對兩端做 find：find(4) = S1。",
+     "k": 7,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 204.8
+     }
+    },
+    {
+     "say": "find(8) = S2，兩端分屬不同集合。",
+     "k": 8,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 215.2
+     }
+    },
+    {
+     "say": "那就 union：S1 ∪ S2 合成一個新集合 S3。這條邊把兩塊接起來了，它們現在是同一塊。",
+     "read": "那就 union：S1 聯集 S2 合成一個新集合 S3。這條邊把兩塊接起來了，它們現在是同一塊。",
+     "k": 9,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 223.8
+     }
+    },
+    {
+     "say": "整理一下：加一條邊 (u, v)，先 find(u)、find(v)；不同集合，就合併。",
+     "k": 10,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 242.42
+     }
+    },
+    {
+     "say": "為什麼要這樣做？再加一條邊 (1, 5) 來看看。",
+     "k": 11,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 258.08
+     }
+    },
+    {
+     "say": "find(1) 是 S3，find(5) 也是 S3。兩端早就在同一個集合，代表 1 和 5 本來就有路。",
+     "k": 12,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 281.04
+     }
+    },
+    {
+     "say": "本來就連著，又多一條邊，一定會繞出一個圈。所以兩端同集合，就有 cycle。",
+     "k": 13,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 292.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "用集合一條一條偵測 cycle",
+   "scene": "galgo-ds-cycle-sets",
+   "steps": 20,
+   "lines": [
+    {
+     "say": "換一張完整的圖，從頭開始，一條邊一條邊加進去。",
+     "k": 1,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 325.73
+     }
+    },
+    {
+     "say": "邊上的編號 #1 到 #9 就是加入順序，你就想成權重已經由小到大排好，像 Kruskal 那樣。",
+     "k": 2,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 358.21
+     }
+    },
+    {
+     "say": "一開始 8 個頂點都在全集 U 裡，每個點都還沒跟誰連在一起。",
+     "k": 3,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 370.39
+     }
+    },
+    {
+     "say": "邊 1 是 (1, 2)：find(1)、find(2)，兩個都還在 U。",
+     "k": 4,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 392.41
+     }
+    },
+    {
+     "say": "不在同一個集合，就 union：1、2 組成 S1，這條邊收下。",
+     "k": 5,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 410.09
+     }
+    },
+    {
+     "say": "邊 2 (3, 4) 組成 S2。",
+     "k": 6,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 416.77
+     }
+    },
+    {
+     "say": "邊 3 (5, 6) 組成 S3。",
+     "k": 7,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 443.75
+     }
+    },
+    {
+     "say": "邊 4 (7, 8) 組成 S4。現在有四個集合。",
+     "k": 8,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 454.65
+     }
+    },
+    {
+     "say": "邊 5 是 (2, 4)：find(2) 是 S1，find(4) 是 S2，不一樣。",
+     "k": 9,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 466.8
+     }
+    },
+    {
+     "say": "就 union 成 S5 = {1, 2, 3, 4}，舊的 S1、S2 消失。",
+     "k": 10,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 487.05
+     }
+    },
+    {
+     "say": "邊 6 是 (2, 5)：find(2) 是 S5，find(5) 是 S3。",
+     "k": 11,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 508.77
+     }
+    },
+    {
+     "say": "不同，union 成 S6，裡面有 1 到 6。現在只剩 S6 和 S4。",
+     "k": 12,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 518.45
+     }
+    },
+    {
+     "say": "邊 7 是 (1, 3)：find(1) 是 S6，再找 3……",
+     "k": 13,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 542.55
+     }
+    },
+    {
+     "say": "find(3) 也是 S6！同一個集合，加了就會形成 cycle。",
+     "k": 14,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 560.09
+     }
+    },
+    {
+     "say": "對照圖看：1–2、2–4、3–4 已經讓 1 和 3 連通了，再加就繞成 1→2→4→3→1。所以不加。",
+     "read": "對照圖看：1到2、2到4、3到4 已經讓 1 和 3 連通了，再加就繞成 1到2到4到3到1。所以不加。",
+     "k": 15,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 573.55
+     }
+    },
+    {
+     "say": "邊 8 是 (6, 8)：find(6) 是 S6，find(8) 是 S4，不同。",
+     "k": 16,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 592.67
+     }
+    },
+    {
+     "say": "union 成 S7，全部 8 個頂點都在同一個集合了。",
+     "k": 17,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 609.01
+     }
+    },
+    {
+     "say": "最後邊 9 是 (5, 7)：find(5)、find(7)……",
+     "k": 18,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 625.8
+     }
+    },
+    {
+     "say": "都在 S7，同一個集合，有 cycle，不加。",
+     "k": 19,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 636.2
+     }
+    },
+    {
+     "say": "Kruskal 就是這樣用的：每挑一條最小的邊，就 find 兩端；不同才選它並 union，相同就丟掉。",
+     "k": 20,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 641.92
+     }
+    }
+   ]
+  },
+  {
+   "title": "把集合畫成樹：weighted union",
+   "scene": "galgo-ds-trees",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "那集合在電腦裡怎麼表示？先畫出來看。8 個方塊，一開始各自一個集合。",
+     "k": 1,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 669.42
+     }
+    },
+    {
+     "say": "我們只想偵測 cycle，集合不需要名字，只要選一個代表。把集合畫成樹，root 就是代表。",
+     "k": 2,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 715.14
+     }
+    },
+    {
+     "say": "邊 (1, 2)：讓 1 當 parent、2 當 child，連成一棵小樹。反過來也可以。",
+     "k": 3,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 721.38
+     }
+    },
+    {
+     "say": "邊 (3, 4)：3 當 parent，4 掛在下面。",
+     "k": 4,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 730.8
+     }
+    },
+    {
+     "say": "(5, 6)、(7, 8) 也一樣。現在四棵小樹，root 是 1、3、5、7。",
+     "k": 5,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 745.24
+     }
+    },
+    {
+     "say": "邊 (2, 4)：find 就是沿著 parent 往上走到 root。2 走到 1，4 走到 3，root 不同。",
+     "k": 6,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 761.8
+     }
+    },
+    {
+     "say": "union 的做法：把一棵樹的 root，掛到另一棵的 root 底下。這裡讓 3 變成 1 的 child。",
+     "k": 7,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 787.6
+     }
+    },
+    {
+     "say": "為什麼不是 1 掛到 3？因為兩棵一樣大，都 2 個點，誰當 parent 都可以。",
+     "k": 8,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 803.42
+     }
+    },
+    {
+     "say": "邊 (2, 5)：2 往上到 1，5 自己就是 root。不同，要 union。",
+     "k": 9,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 813.2
+     }
+    },
+    {
+     "say": "這次就有講究了：root 1 那棵有 4 個點，root 5 那棵只有 2 個點。",
+     "k": 10,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 842.02
+     }
+    },
+    {
+     "say": "讓點多的當 parent，5 掛到 1 底下。小樹掛大樹，樹才不會越長越高，這叫 weighted union。",
+     "k": 11,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 856.36
+     }
+    },
+    {
+     "say": "邊 (1, 3)：1 是 root，3 往上一步也到 1。root 相同，同一集合，有 cycle。",
+     "k": 12,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 886.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "用陣列存：parent[ ]",
+   "scene": "galgo-ds-array",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "同樣的事改用陣列來做，上面是樹，下面是陣列，對照著看。",
+     "k": 1,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 918.02
+     }
+    },
+    {
+     "say": "陣列叫 parent，index 1 到 8 代表頂點。每格先放 −1，意思是我自己就是 root。",
+     "read": "陣列叫 parent，index 1 到 8 代表頂點。每格先放 負1，意思是我自己就是 root。",
+     "k": 2,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 945.3
+     }
+    },
+    {
+     "say": "邊 (1, 2)：parent[1]、parent[2] 都是負的，兩個都是 root，而且不一樣。",
+     "read": "邊 (1, 2)：parent 1、parent 2 都是負的，兩個都是 root，而且不一樣。",
+     "k": 3,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 976.3
+     }
+    },
+    {
+     "say": "union：讓 1 當 parent，就在 parent[2] 寫 1，意思是 2 的 parent 是 1。",
+     "read": "union：讓 1 當 parent，就在 parent 2 寫 1，意思是 2 的 parent 是 1。",
+     "k": 4,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1004.62
+     }
+    },
+    {
+     "say": "root 那格不只寫 −1，而是寫負的點數：parent[1] = −2。負號代表 root，2 代表有 2 個點。",
+     "read": "root 那格不只寫 負1，而是寫負的點數：parent 1 = 負2。負號代表 root，2 代表有 2 個點。",
+     "k": 5,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1022.8
+     }
+    },
+    {
+     "say": "邊 (3, 4)：parent[4] = 3，parent[3] = −2。",
+     "read": "邊 (3, 4)：parent 4 = 3，parent 3 = 負2。",
+     "k": 6,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1041.9
+     }
+    },
+    {
+     "say": "邊 (5, 6)：parent[6] = 5，parent[5] = −2。",
+     "read": "邊 (5, 6)：parent 6 = 5，parent 5 = 負2。",
+     "k": 7,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1067.7
+     }
+    },
+    {
+     "say": "邊 (7, 8)：parent[8] = 7，parent[7] = −2。四個集合各 2 個點。",
+     "read": "邊 (7, 8)：parent 8 = 7，parent 7 = 負2。四個集合各 2 個點。",
+     "k": 8,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1076.8
+     }
+    },
+    {
+     "say": "邊 (2, 4)：parent[2] 是 1，parent[1] 是負的，root 是 1；4 的 root 是 3。不同，union。",
+     "read": "邊 (2, 4)：parent 2 是 1，parent 1 是負的，root 是 1；4 的 root 是 3。不同，union。",
+     "k": 9,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1095
+     }
+    },
+    {
+     "say": "讓 1 當 parent：parent[3] = 1，點數相加，parent[1] = −4，這個集合有 4 個點。",
+     "read": "讓 1 當 parent：parent 3 = 1，點數相加，parent 1 = 負4，這個集合有 4 個點。",
+     "k": 10,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1123.32
+     }
+    },
+    {
+     "say": "邊 (2, 5)：2 一步就到 root 1，5 自己是 root。",
+     "k": 11,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1153.2
+     }
+    },
+    {
+     "say": "Bari 說 find 只走一兩步，算常數時間。其實 find 的成本是樹高，不一定是常數。",
+     "k": 11,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1153.2
+     }
+    },
+    {
+     "say": "誰當 parent？比點數，4 比 2 大，所以 parent[5] = 1，parent[1] = −6。",
+     "read": "誰當 parent？比點數，4 比 2 大，所以 parent 5 = 1，parent 1 = 負6。",
+     "k": 12,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1188.54
+     }
+    },
+    {
+     "say": "影片說這叫 rank。嚴格說，存點數是 weight；CLRS 的 rank 是樹高的上界，兩個不一樣。",
+     "k": 12,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1188.54
+     }
+    },
+    {
+     "say": "邊 (1, 3)：find(1) 是 1，find(3) 也到 1，root 相同，cycle，不加。",
+     "k": 13,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1235.62
+     }
+    },
+    {
+     "say": "邊 (6, 8)：6 → 5 → 1，root 是 1；8 → 7，root 是 7，不同。",
+     "read": "邊 (6, 8)：6 到 5 到 1，root 是 1；8 到 7，root 是 7，不同。",
+     "k": 14,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1295.3
+     }
+    },
+    {
+     "say": "root 1 有 6 個點，root 7 有 2 個，所以 parent[7] = 1，parent[1] 變成 −8。",
+     "read": "root 1 有 6 個點，root 7 有 2 個，所以 parent 7 = 1，parent 1 變成 負8。",
+     "k": 15,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1320.18
+     }
+    },
+    {
+     "say": "影片這裡說「−8 比較大」，其實比的是合併前的 6 跟 2，合併後才變 −8。",
+     "read": "影片這裡說「負8 比較大」，其實比的是合併前的 6 跟 2，合併後才變 負8。",
+     "k": 15,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1320.18
+     }
+    },
+    {
+     "say": "最後 (5, 7)：兩邊 root 都是 1，cycle。一個整數陣列，就能做 find、union、抓 cycle。",
+     "k": 16,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1346.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Collapsing find：讓樹變矮",
+   "scene": "galgo-ds-collapse",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "回顧一下，剛剛 union 時點數多的當 parent，這叫 weighted union。",
+     "k": 1,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1380.92
+     }
+    },
+    {
+     "say": "還有另一招讓 find 更快：collapsing find，也叫 path compression，路徑壓縮。",
+     "k": 2,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1394.94
+     }
+    },
+    {
+     "say": "find(2)、find(3)：parent 就是 1，1 是 root，很快就找到。",
+     "k": 3,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1397.94
+     }
+    },
+    {
+     "say": "可是 find(4)：4 → 3 → 1，要一層一層往上爬。樹越高，find 越久。",
+     "read": "可是 find(4)：4 到 3 到 1，要一層一層往上爬。樹越高，find 越久。",
+     "k": 4,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1415.72
+     }
+    },
+    {
+     "say": "find(6) 也是：6 的 parent 是 5，5 的 parent 是 1，root 是 1。",
+     "k": 5,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1435.36
+     }
+    },
+    {
+     "say": "既然知道 6 的 root 是 1，就順手把 parent[6] 改成 1，直接掛到 root 底下。",
+     "read": "既然知道 6 的 root 是 1，就順手把 parent 6 改成 1，直接掛到 root 底下。",
+     "k": 6,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1452.36
+     }
+    },
+    {
+     "say": "下次再 find(6)，看一格就知道 root，一步到位。",
+     "k": 7,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1470.12
+     }
+    },
+    {
+     "say": "找完之後把路上的點直接接到 root，這就是 collapsing find。第一次多花一點，之後就快了。",
+     "k": 8,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1483.92
+     }
+    },
+    {
+     "say": "find(8) 也一樣：8 → 7 → 1，走兩步才到 root。",
+     "read": "find(8) 也一樣：8 到 7 到 1，走兩步才到 root。",
+     "k": 9,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1501.26
+     }
+    },
+    {
+     "say": "找到就把 parent[8] 改成 1。兩招一起用，一連串操作平均下來，每次幾乎是常數。",
+     "read": "找到就把 parent 8 改成 1。兩招一起用，一連串操作平均下來，每次幾乎是常數。",
+     "k": 10,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1514.72
+     }
+    },
+    {
+     "say": "補充正確的界：只用 weighted union，find 最差 O(log n)；再加 collapsing，攤銷接近 O(α(n))。",
+     "read": "補充正確的界：只用 weighted union，find 最差 大O log n；再加 collapsing，攤銷接近 大O alpha n。",
+     "k": 10
+    },
+    {
+     "say": "除了陣列，也可以用 linked list：每個 node 存值和一個指向 parent 的指標，Bari 留給大家自己研究。",
+     "k": 11,
+     "src": {
+      "v": "wU6udHRIkcc",
+      "t": 1530.48
+     }
+    }
+   ]
+  },
+  {
+   "title": "Kruskal 要花多少時間",
+   "scene": "galgo-kruskal-heap",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "好，回到 Kruskal：它要花多少時間？把 9 條邊的 cost 排成一排來看。",
+     "k": 1,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 811.8
+     }
+    },
+    {
+     "say": "每次都要從 E 條邊裡找最小的，一個一個掃，每次 Θ(E)。",
+     "read": "每次都要從 E 條邊裡找最小的，一個一個掃，每次 Theta E。",
+     "k": 2,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 817.8
+     }
+    },
+    {
+     "say": "要找幾次？spanning tree 要 V − 1 條邊，所以大約 V 次。",
+     "read": "要找幾次？spanning tree 要 V 減 1 條邊，所以大約 V 次。",
+     "k": 3,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 827.8
+     }
+    },
+    {
+     "say": "每次 Θ(E)、做 V 次，總共 Θ(V · E)。",
+     "read": "每次 Theta E、做 V 次，總共 Theta V 乘 E。",
+     "k": 4,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 847.8
+     }
+    },
+    {
+     "say": "頂點數、邊數都粗略當成 n，就是 Θ(n²)。",
+     "read": "頂點數、邊數都粗略當成 n，就是 Theta n平方。",
+     "k": 5,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 863.8
+     }
+    },
+    {
+     "say": "能更快嗎？問題出在每次都要重新找最小值。有沒有資料結構，隨時直接給你最小的？",
+     "k": 6,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 877.4
+     }
+    },
+    {
+     "say": "有，min Heap：每個 parent 都比 child 小，root 永遠是最小值。把所有邊的 cost 放進去。",
+     "k": 7,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 889.9
+     }
+    },
+    {
+     "say": "每做一次 delete，拿走 root 就是目前最小的邊，接著調整，下一個最小的又浮到 root。",
+     "k": 8,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 898.8
+     }
+    },
+    {
+     "say": "delete 一次只沿著 root 到底的一條路走，長度是樹高，O(log n)。",
+     "read": "delete 一次只沿著 root 到底的一條路走，長度是樹高，大O log n。",
+     "k": 9,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 909.8
+     }
+    },
+    {
+     "say": "做大約 n 次，就是 O(n log n)，比 n² 快很多。",
+     "read": "做大約 n 次，就是 大O n log n，比 n平方 快很多。",
+     "k": 10,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 920.8
+     }
+    },
+    {
+     "say": "課本的寫法是 O(E log E)，也等於 O(E log V)：被丟掉的邊也要刪，最多 E 次，再加上 union-find。",
+     "read": "課本的寫法是 大O E log E，也等於 大O E log V：被丟掉的邊也要刪，最多 E 次，再加上 union-find。",
+     "k": 10
+    }
+   ]
+  },
+  {
+   "title": "Prim：一棵樹慢慢往外長",
+   "scene": "gpeng20-prim",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "第二個演算法是 Prim。Kruskal 從「邊」出發，Prim 從「頂點」出發。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1106.06
+     }
+    },
+    {
+     "say": "Prim 讓一棵 tree 慢慢長大。來看它怎麼長。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1124.84
+     }
+    },
+    {
+     "say": "一開始先選一條最小的邊，這張圖最小的是 10。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1132.97
+     }
+    },
+    {
+     "say": "課本的 Prim 是從任一個頂點開始；從 0 開始，第一步剛好也是選 10，過程一樣。",
+     "k": 3
+    },
+    {
+     "say": "10 選進來，tree 有 0 和 5 兩個頂點。接下來從這兩個點往外看。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1150.96
+     }
+    },
+    {
+     "say": "0 往外的邊，除了已選的 10，是 (0, 1) = 28。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1166.92
+     }
+    },
+    {
+     "say": "5 往外只有一條，(5, 4) = 25。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1175.42
+     }
+    },
+    {
+     "say": "往外的邊裡最小是 25，4 加進來，tree 從 {0, 5} 長成 {0, 5, 4}。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1186.06
+     }
+    },
+    {
+     "say": "再往外看：0 還是只有 28，25 已經選走了。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1222.66
+     }
+    },
+    {
+     "say": "4 往外有 (4, 6) = 24 和 (4, 3) = 22，候選是 28、24、22。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1235.82
+     }
+    },
+    {
+     "say": "你想想看，12、14 明明更小，為什麼不選？因為它們現在沒有連到這棵樹。",
+     "k": 9
+    },
+    {
+     "say": "最小的是 22，3 加進來。這就叫往外擴張。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1249.76
+     }
+    },
+    {
+     "say": "Prim 跟 Kruskal 最大的不同：Prim 從頭到尾都是一棵 tree，像在擴張自己的領土。",
+     "k": 11,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1263.46
+     }
+    },
+    {
+     "say": "每步長出一個點：接著依序選 12 加入 2、16 加入 1、14 加入 6。",
+     "k": 12,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1275.62
+     }
+    },
+    {
+     "say": "所有頂點都進來就結束。cost = 10 + 25 + 22 + 12 + 16 + 14 = 99，跟 Kruskal 一樣。",
+     "k": 13,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1293.42
+     }
+    }
+   ]
+  },
+  {
+   "title": "Prim 用 min priority queue",
+   "scene": "gpeng20-prim-pq",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "Prim 很好懂，但實作要想一下：那些往外的邊，要用什麼資料結構放？",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1313.27
+     }
+    },
+    {
+     "say": "答案是 priority queue，優先佇列，可以很快取出最小或最大的元素。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1338.03
+     }
+    },
+    {
+     "say": "0 和 5 進了 tree，它們往外的邊 28、25 都放進 priority queue。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1346.33
+     }
+    },
+    {
+     "say": "而且是 min priority queue，最小的在最前面，通常用 Heap 來實作。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1355.67
+     }
+    },
+    {
+     "say": "每次把所有邊重新排序不行嗎？可以，但成本很高；priority queue 只要取最小就夠了。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1362.31
+     }
+    },
+    {
+     "say": "延伸一次：取出最小的 25，4 加進來；4 的新邊 22、24 插進 queue。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1388.97
+     }
+    },
+    {
+     "say": "再取出 22，3 加進來；3 的新邊 12、18 插進去。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1396.17
+     }
+    },
+    {
+     "say": "依此類推，12、16、14 被取出，2、1、6 也進來。但取出來之後還要檢查一件事。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1410.02
+     }
+    },
+    {
+     "say": "會不會構成 loop？下一個最小是 18 (3,6)，可是 3 和 6 都已經在 tree 裡，丟掉。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1418.34
+     }
+    },
+    {
+     "say": "怎麼 detect loop？老師留給大家想。提示：記住每個點在不在 tree 裡，兩端都在就是 loop。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1426.98
+     }
+    },
+    {
+     "say": "用 binary Heap 實作，Prim 的時間是 O(E log V)。",
+     "read": "用 binary Heap 實作，Prim 的時間是 大O E log V。",
+     "k": 10
+    }
+   ]
+  },
+  {
+   "title": "Prim 和 Kruskal 差在哪",
+   "scene": "galgo-8v-prim",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "用那張 8 個頂點的圖，再比一次 Prim 跟 Kruskal。",
+     "k": 1,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 353.8
+     }
+    },
+    {
+     "say": "Kruskal 一開始擺好 n 個頂點；Prim 只從一個頂點開始，這裡從 1 開始。",
+     "k": 2,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 364.86
+     }
+    },
+    {
+     "say": "Prim 的想法像種樹：從一個點慢慢長，最後長成包含全部頂點的樹。",
+     "k": 3,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 379.26
+     }
+    },
+    {
+     "say": "每步加一個新頂點和一條邊。1 連出去有 8 和 4，選 4，把 5 加進來。",
+     "k": 4,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 396.73
+     }
+    },
+    {
+     "say": "現在跟樹相連的有 8 和 14，選 8，把 2 加進來。",
+     "k": 5,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 413.62
+     }
+    },
+    {
+     "say": "差別就在這：Kruskal 每次從全部的邊挑最小；Prim 只看跟這棵樹相連的邊。",
+     "k": 6,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 427
+     }
+    },
+    {
+     "say": "繼續，相連的有 7、12、14，選 7，3 加進來。",
+     "k": 7,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 443.22
+     }
+    },
+    {
+     "say": "相連的有 9、10、12、14，選 9，4 加進來。",
+     "k": 8,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 462.1
+     }
+    },
+    {
+     "say": "一直重複，直到 8 個頂點都進到樹裡。過程中 Prim 永遠是一棵樹，Kruskal 可能是好幾塊。",
+     "k": 9,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 470.56
+     }
+    }
+   ]
+  },
+  {
+   "title": "不連通的圖：Prim 只長一塊",
+   "scene": "galgo-prim-disconn",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "那如果圖長這樣：7 個頂點，但分成互不相連的兩塊呢？",
+     "k": 1,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 641.8
+     }
+    },
+    {
+     "say": "Prim 能找出它的 MST 嗎？不行，而且任何演算法都不行。",
+     "k": 2,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 662.8
+     }
+    },
+    {
+     "say": "因為 spanning tree 一定要把所有頂點連起來，不連通的圖根本沒有 spanning tree。",
+     "k": 3,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 677.1
+     }
+    },
+    {
+     "say": "硬是從 1 開始跑 Prim，它只會沿著相連的邊長，最後只得到 1 那一塊的樹。",
+     "k": 4,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 680.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "不連通的圖：Kruskal 得到森林",
+   "scene": "galgo-kruskal-forest",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "那 Kruskal 呢？看這張圖：左邊一塊 4 個頂點，右邊一塊 5 個。",
+     "k": 1,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 931.7
+     }
+    },
+    {
+     "say": "不連通就沒有 spanning tree，這點剛剛講過。",
+     "k": 2,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 942.8
+     }
+    },
+    {
+     "say": "硬跑 Kruskal，9 個頂點，它會想選 9 − 1 = 8 條邊。",
+     "read": "硬跑 Kruskal，9 個頂點，它會想選 9 減 1 = 8 條邊。",
+     "k": 3,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 951.8
+     }
+    },
+    {
+     "say": "它從整張圖挑最小的，兩塊的邊會輪流被選到。選了 7 條之後，剩下的都會成圈。",
+     "k": 4,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 968.1
+     }
+    },
+    {
+     "say": "結果是每一塊各自的 spanning tree，合起來叫 spanning forest，森林，邊數是 9 − 2 = 7。",
+     "read": "結果是每一塊各自的 spanning tree，合起來叫 spanning forest，森林，邊數是 9 減 2 = 7。",
+     "k": 5,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 987.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Sollin：每個頂點一次選最小邊",
+   "scene": "gpeng20-sollin",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "第三個是 Sollin。先對照前兩個：Kruskal 從邊出發，每次選一條最小的。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1455.94
+     }
+    },
+    {
+     "say": "Prim 從頂點出發，一棵樹慢慢往外長。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1470.36
+     }
+    },
+    {
+     "say": "Sollin 的想法是：何必一次只選一條邊？能不能一次選好幾條？",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1482.68
+     }
+    },
+    {
+     "say": "做法：每個頂點各自看自己周圍的邊。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1520.58
+     }
+    },
+    {
+     "say": "先看頂點 0，周圍有 10 和 28。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1529.77
+     }
+    },
+    {
+     "say": "選最小的 10，0 和 5 連起來。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1542.12
+     }
+    },
+    {
+     "say": "頂點 1 周圍有 14、16、28，選 14，1 和 6 連起來。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1560.24
+     }
+    },
+    {
+     "say": "頂點 2 周圍有 16、12，選 12，2 和 3 連起來。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1569.74
+     }
+    },
+    {
+     "say": "頂點 3 周圍是 12、18、22，最小也是 12，剛剛選過了。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1599.18
+     }
+    },
+    {
+     "say": "頂點 4 周圍有 22、24、25，選 22，4 和 3 連起來。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1614.4
+     }
+    },
+    {
+     "say": "5 最小的是 10，6 最小的是 14，都已經選過了。",
+     "k": 11,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1629.88
+     }
+    },
+    {
+     "say": "所以 Sollin 有點像 Prim 和 Kruskal 的合體：從頂點出發、挑最小邊，一次挑很多條。",
+     "k": 12,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1631.08
+     }
+    },
+    {
+     "say": "第一回合結束，有三棵樹：{0,5}、{1,6}、{2,3,4}。老師口誤說成 1 和 5，正確是 0 和 5。",
+     "k": 13,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1677.26
+     }
+    },
+    {
+     "say": "第二回合就像 Prim：把每棵樹當成一個整體，看它往外最小的邊。",
+     "k": 14,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1697.02
+     }
+    },
+    {
+     "say": "{1,6} 往外最小是 16 (1,2)，{0,5} 往外最小是 25 (5,4)。選了這兩條，全部連通。",
+     "k": 15,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1722.22
+     }
+    },
+    {
+     "say": "cost = 10 + 14 + 12 + 22 + 16 + 25 = 99，三個演算法都一樣。",
+     "k": 16,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1737.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "反過來丟邊：edge rejection",
+   "scene": "galgo-8v-reject",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "剛剛都是選邊。另一類 greedy 反過來：edge rejection，一條一條丟，丟到剩 n − 1 條。",
+     "read": "剛剛都是選邊。另一類 greedy 反過來：edge rejection，一條一條丟，丟到剩 n 減 1 條。",
+     "k": 1,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 483.5
+     }
+    },
+    {
+     "say": "方法一：從整張連通圖開始，10 條邊全都在。",
+     "k": 2,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 526.8
+     }
+    },
+    {
+     "say": "找一個 cycle，像 1–2–6–5，邊是 8、12、14、4，把最貴的 14 刪掉，圈就斷了。",
+     "read": "找一個 cycle，像 1到2到6到5，邊是 8、12、14、4，把最貴的 14 刪掉，圈就斷了。",
+     "k": 3,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 540.9
+     }
+    },
+    {
+     "say": "再找一個 cycle 2–3–7–6，邊是 7、10、13、12，刪掉最貴的 13。",
+     "read": "再找一個 cycle 2到3到7到6，邊是 7、10、13、12，刪掉最貴的 13。",
+     "k": 4,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 558.1
+     }
+    },
+    {
+     "say": "還有 3–4–8–7，刪掉 11。現在沒有 cycle 了，剩下 7 條就是 spanning tree。",
+     "read": "還有 3到4到8到7，刪掉 11。現在沒有 cycle 了，剩下 7 條就是 spanning tree。",
+     "k": 5,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 573.8
+     }
+    },
+    {
+     "say": "方法二：把邊由大到小排，descending，從最貴的開始考慮要不要刪。",
+     "k": 6,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 596.36
+     }
+    },
+    {
+     "say": "條件是刪了以後圖還連通才刪。14、13、11 可以刪；12、10、9 一刪就有點被孤立，留下。",
+     "k": 7,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 604.5
+     }
+    },
+    {
+     "say": "兩種丟法留下的 7 條邊一樣，就是同一棵 MST，cost 56。跟剛剛 Kruskal 的答案對得上。",
+     "k": 8,
+     "src": {
+      "v": "JR2fneVevbg",
+      "t": 618.11
+     }
+    },
+    {
+     "say": "影片說丟邊也是「用 Kruskal 和 Prim」，其實這是另外兩種方法，只是結果一樣是 MST。",
+     "k": 8
+    }
+   ]
+  },
+  {
+   "title": "三個演算法比一比",
+   "scene": "gpeng20-mst-compare",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "比一比：這個例子裡 Kruskal、Prim、Sollin 找到同一棵樹，只是選邊順序不同，cost 都是 99。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1747.4
+     }
+    },
+    {
+     "say": "那考試時三個結果長得不一樣，是不是你錯了？不一定。為什麼？",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1763.46
+     }
+    },
+    {
+     "say": "因為圖上可能有好幾條 weight 相同的邊，像這個三角形三條邊都是 10。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1782.15
+     }
+    },
+    {
+     "say": "選的邊不一樣，MST 就長得不一樣：三種選法都是兩條邊，cost 都是 20。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1789.18
+     }
+    },
+    {
+     "say": "彭老師說它們是 greedy，所以沒辦法保證 optimal。這裡要更正。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1800.46
+     }
+    },
+    {
+     "say": "對 MST 來說，這三個 greedy 演算法都保證 cost 最小；同 weight 時只是樹可能不唯一。",
+     "k": 5
+    },
+    {
+     "say": "總結：Kruskal 從邊的角度，全圖最小的先選，順序是 10、12、14、16、22、25。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1815.18
+     }
+    },
+    {
+     "say": "Prim 從頂點的角度擴張領土：10、25、22、12、16、14。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1821.36
+     }
+    },
+    {
+     "say": "Sollin 結合兩者：每個頂點選鄰近最小的邊，一次選出 10、14、12、22。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1826.6
+     }
+    },
+    {
+     "say": "然後再像 Prim 一樣，看每棵樹往外最小的邊 16、25，把樹 merge 起來。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1845.16
+     }
+    }
+   ]
+  },
+  {
+   "title": "MST 的 cost 唯一，樹不一定",
+   "scene": "galgo-two-msts",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "Bari 也用一個例子講這件事：5 個頂點的圖，用 Kruskal 找 MST，要 4 條邊。",
+     "k": 1,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1095.8
+     }
+    },
+    {
+     "say": "先選最小的 2，A–B。",
+     "read": "先選最小的 2，A到B。",
+     "k": 2,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1105.8
+     }
+    },
+    {
+     "say": "接著有兩條 3，選哪條先都可以，先選 B–C。",
+     "read": "接著有兩條 3，選哪條先都可以，先選 B到C。",
+     "k": 3,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1110.8
+     }
+    },
+    {
+     "say": "另一條 3，A–D，也不會成圈，也選。",
+     "read": "另一條 3，A到D，也不會成圈，也選。",
+     "k": 4,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1116.8
+     }
+    },
+    {
+     "say": "然後有兩條 4，任選一條，選 D–E。",
+     "read": "然後有兩條 4，任選一條，選 D到E。",
+     "k": 5,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1120.8
+     }
+    },
+    {
+     "say": "5 個頂點 4 條邊，得到一棵 spanning tree。",
+     "k": 6,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1130.8
+     }
+    },
+    {
+     "say": "cost = 2 + 3 + 3 + 4 = 12。",
+     "k": 7,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1141.8
+     }
+    },
+    {
+     "say": "Bari 先說：最佳答案只有一個，所以 MST 只有一棵。這句他等一下會自己更正。",
+     "k": 8,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1153.8
+     }
+    },
+    {
+     "say": "如果剛剛不選 D–E，改選另一條 4，C–E，也不成圈，也是一棵。",
+     "read": "如果剛剛不選 D到E，改選另一條 4，C到E，也不成圈，也是一棵。",
+     "k": 9,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1168.8
+     }
+    },
+    {
+     "say": "cost 還是 12。最小的「值」只有一個，但達到這個值的邊的組合可以不同。",
+     "k": 10,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1183.8
+     }
+    },
+    {
+     "say": "所以這張圖有 2 棵 MST。只有所有邊權重都不一樣時，MST 才保證唯一。",
+     "k": 11,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1199.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "考題：反推缺少的權重",
+   "scene": "galgo-missing-w",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "來一道常見考題：圖上有兩條邊沒標權重，剩下有權重的 5 條剛好就是 MST。",
+     "k": 1,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1001.6
+     }
+    },
+    {
+     "say": "問：這兩條邊的權重最小可能是多少？大可以無限大，問的是至少多少。",
+     "k": 2,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1022.8
+     }
+    },
+    {
+     "say": "用 Kruskal 的順序想：最小的 2 先選，接著選 3。",
+     "k": 3,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1031.8
+     }
+    },
+    {
+     "say": "第一條沒被選，是因為它跟 2、3 那兩條會形成 cycle。",
+     "k": 4,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1040.8
+     }
+    },
+    {
+     "say": "代表它是在 2、3 都選完才輪到，所以比 3 大。權重是整數的話，Bari 的答案是 4。",
+     "k": 5,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1050.8
+     }
+    },
+    {
+     "say": "反過來想：如果它比 3 小，例如 1，它會更早被考慮，那時不成圈，就會被選進去。",
+     "k": 6,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1060.8
+     }
+    },
+    {
+     "say": "接著 4、4、5 依序選進來。",
+     "k": 7,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1069.8
+     }
+    },
+    {
+     "say": "第二條一直沒被選，而且會跟 4、5 成圈，所以要比 5 大，最小是 6。",
+     "k": 8,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1077.8
+     }
+    },
+    {
+     "say": "嚴格說，等於 3 或等於 5 時，看 tie 怎麼排，也可能得到同一棵。懂 Kruskal 的順序就能反推。",
+     "k": 9,
+     "src": {
+      "v": "4ZlRH0eK-qQ",
+      "t": 1086.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Articulation point：拿掉就斷線的點",
+   "scene": "gpeng20-articulation",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "MST 講完，彭老師接著講 biconnected component，雙連通元件。先從 connected 說起。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1867.44
+     }
+    },
+    {
+     "say": "connected 的意思是我連得到你就好。從 0 一路走得到 9，整張圖就是 connected。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1881.96
+     }
+    },
+    {
+     "say": "biconnected 是更強的連通，連結更牢靠。多強？等一下就知道。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1888
+     }
+    },
+    {
+     "say": "在這之前，要先定義 articulation point，關節點。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1916.28
+     }
+    },
+    {
+     "say": "定義：把這個頂點拿掉，圖會變成至少兩個彼此獨立的 connected component。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1926.66
+     }
+    },
+    {
+     "say": "紅色的就是 articulation point。比如把 1 拿掉，連在它身上的邊也一起消失。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1953.86
+     }
+    },
+    {
+     "say": "結果 0 自己一塊，剩下的 2、3、5 那些是另一塊，圖斷成兩塊了。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1962.28
+     }
+    },
+    {
+     "say": "為了表示方便，可以把 1 想成複製兩份：{0,1} 一塊，1 跟右邊那一大塊又是一塊。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1979.48
+     }
+    },
+    {
+     "say": "3 也一樣，拿掉 3，左邊跟右邊就連不起來了。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 1998.32
+     }
+    },
+    {
+     "say": "所以 1、3、5、7 都是 articulation point，少了它，圖就斷了。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2011.04
+     }
+    },
+    {
+     "say": "想像這是宿舍網路，每個點是一台 router 或 switch。3 這台壞了，封包就過不去。",
+     "k": 11,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2032.18
+     }
+    },
+    {
+     "say": "而在一個 biconnected component 裡，兩兩頂點都能互相連，例如 5、6、7 這一塊。",
+     "k": 12,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2055.26
+     }
+    }
+   ]
+  },
+  {
+   "title": "Biconnected graph 與 component",
+   "scene": "gpeng20-bicomponents",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "一個 connected graph 裡沒有任何 articulation point，就叫 biconnected graph。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2089.02
+     }
+    },
+    {
+     "say": "注意，biconnected 是無向圖的概念；有向圖裡彼此互相到得了，叫 strongly connected。",
+     "k": 1
+    },
+    {
+     "say": "maximal biconnected component：不被更大的同類子圖包住。像 {5,6} 被 {5,6,7} 包住，就不算。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2101.9
+     }
+    },
+    {
+     "say": "這裡的大是看大小，跟邊上的 cost、weight 沒有關係。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2122.82
+     }
+    },
+    {
+     "say": "書上的性質：兩個 biconnected component 最多只共用一個頂點，例如 {0,1} 和 {1,2,3,4}。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2186.3
+     }
+    },
+    {
+     "say": "它們共用的 1，就是 articulation point。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2209.54
+     }
+    },
+    {
+     "say": "{1,2,3,4} 和 {3,5} 共用 3，3 也是 articulation point。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2231.78
+     }
+    },
+    {
+     "say": "整張圖被拆成 6 個 biconnected component，彼此共用的點就是 1、3、5、7。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2276.04
+     }
+    },
+    {
+     "say": "另一個角度：biconnected component 其實是對 edge 做 partition，每條邊分到某一塊。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2321.85
+     }
+    },
+    {
+     "say": "沒有一條邊會同時在兩塊裡。頂點可以共用，那就是 articulation point；邊不行。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2328.77
+     }
+    }
+   ]
+  },
+  {
+   "title": "用 DFS 編號：dfn 與 back edge",
+   "scene": "gpeng20-dfn-tree",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "人眼一看就知道誰是 articulation point，但要讓電腦判斷，就要靠 DFS spanning tree。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2353.09
+     }
+    },
+    {
+     "say": "彭老師說，articulation point 一決定，biconnected component 就簡單了，前面的定義都是在鋪路。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3143.83
+     }
+    },
+    {
+     "say": "過程中會遇到一種特別的邊，叫 back edge，看到例子就懂。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2376.73
+     }
+    },
+    {
+     "say": "步驟一：對圖做 DFS，建出 DFS spanning tree。這裡從 3 出發，3 第一個被拜訪，標 1。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2415.4
+     }
+    },
+    {
+     "say": "3 接下來可以走 4，也可以走 5。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2470.7
+     }
+    },
+    {
+     "say": "adjacency list 裡 4 排在 5 前面，所以先走 4，4 是第 2 個。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2477.75
+     }
+    },
+    {
+     "say": "4 跟 3、2 有連線，3 去過了，就走到 2。照這樣一路走完，每個點都編上號碼。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2487.07
+     }
+    },
+    {
+     "say": "這個號碼就是 DFS 拜訪的順序，叫 dfn，DFS number，越早拜訪越小。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2493.67
+     }
+    },
+    {
+     "say": "步驟二：把 dfn 是 1 的 3，像提布偶一樣往上拉，整張圖垂下來，變成一棵樹。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2503.98
+     }
+    },
+    {
+     "say": "虛線是什麼？它在原圖真的存在，只是 DFS 沒走它。這裡有 (1,3) 和 (7,5) 兩條。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2533.46
+     }
+    },
+    {
+     "say": "老師口頭說成 6 和 7；照這棵樹，6–7 是樹邊，虛線應該是 7 和 5。",
+     "read": "老師口頭說成 6 和 7；照這棵樹，6到7 是樹邊，虛線應該是 7 和 5。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2533.46
+     }
+    },
+    {
+     "say": "把虛線加回樹上，就會形成 cycle。像 3 → 4 → 2 → 1，再沿虛線回到 3。",
+     "read": "把虛線加回樹上，就會形成 cycle。像 3 到 4 到 2 到 1，再沿虛線回到 3。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2545.56
+     }
+    },
+    {
+     "say": "這種虛線叫 back edge：從某個點往上跳回它的祖先。",
+     "k": 11,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2592.07
+     }
+    },
+    {
+     "say": "這棵樹的 root 是 3，它有兩個 child：4 和 5。這點等一下判斷會用到。",
+     "k": 12,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2641.77
+     }
+    }
+   ]
+  },
+  {
+   "title": "low(w)：往下走，再往上跳一次",
+   "scene": "gpeng20-low-def",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "步驟三要替每個頂點 w 算一個值，叫 low(w)。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2663.17
+     }
+    },
+    {
+     "say": "low(w) 的意思：從 w 出發，在樹裡往它的子孫走下去。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2675.18
+     }
+    },
+    {
+     "say": "途中最多可以用一條 back edge 往上跳，能到的點裡最小的 dfn，就是 low(w)。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2684.07
+     }
+    },
+    {
+     "say": "左邊這張表列出每個頂點的 dfn，就是 DFS 的拜訪順序。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2749.35
+     }
+    },
+    {
+     "say": "例如 3 第一個被拜訪，dfn(3) = 1；4 第二個，dfn(4) = 2。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2768.48
+     }
+    },
+    {
+     "say": "先算最簡單的：0 的 low 是多少？",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2785.58
+     }
+    },
+    {
+     "say": "0 下面沒有 child，也沒有 back edge，哪裡都去不了。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2799.32
+     }
+    },
+    {
+     "say": "只能到自己，所以 low(0) = dfn(0) = 5。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2829.63
+     }
+    },
+    {
+     "say": "再看 1：它下面只有 0，dfn 是 5。只看這個，最小好像是自己的 4。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2849.73
+     }
+    },
+    {
+     "say": "但 1 有一條 back edge (1,3)，可以「直達天聽」，一口氣跳到 3。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2861.33
+     }
+    },
+    {
+     "say": "dfn(3) = 1，所以 low(1) = 1。",
+     "k": 11,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2883.08
+     }
+    },
+    {
+     "say": "再看 2：它的 child 是 1。",
+     "k": 12,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2895.47
+     }
+    },
+    {
+     "say": "2 先往下走到 1，再借 1 的 back edge 跳到 3，所以 low(2) 也是 1。",
+     "k": 13,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2911.38
+     }
+    },
+    {
+     "say": "寫成公式，low(w) 從三個來源取最小。第一個：w 自己的 dfn(w)。",
+     "k": 14,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2980.79
+     }
+    },
+    {
+     "say": "第二個：w 每個 child x 的 low(x)。child 跳得到哪裡，w 往下走也就跟著到。",
+     "k": 15,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 2996.45
+     }
+    },
+    {
+     "say": "第三個：如果 (w, x) 是 back edge，就看 dfn(x)，也就是 w 直接往上跳到的地方。",
+     "k": 16,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3008.85
+     }
+    },
+    {
+     "say": "三個不一定都有，有的才拿來比。沒有 child 或 back edge 的點，就少那一項。",
+     "k": 17,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3061.17
+     }
+    }
+   ]
+  },
+  {
+   "title": "low 要由下往上算",
+   "scene": "gpeng20-low-567",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "多練幾個。vertex 5 的 low 是多少？答案是 6。表裡最下面那幾個已經先填好了。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3508.68
+     }
+    },
+    {
+     "say": "5 自己的 dfn 是 6，它的 child 是 6 號頂點。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3534.64
+     }
+    },
+    {
+     "say": "6 號頂點的 dfn 是 7。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3541.86
+     }
+    },
+    {
+     "say": "從 5 往下走，只會遇到號碼更大的點，越下面號碼越大，不會讓它變小。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3562.16
+     }
+    },
+    {
+     "say": "所以 low(5) = 6。嚴格說公式看的是 child 的 low，low(6) 也是 6，答案一樣。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3569.93
+     }
+    },
+    {
+     "say": "再看 7，low(7) 也是 6，它有三個來源。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3580.94
+     }
+    },
+    {
+     "say": "7 自己 dfn 是 8，它有兩個 child：9 和 8。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3612.14
+     }
+    },
+    {
+     "say": "child 的 low：low(9) = 9，low(8) = 10。老師口誤說 8 的 low 是 9，不影響答案。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3622.31
+     }
+    },
+    {
+     "say": "7 還有一條 back edge 跳到 5，dfn(5) = 6。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3631.22
+     }
+    },
+    {
+     "say": "8、9、10、6 裡最小是 6，所以 low(7) = 6。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3639.24
+     }
+    },
+    {
+     "say": "為什麼故意先算 7、不先算 6？因為算 6 要用到 child 7 的 low。",
+     "k": 11,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3665.64
+     }
+    },
+    {
+     "say": "現在算 6：自己 dfn 是 7，child 是 7。",
+     "k": 12,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3698.47
+     }
+    },
+    {
+     "say": "查表 low(7) = 6，所以 low(6) = min(7, 6) = 6。",
+     "k": 13,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3715.65
+     }
+    },
+    {
+     "say": "順序是：先算最下面的 0、8、9，再 1、7，再 2、6，一層一層往上。",
+     "k": 14,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3742.23
+     }
+    },
+    {
+     "say": "這叫 bottom-up，不能照編號 0、1、2 一路算；其實就是 DFS 的後序。",
+     "k": 14,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3858.89
+     }
+    }
+   ]
+  },
+  {
+   "title": "判斷 articulation point",
+   "scene": "gpeng20-ap-test",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "步驟四：判斷 articulation point，有兩個條件。條件一，u 是 root。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3880.02
+     }
+    },
+    {
+     "say": "老師說 root 一定是 articulation point。更正：root 要在 DFS 樹裡有兩個以上 child 才算。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3084.39
+     }
+    },
+    {
+     "say": "條件二，u 不是 root。這時看 u 的 child，叫它 w，這裡用 u = 5、w = 6 當例子。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3897.36
+     }
+    },
+    {
+     "say": "如果 low(w) ≥ dfn(u)，u 就是 articulation point。這裡 low(6) = 6 ≥ dfn(5) = 6。",
+     "read": "如果 low(w) 大於等於 dfn(u)，u 就是 articulation point。這裡 low(6) = 6 大於等於 dfn(5) = 6。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3905.74
+     }
+    },
+    {
+     "say": "用圖來理解：藍色的是 w 和它底下所有的點。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3928.9
+     }
+    },
+    {
+     "say": "這些點不管怎麼跑，就算用 back edge 往上跳，最高也只到 u，跨不過 u。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3939.27
+     }
+    },
+    {
+     "say": "要往上一定得經過 u。所以拿掉 u，下面這塊就斷開了。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3950.6
+     }
+    },
+    {
+     "say": "只要有一個 child 讓這個條件成立，u 就是 articulation point。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 3993.1
+     }
+    },
+    {
+     "say": "再看 1，它也是紅色的。為什麼？",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4005.29
+     }
+    },
+    {
+     "say": "1 的 dfn 是 4。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4016.29
+     }
+    },
+    {
+     "say": "1 的 child 是 0，low(0) = 5 ≥ 4。0 要往上一定要經過 1，所以 1 是。",
+     "read": "1 的 child 是 0，low(0) = 5 大於等於 4。0 要往上一定要經過 1，所以 1 是。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4026.76
+     }
+    },
+    {
+     "say": "7 也一樣：low(9) = 9 ≥ dfn(7) = 8。3 是 root，有兩個 child。答案是 1、3、5、7。",
+     "read": "7 也一樣：low(9) = 9 大於等於 dfn(7) = 8。3 是 root，有兩個 child。答案是 1、3、5、7。",
+     "k": 11,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4046.39
+     }
+    }
+   ]
+  },
+  {
+   "title": "四個步驟串起來",
+   "scene": "gpeng20-ap-steps",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "總結一下，找 articulation point 一共四步。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4074.61
+     }
+    },
+    {
+     "say": "步驟一：做 DFS，決定每個頂點的 dfn。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4079.41
+     }
+    },
+    {
+     "say": "步驟二：把建出來的樹拉起來。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4093.79
+     }
+    },
+    {
+     "say": "把 back edge 畫上去：原圖有、但樹裡不見的那些邊。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4100.35
+     }
+    },
+    {
+     "say": "步驟三：算每個頂點的 low。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4121.42
+     }
+    },
+    {
+     "say": "自己的 dfn、child 的 low、back edge 那端的 dfn，三個取最小。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4137.61
+     }
+    },
+    {
+     "say": "記得由下往上：先 0、8、9，再 1、7，一路往上。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4153.31
+     }
+    },
+    {
+     "say": "步驟四：判斷，有兩種。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4172.43
+     }
+    },
+    {
+     "say": "第一種：root 有兩個以上 child，就是，例如 3。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4186.43
+     }
+    },
+    {
+     "say": "第二種：有 child w 讓 low(w) ≥ dfn(u)，所以 1、5、7 也是。",
+     "read": "第二種：有 child w 讓 low(w) 大於等於 dfn(u)，所以 1、5、7 也是。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4193.95
+     }
+    },
+    {
+     "say": "反過來，底下的點能跳過 u，u 就不是。例如 2：low(1) = 1 < dfn(2) = 3。",
+     "k": 11,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4216.89
+     }
+    }
+   ]
+  },
+  {
+   "title": "下一步：找出 biconnected component",
+   "scene": "gpeng20-open-q",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "articulation point 1、3、5、7 找到了。那 biconnected component 怎麼決定？",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4246.33
+     }
+    },
+    {
+     "say": "老師留給大家看書。課本的做法：DFS 時把邊推進 stack。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4272.55
+     }
+    },
+    {
+     "say": "遇到 low(w) ≥ dfn(u)，就把邊 pop 到 (u, w) 為止，pop 出來的邊就是一個 biconnected component。",
+     "read": "遇到 low(w) 大於等於 dfn(u)，就把邊 pop 到 (u, w) 為止，pop 出來的邊就是一個 biconnected component。",
+     "k": 2
+    },
+    {
+     "say": "第二個問題：這麼多 component 裡，哪些是 maximal？",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4283.22
+     }
+    },
+    {
+     "say": "這張圖一共 6 個 biconnected component，哪些是 maximal，就用定義判斷。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4297.23
+     }
+    },
+    {
+     "say": "這兩個 open question，怎麼找 component、怎麼找 maximal 的，都要能寫成程式。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4337.44
+     }
+    }
+   ]
+  },
+  {
+   "title": "單一起點的最短路徑",
+   "scene": "gpeng20-sssp-problem",
+   "steps": 18,
+   "lines": [
+    {
+     "say": "好，換一個大題目：最短路徑。給你一個 network，邊上的 cost 可以想成公里數。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4398.52
+     }
+    },
+    {
+     "say": "再給一個出發點，start point，這裡是 0。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4406.64
+     }
+    },
+    {
+     "say": "要找出從 0 到每個 destination 的最短路徑，最少要走多少才到。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4413.8
+     }
+    },
+    {
+     "say": "例如 0 到 3，最短是直接走過去，cost 10。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4436.94
+     }
+    },
+    {
+     "say": "也可以繞路，0 → 1 → 3，但 cost 是 50 + 15 = 65，高很多。",
+     "read": "也可以繞路，0 到 1 到 3，但 cost 是 50 + 15 = 65，高很多。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4446.62
+     }
+    },
+    {
+     "say": "一條 path 的 cost，就是它經過的邊的 cost 加起來。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4457.27
+     }
+    },
+    {
+     "say": "再看 0 到 4，也有好幾種走法。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4465.8
+     }
+    },
+    {
+     "say": "最短是 0 → 3 → 4，cost 10 + 15 = 25。",
+     "read": "最短是 0 到 3 到 4，cost 10 + 15 = 25。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4476.07
+     }
+    },
+    {
+     "say": "解這題有個條件：沒有負的邊，cost 都是 non-negative，大於等於 0。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4521.14
+     }
+    },
+    {
+     "say": "這時就能用很有名的 Dijkstra 演算法。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4527.84
+     }
+    },
+    {
+     "say": "它的想法很簡單：從起點先看鄰居。0 的鄰居是 3 的 10、2 的 45、1 的 50，最近的是 3。",
+     "k": 11,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4546.6
+     }
+    },
+    {
+     "say": "一旦確定某個點的最短路徑，就從這些「已經知道答案」的點再往外擴充。",
+     "k": 12,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4557.38
+     }
+    },
+    {
+     "say": "所以它有點像 Prim：從一個點開始，看鄰近的點，慢慢往外長。",
+     "k": 13,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4564.97
+     }
+    },
+    {
+     "say": "彭老師舉了個例子：從新竹出發要到台北，走高速公路。",
+     "k": 14,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4586.66
+     }
+    },
+    {
+     "say": "最近的交流道可能是竹北，也可能是頭份。",
+     "k": 15,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4594.86
+     }
+    },
+    {
+     "say": "老師說往頭份走不對，因為偏離台北。但 Dijkstra 其實不看方向，頭份比較近就先處理頭份。",
+     "k": 16,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4609.78
+     }
+    },
+    {
+     "say": "會看目標方向的是 A* 這類 heuristic search，Dijkstra 只看目前已知距離最小的點。",
+     "k": 16
+    },
+    {
+     "say": "然後從竹北再往前，到楊梅，一站一站往外推。",
+     "k": 17,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4620.75
+     }
+    },
+    {
+     "say": "Dijkstra 的精神：每次把確定是最短的點收進來，再透過它往外延伸，直到所有點都拜訪過。",
+     "k": 18,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4632.26
+     }
+    }
+   ]
+  },
+  {
+   "title": "繞路反而比較近",
+   "scene": "dijk-problem",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "再用 Lalitha Natraj 的小例子，把 Dijkstra 一步一步看清楚。",
+     "k": 1,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 1.3
+     }
+    },
+    {
+     "say": "圖有頂點 s、a、b、c，邊上的數字是權重，這是加權圖。出發點，source，是 s。",
+     "k": 2,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 17.3
+     }
+    },
+    {
+     "say": "輸出是 s 到其他每個頂點的最短路徑。最短是指權重加起來最小，不是邊最少。",
+     "k": 3,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 36
+     }
+    },
+    {
+     "say": "比如從 s 走到 b，不只一條路。",
+     "k": 4,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 112.8
+     }
+    },
+    {
+     "say": "第一條，直接走 s–b，權重 3。",
+     "read": "第一條，直接走 s到b，權重 3。",
+     "k": 5,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 119.8
+     }
+    },
+    {
+     "say": "第二條，先到 a 再到 b，1 + 1 = 2，多繞一個點反而比較小。",
+     "k": 6,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 126.6
+     }
+    },
+    {
+     "say": "2 < 3，所以 s 到 b 最短是經過 a 那條。邊數少不代表路短。",
+     "k": 7,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 132.8
+     }
+    },
+    {
+     "say": "a、b、c 每個都要這樣找，一條一條試太累，來看 Dijkstra 怎麼一次算出來。",
+     "k": 8,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 140.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Dijkstra 的準備：兩個集合與 D、P",
+   "scene": "dijk-init",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "Dijkstra 第一個想法：把頂點分成兩個集合。第一個叫 explored，答案已經確定的。",
+     "k": 1,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 157.8
+     }
+    },
+    {
+     "say": "另一個叫 unexplored，還沒確定的。頂點會一個一個從 unexplored 搬到 explored。",
+     "k": 2,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 162.8
+     }
+    },
+    {
+     "say": "一開始什麼都還沒探索，s、a、b、c 全部在 unexplored。",
+     "k": 3,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 184.9
+     }
+    },
+    {
+     "say": "每個頂點旁邊寫兩個記號：D 和 P。",
+     "k": 4,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 194.8
+     }
+    },
+    {
+     "say": "D 是 distance：從 s 到這個點，目前找到的最短距離。",
+     "k": 5,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 220.8
+     }
+    },
+    {
+     "say": "D 有個重要條件：路上只能經過 explored 的頂點，還沒探索的不能借道。",
+     "k": 6,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 247.8
+     }
+    },
+    {
+     "say": "影片有時說成 explored edges，意思其實是 explored 的頂點。",
+     "k": 6,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 247.8
+     }
+    },
+    {
+     "say": "P 是 parent：那條最短的路上，到這個點之前的最後一站。最後就靠 P 回推整條路。",
+     "k": 7,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 289.9
+     }
+    },
+    {
+     "say": "開始填初始值，先看 s：s 到 s 要走多遠？",
+     "k": 8,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 318
+     }
+    },
+    {
+     "say": "同一個點，不用走，D(s) = 0，也沒有前一站，P 空著。",
+     "k": 9,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 328.8
+     }
+    },
+    {
+     "say": "再看 a：要找一條只經過 explored 頂點的路，可是 explored 現在是空的。",
+     "k": 10,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 342.8
+     }
+    },
+    {
+     "say": "找不到合法的路，距離就記成 ∞，無限大，代表目前到不了，也沒有 parent。",
+     "read": "找不到合法的路，距離就記成 無限大，無限大，代表目前到不了，也沒有 parent。",
+     "k": 11,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 367.8
+     }
+    },
+    {
+     "say": "b 和 c 也一樣，都是 ∞。",
+     "read": "b 和 c 也一樣，都是 無限大。",
+     "k": 12,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 381.5
+     }
+    },
+    {
+     "say": "整理一下：s 是 0，a、b、c 是 ∞。這就是初始狀態。",
+     "read": "整理一下：s 是 0，a、b、c 是 無限大。這就是初始狀態。",
+     "k": 13,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 391.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "每輪挑 D 最小的去 explore",
+   "scene": "dijk-explore-sa",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "每一輪只做一件事：從 unexplored 挑 D 最小的頂點，搬進 explored。這就是 greedy。",
+     "k": 1,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 437.6
+     }
+    },
+    {
+     "say": "現在 s 是 0，其他都 ∞，最小的當然是 s。",
+     "read": "現在 s 是 0，其他都 無限大，最小的當然是 s。",
+     "k": 2,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 446.7
+     }
+    },
+    {
+     "say": "s 搬進 explored，unexplored 剩 a、b、c。",
+     "k": 3,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 460.8
+     }
+    },
+    {
+     "say": "多了 s，就有新路可走：s 沿權重 1 到 a，0 + 1 = 1，比 ∞ 小，D(a) = 1，P(a) = s。",
+     "read": "多了 s，就有新路可走：s 沿權重 1 到 a，0 + 1 = 1，比 無限大 小，D(a) = 1，P(a) = s。",
+     "k": 4,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 473.3
+     }
+    },
+    {
+     "say": "s 沿權重 3 到 b，D(b) = 3，P(b) = s。",
+     "k": 5,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 497.8
+     }
+    },
+    {
+     "say": "c 呢？只經過 s 到不了 c，還是 ∞。",
+     "read": "c 呢？只經過 s 到不了 c，還是 無限大。",
+     "k": 6,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 504.8
+     }
+    },
+    {
+     "say": "下一輪：a 是 1、b 是 3、c 是 ∞，最小的是 a，搬進 explored。",
+     "read": "下一輪：a 是 1、b 是 3、c 是 無限大，最小的是 a，搬進 explored。",
+     "k": 7,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 522.8
+     }
+    },
+    {
+     "say": "a 進來，又多了新路：s → a → b，1 + 1 = 2。",
+     "read": "a 進來，又多了新路：s 到 a 到 b，1 + 1 = 2。",
+     "k": 8,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 539.8
+     }
+    },
+    {
+     "say": "2 比原本的 3 小，更新：D(b) 改 2，P(b) 改 a。這個「發現更短就更新」叫 relax，放鬆。",
+     "k": 9,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 550.6
+     }
+    },
+    {
+     "say": "注意，只有新路比較短才換。比較長就不動，D 永遠只記最小的。",
+     "k": 10,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 576.8
+     }
+    },
+    {
+     "say": "經過 a 也能到 c：1 + 10 = 11，比 ∞ 小，D(c) = 11、P(c) = a。但這還不一定是最後答案。",
+     "read": "經過 a 也能到 c：1 + 10 = 11，比 無限大 小，D(c) = 11、P(c) = a。但這還不一定是最後答案。",
+     "k": 11,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 607.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Relax：c 從 11 變成 6",
+   "scene": "dijk-explore-bc",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "下一輪：unexplored 剩 b 的 2 和 c 的 11，挑 b，搬進 explored。",
+     "k": 1,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 626.8
+     }
+    },
+    {
+     "say": "b 進來了，看 c：經過 s、a、b，有沒有比 11 更短的路？",
+     "k": 2,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 645.9
+     }
+    },
+    {
+     "say": "b 跟 c 之間有一條邊，權重 4。",
+     "k": 3,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 655.8
+     }
+    },
+    {
+     "say": "經過 b 到 c，就是 D(b) 的 2 再加 4。D(b) 已經算好了，直接拿來用。",
+     "k": 4,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 663.8
+     }
+    },
+    {
+     "say": "2 + 4 = 6，比 11 小，D(c) 改成 6，經過 a 那條就被淘汰了。",
+     "k": 5,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 674.8
+     }
+    },
+    {
+     "say": "最短的路改成從 b 來，所以 P(c) 也改成 b。D 和 P 一定一起改。",
+     "k": 6,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 681.8
+     }
+    },
+    {
+     "say": "寫成規則：D(v) = min(D(v), D(u) + w(u, v))，u 是 explored，v 是 unexplored。",
+     "k": 7,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 688.6
+     }
+    },
+    {
+     "say": "對照剛剛：b 的 2 加上 b 到 c 的 4，得到 6。整個演算法就是這個動作一直重複。",
+     "k": 8,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 707.1
+     }
+    },
+    {
+     "say": "最後把剩下的 c 也搬進 explored。",
+     "k": 9,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 717.8
+     }
+    },
+    {
+     "say": "unexplored 空了，演算法結束。影片沒提的前提：權重都要大於等於 0，不然答案會錯。",
+     "k": 10,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 735.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "沿著 parent 回推路徑",
+   "scene": "dijk-path",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "跑完以後每個點都有 D 和 P。真正的路線怎麼走？",
+     "k": 1,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 738.8
+     }
+    },
+    {
+     "say": "到 a：P(a) = s，前一站就是起點，路徑 s → a，cost 1。",
+     "read": "到 a：P(a) = s，前一站就是起點，路徑 s 到 a，cost 1。",
+     "k": 2,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 756.8
+     }
+    },
+    {
+     "say": "到 b：P(b) = a，先往回走到 a。",
+     "k": 3,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 766.3
+     }
+    },
+    {
+     "say": "P(a) = s，回到起點。反過來就是 s → a → b。",
+     "read": "P(a) = s，回到起點。反過來就是 s 到 a 到 b。",
+     "k": 4,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 773.9
+     }
+    },
+    {
+     "say": "cost 不用再加，D(b) 就是最短距離，2。",
+     "k": 5,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 789.7
+     }
+    },
+    {
+     "say": "到 c：P(c) = b，回到 b；P(b) = a，再回到 a。",
+     "k": 6,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 796.2
+     }
+    },
+    {
+     "say": "P(a) = s，到起點了。反過來 s → a → b → c，cost 6。parent 連起來是一棵最短路徑樹。",
+     "read": "P(a) = s，到起點了。反過來 s 到 a 到 b 到 c，cost 6。parent 連起來是一棵最短路徑樹。",
+     "k": 7,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 806.1
+     }
+    },
+    {
+     "say": "完整流程就是：每輪挑 D 最小的 explore，更新鄰居的 D 和 P，最後沿 P 回推路徑。",
+     "k": 8,
+     "src": {
+      "v": "HlFsexTpM4Q",
+      "t": 816.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Boston 出發：用表格跑 Dijkstra",
+   "scene": "gpeng20-boston-init",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "再看彭老師用的課本例子：美國幾個大城市，邊上的數字是飛行距離。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4660.25
+     }
+    },
+    {
+     "say": "出發點是 Boston，頂點 4。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4670.32
+     }
+    },
+    {
+     "say": "其他城市都是 destination，邊就是航線。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4677.5
+     }
+    },
+    {
+     "say": "Boston 飛 NY，5 號點，要 250；飛 Chicago，3 號點，要 1500。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4686.26
+     }
+    },
+    {
+     "say": "這個 network 可以存成 cost matrix：第 i 列第 j 行是 i 到 j 的距離，沒航線就是 ∞。",
+     "read": "這個 network 可以存成 cost matrix：第 i 列第 j 行是 i 到 j 的距離，沒航線就是 無限大。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4705.1
+     }
+    },
+    {
+     "say": "它是有向圖：有 A 飛 B 的航線，不代表也有 B 飛 A。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4717.72
+     }
+    },
+    {
+     "say": "演算法怎麼跑？看下面這張表，每一回合一列。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4755.82
+     }
+    },
+    {
+     "say": "表裡的 S 是一個集合，放最短距離已經確定的頂點，就是剛剛的 explored。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4765.08
+     }
+    },
+    {
+     "say": "vertex selected 是每一回合新選進來的點。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4776.26
+     }
+    },
+    {
+     "say": "初始狀態，S 是空的。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4793.6
+     }
+    },
+    {
+     "say": "起點是 4，先做初始化：Boston 到自己是 0。",
+     "k": 11,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4812.26
+     }
+    },
+    {
+     "say": "Boston 直飛不到 LA、SF，這些先設成 +∞，目前到不了。",
+     "read": "Boston 直飛不到 LA、SF，這些先設成 正無限大，目前到不了。",
+     "k": 12,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4817.8
+     }
+    },
+    {
+     "say": "NY 是 250，Chicago 是 1500。初始化時，起點鄰居的 cost 先填上，其他都是 ∞。",
+     "read": "NY 是 250，Chicago 是 1500。初始化時，起點鄰居的 cost 先填上，其他都是 無限大。",
+     "k": 13,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4852.12
+     }
+    },
+    {
+     "say": "這些數字裡，除了起點自己的 0，最小的是 250，NY。",
+     "k": 14,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4885.86
+     }
+    },
+    {
+     "say": "第一回合，起點自然進 S，S = {4}。",
+     "k": 15,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4922.6
+     }
+    },
+    {
+     "say": "vertex selected 選 5，NY，因為它的 250 最小。",
+     "k": 16,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4931.04
+     }
+    },
+    {
+     "say": "S = {4, 5}，NY 的最短距離 250 就確定了。",
+     "k": 17,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4959.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "逐回合更新",
+   "scene": "gpeng20-boston-run",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "NY 進來之後，哪些地方會變短？",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4977.68
+     }
+    },
+    {
+     "say": "NY 可以飛 Chicago、Miami、New Orleans，這些點可能變短。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 4989.24
+     }
+    },
+    {
+     "say": "Boston → NY → Chicago，250 + 1000 = 1250。",
+     "read": "Boston 到 NY 到 Chicago，250 + 1000 = 1250。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5001.16
+     }
+    },
+    {
+     "say": "原本直飛要 1500，經過 NY 反而比較近。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5008.58
+     }
+    },
+    {
+     "say": "所以 Chicago 從 1500 更新成 1250。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5018.47
+     }
+    },
+    {
+     "say": "Miami 本來是 ∞，經過 NY 就能到了：250 + 900 = 1150。",
+     "read": "Miami 本來是 無限大，經過 NY 就能到了：250 + 900 = 1150。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5027.09
+     }
+    },
+    {
+     "say": "New Orleans 也是：250 + 1400 = 1650。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5045.84
+     }
+    },
+    {
+     "say": "規則：每回合有新的點進來，經過它到別的點如果比較便宜，就更新。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5059.32
+     }
+    },
+    {
+     "say": "4、5 都選了。剩下的 1250、1150、1650 裡，誰最小？",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5087.84
+     }
+    },
+    {
+     "say": "1150，所以下一回合選 6，Miami。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5096.72
+     }
+    },
+    {
+     "say": "Miami 只能飛 New Orleans：1150 + 1000 = 2150，比 1650 大，不用改。",
+     "k": 11,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5126.23
+     }
+    },
+    {
+     "say": "剩下最小的是 Chicago 1250，選進來。Chicago 飛 Denver：1250 + 1200 = 2450。",
+     "k": 12,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5147.57
+     }
+    },
+    {
+     "say": "接著選 New Orleans，LA 變 3350；再選 Denver，SF 變 3250；最後選 SF。",
+     "k": 13,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5157.89
+     }
+    },
+    {
+     "say": "全部選完，最後一列就是 Boston 到每個城市的最短距離。",
+     "k": 14,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5185.95
+     }
+    }
+   ]
+  },
+  {
+   "title": "考法、記錄路徑，以及為什麼是 greedy",
+   "scene": "gpeng20-dijkstra-path",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "考試會怎麼考？就是從某個點出發，把這張表一步一步做出來。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5232.81
+     }
+    },
+    {
+     "say": "以前有同學用人腦直接推，像 4 到 3 最短是 4 → 5 → 3。",
+     "read": "以前有同學用人腦直接推，像 4 到 3 最短是 4 到 5 到 3。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5248.07
+     }
+    },
+    {
+     "say": "所以考法改了：把某一步挖空要你填。每一步都要會算。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5259.13
+     }
+    },
+    {
+     "say": "注意，這張表只記最短的 cost，不記 path。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5278.79
+     }
+    },
+    {
+     "say": "要知道 path，就要多記：每次更新時，是哪個點讓它變小，也就是 parent。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5295.69
+     }
+    },
+    {
+     "say": "有了 parent 就能回推。到 SF 是 SF ← Denver ← Chicago ← NY ← Boston。",
+     "read": "有了 parent 就能回推。到 SF 是 SF 往回到 Denver 往回到 Chicago 往回到 NY 往回到 Boston。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5318.05
+     }
+    },
+    {
+     "say": "Dijkstra 是 greedy 演算法，為什麼？",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5325.89
+     }
+    },
+    {
+     "say": "因為每一回合都選最小的，一旦進了 S，答案就定住，之後不會再改。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5338.39
+     }
+    }
+   ]
+  },
+  {
+   "title": "Dijkstra 遇到負邊就錯",
+   "scene": "gpeng20-dijkstra-neg",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "那有負的邊，還能用 Dijkstra 嗎？",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5371.29
+     }
+    },
+    {
+     "say": "例子：1 → 2 是 −5，等於鼓勵你走這條，走了 cost 反而變小。",
+     "read": "例子：1 到 2 是 負5，等於鼓勵你走這條，走了 cost 反而變小。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5381.19
+     }
+    },
+    {
+     "say": "三個點 0、1、2。初始化：0 → 1 是 7，0 → 2 是 5。",
+     "read": "三個點 0、1、2。初始化：0 到 1 是 7，0 到 2 是 5。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5393.96
+     }
+    },
+    {
+     "say": "7 跟 5 選小的，2 先被選出來，以為 0 到 2 最短是 5。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5415.51
+     }
+    },
+    {
+     "say": "接著選 1，0 到 1 是 7。全部選完，結束。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5428.08
+     }
+    },
+    {
+     "say": "可是 0 先到 1 再到 2，是 7 + (−5) = 2，比 5 還短！",
+     "read": "可是 0 先到 1 再到 2，是 7 + (負5) = 2，比 5 還短！",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5436.35
+     }
+    },
+    {
+     "say": "問題在哪？點一旦被選，就定住不能調整，2 不會因為後來選了 1 而更動。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5472.97
+     }
+    },
+    {
+     "say": "所以有 negative edge，絕對不能用 Dijkstra。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5513.27
+     }
+    },
+    {
+     "say": "還要求沒有負的 cycle：繞一圈變小，多繞幾圈就一直變小，最短路徑根本沒有定義。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5520.71
+     }
+    },
+    {
+     "say": "一般正權重的 cycle 沒有問題，真正麻煩的是負 cycle。",
+     "k": 9
+    }
+   ]
+  },
+  {
+   "title": "Bellman-Ford：最多走 k 條邊",
+   "scene": "gpeng20-bf-formula",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "一樣是 single source all destinations，但這次邊的 weight 可以是負的。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5547.39
+     }
+    },
+    {
+     "say": "這個演算法叫 Bellman-Ford。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5552.85
+     }
+    },
+    {
+     "say": "它其實很直覺，有一個變數叫 k。k 是什麼？",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5576.01
+     }
+    },
+    {
+     "say": "k = 1：只准走一條邊，從起點到每個點最好是多少。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5591.92
+     }
+    },
+    {
+     "say": "k = 2：准走兩條邊，最好又是多少，例如 0 → 2 → 1。",
+     "read": "k = 2：准走兩條邊，最好又是多少，例如 0 到 2 到 1。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5602.12
+     }
+    },
+    {
+     "say": "所以定義 dist^k[u]：從 source 到 u，最多經過 k 條邊，能找到的最小值。",
+     "read": "所以定義 dist的k u ：從 source 到 u，最多經過 k 條邊，能找到的最小值。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5631.31
+     }
+    },
+    {
+     "say": "這個最小值來自兩個地方。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5660.19
+     }
+    },
+    {
+     "say": "第一：多走一條邊也不會更小，那就跟上一回合一樣，dist^(k−1)[u]。",
+     "read": "第一：多走一條邊也不會更小，那就跟上一回合一樣，dist的k減1 u 。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5678.28
+     }
+    },
+    {
+     "say": "第二比較好玩：找一個中繼站 i，而且 i 跟 u 之間要有一條邊。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5700.52
+     }
+    },
+    {
+     "say": "source 到 i 最多走 k − 1 條，就是上一回合的答案，再加 i 到 u 一條，還是最多 k 條。",
+     "read": "source 到 i 最多走 k 減 1 條，就是上一回合的答案，再加 i 到 u 一條，還是最多 k 條。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5748.51
+     }
+    },
+    {
+     "say": "所有中繼站裡選加起來最小的。例如 u = 1、k = 2 時選 i = 2：5 + (−2) = 3。",
+     "read": "所有中繼站裡選加起來最小的。例如 u = 1、k = 2 時選 i = 2：5 + (負2) = 3。",
+     "k": 11,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5768.47
+     }
+    },
+    {
+     "say": "最後跟上一回合比，取小的：dist²[1] = min(6, 3) = 3。最難的就是找出中繼點 i。",
+     "read": "最後跟上一回合比，取小的：dist的2 1  = min(6, 3) = 3。最難的就是找出中繼點 i。",
+     "k": 12,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5789.07
+     }
+    },
+    {
+     "say": "最短路徑最多 n − 1 條邊，算到 dist^(n−1) 就是答案。用 adjacency list 是 O(ne)。",
+     "read": "最短路徑最多 n 減 1 條邊，算到 dist的n減1 就是答案。用 adjacency list 是 大O ne。",
+     "k": 12
+    }
+   ]
+  },
+  {
+   "title": "Bellman-Ford 表格實際算",
+   "scene": "gpeng20-bf-table",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "來看例子：這張圖有負的邊，−2、−2、−1、−1。",
+     "read": "來看例子：這張圖有負的邊，負2、負2、負1、負1。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5820.75
+     }
+    },
+    {
+     "say": "dist 是一個一維陣列，7 格，每格放 0 到那個頂點的距離。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5832.99
+     }
+    },
+    {
+     "say": "source 是 0。先算 k = 1，只能走一條邊。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5837.57
+     }
+    },
+    {
+     "say": "0 一步可以到 1 的 6、2 的 5、3 的 5。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5859.05
+     }
+    },
+    {
+     "say": "0 到 4 至少要兩條邊，現在到不了，給 ∞。k = 1 這列就像初始值。",
+     "read": "0 到 4 至少要兩條邊，現在到不了，給 無限大。k = 1 這列就像初始值。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5877.68
+     }
+    },
+    {
+     "say": "k = 2：准走兩條邊，最好是多少？",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5903.11
+     }
+    },
+    {
+     "say": "0 到 1：先到 2，再從 2 到 1，5 + (−2) = 3。",
+     "read": "0 到 1：先到 2，再從 2 到 1，5 + (負2) = 3。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5912.9
+     }
+    },
+    {
+     "say": "不經過 2 的話，上一回合是 6。多走一條反而更少，選 3。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5943.99
+     }
+    },
+    {
+     "say": "0 到 2 有兩個選擇。第一，直接走，5。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5954.41
+     }
+    },
+    {
+     "say": "第二，誰能走到 2？3 可以。上一回合 0 到 3 是 5，再走 −2，5 − 2 = 3。",
+     "read": "第二，誰能走到 2？3 可以。上一回合 0 到 3 是 5，再走 負2，5 減 2 = 3。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 5988.84
+     }
+    },
+    {
+     "say": "取小的 3。k = 2 這列是 0 3 3 5 5 4 ∞，紅色就是繞路走負邊而變小的地方。",
+     "read": "取小的 3。k = 2 這列是 0 3 3 5 5 4 無限大，紅色就是繞路走負邊而變小的地方。",
+     "k": 11,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6015.74
+     }
+    },
+    {
+     "say": "再來 k = 3，看 0 到 1。",
+     "k": 12,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6045.38
+     }
+    },
+    {
+     "say": "找中繼點，要能連到 1 的，就是 2。",
+     "k": 13,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6077.24
+     }
+    },
+    {
+     "say": "上一回合說 0 到 2 兩條邊內最好是 3，不是直接走，是先到 3 再到 2。",
+     "k": 14,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6101.46
+     }
+    },
+    {
+     "say": "再多走 2 到 1 的 −2，3 − 2 = 1，所以 dist³[1] = 1。",
+     "read": "再多走 2 到 1 的 負2，3 減 2 = 1，所以 dist的3 1  = 1。",
+     "k": 15,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6146.56
+     }
+    },
+    {
+     "say": "其他依此類推，k 一直算到 6，也就是 n − 1。最後一列 0 1 3 5 0 4 3 就是答案。",
+     "read": "其他依此類推，k 一直算到 6，也就是 n 減 1。最後一列 0 1 3 5 0 4 3 就是答案。",
+     "k": 16,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6159.02
+     }
+    },
+    {
+     "say": "k 從 1 開始 iteration，每次更新距離。k 的意義：最多准走 k 條邊時的最佳 cost。",
+     "k": 17,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6181.88
+     }
+    }
+   ]
+  },
+  {
+   "title": "All-pairs shortest path",
+   "scene": "gpeng20-allpairs-def",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "有負邊的最短路徑講完了，接下來一個新問題。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6216.74
+     }
+    },
+    {
+     "say": "all pairs shortest path：任取兩點，都要找出它們之間的最短路徑。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6223.64
+     }
+    },
+    {
+     "say": "最笨的方法：每個點都當一次 source，跑 Dijkstra 或 Bellman-Ford。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6244.46
+     }
+    },
+    {
+     "say": "先讓 0 當起點，找出 0 到其他點的最短距離。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6270.09
+     }
+    },
+    {
+     "say": "再讓 1、讓 2 當起點，所有人都輪一次。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6278.64
+     }
+    },
+    {
+     "say": "這樣成本比較高。另一種解法就是 all-pairs 的演算法，Floyd。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6285.94
+     }
+    },
+    {
+     "say": "它用一個二維矩陣表示，上面有個上標，例如 A^(−1)[i][j]。",
+     "read": "它用一個二維矩陣表示，上面有個上標，例如 A負一 i j 。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6303.12
+     }
+    },
+    {
+     "say": "A^(−1) 是初始值，就是 i 到 j 那條邊的長度。−1 本身沒意義，只代表「初始」。",
+     "read": "A負一 是初始值，就是 i 到 j 那條邊的長度。負1 本身沒意義，只代表「初始」。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6313.76
+     }
+    },
+    {
+     "say": "A^(n−1)[i][j] 是最後答案，i 到 j 最短路徑的 cost。",
+     "read": "A的n減1 i j  是最後答案，i 到 j 最短路徑的 cost。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6323.98
+     }
+    },
+    {
+     "say": "那 A^k[i][j] 呢？從 i 到 j，中間可以經過一些點，但這些點的編號最多是 k。",
+     "read": "那 A的k i j  呢？從 i 到 j，中間可以經過一些點，但這些點的編號最多是 k。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6338.38
+     }
+    },
+    {
+     "say": "注意，這個 k 跟剛剛 Bellman-Ford 的 k 意思不一樣。",
+     "k": 11,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6367.66
+     }
+    }
+   ]
+  },
+  {
+   "title": "A^k 的遞迴式",
+   "scene": "gpeng20-ak-formula",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "書上的定義：A^k[i][j] 記的是，經過的頂點編號都小於等於 k 時，i 到 j 的最短路徑。",
+     "read": "書上的定義：A的k i j  記的是，經過的頂點編號都小於等於 k 時，i 到 j 的最短路徑。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6402.3
+     }
+    },
+    {
+     "say": "怎麼算？分兩種情況。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6427.5
+     }
+    },
+    {
+     "say": "第一種：經不經過頂點 k 沒差，那就跟 A^(k−1)[i][j] 一樣。",
+     "read": "第一種：經不經過頂點 k 沒差，那就跟 A的k減1 i j  一樣。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6445.28
+     }
+    },
+    {
+     "say": "第二種：允許走 k，可能出現一條更便宜的路。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6468.6
+     }
+    },
+    {
+     "say": "先從 i 走到 k，中間只經過編號 0 到 k − 1 的點，這段是 A^(k−1)[i][k]。",
+     "read": "先從 i 走到 k，中間只經過編號 0 到 k 減 1 的點，這段是 A的k減1 i k 。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6484.28
+     }
+    },
+    {
+     "say": "再從 k 走到 j，一樣只經過編號最多 k − 1 的點，是 A^(k−1)[k][j]。",
+     "read": "再從 k 走到 j，一樣只經過編號最多 k 減 1 的點，是 A的k減1 k j 。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6511.22
+     }
+    },
+    {
+     "say": "不經過 k、經過 k，兩個選小的，就是 A^k[i][j]。",
+     "read": "不經過 k、經過 k，兩個選小的，就是 A的k i j 。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6535.88
+     }
+    },
+    {
+     "say": "再強調一次：Bellman-Ford 的 k 是邊的「個數」，最多 k 條邊。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6545.54
+     }
+    },
+    {
+     "say": "這裡的 k 管的是頂點的「編號」：A^k 只准經過編號 0 到 k 的點。",
+     "read": "這裡的 k 管的是頂點的「編號」：A的k 只准經過編號 0 到 k 的點。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6574.26
+     }
+    }
+   ]
+  },
+  {
+   "title": "Floyd 實際算：A⁻¹ 到 A²",
+   "scene": "gpeng20-floyd",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "來看例子。A^(−1) 是初始值，有 3 個頂點。",
+     "read": "來看例子。A負一 是初始值，有 3 個頂點。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6592.56
+     }
+    },
+    {
+     "say": "所以是 3 × 3 的矩陣。0 到 0 是 0，0 到 1 是 4。",
+     "read": "所以是 3 乘 3 的矩陣。0 到 0 是 0，0 到 1 是 4。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6598.38
+     }
+    },
+    {
+     "say": "A⁰：路徑可以經過頂點 0。第 0 列、第 0 行這一輪不會變。",
+     "read": "A零：路徑可以經過頂點 0。第 0 列、第 0 行這一輪不會變。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6612.26
+     }
+    },
+    {
+     "say": "紅色的 7：2 到 1 本來到不了，經過 0 就可以，2 → 0 → 1 = 3 + 4 = 7。",
+     "read": "紅色的 7：2 到 1 本來到不了，經過 0 就可以，2 到 0 到 1 = 3 + 4 = 7。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6621.74
+     }
+    },
+    {
+     "say": "A¹：可以經過 0 和 1。",
+     "read": "A一：可以經過 0 和 1。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6658.54
+     }
+    },
+    {
+     "say": "藍色的 6：0 到 2 本來直接走要 11，經過 1，4 + 2 = 6，更短。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6667.78
+     }
+    },
+    {
+     "say": "A²：0、1、2 都可以經過。",
+     "read": "A二：0、1、2 都可以經過。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6713.28
+     }
+    },
+    {
+     "say": "1 到 0 本來是 6，經過 2，2 + 3 = 5，最短變成 5。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6720.55
+     }
+    },
+    {
+     "say": "n 個點，一路做到 A^(n−1) 就是答案。三層迴圈，O(n³)，而且 k 要放最外層。",
+     "read": "n 個點，一路做到 A的n減1 就是答案。三層迴圈，大O n三次方，而且 k 要放最外層。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6729.3
+     }
+    },
+    {
+     "say": "最後提醒：Floyd 的 k 管路徑上頂點的編號，Bellman-Ford 的 k 管邊的個數。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6772.07
+     }
+    }
+   ]
+  },
+  {
+   "title": "Transitive closure",
+   "scene": "gpeng20-closure",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "最後一個：transitive closure，遞移閉包。既然會找 all pairs 了，這題就簡單了。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6793.96
+     }
+    },
+    {
+     "say": "A 可以到 B、B 可以到 C，那 A 跟 C 也是連通的。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6799.66
+     }
+    },
+    {
+     "say": "這是原來那張圖的 adjacency matrix。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6821
+     }
+    },
+    {
+     "say": "0 代表沒有連通，1 代表有一條直接的邊。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6826.52
+     }
+    },
+    {
+     "say": "A⁺ 是什麼？只要能透過別的點到達，也算連通，記 1。",
+     "read": "A plus 是什麼？只要能透過別的點到達，也算連通，記 1。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6835.16
+     }
+    },
+    {
+     "say": "做法：跑 all-pairs，路徑長度大於 0 就記 1。像 2 → 3 → 4 → 2 繞回自己，A⁺[2][2] 也是 1。",
+     "read": "做法：跑 all-pairs，路徑長度大於 0 就記 1。像 2 到 3 到 4 到 2 繞回自己，A plus 2 2  也是 1。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6853.06
+     }
+    },
+    {
+     "say": "那 A* 呢？",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6861.72
+     }
+    },
+    {
+     "say": "A* 很簡單，自己可以到自己，所以對角線也全部設成 1。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6867.56
+     }
+    },
+    {
+     "say": "最笨的方法就是跑 all pairs，到得了就是 1。也可以把 min 和 + 換成 OR 和 AND，一樣 O(n³)。",
+     "read": "最笨的方法就是跑 all pairs，到得了就是 1。也可以把 min 和 + 換成 OR 和 AND，一樣 大O n三次方。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6898.38
+     }
+    }
+   ]
+  },
+  {
+   "title": "最短路徑總整理",
+   "scene": "gpeng20-recap",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "整理一下這幾個最短路徑問題。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6918.77
+     }
+    },
+    {
+     "say": "第一個，single source all destinations，有兩個演算法。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6924.11
+     }
+    },
+    {
+     "say": "Dijkstra：邊的 cost 不能是負的。",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6930.66
+     }
+    },
+    {
+     "say": "第二個是 Bellman-Ford。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6934.64
+     }
+    },
+    {
+     "say": "Bellman-Ford 允許負邊。這兩個都要會一步一步 run。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6938.53
+     }
+    },
+    {
+     "say": "再來是 all pairs shortest path。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6947.97
+     }
+    },
+    {
+     "say": "老師說它很暴力，要把所有路徑找出來比。其實不是，Floyd 是動態規劃，每輪只用上一個矩陣，O(n³)。",
+     "read": "老師說它很暴力，要把所有路徑找出來比。其實不是，Floyd 是動態規劃，每輪只用上一個矩陣，大O n三次方。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6958.63
+     }
+    }
+   ]
+  },
+  {
+   "title": "AOV network：擋修關係圖",
+   "scene": "gpeng20-aov",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "最後一個主題：AOV network，它也是一種 network。",
+     "k": 1,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6983.87
+     }
+    },
+    {
+     "say": "AOV 是 Activity On Vertex：每個頂點是一個 activity，一件要做的事。",
+     "k": 2,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 6990.63
+     }
+    },
+    {
+     "say": "書上的定義字很多，其實很簡單。彭老師問：大家有沒有聽過「擋修」？",
+     "k": 3,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 7000.69
+     }
+    },
+    {
+     "say": "比如 Data Structure 這門課，你得先修過某些課才能修。",
+     "k": 4,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 7031.43
+     }
+    },
+    {
+     "say": "要先修 C1，Programming 1，還有 C2，離散數學。箭頭就代表先修。",
+     "k": 5,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 7040.73
+     }
+    },
+    {
+     "say": "這就是一種順序關係：誰要在誰前面。",
+     "k": 6,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 7051.01
+     }
+    },
+    {
+     "say": "系上的課程地圖就是這種圖：大一修過這些課，才能修後面的。",
+     "k": 7,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 7059.41
+     }
+    },
+    {
+     "say": "所以在 AOV 裡，每個頂點是一個 activity，這個例子就是一門課。",
+     "k": 8,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 7102.71
+     }
+    },
+    {
+     "say": "前面的 activity 還沒完成，這個頂點就不能開始，這就是被擋修。",
+     "k": 9,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 7116.89
+     }
+    },
+    {
+     "say": "edge 表示先後：前面的完成，後面的才能發生。C1、C2 都修完，C3 才亮起來。",
+     "k": 10,
+     "src": {
+      "v": "Wnpsh1O1OMo",
+      "t": 7126.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "修課系統：先修鏈",
+   "scene": "galgo-aov-course",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "下一堂課彭老師接著講。再說一次，AOV 把一件件要做的事，畫成圖上的頂點。",
+     "k": 1,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 11
+     }
+    },
+    {
+     "say": "頂點之間的箭頭代表先後：A → B，就是 A 做完 B 才能做。通常由左往右畫。",
+     "read": "頂點之間的箭頭代表先後：A 到 B，就是 A 做完 B 才能做。通常由左往右畫。",
+     "k": 2,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 39.69
+     }
+    },
+    {
+     "say": "根據這些先後關係，可以推出一個 topological order，拓撲排序。",
+     "k": 3,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 66.61
+     }
+    },
+    {
+     "say": "它的輸出是一個 sequence，把所有頂點排成一直線。",
+     "k": 4,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 91.25
+     }
+    },
+    {
+     "say": "特性是：圖上誰要先做，序列裡它就一定排在前面。例如 0 是 4 的前置，序列裡 0 也在 4 前面。",
+     "k": 5,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 99.65
+     }
+    },
+    {
+     "say": "最生活化的例子就是大學修課系統，假設一共 15 門課，有些要先修別的才能修。",
+     "k": 6,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 116.69
+     }
+    },
+    {
+     "say": "要修 C10 Programming Language，得先修 C7 演算法，所以畫 C7 → C10。",
+     "read": "要修 C10 Programming Language，得先修 C7 演算法，所以畫 C7 到 C10。",
+     "k": 7,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 135.71
+     }
+    },
+    {
+     "say": "C7 演算法又要先修 C3 資料結構和 C6，所以 C3 → C7、C6 → C7。",
+     "read": "C7 演算法又要先修 C3 資料結構和 C6，所以 C3 到 C7、C6 到 C7。",
+     "k": 8,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 142.53
+     }
+    },
+    {
+     "say": "整張課程表畫出來就是一個 AOV，每門課是一個頂點，修一門課就是一個 activity。",
+     "k": 9,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 169.23
+     }
+    },
+    {
+     "say": "這些箭頭沒有 weight，只有方向。照 topological order 修課，就不會違反任何先修規定。",
+     "k": 10,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 186.38
+     }
+    }
+   ]
+  },
+  {
+   "title": "Topological order 的定義",
+   "scene": "galgo-topo-order",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "給一個 AOV，topological order 要輸出的是一個 sequence。",
+     "k": 1,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 209.09
+     }
+    },
+    {
+     "say": "以這張圖為例，一個答案是 0 3 2 5 1 4。",
+     "k": 2,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 215.05
+     }
+    },
+    {
+     "say": "序列裡隨便抓兩個，3 和 5：3 在 5 前面；回到圖上，也真的是 3 → 5。",
+     "read": "序列裡隨便抓兩個，3 和 5：3 在 5 前面；回到圖上，也真的是 3 到 5。",
+     "k": 3,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 228.97
+     }
+    },
+    {
+     "say": "再抓 3 和 4：序列裡 3 在前，圖上也有 3 → 4。",
+     "read": "再抓 3 和 4：序列裡 3 在前，圖上也有 3 到 4。",
+     "k": 4,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 248.99
+     }
+    },
+    {
+     "say": "任意兩點都一樣：圖上 u 要先於 v，序列裡 u 就排在 v 前面。像 0 和 4 沒有直接的邊，0 還是得在前面。",
+     "k": 5,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 257
+     }
+    }
+   ]
+  },
+  {
+   "title": "產生 topological order 的三步驟",
+   "scene": "galgo-topo-steps",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "那怎麼產生 topological order？只有三個步驟。",
+     "k": 1,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 265.48
+     }
+    },
+    {
+     "say": "先認識 in-degree：有幾個箭頭指向它。步驟一：in-degree 是 0 的頂點，就可以輸出。",
+     "k": 2,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 289.65
+     }
+    },
+    {
+     "say": "步驟二：輸出一個點之後，它指到的點少了一個前置，in-degree 減 1。",
+     "k": 3,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 312.13
+     }
+    },
+    {
+     "say": "步驟三：重複一、二，直到全部輸出。",
+     "k": 4,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 328.07
+     }
+    },
+    {
+     "say": "實際跑一次：in-degree 是 0 的只有 0。",
+     "k": 5,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 342.91
+     }
+    },
+    {
+     "say": "輸出 0，它就是序列的第一個。",
+     "k": 6,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 351.78
+     }
+    },
+    {
+     "say": "0 指到 1、2、3，它們原本 in-degree 都是 1，減完都變 0。",
+     "k": 7,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 364.97
+     }
+    },
+    {
+     "say": "回到步驟一：in-degree 是 0 的有 1、2、3 三個。",
+     "k": 8,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 398.18
+     }
+    },
+    {
+     "say": "它們之間沒有擋修關係，任取一個都可以，這裡取 3。",
+     "k": 9,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 407
+     }
+    },
+    {
+     "say": "3 指到 4 和 5，4、5 的 in-degree 各減 1。",
+     "k": 10,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 422.38
+     }
+    },
+    {
+     "say": "剩下 1 和 2，隨便取，這裡取 2。",
+     "k": 11,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 439.68
+     }
+    },
+    {
+     "say": "2 指到 4、5，再各減 1，5 的 in-degree 變 0 了。",
+     "k": 12,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 451.19
+     }
+    },
+    {
+     "say": "接著輸出 5，再輸出 1，1 讓 4 的 in-degree 也變 0。",
+     "k": 13,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 456.52
+     }
+    },
+    {
+     "say": "最後輸出 4，得到 0 3 2 5 1 4。如果還有點沒輸出，卻找不到 in-degree 0 的，代表圖裡有 cycle。",
+     "k": 14,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 470.82
+     }
+    }
+   ]
+  },
+  {
+   "title": "實作：count 欄位，答案不唯一",
+   "scene": "galgo-topo-count",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "寫程式時，圖存成 adjacency list，每個頂點後面串著它指到的點。前面再多一個欄位。",
+     "k": 1,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 480.49
+     }
+    },
+    {
+     "say": "這個欄位叫 count，記的就是 in-degree。",
+     "k": 2,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 503.4
+     }
+    },
+    {
+     "say": "程式去掃 count，是 0 的就輸出，第一個是 vertex 0。",
+     "k": 3,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 516.56
+     }
+    },
+    {
+     "say": "接著沿 vertex 0 的 list 走，1、2、3 的 count 各減 1。",
+     "k": 4,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 535.94
+     }
+    },
+    {
+     "say": "減完，1、2、3 的 count 都是 0 了。",
+     "k": 5,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 553.5
+     }
+    },
+    {
+     "say": "再重複同樣的步驟，依序輸出 3、2、5、1、4。",
+     "k": 6,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 560.65
+     }
+    },
+    {
+     "say": "要注意，topological order 不是唯一的。",
+     "k": 7,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 566.82
+     }
+    },
+    {
+     "say": "剛剛 1、2、3 同時是 0，我們取 3，其實取 1 或 2 也可以。",
+     "k": 8,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 583.12
+     }
+    },
+    {
+     "say": "像 0 1 2 3 這樣開頭也合法，一樣符合先後關係。",
+     "k": 9,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 595.56
+     }
+    },
+    {
+     "say": "只要先後關係有保留，就是對的答案。同一個 AOV 可能有好幾個 topological order。",
+     "k": 10,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 614.22
+     }
+    },
+    {
+     "say": "不想用 count 也行：inverse adjacency list 記錄「誰指向我」，也能掌握 in-degree。",
+     "k": 11,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 643.02
+     }
+    },
+    {
+     "say": "把它跟 adjacency list 搭配也做得到，這裡用最簡單的，多一個 count 欄位。",
+     "k": 12,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 673.03
+     }
+    }
+   ]
+  },
+  {
+   "title": "AOE network：activity 在邊上",
+   "scene": "galgo-aoe-net",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "接著看 AOE network，Activity On Edge。跟 AOV 相反，activity 放在邊上。",
+     "k": 1,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 692.21
+     }
+    },
+    {
+     "say": "那頂點代表什麼？是「事件」，告訴你某些 activity 什麼時候開始、什麼時候結束。",
+     "k": 2,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 707.27
+     }
+    },
+    {
+     "say": "這是一張 AOE，vertex 0 代表整個 project 的開始。",
+     "k": 3,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 726.22
+     }
+    },
+    {
+     "say": "你可以想成我們要做一個 project，例如開發一個 web 搜尋引擎，分成好幾個步驟。",
+     "k": 4,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 736.77
+     }
+    },
+    {
+     "say": "這裡有 11 個步驟，就是 11 個 activity，a1 到 a11，每條箭頭一個。",
+     "k": 5,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 751.41
+     }
+    },
+    {
+     "say": "a1 是 0 → 1，要 6 個時間單位。邊上的數字就是所需時間。",
+     "read": "a1 是 0 到 1，要 6 個時間單位。邊上的數字就是所需時間。",
+     "k": 6,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 763.54
+     }
+    },
+    {
+     "say": "a2 要 4，a3 要 5。",
+     "k": 7,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 776.33
+     }
+    },
+    {
+     "say": "一開始 a1、a2、a3 可以同時做：團隊裡有人負責 a1、有人 a2、有人 a3。",
+     "k": 8,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 796.05
+     }
+    },
+    {
+     "say": "看事件 4：a4 和 a5 都要做完，才算到達事件 4。",
+     "k": 9,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 810.23
+     }
+    },
+    {
+     "say": "到了事件 4，a7 和 a8 才能開始。",
+     "k": 10,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 837.32
+     }
+    },
+    {
+     "say": "一直做到最後的頂點 8，整個 project 就完成了。",
+     "k": 11,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 846.17
+     }
+    },
+    {
+     "say": "大公司常用 AOE 控管進度：誰負責哪段、要花多久，一目了然。",
+     "k": 12,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 854.73
+     }
+    },
+    {
+     "say": "如果其中一個人 delay，整個 project 可能就沒辦法如期完成。所以要知道哪裡不能拖。",
+     "k": 13,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 876.46
+     }
+    }
+   ]
+  },
+  {
+   "title": "AOE 的 adjacency list",
+   "scene": "galgo-aoe-list",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "AOE 在電腦裡一樣存成 adjacency list。",
+     "k": 1,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 962.02
+     }
+    },
+    {
+     "say": "每個頂點前面一樣有 count 欄位，記 in-degree。",
+     "k": 2,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 981.75
+     }
+    },
+    {
+     "say": "比如 vertex 0 連出去有 1、2、3 三個 node。",
+     "k": 3,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 998.98
+     }
+    },
+    {
+     "say": "跟 AOV 不同的是，每個 node 多一個欄位：duration，持續時間。",
+     "k": 4,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1012.75
+     }
+    },
+    {
+     "say": "duration 就是這個 activity 要花的時間，0 → 1 是 6。",
+     "read": "duration 就是這個 activity 要花的時間，0 到 1 是 6。",
+     "k": 5,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1027.53
+     }
+    },
+    {
+     "say": "0 → 2 是 4，0 → 3 是 5。",
+     "read": "0 到 2 是 4，0 到 3 是 5。",
+     "k": 6,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1058.41
+     }
+    },
+    {
+     "say": "所以 AOE 的 list 除了頂點，還要把 duration 一起放上去。",
+     "k": 7,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1072.02
+     }
+    }
+   ]
+  },
+  {
+   "title": "最早時間 ee：topological order 加 stack",
+   "scene": "galgo-aoe-ee",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "接下來算每個事件最早什麼時候發生，記成 ee，earliest event time。",
+     "k": 1,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1091.5
+     }
+    },
+    {
+     "say": "老師說成 activity 最早什麼時候完成。嚴格說，ee 是頂點，也就是事件的時間。",
+     "k": 1,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1091.5
+     }
+    },
+    {
+     "say": "先看 a1，假設時間從 0 開始，它最早什麼時候完成？",
+     "k": 2,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1123.05
+     }
+    },
+    {
+     "say": "a1 要 6 天，沒有 delay 的話，最早第 6 天完成。",
+     "k": 3,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1161.52
+     }
+    },
+    {
+     "say": "a2 要 4 天，最早第 4 天。",
+     "k": 4,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1205.26
+     }
+    },
+    {
+     "say": "時間就寫在邊指到的那個頂點上，頂點 1 寫 6。",
+     "k": 5,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1224.8
+     }
+    },
+    {
+     "say": "要有系統地算完每個點，就用 topological order，再配一個 stack。",
+     "k": 6,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1264.12
+     }
+    },
+    {
+     "say": "一開始 in-degree 是 0 的只有起點 0，push 進 stack。",
+     "k": 7,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1285.16
+     }
+    },
+    {
+     "say": "pop 出 0，它的時間是 0。",
+     "k": 8,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1312.2
+     }
+    },
+    {
+     "say": "0 指到的點：0 + 6 到 1，0 + 4 到 2，0 + 5 到 3。",
+     "k": 9,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1336.39
+     }
+    },
+    {
+     "say": "0 處理完，1、2、3 的 count 各減 1，全部變 0。",
+     "k": 10,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1385.64
+     }
+    },
+    {
+     "say": "count 變 0 的就 push，stack 裡是 1、2、3，3 在最上面。",
+     "k": 11,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1405.8
+     }
+    },
+    {
+     "say": "pop 出最上面的 3，到達 3 的時間是 5。",
+     "k": 12,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1429.22
+     }
+    },
+    {
+     "say": "3 → 5 的 a6 要 2，所以 5 + 2 = 7，頂點 5 最早是 7。",
+     "read": "3 到 5 的 a6 要 2，所以 5 + 2 = 7，頂點 5 最早是 7。",
+     "k": 13,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1443.78
+     }
+    },
+    {
+     "say": "5 的 in-degree 變 0，push 進 stack。",
+     "k": 14,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1480.3
+     }
+    },
+    {
+     "say": "一直 pop、計算、push 到 stack 空。好幾條路進來時取最大，ee(4) = max(4 + 1, 6 + 1) = 7。",
+     "k": 15,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1495.42
+     }
+    },
+    {
+     "say": "影片跳過了後面。算完是 ee 依序 0、6、4、5、7、7、16、14、18，整個 project 最早第 18 天完成。",
+     "k": 15
+    },
+    {
+     "say": "所以 ee(v) 是指向 v 的 activity 全部做完的最早時間；activity 的最早開始時間，就是它起點的 ee。",
+     "k": 16,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1503.05
+     }
+    }
+   ]
+  },
+  {
+   "title": "Critical path 是什麼",
+   "scene": "galgo-crit-intro",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "換另一本教科書的例子。邊上的字母是 activity 和天數，像 A = 3；細線是不花時間的 dummy。",
+     "k": 1,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1527.7
+     }
+    },
+    {
+     "say": "目標：從這個 AOE 找出 critical path，關鍵路徑。",
+     "k": 2,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1559.64
+     }
+    },
+    {
+     "say": "起點到終點，有些點特別重要，因為它們沒有任何可以 delay 的空間。",
+     "k": 3,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1574.82
+     }
+    },
+    {
+     "say": "一般的 activity 可能有彈性，早一天、晚一天都沒關係。",
+     "k": 4,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1591.88
+     }
+    },
+    {
+     "say": "但 critical path 上的不行，一延誤，整個 project 就跟著延誤。",
+     "k": 5,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1608.86
+     }
+    },
+    {
+     "say": "找它分兩步：先算每個點最早的時間 ee，再算最晚的時間 le。",
+     "k": 6,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1614.72
+     }
+    }
+   ]
+  },
+  {
+   "title": "ee 往右推：sync 點取 max",
+   "scene": "galgo-ee-max",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "步驟一：照 topological order 由左往右，算每個點的 ee。",
+     "k": 1,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1622
+     }
+    },
+    {
+     "say": "起點是 0。公式 ee(w) = max{ ee(v) + dur(v, w) }，進來的路都要走完，所以取最大。",
+     "k": 2,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1640.5
+     }
+    },
+    {
+     "say": "到 2 要做 A，3 天，ee(2) = 3。",
+     "k": 3,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1697.58
+     }
+    },
+    {
+     "say": "到 3 要做 B，2 天，ee(3) = 2。",
+     "k": 4,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1713.2
+     }
+    },
+    {
+     "say": "為什麼多一個 6′？因為 2 和 3 都會接到它，它是個特別的點。",
+     "read": "為什麼多一個 6撇？因為 2 和 3 都會接到它，它是個特別的點。",
+     "k": 5,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1724.52
+     }
+    },
+    {
+     "say": "6′ 是 sync，同步點：A 和 B 都做完，才能開始 D。",
+     "read": "6撇 是 sync，同步點：A 和 B 都做完，才能開始 D。",
+     "k": 6,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1763.21
+     }
+    },
+    {
+     "say": "一個 3、一個 2，都要完成，取 max(3, 2) = 3，D 最早第 3 天開始。",
+     "k": 7,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1798.38
+     }
+    },
+    {
+     "say": "D 要 2 天，到 6 的時間是 3 + 2 = 5。",
+     "k": 8,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1821.48
+     }
+    },
+    {
+     "say": "上面那條 C：從 2 的第 3 天做 3 天，ee(4) = 6。",
+     "k": 9,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1840.62
+     }
+    },
+    {
+     "say": "下面那條 E：從 3 的第 2 天做 1 天，ee(5) = 3。",
+     "k": 10,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1896.72
+     }
+    },
+    {
+     "say": "這些就是每個點最早的到達時間，arrival time。",
+     "k": 11,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1905.93
+     }
+    },
+    {
+     "say": "7′ 也是 sync：C、D 都完成才能做 F。6 跟 5 取 max 是 6，再做 F 的 3 天，ee(7) = 9。",
+     "read": "7撇 也是 sync：C、D 都完成才能做 F。6 跟 5 取 max 是 6，再做 F 的 3 天，ee(7) = 9。",
+     "k": 12,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1919.86
+     }
+    },
+    {
+     "say": "一路推到底，整個 project 最早第 10 天完成。",
+     "k": 13,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1956.78
+     }
+    },
+    {
+     "say": "每個點的意思是：連進來的 activity 最早何時做完。像 K 從 5 的第 3 天開始，第 7 天就能做完。",
+     "k": 14,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 1990.25
+     }
+    }
+   ]
+  },
+  {
+   "title": "le 往左推：分岔點取 min",
+   "scene": "galgo-le-min",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "反過來問：每個事件最晚什麼時候要發生，project 才不會延誤？記成 le，latest。",
+     "k": 1,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2024.87
+     }
+    },
+    {
+     "say": "方向相反：ee 從左往右，le 從右往左。",
+     "k": 2,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2070.14
+     }
+    },
+    {
+     "say": "已經知道第 10 天要完成，就把 10 當底線，從這裡往回推。",
+     "k": 3,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2080.48
+     }
+    },
+    {
+     "say": "往回推用 reverse topological order：原本數 in-degree，現在改數 out-degree。",
+     "k": 4,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2114.44
+     }
+    },
+    {
+     "say": "公式 le(v) = min{ le(w) − dur(v, w) }，往左走一步，就減掉那條邊的時間。",
+     "read": "公式 le(v) = min{ le(w) 減 dur(v, w) }，往左走一步，就減掉那條邊的時間。",
+     "k": 5,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2156.84
+     }
+    },
+    {
+     "say": "H 要 1 天，所以 10′ 最晚第 9 天要到。",
+     "read": "H 要 1 天，所以 10撇 最晚第 9 天要到。",
+     "k": 6,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2173.6
+     }
+    },
+    {
+     "say": "7 到 10′ 是 0 天的 dummy，le(7) = 9。",
+     "read": "7 到 10撇 是 0 天的 dummy，le(7) = 9。",
+     "k": 7,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2196.52
+     }
+    },
+    {
+     "say": "F 要 3 天，7′ 最晚第 6 天。另一邊 G 要 2 天，le(8) = 7。",
+     "read": "F 要 3 天，7撇 最晚第 6 天。另一邊 G 要 2 天，le(8) = 7。",
+     "k": 8,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2219.98
+     }
+    },
+    {
+     "say": "來到分岔點 5：走 dummy 到 8 是 7 − 0 = 7，做 K 到 10′ 是 9 − 4 = 5。7 還是 5？",
+     "read": "來到分岔點 5：走 dummy 到 8 是 7 減 0 = 7，做 K 到 10撇 是 9 減 4 = 5。7 還是 5？",
+     "k": 9,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2243.18
+     }
+    },
+    {
+     "say": "準則是取最小，le(5) = min(7, 5) = 5。",
+     "k": 10,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2275.23
+     }
+    },
+    {
+     "say": "為什麼不能選 7？",
+     "k": 11,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2297.26
+     }
+    },
+    {
+     "say": "第 7 天才開始做 K，K 要 4 天，7 + 4 = 11，超過 10 天的底線。",
+     "k": 12,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2323.96
+     }
+    },
+    {
+     "say": "所以 K 最晚第 5 天要開始，5 + 4 = 9 剛好趕上。取最小，就是保證每條路都趕得上。",
+     "k": 13,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2346.89
+     }
+    },
+    {
+     "say": "其他點一樣往左推：le(4) = 6、le(6) = 6、le(6′) = 4、le(3) = 4、le(2) = 3，起點是 0。",
+     "read": "其他點一樣往左推：le(4) = 6、le(6) = 6、le(6撇) = 4、le(3) = 4、le(2) = 3，起點是 0。",
+     "k": 14,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2390.34
+     }
+    }
+   ]
+  },
+  {
+   "title": "找出 critical path",
+   "scene": "galgo-critical-path",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "紅色的 le，就是每個點最晚可以拖到什麼時候。",
+     "k": 1,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2404.92
+     }
+    },
+    {
+     "say": "現在每個頂點都有兩個數字：藍色 ee、紅色 le。",
+     "k": 2,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2424.69
+     }
+    },
+    {
+     "say": "critical path 上的點，ee 跟 le 一定相等，完全沒彈性。灰掉的就是還有空間可以拖的點。",
+     "k": 3,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2430.24
+     }
+    },
+    {
+     "say": "但老師說「點相減為 0 連起來」不夠嚴謹，要看邊：activity 最早開始等於最晚開始，才是 critical activity。",
+     "k": 3,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2430.24
+     }
+    },
+    {
+     "say": "activity 從 k 到 l，最早開始是 ee(k)，最晚開始是 le(l) 減掉它的 duration。",
+     "k": 3
+    },
+    {
+     "say": "把 critical activity 連起來，就是紅色這條：X → 2 → 4 → 7′ → 7 → 10′ → 10。",
+     "read": "把 critical activity 連起來，就是紅色這條：X 到 2 到 4 到 7撇 到 7 到 10撇 到 10。",
+     "k": 4,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2449.27
+     }
+    },
+    {
+     "say": "它的總長 3 + 3 + 3 + 1 = 10，正好是整個 project 最短需要的時間。",
+     "k": 5,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2457.55
+     }
+    },
+    {
+     "say": "老師留了問題：critical path 一定存在嗎？會的，它就是起點到終點最長的路，而且可能不只一條。",
+     "k": 6,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2471.76
+     }
+    },
+    {
+     "say": "所以只縮短不在 critical path 上的 activity，project 並不會提早完成。",
+     "k": 6
+    },
+    {
+     "say": "怎麼找出所有 critical path？算出 ee、le 之後，把沒有彈性的 activity 連起來就是。",
+     "k": 7,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2496.39
+     }
+    },
+    {
+     "say": "這堂的重點：topological order 怎麼算，以及 AOV、AOE 怎麼用它推出 critical path。",
+     "k": 8,
+     "src": {
+      "v": "Yx0dJFe1VdM",
+      "t": 2528.77
+     }
+    }
+   ]
+  }
+ ]
+}

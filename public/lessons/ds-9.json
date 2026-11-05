@@ -1,0 +1,3474 @@
+{
+ "chapter": "ds-9",
+ "title": "進階樹：B-Tree、B+ Tree、Trie",
+ "intro": "從「硬碟一次讀一個 block」出發，弄懂 B-tree 為什麼長這樣、怎麼插入和刪除，再看 B+ tree 怎麼做範圍查詢，最後用 Trie 做前綴搜尋。",
+ "parts": [
+  {
+   "title": "為什麼要先懂硬碟",
+   "scene": "btree-ab-disk",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "B-tree 跟 B+ tree 是資料庫裡的核心結構。很多人只背插入刪除的步驟，卻不知道它為什麼長這樣。",
+     "read": "B-tree 跟 B plus tree 是資料庫裡的核心結構。很多人只背插入刪除的步驟，卻不知道它為什麼長這樣。",
+     "k": 1,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 31
+     }
+    },
+    {
+     "say": "所以我們先從硬碟講起。硬碟裡有一張會轉的圓盤，叫 platter，資料就寫在盤面上。",
+     "k": 1,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 82.65
+     }
+    },
+    {
+     "say": "盤面上劃了一圈一圈的同心圓。欸，這些圓不是真的刻上去的，是邏輯上的分區方式。",
+     "k": 2,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 90.97
+     }
+    },
+    {
+     "say": "每一圈叫 track，磁軌，由內到外編號 track 0、1、2、3。",
+     "k": 3,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 96.09
+     }
+    },
+    {
+     "say": "再從中心像切披薩一樣切成扇形，每一塊叫 sector，磁區。",
+     "k": 4,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 102.61
+     }
+    },
+    {
+     "say": "sector 也有編號，這裡是 0 到 5。整個盤面就被切成很多小格子。",
+     "k": 5,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 111.05
+     }
+    },
+    {
+     "say": "某一圈 track 跟某一塊 sector 交會的那一小格，就叫 block，區塊。",
+     "k": 6,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 128.15
+     }
+    },
+    {
+     "say": "要指定一個 block，只要說第幾個 track、第幾個 sector，例如 track 1、sector 0。",
+     "k": 7,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 149.8
+     }
+    },
+    {
+     "say": "藍色這格是 track 2、sector 1。每個 block 都能用這兩個號碼唯一找到。",
+     "k": 8,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 165.8
+     }
+    },
+    {
+     "say": "block 多大看廠商，學的時候通常假設 512 bytes，一個 byte 大約存一個英文字母。",
+     "k": 9,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 174.43
+     }
+    },
+    {
+     "say": "重點來了：讀寫硬碟，一次一定搬一整個 block，不會只搬 1 個 byte。",
+     "k": 10,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 194.97
+     }
+    },
+    {
+     "say": "所以後面估時間，都是在算「讀了幾個 block」。",
+     "k": 10
+    },
+    {
+     "say": "把一個 block 攤開，裡面有 512 個 byte，從第 0 個排到第 511 個。",
+     "k": 11,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 201.61
+     }
+    },
+    {
+     "say": "每個 byte 的位置編號叫 offset。紅色這格是第 2 個 byte，offset 就是 2。",
+     "k": 12,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 212.53
+     }
+    },
+    {
+     "say": "所以要找到硬碟上的某一個 byte，要三樣東西：track、sector，再加上 offset。",
+     "k": 13,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 249.12
+     }
+    },
+    {
+     "say": "硬碟裝在主軸上會轉，旁邊有一支磁頭臂，前端的 head 負責讀寫。",
+     "k": 14,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 269.32
+     }
+    },
+    {
+     "say": "盤一轉，head 底下經過的 sector 就換了，所以轉盤是用來換 sector。",
+     "k": 15,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 275.82
+     }
+    },
+    {
+     "say": "磁頭臂往內、往外移，就換到不同圈，所以移臂是用來換 track。",
+     "k": 16,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 284.8
+     }
+    },
+    {
+     "say": "結論一句話：硬碟上的資料，以 block 為單位存放，也以 block 為單位讀寫。",
+     "k": 17,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 306.96
+     }
+    }
+   ]
+  },
+  {
+   "title": "資料要先搬進記憶體",
+   "scene": "btree-ab-ram",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "那資料讀出來要去哪？去 main memory，也就是 RAM。",
+     "k": 1,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 314.4
+     }
+    },
+    {
+     "say": "程式是在 main memory 裡執行的，它沒辦法直接在硬碟上處理資料。",
+     "k": 2,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 325.8
+     }
+    },
+    {
+     "say": "要用硬碟上的資料，得先把那個 block 搬進 main memory，程式才讀得到。",
+     "k": 3,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 333.97
+     }
+    },
+    {
+     "say": "處理完，有結果要保存，再把資料寫回硬碟。",
+     "k": 4,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 343.69
+     }
+    },
+    {
+     "say": "搬一次很花時間，所以目標很明確：盡量少讀幾個 block。",
+     "k": 5,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 349.07
+     }
+    },
+    {
+     "say": "在 main memory 裡怎麼安排資料，讓程式快速使用，就是資料結構在學的。",
+     "k": 6,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 360.99
+     }
+    },
+    {
+     "say": "在硬碟上怎麼有效率地存資料，是 DBMS 在研究的。B-tree 剛好把這兩邊接起來。",
+     "k": 7,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 376.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "一張表要佔幾個 block",
+   "scene": "btree-ab-table",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "來看例子：一張 employee 表，有 100 筆 record，每一列就是一筆。",
+     "k": 1,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 398.93
+     }
+    },
+    {
+     "say": "5 個欄位：ID 10 bytes、name 50、department 10、section 8、address 50。",
+     "k": 2,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 428.59
+     }
+    },
+    {
+     "say": "加起來 128 bytes，所以每筆 record 佔 128 bytes。",
+     "k": 3,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 434.67
+     }
+    },
+    {
+     "say": "你想想看，一個 512 bytes 的 block 放得下幾筆？",
+     "k": 4,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 457.08
+     }
+    },
+    {
+     "say": "512 除以 128 等於 4，一個 block 剛好放 4 筆。",
+     "k": 5,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 463.52
+     }
+    },
+    {
+     "say": "所以前 4 列放第一個 block，接下來 4 列放下一個，依此類推。",
+     "k": 6,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 488.8
+     }
+    },
+    {
+     "say": "100 筆除以 4，整張表要佔 25 個 block。",
+     "k": 7,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 518.8
+     }
+    },
+    {
+     "say": "現在要找 employee ID 是 5 的那筆。問題是，我們不知道它在哪個 block。",
+     "k": 8,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 535.62
+     }
+    },
+    {
+     "say": "查詢花多少時間，主要看讀了幾個 block，因為讀硬碟比在記憶體裡比較慢太多了。",
+     "k": 9,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 548.8
+     }
+    },
+    {
+     "say": "沒有線索，就只能一個一個讀，最壞 25 個全讀完。能不能更快？可以，建 index。",
+     "k": 10,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 561.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Index：從 25 次降到 5 次",
+   "scene": "btree-ab-index",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "index 就像書最後面的索引頁：關鍵字對到第幾頁。這裡每個 entry 存一個 key，就是 employee ID。",
+     "k": 1,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 586.8
+     }
+    },
+    {
+     "say": "再配一個 pointer，指向那筆 record 放在哪個 block。",
+     "k": 2,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 596.26
+     }
+    },
+    {
+     "say": "這種指到 record 的指標，叫 record pointer。",
+     "k": 3,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 619.8
+     }
+    },
+    {
+     "say": "表裡每一筆 record，在 index 都有自己的 entry，這叫 dense index，密集索引。",
+     "k": 4,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 627.7
+     }
+    },
+    {
+     "say": "注意，index 自己也要存在硬碟上，所以它也會佔 block。",
+     "k": 5,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 634.8
+     }
+    },
+    {
+     "say": "那 index 多大？先算一個 entry：employee ID 是 10 bytes，",
+     "k": 6,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 655.8
+     }
+    },
+    {
+     "say": "record pointer 假設 6 bytes，一個 entry 就是 16 bytes。100 筆就有 100 個 entry。",
+     "k": 7,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 671.52
+     }
+    },
+    {
+     "say": "512 除以 16 等於 32，一個 block 放 32 個 entry。",
+     "k": 8,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 694.8
+     }
+    },
+    {
+     "say": "100 除以 32 是 3.125，三個 block 放不下。",
+     "k": 9,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 715.83
+     }
+    },
+    {
+     "say": "block 只能整塊用，所以進位成 4 個。index 才 4 個 block，比整張表的 25 個小很多。",
+     "k": 10,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 735.8
+     }
+    },
+    {
+     "say": "查詢時先在 index 找 key，最多讀 4 個 index block 就找到。",
+     "k": 11,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 744.39
+     }
+    },
+    {
+     "say": "找到 entry，再用 record pointer，直接讀資料所在的那 1 個 block。",
+     "k": 12,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 751.39
+     }
+    },
+    {
+     "say": "總共 4 加 1，5 次 block 存取，原本最壞要 25 次。這就是 index 的威力。",
+     "k": 13,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 780.63
+     }
+    }
+   ]
+  },
+  {
+   "title": "Multi-level index：幫 index 再建 index",
+   "scene": "btree-ab-multilevel",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "那問題來了：如果 index 本身也越來越大呢？",
+     "k": 1,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 799.99
+     }
+    },
+    {
+     "say": "假設資料變成 1000 筆，表就要 250 個 block。",
+     "k": 2,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 808.37
+     }
+    },
+    {
+     "say": "index 也變 1000 個 entry。老師說約 40 個 block，其實細算是 1000 除以 32，大約 32 個，他只是補個 0 好講。",
+     "k": 3,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 813.53
+     }
+    },
+    {
+     "say": "光在幾十個 block 的 index 裡找就很慢了。那就幫 index 再建一個 index！",
+     "k": 4,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 830.97
+     }
+    },
+    {
+     "say": "上一層不用對每個 entry 都放一筆，而是下一層的每個 block 放一筆。",
+     "k": 5,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 844.8
+     }
+    },
+    {
+     "say": "下層一個 block 有 32 個 entry，上層一個 entry 就管這一整塊。",
+     "k": 6,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 855.89
+     }
+    },
+    {
+     "say": "例如上層第一筆 key 是 1，指向第一個 index block；下一筆是 33，因為第一塊裝了 1 到 32。",
+     "k": 7,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 863.11
+     }
+    },
+    {
+     "say": "這種不是每筆都有 entry 的 index，叫 sparse index，稀疏索引。",
+     "k": 8,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 867.29
+     }
+    },
+    {
+     "say": "照 40 個 block 算，上層有 40 個 entry，一個 block 放 32 個，只要 2 個 block。",
+     "k": 9,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 894.53
+     }
+    },
+    {
+     "say": "查詢：上層讀 2 個、index 讀 1 個、表讀 1 個，總共 4 次。",
+     "k": 10,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 913.11
+     }
+    },
+    {
+     "say": "多蓋一層 index，block 存取就更少。這個一層一層往上蓋的想法，就是 B-tree 的來源。",
+     "k": 11,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 932.21
+     }
+    }
+   ]
+  },
+  {
+   "title": "多層 index 轉過來就是一棵樹",
+   "scene": "btree-ab-index-tree",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "把多層 index 畫出來：右邊是資料表，中間是主 index，每個 entry 指向一組 record。",
+     "k": 1,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 942.25
+     }
+    },
+    {
+     "say": "主 index 太大，就在上面加一層，每個 entry 指向下一層的一組 entry。",
+     "k": 2,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 961.16
+     }
+    },
+    {
+     "say": "這層也太大？再往上加一層，道理一樣。",
+     "k": 3,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 979.3
+     }
+    },
+    {
+     "say": "表越長越大，index 就一層一層往上加，存取的 block 數就壓下來了。",
+     "k": 4,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 994.82
+     }
+    },
+    {
+     "say": "欸，把這張圖轉 90 度來看：最上面一個入口，往下分岔，這不就是一棵樹嗎？",
+     "k": 5,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1005.84
+     }
+    },
+    {
+     "say": "那問題來了：難道要有人一直盯著資料庫，太大就手動加一層？",
+     "k": 6,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1040.48
+     }
+    },
+    {
+     "say": "當然不想。我們希望表變大時自動加一層，資料刪掉、表變小時也自動拿掉一層。",
+     "k": 7,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1052.98
+     }
+    },
+    {
+     "say": "這叫 self-managed multi-level index，自己管理層數的多層索引。",
+     "k": 8,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1066.1
+     }
+    },
+    {
+     "say": "B-tree 跟 B+ tree 就是這個東西：會自己長高、自己變矮的多層 index。",
+     "read": "B-tree 跟 B plus tree 就是這個東西：會自己長高、自己變矮的多層 index。",
+     "k": 9,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1080.8
+     }
+    },
+    {
+     "say": "它們都是從 m-way search tree 演變來的，所以先來認識 m-way search tree。",
+     "read": "它們都是從 m way search tree 演變來的，所以先來認識 m way search tree。",
+     "k": 10,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1093.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "m-way search tree",
+   "scene": "btree-ab-mway",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "先回想 binary search tree，BST：每個 node 放一個 key。",
+     "k": 1,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1104.36
+     }
+    },
+    {
+     "say": "找東西從 root 開始，比較小往左，比較大往右。",
+     "k": 2,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1110.86
+     }
+    },
+    {
+     "say": "例如找 15：15 比 10 大往右，比 20 小往左，找到。",
+     "k": 3,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1124.8
+     }
+    },
+    {
+     "say": "BST 每個 node 只放 1 個 key，",
+     "k": 4,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1138.24
+     }
+    },
+    {
+     "say": "最多 2 個 child，所以叫 binary，二元。",
+     "k": 5,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1153.12
+     }
+    },
+    {
+     "say": "那一個 node 能不能放兩個 key、有三個 child？可以！例如 node 裡放 20 跟 50。",
+     "k": 6,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1168.88
+     }
+    },
+    {
+     "say": "比 20 小的，10 和 15，放最左邊的 child。",
+     "k": 7,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1174.8
+     }
+    },
+    {
+     "say": "介於 20 和 50 之間的，30 和 35，放中間。",
+     "k": 8,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1180.92
+     }
+    },
+    {
+     "say": "比 50 大的，60 和 90，放右邊。道理跟 BST 一樣，所以它也是 search tree。",
+     "k": 9,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1188.18
+     }
+    },
+    {
+     "say": "搜尋 30：比 20 大、比 50 小，走中間，找到。每個 node 多比幾次，方法不變。",
+     "k": 10,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1210.32
+     }
+    },
+    {
+     "say": "這個例子每個 node 最多 2 個 key，",
+     "k": 11,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1232.62
+     }
+    },
+    {
+     "say": "最多 3 個 child，所以叫 3-way search tree。",
+     "read": "最多 3 個 child，所以叫 3 way search tree。",
+     "k": 12,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1238.18
+     }
+    },
+    {
+     "say": "一般化：每個 node 最多 m 個 child，就叫 m-way search tree，m 也叫 degree。",
+     "read": "一般化：每個 node 最多 m 個 child，就叫 m way search tree，m 也叫 degree。",
+     "k": 13,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1252.14
+     }
+    },
+    {
+     "say": "m 個 child，中間就夾著 m − 1 個 key。",
+     "read": "m 個 child，中間就夾著 m 減 1 個 key。",
+     "k": 14,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1261.3
+     }
+    },
+    {
+     "say": "所以 BST 其實就是 degree 2 的 m-way search tree。",
+     "read": "所以 BST 其實就是 degree 2 的 m way search tree。",
+     "k": 15,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1278.8
+     }
+    },
+    {
+     "say": "degree 可以是 100、甚至 1000。degree 100 的 node 放 99 個 key，剛好可以塞滿一個硬碟 block。",
+     "k": 16,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1285.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "節點裡的三樣東西",
+   "scene": "btree-ab-node",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "再看 node 長什麼樣。BST 的 node：中間放資料，兩邊各一個 child pointer。",
+     "k": 1,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1306
+     }
+    },
+    {
+     "say": "m-way 要更多 child pointer。以 4-way 為例：4 個 child、3 個 key。",
+     "read": "m way 要更多 child pointer。以 4 way 為例：4 個 child、3 個 key。",
+     "k": 2,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1319.68
+     }
+    },
+    {
+     "say": "從左邊畫：先一個 cp，也就是 child pointer，後面接 K1。",
+     "k": 3,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1333.8
+     }
+    },
+    {
+     "say": "再一個 cp，接 K2，",
+     "k": 4,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1343.08
+     }
+    },
+    {
+     "say": "再一個 cp、K3，最後一個 cp。排成 cp K1 cp K2 cp K3 cp。",
+     "k": 5,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1349.08
+     }
+    },
+    {
+     "say": "m 個 child pointer 就要 m − 1 個 key 的位置，每個 cp 在硬碟上就指向一個 block。",
+     "read": "m 個 child pointer 就要 m 減 1 個 key 的位置，每個 cp 在硬碟上就指向一個 block。",
+     "k": 6,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1360.02
+     }
+    },
+    {
+     "say": "那這種 node 能不能拿來建資料庫的 index？試試看。",
+     "k": 7,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1386.69
+     }
+    },
+    {
+     "say": "當 index 用的話，每個 key 後面還要多一個 pointer，",
+     "k": 8,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1421.27
+     }
+    },
+    {
+     "say": "就是 record pointer，指向資料庫裡那筆 record。index 本來就是要用 key 找資料嘛。",
+     "k": 9,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1442.21
+     }
+    },
+    {
+     "say": "樹本來就有很多層，所以 m-way search tree 天生就能做多層 index。",
+     "read": "樹本來就有很多層，所以 m way search tree 天生就能做多層 index。",
+     "k": 10,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1459.85
+     }
+    },
+    {
+     "say": "記住這三樣：key、child pointer、record pointer。degree 4 就是 4 個 cp、3 個 key、3 個 rp。",
+     "k": 11,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1472.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "沒有規則，樹會長歪",
+   "scene": "btree-ab-skew",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "可是直接拿 m-way search tree 當 index，會出什麼問題？",
+     "read": "可是直接拿 m way search tree 當 index，會出什麼問題？",
+     "k": 1,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1486.87
+     }
+    },
+    {
+     "say": "用一棵 10-way search tree 當例子：每個 node 最多 10 個 child、9 個 key。",
+     "read": "用一棵 10 way search tree 當例子：每個 node 最多 10 個 child、9 個 key。",
+     "k": 2,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1531.85
+     }
+    },
+    {
+     "say": "插入 10：建一個 node 放 10，這個 node 還有 8 個空位。",
+     "k": 3,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1540.97
+     }
+    },
+    {
+     "say": "插入 20：明明還有空位，卻另開一個 child 放 20。",
+     "k": 4,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1555.79
+     }
+    },
+    {
+     "say": "插入 30：又往右再開一個 node。樹變成一條往下斜的線。",
+     "k": 5,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1560.75
+     }
+    },
+    {
+     "say": "這樣很浪費。應該先把一個 node 填滿，再考慮開新的。",
+     "k": 6,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1576.13
+     }
+    },
+    {
+     "say": "可是 m-way search tree 沒有任何規定，你愛怎麼插就怎麼插。",
+     "read": "可是 m way search tree 沒有任何規定，你愛怎麼插就怎麼插。",
+     "k": 7,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1582.91
+     }
+    },
+    {
+     "say": "最壞情況，n 個 key 長成 n 層，搜尋一層一層往下，退化成 linear search。",
+     "k": 8,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1593.81
+     }
+    },
+    {
+     "say": "所以問題出在：建樹的過程沒有規範。",
+     "k": 9,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1606.33
+     }
+    },
+    {
+     "say": "把規則加上去，m-way search tree 就變成 B-tree。",
+     "read": "把規則加上去，m way search tree 就變成 B-tree。",
+     "k": 10,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1625.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "B-tree 的規則",
+   "scene": "btree-ab-rules",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "B-tree 就是加上規則的 m-way search tree。右邊這棵 degree 4 的樹，符合全部規則。",
+     "read": "B-tree 就是加上規則的 m way search tree。右邊這棵 degree 4 的樹，符合全部規則。",
+     "k": 1,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1646.33
+     }
+    },
+    {
+     "say": "規則一：每個 node 至少半滿。非 root 的 internal node，至少要有 ⌈m/2⌉ 個 child。",
+     "read": "規則一：每個 node 至少半滿。非 root 的 internal node，至少要有 m 除以 2 取上整 個 child。",
+     "k": 2,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1652.07
+     }
+    },
+    {
+     "say": "注意是 ceiling，無條件進位，不是 floor。例如 ⌈5/2⌉ 是 3。",
+     "read": "注意是 ceiling，無條件進位，不是 floor。例如 5 除以 2 取上整 是 3。",
+     "k": 3,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1663.37
+     }
+    },
+    {
+     "say": "degree 10 的話，非 root 的 internal node，隨時都要至少 5 個 child。",
+     "k": 4,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1671.31
+     }
+    },
+    {
+     "say": "老師這裡講成「先有 5 個 child 才能開新的 node」，其實這不是建立的順序。",
+     "k": 4
+    },
+    {
+     "say": "它是每個 node 隨時都要守的下限；leaf 沒有 child，不套這條。",
+     "k": 4
+    },
+    {
+     "say": "規則二：這條能套在 root 上嗎？不行。第一個 key 插進去時，root 只有 1 個 key，馬上違規。",
+     "k": 5,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1690.8
+     }
+    },
+    {
+     "say": "所以 root 例外：至少 2 個 child 就好，也就是 root 可以只有 1 個 key。",
+     "k": 6,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1704.12
+     }
+    },
+    {
+     "say": "規則三：所有 leaf 都在同一層，所以每次搜尋走的層數都一樣。",
+     "k": 7,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1733.14
+     }
+    },
+    {
+     "say": "建 m-way search tree 時守住這些規則，你其實就是在建 B-tree。",
+     "read": "建 m way search tree 時守住這些規則，你其實就是在建 B-tree。",
+     "k": 8,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1741.6
+     }
+    },
+    {
+     "say": "第四點是建法：bottom-up。key 一律先進 leaf，滿了就 split 往上送，樹是從 root 那端長高的。",
+     "k": 9,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1756.82
+     }
+    }
+   ]
+  },
+  {
+   "title": "用 order 4 把規則算一遍",
+   "scene": "btree-hi-rules",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "我們用數字把規則算一遍。題目給一串 key 要依序插進 B-tree，第一件事是看 order m。",
+     "k": 1,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 9.14
+     }
+    },
+    {
+     "say": "order m 就是一個 node 最多幾個 child，所以 order m 的 B-tree，也是一棵 m-way search tree。",
+     "read": "order m 就是一個 node 最多幾個 child，所以 order m 的 B-tree，也是一棵 m way search tree。",
+     "k": 2,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 15.07
+     }
+    },
+    {
+     "say": "取 m = 4：一個 node 有 4 個 pointer 的位置，",
+     "read": "取 m 等於 4：一個 node 有 4 個 pointer 的位置，",
+     "k": 3,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 23.6
+     }
+    },
+    {
+     "say": "4 個 pointer 中間只夾得下 3 個 key，所以最多 m − 1 = 3 個 key，而且由小排到大。",
+     "read": "4 個 pointer 中間只夾得下 3 個 key，所以最多 m 減 1 等於 3 個 key，而且由小排到大。",
+     "k": 4,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 24.92
+     }
+    },
+    {
+     "say": "已經 3 個 key，第 4 個又擠進來，就是 overflow，要 split。",
+     "k": 5,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 45.17
+     }
+    },
+    {
+     "say": "下限：internal node 至少 ⌈m/2⌉ 個 child，⌈4/2⌉ 等於 2。",
+     "read": "下限：internal node 至少 m 除以 2 取上整 個 child，4 除以 2 取上整 等於 2。",
+     "k": 6,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 61.02
+     }
+    },
+    {
+     "say": "老師講成 m/2，m = 4 剛好整除看不出差別；m 是奇數就會差 1，所以要取上整，而且 root 例外。",
+     "read": "老師講成 m 除以 2，m 等於 4 剛好整除看不出差別；m 是奇數就會差 1，所以要取上整，而且 root 例外。",
+     "k": 6
+    },
+    {
+     "say": "至少 2 個 child，中間就至少 1 個 key。合起來，order 4 的 B-tree，每個 node 有 1 到 3 個 key。",
+     "k": 7,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 84.67
+     }
+    },
+    {
+     "say": "一般式：非 root 的 node，key 數介於 ⌈m/2⌉ − 1 到 m − 1 之間。",
+     "read": "一般式：非 root 的 node，key 數介於 m 除以 2 取上整 減 1 到 m 減 1 之間。",
+     "k": 7
+    },
+    {
+     "say": "插入時找位置跟 BST 一樣：從 root 開始比大小走到 leaf，只是一個 node 裡有好幾個 key 要比。",
+     "k": 8,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 110.06
+     }
+    }
+   ]
+  },
+  {
+   "title": "2-3 tree 就是 order 3 的 B-tree",
+   "scene": "btree-p-23tree",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "B-tree 有兩個常見的小名：order 3 叫 2-3 tree，order 4 叫 2-3-4 tree。",
+     "read": "B-tree 有兩個常見的小名：order 3 叫 2 3 tree，order 4 叫 2 3 4 tree。",
+     "k": 1,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 33
+     }
+    },
+    {
+     "say": "這是一棵 2-3 tree。注意這裡的 order 是 B-tree 的 order：最多 3 個 child、2 個 key。",
+     "read": "這是一棵 2 3 tree。注意這裡的 order 是 B-tree 的 order：最多 3 個 child、2 個 key。",
+     "k": 2,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 40.26
+     }
+    },
+    {
+     "say": "root 至少 2 個 pointer 往下指，除非整棵樹只有它一個 node。",
+     "k": 3,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 51.51
+     }
+    },
+    {
+     "say": "不是 root 的 node，child 至少 ⌈3/2⌉，無條件進位就是 2。",
+     "read": "不是 root 的 node，child 至少 3 除以 2 取上整，無條件進位就是 2。",
+     "k": 4,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 61.03
+     }
+    },
+    {
+     "say": "數數看，B 跟 C 各有幾個 pointer 往下指？",
+     "k": 5,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 74.71
+     }
+    },
+    {
+     "say": "B 有 2 個 key，所以 3 個 pointer；C 有 1 個 key，2 個 pointer。都符合至少 2 個。",
+     "k": 6,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 83.53
+     }
+    },
+    {
+     "say": "每個 node 不是 2 個 child 就是 3 個，所以叫 2-3 tree。",
+     "read": "每個 node 不是 2 個 child 就是 3 個，所以叫 2 3 tree。",
+     "k": 7,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 93.27
+     }
+    }
+   ]
+  },
+  {
+   "title": "搜尋：四種情況",
+   "scene": "btree-p-search",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "搜尋跟 BST 一樣，從 root 比大小，決定往哪個 child 走。",
+     "k": 1,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 111.61
+     }
+    },
+    {
+     "say": "差別是 2-3 tree 的一個 node 裡，可能有兩個 key。",
+     "read": "差別是 2 3 tree 的一個 node 裡，可能有兩個 key。",
+     "k": 2,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 118.15
+     }
+    },
+    {
+     "say": "第一個叫 first key，第二個叫 second key，要找的 x 跟這兩個比。",
+     "k": 3,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 123.29
+     }
+    },
+    {
+     "say": "比的結果有四種情況。",
+     "k": 4,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 129.95
+     }
+    },
+    {
+     "say": "一：x 比 first key 小，走 left child。例如找 10，10 < 20，走左邊。",
+     "read": "一：x 比 first key 小，走 left child。例如找 10，10 小於 20，走左邊。",
+     "k": 5,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 136.71
+     }
+    },
+    {
+     "say": "二：x 夾在兩個 key 中間，走中間的 child。例如找 30，20 < 30 < 40。",
+     "read": "二：x 夾在兩個 key 中間，走中間的 child。例如找 30，20 小於 30 小於 40。",
+     "k": 6,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 144.75
+     }
+    },
+    {
+     "say": "三：x 比 second key 大，走最右邊的 pointer。例如找 80，80 > 40。",
+     "read": "三：x 比 second key 大，走最右邊的 pointer。例如找 80，80 大於 40。",
+     "k": 7,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 150.27
+     }
+    },
+    {
+     "say": "四：x 剛好等於某個 key，直接找到。例如找 40，在 root 就找到了。",
+     "k": 8,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 157.21
+     }
+    }
+   ]
+  },
+  {
+   "title": "插入：滿了就 split，樹往上長",
+   "scene": "btree-ab-ins1",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "好，開始插入。用 degree 4：每個 node 最多 4 個 child、3 個 key，依序插入 10、20、40、50。",
+     "k": 1,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1789.74
+     }
+    },
+    {
+     "say": "第一個 key 10：樹是空的，建一個 node 放 10。",
+     "k": 2,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1804.54
+     }
+    },
+    {
+     "say": "10 可以有左右兩個 child pointer；當 index 用的話，還有一個 record pointer 指向資料。",
+     "k": 3,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1811.64
+     }
+    },
+    {
+     "say": "插入 20，比 10 大，排在後面。",
+     "k": 4,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1815.02
+     }
+    },
+    {
+     "say": "插入 40，排最後，node 滿了。",
+     "k": 5,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1821.16
+     }
+    },
+    {
+     "say": "接著是 50，照大小應該排在最後面。",
+     "k": 6,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1823.18
+     }
+    },
+    {
+     "say": "可是已經 3 個 key，放不下第 4 個。硬塞就是 10、20、40、50，overflow。",
+     "k": 7,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1830.1
+     }
+    },
+    {
+     "say": "split：開一個新 node，10、20 留左邊，50 去右邊，40 送上去當 root。",
+     "k": 8,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1835.8
+     }
+    },
+    {
+     "say": "10、20 是 40 的左 child，50 是右 child。split 就是把 node 拆開，送一個 key 到上一層。",
+     "k": 9,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1853.26
+     }
+    },
+    {
+     "say": "你看，新的一層出現在最上面，樹是往上長的，這就是 bottom-up。",
+     "k": 10,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1875.18
+     }
+    },
+    {
+     "say": "對照多層 index：leaf 這層是第一層 index，上面這層就是自動長出來的第二層。",
+     "k": 11,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1889.24
+     }
+    }
+   ]
+  },
+  {
+   "title": "繼續插入：root 越來越滿",
+   "scene": "btree-ab-ins2",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "繼續。插入 60：比 40 大，走右邊到 50 那個 node，變成 50、60。",
+     "k": 1,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1906
+     }
+    },
+    {
+     "say": "插入 70，一樣往右，50、60、70，滿了。",
+     "k": 2,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1909.7
+     }
+    },
+    {
+     "say": "插入 80：該放右邊這個 node，但沒空間了。",
+     "k": 3,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1914.28
+     }
+    },
+    {
+     "say": "split：50、60 留左邊，80 去右邊，70 送到 root，root 變成 40、70。",
+     "k": 4,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1918.78
+     }
+    },
+    {
+     "say": "插入 30：比 40 小，走最左邊，10、20、30，滿了。",
+     "k": 5,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1938.66
+     }
+    },
+    {
+     "say": "插入 35：也走最左邊，可是沒位置了。",
+     "k": 6,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1944.8
+     }
+    },
+    {
+     "say": "split：10、20 留左邊，35 去右邊，30 往上送。",
+     "k": 7,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1953.32
+     }
+    },
+    {
+     "say": "root 變成 30、40、70，下面掛 4 個 child。",
+     "k": 8,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1972.7
+     }
+    },
+    {
+     "say": "規律就是：node 滿了又有 key 要進來，就分裂，把一個 key 送到 parent。",
+     "k": 9,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 1989.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "連續 split 與 left / right biased",
+   "scene": "btree-ab-ins3",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "插入 5：比 30 小，走最左邊，排最前面，5、10、20，滿了。",
+     "k": 1,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2000.14
+     }
+    },
+    {
+     "say": "插入 15：進同一個 leaf，排好是 5、10、15、20，沒空間。",
+     "k": 2,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2011.72
+     }
+    },
+    {
+     "say": "split：5、10 留左邊，20 在右邊，15 往上送。",
+     "k": 3,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2024.28
+     }
+    },
+    {
+     "say": "為什麼送第 3 個不送第 2 個？自己決定。送第 3 個左邊多，叫 left biased；送第 2 個右邊多，叫 right biased。",
+     "k": 4,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2039.07
+     }
+    },
+    {
+     "say": "兩種都合法，但長出來的樹不一樣，考試要照題目規定。Horowitz 課本的慣例是送第 ⌈m/2⌉ 個。",
+     "read": "兩種都合法，但長出來的樹不一樣，考試要照題目規定。Horowitz 課本的慣例是送第 m 除以 2 取上整 個。",
+     "k": 4
+    },
+    {
+     "say": "那問題來了：parent 本來是 30、40、70，加上 15 變四個 key，也爆了。",
+     "k": 5,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2060.51
+     }
+    },
+    {
+     "say": "parent 再 split：15、30 留左邊，70 在右邊，40 往上當新的 root，樹又高一層。",
+     "k": 6,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2068.19
+     }
+    },
+    {
+     "say": "分裂後 child 連結也要跟著改，例如 70 的左邊接 50、60，右邊接 80。",
+     "k": 7,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2080.8
+     }
+    },
+    {
+     "say": "現在三層了。插入的過程中，樹自己長出了三層 index。",
+     "k": 8,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2095.27
+     }
+    },
+    {
+     "say": "高度一層層往上加，跟 multi-level index 一模一樣。",
+     "k": 9,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2112.55
+     }
+    },
+    {
+     "say": "而且有規則管著，所有 leaf 都在同一層，看起來就是一層層整齊的 index。",
+     "k": 10,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2120.01
+     }
+    }
+   ]
+  },
+  {
+   "title": "再練一題：送第 2 個 key",
+   "scene": "btree-hi-split5",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "再練一題，這次改送第 2 個。order 4，依序插入 5、3、21、9、1、13、2、7、10、12、4。",
+     "k": 1,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 116.65
+     }
+    },
+    {
+     "say": "樹是空的，5 直接當 root。只有一個 node 時，它同時是 root 也是 leaf。",
+     "k": 2,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 131.84
+     }
+    },
+    {
+     "say": "插入 3，比 5 小排前面，變成 3、5。node 裡的 key 永遠由小到大。",
+     "k": 3,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 139.59
+     }
+    },
+    {
+     "say": "插入 21，排最後，3、5、21，三格滿了。",
+     "k": 4,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 155.3
+     }
+    },
+    {
+     "say": "插入 9，該在 5 和 21 中間，變成 3、5、9、21，四個 key，overflow。",
+     "k": 5,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 164.43
+     }
+    },
+    {
+     "say": "四個是偶數，中間有兩個，5 跟 9 都能選。老師口誤說成「5 或 21」，正確是 5 或 9。",
+     "k": 6,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 168.78
+     }
+    },
+    {
+     "say": "老師選 5，也就是第 ⌈4/2⌉ 個。沒有 parent，就開新 root 放 5，左邊 3，右邊 9、21。",
+     "read": "老師選 5，也就是第 4 除以 2 取上整 個。沒有 parent，就開新 root 放 5，左邊 3，右邊 9、21。",
+     "k": 7,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 199.32
+     }
+    },
+    {
+     "say": "樹長高一層，而且是從 root 那端長的，所以 leaf 永遠在同一層。",
+     "k": 8,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 212.77
+     }
+    }
+   ]
+  },
+  {
+   "title": "插入 1、13、2、7：9 往上",
+   "scene": "btree-hi-split9",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "現在 root 是 5，左邊 3，右邊 9、21。接著插 1、13、2、7，每次都從 root 比起。",
+     "k": 1,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 220.97
+     }
+    },
+    {
+     "say": "插入 1：比 5 小往左，比 3 小排前面，1、3，還有空位。",
+     "k": 2,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 225.98
+     }
+    },
+    {
+     "say": "插入 13：比 5 大往右，夾在 9 和 21 中間，9、13、21，滿了。",
+     "k": 3,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 229.72
+     }
+    },
+    {
+     "say": "插入 2：往左，排在 1 和 3 中間，1、2、3，左邊也滿了。",
+     "k": 4,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 241.8
+     }
+    },
+    {
+     "say": "插入 7：比 5 大往右，排最前面，7、9、13、21，overflow！",
+     "k": 5,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 244.76
+     }
+    },
+    {
+     "say": "一樣送第 2 個：9 進 parent，parent 變 5、9；左邊留 7，右邊是 13、21。",
+     "k": 6,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 270.84
+     }
+    },
+    {
+     "say": "root 的兩個 key 切出三個區間：小於 5、5 到 9 之間、大於 9，各掛一個 child。",
+     "k": 7,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 285.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "插入 10、12：12 往上",
+   "scene": "btree-hi-split12",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "下一個是 10。你先想想，10 會走到哪個 leaf？",
+     "k": 1,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 290.74
+     }
+    },
+    {
+     "say": "10 比 9 大，走最右邊；在 13、21 裡它最小，排最前面，變成 10、13、21。",
+     "k": 2,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 293.95
+     }
+    },
+    {
+     "say": "這個 leaf 又滿了，再來一個就要 split。",
+     "k": 3,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 299.06
+     }
+    },
+    {
+     "say": "插入 12：一樣走最右邊，排在 10 和 13 中間，四個 key，overflow。",
+     "k": 4,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 302.94
+     }
+    },
+    {
+     "say": "第 2 個 key 12 往上送，root 變成 5、9、12。",
+     "k": 5,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 309.08
+     }
+    },
+    {
+     "say": "12 的左邊是 10，右邊是 13、21。注意 root 也滿了，下次再有 key 送上來，root 也得分裂。",
+     "k": 6,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 316.38
+     }
+    }
+   ]
+  },
+  {
+   "title": "插入 4：一路分裂到 root",
+   "scene": "btree-hi-cascade",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "最後一個是 4。比 5 小，走最左邊，到 1、2、3。",
+     "k": 1,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 320.58
+     }
+    },
+    {
+     "say": "4 排最後，1、2、3、4，又 overflow。",
+     "k": 2,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 330.13
+     }
+    },
+    {
+     "say": "split 這個 leaf：2 往上送，左邊留 1，右邊是 3、4。",
+     "k": 3,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 336.44
+     }
+    },
+    {
+     "say": "可是 parent 本來就 3 個 key，加上 2 變成 2、5、9、12，parent 也爆了，這就是連續 split。",
+     "k": 4,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 343.88
+     }
+    },
+    {
+     "say": "parent 再分裂，第 2 個 key 5 往上。它已經是 root，就新開一個 root 放 5。這次插入一共分裂兩次。",
+     "k": 5,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 352.94
+     }
+    },
+    {
+     "say": "新的 root 是 5。B-tree 只有 root 分裂時才會長高，所以 leaf 永遠在同一層。",
+     "k": 6,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 357.28
+     }
+    },
+    {
+     "say": "5 的左邊是 2，2 底下是 1，還有 3、4。",
+     "k": 7,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 365.3
+     }
+    },
+    {
+     "say": "5 的右邊是 9、12，原本接在舊 root 底下的 child 也跟著搬過去。",
+     "k": 8,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 375.3
+     }
+    },
+    {
+     "say": "9、12 底下三個 child：7、10、13 跟 21。老師說「9 的左邊是 10」是口誤，10 夾在 9 和 12 中間。",
+     "k": 9,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 379.3
+     }
+    },
+    {
+     "say": "完成！order 4，每個 node 1 到 3 個 key，所有 leaf 在同一層。",
+     "k": 10,
+     "src": {
+      "v": "IilVRpUsAiQ",
+      "t": 383.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "2-3 tree 插入：三個準則與連鎖反應",
+   "scene": "btree-p-insert60",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "換 2-3 tree 看插入，規則講得更白。先像 search 一樣找到該放的 node，叫它 u，u 一定是 leaf。",
+     "read": "換 2 3 tree 看插入，規則講得更白。先像 search 一樣找到該放的 node，叫它 u，u 一定是 leaf。",
+     "k": 1,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 167.11
+     }
+    },
+    {
+     "say": "放進 u 有兩種情況。",
+     "k": 2,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 173.79
+     }
+    },
+    {
+     "say": "一：u 只有 1 個 element，還有空位，直接放。",
+     "k": 3,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 179.21
+     }
+    },
+    {
+     "say": "二：u 已經 2 個，滿了。那怎麼辦？",
+     "k": 4,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 195.69
+     }
+    },
+    {
+     "say": "split。拆的時候記三個準則。",
+     "k": 5,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 204.46
+     }
+    },
+    {
+     "say": "原本 2 個加新來 1 個，共 3 個數字。準則一：開一個新 node，放最大的。",
+     "k": 6,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 211.09
+     }
+    },
+    {
+     "say": "準則二：中間那個，insert 到 u 的 parent。",
+     "k": 7,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 224.85
+     }
+    },
+    {
+     "say": "準則三：最小的，留在原本的 u。",
+     "k": 8,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 234.72
+     }
+    },
+    {
+     "say": "例子：root A 是 20、40，最右邊的 leaf C 是 70、80。等一下會看到連鎖反應。",
+     "k": 9,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 248.53
+     }
+    },
+    {
+     "say": "插入 60：比 40 大，走最右邊落在 C，C 變成 60、70、80。",
+     "k": 10,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 260.83
+     }
+    },
+    {
+     "say": "三個數字，超過上限，很明顯要 split。",
+     "k": 11,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 266.89
+     }
+    },
+    {
+     "say": "最大的 80 進新 node，中間的 70 往 parent 走，最小的 60 留在 C。",
+     "k": 12,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 286.03
+     }
+    },
+    {
+     "say": "C 的 parent 是 A。70 放進去，A 變成 20、40、70，也三個了！",
+     "k": 13,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 292.55
+     }
+    },
+    {
+     "say": "所以 A 也要 split，同樣三個準則再做一次。",
+     "k": 14,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 301.95
+     }
+    },
+    {
+     "say": "下面 split 送上去，又讓上面 split，彭老師叫它連鎖反應，chain reaction，最壞一路到 root。",
+     "k": 15,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 311.95
+     }
+    },
+    {
+     "say": "A 的中間是 40，往上送；A 是 root 沒有 parent，就產生新的 root 40，樹高加 1。",
+     "k": 16,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 329.89
+     }
+    }
+   ]
+  },
+  {
+   "title": "課堂提問：60 存在哪裡",
+   "scene": "btree-p-leaf60",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "看插入後的樹。老師提醒投影片少畫一根 pointer：internal node 的 pointer 數，永遠是 key 數加 1。",
+     "k": 1,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 367.63
+     }
+    },
+    {
+     "say": "數 node：原本 4 個，C 分裂加 1、A 分裂加 1、新 root 再加 1，現在 7 個。",
+     "k": 2,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 380.75
+     }
+    },
+    {
+     "say": "這時有同學問：60 存在哪裡？插入一律先進 leaf，所以 60 就在最底層的 leaf。",
+     "k": 3,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 409.65
+     }
+    },
+    {
+     "say": "不過老師順口說「真正的數值都在 leaf」，那是 B+ tree 的性質。B-tree 上層的 key 也是資料本身，像 70、40 就只在上層。",
+     "read": "不過老師順口說「真正的數值都在 leaf」，那是 B plus tree 的性質。B-tree 上層的 key 也是資料本身，像 70、40 就只在上層。",
+     "k": 4,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 427.53
+     }
+    }
+   ]
+  },
+  {
+   "title": "B-tree 當 index：每個 key 都有 record pointer",
+   "scene": "btree-ab-recptr",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "回到資料庫，這棵 B-tree 怎麼當 index？有個小細節很重要。",
+     "k": 1,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2143.39
+     }
+    },
+    {
+     "say": "每個 node 有指向 child 的 pointer，也有 record pointer。",
+     "k": 2,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2147.87
+     }
+    },
+    {
+     "say": "而且每個 key 都有自己的 record pointer，不管它在哪一層。",
+     "k": 3,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2153.75
+     }
+    },
+    {
+     "say": "這些 pointer 指到硬碟上的 record，所以 B-tree 很適合拿來做多層 index。",
+     "k": 4,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2164.83
+     }
+    },
+    {
+     "say": "總結 B-tree 的 node：key、child pointer，也叫 block pointer，還有 record pointer。",
+     "k": 5,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2171.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "刪除：刪完沒空就沒事",
+   "scene": "btree-p-del-leaf",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "接著是刪除，一樣有好幾種情況。",
+     "k": 1,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 454.31
+     }
+    },
+    {
+     "say": "insert 太滿會 split；delete 太空就要 merge，node 被刪到一個都不剩，就得併掉。",
+     "k": 2,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 464.39
+     }
+    },
+    {
+     "say": "原本的 2-3 tree：root A 是 50、80，下面三個 leaf，B 是 10、20，C 是 60、70，D 是 90、95。",
+     "read": "原本的 2 3 tree：root A 是 50、80，下面三個 leaf，B 是 10、20，C 是 60、70，D 是 90、95。",
+     "k": 3,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 480.11
+     }
+    },
+    {
+     "say": "刪 70：50 < 70 < 80，走中間到 C，把 70 刪掉。",
+     "read": "刪 70：50 小於 70 小於 80，走中間到 C，把 70 刪掉。",
+     "k": 4,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 488.15
+     }
+    },
+    {
+     "say": "C 還剩 60，每個 node 都至少 1 個 key，合法，不用調整。",
+     "k": 5,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 504.65
+     }
+    },
+    {
+     "say": "再刪 90：比 80 大，走最右邊到 D，刪掉。",
+     "k": 6,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 514.63
+     }
+    },
+    {
+     "say": "D 還剩 95，一樣沒事。簡單的刪除就是這樣：node 沒空掉，就不用動。",
+     "k": 7,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 526.37
+     }
+    }
+   ]
+  },
+  {
+   "title": "刪除：先向兄弟借，借不到就合併",
+   "scene": "btree-p-del-rotate",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "接著刪 60，投影片寫成 50，老師口頭更正是 60。現在 C 只剩 60，D 只剩 95。",
+     "k": 1,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 548.92
+     }
+    },
+    {
+     "say": "刪掉 60，C 變成 0 個 key，不合法，要調整。",
+     "k": 2,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 558.09
+     }
+    },
+    {
+     "say": "直接把空 node 回收的話，整棵樹要大改，老師說那是大工程。所以先找旁邊借。",
+     "k": 3,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 573.85
+     }
+    },
+    {
+     "say": "左邊兄弟 B 有 10、20 兩個，借一個也不會空，可以做 rotate。",
+     "k": 4,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 589.45
+     }
+    },
+    {
+     "say": "rotate：parent 的 50 往下推到 C，B 最大的 20 往上送。結果 A 是 20、80，B 是 10，C 是 50。",
+     "k": 5,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 603.19
+     }
+    },
+    {
+     "say": "再刪 95：D 也空了。",
+     "k": 6,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 616.85
+     }
+    },
+    {
+     "say": "這次要做 combine，也叫 merge，把空 node 併掉。",
+     "k": 7,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 630.54
+     }
+    },
+    {
+     "say": "為什麼不 rotate？兄弟 C 只有 50 一個，借出去自己就空了。",
+     "k": 8,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 646.01
+     }
+    },
+    {
+     "say": "combine：parent 的 80 往下推，跟 C 的 50 合成 50、80，空的 D 刪掉。",
+     "k": 9,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 650.17
+     }
+    },
+    {
+     "say": "結果 A 只剩 20，下面是 10，和 50、80。parent 少一個 key，也少一個 child。",
+     "k": 10,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 659.05
+     }
+    },
+    {
+     "say": "如果 parent 因此也空了，就在上一層再借或再合併；一路併到 root 被拿光，樹高就減 1。",
+     "k": 10
+    }
+   ]
+  },
+  {
+   "title": "Rotate 的三種 case",
+   "scene": "btree-p-rotate-cases",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "rotate 有三種 case，看空掉的 node p，是 parent r 的哪一個 child。",
+     "k": 1,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 680.99
+     }
+    },
+    {
+     "say": "case 1：p 是 r 的 left child。r 有 x、z 兩個 key，旁邊的兄弟 q 有 2 個 key。",
+     "k": 2,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 687.69
+     }
+    },
+    {
+     "say": "x 往下推到 p，q 最小的 y 往上提到 r。r 變成 y、z，大小順序沒亂。",
+     "k": 3,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 712.25
+     }
+    },
+    {
+     "say": "搬完之後，下面掛的 subtree a、b、c、d 也要接到對的 node，由左到右的順序一定要對。",
+     "k": 4,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 724.61
+     }
+    },
+    {
+     "say": "最後確認每根 pointer 都指到調整過的 node，這是 case 1。",
+     "k": 5,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 753.35
+     }
+    },
+    {
+     "say": "case 2：p 是 middle child，這裡跟右邊的兄弟 q 借。",
+     "k": 6,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 763.62
+     }
+    },
+    {
+     "say": "r 的第二個 key z 往下推到 p，q 最小的 y 往上提到 r。",
+     "k": 7,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 777.74
+     }
+    },
+    {
+     "say": "前提是兄弟要有 2 個數字才借得起。每次 rotate 只動到三個數字。",
+     "k": 8,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 785.59
+     }
+    },
+    {
+     "say": "case 3：p 是 right child，只能跟左邊的兄弟借。",
+     "k": 9,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 805.22
+     }
+    },
+    {
+     "say": "z 往下推到 p，q 最大的 y 往上提到 r，x 不動。",
+     "k": 10,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 815.43
+     }
+    },
+    {
+     "say": "整理：被刪的 node 在 left、middle、right 都能 rotate，只要兄弟借得起。",
+     "k": 11,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 825.87
+     }
+    },
+    {
+     "say": "調整完，下面的 leaf 和 subtree 要跟著接好。",
+     "k": 12,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 843.91
+     }
+    },
+    {
+     "say": "兄弟借不起就 merge，老師請大家看課本：parent 夾在中間的那個 key 下來，跟兄弟併成一個 node。",
+     "k": 13,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 852.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "刪除 internal node 裡的 key",
+   "scene": "btree-internal-delete",
+   "steps": 0,
+   "lines": [
+    {
+     "say": "還有一種情況課堂沒細講：要刪的 key 不在 leaf，而在 internal node。"
+    },
+    {
+     "say": "做法是找替身：左子樹最大的 predecessor，或右子樹最小的 successor，換上去。"
+    },
+    {
+     "say": "例如刪 60，先換成左子樹最大的 50，再去 leaf 把原本那個 50 刪掉。"
+    },
+    {
+     "say": "這樣刪除永遠變成「從 leaf 刪」，之後照剛才的 rotate 或 merge 處理就好。"
+    }
+   ]
+  },
+  {
+   "title": "2-3-4 tree 與紅黑樹",
+   "scene": "btree-p-234",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "回頭整理：2-3 tree 是 order 3；2-3-4 tree 是 order 4，最多 3 個 key、4 個 pointer。",
+     "read": "回頭整理：2 3 tree 是 order 3；2 3 4 tree 是 order 4，最多 3 個 key、4 個 pointer。",
+     "k": 1,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 861.9
+     }
+    },
+    {
+     "say": "2-3-4 tree 的高度介於 log₄(n+1) 和 log₂(n+1)：都分 4 岔最矮，都分 2 岔最高。",
+     "read": "2 3 4 tree 的高度介於 log 以 4 為底 n 加 1 和 log 以 2 為底 n 加 1：都分 4 岔最矮，都分 2 岔最高。",
+     "k": 2,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 882.11
+     }
+    },
+    {
+     "say": "它有些比 2-3 tree 好的地方，老師說這段聽聽就好。",
+     "read": "它有些比 2 3 tree 好的地方，老師說這段聽聽就好。",
+     "k": 3,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 888.46
+     }
+    },
+    {
+     "say": "優點一：插入可以 top-down，往下走時就先把滿的 node 拆掉，不會像 2-3 tree 回頭一路連鎖到 root。",
+     "read": "優點一：插入可以 top-down，往下走時就先把滿的 node 拆掉，不會像 2 3 tree 回頭一路連鎖到 root。",
+     "k": 4,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 908.67
+     }
+    },
+    {
+     "say": "優點二：它能改寫成演算法課會讀到的 red-black tree，紅黑樹。",
+     "k": 5,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 920.94
+     }
+    },
+    {
+     "say": "資料結構這段至少要懂 2-3 tree，2-3-4 tree 有時間再看。",
+     "read": "資料結構這段至少要懂 2 3 tree，2 3 4 tree 有時間再看。",
+     "k": 6,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 940.79
+     }
+    },
+    {
+     "say": "這是 2-3-4 tree 的例子，每個 node 最多 4 個 pointer。",
+     "read": "這是 2 3 4 tree 的例子，每個 node 最多 4 個 pointer。",
+     "k": 7,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 959.93
+     }
+    },
+    {
+     "say": "紅黑樹仍然是 binary tree：一個有 3 個 key 的 node，拆成中間黑、兩旁紅的三個小 node。",
+     "k": 8,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 999.67
+     }
+    },
+    {
+     "say": "老師說這段不考，但 2-3-4 tree 跟紅黑樹的對應，在演算法很常考，記一下。",
+     "read": "老師說這段不考，但 2 3 4 tree 跟紅黑樹的對應，在演算法很常考，記一下。",
+     "k": 9,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1003.17
+     }
+    }
+   ]
+  },
+  {
+   "title": "Range search：為什麼要 B+ tree",
+   "scene": "btree-p-range-naive",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "好，換 B+ tree。先看它要解決什麼問題。",
+     "read": "好，換 B plus tree。先看它要解決什麼問題。",
+     "k": 1,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1013.2
+     }
+    },
+    {
+     "say": "到目前為止的 search，都是找一個值。",
+     "k": 2,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1021.65
+     }
+    },
+    {
+     "say": "可是有時候要的是一堆值。",
+     "k": 3,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1026.33
+     }
+    },
+    {
+     "say": "例如：把學期平均 80 分以上的學生，通通列出來。",
+     "k": 4,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1039.75
+     }
+    },
+    {
+     "say": "這種有範圍的查詢，叫 range search。",
+     "k": 5,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1060.11
+     }
+    },
+    {
+     "say": "最笨的方法：80 search 一次、81 一次、82 一次，一路到 100，二十幾次，太慢了。",
+     "k": 6,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1072.47
+     }
+    },
+    {
+     "say": "B+ tree 跟 B-tree 很像，",
+     "read": "B plus tree 跟 B-tree 很像，",
+     "k": 7,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1099.69
+     }
+    },
+    {
+     "say": "差別在最底層的 leaf 用 linked list 串起來。找到 80 之後，沿著串列往右走就全拿到了。",
+     "k": 8,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1109.85
+     }
+    },
+    {
+     "say": "在資料庫裡，B+ tree 就是所謂的 index 結構，資料庫課會再講一次。",
+     "read": "在資料庫裡，B plus tree 就是所謂的 index 結構，資料庫課會再講一次。",
+     "k": 9,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1120.39
+     }
+    },
+    {
+     "say": "index 裡藍色的是 key：K1、K2 到 Kn，拿來比大小的數值。",
+     "k": 10,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1158.61
+     }
+    },
+    {
+     "say": "每個 key 對應一個 pointer，指到硬碟上的一個 page。",
+     "k": 11,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1178.53
+     }
+    },
+    {
+     "say": "page 裡放的是 record，也就是學生的成績資料。",
+     "k": 12,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1186.65
+     }
+    },
+    {
+     "say": "彭老師還說，資料庫課不只是教你裝 MySQL；去 Oracle 這種公司，要實作的就是 index 結構。",
+     "k": 12,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1252.48
+     }
+    }
+   ]
+  },
+  {
+   "title": "B+ tree 改了哪三件事",
+   "scene": "btree-ab-bplus",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "那 B+ tree 到底改了什麼？把剛才那棵 B-tree 稍微改一下就好。",
+     "read": "那 B plus tree 到底改了什麼？把剛才那棵 B-tree 稍微改一下就好。",
+     "k": 1,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2227.57
+     }
+    },
+    {
+     "say": "第一：只有 leaf 才有 record pointer，上層只剩 key 和 child pointer。",
+     "k": 2,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2234.8
+     }
+    },
+    {
+     "say": "第二：上層的每個 key，在 leaf 都要有一份副本。上面有 15，leaf 裡也放一個 15，帶著 record pointer。",
+     "k": 3,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2249.43
+     }
+    },
+    {
+     "say": "30 也一樣，leaf 裡放一份，跟 35 在一起。",
+     "k": 4,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2264.11
+     }
+    },
+    {
+     "say": "40 也下到 leaf，跟 50、60 放一起。",
+     "k": 5,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2270.05
+     }
+    },
+    {
+     "say": "70 也下來。所以樹裡的每個 key，一定都會出現在 leaf。",
+     "k": 6,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2283.07
+     }
+    },
+    {
+     "say": "第三：leaf 在同一層，像 linked list 一樣串起來，從左走到右。leaf 層含所有 key，就是 dense index。",
+     "k": 7,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2290.05
+     }
+    },
+    {
+     "say": "整理差別：一，所有 key 都在 leaf，上層的 key 只是指路用的副本；",
+     "k": 8,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2304.92
+     }
+    },
+    {
+     "say": "二，record pointer 只從 leaf 出來；三，leaf 串成 linked list。",
+     "k": 9,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2316.42
+     }
+    },
+    {
+     "say": "所以 leaf 層是 dense index，上面幾層是 sparse index，只負責指路。",
+     "k": 10,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2330.6
+     }
+    },
+    {
+     "say": "B+ tree 比 B-tree 更像多層 index，這就是 plus 多出來的地方。",
+     "read": "B plus tree 比 B-tree 更像多層 index，這就是 plus 多出來的地方。",
+     "k": 11,
+     "src": {
+      "v": "aZjYr87r1b8",
+      "t": 2334.8
+     }
+    },
+    {
+     "say": "補一個常考點：leaf 分裂時，中間的 key 是「複製」上去，leaf 還留著；上層 index node 分裂，才是「移」上去。",
+     "k": 11
+    }
+   ]
+  },
+  {
+   "title": "B+ tree 的例子：order d = 1",
+   "scene": "btree-p-bp-d1",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "來看資料庫實際用的 B+ tree。",
+     "read": "來看資料庫實際用的 B plus tree。",
+     "k": 1,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1273.52
+     }
+    },
+    {
+     "say": "它也是 m-way 的樹，一個 node 的 pointer 可以超過兩個，",
+     "read": "它也是 m way 的樹，一個 node 的 pointer 可以超過兩個，",
+     "k": 2,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1286.36
+     }
+    },
+    {
+     "say": "而且是 balanced：所有 leaf 都在同一層，每次搜尋走的層數一樣。",
+     "k": 3,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1295.8
+     }
+    },
+    {
+     "say": "紅字是 order。注意！B+ tree 的 order，跟 B-tree 的定義不一樣。",
+     "read": "紅字是 order。注意！B plus tree 的 order，跟 B-tree 的定義不一樣。",
+     "k": 5,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1304.8
+     }
+    },
+    {
+     "say": "這棵的 order d = 1。",
+     "read": "這棵的 order d 等於 1。",
+     "k": 6,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1314.18
+     }
+    },
+    {
+     "say": "這裡的 order d 是：非 root 的 node 至少 d 個 entry、最多 2d 個。d = 1 就是 1 到 2 個 key。",
+     "read": "這裡的 order d 是：非 root 的 node 至少 d 個 entry、最多 2d 個。d 等於 1 就是 1 到 2 個 key。",
+     "k": 7,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1321.6
+     }
+    },
+    {
+     "say": "對照一下：B-tree 的 order m 是最多幾個 child；這裡的 d 是最少幾個 key。看題目用哪一種。",
+     "k": 7
+    },
+    {
+     "say": "root 是 40，只有一個 entry。",
+     "k": 8,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1330.14
+     }
+    },
+    {
+     "say": "下一層 20、33 跟 51、63，各有 2 個，剛好是上限 2d。",
+     "k": 9,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1341.92
+     }
+    },
+    {
+     "say": "最下層 leaf 的數字後面有個星號，例如 63 星：這個星號代表一個 pointer。",
+     "k": 10,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1374.26
+     }
+    },
+    {
+     "say": "假設 key 是每個人的年紀，我們用年紀這個欄位建 index。",
+     "k": 11,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1391.48
+     }
+    },
+    {
+     "say": "63 星的意思是：年紀 63 的那個人，資料在這個 pointer 指到的硬碟 record。",
+     "k": 12,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1405.66
+     }
+    },
+    {
+     "say": "上面 internal node 的 63 只是比大小、指路用的，資料不在那裡；上面每個數字在 leaf 都有對應的 pointer。",
+     "k": 13,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1424.29
+     }
+    },
+    {
+     "say": "最下面的 leaf 用 doubly linked list 串起來，前後都能走，等於 linked list 跟 tree 混搭。",
+     "k": 14,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1458.6
+     }
+    },
+    {
+     "say": "好處是什麼？年紀小於 40 的，全在 root 左邊的 subtree，範圍一下就被限定住了。",
+     "k": 15,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1480.04
+     }
+    },
+    {
+     "say": "大於等於 40 的，都在右邊。",
+     "k": 16,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1517.8
+     }
+    },
+    {
+     "say": "遞迴下去也一樣：介於 20 和 33 之間的，都在中間那棵小 subtree。",
+     "k": 17,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1528.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "B+ tree 找一個 key",
+   "scene": "btree-p-bp-find27",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "找 key 27，也就是年紀 27 的人，資料在哪？",
+     "k": 1,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1550.76
+     }
+    },
+    {
+     "say": "從 root 開始比，跟以前找一個 key 一樣。",
+     "k": 2,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1559.24
+     }
+    },
+    {
+     "say": "27 比 40 小，走左半邊。",
+     "k": 3,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1565.22
+     }
+    },
+    {
+     "say": "到了 20、33：27 夾在中間，走中間的 pointer。",
+     "k": 4,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1573.72
+     }
+    },
+    {
+     "say": "到 leaf 20、27，有 27，hit！跟著 27 星的 pointer，就拿到資料。",
+     "k": 5,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1580.96
+     }
+    },
+    {
+     "say": "注意，B+ tree 就算在上層看到一樣的 key 也不停，一定要走到 leaf 才拿得到資料。",
+     "read": "注意，B plus tree 就算在上層看到一樣的 key 也不停，一定要走到 leaf 才拿得到資料。",
+     "k": 5
+    },
+    {
+     "say": "所以 B+ tree 找單一值沒問題，",
+     "read": "所以 B plus tree 找單一值沒問題，",
+     "k": 6,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1591.72
+     }
+    },
+    {
+     "say": "接下來要看的是，它為什麼能很快做 range query。",
+     "k": 7,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1603.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "B+ tree 的節點格式",
+   "scene": "btree-p-bp-format",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "B+ tree 的 node 格式：一排 key，K1、K2 到 Kn。",
+     "read": "B plus tree 的 node 格式：一排 key，K1、K2 到 Kn。",
+     "k": 1,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1617.94
+     }
+    },
+    {
+     "say": "中間穿插 pointer P0、P1 到 Pn，排成 P0 K1 P1 一直到 Kn Pn，pointer 比 key 多一個。",
+     "k": 2,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1632.3
+     }
+    },
+    {
+     "say": "特性一：跟 B-tree 一樣，key 排好序，K1 < K2 < … < Kn。",
+     "read": "K1 小於 K2，一路小於到 Kn。",
+     "k": 3,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1641.6
+     }
+    },
+    {
+     "say": "特性二是關於不是 root 的 node：它的 key 數有限制。",
+     "k": 4,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1654.56
+     }
+    },
+    {
+     "say": "key 的個數 n，必須在 d ≤ n ≤ 2d 之間。",
+     "read": "key 的個數 n，必須在 d 小於等於 n 小於等於 2d 之間。",
+     "k": 5,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1666.18
+     }
+    },
+    {
+     "say": "這個 d 就是 order。例如 d = 2，每個非 root 的 node 有 2 到 4 個 key。",
+     "read": "這個 d 就是 order。例如 d 等於 2，每個非 root 的 node 有 2 到 4 個 key。",
+     "k": 6,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1672.65
+     }
+    },
+    {
+     "say": "特性三：如果是 root，key 數至少 1 個、最多 2d 個。",
+     "k": 7,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1680.14
+     }
+    },
+    {
+     "say": "搜尋就是跟著 pointer 比大小往下走，跟 B-tree 很像。",
+     "k": 8,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1694.4
+     }
+    },
+    {
+     "say": "一路走到 leaf，找到 k 星，星號就是指向 record 的 pointer。",
+     "k": 9,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1721
+     }
+    }
+   ]
+  },
+  {
+   "title": "order 2 的 B+ tree：找 5、找 15",
+   "scene": "btree-p-bp-d2-search",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "實戰：一棵 order 2 的 B+ tree，root 有 13、17、24、30 四個 key，下面 5 個 leaf 串起來。",
+     "read": "實戰：一棵 order 2 的 B plus tree，root 有 13、17、24、30 四個 key，下面 5 個 leaf 串起來。",
+     "k": 1,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1738.63
+     }
+    },
+    {
+     "say": "三個查詢：年紀 5、年紀 15，還有年紀 24 以上的所有資料。",
+     "k": 2,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1749.48
+     }
+    },
+    {
+     "say": "先找 5，從 root 下來。",
+     "k": 3,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1767.59
+     }
+    },
+    {
+     "say": "拿 5 跟 13、17、24、30 比。",
+     "k": 4,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1776.84
+     }
+    },
+    {
+     "say": "5 比 13 還小，走最左邊的 pointer。",
+     "k": 5,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1785.26
+     }
+    },
+    {
+     "say": "leaf 裡有 2、3、5、7 四筆，其中就有 5，找到了。",
+     "k": 6,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1793.93
+     }
+    },
+    {
+     "say": "接著找 15，一樣從 root 開始。",
+     "k": 7,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1802.42
+     }
+    },
+    {
+     "say": "15 介於 13 和 17 之間，走這兩個中間的 pointer。",
+     "k": 8,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1812.6
+     }
+    },
+    {
+     "say": "那個 leaf 只有 14 和 16，沒有 15，所以 no return，找不到。",
+     "k": 9,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1817.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Range query：找到起點，沿著 leaf 走",
+   "scene": "btree-p-bp-d2-range",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "第三個查詢：年紀 ≥ 24 的全部。第一步，先 search 24。",
+     "read": "第三個查詢：年紀 大於等於 24 的全部。第一步，先 search 24。",
+     "k": 1,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1828.9
+     }
+    },
+    {
+     "say": "24 ≥ 24，走 24 跟 30 中間的 pointer。",
+     "read": "24 大於等於 24，走 24 跟 30 中間的 pointer。",
+     "k": 2,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1839.18
+     }
+    },
+    {
+     "say": "到 leaf，找到 24。",
+     "k": 3,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1852.16
+     }
+    },
+    {
+     "say": "關鍵來了：leaf 是由小到大串的，所以從這裡往右串出去的，全都 ≥ 24。",
+     "read": "關鍵來了：leaf 是由小到大串的，所以從這裡往右串出去的，全都 大於等於 24。",
+     "k": 4,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1858.54
+     }
+    },
+    {
+     "say": "那就沿著 linked list 一直往右走，經過的都拿出來。",
+     "k": 5,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1869.03
+     }
+    },
+    {
+     "say": "走到 null 就停。一下子拿到 24、27、29、33、34、38、39。",
+     "k": 6,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1879.66
+     }
+    },
+    {
+     "say": "那小於 24 呢？一樣先找到 24，",
+     "k": 7,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1886.76
+     }
+    },
+    {
+     "say": "再沿著 linked list 往左走。這就是為什麼要 doubly linked list，才能往回走。",
+     "k": 8,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1900.4
+     }
+    },
+    {
+     "say": "再問：15 到 24 之間呢？",
+     "k": 9,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1908.62
+     }
+    },
+    {
+     "say": "老師說要做兩次 search，還口誤說先找 5。其實只要 search 一次，找到 15 該在的 leaf。",
+     "k": 10,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1925.58
+     }
+    },
+    {
+     "say": "從那裡沿著 linked list 往右走，碰到大於 24 的就停。",
+     "k": 11,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1946.95
+     }
+    },
+    {
+     "say": "沿路的 16、19、20、22、24，全部符合。",
+     "k": 12,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1961.19
+     }
+    },
+    {
+     "say": "這就是 B+ tree 輕鬆做到的 range query。",
+     "read": "這就是 B plus tree 輕鬆做到的 range query。",
+     "k": 13,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1974.87
+     }
+    },
+    {
+     "say": "大於、小於、介於兩值之間都一樣快：往下走一次找起點，之後沿著 leaf 掃。",
+     "k": 14,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 1985.49
+     }
+    },
+    {
+     "say": "B-tree 就沒這麼漂亮，資料散在各層，要做 inorder traversal，上上下下地走。",
+     "k": 14
+    }
+   ]
+  },
+  {
+   "title": "延伸：R-tree 與空間查詢",
+   "scene": "btree-p-rtree",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "所以 B+ tree 比 B-tree 多了 range search 的能力。",
+     "read": "所以 B plus tree 比 B-tree 多了 range search 的能力。",
+     "k": 1,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 2002.31
+     }
+    },
+    {
+     "say": "老師最後預告一個延伸：R-tree，有興趣可以去查。",
+     "k": 2,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 2008.63
+     }
+    },
+    {
+     "say": "剛才的 key 是年紀，一個數字，叫一維資料。",
+     "k": 3,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 2033.47
+     }
+    },
+    {
+     "say": "二維呢？例如路上的景點，要用經度跟緯度兩個數字表示。",
+     "k": 4,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 2052.01
+     }
+    },
+    {
+     "say": "查詢：以交大為中心，半徑 5 公里內的景點全部找出來。",
+     "k": 5,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 2077.13
+     }
+    },
+    {
+     "say": "笨方法：經度建一棵 B+ tree、緯度建一棵，各做一次 range query 再合起來。老師順口說 union，正確是取交集。",
+     "read": "笨方法：經度建一棵 B plus tree、緯度建一棵，各做一次 range query 再合起來。老師順口說 union，正確是取交集。",
+     "k": 6,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 2096.49
+     }
+    },
+    {
+     "say": "厲害的方法是 R-tree，1984 年提出，用矩形把相近的點分組，只看跟範圍重疊的矩形。",
+     "k": 7,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 2111.17
+     }
+    },
+    {
+     "say": "它專門處理空間資料，也就是 spatial data 的查詢。",
+     "k": 8,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 2133.17
+     }
+    },
+    {
+     "say": "還能推廣到多維度的空間。這段是補充，有興趣再看。",
+     "k": 9,
+     "src": {
+      "v": "ucL0BLz2OGk",
+      "t": 2148.89
+     }
+    }
+   ]
+  },
+  {
+   "title": "Trie：路徑就是單字",
+   "scene": "trie-hr-what",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "最後一個結構：trie，唸作 try。學校不太花時間教，但面試超常考。",
+     "k": 1,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 10.04
+     }
+    },
+    {
+     "say": "它就是一棵樹，最常拿來存字元，每個節點只放一個字元。",
+     "k": 2,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 15.16
+     }
+    },
+    {
+     "say": "從 root 往下走，沿路的字元串起來就是字串。c、a 是 ca，只是一部分；再走到 r，就是完整單字 car。",
+     "k": 3,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 24.42
+     }
+    },
+    {
+     "say": "字串就是一條路徑，所以長度 L 的字串只要走 L 步，查詢非常快。",
+     "k": 4,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 34.18
+     }
+    }
+   ]
+  },
+  {
+   "title": "前綴查詢",
+   "scene": "trie-hr-car",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "把一個小字典存進去：car、card、care、cat、call、calm、do、dog。共同開頭像 ca 只存一次。",
+     "k": 1,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 38.28
+     }
+    },
+    {
+     "say": "問：有沒有以 C-A-R 開頭的單字？從 root 走 c、a、r。",
+     "read": "問：有沒有以 C A R 開頭的單字？從 root 走 c、a、r。",
+     "k": 2,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 46.48
+     }
+    },
+    {
+     "say": "有！r 這個節點是金色的，代表 car 本身就是一個單字。",
+     "k": 3,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 52.14
+     }
+    },
+    {
+     "say": "r 底下還有 d、e，所以還有 card、care。car 既是單字，也是別人的 prefix。",
+     "k": 4,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 56.52
+     }
+    },
+    {
+     "say": "只走 3 步就知道答案。查詢時間只跟字串長度有關，跟字典裡有幾個字無關。",
+     "k": 5,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 59.66
+     }
+    }
+   ]
+  },
+  {
+   "title": "Trie 的節點怎麼寫",
+   "scene": "trie-hr-node",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "實作上寫一個 Node class。但它不像 BST 只有 left、right，因為一個字母後面可能接很多種字母。",
+     "k": 1,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 66
+     }
+    },
+    {
+     "say": "做法一：陣列，英文小寫 26 格，用 children[ch − 'a'] 直接找。缺點是大部分格子空著。",
+     "read": "做法一：陣列，英文小寫 26 格，用 ch 減去 a 當索引，直接找到 child。缺點是大部分格子空著。",
+     "k": 2,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 74.44
+     }
+    },
+    {
+     "say": "更常見的是 lookup table，例如 hash map，把字元對到子節點，只存真的有的 child。",
+     "k": 3,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 81.4
+     }
+    },
+    {
+     "say": "這樣就能直接問這個節點：你有沒有 A 這個 child？有就馬上拿到。",
+     "k": 4,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 86.72
+     }
+    },
+    {
+     "say": "但光知道有 R 這個 child 還不夠，還要知道走到這裡是完整單字，還是只是前綴。",
+     "k": 5,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 99.82
+     }
+    },
+    {
+     "say": "所以每個節點再加一個 flag，例如 isCompleteWord：car 是 true，ca 是 false。",
+     "k": 6,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 113.28
+     }
+    }
+   ]
+  },
+  {
+   "title": "什麼題目會用到 trie",
+   "scene": "trie-hr-uses",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "什麼題目會用到 trie？只要跟「單字驗證」有關，就想想它。",
+     "k": 1,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 125.22
+     }
+    },
+    {
+     "say": "例如在拼字遊戲盤面上找所有單字：邊走邊檢查還是不是有效前綴，不是就提早放棄這條路。",
+     "k": 2,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 134.7
+     }
+    },
+    {
+     "say": "或是給一串字串，找出所有名人名字：先把名字存進 trie，再一個個比對。",
+     "k": 3,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 140.82
+     }
+    },
+    {
+     "say": "總之，看到 word list validation 這類題目，就想到 trie。",
+     "k": 4,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 147.42
+     }
+    }
+   ]
+  },
+  {
+   "title": "最佳化：接著上一次的位置查",
+   "scene": "trie-hr-incr",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "trie 題目常見一招最佳化。情境：使用者邊打字，一確定不可能是單字，就馬上標錯。",
+     "k": 1,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 158.36
+     }
+    },
+    {
+     "say": "打了 C：有 c 這個節點，沒問題。",
+     "k": 2,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 169.96
+     }
+    },
+    {
+     "say": "打成 CA：c 底下有 a，還是有效前綴。",
+     "k": 3,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 175.14
+     }
+    },
+    {
+     "say": "打成 CAL：有 call、calm，還是 OK。",
+     "k": 4,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 177.6
+     }
+    },
+    {
+     "say": "打成 CALP：cal 底下沒有 p，不可能是任何單字，標錯。",
+     "k": 5,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 183.62
+     }
+    },
+    {
+     "say": "天真的寫法每次都從 root 重來：C 走 1 步、CA 走 2 步、CAL 走 3 步，前面的路一直重走。",
+     "k": 6,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 189.3
+     }
+    },
+    {
+     "say": "更好的做法：記住上次停在哪個節點，多打一個字只要問「它是不是上個節點的 child」，一步就好。",
+     "k": 7,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 206.3
+     }
+    },
+    {
+     "say": "實作有兩種：在 trie 裡存目前位置，或把節點回傳給呼叫者，下次從那裡接著問。",
+     "k": 8,
+     "src": {
+      "v": "zIjfhVPRZCg",
+      "t": 233.12
+     }
+    }
+   ]
+  },
+  {
+   "title": "總複習：整章串起來",
+   "scene": "bplus-range",
+   "steps": 0,
+   "lines": [
+    {
+     "say": "最後把整章串起來。硬碟一次讀一個 block，所以要用 index，少讀幾個 block。"
+    },
+    {
+     "say": "index 太大就再蓋一層，轉過來就是樹；會自己長高、變矮的那棵，就是 B-tree。"
+    },
+    {
+     "say": "B-tree 是有規則的 m-way search tree：非 root 至少 ⌈m/2⌉ 個 child，root 至少 2 個，leaf 同一層。",
+     "read": "B-tree 是有規則的 m way search tree：非 root 至少 m 除以 2 取上整 個 child，root 至少 2 個，leaf 同一層。"
+    },
+    {
+     "say": "插入一律進 leaf，滿了就 split 把中間送上去，連鎖到 root 才長高。"
+    },
+    {
+     "say": "刪除先向兄弟 rotate 借，借不到就 merge，併到 root 被拿光，樹才變矮。"
+    },
+    {
+     "say": "B+ tree 把資料全放 leaf、串成 linked list，上層只指路，所以 range query 往下一次、往右一路掃。",
+     "read": "B plus tree 把資料全放 leaf、串成 linked list，上層只指路，所以 range query 往下一次、往右一路掃。"
+    },
+    {
+     "say": "Trie 把字串變成路徑，查詢只跟字串長度有關，前綴查詢和單字驗證都靠它。"
+    }
+   ]
+  }
+ ]
+}
