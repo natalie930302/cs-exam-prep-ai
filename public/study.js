@@ -797,7 +797,10 @@
       .replace(/√/g, '根號').replace(/²/g, '平方').replace(/³/g, '立方').replace(/≤/g, '小於等於').replace(/≥/g, '大於等於')
       .replace(/≠/g, '不等於').replace(/←/g, '設成').replace(/→/g, '，').replace(/×/g, '乘').replace(/[()（）]/g, ' ');
   }
-  fetch('/lessons/' + chId + '.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : null; }).then(function(l){
+  // lessons/index.json lists the chapters that have one, so the others ask for nothing
+  fetch('/lessons/index.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : []; }).then(function(have){
+    return have.indexOf(chId) >= 0 ? fetch('/lessons/' + chId + '.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : null; }) : null;
+  }).then(function(l){
     if (!l || !l.parts || !hasStage) return;
     lesson = l; lsLines = [];
     l.parts.forEach(function(p, pi){
