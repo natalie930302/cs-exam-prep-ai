@@ -13,3 +13,5 @@ node_modules/
 *.bat
 *.log
 .env*
+# lesson audio being re-encoded right now
+*.tmp.mp3
