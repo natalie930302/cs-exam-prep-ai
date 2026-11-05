@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap">
 <link rel="stylesheet" href="theme.css?v=20261007e">
-<link rel="stylesheet" href="study.css?v=20261024a">
+<link rel="stylesheet" href="study.css?v=20261105a">
 </head>
 <body class="st-booting">
 <script>setTimeout(function(){ document.body.classList.remove('st-booting'); }, 4000);</script>
@@ -53,6 +53,17 @@
         <button class="st-btn st-walk-next" id="walkNext" type="button">下一步 ›</button>
       </div>
     </div>
+    <!-- 自製課：整章一堂課，一句一句念、動畫跟著走；可以跳回老師原話 -->
+    <div class="st-walk" id="lessonBar" hidden>
+      <div class="st-walk-quote" id="lessonSrc"></div>
+      <div class="st-walk-btns">
+        <button class="st-btn" id="lsPrev" type="button">‹ 上一句</button>
+        <button class="st-btn st-walk-next" id="lsPlay" type="button">▶ 播放</button>
+        <button class="st-btn" id="lsNext" type="button">下一句 ›</button>
+        <button class="st-btn" id="lsRate" type="button" title="語速">1×</button>
+        <button class="st-btn" id="lsHear" type="button">▶ 聽老師原話</button>
+      </div>
+    </div>
   </section>
 
   <!-- 現在在講什麼：一行就好 -->
@@ -65,6 +76,7 @@
       <label class="st-follow"><input type="checkbox" id="followChk" checked> 跟著影片</label>
       <button class="st-btn" id="prevVid" aria-label="上一支影片"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg></button>
       <button class="st-btn st-walk-toggle" id="walkBtn" type="button" hidden>動畫講解</button>
+      <button class="st-btn st-walk-toggle" id="lessonBtn" type="button" hidden>自製課</button>
       <button class="st-btn st-btn-sub" id="subBtn" aria-pressed="true" title="影片字幕（逐字稿）" hidden>字幕</button>
       <button class="st-btn st-btn-watch" id="watchBtn"></button>
       <button class="st-btn" id="nextVid" aria-label="下一支影片"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></button>
@@ -112,6 +124,6 @@
 <script src="data.js?v=20261020a"></script>
 <script src="video-order.js?v=20261008m"></script>
 <script src="chapter-core.js?v=20261008p"></script>
-<script src="study.js?v=20261030a"></script>
+<script src="study.js?v=20261105a"></script>
 </body>
 </html>

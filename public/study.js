@@ -402,7 +402,7 @@
   document.addEventListener('keydown', function(e){
     const tag = (e.target && e.target.tagName) || '';
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || (e.target && e.target.isContentEditable)) return;
-    if (e.ctrlKey || e.metaKey || e.altKey || !playerReady || !current) return;
+    if (e.ctrlKey || e.metaKey || e.altKey || !playerReady || !current || lsOn) return;
     if (document.querySelector('.st-ask')) return;
     const t = player.getCurrentTime ? player.getCurrentTime() : 0;
     if (e.key === ' ' || e.key === 'k') {
@@ -771,6 +771,167 @@
     if (e.key === 'ArrowLeft') { e.preventDefault(); $('walkPrev').click(); }
   });
 
+  // ── 自製課: one lesson for the whole chapter, written from every teacher's
+  // subtitles (lessons/<subj>-<n>.json). Each line is shown, read aloud by the
+  // device's own voice, and plays step k of its part's scene; while playing,
+  // the next line follows when the voice finishes. A line may name the
+  // sentence it came from, to hear the teacher say it.
+  let lesson = null, lsOn = false, lsI = 0, lsPlaying = false, lsSeq = 0, lsLines = [], lsTimer = 0;
+  const synth = window.speechSynthesis || null;
+  const RATES = [0.9, 1, 1.15, 1.3, 1.5];
+  let lsRate = Number(store.get('lesson-rate')) || 1.15;
+  function lsVoice(){
+    if (!synth) return null;
+    const v = synth.getVoices(), tw = v.filter(function(x){ return /zh[-_]TW/i.test(x.lang); });
+    // the most natural Taiwanese voice the device has (Edge's online ones, Apple's Mei-Jia, Windows' Yating)
+    const best = tw.find(function(x){ return /Natural|Online/i.test(x.name); }) || tw.find(function(x){ return /HsiaoChen|Mei-?Jia|Yating/i.test(x.name); });
+    if (best) return best;
+    return v.find(function(x){ return /zh[-_]TW/i.test(x.lang); }) || v.find(function(x){ return /zh[-_](HK|Hant)/i.test(x.lang); }) || v.find(function(x){ return /^zh/i.test(x.lang); }) || null;
+  }
+  // what the voice reads: the line's own reading if given, else the shown
+  // text with the symbols a voice would misread spelled out
+  function lsSpeech(line){
+    if (line.read) return line.read;
+    return String(line.say).replace(/\[\[(.+?)\]\]/g, '$1')
+      .replace(/([OΘΩ])\(/g, function(m, c){ return {O: '大O ', 'Θ': 'Theta ', 'Ω': 'Omega '}[c] + '('; })
+      .replace(/√/g, '根號').replace(/²/g, '平方').replace(/³/g, '立方').replace(/≤/g, '小於等於').replace(/≥/g, '大於等於')
+      .replace(/≠/g, '不等於').replace(/←/g, '設成').replace(/→/g, '，').replace(/×/g, '乘').replace(/[()（）]/g, ' ');
+  }
+  fetch('/lessons/' + chId + '.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : null; }).then(function(l){
+    if (!l || !l.parts || !hasStage) return;
+    lesson = l; lsLines = [];
+    l.parts.forEach(function(p, pi){
+      let k = 0;
+      p.lines.forEach(function(x, li){ k = x.k != null ? x.k : li === 0 ? 1 : k + 1; lsLines.push({pi: pi, li: li, k: k, line: x}); });
+    });
+    $('lessonBtn').hidden = false;
+  }).catch(function(){});
+  function enterLesson(){
+    if (!lesson) return;
+    if (walk) exitWalk(null);
+    if (playerReady && player.pauseVideo) player.pauseVideo();
+    lsOn = true; stageScene = null;
+    const saved = Number(store.get('lesson-' + chId));
+    lsI = saved > 0 && saved < lsLines.length ? saved : 0;
+    document.querySelector('.st-main').classList.add('walk', 'lesson');
+    setTeach(true);
+    $('lessonBar').hidden = false;
+    $('lessonBtn').textContent = '回到影片'; $('lessonBtn').classList.add('on');
+    $('timeline').innerHTML = lesson.parts.map(function(p, pi){
+      return '<button class="st-seg" data-part="' + pi + '"><span class="st-seg-t">' + (pi + 1) + '</span><span class="st-seg-name">' + esc(p.title) + '</span></button>';
+    }).join('');
+    $('timeline').querySelectorAll('.st-seg').forEach(function(b){ b.onclick = function(){
+      const i = lsLines.findIndex(function(x){ return x.pi === Number(b.dataset.part); });
+      if (i >= 0) lsGo(i);
+    }; });
+    renderLesson();
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+  function exitLesson(rerender){
+    lsStop();
+    lsOn = false; stageScene = null; lastTeach = null; lastSec = -1;
+    document.querySelector('.st-main').classList.remove('walk', 'lesson');
+    $('lessonBar').hidden = true;
+    $('lessonBtn').textContent = '自製課'; $('lessonBtn').classList.remove('on');
+    if (rerender) renderNotes();
+  }
+  function lsStop(){
+    lsPlaying = false; lsSeq++; clearTimeout(lsTimer);
+    if (synth) synth.cancel();
+    $('lsPlay').textContent = '▶ 播放';
+  }
+  function lsGo(i){
+    const was = lsPlaying;
+    lsStop();
+    lsI = Math.max(0, Math.min(lsLines.length - 1, i));
+    renderLesson();
+    if (was) lsStart();
+  }
+  // read the current line; when it ends, go on to the next one
+  function lsStart(){
+    lsPlaying = true; $('lsPlay').textContent = '⏸ 暫停';
+    const seq = ++lsSeq, x = lsLines[lsI];
+    const next = function(){
+      if (seq !== lsSeq || !lsPlaying) return;
+      if (lsI >= lsLines.length - 1) { lsStop(); return; }
+      lsI++; renderLesson();
+      lsTimer = setTimeout(function(){ if (seq === lsSeq && lsPlaying) lsStart(); }, 450);
+    };
+    const text = lsSpeech(x.line);
+    if (synth) {
+      synth.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      const v = lsVoice(); if (v) u.voice = v;
+      u.lang = v ? v.lang : 'zh-TW'; u.rate = lsRate;
+      // some browsers never report the end (or stall mid-way): move on anyway
+      // once the line has had well over the time it needs
+      let ended = false;
+      const fin = function(){ if (ended) return; ended = true; clearTimeout(guard); next(); };
+      const guard = setTimeout(function(){ if (seq === lsSeq) { synth.cancel(); fin(); } }, 4000 + text.length * 320 / lsRate);
+      u.onend = fin; u.onerror = function(){ if (seq === lsSeq) setTimeout(fin, 600); };
+      synth.speak(u);
+    } else lsTimer = setTimeout(next, Math.max(1800, text.length * 230 / lsRate));
+  }
+  function renderLesson(){
+    const x = lsLines[lsI], part = lesson.parts[x.pi], line = x.line;
+    const key = 'lesson:' + x.pi;
+    if (stageReady) {
+      $('side').classList.remove('is-idle', 'no-anim');
+      const steps = part.steps;
+      // a scene without steps plays by itself; one with steps shows step k
+      if (stageScene !== key) {
+        stageScene = key;
+        $('stage').contentWindow.postMessage(steps === 0 ? {type: 'scene', scene: part.scene, params: part.params || {}}
+          : {type: 'scene', scene: part.scene, params: part.params || {}, manual: true, step: x.k}, location.origin);
+      } else if (steps !== 0) $('stage').contentWindow.postMessage({type: 'goto', step: x.k}, location.origin);
+    }
+    store.set('lesson-' + chId, String(lsI));
+    renderTeach(part.title + '・' + (x.li + 1) + ' / ' + part.lines.length + '（全課 ' + (lsI + 1) + ' / ' + lsLines.length + '）', line.say);
+    $('nowSec').textContent = lesson.title + '・' + part.title;
+    let src = '';
+    if (line.src && line.src.v) {
+      let o = null;
+      series.forEach(function(s){ s.options.forEach(function(op){ if (!o && youtubeId(op.url) === line.src.v) o = op; }); });
+      if (o) src = '<b>出自</b><span class="zh">' + esc(o.label) + '　' + fmt(line.src.t || 0) + '</span>';
+    }
+    $('lessonSrc').innerHTML = src;
+    $('lsHear').hidden = !src;
+    $('lsPrev').disabled = lsI === 0;
+    $('lsNext').disabled = lsI >= lsLines.length - 1;
+    $('lsRate').textContent = lsRate + '×';
+    $('timeline').querySelectorAll('.st-seg').forEach(function(b){
+      const i = Number(b.dataset.part);
+      b.classList.toggle('active', i === x.pi); b.classList.toggle('past', i < x.pi);
+    });
+    const act = $('timeline').querySelector('.st-seg.active');
+    if (act && act.scrollIntoView) act.scrollIntoView({block: 'nearest', inline: 'nearest'});
+  }
+  $('lessonBtn').onclick = function(){ if (lsOn) exitLesson(true); else enterLesson(); };
+  $('lsPlay').onclick = function(){ if (lsPlaying) lsStop(); else lsStart(); };
+  $('lsPrev').onclick = function(){ lsGo(lsI - 1); };
+  $('lsNext').onclick = function(){ lsGo(lsI + 1); };
+  $('lsRate').onclick = function(){
+    lsRate = RATES[(RATES.indexOf(lsRate) + 1) % RATES.length] || 1;
+    store.set('lesson-rate', String(lsRate));
+    $('lsRate').textContent = lsRate + '×';
+    if (lsPlaying) lsGo(lsI);
+  };
+  // hear the teacher: leave the lesson and play that video at that sentence
+  $('lsHear').onclick = function(){
+    const line = lsLines[lsI].line;
+    let at = null;
+    series.forEach(function(s, si){ s.options.forEach(function(op, i){ if (!at && youtubeId(op.url) === line.src.v) at = [si, i]; }); });
+    if (!at) return;
+    exitLesson(false);
+    playVideo(at[0], at[1], true, Math.max(0, (line.src.t || 0) - 1));
+  };
+  document.addEventListener('keydown', function(e){
+    if (!lsOn || e.target.closest('input, textarea')) return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); $('lsNext').click(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); $('lsPrev').click(); }
+    if (e.key === ' ') { e.preventDefault(); $('lsPlay').click(); }
+  });
+
   // ── Notes, timeline, and the "now" line ──
   async function renderNotes(){
     const el = notesEl();
@@ -778,6 +939,7 @@
     const n = curNotes;
     lastSec = -1; lastPt = null; lastTeach = null;
     if (walk) exitWalk(null);
+    if (lsOn) exitLesson(false);
     setTeach(n && n.sections.some(function(x){ return x.explain; }));
     renderWalkBtn();
     updateCounts();
@@ -827,7 +989,7 @@
   }, {passive: false});
   let lastPt = null, lastSec = -1;
   function syncNotes(t, force){
-    if (!curNotes || walk) return;
+    if (!curNotes || walk || lsOn) return;
     // which point / section is being taught at time t
     let secIdx = 0, pt = null;
     curNotes.sections.forEach(function(s, si){

@@ -764,3 +764,17 @@ body:not(.st-booting) .st-top, body:not(.st-booting) .st-main { animation: m-in 
 .st-pr .st-qz-why, .st-pr .st-qz-go { margin-top: 0; }
 .st-pr-frame { position: fixed; left: -9999px; top: 0; width: 1px; height: 1px; border: 0; opacity: 0; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .st-pr > * { animation: none !important; } }
+/* ── 自製課: the walkthrough layout, the line read aloud in large type ── */
+.st-main.lesson #walkBtn, .st-main.lesson .st-follow { display: none !important; }
+.st-main.lesson .st-teach-body { font-size: 17px; line-height: 1.75; }
+.st-main.lesson .st-timeline .st-seg-t { min-width: 1.6em; text-align: center; }
+#lessonBar .st-walk-btns { display: grid; grid-template-columns: 1fr 1.5fr 1fr; }
+#lessonBar .st-walk-btns .st-btn { justify-content: center; white-space: nowrap; }
+#lessonBar #lsHear { grid-column: span 2; }
+/* while the lesson plays the video controls have nothing to do */
+.st-main.lesson #subBtn, .st-main.lesson #watchBtn, .st-main.lesson #prevVid, .st-main.lesson #nextVid { display: none !important; }
+#lessonBtn { white-space: nowrap; }
+@media (max-width: 900px) {
+  /* the animation where the video was, the line being read under it */
+  .st-main.lesson .st-side { order: 2 !important; }
+}

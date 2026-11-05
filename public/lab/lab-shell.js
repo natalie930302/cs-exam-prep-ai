@@ -120,7 +120,9 @@ const pages = (def.pages || []).filter((p) => p.id !== 'quiz' && !/小測驗|測
 const scenes = def.scenes || {};
 const order = def.sceneOrder || Object.keys(scenes);
 // for automated checks: play every scene / mode from the console
-window.__labCheck = { def, playScene: (id) => playScene(id, {}, false), stop: () => stopAll() };
+window.__labCheck = { def, playScene: (id) => playScene(id, {}, false), stop: () => stopAll(),
+  // how many steps a scene has (manual mode with no limit: the motion runs fast)
+  countSteps: async (id) => { await playScene(id, {}, false, null, Infinity, 1e6); return cue.k; } };
 
 $('kicker').textContent = def.kicker || '';
 $('title').textContent = def.title || '';
