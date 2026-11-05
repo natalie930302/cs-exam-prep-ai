@@ -779,6 +779,7 @@
   let lesson = null, lsOn = false, lsI = 0, lsPlaying = false, lsSeq = 0, lsLines = [], lsTimer = 0;
   const synth = window.speechSynthesis || null;
   const RATES = [0.9, 1, 1.15, 1.3, 1.5];
+  if (synth) { synth.getVoices(); synth.onvoiceschanged = function(){ synth.getVoices(); }; }
   let lsRate = Number(store.get('lesson-rate')) || 1.15;
   function lsVoice(){
     if (!synth) return null;
@@ -838,9 +839,12 @@
     $('lessonBtn').textContent = '自製課'; $('lessonBtn').classList.remove('on');
     if (rerender) renderNotes();
   }
+  const LS_NOVOICE = '這台裝置念不出來，可能還沒有中文語音。iPhone：設定 → 輔助使用 → 語音內容 → 聲音 → 中文（台灣）下載一個；Android：設定 → 文字轉語音 → 安裝中文（台灣）。不播放也可以自己按「下一句」看。';
+  let lsUtter = null;
+  function lsHint(t){ $('lsHint').textContent = t; $('lsHint').hidden = !t; }
   function lsStop(){
     lsPlaying = false; lsSeq++; clearTimeout(lsTimer);
-    if (synth) synth.cancel();
+    if (synth && (synth.speaking || synth.pending)) synth.cancel();
     $('lsPlay').textContent = '▶ 播放';
   }
   function lsGo(i){
@@ -862,17 +866,32 @@
     };
     const text = lsSpeech(x.line);
     if (synth) {
-      synth.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      const v = lsVoice(); if (v) u.voice = v;
-      u.lang = v ? v.lang : 'zh-TW'; u.rate = lsRate;
-      // some browsers never report the end (or stall mid-way): move on anyway
-      // once the line has had well over the time it needs
-      let ended = false;
-      const fin = function(){ if (ended) return; ended = true; clearTimeout(guard); next(); };
-      const guard = setTimeout(function(){ if (seq === lsSeq) { synth.cancel(); fin(); } }, 4000 + text.length * 320 / lsRate);
-      u.onend = fin; u.onerror = function(){ if (seq === lsSeq) setTimeout(fin, 600); };
-      synth.speak(u);
+      const speak = function(){
+        const u = new SpeechSynthesisUtterance(text);
+        lsUtter = u; // held, or some phones drop it before it ends and never say so
+        const v = lsVoice(); if (v) u.voice = v;
+        u.lang = v ? v.lang : 'zh-TW'; u.rate = lsRate;
+        // some browsers never report the end (or stall mid-way): move on anyway
+        // once the line has had well over the time it needs
+        let started = false, ended = false;
+        const fin = function(){ if (ended) return; ended = true; clearTimeout(guard); next(); };
+        const guard = setTimeout(function(){ if (seq === lsSeq) { synth.cancel(); fin(); } }, 4000 + text.length * 320 / lsRate);
+        u.onstart = function(){ started = true; lsHint(''); };
+        u.onend = fin;
+        u.onerror = function(e){ if (seq === lsSeq && !/interrupted|canceled/.test(e.error || '')) setTimeout(fin, 600); };
+        // nothing is being read after 3 s: stop and say why, rather than
+        // running through the lines in silence
+        setTimeout(function(){
+          if (seq !== lsSeq || started || ended || synth.speaking) return;
+          clearTimeout(guard); lsStop(); lsHint(LS_NOVOICE);
+        }, 3000);
+        synth.speak(u);
+        if (synth.paused) synth.resume();
+      };
+      // a line spoken right after cancel() is dropped on some phones; the
+      // first line still starts inside the tap, which iPhones require
+      if (synth.speaking || synth.pending) { synth.cancel(); lsTimer = setTimeout(function(){ if (seq === lsSeq) speak(); }, 180); }
+      else speak();
     } else lsTimer = setTimeout(next, Math.max(1800, text.length * 230 / lsRate));
   }
   function renderLesson(){

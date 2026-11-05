@@ -778,3 +778,6 @@ body:not(.st-booting) .st-top, body:not(.st-booting) .st-main { animation: m-in 
   /* the animation where the video was, the line being read under it */
   .st-main.lesson .st-side { order: 2 !important; }
 }
+.st-ls-hint { margin: 10px 0 0; font-size: 13px; line-height: 1.6; color: var(--tx); background: color-mix(in srgb, var(--subj) 12%, var(--surf)); border-radius: var(--r-sm); padding: 8px 12px; }
+.st-ls-hint[hidden] { display: none; }
+.st-ls-tip { margin: 8px 0 0; font-size: 12px; color: var(--mt); }
