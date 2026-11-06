@@ -3694,3 +3694,6 @@ body#appRoot .ch-mat.done .cb { background: var(--ch-color, var(--ac)) !importan
 body#appRoot .ch-mat.done .cb::after { content: ''; position: absolute; left: 50%; top: 45%; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: translate(-50%, -50%) rotate(45deg); }
 /* 按下去縮一下只留給小按鈕；日曆格、影片列、清單項目按下去不縮 */
 body#appRoot :is(.cal-cell, .ch-mat, .calday-list li a, .global-search-item):active { transform: none !important; }
+/* 學習空間與自製課兩顆按鈕並排；窄螢幕自動換行 */
+body#appRoot .ch-study-row { display: flex; flex-wrap: wrap; gap: 8px; }
+body#appRoot .ch-lesson-link { background: var(--surf) !important; color: var(--ch-color, var(--ac)) !important; border: 1.5px solid var(--ch-color, var(--ac)); }

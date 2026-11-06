@@ -113,6 +113,8 @@
     clearTimeout(sideShowTimer);
     sideShowTimer = setTimeout(showSide, 3500);
     const p = pendingScene; pendingScene = null;
+    // the lesson started before the stage was up: show its current step now
+    if (lsOn) { stageScene = null; renderLesson(); tellStageVisible(); return; }
     if (p && p.idle) postIdle(p.idle);
     else if (p && sceneFor(p)) postScene(p);
     else if (p) { stageScene = null; showIdle(IDLE_CHAT); }
@@ -819,7 +821,15 @@
       p.lines.forEach(function(x, li){ k = x.k != null ? x.k : li === 0 ? 1 : k + 1; lsLines.push({pi: pi, li: li, k: k, line: x}); });
     });
     $('lessonBtn').hidden = false;
+    lsAutoStart();
   }).catch(function(){});
+  // ?mode=lesson (the 自製課 button on the chapter card): open straight into
+  // the lesson, once both it and the first video's notes are in (setting up
+  // the video's notes would otherwise close the lesson again)
+  let lsAuto = params.get('mode') === 'lesson', notesShown = false;
+  function lsAutoStart(){ if (lsAuto && lesson && notesShown && !lsOn) { lsAuto = false; enterLesson(); } }
+  const renderNotesOnly = renderNotes;
+  renderNotes = async function(){ await renderNotesOnly(); notesShown = true; lsAutoStart(); };
   // the read-ahead audio: play the current line's part from where the line starts
   function lsAudioStart(){
     const x = lsLines[lsI], t = lsTimes.parts[x.pi];
