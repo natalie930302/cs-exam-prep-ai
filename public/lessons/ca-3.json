@@ -1,0 +1,5347 @@
+{
+ "chapter": "ca-3",
+ "title": "CPU設計",
+ "intro": "從 floating point 乘法收尾開始，一步一步組出 MIPS 單週期 CPU 的 datapath 和 control，算出它的 clock，再比較多週期與 pipeline，認識三種 hazard。",
+ "parts": [
+  {
+   "title": "Floating point 乘法：exponent 相加、減一次 bias",
+   "scene": "cpu-fpmul",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "好，先把上一章的尾巴收掉：floating point 的乘法。",
+     "k": 1,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 18.27
+     }
+    },
+    {
+     "say": "先回想 IEEE 754 single precision：1 個 sign、8 個 exponent、23 個 fraction。",
+     "k": 1
+    },
+    {
+     "say": "同樣一串 0 和 1，當整數讀跟當 floating point 讀，意思完全不同，所以加法、乘法的 hardware 也要跟著不一樣。",
+     "k": 2,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 52.85
+     }
+    },
+    {
+     "say": "黃婷婷老師先叫大家別管電腦，用國中的科學記號想：兩個「某數乘 10 的幾次方」相乘，怎麼算？",
+     "k": 3,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 86.13
+     }
+    },
+    {
+     "say": "很簡單：前面的 mantissa 相乘，exponent 相加。像 2.0×10³ 乘 3.0×10²，就是 6.0×10⁵。",
+     "read": "很簡單：前面的 mantissa 相乘，exponent 相加。像 2.0 乘 10的3次方 乘 3.0 乘 10的2次方，就是 6.0 乘 10的5次方。",
+     "k": 4,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 119.22
+     }
+    },
+    {
+     "say": "可是有時候乘出來小數點前不只一位，像 5.0 乘 4.0 得 20.0，這就不是 normalized。",
+     "k": 5,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 155.1
+     }
+    },
+    {
+     "say": "那就把小數點往左移一位、exponent 加 1，變成 2.0×10⁶。",
+     "read": "那就把小數點往左移一位、exponent 加 1，變成 2.0 乘 10的6次方。",
+     "k": 5,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 160
+     }
+    },
+    {
+     "say": "電腦裡多一個麻煩：exponent 存的不是真正的值，而是「真正的 exponent 加上 bias」，這叫 biased representation。",
+     "k": 6,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 173.78
+     }
+    },
+    {
+     "say": "single precision 的 bias 是 127。",
+     "k": 6,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 200
+     }
+    },
+    {
+     "say": "老師舉個小例子：exponent 用 4 bits、bias 是 8。7 存成 15，也就是 1111；−3 存成 5，也就是 0101。",
+     "read": "老師舉個小例子：exponent 用 4 bits、bias 是 8。7 存成 15，也就是 一一一一；−3 存成 5，也就是 零一零一。",
+     "k": 7,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 221.52
+     }
+    },
+    {
+     "say": "如果直接把存起來的兩個數相加，15 + 5 = 20。可是真正的 7 + (−3) = 4，應該存成 4 + 8 = 12 才對。",
+     "read": "如果直接把存起來的兩個數相加，15 加 5 等於 20。可是真正的 7 加 (負3) 等於 4，應該存成 4 加 8 等於 12 才對。",
+     "k": 8,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 245.62
+     }
+    },
+    {
+     "say": "多出來的 8 是哪來的？兩個數各加了一次 bias，相加就變成加了兩次。",
+     "k": 8,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 260
+     }
+    },
+    {
+     "say": "所以相加完要再減掉一次 bias：20 − 8 = 12，剛好是 4 + 8。這一步最容易忘。",
+     "read": "所以相加完要再減掉一次 bias：20 減 8 等於 12，剛好是 4 加 8。這一步最容易忘。",
+     "k": 9,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 312.28
+     }
+    },
+    {
+     "say": "exponent 處理好，接著 mantissa 相乘、normalize，再做 rounding。",
+     "k": 10,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 325.79
+     }
+    },
+    {
+     "say": "round 完可能又不 normalized，這兩步可能要重複。",
+     "k": 10
+    },
+    {
+     "say": "最後補上正負號。sign 跟大小是分開存的，大小照乘，sign 用 XOR：同號得正、異號得負。",
+     "k": 11,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 339.42
+     }
+    }
+   ]
+  },
+  {
+   "title": "例題：0.5 乘 −0.4375",
+   "scene": "cpu-fpmulex",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "來做一題。A 是二進位的 1.000×2⁻¹，也就是 0.5；B 是二進位的 −1.110×2⁻²，也就是 −0.4375。",
+     "read": "來做一題。A 是二進位的 1.000 乘 2的負1次方，也就是 0.5；B 是二進位的 負1.110 乘 2的負2次方，也就是 負0.4375。",
+     "k": 1,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 352.53
+     }
+    },
+    {
+     "say": "exponent 直接加：−1 + (−2) = −3。可是電腦裡存的是加過 127 的值：126 + 125 = 251。",
+     "read": "exponent 直接加：負1 加 (負2) 等於 負3。可是電腦裡存的是加過 127 的值：126 加 125 等於 251。",
+     "k": 2,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 364.08
+     }
+    },
+    {
+     "say": "251 再減一次 127，得到 124，正好是 −3 + 127，對了。",
+     "read": "251 再減一次 127，得到 124，正好是 負3 加 127，對了。",
+     "k": 2,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 375
+     }
+    },
+    {
+     "say": "mantissa 相乘：1.000 × 1.110 = 1.110000。",
+     "read": "mantissa 相乘：1.000 乘 1.110 等於 1.110000。",
+     "k": 3,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 387.12
+     }
+    },
+    {
+     "say": "小數點前只有一個 1，已經 normalized，round 到 4 位還是 1.110。",
+     "k": 3
+    },
+    {
+     "say": "一正一負，sign 是負的，答案是 −1.110×2⁻³，也就是 −0.21875。直接算 0.5 × (−0.4375)，一樣。",
+     "read": "一正一負，sign 是負的，答案是 負1.110 乘 2的負3次方，也就是 負0.21875。直接算 0.5 乘 (負0.4375)，一樣。",
+     "k": 4,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 394.94
+     }
+    }
+   ]
+  },
+  {
+   "title": "Floating point 的硬體：Coprocessor 1",
+   "scene": "cpu-cop1",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "那 floating point 在硬體裡誰來算？主 CPU 裡有 ALU、乘法器、除法器，不過它們都是給整數用的。",
+     "k": 1,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 400
+     }
+    },
+    {
+     "say": "floating point 的加跟乘要很多 hardware，不是幾個 full adder 搞得定。",
+     "k": 2,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 430.3
+     }
+    },
+    {
+     "say": "所以交給另一顆 processor：Coprocessor 1。",
+     "k": 2
+    },
+    {
+     "say": "最早的 x86 根本沒有 floating point 硬體，只能用 software 拿整數指令慢慢模擬，後來為了快才加上 coprocessor。",
+     "k": 3,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 435.78
+     }
+    },
+    {
+     "say": "Coprocessor 1 有自己的 register file，$f0 到 $f31，也有自己的運算單元，跟主 CPU 分開。",
+     "read": "Coprocessor 1 有自己的 register file，f 0 到 f 31，也有自己的運算單元，跟主 CPU 分開。",
+     "k": 4,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 453.76
+     }
+    },
+    {
+     "say": "硬體不同，指令也要分開。你寫 add，到底是誰的加？所以 floating point 指令後面帶 .s 或 .d，代表 single 或 double。",
+     "read": "硬體不同，指令也要分開。你寫 add，到底是誰的加？所以 floating point 指令後面帶 點s 或 點d，代表 single 或 double。",
+     "k": 5,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 464.42
+     }
+    },
+    {
+     "say": "register 名字也看得出來：$f0、$f1 是 coprocessor 的；寫 $t0 這種，就是去主 CPU 拿。",
+     "read": "register 名字也看得出來：f 0、f 1 是 coprocessor 的；寫 t 0 這種，就是去主 CPU 拿。",
+     "k": 6,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 517.44
+     }
+    },
+    {
+     "say": "double precision 一個數 64 bits，一個 register 只有 32 bits。",
+     "k": 7,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 531.86
+     }
+    },
+    {
+     "say": "所以用一對：$f0 跟 $f1 當一個，$f2 跟 $f3 當另一個。",
+     "read": "所以用一對：f 0 跟 f 1 當一個，f 2 跟 f 3 當另一個。",
+     "k": 7
+    },
+    {
+     "say": "load、store 也要分：一般的 lw、sw 是主 CPU 的；要搬進 coprocessor 1 的 register，就用 lwc1、swc1。",
+     "read": "load、store 也要分：一般的 L W、S W 是主 CPU 的；要搬進 coprocessor 1 的 register，就用 L W C 1、S W C 1。",
+     "k": 8,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 544.12
+     }
+    },
+    {
+     "say": "想把資料搬回主 CPU 處理，就用 move：mfc1 是 move from coprocessor 1，mtc1 是搬進去。",
+     "read": "想把資料搬回主 CPU 處理，就用 move：M F C 1 是 move from coprocessor 1，M T C 1 是搬進去。",
+     "k": 9,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 591.04
+     }
+    }
+   ]
+  },
+  {
+   "title": "同一串 bits，不同解釋；range 有限、結合律失效",
+   "scene": "cpu-fpfall",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "這章有個很重要的提醒：同樣 32 個 bits，可以有不同的解釋。畫面這串當 two's complement 整數，是 −1945632764。",
+     "read": "這章有個很重要的提醒：同樣 32 個 bits，可以有不同的解釋。畫面這串當 two's complement 整數，是 負1945632764。",
+     "k": 1,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 633.12
+     }
+    },
+    {
+     "say": "同一串也可以當指令：前 6 bits 是 opcode，這裡是 35，也就是 lw，解出來是 lw $t0, 4($zero)。",
+     "read": "同一串也可以當指令：前 6 bits 是 opcode，這裡是 35，也就是 L W，解出來是 L W t 0，offset 4，base 是 zero。",
+     "k": 2,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 647.08
+     }
+    },
+    {
+     "say": "再把它當 floating point：1 個 sign、8 個 exponent、其餘是 fraction，算出來是一個非常小的負數。",
+     "k": 3,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 658.1
+     }
+    },
+    {
+     "say": "同一串 bits，三種意思。",
+     "k": 3
+    },
+    {
+     "say": "解釋不同，hardware 就不同。整數相加，carry-lookahead adder 就好；",
+     "read": "解釋不同，hardware 就不同。整數相加，carry lookahead adder 就好；",
+     "k": 4,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 669.52
+     }
+    },
+    {
+     "say": "floating point 相加，要對齊、相加、normalize、round 一大串。",
+     "k": 4
+    },
+    {
+     "say": "所以資訊的意義看你怎麼解釋；先決定解釋，再照著解釋去設計 hardware。",
+     "k": 5,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 736.24
+     }
+    },
+    {
+     "say": "另一個重點：bits 有限。32 個不夠就用 64 個，但 64 個還是有極限，所以 range 跟 precision 一定有限。",
+     "k": 6,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 748.74
+     }
+    },
+    {
+     "say": "有限會出什麼事？結合律會壞掉。看三個數：x = −1.5×10³⁸，y = 1.5×10³⁸，z = 1.0。",
+     "read": "有限會出什麼事？結合律會壞掉。看三個數：x 等於 負1.5 乘 10的38次方，y 等於 1.5 乘 10的38次方，z 等於 1.0。",
+     "k": 7,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 778.54
+     }
+    },
+    {
+     "say": "先算 x + y：一正一負剛好抵消變 0，再加 z，得到 1.0。",
+     "read": "先算 x 加 y：一正一負剛好抵消變 0，再加 z，得到 1.0。",
+     "k": 8,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 800.96
+     }
+    },
+    {
+     "say": "換個順序，先算 y + z。y 已經大到極限，加 1.0 根本表示不出差別，結果還是 y，1.0 就被吃掉了。",
+     "read": "換個順序，先算 y 加 z。y 已經大到極限，加 1.0 根本表示不出差別，結果還是 y，1.0 就被吃掉了。",
+     "k": 9,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 812.26
+     }
+    },
+    {
+     "say": "再拿這個結果加 x，就變成 0。",
+     "k": 10,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 831.1
+     }
+    },
+    {
+     "say": "同樣三個數，只是先加誰不同，一個得 1.0、一個得 0.0。原因就是 range 跟 precision 有限。",
+     "k": 11,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 845.84
+     }
+    },
+    {
+     "say": "寫 parallel 程式更要小心：一串加法分給不同 processor，誰先加誰後加不一定，結果就可能不一樣。",
+     "k": 12,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 880.96
+     }
+    },
+    {
+     "say": "老師也說，帳戶少 0.002 分沒人在乎，但科學運算很依賴 floating point；Intel 的 Pentium 就曾因除法 bug 召回。",
+     "k": 12,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 997
+     }
+    }
+   ]
+  },
+  {
+   "title": "乘除 2 的次方用 shift，signed 要 sign extension",
+   "scene": "cpu-shift",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "老師順便提醒：要乘除的是 2 的次方，就別真的做乘除，用 shift。5 乘 4 就是往左 shift 2 位。",
+     "k": 1,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 929.26
+     }
+    },
+    {
+     "say": "0000 0101 變成 0001 0100，就是 20。",
+     "read": "零零零零 零一零一 變成 零零零一 零一零零，就是 20。",
+     "k": 1
+    },
+    {
+     "say": "乘法除法要一個 bit 一個 bit 做 iteration，又花 hardware 又花時間；",
+     "k": 2,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 951.72
+     }
+    },
+    {
+     "say": "barrel shifter 一個 clock cycle 就 shift 完。",
+     "k": 2
+    },
+    {
+     "say": "shift 也分 signed 跟 unsigned。",
+     "k": 3,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 975.84
+     }
+    },
+    {
+     "say": "−8 往右 shift 1 位想得到 −4，空出來的位置要補 sign bit 1；補 0 就變 124，錯了。",
+     "read": "負8 往右 shift 1 位想得到 負4，空出來的位置要補 sign bit 1；補 0 就變 124，錯了。",
+     "k": 3
+    },
+    {
+     "say": "補 sign bit 就是 sign extension：4 bits 的 1010 是 −6。",
+     "read": "補 sign bit 就是 sign extension：4 bits 的 一零一零 是 負6。",
+     "k": 4,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 982.56
+     }
+    },
+    {
+     "say": "擴成 8 bits 前面補 1，變 11111010，還是 −6。",
+     "read": "擴成 8 bits 前面補 1，變 一一一一一零一零，還是 負6。",
+     "k": 4
+    },
+    {
+     "say": "正數就補 0。這個觀念等一下 lw 算位址時馬上會再用到。",
+     "read": "正數就補 0。這個觀念等一下 L W 算位址時馬上會再用到。",
+     "k": 4
+    }
+   ]
+  },
+  {
+   "title": "Make the common case fast",
+   "scene": "cpu-common",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "這章收尾：instruction set 可以支援各種表示法，bits 怎麼解釋由你定；定好了，再照著設計加減乘除的 hardware。",
+     "k": 1,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1033.78
+     }
+    },
+    {
+     "say": "不管用哪種表示法，range 跟 precision 都有限，這點要一直記得。",
+     "k": 2,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1051.06
+     }
+    },
+    {
+     "say": "對想做 processor 的人很重要的觀察：指令設計了一大堆，真正常用的只有一小部分，投影片說大約 54 個。",
+     "k": 3,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1066.62
+     }
+    },
+    {
+     "say": "拿 SPEC 這套 benchmark 測，這些常用指令涵蓋 SPEC integer 的全部、SPEC floating point 的 97%。",
+     "k": 4,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1081.26
+     }
+    },
+    {
+     "say": "這就是 trade-off：要做很便宜的 processor，少用的指令乾脆不做，需要時用 software emulate。",
+     "read": "這就是 trade off：要做很便宜的 processor，少用的指令乾脆不做，需要時用 software emulate。",
+     "k": 5,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1109.5
+     }
+    },
+    {
+     "say": "反過來，要加速就加速最常用的那些，同樣的代價，整體跑更快。這叫 make the common case fast。",
+     "k": 6,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1135.94
+     }
+    },
+    {
+     "say": "老師的研究生就這樣做：常 decode 的指令給小而快的 decoder，不常用的給大一點但省電的 decoder。",
+     "k": 7,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1168.44
+     }
+    }
+   ]
+  },
+  {
+   "title": "新的一章：設計一顆 processor",
+   "scene": "cpu-intro",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "好，進入新的一章：設計 processor。",
+     "k": 1,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1246.38
+     }
+    },
+    {
+     "say": "前面學了 instruction set 的 trade-off，也學了 adder、ALU，現在把它們組成真正的 CPU。",
+     "read": "前面學了 instruction set 的 trade off，也學了 adder、ALU，現在把它們組成真正的 CPU。",
+     "k": 1
+    },
+    {
+     "say": "我們只做幾個代表性的指令，但方法學會了，就能類推，自己設計一整顆 processor。",
+     "k": 2,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1300.9
+     }
+    },
+    {
+     "say": "先做 single cycle：每一個 instruction 都在一個 clock cycle 裡做完。",
+     "k": 3,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1316.32
+     }
+    },
+    {
+     "say": "問題是指令有長有短，lw、sw 要等 memory 很慢；cycle 要等最長的，短的只好乾等。所以它不實際，但能教你基本方法。",
+     "read": "問題是指令有長有短，L W、S W 要等 memory 很慢；cycle 要等最長的，短的只好乾等。所以它不實際，但能教你基本方法。",
+     "k": 4,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1324.78
+     }
+    },
+    {
+     "say": "下一步才是 pipeline：把指令切成一階一階的 stage，現在的 processor 都這樣做。",
+     "k": 5,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1350.96
+     }
+    },
+    {
+     "say": "讀這章的訣竅：圖上每個元件、每條線，都搞清楚從哪來、代表什麼。全懂了就不用背。",
+     "k": 6,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1405.82
+     }
+    }
+   ]
+  },
+  {
+   "title": "CPU time = IC × CPI × cycle time",
+   "scene": "cpu-perf",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "所有通用 CPU 都在做同一件事：從 memory 拿指令 fetch、看懂它 decode、執行 execute，再拿下一個，一直重複。",
+     "k": 1,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1461.58
+     }
+    },
+    {
+     "say": "CPU 好不好怎麼評？三個數相乘：instruction count × CPI × clock cycle time，就是 CPU time。",
+     "read": "CPU 好不好怎麼評？三個數相乘：instruction count 乘 CPI 乘 clock cycle time，就是 CPU time。",
+     "k": 2,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1496.46
+     }
+    },
+    {
+     "say": "instruction count 由誰決定？instruction set，例如有沒有乘法指令；",
+     "k": 3,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1523.72
+     }
+    },
+    {
+     "say": "還有 compiler 翻得聰不聰明、有沒有 optimize。",
+     "k": 3
+    },
+    {
+     "say": "CPI 跟 cycle time 就看 hardware：加法器設計得快還是簡單，做加法要的 cycle 數就不同。",
+     "k": 4,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1548.34
+     }
+    },
+    {
+     "say": "single cycle 每個指令一個 cycle，CPI = 1。跑 100 個指令，就是 100 個 cycles。",
+     "read": "single cycle 每個指令一個 cycle，CPI 等於 1。跑 100 個指令，就是 100 個 cycles。",
+     "k": 5,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1584.12
+     }
+    },
+    {
+     "say": "可是 clock period 很長：要等最長的指令做完 clock 才能變，所以不見得 efficient。",
+     "k": 6,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1590.72
+     }
+    },
+    {
+     "say": "接下來會講兩個版本：簡化的 single cycle，跟真正在用的 pipeline。",
+     "k": 7,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1615.36
+     }
+    }
+   ]
+  },
+  {
+   "title": "一個指令怎麼執行：PC、fetch、decode、execute",
+   "scene": "cpu-exec",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "程式寫好後，每個 assembly 指令第一件事是 instruction fetch，從 memory 拿出來。問題來了：去哪裡拿？",
+     "k": 1,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1714.7
+     }
+    },
+    {
+     "say": "答案是 program counter，PC。PC 裡放一個位址，告訴你去 memory 第幾個位置拿指令。",
+     "k": 2,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1761.72
+     }
+    },
+    {
+     "say": "一個接一個執行，下一個就在 PC + 4，因為一個指令 4 bytes，像 1000 到 1004；要跳到 2000，就把 PC 改成 2000。",
+     "read": "一個接一個執行，下一個就在 PC 加 4，因為一個指令 4 bytes，像 1000 到 1004；要跳到 2000，就把 PC 改成 2000。",
+     "k": 3,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1780.17
+     }
+    },
+    {
+     "say": "PC 本身是個 32 bits 的 register，拿它的值去 instruction memory 取指令，這就叫 fetch。",
+     "k": 4,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1797.89
+     }
+    },
+    {
+     "say": "拿到 32 bits 就要 decode。一開始不知道是 R、I 還是 J，就三種一起解，等 opcode 看完才知道是哪種。",
+     "k": 5,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1822.67
+     }
+    },
+    {
+     "say": "decode 完去 register file 拿運算元：有的讀 rs、rt 兩個，有的只讀 rs，因為 rt 是要寫入的 destination。",
+     "k": 6,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1846.08
+     }
+    },
+    {
+     "say": "接著 ALU 照指令運算；如果是 lw、sw，還要再去 access data memory。",
+     "read": "接著 ALU 照指令運算；如果是 L W、S W，還要再去 access data memory。",
+     "k": 7,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1871.85
+     }
+    },
+    {
+     "say": "做完要更新 PC：一般是 PC + 4；branch 或 jump 的 target address，過程中就要先算好。",
+     "read": "做完要更新 PC：一般是 PC 加 4；branch 或 jump 的 target address，過程中就要先算好。",
+     "k": 8,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1880.71
+     }
+    },
+    {
+     "say": "PC 更新完，下一輪再 fetch、decode、execute，一直重複，這就是程式執行的全部。",
+     "k": 9,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1896.89
+     }
+    }
+   ]
+  },
+  {
+   "title": "指令執行的五個步驟",
+   "scene": "cpu-qq-five",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "Enzo 的影片換個角度說：ISA 像一本說明書，規定 CPU 認識哪些指令，但沒規定內部怎麼設計才快。",
+     "k": 1,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 14.1
+     }
+    },
+    {
+     "say": "所以才有三代設計：單週期、FSM 也就是多週期、再到 pipeline，每一代都在解決上一代的根本問題。",
+     "k": 2,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 30
+     }
+    },
+    {
+     "say": "幾乎每道指令都能拆成五步。第一步 Fetch，照 PC 抓指令，PC 再指向下一道。",
+     "k": 3,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 67.2
+     }
+    },
+    {
+     "say": "影片說「PC 加一」，意思是下一道；在 MIPS 一道指令 4 bytes，其實是 PC + 4。",
+     "read": "影片說「PC 加一」，意思是下一道；在 MIPS 一道指令 4 bytes，其實是 PC 加 4。",
+     "k": 3,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 75
+     }
+    },
+    {
+     "say": "第二步 Decode：像翻譯官，把這串 0 和 1 翻成「這是加法，用 R1 和 R2」。",
+     "k": 4,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 82.1
+     }
+    },
+    {
+     "say": "第三步 Execute：真的運算，把兩個數送進 ALU；跳躍指令在這一步算出目標位址。",
+     "k": 5,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 100.2
+     }
+    },
+    {
+     "say": "第四步 Memory Access：只有 load、store 在這步做事，像 add 這種純運算就跳過。",
+     "k": 6,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 114.2
+     }
+    },
+    {
+     "say": "第五步 Write Back：結果寫回目標暫存器，像 add R0, R1, R2，就是把和存進 R0。",
+     "k": 7,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 128.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "要實作的指令與三種 format",
+   "scene": "cpu-subset",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "我們要實作的指令其實很少，只有幾個。",
+     "k": 1,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1629.78
+     }
+    },
+    {
+     "say": "第一類 memory reference：lw 從 memory 讀到 register，sw 從 register 寫到 memory。",
+     "read": "第一類 memory reference：L W 從 memory 讀到 register，S W 從 register 寫到 memory。",
+     "k": 2,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1633.64
+     }
+    },
+    {
+     "say": "第二類算術邏輯：add、sub、and、or、slt，都是 R-type。",
+     "read": "第二類算術邏輯：add、sub、and、or、S L T，都是 R type。",
+     "k": 3,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1635.52
+     }
+    },
+    {
+     "say": "第三類 control：beq 相等就跳，還有 j 直接跳，用來改變執行順序。",
+     "read": "第三類 control：B E Q 相等就跳，還有 J 直接跳，用來改變執行順序。",
+     "k": 4,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1640.61
+     }
+    },
+    {
+     "say": "雖然少，大類都齊了：跟 memory 溝通、做運算、改變 control sequence。",
+     "k": 5,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1648.32
+     }
+    },
+    {
+     "say": "MIPS 很簡單，只有三種 instruction format：R-type、I-type、J-type，每種欄位加起來都是 32 bits。",
+     "read": "MIPS 很簡單，只有三種 instruction format：R type、I type、J type，每種欄位加起來都是 32 bits。",
+     "k": 6,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1675.26
+     }
+    },
+    {
+     "say": "老師說只有一種 format 最好設計，不得已才妥協成三種；自己設計過 hardware 就懂：format 越少越一致越好。",
+     "k": 7,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1701.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "R、I、J format 的每個欄位",
+   "scene": "cpu-formats",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "設計的第一步是分析指令，先複習三種 format，老師說考試很可能會考。",
+     "k": 1,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 64.54
+     }
+    },
+    {
+     "say": "R-type：前 6 bits 是 opcode，接著 rs、rt、rd、shamt 各 5 bits，最後 6 bits 是 funct，加起來 32。",
+     "read": "R type：前 6 bits 是 opcode，接著 rs、rt、rd、shift amount 各 5 bits，最後 6 bits 是 function，加起來 32。",
+     "k": 2,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 81.76
+     }
+    },
+    {
+     "say": "為什麼 rs、rt、rd 都是 5 bits？register file 有 32 個 register，要說第幾個，2⁵ = 32，剛好 5 bits。",
+     "read": "為什麼 rs、rt、rd 都是 5 bits？register file 有 32 個 register，要說第幾個，2的5次方 等於 32，剛好 5 bits。",
+     "k": 3,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 115.8
+     }
+    },
+    {
+     "say": "shamt 是 shift amount。資料 32 bits，shift 0 到 31 位共 32 種，5 bits 也剛好。",
+     "read": "shift amount 是 shift amount。資料 32 bits，shift 0 到 31 位共 32 種，5 bits 也剛好。",
+     "k": 4,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 158.27
+     }
+    },
+    {
+     "say": "funct 幹嘛用？所有 R-type 的 opcode 都是 000000，加減怎麼分？靠 funct：add 是 100000、sub 是 100010。",
+     "read": "function 幹嘛用？所有 R type 的 opcode 都是 零零零零零零，加減怎麼分？靠 function：add 是 一零零零零零、sub 是 一零零零一零。",
+     "k": 5,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 195.58
+     }
+    },
+    {
+     "say": "I-type 的 op、rs、rt 跟 R-type 一樣，後面 16 bits 是 immediate，它有好幾種用途。",
+     "read": "I type 的 op、rs、rt 跟 R type 一樣，後面 16 bits 是 immediate，它有好幾種用途。",
+     "k": 6,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 224.34
+     }
+    },
+    {
+     "say": "用途一：load、store 用 base 加 offset 算位址。",
+     "k": 7,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 258.82
+     }
+    },
+    {
+     "say": "immediate 就是 offset，加上 rs 的內容就是 target address。",
+     "k": 7
+    },
+    {
+     "say": "用途二：當 constant，例如 addi。這 16 bits 是 two's complement，可正可負。",
+     "read": "用途二：當 constant，例如 add immediate。這 16 bits 是 two's complement，可正可負。",
+     "k": 8,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 289.26
+     }
+    },
+    {
+     "say": "用途三：beq 的 offset，概念一樣，只是加在 program counter 上，決定跳去哪。",
+     "read": "用途三：B E Q 的 offset，概念一樣，只是加在 program counter 上，決定跳去哪。",
+     "k": 9,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 351.92
+     }
+    },
+    {
+     "say": "J-type 的 target 只有 26 bits。指令以 4 bytes 為單位，後面補兩個 0，前面再接 PC 的前 4 bits，湊成 32 bits。",
+     "read": "J type 的 target 只有 26 bits。指令以 4 bytes 為單位，後面補兩個 0，前面再接 PC 的前 4 bits，湊成 32 bits。",
+     "k": 10,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 391.99
+     }
+    }
+   ]
+  },
+  {
+   "title": "哪些指令用哪個 format",
+   "scene": "cpu-groups",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "欄位都認識了，再看每個 type 有哪些指令。",
+     "k": 1,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 418.76
+     }
+    },
+    {
+     "say": "R-type 主要是 add、sub、and、or：rs、rt 當 source，rd 當 destination，做什麼由 funct 決定。",
+     "read": "R type 主要是 add、sub、and、or：rs、rt 當 source，rd 當 destination，做什麼由 function 決定。",
+     "k": 2,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 434.88
+     }
+    },
+    {
+     "say": "I-type 一定要記三類：load/store、immediate 運算、branch。都用 rs、rt、immediate，但解釋不同，最容易搞混。",
+     "read": "I type 一定要記三類：load 和 store、immediate 運算、branch。都用 rs、rt、immediate，但解釋不同，最容易搞混。",
+     "k": 3,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 463.96
+     }
+    },
+    {
+     "say": "J-type 就是 jump，直接跳過去，只有這一個。",
+     "read": "J type 就是 jump，直接跳過去，只有這一個。",
+     "k": 4,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 491.16
+     }
+    }
+   ]
+  },
+  {
+   "title": "Datapath 概觀：共用的路要靠 mux",
+   "scene": "cpu-overview",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "先看整體長怎樣。不管多複雜，形狀都差不多：PC 放一個 32 bits 位址，例如 1000，就去 instruction memory 的 1000 拿指令。",
+     "k": 1,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1909.55
+     }
+    },
+    {
+     "say": "要跳到 10000，PC 就放 10000，下一次就去 10000 拿。",
+     "k": 2,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1935.23
+     }
+    },
+    {
+     "say": "指令在圖上只畫一條線，其實是 32 bits：前 6 bits 一定是 opcode，後面是 rs、rt、rd 這些欄位。",
+     "k": 3,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1945.65
+     }
+    },
+    {
+     "say": "MIPS 雖有三種 format，rs、rt 永遠在同樣位置，所以這兩個 5 bits 的地址可以馬上拿去讀 register file。",
+     "k": 4,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1973.85
+     }
+    },
+    {
+     "say": "讀出來交給 ALU。R-type 算完直接寫回 register file，就結束了。",
+     "read": "讀出來交給 ALU。R type 算完直接寫回 register file，就結束了。",
+     "k": 5,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 1997.17
+     }
+    },
+    {
+     "say": "lw、sw 的話，ALU 算出的是 memory 位址，還要去 data memory；lw 讀到的資料再放回 register。",
+     "read": "L W、S W 的話，ALU 算出的是 memory 位址，還要去 data memory；L W 讀到的資料再放回 register。",
+     "k": 6,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2008.55
+     }
+    },
+    {
+     "say": "MIPS 是 load-store machine：資料要先 load 進 register 才能算，算完再 store 回去，搬資料跟運算不混在一起。",
+     "read": "MIPS 是 load store machine：資料要先 load 進 register 才能算，算完再 store 回去，搬資料跟運算不混在一起。",
+     "k": 7,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2022.39
+     }
+    },
+    {
+     "say": "那問題來了：寫回 register 的入口只有一個。ALU 結果要走，memory 的資料也要走，就像兩台車搶同一個高速公路入口。",
+     "k": 8,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2074.65
+     }
+    },
+    {
+     "say": "怎麼辦？放一個 multiplexer，mux。2-to-1 或 4-to-1 的 mux，決定這個 cycle 讓誰上高速公路。",
+     "read": "怎麼辦？放一個 multiplexer，mux。2 to-1 或 4 to-1 的 mux，決定這個 cycle 讓誰上高速公路。",
+     "k": 9,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2137.25
+     }
+    },
+    {
+     "say": "mux 一定有個 control signal 決定選哪邊。它從 opcode decode 出來：知道是哪個指令，就知道誰該優先。",
+     "k": 10,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2154.35
+     }
+    },
+    {
+     "say": "完成的 datapath 就是這張：元件還是那些，多了好幾個 mux，各由 control signal 控制，共用的路就不會打架。",
+     "k": 11,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2180.25
+     }
+    }
+   ]
+  },
+  {
+   "title": "基本元件：wire、bus、combinational 與 sequential",
+   "scene": "cpu-elems",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "要組 datapath，先複習邏輯設計的元件。最基本的是 wire 上的 signal：low 是 0、high 是 1。",
+     "k": 1,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2233.33
+     }
+    },
+    {
+     "say": "data 常常 32 bits，圖上不會畫 32 條線，而是畫一條線再打一條斜線，表示這是一組 bus。",
+     "k": 2,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2256.17
+     }
+    },
+    {
+     "say": "線上跑的 0101 就是 information，可能是 two's complement 整數，也可能是 floating point，看你怎麼表示。",
+     "read": "線上跑的 零一零一 就是 information，可能是 two's complement 整數，也可能是 floating point，看你怎麼表示。",
+     "k": 3,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2282.49
+     }
+    },
+    {
+     "say": "處理它的 hardware 有兩種。",
+     "k": 4,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2304.71
+     }
+    },
+    {
+     "say": "一種是 combinational，像 adder、ALU：input 一變 output 就變，3 + 4 換成 5 + 4，馬上變 9。",
+     "read": "一種是 combinational，像 adder、ALU：input 一變 output 就變，3 加 4 換成 5 加 4，馬上變 9。",
+     "k": 4
+    },
+    {
+     "say": "另一種是 sequential element，負責存。時間切成一個個 clock cycle，做完的結果要存下來給下一個 cycle 用。",
+     "k": 5,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2344.19
+     }
+    },
+    {
+     "say": "combinational 的前面都學過：AND gate、adder、ALU，還有 mux。",
+     "k": 6,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2361.39
+     }
+    }
+   ]
+  },
+  {
+   "title": "Edge-triggered 與 write enable",
+   "scene": "cpu-edge",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "既然一次做一件事，就用 clock 來約束：每個 clock period 做一件事，做完存起來給下一個 period 用。",
+     "k": 1,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2380.35
+     }
+    },
+    {
+     "say": "存 data 的 sequential element 就是 register，裡面是一排 flip-flop。",
+     "read": "存 data 的 sequential element 就是 register，裡面是一排 flip flop。",
+     "k": 2,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2396.67
+     }
+    },
+    {
+     "say": "這個是 rising edge trigger 的。",
+     "k": 2
+    },
+    {
+     "say": "存法有兩種。第一種 level sensitive：只要 clock 是 high，整段時間都可以寫進去。",
+     "k": 3,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2427.35
+     }
+    },
+    {
+     "say": "第二種 edge triggered：只有 clock 從 0 變 1 那一瞬間才寫。",
+     "k": 4,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2451.09
+     }
+    },
+    {
+     "say": "兩個 edge 之間，input D 怎麼變都沒用；output Q 只在 rising edge 那一刻抓 D 的值。",
+     "k": 5,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2465.05
+     }
+    },
+    {
+     "say": "為什麼用 edge trigger？為了避免 racing 這類 timing 問題，所以 datapath 常用 edge-triggered 元件。",
+     "read": "為什麼用 edge trigger？為了避免 racing 這類 timing 問題，所以 datapath 常用 edge triggered 元件。",
+     "k": 6,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2534.91
+     }
+    },
+    {
+     "say": "再加一個很重要的東西：write enable。要寫進去，不只 clock 要 transition，Write 還要等於 1。",
+     "k": 7,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2543.43
+     }
+    },
+    {
+     "say": "這幾個 edge 剛好 Write = 1，資料就寫進去了。",
+     "read": "這幾個 edge 剛好 Write 等於 1，資料就寫進去了。",
+     "k": 8,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2569.79
+     }
+    },
+    {
+     "say": "這幾個 edge 雖然 clock 也從 low 變 high，但 Write = 0，沒 enable，裡面就不變。",
+     "read": "這幾個 edge 雖然 clock 也從 low 變 high，但 Write 等於 0，沒 enable，裡面就不變。",
+     "k": 9,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2585.93
+     }
+    },
+    {
+     "say": "為什麼重要？register file、data memory 的 input 接到很多地方、一直在動，但不是每個指令都要寫，不能每個 clock 都寫。",
+     "k": 10,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2599.73
+     }
+    },
+    {
+     "say": "所以它們一定有 Write 這個 control signal，由 controller 決定：要寫設 1，不寫設 0。",
+     "k": 11,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2651.09
+     }
+    }
+   ]
+  },
+  {
+   "title": "Clocking methodology 與 critical path",
+   "scene": "cpu-clockm",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "複習 clocking methodology：一個 state element 送出資料。",
+     "k": 1,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2669.57
+     }
+    },
+    {
+     "say": "經過 combinational logic，結果存進下一個 state element。",
+     "k": 1
+    },
+    {
+     "say": "clock transition 時新 data 進來，combinational logic 只要 input 一變就開始算。",
+     "k": 2,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2697.93
+     }
+    },
+    {
+     "say": "可是算要時間：訊號要經過一個個 gate，這段叫 path delay，走完才算完成。",
+     "k": 3,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2715.49
+     }
+    },
+    {
+     "say": "這段 delay 一定要小於 clock period。",
+     "k": 4,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2726.29
+     }
+    },
+    {
+     "say": "太長的話，下一個 clock 都 transition 了 output 才來，就 latch 不到正確資料。",
+     "k": 4
+    },
+    {
+     "say": "不同 input 走的路有快有慢，要用最長的那條，也就是 critical path，決定 clock period。畫面示意最長 5.5 ns。",
+     "read": "不同 input 走的路有快有慢，要用最長的那條，也就是 critical path，決定 clock period。畫面示意最長 5.5 奈秒。",
+     "k": 5,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2750.15
+     }
+    },
+    {
+     "say": "起點跟終點也可以是同一個 state element，沒關係，每個 clock 來，它就換成新算好的值。",
+     "k": 6,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2785.93
+     }
+    }
+   ]
+  },
+  {
+   "title": "設計 processor 的五個步驟",
+   "scene": "cpu-steps",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "好，進入重點：怎麼設計 processor？第一步分析 instruction set。老師說就像炒菜，連要炒麻婆豆腐還是牛肉都不知道，怎麼炒？",
+     "k": 1,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2831.21
+     }
+    },
+    {
+     "say": "分析不只要知道有哪些指令，還要知道每個的 format，decode 時才知道 32 bits 怎麼解釋、要做什麼。",
+     "k": 2,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2852.07
+     }
+    },
+    {
+     "say": "第二、三步：選出 datapath 要的元件，一個指令一個指令接起來。",
+     "k": 3,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2885.25
+     }
+    },
+    {
+     "say": "很多指令有共同的部分，就整合成一個 datapath。同一個 datapath 為什麼能做不同指令？靠 control。",
+     "k": 4,
+     "src": {
+      "v": "Ml6xpYl_tns",
+      "t": 2894.39
+     }
+    },
+    {
+     "say": "第四、五步就是 control：決定每個指令的 control signal，再合成 control logic。我們先做前三步的 datapath。",
+     "k": 5,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 49.62
+     }
+    }
+   ]
+  },
+  {
+   "title": "RTL：用 register transfer 描述 add",
+   "scene": "cpu-rtladd",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "要設計 hardware，先把每個指令到底做什麼寫清楚。",
+     "k": 1,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 526.02
+     }
+    },
+    {
+     "say": "這種寫法叫 RTL，logical register transfer，用 register 之間的搬移來描述。",
+     "k": 1
+    },
+    {
+     "say": "先把 32 bits 切成欄位：op 6、rs 5、rt 5、rd 5、shamt 5、funct 6，加起來剛好 32。",
+     "read": "先把 32 bits 切成欄位：op 6、rs 5、rt 5、rd 5、shift amount 5、function 6，加起來剛好 32。",
+     "k": 2,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 539.12
+     }
+    },
+    {
+     "say": "add 做的事：rs、rt 像 index，去 register file 拿出 R[rs]、R[rt]，相加後放進 R[rd]。",
+     "read": "add 做的事：rs、rt 像 index，去 register file 拿出 R 的 rs、R 的 rt，相加後放進 R 的 rd。",
+     "k": 3,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 556.04
+     }
+    },
+    {
+     "say": "同時還要 PC ← PC + 4，準備下一個指令。這兩件事就是 add 的全部。",
+     "read": "同時還要讓 PC 等於 PC 加 4，準備下一個指令。這兩件事就是 add 的全部。",
+     "k": 4,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 570.92
+     }
+    },
+    {
+     "say": "每個指令都這樣寫出來：add 做什麼、load 做什麼……照著描述，就能設計出 hardware。",
+     "k": 5,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 585.84
+     }
+    },
+    {
+     "say": "以 add 為例：從第 rs、第 rt 個 register 拿出 7 和 5，相加，把 12 放回第 rd 個。",
+     "k": 6,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 619.74
+     }
+    }
+   ]
+  },
+  {
+   "title": "Load 的 RTL 與 sign extension",
+   "scene": "cpu-rtllw",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "再來 load 和 store，麻煩一點。format 是 op、rs、rt，加上後面 16 bits 的 immediate。",
+     "k": 1,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 653.44
+     }
+    },
+    {
+     "say": "是 load、store 的話，這 16 bits 就解釋成 offset。",
+     "k": 2,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 667.54
+     }
+    },
+    {
+     "say": "ALU 做的是 32 bits 運算，offset 只有 16 bits，還可正可負，所以要先 sign extension 變 32 bits。",
+     "k": 3,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 677.04
+     }
+    },
+    {
+     "say": "base 在哪？在 rs 指定的那個 register，也就是 base register。",
+     "k": 4,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 693.24
+     }
+    },
+    {
+     "say": "R[rs] 加上 sign-extended 的 offset，就是 memory 位址，接著去 memory access。",
+     "read": "R 的 rs 加上 sign extended 的 offset，就是 memory 位址，接著去 memory access。",
+     "k": 5,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 704.24
+     }
+    },
+    {
+     "say": "load 把讀出來的東西放到 rt 指定的 register，同時一樣 PC + 4。",
+     "read": "load 把讀出來的東西放到 rt 指定的 register，同時一樣 PC 加 4。",
+     "k": 6,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 723.06
+     }
+    },
+    {
+     "say": "老師再強調一次：拿到 32 bits，前 6 bits 是 opcode，接著 rs、rt，最後 16 bits 是 immediate。",
+     "k": 7,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 783.74
+     }
+    },
+    {
+     "say": "一開始根本不知道是哪種 type，hardware 就每種解釋都做、每個欄位都拿出來；opcode 揭曉後，用不到的不理它。",
+     "k": 8,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 808.28
+     }
+    },
+    {
+     "say": "rs 讀出來 32 bits，offset 只有 16 bits，寬度不同，不能直接加。",
+     "k": 9,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 864.74
+     }
+    },
+    {
+     "say": "前面直接補 0 行不行？不行。4 bits 的 1011 是 −5，補 0 變 00001011，卻變成 11 了。",
+     "read": "前面直接補 0 行不行？不行。4 bits 的 一零一一 是 負5，補 0 變 零零零零一零一一，卻變成 11 了。",
+     "k": 10,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 888.32
+     }
+    },
+    {
+     "say": "正確做法：正數補 0、負數補 1，這就是 sign extension。0101 變 00000101 還是 5；1011 變 11111011 還是 −5。",
+     "read": "正確做法：正數補 0、負數補 1，這就是 sign extension。零一零一 變 零零零零零一零一 還是 5；一零一一 變 一一一一一零一一 還是 負5。",
+     "k": 11,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 911.56
+     }
+    },
+    {
+     "say": "擴成 32 bits 後跟 base 一起算出位址，再去拿資料放進 rt。例如 base 1000、offset −4，位址就是 996。",
+     "read": "擴成 32 bits 後跟 base 一起算出位址，再去拿資料放進 rt。例如 base 1000、offset 負4，位址就是 996。",
+     "k": 12,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 928.92
+     }
+    }
+   ]
+  },
+  {
+   "title": "Store、addi、beq 的 RTL",
+   "scene": "cpu-rtlsw",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "store 用同樣的 format，方向相反：把 rt 的內容放到 memory，位址一樣是 R[rs] 加 sign-extended offset。",
+     "read": "store 用同樣的 format，方向相反：把 rt 的內容放到 memory，位址一樣是 R 的 rs 加 sign extended offset。",
+     "k": 1,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 951.28
+     }
+    },
+    {
+     "say": "當然也要做 PC + 4，每個指令都逃不掉。",
+     "read": "當然也要做 PC 加 4，每個指令都逃不掉。",
+     "k": 2,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 978.18
+     }
+    },
+    {
+     "say": "addi，add immediate：把 rs 的內容加上指令裡的 constant，結果放到 rt。",
+     "read": "add immediate：把 rs 的內容加上指令裡的 constant，結果放到 rt。",
+     "k": 3,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 986.1
+     }
+    },
+    {
+     "say": "這 16 bits 是 signed 還是 unsigned？constant 有正有負，所以是 signed，範圍 −32768 到 32767。",
+     "read": "這 16 bits 是 signed 還是 unsigned？constant 有正有負，所以是 signed，範圍 負32768 到 32767。",
+     "k": 4,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1014.32
+     }
+    },
+    {
+     "say": "所以 immediate 也一定要 sign extension。像 −50 前面要補 1；補 0 的話就變成 65486 了。",
+     "read": "所以 immediate 也一定要 sign extension。像 負50 前面要補 1；補 0 的話就變成 65486 了。",
+     "k": 5,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1045.88
+     }
+    },
+    {
+     "say": "beq：把 rs、rt 拿出來比，相等才跳。",
+     "read": "B E Q：把 rs、rt 拿出來比，相等才跳。",
+     "k": 6,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1067.36
+     }
+    },
+    {
+     "say": "hardware 不知道它是不是 branch，所以一開始 always 先做 PC + 4，跳也是以 PC + 4 為基準。",
+     "read": "hardware 不知道它是不是 branch，所以一開始 always 先做 PC 加 4，跳也是以 PC 加 4 為基準。",
+     "k": 7,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1084.46
+     }
+    },
+    {
+     "say": "跳的目標：offset 做 sign extension、後面接兩個 0，也就是乘 4，再加上 PC + 4；不相等就是 PC + 4。",
+     "read": "跳的目標：offset 做 sign extension、後面接兩個 0，也就是乘 4，再加上 PC 加 4；不相等就是 PC 加 4。",
+     "k": 8,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1105.16
+     }
+    },
+    {
+     "say": "target address 可以先算好放著，到底跳不跳，等比較結果出來再決定。",
+     "k": 9,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1110.18
+     }
+    }
+   ]
+  },
+  {
+   "title": "Concatenate：offset 後面接兩個 0",
+   "scene": "cpu-concat",
+   "steps": 2,
+   "lines": [
+    {
+     "say": "有同學問，RTL 裡那個雙直線符號是什麼？它是 concatenate，把兩串 bits 接起來，不是 OR。",
+     "k": 1,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1149
+     }
+    },
+    {
+     "say": "所以 offset 接 00，就是在 offset 後面補兩個 0。",
+     "k": 1
+    },
+    {
+     "say": "為什麼？一個指令 4 bytes，word address 最後兩 bits 一定是 00，不用浪費 bits 存，用的時候補回來。",
+     "k": 2,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1174.6
+     }
+    },
+    {
+     "say": "例如 3 後面接兩個 0，二進位 11 變 1100，就是 12，剛好 3 × 4。",
+     "read": "例如 3 後面接兩個 0，二進位 一一 變 一一零零，就是 12，剛好 3 乘 4。",
+     "k": 2
+    }
+   ]
+  },
+  {
+   "title": "需要哪些 component",
+   "scene": "cpu-parts",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "這些動作需要哪些 component？第一個 register file，存所有 register 的內容。",
+     "k": 1,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1199
+     }
+    },
+    {
+     "say": "要一個 program counter，32 bits，記下一個要執行的指令在哪。",
+     "k": 2,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1213.72
+     }
+    },
+    {
+     "say": "每次都要加 4，所以要一個專門做這件事的簡單加法器。",
+     "k": 3,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1231.02
+     }
+    },
+    {
+     "say": "要一個 ALU 做加減，還要一個 sign extender 把 16 bits 變 32 bits。",
+     "k": 4,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1237.7
+     }
+    },
+    {
+     "say": "有的指令用不到 sign extension，但 hardware 不知道，就 always 先做，用不用由 control 決定。",
+     "k": 5,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1251.74
+     }
+    },
+    {
+     "say": "就像設計 ALU 時，加、and、or 全部一起算，最後用 mux 選要哪個結果。",
+     "k": 5,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1265
+     }
+    },
+    {
+     "say": "還需要 instruction memory 和 data memory。register file 裡 32 個 register，每個 32 bits。",
+     "k": 6,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1324.18
+     }
+    },
+    {
+     "say": "PC 為什麼 32 bits？memory space 是 2³² 個 bytes，位址要 32 bits 才指得到每一格。",
+     "read": "PC 為什麼 32 bits？memory space 是 2的32次方 個 bytes，位址要 32 bits 才指得到每一格。",
+     "k": 7,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1349.48
+     }
+    },
+    {
+     "say": "最後還要一個加法器，把 PC 加上 branch 的 offset，算出 target address。",
+     "k": 8,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1376.94
+     }
+    },
+    {
+     "say": "記住：這些 adder、mux、ALU 進出都是 32 bits，圖上那條斜線就代表其實有 32 條線。",
+     "k": 8,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1436.57
+     }
+    }
+   ]
+  },
+  {
+   "title": "Register file：兩個 read port、一個 write port",
+   "scene": "cpu-regfile",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "sequential 元件有兩類：PC 和 register。一個 register 就像 32 個 D flip-flop 排在一起，存 32 bits。",
+     "read": "sequential 元件有兩類：PC 和 register。一個 register 就像 32 個 D flip flop 排在一起，存 32 bits。",
+     "k": 1,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1466.63
+     }
+    },
+    {
+     "say": "注意它一定要有 write enable，不是每個 cycle 都要寫進去。",
+     "k": 2,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1492.57
+     }
+    },
+    {
+     "say": "register file 裡就有 32 個這樣的 register，每個 32 bits。",
+     "k": 3,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1514.31
+     }
+    },
+    {
+     "say": "每次要讀兩個 operand，rs 和 rt，所以要給兩個地址 RA、RB，也就是兩個 read port。",
+     "k": 4,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1549.03
+     }
+    },
+    {
+     "say": "如果一個 cycle 只讀一個，一個 port 就夠；但 port 越多 hardware 越貴，這又是 trade-off。",
+     "read": "如果一個 cycle 只讀一個，一個 port 就夠；但 port 越多 hardware 越貴，這又是 trade off。",
+     "k": 5,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1604.57
+     }
+    },
+    {
+     "say": "我們要的是：每個 cycle 讀兩個、寫一個。cycle 一開始給地址就讀出來，cycle 結束的 transition 才寫進去。",
+     "k": 6,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1618.83
+     }
+    },
+    {
+     "say": "所以給它三個地址：讀的 RA、RB，寫的 RW，各 5 bits。",
+     "k": 7,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1652.07
+     }
+    },
+    {
+     "say": "很重要的 WrEn：有時只讀不寫，就靠它控制這個 cycle 准不准寫。",
+     "read": "很重要的 write enable：有時只讀不寫，就靠它控制這個 cycle 准不准寫。",
+     "k": 8,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1695.19
+     }
+    },
+    {
+     "say": "讀出來放哪？RA 說讀第 3 個、RB 說讀第 8 個，資料就分別放在 busA、busB 兩條 32 bits 的 bus 上。",
+     "read": "讀出來放哪？RA 說讀第 3 個、RB 說讀第 8 個，資料就分別放在 bus A、bus B 兩條 32 bits 的 bus 上。",
+     "k": 9,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1717.43
+     }
+    },
+    {
+     "say": "要寫的時候，32 bits 的資料放在 busW 上，cycle 結束時寫進去。",
+     "read": "要寫的時候，32 bits 的資料放在 bus W 上，cycle 結束時寫進去。",
+     "k": 10,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1748.45
+     }
+    },
+    {
+     "say": "RA、RB 是地址，32 個 register 要選一個，2⁵ = 32，所以是 5 bits。",
+     "read": "RA、RB 是地址，32 個 register 要選一個，2的5次方 等於 32，所以是 5 bits。",
+     "k": 11,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1808.46
+     }
+    },
+    {
+     "say": "寫的時候，RW 說寫到第 5 個，資料從 busW 進去，第 5 個 register 的內容就變了。",
+     "read": "寫的時候，RW 說寫到第 5 個，資料從 bus W 進去，第 5 個 register 的內容就變了。",
+     "k": 12,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 1880.89
+     }
+    },
+    {
+     "say": "clock 怎麼控制？clock edge 而且 WrEn = 1 才寫，這張投影片畫的是 negative edge。一個 cycle 讀兩筆、寫一筆。",
+     "read": "clock 怎麼控制？clock edge 而且 write enable 等於 1 才寫，這張投影片畫的是 negative edge。一個 cycle 讀兩筆、寫一筆。",
+     "k": 13,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2008.84
+     }
+    }
+   ]
+  },
+  {
+   "title": "Memory element：一個 address、WrEn 才寫",
+   "scene": "cpu-memel",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "再看 memory element，它跟 register file 不太一樣。",
+     "k": 1,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2041.86
+     }
+    },
+    {
+     "say": "它只有一個 address。memory 一次只做一件事，不是 read 就是 write，address 共用就好。",
+     "k": 2,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2051.46
+     }
+    },
+    {
+     "say": "這個 cycle 要不要寫，一樣看 write enable。",
+     "k": 3,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2088
+     }
+    },
+    {
+     "say": "只要給 address，它 always 把那格的 data 讀出來；只有 write 的時候，裡面才改變。",
+     "k": 4,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2106.04
+     }
+    },
+    {
+     "say": "它有一個 Data In、一個 Data Out。WrEn = 1 時，把 Data In 寫到 address 指的那格。",
+     "read": "它有一個 Data In、一個 Data Out。write enable 等於 1 時，把 Data In 寫到 address 指的那格。",
+     "k": 5,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2126.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Fetch：PC + 4 要等 clock edge 才寫",
+   "scene": "cpu-fetchdp",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "開始組 datapath。先做每個指令都要做的事：fetch，然後 PC + 4。",
+     "read": "開始組 datapath。先做每個指令都要做的事：fetch，然後 PC 加 4。",
+     "k": 1,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2154
+     }
+    },
+    {
+     "say": "PC 的值接到 instruction memory 的 read address，給地址它就把指令讀出來。",
+     "k": 2,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2176.82
+     }
+    },
+    {
+     "say": "讀出來的是 32 bits 的 instruction。所有指令都這樣 fetch，接著才 decode。",
+     "k": 3,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2211.84
+     }
+    },
+    {
+     "say": "decode 之前 always 要做 PC + 4，所以這裡放一個加法器。",
+     "read": "decode 之前 always 要做 PC 加 4，所以這裡放一個加法器。",
+     "k": 4,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2248.68
+     }
+    },
+    {
+     "say": "算好的 PC + 4 會不會馬上寫進 PC？不會，它只是算好在那邊等。",
+     "read": "算好的 PC 加 4 會不會馬上寫進 PC？不會，它只是算好在那邊等。",
+     "k": 5,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2269.6
+     }
+    },
+    {
+     "say": "要等這個 clock period 結束、edge trigger 的時候，才寫進 PC。",
+     "k": 6,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2274.14
+     }
+    },
+    {
+     "say": "中途寫進去會怎樣？PC 一變，instruction memory 就吐出另一個指令，前一個還沒做完，就亂掉了。",
+     "k": 7,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2299.42
+     }
+    }
+   ]
+  },
+  {
+   "title": "R-type 的 datapath",
+   "scene": "cpu-rdp",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "先看 R-type 的 add、sub。fetch 已經拿到 32 bits 了。",
+     "read": "先看 R type 的 add、sub。fetch 已經拿到 32 bits 了。",
+     "k": 1,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2335.14
+     }
+    },
+    {
+     "say": "從固定的位置把 op、rs、rt、rd 這些欄位拿出來。",
+     "k": 2,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2347.9
+     }
+    },
+    {
+     "say": "rs 是 register 的地址，接到 register file 的第一個 read address，RA。",
+     "k": 3,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2374.2
+     }
+    },
+    {
+     "say": "rt 接第二個 read address RB；rd 是要寫的地方，接 write address RW。",
+     "k": 4,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2380.16
+     }
+    },
+    {
+     "say": "兩個 operand 從 busA、busB 出來，進 ALU 運算。RTL 就是 R[rd] 等於 R[rs] 跟 R[rt] 運算的結果。",
+     "read": "兩個 operand 從 bus A、bus B 出來，進 ALU 運算。RTL 就是 R 的 rd 等於 R 的 rs 跟 R 的 rt 運算的結果。",
+     "k": 5,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2451.81
+     }
+    },
+    {
+     "say": "ALU 做加還是減？由 control 告訴它，叫 ALUctr，後面再講怎麼產生。",
+     "read": "ALU 做加還是減？由 control 告訴它，叫 ALU control，後面再講怎麼產生。",
+     "k": 6,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2461.29
+     }
+    },
+    {
+     "say": "結果要寫回，所以 ALU 的 output 接 busW，寫進 rd 指定的 register。",
+     "read": "結果要寫回，所以 ALU 的 output 接 bus W，寫進 rd 指定的 register。",
+     "k": 7,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2476.53
+     }
+    },
+    {
+     "say": "到底寫不寫？R-type 要寫，RegWr = 1；別的指令不一定，所以這也是 control signal。",
+     "read": "到底寫不寫？R type 要寫，reg write 等於 1；別的指令不一定，所以這也是 control signal。",
+     "k": 8,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2515.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Load／store 的 datapath：rt 的兩種角色",
+   "scene": "cpu-lsdp",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "換 load、store。format 是 op、rs、rt、16 bits immediate，跟 R-type 比，沒有 rd 了。",
+     "read": "換 load、store。format 是 op、rs、rt、16 bits immediate，跟 R type 比，沒有 rd 了。",
+     "k": 1,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2529.12
+     }
+    },
+    {
+     "say": "rs、rt 一樣接 RA、RB 去讀。",
+     "k": 2,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2561.68
+     }
+    },
+    {
+     "say": "immediate 拿出來做 sign extension，跟 rs 讀出的 base 一起進 ALU 相加。",
+     "k": 3,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2570.76
+     }
+    },
+    {
+     "say": "ALU 算出來的是位址，接到 data memory 的 address，data 就讀出來。",
+     "k": 4,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2591.98
+     }
+    },
+    {
+     "say": "lw 要把讀出來的 data 寫回 register file，所以接到 busW。",
+     "read": "L W 要把讀出來的 data 寫回 register file，所以接到 bus W。",
+     "k": 5,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2614.28
+     }
+    },
+    {
+     "say": "寫到哪個 register？lw 寫到 rt，所以 rt 也要接到 RW。這跟 R-type 不同，R-type 接的是 rd。",
+     "read": "寫到哪個 register？L W 寫到 rt，所以 rt 也要接到 RW。這跟 R type 不同，R type 接的是 rd。",
+     "k": 6,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2649.22
+     }
+    },
+    {
+     "say": "store 是 register 寫到 memory：讀出 rt，從 busB 接到 data memory 的 write data。",
+     "read": "store 是 register 寫到 memory：讀出 rt，從 bus B 接到 data memory 的 write data。",
+     "k": 7,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2748.2
+     }
+    },
+    {
+     "say": "不管 load 還是 store，位址都是 rs 的內容加上 sign-extended offset。老師說 base 永遠在 rs，這考試考過。",
+     "read": "不管 load 還是 store，位址都是 rs 的內容加上 sign extended offset。老師說 base 永遠在 rs，這考試考過。",
+     "k": 8,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 162.82
+     }
+    },
+    {
+     "say": "但 rt 角色不同：lw 的 rt 是 destination，資料要放哪；sw 的 rt 是 source，要把它的內容存進 memory。",
+     "read": "但 rt 角色不同：L W 的 rt 是 destination，資料要放哪；S W 的 rt 是 source，要把它的內容存進 memory。",
+     "k": 9,
+     "src": {
+      "v": "YvSSt6kQbuk",
+      "t": 2829.78
+     }
+    }
+   ]
+  },
+  {
+   "title": "Fan-out 可以，fan-in 要用 mux",
+   "scene": "cpu-fanout",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "為什麼要這樣接？因為指令剛讀出來，根本不知道是 R-type、load 還是 store，所以所有可能都先接好。",
+     "read": "為什麼要這樣接？因為指令剛讀出來，根本不知道是 R type、load 還是 store，所以所有可能都先接好。",
+     "k": 1,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 535.01
+     }
+    },
+    {
+     "say": "MIPS 的 format 盡量一致：rs 位置都一樣，rt 也一樣，這些地方就不用做選擇。",
+     "k": 2,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 569.85
+     }
+    },
+    {
+     "say": "但有一個地方不一樣：寫入的地址。R-type 給 rd，load 給 rt。",
+     "read": "但有一個地方不一樣：寫入的地址。R type 給 rd，load 給 rt。",
+     "k": 3,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 584.09
+     }
+    },
+    {
+     "say": "先講個重要觀念。一個 gate 的 output 可以同時接到好幾個 input，這叫 fan-out，完全沒問題。",
+     "read": "先講個重要觀念。一個 gate 的 output 可以同時接到好幾個 input，這叫 fan out，完全沒問題。",
+     "k": 4,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 627.57
+     }
+    },
+    {
+     "say": "反過來，一個 input 能同時接兩個 output 嗎？不行，兩個訊號會打架，不知道聽誰的。",
+     "k": 5,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 680.7
+     }
+    },
+    {
+     "say": "所以前面要放一個 select 的東西，也就是 mux，讓它選要哪個。",
+     "k": 6,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 704.75
+     }
+    },
+    {
+     "say": "回到 datapath：write address 一下是 rt、一下是 rd，不能兩條線同時接上去。",
+     "k": 7,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 730.4
+     }
+    },
+    {
+     "say": "所以前面放一個 2-to-1 mux，選 rt 或 rd，再接到 write address。",
+     "read": "所以前面放一個 2 to-1 mux，選 rt 或 rd，再接到 write address。",
+     "k": 8,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 745.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "合併 R-type 與 load／store：ALUSrc、MemtoReg",
+   "scene": "cpu-merge",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "接著把 R-type 跟 load、store 合成一個 datapath，兩種都能跑。",
+     "read": "接著把 R type 跟 load、store 合成一個 datapath，兩種都能跑。",
+     "k": 1,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 790.92
+     }
+    },
+    {
+     "say": "ALU 第一個 operand 永遠是 rs，只有一種可能，直接接。這就是 format 一致的好處。",
+     "k": 2,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 816.54
+     }
+    },
+    {
+     "say": "第二個 operand 有兩個來源：R-type 來自 rt，load、store 來自 sign extension。一個 input 不能接兩個來源。",
+     "read": "第二個 operand 有兩個來源：R type 來自 rt，load、store 來自 sign extension。一個 input 不能接兩個來源。",
+     "k": 3,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 842.17
+     }
+    },
+    {
+     "say": "所以加一個 2-to-1 mux，它的 control signal 叫 ALUSrc。",
+     "read": "所以加一個 2 to-1 mux，它的 control signal 叫 ALU source。",
+     "k": 4,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 888.4
+     }
+    },
+    {
+     "say": "ALUSrc = 0 選 register file 那條；ALUSrc = 1 選 sign extension 那條。",
+     "read": "ALU source 等於 0 選 register file 那條；ALU source 等於 1 選 sign extension 那條。",
+     "k": 5,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 892.84
+     }
+    },
+    {
+     "say": "寫回 register file 的 data 也有兩個來源：ALU 的結果，或 load 從 memory 讀出的資料。",
+     "k": 6,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 904.4
+     }
+    },
+    {
+     "say": "所以這裡又一個 2-to-1 mux，control signal 叫 MemtoReg。",
+     "read": "所以這裡又一個 2 to-1 mux，control signal 叫 mem to reg。",
+     "k": 7,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 937.46
+     }
+    },
+    {
+     "say": "MemtoReg = 1 是 load，寫回 memory 的資料；MemtoReg = 0 是 R-type，寫回 ALU 的結果。",
+     "read": "mem to reg 等於 1 是 load，寫回 memory 的資料；mem to reg 等於 0 是 R type，寫回 ALU 的結果。",
+     "k": 8,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 943.32
+     }
+    }
+   ]
+  },
+  {
+   "title": "課堂問答：R-type 與 load 怎麼設",
+   "scene": "cpu-quiz3",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "老師當場點同學：R-type 的 ALUSrc 設多少？第二個 operand 從 register file 來，所以是 0。",
+     "read": "老師當場點同學：R type 的 ALU source 設多少？第二個 operand 從 register file 來，所以是 0。",
+     "k": 1,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 972.14
+     }
+    },
+    {
+     "say": "R-type 的 MemtoReg 呢？寫回的是 ALU 結果，所以也是 0。",
+     "read": "R type 的 mem to reg 呢？寫回的是 ALU 結果，所以也是 0。",
+     "k": 2,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 994.8
+     }
+    },
+    {
+     "say": "換 load：ALUSrc 多少？第二個 operand 是 sign extension 來的 offset，所以是 1。",
+     "read": "換 load：ALU source 多少？第二個 operand 是 sign extension 來的 offset，所以是 1。",
+     "k": 3,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1007.75
+     }
+    },
+    {
+     "say": "load 的 MemtoReg？寫回的是 memory 讀出的資料，所以是 1。",
+     "read": "load 的 mem to reg？寫回的是 memory 讀出的資料，所以是 1。",
+     "k": 4,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1020.89
+     }
+    },
+    {
+     "say": "老師再追問：這張圖還沒畫完，write register 前面要不要一個 2-to-1 mux？",
+     "read": "老師再追問：這張圖還沒畫完，write register 前面要不要一個 2 to-1 mux？",
+     "k": 5,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1060.81
+     }
+    },
+    {
+     "say": "要。load 寫 rt、R-type 寫 rd，所以要一個 mux 決定 destination，這個訊號之後叫 RegDst。",
+     "read": "要。load 寫 rt、R type 寫 rd，所以要一個 mux 決定 destination，這個訊號之後叫 reg destination。",
+     "k": 6,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1092.38
+     }
+    }
+   ]
+  },
+  {
+   "title": "加入 beq：ALU 做減法、另一個 adder 算 target",
+   "scene": "cpu-beqdp",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "再加第三類：branch，它也是 I-type。R-type、load/store、branch 三大類就齊了。",
+     "read": "再加第三類：branch，它也是 I type。R type、load 和 store、branch 三大類就齊了。",
+     "k": 1,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1102.5
+     }
+    },
+    {
+     "say": "beq 做什麼？比 rs 和 rt 是否 equal；相等就跳到新位址，不走 PC + 4。",
+     "read": "B E Q 做什麼？比 rs 和 rt 是否 equal；相等就跳到新位址，不走 PC 加 4。",
+     "k": 2,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1121.28
+     }
+    },
+    {
+     "say": "怎麼比？用 ALU 做減法就好，把兩個值讀出來相減。",
+     "k": 3,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1141.74
+     }
+    },
+    {
+     "say": "還要算 target address。PC + 4 反正已經先算好了，跳的目標就以它為基準。",
+     "read": "還要算 target address。PC 加 4 反正已經先算好了，跳的目標就以它為基準。",
+     "k": 4,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1152.24
+     }
+    },
+    {
+     "say": "而且一定要先算好，不能等確定要跳才開始算，那就來不及了。",
+     "k": 5,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1191.94
+     }
+    },
+    {
+     "say": "ALU 相減：不等於 0 就是 not equal；等於 0，Zero 這條線就是 1，像 7 − 7 = 0。",
+     "read": "ALU 相減：不等於 0 就是 not equal；等於 0，Zero 這條線就是 1，像 7 減 7 等於 0。",
+     "k": 6,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1208.08
+     }
+    },
+    {
+     "say": "ALU 已經拿去比較了，target 誰算？要另外一個加法器專門算。",
+     "k": 7,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1242.02
+     }
+    },
+    {
+     "say": "照定義：16 bits 先 sign extend，再左移兩位也就是乘 4，加上 PC + 4。例如 1004 + 3 × 4 = 1016。",
+     "read": "照定義：16 bits 先 sign extend，再左移兩位也就是乘 4，加上 PC 加 4。例如 1004 加 3 乘 4 等於 1016。",
+     "k": 8,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1251.68
+     }
+    },
+    {
+     "say": "跳不跳？再用一個 2-to-1 mux，在 PC + 4 和 target 之間選。",
+     "read": "跳不跳？再用一個 2 to-1 mux，在 PC 加 4 和 target 之間選。",
+     "k": 9,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1276.88
+     }
+    },
+    {
+     "say": "equal，也就是 Zero = 1，就跳，選 target；不是就選 PC + 4。",
+     "read": "equal，也就是 Zero 等於 1，就跳，選 target；不是就選 PC 加 4。",
+     "k": 10,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1287.14
+     }
+    }
+   ]
+  },
+  {
+   "title": "完整的單週期 datapath：每條線的理由",
+   "scene": "cpu-full",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "這就是完整的 single cycle implementation。雖然只做三類指令，最主要的都包含了。",
+     "k": 1,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1295.02
+     }
+    },
+    {
+     "say": "PC 讀出來，跟加 4 的加法器產生下一個 sequential address。",
+     "k": 2,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1308.9
+     }
+    },
+    {
+     "say": "如果是 beq，sign extension 出來的值左移兩位，跟 PC + 4 相加，得到 branch target。",
+     "read": "如果是 B E Q，sign extension 出來的值左移兩位，跟 PC 加 4 相加，得到 branch target。",
+     "k": 3,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1318.3
+     }
+    },
+    {
+     "say": "這個 mux 決定跳不跳，選出來的就是下一個指令的位址，寫回 PC。這是控制「次序」的部分。",
+     "k": 4,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1328.44
+     }
+    },
+    {
+     "say": "再看 datapath：rs、rt 接到兩個讀地址。但 rt 也可能是 destination，所以多拉一條 fan-out 出去。",
+     "read": "再看 datapath：rs、rt 接到兩個讀地址。但 rt 也可能是 destination，所以多拉一條 fan out 出去。",
+     "k": 5,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1346.96
+     }
+    },
+    {
+     "say": "寫入地址可能是 rt 或 rd，所以一個 2-to-1 mux，訊號叫 RegDst，register destination。",
+     "read": "寫入地址可能是 rt 或 rd，所以一個 2 to 1 mux，訊號叫 register destination。",
+     "k": 6,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1372.08
+     }
+    },
+    {
+     "say": "ALU 第一個 operand 永遠是 rs；第二個可能來自 register file 或 sign extension，所以有 ALUSrc 這個 mux。",
+     "read": "ALU 第一個 operand 永遠是 rs；第二個可能來自 register file 或 sign extension，所以有 ALU source 這個 mux。",
+     "k": 7,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1398.96
+     }
+    },
+    {
+     "say": "ALU 結果在 R-type 直接寫回；load 的話 ALU 算的是位址，要讀 memory 再寫回，所以又有 MemtoReg。",
+     "read": "ALU 結果在 R type 直接寫回；load 的話 ALU 算的是位址，要讀 memory 再寫回，所以又有 mem to reg。",
+     "k": 8,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1421.56
+     }
+    },
+    {
+     "say": "老師說這張圖最重要，學會了就已經會一半的 pipeline。把每條線的原因找出來，就不用背。",
+     "k": 9,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1448.68
+     }
+    }
+   ]
+  },
+  {
+   "title": "add 在完整 datapath 上走一遍",
+   "scene": "cpu-addflow",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "用 add 走一遍，看資料怎麼在圖上跑。假設 $t2 = 7、$t3 = 5。",
+     "read": "用 add 走一遍，看資料怎麼在圖上跑。假設 t 2 等於 7、t 3 等於 5。",
+     "k": 1,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1500
+     }
+    },
+    {
+     "say": "一開始，PC 告訴我們去哪拿指令。",
+     "k": 2,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1508.8
+     }
+    },
+    {
+     "say": "從 instruction memory 拿出來，rs、rt、rd 就出來了，去 access register file。",
+     "k": 3,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1517.04
+     }
+    },
+    {
+     "say": "同時 PC 加 4，算好放著等。",
+     "k": 4,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1534.18
+     }
+    },
+    {
+     "say": "讀出兩個 operand。這裡 ALUSrc = 0，第二個 operand 從 register file 來。",
+     "read": "讀出兩個 operand。這裡 ALU source 等於 0，第二個 operand 從 register file 來。",
+     "k": 5,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1543.38
+     }
+    },
+    {
+     "say": "ALU 結果也接到 data memory，這是 fan-out；memory 看到 input 變也會去讀，讀就讀，我們不拿它的值。",
+     "read": "ALU 結果也接到 data memory，這是 fan out；memory 看到 input 變也會去讀，讀就讀，我們不拿它的值。",
+     "k": 6,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1570.36
+     }
+    },
+    {
+     "say": "因為有 mux 把關：MemtoReg = 0，選 ALU 這條路寫回。",
+     "read": "因為有 mux 把關：mem to reg 等於 0，選 ALU 這條路寫回。",
+     "k": 7,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1581.26
+     }
+    },
+    {
+     "say": "結果其實早就算好在那等；clock edge 一來，「搭」一聲寫進 register file，$t1 = 12，PC 也同時更新。",
+     "read": "結果其實早就算好在那等；clock edge 一來，「搭」一聲寫進 register file，t 1 等於 12，PC 也同時更新。",
+     "k": 8,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1597.32
+     }
+    }
+   ]
+  },
+  {
+   "title": "Clock period 要設成最長的 delay",
+   "scene": "cpu-clock3",
+   "steps": 3,
+   "lines": [
+    {
+     "say": "接著看 timing。回顧一下：clock transition 時 data available，開始運算。",
+     "k": 1,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1640.92
+     }
+    },
+    {
+     "say": "全部算完，下一個 0 到 1 的 transition 才可以來，代表新的 cycle 開始。",
+     "k": 2,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1662.4
+     }
+    },
+    {
+     "say": "所以 clock period 一定要設成最長那條 path 的 delay；不然 transition 時還有 path 沒算完，就 latch 到錯的資料。",
+     "k": 3,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1690.58
+     }
+    }
+   ]
+  },
+  {
+   "title": "R-type 的 register-to-register timing",
+   "scene": "cpu-rtime",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "先看 R-type，這叫 register-to-register timing。畫面上的 ps 是示意，老師沒給數字。",
+     "read": "先看 R type，這叫 register to register timing。畫面上的皮秒數字是示意，老師沒給數字。",
+     "k": 1,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1707.78
+     }
+    },
+    {
+     "say": "從新的 clock edge 開始，這張投影片用的是 negative edge。",
+     "k": 2,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1721.66
+     }
+    },
+    {
+     "say": "trigger 之後，PC 的 output 要一下子才出來，因為裡面是 cross-coupled 的 NOR gate 之類。",
+     "read": "trigger 之後，PC 的 output 要一下子才出來，因為裡面是 cross coupled 的 NOR gate 之類。",
+     "k": 3,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1742.16
+     }
+    },
+    {
+     "say": "這叫 clock-to-Q delay。",
+     "read": "這叫 clock to Q delay。",
+     "k": 3
+    },
+    {
+     "say": "PC 一出來就去 access instruction memory，讀出來也要時間。",
+     "k": 4,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1772.2
+     }
+    },
+    {
+     "say": "指令出來，controller 要 decode，才知道是加還是 load、mux 設 0 還是 1，這有 control 的 delay。",
+     "k": 5,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1781.32
+     }
+    },
+    {
+     "say": "同時 rs、rt 的位置已經知道，趕快去讀 register file，這也有 delay。",
+     "k": 6,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1809.53
+     }
+    },
+    {
+     "say": "讀出來 ALU 再算，有 ALU delay。ALU 算完、data ready，clock 才可以 transition。",
+     "k": 7,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1849.52
+     }
+    },
+    {
+     "say": "有的事可以同時做：decode 和讀 register 並行，只要算比較長的那個。",
+     "k": 8,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1896.96
+     }
+    },
+    {
+     "say": "有的一定要接續：register 讀完才能算 ALU，要相加。示意的 R-type 是 30 + 200 + 100 + 200 = 530 ps。",
+     "read": "有的一定要接續：register 讀完才能算 ALU，要相加。示意的 R type 是 30 加 200 加 100 加 200 等於 530 皮秒。",
+     "k": 9,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1925.18
+     }
+    }
+   ]
+  },
+  {
+   "title": "Critical path：load 最長",
+   "scene": "cpu-lwtime",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "R-type 是最長的嗎？beq、load、store、R-type 裡，最長的是 load：算完位址還要去 memory 拿東西。",
+     "read": "R type 是最長的嗎？B E Q、load、store、R type 裡，最長的是 load：算完位址還要去 memory 拿東西。",
+     "k": 1,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1945.14
+     }
+    },
+    {
+     "say": "最長的 path 叫 critical path。",
+     "k": 2,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1957.16
+     }
+    },
+    {
+     "say": "前段跟 R-type 一樣：clock-to-Q、instruction memory、decode 和讀 register、ALU。",
+     "read": "前段跟 R type 一樣：clock to Q、instruction memory、decode 和讀 register、ALU。",
+     "k": 2
+    },
+    {
+     "say": "但 load 的 ALU 只算出位址，還要 access data memory，讀完才寫回，所以比 R-type 長。",
+     "read": "但 load 的 ALU 只算出位址，還要 access data memory，讀完才寫回，所以比 R type 長。",
+     "k": 3,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 1993.34
+     }
+    },
+    {
+     "say": "列出來：clock-to-Q、instruction memory、register file、ALU、data memory。",
+     "read": "列出來：clock to Q、instruction memory、register file、ALU、data memory。",
+     "k": 4,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2008.22
+     }
+    },
+    {
+     "say": "再加上寫 register file 的 setup time。",
+     "k": 4
+    },
+    {
+     "say": "setup time 是什麼？clock 要 transition 之前，data 必須先準備好、穩定一段時間，不能 clock 來了還在變。",
+     "k": 5,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2039.7
+     }
+    },
+    {
+     "say": "還有 clock skew：clock 送到各處有先有後，為了不 racing，用最壞情況再把 clock 拉長一點。",
+     "k": 6,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2045.3
+     }
+    },
+    {
+     "say": "真正最長的 path 到這裡，clock period 一定要這麼長。示意數字加起來是 760 ps。",
+     "read": "真正最長的 path 到這裡，clock period 一定要這麼長。示意數字加起來是 760 皮秒。",
+     "k": 7,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2071.14
+     }
+    }
+   ]
+  },
+  {
+   "title": "Control：決定 datapath 走哪條路",
+   "scene": "cpu-ctrl3",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "datapath 其實算簡單。再來是 control：什麼叫 control？",
+     "k": 1,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2089.98
+     }
+    },
+    {
+     "say": "PC 的 source 從哪來？要跳還是不跳？register 要不要寫？destination 是 rt 還是 rd？這些都要有人決定。",
+     "k": 2,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2100.64
+     }
+    },
+    {
+     "say": "它們全都是 control signal，也就是那些 2-to-1 mux 的選擇訊號。",
+     "read": "它們全都是 control signal，也就是那些 2 to-1 mux 的選擇訊號。",
+     "k": 3,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2117.72
+     }
+    },
+    {
+     "say": "controller 從 opcode 發出訊號控制 datapath；",
+     "k": 4,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2132.68
+     }
+    },
+    {
+     "say": "datapath 也會回報，像 beq 減出 0，就告訴它兩個一樣，PC 的 source 就要改。",
+     "read": "datapath 也會回報，像 B E Q 減出 0，就告訴它兩個一樣，PC 的 source 就要改。",
+     "k": 4
+    },
+    {
+     "say": "datapath 告訴你有哪些路可以走，control 依現在做什麼 operation，決定這次走哪條。",
+     "k": 5,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2171.89
+     }
+    },
+    {
+     "say": "control signal 沒有規律，所以叫 random logic；不像 adder 每個 bit 電路都一樣，那叫 regular logic。",
+     "k": 6,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2190.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "MIPS 的 format 一致，control 才簡單",
+   "scene": "cpu-regular",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "老師說 MIPS 的 instruction set 設計得很好，比 Intel 好，看完 datapath 就知道為什麼。",
+     "k": 1,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2210
+     }
+    },
+    {
+     "say": "opcode 永遠在前 6 bits。不知道在哪的話，每個地方都要檢查；固定在那，拿出來就知道是什麼指令。",
+     "k": 2,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2216.94
+     }
+    },
+    {
+     "say": "做 datapath 也體會到了：某個欄位可能是這也可能是那，就要全接起來再用 control 選。format 越一致越簡單。",
+     "k": 3,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2241.8
+     }
+    },
+    {
+     "say": "讀 register file：rs 永遠在同一處，第二個一定是 rt，R-type、beq、store 都讀 rt。",
+     "read": "讀 register file：rs 永遠在同一處，第二個一定是 rt，R type、B E Q、store 都讀 rt。",
+     "k": 4,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2265
+     }
+    },
+    {
+     "say": "base register 永遠在 rs；beq、load、store 的 offset 一定在後 16 bits。",
+     "read": "base register 永遠在 rs；B E Q、load、store 的 offset 一定在後 16 bits。",
+     "k": 5,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2278.41
+     }
+    },
+    {
+     "say": "destination 就是剛剛講的，可能 rt 也可能 rd，這是唯一不太一致的地方。",
+     "k": 6,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2291.52
+     }
+    },
+    {
+     "say": "沒關係，一個 mux 選就好。format 越不一致，就要越多這種 mux。",
+     "k": 7,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2312.04
+     }
+    }
+   ]
+  },
+  {
+   "title": "Controller：輸入 opcode，輸出 control signals",
+   "scene": "cpu-ctrlunit",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "control signal 是什麼？就是圖上這些控制點。會 datapath、再會 control，你就會設計 processor。",
+     "k": 1,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2316.24
+     }
+    },
+    {
+     "say": "像 register file：給它 address 不代表要寫，還要 RegWrite = 1 才寫。",
+     "read": "像 register file：給它 address 不代表要寫，還要 reg write 等於 1 才寫。",
+     "k": 2,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2355.42
+     }
+    },
+    {
+     "say": "memory 也一樣：MemWrite = 1 才寫，否則它就一直在讀。",
+     "read": "memory 也一樣：mem write 等於 1 才寫，否則它就一直在讀。",
+     "k": 3,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2362.18
+     }
+    },
+    {
+     "say": "controller 在這裡，所有 control signal 都由它發出去。",
+     "k": 4,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2387.28
+     }
+    },
+    {
+     "say": "它的 input 主要是 opcode，前 6 bits。知道 opcode 就知道指令，也就知道每個訊號該設多少。",
+     "k": 5,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2399.2
+     }
+    },
+    {
+     "say": "發出來的訊號，分別接到各個 mux 的 select input。",
+     "k": 6,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2437
+     }
+    }
+   ]
+  },
+  {
+   "title": "兩個例外：PCSrc 要看 Zero、ALU 要看 funct",
+   "scene": "cpu-twonot",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "但要注意，有幾個 control signal 不是 controller 一出來就能決定的。",
+     "k": 1,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2443.68
+     }
+    },
+    {
+     "say": "大部分可以立刻決定，像 destination 是 rt 還是 rd，一看 opcode 就知道。",
+     "k": 2,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2463.68
+     }
+    },
+    {
+     "say": "第一個例外是 PCSrc，下一個指令在哪。opcode 只知道這是 branch，但 branch 不一定會跳。",
+     "read": "第一個例外是 PC source，下一個指令在哪。opcode 只知道這是 branch，但 branch 不一定會跳。",
+     "k": 3,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2476.26
+     }
+    },
+    {
+     "say": "還要看 ALU 把 rs、rt 相減是不是 0，是 0 才真的跳。",
+     "k": 4,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2492.16
+     }
+    },
+    {
+     "say": "所以這裡有個 AND gate：Branch 是 controller 給的，Zero 是 datapath 給的，兩個都是 1，PCSrc 才是 1。",
+     "read": "所以這裡有個 AND gate：Branch 是 controller 給的，Zero 是 datapath 給的，兩個都是 1，PC source 才是 1。",
+     "k": 5,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2526.54
+     }
+    },
+    {
+     "say": "第二個例外：ALU 要做什麼 operation。",
+     "k": 6,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2537.52
+     }
+    },
+    {
+     "say": "還記得 ALU 的 control code 嗎？0000 是 AND、0001 是 OR、0010 是加、0110 是減、0111 是 slt。",
+     "read": "還記得 ALU 的 control code 嗎？零零零零 是 AND、零零零一 是 OR、零零一零 是加、零一一零 是減、零一一一 是 S L T。",
+     "k": 7,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2554.74
+     }
+    },
+    {
+     "say": "R-type 只看 opcode 知道要做什麼嗎？不行，R-type 的 opcode 全是 000000，要再看 funct。老師說這也考過。",
+     "read": "R type 只看 opcode 知道要做什麼嗎？不行，R type 的 opcode 全是 零零零零零零，要再看 function。老師說這也考過。",
+     "k": 8,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 496.26
+     }
+    },
+    {
+     "say": "所以要第二層 decoder：ALU control，把 opcode 的資訊跟 funct 合起來。",
+     "read": "所以要第二層 decoder：ALU control，把 opcode 的資訊跟 function 合起來。",
+     "k": 9,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2645.6
+     }
+    },
+    {
+     "say": "不過 opcode 也不是沒用：load、store 一看就知道要加，算位址；branch 一看就知道要減。",
+     "k": 10,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2650.6
+     }
+    },
+    {
+     "say": "所以 opcode 先做部分解碼，告訴你是哪一組，再加上 funct，才真正決定 ALU control。這就是兩層的 controller。",
+     "read": "所以 opcode 先做部分解碼，告訴你是哪一組，再加上 function，才真正決定 ALU control。這就是兩層的 controller。",
+     "k": 11,
+     "src": {
+      "v": "iblxfbOsp_g",
+      "t": 2686.64
+     }
+    }
+   ]
+  },
+  {
+   "title": "add 的 control signals 一個一個設",
+   "scene": "cpu-addctl",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "好，開始設 control signal。",
+     "k": 1,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 551
+     }
+    },
+    {
+     "say": "control logic 看起來 random，其實只要知道 datapath 怎麼走，truth table 就找得出來。",
+     "k": 1
+    },
+    {
+     "say": "先看 add，要設哪些訊號。",
+     "k": 2,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 577.11
+     }
+    },
+    {
+     "say": "先 instruction fetch，從 instruction memory 拿出來；rs、rt 都是地址，接到該接的地方。",
+     "k": 3,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 589.22
+     }
+    },
+    {
+     "say": "前 6 bits 給 controller decode；rs 接第一個讀地址、rt 接第二個；最後的 funct 接到 ALU control。",
+     "read": "前 6 bits 給 controller decode；rs 接第一個讀地址、rt 接第二個；最後的 function 接到 ALU control。",
+     "k": 4,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 629.77
+     }
+    },
+    {
+     "say": "第一個 operand 永遠是 rs，不用 control。第二個前面有 ALUSrc 這個 mux。add 的第二個從哪來？",
+     "read": "第一個 operand 永遠是 rs，不用 control。第二個前面有 ALU source 這個 mux。add 的第二個從哪來？",
+     "k": 5,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 660.25
+     }
+    },
+    {
+     "say": "從 rt 讀出來，所以 ALUSrc = 0，選 register file 那條。",
+     "read": "從 rt 讀出來，所以 ALU source 等於 0，選 register file 那條。",
+     "k": 6,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 783.36
+     }
+    },
+    {
+     "say": "算完要寫回，又碰到 MemtoReg：寫回的資料可能從 memory 來，也可能從 ALU 來。",
+     "read": "算完要寫回，又碰到 mem to reg：寫回的資料可能從 memory 來，也可能從 ALU 來。",
+     "k": 7,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 817.42
+     }
+    },
+    {
+     "say": "add 的結果從 ALU 來，所以 MemtoReg = 0。",
+     "read": "add 的結果從 ALU 來，所以 mem to reg 等於 0。",
+     "k": 8,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 858.13
+     }
+    },
+    {
+     "say": "add 的 destination 由 rd 指定。寫回時要告訴 register file：寫到 rt 還是 rd？",
+     "k": 9,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 911.88
+     }
+    },
+    {
+     "say": "寫 rd，所以 RegDst = 1。到這裡 R-type 有三個了：ALUSrc 0、MemtoReg 0、RegDst 1。",
+     "read": "寫 rd，所以 reg destination 等於 1。到這裡 R type 有三個了：ALU source 0、mem to reg 0、reg destination 1。",
+     "k": 10,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 966.54
+     }
+    },
+    {
+     "say": "還有一個比較難想到：register file 每次都寫嗎？data 一直在線上、clock 一直會來，不控制就每個 cycle 都寫。",
+     "k": 11,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1003.03
+     }
+    },
+    {
+     "say": "所以要 RegWrite，register 的 write enable。只有 R-type 和 load 才寫，所以 add 的 RegWrite = 1。",
+     "read": "所以要 reg write，register 的 write enable。只有 R type 和 load 才寫，所以 add 的 reg write 等於 1。",
+     "k": 12,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1088.96
+     }
+    },
+    {
+     "say": "對照一下：beq 要寫回 register 嗎？不用，所以 beq 的 RegWrite = 0。",
+     "read": "對照一下：B E Q 要寫回 register 嗎？不用，所以 B E Q 的 reg write 等於 0。",
+     "k": 13,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1100.72
+     }
+    },
+    {
+     "say": "最後，add 的 PC 要選誰？一個是 PC + 4，一個是 branch target。",
+     "read": "最後，add 的 PC 要選誰？一個是 PC 加 4，一個是 branch target。",
+     "k": 14,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1146.73
+     }
+    },
+    {
+     "say": "add 不跳，選 PC + 4，PCSrc = 0。",
+     "read": "add 不跳，選 PC 加 4，PC source 等於 0。",
+     "k": 15,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1202.88
+     }
+    },
+    {
+     "say": "這樣把一個指令走一遍，每個訊號怎麼設就都知道了。這是合成 control logic 的第一步。",
+     "k": 16,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1214.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "lw 的 control signals",
+   "scene": "cpu-lwctl",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "換 lw。老師提醒，從這裡到 pipeline 都非常重要，上課專心聽，回家就很省力。",
+     "read": "換 L W。老師提醒，從這裡到 pipeline 都非常重要，上課專心聽，回家就很省力。",
+     "k": 1,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1244.2
+     }
+    },
+    {
+     "say": "從 instruction fetch 開始，接著要做 ALU 運算。",
+     "k": 2,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1338.5
+     }
+    },
+    {
+     "say": "ALU 第一個 source 是 rs，大家都是 rs，不用 control。",
+     "k": 3,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1353.18
+     }
+    },
+    {
+     "say": "第二個可能是 rt，也可能是 sign extension 來的 offset。load 要 offset，所以 ALUSrc = 1。",
+     "read": "第二個可能是 rt，也可能是 sign extension 來的 offset。load 要 offset，所以 ALU source 等於 1。",
+     "k": 4,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1377.76
+     }
+    },
+    {
+     "say": "算出來是 memory 位址，就去讀 memory。",
+     "k": 5,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1387.24
+     }
+    },
+    {
+     "say": "讀出來要寫回，這個 mux 的資料從 memory 來，所以 MemtoReg = 1。",
+     "read": "讀出來要寫回，這個 mux 的資料從 memory 來，所以 mem to reg 等於 1。",
+     "k": 6,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1415.67
+     }
+    },
+    {
+     "say": "寫回的 destination 是 rt 還是 rd？load 的 destination 由 rt 指定。",
+     "k": 7,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1496.2
+     }
+    },
+    {
+     "say": "選 rt，所以 RegDst = 0。",
+     "read": "選 rt，所以 reg destination 等於 0。",
+     "k": 8,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1514.49
+     }
+    },
+    {
+     "say": "RegWrite 呢？load 要寫回去，所以設 1。",
+     "read": "reg write 呢？load 要寫回去，所以設 1。",
+     "k": 9,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1535.09
+     }
+    },
+    {
+     "say": "跟 add 一樣是 PC + 4，PCSrc = 0。整理起來，lw 是 RegDst 0、ALUSrc 1、MemtoReg 1、RegWrite 1。",
+     "read": "跟 add 一樣是 PC 加 4，PC source 等於 0。整理起來，L W 是 reg destination 0、ALU source 1、mem to reg 1、reg write 1。",
+     "k": 10,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1550.57
+     }
+    }
+   ]
+  },
+  {
+   "title": "beq 的 control signals 與 don't care",
+   "scene": "cpu-beqctl",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "再來 branch equal，看看它跟前兩個哪裡不一樣。",
+     "k": 1,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1554.7
+     }
+    },
+    {
+     "say": "ALU 要比 rs 和 rt，第二個 source 要 rt，所以 ALUSrc = 0。",
+     "read": "ALU 要比 rs 和 rt，第二個 source 要 rt，所以 ALU source 等於 0。",
+     "k": 2,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1593.08
+     }
+    },
+    {
+     "say": "比完之後，ALU 的值還是會一路跑到寫回的地方，線上有值。這時該寫嗎？不該。",
+     "k": 3,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1611.59
+     }
+    },
+    {
+     "say": "所以 RegWrite = 0。既然不寫，RegDst、MemtoReg 選什麼都沒差，就是 don't care，記成 X。",
+     "read": "所以 reg write 等於 0。既然不寫，reg destination、mem to reg 選什麼都沒差，就是 don't care，記成 X。",
+     "k": 4,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1616.17
+     }
+    },
+    {
+     "say": "比完要決定跳不跳：beq 的 Branch = 1。",
+     "read": "比完要決定跳不跳：B E Q 的 Branch 等於 1。",
+     "k": 5,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1631.03
+     }
+    },
+    {
+     "say": "相等、Zero = 1，PC 就選跳的位址；不相等還是 PC + 4。",
+     "read": "相等、Zero 等於 1，PC 就選跳的位址；不相等還是 PC 加 4。",
+     "k": 6,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1645.99
+     }
+    },
+    {
+     "say": "sw 你也可以自己推：寫 memory 不寫 register。",
+     "read": "S W 你也可以自己推：寫 memory 不寫 register。",
+     "k": 6
+    },
+    {
+     "say": "所以 MemWrite = 1、RegWrite = 0，RegDst、MemtoReg 一樣是 X。",
+     "read": "所以 mem write 等於 1、reg write 等於 0，reg destination、mem to reg 一樣是 X。",
+     "k": 6
+    }
+   ]
+  },
+  {
+   "title": "Control 就是一張 truth table",
+   "scene": "cpu-tt",
+   "steps": 3,
+   "lines": [
+    {
+     "say": "每個指令都走一遍、知道每個 mux 怎麼設以後，合成就太簡單了，就是一張 truth table。",
+     "k": 1,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1666.37
+     }
+    },
+    {
+     "say": "它只是 input 到 output 的 mapping：input 是 opcode，output 是每個 control signal。最難的是知道怎麼設。",
+     "k": 2,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1670.03
+     }
+    },
+    {
+     "say": "opcode 告訴你是哪個指令，就把 output 設成剛才走出來的值。",
+     "k": 3,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1701.59
+     }
+    }
+   ]
+  },
+  {
+   "title": "ALUOp：opcode 先分成三組",
+   "scene": "cpu-aluop",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "兩層的 controller 怎麼設計？先看 ALU 那層。",
+     "k": 1,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1715.07
+     }
+    },
+    {
+     "say": "大部分 control signal，opcode 一定下來就發得出來：要不要 read、write、要不要 memory write……",
+     "k": 2,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1729.71
+     }
+    },
+    {
+     "say": "ALU 比較麻煩：從 opcode 只知道一半。",
+     "k": 3,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1745.87
+     }
+    },
+    {
+     "say": "load、store 一看就知道要做加。",
+     "k": 4,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1790.83
+     }
+    },
+    {
+     "say": "beq 要做減。那 R-type 呢？不知道。",
+     "read": "B E Q 要做減。那 R type 呢？不知道。",
+     "k": 5,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1792.97
+     }
+    },
+    {
+     "say": "所以光看 opcode 可以分三類：知道要加、知道要減、還不知道要看 funct。",
+     "read": "所以光看 opcode 可以分三類：知道要加、知道要減、還不知道要看 function。",
+     "k": 6,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1799.37
+     }
+    },
+    {
+     "say": "三種狀態要用幾個 bits encode？2 個，因為 2² = 4 ≥ 3。",
+     "read": "三種狀態要用幾個 bits encode？2 個，因為 2的2次方 等於 4 大於等於 3。",
+     "k": 7,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1844.07
+     }
+    },
+    {
+     "say": "例如 00 代表加、01 代表減、10 代表要看 funct。這 2 bits 從 main controller 出來，叫 ALUOp。",
+     "read": "例如 零零 代表加、零一 代表減、一零 代表要看 function。這 2 bits 從 main controller 出來，叫 ALU op。",
+     "k": 8,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1857.47
+     }
+    },
+    {
+     "say": "ALUOp 再搭配指令最後 6 bits 的 funct，才真正決定給 ALU 的 control。",
+     "read": "ALU op 再搭配指令最後 6 bits 的 function，才真正決定給 ALU 的 control。",
+     "k": 9,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1885.51
+     }
+    },
+    {
+     "say": "output 是什麼？就是設計 ALU 時定好的 control code。",
+     "k": 10,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1927.55
+     }
+    },
+    {
+     "say": "0000 做 AND、0001 做 OR、0010 做加。",
+     "read": "零零零零 做 AND、零零零一 做 OR、零零一零 做加。",
+     "k": 11,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1936.87
+     }
+    },
+    {
+     "say": "所以要做加的時候，ALU control 要輸出 0010。",
+     "read": "所以要做加的時候，ALU control 要輸出 零零一零。",
+     "k": 12,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1959.71
+     }
+    },
+    {
+     "say": "減是 0110，要 ALU 做減，就發出 0110。",
+     "read": "減是 零一一零，要 ALU 做減，就發出 零一一零。",
+     "k": 13,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 1987.09
+     }
+    },
+    {
+     "say": "什麼時候發減？opcode 就說要減的 beq，或者 R-type 而 funct 說是 sub，兩種都發 0110。",
+     "read": "什麼時候發減？opcode 就說要減的 B E Q，或者 R type 而 function 說是 sub，兩種都發 零一一零。",
+     "k": 14,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2016.56
+     }
+    }
+   ]
+  },
+  {
+   "title": "ALU control 的 truth table",
+   "scene": "cpu-alutt",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "整理一下：opcode 6 bits 進 main control。",
+     "k": 1,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2042.11
+     }
+    },
+    {
+     "say": "它發出 7 個控制 mux 和 enable 的訊號，再加 2 bits 的 ALUOp。",
+     "read": "它發出 7 個控制 mux 和 enable 的訊號，再加 2 bits 的 ALU op。",
+     "k": 2,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2052.77
+     }
+    },
+    {
+     "say": "ALUOp 代表加、減、或不知道，因為 opcode 給不了全部的資訊。",
+     "read": "ALU op 代表加、減、或不知道，因為 opcode 給不了全部的資訊。",
+     "k": 3,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2125.2
+     }
+    },
+    {
+     "say": "只有三組，所以 2 bits 就夠，把知道的部分 encode 起來。",
+     "k": 4,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2154.49
+     }
+    },
+    {
+     "say": "load 和 store 給 00，表示做加。",
+     "read": "load 和 store 給 零零，表示做加。",
+     "k": 5,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2204.97
+     }
+    },
+    {
+     "say": "beq 做減給 01，R-type 不知道給 10。",
+     "read": "B E Q 做減給 零一，R type 不知道給 一零。",
+     "k": 6,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2217.27
+     }
+    },
+    {
+     "say": "有了這個，ALU control 的 truth table 就出來了。",
+     "k": 7,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2243.76
+     }
+    },
+    {
+     "say": "ALUOp 是 00 或 01 時要看 funct 嗎？funct 也會被讀出來，但不需要，是 don't care，表上打 X。",
+     "read": "ALU op 是 零零 或 零一 時要看 function 嗎？function 也會被讀出來，但不需要，是 don't care，表上打 X。",
+     "k": 8,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2273.76
+     }
+    },
+    {
+     "say": "所以碰到 00，不管 funct，輸出 0010 做加；碰到 01，輸出 0110 做減。",
+     "read": "所以碰到 零零，不管 function，輸出 零零一零 做加；碰到 零一，輸出 零一一零 做減。",
+     "k": 9,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2295.5
+     }
+    },
+    {
+     "say": "碰到 10 才看 funct：add 給 0010、sub 給 0110、and 給 0000、or 給 0001、slt 給 0111。",
+     "read": "碰到 一零 才看 function：add 給 零零一零、sub 給 零一一零、and 給 零零零零、or 給 零零零一、S L T 給 零一一一。",
+     "k": 10,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2311.2
+     }
+    },
+    {
+     "say": "左邊是 input、右邊是 output，這就是 truth table。會不會合成？",
+     "k": 11,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2326.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "ALU control 的邏輯式",
+   "scene": "cpu-alueq",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "input 幾個 bits？ALUOp 2 個加 funct 6 個，共 8 個。",
+     "read": "input 幾個 bits？ALU op 2 個加 function 6 個，共 8 個。",
+     "k": 1,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2362.68
+     }
+    },
+    {
+     "say": "output 4 個 bits。所以是 8 個 input、4 個 output 的 truth table。",
+     "k": 2,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2365.72
+     }
+    },
+    {
+     "say": "邏輯設計教過：用 Karnaugh map 就能合成出邏輯式。",
+     "k": 3,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2380.84
+     }
+    },
+    {
+     "say": "左邊 8 個 input、右邊 output，接下來把式子寫出來。",
+     "k": 4,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2394.24
+     }
+    },
+    {
+     "say": "合成時一次只看一個 output，一個一個做，就像邏輯設計那樣。",
+     "k": 5,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2410.66
+     }
+    },
+    {
+     "say": "第一個 output 是 bit 3，你看，它全部都是 0。",
+     "k": 6,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2434.6
+     }
+    },
+    {
+     "say": "不管 input 怎麼變永遠是 0，是 constant 0，不需要任何邏輯。",
+     "k": 7,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2466.32
+     }
+    },
+    {
+     "say": "再看 bit 2：把是 1 的列找出來，看在什麼條件下是 1。",
+     "k": 8,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2475.61
+     }
+    },
+    {
+     "say": "條件是 ALUOp0 = 1，或 ALUOp1 = 1 而且 F1 = 1。",
+     "read": "條件是 ALU op 0 等於 1，或 ALU op 1 等於 1 而且 F1 等於 1。",
+     "k": 9,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2508.91
+     }
+    },
+    {
+     "say": "用 don't care 化簡，bit 2 = ALUOp0 + ALUOp1·F1。",
+     "read": "用 don't care 化簡，bit 2 等於 ALU op 0，OR，ALU op 1 AND F1。",
+     "k": 9
+    },
+    {
+     "say": "同樣方法做另外兩個：bit 1 = ¬ALUOp1 + ¬F2，bit 0 = ALUOp1·(F3 + F0)。",
+     "read": "同樣方法做另外兩個：bit 1 等於 NOT ALU op 1，OR，NOT F2；bit 0 等於 ALU op 1，AND，F3 OR F0。",
+     "k": 10,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2579.16
+     }
+    },
+    {
+     "say": "把四條式子代回七列，output 全部正確。",
+     "k": 10
+    },
+    {
+     "say": "畫成 gate 就是這樣，input 可以共用。",
+     "k": 11,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2595.56
+     }
+    },
+    {
+     "say": "bit 3 是 constant 0，直接接 ground。ALU control 四個 output 就完成了。",
+     "k": 12,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2607.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Main control 的 truth table",
+   "scene": "cpu-mainctl",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "剛做完的是小的 ALU controller。",
+     "k": 1,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2616.1
+     }
+    },
+    {
+     "say": "順序其實是 main controller 先 decode 出 ALUOp，再加 funct 進 ALU control，我們倒著講。",
+     "read": "順序其實是 main controller 先 decode 出 ALU op，再加 function 進 ALU control，我們倒著講。",
+     "k": 1
+    },
+    {
+     "say": "現在看 main controller。它主要看 opcode，知道是什麼指令，大部分 control 就都知道了。",
+     "k": 2,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2639.18
+     }
+    },
+    {
+     "say": "這張就是它的 truth table：上面是各個 opcode，下面是要發出的 control signal。",
+     "k": 3,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2668.9
+     }
+    },
+    {
+     "say": "opcode 000000 是 R-type：RegDst 1、ALUSrc 0……剛剛 trace 過的值，直接填進去。",
+     "read": "opcode 零零零零零零 是 R type：reg destination 1、ALU source 0……剛剛 trace 過的值，直接填進去。",
+     "k": 4,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2684.36
+     }
+    },
+    {
+     "say": "load 的 opcode 是 100011，也就是 35；sw 是 101011，43；beq 是 000100，4。",
+     "read": "load 的 opcode 是 一零零零一一，也就是 35；S W 是 一零一零一一，43；B E Q 是 零零零一零零，4。",
+     "k": 5,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2714.56
+     }
+    },
+    {
+     "say": "舉例：R-type 第一個訊號 RegDst，決定 destination 從 rt 還是 rd 來。R-type 寫 rd，所以是 1。",
+     "read": "舉例：R type 第一個訊號 reg destination，決定 destination 從 rt 還是 rd 來。R type 寫 rd，所以是 1。",
+     "k": 6,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2760.98
+     }
+    },
+    {
+     "say": "ALUSrc 決定第二個 operand：R-type 從 rt 來，所以是 0。設 0 選一條、設 1 選另一條。",
+     "read": "ALU source 決定第二個 operand：R type 從 rt 來，所以是 0。設 0 選一條、設 1 選另一條。",
+     "k": 7,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2783.36
+     }
+    },
+    {
+     "say": "ALUOp：R-type 是不知道那組，剛剛給 10，這裡就填 10。",
+     "read": "ALU op：R type 是不知道那組，剛剛給 一零，這裡就填 一零。",
+     "k": 8,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2830.06
+     }
+    },
+    {
+     "say": "load、store 也照它們的路填好，要做加，落在 00；beq 做減，是 01。",
+     "read": "load、store 也照它們的路填好，要做加，落在 零零；B E Q 做減，是 零一。",
+     "k": 9,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2843.14
+     }
+    },
+    {
+     "say": "上面 input、下面 output，就是一張 truth table，只是寫成矩陣的樣子。",
+     "k": 10,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2874.13
+     }
+    }
+   ]
+  },
+  {
+   "title": "每個 output 一條式子：用 PLA 實作",
+   "scene": "cpu-pla",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "每個 control signal 都是一個 output。針對每一個，看它什麼時候是 1。",
+     "k": 1,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2907.08
+     }
+    },
+    {
+     "say": "例如 RegWrite：什麼時候設 1？也就是什麼時候要寫 register？",
+     "read": "例如 reg write：什麼時候設 1？也就是什麼時候要寫 register？",
+     "k": 2,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2930.54
+     }
+    },
+    {
+     "say": "R-type 會寫，load 也會寫。",
+     "read": "R type 會寫，load 也會寫。",
+     "k": 3,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2934.52
+     }
+    },
+    {
+     "say": "所以 opcode 是 000000 或 100011 時設 1：用 AND gate 認出這兩個 opcode，再 OR 起來，就是 RegWrite。",
+     "read": "所以 opcode 是 零零零零零零 或 一零零零一一 時設 1：用 AND gate 認出這兩個 opcode，再 OR 起來，就是 reg write。",
+     "k": 4,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2958.8
+     }
+    },
+    {
+     "say": "這可以用 PLA 做：AND plane 把各種 opcode 認出來，OR plane 把需要的條件 OR 起來。",
+     "k": 5,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 2985.78
+     }
+    },
+    {
+     "say": "像 ALUSrc 什麼時候是 1？lw 和 sw，所以從這兩個 AND gate 各拉一條線到 ALUSrc 的 OR gate。",
+     "read": "像 ALU source 什麼時候是 1？L W 和 S W，所以從這兩個 AND gate 各拉一條線到 ALU source 的 OR gate。",
+     "k": 6,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 3007.56
+     }
+    },
+    {
+     "say": "每個 output 都這樣接，AND、OR 做成 PLA，main controller 就完成了。",
+     "k": 7,
+     "src": {
+      "v": "3Ig6EcOGV3s",
+      "t": 3019.58
+     }
+    }
+   ]
+  },
+  {
+   "title": "加入 jump",
+   "scene": "cpu-jump",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "還有一個指令沒加：jump。format 是前 6 bits opcode，值是 2，後面 26 bits 是 address。",
+     "k": 1,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 30.04
+     }
+    },
+    {
+     "say": "除了 opcode，剩下 26 bits 全拿來描述目標位址。老師說這題考過。",
+     "k": 2,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 36.56
+     }
+    },
+    {
+     "say": "怎麼跳？先把這 26 bits 左移兩位、後面補 00，因為指令以 4 bytes 為單位，變成 28 bits。",
+     "k": 3,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 55.48
+     }
+    },
+    {
+     "say": "再接上 PC + 4 的前 4 個 bits，湊成 32 bits，就是目標位址。",
+     "read": "再接上 PC 加 4 的前 4 個 bits，湊成 32 bits，就是目標位址。",
+     "k": 4,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 61.24
+     }
+    },
+    {
+     "say": "怎麼加進 datapath？opcode decode 出來是 jump，controller 就發出一個 control signal：Jump。",
+     "k": 5,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 77.65
+     }
+    },
+    {
+     "say": "原本的 datapath，PC + 4 是在這裡做的。",
+     "read": "原本的 datapath，PC 加 4 是在這裡做的。",
+     "k": 6,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 89.46
+     }
+    },
+    {
+     "say": "第一個 mux：beq 而且相等，選 1，也就是 branch target；否則選 0，PC + 4。",
+     "read": "第一個 mux：B E Q 而且相等，選 1，也就是 branch target；否則選 0，PC 加 4。",
+     "k": 7,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 97.12
+     }
+    },
+    {
+     "say": "選出來後再接另一個 mux：是 jump 的話，Jump = 1，選 1 這邊。",
+     "read": "選出來後再接另一個 mux：是 jump 的話，Jump 等於 1，選 1 這邊。",
+     "k": 8,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 112.06
+     }
+    },
+    {
+     "say": "1 這條 path 就是剛剛講的：後 26 bits 左移兩位，再跟 PC + 4 的前 4 bits 接起來。",
+     "read": "1 這條 path 就是剛剛講的：後 26 bits 左移兩位，再跟 PC 加 4 的前 4 bits 接起來。",
+     "k": 9,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 123.62
+     }
+    },
+    {
+     "say": "所以第一個 mux 在 sequential 和 branch 之間選，第二個 mux 再在結果和 jump target 之間選，寫回 PC。",
+     "k": 10,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 141.98
+     }
+    },
+    {
+     "say": "新 datapath 就是多算一個 jump target，control 多一個 Jump。R、I、J 三種 type 都齊了。",
+     "k": 11,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 163.86
+     }
+    }
+   ]
+  },
+  {
+   "title": "Worst case：lw 決定 single cycle 的 clock",
+   "scene": "cpu-worst",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "回頭看 worst case，lw 花最多時間。用課本常見的示意數字：IF 200、Reg 100、ALU 200、Mem 200、寫回 100 ps。",
+     "read": "回頭看 worst case，L W 花最多時間。用課本常見的示意數字：I F 200、Reg 100、ALU 200、Mem 200、寫回 100 皮秒。",
+     "k": 1,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 192.66
+     }
+    },
+    {
+     "say": "lw 要經過 instruction memory、讀 register、ALU、最主要的 data memory，再寫回；",
+     "read": "L W 要經過 instruction memory、讀 register、ALU、最主要的 data memory，再寫回；",
+     "k": 2,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 204.82
+     }
+    },
+    {
+     "say": "投影片還加了 clock-to-Q 和 skew。",
+     "read": "投影片還加了 clock to Q 和 skew。",
+     "k": 2
+    },
+    {
+     "say": "single cycle 的 cycle 長度固定，就要用最長的指令：示意的 lw 是 800 ps，clock period 就是 800 ps。",
+     "read": "single cycle 的 cycle 長度固定，就要用最長的指令：示意的 L W 是 800 皮秒，clock period 就是 800 皮秒。",
+     "k": 3,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 232.28
+     }
+    },
+    {
+     "say": "其他指令不需要那麼久，但大家都要一樣，clock 不能變來變去。",
+     "k": 4,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 238.34
+     }
+    },
+    {
+     "say": "CPI 是 clock per instruction。每個指令一個 cycle，CPI = 1，只是 cycle 很長。",
+     "read": "CPI 是 clock per instruction。每個指令一個 cycle，CPI 等於 1，只是 cycle 很長。",
+     "k": 5,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 261.72
+     }
+    },
+    {
+     "say": "所以不 efficient：像 R-type 只要 600 ps，每次白等 200 ps。",
+     "read": "所以不 efficient：像 R type 只要 600 皮秒，每次白等 200 皮秒。",
+     "k": 6,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 288.09
+     }
+    },
+    {
+     "say": "下一個做法是 pipeline。但 single cycle 的 datapath 和 control，pipeline 全部會用到，一定要懂。",
+     "k": 7,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 297.63
+     }
+    }
+   ]
+  },
+  {
+   "title": "MIPS 的設計讓 controller 簡單",
+   "scene": "cpu-mipsgood",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "學過 controller 設計，就能體會 MIPS 為什麼這樣設計。",
+     "k": 1,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 319.67
+     }
+    },
+    {
+     "say": "opcode 固定在前 6 bits，decode 很簡單；不知道它在前 6 還是前 8 bits，controller 就複雜了。",
+     "k": 2,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 328.99
+     }
+    },
+    {
+     "say": "source register 盡量固定：rs 永遠是第一個；第二個可能是 rt 或 sign extension，那裡才要 mux。",
+     "k": 3,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 354.91
+     }
+    },
+    {
+     "say": "immediate 永遠在同一個位置，不管拿去 sign extension、算 PC-relative 位址或做 immediate 運算。",
+     "read": "immediate 永遠在同一個位置，不管拿去 sign extension、算 PC relative 位址或做 immediate 運算。",
+     "k": 4,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 377.99
+     }
+    },
+    {
+     "say": "結論：format 越簡單越一致，datapath 和 controller 就越好合成。",
+     "k": 5,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 396.59
+     }
+    }
+   ]
+  },
+  {
+   "title": "單週期：clock 被最慢的指令拖住",
+   "scene": "cpu-qq-single",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "用 Enzo 的講法再把 single cycle 的問題看清楚：每道指令用一個 clock cycle，把五步全走完。",
+     "k": 1,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 148.8
+     }
+    },
+    {
+     "say": "所以 CPI 永遠是 1，前一道做完下一道馬上開始，設計最簡單。",
+     "k": 2,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 180.2
+     }
+    },
+    {
+     "say": "致命問題是：大家共用一個 clock，週期要讓最慢的指令也做得完。",
+     "k": 3,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 193.6
+     }
+    },
+    {
+     "say": "例如 add 只要 2 ns，load 要讀記憶體，要 10 ns，clock cycle 就至少 10 ns。",
+     "read": "例如 add 只要 2 奈秒，load 要讀記憶體，要 10 奈秒，clock cycle 就至少 10 奈秒。",
+     "k": 4,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 201.3
+     }
+    },
+    {
+     "say": "結果 add 明明 2 ns 就夠，還要等滿 10 ns，白白空等 8 ns，這段時間大部分電路都閒著。",
+     "read": "結果 add 明明 2 奈秒 就夠，還要等滿 10 奈秒，白白空等 8 奈秒，這段時間大部分電路都閒著。",
+     "k": 5,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 221.5
+     }
+    },
+    {
+     "say": "真實 CPU 有幾十種指令，時間差好幾倍；讓最慢的決定節奏，等於整顆 CPU 都用最慢的速度跑。",
+     "k": 6,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 246
+     }
+    }
+   ]
+  },
+  {
+   "title": "FSM（多週期）：短 cycle，但一次只跑一道",
+   "scene": "cpu-qq-fsm",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "那怎麼改？FSM，也就是多週期處理器：把一道指令拆成好幾個短 cycle，每個 cycle 只做一步。",
+     "k": 1,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 273.9
+     }
+    },
+    {
+     "say": "不同指令步數不同：add 要 Fetch、Decode、Execute、Write Back 四個 cycle，load 五個，跳躍大約三個。",
+     "k": 2,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 285.7
+     }
+    },
+    {
+     "say": "每步很簡單，cycle 可以縮到例如 2 ns。add 只花 8 ns、jump 6 ns，不用再陪 load 等。",
+     "read": "每步很簡單，cycle 可以縮到例如 2 奈秒。add 只花 8 奈秒、jump 6 奈秒，不用再陪 load 等。",
+     "k": 3,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 301.5
+     }
+    },
+    {
+     "say": "控制單元是 finite state machine：記住現在走到第幾步，依狀態決定下一步。要加新指令，多加幾個狀態就好。",
+     "k": 4,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 315.9
+     }
+    },
+    {
+     "say": "但它有根本瓶頸：前一道沒做完，下一道不能開始，同時只有一道指令在跑。",
+     "k": 5,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 343.4
+     }
+    },
+    {
+     "say": "所以 ALU 在 Memory Access 時閒著，Fetch 電路在 Execute 時也閒著。",
+     "k": 6,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 354
+     }
+    },
+    {
+     "say": "這例子 9 個 cycle 乘 5 個單元，只用 9 格，使用率 20%。",
+     "k": 6
+    }
+   ]
+  },
+  {
+   "title": "Pipeline 這一章要講什麼",
+   "scene": "cpu-pipeplan",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "接下來是 pipeline，現在的高效能 processor 一定用。它也是拿 single cycle 的 datapath 和 control 改出來的。",
+     "k": 1,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 403.67
+     }
+    },
+    {
+     "say": "先 overview 什麼叫 pipeline，再看它的 datapath 和 control。single cycle 學會了，這兩個很簡單。",
+     "k": 2,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 425.03
+     }
+    },
+    {
+     "say": "難的是 data hazard 和 control hazard：pipeline 裡前一個還沒做完，後一個就進來了，有 dependency 就出問題。",
+     "k": 3,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 444.63
+     }
+    },
+    {
+     "say": "再來是 exception：interrupt 這類不正常的事要跳出正常流程，也算一種 hazard。",
+     "k": 4,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 484.71
+     }
+    },
+    {
+     "say": "最後介紹其他高效能架構，像 superscalar、dynamic pipelining。",
+     "k": 5,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 504.73
+     }
+    }
+   ]
+  },
+  {
+   "title": "洗衣服的比喻：6 小時 vs 3.5 小時",
+   "scene": "cpu-laundry",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "黃老師用洗衣服打比方。有四個人：A、B、C、D，都要去洗衣服。",
+     "k": 1,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 520.19
+     }
+    },
+    {
+     "say": "要經過三站：洗衣機洗、烘乾機烘、桌上摺，就像宿舍洗衣房一台洗衣機、一台烘乾機、一張桌子。",
+     "k": 2,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 534.93
+     }
+    },
+    {
+     "say": "假設洗 30 分鐘、烘 40 分鐘、摺 20 分鐘，一個人共 90 分鐘。",
+     "k": 3,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 552.39
+     }
+    },
+    {
+     "say": "第一種做法：A 進去就把門鎖起來，洗、烘、摺全做完才開門讓 B 進去。這叫 sequential laundry。",
+     "k": 4,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 563.43
+     }
+    },
+    {
+     "say": "要多久？一個人 90 分鐘，四個人 360 分鐘，也就是 6 小時。",
+     "k": 5,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 602.6
+     }
+    },
+    {
+     "say": "老師說這很自私：A 在烘的時候，洗衣機根本沒人用；A 在摺的時候，兩台機器都空著。",
+     "k": 6,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 616.83
+     }
+    },
+    {
+     "say": "這就是 pipeline：A 洗完去烘，洗衣機就讓 B 用；A 摺衣服時，B 烘、C 洗。resource 用完就 release。",
+     "k": 7,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 643.1
+     }
+    },
+    {
+     "say": "這樣只要 3.5 小時：30 + 4 × 40 + 20 = 210 分鐘。",
+     "read": "這樣只要 3.5 小時：30 加 4 乘 40 加 20 等於 210 分鐘。",
+     "k": 8,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 682.77
+     }
+    }
+   ]
+  },
+  {
+   "title": "Latency 不變、throughput 增加",
+   "scene": "cpu-lessons",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "這例子學到什麼？第一，latency 有沒有變？latency 就是 response time：丟衣服進去到拿回來多久。",
+     "k": 1,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 699.41
+     }
+    },
+    {
+     "say": "不會變。每一批還是要洗、烘、摺，30 + 40 + 20 = 90 分鐘，pipeline 不會讓它變快。",
+     "read": "不會變。每一批還是要洗、烘、摺，30 加 40 加 20 等於 90 分鐘，pipeline 不會讓它變快。",
+     "k": 2,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 721.87
+     }
+    },
+    {
+     "say": "變快的是整體：單位時間完成的工作變多，叫 throughput。四批在 90、130、170、210 分完成，之後每 40 分鐘一批。",
+     "k": 3,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 739.99
+     }
+    },
+    {
+     "say": "第二，pipeline 被最慢的 stage 限制。B 洗完只要 30 分，但 A 還在烘 40 分，B 只能等，每站其實都變 40 分。",
+     "k": 4,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 758.69
+     }
+    },
+    {
+     "say": "第三，同一時間用到不同 resource，大家共享；但每個 resource 一次只給一個人用，不能搶。",
+     "k": 5,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 818.93
+     }
+    },
+    {
+     "say": "potential speedup 多少？切成三個 stage、三件事同時做，最多快 3 倍：speedup = stage 數。",
+     "read": "potential speedup 多少？切成三個 stage、三件事同時做，最多快 3 倍：speedup 等於 stage 數。",
+     "k": 6,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 845.95
+     }
+    },
+    {
+     "say": "但到不了。stage 長度不一樣，30、40、20，被最長的限制，實際只有 360 ÷ 210，大約 1.71 倍。",
+     "read": "但到不了。stage 長度不一樣，30、40、20，被最長的限制，實際只有 360 除以 210，大約 1.71 倍。",
+     "k": 7,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 906.33
+     }
+    },
+    {
+     "say": "再來，剛開始 fill 時只用到洗衣機，結束 drain 時只用到摺衣桌，其他閒著，也降低 speedup。",
+     "k": 8,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 941.03
+     }
+    },
+    {
+     "say": "更麻煩的是 dependency，會讓 pipeline 停下來。洗衣服沒有 dependency 所以很順，後面再解決。",
+     "k": 9,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 972.37
+     }
+    }
+   ]
+  },
+  {
+   "title": "Processor 的 pipeline：800 ps vs 200 ps",
+   "scene": "cpu-pipeproc",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "換回 processor。single cycle：一個 cycle 要把所有事做完，lw 完整做完才換下一個。",
+     "read": "換回 processor。single cycle：一個 cycle 要把所有事做完，L W 完整做完才換下一個。",
+     "k": 1,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 991.41
+     }
+    },
+    {
+     "say": "想想看，lw 其實可以拆成好幾個動作：fetch、decode、讀 register、ALU 運算、memory access……",
+     "read": "想想看，L W 其實可以拆成好幾個動作：fetch、decode、讀 register、ALU 運算、memory access……",
+     "k": 2,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1007.13
+     }
+    },
+    {
+     "say": "把長長的 cycle 切成五個 stage。",
+     "k": 3,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1042.01
+     }
+    },
+    {
+     "say": "分別是 fetch、decode 跟讀 register、execution、memory access、write back。",
+     "k": 3
+    },
+    {
+     "say": "第一站做完，resource 就給下一個人：lw 在讀 register 時，instruction memory 就能給下一個指令用。",
+     "read": "第一站做完，resource 就給下一個人：L W 在讀 register 時，instruction memory 就能給下一個指令用。",
+     "k": 4,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1052.05
+     }
+    },
+    {
+     "say": "效能差多少？single cycle 一個指令 800 ps，做完才能做下一個。",
+     "read": "效能差多少？single cycle 一個指令 800 皮秒，做完才能做下一個。",
+     "k": 5,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1073.79
+     }
+    },
+    {
+     "say": "pipeline 最慢的 stage 是 200 ps，就把每個 stage 都設成 200 ps。",
+     "read": "pipeline 最慢的 stage 是 200 皮秒，就把每個 stage 都設成 200 皮秒。",
+     "k": 6,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1082.07
+     }
+    },
+    {
+     "say": "站在出口等：single cycle 每 800 ps 才出來一個，800、1600、2400 ps。",
+     "read": "站在出口等：single cycle 每 800 皮秒 才出來一個，800、1600、2400 皮秒。",
+     "k": 7,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1119.02
+     }
+    },
+    {
+     "say": "pipeline 重疊著做：第一個要 5 × 200 = 1000 ps，之後每 200 ps 就出來一個。",
+     "read": "pipeline 重疊著做：第一個要 5 乘 200 等於 1000 皮秒，之後每 200 皮秒 就出來一個。",
+     "k": 8,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1133.92
+     }
+    },
+    {
+     "say": "為什麼能 pipeline？register、ALU、memory 這些 resource 都在，只是同一時間給不同指令共享。",
+     "k": 9,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1159.86
+     }
+    },
+    {
+     "say": "pipeline 改善的是 throughput，不是 latency，也就是一個指令從進去到做完的時間，一定要記住。",
+     "k": 10,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1201.32
+     }
+    }
+   ]
+  },
+  {
+   "title": "Pipeline：五個工作站同時開工",
+   "scene": "cpu-qq-pipe",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "Enzo 也用洗衣服說：傻瓜做法是一件洗完、烘完、摺好才換下一件。",
+     "k": 1,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 382.8
+     }
+    },
+    {
+     "say": "聰明做法：第一件搬進烘衣機時，第二件馬上進洗衣機，兩台同時跑。",
+     "k": 2,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 394
+     }
+    },
+    {
+     "say": "把五個步驟想成五個工作站，不同指令同時在不同的站。",
+     "k": 3,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 416.8
+     }
+    },
+    {
+     "say": "第 1 個 cycle：指令 A 在 Fetch。",
+     "k": 4,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 426.2
+     }
+    },
+    {
+     "say": "第 2 個 cycle：A 在 Decode，B 開始 Fetch。",
+     "k": 5,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 429
+     }
+    },
+    {
+     "say": "第 3 個 cycle：A 在 Execute、B 在 Decode、C 在 Fetch，三道指令同時在跑。",
+     "k": 6,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 434.4
+     }
+    },
+    {
+     "say": "穩定之後每個 cycle 都有一道做完，理論上 5 級 pipeline 可到 single cycle 的 5 倍。",
+     "k": 7,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 440.7
+     }
+    },
+    {
+     "say": "跟 FSM 比：cycle 差不多短。",
+     "k": 8,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 455.5
+     }
+    },
+    {
+     "say": "但 FSM 一道要 3 到 5 個 cycle，pipeline 平均約 1 個，CPI 大降，throughput 大增。",
+     "k": 8
+    }
+   ]
+  },
+  {
+   "title": "五個 stage：IF、ID、EX、MEM、WB",
+   "scene": "cpu-stages",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "來看 pipeline 的 datapath 怎麼做，先抓基本概念。",
+     "k": 1,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1252.21
+     }
+    },
+    {
+     "say": "single cycle 的 datapath 從頭到尾只有一個 stage。能不能拿它當 pipeline 的骨架？control 能不能用？要改什麼？",
+     "k": 2,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1272.27
+     }
+    },
+    {
+     "say": "要把 datapath 分成一階一階，像洗、烘，每站做什麼、做完沒，要分清楚，不然衣服會跟別人的混在一起。",
+     "k": 3,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1308.65
+     }
+    },
+    {
+     "say": "第一個 stage：instruction fetch，IF。這五個一定要記。",
+     "read": "第一個 stage：instruction fetch，I F。這五個一定要記。",
+     "k": 4,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1341.33
+     }
+    },
+    {
+     "say": "第二個：instruction decode，ID，decode 包含讀 register file。",
+     "read": "第二個：instruction decode，I D，decode 包含讀 register file。",
+     "k": 5,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1347.57
+     }
+    },
+    {
+     "say": "第三個：execution，EX，就是 ALU：R-type 做加減，beq 也在這裡比較是否相等。",
+     "read": "第三個：execution，E X，就是 ALU：R type 做加減，B E Q 也在這裡比較是否相等。",
+     "k": 6,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1353.09
+     }
+    },
+    {
+     "say": "老師問：load、store 這時候 ALU 在做什麼？在算 memory 位址，address calculation。",
+     "k": 7,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1463.01
+     }
+    },
+    {
+     "say": "load、store 接著做 memory access，MEM；之後做 write back，WB。",
+     "read": "load、store 接著做 memory access，mem；之後做 write back，W B。",
+     "k": 8,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1469.65
+     }
+    },
+    {
+     "say": "所以五個 stage：IF、ID、EX、MEM、WB，一定要記起來。",
+     "read": "所以五個 stage：I F、I D、E X、mem、W B，一定要記起來。",
+     "k": 9,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1475.47
+     }
+    },
+    {
+     "say": "分好之後，把 resource 跟 stage 對起來。resource 共享，但任何時間每個只能給一個指令用，不能搶。",
+     "k": 10,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1491.39
+     }
+    },
+    {
+     "say": "IF：用 PC 去 instruction memory 拿指令，存進 instruction register，因為後面好幾個 cycle 都要用；",
+     "read": "I F：用 PC 去 instruction memory 拿指令，存進 instruction register，因為後面好幾個 cycle 都要用；",
+     "k": 11,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1529.55
+     }
+    },
+    {
+     "say": "再做 PC + 4。",
+     "read": "再做 PC 加 4。",
+     "k": 11
+    },
+    {
+     "say": "ID：controller decode、讀 register file；投影片上 branch target 也在這裡先算好。",
+     "read": "I D：controller decode、讀 register file；投影片上 branch target 也在這裡先算好。",
+     "k": 12,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1567.23
+     }
+    },
+    {
+     "say": "EX：R-type 加減；load、store 算位址；beq 比較是否一樣；jump 算 target。",
+     "read": "E X：R type 加減；load、store 算位址；B E Q 比較是否一樣；jump 算 target。",
+     "k": 13,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1581.01
+     }
+    },
+    {
+     "say": "MEM：R-type 沒事做，load、store 去 access memory。WB：把 load 的 data 寫回 register file。",
+     "read": "mem：R type 沒事做，load、store 去 access memory。W B：把 load 的 data 寫回 register file。",
+     "k": 14,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1595.61
+     }
+    },
+    {
+     "say": "store 到第四個 stage 就結束；load 要寫回，所以五個 stage；投影片上 R-type 第四個 stage 就寫回，因為已經算完了。",
+     "read": "store 到第四個 stage 就結束；load 要寫回，所以五個 stage；投影片上 R type 第四個 stage 就寫回，因為已經算完了。",
+     "k": 15,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1607.83
+     }
+    }
+   ]
+  },
+  {
+   "title": "Pipeline register：把每個 stage 切乾淨",
+   "scene": "cpu-preg",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "用 single cycle 的 datapath 切成五段。",
+     "k": 1,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1634.19
+     }
+    },
+    {
+     "say": "IF、有 decoder 跟 register 的 ID、ALU 的 EX、memory 的 MEM、還有 write back。",
+     "read": "I F、有 decoder 跟 register 的 I D、ALU 的 E X、memory 的 mem、還有 write back。",
+     "k": 1
+    },
+    {
+     "say": "切好就能 pipeline 了嗎？不行，不是切一切就結束。",
+     "k": 2,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1661.31
+     }
+    },
+    {
+     "say": "「切」只是你心裡想的。signal 會照你想的跑嗎？不會，有快有慢，有的已經跑到後面、有的還在前面。",
+     "k": 3,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1701.99
+     }
+    },
+    {
+     "say": "我們要一個 stage 剛好一個 clock cycle：做完、存起來，下一個 stage 再開始，每段都切得乾乾淨淨。",
+     "k": 4,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1741.97
+     }
+    },
+    {
+     "say": "所以每個切開的地方加一個 pipeline register，把這個 stage 做完的東西存進去。",
+     "k": 5,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1772.15
+     }
+    },
+    {
+     "say": "pipeline register 跟 clock 同步：clock 一來，這段的結果寫進去，下個 clock 再開始下一輪。",
+     "k": 6,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1787.44
+     }
+    },
+    {
+     "say": "存好了，這段的 resource，像 instruction memory，就能 release 給下一個指令；",
+     "k": 7,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1830.37
+     }
+    },
+    {
+     "say": "下一段的 input 從 pipeline register 拿。",
+     "k": 7
+    },
+    {
+     "say": "那 clock period 比原來長還是短？",
+     "k": 8,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1883.39
+     }
+    },
+    {
+     "say": "變短了：原本 single cycle 那麼長，現在只要一個 stage 的時間，clock 就變快。",
+     "k": 9,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1899.44
+     }
+    }
+   ]
+  },
+  {
+   "title": "lw 在 pipeline 裡：先讀再說，寫回要選對 rt",
+   "scene": "cpu-lwpipe",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "看 lw 在 pipeline 裡做什麼：IF 讀 instruction memory；ID 一邊 decode 一邊做 register fetch。",
+     "read": "看 L W 在 pipeline 裡做什麼：I F 讀 instruction memory；I D 一邊 decode 一邊做 register fetch。",
+     "k": 1,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1909.92
+     }
+    },
+    {
+     "say": "opcode 在 decode 時，rs、rt、rd 早就在那，直接拿去讀 register file。",
+     "k": 2,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1932.98
+     }
+    },
+    {
+     "say": "讀出來一定會用到嗎？那時候還不知道是什麼指令呢。",
+     "k": 3,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1936.86
+     }
+    },
+    {
+     "say": "不一定。但為了省時間，先讀再說；decode 完知道是什麼指令，用不到的就不理。",
+     "k": 4,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1968.96
+     }
+    },
+    {
+     "say": "sign extension 也照做，後 16 bits 一起做好，最後 controller 選要的 data 就好。",
+     "k": 5,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 1990.58
+     }
+    },
+    {
+     "say": "lw 每站用的 resource：IF 用 instruction memory，ID 用 read port，EX 用 ALU。",
+     "read": "L W 每站用的 resource：I F 用 instruction memory，I D 用 read port，E X 用 ALU。",
+     "k": 6,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 2031.1
+     }
+    },
+    {
+     "say": "MEM 用 data memory，WB 用 write port。",
+     "read": "mem 用 data memory，W B 用 write port。",
+     "k": 6
+    },
+    {
+     "say": "看動畫：先 fetch、PC + 4，指令放進 pipeline register。不能弄丟，因為下一個 clock 下一個指令就進來了。",
+     "read": "看動畫：先 fetch、PC 加 4，指令放進 pipeline register。不能弄丟，因為下一個 clock 下一個指令就進來了。",
+     "k": 7,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 2080.64
+     }
+    },
+    {
+     "say": "投影片上，元件左半邊上色代表 write、右半邊上色代表 read。",
+     "k": 8,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 2110.24
+     }
+    },
+    {
+     "say": "ID 讀 rs、rt，做 sign extension，結束時全存進 pipeline register。",
+     "read": "I D 讀 rs、rt，做 sign extension，結束時全存進 pipeline register。",
+     "k": 8
+    },
+    {
+     "say": "接著 EX 算位址存起來，第四站 access memory，第五站 write back。",
+     "read": "接著 E X 算位址存起來，第四站 access memory，第五站 write back。",
+     "k": 9,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 2163.48
+     }
+    },
+    {
+     "say": "問題來了：lw 跑到第五站要寫回 register file，寫到哪？寫到 rt。",
+     "read": "問題來了：L W 跑到第五站要寫回 register file，寫到哪？寫到 rt。",
+     "k": 10,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 2168.92
+     }
+    },
+    {
+     "say": "可是這時新指令已經在 ID，也拿出它自己的 rt。到底用誰的？我們要的是第五站那個 lw 的 rt。",
+     "read": "可是這時新指令已經在 I D，也拿出它自己的 rt。到底用誰的？我們要的是第五站那個 L W 的 rt。",
+     "k": 11,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 2198.64
+     }
+    },
+    {
+     "say": "這要想辦法選對，老師說後面會用 control 處理。這就是 dependency 帶來的麻煩，也是 hazard 難的地方。",
+     "k": 12,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 2237.32
+     }
+    },
+    {
+     "say": "課本的修正是：讓要寫的 register 編號跟著 pipeline register 一路傳到 WB，寫回時用的就是 lw 自己的 rt。",
+     "read": "課本的修正是：讓要寫的 register 編號跟著 pipeline register 一路傳到 W B，寫回時用的就是 L W 自己的 rt。",
+     "k": 12
+    }
+   ]
+  },
+  {
+   "title": "R-type 跟 lw 混在一起：structural hazard",
+   "scene": "cpu-struct",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "再看 R-type：IF、ID、EX，然後 write back，投影片上四個 stage 就結束。",
+     "read": "再看 R type：I F、I D、E X，然後 write back，投影片上四個 stage 就結束。",
+     "k": 1,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 2253.36
+     }
+    },
+    {
+     "say": "如果全都是 lw，一個接一個 pipeline，沒什麼問題。",
+     "read": "如果全都是 L W，一個接一個 pipeline，沒什麼問題。",
+     "k": 2,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 2275
+     }
+    },
+    {
+     "say": "但你能規定誰跟誰排在一起嗎？不行，可能 lw、lw、R、lw，什麼組合都有。",
+     "read": "但你能規定誰跟誰排在一起嗎？不行，可能 L W、L W、R、L W，什麼組合都有。",
+     "k": 3,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 2281.94
+     }
+    },
+    {
+     "say": "假如前面一個 lw，後面跟一個 R-type。",
+     "read": "假如前面一個 L W，後面跟一個 R type。",
+     "k": 4,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 2299.1
+     }
+    },
+    {
+     "say": "lw 第五站才寫 register file，R-type 第四站就寫。R-type 晚一個 cycle 進來，兩個都在 cycle 5 寫，撞在一起。",
+     "read": "L W 第五站才寫 register file，R type 第四站就寫。R type 晚一個 cycle 進來，兩個都在 cycle 5 寫，撞在一起。",
+     "k": 5,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 2317.24
+     }
+    },
+    {
+     "say": "兩個同時要寫，可是 register file 只有一個 write port，就打架了。",
+     "k": 6,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 2350.82
+     }
+    },
+    {
+     "say": "老師的比喻：前面的人洗、烘、摺；你的衣服已經手洗好，晚一小時來直接去烘，就跟前面那個人撞在烘乾機了。",
+     "k": 7,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 2359.46
+     }
+    },
+    {
+     "say": "這就是 resource conflict：時間沒分配好，兩個指令搶同一個 resource。",
+     "k": 8,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 2447.76
+     }
+    },
+    {
+     "say": "名字叫 structural hazard：不同指令在同一時間要用同一個 resource。",
+     "k": 9,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 2451.56
+     }
+    },
+    {
+     "say": "怎麼解？老師留到下一節。先透露課本的做法：讓 R-type 也走滿五站，MEM 空過，大家都在第五站寫回，就不撞了。",
+     "read": "怎麼解？老師留到下一節。先透露課本的做法：讓 R type 也走滿五站，mem 空過，大家都在第五站寫回，就不撞了。",
+     "k": 10,
+     "src": {
+      "v": "4vRk10j9MC8",
+      "t": 2464.14
+     }
+    }
+   ]
+  },
+  {
+   "title": "Structural、data hazard 與解法",
+   "scene": "cpu-qq-hazard",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "天下沒有白吃的午餐：多道指令同時在 pipeline 會互相干擾，叫 hazard，分 structural、data、control 三種。",
+     "k": 1,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 468.2
+     }
+    },
+    {
+     "say": "structural 另一個常見例子：指令和資料放同一塊記憶體，cycle 4 時 A 在 MEM 讀資料、D 在 Fetch 抓指令，搶同一塊。",
+     "read": "structural 另一個常見例子：指令和資料放同一塊記憶體，cycle 4 時 A 在 mem 讀資料、D 在 Fetch 抓指令，搶同一塊。",
+     "k": 2,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 489.6
+     }
+    },
+    {
+     "say": "解法：指令記憶體和資料記憶體分開，這就是快取要分 I-cache 跟 D-cache 的原因。",
+     "read": "解法：指令記憶體和資料記憶體分開，這就是快取要分 I cache 跟 D cache 的原因。",
+     "k": 3,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 518.9
+     }
+    },
+    {
+     "say": "data hazard 最常見：sub R3, R0, R4 要用 add R0, R1, R2 算出的 R0。",
+     "k": 4,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 539
+     }
+    },
+    {
+     "say": "但 sub 在 cycle 3 讀 R0，add 到 cycle 5 才寫回。",
+     "k": 4
+    },
+    {
+     "say": "解法一 stall：插 bubble，也就是 NOP，等 add 寫回再讀。課本假設前半 cycle 寫、後半讀，要等 2 個 cycle。",
+     "k": 5,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 573
+     }
+    },
+    {
+     "say": "解法二 forwarding，又叫 bypassing：add 在 EX 算完就直接轉給 sub 的 EX，不用等寫回。代價是多一些電路。",
+     "read": "解法二 forwarding，又叫 bypassing：add 在 E X 算完就直接轉給 sub 的 E X，不用等寫回。代價是多一些電路。",
+     "k": 6,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 612.8
+     }
+    },
+    {
+     "say": "但 load-use hazard 救不了：load 到 MEM 才拿到資料。",
+     "read": "但 load use hazard 救不了：load 到 mem 才拿到資料。",
+     "k": 7,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 660.9
+     }
+    },
+    {
+     "say": "下一道 add 的 EX 同時就要用，差一個 cycle，一定要 stall 1 個。",
+     "read": "下一道 add 的 E X 同時就要用，差一個 cycle，一定要 stall 1 個。",
+     "k": 7
+    },
+    {
+     "say": "聰明的 compiler 會做 instruction scheduling：在 load 和 add 中間塞一道不相關的指令，那個 cycle 就不浪費。",
+     "k": 8,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 695.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Control hazard 與 branch prediction",
+   "scene": "cpu-qq-ctrl",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "control hazard 最棘手：遇到 if-else、迴圈這種 branch，像 beq，CPU 不知道下一道是往下走還是跳到 L。",
+     "read": "control hazard 最棘手：遇到 if else、迴圈這種 branch，像 B E Q，CPU 不知道下一道是往下走還是跳到 L。",
+     "k": 1,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 715.6
+     }
+    },
+    {
+     "say": "pipeline 一直提前 fetch，beq 還沒算出結果，後面已經先抓進兩道「猜的」指令。這裡假設到 EX 才知道。",
+     "read": "pipeline 一直提前 fetch，B E Q 還沒算出結果，後面已經先抓進兩道「猜的」指令。這裡假設到 E X 才知道。",
+     "k": 2,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 737.1
+     }
+    },
+    {
+     "say": "猜錯的話，已進 pipeline 的錯誤指令全部丟掉，叫 pipeline flush，這裡白白損失 2 個 cycle。",
+     "k": 3,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 743.1
+     }
+    },
+    {
+     "say": "解法是 branch prediction，先猜。現代 CPU 猜得很準，準確率可到 95% 以上。",
+     "k": 4,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 766.6
+     }
+    },
+    {
+     "say": "最簡單是一律猜不跳。可是迴圈的 branch 幾乎每次都跳回去，只有最後一次離開，這例子 11 次只猜對 1 次。",
+     "k": 5,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 779.4
+     }
+    },
+    {
+     "say": "聰明一點是記住每個 branch 的歷史：上次跳，這次就猜跳。同一個例子 11 次猜對 9 次。",
+     "k": 6,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 794.2
+     }
+    },
+    {
+     "say": "猜對，pipeline 滿速前進沒損失；猜錯，就 flush 掉從正確位置重來，損失幾個 cycle。",
+     "k": 7,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 809.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "總結：單週期、FSM、pipeline 與 hazard",
+   "scene": "cpu-qq-sum",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "最後串成一條演進線：single cycle、FSM 多週期、pipeline。",
+     "k": 1,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 832
+     }
+    },
+    {
+     "say": "single cycle 最簡單，但 clock 被最慢的指令拖垮、硬體大量閒置，所以讓指令用多個短 cycle，就有了 FSM。",
+     "k": 2,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 845.8
+     }
+    },
+    {
+     "say": "FSM 比較靈活，但還是一道一道做，硬體使用率低，所以讓多道指令同時在不同階段，就有了 pipeline。",
+     "k": 3,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 861.4
+     }
+    },
+    {
+     "say": "N 級 pipeline 理論上 N 倍效能，但有三種 hazard。",
+     "k": 4,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 874.2
+     }
+    },
+    {
+     "say": "structural 分開記憶體，data 靠 forwarding 加排程，control 靠預測。",
+     "k": 4
+    },
+    {
+     "say": "現代 CPU 早就十幾到二十幾級、好幾條 pipeline。flush 演變成 speculative execution。",
+     "k": 5,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 911.1
+     }
+    },
+    {
+     "say": "data hazard 的解法 演變成 out-of-order 跟 register renaming。",
+     "read": "data hazard 的解法 演變成 out of order 跟 register renaming。",
+     "k": 5
+    },
+    {
+     "say": "下一步是 cache：pipeline 讓 CPU 很快，記憶體卻跟不上，每次都去記憶體拿，pipeline 的優勢就沒了。",
+     "k": 6,
+     "src": {
+      "v": "QQG_zv-moMs",
+      "t": 944
+     }
+    }
+   ]
+  }
+ ]
+}

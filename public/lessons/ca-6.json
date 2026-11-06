@@ -1,0 +1,5333 @@
+{
+ "chapter": "ca-6",
+ "title": "記憶體系統",
+ "intro": "從一條 DIMM 裡的 rank、bank、RAS／CAS 和 burst 講到 memory interleaving，再走進 virtual memory、page table、TLB 跟 cache 的配合，最後看 cache controller 的 FSM 與多核心的 cache coherence。",
+ "parts": [
+  {
+   "title": "一條記憶體裡面有什麼：DIMM 的層級",
+   "scene": "dram-hier",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "好，這一章講記憶體系統。先從摸得到的東西開始：一條記憶體，英文叫 DIMM，dual inline memory module。",
+     "k": 1,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 4.5
+     }
+    },
+    {
+     "say": "一般桌機主機板有 4 個 DIMM 插槽，所以最多可以一次插 4 條。",
+     "k": 2,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 11.9
+     }
+    },
+    {
+     "say": "DIMM 一面通常焊 8 顆 DRAM 晶片，這 8 顆合起來叫一個 rank。",
+     "k": 3,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 17.8
+     }
+    },
+    {
+     "say": "注意，rank 是「一起回應同一個讀寫請求的一組晶片」，只是剛好常常是一面的 8 顆。",
+     "k": 3,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 17.8
+     }
+    },
+    {
+     "say": "有些記憶體條不只一個 rank，例如雙 rank 的。",
+     "k": 4,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 24.3
+     }
+    },
+    {
+     "say": "第二個 rank 通常放在背面，翻過來那 8 顆就是 rank 1。",
+     "k": 5,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 27
+     }
+    },
+    {
+     "say": "再往晶片裡看：每顆晶片切成好幾個 bank，這裡畫 8 個。你可以把 bank 想成晶片裡獨立的小倉庫。",
+     "k": 6,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 31.2
+     }
+    },
+    {
+     "say": "每個 bank 又由好幾個 array 組成。",
+     "k": 7,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 33.6
+     }
+    },
+    {
+     "say": "array 是一張格子：橫的一排叫 row，直的一行叫 column，交叉點就是一個 cell，存 1 個 bit。",
+     "k": 8,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 37.6
+     }
+    },
+    {
+     "say": "所以整個層級是：DIMM、rank、chip、bank、array，最後是 row 跟 column 交叉出來的 cell。",
+     "k": 8
+    },
+    {
+     "say": "設計記憶體，永遠在容量、速度、耗電跟成本之間取捨，這句話等一下會一直出現。",
+     "k": 9,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 47.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Memory channel：位址、命令、資料三組線",
+   "scene": "dram-channel",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "那這條 DIMM 怎麼跟 CPU 講話？左邊是 CPU，右邊是一條 DIMM。",
+     "k": 1,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 58.7
+     }
+    },
+    {
+     "say": "DIMM 插在插槽上，插槽經過一組叫 memory channel 的線路，接到 memory controller，也就是指揮讀寫的電路。",
+     "k": 2,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 64
+     }
+    },
+    {
+     "say": "在現代 PC 裡，memory controller 不是獨立晶片，它跟 CPU 做在同一顆晶片上。",
+     "k": 3,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 73.7
+     }
+    },
+    {
+     "say": "memory channel 其實是三組線：address bus 說「要哪裡」，command bus 說「要做什麼」，data bus 搬資料本身。",
+     "k": 4,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 80.2
+     }
+    },
+    {
+     "say": "送位址的線通常有 17 條。",
+     "k": 5,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 89.7
+     }
+    },
+    {
+     "say": "欸，17 條不就只能定址 2¹⁷ 個位置？不是喔。位址分兩次送：先送 row address，再用同一組線送 column address。",
+     "read": "欸，17 條不就只能定址 2的17次方 個位置？不是喔。位址分兩次送：先送 row address，再用同一組線送 column address。",
+     "k": 6,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 93.4
+     }
+    },
+    {
+     "say": "這叫位址多工，所以實際能定址的範圍遠大於 17 bits。",
+     "k": 6,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 93.4
+     }
+    },
+    {
+     "say": "另外有 6 條線送命令跟控制訊號，像「開 row」、「讀」、「寫」。",
+     "k": 7,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 102.8
+     }
+    },
+    {
+     "say": "data bus 有 64 條，一次傳 64 bits。三組加起來 17 + 6 + 64，一共 87 條。",
+     "read": "data bus 有 64 條，一次傳 64 bits。三組加起來 17加6加64，一共 87 條。",
+     "k": 8,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 107
+     }
+    },
+    {
+     "say": "如果記憶體有 ECC，也就是錯誤更正碼，會多 8 條檢查線，data bus 變成 72 bits。",
+     "k": 9,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 110.9
+     }
+    },
+    {
+     "say": "早期 PC 的 data bus 只有 32 條，模組跟主機板之間也只有 32 bits 的連接。",
+     "k": 10,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 117.5
+     }
+    },
+    {
+     "say": "那種模組叫 SIMM，single inline memory module。",
+     "k": 11,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 128.4
+     }
+    },
+    {
+     "say": "當時一次搬 32 bits，也就是 4 bytes，這個單位叫一個 word。",
+     "k": 12,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 134.1
+     }
+    },
+    {
+     "say": "現代 PC 的 data bus 是 64 bits，是 SIMM 的兩倍。",
+     "k": 13,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 144
+     }
+    },
+    {
+     "say": "影片說寬度變兩倍所以叫 dual。更精確的說法是：DIMM 兩面的金手指是各自獨立的訊號，SIMM 兩面是相通的。",
+     "k": 14,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 155.3
+     }
+    },
+    {
+     "say": "所以現代 PC 的 word 是 64 bits，也就是 8 bytes。",
+     "k": 15,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 162.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "2,133 MT/s：一個 word 不到半奈秒",
+   "scene": "dram-rate",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "好，來算頻寬。memory channel 的有效頻率典型是 2,133 MHz，意思是每秒傳 2,133 百萬次，常寫成 2,133 MT/s。",
+     "read": "好，來算頻寬。memory channel 的有效頻率典型是 2,133 MHz，意思是每秒傳 2,133 百萬次，常寫成 2,133 MT每秒。",
+     "k": 1,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 168
+     }
+    },
+    {
+     "say": "每次傳一個 64-bit word，也就是 8 bytes。2,133 百萬乘 8，頻寬就是 17.064 GB/s。",
+     "read": "每次傳一個 64-bit word，也就是 8 bytes。2,133 百萬乘 8，頻寬就是 17.064 GB每秒。",
+     "k": 2,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 174.2
+     }
+    },
+    {
+     "say": "反過來算：每個 word 只花 21.33 億分之一秒，大約 0.469 奈秒，不到半奈秒。",
+     "k": 3,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 182.7
+     }
+    },
+    {
+     "say": "那問題來了：存取一個 cell 其實很慢，DIMM 怎麼跟得上這麼快的 bus？答案是 DDR、burst 跟 bank interleaving。",
+     "k": 4,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 184.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "單通道、雙通道、四通道與 rank",
+   "scene": "dram-chmode",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "先看多條 DIMM 怎麼接。假設兩條 DIMM 共用同一條 memory channel。",
+     "k": 1,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 190
+     }
+    },
+    {
+     "say": "這叫 single-channel mode，一次只有一條通道在傳，頻寬就是剛剛的 17.064 GB/s。",
+     "read": "這叫 single-channel mode，一次只有一條通道在傳，頻寬就是剛剛的 17.064 GB每秒。",
+     "k": 2,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 195.5
+     }
+    },
+    {
+     "say": "如果兩條 DIMM 各有自己的通道，memory controller 就能同時對兩條讀寫。",
+     "k": 3,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 199.5
+     }
+    },
+    {
+     "say": "這叫 dual-channel mode，雙通道。",
+     "k": 4,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 207.7
+     }
+    },
+    {
+     "say": "理論頻寬變兩倍，34.128 GB/s。為什麼說「理論」？因為程式不一定能一直同時用到兩條。",
+     "read": "理論頻寬變兩倍，34.128 GB每秒。為什麼說「理論」？因為程式不一定能一直同時用到兩條。",
+     "k": 5,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 210.3
+     }
+    },
+    {
+     "say": "4 條各有通道就是 quad-channel，理論頻寬乘 4，68.256 GB/s，常見於工作站或高階電競機。",
+     "read": "4 條各有通道就是 quad-channel，理論頻寬乘 4，68.256 GB每秒，常見於工作站或高階電競機。",
+     "k": 6,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 217.2
+     }
+    },
+    {
+     "say": "能不能多通道，要看主機板佈線跟 CPU 的記憶體控制器支不支援；大多數 PC 有雙通道。",
+     "k": 7,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 228.2
+     }
+    },
+    {
+     "say": "那一條通道能不能掛很多條 DIMM？有限制，跟電氣訊號有關。",
+     "k": 8,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 240.8
+     }
+    },
+    {
+     "say": "同一條線分岔接到好幾條 DIMM，訊號會被分弱，就傳不了那麼快。",
+     "k": 9,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 247.1
+     }
+    },
+    {
+     "say": "所以一條通道通常最多掛 2 條。",
+     "k": 10,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 250.4
+     }
+    },
+    {
+     "say": "那雙 rank 的 DIMM 呢？兩個 rank 插在同一個插槽，一定共用同一條通道。",
+     "k": 11,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 254
+     }
+    },
+    {
+     "say": "所以多 rank 容量大、比較耗電，但速度幾乎沒變。記住：雙 rank 不等於雙通道。",
+     "k": 12,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 263.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "DDR：一個 clock 傳兩次，8 顆晶片各管 8 條線",
+   "scene": "dram-ddr",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "好，回到剛剛的問題。存取單一個 cell 其實很慢。",
+     "k": 1,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 273.4
+     }
+    },
+    {
+     "say": "光讀或寫 1 個 bit，就要好幾個 clock cycle。",
+     "k": 2,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 278.1
+     }
+    },
+    {
+     "say": "可是 data bus 每個 clock 可以傳兩次：時脈上升緣傳一次，下降緣再傳一次。",
+     "k": 3,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 283.4
+     }
+    },
+    {
+     "say": "這就是 DDR，Double Data Rate。所以 2,133 MT/s 的實際時脈只有一半，1,066.5 MHz。",
+     "read": "這就是 DDR，Double Data Rate。所以 2,133 MT每秒 的實際時脈只有一半，1,066.5 MHz。",
+     "k": 4,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 294.2
+     }
+    },
+    {
+     "say": "所以記憶體模組的設計目標很清楚：讓 data bus 一直有資料在跑，不要閒著。",
+     "k": 5,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 299.8
+     }
+    },
+    {
+     "say": "在一般 DIMM 上，每顆晶片只接 data bus 的 8 條線，叫 x8 晶片。",
+     "read": "在一般 DIMM 上，每顆晶片只接 data bus 的 8 條線，叫 by 8 晶片。",
+     "k": 6,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 308.1
+     }
+    },
+    {
+     "say": "一個 64-bit word 拆成 8 份，每份 8 bits，8 顆晶片同時各管一份。",
+     "k": 7,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 313.9
+     }
+    },
+    {
+     "say": "8 顆最常見，但也有晶片多一點或少一點的 DIMM。",
+     "k": 8,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 322.8
+     }
+    },
+    {
+     "say": "每顆容量固定的話，晶片越多總容量越大，例如每顆 8 Gbit，8 顆就是 8 GB。",
+     "k": 9,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 327.6
+     }
+    },
+    {
+     "say": "但每個讀寫請求都要這些晶片一起動，晶片越多就越耗電。",
+     "k": 10,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 333.8
+     }
+    },
+    {
+     "say": "反過來，晶片少比較省電，但每顆要管更多條線，例如 x16 晶片只要 4 顆，每顆管 16 條。",
+     "read": "反過來，晶片少比較省電，但每顆要管更多條線，例如 by 16 晶片只要 4 顆，每顆管 16 條。",
+     "k": 11,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 341.9
+     }
+    },
+    {
+     "say": "這代表每顆要更多資料接腳，而 pin 是很貴的。",
+     "k": 12,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 349.2
+     }
+    },
+    {
+     "say": "每顆晶片裡通常有 8 個 bank。影片說每個 bank「存 8 bits」，正確意思是 x8 晶片每次存取進出 8 bits。",
+     "read": "每顆晶片裡通常有 8 個 bank。影片說每個 bank「存 8 bits」，正確意思是 by 8 晶片每次存取進出 8 bits。",
+     "k": 13,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 356
+     }
+    },
+    {
+     "say": "各晶片裡位置相同的 bank，例如都是 bank 0，共用同一組位址跟控制訊號，會一起動作。",
+     "k": 14,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 362.3
+     }
+    },
+    {
+     "say": "所以寫一個 64-bit word，就是 8 bits 同時寫進每顆晶片的 bank 0。",
+     "k": 15,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 369
+     }
+    },
+    {
+     "say": "但要注意：一次 64 bits 只是比較「寬」，每次存取要等的時間跟讀 1 bit 一樣，並沒有比較快。",
+     "k": 16,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 376.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Bank 內部：RAS 開 row，CAS 選 column",
+   "scene": "dram-rascas",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "想知道怎麼加速，先打開一個 bank 看。前面這張 8 乘 8 的格子是一個 array，後面還疊著 7 個。",
+     "k": 1,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 385
+     }
+    },
+    {
+     "say": "這個模型有 8 個 array，每個 64 個 cell，加起來 512 個。",
+     "k": 2,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 395
+     }
+    },
+    {
+     "say": "真實的 array 是長方形，例如 1024 個 column、16384 個 row，一個 array 就有一千六百多萬個 cell。",
+     "k": 3,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 401.4
+     }
+    },
+    {
+     "say": "要選 16384 個 row 需要 14 bits，選 1024 個 column 需要 10 bits。",
+     "k": 3,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 401.4
+     }
+    },
+    {
+     "say": "讀資料時，先送 row address 加上 RAS 訊號，row address strobe，啟動讀取週期。這裡選 row 5。",
+     "k": 4,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 409.5
+     }
+    },
+    {
+     "say": "接著送 column address 跟 CAS，column address strobe，這裡選 column 3。",
+     "k": 5,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 417.3
+     }
+    },
+    {
+     "say": "row 加 column 就指定每個 array 裡的一個 cell。8 個 array 共用位址，所以 8 個 cell 都在第 5 列第 3 行。",
+     "k": 6,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 419.7
+     }
+    },
+    {
+     "say": "被選中的整個 row 5 會被啟動，整排資料複製進下方的 sense amplifiers，也叫 row buffer，並鎖住。",
+     "k": 7,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 431
+     }
+    },
+    {
+     "say": "開 row 這一步，是讀取週期裡比較慢的部分。",
+     "k": 8,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 435.5
+     }
+    },
+    {
+     "say": "完成後，我們說 row 5 現在是 open 的。",
+     "k": 9,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 439.2
+     }
+    },
+    {
+     "say": "接著每個 array 從 row buffer 挑出 column 3 的 bit，一起送進 output buffer，共 8 bits。",
+     "k": 10,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 442.8
+     }
+    },
+    {
+     "say": "別忘了這只是模型：DIMM 上 8 顆晶片裡同位置的 bank，同時在做一模一樣的事。",
+     "k": 11,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 448.8
+     }
+    },
+    {
+     "say": "每顆 8 bits、8 顆晶片，合起來就是一個 64-bit word。",
+     "k": 12,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 459.2
+     }
+    },
+    {
+     "say": "一個 bank 一次只能開一個 row。早期 DRAM 讀完就把 row 關掉，下次再重開。",
+     "k": 13,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 463.7
+     }
+    },
+    {
+     "say": "可是開一整排 1024 個 column 卻只用 1 個，只用了大約千分之一，太浪費了。",
+     "k": 14,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 475.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Burst mode：row 開著就連讀好幾個 column",
+   "scene": "dram-burst",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "聰明的做法是：row 5 還開著，就直接讀下一個 column 4，不用重開 row。",
+     "k": 1,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 487
+     }
+    },
+    {
+     "say": "再讀 column 5、column 6，資料就從 row buffer 一個接一個流出來。",
+     "k": 2,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 493.3
+     }
+    },
+    {
+     "say": "換句話說，只要給一個 row address 和一個起始 column，就能讀出一整串，這叫 burst。",
+     "k": 3,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 495.8
+     }
+    },
+    {
+     "say": "row 開著時連續讀幾個 column，叫 burst length。畫面讀了 3、4、5、6，burst length 是 4。",
+     "k": 4,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 503.5
+     }
+    },
+    {
+     "say": "不同世代的 DRAM，burst length 不一樣。",
+     "k": 5,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 511
+     }
+    },
+    {
+     "say": "影片說 DDR2 是 4、DDR3 是 8、DDR4 是 16。這裡要更正：DDR4 其實還是 8，DDR5 才是 16。",
+     "k": 6,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 515
+     }
+    },
+    {
+     "say": "別忘了，畫面上只是一個 bank。",
+     "k": 7,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 525
+     }
+    },
+    {
+     "say": "實際上 DDR3 模組 8 顆晶片同時動，一次 burst 連送 8 個 64-bit word，8 × 8 = 64 bytes。",
+     "read": "實際上 DDR3 模組 8 顆晶片同時動，一次 burst 連送 8 個 64-bit word，8乘8等於64 bytes。",
+     "k": 8,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 528
+     }
+    },
+    {
+     "say": "這種一次從 array 抓好幾份、再一份一份快速送出的技術，叫 prefetching。",
+     "k": 9,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 541.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Bank interleaving：讓 data bus 不停下來",
+   "scene": "dram-bankint",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "不過還有一個問題。看時間軸：bank 0 先花時間開 row，再用 data bus 送一次 burst。",
+     "k": 1,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 545
+     }
+    },
+    {
+     "say": "每個 bank 同一時間只能開一個 row。",
+     "k": 2,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 547.2
+     }
+    },
+    {
+     "say": "burst 結束後，必須先把這個 row 關掉，才能開別的 row。",
+     "k": 3,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 551.3
+     }
+    },
+    {
+     "say": "關 row 要做兩件事：DRAM 讀取會破壞電荷，所以先把資料寫回去；再把 bit line 重新 precharge。",
+     "k": 4,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 556.3
+     }
+    },
+    {
+     "say": "這可能要花到 18 個 clock cycle。",
+     "k": 5,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 561.8
+     }
+    },
+    {
+     "say": "另外，CPU 跟 DRAM 之間不是一個 byte 一個 byte 搬，而是以 cache line 為單位。",
+     "k": 6,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 566
+     }
+    },
+    {
+     "say": "一條 cache line 通常 64 bytes，也就是 8 個 64-bit word。",
+     "k": 7,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 573
+     }
+    },
+    {
+     "say": "burst length 8 就是 8 次乘 8 bytes，剛好 64 bytes 填滿一條 cache line。",
+     "k": 8,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 580
+     }
+    },
+    {
+     "say": "DDR 一個 clock 傳兩次，所以這 8 次只要 4 個 clock。",
+     "k": 8,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 580
+     }
+    },
+    {
+     "say": "那要連讀好幾條呢？只靠 bank 0，要等 4 + 18 + 10 = 32 個 clock 才能再送，bus 只忙了 12.5%。",
+     "read": "那要連讀好幾條呢？只靠 bank 0，要等 4加18加10等於32 個 clock 才能再送，bus 只忙了 12.5%。",
+     "k": 9,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 585.8
+     }
+    },
+    {
+     "say": "這裡開 row 的 10 個 clock 是示意數字，影片只給了關 row 最多 18 個。",
+     "k": 9
+    },
+    {
+     "say": "為了提高吞吐量，同一顆晶片裡的每個 bank 都設計成可以獨立運作。",
+     "k": 10,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 590.6
+     }
+    },
+    {
+     "say": "所以不同 bank 可以處在不同階段：有的在開 row，有的在送資料，有的在關 row。",
+     "k": 11,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 600.4
+     }
+    },
+    {
+     "say": "這種輪流使用 bank 的做法，就叫 bank interleaving。",
+     "k": 12,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 605.6
+     }
+    },
+    {
+     "say": "bank 0 一送完，bank 1 的 burst 馬上接上，因為它早就提前開好 row 了。",
+     "k": 13,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 613.5
+     }
+    },
+    {
+     "say": "接著 bank 2、bank 3，一路輪下去，data bus 上一格接一格，沒有空隙。",
+     "k": 14,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 620.4
+     }
+    },
+    {
+     "say": "看這一刻：bank 3 正在送資料，其他 bank 有的在開 row、有的在關 row，都在為下一次準備。",
+     "k": 15,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 623
+     }
+    },
+    {
+     "say": "等 bank 7 送完，bank 0 正好恢復：它要 32 個 clock，8 個 bank 輪一圈也剛好 8 × 4 = 32。",
+     "read": "等 bank 7 送完，bank 0 正好恢復：它要 32 個 clock，8 個 bank 輪一圈也剛好 8乘4等於32。",
+     "k": 16,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 629
+     }
+    },
+    {
+     "say": "所以 bank interleaving 讓 data bus 長時間保持滿載。重點是：輪一圈的時間不能比單一 bank 的恢復時間短。",
+     "k": 17,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 637.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "一顆晶片要放幾個 bank：速度和容量的取捨",
+   "scene": "dram-banks",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "這顆晶片有 8 個 bank，但也有多一點或少一點的。",
+     "k": 1,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 651.3
+     }
+    },
+    {
+     "say": "放幾個 bank，是 DRAM 設計者的重要決定。",
+     "k": 2,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 656.2
+     }
+    },
+    {
+     "say": "bank 越多，能同時進行的存取越多，平行度高，平均等待也越短。",
+     "k": 3,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 663.3
+     }
+    },
+    {
+     "say": "所以 bank 多，data bus 更常有事做，記憶體就更快。",
+     "k": 4,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 669.2
+     }
+    },
+    {
+     "say": "但矽面積是固定的。bank 一多，例如換成 16 個，每個 bank 就變小。",
+     "k": 5,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 676.6
+     }
+    },
+    {
+     "say": "也就是 array 變小、數量變多。",
+     "k": 6,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 684
+     }
+    },
+    {
+     "say": "每個 array 都要自己的周邊電路：decoder 把位址變成選哪一排，sense amplifier 放大訊號，multiplexer 挑 column。",
+     "k": 7,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 686.4
+     }
+    },
+    {
+     "say": "想做出容量最大的 DRAM，就要少放這些周邊電路，把空間留給真正存資料的 cell。",
+     "k": 8,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 692.6
+     }
+    },
+    {
+     "say": "所以 bank 越多，容量越低。示意算法：面積 100，每個 bank 周邊電路佔 1.5，8 個 bank 剩 88，16 個只剩 76。",
+     "k": 9,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 705
+     }
+    },
+    {
+     "say": "反過來，bank 少，例如 4 個，bank 和 array 都比較大，容量可能更高。",
+     "k": 10,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 710.8
+     }
+    },
+    {
+     "say": "但大 array 的 bit line 很長、電容大，讀寫比較慢也比較耗電。又是一個取捨。",
+     "k": 11,
+     "src": {
+      "v": "9BjVUmaXaCQ",
+      "t": 717.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "為什麼要 interleaving：CPU 太快，記憶體跟不上",
+   "scene": "dram-ilv-gap",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "我們換個角度，把 interleaving 從頭講一次。CPU 的架構越來越聰明、時脈越來越高、管線越來越深。",
+     "k": 1,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 9.5
+     }
+    },
+    {
+     "say": "可是記憶體供應資料的速度跟不上，CPU 常常等不到資料。",
+     "k": 2,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 16
+     }
+    },
+    {
+     "say": "這個 CPU 快、記憶體慢的瓶頸，叫 von Neumann bottleneck，讓昂貴的處理器沒辦法全力運作。",
+     "k": 3,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 24
+     }
+    },
+    {
+     "say": "為了縮小落差，記憶體設計演進了好幾次，早期的一種解法就是 memory interleaving。",
+     "k": 4,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 39.7
+     }
+    },
+    {
+     "say": "我們看三件事：它怎麼運作、有哪些類型、各有什麼優缺點。",
+     "k": 5,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 45
+     }
+    }
+   ]
+  },
+  {
+   "title": "Interleaving：連續位址輪流放進不同 bank",
+   "scene": "dram-ilv-what",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "上面是 CPU，下面是 4 個 memory bank。",
+     "k": 1,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 56
+     }
+    },
+    {
+     "say": "interleaving 就是把連續位址輪流放進不同 bank：0 在 bank 0、1 在 bank 1，到 4 又回到 bank 0。",
+     "k": 2,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 58.4
+     }
+    },
+    {
+     "say": "4 個 bank 時，bank 編號就是位址除以 4 的餘數。",
+     "k": 2,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 58.4
+     }
+    },
+    {
+     "say": "為什麼要這樣？因為一個記憶體晶片被存取之後，要恢復一段時間才能再被存取。",
+     "k": 3,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 71.7
+     }
+    },
+    {
+     "say": "如果連續位址都在同一個晶片，CPU 就只能停下來等，這段等待叫 wait state。",
+     "k": 4,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 78
+     }
+    },
+    {
+     "say": "有了 interleaving，連續位址在不同 bank，bank 0 在恢復時，bank 1 接手。",
+     "k": 5,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 81.8
+     }
+    },
+    {
+     "say": "所以 bank 0 把資料送給 CPU 的同時，bank 1 已經在收下一個位址。",
+     "k": 6,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 96.1
+     }
+    },
+    {
+     "say": "等 bank 1 送資料時，bank 0 已經恢復好，又可以被存取了。",
+     "k": 7,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 102.7
+     }
+    },
+    {
+     "say": "結果，連續幾個 word 之間的等待時間就大幅縮短。",
+     "k": 8,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 108
+     }
+    }
+   ]
+  },
+  {
+   "title": "Interleaving 可以做在哪一層",
+   "scene": "dram-ilv-hier",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "回想剛剛的層級：記憶體條上，一組一起動作的 DRAM 晶片叫 rank。",
+     "k": 4,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 130.2
+     }
+    },
+    {
+     "say": "每顆晶片分成好幾個 bank，bank 是 row 乘 column 的二維陣列，交叉點是 cell。",
+     "k": 5,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 137.1
+     }
+    },
+    {
+     "say": "interleaving 可以做在不同層級：多通道之間可以交錯，rank 之間、chip 之間也可以。",
+     "k": 7,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 152.6
+     }
+    },
+    {
+     "say": "但最早、最基本的單位是 bank，所以接下來都講以 bank 為單位的 interleaving。",
+     "k": 8,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 168.1
+     }
+    },
+    {
+     "say": "抽象來看：主記憶體分成好幾個 bank，位址輪流放，例如 4 個 bank 時，bank 0 放 0、4、8。",
+     "k": 9,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 178.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "算 cycle：非交錯 28，交錯 10",
+   "scene": "dram-ilv-cycles",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "用例子比較。上面一排是非交錯，下面四排是交錯的 4 個 bank，橫軸是 cycle。",
+     "k": 1,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 190.7
+     }
+    },
+    {
+     "say": "非交錯時，要等前一次存取完全結束，才能開始下一個位址，四個 word 排成一長條。",
+     "k": 2,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 200.9
+     }
+    },
+    {
+     "say": "交錯時，連續位址在不同 bank，存取可以重疊，總時間大幅減少。",
+     "k": 3,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 208.9
+     }
+    },
+    {
+     "say": "我們實際算 cycle 數。",
+     "k": 4,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 224.3
+     }
+    },
+    {
+     "say": "假設送位址給 DRAM 要 1 個 cycle，DRAM 存取一個 word 要 5 個 cycle，資料送回來要 1 個 cycle。",
+     "k": 5,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 232.1
+     }
+    },
+    {
+     "say": "所以取一個 word 要 1 + 5 + 1 = 7 個 cycle。",
+     "read": "所以取一個 word 要 1加5加1等於7 個 cycle。",
+     "k": 6,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 244.2
+     }
+    },
+    {
+     "say": "非交錯時，4 個 word 一個做完才做下一個：4 × 7 = 28 個 cycle。",
+     "read": "非交錯時，4 個 word 一個做完才做下一個：4乘7等於28 個 cycle。",
+     "k": 7,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 252.3
+     }
+    },
+    {
+     "say": "交錯時，每個 cycle 送一個位址給不同 bank，存取錯開重疊，最後一個在第 10 個 cycle 結束。",
+     "k": 8,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 261.5
+     }
+    },
+    {
+     "say": "也就是 1 + 5 + 4 × 1 = 10，跟課本公式一樣。",
+     "read": "也就是 1加5加4乘1等於10，跟課本公式一樣。",
+     "k": 8,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 261.5
+     }
+    },
+    {
+     "say": "28 除以 10 是 2.8，交錯快了 2.8 倍。",
+     "k": 9,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 269.7
+     }
+    },
+    {
+     "say": "考試小心：這裡的 28 是每個 word 都重送位址。P&H 課本位址只送一次，非交錯是 1 + 4 × 5 + 4 × 1 = 25。",
+     "read": "考試小心：這裡的 28 是每個 word 都重送位址。P and H 課本位址只送一次，非交錯是 1加4乘5加4乘1等於25。",
+     "k": 9
+    }
+   ]
+  },
+  {
+   "title": "n-way interleaving：分成幾個 bank",
+   "scene": "dram-ilv-nway",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "接下來是 n-way interleaving。",
+     "k": 1,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 276
+     }
+    },
+    {
+     "say": "幾 way，就是主記憶體被分成幾個 bank。",
+     "k": 2,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 280
+     }
+    },
+    {
+     "say": "2-way 就是 2 個 bank，選其中一個只要 1 個 bit。",
+     "k": 3,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 288.3
+     }
+    },
+    {
+     "say": "4-way 就是 4 個 bank，選 bank 要 2 個 bit：00、01、10、11。",
+     "read": "4-way 就是 4 個 bank，選 bank 要 2 個 bit：零零、零一、一零、一一。",
+     "k": 4,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 295.5
+     }
+    },
+    {
+     "say": "一般來說，n-way 就是 n 個 bank，要 log₂ n 個 bit 選 bank，所以 8-way 要 3 bits，16-way 要 4 bits。",
+     "read": "一般來說，n-way 就是 n 個 bank，要 log 以2為底的 n 個 bit 選 bank，所以 8-way 要 3 bits，16-way 要 4 bits。",
+     "k": 5,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 301.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Low-order 與 high-order：用哪幾個 bit 選 bank",
+   "scene": "dram-ilv-types",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "interleaving 分兩種：low-order 和 high-order，差別在用位址的哪幾個 bit 選 bank。",
+     "k": 1,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 307.4
+     }
+    },
+    {
+     "say": "low-order：用位址最右邊、最低位的幾個 bit 選 bank，左邊高位的 bits 選 bank 裡第幾個 word。",
+     "k": 2,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 315.3
+     }
+    },
+    {
+     "say": "連續位址的低位一直在變，所以 0、1、2、3 會輪流落在 bank 0、1、2、3。",
+     "k": 3,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 325.8
+     }
+    },
+    {
+     "say": "high-order 反過來：用最左邊、最高位的幾個 bit 選 bank，低位選 word。",
+     "k": 4,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 332.8
+     }
+    },
+    {
+     "say": "連續位址的高位不變，所以 0 到 3 全在 bank 0，4 到 7 全在 bank 1，一整塊一整塊分。",
+     "k": 5,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 342.5
+     }
+    },
+    {
+     "say": "記法：low-order 的 low 是指「用低位 bits 選 bank」，不是 bank 編號低。",
+     "k": 5
+    }
+   ]
+  },
+  {
+   "title": "例子：4 個 bank 的 low-order",
+   "scene": "dram-ilv-low",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "具體例子：4 個 bank，用 4-bit 位址、16 個 word 當示意。",
+     "k": 1,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 353.3
+     }
+    },
+    {
+     "say": "low-order 連續位址輪流放：0000 在 bank 0、0001 在 bank 1、0010 在 bank 2、0011 在 bank 3。",
+     "read": "low-order 連續位址輪流放：零零零零 在 bank 0、零零零一 在 bank 1、零零一零 在 bank 2、零零一一 在 bank 3。",
+     "k": 2,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 356
+     }
+    },
+    {
+     "say": "下一個 0100，又回到 bank 0。",
+     "read": "下一個 零一零零，又回到 bank 0。",
+     "k": 2,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 356
+     }
+    },
+    {
+     "say": "CPU 送出位址時，低位的 bits 選 bank，其餘高位 bits 選 bank 裡的 word。",
+     "k": 3,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 364.5
+     }
+    },
+    {
+     "say": "4 個 bank 需要 log₂ 4 = 2 個 bit 選 bank，4-bit 位址剩 2 bits 選 word。",
+     "read": "4 個 bank 需要 log 以2為底的 4等於2 個 bit 選 bank，4-bit 位址剩 2 bits 選 word。",
+     "k": 4,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 374
+     }
+    },
+    {
+     "say": "例如 0000：低位 00 選 bank 0，高位 00 選第 0 個 word。",
+     "read": "例如 零零零零：低位 零零 選 bank 0，高位 零零 選第 0 個 word。",
+     "k": 5,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 381.1
+     }
+    },
+    {
+     "say": "再一個：0110，低位 10 是 bank 2，高位 01 是 word 1。",
+     "read": "再一個：零一一零，低位 一零 是 bank 2，高位 零一 是 word 1。",
+     "k": 5,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 381.1
+     }
+    },
+    {
+     "say": "第一個 cycle 結束後，bank 0 已經開始處理 0000。",
+     "read": "第一個 cycle 結束後，bank 0 已經開始處理 零零零零。",
+     "k": 6,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 391.5
+     }
+    },
+    {
+     "say": "接下來 CPU 繼續送 0001、0010、0011，落在 bank 1、2、3，存取就能重疊進行。",
+     "read": "接下來 CPU 繼續送 零零零一、零零一零、零零一一，落在 bank 1、2、3，存取就能重疊進行。",
+     "k": 7,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 398.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "例子：4 個 bank 的 high-order",
+   "scene": "dram-ilv-high",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "high-order 同樣 4 個 bank，唯一差別是：一整塊連續位址放同一個 bank，0000 到 0011 都在 bank 0。",
+     "read": "high-order 同樣 4 個 bank，唯一差別是：一整塊連續位址放同一個 bank，零零零零 到 零零一一 都在 bank 0。",
+     "k": 1,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 404.9
+     }
+    },
+    {
+     "say": "CPU 送出位址時，最高的 2 個 bit 選 bank。",
+     "k": 2,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 416.1
+     }
+    },
+    {
+     "say": "0000 的高位 00 選 bank 0，低位 00 選 word 0。同樣的 0110，現在高位 01 是 bank 1、低位 10 是 word 2。",
+     "read": "零零零零 的高位 零零 選 bank 0，低位 零零 選 word 0。同樣的 零一一零，現在高位 零一 是 bank 1、低位 一零 是 word 2。",
+     "k": 3,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 423.3
+     }
+    },
+    {
+     "say": "high-order 最適合共享記憶體，也就是好幾個處理器共用一塊記憶體。例如 CPU 1 正在用 bank 0。",
+     "k": 4,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 435.4
+     }
+    },
+    {
+     "say": "同一時間 CPU 2 可以用 bank 2，兩個不衝突，真正同時進行。",
+     "k": 5,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 448.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "兩種 interleaving 的優缺點與 bank conflict",
+   "scene": "dram-ilv-pros",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "最後比優缺點：左邊 low-order，右邊 high-order。",
+     "k": 1,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 451.1
+     }
+    },
+    {
+     "say": "low-order 的優點：burst 讀連續位址時，延遲可以重疊，就像剛剛 28 變 10。",
+     "k": 2,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 455.2
+     }
+    },
+    {
+     "say": "而且連續位址分散到各 bank，每個 bank 分到的工作比較平均。",
+     "k": 3,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 467
+     }
+    },
+    {
+     "say": "缺點：如果不是連續讀，例如 0、4、8、12 每次跳 4，在 4 個 bank 下全落在 bank 0，互相卡住，這叫 bank conflict。",
+     "k": 4,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 477.7
+     }
+    },
+    {
+     "say": "另一個缺點：每塊資料都分散在所有 bank，只要壞一個 bank，幾乎所有資料都受影響。",
+     "k": 5,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 480.4
+     }
+    },
+    {
+     "say": "high-order 的優點：共享記憶體系統裡，不同 CPU 可以同時用不同 bank，平行度好。",
+     "k": 6,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 490.4
+     }
+    },
+    {
+     "say": "容錯也比較好：壞一個 bank 只影響那一整塊位址，其他照常用。",
+     "k": 7,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 500.6
+     }
+    },
+    {
+     "say": "缺點：連續位址都在同一個 bank，沒辦法像 low-order 那樣讓連續存取重疊。",
+     "k": 8,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 506.8
+     }
+    },
+    {
+     "say": "那能不能兩種一起用？可以。",
+     "k": 9,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 514.7
+     }
+    },
+    {
+     "say": "外層在 chip 層級用 high-order，給多處理器平行度；內層在 bank 層級用 low-order，讓連續讀取的延遲重疊。",
+     "k": 10,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 522
+     }
+    },
+    {
+     "say": "總結 conflict：low-order 時，CPU 接連存取的位址如果落在同一個 bank，就會 bank conflict。",
+     "k": 11,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 535.5
+     }
+    },
+    {
+     "say": "high-order 的共享記憶體裡，好幾個處理器同時要同一個 bank，也會衝突。",
+     "k": 12,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 549.1
+     }
+    },
+    {
+     "say": "在現在的 DDR 記憶體裡，interleaving 是可選的功能，常搭配 burst 模式。",
+     "k": 13,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 557.8
+     }
+    },
+    {
+     "say": "另一條路是把記憶體跟 bus 做寬，一次拿 4 個 word，只要 1 + 5 + 1 = 7 cycles，但匯流排跟多工器比較貴。",
+     "read": "另一條路是把記憶體跟 bus 做寬，一次拿 4 個 word，只要 1加5加1等於7 cycles，但匯流排跟多工器比較貴。",
+     "k": 14,
+     "src": {
+      "v": "0dTWcYk1rts",
+      "t": 565.8
+     }
+    },
+    {
+     "say": "口訣：low-order 給單一處理器連續讀，high-order 給多處理器各用一塊，不要記反。",
+     "k": 14
+    }
+   ]
+  },
+  {
+   "title": "為什麼需要 virtual memory：multiprogramming",
+   "scene": "cvm-25a-why",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "好，進入 virtual memory。看 memory hierarchy：CPU 旁邊有 cache，再來是 main memory，最下面是 disk。",
+     "k": 1,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 46.4
+     }
+    },
+    {
+     "say": "memory 跟 disk 之間，為什麼又要多一個 virtual memory？黃婷婷老師說，因為它跟 OS 的 multiprogramming 有關。",
+     "k": 1,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 46.4
+     }
+    },
+    {
+     "say": "我們寫的程式裡每樣東西都有位址：程式碼、static data、stack，各放在 user memory space 的某個地方。",
+     "k": 2,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 70.2
+     }
+    },
+    {
+     "say": "如果整台電腦只跑你一個程式，最簡單：你說第 100 號位址，就是 memory 的第 100 個位置，不用 translation。",
+     "k": 3,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 138
+     }
+    },
+    {
+     "say": "問題是程式常常在做 IO，IO 要上百萬個 cycle，這段時間 CPU 只能閒著。",
+     "k": 4,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 180.6
+     }
+    },
+    {
+     "say": "所以 OS 用 multiprogramming，好幾個程式一起跑：P1 去做 IO，就從 ready list 拿一個準備好的來用 CPU。",
+     "k": 5,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 217.8
+     }
+    },
+    {
+     "say": "可是大家位址都從 0 開始，同一個位址放誰的？解法：每人有自己的 address space，再一起 share 同一塊 physical memory。",
+     "k": 6,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 265.6
+     }
+    },
+    {
+     "say": "而且 user 看到的空間可以比 physical memory 還大，反正不會一次全部搬進來。",
+     "k": 7,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 285
+     }
+    },
+    {
+     "say": "為什麼搬一部分就夠？因為 locality：同一段時間只會用到某一塊，跑到哪塊就把那塊搬進 main memory。",
+     "k": 8,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 302.3
+     }
+    },
+    {
+     "say": "其他還沒用到的放哪？放在 disk 上的 swap space。",
+     "k": 9,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 326.6
+     }
+    },
+    {
+     "say": "每次只搬需要的一小塊。cache 那邊一塊叫 block，在 virtual memory 這一層，一塊叫 page。",
+     "k": 10,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 348.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "每個 process 都有一整個 virtual space",
+   "scene": "cvm-26b-recap",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "有同學下課問老師 virtual memory，老師說這牽涉到作業系統，一開始不懂很正常。我們再講清楚一點。",
+     "k": 1,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 21.4
+     }
+    },
+    {
+     "say": "程式跑起來就是一個 process，是行程，不是 processor。",
+     "k": 2,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 47.9
+     }
+    },
+    {
+     "say": "每個 process 都有完整、獨立的 virtual address space，例如 2³² 個 byte。",
+     "read": "每個 process 都有完整、獨立的 virtual address space，例如 2的32次方 個 byte。",
+     "k": 2,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 47.9
+     }
+    },
+    {
+     "say": "可是三個 process 同時在跑，共用同一個 CPU、同一塊 physical memory。",
+     "k": 3,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 74.4
+     }
+    },
+    {
+     "say": "P1 在跑時，雖然它的空間有 2³² 那麼大，實際只要把要用的三、四個 page 搬進 main memory。",
+     "read": "P1 在跑時，雖然它的空間有 2的32次方 那麼大，實際只要把要用的三、四個 page 搬進 main memory。",
+     "k": 4,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 90.5
+     }
+    },
+    {
+     "say": "P1 跑到一半要做 IO，就把 CPU 讓給 P2。",
+     "k": 5,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 127.7
+     }
+    },
+    {
+     "say": "輪到 P1 再跑時，它的 page 還在 main memory，就從剛剛被 interrupt 的地方 resume。",
+     "k": 6,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 142.3
+     }
+    },
+    {
+     "say": "那整個 2³² 的空間在哪？都在 disk 上有位置，沒用到的 swap 出去，而且不需要連續擺放。",
+     "read": "那整個 2的32次方 的空間在哪？都在 disk 上有位置，沒用到的 swap 出去，而且不需要連續擺放。",
+     "k": 8,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 178
+     }
+    },
+    {
+     "say": "如果不要 virtual memory，就是一個程式獨佔 memory 跟 CPU，跑完一個才換下一個，位址就是 physical address。",
+     "k": 9,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 240.8
+     }
+    },
+    {
+     "say": "正因為大家要 share CPU 跟 memory，又有 locality，只搬自己要用的進來，所以才需要 translation。",
+     "k": 10,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 285.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Virtual memory 這一層：page 很大、由 OS 管",
+   "scene": "cvm-25a-level",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "把 virtual memory 想成 hierarchy 多一層：disk 是 lower level，大又慢；main memory 在它上面。",
+     "k": 1,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 358.9
+     }
+    },
+    {
+     "say": "disk 比 memory 慢非常多，東西不在 main memory，就要花很長很長的時間搬。",
+     "k": 2,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 375.2
+     }
+    },
+    {
+     "say": "既然搬一次這麼貴，就一次搬大塊一點，這一塊叫 page，通常 1 KiB 以上。",
+     "read": "既然搬一次這麼貴，就一次搬大塊一點，這一塊叫 page，通常 1 K byte 以上。",
+     "k": 3,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 392.4
+     }
+    },
+    {
+     "say": "搬的時候，這個程式就把 CPU 讓給別人，讓 disk 在背景慢慢搬。",
+     "k": 4,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 399.4
+     }
+    },
+    {
+     "say": "一次 miss 要上百萬 cycle，就算 OS 多跑幾萬個 cycle 把事情處理聰明一點也划算，所以這一層用軟體管。",
+     "k": 5,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 417
+     }
+    },
+    {
+     "say": "從 disk 搬到 memory 也要做 translation，概念跟 memory 和 cache 之間很像。",
+     "k": 6,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 468.5
+     }
+    },
+    {
+     "say": "搬進搬出用固定大小：在 disk 上這一塊叫 page，放進 memory 佔的位置叫 frame。",
+     "k": 7,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 490.4
+     }
+    },
+    {
+     "say": "所以換個角度看：main memory 就像 disk 的 cache。",
+     "k": 8,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 504.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "教室座位的比喻：page 對到 frame",
+   "scene": "cvm-25a-share",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "畫面上 A、B 兩個程式各有自己的 virtual space，常用的 page 放進 physical memory，不常用的留在 disk。",
+     "k": 1,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 534.2
+     }
+    },
+    {
+     "say": "virtual 跟 physical 不必一樣：A 的 page 1 可以放在 2 號，B 的 page 4 可以放在 0 號，放哪都行。",
+     "k": 2,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 555.6
+     }
+    },
+    {
+     "say": "做法是把程式切成一塊一塊，例如 1K，physical 也切成一樣大小，兩邊切法相同。",
+     "k": 3,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 576.1
+     }
+    },
+    {
+     "say": "黃老師的比喻：教室只有 10 個位置，這就是 frame，每個位置一樣大，誰都可以坐。",
+     "k": 4,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 602.6
+     }
+    },
+    {
+     "say": "學號 38 號的同學坐到 10 號位。只要有張表寫「38 號在 10 號位」，要找他就去 10 號位找。",
+     "k": 5,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 618.6
+     }
+    },
+    {
+     "say": "這其實就是一個 mapping：把 virtual page 對應到 physical frame。",
+     "k": 6,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 653.8
+     }
+    },
+    {
+     "say": "所以寫程式可以用很大的 virtual space，很方便；真正跑的時候一次只用幾塊，用到再搬。",
+     "k": 7,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 664.2
+     }
+    },
+    {
+     "say": "如果要的 page 不在 main memory，就叫 page fault。",
+     "k": 8,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 713
+     }
+    }
+   ]
+  },
+  {
+   "title": "四個問題：為什麼 virtual memory 用 fully associative",
+   "scene": "cvm-25a-four",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "名詞記清楚：在 memory 裡的位置叫 frame，在 disk 上那一塊叫 page，兩個一樣大，搬進來剛好放得下。",
+     "k": 1,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 723.9
+     }
+    },
+    {
+     "say": "跟 cache 一樣，這一層也要回答四個問題：一塊多大、放哪裡怎麼找、滿了誰出去、寫入怎麼處理。",
+     "k": 2,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 765.9
+     }
+    },
+    {
+     "say": "第一個：miss penalty 上百萬 cycle，page fault 時還要 interrupt、讓出 CPU，所以乾脆一次搬大塊，page 很大。",
+     "k": 3,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 783.9
+     }
+    },
+    {
+     "say": "第二個是怎麼放。cache 學過三種：direct map 位置固定，set associative 放在一組裡，fully associative 哪都行。",
+     "k": 4,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 822.8
+     }
+    },
+    {
+     "say": "如果用 direct map，memory 明明有空位，卻因為位置固定不能放，就多出 page fault，每次 penalty 都超大。",
+     "k": 5,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 850.5
+     }
+    },
+    {
+     "say": "所以 virtual memory 用 fully associative：任何 page 可以擺在任何 frame。",
+     "k": 6,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 855.7
+     }
+    },
+    {
+     "say": "位置大小一定符合 page 大小，一個洞剛好塞一個 page。",
+     "k": 7,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 878.2
+     }
+    },
+    {
+     "say": "既然 page 可以在任何地方，就需要一張表記它在哪，這張表就是 page table，用來做 translation。",
+     "k": 8,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 898.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "位址怎麼切：virtual page number + page offset",
+   "scene": "cvm-25a-split",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "給你一個 virtual address。如果 page 是 2¹² 個 byte，最低 12 個 bit 就是 page offset，表示第幾個 byte。",
+     "read": "給你一個 virtual address。如果 page 是 2的12次方 個 byte，最低 12 個 bit 就是 page offset，表示第幾個 byte。",
+     "k": 1,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 905.4
+     }
+    },
+    {
+     "say": "這跟 word 一樣：一個 word 4 個 byte，最後 2 個 bit 只是挑 word 裡第幾個 byte，找第幾個 word 時不用理它。",
+     "k": 2,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 923.3
+     }
+    },
+    {
+     "say": "扣掉 offset，前面剩下的 bit 就是 virtual page number，VPN，表示第幾個 page。",
+     "k": 3,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 934
+     }
+    },
+    {
+     "say": "你想想看：把一整個 page 搬進某個 frame，裡面第 0、1、2、3 個 byte 的位置會變嗎？",
+     "k": 4,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 949.7
+     }
+    },
+    {
+     "say": "不會！第 3 個 byte 搬過去還是第 3 個。這個相對位置就是 page offset，所以 offset 完全不用翻譯。",
+     "k": 5,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 999.3
+     }
+    },
+    {
+     "say": "前面的 high-order bits 告訴你是第幾個 page，就像看第幾個 word 一樣。",
+     "k": 6,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1034
+     }
+    },
+    {
+     "say": "page 擺去哪個 frame 我們不在乎，只要一張 translation table 對應就好。",
+     "k": 7,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1066.9
+     }
+    },
+    {
+     "say": "老師的例子：你是 page 5，查表後被告知「請到 3 號位置」，也就是 frame number 3。offset 我們用 0x2A4 當示意。",
+     "read": "老師的例子：你是 page 5，查表後被告知「請到 3 號位置」，也就是 frame number 3。offset 我們用 十六進位 2A4 當示意。",
+     "k": 8,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1084.9
+     }
+    },
+    {
+     "say": "把不變的 offset 接上去：3 × 4096 + 0x2A4 = 0x32A4，這就是 physical address。",
+     "read": "把不變的 offset 接上去：3乘4096加十六進位 2A4等於十六進位 32A4，這就是 physical address。",
+     "k": 9,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1102.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "黑板例子：4 個 page、2 個 frame",
+   "scene": "cvm-25b-board",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "黃老師在黑板上用一個超小的例子再走一次。平常的 memory reference 就是：給一個地址，去那裡拿東西。",
+     "k": 1,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 20.4
+     }
+    },
+    {
+     "say": "如果 virtual 跟 physical 一樣，就很簡單：給 0011 就去 0011 拿。",
+     "read": "如果 virtual 跟 physical 一樣，就很簡單：給 零零一一 就去 零零一一 拿。",
+     "k": 2,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 74
+     }
+    },
+    {
+     "say": "但 virtual address 其實是寫程式時自己編的號碼，東西真正擺在別的地址，所以要 translation。",
+     "k": 3,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 92.4
+     }
+    },
+    {
+     "say": "假設 virtual space 分成 4 個 page，每個 page 只有 4 個 byte，位址從 0000 排到 1111，總共 16 個。",
+     "read": "假設 virtual space 分成 4 個 page，每個 page 只有 4 個 byte，位址從 零零零零 排到 一一一一，總共 16 個。",
+     "k": 4,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 126.5
+     }
+    },
+    {
+     "say": "怎麼知道在第幾個 page？看前兩個 bit：00 是第 0 個 page，01 是第 1 個。",
+     "read": "怎麼知道在第幾個 page？看前兩個 bit：零零 是第 0 個 page，零一 是第 1 個。",
+     "k": 5,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 169.7
+     }
+    },
+    {
+     "say": "後兩個 bit 是 page offset，表示 page 裡第 0 到第 3 個 byte。",
+     "k": 6,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 180.8
+     }
+    },
+    {
+     "say": "physical memory 只有兩個 frame，地址前面就是 frame number，黑板上寫成 00、01。",
+     "read": "physical memory 只有兩個 frame，地址前面就是 frame number，黑板上寫成 零零、零一。",
+     "k": 7,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 212.3
+     }
+    },
+    {
+     "say": "紅色的 page 01 常被用到，就把它整塊搬進 main memory，放在 frame 00。",
+     "read": "紅色的 page 零一 常被用到，就把它整塊搬進 main memory，放在 frame 零零。",
+     "k": 8,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 259.1
+     }
+    },
+    {
+     "say": "page table 有 4 個 entry，第 01 個 entry 記下：page 01 在 frame 00。",
+     "read": "page table 有 4 個 entry，第 零一 個 entry 記下：page 零一 在 frame 零零。",
+     "k": 9,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 281.7
+     }
+    },
+    {
+     "say": "現在要拿 page 01 裡的第 3 個 element。搬到 frame 以後，它還是第 3 個嗎？",
+     "read": "現在要拿 page 零一 裡的第 3 個 element。搬到 frame 以後，它還是第 3 個嗎？",
+     "k": 10,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 294.6
+     }
+    },
+    {
+     "say": "是，因為整塊一起搬，offset 不會變，會變的只有前面的 page number。",
+     "k": 11,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 331.1
+     }
+    },
+    {
+     "say": "給你 virtual address 0110：前面 01 是 page number，查 page table 得到 frame 00。",
+     "read": "給你 virtual address 零一一零：前面 零一 是 page number，查 page table 得到 frame 零零。",
+     "k": 12,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 346.9
+     }
+    },
+    {
+     "say": "後面 offset 10 不變，接在 frame 00 後面，physical address 就是 0010。",
+     "read": "後面 offset 一零 不變，接在 frame 零零 後面，physical address 就是 零零一零。",
+     "k": 13,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 364.6
+     }
+    },
+    {
+     "say": "總結：low-order bits 是 offset，原樣抄；high-order bits 是 page number，查表換成 frame number。",
+     "k": 14,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 419.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Virtual space 可以比 physical 大",
+   "scene": "cvm-25a-size",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "translation 之後位址不一定變小，但 virtual 可以比較大，physical 可以比較小。",
+     "k": 1,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1125.8
+     }
+    },
+    {
+     "say": "例如 virtual 有 2³⁶ 個 address，64 GiB；physical 只有 2³⁴，16 GiB，差了 4 倍。",
+     "read": "例如 virtual 有 2的36次方 個 address，64 GB；physical 只有 2的34次方，16 GB，差了 4 倍。",
+     "k": 2,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1132.8
+     }
+    },
+    {
+     "say": "都切成一塊一塊、又不會同時全搬進來，所以 virtual 有 1024 個 page、physical 只有 32 個 frame 也沒關係。",
+     "k": 3,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1150.7
+     }
+    },
+    {
+     "say": "physical 多大由 hardware 決定，virtual address space 不必跟它一樣大。",
+     "k": 4,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1175.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page table 的 valid bit：從空表長起來",
+   "scene": "cvm-25a-valid",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "page table 怎麼長出來的？跟 cache 很像，每次有 page 搬進來就更新它。",
+     "k": 1,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1193.4
+     }
+    },
+    {
+     "say": "一開始 page table 是空的，每個 entry 有一個 valid bit，全部是 0，表示還沒東西。",
+     "k": 2,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1213.3
+     }
+    },
+    {
+     "say": "拿 VPN 2 去查，valid 是 0，代表還沒搬進來，產生 page fault。",
+     "k": 3,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1225
+     }
+    },
+    {
+     "say": "這時 OS 到 disk 把 page 搬到 main memory 的某個 frame，這裡放進 frame 1。",
+     "k": 4,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1230.9
+     }
+    },
+    {
+     "say": "老師說 OS 就像班長，知道教室哪裡有空位、誰坐在哪，所以由它決定放哪。",
+     "k": 5,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1239
+     }
+    },
+    {
+     "say": "搬好後，OS 把 entry 的 valid 設成 1，記下 frame 1。",
+     "k": 6,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1260.7
+     }
+    },
+    {
+     "say": "下次再用 VPN 2，查到 valid，直接翻到 frame 1，不再 page fault。",
+     "k": 7,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1281.6
+     }
+    },
+    {
+     "say": "physical memory 裡同時有很多程式，每個程式都有自己的 page table，全部由 OS 管。",
+     "k": 8,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1323
+     }
+    }
+   ]
+  },
+  {
+   "title": "Paging：page fault 時 process 去哪了",
+   "scene": "cvm-25a-paging",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "正式定義 paging：virtual address 切成 page，physical 切成 page frame，兩者一定要一樣大。",
+     "k": 1,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1365.5
+     }
+    },
+    {
+     "say": "誰對到誰，就靠 page table 記這個 mapping。",
+     "k": 2,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1394.1
+     }
+    },
+    {
+     "say": "在 memory 裡的，例如第 3 個 page 對到第 5 個 frame，table 給你有效的 frame，就拿得到資料。",
+     "k": 3,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1418
+     }
+    },
+    {
+     "say": "不在的，table 告訴你它還在 disk，這就是 page fault。",
+     "k": 4,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1426.7
+     }
+    },
+    {
+     "say": "page fault 會 interrupt，OS 開始處理，這個程式把 CPU 讓給別人。",
+     "k": 5,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1456.4
+     }
+    },
+    {
+     "say": "接著做 IO，disk 慢慢把 page 搬到 memory 的空 frame。",
+     "k": 6,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1463.6
+     }
+    },
+    {
+     "say": "搬完再 interrupt 一下，OS 把這個 process 放回 ready queue，等 CPU 有空。",
+     "k": 7,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1474.5
+     }
+    },
+    {
+     "say": "輪到它時從剛剛停下的地方繼續。對程式自己來說，好像一直按順序在跑，完全不知道中間發生什麼事。",
+     "k": 8,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1496.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page table 是 memory 裡的 array",
+   "scene": "cvm-25a-ptarray",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "page table 長什麼樣？它就是一個放在 main memory 裡的 array。",
+     "k": 1,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1565.7
+     }
+    },
+    {
+     "say": "第 i 個 entry 對應第 i 個 page，存它的 frame number，所以用 page number 當 index 直接查。",
+     "k": 2,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1591.7
+     }
+    },
+    {
+     "say": "page table 一定從位址 0 開始放嗎？不一定，例如從 100 開始。",
+     "k": 3,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1627.1
+     }
+    },
+    {
+     "say": "從 100 開始，要找第 5 個 entry，就去 100 + 5 = 105。",
+     "read": "從 100 開始，要找第 5 個 entry，就去 100加5等於105。",
+     "k": 4,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1655
+     }
+    },
+    {
+     "say": "起點記在哪？記在 page table register，它告訴硬體 page table 從哪裡開始。",
+     "k": 5,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1703.7
+     }
+    },
+    {
+     "say": "page 在 memory 裡，entry 給你 frame number，還有幾個 status bit：valid、reference、dirty。",
+     "k": 6,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1716.8
+     }
+    },
+    {
+     "say": "reference 表示最近有沒有被用，dirty 表示有沒有被寫過。",
+     "k": 6,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1716.8
+     }
+    },
+    {
+     "say": "不在 memory 的，entry 指到 disk 上的 swap area，這時就是 page fault，程式要等 OS 處理。",
+     "k": 7,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1738.4
+     }
+    },
+    {
+     "say": "整理一下：page number 經過 page table 翻譯，page offset 直接往下抄。",
+     "k": 8,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1776.6
+     }
+    },
+    {
+     "say": "例如 page number 38，table 從 0 開始放就在 38；從 100 開始，就在 100 + 38 = 138。",
+     "read": "例如 page number 38，table 從 0 開始放就在 38；從 100 開始，就在 100加38等於138。",
+     "k": 9,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1797.3
+     }
+    },
+    {
+     "say": "拿到的 frame number 當 physical address 的 high-order bits，接上不變的 offset 就完成了。",
+     "k": 10,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1835.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page fault：硬體偵測、OS 處理",
+   "scene": "cvm-25a-fault",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "再仔細看 page fault：查 page table 發現這個 page 不在 main memory。",
+     "k": 1,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2142.2
+     }
+    },
+    {
+     "say": "penalty 很大。硬體可以偵測到 valid 是 0，但沒辦法自己修好。",
+     "k": 2,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2188.6
+     }
+    },
+    {
+     "say": "對照 cache：cache miss 只要幾個 cycle，硬體很快就修好了。",
+     "k": 3,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2194.7
+     }
+    },
+    {
+     "say": "page fault 要交給 OS 處理。OS 跑幾千、幾萬個 cycle，比起 disk 的幾百萬個很小，而且軟體能做聰明的決定。",
+     "k": 4,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2206.7
+     }
+    },
+    {
+     "say": "發生 page fault 的 process 會被 context switch，CPU 換人用。",
+     "k": 5,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2243.5
+     }
+    },
+    {
+     "say": "OS 處理時，如果 main memory 還有空 frame，就直接搬進來，剛開始跑時常常是這樣。",
+     "k": 6,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2294.4
+     }
+    },
+    {
+     "say": "如果滿了，就要 replace 一個 page；被換掉的如果改過，要先寫回 disk。",
+     "k": 7,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2319.7
+     }
+    },
+    {
+     "say": "然後把要的 page 讀進來、update page table，讓程式 resume。",
+     "k": 8,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2329.1
+     }
+    },
+    {
+     "say": "OS 一開始就要替整個 virtual address space 在 disk 上建好 swap space，每個 page 在 disk 上都有位置。",
+     "k": 9,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2359.6
+     }
+    },
+    {
+     "say": "OS 還要有資料結構記錄：哪個 page 在 disk 哪裡、在哪個 frame、什麼時候被用過，才能決定換誰。",
+     "k": 10,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2391.1
+     }
+    },
+    {
+     "say": "決定好、設定好之後，真正的 IO 不用 OS 盯著，disk 自己搬，搬完再 interrupt CPU。",
+     "k": 11,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2436
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page replacement 與 write back",
+   "scene": "cvm-25a-replace",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "再來是 replacement。direct map 只有一個固定位置，來了就換掉原本的；fully associative 滿了就得決定誰出去。",
+     "k": 1,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2492.5
+     }
+    },
+    {
+     "say": "例如 1024 個 frame 全滿，新的 page 要進來，該請誰出去？",
+     "k": 2,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2508.6
+     }
+    },
+    {
+     "say": "靠 temporal locality：最近用過的待會很可能再用，所以把最久沒用的搬出去，這叫 LRU，least recently used。",
+     "k": 3,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2539
+     }
+    },
+    {
+     "say": "純 LRU 要一直記誰最近用、誰最久沒用，太複雜。所以改用 reference bit，也叫 use bit。",
+     "k": 4,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2556.5
+     }
+    },
+    {
+     "say": "page 只要被用到，reference bit 就設成 1。",
+     "k": 5,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2575.2
+     }
+    },
+    {
+     "say": "OS 要換 page 時，就找 reference bit 是 0 的，代表最近沒被用。",
+     "k": 6,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2584.8
+     }
+    },
+    {
+     "say": "老師的例子：先全部清 0，這段期間 16 個 page 有 10 個被用到變 1，剩 6 個是 0，就從這 6 個挑一個換掉。",
+     "k": 7,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2596.9
+     }
+    },
+    {
+     "say": "但不能用過一次就永遠算最近用過，所以每隔一段時間全部清回 0，這樣就近似 LRU。",
+     "k": 8,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2628
+     }
+    },
+    {
+     "say": "那 write 呢？write through 是每次寫都同步寫下層，write back 是換出去時才寫回。",
+     "k": 9,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2644.7
+     }
+    },
+    {
+     "say": "virtual memory 不可能 write through，每寫一次就寫 disk，要上百萬 cycle。所以一定是 write back。",
+     "k": 10,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2654.6
+     }
+    },
+    {
+     "say": "write back 要配 dirty bit，記錄 page 有沒有被改過。沒改過就跟 disk 上一模一樣，換出去不用寫回。",
+     "k": 11,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2666.6
+     }
+    },
+    {
+     "say": "dirty bit 放在 page table entry 裡，被改過的 page 被 replace 時，要多做一次寫回。",
+     "k": 12,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2688.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page table 帶來的兩個麻煩",
+   "scene": "cvm-25a-ptbig",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "四個問題都答完了，可是 page table 本身帶來麻煩。同時有好幾個程式在跑，每個都有自己的一張 page table。",
+     "k": 1,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2077
+     }
+    },
+    {
+     "say": "因為 fully associative，每個 page 都要一個 entry：1024 個 page 就要 1024 個 entry。",
+     "k": 2,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2097.2
+     }
+    },
+    {
+     "say": "virtual space 很大，page 就很多，page table 也跟著變很大。",
+     "k": 3,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2112.2
+     }
+    },
+    {
+     "say": "所以有兩個問題：一是 page table 太大，二是每次存取要兩倍的 memory access。一個一個來解。",
+     "k": 4,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2128.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page table 有多大：4 MiB 與 bound register",
+   "scene": "cvm-25a-huge",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "先看太大。每個 virtual page 都要一格：cache 靠比 tag 不必每個 block 一格，查表法就得每個 page 一格。",
+     "k": 3,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2764.3
+     }
+    },
+    {
+     "say": "算算看：32-bit virtual address，page 4 KiB 是 2¹² bytes，offset 用掉 12 個 bit。",
+     "read": "算算看：32-bit virtual address，page 4 K byte 是 2的12次方 bytes，offset 用掉 12 個 bit。",
+     "k": 4,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2809
+     }
+    },
+    {
+     "say": "剩下 32 − 12 = 20 個 bit 是 page number，所以有 2²⁰ 個 entry。",
+     "read": "剩下 32減12等於20 個 bit 是 page number，所以有 2的20次方 個 entry。",
+     "k": 5,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2824.9
+     }
+    },
+    {
+     "say": "每個 entry 4 bytes，2²⁰ × 4 = 4 MiB。",
+     "read": "每個 entry 4 bytes，2的20次方乘4等於4 MB。",
+     "k": 6,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2827.4
+     }
+    },
+    {
+     "say": "好多程式同時在跑，每人一張 4 MiB 的表，memory 被吃掉一大塊。",
+     "read": "好多程式同時在跑，每人一張 4 MB 的表，memory 被吃掉一大塊。",
+     "k": 7,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2840
+     }
+    },
+    {
+     "say": "其實 page table 也有 locality：同一段時間只用某一塊 virtual space，不需要整張都放著。",
+     "k": 8,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2858.6
+     }
+    },
+    {
+     "say": "第一個方法：用 bound register 限制 table size。程式跑時 dynamic data 和 stack 一直長，table 也跟著長。",
+     "k": 9,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2889
+     }
+    },
+    {
+     "say": "例如現在只用到 100 個 entry，limit 就設 100，用更多再加。",
+     "k": 10,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2927.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "兩個 limit register：stack 和 heap 從兩端長",
+   "scene": "cvm-25b-limit",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "黃老師第二講再補充 bound register：用到第 10、15、18 個 entry，就用多少給多少，limit 慢慢往上漲。",
+     "k": 7,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 579.4
+     }
+    },
+    {
+     "say": "但 memory 其實是從兩端長過來的：stack 從高位址往下長，dynamic data 從低位址往上長。",
+     "k": 8,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 601.9
+     }
+    },
+    {
+     "say": "所以用兩個 limit register 比較合理，一個管往上長的，一個管往下長的。",
+     "k": 9,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 618.9
+     }
+    },
+    {
+     "say": "其他方法還有兩個：把 page table 本身再分頁，也就是 multi-level page table，或用 hashing。",
+     "k": 10,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 638.3
+     }
+    },
+    {
+     "say": "limit 的意思是：設 30，30 以下合法、以上不合法，需要時再往上長。",
+     "k": 11,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 653.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Hashing：inverted page table",
+   "scene": "cvm-25b-hash",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "先看 hashing。資料結構學過 hash table，還記得嗎？",
+     "k": 1,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 697.9
+     }
+    },
+    {
+     "say": "例如值的範圍是 1 到一千，但真正出現的只有 100 個。",
+     "k": 2,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 725.9
+     }
+    },
+    {
+     "say": "用 array 直接 index 就要開一千格，大多空著，就跟 page table 一樣浪費。",
+     "k": 3,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 765.2
+     }
+    },
+    {
+     "say": "只挖 100 個洞，用 hash function，例如 mod 100：101 除以 100 餘 1，就放第 1 格。",
+     "k": 4,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 788.8
+     }
+    },
+    {
+     "say": "page table 也一樣：virtual 有 1024 個 page，frame 只有 100 個，任何時刻最多 100 個 page 在 memory。",
+     "k": 5,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 828.7
+     }
+    },
+    {
+     "say": "所以照 frame 數只建 100 個 entry，用 hash function 把 page number map 進這張表。",
+     "k": 6,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 866
+     }
+    },
+    {
+     "say": "1024 個擠 100 格，一定 collision，所以每個 entry 要記是哪個 page number、對應哪個 frame。",
+     "k": 7,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 883
+     }
+    },
+    {
+     "say": "這張表只要跟 frame 數一樣大就夠了。",
+     "k": 8,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 897.4
+     }
+    },
+    {
+     "say": "衝突怎麼辦？用 chaining 串成 linked list，或 linear probing 往下一格找，比對 page number，不對就繼續找。",
+     "k": 9,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 935.8
+     }
+    },
+    {
+     "say": "課本數字：28-bit virtual address、4K page，page number 是 28 − 12 = 16 bits，64K 個 page。",
+     "read": "課本數字：28-bit virtual address、4K page，page number 是 28減12等於16 bits，64K 個 page。",
+     "k": 10,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1018.9
+     }
+    },
+    {
+     "say": "physical 只有 16K 個 frame，page 數是 frame 數的 4 倍。",
+     "k": 10,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1018.9
+     }
+    },
+    {
+     "say": "一般 page table 要 64K 個 entry；用 inverted page table，依 frame 數建，只要 16K 個。",
+     "k": 11,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1067.4
+     }
+    },
+    {
+     "say": "沒有直接 index 了，那去哪格找？靠 hash function 算出位置。記住：inverted page table 的大小跟 frame 數成正比。",
+     "k": 12,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1085
+     }
+    }
+   ]
+  },
+  {
+   "title": "Two-level page table：用到才展開",
+   "scene": "cvm-25b-twolevel",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "再來是 two-level page table。page number 有 2²⁰ 個，全展開就要 2²⁰ 個 entry。",
+     "read": "再來是 two-level page table。page number 有 2的20次方 個，全展開就要 2的20次方 個 entry。",
+     "k": 1,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1127.2
+     }
+    },
+    {
+     "say": "把 page number 再切兩份：前面那份是第一層，指到某一大塊。",
+     "k": 2,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1152.5
+     }
+    },
+    {
+     "say": "每一大塊裡又有 2¹⁰ 個 entry，由後面那份來選。",
+     "read": "每一大塊裡又有 2的10次方 個 entry，由後面那份來選。",
+     "k": 3,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1179.3
+     }
+    },
+    {
+     "say": "所以是兩層：高層先選哪一大塊，再到低一層的 table 用 index 找到真正的 entry。",
+     "k": 4,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1192.8
+     }
+    },
+    {
+     "say": "關鍵是：有用到的那塊才展開第二層，沒用到的不配置。只用 2 塊的話，大約 2¹⁰ + 2 × 2¹⁰ 個 entry，比 2²⁰ 小太多。",
+     "read": "關鍵是：有用到的那塊才展開第二層，沒用到的不配置。只用 2 塊的話，大約 2的10次方加2乘2的10次方 個 entry，比 2的20次方 小太多。",
+     "k": 5,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1232.4
+     }
+    },
+    {
+     "say": "老師再用小例子講一次：page number 只有 4 bits，開頭 00、01、10、11 各一塊。",
+     "read": "老師再用小例子講一次：page number 只有 4 bits，開頭 零零、零一、一零、一一 各一塊。",
+     "k": 6,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1268.9
+     }
+    },
+    {
+     "say": "第一層只要 4 個 entry；全部展開則是 16 個。",
+     "k": 7,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1304.7
+     }
+    },
+    {
+     "say": "00 有用到，展開；01 有用到，也展開。",
+     "read": "零零 有用到，展開；零一 有用到，也展開。",
+     "k": 8,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1328.4
+     }
+    },
+    {
+     "say": "10、11 沒用到，第二層就不用 allocate。",
+     "read": "一零、一一 沒用到，第二層就不用 allocate。",
+     "k": 9,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1338.8
+     }
+    },
+    {
+     "say": "第一層記每塊有沒有用到：1 代表展開了，0 代表沒用到。",
+     "k": 10,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1348
+     }
+    },
+    {
+     "say": "所以只要 4 + 2 × 4 = 12 個 entry，比 16 個少。",
+     "read": "所以只要 4加2乘4等於12 個 entry，比 16 個少。",
+     "k": 11,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1373
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page table 太慢：每次要兩次 memory reference",
+   "scene": "cvm-25a-twice",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "解決了太大，再來解決太慢。page table 放在哪？放在 memory 裡。",
+     "k": 1,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1904.9
+     }
+    },
+    {
+     "say": "所以每次要用一個 virtual address，都要先到 memory 裡查 page table。",
+     "k": 2,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1914.7
+     }
+    },
+    {
+     "say": "拿到 physical address 還要再去 memory 拿資料，所以每次存取要 2 次 memory reference。",
+     "k": 3,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1945.2
+     }
+    },
+    {
+     "say": "memory 本來就慢到要加 cache 了，現在還要兩次，當然不能接受。",
+     "k": 4,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1968.8
+     }
+    },
+    {
+     "say": "你想想看：page 很大，裡面每個 address 翻譯時用的都是同一個 entry。",
+     "k": 5,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 1996.8
+     }
+    },
+    {
+     "say": "常用的 entry 何必放在 memory？放到 CPU 旁邊，馬上就能翻譯。",
+     "k": 6,
+     "src": {
+      "v": "JqxIZlm23R8",
+      "t": 2014.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "TLB：translation 的 cache",
+   "scene": "cvm-25b-tlb",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "這個放在 CPU 旁邊的東西，全名叫 translation look-aside buffer，TLB。",
+     "k": 1,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1397.6
+     }
+    },
+    {
+     "say": "回顧一下：page table 在 main memory，每次翻譯都要去那拿 entry。",
+     "k": 2,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1415.6
+     }
+    },
+    {
+     "say": "可是 page 很大，1024、2048 個 byte，用到這個 address，下一個多半在同一個 page，用同一個 translation。",
+     "k": 3,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1431.1
+     }
+    },
+    {
+     "say": "那就把這個 entry 搬到 CPU 旁邊，緊緊靠著 CPU。",
+     "k": 4,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1445.9
+     }
+    },
+    {
+     "say": "最早真的只有一個 entry 的 buffer，就已經省掉很多事。",
+     "k": 5,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1454.8
+     }
+    },
+    {
+     "say": "例如連續存取 0100、0101，每個都要翻譯，查的都是同一個 entry。",
+     "read": "例如連續存取 零一零零、零一零一，每個都要翻譯，查的都是同一個 entry。",
+     "k": 6,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1474.3
+     }
+    },
+    {
+     "say": "這就是 cache 的觀念：常用的東西放靠近 CPU。專門放 translation 的 buffer，就是 TLB。",
+     "k": 7,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1496.4
+     }
+    },
+    {
+     "say": "沒有 TLB，每次 memory operation 要兩次：一次讀 page table entry，一次真正存取。",
+     "k": 8,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1510.8
+     }
+    },
+    {
+     "say": "TLB 是硬體做的，OS 是軟體，做不到這麼快。",
+     "k": 9,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1556.3
+     }
+    },
+    {
+     "say": "後來硬體越來越便宜，TLB 不只一個 entry，而是放好幾個，組織得像一個 cache。",
+     "k": 10,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1571.3
+     }
+    },
+    {
+     "say": "每次翻譯先查 TLB，在的話直接拿 physical address 去 main memory。",
+     "k": 11,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1631.9
+     }
+    },
+    {
+     "say": "TLB miss 才去 main memory 查 page table，再去拿東西。",
+     "k": 12,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1649
+     }
+    }
+   ]
+  },
+  {
+   "title": "TLB 細節：MMU、miss rate、dirty bit、兩種 miss",
+   "scene": "cvm-25b-tlbmore",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "TLB hit 時根本不用碰 page table，memory reference 只剩拿資料那一次。",
+     "k": 2,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1682.7
+     }
+    },
+    {
+     "say": "TLB miss 時，還是要去 memory 的 page table 找，再去 physical address。",
+     "k": 3,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1692.3
+     }
+    },
+    {
+     "say": "main memory 被分成很多塊：一塊放 page table，其他是各個 process 的 frame。",
+     "k": 4,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1709.3
+     }
+    },
+    {
+     "say": "TLB 通常在 memory management unit，MMU 裡面，在 CPU 這一端，不在 DRAM 那一端。",
+     "k": 5,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1731.6
+     }
+    },
+    {
+     "say": "TLB 可以組織成 fully associative，也可以是 set associative。",
+     "k": 6,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1752.2
+     }
+    },
+    {
+     "say": "TLB 的 miss rate 只有 0.01% 到 1%，因為 page 很大，locality 非常高。",
+     "k": 7,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1759.2
+     }
+    },
+    {
+     "say": "TLB miss 可以用硬體處理，比較複雜；也可以 interrupt 跳到 OS，用軟體處理。",
+     "k": 8,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1775
+     }
+    },
+    {
+     "say": "TLB hit 時如果是 read 就沒事；如果是 write 呢？別忘了 dirty bit。",
+     "k": 9,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1789.3
+     }
+    },
+    {
+     "say": "TLB entry 只是 page table 的 copy，不可能每寫一次就改 memory 裡的 page table。",
+     "k": 10,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1797.6
+     }
+    },
+    {
+     "say": "所以 dirty bit 先記在 TLB 這邊。",
+     "k": 10,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1797.6
+     }
+    },
+    {
+     "say": "等這個 TLB entry 被換掉，才把 dirty 資訊寫回 page table。",
+     "k": 11,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1829.6
+     }
+    },
+    {
+     "say": "TLB miss 有兩種。第一種：page 在 main memory，只是 translation 沒放上 TLB，從 page table 搬上來就好。",
+     "k": 12,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1861
+     }
+    },
+    {
+     "say": "第二種：page 根本不在 memory，page table 沒有有效的 translation，TLB 更不會有，這是 page fault。",
+     "k": 13,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1874.6
+     }
+    },
+    {
+     "say": "層次要分清楚：TLB 是 page table 的一小部分，不在 page table 的一定不在 TLB。",
+     "k": 14,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1922.5
+     }
+    },
+    {
+     "say": "所以 TLB miss 不等於 page fault，大多只是從 page table 補上來而已。",
+     "k": 14,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1922.5
+     }
+    },
+    {
+     "say": "整理：page table 太大，用 limit、hashing、multi-level；存取太慢，用 TLB。",
+     "k": 15,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 1958
+     }
+    }
+   ]
+  },
+  {
+   "title": "TLB 加 cache：最好一次 memory access 都不用",
+   "scene": "cvm-25b-tlbcache",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "翻譯完拿到 physical address，真的要去 memory 拿嗎？不一定，上面還有 cache。",
+     "k": 1,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2015.5
+     }
+    },
+    {
+     "say": "TLB 跟 cache，其實都是為了加速。",
+     "k": 2,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2033
+     }
+    },
+    {
+     "say": "什麼都沒有的話：先到 memory 的 page table 翻譯，再去 memory 拿資料，共兩次。",
+     "k": 3,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2038
+     }
+    },
+    {
+     "say": "有 TLB：翻譯先查 TLB，有的話馬上得到 physical address。",
+     "k": 4,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2049.5
+     }
+    },
+    {
+     "say": "有 cache：拿到 physical address 先查 cache，有的話就不用去 memory。",
+     "k": 5,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2061
+     }
+    },
+    {
+     "say": "所以最好的情況：TLB 翻好、資料又在 cache，一次 memory access 都不用。",
+     "k": 6,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2071.7
+     }
+    },
+    {
+     "say": "看流程：CPU 發出 virtual address，先查 TLB，hit 得到 physical address；再查 cache，hit 就給 CPU。",
+     "k": 7,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2115.3
+     }
+    },
+    {
+     "say": "差一點的：TLB miss，要去 memory 翻譯，拿到 physical address 再查 cache。",
+     "k": 8,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2143.5
+     }
+    },
+    {
+     "say": "不管 TLB hit 或 miss，拿到 physical address 都去 cache 找；不在就是 cache miss，要去 memory 搬。",
+     "k": 9,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2170.9
+     }
+    },
+    {
+     "say": "以上都還沒有 page fault，東西都在 main memory。而且流程是 sequential 的：先翻譯完，才查 cache。",
+     "k": 10,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2184.4
+     }
+    },
+    {
+     "say": "接起來看：virtual page number 送進 TLB，它在 CPU 旁、只有幾個 entry，很快給出 physical page number。",
+     "k": 11,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2220.3
+     }
+    },
+    {
+     "say": "physical page number 加上 page offset，就是 physical address。",
+     "k": 12,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2243.4
+     }
+    },
+    {
+     "say": "再用 physical address 查 cache：後半段當 index，最前面當 tag，direct map 或 set associative 都行。",
+     "k": 13,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2252
+     }
+    },
+    {
+     "say": "最快的路就是：TLB 把 virtual 轉 physical，再用 physical 查 cache。",
+     "k": 14,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2274.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "流程圖：read、write 與 protection",
+   "scene": "cvm-25b-flow",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "看流程圖：先做 TLB access，判斷 hit 還是 miss。",
+     "k": 1,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2306.7
+     }
+    },
+    {
+     "say": "TLB hit 之後，看是不是 write；不是的話就是 read，去 access cache。",
+     "k": 2,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2317.4
+     }
+    },
+    {
+     "say": "cache hit，資料給 CPU；cache miss，CPU 要 stall。",
+     "k": 3,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2320.7
+     }
+    },
+    {
+     "say": "cache miss 用硬體處理，CPU 只是停下來等幾個 cycle，不放棄 CPU。交給 OS 要跑很多指令，反而更慢。",
+     "k": 4,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2338.2
+     }
+    },
+    {
+     "say": "如果是 write，先檢查有沒有 write access，也就是寫入權限。",
+     "k": 5,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2363.4
+     }
+    },
+    {
+     "say": "沒權限就是 write protection exception，OS 中斷你，不准寫這裡。",
+     "k": 6,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2368.3
+     }
+    },
+    {
+     "say": "有權限才去 cache：hit 就寫進去，順便把 dirty 等 bit 設好；miss 就照 cache miss 處理。",
+     "k": 7,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2376.7
+     }
+    },
+    {
+     "say": "整個目標：大部分時候都走 TLB hit、cache hit 這條路，完全不碰 main memory。",
+     "k": 8,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2389.1
+     }
+    },
+    {
+     "say": "只在 TLB 跟 cache 之間走，一兩個 cycle 就完成；要到 memory 就要更多 cycle。",
+     "k": 9,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2428.7
+     }
+    },
+    {
+     "say": "連 memory 都沒有就是 page fault，上百萬 cycle，交給 OS，多花幾萬 cycle 也沒關係。",
+     "k": 10,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2439.5
+     }
+    },
+    {
+     "say": "分清楚：cache miss 是硬體處理、CPU stall；page fault 是軟體處理、context switch，因為 penalty 差太多。",
+     "k": 11,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2476.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "TLB、page table、cache：哪些組合可能發生",
+   "scene": "cvm-25b-combos",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "老師在課堂上逐一點名問：TLB、page table、cache 各自 hit 或 miss，哪些組合可能發生？",
+     "k": 1,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2491.5
+     }
+    },
+    {
+     "say": "TLB hit、page table hit、cache miss：可能。翻譯在 TLB，資料不在 cache。",
+     "k": 2,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2523.4
+     }
+    },
+    {
+     "say": "注意，TLB hit 時其實根本不會去查 page table。",
+     "k": 2,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2523.4
+     }
+    },
+    {
+     "say": "TLB miss、page table hit、cache hit：可能。entry 還沒搬上 TLB，但資料可能已經在 cache 了。",
+     "k": 3,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2566.2
+     }
+    },
+    {
+     "say": "TLB miss、page table hit、cache miss：可能。在 page table 找到翻譯，但資料還沒進 cache。",
+     "k": 4,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2614.7
+     }
+    },
+    {
+     "say": "三個都 miss：可能，但很花時間。page table 沒有，表示 page 不在 main memory，就是 page fault。",
+     "k": 5,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2636.5
+     }
+    },
+    {
+     "say": "TLB hit、page table miss：不可能。TLB 只是 page table 常用的一小部分，page table 都沒有，TLB 怎麼會有？",
+     "k": 6,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2701.1
+     }
+    },
+    {
+     "say": "所以不管 cache 是 hit 還是 miss，只要 TLB hit、page table miss，都不可能。",
+     "k": 7,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2753.5
+     }
+    },
+    {
+     "say": "TLB miss、page table miss、cache hit：也不可能。page fault 代表不在 memory，怎麼可能在 cache？",
+     "k": 8,
+     "src": {
+      "v": "CDpUW5B9EbA",
+      "t": 2818
+     }
+    }
+   ]
+  },
+  {
+   "title": "Cache 用 physical address，所以要排隊",
+   "scene": "cvm-26a-recap",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "第三講開頭老師先複習：正常要兩次 memory access，靠 TLB 和 cache，最好一次都不用。",
+     "k": 10,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 242.4
+     }
+    },
+    {
+     "say": "那 cache 用的是什麼 address？physical address。process 很多，physical 只有一份，所以它才 unique。",
+     "k": 11,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 275.6
+     }
+    },
+    {
+     "say": "所以要先翻譯才能查 cache：TLB hit 直接拿到 physical address，miss 要去 memory 找，這是 sequential 的。",
+     "k": 12,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 309.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "Virtually addressed cache：快，但有兩個問題",
+   "scene": "cvm-26a-vcache",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "先翻譯再查 cache，時間拉長了。有沒有可能兩件事同時做？",
+     "k": 1,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 347.6
+     }
+    },
+    {
+     "say": "要同時做，cache 就得直接用 virtual address，裡面擺的就是 virtual address。",
+     "k": 2,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 374.1
+     }
+    },
+    {
+     "say": "直接拿 virtual address 去 cache 找，hit 就結束，完全不用翻譯。",
+     "k": 3,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 388.5
+     }
+    },
+    {
+     "say": "只有 miss 時，才翻成 physical address，去 main memory 把東西搬進 cache。",
+     "k": 4,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 399.2
+     }
+    },
+    {
+     "say": "這樣可以同時做。但天下有這麼容易的事嗎？沒有。",
+     "k": 5,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 440
+     }
+    },
+    {
+     "say": "第一個問題：cache 是共用的。multiprogramming 下，好幾個 process 輪流在同一個 CPU 上跑，共用同一個 cache。",
+     "k": 6,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 470.4
+     }
+    },
+    {
+     "say": "你說第 8 號 address，他也說第 8 號，但各有自己的 address space，不是同一個 data，不再 unique。",
+     "k": 7,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 496.4
+     }
+    },
+    {
+     "say": "解法：每個 process 有一個 process ID，把 ID 加進 tag，又變 unique 了。",
+     "k": 8,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 531.8
+     }
+    },
+    {
+     "say": "第二個問題：physical address 可能被 share，兩個 process 用不同的 virtual address 指到同一個位置。",
+     "k": 9,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 568.8
+     }
+    },
+    {
+     "say": "這樣 cache 裡同一個位置就有兩份 copy，改一份另一份也要改，維持一致性要很多硬體。",
+     "k": 10,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 602.6
+     }
+    },
+    {
+     "say": "所以 virtually addressed cache 好處是能同時做，代價是很多硬體。",
+     "k": 11,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 628.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Virtually indexed, physically tagged",
+   "scene": "cvm-26a-vipt",
+   "steps": 19,
+   "lines": [
+    {
+     "say": "另一個做法稍微變化一下，叫 virtually indexed, physically tagged。",
+     "k": 1,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 648.4
+     }
+    },
+    {
+     "say": "cache 的 tag 還是用 physical address，它是 unique，不會有不同名字、同一位置的問題。",
+     "k": 2,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 667.2
+     }
+    },
+    {
+     "say": "看 translation：TLB 把 page number 換成 frame number，page offset 不會變。",
+     "k": 3,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 695.6
+     }
+    },
+    {
+     "say": "再看 cache 的地址：最後幾個 bit 是 block offset。老師的例子 block 4 bytes，最後 2 個 bit 不用理。",
+     "k": 4,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 733.8
+     }
+    },
+    {
+     "say": "index 我們用 10 bits 當示意。",
+     "k": 4,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 733.8
+     }
+    },
+    {
+     "say": "block number 的 low-order bits 當 index，剩下的高位就是 tag，用來分辨 map 到同一格的人。",
+     "k": 5,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 759.9
+     }
+    },
+    {
+     "say": "如果 index 用到會被翻譯改掉的 bits，拿 virtual address 去 index 就不對，只能等翻譯完。",
+     "k": 6,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 784.9
+     }
+    },
+    {
+     "say": "換個角度看 32 bits 的位址：翻譯會改變的，只有前面 frame number 那一段。",
+     "k": 7,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 861.5
+     }
+    },
+    {
+     "say": "還沒翻譯就不知道 physical address，只能先翻再查，sequential，很慢。",
+     "k": 8,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 966.2
+     }
+    },
+    {
+     "say": "翻譯時變的只有前面那一小塊，page offset 完全不變。",
+     "k": 9,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1000.6
+     }
+    },
+    {
+     "say": "所以只要 page 夠大，cache 的 index 加 block offset 就完全落在 page offset 裡。",
+     "k": 10,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1017.3
+     }
+    },
+    {
+     "say": "像這裡 2 + 10 = 12，不超過 page offset 的 12 bits。",
+     "read": "像這裡 2加10等於12，不超過 page offset 的 12 bits。",
+     "k": 10,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1017.3
+     }
+    },
+    {
+     "say": "這幾個 bit 在 virtual 跟 physical 是一樣的，所以能直接拿 virtual address 的這幾個 bit 去查 cache。",
+     "k": 11,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1050.1
+     }
+    },
+    {
+     "say": "cache 讀出 tag 要一點時間，同一時間 TLB 也在翻譯。",
+     "k": 12,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1059.8
+     }
+    },
+    {
+     "say": "等 tag 讀出來，翻譯也好了，馬上比對，沒有浪費時間。cache access 跟翻譯同步進行。",
+     "k": 13,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1079.6
+     }
+    },
+    {
+     "say": "index 跟 virtual address 一樣，所以叫 virtually indexed。",
+     "k": 14,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1137.7
+     }
+    },
+    {
+     "say": "tag 卻是 physical address，所以叫 physically tagged。",
+     "k": 14,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1137.7
+     }
+    },
+    {
+     "say": "流程：virtual address 的 page offset 拿去當 index 讀 cache，page number 同時送進 TLB 翻譯。",
+     "k": 15,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1179.6
+     }
+    },
+    {
+     "say": "TLB 翻出來的 physical tag，跟 cache 讀出來的 tag 比對，一樣而且 valid 就是 hit，資料送給 CPU。",
+     "k": 16,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1202.4
+     }
+    },
+    {
+     "say": "如果 cache 沒有、但 TLB hit，只要一次 memory access 把 block 拿進來。",
+     "k": 17,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1254.8
+     }
+    },
+    {
+     "say": "如果 TLB 也 miss，要先去 page table 拿 entry，再去拿 block，共兩次 memory access。",
+     "k": 18,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1274.9
+     }
+    },
+    {
+     "say": "條件記住：index 加 block offset 的 bit 數，要小於等於 page offset 的 bit 數，也就是 page 要夠大。",
+     "k": 19,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1295.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Memory protection：kernel mode 與 system call",
+   "scene": "cvm-26a-protect",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "再來是 memory protection：很多 process 共用同一塊 memory，我的 data 會不會被別人改掉？",
+     "k": 1,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1322.8
+     }
+    },
+    {
+     "say": "每個 task 都有自己的 virtual address，但用的是同一塊 physical memory，所以要保護。",
+     "k": 2,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1339.9
+     }
+    },
+    {
+     "say": "保護靠 OS。有些事 user program 不能做，例如看 page table、設定 translation，你碰不到別人的 page table。",
+     "k": 3,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1351.1
+     }
+    },
+    {
+     "say": "OS 跑在 supervisor mode，也叫 kernel mode，只有這個 mode 才能做這些事。",
+     "k": 4,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1372.9
+     }
+    },
+    {
+     "say": "所以 physical memory 雖然共用，不是任何 user program 都能碰別人的東西。",
+     "k": 5,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1387.1
+     }
+    },
+    {
+     "say": "user 要從 user mode 進 kernel mode，一定要透過 system call，這樣 user 之間就不會互相存取對方的 data。",
+     "k": 6,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1408.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "小結：page table、TLB、cache 的 index",
+   "scene": "cvm-26a-sum",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "小結一下 virtual memory：有一個 page table 做 translation。",
+     "k": 1,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1434.2
+     }
+    },
+    {
+     "say": "TLB 用來加速 translation。",
+     "k": 2,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1443
+     }
+    },
+    {
+     "say": "TLB 跟 cache 都在 memory 系統裡，最快就是 TLB hit、cache hit。",
+     "k": 3,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1458.1
+     }
+    },
+    {
+     "say": "cache 用 physical address 的 index，所以要先經過 TLB 翻譯。",
+     "k": 4,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1465.1
+     }
+    },
+    {
+     "say": "想更快：cache 直接用 virtual address；或 page 夠大時，用不變的部分當 index，只有 tag 要翻譯。",
+     "k": 5,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1473.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "共同架構：放哪裡、怎麼找",
+   "scene": "cvm-26a-place",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "最後把整個 memory hierarchy 串起來。cache、TLB、virtual memory，每一層都靠 locality。",
+     "k": 1,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1501.2
+     }
+    },
+    {
+     "say": "每一層都要答同樣四個問題，唸書時照這四個問題去比較，最清楚。",
+     "k": 2,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1516.1
+     }
+    },
+    {
+     "say": "第一個是 block placement：block 可以放哪？放法不同，找法也不同。",
+     "k": 3,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1519.9
+     }
+    },
+    {
+     "say": "direct map 用 set associative 的角度看，就是每個 set 只有 1 個 entry，one-way。index 算出來只有一個位置。",
+     "k": 4,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1572.9
+     }
+    },
+    {
+     "say": "n-way set associative：index 選出 set，2-way 的 set 有兩個位置，4-way 有四個，選哪個都行，比較不用搶。",
+     "k": 5,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1604.7
+     }
+    },
+    {
+     "say": "fully associative：整個 cache 只有一個 set，裡面 N 個位置，放哪都行。",
+     "k": 6,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1654.2
+     }
+    },
+    {
+     "say": "associativity 越高，miss rate 越低，但好處越來越小；複雜度、成本、access time 都會增加。",
+     "k": 7,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1665.8
+     }
+    },
+    {
+     "say": "第二個問題：怎麼找？direct map 只有一個位置，比一次 tag 就知道。",
+     "k": 8,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1688.7
+     }
+    },
+    {
+     "say": "n-way 的 set 有 n 個人，要 n 個 tag 同時比，n 越大硬體越多。",
+     "k": 9,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1705.1
+     }
+    },
+    {
+     "say": "fully associative 的 cache，例如 1024 個 entry，就要 1024 個 tag 同時比。",
+     "k": 10,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1737.2
+     }
+    },
+    {
+     "say": "virtual memory 也是 fully associative，但它建一張完整的 page table，用 page number 直接 index。",
+     "k": 11,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1761.2
+     }
+    },
+    {
+     "say": "virtual memory 查表要多一次 memory access，但 fully associative 讓 miss rate 降低，有空位就能放。",
+     "k": 12,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1855
+     }
+    }
+   ]
+  },
+  {
+   "title": "共同架構：誰出去、怎麼寫",
+   "scene": "cvm-26a-repwrite",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "第三個問題 replacement：direct map 只有一個位置，我來你就走，沒得選；set 和 fully associative 才要選。",
+     "k": 1,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1889.8
+     }
+    },
+    {
+     "say": "例如 4-way，四個位置坐滿了，新的人進來，誰出去？",
+     "k": 2,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1901.4
+     }
+    },
+    {
+     "say": "照 temporal locality，很久沒用的以後也最可能不用，所以把 LRU 那個搬出去。",
+     "k": 3,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1913.5
+     }
+    },
+    {
+     "say": "way 很多時精確記 LRU 太貴，通常用近似法，像 virtual memory 的 reference bit。",
+     "k": 4,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1931.6
+     }
+    },
+    {
+     "say": "另一種是 random，隨機挑，硬體最省。",
+     "k": 5,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1983.1
+     }
+    },
+    {
+     "say": "第四個問題 write：write through 每次寫上層也同時寫下層，兩份一致，但 traffic 大增。",
+     "k": 6,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 1992.6
+     }
+    },
+    {
+     "say": "加一個 write buffer 可以減少負擔：先寫進 buffer，再慢慢寫到下層。",
+     "k": 7,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2015.6
+     }
+    },
+    {
+     "say": "write back：寫的時候不寫回，只標成 dirty，等這塊要被換掉才寫回下層。",
+     "k": 8,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2025.5
+     }
+    },
+    {
+     "say": "virtual memory 就不用說了，一定 write back，等 page 被換出去才整塊寫回。",
+     "k": 9,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2045.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Miss 的三個來源：3C",
+   "scene": "cvm-26a-3c",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "miss 從哪裡來？cache miss 跟 page fault 都有三種來源。",
+     "k": 1,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2064.6
+     }
+    },
+    {
+     "say": "第一種 compulsory miss，也叫 cold start miss：一開始誰都不在，第一次存取一定 miss。",
+     "k": 2,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2070.9
+     }
+    },
+    {
+     "say": "第二種 capacity miss：容量真的不夠。要用 100，上層只放得下 80，一定擺不下。",
+     "k": 3,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2093.8
+     }
+    },
+    {
+     "say": "virtual memory 也一樣，physical memory 有限，放不下所有 process 的 space，就有 capacity miss。",
+     "k": 4,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2119.2
+     }
+    },
+    {
+     "say": "第三種 conflict miss，也叫 collision miss。fully associative 沒這個問題，有位置就能進。",
+     "k": 5,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2139.8
+     }
+    },
+    {
+     "say": "direct map 規定你只能坐某個位置。例如 4 個 block 的 direct map，依序存取 block 0、4、0、4。",
+     "k": 6,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2151.8
+     }
+    },
+    {
+     "say": "0 跟 4 都 map 到 line 0，互相踢來踢去，結果全部 miss。",
+     "k": 6,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2151.8
+     }
+    },
+    {
+     "say": "就算 line 1 到 3 空著也不能去。換成 fully associative，只會 miss 前 2 次。",
+     "k": 6,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2151.8
+     }
+    },
+    {
+     "say": "判斷法：同一個 miss 在 fully associative 下不會發生，它就是 conflict miss。",
+     "k": 7,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2196.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "改 design 一定變快嗎",
+   "scene": "cvm-26a-tradeoff",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "知道 miss 的原因，改 design 降低 miss rate，就一定變快嗎？不一定，要看整體。",
+     "k": 1,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2212.7
+     }
+    },
+    {
+     "say": "cache 變大，capacity miss 降低；但 cache 越大越慢，access time 增加。",
+     "k": 2,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2243.5
+     }
+    },
+    {
+     "say": "associativity 增加，例如 2-way 變 4-way，conflict miss 降低；但 access time 也增加。",
+     "k": 3,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2268.8
+     }
+    },
+    {
+     "say": "block size 變大，附近的資料一起搬進來，利用 spatial locality，miss rate 下降。",
+     "k": 4,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2289.3
+     }
+    },
+    {
+     "say": "可是 block 一大，每次搬的東西多，miss penalty 就增加了。",
+     "k": 5,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2319.2
+     }
+    },
+    {
+     "say": "還記得那張圖嗎？cache size 固定，block size 一直變大，miss rate 先下降，後來反而上升。為什麼？",
+     "k": 6,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2331
+     }
+    },
+    {
+     "say": "因為 block 越大，block 數越少。16 KiB 的 cache，16 byte 的 block 有 1024 個，1 KiB 的只剩 16 個。",
+     "read": "因為 block 越大，block 數越少。16 K byte 的 cache，16 byte 的 block 有 1024 個，1 K byte 的只剩 16 個。",
+     "k": 7,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2398.4
+     }
+    },
+    {
+     "say": "格子變少，更多人 map 到同一個位置，conflict 就多了。",
+     "k": 7,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2398.4
+     }
+    },
+    {
+     "say": "一些趨勢：synchronous SRAM 可以送出一串 burst，DRAM 也重新設計來提高頻寬。",
+     "k": 8,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2429.1
+     }
+    },
+    {
+     "say": "也可以改寫程式增加 locality。設計演算法不能只看 time complexity，資料分散的話，cache miss 會讓它變慢。",
+     "k": 9,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2440
+     }
+    },
+    {
+     "say": "還有 prefetching，先把資料抓上來，也能降低 cache miss。",
+     "k": 10,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2470.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "常犯的錯：byte address 與 word、block、page",
+   "scene": "cvm-26b-pitfall",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "接著看常犯的錯。",
+     "k": 1,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1616.2
+     }
+    },
+    {
+     "say": "byte address 跟 word address 不一樣。算 index 或 page number 前，先搞清楚 word、block、page 多大。",
+     "k": 2,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1624.8
+     }
+    },
+    {
+     "say": "我們說 2³² 個 byte，所以 32 bits 是 byte address，每個 byte 一個編號。",
+     "read": "我們說 2的32次方 個 byte，所以 32 bits 是 byte address，每個 byte 一個編號。",
+     "k": 3,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1640.6
+     }
+    },
+    {
+     "say": "一個 word 4 個 byte，最後 2 個 bit 是 word 裡的 offset，word address 就看前面 30 個 bit。",
+     "k": 4,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1649.3
+     }
+    },
+    {
+     "say": "換成 cache block：一個 block 32 個 byte，block address 有幾個 bit？",
+     "k": 5,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1713.6
+     }
+    },
+    {
+     "say": "32 是 2⁵，用掉 5 個 bit 當 offset，block address 是 32 − 5 = 27 bits。",
+     "read": "32 是 2的5次方，用掉 5 個 bit 當 offset，block address 是 32減5等於27 bits。",
+     "k": 6,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1767
+     }
+    },
+    {
+     "say": "再換成 page：4K bytes 是 4 × 1024 = 2¹²，用掉 12 個 bit。",
+     "read": "再換成 page：4K bytes 是 4乘1024等於2的12次方，用掉 12 個 bit。",
+     "k": 7,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1800.9
+     }
+    },
+    {
+     "say": "page number 就是前面 32 − 12 = 20 個 bit。",
+     "read": "page number 就是前面 32減12等於20 個 bit。",
+     "k": 8,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1832.8
+     }
+    },
+    {
+     "say": "概念完全一樣：word、block、page number，都是看 size 多大，扣掉那些 low-order bits，剩下就是它的 address。",
+     "k": 9,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1874.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "寫程式也要想到 locality：row major",
+   "scene": "cvm-26b-array",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "寫 code 的時候，千萬別忘了你有一個 memory system，要有 locality 的概念。",
+     "k": 1,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1906.6
+     }
+    },
+    {
+     "say": "一維 array 的 index 一個接一個走，locality 很好。",
+     "k": 2,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1918.3
+     }
+    },
+    {
+     "say": "二維 array 呢？memory 是一維的，要決定怎麼擺：一個 row 擺完再擺下一個叫 row major，反過來叫 column major。",
+     "k": 3,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1929.3
+     }
+    },
+    {
+     "say": "機器是 row major，你也一個 row 一個 row 走，locality 很好。",
+     "k": 4,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1986.6
+     }
+    },
+    {
+     "say": "示意一下：一個 block 放 4 個 element，走完 16 個只 miss 4 次。",
+     "k": 4,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1986.6
+     }
+    },
+    {
+     "say": "但你一個 column 一個 column 走，每次跳過一整個 row，同樣的小 cache，16 次全部 miss。",
+     "k": 5,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 2001.3
+     }
+    },
+    {
+     "say": "所以存取順序要跟資料的擺法配合，不然 cache miss 一多，速度就掉下來。",
+     "k": 6,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 2014.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Cache 的 control：為什麼要 FSM",
+   "scene": "cvm-26a-fsmintro",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "接下來看怎麼用 finite state machine 控制一個簡單的 cache。",
+     "k": 1,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2486.8
+     }
+    },
+    {
+     "say": "先回想 single cycle processor：control signal 看 opcode 就知道，加減乘除的細節藏在 funct field。",
+     "k": 2,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2497.7
+     }
+    },
+    {
+     "say": "pipeline 也一樣：control signal 在 decode 就產生，後面的 stage 才用，就一路傳下去。",
+     "k": 3,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2549.4
+     }
+    },
+    {
+     "say": "但 cache 沒有 instruction。要發什麼 control signal，取決於現在在哪個 state、收到什麼 input。",
+     "k": 4,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2585.6
+     }
+    },
+    {
+     "say": "所以用 finite state machine 來 model：某個 state 收到某些 input，就發出對應 signal，轉到下一個 state。",
+     "k": 5,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2625.2
+     }
+    },
+    {
+     "say": "例子很簡單：direct mapped、write-back；write allocate 表示 write miss 也要把 block 搬進來。",
+     "k": 6,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2653.1
+     }
+    },
+    {
+     "say": "block 4 個 word，16 bytes；cache 16K bytes，所以有 16K 除以 16，等於 1024 個 block。",
+     "k": 7,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2670.1
+     }
+    },
+    {
+     "say": "位址是 32 bits 的 byte address，每個 block 有 valid 跟 dirty bit。",
+     "k": 8,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2683.1
+     }
+    },
+    {
+     "say": "它還是 blocking cache：存取 cache 的時候，CPU 會停在那邊等。",
+     "k": 8,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2683.1
+     }
+    },
+    {
+     "say": "tag 幾個 bit？block 16 bytes 是 2⁴，最後 4 個 bit 是 block offset。",
+     "read": "tag 幾個 bit？block 16 bytes 是 2的4次方，最後 4 個 bit 是 block offset。",
+     "k": 9,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2704.8
+     }
+    },
+    {
+     "say": "往上是 block number，取 low-order bits 當 index，1024 個 block 要 10 個 bit。",
+     "k": 10,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2728.4
+     }
+    },
+    {
+     "say": "剩下 32 − 10 − 4 = 18 bits，就是 tag。",
+     "read": "剩下 32減10減4等於18 bits，就是 tag。",
+     "k": 11,
+     "src": {
+      "v": "Jtulk55Q1Ls",
+      "t": 2751
+     }
+    }
+   ]
+  },
+  {
+   "title": "Cache controller 的 input 和 output",
+   "scene": "cvm-26b-sig",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "controller 要發什麼 signal，看現在的 state 跟 input，再跳到下一個 state，所以用 FSM 來 model。",
+     "k": 1,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 330.6
+     }
+    },
+    {
+     "say": "例子就是剛剛那個 direct mapped、write back、write allocate 的 cache。",
+     "k": 2,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 349.9
+     }
+    },
+    {
+     "say": "先看 cache controller 跟 CPU、跟 memory 之間有哪些 input 和 output。",
+     "k": 3,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 365.2
+     }
+    },
+    {
+     "say": "CPU 要告訴 cache：這次是 read 還是 write。",
+     "k": 4,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 379.9
+     }
+    },
+    {
+     "say": "還要一個 valid signal：線上訊號隨時在變，CPU 把 valid 設成 1，才表示要開始存取了。",
+     "k": 5,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 384.7
+     }
+    },
+    {
+     "say": "要給 cache address，2³² 個 byte，所以 32 bits。",
+     "read": "要給 cache address，2的32次方 個 byte，所以 32 bits。",
+     "k": 6,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 408.1
+     }
+    },
+    {
+     "say": "data 也是 32 bits，因為一個 word 32 bits：write data 寫進去，read data 拿出來。",
+     "k": 7,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 414.8
+     }
+    },
+    {
+     "say": "cache 準備好了，要跟 CPU 說 ready。",
+     "k": 8,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 431.6
+     }
+    },
+    {
+     "say": "cache 也要跟 memory 溝通：miss 時要去拿，write back 的 block 被換掉時也要寫回。",
+     "k": 9,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 438.4
+     }
+    },
+    {
+     "say": "對 memory 有一組類似的 signal：read 或 write、valid，還有 32 bits 的 address。",
+     "k": 10,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 468.3
+     }
+    },
+    {
+     "say": "為什麼 data 是 128 bits？因為一次搬整個 block，4 個 word 乘 32 bits，等於 128。",
+     "k": 11,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 485.5
+     }
+    },
+    {
+     "say": "memory 讀完或寫完會送 ready，因為 memory 慢，可能要好幾個 cycle。",
+     "k": 12,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 506.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "四個 state：Idle、Compare Tag、Write-Back、Allocate",
+   "scene": "cvm-26b-fsm",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "把 controller 畫成 FSM。沒有存取時，它待在 Idle state。",
+     "k": 1,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 524.9
+     }
+    },
+    {
+     "say": "CPU 送來 valid 等於 1 的 request，就轉到 Compare Tag state 比 tag。",
+     "k": 2,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 537.8
+     }
+    },
+    {
+     "say": "比完如果 valid 而且 tag 一樣，就是 cache hit。",
+     "k": 3,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 543.7
+     }
+    },
+    {
+     "say": "沒有人存取時，每個 clock 都在 Idle 原地轉，一有 valid 才離開。",
+     "k": 4,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 562
+     }
+    },
+    {
+     "say": "在 Compare Tag 時如果是 write，要發 signal 寫入並 set dirty bit；dirty、valid、tag 存在一起，一起寫。",
+     "k": 5,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 572.9
+     }
+    },
+    {
+     "say": "hit 的話事情做完，回到 Idle。",
+     "k": 6,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 610.3
+     }
+    },
+    {
+     "say": "如果 miss，要看被換掉的舊 block 是不是 dirty。",
+     "k": 7,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 616.3
+     }
+    },
+    {
+     "say": "是 dirty 就到 Write-Back state 寫回 memory。這很久：在 memory 送回 ready 之前，一直留在這個 state。",
+     "k": 8,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 637
+     }
+    },
+    {
+     "say": "memory 說寫好了，就到 Allocate state。",
+     "k": 9,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 652.7
+     }
+    },
+    {
+     "say": "舊 block 不是 dirty 的話，不用寫回，直接跳 Allocate。",
+     "k": 10,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 670.8
+     }
+    },
+    {
+     "say": "到 Allocate 不管 read 還是 write，都要把新的 block 從 memory 讀進 cache。",
+     "k": 11,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 695.8
+     }
+    },
+    {
+     "say": "讀完回到 Compare Tag，這次 tag 一樣就 hit，再回 Idle。",
+     "k": 12,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 709.4
+     }
+    },
+    {
+     "say": "舊 block 是 dirty 又 write miss 的話，路徑是：Idle、Compare Tag、Write-Back、Allocate，",
+     "k": 12
+    },
+    {
+     "say": "再回 Compare Tag，最後回到 Idle。",
+     "k": 12
+    },
+    {
+     "say": "為什麼 write 也要 allocate？因為你只寫 block 裡一個 word，block 是一個整體，要整塊搬上來。",
+     "k": 13,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 728.3
+     }
+    },
+    {
+     "say": "這叫 write allocate；另一種 write no-allocate，只改 memory 裡那個 word。",
+     "k": 13,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 728.3
+     }
+    },
+    {
+     "say": "搬上來的是舊資料，所以回 Compare Tag 再寫一次，把 dirty 設成 1，read 跟 write 才一致。",
+     "k": 14,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 772.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "FSM 怎麼變成硬體",
+   "scene": "cvm-26b-impl",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "FSM 把 cache controller 分成這幾個 state。",
+     "k": 1,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 796.1
+     }
+    },
+    {
+     "say": "每個 state 就是一個 clock cycle 要做的事。",
+     "k": 2,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 810
+     }
+    },
+    {
+     "say": "某個 state 事情很多，clock cycle 就得等它做完；大家共用同一個 clock，其他 state 也跟著變長。",
+     "k": 3,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 817.6
+     }
+    },
+    {
+     "say": "解法：把它拆成兩個 state，各做一半，clock cycle 就能變短。",
+     "k": 4,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 836.7
+     }
+    },
+    {
+     "say": "有了 FSM，就用邏輯設計的方法合成。4 個 state 要幾個 bit？log₂ 4 = 2，兩個 flip-flop 就夠。",
+     "read": "有了 FSM，就用邏輯設計的方法合成。4 個 state 要幾個 bit？log 以2為底的 4等於2，兩個 flip-flop 就夠。",
+     "k": 5,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 851
+     }
+    },
+    {
+     "say": "這個 state register 記住 present state，算出來的 next state 再存回去。",
+     "k": 6,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 878.4
+     }
+    },
+    {
+     "say": "input 跟 present state 一起經過 combinational logic，決定發哪些 control signal、下一個 state。",
+     "k": 7,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 889.9
+     }
+    },
+    {
+     "say": "這跟 instruction 的 control 很不一樣：那邊看 opcode 就好；這邊要把所有 state 跟 input 的組合都 model 進去。",
+     "k": 8,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 917.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Cache coherence：多個 CPU 各有一份 copy",
+   "scene": "cvm-26b-coh",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "最後一個主題：平行化跟 memory hierarchy 的關係，cache coherence，只有平行時才會遇到。",
+     "k": 1,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 976.7
+     }
+    },
+    {
+     "say": "現在一顆 processor 裡有好幾個 core，每個 core 有自己的 cache，同一份 data 可能各存一份 copy。",
+     "k": 2,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 990.9
+     }
+    },
+    {
+     "say": "很多 CPU share 同一個 physical address，就會出問題。",
+     "k": 3,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1027.3
+     }
+    },
+    {
+     "say": "舉例：memory 裡 X 一開始是 0。這是課本的例子，假設 cache 是 write-through。",
+     "k": 4,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1036.9
+     }
+    },
+    {
+     "say": "CPU A 讀 X，讀到 0，放進 A 的 cache。",
+     "k": 5,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1042.6
+     }
+    },
+    {
+     "say": "CPU B 也讀 X，拿到 0，放進 B 的 cache。到這裡都沒問題。",
+     "k": 6,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1049.1
+     }
+    },
+    {
+     "say": "接著 A 把 1 寫進 X：A 的 cache 變 1，memory 也更新成 1。",
+     "k": 7,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1054.6
+     }
+    },
+    {
+     "say": "可是 B 沒跟著更新，B 的 cache 裡還是 0。同一個 location 兩個值，這就是 coherence 問題。",
+     "k": 8,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1058.4
+     }
+    },
+    {
+     "say": "嚴格說，coherence 就是：讀一個 location，一定讀到最近寫進去的值。",
+     "k": 9,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1084.8
+     }
+    },
+    {
+     "say": "formal 定義第一條：同一個 processor 寫完再讀，中間沒人寫，要讀到自己剛寫的值。",
+     "k": 10,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1116.5
+     }
+    },
+    {
+     "say": "第二條：別的 CPU 寫了，經過足夠時間再讀，要讀到新值。",
+     "k": 11,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1142.5
+     }
+    },
+    {
+     "say": "第三條：P1、P2 都寫同一個 location，寫入要 serialized，排成一個順序，而且大家看到的順序一樣。",
+     "k": 12,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1170
+     }
+    }
+   ]
+  },
+  {
+   "title": "Snooping 與 directory：write invalidate",
+   "scene": "cvm-26b-snoop",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "怎麼維持 coherence？同一份 data 經過 migration 跟 replication，會在很多地方有 copy。",
+     "k": 1,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1212.8
+     }
+    },
+    {
+     "say": "有兩種 protocol：snooping，或 directory-based。",
+     "k": 2,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1234.2
+     }
+    },
+    {
+     "say": "directory-based 是集中式：一個 directory 記錄誰 share 這份 data、有沒有被改、誰可以寫。",
+     "k": 3,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1241.1
+     }
+    },
+    {
+     "say": "snooping 沒有中央管理者，每個 cache 自己盯著 bus，看經過的傳輸。",
+     "k": 4,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1256.8
+     }
+    },
+    {
+     "say": "老師用史努比比喻：snoop 就是愛管閒事、到處探聽，每個 cache 都盯著別人在做什麼。",
+     "k": 5,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1302.4
+     }
+    },
+    {
+     "say": "只要有人改了某個 data，你如果也有 copy，就把自己的 copy invalidate。",
+     "k": 6,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1341.5
+     }
+    },
+    {
+     "say": "這叫 invalidating snooping protocol。要寫的 cache 一定要拿到 exclusive access，不能兩人同時寫。",
+     "k": 7,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1359.8
+     }
+    },
+    {
+     "say": "寫的同時在 bus 上 broadcast 一個 invalidate message，其他 cache 看到就把自己那份作廢。",
+     "k": 8,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1378.3
+     }
+    },
+    {
+     "say": "例子：A 讀 X 得 0，B 也讀 X 得 0。",
+     "k": 9,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1409.6
+     }
+    },
+    {
+     "say": "A 寫 1 到 X，同時發 invalidate，B 看到就把自己的 X 作廢。這個例子用 write back，所以 memory 還是舊的 0。",
+     "k": 10,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1415.5
+     }
+    },
+    {
+     "say": "B 再讀 X，已經 invalid，所以 cache miss。它跟 owner A 要資料，拿到 1，同時 memory 也更新成 1。",
+     "k": 11,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1440.8
+     }
+    },
+    {
+     "say": "整理：大家各管各的；要寫就發 signal，別人把 copy 作廢；之後誰 miss，就跟 owner 要最新的。",
+     "k": 12,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1468.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "真實例子：Intel 四核心的三層 cache",
+   "scene": "cvm-26b-intel",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "看一下現在的處理器長什麼樣：Intel 一顆 4-core processor。",
+     "k": 1,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1492.5
+     }
+    },
+    {
+     "say": "它有三層 cache：L1、L2、L3，我們之前只講過一層。",
+     "k": 2,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1505
+     }
+    },
+    {
+     "say": "L1 分 I-cache 放指令、D-cache 放資料，每個 core 自己一份，叫 private cache。",
+     "k": 3,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1518.7
+     }
+    },
+    {
+     "say": "L2 也是 private，每個 core 各一份。",
+     "k": 4,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1529.1
+     }
+    },
+    {
+     "say": "L3 有 8 MB，是 shared，四個 core 都來這拿。現在 multi-core 多半這樣：L1、L2 private，L3 shared。",
+     "k": 5,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1537.9
+     }
+    },
+    {
+     "say": "TLB 也做成兩層。",
+     "k": 6,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1587.1
+     }
+    },
+    {
+     "say": "投影片上有 Intel 跟 AMD 的 TLB、cache 大小和 replacement 比較，回去看看那些數字，有個概念。",
+     "k": 7,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 1596.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Multiprocessor 與 out-of-order 怎麼評估",
+   "scene": "cvm-26b-ooo",
+   "steps": 3,
+   "lines": [
+    {
+     "say": "multiprocessor 時，很多人同時 map 到同一個位置的機會變大，associativity 要增加。",
+     "k": 1,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 2049.8
+     }
+    },
+    {
+     "say": "在 out-of-order 的 superscalar 上，cache miss 不一定拖垮效能：別的指令 ready 就照跑，miss 被藏起來了。",
+     "k": 2,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 2066.4
+     }
+    },
+    {
+     "say": "所以不能只拿 cache miss 次數算 performance，要用 simulation 看真正的平均時間。",
+     "k": 3,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 2092.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "結論：又快又大的 memory 錯覺",
+   "scene": "cvm-26b-end",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "結論：fast 的 memory 一定 small，large 的 memory 一定 slow。",
+     "k": 1,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 2129.1
+     }
+    },
+    {
+     "say": "靠 memory hierarchy 和 caching，把一小部分放在靠近 CPU 的上層，我們就好像有一個又快又大的 memory。",
+     "k": 2,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 2133.7
+     }
+    },
+    {
+     "say": "這一切靠 locality：程式任何時間只需要一小部分，把它搬進來就好。",
+     "k": 3,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 2151.6
+     }
+    },
+    {
+     "say": "hierarchy 可以很多層：cache 分 L1、L2、L3，往下是 memory、disk；DRAM 還靠 burst、interleaving 拚頻寬。",
+     "k": 4,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 2166.3
+     }
+    },
+    {
+     "say": "不管 single processor 還是 multiprocessor，memory 系統的設計都非常重要。這一章就到這裡。",
+     "k": 5,
+     "src": {
+      "v": "m6HNCwqazNE",
+      "t": 2175.7
+     }
+    }
+   ]
+  }
+ ]
+}

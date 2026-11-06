@@ -1,0 +1,8557 @@
+{
+ "chapter": "ca-2",
+ "title": "指令集架構 ISA",
+ "intro": "先學會用 CPU time、CPI 和 power 衡量一台電腦，再一路走過 MIPS 的暫存器、算術與記憶體指令、R／I／J 三種格式、分支迴圈、procedure call，最後整理五種定址模式。",
+ "parts": [
+  {
+   "title": "效能怎麼量：response time 與 throughput",
+   "scene": "isA-4a-perf",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "好，這一章先從效能開始。要說一台電腦好不好，得先講好：我們到底量什麼？",
+     "k": 1,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 18
+     }
+    },
+    {
+     "say": "就像比賽跑步，要先說清楚比的是時間，還是比誰跑得遠。",
+     "k": 1
+    },
+    {
+     "say": "第一種標準叫 response time，回應時間：一件工作丟進去，多久才拿到結果。當然越短越好。",
+     "k": 2,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 22.3
+     }
+    },
+    {
+     "say": "第二種叫 throughput。它不管單一件事多快，而是看一段時間裡總共做完多少事。",
+     "k": 3,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 24.1
+     }
+    },
+    {
+     "say": "所以 throughput 就是「單位時間做完幾件工作」，例如每秒完成幾個 job。",
+     "k": 4,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 75.7
+     }
+    },
+    {
+     "say": "兩種都有用，不過這門課主要看 response time，也就是一件事要花多久。",
+     "k": 5,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 86.5
+     }
+    },
+    {
+     "say": "你拿牆上的時鐘量，量到的時間其實混了很多東西：CPU 在算、等 I/O 讀硬碟，還有閒著的 idle。",
+     "k": 6,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 98.2
+     }
+    },
+    {
+     "say": "想評估 CPU 本身，就把 I/O、idle 拿掉，只算 CPU 真正在做事的時間，這叫 CPU time。",
+     "k": 7,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 107.2
+     }
+    },
+    {
+     "say": "CPU 是跟著 clock 一拍一拍做事的，所以可以數：這件工作總共跑了幾個 clock cycle。",
+     "k": 8,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 116.8
+     }
+    },
+    {
+     "say": "再乘上每一拍多長，也就是 clock period，就是 CPU time。像 12 個 cycle 乘 0.5 ns，就是 6 ns。",
+     "read": "再乘上每一拍多長，也就是 clock period，就是 CPU time。像 12 個 cycle 乘 0.5 奈秒，就是 6 奈秒。",
+     "k": 9,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 137
+     }
+    },
+    {
+     "say": "Clock rate，也叫 clock frequency，是每秒有幾拍，剛好是 period 的倒數。0.5 ns 一拍，就是 2 GHz。",
+     "read": "Clock rate，也叫 clock frequency，是每秒有幾拍，剛好是 period 的倒數。0.5 奈秒一拍，就是 2 G 赫茲。",
+     "k": 10,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 144
+     }
+    },
+    {
+     "say": "既然互為倒數，乘 period 就等於除以 rate。所以 CPU time 也等於 cycle 數除以 clock rate。",
+     "k": 11,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 170.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "從 clock 到指令：IC 與 CPI",
+   "scene": "isA-4a-cpi",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "可是數 clock 對寫程式的人太低階了。programmer 比較關心：我的程式有幾個指令？每個要多久？",
+     "k": 1,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 190.2
+     }
+    },
+    {
+     "say": "所以要換成指令的角度，用兩個量：instruction count，簡稱 IC，就是程式總共執行幾個指令；另一個是 CPI。",
+     "k": 2,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 202.4
+     }
+    },
+    {
+     "say": "CPI 是 clocks per instruction，平均一個指令要幾個 clock cycle 才做完。",
+     "k": 3,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 225.2
+     }
+    },
+    {
+     "say": "順便複習 ISA，指令集架構。它是 software 和 hardware 之間的約定：硬體照它做，軟體照它寫。",
+     "k": 4,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 238.4
+     }
+    },
+    {
+     "say": "每個指令複雜度不同，硬體做法也不同，所以有的指令 1 拍做完、有的要 3 拍。",
+     "k": 5,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 263
+     }
+    },
+    {
+     "say": "把它們平均起來：6 個指令總共 12 拍，12 除以 6 等於 2，這個平均就是 CPI。",
+     "k": 6,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 273.6
+     }
+    },
+    {
+     "say": "反過來，指令數乘 CPI 就是總 cycle 數：6 乘 2 是 12，跟數格子一樣。",
+     "k": 7,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 313
+     }
+    },
+    {
+     "say": "總 cycle 再乘每拍長度，就得到這章最重要的公式：CPU time = IC × CPI × clock cycle time。",
+     "read": "總 cycle 再乘每拍長度，就得到這章最重要的公式：CPU time 等於 IC 乘 CPI 乘 clock cycle time。",
+     "k": 8,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 324.7
+     }
+    },
+    {
+     "say": "那 IC 受誰影響？程式寫得好不好、指令集怎麼設計、compiler 會不會把多餘的指令拿掉，都有關。",
+     "k": 9,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 332.5
+     }
+    },
+    {
+     "say": "CPI 呢，主要看硬體怎麼設計，也就是 organization，實作方式。",
+     "k": 10,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 358
+     }
+    },
+    {
+     "say": "而且不同種類的指令 CPI 不同，要看程式裡各種指令佔多少，叫 instruction mix，再算平均。",
+     "k": 11,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 365.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "例題：同一個 ISA 的 A 與 B",
+   "scene": "isA-4a-ab",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "來看例題。兩台電腦 A 和 B，指令集架構 ISA 一樣。這句話代表什麼？",
+     "k": 1,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 375.8
+     }
+    },
+    {
+     "say": "代表同一個程式、同一個 compiler 編出來的指令一模一樣，指令數也一樣，我們就用大寫 I 表示。",
+     "k": 2,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 409.3
+     }
+    },
+    {
+     "say": "那怎麼會是兩台不同的電腦？因為 organization 不同。就像都用 Intel 的指令集，但用不同電路去實作。",
+     "k": 3,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 432.8
+     }
+    },
+    {
+     "say": "A 的 clock 一拍 250 ps，B 一拍 500 ps。ps 是 picosecond，兆分之一秒。A 的格子比較窄，跑得比較快。",
+     "read": "A 的 clock 一拍 250 皮秒，B 一拍 500 皮秒。皮秒是 picosecond，兆分之一秒。A 的格子比較窄，跑得比較快。",
+     "k": 4,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 449.9
+     }
+    },
+    {
+     "say": "A 的 clock 快，可是每一拍能做的事少，所以一個指令平均要 2 拍，CPI 是 2.0。",
+     "k": 5,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 462.7
+     }
+    },
+    {
+     "say": "B 的 clock 慢，每一拍長、做得多，一個指令平均只要 1.2 拍，CPI 是 1.2。",
+     "k": 6,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 479.4
+     }
+    },
+    {
+     "say": "那誰比較快？不能只看 clock，要把 CPU time 算出來：IC 乘 CPI 乘 cycle time。",
+     "k": 7,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 496.3
+     }
+    },
+    {
+     "say": "A：每個指令 2.0 乘 250，是 500 ps，I 個指令就是 500 I ps。",
+     "read": "A：每個指令 2.0 乘 250，是 500 皮秒，I 個指令就是 500 I 皮秒。",
+     "k": 8,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 541.4
+     }
+    },
+    {
+     "say": "B：每個指令 1.2 乘 500，是 600 ps，總共 600 I ps。",
+     "read": "B：每個指令 1.2 乘 500，是 600 皮秒，總共 600 I 皮秒。",
+     "k": 9,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 551.4
+     }
+    },
+    {
+     "say": "500 I 比 600 I 小，所以 A 比較快。它每個指令要比較多拍，但每一拍短很多。",
+     "k": 10,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 569.1
+     }
+    },
+    {
+     "say": "「A 比 B 快幾倍」，要把慢的 B 放分子、A 放分母：600 I 除以 500 I，I 消掉，A 快 1.2 倍。",
+     "k": 11,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 595
+     }
+    },
+    {
+     "say": "欸，這裡很容易放反。記法很簡單：問誰快幾倍，就把慢的那台的時間放上面。",
+     "k": 11
+    }
+   ]
+  },
+  {
+   "title": "依指令類別加權算 CPI",
+   "scene": "isA-4a-class",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "剛才的例題直接給了平均 CPI。現在看得更細一點：這個平均是怎麼來的？",
+     "k": 1,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 624.5
+     }
+    },
+    {
+     "say": "你想想看，乘法跟加法怎麼會一樣快？load、store 還要跑到記憶體拿資料，又更花時間。",
+     "k": 2,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 639.3
+     }
+    },
+    {
+     "say": "所以把指令分類，同一類的 CPI 一樣，每一類有自己的 CPI。",
+     "k": 3,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 662.6
+     }
+    },
+    {
+     "say": "總 cycle 數，就是每一類的 CPI 乘上這類有幾個指令，再全部加起來。",
+     "k": 4,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 686.5
+     }
+    },
+    {
+     "say": "平均 CPI 就是總 cycle 除以總指令數，也等於每類 CPI 乘它佔的比例再加總，跟算學期總成績一樣。",
+     "k": 5,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 726.2
+     }
+    },
+    {
+     "say": "例題：指令分 A、B、C 三類，A 類 1 拍、B 類 2 拍，C 類比較複雜要 3 拍。",
+     "k": 6,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 754.8
+     }
+    },
+    {
+     "say": "兩種 compiler 產生兩段序列。Sequence 1 是 A 兩個、B 一個、C 兩個；Sequence 2 是 A 四個、B 一個、C 一個。",
+     "k": 7,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 777
+     }
+    },
+    {
+     "say": "Sequence 1 的總 cycle：2 乘 1，加 1 乘 2，加 2 乘 3，就是 2 加 2 加 6，等於 10。",
+     "k": 8,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 799.5
+     }
+    },
+    {
+     "say": "它共有 5 個指令，平均 CPI 是 10 除以 5，等於 2.0。",
+     "k": 9,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 812.8
+     }
+    },
+    {
+     "say": "Sequence 2：4 乘 1，加 1 乘 2，加 1 乘 3，是 4 加 2 加 3，等於 9。",
+     "k": 10,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 822.3
+     }
+    },
+    {
+     "say": "它有 6 個指令，CPI 是 9 除以 6，等於 1.5。有趣吧？指令比較多，總 cycle 反而少，所以比較快。",
+     "k": 11,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 838.4
+     }
+    },
+    {
+     "say": "所以重點是：知道每類有幾個指令、每類 CPI 多少，就用加權公式算總 cycle 和平均 CPI。指令少不等於跑得快。",
+     "k": 12,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 845.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "誰影響 IC、CPI、clock rate",
+   "scene": "isA-4a-factor",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "來做個總整理。CPU time 是 IC 乘 CPI 乘 clock period，表格的列是五件事，我們一格一格問：會不會影響？",
+     "k": 1,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 862.1
+     }
+    },
+    {
+     "say": "先看 program。你寫 100 行、隔壁同學寫 50 行，或用不同 algorithm，執行的指令數就不同，IC 打勾。",
+     "k": 2,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 891.4
+     }
+    },
+    {
+     "say": "那 program 影響 CPI 嗎？課堂上有同學答「不會」，老師說會：你用一堆加法，同學用乘法，每個指令的拍數不同。",
+     "k": 3,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 953
+     }
+    },
+    {
+     "say": "Program 不影響 clock rate。clock 多快是硬體做出來的，跟你程式怎麼寫無關，打叉。",
+     "k": 4,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 991.7
+     }
+    },
+    {
+     "say": "再來 compiler。它把程式翻成指令，不同 compiler、有沒有做 optimization，指令數就不同，打勾。",
+     "k": 5,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1032.3
+     }
+    },
+    {
+     "say": "既然 compiler 決定了指令的種類和數量，CPI 當然跟著變，也打勾。",
+     "k": 6,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1051.5
+     }
+    },
+    {
+     "say": "clock rate 呢？一樣跟 compiler 無關，那是硬體實作的事，打叉。",
+     "k": 7,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1060
+     }
+    },
+    {
+     "say": "看到那條紅線了嗎？那就是 ISA 這個介面。往上是 software，只影響 IC 和 CPI；往下是 hardware，才跟 clock rate 有關。",
+     "k": 8,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1067
+     }
+    },
+    {
+     "say": "ISA 本身呢？假設你的指令集只有加和 shift，沒有乘法，要乘就得用一堆加和 shift 湊；同學的有乘法，一個指令搞定。",
+     "k": 9,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1087.1
+     }
+    },
+    {
+     "say": "所以 ISA 影響 IC，也影響 CPI。要注意，老師的表 ISA 對 clock rate 沒打勾，課本的表有勾，考試要看版本。",
+     "k": 10,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1148.7
+     }
+    },
+    {
+     "say": "接著 organization：ISA 定好以後，真的用硬體把加、減、乘這些指令做出來，這就是 organization。",
+     "k": 11,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1155.9
+     }
+    },
+    {
+     "say": "Organization 影響指令數嗎？不會。指令數在程式、compiler、ISA 那幾層就決定好了。",
+     "k": 12,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1222.1
+     }
+    },
+    {
+     "say": "但它影響 CPI。同一個 32 位元加法，用 carry ripple adder，把 full adder 串起來，硬體少可是慢。",
+     "k": 13,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1243.4
+     }
+    },
+    {
+     "say": "用 carry lookahead adder，像一棵樹，好大一塊，硬體多可是快。做法不同，要的 cycle 就不同。",
+     "k": 13,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1281
+     }
+    },
+    {
+     "say": "Organization 也決定 clock rate：每一拍設多長、每拍做多少事，都是硬體設計決定的，打勾。",
+     "k": 14,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1297
+     }
+    },
+    {
+     "say": "最後是 technology，製程技術。設計好之後拿去工廠，例如台積電，把它做出來。它影響 clock rate。",
+     "k": 15,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1312.7
+     }
+    },
+    {
+     "say": "為什麼？製程進步，feature size 越做越小，電路跑更快。cycle 數一樣，但每個 clock period 變短了。",
+     "k": 16,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1367.8
+     }
+    },
+    {
+     "say": "把這張表看懂，你就知道效能公式裡每一項是誰在決定，也看懂軟硬體的介面在哪裡。",
+     "k": 17,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1387.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Fallacy：用 MIPS 當效能指標",
+   "scene": "isA-4b-mips",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "講到指令數，順便破解一個常見的錯誤觀念：拿 MIPS 當效能指標。注意，這裡的 MIPS 不是指令集，是一個數字。",
+     "k": 1,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1011.6
+     }
+    },
+    {
+     "say": "MIPS 是 million instructions per second，每秒執行幾百萬個指令。常聽人說這台 3 MIPS、那台 5 MIPS。",
+     "k": 2,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1018.5
+     }
+    },
+    {
+     "say": "直覺上，2 MIPS 的機器應該比 1 MIPS 的快吧？",
+     "k": 3,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1047.1
+     }
+    },
+    {
+     "say": "問題是 MIPS 只數指令個數。A 的指令很簡單，同一個程式要 一千萬個指令；B 的指令複雜，300 萬個就做完。",
+     "k": 4,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1056.1
+     }
+    },
+    {
+     "say": "算執行時間：A 是 一千萬除以每秒 200 萬，5 秒；B 是 300 萬除以每秒 100 萬，3 秒。MIPS 低的 B 反而快！",
+     "k": 5,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1067.5
+     }
+    },
+    {
+     "say": "所以 MIPS 好算歸好算，卻反映不了真正的效能。人家說他的 MIPS 比較高，你還是要看執行時間。",
+     "k": 6,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1084.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Amdahl's law：只有被改進的部分會變快",
+   "scene": "isA-4b-amdahl",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "再來一個很重要的效能觀念。黃老師先用一個生活例子說明。",
+     "k": 1,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 610.2
+     }
+    },
+    {
+     "say": "從台北開車到高雄：先在市區走半小時，才上高速公路。",
+     "k": 2,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 620.6
+     }
+    },
+    {
+     "say": "高速公路開 4 個小時。",
+     "k": 3,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 636.4
+     }
+    },
+    {
+     "say": "下了交流道，到目的地再半小時。總共 0.5 加 4 加 0.5，5 個小時。",
+     "k": 4,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 642.2
+     }
+    },
+    {
+     "say": "那改坐飛機呢？到機場、出機場那兩段市區的半小時，不管怎麼樣都省不掉。",
+     "k": 5,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 651.1
+     }
+    },
+    {
+     "say": "能改進的只有中間那段：高速公路 4 小時，變成飛機 1 小時。",
+     "k": 6,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 694.1
+     }
+    },
+    {
+     "say": "總時間變成 2 小時，speedup 是 5 除以 2，2.5 倍。中間快了 4 倍，整體卻只有 2.5 倍。",
+     "k": 7,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 705.8
+     }
+    },
+    {
+     "say": "這就是 Amdahl's law：你改進其中一部分，只有那部分變快，沒被影響的時間不變，所以整體的改進有上限。",
+     "k": 8,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 717.7
+     }
+    },
+    {
+     "say": "寫成公式：改進後的時間，等於受影響部分的時間除以改進倍數，再加上不受影響部分的時間。",
+     "k": 9,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 768.7
+     }
+    },
+    {
+     "say": "例題：一個程式跑 100 秒，其中乘法佔 80 秒，其他 20 秒在做別的事。",
+     "k": 10,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 773.9
+     }
+    },
+    {
+     "say": "想讓整個程式快 5 倍，也就是 20 秒跑完。辦得到嗎？",
+     "k": 11,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 783.4
+     }
+    },
+    {
+     "say": "那 20 秒不是乘法，怎麼改都還在。要總共 20 秒，乘法就得變 0 秒，等於要無限快，所以做不到。",
+     "k": 12,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 803.7
+     }
+    },
+    {
+     "say": "Amdahl's law 給我們一個原則：make the common case fast，讓最常發生的情況變快。",
+     "k": 13,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 832.8
+     }
+    },
+    {
+     "say": "加法、load、store 一天到晚在用，值得加速；乘法如果只佔 1% 的時間，花大錢加速它，整體只快一點點。",
+     "k": 14,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 849.7
+     }
+    },
+    {
+     "say": "所以設計處理器前要先做 profiling，看時間花在哪，把錢花在最常跑的地方，用最少的錢換最大的改進。",
+     "k": 15,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 872.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Power：dynamic、static 與 power wall",
+   "scene": "isA-4a-power",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "除了跑多快，現在還有一件大事：power，功率消耗。以前不太在意，近幾年變成設計電腦最大的限制之一。",
+     "k": 1,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1415.8
+     }
+    },
+    {
+     "say": "看 Intel 二十幾年來的各代處理器：clock rate 越來越快，power 也越來越大，直到最近兩代才變平。",
+     "k": 2,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1440.7
+     }
+    },
+    {
+     "say": "為什麼變平？Power 分兩類：dynamic power 是做事時才耗的；static power 是不做事也在漏電，叫 leakage。",
+     "k": 3,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1471.9
+     }
+    },
+    {
+     "say": "Dynamic power 怎麼來？電路裡 0 和 1 用電壓高低表示。CMOS 從 0 變 1、1 變 0，就要對輸出端的電容充電、放電。",
+     "k": 4,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1491.5
+     }
+    },
+    {
+     "say": "所以 dynamic power 跟三樣東西成正比：capacitive load C、電壓 V 的平方，還有切換頻率 f。",
+     "k": 5,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1507.9
+     }
+    },
+    {
+     "say": "Capacitive load 是什麼？一個 gate 的輸出接給越多 gate，也就是 fan-out 越大，電容就越大；它也跟面積很有關。",
+     "k": 6,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1515.5
+     }
+    },
+    {
+     "say": "Voltage 就是用多高的電壓代表 1、多低代表 0。",
+     "k": 7,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1538.3
+     }
+    },
+    {
+     "say": "那問題來了：過去 25 年 frequency 快了超過一千倍，dynamic power 卻只增加大約 30 倍。怎麼做到的？",
+     "k": 8,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1553.6
+     }
+    },
+    {
+     "say": "秘訣是降電壓，從 5 伏特降到 1 伏特，每一代大約降 15%。因為是平方，電壓變 5 分之 1，power 就變 25 分之 1。",
+     "k": 9,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1570.5
+     }
+    },
+    {
+     "say": "那一直降不就好了？不行。降到大約 1 伏特就降不下去了，再降漏電會很大，電晶體想關也關不緊。",
+     "k": 10,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1599.7
+     }
+    },
+    {
+     "say": "Power 降不下來，單位面積又塞進更多運算，power density 變很高，熱就很多，散熱變成大問題。",
+     "k": 11,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1632.6
+     }
+    },
+    {
+     "say": "來算一題：新 CPU 跟舊的比，C、V、f 都變成 85%。代進公式，C 乘 0.85，V 平方乘兩次 0.85，f 再乘 0.85。",
+     "k": 12,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1666.1
+     }
+    },
+    {
+     "say": "0.85 的 4 次方約等於 0.52。每樣只降 15%，power 卻幾乎砍半，就是因為電壓是平方項。",
+     "k": 13,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1683.5
+     }
+    },
+    {
+     "say": "可惜因為 leakage，電壓沒辦法再降。很貴的散熱方法，桌機和便宜的伺服器負擔不起，這就是 power wall。",
+     "k": 14,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1696.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "從 uniprocessor 到 multi-core",
+   "scene": "isA-4a-multi",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "為了解決 power，這幾年方向變了：不再只想把單一處理器做快，而是走向 multi-core，多核心。",
+     "k": 1,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1740.3
+     }
+    },
+    {
+     "say": "先看 uniprocessor，一顆晶片只有一個 core。2002 年以前，效能每年大約進步 1.5 倍。",
+     "k": 2,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1752.1
+     }
+    },
+    {
+     "say": "2002 年以後只剩每年 1.2 倍左右。原因有 power、指令層級平行度 ILP 挖不出更多，還有記憶體太慢，資料拿不進來。",
+     "k": 3,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1770.1
+     }
+    },
+    {
+     "say": "2004 年以後，大家改把好幾個 core 放進同一顆 microprocessor，你買的電腦可能是 2 核、4 核。",
+     "k": 4,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1798.3
+     }
+    },
+    {
+     "say": "這跟以前有個很大的差別。以前 processor 變快，舊程式一行 code 都不用改，放到新機器上自然就快了。",
+     "k": 5,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1845.6
+     }
+    },
+    {
+     "say": "換成多核心，要變快的責任就跑到 programmer 身上了。程式不改，多出來的 core 不會自動幫你。",
+     "k": 6,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1897.6
+     }
+    },
+    {
+     "say": "老師問：如果一行都不改，加了兩個、四個 core，到底增加了什麼？同一個 job 丟進去，時間一樣，response time 沒變。",
+     "k": 7,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1919
+     }
+    },
+    {
+     "say": "增加的是 throughput：第一個 job 放這個 core、第二個放那個 core，單位時間做更多事。",
+     "k": 8,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1961.1
+     }
+    },
+    {
+     "say": "既然一次能做兩件事，也可以把 clock frequency 調慢一點，power 就跟著降。",
+     "k": 9,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1978.6
+     }
+    },
+    {
+     "say": "如果要讓單一個工作更快，也就是改進 response time，就得寫 parallel program，明確把工作分給不同 core。",
+     "k": 10,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 1998.3
+     }
+    },
+    {
+     "say": "寫平行程式要先找出哪些地方能同時做，拆成不同部分的 code，分給不同 core。",
+     "k": 11,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2015.8
+     }
+    },
+    {
+     "say": "還要注意 load balancing。A 很大、B 很小，core 2 一下就做完在發呆，整體還是要等 A，所以工作要平均分。",
+     "k": 12,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2030.3
+     }
+    },
+    {
+     "say": "還有 communication 和 synchronization：C 要等 A、B 都做完才能開始，不能 A 一做完就衝去做 C。所以平行程式不好寫。",
+     "k": 13,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2046.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Benchmark 與 SPEC",
+   "scene": "isA-4a-bench",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "效能和 power 的標準都定好了。接下來的問題是：實際上要怎麼量？",
+     "k": 1,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2104
+     }
+    },
+    {
+     "say": "最直接的方法，拿一個程式到 A、B、C 機器上跑，看哪台快。",
+     "k": 2,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2164.5
+     }
+    },
+    {
+     "say": "那拿矩陣相乘的程式來測，好不好？老師說：好，也不好，看情況。",
+     "k": 3,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2242
+     }
+    },
+    {
+     "say": "如果你是科學家，天天在做矩陣相乘，用它測很有意義；如果你是作家，很少算矩陣，那就沒什麼意義。",
+     "k": 4,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2268.2
+     }
+    },
+    {
+     "say": "所以要依自己的 workload，也就是平常的工作內容來測。工程師常用 compiler、試算表，作家常用文書處理。",
+     "k": 5,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2292.4
+     }
+    },
+    {
+     "say": "可是每個人都自己寫一組程式，太辛苦了。所以有人先寫好一組給大家用，這叫 benchmark。",
+     "k": 6,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2316.5
+     }
+    },
+    {
+     "say": "問題又來了：A 公司、B 公司各自做 benchmark，一定挑對自己有利的程式，沒有公信力。",
+     "k": 7,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2359.1
+     }
+    },
+    {
+     "say": "所以要一個 industry standard：各家一起出錢成立一個機構來做 benchmark，大家用同一組測才公平，這就是 SPEC。",
+     "k": 8,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2391.5
+     }
+    },
+    {
+     "say": "SPEC 從 1989 年開始做。當時最新的 SPEC2006 有專測 CPU 的，分 integer 和 floating point，也有 HPC 等。",
+     "k": 9,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2454.8
+     }
+    },
+    {
+     "say": "但 benchmark 也有陷阱。程式是公開的，廠商可以讓 compiler 或 library 專門針對這些 code 最佳化，分數好看，卻不代表真實效能。",
+     "k": 10,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2493.4
+     }
+    },
+    {
+     "say": "測出來的結果也跟整個系統的設定有關，叫 system configuration；測試規格本身也可能剛好對某台機器有利。",
+     "k": 11,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2531.3
+     }
+    },
+    {
+     "say": "再來，benchmark 只是一小組程式，涵蓋不了所有情況，而且要定期更換，不然大家只針對它優化。",
+     "k": 12,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2552.8
+     }
+    },
+    {
+     "say": "老師也提醒，以後讀研究所做實驗，其實也是在做 benchmarking。像影像處理就有大家共用的標準圖片。",
+     "k": 13,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2571.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "SPECratio 與 geometric mean",
+   "scene": "isA-4a-ratio",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "來看實際例子：用 SPEC CPU2006 裡專測整數運算的那組 integer 程式。",
+     "k": 1,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2614.5
+     }
+    },
+    {
+     "say": "要測的是 AMD 的一顆處理器 X4，把這組程式拿到 X4 上跑。",
+     "k": 2,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2629.5
+     }
+    },
+    {
+     "say": "每個程式收集 IC、CPI、clock cycle time，乘起來就是 execution time。像 perl 在 X4 上跑了 637 秒。",
+     "k": 3,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2648.3
+     }
+    },
+    {
+     "say": "光看 637 秒很難比，所以找一台 reference machine，大家都跟它比。perl 在參考機器上要 9770 秒。",
+     "k": 4,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2664.6
+     }
+    },
+    {
+     "say": "SPECratio 就是參考機器的時間除以待測機器的時間：9770 除以 637，約 15.3。越大代表越快。",
+     "k": 5,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2692
+     }
+    },
+    {
+     "say": "12 個程式各有一個 ratio。要合成總分，用 geometric mean：全部乘起來，開 12 次方根，X4 大約是 11.7。",
+     "k": 6,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2714.8
+     }
+    },
+    {
+     "say": "如果用 arithmetic mean，加起來除以個數，結果會不一樣。SPEC 選幾何平均，好處是換一台參考機器，排名也不變。",
+     "k": 7,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2733.9
+     }
+    },
+    {
+     "say": "這張表就是課本裡 X4 的結果。你設計一顆 processor，也照同樣流程測，得到自己的一張表。",
+     "k": 8,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2764.9
+     }
+    },
+    {
+     "say": "最後只看 summary 那個數字：你的是 10、我的是 11，就說對這組 benchmark，我的 CPU 比較好。",
+     "k": 9,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2780.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "SPEC power：每一瓦做多少事",
+   "scene": "isA-4a-spow",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "Power 也有 benchmark。不能只看耗多少電，還要看同時做了多少事，所以要記錄兩樣東西。",
+     "k": 1,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2795
+     }
+    },
+    {
+     "say": "一樣是 throughput，每秒完成幾個 operation，叫 ssj_ops；另一樣是 power，消耗多少瓦。",
+     "read": "一樣是 throughput，每秒完成幾個 operation，叫 s s j ops；另一樣是 power，消耗多少瓦。",
+     "k": 2,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2808.5
+     }
+    },
+    {
+     "say": "負載不同，耗電也不同。所以從 100% 負載開始，90%、80%，每 10% 跑一次，一路到 0%。",
+     "k": 3,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2819.5
+     }
+    },
+    {
+     "say": "看 X4 的結果：負載降低，做的事一路變少，耗電也往下降，但降得比較慢。",
+     "k": 4,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2851.1
+     }
+    },
+    {
+     "say": "總分怎麼算？把每個負載下完成的 operation 全部加起來，除以全部的 power，就是每一瓦能做多少事。",
+     "k": 5,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2874.6
+     }
+    },
+    {
+     "say": "注意最右邊 0% 的地方：完全沒做事，performance 是 0，power 卻還不小！",
+     "k": 6,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2916.6
+     }
+    },
+    {
+     "say": "為什麼？還記得 power 有 dynamic 和 static 兩種嗎？static 就是漏電，什麼都不做也一直在漏。",
+     "k": 7,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2931.1
+     }
+    },
+    {
+     "say": "電壓已經降到大約 1 伏特，漏電在整個 power 裡佔很大比例。怎麼解決，正是現在的研究題目。",
+     "k": 8,
+     "src": {
+      "v": "A6sbcPRLkmg",
+      "t": 2957.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Fallacy：閒著就很省電？",
+   "scene": "isA-4b-idle",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "接著是另一個 fallacy，錯誤的想法：「電腦閒著、負載低的時候，就很省電」。對嗎？",
+     "k": 1,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 901.9
+     }
+    },
+    {
+     "say": "看實測數據。滿載算 100%；只做一半的工作，power 還要 83%；只做 10% 的工作，還要 61%。",
+     "k": 2,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 915.2
+     }
+    },
+    {
+     "say": "什麼都不做，0% 負載，還要吃掉 141 瓦。",
+     "k": 3,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 931.4
+     }
+    },
+    {
+     "say": "所以「閒著就省電」是錯的，原因就是剛剛講的 leakage。",
+     "k": 4,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 935.8
+     }
+    },
+    {
+     "say": "最理想的處理器是 power 跟 loading 成正比，做一半的事只耗一半的電。可是現在因為漏電，做不到。",
+     "k": 5,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 949.2
+     }
+    },
+    {
+     "say": "Google 資料中心的統計：大部分時間負載在 10% 到 50%，真的跑滿 100% 只佔大約 1% 的時間。",
+     "k": 6,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 976.1
+     }
+    },
+    {
+     "say": "也就是說，電大多花在負載不高的時候。誰能做出耗電跟負載成比例的處理器，就太棒了，老師說這是你們的 challenge。",
+     "k": 7,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 993
+     }
+    }
+   ]
+  },
+  {
+   "title": "晶片怎麼做出來：wafer、die 與 yield",
+   "scene": "isA-4b-mfg",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "效能再好，也要看價錢。我們來看一顆晶片的 cost 是怎麼算出來的，先看它怎麼做出來。",
+     "k": 1,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 17.9
+     }
+    },
+    {
+     "say": "一開始是一根 silicon ingot，矽晶棒，長長一根像香腸，直徑大約 8 到 12 吋。",
+     "k": 2,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 21.6
+     }
+    },
+    {
+     "say": "把它切成一片一片薄薄的圓片，叫 blank wafer，空白晶圓。",
+     "k": 3,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 46.9
+     }
+    },
+    {
+     "say": "晶圓送進晶圓廠，例如台積電，經過 20 到 40 道製程。每一道用一張 mask，光罩，把電晶體、導線的形狀照上去。",
+     "k": 4,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 62.6
+     }
+    },
+    {
+     "say": "一層層做完，就成了 patterned wafer。同一個設計重複做很多份，每一個小方塊叫一個 die，晶粒。",
+     "k": 5,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 94.3
+     }
+    },
+    {
+     "say": "做好以後先測試，有些 die 是壞的，不能動。",
+     "k": 6,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 107.2
+     }
+    },
+    {
+     "say": "接著把晶圓切開，這叫 dicing，壞的就丟掉。",
+     "k": 7,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 121.4
+     }
+    },
+    {
+     "say": "Die 上的線寬非常非常小，沒辦法直接跟外面連，所以要 packaging，封裝，拉出摸得到的接腳。",
+     "k": 8,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 128.7
+     }
+    },
+    {
+     "say": "包好再測一次，沒問題才出貨。這就是整個製造流程。",
+     "k": 9,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 141
+     }
+    },
+    {
+     "say": "做 100 顆不一定 100 顆都好，可能只有 90 顆好。好的比例叫 yield，良率，這裡是 90%。",
+     "k": 10,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 151
+     }
+    },
+    {
+     "say": "Yield 越高代表製程越好。如果只有 50%，做 100 顆就要丟 50 顆，成本當然很高。",
+     "k": 11,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 170.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "一顆 die 多少錢：面積與缺陷",
+   "scene": "isA-4b-cost",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "一片晶圓上是同一個設計重複很多次，像 AMD X2 的晶圓上有 117 個 die。",
+     "k": 1,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 193.9
+     }
+    },
+    {
+     "say": "一顆 die 多少錢？把一片晶圓的成本，除以好的 die 數量。好的 die 數，就是能切幾個 die 乘上 yield。",
+     "k": 2,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 231.2
+     }
+    },
+    {
+     "say": "老師的例子：一片晶圓 100 元，切 100 個 die，90% 是好的，只有 90 顆能賣，100 除以 90，一顆約 1.11 元。",
+     "k": 3,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 262.9
+     }
+    },
+    {
+     "say": "一片晶圓能切幾個 die？大約是晶圓面積除以每個 die 的面積。",
+     "k": 4,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 281.7
+     }
+    },
+    {
+     "say": "例如晶圓面積一千：die 面積 100，只能切 10 顆；die 面積 50，就能切 20 顆。die 越大，切得越少。",
+     "k": 5,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 325.6
+     }
+    },
+    {
+     "say": "Yield 又跟什麼有關？跟單位面積的缺陷數 defects per area，還有 die 的面積。課本有公式，這裡先講直覺。",
+     "k": 6,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 344.6
+     }
+    },
+    {
+     "say": "缺陷從哪來？線寬只有幾十奈米，晶圓廠雖然是無塵室，還是有很小的灰塵，掉到 chip 上那顆就壞了。",
+     "k": 7,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 378.1
+     }
+    },
+    {
+     "say": "製程控制得越好，缺陷率越低，yield 就越高。每家晶圓廠、每種製程都有自己的缺陷率。",
+     "k": 8,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 423.6
+     }
+    },
+    {
+     "say": "面積的影響是這樣：同樣掉 5 顆灰塵，整片只切 5 顆大 die，很可能每顆都中獎；切成 100 顆小的，至少 95 顆是好的。",
+     "k": 9,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 443.5
+     }
+    },
+    {
+     "say": "缺陷率看製程，但 die 的面積是設計者決定的。面積越大，yield 越低，每顆成本越高。",
+     "k": 10,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 488.6
+     }
+    },
+    {
+     "say": "除了 die 本身，還有 testing 的成本：做完要測哪些好、哪些壞。",
+     "k": 11,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 520.9
+     }
+    },
+    {
+     "say": "還有 packaging 的成本。沒包裝的 bare die 根本摸不到，包好有接腳，才放得進電腦。",
+     "k": 12,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 529.2
+     }
+    },
+    {
+     "say": "所以晶片成本是 die 的成本，加上測試和封裝。再拿成本和效能做 trade-off，就知道該選哪台電腦。",
+     "k": 13,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 595
+     }
+    }
+   ]
+  },
+  {
+   "title": "第一部分的結論",
+   "scene": "isA-4b-sum",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "好，效能這部分做個結論。第一，技術一直進步，cost／performance，也就是花多少錢買到多少效能，一直在改善。",
+     "k": 1,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1101.4
+     }
+    },
+    {
+     "say": "哪個定律告訴我們的？Moore's law：晶片上的電晶體數量，大約每 1.5 到 2 年翻一倍。",
+     "k": 2,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1116.1
+     }
+    },
+    {
+     "say": "第二，abstraction，抽象化：把下一層的複雜細節藏起來，讓我們一層一層理解。",
+     "k": 3,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1148.5
+     }
+    },
+    {
+     "say": "第三，ISA 是 hardware 和 software 的介面。有了它，軟體和硬體可以分開各自發展。",
+     "k": 4,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1158
+     }
+    },
+    {
+     "say": "第四，把執行時間真的算出來，才是最好的效能衡量；MIPS 那種都不是。",
+     "k": 5,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1170.6
+     }
+    },
+    {
+     "say": "第五，power 是限制因素。電壓降不下去，散熱一定要解決。",
+     "k": 6,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1181.6
+     }
+    },
+    {
+     "say": "第六，所以現在的處理器都靠 parallelism，像 multi-core，來提升效能。接下來我們就進入 ISA 本身。",
+     "k": 7,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1192.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "指令集要規定哪些事",
+   "scene": "isA-4b-isa",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "好，這一章要把 instruction set，也就是指令集，整個介紹完，例子用 MIPS。",
+     "k": 1,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1219.6
+     }
+    },
+    {
+     "say": "指令集定好了，後面的章節才照著它去設計硬體，所以這章是地基。",
+     "k": 1,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1240
+     }
+    },
+    {
+     "say": "先複習一下：computer architecture 包含兩塊，一塊是 ISA，一塊是 machine organization。",
+     "k": 2,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1253.6
+     }
+    },
+    {
+     "say": "ISA 聽起來很抽象，對寫程式的人來說，它其實就是 assembly，組合語言。",
+     "k": 3,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1278.6
+     }
+    },
+    {
+     "say": "你用 C 寫程式，compiler 最後就是把它翻成 assembly code。",
+     "k": 3,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1290
+     }
+    },
+    {
+     "say": "那一段 C 程式裡有什麼？一定有 operator，運算子，像加減乘除、取餘數。",
+     "k": 4,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1300.7
+     }
+    },
+    {
+     "say": "operator 要作用在 operand 上，operand 可以是 variable 變數，也可以是 constant 常數。",
+     "k": 5,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1314.2
+     }
+    },
+    {
+     "say": "operator 作用在 operand 上叫 expression，算完再指定給一個變數，就是 assignment。",
+     "k": 6,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1338.9
+     }
+    },
+    {
+     "say": "看 a = b + 5 這一行 C，寫成 assembly 要四行：load b、放 5、相加、再 store 回 a。",
+     "read": "看 a 等於 b 加 5 這一行 C，寫成 assembly 要四行：load b、放 5、相加、再 store 回 a。",
+     "k": 7,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1361
+     }
+    },
+    {
+     "say": "這四行裡的 operand 從三個地方來：記憶體裡的資料、register，還有常數 5。",
+     "k": 8,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1409.7
+     }
+    },
+    {
+     "say": "每行最前面的 load、add、store 說明要做什麼，這叫 op code，operation code。",
+     "k": 9,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1441.4
+     }
+    },
+    {
+     "say": "為什麼切這麼細？因為每一行 assembly 都對應硬體的一個動作。",
+     "k": 10,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1462.6
+     }
+    },
+    {
+     "say": "高階語言一行寫起來很輕鬆，硬體卻要分四步才做得完。",
+     "k": 10,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1470
+     }
+    },
+    {
+     "say": "那指令集要規定什麼？第一是 storage：有幾個 register、記憶體多大、怎麼去記憶體拿資料。",
+     "k": 11,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1477.2
+     }
+    },
+    {
+     "say": "第二是 data type。同一串 0101，當整數跟當浮點數，值不一樣，加法器的設計也不一樣。",
+     "read": "第二是 data type。同一串 零一零一，當整數跟當浮點數，值不一樣，加法器的設計也不一樣。",
+     "k": 12,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1543.2
+     }
+    },
+    {
+     "say": "第三是 instruction format：一個指令多長？固定 32 bits、16 bits，還是有長有短？",
+     "k": 13,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1594.7
+     }
+    },
+    {
+     "say": "第四是 operations：這顆處理器准你做哪些動作，load、store、加減乘除等等。",
+     "k": 14,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1615.9
+     }
+    },
+    {
+     "say": "MIPS 的好處是格式很簡單，只有 R、I、J 三種，而且一律 32 bits。",
+     "k": 15,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1640
+     }
+    },
+    {
+     "say": "反觀 Intel 的 x86，指令有長有短。越複雜，硬體越要花功夫判斷這是哪種指令。",
+     "k": 16,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1674.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "算術指令：一個動作、三個 operand",
+   "scene": "isA-4b-arith",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "開始看 MIPS 的指令。operand 可以從三個地方來：register、memory，還有常數，MIPS 叫 immediate。",
+     "k": 1,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1731.8
+     }
+    },
+    {
+     "say": "先看算術指令的文法，它有四個 field，排成一排。",
+     "k": 2,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1755.6
+     }
+    },
+    {
+     "say": "第一個 field 寫動作，例如 add；第二個是 destination，算完的結果放哪。",
+     "k": 3,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1794.4
+     }
+    },
+    {
+     "say": "第三、第四個 field 是兩個 source，就是拿來運算的兩個值。",
+     "k": 4,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1806.9
+     }
+    },
+    {
+     "say": "所以 add a, b, c 的意思是：b 加 c，放到 a。",
+     "k": 5,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1815.6
+     }
+    },
+    {
+     "say": "每個指令都是 32 bits，格式很死：一個 operator 加三個 operand，順序是目的、來源一、來源二。",
+     "k": 6,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1824.7
+     }
+    },
+    {
+     "say": "那 C 裡一次加四、五個數呢？能不能在後面一直寫下去？不行，只能拆成好幾條。",
+     "k": 7,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1857.4
+     }
+    },
+    {
+     "say": "為什麼規定這麼嚴？格式越規律，硬體越簡單：固定位置的前幾個 bits 就是 op code，一看就懂。",
+     "k": 8,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1927.9
+     }
+    },
+    {
+     "say": "這就是第一個 design principle：Simplicity favors regularity，要簡單就要規律。",
+     "k": 9,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1957.6
+     }
+    },
+    {
+     "say": "簡單的好處是要判斷的事少，面積小、成本低，速度還能提升。",
+     "k": 10,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 1986.4
+     }
+    },
+    {
+     "say": "來看例子：f = (g + h) − (i + j)，有四個 operand，可是一個指令只能有兩個 source。",
+     "read": "來看例子：f 等於 g 加 h，減掉 i 加 j，有四個 operand，可是一個指令只能有兩個 source。",
+     "k": 11,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2010.2
+     }
+    },
+    {
+     "say": "所以拆開：第一步先算 g 加 h，結果放在暫存的 t0。",
+     "read": "所以拆開：第一步先算 g 加 h，結果放在暫存的 t 零。",
+     "k": 12,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2032.4
+     }
+    },
+    {
+     "say": "第二步算 i 加 j，放在 t1。",
+     "read": "第二步算 i 加 j，放在 t 一。",
+     "k": 13,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2039.9
+     }
+    },
+    {
+     "say": "第三步 t0 減 t1，放到 f。一行 C 變三個指令，每條都守「一個動作、三個 operand」。",
+     "read": "第三步 t 零減 t 一，放到 f。一行 C 變三個指令，每條都守「一個動作、三個 operand」。",
+     "k": 14,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2049
+     }
+    }
+   ]
+  },
+  {
+   "title": "為什麼 operand 要放在 register",
+   "scene": "isA-4b-regs",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "欸，剛剛的 t0、g、h 只是方便看的名字。assembly 沒有 variable，你得說清楚資料放在哪。",
+     "read": "欸，剛剛的 t 零、g、h 只是方便看的名字。assembly 沒有 variable，你得說清楚資料放在哪。",
+     "k": 1,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2071.8
+     }
+    },
+    {
+     "say": "像 add 這種指令，operand 只能放在 register，暫存器。",
+     "k": 2,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2103.4
+     }
+    },
+    {
+     "say": "register 是什麼？就是 CPU 裡、緊貼著加法器的一排小格子，合起來叫 register file。",
+     "k": 3,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2137.4
+     }
+    },
+    {
+     "say": "memory 是另一顆晶片，要去拿資料得離開 processor，也就是 off-chip，很花時間。",
+     "k": 4,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2163.8
+     }
+    },
+    {
+     "say": "所以 register 的第一個好處：就在旁邊，比 memory 快很多。",
+     "k": 5,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2212.4
+     }
+    },
+    {
+     "say": "第二，compiler 好用：算到一半的暫存值，就丟在 register 裡。",
+     "k": 6,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2229.6
+     }
+    },
+    {
+     "say": "第三，變數放 register，就不用一直跑記憶體，減少 memory traffic。",
+     "k": 7,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2260.9
+     }
+    },
+    {
+     "say": "第四，提高 code density。指令裡要寫出位置的編號，編號越大，要的 bits 越多。",
+     "k": 8,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2288.7
+     }
+    },
+    {
+     "say": "比方班上 150 人，學號至少要 8 個 bits，因為 2 的 8 次方是 256；記憶體位址更要 32 bits。",
+     "k": 9,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2346.5
+     }
+    },
+    {
+     "say": "可是 register 只有 32 個，2 的 5 次方等於 32，5 個 bits 就能指定，省很多。",
+     "k": 10,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2382.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "MIPS 的 32 個 register",
+   "scene": "isA-4b-mregs",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "MIPS 有 32 個 register，編號 0 到 31，指定一個要 5 個 bits。",
+     "k": 1,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2435.3
+     }
+    },
+    {
+     "say": "嫌不夠，想要 64 個？比較有彈性，但每次要 6 個 bits；128 個就要 7 個。",
+     "k": 2,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2458.4
+     }
+    },
+    {
+     "say": "一個 add 要寫三個 register，32 個時就用掉 3 乘 5，15 個 bits。register 越多，指令越擠。",
+     "k": 3,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2506.6
+     }
+    },
+    {
+     "say": "MIPS 的選擇是 32 個 register，每個 32 bits；資料和指令也都是 32 bits。",
+     "k": 4,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2542.2
+     }
+    },
+    {
+     "say": "為什麼不要更多？register file 越大就越慢。這是第二個 design principle：Smaller is faster。",
+     "k": 5,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2560
+     }
+    },
+    {
+     "say": "32 個 bits 合起來叫一個 word。不管存取 register 還是 memory，基本單位都是 word。",
+     "k": 6,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2611
+     }
+    },
+    {
+     "say": "register 可以叫編號，也可以叫名字，比較好讀。像 $s0 就是 16 號 register。",
+     "read": "register 可以叫編號，也可以叫名字，比較好讀。像 s 零就是 16 號 register。",
+     "k": 7,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2630.8
+     }
+    },
+    {
+     "say": "16 到 23 號叫 $s0 到 $s7，放程式裡一般的變數。",
+     "read": "16 到 23 號叫 s 零到 s 七，放程式裡一般的變數。",
+     "k": 8,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2656.7
+     }
+    },
+    {
+     "say": "8 到 15 號叫 $t0 到 $t7，放暫時的值，像算到一半的結果。",
+     "read": "8 到 15 號叫 t 零到 t 七，放暫時的值，像算到一半的結果。",
+     "k": 9,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2671.5
+     }
+    },
+    {
+     "say": "0 號很特別，裡面永遠是 0。0 太常用了，乾脆用硬體固定一個，就是 $zero。",
+     "read": "0 號很特別，裡面永遠是 0。0 太常用了，乾脆用硬體固定一個，就是 zero 暫存器。",
+     "k": 10,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2700.3
+     }
+    },
+    {
+     "say": "2、3 號是 $v0、$v1，4 到 7 號是 $a0 到 $a3，寫 procedure 用：a 放參數，v 放回傳值。",
+     "read": "2、3 號是 v 零、v 一，4 到 7 號是 a 零到 a 三，寫 procedure 用：a 放參數，v 放回傳值。",
+     "k": 11,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2721.1
+     }
+    },
+    {
+     "say": "其他有特殊用途：28 到 31 號是 $gp、$sp、$fp，和存 return address 的 $ra。所以不是每個都能亂用。",
+     "read": "其他有特殊用途：28 到 31 號是 g p、s p、f p，和存 return address 的 r a。所以不是每個都能亂用。",
+     "k": 12,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2756.4
+     }
+    },
+    {
+     "say": "整體看：CPU 裡有 32 個 register 和運算單元，外面是 memory。",
+     "k": 13,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2781.5
+     }
+    },
+    {
+     "say": "乘法結果會變長、除法有商和餘數，都放在 Hi、Lo 兩個特別的 register。",
+     "k": 13,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2790
+     }
+    },
+    {
+     "say": "浮點數另外交給 coprocessor 1。同一串 bits 當整數或浮點數解釋不同，硬體也不同。",
+     "k": 13,
+     "src": {
+      "v": "SbLPeJMK_d8",
+      "t": 2803
+     }
+    }
+   ]
+  },
+  {
+   "title": "用 register 寫 f = (g + h) − (i + j)",
+   "scene": "isA-5a-fghij",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "好，回到 f = (g + h) − (i + j)。這行 C 有 g、h、i、j 四個 operand。",
+     "read": "好，回到 f 等於 g 加 h，減掉 i 加 j。這行 C 有 g、h、i、j 四個 operand。",
+     "k": 1,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 191.2
+     }
+    },
+    {
+     "say": "可是 MIPS 一個指令只能兩個 source、一個 destination，所以要拆。",
+     "k": 2,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 201.8
+     }
+    },
+    {
+     "say": "加法的 operand 一定要在 register。假設 f 到 j 已經放在 $s0 到 $s4 這五個 register。",
+     "read": "加法的 operand 一定要在 register。假設 f 到 j 已經放在 s 零到 s 四這五個 register。",
+     "k": 3,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 235.7
+     }
+    },
+    {
+     "say": "第一個指令 add $t0, $s1, $s2：g 加 h 放到 $t0，代數字就是 5 加 3 得 8。",
+     "read": "第一個指令 add t 零、s 一、s 二：g 加 h 放到 t 零，代數字就是 5 加 3 得 8。",
+     "k": 4,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 258.8
+     }
+    },
+    {
+     "say": "第二個 add $t1, $s3, $s4：i 加 j 放到 $t1，4 加 2 得 6。",
+     "read": "第二個 add t 一、s 三、s 四：i 加 j 放到 t 一，4 加 2 得 6。",
+     "k": 5,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 271.9
+     }
+    },
+    {
+     "say": "第三個 sub $s0, $t0, $t1：8 減 6 得 2，放進 f，跟直接算的一樣。",
+     "read": "第三個 sub s 零、t 零、t 一：8 減 6 得 2，放進 f，跟直接算的一樣。",
+     "k": 6,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 283
+     }
+    },
+    {
+     "say": "一行 C 寫成三行 assembly，每一行都是一個 destination、兩個 source。",
+     "k": 7,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 295.1
+     }
+    },
+    {
+     "say": "記住：加、減、and、or 只能在 register 上做；資料不在 register，就得先用別的指令搬進來。",
+     "k": 8,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 319
+     }
+    }
+   ]
+  },
+  {
+   "title": "Register 架構的演變",
+   "scene": "isA-5a-arch",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "register file 長什麼樣，是指令集很重要的特性，歷史上有好幾種設計。",
+     "k": 1,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 339.7
+     }
+    },
+    {
+     "say": "大致四種：accumulator、stack、general purpose register，還有 load-store。MIPS 是最後這種。",
+     "k": 2,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 368.9
+     }
+    },
+    {
+     "say": "最早硬體很貴，CPU 裡只建得起一個 register，它有個名字叫 accumulator，累加器。",
+     "k": 3,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 388
+     }
+    },
+    {
+     "say": "只有一個 register 怎麼做 A = B + C？先 load B 進 accumulator，再 add C，結果還在 accumulator。",
+     "read": "只有一個 register 怎麼做 A 等於 B 加 C？先 load B 進 accumulator，再 add C，結果還在 accumulator。",
+     "k": 4,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 409
+     }
+    },
+    {
+     "say": "所以指令只要寫一個 address。另一個運算元和結果放哪都不用講，反正只有一個。",
+     "k": 5,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 479.7
+     }
+    },
+    {
+     "say": "後來變成 stack：register 多了，但只能像疊盤子，後進先出，只能動最上面那個。",
+     "k": 6,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 529.6
+     }
+    },
+    {
+     "say": "做 A 加 B：push A、push B，再 add，自動把最上面兩個相加放回頂端，最後 pop 到 C。",
+     "k": 7,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 569.7
+     }
+    },
+    {
+     "say": "你看，這裡的 add 連一個 operand 都不用寫。",
+     "k": 7,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 590
+     }
+    },
+    {
+     "say": "硬體越來越便宜，可以有很多 register，而且任何一個都能存取，這叫 general purpose register。",
+     "k": 8,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 602.6
+     }
+    },
+    {
+     "say": "GPR 又分 2-address，像 add A, B 代表 A 等於 A 加 B；跟 3-address。要寫的位址越多，指令越長。",
+     "k": 9,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 622.2
+     }
+    },
+    {
+     "say": "GPR 還有一個特點：operand 可以在 register，也可以直接從 memory 拿。",
+     "k": 10,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 666.2
+     }
+    },
+    {
+     "say": "到了 RISC 的 load-store machine，規定加減運算的三個 operand 全都要在 register 裡。",
+     "k": 11,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 690.2
+     }
+    },
+    {
+     "say": "為什麼這樣比較好？只要有一個 operand 在 memory，這個指令要花多久就說不準了。",
+     "k": 12,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 756.4
+     }
+    },
+    {
+     "say": "所以把「去記憶體拿東西」拆成獨立的 load、store。指令切得小又單純，就好做 optimization。",
+     "k": 13,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 787.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "C = A + B 的四種寫法",
+   "scene": "isA-5a-cab",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "同一件事 C = A + B，用四種架構各寫一次，比一比。",
+     "read": "同一件事 C 等於 A 加 B，用四種架構各寫一次，比一比。",
+     "k": 1,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 875.9
+     }
+    },
+    {
+     "say": "Stack：push A、push B 放到頂端，add 把頂端兩個相加，最後 pop C 存回去。",
+     "k": 2,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 892.3
+     }
+    },
+    {
+     "say": "Accumulator：load A，add B，store C，三條都只寫一個位址，因為一定是那個 accumulator。",
+     "k": 3,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 955.5
+     }
+    },
+    {
+     "say": "Register-memory：先把 A 拿到 R1，add R1, B 直接拿記憶體裡的 B 來加，再 store 回 C。",
+     "k": 4,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1013.5
+     }
+    },
+    {
+     "say": "Load-store：load A 到 R1、load B 到 R2，R1 加 R2 放 R3，再 store 回 C。",
+     "k": 5,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1045.1
+     }
+    },
+    {
+     "say": "1975 年後就沒人用 stack 和 accumulator 了。x86 屬 register-memory，MIPS 屬 load-store。",
+     "k": 6,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1081.3
+     }
+    },
+    {
+     "say": "那後兩種差在哪？看三件事：每個指令幾個 bytes、總共幾個指令、CPI 多少。",
+     "k": 7,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1099.7
+     }
+    },
+    {
+     "say": "Register-memory 只要 3 個指令，但每個比較長，因為要放記憶體位址；load-store 要 4 個，但都短。",
+     "k": 8,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1169.4
+     }
+    },
+    {
+     "say": "那 3 個一定比 4 個快嗎？不一定！add R1, B 要先等記憶體送來 B；load-store 的 add 很快就做完。",
+     "k": 9,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1229.4
+     }
+    },
+    {
+     "say": "所以指令數多，不代表 cycle 數多。指令拆得小又單純，反而好做 optimization。",
+     "k": 10,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1285.1
+     }
+    },
+    {
+     "say": "MIPS 就是 load-store machine：算術、邏輯運算的 operand，一定要先在 register file 裡。",
+     "k": 11,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1312.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Memory operand：base register 加 offset",
+   "scene": "isA-5a-memop",
+   "steps": 18,
+   "lines": [
+    {
+     "say": "好，進入第二部分：memory operand，還有搬資料的 data transfer。",
+     "k": 1,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1340.1
+     }
+    },
+    {
+     "say": "簡單變數放 register 沒問題。可是 array、matrix 這種大量資料，32 個 register 根本放不下。",
+     "k": 2,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1347.3
+     }
+    },
+    {
+     "say": "運算前資料又一定要在 register，所以要搬：memory 到 register 叫 load，反過來叫 store。",
+     "k": 3,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1389.6
+     }
+    },
+    {
+     "say": "搬資料要講清楚從哪搬到哪。第一件：哪個 register，5 個 bits 就搞定。",
+     "k": 4,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1438.4
+     }
+    },
+    {
+     "say": "第二件：記憶體的哪個位置。記憶體像一條很長的一維陣列，每個 byte 一個編號，叫 byte address。",
+     "k": 5,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1491.1
+     }
+    },
+    {
+     "say": "MIPS 的記憶體有 2 的 32 次方個 byte，所以一個位址要 32 個 bits。",
+     "k": 6,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1542.5
+     }
+    },
+    {
+     "say": "對照一下：如果只有 1024 個 byte，1024 是 2 的 10 次方，位址只要 10 個 bits。",
+     "k": 7,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1599.1
+     }
+    },
+    {
+     "say": "那把 32 bits 的位址直接寫進指令？op code、register 再加 32 bits，指令就塞不下了。",
+     "k": 8,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1624.4
+     }
+    },
+    {
+     "say": "所以 MIPS 換個方法：先找一個 pointer 指到某個位置，要的地方就是 pointer 再往上加多少。",
+     "k": 9,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1707.7
+     }
+    },
+    {
+     "say": "往上加的那個量，叫 offset，偏移量。",
+     "k": 9,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1720
+     }
+    },
+    {
+     "say": "關鍵是 pointer 放在 register 裡，指令只要 5 bits 說是哪個 register。這個 register 叫 base register。",
+     "k": 10,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1878.8
+     }
+    },
+    {
+     "say": "舉例：要拿位址 1012 裡的 999。直接寫 1012，前面一大串 0 也得寫，還是 32 bits。",
+     "k": 11,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1929.8
+     }
+    },
+    {
+     "say": "改成這樣：$s0 裡放 1000，像指標指到 1000；要 1012，就是 1000 加 12。",
+     "read": "改成這樣：s 零裡放 1000，像指標指到 1000；要 1012，就是 1000 加 12。",
+     "k": 12,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 1979.8
+     }
+    },
+    {
+     "say": "指令裡只要寫 base 是 $s0，再加 offset 12。offset 通常是很小的數，用不了幾個 bits。",
+     "read": "指令裡只要寫 base 是 s 零，再加 offset 12。offset 通常是很小的數，用不了幾個 bits。",
+     "k": 13,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2036.3
+     }
+    },
+    {
+     "say": "要拿一萬附近的資料呢？把 base 改設成 10000，再從那裡加 offset 就好。",
+     "read": "要拿一萬附近的資料呢？把 base 改設成 一萬，再從那裡加 offset 就好。",
+     "k": 14,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2069.9
+     }
+    },
+    {
+     "say": "為什麼 base 放 1000？因為資料就在附近，這其實就是 array：1000、1004、1008，一筆一筆往上。",
+     "read": "為什麼 base 放 一千？因為資料就在附近，這其實就是 array：一千、一千零四、一千零八，一筆一筆往上。",
+     "k": 15,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2138.5
+     }
+    },
+    {
+     "say": "$s0 裡的 1000 不是天上掉下來的，要先寫一個指令把它設好。",
+     "read": "s 零裡的 1000 不是天上掉下來的，要先寫一個指令把它設好。",
+     "k": 16,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2202.5
+     }
+    },
+    {
+     "say": "為什麼一筆加 4？因為位址以 byte 算，而 MIPS 一個 word 是 4 個 byte。",
+     "k": 17,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2232.4
+     }
+    },
+    {
+     "say": "整理一下：真正的位址，等於 base register 裡的值，加上 offset。",
+     "k": 18,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2280.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "lw 與 sw",
+   "scene": "isA-5a-lwsw",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "來看 load 指令的長相。第一個 field 是 op code lw，第二個是資料搬進來要放的 register。",
+     "read": "來看 load 指令的長相。第一個 field 是 op code l w，第二個是資料搬進來要放的 register。",
+     "k": 1,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2346.1
+     }
+    },
+    {
+     "say": "後面兩個 field 是拿來算記憶體位址的，也就是 base register 加 offset。",
+     "k": 2,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2377.8
+     }
+    },
+    {
+     "say": "寫成 lw $t0, 12($s0)：$s0 的內容加 12，就是記憶體的位址。",
+     "read": "寫成 l w t 零、12 括號 s 零：s 零的內容加 12，就是記憶體的位址。",
+     "k": 3,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2410.5
+     }
+    },
+    {
+     "say": "lw 是 load word，一次搬一個 word，32 個 bits 進來。",
+     "read": "l w 是 load word，一次搬一個 word，32 個 bits 進來。",
+     "k": 4,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2417.6
+     }
+    },
+    {
+     "say": "括號裡的 $s0 叫 base register，前面的 12 叫 offset。",
+     "read": "括號裡的 s 零叫 base register，前面的 12 叫 offset。",
+     "k": 5,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2439
+     }
+    },
+    {
+     "say": "這剛好對應 array：第一個元素的位置當 base，其他元素從 base 加多少去拿。",
+     "k": 6,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2451.5
+     }
+    },
+    {
+     "say": "例子：記憶體 1012 放著 999，$s0 已經設成 1000。",
+     "read": "例子：記憶體 1012 放著 999，s 零已經設成 1000。",
+     "k": 7,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2477.3
+     }
+    },
+    {
+     "say": "1000 加 12 等於 1012，所以去 1012 這個位址拿東西。",
+     "read": "一千 加 12 等於 一千零一十二，所以去 一千零一十二 這個位址拿東西。",
+     "k": 8,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2491.3
+     }
+    },
+    {
+     "say": "那執行完，$t0 是 1012 還是 999？是 999！1012 只是位址，lw 拿的是位址裡面的內容。",
+     "read": "那執行完，t 零是 1012 還是 999？是 999！1012 只是位址，l w 拿的是位址裡面的內容。",
+     "k": 9,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2530
+     }
+    },
+    {
+     "say": "為什麼不直接把位址寫進指令？再強調一次，32 bits 的位址放不下，只好用間接的方式描述。",
+     "k": 10,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2580.9
+     }
+    },
+    {
+     "say": "反過來，算完要把資料從 register 寫回記憶體，叫 store，指令是 sw，store word。",
+     "read": "反過來，算完要把資料從 register 寫回記憶體，叫 store，指令是 s w，store word。",
+     "k": 11,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2609.7
+     }
+    },
+    {
+     "say": "描述位址的方法一模一樣，base register 加 offset，只是 op code 不同。",
+     "k": 12,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2647.3
+     }
+    },
+    {
+     "say": "例子：$s0 是 1000，$t0 是 25，執行 sw $t0, 12($s0)，25 會存到哪？",
+     "read": "例子：s 零是 1000，t 零是 25，執行 s w t 零、12 括號 s 零，25 會存到哪？",
+     "k": 13,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2669
+     }
+    },
+    {
+     "say": "位址 1000 加 12 等於 1012，執行完記憶體 1012 這格就變成 25。",
+     "read": "位址 一千 加 12 等於 一千零一十二，執行完記憶體 一千零一十二 這格就變成 25。",
+     "k": 14,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2705.2
+     }
+    },
+    {
+     "say": "offset 是整數，可以正也可以負，往上或往下都行。",
+     "k": 15,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2737.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "陣列：g = h + A[8] 與 A[12] = h + A[8]",
+   "scene": "isA-5a-array",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "把剛學的拿來編譯：C 寫 g = h + A[8]，怎麼變成 assembly？先要知道每樣東西在哪。",
+     "read": "把剛學的拿來編譯：C 寫 g 等於 h 加 A 八，怎麼變成 assembly？先要知道每樣東西在哪。",
+     "k": 1,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2758.2
+     }
+    },
+    {
+     "say": "假設 g 在 $s1、h 在 $s2，陣列 A 第 0 個元素的位址，也就是 base，在 $s3。",
+     "read": "假設 g 在 s 一、h 在 s 二，陣列 A 第 0 個元素的位址，也就是 base，在 s 三。",
+     "k": 2,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2770.8
+     }
+    },
+    {
+     "say": "A[8] 的 offset 寫多少？是 8 嗎？不是！一個元素 4 個 byte，所以是 8 乘 4，等於 32。",
+     "read": "A 八的 offset 寫多少？是 8 嗎？不是！一個元素 4 個 byte，所以是 8 乘 4，等於 32。",
+     "k": 3,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2792.1
+     }
+    },
+    {
+     "say": "第一個指令 lw $t0, 32($s3)：1000 加 32 是 1032，把 A[8] 搬進 $t0。",
+     "read": "第一個指令 l w t 零、32 括號 s 三：1000 加 32 是 1032，把 A 八搬進 t 零。",
+     "k": 4,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2809
+     }
+    },
+    {
+     "say": "第二個 add $s1, $s2, $t0：h 加 A[8] 放到 g，5 加 30 得 35。",
+     "read": "第二個 add s 一、s 二、t 零：h 加 A 八放到 g，5 加 30 得 35。",
+     "k": 5,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2821
+     }
+    },
+    {
+     "say": "再難一點：A[12] = h + A[8]。讀 A[8]、加上 h 之後，還要寫回 A[12]。",
+     "read": "再難一點：A 十二等於 h 加 A 八。讀 A 八、加上 h 之後，還要寫回 A 十二。",
+     "k": 6,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2836.1
+     }
+    },
+    {
+     "say": "一樣先 lw 把 A[8] 搬到 $t0，跟 h 相加，結果先放在 $t0。",
+     "read": "一樣先 l w 把 A 八搬到 t 零，跟 h 相加，結果先放在 t 零。",
+     "k": 7,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2855.7
+     }
+    },
+    {
+     "say": "最後 sw 存回去：base 還是 $s3，offset 是 12 乘 4 等於 48，寫成 sw $t0, 48($s3)。",
+     "read": "最後 s w 存回去：base 還是 s 三，offset 是 12 乘 4 等於 48，寫成 s w t 零、48 括號 s 三。",
+     "k": 8,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2866.9
+     }
+    },
+    {
+     "say": "所以重點是：存取 array 時 base 不用動，只要改 offset，32、48，就能拿到任何一個元素。",
+     "k": 9,
+     "src": {
+      "v": "Ri-K2287x2U",
+      "t": 2890.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Byte address、alignment 與 endian",
+   "scene": "isA-6a-endian",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "再來幾個要注意的地方。記憶體要一格一格存取，每一格給一個位址：第 0 格、第 1 格、第 2 格。",
+     "k": 1,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 404.2
+     }
+    },
+    {
+     "say": "這一格是存取的基本單位。早期記憶體很貴，一格就是一個 byte；技術進步後一次能拿更多。",
+     "k": 2,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 429.9
+     }
+    },
+    {
+     "say": "那 MIPS 都以 4 個 byte 存取，為什麼不用「第幾個 word」當位址，還能省 bits？",
+     "k": 3,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 457.5
+     }
+    },
+    {
+     "say": "因為我們還是常常要拿單一個 byte，所以位址照樣以 byte 來算。",
+     "k": 3,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 470
+     }
+    },
+    {
+     "say": "MIPS 一個 word 是 4 個 byte，所以 word 的位址是 0、4、8，都是 4 的倍數。",
+     "k": 4,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 499
+     }
+    },
+    {
+     "say": "很重要的觀念 alignment，對齊：一個 word 一定要從 4 的倍數開始放。",
+     "k": 5,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 529.5
+     }
+    },
+    {
+     "say": "從位址 1、2 或 3 開始放一個 word，就是沒對齊，不合法。",
+     "k": 6,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 554.9
+     }
+    },
+    {
+     "say": "另一個觀念：一個 word 裡的 4 個 byte 怎麼排？拿 0x12345678 當例子，12 是最高位的 byte。",
+     "read": "另一個觀念：一個 word 裡的 4 個 byte 怎麼排？拿 十六進位 一二三四五六七八 當例子，一二 是最高位的 byte。",
+     "k": 7,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 611.3
+     }
+    },
+    {
+     "say": "Little endian：位址 0 放最低位的 byte，也就是 78，接著 56、34、12。",
+     "read": "Little endian：位址 0 放最低位的 byte，也就是 七八，接著 五六、三四、一二。",
+     "k": 8,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 618.9
+     }
+    },
+    {
+     "say": "Big endian 反過來，位址 0 放最高位的 12。MIPS 是 big endian；這只是習慣，知道是哪種就好。",
+     "read": "Big endian 反過來，位址 0 放最高位的 一二。MIPS 是 big endian；這只是習慣，知道是哪種就好。",
+     "k": 9,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 650.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Register 放不下：spilling",
+   "scene": "isA-6a-spill",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "到這裡，register 和 memory 都能放 operand，但要運算，一定先搬到 register。",
+     "k": 1,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 685.7
+     }
+    },
+    {
+     "say": "平常是 compiler 幫我們分配：一直要用到的變數，就放在 register。",
+     "k": 2,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 704.2
+     }
+    },
+    {
+     "say": "變數太多放不下，就用 load、store 把一些丟到記憶體，像水滿出來一樣，叫 spilling。",
+     "k": 3,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 736.1
+     }
+    },
+    {
+     "say": "那把 register file 做大，全部塞進去不就好了？不行，做大就變慢，還是那句 smaller is faster。",
+     "k": 4,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 762.1
+     }
+    },
+    {
+     "say": "register 的另一個好處：5 個 bits 就能指定，所以一個 add 能描述三個 register。",
+     "k": 5,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 807.8
+     }
+    },
+    {
+     "say": "記憶體位址太長，所以搬資料的指令一次只處理一個 memory operand。",
+     "k": 6,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 838.5
+     }
+    },
+    {
+     "say": "所以分工是：常用、最近要用的放 register；不常用、放不下的，寫回 memory。",
+     "k": 7,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 868.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Immediate operand：把常數放進指令",
+   "scene": "isA-6a-imm",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "除了 register 和 memory，還有很重要的第三種 operand：immediate，也就是常數。",
+     "k": 1,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 884.1
+     }
+    },
+    {
+     "say": "寫程式常有 a = a + 5、b = b + 1 這種加常數的運算，統計起來大約佔一半的 operand。",
+     "read": "寫程式常有 a 等於 a 加 5、b 等於 b 加 1 這種加常數的運算，統計起來大約佔一半的 operand。",
+     "k": 2,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 899.2
+     }
+    },
+    {
+     "say": "機器只認得 0 和 1，要加 5，就需要 5 的 bit pattern。這個 pattern 從哪來？不能憑空變出來。",
+     "k": 3,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 916.7
+     }
+    },
+    {
+     "say": "最直覺的做法：常數先存在記憶體，要用再 load。可是加個 5 就要多一個 load，太浪費。",
+     "k": 4,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1013.4
+     }
+    },
+    {
+     "say": "這種情況又佔一半，依照 make the common case fast，乾脆把常數直接放進指令裡。",
+     "k": 5,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1053.1
+     }
+    },
+    {
+     "say": "這種指令名字後面加個 i，像 addi，add immediate。讀出指令的同時，常數也一起拿到了。",
+     "read": "這種指令名字後面加個 i，像 add i，add immediate。讀出指令的同時，常數也一起拿到了。",
+     "k": 6,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1095.2
+     }
+    },
+    {
+     "say": "例子：f = g + 10，f、g 在 $s0、$s1，就寫成 addi $s0, $s1, 10。",
+     "read": "例子：f 等於 g 加 10，f、g 在 s 零、s 一，就寫成 add i s 零、s 一、10。",
+     "k": 7,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1158.8
+     }
+    },
+    {
+     "say": "常數可正可負，所以 MIPS 不需要減常數的指令：要減 1，就加負 1，addi $s2, $s1, -1。",
+     "read": "常數可正可負，所以 MIPS 不需要減常數的指令：要減 1，就加負 1，add i s 二、s 一、負 1。",
+     "k": 8,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1188.9
+     }
+    },
+    {
+     "say": "還有一個特別的常數 0，太常用了，所以 MIPS 把第 0 號 register 用硬體接死成 0，叫 hard-wired。",
+     "k": 9,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1216.7
+     }
+    },
+    {
+     "say": "$zero 改不了。就算寫「0 加 5 放進 $zero」，它還是 0，這個指令等於白做。",
+     "read": "zero 暫存器改不了。就算寫「0 加 5 放進 zero」，它還是 0，這個指令等於白做。",
+     "k": 10,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1266.3
+     }
+    },
+    {
+     "say": "它還有個妙用：MIPS 沒有 move。要把 $s1 搬到 $t2，就寫 add $t2, $s1, $zero，加 0 原封不動。",
+     "read": "它還有個妙用：MIPS 沒有 move。要把 s 一搬到 t 二，就寫 add t 二、s 一、zero，加 0 原封不動。",
+     "k": 11,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1275.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "指令也是 32 個 bits",
+   "scene": "isA-6a-repr",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "有號、無號數字怎麼表示，logic design 學過，黃老師請大家自己回去複習。",
+     "k": 1,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1339.7
+     }
+    },
+    {
+     "say": "我們寫的 add、$t0 對機器沒有意義，它只看得懂 0 和 1。那指令要怎麼變成 0101？",
+     "read": "我們寫的 add、t 零對機器沒有意義，它只看得懂 0 和 1。那指令要怎麼變成 零一零一？",
+     "k": 2,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1377.7
+     }
+    },
+    {
+     "say": "先問長度：register 32 bits，記憶體一次搬一個 word 也是 32 bits，那指令就 32 bits，越規律越簡單。",
+     "k": 3,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1417.5
+     }
+    },
+    {
+     "say": "再把 32 個 bits 切成好幾個 field，每一格代表一種資訊。",
+     "k": 4,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1488.2
+     }
+    },
+    {
+     "say": "電腦拿到指令，先取前 6 個 bits，那是 op code；再取 5 個 bits，那是第幾號 register……",
+     "k": 5,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1522.4
+     }
+    },
+    {
+     "say": "如果各格式 op code 長度不同，6、7、8 bits 都有，拿到指令連先取幾個 bits 都不知道，只好先猜。",
+     "k": 6,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1554.5
+     }
+    },
+    {
+     "say": "所以格式要盡量一致：不管哪種指令，第一格都是 6 bits 的 op code。",
+     "k": 7,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1679
+     }
+    },
+    {
+     "say": "對照 x86，一大堆格式，硬體就很複雜。所以這些格式不是要你死背，要懂它為什麼這樣設計。",
+     "k": 8,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1716.8
+     }
+    },
+    {
+     "say": "MIPS 只有三種：R-type、I-type、J-type，所有指令都落在這三種裡。",
+     "k": 9,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1742.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "R-format：add $t0, $s1, $s2 編碼",
+   "scene": "isA-6a-rfmt",
+   "steps": 18,
+   "lines": [
+    {
+     "say": "先看 R-type，就是一開始學的加、減、邏輯運算這類指令，R 代表 register。",
+     "k": 1,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1769
+     }
+    },
+    {
+     "say": "32 個 bits 切成六格：op 6、rs 5、rt 5、rd 5、shamt 5、funct 6，加起來剛好 32。",
+     "k": 2,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1786.6
+     }
+    },
+    {
+     "say": "op code 告訴我們是什麼指令。R-type 很特別：加、減、and、or 全部共用同一個 op，六個 0。",
+     "k": 3,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1814.1
+     }
+    },
+    {
+     "say": "那到底是哪個？看最後 6 bits 的 funct：add 是 32、sub 是 34、and 是 36、or 是 37。",
+     "k": 4,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1845.4
+     }
+    },
+    {
+     "say": "中間三格 rs、rt、rd：兩個 source 一個 destination，register 有 32 個，所以各 5 bits。",
+     "k": 5,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1888
+     }
+    },
+    {
+     "say": "rs 是第一個 source，rt 是第二個 source，rd 是 destination，結果放這。",
+     "k": 6,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1911.1
+     }
+    },
+    {
+     "say": "剩下 5 bits 叫 shamt，shift amount，給 shift 用。32 bits 最多移 31 次，0 到 31，5 bits 剛好。",
+     "k": 7,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 1921
+     }
+    },
+    {
+     "say": "沒用到 shift 的指令，像 add，這格就填 0。",
+     "k": 8,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2049.3
+     }
+    },
+    {
+     "say": "來看例子：add $t0, $s1, $s2，把 $s1 加 $s2 放到 $t0。",
+     "read": "來看例子：add t 零、s 一、s 二，把 s 一加 s 二放到 t 零。",
+     "k": 9,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2062.9
+     }
+    },
+    {
+     "say": "它是 R-type，op 一律是 0；它是加法，funct 是 32。",
+     "k": 10,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2076
+     }
+    },
+    {
+     "say": "第一個 source rs 是 $s1，17 號；第二個 source rt 是 $s2，18 號。",
+     "read": "第一個 source rs 是 s 一，17 號；第二個 source rt 是 s 二，18 號。",
+     "k": 11,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2091.9
+     }
+    },
+    {
+     "say": "rd 是 $t0，8 號；shamt 填 0。所以六格十進位是 0、17、18、8、0、32。",
+     "read": "rd 是 t 零，8 號；shamt 填 0。所以六格十進位是 0、17、18、8、0、32。",
+     "k": 12,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2100.7
+     }
+    },
+    {
+     "say": "注意：assembly 把 destination 寫最前面，可是編碼時欄位順序是 rs、rt、rd。",
+     "k": 12
+    },
+    {
+     "say": "每格換成二進位：op 是 000000，rs 是 10001，接下去，就是機器真正看到的 32 個 bits。",
+     "read": "每格換成二進位：op 是 零零零零零零，rs 是 一零零零一，接下去，就是機器真正看到的 32 個 bits。",
+     "k": 13,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2110.9
+     }
+    },
+    {
+     "say": "這串 0101 跟一般資料長得一模一樣，差別只在：告訴機器它是指令，它就照指令格式去解釋。",
+     "read": "這串 零一零一 跟一般資料長得一模一樣，差別只在：告訴機器它是指令，它就照指令格式去解釋。",
+     "k": 14,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2125
+     }
+    },
+    {
+     "say": "知道是 R-type，硬體就照格式切：6、5、5、5、5、6，一段一段拿出來，就知道要做什麼。",
+     "k": 15,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2150.2
+     }
+    },
+    {
+     "say": "R-type 長什麼樣一定要記得，後面設計硬體，就是照這三種格式來做的。",
+     "k": 16,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2215.5
+     }
+    },
+    {
+     "say": "一長串 0101 很難讀，常用十六進位：每 4 個 bits 一塊。這個指令就是 0x02324020。",
+     "read": "一長串 零一零一 很難讀，常用十六進位：每 4 個 bits 一塊。這個指令就是 十六進位 零二三二四零二零。",
+     "k": 17,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2256.2
+     }
+    },
+    {
+     "say": "課本的練習：十六進位 eca8 6420，每個 digit 換 4 個 bits，e 是 1110、c 是 1100，反過來也一樣。",
+     "read": "課本的練習：十六進位 e c a 八 六四二零，每個 digit 換 4 個 bits，e 是 一一一零、c 是 一一零零，反過來也一樣。",
+     "k": 18,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2287.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "I-format：常數與 offset 放在 16 bits",
+   "scene": "isA-6a-ifmt",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "第二種 I-type。我們還學了 load、store、immediate，I 就是 immediate：指令裡有一格放常數。",
+     "k": 1,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2299.1
+     }
+    },
+    {
+     "say": "op 是 6 bits，rs、rt 各 5 bits；R-type 後面的 rd、shamt、funct 共 16 bits，合成一格 immediate。",
+     "k": 2,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2333.9
+     }
+    },
+    {
+     "say": "屬於 I-type 的有 lw、sw、addi 這些。",
+     "read": "屬於 I-type 的有 l w、s w、add i 這些。",
+     "k": 3,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2386.8
+     }
+    },
+    {
+     "say": "它只描述兩個 register：rs 是 source；rt 叫 target，像 addi、lw 時它就是放結果的地方。",
+     "read": "它只描述兩個 register：rs 是 source；rt 叫 target，像 add i、l w 時它就是放結果的地方。",
+     "k": 4,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2397.6
+     }
+    },
+    {
+     "say": "這 16 bits 被當成有號數，可是運算的資料是 32 bits，要先擴成 32 bits，叫 sign extension。",
+     "k": 5,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2428.3
+     }
+    },
+    {
+     "say": "做法：看最高位的 sign bit，0 是正數，前面補 0；1 是負數，前面補 1。",
+     "k": 6,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2479.5
+     }
+    },
+    {
+     "say": "這是二補數的性質：負 50 用 16 bits 寫是 十六進位 FFCE，前面補滿 1，擴成 32 bits 還是負 50。",
+     "read": "這是二補數的性質：負 50 用 16 bits 寫是 十六進位 F F C E，前面補滿 1，擴成 32 bits 還是負 50。",
+     "k": 6
+    },
+    {
+     "say": "所以常數不能任意大：16 bits 有號數，範圍從負 32768 到 32767，超過就放不進去。",
+     "k": 7,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2528.7
+     }
+    },
+    {
+     "say": "這裡出現第三個 design principle：Good design demands good compromise，好設計需要好妥協。",
+     "k": 8,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2576.9
+     }
+    },
+    {
+     "say": "為什麼不沿用 R-type，把常數塞進 shamt 或 funct？那只有 5、6 個 bits，太小，所以合併成 16 bits。",
+     "k": 9,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2594.2
+     }
+    },
+    {
+     "say": "格式雖不同，但盡量相像：前 6 bits 一定是 op，接著 5 bits 是 rs，再來是 rt，解碼硬體就很接近。",
+     "k": 10,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2631.9
+     }
+    },
+    {
+     "say": "例子：addi $21, $22, -50，把 22 號 register 加負 50，放到 21 號。addi 的 op code 是 8。",
+     "read": "例子：add i 21 號、22 號、負 50，把 22 號 register 加負 50，放到 21 號。add i 的 op code 是 8。",
+     "k": 11,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2676.3
+     }
+    },
+    {
+     "say": "注意順序：assembly 先寫目的地 21，再寫來源 22；格式裡卻是 rs 放 22 在前、rt 放 21 在後。",
+     "k": 12,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2712.3
+     }
+    },
+    {
+     "say": "最後 16 bits 放負 50 的二補數。整個是 8、22、21、負 50，換成十六進位是 0x22D5FFCE。",
+     "read": "最後 16 bits 放負 50 的二補數。整個是 8、22、21、負 50，換成十六進位是 二二 D 五 F F C E。",
+     "k": 13,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2738.1
+     }
+    },
+    {
+     "say": "load、store 也是 I-type。例如 lw $t0, 1200($t1)，lw 的 op code 是 35。",
+     "read": "load、store 也是 I-type。例如 l w t 零、1200 括號 t 一，l w 的 op code 是 35。",
+     "k": 14,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2785.3
+     }
+    },
+    {
+     "say": "rs 放 base $t1，9 號；rt 放目的地 $t0，8 號；16 bits 放 1200。編起來是 0x8D2804B0。",
+     "read": "rs 放 base t 一，9 號；rt 放目的地 t 零，8 號；16 bits 放 1200。編起來是 十六進位 八 D 二八零四 B 零。",
+     "k": 15,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2837.8
+     }
+    },
+    {
+     "say": "上次有同學問 offset 能多大？它也是有號數、要 sign extension，只能在 base 上下 2 的 15 次方 bytes 內。",
+     "k": 16,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2902.8
+     }
+    },
+    {
+     "say": "超過這個範圍，就得把 base 改到別的位置。",
+     "k": 16,
+     "src": {
+      "v": "jhMWFZV6hy8",
+      "t": 2936
+     }
+    }
+   ]
+  },
+  {
+   "title": "lw 也用 I-format",
+   "scene": "isB-7a-ifmt2",
+   "steps": 3,
+   "lines": [
+    {
+     "say": "黃老師上課時再考大家一次：還有哪些指令也用 I-format？這題很重要。",
+     "k": 1,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 379.98
+     }
+    },
+    {
+     "say": "load、store 也是 I-type，需要兩個 register 加一個常數，例如 lw $t0, 32($s3)。",
+     "read": "load、store 也是 I-type，需要兩個 register 加一個常數，例如 l w t 零、32 括號 s 三。",
+     "k": 2,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 410.55
+     }
+    },
+    {
+     "say": "16 bits 放 offset 32；lw 的 op 是 35、$s3 是 19 號、$t0 是 8 號，所以欄位是 35、19、8、32。",
+     "read": "16 bits 放 offset 32；l w 的 op 是 35、s 三是 19 號、t 零是 8 號，所以欄位是 35、19、8、32。",
+     "k": 3,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 422.67
+     }
+    }
+   ]
+  },
+  {
+   "title": "I-format 的三種用途",
+   "scene": "isB-7a-ifmt3",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "為什麼要這麼熟？後面設計硬體，只要支援這幾種 type，幾乎就能建出一台電腦。",
+     "k": 1,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 463.29
+     }
+    },
+    {
+     "say": "寫程式除了一行一行往下跑，最重要的是做決定：有時走這邊、有時走那邊，就是 if-then-else。",
+     "k": 2,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 476.23
+     }
+    },
+    {
+     "say": "要做 if-then-else 需要 conditional branch，也就是 beq、bne，它們也是 I-type。",
+     "read": "要做 if-then-else 需要 conditional branch，也就是 b e q、b n e，它們也是 I-type。",
+     "k": 3,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 504.09
+     }
+    },
+    {
+     "say": "所以 R-type 只有一種樣子，好記；I-type 名字叫 immediate，卻有三種用途。",
+     "k": 4,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 527.69
+     }
+    },
+    {
+     "say": "一是 immediate 運算，二是 load、store，三是 beq、bne 這種分支。",
+     "read": "一是 immediate 運算，二是 load、store，三是 b e q、b n e 這種分支。",
+     "k": 4,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 540
+     }
+    }
+   ]
+  },
+  {
+   "title": "Stored-program：指令和資料都是 0101",
+   "scene": "isB-6b-stored",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "好，我們先補一個很重要的觀念，叫 stored-program computer，儲存程式的電腦。",
+     "k": 1,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 23.3
+     }
+    },
+    {
+     "say": "你想想看，在 MIPS 裡一個指令是 32 個 bit，一筆整數資料也是 32 個 bit。",
+     "k": 2,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 23.3
+     }
+    },
+    {
+     "say": "那問題來了：給你一串 0101，你分得出它是指令還是資料嗎？分不出來，它就是一串 bit。",
+     "read": "那問題來了：給你一串 零一零一，你分得出它是指令還是資料嗎？分不出來，它就是一串 bit。",
+     "k": 3,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 23.3
+     }
+    },
+    {
+     "say": "所以電腦乾脆不分了，不管是指令還是資料，通通變成 0101 放進記憶體。",
+     "read": "所以電腦乾脆不分了，不管是指令還是資料，通通變成 零一零一 放進記憶體。",
+     "k": 4,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 45
+     }
+    },
+    {
+     "say": "舉個例子：你寫了一個 C 程式，對你來說，它是要拿來執行的「程式」。",
+     "k": 5,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 65
+     }
+    },
+    {
+     "say": "可是對 compiler 來說，你的程式只是它的 input data，它讀進去，再輸出 assembly code。",
+     "k": 6,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 65
+     }
+    },
+    {
+     "say": "所以 program 和 data 都放在 memory 裡，只是分在不同區塊。黃老師說，這看似簡單，其實是很厲害的發現。",
+     "k": 7,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 85
+     }
+    },
+    {
+     "say": "要用的時候讀出來：當資料讀，這串 bit 就是 36,847,648；拿去執行，它就是 add $t0, $s1, $s2。",
+     "read": "要用的時候讀出來：當資料讀，這串 bit 就是 36,847,648；拿去執行，它就是 add t 零、s 一、s 二。",
+     "k": 8,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 108
+     }
+    },
+    {
+     "say": "所以重點是：指令也用 binary 表示、跟資料一起存在記憶體，而且程式可以處理程式，compiler 就是例子。",
+     "k": 9,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 129
+     }
+    }
+   ]
+  },
+  {
+   "title": "R-type 為什麼還要 funct",
+   "scene": "isB-6b-funct",
+   "steps": 3,
+   "lines": [
+    {
+     "say": "再回到上一講留下的問題。上面是 R-format：op、rs、rt、rd、shamt、funct；下面是 I-format。",
+     "k": 1,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 151
+     }
+    },
+    {
+     "say": "I-type 的指令，看最前面 6 個 bit 的 opcode，就知道要做什麼動作。",
+     "k": 2,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 173
+     }
+    },
+    {
+     "say": "可是 R-type 看完 op，還要再看最後 6 個 bit 的 funct，才知道是 add 還是 sub。為什麼要這樣繞一圈？",
+     "k": 3,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 195
+     }
+    }
+   ]
+  },
+  {
+   "title": "全部塞進 opcode 會怎樣",
+   "scene": "isB-6b-funct2",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "黃老師請同學猜。假設每種運算，add、sub、and、or，都有自己的 opcode，6 個 bit 只有 64 種，夠嗎？",
+     "k": 1,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 234
+     }
+    },
+    {
+     "say": "不夠，只好把 op 加長，例如變 7 個 bit。而且為了格式整齊，每種 type 的 op 都要一樣長。",
+     "k": 2,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 274
+     }
+    },
+    {
+     "say": "可是一個指令總共就 32 個 bit，前面多用一個，後面就得少一個。",
+     "k": 3,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 274
+     }
+    },
+    {
+     "say": "對 R-type 沒差：rs、rt、rd、shamt 各 5 個 bit，照樣放得下，後面還有剩。",
+     "k": 4,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 316
+     }
+    },
+    {
+     "say": "但 I-type 就慘了：immediate 從 16 bit 變 15 bit，範圍從正負 2 的 15 次方縮成 2 的 14 次方，少一半。",
+     "k": 5,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 337
+     }
+    },
+    {
+     "say": "所以聰明的做法是：R-type 用完 rs、rt、rd、shamt 還剩 6 個 bit，就把「哪一種運算」放在這裡，就是 funct。",
+     "k": 6,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 357
+     }
+    },
+    {
+     "say": "這樣 R-type 共用 op 等於 0，再用 funct 分，add 32、sub 34；op 維持 6 bit，immediate 保住 16 bit。",
+     "k": 7,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 398
+     }
+    },
+    {
+     "say": "黃老師還補一句：聽不懂就要說，因為你不懂，別人多半也不懂，你的問題就是大家的問題。",
+     "k": 7,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 424
+     }
+    }
+   ]
+  },
+  {
+   "title": "Logical operations：一個 bit 一個 bit 處理",
+   "scene": "isB-6b-bitwise",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "接下來兩類很重要的指令：第一是 logical operation，第二是 decision making，也就是 branch。",
+     "k": 1,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 445
+     }
+    },
+    {
+     "say": "decision making 為什麼重要？程式厲害就厲害在：有時執行、有時不執行，有時還要重複執行。",
+     "k": 2,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 445
+     }
+    },
+    {
+     "say": "先看 logical operation。之前我們都把 32 個 bit 當成一整個數字，整塊拿去加減。",
+     "k": 3,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 477
+     }
+    },
+    {
+     "say": "可是一個 word 裡面其實就是 32 個 0 或 1。一個 bit 一個 bit 去處理，就叫 bitwise operation。",
+     "k": 4,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 493
+     }
+    },
+    {
+     "say": "像 shift、and、or，都是對每個 bit 分別做的。會寫程式的話不難，我們快速複習一遍。",
+     "k": 5,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 512
+     }
+    }
+   ]
+  },
+  {
+   "title": "Shift：sll、srl 與 sra",
+   "scene": "isB-6b-shift",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "先看對照表：C 的左移對應 sll，shift left logical；右移對應 srl；AND 是 and、andi；OR 是 or、ori。",
+     "read": "先看對照表：C 的左移對應 s l l，shift left logical；右移對應 s r l；AND 是 and、and i；OR 是 or、o r i。",
+     "k": 1,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 534
+     }
+    },
+    {
+     "say": "欸，MIPS 沒有 NOT。因為 R-type 都是兩個來源、一個目的，NOT 只有一個來源，就不另外設計，改用 nor。",
+     "k": 2,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 560
+     }
+    },
+    {
+     "say": "shift 的寫法是：目的 register、來源 register、移幾位。像課本的 sll $t2, $s0, 4，4 就是 shift amount。",
+     "read": "shift 的寫法是：目的 register、來源 register、移幾位。像課本的 s l l t 二、s 零、4，4 就是 shift amount。",
+     "k": 3,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 583
+     }
+    },
+    {
+     "say": "左移的時候，右邊會空出位置，sll 一律補 0。",
+     "read": "左移的時候，右邊會空出位置，s l l 一律補 0。",
+     "k": 4,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 633
+     }
+    },
+    {
+     "say": "往右移也一樣，左邊空出來的位置全部補 0，這叫 shift right logical，srl。",
+     "read": "往右移也一樣，左邊空出來的位置全部補 0，這叫 shift right logical，s r l。",
+     "k": 5,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 640
+     }
+    },
+    {
+     "say": "可是如果這串 bit 是 signed number，右移時左邊要補 sign bit，這叫 sign extension，指令是 sra。",
+     "read": "可是如果這串 bit 是 signed number，右移時左邊要補 sign bit，這叫 sign extension，指令是 s r a。",
+     "k": 6,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 652
+     }
+    },
+    {
+     "say": "整理一下：正數的 sign bit 是 0，sra 補 0；負數是 1，sra 就補 1。srl 則不管正負，一律補 0。",
+     "read": "整理一下：正數的 sign bit 是 0，s r a 補 0；負數是 1，s r a 就補 1。s r l 則不管正負，一律補 0。",
+     "k": 7,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 686
+     }
+    },
+    {
+     "say": "看 32 bit 的例子：往右移 8 個 bit，每個 bit 往右 8 格，最前面空出的 8 格補 0。",
+     "k": 8,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 709
+     }
+    },
+    {
+     "say": "往左移 8 個 bit 呢？最前面 8 個 bit 被擠出去不見了，後面空出的 8 格補 0。",
+     "k": 9,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 717
+     }
+    },
+    {
+     "say": "換成 sra 8：這個數最前面是 0，是正數，所以補的也是 0，結果跟 srl 一樣。",
+     "read": "換成 s r a 8：這個數最前面是 0，是正數，所以補的也是 0，結果跟 s r l 一樣。",
+     "k": 10,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 733
+     }
+    },
+    {
+     "say": "再換一個最前面是 1 的負數，sra 8 要在前面補 8 個 1，結果還是負數。這就是 srl 跟 sra 的差別。",
+     "read": "再換一個最前面是 1 的負數，s r a 8 要在前面補 8 個 1，結果還是負數。這就是 s r l 跟 s r a 的差別。",
+     "k": 11,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 750
+     }
+    },
+    {
+     "say": "順帶一提，左移沒有 arithmetic 版本，MIPS 只有 sll。",
+     "read": "順帶一提，左移沒有 arithmetic 版本，MIPS 只有 s l l。",
+     "k": 11
+    }
+   ]
+  },
+  {
+   "title": "Shift 的 R-format：左移就是乘 2",
+   "scene": "isB-6b-shiftfmt",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "shift 是 R-type。sll $t2, $s0, 4 的六個欄位是 0、0、16、10、4、0：$s0 是 16 號，$t2 是 10 號。",
+     "read": "shift 是 R-type。s l l t 二、s 零、4 的六個欄位是 0、0、16、10、4、0：s 零是 16 號，t 二是 10 號。",
+     "k": 1,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 766
+     }
+    },
+    {
+     "say": "op 加上 funct，告訴你是左移還是右移、logical 還是 arithmetic：sll 的 funct 是 0、srl 是 2、sra 是 3。",
+     "read": "op 加上 funct，告訴你是左移還是右移、logical 還是 arithmetic：s l l 的 funct 是 0、s r l 是 2、s r a 是 3。",
+     "k": 2,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 775
+     }
+    },
+    {
+     "say": "移幾位放在 shamt，5 個 bit，可以表示 0 到 31，剛好夠一個 32 bit 的 word。",
+     "k": 3,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 782
+     }
+    },
+    {
+     "say": "shift 只要一個來源、一個目的，兩個 register 就夠，所以 rs 這格用不到，填 0。",
+     "k": 4,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 793
+     }
+    },
+    {
+     "say": "很重要的觀念：左移補 0 就等於乘 2。左移 1 位乘 2，左移 2 位乘 4。像 3 左移一位變 6，再一位變 12。",
+     "k": 5,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 814
+     }
+    },
+    {
+     "say": "反過來，右移就是除法：右移 1 位除以 2，右移 2 位除以 4。這對 unsigned 的數成立。",
+     "k": 6,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 820
+     }
+    },
+    {
+     "say": "為什麼重要？shift 很便宜，一個 R-type 指令就做完；乘法要對每個 bit 處理，又麻煩又慢。",
+     "k": 7,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 834
+     }
+    },
+    {
+     "say": "所以聰明的 compiler 看到 a 乘 8，就改成左移 3 位。你驗算看看：5 左移 3 位是 40，正好 5 乘 8。",
+     "k": 8,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 860
+     }
+    }
+   ]
+  },
+  {
+   "title": "AND 選出 bit、OR 設定 bit",
+   "scene": "isB-6b-andor",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "and 也是 bitwise：兩個數的 bit 一一配對做 AND，兩個都是 1 才得 1。",
+     "k": 1,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 893
+     }
+    },
+    {
+     "say": "課本的例子：$t2 裡有一個值，我們只想留下其中某一塊 bit，其他通通清成 0。",
+     "read": "課本的例子：t 二 裡有一個值，我們只想留下其中某一塊 bit，其他通通清成 0。",
+     "k": 2,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 908
+     }
+    },
+    {
+     "say": "做法是準備一個 mask，遮罩，放在 $t1：要保留的位置放 1，其他放 0。",
+     "read": "做法是準備一個 mask，遮罩，放在 t 一：要保留的位置放 1，其他放 0。",
+     "k": 3,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 927
+     }
+    },
+    {
+     "say": "and $t0, $t1, $t2：mask 是 1 的地方保留，是 0 的地方變 0，結果是 0x00000C00，要的 bit 被選出來了。",
+     "read": "and t 零、t 一、t 二：mask 是 1 的地方保留，是 0 的地方變 0，結果是 十六進位 零零零零零 C 零零，要的 bit 被選出來了。",
+     "k": 4,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 932
+     }
+    },
+    {
+     "say": "or 的用途剛好相反：把某些 bit 設成 1，其他 bit 不要動。",
+     "k": 5,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 953
+     }
+    },
+    {
+     "say": "一樣準備 $t1，想變成 1 的位置寫 1，其他寫 0。",
+     "read": "一樣準備 t 一，想變成 1 的位置寫 1，其他寫 0。",
+     "k": 6,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 965
+     }
+    },
+    {
+     "say": "跟 1 做 OR 一定是 1，跟 0 做 OR 不變。所以 or 之後，指定位置都變 1，結果是 0x00003DC0。",
+     "read": "跟 1 做 OR 一定是 1，跟 0 做 OR 不變。所以 or 之後，指定位置都變 1，結果是 十六進位 零零零零三 D C 零。",
+     "k": 7,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 971
+     }
+    }
+   ]
+  },
+  {
+   "title": "NOT 用 NOR 加 $zero 做出來",
+   "scene": "isB-6b-nor",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "剛才說 MIPS 沒有 NOT，它用 nor 來代替。",
+     "k": 1,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 995
+     }
+    },
+    {
+     "say": "NOR 的意思是：先把 a 和 b 做 OR，外面再加一個 NOT。",
+     "k": 2,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1008
+     }
+    },
+    {
+     "say": "那要用 NOR 做出 NOT a，b 要放什麼？要讓 a OR b 還是 a，b 就要是 0，因為跟 0 做 OR 不變。",
+     "k": 3,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1026
+     }
+    },
+    {
+     "say": "外面再套 NOT：a NOR 0，就是 NOT 括號 a OR 0，也就是 NOT a。NOT 就做出來了。",
+     "k": 4,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1048
+     }
+    },
+    {
+     "say": "可是 nor 是 R-type，只能拿 register 當運算元，不能直接寫常數 0。那 0 從哪裡來？",
+     "k": 5,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1057
+     }
+    },
+    {
+     "say": "答案是 $zero：第 0 號 register 永遠是 0。nor $t0, $t1, $zero，就把 NOT $t1 放進 $t0。",
+     "read": "答案是 zero 暫存器：第 0 號 register 永遠是 0。nor t 零、t 一、zero，就把 NOT t 一 放進 t 零。",
+     "k": 6,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1092
+     }
+    },
+    {
+     "say": "拿剛才的 mask 試試看，0x00003C00 取 NOT，就變成 0xFFFFC3FF。",
+     "read": "拿剛才的 mask 試試看，十六進位 零零零零三 C 零零 取 NOT，就變成 十六進位 F F F F C 三 F F。",
+     "k": 6,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1092
+     }
+    },
+    {
+     "say": "所以 NOT 是用 NOR 實作的，一個運算元放 $zero 就好。shift、and、or、nor，都是在 bit 層次操作。",
+     "read": "所以 NOT 是用 NOR 實作的，一個運算元放 zero 暫存器就好。shift、and、or、nor，都是在 bit 層次操作。",
+     "k": 7,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1112
+     }
+    }
+   ]
+  },
+  {
+   "title": "Decision making：beq、bne 與 j",
+   "scene": "isB-6b-branch",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "好，到目前學的都是運算。如果程式只會從第一行一路做到最後一行，寫不出什麼厲害的東西。",
+     "k": 1,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1138
+     }
+    },
+    {
+     "say": "寫程式最厲害的是做決定：if 條件成立就做 A，else 就做 B。",
+     "k": 2,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1159
+     }
+    },
+    {
+     "say": "或是一段 code 一直重複，直到條件滿足才停，這就是 loop。MIPS 要有指令支援，就是 branch。",
+     "k": 3,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1166
+     }
+    },
+    {
+     "say": "第一個是 beq，branch on equal，寫成 beq 兩個 register，再加一個 L1。L1 是 label，要跳去的地方。",
+     "read": "第一個是 b e q，branch on equal，寫成 b e q 兩個 register，再加一個 L1。L1 是 label，要跳去的地方。",
+     "k": 4,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1211
+     }
+    },
+    {
+     "say": "意思是：兩個 register 的值一樣，就跳到 L1，像 go to L1。",
+     "k": 5,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1256
+     }
+    },
+    {
+     "say": "bne，branch on not equal，剛好相反：兩個值不一樣，才跳到 L1。",
+     "read": "b n e，branch on not equal，剛好相反：兩個值不一樣，才跳到 L1。",
+     "k": 6,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1268
+     }
+    },
+    {
+     "say": "這兩個都叫 conditional branch，條件分支，條件滿足才跳。",
+     "k": 7,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1285
+     }
+    },
+    {
+     "say": "另一個是 j，jump，叫 unconditional jump：不管三七二十一，執行到它就跳到 label。",
+     "k": 8,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1306
+     }
+    },
+    {
+     "say": "其實 beq 也能做到一定跳：比較兩個一定是 0 的 register，像 $zero 跟 $zero，一定相等，一定跳。",
+     "read": "其實 b e q 也能做到一定跳：比較兩個一定是 0 的 register，像 zero 跟 zero，一定相等，一定跳。",
+     "k": 9,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1332
+     }
+    },
+    {
+     "say": "可是 j 跟 beq 雖然意思一樣，instruction format 不同，能跳的範圍也不同。",
+     "read": "可是 j 跟 b e q 雖然意思一樣，instruction format 不同，能跳的範圍也不同。",
+     "k": 10,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1351
+     }
+    },
+    {
+     "say": "猜猜 beq 是哪種 format？op、兩個 register、後面一個 label，跟 I-type 一模一樣，目標放在那 16 個 bit。",
+     "read": "猜猜 b e q 是哪種 format？op、兩個 register、後面一個 label，跟 I-type 一模一樣，目標放在那 16 個 bit。",
+     "k": 11,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1406
+     }
+    },
+    {
+     "say": "j 是第三種 format，J-format：op 一樣 6 個 bit，後面 26 個 bit 全部用來描述要跳去哪。",
+     "k": 12,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1430
+     }
+    },
+    {
+     "say": "beq、bne 用掉 6、5、5 個 bit，只剩 16 個；j 有 26 個。所以 beq 只能在附近跳，j 可以跳比較遠。",
+     "read": "b e q、b n e 用掉 6、5、5 個 bit，只剩 16 個；j 有 26 個。所以 b e q 只能在附近跳，j 可以跳比較遠。",
+     "k": 13,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1473
+     }
+    }
+   ]
+  },
+  {
+   "title": "if-then-else 編成 bne 加 j",
+   "scene": "isB-6b-ifelse",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "來看 compiler 怎麼翻 if-then-else：if i 等於 j，f 等於 g 加 h；否則 f 等於 g 減 h。",
+     "k": 1,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1544
+     }
+    },
+    {
+     "say": "先決定變數放哪：f、g、h、i、j 依序放在 $s0 到 $s4。",
+     "read": "先決定變數放哪：f、g、h、i、j 依序放在 s 零 到 s 四。",
+     "k": 2,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1578
+     }
+    },
+    {
+     "say": "畫成流程圖：i 等於 j 就走 true path，算 g 加 h；不成立走 false path，算 g 減 h。",
+     "k": 3,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1595
+     }
+    },
+    {
+     "say": "不管走哪條，最後都要到同一個出口 Exit，接著做下一個 statement。",
+     "k": 4,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1604
+     }
+    },
+    {
+     "say": "第一行寫 bne $s3, $s4, Else：i 跟 j 不一樣就跳到 Else。注意，條件是反過來寫的。",
+     "read": "第一行寫 b n e s 三、s 四、Else：i 跟 j 不一樣就跳到 Else。注意，條件是反過來寫的。",
+     "k": 5,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1623
+     }
+    },
+    {
+     "say": "Else 這裡做 sub $s0, $s1, $s2，把 g 減 h 放進 f，做完自然往下走到 Exit。",
+     "read": "Else 這裡做 sub s 零、s 一、s 二，把 g 減 h 放進 f，做完自然往下走到 Exit。",
+     "k": 6,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1641
+     }
+    },
+    {
+     "say": "如果 bne 沒跳，表示 i 等於 j，就直接做下一行：add $s0, $s1, $s2，f 等於 g 加 h。",
+     "read": "如果 b n e 沒跳，表示 i 等於 j，就直接做下一行：add s 零、s 一、s 二，f 等於 g 加 h。",
+     "k": 7,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1665
+     }
+    },
+    {
+     "say": "add 做完，一定要補一行 j Exit，直接跳到出口。",
+     "k": 8,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1695
+     }
+    },
+    {
+     "say": "忘了會怎樣？電腦會乖乖執行下一個指令，也就是 sub，把剛算好的 f 蓋掉，結果就錯了。",
+     "k": 9,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1708
+     }
+    },
+    {
+     "say": "黃老師說，電腦就是這麼笨，一個指令接一個照順序做。不想做下一個，就要明確叫它 jump。",
+     "k": 10,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1780
+     }
+    }
+   ]
+  },
+  {
+   "title": "Loop：while 迴圈與陣列索引",
+   "scene": "isB-6b-loop",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "第二個例子是 loop：while save[i] 等於 k，就一直把 i 加 1。",
+     "read": "第二個例子是 loop：while save i 等於 k，就一直把 i 加 1。",
+     "k": 1,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1808
+     }
+    },
+    {
+     "say": "麻煩在哪？i 是 save 這個 array 的 index。以前 offset 是固定的，這裡 offset 會跟著 i 變。",
+     "k": 2,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1827
+     }
+    },
+    {
+     "say": "save 的起始位址，也就是 base，放在 $s6。",
+     "read": "save 的起始位址，也就是 base，放在 s 六。",
+     "k": 3,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1856
+     }
+    },
+    {
+     "say": "i 放在 $s3，要比的 k 放在 $s5。",
+     "read": "i 放在 s 三，要比的 k 放在 s 五。",
+     "k": 4,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1870
+     }
+    },
+    {
+     "say": "那 i 是 3 的時候，要從 base 加多少？不是 3，是 3 乘 4 等於 12，因為一個 word 佔 4 個 byte。",
+     "k": 5,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1877
+     }
+    },
+    {
+     "say": "i 是 5 就加 20。永遠要乘 4。而且 i 一直在變，所以要先把 offset 算出來。",
+     "k": 6,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1895
+     }
+    },
+    {
+     "say": "剛學過乘法很慢，所以用 shift：sll $t1, $s3, 2，把 i 左移 2 位，就是乘 4，放進 $t1。",
+     "read": "剛學過乘法很慢，所以用 shift：s l l t 一、s 三、2，把 i 左移 2 位，就是乘 4，放進 t 一。",
+     "k": 7,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1960
+     }
+    },
+    {
+     "say": "再來 add $t1, $t1, $s6：base 加上 offset，$t1 就是 save[i] 的位址。",
+     "read": "再來 add t 一、t 一、s 六：base 加上 offset，t 一 就是 save i 的位址。",
+     "k": 8,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 1990
+     }
+    },
+    {
+     "say": "lw $t0, 0($t1)：位址已經算好了，offset 寫 0，把 save[i] 讀進 $t0。",
+     "read": "l w t 零、0 括號 t 一：位址已經算好了，offset 寫 0，把 save i 讀進 t 零。",
+     "k": 9,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2015
+     }
+    },
+    {
+     "say": "bne $t0, $s5, Exit：拿 save[i] 跟 k 比，不相等就表示條件不滿足，跳出去。",
+     "read": "b n e t 零、s 五、Exit：拿 save i 跟 k 比，不相等就表示條件不滿足，跳出去。",
+     "k": 10,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2029
+     }
+    },
+    {
+     "say": "相等就不跳，做下一行 addi $s3, $s3, 1，也就是 i 加 1。",
+     "read": "相等就不跳，做下一行 add i s 三、s 三、1，也就是 i 加 1。",
+     "k": 11,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2056
+     }
+    },
+    {
+     "say": "這一圈做完，j Loop 跳回開頭，再做一遍。",
+     "k": 12,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2066
+     }
+    },
+    {
+     "say": "跑一次看看：save 前四格是 5、5、5、7，k 是 5，到第 3 格是 7 不等於 5 就離開，i 停在 3。",
+     "k": 13,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2089
+     }
+    }
+   ]
+  },
+  {
+   "title": "Loop 的結構與 basic block",
+   "scene": "isB-6b-block",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "把這個 loop 拆開看：前三行 sll、add、lw 在做 index，算出 save[i] 在哪，再讀進 $t0。",
+     "read": "把這個 loop 拆開看：前三行 s l l、add、l w 在做 index，算出 save i 在哪，再讀進 t 零。",
+     "k": 1,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2117
+     }
+    },
+    {
+     "say": "bne 這一行是 loop 的測試：save[i] 跟 k 不一樣，條件不滿足，就跳出去。",
+     "read": "b n e 這一行是 loop 的測試：save i 跟 k 不一樣，條件不滿足，就跳出去。",
+     "k": 2,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2140
+     }
+    },
+    {
+     "say": "中間是 loop 的 body。這裡只有 i 加 1 一行，實際上可能有很多 statement，全部擺在這裡。",
+     "k": 3,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2161
+     }
+    },
+    {
+     "say": "body 做完，最後 j Loop 跳回 loop 的開頭。",
+     "k": 4,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2183
+     }
+    },
+    {
+     "say": "loop 可能跑上百、上千次，body 最佳化效果就很好。compiler 常以 basic block 為單位做 optimization。",
+     "k": 5,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2224
+     }
+    },
+    {
+     "say": "什麼是 basic block？從 entry point 進來，到跳出去之前的這段 code，中間沒有跳進來或跳出去。",
+     "k": 6,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2245
+     }
+    }
+   ]
+  },
+  {
+   "title": "slt：判斷小於",
+   "scene": "isB-6b-slt",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "寫程式除了等於、不等於，還有大於、小於、大於等於、小於等於。",
+     "k": 1,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2265
+     }
+    },
+    {
+     "say": "只有 beq、bne 夠嗎？不夠，它們只能判斷相等和不相等，其他四種做不到。",
+     "read": "只有 b e q、b n e 夠嗎？不夠，它們只能判斷相等和不相等，其他四種做不到。",
+     "k": 2,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2302
+     }
+    },
+    {
+     "say": "MIPS 只多加一個指令：slt，set on less than，它是 R-type。",
+     "read": "MIPS 只多加一個指令：s l t，set on less than，它是 R-type。",
+     "k": 3,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2323
+     }
+    },
+    {
+     "say": "意思是：rs 小於 rt，就把 rd set 成 1；否則 rd 設成 0。",
+     "k": 4,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2362
+     }
+    },
+    {
+     "say": "算出 0 或 1 之後，再用 conditional branch 拿它跟 0 比，決定要不要跳。",
+     "k": 5,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2393
+     }
+    },
+    {
+     "say": "例子：if g 小於 h 就 go to Less，g 在 $s0、h 在 $s1。只要兩個指令。",
+     "read": "例子：if g 小於 h 就 go to Less，g 在 s 零、h 在 s 一。只要兩個指令。",
+     "k": 6,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2426
+     }
+    },
+    {
+     "say": "先 slt $t0, $s0, $s1。假設 g 是 3、h 是 7，3 真的小於 7，$t0 就被 set 成 1。",
+     "read": "先 s l t t 零、s 零、s 一。假設 g 是 3、h 是 7，3 真的小於 7，t 零 就被 set 成 1。",
+     "k": 7,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2441
+     }
+    },
+    {
+     "say": "再 bne $t0, $zero, Less：$t0 不是 0，表示 g 小於 h 成立，就跳到 Less。",
+     "read": "再 b n e t 零、zero、Less：t 零 不是 0，表示 g 小於 h 成立，就跳到 Less。",
+     "k": 8,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2459
+     }
+    }
+   ]
+  },
+  {
+   "title": "為什麼沒有 blt：省 opcode、不拖慢 clock",
+   "scene": "isB-6b-noblt",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "那問題來了：為什麼不直接設計小於就跳、小於等於就跳？那要 blt、ble、bgt、bge 四個指令。",
+     "k": 1,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2474
+     }
+    },
+    {
+     "say": "第一個理由：要多用掉 4 個 opcode，opcode 只有 6 個 bit，很珍貴。",
+     "k": 2,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2495
+     }
+    },
+    {
+     "say": "只要一個 slt，把兩個 register 的位置換一換，再配 beq 或 bne，就做得出四種比較。",
+     "read": "只要一個 s l t，把兩個 register 的位置換一換，再配 b e q 或 b n e，就做得出四種比較。",
+     "k": 3,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2499
+     }
+    },
+    {
+     "say": "第二個理由跟速度有關，跟 clock cycle 有關。",
+     "k": 4,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2520
+     }
+    },
+    {
+     "say": "每個指令都要在一個 clock cycle 做完，所有指令的 clock period 都一樣長。黃老師比喻成刀子一直轉，轉一次做一件事。",
+     "k": 5,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2561
+     }
+    },
+    {
+     "say": "如果比較和跳躍合成一個指令，它要做很多事，clock period 就得拉長，大家共用一個 clock，add、lw 全被拖慢。",
+     "read": "如果比較和跳躍合成一個指令，它要做很多事，clock period 就得拉長，大家共用一個 clock，add、l w 全被拖慢。",
+     "k": 6,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2583
+     }
+    },
+    {
+     "say": "拆成 slt 加 bne 兩個指令，雖然要兩個 cycle，但每個 cycle 還是短的，別的指令不受影響。",
+     "read": "拆成 s l t 加 b n e 兩個指令，雖然要兩個 cycle，但每個 cycle 還是短的，別的指令不受影響。",
+     "k": 7,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2603
+     }
+    },
+    {
+     "say": "beq、bne 才是最常用的 common case，讓它們保持簡單快速，這就是 make the common case fast。",
+     "read": "b e q、b n e 才是最常用的 common case，讓它們保持簡單快速，這就是 make the common case fast。",
+     "k": 8,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2667
+     }
+    },
+    {
+     "say": "回家練習：小於、大於、小於等於、大於等於，四種都只用 slt 加 beq 或 bne 寫出來。",
+     "read": "回家練習：小於、大於、小於等於、大於等於，四種都只用 s l t 加 b e q 或 b n e 寫出來。",
+     "k": 9,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2687
+     }
+    },
+    {
+     "say": "提示：換 a、b 的位置決定是小於還是大於，用 bne 或 beq 決定有沒有等號。",
+     "read": "提示：換 a、b 的位置決定是小於還是大於，用 b n e 或 b e q 決定有沒有等號。",
+     "k": 9
+    },
+    {
+     "say": "你在 assembly 裡看到的 blt，其實是 pseudo-instruction，assembler 會換成 slt 加 bne，硬體沒有這個指令。",
+     "read": "你在 assembly 裡看到的 blt，其實是 pseudo-instruction，assembler 會換成 s l t 加 b n e，硬體沒有這個指令。",
+     "k": 9
+    }
+   ]
+  },
+  {
+   "title": "Signed 與 unsigned 的比較",
+   "scene": "isB-6b-signed",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "最後比較時還要注意一件事。課本例子：$s0 是 32 個 1，$s1 是 1。",
+     "read": "最後比較時還要注意一件事。課本例子：s 零 是 32 個 1，s 一 是 1。",
+     "k": 1,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2710
+     }
+    },
+    {
+     "say": "當成 unsigned number，$s0 是 4,294,967,295，當然比 1 大。",
+     "read": "當成 unsigned number，s 零 是 4,294,967,295，當然比 1 大。",
+     "k": 2,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2732
+     }
+    },
+    {
+     "say": "可是當成 signed number，用 two's complement，最前面的 1 代表負數，$s0 其實是負 1，比 1 小。",
+     "read": "可是當成 signed number，用 two's complement，最前面的 1 代表負數，s 零 其實是負 1，比 1 小。",
+     "k": 3,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2732
+     }
+    },
+    {
+     "say": "所以同一串 bit，slt 做 signed 比較得 1，sltu 做 unsigned 比較得 0。寫程式要用對指令。",
+     "read": "所以同一串 bit，s l t 做 signed 比較得 1，s l t u 做 unsigned 比較得 0。寫程式要用對指令。",
+     "k": 4,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2754
+     }
+    },
+    {
+     "say": "到這裡，加減、logical、branch 都會了。下一個是黃老師說 assembly 最難的部分：procedure call。",
+     "k": 4,
+     "src": {
+      "v": "PlbXyb-UymI",
+      "t": 2754
+     }
+    }
+   ]
+  },
+  {
+   "title": "Procedure call 的六個步驟",
+   "scene": "isB-7a-proc",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "好，接下來是寫程式很重要的東西：procedure call。整支程式寫成一大坨，很沒組織。",
+     "k": 1,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 584.3
+     }
+    },
+    {
+     "say": "有了 procedure，同一段 code 可以 reuse，程式也能寫得 modular。那在 assembly 裡要怎麼做？",
+     "k": 1,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 590
+     }
+    },
+    {
+     "say": "先分角色：去叫別人的叫 caller，像爸爸；被叫的叫 callee，像兒子。",
+     "k": 2,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 625.5
+     }
+    },
+    {
+     "say": "第一步，caller 先把參數 parameter 放好。同一個 procedure 叫很多次，參數不同，結果就不同。",
+     "k": 3,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 641.1
+     }
+    },
+    {
+     "say": "第二步，把 control，也就是執行權，交給 callee，跳到 procedure 那邊去執行。",
+     "k": 4,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 667.2
+     }
+    },
+    {
+     "say": "第三步，callee 做事之前要先拿到需要的 storage，例如它自己的 local variable。",
+     "k": 5,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 699.5
+     }
+    },
+    {
+     "say": "第四步，真的去執行 procedure 的工作。",
+     "k": 6,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 717.4
+     }
+    },
+    {
+     "say": "第五步，把結果放在 caller 拿得到的地方。",
+     "k": 7,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 720.7
+     }
+    },
+    {
+     "say": "第六步，把 control 交回 caller，回到原來的地方繼續往下做。",
+     "k": 8,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 726.4
+     }
+    },
+    {
+     "say": "在 assembly 裡，參數要放在 register，因為運算都靠 register；而且位置要固定，不然 callee 不知道去哪拿。",
+     "k": 9,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 739
+     }
+    },
+    {
+     "say": "麻煩來了：爸爸叫兒子，兒子還會叫孫子，可是 register file 只有一份，大家共用，資料要放哪？",
+     "k": 10,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 756.7
+     }
+    },
+    {
+     "say": "最後，結果也放在固定的 register，回到 caller 才知道去哪裡拿。這些等一下一個一個處理。",
+     "k": 11,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 790.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "leaf_example：需要哪些特別的 register",
+   "scene": "isB-7a-leafc",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "看個 C 的例子：main 在某一行寫 sum = leaf_example(a, b, c, d)，前後還有很多別的 statement。",
+     "read": "main 在某一行寫 sum 等於 leaf_example，括號 a、b、c、d，前後還有很多別的 statement。",
+     "k": 1,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 808.9
+     }
+    },
+    {
+     "say": "leaf_example 做的事：前兩個參數相加，後兩個相加，再相減得到 f，然後 return f。",
+     "k": 2,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 837.7
+     }
+    },
+    {
+     "say": "呼叫那一行跟 procedure 本身在程式不同地方，可能一個在第 5 行、一個在第 100 行。",
+     "k": 3,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 852
+     }
+    },
+    {
+     "say": "所以執行到呼叫時要跳過去，算完再跳回來，接著往下做。",
+     "k": 3
+    },
+    {
+     "say": "第一件事：回來時要回到「下一個 statement」，這個位置叫 return address，一定要記住。",
+     "k": 4,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 892.9
+     }
+    },
+    {
+     "say": "MIPS 在 32 個 register 裡特別規定一個放 return address，叫 $ra。",
+     "read": "MIPS 在 32 個 register 裡特別規定一個放 return address，叫 r a。",
+     "k": 5,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 898.7
+     }
+    },
+    {
+     "say": "還要知道跳去哪：procedure 的位址就跟 jump 一樣，用一個 label 表示，這裡就是 leaf_example。",
+     "k": 6,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 927.6
+     }
+    },
+    {
+     "say": "參數放在 $a0 到 $a3，a 是 argument。這次可能傳 3、5、7、8，下次又是別的數。",
+     "read": "參數放在 a 零 到 a 三，a 是 argument。這次可能傳 3、5、7、8，下次又是別的數。",
+     "k": 7,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 940.3
+     }
+    },
+    {
+     "say": "回傳值放在 $v0、$v1，v 就是 value。",
+     "read": "回傳值放在 v 零、v 一，v 就是 value。",
+     "k": 8,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 959.8
+     }
+    },
+    {
+     "say": "運算時當然也要 register，像 $s0 到 $s7。這些 register 都有固定用途，不是亂用的。",
+     "read": "運算時當然也要 register，像 s 零 到 s 七。這些 register 都有固定用途，不是亂用的。",
+     "k": 9,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 971.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "32 個 register 的分工",
+   "scene": "isB-7a-regmap",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "回到 32 個 register 的表。第 8 到 15 號叫 $t0 到 $t7，t 是 temporary；寫 $t0 或 $8 都可以。",
+     "read": "第 8 到 15 號叫 t 零 到 t 七，t 是 temporary；寫 t 零，或寫 8 號 register 都可以。",
+     "k": 1,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 992.5
+     }
+    },
+    {
+     "say": "第 16 到 23 號是 $s0 到 $s7，s 是 saved。之前它們好像沒差，到了 procedure call 用法就不同了。",
+     "read": "第 16 到 23 號是 s 零 到 s 七，s 是 saved。之前它們好像沒差，到了 procedure call 用法就不同了。",
+     "k": 2,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1009.7
+     }
+    },
+    {
+     "say": "參數 $a0 到 $a3 是第 4 到 7 號，要叫 procedure，有參數就放這裡。",
+     "read": "參數 a 零 到 a 三 是第 4 到 7 號，要叫 procedure，有參數就放這裡。",
+     "k": 3,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1054.7
+     }
+    },
+    {
+     "say": "回傳值 $v0、$v1 是第 2、3 號。",
+     "read": "回傳值 v 零、v 一 是第 2、3 號。",
+     "k": 4,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1074
+     }
+    },
+    {
+     "say": "第 0 號是 $zero，硬體接死，永遠是 0。",
+     "read": "第 0 號是 zero，硬體接死，永遠是 0。",
+     "k": 5,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1082.6
+     }
+    },
+    {
+     "say": "第 31 號是 $ra，保留給 return address，別人不能亂用。",
+     "read": "第 31 號是 r a，保留給 return address，別人不能亂用。",
+     "k": 6,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1095.1
+     }
+    },
+    {
+     "say": "還有 $gp 是 global pointer、$sp 是 stack pointer、$fp 是 frame pointer；$k0、$k1 留給 OS。",
+     "read": "還有 g p 是 global pointer、s p 是 stack pointer、f p 是 frame pointer；k 零、k 一 留給 OS。",
+     "k": 7,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1111.9
+     }
+    },
+    {
+     "say": "其中 $sp，等一下叫 procedure 時馬上就會用到。",
+     "read": "其中 s p，等一下叫 procedure 時馬上就會用到。",
+     "k": 8,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1128
+     }
+    }
+   ]
+  },
+  {
+   "title": "跳過去，還要跳得回來",
+   "scene": "isB-7a-jumpq",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "要叫 procedure，就需要特別的指令。第一件事，是跳到 subroutine 那邊去。",
+     "k": 1,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1143.6
+     }
+    },
+    {
+     "say": "會跳的指令我們學過了：beq、bne 跳短距離，j 也就是 jump，跳比較遠。",
+     "read": "b e q、b n e 跳短距離，j 也就是 jump，跳比較遠。",
+     "k": 2,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1171.3
+     }
+    },
+    {
+     "say": "要跳到 subroutine，一個 jump 就夠了。",
+     "k": 3,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1193.2
+     }
+    },
+    {
+     "say": "可是跳過去就算了嗎？不行，做完還得跳回來。",
+     "k": 4,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1203
+     }
+    },
+    {
+     "say": "回到哪裡？回到呼叫那一行的「下一個 instruction」。",
+     "k": 5,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1226.8
+     }
+    },
+    {
+     "say": "那問題來了：程式執行時，「下一個要執行哪個指令」是記在哪裡？黃老師在課堂上就這樣點同學問。",
+     "k": 6,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1243.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Program Counter：下一個指令的位址",
+   "scene": "isB-7b-pc",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "答案是 Program Counter，PC。不少同學一開始答不出來，所以黃老師下一堂課又特地補充一次。",
+     "k": 1,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1342
+     }
+    },
+    {
+     "say": "例如 jal 後面寫一個 procedure 的 label，那個 label 代表的就是 subroutine 的位址。",
+     "read": "j a l 後面寫一個 procedure 的 label，那個 label 代表的就是 subroutine 的位址。",
+     "k": 2,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 27
+     }
+    },
+    {
+     "say": "假設 subroutine 在位址 37685，怎麼跳過去？這是老師隨口舉的數，真正的指令位址都是 4 的倍數。",
+     "k": 3,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 40
+     }
+    },
+    {
+     "say": "很簡單，把 PC 設成那個位址就好。PC 裝的就是下一個要執行的指令位址，下一步就從那裡執行。",
+     "k": 4,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 51
+     }
+    },
+    {
+     "say": "不跳的時候是 sequential 循序執行：一個指令 4 bytes，PC 每次加 4，1000、1004、1008 往下走。",
+     "read": "不跳的時候是 sequential 循序執行：一個指令 4 bytes，PC 每次加 4，一千、一千零四、一千零八 往下走。",
+     "k": 5,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 61
+     }
+    },
+    {
+     "say": "要跳，就把 target address 放進 PC。jal 做的就是這件事，只是多了一步：記住回來的位址。",
+     "read": "j a l 做的就是這件事，只是多了一步：記住回來的位址。",
+     "k": 6,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 91.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "jal 與 jr $ra",
+   "scene": "isB-7a-jal",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "來看例子：PC 現在走到位址 1000 的 jal，這個 1000 是示意的數字。",
+     "read": "來看例子：PC 現在走到位址 1000 的 j a l，這個 1000 是示意的數字。",
+     "k": 1,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1358.2
+     }
+    },
+    {
+     "say": "跳去 procedure 之後還要回到 next instruction，所以它的位址要先記在某個地方。",
+     "k": 2,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1380.3
+     }
+    },
+    {
+     "say": "跳過去的方法：把 procedure 的位址，老師舉 3468，放進 PC，下一個就從 3468 開始執行。",
+     "k": 3,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1397.8
+     }
+    },
+    {
+     "say": "next instruction 的位址是 1000 加 4，也就是 1004，把它記在 $ra。",
+     "read": "next instruction 的位址是 1000 加 4，也就是 1004，把它記在 r a。",
+     "k": 4,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1411
+     }
+    },
+    {
+     "say": "procedure 做完，再把 $ra 的值放回 PC，就回到 1004 了。",
+     "read": "procedure 做完，再把 r a 的值放回 PC，就回到 1004 了。",
+     "k": 5,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1417.2
+     }
+    },
+    {
+     "say": "照理說用兩個指令就能做：一個把位址存進 $ra，一個 jump 過去。",
+     "read": "照理說用兩個指令就能做：一個把位址存進 r a，一個 jump 過去。",
+     "k": 6,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1446.2
+     }
+    },
+    {
+     "say": "MIPS 把它合成一個指令 jal，jump and link：先把 PC + 4 存進 $ra，再把 PC 設成 procedure 的位址。",
+     "read": "MIPS 把它合成一個指令 j a l，jump and link：先把 PC 加 4 存進 r a，再把 PC 設成 procedure 的位址。",
+     "k": 7,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1463
+     }
+    },
+    {
+     "say": "注意，$ra 存的是 jal 的下一個指令，PC + 4，不是 jal 自己的位址。",
+     "read": "注意，r a 存的是 j a l 的下一個指令，PC 加 4，不是 j a l 自己的位址。",
+     "k": 7
+    },
+    {
+     "say": "為什麼要特別設計？procedure call 太常用，這兩件事又很快做得完，這就是 make the common case fast。",
+     "k": 8,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1490.5
+     }
+    },
+    {
+     "say": "做完要回去，就執行 jr $ra，jump register。register 剛好 32 bits，等於一個位址的長度。",
+     "read": "做完要回去，就執行 j r，r a，jump register。register 剛好 32 bits，等於一個位址的長度。",
+     "k": 9,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1541.6
+     }
+    },
+    {
+     "say": "jr 就是把第 31 號 register $ra 的值 copy 到 PC，於是回到 1004。",
+     "read": "j r 就是把第 31 號 register r a 的值 copy 到 PC，於是回到 1004。",
+     "k": 9,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1599
+     }
+    },
+    {
+     "say": "欸，jr 不只用在 procedure，也能做 switch-case：把各個 case 的位址放進 register，再 jr 過去。",
+     "read": "欸，j r 不只用在 procedure，也能做 switch case：把各個 case 的位址放進 register，再 j r 過去。",
+     "k": 10,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1615.8
+     }
+    },
+    {
+     "say": "所以重點是：要實作 procedure call，一定要這兩個新指令，jal 和 jr。",
+     "read": "所以重點是：要實作 procedure call，一定要這兩個新指令，j a l 和 j r。",
+     "k": 11,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1646.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Caller 這邊：搬參數、jal、拿結果",
+   "scene": "isB-7a-caller",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "好，caller 那一行 sum = leaf_example(a, b, c, d)，要寫成哪些指令？",
+     "read": "好，caller 那一行 sum 等於 leaf_example，括號 a、b、c、d，要寫成哪些指令？",
+     "k": 1,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1662.4
+     }
+    },
+    {
+     "say": "a、b、c、d 正在 main 裡運算，放在 $s0 到 $s3；畫面上的 5、3、4、2 是示意值。",
+     "read": "a、b、c、d 正在 main 裡運算，放在 s 零 到 s 三；畫面上的 5、3、4、2 是示意值。",
+     "k": 2,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1694.6
+     }
+    },
+    {
+     "say": "要叫 procedure，就得把它們搬到參數 register $a0 到 $a3。",
+     "read": "要叫 procedure，就得把它們搬到參數 register a 零 到 a 三。",
+     "k": 3,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1718
+     }
+    },
+    {
+     "say": "怎麼搬？add $a0, $s0, $zero。$zero 永遠是 0，加 0 等於沒變，就是把 $s0 copy 過去。",
+     "read": "怎麼搬？add a 零、s 零、zero。zero 永遠是 0，加 0 等於沒變，就是把 s 零 copy 過去。",
+     "k": 4,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1727.5
+     }
+    },
+    {
+     "say": "這招其實就是 move。四個參數照這樣依序搬好。",
+     "k": 4
+    },
+    {
+     "say": "參數準備好，就 jal leaf_example，跳過去；callee 做完會回到下一行。",
+     "read": "參數準備好，就 j a l leaf_example，跳過去；callee 做完會回到下一行。",
+     "k": 5,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1742.1
+     }
+    },
+    {
+     "say": "回來時結果已經在 $v0：(5 + 3) − (4 + 2) = 2。",
+     "read": "回來時結果已經在 v 零：5 加 3，減掉 4 加 2，等於 2。",
+     "k": 6,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1768.8
+     }
+    },
+    {
+     "say": "sum 放在 $s4，所以 add $s4, $v0, $zero 把結果搬過去，$s4 就是 2。",
+     "read": "sum 放在 s 四，所以 add s 四、v 零、zero 把結果搬過去，s 四 就是 2。",
+     "k": 7,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1784.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Callee 也要用 register：衝突",
+   "scene": "isB-7a-callee",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "換 callee 這邊：它拿到參數，還需要一個 local 變數 f，算 (g + h) − (i + j)，再 return f。",
+     "read": "換 callee 這邊：它拿到參數，還需要一個 local 變數 f，算 g 加 h，減掉 i 加 j，再 return f。",
+     "k": 1,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1874.3
+     }
+    },
+    {
+     "say": "g、h、i、j 已經由 caller 放在 $a0 到 $a3。",
+     "read": "g、h、i、j 已經由 caller 放在 a 零 到 a 三。",
+     "k": 2,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1893.2
+     }
+    },
+    {
+     "say": "f 用 $s0 來放。",
+     "read": "f 用 s 零 來放。",
+     "k": 3,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1914.6
+     }
+    },
+    {
+     "say": "一個指令只能加兩個數，所以 g + h、i + j 要先放 temporary，課本用 $t0、$t1；老師口頭說 t1、t2，意思一樣。",
+     "read": "一個指令只能加兩個數，所以 g 加 h、i 加 j 要先放 temporary，課本用 t 零、t 一；老師口頭說 t 一、t 二，意思一樣。",
+     "k": 4,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1926.2
+     }
+    },
+    {
+     "say": "算完的結果放 $v0 回傳。",
+     "read": "算完的結果放 v 零 回傳。",
+     "k": 5,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1940.2
+     }
+    },
+    {
+     "say": "問題來了：caller 自己也在用 $s 和 $t！callee 又要用 $s0、$t0、$t1，兩邊在搶同一批 register。",
+     "read": "問題來了：caller 自己也在用 s 和 t！callee 又要用 s 零、t 零、t 一，兩邊在搶同一批 register。",
+     "k": 6,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1957.2
+     }
+    },
+    {
+     "say": "register file 只有一份，不管跑到 main 還是 procedure 都用同一份。callee 一用，caller 的資料就被蓋掉。",
+     "k": 7,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 1992.4
+     }
+    },
+    {
+     "say": "黃老師的比喻：爸爸出門，你在家開 party 可以，但他回來之前要全部恢復原狀，不能讓他發現。",
+     "k": 8,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2032.6
+     }
+    },
+    {
+     "say": "所以 callee 知道自己要用哪幾個 register，就在用之前先把舊值存起來，做完再還原。",
+     "k": 9,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2066.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "存到 stack：記憶體與 $sp",
+   "scene": "isB-7a-stack",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "舊值存哪？存到 stack。stack 是記憶體裡的一塊區域，記憶體很大，放得下。圖上面是高位址。",
+     "k": 1,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2085.4
+     }
+    },
+    {
+     "say": "這塊記憶體要組織成 stack 的樣子：呼叫 procedure 時，把要保護的資料存上去。",
+     "k": 2,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2099.9
+     }
+    },
+    {
+     "say": "stack 是 last in first out，後進先出：新資料 push 到 top of stack，用完就 pop 掉。資料結構學過。",
+     "k": 3,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2122.3
+     }
+    },
+    {
+     "say": "要有一個 stack pointer 記住現在用到哪，它指著 top of stack。",
+     "k": 4,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2145.3
+     }
+    },
+    {
+     "say": "stack pointer 就是第 29 號 register，$sp；這裡用 1000 當示意位址。",
+     "read": "stack pointer 就是第 29 號 register，s p；這裡用 1000 當示意位址。",
+     "k": 5,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2155.9
+     }
+    },
+    {
+     "say": "procedure 執行時，把要用的 $s0 和兩個 temporary 存進去，stack 往下長 3 格，$sp 跟著往下。",
+     "read": "procedure 執行時，把要用的 s 零 和兩個 temporary 存進去，stack 往下長 3 格，s p 跟著往下。",
+     "k": 6,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2170.4
+     }
+    },
+    {
+     "say": "procedure 一結束就把資料拿回來，$sp 回到 1000，回到爸爸那邊，像什麼都沒發生過。",
+     "read": "procedure 一結束就把資料拿回來，s p 回到 1000，回到爸爸那邊，像什麼都沒發生過。",
+     "k": 7,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2194.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "leaf_example 一行一行跑",
+   "scene": "isB-7a-leafrun",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "我們用小模擬器跑一次。jal 已經執行，$ra 記好回去的位址，PC 在 leaf 的第一行。",
+     "read": "我們用小模擬器跑一次。j a l 已經執行，r a 記好回去的位址，PC 在 leaf 的第一行。",
+     "k": 1,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2208.6
+     }
+    },
+    {
+     "say": "參數是 5、3、4、2，$s0、$t0、$t1 原本是 11、22、33，都是示意值。",
+     "read": "參數是 5、3、4、2，s 零、t 零、t 一 原本是 11、22、33，都是示意值。",
+     "k": 1
+    },
+    {
+     "say": "stack 在記憶體哪裡？看 $sp，現在 $sp 是 1000。",
+     "read": "stack 在記憶體哪裡？看 s p，現在 s p 是 1000。",
+     "k": 2,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2220.9
+     }
+    },
+    {
+     "say": "要存 3 個資料，每個 4 bytes，共 12 bytes。stack 從高位址往低位址長，所以 $sp 要減 12。",
+     "read": "要存 3 個資料，每個 4 bytes，共 12 bytes。stack 從高位址往低位址長，所以 s p 要減 12。",
+     "k": 3,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2244.4
+     }
+    },
+    {
+     "say": "執行 addi $sp, $sp, -12：$sp 從 1000 變 988，空出 988、992、996 三格。",
+     "read": "執行 add i s p、s p、負 12：s p 從 1000 變 988，空出 988、992、996 三格。",
+     "k": 4,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2284.6
+     }
+    },
+    {
+     "say": "sw $t1, 8($sp)：位址是 $sp 加 8，也就是 996，把 $t1 的舊值 33 存進去。",
+     "read": "s w t 一、8 括號 s p：位址是 s p 加 8，也就是 996，把 t 一 的舊值 33 存進去。",
+     "k": 5,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2302
+     }
+    },
+    {
+     "say": "這就是 base 加 offset，只是這次 base register 換成 $sp。",
+     "read": "這就是 base 加 offset，只是這次 base register 換成 s p。",
+     "k": 5
+    },
+    {
+     "say": "接著 sw $t0, 4($sp) 存到 992，sw $s0, 0($sp) 存到 988，三個會被破壞的都存好了。",
+     "read": "接著 s w t 零、4 括號 s p 存到 992，s w s 零、0 括號 s p 存到 988，三個會被破壞的都存好了。",
+     "k": 6,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2315.7
+     }
+    },
+    {
+     "say": "開始算：add $t0, $a0, $a1，5 + 3 = 8 放進 $t0。舊值存好了，現在可以放心用。",
+     "read": "開始算：add t 零、a 零、a 一，5 加 3 等於 8 放進 t 零。舊值存好了，現在可以放心用。",
+     "k": 7,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2329.1
+     }
+    },
+    {
+     "say": "add $t1, $a2, $a3 得到 6，再 sub $s0, $t0, $t1，f = 8 − 6 = 2。",
+     "read": "add t 一、a 二、a 三 得到 6，再 sub s 零、t 零、t 一，f 等於 8 減 6，等於 2。",
+     "k": 8,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2335.6
+     }
+    },
+    {
+     "say": "return 的值要放 $v0：add $v0, $s0, $zero，$v0 = 2。",
+     "read": "return 的值要放 v 零：add v 零、s 零、zero，v 零 等於 2。",
+     "k": 9,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2347.4
+     }
+    },
+    {
+     "say": "這樣可以走了嗎？不行！走之前要恢復原狀，stack 裡那三格就是要拿回來的舊值。",
+     "k": 10,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2356.4
+     }
+    },
+    {
+     "say": "用 lw 一個個載回來：$s0 變回 11、$t0 變回 22、$t1 變回 33。",
+     "read": "用 l w 一個個載回來：s 零 變回 11、t 零 變回 22、t 一 變回 33。",
+     "k": 11,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2366.2
+     }
+    },
+    {
+     "say": "$sp 也要還原：addi $sp, $sp, 12，回到 1000。",
+     "read": "s p 也要還原：add i s p、s p、12，回到 1000。",
+     "k": 12,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2367.6
+     }
+    },
+    {
+     "say": "最後 jr $ra 跳回 caller。$v0 是 2，其他 register 跟 $sp 全部復原，爸爸完全看不出來。",
+     "read": "最後 j r，r a 跳回 caller。v 零 是 2，其他 register 跟 s p 全部復原，爸爸完全看不出來。",
+     "k": 13,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2377.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "$t 與 $s：誰負責保存",
+   "scene": "isB-7a-ts",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "一開始說 $s 跟 $t 好像可以亂用；可是寫 procedure call 時，它們有不同的約定。",
+     "read": "一開始說 s 跟 t 好像可以亂用；可是寫 procedure call 時，它們有不同的約定。",
+     "k": 1,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2397.3
+     }
+    },
+    {
+     "say": "黃老師的比喻：爸爸出門把家交給你。冰箱被吃光他不在乎，桌上的玻璃可不能打破。",
+     "k": 2,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2410.2
+     }
+    },
+    {
+     "say": "爸爸不在乎的東西放 $t，temporary，被弄亂就算了。",
+     "read": "爸爸不在乎的東西放 t，temporary，被弄亂就算了。",
+     "k": 3,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2437.9
+     }
+    },
+    {
+     "say": "爸爸在乎的東西放 $s，絕對不能破壞。",
+     "read": "爸爸在乎的東西放 s，絕對不能破壞。",
+     "k": 4,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2444.8
+     }
+    },
+    {
+     "say": "有了這個約定，callee 只要存 $s，$t 不用存，少搬幾次 load、store，程式更有效率。",
+     "read": "有了這個約定，callee 只要存 s，t 不用存，少搬幾次 load、store，程式更有效率。",
+     "k": 5,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2476.9
+     }
+    },
+    {
+     "say": "所以 leaf_example 只存 $s0：addi $sp, $sp, -4、sw $s0, 0($sp)，stack 只長一格。",
+     "read": "所以 leaf_example 只存 s 零：add i s p、s p、負 4，s w s 零、0 括號 s p，stack 只長一格。",
+     "k": 6,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2492.5
+     }
+    },
+    {
+     "say": "反過來，caller 就不能期待 $t 不變。房子交給兒子，就要有冰箱被吃光的心理準備。",
+     "read": "反過來，caller 就不能期待 t 不變。房子交給兒子，就要有冰箱被吃光的心理準備。",
+     "k": 7,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2511
+     }
+    },
+    {
+     "say": "caller 的責任：在乎的資料不要放 $t，要放 $s，或自己先存好；放 $t 就代表不在乎。",
+     "read": "caller 的責任：在乎的資料不要放 t，要放 s，或自己先存好；放 t 就代表不在乎。",
+     "k": 8,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2542.5
+     }
+    },
+    {
+     "say": "callee 的責任：$t 隨便用，但只要用到 $s，就保證先存起來、用完還原。",
+     "read": "callee 的責任：t 隨便用，但只要用到 s，就保證先存起來、用完還原。",
+     "k": 9,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2553.4
+     }
+    },
+    {
+     "say": "這叫 register convention。$t 是 caller-saved，$s 是 callee-saved，考試常這樣問。",
+     "read": "這叫 register convention。t 是 caller saved，s 是 callee saved，考試常這樣問。",
+     "k": 10,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2571.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Non-leaf procedure：$ra 一定要存",
+   "scene": "isB-7a-nonleaf",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "真實情況沒這麼單純：祖父叫爸爸、爸爸叫你、你又叫你兒子，一代一代往下。",
+     "k": 1,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2597
+     }
+    },
+    {
+     "say": "不再叫別人的叫 leaf procedure，像樹葉長在最末端；還會叫別人的，叫 non-leaf procedure。",
+     "k": 2,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2611
+     }
+    },
+    {
+     "say": "同樣的問題：每一代都用同一份 register file，所以交給下一代之前，相關資料都要先存起來。",
+     "k": 3,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2623
+     }
+    },
+    {
+     "say": "每叫一代，就在 top of stack 放一塊屬於它的資料，stack 一層層往下長。",
+     "k": 4,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2644.5
+     }
+    },
+    {
+     "say": "return 之後，那一塊就 pop 掉，回到上一層；上一層做完再 pop。這是 procedure call 最基本的概念。",
+     "k": 5,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2654.2
+     }
+    },
+    {
+     "say": "所以不管 nested call，還是自己叫自己的 recursive call，只要把 stack 安排好都沒問題。",
+     "k": 6,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2676.8
+     }
+    },
+    {
+     "say": "最要注意的是 return address：一定要回得去。",
+     "k": 7,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2692.3
+     }
+    },
+    {
+     "say": "祖父 jal 叫爸爸時，$ra 存「回祖父」的位址；爸爸再 jal 叫你，$ra 被改成「回爸爸」，原值被蓋掉。",
+     "read": "祖父 j a l 叫爸爸時，r a 存回祖父的位址；爸爸再 j a l 叫你，r a 被改成回爸爸，原值被蓋掉。",
+     "k": 8,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2712.4
+     }
+    },
+    {
+     "say": "所以爸爸叫兒子之前，要先把自己的 $ra 存到 stack，回來再取出來，才回得了祖父那邊。",
+     "read": "所以爸爸叫兒子之前，要先把自己的 r a 存到 stack，回來再取出來，才回得了祖父那邊。",
+     "k": 9,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2722.5
+     }
+    },
+    {
+     "say": "還有 argument、temporary 這些，之後還要用的也要存；叫完再把 stack 恢復原樣。",
+     "k": 10,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2755.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "遞迴 fact(n)：要存哪些東西",
+   "scene": "isB-7a-factc",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "來看比較難的例子：factorial 階乘，這是 recursive call。",
+     "k": 1,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2776
+     }
+    },
+    {
+     "say": "如果 n < 1，就 return 1。",
+     "read": "如果 n 小於 1，就 return 1。",
+     "k": 2,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2784.7
+     }
+    },
+    {
+     "say": "否則把參數改成 n − 1，再叫自己一次。",
+     "read": "否則把參數改成 n 減 1，再叫自己一次。",
+     "k": 3,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2791
+     }
+    },
+    {
+     "say": "注意：叫完回來還沒結束！還要把回傳值乘上現在的 n，才 return。",
+     "k": 4,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2807.1
+     }
+    },
+    {
+     "say": "參數 n 放在 $a0，我們用 n = 3 當例子。",
+     "read": "參數 n 放在 a 零，我們用 n 等於 3 當例子。",
+     "k": 5,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2837.8
+     }
+    },
+    {
+     "say": "叫 fact(n − 1) 之前，$a0 要先減 1 變成 2；可是回來要乘的是原本的 3，它已經不見了。",
+     "read": "叫 fact n 減 1 之前，a 零 要先減 1 變成 2；可是回來要乘的是原本的 3，它已經不見了。",
+     "k": 6,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2849.8
+     }
+    },
+    {
+     "say": "所以 n，也就是 $a0，一定要先存起來，$ra 也是。",
+     "read": "所以 n，也就是 a 零，一定要先存起來，r a 也是。",
+     "k": 7,
+     "src": {
+      "v": "H6wkyzXzX6g",
+      "t": 2862.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "fact：呼叫前存 $ra 和 $a0",
+   "scene": "isB-7b-factsave",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "來寫 fact 的 MIPS 程式。最好的 non-leaf 例子就是 recursive，一直叫自己。",
+     "k": 1,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 117.4
+     }
+    },
+    {
+     "say": "參數 $a0 每叫一層就改變，回來又要用，所以要存。",
+     "read": "參數 a 零 每叫一層就改變，回來又要用，所以要存。",
+     "k": 2,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 130.9
+     }
+    },
+    {
+     "say": "$v0 要不要存？兒子等一下會用 $v0 回傳，可是你現在沒在用它，所以不用存。",
+     "read": "v 零 要不要存？兒子等一下會用 v 零 回傳，可是你現在沒在用它，所以不用存。",
+     "k": 3,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 136.6
+     }
+    },
+    {
+     "say": "站在爸爸的角度：把 control 交給兒子之前，要存的是 argument n，因為回來還要用。",
+     "k": 4,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 161.8
+     }
+    },
+    {
+     "say": "你做完還要回祖父那邊，所以 $ra 也要存。想「要 call 兒子」和「要回去」，就知道存什麼。",
+     "read": "你做完還要回祖父那邊，所以 r a 也要存。想要 call 兒子、和要回去，就知道存什麼。",
+     "k": 5,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 179.8
+     }
+    },
+    {
+     "say": "要存兩個，每個 4 bytes，所以 addi $sp, $sp, -8，stack 往下挪兩格。",
+     "read": "要存兩個，每個 4 bytes，所以 add i s p、s p、負 8，stack 往下挪兩格。",
+     "k": 6,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 223.1
+     }
+    },
+    {
+     "say": "再 sw $ra, 4($sp)、sw $a0, 0($sp)，把 return address 和 n 存進 stack。",
+     "read": "再 s w r a、4 括號 s p，s w a 零、0 括號 s p，把 return address 和 n 存進 stack。",
+     "k": 7,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 227
+     }
+    }
+   ]
+  },
+  {
+   "title": "fact：測 n < 1，base case 回傳 1",
+   "scene": "isB-7b-factbase",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "stack 準備好，開始做事：先測 n 是不是小於 1。",
+     "k": 1,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 240.5
+     }
+    },
+    {
+     "say": "判斷小於，就用 slt 配 beq、bne。這裡跟常數 1 比，用 immediate 版 slti $t0, $a0, 1。",
+     "read": "判斷小於，就用 s l t 配 b e q、b n e。這裡跟常數 1 比，用 immediate 版 s l t i t 零、a 零、1。",
+     "k": 2,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 251.7
+     }
+    },
+    {
+     "say": "如果 n 真的小於 1，$t0 就被 set 成 1；否則 $t0 是 0。",
+     "read": "如果 n 真的小於 1，t 零 就被 set 成 1；否則 t 零 是 0。",
+     "k": 3,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 269.1
+     }
+    },
+    {
+     "say": "beq $t0, $zero, L1：$t0 等於 0，表示 n < 1 不成立，就跳到 L1 去遞迴。",
+     "read": "b e q t 零、zero、L1：t 零 等於 0，表示 n 小於 1 不成立，就跳到 L1 去遞迴。",
+     "k": 4,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 291.2
+     }
+    },
+    {
+     "say": "如果是 base case，就要 return 1：addi $v0, $zero, 1，把 1 放進 $v0。",
+     "read": "如果是 base case，就要 return 1：add i v 零、zero、1，把 1 放進 v 零。",
+     "k": 5,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 359.4
+     }
+    },
+    {
+     "say": "回去前把 stack 還原：addi $sp, $sp, 8。這一層沒動到 $a0 和 $ra，所以不必 lw 回來。",
+     "read": "回去前把 stack 還原：add i s p、s p、8。這一層沒動到 a 零 和 r a，所以不必 l w 回來。",
+     "k": 6,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 405.9
+     }
+    },
+    {
+     "say": "最後 jr $ra 跳回去。這就是遞迴的 termination condition，終止條件。",
+     "read": "最後 j r，r a 跳回去。這就是遞迴的 termination condition，終止條件。",
+     "k": 7,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 412
+     }
+    }
+   ]
+  },
+  {
+   "title": "fact：遞迴、還原、相乘",
+   "scene": "isB-7b-factrec",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "n 大於等於 1，就跳到 L1 做 recursive call。",
+     "k": 1,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 429.2
+     }
+    },
+    {
+     "say": "else 這段不只叫 subroutine，回來還要乘以 n 再 return。我們一件一件來。",
+     "k": 2,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 454.3
+     }
+    },
+    {
+     "say": "第一件事：參數減 1。",
+     "k": 3,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 482.1
+     }
+    },
+    {
+     "say": "addi $a0, $a0, -1，$a0 變成 n − 1。老師這裡口誤說 a1，實際上是 $a0。",
+     "read": "add i a 零、a 零、負 1，a 零 變成 n 減 1。老師這裡口誤說 a 一，實際上是 a 零。",
+     "k": 4,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 517.3
+     }
+    },
+    {
+     "say": "jal fact，跳去叫自己；jal 會把下一行的位址存進 $ra。",
+     "read": "j a l fact，跳去叫自己；j a l 會把下一行的位址存進 r a。",
+     "k": 5,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 523
+     }
+    },
+    {
+     "say": "那一層做完回來，執行下一行，這時兒子的回傳值 fact(n − 1) 已經在 $v0。",
+     "read": "那一層做完回來，執行下一行，這時兒子的回傳值 fact n 減 1 已經在 v 零。",
+     "k": 6,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 541.8
+     }
+    },
+    {
+     "say": "可是 $a0 剛才被改成 n − 1，所以先 lw $a0, 0($sp)，從 stack 拿回原本的 n。",
+     "read": "可是 a 零 剛才被改成 n 減 1，所以先 l w a 零、0 括號 s p，從 stack 拿回原本的 n。",
+     "k": 7,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 624.9
+     }
+    },
+    {
+     "say": "這步要是忘了，乘到的就是 n − 1，答案會錯。",
+     "read": "這步要是忘了，乘到的就是 n 減 1，答案會錯。",
+     "k": 7
+    },
+    {
+     "say": "jal 也把 $ra 改掉了，所以 lw $ra, 4($sp) 把原本的 return address 拿回來。",
+     "read": "j a l 也把 r a 改掉了，所以 l w r a、4 括號 s p 把原本的 return address 拿回來。",
+     "k": 8,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 640.7
+     }
+    },
+    {
+     "say": "stack pointer 也恢復：addi $sp, $sp, 8。",
+     "read": "stack pointer 也恢復：add i s p、s p、8。",
+     "k": 9,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 645
+     }
+    },
+    {
+     "say": "現在相乘：mul $v0, $a0, $v0，就是 n 乘 fact(n − 1)。老師口誤說 b0，指的是 $v0。",
+     "read": "現在相乘：mul v 零、a 零、v 零，就是 n 乘 fact n 減 1。老師口誤說 b 零，指的是 v 零。",
+     "k": 10,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 659.9
+     }
+    },
+    {
+     "say": "最後 jr $ra，回到上一層。",
+     "read": "最後 j r，r a，回到上一層。",
+     "k": 11,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 671.4
+     }
+    },
+    {
+     "say": "比較兩條路：base case 沒動 $a0、$ra，只還原 $sp；else 叫過 procedure，所以多兩個 lw。",
+     "read": "比較兩條路：base case 沒動 a 零、r a，只還原 s p；else 叫過 procedure，所以多兩個 l w。",
+     "k": 12,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 689.4
+     }
+    },
+    {
+     "say": "跑 fact(3)：$v0 = 6，也就是 3 × 2 × 1。最深有 n = 3、2、1、0 四層，每層 8 bytes，$sp 降到 968。",
+     "read": "跑 fact 3：v 零 等於 6，也就是 3 乘 2 乘 1。最深有 n 等於 3、2、1、0 四層，每層 8 bytes，s p 降到 968。",
+     "k": 13,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 737
+     }
+    },
+    {
+     "say": "全部回來以後，$sp 又回到 1000，一點都不亂。",
+     "read": "全部回來以後，s p 又回到 1000，一點都不亂。",
+     "k": 13
+    }
+   ]
+  },
+  {
+   "title": "Procedure frame：stack 上放什麼",
+   "scene": "isB-7b-frame",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "整理一下 stack 的樣子。叫 procedure 之前，上面是 caller 的資料，$sp 和 frame pointer $fp 指在這裡。",
+     "read": "整理一下 stack 的樣子。叫 procedure 之前，上面是 caller 的資料，s p 和 frame pointer f p 指在這裡。",
+     "k": 1,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 754.7
+     }
+    },
+    {
+     "say": "一般情況要存：會用到的 argument、最重要的 return address，還有會用到的 $s register。",
+     "read": "一般情況要存：會用到的 argument、最重要的 return address，還有會用到的 s register。",
+     "k": 2,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 775.9
+     }
+    },
+    {
+     "say": "procedure 自己的 local 變數，像 local array、structure，也由 callee 配置在這裡。",
+     "k": 3,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 788
+     }
+    },
+    {
+     "say": "用完回到爸爸那邊，這些就不要了，整塊 pop 掉，$sp 回到原位。",
+     "read": "用完回到爸爸那邊，這些就不要了，整塊 pop 掉，s p 回到原位。",
+     "k": 4,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 810.3
+     }
+    },
+    {
+     "say": "這一整塊有個名字，叫 activation record，也叫 procedure frame。",
+     "k": 5,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 833.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Activation record：建立與 pop",
+   "scene": "isB-7b-frame2",
+   "steps": 2,
+   "lines": [
+    {
+     "say": "黃老師問同學有沒有聽過 activation record。其實它就是每次呼叫專屬的那一塊。",
+     "k": 1,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 857
+     }
+    },
+    {
+     "say": "每叫一次 procedure，就在 stack 頂端建一個 activation record，放參數、return address、local 變數。",
+     "k": 1,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 863.5
+     }
+    },
+    {
+     "say": "procedure 做完，就把這個 activation record pop 掉，從 stack 上刪除。",
+     "k": 2,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 880.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Memory layout：記憶體怎麼分區",
+   "scene": "isB-7b-layout",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "整個 memory 可以看成一條一維的長條，從位址 0 往上。來看它怎麼分區。",
+     "k": 1,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 901.6
+     }
+    },
+    {
+     "say": "最底下一塊是 reserved，保留給特別用途。",
+     "k": 2,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 908.4
+     }
+    },
+    {
+     "say": "text 區放程式，也就是指令。課本上從十六進位 0040 0000 開始，PC 一開始就指在這。",
+     "read": "課本上從十六進位 零零四零 零零零零 開始，PC 一開始就指在這。",
+     "k": 3,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 913.5
+     }
+    },
+    {
+     "say": "static data 放整個執行期間都在的資料，像 global 變數；$gp 指在十六進位 1000 8000。",
+     "read": "static data 放整個執行期間都在的資料，像 global 變數；g p 指在十六進位 一零零零 八零零零。",
+     "k": 4,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 915.4
+     }
+    },
+    {
+     "say": "同學問過：為什麼 $sp 用減的？因為 stack 從最上面開始，課本 $sp 是 7fff fffc，往下長。",
+     "read": "同學問過：為什麼 s p 用減的？因為 stack 從最上面開始，課本 s p 是十六進位 七 f f f f f f c，往下長。",
+     "k": 5,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 938.8
+     }
+    },
+    {
+     "say": "所以 push 的時候，$sp 一定是先減。",
+     "read": "所以 push 的時候，s p 一定是先減。",
+     "k": 5
+    },
+    {
+     "say": "另一邊是 dynamic data，也叫 heap，從下往上長，跟 stack 往中間空白處靠攏。",
+     "k": 6,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 959.2
+     }
+    },
+    {
+     "say": "dynamic data 是執行時才決定要不要配置的，像 Java 的 new、C 的 malloc，或 pointer 指到的資料。",
+     "k": 7,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 968.8
+     }
+    },
+    {
+     "say": "不管在哪一區，load、store 的方式都一樣：給 base address 和 offset 就拿得到。",
+     "k": 8,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 989.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Procedure convention：caller 與 callee 的約定",
+   "scene": "isB-7b-conv",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "把剛才的規則整理成 procedure convention，呼叫約定。",
+     "k": 1,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1020
+     }
+    },
+    {
+     "say": "其實硬體根本不管，$s、$t 亂用也能跑，只要你記得哪些會被弄掉；但這樣很容易寫錯。",
+     "read": "其實硬體根本不管，s、t 亂用也能跑，只要你記得哪些會被弄掉；但這樣很容易寫錯。",
+     "k": 2,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1031.9
+     }
+    },
+    {
+     "say": "而且 caller 和 callee 可能是不同人寫的，各用各的就會亂成一團。",
+     "k": 3,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1049.1
+     }
+    },
+    {
+     "say": "caller 是發出 jal 的 function，callee 是被叫的 function。",
+     "read": "發出 j a l 的 function 是 caller，被叫的 function 是 callee。",
+     "k": 4,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1075
+     }
+    },
+    {
+     "say": "兩邊之間有一份 contract：哪些能動、哪些不能動，就像你跟爸爸先講好，不同人寫也能合作。",
+     "k": 5,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1083.2
+     }
+    },
+    {
+     "say": "callee 的權利：$v、$a、$t 都可以隨便用。",
+     "read": "callee 的權利：v、a、t 都可以隨便用。",
+     "k": 6,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1119
+     }
+    },
+    {
+     "say": "所以 caller 要負責：自己的 return address 要顧好。",
+     "k": 7,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1163.6
+     }
+    },
+    {
+     "say": "$a0 到 $a3、$v0、$v1 之後還要用原值的話，caller 要自己存，callee 不會幫你還原。",
+     "read": "a 零 到 a 三、v 零、v 一 之後還要用原值的話，caller 要自己存，callee 不會幫你還原。",
+     "k": 8,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1178.4
+     }
+    },
+    {
+     "say": "$t 也一樣：callee 會弄亂，caller 想保留就自己存到 stack。",
+     "read": "t 也一樣：callee 會弄亂，caller 想保留就自己存到 stack。",
+     "k": 9,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1206.8
+     }
+    },
+    {
+     "say": "caller 的權利：$s 不能被亂動，回來一定是原狀。想保護的東西就放 $s。",
+     "read": "caller 的權利：s 不能被亂動，回來一定是原狀。想保護的東西就放 s。",
+     "k": 10,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1239.1
+     }
+    },
+    {
+     "say": "所以 callee 只負責 $s，還有 $sp：用到就先存，回去之前還原。",
+     "read": "所以 callee 只負責 s，還有 s p：用到就先存，回去之前還原。",
+     "k": 11,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1278.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "整理：caller 與 callee 各做哪些事",
+   "scene": "isB-7b-steps",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "最後整理一次，左邊 caller、右邊 callee。先看 caller 呼叫前要做什麼。",
+     "k": 1,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1301.9
+     }
+    },
+    {
+     "say": "一，把 $sp 往下挪，需要保留的 $v、$a、$t、$ra 存進 stack；$s 不用存，callee 會負責。",
+     "read": "一，把 s p 往下挪，需要保留的 v、a、t、r a 存進 stack；s 不用存，callee 會負責。",
+     "k": 2,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1319.8
+     }
+    },
+    {
+     "say": "二，把參數放進 $a0 到 $a3，然後 jal 跳過去。",
+     "read": "二，把參數放進 a 零 到 a 三，然後 j a l 跳過去。",
+     "k": 3,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1336.2
+     }
+    },
+    {
+     "say": "三，回來後從 $v0、$v1 拿結果。",
+     "read": "三，回來後從 v 零、v 一 拿結果。",
+     "k": 4,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1341.8
+     }
+    },
+    {
+     "say": "四，把存起來的值拿回來，恢復 stack pointer。",
+     "k": 5,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1347.9
+     }
+    },
+    {
+     "say": "callee 這邊：一，$s 不能亂弄，要用就先存；然後拿參數做運算。",
+     "read": "callee 這邊：一，s 不能亂弄，要用就先存；然後拿參數做運算。",
+     "k": 6,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1361.9
+     }
+    },
+    {
+     "say": "二，做完把結果放 $v0、$v1。",
+     "read": "二，做完把結果放 v 零、v 一。",
+     "k": 7,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1371.3
+     }
+    },
+    {
+     "say": "三，回去前還原 $s 和 $sp，然後 jr $ra 跳回去。兩邊分工清楚，程式就不會亂。",
+     "read": "三，回去前還原 s 和 s p，然後 j r，r a 跳回去。兩邊分工清楚，程式就不會亂。",
+     "k": 8,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1374.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "字元資料：ASCII 與 Unicode",
+   "scene": "isB-7b-ascii",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "好，接下來換個主題：電腦要怎麼跟人溝通？我們平常用的是 A、B、C 這些符號，不是 0101。",
+     "read": "好，接下來換個主題：電腦要怎麼跟人溝通？我們平常用的是 A、B、C 這些符號，不是 零一零一。",
+     "k": 1,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1411.7
+     }
+    },
+    {
+     "say": "這些叫 character data，字元資料：英文字母、標點符號、中文字，各式各樣的 symbol。",
+     "k": 2,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1425.76
+     }
+    },
+    {
+     "say": "可是你想想看，不管是 2's complement 的數字、指令，還是字元，在電腦裡全都是 0101 的 pattern。",
+     "read": "可是你想想看，不管是 2 的補數的數字、指令，還是字元，在電腦裡全都是 零一零一 的 pattern。",
+     "k": 3,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1433.74
+     }
+    },
+    {
+     "say": "差別只在你怎麼解釋它。同一串 bit，當數字看是一個意思，當字元看又是另一個意思。",
+     "k": 3
+    },
+    {
+     "say": "ASCII 規定用一個 byte，也就是 8 個 bit 表示一個字元。像大寫 A 就是 65，二進位 0100 0001。",
+     "read": "ASCII 規定用一個 byte，也就是 8 個 bit 表示一個字元。像大寫 A 就是 65，二進位 零一零零 零零零一。",
+     "k": 4,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1451.78
+     }
+    },
+    {
+     "say": "ASCII 有 128 個字元，Latin-1 擴充到 256 個。這兩種都是一個 byte 一個字元。",
+     "k": 5,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1463.14
+     }
+    },
+    {
+     "say": "Unicode 就大方多了，用 32 bits 的 character set，全世界的文字，包括中文，幾乎都在裡面。",
+     "k": 6,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1472.2
+     }
+    },
+    {
+     "say": "例如「中」這個字，Unicode 的編號是 U+4E2D。",
+     "read": "例如「中」這個字，Unicode 的編號是 U 加 四 E 二 D。",
+     "k": 6
+    },
+    {
+     "say": "所以說穿了就是一個規定：哪個 pattern 叫 A、哪個叫 B，大家照著規定用就好。",
+     "k": 7,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1492.88
+     }
+    }
+   ]
+  },
+  {
+   "title": "lb、lbu、sb：一個 byte 放進 32-bit register",
+   "scene": "isB-7b-lb",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "那 MIPS 怎麼處理字元？數字通常是 32 bits，可是一個 ASCII 字元只要讀一個 byte 就夠了。",
+     "k": 1,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1509.94
+     }
+    },
+    {
+     "say": "所以有 byte 和 halfword 的指令：load 有 lb、lbu、lh、lhu，store 有 sb、sh。halfword 是 2 個 byte。",
+     "read": "所以有 byte 和 halfword 的指令：load 有 l b、l b u、l h、l h u，store 有 s b、s h。halfword 是 2 個 byte。",
+     "k": 2,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1522.72
+     }
+    },
+    {
+     "say": "它們又分兩種：把資料當 signed number 看，或者當 unsigned number、當字元來看。",
+     "k": 3,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1531.04
+     }
+    },
+    {
+     "say": "問題來了：register 永遠是 32 bits，記憶體卻是 byte address，可以拿 1 個、2 個或 4 個 byte。",
+     "k": 4,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1558.96
+     }
+    },
+    {
+     "say": "那我從記憶體只搬一個 byte，才 8 個 bit，要放在 32-bit register 的哪裡？",
+     "k": 5,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1584.8
+     }
+    },
+    {
+     "say": "規定放最右邊。那左邊剩下的 24 個 bit 要填什麼？就看你用哪個指令。",
+     "k": 6,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1598.37
+     }
+    },
+    {
+     "say": "lb 把它當 signed number：左邊 24 個 bit 全填這個 byte 的 sign bit，這叫 sign extension。",
+     "read": "l b 把它當 signed number：左邊 24 個 bit 全填這個 byte 的 sign bit，這叫 sign extension。",
+     "k": 7,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1631.85
+     }
+    },
+    {
+     "say": "lbu 當 unsigned 看：左邊 24 個 bit 都補 0，叫 zero extension。lh、lhu 也是同樣的道理。",
+     "read": "l b u 當 unsigned 看：左邊 24 個 bit 都補 0，叫 zero extension。l h、l h u 也是同樣的道理。",
+     "k": 8,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1639.47
+     }
+    },
+    {
+     "say": "反過來，sb，store byte，從 register 存一個 byte 到記憶體，存的是最右邊那個 byte。",
+     "read": "s b，store byte，反過來從 register 存一個 byte 到記憶體，存的是最右邊那個 byte。",
+     "k": 9,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1658.97
+     }
+    },
+    {
+     "say": "看例子：$t0 是 base register，指到記憶體裡一個 byte，內容是十六進位 F7，也就是 1111 0111。",
+     "read": "看例子：t 零 是 base register，指到記憶體裡一個 byte，內容是十六進位 F 7，也就是 一一一一 零一一一。",
+     "k": 10,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1670.94
+     }
+    },
+    {
+     "say": "執行 lb $t1, 0($t0)：offset 是 0，就指到這個 byte，把它搬進 $t1。",
+     "read": "執行 l b t 一、0 括號 t 零：offset 是 0，就指到這個 byte，把它搬進 t 一。",
+     "k": 10,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1702
+     }
+    },
+    {
+     "say": "lb 當它是 signed：最前面是 1，sign extension 把左邊全填 1，$t1 變成 0xFFFFFFF7，也就是 −9。",
+     "read": "l b 當它是 signed：最前面是 1，sign extension 把左邊全填 1，t 一 變成 十六進位 F F F F F F F 7，也就是 負 9。",
+     "k": 11,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1708.09
+     }
+    },
+    {
+     "say": "同一個 F7 改用 lbu 讀，前面補 0，$t1 就是 0x000000F7，等於 247。",
+     "read": "同一個 F 7 改用 l b u 讀，前面補 0，t 一 就是 十六進位 零零零零零零 F 7，等於 247。",
+     "k": 12,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1726.69
+     }
+    },
+    {
+     "say": "同一個 byte，指令不同，register 裡的結果就不同。所以處理字元通常用 lbu，才不會變成負數。",
+     "read": "同一個 byte，指令不同，register 裡的結果就不同。所以處理字元通常用 l b u，才不會變成負數。",
+     "k": 12
+    }
+   ]
+  },
+  {
+   "title": "傳地址也是 32 bits：call by value 與 call by reference",
+   "scene": "isB-7b-strcpy1",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "來看一個例子：string copy，strcpy。它把字串 y 一個字元一個字元複製到 x，直到字串結尾的 \\0。",
+     "read": "來看一個例子：string copy，s t r copy。它把字串 y 一個字元一個字元複製到 x，直到字串結尾的 反斜線 0。",
+     "k": 1,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1759.39
+     }
+    },
+    {
+     "say": "講之前，黃老師先回答一個同學的問題：C 裡面 call by value 和 call by reference 有什麼不同？",
+     "k": 2,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1774.75
+     }
+    },
+    {
+     "say": "call by value 是傳一個值過去，對方拿去算，算完就結束了。",
+     "k": 3,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1789.38
+     }
+    },
+    {
+     "say": "call by reference 是傳一個地址過去，所有的變化都發生在那個地址裡的資料上。",
+     "k": 4,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1801.79
+     }
+    },
+    {
+     "say": "那 C 把 array 傳給 function，傳的是什麼？是地址。所以 strcpy 的 x、y 其實都是位址。",
+     "read": "那 C 把 array 傳給 function，傳的是什麼？是地址。所以 s t r copy 的 x、y 其實都是位址。",
+     "k": 5,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1828.11
+     }
+    },
+    {
+     "say": "地址也是 32 bits，一樣放在 register：x 的位址放 $a0，y 的位址放 $a1。",
+     "read": "地址也是 32 bits，一樣放在 register：x 的位址放 a 零，y 的位址放 a 一。",
+     "k": 6,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1841.07
+     }
+    },
+    {
+     "say": "拿到地址，怎麼取得裡面的資料？不就是 load 嗎？把地址當 base register，再加上 offset。",
+     "k": 7,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1876.53
+     }
+    },
+    {
+     "say": "所以不管 by value 還是 by reference，參數都放 register：值就直接用，地址就當 base register 用。",
+     "k": 8,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1901.96
+     }
+    }
+   ]
+  },
+  {
+   "title": "strcpy 寫成 MIPS",
+   "scene": "isB-7b-strcpy2",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "好，看程式。caller 已經把 x、y 的地址放在 $a0、$a1，再強調一次，這是地址，不是值。",
+     "read": "好，看程式。caller 已經把 x、y 的地址放在 a 零、a 一，再強調一次，這是地址，不是值。",
+     "k": 1,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1954.02
+     }
+    },
+    {
+     "say": "subroutine 裡的 i 用 $s0 放。s 開頭的是爸爸希望保持原狀的 register，小孩子不能把它弄壞。",
+     "read": "subroutine 裡的 i 用 s 零 放。s 開頭的是爸爸希望保持原狀的 register，小孩子不能把它弄壞。",
+     "k": 2,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1967.98
+     }
+    },
+    {
+     "say": "所以這是 callee 的責任：先 addi $sp, $sp, −4 挪出空間，再 sw $s0, 0($sp) 把 $s0 原本的值存起來。",
+     "read": "所以這是 callee 的責任：先 add i s p、s p、負 4 挪出空間，再 s w s 零、0 括號 s p 把 s 零 原本的值存起來。",
+     "k": 3,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 1999.08
+     }
+    },
+    {
+     "say": "迴圈開始前，i 設成 0：add $s0, $zero, $zero。",
+     "read": "迴圈開始前，i 設成 0：add s 零、zero、zero。",
+     "k": 4,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2015.8
+     }
+    },
+    {
+     "say": "接著算 y[i] 的地址：add $t1, $s0, $a1。字元一個 byte，所以 i 不用乘 4。",
+     "read": "接著算 y i 的地址：add t 一、s 零、a 一。字元一個 byte，所以 i 不用乘 4。",
+     "k": 5,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2039.6
+     }
+    },
+    {
+     "say": "lbu $t2, 0($t1)，把 y[i] 這個 byte 搬進 $t2。字串是 Hi 的話，第一次拿到的就是 H。",
+     "read": "l b u t 二、0 括號 t 一，把 y i 這個 byte 搬進 t 二。字串是 Hi 的話，第一次拿到的就是 H。",
+     "k": 6,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2050.44
+     }
+    },
+    {
+     "say": "再算 x[i] 的地址：add $t3, $s0, $a0，放在 $t3。",
+     "read": "再算 x i 的地址：add t 三、s 零、a 零，放在 t 三。",
+     "k": 7,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2071.82
+     }
+    },
+    {
+     "say": "sb $t2, 0($t3)，把 $t2 存到 x[i]。這兩步合起來，才完成 x[i] = y[i]。",
+     "read": "s b t 二、0 括號 t 三，把 t 二 存到 x i。這兩步合起來，才完成 x i 等於 y i。",
+     "k": 8,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2103.54
+     }
+    },
+    {
+     "say": "這裡是最重要的觀念：MIPS 是 load-store machine，不能把 y 的資料直接搬到 x。",
+     "k": 9,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2128.78
+     }
+    },
+    {
+     "say": "一定要先 load 進 register，再 store 出去。黃老師這一段反覆講了好幾遍，可見有多重要。",
+     "k": 9,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2195
+     }
+    },
+    {
+     "say": "搬完要測試：剛搬的是不是 \\0？beq $t2, $zero, L2，是 0 就跳到 L2 結束。",
+     "read": "搬完要測試：剛搬的是不是 反斜線 0？b e q t 二、zero、L 二，是 0 就跳到 L 二 結束。",
+     "k": 10,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2246.84
+     }
+    },
+    {
+     "say": "不是 0 就 addi $s0, $s0, 1 把 i 加 1，再 j L1 回去搬下一個。連 \\0 也會一起複製過去。",
+     "read": "不是 0 就 add i s 零、s 零、1 把 i 加 1，再 j L 一 回去搬下一個。連 反斜線 0 也會一起複製過去。",
+     "k": 11,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2255.84
+     }
+    },
+    {
+     "say": "跳出去之前要恢復：lw $s0, 0($sp)、addi $sp, $sp, 4，最後 jr $ra 回到 caller。",
+     "read": "跳出去之前要恢復：l w s 零、0 括號 s p、add i s p、s p、4，最後 j r，r a 回到 caller。",
+     "k": 12,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2265.36
+     }
+    },
+    {
+     "say": "整段跑一遍驗算：x 變成 Hi 再加一個 \\0，$s0 也還原成原本的 77，$sp 回到原位。",
+     "read": "整段跑一遍驗算：x 變成 Hi 再加一個 反斜線 0，s 零 也還原成原本的 77，s p 回到原位。",
+     "k": 12
+    }
+   ]
+  },
+  {
+   "title": "strcpy 的兩個重點",
+   "scene": "isB-7b-strcpy3",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "整理兩個重點。第一，argument 可以是值，也可以是地址，反正都是 32 bits，放在 $a0 到 $a3。",
+     "read": "整理兩個重點。第一，argument 可以是值，也可以是地址，反正都是 32 bits，放在 a 零 到 a 三。",
+     "k": 1,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2279.94
+     }
+    },
+    {
+     "say": "如果是地址，就拿它當 base register，去 reference 記憶體裡的資料。",
+     "k": 2,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2297.44
+     }
+    },
+    {
+     "say": "第二，MIPS 有沒有指令能把記憶體 A 的資料直接搬到記憶體 B？沒有！",
+     "k": 3,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2306.88
+     }
+    },
+    {
+     "say": "一定要先把 A 的資料 load 進 register file，再從 register store 到 B。",
+     "k": 4,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2314.54
+     }
+    }
+   ]
+  },
+  {
+   "title": "16 bits 不夠用的兩個問題",
+   "scene": "isB-7b-const",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "好，前面講了 procedure call，也講了 branch，我們一直說 branch 是 I-type。",
+     "k": 1,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2329.46
+     }
+    },
+    {
+     "say": "可是寫程式時只寫一個 label，它的 instruction format 裡到底放什麼？",
+     "k": 2,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2348.52
+     }
+    },
+    {
+     "say": "另一個問題：I-type 的 immediate 只有 16 bits。萬一需要一個很大的常數，根本放不下，怎麼辦？",
+     "k": 3,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2364.86
+     }
+    },
+    {
+     "say": "所以接下來處理兩件事：一，怎麼做出 32-bit 的常數；二，branch 和 jump 的位址到底怎麼放。",
+     "k": 4,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2386.98
+     }
+    }
+   ]
+  },
+  {
+   "title": "32-bit 常數：lui 加 ori",
+   "scene": "isB-7b-lui",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "先看 32-bit constant。其實不管 data 多大，在 register 裡都是 32 bits。",
+     "k": 1,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2406.5
+     }
+    },
+    {
+     "say": "如果常數用 16 bits 就放得下，直接寫在指令裡就好，像 addi。",
+     "read": "如果常數用 16 bits 就放得下，直接寫在指令裡就好，像 add i。",
+     "k": 2,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2412.18
+     }
+    },
+    {
+     "say": "放不下的時候，有一個指令叫 lui，load upper immediate。",
+     "read": "放不下的時候，有一個指令叫 l u i，load upper immediate。",
+     "k": 3,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2424.3
+     }
+    },
+    {
+     "say": "課本的例子：把四百萬放進 $s0。它是十六進位 003D0900，前 16 bits 也有 1，16-bit 裝不下。",
+     "read": "課本的例子：把四百萬放進 s 零。它是十六進位 零零三 D 零九零零，前 16 bits 也有 1，16-bit 裝不下。",
+     "k": 4,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2446.92
+     }
+    },
+    {
+     "say": "做法是拆成兩半：上半 16 bits 是 61，下半是 2304。61 × 65536 + 2304，剛好四百萬。",
+     "read": "做法是拆成兩半：上半 16 bits 是 61，下半是 2304。61 乘 65536 加 2304，剛好四百萬。",
+     "k": 5,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2464.7
+     }
+    },
+    {
+     "say": "lui 還是 I-type，有 16 bits 的常數欄位。它只需要一個 destination，所以 rs 填 0。",
+     "read": "l u i 還是 I-type，有 16 bits 的常數欄位。它只需要一個 destination，所以 rs 填 0。",
+     "k": 6,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2475.2
+     }
+    },
+    {
+     "say": "欄位就是 15、0、16、61：op 15，rs 0，rt 是 $s0 的編號 16，immediate 是 61。",
+     "read": "欄位就是 15、0、16、61：op 15，rs 0，rt 是 s 零 的編號 16，immediate 是 61。",
+     "k": 6
+    },
+    {
+     "say": "寫成 lui $s0, 61：destination 是 $s0，immediate 是前半部的值 61。",
+     "read": "寫成 l u i s 零、61：destination 是 s 零，immediate 是前半部的值 61。",
+     "k": 7,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2512.64
+     }
+    },
+    {
+     "say": "lui 會把指令後半部這 16 bits 的 61，搬到 $s0 的上半部。",
+     "read": "l u i 會把指令後半部這 16 bits 的 61，搬到 s 零 的上半部。",
+     "k": 8,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2546.58
+     }
+    },
+    {
+     "say": "黃老師再講一次：32-bit 常數拆兩半，一半寫在 lui 的 immediate，一半寫在接下來 ori 的 immediate。",
+     "read": "黃老師再講一次：32-bit 常數拆兩半，一半寫在 l u i 的 immediate，一半寫在接下來 o r i 的 immediate。",
+     "k": 9,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2567.72
+     }
+    },
+    {
+     "say": "lui 除了把 61 放到上半部，還會把下半部 16 bits 全部清成 0。現在 $s0 等於 61 乘 65536。",
+     "read": "l u i 除了把 61 放到上半部，還會把下半部 16 bits 全部清成 0。現在 s 零 等於 61 乘 65536。",
+     "k": 10,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2652.86
+     }
+    },
+    {
+     "say": "接著 ori $s0, $s0, 2304，把 2304 OR 進去。",
+     "read": "接著 o r i s 零、s 零、2304，把 2304 OR 進去。",
+     "k": 11,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2669.98
+     }
+    },
+    {
+     "say": "2304 也只有 16 bits，ori 會在前面補 0 變成 32 bits，它的 1 全在低 16 bits。",
+     "read": "2304 也只有 16 bits，o r i 會在前面補 0 變成 32 bits，它的 1 全在低 16 bits。",
+     "k": 12,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2709.62
+     }
+    },
+    {
+     "say": "OR 完，上半部的 61 不受影響，因為 OR 0 不會變；下半部本來是 0，OR 完就變成 2304。",
+     "k": 13,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2782.48
+     }
+    },
+    {
+     "say": "所以 $s0 就是 0x003D0900，四百萬，做出來了。",
+     "read": "所以 s 零 就是 十六進位 零零三 D 零九零零，四百萬，做出來了。",
+     "k": 13
+    },
+    {
+     "say": "第二步為什麼用 ori 不用 addi？addi 會 sign extend，低半部最高位是 1 時會改到上半部；ori 補 0 不會。",
+     "read": "第二步為什麼用 o r i 不用 add i？add i 會 sign extend，低半部最高位是 1 時會改到上半部；o r i 補 0 不會。",
+     "k": 13
+    },
+    {
+     "say": "所以要在 register 裡做一個 32-bit 大常數，就用 lui 加 ori，不必先把它存在記憶體裡。",
+     "read": "所以要在 register 裡做一個 32-bit 大常數，就用 l u i 加 o r i，不必先把它存在記憶體裡。",
+     "k": 14,
+     "src": {
+      "v": "CqVPl7fIlAo",
+      "t": 2790.98
+     }
+    }
+   ]
+  },
+  {
+   "title": "回頭看 R 和 I format",
+   "scene": "isB-8a-irev",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "好，解開 branch 位址之前，黃老師又要大家複習 instruction format。為什麼每次都問？",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 17.32
+     }
+    },
+    {
+     "say": "因為後面要照著它設計硬體。就像煮菜，你不知道要煮什麼菜，怎麼煮？ISA 就是那份菜單。",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 33.95
+     }
+    },
+    {
+     "say": "R-format：op 6 bits，rs、rt、rd、shamt 各 5 bits，funct 6 bits，operand 全是 register。",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 144.28
+     }
+    },
+    {
+     "say": "I-format 用在 load、store，例如 lw $t0, 32($s3)。",
+     "read": "I-format 用在 load、store，例如 l w t 零、32 括號 s 三。",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 211.54
+     }
+    },
+    {
+     "say": "設計原則是 format 越一樣越好，所以 op、rs、rt 的位置都跟 R-type 一樣，後面合成 16 bits 的 immediate。",
+     "k": 3,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 222.37
+     }
+    },
+    {
+     "say": "load、store 的這 16 bits 是 offset：base register 加上 offset，才是真正要存取的記憶體位址。",
+     "k": 4,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 273.24
+     }
+    }
+   ]
+  },
+  {
+   "title": "Immediate 是 two's complement",
+   "scene": "isB-8a-irev3",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "I-format 還用在 beq、bne 這種 conditional branch。I 就是 immediate：constant 直接放在指令裡。",
+     "read": "I-format 還用在 b e q、b n e 這種 conditional branch。I 就是 immediate：constant 直接放在指令裡。",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 390.39
+     }
+    },
+    {
+     "say": "這 16 bits 是一個 two's complement 的數，可以是正的，也可以是負的，例如 −4。",
+     "read": "這 16 bits 是一個 two's complement 的數，可以是正的，也可以是負的，例如 負 4。",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 435.85
+     }
+    },
+    {
+     "say": "可是運算是 32 bits，要做 sign extension，把 sign bit 複製到前面 16 bits。−4 變成 0xFFFFFFFC，還是 −4。",
+     "read": "可是運算是 32 bits，要做 sign extension，把 sign bit 複製到前面 16 bits。負 4 變成 十六進位 F F F F F F F C，還是 負 4。",
+     "k": 3,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 444.53
+     }
+    },
+    {
+     "say": "正數的 sign bit 是 0，前面就補 0，像正 5。所以正負都能正確延伸。",
+     "k": 4,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 460.28
+     }
+    },
+    {
+     "say": "總結：immediate 運算、conditional branch、load 和 store，這三種指令都用 I-format。",
+     "k": 5,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 484.76
+     }
+    }
+   ]
+  },
+  {
+   "title": "Branch 的目標：PC-relative addressing",
+   "scene": "isB-8a-pcrel",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "現在來解開上次留下的謎。branch 的 format 是 op、rs、rt，再加一個 16-bit immediate。",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 496.76
+     }
+    },
+    {
+     "say": "beq 是 rs、rt 一樣就跳，bne 是不一樣才跳，由 op code 決定是哪一種。",
+     "read": "b e q 是 rs、rt 一樣就跳，b n e 是不一樣才跳，由 op code 決定是哪一種。",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 506.48
+     }
+    },
+    {
+     "say": "跳去哪裡？我們之前只寫一個 label，像 L1，那只是 symbolic 的描述。",
+     "k": 3,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 524.12
+     }
+    },
+    {
+     "say": "電腦看不懂 L1、L2，它只認得 0101，所以指令裡放的必須是一個 number，也就是位址。",
+     "read": "電腦看不懂 L1、L2，它只認得 零一零一，所以指令裡放的必須是一個 number，也就是位址。",
+     "k": 4,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 541.24
+     }
+    },
+    {
+     "say": "跳去哪裡，其實就是跳到一個 memory address，因為指令本身也放在記憶體裡。",
+     "k": 5,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 565.76
+     }
+    },
+    {
+     "say": "位址有多長？32 bits。可是 immediate 只有 16 bits，怎麼寫得下？",
+     "k": 6,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 576.02
+     }
+    },
+    {
+     "say": "解法叫 PC-relative addressing：不用絕對位置，而是用相對位置。",
+     "k": 7,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 595.72
+     }
+    },
+    {
+     "say": "相對於誰？相對於 PC，Program Counter，不是個人電腦那個 PC 喔。",
+     "k": 8,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 606.06
+     }
+    },
+    {
+     "say": "PC 記錄執行到哪個指令，裡面放的就是指令的位址。例如 beq 在 1000，PC 就是 1000。",
+     "read": "PC 記錄執行到哪個指令，裡面放的就是指令的位址。例如 b e q 在 1000，PC 就是 1000。",
+     "k": 9,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 644.83
+     }
+    }
+   ]
+  },
+  {
+   "title": "分支通常很近：用 word 當單位的 offset",
+   "scene": "isB-8a-near",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "那 32-bit 的 PC 和 16-bit 的 immediate 要怎麼結合？",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 657.31
+     }
+    },
+    {
+     "say": "先想：執行 beq 的時候，PC 指著誰？就是 beq 自己的位置。",
+     "read": "先想：執行 b e q 的時候，PC 指著誰？就是 b e q 自己的位置。",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 689.01
+     }
+    },
+    {
+     "say": "你寫程式時，branch 通常只是往上或往下跳幾個 statement，像 loop，目標一定在附近。",
+     "k": 3,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 714.11
+     }
+    },
+    {
+     "say": "例如 beq 在 1000，要去的地方可能是 1000 加 50，或 1000 減 50。",
+     "read": "例如 b e q 在 1000，要去的地方可能是 1000 加 50，或 1000 減 50。",
+     "k": 4,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 728.35
+     }
+    },
+    {
+     "say": "所以 immediate 就像一個 offset，加到現在的 PC 上，就是目標。",
+     "k": 5,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 741.51
+     }
+    },
+    {
+     "say": "這 16 bits 是帶號的 two's complement，負的往上跳，正的往下跳。",
+     "k": 6,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 768.75
+     }
+    },
+    {
+     "say": "是不是很像 load、store 的 base 加 offset？只是 base 從 register 換成了 PC。",
+     "k": 7,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 777.91
+     }
+    },
+    {
+     "say": "不過 lw、sw 的 offset 是以 byte 為單位。branch 也要用 byte 嗎？",
+     "read": "不過 l w、s w 的 offset 是以 byte 為單位。branch 也要用 byte 嗎？",
+     "k": 8,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 829.73
+     }
+    },
+    {
+     "say": "用 byte 的話，16 bits 只能往上、往下各跳 2¹⁵ 個 byte。我們當然希望範圍越大越好。",
+     "read": "用 byte 的話，16 bits 只能往上、往下各跳 2 的 15 次方 個 byte。我們當然希望範圍越大越好。",
+     "k": 9,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 869.3
+     }
+    },
+    {
+     "say": "想一想：MIPS 有沒有 1 個、2 個、3 個 byte 長的指令？沒有，指令永遠是 4 個 byte。",
+     "k": 10,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 906.53
+     }
+    },
+    {
+     "say": "所以指令位址永遠是 0、4、8、12 這種 4 的倍數，換成二進位，最後兩個 bit 一定是 00。",
+     "read": "所以指令位址永遠是 0、4、8、12 這種 4 的倍數，換成二進位，最後兩個 bit 一定是 零零。",
+     "k": 11,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 921.88
+     }
+    },
+    {
+     "say": "既然一定是 00，何必浪費空間放進 immediate？用的時候自動補兩個 0，補兩個 0 就是乘以 4。",
+     "read": "既然一定是 零零，何必浪費空間放進 immediate？用的時候自動補兩個 0，補兩個 0 就是乘以 4。",
+     "k": 12,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 943.04
+     }
+    },
+    {
+     "say": "所以 branch 的 immediate 是 word address，以指令為單位；lw、sw 可能只拿某個 byte，才要用 byte address。",
+     "read": "所以 branch 的 immediate 是 word address，以指令為單位；l w、s w 可能只拿某個 byte，才要用 byte address。",
+     "k": 13,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 963.74
+     }
+    },
+    {
+     "say": "這樣範圍變成 4 倍：上下各 2¹⁵ 個 word，也就是 2¹⁷ 個 byte。",
+     "read": "這樣範圍變成 4 倍：上下各 2 的 15 次方 個 word，也就是 2 的 17 次方 個 byte。",
+     "k": 14,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1045.74
+     }
+    }
+   ]
+  },
+  {
+   "title": "offset 從 PC + 4 算起",
+   "scene": "isB-8a-pc4",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "還有一點要注意。正常情況下 PC 每次加 4，因為每個指令 4 個 byte。",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1060.02
+     }
+    },
+    {
+     "say": "PC + 4 就是下一個指令，不跳的話就執行它。",
+     "read": "PC 加 4 就是下一個指令，不跳的話就執行它。",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1088.2
+     }
+    },
+    {
+     "say": "大部分時候都是循序執行，所以硬體先假設不跳，先把 PC 加 4 做掉。",
+     "k": 3,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1095.68
+     }
+    },
+    {
+     "say": "同時硬體去讀 rs、rt，比較是不是相等。兩件事一起做，比較快。",
+     "k": 4,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1120.96
+     }
+    },
+    {
+     "say": "比完發現要跳，如果還得先把 PC 減 4 恢復原狀，就浪費時間了。",
+     "k": 5,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1133.72
+     }
+    },
+    {
+     "say": "所以規定：offset 從 PC + 4，也就是下一個指令開始算。",
+     "read": "所以規定：offset 從 PC 加 4，也就是下一個指令開始算。",
+     "k": 6,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1148.42
+     }
+    },
+    {
+     "say": "這一行最重要：branch target = (PC + 4) + immediate × 4。",
+     "read": "這一行最重要：branch target 等於 PC 加 4，再加 immediate 乘 4。",
+     "k": 7,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1166.16
+     }
+    }
+   ]
+  },
+  {
+   "title": "例題：beq 的 immediate 填多少",
+   "scene": "isB-8a-beqex",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "看例子：Loop 這行是 beq $9, $0, End，比較第 9 號和第 0 號 register，一樣就跳到 End。",
+     "read": "看例子：Loop 這行是 b e q 9 號、0 號、End，比較第 9 號和第 0 號 register，一樣就跳到 End。",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1201.8
+     }
+    },
+    {
+     "say": "不一樣就做 add、addi，然後 j Loop 跳回去，loop 一直跑。",
+     "read": "不一樣就做 add、add i，然後 j Loop 跳回去，loop 一直跑。",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1212.54
+     }
+    },
+    {
+     "say": "assembly 寫到這樣就完成了。可是電腦看不懂 End 這個 symbol，要給它一個 number。",
+     "k": 3,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1233.76
+     }
+    },
+    {
+     "say": "beq 是 I-type，所以長成 op、rs、rt、immediate 的樣子。",
+     "read": "b e q 是 I-type，所以長成 op、rs、rt、immediate 的樣子。",
+     "k": 4,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1245.94
+     }
+    },
+    {
+     "say": "查表，beq 的 op code 是 4；rs 是 9、rt 是 0，直接填進去。",
+     "read": "查表，b e q 的 op code 是 4；rs 是 9、rt 是 0，直接填進去。",
+     "k": 5,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1273.04
+     }
+    },
+    {
+     "say": "那 immediate 要放多少？黃老師請同學猜，你也先想想看。",
+     "k": 6,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1281.14
+     }
+    }
+   ]
+  },
+  {
+   "title": "從下一個指令數起：immediate 是 3",
+   "scene": "isB-8a-beqex2",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "先問：現在執行到哪？在 beq，PC 指著它。",
+     "read": "先問：現在執行到哪？在 b e q，PC 指著它。",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1307.06
+     }
+    },
+    {
+     "say": "可是加 offset 的時候，PC 已經加過 4 了，所以要從下一個指令 add 開始數。",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1323.46
+     }
+    },
+    {
+     "say": "從 add 數：1、2、3，就到 End。所以 immediate 放 3。",
+     "k": 3,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1334.36
+     }
+    },
+    {
+     "say": "剛剛的乘以 4，是換算成 byte 才需要；欄位裡以指令為單位，兩個 0 會自動補，所以直接填 3。",
+     "k": 4,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1353.46
+     }
+    },
+    {
+     "say": "換成 binary，四個欄位就是 4、9、0、3，跟組譯出來的一樣。",
+     "k": 5,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1382.76
+     }
+    },
+    {
+     "say": "那真正的 byte address 呢？PC 加 4，再加上 immediate 乘 4。",
+     "k": 6,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1390.52
+     }
+    },
+    {
+     "say": "假設 PC 是 X，目標 = X + 4 + 3 × 4 = X + 16。X 是 1000 的話就是 1016，正好是 End。",
+     "read": "假設 PC 是 X，目標 等於 X 加 4 加 3 乘 4，等於 X 加 16。X 是 1000 的話就是 1016，正好是 End。",
+     "k": 7,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1420.28
+     }
+    },
+    {
+     "say": "所以看 assembly 有個快方法：從下一個指令開始數到目標，數到幾就填幾。",
+     "k": 8,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1504.88
+     }
+    }
+   ]
+  },
+  {
+   "title": "J-format：留下 op，其餘都放位址",
+   "scene": "isB-8a-jfmt",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "最後一種 format：J-format，J 就是 jump。",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1524.36
+     }
+    },
+    {
+     "say": "它很簡單，只有 j 會用，之後要講的 jal 也是同樣格式。",
+     "read": "它很簡單，只有 j 會用，之後要講的 j a l 也是同樣格式。",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1537.42
+     }
+    },
+    {
+     "say": "beq、bne 只能在 PC 附近跳。那想跳遠一點怎麼辦？",
+     "read": "b e q、b n e 只能在 PC 附近跳。那想跳遠一點怎麼辦？",
+     "k": 3,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1545.94
+     }
+    },
+    {
+     "say": "最理想是直接放一個完整的 32-bit 位址，就能跳到任何地方。",
+     "k": 4,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1572.12
+     }
+    },
+    {
+     "say": "可是指令也只有 32 bits，全拿來放位址，op code 就沒地方放了。為了它把所有指令加長？也不行。",
+     "k": 5,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1595.76
+     }
+    },
+    {
+     "say": "所以做個 compromise：op code 留著，j 的 op 是 2，後面的欄位全部拿來放位址。",
+     "k": 6,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1633.3
+     }
+    },
+    {
+     "say": "32 減 6，剩 26 bits。只用 26 bits 描述位置，一定有些地方跳不到。",
+     "k": 7,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1653.08
+     }
+    },
+    {
+     "say": "有沒有辦法讓 26 bits 跳得更遠？剛剛才學過一個技巧，你想想看。",
+     "k": 7,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1666.38
+     }
+    }
+   ]
+  },
+  {
+   "title": "補兩個 0：26 bits 變 28 bits",
+   "scene": "isB-8a-j28b",
+   "steps": 2,
+   "lines": [
+    {
+     "say": "答案是補兩個 0！指令位址最後兩個 bit 一定是 00，不必放在指令裡，用的時候自動補上。",
+     "read": "答案是補兩個 0！指令位址最後兩個 bit 一定是 零零，不必放在指令裡，用的時候自動補上。",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1737.66
+     }
+    },
+    {
+     "say": "26 bits 當 word address，補上兩個 0 變 28 bits，只差 4 個 bit 就是完整的 32 bits。",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1757.86
+     }
+    },
+    {
+     "say": "那缺的 4 個 bit 要從哪裡來？",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1766
+     }
+    }
+   ]
+  },
+  {
+   "title": "缺的 4 bits 從 PC 拿",
+   "scene": "isB-8a-pcup",
+   "steps": 2,
+   "lines": [
+    {
+     "say": "答案是：從 Program Counter 來。",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1803.24
+     }
+    },
+    {
+     "say": "那要拿 PC 的哪 4 個 bit？後面、前面，還是中間？",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1809.24
+     }
+    },
+    {
+     "say": "同學答：從前面拿。答對了，可是為什麼是前面？",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1826
+     }
+    }
+   ]
+  },
+  {
+   "title": "拿 PC 最前面的 bit：把 memory 切塊",
+   "scene": "isB-8a-blocks",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "從 PC 的前面拿 bit 接上去，其實等於把整個 memory 切成好幾塊。",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1851.86
+     }
+    },
+    {
+     "say": "前面拿 2 個 bit，就等於把 memory 切成 4 塊。",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1867
+     }
+    },
+    {
+     "say": "先看只拿 1 個 bit：最前面是 0 的一塊，是 1 的一塊，切成 2 塊。",
+     "k": 3,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1884.56
+     }
+    },
+    {
+     "say": "拿前兩個 bit：00 在最下面，再來 01、10、11，切成 4 塊。",
+     "read": "拿前兩個 bit：零零 在最下面，再來 零一、一零、一一，切成 4 塊。",
+     "k": 4,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1919.18
+     }
+    },
+    {
+     "say": "只要整個 program 都落在同一塊，例如 01 這塊，接上現在 PC 前面的 bit 就不會錯。",
+     "read": "只要整個 program 都落在同一塊，例如 零一 這塊，接上現在 PC 前面的 bit 就不會錯。",
+     "k": 5,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1932.86
+     }
+    },
+    {
+     "say": "為什麼？位址從全 0 往上數，最後面的 bit 一直變，最前面的要很久才變一次，所以同一塊裡前面的 bit 都一樣。",
+     "k": 6,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 1968.28
+     }
+    },
+    {
+     "say": "program 在 01 這塊裡跳來跳去，目標前兩個 bit 也是 01，接上 PC 的 01，完全正確。",
+     "read": "program 在 零一 這塊裡跳來跳去，目標前兩個 bit 也是 零一，接上 PC 的 零一，完全正確。",
+     "k": 7,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2044.49
+     }
+    },
+    {
+     "say": "可是要從 00 那塊跳到 10 那塊，接上去的是現在 PC 的 00，位址就錯了。",
+     "read": "可是要從 零零 那塊跳到 一零 那塊，接上去的是現在 PC 的 零零，位址就錯了。",
+     "k": 8,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2085.61
+     }
+    },
+    {
+     "say": "MIPS 拿 PC 最前面 4 個 bit：切成 2⁴ = 16 塊，每塊 2²⁸ 個 byte，也就是 256 MB。",
+     "read": "MIPS 拿 PC 最前面 4 個 bit：切成 2 的 4 次方，16 塊，每塊 2 的 28 次方 個 byte，也就是 256 MB。",
+     "k": 9,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2148.31
+     }
+    },
+    {
+     "say": "誰負責擺程式？linker、loader。擺的時候別跨過 256 MB 的邊界，黃老師說 99% 的情況都沒問題。",
+     "read": "誰負責擺程式？linker、loader。擺的時候別跨過 256 MB 的邊界，黃老師說 百分之 99 的情況都沒問題。",
+     "k": 10,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2172.71
+     }
+    }
+   ]
+  },
+  {
+   "title": "j 的目標：接起來，不是加起來",
+   "scene": "isB-8a-jaddr",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "所以 jump 的新 PC 是三段接起來的，總共 32 bits。",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2197.99
+     }
+    },
+    {
+     "say": "第一段，PC 最前面 4 個 bit。",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2199.29
+     }
+    },
+    {
+     "say": "第二段，接上 jump 指令後面的 26 bits。",
+     "k": 3,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2202.49
+     }
+    },
+    {
+     "say": "第三段，最後補兩個 0。這種定址叫 pseudodirect addressing。",
+     "k": 4,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2208.95
+     }
+    },
+    {
+     "say": "注意，這不是加法，是 concatenation，串接：三段 bit 依序排在一起，連加法器都不用。",
+     "k": 5,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2212.81
+     }
+    },
+    {
+     "say": "那真的要跳到任意 32-bit 位址呢？把位址放進 register，用 jr，jump register。",
+     "read": "那真的要跳到任意 32-bit 位址呢？把位址放進 register，用 j r，jump register。",
+     "k": 6,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2227.59
+     }
+    },
+    {
+     "say": "黃老師舉 $ra 當例子，其實任何 register 都行；用 $ra 的話，記得先把原本的返回位址存起來。",
+     "read": "黃老師舉 r a 當例子，其實任何 register 都行；用 r a 的話，記得先把原本的返回位址存起來。",
+     "k": 6,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2248
+     }
+    },
+    {
+     "say": "整理：beq、bne 是有範圍的 PC-relative；j 是 pseudodirect，限同一個 256 MB 區塊；jr 用 register，哪都能去。",
+     "read": "整理：b e q、b n e 是有範圍的 PC-relative；j 是 pseudodirect，限同一個 256 MB 區塊；j r 用 register，哪都能去。",
+     "k": 7,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2273.43
+     }
+    }
+   ]
+  },
+  {
+   "title": "例題：從 80000 開始的迴圈",
+   "scene": "isB-8a-loopex",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "來看課本的例子：之前的 while (save[i] == k) 迴圈，假設從位址 80000 開始。",
+     "read": "來看課本的例子：之前的 while save i 等於 k 迴圈，假設從位址 80000 開始。",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2302.37
+     }
+    },
+    {
+     "say": "bne $t0, $s5, Exit：op 是 5，rs 是 $t0 的 8，rt 是 $s5 的 21。immediate 要放多少？",
+     "read": "b n e t 零、s 五、Exit：op 是 5，rs 是 t 零 的 8，rt 是 s 五 的 21。immediate 要放多少？",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2316.77
+     }
+    },
+    {
+     "say": "有同學說 3，因為從 bne 數到 Exit 是 3 行。欸，別忘了 PC 在哪裡。",
+     "read": "有同學說 3，因為從 b n e 數到 Exit 是 3 行。欸，別忘了 PC 在哪裡。",
+     "k": 3,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2337.98
+     }
+    },
+    {
+     "say": "這時 PC 已經加 4，指到 80016 的 addi。從那裡數：j 是 1，Exit 是 2。所以 immediate 是 2。",
+     "read": "這時 PC 已經加 4，指到 80016 的 add i。從那裡數：j 是 1，Exit 是 2。所以 immediate 是 2。",
+     "k": 4,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2342.58
+     }
+    },
+    {
+     "say": "再看 j Loop，它的 26-bit 欄位要放多少？",
+     "k": 5,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2355.38
+     }
+    },
+    {
+     "say": "Loop 的絕對位址是 80000。用十進位算就好，換成 binary 反而容易搞亂。",
+     "k": 6,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2360.96
+     }
+    }
+   ]
+  },
+  {
+   "title": "j 的欄位是 20000",
+   "scene": "isB-8a-loopex2",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "答案：j 的欄位放 20000。",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2399.8
+     }
+    },
+    {
+     "say": "因為 80000 是 byte address，指令裡只描述 word address，所以除以 4：80000 ÷ 4 = 20000。",
+     "read": "因為 80000 是 byte address，指令裡只描述 word address，所以除以 4：80000 除以 4 等於 20000。",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2413.9
+     }
+    },
+    {
+     "say": "回頭驗算 bne：目標 = 80012 + 4 + 2 × 4 = 80024，正好是 Exit。",
+     "read": "回頭驗算 b n e：目標 等於 80012 加 4 加 2 乘 4，等於 80024，正好是 Exit。",
+     "k": 3,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2426.6
+     }
+    },
+    {
+     "say": "j 的部分，假設在同一個 segment，PC 前 4 bits 都是 0，接上 20000 再補兩個 0，就是 80000。",
+     "k": 4,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2443.62
+     }
+    }
+   ]
+  },
+  {
+   "title": "要跳很遠：條件反過來，再加一個 j",
+   "scene": "isB-8a-far",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "還有一個問題：寫 loop 時，我們都假設 beq、bne 的目標在 16-bit 的範圍內。",
+     "read": "還有一個問題：寫 loop 時，我們都假設 b e q、b n e 的目標在 16-bit 的範圍內。",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2456.34
+     }
+    },
+    {
+     "say": "萬一 L1 很遠，超過上下 2¹⁵ 個指令，immediate 就描述不了，怎麼辦？",
+     "read": "萬一 L1 很遠，超過上下 2 的 15 次方 個指令，immediate 就描述不了，怎麼辦？",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2470
+     }
+    },
+    {
+     "say": "把 beq $s0, $s1, L1 改成 bne $s0, $s1, L2，條件反過來；下一行放 j L1，L2 是再下一行。",
+     "read": "把 b e q s 零、s 一、L 一 改成 b n e s 零、s 一、L 二，條件反過來；下一行放 j L 一，L 二 是再下一行。",
+     "k": 3,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2474.62
+     }
+    },
+    {
+     "say": "意思是先用 branch 在附近決定要不要跳；要跳，就執行旁邊的 j，由 j 跳到很遠的 L1。",
+     "k": 4,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2509.78
+     }
+    }
+   ]
+  },
+  {
+   "title": "什麼是 addressing mode",
+   "scene": "isA-am-intro",
+   "steps": 3,
+   "lines": [
+    {
+     "say": "最後把 addressing mode，定址模式，整理一遍。這是 instruction set design 很重要的特性。",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2534.56
+     }
+    },
+    {
+     "say": "定義是：指令裡指定 operand 在哪裡的各種方法。operand 可能在指令裡、在 register 裡，或在記憶體裡。",
+     "k": 2,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 8
+     }
+    },
+    {
+     "say": "MIPS 有五種：immediate、register、base、PC-relative、pseudo-direct。我們跟著英文影片一種一種看。",
+     "k": 3,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 16
+     }
+    }
+   ]
+  },
+  {
+   "title": "Immediate addressing",
+   "scene": "isA-am-imm",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "第一種，immediate addressing，立即定址。",
+     "k": 1,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 21
+     }
+    },
+    {
+     "say": "格式是 6 bits 的 op code，接 rs、rt，最後是 immediate。例如 addi $s1, $s2, 5，結果放在 rt。",
+     "read": "格式是 6 bits 的 op code，接 rs、rt，最後是 immediate。例如 add i s 一、s 二、5，結果放在 rt。",
+     "k": 2,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 23.5
+     }
+    },
+    {
+     "say": "既然叫 immediate，資料就直接跟著指令一起來，不用再去記憶體拿。那個 5 就在指令裡。",
+     "k": 3,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 41.4
+     }
+    },
+    {
+     "say": "影片也提到，op code 只有 6 bits，所以最多 2⁶ = 64 種 op code。",
+     "read": "影片也提到，op code 只有 6 bits，所以最多 2 的 6 次方，64 種 op code。",
+     "k": 4,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 55.7
+     }
+    },
+    {
+     "say": "add 用不同的 register，不算不同的指令，處理器是看欄位裡的值來分辨。",
+     "k": 5,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 74.7
+     }
+    },
+    {
+     "say": "影片說「最多 64 種指令」要修正：R-type 的 op 都是 0，再用 funct 區分，所以實際指令不只 64 個。",
+     "k": 5
+    }
+   ]
+  },
+  {
+   "title": "Register addressing",
+   "scene": "isA-am-reg",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "第二種，register addressing。這種格式有三個 register field。",
+     "k": 1,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 95
+     }
+    },
+    {
+     "say": "MIPS 有 32 個 register，要指定一個需要幾個 bit？2⁵ = 32，所以每個欄位 5 bits。",
+     "read": "MIPS 有 32 個 register，要指定一個需要幾個 bit？2 的 5 次方 等於 32，所以每個欄位 5 bits。",
+     "k": 2,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 98.7
+     }
+    },
+    {
+     "say": "shamt 是 shift amount，只有 shift 會用，add、sub 這格就填 0。",
+     "k": 3,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 127.5
+     }
+    },
+    {
+     "say": "funct 有 6 bits：加法填 32，二進位 100000；減法填 34。",
+     "read": "funct 有 6 bits：加法填 32，二進位 一零零零零零；減法填 34。",
+     "k": 4,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 145.8
+     }
+    },
+    {
+     "say": "add、sub 的 op code 則是 000000，六個 bit 全是 0。",
+     "read": "add、sub 的 op code 則是 零零零零零零，六個 bit 全是 0。",
+     "k": 5,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 171.6
+     }
+    },
+    {
+     "say": "為什麼是 0 和 32？是 MIPS 設計者定的。你自己設計處理器可以定別的，但我們照 MIPS 的規定。",
+     "k": 6,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 179.4
+     }
+    },
+    {
+     "say": "例子：add $s1, $s2, $s3，把 $s2 和 $s3 相加，結果存到 $s1。",
+     "read": "例子：add s 一、s 二、s 三，把 s 二 和 s 三 相加，結果存到 s 一。",
+     "k": 7,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 204.7
+     }
+    },
+    {
+     "say": "$s2 的編號 18 填進 rs，$s3 的 19 填進 rt，destination $s1 的 17 填進 rd。",
+     "read": "s 二 的編號 18 填進 rs，s 三 的 19 填進 rt，destination s 一 的 17 填進 rd。",
+     "k": 8,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 223.7
+     }
+    },
+    {
+     "say": "funct 填 32，op 和 shamt 都是 0。整個指令是 0、18、19、17、0、32，hex 就是 0x02538820。",
+     "read": "funct 填 32，op 和 shamt 都是 0。整個指令是 0、18、19、17、0、32，hex 就是 十六進位 零二五三八八二零。",
+     "k": 9,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 248.1
+     }
+    },
+    {
+     "say": "注意順序：assembly 寫成 rd、rs、rt，機器碼的欄位卻是 rs、rt、rd，很容易考成陷阱。",
+     "k": 10,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 287.3
+     }
+    },
+    {
+     "say": "為什麼叫 register addressing？因為這個指令所有的 operand 都是 register。",
+     "k": 12,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 352.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Base addressing",
+   "scene": "isA-am-base",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "第三種，base addressing，也叫 displacement addressing。",
+     "k": 1,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 371.7
+     }
+    },
+    {
+     "say": "例子：lw $s1, 32($s3)，load word。假設 $s3 裡是 1000。",
+     "read": "例子：l w s 一、32 括號 s 三，load word。假設 s 三 裡是 1000。",
+     "k": 3,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 411
+     }
+    },
+    {
+     "say": "32 和 $s3 的內容加起來就是位址：1000 + 32 = 1032，指到記憶體的一格。",
+     "read": "32 和 s 三 的內容加起來就是位址：1000 加 32 等於 1032，指到記憶體的一格。",
+     "k": 4,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 420.5
+     }
+    },
+    {
+     "say": "從那裡拿一個 word。word 是 4 個 byte，half word 是 2 個，byte 就是 1 個。",
+     "k": 5,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 441.7
+     }
+    },
+    {
+     "say": "load word 就拿 4 個 byte 放進 $s1，register 是 32 bits，剛好放得下。",
+     "read": "load word 就拿 4 個 byte 放進 s 一，register 是 32 bits，剛好放得下。",
+     "k": 6,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 451.4
+     }
+    },
+    {
+     "say": "注意，這個 32 雖然寫在指令裡，但它不是資料，而是位址的一部分。",
+     "k": 7,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 468.1
+     }
+    },
+    {
+     "say": "指令裡直接給的值，在 immediate mode 是 data，在 base mode 是 address，要分清楚。",
+     "k": 9,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 496.9
+     }
+    },
+    {
+     "say": "欄位：lw 的 op 是 35，rs 是 base $s3 的 19，rt 是放結果的 $s1，填 17。填的是編號，不是內容。",
+     "read": "欄位：l w 的 op 是 35，rs 是 base s 三 的 19，rt 是放結果的 s 一，填 17。填的是編號，不是內容。",
+     "k": 10,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 515.2
+     }
+    },
+    {
+     "say": "順便分清楚：整個 32 bits 叫 instruction code，op code 只是最前面那 6 bits。",
+     "k": 11,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 557.7
+     }
+    },
+    {
+     "say": "換成 lh 就讀 2 個 byte，lb 只讀 1 個 byte，結果一樣放進 $s1。",
+     "read": "換成 l h 就讀 2 個 byte，l b 只讀 1 個 byte，結果一樣放進 s 一。",
+     "k": 13,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 619.6
+     }
+    },
+    {
+     "say": "黃老師的整理也一樣：load、store 都用 base addressing，可以存取 byte、halfword 或 word。",
+     "k": 13,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2564.52
+     }
+    },
+    {
+     "say": "叫 base，是因為 $s3 提供位址的基準，叫 base register；32 是位移，叫 offset 或 displacement。",
+     "read": "叫 base，是因為 s 三 提供位址的基準，叫 base register；32 是位移，叫 offset 或 displacement。",
+     "k": 14,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 663.5
+     }
+    },
+    {
+     "say": "影片也叫它 indirect addressing，但課本名稱是 base。MIPS 沒有「記憶體裡存位址」那種 indirect。",
+     "k": 15,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 720.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "PC-relative addressing",
+   "scene": "isA-am-pc",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "第四種，PC-relative addressing。PC 存著目前正在執行的指令的位址。",
+     "k": 1,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 747.5
+     }
+    },
+    {
+     "say": "指令也放在記憶體裡，處理器就是照 PC 的位址把指令拿進來執行。",
+     "k": 2,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 763.2
+     }
+    },
+    {
+     "say": "想跳到程式別的地方，就改 PC 的值，它就會去新位址拿指令。",
+     "k": 3,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 782.3
+     }
+    },
+    {
+     "say": "英文影片的例子：bne $s0, $s1, 100。bne 是 branch on not equal，不相等就跳。",
+     "read": "b n e s 零、s 一、100。b n e 是 branch on not equal，不相等就跳，這是英文影片的例子。",
+     "k": 4,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 801
+     }
+    },
+    {
+     "say": "這個 100 不是第 100 個 byte，而是 100 個指令；每個 4 個 byte，所以是 400 個 byte。",
+     "k": 6,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 831.1
+     }
+    },
+    {
+     "say": "還要從下一個指令算起：PC + 4 + 100 × 4。PC 是 1000 的話，目標就是 1404。",
+     "read": "還要從下一個指令算起：PC 加 4 加 100 乘 4。PC 是 1000 的話，目標就是 1404。",
+     "k": 7,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 860.8
+     }
+    },
+    {
+     "say": "beq 也一樣，只是相等才跳，就像高階語言的 if。",
+     "read": "b e q 也一樣，只是相等才跳，就像高階語言的 if。",
+     "k": 8,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 893
+     }
+    },
+    {
+     "say": "欄位：bne 的 op 是 5，rs 填 $s0 的 16，rt 填 $s1 的 17，最後 16 bits 放 100。",
+     "read": "欄位：b n e 的 op 是 5，rs 填 s 零 的 16，rt 填 s 一 的 17，最後 16 bits 放 100。",
+     "k": 10,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 944.4
+     }
+    },
+    {
+     "say": "16 bits 放不下 20 萬、100 萬。影片說範圍到 2¹⁶，正確是 signed：−2¹⁵ 到 2¹⁵ − 1 個指令。",
+     "read": "16 bits 放不下 20 萬、100 萬。影片說範圍到 2 的 16 次方，正確是 signed：負 2 的 15 次方 到 2 的 15 次方 減 1 個指令。",
+     "k": 11,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 985
+     }
+    },
+    {
+     "say": "叫 PC-relative，是因為目標相對於目前的 PC：PC 是 1000，就以 1000 為基準。",
+     "read": "叫 PC-relative，是因為目標相對於目前的 PC：PC 是 一千，就以 一千 為基準。",
+     "k": 12,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 1032.1
+     }
+    },
+    {
+     "say": "黃老師的例子也一樣：PC + 4 是 80016，再加 2 × 4，就到 80024。",
+     "read": "黃老師的例子也一樣：PC 加 4 是 80016，再加 2 乘 4，就到 80024。",
+     "k": 12,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2584.06
+     }
+    }
+   ]
+  },
+  {
+   "title": "Pseudo-direct addressing",
+   "scene": "isA-am-pseudo",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "最後一種，pseudo-direct addressing。例子是 j 2500。",
+     "k": 1,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 1079.4
+     }
+    },
+    {
+     "say": "bne 是有條件的跳；j 是無條件跳，要去哪裡直接寫在指令的 26 bits 裡。",
+     "read": "b n e 是有條件的跳；j 是無條件跳，要去哪裡直接寫在指令的 26 bits 裡。",
+     "k": 2,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 1091.1
+     }
+    },
+    {
+     "say": "執行 j 2500，處理器會跳到 2500 × 4 = 10000。",
+     "read": "執行 j 2500，處理器會跳到 2500 乘 4，等於 10000。",
+     "k": 3,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 1105
+     }
+    },
+    {
+     "say": "2500 不是位址，是以指令為單位；每個指令 4 個 byte，所以要乘 4。",
+     "k": 4,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 1113.9
+     }
+    },
+    {
+     "say": "影片說再「加上」PC，要修正：是把 PC 最高 4 bits 接在前面，不是相加。這裡最高 4 bits 是 0，所以是 10000。",
+     "read": "影片說再「加上」PC，要修正：是把 PC 最高 4 bits 接在前面，不是相加。這裡最高 4 bits 是 0，所以是 一萬。",
+     "k": 5,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 1141.8
+     }
+    },
+    {
+     "say": "位址幾乎是直接給的，但最高 4 bits 還要靠 PC 補，不算真正的 direct，所以叫 pseudo-direct。",
+     "k": 6,
+     "src": {
+      "v": "fy7H3jWfBnY",
+      "t": 1159.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "五種定址模式總整理",
+   "scene": "isB-8a-modes",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "好，五種放在一起再看一次。黃老師說，MIPS 的定址方式並不複雜。",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2534.56
+     }
+    },
+    {
+     "say": "Immediate：operand 就在指令裡，像常數 5。",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2549.08
+     }
+    },
+    {
+     "say": "Register：只要指定 register，到 register file 拿 operand。",
+     "k": 3,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2557.84
+     }
+    },
+    {
+     "say": "Base：register 加 offset 得到記憶體位址，例如 100 + 32 = 132。",
+     "read": "Base：register 加 offset 得到記憶體位址，例如 100 加 32 等於 132。",
+     "k": 4,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2564.52
+     }
+    },
+    {
+     "say": "PC-relative：beq、bne 用的，PC + 4 再加 offset × 4。",
+     "read": "PC-relative：b e q、b n e 用的，PC 加 4 再加 offset 乘 4。",
+     "k": 5,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2584.06
+     }
+    },
+    {
+     "say": "Pseudodirect：j 用的，PC 最高 4 bits 接上 26 bits 再補兩個 0，像 20000 乘 4 得到 80000。",
+     "k": 6,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2604.88
+     }
+    },
+    {
+     "say": "這五種就是 MIPS 找 operand 和跳躍目標的全部方式。考試注意：MIPS 沒有 direct 和 indirect 定址。",
+     "k": 7,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2624.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "從 C 程式到記憶體：translation",
+   "scene": "isB-8a-trans",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "最後一個主題，之後會細講：一個 C program 怎麼變成 0101，放進 main memory 開始跑？",
+     "read": "最後一個主題，之後會細講：一個 C program 怎麼變成 零一零一，放進 main memory 開始跑？",
+     "k": 1,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2642.48
+     }
+    },
+    {
+     "say": "中間有很多 system program 在幫忙。你自己寫過 assembly 就知道，C 三五行的東西，assembly 要寫一大串。",
+     "k": 2,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2663.5
+     }
+    },
+    {
+     "say": "所以要有生產力，就寫 high-level language，再由 compiler 轉成 assembly。",
+     "k": 3,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2714.78
+     }
+    },
+    {
+     "say": "assembler 再把 assembly 變成 object，也就是 machine language 的 0101。",
+     "read": "assembler 再把 assembly 變成 object，也就是 machine language 的 零一零一。",
+     "k": 4,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2733.08
+     }
+    },
+    {
+     "say": "assembler 大致是一對一翻譯：把 add、$t0 這些符號換成 op code 和 register 編號。",
+     "read": "assembler 大致是一對一翻譯：把 add、t 零 這些符號換成 op code 和 register 編號。",
+     "k": 5,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2738.84
+     }
+    },
+    {
+     "say": "再加上 library 裡現成的 routine，常用的東西不必自己重寫。",
+     "k": 6,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2780.94
+     }
+    },
+    {
+     "say": "linker 把各個 module 連起來，補上先前用 label 代表、還沒決定的跳躍位址，變成 executable。",
+     "k": 7,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2826.2
+     }
+    },
+    {
+     "say": "loader 再把它放進記憶體。放好之後，每個指令的絕對位址就確定了。",
+     "k": 8,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2840.08
+     }
+    },
+    {
+     "say": "有 virtual memory 的系統放哪都能跑；沒有的話，就要告訴它從哪個 base 開始算絕對位址。",
+     "k": 9,
+     "src": {
+      "v": "4FhTREqO4xE",
+      "t": 2864.14
+     }
+    },
+    {
+     "say": "這一章我們從效能公式出發，走過 MIPS 的指令、三種 format 和五種定址模式。接下來，就照著這份菜單把硬體做出來。",
+     "k": 9
+    }
+   ]
+  }
+ ]
+}

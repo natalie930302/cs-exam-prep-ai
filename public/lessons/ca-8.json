@@ -1,0 +1,1072 @@
+{
+ "chapter": "ca-8",
+ "title": "平行與多核",
+ "intro": "先用 Amdahl's law 算清楚多加處理器到底能快多少、為什麼有上限，再看多核心共用資料時的 cache coherence problem，以及 MSI 等狀態、snooping 與 directory 兩類硬體協定。",
+ "parts": [
+  {
+   "title": "Amdahl's law 在問什麼",
+   "scene": "cpar-am-intro",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "好，這一章講平行與多核。先問一個最實際的問題：把 CPU 的某個部分加強了，整台到底快幾倍？",
+     "k": 1,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 2.6
+     }
+    },
+    {
+     "say": "回答這個問題的，就是 Amdahl's law，Amdahl 定律。它算出來的那個倍數，叫 speedup，加速比。",
+     "k": 1,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 5
+     }
+    },
+    {
+     "say": "你看，左邊是原本的 CPU，右邊是做了 enhancement，也就是改良之後的 CPU。",
+     "k": 2,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 13.6
+     }
+    },
+    {
+     "say": "要讓 CPU 變快，方法其實很多。",
+     "k": 3,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 22.9
+     }
+    },
+    {
+     "say": "例如改良 instruction set，讓 CPU 認得更好用的指令。",
+     "k": 4,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 28.7
+     }
+    },
+    {
+     "say": "或者做 pipelining，像生產線一樣，讓好幾個指令重疊著執行。",
+     "k": 5,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 33.8
+     }
+    },
+    {
+     "say": "再不然就上 multiprocessor system，用好幾顆處理器一起做。這一章的主角就是它。",
+     "k": 6,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 37
+     }
+    },
+    {
+     "say": "Engineering Funda 的老師說，怎麼增強他先不細談；重點是不管用哪一種，整體快多少都用同一條定律算。",
+     "k": 7,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 55.6
+     }
+    },
+    {
+     "say": "他還特別提醒：考試一定會出這類題。只要先把幾個名詞弄懂，題目其實很好解。",
+     "k": 8,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 66.3
+     }
+    },
+    {
+     "say": "所以一句話記住：Amdahl's law 告訴你，CPU 局部增強之後，整體的 speedup 是多少。",
+     "k": 9,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 81.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "正規化：f 被增強、1 − f 不變",
+   "scene": "cpar-am-norm",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "那要怎麼算？我們先看一顆還沒增強的舊 CPU。",
+     "k": 1,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 111
+     }
+    },
+    {
+     "say": "它要跑 n 個 instructions。圖上每個灰色方塊，代表一部分指令。",
+     "k": 2,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 117.5
+     }
+    },
+    {
+     "say": "老師不直接用 n，而是用 normalized，正規化的指令數：把全部指令當成 1。",
+     "k": 3,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 126.7
+     }
+    },
+    {
+     "say": "實際上可能是 500 個，也可能是 1000 個，數量多少根本不重要。",
+     "k": 4,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 132.6
+     }
+    },
+    {
+     "say": "正規化就是指令數除以總指令數。1000 個指令就除以 1000，剛好得到 1。",
+     "k": 5,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 140.6
+     }
+    },
+    {
+     "say": "為什麼要這麼做？因為題目講增強多少，通常給的是百分比，像 20%、30%、50%。",
+     "read": "為什麼要這麼做？因為題目講增強多少，通常給的是百分比，像百分之二十、百分之三十、百分之五十。",
+     "k": 6,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 149
+     }
+    },
+    {
+     "say": "你要是每次都換算，1000 個的 30% 是 300 個，很麻煩。總數當成 1，30% 直接寫 0.3 就好。",
+     "read": "你要是每次都換算，1000 個的百分之三十是 300 個，很麻煩。總數當成 1，百分之三十直接寫 0.3 就好。",
+     "k": 7,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 161.8
+     }
+    },
+    {
+     "say": "再看增強後的 CPU。有一部分指令沒被增強，它占的比例寫成 1 − f，圖上是灰色。",
+     "read": "再看增強後的 CPU。有一部分指令沒被增強，它占的比例寫成 1 減 f，圖上是灰色。",
+     "k": 8,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 193
+     }
+    },
+    {
+     "say": "被增強的那部分比例就叫 f，是藍色那塊。比方浮點指令占 20%，f 就是 0.2。",
+     "read": "被增強的那部分比例就叫 f，是藍色那塊。比方浮點指令占百分之二十，f 就是 0.2。",
+     "k": 9,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 196.7
+     }
+    },
+    {
+     "say": "記下來：1 − f 是 unenhanced，沒增強；f 是 enhanced，有增強。兩塊加起來還是 1。",
+     "read": "記下來：1 減 f 是 unenhanced，沒增強；f 是 enhanced，有增強。兩塊加起來還是 1。",
+     "k": 10,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 216
+     }
+    },
+    {
+     "say": "題目還會告訴你，增強的部分快了幾倍，這個倍數我們記作 s，scale 的 s。",
+     "k": 11,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 225.3
+     }
+    },
+    {
+     "say": "那問題來了：只有 f 這一塊快了 s 倍，整體會快幾倍？這正是 Amdahl's law 要回答的。",
+     "k": 12,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 236
+     }
+    }
+   ]
+  },
+  {
+   "title": "舊時間 ÷ 新時間 = speedup",
+   "scene": "cpar-am-formula",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "關鍵在這裡：speedup 看的是時間的比值，舊 CPU 花多久、新 CPU 花多久。上排是舊的，下排是新的。",
+     "k": 1,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 250.6
+     }
+    },
+    {
+     "say": "舊 CPU 什麼都沒增強，用正規化的時間來算，花的就是 1。",
+     "k": 2,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 265.2
+     }
+    },
+    {
+     "say": "那新 CPU 要花多少時間？我們分兩塊來看。",
+     "k": 3,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 280
+     }
+    },
+    {
+     "say": "沒被增強的那塊，花的時間跟以前一模一樣，還是 1 − f。",
+     "read": "沒被增強的那塊，花的時間跟以前一模一樣，還是 1 減 f。",
+     "k": 4,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 284.1
+     }
+    },
+    {
+     "say": "欸，老師這裡一時口誤，說成「增強的部分時間一樣」；其實時間不變的，是沒增強的那塊。",
+     "k": 4,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 284.1
+     }
+    },
+    {
+     "say": "被增強的那塊呢？時間就變少了，你看藍色條縮短了。",
+     "k": 5,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 299.7
+     }
+    },
+    {
+     "say": "快了 s 倍，時間就剩原來的 s 分之一，也就是 f/s。圖上用 f = 0.2、s = 3 來畫。",
+     "read": "快了 s 倍，時間就剩原來的 s 分之一，也就是 f 除以 s。圖上用 f 等於 0.2、s 等於 3 來畫。",
+     "k": 6,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 310.3
+     }
+    },
+    {
+     "say": "所以新 CPU 總共花 (1 − f) + f/s，比舊的 1 少，當然比較快。",
+     "read": "所以新 CPU 總共花 1 減 f，再加上 f 除以 s，比舊的 1 少，當然比較快。",
+     "k": 7,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 313.4
+     }
+    },
+    {
+     "say": "但你注意：沒增強的 1 − f，新舊兩邊花的時間完全一樣長。這一點，等一下會變成上限。",
+     "read": "但你注意：沒增強的 1 減 f，新舊兩邊花的時間完全一樣長。這一點，等一下會變成上限。",
+     "k": 8,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 320.9
+     }
+    },
+    {
+     "say": "整體加速比，overall speedup，就是舊時間除以新時間。",
+     "k": 9,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 326.6
+     }
+    },
+    {
+     "say": "舊時間正規化之後是 1，所以 speedup 就等於 1 除以新時間。",
+     "k": 10,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 340.7
+     }
+    },
+    {
+     "say": "新時間是 (1 − f) + f/s，於是 speedup = 1 / ((1 − f) + f/s)。這就是 Amdahl's law。",
+     "read": "新時間是 1 減 f 加 f 除以 s，於是 speedup 等於 1 除以括號 1 減 f 加 f 除以 s。這就是 Amdahl's law。",
+     "k": 11,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 345.3
+     }
+    },
+    {
+     "say": "分母記兩塊：1 − f 是沒增強的，f/s 是增強後的。千萬別寫成 f 乘 s，那是常見的錯。",
+     "read": "分母記兩塊：1 減 f 是沒增強的，f 除以 s 是增強後的。千萬別寫成 f 乘 s，那是常見的錯。",
+     "k": 12,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 353
+     }
+    }
+   ]
+  },
+  {
+   "title": "處理器再多，也有上限",
+   "scene": "cpar-am-limit",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "老師接著問：處理器加到上千倍，CPU 會快上千倍嗎？你想想看。",
+     "k": 1,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 364.8
+     }
+    },
+    {
+     "say": "假設 90% 可以平行，f = 0.9，丟 1000 顆處理器下去，算出來 speedup 只有大約 9.91。",
+     "read": "假設百分之九十可以平行，f 等於 0.9，丟 1000 顆處理器下去，算出來 speedup 只有大約 9.91。",
+     "k": 1
+    },
+    {
+     "say": "原因是 serial，序列的那一段只能一步一步做，不能分給別人，所以它的時間跟舊 CPU 一樣。",
+     "k": 2,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 376.9
+     }
+    },
+    {
+     "say": "所以不是處理器越多就一直越快；多到某個數量之後，執行時間會變成一個常數。",
+     "k": 3,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 386.6
+     }
+    },
+    {
+     "say": "老師舉例：一個程式在 1 顆 CPU 上要 1 ms。畫成圖，橫軸是處理器數，縱軸是執行時間。",
+     "read": "老師舉例：一個程式在 1 顆 CPU 上要 1 毫秒。畫成圖，橫軸是處理器數，縱軸是執行時間。",
+     "k": 4,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 400.5
+     }
+    },
+    {
+     "say": "一開始加到 2、4、8 顆，時間掉得很快：0.55、0.325、0.2125 ms，這是用 f = 0.9 算的。",
+     "read": "一開始加到 2、4、8 顆，時間掉得很快：0.55、0.325、0.2125 毫秒，這是用 f 等於 0.9 算的。",
+     "k": 5,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 410.4
+     }
+    },
+    {
+     "say": "可是到 64、256、1024 顆，只剩 0.114、0.1035、0.1009 ms，幾乎不動了。",
+     "read": "可是到 64、256、1024 顆，只剩 0.114、0.1035、0.1009 毫秒，幾乎不動了。",
+     "k": 6,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 414.9
+     }
+    },
+    {
+     "say": "再怎麼加處理器，時間都被那條綠線擋住，下不去。",
+     "k": 7,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 422
+     }
+    },
+    {
+     "say": "那條線就是沒增強的序列部分，1 − f = 0.1 ms，它永遠都在。這就是 Amdahl's law 想說的。",
+     "read": "那條線就是沒增強的序列部分，1 減 f 等於 0.1 毫秒，它永遠都在。這就是 Amdahl's law 想說的。",
+     "k": 8,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 426
+     }
+    },
+    {
+     "say": "所以背一個極限：s 趨近無限大時，speedup 最多就是 1 / (1 − f)。f = 0.9，頂多 10 倍。",
+     "read": "所以背一個極限：s 趨近無限大時，speedup 最多就是 1 除以 1 減 f。f 等於 0.9，頂多 10 倍。",
+     "k": 8
+    }
+   ]
+  },
+  {
+   "title": "例題：浮點指令占 20%、快 3 倍",
+   "scene": "cpar-am-fp",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "好，來做一題典型的例題：有一顆常用在科學計算的處理器。",
+     "k": 1,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 437.8
+     }
+    },
+    {
+     "say": "它有兩種指令：integer 整數指令，跟 floating point 浮點指令。圖上 10 格裡，2 格浮點、8 格整數。",
+     "k": 2,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 447.6
+     }
+    },
+    {
+     "say": "浮點指令被改良，變成原來的 3 倍快；整數指令維持不變。",
+     "k": 3,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 451.4
+     }
+    },
+    {
+     "say": "程式裡有 20% 是浮點指令，問整體 speedup 是多少？",
+     "read": "程式裡有百分之二十是浮點指令，問整體 speedup 是多少？",
+     "k": 4,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 460
+     }
+    },
+    {
+     "say": "先找 f：被增強的是浮點指令，占 20%，所以 f = 0.2。",
+     "read": "先找 f：被增強的是浮點指令，占百分之二十，所以 f 等於 0.2。",
+     "k": 5,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 473.2
+     }
+    },
+    {
+     "say": "再找 s：快了三倍，所以 s = 3。",
+     "read": "再找 s：快了三倍，所以 s 等於 3。",
+     "k": 6,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 487.1
+     }
+    },
+    {
+     "say": "套公式：speedup = 1 / ((1 − f) + f/s)。",
+     "read": "套公式：speedup 等於 1 除以括號 1 減 f 加 f 除以 s。",
+     "k": 7,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 497.1
+     }
+    },
+    {
+     "say": "代進去：1 − f 是 0.8，f/s 是 0.2/3，所以是 1 / (0.8 + 0.2/3)。",
+     "read": "代進去：1 減 f 是 0.8，f 除以 s 是 0.2 除以 3，所以是 1 除以括號 0.8 加 0.2 除以 3。",
+     "k": 8,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 510.6
+     }
+    },
+    {
+     "say": "老師的算法是取 LCM 通分：分子分母同乘 3，分子變 3，分母變 2.4 + 0.2 = 2.6。",
+     "read": "老師的算法是取 LCM 通分：分子分母同乘 3，分子變 3，分母變 2.4 加 0.2 等於 2.6。",
+     "k": 9,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 520.4
+     }
+    },
+    {
+     "say": "3 除以 2.6，等於 1.1538。",
+     "k": 10,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 529.4
+     }
+    },
+    {
+     "say": "你看，浮點快了 3 倍，整台處理器卻只快了大約 1.15 倍。",
+     "k": 11,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 536
+     }
+    },
+    {
+     "say": "所以重點是：只把一部分加速 s 倍，整體不會跟著快 s 倍。",
+     "k": 12,
+     "src": {
+      "v": "2dYV_lADfFI",
+      "t": 548.2
+     }
+    },
+    {
+     "say": "這題 f = 0.2，就算浮點快到無限多倍，整體最多也只有 1 / 0.8 = 1.25 倍。",
+     "read": "這題 f 等於 0.2，就算浮點快到無限多倍，整體最多也只有 1 除以 0.8，等於 1.25 倍。",
+     "k": 12
+    }
+   ]
+  },
+  {
+   "title": "多核心的 private 與 shared storage",
+   "scene": "cpar-org",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "好，處理器一多，新的麻煩也跟著來。先回想一顆 dual-core，雙核心處理器長什麼樣子。",
+     "k": 1,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 37.2
+     }
+    },
+    {
+     "say": "兩個 core，每個 core 底下有自己的 L1、L2 cache，再往下是一個 L3 cache。",
+     "k": 1,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 40
+     }
+    },
+    {
+     "say": "處理器再透過 system bus，系統匯流排，接到 main memory。",
+     "k": 2,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 46
+     }
+    },
+    {
+     "say": "仔細看，L1、L2 是每個 core 私有的，叫 private，別的 core 用不到。",
+     "k": 3,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 54
+     }
+    },
+    {
+     "say": "L3 cache 跟 main memory 則是大家共用的，叫 shared。",
+     "k": 4,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 60.2
+     }
+    },
+    {
+     "say": "所以多處理器系統裡，每個 core 有自己的儲存，也有大家共用的儲存。問題就藏在這裡。",
+     "k": 5,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 66
+     }
+    },
+    {
+     "say": "我們換個簡單的模型：四個處理器 P1 到 P4，為了簡化，每個只有一個 private cache。",
+     "k": 6,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 80
+     }
+    },
+    {
+     "say": "大家共用的是 main memory，透過 system bus 接到每個處理器。",
+     "k": 7,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 96.4
+     }
+    },
+    {
+     "say": "另外，四個 private cache 之間還有一條 internal bus，內部匯流排，彼此相連。",
+     "k": 8,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 103.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "例子：A = 7，四個處理器各改一次",
+   "scene": "cpar-incoh",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "現在 main memory 裡的程式有一個 global variable A，初值是 7。",
+     "k": 1,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 109.5
+     }
+    },
+    {
+     "say": "四個處理器都要處理同一個 A。Neso Academy 的講者把這叫 MISD，多指令流、單一資料流。",
+     "k": 2,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 119.3
+     }
+    },
+    {
+     "say": "這裡要更正一下：照 Flynn 分類，共享記憶體的多核心其實是 MIMD。你只要記住，大家共用同一個 A。",
+     "k": 2
+    },
+    {
+     "say": "先看 P1，它想把 A 加 1。",
+     "k": 3,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 134.3
+     }
+    },
+    {
+     "say": "它先找自己的 private cache，可是這是第一次存取 A，裡面還沒有，這叫 compulsory miss。",
+     "k": 4,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 144
+     }
+    },
+    {
+     "say": "所以 P1 往下一層記憶體，也就是 main memory，把 A = 7 帶進自己的 cache。",
+     "read": "所以 P1 往下一層記憶體，也就是 main memory，把等於 7 的 A 帶進自己的 cache。",
+     "k": 5,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 160
+     }
+    },
+    {
+     "say": "拿到之後，P1 把它加 1，自己 cache 裡的 A 就變成 8。",
+     "k": 6,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 176
+     }
+    },
+    {
+     "say": "接著 P2 想把 A 加 2。它的 cache 也沒有，只好去 main memory 拿。",
+     "k": 7,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 185
+     }
+    },
+    {
+     "say": "注意，P1 只改了自己的 cache；假設是 write back，晚點才寫回，所以 memory 裡還是 7。",
+     "k": 7
+    },
+    {
+     "say": "P2 拿到 7，加 2，它 cache 裡的 A 就是 9。",
+     "k": 8,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 211
+     }
+    },
+    {
+     "say": "P3 想減 1：一樣從 memory 拿 7，減完變 6。",
+     "k": 9,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 219
+     }
+    },
+    {
+     "say": "最後 P4 想減 2：從 memory 拿 7，變成 5。",
+     "k": 10,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 240
+     }
+    },
+    {
+     "say": "現在仔細看：同一個變數 A，四個 cache 裡分別是 8、9、6、5，memory 還是 7。",
+     "k": 11,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 257
+     }
+    },
+    {
+     "say": "同一份資料，不同地方的值卻不一樣，這叫 inconsistency，也就是 cache coherence problem。",
+     "k": 12,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 263.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "cache coherence 與 coherence problem",
+   "scene": "cpar-def",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "那 cache coherence 到底是什麼？就是同一份共享資料放進好幾個 local cache 時，大家的值要一致。",
+     "k": 1,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 273
+     }
+    },
+    {
+     "say": "而 coherence problem 是：某個處理器更新了自己那份副本，其他 cache 要怎麼跟著同步？",
+     "k": 2,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 285.2
+     }
+    },
+    {
+     "say": "只要共享的值同時待在好幾個 private cache，就得保持同步；難就難在要一直維持住。",
+     "k": 3,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 300
+     }
+    },
+    {
+     "say": "解法叫 cache coherency protocol：訂好一套基本規則，讓所有 private cache 保持一致。",
+     "k": 4,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 311.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "cache line 的狀態：M、S、I",
+   "scene": "cpar-msi",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "在講協定之前，先認識名詞。cache 在邏輯上切成一條一條的 line，也叫 block。",
+     "k": 1,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 328
+     }
+    },
+    {
+     "say": "為了維持一致，cache controller 會替每一條 block 記一個狀態。",
+     "k": 2,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 335
+     }
+    },
+    {
+     "say": "第一種是 M，Modified：這條 line 被自己的處理器改過，所以跟 main memory 不一樣。",
+     "k": 3,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 347
+     }
+    },
+    {
+     "say": "第二種是 S，Shared：資料沒被改過，可以同時出現在不只一個 cache 裡。",
+     "k": 4,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 361
+     }
+    },
+    {
+     "say": "講者特別要你記住：一個 block 要同時出現在好幾個 cache，它一定得是 Shared。",
+     "k": 5,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 375
+     }
+    },
+    {
+     "say": "第三種是 I，Invalid：別的處理器寫了這份資料，我手上的副本就作廢，不能再用。",
+     "k": 6,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 380.2
+     }
+    },
+    {
+     "say": "套回 A = 7 的例子：P1、P2 第一次從 memory 把 A 拿進來，狀態都設成 S。",
+     "read": "套回 A 等於 7 的例子：P1、P2 第一次從 memory 把 A 拿進來，狀態都設成 S。",
+     "k": 7,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 393.1
+     }
+    },
+    {
+     "say": "P1 要把 A 改成 8，它那條 line 就從 S 升級成 M，同時在 bus 上送出 invalidate。",
+     "k": 8,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 404
+     }
+    },
+    {
+     "say": "因為是 write-back，這時 memory 裡暫時還是 7。",
+     "k": 8
+    },
+    {
+     "say": "從 P2 來看：別人先改了 A，為了一致，P2 那條 line 從 S 降成 I，下次要用就得重拿。",
+     "k": 9,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 413
+     }
+    },
+    {
+     "say": "這三個狀態合起來就是 MSI protocol；寫之前先讓別人的副本失效，就是 write invalidate 的做法。",
+     "k": 9
+    }
+   ]
+  },
+  {
+   "title": "其他狀態：Exclusive、Owned、Forward",
+   "scene": "cpar-eof",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "除了 M、S、I，還可以再加三種狀態：Exclusive、Owned、Forward。",
+     "k": 1,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 430
+     }
+    },
+    {
+     "say": "E，Exclusive，獨占：這條 line 只在我的 cache 裡，而且跟 memory 一樣。",
+     "k": 2,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 438
+     }
+    },
+    {
+     "say": "別的處理器一來讀，它就變成 S。像 P1 自己讀 A 是 E，P2 也來讀，兩邊就都是 S。這叫 MESI。",
+     "k": 2,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 445
+     }
+    },
+    {
+     "say": "O，Owned：我是這份內容的負責人，別人來讀，由我提供資料。",
+     "k": 3,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 452
+     }
+    },
+    {
+     "say": "例如 P1 已經把 A 改成 8，P2 來讀，P1 變成 O，直接把 8 交給 P2，memory 還是舊的 7。這是 MOESI。",
+     "k": 3
+    },
+    {
+     "say": "F，Forward，是一種特別的 Shared。講者說，資料更新時由它負責轉送給其他 cache。",
+     "k": 4,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 465
+     }
+    },
+    {
+     "say": "更精確地說，課本裡 Intel 的 MESIF 是：好幾個 cache 共享時，由 F 那一份負責回應新的讀取。",
+     "k": 4
+    },
+    {
+     "say": "所以一條 line 有哪些狀態，要看用哪一種 protocol：MSI、MESI、MOESI、MESIF。",
+     "k": 5,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 486
+     }
+    }
+   ]
+  },
+  {
+   "title": "軟體 scheme 與硬體 protocol",
+   "scene": "cpar-swhw",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "講者也老實說：解決 coherence problem 其實有軟體做法，叫 software-based scheme，只靠 compiler 跟 OS。",
+     "k": 1,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 495
+     }
+    },
+    {
+     "say": "compiler 分析程式碼，找出哪些資料放進 cache 不安全；OS 再在執行時，不讓它們被 cache。",
+     "k": 2,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 507.3
+     }
+    },
+    {
+     "say": "這些軟體做法叫 scheme，不叫 protocol；硬體做法才叫 cache coherency protocol。名稱別混。",
+     "k": 3,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 521
+     }
+    },
+    {
+     "say": "這是計算機組織的課，所以重點放在硬體 protocol，而且它的效能也比軟體 scheme 好。",
+     "k": 4,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 531
+     }
+    }
+   ]
+  },
+  {
+   "title": "Snooping：write update 與 write invalidate",
+   "scene": "cpar-snoop",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "硬體 protocol 分兩大類。第一類叫 snooping，也叫 bus-based；第二類是 directory-based。",
+     "k": 1,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 543.3
+     }
+    },
+    {
+     "say": "snoop 就是偷聽。每個 cache 隨時監聽 bus，有人在 shared bus 上廣播，大家都聽得到、各自處理。",
+     "k": 2,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 550
+     }
+    },
+    {
+     "say": "snooping 主要有兩種做法：write update，跟 write invalidate。",
+     "k": 3,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 567.3
+     }
+    },
+    {
+     "say": "write update：某條 line 從 S 變 M，也就是有人寫入，其他共享的 cache 一起更新。P1 寫 8，大家都變 8。",
+     "k": 4,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 577
+     }
+    },
+    {
+     "say": "write invalidate：同樣 P1 寫 8，其他人不更新，而是把自己的副本作廢成 I，只剩 P1 那份是 M。",
+     "k": 5,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 590
+     }
+    },
+    {
+     "say": "還記得寫入策略嗎？write through 是寫 cache 同時寫 memory；write back 是先寫 cache，之後再寫回。",
+     "k": 6,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 599
+     }
+    },
+    {
+     "say": "所以 P1 寫 8 之後，write-through 的 memory 馬上是 8，write-back 的 memory 還是 7。",
+     "k": 6
+    },
+    {
+     "say": "兩種做法乘上兩種寫入策略，總共四種組合。",
+     "k": 7,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 623.1
+     }
+    },
+    {
+     "say": "write update 可以配 write-through 或 write-back；write invalidate 也一樣，兩種都能配。",
+     "k": 7,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 630
+     }
+    },
+    {
+     "say": "補充一點：課本說實務上多數 snooping 系統用 write invalidate 加 write-back，像 MSI、MESI 都是。",
+     "k": 7
+    }
+   ]
+  },
+  {
+   "title": "Directory-based protocol",
+   "scene": "cpar-dir",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "第二類硬體 protocol 是 directory-based，目錄式。",
+     "k": 1,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 636.2
+     }
+    },
+    {
+     "say": "它維護一個集中的 directory，記錄每筆資料現在在哪些 cache。比方 A 在 P1、P3，就記成 1 0 1 0。",
+     "k": 2,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 642
+     }
+    },
+    {
+     "say": "除了集中的目錄，每個處理器也有自己的 private directory，一起幫忙維持一致。",
+     "k": 3,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 646.1
+     }
+    },
+    {
+     "say": "最大差別：snooping 用 broadcast 廣播，cache 都接在同一條 bus；directory 用可擴充的網路，點對點傳訊。",
+     "k": 4,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 653
+     }
+    },
+    {
+     "say": "你想想看：P1 要寫 A，directory 只要通知 P3 一個人；換成 snooping，就得廣播給其他三個。",
+     "k": 4
+    },
+    {
+     "say": "最後收個尾：cache coherency protocol，是解決 coherence problem 的「硬體」做法。",
+     "k": 5,
+     "src": {
+      "v": "r_ZE1XVT8Ao",
+      "t": 678
+     }
+    },
+    {
+     "say": "考試看到這兩類，就想：snooping 靠廣播大家偷聽，directory 靠目錄點名通知。",
+     "k": 5
+    }
+   ]
+  }
+ ]
+}

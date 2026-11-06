@@ -1,0 +1,8371 @@
+{
+ "chapter": "ca-4",
+ "title": "Pipeline",
+ "intro": "從 single cycle 走到五段 pipeline，弄懂 structural、data、control 三種 hazard 怎麼用 forwarding、stall、branch prediction、delayed branch 解決，再看 exception、multiple issue 與 superscalar。",
+ "parts": [
+  {
+   "title": "從 single cycle 到 pipeline",
+   "scene": "ppA-19a-review",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "好，這一章講 pipeline。它是一種 high performance 的設計：讓很多指令在同一個時間一起做。",
+     "k": 1,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 18.1
+     }
+    },
+    {
+     "say": "先回想 single cycle：一個指令在一個長長的 clock cycle 裡全部做完，下一個才進來。",
+     "k": 2,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 22.3
+     }
+    },
+    {
+     "say": "可是在這個長 cycle 裡，同一時間其實只有一段硬體在忙，其他的都閒著在等，很浪費。",
+     "k": 3,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 56.4
+     }
+    },
+    {
+     "say": "所以改用 pipeline：把事情切成好幾個 stage，讓不同的指令錯開，各用各的那一段。",
+     "k": 4,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 61.2
+     }
+    },
+    {
+     "say": "改 datapath 最重要的一件事，就是在 stage 之間加 pipeline register，把每段的結果存起來。",
+     "k": 5,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 82
+     }
+    },
+    {
+     "say": "切成五個 stage，中間就要加四個 pipeline register。這個數字算題目時會用到。",
+     "k": 6,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 91.8
+     }
+    },
+    {
+     "say": "每個 clock cycle 只做一段，cycle 就變短了：這段做完先存起來，下一個 clock 再做下一段。",
+     "k": 7,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 98.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "為什麼要 pipeline：五個 stage、latency 與 throughput",
+   "scene": "ppA-18a-review",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "黃老師一句話講 pipeline 的精神：把硬體資源讓大家共用，同一時間好幾個指令各用各的硬體，一起往前做。",
+     "k": 1,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 94.6
+     }
+    },
+    {
+     "say": "做法是把 datapath 要做的事切成好幾段，叫 stage。MIPS 切成五段，表格往右是一個一個 clock cycle。",
+     "k": 2,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 105
+     }
+    },
+    {
+     "say": "第一段 instruction fetch，簡稱 IF：拿 PC 去記憶體把指令抓出來。",
+     "k": 3,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 115.5
+     }
+    },
+    {
+     "say": "第二段讀暫存器，同時解讀這是什麼指令，所以叫 ID，instruction decode。",
+     "k": 4,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 121.2
+     }
+    },
+    {
+     "say": "第三段 EX，用 ALU 執行。R-type 在這裡做加減，load、store 在這裡算記憶體位址。",
+     "k": 5,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 127.6
+     }
+    },
+    {
+     "say": "第四段 MEM，讀寫資料記憶體。R-type 用不到記憶體，可是它還是要空著走過這一段。",
+     "k": 6,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 137.7
+     }
+    },
+    {
+     "say": "第五段 WB，write back，把結果寫回 register file。這五段黃老師說一定要背起來。",
+     "k": 7,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 148.2
+     }
+    },
+    {
+     "say": "那 pipeline 怎麼動？第一個指令進到第二段時，第一段的硬體就空出來，第二個指令馬上進來用。",
+     "k": 8,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 172.4
+     }
+    },
+    {
+     "say": "第一個走到第三段，前兩段又空了，第三個進來。所以每個指令都比前一個晚一個 cycle 開始。",
+     "k": 9,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 188.5
+     }
+    },
+    {
+     "say": "你看 cycle 5 這一欄，五列都有東西：同一時間最多五個指令在跑，各用各的硬體。",
+     "k": 10,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 197
+     }
+    },
+    {
+     "say": "那問題來了：pipeline 會讓一個指令變快嗎？不會。每個指令自己還是要走完五段，latency 沒有縮短。",
+     "k": 11,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 207.4
+     }
+    },
+    {
+     "say": "變大的是 throughput，也就是單位時間做完的工作量。從 cycle 5 開始，每個 cycle 都有一個指令做完。",
+     "k": 12,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 254.8
+     }
+    },
+    {
+     "say": "欸，甚至因為多了 pipeline register，單一指令的 latency 還會稍微變長一點。考題很愛拿這點來騙人。",
+     "k": 12
+    }
+   ]
+  },
+  {
+   "title": "pipeline register 與切得平不平均",
+   "scene": "ppA-18a-dp",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "再來看 datapath。pipeline 的 datapath 可以直接拿 single cycle 那一套，因為它本來就一段一段排好了。",
+     "k": 1,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 268.4
+     }
+    },
+    {
+     "say": "可是在圖上畫幾條線說「這裡切一下」，就真的變成五個 stage 了嗎？還少了什麼？",
+     "k": 2,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 283.2
+     }
+    },
+    {
+     "say": "少了 pipeline register。每兩個 stage 中間都要真的加一個暫存器，不是心裡想想就好。",
+     "k": 3,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 299.6
+     }
+    },
+    {
+     "say": "一段做完，結果先存進 pipeline register，黃老師也叫它 pipeline latch。存好了，這個 cycle 才算完成。",
+     "k": 4,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 313.7
+     }
+    },
+    {
+     "say": "下一段在下一個 cycle 從這裡拿資料。這樣一個 cycle 只做一段，cycle 就切得又細又短。",
+     "k": 5,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 321.2
+     }
+    },
+    {
+     "say": "那段要隨便切，還是盡量切平均？你想想看為什麼。",
+     "k": 6,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 333.6
+     }
+    },
+    {
+     "say": "因為 clock 是由最長的那一段決定的。畫面上每根柱子是示意的各段時間，第四段最長。",
+     "k": 7,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 345.9
+     }
+    },
+    {
+     "say": "短的段做完了也不能先走，要等最慢那段做完，大家才一起往下一段。灰掉的部分就是白白在等。",
+     "k": 8,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 371.9
+     }
+    },
+    {
+     "say": "所以 clock period 就等於最長那段的時間。各段切得越 balance，浪費就越少。",
+     "k": 9,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 389.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "R-type 也要等到第五段才寫回",
+   "scene": "ppA-17b-wb",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "先看一個很容易考的細節。lw 要走滿五段；R-type 像 add、sub 不用讀記憶體，如果只走四段，算完就寫回呢？",
+     "k": 1,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 18.2
+     }
+    },
+    {
+     "say": "問題就來了。lw 在自己的第五段寫回，是 cycle 5；R-type 晚一個 cycle 進來，在第四段寫回，也是 cycle 5。",
+     "k": 2,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 21.3
+     }
+    },
+    {
+     "say": "兩個指令在同一個 cycle 都要寫 register file，撞在一起了。",
+     "k": 2
+    },
+    {
+     "say": "黃老師給的第一個觀念：每個 functional unit，像 ALU、記憶體、register file 的寫入口，同一時間只能給一個指令用。",
+     "k": 3,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 58.7
+     }
+    },
+    {
+     "say": "第二個觀念：同一個 resource，所有指令都要在同一個 stage 用它。像寫 register file，大家都在第五段寫。",
+     "k": 4,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 76.6
+     }
+    },
+    {
+     "say": "為什麼？你在第四段用、我在第五段用，我們又剛好差一個 cycle，那就會在同一個 cycle 搶同一個東西。",
+     "k": 5,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 83.7
+     }
+    },
+    {
+     "say": "write back 其實就是在用 register file 的 write port，而 lw 是在第五個 stage 用它。",
+     "k": 6,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 96.1
+     }
+    },
+    {
+     "say": "所以 R-type 也一律放到第五段才寫。它的第四段 MEM 本來就用不到，就空著不做事。",
+     "k": 7,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 104.6
+     }
+    },
+    {
+     "say": "改完之後，lw 在 cycle 5 寫、R-type 在 cycle 6 寫，每個 cycle 的資源都不衝突了。",
+     "k": 8,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 110.6
+     }
+    },
+    {
+     "say": "pipeline 的規矩是後一個指令一定比前一個晚一個 cycle 開始。你先用完，下一個 cycle 才輪到我。",
+     "k": 9,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 153.5
+     }
+    },
+    {
+     "say": "黃老師用洗衣服比喻：本來應該先洗再烘，我晚一步到，卻跳過洗衣機直接去搶烘衣機，就跟前面的人撞上了。",
+     "k": 10,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 197.9
+     }
+    },
+    {
+     "say": "跳過一段，就等於插隊搶先一步。",
+     "k": 10
+    },
+    {
+     "say": "只要每個指令都晚一個 cycle 進來，同一個資源又都在同一段用，前面的人永遠在你前面，就永遠不會打架。",
+     "k": 11,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 211.2
+     }
+    },
+    {
+     "say": "所以 R-type 的結果雖然在 EX 就算好了，還是要等到第五段才寫；中間那格 MEM 什麼都不做。",
+     "k": 12,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 258.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "sw、beq 也排成五段，以及圖形表示法",
+   "scene": "ppA-17b-five",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "同樣的道理用在別的指令。sw 只要四段：抓指令、讀暫存器、算位址、寫記憶體。它不寫暫存器，就補一個假的 write back。",
+     "k": 1,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 322.5
+     }
+    },
+    {
+     "say": "beq 更短，只有 IF、ID、EX 三段：抓指令、讀兩個暫存器、比較。後面的 MEM、WB 也假裝有，只是不做事。",
+     "k": 2,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 330.2
+     }
+    },
+    {
+     "say": "這樣 pipelined datapath 就完成了：不管什麼指令，都走 IF、ID、EX、MEM、WB 這五段。",
+     "k": 3,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 351.6
+     }
+    },
+    {
+     "say": "再強調一次 R-type：它在 EX 算完其實就能寫，但規定不行，要跳過 MEM，等到第五段才寫。",
+     "k": 4,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 369.9
+     }
+    },
+    {
+     "say": "也可以換一種畫法：每列一個指令，格子裡寫那一段用的硬體：IM、Reg、ALU、DM、Reg。",
+     "k": 5,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 387.1
+     }
+    },
+    {
+     "say": "這種圖可以直著看一個 cycle。像第三個 cycle，第一個在用 ALU，第二個在讀 register，第三個正在抓指令。",
+     "k": 6,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 397.9
+     }
+    },
+    {
+     "say": "黃老師叫它 graphic representation，一眼就看得出每個 cycle 誰在做什麼。",
+     "k": 7,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 407
+     }
+    }
+   ]
+  },
+  {
+   "title": "lw 和 sub 一拍一拍走過 datapath",
+   "scene": "ppA-17b-lwsub",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "好，拿兩個指令實際跑一次：lw $10, 20($1)，接著 sub $11, $2, $3。中間的直條就是 pipeline register。",
+     "read": "好，拿兩個指令實際跑一次：lw 暫存器十，位移二十、基底暫存器一，接著 sub 暫存器十一、暫存器二、暫存器三。中間的直條就是 pipeline register。",
+     "k": 1,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 414.1
+     }
+    },
+    {
+     "say": "cycle 1：lw 做 instruction fetch，用 PC 到 instruction memory 把指令讀出來。",
+     "k": 2,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 423.1
+     }
+    },
+    {
+     "say": "cycle 2：lw 往前到第二段，讀 register、做 decode。第一段空出來，sub 就進來 fetch。",
+     "k": 3,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 428.2
+     }
+    },
+    {
+     "say": "注意同一個 cycle 裡，lw 用 register file，sub 用 instruction memory，兩個用不同的硬體，互不相干。",
+     "k": 4,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 445.5
+     }
+    },
+    {
+     "say": "黃老師在這裡問：cycle 2 的時候，lw 這條指令放在哪裡？答案是 IF/ID 這個 pipeline register。",
+     "read": "黃老師在這裡問：cycle 2 的時候，lw 這條指令放在哪裡？答案是 IF ID 這個 pipeline register。",
+     "k": 5,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 485
+     }
+    },
+    {
+     "say": "什麼時候寫進去？在 clock cycle 結束的那一瞬間「啪」寫進去，舊的內容那時已經用完，就被蓋掉。",
+     "k": 6,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 491
+     }
+    },
+    {
+     "say": "cycle 3：lw 到 ALU 算位址，$1 加 20，20 要先 sign extension 成 32 位元。sub 這時在讀 $2、$3。",
+     "read": "cycle 3：lw 到 ALU 算位址，暫存器一加二十，二十要先 sign extension 成 32 位元。sub 這時在讀暫存器二、暫存器三。",
+     "k": 7,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 509.7
+     }
+    },
+    {
+     "say": "cycle 4：lw 去讀 data memory，sub 到 ALU 做 $2 減 $3。",
+     "read": "cycle 4：lw 去讀 data memory，sub 到 ALU 做暫存器二減暫存器三。",
+     "k": 8,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 543.4
+     }
+    },
+    {
+     "say": "cycle 5：lw 到第五段 write back，把從記憶體讀到的資料寫回 $10。",
+     "read": "cycle 5：lw 到第五段 write back，把從記憶體讀到的資料寫回暫存器十。",
+     "k": 9,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 563.5
+     }
+    },
+    {
+     "say": "那問題來了：sub 的答案在 cycle 4 就算完了，下一個 cycle 直接寫回 register file 可以嗎？",
+     "k": 10,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 576.1
+     }
+    },
+    {
+     "say": "不行，寫回一律在第五段。所以 cycle 5 的 sub 走在 MEM，什麼事都不做。",
+     "k": 11,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 598.2
+     }
+    },
+    {
+     "say": "cycle 6，sub 才用 write port 把答案寫回 $11。兩個指令一共 2 加 4，6 個 cycle。",
+     "read": "cycle 6，sub 才用 write port 把答案寫回暫存器十一。兩個指令一共 2 加 4，6 個 cycle。",
+     "k": 12,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 610.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Pipelined control：訊號一樣，用的時間不一樣",
+   "scene": "ppA-17b-ctl",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "datapath 講完，再來看 control：是誰告訴每一段硬體「這次要做什麼」？",
+     "k": 1,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 777.7
+     }
+    },
+    {
+     "say": "single cycle 的時候有一個 controller，看指令的 opcode，一次把所有 control signal 發出去。",
+     "k": 2,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 785.6
+     }
+    },
+    {
+     "say": "其實有兩個：main controller 看 opcode，ALU controller 看 function code，讓 opcode 那邊簡單點。",
+     "k": 2,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 418.7
+     }
+    },
+    {
+     "say": "control signal 管的是：要不要寫 register？ALU 做加還是減？寫回的資料來自 memory 還是 ALU？",
+     "k": 3,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 804.6
+     }
+    },
+    {
+     "say": "改成 pipeline 之後呢？黃老師要我們想：跟 single cycle 比，哪裡一樣、哪裡不一樣。",
+     "k": 4,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 835.7
+     }
+    },
+    {
+     "say": "看 R-type 在 EX：ALU 拿 rs 和 rt 來算，所以 ALUSrc 設 0，選 rt。這跟 single cycle 一模一樣。",
+     "k": 5,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 888.9
+     }
+    },
+    {
+     "say": "寫回的資料從 ALU 來，MemtoReg 選 0，也一樣。所以 control signal 的「值」根本沒變。",
+     "k": 6,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 920.8
+     }
+    },
+    {
+     "say": "不一樣的只有「什麼時候用」：EX 的訊號在第三個 cycle 用，MEM 的在第四個，WB 的在第五個。",
+     "k": 7,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 935.1
+     }
+    },
+    {
+     "say": "那怎麼辦？黃老師的辦法是把 control signal 做 grouping，分組。",
+     "k": 8,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 962.3
+     }
+    },
+    {
+     "say": "訊號怎麼產生還是跟以前一樣：拿 opcode 去查同一張 truth table。",
+     "k": 9,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 975.9
+     }
+    },
+    {
+     "say": "黃老師問：control signal 在第一段 IF 就知道了嗎？不知道，指令才剛抓進來，還沒解讀。",
+     "k": 10,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1020.3
+     }
+    },
+    {
+     "say": "第二段 decode 結束時就全部知道了。可是知道得早、用得晚，後面三段才分別要用。",
+     "k": 11,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1058
+     }
+    },
+    {
+     "say": "所以切成三組：EX 段用的叫 EX 組，MEM 段用的叫 M 組，WB 段用的叫 WB 組。",
+     "k": 12,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1110.4
+     }
+    },
+    {
+     "say": "還沒輪到的組，就放在 pipeline register 裡，跟著指令一段一段往下傳。",
+     "k": 13,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1142.5
+     }
+    },
+    {
+     "say": "整個流程是：decode 完三組都存進 ID/EX；EX 用掉 EX 組，MEM 用掉 M 組，最後 WB 用掉 WB 組。",
+     "read": "整個流程是：decode 完三組都存進 ID EX；EX 用掉 EX 組，MEM 用掉 M 組，最後 WB 用掉 WB 組。",
+     "k": 14,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1199.1
+     }
+    },
+    {
+     "say": "所以懂了 single cycle 的 control，pipeline 的 control 其實很簡單：decode 產生，然後往下傳而已。",
+     "k": 14,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 503.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Destination register 也要跟著傳",
+   "scene": "ppA-17b-dst",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "這就是 pipelined control 的整體樣子：每過一段用掉一組，用掉的就不再往下傳。",
+     "k": 1,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1271.9
+     }
+    },
+    {
+     "say": "還有一個問題：write back 的時候，要寫到「哪一個」register？register file 需要一個寫入位址。",
+     "k": 2,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1293.6
+     }
+    },
+    {
+     "say": "R-type 的答案寫到 rd；lw 從記憶體讀來的資料寫到 rt。",
+     "k": 3,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1306.6
+     }
+    },
+    {
+     "say": "所以不只 control signal 要往下傳，destination，也就是要寫哪個 register，也要往下傳。",
+     "k": 4,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1327.4
+     }
+    },
+    {
+     "say": "為什麼不能直接用 IF/ID 裡的號碼？因為那時 IF/ID 裡放的是新進來的指令，跟正在寫回的那個沒有關係。",
+     "read": "為什麼不能直接用 IF ID 裡的號碼？因為那時 IF ID 裡放的是新進來的指令，跟正在寫回的那個沒有關係。",
+     "k": 5,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1335.3
+     }
+    },
+    {
+     "say": "R-type 和 lw 都在第五段才寫回，寫的時候一定要告訴 register file：寫到第幾號。",
+     "k": 6,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1378.1
+     }
+    },
+    {
+     "say": "要用的是正在寫回的這個指令自己的 rd，因為是它要寫回去，不是新來的那個。",
+     "k": 7,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1420.3
+     }
+    },
+    {
+     "say": "所以 rd 雖然現在用不到，也要放在 pipeline register 裡，跟著它的指令一路帶到第五段。",
+     "k": 8,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1441.4
+     }
+    },
+    {
+     "say": "到了 write back stage，就拿這個一路跟過來的 destination 當寫入位址。",
+     "k": 9,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1462.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "RegDst 的 mux：只帶一個號碼往下走",
+   "scene": "ppA-17b-regdst",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "有同學問：lw 寫回的 register 號碼從哪裡來？答案還是它自己原本那條指令。",
+     "k": 1,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1465.1
+     }
+    },
+    {
+     "say": "這裡放一個 mux，從幾個輸入裡選一個：R-type 就選 rd，lw 就選 rt。",
+     "k": 2,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1488.6
+     }
+    },
+    {
+     "say": "舉例：一個 R-type 在第二段讀 register，這時 rs、rt、rd 三個欄位都已經拿出來了。",
+     "k": 3,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1537.7
+     }
+    },
+    {
+     "say": "rd 現在用得到嗎？用不到，要到第五段才寫回。",
+     "k": 4,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1574.2
+     }
+    },
+    {
+     "say": "那可以丟掉嗎？不行，丟了等一下就不知道要寫去哪。所以跟 control signal 一樣，先放進 pipeline register。",
+     "k": 5,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1586.6
+     }
+    },
+    {
+     "say": "為什麼 mux 放在這裡？因為 decode 完已經知道是 R-type 還是 lw，與其 rt、rd 兩個都帶著走，不如先選好，只帶一個。",
+     "k": 6,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1611.3
+     }
+    },
+    {
+     "say": "黃老師特別提醒：這時 pipeline 裡有兩個 rt。第二段讀的是新指令的 rt，第五段寫的是舊指令跟過來的 rt 或 rd。",
+     "k": 7,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1666
+     }
+    },
+    {
+     "say": "這兩個是不同的東西，畫 datapath 時千萬別接錯。",
+     "k": 7
+    },
+    {
+     "say": "那 sw、beq 這種不寫 register 的呢？位址照樣一路帶過去，但 RegWrite 是 0，到第五段也不會寫。",
+     "k": 8,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1784
+     }
+    },
+    {
+     "say": "總結：destination register 的號碼，功能就跟 control 很像，還沒用到就一路傳下去。",
+     "k": 9,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1828.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "五個指令跑一遍：control 跟著指令走",
+   "scene": "ppA-17b-run5",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "我們用 lw、sub、and、or、add 五個指令跑一遍，看 control 怎麼跟著指令走。",
+     "k": 1,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1851.2
+     }
+    },
+    {
+     "say": "cycle 1：lw 只做 instruction fetch。這段不需要任何 control signal，因為還不知道它是什麼指令。",
+     "k": 2,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1866
+     }
+    },
+    {
+     "say": "cycle 2：lw 進 decode，control 就出來了：EX 組 0001、M 組 010、WB 組 11，先放進 ID/EX。",
+     "read": "cycle 2：lw 進 decode，control 就出來了：EX 組 零零零一、M 組 零一零、WB 組 一一，先放進 ID EX。",
+     "k": 3,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1881.3
+     }
+    },
+    {
+     "say": "cycle 3：lw 到 EX，拿出 EX 組來用。因為是 lw，ALUSrc 設 1，ALU 第二個輸入選 sign extension 過來的 20。",
+     "k": 4,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1904
+     }
+    },
+    {
+     "say": "上一個 cycle 讀出來的 rs 值、rt 值、sign-extend 後的立即值，也都一起放在這個 pipeline register。",
+     "k": 5,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1949
+     }
+    },
+    {
+     "say": "同一個 cycle，sub 正在 decode，也產生自己的 control。那會不會跟 lw 還在用的那一組打架？",
+     "k": 6,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 1990.8
+     }
+    },
+    {
+     "say": "不會。新的值要等 clock edge 一來才寫進 pipeline register，那時 lw 已經用完了。新的蓋掉舊的，剛剛好。",
+     "k": 7,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2015
+     }
+    },
+    {
+     "say": "cycle 4：lw 到 MEM 用 M 組讀記憶體，sub 到 EX 做減法，and 在 decode，or 在 fetch，各做各的。",
+     "k": 8,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2103.7
+     }
+    },
+    {
+     "say": "過了 EX，lw 只剩 M 和 WB 兩組要往下帶，EX 組已經用掉了。",
+     "k": 9,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2152.7
+     }
+    },
+    {
+     "say": "cycle 5：lw 用 WB 組把資料寫回，寫入位址就是剛剛 mux 選好、一路跟過來的 $10。",
+     "read": "cycle 5：lw 用 WB 組把資料寫回，寫入位址就是剛剛 mux 選好、一路跟過來的暫存器十。",
+     "k": 10,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2199.1
+     }
+    },
+    {
+     "say": "cycle 6：sub 寫回 $11。每個指令都帶著自己的 control，像帶著自己的說明書往前走。",
+     "read": "cycle 6：sub 寫回暫存器十一。每個指令都帶著自己的 control，像帶著自己的說明書往前走。",
+     "k": 11,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2235.4
+     }
+    },
+    {
+     "say": "最後一個 add 在 cycle 9 寫回。五個指令一共 5 加 4，9 個 cycle 做完。",
+     "k": 12,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2243.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "小結：5 倍加速只是理想",
+   "scene": "ppA-17b-sum",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "小結一下。datapath 就是 single cycle 的 datapath 切好 stage，段與段之間加 pipeline register。",
+     "k": 1,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2257.5
+     }
+    },
+    {
+     "say": "control 一樣在第二段 decode，但按照哪一段要用分好組，一直往下傳，傳到那一段才用。",
+     "k": 2,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2273.3
+     }
+    },
+    {
+     "say": "除了 control signal，凡是現在用不到、等一下才用的，像 destination register 號碼，也都要往下傳。",
+     "k": 3,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2294.9
+     }
+    },
+    {
+     "say": "基本概念是：工作分成好幾個 step，每個 step 用不同硬體，所以可以同時被不同的指令執行。",
+     "k": 4,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2311.3
+     }
+    },
+    {
+     "say": "每個 clock cycle 就開始下一個指令，同一個資源又都在同一段用，所以不會打架。",
+     "k": 5,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2334.8
+     }
+    },
+    {
+     "say": "理論上切五段就有 5 倍 speedup。示意算一下：五段一樣長、跑 1000 個指令，大約 4.98 倍，很接近 5。",
+     "k": 6,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2355.4
+     }
+    },
+    {
+     "say": "為什麼不是剛好 5？因為一開始要先花 4 個 cycle 把 pipeline 填滿。",
+     "k": 6
+    },
+    {
+     "say": "但 clock 要配合最慢的那一段。假設段長 2、1、2、2、1，clock 只能設 2，加速就只剩大約 4 倍。",
+     "k": 7,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2362
+     }
+    },
+    {
+     "say": "最麻煩的是 hazard。到目前為止，我們都假設每個指令都不依賴前一個，一路順順往下走。",
+     "k": 8,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2382.7
+     }
+    },
+    {
+     "say": "黃老師也順便提 MIPS 的好處：每個指令都是 32 位元一樣長、格式簡單，所以很容易做成 pipeline。",
+     "k": 9,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2397.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "理想的 CPI 是 1",
+   "scene": "ppB-cpi-fill",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "換個角度，用 CPI 來看 pipeline。填滿之後，理想上每個 cycle 都有一道指令做完，所以 CPI 等於 1。",
+     "k": 1,
+     "src": {
+      "v": "GAUppsLpjvg",
+      "t": 0
+     }
+    },
+    {
+     "say": "一開始前 4 個 cycle 是在填 pipeline，還沒有指令做完。但一個程式通常有幾十億道指令，這幾個 cycle 可以忽略。",
+     "k": 2,
+     "src": {
+      "v": "GAUppsLpjvg",
+      "t": 7.4
+     }
+    },
+    {
+     "say": "五段 pipeline 跑 N 道指令要 N 加 4 個 cycle，所以 CPI 是 N 加 4 除以 N，比 1 大一點點。",
+     "k": 3,
+     "src": {
+      "v": "GAUppsLpjvg",
+      "t": 21
+     }
+    },
+    {
+     "say": "N 越大，多的 4 個 cycle 攤得越薄：N 等於 6 時 CPI 約 1.67，N 等於 100 時 1.04，十億道就幾乎是 1。",
+     "k": 4,
+     "src": {
+      "v": "GAUppsLpjvg",
+      "t": 29.6
+     }
+    },
+    {
+     "say": "所以填充不是大問題。真正讓 CPI 大於 1 的，是 stall。",
+     "k": 5,
+     "src": {
+      "v": "GAUppsLpjvg",
+      "t": 40.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "汽車生產線：一台卡住，後面全空一格",
+   "scene": "ppB-cpi-car",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "Udacity 的影片用汽車生產線來講 stall：就算 pipeline 已經填滿，CPI 還是可能不是 1。",
+     "k": 1,
+     "src": {
+      "v": "GAUppsLpjvg",
+      "t": 46.2
+     }
+    },
+    {
+     "say": "第一站裝車門、第二站裝前輪、第三站裝後輪。每個 cycle 每台車往前一站，就像指令每個 cycle 前進一個 stage。",
+     "k": 2,
+     "src": {
+      "v": "GAUppsLpjvg",
+      "t": 53.7
+     }
+    },
+    {
+     "say": "某個時刻，黑車在裝後輪，紫車在裝前輪，綠車在第一站裝車門。",
+     "k": 3,
+     "src": {
+      "v": "GAUppsLpjvg",
+      "t": 66.1
+     }
+    },
+    {
+     "say": "裝前輪的時候，機器把紫車的輪子弄壞了。",
+     "k": 4,
+     "src": {
+      "v": "GAUppsLpjvg",
+      "t": 79.1
+     }
+    },
+    {
+     "say": "生產線往前移，黑車往下一站走；紫車沒有前輪，不能放它走，只好在原站多待一個 cycle 重裝。",
+     "k": 5,
+     "src": {
+      "v": "GAUppsLpjvg",
+      "t": 87.3
+     }
+    },
+    {
+     "say": "紫車沒過來，裝後輪那站這個 cycle 沒車可做，工人只能閒著。",
+     "k": 6,
+     "src": {
+      "v": "GAUppsLpjvg",
+      "t": 115.5
+     }
+    },
+    {
+     "say": "綠車的車門裝好了，可是前面被紫車擋住，也不能往前。",
+     "k": 7,
+     "src": {
+      "v": "GAUppsLpjvg",
+      "t": 123
+     }
+    },
+    {
+     "say": "下一個 cycle 輪子裝好，大家往前走，但那個空檔，也就是 bubble，會一路跟著往下走。",
+     "k": 8,
+     "src": {
+      "v": "GAUppsLpjvg",
+      "t": 131.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Stall 讓 CPI 大於 1",
+   "scene": "ppB-cpi-stall",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "從出口看：黑車離開之後，有一整個 cycle 沒有車做完，下一個 cycle 紫車才出來。",
+     "k": 1,
+     "src": {
+      "v": "GAUppsLpjvg",
+      "t": 148.4
+     }
+    },
+    {
+     "say": "每一次 stall，都讓某個 cycle「本來該完成一台，卻沒有完成」。",
+     "k": 2,
+     "src": {
+      "v": "GAUppsLpjvg",
+      "t": 159.3
+     }
+    },
+    {
+     "say": "如果每 5 台車就 stall 一次，要 6 個 cycle 才完成 5 台。",
+     "k": 3,
+     "src": {
+      "v": "GAUppsLpjvg",
+      "t": 176.7
+     }
+    },
+    {
+     "say": "CPI 就是 6 除以 5，等於 1.2，也就是 1 加上平均每道指令的 stall 數，五分之一，0.2。",
+     "k": 4,
+     "src": {
+      "v": "GAUppsLpjvg",
+      "t": 184.5
+     }
+    },
+    {
+     "say": "所以有 stall 的 pipeline，CPI 一定大於 1。影片這裡口誤說成 lower，其實是變大。",
+     "k": 5,
+     "src": {
+      "v": "GAUppsLpjvg",
+      "t": 192
+     }
+    }
+   ]
+  },
+  {
+   "title": "Hazard 是什麼：三種危障",
+   "scene": "ppB-hz-intro",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "好，pipeline 順順跑的樣子看完了，接下來是麻煩的部分：pipeline hazards，管線危障。",
+     "k": 1,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 7.5
+     }
+    },
+    {
+     "say": "兩個問題：hazard 是什麼？總共有幾種？",
+     "k": 2,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 14.6
+     }
+    },
+    {
+     "say": "先回想洗衣服：洗、烘、摺三步，第一籃在烘的時候，第二籃就可以開始洗。",
+     "k": 3,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 30.2
+     }
+    },
+    {
+     "say": "指令也一樣，好幾個指令在執行時重疊，叫 overlap。每列一個指令，每往右一格是一個 clock cycle。",
+     "k": 4,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 51.1
+     }
+    },
+    {
+     "say": "可是一重疊就會出問題。pipeline 裡發生的這些問題，就叫 hazard。",
+     "k": 5,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 63
+     }
+    },
+    {
+     "say": "hazard 會讓下一個指令沒辦法照原本的節奏，在它該執行的那個 cycle 執行。",
+     "k": 6,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 82.7
+     }
+    },
+    {
+     "say": "第一種是 structural hazard，結構危障：兩個指令同時要用同一種硬體資源。",
+     "k": 7,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 96.9
+     }
+    },
+    {
+     "say": "第二種是 data hazard，資料危障：要用的資料得靠前一個指令算出來，但前一個還沒做完。",
+     "k": 8,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 115.1
+     }
+    },
+    {
+     "say": "第三種是 control hazard，控制危障：branch、jump 這類會改變流程的指令，讓 fetch 不知道該抓哪個。",
+     "k": 9,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 143.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "Hazard 從哪來：往回走的線",
+   "scene": "ppA-18a-why",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "黃老師用 datapath 來看 data hazard 和 control hazard 是怎麼來的。",
+     "k": 1,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 511.2
+     }
+    },
+    {
+     "say": "看 datapath 上往回走的 feedback 線：一條是 WB 寫回前面的 register file，一條是 branch 算出新的 PC 送回最前面。",
+     "k": 2,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 518.4
+     }
+    },
+    {
+     "say": "資料往回走，就可能來不及給後面的指令用。",
+     "k": 2
+    },
+    {
+     "say": "以前一次只做一個指令就沒問題：前一個全部做完、都寫回去了，下一個才開始。",
+     "k": 3,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 527.5
+     }
+    },
+    {
+     "say": "pipeline 就不一樣。寫 register 要到第五個 stage 才寫。",
+     "k": 4,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 542.8
+     }
+    },
+    {
+     "say": "假設這個指令要寫 R5，下一個緊接著要用 R5。它在 cycle 3 讀 register 時，前一個才在 EX。",
+     "k": 5,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 554.6
+     }
+    },
+    {
+     "say": "這時 R5 還沒寫進去，下一個讀到的是舊資料：讀在 cycle 3，寫在 cycle 5。這就是 data hazard。",
+     "k": 6,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 586.4
+     }
+    },
+    {
+     "say": "control hazard 也是同一個道理。beq 可能照順序往下走，也可能跳去 target。",
+     "k": 7,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 591.3
+     }
+    },
+    {
+     "say": "什麼時候才能決定？在這個 datapath 裡，要到第四段 MEM 才知道跳不跳。",
+     "k": 8,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 602.6
+     }
+    },
+    {
+     "say": "可是下一個指令馬上就要進來，只好先猜：假裝照順序，PC 等於 PC 加 4，把後面的指令抓進來。",
+     "k": 9,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 615.7
+     }
+    },
+    {
+     "say": "真正知道時如果其實要跳，已經抓進來、做到一半的 3 個指令都錯了，要像沖馬桶一樣把它們 flush 掉。",
+     "k": 10,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 627.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "三種 hazard 與「等」這個萬用解",
+   "scene": "ppA-18a-three",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "整理一下，hazard 到底有哪些？",
+     "k": 1,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 910.6
+     }
+    },
+    {
+     "say": "除了 data 和 control，還有 structural hazard：同一個硬體，兩個人同時搶著用。",
+     "k": 2,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 918.8
+     }
+    },
+    {
+     "say": "注意 structural hazard 跟 dependency 沒有關係，只是搶硬體；data 和 control hazard 才跟指令之間的相依有關。",
+     "k": 3,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 929.6
+     }
+    },
+    {
+     "say": "structural hazard 怎麼解？每個 resource 都在同一個 stage 用，大家又差一個 cycle，就永遠不會撞。",
+     "k": 4,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 953.4
+     }
+    },
+    {
+     "say": "誰提前用就會撞：R-type 想在第四段寫回，又剛好接在 lw 後面，兩個就在 cycle 5 撞在一起。",
+     "k": 5,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1007
+     }
+    },
+    {
+     "say": "data hazard：要用 data 時它還沒準備好，就用到舊的。可是不管什麼架構，都不能違反程式的意思。",
+     "k": 6,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1044.9
+     }
+    },
+    {
+     "say": "control hazard：連下一個要去哪都還不知道，就得 fetch 下一個指令，只好猜，猜錯就出事。",
+     "k": 7,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1079.9
+     }
+    },
+    {
+     "say": "要解決 hazard，永遠有一招：wait，等。有相依，就等你寫回去我再做。",
+     "k": 8,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1096.1
+     }
+    },
+    {
+     "say": "沒有其他技巧時，後一個要等前一個在第五段寫回才讀，fetch 從 cycle 2 延到 cycle 5，多等 3 個 cycle。",
+     "k": 9,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1109.4
+     }
+    },
+    {
+     "say": "等一定能解決，但浪費 cycle。做 pipeline 就是要每個 cycle 都有東西出來，所以要想更好的辦法。",
+     "k": 10,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1117.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Structural hazard：指令和資料共用一個 memory",
+   "scene": "ppB-hz-struct",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "一個一個來，先看 structural hazard。",
+     "k": 1,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 167.8
+     }
+    },
+    {
+     "say": "資源可能是記憶體、general purpose register，或是 ALU，好幾個指令同時要用同一個就會出問題。",
+     "k": 2,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 173.3
+     }
+    },
+    {
+     "say": "定義：同一個 clock cycle 裡，pipeline 中不只一個指令要用同一個 resource，產生衝突。",
+     "k": 3,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 197.9
+     }
+    },
+    {
+     "say": "Katiyar 老師用四個 phase 的 pipeline：FI 取指令、DI 解碼、EI 執行、WR 寫結果，四個指令、七個 cycle。",
+     "k": 4,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 217.6
+     }
+    },
+    {
+     "say": "I1 在 T1 取指令、T2 解碼、T3 執行、T4 寫結果。",
+     "k": 5,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 249.2
+     }
+    },
+    {
+     "say": "注意：FI 要從 memory 讀指令，WR 在這個例子裡也要把結果寫進 memory，兩個 phase 都用到 memory。",
+     "k": 6,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 266
+     }
+    },
+    {
+     "say": "pipeline 就是 I1 在 decode 的時候，I2 同時被 fetch，",
+     "k": 7,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 275.1
+     }
+    },
+    {
+     "say": "接著 I2 decode 時 fetch I3，I3 decode 時 fetch I4，一路錯開一格。",
+     "k": 8,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 289.5
+     }
+    },
+    {
+     "say": "看 T4 這一欄：I1 在 WR，要寫 memory；同一時間 I4 在 FI，要從 memory 讀指令。",
+     "k": 9,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 307.5
+     }
+    },
+    {
+     "say": "兩個指令搶同一個 memory，resource clash，這就是 structural hazard。",
+     "k": 10,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 337
+     }
+    }
+   ]
+  },
+  {
+   "title": "怎麼躲開：I4 晚點 fetch",
+   "scene": "ppB-hz-struct2",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "那怎麼避開？把表格拉長到 T10。",
+     "k": 1,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 351.6
+     }
+    },
+    {
+     "say": "I1、I2、I3 照原本的時間跑都沒問題，問題只在 I4 要 fetch 的那一點。",
+     "k": 2,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 375.1
+     }
+    },
+    {
+     "say": "T4、T5、T6 的 memory 分別被 I1、I2、I3 的 WR 占住，所以 I4 要等到 T7 才能 fetch。",
+     "k": 3,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 384.3
+     }
+    },
+    {
+     "say": "然後 I4 再 decode、execute、寫結果，一路做到 T10。",
+     "k": 4,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 398.4
+     }
+    },
+    {
+     "say": "這樣沒有任何一個 cycle 有兩個 phase 同時用 memory，衝突避掉了。",
+     "k": 5,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 406.8
+     }
+    },
+    {
+     "say": "代價是時間：原本 7 個 cycle 做完，現在要 10 個。",
+     "k": 6,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 418.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "MIPS 的做法：memory 拆成兩塊",
+   "scene": "ppA-18a-mem1",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "黃老師在 MIPS 上也舉了同一種例子。",
+     "k": 1,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1131.6
+     }
+    },
+    {
+     "say": "我們的設計裡 memory 是分成兩塊的：instruction memory 放指令，data memory 放資料。",
+     "k": 2,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1138.2
+     }
+    },
+    {
+     "say": "如果把兩塊合成一塊，會發生什麼事？",
+     "k": 3,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1147.8
+     }
+    },
+    {
+     "say": "一個指令在第四段存取資料，同一時間另一個指令在第一段要抓指令，兩個都要用這塊 memory。",
+     "k": 4,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1154.6
+     }
+    },
+    {
+     "say": "時序圖上就是 cycle 4：lw 要讀資料，第四個指令剛好要抓指令，撞在一起。",
+     "k": 5,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1185
+     }
+    },
+    {
+     "say": "解法就是拆成 instruction memory 和 data memory 兩塊，IF 用一塊、MEM 用另一塊。",
+     "k": 6,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1207.3
+     }
+    },
+    {
+     "say": "所以課本的五段 MIPS 不會有 Katiyar 老師那種 memory 的 structural hazard。",
+     "k": 6
+    },
+    {
+     "say": "這就是做 pipeline 的條件：每一個 stage 用的 resource 要不一樣。",
+     "k": 7,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1216.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "只讀不寫，就沒有相依問題",
+   "scene": "ppA-19a-five",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "data hazard 和 control hazard，根源都是指令和指令之間的 dependency。",
+     "k": 11,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 337.2
+     }
+    },
+    {
+     "say": "那什麼才算有 dependency 的問題？兩個指令都只是讀同一個 register，沒關係，讀不會改變任何東西。",
+     "k": 12,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 388.1
+     }
+    },
+    {
+     "say": "一定要牽涉到 write，因為寫會改變 state，順序沒排好才會出錯。",
+     "k": 12
+    },
+    {
+     "say": "control hazard 也一樣是順序問題：branch 才到第二段就得抓下一個，只好先猜，讓 pipeline 保持滿的。",
+     "k": 13,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 412.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "在 datapath 上看：誰會讀到錯的 R5？",
+   "scene": "ppA-18a-path",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "好，進入 data hazard。先在 datapath 上看看問題出在哪。",
+     "k": 1,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1236.2
+     }
+    },
+    {
+     "say": "分成五段之後，最主要的問題就是這些 feedback path：寫回 register 和改 PC，都是從後面送回前面。",
+     "k": 2,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1245.2
+     }
+    },
+    {
+     "say": "先看一眼 control hazard：beq 在這個 datapath 要到第四段才知道跳不跳。",
+     "k": 3,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1256.5
+     }
+    },
+    {
+     "say": "為了 performance，前面三段早就各塞了一個指令，可是它們是「亂猜」進來的。",
+     "k": 4,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1279.7
+     }
+    },
+    {
+     "say": "到第四段如果猜對，就正常繼續；猜錯，這以下全部 flush，重新來。",
+     "k": 5,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1298.4
+     }
+    },
+    {
+     "say": "再看 data hazard：這個指令在 EX 已經算完，但要到第五段才寫回 R5。",
+     "k": 6,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1315.8
+     }
+    },
+    {
+     "say": "下一個指令正在讀 register，也要讀 R5。讀得到正確的嗎？讀不到，還沒寫回。",
+     "k": 7,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1344.3
+     }
+    },
+    {
+     "say": "寫的人走到第四段時，下兩個指令在讀 R5，一樣讀不到對的值。",
+     "k": 8,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1351.5
+     }
+    },
+    {
+     "say": "寫的人走到第五段、正在寫的時候，下三個指令同時在讀 R5，理論上也還沒寫進去。",
+     "k": 9,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1404.3
+     }
+    },
+    {
+     "say": "但 register file 可以做 internal forwarding：clock 前半段先寫、後半段才讀，下三個就讀得到新值。",
+     "k": 10,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1430.2
+     }
+    },
+    {
+     "say": "結論：下三個 OK；下一個、下兩個只要讀的剛好是 R5，就一定讀錯，這就是 data hazard。",
+     "k": 11,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1479.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "時序圖：sub 寫回之前，誰讀到舊值？",
+   "scene": "ppA-18a-time",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "換課本的例子：sub $2, $1, $3 之後，and、or、add、sw 都要用 $2。",
+     "read": "換課本的例子：sub 暫存器二、暫存器一、暫存器三之後，and、or、add、sw 都要用暫存器二。",
+     "k": 1,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1515.1
+     }
+    },
+    {
+     "say": "往右是時間，每個指令都比前一個晚一個 cycle 開始。",
+     "k": 2,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1528.3
+     }
+    },
+    {
+     "say": "sub 要到第五個 clock cycle 的 WB，才把結果寫回 $2。",
+     "read": "sub 要到第五個 clock cycle 的 WB，才把結果寫回暫存器二。",
+     "k": 3,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1571
+     }
+    },
+    {
+     "say": "後面四個指令都在第二段讀 $2，也就是 cycle 3、4、5、6。",
+     "read": "後面四個指令都在第二段讀暫存器二，也就是 cycle 3、4、5、6。",
+     "k": 4,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1585.4
+     }
+    },
+    {
+     "say": "cycle 5 寫回之前去讀的，拿到的都是舊資料，可是照程式的意思，它們要的是新的 $2。",
+     "read": "cycle 5 寫回之前去讀的，拿到的都是舊資料，可是照程式的意思，它們要的是新的暫存器二。",
+     "k": 5,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1606.6
+     }
+    },
+    {
+     "say": "cycle 6 讀的 sw 沒問題，cycle 5 已經寫下去了。",
+     "k": 6,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1641.2
+     }
+    },
+    {
+     "say": "cycle 5 讀的 add 呢？讀寫在同一個 cycle，靠 internal forwarding 前半段寫、後半段讀，也拿得到新值。",
+     "k": 7,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1656.6
+     }
+    },
+    {
+     "say": "所以只剩 and、or 這兩個會讀錯，這兩個才是真正的 data hazard。",
+     "k": 8,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1668.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Read after write：MIPS 唯一會遇到的",
+   "scene": "ppA-18a-raw",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "這種 data hazard 是：上面那列寫 $2，下面那列讀 $2，讀發生在寫之後。",
+     "read": "這種 data hazard 是：上面那列寫暫存器二，下面那列讀暫存器二，讀發生在寫之後。",
+     "k": 1,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1670.1
+     }
+    },
+    {
+     "say": "它的名字叫 read after write hazard，簡稱 RAW。",
+     "k": 2,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1694.3
+     }
+    },
+    {
+     "say": "其實 data hazard 一共有三種，我們一個一個看。",
+     "k": 3,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1721.7
+     }
+    },
+    {
+     "say": "名字很容易搞混，先講好：第一個指令叫 I1，第二個叫 I2。",
+     "k": 4,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1736.6
+     }
+    },
+    {
+     "say": "read after write 是 I1 先寫、I2 後讀，I2 依賴 I1。hazard 就是 I1 還沒寫進去，I2 就先讀了。",
+     "k": 5,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1744.9
+     }
+    },
+    {
+     "say": "MIPS 讀在第二段、寫在第五段，後面的指令很容易讀得太早，所以會發生 RAW。",
+     "k": 6,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1810.9
+     }
+    },
+    {
+     "say": "第二種叫 write after read，WAR：前面的 I1 讀，後面的 I2 寫。",
+     "k": 7,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1825.7
+     }
+    },
+    {
+     "say": "黃老師先賣個關子：這樣為什麼會有 hazard？",
+     "k": 8,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1843.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "三種 data hazard 的別名",
+   "scene": "ppB-hz-data",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "Katiyar 老師把三種 data hazard 整理得很清楚。",
+     "k": 1,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 446.7
+     }
+    },
+    {
+     "say": "一個指令執行時，要依賴另一個還在 pipeline 裡處理中的指令，就是 data hazard。",
+     "k": 2,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 451.5
+     }
+    },
+    {
+     "say": "暫存器只有讀、寫兩種動作，就看兩個指令對同一個暫存器讀寫的先後來分。",
+     "k": 3,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 472
+     }
+    },
+    {
+     "say": "RAW，read after write，又叫 flow dependency，或 true dependency，真正的相依。",
+     "k": 4,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 487.5
+     }
+    },
+    {
+     "say": "WAR，write after read，叫 anti dependency；WAW，write after write，叫 output dependency",
+     "k": 5,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 497.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "WAR、WAW：為什麼 MIPS 不會發生",
+   "scene": "ppA-18a-warwaw",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "回到 WAR：I1 要讀 R3，I2 要寫 R3。",
+     "k": 1,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1920.6
+     }
+    },
+    {
+     "say": "I1 在前面，本來該讀到舊的 R3。hazard 是 I2 不守規矩，搶在 I1 讀之前先寫，I1 反而讀到新值。",
+     "k": 2,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1933.3
+     }
+    },
+    {
+     "say": "這通常出現在有 auto increment 的指令，存取完自動把位址加一。MIPS 沒有這種指令。",
+     "k": 3,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1967.1
+     }
+    },
+    {
+     "say": "而且 MIPS 的 write 永遠在第五段，read 永遠在第二段。",
+     "k": 4,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 1987.7
+     }
+    },
+    {
+     "say": "I2 比 I1 晚一個 cycle，又在最後一段才寫，是 cycle 6；I1 早在 cycle 2 就讀完了，不可能被搶先。",
+     "k": 5,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 2016.5
+     }
+    },
+    {
+     "say": "所以 WAR 在 MIPS 不可能發生。",
+     "k": 6,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 2082.9
+     }
+    },
+    {
+     "say": "再來 WAW：I1、I2 都寫同一個 register，照程式的意思，最後要留 I2 的值。",
+     "k": 7,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 2094
+     }
+    },
+    {
+     "say": "例如 I1 寫 5、I2 寫 6，答案應該是 6。如果 6 先寫、5 後寫，最後變成 5，就錯了。",
+     "k": 8,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 2137
+     }
+    },
+    {
+     "say": "MIPS 大家都在第五段寫，I1 又永遠早一個 cycle，I1 在 cycle 5 寫、I2 在 cycle 6 寫，順序不會反。",
+     "k": 9,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 2151.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "WAR、WAW 什麼時候會出現",
+   "scene": "ppB-hz-raw",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "用 Katiyar 老師的例子再對一次：I1 是 ADD 寫 R0，I2 是 SUB 讀 R0，這是 RAW。",
+     "k": 2,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 521.3
+     }
+    },
+    {
+     "say": "I1 把結果交出來之前，I2 不能用 R0，不然拿到舊值。",
+     "k": 3,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 543.1
+     }
+    },
+    {
+     "say": "反過來，I1 的 ADD 要讀 R0，I2 的 SUB 要寫 R0，這就是 WAR。",
+     "k": 6,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 587.3
+     }
+    },
+    {
+     "say": "正確順序是 I1 先讀、I2 再寫；I2 搶先寫，I1 就讀到被改過的 R0。",
+     "k": 7,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 615.6
+     }
+    },
+    {
+     "say": "如果兩個都把結果寫進 R0，就是 WAW，最後 R0 應該留 I2 的結果。",
+     "k": 10,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 672.7
+     }
+    },
+    {
+     "say": "這就是 RAW、WAR、WAW 三種情況。",
+     "k": 11,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 697.3
+     }
+    },
+    {
+     "say": "WAR 和 WAW 只會在指令平行執行、或 out-of-order 不照順序執行時出現。五段 MIPS 是照順序的，只有 RAW。",
+     "k": 12,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 706.5
+     }
+    },
+    {
+     "say": "它們怎麼來的？compiler 剛好用了同一個暫存器名字而已。換一個暫存器，也就是 renaming，就能完全避免。",
+     "k": 13,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 733.7
+     }
+    },
+    {
+     "say": "所以 RAW 才叫 true dependency，資料真的要從前面傳過來；另外兩種只是名字撞到，又叫 name dependency。",
+     "k": 13
+    }
+   ]
+  },
+  {
+   "title": "為什麼 MIPS 只會有 RAW",
+   "scene": "ppA-19a-warwaw",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "所以三種 data hazard 裡，只有 read after write 會發生在我們的 MIPS。",
+     "k": 10,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1025.3
+     }
+    },
+    {
+     "say": "畫成時間軸來看：前面的應該先寫，可是下一個已經要拿了，依賴的箭頭往左指，等於時間倒流，這就是 RAW hazard。",
+     "k": 11,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1034.6
+     }
+    },
+    {
+     "say": "黃老師點出設計的關鍵：operand 一律在 ID 讀，write 一律放在最後一段，WAR、WAW 就絕對不會發生。",
+     "k": 12,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1116.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Data hazard 的兩大類：R-type 和 load",
+   "scene": "ppA-18a-2types",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "回到 MIPS 的 RAW。它分兩種：R-type 接 R-type，跟 load 接 R-type，兩個不太一樣。",
+     "k": 1,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 643.4
+     }
+    },
+    {
+     "say": "黃老師先問：哪些指令會「寫」register？",
+     "k": 2,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 667.3
+     }
+    },
+    {
+     "say": "只有兩大類：R-type，和 load。它們都在第五段寫回。",
+     "k": 3,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 698.2
+     }
+    },
+    {
+     "say": "要「讀」的人呢？各種指令都可能讀，而所有的讀 register 都在第二段。",
+     "k": 4,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 709.5
+     }
+    },
+    {
+     "say": "R-type 雖然第五段才寫回，但 data 其實在第三段 EX 就算好了，是我們規定它慢慢來。",
+     "k": 5,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 741.3
+     }
+    },
+    {
+     "say": "load 就不同：EX 只算出記憶體位址，資料要等第四段真的讀完記憶體才有。",
+     "k": 6,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 759.4
+     }
+    },
+    {
+     "say": "所以前面是 R-type：data 已經在那裡，只是還沒寫回，那就用 forwarding，直接送過去。",
+     "k": 7,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 790.2
+     }
+    },
+    {
+     "say": "前面是 load：data 真的還不存在，沒別的辦法，只能 stall，停下來等。",
+     "k": 8,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 798.1
+     }
+    },
+    {
+     "say": "黃老師強調：聽到 data hazard，就要想到兩大類，一種 forwarding 馬上解決，一種只好 stall。關鍵是 data 出來了沒。",
+     "k": 9,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 824.9
+     }
+    },
+    {
+     "say": "實際程式什麼組合都有，但後面的只要讀 register 都一樣；前面寫的只有這兩類，所以歸類完就這兩種情況。",
+     "k": 11,
+     "src": {
+      "v": "IO5zhg0flDI",
+      "t": 869.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "有相依不一定有 hazard",
+   "scene": "ppA-17b-hz",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "再補一個重點。第一個指令要寫回 register 5，但要到第五個 cycle 才寫。",
+     "k": 6,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2507.8
+     }
+    },
+    {
+     "say": "下一個只晚一個 cycle，在 cycle 3 就要讀 register 5，還沒寫回，讀到舊值，hazard 產生。",
+     "k": 7,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2548.7
+     }
+    },
+    {
+     "say": "可是如果讀的指令很後面，cycle 6 才讀，那時已經寫好了，就沒有 hazard。",
+     "k": 8,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2566.7
+     }
+    },
+    {
+     "say": "所以有 dependency 不一定有 hazard，要看兩個指令隔多遠。",
+     "k": 8
+    },
+    {
+     "say": "R-type 接 R-type：答案第三段就算好了，那就不要從 register file 拿，直接送過去，這叫 forwarding。",
+     "k": 9,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2595.3
+     }
+    },
+    {
+     "say": "lw 接 R-type：lw 第四段讀完記憶體才有資料，下一個在 cycle 4 就要用，資料真的還沒出來，只好 stall。",
+     "k": 10,
+     "src": {
+      "v": "_GDfZbzFVs0",
+      "t": 2660
+     }
+    }
+   ]
+  },
+  {
+   "title": "Internal forwarding：前半寫、後半讀",
+   "scene": "ppA-19a-intfwd",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "好，開始解 RAW。第一招其實已經偷偷用過了：internal forwarding。",
+     "k": 1,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1144.2
+     }
+    },
+    {
+     "say": "回到 sub 寫 $2 的例子，有三個指令拿不到新資料，就是紅色的格子。",
+     "read": "回到 sub 寫暫存器二的例子，有三個指令拿不到新資料，就是紅色的格子。",
+     "k": 2,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1146.9
+     }
+    },
+    {
+     "say": "第三個是 add：sub 在寫的同一個 cycle，它同時要讀。",
+     "k": 3,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1151.4
+     }
+    },
+    {
+     "say": "解法是把 register file 設計成 clock 一來就寫進去，用 edge trigger，在時脈邊緣那一瞬間寫入。",
+     "k": 4,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1176.2
+     }
+    },
+    {
+     "say": "讀的那邊 clock 一來也開始讀，剛開始讀到的可能還是舊的。",
+     "k": 5,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1188.8
+     }
+    },
+    {
+     "say": "可是過了半個 clock，寫的那邊已經寫好了，下半個 clock 讀出來的就是新資料。",
+     "k": 6,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1197.2
+     }
+    },
+    {
+     "say": "所以有了 internal forwarding，同一個 cycle 先寫後讀，add 的 hazard 就解決了。",
+     "k": 7,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1228
+     }
+    },
+    {
+     "say": "現在還剩 and、or 兩個，怎麼辦？",
+     "k": 8,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1234.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "軟體解法：compiler 插 no-op",
+   "scene": "ppA-19a-nop",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "最簡單的方法是 compiler insert no-op，讓編譯器插入什麼都不做的指令。",
+     "k": 1,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1252.4
+     }
+    },
+    {
+     "say": "受影響的是後面兩個指令，它們離 sub 太近，差兩個 cycle 來不及拿到資料。",
+     "k": 2,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1257.4
+     }
+    },
+    {
+     "say": "那 compiler 看到 dependency，就在中間插 no-op。pipeline 裡空轉，等距離夠遠了，資料就拿得到。",
+     "k": 3,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1265.5
+     }
+    },
+    {
+     "say": "很簡單，軟體就做得到，但浪費時間。我們用 pipeline 就是要加速，插一堆 no-op 等於白白丟掉 clock cycle。",
+     "k": 4,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1297.5
+     }
+    },
+    {
+     "say": "所以要靠硬體做 forwarding，直接把結果轉送過去。",
+     "k": 5,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1315.3
+     }
+    },
+    {
+     "say": "另外還有一種狀況一定要 stall。所以 data hazard 的硬體處理就兩招：forwarding 和 stall。",
+     "k": 6,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1316.6
+     }
+    },
+    {
+     "say": "先把軟體解法算清楚：sub 寫 $2，and、or 讀得太早，至少要再往後挪兩個 cycle。",
+     "read": "先把軟體解法算清楚：sub 寫暫存器二，and、or 讀得太早，至少要再往後挪兩個 cycle。",
+     "k": 7,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1335.2
+     }
+    },
+    {
+     "say": "and 要在 cycle 5，也就是 sub 寫回的那個 cycle 讀，靠前半寫後半讀才拿得到。",
+     "k": 8,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1343.5
+     }
+    },
+    {
+     "say": "所以 sub 後面插兩個 no-op。and 的 ID 正好落在 cycle 5，讀對了，但五個指令總共要 11 個 cycle。",
+     "k": 9,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1356.4
+     }
+    },
+    {
+     "say": "用硬體 forwarding 呢？不插 nop，9 個 cycle 就做完，省下 2 個。所以我們要靠硬體來解。",
+     "k": 10,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1367.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Forwarding：結果早就算好，就在 pipeline register 裡",
+   "scene": "ppA-19a-fwd",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "什麼叫 forwarding？再仔細看一次。",
+     "k": 1,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1373
+     }
+    },
+    {
+     "say": "有問題的是 and 和 or，它們讀完 register，在 EX 這段要拿 $2 來算。",
+     "read": "有問題的是 and 和 or，它們讀完 register，在 EX 這段要拿暫存器二來算。",
+     "k": 2,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1379.5
+     }
+    },
+    {
+     "say": "sub 的結果什麼時候算好？cycle 3，它自己的 EX 就算好了。",
+     "k": 3,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1404.1
+     }
+    },
+    {
+     "say": "只是規定第五段才能寫，所以 cycle 4、cycle 5 它一直都在，只是還沒寫回 register file。",
+     "k": 4,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1413.8
+     }
+    },
+    {
+     "say": "那就直接拿來用吧！下一個指令要算的時候直接拿這個結果，金色箭頭就是 forwarding。",
+     "k": 5,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1440.8
+     }
+    },
+    {
+     "say": "要學會 forwarding 要搞懂兩件事：datapath 要怎麼改，以及什麼時候要 forward，也就是 control。",
+     "k": 6,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1449.7
+     }
+    },
+    {
+     "say": "黃老師問：sub 算完、還沒寫回的時候，資料放在哪裡？丟掉了嗎？",
+     "k": 7,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1489.3
+     }
+    },
+    {
+     "say": "沒丟，就在 pipeline register 裡。",
+     "k": 8,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1504.4
+     }
+    },
+    {
+     "say": "pipeline register 用前後兩段的名字來叫，中間畫一條斜線：ID/EX、EX/MEM、MEM/WB。",
+     "read": "pipeline register 用前後兩段的名字來叫，中間畫一條斜線：ID EX、EX MEM、MEM WB。",
+     "k": 9,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1519.6
+     }
+    },
+    {
+     "say": "cycle 4 的時候，sub 的結果在 EX/MEM 裡。",
+     "read": "cycle 4 的時候，sub 的結果在 EX MEM 裡。",
+     "k": 10,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1551
+     }
+    },
+    {
+     "say": "到 cycle 5 還沒寫進 register file，那資料又跑去哪了？",
+     "k": 11,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1562.2
+     }
+    },
+    {
+     "say": "在 MEM/WB 裡，一樣沒有丟掉。",
+     "read": "在 MEM WB 裡，一樣沒有丟掉。",
+     "k": 12,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1640.2
+     }
+    },
+    {
+     "say": "所以 and 在 cycle 4 要用，就從 EX/MEM 拿；or 在 cycle 5 要用，就從 MEM/WB 拿。",
+     "read": "所以 and 在 cycle 4 要用，就從 EX MEM 拿；or 在 cycle 5 要用，就從 MEM WB 拿。",
+     "k": 13,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1653.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "ALU 前面的 3 選 1 mux",
+   "scene": "ppA-19a-fwdmux",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "datapath 要怎麼改？放大 EX 附近：左邊 ID/EX，中間 ALU，右邊 EX/MEM、data memory、MEM/WB。",
+     "read": "datapath 要怎麼改？放大 EX 附近：左邊 ID EX，中間 ALU，右邊 EX MEM、data memory、MEM WB。",
+     "k": 1,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1707.6
+     }
+    },
+    {
+     "say": "正常狀況，ALU 的資料是從 register file 讀出來，經過 ID/EX 送進來的。",
+     "read": "正常狀況，ALU 的資料是從 register file 讀出來，經過 ID EX 送進來的。",
+     "k": 2,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1720.1
+     }
+    },
+    {
+     "say": "如果依賴的是前一個指令，資料在 EX/MEM 裡。",
+     "read": "如果依賴的是前一個指令，資料在 EX MEM 裡。",
+     "k": 3,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1728
+     }
+    },
+    {
+     "say": "如果依賴的是前兩個指令，資料在 MEM/WB 裡。",
+     "read": "如果依賴的是前兩個指令，資料在 MEM WB 裡。",
+     "k": 4,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1734.6
+     }
+    },
+    {
+     "say": "那就把這兩個地方的資料拉回來，接到 ALU 輸入前面的 mux。",
+     "k": 5,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1741.8
+     }
+    },
+    {
+     "say": "ALU 每個 input 就有三種來源：register file、從 EX/MEM forward 來的、從 MEM/WB forward 來的。",
+     "read": "ALU 每個 input 就有三種來源：register file、從 EX MEM forward 來的、從 MEM WB forward 來的。",
+     "k": 6,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1798.3
+     }
+    },
+    {
+     "say": "所以 ALU 的兩個輸入前面，各放一個 3-to-1 mux，三選一。",
+     "read": "所以 ALU 的兩個輸入前面，各放一個三選一的 mux。",
+     "k": 7,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1814.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Forwarding unit：00、10、01",
+   "scene": "ppA-19a-fwdunit",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "誰來控制這兩個 mux？forwarding unit。它決定什麼時候選哪個 input。",
+     "k": 1,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1821.5
+     }
+    },
+    {
+     "say": "正常狀況送 00，選 register file 讀出來的值。",
+     "read": "正常狀況送零零，選 register file 讀出來的值。",
+     "k": 2,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1836.6
+     }
+    },
+    {
+     "say": "要從 EX/MEM forward，就送 10。",
+     "read": "要從 EX MEM forward，就送一零。",
+     "k": 3,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1840.3
+     }
+    },
+    {
+     "say": "要從 MEM/WB forward，就送 01。",
+     "read": "要從 MEM WB forward，就送零一。",
+     "k": 4,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1842.5
+     }
+    },
+    {
+     "say": "那它怎麼知道該送哪一個？要把 condition 找出來。",
+     "k": 5,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1874.7
+     }
+    },
+    {
+     "say": "要讀的是 rs、rt。如果前面指令要寫的 destination 剛好是 rs 或 rt，就可能有 dependency。",
+     "k": 6,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1882.9
+     }
+    },
+    {
+     "say": "所以光讀出 rs、rt 的值不夠，rs、rt 的「號碼」也要傳到 ID/EX，交給 forwarding unit 去比。",
+     "read": "所以光讀出 rs、rt 的值不夠，rs、rt 的「號碼」也要傳到 ID EX，交給 forwarding unit 去比。",
+     "k": 7,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1910.3
+     }
+    },
+    {
+     "say": "比的對象有兩個：EX/MEM 的 rd，和 MEM/WB 的 rd，它們都是等一下要寫回的目的地。",
+     "read": "比的對象有兩個：EX MEM 的 rd，和 MEM WB 的 rd，它們都是等一下要寫回的目的地。",
+     "k": 8,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1934.1
+     }
+    },
+    {
+     "say": "就算這次不需要 forward，讀了哪幾個 register，號碼也一定要記下來往下傳。",
+     "k": 9,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1955.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "只比號碼夠嗎？還要看 RegWrite",
+   "scene": "ppA-19a-enough",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "黃老師問：只比 rs、rt 跟 rd，這樣夠不夠？",
+     "k": 1,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1975.6
+     }
+    },
+    {
+     "say": "想法是：我讀的跟你要寫的一樣，就有相依，就 forward。只查這個就好了嗎？",
+     "k": 2,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 1991.1
+     }
+    },
+    {
+     "say": "不夠！不管什麼指令，rs、rt、rd 這些欄位都會被拿出來一路傳下去，裡面一定有值。",
+     "k": 3,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2036
+     }
+    },
+    {
+     "say": "如果前一個是 sw、beq 這種根本不寫 register 的指令，欄位剛好一樣也不能 forward，它根本沒要寫。",
+     "k": 4,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2053.7
+     }
+    },
+    {
+     "say": "所以還要把 RegWrite 拉給 forwarding unit，RegWrite 是 1 才做比對。",
+     "k": 5,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2082.6
+     }
+    },
+    {
+     "say": "整理 input：ID/EX 裡現在這個指令的 rs、rt；EX/MEM 的 rd 和 RegWrite；MEM/WB 的 rd 和 RegWrite。",
+     "read": "整理 input：ID EX 裡現在這個指令的 rs、rt；EX MEM 的 rd 和 RegWrite；MEM WB 的 rd 和 RegWrite。",
+     "k": 6,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2133.9
+     }
+    },
+    {
+     "say": "這裡的 rd 是 RegDst mux 選過的：load 取 rt、R-type 取 rd，最後只剩一個 destination。",
+     "k": 7,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2196.1
+     }
+    },
+    {
+     "say": "有了這些 input，forwarding unit 就發出 control signal，決定 mux 選哪一路。",
+     "k": 8,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2253.8
+     }
+    },
+    {
+     "say": "運算元有兩個，所以發兩個訊號：ForwardA 管 rs、ForwardB 管 rt。兩個不一定一樣，可能 rs 依賴前一個、rt 依賴前兩個。",
+     "k": 9,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2281.8
+     }
+    },
+    {
+     "say": "不依賴誰選 00，依賴前兩個選 01，依賴前一個選 10。",
+     "read": "不依賴誰選零零，依賴前兩個選零一，依賴前一個選一零。",
+     "k": 10,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2296.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Forwarding 的條件：RegWrite、rd 不是 0、rd 等於 rs",
+   "scene": "ppA-19a-cond",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "把條件完整寫出來。黃老師說這不用背，懂了意思自然寫得出來。",
+     "k": 1,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2377.1
+     }
+    },
+    {
+     "say": "EX/MEM 的 rd，也就是前一個指令要寫的，如果等於我要讀的 rs，就可能要 forward。像 sub 寫 $2、and 讀 $2。",
+     "read": "EX MEM 的 rd，也就是前一個指令要寫的，如果等於我要讀的 rs，就可能要 forward。像 sub 寫暫存器二、and 讀暫存器二。",
+     "k": 2,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2399.8
+     }
+    },
+    {
+     "say": "MEM/WB 的 rd，前兩個指令要寫的，如果等於我的 rs 或 rt，也可能要 forward。",
+     "read": "MEM WB 的 rd，前兩個指令要寫的，如果等於我的 rs 或 rt，也可能要 forward。",
+     "k": 3,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2424.2
+     }
+    },
+    {
+     "say": "但前一個如果是 sw，欄位剛好是 $2 也不行，它的 RegWrite 是 0，ForwardA 還是 00。",
+     "read": "但前一個如果是 sw，欄位剛好是暫存器二也不行，它的 RegWrite 是 0，ForwardA 還是零零。",
+     "k": 4,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2439.6
+     }
+    },
+    {
+     "say": "再來，destination 是 $0 要不要 forward？不用。$0 永遠是 0，寫了也不會變，所以 rd 不等於 0 才 forward。",
+     "read": "再來，destination 是零號暫存器要不要 forward？不用。零號暫存器永遠是 0，寫了也不會變，所以 rd 不等於 0 才 forward。",
+     "k": 5,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2464.7
+     }
+    },
+    {
+     "say": "合起來就是 EX hazard：EX/MEM 要寫、rd 不是 0、而且等於 ID/EX 的 rs，ForwardA 就送 10。",
+     "read": "合起來就是 EX hazard：EX MEM 要寫、rd 不是 0、而且等於 ID EX 的 rs，ForwardA 就送一零。",
+     "k": 6,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2486.2
+     }
+    },
+    {
+     "say": "MEM hazard 一樣：MEM/WB 要寫、rd 不是 0、而且等於 rs，就送 01。像 or 的 rt 依賴 sub，ForwardB 就是 01。",
+     "read": "MEM hazard 一樣：MEM WB 要寫、rd 不是 0、而且等於 rs，就送零一。像 or 的 rt 依賴 sub，ForwardB 就是零一。",
+     "k": 7,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2511
+     }
+    },
+    {
+     "say": "rt 的條件一模一樣，把 rs 換成 rt，就是 ForwardB。",
+     "k": 8,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2534.4
+     }
+    },
+    {
+     "say": "做完 forwarding，時序圖變成：and 從 EX/MEM 拿，or 從 MEM/WB 拿。",
+     "read": "做完 forwarding，時序圖變成：and 從 EX MEM 拿，or 從 MEM WB 拿。",
+     "k": 9,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2539.3
+     }
+    },
+    {
+     "say": "add 在 cycle 5 靠 internal forwarding。整串指令一個 cycle 都不用 stall。",
+     "k": 10,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2580.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Double data hazard：兩個都寫同一個，拿最新的",
+   "scene": "ppA-19a-double",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "還有一個小問題，課本叫它 double data hazard。",
+     "k": 1,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2610.7
+     }
+    },
+    {
+     "say": "假如前一個指令要寫 R3，前兩個指令也要寫 R3，",
+     "k": 2,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2635.5
+     }
+    },
+    {
+     "say": "而我的 rs 要讀 R3。兩個都符合 forward 的條件，到底要拿誰的？",
+     "k": 3,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2646.3
+     }
+    },
+    {
+     "say": "答案是 EX/MEM，前一個指令。",
+     "read": "答案是 EX MEM，前一個指令。",
+     "k": 4,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2716.6
+     }
+    },
+    {
+     "say": "因為照程式順序，最後寫 R3 的是前一個，它的值才是最新的。",
+     "k": 5,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2725
+     }
+    },
+    {
+     "say": "課本例子：add $1,$1,$2，再 add $1,$1,$3，再 add $1,$1,$4，第三個要拿第二個的結果，ForwardA 是 10。",
+     "read": "課本例子：add 暫存器一、一、二，再 add 暫存器一、一、三，再 add 暫存器一、一、四，第三個要拿第二個的結果，ForwardA 是一零。",
+     "k": 6,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2738.6
+     }
+    },
+    {
+     "say": "整理一下 forwarding logic：ALU 前的 mux 三個 input，一個是正常讀出來的，兩個是還沒寫回的。",
+     "k": 7,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2754.9
+     }
+    },
+    {
+     "say": "00 選正常的，01 選 write back 那段的，10 選最新的、在 memory 那段的。",
+     "read": "零零選正常的，零一選 write back 那段的，一零選最新的、在 memory 那段的。",
+     "k": 8,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2797.6
+     }
+    },
+    {
+     "say": "兩邊都能 forward 時，要取 memory 那邊最新的，不能取到 write back 的。",
+     "k": 9,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2825.4
+     }
+    },
+    {
+     "say": "寫成條件：先看前一個，要寫、rd 不是 0、等於我的 rs，成立就送 10。",
+     "read": "寫成條件：先看前一個，要寫、rd 不是 0、等於我的 rs，成立就送一零。",
+     "k": 10,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2849
+     }
+    },
+    {
+     "say": "前兩個的條件都一樣，但要多加一條。",
+     "k": 11,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2887
+     }
+    },
+    {
+     "say": "多的那條是：前一個的條件不成立時，才去看前兩個，一樣就送 01。",
+     "read": "多的那條是：前一個的條件不成立時，才去看前兩個，一樣就送零一。",
+     "k": 12,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2896.4
+     }
+    },
+    {
+     "say": "forwarding unit 就是照這些條件送出 00、01、10，決定 ALU 的 input 從哪裡來。",
+     "read": "forwarding unit 就是照這些條件送出零零、零一、一零，決定 ALU 的 input 從哪裡來。",
+     "k": 13,
+     "src": {
+      "v": "XtcJtp7n4o8",
+      "t": 2950
+     }
+    }
+   ]
+  },
+  {
+   "title": "我在 EX 時，爸爸和祖父在哪裡",
+   "scene": "ppA-19b-where",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "在做 forwarding 的例子之前，黃老師要我們先注意兩件事。",
+     "k": 1,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 17.3
+     }
+    },
+    {
+     "say": "第一，forwarding unit 是在 EX 這段做檢查的，不是在前面讀 register 的時候。",
+     "k": 2,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 22.8
+     }
+    },
+    {
+     "say": "因為不是每次都要 forward。正常狀況下，rs、rt 還是照樣從 register file 讀出來，送進 ID/EX。",
+     "read": "因為不是每次都要 forward。正常狀況下，rs、rt 還是照樣從 register file 讀出來，送進 ID EX。",
+     "k": 3,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 36.2
+     }
+    },
+    {
+     "say": "等到 ALU 真的要算的時候，才檢查需不需要 forward。",
+     "k": 4,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 58.5
+     }
+    },
+    {
+     "say": "第二，我正在 EX 的時候，前面的指令在哪裡？",
+     "k": 5,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 63.7
+     }
+    },
+    {
+     "say": "黃老師用家族來比喻：前一個是「爸爸」，結果在 EX/MEM；前兩個是「祖父」，結果在 MEM/WB。",
+     "read": "黃老師用家族來比喻：前一個是「爸爸」，結果在 EX MEM；前兩個是「祖父」，結果在 MEM WB。",
+     "k": 6,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 76.1
+     }
+    },
+    {
+     "say": "立體的 datapath 圖容易看花，可以改看這種只有時間的圖：每列一個指令，往右是 clock cycle。",
+     "k": 7,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 87
+     }
+    },
+    {
+     "say": "比如第 5 個 clock cycle，同一時間只有框起來的這幾格在運作。",
+     "k": 8,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 98.4
+     }
+    },
+    {
+     "say": "我在 cycle 5 做 EX，爸爸在 MEM，祖父在 WB。這個搞清楚，後面判斷要 forward 誰才不會亂。",
+     "k": 9,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 113.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "例子：sub、and、or、add，每個 cycle 選什麼",
+   "scene": "ppA-19b-ex1",
+   "steps": 25,
+   "lines": [
+    {
+     "say": "來做課本的例子，四個指令。",
+     "k": 1,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 120.8
+     }
+    },
+    {
+     "say": "第一個 sub $2, $1, $3，destination 是 $2。",
+     "read": "第一個 sub 暫存器二、暫存器一、暫存器三，destination 是暫存器二。",
+     "k": 2,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 125.1
+     }
+    },
+    {
+     "say": "接著 and $4, $2, $5：rs 要讀 $2，另一個運算元是 $5。",
+     "read": "接著 and 暫存器四、暫存器二、暫存器五：rs 要讀暫存器二，另一個運算元是暫存器五。",
+     "k": 3,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 135.3
+     }
+    },
+    {
+     "say": "and 寫回的 destination 是 $4。",
+     "read": "and 寫回的 destination 是暫存器四。",
+     "k": 4,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 140.4
+     }
+    },
+    {
+     "say": "後面還有 or $4, $4, $2 和 add $9, $4, $2，到處都是 dependency。",
+     "read": "後面還有 or 暫存器四、四、二，和 add 暫存器九、四、二，到處都是 dependency。",
+     "k": 5,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 145.5
+     }
+    },
+    {
+     "say": "cycle 4：sub 算完了，結果放在 EX/MEM，同時記著「destination 是 2」，forwarding unit 才能比。",
+     "read": "cycle 4：sub 算完了，結果放在 EX MEM，同時記著「destination 是 2」，forwarding unit 才能比。",
+     "k": 6,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 151.3
+     }
+    },
+    {
+     "say": "這時 and 在 EX，source 是 2 和 5。這兩個號碼就存在 ID/EX，讀完不能丟。",
+     "read": "這時 and 在 EX，source 是 2 和 5。這兩個號碼就存在 ID EX，讀完不能丟。",
+     "k": 7,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 187
+     }
+    },
+    {
+     "say": "一比對：rs 的 2，跟 EX/MEM 的 destination 2 一樣。",
+     "read": "一比對：rs 的 2，跟 EX MEM 的 destination 2 一樣。",
+     "k": 8,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 208.3
+     }
+    },
+    {
+     "say": "再檢查：sub 會寫 register 嗎？會，RegWrite 是 1。它寫的是 $0 嗎？不是。",
+     "read": "再檢查：sub 會寫 register 嗎？會，RegWrite 是 1。它寫的是零號暫存器嗎？不是。",
+     "k": 9,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 212.6
+     }
+    },
+    {
+     "say": "條件都成立，所以把 EX/MEM 裡的值送到 ALU 的 rs 那一邊。",
+     "read": "條件都成立，所以把 EX MEM 裡的值送到 ALU 的 rs 那一邊。",
+     "k": 10,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 229.2
+     }
+    },
+    {
+     "say": "黃老師問：rs 這個 mux 的 control signal 該是多少？",
+     "k": 11,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 241.2
+     }
+    },
+    {
+     "say": "答案是 10，從 EX/MEM 來。rt 的 $5 沒有依賴，維持 00。",
+     "read": "答案是一零，從 EX MEM 來。rt 的暫存器五沒有依賴，維持零零。",
+     "k": 12,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 253.8
+     }
+    },
+    {
+     "say": "下一個 clock，cycle 5，換 or 進 EX。",
+     "k": 13,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 283
+     }
+    },
+    {
+     "say": "爸爸 and 的 destination 是 4，拉過來給 forwarding unit。",
+     "k": 14,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 287.4
+     }
+    },
+    {
+     "say": "祖父 sub 也要顧，它的 destination 是 2，也拉過來。",
+     "k": 15,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 300.6
+     }
+    },
+    {
+     "say": "or 要讀的 rs、rt 是 4 和 2。",
+     "k": 16,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 304.6
+     }
+    },
+    {
+     "say": "比對結果：4 要 forward 到 rs，2 要 forward 到 rt。",
+     "k": 17,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 312
+     }
+    },
+    {
+     "say": "and、sub 都是 R-type，都會寫 register，所以兩邊都 forward。",
+     "k": 18,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 323.4
+     }
+    },
+    {
+     "say": "rs 的 4 從爸爸 EX/MEM 來，ForwardA 是 10。",
+     "read": "rs 的 4 從爸爸 EX MEM 來，ForwardA 是一零。",
+     "k": 19,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 356.5
+     }
+    },
+    {
+     "say": "rt 的 2 從祖父 MEM/WB 來，ForwardB 是 01。你看，兩個 mux 選的不一樣。",
+     "read": "rt 的 2 從祖父 MEM WB 來，ForwardB 是零一。你看，兩個 mux 選的不一樣。",
+     "k": 20,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 363.3
+     }
+    },
+    {
+     "say": "cycle 6：add 進 EX，要讀 4 跟 2。",
+     "k": 21,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 386.2
+     }
+    },
+    {
+     "say": "爸爸 or 寫 4，祖父 and 也寫 4，兩個都要寫 4。",
+     "k": 22,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 398.3
+     }
+    },
+    {
+     "say": "那 rs 該選誰？",
+     "k": 23,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 400.5
+     }
+    },
+    {
+     "say": "選 10，拿最新的爸爸 or 的結果。rt 的 $2 早在 cycle 5 就寫回了，前半寫後半讀，所以 ForwardB 是 00。",
+     "read": "選一零，拿最新的爸爸 or 的結果。rt 的暫存器二早在 cycle 5 就寫回了，前半寫後半讀，所以 ForwardB 是零零。",
+     "k": 24,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 431.4
+     }
+    },
+    {
+     "say": "有了 forwarding，這四個指令完全不用 stall，4 加 4，8 個 cycle 做完。",
+     "k": 25,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 452.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Load-use：forwarding 救不了，一定要 stall",
+   "scene": "ppA-19b-loaduse",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "接下來是 forwarding 解決不了的那一種。為什麼 data hazard 只分兩種？再把所有指令分析一次。",
+     "k": 1,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 472
+     }
+    },
+    {
+     "say": "先問：誰會寫 register file？",
+     "k": 2,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 483
+     }
+    },
+    {
+     "say": "誰會讀？很多指令都會讀，而且讀一定在第二段。",
+     "k": 3,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 491
+     }
+    },
+    {
+     "say": "寫的到目前為止只有兩種：R-type，和從 memory 拿東西的 load。",
+     "k": 4,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 502.4
+     }
+    },
+    {
+     "say": "前一個是 R-type：EX 就算好了，下一個來的時候直接 forward，箭頭往右走，沒問題。",
+     "k": 5,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 511.6
+     }
+    },
+    {
+     "say": "前一個是 load 呢？它什麼時候才拿到資料？",
+     "k": 6,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 534.9
+     }
+    },
+    {
+     "say": "load 在 EX 只是在算地址，要等 memory access 做完，也就是 cycle 4 結束，資料才出來。",
+     "k": 7,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 543.7
+     }
+    },
+    {
+     "say": "下一個指令 cycle 4 一開始做 EX 就要用了。箭頭往回走，時間倒流，forward 也沒辦法。",
+     "k": 8,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 555
+     }
+    },
+    {
+     "say": "所以不是永遠都能 forward，課本的說法是 cannot always forward：load 後面馬上用它的結果，一定要停。",
+     "k": 9,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 577.1
+     }
+    },
+    {
+     "say": "停一個 cycle，等於中間插一個 nop。讀的人 EX 延到 cycle 5，這時資料已經在 MEM/WB，再 forward 就好。",
+     "read": "停一個 cycle，等於中間插一個 nop。讀的人 EX 延到 cycle 5，這時資料已經在 MEM WB，再 forward 就好。",
+     "k": 10,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 602.5
+     }
+    },
+    {
+     "say": "用軟體的話，compiler 插一個 no-op；不靠軟體，就要在 run time 用硬體的 hazard detection 自己偵測。",
+     "k": 11,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 641.2
+     }
+    },
+    {
+     "say": "硬體插 no-op 是什麼意思？就是讓這個指令「再做一遍」：同一個指令下個 cycle 再 decode 一次，後面那個也再 fetch 一次。",
+     "k": 12,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 652.6
+     }
+    },
+    {
+     "say": "第一次 decode 出來的那份不要了，control 全部給 0 往下傳，就是一個什麼都不做的 nop，也叫 bubble。",
+     "k": 13,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 687.2
+     }
+    },
+    {
+     "say": "所以要做兩件事：一個偵測這種情況的 controller，以及讓 datapath 真的停得下來。",
+     "k": 14,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 698.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "在 ID 偵測 load-use，讓 pipeline 停一拍",
+   "scene": "ppA-19b-detect",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "先看偵測。上面這塊是 hazard detection unit，下面是五段 datapath。",
+     "k": 1,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 765.9
+     }
+    },
+    {
+     "say": "假設前一個是 lw $2，我這個 and 在 ID，又要讀 $2。",
+     "read": "假設前一個是 lw 暫存器二，我這個 and 在 ID，又要讀暫存器二。",
+     "k": 2,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 780
+     }
+    },
+    {
+     "say": "在 ID 就能知道了，因為 decode 時我的 rs、rt 是誰已經很清楚。",
+     "k": 3,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 793.3
+     }
+    },
+    {
+     "say": "前一個在哪？它正在 EX，資料和 control 全都在 ID/EX 裡。",
+     "read": "前一個在哪？它正在 EX，資料和 control 全都在 ID EX 裡。",
+     "k": 4,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 814.2
+     }
+    },
+    {
+     "say": "怎麼知道它是不是 load？看 MemRead 有沒有 enable，只有 load 會讀記憶體。所以把 ID/EX.MemRead 拉進來。",
+     "read": "怎麼知道它是不是 load？看 MemRead 有沒有 enable，只有 load 會讀記憶體。所以把 ID EX 的 MemRead 拉進來。",
+     "k": 5,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 829.9
+     }
+    },
+    {
+     "say": "再把我在 IF/ID 裡要讀的 rs、rt 也拉進來。",
+     "read": "再把我在 IF ID 裡要讀的 rs、rt 也拉進來。",
+     "k": 6,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 853.4
+     }
+    },
+    {
+     "say": "還有前一個的 destination。前一個是 load，而且 destination 等於我的 rs 或 rt，就一定要 stall。",
+     "k": 7,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 869
+     }
+    },
+    {
+     "say": "那怎麼 stall？我現在在 decode，一定會產生一組 control signal。",
+     "k": 8,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 884.2
+     }
+    },
+    {
+     "say": "不管它的話，下一個 cycle 它就送去執行了。可是我們要停一拍，這份 control 不能用。",
+     "k": 9,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 912.6
+     }
+    },
+    {
+     "say": "做法是在 Control 和 ID/EX 之間放一個 mux，改選 0，control 全是 0，就是 no-op。",
+     "read": "做法是在 Control 和 ID EX 之間放一個 mux，改選 0，control 全是 0，就是 no-op。",
+     "k": 10,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 936.5
+     }
+    },
+    {
+     "say": "IF/ID 裡的 and 要留著，下個 cycle 要再做一遍，所以 IF/ID 不能讓新指令寫進來。",
+     "read": "IF ID 裡的 and 要留著，下個 cycle 要再做一遍，所以 IF ID 不能讓新指令寫進來。",
+     "k": 11,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 941.1
+     }
+    },
+    {
+     "say": "PC 也一樣，本來要寫 PC 加 4，現在不寫。所以送出 PCWrite 等於 0、IF/IDWrite 等於 0。",
+     "read": "PC 也一樣，本來要寫 PC 加 4，現在不寫。所以送出 PCWrite 等於 0、IF ID Write 等於 0。",
+     "k": 12,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 959.6
+     }
+    },
+    {
+     "say": "整理：control 給 0 插一個 bubble，PC 和 IF/ID 不動讓指令重做，這就是 stall。",
+     "read": "整理：control 給 0 插一個 bubble，PC 和 IF ID 不動讓指令重做，這就是 stall。",
+     "k": 13,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 974.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Hazard detection unit：別忘了是 rt",
+   "scene": "ppA-19b-hdu",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "再整理一次 input。前一個是不是 load？看它的 MemRead。",
+     "k": 1,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1001.1
+     }
+    },
+    {
+     "say": "load 要寫哪一個 register，它的 destination 號碼也要拉過來。",
+     "k": 2,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1019.6
+     }
+    },
+    {
+     "say": "再加上我這個指令的 rs、rt，input 就齊了。",
+     "k": 3,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1040
+     }
+    },
+    {
+     "say": "output 有三個：PC 不 write、IF/ID 不 write、control 的 mux 選 0。",
+     "read": "output 有三個：PC 不 write、IF ID 不 write、control 的 mux 選 0。",
+     "k": 4,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1050.1
+     }
+    },
+    {
+     "say": "下一個 cycle，送進 ID/EX 的 control 全是 0，什麼都不做，灰色的 bubble 就是它。",
+     "read": "下一個 cycle，送進 ID EX 的 control 全是 0，什麼都不做，灰色的 bubble 就是它。",
+     "k": 5,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1076
+     }
+    },
+    {
+     "say": "and 和 or 原地踏步：IF/ID 沒換，and 再 decode 一次；PC 沒改，同一個 or 再抓一次。",
+     "read": "and 和 or 原地踏步：IF ID 沒換，and 再 decode 一次；PC 沒改，同一個 or 再抓一次。",
+     "k": 6,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1085.2
+     }
+    },
+    {
+     "say": "這就叫 insert a bubble，插入一個氣泡。",
+     "k": 7,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1104.8
+     }
+    },
+    {
+     "say": "硬體上就是在讀 register 那裡多一個 hazard detection unit；control 就是把條件寫成布林式。",
+     "k": 8,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1112.8
+     }
+    },
+    {
+     "say": "黃老師特別提醒：不要忘記把 rt 放進去。",
+     "k": 9,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1162.3
+     }
+    },
+    {
+     "say": "因為 load 的 destination 是 rt，不是 rd，要拿 ID/EX 的 rt 跟我的 rs、rt 比。她說考試考過這題。",
+     "read": "因為 load 的 destination 是 rt，不是 rd，要拿 ID EX 的 rt 跟我的 rs、rt 比。她說考試考過這題。",
+     "k": 10,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1196.6
+     }
+    },
+    {
+     "say": "寫成條件：ID/EX.MemRead 是 1，而且 ID/EX.rt 等於 IF/ID.rs 或 IF/ID.rt，就 stall。",
+     "read": "寫成條件：ID EX 的 MemRead 是 1，而且 ID EX 的 rt 等於 IF ID 的 rs 或 IF ID 的 rt，就 stall。",
+     "k": 11,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1218.3
+     }
+    },
+    {
+     "say": "驗一下：lw 後面讀它的 rs 或 rt 都要停；不相關的不用；前面是 add 也不用停，交給 forwarding。",
+     "k": 12,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1244.6
+     }
+    },
+    {
+     "say": "stall 的動作：不改 PC，也不改 IF/ID，讓指令重複執行一遍。",
+     "read": "stall 的動作：不改 PC，也不改 IF ID，讓指令重複執行一遍。",
+     "k": 13,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1254.4
+     }
+    },
+    {
+     "say": "同時把正在 decode 的那份 control 全給 0 傳下去，等於傳下去一個 no-op。",
+     "k": 14,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1266.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "例子：lw 之後先 stall 再 forward",
+   "scene": "ppA-19b-ex2",
+   "steps": 24,
+   "lines": [
+    {
+     "say": "再做一個例子，把第一個指令換成 load：lw $2, 20($1)。",
+     "read": "再做一個例子，把第一個指令換成 load：lw 暫存器二，位移二十、基底暫存器一。",
+     "k": 1,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1289.3
+     }
+    },
+    {
+     "say": "lw 寫的是 rt，destination 是 2。",
+     "k": 2,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1295.3
+     }
+    },
+    {
+     "say": "下一個 and 要讀 $2。",
+     "read": "下一個 and 要讀暫存器二。",
+     "k": 3,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1302.8
+     }
+    },
+    {
+     "say": "lw 把 destination 2 傳過來，and 把它要讀的 2 和 5 傳過來。",
+     "k": 4,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1319.9
+     }
+    },
+    {
+     "say": "前一個是不是 load？MemRead 有 enable，是。",
+     "k": 5,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1339.1
+     }
+    },
+    {
+     "say": "條件全中：load 後面緊接著讀同一個 register，要 stall。",
+     "k": 6,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1345.1
+     }
+    },
+    {
+     "say": "第一件事：mux 選 0，讓 0 往下傳。",
+     "k": 7,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1356.4
+     }
+    },
+    {
+     "say": "第二件事：PC 不動、IF/ID 不動，and 再做一遍。",
+     "read": "第二件事：PC 不動、IF ID 不動，and 再做一遍。",
+     "k": 8,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1363.6
+     }
+    },
+    {
+     "say": "下一個 cycle，0 在 EX 變成 bubble；and 還在 ID、or 還在 IF，因為它們的 register 沒被寫入，內容不變。",
+     "k": 9,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1371.4
+     }
+    },
+    {
+     "say": "換到 forwarding 來看。cycle 5：bubble 繼續往下走，and 進 EX，要讀 2 跟 5。",
+     "k": 10,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1409
+     }
+    },
+    {
+     "say": "號碼 2、5 送到 forwarding unit。",
+     "k": 11,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1421.5
+     }
+    },
+    {
+     "say": "爸爸 EX/MEM 是 bubble，沒東西；祖父 MEM/WB 是 lw，destination 是 2。",
+     "read": "爸爸 EX MEM 是 bubble，沒東西；祖父 MEM WB 是 lw，destination 是 2。",
+     "k": 12,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1429.1
+     }
+    },
+    {
+     "say": "因為已經延了一拍，lw 讀出來的資料已經到 MEM/WB 了。",
+     "read": "因為已經延了一拍，lw 讀出來的資料已經到 MEM WB 了。",
+     "k": 13,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1441.2
+     }
+    },
+    {
+     "say": "所以 rs 選 01，從 MEM/WB forward。",
+     "read": "所以 rs 選零一，從 MEM WB forward。",
+     "k": 14,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1465.6
+     }
+    },
+    {
+     "say": "rt 的 $5 正常，00。",
+     "read": "rt 的暫存器五正常，零零。",
+     "k": 15,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1469.8
+     }
+    },
+    {
+     "say": "cycle 6：or 進 EX。load 的問題已經過去，只要看要不要 forward。",
+     "k": 16,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1491.5
+     }
+    },
+    {
+     "say": "or 讀 4 跟 2。爸爸 and 寫 4，祖父是 bubble，沒影響。",
+     "k": 17,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1500.6
+     }
+    },
+    {
+     "say": "and 會寫 register，4 又跟 rs 一樣，要 forward。",
+     "k": 18,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1512.4
+     }
+    },
+    {
+     "say": "rs 從 EX/MEM 來，送 10。",
+     "read": "rs 從 EX MEM 來，送一零。",
+     "k": 19,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1529.3
+     }
+    },
+    {
+     "say": "rt 的 2 呢？不用 forward，00。lw 在 cycle 5 已經寫回 $2，or 在同一個 cycle 後半段就讀到了。",
+     "read": "rt 的 2 呢？不用 forward，零零。lw 在 cycle 5 已經寫回暫存器二，or 在同一個 cycle 後半段就讀到了。",
+     "k": 20,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1532.7
+     }
+    },
+    {
+     "say": "cycle 7：add 進 EX，要讀 4 跟 2。",
+     "k": 21,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1538.2
+     }
+    },
+    {
+     "say": "爸爸 or 寫 4，祖父 and 也寫 4。第一個運算元要從哪裡 forward？",
+     "k": 22,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1550.1
+     }
+    },
+    {
+     "say": "從最新的爸爸，設 10；rt 照樣 00。",
+     "read": "從最新的爸爸，設一零；rt 照樣零零。",
+     "k": 23,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1563.7
+     }
+    },
+    {
+     "say": "畫成時序圖：lw 後面多一個 bubble，and 的 ID 做兩次、or 的 IF 做兩次，總共 4 加 4 加 1，9 個 cycle。",
+     "k": 24,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1582.3
+     }
+    },
+    {
+     "say": "黃老師說考試很喜歡考 control signal 怎麼設，懂了就會，不用背。",
+     "k": 24,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1582.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Control hazard：branch 會改變 PC",
+   "scene": "ppB-hz-ctrl",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "好，data hazard 處理完，來看第三種：control hazard。Katiyar 老師說它是 pipeline 裡最複雜的一種。",
+     "k": 1,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 757.4
+     }
+    },
+    {
+     "say": "它出在 branch、條件判斷這類指令：它們可能改掉 program counter，也就是下一個要抓的指令位址。",
+     "k": 2,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 770.8
+     }
+    },
+    {
+     "say": "這時程式接下來往哪走，是由 branch 指令自己決定的。",
+     "k": 3,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 802.4
+     }
+    },
+    {
+     "say": "想像一個 branch 在 pipeline 的最前面。",
+     "k": 4,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 812.4
+     }
+    },
+    {
+     "say": "它在 decode 的時候，pipeline 已經在 fetch 下一個指令了，可是 branch 還沒決定跳不跳，根本不知道下一個是誰。",
+     "k": 5,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 838.6
+     }
+    },
+    {
+     "say": "只好先挑一個抓進來。挑錯了就叫 branch misprediction，分支預測錯誤。",
+     "k": 6,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 857.9
+     }
+    },
+    {
+     "say": "if-else 也一樣：要等前面的結果出來，才知道下一個該去哪裡拿。",
+     "k": 7,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 892
+     }
+    },
+    {
+     "say": "到這裡，三種 hazard 都認識了：structural、data、control。",
+     "k": 8,
+     "src": {
+      "v": "t27kbXWP5GY",
+      "t": 922.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "決定得越晚，flush 越多",
+   "scene": "ppA-19b-branch",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "回到 MIPS 看 branch hazard，課本也叫它 control hazard。",
+     "k": 1,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1732.5
+     }
+    },
+    {
+     "say": "一般指令 PC 等於 PC 加 4；branch 如果 taken，就算出 target，例如 1000，跳過去。",
+     "k": 2,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1745.7
+     }
+    },
+    {
+     "say": "什麼時候才知道要不要跳？decode？execution？還是 memory？看你 datapath 怎麼切，可能很後面才知道。",
+     "k": 3,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1763.3
+     }
+    },
+    {
+     "say": "可是 pipeline 要裝滿，beq 才到 decode，下一個就要 fetch 進來了。",
+     "k": 4,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1786.3
+     }
+    },
+    {
+     "say": "抓進來的跟最後的決定不一樣，就是 branch hazard。它也是 feedback 造成的：很後面才寫回「要跳去哪」。",
+     "k": 5,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1807.7
+     }
+    },
+    {
+     "say": "在這個 pipeline 的切法裡，要到第四段 MEM 才決定。",
+     "k": 6,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1833.9
+     }
+    },
+    {
+     "say": "如果要跳，已經進來的那幾個指令都得犧牲。",
+     "k": 7,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1846.1
+     }
+    },
+    {
+     "say": "怎麼洗掉？剛學過：把它們的 control signal 全部設成 0，變成 no-op。",
+     "k": 8,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1860.4
+     }
+    },
+    {
+     "say": "來得及嗎？來得及。只有寫 register、寫記憶體才會改變 state，它們都還沒走到那裡，清掉沒有副作用。",
+     "k": 9,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1889.1
+     }
+    },
+    {
+     "say": "但在 MEM 才決定，已經抓進來 3 個，target 要到 cycle 5 才 fetch，branch penalty 是 3 個 cycle，太浪費了。",
+     "k": 10,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1905.9
+     }
+    },
+    {
+     "say": "那決定能不能往前移？多加一點硬體就好。",
+     "k": 11,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1922.5
+     }
+    },
+    {
+     "say": "移到 IF 可以嗎？不行，指令才剛抓進來，連它是不是 branch 都不知道。",
+     "k": 12,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1939.3
+     }
+    },
+    {
+     "say": "最快可以移到 ID：decode 完就知道它是 branch，rs、rt 也讀出來了，比一下就好。",
+     "k": 13,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1948.3
+     }
+    },
+    {
+     "say": "跟我猜的一樣，就繼續；猜錯了，才 flush。",
+     "k": 14,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1967.7
+     }
+    },
+    {
+     "say": "flush 就是把 IF/ID 裡剛抓的那一個清成 0，PC 改選 target。只犧牲 1 個 cycle，penalty 從 3 降到 1。",
+     "read": "flush 就是把 IF ID 裡剛抓的那一個清成 0，PC 改選 target。只犧牲 1 個 cycle，penalty 從 3 降到 1。",
+     "k": 15,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 1980.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Flush：猜錯就沖掉",
+   "scene": "ppB-20a-flush",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "假設 beq 其實要跳，可是 IF 已經抓了一個錯路上的指令進來。怎麼辦？",
+     "k": 1,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 174.6
+     }
+    },
+    {
+     "say": "一發現要去的地方跟抓進來的不一樣，就把錯的指令 flush 掉。",
+     "k": 2,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 188
+     }
+    },
+    {
+     "say": "黃老師的比喻很傳神：flush 就像沖馬桶，整個沖走，當作沒抓過。",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 199.2
+     }
+    },
+    {
+     "say": "為什麼能直接沖？錯的指令才走到前面幾段，還沒寫任何東西。沒寫，state 就沒變，沖掉不會留後遺症。",
+     "k": 4,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 202.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Flush 就是變成 bubble",
+   "scene": "ppB-20a-bubble",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "黃老師點了好幾位同學，最後有人答出來：flush 就是把那個指令變成一個 bubble。bubble 跟著 pipeline 往前流，但裡面是空的。",
+     "k": 1,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 267
+     }
+    },
+    {
+     "say": "怎樣才算變成 bubble？就是讓它不改變任何 state，也就是暫存器和記憶體的內容。",
+     "k": 2,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 278.7
+     }
+    },
+    {
+     "say": "這種什麼都不做的指令叫 no-op，no operation，它待會不會去寫任何東西。",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 281.2
+     }
+    },
+    {
+     "say": "讀一下沒關係，真正危險的是寫。所以 flush 的重點就是：絕對不能讓它寫。",
+     "k": 4,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 286.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Flush 的做法：control 全設 0",
+   "scene": "ppB-20a-zero",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "做法揭曉：把它的 control signal 全部設成 0。像 lw 原本 RegWrite 是 1、MemRead 是 1，通通變 0。",
+     "k": 1,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 325.7
+     }
+    },
+    {
+     "say": "控制訊號全是 0，就是不寫暫存器、不讀也不寫記憶體。指令還在 pipeline 裡流，卻什麼事都不做。",
+     "k": 2,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 333.5
+     }
+    },
+    {
+     "say": "如果它還在 IF、還沒 decode，就把抓進來的 32 位元指令整個清成 0。",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 340.3
+     }
+    },
+    {
+     "say": "例如 lw $4, 50($7) 的機器碼是 0x8CE40032，清成全 0 之後，解出來是 sll $0, $0, 0。",
+     "read": "例如 lw 暫存器四，位移五十、基底暫存器七，機器碼是十六進位 八 C E 四 零零三二，清成全 0 之後，解出來是 sll 零號暫存器、零號暫存器、0。",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 340.3
+     }
+    },
+    {
+     "say": "把 0 號暫存器左移 0 位，等於什麼都沒做，這就是 MIPS 的 nop。",
+     "k": 3
+    },
+    {
+     "say": "整理：已經在中間的，把 control signal 設 0；還在 IF 的，把指令本身設 0。兩種都是讓它不做事。",
+     "k": 4,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 351.7
+     }
+    },
+    {
+     "say": "做完以後，這個位置就像塞了一個 bubble。",
+     "k": 5,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 378.7
+     }
+    },
+    {
+     "say": "所以 control hazard 猜錯時，處理方法就是 flush。",
+     "k": 6,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 384
+     }
+    }
+   ]
+  },
+  {
+   "title": "Deeper pipeline：猜錯的代價更大",
+   "scene": "ppB-20a-deep",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "再比較三種 pipeline。最下面那條比較深，例如切成 8 個 stage。superscalar 這種一次跑好幾條的，下一講會講。",
+     "k": 1,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 544.2
+     }
+    },
+    {
+     "say": "如果它在第 6 個 stage 才決定跳不跳，猜錯時前面已經抓進來的 5 個指令都要 flush。",
+     "k": 2,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 558.1
+     }
+    },
+    {
+     "say": "所以 pipeline 越深，branch 猜錯的 penalty 就越大、越明顯。",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 569.3
+     }
+    },
+    {
+     "say": "上面兩條是五段：在 ID 決定犧牲 1 個 cycle，在 MEM 決定犧牲 3 個。規律是 penalty 等於決定的 stage 減 1。",
+     "k": 4,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 572.1
+     }
+    },
+    {
+     "say": "那為什麼還要切那麼深？stage 切越多，每段事情越少，clock cycle 越短，效能越高。可是一猜錯，後面全部犧牲。",
+     "k": 5,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 579.3
+     }
+    },
+    {
+     "say": "所以重點來了：「猜對」這件事非常重要。",
+     "k": 6,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 599.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Predict not taken：branch 移到 ID，只 flush 一個",
+   "scene": "ppA-19b-pnt",
+   "steps": 18,
+   "lines": [
+    {
+     "say": "用 beq 來看：相等就跳到 target。",
+     "k": 1,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2042.6
+     }
+    },
+    {
+     "say": "執行時不知道要不要跳，就照順序一直 fetch，等於假設 branch 不會跳，這叫 predict not taken。",
+     "k": 2,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2065
+     }
+    },
+    {
+     "say": "如果在 MEM 才決定，結果其實要跳，後面三個全錯。",
+     "k": 3,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2072.8
+     }
+    },
+    {
+     "say": "所以 predict not taken 要多加硬體：決定之後，能把抓錯的指令 flush 掉。",
+     "k": 4,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2093
+     }
+    },
+    {
+     "say": "那就早點決定。早點做決定，錯也早點錯，不用在 pipeline 走了半天才 flush。",
+     "k": 5,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2115.4
+     }
+    },
+    {
+     "say": "做法是把 branch 的位址計算，PC 加 4 再加 offset 乘 4，移到 ID 來做。",
+     "k": 6,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2136
+     }
+    },
+    {
+     "say": "beq 的 rs、rt 在 ID 已經讀出來了，再加一個比較器看相不相等，branch decision 在 ID 就做得出來。",
+     "k": 7,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2143.9
+     }
+    },
+    {
+     "say": "這樣只有 IF 多抓的那一個是錯的，只要 flush 那一個。",
+     "k": 8,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2157.6
+     }
+    },
+    {
+     "say": "怎麼 flush？讓 IF/ID 這次寫進去的是 0，而不是剛讀出來的指令。",
+     "read": "怎麼 flush？讓 IF ID 這次寫進去的是 0，而不是剛讀出來的指令。",
+     "k": 9,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2168.7
+     }
+    },
+    {
+     "say": "就是在 IF/ID 前面加一個 2-to-1 mux：平常寫入指令，要 flush 時寫入 0，課本叫它 IF.Flush。",
+     "read": "就是在 IF ID 前面加一個二選一的 mux：平常寫入指令，要 flush 時寫入 0，課本叫它 IF Flush。",
+     "k": 10,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2222.9
+     }
+    },
+    {
+     "say": "ID 裡偵測到是 beq，而且比對成立要跳，就發 control 讓 mux 寫 0。",
+     "k": 11,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2238.5
+     }
+    },
+    {
+     "say": "target 在 ID 已經算好，PC 直接改成它，下一個 cycle 就抓 target 的指令。",
+     "k": 12,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2281.9
+     }
+    },
+    {
+     "say": "犧牲的就只有一個 bubble。",
+     "k": 13,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2296.7
+     }
+    },
+    {
+     "say": "課本例子：36 是 sub，40 是 beq $1, $3, 7，44 是 and，72 是 lw。",
+     "read": "課本例子：36 是 sub，40 是 beq 暫存器一、暫存器三、7，44 是 and，72 是 lw。",
+     "k": 14,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2332
+     }
+    },
+    {
+     "say": "cycle 3：beq 在 ID 比 $1 和 $3，相等，要跳。",
+     "read": "cycle 3：beq 在 ID 比暫存器一和暫存器三，相等，要跳。",
+     "k": 15,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2338.1
+     }
+    },
+    {
+     "say": "跳去哪？target 等於 40 加 4 加 7 乘 4，就是 72，也在 ID 算好。下一個 clock IF/ID 清成 0，PC 跳到 72。",
+     "read": "跳去哪？target 等於 40 加 4 加 7 乘 4，就是 72，也在 ID 算好。下一個 clock IF ID 清成 0，PC 跳到 72。",
+     "k": 16,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2356.9
+     }
+    },
+    {
+     "say": "cycle 4：44 那條 and 變成 bubble，72 的 lw 被抓進來，抓對了。",
+     "k": 17,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2367.8
+     }
+    },
+    {
+     "say": "總結：只犧牲 1 個 bubble、flush 一個指令就搞定。",
+     "k": 18,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2381
+     }
+    }
+   ]
+  },
+  {
+   "title": "Dynamic branch prediction：1-bit 錯兩次、2-bit 錯一次",
+   "scene": "ppA-19b-predict",
+   "steps": 24,
+   "lines": [
+    {
+     "say": "再進一步：能不能猜得更準？",
+     "k": 1,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2392.8
+     }
+    },
+    {
+     "say": "剛才一律猜 PC 加 4。這樣猜對不對？",
+     "k": 2,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2399.4
+     }
+    },
+    {
+     "say": "taken 是跳到 target，not taken 是 PC 加 4。乍看之下，好像大多是 PC 加 4。",
+     "k": 3,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2411.7
+     }
+    },
+    {
+     "say": "程式什麼時候會跳？一個是 if-then-else，",
+     "k": 4,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2448.3
+     }
+    },
+    {
+     "say": "另一個是 for loop。",
+     "k": 5,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2452.3
+     }
+    },
+    {
+     "say": "loop 最後一個指令是 branch，要跳回開頭，這是 taken，而且會執行很多很多次。",
+     "k": 6,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2460.6
+     }
+    },
+    {
+     "say": "if-then-else 只跑一次，猜錯一次無所謂。",
+     "k": 7,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2470.1
+     }
+    },
+    {
+     "say": "可是 loop 一直重複，一直猜 PC 加 4 就一直錯。迴圈跑 101 次，猜 not taken 會錯 100 次。",
+     "k": 8,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2487.1
+     }
+    },
+    {
+     "say": "所以可以做 dynamic branch prediction，每個 branch 的預測會隨著它的表現改變。",
+     "k": 9,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2512.8
+     }
+    },
+    {
+     "say": "最簡單的規則：上一次跳了，這次就猜跳；上一次沒跳，這次就猜不跳。",
+     "k": 10,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2521.8
+     }
+    },
+    {
+     "say": "怎麼記？用 branch 指令的地址當 index，去一張表裡查它上一次跳了沒。",
+     "k": 11,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2537.2
+     }
+    },
+    {
+     "say": "什麼時候查？instruction fetch 的時候就要查：是 branch、上次 taken，下一個就直接去 target 抓。",
+     "k": 12,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2568.7
+     }
+    },
+    {
+     "say": "為什麼這麼在意？pipeline 很長、branch 又很晚才決定的話，猜錯一次要 flush 很多指令，代價很大。",
+     "k": 13,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2608.9
+     }
+    },
+    {
+     "say": "這張表叫 branch prediction buffer，也叫 branch history table。",
+     "k": 14,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2662.4
+     }
+    },
+    {
+     "say": "表不可能很大，只記最近的 branch：地址，跟 taken 還是 not taken。查到就照猜，真的猜錯才 flush。",
+     "k": 15,
+     "src": {
+      "v": "p_GUphUjmvI",
+      "t": 2706.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "Branch history table 用 associative memory 做",
+   "scene": "ppB-20a-bht",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "那這張 branch prediction buffer 長什麼樣子？黃老師說，就像一張 table。",
+     "k": 1,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 801.2
+     }
+    },
+    {
+     "say": "表裡記的是：這個 branch 上一次是 taken 還是 not taken。",
+     "k": 2,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 807.7
+     }
+    },
+    {
+     "say": "一開始還不知道，就用 default，例如全部先猜 not taken，記成 0。左邊這列是位址 48 的 branch。",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 815.7
+     }
+    },
+    {
+     "say": "結果它其實要跳，猜錯了。這時趕快把那個 bit 更新成 1。",
+     "k": 4,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 849.3
+     }
+    },
+    {
+     "say": "下次再遇到這個指令，查到 1，就猜 taken。",
+     "k": 5,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 862.4
+     }
+    },
+    {
+     "say": "怎麼查？抓指令的時候，PC 裡的值就是這個 branch 的位址，例如 48。",
+     "k": 6,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 873
+     }
+    },
+    {
+     "say": "黃老師說要用一種特別的記憶體：associative memory，關聯式記憶體。",
+     "k": 7,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 905
+     }
+    },
+    {
+     "say": "先想一般的陣列：index 是固定的，知道 index 是 100，就直接去第 100 格拿。",
+     "k": 8,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 912.1
+     }
+    },
+    {
+     "say": "用這種方法，每一個可能的位址都要留一格，那要非常大一塊記憶體，太浪費了。",
+     "k": 9,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 925.1
+     }
+    },
+    {
+     "say": "associative memory 只有少少幾個 entry，每個 entry 除了內容，還存著「我是哪個位址」。拿位址去比，對上了才讀出來。",
+     "k": 10,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 935.6
+     }
+    },
+    {
+     "say": "所以 5 個 entry，就記最近 5 個 branch 的位址，和它們是 taken 還是 not taken。",
+     "k": 11,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 974.4
+     }
+    },
+    {
+     "say": "查的時候 5 個 entry 同時比對，有 match 就讀出預測；都沒有，表示最近沒碰過這個 branch，就照預設的方法猜。",
+     "k": 12,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 986.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "和 cache 一樣的查表方式",
+   "scene": "ppB-20a-assoc",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "黃老師說這種 memory 下一章會講，它就是 cache。",
+     "k": 1,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1009.4
+     }
+    },
+    {
+     "say": "記憶體分好幾層。主記憶體在 CPU 晶片外面，off chip，去拿一次要很久。",
+     "k": 2,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1019.5
+     }
+    },
+    {
+     "say": "而 pipeline 的 clock 要配合最慢的 stage。MEM 每次都真的去主記憶體的話，整條 pipeline 每一拍都被拖長。",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1042
+     }
+    },
+    {
+     "say": "所以 CPU 旁邊放一個小小的 cache，常用的東西放進去，通常一個 cycle 就拿到。",
+     "k": 4,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1055.1
+     }
+    },
+    {
+     "say": "branch history table 也可以這樣做。跟陣列不同，這裡的 index 要「寫出來」存在表裡，因為它不是照順序排的。",
+     "k": 5,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1072
+     }
+    },
+    {
+     "say": "黃老師的例子：表只有 3 個 entry，index 3 存 A、5 存 B、7 存 C。",
+     "k": 6,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1091.6
+     }
+    },
+    {
+     "say": "要讀 5：把 5 同時跟 3、5、7 比，第二個 match，就讀出 B。",
+     "k": 7,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1106
+     }
+    },
+    {
+     "say": "要讀 4 呢？跟 3、5、7 都不一樣，沒有 match，就什麼都不讀出來。",
+     "k": 8,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1114
+     }
+    },
+    {
+     "say": "這樣就不用每個位址都記，只記最近跳過的那幾個 branch，但每一筆要同時記位址和內容。",
+     "k": 9,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1131
+     }
+    },
+    {
+     "say": "預測結果也一起存在這張表裡。",
+     "k": 10,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1150.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Fetch 前先查表，猜錯就 flush 加 flip",
+   "scene": "ppB-20a-flip",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "流程是這樣：每次抓指令前，先拿 PC 去查表，看有沒有 match。",
+     "k": 1,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1162
+     }
+    },
+    {
+     "say": "有 match 就讀出預測：猜不跳就抓 fall through，也就是 PC 加 4；猜跳就抓 target。",
+     "k": 2,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1173.1
+     }
+    },
+    {
+     "say": "要抓 target，就得知道 target 在哪，所以 target address 也要記，等一下講。",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1186.1
+     }
+    },
+    {
+     "say": "最後發現猜錯了，要做兩件事：flush pipeline，以及把預測翻過來，flip。",
+     "k": 4,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1190.2
+     }
+    },
+    {
+     "say": "因為只用一個 bit 記，所以一猜錯就馬上翻。",
+     "k": 5,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1207.2
+     }
+    },
+    {
+     "say": "例如表裡記 taken，是 1，這次實際 not taken，就把 bit 改成 0。",
+     "k": 6,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1213.2
+     }
+    },
+    {
+     "say": "所以猜錯時，flush pipeline 再加上 flip prediction。",
+     "k": 7,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1223.6
+     }
+    },
+    {
+     "say": "預測錯的 penalty 很大，大家都想把 branch prediction 做得更好。",
+     "k": 8,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1240.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "1-bit predictor 不夠：巢狀迴圈",
+   "scene": "ppB-20a-1bit",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "剛剛這種叫 1-bit predictor：跳記 1、不跳記 0，這次就照上一次猜。",
+     "k": 1,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1248.2
+     }
+    },
+    {
+     "say": "黃老師說，一個 bit 在某些狀況不夠用。哪種狀況？",
+     "k": 2,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1264.4
+     }
+    },
+    {
+     "say": "就是 loop 裡面還有 loop。例如 inner loop 跑 50 次、outer loop 跑 100 次，這很常見。",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1281.2
+     }
+    },
+    {
+     "say": "inner loop 的 branch 每跑完一輪就會猜錯，outer 跑 100 次就錯 100 次以上。牽涉到 loop，錯一次就被乘上很多倍。",
+     "k": 4,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1295.2
+     }
+    },
+    {
+     "say": "所以最佳化時要特別盯著 loop，這就是 make the common case fast，讓最常發生的情況變快。",
+     "k": 5,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1311.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "1-bit 跑巢狀迴圈：出口錯，進來又錯",
+   "scene": "ppB-20a-1bitrun",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "實際跑一次：inner loop 執行 100 次，每次結尾的 branch 都跳回頭，taken。",
+     "k": 1,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1356.1
+     }
+    },
+    {
+     "say": "第 101 次，loop 結束，這次不跳，not taken。",
+     "k": 2,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1369.6
+     }
+    },
+    {
+     "say": "1-bit predictor 只有一個 bit，前面一直 taken，bit 記的是 1。",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1380.5
+     }
+    },
+    {
+     "say": "前 100 次猜 taken，全部猜對；第 101 次還是猜 taken，可是實際不跳，猜錯了。",
+     "k": 4,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1388.6
+     }
+    },
+    {
+     "say": "猜錯就要 flush 抓錯的指令，",
+     "k": 5,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1405.5
+     }
+    },
+    {
+     "say": "而且把 prediction bit 翻成 0，改成 not taken。",
+     "k": 6,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1414.1
+     }
+    },
+    {
+     "say": "這時已經跳出 inner loop，回到 outer loop 繼續做。",
+     "k": 7,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1428.1
+     }
+    },
+    {
+     "say": "outer loop 做完一圈，又要進 inner loop。這時 bit 是 0，預測 not taken。",
+     "k": 8,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1440.2
+     }
+    },
+    {
+     "say": "可是進 loop 的第一次應該是 taken，要跳回頭繼續跑，又猜錯了！",
+     "k": 9,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1459
+     }
+    },
+    {
+     "say": "問題在哪？taken 變 not taken 只是一次性的，只在出口發生一次。錯一次就翻，太早下結論了。",
+     "k": 10,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1467.2
+     }
+    },
+    {
+     "say": "模擬三輪 inner loop：第一輪錯 1 次，之後每一輪都錯 2 次，出口一次、重新進來一次。",
+     "k": 11,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1495.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "錯兩次才翻：2-bit predictor",
+   "scene": "ppB-20a-2bit",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "才錯一次就翻太急了。黃老師提議：錯兩次才翻，可不可以？",
+     "k": 1,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1507.2
+     }
+    },
+    {
+     "say": "那 loop 出口那次猜錯，但只錯一次，預測還是維持 taken。",
+     "k": 2,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1515.6
+     }
+    },
+    {
+     "say": "下一次再進 inner loop，預測 taken，實際也是 taken，猜對了！",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1522.6
+     }
+    },
+    {
+     "say": "只省一次有差嗎？有。outer loop 跑 1000 輪、每輪 101 次 branch，1-bit 錯 1999 次，2-bit 只錯 1000 次。",
+     "k": 4,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1528.4
+     }
+    },
+    {
+     "say": "換成錯誤率：1-bit 大約 1.98%，2-bit 大約 0.99%。預測錯誤就是要壓到這麼低。",
+     "read": "換成錯誤率：1-bit 大約百分之一點九八，2-bit 大約百分之零點九九。預測錯誤就是要壓到這麼低。",
+     "k": 5,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1544.6
+     }
+    },
+    {
+     "say": "所以多花一個 bit，用兩個 bit 來記，就能猜得更準。",
+     "k": 6,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1552.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "2-bit predictor 是四個 state 的狀態機",
+   "scene": "ppB-20a-fsm",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "兩個 bit 到底怎麼用？",
+     "k": 1,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1559.5
+     }
+    },
+    {
+     "say": "兩個 bit 有四種狀態，所以它是一個四個 state 的 finite state machine。兩個預測 taken，兩個預測 not taken。",
+     "k": 2,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1567
+     }
+    },
+    {
+     "say": "state 怎麼編號都可以，考試看清楚題目的畫法就好。",
+     "k": 2
+    },
+    {
+     "say": "兩個 bit 用兩個 flip-flop 存。下一個 state，由現在的 state 加上這次實際的結果決定。",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1584.2
+     }
+    },
+    {
+     "say": "在最左邊的 taken state，這次也真的 taken，就留在原地。",
+     "k": 4,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1600
+     }
+    },
+    {
+     "say": "出現一次 not taken，往右移一格，但這格還是預測 taken，不會馬上改口。",
+     "k": 5,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1617.7
+     }
+    },
+    {
+     "say": "再錯一次，連續兩次 not taken，才移到預測 not taken 的那一邊。",
+     "k": 6,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1624.3
+     }
+    },
+    {
+     "say": "not taken 那一側也一樣，要兩次 taken 才會回到預測 taken。",
+     "k": 7,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1633.2
+     }
+    },
+    {
+     "say": "狀態機稍微複雜一點，但用很簡單的 control 電路就做得出來。",
+     "k": 8,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1646.5
+     }
+    },
+    {
+     "say": "跑一次：現在在起點，下一個 branch 來了，預測 taken。",
+     "k": 9,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1663.6
+     }
+    },
+    {
+     "say": "實際不是 taken，猜錯，走到下一格。",
+     "k": 10,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1689
+     }
+    },
+    {
+     "say": "在這一格，下一個 branch 來，還是預測 taken。",
+     "k": 11,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1702
+     }
+    },
+    {
+     "say": "萬一又不是 taken，才走到預測 not taken 的 state，下一次就猜 not taken。",
+     "k": 12,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1710.5
+     }
+    },
+    {
+     "say": "用 state 加上「這次的結果」來控制，2-bit branch prediction 就做出來了。",
+     "k": 13,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1720.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "猜要跳，可是 target 在哪？",
+   "scene": "ppB-20a-btb",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "就算預測要跳，還有一個問題：要跳去的位址在哪？",
+     "k": 1,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1733.5
+     }
+    },
+    {
+     "say": "我們的設計裡，target 也是在第二個 cycle，ID 才算出來。",
+     "k": 2,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1746.1
+     }
+    },
+    {
+     "say": "原本 target 是在 EX 算的，為了提早決定，整個搬到 decode 去了。",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1757.7
+     }
+    },
+    {
+     "say": "可是 IF 在 cycle 2 就要抓下一個，那時 target 還沒算好。就算猜 taken，也不知道去哪抓，還是要多等 1 個 cycle。",
+     "k": 4,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1777.7
+     }
+    },
+    {
+     "say": "解法：把要跳去的位址也記下來。",
+     "k": 5,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1788.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "表裡連 target 一起記：branch target buffer",
+   "scene": "ppB-20a-btb2",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "表裡只用一個 bit 記 taken 或 not taken，夠不夠？",
+     "k": 1,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1823.8
+     }
+    },
+    {
+     "say": "不夠。beq 在 decode 算 target 的同時，IF 就要抓下一個，只知道要跳、不知道位址，還是抓不了。",
+     "k": 2,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1837.6
+     }
+    },
+    {
+     "say": "所以 target address 要記下來。可是要記哪一個？",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1864.2
+     }
+    },
+    {
+     "say": "關鍵是：表裡為什麼會記 taken？因為上一次它真的跳了，那時就已經算出它跳去哪裡。",
+     "k": 4,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1888.7
+     }
+    },
+    {
+     "say": "那就一起記：表裡每一列有 branch 位址、taken 或 not taken、target 三欄。",
+     "k": 5,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1901.1
+     }
+    },
+    {
+     "say": "之後拿 PC 查表，預測 taken 的話 target 同時讀出來，例如 96，馬上就能去抓，不用等。",
+     "k": 6,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1926.1
+     }
+    },
+    {
+     "say": "這種邊跑邊記、邊預測的方法就是 dynamic prediction，課本把這張表叫 branch target buffer。",
+     "k": 7,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1947.1
+     }
+    },
+    {
+     "say": "看起來只差一個 cycle，但 loop 會一直重複，一錯就錯很多次。",
+     "k": 8,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1958.8
+     }
+    },
+    {
+     "say": "所以預測錯誤率通常要壓到很低的個位數百分比。",
+     "k": 9,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1973.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Delayed branch：把那一拍拿來做正事",
+   "scene": "ppB-20a-delay1",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "前面都是在「猜」。另一個處理 control hazard 的方法，叫 delayed branch。",
+     "k": 1,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 1987.3
+     }
+    },
+    {
+     "say": "看時序圖：beq 在 ID 決定，ID 結束就知道要不要跳，再過一個 clock 就能抓正確的指令。",
+     "k": 2,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2010.6
+     }
+    },
+    {
+     "say": "可是它決定的那個 cycle，第一段已經抓了一個指令進來。",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2038
+     }
+    },
+    {
+     "say": "抓 PC 加 4，結果要跳，錯；抓 target，結果不跳，也錯。",
+     "k": 4,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2069.5
+     }
+    },
+    {
+     "say": "其實只差一個 cycle 而已。",
+     "k": 5,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2082.6
+     }
+    },
+    {
+     "say": "那換個想法：這個多出來的 slot，放一個「不管跳不跳，本來就要執行」的指令，怎麼抓都不會錯。",
+     "k": 6,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2137.3
+     }
+    },
+    {
+     "say": "看這段程式：beq 前面有一個 add，不管跳不跳都會被執行。",
+     "k": 7,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2206.2
+     }
+    },
+    {
+     "say": "黃老師說，大約 50% 的情況找得到這種指令。",
+     "read": "黃老師說，大約百分之五十的情況找得到這種指令。",
+     "k": 8,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2216
+     }
+    },
+    {
+     "say": "找到了，就把它搬到 beq 下面，放進那個 delay slot，照常走完五段，完全不浪費。",
+     "k": 9,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2225.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Delayed branch 的條件與限制",
+   "scene": "ppB-20a-delay2",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "這就叫 delayed branch：branch 後面緊接的那一個指令，不管跳不跳都一定執行，always executed。",
+     "k": 1,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2251
+     }
+    },
+    {
+     "say": "搬之前要檢查：add 寫 $s1，beq 只讀 $s2 和 $zero，沒有相依，可以安全搬到 beq 後面。",
+     "read": "搬之前要檢查：add 寫 s1，beq 只讀 s2 和 zero，沒有相依，可以安全搬到 beq 後面。",
+     "k": 2,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2304.1
+     }
+    },
+    {
+     "say": "就算 beq 跳走了，這個 add 本來也要執行，完全不用 flush。",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2331.1
+     }
+    },
+    {
+     "say": "換句話說，它永遠抓下一個指令，卻沒有 penalty。這是 compiler 的技巧，把指令重新排列。",
+     "k": 4,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2353
+     }
+    },
+    {
+     "say": "條件是能搬：跟 branch 有 dependency 就不能亂搬。找不到的話，delay slot 只好放一個 nop。",
+     "k": 5,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2378
+     }
+    },
+    {
+     "say": "pipeline 淺，在 ID 就決定，只要塞 1 個，很好找；pipeline 很深要塞 3 個，就很難塞滿了。",
+     "k": 6,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2398.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "整理：control hazard 的三種機制",
+   "scene": "ppB-21a-review",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "黃老師發現大家把 branch prediction 和 delayed branch 搞混了，所以先整理一次：處理 control hazard 有三種機制。",
+     "k": 1,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 17
+     }
+    },
+    {
+     "say": "第一種最簡單：一律猜 PC 加 4。決定點在第三段，猜錯要 flush 2 個；在第四段，要 flush 3 個。",
+     "k": 6,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 82
+     }
+    },
+    {
+     "say": "五段 pipeline 比較單純，課本把決定搬到第二段 ID，猜錯只 flush 1 個，penalty 1 個 clock cycle。",
+     "k": 7,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 108.7
+     }
+    },
+    {
+     "say": "這就是機制一：一律猜 not taken，錯了就 flush。",
+     "k": 8,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 131.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "機制二：delayed branch",
+   "scene": "ppB-21a-delay",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "機制二：五段 pipeline 很短，猜錯也只差一個指令，那就從這一個 slot 下手。",
+     "k": 1,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 144.5
+     }
+    },
+    {
+     "say": "想辦法讓這個 slot 永遠抓到有用的指令。效果上，就等於 branch 的決定晚一個 cycle 才生效，所以叫 delayed。",
+     "k": 2,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 156
+     }
+    },
+    {
+     "say": "這樣根本沒有猜錯的問題：執行到 branch 時，下一個指令本來就該執行。",
+     "k": 4,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 182.6
+     }
+    },
+    {
+     "say": "找不到這種指令，就插一個 no-op。",
+     "k": 5,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 198.5
+     }
+    },
+    {
+     "say": "那還要 flush 嗎？不用。下一個不是有用的指令就是 nop，都不用沖掉。",
+     "k": 7,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 231
+     }
+    }
+   ]
+  },
+  {
+   "title": "機制三：branch history table",
+   "scene": "ppB-21a-dyn",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "機制三要從機制一的缺點說起：always not taken，遇到 taken 就要 flush。",
+     "k": 2,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 256.4
+     }
+    },
+    {
+     "say": "五段的 pipeline flush 一個還 OK，可是高效能的處理器可能切到 10 個 stage 以上。",
+     "k": 3,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 268.5
+     }
+    },
+    {
+     "say": "決定點如果在第 6 段，猜錯就要 flush 5 個。",
+     "k": 4,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 282.5
+     }
+    },
+    {
+     "say": "所以不能亂猜。像迴圈的 branch 大多是 taken，一律猜 not taken 會一直錯。",
+     "k": 5,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 294
+     }
+    },
+    {
+     "say": "於是用 branch history table 把歷史記下來，當然要更多硬體。",
+     "k": 6,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 314.2
+     }
+    },
+    {
+     "say": "電晶體越來越便宜，大家做更長的 pipeline、更短的 clock。這時第二段本來就很忙，沒辦法隨便把 branch 決定往前搬。",
+     "k": 7,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 325.1
+     }
+    },
+    {
+     "say": "黃老師強調：這三個機制有關，但不是混在一起用的。delayed branch 是另一種想法：用 compiler 塞有用的指令，就不用 flush。",
+     "k": 8,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 359
+     }
+    }
+   ]
+  },
+  {
+   "title": "Exception：意料之外的事件",
+   "scene": "ppB-20a-exc",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "branch hazard 講完，接著是 exception。左邊是一段從位址 1000 開始在跑的程式。",
+     "k": 1,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2423.4
+     }
+    },
+    {
+     "say": "exception 是 unexpected event：寫程式時沒預期，但它發生了，程式只好停下來，跳去作業系統處理。",
+     "k": 2,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2434.7
+     }
+    },
+    {
+     "say": "原因之一是 I/O，例如硬碟資料讀完了，要通知原本在等的程式，這叫 interrupt。",
+     "read": "原因之一是 I O，例如硬碟資料讀完了，要通知原本在等的程式，這叫 interrupt。",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2449.2
+     }
+    },
+    {
+     "say": "因為 process A 做 I/O 時會把 CPU 讓給 process B。I/O 做完一定要通知 A，不然 A 永遠沒辦法繼續。",
+     "read": "因為 process A 做 I O 時會把 CPU 讓給 process B。I O 做完一定要通知 A，不然 A 永遠沒辦法繼續。",
+     "k": 3,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 409.6
+     }
+    },
+    {
+     "say": "另一種是程式本身出問題，例如解出一個不認得的 opcode，叫 undefined opcode，或是運算 overflow。",
+     "k": 4,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2459.4
+     }
+    },
+    {
+     "say": "仔細想想，exception 也是一種 control hazard：本來照順序執行，突然要停下來，control flow 就變了。",
+     "k": 5,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2483.7
+     }
+    },
+    {
+     "say": "跳到 OS 沒什麼了不起，OS 也是一組程式，只是它是 system program，不是使用者寫的。",
+     "k": 6,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2509.6
+     }
+    },
+    {
+     "say": "MIPS 的定義：CPU 內部發生的，像 overflow，叫 exception；",
+     "k": 7,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2535
+     }
+    },
+    {
+     "say": "從外部 I/O controller 來的，叫 interrupt。",
+     "read": "從外部 I O controller 來的，叫 interrupt。",
+     "k": 8,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2555
+     }
+    },
+    {
+     "say": "例如 I/O 做完了，送一個 signal 給 CPU 說「我這邊好了」，CPU 再找時間處理。",
+     "read": "例如 I O 做完了，送一個 signal 給 CPU 說「我這邊好了」，CPU 再找時間處理。",
+     "k": 9,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2584
+     }
+    },
+    {
+     "say": "這些事件都沒辦法預期，一發生就像 control hazard，pipeline 裡做到一半的可能都要 flush，會犧牲效能。",
+     "k": 10,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2605.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "處理 exception：EPC、Cause、入口位址",
+   "scene": "ppB-20a-handle",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "CPU 正在執行位址 1000 的指令，突然來了一個沒預期的 signal。",
+     "k": 1,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2650.6
+     }
+    },
+    {
+     "say": "不同事件處理方式不同，但共同點是：正常流程要停下來。",
+     "k": 2,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2663.4
+     }
+    },
+    {
+     "say": "跳去 OS 其實就是改 PC。黃老師舉例，OS 的處理程式從 34686 開始，就把 PC 從 1000 改成 34686。",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2677.5
+     }
+    },
+    {
+     "say": "本來該執行下一個指令，結果跳到別的地方，所以說 exception 也是 control hazard。",
+     "k": 4,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2708.4
+     }
+    },
+    {
+     "say": "要先把現在的 PC 記下來，因為處理完可能要回來。",
+     "k": 5,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2726.1
+     }
+    },
+    {
+     "say": "很多情況處理完還能回來，像 I/O，只是暫停一下，處理完繼續原本的程式。",
+     "read": "很多情況處理完還能回來，像 I O，只是暫停一下，處理完繼續原本的程式。",
+     "k": 6,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2742.5
+     }
+    },
+    {
+     "say": "回來要回哪？兩種狀況。I/O interrupt 通常讓現在這個指令做完再處理，回來時執行下一個指令。",
+     "read": "回來要回哪？兩種狀況。I O interrupt 通常讓現在這個指令做完再處理，回來時執行下一個指令。",
+     "k": 7,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2805.3
+     }
+    },
+    {
+     "say": "exception 是這個指令本身出問題，像 overflow，它沒做完，回來時要重新執行它。",
+     "k": 8,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2813.2
+     }
+    },
+    {
+     "say": "PC 記在一個特別的暫存器：EPC，Exception Program Counter，這裡記 1000。",
+     "k": 9,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2856.1
+     }
+    },
+    {
+     "say": "處理完，把 EPC 放回 PC，程式就從那裡繼續。",
+     "k": 10,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2861.6
+     }
+    },
+    {
+     "say": "原因也要記下來，放在 Cause 暫存器，因為 handler 要知道是哪一種狀況。",
+     "k": 11,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2873.2
+     }
+    },
+    {
+     "say": "黃老師舉的簡化例子：只有兩種 exception，undefined opcode 記 0，overflow 記 1，一個 bit 就夠。",
+     "k": 12,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2893.1
+     }
+    },
+    {
+     "say": "因為是 exception，出問題的指令不會被做完。",
+     "k": 13,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2927.2
+     }
+    },
+    {
+     "say": "然後馬上跳去 handler。MIPS 只有一個入口，位址 8000 0180，不管哪種 exception 都跳到這裡。",
+     "read": "然後馬上跳去 handler。MIPS 只有一個入口，十六進位 八零零零 零一八零，不管哪種 exception 都跳到這裡。",
+     "k": 14,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2938.8
+     }
+    },
+    {
+     "say": "就像一個大門，大家都從這裡進去，進去之後再由 OS 判斷是哪一種、去執行對應的處理程式。",
+     "k": 15,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2967
+     }
+    }
+   ]
+  },
+  {
+   "title": "Single entry 還是 vectored interrupt",
+   "scene": "ppB-20a-vec",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "所以跳去 handler 有兩種方法。第一種是 single entry，只有一個入口，MIPS 就是 8000 0180。",
+     "read": "所以跳去 handler 有兩種方法。第一種是 single entry，只有一個入口，MIPS 就是十六進位 八零零零 零一八零。",
+     "k": 1,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2981.4
+     }
+    },
+    {
+     "say": "進了 OS，入口程式看 Cause 是 0 還是 1，再跳到 undefined opcode 或 overflow 的 handler。",
+     "k": 2,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 2995
+     }
+    },
+    {
+     "say": "第二種叫 vectored interrupt，向量式中斷。",
+     "k": 3,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 3007.5
+     }
+    },
+    {
+     "say": "直接拿原因當 index 去查一張表，表裡寫著每種原因的 handler 位址，直接跳過去，不用先到同一個入口再判斷。",
+     "k": 4,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 3017.1
+     }
+    },
+    {
+     "say": "總結：MIPS 用 single entry point；vectored interrupt 是依原因直接跳到對應程式的開頭。",
+     "k": 5,
+     "src": {
+      "v": "II7Eh-Q8hdI",
+      "t": 3048
+     }
+    }
+   ]
+  },
+  {
+   "title": "Handler 做完之後",
+   "scene": "ppB-21a-handler",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "再把 handler 要做的事串一次。先不管 pipeline，當成一次一個指令的 single cycle 來想。",
+     "k": 1,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 445.2
+     }
+    },
+    {
+     "say": "可以恢復的狀況，等一下還要回來，所以先把被打斷的那個指令，offending instruction，的位址記到 EPC。",
+     "k": 3,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 476.2
+     }
+    },
+    {
+     "say": "跳過去之前，把原因存進 Cause register，OS 才知道要叫哪一個處理程式。",
+     "k": 4,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 503.3
+     }
+    },
+    {
+     "say": "處理完，如果是 restartable，可以重新開始的，就用 EPC 跳回原來的程式繼續。",
+     "k": 10,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 601.3
+     }
+    },
+    {
+     "say": "如果是救不回來的錯誤，就 terminate 這個程式，並且 report error。",
+     "k": 11,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 622
+     }
+    }
+   ]
+  },
+  {
+   "title": "Pipeline 裡的 exception：前面做完、後面 flush",
+   "scene": "ppB-21a-pipe",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "剛才的步驟不管有沒有 pipeline 都要做到。",
+     "k": 1,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 636
+     }
+    },
+    {
+     "say": "但 pipeline 同時有好多指令。看 cycle 6：出事的指令前面有快做完的，後面也有剛抓進來的。",
+     "k": 2,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 651.1
+     }
+    },
+    {
+     "say": "所以在 pipeline 裡，exception 很像一個 control hazard：流程要改，跳去 OS 的位址。",
+     "k": 3,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 679.3
+     }
+    },
+    {
+     "say": "原則是：出事之前的指令讓它們做完，之後的指令通通 flush。",
+     "k": 4,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 703.2
+     }
+    },
+    {
+     "say": "例子：add 在 EX 算出 overflow。",
+     "k": 5,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 722
+     }
+    },
+    {
+     "say": "這時絕對不能讓 add 把結果寫進 $1，寫下去 program state 就被改了。",
+     "read": "這時絕對不能讓 add 把結果寫進暫存器一，寫下去 program state 就被改了。",
+     "k": 6,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 731.6
+     }
+    },
+    {
+     "say": "所以前面的 and、or 繼續做完；add 和後面的 slt、lw 全部 flush，再把原因記進 Cause。",
+     "k": 7,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 737.5
+     }
+    },
+    {
+     "say": "最後跳到 handler。整件事就像一個沒預測到的 branch：抓錯的沖掉，改去抓 handler 的指令。",
+     "k": 8,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 758.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Exception 的硬體",
+   "scene": "ppB-21a-hw",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "硬體要加什麼？上面是五個 stage，中間深色的是 pipeline register。",
+     "k": 1,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 768
+     }
+    },
+    {
+     "say": "假設 exception 發生在 EX，像剛剛的 overflow。",
+     "k": 2,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 777
+     }
+    },
+    {
+     "say": "EX 和前面 ID、IF 的 control signal 都要能清成 0，所以加了 IF.Flush、ID.Flush、EX.Flush 三條訊號。",
+     "read": "EX 和前面 ID、IF 的 control signal 都要能清成 0，所以加了 IF Flush、ID Flush、EX Flush 三條訊號。",
+     "k": 3,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 789.3
+     }
+    },
+    {
+     "say": "發生 exception 時，這些 flush 訊號變成 1，把那些指令的 control 清成 0。",
+     "k": 4,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 809.6
+     }
+    },
+    {
+     "say": "PC 那邊也要改：把 8000 0180 這個位址接到 PC 前面的 mux。",
+     "read": "PC 那邊也要改：把十六進位 八零零零 零一八零 這個位址接到 PC 前面的 mux。",
+     "k": 5,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 818.1
+     }
+    },
+    {
+     "say": "一發現 exception，就把它載入 PC，下一個 cycle 開始抓 handler 的指令。",
+     "k": 6,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 830.4
+     }
+    },
+    {
+     "say": "整體跟 control hazard 很像：哪個 stage 出事，那裡和後面進來的都 flush，前面的讓它做完。",
+     "k": 7,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 849.6
+     }
+    },
+    {
+     "say": "再強調一次：flush 就是把 control signal 設成 0。",
+     "k": 8,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 860.5
+     }
+    },
+    {
+     "say": "另外還要兩個暫存器：Cause 記原因，EPC 記出事指令的位址，等一下靠它回來。",
+     "k": 9,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 870
+     }
+    },
+    {
+     "say": "可以重來的 exception：先 flush，handler 處理完，再回到那個指令從頭執行一次，好像什麼都沒發生。",
+     "k": 10,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 894
+     }
+    },
+    {
+     "say": "要分清楚：I/O interrupt 通常讓那個指令做完才處理；overflow 這種要從那個指令重新開始。",
+     "read": "要分清楚：I O interrupt 通常讓那個指令做完才處理；overflow 這種要從那個指令重新開始。",
+     "k": 11,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 911.1
+     }
+    },
+    {
+     "say": "所以 PC 存起來之後，要由 handler，也就是軟體，判斷要從哪一個指令繼續。",
+     "k": 12,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 934
+     }
+    }
+   ]
+  },
+  {
+   "title": "例子：4C 的 add 發生 overflow",
+   "scene": "ppB-21a-ex",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "看課本例子：程式從 40 開始，跑到 4C 的 add $1, $2, $1 發生 overflow。位址都是十六進位。",
+     "read": "看課本例子：程式從十六進位 40 開始，跑到十六進位 4C 的 add 暫存器一、暫存器二、暫存器一，發生 overflow。",
+     "k": 1,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 960.1
+     }
+    },
+    {
+     "say": "handler 在 8000 0180，它的第一個指令是一個 sw，先把一些東西存起來。",
+     "read": "handler 在十六進位 八零零零 零一八零，它的第一個指令是一個 sw，先把一些東西存起來。",
+     "k": 2,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 971.7
+     }
+    },
+    {
+     "say": "時序圖上，add 前面有 sub、and、or，後面有 slt、lw，cycle 1 到 5 大家照常往前走。",
+     "k": 3,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 985.8
+     }
+    },
+    {
+     "say": "cycle 6：add 進 EX，算出 overflow。",
+     "k": 4,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 991.4
+     }
+    },
+    {
+     "say": "從 add 開始，add、slt、lw 全部 flush，control signal 清成 0。",
+     "k": 5,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 995.6
+     }
+    },
+    {
+     "say": "前面的 and、or 繼續做完：and 在 cycle 6 寫回，or 在 cycle 7 寫回。",
+     "k": 6,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1003.3
+     }
+    },
+    {
+     "say": "到了 cycle 7，add、slt、lw 原本該做的段都變成 bubble。",
+     "k": 7,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1033.6
+     }
+    },
+    {
+     "say": "同時 EPC 記下位址。課本的硬體存的是 4C 加 4，也就是 50；Cause 記成 overflow。",
+     "read": "同時 EPC 記下位址。課本的硬體存的是十六進位 4C 加 4，也就是十六進位 50；Cause 記成 overflow。",
+     "k": 8,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1062.2
+     }
+    },
+    {
+     "say": "cycle 7 就已經從 8000 0180 抓進 handler 的第一個指令 sw。",
+     "read": "cycle 7 就已經從十六進位 八零零零 零一八零 抓進 handler 的第一個指令 sw。",
+     "k": 9,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1075.1
+     }
+    },
+    {
+     "say": "同一個處理器，前面跑一般程式，出事後 PC 換成 OS 的程式來跑，OS 也只是軟體。handler 再把 EPC 減 4，就找到出事的 add。",
+     "k": 10,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1090.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "同時好幾個 exception：precise 與 imprecise",
+   "scene": "ppB-21a-multi",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "pipeline 同時有好幾個指令，可能同一個 cycle 發生好幾個 exception。i1 已經在 WB，i5 剛進 IF。",
+     "k": 1,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1126.2
+     }
+    },
+    {
+     "say": "假設紅色這幾個同時出事，分散在不同 stage，先處理誰？",
+     "k": 2,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1132.4
+     }
+    },
+    {
+     "say": "先處理最早的指令，也就是走得最遠、在最後面 stage 的那個，因為它最早進來。",
+     "k": 3,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1162
+     }
+    },
+    {
+     "say": "所以選在 MEM 的 i2，它以下的 i3、i4、i5 全部 flush，i1 讓它做完。",
+     "k": 4,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1189.7
+     }
+    },
+    {
+     "say": "準確找到出事的指令，之前的都做完、之後的都清掉，這叫 precise exception。",
+     "k": 5,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1213
+     }
+    },
+    {
+     "say": "五段 pipeline 這很簡單，大家依序進來，誰在最後面一看就知道。",
+     "k": 6,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1225.7
+     }
+    },
+    {
+     "say": "可是 superscalar、很深、又 out-of-order 的處理器，沒有相依的可以先做，走在最後面的不一定是最早的指令。",
+     "k": 7,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1240.2
+     }
+    },
+    {
+     "say": "不知道誰最早，要維持 precise exception 就很難。",
+     "k": 8,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1268.1
+     }
+    },
+    {
+     "say": "這時改用 imprecise exception：把 pipeline 停下來、state 存起來，直接跳去 OS，讓 OS 判斷是誰出事、哪些要 flush。",
+     "k": 9,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1294.2
+     }
+    },
+    {
+     "say": "硬要用硬體找出精確的那一個，要很多硬體，所以一般交給軟體。",
+     "k": 10,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1335.3
+     }
+    },
+    {
+     "say": "判斷得沒那麼精確也沒關係，能 recover 就好，所以 out-of-order 的處理器常用 imprecise exception。",
+     "k": 11,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1359.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Pipeline 本身就是 ILP",
+   "scene": "ppB-21a-ilp",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "最後簡單看更進階的處理器：superscalar 和 dynamic pipelining。",
+     "k": 1,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1416.2
+     }
+    },
+    {
+     "say": "先問：什麼是 instruction-level parallelism，ILP，指令層級的平行？",
+     "k": 2,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1440.5
+     }
+    },
+    {
+     "say": "其實 pipeline 本身就是一種 ILP。切成五段，五個指令依序錯開一個 cycle 進來。",
+     "k": 3,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1445.5
+     }
+    },
+    {
+     "say": "在 cycle 5，五個指令分別在 WB、MEM、EX、ID、IF，正好五個同時在執行。",
+     "k": 5,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1475.4
+     }
+    },
+    {
+     "say": "沒有 dependency 的話，之後每個 cycle 完成一個，throughput 大約是不用 pipeline 的 5 倍。",
+     "k": 6,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1513.5
+     }
+    },
+    {
+     "say": "想要更多的 parallelism，還有哪些方法？",
+     "k": 7,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1531
+     }
+    }
+   ]
+  },
+  {
+   "title": "方法一：deeper pipeline",
+   "scene": "ppB-21a-deep",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "第一個方法很簡單：切更細，切成 7 個、8 個 stage。",
+     "k": 1,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1560.5
+     }
+    },
+    {
+     "say": "用洗衣服來想：本來一台洗衣機要洗完又脫水。擺兩台，一台專門洗、一台專門脫水，就多了一個 stage。",
+     "k": 2,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1565
+     }
+    },
+    {
+     "say": "烘乾、摺衣服也能各拆兩段，stage 越多，同時在處理的衣服就越多。",
+     "k": 3,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1586.2
+     }
+    },
+    {
+     "say": "增加到 10 個 stage，同時就有 10 個指令在做，理想上是 10 倍。",
+     "k": 4,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1595.4
+     }
+    },
+    {
+     "say": "這叫 deeper pipeline。",
+     "k": 5,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1606.6
+     }
+    },
+    {
+     "say": "同一件事切得更小，每段工作變少，clock cycle 就能變短。用一件 1000 ps 的工作來看。",
+     "read": "同一件事切得更小，每段工作變少，clock cycle 就能變短。用一件 1000 皮秒的工作來看。",
+     "k": 6,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1611.4
+     }
+    },
+    {
+     "say": "clock 要設成最慢那段的時間。切五段、每段 200 ps，clock 就是 200 ps。",
+     "read": "clock 要設成最慢那段的時間。切五段、每段 200 皮秒，clock 就是 200 皮秒。",
+     "k": 7,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1644.6
+     }
+    },
+    {
+     "say": "切十段，每段 100 ps，clock 就更快。",
+     "read": "切十段，每段 100 皮秒，clock 就更快。",
+     "k": 8,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1649.7
+     }
+    },
+    {
+     "say": "可是 cycle 很短，每段分到的時間很少，有些工作不見得塞得進去。",
+     "k": 9,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1662.2
+     }
+    },
+    {
+     "say": "而且 pipeline 很深，branch 在很後面才決定，猜錯的 penalty 也很大。",
+     "k": 10,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1689
+     }
+    }
+   ]
+  },
+  {
+   "title": "方法二：multiple issue，從寬度加平行",
+   "scene": "ppB-21a-wide",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "第二個方向：stage 數不變，還是五段一條 pipeline。",
+     "k": 1,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1704.4
+     }
+    },
+    {
+     "say": "那要怎麼讓更多指令同時做？",
+     "k": 2,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1711.6
+     }
+    },
+    {
+     "say": "黃老師提示：只能有一條 pipeline 嗎？不能兩條嗎？",
+     "k": 3,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1740.1
+     }
+    },
+    {
+     "say": "再加一條：一條有 5 個指令在跑，兩條就有 10 個。",
+     "k": 4,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1753.1
+     }
+    },
+    {
+     "say": "所以平行可以從深度加，也可以從寬度加。",
+     "k": 5,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1758.6
+     }
+    },
+    {
+     "say": "把資源加倍，同一個 cycle 就能 issue 不只一個指令。",
+     "k": 6,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1770.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "兩條 pipeline，每個 cycle 抓幾個？",
+   "scene": "ppB-21a-fetch2",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "黃老師問：兩條 pipeline，每個 clock cycle 要 fetch 幾個指令？",
+     "k": 1,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1785
+     }
+    },
+    {
+     "say": "先想一條的：每個 cycle 丟一個進去。",
+     "k": 2,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1803
+     }
+    },
+    {
+     "say": "兩條就是 resource 加倍：兩個 instruction fetch、register file 一次讀更多 operand、ALU 也有兩個。",
+     "k": 3,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1812
+     }
+    },
+    {
+     "say": "所以每個 cycle 要 fetch 2 個。填滿之後每個 cycle 完成 2 個，理想的 CPI 是 0.5。",
+     "k": 4,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1836
+     }
+    }
+   ]
+  },
+  {
+   "title": "Multiple issue：同時 10 個指令",
+   "scene": "ppB-21a-wide2",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "平行化可以把 pipeline 加深，也可以橫向，一次 fetch 2 個、3 個、4 個。",
+     "k": 2,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1884.4
+     }
+    },
+    {
+     "say": "兩條 pipeline、每條五段，cycle 5 同時就有 2 乘 5，10 個指令在跑。",
+     "k": 3,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1909
+     }
+    },
+    {
+     "say": "這叫 multiple issue：每個 stage 同時處理不只一個指令，IF 一次抓兩個、ID 一次解兩個、EX 一次算兩個。",
+     "k": 4,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1956.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "CPI 與 IPC",
+   "scene": "ppB-21a-ipc",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "multiple issue 之後，一個 cycle 能完成幾個指令？",
+     "k": 1,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1976.7
+     }
+    },
+    {
+     "say": "一般 single issue 的 pipeline，最好的情況是每個 cycle 完成 1 個。",
+     "k": 2,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 1998.3
+     }
+    },
+    {
+     "say": "有 dependency 要 stall、或要 flush，就連 1 個都不到。",
+     "k": 3,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2023
+     }
+    },
+    {
+     "say": "所以用 CPI，cycles per instruction 來量，single issue 時 CPI 大於或等於 1。",
+     "k": 4,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2030.5
+     }
+    },
+    {
+     "say": "可是 2-issue 一個 cycle 可以完成 2 個指令，",
+     "k": 5,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2060.6
+     }
+    },
+    {
+     "say": "CPI 就小於 1，用起來不直覺，所以改用 IPC，instructions per cycle，一個 cycle 完成幾個，越大越好。",
+     "k": 6,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2078
+     }
+    },
+    {
+     "say": "CPI 和 IPC 互為倒數：IPC 等於 1 除以 CPI。",
+     "k": 7,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2111.5
+     }
+    },
+    {
+     "say": "例子：4 GHz 的處理器，4-way multiple issue，一次發 4 個。",
+     "k": 8,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2193.4
+     }
+    },
+    {
+     "say": "4 GHz 是每秒 4 乘 10 的 9 次方個 cycle，每個 cycle 最多 4 個，每秒最多 160 億個指令。",
+     "k": 9,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2201.7
+     }
+    },
+    {
+     "say": "沒有 dependency 時，每個指令平均只要四分之一個 cycle，CPI 是 0.25。",
+     "k": 10,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2215.6
+     }
+    },
+    {
+     "say": "換成 IPC 就是 4，兩個數字講的是同一件事。",
+     "k": 11,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2238.1
+     }
+    },
+    {
+     "say": "但這是最好的狀況。有 dependency 的話，就算有兩條 pipeline，也不一定每次湊得到兩個能一起做的指令。",
+     "k": 12,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2291
+     }
+    }
+   ]
+  },
+  {
+   "title": "Static 與 dynamic multiple issue",
+   "scene": "ppB-21a-static",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "multiple issue 分兩大類：static 和 dynamic。",
+     "k": 1,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2333
+     }
+    },
+    {
+     "say": "static 是在 compile 的時候就決定好，哪些指令可以同時發出去。",
+     "k": 2,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2343
+     }
+    },
+    {
+     "say": "compiler 把能一起發的指令包在一起，叫一個 issue packet。4-way 包 4 個，2-way 包 2 個。",
+     "k": 3,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2365.7
+     }
+    },
+    {
+     "say": "因為是 compile 時決定的，偵測和避免 hazard 都是 compiler 的責任，硬體不管。",
+     "k": 4,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2379.9
+     }
+    },
+    {
+     "say": "dynamic 則是到 run time，程式真的在跑，才由硬體決定。",
+     "k": 5,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2418
+     }
+    },
+    {
+     "say": "有點像 forwarding：硬體偵測到條件符合，就讓它們平行做。",
+     "k": 6,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2427.5
+     }
+    },
+    {
+     "say": "遇到 hazard，全部由硬體處理。",
+     "k": 7,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2438
+     }
+    },
+    {
+     "say": "不過 compiler 如果幫忙把沒相依的指令排在附近，硬體看得到的範圍有限，效果會更好。",
+     "k": 8,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2447.1
+     }
+    },
+    {
+     "say": "一句話：static 是軟體 compiler 的方法，dynamic 是硬體的方法。",
+     "k": 9,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2488.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Speculation：先做再說，錯了再退",
+   "scene": "ppB-21a-spec",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "不管哪一種方法，speculation，猜測，都很重要。",
+     "k": 1,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2500.2
+     }
+    },
+    {
+     "say": "什麼都不敢猜，遇到 branch 就等決定、遇到 load 就等資料，只能呆在那邊，根本平行不起來。",
+     "k": 2,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2505.3
+     }
+    },
+    {
+     "say": "所以策略是 start operation as soon as possible，盡快開始做，猜錯了再 roll back。",
+     "k": 3,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2520.6
+     }
+    },
+    {
+     "say": "branch 就是最好的例子：猜 taken 還是 not taken，先照猜的做下去。",
+     "k": 4,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2547
+     }
+    },
+    {
+     "say": "另一個例子是猜 load：一個 sw 後面緊接一個 lw。",
+     "k": 5,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2580.4
+     }
+    },
+    {
+     "say": "這兩個通常不會用到同一個 address，",
+     "k": 6,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2595.2
+     }
+    },
+    {
+     "say": "所以猜它們不同，讓 load 先做。load 很花時間，cache miss 還要去 memory 拿，更久。",
+     "k": 7,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2618
+     }
+    }
+   ]
+  },
+  {
+   "title": "Speculate on load：什麼時候會錯",
+   "scene": "ppB-21a-load",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "仔細看：store 把 9 寫到某個位址，緊接著 load 從某個位址讀。",
+     "k": 1,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2652.1
+     }
+    },
+    {
+     "say": "正常順序是 store 先做完，再 load。",
+     "k": 2,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2703.1
+     }
+    },
+    {
+     "say": "讓 load 先做，什麼時候會錯？只有兩個是同一個位址才會。例如都是 1300，應該讀到剛寫的 9，先 load 卻讀到舊的 3。",
+     "k": 3,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2715.6
+     }
+    },
+    {
+     "say": "可是正常寫程式，會先寫回記憶體又馬上讀同一個嗎？很少。馬上要用的值，放在 register 裡用就好。",
+     "k": 4,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2737.7
+     }
+    },
+    {
+     "say": "所以假設位址不同：store 寫 100、load 讀 200。不管誰先做，load 都讀到 7，不會錯。",
+     "k": 5,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2758.3
+     }
+    },
+    {
+     "say": "這種先假設不衝突、讓 load 先做的技巧，就叫 speculate on load。",
+     "k": 6,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2781.4
+     }
+    },
+    {
+     "say": "反過來，store 寫 100、load 也讀 100，load 先做就讀到舊值 5，不是該有的 9，就錯了。",
+     "k": 7,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2807.1
+     }
+    },
+    {
+     "say": "同一個位址的情況很少，所以通常猜不同，先 load，做完再 check 有沒有猜錯。",
+     "k": 9,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2862
+     }
+    },
+    {
+     "say": "為什麼讓 load 先？store 的運算早就做完了，只差寫進記憶體，晚一點寫不影響別人。",
+     "k": 10,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2897
+     }
+    },
+    {
+     "say": "load 不一樣：讀進來的資料，下一個指令可能馬上要用，晚一步大家都得等。",
+     "k": 11,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2926.5
+     }
+    },
+    {
+     "say": "遇到 cache miss，load 要等很久；store 則可以先放進 buffer 慢慢寫。",
+     "k": 12,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2965.6
+     }
+    },
+    {
+     "say": "萬一真的猜錯，rollback 就好。所以 speculation 很重要。",
+     "k": 13,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2983.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "猜錯的善後：fix-up routine 或硬體 flush",
+   "scene": "ppB-21a-fix",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "compiler 可以把 load 搬到 store 前面。",
+     "k": 1,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 2992.3
+     }
+    },
+    {
+     "say": "既然是 compiler 的做法，硬體不幫忙檢查，compiler 就要插一段 if-then-else 檢查剛才猜對沒。",
+     "k": 2,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 3010.5
+     }
+    },
+    {
+     "say": "猜對什麼都不用做；猜錯就跳到 fix-up routine，把錯的結果修回來。",
+     "k": 3,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 3023
+     }
+    },
+    {
+     "say": "硬體的做法，就是用更多硬體檢查條件，發現猜錯就把相關指令 flush 掉。",
+     "k": 4,
+     "src": {
+      "v": "WpJZIFEtgg4",
+      "t": 3036.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "為什麼 multiple issue 一定要猜",
+   "scene": "ppB-21b-why",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "有同學下課來問：猜，跟 multiple issue 有什麼關係？",
+     "k": 1,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 17
+     }
+    },
+    {
+     "say": "不猜的話，就要等 branch 決定才能抓下一個。beq 後面就空一格，下一個晚一個 cycle 才進來。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 27.2
+     }
+    },
+    {
+     "say": "這樣 pipeline 常常是空的。硬體一次能抓兩個，但不敢猜，還是只能抓一個，兩條 pipeline 等於白做。",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 37.5
+     }
+    },
+    {
+     "say": "所以要讓 pipeline 大部分時間都是滿的，就一定要猜，這就是 speculation。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 45.7
+     }
+    },
+    {
+     "say": "猜錯怎麼辦？軟體的方法是程式裡加檢查，錯了跳到 fix-up routine。",
+     "k": 5,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 55.4
+     }
+    },
+    {
+     "say": "硬體的方法，就是 superscalar 架構。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 73
+     }
+    }
+   ]
+  },
+  {
+   "title": "Superscalar：照順序進、亂序做、照順序寫回",
+   "scene": "ppB-21b-commit",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "superscalar 的概念是：fetch 的時候照順序，in order，順便把指令之間的 dependency 找出來。",
+     "k": 1,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 78.3
+     }
+    },
+    {
+     "say": "真正執行的時候可以 out of order，誰準備好誰先做。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 84
+     }
+    },
+    {
+     "say": "做完的結果先放在 buffer，不馬上寫回 register，也不馬上寫進記憶體。",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 90.4
+     }
+    },
+    {
+     "say": "因為只有改變 state 才會真的影響結果，中間怎麼算、放在哪暫存都沒關係。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 97.7
+     }
+    },
+    {
+     "say": "最後一段叫 commit：這時才照原本程式的順序，一個一個寫回去。",
+     "k": 5,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 106.5
+     }
+    },
+    {
+     "say": "還不確定對不對，例如還在猜的，就讓它留在 buffer，確定了才寫回。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 111.1
+     }
+    },
+    {
+     "say": "branch 猜錯，就把 buffer 裡錯的結果 flush 掉，完全不影響 state。",
+     "k": 7,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 121
+     }
+    }
+   ]
+  },
+  {
+   "title": "猜測執行碰上 exception",
+   "scene": "ppB-21b-specexc",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "exception 也要小心：我們先猜、先做了，結果出了狀況怎麼辦？",
+     "k": 1,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 130.2
+     }
+    },
+    {
+     "say": "例如 branch 還沒決定，我們猜某個 load 會被執行，就先讓它做。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 141.1
+     }
+    },
+    {
+     "say": "結果這個 load 用的位址 $t0 不合法，invalid address，產生了 exception。",
+     "read": "結果這個 load 用的位址 t零 不合法，invalid address，產生了 exception。",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 149.4
+     }
+    },
+    {
+     "say": "這個 exception 不能算數！照正常順序，branch 可能根本不會走到這個 load。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 158
+     }
+    },
+    {
+     "say": "所以 static 的做法是把 exception 延後，defer。",
+     "k": 5,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 160
+     }
+    },
+    {
+     "say": "dynamic 的做法是把 exception 也放進 buffer，等這個指令真的 commit、確定會執行，才處理。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 173.3
+     }
+    },
+    {
+     "say": "speculation 和 exception 交錯在一起，這些都要更多硬體、更多心力。",
+     "k": 7,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 188.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Static multiple issue 就是 VLIW",
+   "scene": "ppB-21b-vliw",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "先看 static，主要靠 compiler。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 208.5
+     }
+    },
+    {
+     "say": "程式還沒執行，compiler 就把能平行的指令包在一起，例如一個 add 加一個 lw，整包當成一個指令。",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 220.6
+     }
+    },
+    {
+     "say": "同一包裡當然不能有 dependency；發生 exception，也把整包當作一個指令處理。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 239.7
+     }
+    },
+    {
+     "say": "要做到這件事，程式本身要有足夠的 parallelism，才找得到能包在一起的指令。",
+     "k": 5,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 250.1
+     }
+    },
+    {
+     "say": "pipeline 的 resource 也要增加，才能同時執行一整包。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 257.3
+     }
+    },
+    {
+     "say": "一整包像一個很長的指令，所以叫 VLIW，very long instruction word。",
+     "k": 7,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 268.5
+     }
+    },
+    {
+     "say": "說一個處理器是 VLIW，意思就是它用 compiler 把很多指令包在一起，同時執行。",
+     "k": 8,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 288.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Scheduling：同一包不能相依，找不到就放 nop",
+   "scene": "ppB-21b-sched",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "compiler 排程時，必須自己把 hazard 移除。",
+     "k": 1,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 295.6
+     }
+    },
+    {
+     "say": "規則一：同一個 issue packet 裡不能有 dependency。像 add 寫 $t0、lw 拿 $t0 當位址，就不能同一包。",
+     "read": "規則一：同一個 issue packet 裡不能有 dependency。像 add 寫 t零、lw 拿 t零 當位址，就不能同一包。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 308.6
+     }
+    },
+    {
+     "say": "packet 和 packet 之間的相依，要看 processor 怎麼處理，compiler 都要知道。",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 320
+     }
+    },
+    {
+     "say": "找不到能一起包的，就插 nop。這就是 scheduling 要解決的問題。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 333
+     }
+    }
+   ]
+  },
+  {
+   "title": "MIPS dual issue：一個 ALU 配一個 load/store",
+   "scene": "ppB-21b-dual",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "看一個例子：dual issue，一次發兩個。",
+     "k": 1,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 342
+     }
+    },
+    {
+     "say": "VLIW 不是隨便兩個指令都能包在一起。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 351
+     }
+    },
+    {
+     "say": "這個例子規定：一個是 ALU 或 branch，另一個是 load 或 store。不能兩個 load，也不能兩個 ALU。",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 362
+     }
+    },
+    {
+     "say": "所以一個 packet 有兩個 slot：slot 0 放 ALU 或 branch，slot 1 放 load 或 store。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 372.4
+     }
+    },
+    {
+     "say": "每個指令 32 位元，兩個就是 64 位元，對齊 64 位元存放，每次抓 64 位元。",
+     "k": 5,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 385.4
+     }
+    },
+    {
+     "say": "包不起來就放 nop。這樣規定是為了簡化硬體，每次都固定抓 64 位元。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 396.6
+     }
+    },
+    {
+     "say": "pipeline 圖上，每個 cycle 同時進兩個，一個 ALU 或 branch、一個 load 或 store，一起走五段。",
+     "k": 7,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 445.2
+     }
+    },
+    {
+     "say": "黃老師強調：不是有兩條 pipeline 就能隨便要，有些 resource 要共用，硬體已經規定好怎麼搭。",
+     "k": 9,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 485.7
+     }
+    },
+    {
+     "say": "所以 scheduling 要照硬體的規定來包。她說這一段考試一定會考。",
+     "k": 10,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 513
+     }
+    },
+    {
+     "say": "直覺會以為隨便找兩個互不相干的指令就行，其實不是：要一個 ALU 或 branch 組、一個 load/store 組。",
+     "read": "直覺會以為隨便找兩個互不相干的指令就行，其實不是：要一個 ALU 或 branch 組、一個 load 或 store 組。",
+     "k": 11,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 555.4
+     }
+    },
+    {
+     "say": "每次抓的還是 64 位元，真的包不起來的那一格，就是 nop。",
+     "k": 13,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 609
+     }
+    }
+   ]
+  },
+  {
+   "title": "Dual issue 要加的硬體",
+   "scene": "ppB-21b-hw",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "dual issue 要哪些硬體？不用整個處理器加倍，只要增加某些 resource。",
+     "k": 1,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 634.8
+     }
+    },
+    {
+     "say": "同時執行一個 ALU 指令和一個 load/store，例如 add 和 sw。",
+     "read": "同時執行一個 ALU 指令和一個 load 或 store，例如 add 和 sw。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 649
+     }
+    },
+    {
+     "say": "同一時間讀 register file，要讀出幾個 operand？",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 662
+     }
+    },
+    {
+     "say": "R-type 要讀 rs、rt 兩個；sw 也要讀 rs 當基底、rt 當要存的值，兩個。加起來 4 個。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 685.1
+     }
+    },
+    {
+     "say": "以前 register file 只有 2 個 read port，現在要 4 個。port 越多硬體越貴，可不是免費的。",
+     "k": 5,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 702.2
+     }
+    },
+    {
+     "say": "同時可能有兩個指令走到 WB 要寫回，所以還要 2 個 write port。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 734
+     }
+    },
+    {
+     "say": "EX 也是：以前算數和算位址共用一個 ALU，現在要多一個 ALU，專門算 load/store 的位址。",
+     "read": "EX 也是：以前算數和算位址共用一個 ALU，現在要多一個 ALU，專門算 load 或 store 的位址。",
+     "k": 7,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 762.4
+     }
+    },
+    {
+     "say": "MEM 和 WB 則跟原本一樣。",
+     "k": 8,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 787.3
+     }
+    },
+    {
+     "say": "黃老師的類比：要做 shift，ALU 做不到，就得加一個 shifter。想加功能，就要加硬體。",
+     "k": 9,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 808.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Dual issue 的 hazard：同一包不能 forward",
+   "scene": "ppB-21b-dhz",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "兩個同時做雖然快，但 hazard 一發生，代價也比較大。",
+     "k": 1,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 859.4
+     }
+    },
+    {
+     "say": "先看 EX 的 data hazard：資料還沒算出來，後面的就要用。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 882.5
+     }
+    },
+    {
+     "say": "single issue 時，add 在 EX 算出 $t0，下個 cycle 的 sub 要用，結果已在 pipeline register 裡。",
+     "read": "single issue 時，add 在 EX 算出 t零，下個 cycle 的 sub 要用，結果已在 pipeline register 裡。",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 895.2
+     }
+    },
+    {
+     "say": "直接 forward 過去就好，完全不用停。",
+     "k": 3
+    },
+    {
+     "say": "可是 dual issue 時，add 和要用 $t0 的 lw 如果在同一包，兩個同時在 EX，一個正在算、一個就要用，沒東西可以 forward。",
+     "read": "可是 dual issue 時，add 和要用 t零 的 lw 如果在同一包，兩個同時在 EX，一個正在算、一個就要用，沒東西可以 forward。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 937
+     }
+    },
+    {
+     "say": "只好拆成兩包，讓 lw 晚一個 cycle，就像 stall 一樣。",
+     "k": 5,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 964.3
+     }
+    },
+    {
+     "say": "還有另一個 penalty：load-use。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 985.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Load-use 在 dual issue 損失兩個位置",
+   "scene": "ppB-21b-lu",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "黃老師在這裡連點了好幾位同學答 load-use，再複習一次。R-type 接 R-type，像 sub $2 接 and，forward 就好。",
+     "read": "黃老師在這裡連點了好幾位同學答 load-use，再複習一次。R-type 接 R-type，像 sub 暫存器二接 and，forward 就好。",
+     "k": 1,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1014.2
+     }
+    },
+    {
+     "say": "第二種是 load 讀進來的資料，下一個指令馬上要用，像 lw $2 接 and。",
+     "read": "第二種是 load 讀進來的資料，下一個指令馬上要用，像 lw 暫存器二接 and。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1021.2
+     }
+    },
+    {
+     "say": "所以一定有一個 cycle 的 penalty，and 停一格。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1067.2
+     }
+    },
+    {
+     "say": "single issue 這一拍只損失 1 個指令的位置；dual issue 一拍本來能做 2 個，所以損失 2 個。",
+     "k": 7,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1080.3
+     }
+    },
+    {
+     "say": "所以 dual issue 的 scheduling 特別重要，要盡量把指令排好，避開 stall。",
+     "k": 8,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1093.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Scheduling 例子：4 個 cycle 做 5 個指令",
+   "scene": "ppB-21b-sched-ex",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "來排一個程式，課本的 loop。",
+     "k": 1,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1271
+     }
+    },
+    {
+     "say": "它做的事很簡單：陣列每次讀一個元素，加上一個值，再寫回去。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1283.4
+     }
+    },
+    {
+     "say": "lw $t0, 0($s1)：$s1 指著目前的元素，把它讀進 $t0。",
+     "read": "lw t零，位移零、基底 s1：s1 指著目前的元素，把它讀進 t零。",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1296.1
+     }
+    },
+    {
+     "say": "addu $t0, $t0, $s2：把 $t0 加上一個固定的數 $s2，放回 $t0。",
+     "read": "addu t零、t零、s2：把 t零 加上一個固定的數 s2，放回 t零。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1304
+     }
+    },
+    {
+     "say": "sw 把結果寫回原位；addi $s1, $s1, -4 讓 $s1 往前移一個 word，一個 word 是 4 bytes。",
+     "read": "sw 把結果寫回原位；addi s1、s1、負 4，讓 s1 往前移一個 word，一個 word 是 4 bytes。",
+     "k": 5,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1313.2
+     }
+    },
+    {
+     "say": "bne $s1, $zero, Loop：$s1 還不是 0 就繼續，是 0 就結束。",
+     "read": "bne s1、zero、Loop：s1 還不是 0 就繼續，是 0 就結束。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1331.7
+     }
+    },
+    {
+     "say": "相依有兩串：$t0 這串，lw、addu、sw；$s1 這串，addi、bne。",
+     "read": "相依有兩串：t零 這串，lw、addu、sw；s1 這串，addi、bne。",
+     "k": 7,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1349.3
+     }
+    },
+    {
+     "say": "現在要包：每個 cycle 一包，左邊放 ALU 或 branch，右邊放 load 或 store。",
+     "k": 8,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1360.4
+     }
+    },
+    {
+     "say": "lw、addu、sw 互相相依，各占一個 cycle：lw 在 cycle 1，addu 躲 load-use 排 cycle 3，sw 在 cycle 4。",
+     "k": 9,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1370.7
+     }
+    },
+    {
+     "say": "addi 是 ALU 指令，跟 $t0 那串無關，就放進 cycle 2 的 ALU 格子。",
+     "read": "addi 是 ALU 指令，跟 t零 那串無關，就放進 cycle 2 的 ALU 格子。",
+     "k": 10,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1378.1
+     }
+    },
+    {
+     "say": "規則就是 ALU 類可以跟 load/store 類包一起，branch 也可以跟 store 配一包。",
+     "read": "規則就是 ALU 類可以跟 load 或 store 類包一起，branch 也可以跟 store 配一包。",
+     "k": 11,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1401.2
+     }
+    },
+    {
+     "say": "把 bne 跟 sw 包在 cycle 4。注意 sw 現在在 addi 之後，$s1 已經減了 4，offset 要改成 4($s1)，才寫回原位。",
+     "read": "把 bne 跟 sw 包在 cycle 4。注意 sw 現在在 addi 之後，s1 已經減了 4，offset 要改成 4，才寫回原位。",
+     "k": 12,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1461.2
+     }
+    },
+    {
+     "say": "結果只有最後一包兩格都有用，其他格子都是 nop。",
+     "k": 13,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1473
+     }
+    },
+    {
+     "say": "4 個 cycle 執行 5 個指令，IPC 等於 5 除以 4，1.25。",
+     "k": 14,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1486.4
+     }
+    },
+    {
+     "say": "兩條 pipeline 理想的 IPC 是 2，現在只多一點點，效能不好。",
+     "k": 15,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1496.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Loop unrolling：一圈做四份",
+   "scene": "ppB-21b-unroll",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "compiler 有一個很重要的方法：loop unrolling，迴圈展開。",
+     "k": 1,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1510.1
+     }
+    },
+    {
+     "say": "剛才排的只是一圈，可是它要跑 1000 次。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1525.4
+     }
+    },
+    {
+     "say": "把 loop 內容 copy 4 份放在同一圈：一圈做 4 個元素，1000 次變成 250 圈。",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1531
+     }
+    },
+    {
+     "say": "為什麼？展開之後，同時有很多指令可以一起做。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1550.6
+     }
+    },
+    {
+     "say": "compiler 一次看得到的指令，也就是 window，變大了，就能好好地排、好好地包。",
+     "k": 5,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1572.3
+     }
+    },
+    {
+     "say": "每一份做的事都一樣：讀一個元素、加上 scalar、寫回去，四份處理四個相鄰的元素。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1612.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Register renaming：8 個 cycle 做 14 個指令",
+   "scene": "ppB-21b-rename",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "單純 copy 的話，四份都用 $t0，看起來每一份都依賴前一份，好像沒辦法平行。",
+     "read": "單純 copy 的話，四份都用 t零，看起來每一份都依賴前一份，好像沒辦法平行。",
+     "k": 1,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1669
+     }
+    },
+    {
+     "say": "可是這一份的 $t0 跟下一份的 $t0，真的有關係嗎？",
+     "read": "可是這一份的 t零 跟下一份的 t零，真的有關係嗎？",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1691
+     }
+    },
+    {
+     "say": "沒有！前一份讀進來、加完、已經 store 回去了，下一份 load 進來的是全新的資料。",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1704.5
+     }
+    },
+    {
+     "say": "那就換名字：四份分別用 $t0、$t1、$t2、$t3，多用幾個 register 就好。",
+     "read": "那就換名字：四份分別用 t零、t一、t二、t三，多用幾個 register 就好。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1750.3
+     }
+    },
+    {
+     "say": "這就是 rename。它們只是名字相同造成的 name dependency，資料根本沒有相依。",
+     "k": 5,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1769.2
+     }
+    },
+    {
+     "say": "這等於一次考慮四個元素一起排。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1805.3
+     }
+    },
+    {
+     "say": "先連續兩個 cycle 都在 load：cycle 1 讀 $t0，同時 addi 把 $s1 減 16；cycle 2 讀 $t1。",
+     "read": "先連續兩個 cycle 都在 load：cycle 1 讀 t零，同時 addi 把 s1 減 16；cycle 2 讀 t一。",
+     "k": 7,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1825.3
+     }
+    },
+    {
+     "say": "資料到了就開始加，同時繼續 load 下一份。後一份的 load 和前一份的加法重疊，最後一路 store 回去。",
+     "k": 8,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1858.5
+     }
+    },
+    {
+     "say": "結果 8 個 cycle 執行 14 個指令，IPC 等於 14 除以 8，1.75，比剛才的 1.25 好很多。",
+     "k": 9,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1962.3
+     }
+    },
+    {
+     "say": "代價是要用更多 register，程式碼也變成大約四倍大。",
+     "k": 10,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 1981
+     }
+    }
+   ]
+  },
+  {
+   "title": "Unrolling 的好處與 anti-dependence",
+   "scene": "ppB-21b-overhead",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "unrolling 還有一個好處：reduce loop control overhead，減少控制迴圈的額外工作。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2034
+     }
+    },
+    {
+     "say": "本來每一圈都要 bne 檢查一次要不要繼續。",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2047.1
+     }
+    },
+    {
+     "say": "展開 4 次之後，4 份做完才查一次，1000 次檢查變 250 次。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2056.7
+     }
+    },
+    {
+     "say": "再看 renaming 為什麼可以：把新資料 load 進 $t0 之前，舊的 $t0 早就 store 回去了。",
+     "read": "再看 renaming 為什麼可以：把新資料 load 進 t零 之前，舊的 t零 早就 store 回去了。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2121.1
+     }
+    },
+    {
+     "say": "兩個 $t0 的值根本不同，只是名字一樣，name dependency，改名字就好。",
+     "read": "兩個 t零 的值根本不同，只是名字一樣，name dependency，改名字就好。",
+     "k": 7,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2148
+     }
+    },
+    {
+     "say": "注意：只 unroll 不 rename 不行。四份都叫 $t0，compiler 會以為它們相依，就不敢重排。",
+     "read": "注意：只 unroll 不 rename 不行。四份都叫 t零，compiler 會以為它們相依，就不敢重排。",
+     "k": 8,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2160.3
+     }
+    },
+    {
+     "say": "這種因為名字相同造成的相依，叫 anti-dependence，就是前面講的 WAR。",
+     "k": 9,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2182
+     }
+    },
+    {
+     "say": "有同學問：loop 次數不是 4 的倍數怎麼辦？",
+     "k": 10,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2193
+     }
+    },
+    {
+     "say": "例如 1003 次：前 1000 次用展開版跑 250 圈，剩下 3 次照原本一圈一圈跑完。",
+     "k": 11,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2202
+     }
+    },
+    {
+     "say": "所以軟體方法最重要的就是 scheduling，尤其是 loop，跑一千、一萬次，排得不好效能就差很多。",
+     "k": 12,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2245
+     }
+    }
+   ]
+  },
+  {
+   "title": "Dynamic multiple issue：superscalar",
+   "scene": "ppB-21b-dyn",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "另一種是 dynamic multiple issue，主要靠硬體。",
+     "k": 1,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2267
+     }
+    },
+    {
+     "say": "最簡單的版本叫 superscalar processor。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2272.6
+     }
+    },
+    {
+     "say": "它在 issue 的時候檢查 dependency，決定這個 cycle 發 0 個、1 個、2 個，避開 structural 和 data hazard。",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2282.3
+     }
+    },
+    {
+     "say": "不靠 compiler 也行，但 compiler 幫忙把沒相依的指令集中，硬體比較容易一次發多個。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2304.8
+     }
+    },
+    {
+     "say": "不過最後發幾個，還是硬體決定。",
+     "k": 5,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2320.7
+     }
+    },
+    {
+     "say": "課本例子：lw 讀進 $t0，下一個 addu 要用 $t0，這兩個相依。",
+     "read": "課本例子：lw 讀進 t零，下一個 addu 要用 t零，這兩個相依。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2341.8
+     }
+    },
+    {
+     "say": "就算是 2-issue，也只能先發 lw，再發 addu。",
+     "k": 7,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2352.3
+     }
+    },
+    {
+     "say": "可是下一個 sub 跟它們根本沒關係。load 要很久，為什麼要讓 sub 乾等？",
+     "k": 8,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2355.3
+     }
+    },
+    {
+     "say": "那就讓 sub 先做：load 還沒做完，後面的 sub 已經先做了，這就是 out-of-order execution。",
+     "k": 9,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2367.6
+     }
+    },
+    {
+     "say": "誰能做就先做，只要最後 commit 時照順序寫回就好，由硬體來把關。",
+     "k": 10,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2382
+     }
+    }
+   ]
+  },
+  {
+   "title": "Superscalar 的結構：reservation station 與 commit unit",
+   "scene": "ppB-21b-ss",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "dynamic superscalar 的基本架構長這樣。",
+     "k": 1,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2399.5
+     }
+    },
+    {
+     "say": "第一段：instruction fetch 和 decode，照順序 issue，in-order issue。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2405.7
+     }
+    },
+    {
+     "say": "第二段：很多個 function unit，整數、浮點、load/store，可以亂序執行。第三段：commit unit，照順序 commit。",
+     "read": "第二段：很多個 function unit，整數、浮點、load 或 store，可以亂序執行。第三段：commit unit，照順序 commit。",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2414.1
+     }
+    },
+    {
+     "say": "讀進來一定要照順序，因為要靠順序找出 dependency。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2422.2
+     }
+    },
+    {
+     "say": "中間的 function unit 就不照順序：誰的 operand 到齊，誰先做。",
+     "k": 5,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2428.8
+     }
+    },
+    {
+     "say": "怎麼知道到齊沒？每個 function unit 前面有一個 reservation station，保留站，專門放它要的 operand。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2441
+     }
+    },
+    {
+     "say": "operand 可來自 register file、剛算完的 function unit，或 commit unit 裡還沒寫回的值。",
+     "k": 7,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2448.2
+     }
+    },
+    {
+     "say": "commit unit 也是一個 buffer：算完的結果先放這裡，不馬上寫回 register file 或記憶體。",
+     "k": 8,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2455.6
+     }
+    },
+    {
+     "say": "它要 in-order commit，寫回的順序和原本程式一樣。",
+     "k": 9,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2467.7
+     }
+    },
+    {
+     "say": "中間這段只要 ready 就算，所以能加快速度。",
+     "k": 11,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2520
+     }
+    },
+    {
+     "say": "因為寫回會改變 state，所以一定照順序 commit。",
+     "k": 13,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2577.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "硬體也在做 renaming 和 speculation",
+   "scene": "ppB-21b-hwspec",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "superscalar 為什麼能加速？因為它其實也在做 renaming。",
+     "k": 1,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2599.4
+     }
+    },
+    {
+     "say": "它只認 data dependency，data 一 ready 就開始做，暫存器原本叫什麼名字根本不重要。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2612.7
+     }
+    },
+    {
+     "say": "這就等於 loop unrolling 時做的 renaming，只是改由硬體自動完成。",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2632.2
+     }
+    },
+    {
+     "say": "硬體也要猜，常用兩種：branch 的預測，和 load 的推測。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2652.8
+     }
+    },
+    {
+     "say": "load 的資料常常馬上要用，所以早點猜、早點 load；萬一猜錯，只要不 commit 就好。",
+     "k": 5,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2678.4
+     }
+    },
+    {
+     "say": "例如預測 load 的有效位址、前面的 store 還沒完成就先 load，或把 store 要寫的值直接 bypass 給後面的 load。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2696.4
+     }
+    },
+    {
+     "say": "結果還不確定，就留在最後一段的 buffer 先不 commit，確認錯了就 redo。",
+     "k": 7,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2719.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "為什麼不只靠 compiler 的 VLIW",
+   "scene": "ppB-21b-whyss",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "比一比：compiler 的方法 offline 做就好，處理器不太要改；superscalar 則要很多硬體做檢查。",
+     "k": 1,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2740.4
+     }
+    },
+    {
+     "say": "那為什麼還需要 superscalar？黃老師給三個原因。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2794.4
+     }
+    },
+    {
+     "say": "第一，不是所有 stall 都能事先預測。",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2797.1
+     }
+    },
+    {
+     "say": "像下一章的記憶體系統：cache hit 一個 cycle 就拿到，cache miss 要去主記憶體，很多 cycle，pipeline 只好等。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2808.3
+     }
+    },
+    {
+     "say": "哪些資料會在 cache 裡，compile 的時候絕對不知道，compiler 沒辦法事先排好。",
+     "k": 5,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2849.4
+     }
+    },
+    {
+     "say": "第二，像 delayed branch，不見得每次都找得到足夠的指令填 delay slot。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2861.8
+     }
+    },
+    {
+     "say": "第三，同一個 instruction set 有很多實作：4 段、5 段、2-issue，每種的 latency 和 dependency 都不一樣。",
+     "k": 7,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2883.6
+     }
+    },
+    {
+     "say": "compiler 要針對每台機器最佳化，換一台可能就不適用，要重來，很麻煩。",
+     "k": 8,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2913.3
+     }
+    },
+    {
+     "say": "所以光靠 VLIW 不夠，還是需要 superscalar。",
+     "k": 9,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2934.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Multiple issue 沒有想像中那麼好",
+   "scene": "ppB-21b-fallacy",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "multiple issue 大部分情況都有效，",
+     "k": 1,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2945.1
+     }
+    },
+    {
+     "say": "但因為 dependency，效果常常沒想像中好。尤其是 pointer，兩個指標可能指到同一個地方，這種相依很難消除。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2959.3
+     }
+    },
+    {
+     "say": "還有 window 太小，一次看到的指令太少，找不到夠多沒相依的指令一起做。",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2972.2
+     }
+    },
+    {
+     "say": "記憶體的 delay 和 bandwidth 也有限，pipeline 很難一直滿。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 2989.2
+     }
+    },
+    {
+     "say": "speculation 有幫助，但要猜得對，猜錯就得 flush，付出代價。",
+     "k": 5,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 3004.4
+     }
+    },
+    {
+     "say": "另外還有一個問題：power，耗電。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 3013.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Power wall：轉向 multi-core",
+   "scene": "ppB-21b-power",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "電晶體越來越便宜，一顆晶片放了很多機制：branch prediction、superscalar、很深的 pipeline。",
+     "k": 1,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 3020.4
+     }
+    },
+    {
+     "say": "可是硬體越多越複雜就越耗電，power 變成 limiting factor，沒辦法一直加。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 3050.9
+     }
+    },
+    {
+     "say": "所以現在走 multi-core，多核心。",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 3076.4
+     }
+    },
+    {
+     "say": "例子：Pentium 4 有 31 段 pipeline、1 個 core、103 瓦；Intel Core 只有 14 段、2 個 core，只要 75 瓦。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 3082.4
+     }
+    },
+    {
+     "say": "SPARC 也是：UltraSPARC III 是 14 段、單核心、90 瓦；UltraSPARC T1 只有 6 段、8 個 core，只要 70 瓦。",
+     "k": 5,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 3092.9
+     }
+    },
+    {
+     "say": "所以不必把每個 core 做得那麼複雜：pipeline 簡單一點、多放幾個 core，耗電還更低。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 3107.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "本章總結",
+   "scene": "ppB-21b-concl",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "最後總結這一章。pipeline 的概念很簡單，麻煩的是 dependency，也就是 data hazard 和 control hazard。",
+     "k": 1,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 3126.5
+     }
+    },
+    {
+     "say": "pipeline 跟 technology 有關：電晶體便宜又多，設計才越來越複雜、pipeline 越來越深。",
+     "k": 2,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 3137.4
+     }
+    },
+    {
+     "say": "也跟 instruction set 有關：指令集太複雜就很難切 stage，簡單的像 MIPS 比較好做。",
+     "k": 3,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 3150.6
+     }
+    },
+    {
+     "say": "指令集會影響 datapath 和 control 的設計。",
+     "k": 4,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 3171.7
+     }
+    },
+    {
+     "say": "最重要的觀念：pipeline 增加的是 throughput，不會減少單一指令的 latency。",
+     "k": 5,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 3183.9
+     }
+    },
+    {
+     "say": "三種 hazard：structural、data、control，解法分別是同段用資源、forwarding 加 stall、predict 加 flush。",
+     "k": 6,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 3191.1
+     }
+    },
+    {
+     "say": "要再加速就靠 ILP，有 static 和 dynamic 兩種；但受 dependency 限制，很難達到理想值。",
+     "k": 7,
+     "src": {
+      "v": "Bu-L3BvML5E",
+      "t": 3196
+     }
+    }
+   ]
+  }
+ ]
+}

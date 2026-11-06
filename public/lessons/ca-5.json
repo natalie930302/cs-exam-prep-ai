@@ -1,0 +1,5886 @@
+{
+ "chapter": "ca-5",
+ "title": "記憶體層次與Cache",
+ "intro": "從 SRAM、DRAM 和 locality 講起，學會 direct-mapped、set associative 的位址切割與 hit/miss，再用 CPI 和 AMAT 算 cache 的效能，最後接到 virtual memory。",
+ "parts": [
+  {
+   "title": "這個單元要學什麼",
+   "scene": "mh-22a-outline",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "好，這一章進入 memory，記憶體。先看看整個單元到底要學哪些東西。",
+     "k": 1,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 18
+     }
+    },
+    {
+     "say": "我們心裡理想的 memory 有三個願望：存取很快、容量很大、價錢便宜。",
+     "k": 2,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 18.6
+     }
+    },
+    {
+     "say": "可惜這三件事通常互相打架：快的貴，便宜的又慢。那怎麼辦？",
+     "k": 2
+    },
+    {
+     "say": "第一招：在 processor 跟 memory 中間，加一個小而快的 cache，快取。",
+     "k": 3,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 21.8
+     }
+    },
+    {
+     "say": "常用的資料先放在 cache，就不用每次都跑去慢吞吞的 memory 拿。",
+     "k": 3,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 21.8
+     }
+    },
+    {
+     "say": "我們會先學最簡單的 cache 怎麼運作，再學一些讓它 performance 更好的技巧。",
+     "k": 4,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 51.4
+     }
+    },
+    {
+     "say": "第二招在 memory 和 disk 之間，叫 virtual memory，讓 memory 看起來比實際更大。",
+     "k": 5,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 58.6
+     }
+    },
+    {
+     "say": "所以整個單元就兩大塊：cache 和 virtual memory。",
+     "k": 6,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 75.1
+     }
+    },
+    {
+     "say": "黃婷婷老師特別提醒：投影片看起來一大堆，念書一定要提綱挈領，top-down。",
+     "k": 6,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1154.6
+     }
+    },
+    {
+     "say": "先抓 chapter 要學哪幾件事，其實就是 section 的標題，把這個架構記起來。",
+     "k": 6,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1259.5
+     }
+    },
+    {
+     "say": "再往下看每件事怎麼做。大架構好記，從細節 bottom-up 往上背，很容易忘。",
+     "k": 6,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1302.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Random access：SRAM 和 DRAM 各用在哪",
+   "scene": "mh-22a-ram",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "先從 technology，也就是做 memory 的技術看起。依存取方式可以分兩大類。",
+     "k": 1,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 82.8
+     }
+    },
+    {
+     "say": "第一類叫 random access：不管你存取哪一個位置，花的時間都一樣。",
+     "k": 2,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 90.6
+     }
+    },
+    {
+     "say": "另一類就不是這樣了，位置不同，存取時間就不同。",
+     "k": 3,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 102.3
+     }
+    },
+    {
+     "say": "像 magnetic disk，磁碟：read/write head 要先移到資料那裡，才能開始讀。",
+     "read": "像 magnetic disk，磁碟：read write head 要先移到資料那裡，才能開始讀。",
+     "k": 4,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 109.2
+     }
+    },
+    {
+     "say": "所以時間要看它離上一個位置有多遠。",
+     "k": 4,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 109.2
+     }
+    },
+    {
+     "say": "Disk 主要拿來當 secondary memory，像硬碟，不是我們平常說的主記憶體。",
+     "k": 5,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 133.2
+     }
+    },
+    {
+     "say": "Random access memory，也就是 RAM，又分兩種：SRAM，static；DRAM，dynamic。",
+     "k": 6,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 137.3
+     }
+    },
+    {
+     "say": "SRAM 主要用在 cache，也就是 processor 和 main memory 中間那一層。",
+     "k": 7,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 147.4
+     }
+    },
+    {
+     "say": "為什麼需要 cache？因為去 memory 一趟，可能要幾十、幾百個 clock cycle。",
+     "k": 8,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 167.5
+     }
+    },
+    {
+     "say": "Cache 很快，讀寫一次可以跟 CPU 的一個 cycle 一樣快，跟得上 CPU 的腳步。",
+     "k": 9,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 180.6
+     }
+    },
+    {
+     "say": "我們平常說的 memory，就是 main memory，主記憶體，它是用 DRAM 做的。",
+     "k": 10,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 197.3
+     }
+    },
+    {
+     "say": "但 CPU 存取時不是直接去 DRAM，而是先經過 cache；資料已經在 cache，就直接拿。",
+     "k": 11,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 210.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "SRAM 與 DRAM 的技術差在哪",
+   "scene": "mh-22a-sramdram",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "SRAM 的特性：low density、high power、expensive，但是 fast。",
+     "k": 1,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 231.4
+     }
+    },
+    {
+     "say": "也就是同樣面積存的 bit 少、耗電、貴，可是很快。",
+     "k": 1
+    },
+    {
+     "say": "SRAM 是兩個 NOT gate 交叉接起來，叫 cross-coupled，就像 logic design 學過的 latch。",
+     "k": 2,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 236.7
+     }
+    },
+    {
+     "say": "Output 拉回去當 input，就能把 1 或 0 鎖住。",
+     "k": 2,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 236.7
+     }
+    },
+    {
+     "say": "它跟一般 logic 是同一種製程，製程一進步它也跟著變快，所以很快。",
+     "k": 3,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 261.7
+     }
+    },
+    {
+     "say": "電路一直接著電源在運作，所以耗電比較高，high power。",
+     "k": 4,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 283.6
+     }
+    },
+    {
+     "say": "一個 bit 要好幾個 transistor，面積大、容量小又貴，不可能整個 memory 都用 SRAM。",
+     "k": 5,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 290.4
+     }
+    },
+    {
+     "say": "那為什麼叫 static？因為只要有電，存的 1 或 0 就一直保持住，不用管它。",
+     "k": 6,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 312
+     }
+    },
+    {
+     "say": "DRAM 不一樣：一個 transistor 加一個 capacitor，電容，用電荷存一個 bit。",
+     "k": 7,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 348
+     }
+    },
+    {
+     "say": "問題是電容充好電之後，電荷會慢慢漏掉，叫 decay。所以要 refresh。",
+     "k": 8,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 362
+     }
+    },
+    {
+     "say": "Refresh 就是每隔幾個 millisecond，把資料讀出來再寫回去。這就是 dynamic 的由來。",
+     "k": 9,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 400.4
+     }
+    },
+    {
+     "say": "CPU 的 cycle 是 nanosecond 等級，所以要跑非常多 cycle 才輪到一次 refresh。",
+     "k": 9,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 400.4
+     }
+    },
+    {
+     "say": "一個 transistor 就存一個 bit，所以 DRAM high density、low power，而且便宜。",
+     "k": 10,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 419
+     }
+    },
+    {
+     "say": "缺點是慢：電容的訊號很微弱，要先用 sense amplifier 放大，才知道是 0 還是 1。",
+     "k": 11,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 441.2
+     }
+    },
+    {
+     "say": "考試要分清楚：static、dynamic 指的就是要不要 refresh。",
+     "k": 11
+    }
+   ]
+  },
+  {
+   "title": "DRAM 像一個矩陣：row 和 column",
+   "scene": "mh-22a-dramarray",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "SRAM 用起來很直覺：給它一個 address，它就找出那個位置的內容。",
+     "k": 1,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 457.2
+     }
+    },
+    {
+     "say": "DRAM 的結構不一樣：所有的 bit 排成一個二維的 matrix，像一張大表格。",
+     "k": 2,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 473.4
+     }
+    },
+    {
+     "say": "要在表格裡找到一格，需要兩個座標：row address 和 column address。",
+     "k": 3,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 501.9
+     }
+    },
+    {
+     "say": "所以 address 要拆成兩半，一半當 row address，一半當 column address。",
+     "k": 4,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 526.8
+     }
+    },
+    {
+     "say": "第一步，用 row address 把整列 activate，那一列的資料全部讀出來放進 buffer。",
+     "k": 5,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 535.6
+     }
+    },
+    {
+     "say": "第二步，再用 column address，從這一列裡挑出你要的那一格。",
+     "k": 6,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 542.9
+     }
+    },
+    {
+     "say": "這種 DRAM 結構主要用在 main memory。後面講 miss penalty 時還會再回來看它。",
+     "k": 7,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 574.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "速度和價錢：沒有一種技術能全包",
+   "scene": "mh-22a-cost",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "來看各種技術的存取時間和價錢。這是課本 2008 年的表，重點是數量級的差距。",
+     "k": 1,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 579.4
+     }
+    },
+    {
+     "say": "SRAM：0.5 到 2.5 ns，大約一個 clock cycle 就存取完。",
+     "read": "SRAM：0.5 到 2.5 奈秒，大約一個 clock cycle 就存取完。",
+     "k": 2,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 590.5
+     }
+    },
+    {
+     "say": "DRAM：50 到 70 ns。50 除以 0.5 是 100，所以資料在 DRAM 可能要等 100 個 cycle。",
+     "read": "DRAM：50 到 70 奈秒。50 除以 0.5 是 100，所以資料在 DRAM 可能要等 100 個 cycle。",
+     "k": 3,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 603.2
+     }
+    },
+    {
+     "say": "Magnetic disk 更遠：5 到 20 ms。5 ms 就是 500 萬 ns，差到百萬倍的等級。",
+     "read": "Magnetic disk 更遠：5 到 20 毫秒。5 毫秒就是 500 萬奈秒，差到百萬倍的等級。",
+     "k": 4,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 616.5
+     }
+    },
+    {
+     "say": "價錢呢？SRAM 每 GB 要 2000 到 5000 美金。",
+     "k": 5,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 632.9
+     }
+    },
+    {
+     "say": "DRAM 每 GB 只要 20 到 75 美金，差非常多。",
+     "k": 6,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 636.4
+     }
+    },
+    {
+     "say": "Magnetic disk 更便宜，每 GB 大約 0.2 到 2 美金。",
+     "k": 7,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 641.1
+     }
+    },
+    {
+     "say": "那這麼多種技術，到底要用哪一種來做 memory 系統？",
+     "k": 8,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 656.8
+     }
+    },
+    {
+     "say": "貪心一點講，我們想要：存取很快、容量很大、又很便宜。",
+     "k": 9,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 695.8
+     }
+    },
+    {
+     "say": "可惜單獨用任何一種都做不到：快的很貴，便宜的很慢。",
+     "k": 10,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 703.6
+     }
+    },
+    {
+     "say": "但三種合在一起，規劃成一層一層的 hierarchy，就能做到又快、又大、又便宜。",
+     "k": 11,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 711
+     }
+    },
+    {
+     "say": "最終目標：存取時間像 SRAM 一樣快，容量和成本卻像 disk 一樣大又便宜。",
+     "k": 12,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 732.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "Processor 和 DRAM 越差越遠",
+   "scene": "mh-22a-gap",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "看這張示意圖：照 Moore's law，logic 電路越做越小，processor 越來越快。",
+     "k": 1,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 743.4
+     }
+    },
+    {
+     "say": "DRAM 是另一種製程，靠電容存資料，沒辦法像 logic 那樣一直變快。",
+     "k": 2,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 763.8
+     }
+    },
+    {
+     "say": "所以 processor 跟 memory 的速度差距，也就是 gap，一年比一年大。",
+     "k": 3,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 783.8
+     }
+    },
+    {
+     "say": "程式裡 load、store 很多，一做就得停下來等 memory。東西沒到，processor 再快也只能空等。",
+     "k": 4,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 796.1
+     }
+    },
+    {
+     "say": "Gap 越嚴重，cache 就越重要。",
+     "k": 5,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 816.3
+     }
+    },
+    {
+     "say": "解法就是 memory hierarchy：把不同的技術一層一層排好。",
+     "k": 6,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 823.9
+     }
+    },
+    {
+     "say": "越靠近 processor，用越貴、越快的技術，但容量比較小。",
+     "k": 7,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 833.1
+     }
+    },
+    {
+     "say": "欸，有人會想：我願意多花錢，把 cache 做到超大，不是更好嗎？",
+     "k": 8,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 847
+     }
+    },
+    {
+     "say": "不行。設計的老原則：small is fast。做大了訊號要走更遠、要找的格子更多，就變慢了。",
+     "k": 9,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 867.5
+     }
+    },
+    {
+     "say": "所以越往下層：容量越大、速度越慢、價錢越便宜。",
+     "k": 10,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 898.4
+     }
+    },
+    {
+     "say": "資料不可能全放最上層，上下兩層之間就需要機制，決定什麼時候搬上來、搬下去。",
+     "k": 11,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 913.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "Upper level、lower level 與 block",
+   "scene": "mh-22a-levels",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "這個單元會談兩對層級：一對是 cache 和 memory，一對是 memory 和 disk，也就是 virtual memory。",
+     "k": 1,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 976.8
+     }
+    },
+    {
+     "say": "每一對裡，靠近 processor 的叫 upper level，離得遠的叫 lower level。",
+     "k": 2,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 999.7
+     }
+    },
+    {
+     "say": "注意，memory 的角色會變：跟 cache 配是 lower level，跟 disk 配就變成 upper level。",
+     "k": 3,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1026.8
+     }
+    },
+    {
+     "say": "Upper level 比較小，不可能所有東西都放上去，所以資料得在上下層之間搬來搬去。",
+     "k": 4,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1045
+     }
+    },
+    {
+     "say": "搬的大小要固定，不能這次搬一個、下次搬兩個，那就亂了。",
+     "k": 5,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1067.4
+     }
+    },
+    {
+     "say": "這個固定的最小搬動單位，在 cache 和 memory 之間叫 block。",
+     "k": 6,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1078.9
+     }
+    },
+    {
+     "say": "在 virtual memory 裡，同樣的概念叫 page。",
+     "k": 7,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1090.7
+     }
+    },
+    {
+     "say": "規則是：要嘛整個 block 一起搬進來，要嘛一起搬出去，不會只搬其中一兩個 byte。",
+     "k": 8,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1111
+     }
+    },
+    {
+     "say": "有點像讀 memory 一次讀一個 word，4 個 byte 一起讀，不會拆開。",
+     "k": 8,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 395.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Principle of locality：九成時間跑一成程式",
+   "scene": "mh-22a-locality",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "那問題來了：上層小又快、下層大又慢，這樣的設計真的有用嗎？",
+     "k": 1,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1135.6
+     }
+    },
+    {
+     "say": "有用！關鍵叫 principle of locality：任何一個時間，程式只會用到 address space 裡很小一塊。",
+     "k": 2,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1155.6
+     }
+    },
+    {
+     "say": "常說的 90/10 rule：90% 的時間，都在執行那 10% 的 code。",
+     "read": "常說的 90 10 rule：90% 的時間，都在執行那 10% 的 code。",
+     "k": 3,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1169.3
+     }
+    },
+    {
+     "say": "你想想看，如果每個地址被用到的機率都一樣，怎麼排都沒用；正因為不平均，才有辦法。",
+     "k": 3,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 144.1
+     }
+    },
+    {
+     "say": "老師打了個比方：去圖書館不會每本都看，常看的幾本放身邊，大部分時候伸手就拿到。",
+     "k": 3,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 169.5
+     }
+    },
+    {
+     "say": "回想你自己寫程式：寫了 100 行，真正一直反覆在跑的只有一小段。",
+     "k": 4,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1216
+     }
+    },
+    {
+     "say": "哪一段會一直跑？像 function、subroutine，會被一直呼叫。",
+     "k": 5,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1229
+     }
+    },
+    {
+     "say": "一般的 statement 執行一次就過去了，不會重複。",
+     "k": 6,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1267.3
+     }
+    },
+    {
+     "say": "If-then-else 也只會走其中一邊。",
+     "k": 7,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1273.8
+     }
+    },
+    {
+     "say": "真正的主角是 loop：程式碼很短，卻吃掉大部分的執行時間。",
+     "k": 8,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1287
+     }
+    },
+    {
+     "say": "所以只要把那 10% 正確地搬到最近的 cache，大部分要用的東西都找得到。",
+     "k": 9,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1339.1
+     }
+    },
+    {
+     "say": "其他 90% 用到再搬，不用就搬出去，常用的東西自然一直留在 cache。",
+     "k": 10,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1361.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Temporal 與 spatial locality",
+   "scene": "mh-22a-temporal",
+   "steps": 3,
+   "lines": [
+    {
+     "say": "Locality 又分兩種：temporal，時間上的；spatial，空間上的。",
+     "k": 1,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1369.3
+     }
+    },
+    {
+     "say": "Temporal locality：一個東西剛被用過，很快又會再被用一次。",
+     "k": 2,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1385.2
+     }
+    },
+    {
+     "say": "Spatial locality：用到一個位置，它旁邊、後面的位置很快也會被用到。",
+     "k": 3,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1396.5
+     }
+    },
+    {
+     "say": "黃老師上課點名問：這不是背的，是從程式行為觀察出來的，你會寫程式就說得出例子。",
+     "k": 3,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1428.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Locality 的例子：loop、array、指令",
+   "scene": "mh-22a-examples",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "Temporal 的例子就是 loop：迴圈裡的 instruction 剛 fetch 完，下一圈馬上又要 fetch。",
+     "k": 1,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1571.3
+     }
+    },
+    {
+     "say": "所以 loop 的 instruction 應該留在 cache，不要搬走，因為馬上又要用。",
+     "k": 2,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1584.3
+     }
+    },
+    {
+     "say": "那 spatial 呢？存取了一個位置，隔壁的位置馬上也會被存取。",
+     "k": 3,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1596.2
+     }
+    },
+    {
+     "say": "Array！A[0]、A[1]、A[2] 在記憶體裡排在一起，一個接一個被存取。",
+     "read": "Array！A 0、A 1、A 2 在記憶體裡排在一起，一個接一個被存取。",
+     "k": 4,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1619.2
+     }
+    },
+    {
+     "say": "那 linked list 呢？node 散在各處，靠 pointer 跳來跳去，位址不連續，spatial locality 就不好。",
+     "k": 5,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1661.5
+     }
+    },
+    {
+     "say": "程式本身也是：instruction 大多一條接一條執行，PC 加 4，下一條就在隔壁。",
+     "k": 6,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1688.3
+     }
+    },
+    {
+     "say": "正因為程式有這些 locality，memory hierarchy 才會 work。",
+     "k": 7,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1712.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "每一層由誰來管",
+   "scene": "mh-22a-who",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "來看整個階層。最上面其實是 register，也是存東西的地方，最靠近 processor。",
+     "k": 1,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1771.8
+     }
+    },
+    {
+     "say": "像 MIPS 有 32 個 register，非常快，算完的結果都先存回 register。",
+     "k": 2,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1786.4
+     }
+    },
+    {
+     "say": "下一層是 memory。學 single-cycle 時，好像只有一個 memory，直接 load、store。",
+     "k": 3,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1793.6
+     }
+    },
+    {
+     "say": "可是直接用 memory 太慢了，每次 load、store 可能要 100 個 cycle。",
+     "k": 4,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1808.9
+     }
+    },
+    {
+     "say": "所以中間加一層 cache，而且 cache 和 processor 做在同一顆 chip 上，叫 on-chip。",
+     "k": 5,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1813.9
+     }
+    },
+    {
+     "say": "Main memory 是 off-chip：CPU 和記憶體條是分開買的，要出 chip 才拿得到，所以更慢。",
+     "k": 6,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1858.8
+     }
+    },
+    {
+     "say": "把 processor 的晶片照片放大來看，很大一塊面積都是 cache。",
+     "k": 7,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1889.9
+     }
+    },
+    {
+     "say": "再下一層是 disk，又是另一個獨立的裝置。",
+     "k": 8,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1916.3
+     }
+    },
+    {
+     "say": "Register 和 memory 之間誰管？大部分是 compiler 決定變數放哪個 register；寫 assembly 就是你自己。",
+     "k": 9,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1926.5
+     }
+    },
+    {
+     "say": "Cache 和 memory 之間由 cache controller 管，這是 hardware；miss 時由 hardware 讓 CPU 停下來等。",
+     "k": 10,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1957.9
+     }
+    },
+    {
+     "say": "Memory 和 disk 之間搬的是 page，主要由 OS 做，它是 software，再加一點 hardware 幫忙。",
+     "k": 11,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 1971.1
+     }
+    },
+    {
+     "say": "最後，file 的讀寫，由 user 自己決定。",
+     "k": 12,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2007
+     }
+    }
+   ]
+  },
+  {
+   "title": "Hit、miss 和它們的代價",
+   "scene": "mh-22a-terms",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "好，先學幾個一定會用到的名詞。左邊綠色是 upper level，右邊藍色是 lower level。",
+     "k": 1,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2058.3
+     }
+    },
+    {
+     "say": "要的資料不一定都在 upper level，像畫面上的 X 只在 lower level。",
+     "k": 2,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2080.5
+     }
+    },
+    {
+     "say": "CPU 去 upper level 找，找不到，這就叫 miss。",
+     "k": 3,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2083.3
+     }
+    },
+    {
+     "say": "如果資料就在 upper level，像 Y，就叫 hit。",
+     "k": 4,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2089.2
+     }
+    },
+    {
+     "say": "Hit rate：存取 upper level 時，有多少比例找得到。",
+     "k": 5,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2091.6
+     }
+    },
+    {
+     "say": "Hit time 有兩段：存取 upper level 的時間，加上判斷「這是不是我要的」的時間。",
+     "k": 6,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2104.2
+     }
+    },
+    {
+     "say": "為什麼要判斷？因為上層小，那一格裡放的不一定是你要的，得檢查。",
+     "k": 6,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2104.2
+     }
+    },
+    {
+     "say": "Miss rate 就是 1 減 hit rate。",
+     "k": 7,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2143.5
+     }
+    },
+    {
+     "say": "Miss penalty：把上層某個 block 換掉，從下層把新的 block 拿上來，再送給 processor。",
+     "k": 8,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2150.7
+     }
+    },
+    {
+     "say": "去下層拿要時間：main memory 本身有 latency，從 off-chip 搬到 on-chip 還有 transfer 時間。",
+     "k": 9,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2180.6
+     }
+    },
+    {
+     "say": "記住：hit time 遠遠小於 miss penalty。所以 miss 一多，效能就掉很多。",
+     "k": 10,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2201.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Memory hierarchy 的四個問題",
+   "scene": "mh-22a-4q",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "接下來不管 cache 還是 virtual memory，都會問同樣四個問題。",
+     "k": 1,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2224
+     }
+    },
+    {
+     "say": "第一個，block placement：搬上來的是 block，可是上層比較小，要放在哪裡？",
+     "k": 2,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2241.2
+     }
+    },
+    {
+     "say": "打個比方：下面可能有 100 個人，上面只有 10 個位置，一定不是一人一位。",
+     "k": 3,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2265.1
+     }
+    },
+    {
+     "say": "很多人會搶同一個位置，那第二個問題：block identification，要怎麼找到你的 block？",
+     "k": 4,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2286.9
+     }
+    },
+    {
+     "say": "第三個，block replacement：10 個位置坐滿了，第 11 個人要上來，總得請一個人出去。請誰？",
+     "k": 5,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2295.3
+     }
+    },
+    {
+     "say": "第四個，write strategy：資料現在有兩份 copy，上層一份、下層一份，要不要隨時保持一樣？",
+     "k": 6,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2309.8
+     }
+    },
+    {
+     "say": "Read 只是讀，兩份一樣不會出事；write 會改內容，問題和代價都在這裡。",
+     "k": 7,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2336.9
+     }
+    },
+    {
+     "say": "這四個問題都回答完，cache 和 virtual memory 你就全懂了。",
+     "k": 8,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2357.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Direct-mapped：位置就是 mod 的餘數",
+   "scene": "mh-22a-direct",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "現在正式看 cache。它夾在 memory 和 processor 中間。",
+     "k": 1,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2494.4
+     }
+    },
+    {
+     "say": "Register 直接去 memory 要 100 個 cycle 太慢，所以 cache 就建在 CPU 裡面。",
+     "k": 2,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2516.7
+     }
+    },
+    {
+     "say": "要解決的問題：哪些東西放上來？放哪裡？要用的時候怎麼找到？",
+     "k": 3,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2545.9
+     }
+    },
+    {
+     "say": "Memory 地址是 0、1、2、3 照順序排，可是程式存取東一個西一個，需要一套規則決定放哪。",
+     "k": 4,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2561.7
+     }
+    },
+    {
+     "say": "最簡單的第一種規則，叫 direct-mapped cache，直接對映。",
+     "k": 5,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2600.8
+     }
+    },
+    {
+     "say": "例子：cache 有 8 個 block，memory 有 32 個 block，memory 排成 4 列、每列 8 個。",
+     "k": 6,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2623.9
+     }
+    },
+    {
+     "say": "進出都以 block 為單位。為了簡單，先假設一個 block 就是一個 byte。",
+     "k": 7,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2636.2
+     }
+    },
+    {
+     "say": "Cache 的 8 個位置，編號 0 到 7。",
+     "k": 8,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2656.1
+     }
+    },
+    {
+     "say": "下層就照順序分配：0 到 7，再從 0 到 7，一輪一輪下去，每一列剛好一輪。",
+     "k": 9,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2678.2
+     }
+    },
+    {
+     "say": "所以同一欄的 block 都搶 cache 同一格：1、9、17、25 都去 1 號，5、13、21、29 都去 5 號。",
+     "k": 10,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2702.3
+     }
+    },
+    {
+     "say": "給一個地址，怎麼馬上知道在哪格？把 block address 除以 cache 的 block 數 8，取餘數。",
+     "k": 11,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2742.4
+     }
+    },
+    {
+     "say": "Mod 就是取餘數，例如 101 mod 100 等於 1。",
+     "k": 12,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2753.3
+     }
+    },
+    {
+     "say": "換成二進位更清楚：cache 位置是 3 個 bit，從 000 到 111；memory 的 block 地址是 5 個 bit。",
+     "read": "換成二進位更清楚：cache 位置是 3 個 bit，從 零零零 到 一一一；memory 的 block 地址是 5 個 bit。",
+     "k": 13,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2783.8
+     }
+    },
+    {
+     "say": "橘紅色的 00001、01001、10001、11001，除以 8 都餘 1，剛好就是最後 3 個 bit：001。",
+     "read": "橘紅色的 零零零零一、零一零零一、一零零零一、一一零零一，除以 8 都餘 1，剛好就是最後 3 個 bit：零零一。",
+     "k": 14,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2793.9
+     }
+    },
+    {
+     "say": "灰色的也一樣，最後 3 個 bit 都是 101，所以都到 5 號。",
+     "read": "灰色的也一樣，最後 3 個 bit 都是 一零一，所以都到 5 號。",
+     "k": 15,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2824.7
+     }
+    },
+    {
+     "say": "結論：block 數是 8，也就是 2 的 3 次方時，不用真的做除法，取地址最低 3 個 bit 就是位置。",
+     "k": 16,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2842.2
+     }
+    },
+    {
+     "say": "這 3 個 bit 叫 index。這就是 direct-mapped。",
+     "k": 16,
+     "src": {
+      "v": "p16QNdRJqMk",
+      "t": 2842.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "練習：block 20 放哪一格",
+   "scene": "mh-22b-block20",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "老師馬上出題：下層有 32 個 block，編號 0 到 31；cache 只有 8 個，0 到 7。",
+     "k": 1,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 20.3
+     }
+    },
+    {
+     "say": "問：第 20 個 block 會 map 到 cache 的哪一格？",
+     "k": 2,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 22.8
+     }
+    },
+    {
+     "say": "先想，要除以多少？除以上層的 block 數，也就是 8。",
+     "k": 3,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 68.3
+     }
+    },
+    {
+     "say": "20 除以 8，商 2 餘 4，所以放第 4 格。",
+     "k": 4,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 70.4
+     }
+    },
+    {
+     "say": "小心編號從 0 開始：0、1、2、3、4，所以「第 4 格」其實是第 5 個位置。",
+     "k": 5,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 80.2
+     }
+    },
+    {
+     "say": "換成二進位：20 是 16 加 4，寫成 10100。",
+     "read": "換成二進位：20 是 16 加 4，寫成 一零一零零。",
+     "k": 6,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 92.5
+     }
+    },
+    {
+     "say": "4 的二進位是 100。",
+     "read": "4 的二進位是 一零零。",
+     "k": 7,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 139.9
+     }
+    },
+    {
+     "say": "只有 8 個 block，位置只要 3 個 bit；10100 的最後 3 個 bit 是 100，剛好就是餘數 4。",
+     "read": "只有 8 個 block，位置只要 3 個 bit；一零一零零 的最後 3 個 bit 是 一零零，剛好就是餘數 4。",
+     "k": 8,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 151.5
+     }
+    },
+    {
+     "say": "所以規則是：上層有幾個 block 就當除數，下層的 block number 去除，餘數就是位置。",
+     "k": 9,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 169.5
+     }
+    },
+    {
+     "say": "用二進位看更快：不用除，直接取最後 3 個 bit 當 index，馬上找到那一格。",
+     "k": 10,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 198.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Tag 和 valid bit：格子裡到底是誰",
+   "scene": "mh-22b-tag",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "回到橘紅色那四個：1、9、17、25 都要 map 到同一格，001。",
+     "read": "回到橘紅色那四個：1、9、17、25 都要 map 到同一格，零零一。",
+     "k": 1,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 213.7
+     }
+    },
+    {
+     "say": "要找某個 block 時，先用 index 很快找到那一格。",
+     "k": 2,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 230.8
+     }
+    },
+    {
+     "say": "問題來了：那一格裡放的，到底是不是我要的那個？",
+     "k": 3,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 279.4
+     }
+    },
+    {
+     "say": "四個人都有可能坐在那裡，要怎麼分辨是誰？",
+     "k": 4,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 307
+     }
+    },
+    {
+     "say": "所以除了 data，還要把它的地址也存進 cache，才知道是誰。",
+     "k": 5,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 329.8
+     }
+    },
+    {
+     "say": "那要把整個地址都存進去嗎？",
+     "k": 6,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 363.1
+     }
+    },
+    {
+     "say": "不用。坐在 001 這格，就代表後 3 個 bit 一定是 001，這部分已經「隱含」在位置裡了。",
+     "read": "不用。坐在 零零一 這格，就代表後 3 個 bit 一定是 零零一，這部分已經「隱含」在位置裡了。",
+     "k": 7,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 392.2
+     }
+    },
+    {
+     "say": "它們不同的是前面的 high-order bits：00、01、10、11。只存這段就好，這叫 tag。",
+     "read": "它們不同的是前面的 high-order bits：零零、零一、一零、一一。只存這段就好，這叫 tag。",
+     "k": 8,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 425.8
+     }
+    },
+    {
+     "say": "所以 cache 每一格要存兩樣東西：data 和 tag。",
+     "k": 9,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 499.6
+     }
+    },
+    {
+     "say": "還有一個問題：剛開機時，cache 裡本來就有亂七八糟的 0 和 1，怎麼知道是真資料還是垃圾？",
+     "k": 10,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 551.3
+     }
+    },
+    {
+     "say": "再多一個 bit，叫 valid bit。一開始全部設成 0，表示裡面的東西都不能用。",
+     "k": 11,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 565.6
+     }
+    },
+    {
+     "say": "程式跑起來，真的從 memory 讀資料進來了，才把那格的 valid 設成 1。",
+     "k": 12,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 584.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "跑一遍：22、26、22、26、16、3、16、18",
+   "scene": "mh-22b-seq",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "來跑課本的例子：8 個 block 的 direct-mapped cache，每列有 V、tag、data，一開始全部 invalid。",
+     "k": 1,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 607.1
+     }
+    },
+    {
+     "say": "8 個 block，index 是 3 個 bit；這裡用 5 個 bit 的 word address，所以前面 2 個 bit 是 tag。",
+     "k": 2,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 631.4
+     }
+    },
+    {
+     "say": "第一個讀 22。22 是 10110，後 3 個 bit 110 當 index，前 2 個 bit 10 是 tag。",
+     "read": "第一個讀 22。22 是 一零一一零，後 3 個 bit 一一零 當 index，前 2 個 bit 一零 是 tag。",
+     "k": 3,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 645.4
+     }
+    },
+    {
+     "say": "110 那格 V 是 N，沒人在裡面，miss。把 V 設成 Y、tag 存 10，資料搬進來。",
+     "read": "一一零 那格 V 是 N，沒人在裡面，miss。把 V 設成 Y、tag 存 一零，資料搬進來。",
+     "k": 4,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 654.8
+     }
+    },
+    {
+     "say": "再讀 26，是 11010，index 010，也沒人用，miss，存 tag 11 和資料。",
+     "read": "再讀 26，是 一一零一零，index 零一零，也沒人用，miss，存 tag 一一 和資料。",
+     "k": 5,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 684.5
+     }
+    },
+    {
+     "say": "這兩個都 miss，因為 cache 一開始是空的，資料本來就不在裡面。",
+     "k": 6,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 708.4
+     }
+    },
+    {
+     "say": "再讀 22：110 那格有資料，tag 一樣是 10，hit！",
+     "read": "再讀 22：一一零 那格有資料，tag 一樣是 一零，hit！",
+     "k": 7,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 720.6
+     }
+    },
+    {
+     "say": "再讀 26：010 那格的 tag 是 11，跟我一樣，也是 hit。",
+     "read": "再讀 26：零一零 那格的 tag 是 一一，跟我一樣，也是 hit。",
+     "k": 8,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 737.7
+     }
+    },
+    {
+     "say": "接著再讀三筆：16、3、16。",
+     "k": 9,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 750.1
+     }
+    },
+    {
+     "say": "16 是 10000，index 000，原本沒資料，miss，放進去，tag 10。",
+     "read": "16 是 一零零零零，index 零零零，原本沒資料，miss，放進去，tag 一零。",
+     "k": 10,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 755.3
+     }
+    },
+    {
+     "say": "3 是 00011，index 011，也沒資料，miss，tag 00。",
+     "read": "3 是 零零零一一，index 零一一，也沒資料，miss，tag 零零。",
+     "k": 11,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 775.6
+     }
+    },
+    {
+     "say": "再讀 16：000 那格有資料，tag 10 也一樣，hit。",
+     "read": "再讀 16：零零零 那格有資料，tag 一零 也一樣，hit。",
+     "k": 12,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 794.7
+     }
+    },
+    {
+     "say": "最後讀 18，是 10010，index 010。那格有資料，可是那是 26 的，tag 是 11，我是 10。",
+     "read": "最後讀 18，是 一零零一零，index 零一零。那格有資料，可是那是 26 的，tag 是 一一，我是 一零。",
+     "k": 13,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 805.3
+     }
+    },
+    {
+     "say": "Tag 不一樣，不是我的資料，miss。只有一個位置，26 只好出去，換 18 進來。",
+     "k": 14,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 838.5
+     }
+    },
+    {
+     "say": "整理：找到那格後，一定要 valid 而且 tag 相同才算 hit。8 次存取，3 次 hit、5 次 miss。",
+     "k": 15,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 854.6
+     }
+    },
+    {
+     "say": "Direct-mapped 的 replacement 很簡單，直接蓋過去；不過如果那個 block 被寫過，要先寫回 memory。",
+     "k": 16,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 881.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "32-bit 位址怎麼切：tag、index、offset",
+   "scene": "mh-22b-split",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "真的 cache 裡，一個 block 不會只有一個 byte，通常有好多個 byte。",
+     "k": 1,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 909.7
+     }
+    },
+    {
+     "say": "例如一個 block 就是一個 word，4 個 byte。32-bit 地址最後 2 個 bit 叫 byte offset。",
+     "read": "例如一個 block 就是一個 word，4 個 byte。32 bit 地址最後 2 個 bit 叫 byte offset。",
+     "k": 2,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 922.5
+     }
+    },
+    {
+     "say": "這兩個 bit，00、01、10、11，決定拿這個 word 裡的第幾個 byte。",
+     "read": "這兩個 bit，零零、零一、一零、一一，決定拿這個 word 裡的第幾個 byte。",
+     "k": 3,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 944.8
+     }
+    },
+    {
+     "say": "Cache 有 1K 個 word。1K 是 1024，也就是 2 的 10 次方，要分出 1024 格需要 10 個 bit。",
+     "k": 4,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 958.1
+     }
+    },
+    {
+     "say": "這 10 個 bit 就是 index，是 low-order 的部分，但要先扣掉最後的 byte offset。",
+     "k": 5,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 987.8
+     }
+    },
+    {
+     "say": "老師順勢問：如果一個 block 是 2 個 word 呢？那是 8 個 byte，後面就要留 3 個 bit。",
+     "k": 6,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1012.1
+     }
+    },
+    {
+     "say": "今天一定要會的題型：給一個 address，tag 多大、index 多大、byte offset 多大？",
+     "k": 7,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1101.5
+     }
+    },
+    {
+     "say": "先看簡單的：32-bit 地址，block 4 個 byte，offset 只要 log₂4，2 個 bit。",
+     "read": "先看簡單的：32 bit 地址，block 4 個 byte，offset 只要 log 2 的 4，2 個 bit。",
+     "k": 8,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1117.6
+     }
+    },
+    {
+     "say": "Cache 有 1024 個 block，2 的 10 次方，index 需要 10 個 bit。",
+     "k": 9,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1134.9
+     }
+    },
+    {
+     "say": "32 個 bit 用掉 2 個和 10 個，剩下 20 個 bit，就當 tag 存起來。",
+     "k": 10,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1157.5
+     }
+    },
+    {
+     "say": "老師這裡口誤說成 2 的 24 次方；正確是 tag 20 bit，所以每一格有 2 的 20 次方個 block 在搶。",
+     "k": 10,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1160
+     }
+    },
+    {
+     "say": "再問：一樣的結構，一個 block 改成 8 個 byte 呢？offset 就要 log₂8，3 個 bit。",
+     "read": "再問：一樣的結構，一個 block 改成 8 個 byte 呢？offset 就要 log 2 的 8，3 個 bit。",
+     "k": 11,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1300.1
+     }
+    },
+    {
+     "say": "Block 數還是 1024，index 10 bit，tag 就剩 32 − 10 − 3，19 個 bit。",
+     "read": "Block 數還是 1024，index 10 bit，tag 就剩 32 減 10 減 3，19 個 bit。",
+     "k": 12,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1330.5
+     }
+    },
+    {
+     "say": "所以 cache 結構一變，tag 長度就跟著變。Index 由 cache 有多少個 block 決定。",
+     "k": 13,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1416.4
+     }
+    },
+    {
+     "say": "回到 1024 個 word 的例子：每格還要一個 valid bit，所以每格是 1 + 20 + 32，53 個 bit。",
+     "read": "回到 1024 個 word 的例子：每格還要一個 valid bit，所以每格是 1 加 20 加 32，53 個 bit。",
+     "k": 14,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1435.8
+     }
+    },
+    {
+     "say": "口訣：先扣 offset，再扣 index，剩下的才是 tag。",
+     "k": 14
+    }
+   ]
+  },
+  {
+   "title": "課本例：address 1200 放哪一格",
+   "scene": "mh-22b-1200",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "再變個花樣：cache 有 64 個 block，每個 block 16 個 byte，32-bit 地址怎麼切？",
+     "read": "再變個花樣：cache 有 64 個 block，每個 block 16 個 byte，32 bit 地址怎麼切？",
+     "k": 1,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1448.5
+     }
+    },
+    {
+     "say": "16 個 byte 是 2 的 4 次方，最後 4 個 bit 是 offset。",
+     "k": 2,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1480.3
+     }
+    },
+    {
+     "say": "64 個 block 是 2 的 6 次方，index 要 6 個 bit。",
+     "k": 3,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1497.2
+     }
+    },
+    {
+     "say": "32 − 6 − 4 = 22，剩下 22 個 bit 是 tag。",
+     "read": "32 減 6 減 4 等於 22，剩下 22 個 bit 是 tag。",
+     "k": 4,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1516.6
+     }
+    },
+    {
+     "say": "再問：byte address 1200，會 map 到 cache 的哪一個 block？",
+     "k": 5,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1538.8
+     }
+    },
+    {
+     "say": "1200 是 byte address，一個 block 16 個 byte，1200 除以 16 取整數是 75，它在第 75 個 block。",
+     "k": 6,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1570
+     }
+    },
+    {
+     "say": "重點：memory address 以 byte 為單位，要先換成 block address，才能做 mod。",
+     "k": 7,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1604.1
+     }
+    },
+    {
+     "say": "Cache 有 64 個 block，75 mod 64 = 11，放在 cache 的第 11 格。",
+     "read": "Cache 有 64 個 block，75 mod 64 等於 11，放在 cache 的第 11 格。",
+     "k": 8,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1635.4
+     }
+    },
+    {
+     "say": "用二進位再看一次：1200 寫成 32 個 bit，就是畫面上這一條。",
+     "k": 9,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1655.8
+     }
+    },
+    {
+     "say": "一個 block 16 個 byte，最後 4 個 bit 是 block 裡的位置，先不管它。",
+     "k": 10,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1662.1
+     }
+    },
+    {
+     "say": "前面的 bit 就是 block address：1001011，也就是 75。",
+     "read": "前面的 bit 就是 block address：一零零一零一一，也就是 75。",
+     "k": 11,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1681.1
+     }
+    },
+    {
+     "say": "再取它的後 6 個 bit，001011，就是 11。這就是 index，不用真的除也知道在哪格。",
+     "read": "再取它的後 6 個 bit，零零一零一一，就是 11。這就是 index，不用真的除也知道在哪格。",
+     "k": 12,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 1692.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "先把 byte address 換成 block address",
+   "scene": "mh-24b-blockaddr",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "黃老師說，很多同學搞不清楚這裡：題目給的 address 是 byte address，以 byte 為單位編號。",
+     "k": 1,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 18.3
+     }
+    },
+    {
+     "say": "要算第幾個 word，一個 word 4 個 byte，最後 2 個 bit 不用看：0 到 3 是 word 0，4 到 7 是 word 1。",
+     "k": 2,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 20.3
+     }
+    },
+    {
+     "say": "那一個 block 是兩個 word，後面要幾個 bit 不看？",
+     "k": 3,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 50.1
+     }
+    },
+    {
+     "say": "要先找 block address，因為上下兩層都是以 block 為單位在搬。",
+     "k": 4,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 58.1
+     }
+    },
+    {
+     "say": "用 mod 找位置時，兩邊的單位一定要一樣，都要是 block。",
+     "k": 5,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 83.5
+     }
+    },
+    {
+     "say": "一個 block 2 個 word、一個 word 4 個 byte，一個 block 就是 8 個 byte，後面 3 個 bit 可以忽略。",
+     "k": 6,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 96.6
+     }
+    },
+    {
+     "say": "8 個 byte 綁成一體：0000 到 0111 是第 0 個 block，1000 到 1111 是第 1 個 block。",
+     "read": "8 個 byte 綁成一體：零零零零 到 零一一一 是第 0 個 block，一零零零 到 一一一一 是第 1 個 block。",
+     "k": 7,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 129.8
+     }
+    },
+    {
+     "say": "所以做 mapping 第一件事：先想 block size 多大，上下兩層的 block 要一致。",
+     "k": 8,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 146.1
+     }
+    },
+    {
+     "say": "拿到 block number 再去 mod；有幾個 set，就知道 index 幾個 bit，剩下的全是 tag。",
+     "k": 9,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 163
+     }
+    },
+    {
+     "say": "Block 是 16 個 byte：2 的 4 次方，後 4 個 bit 不理它，前面才是 block address。",
+     "k": 10,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 186.6
+     }
+    },
+    {
+     "say": "Block 是 32 個 byte：2 的 5 次方，後面 5 個 bit 是 block 裡的第幾個 byte。",
+     "k": 11,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 207
+     }
+    },
+    {
+     "say": "去掉這些 bit 才是 block address，再找 index、找 tag 就很容易了。",
+     "k": 12,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 225.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "同一個 block 的 word：只差 offset",
+   "scene": "mh-23b-words",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "給一個 address 要拿某個 word：先用 index 那段，決定是 cache 的第幾個 block。",
+     "k": 1,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 17.6
+     }
+    },
+    {
+     "say": "有同學問：同一個 block 裡的那些 word，index 和 tag 是不是都一樣？",
+     "k": 2,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 34.9
+     }
+    },
+    {
+     "say": "是的。地址是連續的，把連續的地址圈起來就是一個 block。畫面是每 2 個 word 綁一個 block。",
+     "k": 3,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 41.4
+     }
+    },
+    {
+     "say": "圈在一起的地址，前面的 high-order bits 都一樣，所以 index、tag 相同，只差最後幾個 bit。",
+     "k": 4,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 92.8
+     }
+    },
+    {
+     "say": "找到 block、tag 也對上了，要分是哪個 word，就看最後那幾個 low-order bits。",
+     "k": 5,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 110
+     }
+    },
+    {
+     "say": "整個流程：index 找 block，比 tag 確認是我，block offset 選 word；byte offset 先不理它。",
+     "k": 6,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 126.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Block 要多大：好處和代價",
+   "scene": "mh-23a-bsize",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "Block size 可以自己定：一個 word、四個、十六個？畫面上 cache 有 10 個 block。",
+     "k": 1,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 793
+     }
+    },
+    {
+     "say": "Block 只有一個 word 的話，用不到 spatial locality，下一個要用的根本沒搬進來。",
+     "k": 1,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 438.4
+     }
+    },
+    {
+     "say": "為了 spatial locality：用到一個，隔壁很快也會用到，那就乾脆一起搬進來。",
+     "k": 2,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 819
+     }
+    },
+    {
+     "say": "第一次讀 w0 是 miss，但整個 block 一起進來了；接著讀 w1、w2、w3 就都 hit。",
+     "k": 3,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 847.2
+     }
+    },
+    {
+     "say": "所以因為 spatial locality，large block size 可以降低 miss rate。",
+     "k": 4,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 866.3
+     }
+    },
+    {
+     "say": "可是 cache 大小是固定的，太大會變慢又貴。block 變兩倍大，cache 就只剩 5 個 block。",
+     "k": 5,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 873.2
+     }
+    },
+    {
+     "say": "本來 10 個位置剩 5 個，更多人 map 到同一格，競爭更激烈，更容易 miss。",
+     "k": 6,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 918.9
+     }
+    },
+    {
+     "say": "再看 miss penalty：block 越大，每次從下層搬要花越多時間。",
+     "k": 7,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 950.5
+     }
+    },
+    {
+     "say": "而且可能白搬：一大塊搬進來，搞不好只用到其中兩個。",
+     "k": 8,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 964.4
+     }
+    },
+    {
+     "say": "還有 pollution：block 越大，被寫過、變 dirty 的機會越大，換掉時又得寫回 memory。",
+     "k": 9,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 978
+     }
+    },
+    {
+     "say": "Block 很大時搬完要很久，通常要等全部搬完，CPU 才重新存取。",
+     "k": 10,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1056.2
+     }
+    },
+    {
+     "say": "改善方法一，early restart：要的是第 4 個 word，1、2、3、4 一到就開始做，後面慢慢搬。",
+     "k": 11,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1086.3
+     }
+    },
+    {
+     "say": "方法二，critical word first：先搬第 4 個，再 5、6 到 16，最後回頭搬 1、2、3。",
+     "k": 12,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1100.9
+     }
+    },
+    {
+     "say": "當然，這兩招都要多一些 hardware。",
+     "k": 12,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1100.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "看圖：miss rate 對 block size",
+   "scene": "mh-23a-graph",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "老師說最重要的是這張圖，看圖要能講出設計的道理。數值是示意，趨勢同課本。",
+     "k": 1,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1121.9
+     }
+    },
+    {
+     "say": "X 軸是 block size，每一條線是一種 cache size：4K、16K、64K、256K。",
+     "k": 2,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1166
+     }
+    },
+    {
+     "say": "Y 軸是 miss rate。",
+     "k": 3,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1177.7
+     }
+    },
+    {
+     "say": "看 4K 這條：先往下彎，然後又往上翹。代表什麼？",
+     "k": 4,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1178.8
+     }
+    },
+    {
+     "say": "前半段下降：block 變大，spatial locality 發揮作用，要用的先搬進來了。",
+     "k": 5,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1213.2
+     }
+    },
+    {
+     "say": "後半段上升：block 太大、block 數太少，大家搶同一個位置，miss 反而變多。",
+     "k": 6,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1245.6
+     }
+    },
+    {
+     "say": "64K、256K 的線就平很多：cache 夠大時，block 再大，block 數還是夠，不會擠來擠去。",
+     "k": 7,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1263.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Read hit 和 read miss",
+   "scene": "mh-23a-read",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "Cache 存取分 read、write，各自又分 hit、miss，一共四個 case，一個一個看。",
+     "k": 1,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1341.6
+     }
+    },
+    {
+     "say": "Read hit 最好：資料就在 cache，很快拿到，CPU 照常做，完全不受影響。",
+     "k": 2,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1355.5
+     }
+    },
+    {
+     "say": "Read miss：資料不在 cache，CPU 必須 stall，停下整條 pipeline，因為沒資料做不下去。",
+     "k": 3,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1394.4
+     }
+    },
+    {
+     "say": "為什麼要 hardware 處理？因為 compile 的時候根本不知道哪次會 hit、哪次會 miss。",
+     "k": 3,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 2322.2
+     }
+    },
+    {
+     "say": "這時去下一層，可能是 L2 或 main memory，把整個 block 搬進 cache。",
+     "k": 4,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1401.8
+     }
+    },
+    {
+     "say": "如果是 instruction miss，就重新 fetch 一次指令；如果是 data miss，等資料到了再做。",
+     "k": 5,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1409.5
+     }
+    },
+    {
+     "say": "這跟之後的 virtual memory 不一樣：那邊 memory 和 disk 之間的 miss，是 OS 用 interrupt 處理。",
+     "k": 6,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1438.6
+     }
+    },
+    {
+     "say": "Cache miss 是 stall：CPU 不會讓給別的程式，還是自己的，只是停下來等資料進來再繼續。",
+     "k": 7,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1456.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Write hit：write-through 和 write-back",
+   "scene": "mh-23a-writehit",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "Write 也分 hit 和 miss。Write hit：要寫的資料已經在 cache 裡。",
+     "k": 1,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1477.8
+     }
+    },
+    {
+     "say": "Read 做 100 次都不影響內容；可是 write 一次，cache 和 memory 兩份 copy 就不一樣了。",
+     "k": 2,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1495.4
+     }
+    },
+    {
+     "say": "例如 cache、memory 原本都是 X 等於 5，CPU 把 X 寫成 7 只寫進 cache，兩邊就不一致了。",
+     "k": 2,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 2397.7
+     }
+    },
+    {
+     "say": "第一種 policy：write-through。每次更新 cache，也同時寫回 main memory，兩邊永遠一致。",
+     "k": 3,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1523
+     }
+    },
+    {
+     "say": "優點：兩份 copy 永遠一樣，就算突然發生 interrupt，memory 裡也是最新的。",
+     "k": 4,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1555.6
+     }
+    },
+    {
+     "say": "缺點：每次都要寫 memory，浪費 memory bandwidth，製造很多 traffic。",
+     "k": 5,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1577.6
+     }
+    },
+    {
+     "say": "另一種做法：write-back。新的值只寫在 cache 裡。",
+     "k": 6,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1601.3
+     }
+    },
+    {
+     "say": "一直等到這個 block 被 replace，位置被別人搶走時，才把最新的資料寫回 memory。",
+     "k": 7,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1611.3
+     }
+    },
+    {
+     "say": "用 write-back，每一格要多記一件事：它有沒有被寫過。",
+     "k": 8,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1640.8
+     }
+    },
+    {
+     "say": "這個 bit 叫 dirty bit。被寫過設成 1；被換掉時，dirty 是 1 才寫回，是 0 就直接蓋過去。",
+     "k": 9,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1663.6
+     }
+    },
+    {
+     "say": "優點：traffic 少。同一格連寫 3 次，write-through 寫 memory 3 次，write-back 換掉時才寫 1 次。",
+     "k": 10,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1687.9
+     }
+    },
+    {
+     "say": "缺點：寫回之前，memory 那份是舊的，兩份 copy 不一致。",
+     "k": 11,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1695.5
+     }
+    },
+    {
+     "say": "不管哪一種，寫回 memory 時都可以加一個 buffer，讓它慢慢寫，CPU 不用等。",
+     "k": 12,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1718.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Write-through 有多慢：write buffer 來救",
+   "scene": "mh-22b-write",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "回頭算一下 write-through 的代價。畫面上 cache 和 memory 都存著 X 等於 5。",
+     "k": 1,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 2379.7
+     }
+    },
+    {
+     "say": "Write-back 的動機就是：每寫一次就改 memory 太花時間，也增加 memory 的 traffic。",
+     "k": 4,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 2427.3
+     }
+    },
+    {
+     "say": "假設平常 CPI 是 1，10% 的指令是 store，寫 memory 要 100 個 cycle。",
+     "k": 5,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 2469.9
+     }
+    },
+    {
+     "say": "就算 hit，每個 store 也要等 memory 寫完：CPI = 1 + 10% × 100 = 11，慢了 11 倍。",
+     "read": "就算 hit，每個 store 也要等 memory 寫完：CPI 等於 1 加 百分之10 乘 100，等於 11，慢了 11 倍。",
+     "k": 6,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 2482.3
+     }
+    },
+    {
+     "say": "解法：write buffer。不直接寫 main memory，先寫進 processor 裡的一個小 buffer。",
+     "k": 7,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 2496.7
+     }
+    },
+    {
+     "say": "寫進 buffer，CPU 就繼續跑；buffer 再由 memory controller 在背後慢慢寫回 memory。",
+     "k": 8,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 2503.8
+     }
+    },
+    {
+     "say": "只有 buffer 滿了，processor 才需要停下來等。",
+     "k": 9,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 2519.9
+     }
+    },
+    {
+     "say": "有同學問：下一個指令要 read 的資料還在 buffer 沒寫回去怎麼辦？",
+     "k": 10,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 2557.1
+     }
+    },
+    {
+     "say": "可以直接從 buffer forward 過來，不用再去 memory 拿，但這要有 hardware 來控制。",
+     "k": 10,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 2583.7
+     }
+    },
+    {
+     "say": "Write buffer 其實就是一個 FIFO，先進先出的佇列，通常有 4 個 entry。",
+     "k": 11,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 2637.3
+     }
+    },
+    {
+     "say": "但 store 太頻繁，寫的速度比 memory 消化的速度還快，buffer 很快就滿，還是會 stall。",
+     "k": 12,
+     "src": {
+      "v": "4q1UMEuDvpM",
+      "t": 2649.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Write miss：要不要搬進來",
+   "scene": "mh-23a-writemiss",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "前三種講完了：read hit、read miss、write hit。第四種是 write miss。",
+     "k": 1,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1769.3
+     }
+    },
+    {
+     "say": "要寫的東西不在 cache 裡，怎麼辦？直覺是：先搬進來，再把新資料寫上去。",
+     "k": 2,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1793.8
+     }
+    },
+    {
+     "say": "不過搭配不同的 write policy，做法不一樣。",
+     "k": 3,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1808.1
+     }
+    },
+    {
+     "say": "Write-back 本來就是寫在 cache，所以 write miss 時會把 block 搬進 cache 再寫，叫 write allocate。",
+     "k": 4,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1814
+     }
+    },
+    {
+     "say": "Write-through 就不一定要 allocate。",
+     "k": 5,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1848.9
+     }
+    },
+    {
+     "say": "為什麼？像 initialization，初始化，只寫一次之後根本不讀，搬進來只會增加 traffic。",
+     "k": 6,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1856.6
+     }
+    },
+    {
+     "say": "所以 write-through 常在 write miss 時直接寫 memory，叫 no-write allocate，也叫 write around。",
+     "k": 7,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1876.9
+     }
+    },
+    {
+     "say": "整理成表：write-back 通常 write allocate；write-through 可以 allocate，也可以不要。",
+     "k": 8,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1890.8
+     }
+    },
+    {
+     "say": "Hit、miss 再分 read、write，四個 case 各做什麼，分類清楚就不會亂。",
+     "k": 9,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1945.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "真實例子：Intrinsity FastMATH",
+   "scene": "mh-23a-fastmath",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "看一個真的商用處理器：Intrinsity FastMATH，一顆 embedded processor。",
+     "k": 1,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1952.9
+     }
+    },
+    {
+     "say": "它有 12 個 stage 的 pipeline，每個 cycle 都可能同時要拿指令和存取資料。",
+     "k": 2,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1971.6
+     }
+    },
+    {
+     "say": "所以用 split cache：instruction cache 和 data cache 分開，可以同時存取。",
+     "k": 3,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1984.6
+     }
+    },
+    {
+     "say": "每個 cache 都是 256 個 block，每個 block 16 個 word。",
+     "k": 4,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1987.3
+     }
+    },
+    {
+     "say": "16 個 word 是 64 個 byte，256 乘 64 byte 就是 16 KiB。之前一個 word 的 block 其實很極端。",
+     "read": "16 個 word 是 64 個 byte，256 乘 64 byte 就是 16 K byte。之前一個 word 的 block 其實很極端。",
+     "k": 5,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 1998.7
+     }
+    },
+    {
+     "say": "D-cache 可以設成 write-through，也可以設成 write-back。",
+     "read": "D cache 可以設成 write-through，也可以設成 write-back。",
+     "k": 6,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2016.2
+     }
+    },
+    {
+     "say": "Miss rate：I-cache 只有 0.4%，D-cache 大約 11.4%，這是課本的 SPEC 測試數據。",
+     "read": "Miss rate：I cache 只有 0.4%，D cache 大約 11.4%，這是課本的 SPEC 測試數據。",
+     "k": 7,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2023.9
+     }
+    },
+    {
+     "say": "I-cache 為什麼這麼低？指令大多照順序執行，又有 loop，兩種 locality 都很好抓。",
+     "read": "I cache 為什麼這麼低？指令大多照順序執行，又有 loop，兩種 locality 都很好抓。",
+     "k": 8,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2040.6
+     }
+    },
+    {
+     "say": "Data 比較亂：array 還算整齊，其他資料，尤其有 pointer 的，不知道會指去哪，miss 就高。",
+     "k": 9,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2055.8
+     }
+    },
+    {
+     "say": "平均起來整體 miss rate 大約 3.2%，其實相當低。",
+     "k": 10,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2069.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "FastMATH 的位址切割",
+   "scene": "mh-23a-fmaddr",
+   "steps": 18,
+   "lines": [
+    {
+     "say": "來看 FastMATH 的地址怎麼切。它是 32-bit 的 byte address。",
+     "read": "來看 FastMATH 的地址怎麼切。它是 32 bit 的 byte address。",
+     "k": 1,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2085.9
+     }
+    },
+    {
+     "say": "最後 2 個 bit 是 byte offset：一個 word 有 4 個 byte，用它選第幾個 byte。",
+     "k": 2,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2106
+     }
+    },
+    {
+     "say": "一個 block 有 16 個 word，16 是 2 的 4 次方，要 4 個 bit 說是第幾個 word，叫 block offset。",
+     "k": 3,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2122.7
+     }
+    },
+    {
+     "say": "要知道是第幾個 block，就看再前面那一段，這就是 index。",
+     "k": 4,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2142.8
+     }
+    },
+    {
+     "say": "有 256 個 block，256 是 2 的 8 次方，index 要 8 個 bit。",
+     "k": 5,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2178.1
+     }
+    },
+    {
+     "say": "那剩下的 18 個 bit 是什麼？",
+     "k": 6,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2194.7
+     }
+    },
+    {
+     "say": "就是 tag！32 − 8 − 4 − 2 = 18。map 到同一格的人，靠這 18 個 bit 區分。",
+     "read": "就是 tag！32 減 8 減 4 減 2 等於 18。map 到同一格的人，靠這 18 個 bit 區分。",
+     "k": 7,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2222.5
+     }
+    },
+    {
+     "say": "Cache 的每一列有 valid bit、18 bit 的 tag，加上 16 個 word 的 data，總共 256 列。",
+     "k": 8,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2256.3
+     }
+    },
+    {
+     "say": "用 8 bit 的 index 選到一列，再拿地址的 tag 跟那列的 tag 比，一樣而且 valid 就是 hit。",
+     "k": 9,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2280.5
+     }
+    },
+    {
+     "say": "老師問：這一條 line，也就是一個 block，裡面有幾個 word？",
+     "k": 10,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2379.2
+     }
+    },
+    {
+     "say": "16 個 word。一個 block 就是 16 個 word，整塊一起搬。",
+     "k": 11,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2396.2
+     }
+    },
+    {
+     "say": "那要拿 block 裡的第幾個 word，用地址的哪一段？",
+     "k": 12,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2459.7
+     }
+    },
+    {
+     "say": "就是那 4 個 bit 的 block offset：0000 是第 0 個 word，0001 是第 1 個，一直到 1111。",
+     "read": "就是那 4 個 bit 的 block offset：零零零零 是第 0 個 word，零零零一 是第 1 個，一直到 一一一一。",
+     "k": 13,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2485.8
+     }
+    },
+    {
+     "say": "Hit 之後，用這 4 個 bit 控制一個 16 選 1 的 MUX，選出你要的 word。",
+     "k": 14,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2571
+     }
+    },
+    {
+     "say": "同一個 block 的 16 個 word，tag 和 index 全部一樣，只差這 4 個 bit。",
+     "k": 15,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2651.3
+     }
+    },
+    {
+     "say": "Word 選出來後，最後 2 個 bit 的 byte offset，再挑這個 word 4 個 byte 裡的哪一個。",
+     "k": 16,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2705.5
+     }
+    },
+    {
+     "say": "同學被點名：如果一個 block 只放 4 個 word 呢？block offset 就只要 2 個 bit。",
+     "k": 17,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2784.6
+     }
+    },
+    {
+     "say": "整個流程：valid 加 tag 比對決定 hit，再用 block offset 選 word、byte offset 選 byte。",
+     "k": 18,
+     "src": {
+      "v": "-83W2w16UYI",
+      "t": 2829
+     }
+    }
+   ]
+  },
+  {
+   "title": "Memory 怎麼配合 cache：miss penalty",
+   "scene": "mh-23b-memorg",
+   "steps": 18,
+   "lines": [
+    {
+     "say": "Cache hit 不用碰 memory；miss 就要從 memory 把整個 block 搬上來。",
+     "k": 1,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 183.4
+     }
+    },
+    {
+     "say": "Miss penalty 怎麼算？要看搬一個 block 的時間，以及 memory 怎麼設計來配合 cache。",
+     "k": 2,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 204.2
+     }
+    },
+    {
+     "say": "第一種：one-word-wide。memory 一次存取一個 word，bus 也一次只傳一個 word。",
+     "k": 3,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 219.2
+     }
+    },
+    {
+     "say": "第二種：wide memory。一次存取四個 word，bus 也做得一樣寬，四個 word 同時傳。",
+     "k": 4,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 233.1
+     }
+    },
+    {
+     "say": "第三種：interleaved。memory 切成四個 bank 可以同時存取，但 bus 還是一次傳一個 word。",
+     "k": 5,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 247.4
+     }
+    },
+    {
+     "say": "比較之前，先分兩個時間：access time 是給地址到拿到資料；cycle time 是到下一次可以再存取。",
+     "k": 6,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 272.9
+     }
+    },
+    {
+     "say": "為什麼有 cycle time？DRAM 每次讀要先放大訊號，還要把資料寫回電容，才能做下一筆。",
+     "k": 7,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 302.5
+     }
+    },
+    {
+     "say": "沒有 interleave 時只有一個 memory，一筆做完、等 cycle time 結束，才能做下一筆。",
+     "k": 8,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 350
+     }
+    },
+    {
+     "say": "Interleave 切成 4 個獨立 bank，每個也要等 cycle time，但 4 個同時做，一次拿到 4 筆。",
+     "k": 9,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 380
+     }
+    },
+    {
+     "say": "來算 miss penalty。假設送 address 給 memory 要 1 個 bus clock。",
+     "k": 10,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 493.4
+     }
+    },
+    {
+     "say": "每次存取 DRAM 要 15 個 cycle，才能開始下一筆。",
+     "k": 11,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 499.7
+     }
+    },
+    {
+     "say": "把一個 word 傳回 cache 要 1 個 cycle。",
+     "k": 12,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 518.4
+     }
+    },
+    {
+     "say": "Cache block 是 4 個 word。三種組織各要多少時間？",
+     "k": 13,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 524.3
+     }
+    },
+    {
+     "say": "第一種：讀 4 次、每次 15，再傳 4 次：1 + 4 × 15 + 4 × 1 = 65 個 cycle。",
+     "read": "第一種：讀 4 次、每次 15，再傳 4 次：1 加 4 乘 15 加 4 乘 1，等於 65 個 cycle。",
+     "k": 14,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 528.8
+     }
+    },
+    {
+     "say": "第二種：4 個 word 一起讀只要 15，bus 夠寬一次傳完只要 1：1 + 15 + 1 = 17。",
+     "read": "第二種：4 個 word 一起讀只要 15，bus 夠寬一次傳完只要 1：1 加 15 加 1，等於 17。",
+     "k": 15,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 567.9
+     }
+    },
+    {
+     "say": "第三種：4 個 bank 同時讀，只要一次 15；bus 一個 word 寬，要傳 4 次：1 + 15 + 4 × 1 = 20。",
+     "read": "第三種：4 個 bank 同時讀，只要一次 15；bus 一個 word 寬，要傳 4 次：1 加 15 加 4 乘 1，等於 20。",
+     "k": 16,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 590.1
+     }
+    },
+    {
+     "say": "Wide 最快，但 bus、pin 都要變寬，hardware 很貴；interleave 只是切 bank，成本小、效能卻接近。",
+     "k": 17,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 640.5
+     }
+    },
+    {
+     "say": "為什麼有用？同時存取 4 個 bank，就把 cycle time 藏起來了，資料一到就能傳。",
+     "k": 18,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 667.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "DRAM 的 row、column 與 DDR SDRAM",
+   "scene": "mh-23b-dram",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "Cache 給一個 address，馬上就能從地址知道在哪個 block。",
+     "k": 1,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 695.6
+     }
+    },
+    {
+     "say": "DRAM 不一樣：address 拆成兩部分，一部分做 row access，一部分做 column access。",
+     "k": 2,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 725.4
+     }
+    },
+    {
+     "say": "例如 22 個 bit 的地址拆一半，11 個 bit 給 row decoder，可以選 2 的 11 次方，2048 條 row。",
+     "k": 3,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 739.7
+     }
+    },
+    {
+     "say": "11 乘 11，整個 DRAM 就像一個 2048 乘 2048 的 bit 矩陣。",
+     "k": 4,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 796.2
+     }
+    },
+    {
+     "say": "先用 row address 決定哪一列，把整列讀下來，放進 latch。",
+     "k": 5,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 817.5
+     }
+    },
+    {
+     "say": "再用另一半的 column address，從 latch 裡挑出你要的那一個。",
+     "k": 6,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 828.5
+     }
+    },
+    {
+     "say": "好處是：整列已經在 latch 裡了，接下來讀同一列的其他 column 就非常快。",
+     "k": 7,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 890.5
+     }
+    },
+    {
+     "say": "連續的地址可以用 burst mode 一口氣讀出來，而 cache 的 block 剛好就是連續的地址。",
+     "k": 8,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 910.4
+     }
+    },
+    {
+     "say": "現在用的 DRAM 叫 DDR SDRAM：Double Data Rate Synchronous DRAM。",
+     "k": 9,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 936
+     }
+    },
+    {
+     "say": "最早的 DRAM 是 asynchronous 的，要靠一些 control signal 來控制讀寫。",
+     "k": 10,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 967.4
+     }
+    },
+    {
+     "say": "Synchronous 的意思是：直接用 clock 來控制讀寫。",
+     "k": 11,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 990.4
+     }
+    },
+    {
+     "say": "Double data rate：clock 的 rising edge 和 falling edge 都能傳資料，所以兩倍快。",
+     "k": 12,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1001.2
+     }
+    },
+    {
+     "say": "Burst mode：只要給起始地址和長度，就跟著 clock 一筆一筆連續讀出來。",
+     "k": 13,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1010.6
+     }
+    },
+    {
+     "say": "現在 PC 都用 DDR SDRAM，每 GB 的價錢也一路往下掉。",
+     "k": 14,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1058.4
+     }
+    },
+    {
+     "say": "Row access 和 column access 都在進步，而 column access 一直快很多，因為 row 已經在 latch 裡了。",
+     "k": 15,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1083.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Cache 對 CPI 的影響：2 變 5.44",
+   "scene": "mh-23b-cpi",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "到這裡學了 memory hierarchy、最基本的 direct-mapped cache，還有 memory 怎麼配合 cache。",
+     "k": 1,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1379.6
+     }
+    },
+    {
+     "say": "接下來量量看，這個最簡單的 cache，performance 到底怎麼樣。",
+     "k": 2,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1405.5
+     }
+    },
+    {
+     "say": "CPU 時間分兩部分：execution cycles，加上等 memory 的 memory-stall cycles，再乘 cycle time。",
+     "k": 3,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1423.7
+     }
+    },
+    {
+     "say": "不管 hit 或 miss，都得先查 cache 才知道，所以 hit 的時間算在 execution cycles 裡。",
+     "k": 4,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1432.8
+     }
+    },
+    {
+     "say": "只有 miss 的時候，才要加上額外的 memory-stall cycles。",
+     "k": 5,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1452.6
+     }
+    },
+    {
+     "say": "Memory-stall cycles = 程式的 memory 存取次數 × miss rate × miss penalty。",
+     "read": "Memory-stall cycles 等於 程式的 memory 存取次數 乘 miss rate 乘 miss penalty。",
+     "k": 6,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1459.4
+     }
+    },
+    {
+     "say": "Base CPI：假設完全沒有 cache miss 時，每個指令平均要幾個 cycle。",
+     "k": 7,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1487.4
+     }
+    },
+    {
+     "say": "課本例子：I-cache 的 miss rate 是 2%，D-cache 是 4%。",
+     "read": "課本例子：I cache 的 miss rate 是 2%，D cache 是 4%。",
+     "k": 8,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1521.2
+     }
+    },
+    {
+     "say": "Miss penalty 是 100 個 cycle，base CPI 是 2。",
+     "k": 9,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1529.6
+     }
+    },
+    {
+     "say": "Load、store 指令佔全部指令的 36%。",
+     "k": 10,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1536.1
+     }
+    },
+    {
+     "say": "兩個 cache 分開算：每個指令都要去 I-cache 拿指令，有些還要去 D-cache。",
+     "read": "兩個 cache 分開算：每個指令都要去 I cache 拿指令，有些還要去 D cache。",
+     "k": 11,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1554.1
+     }
+    },
+    {
+     "say": "那 36% 的 load、store，存取的是 D-cache。",
+     "read": "那 36% 的 load、store，存取的是 D cache。",
+     "k": 12,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1572.4
+     }
+    },
+    {
+     "say": "那 I-cache 是 100% 還是 64%？是 100%！每個指令都要被 fetch。老師說這是核心，搞錯就算不出來。",
+     "read": "那 I cache 是 100% 還是 64%？是 100%！每個指令都要被 fetch。老師說這是核心，搞錯就算不出來。",
+     "k": 13,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1637.1
+     }
+    },
+    {
+     "say": "I-cache 造成的 stall：1 × 2% × 100，每個指令平均多 2 個 cycle。",
+     "read": "I cache 造成的 stall：1 乘 百分之2 乘 100，每個指令平均多 2 個 cycle。",
+     "k": 14,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1672
+     }
+    },
+    {
+     "say": "D-cache 造成的 stall：36% × 4% × 100 = 1.44 個 cycle。",
+     "read": "D cache 造成的 stall：百分之36 乘 百分之4 乘 100，等於 1.44 個 cycle。",
+     "k": 15,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1687.6
+     }
+    },
+    {
+     "say": "實際 CPI = 2 + 2 + 1.44 = 5.44。三段疊起來，就是這根 5.44 的長條。",
+     "read": "實際 CPI 等於 2 加 2 加 1.44，等於 5.44。三段疊起來，就是這根 5.44 的長條。",
+     "k": 16,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1711.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "AMAT：hit time 每次都要付",
+   "scene": "mh-23b-amat",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "AMAT，average memory access time，平均記憶體存取時間，也是一樣的想法。",
+     "k": 1,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1757.3
+     }
+    },
+    {
+     "say": "不管 hit 或 miss，都要先花 hit time 去查 cache，所以 hit time 一定要算。",
+     "k": 2,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1769
+     }
+    },
+    {
+     "say": "萬一 miss，再加上額外的 miss penalty。AMAT = hit time + miss rate × miss penalty。",
+     "read": "萬一 miss，再加上額外的 miss penalty。AMAT 等於 hit time 加 miss rate 乘 miss penalty。",
+     "k": 3,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1777.5
+     }
+    },
+    {
+     "say": "例子：clock 1 ns，hit time 1、miss penalty 20 cycle，miss rate 5%，20 次裡 1 次 miss。",
+     "read": "例子：clock 1 奈秒，hit time 1、miss penalty 20 cycle，miss rate 5%，20 次裡 1 次 miss。",
+     "k": 4,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1807.8
+     }
+    },
+    {
+     "say": "AMAT = 1 + 5% × 20 = 1 + 1 = 2 個 cycle，也就是 2 ns。前面那個 1 一定要加。",
+     "read": "AMAT 等於 1 加 百分之5 乘 20，等於 1 加 1，等於 2 個 cycle，也就是 2 奈秒。前面那個 1 一定要加。",
+     "k": 5,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1823
+     }
+    },
+    {
+     "say": "常見錯法：0.95 × 1 + 0.05 × 20 = 1.95，以為 95% hit、5% miss 分開算。這是錯的。",
+     "read": "常見錯法：0.95 乘 1 加 0.05 乘 20，等於 1.95，以為 95% hit、5% miss 分開算。這是錯的。",
+     "k": 6,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1839.9
+     }
+    },
+    {
+     "say": "因為 hit time 每次都付，乘的是 100%；miss 那 5% 只是額外多付 20。",
+     "k": 7,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1862.7
+     }
+    },
+    {
+     "say": "真要拆開，miss 那次總共花 1 + 20 = 21：0.95 × 1 + 0.05 × 21，也是 2。",
+     "read": "真要拆開，miss 那次總共花 1 加 20 等於 21：0.95 乘 1 加 0.05 乘 21，也是 2。",
+     "k": 7,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1862.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "從次數推 AMAT：5 個 request",
+   "scene": "mh-amat-avg",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "換個角度，PacketPrep 的英文影片從最原始的次數推 AMAT，很適合拿來驗證公式。",
+     "k": 1,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 15.1
+     }
+    },
+    {
+     "say": "有 5 個 request，叫 A、B、C、D、E。",
+     "k": 2,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 22.1
+     }
+    },
+    {
+     "say": "假設 A、B、C 都 miss，D、E 是 hit。",
+     "k": 3,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 27.2
+     }
+    },
+    {
+     "say": "Hit 一次花 t = 5 秒，miss 一次花 m = 10 秒。秒數只是方便算的示意。",
+     "read": "Hit 一次花 t 等於 5 秒，miss 一次花 m 等於 10 秒。秒數只是方便算的示意。",
+     "k": 4,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 34.9
+     }
+    },
+    {
+     "say": "平均時間 =（hit 次數 × hit time + miss 次數 × miss 時間）÷ 總次數。",
+     "read": "平均時間 等於 hit 次數 乘 hit time，加上 miss 次數 乘 miss 時間，再除以 總次數。",
+     "k": 5,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 41.2
+     }
+    },
+    {
+     "say": "Hit 有 2 個，2 × 5 = 10；miss 有 3 個，3 × 10 = 30。",
+     "read": "Hit 有 2 個，2 乘 5 等於 10；miss 有 3 個，3 乘 10 等於 30。",
+     "k": 6,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 68.3
+     }
+    },
+    {
+     "say": "加起來 40，除以 5 次，平均 8 秒。那條金色線就是平均高度。",
+     "k": 7,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 86
+     }
+    }
+   ]
+  },
+  {
+   "title": "AMAT 的標準公式：改用 hit ratio",
+   "scene": "mh-amat-ratio",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "意思是：hit 的 request 要 5 秒，miss 的要 10 秒，平均下來每個大約 8 秒。",
+     "k": 1,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 89.2
+     }
+    },
+    {
+     "say": "考題通常不會告訴你幾次 hit、幾次 miss，而是直接給 hit ratio。",
+     "k": 2,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 103.4
+     }
+    },
+    {
+     "say": "Hit ratio h = hit 次數 ÷ 總次數；miss ratio 就是 1 − h。",
+     "read": "Hit ratio h 等於 hit 次數 除以 總次數；miss ratio 就是 1 減 h。",
+     "k": 3,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 112.3
+     }
+    },
+    {
+     "say": "把剛才的式子拆兩半：hit 那部分除以總次數，加上 miss 那部分除以總次數。",
+     "k": 4,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 123.7
+     }
+    },
+    {
+     "say": "Hit 除以總次數就是 h，miss 除以總次數就是 1 − h。",
+     "read": "Hit 除以總次數就是 h，miss 除以總次數就是 1 減 h。",
+     "k": 5,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 145.9
+     }
+    },
+    {
+     "say": "所以 AMAT = h × t + (1 − h) × m。",
+     "read": "所以 AMAT 等於 h 乘 t，加上 1 減 h 乘 m。",
+     "k": 6,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 153.5
+     }
+    },
+    {
+     "say": "代回去：h = 0.4，0.4 × 5 + 0.6 × 10 = 8，一樣。",
+     "read": "代回去：h 等於 0.4，0.4 乘 5 加 0.6 乘 10，等於 8，一樣。",
+     "k": 7,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 164.5
+     }
+    },
+    {
+     "say": "注意這裡的 m 是 miss 的「總時間」10 秒；課本的 miss penalty 是「額外」多花的 5 秒。",
+     "k": 7,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 164.5
+     }
+    },
+    {
+     "say": "用課本寫法 5 + 0.6 × 5，也是 8。所以先看清楚題目的 penalty 是總時間還是額外時間。",
+     "read": "用課本寫法 5 加 0.6 乘 5，也是 8。所以先看清楚題目的 penalty 是總時間還是額外時間。",
+     "k": 7
+    }
+   ]
+  },
+  {
+   "title": "CPU 越快，cache 越重要",
+   "scene": "mh-23b-why",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "Performance 的結論：cache 很重要，可是設計 processor 時常被忽略。",
+     "k": 1,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1878.5
+     }
+    },
+    {
+     "say": "就算 CPU 的 performance 一直提高，miss penalty 反而變得更顯著。",
+     "k": 2,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1885.6
+     }
+    },
+    {
+     "say": "base CPI 降低，stall 不變，比例反而變大：3.44/5.44 約 63%，base 變 1 就是 3.44/4.44 約 77%。",
+     "read": "base CPI 降低，stall 不變，比例反而變大：3.44 除以 5.44 約 63%，base 變 1 就是 3.44 除以 4.44 約 77%。",
+     "k": 3,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1903.9
+     }
+    },
+    {
+     "say": "把 clock rate 提高也一樣：memory 的 ns 數不變，換成 cycle 數就變多，stall 比例又增加。",
+     "read": "把 clock rate 提高也一樣：memory 的奈秒數不變，換成 cycle 數就變多，stall 比例又增加。",
+     "k": 4,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1922.6
+     }
+    },
+    {
+     "say": "寫程式也是：只看 big O、只算指令數，不管 memory access pattern，跟實際會差很多。",
+     "k": 5,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1942.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "要改善 cache，從三個變數下手",
+   "scene": "mh-23b-improve",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "基本的 cache 講完了，performance 也會算了。不滿意的話，要怎麼 improve？",
+     "k": 1,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 1974.4
+     }
+    },
+    {
+     "say": "第一個：hit time，也就是檢查資料在不在 cache 的時間，要把它減少。",
+     "k": 2,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2005.4
+     }
+    },
+    {
+     "say": "回到公式：hit time 加 miss rate 乘 miss penalty，結果就由這三個變數決定。",
+     "k": 3,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2062.1
+     }
+    },
+    {
+     "say": "想讓結果變小，任何一個變數都可以下手。老師說，做研究不也是這樣嗎？",
+     "k": 4,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2131.4
+     }
+    },
+    {
+     "say": "所以接下來三個方向：降低 hit time、降低 miss rate、降低 miss penalty。",
+     "k": 5,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2150
+     }
+    }
+   ]
+  },
+  {
+   "title": "Direct-mapped 的缺點：一個號碼一張椅子",
+   "scene": "mh-23b-dmbad",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "先回頭看原來的設計：direct-mapped。",
+     "k": 1,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2164
+     }
+    },
+    {
+     "say": "Cache 有 8 個 block，memory 有 32 個。",
+     "k": 2,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2207.5
+     }
+    },
+    {
+     "say": "下面的地址除以上面的數目，餘數就是位置：橘紅色都去橘紅色那格，灰色都去灰色那格。",
+     "k": 3,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2230.4
+     }
+    },
+    {
+     "say": "好幾個人到同一格，就用 high-order bits，也就是 tag，比對是誰。",
+     "k": 4,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2263.6
+     }
+    },
+    {
+     "say": "那 direct-mapped 的缺點是什麼？",
+     "k": 5,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2273.6
+     }
+    },
+    {
+     "say": "假如存取順序剛好是這樣：1、9、17、25 這四個橘紅色的 block 輪流來。",
+     "k": 6,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2277.9
+     }
+    },
+    {
+     "say": "它們全部 map 到 001。第二個來，第一個得出去；第三個來，第二個又出去，8 次全部 miss。",
+     "read": "它們全部 map 到 零零一。第二個來，第一個得出去；第三個來，第二個又出去，8 次全部 miss。",
+     "k": 7,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2294.4
+     }
+    },
+    {
+     "say": "就像一個號碼只有一張椅子，一次只能坐一個人，下一個來，前一個就得走。",
+     "k": 8,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2316.4
+     }
+    },
+    {
+     "say": "可是 cache 其他 7 個位置都空著沒人坐！這四個人卻一直擠同一張椅子。",
+     "k": 9,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2322.7
+     }
+    },
+    {
+     "say": "限制太大了，所以要改善它。",
+     "k": 10,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2367.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Fully associative：坐哪裡都可以",
+   "scene": "mh-23b-fully",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "最直接的改善：不要給固定位置，上面只要有空位，坐哪都可以。",
+     "k": 1,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2375.1
+     }
+    },
+    {
+     "say": "有空就擺：同樣 1、9、17、25 輪流存取，只有前 4 次 miss，之後全部 hit。",
+     "k": 2,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2399
+     }
+    },
+    {
+     "say": "這是另一個極端，叫 fully associative。",
+     "k": 3,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2419.8
+     }
+    },
+    {
+     "say": "問題是：要找的時候，不知道它在哪一格。沒有 index，整個 block address 都要存成 tag。",
+     "k": 4,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2461.2
+     }
+    },
+    {
+     "say": "存取時每一個位置都有可能，每一格都要 check。",
+     "k": 5,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2517.5
+     }
+    },
+    {
+     "say": "一格一格照順序 check？8 個 entry 就要比 8 次、花 8 個 cycle，太慢了。",
+     "k": 6,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2539.5
+     }
+    },
+    {
+     "say": "所以要同時比：每個 entry 配一個 comparator，8 個 entry 就 8 個 comparator 一起比。",
+     "k": 7,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2573.6
+     }
+    },
+    {
+     "say": "優點：非常彈性，有空位就用，絕不浪費。缺點：比對的 hardware 很多，很貴。",
+     "k": 8,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2603.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "Set associative：一個號碼幾張椅子",
+   "scene": "mh-23b-setassoc",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "Fully 太自由了，不需要整個 cache 都能坐，一個號碼裡有兩、四個位置就好。",
+     "k": 1,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2625.5
+     }
+    },
+    {
+     "say": "這叫 set associative，是 direct-mapped 和 fully associative 的折衷。",
+     "k": 2,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2633.9
+     }
+    },
+    {
+     "say": "一樣先 map 到一個號碼，叫 set，但 set 裡有好幾個位置。右邊是 2-way：4 個 set、每個 2 格。",
+     "read": "一樣先 map 到一個號碼，叫 set，但 set 裡有好幾個位置。右邊是 2 way：4 個 set、每個 2 格。",
+     "k": 3,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2642.4
+     }
+    },
+    {
+     "say": "假如兩個橘紅色的 block 交替存取：1、9、1、9。",
+     "k": 4,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2659.6
+     }
+    },
+    {
+     "say": "Direct-mapped 只有一個位置，這個進來那個就出去，6 次全部 miss。",
+     "k": 5,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2663.1
+     }
+    },
+    {
+     "say": "2-way：1 mod 4 是 1，9 mod 4 也是 1，都在 set 1，但有兩張椅子，只有前 2 次 miss。",
+     "read": "2 way：1 mod 4 是 1，9 mod 4 也是 1，都在 set 1，但有兩張椅子，只有前 2 次 miss。",
+     "k": 6,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2688.9
+     }
+    },
+    {
+     "say": "做到 4 張椅子更有彈性；所有位置都在同一個 set，就變成 fully associative。",
+     "k": 7,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2729.3
+     }
+    },
+    {
+     "say": "Fully associative 一個 block 可以去任何 entry，不需要 index，但每個 entry 都要 comparator。",
+     "k": 8,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2744.4
+     }
+    },
+    {
+     "say": "N-way set associative：每個 set 就像 direct-mapped 的一格，只是裡面有 n 張椅子。",
+     "read": "N way set associative：每個 set 就像 direct-mapped 的一格，只是裡面有 n 張椅子。",
+     "k": 9,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2794.6
+     }
+    },
+    {
+     "say": "位置怎麼算？除的是 set 的數目：set 等於 block number mod set 數，例如 9 mod 4 是 1。",
+     "k": 10,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2840.5
+     }
+    },
+    {
+     "say": "找的時候只要在那個 set 裡找，2-way 只要 check 兩個。",
+     "read": "找的時候只要在那個 set 裡找，2 way 只要 check 兩個。",
+     "k": 11,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2882.1
+     }
+    },
+    {
+     "say": "統一用 set associative 來看：direct-mapped 是 1-way；fully 是 n-way，n 等於 block 數。",
+     "read": "統一用 set associative 來看：direct-mapped 是 1 way；fully 是 n way，n 等於 block 數。",
+     "k": 12,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2920.1
+     }
+    },
+    {
+     "say": "2-way 只要 2 個 comparator，4-way 要 4 個；代價是彈性沒有 fully 那麼大。",
+     "read": "2 way 只要 2 個 comparator，4 way 要 4 個；代價是彈性沒有 fully 那麼大。",
+     "k": 13,
+     "src": {
+      "v": "QWGIvh-k7go",
+      "t": 2955.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "先找家，再找房間",
+   "scene": "mh-24a-sets",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "黃老師換了個比方：原本 8 戶人家，每戶一個房間；現在讓一戶裡有兩個或四個房間。",
+     "k": 1,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 492.9
+     }
+    },
+    {
+     "say": "一樣用 mod：先找到你家，也就是 set。右邊是 2-way，4 戶，每戶 2 個房間。",
+     "read": "一樣用 mod：先找到你家，也就是 set。右邊是 2 way，4 戶，每戶 2 個房間。",
+     "k": 2,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 522.3
+     }
+    },
+    {
+     "say": "以前 8 個 entry 要除以 8；現在拆成 4 戶、每戶 2 間，就除以 4 找家。",
+     "k": 3,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 530.9
+     }
+    },
+    {
+     "say": "找到 set 後，兩個房間都可能放，所以要同時比 2 個 tag，需要 2 個 comparator。",
+     "k": 4,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 586.8
+     }
+    },
+    {
+     "say": "比 fully 的 8 個少，比 direct-mapped 的 1 個多一點，取中間。",
+     "k": 5,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 614.4
+     }
+    },
+    {
+     "say": "三種 mapping 整理：direct-mapped 每人只去一個位置；fully associative 哪都可以。",
+     "k": 6,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 631.9
+     }
+    },
+    {
+     "say": "Cache 存 address 和 data。Direct-mapped 同位置低位一樣，只存前半段；fully 沒有共同部分，整個都要存。",
+     "k": 7,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 654.2
+     }
+    },
+    {
+     "say": "Set associative：除以 set 數找到家，家裡那幾個 block 再像 fully 一樣全部 check。",
+     "k": 8,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 669.6
+     }
+    },
+    {
+     "say": "Fully 每個 entry 都要 search，所以每個 entry 一個 comparator：8 格 8 個，16 格 16 個。",
+     "k": 9,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 716.3
+     }
+    },
+    {
+     "say": "N-way 的 n，就是一個 set 裡有幾個 block：2 個叫 two-way，4 個叫 four-way。",
+     "read": "N way 的 n，就是一個 set 裡有幾個 block：2 個叫 two way，4 個叫 four way。",
+     "k": 10,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 775.6
+     }
+    },
+    {
+     "say": "Two-way 要 2 個 comparator，four-way 要 4 個。",
+     "read": "Two way 要 2 個 comparator，four way 要 4 個。",
+     "k": 11,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 790.4
+     }
+    },
+    {
+     "say": "Index 幾個 bit？8 個 entry：direct-mapped 8 戶 3 bit，2-way 4 戶 2 bit，4-way 2 戶 1 bit。",
+     "read": "Index 幾個 bit？8 個 entry：direct-mapped 8 戶 3 bit，2 way 4 戶 2 bit，4 way 2 戶 1 bit。",
+     "k": 12,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 815.1
+     }
+    },
+    {
+     "say": "Fully associative 有沒有 index？沒有了，任何位置都可以。",
+     "k": 13,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 870.9
+     }
+    },
+    {
+     "say": "記住：用 block number mod「set 的數目」決定 set，不是除以 block 數。",
+     "k": 14,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 887.6
+     }
+    },
+    {
+     "say": "找到 set 後，在 set 裡用 fully 的方式 check：有幾個 block 就幾個 comparator，同時比。",
+     "k": 15,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 977.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "課本例：block 12 放在哪",
+   "scene": "mh-24a-block12",
+   "steps": 7,
+   "lines": [
+    {
+     "say": "換一張圖再看一次：同樣 8 個 entry，三種組織方式。",
+     "k": 1,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1002.3
+     }
+    },
+    {
+     "say": "Block address 12。Direct-mapped：12 除以 8 餘 4，只能放第 4 格，只比一個 tag。",
+     "k": 2,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1017.4
+     }
+    },
+    {
+     "say": "2-way：先看有幾個 set。8 個 entry、一戶兩個，只有 4 個 set，0 到 3。",
+     "read": "2 way：先看有幾個 set。8 個 entry、一戶兩個，只有 4 個 set，0 到 3。",
+     "k": 3,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1027.4
+     }
+    },
+    {
+     "say": "12 除以 4 餘 0，map 到 set 0，set 0 的兩格都可以放。",
+     "k": 4,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1043.6
+     }
+    },
+    {
+     "say": "Set 0 有兩個 entry，要兩個 comparator 同時找。",
+     "k": 5,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1050.4
+     }
+    },
+    {
+     "say": "Fully associative：任何空位都行；不知道在哪，要 8 個 comparator 一起比。",
+     "k": 6,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1069.7
+     }
+    },
+    {
+     "say": "Index 呢？Direct-mapped 用 3 bit，2-way 用 2 bit，fully 不需要 index。",
+     "read": "Index 呢？Direct-mapped 用 3 bit，2 way 用 2 bit，fully 不需要 index。",
+     "k": 7,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1085.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Associativity 越高，tag 越長",
+   "scene": "mh-24a-tagsize",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "同樣 8 個 block 的 cache 可以怎麼組？Direct-mapped：8 個 set，每格存 tag 和 data。",
+     "k": 1,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1109.3
+     }
+    },
+    {
+     "say": "Tag 長度會跟著組織變。理論上要存整個地址，但 index 那段在同一位置都一樣，是 redundant，去掉才是 tag。",
+     "k": 2,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1117.1
+     }
+    },
+    {
+     "say": "2-way：一個 set 兩個 entry，變成 4 個 set。",
+     "read": "2 way：一個 set 兩個 entry，變成 4 個 set。",
+     "k": 3,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1155.8
+     }
+    },
+    {
+     "say": "Mapping 時 block address 除以 4 找 set，再把 set 裡兩個 tag 拿出來同時比。",
+     "k": 4,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1186.6
+     }
+    },
+    {
+     "say": "4-way：一個 set 4 個 entry，只剩 2 個 set，每個 set 有 4 個 tag。",
+     "read": "4 way：一個 set 4 個 entry，只剩 2 個 set，每個 set 有 4 個 tag。",
+     "k": 5,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1205.4
+     }
+    },
+    {
+     "say": "8-way 就是 fully associative：只有一個 set，8 個 tag 同時比。",
+     "read": "8 way 就是 fully associative：只有一個 set，8 個 tag 同時比。",
+     "k": 6,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1229.9
+     }
+    },
+    {
+     "say": "你想想看：從上到下，tag 的 bit 數越來越長，還是越來越短？",
+     "k": 7,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1247.8
+     }
+    },
+    {
+     "say": "地址長度固定，index 選 set，剩下是 tag。5 bit 的 block address：tag 2、3、4、5 bit，每次多一個。",
+     "k": 8,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1295.2
+     }
+    },
+    {
+     "say": "因為 index 從 3 bit 變 2、1、最後 0，少掉的都歸到 tag。",
+     "k": 9,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1322
+     }
+    },
+    {
+     "say": "其實只有一個概念：地址分成 tag 和 set number。一個 set 一格是 direct-mapped，全在一個 set 是 fully。",
+     "k": 10,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1341.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "課本例：0、8、0、6、8",
+   "scene": "mh-24a-058",
+   "steps": 20,
+   "lines": [
+    {
+     "say": "再來一題：依序存取 block 0、8、0、6、8，分別用 direct-mapped、2-way、fully 會怎樣？",
+     "read": "再來一題：依序存取 block 0、8、0、6、8，分別用 direct-mapped、2 way、fully 會怎樣？",
+     "k": 1,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1364.5
+     }
+    },
+    {
+     "say": "Cache 只有 4 個 block：direct-mapped 4 個位置；2-way 只有 2 個 set；fully 只有 1 個 set。",
+     "read": "Cache 只有 4 個 block：direct-mapped 4 個位置；2 way 只有 2 個 set；fully 只有 1 個 set。",
+     "k": 2,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1389.3
+     }
+    },
+    {
+     "say": "先看 direct-mapped，存取順序從上往下。",
+     "k": 3,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1407.5
+     }
+    },
+    {
+     "say": "存取 0：0 mod 4 是 0，位置 0 沒東西，miss，把 block 0 放進去。",
+     "k": 4,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1417.1
+     }
+    },
+    {
+     "say": "存取 8：8 mod 4 也是 0，同一個位置。0 被踢出去，8 進來，miss。",
+     "k": 5,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1434.8
+     }
+    },
+    {
+     "say": "再存取 0：又是同一格，只好把 8 踢走、0 回來，miss。",
+     "k": 6,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1461.1
+     }
+    },
+    {
+     "say": "存取 6：6 mod 4 是 2，第一次用，miss，放進去。",
+     "k": 7,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1470.3
+     }
+    },
+    {
+     "say": "再存取 8：又是位置 0，再把 0 踢掉，miss。",
+     "k": 8,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1485.5
+     }
+    },
+    {
+     "say": "每一次都 miss！明明只是 0、8 交替，但只有一個位置，5 次全 miss。",
+     "k": 9,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1496.1
+     }
+    },
+    {
+     "say": "換 2-way：4 個 block、一個 set 2 個，所以 2 個 set，地址要除以 2。",
+     "read": "換 2 way：4 個 block、一個 set 2 個，所以 2 個 set，地址要除以 2。",
+     "k": 10,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1522.8
+     }
+    },
+    {
+     "say": "存取 0：0 mod 2 是 0，miss，跟剛才一樣；但這個 set 放得下兩個。",
+     "k": 11,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1555
+     }
+    },
+    {
+     "say": "存取 8：8 mod 2 是 0，同一個 set，還有空位，擺進去，miss。",
+     "k": 12,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1562
+     }
+    },
+    {
+     "say": "再存取 0：0 還在裡面，hit！",
+     "k": 13,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1577.3
+     }
+    },
+    {
+     "say": "存取 6：6 mod 2 也是 0！只剩 2 個 set，6 也擠進 set 0，就用 LRU 把最久沒用的 8 換掉。",
+     "k": 14,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1589.7
+     }
+    },
+    {
+     "say": "8 又來了，剛被搬出去，miss；位置不夠，把 0 換出去。",
+     "k": 15,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1629.9
+     }
+    },
+    {
+     "say": "一個 set 雖然有兩格，但 cache 大小固定，set 數變少，更多人擠同一個 set。",
+     "k": 16,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1658.3
+     }
+    },
+    {
+     "say": "2-way 的結果：1 個 hit、4 個 miss。",
+     "read": "2 way 的結果：1 個 hit、4 個 miss。",
+     "k": 17,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1669.6
+     }
+    },
+    {
+     "say": "Fully 最有彈性，有空位就進：0 miss、8 miss、0 hit、6 miss、8 hit。",
+     "k": 18,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1675
+     }
+    },
+    {
+     "say": "Fully 兩個 hit，只 miss 3 次。5、4、3：associativity 越高，miss 越少。",
+     "k": 19,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1694.6
+     }
+    },
+    {
+     "say": "但成本最貴：fully 每次要 4 個 comparator，2-way 要 2 個，direct-mapped 只要 1 個。",
+     "read": "但成本最貴：fully 每次要 4 個 comparator，2 way 要 2 個，direct-mapped 只要 1 個。",
+     "k": 20,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1705.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "Associativity 的效果越來越小",
+   "scene": "mh-24a-assoc",
+   "steps": 4,
+   "lines": [
+    {
+     "say": "Associativity 增加，從 direct-mapped 到 2-way、4-way，comparator 變多，miss rate 會降。",
+     "read": "Associativity 增加，從 direct-mapped 到 2 way、4 way，comparator 變多，miss rate 會降。",
+     "k": 1,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1738.9
+     }
+    },
+    {
+     "say": "但降幅越來越小。課本 64 KiB、16-word block 的例子：1-way 10.3%，2-way 8.6%。",
+     "read": "但降幅越來越小。課本 64 K byte、16 word block 的例子：1 way 10.3%，2 way 8.6%。",
+     "k": 2,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1752.6
+     }
+    },
+    {
+     "say": "到 4-way 只再降 0.3%，到 8-way 只降 0.2%，效果越來越低。",
+     "read": "到 4 way 只再降 0.3%，到 8 way 只降 0.2%，效果越來越低。",
+     "k": 3,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1764.1
+     }
+    },
+    {
+     "say": "而 comparator 的數目還一直增加，成本越來越高。",
+     "k": 4,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1771.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "4-way set-associative cache 怎麼做",
+   "scene": "mh-24a-4way",
+   "steps": 17,
+   "lines": [
+    {
+     "say": "看這張實作圖，搞懂 address 怎麼分給 index 和 tag。",
+     "k": 1,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1775.7
+     }
+    },
+    {
+     "say": "這個 cache 每個 set 有 4 個 entry，4 個 way，所以是 4-way set associative。",
+     "read": "這個 cache 每個 set 有 4 個 entry，4 個 way，所以是 4 way set associative。",
+     "k": 2,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1797.4
+     }
+    },
+    {
+     "say": "每個 block 多大？block 是搬進搬出的單位。",
+     "k": 3,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1810.9
+     }
+    },
+    {
+     "say": "圖上 data 是 32 bit，一個 word、4 個 byte，所以一個 block 就是一個 word。",
+     "k": 4,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1836.4
+     }
+    },
+    {
+     "say": "Byte address 最後 2 個 bit 是 byte offset，找 block 時不用它；從 bit 2 開始才是 block address。",
+     "k": 5,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1841.2
+     }
+    },
+    {
+     "say": "這個 cache 有多少 entry？有幾個 set？",
+     "k": 6,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1873.6
+     }
+    },
+    {
+     "say": "256 個 set，每個 set 4 個 block，總共 256 乘 4，1024 個 block。",
+     "k": 7,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1899.7
+     }
+    },
+    {
+     "say": "反過來，從 block 數看，要除以 4 才得到 set 數。",
+     "k": 8,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1931.7
+     }
+    },
+    {
+     "say": "256 個 set，要 8 個 bit 才選得出第幾個 set，這就是 index。",
+     "k": 9,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1948.2
+     }
+    },
+    {
+     "say": "Block address 除以 256 的餘數，就是它最後 8 個 bit，直接拿來當 set index。",
+     "k": 10,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1979.2
+     }
+    },
+    {
+     "say": "找到 set 了，那 tag 有多大？",
+     "k": 11,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 1988.6
+     }
+    },
+    {
+     "say": "Index 那段隱含在位置裡不用存，32 − 8 − 2 = 22，tag 是 22 個 bit。",
+     "read": "Index 那段隱含在位置裡不用存，32 減 8 減 2 等於 22，tag 是 22 個 bit。",
+     "k": 12,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2031.9
+     }
+    },
+    {
+     "say": "一個 set 4 個 block，4 個 tag 都要存；算 cache 總大小時，tag 也要算進去。",
+     "k": 13,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2041.1
+     }
+    },
+    {
+     "say": "存取時，用 8 bit 的 index 直接選到一個 set，四個 way 一起亮起來。",
+     "k": 14,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2108.9
+     }
+    },
+    {
+     "say": "4 個 way 都可能是我要的，所以 4 個 tag 一起讀出來，用 4 個 comparator 同時比。",
+     "k": 15,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2118.4
+     }
+    },
+    {
+     "say": "比對一樣而且 valid 就輸出 1；4 個結果經過一個 OR gate，任何一個是 1 就是 hit。",
+     "k": 16,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2140.5
+     }
+    },
+    {
+     "say": "Hit 了，是哪一個 way？用比對結果去控制一個 4 選 1 的 MUX，從 4 筆 data 選出那一筆。",
+     "k": 17,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2151
+     }
+    }
+   ]
+  },
+  {
+   "title": "Replacement：該請誰出去",
+   "scene": "mh-24a-repl",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "複習 placement：direct-mapped 每個人只 map 到一個位置，沒得選，直接擺進去。",
+     "k": 1,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2192.7
+     }
+    },
+    {
+     "say": "原來在那的就被蓋掉。N-way 的話，map 到 set 後有 n 個選擇，2-way 就兩個。",
+     "read": "原來在那的就被蓋掉。N way 的話，map 到 set 後有 n 個選擇，2 way 就兩個。",
+     "k": 2,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2222.5
+     }
+    },
+    {
+     "say": "4-way 四個選擇；fully associative 呢？cache 有幾個 block，就有幾個選擇。",
+     "read": "4 way 四個選擇；fully associative 呢？cache 有幾個 block，就有幾個選擇。",
+     "k": 3,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2236.8
+     }
+    },
+    {
+     "say": "有選擇，就要決定誰出去，這就是 replacement。",
+     "k": 4,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2261.5
+     }
+    },
+    {
+     "say": "萬一選錯，踢掉的等一下又要用，就會搬來搬去，又回到 direct-mapped 那種問題。",
+     "k": 5,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2290.7
+     }
+    },
+    {
+     "say": "所以我們希望被換掉的，是待會兒不會再用到的。",
+     "k": 6,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2325.5
+     }
+    },
+    {
+     "say": "怎麼做？Direct-mapped 沒有選擇，不用煩惱。",
+     "k": 7,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2341.2
+     }
+    },
+    {
+     "say": "Set associative 和 fully 可以用 random：不想多花 hardware 記錄，就隨便挑一個。",
+     "k": 8,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2346.8
+     }
+    },
+    {
+     "say": "另一種是 LRU，least recently used，換掉最久沒用的。因為 locality，很久沒用多半不會再用。",
+     "k": 9,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2363.8
+     }
+    },
+    {
+     "say": "可是真正的 LRU 要記錄每個 block 誰早誰晚，需要比較多 hardware，很麻煩。",
+     "k": 10,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2407.2
+     }
+    },
+    {
+     "say": "所以大家用近似的就好，叫 pseudo-LRU。",
+     "k": 11,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2420.2
+     }
+    },
+    {
+     "say": "像 2 個 entry：設一個 pointer 指向下次要換的；一用到某個，就把 pointer 推到另一個。",
+     "k": 12,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2428.5
+     }
+    },
+    {
+     "say": "最近被用到的一定不會被指到，這樣就近似 LRU 了。",
+     "k": 12,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2428.5
+     }
+    }
+   ]
+  },
+  {
+   "title": "Set associative 的代價：hit time 變長",
+   "scene": "mh-24a-dmvssa",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "把 direct-mapped 和 n-way set associative 比一比。",
+     "read": "把 direct-mapped 和 n way set associative 比一比。",
+     "k": 1,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2496.6
+     }
+    },
+    {
+     "say": "N-way 要 n 個 comparator 同時比；direct-mapped 只有一個 entry，一個 comparator 就夠。",
+     "read": "N way 要 n 個 comparator 同時比；direct-mapped 只有一個 entry，一個 comparator 就夠。",
+     "k": 2,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2500.8
+     }
+    },
+    {
+     "say": "4-way 還需要一個 MUX：就算 hit，也不知道是第幾個 way，要用 MUX 選出來。",
+     "read": "4 way 還需要一個 MUX：就算 hit，也不知道是第幾個 way，要用 MUX 選出來。",
+     "k": 3,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2516.2
+     }
+    },
+    {
+     "say": "問題在哪？要等 tag 比完、hit 決定之後，才知道選哪一筆，所以時間要等。",
+     "k": 4,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2543.3
+     }
+    },
+    {
+     "say": "Direct-mapped 只有一筆 data，可以不等，先拿去用，假設它是 hit。",
+     "k": 5,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2572.7
+     }
+    },
+    {
+     "say": "最後發現是 miss，丟掉就好，反正 miss 本來就要做一大堆事。",
+     "k": 6,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2588.9
+     }
+    },
+    {
+     "say": "Set associative 多了 MUX 的 delay；cache 存取常在 pipeline 的 critical path 上，這點延遲很要緊。",
+     "k": 7,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2614
+     }
+    },
+    {
+     "say": "所以各種結構，其實就是在 hit time、miss rate、miss penalty 之間取捨。",
+     "k": 8,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2662
+     }
+    }
+   ]
+  },
+  {
+   "title": "Multilevel cache：L1 求快、L2 求少 miss",
+   "scene": "mh-24a-multi",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "另一種加速的方法：multilevel cache，多層快取。",
+     "k": 1,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2715
+     }
+    },
+    {
+     "say": "不只一層：第一層、第二層，甚至第三層 cache。",
+     "k": 2,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2730.5
+     }
+    },
+    {
+     "say": "都用 cache 的技術，但越靠近 processor 的越小、越快。",
+     "k": 3,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2737.1
+     }
+    },
+    {
+     "say": "最靠近 CPU 的叫 primary cache，L1。它小所以快，主要目的是降低 hit time。",
+     "k": 4,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2746.6
+     }
+    },
+    {
+     "say": "L2 做大一點，大就不容易 miss，目的是降低 miss rate。",
+     "k": 5,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2773.4
+     }
+    },
+    {
+     "say": "L1 miss 時不直接去 main memory，那太花時間，而是先找 L2。",
+     "k": 6,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2795.8
+     }
+    },
+    {
+     "say": "L2 比 L1 大、慢一點，但比 main memory 快很多；連 L2 都沒有，才去 main memory。",
+     "k": 7,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2821.1
+     }
+    },
+    {
+     "say": "Main memory 雖然最慢，但要去的比例很低了，整體時間就降下來。高階處理器還有 L3。",
+     "k": 8,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 2844
+     }
+    }
+   ]
+  },
+  {
+   "title": "課本例：加一層 L2，CPI 從 9 降到 3.4",
+   "scene": "mh-24b-multi",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "用例子算算看多層 cache 有多大用。",
+     "k": 1,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 247.7
+     }
+    },
+    {
+     "say": "沒有 miss 時 base CPI 是 1，clock rate 4 GHz；每個指令有 2% 的機率在 L1 miss。",
+     "read": "沒有 miss 時 base CPI 是 1，clock rate 4 G赫茲；每個指令有 2% 的機率在 L1 miss。",
+     "k": 2,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 275.7
+     }
+    },
+    {
+     "say": "Main memory 的存取時間是 100 ns。",
+     "read": "Main memory 的存取時間是 100 奈秒。",
+     "k": 3,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 289.2
+     }
+    },
+    {
+     "say": "Miss 要用 clock cycle 算，所以先把 100 ns 換成 cycle 數。",
+     "read": "Miss 要用 clock cycle 算，所以先把 100 奈秒換成 cycle 數。",
+     "k": 4,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 304.5
+     }
+    },
+    {
+     "say": "4 GHz 表示一個 cycle 是 0.25 ns。100 除以 0.25 等於 400，miss penalty 是 400 個 cycle。",
+     "read": "4 G赫茲 表示一個 cycle 是 0.25 奈秒。100 除以 0.25 等於 400，miss penalty 是 400 個 cycle。",
+     "k": 5,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 311.6
+     }
+    },
+    {
+     "say": "每個指令平均多 2% × 400 = 8 個 cycle，加上 base 1，CPI 是 9。",
+     "read": "每個指令平均多 百分之2 乘 400，等於 8 個 cycle，加上 base 1，CPI 是 9。",
+     "k": 6,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 327.9
+     }
+    },
+    {
+     "say": "那變成兩層呢？加一個 L2 cache。",
+     "k": 7,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 352.6
+     }
+    },
+    {
+     "say": "L2 比 L1 大、比較慢，存取要 5 ns，但比去 memory 的 100 ns 快很多。",
+     "read": "L2 比 L1 大、比較慢，存取要 5 奈秒，但比去 memory 的 100 奈秒快很多。",
+     "k": 8,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 361.8
+     }
+    },
+    {
+     "say": "L1 miss 的那 2%，現在先去找 L2。",
+     "k": 9,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 383.4
+     }
+    },
+    {
+     "say": "L2 也 miss、真的得去 main memory 的，只剩 0.5%，這是以每個指令來算的。",
+     "k": 10,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 417.8
+     }
+    },
+    {
+     "say": "L1 miss 去 L2 的 penalty：5 除以 0.25，20 個 cycle。",
+     "k": 11,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 452.4
+     }
+    },
+    {
+     "say": "去 main memory 還是 400 個 cycle。",
+     "k": 12,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 464.6
+     }
+    },
+    {
+     "say": "CPI = 1 + 2% × 20 + 0.5% × 400 = 1 + 0.4 + 2 = 3.4。",
+     "read": "CPI 等於 1 加 百分之2 乘 20，加 百分之0.5 乘 400，就是 1 加 0.4 加 2，等於 3.4。",
+     "k": 13,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 469.2
+     }
+    },
+    {
+     "say": "小心：0.5% 已經是每個指令的比例，也就是 global miss rate，直接乘 400，不要再乘 2%。",
+     "k": 13
+    },
+    {
+     "say": "只多一層 L2，CPI 就從 9 降到 3.4，大約快了 2.6 倍。",
+     "k": 14,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 493.7
+     }
+    }
+   ]
+  },
+  {
+   "title": "L1 和 L2 的設計重點",
+   "scene": "mh-24b-l1l2",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "L1 要做什麼？hit time 越小越好。",
+     "k": 1,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 503.3
+     }
+    },
+    {
+     "say": "更小，才會更快，small is fast。",
+     "k": 2,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 514.5
+     }
+    },
+    {
+     "say": "L2 慢一點沒關係，但容量要大，才能減少 miss，不要那麼常去 main memory。",
+     "k": 3,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 521.8
+     }
+    },
+    {
+     "say": "L2 雖然比 L1 多花一點時間，比起去 main memory 還是少很多，所以專心追求 low miss rate。",
+     "k": 4,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 531.3
+     }
+    },
+    {
+     "say": "有了 L2，L1 通常做得比單層設計時更小，block size 也比 L2 小。",
+     "k": 5,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 554.6
+     }
+    }
+   ]
+  },
+  {
+   "title": "兩層 AMAT：同時找還是一層層找",
+   "scene": "mh-amat-sim2",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "多層的 AMAT 怎麼算？PacketPrep 分兩種情況：simultaneous 和 hierarchical。",
+     "k": 1,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 167.9
+     }
+    },
+    {
+     "say": "Simultaneous，同時：CPU 同時對兩層發出存取，兩層一起找。",
+     "k": 2,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 173.3
+     }
+    },
+    {
+     "say": "存取 L1 要 t1，存取 L2 要 t2。",
+     "k": 3,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 178.9
+     }
+    },
+    {
+     "say": "L1 的 hit ratio 設為 h。",
+     "k": 4,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 182
+     }
+    },
+    {
+     "say": "L2 是最後一層，假設資料一定在，hit ratio 是 1。",
+     "k": 5,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 187.4
+     }
+    },
+    {
+     "say": "Hit 花 t1；miss 時 L2 早就同時在找，只要等 t2。所以 AMAT = h·t1 + (1 − h)·t2。",
+     "read": "Hit 花 t1；miss 時 L2 早就同時在找，只要等 t2。所以 AMAT 等於 h 乘 t1，加上 1 減 h 乘 t2。",
+     "k": 6,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 205
+     }
+    },
+    {
+     "say": "代個數字：h 是 0.8、t1 是 2、t2 是 10，就是 1.6 加 2，3.6。",
+     "k": 6,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 205
+     }
+    }
+   ]
+  },
+  {
+   "title": "一層一層找：hierarchical",
+   "scene": "mh-amat-hier2",
+   "steps": 6,
+   "lines": [
+    {
+     "say": "Hierarchical，階層式：先在 L1 找，花 t1。",
+     "k": 1,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 219.9
+     }
+    },
+    {
+     "say": "L1 找不到，才去 L2 找，再花 t2。",
+     "k": 2,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 225.2
+     }
+    },
+    {
+     "say": "L1 的 hit ratio 是 h；不在 L1 就去 L2，L2 一定找得到。",
+     "k": 3,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 232.8
+     }
+    },
+    {
+     "say": "所以 miss 時已經花了 t1，再加 t2：這時的 miss 時間是 t1 + t2，不是 t2。",
+     "read": "所以 miss 時已經花了 t1，再加 t2：這時的 miss 時間是 t1 加 t2，不是 t2。",
+     "k": 4,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 238.6
+     }
+    },
+    {
+     "say": "套公式：AMAT = h·t1 + (1 − h)·(t1 + t2)。",
+     "read": "套公式：AMAT 等於 h 乘 t1，加上 1 減 h，乘 t1 加 t2。",
+     "k": 5,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 242.2
+     }
+    },
+    {
+     "say": "化簡：h·t1 跟 (1 − h)·t1 合起來就是 t1，剩下 AMAT = t1 + (1 − h)·t2。",
+     "read": "化簡：h 乘 t1 跟 1 減 h 乘 t1 合起來就是 t1，剩下 AMAT 等於 t1 加上 1 減 h 乘 t2。",
+     "k": 6,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 260
+     }
+    },
+    {
+     "say": "這就是課本 hit time 加 miss rate 乘 miss penalty 的樣子。同樣數字代進去是 4。",
+     "k": 6
+    }
+   ]
+  },
+  {
+   "title": "三層：同時找",
+   "scene": "mh-amat-sim3",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "推到三層：L1、L2、L3 的時間是 t1、t2、t3，L1、L2 的 hit ratio 是 h1、h2。",
+     "k": 1,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 273.1
+     }
+    },
+    {
+     "say": "最後一層 L3 一定有資料，hit ratio 是 1。",
+     "k": 2,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 287.3
+     }
+    },
+    {
+     "say": "第一項：在 L1 hit 的機率 h1，乘上 t1。",
+     "k": 3,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 292.1
+     }
+    },
+    {
+     "say": "如果資料不在 L1，就是 L1 miss。",
+     "k": 4,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 295.1
+     }
+    },
+    {
+     "say": "L1 miss、L2 hit：機率是 (1 − h1)·h2，時間 t2。",
+     "read": "L1 miss、L2 hit：機率是 1 減 h1，再乘 h2，時間 t2。",
+     "k": 5,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 308
+     }
+    },
+    {
+     "say": "L2 也 miss，就在 L3 找到：機率 (1 − h1)(1 − h2)，時間 t3。",
+     "read": "L2 也 miss，就在 L3 找到：機率是 1 減 h1，乘 1 減 h2，時間 t3。",
+     "k": 6,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 310.9
+     }
+    },
+    {
+     "say": "全部加起來就是 AMAT。代 h1 0.8、h2 0.5、時間 1、5、20：0.8 加 0.5 加 2，3.3。",
+     "k": 7,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 328.5
+     }
+    },
+    {
+     "say": "這是 simultaneous：三層同時找，每種情況只算「找到的那一層」的時間。",
+     "k": 8,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 359.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "三層：一層層找",
+   "scene": "mh-amat-hier3",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "如果是 hierarchical，一層一層找，時間一樣是 t1、t2、t3，hit ratio h1、h2。",
+     "k": 1,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 361
+     }
+    },
+    {
+     "say": "L3 一樣假設一定找得到。",
+     "k": 2,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 370.1
+     }
+    },
+    {
+     "say": "式子長得一樣，只差時間：第一層找到花 t1，第二層才找到要 t1 + t2，第三層要 t1 + t2 + t3。",
+     "read": "式子長得一樣，只差時間：第一層找到花 t1，第二層才找到要 t1 加 t2，第三層要 t1 加 t2 加 t3。",
+     "k": 3,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 375.3
+     }
+    },
+    {
+     "say": "把這三種時間代進去，乘上各自的機率。",
+     "k": 4,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 383.6
+     }
+    },
+    {
+     "say": "影片把化簡留給你：AMAT = t1 + (1 − h1)·t2 + (1 − h1)(1 − h2)·t3。",
+     "read": "影片把化簡留給你：AMAT 等於 t1，加上 1 減 h1 乘 t2，再加上 1 減 h1、乘 1 減 h2、再乘 t3。",
+     "k": 5,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 396.2
+     }
+    },
+    {
+     "say": "意思是：t1 每次都付；L1 miss 才多付 t2；L1、L2 都 miss 才再付 t3。",
+     "k": 5,
+     "src": {
+      "v": "Y1esjWBTf7Q",
+      "t": 396.2
+     }
+    }
+   ]
+  },
+  {
+   "title": "Cache miss 和 out-of-order",
+   "scene": "mh-24b-ooo",
+   "steps": 8,
+   "lines": [
+    {
+     "say": "Cache 的影響不只這樣。回想 instruction-level parallelism 有兩種做法：superscalar 和 VLIW。",
+     "k": 1,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 568.8
+     }
+    },
+    {
+     "say": "VLIW 靠 compiler 找出沒有 dependency 的指令，排在一起同時做。",
+     "k": 2,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 585.4
+     }
+    },
+    {
+     "say": "那全交給 compiler 就好啦，為什麼還要 hardware 一大堆的 superscalar？",
+     "k": 3,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 601.1
+     }
+    },
+    {
+     "say": "因為 cache：compile 的時候，根本不知道哪個 load 會 cache miss。",
+     "k": 4,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 606.8
+     }
+    },
+    {
+     "say": "所以沒辦法事先排好順序，要靠 out-of-order 的 CPU 在 run time 動態處理。",
+     "k": 5,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 614.8
+     }
+    },
+    {
+     "say": "資料還沒來的指令放在 reservation station 等，資料 ready 的先進 function unit 做。",
+     "k": 6,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 620.8
+     }
+    },
+    {
+     "say": "Cache miss 只有 run time 才知道，誰是 independent 的也只有那時才知道，所以需要 hardware 動態排程。",
+     "k": 7,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 649.9
+     }
+    },
+    {
+     "say": "要分析程式的 cache 行為更麻煩，通常用 simulator 模擬 cache 結構，看會發生多少 miss。",
+     "k": 8,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 699.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Radix sort 對 quicksort：指令少不一定快",
+   "scene": "mh-24b-sort",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "Cache 和 software 的互動：比比看 radix sort 和 quicksort。",
+     "k": 1,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 741.3
+     }
+    },
+    {
+     "say": "看 complexity：radix sort 是 O(n)，quicksort 是 O(n log n)，資料多時 radix 理論上比較快。",
+     "read": "看 complexity：radix sort 是 大O n，quicksort 是 大O n log n，資料多時 radix 理論上比較快。",
+     "k": 2,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 752.4
+     }
+    },
+    {
+     "say": "圖的 X 軸是要排序的元素個數，曲線是示意，趨勢同課本。",
+     "k": 3,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 784.2
+     }
+    },
+    {
+     "say": "第一張圖：每個 item 要幾個 instruction？radix sort 比較少，看起來比較快。",
+     "k": 4,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 789.3
+     }
+    },
+    {
+     "say": "可是第二張圖，真的去跑，每個 item 要幾個 clock cycle？反而 quicksort 比較快。",
+     "k": 5,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 795.8
+     }
+    },
+    {
+     "say": "這要怎麼解釋？",
+     "k": 6,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 815.7
+     }
+    },
+    {
+     "say": "Radix sort 把元素丟進各個 bucket，範圍一大，資料散在各處，沒有 locality，cache miss 很多。",
+     "k": 7,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 838.1
+     }
+    },
+    {
+     "say": "Quicksort 一直在比相鄰的元素，cache miss 比較少。",
+     "k": 8,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 856.9
+     }
+    },
+    {
+     "say": "第三張圖把 cache miss 拿出來看：radix sort 每個 item 的 miss 高很多，所以整體反而慢。",
+     "k": 9,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 865.3
+     }
+    },
+    {
+     "say": "所以設計演算法，不能只看 big O 或指令數，還要考慮 data access pattern 和 cache。",
+     "k": 10,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 887.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Virtual memory：把 memory 當 disk 的 cache",
+   "scene": "mh-24b-vmintro",
+   "steps": 15,
+   "lines": [
+    {
+     "say": "Cache 的部分到這裡告一段落，重點就是放、找、換、寫，這四個問題。",
+     "k": 1,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 937.2
+     }
+    },
+    {
+     "say": "接下來看下一層：virtual memory。OS 課還會再教，這裡著重它需要的 hardware 支援。",
+     "k": 2,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 966.1
+     }
+    },
+    {
+     "say": "之前講的 cache 和 main memory 之間，由 cache controller 這個 hardware 管，miss 就 stall。",
+     "k": 3,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1019
+     }
+    },
+    {
+     "say": "Memory 和 disk 之間，是再下一個 level。",
+     "k": 4,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1036.3
+     }
+    },
+    {
+     "say": "如果程式用的 address 就是 physical address，一個 memory 一次只能跑一個程式。",
+     "k": 5,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1045.2
+     }
+    },
+    {
+     "say": "可是實際上，我們希望同一個 physical memory 能同時跑好多個程式。",
+     "k": 6,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1057.3
+     }
+    },
+    {
+     "say": "所以每個程式有自己的 address space，經過 translation，map 到真正的 physical address。",
+     "k": 7,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1070.6
+     }
+    },
+    {
+     "say": "而且不用整個程式都搬進來：90% 的時間只用 10%，只搬一部分，其他放 disk，要用再搬。",
+     "k": 8,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1116
+     }
+    },
+    {
+     "say": "一樣是 upper、lower level 的概念，只是現在 upper 是 memory，lower 是 disk。",
+     "k": 9,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1155
+     }
+    },
+    {
+     "say": "Memory 和 cache 差幾十、幾百個 cycle；disk 和 memory 卻差幾百萬個 cycle，因為 disk 已經是 I/O 了。",
+     "read": "Memory 和 cache 差幾十、幾百個 cycle；disk 和 memory 卻差幾百萬個 cycle，因為 disk 已經是 I O 了。",
+     "k": 10,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1169.1
+     }
+    },
+    {
+     "say": "所以這一層不用 hardware 搶時間，由 OS 這個 system software 來處理。",
+     "k": 11,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1185.8
+     }
+    },
+    {
+     "say": "另一個差別：搬動的單位叫 page，而且很大，因為從 disk 搬一次要花很大力氣。",
+     "k": 12,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1247.6
+     }
+    },
+    {
+     "say": "Placement 也不同：一次一大塊，就別讓它搶位置，任何位置都能放，也就是 fully associative。",
+     "k": 13,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1278.5
+     }
+    },
+    {
+     "say": "所以 virtual memory 就是：把 main memory 當 cache，把 disk 當下層的 storage。",
+     "k": 14,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1311.1
+     }
+    },
+    {
+     "say": "Software 可以做複雜的 policy；比起 page fault 搬一個 page 的龐大時間，多想一下也划算。cache miss 就不行。",
+     "k": 15,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1354
+     }
+    }
+   ]
+  },
+  {
+   "title": "每個程式有自己的 virtual address space",
+   "scene": "mh-24b-vmshare",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "Virtual memory 讓很多程式共用同一個 main memory。左邊是兩個程式的 virtual page，中間是 physical frame。",
+     "k": 1,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1389.1
+     }
+    },
+    {
+     "say": "為什麼要同時跑很多程式？一個程式跑到一半去做 I/O，I/O 很慢，processor 不能白等，就讓別人用。",
+     "read": "為什麼要同時跑很多程式？一個程式跑到一半去做 I O，I O 很慢，processor 不能白等，就讓別人用。",
+     "k": 2,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1402.6
+     }
+    },
+    {
+     "say": "Physical memory 只有一個，但每個程式都有自己的 memory space，彼此不 share。",
+     "k": 3,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1430.2
+     }
+    },
+    {
+     "say": "每個程式都有自己的 private virtual address space；physical 只有一個，例如 2 的 32 次方個 byte。",
+     "k": 4,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1461.6
+     }
+    },
+    {
+     "say": "所有程式的東西都可以放 disk，要用時只把需要的那幾塊搬到 memory。",
+     "k": 5,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1484.3
+     }
+    },
+    {
+     "say": "搬上來可以放 physical memory 的任何空位，只要有個 translation 告訴我們放在哪就好。",
+     "k": 6,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1509.8
+     }
+    },
+    {
+     "say": "下層叫 virtual address，上層叫 physical address，中間靠 translation 轉換。",
+     "k": 7,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1569.9
+     }
+    },
+    {
+     "say": "跟 cache 比：cache 靠 index 加 tag 比對找位置；這裡是 fully associative，查一張 table 就知道在哪。",
+     "k": 8,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1584.9
+     }
+    },
+    {
+     "say": "另一個好處：程式之間可以互相 protect，沒有權限就碰不到別人的資料。",
+     "k": 9,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1622.1
+     }
+    },
+    {
+     "say": "還有：virtual address space 可以比 physical memory 還大，因為每次只搬一小部分上來。",
+     "k": 10,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1637.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page、page fault、frame",
+   "scene": "mh-24b-terms",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "Virtual memory 的概念跟 cache 一樣：下層是每個程式的 virtual address space，上層是 physical memory。",
+     "k": 1,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1659.1
+     }
+    },
+    {
+     "say": "從下層搬到上層一樣是一塊一塊，在這裡叫 page。",
+     "k": 2,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1693.5
+     }
+    },
+    {
+     "say": "一個程式可能有一千個 page，memory 裡也許只放五個，用到才放上去。",
+     "k": 3,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1713.7
+     }
+    },
+    {
+     "say": "所以一樣有四個問題：placement、怎麼找、replacement、write。",
+     "k": 4,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1732.6
+     }
+    },
+    {
+     "say": "要用的 page 不在 main memory，就叫 page fault，相當於 cache miss。",
+     "k": 5,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1753
+     }
+    },
+    {
+     "say": "Physical memory 也切成跟 page 一樣大的一塊塊，每一塊叫 frame。",
+     "k": 6,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1801.2
+     }
+    },
+    {
+     "say": "一個 page map 到一個 frame，大小一樣，一起搬進、一起搬出。畫面上 page 5 放進 frame 2。",
+     "k": 7,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1841.4
+     }
+    },
+    {
+     "say": "要回答的問題：page size 多大？怎麼放，也就決定了怎麼找？怎麼 replacement？",
+     "k": 8,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1865.9
+     }
+    },
+    {
+     "say": "什麼時候搬？Cache 常常 prefetch；page 太大，亂搬太浪費，所以只在 page fault 時才搬，叫 demand load。",
+     "k": 9,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1915.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Page size 與 page table",
+   "scene": "mh-24b-pagetable",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "Page size：page fault 的代價非常大，要幾百萬個 cycle，因為是從 disk 這個 I/O 搬到 memory。",
+     "read": "Page size：page fault 的代價非常大，要幾百萬個 cycle，因為是從 disk 這個 I O 搬到 memory。",
+     "k": 1,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1953.5
+     }
+    },
+    {
+     "say": "OS 忙了半天只搬一點點，划不來，所以 page 都很大，例如 4K byte。",
+     "k": 2,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 1993.9
+     }
+    },
+    {
+     "say": "減少 page fault 很重要：不能像 direct-mapped 那樣，明明別處有空位卻不給你用。",
+     "k": 3,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 2014.8
+     }
+    },
+    {
+     "say": "所以 virtual memory 用 fully associative：memory 只要有位置，就把 page 放進去。",
+     "k": 4,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 2047.8
+     }
+    },
+    {
+     "say": "Fully associative 就有「怎麼找」的問題，又不能一個一個找，所以建一張表，叫 page table。",
+     "k": 5,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 2066.2
+     }
+    },
+    {
+     "say": "Page table 很單純：你是第幾個 page，就記你 map 到第幾個 frame。",
+     "k": 6,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 2093.3
+     }
+    },
+    {
+     "say": "它像一個 array，用 page number 當 index：要查第 i 個 page，就看第 i 個 entry；V 是 1 表示在 memory。",
+     "k": 7,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 2099
+     }
+    },
+    {
+     "say": "Virtual 切成一個個 page，physical 切成一樣大的 frame；virtual 雖然連續，放到 physical 可以隨便擺。",
+     "k": 8,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 2175.4
+     }
+    },
+    {
+     "say": "每次存取先查 page table：page 3 在不在？在，table 說它在 frame 1。",
+     "k": 9,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 2233.9
+     }
+    },
+    {
+     "say": "如果不在，像 page 4 的 V 是 0，表示它在 disk 裡，就產生 page fault。",
+     "k": 10,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 2243.3
+     }
+    },
+    {
+     "say": "一產生 page fault，要做一大堆處理，這是 OS 在做，不是 hardware。",
+     "k": 11,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 2269.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "Address translation：換 page number，offset 照搬",
+   "scene": "mh-24b-translate",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "Page table 要怎麼做 translation？",
+     "k": 1,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 2285.1
+     }
+    },
+    {
+     "say": "跟 cache 一樣：先找出 block 的 number，在這裡是 page number；page 裡面的位址綁在一起不用管。",
+     "k": 2,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 2301.4
+     }
+    },
+    {
+     "say": "Page size 是 4K，2 的 12 次方個 byte，所以最後 12 個 bit 是 page offset。",
+     "k": 3,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 2315.5
+     }
+    },
+    {
+     "say": "32-bit 的 virtual address，前 20 個 bit 就是 virtual page number，第幾個 page。",
+     "read": "32 bit 的 virtual address，前 20 個 bit 就是 virtual page number，第幾個 page。",
+     "k": 4,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 2332.8
+     }
+    },
+    {
+     "say": "拿 virtual page number 去查 page table，看它擺在 physical 的哪裡。",
+     "k": 5,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 2374.6
+     }
+    },
+    {
+     "say": "Page table 給你 physical frame number；physical 有多少個 frame，就用幾個 bit 表示，畫面上是 18 bit。",
+     "k": 6,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 2402.2
+     }
+    },
+    {
+     "say": "一個 page 是整塊搬到一個 frame，裡面的位址分佈一模一樣。",
+     "k": 7,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 2413.3
+     }
+    },
+    {
+     "say": "offset 直接照搬：virtual address 0x3ABC 是 page 3、offset 0xABC，在 frame 7，就成了 0x7ABC。",
+     "read": "offset 直接照搬：virtual address 十六進位 3ABC 是 page 3、offset ABC，在 frame 7，就成了 十六進位 7ABC。",
+     "k": 8,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 2443.1
+     }
+    },
+    {
+     "say": "Physical address 就是 frame number 接上同樣的 page offset。這就是 address translation。",
+     "k": 9,
+     "src": {
+      "v": "nPiZueMU4fQ",
+      "t": 2450.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "總整理：一個階層、四個問題",
+   "scene": "mh-24a-review",
+   "steps": 10,
+   "lines": [
+    {
+     "say": "最後把整章串起來。不同的 memory 技術，容量、速度、價錢都不一樣。",
+     "k": 1,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 17.6
+     }
+    },
+    {
+     "say": "但程式有 locality，90% 的時間大多只用 10% 的程式。",
+     "k": 2,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 20.4
+     }
+    },
+    {
+     "say": "所以做成 hierarchy：近的快、小、貴，遠的大、慢、便宜，processor 看到的是又快又大的 memory。",
+     "k": 3,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 21.8
+     }
+    },
+    {
+     "say": "第一層：processor 和 memory 中間加 SRAM 做的 cache。",
+     "k": 4,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 74.7
+     }
+    },
+    {
+     "say": "Cache 是 upper level，main memory 是 lower level。",
+     "k": 5,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 92.9
+     }
+    },
+    {
+     "say": "第一個問題 placement：direct-mapped、set associative、fully associative，差在一個號碼幾張椅子。",
+     "k": 6,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 117.6
+     }
+    },
+    {
+     "say": "怎麼放決定了怎麼找：index 找位置、tag 比對、valid 確認；virtual memory 則查 page table。",
+     "k": 7,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 129.7
+     }
+    },
+    {
+     "say": "位置不夠就要 replacement：direct-mapped 沒得選，其他用 random 或 LRU。",
+     "k": 8,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 141.2
+     }
+    },
+    {
+     "say": "寫的時候兩層會不一致：write-through 加 write buffer，或 write-back 加 dirty bit。",
+     "k": 9,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 154.4
+     }
+    },
+    {
+     "say": "把這四個問題搞清楚，cache 和 virtual memory 這整套系統你就懂了。",
+     "k": 10,
+     "src": {
+      "v": "1fhK7KF8hgE",
+      "t": 175.4
+     }
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,1087 @@
+{
+ "chapter": "ca-7",
+ "title": "I/O與中斷",
+ "intro": "從 memory 才是資料起點和終點出發，比較 programmed I/O、interrupt-initiated I/O 和 DMA 怎麼搬資料；再看多個裝置搶 bus 時，daisy chain、polling、independent request 三種仲裁怎麼決定誰先用。",
+ "parts": [
+  {
+   "title": "三種傳輸方式：memory 才是起點和終點",
+   "scene": "cio-three",
+   "steps": 9,
+   "lines": [
+    {
+     "say": "好，這一章要回答一個很實際的問題：電腦跟鍵盤、磁碟這些周邊裝置之間，資料到底怎麼傳？",
+     "k": 1,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 13.1
+     }
+    },
+    {
+     "say": "先講一個大前提。電腦處理的全是 binary，也就是一串 0 和 1，周邊裝置送來的也一樣。",
+     "k": 1,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 32.4
+     }
+    },
+    {
+     "say": "從外部裝置收進來的資料，最後去哪裡？一定是存進 memory，記憶體。",
+     "k": 2,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 41.5
+     }
+    },
+    {
+     "say": "反過來，CPU 要送給裝置的資料，其實也是先從 memory 拿出來的。",
+     "k": 3,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 59.7
+     }
+    },
+    {
+     "say": "所以 CPU 在這裡只負責處理、負責轉手，它不是資料的老家。",
+     "k": 4,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 67.6
+     }
+    },
+    {
+     "say": "Katiyar 老師特別強調：資料傳輸真正的 source 和 target，永遠是 memory。",
+     "k": 5,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 74.7
+     }
+    },
+    {
+     "say": "記住這句話，等一下你就會懂，為什麼 DMA 可以把 CPU 跳過去。",
+     "k": 5
+    },
+    {
+     "say": "既然資料是在 memory 跟 I/O 之間跑，那「怎麼跑」就有好幾種做法，每一種叫一個 mode。",
+     "k": 6,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 84.4
+     }
+    },
+    {
+     "say": "有的 mode 讓 CPU 當中間人：資料先進 CPU，再由 CPU 寫進 memory。",
+     "k": 7,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 96.3
+     }
+    },
+    {
+     "say": "有的 mode 乾脆不經過 CPU，資料直接在 memory 和 I/O 之間傳。",
+     "k": 8,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 103.3
+     }
+    },
+    {
+     "say": "具體來說有三種：programmed I/O、interrupt-initiated I/O，還有 DMA，direct memory access。",
+     "k": 9,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 116.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Programmed I/O：CPU 一直 polling",
+   "scene": "cio-pio",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "好，我們先來看第一種，programmed I/O，它是最簡單的 I/O 做法。",
+     "k": 1,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 129.4
+     }
+    },
+    {
+     "say": "programmed 的意思就是：整個傳輸都寫在程式裡，由程式來控制。",
+     "k": 1
+    },
+    {
+     "say": "在這種方式裡，CPU 什麼都得自己來，沒有任何幫手。",
+     "k": 2,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 140
+     }
+    },
+    {
+     "say": "資料在處理器和 I/O module 之間傳，而且一定要經過 CPU。",
+     "k": 3,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 154.3
+     }
+    },
+    {
+     "say": "I/O 指令就寫在程式裡。畫面這幾行是 MIPS 寫法的示意：先讀裝置狀態，還沒好就跳回去再讀。",
+     "k": 4,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 170.2
+     }
+    },
+    {
+     "say": "程式一行一行跑，每一筆資料都要靠一條指令來搬。像 lw，把資料讀進暫存器 $t1。",
+     "read": "程式一行一行跑，每一筆資料都要靠一條指令來搬。像 load word，把資料讀進暫存器 t1。",
+     "k": 5,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 180.3
+     }
+    },
+    {
+     "say": "接著 sw 再把 $t1 存進 memory。所以一般來說，資料是在 CPU 暫存器和 memory 之間搬。",
+     "read": "接著 store word 再把 t1 存進 memory。所以一般來說，資料是在 CPU 暫存器和 memory 之間搬。",
+     "k": 6,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 190.5
+     }
+    },
+    {
+     "say": "那問題來了：裝置什麼時候準備好？CPU 不知道，只好一直去問，這就叫 polling，輪詢。",
+     "k": 7,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 198.6
+     }
+    },
+    {
+     "say": "第一次問，status 是 0，還沒好，beq 就跳回 loop 再問一次。",
+     "read": "第一次問，status 是零，還沒好，b e q 就跳回 loop 再問一次。",
+     "k": 7,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 210.6
+     }
+    },
+    {
+     "say": "就這樣一次又一次：ready 了沒？還沒。ready 了沒？還沒。",
+     "k": 8,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 215.5
+     }
+    },
+    {
+     "say": "看上面這條 CPU 時間軸，假設 160 個 cycle 裡來 8 筆資料。紅色在 polling，橘色在搬資料。",
+     "k": 9
+    },
+    {
+     "say": "CPU 整段時間都在盯裝置，其他程式根本分不到 CPU，只能乾等。",
+     "k": 10,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 227.7
+     }
+    },
+    {
+     "say": "算一下，CPU 能拿去做別的事的時間是 0/160，也就是 0%。這就是老師說的非常耗時間。",
+     "read": "算一下，CPU 能拿去做別的事的時間是一百六十分之零，也就是百分之零。這就是老師說的非常耗時間。",
+     "k": 11,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 235.2
+     }
+    },
+    {
+     "say": "當然它也有優點：做法簡單，需要的硬體非常少。",
+     "k": 12,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 246.2
+     }
+    },
+    {
+     "say": "缺點就是 busy waiting，忙碌等待：CPU 看起來很忙，其實一直在等，沒做正事。",
+     "k": 13,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 253.2
+     }
+    },
+    {
+     "say": "老師的總結是：它把 CPU 綁住很長一段時間，卻產生不了有用的結果。",
+     "k": 14,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 266.8
+     }
+    },
+    {
+     "say": "補充一個考試算法：polling 的負擔，是每秒 poll 幾次乘每次幾個 cycle，再除以 clock rate。",
+     "k": 14
+    },
+    {
+     "say": "而且不管裝置忙不忙，都得一直 poll，這正是它浪費的地方。",
+     "k": 14
+    }
+   ]
+  },
+  {
+   "title": "Interrupt-initiated I/O：裝置好了才叫 CPU",
+   "scene": "cio-intr",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "第二種是 interrupt-initiated I/O，由中斷來發動的 I/O。你看，CPU 現在正在跑主程式。",
+     "k": 1,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 276
+     }
+    },
+    {
+     "say": "interrupt 這個字就是「打斷」：手上正在做的事，被暫停下來。",
+     "k": 2,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 282.7
+     }
+    },
+    {
+     "say": "被打斷後，CPU 先去處理別的事，處理完再回來接著做，這叫 resume。",
+     "k": 3,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 291.5
+     }
+    },
+    {
+     "say": "就像你寫作業寫到一半接了通電話，講完再回來繼續寫，前面寫的不用重來。",
+     "k": 3
+    },
+    {
+     "say": "它的好處就在這：programmed I/O 那個 CPU 一直 polling 的限制，在這裡被解決了。",
+     "k": 4,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 298.3
+     }
+    },
+    {
+     "say": "那 CPU 不用一直盯，總得有人通知它吧？這個機制就是 interrupt。",
+     "k": 5,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 315.1
+     }
+    },
+    {
+     "say": "做法是：CPU 先送一個特別的 command 給 I/O interface，意思是「資料好了你再叫我」。",
+     "k": 6,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 329.9
+     }
+    },
+    {
+     "say": "interface 什麼時候叫？等裝置的資料 available，也就是準備好的時候。",
+     "k": 7,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 347.1
+     }
+    },
+    {
+     "say": "在等的這段時間，CPU 可以去執行別的程式，不用乾等。",
+     "k": 8,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 356.6
+     }
+    },
+    {
+     "say": "那誰在盯裝置？是 interface，不是 CPU。監看的工作交給了介面電路。",
+     "k": 9,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 362.7
+     }
+    },
+    {
+     "say": "裝置準備好了，interface 才送出 interrupt request，簡稱 IRQ。注意，只有 ready 才會發。",
+     "k": 10,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 377.8
+     }
+    },
+    {
+     "say": "CPU 看到這個訊號，就先把目前正在執行的工作停下來。",
+     "k": 11,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 390
+     }
+    },
+    {
+     "say": "接著去處理這個請求：把裝置的資料搬進來、存進 memory。這段程式叫中斷服務程式，ISR。",
+     "k": 12,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 399.9
+     }
+    },
+    {
+     "say": "處理完，再回到剛才被打斷的主程式，把它做完。",
+     "k": 13,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 403.9
+     }
+    },
+    {
+     "say": "用同一個示意模型算：8 筆資料各中斷一次，每次 6 個 cycle，CPU 只忙 48 個 cycle。",
+     "k": 14
+    },
+    {
+     "say": "剩下 112/160，也就是 70% 的時間可以做別的事。從 0% 到 70%，差別就在不用一直監看。",
+     "read": "剩下一百六十分之一百一十二，也就是百分之七十的時間可以做別的事。從百分之零到百分之七十，差別就在不用一直監看。",
+     "k": 14,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 416.8
+     }
+    }
+   ]
+  },
+  {
+   "title": "前兩種的共同缺點",
+   "scene": "cio-limits",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "好，回頭把 programmed I/O 跟 interrupt-initiated I/O 放在一起看。",
+     "k": 1,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 430.1
+     }
+    },
+    {
+     "say": "老師說，這兩種都有兩個主要的缺點。",
+     "k": 2,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 438.7
+     }
+    },
+    {
+     "say": "第一，每一筆 I/O 傳輸都要處理器親自管，而且每筆都要執行好幾條指令。",
+     "k": 3,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 443.7
+     }
+    },
+    {
+     "say": "像畫面上，4 個 word 各要一條 lw、一條 sw，總共 8 條指令，全落在 CPU 頭上。",
+     "read": "像畫面上，4 個 word 各要一條 load word、一條 store word，總共 8 條指令，全落在 CPU 頭上。",
+     "k": 3
+    },
+    {
+     "say": "第二，資料一定要經過 CPU，所以 I/O 的傳輸速率，最多就跟 CPU 處理資料一樣快。",
+     "k": 4,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 454
+     }
+    },
+    {
+     "say": "那怎麼辦？這兩個缺點，就要靠第三種方式來解決：DMA。",
+     "k": 5,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 466.1
+     }
+    }
+   ]
+  },
+  {
+   "title": "DMA：CPU 只發動，資料直接進 memory",
+   "scene": "cio-dma",
+   "steps": 11,
+   "lines": [
+    {
+     "say": "第三種，DMA，direct memory access。負責搬運的 interface，換成 DMA controller。",
+     "k": 1,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 475.7
+     }
+    },
+    {
+     "say": "它透過 memory bus，直接把資料搬進或搬出 memory。",
+     "k": 1,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 478.1
+     }
+    },
+    {
+     "say": "資料就在 memory 和 I/O 之間直接傳，不用每一筆都麻煩 CPU。",
+     "k": 2,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 484.9
+     }
+    },
+    {
+     "say": "CPU 只負責發動：把起始位址、要傳幾個 word 告訴 DMA controller，之後就放手。",
+     "k": 3,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 496.4
+     }
+    },
+    {
+     "say": "它特別適合磁碟、磁帶這種快速的儲存裝置，因為它們一次要傳一大塊資料。",
+     "k": 4,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 504.2
+     }
+    },
+    {
+     "say": "老師說 DMA 讓周邊裝置「彼此直接溝通」，精確一點講，是裝置直接跟 memory 交換資料。",
+     "k": 5,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 521.2
+     }
+    },
+    {
+     "say": "真正傳的時候，DMA 先透過 memory bus 要一個 memory cycle，這叫 bus request。",
+     "k": 6,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 540.7
+     }
+    },
+    {
+     "say": "請求被允許，也就是 bus grant，DMA 就直接把第一個 word 寫進 memory 的 A000。",
+     "read": "請求被允許，也就是 bus grant，DMA 就直接把第一個 word 寫進 memory 的 A 零零零。",
+     "k": 7,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 547.5
+     }
+    },
+    {
+     "say": "同時，它暫存器裡的位址往後移一格，剩下要傳的數量減 1。",
+     "k": 7
+    },
+    {
+     "say": "這時 CPU 也要用 memory 呢？稍等一下就好。老師說，CPU 只是延後自己的 memory 存取。",
+     "k": 8,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 557.8
+     }
+    },
+    {
+     "say": "課本把這叫 cycle stealing：DMA 偷用 bus 一個 cycle，CPU 只被耽誤一點點。",
+     "k": 8
+    },
+    {
+     "say": "剩下的 word 也一樣，每傳一個偷一個 cycle，4 個 word 依序寫進 A000 到 A003。",
+     "read": "剩下的 word 也一樣，每傳一個偷一個 cycle，4 個 word 依序寫進 A 零零零 到 A 零零三。",
+     "k": 9
+    },
+    {
+     "say": "在 DMA 傳輸的那一刻，bus 由 DMA controller 掌控，CPU 沒有 memory bus 的控制權。",
+     "k": 10,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 574.5
+     }
+    },
+    {
+     "say": "老師說這時 CPU 是 idle，更精確的說法是：CPU 不能用 bus，但不需要 bus 的工作照樣能做。",
+     "k": 10,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 579.5
+     }
+    },
+    {
+     "say": "整體算一下：開頭設定 10 個 cycle，每個 word 偷 1 個，結束時再中斷一次，6 個 cycle。",
+     "k": 11
+    },
+    {
+     "say": "8 個 word 共 24 個 cycle，CPU 有 85% 的時間是自由的。DMA 只在開頭和結尾打擾 CPU。",
+     "read": "8 個 word 共 24 個 cycle，CPU 有百分之八十五的時間是自由的。DMA 只在開頭和結尾打擾 CPU。",
+     "k": 11
+    },
+    {
+     "say": "課本還提到 burst mode：DMA 一次佔住 bus，把整塊資料傳完才還回去。",
+     "k": 11
+    }
+   ]
+  },
+  {
+   "title": "DMA 的優缺點",
+   "scene": "cio-dmapc",
+   "steps": 5,
+   "lines": [
+    {
+     "say": "好，來整理 DMA 的優缺點。優點一：周邊可以直接讀寫 memory，不需要 CPU 參與。",
+     "k": 1,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 598.7
+     }
+    },
+    {
+     "say": "優點二：資料在傳的同時，處理器可以去做別的事，所以整體處理更快。",
+     "k": 2,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 604.3
+     }
+    },
+    {
+     "say": "缺點一：要多一顆 DMA controller 來搬資料，系統成本當然就上去了。",
+     "k": 3,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 619.3
+     }
+    },
+    {
+     "say": "缺點二：可能有 cache coherence，也就是快取一致性的問題。",
+     "k": 4,
+     "src": {
+      "v": "E82x-cug9YE",
+      "t": 631.4
+     }
+    },
+    {
+     "say": "你想想看：cache 裡存著 X = 5，DMA 直接把 memory 的 X 改成 9，cache 不知道，還是舊的 5。",
+     "read": "你想想看：cache 裡存著 X 等於 5，DMA 直接把 memory 的 X 改成 9，cache 不知道，還是舊的 5。",
+     "k": 4
+    },
+    {
+     "say": "所以 DMA 的總結是：快、讓 CPU 自由；代價是控制器的成本，還有 cache 可能拿到舊資料。",
+     "k": 5
+    }
+   ]
+  },
+  {
+   "title": "Bus arbitration：誰先用 bus？",
+   "scene": "cio-arbwhy",
+   "steps": 13,
+   "lines": [
+    {
+     "say": "資料要在 memory、CPU、I/O 之間跑，靠的都是 bus。那問題來了：大家同時搶 bus 怎麼辦？",
+     "k": 1
+    },
+    {
+     "say": "先複習，system bus 由三種組成：data bus 傳資料、address bus 傳位址、control bus 傳控制訊號。",
+     "k": 1,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 15.1
+     }
+    },
+    {
+     "say": "所謂 arbitration，仲裁，就是決定現在誰可以用 bus 來讀或寫。",
+     "k": 2,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 23.8
+     }
+    },
+    {
+     "say": "為什麼要仲裁？因為好幾個裝置，可能在同一時間都想用 bus。",
+     "k": 3,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 37.8
+     }
+    },
+    {
+     "say": "一條 bus 接著很多裝置，所以一定要決定：bus 先交給哪一個？",
+     "k": 4,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 47.1
+     }
+    },
+    {
+     "say": "老師把 arbitration 比喻成一個 master，老大：由它決定誰先存取。",
+     "k": 5,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 81.3
+     }
+    },
+    {
+     "say": "因為同一時間，bus 只能服務一個裝置。D1 的資料上了 bus，D2、D3 就得等。",
+     "k": 6,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 90.7
+     }
+    },
+    {
+     "say": "好的仲裁方式，要在兩件事之間取得平衡：bus priority，跟 fairness。",
+     "k": 7,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 100.8
+     }
+    },
+    {
+     "say": "priority 是優先權：最高的先服務，再輪到低的。這裡假設 D1 最高、D3 最低。",
+     "k": 8,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 140.4
+     }
+    },
+    {
+     "say": "fairness 是公平：每個裝置是不是都服務得到，不會有人永遠排不到。",
+     "k": 9,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 151.8
+     }
+    },
+    {
+     "say": "那實際上怎麼做？有三種仲裁機制。",
+     "k": 10,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 169.8
+     }
+    },
+    {
+     "say": "分別是 daisy chain 菊鍊、polling 輪詢，還有 independent request 獨立請求。",
+     "k": 11,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 192.2
+     }
+    },
+    {
+     "say": "每一種都要用一些特別的 control lines，畫面下面列出它們各自用到的線。",
+     "k": 12,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 212.4
+     }
+    },
+    {
+     "say": "三種的目標一樣，都是依照優先權服務裝置，只是規則各不相同。我們一個一個來。",
+     "k": 13,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 228.4
+     }
+    }
+   ]
+  },
+  {
+   "title": "Daisy chain：grant 一台傳一台",
+   "scene": "cio-daisy",
+   "steps": 16,
+   "lines": [
+    {
+     "say": "第一種，daisy chain，菊鍊。名字的意思是：裝置像花圈一樣，一個串著一個。",
+     "k": 1,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 252.6
+     }
+    },
+    {
+     "say": "做決定的只有一個角色，bus master。老師強調，不管哪個系統，master 只有一個。",
+     "k": 2,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 261.5
+     }
+    },
+    {
+     "say": "接上三個裝置，D1、D2、D3。",
+     "k": 3,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 295.7
+     }
+    },
+    {
+     "say": "它們接到三條控制線：bus request、bus busy，還有 bus grant。",
+     "k": 4,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 309.9
+     }
+    },
+    {
+     "say": "前兩條大家共用；bus grant 最特別，它從 master 出發，一台串一台，經過 D1、D2、D3。",
+     "k": 4
+    },
+    {
+     "say": "想用 bus 的裝置，就把 bus request 拉起來，告訴 master：「有人要用。」",
+     "k": 5,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 333.5
+     }
+    },
+    {
+     "say": "master 先確認 bus 是空閒的，也就是 busy 線是 0，現在沒人在傳資料。",
+     "read": "master 先確認 bus 是空閒的，也就是 busy 線是零，現在沒人在傳資料。",
+     "k": 6,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 345.9
+     }
+    },
+    {
+     "say": "優先權怎麼定？看位置：離 master 越近越高。D1 最高、D3 最低。",
+     "k": 7,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 359
+     }
+    },
+    {
+     "say": "master 送出 grant，grant 先到 D1。D1 有請求，就把 grant 攔下來，不往下傳。",
+     "k": 8,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 375
+     }
+    },
+    {
+     "say": "D1 拿到 bus，同時拉起 busy 線，告訴大家「我在用」，其他裝置就不能再要。",
+     "k": 9,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 384.3
+     }
+    },
+    {
+     "say": "D1 用完就釋放 bus。下一次 grant 經過 D1，它已經沒有請求，就把 grant 往下傳。",
+     "k": 10,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 400.9
+     }
+    },
+    {
+     "say": "這點老師講得比較快。課本的規則是：裝置只有在自己沒請求時，才把 grant 傳下去。",
+     "k": 10
+    },
+    {
+     "say": "所以下一個有請求的 D2，就拿到 bus。",
+     "k": 11,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 408.6
+     }
+    },
+    {
+     "say": "D2 用完，grant 再一路傳到 D3。服務順序 D1、D2、D3，一個接一個，像一條鏈。",
+     "k": 12,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 412.8
+     }
+    },
+    {
+     "say": "優點呢？構造非常簡單，線也很少。",
+     "k": 13,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 424.7
+     }
+    },
+    {
+     "say": "缺點是不能保證 fairness。低優先權的裝置，可能被無限期地擋在外面。",
+     "k": 14,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 436.9
+     }
+    },
+    {
+     "say": "為什麼？老師說：快輪到最後一台時，可能又有高優先權的裝置中途插進來。",
+     "k": 15,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 467.4
+     }
+    },
+    {
+     "say": "像這裡 D1、D2 用完馬上又請求，grant 總是先經過它們，D3 一次都輪不到。這叫 starvation，飢餓。",
+     "k": 15
+    },
+    {
+     "say": "另一個缺點是慢。grant 要一台一台傳，到 D3 得經過三站，鏈越長越慢，bus 速度就被限制住。",
+     "k": 16,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 484.9
+     }
+    }
+   ]
+  },
+  {
+   "title": "Polling：master 用 ID 一個個問",
+   "scene": "cio-poll",
+   "steps": 14,
+   "lines": [
+    {
+     "say": "第二種是 polling。老師還特別把拼法寫出來：p-o-l-l-i-n-g。",
+     "read": "第二種是 polling。老師還特別把拼法寫出來：p，o，l，l，i，n，g。",
+     "k": 1,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 500.1
+     }
+    },
+    {
+     "say": "先分清楚：這裡的 polling 是 bus 仲裁的方法，跟前面 CPU 一直問裝置好了沒，是兩回事。",
+     "k": 1
+    },
+    {
+     "say": "它很像 daisy chain，差別是：沒有那條一路串下去的 bus grant，改由 master 決定先服務誰。",
+     "k": 2,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 509
+     }
+    },
+    {
+     "say": "一樣接三個裝置，D1、D2、D3。",
+     "k": 3,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 525.5
+     }
+    },
+    {
+     "say": "用到三種線：poll lines、bus request，還有 bus busy，有人用 bus 時就拉起來。",
+     "k": 4,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 539.3
+     }
+    },
+    {
+     "say": "原本的 grant 線，被換成一組 poll lines，上面放的是裝置的 ID。",
+     "k": 5,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 573.1
+     }
+    },
+    {
+     "say": "3 台裝置用 ID 1 到 3，2 條線就夠，因為 2 個 bit 最多可以表示到 3。",
+     "k": 5
+    },
+    {
+     "say": "步驟一：bus 沒在忙的時候，想用的裝置向 master 發 bus request。這裡假設 D2、D3 想用。",
+     "k": 6,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 585.1
+     }
+    },
+    {
+     "say": "步驟二：master 把 ID 一個個放上 poll lines 去問。ID 1 的 D1 沒請求，ID 2 的 D2 有，就回應。",
+     "k": 7,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 611.1
+     }
+    },
+    {
+     "say": "每台都有自己的 ID，master 依照 ID 決定先服務誰，一切由 master 說了算。",
+     "k": 8,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 645.1
+     }
+    },
+    {
+     "say": "步驟三：拿到 bus grant 的 D2，把 bus 標成 busy，開始使用。",
+     "k": 9,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 665.1
+     }
+    },
+    {
+     "say": "優點：daisy chain 的那些缺點，在這裡都沒有。",
+     "k": 10,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 695.8
+     }
+    },
+    {
+     "say": "回想一下，daisy chain 的毛病是不公平、又慢，最低優先權的裝置可能一直等。",
+     "k": 11,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 711.1
+     }
+    },
+    {
+     "say": "polling 每台有 ID，master 能決定從哪個 ID 問起。上次服務 D2，這次從 ID 3 問，D3 就不會一直等。",
+     "k": 12,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 733.8
+     }
+    },
+    {
+     "say": "缺點：要多幾條 poll lines。daisy chain 只要一條 grant 線就夠了。",
+     "k": 13,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 752.5
+     }
+    },
+    {
+     "say": "而且 master 一台一台 poll 也要時間，所以跟 daisy chain 的 grant 一樣，也有延遲。",
+     "k": 14,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 767.3
+     }
+    }
+   ]
+  },
+  {
+   "title": "Independent request：每台自己一對線",
+   "scene": "cio-indep",
+   "steps": 12,
+   "lines": [
+    {
+     "say": "第三種，independent request。名字就說明了：每個裝置彼此獨立。",
+     "k": 1,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 775.5
+     }
+    },
+    {
+     "say": "master 和每台裝置之間，都有自己的 request 線 R、自己的 grant 線 G，外加一條共用的 busy。",
+     "k": 2,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 790.4
+     }
+    },
+    {
+     "say": "D1 準備好，就從自己的 R1 送出請求；bus 正空著，master 從 G1 回覆，D1 拿到 bus。",
+     "k": 3,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 805.3
+     }
+    },
+    {
+     "say": "D2 也從 R2 請求，可是 bus 還被 D1 佔著，就先等；D1 釋放後，master 才送 G2。",
+     "k": 4,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 816.1
+     }
+    },
+    {
+     "say": "D3 從 R3 請求，等 bus 空出來，master 就把 G3 給 D3。",
+     "k": 5,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 822.4
+     }
+    },
+    {
+     "say": "那條共用的 busy 線：誰在用 bus，誰就把它拉起來，別人一看就知道要等。",
+     "k": 6,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 835.2
+     }
+    },
+    {
+     "say": "老師強調：bus 忙的時候，裝置一定要等它被釋放。這次 D1 再請求，就得等 D3 放手。",
+     "k": 7,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 851.6
+     }
+    },
+    {
+     "say": "好幾台同時請求呢？master 一樣等 bus 空了才送 grant，而且依優先權決定給誰。",
+     "k": 8,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 874
+     }
+    },
+    {
+     "say": "整理步驟：bus 不忙就送 request；master 從 grant 線決定給誰；拿到的標 busy；用完標 release。",
+     "k": 9,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 886.1
+     }
+    },
+    {
+     "say": "優點是快，而且可以做 dynamic priority，動態優先權。像這裡把 D3 調成最高，這次就先給 D3。",
+     "k": 10,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 917
+     }
+    },
+    {
+     "say": "缺點是線太多：每台一條 request 加一條 grant，N 個裝置就要 2N 條，3 台就是 6 條。",
+     "read": "缺點是線太多：每台一條 request 加一條 grant，N 個裝置就要兩倍的 N 條，3 台就是 6 條。",
+     "k": 11,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 934.9
+     }
+    },
+    {
+     "say": "最後比一比三種：daisy chain 線最少，但不公平又慢；polling 公平一些，但要多幾條 poll lines。",
+     "k": 12,
+     "src": {
+      "v": "Yp_3OrDhUkQ",
+      "t": 958.8
+     }
+    },
+    {
+     "say": "independent request 最快、最有彈性，代價是 2N 條線。考比較題，就從線數、速度、公平性下手。",
+     "read": "independent request 最快、最有彈性，代價是兩倍的 N 條線。考比較題，就從線數、速度、公平性下手。",
+     "k": 12
+    }
+   ]
+  }
+ ]
+}
