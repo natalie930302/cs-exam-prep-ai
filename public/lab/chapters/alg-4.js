@@ -176,7 +176,7 @@ export default function (ctx) {
     for (let k = 1; k <= n; k++) {
       const x = (k - (n + 1) / 2) * w;
       out.push(cube('A' + k, k % 2 ? BLUE : PURPLE, [w * 0.82, 0.5, 0.4], x, y, 0));
-      tag(p[k - 1] + '×' + p[k], 'idx', x, y - 0.5);
+      tag(p[k - 1] + '×' + p[k], 'idx', x, y - 0.62);
     }
     return out;
   }
@@ -228,13 +228,19 @@ export default function (ctx) {
     fresh([0, 4.4, 14], [0, 3.4, 0]);
     say('暴力法：把所有括號方式都試一遍？', 'P(n) = Σ P(k)·P(n−k)，k = 1…n−1');
     const ALL4 = ['((A1A2)A3)A4', '(A1(A2A3))A4', '(A1A2)(A3A4)', 'A1((A2A3)A4)', 'A1(A2(A3A4))'];
-    tag('n = 4 的 5 種括法', 'ptr', 0, 7.2);
-    for (let k = 0; k < 5; k++) { const l = tag(ALL4[k], 'ptr alt', -4.6 + (k % 3) * 4.6, 6.4 - Math.floor(k / 3) * 0.7); Object.assign(l.element.style, MONO); await wait(tok, 700); }
+    const head = tag('n = 4 的 5 種括法', 'ptr', 0, 7.2), ways = [];
+    for (let k = 0; k < 5; k++) { const l = tag(ALL4[k], 'ptr alt', -4.6 + (k % 3) * 4.6, 6.4 - Math.floor(k / 3) * 0.7); Object.assign(l.element.style, MONO); ways.push(l); await wait(tok, 700); }
     await wait(tok, 1200);
+    // next subject: the five ways go, the growth chart has the stage to itself
+    // (all the flat bars arrive with them, so the framing does not jump)
+    ways.forEach(kill); head.element.textContent = 'n 個矩陣有幾種括法';
+    const barAt = [];
+    for (let n = 1; n <= 10; n++) { const x = -5.4 + (n - 1) * 1.2; barAt[n] = cube('', n <= 4 ? BLUE : ORANGE, [0.9, 1, 0.9], x, 0.02, 0); barAt[n].scale.y = 0.04; tag('n=' + n, 'idx', x, -0.45, 0.9); }
     for (let n = 1; n <= 10; n++) {
-      const v = catalan(n), h = 0.3 + Math.log10(v) * 1.1, x = -5.4 + (n - 1) * 1.2;
-      const m = cube('', n <= 4 ? BLUE : ORANGE, [0.9, 1, 0.9], x, 0, 0); m.scale.y = h; m.position.y = h / 2;
-      tag('n=' + n, 'idx', x, 0, 0.9); tag(String(v), 'idx', x, h + 0.35);
+      const v = catalan(n), h = 0.3 + Math.log10(v) * 1.1, m = barAt[n];
+      // the count is the bar's own value, on top of it
+      m.scale.y = h; m.position.y = h / 2;
+      const vl = lab.label(String(v), 'val'); vl.position.set(0, 0.5 + 0.3 / h, 0); m.add(vl);
       say('n = ' + n + '：' + v + ' 種', '高度用對數尺度');
       await wait(tok, 520);
     }
@@ -279,8 +285,8 @@ export default function (ctx) {
   }
   async function scMcTable(tok) {
     fresh([0, 4.4, 15], [0, 3.6, 0]);
-    dimsRow(MC_P, 7.3);
-    const g = mcmGrid(MC_P, -3.3, 5.6, 1.32, 0.82);
+    dimsRow(MC_P, 7.75);
+    const g = mcmGrid(MC_P, -4.25, 5.5, 1.7, 0.82);
     say('CLRS 例子：6 個矩陣', 'p = 30, 35, 15, 5, 10, 20, 25');
     await wait(tok, 2800);
     say('m[i][j]：試每個切點 k', 'min_k { m[i][k] + m[k+1][j] + pᵢ₋₁pₖpⱼ }；來源：同列左邊、同行下面');
@@ -298,8 +304,8 @@ export default function (ctx) {
   async function scMcSplit(tok) {
     fresh([0, 4.4, 15], [0, 3.6, 0]);
     const S = mcmSolve(MC_P), n = 6;
-    const g = grid({ rows: n, cols: n, cw: 0.62, ch: 0.5, x0: -6.2 + 0.7, y0: 6.6, colHdr: [1, 2, 3, 4, 5, 6], rowHdr: [1, 2, 3, 4, 5, 6], rowDx: 0.1 });
-    tag('s[i][j]', 'ptr', -4.0, 7.4);
+    const g = grid({ rows: n, cols: n, cw: 0.9, ch: 0.7, x0: -6.6, y0: 6.4, colHdr: [1, 2, 3, 4, 5, 6], rowHdr: [1, 2, 3, 4, 5, 6], rowDx: 0.1 });
+    tag('s[i][j]', 'ptr', -4.35, 7.55);
     for (let i = 1; i <= n; i++) for (let j = 1; j <= n; j++) { if (j > i) g.set(i - 1, j - 1, S.s[i][j], PURPLE, 0); else g.mark(i - 1, j - 1, '#ddd2bf'); }
     say('s[i][j] 記下最好的切點 k', '從 s[1][6] 一路往下拆');
     await wait(tok, 2600);
@@ -375,7 +381,7 @@ export default function (ctx) {
       nd.m = nd.dummy !== undefined ? cube('d' + nd.dummy, GRAY, [0.62, 0.4, 0.36], nd.x, nd.y, 0, ms ? 1 : 0) : cube(keyName(nd.key), BLUE, [0.72, 0.48, 0.42], nd.x, nd.y, 0, ms ? 1 : 0);
       if (ms) {
         sum += (nd.d + 1) * pr;
-        tag((nd.d + 1) + '×' + pr, 'idx', nd.x, nd.y - 0.45);
+        tag((nd.d + 1) + '×' + pr, 'idx', nd.x, nd.y - 0.54);
         if (sumL) txt(sumL, '期望成本 = ' + (Number.isInteger(sum) ? sum : sum.toFixed(2)));
         await wait(tok, ms);
       }
@@ -390,12 +396,12 @@ export default function (ctx) {
     await wait(tok, 3000);
     say('搜尋成本 = depth + 1', 'E[cost] = Σ (depth(kᵢ)+1)·pᵢ + Σ (depth(dᵢ)+1)·qᵢ');
     await wait(tok, 3000);
-    const lA = tag('期望成本 = 0', 'ptr alt', -3.6, 0.7), lB = tag('期望成本 = 0', 'ptr alt', 3.6, 0.7);
-    tag('樹 (a)', 'ptr', -3.6, 7.6); tag('樹 (b)', 'ptr', 3.6, 7.6);
-    const a = await drawObst(tok, obstTree(SPEC_A(), 5, -6.1, 0.45, 6.8, 1.25), OB_P, OB_Q, 420, lA);
+    const lA = tag('期望成本 = 0', 'ptr alt', -4.1, 0.3), lB = tag('期望成本 = 0', 'ptr alt', 4.1, 0.3);
+    tag('樹 (a)', 'ptr', -4.1, 7.6); tag('樹 (b)', 'ptr', 4.1, 7.6);
+    const a = await drawObst(tok, obstTree(SPEC_A(), 5, -7.4, 0.66, 6.8, 1.35), OB_P, OB_Q, 420, lA);
     say('樹 (a)：期望成本 ' + a.toFixed(2), '看起來很平衡');
     await wait(tok, 2000);
-    const b = await drawObst(tok, obstTree(SPEC_B(), 5, 1.1, 0.45, 6.8, 1.25), OB_P, OB_Q, 420, lB);
+    const b = await drawObst(tok, obstTree(SPEC_B(), 5, 0.8, 0.66, 6.8, 1.35), OB_P, OB_Q, 420, lB);
     say('樹 (b)：' + b.toFixed(2) + ' 比較小，而且是最佳', '高度最小 ≠ 期望成本最小；root 也不一定是機率最大的 key');
     await wait(tok, 3600);
   }
@@ -415,8 +421,8 @@ export default function (ctx) {
   async function scObstBuild(tok) {
     fresh([0, 4.4, 15], [0, 3.8, 0]);
     const S = obstSolve(OB_P, OB_Q), n = 5;
-    const g = grid({ rows: n, cols: n, cw: 0.62, ch: 0.5, x0: -5.5, y0: 6.6, colHdr: [1, 2, 3, 4, 5], rowHdr: [1, 2, 3, 4, 5], rowDx: 0.1 });
-    tag('root[i][j]', 'ptr', -4.2, 7.4);
+    const g = grid({ rows: n, cols: n, cw: 0.9, ch: 0.7, x0: -6.4, y0: 6.4, colHdr: [1, 2, 3, 4, 5], rowHdr: [1, 2, 3, 4, 5], rowDx: 0.1 });
+    tag('root[i][j]', 'ptr', -4.6, 7.55);
     for (let i = 1; i <= n; i++) for (let j = 1; j <= n; j++) { if (j >= i) g.set(i - 1, j - 1, S.root[i][j], PURPLE, 0); else g.mark(i - 1, j - 1, '#ddd2bf'); }
     say('用 root 表遞迴建樹', 'root[1][5] = 2 → 左 k1、右 k3…k5');
     await wait(tok, 2600);
@@ -971,7 +977,7 @@ FRAG.push(['dp4bari-chain3', '三個矩陣兩種括法：40 vs 36', async (tok) 
   const ops = {
     abc: () => {
       mats = X.map((x, k) => cube('A' + (k + 1), k % 2 ? PURPLE : BLUE, [1.4, 0.55, 0.45], x, 7.0, 0, fast ? 0 : 1.5));
-      X.forEach((x, k) => top.push(tag(d[k] + '×' + d[k + 1], 'idx', x, 7.6)));
+      X.forEach((x, k) => top.push(tag(d[k] + '×' + d[k + 1], 'idx', x, 7.75)));
       gd.mood('wow'); say('三個矩陣 A1、A2、A3 要相乘', '2×3、3×4、4×2');
     },
     check: () => { top.push(tag('3 = 3 ✓', 'good', -1.2, 8.2), tag('4 = 4 ✓', 'good', 1.2, 8.2)); gd.mood('calm'); say('先檢查能不能乘', '相鄰的維度都對得上'); },
@@ -1047,7 +1053,7 @@ FRAG.push(['dp4bari-trees4', '四個矩陣：括號 = 二元樹，共 5 種', as
       const gm = grid({ rows: 4, cols: 4, cw: 1.15, ch: 0.8, x0: -5.0, y0: 5.5, colHdr: hd('j='), rowHdr: hd('i='), rowDx: 0.35 });
       const gs = grid({ rows: 4, cols: 4, cw: 0.9, ch: 0.8, x0: 1.9, y0: 5.5, colHdr: hd('j='), rowHdr: hd('i='), rowDx: 0.3 });
       for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { if (j < i) gm.mark(i, j, '#ddd2bf'); if (j <= i) gs.mark(i, j, '#ddd2bf'); }
-      tag('M 表', 'ptr', -6.5, 6.3); tag('S 表', 'ptr', 1.0, 6.5);
+      tag('M 表', 'ptr', -6.5, 6.3); tag('S 表', 'ptr', 0.75, 6.3);
       gd.mood('calm'); say('DP 用 tabulation：兩張表', 'M 存成本、S 存切點');
     },
   };
@@ -1104,10 +1110,10 @@ FRAG.push(['dp4bari-derive', '從 40 和 36 兩個算式推出 C(i,j) 公式', a
   const dT = d.map((v, k) => tag('d' + k + '=' + v, 'idx', -3.6 + k * 2.4, 6.8));
   let head = null, r1 = [], r2 = [], g = [], gLbl = null;
   const row = (y, lbl, vals) => {
-    tag(lbl, 'ptr', -5.3, y);
+    const lt = tag(lbl, 'ptr', -5.7, y);
     const ps = vals.slice(0, 3).map((v, t) => cube(String(v), [BLUE, PURPLE, ORANGE][t], [2.1, 0.55, 0.45], PX[t], y, 0, 1.0));
     tag('+', 'val', -1.8, y); tag('+', 'val', 1.35, y);
-    ps.res = tag('= ' + vals[3], 'ptr alt', 5.4, y);
+    ps.res = tag('= ' + vals[3], 'ptr alt', 5.4, y); ps.lt = lt;
     return ps;
   };
   const hi = (ks) => dT.forEach((l, k) => setCls(l, ks.includes(k) ? 'ptr alt' : 'idx'));
@@ -1126,10 +1132,11 @@ FRAG.push(['dp4bari-derive', '從 40 和 36 兩個算式推出 C(i,j) 公式', a
     ij: () => { glow(r2[2], null); hi([]); txt(head, 'C(i,j)：i = 1、j = 3'); sb('兩式頭尾都是 1 和 3 → i、j'); say('兩式的頭尾都是 1 和 3', '叫它們 i 和 j'); },
     dij: () => { hi([0, 3]); sb('d0 = d(i−1)、d3 = d(j)'); say('兩式都有 d0 和 d3', 'd0 = d(i−1)、d3 = d(j)'); },
     k: () => {
-      gLbl = tag('C(i,j) = min', 'ptr alt', -5.3, 2.2);
+      gLbl = tag('C(i,j) = min', 'ptr alt', -5.7, 2.2);
       g = ['C(i,k)', 'C(k+1,j)'].map((s, t) => cube(s, [BLUE, PURPLE][t], [2.1, 0.55, 0.45], PX[t], 2.2, 0, 1.0));
       tag('+', 'val', -1.8, 2.2);
-      tag('k=2', 'idx', -5.3, 4.55); tag('k=1', 'idx', -5.3, 3.25);
+      // k joins each row's own name (no second tag under it)
+      txt(r1.lt, '(A1A2)A3  k=2'); txt(r2.lt, 'A1(A2A3)  k=1');
       say('中間切開的地方叫 k', '左邊 C(i,k)、右邊 C(k+1,j)');
     },
     dk: () => { hi([1, 2]); sb('中間的維度 d(k)：k=2 → d2、k=1 → d1'); say('中間那個維度就是 d(k)', 'k = 2 用 d2，k = 1 用 d1'); },
@@ -1161,7 +1168,7 @@ FRAG.push(['dp4bari-mc-count', '四個矩陣 5 種括法：Catalan 數', async (
   const ops = {
     mats: () => {
       mats = [0, 1, 2, 3].map((k) => cube('A' + (k + 1), k % 2 ? PURPLE : BLUE, [1.4, 0.5, 0.45], -3.3 + k * 2.2, 7.4, 0, 1.2));
-      [0, 1, 2, 3].forEach((k) => tag('d' + k + '×d' + (k + 1), 'idx', -3.3 + k * 2.2, 8.0));
+      [0, 1, 2, 3].forEach((k) => tag('d' + k + '×d' + (k + 1), 'idx', -3.3 + k * 2.2, 8.15));
       gd.mood('wow'); say('四個矩陣，維度 d0…d4', '用公式之前，先看有幾種乘法');
     },
     ask: () => { sb('先找出最省力的括法'); say('有哪些相乘的方法？', '真的乘之前先知道哪種最省'); },
@@ -1185,13 +1192,13 @@ FRAG.push(['dp4bari-expand14', '直接展開 C(1,4)：子問題重複 → 由小
   const seq = prm().seq || ['root', 'k1', 'k2', 'k3', 'exp24', 'layer', 'rep'];
   fresh([0, 4.4, 14.5], [0, 3.8, 0]);
   const gd = guide(-6.5, 1.8, 0.6), sb = slot(4.6, 1.4);
-  const all = [], pars = [], cxs = [-4.4, 0, 4.4];
+  const all = [], pars = [], cxs = [-5.0, 0, 5.0];
   const lb = (a, b) => 'C(' + a + ',' + b + ')';
   const node = (a, b, x, y, color) => { const m = cube(lb(a, b), color, [1.05, 0.48, 0.4], x, y, 0, 1.0); m.userData.key = lb(a, b); all.push(m); return m; };
   const kOp = (k) => {
     const cx = cxs[k - 1];
     line(0, 7.35, cx, 6.25); tag('k=' + k, 'idx', cx, 6.75);
-    node(1, k, cx - 0.62, 6.0, BLUE); node(k + 1, 4, cx + 0.62, 6.0, PURPLE);
+    node(1, k, cx - 0.85, 6.0, BLUE); node(k + 1, 4, cx + 0.85, 6.0, PURPLE);
     tag('+ d0·d' + k + '·d4', 'idx', cx, 5.45);
     say('k = ' + k + '：' + lb(1, k) + ' + ' + lb(k + 1, 4), '+ d0·d' + k + '·d4');
   };
@@ -1208,11 +1215,11 @@ FRAG.push(['dp4bari-expand14', '直接展開 C(1,4)：子問題重複 → 由小
     },
     exp24: () => {
       pars.forEach(kill);
-      const ex = cxs[0] + 0.62;
+      const ex = cxs[0] + 0.85;
       [[2, [2, 2], [3, 4]], [3, [2, 3], [4, 4]]].forEach(([k, a, b], t) => {
-        const cx = ex + (t - 0.5) * 2.5;
+        const cx = ex + (t - 0.5) * 3.5;
         line(ex, 5.75, cx, 4.05); tag('k=' + k, 'idx', cx, 4.6);
-        node(a[0], a[1], cx - 0.58, 3.8, BLUE); node(b[0], b[1], cx + 0.58, 3.8, PURPLE);
+        node(a[0], a[1], cx - 0.8, 3.8, BLUE); node(b[0], b[1], cx + 0.8, 3.8, PURPLE);
       });
       say('C(2,4) 不知道：再套一次公式', 'k = 2、3');
     },
@@ -1222,9 +1229,9 @@ FRAG.push(['dp4bari-expand14', '直接展開 C(1,4)：子問題重複 → 由小
     layer: () => {
       for (let d = 0; d <= 3; d++) {
         const rw = []; for (let i = 1; i + d <= 4; i++) rw.push([i, i + d]);
-        const y = 0.3 + d * 0.6;
-        tag('j−i=' + d, 'idx', -4.0, y);
-        rw.forEach((a, t) => cube(lb(a[0], a[1]), d === 3 ? TEAL : d === 0 ? GRAY : BLUE, [1.0, 0.42, 0.35], (t - (rw.length - 1) / 2) * 1.15, y, 0, 1.0));
+        const y = 0.0 + d * 0.72;
+        tag('j−i=' + d, 'idx', -4.4, y);
+        rw.forEach((a, t) => cube(lb(a[0], a[1]), d === 3 ? TEAL : d === 0 ? GRAY : BLUE, [1.3, 0.48, 0.35], (t - (rw.length - 1) / 2) * 1.75, y, 0, 1.0));
       }
       sb(''); say('先算 j − i = 0，再 1、2、3', '由小到大填');
     },
@@ -1261,7 +1268,7 @@ FRAG.push(['dp4bari-mc-fill', 'Matrix chain 填表：成本表 + 切點表（逐
     return h + c.a + ' + ' + c.b + ' + ' + c.x + ' = ' + c.v;
   };
   const ops = {
-    dims: () => { if (dims) return; dims = dimsRow(p, 7.6); tag(p.map((v, k) => 'd' + k + '=' + v).join(' '), 'ptr', 5.0, 7.6); say('例題：d0…d4 = ' + p.join('、'), '4 個矩陣、5 個維度'); },
+    dims: () => { if (dims) return; dims = dimsRow(p, 7.6); tag(p.map((v, k) => 'd' + k + '=' + v).join(' '), 'ptr', 6.3, 7.6); say('例題：d0…d4 = ' + p.join('、'), '4 個矩陣、5 個維度'); },
     mgrid: () => {
       if (gm) return;
       gm = grid({ rows: n, cols: n, cw: 1.15, ch: 0.8, x0: -5.0, y0: 5.5, colHdr: hd('j='), rowHdr: hd('i='), rowDx: 0.35 });
@@ -1273,7 +1280,7 @@ FRAG.push(['dp4bari-mc-fill', 'Matrix chain 填表：成本表 + 切點表（逐
       if (gk) return;
       gk = grid({ rows: n, cols: n, cw: 0.9, ch: 0.8, x0: 1.9, y0: 5.5, colHdr: hd('j='), rowHdr: hd('i='), rowDx: 0.3 });
       for (let i = 0; i < n; i++) for (let j = 0; j <= i; j++) gk.mark(i, j, '#ddd2bf');
-      tag(kn + ' 表', 'ptr', 1.0, 6.5);
+      tag(kn + ' 表', 'ptr', 0.75, 6.3);
       say('再準備一張 ' + n + '×' + n + ' 的表', '記錄取到最小值的 k');
     },
     z: (i) => { gm.set(i - 1, i - 1, 0, GRAY, 1.4); if (dims) dims.forEach((m, k) => glow(m, k === i - 1 ? GOLD : null)); say(cn + '(' + i + ',' + i + ') = 0', '只有 A' + i + '，沒有乘任何東西'); },
@@ -1370,10 +1377,10 @@ FRAG.push(['dp4bari-paren', '從切點表加括號', async (tok) => {
   const seq = P.seq || ['tab', [['split', 1, 4]], [['split', 1, 3]], [['split', 2, 3]], 'order', 'str'];
   fresh([0, 4.4, 15], [0, 3.8, 0]);
   const gd = guide(-6.5, 1.8, 0.6), sb = slot(-3.6, 1.6);
-  const g = grid({ rows: n, cols: n, cw: 0.72, ch: 0.58, x0: -5.4, y0: 6.4, colHdr: Array.from({ length: n }, (_, k) => k + 1), rowHdr: Array.from({ length: n }, (_, k) => k + 1), rowDx: 0.1 });
-  tag(kn + ' 表', 'ptr', -4.3, 7.3);
+  const g = grid({ rows: n, cols: n, cw: 0.92, ch: 0.72, x0: -6.0, y0: 6.2, colHdr: Array.from({ length: n }, (_, k) => k + 1), rowHdr: Array.from({ length: n }, (_, k) => k + 1), rowDx: 0.1 });
+  tag(kn + ' 表', 'ptr', -4.6, 7.4);
   for (let i = 1; i <= n; i++) for (let j = 1; j <= n; j++) { if (j > i) g.set(i - 1, j - 1, S.s[i][j], PURPLE, 0); else g.mark(i - 1, j - 1, '#ddd2bf'); }
-  const xL = (k) => 0.4 + (k - 1) * (5.6 / Math.max(1, n - 1));
+  const xL = (k) => 0.9 + (k - 1) * (6.0 / Math.max(1, n - 1));
   const nodes = {};
   let lastCell = null, strT = null;
   const mk = (i, j, d, par) => {
@@ -1402,7 +1409,7 @@ FRAG.push(['dp4bari-paren', '從切點表加括號', async (tok) => {
       Object.values(nodes).forEach((nd) => glow(nd.m, null));
       say('由下往上乘：A2A3 → 乘 A1 → 乘 A4', '先乘樹的最底層');
       let t = 0;
-      for (const nd of post()) { t++; glow(nd.m, GREEN); tag('第' + t + '次', 'pkt', nd.x - 0.95, nd.y + 0.35); await beat(tok, 650); }
+      for (const nd of post()) { t++; glow(nd.m, GREEN); tag('第' + t + '次', 'pkt', nd.x - 1.15, nd.y + 0.2); await beat(tok, 650); }
       gd.mood('happy');
     },
     inorder: async () => {
@@ -1489,18 +1496,20 @@ FRAG.push(['dp4bari-code', '程式：d 是對角線、i 是列、j = i + d、k �
   const P = prm(), p = [5, 4, 6, 2, 7], S = mcmSolve(p);
   const seq = P.seq || ['p', 'ms', 'diag0', [['d', 2]], [['i', 1]], 'kl', [['k', 1, 2]], [['k', 2, 2]], [['kv', 1, 2]], 'min', 'sset'];
   fresh([0, 4.2, 15], [0, 4.0, 0]);
-  const gd = guide(-6.6, 1.8, 0.55), sb = slot(5.0, 2.6);
+  // layout: the code sits on a back plane on the left; the data (p, m, s, the
+  // q being tried) has the front right to itself, each in its own band
+  const gd = guide(-6.6, 1.8, 0.55), sb = slot(4.6, 1.6);
   let cd = null, gm = null, gs = null, pc = null, pT = [], dTag = null, mL = null, cur = null, mats = [], tmp = [];
   let D = 0, I = 0, J = 0, Q = {};
   const hdr = Array.from({ length: 5 }, (_, k) => k);
-  const ensureCode = () => { if (!cd) cd = code(MC_CODE, -2.0, 7.9, 0.41); };
-  const ensureP = (drop) => { if (!pc) pc = p.map((v, k) => cube(v, ORANGE, [0.5, 0.4, 0.4], 3.6 + k * 0.65, 6.9, 0, drop ? 1.2 : 0)); };
-  const ensurePT = () => { if (!pT.length) pT = p.map((v, k) => tag('p[' + k + ']', 'idx', 3.6 + k * 0.65, 6.45)); };
+  const ensureCode = () => { if (!cd) cd = code(MC_CODE, -5.4, 7.9, 0.46, -2.2); };
+  const ensureP = (drop) => { if (!pc) pc = p.map((v, k) => cube(v, ORANGE, [0.5, 0.4, 0.4], 6.0 + k * 0.7, 8.35, 0, drop ? 1.2 : 0)); };
+  const ensurePT = () => { if (!pT.length) pT = p.map((v, k) => tag('p[' + k + ']', 'idx', 6.0 + k * 0.7, 7.9)); };
   const ensureG = () => {
     if (gm) return;
-    gm = grid({ rows: 5, cols: 5, cw: 0.7, ch: 0.46, x0: -5.0, y0: 2.5, colHdr: hdr, rowHdr: hdr, rowDx: 0.1 });
-    gs = grid({ rows: 5, cols: 5, cw: 0.7, ch: 0.46, x0: 0.2, y0: 2.5, colHdr: hdr, rowHdr: hdr, rowDx: 0.1 });
-    tag('m', 'ptr', -6.3, 3.0); tag('s', 'ptr', -0.9, 3.0);
+    gm = grid({ rows: 5, cols: 5, cw: 0.8, ch: 0.6, x0: 1.2, y0: 6.9, colHdr: hdr, rowHdr: hdr, rowDx: 0.1 });
+    gs = grid({ rows: 5, cols: 5, cw: 0.8, ch: 0.6, x0: 6.0, y0: 6.9, colHdr: hdr, rowHdr: hdr, rowDx: 0.1 });
+    tag('m', 'ptr', 0.45, 7.4); tag('s', 'ptr', 5.25, 7.4);
     for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) if (j < i && i > 0 && j > 0) { gm.mark(i, j, '#ddd2bf'); gs.mark(i, j, '#ddd2bf'); }
   };
   const markZero = () => { for (let k = 0; k < 5; k++) for (const g of [gm, gs]) { g.mark(0, k, '#c9bfae'); g.mark(k, 0, '#c9bfae'); } };
@@ -1536,7 +1545,7 @@ FRAG.push(['dp4bari-code', '程式：d 是對角線、i 是列、j = i + d、k �
       const cs = []; for (let i = 1; i + dd < 5; i++) { gm.mark(i, i + dd, '#f3d27a'); gs.mark(i, i + dd, '#f3d27a'); cs.push('(' + i + ',' + (i + dd) + ')'); }
       say('要填的格子：j − i = ' + dd, cs.join(' '));
     },
-    dloop: () => { ensureCode(); cd.hl(2); unmarkUpper(); dTag = dTag || tag('d = 1, 2, 3', 'ptr alt', 4.9, 5.95); say('最外層 d：j − i 的差', 'd < n − 1 = 4 → d = 1、2、3'); },
+    dloop: () => { ensureCode(); cd.hl(2); unmarkUpper(); dTag = dTag || tag('d = 1, 2, 3', 'ptr alt', 2.0, 3.6); say('最外層 d：j − i 的差', 'd < n − 1 = 4 → d = 1、2、3'); },
     jcalc: () => {
       cd.hl(4);
       for (let i = 1; i < 5; i++) for (let j = i + 1; j < 5; j++) { const q0 = gm.pos(i, j); tmp.push(tag(i + '+' + (j - i), 'idx', q0.x, q0.y, 0.4)); }
@@ -1558,12 +1567,13 @@ FRAG.push(['dp4bari-code', '程式：d 是對角線、i 是列、j = i + d、k �
     },
     pick: (i, j) => { gm.mark(i, j, '#f3d27a'); say('先填 m[' + i + '][' + j + ']', 'A' + i + ' 和 A' + j + ' 兩個矩陣'); },
     sall: async () => { say('s 表也填上 1、2、3', '兩個矩陣只有一種切法：k = i'); for (let i = 1; i <= 3; i++) { gs.set(i, i + 1, i, PURPLE); gs.mark(i, i + 1); await beat(tok, 400); } },
-    d: (dd) => { ensureCode(); cd.hl(2); D = dd; dTag = dTag || tag('', 'ptr alt', 4.9, 5.95); txt(dTag, 'd = ' + dd); sb(''); gd.mood('wow'); say('d 變成 ' + dd, '下一條對角線'); },
+    d: (dd) => { ensureCode(); cd.hl(2); D = dd; dTag = dTag || tag('', 'ptr alt', 2.0, 3.6); txt(dTag, 'd = ' + dd); sb(''); gd.mood('wow'); say('d 變成 ' + dd, '下一條對角線'); },
     i: (ii) => {
       cd.hl(4); I = ii; J = ii + D; clearQ(); gm.clearArrows(); gm.unglow();
       gm.mark(I, J, '#f3d27a'); gs.mark(I, J, '#f3d27a');
-      const q0 = gm.pos(I, J); kill(cur); cur = tag('i=' + I + ' j=' + J, 'ptr alt', q0.x, q0.y + 0.42, 0.4);
-      mL = mL || mono(tag('', 'ptr', 4.9, 5.45)); txt(mL, 'min = INT_MAX');
+      // i and j join d on the one loop-variable label (no extra tag over the table)
+      dTag = dTag || tag('', 'ptr alt', 2.0, 3.6); txt(dTag, 'd = ' + D + '　i = ' + I + '　j = ' + J);
+      mL = mL || mono(tag('', 'ptr', 2.0, 3.0)); txt(mL, 'min = INT_MAX');
       say('i = ' + I + '，j = i + d = ' + J, '求 m[' + I + '][' + J + ']');
     },
     kl: () => { cd.hl(5); const ks = []; for (let k = I; k < J; k++) ks.push(k); sb('k = ' + ks.join('、')); say('k 從 i 到 j − 1', 'k = ' + ks.join('、')); },
@@ -1574,7 +1584,7 @@ FRAG.push(['dp4bari-code', '程式：d 是對角線、i 是列、j = i + d、k �
       gm.arrow(I, k, I, J, TRY); gm.arrow(k + 1, J, I, J, TRY);
       if (gm.get(I, k)) glow(gm.get(I, k), GOLD); if (gm.get(k + 1, J)) glow(gm.get(k + 1, J), GOLD);
       if (lvl >= 1 && pc) [I - 1, k, J].forEach((z) => glow(pc[z], GOLD));
-      if (!Q[k]) Q[k] = mono(tag('', '', 4.9, 4.9 - (k - I) * 0.55));
+      if (!Q[k]) Q[k] = mono(tag('', '', 6.9, 3.6 - (k - I) * 0.58));
       txt(Q[k], qTxt(k, lvl));
       say('k = ' + k + '：' + (I === k ? 'A' + I : 'A' + I + '…A' + k) + ' | ' + (k + 1 === J ? 'A' + J : 'A' + (k + 1) + '…A' + J), qTxt(k, lvl).split(': ')[1]);
     },
@@ -1582,7 +1592,7 @@ FRAG.push(['dp4bari-code', '程式：d 是對角線、i 是列、j = i + d、k �
     kparen: (...ks) => { const xs = ks.map((k) => 'k=' + k + '：' + splitStr(I, k, J)); sb(xs.join('　')); say(xs.length > 1 ? '兩種括法' : '這代表的括法', xs.join('、')); },
     kv: (...ks) => {
       cd.hl(7);
-      for (const k of ks) { if (!Q[k]) Q[k] = mono(tag('', '', 4.9, 4.9 - (k - I) * 0.55)); txt(Q[k], qTxt(k, 3)); }
+      for (const k of ks) { if (!Q[k]) Q[k] = mono(tag('', '', 6.9, 3.6 - (k - I) * 0.58)); txt(Q[k], qTxt(k, 3)); }
       const last = ks[ks.length - 1];
       say(ks.map((k) => qTxt(k, 3).split('= ').pop()).join('、'), '從表裡查值算出來');
       return last;
@@ -1590,7 +1600,7 @@ FRAG.push(['dp4bari-code', '程式：d 是對角線、i 是列、j = i + d、k �
     min: async () => {
       cd.hl(10); gm.clearArrows(); gm.unglow(); if (pc) pc.forEach((m) => glow(m, null));
       const bk = S.s[I][J];
-      for (let k = I; k < J; k++) { if (!Q[k]) Q[k] = mono(tag(qTxt(k, 3), '', 4.9, 4.9 - (k - I) * 0.55)); setCls(Q[k], k === bk ? 'ptr alt' : ''); }
+      for (let k = I; k < J; k++) { if (!Q[k]) Q[k] = mono(tag(qTxt(k, 3), '', 6.9, 3.6 - (k - I) * 0.58)); setCls(Q[k], k === bk ? 'ptr alt' : ''); }
       txt(mL, 'min = ' + S.m[I][J]);
       gm.set(I, J, S.m[I][J], TEAL); gm.mark(I, J);
       gd.mood('happy'); say('m[' + I + '][' + J + '] = ' + S.m[I][J], '最小的是 k = ' + bk);
@@ -1604,7 +1614,7 @@ FRAG.push(['dp4bari-code', '程式：d 是對角線、i 是列、j = i + d、k �
     ensureCode();
     if (P.full) { ensureP(false); ensurePT(); ensureG(); markZero(); for (let i = 1; i < 5; i++) gm.set(i, i, 0, GRAY, 0); }
     for (const [i, j] of P.pre || []) { gm.set(i, j, S.m[i][j], TEAL, 0); gs.set(i, j, S.s[i][j], PURPLE, 0); }
-    if (P.d) { D = P.d; dTag = tag('d = ' + D, 'ptr alt', 4.9, 5.95); }
+    if (P.d) { D = P.d; dTag = tag('d = ' + D, 'ptr alt', 2.0, 3.6); }
   }
   await runSeq(tok, seq, ops);
 }]);
@@ -1716,10 +1726,10 @@ FRAG.push(['dp4bari-obst-fill', 'OBST 填表：c(i,j) = min + w(i,j)', async (to
   const P = prm(), keys = P.keys || [10, 20, 30, 40], layout = P.layout || 'ij', ms = P.ms || 1500;
   const H = hobst(P.p || [4, 2, 6, 3], P.q), n = H.n, showW = layout === 'diag';
   fresh([0, 4.4, 15], [0, 3.8, 0]);
-  const cw = 1.15, ch = showW ? 1.0 : 0.85;
-  const g = obGrid(n, layout, -4.6, 6.4, cw, ch);
+  const cw = 1.15, ch = showW ? 1.2 : 1.08;
+  const g = obGrid(n, layout, -4.6, 6.6, cw, ch);
   const extra = {};
-  const putTag = (i, j, s) => { const k = i + ',' + j; if (extra[k]) kill(extra[k]); const [a, b] = g.at(i, j), q0 = g.pos(a, b); extra[k] = tag(s, 'idx', q0.x, q0.y - ch * 0.42, 0.4); };
+  const putTag = (i, j, s) => { const k = i + ',' + j; if (extra[k]) kill(extra[k]); const [a, b] = g.at(i, j), q0 = g.pos(a, b); extra[k] = tag(s, 'idx', q0.x, q0.y - ch * 0.46, 0.4); };
   const info = (i, j, withC) => (showW ? 'w' + H.w[i][j] + (withC ? ' r' + H.r[i][j] : '') : (withC && j > i ? 'r=' + H.r[i][j] : ''));
   const setC = (i, j, drop, color) => { const [a, b] = g.at(i, j); g.set(a, b, H.c[i][j], color || (j === i ? GRAY : TEAL), drop); };
   tag('key ' + keys.join(' '), 'ptr', 4.4, 7.3);
@@ -1818,7 +1828,7 @@ FRAG.push(['dp4bari-obst-build', '用 r 表建出最佳 BST', async (tok) => {
   const P = prm(), keys = P.keys || [10, 20, 30, 40], layout = P.layout || 'ij';
   const H = hobst(P.p || [4, 2, 6, 3], P.q), n = H.n;
   fresh([0, 4.4, 15], [0, 3.8, 0]);
-  const g = obGrid(n, layout, -5.3, 6.3, 0.72, 0.62);
+  const g = obGrid(n, layout, -5.8, 6.3, 0.92, 0.76);
   tag('r 表', 'ptr', -4.0, 7.3);
   for (let i = 0; i <= n; i++) for (let j = i; j <= n; j++) { const [a, b] = g.at(i, j); g.set(a, b, H.r[i][j], j === i ? GRAY : PURPLE, 0); }
   say('r(0,' + n + ') 是整棵樹的 root', 'root k 的左邊 (i, k−1)、右邊 (k, j)');
@@ -2124,10 +2134,19 @@ const DRED = '#7a1010', MARK = '#f3d27a', DONE = '#9fe0c4', LINEC = '#c9bfae';
 // one function per lecturer sentence: wait for its cue, then show it
 async function run(tok, acts) { for (const a of acts) { await step(tok); await a(); } }
 // a column of monospace lines (the lecturer's working on the board)
-function pad(x, y0, dy = 0.5) {
-  const P = { ls: [] };
-  P.add = (t, c = '') => { const l = mono(tag(t, c, x, y0 - P.ls.length * dy, 0.3)); P.ls.push(l); return l; };
-  P.clear = () => { P.ls.forEach(kill); P.ls = []; };
+// At most MAX working lines stay (the oldest one goes); a remark ('good' /
+// 'note' / 'say') is one label under the working, rewritten each time, so
+// remarks never pile up.
+function pad(x, y0, dy = 0.58, MAX = 6) {
+  dy = Math.max(dy, 0.58);
+  const P = { ls: [], rem: null };
+  const lay = () => { P.ls.forEach((l, k) => l.position.set(x, y0 - k * dy, 0.3)); if (P.rem) P.rem.position.set(x, y0 - P.ls.length * dy - 0.12, 0.3); };
+  P.add = (t, c = '') => {
+    if (/^(good|note|say)$/.test(c)) { if (!P.rem) P.rem = tag(t, c, x, y0, 0.3); else { txt(P.rem, t); cls(P.rem, c); } lay(); return P.rem; }
+    if (P.ls.length >= MAX) kill(P.ls.shift());
+    const l = mono(tag(t, c, x, y0, 0.3)); P.ls.push(l); lay(); return l;
+  };
+  P.clear = () => { P.ls.forEach(kill); P.ls = []; kill(P.rem); P.rem = null; };
   return P;
 }
 const goTo = (tok, l, x, y, ms = 450) => travel(tok, l, l.position.clone(), V3(x, y, l.position.z), ms);
@@ -2182,7 +2201,7 @@ const HB = obSolve([3, 3, 1, 1], [2, 3, 1, 1, 1]);   // wAy6nDMPYAE（×16）
 const HV = obSolve([4, 2, 6, 3]);                     // vLS-zRCHo-Y（頻率）
 // DP 表：layout 'diag'（列 = j − i、行 = i，格內 w / c / r）或 'ij'（列 i、行 j，格內 c / r）
 function obTable(n, o) {
-  o = Object.assign({ layout: 'diag', X0: -5.5, Y0: 6.5, CW: 1.3, CH: 1.15, w: true }, o);
+  o = Object.assign({ layout: 'diag', X0: -5.5, Y0: 6.7, CW: 1.3, CH: 1.42, w: true }, o);
   const D = o.layout === 'diag';
   const T = { o, pl: {}, c: {}, w: {}, r: {}, arrows: [], hot: null };
   const key = (i, j) => i + ',' + j;
@@ -2194,18 +2213,21 @@ function obTable(n, o) {
   }
   T.setW = (i, j, v, hot) => {
     const k = key(i, j); if (T.w[k]) kill(T.w[k]);
-    const p = T.pos(i, j); T.w[k] = tag('w ' + v, 'idx', p.x, p.y + o.CH * 0.3, 0.3);
+    const p = T.pos(i, j); T.w[k] = tag('w ' + v, 'idx', p.x, p.y + o.CH * 0.37, 0.3);
+    if (o.hideW) T.w[k].element.style.visibility = 'hidden';
     if (hot) T.hotW(i, j);
     return T.w[k];
   };
-  T.hotW = (i, j) => { if (T.hot) cls(T.hot, 'idx'); T.hot = T.w[key(i, j)]; cls(T.hot, 'ptr alt'); };
-  T.coolW = () => { if (T.hot) cls(T.hot, 'idx'); T.hot = null; };
+  // o.hideW: w was the previous subject; only the w in use is shown
+  const wOff = (l) => { if (l) { cls(l, 'idx'); if (o.hideW) l.element.style.visibility = 'hidden'; } };
+  T.hotW = (i, j) => { wOff(T.hot); T.hot = T.w[key(i, j)]; cls(T.hot, 'ptr alt'); T.hot.element.style.visibility = ''; };
+  T.coolW = () => { wOff(T.hot); T.hot = null; };
   T.setC = (i, j, v, drop = 1.2, color) => {
     const k = key(i, j); if (T.c[k]) kill(T.c[k]);
     const p = T.pos(i, j);
-    return (T.c[k] = cube(v, color || (i === j ? GRAY : TEAL), [o.CW * 0.5, o.CH * 0.36, 0.3], p.x, p.y + (o.w ? -0.02 : 0.1), 0.2, drop));
+    return (T.c[k] = cube(v, color || (i === j ? GRAY : TEAL), [o.CW * 0.5, o.CH * 0.36, 0.3], p.x, p.y + (o.w && !o.hideW ? -0.02 : 0.12), 0.2, drop));
   };
-  T.setR = (i, j, v) => { const k = key(i, j); if (T.r[k]) kill(T.r[k]); const p = T.pos(i, j); return (T.r[k] = tag('r ' + v, 'idx', p.x, p.y - o.CH * 0.33, 0.3)); };
+  T.setR = (i, j, v) => { const k = key(i, j); if (T.r[k]) kill(T.r[k]); const p = T.pos(i, j); return (T.r[k] = tag('r ' + v, 'idx', p.x, p.y - o.CH * 0.38, 0.3)); };
   T.mark = (i, j, c) => { const pl = T.pl[key(i, j)]; if (pl) pl.material.color.set(c || PAPER); };
   T.arrow = (i1, j1, i2, j2, c) => { const a = T.pos(i1, j1), b = T.pos(i2, j2); a.z = b.z = 0.6; const h = K.arrow(a, b, c || TRY); T.arrows.push(h); return h; };
   T.glowC = (i, j, c) => { const m = T.c[key(i, j)]; if (m) glow(m, c || GOLD); };
@@ -2229,18 +2251,15 @@ const kText = (H, i, j, k, v) => 'k=' + k + ': c(' + i + ',' + (k - 1) + ') + c(
 const kArrows = (T, i, j, k) => { T.arrow(i, k - 1, i, j); T.arrow(k, j, i, j); };
 function stageB(H, stop, what) {
   K.fresh([0, 4.4, 15], [0, 3.8, 0]);
-  const T = obTable(H.n, {});
-  mono(tag('key  10  20  30  40', 'ptr', 3.6, 7.4));
-  mono(tag('p      3   3   1   1', 'idx', 3.6, 6.95));
-  mono(tag('q    2   3   1   1   1', 'idx', 3.6, 6.5));
+  const T = obTable(H.n, { hideW: true });
+  T.hdr = [mono(tag('key  10  20  30  40', 'ptr', 3.6, 7.7)), mono(tag('p      3   3   1   1', 'idx', 3.6, 7.12)), mono(tag('q    2   3   1   1   1', 'idx', 3.6, 6.54))];
   fillBefore(T, H, stop, true, what || 'cr');
   return T;
 }
 function stageV(H, stop) {
   K.fresh([0, 4.4, 15], [0, 3.8, 0]);
-  const T = obTable(H.n, { layout: 'ij', w: false, X0: -5.2, Y0: 6.4, CW: 1.15, CH: 1.0 });
-  mono(tag('key   10  20  30  40', 'ptr', 3.4, 7.4));
-  mono(tag('freq   4   2   6   3', 'idx', 3.4, 6.95));
+  const T = obTable(H.n, { layout: 'ij', w: false, X0: -5.2, Y0: 6.6, CW: 1.15, CH: 1.22 });
+  T.hdr = [mono(tag('key   10  20  30  40', 'ptr', 3.6, 7.7)), mono(tag('freq   4   2   6   3', 'idx', 3.6, 7.12))];
   fillBefore(T, H, stop, false, 'cr');
   return T;
 }
@@ -2248,24 +2267,25 @@ function stageV(H, stop) {
 // ═════════════════ wAy6nDMPYAE：4.6.2 Optimal BST（成功＋失敗） ═════════════════
 FRAG.push(['dp4bari2-bst-search', 'BST 搜尋：找 30、9、47', async (tok) => {
   K.fresh([0, 4.2, 13.5], [0, 3.6, 0]);
-  let nd, cur, cnt;
+  let nd, cur, cnt, side = [];
+  const times = [];
   const unglow = () => B7_ORDER.forEach((k) => glow(nd[k], null));
   const goto = async (k, n) => { const [x, y] = above(k); await goTo(tok, cur, x, y); glow(nd[k], GOLD); txt(cnt, '比較 ' + n + ' 次'); };
   const start = (t) => { unglow(); if (cur) kill(cur); cur = tag('找 ' + t, 'pkt', 0, 7.05); glow(nd[40], GOLD); txt(cnt, '比較 1 次'); cls(cnt, 'ptr alt'); };
   const nullAt = async (x, px) => { line(px, 3.2, x, 2.62, 0, LINEC); const m = cube('', RED, [0.42, 0.42, 0.42], x, 2.4, 0, 0.8); glow(m, DRED); await goTo(tok, cur, x, 3.1, 400); };
   await run(tok, [
     () => { nd = bst7(); cnt = tag(' ', 'ptr alt', -5.8, 7.0); say('一棵 binary search tree', '每個節點放一個 key'); },
-    () => { [10, 20, 30].forEach((k) => tint(nd[k], TEAL)); [50, 60, 70].forEach((k) => tint(nd[k], PURPLE)); tag('10、20、30 < 40', 'good', -2.8, 6.95); tag('50、60、70 > 40', 'note', 2.8, 6.95); say('40 的左邊都比較小、右邊都比較大'); },
-    () => { B7_ORDER.forEach((k) => tint(nd[k], BLUE)); glow(nd[60], GOLD); tint(nd[50], TEAL); tint(nd[70], PURPLE); say('60 也一樣', '50 < 60 在左、70 > 60 在右'); },
+    () => { [10, 20, 30].forEach((k) => tint(nd[k], TEAL)); [50, 60, 70].forEach((k) => tint(nd[k], PURPLE)); side = [tag('10、20、30 < 40', 'good', -2.8, 6.95), tag('50、60、70 > 40', 'note', 2.8, 6.95)]; say('40 的左邊都比較小、右邊都比較大'); },
+    () => { side.forEach(kill); B7_ORDER.forEach((k) => tint(nd[k], BLUE)); glow(nd[60], GOLD); tint(nd[50], TEAL); tint(nd[70], PURPLE); say('60 也一樣', '50 < 60 在左、70 > 60 在右'); },
     () => { tint(nd[50], BLUE); tint(nd[70], BLUE); start(30); say('找 30：從 root 開始', '40 是 30 嗎？不是'); },
     async () => { say('30 < 40 → 一定在左邊'); await goto(20, 2); glow(nd[40], null); },
     async () => { say('30 > 20 → 往右邊'); await goto(30, 3); glow(nd[20], null); },
     () => { tint(nd[30], TEAL); glow(nd[30], GREEN); say('找到 30！'); },
     () => { cls(cnt, 'ptr'); say('找 30 一共比較 3 次', '40、20、30 各比一次'); },
-    () => { tint(nd[30], BLUE); unglow(); kill(cur); cur = null; B7_ORDER.forEach((k) => { const [x, y] = B7[k]; tag((y > 6 ? 1 : y > 4 ? 2 : 3) + ' 次', 'idx', x + 0.8, y + 0.25); }); say('10 要 3 次、20 要 2 次、40 只要 1 次'); },
+    () => { tint(nd[30], BLUE); unglow(); kill(cur); cur = null; B7_ORDER.forEach((k) => { const [x, y] = B7[k]; times.push(tag((y > 6 ? 1 : y > 4 ? 2 : 3) + ' 次', 'idx', x + 0.8, y + 0.25)); }); say('10 要 3 次、20 要 2 次、40 只要 1 次'); },
     () => { [6.2, 4.9, 3.6].forEach((y, t) => tag('level ' + (t + 1), 'ptr', -6.3, y)); say('最多比較 3 次 = 樹的高度', '3 層 → 最多比 3 次'); },
     () => { tag('找得到：successful search ✓', 'good', 3.4, 7.45); say('找得到 → successful search（成功搜尋）'); },
-    async () => { start(9); say('找 9：9 < 40、9 < 20、9 < 10', '一路往左'); await goto(20, 2); await goto(10, 3); },
+    async () => { times.forEach(kill); start(9); say('找 9：9 < 40、9 < 20、9 < 10', '一路往左'); await goto(20, 2); await goto(10, 3); },
     async () => { await nullAt(-4.9, -4.2); tag('null', 'bad', -4.9, 1.8); say('10 的左邊什麼都沒有（null）', '9 不在樹裡 → unsuccessful search'); },
     () => { cls(cnt, 'ptr'); say('失敗搜尋也比較了 3 次', '40、20、10'); },
     async () => { start(47); say('找 47：47 > 40 → 往右'); await goto(60, 2); },
@@ -2325,12 +2345,12 @@ FRAG.push(['dp4bari2-prob', '成功機率 p 與失敗機率 q：開店的比喻'
   const keys = [10, 20, 30, 40], p = [0.1, 0.2, 0.1, 0.2], q = [0.1, 0.05, 0.15, 0.05, 0.05];
   const xs = (t) => -5.6 + t * 1.4, YL = 6.0;
   const km = [], sq = [], shop = [];
-  let boss, cust;
+  let boss, cust, topT;
   const walkTo = async (b, x, ms = 700) => { const x0 = b.g.position.x; b.look(x > x0 ? 1 : -1); await anim(tok, ms, (u) => { b.g.position.x = x0 + (x - x0) * u; }); };
   await run(tok, [
-    () => { keys.forEach((k, t) => km.push(cube(k, BLUE, [0.9, 0.6, 0.6], xs(2 * t + 1), YL, 0, 1.2))); tag('4 個 key → 可以畫出 14 棵 BST', 'ptr', 0, 7.35); say('4 個 key：10、20、30、40', '可以畫出 14 棵 BST'); },
+    () => { keys.forEach((k, t) => km.push(cube(k, BLUE, [0.9, 0.6, 0.6], xs(2 * t + 1), YL, 0, 1.2))); topT = tag('4 個 key → 可以畫出 14 棵 BST', 'ptr', 0, 7.35); say('4 個 key：10、20、30、40', '可以畫出 14 棵 BST'); },
     () => { for (let t = 0; t <= 4; t++) sq.push(cube('', GRAY, [0.5, 0.45, 0.45], xs(2 * t), YL - 0.05, 0, 1.2)); say('方塊代表失敗搜尋：1、2、3、4、5 個'); },
-    () => { tag('n 個 key → n + 1 個方塊', 'ptr alt', 0, 4.95); say('n 個 key → n + 1 個方塊'); },
+    () => { shop.push(tag('n 個 key → n + 1 個方塊', 'ptr alt', 0, 4.95)); say('n 個 key → n + 1 個方塊'); },
     () => {
       shop.push(cube('櫃台', SAND, [2.6, 0.7, 1.0], -3.6, 0.35, 0.8));
       const wh = prop('warehouse', 4.0, 0, -0.3, 1.0, '倉庫'); shop.push(wh);
@@ -2355,7 +2375,7 @@ FRAG.push(['dp4bari2-prob', '成功機率 p 與失敗機率 q：開店的比喻'
       say('成功、失敗的機率都很重要', '每個 key、每個方塊都有機率');
       await anim(tok, 1200, (u) => ms.forEach(([m, v]) => { const h = v * 16 * u; m.scale.y = Math.max(0.001, h); m.position.y = 0.8 + h / 2; }));
     },
-    () => { tag('全部加起來 = 1', 'good', 4.6, 4.4); say('機率用小數，全部加起來 = 1', '0.6 + 0.4 = 1'); },
+    () => { txt(topT, '全部加起來 = 1'); cls(topT, 'good'); say('機率用小數，全部加起來 = 1', '0.6 + 0.4 = 1'); },
     () => { keys.forEach((k, t) => tag('p' + (t + 1), 'ptr', xs(2 * t + 1), 0.35)); say('成功機率：p1、p2、p3、p4'); },
     () => { q.forEach((v, t) => tag('q' + t, t === 0 ? 'ptr alt' : 'ptr', xs(2 * t), 0.35)); say('失敗機率多一個：q0 … q4', '所以從 0 開始編號'); },
     () => { glow(sq[0], GOLD); tag('−∞~9', 'note', xs(0), YL + 0.7); say('q0：要找比 10 小的值'); },
@@ -2369,10 +2389,10 @@ FRAG.push(['dp4bari2-cost21', '一棵 BST 的期望成本 = 2.1', async (tok) =>
   const L = { 20: [0, 6.4, null, 1, 0.2], 10: [-2.6, 5.0, 20, 2, 0.1], 30: [2.6, 5.0, 20, 2, 0.1], 40: [4.2, 3.6, 30, 3, 0.2] };
   const E = [['E0', -3.4, 3.6, -2.6, 5.0, 3, 0.1], ['E1', -1.8, 3.6, -2.6, 5.0, 3, 0.05], ['E2', 1.8, 3.6, 2.6, 5.0, 3, 0.15], ['E3', 3.4, 2.2, 4.2, 3.6, 4, 0.05], ['E4', 5.0, 2.2, 4.2, 3.6, 4, 0.05]];
   const nd = {}; let em = [], sumK, sumE, tot, f1, total = 0;
-  const kT = [], eT = [];
+  const kT = [], eT = [], pT = {}, qT = [];
   const off = () => { Object.values(nd).forEach((m) => glow(m, null)); em.forEach((m) => glow(m, null)); };
-  const addK = (k) => { const [x, y, , lv, pv] = L[k]; off(); glow(nd[k], GOLD); total += lv * pv; kT.push(lv + '×' + pv); txt(sumK, 'key ：' + kT.join(' + ')); txt(tot, 'cost = ' + fr(total)); tag(lv + '×' + pv, 'ptr alt', x + 0.95, y + 0.25); };
-  const addE = (t) => { const e = E[t]; glow(em[t], GOLD); total += (e[5] - 1) * e[6]; eT.push((e[5] - 1) + '×' + e[6]); txt(sumE, '方塊：' + eT.join(' + ')); txt(tot, 'cost = ' + fr(total)); tag((e[5] - 1) + '×' + e[6], 'ptr alt', e[1], e[2] - 0.95); };
+  const addK = (k) => { const [x, y, , lv, pv] = L[k]; off(); glow(nd[k], GOLD); total += lv * pv; kT.push(lv + '×' + pv); txt(sumK, 'key ：' + kT.join(' + ')); txt(tot, 'cost = ' + fr(total)); txt(pT[k], lv + '×' + pv); cls(pT[k], 'ptr alt'); };
+  const addE = (t) => { const e = E[t]; glow(em[t], GOLD); total += (e[5] - 1) * e[6]; eT.push((e[5] - 1) + '×' + e[6]); txt(sumE, '方塊：' + eT.join(' + ')); txt(tot, 'cost = ' + fr(total)); txt(qT[t], (e[5] - 1) + '×' + e[6]); cls(qT[t], 'ptr alt'); };
   await run(tok, [
     () => {
       for (const k of [20, 10, 30, 40]) { const [x, y, par] = L[k]; nd[k] = tnode(k, x, y, 0, par ? nd[par] : null, BLUE); }
@@ -2381,8 +2401,9 @@ FRAG.push(['dp4bari2-cost21', '一棵 BST 的期望成本 = 2.1', async (tok) =>
     },
     () => { [1, 2, 3, 4].forEach((lv) => tag('level ' + lv, 'ptr', -6.1, [0, 6.4, 5.0, 3.6, 2.2][lv])); say('20 在 level 1；10、30 在 level 2', '40 在 level 3'); },
     () => {
-      for (const k of [20, 10, 30, 40]) { const [x, y, , , pv] = L[k]; tag('p=' + pv, 'note', x - 0.95, y + 0.25); }
-      E.forEach(([, x, y, , , , qv]) => tag('q=' + qv, 'note', x, y - 0.45));
+      // each node keeps ONE tag: p= / q= now, rewritten to level × p later
+      for (const k of [20, 10, 30, 40]) { const [x, y, , , pv] = L[k]; pT[k] = tag('p=' + pv, 'idx', x + 1.0, y + 0.25); }
+      E.forEach(([, x, y, , , , qv], t) => { qT[t] = tag('q=' + qv, 'idx', x, y - 0.55); });
       sumK = mono(tag(' ', 'ptr', -1.6, 0.85)); sumE = mono(tag(' ', 'ptr', -1.6, 0.3)); tot = tag('cost = 0', 'pkt', 4.6, 7.2);
       say('每個 key、每個方塊都標上機率');
     },
@@ -2433,14 +2454,15 @@ FRAG.push(['dp4bari2-brute', 'Optimal BST：暴力法試不完', async (tok) => 
     },
     async () => {
       all.forEach(kill); all = [];
-      const bars = [];
+      const bars = [], barV = [];
       for (let n = 1; n <= 9; n++) {
         const v = catalan(n + 1), h = 0.3 + Math.log10(v) * 1.2, x = -5.2 + (n - 1) * 1.3;
         const m = cube('', n === 4 ? ORANGE : BLUE, [0.9, 1, 0.9], x, 0, 0); m.scale.y = 0.001; bars.push([m, h]);
-        tag(n + ' 個 key', 'idx', x, 0.0, 0.9); tag(String(v), n === 4 ? 'ptr alt' : 'idx', x, h + 0.35);
+        tag(n + ' 個 key', 'idx', x, -0.45, 0.9); barV.push([m, String(v)]);
       }
       say('(2n C n)/(n+1)：key 一多，數量爆炸', '高度用對數尺度');
       await anim(tok, 1500, (u) => bars.forEach(([m, h]) => { m.scale.y = Math.max(0.001, h * u); m.position.y = h * u / 2; }));
+      barV.forEach(([m, v], t) => { all.push(tag(v, 'val', m.position.x, bars[t][1] + 0.32)); });
     },
     () => { tag('40 個 key：約 2.6 × 10²¹ 棵 ✗', 'bad', 3.8, 6.6); say('40 個 key：根本不可能全部試'); },
     () => { think = buddy('DP', '?', TEAL, -4.6, 4.2, 0.6, 0.8); think.mood('wow'); say('能不能不全部畫出來', '也找到最好的那棵？'); },
@@ -2494,10 +2516,10 @@ FRAG.push(['dp4bari2-wcr', '每格要記 w、c、r；w 的遞迴', async (tok) =
     () => {
       ['q0', 'p1', 'q1', 'p2', 'q2', 'p3', 'q3'].forEach((s, t) => seq.push(cube(s, s[0] === 'p' ? TEAL : GRAY, [0.9, 0.55, 0.5], xs(t), 1.8, 0, 1.2)));
       const g = ghostBox(BLUE, 1.5 * 5, 0.95, 0.9); g.position.set((xs(0) + xs(4)) / 2, 1.8, 0);
-      tag('w(0,2) = q0 + p1 + q1 + p2 + q2', 'ptr', (xs(0) + xs(4)) / 2, 2.65);
+      tag('w(0,2) = q0 + p1 + q1 + p2 + q2', 'ptr', (xs(0) + xs(4)) / 2, 2.75);
       say('w(0,2) = q0 + p1 + q1 + p2 + q2');
     },
-    () => { const g = ghostBox(ORANGE, 1.5 * 7 + 0.2, 1.25, 1.1); g.position.set((xs(0) + xs(6)) / 2, 1.8, 0); glow(seq[5], GOLD); glow(seq[6], GOLD); tag('w(0,3) 只多了 p3 + q3', 'ptr alt', 2.4, 3.15); say('w(0,3)：前面都一樣，只多了 p3 + q3'); },
+    () => { const g = ghostBox(ORANGE, 1.5 * 7 + 0.2, 1.25, 1.1); g.position.set((xs(0) + xs(6)) / 2, 1.8, 0); glow(seq[5], GOLD); glow(seq[6], GOLD); tag('w(0,3) 只多了 p3 + q3', 'ptr alt', (xs(5) + xs(6)) / 2, 2.75); say('w(0,3)：前面都一樣，只多了 p3 + q3'); },
     () => { mono(tag('w(0,3) = w(0,2) + p3 + q3', 'ptr', 0, 0.75)); say('所以 w(0,3) = w(0,2) + p3 + q3'); },
     () => { mono(tag('w(i,j) = w(i,j−1) + p_j + q_j', 'ptr alt', 0, 0.2)); say('一般式：w(i,j) = w(i,j−1) + p_j + q_j', '知道前一格，馬上算出下一格'); },
     () => { cell.material.color.set(MARK); sl.forEach((l) => cls(l, 'good')); say('每一格都要算：cost、weight、root'); },
@@ -2507,7 +2529,7 @@ FRAG.push(['dp4bari2-wcr', '每格要記 w、c、r；w 的遞迴', async (tok) =
 // ── 例題（×16）：p = 3 3 1 1、q = 2 3 1 1 1 ──
 FRAG.push(['dp4bari2-wtab', '例題：先填 w', async (tok) => {
   K.fresh([0, 4.4, 15], [0, 3.8, 0]);
-  const H = HB, P = pad(3.6, 5.3, 0.5); let T;
+  const H = HB, P = pad(3.6, 5.2, 0.5); let T;
   const wStep = (i, j) => {
     T.arrows.forEach(kill); T.arrows = [];
     T.arrow(i, j - 1, i, j); T.setW(i, j, H.w[i][j], true);
@@ -2515,10 +2537,10 @@ FRAG.push(['dp4bari2-wtab', '例題：先填 w', async (tok) => {
     say('w(' + i + ',' + j + ') = ' + H.w[i][j - 1] + ' + ' + H.p[j] + ' + ' + H.q[j] + ' = ' + H.w[i][j]);
   };
   await run(tok, [
-    () => { mono(tag('key  10  20  30  40', 'ptr', 3.6, 7.4)); say('例題：4 個 key：10、20、30、40'); },
-    () => { mono(tag('p      3   3   1   1', 'idx', 3.6, 6.95)); say('成功機率 p1 … p4'); },
-    () => { mono(tag('q    2   3   1   1   1', 'idx', 3.6, 6.5)); say('失敗機率 q0 … q4：從 0 開始'); },
-    () => { tag('都乘了 16（總和 16），避開小數', 'note', 3.6, 6.0); say('數值是機率 × 16', '全部加起來 16'); },
+    () => { mono(tag('key  10  20  30  40', 'ptr', 3.6, 7.7)); say('例題：4 個 key：10、20、30、40'); },
+    () => { mono(tag('p      3   3   1   1', 'idx', 3.6, 7.12)); say('成功機率 p1 … p4'); },
+    () => { mono(tag('q    2   3   1   1   1', 'idx', 3.6, 6.54)); say('失敗機率 q0 … q4：從 0 開始'); },
+    () => { tag('都乘了 16（總和 16），避開小數', 'note', 3.6, 5.9); say('數值是機率 × 16', '全部加起來 16'); },
     () => { T = obTable(4, {}); say('每格放 w、c、r', '第一列 j − i = 0'); },
     () => { T.setW(0, 0, H.w[0][0], true); say('w(0,0) = q0 = 2'); },
     () => { T.setW(1, 1, H.w[1][1], true); say('w(1,1) = q1 = 3'); },
@@ -2616,7 +2638,7 @@ FRAG.push(['dp4bari2-tbuild', '用 r 表建出最佳 BST', async (tok) => {
   const sqAt = (x, y, px, py) => { line(px, py - 0.4, x, y + 0.2, 0, LINEC); cube('', GRAY, [0.36, 0.36, 0.36], x, y, 0, 0.8); };
   const nd = {};
   await run(tok, [
-    () => { Object.values(T.r).forEach((l) => cls(l, 'ptr')); say('用表裡的 r 決定樹的形狀'); },
+    () => { T.hdr.forEach(kill); Object.values(T.r).forEach((l) => cls(l, 'ptr')); say('用表裡的 r 決定樹的形狀'); },
     () => { T.mark(0, 4, MARK); tag('整棵樹 = key 1…4 → 看 r(0,4)', 'say', 3.6, 7.4); say('整棵樹：看 r(0,4)', 'i 從 0 開始，配合 q0'); },
     () => { nd[20] = tnode(20, 3.6, 6.3, 0, null, TEAL); tag('r(0,4) = 2 → 第 2 個 key', 'note', 5.6, 6.6); say('r(0,4) = 2 → 第 2 個 key 20 當 root'); },
     () => { lt = tag('左：(i, k−1)', 'idx', 2.0, 5.75); rt = tag('右：(k, j)', 'idx', 5.2, 5.75); say('root 是 k：左邊 (i, k−1)、右邊 (k, j)'); },
@@ -2627,8 +2649,8 @@ FRAG.push(['dp4bari2-tbuild', '用 r 表建出最佳 BST', async (tok) => {
     () => { T.mark(2, 4); nd[40] = tnode(40, 6.3, 3.5, 0, nd[30], BLUE); say('剩下 40 → 放在 30 的右邊'); },
     () => { T.mark(3, 4, MARK); sqAt(1.5, 3.7, 2.0, 4.9); sqAt(2.5, 3.7, 2.0, 4.9); sqAt(4.6, 3.7, 5.2, 4.9); sqAt(5.8, 2.3, 6.3, 3.5); sqAt(6.8, 2.3, 6.3, 3.5); say('r(3,4) = 4 ✓', '其他位置是 null（方塊）'); },
     () => { T.mark(3, 4); Object.values(nd).forEach((m) => glow(m, GREEN)); say('最佳 BST：20 當 root', '10 在左、30 在右、40 在 30 的右邊'); },
-    () => { tag('好像試過所有的樹，挑了最好的', 'good', 4.0, 1.4); say('就像試過所有 BST 再挑最好的'); },
-    () => { tag('同類問題 → 同一套 DP 策略', 'say', 4.0, 0.8); say('類似的問題，可以用同樣的 DP 策略'); },
+    () => { lt = tag('好像試過所有的樹，挑了最好的', 'good', 4.0, 1.2); say('就像試過所有 BST 再挑最好的'); },
+    () => { txt(lt, '同類問題 → 同一套 DP 策略'); say('類似的問題，可以用同樣的 DP 策略'); },
   ]);
 }]);
 
@@ -2714,11 +2736,11 @@ FRAG.push(['dp4bari2-bst5freq', '加上搜尋頻率：成本 17 的樹最好', a
 }]);
 
 FRAG.push(['dp4bari2-ftab', 'DP 表：先填一個 key 的格子', async (tok) => {
-  const H = HV; let T; const P = pad(3.4, 5.8, 0.5);
+  const H = HV; let T; const P = pad(3.6, 6.1, 0.5);
   K.fresh([0, 4.4, 15], [0, 3.8, 0]);
   await run(tok, [
-    () => { mono(tag('key   10  20  30  40', 'ptr', 3.4, 7.4)); mono(tag('freq   4   2   6   3', 'idx', 3.4, 6.95)); say('例題：key 10、20、30、40', '頻率 4、2、6、3'); },
-    () => { T = obTable(4, { layout: 'ij', w: false, X0: -5.2, Y0: 6.4, CW: 1.15, CH: 1.0 }); say('畫一張表，填好後就能建出樹'); },
+    () => { mono(tag('key   10  20  30  40', 'ptr', 3.6, 7.7)); mono(tag('freq   4   2   6   3', 'idx', 3.6, 7.12)); say('例題：key 10、20、30、40', '頻率 4、2、6、3'); },
+    () => { T = obTable(4, { layout: 'ij', w: false, X0: -5.2, Y0: 6.6, CW: 1.15, CH: 1.22 }); say('畫一張表，填好後就能建出樹'); },
     () => { P.add('表從 0 開始；key 從 1 開始', 'note'); say('key 是 1~4，表卻從 0 開始', '這樣才配合公式'); },
     () => { P.add('row = i、column = j'); say('列叫 i、行叫 j'); },
     () => { for (let i = 0; i <= 4; i++) T.mark(i, i, MARK); P.add('先填 j − i = 0：c(0,0)…c(4,4)'); say('先算 j − i = 0 的格子', '0−0、1−1、2−2…'); },
@@ -2734,8 +2756,8 @@ FRAG.push(['dp4bari2-ftab', 'DP 表：先填一個 key 的格子', async (tok) =
 
 // two small trees for two keys a < b: left = a as root, right = b as root
 function twoTrees(ka, kb, fa, fb, all) {
-  const a1 = tnode(ka, 1.9, 5.9, 0, null, BLUE), b1 = tnode(kb, 2.8, 4.7, 0, a1, BLUE);
-  const b2 = tnode(kb, 5.4, 5.9, 0, null, BLUE), a2 = tnode(ka, 4.5, 4.7, 0, b2, BLUE);
+  const a1 = tnode(ka, 1.4, 5.9, 0, null, BLUE), b1 = tnode(kb, 2.3, 4.7, 0, a1, BLUE);
+  const b2 = tnode(kb, 5.9, 5.9, 0, null, BLUE), a2 = tnode(ka, 5.0, 4.7, 0, b2, BLUE);
   all.push(a1, b1, b1.userData.edge, b2, a2, a2.userData.edge);
   return { A: [a1, b1], B: [b2, a2], vA: fa + 2 * fb, vB: fb + 2 * fa };
 }
@@ -2744,10 +2766,10 @@ FRAG.push(['dp4bari2-two02', '兩個 key：c(0,2) = 8', async (tok) => {
   await run(tok, [
     () => { [[0, 2], [1, 3], [2, 4]].forEach(([i, j]) => T.mark(i, j, MARK)); say('j − i = 2：c(0,2)、c(1,3)、c(2,4)', '每次看兩個 key'); },
     () => { T.mark(1, 3); T.mark(2, 4); say('先算 c(0,2)'); },
-    () => { all.push(tag('key 10、20；頻率 4、2', 'say', 3.6, 6.65)); say('不看 0，從 1 開始：key 10、20', '頻率 4、2'); },
+    () => { all.push(tag('key 10、20；頻率 4、2', 'say', 3.6, 6.5)); say('不看 0，從 1 開始：key 10、20', '頻率 4、2'); },
     () => { tt = twoTrees(10, 20, 4, 2, all); say('兩個 key：兩種 BST', '10 當 root，或 20 當 root'); },
-    () => { all.push(tag('1×4 + 2×2 = ' + tt.vA, 'ptr alt', 2.35, 3.9)); say('10 當 root：1×4 + 2×2 = 8'); },
-    () => { all.push(tag('1×2 + 2×4 = ' + tt.vB, 'ptr alt', 4.95, 3.9)); say('20 當 root：1×2 + 2×4 = 10'); },
+    () => { all.push(tag('1×4 + 2×2 = ' + tt.vA, 'ptr alt', 1.85, 3.9)); say('10 當 root：1×4 + 2×2 = 8'); },
+    () => { all.push(tag('1×2 + 2×4 = ' + tt.vB, 'ptr alt', 5.45, 3.9)); say('20 當 root：1×2 + 2×4 = 10'); },
     () => { tt.A.forEach((m) => glow(m, GREEN)); T.mark(0, 2); T.setC(0, 2, H.c[0][2]); T.setR(0, 2, H.r[0][2]); say('最小是 8：c(0,2) = 8', 'root = 第 1 個 key'); },
     () => { P.add('w(i,j) = 這段 key 的頻率和'); P.add('w(0,2) = 4 + 2 = 6'); say('用公式看看：先認識 w', 'w = 這段 key 的頻率總和'); },
     () => { l1 = P.add('root 1：c(0,0) + c(1,2) + w(0,2)'); kArrows(T, 0, 2, 1); say('root 1：c(0,0) + c(1,2) + w(0,2)', '左子樹 + 右子樹 + w'); },
@@ -2762,15 +2784,15 @@ FRAG.push(['dp4bari2-two02', '兩個 key：c(0,2) = 8', async (tok) => {
 FRAG.push(['dp4bari2-two1324', '兩個 key：c(1,3) = 10、c(2,4) = 12', async (tok) => {
   const H = HV, T = stageV(H, [1, 3]); let all = [], tt;
   await run(tok, [
-    () => { T.mark(1, 3, MARK); all.push(tag('c(1,3)：key 20、30', 'say', 3.6, 6.65)); say('c(1,3)：不看 1，看 key 2、3', '20、30'); },
-    () => { tt = twoTrees(20, 30, 2, 6, all); all.push(tag('頻率 2、6', 'note', 3.6, 6.2)); say('頻率 2、6：兩種樹'); },
-    () => { all.push(tag('1×2 + 2×6 = ' + tt.vA, 'ptr alt', 2.35, 3.9)); say('20 當 root：2 + 12 = 14'); },
-    () => { all.push(tag('1×6 + 2×2 = ' + tt.vB, 'ptr alt', 4.95, 3.9)); say('30 當 root：6 + 4 = 10'); },
+    () => { T.mark(1, 3, MARK); all.push(tag('c(1,3)：key 20、30', 'say', 3.6, 6.5)); say('c(1,3)：不看 1，看 key 2、3', '20、30'); },
+    () => { tt = twoTrees(20, 30, 2, 6, all); txt(all[0], 'c(1,3)：key 20、30；頻率 2、6'); say('頻率 2、6：兩種樹'); },
+    () => { all.push(tag('1×2 + 2×6 = ' + tt.vA, 'ptr alt', 1.85, 3.9)); say('20 當 root：2 + 12 = 14'); },
+    () => { all.push(tag('1×6 + 2×2 = ' + tt.vB, 'ptr alt', 5.45, 3.9)); say('30 當 root：6 + 4 = 10'); },
     () => { tt.B.forEach((m) => glow(m, GREEN)); T.mark(1, 3); T.setC(1, 3, H.c[1][3]); T.setR(1, 3, H.r[1][3]); say('c(1,3) = 10', '第 3 個 key 當 root'); },
-    () => { all.forEach(kill); all = []; T.mark(2, 4, MARK); all.push(tag('c(2,4)：key 30、40；頻率 6、3', 'say', 3.6, 6.65)); say('c(2,4)：key 30、40', '頻率 6、3'); },
+    () => { all.forEach(kill); all = []; T.mark(2, 4, MARK); all.push(tag('c(2,4)：key 30、40；頻率 6、3', 'say', 3.6, 6.5)); say('c(2,4)：key 30、40', '頻率 6、3'); },
     () => { tt = twoTrees(30, 40, 6, 3, all); say('30 當 root，或 40 當 root'); },
-    () => { all.push(tag('1×6 + 2×3 = ' + tt.vA, 'ptr alt', 2.35, 3.9)); say('30 當 root：6 + 6 = 12'); },
-    () => { all.push(tag('1×3 + 2×6 = ' + tt.vB, 'ptr alt', 4.95, 3.9)); say('40 當 root：3 + 12 = 15'); },
+    () => { all.push(tag('1×6 + 2×3 = ' + tt.vA, 'ptr alt', 1.85, 3.9)); say('30 當 root：6 + 6 = 12'); },
+    () => { all.push(tag('1×3 + 2×6 = ' + tt.vB, 'ptr alt', 5.45, 3.9)); say('40 當 root：3 + 12 = 15'); },
     () => { tt.A.forEach((m) => glow(m, GREEN)); T.mark(2, 4); T.setC(2, 4, H.c[2][4]); T.setR(2, 4, H.r[2][4]); say('c(2,4) = 12', '第 3 個 key 當 root'); },
     () => { [[0, 2], [1, 3], [2, 4]].forEach(([i, j]) => T.mark(i, j, DONE)); say('j − i = 2 這條對角線填好了'); },
   ]);
@@ -2784,23 +2806,23 @@ function rootLines(T, H, P, i, j) {
   return L;
 }
 FRAG.push(['dp4bari2-three03', '三個 key：c(0,3) = 20', async (tok) => {
-  const H = HV, T = stageV(H, [0, 3]), P = pad(3.6, 3.6, 0.48), all = []; let L;
+  const H = HV, T = stageV(H, [0, 3]), P = pad(4.6, 3.3, 0.48), all = []; let L;
   const MT = [
-    [[10, 0, 0, null], [20, 0.4, 1, 10], [30, 0.8, 2, 20]],
-    [[10, 0, 0, null], [30, 0.4, 1, 10], [20, 0, 2, 30]],
-    [[20, 0, 0, null], [10, -0.4, 1, 20], [30, 0.4, 1, 20]],
-    [[30, 0, 0, null], [20, -0.4, 1, 30], [10, -0.8, 2, 20]],
-    [[30, 0, 0, null], [10, -0.4, 1, 30], [20, 0, 2, 10]],
+    [[10, 0, 0, null], [20, 0.6, 1, 10], [30, 1.2, 2, 20]],
+    [[10, 0, 0, null], [30, 0.6, 1, 10], [20, 0, 2, 30]],
+    [[20, 0, 0, null], [10, -0.6, 1, 20], [30, 0.6, 1, 20]],
+    [[30, 0, 0, null], [20, -0.6, 1, 30], [10, -1.2, 2, 20]],
+    [[30, 0, 0, null], [10, -0.6, 1, 30], [20, 0, 2, 10]],
   ];
-  const tx = [1.0, 2.4, 3.8, 5.2, 6.4];
+  const tx = [0.8, 2.9, 4.9, 7.0, 8.6];
   await run(tok, [
     () => { T.mark(0, 3, MARK); T.mark(1, 4, MARK); say('j − i = 3：c(0,3)、c(1,4)', '每次看三個 key'); },
-    () => { T.mark(1, 4); all.push(tag('c(0,3)：key 10、20、30；頻率 4、2、6', 'say', 3.6, 6.65)); say('c(0,3)：key 10、20、30', '頻率 4、2、6'); },
-    () => { miniTree(MT[0], tx[0], 6.0, 0.6, all, 0.42); say('10 當 root：20、30 在右邊'); },
-    () => { miniTree(MT[1], tx[1], 6.0, 0.6, all, 0.42); say('10 當 root：30、20'); },
-    () => { miniTree(MT[2], tx[2], 6.0, 0.6, all, 0.42); say('20 當 root：10 在左、30 在右'); },
-    () => { miniTree(MT[3], tx[3], 6.0, 0.6, all, 0.42); miniTree(MT[4], tx[4], 6.0, 0.6, all, 0.42); say('30 當 root：兩種'); },
-    () => { all.push(tag('3 個 key → 5 棵：直接用公式', 'note', 3.6, 4.3)); say('一共 5 棵：這次直接用公式'); },
+    () => { T.mark(1, 4); all.push(tag('c(0,3)：key 10、20、30；頻率 4、2、6', 'say', 3.6, 6.5)); say('c(0,3)：key 10、20、30', '頻率 4、2、6'); },
+    () => { miniTree(MT[0], tx[0], 5.75, 0.65, all, 0.42); say('10 當 root：20、30 在右邊'); },
+    () => { miniTree(MT[1], tx[1], 5.75, 0.65, all, 0.42); say('10 當 root：30、20'); },
+    () => { miniTree(MT[2], tx[2], 5.75, 0.65, all, 0.42); say('20 當 root：10 在左、30 在右'); },
+    () => { miniTree(MT[3], tx[3], 5.75, 0.65, all, 0.42); miniTree(MT[4], tx[4], 5.75, 0.65, all, 0.42); say('30 當 root：兩種'); },
+    () => { all.push(tag('3 個 key → 5 棵：直接用公式', 'note', 4.6, 3.95)); say('一共 5 棵：這次直接用公式'); },
     () => { P.add('w(0,3) = 4 + 2 + 6 = 12'); say('w(0,3) = 4 + 2 + 6 = 12'); L = rootLines(T, H, P, 0, 3); },
     () => { L.add([1]); say('root 1：c(0,0) + c(1,3) + 12'); },
     () => { L.add([2, 3]); say('root 2：c(0,1) + c(2,3) + 12', 'root 3：c(0,2) + c(3,3) + 12'); },
@@ -2815,7 +2837,7 @@ FRAG.push(['dp4bari2-c14', '三個 key：c(1,4) = 16', async (tok) => {
   const H = HV, T = stageV(H, [1, 4]), P = pad(3.6, 5.6, 0.5); let L;
   await run(tok, [
     () => { T.mark(1, 4, MARK); P.add('c(1,4)：key 20、30、40', 'say'); say('c(1,4)：不看 1，從第 2 個 key 開始', '20、30、40'); },
-    () => { P.add('頻率 2、6、3：直接用公式', 'note'); say('頻率 2、6、3', '不畫樹，直接用公式'); },
+    () => { P.add('key 20、30、40；頻率 2、6、3：直接用公式', 'note'); say('頻率 2、6、3', '不畫樹，直接用公式'); },
     () => { P.add('w(1,4) = 2 + 6 + 3 = 11'); say('w(1,4) = 2 + 6 + 3 = 11'); L = rootLines(T, H, P, 1, 4); },
     () => { L.add([2]); say('root 2：c(1,1) + c(2,4)'); },
     () => { L.add([3, 4]); say('root 3：c(1,2) + c(3,4)', 'root 4：c(1,3) + c(4,4)'); },
@@ -2850,7 +2872,7 @@ FRAG.push(['dp4bari2-build2', '用 root 建出最佳 BST', async (tok) => {
   const H = HV, T = stageV(H, null); const nd = {}; let lt, rt;
   const sqAt = (x, y, px, py) => { line(px, py - 0.4, x, y + 0.2, 0, LINEC); cube('', GRAY, [0.36, 0.36, 0.36], x, y, 0, 0.8); };
   await run(tok, [
-    () => { T.mark(0, 4, MARK); Object.values(T.r).forEach((l) => cls(l, 'ptr')); say('成本 26、root 3：接著建出樹'); },
+    () => { T.hdr.forEach(kill); T.mark(0, 4, MARK); Object.values(T.r).forEach((l) => cls(l, 'ptr')); say('成本 26、root 3：接著建出樹'); },
     () => { nd[30] = tnode(30, 3.9, 6.3, 0, null, TEAL); tag('r(0,4) = 3：第 3 個 key', 'note', 3.9, 7.3); say('r(0,4) = 3 → 第 3 個 key = 30', '3 是 key 的編號'); },
     () => { lt = tag('左 r(0,2)', 'ptr', 2.2, 5.75); rt = tag('右 r(3,4)', 'ptr', 5.6, 5.75); say('左邊看 r(0,2)、右邊看 r(3,4)'); },
     () => { T.mark(0, 4); T.mark(0, 2, MARK); nd[10] = tnode(10, 2.2, 4.9, 0, nd[30], BLUE); sqAt(1.6, 3.6, 2.2, 4.9); say('r(0,2) = 1 → 10', '它的左邊 (0,0) 是空的'); },
@@ -2859,9 +2881,9 @@ FRAG.push(['dp4bari2-build2', '用 root 建出最佳 BST', async (tok) => {
     () => { T.mark(3, 4, MARK); nd[40] = tnode(40, 5.6, 4.9, 0, nd[30], BLUE); say('r(3,4) = 4 → 40'); },
     () => { T.mark(3, 4); sqAt(5.0, 3.6, 5.6, 4.9); sqAt(6.2, 3.6, 5.6, 4.9); say('r(3,3)、r(4,4) = 0', '空的'); },
     () => { kill(lt); kill(rt); Object.values(nd).forEach((m) => glow(m, GREEN)); say('30 當 root；左 10，10 的右邊 20', '右邊 40'); },
-    () => { tag('依頻率，搜尋成本最小', 'good', 3.9, 1.4); say('這就是 optimal BST', '依頻率算，搜尋成本最小'); },
-    () => { mono(tag('c(i,j) = min{ c(i,k−1) + c(k,j) } + w(i,j)', 'ptr', 3.6, 0.8)); say('填表用的公式', 'c(i,j) = min{c(i,k−1) + c(k,j)} + w(i,j)'); },
-    () => { tag('i < k ≤ j：所以表從 0 開始編', 'note', 3.6, 0.2); say('k 從 i + 1 開始', '所以 i 從 0 寫起'); },
+    () => { lt = tag('依頻率，搜尋成本最小', 'good', 4.2, 1.3); say('這就是 optimal BST', '依頻率算，搜尋成本最小'); },
+    () => { mono(tag('c(i,j) = min{ c(i,k−1) + c(k,j) } + w(i,j)', 'ptr', 4.2, 0.6)); kill(lt); lt = null; say('填表用的公式', 'c(i,j) = min{c(i,k−1) + c(k,j)} + w(i,j)'); },
+    () => { lt = tag('i < k ≤ j：所以表從 0 開始編', 'note', 4.2, 1.3); say('k 從 i + 1 開始', '所以 i 從 0 寫起'); },
   ]);
 }]);
 
@@ -2879,16 +2901,16 @@ FRAG.push(['dp4bari2-rel-series', '串聯系統：可靠度相乘', async (tok) 
   await run(tok, [
     () => { line(-6.6, 2.6, 6.6, 2.6, 0, '#6e5f49'); tag('開始 →', 'idx', -6.2, 3.0); tag('→ 系統正常', 'idx', 6.0, 3.0); me = buddy('錄影的人', '', ORANGE, 0, 4.9, -0.8, 0.7); say('要架設一個系統'); },
     () => { for (let k = 0; k < 4; k++) ds.push(cube('D' + (k + 1), BLUE, [1.3, 0.9, 0.9], X(k), 2.6, 0, 1.5)); say('系統由裝置 D1、D2、D3、D4 組成'); },
-    () => { NM.forEach(([g, n], k) => icon(g, n, X(k), 3.9, 0, 'sm')); say('例如錄影室：白板、相機、燈、筆…', '這些都叫裝置（device）'); },
+    () => { NM.forEach(([g, n], k) => icon(g, n, X(k), 4.5, 0, 'sm')); say('例如錄影室：白板、相機、燈、筆…', '這些都叫裝置（device）'); },
     () => { for (let k = 0; k < 4; k++) tag('cost c' + (k + 1), 'idx', X(k), 1.75); say('每個裝置有成本 cᵢ'); },
-    () => { [['可靠度高', 'good'], ['', ''], ['比較低', 'note'], ['更低', 'bad']].forEach(([t, c], k) => { if (t) rt.push(tag(t, c, X(k), 1.25)); }); say('reliability：正常運作的機率', '白板很可靠；燈、筆比較容易出問題'); },
-    () => { rt.forEach(kill); for (let k = 0; k < 4; k++) tag('r = 0.9', 'ptr', X(k), 1.25); say('假設每個裝置的 reliability 都是 0.9'); },
+    () => { [['可靠度高', 'good'], ['', ''], ['比較低', 'note'], ['更低', 'bad']].forEach(([t, c], k) => { if (t) rt.push(tag(t, c, X(k), 1.1)); }); say('reliability：正常運作的機率', '白板很可靠；燈、筆比較容易出問題'); },
+    () => { rt.forEach(kill); for (let k = 0; k < 4; k++) tag('r = 0.9', 'ptr', X(k), 1.1); say('假設每個裝置的 reliability 都是 0.9'); },
     async () => {
       const cur = tag('R = 1', 'pkt', -6.2, 3.45); let R = 1;
       say('系統的 reliability = 全部相乘', '0.9 × 0.9 × 0.9 × 0.9');
       for (let k = 0; k < 4; k++) { await goTo(tok, cur, X(k), 3.45, 450); R *= 0.9; glow(ds[k], GOLD); txt(cur, 'R = ' + fr(R)); }
     },
-    () => { ds.forEach((m) => glow(m, null)); tag('每個 0.9，整個系統只有 0.6561', 'say', 0, 6.3); say('每個都 0.9，系統卻只有 0.65'); },
+    () => { ds.forEach((m) => glow(m, null)); tag('每個 0.9，整個系統只有 0.6561', 'say', 0, 7.0); say('每個都 0.9，系統卻只有 0.65'); },
     () => { tint(ds[2], RED); glow(ds[2], DRED); me.mood('sad'); tag('燈壞了 → 錄影中斷', 'bad', X(2), 0.6); say('約 35% 的機率系統會停', '任何一個壞掉就得停'); },
     () => { tint(ds[2], BLUE); glow(ds[2], null); me.mood('happy'); tag('目標：讓系統 reliability 最大', 'good', -3.0, 0.6); say('目標：讓整個系統最可靠'); },
   ]);
@@ -3065,7 +3087,9 @@ FRAG.push(['dp4bari2-rel-back', '回溯：每種裝置買幾份', async (tok) =>
 // n×F 的 DAG（完全二分 + 0 權重 source）、Θ(nF²)、(手指, 弦) → nF²S²、和弦 pose (F+1)^F、Tetris skyline (h+1)^w × 4w、
 // Mario configuration c^{wh}·S·T；Rec22 DDR 譜 ↑ ↑↓ ↓ ↑↓ ↑ ↑↓ ←→ ← ←→ →、δ(from, to) ∈ [0, 1]、腳位 25 / 50 / 75、
 // 空白 note ○、(i, L, R) → (i+1, Lj, Rj)、source / sink 0 權重、DAG shortest path。
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, ghostBox, step, buddy, prop, bob, travel, remove, GOLD, GREEN, RED, GRAY } = K;
+const { V3, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, line, arrow, ghostBox, step, buddy, prop, bob, travel, remove, GOLD, GREEN, RED, GRAY } = K;
+// these scenes keep their remark board near y = 7.3: aim a little higher so it clears the caption
+const fresh = (pos, look) => K.fresh([pos[0], pos[1] + 0.5, pos[2]], [look[0], look[1] + 0.5, look[2]]);
 const say = (a, b = '') => ctx.say(a, b);
 const beat = ctx.beat;
 const Q = { blue: '#4b9ee2', teal: '#2fc092', purple: '#9b7ef4', orange: '#dd8238', pink: '#e55a9b', red: '#d64545', sand: '#c9b48e', paper: '#efe6d2', brown: '#6e5f49', gold: '#c08a1f', key: '#f4efe4', ink: '#3a3328', you: '#f2d37a', sky: '#dbe9f7', lilac: '#c4b3f7', mint: '#bfe8d6', faint: '#cfc6b4' };
@@ -3087,7 +3111,7 @@ const qOff = (G) => G.g.forEach((col) => col.forEach((m) => glow(m, null)));
 // guitar fretboard: 6 strings (1 on top … 6 at the bottom), frets 0…nf
 function qFret(nf, x0, w, yTop, dy) {
   const fx = (j) => x0 + j * w, sy = (k) => yTop - (k - 1) * dy;
-  for (let k = 1; k <= 6; k++) { line(fx(0), sy(k), fx(nf), sy(k), 0, Q.brown); tag(String(k), 'idx', fx(0) - 0.45, sy(k)); }
+  for (let k = 1; k <= 6; k++) { line(fx(0), sy(k), fx(nf), sy(k), 0, Q.brown); tag(String(k), 'idx', fx(0) - 0.8, sy(k)); }
   for (let j = 0; j <= nf; j++) line(fx(j), sy(1) + 0.15, fx(j), sy(6) - 0.15, 0, j === 0 ? Q.ink : Q.sand);
   for (let j = 1; j <= nf; j++) if (j % 2 === 1 || j === nf) tag(String(j), 'idx', fx(j) - w / 2, sy(6) - 0.5);
   return { at: (k, j) => V3(j === 0 ? fx(0) - 0.25 : fx(j) - w / 2, sy(k), 0.25), fx, sy };
@@ -3173,7 +3197,7 @@ FRAG.push(['dp4mit-knap-remember', '第二種猜：子問題多記一點（knaps
   you.mood('wow');
   say('還有更高一層的猜', '在 knapsack 已經偷偷用過');
   await step(tok);                                   // 188.8 add more subproblems = remember more features
-  tag('多加子問題 = 記住解的更多特徵', 'note', 0, 6.5);
+  const digL = tag('多加子問題 = 記住解的更多特徵', 'note', 0, 6.5);
   say('定義子問題時，多加一些', '等於「記住」解的更多特徵');
   await step(tok);                                   // 222.6 knapsack: a sequence of items
   const X = qX(6, 1.15, -0.8);
@@ -3211,7 +3235,7 @@ FRAG.push(['dp4mit-knap-remember', '第二種猜：子問題多記一點（knaps
   you.mood('happy'); await you.hop(tok);
   say('換個角度：子問題多記住「過去」', '今天的例子全是這一型');
   await step(tok);                                   // 315.8 obvious subproblems fail → add more
-  tag('直覺的子問題不夠 → 多加資訊', 'good', 0, 6.5);
+  kill(digL); tag('直覺的子問題不夠 → 多加資訊', 'good', 0, 6.5);
   say('今天會一直看到：直覺的子問題不夠用', '就把需要的資訊加進子問題');
 }]);
 
@@ -3405,7 +3429,7 @@ FRAG.push(['dp4mit-finger-naive', '只猜 note i 的手指：遞迴寫不出來'
   you.mood('sad');
   say('問題來了：note i+1 用哪根手指？', 'DP(i+1) 沒告訴我們 → 寫不出來');
   await step(tok);                                   // 942.5 often enough for simple DPs; here we need more
-  tag('簡單的 DP 這樣就夠；這裡不夠', 'note', 1.6, 4.8);
+  tag('簡單的 DP 這樣就夠；這裡不夠', 'note', 3.8, 3.6);
   say('簡單的 DP 這樣就夠了', '這題要多知道下一步的資訊');
   await step(tok);                                   // 964.6 more subproblems, more power
   top('多加子問題 = 更多力量');
@@ -3441,7 +3465,7 @@ FRAG.push(['dp4mit-finger-recur', 'DP(i, f) = min_g DP(i+1, g) + d(…)', async 
   you.mood('happy');
   say('這樣遞迴式一下就寫得出來');
   await step(tok);                                   // 1137.0 DP(i, f): a subproblem has two things
-  tag('子問題 = (哪個 suffix, note i 的手指)', 'note', -0.4, 0.3);
+  const subL = tag('子問題 = (哪個 suffix, note i 的手指)', 'note', -0.4, 0.3);
   say('子問題有兩個參數', '哪個 suffix、note i 用哪根手指');
   await step(tok);                                   // 1150.9 call DP(i+1, g), loop over g
   for (let r = 0; r < 5; r++) relabel(G.g[3][r], 'g' + (r + 1));
@@ -3469,7 +3493,7 @@ FRAG.push(['dp4mit-finger-recur', 'DP(i, f) = min_g DP(i+1, g) + d(…)', async 
   for (let c = 4; c >= 0; c--) { for (let r = 1; r < 5; r++) { tint(G.g[c][r], c === 4 ? Q.purple : Q.teal); relabel(G.g[c][r], ''); } await beat(tok, 300); }
   say('內層跑 f', '每一欄的 F 格都填好，再往左一欄');
   await step(tok);                                   // 1312.5 swap the loops and it's wrong
-  tag('迴圈對調 ✗：DP(i+1, ·) 還沒算好', 'bad', -0.4, 0.3);
+  kill(subL); tag('迴圈對調 ✗：DP(i+1, ·) 還沒算好', 'bad', -0.4, 0.3);
   you.mood('sad');
   say('兩層迴圈對調就錯了', '算 DP(i, f) 時要先有整欄 DP(i+1, ·)');
 }]);
@@ -3713,9 +3737,9 @@ const qCell = (c, r, color, drop = 0) => qBox('', color, TX(c), TY(r), TS * 0.94
 FRAG.push(['dp4mit-tetris-rules', 'Tetris 的假設：已知序列、直接落下、不消列', async (tok) => {
   fresh([0, 4, 14], [0, 3.6, 0]);
   const top = board(1.6, 7.6);
-  const you = me(5.6, 0.2, 1.2);
+  const you = me(6.8, 0.2, 1.2);
   const rules = [];
-  const rule = (t) => rules.push(tag(t, 'note', 3.9, 6.6 - rules.length * 0.62));
+  const rule = (t) => rules.push(K.keep(tag(t, 'note', 4.2, 6.6 - rules.length * 0.62))); // the rules are the subject: all stay
   await step(tok);                                   // 2124.8 Tetris: same flavor, it's all about subproblems
   qBoard();
   top('下一個例子：Tetris');
@@ -3759,11 +3783,11 @@ FRAG.push(['dp4mit-tetris-rules', 'Tetris 的假設：已知序列、直接落�
   rule('⑤ 一開始盤面是空的');
   say('⑤ 盤面一開始是空的', '就像第一關');
   await step(tok);                                   // 2254.0 without them: NP-complete
-  tag('一般 Tetris：NP-complete', 'bad', 3.9, 2.6);
+  tag('一般 Tetris：NP-complete', 'bad', 4.2, 2.3);
   you.mood('wow');
   say('沒有這些假設：NP-complete', '計算上很難（下一講會定義）');
   await step(tok);                                   // 2262.0 with them: easy by DP
-  tag('有這些假設：DP 可解 ✓', 'good', 3.9, 1.9);
+  tag('有這些假設：DP 可解 ✓', 'good', 4.2, 1.65);
   you.mood('happy'); await you.hop(tok);
   say('加上這些假設', '就能用 DP 輕鬆解');
 }]);
@@ -3846,6 +3870,7 @@ FRAG.push(['dp4mit-tetris-guess', 'Tetris：猜 piece i 的旋轉與位置', asy
   let piece = [];
   const show = (rot, c0) => { piece.forEach(kill); piece = T_ROT[rot].map(([dx, dy]) => qCell(c0 + dx, 8 + dy, Q.purple)); };
   const tr = tag('', 'ptr alt', 3.9, 5.6);
+  const rem = board(3.9, 3.3, 0, 'note'); // one remark under the guess, rewritten
   await step(tok);                                   // 2443.2 what to do with piece i?
   show(0, 0); txt(tr, 'piece i');
   top('第二步：猜 piece i 怎麼放');
@@ -3863,15 +3888,15 @@ FRAG.push(['dp4mit-tetris-guess', 'Tetris：猜 piece i 的旋轉與位置', asy
   txt(tr, '新 skyline → (i+1, 新 skyline)');
   say('猜定之後，算出新的 skyline', '接到子問題 (i+1, 新 skyline)');
   await step(tok);                                   // 2468.0 about 4·w choices
-  tag('約 4·w 種選擇', 'note', 3.9, 4.8);
+  rem('約 4·w 種選擇');
   say('大約 4·w 種選擇', '4 種旋轉 × w 個位置');
   await step(tok);                                   // 2483.0 running time = product
   say('執行時間：把它們相乘');
   await step(tok);                                   // 2502.1 O(n·w·(h+1)^w); open problem
-  tag('O(n·w·(h+1)^w)', 'ptr alt', 3.9, 4.0);
+  tag('O(n·w·(h+1)^w)', 'ptr alt', 3.9, 4.5);
   say('O(n · w · (h+1)^w)');
   await step(tok);                                   // 2510.7 drop an assumption? large w? clearing rows?
-  tag('w 很大？會消列？→ 未解問題', 'say', 3.9, 3.2);
+  rem('w 很大？會消列？→ 未解問題');
   you.mood('wow');
   say('open problem：拿掉一個假設還能 DP 嗎？', 'w 很大？會消列？老師也不知道');
   await step(tok);                                   // 2536.1 the rest: write the recurrence, min/max over guesses
@@ -3881,14 +3906,14 @@ FRAG.push(['dp4mit-tetris-guess', 'Tetris：猜 piece i 的旋轉與位置', asy
   top('問的是：能不能活下來？');
   say('這題問的是：能不能活下來');
   await step(tok);                                   // 2551.3 answer is Boolean
-  tag('答案：true／false', 'note', 3.9, 2.4);
+  rem('答案：true／false');
   say('答案是 Boolean：true 或 false');
   await step(tok);                                   // 2557.1 true/false as 1/0: maximize
-  tag('true = 1、false = 0 → 取 max', 'good', 3.9, 1.7);
+  rem('true = 1、false = 0 → 取 max');
   you.mood('happy');
   say('把 true／false 當成 1／0', '能活就是 1 → 遞迴式取 max');
   await step(tok);                                   // 2570.1 base case: did I survive?
-  tag('base case：活著嗎？', 'note', 3.9, 1.0);
+  rem('base case：活著嗎？');
   await you.hop(tok);
   say('base case 就是真假值', '活下來了嗎？死了嗎？');
 }]);
@@ -4146,7 +4171,7 @@ FRAG.push(['dp4mit-ddr-logs', 'DDR 的目標：失敗機率要取 log', async (t
   you.mood('calm');
   say('目標 1：在自己的技術下，分數最高');
   await step(tok);                                   // 171.8 DP: we always maximize something
-  tag('DP = 最大化／最小化某個東西', 'note', 2.6, 3.0);
+  const dpN = tag('DP = 最大化／最小化某個東西', 'note', 3.0, 4.6);
   say('DP 總是在最大化（或最小化）某個東西');
   await step(tok);                                   // 177.8 really good: hit all notes, minimum effort
   goal('② 全部踩到，最省力');
@@ -4171,10 +4196,12 @@ FRAG.push(['dp4mit-ddr-logs', 'DDR 的目標：失敗機率要取 log', async (t
   top('最小化失敗 = 最大化成功機率');
   say('最小化失敗 = 最大化成功機率');
   await step(tok);                                   // 340.8 success on all moves = product of each
+  // the other goals are done: only ④ stays, the product has the stage
+  kill(dpN); goals.slice(0, 3).forEach(kill);
   const ps = ['.99', '.98', '.95', '.99', '.97'];
-  const X = qX(5, 1.1, 2.4);
-  ms = ps.map((p, i) => qBox(p, Q.teal, X(i), 2.4, 0.95, 0.6, 0.5, 1.4));
-  op = tag('成功機率 = p₁ × p₂ × … × p₅', 'ptr alt', 2.4, 3.5);
+  const X = qX(5, 1.35, 2.6);
+  ms = ps.map((p, i) => qBox(p, Q.teal, X(i), 2.4, 1.2, 0.6, 0.5, 1.4));
+  op = tag('成功機率 = p₁ × p₂ × … × p₅', 'ptr alt', 2.6, 3.5);
   say('整首都成功 = 每一步成功機率相乘');
   await step(tok);                                   // 355.8 products instead of sums
   you.mood('wow');
@@ -4298,7 +4325,7 @@ FRAG.push(['dp4mit-ddr-direct', 'DDR：最佳走法併進 δ，一步就夠', as
   ['↑↓', '↓', '←→', '←', '→'].forEach((s, i) => { qBox(s, Q.paper, X(i), 1.0, 0.9, 0.5, 0.3, 1.2); if (i < 4) arrow(V3(X(i) + 0.5, 1.0, 0.2), V3(X(i + 1) - 0.5, 1.0, 0.2), Q.gold); });
   say('每個 note 都要產生一個 move');
   await step(tok);                                   // 854.8 there might be moves in between
-  tag('中間還有 move？', 'say', X(2), 2.0);
+  tag('中間還有 move？', 'say', X(2) + 3.6, 2.2);
   say('note 之間可能還有別的 move');
   await step(tok);                                   // 872.8 uneasy: how many? will the graph get huge?
   you.mood('sad');
@@ -4321,7 +4348,7 @@ FRAG.push(['dp4mit-ddr-direct', 'DDR：最佳走法併進 δ，一步就夠', as
   you.mood('happy');
   say('乾脆把最佳走法算進 δ', 'δ 直接回報最好那種走法的總難度');
   await step(tok);                                   // 1002.8 between two notes: always one move
-  tag('兩個 note 之間：一個 move 就夠', 'good', X(2), 2.0);
+  tag('兩個 note 之間：一個 move 就夠', 'good', X(2) + 3.9, 2.2);
   await you.hop(tok);
   say('所以兩個 note 之間', '永遠用一個 move 就能完成');
   await step(tok);                                   // 1026.8 the best way from one state to another
@@ -4398,9 +4425,10 @@ FRAG.push(['dp4mit-ddr-count', 'DDR 腳位數：25、50、75', async (tok) => {
   const D = ['↑', '↓', '←', '→', '·'];
   const dancer = buddy('重心', '', Q.lilac, -5.6, 0.2, 1.2, 0.7);
   let t = null;
-  const grid = (cx, col, name) => {
+  // the arrows along the edges only once, on the first grid: the others are the same 5×5
+  const grid = (cx, col, name, heads) => {
     const G = qGrid(5, 5, 0.46, 0.46, cx, 3.0, col, null, 0.38);
-    D.forEach((d, i) => { tag(d, 'idx', G.X(i), 4.3); tag(d, 'idx', cx - 1.5, G.Y(i)); });
+    if (heads) D.forEach((d, i) => { tag(d, 'idx', G.X(i), 4.3); tag(d, 'idx', cx - 1.5, G.Y(i)); });
     tag(name, 'ptr', cx, 5.0); return G;
   };
   await step(tok);                                   // 1333.8 a foot that's not touching the ground
@@ -4417,7 +4445,7 @@ FRAG.push(['dp4mit-ddr-count', 'DDR 腳位數：25、50、75', async (tok) => {
   dancer.mood('calm'); dancer.look(1);
   say('差別在：重心在哪隻腳');
   await step(tok);                                   // 1369.8 keep track of weight: left or right foot
-  tag('記住重心 W：左腳或右腳', 'note', -5.0, 2.0);
+  tag('記住重心 W：左腳或右腳', 'note', -5.6, 2.5);
   say('想超越初學者', '就要記住重心在左腳還是右腳');
   await step(tok);                                   // 1373.8 state: L, R, and W
   top('state 裡：L、R、W（W ∈ {L, R}）');
@@ -4426,7 +4454,7 @@ FRAG.push(['dp4mit-ddr-count', 'DDR 腳位數：25、50、75', async (tok) => {
   top('腳位有幾種？');
   say('先算：兩隻腳的位置有幾種？');
   await step(tok);                                   // 1427.8 each foot: any of these five squares
-  const g1 = grid(-1.6, Q.teal, '只記腳位');
+  const g1 = grid(-1.6, Q.teal, '只記腳位', true);
   say('每隻腳可以在 5 格之一', '上、下、左、右、中');
   await step(tok);                                   // 1453.8 two feet, five each → 25
   t = tag('5 × 5 = 25', 'ptr alt', -1.6, 0.9);
@@ -4836,8 +4864,9 @@ FRAG.push(['dp4mit-l21-five', 'DP 五步驟：子問題、猜、遞迴、建 DP�
   const you = me(5.2, 0.2, 1.4);
   const S = ['1. 子問題（數有幾個）', '2. 猜（數有幾種選擇）', '3. 遞迴式（每個子問題的時間）', '4. 建 DP：memo / bottom-up', '5. 解原問題'];
   let cd = null;
+  const rem = board(4.2, 4.4, 0, 'note'); // one remark beside the steps, rewritten
   await step(tok);                                   // 57.2 dynamic programming in five easy steps
-  cd = code(S, -2.0, 6.3, 0.8);
+  cd = code(S, -2.6, 6.1, 0.8);
   top('DP 五個簡單步驟');
   say('還記得 DP 五步驟嗎？');
   await step(tok);                                   // 62.9 define subproblems and count them
@@ -4850,19 +4879,19 @@ FRAG.push(['dp4mit-l21-five', 'DP 五步驟：子問題、猜、遞迴、建 DP�
   cd.hl(2);
   say('第三步：遞迴式', '用更小的子問題表示');
   await step(tok);                                   // 96.0 a min or max over options = the guesses
-  tag('min / max over 猜測', 'note', 3.4, 4.6);
+  rem('min / max over 猜測');
   say('會得到一堆選項的 min 或 max', '每個選項就是一種猜測');
   await step(tok);                                   // 101.0 time per subproblem (ignoring recursion)
-  tag('每個子問題的時間（遞迴不算）', 'note', 3.4, 3.9);
+  rem('每個子問題的時間（遞迴不算）');
   say('算出每個子問題要花的時間', '遞迴呼叫當作免費');
   await step(tok);                                   // 108.3 memoize recursion, or bottom-up
   cd.hl(3);
   say('第四步：遞迴 + memoize，或 bottom-up', '兩種做的計算幾乎一樣');
   await step(tok);                                   // 123.1 check acyclic
-  tag('要 acyclic：不能依賴自己', 'bad', 3.4, 3.2);
+  rem('要 acyclic：不能依賴自己');
   say('要檢查遞迴式沒有環', '不然會跑不完或算錯');
   await step(tok);                                   // 132.3 bottom-up: a topological order
-  tag('bottom-up：拓撲順序', 'note', 3.4, 2.5);
+  rem('bottom-up：拓撲順序');
   say('bottom-up 要明確知道拓撲順序', '通常不難');
   await step(tok);                                   // 144.1 time = #subproblems × time/subproblem
   tag('時間 = 子問題數 × 每個的時間', 'ptr alt', 0, 1.4);
@@ -5008,7 +5037,7 @@ FRAG.push(['dp4mit-l21-paren-guess', '猜最後一次乘法：子問題是 subst
   you.mood('wow');
   say('先不談子問題：要猜什麼？');
   await step(tok);                                   // 579.5 can't know the whole solution: exponentially many
-  tag('括法有指數多種 → 不能整個猜', 'bad', 0.4, 6.0);
+  tag('括法有指數多種 → 不能整個猜', 'bad', 0.4, 6.35);
   say('整個括法有指數多種', '只能猜「一小塊」');
   await step(tok);                                   // 603.8 the last operation
   you.mood('calm');
@@ -5595,6 +5624,7 @@ FRAG.push(['dp4mit-l21-pseudo', 'Knapsack 的 n·S：pseudo-polynomial', async (
   const top = board(0, 7.3);
   const you = me(-6.0, 0.2, 1.2);
   let t = null, bits = null;
+  const rem = board(4.6, 5.25, 0, 'note'); // one remark beside the running time, rewritten
   await step(tok);                                   // 3006.8 the running time
   top('執行時間是多少？');
   say('來看執行時間');
@@ -5627,13 +5657,13 @@ FRAG.push(['dp4mit-l21-pseudo', 'Knapsack 的 n·S：pseudo-polynomial', async (
   you.mood('calm');
   say('但 S 不大時其實還好', '這叫 pseudo-polynomial（偽多項式）');
   await step(tok);                                   // 3093.6 polynomial in n and in the numbers in the input
-  tag('對 n 和「輸入裡的數字」是多項式', 'good', 4.0, 4.9);
+  rem('對 n 和「輸入裡的數字」是多項式');
   say('定義：對輸入大小 n', '和輸入裡的整數（例如 S）是多項式');
   await step(tok);                                   // 3112.7 n·S: pseudo-quadratic
-  tag('n·S：偽二次', 'note', 4.0, 4.2);
+  rem('n·S：偽二次');
   say('n·S 是 n 和 S 的乘積', '可以叫它「偽二次」時間');
   await step(tok);                                   // 3131.9 k bits can write a number of size 2^k
-  tag('k 個 bit → 數字可以到 2^k', 'note', 4.0, 3.5);
+  rem('k 個 bit → 數字可以到 2^k');
   say('k 個 bit 就能寫出 2^k 那麼大的數', '介於多項式和指數之間');
   await step(tok);                                   // 3138.7 polynomial good, exponential bad, pseudo-poly OK
   top('多項式：好　指數：壞　偽多項式：還可以');
