@@ -370,8 +370,13 @@ export function createLab(container) {
   // anchor, cx/cy where the anchor sits inside the label (0.5 = centred)
   const TR = /translate\(([-\d.e]+)%,\s*([-\d.e]+)%\)\s*translate\(([-\d.e]+)px,\s*([-\d.e]+)px\)\s*$/;
   let dcCount = 0, born = 0;
+  // Labels keep their pixel size while the camera backs off to fit a big
+  // layout, so they crowd together: shrink all of them with the zoom-out
+  // (down to 0.62 at most, still readable)
+  const zoomShrink = () => Math.max(0.62, Math.min(1, Math.pow(fit.scale, -0.7)));
   function declutter(dt, snap = false) {
     const items = [];
+    const G = zoomShrink();
     scene.traverseVisible((o) => {
       if (!o.isCSS2DObject) return;
       const el = o.element, st = el.style;
@@ -383,7 +388,7 @@ export function createLab(container) {
       items.push({ el, o, ax: +m[3], ay: +m[4], fx: -m[1] / 100, fy: -m[2] / 100, born: el.__born });
     });
     if (snap || dcCount++ % 6 === 0) {
-      for (const it of items) { it.w = it.el.offsetWidth; it.h = it.el.offsetHeight; it.x = it.ax + (0.5 - it.fx) * it.w; it.y = it.ay + (0.5 - it.fy) * it.h; it.fixed = it.el.classList.contains('val') || it.el.classList.contains('icon'); it.code = /mono/i.test(it.el.style.fontFamily); }
+      for (const it of items) { it.w = it.el.offsetWidth * G; it.h = it.el.offsetHeight * G; it.x = it.ax + (0.5 - it.fx) * it.w; it.y = it.ay + (0.5 - it.fy) * it.h; it.fixed = it.el.classList.contains('val') || it.el.classList.contains('icon'); it.code = /mono/i.test(it.el.style.fontFamily); }
       // a code panel (monospace lines at one x / z in the same parent) is
       // spread evenly about its middle when its lines would touch, so the
       // panel stays whole
@@ -445,7 +450,14 @@ export function createLab(container) {
       if (!n) continue;
       n.cx += (n.gx - n.cx) * k; n.cy += (n.gy - n.cy) * k; n.cs += (n.gs - n.cs) * k; n.co += (n.go - n.co) * ko;
       if (Math.abs(n.cx) > 0.3 || Math.abs(n.cy) > 0.3) it.el.style.transform += ' translate(' + n.cx.toFixed(1) + 'px,' + n.cy.toFixed(1) + 'px)';
-      if (n.cs < 0.995) it.el.style.transform += ' scale(' + n.cs.toFixed(3) + ')';
+      const sc = n.cs * G;
+      if (sc < 0.995) {
+        // shrink about the point the label is pinned to, so left-aligned
+        // code lines keep a straight left edge
+        const org = (it.fx * 100).toFixed(0) + '% ' + (it.fy * 100).toFixed(0) + '%';
+        if (it.el.style.transformOrigin !== org) it.el.style.transformOrigin = org;
+        it.el.style.transform += ' scale(' + sc.toFixed(3) + ')';
+      }
       // only touch opacity while fading (scenes may set their own)
       if (n.co <= 0.99) { it.el.style.opacity = n.co.toFixed(2); it.el.__faded = true; }
       else if (it.el.__faded) { it.el.style.opacity = ''; it.el.__faded = false; }
