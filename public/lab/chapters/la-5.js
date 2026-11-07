@@ -905,6 +905,12 @@ const P = K; const { V3, tag, cube, kill, glow, code, anim, zone, travel, remove
 // 每個矩陣、落點、換基底結果都由程式算出來，再和老師說的數字比對，畫面顯示 ✓／✘。
 // 老師沒給數字的地方用自己挑的例子，畫面標「示意」。
 const kArrow = P.arrow;
+// An invisible box over the area a scene will use later: the stage's auto framing measures it from the first
+// step, so the camera does not zoom in on the first few things and then jump back out when the rest arrives.
+function frameHold(x0, y0, z0, x1, y1, z1) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+}
 const cap = (a, b = '') => say(a, b);
 const hd = (t, x, y, z = 0) => tag(t, 'ptr', x, y, z);
 const hot = (t, x, y, z = 0) => tag(t, 'ptr alt', x, y, z);
@@ -1065,13 +1071,31 @@ function house(F, color = COL.b) {
   H.setM(I2); return H;
 }
 
-// 左側說明行（平面場景）：第 i 行文字；同一行再寫一次就換字
+// 左側說明行（平面場景）：第 i 行文字；同一行再寫一次就換字。
+// 說明欄放在格子左邊、一行一行往下長，行距夠寬不會疊在一起；最多 PANE_MAX 行，
+// 再多就把最舊的一行收掉（剩下的往上補）。換題目時 paneClear(S) 整欄清掉再重寫。
+// 說明欄是畫面的主體之一：keep() 讓它不會被「舊的 good/bad 自動淡出」收走。
+const PANE_X = -6.4, PANE_Z0 = -3.8, PANE_DZ = 0.95, PANE_MAX = 4;
+function paneLay(S) { S.pnL.forEach((l, k) => l.position.set(PANE_X, 0.5, PANE_Z0 + k * PANE_DZ)); }
 function pane(S, i, t, cls = 'ptr') {
-  S.pn = S.pn || [];
+  S.pn = S.pn || []; S.pnL = S.pnL || [];
   if (cls === 'good' && /✘/.test(t)) log('check failed: ' + t, true);
   if (S.pn[i]) { txt(S.pn[i], t); setCls(S.pn[i], cls); return S.pn[i]; }
-  const l = tag(t, cls, -5.0, 0.5, -3.3 + i * 0.62); mono(l); S.pn[i] = l; return l;
+  const l = P.keep(mono(tag(t, cls, PANE_X, 0.5, PANE_Z0))); S.pn[i] = l; S.pnL.push(l);
+  while (S.pnL.length > PANE_MAX) { const o = S.pnL.shift(); S.pn[S.pn.indexOf(o)] = null; remove(o); }
+  paneLay(S); return l;
 }
+// 一個 scene 只用一個「檢查」說明：每步改寫同一個 label（不再一步一個新 label 疊起來）
+function rem(S, t, cls, x, y, z = 0) {
+  if (!S.rm) S.rm = P.keep(tag(t, cls, x, y, z)); else { txt(S.rm, t); setCls(S.rm, cls); S.rm.position.set(x, y, z); }
+  return S.rm;
+}
+const okr = (S, b, t, x, y, z = 0) => { if (!b) log('check failed: ' + t, true); return rem(S, b ? t : t.replace(/✓/g, '✘'), b ? 'good' : 'bad', x, y, z); };
+// 說明欄裡的一行檢查（✓／✘ 由程式算）
+const paneOk = (S, i, b, t) => { if (!b) log('check failed: ' + t, true); return pane(S, i, b ? t : t.replace(/✓/g, '✘'), b ? 'good' : 'bad'); };
+// 只留第 i 行（其餘收掉，留下的移到最上面）
+function paneOnly(S, i) { const keepL = (S.pn || [])[i]; (S.pnL || []).forEach((l) => { if (l !== keepL) remove(l); }); S.pn = []; S.pnL = []; if (keepL) { S.pn[i] = keepL; S.pnL.push(keepL); paneLay(S); } }
+function paneClear(S) { (S.pnL || []).forEach((l) => remove(l)); S.pn = []; S.pnL = []; }
 
 // ═══════════════════════ 3Blue1Brown 第 3 集：Linear transformations and matrices ═══════════════════════
 const MX = [[1, -1], [0.5, 1]];                  // 示意：前兩段用來「看移動」的變換
@@ -1142,33 +1166,33 @@ sc('lt-k-linear', '3B1B 第 3 集：線性 = 直線保持直線、原點不動',
   async (tok, S) => {
     cap('反例：線全變彎了', '→ 不是線性變換');
     S.W.visible = true; await anim(tok, 1600, (u) => S.W.setG(lerpP(gCurvy, u)));
-    S.b1 = bad('✘ 線變彎（示意）', 3.2, 0.5, -4.3);
+    S.b1 = rem(S, '✘ 線變彎（示意）', 'bad', 2.8, 0.5, -4.3);
   },
   async (tok, S) => {
     cap('反例：線都直的，但整個平面被平移', '原點被移走 → 不是線性');
-    gone(S.b1); S.W.setG((p) => p);
+    S.W.setG((p) => p);
     await anim(tok, 1500, (u) => { S.W.setG(lerpP(gShift, u)); S.o.position.copy(S.F.w([gShift([0, 0])[0] * u, gShift([0, 0])[1] * u], 0.14)); });
-    S.b2 = bad('✘ 原點移到 (1, 0.6)（示意）', 3.0, 0.5, -4.3);
+    S.b2 = rem(S, '✘ 原點移到 (1, 0.6)（示意）', 'bad', 2.8, 0.5, -4.3);
   },
   async (tok, S) => {
     cap('這個：原點不動，水平線和垂直線看起來還是直的', '但只是因為只畫了水平、垂直的格線');
-    gone(S.b2); S.W.setG((p) => p); S.o.position.copy(S.F.w([0, 0], 0.14));
+    S.W.setG((p) => p); S.o.position.copy(S.F.w([0, 0], 0.14));
     await anim(tok, 1600, (u) => S.W.setG(lerpP(gTrick, u)));
     const h = [-2, 0, 2].map((x) => gTrick([x, 1]));
-    S.b3 = ok(Math.abs(colin(...h)) < 1e-9 && eqv(gTrick([0, 0]), [0, 0]), 'y = 1 的像仍是直線、原點不動 ✓', 3.0, 0.5, -4.3);
+    S.b3 = okr(S, Math.abs(colin(...h)) < 1e-9 && eqv(gTrick([0, 0]), [0, 0]), 'y = 1 的像仍是直線、原點不動 ✓', 2.8, 0.5, -4.3);
   },
   async (tok, S) => {
     cap('看一條對角線 y = x 就露餡了', '它被彎成曲線 → 根本不是線性');
     S.D = curveLine(S.F, [-4, -4], [4, 4], COL.r);
     await anim(tok, 1400, (u) => S.D.setG(lerpP(gTrick, u)));
     const d = [0, 1, 2].map((t) => gTrick([t, t]));
-    gone(S.b3); ok(Math.abs(colin(...d)) > 1e-6, '✘ 對角線變成拋物線 x = t + 0.15t²（示意）', 2.6, 0.5, -4.3);
+    okr(S, Math.abs(colin(...d)) > 1e-6, '✘ 對角線變成拋物線 x = t + 0.15t²（示意）', 2.8, 0.5, -4.3);
   },
   async (tok, S) => {
     cap('一般原則：線性變換讓格線保持平行、等距', '原點也不動');
     S.W.visible = false; S.D.visible = false; S.G.visible = true;
     await S.go(tok, [[1, 1], [0, 1]], 1600);
-    good('✓ 平行、等距、原點不動（示意）', 3.0, 0.5, -4.3);
+    rem(S, '✓ 平行、等距、原點不動（示意）', 'good', 2.8, 0.5, -4.3);
   },
   async (tok, S) => {
     cap('有些很好描述，例如繞原點旋轉', '');
@@ -1215,7 +1239,7 @@ sc('lt-k-ijhat', '3B1B 第 3 集：只要知道 î、ĵ 落在哪裡', async (to
     cap('厲害的是：只要知道 î、ĵ 的落點', '不必看變換的過程，就能推出任何向量的落點');
     S.G.visible = false; S.v.glow(null); gone(S.dot);
   },
-  async (tok, S) => { cap('一般的向量 (x, y)', '落在 x·(1, −2) + y·(3, 0)'); pane(S, 4, '(x, y) → x·(1, −2) + y·(3, 0)'); },
+  async (tok, S) => { cap('一般的向量 (x, y)', '落在 x·(1, −2) + y·(3, 0)'); paneClear(S); pane(S, 4, '(x, y) → x·(1, −2) + y·(3, 0)'); },
   async (tok, S) => {
     cap('= (1x + 3y, −2x + 0y)', '給任何向量，都能用這個公式算落點');
     const f = (x, y) => [1 * x + 3 * y, -2 * x + 0 * y];
@@ -1318,12 +1342,12 @@ const M3 = [[1, 0, 0.5], [0.5, 1, 0], [0, 0.5, 1]];   // 示意：老師沒講�
 const RY = [[0, 0, 1], [0, 1, 0], [-1, 0, 0]];          // 繞 y 軸轉 90°（老師給的三個落點）
 const RV = [2, 1, 1];                                    // 示意向量
 sc('lt-r-3d', '3B1B：3×3 矩陣的三行 = î、ĵ、k̂ 的落點', async (tok, S) => {
-  space(S);
+  space(S, { ang: 16 });
 }, [
   async (tok, S) => { cap('3D 向量 → 3D 向量的線性變換', '輸入、輸出都是三維'); },
   async (tok, S) => {
     cap('把空間所有點「揉一揉」', '格線保持平行等距、原點不動');
-    await S.go(tok, M3, 2000); S.n = note('示意的變換', -4.2, 6.2);
+    await S.go(tok, M3, 2000); S.n = note('示意的變換', -4.3, 3.4);
   },
   async (tok, S) => {
     cap('每個移動的點，代表尖端在那裡的向量', '其實是「輸入向量移到輸出向量」');
@@ -1362,14 +1386,14 @@ sc('lt-r-3d', '3B1B：3×3 矩陣的三行 = î、ĵ、k̂ 的落點', async (to
   async (tok, S) => {
     cap('三組座標當成行 → 這個旋轉的矩陣', '[0 0 1; 0 1 0; −1 0 0]');
     S.P = code(RY.map((r) => '[ ' + r.map((x) => fmt(x).padStart(3)).join(' ') + ' ]'), -4.3, 6.0);
-    ok(eqv(S.M, RY) && eqv(rotY(90), RY), '= R_y(90°) ✓', -4.3, 4.1);
+    okr(S, eqv(S.M, RY) && eqv(rotY(90), RY), '= R_y(90°) ✓', -4.3, 4.1);
   },
   async (tok, S) => {
     cap('向量 (x, y, z) 落在哪？推理跟 2D 一樣', '座標 = 「各基底向量縮放幾倍再相加」的指示');
     S.ar.forEach((a, j) => a.tag(['î', 'ĵ', 'k̂'][j]));
     await S.go(tok, I3, 900);
     S.c1 = S.track([2, 0, 0], COL.d, ''); S.c2 = S.track([0, 1, 0], COL.r, '', [2, 0, 0]); S.c3 = S.track([0, 0, 1], COL.a, '', [2, 1, 0]);
-    S.vv = S.track(RV, COL.g, 'v = 2î + ĵ + k̂（示意）');
+    S.vv = S.track(RV, COL.g, 'v（示意）'); rem(S, 'v = 2î + ĵ + k̂（示意）', 'ptr', -4.3, 4.1);
   },
   async (tok, S) => {
     cap('重點：這個「縮放再相加」在變換前後都成立', '');
@@ -1378,18 +1402,18 @@ sc('lt-r-3d', '3B1B：3×3 矩陣的三行 = î、ĵ、k̂ 的落點', async (to
   async (tok, S) => {
     const r = lin(RV, [0, 1, 2].map((j) => colOf(RY, j)));
     cap('所以：座標乘上對應的行，三個結果加起來', '2·(0, 0, −1) + 1·(0, 1, 0) + 1·(1, 0, 0)');
-    ok(eqv(r, mulMV(RY, RV)) && eqv(r, mulMV(S.M, RV)), '= ' + vs(r) + ' ✓', -4.3, 3.4);
+    okr(S, eqv(r, mulMV(RY, RV)) && eqv(r, mulMV(S.M, RV)), '= ' + vs(r) + ' ✓', -4.3, 4.1);
     S.vv.tag('v → ' + vs(r));
   },
 ]);
 
 const RX = [[1, 0, 0], [0, 0, -1], [0, 1, 0]];   // 示意：第二個旋轉（繞 x 軸 90°）
 sc('lt-r-compose', '3B1B：3×3 矩陣相乘 = 先做右邊、再做左邊', async (tok, S) => {
-  space(S, { grid: false });
+  space(S, { grid: false, ang: 50 });
 }, [
   async (tok, S) => {
     cap('兩個 3×3 矩陣相乘', '例（示意）：M₂M₁ = R_x(90°)·R_y(90°)');
-    S.P = mono(hd('M₂ M₁', -4.3, 6.0)); note('示意', -4.3, 5.4);
+    S.P = mono(hd('M₂ M₁', -4.9, 6.0)); note('示意', -4.9, 5.4);
   },
   async (tok, S) => { cap('先做右邊那個：M₁ = 繞 y 軸轉 90°', ''); await S.spin(tok, (u) => rotY(90 * u), 2000); },
   async (tok, S) => { cap('再做左邊那個：M₂ = 繞 x 軸轉 90°', ''); await S.spin(tok, (u) => rotX(90 * u), 2000); },
@@ -1397,14 +1421,14 @@ sc('lt-r-compose', '3B1B：3×3 矩陣相乘 = 先做右邊、再做左邊', asy
   async (tok, S) => {
     const Pm = mm(RX, RY);
     cap('數值上的乘法跟 2D 差不多', 'M₂M₁ = [0 0 1; 1 0 0; 0 1 0]');
-    S.Q = code(Pm.map((r) => '[ ' + r.map((x) => fmt(x).padStart(3)).join(' ') + ' ]'), -4.3, 5.0);
-    ok(eqv(Pm, S.M), '行 = 三個箭頭現在的位置 ✓', -4.3, 3.2);
+    S.Q = code(Pm.map((r) => '[ ' + r.map((x) => fmt(x).padStart(3)).join(' ') + ' ]'), -4.9, 4.6);
+    okr(S, eqv(Pm, S.M), '行 = 三個箭頭現在的位置 ✓', -4.9, 2.8);
     S.ar.forEach((a, j) => a.tag(['î', 'ĵ', 'k̂'][j] + ' → ' + vs(colOf(Pm, j))));
   },
   async (tok, S) => {
     cap('自我測驗：想想看乘法的每一行怎麼來', 'M₂M₁ 的第 j 行 = M₂ ×（M₁ 的第 j 行）');
     const Pm = mm(RX, RY);
-    ok([0, 1, 2].every((j) => eqv(colOf(Pm, j), mulMV(RX, colOf(RY, j)))), '第 j 行 = M₂·(M₁ 第 j 行) ✓', -4.3, 2.6);
+    okr(S, [0, 1, 2].every((j) => eqv(colOf(Pm, j), mulMV(RX, colOf(RY, j)))), '第 j 行 = M₂·(M₁ 第 j 行) ✓', -4.9, 2.8);
   },
 ]);
 
@@ -1433,7 +1457,7 @@ sc('lt-v-3x2', '3B1B：3×2 矩陣 = 把 2D 送進 3D', async (tok, S) => {
   async (tok, S) => {
     cap('這個矩陣有 3 列、2 行', '標準說法：3×2 矩陣');
     S.P = code(VM.map((r) => '[ ' + r.map((x) => fmt(x).padStart(3)).join(' ') + ' ]'), -4.3, 6.4);
-    sm(VM.length + ' × ' + VM[0].length, -4.3, 4.6);
+    sm(VM.length + ' × ' + VM[0].length, -2.7, 5.85);
   },
   async (tok, S) => {
     cap('column space（所有向量落點的集合）', '是 3D 空間裡穿過原點的一個 2D 平面');
@@ -1442,7 +1466,7 @@ sc('lt-v-3x2', '3B1B：3×2 矩陣 = 把 2D 送進 3D', async (tok, S) => {
   async (tok, S) => {
     const r = rrefSteps(VM).rank;
     cap('但它仍是 full rank', 'column space 的維度 = 輸入空間的維度 = 2');
-    ok(r === 2, 'rank = ' + r + ' = 輸入維度 ✓', -4.3, 4.0);
+    ok(r === 2, 'rank = ' + r + ' = 輸入維度 ✓', -1.6, 5.2);
   },
   async (tok, S) => { cap('看到 3×2 矩陣：就是把 2D 送到 3D', '2 行 → 輸入空間有 2 個基底向量'); S.ai.glow(GOLD); S.aj.glow(GOLD); },
   async (tok, S) => { cap('3 列 → 每個落點要用 3 個座標描述', ''); S.o1.glow(GOLD); S.o2.glow(GOLD); },
@@ -1518,7 +1542,7 @@ sc('lt-v-1x2', '3B1B：1×2 矩陣 = 把 2D 送到數線', async (tok, S) => {
   },
   async (tok, S) => {
     cap('兩個行 = 兩個基底向量落在數線上的哪個數', 'î → 2、ĵ → 1');
-    [[VL[0], 'î → ' + VL[0], COL.d], [VL[1], 'ĵ → ' + VL[1], COL.r]].forEach(([x, t, c], i) => { const b = dotBall(c, 0.14); b.position.copy(NL(x)); tag(t, 'ptr', NL(x).x, 0.25 - i * 0.0, 0.3); });
+    [[VL[0], 'î → ' + VL[0], COL.d], [VL[1], 'ĵ → ' + VL[1], COL.r]].forEach(([x, t, c], i) => { const b = dotBall(c, 0.14); b.position.copy(NL(x)); tag(t, 'ptr', NL(x).x, i ? 0.25 : 1.4, 0.3); });
     S.ai.glow(GOLD); S.aj.glow(GOLD);
   },
   async (tok, S) => {
@@ -1583,7 +1607,7 @@ sc('lt-p-jennifer', '3B1B 換基底：Jennifer 的基底 b₁、b₂', async (to
     const a = scl(JB1, 5 / 3), b = scl(JB2, 1 / 3);
     await anim(tok, 1000, (u) => S.F.set(S.q1, scl(a, u)));
     await anim(tok, 900, (u) => S.F.set(S.q2, scl(b, u), a));
-    ok(eqv(addv(a, b), JV), '(5/3)·b₁ + (1/3)·b₂ = (3, 2) ✓', 3.0, 0.5, -4.3);
+    okr(S, eqv(addv(a, b), JV), '(5/3)·b₁ + (1/3)·b₂ = (3, 2) ✓', 3.0, 0.5, -4.3);
   },
   async (tok, S) => { cap('一般來說：她的第一個座標縮放 b₁、第二個縮放 b₂', '再把結果加起來'); },
   async (tok, S) => {
@@ -1595,7 +1619,7 @@ sc('lt-p-jennifer', '3B1B 換基底：Jennifer 的基底 b₁、b₂', async (to
   async (tok, S) => {
     cap('但在她的系統裡，它們就是 (1, 0) 和 (0, 1)', '是它們定義了她的座標的意義');
     S.b1.tag('b₁：她說 (1, 0)'); S.b2.tag('b₂：她說 (0, 1)');
-    ok(eqv(mulMV(JAi, JB1), [1, 0]) && eqv(mulMV(JAi, JB2), [0, 1]), '在她的語言 b₁ = (1, 0)、b₂ = (0, 1) ✓', 3.0, 0.5, -4.3);
+    okr(S, eqv(mulMV(JAi, JB1), [1, 0]) && eqv(mulMV(JAi, JB2), [0, 1]), '在她的語言 b₁ = (1, 0)、b₂ = (0, 1) ✓', 3.0, 0.5, -4.3);
   },
   async (tok, S) => { cap('所以我們在說不同的「語言」', '看的是同一批向量，用的字和數字不一樣'); },
 ]);
@@ -1660,7 +1684,7 @@ sc('lt-p-translate', '3B1B 換基底：用 A = [b₁ b₂] 把她的座標翻成
   },
   async (tok, S) => {
     cap('把 A 看成一個變換', '它把我們的 î、ĵ 移到 Jennifer 的 b₁、b₂');
-    gone(S.q1, S.q2, S.r); hide(S.b1, S.b2); S.HG.material.opacity = 0.25;
+    gone(S.q1, S.q2, S.r); hide(S.b1, S.b2); S.HG.material.opacity = 0.25; paneOnly(S, 4);
     await S.go(tok, JA, 2000);
     S.ai.tag('î → b₁'); S.aj.tag('ĵ → b₂');
   },
@@ -1683,7 +1707,7 @@ sc('lt-p-translate', '3B1B 換基底：用 A = [b₁ b₂] 把她的座標翻成
   async (tok, S) => { cap('這個矩陣把「我們對她的誤會」', '變成她真正指的那個向量'); },
   async (tok, S) => {
     cap('剛學時常覺得方向反了', '');
-    pane(S, 5, '幾何上：我們的格子 → 她的格子');
+    paneClear(S); pane(S, 5, '幾何上：我們的格子 → 她的格子');
     pane(S, 6, '數值上：她的語言 → 我們的語言');
   },
   async (tok, S) => {
@@ -1754,7 +1778,7 @@ sc('lt-p-rotation', '3B1B 換基底：旋轉 90° 在 Jennifer 的語言 = A⁻�
   },
   async (tok, S) => {
     cap('常見的想法：從她語言裡的任一個向量開始', '例：她的 (−1, 2)');
-    gone(S.r1, S.r2); pane(S, 2, '① 她的向量：(−1, 2)');
+    gone(S.r1, S.r2); paneClear(S); pane(S, 2, '① 她的向量：(−1, 2)');
   },
   async (tok, S) => {
     const w = mulMV(JA, [-1, 2]);
@@ -1855,7 +1879,7 @@ sc('lt-c-recap', '叉積回顧：怪行列式算法 + 長度 = 面積、方向 �
 
 const DP = [2, 1, 2];   // 示意的 1×3 矩陣 [2 1 2]
 sc('lt-c-dual', '對偶性：R³ → 數線的線性變換 = 跟向量 p 做內積', async (tok, S) => {
-  fresh([0, 0, 0], LOOK3); cam(28, 24, 10.5, LOOK3);
+  fresh([0, 0, 0], LOOK3); cam(42, 24, 10.5, LOOK3);
   S.Sp = space3(0, 2.6, 0, 0.75, 2.6);
 }, [
   async (tok, S) => {
@@ -2012,7 +2036,7 @@ async function termStep(S, i, a, sub) {
 }
 
 sc('lt-c-geo', '幾何面：體積 = 面積 × 高 = p·x，p ⊥ v、w', async (tok, S) => {
-  crossStage(S, 0.55, 40, 18);
+  crossStage(S, 0.55, 58, 18);
   S.pg = pgram(S.Sp, CV, CW, COL.g, 0.3);
 }, [
   async (tok, S) => { cap('精彩的部分：把它和叉積的幾何連起來', ''); },
@@ -2032,7 +2056,7 @@ sc('lt-c-geo', '幾何面：體積 = 面積 × 高 = p·x，p ⊥ v、w', async 
     cap('也就是：把 x 投影到垂直 v、w 的直線上', '投影長度 × 面積');
     S.Sp.line(CP, COL.r, 2.4, [0, 0, 0], 0.012);
     S.hr = rod(COL.r, 0.04); await anim(tok, 1000, (t) => S.hr.setW(S.Sp.w([0, 0, 0]), S.Sp.w(scl(n, h * Math.max(0.01, t)))));
-    const hl = S.Sp.w(scl(n, h + 0.3)); hd('高 = ' + h.toFixed(2), hl.x, hl.y, hl.z);
+    const hl = S.Sp.w(scl(n, h / 2)); hd('高 = ' + h.toFixed(2), hl.x - 0.2, hl.y, hl.z).center.set(1, 0.5);
   },
   async (tok, S) => {
     cap('這正是跟一個「⊥ v、w、長度 = 面積」的向量做內積', '');
@@ -2042,16 +2066,16 @@ sc('lt-c-geo', '幾何面：體積 = 面積 × 高 = p·x，p ⊥ v、w', async 
   async (tok, S) => {
     const x2 = [-1, 1, -1.2];
     cap('方向選對：內積為負的情況', '剛好就是 (x, v, w) 不符合右手定則的情況');
-    ok(dot(CP, x2) < 0 && fvol(x2) < 0, '另一側的 x：p·x、det 都是負的 ✓', -4.4, 5.6);
+    ok(dot(CP, x2) < 0 && fvol(x2) < 0, '另一側的 x：p·x、det 都是負的 ✓', -5.6, 5.6);
   },
   async (tok, S) => {
     const d = fvol(S.x), pd = dot(CP, S.x);
     cap('找到了：p·(x, y, z) = det[(x, y, z) v w]', '');
-    ok(Math.abs(d - pd) < 1e-9, 'p·x = ' + fmt(Math.round(pd * 100) / 100) + ' = det[x v w] ✓', -4.4, 5.0);
+    ok(Math.abs(d - pd) < 1e-9, 'p·x = ' + fmt(Math.round(pd * 100) / 100) + ' = det[x v w] ✓', -5.6, 5.0);
   },
   async (tok, S) => {
     cap('所以先前用符號技巧算出的向量', '幾何上一定就是這個向量');
-    ok(eqv(cof1(CV, CW), CP) && Math.abs(norm(CP) - pgArea(CV, CW)) < 1e-9, '算法的 p = 幾何的 p ✓', -4.4, 4.4);
+    ok(eqv(cof1(CV, CW), CP) && Math.abs(norm(CP) - pgArea(CV, CW)) < 1e-9, '算法的 p = 幾何的 p ✓', -5.6, 4.4);
   },
   async (tok, S) => { cap('這就是叉積的「算法」和「幾何」相關的根本原因', ''); await orb(tok, 2500, 40, 100, 18); },
 ]);
@@ -2110,21 +2134,21 @@ sc('lt-m-rules', 'MIT L30：線性的規則 T(cv + dw) = cT(v) + dT(w)', async (
     cap('投影是線性的：v 變兩倍長，投影也變兩倍長', '');
     await anim(tok, 1200, (u) => setVT(S, scl(v, 1 + u)));
     S.av.tag('2v'); S.at.tag('T(2v)');
-    ok(eqv(PR(scl(v, 2)), scl(PR(v), 2)), 'T(2v) = 2T(v) ✓', 3.0, 0.5, -4.3);
+    okr(S, eqv(PR(scl(v, 2)), scl(PR(v), 2)), 'T(2v) = 2T(v) ✓', 3.2, 0.5, -4.3);
   },
   async (tok, S) => {
     const v = [1, 2];
     cap('v 換成 −v，投影也變成負的', '');
     await anim(tok, 1500, (u) => setVT(S, scl(v, 2 - 3 * u)));
     S.av.tag('−v'); S.at.tag('T(−v)');
-    ok(eqv(PR(scl(v, -1)), scl(PR(v), -1)), 'T(−v) = −T(v) ✓', 3.0, 0.5, -3.7);
+    okr(S, eqv(PR(scl(v, -1)), scl(PR(v), -1)), 'T(−v) = −T(v) ✓', 3.2, 0.5, -4.3);
   },
   async (tok, S) => {
     const v = [1, 2];
     cap('c = 2、c = −1…任何 c 都成立', '');
     S.av.tag('cv'); S.at.tag('T(cv)');
     await anim(tok, 1800, (u) => setVT(S, scl(v, -1 + 2.2 * u)));
-    ok([-1, 0.5, 1.2, 3].every((c) => eqv(PR(scl(v, c)), scl(PR(v), c))), 'T(cv) = cT(v)（任何 c）✓', 3.0, 0.5, -3.1);
+    okr(S, [-1, 0.5, 1.2, 3].every((c) => eqv(PR(scl(v, c)), scl(PR(v), c))), 'T(cv) = cT(v)（任何 c）✓', 3.2, 0.5, -4.3);
   },
   async (tok, S) => {
     const v = [1, 2], w = [-0.5, 2];
@@ -2132,7 +2156,7 @@ sc('lt-m-rules', 'MIT L30：線性的規則 T(cv + dw) = cT(v) + dT(w)', async (
     setVT(S, v); S.av.tag('v'); S.at.tag('T(v)');
     S.F.arrow(w, COL.c, 'w'); S.F.arrow(addv(v, w), COL.d, 'v + w'); S.F.arrow(PR(addv(v, w)), COL.b, 'T(v + w)');
     pane(S, 2, 'T(cv + dw) = cT(v) + dT(w)');
-    ok(eqv(PR(addv(scl(v, 2), scl(w, -1))), addv(scl(PR(v), 2), scl(PR(w), -1))) && eqv(PR(addv(v, w)), addv(PR(v), PR(w))), 'T(v + w) = T(v) + T(w) ✓', 3.0, 0.5, -2.5);
+    okr(S, eqv(PR(addv(scl(v, 2), scl(w, -1))), addv(scl(PR(v), 2), scl(PR(w), -1))) && eqv(PR(addv(v, w)), addv(PR(v), PR(w))), 'T(v + w) = T(v) + T(w) ✓', 3.2, 0.5, -4.3);
   },
 ]);
 
@@ -2153,23 +2177,23 @@ sc('lt-m-nonex', 'MIT L30：反例——平移整個平面、取長度', async (
     S.v = S.F.arrow(v, COL.g, 'v'); S.v0 = S.F.arrow(V0, COL.k, 'v₀', v); S.tv = S.F.arrow(SHF(v), COL.r, 'T(v)');
   },
   async (tok, S) => { cap('看起來是個合理又簡單的變換', '它是線性的嗎？'); },
-  async (tok, S) => { cap('答案：不是', ''); S.nb = bad('✘ 不是線性', 3.0, 0.5, -4.3); },
+  async (tok, S) => { cap('答案：不是', ''); S.nb = rem(S, '✘ 不是線性', 'bad', 3.2, 0.5, -4.3); },
   async (tok, S) => {
     const v = [1, 1], a = SHF(scl(v, 2)), b = scl(SHF(v), 2);
     cap('v 變兩倍，T(v) 有變兩倍嗎？沒有', '還是只加一個 v₀，不是兩個');
     S.F.arrow(a, COL.r, 'T(2v) = ' + vs(a)); S.F.arrow(b, COL.gray, '2T(v) = ' + vs(b));
-    ok(!eqv(a, b), '✘ T(2v) ≠ 2T(v)（檢查 ✓）', 3.0, 0.5, -3.7);
+    okr(S, !eqv(a, b), '✘ T(2v) ≠ 2T(v)（檢查 ✓）', 3.2, 0.5, -4.3);
   },
   async (tok, S) => { cap('其實有個特別值得注意的情況', '線性變換的 T(0) 是什麼？'); },
   async (tok, S) => { cap('線性變換一定把零向量送到零向量', '原點不能動'); pane(S, 0, '線性 ⇒ T(0) = 0', 'good'); },
   async (tok, S) => { cap('取 v = 0、c = 3：T(0) = 3T(0)', '所以 T(0) 只能是 0'); pane(S, 1, 'T(3·0) = 3T(0) ⇒ T(0) = 0'); },
   async (tok, S) => {
     cap('平移：T(0) = v₀ ≠ 0', '所以平移整個平面不是線性變換');
-    glow(S.o, RED); ok(!eqv(SHF([0, 0]), [0, 0]), '✘ T(0) = ' + vs(SHF([0, 0])) + ' ≠ 0（檢查 ✓）', -1.0, 0.5, -4.3);
+    glow(S.o, RED); okr(S, !eqv(SHF([0, 0]), [0, 0]), '✘ T(0) = ' + vs(SHF([0, 0])) + ' ≠ 0（檢查 ✓）', 3.2, 0.5, -4.3);
   },
   async (tok, S) => {
     cap('另一個反例：T(v) = ‖v‖（長度）', '從 R³ 送到 R¹（實數）');
-    pane(S, 2, 'T(v) = ‖v‖：R³ → R¹'); pane(S, 3, '例（示意）v = (1, 2, 2)，‖v‖ = ' + vlen([1, 2, 2]));
+    paneClear(S); pane(S, 2, 'T(v) = ‖v‖：R³ → R¹'); pane(S, 3, '例（示意）v = (1, 2, 2)，‖v‖ = ' + vlen([1, 2, 2]));
   },
   async (tok, S) => {
     const v = [1, 2, 2];
@@ -2200,7 +2224,7 @@ sc('lt-m-rot', 'MIT L30：例 旋轉 45°，整棟房子跟著轉', async (tok, 
     cap('v 變兩倍，轉完也就兩倍遠', '');
     S.F.set(S.v, scl(v, 2)); S.v.tag('2v'); S.t.tag('T(2v)');
     await anim(tok, 1000, (u) => S.F.set(S.t, scl(mulMV(R45, v), 1 + u)));
-    ok(eqv(mulMV(R45, scl(v, 2)), scl(mulMV(R45, v), 2)), 'T(2v) = 2T(v) ✓', 3.0, 0.5, -4.3);
+    okr(S, eqv(mulMV(R45, scl(v, 2)), scl(mulMV(R45, v), 2)), 'T(2v) = 2T(v) ✓', 3.0, 0.5, -4.3);
   },
   async (tok, S) => {
     const v = [2, 1], w = [-1, 1];
@@ -2208,7 +2232,7 @@ sc('lt-m-rot', 'MIT L30：例 旋轉 45°，整棟房子跟著轉', async (tok, 
     S.F.set(S.v, v); S.v.tag('v'); S.F.set(S.t, mulMV(R45, v)); S.t.tag('T(v)');
     S.F.arrow(w, COL.c, 'w'); S.F.arrow(mulMV(R45, w), COL.b, 'T(w)', mulMV(R45, v));
     S.F.arrow(mulMV(R45, addv(v, w)), COL.d, 'T(v + w)');
-    ok(eqv(mulMV(R45, addv(v, w)), addv(mulMV(R45, v), mulMV(R45, w))), 'T(v + w) = T(v) + T(w) ✓', 3.0, 0.5, -3.7);
+    okr(S, eqv(mulMV(R45, addv(v, w)), addv(mulMV(R45, v), mulMV(R45, w))), 'T(v + w) = T(v) + T(w) ✓', 3.0, 0.5, -4.3);
   },
   async (tok, S) => {
     cap('課本 7.1 節（和封面）有個圖：', '線性變換作用在一棟房子上');
@@ -2295,11 +2319,11 @@ sc('lt-m-info', 'MIT L30：只要知道 T 對一組基底做了什麼', async (t
     const c = [1, 1.5], v = lin(c, [IV1, IV2]), tv = lin(c, [mulMV(TI, IV1), mulMV(TI, IV2)]);
     cap('其實你知道的更多：所有線性組合都知道了', '例：v = v₁ + 1.5v₂');
     S.F.arrow(v, COL.g, 'v'); S.F.arrow(tv, COL.r, 'T(v)');
-    ok(eqv(tv, mulMV(TI, v)), 'T(v₁ + 1.5v₂) = T(v₁) + 1.5T(v₂) ✓', 3.0, 0.5, -4.3);
+    okr(S, eqv(tv, mulMV(TI, v)), 'T(v₁ + 1.5v₂) = T(v₁) + 1.5T(v₂) ✓', 3.2, 0.5, -4.3);
   },
   async (tok, S) => {
     cap('前提：v₁、v₂ 獨立', '如果 v₂ = 6v₁，T(v₂) 就沒有新資訊');
-    ok(eqv(mulMV(TI, scl(IV1, 6)), scl(mulMV(TI, IV1), 6)), 'v₂ = 6v₁ ⇒ T(v₂) = 6T(v₁) ✓', 3.0, 0.5, -3.7);
+    okr(S, eqv(mulMV(TI, scl(IV1, 6)), scl(mulMV(TI, IV1), 6)), 'v₂ = 6v₁ ⇒ T(v₂) = 6T(v₁) ✓', 3.2, 0.5, -4.3);
   },
   async (tok, S) => { cap('知道 T 對基底中每個向量做了什麼', '就知道 T 的一切'); pane(S, 0, '需要的資訊：T(v₁), …, T(vₙ)'); },
   async (tok, S) => { cap('因為每個 v 都是基底的組合', ''); pane(S, 1, 'v = c₁v₁ + … + cₙvₙ'); },
@@ -2385,18 +2409,18 @@ sc('lt-m-projgood', 'MIT L30：投影用「好基底」——矩陣是對角的 
   async (tok, S) => { cap('輸出也用這組基底', ''); pane(S, 0, '輸入基底 = 輸出基底 = {v₁, v₂}'); },
   async (tok, S) => {
     cap('輸入 v₁，輸出是什麼？還是 v₁', '投影不動它');
-    S.a1.glow(GOLD); ok(eqv(P45(U1), U1), 'T(v₁) = v₁ ✓', 2.4, 0.5, -3.4);
+    S.a1.glow(GOLD); okr(S, eqv(P45(U1), U1), 'T(v₁) = v₁ ✓', 2.9, 0.5, -3.4);
   },
   async (tok, S) => {
     cap('輸入 v₂ 呢？被殺掉，送到 0', '');
     S.t2 = S.F.arrow(U2, COL.b); await anim(tok, 1200, (u) => S.F.set(S.t2, scl(U2, 1 - u)));
-    ok(eqv(P45(U2), [0, 0]), 'T(v₂) = 0 ✓', 2.4, 0.5, -2.8);
+    okr(S, eqv(P45(U2), [0, 0]), 'T(v₂) = 0 ✓', 2.9, 0.5, -3.4);
   },
   async (tok, S) => {
     const c = [1.5, 1], v = lin(c, [U1, U2]);
     cap('組合 c₁v₁ + c₂v₂：v₂ 的部分被殺掉，v₁ 的部分留下', '例（示意）1.5v₁ + 1·v₂');
     S.v = S.F.arrow(v, COL.g, 'v'); S.F.arrow(P45(v), COL.r, 'T(v) = 1.5v₁'); rod(COL.gray, 0.02).setW(S.F.w(v, 0.11), S.F.w(P45(v), 0.11));
-    ok(eqv(P45(v), scl(U1, 1.5)), 'T(1.5v₁ + v₂) = 1.5v₁ ✓', 2.4, 0.5, -2.2);
+    okr(S, eqv(P45(v), scl(U1, 1.5)), 'T(1.5v₁ + v₂) = 1.5v₁ ✓', 2.9, 0.5, -3.4);
   },
   async (tok, S) => { cap('所以要找的矩陣：輸入座標 (c₁, c₂)', '→ 輸出座標 (c₁, 0)'); pane(S, 1, '(c₁, c₂) → (c₁, 0)'); },
   async (tok, S) => {
@@ -2407,7 +2431,7 @@ sc('lt-m-projgood', 'MIT L30：投影用「好基底」——矩陣是對角的 
   async (tok, S) => { cap('這組基底其實是投影的特徵向量', '結果矩陣是對角的 = Λ'); pane(S, 3, '特徵向量基底 → 對角矩陣 Λ'); },
   async (tok, S) => {
     cap('特徵值是 1 和 0', '那就是我們得到的矩陣');
-    ok(eqv(P45(U1), scl(U1, 1)) && eqv(P45(U2), scl(U2, 0)), 'λ₁ = 1、λ₂ = 0 ✓', 2.4, 0.5, -1.6);
+    okr(S, eqv(P45(U1), scl(U1, 1)) && eqv(P45(U2), scl(U2, 0)), 'λ₁ = 1、λ₂ = 0 ✓', 2.9, 0.5, -3.4);
   },
 ]);
 
@@ -2434,12 +2458,12 @@ sc('lt-m-projstd', 'MIT L30：同一個投影用標準基底——P = [½ ½; ½
   async (tok, S) => {
     cap('輸入 (0, 1)，輸出也是 (½, ½)', '');
     S.t2 = S.F.arrow([0, 1], COL.r); await anim(tok, 1200, (u) => S.F.set(S.t2, lerpM([[0, 1]], [P45([0, 1])], u)[0]));
-    ok(eqv(mulMV(PM, [0, 1]), [0.5, 0.5]), 'T(0, 1) = (1/2, 1/2) ✓', 2.4, 0.5, -3.4);
+    okr(S, eqv(mulMV(PM, [0, 1]), [0.5, 0.5]), 'T(0, 1) = (1/2, 1/2) ✓', 2.9, 0.5, -3.4);
   },
   async (tok, S) => { cap('矩陣對，但當然不是對角的', '因為選的是最順手、不是最好的基底'); },
   async (tok, S) => {
     cap('它也不錯：對稱，而且 P² = P', '但在最好的基底裡這些都一眼看出來');
-    ok(eqv(PM, T(PM)) && eqv(mm(PM, PM), PM), 'Pᵀ = P、P² = P ✓', 2.4, 0.5, -2.8);
+    okr(S, eqv(PM, T(PM)) && eqv(mm(PM, PM), PM), 'Pᵀ = P、P² = P ✓', 2.9, 0.5, -3.4);
   },
 ]);
 
@@ -2541,13 +2565,16 @@ sc('lt-g-pixels', 'MIT L31：一張圖 = 很長的向量（512² 個像素）', 
 ]);
 
 const PX8 = [121, 124, 123, 122, 40, 42, 41, 43];   // 示意：藍襯衫四格、領帶四格
+// 一列像素的數字寫成一行（不再每根長條各掛一個數字）
+const pxLine = (v) => v.map((x) => String(Math.round(x)).padStart(3)).join(' ');
 sc('lt-g-basis', 'MIT L31：換個更好的基底——全 1、正負交錯、半正半負', async (tok, S) => {
-  fresh(CAMB[0], CAMB[1]);
+  fresh(CAMB[0], CAMB[1]); frameHold(-6, 0, -0.2, 6, 6.6, 0.2);
 }, [
   async (tok, S) => { cap('JPEG 在做的，就是換基底', ''); hot('壓縮 = 換基底', 0, 6.7); },
   async (tok, S) => {
     cap('現在的「標準基底」：每個像素給一個值', '例（示意）一列 8 個像素');
-    S.b = bar8(PX8, -4.2, 3.2, { k: 0.012, gap: 0.42, w: 0.3 }); hd('標準基底的座標 = 像素值', -2.7, 5.4);
+    S.b = bar8(PX8, -1.47, 3.2, { k: 0.012, gap: 0.42, w: 0.3, noNum: true });
+    S.vl = mono(sm(pxLine(PX8), 0, 2.85)); hd('標準基底的座標 = 像素值', 0, 5.75);
   },
   async (tok, S) => {
     cap('相鄰像素很接近（同一件藍襯衫）', '領帶開始才變；這種相關性讓壓縮成為可能');
@@ -2556,24 +2583,24 @@ sc('lt-g-basis', 'MIT L31：換個更好的基底——全 1、正負交錯、�
   async (tok, S) => {
     cap('上課前空白的黑板：每個像素幾乎一樣', '');
     S.b.color(COL.k); const a = PX8.slice();
-    await anim(tok, 1400, (u) => S.b.set(a.map((x) => x + (180 - x) * u)));
+    await anim(tok, 1400, (u) => { const v = a.map((x) => x + (180 - x) * u); S.b.set(v); txt(S.vl, pxLine(v)); });
   },
-  async (tok, S) => { cap('這種圖，標準基底很糟', '一個灰色要寫 8 次'); bad('標準基底：8 個數都要送', 3.6, 5.6); },
+  async (tok, S) => { cap('這種圖，標準基底很糟', '一個灰色要寫 8 次'); rem(S, '標準基底：8 個數都要送', 'bad', 3.7, 4.2); },
   async (tok, S) => {
     cap('很希望基底裡有「全部是 1」的向量', '');
-    S.w1 = bar8([1, 1, 1, 1, 1, 1, 1, 1], -5.8, 1.0, { k: 0.45, gap: 0.3, color: COL.d }); sm('(1, 1, …, 1)', -4.75, 0.2);
+    S.w1 = bar8([1, 1, 1, 1, 1, 1, 1, 1], -4.6, 1.15, { k: 0.45, gap: 0.3, color: COL.d, noNum: true }); sm('(1, 1, …, 1)', -3.55, 0.35);
   },
   async (tok, S) => {
     cap('只用這一個向量，就能描述整張純色的圖', '');
-    ok(eqv(scl([1, 1, 1, 1, 1, 1, 1, 1], 180), S.b.vals.map((x) => Math.round(x))), '黑板 = 180 ·(1, …, 1) ✓', 3.6, 4.9);
+    okr(S, eqv(scl([1, 1, 1, 1, 1, 1, 1, 1], 180), S.b.vals.map((x) => Math.round(x))), '黑板 = 180 ·(1, …, 1) ✓', 3.7, 4.2);
   },
   async (tok, S) => {
     cap('極端的另一個：1, −1, 1, −1, …', '像棋盤，整張棋盤圖只要它');
-    S.w2 = bar8([1, -1, 1, -1, 1, -1, 1, -1], -2.4, 1.0, { k: 0.45, gap: 0.3, color: COL.r }); sm('(1, −1, 1, −1, …)', -1.35, 0.2);
+    S.w2 = bar8([1, -1, 1, -1, 1, -1, 1, -1], -1.05, 1.15, { k: 0.45, gap: 0.3, color: COL.r, noNum: true }); sm('(1, −1, 1, −1, …)', 0, 0.35);
   },
   async (tok, S) => {
     cap('更常見：半張暗、半張亮', '→ 一半 1、一半 −1');
-    S.w3 = bar8([1, 1, 1, 1, -1, -1, -1, -1], 1.0, 1.0, { k: 0.45, gap: 0.3, color: COL.c }); sm('(1,1,1,1,−1,−1,−1,−1)', 2.05, 0.2);
+    S.w3 = bar8([1, 1, 1, 1, -1, -1, -1, -1], 2.5, 1.15, { k: 0.45, gap: 0.3, color: COL.c, noNum: true }); sm('(1,1,1,1,−1,−1,−1,−1)', 3.55, 0.35);
   },
   async (tok, S) => { cap('基底可以自由選', '選哪一組是價值數十億的決定'); },
 ]);
@@ -2585,24 +2612,29 @@ const KEEP = DC.map((c, i) => [Math.abs(c), i]).sort((a, b) => b[0] - a[0]).slic
 const DCh = DC.map((c, i) => (KEEP.includes(i) ? c : 0));
 const XH = mulMV(T(DCT), DCh);
 const r1 = (x) => Math.round(x * 10) / 10;
+const cLine = (v) => v.map((x) => String(r1(x))).join('  ');
+// 三格排一列：x（左）→ 係數 c（中）→ 重建 x̂（右）；說明只用一個 label 改寫
 sc('lt-g-jpeg', 'MIT L31：JPEG——換基底（不失真）→ 丟掉小係數（失真）', async (tok, S) => {
-  fresh(CAMB[0], CAMB[1]);
+  fresh(CAMB[0], CAMB[1]); frameHold(-6, 0.6, -0.2, 6, 6.6, 0.2);
 }, [
   async (tok, S) => { cap('最有名的基底：Fourier 基底', 'JPEG 用的就是它'); hot('Fourier 基底（JPEG）', 0, 6.7); },
   async (tok, S) => {
     cap('它包含常數向量（全部是 1）', '電機的人叫它 DC 向量');
-    S.one = bar8([1, 1, 1, 1, 1, 1, 1, 1], 3.0, 5.4, { k: 0.4, gap: 0.3, color: COL.d, noNum: true }); sm('DC = (1, …, 1)', 4.05, 4.9);
+    S.one = bar8([1, 1, 1, 1, 1, 1, 1, 1], -1.05, 4.6, { k: 0.4, gap: 0.3, color: COL.d, noNum: true }); S.onel = sm('DC = (1, …, 1)', 0, 4.0);
   },
   async (tok, S) => {
     cap('通常切成 8 × 8 的小塊', '');
-    ok(512 / 8 === 64, '512 ÷ 8 = 64 → 每邊 64 塊 ✓', 4.0, 4.3);
+    okr(S, 512 / 8 === 64, '512 ÷ 8 = 64 → 每邊 64 塊 ✓', 0, 3.2);
   },
   async (tok, S) => { cap('每塊 64 個像素', '在這 64 維空間裡換基底'); },
   async (tok, S) => {
     cap('進來訊號 x → 換基底 → 係數 c', '64 個像素進、64 個係數出：不失真');
-    S.x = bar8(X8, -5.8, 3.4, { k: 0.016, gap: 0.42, w: 0.3 }); hd('x（示意：一列 8 個像素）', -4.3, 5.9);
-    S.c = bar8(DC.map(r1), -1.4, 2.0, { k: 0.007, gap: 0.42, w: 0.3, color: COL.c }); hd('係數 c（8 點 DCT，示意）', 0.1, 5.9);
-    ok(eqv(mulMV(T(DCT), DC).map((v) => Math.round(v * 1e6) / 1e6), X8), '用 c 可以完全還原 x ✓', 0.1, 1.2);
+    S.one.kill(); gone(S.onel);
+    S.x = bar8(X8, -5.6, 2.4, { k: 0.016, gap: 0.42, w: 0.3, noNum: true }); hd('x（示意：一列 8 個像素）', -4.13, 5.75);
+    S.c = bar8(DC.map(r1), -1.47, 2.4, { k: 0.007, gap: 0.42, w: 0.3, color: COL.c, noNum: true }); S.ch = hd('係數 c（8 點 DCT，示意）', 0, 5.75);
+    S.cl = mono(sm(cLine(DC), 0, 1.95));
+    S.f1 = P.flow(V3(-2.7, 4.0, 0), V3(-1.6, 4.0, 0), '換基底');
+    okr(S, eqv(mulMV(T(DCT), DC).map((v) => Math.round(v * 1e6) / 1e6), X8), '用 c 可以完全還原 x ✓', 0, 1.2);
   },
   async (tok, S) => { cap('接下來是壓縮步驟：會失真', '會丟掉資訊'); },
   async (tok, S) => {
@@ -2611,21 +2643,22 @@ sc('lt-g-jpeg', 'MIT L31：JPEG——換基底（不失真）→ 丟掉小係數
   },
   async (tok, S) => {
     cap('得到 ĉ：很多 0', '');
-    S.c.set(DCh.map(r1));
-    sm('只留 ' + KEEP.length + ' 個', 0.1, 0.6);
+    S.c.set(DCh.map(r1)); txt(S.cl, cLine(DCh));
+    txt(S.ch, 'ĉ：只留 ' + KEEP.length + ' 個');
   },
   async (tok, S) => {
     cap('全 1 向量的係數通常很大，很少丟', '快速交錯（高頻）的係數在平滑的圖裡很小');
     S.c.glow(GOLD, 0); S.c.glow(RED, 7);
-    ok(Math.abs(DC[0]) > 10 * Math.max(...DC.slice(1).map(Math.abs)), 'c₀（DC）遠大於其他 ✓', 4.0, 3.6);
+    okr(S, Math.abs(DC[0]) > 10 * Math.max(...DC.slice(1).map(Math.abs)), 'c₀（DC）遠大於其他 ✓', 0, 1.2);
   },
   async (tok, S) => {
     const err = Math.max(...XH.map((v, i) => Math.abs(v - X8[i])));
     cap('用剩下的少數係數重建訊號', '不再是 64 項相加，只剩兩三項');
-    S.xh = bar8(XH.map(r1), 3.0, 1.0, { k: 0.012, gap: 0.42, w: 0.3, color: COL.b }); hd('重建 x̂', 4.5, 2.9);
-    ok(err < 1, '最大誤差 ' + r1(err) + ' 個灰階 ✓', 4.5, 0.4);
+    S.xh = bar8(XH.map(r1), 2.66, 2.4, { k: 0.016, gap: 0.42, w: 0.3, color: COL.b, noNum: true }); hd('重建 x̂', 4.13, 5.75);
+    S.f2 = P.flow(V3(1.6, 4.0, 0), V3(2.7, 4.0, 0), '重建');
+    okr(S, err < 1, '最大誤差 ' + r1(err) + ' 個灰階 ✓', 4.13, 1.2);
   },
-  async (tok, S) => { cap('64 個係數只留 3 個', '壓縮比大約 21 : 1'); ok(Math.floor(64 / 3) === 21, '64 ÷ 3 ≈ ' + r1(64 / 3) + ' → 21 : 1 ✓', 4.0, 3.0); },
+  async (tok, S) => { cap('64 個係數只留 3 個', '壓縮比大約 21 : 1'); okr(S, Math.floor(64 / 3) === 21, '64 ÷ 3 ≈ ' + r1(64 / 3) + ' → 21 : 1 ✓', 0, 1.2); },
 ]);
 
 const HW = [[1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, -1, -1, -1, -1], [1, 1, -1, -1, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, -1, -1],
@@ -2633,9 +2666,10 @@ const HW = [[1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, -1, -1, -1, -1], [1, 1, -1, -
 const WM = T(HW);                     // 行 = 小波
 const P8 = [121, 124, 126, 127, 127, 125, 122, 120];   // 示意像素
 const WC = mulMV(inv(WM), P8);
-const wrow = (S, i) => { S.wr = S.wr || []; S.wr[i] = bar8(HW[i], -5.4, 6.4 - i * 0.68, { k: 0.24, gap: 0.27, w: 0.19, color: COL.c, noNum: true }); sm('w' + SUB(i + 1), -6.1, 6.4 - i * 0.68); };
+const wrow = (S, i) => { S.wr = S.wr || []; S.wr[i] = bar8(HW[i], -4.6, 6.4 - i * 0.68, { k: 0.24, gap: 0.27, w: 0.19, color: COL.c, noNum: true }); sm('w' + SUB(i + 1), -5.3, 6.4 - i * 0.68); };
+// 左：8 個小波一列一列長出來；右：一次只放一個主題（Fourier 的向量 → 換成像素 p）
 sc('lt-g-wavelet', 'MIT L31：小波（wavelet）基底：8 個向量', async (tok, S) => {
-  fresh(CAMB[0], CAMB[1]);
+  fresh(CAMB[0], CAMB[1]); frameHold(-5.8, 1.2, -0.2, 5.4, 6.8, 0.2);
 }, [
   async (tok, S) => { cap('Fourier 的競爭對手：小波（wavelets）', '看 8 × 8 情況（一列 8 個）的小波基底'); },
   async (tok, S) => { cap('第一個：8 個 1', ''); wrow(S, 0); },
@@ -2645,72 +2679,79 @@ sc('lt-g-wavelet', 'MIT L31：小波（wavelet）基底：8 個向量', async (t
   async (tok, S) => { cap('再來是 1, −1 加六個 0', '1, −1 依序搬到後面，再三個'); [4, 5, 6, 7].forEach((i) => wrow(S, i)); },
   async (tok, S) => {
     cap('這是 8 維空間裡的 8 個向量', '叫做 wavelets（最簡單的一種）');
-    ok(rrefSteps(WM).rank === 8, 'rank = 8：真的是 R⁸ 的基底 ✓', 2.6, 6.6);
+    okr(S, rrefSteps(WM).rank === 8, 'rank = 8：真的是 R⁸ 的基底 ✓', 2.7, 6.3);
   },
   async (tok, S) => {
     cap('跟 Fourier 比：最快的那個 (1, −1, 1, −1, …)', '用小波怎麼組合出來？');
-    S.f = bar8([1, -1, 1, -1, 1, -1, 1, -1], 1.6, 5.3, { k: 0.3, gap: 0.3, color: COL.r, noNum: true }); sm('Fourier 最快的向量', 2.65, 4.7);
+    S.f = bar8([1, -1, 1, -1, 1, -1, 1, -1], 1.6, 4.9, { k: 0.3, gap: 0.3, color: COL.r, noNum: true }); S.fl = sm('Fourier 最快的向量', 2.65, 4.3);
   },
   async (tok, S) => {
     const s = lin([0, 0, 0, 0, 1, 1, 1, 1], HW);
     cap('就是最後四個小波相加', '');
     [4, 5, 6, 7].forEach((i) => S.wr[i].glow(GOLD));
-    ok(eqv(s, [1, -1, 1, -1, 1, -1, 1, -1]), '= w₅ + w₆ + w₇ + w₈ ✓', 2.6, 4.1);
+    S.fw = P.flow(V3(-2.4, 2.7, 0), V3(1.4, 4.9, 0), 'w₅ + w₆ + w₇ + w₈');
+    okr(S, eqv(s, [1, -1, 1, -1, 1, -1, 1, -1]), '= w₅ + w₆ + w₇ + w₈ ✓', 2.65, 3.7);
   },
   async (tok, S) => {
     cap('給一列 8 個像素值 p₁ … p₈', '這是它在標準基底的座標');
     [4, 5, 6, 7].forEach((i) => S.wr[i].glow(null));
-    S.p = bar8(P8, 1.6, 1.4, { k: 0.012, gap: 0.3, w: 0.22, color: COL.a }); sm('p（示意）', 2.65, 0.8);
+    S.f.kill(); gone(S.fl, S.rm); S.rm = null; S.fw.kill();
+    S.p = bar8(P8, 1.6, 3.6, { k: 0.012, gap: 0.3, w: 0.22, color: COL.a, noNum: true });
+    mono(sm('p = (' + P8.join(', ') + ')（示意）', 2.65, 3.1));
   },
-  async (tok, S) => { cap('要把 p 寫成小波的組合', 'p = c₁w₁ + c₂w₂ + … + c₈w₈'); mono(hot('p = c₁w₁ + … + c₈w₈', 2.6, 3.3)); },
+  async (tok, S) => { cap('要把 p 寫成小波的組合', 'p = c₁w₁ + c₂w₂ + … + c₈w₈'); mono(hot('p = c₁w₁ + … + c₈w₈', 2.65, 2.4)); },
 ]);
 
 const WN = HW.map((r) => scl(r, 1 / norm(r)));   // 正規化（當列）
+// 左：W 的 8 × 8 格子（顏色就是數值，不再每格掛數字）；右：一次一個主題（p = Wc → ① 快 → ② 少數幾項），檢查只用一個 label 改寫
 sc('lt-g-wmatrix', 'MIT L31：c = W⁻¹p；好基底要「快」又要「少數幾項就夠」', async (tok, S) => {
-  fresh(CAMB[0], CAMB[1]);
+  fresh(CAMB[0], CAMB[1]); frameHold(-6.9, 0.4, -0.2, 6, 6.9, 0.2);
 }, [
   async (tok, S) => { cap('寫成矩陣：p = 小波矩陣的行的組合', ''); },
   async (tok, S) => {
     cap('W 的 8 個行 = 8 個小波', 'p = W c');
-    S.g = mgrid(WM, -6.3, 6.5, 0, { size: 0.38, gap: 0.45, color: (i, j) => (WM[i][j] > 0 ? COL.d : WM[i][j] < 0 ? COL.r : '#e9dcc4') });
-    hd('W', -6.8, 4.9);
+    S.g = mgrid(WM.map((r) => r.map(() => '')), -6.3, 6.5, 0, { size: 0.38, gap: 0.45, color: (i, j) => (WM[i][j] > 0 ? COL.d : WM[i][j] < 0 ? COL.r : '#e9dcc4') });
+    hd('W', -6.85, 4.9); sm('綠 = 1、紅 = −1、淺色 = 0', -4.72, 2.85);
   },
   async (tok, S) => { cap('換基底 = 解方程式 p = W c', ''); mono(hd('p = W c', 2.4, 6.6)); },
   async (tok, S) => {
     cap('係數 c = W⁻¹ p', '');
     mono(hd('c = W⁻¹p = (' + WC.map(fmt).join(', ') + ')', 2.4, 6.0));
-    ok(eqv(mulMV(WM, WC), P8), 'W c = p ✓（示意 p）', 2.4, 5.4);
+    okr(S, eqv(mulMV(WM, WC), P8), 'W c = p ✓（示意 p）', 2.4, 5.4);
   },
   async (tok, S) => { cap('關鍵：好的基底要有又好又快的反矩陣', ''); },
-  async (tok, S) => { cap('第一個要求：快', 'Fourier 有 FFT，小波也有快速小波轉換'); hd('① 快：W、W⁻¹ 都要能快速相乘', 2.4, 4.7); },
+  async (tok, S) => { cap('第一個要求：快', 'Fourier 有 FFT，小波也有快速小波轉換'); S.req = hd('① 快：W、W⁻¹ 都要能快速相乘', 2.4, 4.6); },
   async (tok, S) => { cap('這些向量只有 1、−1、0', '用二進位乘很快'); },
   async (tok, S) => {
     const G = mm(HW, WM);
     cap('還有更棒的性質：它們互相正交', '任兩個做內積都是 0');
-    ok(G.every((r, i) => r.every((x, j) => (i === j) || x === 0)), 'WᵀW 是對角矩陣 → 正交 ✓', 2.4, 4.1);
+    okr(S, G.every((r, i) => r.every((x, j) => (i === j) || x === 0)), 'WᵀW 是對角矩陣 → 正交 ✓', 2.4, 4.0);
   },
   async (tok, S) => {
     const L = HW.map(norm);
     cap('但不是單位長度：除以長度就好', '長度分別是 √8、√4、√2');
-    ok(Math.abs(L[0] - Math.sqrt(8)) < 1e-9 && L[1] === Math.sqrt(8) && L[2] === 2 && Math.abs(L[4] - Math.SQRT2) < 1e-9, '長度 √8, √8, 2, 2, √2 … ✓', 2.4, 3.5);
+    okr(S, Math.abs(L[0] - Math.sqrt(8)) < 1e-9 && L[1] === Math.sqrt(8) && L[2] === 2 && Math.abs(L[4] - Math.SQRT2) < 1e-9, '長度 √8, √8, 2, 2, √2 … ✓', 2.4, 4.0);
   },
   async (tok, S) => {
     const Wn = T(WN);
     cap('行正規正交 ⇒ 反矩陣 = 轉置', '第 4.4 節');
-    ok(eqv(mm(T(Wn), Wn).map((r) => r.map((x) => Math.round(x * 1e9) / 1e9)), Array.from({ length: 8 }, (_, i) => Array.from({ length: 8 }, (_, j) => (i === j ? 1 : 0)))), 'W⁻¹ = Wᵀ（正規化後）✓', 2.4, 2.9);
+    okr(S, eqv(mm(T(Wn), Wn).map((r) => r.map((x) => Math.round(x * 1e9) / 1e9)), Array.from({ length: 8 }, (_, i) => Array.from({ length: 8 }, (_, j) => (i === j ? 1 : 0)))), 'W⁻¹ = Wᵀ（正規化後）✓', 2.4, 4.0);
   },
-  async (tok, S) => { cap('第二個要求：好不好用？', '最快的其實是根本不換基底'); hd('② 少數幾個基底向量就接近原圖', 2.4, 2.3); },
+  async (tok, S) => {
+    cap('第二個要求：好不好用？', '最快的其實是根本不換基底');
+    gone(S.rm); S.rm = null; txt(S.req, '② 少數幾個基底向量就接近原圖'); setCls(S.req, 'ptr alt');
+  },
   async (tok, S) => {
     cap('留在標準基底、丟掉 90% 的像素', '圖就變黑了');
-    S.std = bar8(P8.map((x, i) => (i === 0 ? x : 0)), -6.0, 0.6, { k: 0.008, gap: 0.42, w: 0.3, color: COL.gray });
-    bad('標準基底只留 1 個 → 其餘全黑', -4.5, 1.9);
+    S.std = bar8(P8.map((x, i) => (i === 0 ? x : 0)), -2.67, 0.9, { k: 0.008, gap: 0.42, w: 0.3, color: COL.gray, noNum: true });
+    bad('標準基底只留 1 個 → 其餘全黑', -1.2, 2.2);
   },
   async (tok, S) => {
     const ch = WC.map((c, i) => (i < 4 ? c : 0)), ph = mulMV(WM, ch);
     const err = Math.max(...ph.map((x, i) => Math.abs(x - P8[i])));
     cap('小波基底：丟掉 c₅、c₆、c₇、c₈', '丟的只是很小的起伏');
-    S.wv = bar8(ph, -1.6, 0.6, { k: 0.008, gap: 0.42, w: 0.3, color: COL.b });
-    ok(err <= 1.5, '只留 c₁…c₄：最大誤差 ' + fmt(err) + ' 個灰階 ✓', -0.1, 1.9);
+    S.wv = bar8(ph, 2.83, 0.9, { k: 0.008, gap: 0.42, w: 0.3, color: COL.b, noNum: true });
+    ok(err <= 1.5, '只留 c₁…c₄：最大誤差 ' + fmt(err) + ' 個灰階 ✓', 4.3, 2.2);
   },
   async (tok, S) => { cap('所以第二個要求：少數幾個基底向量', '就足以重現影像'); },
   async (tok, S) => { cap('JPEG-2000 會納入小波', 'FBI 用更平滑的小波（不是 1 跳到 −1）'); },
@@ -2859,13 +2900,13 @@ sc('lt-k-sum', '總結：矩陣的行 = î、ĵ 的落點，矩陣 = 空間的�
   },
   async (tok, S) => {
     cap('矩陣的行就是這些座標', 'A = [1 −1; 0.5 1]');
-    ok(eqv(colOf(SUMA, 0), [1, 0.5]) && eqv(colOf(SUMA, 1), [-1, 1]), 'A 的行 = î、ĵ 的落點 ✓', -5.0, 0.5, -3.3 + 2 * 0.62);
+    paneOk(S, 2, eqv(colOf(SUMA, 0), [1, 0.5]) && eqv(colOf(SUMA, 1), [-1, 1]), 'A 的行 = î、ĵ 的落點 ✓');
   },
   async (tok, S) => {
     const r = mulMV(SUMA, SUMV);
     cap('矩陣乘向量：算出變換把這個向量送到哪', 'A(1.5, 1) = 1.5·(1, 0.5) + 1·(−1, 1) = (0.5, 1.75)');
     S.track(SUMV, COL.g, 'Av');
-    ok(eqv(r, [0.5, 1.75]), 'A(1.5, 1) = (0.5, 1.75) ✓', -5.0, 0.5, -3.3 + 3 * 0.62);
+    paneOk(S, 3, eqv(r, [0.5, 1.75]), 'A(1.5, 1) = (0.5, 1.75) ✓');
   },
   async (tok, S) => {
     const R = [[0, -1], [1, 0]];
@@ -2890,7 +2931,7 @@ sc('lt-m-intro', 'L30 開場：線性變換不需要座標；要計算才有矩�
     cap('不需要矩陣、不需要數字也說得通', '只看整個空間怎麼動（物理學家喜歡這樣）');
     S.w = S.F.arrow(TSW, COL.b, 'w'); S.tw = S.F.arrow(mulMV(TSA, TSW), COL.r, 'T(w)');
     pane(S, 1, 'T(v + w) = T(v) + T(w)、T(cv) = cT(v)');
-    ok(eqv(mulMV(TSA, [TSV[0] + TSW[0], TSV[1] + TSW[1]]), mulMV(TSA, TSV).map((x, i) => x + mulMV(TSA, TSW)[i])), '線性 ✓', -5.0, 0.5, -3.3 + 2 * 0.62);
+    paneOk(S, 2, eqv(mulMV(TSA, [TSV[0] + TSW[0], TSV[1] + TSW[1]]), mulMV(TSA, TSV).map((x, i) => x + mulMV(TSA, TSW)[i])), '線性 ✓');
   },
   async (tok, S) => {
     cap('要算東西，就引入座標（選基底）', '每個線性變換就對應一個矩陣 A');
