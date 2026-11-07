@@ -55,11 +55,25 @@ export default function (ctx) {
   // 磁碟格子：32 個 block，8 欄 × 4 列（恐龍書圖 14.x 的 0–31 號）
   const COLS = 8, SP = 1.2, BS = [1.0, 0.36, 1.0];
   const gp = (i, y = 0.2, ox = 0, oz = 0) => V3(ox + (i % COLS - 3.5) * SP, y, oz + (Math.floor(i / COLS) - 1.5) * SP);
-  function diskGrid(n = 32, ox = 0, oz = 0) {
-    for (let i = 0; i < n; i++) { const p = gp(i, 0.04, ox, oz); ctx.tile(p, 1.06, 1.06); tag(String(i), 'idx', p.x - 0.36, 0.08, p.z + 0.4); }
+  // 格子號碼：預設只標每列開頭和最後一格，其餘等場景講到那一格才用 num() 標（手機上 32 個小數字太亂）；full = 全標（互動模式）
+  let GN = null;
+  function num(...is) { if (!GN) return; for (const i of is) { if (GN.m.has(i)) continue; const p = gp(i, 0.04, GN.ox, GN.oz); GN.m.set(i, tag(String(i), 'idx', p.x - 0.43, 0.02, p.z + 0.47)); } }
+  function numsOff() { if (GN) for (const [i, l] of [...GN.m]) if (i % COLS && i !== GN.n - 1) { kill(l); GN.m.delete(i); } }
+  function diskGrid(n = 32, ox = 0, oz = 0, full = false) {
+    GN = { m: new Map(), ox, oz, n };
+    for (let i = 0; i < n; i++) { ctx.tile(gp(i, 0.04, ox, oz), 1.06, 1.06); if (full === true || (full !== 'none' && (i % COLS === 0 || i === n - 1))) num(i); }
   }
-  const blk = (i, text, color, ox = 0, oz = 0, drop = 0) => { const p = gp(i, 0.2, ox, oz); return cube(text, color, BS, p.x, 0.2, p.z, drop); };
-  function cursorAt(l, i, ox = 0, oz = 0) { const p = gp(i, 1.0, ox, oz); l.position.set(p.x, 1.0, p.z); }
+  // 格子之間的箭頭（linked / index 的 pointer）：頭尾退開，不插進方塊
+  function link(i, j, color = '#c08a1f', ox = 0, oz = 0, y = 0.45) {
+    const a = gp(i, y, ox, oz), b = gp(j, y, ox, oz), d = b.clone().sub(a).normalize();
+    const h = new THREE.ArrowHelper(d, a.clone().addScaledVector(d, 0.4), a.distanceTo(b) - 0.8, color, 0.3, 0.2);
+    lab.world.add(h); return h;
+  }
+  // 每格一個 bit（值標籤的樣子，放在格子正中）：0 綠底、1 淡色
+  function setBit(l, i) { const z = FREE0.includes(i); txt(l, z ? '0' : '1'); Object.assign(l.element.style, z ? { color: '#0f5a3a', background: '#d2f1e6', fontWeight: '800' } : { color: '#8d8170' }); }
+  function bitsOn(known = true) { const a = []; for (let i = 0; i < 32; i++) { const p = gp(i, 0.42); const l = tag('?', 'val', p.x + 0.16, 0.42, p.z); if (known) setBit(l, i); a.push(l); } return a; }
+  const blk = (i, text, color, ox = 0, oz = 0, drop = 0) => { const p = gp(i, 0.2, ox, oz); return cube(text, color, BS, p.x, 0.2, p.z, Math.min(drop, 0.7)); };
+  function cursorAt(l, i, ox = 0, oz = 0) { const p = gp(i, 1.1, ox, oz); l.position.set(p.x + 0.62, 1.1, p.z); }
 
   // 樹狀／圖狀目錄：節點放在 x-y 平面
   function graph(nodes, edges, drop = 0) {
@@ -99,7 +113,7 @@ export default function (ctx) {
   }
   function resetAlloc() {
     lab.clear(); clearLog();
-    diskGrid(32, AL.ox);
+    diskGrid(32, AL.ox, 0, true);
     AL.used = new Set(OTHER); AL.file = null; AL.meshes = [];
     OTHER.forEach((i) => blk(i, '', C.other, AL.ox));
     AL.dir = tag('directory：（空）', 'ptr', AL.ox, 0.3, -3.4);
@@ -198,14 +212,14 @@ export default function (ctx) {
     const slots = [];
     tag('inode', 'ptr', -5.3, 0.4, -3.75);
     for (let i = 0; i < tot; i++) {
-      const z = -3.1 + i * (6.2 / (tot - 1));
       const ind = i >= shownD;
+      const z = ind ? 1.55 + (i - shownD) * 0.8 : -3.1 + i * (3.74 / Math.max(1, shownD - 1)); // direct 排緊、三個 indirect 分開，標籤才不疊
       const nm = ind ? ['single', 'double', 'triple'][i - shownD] : String(i);
       const m = cube('', ind ? C.idx : C.file, [1.1, 0.28, 0.32], -5.3, 0.14, z);
-      tag(nm, 'idx', ind ? -6.4 : -6.1, 0.1, z);
+      if (ind || i === 0 || i === shownD - 1) tag(nm, 'idx', ind ? -6.4 : -6.1, 0.1, z);
       slots.push({ m, z });
     }
-    if (IN.nd > 12) tag('（direct 共 ' + IN.nd + ' 格）', 'idx', -5.3, 0.1, 3.7);
+    if (IN.nd > 12) tag('（direct 共 ' + IN.nd + ' 格）', 'idx', -5.3, 0.1, 3.9);
     INO = { slots, shownD, objs: [] };
     if (caps) {
       const e = inodeE(), B = IN.bs * 1024;
@@ -237,7 +251,7 @@ export default function (ctx) {
     for (let j = 0; j < L.lvl; j++) {
       const x = -2.4 + j * 2.5, z = s.z * (1 - (j + 1) / (L.lvl + 1));
       const m = cube('IB', C.idx, [1.3, 0.5, 1.1], x, 0.25, z, 2.5); INO.objs.push(m);
-      const l = tag('第 ' + L.idx[j] + ' 格', 'idx', x, 0.9, z + 0.8); INO.objs.push(l);
+      const l = tag('第 ' + L.idx[j] + ' 格', 'idx', x, 0.02, z + 1.0); INO.objs.push(l);
       INO.objs.push(seg(prev, V3(x - 0.65, 0.3, z), '#c08a1f'));
       prev = V3(x + 0.65, 0.3, z);
       acc++; show('讀第 ' + (j + 1) + ' 層 index block，取第 ' + L.idx[j] + ' 格');
@@ -441,7 +455,7 @@ export default function (ctx) {
   }
   function drawFree() {
     lab.clear();
-    diskGrid(32);
+    diskGrid(32, 0, 0, true);
     FS.m = {};
     for (let i = 0; i < 32; i++) {
       if (!FS.free.has(i)) FS.m[i] = FS.mine.has(i) ? blk(i, 'f', C.file) : blk(i, '', C.other);
@@ -666,19 +680,19 @@ export default function (ctx) {
   async function scMountPoints(tok) {
     fresh([0, 4.2, 13], [0, 3.2, 0]);
     const N = { r: { name: '/', x: 0, y: 6, kind: 'dir' }, local: { name: 'local', x: -4, y: 4.3, kind: 'dir' }, usr: { name: 'usr', x: 0, y: 4.3, kind: 'dir' }, home: { name: 'home', x: 4, y: 4.3, kind: 'dir' } };
-    graph(N, [['r', 'local'], ['r', 'usr'], ['r', 'home']], 2);
+    graph(N, [['r', 'local'], ['r', 'usr'], ['r', 'home']]);
     say('三種時機：boot / run time / manual', '開機就要 mount 系統槽，才能載入 OS');
     await beat(tok, 2800);
     say('插上新 volume：mount 到 usr 底下', 'usr 就是 mount point');
     const V = { a: { name: 'bin', x: -1.4, y: 2.5, kind: 'vol' }, b: { name: 'lib', x: 1.4, y: 2.5, kind: 'vol' } };
-    graph(V, [], 4); seg(V3(0, 4.05), V3(-1.4, 2.75), '#31aab0'); seg(V3(0, 4.05), V3(1.4, 2.75), '#31aab0');
+    graph(V, [], 1); seg(V3(0, 4.05), V3(-1.4, 2.75), '#31aab0'); seg(V3(0, 4.05), V3(1.4, 2.75), '#31aab0');
     tag('volume 2', 'ptr alt', -2.9, 2.5);
     await beat(tok, 2600);
     const N2 = { john: { name: 'john', x: 4, y: 2.5, kind: 'dir' } };
-    graph(N2, [], 2); seg(V3(4, 4.05), V3(4, 2.75));
+    graph(N2, [], 0.6); seg(V3(4, 4.05), V3(4, 2.75));
     await beat(tok, 900);
     say('可以 recursive：再掛到 john 底下', 'Linux / Mac：任何存在的資料夾都能當 mount point');
-    graph({ g: { name: 'games', x: 4, y: 0.8, kind: 'vol', color: C.fat } }, [], 4); seg(V3(4, 2.25), V3(4, 1.05), '#9b7ef4');
+    graph({ g: { name: 'games', x: 4, y: 0.8, kind: 'vol', color: C.fat } }, [], 0.6); seg(V3(4, 2.25), V3(4, 1.05), '#9b7ef4');
     tag('volume 3', 'ptr alt', 5.6, 0.8);
     await beat(tok, 2800);
     say('Windows：只能掛在最上層', 'C:、D:、E: 一槽一個 root');
@@ -734,23 +748,23 @@ export default function (ctx) {
     fresh([0, 6, 11], [0, 1.2, 0]);
     say('最直覺：每個檔案一張 list，列每個 user', 'Access-Control List（one to one）');
     const rows = [];
-    for (let i = 0; i < 12; i++) { rows.push(cube('user' + (i + 1) + '：' + pickOne(['rw', 'r', 'rwx', '—']), C.other, [2.6, 0.3, 0.45], -4, 0.15 + i * 0.32, -1, 2)); await beat(tok, 180); }
+    for (let i = 0; i < 12; i++) { rows.push(cube('user' + (i + 1) + '：' + pickOne(['rw', 'r', 'rwx', '—']), C.other, [3.2, 0.42, 0.45], i < 6 ? -2.2 : 2.2, 3.4 - (i % 6) * 0.66, -1)); await beat(tok, 180); }
     say('使用者一多，list 又長又常改', '每次判斷都要 load 進 memory → 不可行');
     await beat(tok, 2400);
-    rows.forEach((r) => fly(r));
+    rows.forEach(kill);
     await beat(tok, 800);
     say('簡化：3 個 class × 3 個 bit', 'r = read、w = write、x = execute');
     const BITS = [[1, 1, 1], [1, 1, 0], [1, 0, 0]];
     const M = [];
     ['owner', 'group', 'others'].forEach((g, gi) => {
       tag(g, 'ptr', -4 + gi * 4, 0.1, 1.6);
-      BITS[gi].forEach((b, k) => { M.push(cube('rwx'[k], b ? C.free : GRAY, [1, b ? 0.8 : 0.3, 1], -5.1 + gi * 4 + k * 1.1, b ? 0.4 : 0.15, 0, 2)); });
+      BITS[gi].forEach((b, k) => { M.push(cube('rwx'[k], b ? C.free : GRAY, [1, b ? 0.8 : 0.3, 1], -5.1 + gi * 4 + k * 1.1, b ? 0.4 : 0.15, 0)); });
       tag(BITS[gi].join(''), 'ptr alt', -4 + gi * 4, 1.6, 0);
     });
     await beat(tok, 2800);
     say('owner 111、group 110、others 100', 'owner 全部可以；group 讀寫；others 只能讀');
     await beat(tok, 2800);
-    const ls = tag('$ ls -l   -rw-rw-r--  alice  staff  hw.c', '', 0, 0.2, -2.6); Object.assign(ls.element.style, MONO);
+    const ls = tag('$ ls -l   -rw-rw-r--  alice  staff  hw.c', '', 0, 2.5, 0); Object.assign(ls.element.style, MONO);
     say('ls -l 前面那串就是 ACL', '第 1 字元是檔案類型；後 9 個 = 3 組 rwx');
     await beat(tok, 3000);
     txt(ls, '$ chmod 644 hw.c   →   -rw-r--r--');
@@ -787,11 +801,12 @@ export default function (ctx) {
   }
 
   // ───────────────────────── 場景：C42WzJATHg0（25A） ─────────────────────────
-  const CHAIN = [9, 16, 5, 10, 25, 4, 30, 18, 27, 12];   // 10 塊的 linked 檔案（前段取自恐龍書 jeep：9→16→…→25）
+  const CHAIN = [9, 16, 25, 18, 11, 4, 13, 22, 31, 30];   // 10 塊的 linked 檔案（位置示意，開頭取自恐龍書 jeep 9→16；排成不交叉的折線）
   async function scContigLinked(tok) {
     fresh([0, 9.5, 8.2], [0, 0, 0.4]);
     diskGrid();
     const cm = []; for (let k = 0; k < 6; k++) cm.push(blk(19 + k, k + 1, C.fil, 0, 0, 2));
+    num(19, 23, 24);
     const dir = tag('mail：start 19, length 6', 'ptr', 0, 0.3, -3.3);
     say('Contiguous：檔案放在連續的 block', '恐龍書例子 mail：start 19、length 6');
     await beat(tok, 2600);
@@ -801,11 +816,11 @@ export default function (ctx) {
     glow(cm[4], null);
     say('缺點：檔案長大或空間破碎就放不下', 'external fragmentation');
     await beat(tok, 2200);
-    cm.forEach((m) => fly(m)); kill(dir);
+    cm.forEach(kill); kill(dir); numsOff();
     await beat(tok, 700);
     const lm = [];
-    for (let k = 0; k < CHAIN.length; k++) { lm.push(blk(CHAIN[k], k + 1, C.file, 0, 0, 2)); if (k) seg(gp(CHAIN[k - 1], 0.45), gp(CHAIN[k], 0.45), '#c08a1f'); await beat(tok, 150); }
-    tag('start 9 … end 12', 'ptr', 0, 0.3, -3.3);
+    for (let k = 0; k < CHAIN.length; k++) { lm.push(blk(CHAIN[k], k + 1, C.file, 0, 0, 2)); if (k) link(CHAIN[k - 1], CHAIN[k]); await beat(tok, 150); }
+    tag('start 9 … end 30', 'ptr', 0, 0.3, -3.3);
     say('Linked：有空間就能用，用 pointer 串起來', 'pointer 散落在每個 data block 上');
     await beat(tok, 2400);
     const cur = tag('讀', 'ptr alt', 0, 1, 0);
@@ -824,29 +839,29 @@ export default function (ctx) {
   async function scFat(tok) {
     fresh([0.6, 9.5, 8.2], [0.6, 0, 0.5]);
     const ox = -1.6;
-    diskGrid(32, ox);
+    diskGrid(32, ox, 0, 'none');
     blk(0, 'FAT', C.fat, ox); blk(1, 'FAT', C.fat, ox);
-    const lm = CHAIN.map((b, k) => blk(b, k + 1, C.file, ox));
+    const lm = CHAIN.map((b) => blk(b, b, C.file, ox));
     say('改良：把 pointer 全部收集起來', '存在前面幾個 block → File Allocation Table');
     const tbl = code(['FAT', ...CHAIN.map((b, k) => 'FAT[' + String(b).padStart(2) + '] = ' + (k < 9 ? CHAIN[k + 1] : 'EOF'))], 5.4, 3.8, 0.4);
     await beat(tok, 3000);
-    const mem = cube('memory', C.mem, [3.6, 0.3, 1.2], 5.4, 3.0, 3.2);
+    const mem = cube('', '#f7c9de', [3.6, 6.0, 0.1], 5.4, 1.6, -0.8); mem.rotation.x = -0.89; txt(tbl.ls[0], 'FAT（已 load 到 memory）'); tbl.hl(0);
     say('mount 時把 FAT 整張 load 到 memory', '');
     await beat(tok, 2200);
     say('讀第 8 塊：在 memory 沿表走', '走表不用 disk I/O');
     for (let k = 1; k <= 8; k++) { tbl.hl(k); await beat(tok, 380); }
     const cur = tag('讀', 'ptr alt', 0, 1, 0); cursorAt(cur, CHAIN[7], ox); glow(lm[7], GOLD);
-    say('只剩 1 次 disk I/O：讀 block 18', 'FAT32 已不是傳統 linked，是改良版');
+    say('只剩 1 次 disk I/O：讀 block 22', 'FAT32 已不是傳統 linked，是改良版');
     await beat(tok, 3200);
   }
   async function scIndexed(tok) {
     fresh([0, 9.5, 8.2], [0, 0, 0.4]);
     diskGrid();
     const J = [9, 16, 1, 10, 25];
-    const ib = blk(19, 'IB', C.idx, 0, 0, 2);
-    const dm = J.map((b, k) => blk(b, k + 1, C.file, 0, 0, 2));
-    J.forEach((b) => seg(gp(19, 0.45), gp(b, 0.45), '#c08a1f'));
-    tag('[9,16,1,10,25,−1,−1,−1]', 'ptr alt', gp(19).x, 1.3, gp(19).z);
+    const ib = blk(19, 'IB', C.idx);
+    const dm = J.map((b, k) => blk(b, k + 1, C.file));
+    num(19, ...J); J.forEach((b) => link(19, b));
+    tag('[9,16,1,10,25,−1,−1,−1]', 'ptr alt', gp(19).x, 0.3, 2.9);
     tag('directory：jeep → index block 19', 'ptr', 0, 0.3, -3.3);
     say('Indexed：pointer 全集中在 index block', '恐龍書 jeep：index block 19');
     await beat(tok, 3000);
@@ -935,11 +950,11 @@ export default function (ctx) {
     ];
     for (const [[a, b], cap, f, t] of steps) {
       for (let i = a; i <= b; i++) { glow(I.slots[i].m, GOLD); if (b - a > 1) await beat(tok, 120); }
-      tag(t, 'ptr alt', -3.6, 0.2, I.slots[Math.round((a + b) / 2)].z);
+      tag(t, 'ptr alt', a >= 12 ? 4.8 : -3.6, 0.2, I.slots[Math.round((a + b) / 2)].z);
       say(cap, f);
       if (a >= 12) {
         const lv = a - 11; let px = -4.75;
-        for (let j = 0; j < lv; j++) { const x = -1.9 + j * 2.3; cube('', C.idx, [1.1, 0.4, 0.9], x, 0.2, I.slots[a].z * 0.5, 2); seg(V3(px, 0.25, j ? I.slots[a].z * 0.5 : I.slots[a].z), V3(x - 0.55, 0.25, I.slots[a].z * 0.5), '#c08a1f'); px = x + 0.55; }
+        for (let j = 0; j < lv; j++) { const x = -1.9 + j * 2.3; cube('', C.idx, [1.1, 0.4, 0.5], x, 0.2, I.slots[a].z); seg(V3(px, 0.25, I.slots[a].z), V3(x - 0.55, 0.25, I.slots[a].z), '#c08a1f'); px = x + 0.55; }
       }
       await beat(tok, 2800);
     }
@@ -954,12 +969,13 @@ export default function (ctx) {
     say('Free space：把空塊想成一個檔案', '只要 sequential：每次拿第一個空塊');
     await beat(tok, 2600);
     const L = [];
-    for (let k = 1; k < FREE0.length; k++) { L.push(seg(gp(FREE0[k - 1], 0.15), gp(FREE0[k], 0.15), '#2fc092')); await beat(tok, 120); }
+    num(2, 8, 17, 25);
+    for (let k = 1; k < FREE0.length; k++) { L.push(link(FREE0[k - 1], FREE0[k], '#2fc092')); await beat(tok, 120); }
     const h = tag('head', 'ptr alt', gp(2).x, 0.9, gp(2).z);
     say('Linked list＝linked allocation', '每個空塊存下一個空塊');
     await beat(tok, 2600);
     L.forEach(kill); kill(h);
-    const g = tag('block 2 存：3,4,5,8,9,10,11,12,13 → 下一組', 'ptr alt', 0, 0.9, -3.3);
+    const g = tag('block 2 存：3,4,5,8,9,10,11,12,13 → 下一組', 'ptr alt', 0, 0.3, -3.3);
     say('Grouping＝linked index', '第一個空塊存 n 個空塊位址');
     await beat(tok, 3000);
     txt(g, '(2,4) (8,6) (17,2) (25,3)');
@@ -976,7 +992,7 @@ export default function (ctx) {
     say('Bit vector：一個 block 一個 bit', '周老師：0 = free、1 = occupied（恐龍書相反）');
     await beat(tok, 2600);
     const bl = [];
-    for (let i = 0; i < 32; i++) { const p = gp(i, 0.6); bl.push(tag(FREE0.includes(i) ? '0' : '1', FREE0.includes(i) ? 'ptr alt' : 'idx', p.x + 0.2, 0.6, p.z - 0.15)); await beat(tok, 50); }
+    bitsOn().forEach((l) => bl.push(l)); await beat(tok, 600);
     let s = ''; for (let i = 0; i < 32; i++) { s += FREE0.includes(i) ? 0 : 1; if (i % 8 === 7 && i < 31) s += ' '; }
     const l = tag(s, '', 0, 0.3, -3.3); Object.assign(l.element.style, MONO);
     await beat(tok, 1600);
@@ -991,20 +1007,21 @@ export default function (ctx) {
     fresh([0, 9.5, 8.2], [0, 0, 0.4]);
     diskGrid();
     for (let i = 0; i < 32; i++) if (!FREE0.includes(i)) blk(i, '', C.other);
-    for (let i = 0; i < 32; i++) { const p = gp(i, 0.6); tag(FREE0.includes(i) ? '0' : '1', FREE0.includes(i) ? 'ptr alt' : 'idx', p.x + 0.2, 0.6, p.z - 0.15); }
+    bitsOn();
     say('為什麼要一次知道所有的 0？', 'contiguous 要找「連續的 0」');
     await beat(tok, 2400);
     const cur = tag('▼', 'ptr alt', 0, 1, 0);
     let run = 0, hit = -1;
     for (let i = 0; i < 32; i++) { cursorAt(cur, i); run = FREE0.includes(i) ? run + 1 : 0; await beat(tok, 140); if (run === 6) { hit = i; break; } }
     for (let k = hit - 5; k <= hit; k++) blk(k, '', C.free, 0, 0, 1.5);
+    num(8, 13);
     say('連續 6 個 0：block 8–13', '掃 bit 就找得到');
     await beat(tok, 2600);
-    const tgt = tag('目標位置 20', 'ptr', gp(20).x, 1.4, gp(20).z);
+    num(20); cursorAt(cur, 20); const tgt = tag('目標位置 20', 'ptr', gp(20).x, 0.3, 2.9);
     say('FS 常問：離 20 最近、至少 2 塊的空位？', '讓同檔案靠近 → 磁頭少移動');
     await beat(tok, 2200);
     for (let d = 0; d <= 3; d++) { for (const i of [20 - d, 20 + d]) { cursorAt(cur, i); await beat(tok, 300); } }
-    blk(17, '', C.idx, 0, 0, 1.5); blk(18, '', C.idx, 0, 0, 1.5);
+    blk(17, '', C.idx, 0, 0, 1.5); blk(18, '', C.idx, 0, 0, 1.5); num(17, 18);
     say('找到 17–18', 'bit vector 不用改就能回答；linked list 要大改');
     await beat(tok, 3200);
   }
@@ -1017,7 +1034,7 @@ export default function (ctx) {
       const [n, v, why] = items[i];
       const x = -4.5 + i * 3;
       const b = cube(String(v), i === 1 ? C.bad : C.free, [1.2, 1, 1.2], x, 0, 0); b.scale.y = 0.01;
-      tag(n, 'ptr', x, 0.1, 1.4); tag(why, 'idx', x, 0.1, 2.0);
+      tag(n, 'ptr', x, -0.25, 1.0); tag(why, 'idx', x, -0.95, 1.0);
       await anim(tok, 600, (t) => { b.scale.y = Math.max(0.01, v * 0.5 * t); b.position.y = b.scale.y / 2; });
       say(n + '：' + v + ' 次', why);
       await beat(tok, 1400);
@@ -1254,7 +1271,7 @@ scene('fs-23a-logical', 'File 是 logical unit，sector 才是 physical unit', C
 
 scene('fs-23a-attr', 'File attributes：name、identifier、type、size…', CAM, [
   async (tok, S) => { // 361.1 content map 到 physical 位置
-    S.f = prop('file', -5.2, 1.2, 0, 1.2, 'a.txt'); S.d = prop('disk', -5.2, -0.2, 2.2, 0.7);
+    frameHold(-6.4, -1, -0.5, 6.4, 7.4, 0.5); S.f = prop('file', -5.2, 1.2, 0, 1.2, 'a.txt'); S.d = prop('disk', -5.2, -0.2, 2.2, 0.7);
     cap('除了把內容 map 到 device 上的位置', '');
   },
   async (tok, S) => { // 367.6 很多 attribute 描述檔案
@@ -1275,7 +1292,7 @@ scene('fs-23a-attr', 'File attributes：name、identifier、type、size…', CAM
     cap('還有 type、location、size、protection', '');
   },
   async (tok, S) => { // 417.9 有些是給 OS / FS 自己管理用
-    bub('有些給使用者看，有些給 OS 管理', 0.6, 6.7);
+    bub('有些給使用者看，有些給 OS 管理', 0.6, 7.0);
     cap('有些 attribute 是給 OS 自己 manage', '');
   },
   async (tok, S) => { // 423.6 都必須存起來
@@ -1739,6 +1756,7 @@ scene('fs-23b-raw', 'Raw partition：database、swap space 不用 format', CAM, 
 
 scene('fs-23b-layout', 'Directory 在 volume 上：先找目錄，再找內容', CAM, [
   async (tok, S) => { // 340.0 directory：分類管理
+    frameHold(-6, -0.8, -0.5, 6, 7.4, 0.5); // the disks arrive later: frame for them now
     S.dir = bx('directory', FC.blue, 0, 6.0, 0, 2.6, 0.5, 0.8);
     cap('directory：把檔案切割分類', '比較容易找到要的 file');
   },
@@ -2032,7 +2050,7 @@ scene('fs-23c-access', '三種 access method 的例子（MATLAB A(3,3)）', [[0,
     cap('剛才的例子：sequential', 'C 的 fread、fwrite');
   },
   async (tok, S) => { // 17.2 index：database
-    S.tape.forEach((m) => glow(m, null));
+    S.tape.forEach((m) => glow(m, null)); remove(S.cur);
     tag('Index', 'ptr', 3, 0.3, 3.1); S.db = sm('像 database', 4.6, 0.3, 3.1);
     cap('index 的 random access', '就像 database');
   },
@@ -2046,7 +2064,7 @@ scene('fs-23c-access', '三種 access method 的例子（MATLAB A(3,3)）', [[0,
     cap('MATLAB：load 一個 file', '行當作 row，用逗號分 column');
   },
   async (tok, S) => { // 57.1 我要 A(3,3)
-    glow(S.g[8], HL); S.g[8].position.y = 0.6;
+    glow(S.g[8], HL); S.g[8].position.y = 0.25;
     cap('請告訴我 A(3,3) 的 data', '直接給第 3 列第 3 行');
   },
   async (tok, S) => { // 76.4 這就是 direct access
@@ -2054,19 +2072,19 @@ scene('fs-23c-access', '三種 access method 的例子（MATLAB A(3,3)）', [[0,
     cap('這就是 direct access 的例子', '座標就是位置');
   },
   async (tok, S) => { // 84.4 哪個好？看 application
-    S.q = bub('哪個好？看 application 的行為', 0, 1.8, -1.0);
+    S.q = bub('哪個好？看 application 的行為', 1.6, 0.6, 0.4);
     cap('哪一個好哪個不好？', '看使用者、application 的需求');
   },
   async (tok, S) => { // 94.8 看 argument：沒給 position → sequential
-    remove(S.q); S.c = code(['read(fp, n)        → sequential'], 1.6, 1.6, 0.42, -0.6);
+    remove(S.q); S.c = code(['read(fp, n)        → sequential'], 1.8, 0.6, 0.42, 0.4);
     cap('看 API 的 argument 就分得出來', '沒有給 position：一定是 sequential');
   },
   async (tok, S) => { // 103.6 給 position → direct
-    S.c.kill(); S.c = code(['read(fp, n)        → sequential', 'read(A, 3, 3)      → direct'], 1.6, 1.8, 0.42, -0.6);
+    S.c.kill(); S.c = code(['read(fp, n)        → sequential', 'read(A, 3, 3)      → direct'], 1.8, 0.8, 0.42, 0.4);
     cap('給 position 資訊（像 A(3,3)）', '就是 direct access');
   },
   async (tok, S) => { // 114.1 給名字 → index
-    S.c.kill(); S.c = code(['read(fp, n)        → sequential', 'read(A, 3, 3)      → direct', 'find("John")       → index'], 1.6, 2.0, 0.42, -0.6);
+    S.c.kill(); S.c = code(['read(fp, n)        → sequential', 'read(A, 3, 3)      → direct', 'find("John")       → index'], 1.8, 1.0, 0.42, 0.4);
     S.key = cube('John', C.idx, [1.1, 0.4, 0.7], 1.4, 0.2, 2.0); glow(S.key, HL);
     cap('直接給名字（自己取的 key）', '用它 refer 到資料：index access');
   },
@@ -2075,19 +2093,20 @@ scene('fs-23c-access', '三種 access method 的例子（MATLAB A(3,3)）', [[0,
   },
   async (tok, S) => { // 153.1 sequential 串在一起；index 建 data structure
     S.tape.forEach((m) => glow(m, OKG));
-    sm('sequential：盡量串在一起放', -1.2, 0.3, -1.8); sm('index：建 data structure 快速搜尋位置', 3.6, 0.3, 2.6);
+    sm('sequential：盡量串在一起放', -2.4, 0.3, -1.7); sm('index：建 data structure 快速搜尋位置', 3.6, 0.3, 3.8);
     cap('sequential：資料盡量放在一起', 'index：建 data structure 減少多餘 I/O');
   },
 ]);
 
 scene('fs-23c-gengraph', 'General graph 的 cycle 與 garbage collection', [[0, 4.2, 13], [0, 3.3, 0]], [
   async (tok, S) => { // 180.3 single、two-level、tree
-    ['single', 'two-level', 'tree'].forEach((t, i) => sm(t, -4 + i * 2.2, 6.8));
+    frameHold(-6, -0.8, -0.5, 6, 7.9, 0.5); // the graph arrives later: frame for it now
+    ['single', 'two-level', 'tree'].forEach((t, i) => sm(t, -4 + i * 2.2, 7.5));
     cap('directory：single level、two level、tree', '');
   },
   async (tok, S) => { // 187.6 最 general：任意加 edge
-    S.Sp = DSPEC.general(); S.G = graph(S.Sp.nodes, S.Sp.edges.filter((e) => e[2] !== 'cyc'), 2);
-    hot('General graph', 3.6, 6.8);
+    S.Sp = DSPEC.general(); S.G = graph(S.Sp.nodes, S.Sp.edges.filter((e) => e[2] !== 'cyc'));
+    hot('General graph', 3.6, 7.5);
     cap('最 general 就是 general graph', '任何位置、任何方向都可以加 edge');
   },
   async (tok, S) => { // 203.7 會有 cycle
@@ -2120,7 +2139,7 @@ scene('fs-23c-gengraph', 'General graph 的 cycle 與 garbage collection', [[0, 
   },
   async (tok, S) => { // 293.4 沒被 label 的 → delete（兩個 pass）
     glow(S.G.M.g2, NG); glow(S.G.M.t1, NG); await wt(tok, 500);
-    fly(S.G.M.g2); fly(S.G.M.t1); kill(S.cyc); remove(S.rG2); remove(S.rT1);
+    kill(S.G.M.g2); kill(S.G.M.t1); kill(S.cyc); remove(S.rG2); remove(S.rT1);
     S.G.E.filter((e) => e.a === 'g2').forEach((e) => kill(e.l));
     cap('沒被 label 的 = unreachable → delete', '兩個 pass：不管有沒有 cycle');
   },
@@ -2129,7 +2148,7 @@ scene('fs-23c-gengraph', 'General graph 的 cycle 與 garbage collection', [[0, 
     cap('這些 overhead 都比較大', 'file system 的使用者、檔案數量非常驚人');
   },
   async (tok, S) => { // 328.0 很多 FS 不 support：會造成 cycle 的 link 擋掉
-    note('加 link 會 create cycle → invalid', 0, 6.0);
+    note('加 link 會 create cycle → invalid', 4.2, 6.6);
     cap('所以很多 file system 不支援 general graph', '加會造成 cycle 的 link 就擋掉');
   },
   async (tok, S) => { // 360.0 directory 就是在處理 mapping
@@ -2140,16 +2159,17 @@ scene('fs-23c-gengraph', 'General graph 的 cycle 與 garbage collection', [[0, 
 
 scene('fs-23c-mount', 'Mounting：mount point、時機與 recursive mount', [[0, 4.2, 13], [0, 3.2, 0]], [
   async (tok, S) => { // 373.3 mounting 與 sharing
+    frameHold(-6.4, -0.8, -0.5, 6.6, 7.4, 0.5); // the tree arrives later: frame for it now
     hd('Mounting', -2.4, 7.0); sm('Sharing（下一段）', 0.8, 7.0);
     cap('接著：mounting 與 sharing', '使用檔案時常做的動作');
   },
   async (tok, S) => { // 389.4 要用一個儲存空間，先 mount
-    S.dev = prop('disk', 5.4, 0, 0, 0.9, 'device');
+    S.dev = prop('disk', 5.8, 5.4, 0, 0.9, 'device');
     cap('要使用一個儲存空間，第一件事是 mount', '讓系統可以 access 那個 device 上的資料');
   },
   async (tok, S) => { // 412.6 透過 file system 的 directory structure
     S.N = { r: { name: '/', x: 0, y: 6, kind: 'dir' }, local: { name: 'local', x: -4, y: 4.3, kind: 'dir' }, usr: { name: 'usr', x: 0, y: 4.3, kind: 'dir' }, home: { name: 'home', x: 4, y: 4.3, kind: 'dir' } };
-    S.G = graph(S.N, [['r', 'local'], ['r', 'usr'], ['r', 'home']], 2);
+    S.G = graph(S.N, [['r', 'local'], ['r', 'usr'], ['r', 'home']]);
     cap('使用者、程式要 access file', '都要透過 file system 的 directory structure');
   },
   async (tok, S) => { // 432.4 決定 mount point
@@ -2181,20 +2201,20 @@ scene('fs-23c-mount', 'Mounting：mount point、時機與 recursive mount', [[0,
   },
   async (tok, S) => { // 568.0 第二個 volume 掛在 usr 下
     const V = { a: { name: 'bin', x: -1.4, y: 2.5, kind: 'vol' }, b: { name: 'lib', x: 1.4, y: 2.5, kind: 'vol' } };
-    graph(V, [], 4); seg(V3(0, 4.05), V3(-1.4, 2.75), '#31aab0'); seg(V3(0, 4.05), V3(1.4, 2.75), '#31aab0');
+    graph(V, [], 1); seg(V3(0, 4.05), V3(-1.4, 2.75), '#31aab0'); seg(V3(0, 4.05), V3(1.4, 2.75), '#31aab0');
     tag('volume 2', 'ptr alt', -2.9, 2.5); glow(S.G.M.usr, HL);
     cap('把第二個 volume mount 進來，掛在 usr 下', 'usr 就是 mount point（不同顏色＝不同 FS）');
   },
   async (tok, S) => { // 591.0 recursive
-    graph({ john: { name: 'john', x: 4, y: 2.5, kind: 'dir' } }, [], 2); seg(V3(4, 4.05), V3(4, 2.75));
+    graph({ john: { name: 'john', x: 4, y: 2.5, kind: 'dir' } }, [], 0.6); seg(V3(4, 4.05), V3(4, 2.75));
     cap('甚至可以 recursive', '被 mount 的 volume 下面再掛別的，一直下去');
   },
   async (tok, S) => { // 604.7 Windows：只能 C:、D:、E:
-    S.w = ['C:', 'D:', 'E:'].map((n, i) => cube(n, C.vol, [0.9, 0.5, 0.5], -5.2 + i * 1.1, 2.4, 0, 3));
+    S.w = ['C:', 'D:', 'E:'].map((n, i) => cube(n, C.vol, [0.9, 0.5, 0.5], -5.4 + i * 1.1, 3.2, 0));
     cap('Windows 比較感覺不到', '掛進來就是 C 槽、D 槽、E 槽：只能掛在 root');
   },
   async (tok, S) => { // 631.1 Linux / Mac：任何存在的資料夾
-    graph({ g: { name: 'games', x: 4, y: 0.8, kind: 'vol', color: C.fat } }, [], 4); seg(V3(4, 2.25), V3(4, 1.05), '#9b7ef4');
+    graph({ g: { name: 'games', x: 4, y: 0.8, kind: 'vol', color: C.fat } }, [], 0.6); seg(V3(4, 2.25), V3(4, 1.05), '#9b7ef4');
     tag('volume 3', 'ptr alt', 5.6, 0.8);
     cap('Linux、Mac 可以自己選掛哪', '只要資料夾存在，例如掛在 john 下面');
   },
@@ -2207,7 +2227,7 @@ scene('fs-23c-mount', 'Mounting：mount point、時機與 recursive mount', [[0,
 scene('fs-23c-mtable', 'Mount table：跨 partition 找 /usr/hw.c', [[0, 4.2, 13], [0, 3, 0]], [
   async (tok, S) => { // 674.4 meta data 上發生什麼事
     S.N = { r: { name: '/', x: -3, y: 6, kind: 'dir' }, usr: { name: 'usr', x: -5, y: 4.3, kind: 'dir' }, bin: { name: 'bin', x: -3, y: 4.3, kind: 'dir' }, mnt: { name: 'mnt', x: -1, y: 4.3, kind: 'dir' } };
-    S.G = graph(S.N, [['r', 'usr'], ['r', 'bin'], ['r', 'mnt']], 2);
+    frameHold(-6.5, -0.6, -0.5, 6.5, 7.3, 0.5); S.G = graph(S.N, [['r', 'usr'], ['r', 'bin'], ['r', 'mnt']]);
     tag('P1（系統槽）', 'ptr', -3, 6.8);
     cap('mount point 在 metadata 上發生什麼事？', '');
   },
@@ -2217,7 +2237,7 @@ scene('fs-23c-mtable', 'Mount table：跨 partition 找 /usr/hw.c', [[0, 4.2, 13
   },
   async (tok, S) => { // 714.5 root 下三個 folder，usr、mnt 是掛進來的
     S.P2 = { r2: { name: 'root (= usr)', x: 3.5, y: 4.3, kind: 'vol' }, a: { name: 'john', x: 2.2, y: 2.6, kind: 'vol' }, b: { name: 'hw.c', x: 4.8, y: 2.6, kind: 'vol', color: C.fil } };
-    S.G2 = graph(S.P2, [['r2', 'a'], ['r2', 'b']], 2); tag('P2', 'ptr', 3.5, 5.1);
+    S.G2 = graph(S.P2, [['r2', 'a'], ['r2', 'b']]); tag('P2', 'ptr', 3.5, 5.1);
     cap('root 下三個 folder：usr、mnt 不屬於 P1', '它們來自獨立的 partition P2、P3');
   },
   async (tok, S) => { // 749.3 寫一個 m 標記就好
@@ -2310,24 +2330,25 @@ scene('fs-23c-share', 'Sharing：user ID、group ID 與 owner / group / others',
 
 scene('fs-23c-acl', 'ACL 簡化成 rwx × 3、ls -l、chmod 644', [[0, 6, 11], [0, 1.2, 0]], [
   async (tok, S) => { // 1072.6 permission 是什麼：r、w、x
-    S.p = ['read', 'write', 'execute'].map((t, i) => bx(t, C.free, -3 + i * 3, 3.6, -1, 2.2, 0.5, 0.6));
+    frameHold(-6.2, -0.4, -1, 6.2, 4.6, 2); // the classes arrive later: frame for them now
+    S.p = ['read', 'write', 'execute'].map((t, i) => bx(t, C.free, -3 + i * 3, 3.0, -1, 2.2, 0.5, 0.6));
     cap('permission 指的是什麼？', '就是 read、write、execute 三種');
   },
   async (tok, S) => { // 1095.8 每個 level 對到 privilege；只有 owner / root 能改
-    sm('只有 owner 或 root 能改權限', 0, 4.4, -1);
+    S.who = sm('只有 owner 或 root 能改權限', 0, 3.8, -1);
     cap('每個 level 對到不同的 privilege', '只有 owner 或 root 能修改；其他人只能 follow');
   },
   async (tok, S) => { // 1135.5 access control 問題
-    S.p.forEach((m) => fly(m));
+    gone(S.p, S.who);
     cap('權限怎麼描述？', '這叫 access control 的問題');
   },
   async (tok, S) => { // 1162.2 control list
-    hd('Access-Control List（ACL）', -4, 5.2);
+    S.h = hd('Access-Control List（ACL）', 0, 4.1, -1);
     cap('演變到現在：用一個 control list', '控制每個使用者對 file 有什麼權限');
   },
   async (tok, S) => { // 1175.1 最單純：one to one
     S.rows = [];
-    for (let i = 0; i < 12; i++) { S.rows.push(cube('user' + (i + 1) + '：' + ['rw', 'r', 'rwx', '—'][i % 4], C.other, [2.6, 0.3, 0.45], -4, 0.15 + i * 0.32, -1, 2)); await wt(tok, 60); }
+    for (let i = 0; i < 12; i++) { S.rows.push(cube('user' + (i + 1) + '：' + ['rw', 'r', 'rwx', '—'][i % 4], C.other, [3.2, 0.42, 0.45], i < 6 ? -2.2 : 2.2, 3.4 - (i % 6) * 0.66, -1)); await wt(tok, 60); }
     cap('最單純：每個檔案一張 list', 'list 上列每個使用者的權限（one to one）');
   },
   async (tok, S) => { // 1188.5 使用者一多：不可行
@@ -2335,7 +2356,7 @@ scene('fs-23c-acl', 'ACL 簡化成 rwx × 3、ls -l、chmod 644', [[0, 6, 11], [
     cap('使用者隨時增加：list 又長又要一直改', '還要 load 到 memory 才能判斷：不可行');
   },
   async (tok, S) => { // 1217.3 三個 class
-    S.rows.forEach((r) => fly(r));
+    gone(S.rows);
     ['owner', 'group', 'others'].forEach((g, gi) => tag(g, 'ptr', -4 + gi * 4, 0.1, 1.6));
     cap('現在的做法：三個 class', 'owner、group、others');
   },
@@ -2345,7 +2366,7 @@ scene('fs-23c-acl', 'ACL 簡化成 rwx × 3、ls -l、chmod 644', [[0, 6, 11], [
     cap('privilege 也限制成三個動作', 'r = read、w = write、x = execute');
   },
   async (tok, S) => { // 1255.0 每個 class 3 個 bit
-    note('每個 class 3 bits × 3 = 9 bits', 0, 4.2);
+    S.rem = note('每個 class 3 bits × 3 = 9 bits', 0, 3.1);
     cap('很長的 list 簡化成每個 class 3 個 bit', '乘三倍而已：儲存空間很少');
   },
   async (tok, S) => { // 1272.6 owner 111
@@ -2361,7 +2382,7 @@ scene('fs-23c-acl', 'ACL 簡化成 rwx × 3、ls -l、chmod 644', [[0, 6, 11], [
     cap('file 的 owner 或 root', '透過修改這幾個 bit 控制 access control');
   },
   async (tok, S) => { // 1327.7 ls -l
-    S.ls = tag('$ ls -l   -rw-rw-r--  alice  staff  hw.c', '', 0, 0.2, -2.6); Object.assign(S.ls.element.style, MONO);
+    S.ls = tag('$ ls -l   -rw-rw-r--  alice  staff  hw.c', '', 0, 2.35, 0); Object.assign(S.ls.element.style, MONO);
     cap('工作站上打 ls -l', '前面那串奇怪的符號就是 access control list');
   },
   async (tok, S) => { // 1348.3 第一個字元：directory 還是 file；後面 9 個
@@ -2372,11 +2393,11 @@ scene('fs-23c-acl', 'ACL 簡化成 rwx × 3、ls -l、chmod 644', [[0, 6, 11], [
     cap('這是 file：owner rw-、group（staff）rw-', 'others 只有 r--');
   },
   async (tok, S) => { // 1421.0 folder 的 x：能不能 traverse
-    S.dir = tag('目錄的 x = 能不能 traverse 進去', 'ptr alt', 0, 0.2, 2.6);
+    S.rem.element.className = 'lab-label ptr alt'; txt(S.rem, '目錄的 x = 能不能 traverse 進去');
     cap('對 folder 而言 execute 的意思', '能不能 traverse 進去看裡面有什麼');
   },
   async (tok, S) => { // 1433.2 permission denied：檢查路徑上每個 parent
-    bad('Permission denied？檢查路徑上每層 parent 的 x', 0, 0.2, 3.4);
+    S.rem.element.className = 'lab-label bad'; txt(S.rem, 'Permission denied？檢查路徑上每層 parent 的 x');
     cap('遇到 access permission denied', '看路徑上每個 parent folder 有沒有 x');
   },
   async (tok, S) => { // 1464.7 group：students 只讀
@@ -2913,7 +2934,7 @@ scene('fs-24a-inmem', 'In-memory structures：mount table、directory cache、�
 
 scene('fs-24a-open', 'open()：traverse directory → 找到 FCB → 載入 open-file table', CAM, [
   async (tok, S) => { // 616.8 用例子走一遍
-    S.dk = zone('disk', -3.0, 0, 0, 7.0, 2.0, '#e7e0d4'); S.mm = zone('memory', 3.6, 0, 0, 5.8, 2.0, '#f3e3ea');
+    frameHold(-6.6, -0.4, -0.5, 6.6, 7.4, 0.5); S.dk = zone('disk', -3.0, 0, 0, 7.0, 2.0, '#e7e0d4'); S.mm = zone('memory', 3.6, 0, 0, 5.8, 2.0, '#f3e3ea');
     cap('用幾個例子走一遍：open、read / write、create', '看這些 structure 運作的順序');
   },
   async (tok, S) => { // 631.1 open 一個 file
@@ -2939,7 +2960,7 @@ scene('fs-24a-open', 'open()：traverse directory → 找到 FCB → 載入 open
   },
   async (tok, S) => { // 721.4 把 FCB load 到 system-wide open-file table
     S.sw = bx('system-wide OFT', FC.purple, 3.6, 4.4, 0, 2.6, 0.6, 0.8);
-    S.pk2 = bx('FCB', FC.purple, -1.4, 2.4, 0, 1.0, 0.4, 0.6); await slide(tok, S.pk2, 3.6, 5.0, 0, 900);
+    S.pk2 = bx('FCB', FC.purple, -1.4, 2.4, 0, 1.0, 0.4, 0.6); await slide(tok, S.pk2, 6.1, 4.4, 0, 900);
     cap('open 就是找到 FCB', '把 on-disk 的 FCB load 到 memory 的 open-file table');
   },
   async (tok, S) => { // 739.2 填 per-process table
@@ -3108,22 +3129,22 @@ scene('fs-24a-vfsobj', 'Linux VFS 的四個 object：inode、file、superblock�
     cap('Linux 的 VFS 實作', '分成四個主要的 object（class）');
   },
   async (tok, S) => { // 1320.6 inode = FCB
-    S.i = bx('inode', FC.purple, -4.8, 4.8, 0, 2.2, 0.8, 0.9); sm('= file control block（on disk）', -4.8, 4.0);
+    S.i = bx('inode', FC.purple, -2.8, 5.6, 0, 2.2, 0.7, 0.9); sm('= file control block（on disk）', -2.8, 4.9);
     cap('最常聽到的 inode', '就是 individual file 的 FCB');
   },
   async (tok, S) => { // 1337.5 VFS 定義名字，各 FS implement
     cap('inode 是 VFS 這層定義的名字', '不同 file system 去 implement 它的操作與細節');
   },
   async (tok, S) => { // 1349.6 file object：open 後在 memory
-    S.f = bx('file object', FC.sky, -1.6, 4.8, 0, 2.2, 0.8, 0.9); sm('open 之後的 in-memory object', -1.6, 4.0);
+    S.f = bx('file object', FC.sky, 2.8, 5.6, 0, 2.2, 0.7, 0.9); sm('open 之後的 in-memory object', 2.8, 4.9);
     cap('file object：兩個都是 file，差在哪？', 'inode 是 on-disk 的 FCB；file object 是 open 後 load 到 memory 的');
   },
   async (tok, S) => { // 1381.3 superblock：整個 file system
-    S.sb = bx('superblock', FC.orange, 1.6, 4.8, 0, 2.2, 0.8, 0.9); sm('整個 file system（partition CB）', 1.6, 4.0);
+    S.sb = bx('superblock', FC.orange, -2.8, 3.6, 0, 2.2, 0.7, 0.9); sm('整個 file system（partition CB）', -2.8, 2.9);
     cap('superblock object：entire file system', '對到前面 partition control block 存的資料');
   },
   async (tok, S) => { // 1401.4 dentry：directory
-    S.de = bx('dentry', FC.blue, 4.8, 4.8, 0, 2.2, 0.8, 0.9); sm('directory entry', 4.8, 4.0);
+    S.de = bx('dentry', FC.blue, 2.8, 3.6, 0, 2.2, 0.7, 0.9); sm('directory entry', 2.8, 2.9);
     cap('最後是 dentry object', '指的就是 directory');
   },
   async (tok, S) => { // 1418.1 四個
@@ -3131,15 +3152,15 @@ scene('fs-24a-vfsobj', 'Linux VFS 的四個 object：inode、file、superblock�
     cap('volume → directory → file', 'file 又分 on-disk 的 inode 和 active 的 file object');
   },
   async (tok, S) => { // 1427.3 每個 class 有 method：open
-    S.m1 = code(['file->open()'], -1.6, 2.6); glow(S.f, HL);
+    S.m1 = code(['file->open()'], -1.5, 2.1); glow(S.f, HL);
     cap('每個 class 都有 method（interface）', '例如 open 在 file object 裡，要去 implement');
   },
   async (tok, S) => { // 1449.6 read
-    S.m2 = code(['file->read()'], -1.6, 2.0);
+    S.m2 = code(['file->read()'], 1.5, 2.1);
     cap('要 read 一個 file', '一定是從已經 open 的 file object 讀：也有 read 的 API');
   },
   async (tok, S) => { // 1465.3 上層照 VFS 下指令
-    glow(S.f, null); good('上層 system code 照 VFS 對 FS 下指令', 0, 0.6);
+    glow(S.f, null); good('上層 system code 照 VFS 對 FS 下指令', 0, 1.2);
     cap('implement 好之後', '上面的 system code 就照 VFS 對 file system 下指令');
   },
 ]);
@@ -3184,7 +3205,7 @@ scene('fs-24a-keys', '實作兩大重點：directory 怎麼存、data block 怎�
 // 恐龍書的圖：contiguous（count 0-1、f 6-7、tr 14-16、mail 19-24、list 28-31）、linked（jeep 9→16→1→10→25）、FAT（217→618→339）
 const CONTIG = { count: [0, 2], f: [6, 2], tr: [14, 3], mail: [19, 6], list: [28, 4] };
 const JEEP = [9, 16, 1, 10, 25];
-const ttl = (t) => tag(t, 'ptr', 0, 0.3, -3.3);
+const ttl = (t) => tag(t, 'ptr', 0, 1.5, -3.5);
 scene('fs-24b-overview', 'Allocation methods：contiguous、linked、indexed', CAM, [
   async (tok, S) => { // 14.8 allocation：content → data blocks
     S.f = prop('file', -5.4, 3.6, 0, 1.0, 'file');
@@ -3236,7 +3257,8 @@ scene('fs-24b-contig', 'Contiguous allocation：directory 存 (start, length)', 
   },
   async (tok, S) => { // 154.1 五個 files
     S.M = {}; const col = { count: C.fat, f: C.vol, tr: C.fil, mail: C.file, list: C.free };
-    for (const [n, [s, l]] of Object.entries(CONTIG)) { S.M[n] = []; for (let k = 0; k < l; k++) S.M[n].push(blk(s + k, k ? '' : n, col[n], 0, 0, 1.5)); }
+    for (const [n, [s, l]] of Object.entries(CONTIG)) { S.M[n] = []; for (let k = 0; k < l; k++) S.M[n].push(blk(s + k, k ? '' : n, col[n], 0, 0, 1.5)); num(s); S.M[n][0].userData.lbl.position.set(0.1, 0.2, -0.25); } // file name toward the back of its block, clear of the tile number
+    num(15, 16, 24);
     cap('假設有五個 files（恐龍書的圖）', 'count、f、tr、mail、list');
   },
   async (tok, S) => { // 172.9 tr 從 14 開始：14、15、16
@@ -3244,7 +3266,7 @@ scene('fs-24b-contig', 'Contiguous allocation：directory 存 (start, length)', 
     cap('contiguous：從哪開始擺就必須接著', 'tr 從 14 開始存，就 14、15、16 依序下去');
   },
   async (tok, S) => { // 188.6 FCB 要存什麼？
-    S.q = tag('FCB 要存什麼，才找得到資料？', 'ptr alt', 0, 1.0, 2.9);
+    S.q = tag('FCB 要存什麼，才找得到資料？', 'ptr alt', 0, 0.3, 3.0);
     cap('FCB 裡要存的 information 是什麼？', '');
   },
   async (tok, S) => { // 198.2 tr 的第 1000 個 byte，block 200 → 第 5 個 block
@@ -3257,7 +3279,7 @@ scene('fs-24b-contig', 'Contiguous allocation：directory 存 (start, length)', 
   },
   async (tok, S) => { // 226.7 14 + 5 = 19
     txt(S.q, 'start + 5 = 14 + 5 = 19（示意算法）');
-    S.cur = tag('▼', 'ptr alt', gp(19).x, 1.2, gp(19).z);
+    S.cur = tag('▼', 'ptr alt', 0, 1, 0); cursorAt(S.cur, 19);
     cap('tr 從 14 開始：加 5 就是 19', '用算的就知道位置（公式示意）');
   },
   async (tok, S) => { // 238.5 block 編號從哪來：format 時
@@ -3272,11 +3294,12 @@ scene('fs-24b-contigpc', 'Contiguous 的好處與 external fragmentation', TOP, 
   async (tok, S) => { // 284.6 好壞處
     diskGrid(); S.M = {};
     for (const [n, [s, l]] of Object.entries(CONTIG)) { S.M[n] = []; for (let k = 0; k < l; k++) S.M[n].push(blk(s + k, k ? '' : n, C.file)); }
+    num(14, 16, 19, 24);
     S.t = ttl('Contiguous：好處與壞處');
     cap('看它的好處跟壞處', '');
   },
   async (tok, S) => { // 292.6 找位置：用算的
-    S.cur = tag('▼', 'ptr alt', gp(20).x, 1.2, gp(20).z); glow(S.M.mail[1], HL);
+    S.cur = tag('▼', 'ptr alt', 0, 1, 0); cursorAt(S.cur, 20); glow(S.M.mail[1], HL); num(20);
     cap('找任何資料的位置 effort 最小', '不用 traverse 整個 file：給 position 用算的');
   },
   async (tok, S) => { // 314.0 single I/O
@@ -3292,25 +3315,25 @@ scene('fs-24b-contigpc', 'Contiguous 的好處與 external fragmentation', TOP, 
     cap('directory entry 也很小', '只要兩個值：start 與 block 數');
   },
   async (tok, S) => { // 361.0 external fragmentation
-    S.M.mail.forEach((m) => glow(m, null));
+    S.M.mail.forEach((m) => glow(m, null)); remove(S.cur);
     cap('trade-off：很容易有 external fragmentation', '這也很嚴重');
   },
   async (tok, S) => { // 371.6 檔案來來去去 → 碎片
-    fly(S.M.f[0]); fly(S.M.f[1]); fly(S.M.list[0]); fly(S.M.list[1]); fly(S.M.list[2]); fly(S.M.list[3]);
+    gone(S.M.f, S.M.list);
     await wt(tok, 600);
     for (const i of [2, 3, 4, 5, 8, 9, 10, 11, 12, 13]) blk(i, '', C.other, 0, 0, 1.2);
     cap('檔案來來去去', 'fragment 越來越多：剩下的空位東一塊、西一塊');
   },
   async (tok, S) => { // 378.4 檔案增長：要整個搬走
-    glow(S.M.tr[2], NG); S.x = tag('tr 長到 17、18 之後就卡住：19 已被 mail 佔了', 'ptr alt', 0, 1.0, 2.9);
+    glow(S.M.tr[2], NG); num(17, 18); S.x = tag('tr 長到 17、18 之後就卡住：19 已被 mail 佔了', 'ptr alt', 0, 0.3, 3.0);
     cap('更糟：檔案會增長', '用完後面的空間就長不了：要整個 file 搬到別處');
   },
   async (tok, S) => { // 403.8 disk 使用率下降
-    txt(S.t, '越來越難使用 disk space：使用率下降');
+    glow(S.M.tr[2], null); txt(S.t, '越來越難使用 disk space：使用率下降');
     cap('越來越難使用 disk 空間', '要長時撞到別的 file：fail，或整個 copy，effort 很大');
   },
   async (tok, S) => { // 423.4 compaction（重組）
-    txt(S.t, 'solution：compaction（磁碟重組）');
+    remove(S.x); txt(S.t, 'solution：compaction（磁碟重組）');
     cap('solution 跟 memory 管理一樣：compaction', '「硬碟整理一下」就是在處理 fragmentation');
   },
 ]);
@@ -3324,16 +3347,16 @@ scene('fs-24b-extent', 'Extent-based：contiguous + linked list', TOP, [
     cap('簡單講就是跟 linked list 結合', '基本三種做法，常會 hybrid 互補');
   },
   async (tok, S) => { // 492.5 一次 allocate 一個 extent
-    S.e1 = [2, 3, 4].map((b, k) => blk(b, k + 1, C.fil, 0, 0, 1.5));
+    S.e1 = [2, 3, 4].map((b, k) => blk(b, k + 1, C.fil, 0, 0, 1.5)); num(2, 4);
     cap('不夠時不是 allocate 一個 block', '一次給一個 extent：一組連續的 block');
   },
   async (tok, S) => { // 507.5 用完再給一個，可以在別處
-    S.e2 = [12, 13, 14].map((b, k) => blk(b, k + 4, C.fil, 0, 0, 1.5));
+    S.e2 = [12, 13, 14].map((b, k) => blk(b, k + 4, C.fil, 0, 0, 1.5)); num(12, 14);
     cap('用完不夠怎麼辦？再給一個 extent', '兩個 extent 可以在不同的地方');
   },
   async (tok, S) => { // 516.7 用 linked list 串起來
-    S.e3 = [25, 26, 27].map((b, k) => blk(b, k + 7, C.fil, 0, 0, 1.5));
-    S.l1 = seg(gp(4, 0.45), gp(12, 0.45), '#c08a1f'); S.l2 = seg(gp(14, 0.45), gp(25, 0.45), '#c08a1f');
+    S.e3 = [25, 26, 27].map((b, k) => blk(b, k + 7, C.fil, 0, 0, 1.5)); num(25, 27);
+    S.l1 = link(4, 12); S.l2 = link(14, 25);
     cap('然後用 linked list 把 extent 串起來', '（這裡每個 extent 3 塊，位置示意）');
   },
   async (tok, S) => { // 523.5 on-disk：extent 尾巴留 4 bytes 記下一個
@@ -3365,7 +3388,7 @@ scene('fs-24b-extent', 'Extent-based：contiguous + linked list', TOP, [
     cap('第 3 個 extent 在哪？', '必須 traverse linked list：把每個 extent 尾巴的資訊從 disk 讀進來');
   },
   async (tok, S) => { // 664.3 三個 I/O request
-    S.n = tag('I/O 1', 'ptr alt', 4.6, 0.3, -3.3); glow(S.e1[2], HL); await wt(tok, 500);
+    S.n = tag('I/O 1', 'ptr alt', 5.2, 1.5, -3.5); glow(S.e1[2], HL); await wt(tok, 500);
     cursorAt(S.cur, 14); txt(S.n, 'I/O 2'); glow(S.e2[2], HL); await wt(tok, 500);
     cursorAt(S.cur, 25); txt(S.n, 'I/O 3'); glow(S.e3[0], OKG);
     cap('讀第 1 個 extent 尾巴、第 2 個 extent 尾巴', '最後才讀第 7 個 block：3 個 I/O request');
@@ -3385,7 +3408,7 @@ scene('fs-24b-linked', 'Linked allocation：jeep 9 → 16 → 1 → 10 → 25', 
     cap('第二個基本做法：另一個極端', '全部都用 link');
   },
   async (tok, S) => { // 741.0 每個 block 都用 link 串起來
-    S.L = []; for (let k = 0; k < JEEP.length; k++) { S.L.push(blk(JEEP[k], k + 1, C.file, 0, 0, 1.5)); if (k) seg(gp(JEEP[k - 1], 0.45), gp(JEEP[k], 0.45), '#c08a1f'); await wt(tok, 150); }
+    S.L = []; for (let k = 0; k < JEEP.length; k++) { S.L.push(blk(JEEP[k], k + 1, C.file, 0, 0, 1.5)); num(JEEP[k]); if (k) link(JEEP[k - 1], JEEP[k]); await wt(tok, 150); }
     cap('標準的 linked allocation', '每一個 block 全部用 link 串起來（恐龍書 jeep）');
   },
   async (tok, S) => { // 755.2 存起始與結束
@@ -3393,12 +3416,12 @@ scene('fs-24b-linked', 'Linked allocation：jeep 9 → 16 → 1 → 10 → 25', 
     cap('directory 存的很簡單：起始跟結束', '存結束：知道最後一塊的 id，不用 traverse 到底');
   },
   async (tok, S) => { // 770.5 每個 block 留幾個 byte 存下一個
-    S.L.forEach((m) => glow(m, HL)); S.p = tag('每塊尾巴：next pointer', 'ptr alt', gp(16).x, 1.2, gp(16).z);
+    S.L.forEach((m) => glow(m, HL)); S.p = K.note('每塊尾巴：next pointer', S.L[1], 'left', 'ptr alt');
     cap('每個 block 最後 reserve 幾個 byte', '存下一個位置：所以頭只要存一個');
   },
   async (tok, S) => { // 793.9 size 沒問題：有空 block 就加
     S.L.forEach((m) => glow(m, null)); remove(S.p);
-    S.n = blk(28, 6, C.free, 0, 0, 1.5); seg(gp(25, 0.45), gp(28, 0.45), '#2fc092');
+    S.n = blk(28, 6, C.free, 0, 0, 1.5); num(28); link(25, 28, '#2fc092');
     cap('好處：size 沒問題', '只要找到任何 available 的 data block 就加上去');
   },
   async (tok, S) => { // 801.0 grow / shrink 很容易
@@ -3427,8 +3450,8 @@ scene('fs-24b-linked', 'Linked allocation：jeep 9 → 16 → 1 → 10 → 25', 
 scene('fs-24b-linked2', 'Linked：cluster、reliability、配置 O(1)', TOP, [
   async (tok, S) => { // 891.8 cluster：把 block group 起來
     diskGrid(); S.t = ttl('改良：cluster（把 block group 起來）');
-    S.c = {}; for (const [a, b] of [[8, 9], [20, 21], [2, 3]]) { S.c[a] = blk(a, '', C.file); S.c[b] = blk(b, '', C.file); }
-    seg(gp(9, 0.45), gp(20, 0.45), '#c08a1f'); seg(gp(21, 0.45), gp(2, 0.45), '#c08a1f');
+    S.c = {}; for (const [a, b] of [[8, 9], [20, 21], [2, 3]]) { S.c[a] = blk(a, '', C.file); S.c[b] = blk(b, '', C.file); num(a, b); }
+    link(9, 20); link(21, 2);
     cap('不想 traverse 那麼多、存那麼多 link？', '把很多 block cluster 在一起當一個單位（像 extent）');
   },
   async (tok, S) => { // 926.1 reliability
@@ -3443,19 +3466,20 @@ scene('fs-24b-linked2', 'Linked：cluster、reliability、配置 O(1)', TOP, [
     cap('資料壞掉、或修改時斷電沒把 metadata 修好', '整個 file 可能就 collapse 掉');
   },
   async (tok, S) => { // 950.4 資源使用很有效率
-    S.fl = tag('free list → 5 → 11 → 30 …', 'ptr alt', 0, 1.0, 2.9);
+    S.fl = tag('free list → 5 → 11 → 30 …', 'ptr alt', 0, 0.3, 3.0);
     cap('最大好處：資源使用非常有效率', '');
   },
   async (tok, S) => { // 959.1 O(1)：pop free list 最上面
-    blk(5, 'new', C.free, 0, 0, 1.5); txt(S.fl, 'pop → 5（O(1)，不用 search）');
+    blk(5, 'new', C.free, 0, 0, 1.5); num(5); txt(S.fl, 'pop → 5（O(1)，不用 search）');
     cap('找 free 空間 order one，不用 search', 'free data block list 最上面 pop 出來就存：create 最快');
   },
 ]);
 
 scene('fs-24b-fat', 'FAT32：pointer 收集成一張表、mount 時 load 進 memory', CAM, [
   async (tok, S) => { // 976.5 FAT32 用 link
-    hd('FAT32（File Allocation Table）', 0, 6.9);
-    S.dir = bx('directory：test → start 217', FC.blue, -4.2, 6.0, 0, 3.6, 0.5, 0.7);
+    frameHold(-6.4, -1.0, -0.5, 6.4, 7.4, 0.5); // the table and memory arrive later: frame for them now
+    hd('FAT32（File Allocation Table）', 0, 7.3);
+    S.dir = bx('directory：test → start 217', FC.blue, -4.2, 6.5, 0, 3.6, 0.5, 0.7);
     cap('真實 file system：有名的 FAT32', '其實就是用 link');
   },
   async (tok, S) => { // 992.3 要解決 random access、traversing
@@ -3505,7 +3529,7 @@ scene('fs-24b-fat', 'FAT32：pointer 收集成一張表、mount 時 load 進 mem
     cap('簡單講 FAT 就是一個 cache', '收集存在連續 block，load 到 memory：minimum seek time');
   },
   async (tok, S) => { // 1158.5 contiguous 的 FS：XFS（extent-based）
-    sm('XFS：extent-based', -4.2, 5.4);
+    sm('XFS：extent-based', -5.4, 5.8);
     cap('FAT32 用的是 linked', '好奇 contiguous 的話：XFS 是 extent-based，很多 OS 都 support');
   },
 ]);
@@ -3516,13 +3540,13 @@ scene('fs-24b-indexed', 'Indexed allocation：index block 直接查表', TOP, [
     cap('最後一個：index', '');
   },
   async (tok, S) => { // 1201.2 pointer 收集起來，但不用 traverse
-    S.ib = blk(19, 'IB', C.idx, 0, 0, 1.5);
+    S.ib = blk(19, 'IB', C.idx, 0, 0, 1.5); num(19);
     cap('一樣把 pointer 收集起來', '跟 FAT 不同：沒有 traversing');
   },
   async (tok, S) => { // 1221.4 完全是 lookup
-    S.dm = JEEP.map((b, k) => blk(b, k + 1, C.file, 0, 0, 1.5));
-    JEEP.forEach((b) => seg(gp(19, 0.45), gp(b, 0.45), '#c08a1f'));
-    S.lst = tag('[9, 16, 1, 10, 25, −1, −1, −1]', 'ptr alt', gp(19).x, 1.3, gp(19).z);
+    S.dm = JEEP.map((b, k) => blk(b, k + 1, C.file));
+    num(...JEEP); JEEP.forEach((b) => link(19, b));
+    S.lst = tag('[9, 16, 1, 10, 25, −1, −1, −1]', 'ptr alt', gp(19).x, 0.3, 2.9);
     cap('index 就完全是 lookup', '第幾個 data block 存在哪個 physical location，直接存');
   },
   async (tok, S) => { // 1231.6 找第 3 個 block：查第 3 個 entry
@@ -3552,10 +3576,11 @@ scene('fs-24b-indexed', 'Indexed allocation：index block 直接查表', TOP, [
 ]);
 
 // ════════ C42WzJATHg0（第 25A 講：Indexed、multi-level、inode、free space）— built-in scenes 的 cued 版 ════════
-const CH10 = [9, 16, 5, 10, 25, 4, 30, 18, 27, 12];   // 10 塊的 linked 檔案（位置示意；前段取自恐龍書 jeep）
+const CH10 = CHAIN;   // 10 塊的 linked 檔案（位置示意；開頭取自恐龍書 jeep）
 scene('fs-25a-review', '複習：Contiguous 與 Linked（讀第 5 塊要先讀前 4 塊）', TOP, [
   async (tok, S) => { // 14.4 contiguous：連續擺放
     diskGrid(); S.cm = []; for (let k = 0; k < 6; k++) S.cm.push(blk(19 + k, k + 1, C.fil, 0, 0, 1.5));
+    num(19, 24);
     S.t = ttl('Contiguous：mail  start 19, length 6（課本圖）');
     cap('上次第一種：contiguous', '連續擺放');
   },
@@ -3563,12 +3588,12 @@ scene('fs-25a-review', '複習：Contiguous 與 Linked（讀第 5 塊要先讀�
     cap('好處：sequential 或 random 讀都非常快', '');
   },
   async (tok, S) => { // 47.3 用算的知道 physical 位置
-    glow(S.cm[4], HL); S.cur = tag('▼', 'ptr alt', gp(23).x, 1.2, gp(23).z);
+    glow(S.cm[4], HL); num(23); S.cur = tag('▼', 'ptr alt', 0, 1, 0); cursorAt(S.cur, 23);
     cap('告訴它第幾個 byte，用算的就知道 data block', '第 5 塊 = 19 + 4 = 23（示意）→ 直接對 disk 做 I/O');
   },
   async (tok, S) => { // 60.3 linked：像 linked list 串起來
-    S.cm.forEach((m) => fly(m)); remove(S.cur);
-    S.lm = []; for (let k = 0; k < CH10.length; k++) { S.lm.push(blk(CH10[k], k + 1, C.file, 0, 0, 1.5)); if (k) seg(gp(CH10[k - 1], 0.45), gp(CH10[k], 0.45), '#c08a1f'); }
+    gone(S.cm); remove(S.cur); numsOff();
+    S.lm = []; for (let k = 0; k < CH10.length; k++) { S.lm.push(blk(CH10[k], k + 1, C.file, 0, 0, 1.5)); if (k) link(CH10[k - 1], CH10[k]); }
     txt(S.t, 'Linked：10 個 block（位置示意）');
     cap('第二種：linked', '把每個 data block 像 linked list 串起來');
   },
@@ -3582,7 +3607,7 @@ scene('fs-25a-review', '複習：Contiguous 與 Linked（讀第 5 塊要先讀�
     cap('壞處剛好反過來：sequential 還不錯', '順著 linked list 讀');
   },
   async (tok, S) => { // 104.7 從第 5 塊開始讀：前 4 塊還得讀
-    S.cur = tag('讀', 'ptr alt', 0, 1, 0); S.n = tag('', 'ptr alt', 4.2, 0.3, 2.9);
+    S.cur = tag('讀', 'ptr alt', 0, 1, 0); S.n = tag('', 'ptr alt', 5.2, 1.5, -3.5);
     for (let k = 0; k < 5; k++) { cursorAt(S.cur, CH10[k]); glow(S.lm[k], k < 4 ? HL : OKG); txt(S.n, 'I/O ' + (k + 1)); await wt(tok, 350); }
     cap('不從頭讀就有 overhead：從第 5 個讀到第 10 個', '前 4 個 block 還是得讀出來，才找得到第 5 個');
   },
@@ -3604,7 +3629,7 @@ scene('fs-25a-review', '複習：Contiguous 與 Linked（讀第 5 塊要先讀�
 
 scene('fs-25a-fat', 'FAT：pointer 收集起來、mount 時載入 memory', [[0.6, 9.5, 8.2], [0.6, 0, 0.5]], [
   async (tok, S) => { // 143.9 還是有被採用：有解法
-    const ox = -1.6; diskGrid(32, ox); S.lm = CH10.map((b, k) => blk(b, k + 1, C.file, ox));
+    const ox = -1.6; diskGrid(32, ox, 0, 'none'); S.lm = CH10.map((b) => blk(b, b, C.file, ox));
     cap('這種方式還是有被採用', '解決 random 時很多 I/O request 的方法其實有');
   },
   async (tok, S) => { // 150.0 把 pointer 全部收集起來
@@ -3616,7 +3641,7 @@ scene('fs-25a-fat', 'FAT：pointer 收集起來、mount 時載入 memory', [[0.6
     cap('存在前面的幾個 data block', '');
   },
   async (tok, S) => { // 168.1 mount 時 load 到 memory
-    S.mem = cube('memory', C.mem, [3.6, 0.3, 1.2], 5.4, 3.0, 3.2);
+    S.mem = cube('', '#f7c9de', [3.6, 6.0, 0.1], 5.4, 1.6, -0.8); S.mem.rotation.x = -0.89; txt(S.tbl.ls[0], 'FAT（已 load 到 memory）'); S.tbl.hl(0);
     cap('mount 這個 file system 時', '就把它 load 到 memory');
   },
   async (tok, S) => { // 173.4 traversing 還在，但在 memory
@@ -3646,12 +3671,12 @@ scene('fs-25a-indexed', 'Indexed allocation：index block 19', TOP, [
     cap('一樣有 pointer，但不是 linked list', '而是 direct access 的概念');
   },
   async (tok, S) => { // 247.0 存在一起的 block：index block
-    S.ib = blk(19, 'IB', C.idx, 0, 0, 1.5);
-    S.lst = tag('[9, 16, 1, 10, 25, −1, −1, −1]', 'ptr alt', gp(19).x, 1.3, gp(19).z);
+    S.ib = blk(19, 'IB', C.idx, 0, 0, 1.5); num(19);
+    S.lst = tag('[9, 16, 1, 10, 25, −1, −1, −1]', 'ptr alt', gp(19).x, 0.3, 2.9);
     cap('pointer 一定存在一起：index block', 'pointer 也要存在 disk 上的一個 block（恐龍書：19）');
   },
   async (tok, S) => { // 269.0 其他是 data block
-    S.dm = JEEP.map((b, k) => blk(b, k + 1, C.file, 0, 0, 1.5)); JEEP.forEach((b) => seg(gp(19, 0.45), gp(b, 0.45), '#c08a1f'));
+    S.dm = JEEP.map((b, k) => blk(b, k + 1, C.file)); num(...JEEP); JEEP.forEach((b) => link(19, b));
     cap('其他被指到的就是 data block', '');
   },
   async (tok, S) => { // 275.5 directory：檔名 + 指向 index block 的 pointer
@@ -3667,7 +3692,7 @@ scene('fs-25a-indexed', 'Indexed allocation：index block 19', TOP, [
     cap('這就是 indexed allocation', '把所有 pointer bring together，放在 special 的 index block');
   },
   async (tok, S) => { // 320.6 random、sequential 都有效率
-    good('random、sequential 都一次就找到位置', 0, 1.0, 2.9);
+    good('random、sequential 都一次就找到位置', 0, 0.3, 3.8);
     cap('random access 變得非常 efficient', 'sequential 也一樣，一次就找到位置');
   },
   async (tok, S) => { // 333.4 沒有 external fragmentation
@@ -3816,8 +3841,19 @@ scene('fs-25a-multilevel', 'Multi-level index：16 → 19 → data', [[0, 6, 12]
   },
 ]);
 
+// single / double / triple：同一列往右排 n 個 index block，用箭頭串起來
+function ibChain(z, n) {
+  let px = -4.7, first = null;
+  for (let j = 0; j < n; j++) { const x = -1.9 + j * 2.3; const m = cube(j ? '' : 'IB', C.idx, [1.1, 0.4, 0.5], x, 0.2, z); first = first || m; lk(V3(px, 0.25, z), V3(x - 0.6, 0.25, z), '#c08a1f'); px = x + 0.6; }
+  return first;
+}
+function frameHold(x0, y0, z0, x1, y1, z1) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+}
 scene('fs-25a-inode', 'UNIX inode：12 direct + single / double / triple indirect', [[0, 9, 9], [0, 0, 0.2]], [
   async (tok, S) => { // 794.5 combined：UNIX inode 的預設
+    frameHold(-6.9, 0, -3.9, 6.2, 0.4, 3.9); // the index blocks arrive later: frame for them now
     S.sv = { ...IN }; Object.assign(IN, { bs: 4, ps: 4, nd: 12 });
     S.I = buildInode(false); Object.assign(IN, S.sv);
     cap('最後一個：combined', '也是 UNIX inode 的 default 做法');
@@ -3839,7 +3875,7 @@ scene('fs-25a-inode', 'UNIX inode：12 direct + single / double / triple indirec
     cap('inode 也只是一個 data structure', '它的 size 一定是有限的');
   },
   async (tok, S) => { // 886.3 block 4KB：一個 entry 指 4KB
-    S.c0 = tag('每格 → 1 個 block = 4KB', 'ptr alt', -3.0, 0.2, -3.6);
+    S.c0 = tag('每格 → 1 個 block = 4KB', 'ptr alt', 1.0, 0.2, -2.2);
     cap('每個 entry 只能指到一個 data block', '假設 block 4KB：一個 entry 只能指 4KB');
   },
   async (tok, S) => { // 896.0 就算一千個 entry 也只到 4MB
@@ -3847,8 +3883,7 @@ scene('fs-25a-inode', 'UNIX inode：12 direct + single / double / triple indirec
     cap('就算有一千個 entry', '整個 file 最大也只到 4MB：太小，塞不下');
   },
   async (tok, S) => { // 909.3 single indirect
-    glow(S.I.slots[12].m, HL); S.i1 = cube('IB', C.idx, [1.1, 0.4, 0.9], -1.9, 0.2, S.I.slots[12].z * 0.5, 2);
-    seg(V3(-4.75, 0.25, S.I.slots[12].z), V3(-2.45, 0.25, S.I.slots[12].z * 0.5), '#c08a1f');
+    glow(S.I.slots[12].m, HL); S.i1 = ibChain(S.I.slots[12].z, 1);
     txt(S.c0, 'single indirect：多一層 index block');
     cap('塞不下就用 multi-level：single indirect', '這個 pointer 指到的不是 data，而是 index block');
   },
@@ -3858,13 +3893,13 @@ scene('fs-25a-inode', 'UNIX inode：12 direct + single / double / triple indirec
   },
   async (tok, S) => { // 953.0 超過 4MB：double
     glow(S.I.slots[13].m, HL);
-    for (let j = 0; j < 2; j++) cube('', C.idx, [1.1, 0.4, 0.9], -1.9 + j * 2.3, 0.2, S.I.slots[13].z * 0.5, 2);
+    ibChain(S.I.slots[13].z, 2);
     txt(S.c0, 'double indirect：two level → 1024² × 4KB = 4GB');
     cap('超過四個 MB 還不夠，就用 double', 'two level：看從哪個 pointer 開始找，就知道值是 data 還是 index');
   },
   async (tok, S) => { // 987.4 triple
     glow(S.I.slots[14].m, HL);
-    for (let j = 0; j < 3; j++) cube('', C.idx, [1.1, 0.4, 0.9], -1.9 + j * 2.3, 0.2, S.I.slots[14].z * 0.5, 2);
+    ibChain(S.I.slots[14].z, 3);
     txt(S.c0, 'triple indirect：1024³ × 4KB = 4TB');
     cap('以此類推到 triple', '可存的檔案大小又更大');
   },
@@ -3882,12 +3917,12 @@ scene('fs-25a-inode', 'UNIX inode：12 direct + single / double / triple indirec
     cap('trade-off 是 size：這裡有 12 個 entry', '每個 4KB → 只能到 48KB，很小的檔案');
   },
   async (tok, S) => { // 1042.3 single：再多 4MB
-    S.cap.push(tag('+4MB', 'ptr alt', -3.6, 0.2, S.I.slots[12].z));
+    S.cap.push(tag('+4MB', 'ptr alt', 4.8, 0.2, S.I.slots[12].z));
     txt(S.c0, '48KB + 4MB 以內：只用前兩部分');
     cap('超過就用 single indirect：光這裡就 4MB', '總共還要加上 48KB');
   },
   async (tok, S) => { // 1062.3 double 4GB、triple 4TB
-    S.cap.push(tag('+4GB', 'ptr alt', -3.6, 0.2, S.I.slots[13].z)); S.cap.push(tag('+4TB', 'ptr alt', -3.6, 0.2, S.I.slots[14].z));
+    S.cap.push(tag('+4GB', 'ptr alt', 4.8, 0.2, S.I.slots[13].z)); S.cap.push(tag('+4TB', 'ptr alt', 4.8, 0.2, S.I.slots[14].z));
     txt(S.c0, '最大 = 48KB + 4MB + 4GB + 4TB');
     cap('再不夠長到 4GB', '最後一層就是 4TB：整顆 disk 也才 TB 級');
   },
@@ -3906,14 +3941,14 @@ scene('fs-25a-freekinds', 'Free-space management：就是三種配置方式', TO
     cap('做法可以分成四種', '後面三個名字看起來不一樣，其實不用特別看');
   },
   async (tok, S) => { // 1144.3 linked list = linked allocation
-    S.L = []; for (let k = 1; k < FREE0.length; k++) S.L.push(seg(gp(FREE0[k - 1], 0.15), gp(FREE0[k], 0.15), '#2fc092'));
-    S.h = tag('head', 'ptr alt', gp(2).x, 0.9, gp(2).z);
+    S.L = []; for (let k = 1; k < FREE0.length; k++) S.L.push(link(FREE0[k - 1], FREE0[k], '#2fc092'));
+    num(2, 8, 17, 25); S.h = tag('head', 'ptr alt', gp(2).x, 1.1, gp(2).z);
     txt(S.t, 'Linked list = linked allocation');
     cap('linked list 就是 linked allocation', '每個空塊存下一個空塊');
   },
   async (tok, S) => { // 1146.2 grouping = linked index
     S.L.forEach(kill); remove(S.h);
-    S.g = tag('block 2 存：3,4,5,8,9,10,11,12,13 → 下一組', 'ptr alt', 0, 0.9, 2.9);
+    S.g = tag('block 2 存：3,4,5,8,9,10,11,12,13 → 下一組', 'ptr alt', 0, 0.3, 3.0);
     txt(S.t, 'Grouping = linked index');
     cap('grouping 指的就是 linked index 的做法', '第一個空塊存 n 個空塊的位址（課本）');
   },
@@ -3941,11 +3976,11 @@ scene('fs-25a-bitvec', 'Bit vector：一個 block 一個 bit', TOP, [
     cap('把整個 partition 的空間', '一個 file system 管一個 partition 的 data block');
   },
   async (tok, S) => { // 1240.5 一個 bit 表示有沒有空
-    S.bl = []; for (let i = 0; i < 32; i++) { const p = gp(i, 0.6); S.bl.push(tag('?', 'idx', p.x + 0.2, 0.6, p.z - 0.15)); }
+    S.bl = bitsOn(false);
     cap('每個 block 只要知道有沒有用到', '用一個 bit 表示：多少 block 就多少 bit');
   },
   async (tok, S) => { // 1249.6 0 = free、1 = occupied
-    for (let i = 0; i < 32; i++) { txt(S.bl[i], FREE0.includes(i) ? '0' : '1'); S.bl[i].element.className = 'lab-label ' + (FREE0.includes(i) ? 'ptr alt' : 'idx'); }
+    for (let i = 0; i < 32; i++) setBit(S.bl[i], i);
     let s = ''; for (let i = 0; i < 32; i++) { s += FREE0.includes(i) ? 0 : 1; if (i % 8 === 7 && i < 31) s += ' '; }
     S.str = tag(s, '', 0, 0.3, 2.9); Object.assign(S.str.element.style, MONO);
     cap('周老師：0 當作 free、1 是 occupied', '（恐龍書慣例相反：1 = free）');
@@ -3981,7 +4016,7 @@ scene('fs-25a-bitvec', 'Bit vector：一個 block 一個 bit', TOP, [
 scene('fs-25a-nearest', '為什麼要知道所有 free block：連續的 0、最近的空位', TOP, [
   async (tok, S) => { // 1347.0 為什麼要一次知道所有 0？
     diskGrid(); for (let i = 0; i < 32; i++) if (!FREE0.includes(i)) blk(i, '', C.other);
-    for (let i = 0; i < 32; i++) { const p = gp(i, 0.6); tag(FREE0.includes(i) ? '0' : '1', FREE0.includes(i) ? 'ptr alt' : 'idx', p.x + 0.2, 0.6, p.z - 0.15); }
+    bitsOn();
     S.t = ttl('為什麼要知道所有 0 的位置？');
     cap('不是隨便找一個有空的位置就好嗎？', '為什麼要一次知道所有 0 的位置');
   },
@@ -3989,6 +4024,7 @@ scene('fs-25a-nearest', '為什麼要知道所有 free block：連續的 0、最
     S.cur = tag('▼', 'ptr alt', 0, 1, 0); let run = 0, hit = -1;
     for (let i = 0; i < 32; i++) { cursorAt(S.cur, i); run = FREE0.includes(i) ? run + 1 : 0; await wt(tok, 60); if (run === 6) { hit = i; break; } }
     for (let k = hit - 5; k <= hit; k++) blk(k, '', C.free, 0, 0, 1.5);
+    num(8, 13);
     txt(S.t, '連續 6 個 0：block 8–13（示意）');
     cap('contiguous 不能隨便找，要連續的 0', 'bit vector 一次就找出有幾個連續的 0');
   },
@@ -3999,7 +4035,7 @@ scene('fs-25a-nearest', '為什麼要知道所有 free block：連續的 0、最
     cap('不管什麼做法', '都希望同一個 file 放在相近的 physical location');
   },
   async (tok, S) => { // 1410.8 要知道哪些臨近有空位
-    S.tg = tag('目標附近有哪些空位？', 'ptr', gp(20).x, 1.4, gp(20).z);
+    num(20); cursorAt(S.cur, 20); S.tg = tag('目標附近有哪些空位？', 'ptr', gp(20).x, 0.3, 2.9);
     cap('要知道哪些臨近的有空位', '不是一個 linked list 就能解決：要有 0101');
   },
   async (tok, S) => { // 1424.0 load 一塊範圍
@@ -4014,7 +4050,7 @@ scene('fs-25a-nearest', '為什麼要知道所有 free block：連續的 0、最
     cap('file system 常要：給一個 position', '很快 return 離它最近的 0 在哪');
   },
   async (tok, S) => { // 1482.0 再加：大小至少某個 size
-    blk(17, '', C.idx, 0, 0, 1.5); blk(18, '', C.idx, 0, 0, 1.5);
+    blk(17, '', C.idx, 0, 0, 1.5); blk(18, '', C.idx, 0, 0, 1.5); num(17, 18);
     cap('甚至多一個 condition：最近而且至少某個 size', '這裡：17–18（示意）');
   },
   async (tok, S) => { // 1497.2 其他做法要改，bit vector 不用
@@ -4025,7 +4061,8 @@ scene('fs-25a-nearest', '為什麼要知道所有 free block：連續的 0、最
 
 scene('fs-25a-summary', '考試重點：算 I/O 次數；FS 就是兩層 mapping', [[0, 5.5, 12], [0, 2, 0]], [
   async (tok, S) => { // 1515.4 圖：linked list、grouping、counting
-    hd('Linked list ／ Grouping ／ Counting：跟之前一樣', 0, 5.6);
+    frameHold(-6, -1.8, -0.5, 6, 6.6, 1.2); // the chart arrives later: frame for it now
+    S.h = hd('Linked list ／ Grouping ／ Counting：跟之前一樣', 0, 6.0);
     cap('圖稍微看一下就好', 'linked list、grouping、counting 就是之前那幾種管理方式');
   },
   async (tok, S) => { // 1529.5 章節後半很重要
@@ -4035,26 +4072,29 @@ scene('fs-25a-summary', '考試重點：算 I/O 次數；FS 就是兩層 mapping
     cap('還要思考不同的 allocation 方式', '對不同 I/O pattern 會產生多少 I/O request');
   },
   async (tok, S) => { // 1561.0 10 個 block 的檔案，讀第 10 塊第 3 byte
-    note('檔案 10 個 block，讀第 10 個 block 的第 3 個 byte：幾次 I/O？', 0, 4.8);
+    S.q = note('檔案 10 個 block，讀第 10 個 block 的第 3 個 byte：幾次 I/O？', 0, 5.1); S.ch = [];
     const items = [['Contiguous', 1, 'start + 9'], ['Linked', 10, '前 9 塊都要讀'], ['FAT（在 memory）', 1, '查表免 I/O'], ['Indexed', 2, 'index + data']];
     for (let i = 0; i < items.length; i++) {
       const [n, v, why] = items[i]; const x = -4.5 + i * 3;
       const b = cube(String(v), i === 1 ? C.bad : C.free, [1.2, 1, 1.2], x, 0, 0); b.scale.y = 0.01;
-      tag(n, 'ptr', x, 0.1, 1.4); tag(why, 'idx', x, 0.1, 2.0);
+      S.ch.push(b, tag(n, 'ptr', x, -0.25, 1.0), tag(why, 'idx', x, -0.95, 1.0));
       await anim(tok, 400, (t) => { b.scale.y = Math.max(0.01, v * 0.35 * t); b.position.y = b.scale.y / 2; });
     }
-    sm('（示意：假設 FCB 已在 memory、index block 不在 memory）', 0, 0.1, 2.6);
+    S.ch.push(sm('（示意：假設 FCB 已在 memory、index block 不在 memory）', 0, -1.6, 1.0));
     cap('例：檔案大小 10 個 block，讀第 10 塊的第 3 個 byte', '用各種方式串起來，各要幾次 I/O？');
   },
   async (tok, S) => { // 1585.7 名字很像要分清楚
     cap('這些名字有些類似', 'linked、linked index、multi-level……要分清楚');
   },
   async (tok, S) => { // 1599.8 FS 最重要：path → inode
-    good('① file path → inode（FCB）', -2.4, 6.4);
+    gone(S.ch, S.q, S.h);
+    S.a = bx('file path', FC.sky, -4.6, 2.6, 0, 2.2, 0.8, 0.8); S.b = bx('inode（FCB）', FC.lilac, 0, 2.6, 0, 2.6, 0.8, 0.8);
+    lk(V3(-3.4, 2.6), V3(-1.4, 2.6), '#c08a1f'); good('① namespace：path → inode', -2.4, 4.0);
     cap('file system 最重要的就是 mapping', '第一：namespace，一個 file path 對到 inode（FCB）');
   },
   async (tok, S) => { // 1619.5 FCB → physical location
-    good('② FCB 裡的 location → physical location', 2.4, 6.4);
+    S.c = bx('physical block', FC.orange, 4.6, 2.6, 0, 2.4, 0.8, 0.8);
+    lk(V3(1.4, 2.6), V3(3.3, 2.6), '#c08a1f'); good('② FCB 裡的 location → physical location', 2.4, 1.2);
     cap('第二：FCB 裡存的 file location', '怎麼 map 到 physical location：就是這兩塊');
   },
 ]);
