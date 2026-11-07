@@ -21,6 +21,13 @@ export default function (ctx) {
   const C = { white: '#f4efe4', gray: '#b9b2a6', black: '#55504a', edge: '#a8987c', hot: '#e8b02a', tree: '#2f7fd0', back: '#d64545', dim: '#ddd2bd', ok: '#2fc092', q: '#efe3c8', pq: '#e6c36a', purple: '#9b7ef4' };
   const MONO = { whiteSpace: 'pre', fontFamily: 'ui-monospace, SFMono-Regular, Consolas, monospace', fontSize: '11px', fontWeight: '600' };
   const fmt = (x) => (x === INF ? '∞' : x === -INF ? '−∞' : x < 0 ? '−' + Math.abs(x) : String(x));
+  // an edge card's label: the weight with the edge's name in small type under it (one label, so the two never collide)
+  function cardL(w, name) {
+    const l = lab.label(fmt(w) + name, 'val');
+    l.element.innerHTML = fmt(w) + '<br><span style="font-size:9px;font-weight:600;opacity:.75">' + name + '</span>';
+    Object.assign(l.element.style, { lineHeight: '1.05', textAlign: 'center' });
+    return l;
+  }
 
   // ───────────────────────── 圖 ─────────────────────────
   // edges: [u, v, w, bend?]
@@ -28,7 +35,7 @@ export default function (ctx) {
     video: { title: '影片：s, a, b, c（無向）', directed: false, names: ['s', 'a', 'b', 'c'],
       pos: [[-4.5, 0], [-0.5, -2.6], [-0.5, 2.6], [4.2, 0]], edges: [[0, 1, 1], [0, 2, 3], [1, 2, 1], [1, 3, 10], [2, 3, 4]] },
     l15: { title: 'L15：S、A～F', directed: true, names: ['S', 'A', 'B', 'C', 'D', 'E', 'F'],
-      pos: [[-5, 0], [-2.2, -2.3], [-2.2, 2.3], [0.8, 0], [0.8, 2.6], [1.8, -2.8], [4.8, 0.2]],
+      pos: [[-5, 0], [-2.2, -2.3], [-2.2, 2.3], [0.5, -0.1], [1.9, 2.7], [1.8, -2.8], [4.8, 0.2]], // C and D offset: their labels do not stack on the D → C edge
       edges: [[0, 1, 1], [0, 2, 2], [1, 3, 5], [1, 5, 2], [2, 4, 1], [4, 3, 2], [3, 5, 1], [4, 6, 5], [5, 6, 3]] },
     tri: { title: 'L16：s, a, b', directed: true, names: ['s', 'a', 'b'], pos: [[-4, 0], [0, -2.4], [3.6, 0.6]], edges: [[0, 1, 1], [0, 2, 3], [1, 2, 1]] },
     dag: { title: 'L16 DAG（CLRS 圖 24.5）', directed: true, names: ['r', 's', 't', 'x', 'y', 'z'],
@@ -40,7 +47,7 @@ export default function (ctx) {
     neg: { title: '負邊反例', directed: true, names: ['s', 'a', 'b', 'c'],
       pos: [[-4.5, 0], [0, -2.4], [0, 2.4], [4.5, -1.2]], edges: [[0, 1, 2], [0, 2, 3], [2, 1, -2], [1, 3, 1]] },
     bari7: { title: 'Abdul Bari：7 頂點', directed: true, names: ['1', '2', '3', '4', '5', '6', '7'],
-      pos: [[-5, 0], [-1.8, -2.8], [-1.8, 0], [-1.8, 2.8], [1.8, -2.2], [1.8, 2.2], [5, 0]],
+      pos: [[-5, 0.4], [-1.2, -2.5], [-2.4, 0.4], [-1.2, 3.3], [2.0, -1.8], [2.0, 2.6], [5, 0.4]], // 2, 3, 4 staggered; top row clear of the edge cards,
       edges: [[0, 1, 6], [0, 2, 5], [0, 3, 5], [1, 4, -1], [2, 1, -2], [2, 4, 1], [3, 2, -2], [3, 5, -1], [4, 6, 3], [5, 6, 3]] },
     bari4: { title: 'Abdul Bari：4 頂點（倒序邊）', directed: true, names: ['1', '2', '3', '4'],
       pos: [[-4.5, 0], [0, -2.6], [4.5, 0], [0, 2.6]], edges: [[2, 1, -10], [3, 2, 3], [0, 3, 5], [0, 1, 4]] },
@@ -70,10 +77,18 @@ export default function (ctx) {
     lab.clear(); controls(''); lab.frameCamera(cam, look);
   }
   function tag(text, cls, x, y, z) { const l = lab.label(text, cls || ''); l.position.set(x, y, z); lab.world.add(l); return l; }
+  // An invisible box over the area a scene will use: the stage's auto framing measures it from the first step,
+  // so the camera neither zooms in on the first small thing nor puts the top row under the caption (as in dm-8.js).
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
   const txt = (l, t) => { l.element.textContent = t; };
   function code(lines, x, zTop, dz = 0.5) {
-    const w = Math.max(...lines.map((s) => s.length));
-    const ls = lines.map((s, i) => { const l = tag(s.padEnd(w, ' '), '', x, 0.3, zTop + i * dz); Object.assign(l.element.style, MONO); return l; });
+    // one upright panel: all lines at the same x / z, so the engine spreads them evenly and they never overlap
+    const w = Math.max(...lines.map((s) => s.length)), mid = (lines.length - 1) / 2;
+    const ls = lines.map((s, i) => { const l = tag(s.padEnd(w, ' '), '', x, 0.3 + (mid - i) * 0.3, zTop + mid * dz); Object.assign(l.element.style, MONO); l.element.style.opacity = '0.01'; return l; });
+    setTimeout(() => ls.forEach((l) => { if (l.element.style.opacity === '0.01') l.element.style.opacity = ''; }), 1200); // shown once the engine has spread the lines
     return { ls, hl(i) { ls.forEach((l, k) => { l.element.className = 'lab-label' + (k === i ? ' ptr alt' : ''); }); } };
   }
   function selectHtml(id, pairs, val) { return '<select id="' + id + '">' + pairs.map(([v, t]) => '<option value="' + v + '"' + (String(v) === String(val) ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>'; }
@@ -84,7 +99,7 @@ export default function (ctx) {
   let GR = null;
   const nm = (i) => GR.G.names[i];
   function buildGraph(G, o = {}) {
-    const sc = o.scale || 1, dx = o.dx || 0, dz = o.dz || 0, ns = o.ns || 1;
+    const sc = o.scale || 1, sz = o.sz || sc, dx = o.dx || 0, dz = o.dz || 0, ns = o.ns || 1;
     const gr = { G, n: G.names.length, nodes: [], edges: [], directed: !!G.directed, ns };
     GR = gr;
     G.names.forEach((name, i) => {
@@ -94,9 +109,9 @@ export default function (ctx) {
       mesh.add(lab.label(name, 'val'));
       const top = lab.label('', 'ptr'); top.position.set(0, 0.95, 0); top.element.style.display = 'none'; mesh.add(top);
       const bot = lab.label('', 'idx'); bot.position.set(0, 0, 0.78 * ns + 0.1); bot.element.style.display = 'none'; mesh.add(bot);
-      const home = V(G.pos[i][0] * sc + dx, 0.25, G.pos[i][1] * sc + dz);
+      const home = V(G.pos[i][0] * sc + dx, 0.25, G.pos[i][1] * sz + dz);
       mesh.position.copy(home);
-      if (!o.noDrop) mesh.position.y = 4 + Math.random();
+      if (!o.noDrop) mesh.position.y = 1.5 + Math.random() * 0.4; // low drop: labels stay in the picture while nodes land
       const b = lab.addBody(mesh);
       if (!o.noDrop) lab.dropTo(b, home);
       gr.nodes.push({ mesh, b, top, bot, home });
@@ -168,7 +183,7 @@ export default function (ctx) {
   function nodeNote(i, text) { const t = GR.nodes[i].bot; t.element.style.display = text ? '' : 'none'; t.element.textContent = text || ''; }
   function makeStrip(x0, z, title, gap = 1.05) {
     const st = { items: new Map() };
-    if (title) tag(title, 'idx', x0 - 0.95, 0.3, z);
+    if (title) { const t = tag(title, 'idx', x0 - gap * 0.5 - 0.15, 0.3, z); if (t.center) t.center.set(1, 0.5); } // title ends just left of the first box
     st.set = (list) => {
       const keep = new Set(list.map((it) => it.key));
       for (const [k, b] of st.items) if (!keep.has(k)) { lab.flyAway(b, V(0, 6, -2)); st.items.delete(k); }
@@ -178,7 +193,7 @@ export default function (ctx) {
         if (!b) {
           const m = lab.box(it.color || C.q, [gap * 0.9, 0.5, 0.72]);
           m.userData.l = lab.label(it.text, 'val'); m.add(m.userData.l);
-          m.position.copy(pos).setY(3.5);
+          m.position.copy(pos).setY(1.4);
           b = lab.addBody(m); lab.dropTo(b, pos); st.items.set(it.key, b);
         } else {
           lab.springTo(b, pos);
@@ -296,8 +311,7 @@ export default function (ctx) {
     const gap = Math.min(1.15, 11.4 / E.length);
     const blocks = E.map((e, i) => {
       const m = lab.box(C.q, [gap * 0.9, 0.45, 0.7]);
-      m.add(lab.label(fmt(e.w), 'val'));
-      const l = lab.label('(' + nm(e.u) + ',' + nm(e.v) + ')', 'idx'); l.position.set(0, 0, 0.62); m.add(l);
+      m.add(cardL(e.w, '(' + nm(e.u) + ',' + nm(e.v) + ')'));
       m.position.set(-5.7 + gap / 2 + i * gap, 0.23, -4.5); lab.world.add(m);
       return m;
     });
@@ -731,8 +745,8 @@ export default function (ctx) {
   }
   async function scGenericRelax(tok) {
     fresh([0, 12.5, 8], [0.5, 0, -0.3]);
-    buildGraph(GRAPHS.l15, { scale: 0.68, dx: 2.6, dz: -0.6 });
-    const cd = code(['Initialize：d(v) = ∞, π(v) = NIL', '          d(s) = 0', 'repeat', '  挑一條邊 (u, v)', '  Relax(u, v, w):', '    if d(v) > d(u) + w(u, v):', '      d(v) = d(u) + w(u, v)', '      π(v) = u', 'until 沒有邊能 relax'], -3.8, -3.0, 0.62);
+    buildGraph(GRAPHS.l15, { scale: 0.72, sz: 1.05, dx: 3.0, dz: -0.3 }); // graph on the right (narrow but full height), the code panel stands on the left
+    const cd = code(['Initialize：d(v) = ∞, π(v) = NIL', '          d(s) = 0', 'repeat', '  挑一條邊 (u, v)', '  Relax(u, v, w):', '    if d(v) > d(u) + w(u, v):', '      d(v) = d(u) + w(u, v)', '      π(v) = u', 'until 沒有邊能 relax'], -4.6, -3.0, 0.62);
     const d = Array(GR.n).fill(INF); d[0] = 0;
     for (let v = 0; v < GR.n; v++) nodeTag(v, fmt(d[v]));
     cd.hl(0);
@@ -931,7 +945,7 @@ export default function (ctx) {
   }
   async function scDijProof(tok) {
     fresh();
-    buildGraph(GRAPHS.clrs5);
+    buildGraph(GRAPHS.clrs5, { noDrop: true }); // fast-forwarded to S = {A, C, E}: no landing animation under the tags
     run.gen = dijkstraGen(0, {});
     let st;
     while ((st = step()) && !/Extract-Min：E/.test(st.cap)) { /* 快轉到 S = {A, C, E} */ }
@@ -1193,7 +1207,7 @@ function dGraph(drop = 3) {
   for (const k of ['s', 'a', 'b', 'c']) {
     const [x, z] = DPOS[k];
     N[k] = cube(k, DC.node, [0.85, 0.6, 0.85], x, 0.3, z, drop);
-    TG[k] = tag('', 'ptr', x, 1.25, z);
+    TG[k] = tag('', 'ptr', x, 1.6, z); // high enough to clear the cube's own name when it is lifted (explored)
   }
   for (const [u, v, w] of DEDGES) {
     const [x1, z1] = DPOS[u], [x2, z2] = DPOS[v];
@@ -1223,7 +1237,7 @@ async function dGo(tok, g, k, ms = 800) { await travel(tok, g.g, g.g.position.cl
 async function dWalk(tok, text, path, ms = 650) {
   const p = (k) => V3(DPOS[k][0], 1.0, DPOS[k][1]);
   const pk = tag(text, 'pkt', p(path[0]).x, 1.0, p(path[0]).z);
-  for (let i = 1; i < path.length; i++) await travel(tok, pk, p(path[i - 1]), p(path[i]), ms);
+  for (let i = 1; i < path.length; i++) await travel(tok, pk, p(path[i - 1]), i === path.length - 1 ? p(path[i - 1]).lerp(p(path[i]), 0.68) : p(path[i]), ms);
   return pk;
 }
 
@@ -1305,7 +1319,7 @@ FRAG.push(['dijk-init', 'Dijkstra：兩個集合與 D、P 的初始狀態', asyn
   await step(tok);                                   // 5:43 a：沒有 explored 頂點可經過
   glow(G.N.s, null); glow(G.N.a, GOLD); g.mood('wow');
   await dGo(tok, g, 'a');
-  const blk = tag('沒有 explored 頂點可以借道', 'bad', -0.6, 1.9, -2.6);
+  const blk = K.note('沒有 explored 頂點可以借道', G.N.a, 'right', 'bad'); // beside a, not on its D / P tag
   say('再看 a：要找只經過 explored 的路', '可是 explored 還是空的');
   await step(tok);                                   // 6:08 到不了 → ∞
   kill(blk); dLabel(G, 'a', Infinity, null); g.mood('sad');
@@ -1513,10 +1527,10 @@ const sbCls = (l, c) => { l.element.className = 'lab-label' + (c ? ' ' + c : '')
 
 // ── 小幫手：會走、會說話的小方塊（buddy）與沿著邊跑的封包（pkt） ──
 const sbHome = (i) => GR.nodes[i].home;
-const sbAt = (i) => V(sbHome(i).x - 0.95, 0, sbHome(i).z + 0.15);
+const sbAt = (i) => V(sbHome(i).x - 1.2, 0, sbHome(i).z + 0.9); // down-left of the node: its speech bubble stays clear of the node's labels
 function sbBuddy(x, z, s = 0.5, color = '#f4a56a', name = '') {
   const b = buddy(name, '', color, x, 0, z, s);
-  const sp = lab.label(' ', 'say'); sp.position.set(0, s + (name ? 0.85 : 0.45), 0); b.g.add(sp);
+  const sp = lab.label(' ', 'say'); sp.position.set(0, s + (name ? 1.2 : 0.45), 0); b.g.add(sp);
   b.talk = (t) => { sp.element.style.display = t ? '' : 'none'; sp.element.textContent = t || ''; };
   b.talk('');
   return b;
@@ -1525,21 +1539,21 @@ async function sbGo(tok, b, p, ms = 700) { await travel(tok, b.g, b.g.position.c
 async function sbPkt(tok, text, u, v, ms = 800) {
   const a = sbHome(u), c = sbHome(v);
   const l = tag(text, 'pkt', a.x, 1.0, a.z);
-  await travel(tok, l, V(a.x, 1.0, a.z), V(c.x, 1.0, c.z), ms);
+  await travel(tok, l, V(a.x + (c.x - a.x) * 0.2, 1.0, a.z + (c.z - a.z) * 0.2), V(a.x + (c.x - a.x) * 0.68, 1.0, a.z + (c.z - a.z) * 0.68), ms); // leaves u's labels, stops short of v's
   return l;
 }
 // 一個封包沿著一串頂點走
 async function sbWalk(tok, text, path, ms = 600) {
   const p = (k) => V(sbHome(k).x, 1.0, sbHome(k).z);
   const l = tag(text, 'pkt', p(path[0]).x, 1.0, p(path[0]).z);
-  for (let i = 0; i + 1 < path.length; i++) await travel(tok, l, p(path[i]), p(path[i + 1]), ms);
+  for (let i = 0; i + 1 < path.length; i++) await travel(tok, l, p(path[i]), i + 2 === path.length ? p(path[i]).lerp(p(path[i + 1]), 0.68) : p(path[i + 1]), ms);
   return l;
 }
 // 同時從一個頂點送封包到好幾個頂點
 async function sbFan(tok, from, tos, ms = 900) {
   const a = sbHome(from);
   const ls = tos.map((v) => ({ l: tag(nm(from) + '→' + nm(v), 'pkt', a.x, 1.0, a.z), b: sbHome(v) }));
-  await kanim(tok, ms, (u) => ls.forEach(({ l, b }) => l.position.set(a.x + (b.x - a.x) * u, 1.0, a.z + (b.z - a.z) * u)));
+  await kanim(tok, ms, (u) => ls.forEach(({ l, b }) => l.position.set(a.x + (b.x - a.x) * (0.2 + u * 0.48), 1.0, a.z + (b.z - a.z) * (0.2 + u * 0.48))));
   return ls.map((x) => x.l);
 }
 // 一顆小方塊沿著 cycle 走一圈；回傳總和
@@ -1682,6 +1696,7 @@ function sbBFEv(s, o = {}) {
 }
 function sbBFShow(tok, s, o = {}) {
   const E = GR.edges, gap = Math.min(1.15, 11.4 / E.length);
+  frameHold(-6.2, 0.2, -5.3, 6.2, 0.5, 4.7); // the card row arrives later at the back: frame for it now (no zoom jump under the caption)
   const cards = [], cc = E.map(() => C.q);
   const rt = tag('', 'ptr alt', -4.2, 0.3, 4.55);
   const b = sbBuddy(-5.7, 4.0, 0.48);
@@ -1694,11 +1709,10 @@ function sbBFShow(tok, s, o = {}) {
     if (ev.t === 'cards') {
       E.forEach((e, i) => {
         const m = lab.box(C.q, [gap * 0.9, 0.45, 0.7]);
-        m.add(lab.label(fmt(e.w), 'val'));
-        const l = lab.label(ename(e), 'idx'); l.position.set(0, 0, 0.62); m.add(l);
-        m.position.set(-5.7 + gap / 2 + i * gap, 2.6, -4.5); lab.world.add(m); cards.push(m);
+        m.add(cardL(e.w, ename(e)));
+        m.position.set(-5.7 + gap / 2 + i * gap, 1.2, -4.5); lab.world.add(m); cards.push(m);
       });
-      await kanim(tok, Math.min(700, ms), (u) => cards.forEach((m) => { m.position.y = 2.6 + (0.23 - 2.6) * u; }));
+      await kanim(tok, Math.min(700, ms), (u) => cards.forEach((m) => { m.position.y = 1.2 + (0.23 - 1.2) * u; }));
       b.talk('先列出所有邊');
       say('列出所有邊（照這個順序 relax）', E.map(ename).join('、'));
     } else if (ev.t === 'init') {
@@ -2455,9 +2469,9 @@ function fwNote() { const l = tag('', 'note', -2.6, 0.3, 3.9); l.element.style.d
 // 00:00 所有點對最短路徑；Dijkstra 跑 n 次 = O(n³)
 FRAG.push(['spbari-fw-problem', 'All pairs shortest path', async (tok) => {
   fresh();
-  buildGraph(FW4, { scale: 1.1, dx: 3.6, dz: 0.3 });
-  const b = sbBuddy(-4.8, 3.2, 0.55);
-  const bd = tag('', 'note', -3.6, 0.3, 0.2); bd.element.style.display = 'none';
+  buildGraph(FW4, { scale: 1.1, dx: 2.2, dz: 0.3 });
+  const b = sbBuddy(-5.6, 3.2, 0.55);
+  const bd = tag('', 'note', 1.5, 0.3, 0.2); bd.element.style.display = 'none'; if (bd.center) bd.center.set(0, 0.5); // the board stands right of the graph
   const board = (t) => { bd.element.style.display = ''; txt(bd, t); };
   let ps = [];
   const fan = async (s) => { ps.forEach(kill); for (let v = 0; v < 4; v++) nodeColor(v, v === s ? C.ok : C.white, v === s ? 0.4 : 0); ps = await sbFan(tok, s, [0, 1, 2, 3].filter((v) => v !== s), 900); };
@@ -2493,9 +2507,9 @@ FRAG.push(['spbari-fw-problem', 'All pairs shortest path', async (tok) => {
 // 01:34 DP：一連串決策——要不要經過中間頂點 k
 FRAG.push(['spbari-fw-idea', 'Floyd-Warshall 的決策：經過哪個中間頂點', async (tok) => {
   fresh();
-  buildGraph(FW4, { scale: 1.1, dx: 3.6, dz: 0.3 });
-  const b = sbBuddy(-4.8, 3.2, 0.55);
-  const bd = tag('', 'note', -3.6, 0.3, 0.2); bd.element.style.display = 'none';
+  buildGraph(FW4, { scale: 1.1, dx: 2.2, dz: 0.3 });
+  const b = sbBuddy(-5.6, 3.2, 0.55);
+  const bd = tag('', 'note', 1.5, 0.3, 0.2); bd.element.style.display = 'none'; if (bd.center) bd.center.set(0, 0.5); // the board stands right of the graph
   const board = (t) => { bd.element.style.display = ''; txt(bd, t); };
   let pk = null;
   await step(tok); // sequence of decisions
@@ -2880,11 +2894,10 @@ FRAG.push(['spbari-sp-bf-list', 'Bellman-Ford：列出邊、其他全部 ∞', a
   const gap = 1.15, bl = [];
   const card = async (i) => {
     const [u, v, w] = L[i];
-    const m = lab.box(C.q, [gap * 0.9, 0.45, 0.7]); m.add(lab.label(fmt(w), 'val'));
-    const l = lab.label('(' + nm(u) + ',' + nm(v) + ')', 'idx'); l.position.set(0, 0, 0.62); m.add(l);
-    const x = -5.7 + gap / 2 + i * gap; m.position.set(x, 2.6, -4.5); lab.world.add(m); bl.push(m);
+    const m = lab.box(C.q, [gap * 0.9, 0.45, 0.7]); m.add(cardL(w, '(' + nm(u) + ',' + nm(v) + ')'));
+    const x = -5.7 + gap / 2 + i * gap; m.position.set(x, 1.2, -4.5); lab.world.add(m); bl.push(m);
     edgeColor(sbE(u, v), C.hot, 1.8);
-    await kanim(tok, 600, (t) => { m.position.y = 2.6 + (0.23 - 2.6) * t; });
+    await kanim(tok, 600, (t) => { m.position.y = 1.2 + (0.23 - 1.2) * t; });
     edgeColor(sbE(u, v), w < 0 ? C.back : C.edge, w < 0 ? 1.8 : 1);
   };
   await step(tok); // another algorithm
@@ -2990,10 +3003,10 @@ function hideW(on = true) { GR.edges.forEach((e) => { if (e.lbl) e.lbl.element.s
 const showW = (e, on = true) => { if (e && e.lbl) e.lbl.element.style.visibility = on ? '' : 'hidden'; };
 function dropEdge(e) { lab.world.remove(e.group); if (e.lbl) kill(e.lbl); const i = GR.edges.indexOf(e); if (i >= 0) GR.edges.splice(i, 1); }
 // 一個小封包沿著一串頂點走，帶著它算的數字
-async function walk(tok, text, path, ms = 600) {
-  const a = hp(path[0]);
-  const pk = tag(text, 'pkt', a.x, 1.0, a.z);
-  for (let i = 1; i < path.length; i++) await travel(tok, pk, hp(path[i - 1]), hp(path[i]), ms);
+async function walk(tok, text, path, ms = 600, y = 1.0) {
+  const a = hp(path[0], y);
+  const pk = tag(text, 'pkt', a.x, y, a.z);
+  for (let i = 1; i < path.length; i++) await travel(tok, pk, hp(path[i - 1], y), i === path.length - 1 ? hp(path[i - 1], y).lerp(hp(path[i], y), 0.68) : hp(path[i], y), ms);
   return pk;
 }
 // relax 一條邊：封包帶著 d(u) + w 走過去，比較後才改數字（一次一條）
@@ -3004,7 +3017,7 @@ function relaxer(d, par, o = {}) {
     if (pk) { kill(pk); pk = null; }
     const e = smE(u, v); edgeColor(e, C.hot, 1.8);
     const sum = fmt(d[u]) + (e.w < 0 ? ' − ' + Math.abs(e.w) : ' + ' + e.w);
-    pk = await walk(tok, sum, [u, v], o.ms || 650);
+    pk = await walk(tok, sum, [u, v], o.ms || 650, o.y || 1.0);
     const nd = d[u] + e.w, old = d[v];
     if (nd < old) {
       if (par && par[v] >= 0) { const pe = smE(par[v], v); if (pe && pe !== e) edgeColor(pe, C.dim, 1); }
@@ -3322,6 +3335,7 @@ FRAG.push(['spmit1-delta-def', 'L15：δ(u, v) 的定義', async (tok) => {
 // 17:56 S、A～F 手動降 d 值（內建 sp-relax-s-af 的跟講版）
 FRAG.push(['spmit1-saf', 'L15：S、A～F 手動降 d 值', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
+  frameHold(-6.6, 0.2, -3.8, 6.6, 0.5, 4.0); // the graph arrives at step 2: frame for it from the start (no zoom jump)
   const g = guide(-6.2, 3.4);
   await step(tok);                                   // @1076.5 let's look at an example
   const sb = tag('來看一個例子：一步一步把數字降下來', 'say', -6.2, 1.7, 3.4);
@@ -3441,14 +3455,14 @@ FRAG.push(['spmit1-pred', 'L15：predecessor π 與回推路徑', async (tok) =>
   await step(tok);                                   // @1534.0 at E: π(E) points to C
   d[5] = 7; nodeTag(5, '7'); nodeNote(5, 'π = C'); edgeColor(smE(3, 5), C.tree, 2);
   nodeColor(5, C.hot, 0.4);
-  await goTo(tok, g, 3.0, -3.8, 700);
-  const bk = tag('π(E) = C', 'pkt', hp(5).x, 1.0, hp(5).z);
+  await goTo(tok, g, 3.6, -4.0, 700);
+  const fE = K.flow(GR.nodes[5].mesh, GR.nodes[3].mesh, 'π(E) = C', { cls: 'pkt' }); // the predecessor pointer, drawn as an arrow
   say('站在 E：π(E) 指向 C', '假設 E 這時是從 C 來的（6 + 1 = 7）');
   await step(tok);                                   // @1550.2 π(C) points to A
-  await travel(tok, bk, hp(5), hp(3), 600); txt(bk, 'π(C) = A'); nodeColor(3, C.hot, 0.4);
+  const fC = K.flow(GR.nodes[3].mesh, GR.nodes[1].mesh, 'π(C) = A', { cls: 'pkt' }); nodeColor(3, C.hot, 0.4);
   say('再看 π(C)：指向 A', '一路往回走…');
   await step(tok);                                   // @1554.0 finally π(E) = A, π(A) = S
-  kill(bk); nodeColor(5, C.white, 0); nodeColor(3, C.white, 0);
+  fE.kill(); fC.kill(); nodeColor(5, C.white, 0); nodeColor(3, C.white, 0);
   edgeColor(smE(3, 5), C.dim, 1);
   d[5] = 3; nodeTag(5, '3'); nodeNote(5, 'π = A');
   smPath([0, 1, 5], C.hot, 2.4);
@@ -3609,8 +3623,8 @@ FRAG.push(['spmit1-negcyc', 'L15：負權重 cycle', async (tok) => {
 // 37:30 通用結構：relaxation（內建 sp-generic-relax 的跟講版）
 FRAG.push(['spmit1-generic', 'L15：通用結構——一直挑邊 relax', async (tok) => {
   fresh([0, 12.5, 8], [0.5, 0, -0.3]);
-  buildGraph(GRAPHS.l15, { scale: 0.68, dx: 2.6, dz: -0.6 });
-  const cd = code(['Initialize：for v ∈ V：', '  d(v) = ∞', '  π(v) = NIL', 'd(s) = 0', 'repeat', '  挑一條邊 (u, v)', '  Relax(u, v, w):', '    if d(v) > d(u) + w(u, v):', '      d(v) = d(u) + w(u, v)', '      π(v) = u', 'until 每條邊 d(v) ≤ d(u) + w(u, v)'], -3.8, -3.2, 0.6);
+  buildGraph(GRAPHS.l15, { scale: 0.72, sz: 1.05, dx: 3.0, dz: -0.3 }); // graph on the right (narrow but full height), the code panel stands on the left
+  const cd = code(['Initialize：for v ∈ V：', '  d(v) = ∞', '  π(v) = NIL', 'd(s) = 0', 'repeat', '  挑一條邊 (u, v)', '  Relax(u, v, w):', '    if d(v) > d(u) + w(u, v):', '      d(v) = d(u) + w(u, v)', '      π(v) = u', 'until 每條邊 d(v) ≤ d(u) + w(u, v)'], -4.6, -3.2, 0.6);
   const d = Array(7).fill(INF);
   await step(tok);                                   // @2250.7 the general structure
   say('最短路徑演算法的通用結構', '');
@@ -3630,7 +3644,7 @@ FRAG.push(['spmit1-generic', 'L15：通用結構——一直挑邊 relax', async
   cd.hl(5); edgeColor(smE(0, 1), C.hot, 1.8);
   say('repeat：挑某一條邊 (u, v)', '這裡挑 S → A');
   await step(tok);                                   // @2328.9 not specifying how
-  const how = tag('怎麼挑 → 決定是哪個演算法', 'note', -3.8, 0.3, 4.0);
+  const how = tag('怎麼挑 → 決定是哪個演算法', 'note', -4.6, 0.3, 4.0);
   say('沒規定怎麼挑', '挑法不同 = 不同的演算法');
   await step(tok);                                   // @2338.6 relax edge (u, v)
   kill(how); cd.hl(6);
@@ -3653,7 +3667,7 @@ FRAG.push(['spmit1-generic', 'L15：通用結構——一直挑邊 relax', async
   cd.hl(10);
   say('一直重複，直到每條邊都滿足', 'd(v) ≤ d(u) + w(u, v)');
   await step(tok);                                   // @2456.8 assumption: no negative cycles
-  const nc = tag('前提：沒有負 cycle', 'bad', -3.8, 0.3, 4.0);
+  const nc = tag('前提：沒有負 cycle', 'bad', -4.6, 0.3, 4.0);
   say('前提：沒有負權重 cycle', 'Bellman-Ford 要用不同的結構');
   await step(tok);                                   // @2494.7 the 6 → 5 picture
   kill(nc); cd.hl(-1);
@@ -3679,7 +3693,7 @@ FRAG.push(['spmit1-generic', 'L15：通用結構——一直挑邊 relax', async
   say('什麼時候停？沒有邊能再 relax', '');
   await step(tok);                                   // @2567.0 the check is O(E)
   GR.edges.forEach((e) => edgeColor(e, C.hot, 1.4));
-  const ck = tag('檢查一次 = 看過全部 E 條邊', 'note', -3.8, 0.3, 4.0);
+  const ck = tag('檢查一次 = 看過全部 E 條邊', 'note', -4.6, 0.3, 4.0);
   say('檢查停止條件本身就要 O(E)', '要看過每一條邊');
   await step(tok);                                   // @2596.6 brute force: works, but slow
   GR.edges.forEach((e) => edgeColor(e, C.edge, 1));
@@ -4118,7 +4132,7 @@ FRAG.push(['spmit1-dagrun', 'L16：DAG 例子逐步 relax', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
   const g = guide(-6.2, 3.6);
   const d = Array(6).fill(INF);
-  const R = relaxer(d, null);
+  const R = relaxer(d, null, { y: 2.0 }); // packets ride above the row of nodes and their tags
   await step(tok);                                   // @1336.0 a DAG like this
   buildGraph(SM.dagv); hideW();
   say('來看一個 DAG', '');
@@ -4347,14 +4361,14 @@ FRAG.push(['spmit1-dij-code', 'L16：Dijkstra pseudocode', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
   buildGraph(GRAPHS.tri, { scale: 0.6, dx: 3.6, dz: -1.4, noDrop: true });
   const cd = code(['Dijkstra(G, w, s):', '  Initialize(G, s)', '  S = ∅', '  Q = V[G]', '  while Q ≠ ∅:', '    u = Extract-Min(Q)', '    S = S ∪ {u}', '    for v in Adj[u]:', '      Relax(u, v, w)'], -3.6, -3.0, 0.62);
-  cd.ls.forEach((l) => { l.element.style.visibility = 'hidden'; });
+  cd.ls.forEach((l) => { l.element.style.opacity = '0.02'; }); // nearly invisible (not hidden): the engine keeps the panel's lines spread
   const d = [INF, INF, INF], inS = [false, false, false];
   const R = relaxer(d, null);
   const sT = tag('S = { }', 'ptr alt', 3.6, 0.3, 2.4), qT = tag('Q = { s, a, b }', 'ptr', 3.6, 0.3, 3.2);
   sT.element.style.visibility = 'hidden'; qT.element.style.visibility = 'hidden';
   const showQ = () => { txt(sT, 'S = { ' + [0, 1, 2].filter((v) => inS[v]).map(nm).join(', ') + ' }'); txt(qT, 'Q = { ' + [0, 1, 2].filter((v) => !inS[v]).map((v) => nm(v) + ' ' + fmt(d[v])).join(', ') + ' }'); };
   await step(tok);                                   // @2009.8 the pseudocode for Dijkstra
-  cd.ls.forEach((l) => { l.element.style.visibility = ''; });
+  cd.ls.forEach((l) => { l.element.style.opacity = ''; });
   say('Dijkstra 的 pseudocode', '');
   await step(tok);                                   // @2040.0 G graph, w weights, s start
   cd.hl(0);
@@ -4673,11 +4687,11 @@ FRAG.push(['spmit1-three-problems', 'L18：三種最短路徑問題', async (tok
 // 04:25 優化一：取出 t 就停
 FRAG.push(['spmit1-dij-stop', 'L18：取出 t 就停的 Dijkstra', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
-  buildGraph(GRAPHS.clrs5, { scale: 0.62, dx: 3.2, dz: -0.6, noDrop: true });
+  buildGraph(GRAPHS.clrs5, { scale: 0.66, sz: 1.0, dx: 3.2, dz: -0.4, noDrop: true }); // narrow but full height beside the code panel
   const lines = ['Dijkstra(G, w, s, t):', '  Initialize：d(s) = 0，其他 ∞', '  Q = V', '  while Q ≠ ∅:', '    u = Extract-Min(Q)', '                        ', '    for v in Adj[u]:', '      Relax(u, v, w)'];
-  const cd = code(lines, -4.0, -2.8, 0.62);
+  const cd = code(lines, -4.4, -2.8, 0.62);
   const d = Array(5).fill(INF), inS = Array(5).fill(false);
-  const qT = tag('', 'ptr', -4.2, 0.3, 3.4);
+  const qT = tag('', 'ptr', -4.4, 0.3, 3.4);
   const showQ = () => txt(qT, 'Q：' + [0, 1, 2, 3, 4].filter((v) => !inS[v]).map((v) => nm(v) + ' ' + fmt(d[v])).join('  '));
   const R = relaxer(d, null, { pi: true, after: showQ });
   const par = null;
@@ -5462,7 +5476,7 @@ function s2Bar(text, color, h, x, z, w = 0.9) { const m = cube('', color, [w, Ma
 // 小探：會說話、會走路的小幫手（talk 顯示對話泡泡、go 走到別處）
 function s2Pal(x, z, s = 0.6, name = '小探', col = S2PAL) {
   const b = buddy(name, '', col, x, 0, z, s);
-  const bub = ctx.lab.label('', 'say'); bub.position.set(0, s + (name ? 1.0 : 0.6), 0); bub.element.style.display = 'none'; b.g.add(bub);
+  const bub = ctx.lab.label('', 'say'); bub.position.set(0, s + (name ? 1.35 : 0.6), 0); bub.element.style.display = 'none'; b.g.add(bub);
   b.talk = (t) => { bub.element.style.display = t ? '' : 'none'; bub.element.textContent = t || ''; };
   b.go = (tok, x2, z2, ms = 700) => travel(tok, b.g, b.g.position.clone(), V3(x2, 0, z2), ms);
   return b;
@@ -5472,7 +5486,7 @@ const s2At = (i, y = 1.0) => { const h = GR.nodes[i].home; return V3(h.x, y, h.z
 async function s2Walk(tok, text, path, ms = 450) {
   const p0 = s2At(path[0]);
   const pk = tag(text, 'pkt', p0.x, p0.y, p0.z);
-  for (let i = 1; i < path.length; i++) await travel(tok, pk, s2At(path[i - 1]), s2At(path[i]), ms);
+  for (let i = 1; i < path.length; i++) await travel(tok, pk, s2At(path[i - 1]), i === path.length - 1 ? s2At(path[i - 1]).lerp(s2At(path[i]), 0.68) : s2At(path[i]), ms);
   return pk;
 }
 
@@ -5544,6 +5558,7 @@ FRAG.push(['spmit2-bf-spec', 'L17：Bellman-Ford 要做到什麼', async (tok) =
 // 04:29 通用演算法與兩個問題：指數時間、負 cycle 永不停止
 FRAG.push(['spmit2-generic-problems', 'L17：通用演算法的兩個問題', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
+  frameHold(-6.6, 0.2, -4.6, 6.6, 0.5, 4.9); // the chain arrives at the front later: keep it above the caption
   await step(tok);                                   // 4:29 複習通用演算法
   const cd = code(['Initialize：d(v) = ∞，π(v) = NIL', '          d(s) = 0', 'repeat', '  選一條邊 (u, v)', '  Relax(u, v, w)', 'until 沒有邊能 relax'], -3.4, -4.2, 0.55);
   cd.hl(-1);
@@ -5657,7 +5672,8 @@ const BF_CODE = ['Bellman-Ford(G, W, s)', '  Initialize()', '  for i = 1 to |V| 
 FRAG.push(['spmit2-bf-code', 'L17：Bellman-Ford 的程式', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
   await step(tok);                                   // 11:29 Bellman-Ford：四行程式
-  const cd = code(BF_CODE, -2.8, -4.3, 0.5);
+  frameHold(-6.6, 0, -4.8, 6.6, 2.4, 4.6); // the upright panel's full height is in the picture from the start (not under the caption)
+  const cd = code(BF_CODE, -2.6, -4.3, 0.5); // upright panel at the back; the rounds of edges lie in front
   cd.hl(-1);
   const g = s2Pal(5.6, 3.4, 0.55);
   g.mood('happy'); g.talk('只有四行！');
@@ -5674,10 +5690,10 @@ FRAG.push(['spmit2-bf-code', 'L17：Bellman-Ford 的程式', async (tok) => {
   g.talk('|V| − 1 輪');
   say('做很多輪：i = 1 到 |V| − 1', '|V| = 頂點數');
   await step(tok);                                   // 12:48 每一輪：每條邊都 relax
-  const E = 5, zOf = (p) => -0.2 + (p - 1) * 1.15;
+  const E = 5, zOf = (p) => 1.1 + (p - 1) * 1.05;
   cd.hl(3);
-  tag('第 1 輪', 'idx', -5.4, 0.3, zOf(1));
-  for (let k = 0; k < E; k++) { cd.hl(k % 2 ? 4 : 3); cube('e' + (k + 1), '#efe3c8', [0.9, 0.4, 0.7], -3.6 + k * 1.3, 0.2, zOf(1), 2); await beat(tok, 280); }
+  tag('第 1 輪', 'idx', -4.4, 0.3, zOf(1));
+  for (let k = 0; k < E; k++) { cd.hl(k % 2 ? 4 : 3); cube('e' + (k + 1), '#efe3c8', [0.9, 0.4, 0.7], -2.6 + k * 1.3, 0.2, zOf(1), 1); await beat(tok, 280); }
   say('每一輪：每一條邊都 relax', '例：5 條邊 e1～e5，一條都不漏');
   await step(tok);                                   // 13:02 Relax 的定義
   const rl = code(['Relax(u, v, w):', '  if d[v] > d[u] + w(u, v):', '    d[v] = d[u] + w(u, v)', '    π[v] = u'], 3.6, -4.3, 0.5);
@@ -5689,13 +5705,13 @@ FRAG.push(['spmit2-bf-code', 'L17：Bellman-Ford 的程式', async (tok) => {
   say('是的話：更新 d(v)', '也設 π(v) = u');
   await step(tok);                                   // 13:48 沒有負 cycle → |V| − 1 輪後正確
   rl.hl(-1); cd.hl(2);
-  for (let p = 2; p <= 3; p++) { tag('第 ' + p + ' 輪', 'idx', -5.4, 0.3, zOf(p)); for (let k = 0; k < E; k++) { cube('e' + (k + 1), '#efe3c8', [0.9, 0.4, 0.7], -3.6 + k * 1.3, 0.2, zOf(p), 2); await beat(tok, 110); } }
+  for (let p = 2; p <= 3; p++) { tag('第 ' + p + ' 輪', 'idx', -4.4, 0.3, zOf(p)); for (let k = 0; k < E; k++) { cube('e' + (k + 1), '#efe3c8', [0.9, 0.4, 0.7], -2.6 + k * 1.3, 0.2, zOf(p), 1); await beat(tok, 110); } }
   g.mood('happy'); g.talk('沒負 cycle 就對了');
   say('沒有負 cycle：|V| − 1 輪後 d = δ', '例：|V| = 4 → 3 輪（之後證明）');
   await step(tok);                                   // 14:23 多做一輪檢查
   cd.hl(5);
-  tag('第 |V| 輪', 'ptr alt', -5.4, 0.3, zOf(4));
-  for (let k = 0; k < E; k++) { cube('e' + (k + 1), C.pq, [0.9, 0.4, 0.7], -3.6 + k * 1.3, 0.2, zOf(4), 2); await beat(tok, 200); }
+  tag('第 |V| 輪', 'ptr alt', -4.4, 0.3, zOf(4));
+  for (let k = 0; k < E; k++) { cube('e' + (k + 1), C.pq, [0.9, 0.4, 0.7], -2.6 + k * 1.3, 0.2, zOf(4), 1); await beat(tok, 200); }
   g.mood('calm'); g.talk('再看一輪');
   say('再多做一輪：第 |V| 輪', '對每條邊再看一次');
   await step(tok);                                   // 14:45 只檢查能不能 relax
@@ -5707,7 +5723,8 @@ FRAG.push(['spmit2-bf-code', 'L17：Bellman-Ford 的程式', async (tok) => {
   say('還能 relax → 回報負 cycle 存在', 'report 然後停下來');
   await step(tok);                                   // 15:11 前半計算、後半檢查
   cd.hl(-1);
-  tag('計算', 'note', 2.2, 0.3, -2.8); tag('檢查', 'note', 2.2, 0.3, -1.0);
+  // beside the panel's two halves (the panel stands upright: its lines differ in height)
+  for (const [t, i] of [['計算', 3], ['檢查', 6]]) { const p = cd.ls[i].position, l = tag(t, 'note', p.x - 3.5, p.y + (p.y - 0.3) * 1.2, p.z); if (l.center) l.center.set(1, 0.5); } // left of the panel; the engine spreads the panel's lines, so the offsets are spread too
   g.mood('happy'); g.talk('放得進一塊黑板');
   say('前半是計算，後半是檢查', '程式短到一塊黑板寫得下');
   await step(tok);                                   // 15:42 i 用在哪？
@@ -6674,6 +6691,7 @@ FRAG.push(['spmit2-r15-traffic-setup', 'R15：塞車路網：時間優先，再�
 FRAG.push(['spmit2-r15-time-expanded', 'R15：時間展開圖', async (tok) => {
   fresh([0, 12.5, 8], [0, 0, -0.3]);
   const T = 6, tc = [3, 3, 2, 1, 1], fc = 4;
+  frameHold(-6.6, 0.2, -3.8, 6.6, 0.5, 4.2); // room above the u row: it stays clear of the caption
   await step(tok);                                   // 46:15 學生：記下到達時間
   const s = s2Pal(-5.8, 3.6, 0.55, '同學', '#8fc7e8');
   s.mood('happy'); s.talk('記到達時間？');
