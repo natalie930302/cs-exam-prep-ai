@@ -135,15 +135,25 @@ export default function (ctx) {
     const A = CSALG[algKey];
     const S = A.init();
     const P = [0, 1].map((i) => { const ls = A.lines(i, 1 - i); return { name: A.names[i], lines: ls, pc: opt.startPc === 'rem' ? ls.length - 1 : opt.startPc ? opt.startPc[i] : 0, m: 0 }; });
-    const panels = P.map((p, i) => code(p.lines.map((l) => l.t), i ? 4.4 : -4.4, 6.2, 0.5, -3.4));
-    P.forEach((p, i) => tag(p.name, i ? 'ptr alt' : 'ptr', i ? 4.4 : -4.4, 6.75, -3.4));
+    // 程式碼放後層、上方；共享變數排在前面一列；中間留給房間和一句說明
+    const longest = Math.max(...P.map((p) => p.lines.length)), wide = A.pid ? 5.4 : 4.4, cdy = longest > 7 ? 0.46 : 0.5, ctop = longest > 7 ? 6.6 : 6.2;
+    const panels = P.map((p, i) => code(p.lines.map((l) => l.t), i ? wide : -wide, ctop, cdy, -3.4));
+    P.forEach((p, i) => tag(p.name, i ? 'ptr alt' : 'ptr', i ? wide : -wide, ctop + (longest > 7 ? 1.3 : 0.9), -3.4));
+    lab.frameCamera([0, 7.8, A.pid ? 15.6 : 14.8], [0, 2.7, 0]);
     const room = ghostBox('#2fc092', 2.6, 1.4, 2.0, 0, 0.7, 0.2, 0.16);
     tag('critical section', 'idx', 0, 1.6, 0.2);
     tag('remainder', 'idx', -5.0, 0, 3.9); tag('remainder', 'idx', 5.0, 0, 3.9);
     const toks = P.map((p, i) => cube(p.name, PCOL[i], [0.9, 0.7, 0.9], (i ? 1 : -1) * REG.rem[0], 0.35, REG.rem[1]));
-    const vs = A.vars(S).map(([k], n, all) => { const x = (n - (all.length - 1) / 2) * 2.2; const m = cube('', '#c9b48e', [1.3, 0.6, 0.9], x, 0.3, -2.4); tag(k, 'idx', x, 0, -1.6); return m; });
+    const vs = A.vars(S).map(([k], n, all) => { const x = (n - (all.length - 1) / 2) * 1.75; const m = cube('', '#c9b48e', [1.3, 0.6, 0.9], x, 0.3, 2.9); tag(k, 'idx', x, 0, 3.75); return m; });
+    let rmk = null; const rmkY = ctop - (longest - 1) * cdy - 0.75;
     const V = {
       A, S, P,
+      // 整個畫面只有一句說明，放在房間上方，換句子時改寫同一個標籤
+      note(t, cls = 'note') {
+        if (!rmk) rmk = tag(t || '', cls, 0, rmkY, 0.2);
+        txt(rmk, t || ''); rmk.element.className = 'lab-label ' + cls; rmk.element.style.visibility = t ? '' : 'hidden';
+        return rmk;
+      },
       update() {
         A.vars(S).forEach(([, v], n) => relabel(vs[n], v));
         P.forEach((p, i) => {
@@ -373,12 +383,13 @@ export default function (ctx) {
   function bbView(wrong, n = 5) {
     const S = { mutex: 1, empty: n, full: 0, buf: Array(n).fill(0), in: 0, out: 0, n, made: 0, got: 0 };
     const P = bbProcs(wrong);
-    const panels = P.map((p, i) => code(p.lines.map((l) => l.t), i ? 4.6 : -4.6, 6.0, 0.44, -3.4));
-    tag('Producer', 'ptr', -4.6, 6.6, -3.4); tag('Consumer', 'ptr alt', 4.6, 6.6, -3.4);
+    const panels = P.map((p, i) => code(p.lines.map((l) => l.t), i ? 5.6 : -5.6, 6.4, 0.38, -3.4));
+    tag('Producer', 'ptr', -5.6, 7.3, -3.4); tag('Consumer', 'ptr alt', 5.6, 7.3, -3.4);
+    lab.frameCamera([0, 7.8, 14.8], [0, 2.7, 0]);
     const slots = S.buf.map((_, k) => { ctx.tile(V3(-2.4 + k * 1.2, 0.04, 0.8), 1.05, 1.05); tag('[' + k + ']', 'idx', -2.4 + k * 1.2, 0, 1.6); return null; });
     const items = Array(n).fill(null);
-    const semC = ['mutex', 'empty', 'full'].map((k, j) => { const m = cube(k + ' = ' + S[k], '#c9b48e', [1.9, 0.6, 0.9], -2.4 + j * 2.4, 0.3, -2.8); return [k, m]; });
-    const pin = tag('in', 'ptr', -2.4, 1.0, 0.8), pout = tag('out', 'ptr alt', -2.4, 0, 2.5);
+    const semC = ['mutex', 'empty', 'full'].map((k, j) => { const m = cube(k + ' = ' + S[k], '#c9b48e', [1.9, 0.6, 0.9], -2.4 + j * 2.4, 3.0, -2.8); return [k, m]; });
+    const pin = tag('in', 'ptr', -2.4, 1.3, 0.8), pout = tag('out', 'ptr alt', -2.4, 2.0, 0.8);
     const toks = P.map((p, i) => cube(p.name, PCOL[i], [1.5, 0.6, 0.8], i ? 5.0 : -5.0, 0.3, 1.6));
     const V = {
       S, P,
@@ -976,10 +987,10 @@ export default function (ctx) {
     await beat(tok, 3200);
   }
   async function scRWSolution(tok) {
-    fresh([0, 6.5, 12.5], [0, 2.4, 0]);
+    fresh([0, 7.8, 14.8], [0, 2.7, 0]);
     const cd = code(['wait(mutex);', 'readcount++;', 'if (readcount == 1) wait(wrt);', 'signal(mutex);', '  … reading …', 'wait(mutex);', 'readcount--;', 'if (readcount == 0) signal(wrt);', 'signal(mutex);'], -3.6, 6.2, 0.46, -3);
-    tag('reader', 'ptr', -3.6, 6.75, -3);
-    code(['wait(wrt);', '  … writing …', 'signal(wrt);'], 4.2, 6.2, 0.46, -3); tag('writer', 'ptr alt', 4.2, 6.75, -3);
+    tag('reader', 'ptr', -3.6, 7.1, -3);
+    code(['wait(wrt);', '  … writing …', 'signal(wrt);'], 4.2, 6.2, 0.46, -3); tag('writer', 'ptr alt', 4.2, 7.1, -3);
     const vals = { wrt: 1, mutex: 1, readcount: 0 };
     const vc = Object.keys(vals).map((k, j) => [k, cube(k + ' = ' + vals[k], '#c9b48e', [2.2, 0.6, 1.0], -2.6 + j * 2.6, 0.3, -0.6)]);
     const upd = () => vc.forEach(([k, m]) => relabel(m, k + ' = ' + vals[k]));
@@ -1028,7 +1039,7 @@ export default function (ctx) {
     const box = ghostBox('#9b7ef4', 6, 2.2, 3, 0.8, 1.1, -0.6, 0.12);
     tag('monitor（像一個 class）', 'ptr', 0.8, 2.6, -0.6);
     cube('shared 變數', '#c9b48e', [2.0, 0.6, 1.0], -0.6, 0.3, -1.4, 2);
-    const ms = ['method A()', 'method B()', 'method C()'].map((n, k) => cube(n, '#4b9ee2', [1.6, 0.5, 0.8], 2.6, 0.25, -1.6 + k * 1.0, 2));
+    const ms = ['method A()', 'method B()', 'method C()'].map((n, k) => cube(n, '#4b9ee2', [1.6, 0.5, 0.8], 2.6, 0.25, -2.0 + k * 1.3, 2));
     say('要保護的變數 = local variable；操作 = method', '外面只能透過 method 碰它');
     await beat(tok, 3000);
     const th = [0, 1, 2].map((k) => cube('T' + k, PCOL[k], [0.7, 0.6, 0.7], -4.6, 0.3, 2.6 - k * 0.0 + k * 0, 0));
@@ -1114,6 +1125,10 @@ const idx = (t, x, y, z = 0) => tag(t, 'idx', x, y, z);
 const bx = (t, c, x, y, z = 0, w = 2.4, h = 0.6, d = 0.9, drop = 0) => cube(t, c, [w, h, d], x, y, z, drop);
 const arr = (x1, y1, x2, y2, c = '#8a7a5c', z = 0, z2 = z) => arrow(V3(x1, y1, z), V3(x2, y2, z2), c);
 const tx = (l, t) => P.txt(l, t);
+// 長程式碼一次只顯示一段（a ≤ 行 < b）；dy：其餘的行往上移，接在原本的位置
+const showPart = (c, a, b, dy = 0) => c.ls.forEach((l, k) => { P.showL(l, k >= a && k < b); if (dy) l.position.y += dy; });
+// 一句說明：同一個位置只留一個標籤，換句子就改寫；r('') 收起來
+const one = (x, y, z = 0, cls0 = 'note') => { let l = null; return (t, cls = cls0) => { if (!l) l = tag(t || '', cls, x, y, z); P.txt(l, t || ''); l.element.className = 'lab-label ' + cls; l.element.style.visibility = t ? '' : 'hidden'; return l; }; };
 const rl = (m, t) => P.relabel(m, t);
 async function slide(tok, o, x, y, z = 0, ms = 700) { const a = o.position.clone(); await travel(tok, o, a, V3(x, y, z), ms); }
 const pal = (name, v, color, x, y = 0, z = 0, s = 0.8) => buddy(name, v, color, x, y, z, s);
@@ -1122,7 +1137,7 @@ const room = (x, y, z, w, h, d, c = '#2fc092') => { const m = P.ghostBox(c, w, h
 const PCS = ['#4b9ee2', '#dd8238', '#2fc092', '#9b7ef4', '#e55a9b', '#31aab0'];
 const SC = { mem: '#c9b48e', cs: '#2fc092', entry: '#9b7ef4', rem: '#d8cfc0', bad: '#d64545', gold: '#c08a1f', paper: '#fffaf0', os: '#7d6bd6' };
 const DIM = '#3a2a00', OKG = '#0f5a3a', NOR = '#7a1010';
-const sleepy = (b, on = true) => { b.mood(on ? 'sad' : 'calm'); if (b.zz) { remove(b.zz); b.zz = null; } if (on) { b.zz = tag('zZ', 'idx', 0.5, 1.2, 0); b.g.add(b.zz); } };
+const sleepy = (b, on = true) => { b.mood(on ? 'sad' : 'calm'); if (b.zz) { remove(b.zz); b.zz = null; } if (on) { b.zz = tag('zZ', 'idx', 0.15, 1.65, 0); b.g.add(b.zz); } };
 
 // ── counter++ / counter-- at instruction level with two buddies (registers on their bellies) ──
 function raceStage(init = 5, o = {}) {
@@ -1165,8 +1180,8 @@ FRAG.push(['syn-18c-linux', 'Active / expired array：H（quantum 10）與 L（q
   fresh([0, 6.5, 13], [0, 1.2, 0]);
   const x0 = -4.2, sx = 0.022;
   await step(tok);                                   // 17 兩個 process：H 高 priority、quantum 10；L 低、200
-  const H = pal('H', 'q = 10', PCS[0], -6.4, 0, -4.6, 0.7), L = pal('L', 'q = 200', PCS[1], -3.2, 0, -4.6, 0.7);
-  H.mood('happy'); idx('priority 高', -6.4, 1.6, -4.6); idx('priority 低', -3.2, 1.6, -4.6);
+  const H = pal('H（高）', 'q = 10', PCS[0], -6.4, 0, -4.6, 0.7), L = pal('L（低）', 'q = 200', PCS[1], -3.2, 0, -4.6, 0.7);
+  H.mood('happy');
   cap('H：priority 高、quantum 10', 'L：priority 低、quantum 200，同時進系統');
   const seg = timeline(x0, sx, [['沒有 active array', -1.4], ['有 active array', 1.8]]);
   await step(tok);                                   // 43 沒有 active array：H 先做 10
@@ -1181,11 +1196,11 @@ FRAG.push(['syn-18c-linux', 'Active / expired array：H（quantum 10）與 L（q
   kill(left);
   seg(120, 130, -1.4, PCS[0], '');
   seg(130, 230, -1.4, PCS[1], 'L');
-  bad('剩下的 100 浪費掉', x0 + 160 * sx, 0, -0.5);
+  const wasted = bad('剩下的 100 浪費掉', x0 + 210 * sx, 1.0, -1.4);
   L.mood('sad');
   cap('第二個 burst 來了：H 又先做', 'L 剛才剩下的 100 就浪費掉');
   await step(tok);                                   // 76 有 active array：第一個 burst 一樣
-  seg(0, 10, 1.8, PCS[0], ''); seg(10, 110, 1.8, PCS[1], 'L 做 100');
+  remove(wasted); seg(0, 10, 1.8, PCS[0], ''); seg(10, 110, 1.8, PCS[1], 'L 做 100');
   const act = zone('active array', 3.6, 0.02, 1.2, 3.2, 1.4, '#d6efe0');
   const exp = zone('expired array', 3.6, 0.02, 3.4, 3.2, 1.4, '#e8e1d6');
   act.userData.name.position.set(5.4, 0.07, 1.2); exp.userData.name.position.set(5.4, 0.07, 3.4);   // names beside the zones
@@ -1202,10 +1217,10 @@ FRAG.push(['syn-18c-linux', 'Active / expired array：H（quantum 10）與 L（q
   glow(L.body, OKG); L.mood('happy');
   cap('scheduler 一定先從 active array 選', '所以這次 priority 低的 L 反而先做');
   await step(tok);                                   // 145 最大好處：保護 quantum 長、priority 低的程式
-  note('不只看 priority，也看 quantum 還剩多少', 0, 4.4, 0);
+  const r1 = one(0, 2.8, 0); r1('不只看 priority，也看 quantum 還剩多少');
   cap('好處：保護 quantum 長、priority 低的程式', '輪到它時，讓它把 quantum 用完');
   await step(tok);                                   // 184 solution：比較 fair
-  good('比較 fair', 3.6, 2.6, 1.2);
+  r1('比較 fair', 'good');
   cap('引入 active array 的概念', '對 low priority 的程式比較公平');
   void act; void exp;
 }]);
@@ -1363,89 +1378,92 @@ FRAG.push(['syn-18c-outcomes', 'Race 的結果可能是 4、5、6', async (tok) 
 
 FRAG.push(['syn-18c-racedef', 'Race condition 的定義與解法方向', async (tok) => {
   fresh([0, 6, 13], [0, 1.6, 0]);
+  const r1 = one(0, 2.8, 0);
   await step(tok);                                   // 830 synchronization 指的就是剛才的問題
-  hd('Synchronization 問題 = 剛才 counter 的例子', 0, 5.6);
+  r1('Synchronization 問題 = 剛才 counter 的例子', 'ptr');
   cap('synchronization 指的就是剛才這個問題', '');
   await step(tok);                                   // 841 race condition
   const mem = bx('counter', SC.mem, 0, 0.45, 0, 2.2, 0.9, 1.2, 2);
   const A = pal('P', '6', PCS[0], -4.2, 0, 1.2), B = pal('C', '4', PCS[1], 4.2, 0, 1.2);
-  hot('race condition', 0, 4.6);
+  r1('race condition', 'ptr alt');
   cap('非常相關的專有名詞：race condition', '最後的值取決於最後修改它的人');
   await step(tok);                                   // 858 last 完成的人決定值
   const p1 = pkt('6', -3.4, 1.4, 1.2); await travel(tok, p1, V3(-3.4, 1.4, 1.2), V3(0, 1.0, 0.7), 600); remove(p1); rl(mem, 'counter = 6');
   const p2 = pkt('4', 3.4, 1.4, 1.2); await travel(tok, p2, V3(3.4, 1.4, 1.2), V3(0, 1.0, 0.7), 600); remove(p2); rl(mem, 'counter = 4');
   B.mood('happy'); A.mood('sad');
-  const last = note('最後一個寫的人「贏」', 0, 2.2, 0.6);
+  r1('最後一個寫的人「贏」');
   cap('像在競爭：finish last 的人', 'determine 最後的 value');
   await step(tok);                                   // 866 synchronization 廣義；race condition 特指這種
-  gone(A, B, mem, last);
+  gone(A, B, mem); r1('');
   const z1 = zone('synchronization 問題（廣義）', 0, 0.02, -2.6, 9.0, 2.0, '#efe6d6');
   z1.userData.name.position.z = -1.35;
-  bx('race condition', SC.bad, 1.6, 0.3, -2.9, 2.8, 0.5, 0.9, 1.5);
+  const rb = bx('race condition', SC.bad, 1.6, 0.3, -2.9, 2.8, 0.5, 0.9, 1.5);
   cap('synchronization 廣義有很多狀況', 'race condition 特指「最後值看誰最後執行」');
   await step(tok);                                   // 901 prevent → synchronize 這些 process
-  good('prevent race condition → synchronize processes', 0, 6.4);
+  r1('prevent race condition → synchronize processes', 'good');
   cap('要 prevent race condition', '就要 synchronize 這些 process');
   await step(tok);                                   // 910 暴力解：disable interrupt
-  const cpu = prop('cpu', -5.8, 0, 3.4, 0.7, 'interrupt off');
-  note('暴力解：disable interrupt → non-preemptive', -2.6, 1.6, 3.4);
+  gone(rb); remove(z1);
+  const cpu = prop('cpu', 0, 0, 0, 0.9, 'interrupt off');
+  r1('暴力解：disable interrupt → non-preemptive');
   cap('第一種很暴力的方式', 'disable scheduler 的 interrupt，切成 non-preemptive');
   await step(tok);                                   // 919 使用者程式絕對不行
-  bad('user program：不行！影響整個系統', 3.2, 0.9, 3.4);
+  r1('user program：不行！影響整個系統', 'bad');
   cap('有些 OS 會這麼做，使用者程式絕對不行', '影響整個系統、也影響別的使用者');
   await step(tok);                                   // 938 OS 可以：kernel code 短、priority 高
-  good('OS kernel：code 短、priority 高 → 可以', 3.2, 0.1, 3.4);
+  r1('OS kernel：code 短、priority 高 → 可以', 'good');
   cap('OS 可以選擇這樣做', 'kernel code 通常很短、priority 本來就高');
   await step(tok);                                   // 962 一般程式：critical section problem
-  hot('一般程式的標準作法：critical section problem', 0, 7.0, -1);
+  r1('一般程式的標準作法：critical section problem', 'ptr alt');
   cap('一般程式的 standardized 作法', '定義成 critical section 問題');
-  void z1; void cpu;
+  void cpu;
 }]);
 
 FRAG.push(['syn-18c-csstruct', 'Critical section 的架構：entry / CS / exit / remainder', async (tok) => {
-  fresh([0, 6.5, 13], [0, 1.8, 0]);
+  fresh([0, 7.6, 14.8], [0, 2.5, 0]);
   let parts = [];
+  const r1 = one(2.5, 3.2, -1.8); r1('').center.set(0, 0.5);
   await step(tok);                                   // 977 critical section 其實是一個 protocol
-  hd('critical section = 一套 protocol', 0, 6.2);
+  r1('critical section = 一套 protocol', 'ptr');
   cap('critical section 其實是一個 protocol', '');
   await step(tok);                                   // 986 cooperate：大家 follow 同一套機制
   const ps = [0, 1, 2].map((k) => pal('P' + k, '', PCS[k], -5.2 + k * 1.2, 0, 3.0, 0.6));
   ps.forEach((b) => b.mood('happy'));
-  note('大家都 follow 同一套 protocol → ordering 受控制', 0, 0, 4.6);
+  r1('大家都 follow 同一套 protocol');
   cap('要 cooperate，大家都 follow 同樣的機制', '只要都遵守，ordering 就受到 control');
   await step(tok);                                   // 1013 定義：N 個 processes
-  idx('N 個 processes', -4.0, 1.9, 3.0);
+  r1('N 個 processes');
   cap('問題的定義：N 個 processes', '才有 concurrent access');
   await step(tok);                                   // 1022 加上一份 shared data
   const sd = bx('shared data', SC.mem, 4.6, 0.4, 3.0, 2.0, 0.8, 1.1, 2);
   cap('再加上一份 shared data', '被 N 個 process concurrently access');
   await step(tok);                                   // 1042 程式切成 section：shared 那段 = critical section
   const rows = [['entry section', SC.entry], ['critical section', SC.cs], ['exit section', SC.entry], ['remainder section', SC.rem]];
-  parts.push(bx(rows[1][0], rows[1][1], 0, 2.9, -1.8, 4.2, 0.7, 1.2, 2));
-  idx('會造成 race condition 的那段 code', 4.6, 2.9, -1.8);
+  parts.push(bx(rows[1][0], rows[1][1], 0, 3.2, -1.8, 4.2, 0.7, 1.2, 2));
+  r1('會造成 race condition 的那段 code');
   cap('程式切成不同 section', '會造成 race condition 的那段 code → critical section');
   await step(tok);                                   // 1070 進去前、出來後各加一段 protocol
-  parts.push(bx(rows[0][0], rows[0][1], 0, 3.9, -1.8, 4.2, 0.7, 1.2, 2));
+  parts.push(bx(rows[0][0], rows[0][1], 0, 4.5, -1.8, 4.2, 0.7, 1.2, 2));
   parts.push(bx(rows[2][0], rows[2][1], 0, 1.9, -1.8, 4.2, 0.7, 1.2, 2));
   cap('找到 critical section 後', '在進入前、離開後各加一段程式（protocol）');
   await step(tok);                                   // 1085 mutual exclusion：一次只有一個人
-  hot('mutual exclusion：一次只有一個人在裡面', 0, 5.4);
+  r1('mutual exclusion：一次只有一個人在裡面', 'ptr alt');
   cap('目的：mutual exclusion', '一次只有一個人可以在裡面執行');
   await step(tok);                                   // 1102 有人在裡面，其他人都不能進
-  await slide(tok, ps[0].g, -2.8, 2.55, -1.4, 900); glow(ps[0].body, OKG);
+  await slide(tok, ps[0].g, -2.8, 2.85, -1.4, 900); glow(ps[0].body, OKG);
   ps[1].mood('wow'); ps[2].mood('wow');
   cap('有一個程式在 critical section 裡', '其他程式都不可以進去 → 拿掉 concurrent access');
   await step(tok);                                   // 1131 do-while、remainder section
-  parts.push(bx(rows[3][0], rows[3][1], 0, 0.9, -1.8, 4.2, 0.7, 1.2, 2));
-  hd('do {', -2.9, 4.6, -1.8); hd('} while (true);', -2.6, 0.2, -1.8);
+  parts.push(bx(rows[3][0], rows[3][1], 0, 0.6, -1.8, 4.2, 0.7, 1.2, 2));
+  hd('do {', -2.9, 5.3, -1.8); hd('} while (true);', -3.8, 0.2, -1.8);
   cap('通常寫成 do { … } while', '其他程式碼就是 remainder section');
   await step(tok);                                   // 1155 要寫的：entry 與 exit section
   glow(parts[1], null); glow(parts[2], DIM);
-  note('我們要寫的：entry、exit', 4.2, 3.9, -1.8);
+  r1('我們要寫的：entry、exit');
   cap('各位要寫的就是 entry 和 exit section', '進去前一定先執行 entry，離開時一定執行 exit');
   await step(tok);                                   // 1190 接下來都在討論 entry / exit 怎麼寫
   await slide(tok, ps[0].g, -5.2, 0, 3.0, 800); glow(ps[0].body, null);
-  await slide(tok, ps[1].g, -2.8, 2.55, -1.4, 800); glow(ps[1].body, OKG);
+  await slide(tok, ps[1].g, -2.8, 2.85, -1.4, 800); glow(ps[1].body, OKG);
   cap('接下來的 solution 都在討論', 'entry、exit 怎麼寫，才能確保 mutual exclusion');
   void sd;
 }]);
@@ -1509,7 +1527,7 @@ FRAG.push(['syn-18c-csreq', '三個條件：mutual exclusion、progress、bounde
 }]);
 
 // ════════ 6LWj3CuOCPs（第 19A 講）：Peterson 回顧、寫法注意、證明三條件、Bakery、choosing、P1/P4 例子 ════════
-const csCam = () => fresh([0, 7, 12.5], [0, 2.2, 0]);
+const csCam = () => fresh([0, 7.8, 14.8], [0, 2.7, 0]);
 // run several interpreter lines of a csView with short pauses (each ≤ ~0.5 s)
 async function runCS(tok, V, seq, ms = 450) { for (const i of seq) { V.step(i); await wt(tok, ms); } }
 
@@ -1520,36 +1538,34 @@ FRAG.push(['syn-19a-peterson', "Peterson's solution 回顧：turn（token）＋ 
   V = csView('peterson', { startPc: [0, 5] });
   cap("回顧：兩個 process 的 Peterson's solution", '不用背，記住它的概念');
   await step(tok);                                   // 18 turn 是 token，只有 0 或 1
-  const tk = hot('turn = token（0 或 1）', 3.2, 1.4, -2.4);
+  V.note('turn = token（0 或 1）', 'ptr alt');
   cap('第一點：turn 就是 token', '值只會是 0 或 1，是一個 boolean');
   await step(tok);                                   // 20 0 → P0 可以進；1 → P1
-  const n3 = note('turn = 0 → P0 可以進　turn = 1 → P1 可以進', 0, 3.4, 0);
+  V.note('turn = 0 → P0 可以進　turn = 1 → P1 可以進');
   cap('turn = 0：P0 可以進去', 'turn = 1：P1 可以進去');
   await step(tok);                                   // 44 進去前 / 出來後把 token 交給對方
   const t = pkt('token', -2.2, 2.0, 1.6);
   await travel(tok, t, V3(-2.2, 2.0, 1.6), V3(2.2, 2.0, 1.6), 900);
+  V.note('');
   cap('進去前（或出來後）要把 token 交給對方', '交換 token 才有輪流的作用');
   await step(tok);                                   // 64 只輪流 → progress 問題
-  remove(n3);
-  const b5 = bad('只用 turn：P0 把 token 給 P1，P1 卻不想進 → P0 進不去', 0, 4.2, 0.6);
+  V.note('只用 turn：P1 不想進 → P0 也進不去', 'bad');
   cap('只靠輪流會有 progress 的問題', 'P1 不想進去，P0 就再也進不去');
   await step(tok);                                   // 83 多加一個 flag：是不是 ready
   remove(t);
-  hot('flag[i] = 我 ready、想進去', -3.2, 1.4, -2.4);
+  V.note('flag[i] = 我 ready、想進去', 'ptr alt');
   cap('為了解決它，多加一個 condition：flag', '表示這個 process 是不是 ready、想進去');
   await step(tok);                                   // 90 只有「對方有 token 而且對方要進」才等
   V.P[0].pc = 2; V.update();
-  remove(b5);
-  const n7 = note('while 後面是分號：條件成立就一直卡在這行', 0, 4.2, 0.6);
+  V.note('while 後面是分號：條件成立就一直卡在這行');
   cap('只有「對方有 token 而且對方要進去」', '才會卡在 while（後面是分號）');
   await step(tok);                                   // 109 兩個條件都要成立 → 沒有 progress 問題
   V.P[0].pc = 0; V.update();
-  remove(n7);
   await runCS(tok, V, [0, 0, 0], 500);
-  good('P1 不想進（flag[1] = F）→ P0 照樣進去', 0, 4.2, 1.8);
+  V.note('P1 不想進（flag[1] = F）→ P0 照樣進去', 'good');
   cap('兩個條件都成立才會被擋住', 'P1 沒有要進，P0 就進得去 → 沒有 progress 問題');
   await step(tok);                                   // 117 輪流交換 token → bounded waiting
-  good('輪流交換 token → bounded waiting', 0, 3.6, 1.8);
+  V.note('輪流交換 token → bounded waiting', 'good');
   cap('又因為輪流交換 token', '所以也符合 bounded waiting');
 }]);
 
@@ -1560,23 +1576,22 @@ FRAG.push(['syn-19a-wrong', 'Peterson 寫法要注意：flag 的位置、token �
   cap('這只是一個 solution', '不一定要寫得一模一樣');
   await step(tok);                                   // 134 flag[0] = true 要寫在進 CS 之前
   V.P[0].pc = 0; V.update();
-  note('flag[i] = true：緊貼在進去之前', 0, 4.2, 0.6);
+  V.note('flag[i] = true：緊貼在進去之前');
   cap('flag[0] = true 要寫在進 critical section 之前', '它的意思是「我要進去了」');
   await step(tok);                                   // 150 太早設 → 擋住對方 → 違反 progress
-  const early = bad('太早設成 true（例如放在 remainder）→ 擋住對方 → 違反 progress', 0, 3.6, 1.8);
+  V.note('太早設成 true → 擋住對方 → 違反 progress', 'bad');
   cap('很早就設成 true，自己又沒要進', '就會擋住對方 → 不滿足 progress');
   await step(tok);                                   // 171 turn = 1 只是交 token：前後無所謂
   V.P[0].pc = 1; V.update();
-  note('turn = j：寫在前面或後面都可以', 0, 0.4, 3.4);
+  V.note('turn = j：寫在前面或後面都可以');
   cap('turn = 1 只是把 token 交給對方', '寫在前面或後面倒是無所謂');
   await step(tok);                                   // 190 之前只保證 ME 的範例：交換擺在後面
-  remove(early);
-  idx('之前只有 mutual exclusion 的範例：exit 時才交換', 0, 3.6, 1.8);
+  V.note('之前只有 ME 的範例：exit 時才交換', 'idx');
   cap('之前那個只保持 mutual exclusion 的範例', '就是把 token 交換擺在後面');
   await step(tok);                                   // 203 一定要交換；turn = 自己 → 錯
   csCam();
   V = csView('wrong');
-  bad('turn = 自己（把 token 搶過來）→ 一定錯', 0, 4.2, 0.6);
+  V.note('turn = 自己（把 token 搶過來）→ 一定錯', 'bad');
   cap('但一定要交換！寫成 turn = 0 搶 token', '這個 solution 一定是錯的');
   await step(tok);                                   // 217 trace：P0 設 turn = 0 → break while → 進去
   await runCS(tok, V, [0, 0, 0], 500);
@@ -1585,7 +1600,7 @@ FRAG.push(['syn-19a-wrong', 'Peterson 寫法要注意：flag 的位置、token �
   await runCS(tok, V, [1, 1, 1], 500);
   cap('換 P1：又寫 turn = 1 把 token 搶走', '檢查 while 也能 break → 兩個都在 critical section！');
   await step(tok);                                   // 241 重點：token 一定要交換、flag 要設
-  good('token 一定要交給對方；flag 要設成 ready', 0, 3.4, 2.4);
+  V.note('token 一定要交給對方；flag 要設成 ready', 'good');
   cap('重點：進去前或出來後一定要交換 token', '還要把 flag 設起來，才滿足 progress');
 }]);
 
@@ -1593,42 +1608,42 @@ FRAG.push(['syn-19a-proof', 'Peterson 證明三個條件（含 bounded waiting �
   fresh([0, 6.5, 12.5], [0, 1.8, 0]);
   let V;
   await step(tok);                                   // 255 三個證明；ME 用反證法
-  hd('① mutual exclusion：反證法', -3.6, 6.0, -2.4);
-  const tc = bx('turn = 0', SC.mem, -3.6, 0.4, 0, 2.0, 0.8, 1.1, 2);
+  const ph = hd('① mutual exclusion：反證法', 0, 4.6, -2.4), pr = one(0, 2.4, 0);
+  const tc = bx('turn = 0', SC.mem, 0, 0.4, 0, 2.0, 0.8, 1.1, 2);
   cap('三個證明，概念上來看', '第一個 mutual exclusion 靠反證法');
   await step(tok);                                   // 262 turn 是 boolean，不可能同時是 0 又是 1
-  note('turn 不可能同時是 0 又是 1 → 不可能兩人都 break while', -3.6, 2.0, 0);
+  pr('turn 不可能同時是 0 又是 1');
   cap('turn 只是一個 boolean 值', '不可能同時是 0 又是 1 → ME 成立');
   await step(tok);                                   // 274 progress：一人想進 / 兩人都想進
-  hd('② progress：兩種情況', 3.4, 6.0, -2.4);
-  const a = pal('想進', '', PCS[0], 1.8, 0, 0.4, 0.55), b = pal('不想進', '', PCS[1], 3.4, 0, 0.4, 0.55);
+  kill(tc); tx(ph, '② progress：兩種情況'); pr('');
+  const a = pal('想進', '', PCS[0], -1.5, 0, 0.4, 0.7), b = pal('不想進', '', PCS[1], 1.5, 0, 0.4, 0.7);
   b.mood('calm'); a.mood('wow');
   cap('progress：一個人要進去，另一個人不要', '或者兩個人都要進去');
   await step(tok);                                   // 286 看 condition：有一個人進得去就好
-  good('想進的人進得去 ✓', 2.6, 1.8, 0.4);
+  pr('想進的人進得去 ✓', 'good');
   cap('檢查 condition：有一個人進得去就好', '就代表 progress 符合');
   await step(tok);                                   // 293 兩個都不想進：不用 evaluate
-  idx('兩個都不想進 → 沒人進去，本來就對', 3.4, 4.6, -1);
+  pr('兩個都不想進 → 沒人進去，本來就對');
   cap('兩個都不想進去當然不用看', '那不是 progress 要管的');
   await step(tok);                                   // 305 這是任何 solution 證 progress 的方法
-  note('任何 solution 證 progress 都這樣檢查', 3.4, 5.3, -1.6);
+  pr('任何 solution 證 progress 都這樣檢查');
   cap('這個證明方式不限於 Peterson', '任何 synchronization solution 都這樣證');
   await step(tok);                                   // 318 很多人同時想進：其中一個會被選中
   b.mood('wow');
-  good('同時想進 → 剛好選中一個（不會多個，否則 ME 已經錯）', 2.6, 3.0, 1.6);
+  pr('同時想進 → 剛好選中一個', 'good');
   cap('很多人同時想進：其中一個會被選中', '不可能多個，否則 ME 就已經不成立');
   await step(tok);                                   // 346 bounded waiting：一人在等，另一人剛離開
   csCam();
   V = csView('peterson');
   for (const i of [1, 1, 1, 0, 0, 0]) V.step(i);
-  hd('③ bounded waiting（比較 tricky）', 0, 7.3, -3.4);
+  V.note('③ bounded waiting（比較 tricky）', 'ptr');
   cap('bounded waiting：P1 在 critical section', 'P0 在 while 裡等（紅色 = 卡住）');
   await step(tok);                                   // 377 直覺：剛出來的人在 remainder，P0 可以進
   await runCS(tok, V, [1, 1], 500);
   cap('P1 剛離開 critical section', '直覺：它在 remainder，P0 應該可以進去');
   await step(tok);                                   // 391 常忘記：沒被 context switch，又想進去
   await runCS(tok, V, [1, 1], 500);
-  note('P1 沒被 context switch，又繞回來想進去！', 3.0, 4.6, 1.2);
+  V.note('P1 沒被 context switch，又繞回來想進去！');
   cap('常被忘記的情況：P1 沒有被 context switch', '繼續下一個 loop，又想進去');
   await step(tok);                                   // 420 有 token 的關係 → 它進去前先把 token 交出去
   await runCS(tok, V, [1], 500);
@@ -1643,12 +1658,11 @@ FRAG.push(['syn-19a-proof', 'Peterson 證明三個條件（含 bounded waiting �
   V.step(0);
   cap('直到 OS 做了 context switch 回到 P0', 'P0 滿足條件、break while → 進去：一定輪流');
   await step(tok);                                   // 494 context switch 不是一人一行
-  note('不是一人一行：可以跑任意多個指令，但就是卡在 entry section', 0, 5.2, 0.4);
+  V.note('可以跑任意多個指令，但就是卡在 entry section');
   cap('context switch 不是一人執行一行', '可能跑任意數目的指令，但就是卡在 entry section');
   await step(tok);                                   // 515 critical section 越小越好
-  good('critical section 越小越好（選錯可能 deadlock）', 0, 4.4, 1.8);
+  V.note('critical section 越小越好（選錯可能 deadlock）', 'good');
   cap('coding 上的注意：critical section 越小越好', '選錯有時會產生 deadlock（下一章）');
-  void tc;
 }]);
 
 // a bakery code panel (choosing lines can be hidden at first)
@@ -1659,8 +1673,9 @@ function bakeryCode(x, yTop, z, withChoosing) {
   return c;
 }
 FRAG.push(['syn-19a-bakery', 'N 個 process：Bakery algorithm（抽號碼牌）', async (tok) => {
-  fresh([0, 6.5, 13], [0, 1.8, 0]);
+  fresh([0, 7.6, 14.8], [0, 2.5, 0]);
   let two = [], ppl = [], cd, nums = [];
+  const r1 = one(0, 3.0, 2.6);
   await step(tok);                                   // 529 為什麼只能兩個：turn 只有 0、1
   two = [pal('P0', '', PCS[0], -1.4, 0, 1.8, 0.7), pal('P1', '', PCS[1], 1.4, 0, 1.8, 0.7)];
   const tk = pkt('turn: 0 ↔ 1', 0, 2.2, 1.8);
@@ -1669,77 +1684,78 @@ FRAG.push(['syn-19a-bakery', 'N 個 process：Bakery algorithm（抽號碼牌）
   remove(tk); gone(...two);
   ppl = [1, 2, 3, 4, 5].map((k, i) => pal('P' + k, '', PCS[i], -5 + i * 2.5, 0, 2.6, 0.6));
   ppl.forEach((b) => b.mood('wow'));
-  const ask = bub('token 交給誰？誰手上有 token？', 0, 2.6, 2.6);
+  r1('token 交給誰？誰手上有 token？', 'say');
   cap('N 個 process：token 要設成多少、交給誰？', '誰手上有 token 也不知道');
   await step(tok);                                   // 555 不能用傳 token 的概念
-  const noTok = bad('傳遞 token 的作法不適用', 0, 4.0, 0);
+  r1('傳遞 token 的作法不適用', 'bad');
   cap('N 個 process 時', '不能用剛剛傳遞 token 的簡單概念');
   await step(tok);                                   // 564 排隊：像郵局抽號碼牌
   const t0 = [1, 2, 3, 3, 4];
-  remove(ask);
+  r1('號碼小的先進去（號碼為示意）');
   ppl.forEach((b, i) => b.mood('happy'));
   nums = ppl.map((b, i) => bx('#' + t0[i], '#f3e6c8', -5 + i * 2.5, 1.55, 2.6, 0.8, 0.4, 0.4, 1.5));
-  idx('號碼為示意', 5.6, 0.2, 3.6);
   cap('概念就是排隊：像去郵局抽號碼牌', '號碼小的先進去');
   await step(tok);                                   // 578 抽號碼本身好幾個 instruction → 可能一樣
   glow(nums[2], NOR); glow(nums[3], NOR);
-  const same3 = note('P3、P4 都抽到 3（示意）', 1.2, 2.8, 2.6);
+  r1('P3、P4 都抽到 3（示意）');
   cap('抽號碼牌本身有好幾個 instruction', '所以有可能抽到相同的數字');
   await step(tok);                                   // 595 tie breaker：unique 的 PID
-  const byPid = good('一樣就比 PID（unique）：P3 先於 P4', 1.2, 3.5, 2.6);
+  r1('一樣就比 PID（unique）：P3 先於 P4', 'good');
   cap('tie breaker：用 PID', '每個 process / thread 的 ID 都是 unique');
   await step(tok);                                   // 628 solution 拆開看：num[i] 陣列
-  gone(...ppl, ...nums, noTok, same3, byPid);
-  cd = bakeryCode(-3.4, 6.4, -3.0, false);
+  gone(...ppl, ...nums); r1('');
+  const r2 = one(3.6, 2.2, -0.6);
+  cd = bakeryCode(-3.6, 5.6, -3.0, false);
   nums = [0, 1, 2, 3, 4].map((k) => { const m = bx('0', SC.mem, 0.6 + k * 1.3, 0.35, -0.6, 1.1, 0.7, 0.9); idx('num[' + k + ']', 0.6 + k * 1.3, 0, 0.3); return m; });
   cap('看似很長，拆開來看：num 是一個 array', '每格記錄第 i 個 process 抽到的號碼');
   await step(tok);                                   // 659 shared，但只有 Pi 寫 num[i]
   glow(nums[2], DIM);
-  note('num[i] 只有 Pi 自己寫，其他人只讀 → 沒有 race', 3.2, 1.8, -0.6);
+  r2('num[i] 只有 Pi 寫，其他人只讀 → 沒有 race');
   cap('num 是 shared variable', '但 num[i] 只有 Pi 會寫，其他人只讀');
   await step(tok);                                   // 686 跟 flag 一樣，只有一個 writer
-  idx('（Peterson 的 flag[i] 也是同樣道理）', 3.2, 2.5, -0.6);
+  r2('Peterson 的 flag[i] 也是同樣道理');
   cap('就像剛剛的 flag[i]', '只有一個人 overwrite，其他人 read only');
   await step(tok);                                   // 696 抽號碼：max + 1
   cd.hl(1); glow(nums[2], null);
   [3, 5].forEach((v, k) => rl(nums[k], v));
   rl(nums[2], 6); glow(nums[2], OKG);
-  idx('示意：P2 看到最大是 5 → 抽 6', 3.2, 3.2, -0.6);
+  r2('示意：P2 看到最大是 5 → 抽 6');
   cap('抽號碼：看目前最大的號碼', '再加 1 → num[i] = max + 1');
   await step(tok);                                   // 714 max 看似一行，其實好幾個 instruction
-  note('max 其實是一堆 if-else 比較 → 可能抽到一樣', -3.4, 1.0, -1.2);
+  r2('max 其實是一堆比較 → 可能抽到一樣');
   cap('max 看似一個 statement', '其實好幾個 instruction → 可能抽到一樣的號碼');
   await step(tok);                                   // 757 for loop 跟每個人比；0 = 沒抽 → 跳過
   cd.hl(3);
   glow(nums[3], DIM); glow(nums[4], DIM);
-  idx('num = 0：沒抽，跳過', 5.8, 1.2, -0.6);
+  r2('num = 0：沒抽，跳過');
   cap('進去前用 for loop 跟每個人比', 'num 是 0 代表沒抽，直接跳過');
   await step(tok);                                   // 792 不是 0：先比號碼，再比 PID
   cd.hl(6);
   cap('不是 0 才比：先比號碼，再比 PID', '(num[j], j) < (num[i], i)');
   await step(tok);                                   // 819 對方比你小 → 卡在 while
   glow(nums[0], NOR); glow(nums[2], NOR);
-  bad('P0 的 3 < P2 的 6 → P2 卡在 while（示意）', 3.2, 4.0, -0.6);
+  r2('P0 的 3 < P2 的 6 → P2 卡在 while（示意）', 'bad');
   cap('有人的 (號碼, PID) 比你小', '你就卡在這個 while loop');
   await step(tok);                                   // 848 first come first serve：小的先
-  good('號碼越抽越大 → 小的先抽、先進：first come, first serve', 0, 7.0, -3.0);
+  r2('小的先抽、先進：first come, first serve', 'good');
   cap('號碼越小代表越早抽', '所以越先進去：first come, first serve');
   await step(tok);                                   // 896 break 所有 while → 進去；離開設 0
-  cd.hl(9); rl(nums[2], 0); glow(nums[2], null); glow(nums[0], null);
+  cd.hl(9); rl(nums[2], 0); glow(nums[2], null); glow(nums[0], null); r2('離開時 num[i] = 0');
   cap('break 所有人的 while 才能進去', '離開時 num[i] = 0：表示不要進去了');
 }]);
 
 FRAG.push(['syn-19a-choosing', 'Bakery 為什麼需要 choosing', async (tok) => {
-  fresh([0, 6.5, 13], [0, 1.8, 0]);
-  const cd = bakeryCode(-3.4, 6.4, -3.0, false);
-  const pi = pal('Pi', 'num 6', PCS[0], 1.4, 0, 1.2, 0.75), pj = pal('Pj', 'num 0', PCS[1], 4.6, 0, 1.2, 0.75);
+  fresh([0, 7.6, 14.8], [0, 2.5, 0]);
+  const cd = bakeryCode(-3.6, 6.0, -3.0, false);
+  const pi = pal('Pi', 'num 6', PCS[0], 1.4, 0, 1.2, 1.3), pj = pal('Pj', 'num 0', PCS[1], 4.6, 0, 1.2, 1.3);
   let sign;
+  const r1 = one(3.0, 3.4, 1.2);
   await step(tok);                                   // 930 多加了三行：choosing
   [0, 2, 4].forEach((k) => P.showL(cd.ls[k], true));
   cd.hl(0);
   cap('基本抽號碼牌之外', '又多加了三行：choosing');
   await step(tok);                                   // 934 像一個 lock：Pi 是不是在抽號碼
-  hot('choosing[i]：像一個 lock', 3.0, 5.1, 1.2);
+  r1('choosing[i]：像一個 lock', 'ptr alt');
   cap('choosing 就像一個 lock', '告訴大家：process i 現在是不是在抽號碼牌');
   await step(tok);                                   // 944 抽之前 true、抽之後 false
   cd.hl(2);
@@ -1753,25 +1769,25 @@ FRAG.push(['syn-19a-choosing', 'Bakery 為什麼需要 choosing', async (tok) =>
   cap('他在抽的話，數字正在改變', '現在或許是 0，抽完就不是 0 了');
   await step(tok);                                   // 988 太快比 → 他抽完跟你一樣（雖然比較晚抽）
   pj.set('num 6'); pj.mood('wow');
-  bad('太早比：Pj 晚抽，卻抽到一樣的 6', 3.0, 3.0, 1.2);
+  r1('太早比：Pj 晚抽，卻抽到一樣的 6', 'bad');
   cap('你太快跟他比的話', '他雖然比你晚抽，可能抽到相同的數字');
   await step(tok);                                   // 1004 晚抽 + 一樣 + PID 比你小 → 完蛋
-  bad('而且 PID 比你小 → 其實他該先進！', 3.0, 3.7, 1.2);
+  r1('而且 PID 比你小 → 其實他該先進！', 'bad');
   cap('晚抽、數字一樣、PID 又比你小', '其實他才該先執行 → 你就完蛋了');
   await step(tok);                                   // 1023 等他抽完、數字穩定才比
-  good('等他抽完、數字 stable 了才比', 3.0, 4.4, 1.2);
+  r1('等他抽完、數字 stable 了才比', 'good');
   cap('choosing 的目的：他正在抽時就等', '等數字穩定了才跟他比');
   await step(tok);                                   // 1048 while loop 等 choosing[j] 變 false
   remove(sign); cd.hl(6); pj.mood('calm');
   cap('用一個 while loop 等 Pj 抽完', '它設回 false，就能跟它真正的數字比');
   await step(tok);                                   // 1084 正確性：mutual exclusion
-  hd('ME：一次只有 (num, PID) 最小的人進去', 0, 7.2, -3.0);
+  r1('ME：(num, PID) 最小的人進去', 'ptr');
   cap('證明：一定符合 mutual exclusion', '號碼加上 PID 是 unique，最小的只有一個');
   await step(tok);                                   // 1102 bounded waiting：first come first serve
-  hd('BW：first come, first serve', -2.6, 0.2, 3.4);
+  r1('BW：first come, first serve', 'ptr');
   cap('也符合 bounded waiting', 'first come, first serve 的演算法一定符合');
   await step(tok);                                   // 1112 progress：最小的人一定能 break
-  hd('progress：最小的人一定能 break', 2.8, 0.2, 3.4);
+  r1('progress：最小的人一定能 break', 'ptr');
   pi.mood('happy'); glow(pi.body, OKG);
   cap('progress 也沒問題', '目前最小的那個人一定能 break 兩個 while loop');
 }]);
@@ -1781,19 +1797,20 @@ FRAG.push(['syn-19a-p1p4', '例子：沒有 choosing → P1、P4 都抽到 6 都
   let V;
   await step(tok);                                   // 1132 為什麼一定要 choosing：具體例子
   V = csView('bakeryNo');
-  hd('沒有 choosing（錯誤版）', 0, 7.4, -3.4);
+  V.note('沒有 choosing（錯誤版）', 'ptr');
   cap('具體的例子：為什麼一定要 choosing', '先看沒有 choosing 的版本');
   await step(tok);                                   // 1143 目前最大的號碼是 5
-  const max5 = note('目前最大的 number = 5', 0, 3.4, 2.4);
+  V.note('目前最大的 number = 5');
   cap('假設現在最大的號碼是 5', '');
   await step(tok);                                   // 1153 P1、P4 要進 CS；PID 小的 P1 優先
   cap('P1、P4 正要進 critical section', 'PID 1 比較小 → P1 有比較高的 priority');
   await step(tok);                                   // 1169 抽之前都是 0；P1 先讀到 max = 5
   V.step(0);
-  idx('P1 讀到 max = 5，還沒寫回就被切走', -4.4, 3.6, 0.8);
+  V.note('P1 讀到 max = 5，還沒寫回就被切走');
   cap('抽之前兩個都是 0', 'P1 讀了 max = 5，還沒寫回就被 context switch');
   await step(tok);                                   // 1174 P4 先抽完：6
   await runCS(tok, V, [1, 1], 600);
+  V.note('P4 先抽完：num[4] = 6');
   cap('P4 先把號碼抽完', 'num[4] = 6');
   await step(tok);                                   // 1181 P4 檢查：P1 是 0 → 不管它 → 進去
   V.step(1);
@@ -1805,16 +1822,15 @@ FRAG.push(['syn-19a-p1p4', '例子：沒有 choosing → P1、P4 都抽到 6 都
   V.step(0);
   cap('兩個都是 6，用 PID 當 tie breaker', 'P1 的 PID 比較小 → P1 也進 critical section');
   await step(tok);                                   // 1209 mutual exclusion 被 violate
-  remove(max5);
-  bad('兩個都在 critical section → ME 被 violate', 0, 3.4, 1.2);
+  V.note('兩個都在 critical section → ME 被 violate', 'bad');
   cap('mutual exclusion 被 violate', '兩個人都進去了');
   await step(tok);                                   // 1223 synchronization 難寫、難驗證
-  note('每個 instruction 都可能 context switch；N 個人的組合無止境', 0, 4.4, 1.2);
+  V.note('每個 instruction 都可能 context switch', 'note');
   cap('synchronization 不好寫、不好驗證', '每個 instruction 都可能被切，組合無止境');
   await step(tok);                                   // 1246 有 locking：P4 會被擋住
   csCam();
   V = csView('bakery');
-  hd('有 choosing（正確版）', 0, 7.4, -3.4);
+  V.note('有 choosing（正確版）', 'ptr');
   await runCS(tok, V, [0, 0, 1, 1, 1, 1, 1], 300);
   cap('有 choosing：P1 抽到一半被切走', 'P4 抽完 6，卻卡在 while (choosing[1])');
   await step(tok);                                   // 1251 P4 等 P1 抽完：都是 6 → P4 被擋
@@ -1822,7 +1838,7 @@ FRAG.push(['syn-19a-p1p4', '例子：沒有 choosing → P1、P4 都抽到 6 都
   cap('P1 抽完也是 6、choosing 放下', 'P4 比較：(6,1) < (6,4) → P4 被擋住');
   await step(tok);                                   // 1258 P1 才是正確的選擇
   await runCS(tok, V, [0, 0], 500);
-  good('P1 先進去：正確！', 0, 3.4, 1.2);
+  V.note('P1 先進去：正確！', 'good');
   cap('P1 比較後 break while → 進去', 'PID 小的 P1 先，這才是正確的演算法');
 }]);
 
@@ -1830,6 +1846,7 @@ FRAG.push(['syn-19a-p1p4', '例子：沒有 choosing → P1、P4 都抽到 6 都
 FRAG.push(['syn-20d-classic', 'Classical synchronization problems：三個經典問題', async (tok) => {
   fresh([0, 6.5, 13], [0, 1.6, 0]);
   let tools = [];
+  const r1 = one(-1.6, 2.2, -3.0), r2 = one(0, 2.6, 0.6), r3 = one(4.6, 2.6, 0.6);
   await step(tok);                                   // 2 介紹完 critical section、semaphore
   tools = ['critical section', 'semaphore'].map((t, k) => bx(t, [SC.cs, PCS[0]][k], -4.6 + k * 3.0, 0.3, -3.0, 2.6, 0.5, 0.8, 1.5));
   cap('介紹完 critical section、semaphore', '');
@@ -1838,43 +1855,43 @@ FRAG.push(['syn-20d-classic', 'Classical synchronization problems：三個經典
   const hiL = idx('更 high level', 1.4, 1.0, -3.0);
   cap('最後一個工具叫 monitor', '更 high level；介紹前先看一些經典問題');
   await step(tok);                                   // 46 各式各樣的 synchronization 問題 → classical problems
-  hd('classical synchronization problems', 0, 6.0);
+  r1('classical synchronization problems', 'ptr');
   cap('synchronization 的問題各式各樣', '於是定義了一些 classical problems');
   await step(tok);                                   // 64 系統裡的問題都可以 reduce 成這幾個
-  note('電腦系統裡的問題，都可以 reduce 成這幾個', 0, 5.2);
+  r1('系統裡的問題都可以 reduce 成這幾個');
   cap('非常著名：系統裡的問題', '都可以 reduce 成這幾個問題');
   await step(tok);                                   // 91 目的：驗證你的 synchronization 是否正確
-  const chk = good('用它們檢驗：你的 solution 真的對嗎？', 2.4, 2.6, -3.0);
+  r1('用它們檢驗：你的 solution 真的對嗎？', 'good');
   cap('最主要的目的：驗證你寫的 synchronization', '能不能解決這些常見的問題');
   await step(tok);                                   // 111 最常見三個：bounded buffer
-  gone(...tools, hiL, chk);
-  zone('① bounded buffer', -4.6, 0.02, 0.6, 3.6, 3.0, '#f3e6c8');
+  gone(...tools, hiL); r1('');
+  zone('① bounded buffer', -4.6, 0.02, 0.6, 3.6, 3.0, '#f3e6c8').userData.name.position.z = 2.45;
   [0, 1, 2].forEach((k) => bx(k + 1, '#2fc092', -5.6 + k * 1.0, 0.3, 0.6, 0.8, 0.5, 0.8, 1.5));
   cap('最常見的三個：第一個 bounded buffer', '就是之前的 producer–consumer');
   await step(tok);                                   // 136 reader-writer：檔案操作
-  zone('② readers-writers', 0, 0.02, 0.6, 3.6, 3.0, '#d6e6f6');
+  zone('② readers-writers', 0, 0.02, 0.6, 3.6, 3.0, '#d6e6f6').userData.name.position.z = 2.45;
   prop('file', 0, 0, 0.2, 1.0);
   const r = pal('R', '', PCS[2], -1.0, 0, 1.6, 0.5), w = pal('W', '', PCS[1], 1.0, 0, 1.6, 0.5);
   cap('第二個 readers-writers', '檔案操作常碰到：read 或 write');
   await step(tok);                                   // 159 兩個人同時 write → 不行
-  bad('兩個 writer 同時寫 ✗', 0, 2.4, 0.6);
+  r2('兩個 writer 同時寫 ✗', 'bad');
   cap('兩個人同時 write 一個檔案', '不知道結果是什麼 → 不可以');
   await step(tok);                                   // 176 reader 可以同時開
-  good('reader 可以同時讀 ✓', 0, 3.0, 0.6);
+  r2('reader 可以同時讀 ✓', 'good');
   r.mood('happy');
   cap('read only 的話大家都可以同時開', '內容不會改，data 是一致的');
   await step(tok);                                   // 196 dining philosophers
-  zone('③ dining philosophers', 4.6, 0.02, 0.6, 3.6, 3.0, '#d8e6cf');
+  r2(''); zone('③ dining philosophers', 4.6, 0.02, 0.6, 3.6, 3.0, '#d8e6cf').userData.name.position.z = 2.45;
   const tb = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.2, 28), new THREE.MeshStandardMaterial({ color: '#e3d3b6' })); tb.position.set(4.6, 0.1, 0.6); lab.world.add(tb);
   cap('最後一個更有趣：dining philosophers', '會用 monitor 的 solution 去解');
   await step(tok);                                   // 216 五個人、五根筷子放在人與人之間
   for (let k = 0; k < 5; k++) { const a = (k / 5) * Math.PI * 2, b = ((k + 0.5) / 5) * Math.PI * 2; bx('', PCS[k], 4.6 + Math.sin(a) * 1.4, 0.25, 0.6 + Math.cos(a) * 1.4, 0.4, 0.5, 0.4); const c = bx('', '#8a5a2b', 4.6 + Math.sin(b) * 0.8, 0.3, 0.6 + Math.cos(b) * 0.8, 0.1, 0.1, 0.6); c.rotation.y = b; }
   cap('五個人只給五根筷子', '放在人跟人之間；左右兩支都拿到才能吃');
   await step(tok);                                   // 227 大家只拿左邊 → 都不能吃
-  bad('大家都只拿左邊 → 都不能吃', 4.6, 2.6, 0.6);
+  r3('大家都只拿左邊 → 都不能吃', 'bad');
   cap('如果大家都只拿起左手邊的筷子', '其實大家都不能用餐');
   await step(tok);                                   // 237 怎麼模擬才不會卡住（deadlock）
-  note('怎麼拿才不會 deadlock？→ monitor', 4.6, 3.4, 0.6);
+  r3('怎麼拿才不會 deadlock？→ monitor');
   cap('每個人要用什麼方式拿', '才不會卡住、不會 deadlock');
   void w;
 }]);
@@ -1883,33 +1900,34 @@ FRAG.push(['syn-20d-bb', 'Bounded-buffer：大小固定的 producer–consumer',
   fresh([0, 6, 13], [0, 1.4, 0]);
   const N = 5, xs = Array.from({ length: N }, (_, k) => -2.4 + k * 1.2);
   let pr, co, its = [];
+  const bbOld = [], r1 = one(0, 2.4, 0);
   await step(tok);                                   // 253 之前講過
-  xs.forEach((x, k) => { ctx.tile(V3(x, 0.04, 0), 1.05, 1.05); idx('[' + k + ']', x, 0, 0.8); });
+  xs.forEach((x, k) => { bbOld.push(ctx.tile(V3(x, 0.04, 0), 1.05, 1.05), idx('[' + k + ']', x, 0, 0.8)); });
   pr = pal('producer', '', PCS[0], -5.4, 0, 0.4, 0.7); co = pal('consumer', '', PCS[1], 5.4, 0, 0.4, 0.7);
   cap('之前講過的 bounded buffer', '大家應該很熟');
   await step(tok);                                   // 260 buffer size 固定、limited
-  hd('buffer size 固定（limited）', 0, 2.4);
-  idx('5 格為示意', 0, 0, 1.6);
+  r1('buffer size 固定（limited）', 'ptr');
+  bbOld.push(idx('5 格為示意', 0, 0, 1.6));
   cap('有一個固定大小的 buffer', 'size 是 limited');
   await step(tok);                                   // 267 空的時候 consumer 要等
-  co.mood('sad'); bad('空 → consumer 等', 5.4, 2.2, 0.4);
+  co.mood('sad'); r1('空 → consumer 等', 'bad').position.set(5.4, 2.2, 0.4);
   cap('一個 producer、一個 consumer', '空的時候 consumer 要等');
   await step(tok);                                   // 271 滿的時候 producer 要等
   for (let k = 0; k < N; k++) its.push(bx(k + 1, '#2fc092', xs[k], 0.35, 0, 0.85, 0.6, 0.85, 2));
   co.mood('calm'); pr.mood('sad');
-  bad('滿 → producer 等', -5.4, 2.2, 0.4);
+  r1('滿 → producer 等', 'bad').position.set(-5.4, 2.2, 0.4);
   cap('滿的時候 producer 要等', '這就是 bounded buffer problem');
   await step(tok);                                   // 277 檢視 critical section 的好例子
-  good('檢視 critical section 怎麼運作的好例子', 0, 3.2);
+  r1('檢視 critical section 怎麼運作的好例子', 'good').position.set(0, 2.4, 0);
   cap('很好的例子', '可以檢視 critical section 到底該怎麼運作');
   await step(tok);                                   // 283 真實系統：compiler → linker → loader
-  gone(...its);
-  const st = ['compiler', 'linker', 'loader'].map((t, k) => bx(t, [PCS[0], PCS[3], PCS[2]][k], -4.4 + k * 4.4, 0.35, -2.6, 2.2, 0.6, 0.9, 1.5));
-  arr(-3.2, 0.5, -1.2, 0.5, '#8a7a5c', -2.6); arr(1.2, 0.5, 3.2, 0.5, '#8a7a5c', -2.6);
-  idx('buffer', -2.2, 1.0, -2.6); idx('buffer', 2.2, 1.0, -2.6);
+  gone(...its, pr, co, ...bbOld); r1('');
+  const st = ['compiler', 'linker', 'loader'].map((t, k) => bx(t, [PCS[0], PCS[3], PCS[2]][k], -4.4 + k * 4.4, 0.35, 0, 2.2, 0.6, 0.9, 1.5));
+  arr(-3.2, 0.5, -1.2, 0.5, '#8a7a5c', 0); arr(1.2, 0.5, 3.2, 0.5, '#8a7a5c', 0);
+  idx('buffer', -2.2, 1.0, 0); idx('buffer', 2.2, 1.0, 0);
   cap('真實系統很多：compiler 的 output 給 linker', 'linker 再給 loader，中間都有 buffer');
   await step(tok);                                   // 298 I/O 系統每層之間都有 buffer
-  note('I/O 系統：每個 layer 之間都有 I/O buffer', 0, 4.0, -1);
+  r1('I/O 系統：每個 layer 之間都有 I/O buffer');
   cap('整個 I/O 系統也是', '每一個 layer 之間都有 buffer 在做 buffering');
   void st;
 }]);
@@ -1918,100 +1936,99 @@ FRAG.push(['syn-20d-rw', 'Readers-writers 問題：first / second 的要求', as
   fresh([0, 6.5, 13], [0, 1.4, 0]);
   const F = prop('file', 0, 0, -0.6, 1.3);
   let rs = [], ws = [], seg;
+  const r1 = one(0, 2.8, 0.6);
   await step(tok);                                   // 309 第二個：reader writer
-  hd('Readers-writers problem', 0, 6.2);
+  r1('Readers-writers problem', 'ptr');
   cap('第二個經典問題：readers-writers', '');
   await step(tok);                                   // 315 data access：reader process、writer process
   rs = [0, 1].map((k) => pal('R' + (k + 1), '', PCS[2 + k], -5.2 + k * 1.3, 0, 1.6, 0.6));
   ws = [0, 1].map((k) => pal('W' + (k + 1), '', PCS[k ? 4 : 1], 4.0 + k * 1.3, 0, 1.6, 0.6));
-  idx('read only', -4.6, 1.5, 1.6); idx('update content', 4.6, 1.5, 1.6);
+  const rwT = [idx('read only', -4.6, 1.7, 1.6), idx('update content', 4.6, 1.7, 1.6)];
   cap('file system、storage system 都會碰到', 'reader 只讀；writer 會 update content');
   await step(tok);                                   // 332 writer 一次只能一個
-  await slide(tok, ws[0].g, 0.9, 0, 0.6, 700); glow(ws[0].body, OKG);
+  r1(''); await slide(tok, ws[0].g, 0.9, 0, 0.6, 700); glow(ws[0].body, OKG);
   cap('為了資料一致', 'writer 一次只能一個去操作這個 file');
   await step(tok);                                   // 340 writer 在寫時，其他人都不能碰
   ws[1].mood('sad'); rs.forEach((r) => r.mood('sad'));
-  const wOnly = bad('writer 在寫：其他 reader、writer 都不能碰', 0, 2.6, 0.6);
+  r1('writer 在寫：其他 reader、writer 都不能碰', 'bad');
   cap('一個 writer 在 access 時', '其他 reader、writer 都不能 touch 這個 file');
   await step(tok);                                   // 353 全部是 reader 可以同時讀
-  remove(wOnly);
+  r1('');
   await slide(tok, ws[0].g, 4.0, 0, 1.6, 600); glow(ws[0].body, null);
   await slide(tok, rs[0].g, -1.0, 0, 0.6, 500); await slide(tok, rs[1].g, -1.0, 0, -1.8, 500);
   rs.forEach((r) => { r.mood('happy'); glow(r.body, OKG); });
-  good('全部都是 reader → 可以同時 access', -3.6, 2.6, 0.6);
+  r1('全部都是 reader → 可以同時 access', 'good');
   cap('全部都是 reader 的話', 'read only，可以同時 access');
   await step(tok);                                   // 365 又分成好幾個 version
   const vers = ['first RW', 'second RW', 'third RW'].map((t, k) => bx(t, ['#d6e6f6', '#c8d8f0', '#b9cae6'][k], 0.6 + k * 2.4, 0.3, -3.4, 2.0, 0.5, 0.7));
   cap('readers-writers 又分好幾個 version', '從最簡單到要求最高、最複雜');
   await step(tok);                                   // 378 first RW：minimum，writer exclusive 就好
   glow(vers[0], DIM);
-  const n1 = note('first：只要保證 writer 有 exclusive access', 0.6, 1.2, -3.4);
+  r1('first：只要保證 writer 有 exclusive access');
   cap('最簡單的 first readers-writers', '要求很單純：writer 用的時候有 exclusive access');
   await step(tok);                                   // 407 不在乎 reader 等多久
-  const i1 = idx('reader 等多久？不管', 0.6, 1.8, -3.4);
+  r1('reader 等多久？不管');
   cap('不 care reader 要等多久', '只要 writer 有 exclusive write 就好');
   await step(tok);                                   // 419 second RW：比較符合真實需求
-  glow(vers[0], null); glow(vers[1], DIM); remove(n1); remove(i1);
+  glow(vers[0], null); glow(vers[1], DIM); r1('');
   cap('複雜一點、比較符合使用情境的', 'second readers-writers');
   await step(tok);                                   // 430 老師先說「reader priority 要高」
-  const slip = bub('「reader 不能 starvation」？', 3.0, 1.4, -3.4);
+  r1('「reader 不能 starvation」？', 'say');
   cap('它多一個條件……', '老師這裡先講成 reader，馬上更正');
   await step(tok);                                   // 464 更正：writer 要比較高的 priority
-  tx(slip, '更正：writer 要比較高的 priority');
-  slip.element.className = 'lab-label good';
+  r1('更正：writer 要比較高的 priority', 'good');
   cap('「我講反了，對不起」', 'second RW：writer 要比較高的 priority');
   await step(tok);                                   // 470 第一個 solution：reader 把 lock 傳給下一個 reader
-  gone(...vers, slip);
+  gone(...vers, F, ...rwT); r1('');
   rs.forEach((r) => glow(r.body, null));
   await slide(tok, rs[1].g, -5.2 + 1.3, 0, 1.6, 500);
-  const x0 = -5.2, sx = 0.38;
-  seg = timeline(x0, sx, [['R', -3.0], ['W', -2.0]]);
-  seg(0, 10, -3.0, PCS[2], 'R1 讀 10 秒');
+  const x0 = -3.0, sx = 0.4;
+  seg = timeline(x0, sx, [['R1', -4.4], ['R2', -2.9], ['W', -1.4]]);
+  seg(0, 10, -4.4, PCS[2], '讀 10 秒');
   cap('first RW 的 solution：reader 可以同時讀', '拿到 lock 的 reader 可以把 lock pass 給下一個 reader');
   await step(tok);                                   // 498 writer 很早就來（第 2 秒）
-  const wt2 = bx('W 第 2 秒到', '#fde8e6', x0 + 2 * sx + 0.6, 0.3, -2.0, 1.6, 0.5, 0.7, 1.2);
-  idx('（課堂例子：10 秒、第 2 秒、第 8 秒）', 0, 4.8, -3.0);
+  const wt2 = bx('W 第 2 秒到', '#fde8e6', x0 + 2 * sx + 0.6, 0.3, -1.4, 1.6, 0.5, 0.7, 1.2);
   cap('writer 其實很早就來了（第 2 秒）', '只比第一個 reader 慢');
   await step(tok);                                   // 517 第 8 秒第二個 reader 來 → token 給它，又 hold 10 秒
-  seg(8, 18, -3.0, PCS[3], 'R2：第 8 秒來，讀 10 秒');
+  seg(8, 18, -2.9, PCS[3], '第 8 秒來，讀 10 秒');
   cap('第 8 秒第二個 reader 來了', 'lock 交給它，它又 hold 10 秒，一直傳下去');
   await step(tok);                                   // 524 writer 永遠拿不到 lock → starvation
-  kill(wt2); seg(2, 18, -2.0, '#d64545', 'W 一直等…');
+  kill(wt2); seg(2, 18, -1.4, '#d64545', '一直等…');
   ws[0].mood('sad'); glow(ws[0].body, NOR);
-  bad('writer starvation', 4.0, 2.6, 1.6);
+  r1('writer starvation', 'bad');
   cap('第 2 秒來的 writer', '可能永遠拿不到 lock → starvation');
   await step(tok);                                   // 535 second RW：writer ready 後，第一個 reader 做完就換 writer
-  hd('second RW：writer ready 了 → 下一個就換它', 0, 6.9);
+  r1('second RW：writer ready 了 → 下一個就換它', 'ptr');
   cap('second RW：writer ready 了', '第一個 reader 做完就要換 writer');
   await step(tok);                                   // 549 比 writer 晚來的 reader 不能優先
-  note('比 writer 晚來的 reader 不能插隊', 0, 4.4, -1.2);
+  r1('比 writer 晚來的 reader 不能插隊');
   cap('比 writer 晚來的 reader', '不能優先執行，不然 writer 被插隊 → starvation');
   await step(tok);                                   // 568 還有 third RW
-  idx('還有 third RW，要求更多（可自己 Google）', 0, 5.4, -1.2);
+  r1('還有 third RW，要求更多（可自己查）');
   cap('其實還有 third readers-writers', '要求更多，有興趣自己查');
-  void F;
 }]);
 
 FRAG.push(['syn-20d-rwsol', 'First readers-writers 的 semaphore 解法', async (tok) => {
-  fresh([0, 7, 13], [0, 2.4, 0]);
+  fresh([0, 7.6, 14.8], [0, 2.5, 0]);
   const RL = ['wait(mutex);', 'readcount++;', 'if (readcount == 1) wait(wrt);', 'signal(mutex);', '  … reading …', 'wait(mutex);', 'readcount--;', 'if (readcount == 0) signal(wrt);', 'signal(mutex);'];
   let rd, wr, vals = { wrt: 1, readcount: 0, mutex: 1 }, vc = {}, rs = [], W;
   const upd = () => Object.keys(vc).forEach((k) => rl(vc[k], k + ' = ' + vals[k]));
   const mk = (k, x) => { vc[k] = bx(k + ' = ' + vals[k], SC.mem, x, 0.3, -0.4, 2.4, 0.6, 1.0, 1.5); };
+  const r1 = one(0, 1.6, -0.4);
   await step(tok);                                   // 583 看 first RW 的 solution
-  hd('First readers-writers（semaphore 版）', 0, 7.3, -3);
+  r1('First readers-writers（semaphore 版）', 'ptr');
   cap('課堂上看 first readers-writers 的 solution', 'second 的強烈建議自己去看');
   await step(tok);                                   // 602 用 counting：數有多少 reader
   mk('readcount', 0);
   cap('用 semaphore、counting 的概念', '要數到底有多少 reader 正在 access');
   await step(tok);                                   // 614 有 reader 就代表 lock 在 reader 這邊
-  note('readcount ≥ 1 → lock 在 reader 這邊', 0, 1.3, -0.4);
+  r1('readcount ≥ 1 → lock 在 reader 這邊');
   cap('只要還有 reader', 'lock 就還在 reader 這邊');
   await step(tok);                                   // 628 沒有 reader 時 lock 才能 release
-  idx('readcount = 0 才能 release lock', 0, 1.9, -0.4);
+  r1('readcount = 0 才能 release lock');
   cap('只有在沒有 reader 的時候', 'lock 才可以被 release');
   await step(tok);                                   // 645 writer：exclusive access
-  wr = code(['wait(wrt);', '  … writing …', 'signal(wrt);'], 4.6, 6.2, 0.5, -3); hot('writer', 4.6, 6.8, -3);
+  r1(''); wr = code(['wait(wrt);', '  … writing …', 'signal(wrt);'], 4.6, 6.2, 0.42, -3); hot('writer', 4.6, 7.0, -3);
   cap('先看 writer', 'writer 是 exclusive 的 access');
   await step(tok);                                   // 661 wrt：binary semaphore，像 mutex
   mk('wrt', 3.2);
@@ -2020,7 +2037,7 @@ FRAG.push(['syn-20d-rwsol', 'First readers-writers 的 semaphore 解法', async 
   wr.hl(0);
   cap('access 之前 wait、之後 signal', '包成一個 critical section');
   await step(tok);                                   // 692 reader：可以 share 這個 lock
-  rd = code(RL, -3.8, 6.2, 0.5, -3); hd('reader', -3.8, 6.8, -3); wr.hl(-1);
+  rd = code(RL, -3.8, 6.2, 0.42, -3); hd('reader', -3.8, 7.0, -3); wr.hl(-1);
   [0, 3, 5, 8].forEach((k) => P.showL(rd.ls[k], false));
   cap('reader 類似，但不一樣', 'reader 可以 share 這個 lock');
   await step(tok);                                   // 706 readcount++
@@ -2033,49 +2050,49 @@ FRAG.push(['syn-20d-rwsol', 'First readers-writers 的 semaphore 解法', async 
   await step(tok);                                   // 736 ≠ 1 → 跳過（有人幫你拿了 lock）
   rs.push(pal('R2', '', PCS[3], -0.4, 0, 2.6, 0.6)); vals.readcount = 2; upd(); glow(rs[1].body, OKG);
   rd.hl(2);
-  const rc2 = note('readcount = 2 ≠ 1 → 不再 wait（lock 已經有人拿了）', 0, 0, 3.8);
+  r1('readcount = 2 ≠ 1 → 不再 wait（lock 已經有人拿了）');
   cap('R2：readcount 不等於 1', '已經有 reader 拿到 lock，不要再 wait');
   await step(tok);                                   // 766 讀完 readcount--
-  rd.hl(6); vals.readcount = 1; upd(); kill(rs[0].g); remove(rc2);
+  rd.hl(6); vals.readcount = 1; upd(); kill(rs[0].g); r1('');
   cap('讀完之後回來：readcount--', 'R1 離開，readcount = 1');
   await step(tok);                                   // 773 == 0 → 最後一個 → signal(wrt)
   rd.hl(7); vals.readcount = 0; vals.wrt = 1; upd(); kill(rs[1].g);
   W = pal('W', '', PCS[1], 3.0, 0, 2.6, 0.6); W.mood('happy');
   cap('R2 離開：readcount 減成 0 → 最後一個', 'signal(wrt) release lock，writer 才有機會');
   await step(tok);                                   // 783 不是最後一個 → 不用 signal
-  idx('（R1 離開時 readcount = 1，不是最後一個 → 跳過）', -1.4, 0.2, 3.6);
+  r1('R1 離開時 readcount = 1，不是最後一個 → 跳過');
   cap('不是最後一個就不用 signal', 'lock 要保留在 reader 這一群裡');
   await step(tok);                                   // 799 by group：第一個拿、最後一個放
-  good('第一個 reader 拿 lock、最後一個 reader 放 lock（by group）', 0, 1.2, 3.6);
+  r1('第一個拿 lock、最後一個放 lock（by group）', 'good');
   cap('只要數：是不是第一個 reader', '是不是最後一個離開的 → by group');
   await step(tok);                                   // 811 還沒完全正確：readcount 本身是 shared
   glow(vc.readcount, NOR);
-  bad('readcount 本身也是 shared variable！', 0, 1.3, -0.4);
+  r1('readcount 本身也是 shared variable！', 'bad');
   cap('程式還沒完全正確', 'readcount 是 readers 之間共享的 variable');
   await step(tok);                                   // 830 再用一個 semaphore（mutex）保護
-  mk('mutex', -3.2);
+  mk('mutex', -3.2); r1('');
   cap('所有 reader 都可能同時 readcount++', '再用一個 semaphore（叫 mutex）保護它');
   await step(tok);                                   // 861 包起來：readcount++ 連同 if
   [0, 3, 5, 8].forEach((k) => P.showL(rd.ls[k], true));
   rd.hl(0); glow(vc.readcount, null);
   cap('把 readcount++ 包起來', '連 if 一起包：操作完要立刻檢查');
   await step(tok);                                   // 889 檢查哪裡會 race；不相關的用不同 lock
-  note('有關聯的 data 用同一個 lock；沒關聯的用不同的 lock', 0, 4.0, -1.6);
+  r1('有關聯的 data 用同一個 lock；沒關聯的用不同的');
   cap('有了框架再檢查哪裡會 race', '不是只能用一個 mutex，看 data 有沒有關聯');
   await step(tok);                                   // 925 shared data 與 readcount 不同 → 不同 lock
   glow(vc.wrt, DIM); glow(vc.mutex, DIM);
-  idx('wrt 保護檔案；mutex 保護 readcount', 0, 0, 0.8);
+  r1('wrt 保護檔案；mutex 保護 readcount');
   cap('writer 的 shared data 跟 readcount 不同', '所以用不同的 lock；全寫在一起會錯或沒效率');
   await step(tok);                                   // 963 writer exclusive、reader sharing
   rd.hl(-1); glow(vc.wrt, null); glow(vc.mutex, null);
-  good('writer：exclusive　reader：sharing', 3.6, 1.2, 3.6);
+  r1('writer：exclusive　reader：sharing', 'good');
   cap('這就是 first RW 的 solution', 'writer 有 exclusive right，reader 可以 sharing');
   await step(tok);                                   // 975 問題：writer starvation
   W.mood('sad'); glow(W.body, NOR);
-  bad('reader 一直把 lock 傳下去 → writer starvation', 0, 2.0, 3.6);
+  r1('reader 一直傳 lock → writer starvation', 'bad');
   cap('問題：writer 會 starvation', '後來的 reader 一直插隊');
   await step(tok);                                   // 997 second RW 的 solution 自己查
-  note('second RW 的 solution 更短：自己 Google、想想為什麼對', 0, 4.8, -1.6);
+  r1('second RW 的 solution 更短：自己查、想想為什麼對');
   cap('要解 starvation → second RW 的 solution', '強力建議自己查，想想為什麼它是對的');
 }]);
 
@@ -2120,59 +2137,60 @@ FRAG.push(['syn-20d-dining', 'Dining philosophers：大家先拿左邊 → deadl
 FRAG.push(['syn-20d-monitor', 'Monitor 的概念：一次只有一個 thread 在裡面', async (tok) => {
   fresh([0, 6.5, 13], [0, 1.4, 0]);
   let box, vars, ms = [], th = [];
+  const r1 = one(0, 3.2, -2.4), r2 = one(1.0, 3.6, -0.6);
   await step(tok);                                   // 1142 為什麼要 monitor
-  hd('為什麼要 monitor？', 0, 6.2);
+  r1('為什麼要 monitor？', 'ptr');
   cap('為什麼要 monitor？', '');
   await step(tok);                                   // 1144 semaphore / mutex / CS：自己 call wait、signal
   const sl = code(['wait(S);', 'wait(Q);', '  …', 'signal(Q);', 'signal(S);'], -4.2, 5.0, 0.5, -2.4);
   cap('用 semaphore、mutex lock、critical section', '都要自己在那邊 call signal 跟 wait');
   await step(tok);                                   // 1154 順序寫錯 → deadlock
   sl.hl(1);
-  bad('順序不小心寫錯 → deadlock', -4.2, 2.0, -2.4);
+  r1('順序不小心寫錯 → deadlock', 'bad');
   cap('一堆 signal 跟 wait', '順序不小心寫錯，就 deadlock 了');
   await step(tok);                                   // 1159 很 low level 的工具
-  idx('low-level tool', -4.2, 5.7, -2.4);
+  r1('low-level tool');
   cap('它們是非常 low level 的 synchronization tool', '很容易因為 programming 的問題卡住');
   await step(tok);                                   // 1170 monitor：high-level language construct，OO 的概念
-  sl.kill();
+  sl.kill(); r1('');
   box = room(1.0, 1.1, -0.6, 6.2, 2.2, 3.2, '#9b7ef4');
   tag('monitor', 'ptr', 1.0, 2.6, -0.6);
   cap('monitor：high-level language 的 construct', '說真的，就是 OO 的概念');
   await step(tok);                                   // 1181 把 resource 想成 OO：class、object
-  idx('class → object', 1.0, 3.2, -0.6);
+  r2('class → object');
   cap('把要保護的 resource 想成 OO', '分 class、object');
   await step(tok);                                   // 1195 monitor = 特殊 class 產生的 object
-  note('monitor = 特殊的 class 產生的 object', 1.0, 4.0, -0.6);
+  r2('monitor = 特殊的 class 產生的 object');
   cap('一個 monitor', '就是一個特殊的 class 所產生的 object');
   await step(tok);                                   // 1200 要保護的變數 = local variable
   vars = bx('local variable（會 race 的變數）', SC.mem, -1.2, 0.3, -1.6, 2.6, 0.6, 1.0, 2);
   cap('要保護的、會 race condition 的變數', '就是這個 object 裡面的 local variable');
   await step(tok);                                   // 1208 操作它的是 method；外面只能透過 method
-  ms = ['method A()', 'method B()', 'method C()'].map((n, k) => bx(n, '#4b9ee2', 3.0, 0.25, -1.6 + k * 1.0, 1.8, 0.5, 0.8, 2));
+  ms = ['method A()', 'method B()', 'method C()'].map((n, k) => bx(n, '#4b9ee2', 3.0, 0.25, -2.0 + k * 1.3, 1.8, 0.5, 0.8, 2));
   cap('操作這些變數的就是 class 的 method', '要 touch 它，一定要 go through 這些 method');
   await step(tok);                                   // 1222 跟一般 OO 差在哪？
   cap('跟一般的 OO 差在哪？', '很小、但很重要的一點');
   await step(tok);                                   // 1229 一般 OO：很多 thread 同時 call → 同時執行
-  th = [0, 1, 2].map((k) => pal('T' + k, '', PCS[k], -5.6 + k * 1.1, 0, 2.6, 0.55));
+  th = [0, 1, 2].map((k) => pal('T' + k, '', PCS[k], -6.0 + k * 1.3, 0, 2.6, 0.55));
   th.forEach((t) => t.mood('wow'));
-  bad('一般 OO：同時執行 → race condition', -4.4, 2.2, 2.6);
+  r2('一般 OO：同時執行 → race condition', 'bad');
   cap('一般 OO 的 method 可以很多 thread 同時 call', '同時執行就會 race condition');
   await step(tok);                                   // 1241 monitor：一次只有一個 method 執行
-  await slide(tok, th[0].g, 1.0, 0, 0.4, 800); glow(th[0].body, OKG); th[0].mood('happy');
+  await slide(tok, th[0].g, 0.6, 0, 1.2, 800); glow(th[0].body, OKG); th[0].mood('happy');
   [1, 2].forEach((k) => glow(th[k].body, '#6a4a00'));
-  hot('一次只有一個 method 可以執行', 1.0, 5.0, -0.6);
+  r2('一次只有一個 method 可以執行', 'ptr alt');
   cap('monitor 的 method 多一個條件', '一次只有一個 method 可以執行');
   await step(tok);                                   // 1252 language level 保護 → mutual exclusion
-  kill(th[0].g); await slide(tok, th[1].g, 1.0, 0, 0.4, 700); glow(th[1].body, OKG); th[1].mood('happy');
+  kill(th[0].g); await slide(tok, th[1].g, 0.6, 0, 1.2, 700); glow(th[1].body, OKG); th[1].mood('happy');
   cap('很多 thread 同時 call 也沒關係', 'language level 保證一次只有一個在執行：mutual exclusion');
   await step(tok);                                   // 1272 為什麼容易：只要定義 behavior
-  good('只要定義：保護哪些變數、有哪些操作', 1.0, 4.4, 2.4);
+  r2('只要定義：保護哪些變數、有哪些操作', 'good');
   cap('為什麼容易得多？', '只要想哪些變數要保護、有哪些操作');
   await step(tok);                                   // 1289 by default method 不能同時執行 → 不會有 CS 問題
-  idx('by default 不能同時執行 → 永遠不會有 critical section 問題', 1.0, 3.6, 2.4);
+  r2('by default 不能同時執行 → 不會有 CS 問題');
   cap('by default，method 之間不能同時執行', '所以永遠不會產生 critical section 的問題');
   await step(tok);                                   // 1304 thread 呼叫 method 操作 program state
-  kill(th[1].g); await slide(tok, th[2].g, 1.0, 0, 0.4, 700); glow(th[2].body, OKG); th[2].mood('happy');
+  kill(th[1].g); await slide(tok, th[2].g, 0.6, 0, 1.2, 700); glow(th[2].body, OKG); th[2].mood('happy');
   cap('那些 thread 去 call 這些 method', '操作整個 program 的 state，就不會有問題');
   void box; void vars; void ms;
 }]);
@@ -2292,28 +2310,29 @@ FRAG.push(['syn-sem-order', '用 semaphore 排順序：S1 一定在 S2 之前', 
   const x0 = -5.0, sx = 0.42;
   const ax = (t, z) => idx(String(t), x0 + t * sx, 0, z + 0.55);
   let sy, wseg;
+  const r1 = one(0, 3.0, -1.4);
   await step(tok);                                   // 263 另一個例子：兩個 process 互相 synchronize
-  hd('用 semaphore 讓兩個 process 同步', 0, 6.0);
+  r1('用 semaphore 讓兩個 process 同步', 'ptr');
   cap('另一個例子', '兩個 process 用 semaphore 互相 synchronize');
   await step(tok);                                   // 272 P1、P2
   hd('P1', -6.2, 0.3, -2.4); hot('P2', -6.2, 0.3, -0.6);
   cap('兩個 process：P1 和 P2', '');
   await step(tok);                                   // 279 S1 在 P1、S2 在 P2；要求 S1 先
-  note('要求：S1 一定要在 S2 之前執行', 0, 4.8);
+  r1('要求：S1 一定要在 S2 之前執行');
   cap('P1 有一行 S1、P2 有一行 S2', '要求：S1 要在 S2 之前執行');
   await step(tok);                                   // 296 時間軸：S1 在 10、S2 在 11 → 開心
   const a1 = bx('S1', PCS[0], x0 + 10 * sx, 0.3, -2.4, 0.8, 0.5, 0.7, 1.2), a2 = bx('S2', PCS[1], x0 + 11 * sx, 0.3, -0.6, 0.8, 0.5, 0.7, 1.2);
   const t10 = ax(10, -2.4), t11 = ax(11, -0.6);
-  const ok1 = good('S1 在 10、S2 在 11 → OK', 2.4, 1.2, -1.4);
+  r1('S1 在 10、S2 在 11 → OK', 'good');
   cap('時間軸上：S1 在第 10、S2 在第 11', 'S1 在前，符合要求');
   await step(tok);                                   // 310 另一種情況：S2 在 10、S1 在 20 → 不行
-  gone(a1, a2, ok1, t10, t11);
+  gone(a1, a2, t10, t11);
   bx('S1', PCS[0], x0 + 20 * sx, 0.3, -2.4, 0.8, 0.5, 0.7, 1.2); ax(20, -2.4);
   const bad2 = bx('S2', PCS[1], x0 + 10 * sx, 0.3, -0.6, 0.8, 0.5, 0.7, 1.2);
-  const nb = bad('S2 在 10、S1 在 20 → 不符合', 2.4, 1.2, 0.6);
+  r1('S2 在 10、S1 在 20 → 不符合', 'bad');
   cap('另一種情況：S1 跑在 S2 後面', 'S2 在第 10、S1 在第 20 → 不符合');
   await step(tok);                                   // 340 定義 semaphore sync = 0
-  sy = bx('sync = 0', SC.mem, 3.6, 0.45, 2.4, 2.2, 0.9, 1.1, 2);
+  r1(''); sy = bx('sync = 0', SC.mem, 3.6, 0.45, 2.4, 2.2, 0.9, 1.1, 2);
   cap('定義一個 semaphore：sync', '初值設成 0');
   await step(tok);                                   // 352 S1 後面寫 signal(sync)
   hd('S1; signal(sync);', -2.0, 2.0, -2.4);
@@ -2322,7 +2341,7 @@ FRAG.push(['syn-sem-order', '用 semaphore 排順序：S1 一定在 S2 之前', 
   hot('wait(sync); S2;', -2.0, 2.0, -0.6);
   cap('在 P2 的 S2 前面', '寫 wait(sync)');
   await step(tok);                                   // 375 S2 先到、sync = 0 → P2 被迫等
-  remove(nb); kill(bad2);
+  kill(bad2);
   wseg = bx('wait…', '#d64545', x0 + 15.5 * sx, 0.25, -0.6, 11 * sx, 0.5, 0.7, 1.2);
   cap('如果 S2 先到，sync = 0', 'wait 會強迫 P2 停在這一行等');
   await step(tok);                                   // 397 等到什麼時候？第 20 秒 P1 signal → sync = 1
@@ -2335,15 +2354,15 @@ FRAG.push(['syn-sem-order', '用 semaphore 排順序：S1 一定在 S2 之前', 
   cap('第 21 秒 P2 看到 sync = 1', '離開等待，執行 S2（sync 又被減回 0）');
   await step(tok);                                   // 449 P2 變長：這段是它的 waiting time
   glow(wseg, '#3a0a0a');
-  note('紅色這段 = P2 多花的 waiting time', -1.0, 1.4, 0.6);
+  r1('紅色這段 = P2 多花的 waiting time');
   cap('P2 在時間軸上變長了', '紅色這段就是 P2 的 waiting time');
 }]);
 
 FRAG.push(['syn-sem-block', 'Busy waiting vs block / wakeup', async (tok) => {
-  fresh([0, 6.5, 13], [0, 1.6, 0]);
+  fresh([0, 8.2, 16.5], [0, 2.9, 0]);
   let M, cd, ps = [];
   await step(tok);                                   // 465 semaphore 也可以換一種實作
-  M = semStage(0, '等待（while 迴圈裡轉）', { sx: 1.4 });
+  M = semStage(0, '等待（while 迴圈裡轉）', { sx: 0.4 });
   cd = code(['wait(S) {', '  while (S <= 0) ;', '  S--;', '}'], -3.6, 5.6, 0.5, -2.8);
   ps = [pal('P1', '', PCS[0], 2.6, 0, -0.2, 0.6)]; glow(ps[0].body, OKG); ps[0].slot = 0; M.st.cs.push(ps[0]);
   cap('semaphore 可以用稍微不一樣的方式實作', '先看原本的 wait');
@@ -2361,32 +2380,33 @@ FRAG.push(['syn-sem-block', 'Busy waiting vs block / wakeup', async (tok) => {
   await step(tok);                                   // 517 每次 OS 給它 CPU，它只跑什麼都不做的迴圈
   const cpu = prop('cpu', -0.6, 0, 0.4, 0.8, 'CPU');
   await spin(tok, w, 800);
-  const spinBad = bad('上了 CPU 也只是在空轉：浪費 CPU cycle', -3.2, 1.8, 2.8);
+  const r1 = one(-3.8, 2.7, 2.8); r1('上了 CPU 也只是在空轉：浪費 CPU cycle', 'bad');
   cap('每次 OS 給它機會上 CPU', '它只是執行這個什麼都不做的迴圈');
   await step(tok);                                   // 551 OS 提供兩個 system call：block、wakeup
-  gone(cpu, spinBad);
-  hd('OS 的 system call：block()、wakeup()', 2.6, 6.4);
+  gone(cpu);
+  r1('OS 的 system call：block()、wakeup()', 'ptr');
   cap('改用 OS 提供的兩個 system call', '一個叫 block，另一個叫 wakeup');
   await step(tok);                                   // 559 像 I/O：睡著時不吃 CPU
-  note('像等 I/O：進入 sleep，不使用 CPU cycle', 2.6, 5.6);
+  r1('像等 I/O：進入 sleep，不使用 CPU cycle');
   cap('還記得等 I/O 時', 'process 進入類似睡覺的狀態，不浪費 CPU cycle');
   await step(tok);                                   // 581 這次是 process 自己說：我要去睡
   w.forEach((b) => sleepy(b, true)); w.forEach((b) => glow(b.body, '#1a2a5a'));
   cap('不同的是：這次是 process 自己說', '「我在等 critical section，讓我去睡」');
   await step(tok);                                   // 598 自己宣告 waiting：call block
-  idx('block()：把自己推進 waiting state', -3.2, 1.8, 2.8);
+  r1('block()：把自己推進 waiting state');
   cap('process 宣告自己在等', '用 block system call 把自己推進 waiting state');
   await step(tok);                                   // 610 出來的人 wakeup 另一個
-  idx('出來的人：wakeup() 叫醒另一個', 3.8, 2.6, -0.2);
+  r1('出來的人：wakeup() 叫醒另一個');
   cap('有 process 離開 critical section 時', '就 wakeup 另一個想進去的 process');
   await step(tok);                                   // 631 不用浪費 CPU：OS 不會把它送上 CPU
-  good('睡著的 process：OS 不會把它送上 CPU', -3.2, 3.6, 2.8);
+  r1('睡著的 process：OS 不會把它送上 CPU', 'good');
   cap('不管幾個在等，都不用浪費 CPU cycle', 'OS 不會把睡著的 process 送進 CPU');
   await step(tok);                                   // 644 新的 wait：先把 S 減 1
   gone(...w, ...ps, cd); M.st.cs = []; M.st.wait = [];
-  fresh([0, 6.5, 13], [0, 1.6, 0]);
-  M = semStage(1, 'S 的 waiting list（block，睡著）', { block: true, sx: 1.4 });
-  cd = code(['wait(S) {', '  S--;', '  if (S < 0) {', '    add P to S.list;', '    block();', '  }', '}', 'signal(S) {', '  S++;', '  if (S <= 0) {', '    remove P from S.list;', '    wakeup(P);', '  }', '}'], -4.2, 6.6, 0.42, -3.2);
+  fresh([0, 8.2, 16.5], [0, 2.9, 0]);
+  M = semStage(1, 'S 的 waiting list（block，睡著）', { block: true, sx: 0.4 });
+  cd = code(['wait(S) {', '  S--;', '  if (S < 0) {', '    add P to S.list;', '    block();', '  }', '}', 'signal(S) {', '  S++;', '  if (S <= 0) {', '    remove P from S.list;', '    wakeup(P);', '  }', '}'], -4.4, 6.0, 0.44, -3.2);
+  showPart(cd, 0, 7);
   const p1 = pal('P1', '', PCS[0], -6.4, 0, 0.6, 0.6);
   cd.hl(1); M.setS(0); await M.toCS(tok, p1, 700);
   cap('新的 wait：一進來就先把 S 減 1', 'P1：S 從 1 減成 0，進去');
@@ -2398,16 +2418,15 @@ FRAG.push(['syn-sem-block', 'Busy waiting vs block / wakeup', async (tok) => {
   await step(tok);                                   // 668 block：自己進入 blocked state
   cd.hl(4); sleepy(p2, true); glow(p2.body, '#1a2a5a');
   const p3 = pal('P3', '', PCS[2], -6.4, 0, 0.6, 0.6); M.setS(-2); await M.toWait(tok, p3, 600);
-  const s2 = note('S = −2：|S| = 2 個在等', 3.8, 2.6, -0.2);
+  const r2 = one(3.8, 2.6, -0.2); r2('S = −2：|S| = 2 個在等');
   cap('再 block()：我不要浪費 CPU cycle', 'P3 也一樣，S = −2（|S| = 在等的人數）');
   await step(tok);                                   // 700 signal：離開的人先把 S 加 1
-  cd.hl(8); M.setS(-1);
+  showPart(cd, 7, 99, 7 * 0.44); cd.hl(8); M.setS(-1); r2('signal：S 加 1（−2 → −1）');
   await M.out(tok, p1, 600);
   cap('離開 critical section 的 process', '先把 S 加 1：−2 → −1');
   await step(tok);                                   // 707 再檢查：還有人在等嗎？
   cd.hl(9);
-  remove(s2);
-  note('課本：S ≤ 0 → 還有人在等（影片說成「0 或大於 0」）', 3.0, 2.8, -0.2);
+  r2('課本：S ≤ 0 → 還有人在等');
   cap('再檢查 S', '課本的條件：加完 S ≤ 0 代表 list 裡還有人');
   await step(tok);                                   // 729 從 list 拿出一個 process，wakeup
   cd.hl(11);
@@ -2416,7 +2435,7 @@ FRAG.push(['syn-sem-block', 'Busy waiting vs block / wakeup', async (tok) => {
   cap('從 list 移出一個 process P', '用 wakeup system call 叫醒它 → P2 進去');
   await step(tok);                                   // 751 no busy waiting / no spinlock
   cd.hl(-1);
-  good('沒有 busy waiting（no spinlock）的 semaphore', 0, 7.0, -3.2);
+  r2('沒有 busy waiting（no spinlock）', 'good');
   cap('這就是沒有 busy waiting 的實作', '也叫 no spinlock：等的人不吃 CPU');
   void ps;
 }]);
@@ -2448,18 +2467,18 @@ FRAG.push(['syn-18d-turn', '解法一：只用 turn 輪流（違反 progress）'
   V = csView('turn', { startPc: [3, 3] });
   cap('先從只有兩個 process 開始', 'P0 跟 P1');
   await step(tok);                                   // 93 do-while：兩邊不斷想進 critical section
-  const n2 = note('do { … } while：兩邊都不斷想進 critical section', 0, 4.2, 0.6);
+  V.note('do { … } while：兩邊都不斷想進 critical section');
   cap('do-while 代表它們會不斷地', '想進到 critical section 做 data access');
   await step(tok);                                   // 116 第一個 solution：一個像 key 的 token：turn
-  hot('turn：shared 的 token（key）', 3.2, 1.4, -2.4);
+  V.note('turn：shared 的 token（key）', 'ptr alt');
   cap('第一個 solution：用一個像 key 的概念', '一個 shared 的 token，叫 turn');
   await step(tok);                                   // 129 值就是 0 或 1
   cap('turn 的值就是 0 或 1', '');
   await step(tok);                                   // 165 turn = 0 → P0 進；= 1 → P1 進：輪流
-  idx('turn = 0 → P0 進　turn = 1 → P1 進', -3.2, 1.4, -2.4);
+  V.note('turn = 0 → P0 進　turn = 1 → P1 進');
   cap('turn 是 0 就 P0 進去，是 1 就 P1 進去', '看 turn 的值來控制：輪流');
   await step(tok);                                   // 181 只有一個人能執行 → mutual exclusion 沒問題
-  const me = good('turn 只有一個值 → 一次只有一個人：ME ✓', 0, 3.6, 1.8);
+  V.note('turn 只有一個值 → 一次只有一個人：ME ✓', 'good');
   cap('turn 要嘛 0 要嘛 1', '只有一個人可以執行 → mutual exclusion 沒問題');
   await step(tok);                                   // 191 P0 做完把 turn 換成 1
   V.P[0].pc = 0; V.update();
@@ -2469,16 +2488,15 @@ FRAG.push(['syn-18d-turn', '解法一：只用 turn 輪流（違反 progress）'
   await runCS(tok, V, [1, 1, 1, 1], 450);
   cap('P1 同樣做完要換別人', '把 turn 寫成 0');
   await step(tok);                                   // 209 entry section / exit section
-  idx('while (turn != i) ; ← entry section', -4.4, 7.4, -3.4); idx('turn = j; ← exit section', 4.4, 7.4, -3.4);
+  V.note('while (turn != i) ← entry　turn = j ← exit');
   cap('while 這段就是 entry section', 'turn = j 這段是 exit section');
   await step(tok);                                   // 222 不完美：一個一個檢查，ME 沒問題
   cap('這個 solution 並不完美', '一個一個檢查：mutual exclusion 沒問題');
   await step(tok);                                   // 240 progress：可能不符合
-  bad('progress？', 0, 5.6, 0.4);
+  V.note('progress？', 'bad');
   cap('第二個條件 progress', '空著時，另一個要能進來：這個程式可能不符合');
   await step(tok);                                   // 258 不是一人一行：P0 可能做很多次 P1 才做一次
-  remove(n2);
-  const n12 = note('不是你一行、我一行：CPU scheduling 是 run time 決定', 0, 4.2, 0.6);
+  V.note('不是你一行、我一行：run time 才決定');
   cap('注意：沒有人說兩個程式你一行我一行', 'P0 可能執行很多次，P1 才執行一次');
   await step(tok);                                   // 289 P0 先進去、出來；P1 還沒進去
   await runCS(tok, V, [0, 0, 0, 0], 450);
@@ -2487,17 +2505,15 @@ FRAG.push(['syn-18d-turn', '解法一：只用 turn 輪流（違反 progress）'
   await runCS(tok, V, [0, 0], 500);
   cap('P0 立刻又執行到 while', 'turn 的值是 1 → P0 卡在這裡進不去');
   await step(tok);                                   // 307 P1 不急，還沒執行到 → 沒有 progress
-  remove(n12);
-  bad('裡面空著，P0 卻進不去 → 沒有 progress', 0, 4.2, 0.6);
+  V.note('裡面空著，P0 卻進不去 → 沒有 progress', 'bad');
   cap('P1 可能不急，還沒執行到這行', '裡面明明是空的 → 沒有 progress');
   await step(tok);                                   // 312 一定要輪流；但實際上 P0 可能連做兩次
   cap('這個 solution 一定要你做完換我', '實際上 P0 很可能要連續做兩次，手上卻沒有 key');
   await step(tok);                                   // 338 bounded waiting 一定符合：輪流
-  remove(me);
-  good('bounded waiting ✓：你一個、我一個，最多等 1 次', 0, 3.6, 1.8);
+  V.note('bounded waiting ✓：最多等 1 次', 'good');
   cap('bounded waiting 一定符合', '你一個我一個，waiting 最多一次');
   await step(tok);                                   // 352 符合 BW、ME，不符合 progress
-  hd('ME ✓　progress ✗　bounded waiting ✓', 0, 8.0, -3.4);
+  V.note('ME ✓　progress ✗　bounded waiting ✓', 'ptr');
   cap('三個裡面只符合兩個', 'mutual exclusion、bounded waiting 有，progress 沒有');
 }]);
 
@@ -2508,13 +2524,13 @@ FRAG.push(['syn-18d-peterson', "解法二：Peterson's solution（turn + flag）
   V = csView('peterson', { startPc: [5, 5] });
   cap("第二個 solution：Peterson's solution", '這個才是正確的解法');
   await step(tok);                                   // 387 延伸：turn = i → Pi 可以進
-  hot('turn = i → Pi 有 key', 3.2, 1.4, -2.4);
+  V.note('turn = i → Pi 有 key', 'ptr alt');
   cap('延伸剛剛的想法：用 turn 表示輪流', 'turn 等於 i 時，Pi 可以進入 critical section');
   await step(tok);                                   // 398 多加一個 flag：想不想進
-  hd('flag[i]：Pi 想不想進', -3.2, 1.4, -2.4);
+  V.note('flag[i]：Pi 想不想進', 'ptr');
   cap('為了解決 progress，多加一個 flag', '表示這個 process 到底想不想進去');
   await step(tok);                                   // 412 剛剛的問題：不知道大家想不想進
-  const prob = note('剛才的問題：只會輪流，不知道對方想不想進', 0, 4.0, 0.8);
+  V.note('剛才的問題：只會輪流，不知道對方想不想進');
   cap('剛剛的問題：我們只是輪流', '不知道大家想不想進去');
   await step(tok);                                   // 426 flag[0]、flag[1]：true / false
   cap('flag[0] 是 P0 想不想進、flag[1] 是 P1', '簡單的 true、false');
@@ -2527,9 +2543,8 @@ FRAG.push(['syn-18d-peterson', "解法二：Peterson's solution（turn + flag）
   cap('多了一個：flag[j] 也要是 true', '對方真的想進、而且有鑰匙，我才等');
   await step(tok);                                   // 505 我有 key 就進；對方有 key 卻不想進 → 我也能進
   V.P[0].pc = 0; V.update();
-  remove(prob);
   await runCS(tok, V, [0, 0, 0], 450);
-  good('對方有 key 但不想進 → 我照樣進去（progress）', 0, 4.0, 1.8);
+  V.note('對方有 key 但不想進 → 我照樣進去', 'good');
   cap('對方有鑰匙卻不想進去', '我也可以進去 → 滿足 progress');
   await step(tok);                                   // 527 進去前 flag 設 true、出來設 false
   await runCS(tok, V, [0, 0, 0], 450);
@@ -2545,7 +2560,7 @@ FRAG.push(['syn-18d-peterson', "解法二：Peterson's solution（turn + flag）
   await runCS(tok, V, [0, 1], 450);
   cap('讓對方先判斷要不要進：turn = 0，P0 進去', '對方想進的話，key 就不會還你 → P1 等');
   await step(tok);                                   // 641 所以一定寫在檢查前面
-  good('turn = j 寫在 while 之前：先給別人一次檢查的機會', 0, 4.4, 1.8);
+  V.note('turn = j 寫在 while 之前：先讓別人檢查', 'good');
   cap('所以 turn = j 一定寫在檢查的前面', '先給別人一次檢查的機會');
 }]);
 
@@ -2560,14 +2575,14 @@ FRAG.push(['syn-18d-proof', "Peterson 為什麼滿足三個 requirements", async
   room(0, 0.8, 0, 4.0, 1.6, 2.4); idx('critical section（假設兩個都在）', 0, 1.9, 0);
   cap('用反證法：假設兩個都已經在', 'critical section 裡面了');
   await step(tok);                                   // 685 能在裡面的條件：對方 flag 是 false，或 turn 是自己
-  note('P0 在裡面：flag[1] == false 或 turn == 0', -3.6, 3.2, 0);
-  note('P1 在裡面：flag[0] == false 或 turn == 1', 3.6, 3.2, 0);
+  note('flag[1] == false 或 turn == 0', -3.6, 2.5, 0);
+  note('flag[0] == false 或 turn == 1', 3.6, 2.5, 0);
   cap('能在裡面的條件：對方的 flag 是 false', '或者 turn 剛好是自己');
   await step(tok);                                   // 706 兩個都要進 → flag 都是 true
-  idx('兩人都要進 → flag[0] = flag[1] = true', 0, 4.2, 0);
+  const pr = one(0, 3.6, 0); pr('兩人都要進 → flag[0] = flag[1] = true');
   cap('兩個都要進去，自己的 flag 一定是 true', '所以「對方 flag 是 false」不可能發生');
   await step(tok);                                   // 723 false 那個條件不會發生 → 只剩 turn
-  hot('只剩 turn 的條件', 0, 4.9, 0);
+  pr('只剩 turn 的條件', 'ptr alt');
   cap('false 的那個 condition 不會幫任何人進去', '所以只剩 turn 的值');
   await step(tok);                                   // 745 turn 用 assign：一定是 0 或 1
   const tc = bx('turn = 0', SC.mem, 0, 0.4, 2.6, 1.8, 0.8, 1.0, 2);
@@ -2576,11 +2591,11 @@ FRAG.push(['syn-18d-proof', "Peterson 為什麼滿足三個 requirements", async
   glow(b.body, NOR); b.mood('sad'); glow(a.body, OKG);
   cap('turn 是 0：P0 可以在裡面', 'P1 的兩個條件都不成立 → 不可能在裡面');
   await step(tok);                                   // 793 反證：兩個條件永遠不能同時發生
-  good('兩人都在裡面的條件永遠不能同時成立 → ME ✓', 0, 5.6, 0);
+  pr('兩個條件不能同時成立 → ME ✓', 'good');
   cap('反過來 turn 是 1 也一樣', '兩個條件永遠不可能同時發生 → 反證完成');
   await step(tok);                                   // 804 第二個：progress
   csCam(); V = csView('peterson', { startPc: [0, 5] });
-  hd('② progress', 0, 7.4, -3.4);
+  V.note('② progress', 'ptr');
   cap('第二個是 progress', '');
   await step(tok);                                   // 823 P0 想進；P1 在 remainder 或 while 之前
   cap('假設 P0 想要進去', 'P1 在 remainder，或在 while 之前：反正不在 critical section');
@@ -2598,12 +2613,12 @@ FRAG.push(['syn-18d-proof', "Peterson 為什麼滿足三個 requirements", async
   await runCS(tok, V, [0, 1], 500);
   cap('兩人的 flag 都是 true、都 ready', 'turn 是 0 → P0 進去；一定有一個人進得去');
   await step(tok);                                   // 951 critical section 不會空在那裡
-  good('critical section 不會空著 → progress ✓', 0, 4.2, 1.8);
+  V.note('critical section 不會空著 → progress ✓', 'good');
   cap('兩種情況都有人能進去', 'critical section 不會空在那裡');
   await step(tok);                                   // 976 最後一個：bounded waiting
   csCam(); V = csView('peterson');
   for (const i of [1, 1, 1, 0, 0, 0]) V.step(i);
-  hd('③ bounded waiting', 0, 7.4, -3.4);
+  V.note('③ bounded waiting', 'ptr');
   cap('最後一個 bounded waiting', 'P1 在 critical section、P0 在等');
   await step(tok);                                   // 990 P1 剛執行完，要確定一定讓給 P0
   cap('跟 progress 像，但更嚴謹', 'P1 剛執行完，要確定接下來一定是 P0');
@@ -2625,12 +2640,11 @@ FRAG.push(['syn-18d-proof', "Peterson 為什麼滿足三個 requirements", async
   await runCS(tok, V, [1, 1], 450); V.step(0);
   cap('P1 在 while 裡一直檢查，直到 burst 用完', 'OS 做 context switch 換到 P0 → P0 馬上進去');
   await step(tok);                                   // 1141 兩人都 ready 時 key 交給另一個 → 不能重複
-  good('剛執行完的人不能立刻再進：等的人一定先拿到 key → BW ✓', 0, 4.4, 1.8);
+  V.note('等的人一定先拿到 key → BW ✓', 'good');
   cap('兩個都 ready 時 key 會交給另一個人', '剛執行完的人沒辦法立刻重複執行');
   await step(tok);                                   // 1168 把 key 交給別人 vs 設給自己的差別
-  note('turn = j（交給別人），不是 turn = i', 0, 5.2, 1.8);
+  V.note('turn = j（交給別人），不是 turn = i');
   cap('這就是 key 交給別人、而不是設給自己的差別', '');
-  void tc;
 }]);
 
 FRAG.push(['syn-18d-csrange', 'Critical section 要定義在哪：越小越好', async (tok) => {
@@ -2692,6 +2706,7 @@ FRAG.push(['syn-18d-csrange', 'Critical section 要定義在哪：越小越好',
 FRAG.push(['syn-18d-bakery', 'N 個 process：Bakery algorithm 的概念', async (tok) => {
   fresh([0, 6.5, 13], [0, 1.6, 0]);
   let ppl = [], tk = [];
+  const r1 = one(0, 3.2, 2.2);
   await step(tok);                                   // 1419 剛剛是兩個 process 的 solution
   const two = [pal('P0', '', PCS[0], -1.0, 0, 1.4, 0.65), pal('P1', '', PCS[1], 1.0, 0, 1.4, 0.65)];
   cap('剛剛介紹的是兩個 process 的 solution', '');
@@ -2700,39 +2715,39 @@ FRAG.push(['syn-18d-bakery', 'N 個 process：Bakery algorithm 的概念', async
   ppl = [0, 1, 2, 3, 4].map((k) => pal('P' + k, '', PCS[k], -5 + k * 2.5, 0, 2.2, 0.6));
   cap('但大部分的問題都不是兩個', '而是 N 個 processes 之間的 synchronization');
   await step(tok);                                   // 1438 Bakery algorithm：N 個都適用
-  hd('Bakery algorithm：N 個 process 都適用', 0, 6.0);
+  r1('Bakery algorithm：N 個 process 都適用', 'ptr');
   cap('解法：Bakery algorithm', '可以 apply 到 N 個 processes');
   await step(tok);                                   // 1460 像去郵局、買麵包
-  const cash = prop('parcel', 0, 0, -2.4, 0.9, '結帳櫃台');
+  const cash = prop('parcel', 0, 0, -3.6, 0.9, '結帳櫃台');
   cap('概念就像去郵局、去麵包店', '只有一個人幫你結帳');
   await step(tok);                                   // 1477 抽號碼牌 → 一次一個
   tk = ppl.map((b, i) => bx('#' + (i + 1), '#f3e6c8', -5 + i * 2.5, 1.45, 2.2, 0.8, 0.4, 0.4, 1.5));
-  await slide(tok, ppl[0].g, 0, 0, -0.6, 700); glow(ppl[0].body, OKG);
+  await slide(tok, ppl[0].g, 0, 0, 0.2, 700); glow(ppl[0].body, OKG);
   cap('大家抽號碼牌', '就能確保一次只有一個人在結帳');
   await step(tok);                                   // 1490 first come first serve → bounded waiting
-  good('first come, first serve → bounded waiting', -3.6, 4.6);
+  r1('first come, first serve → bounded waiting', 'good');
   cap('抽了號碼牌就是 first come, first serve', '滿足 bounded waiting');
   await step(tok);                                   // 1500 知道下一個是誰 → progress
-  good('知道下一個是誰 → progress', 3.6, 4.6);
+  r1('知道下一個是誰 → progress', 'good');
   cap('只要有人抽，就知道下一個要服務誰', '滿足 progress');
   await step(tok);                                   // 1521 進去前抽號碼，小的先
-  note('進 critical section 前抽號碼，號碼小的先', 0, 5.3);
+  r1('進 critical section 前抽號碼，號碼小的先');
   cap('每個人進 critical section 之前抽號碼', '號碼越小越先執行');
   await step(tok);                                   // 1535 程式裡抽號碼好幾行 → 可能相同
   [1, 2, 3, 4].forEach((k) => { kill(tk[k]); });
   [3, 3, 5, 5].forEach((v, k) => { tk[k + 1] = bx('#' + v, '#f3e6c8', -2.5 + k * 2.5, 1.45, 2.2, 0.8, 0.4, 0.4, 1.5); });
   glow(tk[1], NOR); glow(tk[2], NOR);
-  bad('程式裡抽號碼是好幾行 → 可能相同（3、3、5、5）', 0, 3.6, 2.2);
+  r1('抽號碼是好幾行 → 可能相同（3、3、5、5）', 'bad');
   cap('程式裡抽號碼是好幾行程式', '兩個人同時抽可能相同，只保證 non-decreasing');
   await step(tok);                                   // 1566 tie breaker：PID 小的先
   glow(tk[1], OKG);
-  good('相同時比 PID：PID 小的先', 0, 0, 4.2);
+  r1('相同時比 PID：PID 小的先', 'good');
   cap('tie breaker：用 process ID', '號碼相同就比 PID，越小越先');
   await step(tok);                                   // 1595 程式比較 (a, b) < (c, d)
-  const cd = code(['(a, b) < (c, d)  if  a < c', '              or  a == c && b < d', 'a, c：號碼　b, d：PID'], -4.2, 1.4, 0.48, -2.0);
+  const cd = code(['(a, b) < (c, d)  if  a < c', '              or  a == c && b < d', 'a, c：號碼　b, d：PID'], 3.8, 5.0, 0.46, -3.0);
   cap('之後的程式碼比較時', '不只比號碼，號碼相同再比 process ID');
   await step(tok);                                   // 1608 完整的 solution（下次講解）
-  note('完整 solution 比較複雜：下次一行一行講', 0, 6.8, -2.0);
+  r1('完整 solution 比較複雜：下次一行一行講');
   cap('這是完整的 solution，看起來比較複雜', '下次再一行一行講解');
   void cash; void cd;
 }]);
@@ -2783,10 +2798,11 @@ FRAG.push(['syn-19b-mutex', 'Pthread 的 mutex：lock / unlock 包住 critical s
 const CVL = ['pthread_mutex_lock(&m);', 'if (x != 0)', '  pthread_cond_wait(&c, &m);', 'take_action();', 'pthread_mutex_unlock(&m);'];
 const CVR = ['pthread_mutex_lock(&m);', 'x--;          // 改 x', 'if (x == 0)', '  pthread_cond_signal(&c);', 'pthread_mutex_unlock(&m);'];
 FRAG.push(['syn-19b-cond', 'Condition variable：wait / signal / broadcast', async (tok) => {
-  fresh([0, 6.5, 13], [0, 1.8, 0]);
+  fresh([0, 7.6, 14.8], [0, 2.5, 0]);
   let th = [], cl, cr;
+  const r1 = one(0, 3.2, 0);
   await step(tok);                                   // 185 Pthread 另一個 tool：condition variable
-  hd('Pthread：condition variable', 0, 6.4);
+  r1('Pthread：condition variable', 'ptr');
   cap('Pthread 除了 mutex', '還有另一個跟 synchronization 有關的：condition variable');
   await step(tok);                                   // 197 用 event 去 trigger 其他 thread
   th = [0, 1, 2].map((k) => pal('T' + k, '', PCS[k + 1], -1.2 + k * 1.6, 0, 1.6, 0.6));
@@ -2794,12 +2810,12 @@ FRAG.push(['syn-19b-cond', 'Condition variable：wait / signal / broadcast', asy
   cap('程式同時執行時，常常需要一個 event', '去 trigger 其他 thread 開始做事');
   await step(tok);                                   // 227 notify：某個 condition 發生了
   for (const t of th) t.mood('wow');
-  arr(-3.6, 1.0, -1.8, 1.0, '#c08a1f', 1.6);
+  const nfy = arr(-3.6, 1.0, -1.8, 1.0, '#c08a1f', 1.6);
   cap('這個 variable 可以 notify 其他 thread', '告訴它們某個 condition 發生了');
   await step(tok);                                   // 237 例子：一個 thread 載資料，載完叫大家處理
   const ld = pal('loader', '', PCS[0], -5.0, 0, -1.2, 0.6);
-  prop('file', -3.6, 0, -1.6, 0.7);
-  const ldN = note('loader 把 data 載完 → 通知所有 thread 開始處理（示意）', 0, 3.6, 0);
+  const fl = prop('file', -3.6, 0, -1.6, 0.7);
+  r1('loader 載完 data → 通知所有 thread（示意）');
   cap('例子：一個 thread 專門把 data 載進來', '載完就 notify 所有 thread 一起處理');
   await step(tok);                                   // 269 wait：等某個 condition，沒人 signal 就卡住
   th.forEach((t) => sleepy(t, true));
@@ -2811,20 +2827,20 @@ FRAG.push(['syn-19b-cond', 'Condition variable：wait / signal / broadcast', asy
   th.forEach((t) => { sleepy(t, false); t.mood('happy'); glow(t.body, OKG); });
   cap('要叫醒所有在等的 thread', '就 call broadcast');
   await step(tok);                                   // 320 簡單的同步機制
-  const ordG = good('控制 thread 之間做事的順序', 0, 3.0, 1.6);
+  r1('控制 thread 之間做事的順序', 'good');
   cap('簡單的 synchronization 機制', '執行時間點不一定，但能同步大家的動作');
   await step(tok);                                   // 343 API：wait、signal、broadcast；init、destroy
-  gone(...th, ld, ev, ldN, ordG);
+  gone(...th, ld, ev, fl, nfy); r1('');
   code(['pthread_cond_wait(&c, &m);', 'pthread_cond_signal(&c);', 'pthread_cond_broadcast(&c);', '（也要 init、destroy）'], 0, 5.4, 0.5, -1.2);
   cap('Pthread 的 API', 'cond_wait、cond_signal、cond_broadcast');
   await step(tok);                                   // 364 wait 還需要一個 mutex lock
-  hot('cond_wait 還要一個 mutex → 兩個一起用', 0, 3.0, -1.2);
+  r1('cond_wait 還要一個 mutex → 兩個一起用', 'ptr alt');
   cap('你會發現 wait 的時候', '還需要一個 mutex lock：兩個必須一起用');
   await step(tok);                                   // 380 例子：counter 改 x；action 等 x == 0
-  fresh([0, 6.5, 13], [0, 1.8, 0]);
+  fresh([0, 7.6, 14.8], [0, 2.5, 0]);
   cl = code(CVL, -3.8, 5.6, 0.5, -2.4); cr = code(CVR, 3.8, 5.6, 0.5, -2.4);
   hd('action thread', -3.8, 6.2, -2.4); hot('counter thread', 3.8, 6.2, -2.4);
-  const X = bx('x = 2（示意）', SC.mem, 0, 0.45, 0.4, 2.2, 0.9, 1.1, 2);
+  const X = bx('x = 2（示意）', SC.mem, 0, 0.45, 0.4, 2.2, 0.9, 1.1, 2), r2 = one(0, 2.2, 0.4);
   cap('例子：兩個 thread', 'counter 在改 x；action 要等 x 等於 0 才能做事');
   await step(tok);                                   // 402 不等於 0 就 wait；別人發現是 0 就 signal
   cl.hl(2); cr.hl(3);
@@ -2834,18 +2850,18 @@ FRAG.push(['syn-19b-cond', 'Condition variable：wait / signal / broadcast', asy
   cap('這裡必須結合 mutex', '把程式碼包在 critical section 裡，為什麼？');
   await step(tok);                                   // 451 原因一：x 是 shared，很多人 ++ / --
   glow(X, NOR);
-  bad('① x 是 shared variable，很多人在 ++ / --', 0, 2.0, 0.4);
+  r2('① x 是 shared variable，很多人在 ++ / --', 'bad');
   cap('原因一：condition 的變數 x 通常是 shared', '很多人同時 ++ / --，所以要保護 x');
   await step(tok);                                   // 475 原因二：檢查完才 signal，中間可能被改
   cr.hl(2);
-  bad('② 檢查 x == 0 與 signal 中間可能被 context switch、x 被改', 0, 2.8, 0.4);
+  r2('② 檢查與 signal 中間，x 可能被改', 'bad');
   cap('原因二：檢查之後才 signal，是好幾行', 'signal 的瞬間 x 未必還是 0 → 要一次做完');
   await step(tok);                                   // 518 signal 那邊一定在 CS；wait 的也要在 CS
   cr.hl(-1); cl.hl(-1);
   room(-3.8, 4.6, -2.6, 6.2, 2.6, 0.3, '#2fc092'); room(3.8, 4.6, -2.6, 6.2, 2.6, 0.3, '#2fc092');
   cap('所以 signal 的那邊一定包在 critical section', '要 wait 的那邊也必須在 critical section');
   await step(tok);                                   // 542 design pattern：兩邊都在 CS，cond_wait 需要 mutex
-  good('design pattern：兩邊都在 critical section；cond_wait 要傳 mutex', 0, 1.6, 2.6);
+  r2('design pattern：兩邊都在 CS；cond_wait 要傳 mutex', 'good');
   cap('這是一個 design pattern', '兩邊都在 critical section；cond_wait 本身需要 mutex');
 }]);
 
@@ -2888,7 +2904,7 @@ FRAG.push(['syn-19b-hw', 'Hardware support：atomic instruction', async (tok) =>
 }]);
 
 FRAG.push(['syn-19b-tas', 'TestAndSet：讀出舊值並上鎖（atomic）', async (tok) => {
-  fresh([0, 6.5, 13], [0, 1.8, 0]);
+  fresh([0, 7.6, 14.8], [0, 2.5, 0]);
   let cd, lk, V, P0b;
   await step(tok);                                   // 711 第一個：TestAndSet，有一個 lock
   lk = bx('lock = false', SC.mem, 3.6, 0.45, 0.4, 2.4, 0.9, 1.1, 2);
@@ -2907,15 +2923,15 @@ FRAG.push(['syn-19b-tas', 'TestAndSet：讀出舊值並上鎖（atomic）', asyn
   cd.hl(2); rl(lk, 'lock = true'); glow(lk, DIM);
   cap('過程中一定把 lock 設成 true', '把原本的值 override 掉');
   await step(tok);                                   // 771 像是看看有沒有鎖，但不管結果都把門鎖起來
-  bub('看看有沒有鎖…不管怎樣，先把門鎖上！', 0.4, 2.6, 2.2);
+  const r1 = one(0.4, 2.8, 2.2); r1('看看有沒有鎖…不管怎樣，先把門鎖上！', 'say');
   cap('有點像：我去看現在有沒有鎖', '不管結果如何，就把門鎖起來');
   await step(tok);                                   // 784 三行，但 hardware 支援 → 不會 race，一個一個做
   cd.hl(-1);
   room(-3.0, 4.2, -2.5, 7.4, 2.6, 0.3, '#9b7ef4');
-  good('hardware：整個 function 是 atomic，很多人 call 也會被 serialize', -3.0, 1.8, -1.6);
+  r1('hardware：整個 function 是 atomic（serialize）', 'good');
   cap('這其實是三行程式', '但它是 hardware 的 function：一定一個人一個人做（serialize）');
   await step(tok);                                   // 814 用它寫 CS：lock 初值 false
-  fresh([0, 7, 12.5], [0, 2.2, 0]);
+  fresh([0, 7.6, 14.8], [0, 2.5, 0]);
   V = csView('tas');
   cap('有了它，critical section 就變得很簡單', 'lock 一開始 initialize 成 false（unlock）');
   await step(tok);                                   // 829 第一個 call 的人拿到 false → break while
@@ -2931,27 +2947,27 @@ FRAG.push(['syn-19b-tas', 'TestAndSet：讀出舊值並上鎖（atomic）', asyn
   V.step(1);
   cap('unlock 之後，下一個 call TestAndSet 的人', '就可以 break 它的 while loop');
   await step(tok);                                   // 912 ME：atomic → 不可能兩個人同時拿到 false
-  good('ME ✓：atomic → 不可能兩人同時拿到 false', 0, 4.2, 1.8);
+  V.note('ME ✓：不可能兩人同時拿到 false', 'good');
   cap('mutual exclusion：TestAndSet 是 atomic 的', '第一個拿到 false 的人就把它變 true');
   await step(tok);                                   // 942 progress：沒人在裡面時第一個 call 的人進得去（N 個也可以）
-  good('progress ✓：lock 是 false 時，第一個 call 的人一定進得去（N 個 process 都適用）', 0, 3.5, 1.8);
+  V.note('progress ✓：第一個 call 的人一定進得去', 'good');
   cap('progress 也沒問題，而且可用在 N 個 process', '沒人在裡面時 lock 是 false，第一個 call 的人進去');
   await step(tok);                                   // 973 bounded waiting：不符合，沒有排隊
-  fresh([0, 6.5, 13], [0, 1.6, 0]);
+  fresh([0, 7.6, 14.8], [0, 2.5, 0]);
   const lk2 = bx('lock', SC.mem, 0, 0.45, -1.6, 1.6, 0.9, 1.1);
   const crowd = [0, 1, 2, 3, 4, 5].map((k) => pal('P' + k, '', PCS[k], -5 + k * 2, 0, 2.2, 0.55));
-  bad('bounded waiting ✗：沒有排隊', 0, 6.0);
+  const r2 = one(0, 2.6, -1.6); r2('bounded waiting ✗：沒有排隊', 'bad');
   cap('最後 bounded waiting：不符合', '想想看：它沒有 first come, first serve');
   await step(tok);                                   // 989 100 個 process 一直 call；沒有輪流 → 用搶的
-  idx('（課堂說 100 個 process，這裡畫 6 個示意）', 0, 0.2, 3.6);
-  for (let r = 0; r < 2; r++) { const k = [3, 1][r]; await slide(tok, crowd[k].g, 0, 0, 0.2, 500); glow(crowd[k].body, OKG); await wt(tok, 200); await slide(tok, crowd[k].g, -5 + k * 2, 0, 2.2, 400); glow(crowd[k].body, null); }
+  r2('100 個 process 用搶的（這裡畫 6 個示意）');
+  for (let r = 0; r < 2; r++) { const k = [3, 1][r]; await slide(tok, crowd[k].g, 0, 0, 0.9, 500); glow(crowd[k].body, OKG); await wt(tok, 200); await slide(tok, crowd[k].g, -5 + k * 2, 0, 2.2, 400); glow(crowd[k].body, null); }
   cap('很多 process 一直在 while 裡 call', 'scheduling 不一定輪流：先 call 的人拿到 lock → 用搶的');
   await step(tok);                                   // 1021 搶 → 沒有任何保證
   crowd[0].mood('sad'); glow(crowd[0].body, NOR);
-  bad('P0 可能一直搶不到 → 沒有保證', -5, 1.6, 2.2);
+  r2('P0 可能一直搶不到 → 沒有保證', 'bad');
   cap('搶的結果沒有任何保證', '所以不符合 bounded waiting');
   await step(tok);                                   // 1025 很多 solution 只解前兩個；電腦卡住常因為這樣
-  note('全部符合成本太高 → 很多只解前兩個（電腦卡住常卡在這種地方）', 0, 4.8, -1.0);
+  r2('全部符合成本太高 → 很多只解前兩個');
   cap('很多時候全部符合的 effort 太大', '至少解掉前兩個；電腦卡住常常就是這種問題');
   void lk2;
 }]);
@@ -2960,6 +2976,7 @@ FRAG.push(['syn-19b-swap', 'Swap：交換紅球（lock）與藍球（key）', as
   fresh([0, 6.5, 13], [0, 1.6, 0]);
   const RED = '#e04545', BLUE = '#3f7fe0';
   let me, ps = [], balls = [], lockBall, cd;
+  const r1 = one(1.4, 3.6, 0);
   const handPos = (k) => V3(-4.4 + k * 2.6 + 0.55, 1.0, 2.2);
   await step(tok);                                   // 1052 第二個例子：swap，把兩個 variable 的值對調
   hd('Swap(&a, &b)：把兩個值對調', 0, 6.4);
@@ -2978,12 +2995,12 @@ FRAG.push(['syn-19b-swap', 'Swap：交換紅球（lock）與藍球（key）', as
   room(4.6, 0.8, -1.4, 2.4, 1.6, 2.0); idx('critical section', 4.6, 1.8, -1.4);
   cap('拿到紅球的人可以進去執行', '我不進 critical section，大家要搶這顆紅球');
   await step(tok);                                   // 1102 swap 就是交換（大風吹）；只有一顆紅球
-  note('swap = 大風吹：換球；全場只有一顆紅球', 0, 4.2, 0);
+  r1('swap = 大風吹：換球；全場只有一顆紅球');
   cap('swap 的意思就是大家來交換：大風吹', '整個裡面只有一顆紅色的球');
   await step(tok);                                   // 1115 進去前 call swap 跟我換；換到紅球就進去
   cap('進去之前就 call swap 跟我換球', '換到紅球的人就可以進去');
   await step(tok);                                   // 1123 紅 = false（lock）、藍 = true（key）
-  idx('紅球 = false　藍球 = true', 0.75, 2.4, -1.4);
+  r1('紅球 = false　藍球 = true');
   cap('紅球就是 lock 的值 false', '其他 process 手上都是 true（藍球）');
   await step(tok);                                   // 1151 程式：key = true; while (key) Swap(&lock, &key);
   cd = code(['key = true;', 'while (key == true)', '  Swap(&lock, &key);', '  … critical section …', 'lock = false;'], -4.6, 6.0, 0.5, -2.4);
@@ -3015,31 +3032,32 @@ FRAG.push(['syn-19b-swap', 'Swap：交換紅球（lock）與藍球（key）', as
   ps[2].mood('sad'); glow(ps[2].body, NOR);
   cap('搶到的人（P1）讓 lock 變成 true', '擋住其他人：P2 換來換去都是藍球');
   await step(tok);                                   // 1252 跟 test-and-set 完全一樣：先 call 的進去
-  good('跟 TestAndSet 一樣：lock 是 false 時，第一個 call swap 的人進去', 0, 4.9, 0);
+  r1('跟 TestAndSet 一樣：第一個 call 的人進去', 'good');
   cap('原則跟 test-and-set 完全一樣', 'lock 是 false 時，第一個去 call swap 的人進去');
   await step(tok);                                   // 1289 ME：所有 key、lock 裡只有一個 false
-  hd('ME ✓：全場只有一個 false（一顆紅球）', -2.6, 0.2, 3.8);
+  r1('ME ✓：全場只有一個 false（一顆紅球）', 'good');
   cap('mutual exclusion 會滿足', '所有 key 和 lock 裡，同時只可能有一個是 false');
   await step(tok);                                   // 1314 progress 沒問題
-  hd('progress ✓', 2.4, 0.2, 3.8);
+  r1('progress ✓', 'good');
   cap('progress 也沒問題', 'lock 是 false 時，第一個 call 的人可以 break');
   await step(tok);                                   // 1321 bounded waiting 不滿足：先 call 先進
-  bad('bounded waiting ✗：沒有規則，先 call 先進', 4.2, 0.9, 3.8);
+  r1('bounded waiting ✗：沒有規則，先 call 先進', 'bad');
   cap('bounded waiting 一樣不滿足', '沒有規則，先 call 的人先進去');
   await step(tok);                                   // 1328 要 BW 就要排隊 → Bakery；不在乎就很 efficient
-  note('要 bounded waiting → 排隊（Bakery，較複雜）；不在乎就很 efficient', 0, 5.6, -1.0);
+  r1('要 BW → 排隊（Bakery）；不在乎就很 efficient');
   cap('很多 process 要滿足 bounded waiting 就要排隊', '像 Bakery 那樣比較複雜；不 care 的話很 efficient');
   void me;
 }]);
 
 FRAG.push(['syn-19b-condwait', 'cond_wait 為什麼要傳 mutex：一步一步看', async (tok) => {
-  fresh([0, 6.5, 13], [0, 1.8, 0]);
+  fresh([0, 7.6, 14.8], [0, 2.5, 0]);
   const cl = code(CVL, -4.0, 6.0, 0.5, -2.6), cr = code(CVR, 4.0, 6.0, 0.5, -2.6);
-  hd('action', -4.0, 6.6, -2.6); hot('counter', 4.0, 6.6, -2.6);
+  hd('action', -4.0, 6.9, -2.6); hot('counter', 4.0, 6.9, -2.6);
   room(0, 0.8, 0.2, 3.0, 1.6, 2.2); idx('critical section（mutex m）', 0, 1.8, 0.2);
-  const X = bx('x = 1（示意）', SC.mem, 0, 0.35, -2.8, 2.0, 0.7, 0.9);
+  const X = bx('x = 1（示意）', SC.mem, 0, 0.35, 2.8, 2.0, 0.7, 0.9);
   const A = pal('A', '', PCS[0], -4.6, 0, 1.8, 0.65), C = pal('C', '', PCS[1], 4.6, 0, 1.8, 0.65);
   let L;
+  const r1 = one(0, 3.2, 1.2);
   await step(tok);                                   // 1357 一步一步看，為什麼兩邊都要在 mutex 裡
   cap('一步一步看', '為什麼兩邊都要在 mutex（critical section）裡');
   await step(tok);                                   // 1368 右邊一定在 CS：保護 x
@@ -3063,7 +3081,7 @@ FRAG.push(['syn-19b-condwait', 'cond_wait 為什麼要傳 mutex：一步一步�
   cap('進到 waiting', '它被 put to sleep，不可能再被執行');
   await step(tok);                                   // 1429 counter 要進 CS 才能 signal → cond_wait 幫你 release lock
   await travel(tok, L, L.position.clone(), V3(0, 1.8, 2.2), 700);
-  note('cond_wait 裡面會幫你 release mutex', -2.4, 2.8, 1.0);
+  r1('cond_wait 裡面會幫你 release mutex');
   cap('counter 必須進 critical section 才能 signal', '你沒 call unlock，但 cond_wait 會幫你把 lock 放掉');
   await step(tok);                                   // 1448 counter 進去，x 變 0，signal
   await slide(tok, C.g, 0.8, 0, 0.2, 600); glow(C.body, OKG); C.mood('happy');
@@ -3080,10 +3098,10 @@ FRAG.push(['syn-19b-condwait', 'cond_wait 為什麼要傳 mutex：一步一步�
   cl.hl(3); glow(A.body, OKG); A.mood('happy');
   cap('等 counter 離開 critical section', 'action 重新取得 lock，才執行裡面的程式');
   await step(tok);                                   // 1526 看似兩人都在 CS：cond_wait 先 release、return 前 reacquire
-  good('cond_wait：進去時 release mutex，醒來 return 前 reacquire', 0, 3.2, 1.6);
+  r1('進去時 release mutex，醒來 return 前 reacquire', 'good');
   cap('看似兩人都在 critical section：一個在等、一個在執行', 'cond_wait 先 release lock，醒來第一件事 reacquire');
   await step(tok);                                   // 1563 兩邊都要在 CS：API 把這個寫死
-  note('Pthread 的 API 規定：兩邊都在 mutex 裡（避免錯誤）', 0, 4.0, 1.6);
+  r1('Pthread 的 API 規定：兩邊都在 mutex 裡');
   cap('所以兩邊都必須有 mutex', 'API 就把它寫死，避免一些 error');
   await step(tok);                                   // 1603 以後寫 Pthread 再留意
   cl.hl(-1); cr.hl(-1);
@@ -3250,25 +3268,25 @@ FRAG.push(['syn-20a-belady', "第 8 題：Belady's anomaly 與 LRU", async (tok)
 FRAG.push(['syn-20a-faults', '第 10 題：算 page fault 次數（答案 7）', async (tok) => {
   fresh([0, 6.5, 13], [0, 1.4, 0]);
   const fr = [0, 1, 2].map((i) => { const m = bx('', '#f3e6c8', -1.6 + i * 1.6, 0.35, -1.6, 1.3, 0.7, 1.0); idx('frame ' + i, -1.6 + i * 1.6, 0, -0.8); return m; });
-  let faults = 0; const fl = tag('page fault：0', 'ptr alt', 4.6, 2.4, -1.6);
+  let faults = 0; const fl = tag('page fault：0', 'ptr alt', 4.2, 0.5, -1.6), r1 = one(0, 3.2, -1.6);
   const F = (n = 1) => { faults += n; tx(fl, 'page fault：' + faults); };
   const seq = [];
   await step(tok);                                   // 828 程式只用一個 page 放 code
-  hd('第 10 題：3 個 frame，算 page fault', 0, 6.2);
+  r1('第 10 題：3 個 frame，算 page fault', 'ptr');
   cap('第十題，錯比較多但概念很單純', '這個程式的 code 只用到一個 page');
   await step(tok);                                   // 837 每執行一個指令都 access code page → 一直佔第一個 frame
   rl(fr[0], 'code'); glow(fr[0], DIM); F();
   cap('每執行一個 instruction 都會 access code 的 page', 'load program 時第一個 page fault，之後一直佔住第一個 frame');
   await step(tok);                                   // 888 array A：每個 element 4 byte、page 1000 byte → 250 個 → 4 個 page
   const A = [1, 2, 3, 4].map((k) => bx('A 的 page ' + k, PCS[k - 1], -4.6 + (k - 1) * 3.0, 0.3, 2.6, 2.6, 0.5, 0.8, 1.2));
-  idx('每個 element 4 bytes、每個 page 1000 bytes → 一頁放 250 個 → 共 4 個 page', 0, 1.0, 3.6);
+  r1('一頁放 250 個 → 共 4 個 page');
   cap('A：element 4 byte、page 1000 byte', '每頁放 250 個 → 需要 4 個 page');
   await step(tok);                                   // 914 依序讀這 4 個 page → 第一次全部 page fault
-  const t = tag('access：', 'idx', 0, 4.8, -1.6);
+  const t = tag('access：', 'idx', 0, 1.9, -1.6);
   for (const p of [1, 2, 3, 4]) { seq.push(p); tx(t, 'access：' + seq.join(' ')); F(); rl(fr[1 + ((p - 1) % 2)], 'A' + p); await wt(tok, 350); }
   cap('第一次依序讀這 4 個 page', '全部都是 page fault（code 1 + 4 = 5 次）');
   await step(tok);                                   // 925 存取順序 1 2 3 4 4 3 2 1；只剩 2 個 frame 給 data
-  idx('順序：1 2 3 4 4 3 2 1　（code 佔 1 個 → data 只剩 2 個 frame）', 0, 5.5, -1.6);
+  r1('順序：1 2 3 4 4 3 2 1；data 只剩 2 個 frame');
   cap('page 的存取順序是 1 2 3 4 4 3 2 1', '三個 frame，第一個被 code 佔了，只剩兩個');
   await step(tok);                                   // 938 1234 之後 frame 裡是 3、4 → 讀回來 4、3 是 hit
   for (const p of [4, 3]) { seq.push(p); tx(t, 'access：' + seq.join(' ')); glow(fr[1 + ((p - 1) % 2)], OKG); await wt(tok, 450); }
@@ -3279,77 +3297,77 @@ FRAG.push(['syn-20a-faults', '第 10 題：算 page fault 次數（答案 7）',
   seq.push(1); tx(t, 'access：' + seq.join(' ')); rl(fr[1], 'A1'); F(); glow(fr[1], NOR);
   cap('2、1 很不幸又會產生 page fault', 'LRU 或其他演算法結果都一樣');
   await step(tok);                                   // 976 一共 7 次
-  good('code 1 + 第一次 4 + 回程 2 = 7', 4.6, 3.2, -1.6);
+  r1('code 1 + 第一次 4 + 回程 2 = 7', 'good');
   cap('一共 7 次', 'code 1 次、第一次掃過 4 次、回來 2 次');
   await step(tok);                                   // 985 data layout 很重要：I/O bound、大資料
-  note('分析程式的 page access pattern：資料塞不進 memory 就會一直 page fault', 0, 4.2, 1.0);
+  gone(...A); r1('資料塞不進 memory 就會一直 page fault');
   cap('這就是為什麼 memory / data 的 layout 很重要', '大資料塞不進 memory，就在讀資料時卡住');
   await step(tok);                                   // 1025 code 佔一個；切資料用 4KB 對齊 page
-  hot('切資料用 4KB：match page size → 減少 page fault', 0, 7.0, -1.6);
+  r1('切資料用 4KB：match page → 減少 page fault', 'ptr alt');
   cap('code 會佔掉一個 frame', '很多程式切資料用 4KB：match page，減少 page fault');
-  void A;
 }]);
 
 FRAG.push(['syn-20a-addr', '最後幾題：address bits、page table 大小、TLB、位址轉換', async (tok) => {
   fresh([0, 6.5, 13], [0, 1.6, 0]);
   let addr;
+  const r1 = one(0, 2.8, -1.6);
   await step(tok);                                   // 1079 最後一題：address 的 bit
-  hd('address bits：從題目的敘述找答案', 0, 6.2);
+  r1('address bits：從題目的敘述找答案', 'ptr');
   cap('最後一題看似複雜，其實不複雜', '問 memory address 的 bit，從題目裡找答案');
   await step(tok);                                   // 1094 offset bit = page size：1KB → 10 bits
-  addr = [bx('page #', PCS[0], -3.0, 0.4, -1.6, 1.6, 0.8, 1.0, 1.5), bx('offset：10 bits', PCS[2], -0.4, 0.4, -1.6, 3.4, 0.8, 1.0, 1.5)];
-  idx('page size = 1KB = 2^10 → offset 10 bits', -1.6, 1.3, -1.6);
+  addr = [bx('page #', PCS[0], -3.9, 0.4, -1.6, 2.6, 0.8, 1.0, 1.5), bx('offset：10 bits', PCS[2], -0.4, 0.4, -1.6, 3.4, 0.8, 1.0, 1.5)];
+  r1('page size = 1KB = 2^10 → offset 10 bits');
   cap('offset 的 bit 數由 page size 決定', 'page size 1KB → 10 個 bit');
   await step(tok);                                   // 1126 page table 大小 = entry 數 × 每個 entry 的 byte
-  note('page table 大小 = entry 數 × 每個 entry 幾 byte', 0, 4.6, -1.6);
+  r1('page table 大小 = entry 數 × 每個 entry 幾 byte');
   cap('整個 page table 要多少 memory？', '先知道幾個 entry，再乘上一個 entry 要幾個 byte');
   await step(tok);                                   // 1142 logical address 12 bits − 10 = 2 → 4 entry × 4 byte
   rl(addr[0], 'page #：2 bits');
-  idx('logical address 12 bits − offset 10 = 2 bits → 2² = 4 個 entry', 0, 3.6, -0.4);
-  good('4 entries × 4 bytes = 16 bytes', 0, 2.8, -0.4);
+  r1('12 − 10 = 2 bits → 4 entries × 4 bytes = 16 bytes', 'good');
   cap('logical address 12 bit，用了 10 個 → 剩 2 bit', '4 個 entry × 每個 4 byte');
   await step(tok);                                   // 1167 access time：TLB 有幾個 hit
   const tlb = bx('TLB（2 entries）', PCS[3], 3.8, 0.4, 1.6, 2.8, 0.8, 1.0, 1.5);
   cap('算 memory access time 的題目', '重點：TLB 到底有幾個 hit');
   await step(tok);                                   // 1183 看每個 access 是不是同一個 page；第一次 access 的會 miss
-  idx('同一個 page → 可能 hit；第一次 access 的 page → miss', 3.8, 1.4, 2.6);
+  r1('同一個 page → 可能 hit；第一次 access → miss');
   cap('看每個 access 是不是在同一個 page', 'TLB 只有兩個 entry；第一次 access 的會 miss');
   await step(tok);                                   // 1222 公式：hit = TLB + memory；miss 多一次 page table（100）
-  const hitN = note('hit：TLB + 1 次 memory　miss：再多一次 page table（題目的 100）', 0, 0.2, 4.4);
+  r1('hit：TLB + 1 次 memory　miss：再多一次 page table');
   cap('知道 hit / miss 再套公式', 'miss 多一個 100：要多 access 一次 page table');
   await step(tok);                                   // 1257 給 logical 和 physical address：找 entry 與 frame number
-  gone(tlb, hitN);
-  idx('logical → physical：page number 查 page table 得到 frame number', 0, 0.2, 3.4);
+  gone(tlb, ...addr);
+  r1('page number 查 page table 得到 frame number');
   cap('最後：logical、physical address 都給了', '問 access 的是 page table 第幾個 entry、frame number 多少');
   await step(tok);                                   // 1280 page number 0 → 第 0 個 entry；frame bits 11 → 第 3 個 frame
-  bx('page 0 → entry 0', PCS[0], -2.4, 0.3, 2.4, 2.6, 0.5, 0.8, 1.2); bx('frame bits 11 → frame 3', PCS[2], 2.4, 0.3, 2.4, 3.2, 0.5, 0.8, 1.2);
-  arr(-1.0, 0.5, 0.6, 0.5, '#8a7a5c', 2.4);
+  bx('page 0 → entry 0', PCS[0], -2.4, 0.3, 0.4, 2.6, 0.5, 0.8, 1.2); bx('frame bits 11 → frame 3', PCS[2], 2.4, 0.3, 0.4, 3.2, 0.5, 0.8, 1.2);
+  arr(-1.0, 0.5, 0.6, 0.5, '#8a7a5c', 0.4);
   cap('轉成 bit 後看前面的 page number、frame number', 'page number 0 → 第 0 個 entry；frame 是 11 → 3');
 }]);
 
 FRAG.push(['syn-20a-review', 'Synchronization 回顧：mutex lock 與 condition variable', async (tok) => {
   fresh([0, 6.5, 13], [0, 1.6, 0]);
   const ts = [0, 1, 2].map((k) => pal('T' + k, '', PCS[k], -4.6 + k * 1.3, 0, 2.2, 0.6));
+  const r1 = one(0, 3.4, -1.0);
   await step(tok);                                   // 1361 上次卡在一半，再完整 review，並補充
-  hd('回顧：上次講到一半的 synchronization', 0, 6.2);
+  r1('回顧：上次講到一半的 synchronization', 'ptr');
   cap('上次卡在一半', '先完整 review，再補充一些內容');
   await step(tok);                                   // 1380 Pthread 這種 shared memory 平行程式要處理 synchronization
   const mem = bx('shared memory', SC.mem, 0, 0.45, -1.6, 2.6, 0.9, 1.1, 2);
   cap('寫 Pthread 這種 shared memory 的平行程式', '就要處理 synchronization 的 issue');
   await step(tok);                                   // 1398 synchronization：控制執行序的順序或時間點
-  note('synchronization = 控制執行的順序、時間點', 0, 4.6, -1.0);
+  r1('synchronization = 控制執行的順序、時間點');
   cap('synchronization 指的是', '控制這些執行序的順序，或執行的時間點');
   await step(tok);                                   // 1410 目的一：解決 race condition（結果無法預測）
-  bad('目的 ①：解決 race condition（結果無法預測）', -3.0, 3.6, -1.0);
+  r1('目的 ①：解決 race condition', 'bad');
   cap('目的一：解決 race condition', '結果沒辦法預測，programmer 不要的');
   await step(tok);                                   // 1425 工具：Pthread 的 mutex lock，不用自己寫 entry / exit
   const L = prop('lock', 2.2, 0, -1.4, 1.0, 'mutex');
   cap('工具：Pthread 提供的 mutex lock', '不用自己寫 entry、exit，包成一個 function call');
   await step(tok);                                   // 1446 課堂要看 lock / unlock 的實作方式
-  idx('課堂重點：lock / unlock 是怎麼實作的', 2.2, 1.8, -1.4);
+  r1('課堂重點：lock / unlock 是怎麼實作的');
   cap('課堂更想介紹的是', 'lock 跟 unlock 的實作方式有哪些');
   await step(tok);                                   // 1456 目的二：condition variable 控制觸發的時機
-  hot('目的 ②：condition variable 控制「什麼時候」執行', 3.0, 3.6, -1.0);
+  r1('目的 ②：condition variable 控制「什麼時候」', 'ptr alt');
   cap('第二類用法：condition variable', '控制或觸發這些執行序執行的時機點');
   await step(tok);                                   // 1476 像一個 event waiting queue：wait、signal、broadcast
   ts.forEach((t) => sleepy(t, true));
@@ -3357,17 +3375,17 @@ FRAG.push(['syn-20a-review', 'Synchronization 回顧：mutex lock 與 condition 
   evq.userData.name.position.z = 2.2 + 0.7 + 0.35;   // name in front of the sleeping threads
   cap('condition variable 像 event waiting queue', 'wait 就 block；signal 叫醒一個、broadcast 叫醒全部');
   await step(tok);                                   // 1517 很多語言都有，實作不同、概念相同
-  idx('各語言、library 的實作不同，概念相同', 2.6, 0.2, 3.4);
+  r1('各語言實作不同，概念相同');
   cap('很多平行程式語言都有 condition variable', '實作方式不同，但概念完全相同');
   await step(tok);                                   // 1550 Pthread：wait、signal、broadcast；wait 要丟一個 mutex
-  code(['pthread_cond_wait(&c, &m);', 'pthread_cond_signal(&c);', 'pthread_cond_broadcast(&c);'], 3.0, 2.4, 0.45, 1.6);
+  r1(''); code(['pthread_cond_wait(&c, &m);', 'pthread_cond_signal(&c);', 'pthread_cond_broadcast(&c);'], 0, 6.0, 0.45, -3);
   cap('Pthread 的 wait、signal、broadcast', '特別的是 wait 還要丟一個 mutex lock 給它');
   await step(tok);                                   // 1587 原因：觸發 condition 的變數（x）要被保護
   sleepy(ts[0], false); ts[0].mood('happy');
-  bad('觸發 condition 的變數（例如 x）要被 critical section 保護', 0, 5.4, -1.0);
+  r1('觸發條件的變數（例如 x）要被保護', 'bad');
   cap('觸發條件的不是 condition variable 本身', '而是像 x 這種變數，它需要被 critical section 保護');
   await step(tok);                                   // 1616 Pthread 規定的 coding style；C++ 不一樣
-  note('這是 Pthread 規定的 coding style；C++ 等其他 library 寫法可能不同', 0, 0.9, 3.4);
+  r1('這是 Pthread 規定的 coding style');
   cap('這是 Pthread 認為好的 coding style', '其他 library（例如 C++）寫法可以不一樣');
   void mem; void L;
 }]);
@@ -3376,28 +3394,28 @@ FRAG.push(['syn-20a-review', 'Synchronization 回顧：mutex lock 與 condition 
 // the action / counter picture for condition variables (shared with 19B's code)
 function cvStage() {
   const cl = code(CVL, -4.0, 6.0, 0.5, -2.6), cr = code(CVR, 4.0, 6.0, 0.5, -2.6);
-  hd('action', -4.0, 6.6, -2.6); hot('counter', 4.0, 6.6, -2.6);
+  hd('action', -4.0, 6.9, -2.6); hot('counter', 4.0, 6.9, -2.6);
   room(0, 0.8, 0.2, 3.0, 1.6, 2.2); idx('critical section（mutex m）', 0, 1.8, 0.2);
-  const X = bx('x = 1（示意）', SC.mem, 0, 0.35, -2.8, 2.0, 0.7, 0.9);
+  const X = bx('x = 1（示意）', SC.mem, 0, 0.35, 2.8, 2.0, 0.7, 0.9);
   const A = pal('A', '', PCS[0], -4.6, 0, 1.8, 0.65), C = pal('C', '', PCS[1], 4.6, 0, 1.8, 0.65);
   const L = prop('lock', -2.4, 0, 3.2, 0.6);
   return { cl, cr, X, A, C, L };
 }
 FRAG.push(['syn-20b-cvwait', 'cond_wait 會先 release lock、醒來再 reacquire', async (tok) => {
-  fresh([0, 6.5, 13], [0, 1.8, 0]);
+  fresh([0, 7.6, 14.8], [0, 2.5, 0]);
   const S = cvStage();
   const lockTo = (x, y, z) => travel(tok, S.L, S.L.position.clone(), V3(x, y, z), 600);
+  const r1 = one(0, 3.2, 1.2);
   await step(tok);                                   // 15 兩個都在 CS：action 在裡面 wait 不就出不來？→ deadlock？
   await slide(tok, S.A.g, -0.6, 0, 0.2, 600); glow(S.A.body, OKG); await lockTo(-0.6, 1.2, 0.8);
   S.cl.hl(2); sleepy(S.A, true); glow(S.C.body, NOR); S.C.mood('sad');
-  const dlq = bub('action 在裡面睡 → counter 進不來 → deadlock？', 0, 3.2, 1.6);
+  r1('action 在裡面睡 → counter 進不來 → deadlock？', 'say');
   cap('兩個都在 critical section：action 在裡面 wait', '它出不來、signal 的人又進不來 → 不就 deadlock？');
   await step(tok);                                   // 47 原因：call wait 時把 lock release 掉
   await lockTo(0, 1.8, 2.4);
   cap('所以 call wait 的同時', '會把 lock 給 release 掉，讓 signal 的 thread 也能進來');
   await step(tok);                                   // 67 thread 被放進 waiting queue 睡覺 → inactive
-  remove(dlq);
-  const slp = note('在 waiting queue 裡 put to sleep：inactive', -2.6, 2.6, 0.2);
+  r1('在 waiting queue 裡 put to sleep：inactive');
   cap('它被放進 waiting queue、put to sleep', '就算在 critical section 裡，它也不 active');
   await step(tok);                                   // 80 lock 放掉 → 別人進來 signal → 不會 deadlock
   S.cr.hl(0); await slide(tok, S.C.g, 0.8, 0, 0.2, 600); glow(S.C.body, OKG); S.C.mood('happy'); await lockTo(0.8, 1.2, 0.8);
@@ -3412,14 +3430,13 @@ FRAG.push(['syn-20b-cvwait', 'cond_wait 會先 release lock、醒來再 reacquir
   cap('醒了、active 了，但要等 counter 離開', 'release lock 之後才重新 acquire，繼續執行');
   await step(tok);                                   // 136 為什麼 cond_wait 要傳 mutex：library 要知道是哪一把
   S.cl.hl(2);
-  remove(slp);
-  good('library 幫你 release、再 reacquire → 要知道是哪一把 lock（同一個 object）', 0, 3.0, 1.6);
+  r1('library 幫你 release、reacquire → 要知道是哪一把', 'good');
   cap('這就是 call cond_wait 還要給 mutex 的原因', 'library 幫你 release、reacquire，要知道是哪一把');
   await step(tok);                                   // 179 這樣寫，自然會記得放在 critical section 裡
-  idx('不放在 critical section 裡，連 mutex 都不知道要傳什麼 → 相輔相成', 0, 0.2, 3.6);
+  r1('一定寫在 critical section 裡：相輔相成');
   cap('這樣你寫 cond_wait 時', '一定會放在 critical section 裡：相輔相成');
   await step(tok);                                   // 208 step by step：action 先 acquire lock，wait 時 release
-  S.cl.hl(0);
+  S.cl.hl(0); r1('');
   cap('step by step：action 先 acquire lock', '到 wait 時，function 裡面幫你 call unlock');
   await step(tok);                                   // 235 counter 才能進 CS，做 signal
   S.cr.hl(3);
@@ -3432,13 +3449,13 @@ FRAG.push(['syn-20b-cvwait', 'cond_wait 會先 release lock、醒來再 reacquir
   cap('等 counter 結束、離開之後', 'action 才 acquire lock，繼續執行');
   await step(tok);                                   // 285 Java、C++ 等也有 condition variable，寫法不同
   S.cl.hl(-1);
-  note('Java、C++ 等也有 condition variable，寫法依 library 而不同', 0, 4.0, 1.6);
+  r1('Java、C++ 也有 condition variable，寫法不同');
   cap('Java、C++ 等語言也支援 condition variable', '但 coding、實作方式可能不一樣');
 }]);
 
 FRAG.push(['syn-20b-pool', 'Thread pool：用 condition variable 實作', async (tok) => {
-  fresh([0, 6.5, 13], [0, 1.6, 0]);
-  const W = [0, 1, 2, 3].map((k) => pal('T' + k, '', PCS[k + 1], -1.8 + k * 1.3, 0, -1.6, 0.6));
+  fresh([0, 8.2, 16], [0, 2.9, 0]);
+  const W = [0, 1, 2, 3].map((k) => pal('T' + k, '', PCS[k + 1], -1.8 + k * 1.45, 0, -1.6, 0.6));
   let M, job, q;
   const work = (k, x = 3.2, z = 2.4) => slide(tok, W[k].g, x, 0, z, 600);
   await step(tok);                                   // 314 補充：thread pool
@@ -3449,39 +3466,39 @@ FRAG.push(['syn-20b-pool', 'Thread pool：用 condition variable 實作', async 
   await work(0); glow(W[0].body, OKG); await wt(tok, 300); await work(0, -1.8, -1.6); glow(W[0].body, null);
   cap('先 create 好 thread 放在那裡', '有工作就讓它做，做完不 terminate，留著等下一件');
   await step(tok);                                   // 344 不用一直 create / delete；控制 thread 的數量
-  note('不用一直 create / delete；可以控制 thread 總數', 0.2, 2.2, -1.6);
+  const r1 = one(0.2, 2.1, -1.6); r1('不用一直 create / delete；可以控制 thread 總數');
   cap('重點：thread 不用一直 delete、create', '更重要的是能控制系統裡用了多少 thread');
   await step(tok);                                   // 356 request 一多就 create 一堆 → context switch、變慢
-  bad('request 一多就開一堆 thread → 一堆 context switch，大家都慢', 0.2, 3.0, -1.6);
+  r1('request 一多就開一堆 thread → 大家都慢', 'bad');
   cap('不然 request 一多就 create 一堆 thread', 'CPU 資源有限 → 一堆 context switch，整體更糟');
   await step(tok);                                   // 373 控制 pool 大小 → 效能最佳化
-  good('控制 pool 的大小 → 整體效能最佳化', 0.2, 3.8, -1.6);
+  r1('控制 pool 的大小 → 整體效能最佳化', 'good');
   cap('控制 thread pool 的大小', '來控制整個系統的效能，達到最佳化');
   await step(tok);                                   // 381 一種實作：condition variable
-  hot('實作方式：condition variable', 0.2, 4.6, -1.6);
+  r1('實作方式：condition variable', 'ptr alt');
   cap('今天要提的是 thread pool 的一種實作方式', '透過 condition variable');
   await step(tok);                                   // 392 給 thread 一個 function pointer + argument
-  job = bx('function ptr + argument', '#f3d36b', -4.6, 0.4, 2.4, 3.2, 0.7, 0.9, 1.5);
+  r1(''); job = bx('function ptr + argument', '#f3d36b', -4.6, 0.4, 2.4, 3.2, 0.7, 0.9, 1.5);
   cap('怎麼讓 thread 執行不同的工作？', '塞給它一個 function pointer 和 argument');
   await step(tok);                                   // 415 thread 的 function：while loop 等被叫醒→執行→再等
   W.forEach((t) => sleepy(t, true));
-  q = code(['while (true) {', '  lock(&m);', '  cond_wait(&c, &m);', '  f = job.func; a = job.arg;', '  unlock(&m);', '  f(a);', '}'], 4.6, 6.0, 0.48, -2.6);
+  q = code(['while (true) {', '  lock(&m);', '  cond_wait(&c, &m);', '  f = job.func; a = job.arg;', '  unlock(&m);', '  f(a);', '}'], 0.2, 5.5, 0.38, -3.2);
   cap('thread 執行的 function 是一個 while loop', '等著被叫醒 → 執行 data structure 裡的 function → 再等');
   await step(tok);                                   // 435 大家 wait 在同一個 condition variable
   q.hl(2);
   cap('怎麼知道什麼時候被叫起來？', '所有 thread 都 wait 在同一個 condition variable 上');
   await step(tok);                                   // 453 master 收到 request → 填好 data → signal 一個
-  M = pal('master', '', '#c9b48e', -5.6, 0, 0.0, 0.75);
+  M = pal('master', '', '#c9b48e', -6.2, 0, 0.8, 0.75);
   const r = pkt('request', -6.4, 1.4, 1.2); await travel(tok, r, V3(-6.4, 1.4, 1.2), V3(-4.6, 1.4, 2.4), 600); remove(r);
   cap('前面有一個 master server：接到 request', '把 function pointer、argument 填好，再 signal 叫醒一個');
   await step(tok);                                   // 475 實作：data structure、pool、CV 與 mutex 共用
-  idx('pool 共用：condition variable c ＋ mutex m', 0.2, 0.9, -0.6);
+  r1('pool 共用：condition variable c ＋ mutex m');
   cap('實作上：定義 data structure、thread pool', '最重要：整個 pool 共用的 condition variable 和 mutex');
   await step(tok);                                   // 513 事先 create；記錄 thread count、多少 active
-  idx('thread count：知道幾個 active、幾個 available', -5.6, 0, 1.2);
+  r1('thread count：知道幾個 active、幾個 available');
   cap('事先 create 好 thread pool', '記錄 thread count，master 就知道什麼時候能 signal');
   await step(tok);                                   // 548 signal 不在乎是誰：waiting queue 的第一個
-  sleepy(W[0], false); W[0].mood('happy');
+  sleepy(W[0], false); W[0].mood('happy'); r1('');
   cap('condition variable 的 signal 不 care 是誰', 'waiting queue 的第一個來做就對了，一次一個');
   await step(tok);                                   // 568 create 後什麼都不做：cond_wait → put to sleep
   q.hl(2);
@@ -3496,13 +3513,13 @@ FRAG.push(['syn-20b-pool', 'Thread pool：用 condition variable 實作', async 
   cap('處理完，loop 回去又 condition wait', '等著接下一個工作；thread 不會被 terminate');
   await step(tok);                                   // 662 lock → cond_wait → unlock：一次只一人操作 data structure
   q.hl(1);
-  good('lock → cond_wait → unlock：一次只有一個人碰 data structure', 0.2, 5.4, -1.6);
+  r1('lock → cond_wait → unlock：一次只有一個人碰', 'good');
   cap('一樣是 Pthread 的流程：lock、cond_wait、unlock', '一次只有一個人操作 data structure，不會亂掉');
   await step(tok);                                   // 688 condition variable 很好用；thread pool 是例子
-  q.hl(-1);
+  q.hl(-1); r1('');
   cap('condition variable 其實非常好用', 'thread pool 就是透過它控制 thread 做不同事情的例子');
   await step(tok);                                   // 702 同步的兩個層面：race condition、控制順序
-  hd('同步的兩個層面：① 解決 race condition　② 控制執行的順序', 0, 7.0, -2.6);
+  r1('同步兩層面：① race condition　② 控制順序', 'ptr');
   cap('同步其實有兩個層面', '解決 race condition，以及控制執行的順序（正確的 behavior）');
   void M;
 }]);
@@ -3553,47 +3570,49 @@ FRAG.push(['syn-20b-hwrecap', 'Hardware support 回顧：為什麼要燒成一�
 
 FRAG.push(['syn-20b-sem', 'Semaphore：一個管理資源數量的 counter', async (tok) => {
   fresh([0, 6.5, 13], [0, 1.6, 0]);
-  let S, res = [];
+  let S, res = [], mix = [];
+  const r1 = one(0, 2.6, 0.4);
   await step(tok);                                   // 922 介紹另一個很好用的 tool：semaphore
-  hd('Semaphore', 0, 6.4);
+  r1('Semaphore', 'ptr');
   cap('critical section 的 solution 介紹完', '接下來是另一個非常好用的 tool：semaphore');
   await step(tok);                                   // 932 有點像 condition variable + mutex 的結合
-  bx('condition variable', PCS[2], -3.0, 0.3, -2.6, 2.8, 0.5, 0.8, 1.5); idx('＋', 0, 0.4, -2.6); bx('mutex', PCS[0], 2.4, 0.3, -2.6, 2.0, 0.5, 0.8, 1.5);
+  mix = [bx('condition variable', PCS[2], -3.0, 0.3, -2.6, 2.8, 0.5, 0.8, 1.5), idx('＋', 0, 0.4, -2.6), bx('mutex', PCS[0], 2.4, 0.3, -2.6, 2.0, 0.5, 0.8, 1.5)];
   cap('它有一點像 condition variable', '加上 mutex 的結合');
   await step(tok);                                   // 954 定義出來簡化程式、控制執行順序的工具
   cap('同步、控制執行序順序時常用的 tool', '定義出來幫我們簡化程式的複雜度');
   await step(tok);                                   // 968 它其實是一個 counter：integer
+  gone(...mix); r1('');
   S = bx('S = 3', SC.mem, 0, 0.45, 0.4, 2.0, 0.9, 1.2, 2);
   cap('semaphore 首先是一個 counter', '對應到一個 integer 的數字');
   await step(tok);                                   // 980 數字代表它管理的 resource 的數量
   res = [0, 1, 2].map((k) => prop('parcel', 2.6 + k * 1.3, 0, 0.4, 0.7));
-  idx('3 份相同的 resource（示意）', 3.9, 1.3, 0.4);
+  r1('3 份相同的 resource（示意）');
   cap('每個 semaphore 在管理某樣 resource', '數字代表這個 resource 的數量');
   await step(tok);                                   // 1005 數量是 1：一次一人 → binary semaphore，像 mutex lock
   rl(S, 'S = 1'); kill(res[1]); kill(res[2]);
-  hot('S 只在 0、1 之間 → binary semaphore（像 mutex lock）', 0, 2.2, 0.4);
+  r1('S 只在 0、1 之間 → binary semaphore', 'ptr alt');
   cap('如果數量設成 1：一次只有一個人', '只在 0 跟 1 之間變動 → binary semaphore，像 mutex lock');
   await step(tok);                                   // 1032 mutex：把 critical section 想成一種 resource
-  note('critical section 也是一種 resource：很多人想進，一次只能一個', 0, 3.0, 0.4);
+  r1('critical section 也是一種 resource');
   cap('mutex lock 的概念：把 critical section', '想成一種 resource，很多人想進、只能讓一個人');
   await step(tok);                                   // 1054 semaphore 更 powerful：generalized
   cap('但 semaphore 比它更 powerful', '需要比較 generalized 的應用時就會用到它');
   await step(tok);                                   // 1073 counting：thread pool 有 10 個 → init 10
-  rl(S, 'S = 10');
-  idx('thread pool 有 10 個 thread → 初值 10：10 個以內都能用', 0, 1.6, 2.0);
+  rl(S, 'S = 10'); kill(res[0]);
+  r1('thread pool 有 10 個 thread → 初值 10');
   cap('之所以要 semaphore，是因為 counting', '像 thread pool 有 10 個 thread：initialize 成 10');
   await step(tok);                                   // 1124 初值 > 1 → counting semaphore：數有沒有足夠資源
-  good('初值 > 1 → counting semaphore：數資源夠不夠', 0, 3.8, 0.4);
+  r1('初值 > 1 → counting semaphore', 'good');
   cap('初值大於 1 的叫 counting semaphore', '電腦裡的資源常常是一個「量」，不只 true / false');
   await step(tok);                                   // 1156 操作：initialize；用之前 wait
   const cd = code(['S = 資源數量;   // initialize', 'wait(S);         // 要用之前', '  … 使用 resource …', 'signal(S);       // 用完'], -3.8, 5.6, 0.5, -2.6);
   cd.hl(0);
   cap('怎麼操作：先 initialize 成資源的數量', '要使用資源之前，先 call wait');
   await step(tok);                                   // 1172 不要跟 condition variable 的 wait / signal 混在一起
-  bad('跟 condition variable 的 wait / signal 不一樣！', -3.8, 3.4, -2.6);
+  r1('跟 condition variable 的 wait / signal 不一樣！', 'bad');
   cap('這裡也有 wait 和 signal', '但不要跟前面的 condition variable 混在一起，定義不同');
   await step(tok);                                   // 1196 wait：我需要一個 resource；signal：用完 free
-  cd.hl(1);
+  cd.hl(1); r1('');
   cap('wait：我需要一個 resource', 'signal：用完了，把 resource free 掉');
   await step(tok);                                   // 1212 wait 完成 → 值減 1；signal → 加 1；值 = available 數
   rl(S, 'S = 9'); cd.hl(3); await wt(tok, 600); rl(S, 'S = 10');
@@ -3607,6 +3626,7 @@ FRAG.push(['syn-20b-sem', 'Semaphore：一個管理資源數量的 counter', asy
 FRAG.push(['syn-20b-semimpl', 'Semaphore 的簡單實作：spinlock', async (tok) => {
   fresh([0, 6.5, 13], [0, 1.6, 0]);
   let cd, M, b1, b2;
+  const r1 = one(2.4, 2.8, -1.4);
   await step(tok);                                   // 1253 簡單的實作：wait、signal
   cd = code(['wait(S) {', '  while (S <= 0) ;', '  S--;', '}', 'signal(S) {', '  S++;', '}'], -3.8, 5.6, 0.5, -2.6);
   M = semStage(0, '在 while 裡一直轉', { sx: 1.6 });
@@ -3625,19 +3645,19 @@ FRAG.push(['syn-20b-semimpl', 'Semaphore 的簡單實作：spinlock', async (tok
   cap('signal 很單純，就是 ++', '把 resource free 出來，等的 thread 就有機會 break while');
   await step(tok);                                   // 1322 很重要：wait、signal 是 atomic
   cd.hl(-1);
-  hot('wait、signal 必須是 atomic', -3.8, 2.0, -2.6);
+  r1('wait、signal 必須是 atomic', 'ptr alt');
   cap('很重要的第一點', 'wait 跟 signal 是 atomic 的：要一次做完');
   await step(tok);                                   // 1333 任何 technique：hardware、software CS、kernel disable interrupt
-  note('做法不限：hardware 指令、software critical section、kernel 關 interrupt', -3.8, 1.2, -1.6);
+  r1('做法不限：hardware、software、kernel 關 interrupt');
   cap('用 hardware、software、任何 technique 都可以', '例如包成 critical section，或 kernel 先 disable interrupt');
   await step(tok);                                   // 1375 為什麼：S 是 shared，++ / -- 會 race
   glow(M.sc, NOR);
-  bad('S 是 shared variable：一個 ++、一個 -- → 就像 counter 會 race', 1.6, 2.2, -2.4);
+  r1('S 是 shared variable：就像 counter 會 race', 'bad');
   cap('為什麼要 atomic？S 是 shared variable', '一個加加、一個減減，跟最早的 counter 例子一樣');
   await step(tok);                                   // 1404 第二點：這種實作叫 spinlock
   glow(M.sc, DIM);
   const b3 = pal('P3', '', PCS[2], -6.0, 0, 0.6, 0.6); await M.toWait(tok, b3, 600);
-  hd('spinlock', -3.2, 2.0, 2.8);
+  r1('spinlock：一直在 while 裡 spinning', 'ptr');
   cap('第二點：這個實作叫 spinlock', '因為有個 while loop，一直在那邊 spinning');
   await step(tok);                                   // 1423 使用者覺得沒在做事，CPU 卻一直跑相同的 instruction
   await spin(tok, [b3], 900);
@@ -3645,10 +3665,10 @@ FRAG.push(['syn-20b-semimpl', 'Semaphore 的簡單實作：spinlock', async (tok
   await step(tok);                                   // 1441 壞處：CPU 100% 很忙，程式卻沒在動
   const cpu = prop('cpu', -0.6, 0, 0.4, 0.8, 'CPU 100%');
   await spin(tok, [b3], 700);
-  bad('CPU 100% 好忙，程式卻都沒在動', -3.2, 2.8, 2.8);
+  r1('CPU 100% 好忙，程式卻都沒在動', 'bad');
   cap('壞處：浪費 CPU 的資源', 'CPU 百分之百很忙，程式卻沒在動');
   await step(tok);                                   // 1458 好處：比較容易 implement
-  good('好處：容易 implement（一個 while loop）', -3.8, 0.4, -1.6);
+  r1('好處：容易 implement（一個 while loop）', 'good');
   cap('但它比較容易 implement', '直接一個 while loop 就可以了');
   void cpu;
 }]);
@@ -3656,8 +3676,9 @@ FRAG.push(['syn-20b-semimpl', 'Semaphore 的簡單實作：spinlock', async (tok
 FRAG.push(['syn-20b-posix', 'POSIX semaphore 的 API', async (tok) => {
   fresh([0, 6.5, 13], [0, 1.6, 0]);
   let cd;
+  const r1 = one(3.8, 2.6, 0.4);
   await step(tok);                                   // 1475 實際上怎麼用：OS 提供
-  hd('實際上：OS 提供 semaphore', 0, 6.4);
+  r1('實際上：OS 提供 semaphore', 'ptr');
   cap('實作上要怎麼用 semaphore？', '哪裡有這個 library？');
   await step(tok);                                   // 1485 kernel 自己就需要 → part of API；POSIX（Linux）
   const k = zone('OS kernel', 3.8, 0.02, 0.4, 4.0, 2.2, '#e0d6f5'); bx('semaphore', SC.os, 3.8, 0.35, 0.4, 2.4, 0.6, 0.9, 1.5);
@@ -3675,14 +3696,14 @@ FRAG.push(['syn-20b-posix', 'POSIX semaphore 的 API', async (tok) => {
   cap('它不屬於 Pthread', '不只 thread 之間，很多時候在 process 之間使用（OS level）');
   await step(tok);                                   // 1578 跟 mutex 比：初值設 1 → wait / signal 就像 lock / unlock
   cd.hl(3);
-  note('初值設 1：wait / signal ≈ lock / unlock', -3.4, 1.0, -1.0);
+  r1('初值設 1：wait / signal ≈ lock / unlock');
   cap('跟 mutex 比：initialize 成 1', 'wait、signal 就像當初的 lock、unlock，也能解 critical section');
   await step(tok);                                   // 1593 semaphore 更 powerful；只是 binary 就用 mutex
-  good('只是 binary 的問題 → 用 mutex lock（實作較簡單）；要 counting 才用 semaphore', 0, 0.2, 4.2);
+  r1('binary 用 mutex；要 counting 才用 semaphore', 'good');
   cap('semaphore 更 powerful，mutex 實作比較簡單', '只是 binary 的問題建議用 lock，需要 counting 才用 semaphore');
   await step(tok);                                   // 1612 休息；下一段：不用 spinlock，put to sleep
   cd.hl(-1);
-  idx('下一段：不用 spinlock，改成 put to sleep 的實作', 0, 7.0);
+  r1('下一段：不用 spinlock，改成 put to sleep');
   cap('休息十分鐘', '回來介紹不用 spinlock、把它 put to sleep 的實作');
   void k; void p1; void p2;
 }]);
@@ -3714,19 +3735,20 @@ FRAG.push(['syn-20c-q7', '期中考第 7 題補充：hierarchical 不一定只�
 }]);
 const SEMW = ['wait(S) {', '  S.value--;', '  if (S.value < 0) {', '    add P to S.list;', '    sleep();   // block', '  }', '}', 'signal(S) {', '  S.value++;', '  if (S.value <= 0) {', '    remove P from S.list;', '    wakeup(P);', '  }', '}'];
 FRAG.push(['syn-20c-sleep', 'Non-busy waiting：semaphore 帶一個 waiting queue', async (tok) => {
-  fresh([0, 6.5, 13], [0, 1.6, 0]);
+  fresh([0, 8.2, 16.5], [0, 2.9, 0]);
   let M, cd, B = {};
   await step(tok);                                   // 181 之前：busy waiting / spinlock，浪費 CPU
   const old = code(['wait(S) {', '  while (S <= 0) ;', '  S--;', '}'], -4.2, 5.8, 0.5, -2.6);
-  old.hl(1); bad('busy waiting（spinlock）→ 浪費 CPU', -4.2, 3.2, -2.6);
+  old.hl(1); const r0 = one(3.0, 4.4, -2.6, 'bad'); r0('busy waiting（spinlock）→ 浪費 CPU');
   cap('之前的 wait、signal：用 while loop', 'busy waiting，也叫 spinlock，很浪費 CPU');
   await step(tok);                                   // 195 另一種：non-busy waiting，put to sleep
-  good('另一種：non-busy waiting → put to sleep', 3.6, 6.2);
+  r0('另一種：non-busy waiting → put to sleep', 'good');
   cap('另一種實作：non-busy waiting', '把等的人 put to sleep，放進 sleeping queue');
   await step(tok);                                   // 210 structure：value + queue（像 condition variable）
   old.kill();
-  M = semStage(1, 'S.list：waiting queue（睡覺）', { block: true, name: 'S.value', sx: 1.4 });
-  cd = code(SEMW, -4.4, 6.6, 0.42, -3.2);
+  M = semStage(1, 'S.list：waiting queue（睡覺）', { block: true, name: 'S.value', sx: 0.4 });
+  cd = code(SEMW, -4.8, 6.0, 0.44, -3.2); showPart(cd, 0, SEMW.indexOf('signal(S) {'));
+  r0('').position.set(3.2, 2.8, -2.4);
   cap('semaphore 的 structure 變複雜了', '除了 value，還有一個 waiting queue（有點像 condition variable）');
   await step(tok);                                   // 232 queue 裡放被卡住的 process：put to sleep、移出 ready queue
   B.P1 = pal('P1', '', PCS[0], -6.4, 0, 0.6, 0.6); M.setS(0); await M.toCS(tok, B.P1, 600);
@@ -3734,41 +3756,41 @@ FRAG.push(['syn-20c-sleep', 'Non-busy waiting：semaphore 帶一個 waiting queu
   cap('queue 裡放的是 call 了 wait 被卡住的 process', 'put to sleep：從 ready queue 移出，真的在睡');
   await step(tok);                                   // 264 value 的意義：負值 = queue 的長度
   B.P3 = pal('P3', '', PCS[2], -6.4, 0, 0.6, 0.6); M.setS(-2); await M.toWait(tok, B.P3, 600);
-  note('value 是負的 → |value| = 在 queue 裡等的數量', -0.6, 1.6, -2.4);
+  r0('value 是負的 → |value| = 在等的數量', 'note');
   cap('這個實作裡 value 對應 queue 的長度', '負的時候，絕對值就是有多少個在 waiting');
   await step(tok);                                   // 298 用 block、wakeup 兩個 system call 實作
-  hd('system call：block（sleep）、wakeup', 3.8, 6.4);
+  r0('system call：block（sleep）、wakeup', 'ptr');
   cap('怎麼 implement wait 跟 signal？', '透過 block、wakeup 兩個 system call');
   await step(tok);                                   // 313 block：放進 waiting queue；wakeup：拿出來放回 ready queue
-  idx('block：放進 waiting queue　wakeup：移到 ready queue 等 schedule', 3.8, 5.8);
+  r0('block：進 waiting queue　wakeup：回 ready queue', 'note');
   cap('一個把 process 放到 waiting queue', '另一個從 waiting queue 拿出來放到 ready queue');
   await step(tok);                                   // 343 S.value < 0 → queue 有東西；−3 = 三個人在等
   cd.hl(2);
   B.P4 = pal('P4', '', PCS[3], -6.4, 0, 0.6, 0.6); M.setS(-3); await M.toWait(tok, B.P4, 600);
   cap('S.value 小於 0 代表 queue 裡有人', '−3 就是有三個人在等；0 代表沒人在等');
   await step(tok);                                   // 368 初值 > 0：counting，減到 0 之前不會睡
-  idx('初值 > 0（counting）：減到 0 之前都不會 put to sleep', -0.6, 2.3, -2.4);
+  r0('初值 > 0（counting）：減到 0 之前都不會睡', 'note');
   cap('一開始 initialize 成大於 0', '就是 counting semaphore：減到 0 之前都不會睡');
   await step(tok);                                   // 380 value < 0 → 沒資源 → 放進 queue、call sleep
   cd.hl(3);
   cap('value 小於 0 代表目前沒有 resource', '把這個 process 放到 queue 裡，然後 call sleep');
   await step(tok);                                   // 411 沒辦法執行、不用 CPU → non-busy waiting
   cd.hl(4);
-  good('睡著：不會執行、不用 CPU', -3.2, 1.7, 2.8);
+  r0('睡著：不會執行、不用 CPU', 'good');
   cap('它被放到 waiting queue，沒辦法執行', '也不用 CPU：這就是 non-busy waiting');
   await step(tok);                                   // 418 sleep 之前要先減；所以條件是 < 0 不是 = 0
   cd.hl(1);
-  note('先 value--，再判斷 < 0（睡了就沒機會再減）', -0.6, 3.0, -2.4);
+  r0('先 value--，再判斷 < 0（睡了就沒機會再減）', 'note');
   cap('sleep 之前要先把 counter 減 1', '一 call sleep 就沒機會執行了；所以判斷是 < 0，不是 = 0');
   await step(tok);                                   // 461 signal：++，若 ≤ 0 → 從 queue 拿一個、wakeup
-  cd.hl(8); M.setS(-2);
+  { const n = SEMW.indexOf('signal(S) {'); showPart(cd, n, 99, n * 0.44); } cd.hl(8); M.setS(-2);
   await M.out(tok, B.P1, 600);
   cd.hl(11); M.st.wait = M.st.wait.filter((b) => b !== B.P2);
   await M.fromWait(tok, B.P2, 700);
   cap('signal 倒過來：先 ++，若 ≤ 0 代表 queue 裡有人', 'remove 一個出來，wakeup 叫醒它 → 它進去執行');
   await step(tok);                                   // 499 沒有 while loop → 不浪費 CPU
   cd.hl(-1);
-  good('程式碼裡沒有任何 while loop → CPU 不會被浪費', 0, 7.2, -3.2);
+  r0('沒有任何 while loop → CPU 不會被浪費', 'good');
   cap('這就是 non-busy waiting', '程式碼裡沒有任何 while loop，CPU 不會被浪費');
 }]);
 
@@ -3808,8 +3830,9 @@ FRAG.push(['syn-20c-choose', 'Spinlock 還是 sleep？看等待時間長短', as
 FRAG.push(['syn-20c-atomic', 'wait / signal 怎麼做到 atomic', async (tok) => {
   fresh([0, 6.5, 13], [0, 1.6, 0]);
   let cd;
+  const r1 = one(0, 2.6, -1.6);
   await step(tok);                                   // 680 不管哪種實作，都必須 atomic
-  hd('wait、signal 必須是 atomic', 0, 6.4);
+  r1('wait、signal 必須是 atomic', 'ptr');
   cap('不管第一種還是第二種實作', '很重要的條件：必須是 atomic');
   await step(tok);                                   // 694 值有 ++ / --，還有 queue 的 insert / delete
   const v = bx('S.value ++ / --', SC.mem, -3.6, 0.4, -1.6, 2.8, 0.8, 1.0, 2), q = bx('S.list insert / delete', '#dfe3f3', 0.0, 0.4, -1.6, 3.2, 0.8, 1.0, 2);
@@ -3818,47 +3841,46 @@ FRAG.push(['syn-20c-atomic', 'wait / signal 怎麼做到 atomic', async (tok) =>
   const c = prop('cpu', 4.4, 0, -1.6, 0.8, 'interrupt off');
   cap('怎麼保證 atomic？', '最暴力的：OS kernel 做的 disable interrupt');
   await step(tok);                                   // 715 multi-processor：要 suspend 整台電腦 → 很沒效率
-  prop('cpu', 6.0, 0, 0.2, 0.6, 'CPU 2'); prop('cpu', 4.4, 0, 0.6, 0.6, 'CPU 3');
-  bad('multi-processor：只關一顆 CPU 不夠，要整台 suspend → 很沒效率', 3.4, 2.4, -0.4);
+  const c2 = prop('cpu', 6.0, 0, 0.2, 0.6, 'CPU 2'), c3 = prop('cpu', 4.4, 0, 0.6, 0.6, 'CPU 3');
+  r1('只關一顆 CPU 不夠，要整台 suspend → 很沒效率', 'bad');
   cap('有 multi-processor 時，關一個 CPU 還不夠', '要整台電腦都 suspend，非常不 efficient');
   await step(tok);                                   // 732 第二種：hardware support 或 pure software，包成 critical section
-  good('hardware support 或 software 的 entry / exit → 包成 critical section', -2.0, 2.4, -1.6);
+  r1('hardware 或 software → 包成 critical section', 'good');
   cap('第二種作法：才剛教完的 hardware support', '或 pure software 寫 entry、exit：把它變成 critical section');
   await step(tok);                                   // 752 用 critical section 保護 wait 的內容；if-else → 兩個 exit
-  gone(v, q);
+  gone(v, q, c, c2, c3); r1('').position.set(3.2, 3.2, -1.0);
   cd = code(['wait(S) {', '  entry();', '  S.value--;', '  if (S.value < 0) {', '    add P to S.list;', '    exit();', '    sleep();', '  } else', '    exit();', '}'], -3.6, 6.2, 0.46, -3.0);
   cd.hl(5);
   cap('軟體寫：wait、signal 包成 critical section', '因為有 if-else，兩種 case 各要一個 exit section');
   await step(tok);                                   // 775 千萬不要把 sleep / wakeup 包進去
   cd.hl(6);
-  bad('sleep 不能包在 critical section 裡：睡在裡面，別人就進不來', 2.6, 3.8, -1.0);
+  r1('sleep 不能包進去：睡在裡面，別人進不來', 'bad');
   cap('千萬不要把 sleep、wakeup 包進去', '一包進去它就睡在裡面，沒有人進得了 critical section');
   await step(tok);                                   // 791 它只是 system call，不會像 condition variable 幫你 reacquire
-  idx('sleep 只是 system call：不會像 cond_wait 幫你放掉 / 拿回 lock', 2.6, 3.1, -1.0);
+  r1('sleep 不會像 cond_wait 幫你放掉 lock');
   cap('這裡就是單純的 system call', '不像 condition variable 會幫你 reacquire lock');
   await step(tok);                                   // 795 很多人同時 call sleep / wakeup 不用擔心：OS 保證
-  good('sleep / wakeup 是 OS 的 system call：OS 自己保證它們沒有 race', 2.6, 2.3, -1.0);
+  r1('sleep / wakeup：OS 保證它們沒有 race', 'good');
   cap('反而不用擔心很多人同時 call sleep、wakeup', 'OS 提供的 system call，會保證它們是 atomic');
   await step(tok);                                   // 827 這樣就達到 atomic 的要求
   cd.hl(-1);
   cap('用這樣就可以達到 atomic 的要求', '兩種實作就看等待時間是長還是短');
-  void c;
 }]);
 
 FRAG.push(['syn-20c-order', '用 semaphore 控制執行順序：S1 → S2、data flow', async (tok) => {
-  fresh([0, 7, 13], [0, 1.6, 0]);
+  fresh([0, 7.6, 14.8], [0, 2.5, 0]);
   const N = {};
   const node = (n, x, z) => { N[n] = pal(n, '', PCS[(+n.slice(1) - 1) % 6], x, 0, z, 0.6); return N[n]; };
   const edge = (a, b, lbl) => { const A = N[a].g.position, Bp = N[b].g.position; const ar = arrow(V3(A.x + 0.4, 0.5, A.z), V3(Bp.x - 0.4, 0.5, Bp.z), 0x8a7a5c); idx(lbl, (A.x + Bp.x) / 2, 0.9, (A.z + Bp.z) / 2); return ar; };
   let c1, c2;
   await step(tok);                                   // 851 同步的目的：race / counting，以及控制時機、順序
-  hd('同步的另一個目的：控制執行的時機與順序', 0, 6.6);
+  const h1 = hd('同步的另一個目的：控制執行的時機與順序', 0, 3.2);
   cap('同步的目的：解決 race condition、做 counting', '另一個就是控制執行的時機點與順序');
   await step(tok);                                   // 863 semaphore 也常拿來 fine-grained 控制順序
   cap('semaphore 很多時候也拿來做這件事', '很 fine-grained 地調整程式執行的順序');
   await step(tok);                                   // 876 例子：P2 的 S2 一定要在 P1 的 S1 之後
   node('P1', -4.6, -1.0); node('P2', -4.6, 2.2);
-  note('要求：S1 執行完，S2 才可以執行', -1.0, 2.6, 0.6);
+  tx(h1, '要求：S1 執行完，S2 才可以執行');
   cap('例子：兩個 process', 'P1 的 statement S1 執行完之後，P2 的 S2 才可以執行');
   await step(tok);                                   // 900 sync 是 semaphore：P1 做 S1 再 signal；P2 先 wait
   c1 = code(['S1;', 'signal(sync);'], -1.6, 0.9, 0.45, -1.0); c2 = code(['wait(sync);', 'S2;'], -1.6, 0.9, 0.45, 2.2);
@@ -3871,45 +3893,47 @@ FRAG.push(['syn-20c-order', '用 semaphore 控制執行順序：S1 → S2、data
   c1.hl(1); rl(sy, 'sync = 1'); await wt(tok, 500); c2.hl(1); rl(sy, 'sync = 0'); glow(N.P2.body, OKG); N.P2.mood('happy');
   cap('兩個程式就算同時跑下去', '一定是 S1 先執行完、signal，P2 才能 break：沒有其他可能');
   await step(tok);                                   // 954 複雜的例子：data flow
-  c1.kill(); c2.kill(); kill(sy); gone(N.P1, N.P2);
+  c1.kill(); c2.kill(); kill(sy); gone(N.P1, N.P2); remove(h1);
   node('P1', -5.6, 0.6); node('P2', -2.8, -1.6); node('P3', -2.8, 2.8); node('P4', 0.0, -1.6); node('P5', 2.8, -2.6); node('P6', 2.8, 1.4); node('P7', 5.6, 1.4);
-  idx('（graph 為示意，邊的名字照課堂：a、b、c、d、f、h）', 0, 0.2, 4.2);
+  idx('graph 為示意', 0, 0, 4.2);
   cap('複雜一點的例子：一大堆 process 組成的 data flow', '一個的 output 給另一個，有的要等兩個人的 output');
   await step(tok);                                   // 985 每一條 edge 一個 semaphore（初值 0）
   edge('P1', 'P2', 'a'); edge('P1', 'P3', 'b'); edge('P2', 'P4', 'c'); edge('P4', 'P6', 'd'); edge('P4', 'P5', 'e'); edge('P3', 'P6', 'f'); edge('P6', 'P7', 'h');
   cap('照剛才的原則：每一條 edge', '就當成剛才 P1、P2 的例子，create 一個 semaphore');
   await step(tok);                                   // 1016 P1 先執行：S1，再 signal(a)、signal(b)
-  const k1 = code(['S1;', 'signal(a); signal(b);'], -5.6, 4.6, 0.42, -3.0);
+  // 同一時間只留一段程式碼（放後層正中間），換 process 就換掉
+  let kc = code(['S1;', 'signal(a); signal(b);'], 0, 4.8, 0.42, -3.0);
   glow(N.P1.body, OKG);
   cap('全部一開始都是 0：P1 先執行 S1', '然後 signal(a)、signal(b)，trigger 下一個 process');
   await step(tok);                                   // 1039 P2：incoming edge → wait；outgoing → signal
-  const k2 = code(['wait(a);', 'S2;', 'signal(c);'], -2.4, 4.6, 0.42, -3.0);
-  glow(N.P2.body, OKG);
+  kc.kill(); kc = code(['wait(a);', 'S2;', 'signal(c);'], 0, 4.8, 0.42, -3.0);
+  glow(N.P1.body, null); glow(N.P2.body, OKG);
   cap('規則：有 incoming edge 就 call wait', '有 outgoing edge 就 call signal，中間是 statement');
   await step(tok);                                   // 1073 P4：wait(c)，後面兩個 → 兩個 signal
-  const k4 = code(['wait(c);', 'S4;', 'signal(d); signal(e);'], 0.8, 4.6, 0.42, -3.0);
-  glow(N.P4.body, OKG);
+  kc.kill(); kc = code(['wait(c);', 'S4;', 'signal(d); signal(e);'], 0, 4.8, 0.42, -3.0);
+  glow(N.P2.body, null); glow(N.P4.body, OKG);
   cap('隨便挑 P4：wait(c)，等 P2', '後面有兩條，所以 signal 兩個');
   await step(tok);                                   // 1081 P6：wait(f)、wait(d) 都等到才執行，再 signal(h)
-  const k6 = code(['wait(f); wait(d);', 'S6;', 'signal(h);'], 4.4, 4.6, 0.42, -3.0);
-  glow(N.P6.body, OKG);
+  kc.kill(); kc = code(['wait(f); wait(d);', 'S6;', 'signal(h);'], 0, 4.8, 0.42, -3.0);
+  glow(N.P4.body, null); glow(N.P6.body, OKG);
   cap('P6 要 wait(f) 跟 wait(d)', '兩個都被 signal 之後才執行，執行完 signal(h)，以此類推');
   await step(tok);                                   // 1095 很容易控制 data flow；常常跨 process
-  good('semaphore：輕鬆控制整個 data flow（常常是跨 process 的）', 0, 6.0, -1.0);
+  kc.kill(); glow(N.P6.body, null);
+  good('semaphore：輕鬆控制整個 data flow', 0, 3.6, -1.0);
   cap('用 semaphore 很容易做同步', '控制整個 data flow；而且常常是跨 process 使用');
-  void k1; void k2; void k4; void k6;
 }]);
 
 FRAG.push(['syn-20c-deadlock', 'wait / signal 順序寫錯：deadlock 與 starvation', async (tok) => {
   fresh([0, 6.5, 13], [0, 1.6, 0]);
   let s, q, p0, p1, c0, c1;
+  const r1 = one(0, 2.9, 0.4);
   await step(tok);                                   // 1120 tool 好用，但程式變複雜，順序都由 programmer 控制
-  hd('一堆 wait、signal：都要 programmer 自己控制', 0, 6.4);
+  r1('一堆 wait、signal：都要 programmer 自己控制', 'ptr');
   cap('synchronization tool 很好用', '但程式碼常變得複雜，一堆 wait、signal 都由 programmer 控制');
   await step(tok);                                   // 1136 順序寫不好 → 互相等待、無法前進
   cap('很容易發生的問題：wait、signal 順序寫得不好', '造成 process 之間互相等待，沒辦法前進');
   await step(tok);                                   // 1148 例子：S、Q 兩個 semaphore，順序相反
-  s = bx('S = 1', SC.mem, -1.6, 0.4, -1.6, 1.6, 0.8, 1.1, 2); q = bx('Q = 1', SC.mem, 1.6, 0.4, -1.6, 1.6, 0.8, 1.1, 2);
+  r1(''); s = bx('S = 1', SC.mem, -1.6, 0.4, -1.6, 1.6, 0.8, 1.1, 2); q = bx('Q = 1', SC.mem, 1.6, 0.4, -1.6, 1.6, 0.8, 1.1, 2);
   p0 = pal('P0', '', PCS[0], -4.6, 0, 1.6, 0.7); p1 = pal('P1', '', PCS[1], 4.6, 0, 1.6, 0.7);
   c0 = code(['wait(S);', 'wait(Q);', '  …', 'signal(S);', 'signal(Q);'], -4.6, 5.4, 0.45, -2.6); c1 = code(['wait(Q);', 'wait(S);', '  …', 'signal(Q);', 'signal(S);'], 4.6, 5.4, 0.45, -2.6);
   cap('例子：S 跟 Q 兩個 semaphore', 'P0 先 wait(S) 再 Q；P1 先 wait(Q) 再 S');
@@ -3923,20 +3947,20 @@ FRAG.push(['syn-20c-deadlock', 'wait / signal 順序寫錯：deadlock 與 starva
   glow(p0.body, NOR); glow(p1.body, NOR); p0.mood('sad'); p1.mood('sad');
   cap('P0 卡在 wait(Q)：Q 被 P1 拿走', 'P1 卡在 wait(S)：S 被 P0 拿走');
   await step(tok);                                   // 1200 初值是 0 的話，第一行就卡住
-  idx('（若初值是 0，第一行就卡住了）', 0, 0.2, 3.2);
+  r1('若初值是 0，第一行就卡住了');
   cap('如果一開始是 0', '連第一行就卡住了');
   await step(tok);                                   // 1205 互相等待 → deadlock（下一章）
-  bad('互相等待 → deadlock（下一章）', 0, 2.8, 0.4);
+  r1('互相等待 → deadlock（下一章）', 'bad');
   cap('互相等待、沒辦法前進：deadlock', '下一章會教');
   await step(tok);                                   // 1217 結果是 starvation：相關但不一樣
-  note('starvation：某個程式永遠沒機會執行', 0, 3.6, 0.4);
+  r1('starvation：某個程式永遠沒機會執行');
   cap('deadlock 造成的結果是 starvation', '相關但不一樣：starvation 指單一程式永遠沒機會執行');
   await step(tok);                                   // 1229 starvation 的原因：deadlock、priority scheduling…
-  idx('starvation 的原因：deadlock，或 priority 太低（scheduling）…', 0, 4.3, 0.4);
+  r1('starvation 的原因：deadlock，或 priority 太低…');
   cap('沒辦法執行的原因很多', 'deadlock 是一個；priority scheduling 裡 priority 太低也會');
   await step(tok);                                   // 1245 synchronization 時 programmer 的錯誤 → deadlock → starvation
   c0.hl(-1); c1.hl(-1);
-  hot('programmer 寫錯 → deadlock → starvation', 0, 5.0, 0.4);
+  r1('programmer 寫錯 → deadlock → starvation', 'ptr alt');
   cap('同步的過程很容易因為 programmer 的錯誤', '產生 deadlock，最後變成 starvation');
 }]);
 
@@ -3947,15 +3971,16 @@ function monStage() {
   tag('monitor（object）', 'ptr', 0.6, 2.6, -0.8);
   const sd = bx('shared data\n（private）', SC.mem, -0.8, 0.3, -1.6, 2.4, 0.6, 1.0);
   Object.assign(sd.userData.lbl.element.style, { whiteSpace: 'pre', textAlign: 'center', lineHeight: '1.15' }); // two short lines: clear of the methods and the entry queue
-  const ms = ['method A()', 'method B()'].map((n, k) => bx(n, '#4b9ee2', 2.4, 0.25, -1.6 + k * 1.1, 1.8, 0.5, 0.8));
+  const ms = ['method A()', 'method B()'].map((n, k) => bx(n, '#4b9ee2', 2.4, 0.25, -1.9 + k * 1.7, 1.8, 0.5, 0.8));
   zone('entry queue', -5.0, 0.02, -0.8, 3.0, 1.6, '#f6e2d6').userData.name.position.z = 0.3; // name on the front edge, below the waiting threads
   return { sd, ms };
 }
 FRAG.push(['syn-21a-monitor', 'Monitor：一次只有一個 active 的 thread', async (tok) => {
   fresh([0, 6.5, 13], [0, 1.6, 0]);
   let M, th = [];
+  const r1 = one(0.6, 3.6, -0.8);
   await step(tok);                                   // 2 今天重點：monitor，high-level language construct
-  hd('Monitor：high-level language construct', 0, 6.4);
+  r1('Monitor：high-level language construct', 'ptr');
   cap('今天的重點：monitor', '最後一個 synchronization tool，更 high level、更方便 programming');
   await step(tok);                                   // 8 有點像 OO 的 class
   M = monStage();
@@ -3964,41 +3989,42 @@ FRAG.push(['syn-21a-monitor', 'Monitor：一次只有一個 active 的 thread', 
   glow(M.sd, DIM);
   cap('一個 class 有 private variable', '還有 method，拿來操作、修改這些 variable');
   await step(tok);                                   // 72 誰 access、做什麼都 well-defined
-  idx('誰會 access、做什麼動作 → 都 well-defined', 0.6, 3.2, -0.8);
+  r1('誰會 access、做什麼動作 → 都 well-defined');
   cap('誰會 access 這些 variable、做什麼動作', '用 class 都能 well define 出來，很清楚');
   await step(tok);                                   // 85 monitor：解決透過 method 存取 shared variable 的同步
   cap('monitor 就是在 OO 的概念下再衍生', '解決大家透過 method 存取 shared variable 的同步問題');
   await step(tok);                                   // 103 回到最簡單：mutual exclusion，method 一次只有一個執行
-  hot('method 一次只有一個被執行（mutual exclusion）', 0.6, 4.0, -0.8);
+  r1('method 一次只有一個被執行（ME）', 'ptr alt');
   cap('解法回到最簡單的 mutual exclusion', '這個 class 的 method 一次只有一個被執行');
   await step(tok);                                   // 118 很多 thread call → queue 住，一次一個 → 沒有 race
-  th = [0, 1, 2].map((k) => pal('T' + k, '', PCS[k], -5.8 + k * 0.9, 0, -0.8, 0.5));
-  await slide(tok, th[0].g, 0.4, 0, 0.4, 700); glow(th[0].body, OKG);
+  th = [0, 1, 2].map((k) => pal('T' + k, '', PCS[k], -6.1 + k * 1.15, 0, -0.8, 0.5));
+  await slide(tok, th[0].g, 1.0, 0, 1.3, 700); glow(th[0].body, OKG);
   cap('很多 thread 同時 call 也沒關係', '它們會被 queue 住、排隊，一次一個進來 → 沒有 race condition');
   await step(tok);                                   // 141 常被忽略：不是一次只有一個人 call，而是只有一個 active
-  bad('不是「只有一個 thread 在裡面」', 0.6, 4.8, -0.8);
+  r1('不是「只有一個 thread 在裡面」', 'bad');
   cap('大家常忽略的細節', '不是一次只有一個人在 call，而是只有一個 active 的 thread');
   await step(tok);                                   // 161 像 Pthread 的例子：進去後 wait → inactive
   sleepy(th[0], true); glow(th[0].body, '#1a2a5a');
-  await slide(tok, th[0].g, 0.4, 0, 2.6, 600);
+  await slide(tok, th[0].g, -1.2, 0, 2.6, 600);
   cap('像 Pthread condition variable 的例子', '進到 critical section 後做 wait：被 put to sleep → inactive');
   await step(tok);                                   // 190 suspend 的時候，其他 thread 可以進來
-  await slide(tok, th[1].g, 0.4, 0, 0.4, 700); glow(th[1].body, OKG);
+  await slide(tok, th[1].g, 1.0, 0, 1.3, 700); glow(th[1].body, OKG);
   cap('它暫時被 suspend 了', '這時其他 thread 可以進來繼續用：只要維持一個 active 就好');
   await step(tok);                                   // 206 active = 可以執行裡面的 statement
-  good('保證：monitor 裡只有一個 active（正在執行 statement）的 thread', 0.6, 4.8, -0.8);
+  r1('保證：monitor 裡只有一個 active 的 thread', 'good');
   cap('active 的意思是可以執行裡面的 statement', 'monitor 保證只有一個 process 是 active');
   await step(tok);                                   // 233 跟 mutex、CV 一樣是概念，各語言形式不同（Java…）
-  idx('Java 等物件導向、平行語言都支援，形式有些不同', 0.6, 0.2, 3.6);
+  r1('Java 等語言都支援，形式有些不同');
   cap('它跟 mutex、condition variable 一樣是一個概念', '大部分平行語言、Java 都 support，形式不太一樣');
   await step(tok);                                   // 282 high level：融入語言設計的 specialized class
-  hd('specialized class：融入語言設計 → high level', 0, 7.2);
+  r1('specialized class：融入語言設計 → high level', 'ptr');
   cap('用物件、method 來做 synchronization', '已經融入語言設計：它是一個 specialized class');
 }]);
 
 FRAG.push(['syn-21a-cv', 'Monitor ＋ condition variable；CV 和 semaphore 的 wait / signal 差在哪', async (tok) => {
-  fresh([0, 6.5, 13], [0, 1.6, 0]);
+  fresh([0, 7.6, 14.8], [0, 2.5, 0]);
   let M, th = [], cq, semV, cvQ;
+  const r1 = one(0.6, 3.6, -0.8);
   await step(tok);                                   // 291 monitor class 產生的 object 處理同步
   M = monStage();
   cap('右邊這個圖就是 monitor', 'monitor class 產生的 object，負責處理 synchronization');
@@ -4006,53 +4032,53 @@ FRAG.push(['syn-21a-cv', 'Monitor ＋ condition variable；CV 和 semaphore 的 
   glow(M.sd, DIM);
   cap('shared data 對應到 class 的 private variable', '只有透過 method 才能操作，不受外面干擾');
   await step(tok);                                   // 348 special class：call method 的都被 queue 住，一次一個
-  th = [0, 1, 2].map((k) => pal('T' + k, '', PCS[k], -5.8 + k * 0.9, 0, -0.8, 0.5));
-  await slide(tok, th[0].g, 0.4, 0, 0.4, 700); glow(th[0].body, OKG);
+  th = [0, 1, 2].map((k) => pal('T' + k, '', PCS[k], -6.1 + k * 1.15, 0, -0.8, 0.5));
+  await slide(tok, th[0].g, 1.0, 0, 1.3, 700); glow(th[0].body, OKG);
   cap('language 知道它是 monitor', '把 call method 的 thread queue 住，一次只有一個進來');
   await step(tok);                                   // 373 比 semaphore、mutex、CV 更 high level
   const lo = code(['wait(S);', 'lock(&m);', '  …', 'unlock(&m);', 'signal(S);'], -4.6, 5.6, 0.45, -2.8);
   cap('不像 semaphore、mutex、condition variable', '要自己寫 signal、wait、lock、unlock，順序都自己 figure out');
   await step(tok);                                   // 394 往前移一行、往後移一行答案就不同 → deadlock / race
-  bad('往前或往後移一行：可能 deadlock，或還是 race', -4.6, 3.0, -2.8);
+  r1('移一行：可能 deadlock，或還是 race', 'bad');
   cap('往前移一行、往後移一行答案就不一樣', '有時 deadlock、有時還是 race：比較 low level，容易出錯');
   await step(tok);                                   // 417 monitor 也結合 condition variable
   lo.kill();
-  hot('monitor ＋ condition variable', -3.6, 5.2);
+  r1('monitor ＋ condition variable', 'ptr alt');
   cap('monitor 裡面也結合了 condition variable', '它不是解 race condition，但同步非常常用');
   await step(tok);                                   // 439 method 裡可以 call CV 的 wait（像 thread pool）
-  cq = zone('condition x 的 waiting queue', 0.6, 0.02, 3.0, 4.0, 1.4, '#dfe3f3');
+  cq = zone('condition x 的 waiting queue', 0.6, 0.02, 3.0, 4.0, 1.4, '#dfe3f3'); cq.userData.name.position.z = 4.05;
   cap('在 monitor 定義的 method 裡', '還可以 call condition variable 的 wait（例如 thread pool）');
   await step(tok);                                   // 467 每個 CV 是一個 event waiting queue
-  idx('一個 condition variable = 一個 event waiting queue', 0.6, 0.9, 3.8);
+  r1('一個 condition variable = 一個 waiting queue');
   cap('每個 condition variable 代表一個 waiting queue', '等 resource 就 call wait，叫醒人就 call signal');
   await step(tok);                                   // 500 wait = suspend → inactive，外面的可以進來
-  sleepy(th[0], true); glow(th[0].body, '#1a2a5a'); await slide(tok, th[0].g, -0.4, 0, 3.0, 600);
-  await slide(tok, th[1].g, 0.4, 0, 0.4, 600); glow(th[1].body, OKG);
+  sleepy(th[0], true); glow(th[0].body, '#1a2a5a'); await slide(tok, th[0].g, -0.8, 0, 3.0, 600);
+  await slide(tok, th[1].g, 1.0, 0, 1.3, 600); glow(th[1].body, OKG);
   cap('wait 的意思是 suspend：變成 inactive', '雖然還在 monitor 裡，外面的 thread 可以進來了');
   await step(tok);                                   // 527 signal：list 裡有人就叫起來
   sleepy(th[0], false); th[0].mood('happy');
   cap('signal 就去看這個 variable 的 waiting list', '有人的話就把它叫起來');
   await step(tok);                                   // 549 和 semaphore 的差別：semaphore wait 一定 −1、signal 一定 +1
-  semV = bx('semaphore：S = 0', SC.mem, -4.6, 0.4, 2.6, 2.6, 0.7, 1.0, 1.5);
+  semV = bx('semaphore：S = 0', SC.mem, -4.6, 0.4, 3.1, 2.6, 0.7, 1.0, 1.5);
   cap('提醒：semaphore 也有 wait、signal', 'semaphore 的 wait 一定減 1、signal 一定加 1');
   await step(tok);                                   // 588 CV 不是 counter，是 waiting queue：wait = enqueue，signal = dequeue
-  cvQ = bx('CV：queue = [ ]', '#dfe3f3', -4.6, 0.4, 4.0, 2.6, 0.7, 1.0, 1.5);
+  cvQ = bx('CV：queue = [ ]', '#dfe3f3', -4.6, 0.4, 4.3, 2.6, 0.7, 1.0, 1.5);
   cap('CV 不是 counter，是一個 waiting queue', 'wait 是 enqueue（suspend），signal 是 dequeue');
   await step(tok);                                   // 620 queue 空的時候 signal：什麼都沒發生
-  const sg = pkt('signal', -6.4, 1.4, 4.0); await travel(tok, sg, V3(-6.4, 1.4, 4.0), V3(-4.6, 1.2, 4.0), 600); remove(sg);
-  good('queue 是空的 → signal 什麼都沒發生（沒有 −1 這種東西）', -2.2, 1.6, 4.0);
+  const sg = pkt('signal', -6.4, 1.4, 4.3); await travel(tok, sg, V3(-6.4, 1.4, 4.3), V3(-4.6, 1.2, 4.3), 600); remove(sg);
+  r1('queue 是空的 → signal 什麼都沒發生', 'good');
   cap('queue 是空的時候 signal：nothing happens', '沒有人被叫起來，queue 還是空的');
   await step(tok);                                   // 644 semaphore 的值永遠會被修改
-  const sg2 = pkt('signal', -6.4, 1.4, 2.6); await travel(tok, sg2, V3(-6.4, 1.4, 2.6), V3(-4.6, 1.2, 2.6), 600); remove(sg2);
+  const sg2 = pkt('signal', -6.4, 1.4, 3.1); await travel(tok, sg2, V3(-6.4, 1.4, 3.1), V3(-4.6, 1.2, 3.1), 600); remove(sg2);
   rl(semV, 'semaphore：S = 1');
-  bad('semaphore：值一定被修改（可正可負）', -2.2, 1.6, 2.6);
+  r1('semaphore：值一定被修改（可正可負）', 'bad');
   cap('semaphore 就算值是 0，signal 還是加 1', '值永遠會被修改：一個是 queue、一個是 counter');
   await step(tok);                                   // 683 結合後：在 CV queue 的 thread 是 inactive，別人進來 signal
+  gone(semV, cvQ); r1('');
   await slide(tok, th[2].g, -5.0, 0, -0.8, 400);
   cap('monitor ＋ CV 的 structure', '進 queue 的 thread inactive，別的 thread 才能進來 signal 它');
   await step(tok);                                   // 723 monitor 裡可以有很多 thread，但 active 的只有一個
-  good('monitor 裡可以有很多 thread，但 active 的只有一個', 0.6, 4.8, -0.8);
-  bad('「monitor 只能有一個 thread」→ 錯', 0.6, 4.1, -0.8);
+  r1('thread 可以很多，但 active 的只有一個', 'good');
   cap('重點：monitor 裡可以同時有很多 thread', '但 active 的只有一個；「只能有一個 thread」是錯的');
   void cq;
 }]);
@@ -4140,6 +4166,7 @@ FRAG.push(['syn-21a-dining', 'Dining philosophers 的 monitor 解法', async (to
 FRAG.push(['syn-21b-trace', 'Monitor 解法跑一次：P1 吃、P2 等、P1 放下叫醒 P2', async (tok) => {
   fresh([3.4, 9, 9], [3.4, 0.4, 0]);
   let V, cd;
+  const r1 = one(0, 1.8, 0);
   await step(tok);                                   // 2 跟 low level 想 race 的方式完全不同
   V = dpView();
   cd = codeBlock(DPC, 4.2, 1.0, 0);
@@ -4147,7 +4174,7 @@ FRAG.push(['syn-21b-trace', 'Monitor 解法跑一次：P1 吃、P2 等、P1 放�
   await step(tok);                                   // 44 monitor 保證一次一個人 call，最後都輪得到
   cap('monitor 本身保證一次一個人去 call', 'eventually 都會 call 到');
   await step(tok);                                   // 64 實際用法：吃之前 pickup、吃完 putdown
-  note('哲 i：DP.pickup(i); 吃; DP.putdown(i);', 0, 1.2, 0);
+  r1('哲 i：DP.pickup(i); 吃; DP.putdown(i);');
   cap('整個 program：每個 process / thread', '吃之前 call pickup、吃完 call putdown');
   await step(tok);                                   // 97 左右鄰居不能同時吃
   cap('重點：左邊、右邊的人不能同時吃', 'pickup 完成才能開始吃，吃完 putdown');
@@ -4164,32 +4191,33 @@ FRAG.push(['syn-21b-trace', 'Monitor 解法跑一次：P1 吃、P2 等、P1 放�
   cd.hl(DPH.wait); dpAct(V, 2, 'monitor'); V.update();
   cap('P1 還在吃，P2 就進來 pickup', '變成 hungry，test 失敗（鄰居 P1 在吃）→ 放進 waiting list');
   await step(tok);                                   // 186 P2 在 monitor 裡卡住，直到有人 signal
-  const p2w = bad('P2 卡在 self[2].wait()', 0, 1.2, 0);
+  r1('P2 卡在 self[2].wait()', 'bad');
   cap('P2 在 monitor 裡被卡住', '一直到有人 signal、把它叫起來');
   await step(tok);                                   // 202 P1 putdown：thinking，先測左邊 P0
   cd.hl(DPH.putdown); dpPutdown(V, 1); dpTest(V, 0); V.update();
   cap('什麼時候叫起來？等 P1 call putdown', '自己改回 thinking，幫左邊 P0 測：P0 沒 hungry，沒事');
   await step(tok);                                   // 224 測 P2：條件都符合 → eating + signal
-  cd.hl(DPH.eat); dpTest(V, 2); V.update(); remove(p2w);
+  cd.hl(DPH.eat); dpTest(V, 2); V.update(); r1('');
   cap('再測右邊 P2：所有條件都符合', 'test 裡做兩件事：state 改成 eating、signal P2');
   await step(tok);                                   // 253 P2 進去吃
   cd.hl(-1);
-  good('P1 putdown 結束後，P2 開始吃', 0, 1.8, 0);
+  r1('P1 putdown 結束後，P2 開始吃', 'good');
   cap('P1 的 putdown 結束後', 'P2 就可以進到 eat：大家同步了');
   await step(tok);                                   // 265 只有 DP object 是 monitor；P1、P2 是 application
-  idx('只有 DiningPhilosophers 這個 object 是 monitor；P1、P2 只是使用它的 application', 0, 2.6, 0);
+  r1('只有 DP 是 monitor；P1、P2 只是 application');
   cap('只有 DP 這個 object 是 monitor', 'P1、P2 只是 application，用 class 的 method 解問題');
 }]);
 
 FRAG.push(['syn-21b-java', 'Java：synchronized method 與 synchronized statement', async (tok) => {
   fresh([0, 6.5, 13], [0, 1.8, 0]);
   let cm, cs;
+  const r1 = one(0, 1.6, 0.4);
   await step(tok);                                   // 288 真實語言都包裝好了：Java 的 synchronized method
-  hd('Java 怎麼支援 monitor？', 0, 6.4);
+  r1('Java 怎麼支援 monitor？', 'ptr');
   cap('真實的 language 都包裝得非常好用', '像 Java 有 synchronized method');
   await step(tok);                                   // 306 用法跟 monitor 一樣，但更 fine-grained
   cm = code(['class Account {', '  private int balance;', '  public synchronized void deposit(int x) { … }', '  public synchronized void withdraw(int x) { … }', '  public int id() { … }   // 沒加', '}'], -3.0, 5.4, 0.5, -2.4);
-  idx('（類別名稱、method 為示意）', -3.0, 2.0, -2.4);
+  r1('類別名稱、method 為示意', 'idx');
   cap('用法跟 monitor 一樣', '但更 fine-grained 一點');
   await step(tok);                                   // 311 不是整個 class 是 monitor，而是任何一個 method 可以加 synchronized
   cm.hl(2);
@@ -4199,16 +4227,16 @@ FRAG.push(['syn-21b-java', 'Java：synchronized method 與 synchronized statemen
   cap('告訴 compiler：這些 method 會 race', '它們不能同時執行');
   await step(tok);                                   // 335 很有彈性：programmer 決定哪些要 synchronize
   cm.hl(4);
-  good('programmer 決定哪些 method 要 synchronized', 3.6, 1.2, 0.4);
+  r1('programmer 決定哪些 method 要 synchronized', 'good');
   cap('很有彈性：一個 class 可能有 10 個 method', 'programmer 可以控制哪些要 synchronize、哪些不要');
   await step(tok);                                   // 347 貼上 synchronized 的全部互斥，不能分組
-  bad('有標的全部互斥，不能像多把 mutex 那樣分組', 3.6, 2.0, 0.4);
+  r1('有標的全部互斥，不能分組', 'bad');
   cap('只要貼上 synchronized，這些就要 mutual exclusive', '不能像不同的 mutex lock 那樣分成不同組');
   await step(tok);                                   // 369 Java 這樣支援；概念就是 monitor
   cm.hl(-1);
   cap('這就是 Java 支援的方式，很容易用', '概念就是 monitor，只是更有彈性');
   await step(tok);                                   // 391 另一種：statement level，比較接近 mutex lock
-  cs = code(['synchronized (obj) {', '  balance = balance + x;', '}'], 3.4, 5.4, 0.5, -2.4);
+  r1(''); cs = code(['synchronized (obj) {', '  balance = balance + x;', '}'], 3.4, 5.4, 0.5, -2.4);
   hot('statement level（比較像 mutex lock）', 3.4, 6.0, -2.4);
   cap('Java 還支援另一種：statement level', '這個比較接近 mutex lock');
   await step(tok);                                   // 412 把一段 statement 框起來，前面寫 synchronized(變數)
@@ -4218,92 +4246,94 @@ FRAG.push(['syn-21b-java', 'Java：synchronized method 與 synchronized statemen
   const lk = prop('lock', 6.0, 0, 0.4, 0.8, 'lock / unlock');
   cap('compile 成最後的 code 之前', '它自己幫你在前面加 lock、後面加 unlock');
   await step(tok);                                   // 448 幫助 programmer：程式比較乾淨
-  good('程式比較乾淨、容易懂', 3.4, 2.4, -2.4);
+  r1('程式比較乾淨、容易懂', 'good');
   cap('用 mutex lock 也可以', '但這樣比較簡單，程式比較乾淨、容易懂');
   await step(tok);                                   // 475 statement level、比較 fine-grained
   cs.hl(1);
   cap('它是比較 fine-grained', 'statement-level 的 synchronization tool');
   await step(tok);                                   // 492 每個語言不同：Java 兩種；Pthread 有 mutex、CV 的 API
   cs.hl(-1);
-  note('Java：synchronized method / block　Pthread：mutex、condition variable 的 API', 0, 1.0, 1.6);
+  r1('Java：method / block　Pthread：mutex、CV 的 API');
   cap('每個 language 都不太一樣', 'Java 主要這兩種；Pthread 是 mutex lock、condition variable 的 API');
   await step(tok);                                   // 515 classic problems：用來驗證 tool；軟體裡很常見
-  idx('classic problems：拿來驗證 synchronization tool 好不好用；真實軟體裡到處都是', 0, 0.2, 3.4);
+  r1('classic problems：驗證 tool；軟體裡到處都是');
   cap('這就是 classic synchronization problems', '用它們驗證 tool；它們在一般軟體裡非常常見');
   void lk;
 }]);
 
 FRAG.push(['syn-21b-atomic', 'Atomic transaction：all or nothing、commit / rollback、log、checkpoint', async (tok) => {
   fresh([0, 6.5, 13], [0, 1.6, 0]);
-  let log = [], logZ;
+  let log = [], logZ, r1 = one(0, 3.2, 0), kinds, flowA;
   await step(tok);                                   // 548 最後：atomic transaction
-  hd('Atomic transaction', 0, 6.4);
+  r1('Atomic transaction', 'ptr');
   cap('這章最後提到的', 'atomic transaction');
   await step(tok);                                   // 565 atomic = 不可分割；可以形容各種執行單位
-  ['instruction', 'function（wait / signal）', 'transaction'].forEach((t, k) => bx(t, ['#e0d6f5', '#c8b8f0', '#9b7ef4'][k], -4.4 + k * 4.4, 0.3, -2.6, 3.4, 0.6, 0.9, 1.5));
+  kinds = ['instruction', 'function（wait / signal）', 'transaction'].map((t, k) => bx(t, ['#e0d6f5', '#c8b8f0', '#9b7ef4'][k], -4.4 + k * 4.4, 0.3, -2.6, 3.4, 0.6, 0.9, 1.5));
   cap('atomic 就是不可分割，是一個形容詞', '可以形容 instruction、function，也可以形容 transaction');
   await step(tok);                                   // 602 transaction：database，像 ATM 交易
   const atm = prop('monitor', -4.4, 0, 0.6, 0.9);
-  idx('ATM 交易 = transaction', -4.4, 2.2, 0.6);
+  r1('ATM 交易 = transaction');
   cap('transaction 最常聽到的是 database', '像 ATM 提款這些交易，都叫 transaction');
   await step(tok);                                   // 628 transaction：一整個流程（跨銀行轉帳）
   const b1 = prop('warehouse', 0.6, 0, 0.6, 0.8, '銀行 A'), b2 = prop('warehouse', 4.6, 0, 0.6, 0.8, '銀行 B');
-  arr(1.8, 0.8, 3.4, 0.8, '#8a7a5c', 0.6);
+  flowA = arr(1.8, 0.8, 3.4, 0.8, '#8a7a5c', 0.6);
   cap('transaction 更複雜：是一整個流程', '轉帳還 involve 兩個銀行的業務操作');
   await step(tok);                                   // 655 database 類系統：atomic transaction
   cap('在 database 這類 system', '就會聽到 atomic transaction');
   await step(tok);                                   // 670 跟同步有關：兩人同時轉帳 → 錢可能不對
-  bad('兩人同時轉帳、一存一領 → 餘額可能出錯', 2.6, 2.6, 0.6);
+  r1('兩人同時轉帳、一存一領 → 餘額可能出錯', 'bad');
   cap('它跟 synchronization 有關', '兩人同時轉帳、一存一領，沒解好錢可能變不對');
   await step(tok);                                   // 699 transaction = collection of instructions，一種 logic
-  note('transaction：一連串 instruction / function 組成的完整邏輯', 0, 4.4, -1.0);
+  r1('transaction：一連串 instruction 組成的完整邏輯');
   cap('transaction：collection of instructions', '甚至是 function：把整件事做完的一段邏輯');
   await step(tok);                                   // 717 atomic：要嘛全做完、要嘛不做；做一半 state unstable
-  good('all or nothing：要嘛全做、要嘛不做', -2.6, 5.2, -1.0); bad('做一半 → state unstable', 3.0, 5.2, -1.0);
+  r1('all or nothing；做一半 → state unstable', 'good');
   cap('atomic：整個動作要嘛一次做完，要嘛不做', '不能做到一半：state unstable，不知道結果、也接不下去');
   await step(tok);                                   // 743 存錢 fail → 金額沒動
-  idx('存錢失敗 → 金額沒動（不會莫名多 500）', -2.6, 0.2, 2.4);
+  r1('存錢失敗 → 金額沒動');
   cap('存錢失敗就是金額沒動', 'all or nothing：這就是 atomic 的定義');
   await step(tok);                                   // 763 不只 database：file system、OS 重開機檢查
-  prop('disk', 4.6, 0, 3.0, 0.8, 'file system');
+  gone(atm, b1, b2, flowA, ...kinds); r1('');
+  prop('disk', 0, 0, -1.6, 0.8, 'file system');
   cap('不只 database，也可以想成整個 file system', '跳電重開機變慢，就是在檢查 file system 的 state');
   await step(tok);                                   // 812 一般作法：commit / abort（two-phase）
   logZ = zone('stable storage：log', 0, 0.02, 3.6, 6.0, 1.2, '#e8e1d6');
   logZ.userData.name.center.set(1, 0.5); logZ.userData.name.position.set(-3.2, 0.07, 3.6); // name just left of the strip (its back edge runs under the banks)
   cap('保證 atomic transaction 的傳統作法', '透過 commit / abort（two-phase 的動作）');
   await step(tok);                                   // 842 最後一定要 commit；沒 commit 就 rollback（像 git commit）
-  const cm = bx('commit', SC.cs, -1.6, 0.3, 1.6, 1.8, 0.5, 0.8, 1.2), ab = bx('abort → rollback', SC.bad, 1.6, 0.3, 1.6, 2.6, 0.5, 0.8, 1.2);
+  const cm = bx('commit', SC.cs, -2.0, 0.3, 1.2, 1.8, 0.5, 0.8, 1.2), ab = bx('abort → rollback', SC.bad, 2.0, 0.3, 1.2, 2.6, 0.5, 0.8, 1.2);
   cap('執行很多動作後，最後一定要再做 commit', '沒有 commit，前面的都不承認，全部 rollback（像 GitHub 的 commit）');
   await step(tok);                                   // 883 保證 atomic = 要有能力 rollback（none 比較難）
-  hot('難的是 none：做到一半要能回到原本的 state', 0, 2.4, 1.6);
+  r1('難的是 none：做到一半要能回到原本的 state', 'ptr alt');
   cap('要保證 atomic，就要有能力 rollback', 'all 簡單，難的是 none：做一半要回復原本的 state');
   await step(tok);                                   // 920 rollback 靠 logging，存在 stable storage
   for (let k = 0; k < 3; k++) { log.push(bx('log ' + (k + 1), '#fffaf0', -2.0 + k * 2.0, 0.25, 3.6, 1.6, 0.4, 0.7, 1.2)); await wt(tok, 250); }
   cap('怎麼 rollback？做 logging', '把 transaction 的每個步驟記在 stable storage：系統可以 crash，log 不能掉');
   await step(tok);                                   // 969 log 什麼：名稱、時間、動作、data 的舊值 / 新值
-  note('log：transaction 名稱、時間、動作、data 的舊值 / 新值', 0, 1.6, 4.6);
+  gone(cm, ab); r1('log：名稱、時間、動作、data 的舊值 / 新值');
   cap('log 不外乎：transaction 的名稱（第幾筆）、時間、動作', '最重要的是 data：舊值、新值，才能 reconstruct 或改回去');
   await step(tok);                                   // 1004 log 太多變慢、太少重建不了
-  idx('log 太多 → 系統變慢；太少 → 沒辦法重建', 0, 0.2, 5.2);
+  r1('log 太多 → 系統變慢；太少 → 沒辦法重建');
   cap('log 哪些都是設計過的', 'log 太多系統變慢，太少沒辦法重建');
   await step(tok);                                   // 1027 checkpoint：log 沒有時間觀念，不能從十年前重來
   cap('另一個方式：checkpoint', 'log 沒時間觀念：server 跑了十年，總不能從頭重建');
   await step(tok);                                   // 1056 checkpoint = 系統還原點，從那裡開始
   const ck = bx('checkpoint', PCS[2], 0, 1.0, 3.6, 0.3, 1.4, 1.0, 1.0);
-  idx('從最近的 checkpoint 開始，接著 log 往下做', 0, 2.0, 3.6);
+  r1('從最近的 checkpoint 開始，接著 log 往下做');
   cap('checkpoint 就是系統還原點：記下完整 stable 的 state', '壞掉時從 checkpoint 開始，不用從頭');
   await step(tok);                                   // 1098 一般做法：長時間的 application 都會用
-  good('很多跑很久的 application（例如三個月的大氣模擬）都用 checkpoint / rollback / commit', 0, 0.2, -2.0);
+  r1('跑很久的 application 都用 checkpoint / rollback', 'good');
   cap('這是 file system、database 等很 general 的作法', '跑很久的 application 也會做，加快 recovery');
-  void atm; void b1; void b2; void cm; void ab; void ck; void logZ;
+  void ck; void logZ;
 }]);
 
 // ════════ sEVfeXqWY-s（Process Synchronisation | Critical Section Problem）：independent / cooperative、劇場比喻、entry / exit ════════
 FRAG.push(['syn-csneso-coop', 'Independent process vs cooperative process', async (tok) => {
   fresh([0, 6.5, 13], [0, 1.6, 0]);
   let L, R;
+  const rT = one(0, 3.6, 0.4), rL = one(-3.6, 2.2, 0.4), rR = one(3.6, 2.2, 0.4);
   await step(tok);                                   // 0 process synchronization
-  hd('Process synchronization', 0, 6.4);
+  rT('Process synchronization', 'ptr');
   cap('新主題：process synchronization', 'OS 裡的 process 怎麼同步');
   await step(tok);                                   // 12 依同步分成兩種：independent、cooperative
   L = zone('independent process', -3.6, 0.02, 0.4, 5.6, 3.6, '#d8e6cf'); R = zone('cooperative process', 3.6, 0.02, 0.4, 5.6, 3.6, '#f6e2d6');
@@ -4317,23 +4347,23 @@ FRAG.push(['syn-csneso-coop', 'Independent process vs cooperative process', asyn
   arr(3.0, 0.9, 4.2, 0.9, '#c08a1f', 0.4);
   cap('cooperative：一個 process 依賴另一個', '彼此之間要有互相的 understanding');
   await step(tok);                                   // 113 一個的執行會影響另一個
-  idx('一個的執行 → 會影響另一個的執行', 3.6, 2.2, 0.4); idx('一個的執行 → 不影響其他人', -3.6, 2.2, 0.4);
+  rR('一個的執行 → 會影響另一個'); rL('一個的執行 → 不影響其他人');
   cap('independent：執行不影響其他 process', 'cooperative：一個的執行會影響另一個');
   await step(tok);                                   // 151 synchronization 問題只出現在 cooperative
-  hot('synchronization 問題只出現在 cooperative process', 0, 5.4);
+  rT('同步問題只出現在 cooperative process', 'ptr alt');
   cap('process synchronization 的問題', '只會出現在 cooperative process');
   await step(tok);                                   // 158 independent：各有自己的 resource，沒問題
-  good('各用自己的 resource → 沒問題', -3.6, 3.0, 0.4);
+  rL('各用自己的 resource → 沒問題', 'good');
   cap('independent 沒有 dependency', '不共用 resource，各有自己的 → 沒有同步問題');
   await step(tok);                                   // 184 cooperative：resource 是共用的
   bx('shared resource', SC.mem, 3.6, 0.35, 1.6, 2.4, 0.6, 0.9, 1.5);
-  bad('resource 是共用的', 3.6, 3.0, 0.4);
+  rR('resource 是共用的', 'bad');
   cap('cooperative process 會有同步問題', '因為 resource 是共用的');
   await step(tok);                                   // 196 例子：社區大家一起在劇場看電影
   prop('monitor', 3.6, 0, -1.0, 0.9, '社區劇場（一台）');
   cap('生活的例子：社區的人一起在劇場看電影', '');
   await step(tok);                                   // 221 同一部電影 → 要協調；各人想看的不同
-  bub('我想看 A！', 2.4, 2.4, 0.4); bub('我想看 B！', 4.8, 2.6, 0.4);
+  rR('我想看 A！　我想看 B！', 'say');
   cap('大家一起看同一個螢幕，就要彼此合作', '有人想看這部、有人想看那部 → 同步問題');
   await step(tok);                                   // 257 在自己家看：自己的 TV，沒問題
   prop('monitor', -3.6, 0, -1.0, 0.8, '自己家的 TV');
@@ -4346,23 +4376,24 @@ FRAG.push(['syn-csneso-coop', 'Independent process vs cooperative process', asyn
 FRAG.push(['syn-csneso-cs', 'Critical section problem：劇場比喻', async (tok) => {
   fresh([0, 6.5, 13], [0, 1.6, 0]);
   let th, ps = [];
+  const r1 = one(0, 2.9, -0.6);
   await step(tok);                                   // 287 critical section problem
-  hd('Critical section problem', 0, 6.4);
+  r1('Critical section problem', 'ptr');
   cap('接著說明 critical section problem', '');
   await step(tok);                                   // 317 critical section 就是一段 code segment
   const cs = bx('critical section（code segment）', SC.cs, 0, 0.35, -2.4, 4.4, 0.7, 1.0, 1.5);
   cap('critical section 其實就是', '一段 code segment（程式碼片段）');
   await step(tok);                                   // 326 同一時間只能有一個 process 執行
-  note('同一時間只能有一個 process 執行它', 0, 1.5, -2.4);
+  r1('同一時間只能有一個 process 執行它');
   cap('這段 code segment', '同一時間只能被一個 process 存取、執行');
   await step(tok);                                   // 340 裡面有 shared variable，要同步才能保持一致
-  idx('裡面有 shared variable → 要同步，資料才會 consistent', 0, 2.2, -2.4);
+  r1('裡面有 shared variable → 要同步才 consistent');
   cap('它包含 shared variable', '需要同步，才能維持資料的一致性');
   await step(tok);                                   // 357 劇場比喻：大家都要用的就是 shared variable
-  th = room(0, 0.8, 0.6, 3.0, 1.6, 2.2, '#9b7ef4'); idx('劇場 = shared variable', 0, 1.8, 0.6);
+  r1(''); gone(cs); th = room(0, 0.8, 0.6, 3.0, 1.6, 2.2, '#9b7ef4'); idx('劇場 = shared variable', 0, 1.8, 0.6);
   cap('用劇場來比喻', '大家都要用的劇場，就是 shared variable');
   await step(tok);                                   // 387 P1 想看 A、P2 想看 B、P3 想看 C
-  ps = [['P1', 'A'], ['P2', 'B'], ['P3', 'C']].map(([n, m], k) => { const p = pal(n + '（' + m + '）', '', PCS[k], -5.4 + k * 1.3, 0, 2.6, 0.6); return p; });
+  ps = [['P1', 'A'], ['P2', 'B'], ['P3', 'C']].map(([n, m], k) => { const p = pal(n + '（' + m + '）', '', PCS[k], -6.2 + k * 2.1, 0, 2.6, 0.6); return p; });
   cap('P1 這群人想看電影 A、P2 想看 B、P3 想看 C', '但只有一個劇場可以放');
   await step(tok);                                   // 422 想看 A 的人先預約劇場 → 執行 critical section；其他人等
   await slide(tok, ps[0].g, 0, 0, 0.6, 700); glow(ps[0].body, OKG);
@@ -4373,14 +4404,14 @@ FRAG.push(['syn-csneso-cs', 'Critical section problem：劇場比喻', async (to
   await slide(tok, ps[1].g, 0, 0, 0.6, 600); glow(ps[1].body, OKG); ps[1].mood('happy');
   cap('A 看完，下一群人進來看', '再下一群……一個接一個');
   await step(tok);                                   // 455 互相的 understanding；用不同的 solution 解
-  good('mutual understanding：一個一個輪流用', 0, 3.2, 0.6);
+  r1('mutual understanding：一個一個輪流用', 'good');
   cap('這就是彼此之間的 mutual understanding', 'critical section problem 可以用不同的 solution 解');
   await step(tok);                                   // 512 大家同時要用 → 互相干擾 = critical section problem
   await slide(tok, ps[2].g, 0.8, 0, 0.6, 500);
   glow(ps[1].body, NOR); glow(ps[2].body, NOR);
-  bad('同時都要用 → 互相干擾，電影放不成', 0, 4.0, 0.6);
+  r1('同時都要用 → 互相干擾，電影放不成', 'bad');
   cap('如果所有 process 同時都要用 shared variable', '就會互相干擾：這就是 critical section problem');
-  void cs; void th;
+  void th;
 }]);
 
 FRAG.push(['syn-csneso-struct', 'Entry section 上鎖、exit section 解鎖', async (tok) => {
