@@ -559,12 +559,14 @@ export default function (ctx) {
     fresh([0, 4.2, 14.5], [0, 3.4, 0]);
     const S = makeSim({ blocks: 8, ways: 1, bw: 1, bits: 5 });
     const seq = [22, 26, 22, 26, 16, 3, 16, 18];
-    const seqL = seq.map((a, k) => tag(String(a), 'idx', -5.6 + k * 0.6, 7.6));
+    // the access sequence is one line; the current access sits in ［ ］
+    const seqL = tag('access：' + seq.join(' '), 'ptr', -4.3, 7.7);
+    const mark = (k) => txt(seqL, 'access：' + seq.map((v, j) => (j === k ? '［' + v + '］' : String(v))).join(' '));
     say('P&H 例：8-block direct-mapped，一開始全空', '存取 word address 22, 26, 22, 26, 16, 3, 16, 18');
     await beat(tok, 3000);
     for (let k = 0; k < seq.length; k++) {
       S.unglow();
-      seqL.forEach((l, j) => { l.element.className = 'lab-label ' + (j === k ? 'ptr alt' : 'idx'); });
+      mark(k);
       const r = await S.access(seq[k], tok, 1.4);
       say(seq[k] + ' = ' + bin(seq[k], 5) + '：index ' + bin(r.set, 3) + (r.hit ? ' → hit' : ' → miss'),
         r.hit ? 'valid 且 tag ' + bin(r.f.tg, 2) + ' 相同' : r.victim !== null ? '把 ' + r.victim + '（tag ' + bin(Math.floor(r.victim / 8), 2) + '）換掉' : 'valid = 0，放進去');
@@ -970,9 +972,25 @@ function setH(m, h, y0 = 0) { m.scale.y = Math.max(0.001, h); m.position.y = y0 
 async function growH(tok, m, h, y0 = 0, ms = 600) { const h0 = m.scale.y; await anim(tok, ms, (u) => setH(m, h0 + (h - h0) * u, y0)); }
 const fx = (v, d = 2) => String(Math.round(v * Math.pow(10, d)) / Math.pow(10, d));
 const near = (a, b) => Math.abs(a - b) < 1e-9;
-function scene(id, title, steps, cam) {
+// invisible box over the area a scene will use later, so the auto framing does not zoom in at the start and jump back
+function frameHold(x0, y0, z0, x1, y1, z1) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+}
+// one remark for the scene: rewritten in place instead of a new label each step
+const rem = (S, t, x, y, cls = 'note') => {
+  let l = S.rem;
+  if (!l || !l.parent) l = S.rem = K.keep(tag(t, cls, x, y));
+  else { txt(l, t); l.element.className = 'lab-label ' + cls; l.position.set(x, y, 0); }
+  return l;
+};
+const remOk = (S, b, t, x, y) => { if (!b) log('CHECK FAILED: ' + t, true); return rem(S, b ? t : t.replace(/✓/g, '✘'), x, y, b ? 'good' : 'bad'); };
+// push a finished thing back and grey it (instead of piling the next subject on top of it)
+const recede = (os, dz = -1.2) => [].concat(os).flat().forEach((o) => { if (!o) return; if (o.element) { o.position.z += dz; o.element.style.opacity = '0.28'; } else if (o.position) { o.position.z += dz; o.traverse && o.traverse((m) => { if (m.element) m.element.style.opacity = '0.28'; if (m.material && !m.userData.noDim) { m.material = m.material.clone(); m.material.transparent = true; m.material.opacity = 0.35; } }); } });
+function scene(id, title, steps, cam, hold) {
   FRAG.push([id, title, async (tok) => {
     const c = cam || [[0, 4.2, 14], [0, 3.0, 0]]; fresh(c[0], c[1]);
+    if (hold) frameHold(...hold);
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
@@ -1187,8 +1205,8 @@ scene('mh-22a-dramarray', 'DRAM 像 2-D 矩陣：row address、column address', 
 
 scene('mh-22a-cost', '2008 年：存取時間與價錢，以及我們想要的 memory', [
   async (tok, S) => { // @574.8 ~然後再看一下他們的這個價錢
-    hot('2008 年的 technology（P&H 表）', 0, 6.7);
-    ['technology', 'access time', '$ per GB'].forEach((h, i) => hd(h, -4.2 + i * 4.0, 6.0));
+    S.hdr = [hot('2008 年的 technology（P&H 表）', 0, 6.7)];
+    ['technology', 'access time', '$ per GB'].forEach((h, i) => S.hdr.push(hd(h, -4.2 + i * 4.0, 6.0)));
     S.row = (i, a) => { const y = 5.3 - i * 0.7; return a.map((t, k) => sm(t, -4.2 + k * 4.0, y)); };
     cap('看一下 access 時間和價錢', '2008 年的資料，給大家一個概念');
   },
@@ -1198,16 +1216,16 @@ scene('mh-22a-cost', '2008 年：存取時間與價錢，以及我們想要的 m
   },
   async (tok, S) => { // @600.0 ~如果你放在DRAN
     S.r1 = S.row(1, ['DRAM', '50–70 ns', '']);
-    ok(50 / 0.5 === 100, 'DRAM 約慢 100 倍 → 約 100 個 cycle ✓', 0, 3.0);
+    remOk(S, 50 / 0.5 === 100, 'DRAM 約慢 100 倍 → 約 100 個 cycle ✓', 0, 3.0);
     cap('放在 DRAM 要慢好幾十倍', '可能要 100 個 cycle 才能 access');
   },
   async (tok, S) => { // @613.5 ~那如果你是放在這個 magnetic
     S.r2 = S.row(2, ['magnetic disk', '5–20 ms', '']);
-    sm('5 ms = 5,000,000 ns：百萬倍等級（secondary）', 0, 2.5);
+    rem(S, '5 ms = 5,000,000 ns：百萬倍等級（secondary）', 0, 3.0, 'idx');
     cap('magnetic disk 更遠', '要幾百萬倍的時間，是 secondary memory');
   },
   async (tok, S) => { // @629.6 ~SRAM的話它的一個Gigabit
-    S.p0 = sm('$2000–5000', 3.8, 5.3);
+    gone(S.rem); S.p0 = sm('$2000–5000', 3.8, 5.3);
     cap('價錢：SRAM 每 GB', '要 2000 到 5000 美金');
   },
   async (tok, S) => { // @629.6 ~這個是20到
@@ -1219,27 +1237,29 @@ scene('mh-22a-cost', '2008 年：存取時間與價錢，以及我們想要的 m
     cap('magnetic disk 更便宜', '每 GB 約 0.2 到 2 美金');
   },
   async (tok, S) => { // @657.0 ~那我們到底用哪一種
-    hot('要用哪一種 technology 做 memory 系統？', 0, 1.8);
+    // the table is done: push it back, the question takes the front
+    recede([S.hdr, S.r0, S.r1, S.r2, S.p0, S.p1, S.p2], -1.5);
+    hot('要用哪一種 technology 做 memory 系統？', 0, 2.9);
     cap('這麼多不同的 technology', '到底用哪一種來 implement memory 系統？');
   },
   async (tok, S) => { // @696.0 ~但是我又有很大的容量
-    S.want = ['access 很快', '容量很大', '很便宜'].map((t, i) => note(t, -3.5 + i * 3.5, 1.1));
+    S.want = ['access 很快', '容量很大', '很便宜'].map((t, i) => K.keep(note(t, -3.5 + i * 3.5, 2.2)));
     cap('貪心一點：希望 access 很快', '容量又大、又便宜');
   },
   async (tok, S) => { // @703.8 ~那哪一個可以達到
-    bad('單獨一種都做不到', 0, 0.4);
+    rem(S, '單獨一種都做不到', 0, 1.5, 'bad');
     cap('這三種 technology', '單獨一個都達不到目的');
   },
   async (tok, S) => { // @711.2 ~這三個全部合在一起
-    good('三種合在一起，規劃成階層 → 做得到', 0, -0.2);
+    rem(S, '三種合在一起，規劃成階層 → 做得到', 0, 1.5, 'good');
     cap('把三種結合起來，規劃成階層', '就能又快、又便宜、容量又大');
   },
   async (tok, S) => { // @730.5 ~我希望X的碳像SRAM
     S.want.forEach((l) => remove(l));
-    note('access time 像 SRAM', -2.6, 1.1); note('capacity、cost 像 disk', 2.6, 1.1);
+    K.keep(note('access time 像 SRAM', -2.6, 2.2)); K.keep(note('capacity、cost 像 disk', 2.6, 2.2));
     cap('目標：access time 像 SRAM', 'capacity 和 cost 像 disk');
   },
-]);
+], null, [-6.0, 0.9, -0.3, 6.0, 7.0, 0.3]);
 
 scene('mh-22a-gap', 'Processor–DRAM gap 與 memory hierarchy', [
   async (tok, S) => { // @738.1 ~那再看一下這個 processor 跟
@@ -1770,7 +1790,7 @@ scene('mh-22b-tag', 'Tag 與 valid bit：怎麼知道格子裡是誰', [
     cap('多一個 bit：valid bit', '一開始全部設成 0，表示都不是 valid 的');
   },
   async (tok, S) => { // @585.1 ~慢慢讀進來之後
-    relabel(S.cache[1], 'V=1 tag 10'); tint(S.cache[1], NC.orange);
+    relabel(S.cache[1], 'V=1'); tint(S.cache[1], NC.orange); sm('tag 10', S.cx(1), 5.05); // the tag sits right under its cell
     cap('真的把資料讀進來後', '才把 valid 設成 1');
   },
 ]);
@@ -1789,32 +1809,36 @@ const SEQ22 = [22, 26, 22, 26, 16, 3, 16, 18];
 scene('mh-22b-seq', 'P&H 例：22, 26, 22, 26, 16, 3, 16, 18 的 hit / miss', [
   async (tok, S) => { // @607.28 ~這邊做一個例子
     vtTable(S); S.R = csim(SEQ22, 8, 1); S.k = 0; S.h = 0; S.m = 0;
-    S.seq = SEQ22.map((a, k) => sm(String(a), 1.4 + k * 0.72, 6.6));
-    S.cur = hot(' ', 3.9, 5.7); S.st = hd('hit 0 · miss 0', 3.9, 0.3);
+    // the access sequence is one line; the current access sits in ［ ］
+    S.seq = sm('access：' + SEQ22.join(' '), 5.0, 6.2);
+    S.mark = (a, b = a) => { txt(S.seq, 'access：' + SEQ22.map((v, j) => (j === a ? '［' : '') + v + (j === b ? '］' : '')).join(' ')); S.seq.element.className = 'lab-label ptr'; };
+    S.cur = hot(' ', 4.7, 5.35); S.st = hd('hit 0 · miss 0', 4.7, 4.6);
     S.acc = async (tok2) => {
       const r = S.R[S.k], a = SEQ22[S.k], row = a % 8;
-      S.seq.forEach((l, j) => { l.element.className = 'lab-label ' + (j === S.k ? 'ptr alt' : 'idx'); });
-      txt(S.cur, a + ' = ' + b2(a >> 3, 2) + ' ' + b2(row, 3) + '（tag | index）');
+      S.mark(S.k);
+      txt(S.cur, a + ' = ' + b2(a >> 3, 2) + ' ' + b2(row, 3) + '（tag | index）'); S.cur.element.className = 'lab-label ptr alt';
       [S.V, S.T, S.D].forEach((c) => c.forEach((m) => glow(m, null)));
       glow(S.V[row], HL); glow(S.T[row], HL); await wt(tok2, 400);
       if (r.hit) { S.h++; glow(S.D[row], OKG); }
       else { S.m++; relabel(S.V[row], 'Y'); tint(S.V[row], NC.green); relabel(S.T[row], b2(r.tg, 2)); tint(S.T[row], NC.lilac); relabel(S.D[row], 'Mem[' + b2(a, 5) + ']'); tint(S.D[row], NC.sky); glow(S.D[row], NG); }
-      (r.hit ? good : bad)(a + ' → ' + b2(row, 3) + '：' + (r.hit ? 'hit' : 'miss') + (r.victim !== null ? '（換掉 ' + r.victim + '）' : ''), 3.9, 5.0 - S.k * 0.55);
+      // the result goes into the same line as the address (the row itself glows green / red)
+      txt(S.cur, a + ' = ' + b2(a >> 3, 2) + ' ' + b2(row, 3) + ' → ' + b2(row, 3) + '：' + (r.hit ? 'hit' : 'miss') + (r.victim !== null ? '（換掉 ' + r.victim + '）' : ''));
+      S.cur.element.className = 'lab-label ' + (r.hit ? 'good' : 'bad');
       txt(S.st, 'hit ' + S.h + ' · miss ' + S.m); S.k++; return r;
     };
     cap('例子：8 個 block 的 direct-mapped cache', '一開始全部 invalid（V = N）');
   },
   async (tok, S) => { // @631.6 ~tag 八個block 所以它的index是
-    note('index 3 bits、tag 2 bits（5-bit word address）', -3.0, 0.9);
+    rem(S, 'index 3 bits、tag 2 bits（5-bit word address）', 4.7, 3.6);
     cap('8 個 block，index 是 3 bits', 'address 是 word address：5 bits');
   },
   async (tok, S) => { // @645.6 ~那用這個22
-    S.seq.forEach((l, j) => { l.element.className = 'lab-label ' + (j === 0 ? 'ptr alt' : 'idx'); });
-    txt(S.cur, '22 = 10 110（tag | index）'); glow(S.V[6], HL); glow(S.T[6], HL);
+    S.mark(0);
+    txt(S.cur, '22 = 10 110（tag | index）'); S.cur.element.className = 'lab-label ptr alt'; glow(S.V[6], HL); glow(S.T[6], HL);
     cap('第一個：22 = 10110', '後 3 bits 110 當 index');
   },
   async (tok, S) => { // @655.02 ~沒有剛才沒有人在裡面
-    const r = await S.acc(tok); ok(!r.hit && r.tg === 2, 'V = N → miss；存 V=Y、tag 10、data ✓', -3.4, 0.35);
+    const r = await S.acc(tok); remOk(S, !r.hit && r.tg === 2, 'V = N → miss；存 V=Y、tag 10、data ✓', 4.7, 3.6);
     cap('110 裡沒有人（V = N）→ miss', '設 valid、存 tag 10，把 memory 資料存進來');
   },
   async (tok, S) => { // @684.74 ~我又再來讀個26
@@ -1822,7 +1846,7 @@ scene('mh-22b-seq', 'P&H 例：22, 26, 22, 26, 16, 3, 16, 18 的 hit / miss', [
     cap('再讀 26 = 11010', '010 也沒人用 → miss，tag 11 存進去');
   },
   async (tok, S) => { // @708.56 ~但是這個兩個都是miss
-    sm('一開始空的：前兩個一定 miss', 3.9, -0.3);
+    rem(S, '一開始空的：前兩個一定 miss', 4.7, 3.6, 'idx');
     cap('這兩個都是 miss', '資料本來都不在 cache 裡');
   },
   async (tok, S) => { // @720.78 ~要讀22
@@ -1834,7 +1858,7 @@ scene('mh-22b-seq', 'P&H 例：22, 26, 22, 26, 16, 3, 16, 18 的 hit / miss', [
     cap('再看 26：010', 'tag 11 一樣 → hit');
   },
   async (tok, S) => { // @750.32 ~好再來三筆資料
-    S.seq.slice(4, 7).forEach((l) => { l.element.className = 'lab-label ptr'; });
+    S.mark(4, 6);
     cap('再讀三筆', '16、3、16');
   },
   async (tok, S) => { // @755.46 ~第一筆資料他說16
@@ -1851,25 +1875,25 @@ scene('mh-22b-seq', 'P&H 例：22, 26, 22, 26, 16, 3, 16, 18 的 hit / miss', [
   },
   async (tok, S) => { // @805.5 ~寫進去的意思再來再來
     const a = 18, row = a % 8;
-    S.seq.forEach((l, j) => { l.element.className = 'lab-label ' + (j === 7 ? 'ptr alt' : 'idx'); });
-    txt(S.cur, '18 = 10 010（tag | index）'); [S.V, S.T, S.D].forEach((c) => c.forEach((m) => glow(m, null))); glow(S.T[row], HL);
-    ok(Math.floor(26 / 8) === 3 && Math.floor(18 / 8) === 2, '010 裡是 tag 11（26），我是 tag 10 → 不一樣 ✓', 3.9, -0.9);
+    S.mark(7);
+    txt(S.cur, '18 = 10 010（tag | index）'); S.cur.element.className = 'lab-label ptr alt'; [S.V, S.T, S.D].forEach((c) => c.forEach((m) => glow(m, null))); glow(S.T[row], HL);
+    remOk(S, Math.floor(26 / 8) === 3 && Math.floor(18 / 8) === 2, '010 裡是 tag 11（26），我是 tag 10 → 不一樣 ✓', 4.7, 3.6);
     cap('最後 18 = 10010 → 010', '裡面有 data，但 tag 是 11，我是 10');
   },
   async (tok, S) => { // @838.68 ~那就表示什麼
-    const r = await S.acc(tok); ok(!r.hit && r.victim === 26, '→ miss，26 被 replace，18 進來 ✓', 3.9, -1.45);
+    const r = await S.acc(tok); remOk(S, !r.hit && r.victim === 26, '→ miss，26 被 replace，18 進來 ✓', 4.7, 3.6);
     cap('tag 不一樣 → cache miss', '原來的 26 被 replace，把 18 寫進來');
   },
   async (tok, S) => { // @854.8 ~好這是一個非常簡單的例子
     const hs = S.R.map((r) => (r.hit ? 'H' : 'M')).join('');
-    ok(hs === 'MMHHMMHM' && S.h === 3 && S.m === 5, '8 次存取：hit 3、miss 5 ✓', -3.4, -0.25);
+    remOk(S, hs === 'MMHHMMHM' && S.h === 3 && S.m === 5, '8 次存取：hit 3、miss 5 ✓', 4.7, 3.6);
     cap('用 index（low-order bits）找到那格', '不是有 data 就是你的：要 check tag');
   },
   async (tok, S) => { // @881.6 ~Replace 所以Replacement的機制
-    note('replacement：直接蓋過去（dirty 要先寫回）', -3.0, -0.85);
+    rem(S, 'replacement：直接蓋過去（dirty 要先寫回）', 4.7, 3.6);
     cap('replacement 很簡單：直接蓋過去', '如果被寫過（dirty），要先寫回 memory');
   },
-]);
+], null, [-6.7, 1.3, -0.3, 7.3, 7.0, 0.3]);
 
 // 32-bit byte address 的切割條：fields 由左到右（tag、index、offset…）
 function strip(S, val, fields, y = 4.6) { if (S.bs) S.bs.kill(); S.bs = BS(val, fields, y); return S.bs; }
@@ -1944,45 +1968,48 @@ scene('mh-22b-split', '32-bit 位址：tag | index | byte offset', [
 
 scene('mh-22b-1200', 'P&H 例：64 blocks × 16 bytes，address 1200 → block 75 → 11', [
   async (tok, S) => { // @1448.74 ~這麼大好我們再看
-    hot('64 個 block，每個 block 16 bytes', 0, 6.7);
+    S.t = hot('64 個 block，每個 block 16 bytes', 0, 6.7);
     S.bs = BS(null, [{ n: 'tag', b: 22, c: FC.tag }, { n: 'index', b: 6, c: FC.index }, { n: 'offset', b: 4, c: FC.offset }], 4.6);
+    S.lift = () => { const l = S.bs.labels[2]; l.position.y += 0.3; l.position.x += 0.35; }; S.lift(); // offset name clear of the index name
     cap('再變化：64 個 block', '每個 block 16 個 byte，cache 怎麼分配？');
   },
   async (tok, S) => { // @1480.5 ~瞭解嗎你看我們來看看
     S.bs.cubes.slice(28).forEach((m) => glow(m, HL));
-    ok(Math.log2(16) === 4, '16 bytes = 2⁴ → offset 4 bits ✓', -3.4, 3.4);
+    remOk(S, Math.log2(16) === 4, '16 bytes = 2⁴ → offset 4 bits ✓', 4.2, 3.75);
     cap('16 個 byte = 2⁴', 'offset 用掉 4 個 bit');
   },
   async (tok, S) => { // @1497.4 ~那它有幾個block
     S.bs.cubes.forEach((m) => glow(m, null)); S.bs.cubes.slice(22, 28).forEach((m) => glow(m, HL));
-    ok(Math.log2(64) === 6, '64 = 2⁶ → index 6 bits ✓', 2.8, 3.4);
+    remOk(S, Math.log2(64) === 6, '64 = 2⁶ → index 6 bits ✓', 3.5, 3.75);
     cap('cache 有 64 個 block = 2⁶', 'index 6 個 bit');
   },
   async (tok, S) => { // @1516.8 ~剩下的就是它的tag
     S.bs.cubes.forEach((m) => glow(m, null)); S.bs.cubes.slice(0, 22).forEach((m) => glow(m, HL));
-    ok(32 - 6 - 4 === 22, 'tag = 32 − 10 = 22 bits ✓', -3.4, 2.8);
+    remOk(S, 32 - 6 - 4 === 22, 'tag = 32 − 10 = 22 bits ✓', -1.95, 3.75);
     cap('32 減掉 10', '剩下 22 bits 是 tag');
   },
   async (tok, S) => { // @1539.0 ~會不會好會了再問你說好
     S.bs.cubes.forEach((m) => glow(m, null));
-    S.q = hot('memory address = 1200，map 到哪個 cache block？', 0, 1.9);
+    gone(S.rem); txt(S.t, 'memory address = 1200，map 到哪個 cache block？');
+    S.ch = [];
     cap('再問：address 1200', 'map 到 cache 的哪一個 block？');
   },
   async (tok, S) => { // @1570.2 ~我的地址假如是1200的話
-    ok(Math.floor(1200 / 16) === 75, '1200 是 byte address：⌊1200 / 16⌋ = 75 → block 75 ✓', 0, 1.3);
+    S.ch.push(K.keep(ok(Math.floor(1200 / 16) === 75, '1200 是 byte address：⌊1200 / 16⌋ = 75 → block 75 ✓', 0, 3.1)));
     cap('1200 是第幾個 block？', '每個 block 16 byte → 除以 16 = 75');
   },
   async (tok, S) => { // @1604.3 ~對不對 我要先把它看它是到底
-    sm('memory address 是 byte address → 先換成 block address', 0, 0.75);
+    S.ch.push(sm('memory address 是 byte address → 先換成 block address', 0, 2.45));
     cap('memory address 是 byte address', '要先換成 block address');
   },
   async (tok, S) => { // @1635.6 ~得到了這個block address
-    ok(75 % 64 === 11, '75 mod 64 = 11 → cache 第 11 個 block ✓', 0, 0.15);
+    S.ch.push(K.keep(ok(75 % 64 === 11, '75 mod 64 = 11 → cache 第 11 個 block ✓', 0, 1.8)));
     cap('cache 有 64 個 block', '75 mod 64 = 11，放第 11 個位置');
   },
   async (tok, S) => { // @1656.0 ~好 那如果我們用binary來看這個同樣
-    gone(S.bs, S.q); S.bs = BS(1200, [{ n: 'tag', b: 22, c: FC.tag }, { n: 'index', b: 6, c: FC.index }, { n: 'offset', b: 4, c: FC.offset }], 4.6);
-    ok(b2(1200, 12) === '010010110000', '1200 = 0100 1011 0000 ✓', 0, 1.9);
+    gone(S.bs, S.ch); S.bs = BS(1200, [{ n: 'tag', b: 22, c: FC.tag }, { n: 'index', b: 6, c: FC.index }, { n: 'offset', b: 4, c: FC.offset }], 4.6); S.lift();
+    txt(S.t, '用 binary 看：1200 寫成 32 個 bit');
+    remOk(S, b2(1200, 12) === '010010110000', '1200 = 0100 1011 0000 ✓', 0, 3.4);
     cap('用 binary 來看', '1200 寫成 32 個 bit');
   },
   async (tok, S) => { // @1662.3 ~寫成這樣 那因為是16個byte
@@ -1991,15 +2018,15 @@ scene('mh-22b-1200', 'P&H 例：64 blocks × 16 bytes，address 1200 → block 7
   },
   async (tok, S) => { // @1681.3 ~就是它的就是它的block address
     S.bs.cubes.forEach((m) => glow(m, null)); S.bs.cubes.slice(0, 28).forEach((m) => glow(m, HL));
-    ok((1200 >> 4) === 75 && b2(75, 7) === '1001011', '前面 28 bits = 1001011 = 75 = block address ✓', 0, -0.45);
+    K.keep(ok((1200 >> 4) === 75 && b2(75, 7) === '1001011', '前面 28 bits = 1001011 = 75 = block address ✓', -1.2, 2.7));
     cap('前面的就是 block address', '也就是 75');
   },
   async (tok, S) => { // @1692.8 ~只要取6個bit
     S.bs.cubes.forEach((m) => glow(m, null)); S.bs.cubes.slice(22, 28).forEach((m) => glow(m, HL));
-    ok(b2((1200 >> 4) & 63, 6) === '001011' && ((1200 >> 4) & 63) === 11, '取 block address 的後 6 bits：001011 = 11 = 餘數 ✓', 0, -1.05);
+    K.keep(ok(b2((1200 >> 4) & 63, 6) === '001011' && ((1200 >> 4) & 63) === 11, '取 block address 的後 6 bits：001011 = 11 = 餘數 ✓', 1.2, 2.0));
     cap('再除以 64：只取後面 6 bits', '001011 = 11，就是 index');
   },
-]);
+], null, [-6.3, 1.4, -0.3, 6.3, 7.0, 0.3]);
 
 const BSZ = [16, 32, 64, 128, 256];
 const BCURVE = { '4K': [8.6, 7.2, 6.7, 7.7, 10.0], '16K': [4.0, 2.9, 2.4, 2.5, 3.0], '64K': [2.4, 1.6, 1.2, 1.1, 1.1], '256K': [1.5, 1.0, 0.7, 0.6, 0.55] };
@@ -2018,62 +2045,62 @@ function bsGraph(S, x0 = -1.0, y0 = 0.4) {
 }
 scene('mh-22b-blocksize', 'Block size 的取捨', [
   async (tok, S) => { // @1828.2 ~有這個問題好那剛剛不是講到
-    S.bA = bx('1 byte', NC.pink, -5.4, 6.2, 0, 0.6, 0.45); S.bB = bx('16 bytes', NC.pink, -3.0, 6.2, 0, 2.8, 0.45);
-    sm('block size 是自己定義的', -4.2, 6.8);
+    S.bA = bx('1 byte', NC.pink, -2.4, 5.0, 0, 0.6, 0.45); S.bB = bx('16 bytes', NC.pink, 0.6, 5.0, 0, 2.8, 0.45);
+    S.t = hd('block size 是自己定義的', 0, 6.3);
     cap('block size 是可以定義的', '剛剛假設 1 byte，後來又假設 16 byte');
   },
   async (tok, S) => { // @1842.4 ~那block size跟我們的cash的表現
-    hot('block size 跟 cache 表現有關係嗎？', -3.6, 5.5);
+    rem(S, 'block size 跟 cache 表現有關係嗎？', 0, 2.5, 'ptr alt');
     cap('block size 跟 cache 的表現', '有沒有關係？');
   },
   async (tok, S) => { // @1852.5 ~其實你沒有辦法看到它的locality
-    bad('太小：用不到 spatial locality', -3.6, 4.9);
+    rem(S, '太小：用不到 spatial locality', 0, 2.5, 'bad');
     cap('block 太小', '沒辦法利用 spatial locality');
   },
   async (tok, S) => { // @1868.7 ~所以block size要相當的
-    S.arr = [0, 1, 2, 3].map((k) => bx('w' + k, NC.blue, -5.6 + k * 0.8, 4.2, 0, 0.7, 0.45));
-    sm('一次搬進來，下一個、再下一個已經在裡面', -3.6, 3.65);
+    S.arr = [0, 1, 2, 3].map((k) => bx('w' + k, NC.blue, -1.2 + k * 0.8, 3.6, 0, 0.7, 0.45));
+    rem(S, '一次搬進來，下一個、再下一個已經在裡面', 0, 2.5, 'idx');
     cap('block 大一點：一次搬進來', '下一個、再下一個 access 已經在 cache 裡');
   },
   async (tok, S) => { // @1881.9 ~可以reduce miss ray
-    good('large block → 減少 miss rate', -3.6, 3.1);
+    rem(S, 'large block → 減少 miss rate', 0, 2.5, 'good');
     cap('因為 spatial locality', 'large block size 可以 reduce miss rate');
   },
   async (tok, S) => { // @1897.7 ~我們通常cash的size是固定的
-    S.c16 = Array.from({ length: 16 }, (_, i) => bx('', NC.green, -6.0 + (i % 8) * 0.62, 2.3 - Math.floor(i / 8) * 0.5, 0, 0.55, 0.4, 0.5));
-    S.c16L = sm('cache size 固定（示意 16 格）', -3.8, 1.3);
+    gone(S.bA, S.bB, S.arr); txt(S.t, 'cache size 固定（示意 16 格）'); rem(S, '越大越慢，又很貴', 0, 2.5, 'idx');
+    S.c16 = Array.from({ length: 16 }, (_, i) => bx('', NC.green, -2.17 + (i % 8) * 0.62, 4.8 - Math.floor(i / 8) * 0.5, 0, 0.55, 0.4, 0.5));
     cap('可是 cache size 通常是固定的', '越大會越慢，而且很貴');
   },
   async (tok, S) => { // @1922.6 ~那你現在把block變大的話
-    gone(S.c16, S.c16L); S.c8 = Array.from({ length: 8 }, (_, i) => bx('', NC.green, -5.7 + (i % 4) * 1.24, 2.3 - Math.floor(i / 4) * 0.5, 0, 1.17, 0.4, 0.5));
-    bad('block 變 2 倍 → block 數 16 → 8', -3.8, 1.3);
+    gone(S.c16); S.c8 = Array.from({ length: 8 }, (_, i) => bx('', NC.green, -1.86 + (i % 4) * 1.24, 4.8 - Math.floor(i / 4) * 0.5, 0, 1.17, 0.4, 0.5));
+    rem(S, 'block 變 2 倍 → block 數 16 → 8', 0, 2.5, 'bad');
     cap('block size 變大', 'number of blocks 就變少');
   },
   async (tok, S) => { // @1952.1 ~block size 那也就是說每個人要
-    sm('更多人搶同一個位置 → 更多 miss', -3.8, 0.75);
+    rem(S, '更多人搶同一個位置 → 更多 miss', 0, 2.5, 'idx');
     cap('位置變少，更多人要搶同一個位置', 'cache miss 就可能發生');
   },
   async (tok, S) => { // @1977.1 ~搶它你數字越少越多人要
-    bad('large block → miss penalty 也變大（要搬很久）', -3.8, 0.2);
+    rem(S, 'large block → miss penalty 也變大（要搬很久）', 0, 2.5, 'bad');
     cap('另外還會導致', '比較大的 miss penalty');
   },
   async (tok, S) => { // @1991.5 ~penalty 為什麼miss penalty
-    sm('pollution：大 block 容易被寫過（dirty）→ 要寫回', -2.8, -0.35);
+    rem(S, 'pollution：大 block 容易被寫過（dirty）→ 要寫回', 0, 2.5, 'idx');
     cap('large block 比較容易被寫過（pollution）', '被 replace 時就要寫回 memory');
   },
   async (tok, S) => { // @2047.3 ~怎麼樣的機制如果說你真的large
-    S.wd = Array.from({ length: 8 }, (_, i) => bx(String(i + 1), NC.off, -5.6 + i * 0.8, -1.0, 0, 0.7, 0.45));
-    hot('early restart：要的 word 一到，CPU 就開始', 2.6, 6.7);
+    gone(S.c8); S.wd = Array.from({ length: 8 }, (_, i) => bx(String(i + 1), NC.off, -2.8 + i * 0.8, 4.4, 0, 0.7, 0.45));
+    txt(S.t, '真的要 large block：兩個改善方法'); rem(S, 'early restart：要的 word 一到，CPU 就開始', 0, 2.5, 'ptr alt');
     cap('真的要 large block', '可以用 early restart 或 critical word first');
   },
   async (tok, S) => { // @2097.0 ~或者是說你把critical的word first
     tint(S.wd[4], NC.orange); glow(S.wd[4], HL);
     for (const k of [4, 5, 6, 7, 0, 1, 2, 3]) { tint(S.wd[k], NC.blue); await wt(tok, 200); }
-    sm('critical word first：從第 5 個先搬（示意）', -2.8, -1.6);
+    rem(S, 'critical word first：從第 5 個先搬（示意）', 0, 2.5, 'idx');
     cap('critical word first', '你要第 5 個，就從第 5 個先搬，CPU 馬上開始');
   },
   async (tok, S) => { // @2146.1 ~可以看這個圖這個是cache的size
-    gone(S.arr, S.c8, S.wd); bsGraph(S, 1.2, 0.3); ['4K', '16K', '64K', '256K'].forEach((k) => S.show(k));
+    gone(S.wd, S.t, S.rem); bsGraph(S, -2.6, 0.3); ['4K', '16K', '64K', '256K'].forEach((k) => S.show(k));
     cap('看這個圖：每條線一種 cache size', '4K、16K、64K、256K');
   },
   async (tok, S) => { // @2152.7 ~當你這個block size增加的時候
@@ -2082,10 +2109,10 @@ scene('mh-22b-blocksize', 'Block size 的取捨', [
   },
   async (tok, S) => { // @2223.0 ~呢你這個你把block size增加的時候
     const c = BCURVE['4K'];
-    ok(c[1] < c[0] && c[2] < c[1] && c[4] > c[2], '4K：先降（spatial locality）、後升（block 數太少）✓', 1.0, 6.2);
+    ok(c[1] < c[0] && c[2] < c[1] && c[4] > c[2], '4K：先降（spatial locality）、後升（block 數太少）✓', 0.2, 6.45);
     cap('前半：spatial locality 更好，miss 降', '再加大：block 數變少，miss 反而增加');
   },
-]);
+], null, [-5.6, -0.6, -0.3, 5.6, 6.8, 0.3]);
 
 scene('mh-22b-read', 'Read hit 與 read miss', [
   async (tok, S) => { // @2258.2 ~那接下來我們去看這個cache
@@ -2296,61 +2323,62 @@ scene('mh-23a-dmreview', '複習：block、direct-mapped、tag', [
 scene('mh-23a-bsize', '複習：block size 的好處與代價', [
   async (tok, S) => { // @793.2 ~size的問題就是說
     S.cs = Array.from({ length: 10 }, (_, i) => bx('', NC.green, -5.4 + i * 1.2, 6.2, 0, 1.05, 0.45));
-    hd('cache：10 個 block（示意）', 0, 6.85);
+    S.t = hd('cache：10 個 block（示意）', 0, 6.85);
     cap('block size 的問題', '一個 word、四個、十六個…要設多大？');
   },
   async (tok, S) => { // @819.2 ~因為你為了要locality
-    S.w = Array.from({ length: 4 }, (_, i) => bx('w' + i, NC.off, -5.4 + i * 0.8, 4.8, 0, 0.7, 0.45));
+    S.w = Array.from({ length: 4 }, (_, i) => bx('w' + i, NC.off, -1.2 + i * 0.8, 5.2, 0, 0.7, 0.45));
     cap('為了 spatial locality', '要搬就一起搬進來');
   },
   async (tok, S) => { // @847.4 ~你們一起搬進來了那access到
-    tint(S.w[0], NC.rose); bad('w0 miss', -5.4, 4.2);
+    tint(S.w[0], NC.rose); S.wl = [K.keep(bad('w0 miss', -2.8, 4.55))];
     for (let i = 1; i < 4; i++) { tint(S.w[i], NC.mint); await wt(tok, 250); }
-    good('w1–w3 已經進來 → hit', -2.6, 4.2);
+    S.wl.push(K.keep(good('w1–w3 已經進來 → hit', 1.0, 4.55)));
     cap('access 到它是 miss', '但整塊搬進來了，下次 access 隔壁就 hit');
   },
   async (tok, S) => { // @866.5 ~所以我們就說希望搬large
-    good('large block → reduce miss rate', 2.6, 4.8);
+    rem(S, 'large block → reduce miss rate', 0, 3.85, 'good');
     cap('所以搬大一點的 block', '可以 reduce miss rate');
   },
   async (tok, S) => { // @873.4 ~已經在cash裡面了是因為
-    gone(S.cs); S.cs = Array.from({ length: 5 }, (_, i) => bx('', NC.green, -4.8 + i * 2.4, 6.2, 0, 2.3, 0.45));
-    bad('cache size 固定：block 大 2 倍 → 只剩 5 個 block', 0, 3.6);
+    gone(S.cs, S.w, S.wl); S.cs = Array.from({ length: 5 }, (_, i) => bx('', NC.green, -4.8 + i * 2.4, 6.2, 0, 2.3, 0.45));
+    txt(S.t, 'cache size 固定：只剩 5 個 block'); rem(S, 'cache size 固定：block 大 2 倍 → 只剩 5 個 block', 0, 5.2, 'bad');
     cap('但 cache size 固定', '一個 block 變兩個單位，就只剩 5 個 cache block');
   },
   async (tok, S) => { // @919.1 ~heat的那個這第二個理由
-    sm('原本 10 個位置，現在 5 個 → 更多人 map 到同一位置', 0, 3.05);
+    rem(S, '原本 10 個位置，現在 5 個 → 更多人 map 到同一位置', 0, 5.2, 'idx');
     cap('格數變少，競爭更激烈', '更多人 map 到同一個位置');
   },
   async (tok, S) => { // @950.7 ~說Miss Penalty也很重要
-    bad('miss penalty 變大：每次搬更多', 0, 2.5);
+    rem(S, 'miss penalty 變大：每次搬更多', 0, 5.2, 'bad');
     cap('miss penalty 也很重要', 'block 變大，每次從 lower level 搬要更多時間');
   },
   async (tok, S) => { // @964.6 ~來從這個lower level搬到up
-    sm('可能白搬：只用到前兩個，後面根本沒用到', 0, 1.95);
+    rem(S, '可能白搬：只用到前兩個，後面根本沒用到', 0, 5.2, 'idx');
     cap('而且可能白搬了', '搬一大塊進來，可能只用到兩個');
   },
   async (tok, S) => { // @978.2 ~可是又沒全部用到
-    sm('pollution：只要寫過一個 data，整個 block 就 dirty → 換掉時要寫回', 0, 1.4);
+    rem(S, 'pollution：只要寫過一個 data，整個 block 就 dirty → 換掉時要寫回', 0, 5.2, 'idx');
     cap('block 大，被寫過的機率也大', '被 replace 時要寫回 memory（pollution）');
   },
   async (tok, S) => { // @1056.4 ~過的機率大的話你可能要寫回去就
-    S.ws = Array.from({ length: 16 }, (_, i) => bx(String(i + 1), NC.off, -6.0 + i * 0.8, 0.7, 0, 0.7, 0.45));
-    sm('16 個 word：要等全部搬完才重新 access → 很久', 0, 0.05);
+    gone(S.cs); txt(S.t, '一個 block 16 個 word');
+    S.ws = Array.from({ length: 16 }, (_, i) => bx(String(i + 1), NC.off, -6.0 + i * 0.8, 6.2, 0, 0.7, 0.45));
+    rem(S, '16 個 word：要等全部搬完才重新 access → 很久', 0, 5.2, 'idx');
     cap('block 很大，搬進來很久', '本來 4 個 word，變 16 個 word 要更長時間');
   },
   async (tok, S) => { // @1086.5 ~有一些機制叫early restart
-    for (let i = 0; i < 4; i++) tint(S.ws[i], NC.blue); glow(S.ws[3], HL); hot('early restart：第 4 個一到就開始做', -2.2, -0.65);
+    for (let i = 0; i < 4; i++) tint(S.ws[i], NC.blue); glow(S.ws[3], HL); rem(S, 'early restart：第 4 個一到就開始做', 0, 5.2, 'ptr alt');
     cap('early restart', '我要第 4 個 word：1、2、3、4 一進來就開始做');
   },
   async (tok, S) => { // @1101.1 ~然後5 6 7 8 9
     S.ws.forEach((m) => tint(m, NC.off));
     const ord = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2];
     for (const i of ord) { tint(S.ws[i], NC.blue); await wt(tok, 110); }
-    hot('critical word first：第 4 個先搬，最後再搬 1、2、3', 2.6, -1.25);
+    rem(S, 'critical word first：第 4 個先搬，最後再搬 1、2、3', 0, 5.2, 'ptr alt');
     cap('critical word first', '先搬第 4 個…一直到 16，再回來搬 1、2、3（要更多 hardware）');
   },
-]);
+], null, [-6.5, 3.6, -0.3, 6.5, 7.1, 0.3]);
 
 scene('mh-23a-graph', '看圖：miss rate 對 block size', [
   async (tok, S) => { // @1122.14 ~那最重要是下面這張圖
@@ -2358,11 +2386,11 @@ scene('mh-23a-graph', '看圖：miss rate 對 block size', [
     cap('最重要的是這張圖', '看圖要會分析設計');
   },
   async (tok, S) => { // @1166.17 ~X軸就表示
-    hot('X 軸：block size；每條曲線：一種 cache size', 0, 6.7);
+    hot('X 軸：block size；每條曲線：一種 cache size', 0, 7.0);
     cap('X 軸是 block size', '每條曲線是一種 cache size：最上面 4K，再來 16K…');
   },
   async (tok, S) => { // @1177.87 ~那Y軸就表示
-    hot('Y 軸：miss rate', -5.6, 5.0);
+    hot('Y 軸：miss rate', -4.6, 3.0);
     cap('Y 軸是 cache miss rate', '');
   },
   async (tok, S) => { // @1179.04 ~那譬如說講4K
@@ -2371,20 +2399,20 @@ scene('mh-23a-graph', '看圖：miss rate 對 block size', [
   },
   async (tok, S) => { // @1213.4 ~前半段為什麼他catch miss會變好
     S.cur['4K'].slice(0, 3).forEach((m) => tint(m, NC.green));
-    good('前半段下降：spatial locality（預先搬進來）', 0.4, -1.3);
+    rem(S, '前半段下降：spatial locality（預先搬進來）', 1.0, 6.35, 'good');
     cap('前半段 miss 變少', 'spatial locality：預先把會 access 的搬進來');
   },
   async (tok, S) => { // @1240.1 ~那你剛講的後半為什麼又往上了咧
     S.cur['4K'].slice(3).forEach((m) => tint(m, NC.red));
-    bad('後半段上升：block 數變少，更多人搶同一位置', 0.4, -1.85);
+    rem(S, '後半段上升：block 數變少，更多人搶同一位置', 1.0, 6.35, 'bad');
     cap('後半段為什麼往上？', 'block 數變少，更多人 map 到同一個 location');
   },
   async (tok, S) => { // @1260.2 ~那為什麼那下面這個圖就比較平
     S.cur['4K'].forEach((m) => glow(m, null)); S.cur['256K'].forEach((m) => glow(m, HL));
-    note('64K、256K 比較平：cache 夠大，block 數仍足夠', 3.6, 6.0);
+    rem(S, '64K、256K 比較平：cache 夠大，block 數仍足夠', 1.0, 6.35);
     cap('下面 64K、256K 比較平', 'cache size 夠大，就算 block 大，block 數還是夠');
   },
-]);
+], null, [-5.8, -0.6, -0.3, 5.0, 7.3, 0.3]);
 
 scene('mh-23a-read', 'Read hit / miss：stall，不是 interrupt', [
   async (tok, S) => { // @1341.8 ~那整個這個Structure就是這樣子
@@ -2575,7 +2603,7 @@ scene('mh-23a-fmaddr', 'FastMATH 的位址切割與 16-word block', [
   },
   async (tok, S) => { // @2122.9 ~因為它是說一個block有幾個word
     S.bs.labels[2].visible = true; S.bs.cubes.forEach((m) => glow(m, null)); S.bs.cubes.slice(26, 30).forEach((m) => glow(m, HL));
-    S.k3 = ok(Math.log2(16) === 4, '16 words = 2⁴ → block offset 4 bits ✓', 3.4, 4.6);
+    remOk(S, Math.log2(16) === 4, '16 words = 2⁴ → block offset 4 bits ✓', 0, 5.0);
     cap('一個 block 有 16 個 word', '要 4 個 bit 描述是第幾個 word');
   },
   async (tok, S) => { // @2143.0 ~的那我要看他是第幾個block
@@ -2583,71 +2611,71 @@ scene('mh-23a-fmaddr', 'FastMATH 的位址切割與 16-word block', [
     cap('要看是第幾個 block', '從前面這段看，就是 index');
   },
   async (tok, S) => { // @2178.3 ~剛前面講幾個block
-    S.k5 = ok(Math.log2(256) === 8, '256 個 block = 2⁸ → index 8 bits ✓', -2.6, 4.6);
+    remOk(S, Math.log2(256) === 8, '256 個 block = 2⁸ → index 8 bits ✓', 0, 5.0);
     cap('有 256 個 block', '所以 index 要 8 個 bit');
   },
   async (tok, S) => { // @2194.8 ~可以access到 到底是哪一個
-    S.q = hot('剩下的 18 個 bit 是什麼？', -3.6, 4.0);
+    rem(S, '剩下的 18 個 bit 是什麼？', 0, 5.0, 'ptr alt');
     cap('那剩下這 18 個 bit', '是什麼？');
   },
   async (tok, S) => { // @2222.7 ~就是說這個呢就是tag
     S.bs.labels[0].visible = true; S.bs.cubes.forEach((m) => glow(m, null)); S.bs.cubes.slice(0, 18).forEach((m) => glow(m, HL));
-    S.k7 = ok(32 - 8 - 4 - 2 === 18, 'tag = 32 − 8 − 4 − 2 = 18 bits ✓', -3.6, 3.4);
+    remOk(S, 32 - 8 - 4 - 2 === 18, 'tag = 32 − 8 − 4 − 2 = 18 bits ✓', 0, 5.0);
     cap('就是 tag', 'index 相同、map 到同一位置的人，靠 tag 區分');
   },
   async (tok, S) => { // @2256.4 ~structure 你需要一個valuebit
-    gone(S.q); S.bs.cubes.forEach((m) => glow(m, null));
-    hd('V', -6.3, 2.75); hd('tag 18', -5.0, 2.75); hd('data：16 words', 0.8, 2.75);
-    S.rows = [0, 1, 2].map((r) => { const y = 2.15 - r * 0.55; return { v: bx('1', NC.mint, -6.3, y, 0, 0.5, 0.42, 0.6), t: bx('', NC.lilac, -5.0, y, 0, 1.6, 0.42, 0.6), w: Array.from({ length: 16 }, (_, k) => bx('', NC.sky, -3.7 + k * 0.6, y, 0, 0.52, 0.42, 0.6)) }; });
-    sm('…共 256 列（index 0–255）', 0.8, 0.45);
+    gone(S.rem); S.bs.cubes.forEach((m) => glow(m, null));
+    hd('V', -6.3, 4.2); hd('tag 18', -5.0, 4.2); hd('data：16 words', 0.8, 4.2);
+    S.rows = [0, 1, 2].map((r) => { const y = 3.6 - r * 0.55; return { v: bx('1', NC.mint, -6.3, y, 0, 0.5, 0.42, 0.6), t: bx('', NC.lilac, -5.0, y, 0, 1.6, 0.42, 0.6), w: Array.from({ length: 16 }, (_, k) => bx('', NC.sky, -3.7 + k * 0.6, y, 0, 0.52, 0.42, 0.6)) }; });
+    sm('…共 256 列（index 0–255）', -4.6, 1.95);
     cap('cache 的 structure', '每列：valid bit、18-bit tag、16 個 word 的 data');
   },
   async (tok, S) => { // @2280.7 ~之後你就有一個tag比對
     glow(S.rows[1].t, HL); S.rows[1].w.forEach((m) => tint(m, NC.blue));
-    S.hit = good('index 選到這列 → tag 比對一樣 → hit', 3.6, 1.95 + 1.75);
+    rem(S, 'index 選到這列 → tag 比對一樣 → hit', 0, 5.0, 'good');
     cap('用 8-bit index 選到一列', '再做 tag 比對，一樣就是 hit');
   },
   async (tok, S) => { // @2372.4 ~這樣一個灰色的地方
-    S.q3 = hot('這一列（一個 block）有幾個 word？', 3.6, 3.15);
+    rem(S, '這一列（一個 block）有幾個 word？', 0, 5.0, 'ptr alt');
     cap('一條 line（一個 block）', '裡面有多少個 word？');
   },
   async (tok, S) => { // @2396.4 ~就從這邊來看 16個
-    ok(S.rows[1].w.length === 16, '一個 block = 16 個 word ✓', 3.6, -0.15);
+    remOk(S, S.rows[1].w.length === 16, '一個 block = 16 個 word ✓', 0, 5.0);
     cap('16 個 word', '一個 block 就有 16 個 word');
   },
   async (tok, S) => { // @2459.9 ~第三第四對不對這個是tag
-    S.q2 = hot('要第幾個 word，用哪幾個 bit 選？', -3.4, 4.0);
+    rem(S, '要第幾個 word，用哪幾個 bit 選？', 0, 5.0, 'ptr alt');
     cap('那要拿第幾個 word', '用 address 的哪個部分？');
   },
   async (tok, S) => { // @2486.0 ~第一個fuel 還是第二個fuel
-    gone(S.q2); S.bs.cubes.slice(26, 30).forEach((m) => glow(m, HL));
-    S.k13 = ok(Math.pow(2, 4) === 16, 'block offset 4 bits → 0000–1111 選 16 個 word 之一 ✓', -3.4, 4.0);
+    S.bs.cubes.slice(26, 30).forEach((m) => glow(m, HL));
+    remOk(S, Math.pow(2, 4) === 16, 'block offset 4 bits → 0000–1111 選 16 個 word 之一 ✓', 0, 5.0);
     cap('第二個欄位：block offset（4 bits）', '0000 是第 0 個 word、0001 是第 1 個…');
   },
   async (tok, S) => { // @2568.1 ~就在這個4個Beat在這邊Access
     const k = 1; S.rows[1].w.forEach((m) => glow(m, null)); glow(S.rows[1].w[k], OKG); tint(S.rows[1].w[k], NC.green);
-    S.mux = bx('MUX（16 選 1）', NC.gold, -3.1, -0.9, 0, 2.2, 0.5); lk(-3.1, 1.4, -3.1, -0.6, 0x0f5a3a, 0.4);
-    sm('示意：block offset = 0001 → 第 1 個 word', 0.6, -0.9);
+    S.mux = bx('MUX（16 選 1）', NC.gold, -3.1, 1.05, 0, 2.2, 0.5); glow(S.mux, HL); // in focus with the chosen word lk(-3.1, 2.8, -3.1, 1.35, 0x0f5a3a, 0.4);
+    sm('示意：block offset = 0001 → 第 1 個 word', 1.4, 1.05);
     cap('hit 之後，用這 4 個 bit 做 MUX 選擇', '選出 block 裡你要的那個 word');
   },
   async (tok, S) => { // @2651.2 ~我們假如是一群人
-    sm('同一個 block 的 16 個 word：tag、index 都一樣，只差這 4 bits', 0, -1.6);
+    rem(S, '同一個 block 的 16 個 word：tag、index 都一樣，只差這 4 bits', 0, 5.0, 'idx');
     cap('16 個 word 一群一起搬進 cache', 'tag、index 都一樣，不同在這 4 個 bit');
   },
   async (tok, S) => { // @2705.7 ~這樣瞭解嗎好 這樣瞭解 好 所以其實那這個01
-    gone(S.hit, S.q3, S.k3, S.k5, S.k7, S.k13); S.bs.cubes.forEach((m) => glow(m, null)); S.bs.cubes.slice(30).forEach((m) => glow(m, HL));
-    sm('word 出來後：byte offset 00、01、10、11 選第幾個 byte', 0, 5.2);
+    S.bs.cubes.forEach((m) => glow(m, null)); S.bs.cubes.slice(30).forEach((m) => glow(m, HL));
+    rem(S, 'word 出來後：byte offset 00、01、10、11 選第幾個 byte', 0, 5.0, 'idx');
     cap('一個 word 出來之後', '最後兩個 bit 選 4 個 byte 中的哪一個');
   },
   async (tok, S) => { // @2784.8 ~就來決定說這邊有擺幾個
-    ok(Math.log2(4) === 2, '如果一個 block 只有 4 個 word → block offset 2 bits ✓', 0, 4.0);
+    remOk(S, Math.log2(4) === 2, '如果一個 block 只有 4 個 word → block offset 2 bits ✓', 0, 5.0);
     cap('如果一個 block 只放 4 個 word', 'block offset 就只要 2 個 bit');
   },
   async (tok, S) => { // @2829.2 ~兩個beat來選這樣這樣瞭解這關係
-    note('valid + tag 比對 → hit；block offset 選 word；byte offset 選 byte', 0, -2.2);
+    rem(S, 'valid + tag 比對 → hit；block offset 選 word；byte offset 選 byte', 0, 5.0);
     cap('整個流程：valid、tag 比對決定 hit', '再用 block 內的 offset 選出要的 word');
   },
-]);
+], null, [-6.7, 0.6, -0.3, 6.7, 7.1, 0.3]);
 
 // ════════ QWGIvh-k7go（第 23B 講：block 內的 word、memory 組織與 miss penalty、DRAM、CPI/AMAT、associativity） ════════
 scene('mh-23b-words', '同一個 block 的 word：tag、index 相同，offset 不同', [
@@ -2662,12 +2690,12 @@ scene('mh-23b-words', '同一個 block 的 word：tag、index 相同，offset �
   async (tok, S) => { // @41.6 ~它的tag都一樣為什麼
     S.ad = Array.from({ length: 8 }, (_, a) => mt(b2(a, 4), -4.6 + (a % 2) * 1.6, 5.0 - Math.floor(a / 2) * 0.62, 'ptr'));
     S.grp = [0, 1, 2, 3].map((g) => bx('block ' + g, NC.sky, -0.6, 5.0 - g * 0.62, 0, 1.8, 0.45));
-    sm('（示意：4-bit 地址，2 個 word 綁成一個 block）', -2.4, 2.2);
+    sm('（示意：4-bit 地址，2 個 word 綁成一個 block）', -2.4, 2.5);
     cap('是的：地址是連續的', '把連續的地址圈起來，就是一個 block');
   },
   async (tok, S) => { // @93.0 ~它不同在是low order幣的地方
-    good('同一個 block：high-order bits 一樣（index、tag 相同）', 2.6, 1.6);
-    bad('不同的只有 low-order bits', 2.6, 1.0);
+    K.keep(good('同一個 block：high-order bits 一樣（index、tag 相同）', 0, 1.8));
+    K.keep(bad('不同的只有 low-order bits', 0, 1.15));
     cap('high-order 的部分一樣', '不同的是 low-order bits');
   },
   async (tok, S) => { // @110.2 ~找到這個tag都一樣那現在你要
@@ -2675,10 +2703,10 @@ scene('mh-23b-words', '同一個 block 的 word：tag、index 相同，offset �
     cap('找到 block、tag 也對了', '要分哪一個 word，就用最後的 low-order bits');
   },
   async (tok, S) => { // @126.3 ~那你就用它的這個比如說用這個
-    note('index → 哪個 block；tag → 是不是我；block offset → 哪個 word', 0, 0.2);
+    note('index → 哪個 block；tag → 是不是我；block offset → 哪個 word', 0, 0.5);
     cap('流程：index 找 block、比對 tag', 'block offset 找 word；byte offset 不理');
   },
-]);
+], null, [-5.6, -0.1, -0.3, 5.6, 7.0, 0.3]);
 
 scene('mh-23b-memorg', 'Memory 組織與 miss penalty：65、17、20 cycles', [
   async (tok, S) => { // @183.6 ~可是我們現在cache呢是跟memory
@@ -2767,11 +2795,11 @@ scene('mh-23b-dram', 'DRAM：row / column、burst mode、DDR SDRAM', [
   },
   async (tok, S) => { // @725.6 ~這不一樣這兩個access不一樣第一
     S.ad = bx('22-bit address', NC.gold, -4.4, 5.9, 0, 3.0, 0.5);
-    S.r = bx('row 11', NC.orange, -5.2, 5.1, 0, 1.4, 0.45); S.c = bx('column 11', NC.purple, -3.6, 5.1, 0, 1.6, 0.45);
+    S.r = bx('row 11', NC.orange, -5.4, 5.1, 0, 1.4, 0.45); S.c = bx('column 11', NC.purple, -3.3, 5.1, 0, 1.8, 0.45);
     cap('DRAM 不一樣', 'address 拆成兩部分：row access 和 column access');
   },
   async (tok, S) => { // @739.9 ~0到20 22個bit
-    ok(Math.pow(2, 11) === 2048, '11 bits → 2¹¹ = 2048 個 row ✓', -4.4, 4.4);
+    S.k3 = K.keep(ok(Math.pow(2, 11) === 2048, '11 bits → 2¹¹ = 2048 個 row ✓', -4.4, 4.4));
     cap('22 個 bit 拆一半', '11 個 bit 的 row decoder 產生 2048 條 row');
   },
   async (tok, S) => { // @796.4 ~這個總共有幾個row
@@ -2788,44 +2816,45 @@ scene('mh-23b-dram', 'DRAM：row / column、burst mode、DDR SDRAM', [
     cap('再用另一半 address（column）', '選出你要的那個');
   },
   async (tok, S) => { // @890.7 ~有什麼好處
-    good('row 已在 latch：連續的 column 很快', 2.8, 1.3);
+    rem(S, 'row 已在 latch：連續的 column 很快', 2.8, 1.2, 'good');
     cap('好處：row 讀下來之後', '連續 access 同一個 row 的 column 就很快');
   },
   async (tok, S) => { // @910.6 ~那如果你是連續的
     for (let c = 3; c < 8; c++) { glow(S.g[2][c], OKG); await wt(tok, 150); }
-    hot('burst mode：連續地址一口氣讀出', 2.8, 0.7);
+    rem(S, 'burst mode：連續地址一口氣讀出', 2.8, 1.2, 'ptr alt');
     cap('連續的地址可以用 burst mode', 'cache block 正好是連續的，很適合');
   },
   async (tok, S) => { // @936.2 ~Raw X跟Color X 這兩個部分我們叫所謂DDR
-    hd('DDR SDRAM = Double Data Rate Synchronous DRAM', -1.6, 0.0);
+    gone(S.ad, S.r, S.c, S.k3, S.rem); recede([S.g, S.latch], -0.8);
+    hd('DDR SDRAM = Double Data Rate Synchronous DRAM', -2.9, 5.6);
     cap('現在用的叫 DDR SDRAM', 'Double Data Rate Synchronous DRAM');
   },
   async (tok, S) => { // @967.6 ~因為一般的DRAM
-    sm('原始 DRAM：asynchronous，用 control signal（low active）控制讀寫', -1.6, -0.5);
+    rem(S, '原始 DRAM：asynchronous，用 control signal（low active）控制讀寫', 0, 0.7, 'idx');
     cap('原始的 DRAM 是 asynchronous', '用一些 control signal 控制 read/write');
   },
   async (tok, S) => { // @990.6 ~rewrite 但 synchronous 的意思是說
-    S.clk = Array.from({ length: 8 }, (_, i) => bx('', i % 2 ? NC.off : NC.teal, -5.6 + i * 0.5, -1.2, 0, 0.48, i % 2 ? 0.1 : 0.4, 0.3));
-    sm('synchronous：用 clock 控制', -0.6, -1.2);
+    S.clk = Array.from({ length: 8 }, (_, i) => bx('', i % 2 ? NC.off : NC.teal, -5.4 + i * 0.5, 4.6, 0, 0.48, i % 2 ? 0.1 : 0.4, 0.3));
+    sm('synchronous：用 clock 控制', -3.65, 3.95);
     cap('synchronous', '直接用 clock 來控制讀寫');
   },
   async (tok, S) => { // @1001.4 ~clock synchronization 的 然後它是 double data rate
-    good('double data rate：rising edge、falling edge 都傳 data', 1.0, -1.75);
+    rem(S, 'double data rate：rising edge、falling edge 都傳 data', 0, 0.7, 'good');
     cap('double data rate', 'clock 的 rising edge 和 falling edge 都傳資料');
   },
   async (tok, S) => { // @1010.8 ~burst mode 的時候就可以做這個
-    sm('burst：給 starting address 和長度，用 clock 一直讀出來', 0, -2.3);
+    rem(S, 'burst：給 starting address 和長度，用 clock 一直讀出來', 0, 0.7, 'idx');
     cap('burst mode：連續的 location 都在 latch', '只要給 starting address 和長度');
   },
   async (tok, S) => { // @1058.6 ~PC上面都用DDR的sDRAM
-    note('PC 都用 DDR SDRAM；每 GB 價錢一路下降', -3.4, 3.9);
+    rem(S, 'PC 都用 DDR SDRAM；每 GB 價錢一路下降', 0, 0.7);
     cap('現在 PC 都用 DDR SDRAM', '每 GB 價錢一路變便宜');
   },
   async (tok, S) => { // @1084.0 ~紅色就代表RAWX的時間
-    sm('column access 比 row access 快很多', -3.4, 3.3);
+    rem(S, 'column access 比 row access 快很多', 0, 0.7, 'idx');
     cap('row access 和 column access 時間都在下降', 'column access 一直比 row access 快很多');
   },
-]);
+], null, [-6.0, 0.2, -0.3, 6.0, 7.0, 0.3]);
 
 scene('mh-23b-cpi', 'Cache performance：CPI 2 → 5.44', [
   async (tok, S) => { // @1379.8 ~好所以我們說現在你先看memory的
@@ -2999,16 +3028,16 @@ scene('mh-23b-dmbad', 'Direct-mapped 的缺點：一個號碼只有一張椅子'
     cap('下面地址除以上面的數目', '餘數就是位置：橘紅色都到橘紅色那格');
   },
   async (tok, S) => { // @2263.8 ~人到那邊 1 2 3 4
-    sm('同一格好幾個人 → 用 high-order bits（tag）比對', 0, -0.25);
+    rem(S, '同一格好幾個人 → 用 high-order bits（tag）比對', 0, 0.25, 'idx');
     cap('好幾個人到同一格', '用 high-order bits（tag）去比對');
   },
   async (tok, S) => { // @2270.0 ~structure 那你覺得它缺點是什麼
-    hot('缺點是什麼？', 4.6, 6.6);
+    S.q = hot('缺點是什麼？', 4.6, 6.45);
     cap('direct-mapped 的缺點', '是什麼？');
   },
   async (tok, S) => { // @2278.1 ~我現在access就是這樣我的memory
-    S.R = csim(ALT4, 8, 1); S.st = hd('', 0, -0.85);
-    S.seq = ALT4.map((a, k) => sm(String(a), -2.6 + k * 0.75, 6.65));
+    S.R = csim(ALT4, 8, 1); S.st = hd('', -4.7, 7.0);
+    S.seq = ALT4.map((a, k) => sm(String(a), -3.0 + k * 0.86, 7.0));
     cap('如果 access pattern 剛好是', '1、9、17、25 這四個橘紅色輪流（示意）');
   },
   async (tok, S) => { // @2294.6 ~就是第一個橘紅色第二個橘紅色
@@ -3018,24 +3047,24 @@ scene('mh-23b-dmbad', 'Direct-mapped 的缺點：一個號碼只有一張椅子'
       await wt(tok, 260); glow(S.mem[ALT4[k]], null); if (!r.hit) n++;
     }
     txt(S.st, 'miss ' + n + ' / ' + ALT4.length);
-    ok(S.R.every((r) => !r.hit), '全部 map 到 001 → 一直互相踢出去：8 次全 miss ✓', 0, -1.45);
+    remOk(S, S.R.every((r) => !r.hit), '全部 map 到 001 → 一直互相踢出去：8 次全 miss ✓', 0, 0.25);
     cap('四個都 map 到同一個位置', '第二個來，第一個就出去……一直 miss');
   },
   async (tok, S) => { // @2313.7 ~也就是說一個人一個位一個號碼
-    note('一個號碼只有一張椅子', -3.6, -2.05);
+    rem(S, '一個號碼只有一張椅子', 0, 0.25);
     cap('一個號碼裡只有一張椅子', '一次只能坐一個人');
   },
   async (tok, S) => { // @2322.9 ~如果你剛好呢是同時這四個人他
     [0, 2, 3, 4, 5, 6, 7].forEach((i) => glow(S.cache[i], HL));
-    bad('其他 7 格都空著！', 3.6, -2.05);
+    rem(S, '其他 7 格都空著！', 0, 0.25, 'bad');
     cap('其實 cache 其他位置都沒人坐', '這四個人卻都擠同一個位置');
   },
   async (tok, S) => { // @2367.6 ~就要出去這樣好
     [0, 2, 3, 4, 5, 6, 7].forEach((i) => glow(S.cache[i], null));
-    hot('限制太大 → 要改善它', 4.6, 6.0);
+    txt(S.q, '限制太大 → 要改善它');
     cap('限制太大了', '要 improve 它');
   },
-]);
+], null, [-6.2, -0.2, -0.3, 6.2, 7.3, 0.3]);
 
 scene('mh-23b-fully', 'Fully associative：坐哪裡都可以', [
   async (tok, S) => { // @2375.3 ~應該怎麼樣最直接的方法improve
@@ -3044,21 +3073,21 @@ scene('mh-23b-fully', 'Fully associative：坐哪裡都可以', [
     cap('最直接的改善', '不要給固定位置：上面任何一個空位都可以坐');
   },
   async (tok, S) => { // @2399.2 ~極端對不對這是一個極端一個呢是
-    S.R = csim(ALT4, 1, 8); S.seq = ALT4.map((a, k) => sm(String(a), -2.6 + k * 0.75, 6.65));
+    S.R = csim(ALT4, 1, 8); S.seq = ALT4.map((a, k) => sm(String(a), -2.0 + k * 0.86, 6.95));
     for (let k = 0; k < ALT4.length; k++) {
       const r = S.R[k]; S.seq[k].element.className = 'lab-label ' + (r.hit ? 'good' : 'bad');
       if (!r.hit) { relabel(S.cache[r.way], b2(ALT4[k], 5)); tint(S.cache[r.way], NC.orange); }
       glow(S.cache[r.way], r.hit ? OKG : NG); await wt(tok, 220);
     }
-    ok(S.R.filter((r) => r.hit).length === 4, '同樣 1, 9, 17, 25 輪流：只有前 4 次 miss，之後全 hit ✓', 0, -0.2);
+    remOk(S, S.R.filter((r) => r.hit).length === 4, '同樣 1, 9, 17, 25 輪流：只有前 4 次 miss，之後全 hit ✓', 0, 0.2);
     cap('有空位就擺：第一個放第一格、第二個放第二格', '同樣的 pattern，後面全部 hit');
   },
   async (tok, S) => { // @2420.0 ~Fully Associated 那另外一個極端
-    hd('fully associative：另一個極端', 0, 7.15);
+    hd('fully associative：另一個極端', -4.5, 6.95);
     cap('這叫 fully associative', '另一個極端');
   },
   async (tok, S) => { // @2461.4 ~不知道在哪裡那你要記錄什麼
-    note('沒有 index：要把整個 block address 存成 tag', 0, -0.8);
+    rem(S, '沒有 index：要把整個 block address 存成 tag', 0, 0.2);
     cap('那要找的時候，不知道在哪一格', '要把前面的地址全部記錄下來（tag）');
   },
   async (tok, S) => { // @2517.7 ~知道哪個位置我從頭開始check
@@ -3066,83 +3095,82 @@ scene('mh-23b-fully', 'Fully associative：坐哪裡都可以', [
     cap('access 時不知道在哪', '每一個位置都有可能，都要 check');
   },
   async (tok, S) => { // @2539.7 ~那你是sequent去check它嗎
-    S.bd = bad('一格一格 sequential check：8 格要 8 次，太慢', 0, -1.35);
+    rem(S, '一格一格 sequential check：8 格要 8 次，太慢', 0, 0.2, 'bad');
     cap('一個一個 sequential check？', '8 個 entry 就要 8 次，太慢了');
   },
   async (tok, S) => { // @2573.8 ~這樣顯然不是sequential的check
     S.cmp = S.cache.map((m, i) => bx('=?', NC.gold, S.cx(i), 4.85, 0.6, 0.6, 0.35, 0.4));
-    gone(S.bd); good('同時 check：每個 entry 一個 comparator（8 個）', 0, -1.35);
+    rem(S, '同時 check：每個 entry 一個 comparator（8 個）', 0, 0.2, 'good');
     cap('所以要同時 check', '8 個 element 就要 8 個 comparator');
   },
   async (tok, S) => { // @2603.3 ~第二個就是說你在任何位置都可以
-    note('優點：很彈性、不浪費位置　缺點：comparator 很多，hardware 貴', 0, -2.0);
+    rem(S, '優點：很彈性、不浪費位置　缺點：comparator 很多，hardware 貴', 0, 0.2);
     cap('優點：很彈性，絕不浪費', '缺點：要很多 hardware 做比對');
   },
-]);
+], null, [-6.2, -0.2, -0.3, 6.2, 7.4, 0.3]);
 
 const ALT2 = [1, 9, 1, 9, 1, 9];
 scene('mh-23b-setassoc', 'Set associative：一個號碼幾張椅子', [
   async (tok, S) => { // @2625.7 ~也就是太自由了
-    hot('fully 太自由：一個號碼裡兩個或四個位置就好', 0, 6.65);
+    S.t = hot('fully 太自由：一個號碼裡兩個或四個位置就好', 0, 6.65);
     cap('fully associative 太自由了', '一個號碼裡兩個或四個位置就好');
   },
   async (tok, S) => { // @2634.1 ~兩個位置兩個位置或四個位置就好了
-    hd('set associative：direct-mapped 與 fully 的折衷', 0, 6.05);
+    txt(S.t, 'set associative：direct-mapped 與 fully 的折衷'); S.t.element.className = 'lab-label ptr';
     cap('這叫 set associative', 'direct-mapped 和 fully associative 的折衷');
   },
   async (tok, S) => { // @2642.6 ~所以在中間的也就是說
-    S.dm = ctab({ rows: 8, cols: 1, x: -4.4, y: 5.0, cw: 1.5, ch: 0.42, rl: (r) => b2(r, 3), rlw: 0.55 });
-    S.sa = ctab({ rows: 4, cols: 2, x: 1.4, y: 5.0, cw: 1.5, ch: 0.42, rl: (r) => 'set ' + r, rlw: 0.75 });
-    sm('direct-mapped（8 格）', -4.4, 5.5); sm('2-way（4 個 set × 2）', 2.2, 5.5);
+    S.dm = ctab({ rows: 8, cols: 1, x: -3.6, y: 5.0, cw: 1.5, ch: 0.42, rl: (r) => b2(r, 3), rlw: 0.55 });
+    S.sa = ctab({ rows: 4, cols: 2, x: 1.6, y: 5.0, cw: 1.5, ch: 0.42, rl: (r) => 'set ' + r, rlw: 0.75 });
+    sm('direct-mapped（8 格）', -3.6, 5.6); sm('2-way（4 個 set × 2）', 2.4, 5.6);
     cap('一樣先 map 到一個號碼', '但這個號碼裡有兩個位置');
   },
   async (tok, S) => { // @2659.8 ~axe這個再axe這個
-    S.seq = ALT2.map((a, k) => sm(String(a), -2.0 + k * 0.8, 0.0));
-    S.sx = sm('（示意：兩個橘紅色 1、9 交替）', 4.6, 0.0);
+    S.seq = sm('access：1, 9, 1, 9, 1, 9（示意：兩個橘紅色交替）', 0, 0.45);
     cap('假如兩個橘紅色交替 access', '1、9、1、9……');
   },
   async (tok, S) => { // @2665.0 ~假如原來derive map的話只能擺
     S.R1 = csim(ALT2, 8, 1);
     for (let k = 0; k < ALT2.length; k++) { const r = S.R1[k]; S.dm.put(1, 0, String(ALT2[k]), NC.orange); S.dm.fl(1, 0, r.hit ? OKG : NG); await wt(tok, 250); }
-    ok(S.R1.every((r) => !r.hit), 'direct-mapped：6 次全 miss ✓', -4.4, 0.6);
+    K.keep(ok(S.R1.every((r) => !r.hit), 'direct-mapped：6 次全 miss ✓', -3.6, -0.2));
     cap('direct-mapped 只能擺一個人', '這個進來那個就出去：miss、miss、miss');
   },
   async (tok, S) => { // @2689.1 ~那可是如果我這裡面一個號碼裡面
     S.R2 = csim(ALT2, 4, 2);
     for (let k = 0; k < ALT2.length; k++) { const r = S.R2[k]; if (!r.hit) S.sa.put(r.s, r.way, String(ALT2[k]), NC.orange); S.sa.fl(r.s, r.way, r.hit ? OKG : NG); await wt(tok, 250); }
-    ok(S.R2.filter((r) => r.hit).length === 4 && S.R2[0].s === 1 && S.R2[1].s === 1, '2-way：1 mod 4 = 9 mod 4 = 1，同一個 set 兩張椅子 → 只有 2 次 miss ✓', 2.0, -0.6);
+    K.keep(ok(S.R2.filter((r) => r.hit).length === 4 && S.R2[0].s === 1 && S.R2[1].s === 1, '2-way：1 mod 4 = 9 mod 4 = 1，同一個 set 兩張椅子 → 只有 2 次 miss ✓', 1.4, -0.8));
     cap('一個號碼有兩個位置', '兩個都在裡面，交替 access 就不會 miss 了');
   },
   async (tok, S) => { // @2729.5 ~兩個那當然你可以做
-    sm('4 張椅子更彈性；全部同一個 set → fully associative', 0, -1.15);
+    rem(S, '4 張椅子更彈性；全部同一個 set → fully associative', 0, -1.45, 'idx');
     cap('做到 4 個就更彈性', '全部都在同一個 set，就是 fully associative');
   },
   async (tok, S) => { // @2744.6 ~所以direct map
-    hd('fully associative：沒有 index，每個 entry 一個 comparator', 0, -1.7);
+    rem(S, 'fully associative：沒有 index，每個 entry 一個 comparator', 0, -1.45, 'ptr');
     cap('fully associative：block 到任何 entry', '沒有 index；每個 entry 都要 comparator，很貴');
   },
   async (tok, S) => { // @2794.8 ~很貴那另外一個呢
-    hd('n-way set associative：每個 set 有 n 個 entry', 0, -2.25);
+    rem(S, 'n-way set associative：每個 set 有 n 個 entry', 0, -1.45, 'ptr');
     cap('n-way set associative', '一個 set 就像 direct-mapped 的一格，但裡面有 n 張椅子');
   },
   async (tok, S) => { // @2840.7 ~所以它要算就算成什麼東西呢
-    ok(9 % 4 === 1, 'set = (block number) mod (set 數)：9 mod 4 = 1 ✓', 2.2, 2.6);
+    remOk(S, 9 % 4 === 1, 'set = (block number) mod (set 數)：9 mod 4 = 1 ✓', 2.4, 1.6);
     cap('怎麼算位置？跟 direct-mapped 很像', '先算 set：block number mod 有幾個 set');
   },
   async (tok, S) => { // @2882.3 ~set在cache裡面
     S.sa.fl(1, 0, HL); S.sa.fl(1, 1, HL);
-    good('只在 set 裡找：2-way 只比 2 個', 2.2, 2.05);
+    rem(S, '只在 set 1 裡找：2-way 只比 2 個', 2.4, 1.6, 'good');
     cap('search 時只在那個 set 裡找', '2-way 只要 check 兩個 element');
   },
   async (tok, S) => { // @2920.3 ~你可以說如果我們就以set associated來看
-    gone(S.seq, S.sx); sm('direct-mapped = 1-way；fully = n-way（n = cache block 數）', 1.6, 0.0);
+    gone(S.seq); S.sa.calm(); rem(S, 'direct-mapped = 1-way；fully = n-way（n = cache block 數）', 0, 0.45, 'idx');
     cap('都用 set associative 的角度看', 'direct-mapped 是 1-way，fully associative 是 n-way');
   },
   async (tok, S) => { // @2956.1 ~只要在set裡面去search它就可以
-    note('2-way 2 個、4-way 4 個 comparator；比 fully 便宜，但彈性小一點', 1.4, 1.2);
+    rem(S, '2-way 2 個、4-way 4 個 comparator；比 fully 便宜，但彈性小一點', 0, 0.45);
     cap('2-way 只要 2 個 comparator，4-way 要 4 個', '不用整個 cache 都有 comparator，但彈性沒那麼大');
   },
-]);
+], null, [-6.0, -1.9, -0.3, 6.0, 7.0, 0.3]);
 
 // ════════ 1fhK7KF8hgE（第 24A 講：associativity、block 12、0,8,0,6,8、4-way 實作、replacement、multilevel） ════════
 scene('mh-24a-review', '複習：hierarchy 與四個問題', [
@@ -3195,11 +3223,11 @@ scene('mh-24a-three', 'Direct-mapped 的問題 → fully associative → set ass
     cap('placement 最簡單的', '叫 direct-mapped，但它有一些缺點');
   },
   async (tok, S) => { // @203.2 ~performance 我們就可以從三個角度
-    ['hit time ↓', 'miss rate ↓', 'miss penalty ↓'].forEach((t, i) => note(t, -3.4 + i * 3.4, 6.1));
+    S.three = ['hit time ↓', 'miss rate ↓', 'miss penalty ↓'].map((t, i) => K.keep(note(t, -3.4 + i * 3.4, 6.0)));
     cap('improve cache performance', '從三個角度：hit time、miss rate、miss penalty');
   },
   async (tok, S) => { // @216.6 ~改進這個derive map DirectMate是第一個
-    S.ct = ctab({ rows: 1, cols: 8, x: -4.9, y: 5.0, cw: 1.25, ch: 0.5, empty: '' }); S.ct.cells[0].forEach((m, i) => relabel(m, String(i)));
+    gone(S.three); S.ct = ctab({ rows: 1, cols: 8, x: -4.9, y: 5.0, cw: 1.25, ch: 0.5, empty: '' }); S.ct.cells[0].forEach((m, i) => relabel(m, String(i)));
     S.mem = Array.from({ length: 16 }, (_, b) => bx(String(b), NC.off, -4.9 + (b % 8) * 1.35, 3.8 - Math.floor(b / 8) * 0.6, 0, 1.2, 0.45));
     cap('direct-mapped：每個人都有固定位置', 'upper level 8 個 block，照次序排');
   },
@@ -3208,65 +3236,67 @@ scene('mh-24a-three', 'Direct-mapped 的問題 → fully associative → set ass
     cap('找位置：lower level 地址除以 upper 的數目', '餘數就是位置：0 和 8 都到第 0 格（示意）');
   },
   async (tok, S) => { // @260.2 ~跟finding the block的方法那好
-    S.R = csim(ALT08, 8, 1); S.seq = ALT08.map((a, k) => sm(String(a), -2.0 + k * 0.8, 2.4));
+    S.R = csim(ALT08, 8, 1); S.seq = ALT08.map((a, k) => sm(String(a), -2.15 + k * 0.86, 2.4));
     for (let k = 0; k < ALT08.length; k++) { const r = S.R[k]; S.ct.put(0, 0, String(ALT08[k])); S.ct.fl(0, 0, r.hit ? OKG : NG); S.seq[k].element.className = 'lab-label ' + (r.hit ? 'good' : 'bad'); await wt(tok, 300); }
-    ok(S.R.every((r) => !r.hit), '0、8 交替：每次都把對方踢出去 → 全 miss ✓', 0, 1.8);
+    remOk(S, S.R.every((r) => !r.hit), '0、8 交替：每次都把對方踢出去 → 全 miss ✓', 0, 1.7);
     cap('如果交替 access 這兩個橘紅色', '同一個位置只能放一個，一直 replace、一直 miss');
   },
   async (tok, S) => { // @314.0 ~catch miss catch miss 所以大家同樣去
     S.ct.cells[0].slice(1).forEach((m) => glow(m, HL));
-    bad('其他位置都空著', 4.4, 4.45 - 0.0 + 0.0);
+    rem(S, '其他位置都空著', 1.0, 5.7, 'bad');
     cap('大家都擠這個位置', '其他位置搞不好都是空的：不是好的 structure');
   },
   async (tok, S) => { // @333.1 ~每個人都要在同一個位置呢你cash
     S.ct.cells[0].slice(1).forEach((m) => glow(m, null));
-    hd('fully associative：只要有空就可以進去', 0, 1.2);
+    gone(S.seq, S.rem); hd('fully associative：只要有空就可以進去', 0, 2.4);
     cap('另一個極端', '沒有固定位置，有空位就進去：fully associative');
   },
   async (tok, S) => { // @362.1 ~Fully Associated 這差別在哪裡
-    sm('direct-mapped：只比對那一格的 tag（1 個 comparator）', 0, 0.65);
+    sm('direct-mapped：只比對那一格的 tag（1 個 comparator）', 0, 1.8);
     cap('差別：direct-mapped', '只要比對那個位置的 tag');
   },
   async (tok, S) => { // @416.9 ~upper level的tag就可以了
-    sm('fully：每格都要存 address、都要比對', 0, 0.15);
+    sm('fully：每格都要存 address、都要比對', 0, 1.25);
     cap('fully associative 可能擺任何一格', '每一格都要存 address，access 時通通都要比對');
   },
   async (tok, S) => { // @451.2 ~那好但是這個雖然很好
     S.cmp = S.ct.cells[0].map((m, i) => bx('=?', NC.gold, S.ct.px(i), 5.65, 0.4, 0.55, 0.32, 0.4));
-    bad('8 個 comparator 同時比（sequential 太慢）', 0, -0.4);
+    rem(S, '8 個 comparator 同時比（sequential 太慢）', 0, 0.65, 'bad');
     cap('雖然很好，但 hardware 很多', 'access 一個 element 要 8 個 comparator 同時比對');
   },
   async (tok, S) => { // @484.2 ~那你說一個極端叫做只有一個位置
-    note('取中間：set associative', 0, -1.0);
+    rem(S, '取中間：set associative', 0, 0.65);
     cap('一個極端只有一個位置、一個全部都可以', '取個中間：set associative');
   },
-]);
+], null, [-5.8, 0.2, -0.3, 5.8, 7.0, 0.3]);
 
 scene('mh-24a-sets', 'Set associative：先找 set，再在 set 裡比對', [
   async (tok, S) => { // @493.1 ~也就是說跟Daramap很像
-    S.h8 = ctab({ rows: 1, cols: 8, x: -4.9, y: 6.0, cw: 1.25, ch: 0.5, empty: '' });
-    sm('原本：8 家，每家 1 個房間（direct-mapped）', 0, 6.6);
+    S.h8 = ctab({ rows: 1, cols: 8, x: -4.4, y: 6.0, cw: 1.15, ch: 0.5, empty: '' });
+    S.h8L = sm('原本：8 家，每家 1 個房間（direct-mapped）', 0, 6.6);
     cap('跟 direct-mapped 很像', '但一個號碼（一戶）裡可以有兩個或四個房間');
   },
   async (tok, S) => { // @522.48 ~的那個概念找到這個地址
-    S.h4 = ctab({ rows: 4, cols: 2, x: -4.6, y: 5.0, cw: 1.25, ch: 0.45, rl: (r) => 'set ' + r, rlw: 0.75 });
-    sm('2-way：4 家，每家 2 個房間', 1.6, 5.0);
+    recede([S.h8.cells.flat(), S.h8L]);
+    S.h4 = ctab({ rows: 4, cols: 2, x: -3.6, y: 5.0, cw: 1.25, ch: 0.45, rl: (r) => 'set ' + r, rlw: 0.75 });
+    S.h4L = sm('2-way：4 家，每家 2 個房間', 2.0, 5.0);
     cap('一樣用 modulo 的概念', '找到地址、找到這個 set');
   },
   async (tok, S) => { // @531.08 ~不對你看以前是說
-    ok(8 / 2 === 4, '8 個 entry、每 set 2 個 → 4 個 set：以前除以 8，現在除以 4 ✓', 1.8, 4.45);
+    remOk(S, 8 / 2 === 4, '8 個 entry、每 set 2 個 → 4 個 set：以前除以 8，現在除以 4 ✓', 2.0, 4.3);
     cap('以前 8 個 entry，除以 8', '現在拆成 4 家，每家 2 間，所以除以 4');
   },
   async (tok, S) => { // @587 ~在這種狀況之下你要去找set找到之後
-    S.h4.fl(1, 0, HL); S.h4.fl(1, 1, HL); S.cm = [0, 1].map((c) => bx('=?', NC.gold, -1.9 + c * 0.6, S.h4.py(1), 0.3, 0.5, 0.36, 0.4));
+    S.h4.fl(1, 0, HL); S.h4.fl(1, 1, HL); S.cm = [0, 1].map((c) => bx('=?', NC.gold, -1.0 + c * 0.6, S.h4.py(1), 0.3, 0.5, 0.36, 0.4));
     cap('找到 set 之後', '兩個房間都可能：要同時比對 2 個 tag，2 個 comparator');
   },
   async (tok, S) => { // @614.64 ~比比剛才八個是少了對不對
-    good('2 個 comparator：比 fully 的 8 個少，比 direct 的 1 個多', 1.8, 3.9);
+    rem(S, '2 個 comparator：比 fully 的 8 個少，比 direct 的 1 個多', 2.0, 4.3, 'good');
     cap('比剛才 8 個少', '比 direct-mapped 只有 1 個多一點：取中間');
   },
   async (tok, S) => { // @632.08 ~三種mapping的方法
-    S.l = list(2.0, 3.3); S.l.add('direct-mapped：一個位置'); S.l.add('fully associative：任何位置');
+    gone(S.h8, S.h8L, S.h4L, S.rem); S.h4.calm();
+    S.l = list(2.6, 5.0); S.l.add('direct-mapped：一個位置'); S.l.add('fully associative：任何位置');
     cap('三種 mapping', 'direct-mapped 只到一個位置；fully associative 任何位置都可以');
   },
   async (tok, S) => { // @654.36 ~只不過在同一個位置它的law order
@@ -3278,34 +3308,34 @@ scene('mh-24a-sets', 'Set associative：先找 set，再在 set 裡比對', [
     cap('set associative：取中間', '除以 set number 找到家，家裡面再做 fully associative 的 check');
   },
   async (tok, S) => { // @716.54 ~就是剛剛講到我允許一個block
-    sm('fully：comparator per entry（8 格要 8 個、16 格要 16 個）', 0, 1.05);
+    S.l.kill(); rem(S, 'fully：comparator per entry（8 格要 8 個、16 格要 16 個）', 0, 2.3, 'idx');
     cap('fully associative：每個 entry 都要 search', '8 個位置 8 個 comparator，16 個就 16 個');
   },
   async (tok, S) => { // @775.78 ~所以n代表就是說你這set裡面有
-    hd('n-way：每個 set 有 n 個 block（2-way、4-way）', 0, 0.5);
+    rem(S, 'n-way：每個 set 有 n 個 block（2-way、4-way）', 0, 2.3, 'ptr');
     cap('n 代表一個 set 裡有幾個 block', '2 個叫 two-way，4 個叫 four-way');
   },
   async (tok, S) => { // @790.56 ~如果two-way的話表示一個set裡面
-    sm('2-way → 2 個 comparator；4-way → 4 個', 0, -0.05);
+    rem(S, '2-way → 2 個 comparator；4-way → 4 個', 0, 2.3, 'idx');
     cap('two-way 要 2 個 comparator', 'four-way 要 4 個');
   },
   async (tok, S) => { // @815.34 ~的話它的加它的地址
-    ok([8, 4, 2].map((s) => Math.log2(s)).join() === '3,2,1', 'index：8 個 set 3 bits → 4 個 set 2 bits → 2 個 set 1 bit ✓', 0, -0.6);
+    remOk(S, [8, 4, 2].map((s) => Math.log2(s)).join() === '3,2,1', 'index：8 個 set 3 bits → 4 個 set 2 bits → 2 個 set 1 bit ✓', 0, 2.3);
     cap('index 的 bit 數', '8 家用 3 bits；4 家 2 bits；2 家只要 1 bit');
   },
   async (tok, S) => { // @871.14 ~這件事情就沒有了
-    bad('fully：沒有 index', 0, -1.15);
+    rem(S, 'fully：沒有 index', 0, 2.3, 'bad');
     cap('fully associative 有沒有 index？', '沒有了，任何位置都可以');
   },
   async (tok, S) => { // @887.8 ~每一個set就contain n個entries
-    note('set = (block number) mod (set 數)，不是除以 block 數', 0, -1.7);
+    rem(S, 'set = (block number) mod (set 數)，不是除以 block 數', 0, 2.3);
     cap('n-way：每個 set 有 n 個 entry', 'block number mod set number 決定在哪個 set');
   },
   async (tok, S) => { // @978.14 ~fully associated 去check這四個entry
     S.h4.fl(1, 0, OKG); S.h4.fl(1, 1, OKG);
     cap('set 裡面再 fully associative 地 check', '有幾個 block 就要幾個 comparator，同時比');
   },
-]);
+], null, [-5.2, 1.6, -0.3, 5.2, 7.0, 0.3]);
 
 scene('mh-24a-block12', 'P&H 例：block 12 放在哪？', [
   async (tok, S) => { // @1002.54 ~我們再用這不同的圖來表示一下
@@ -3349,18 +3379,20 @@ scene('mh-24a-tagsize', '8 個 block 的四種組織：index 少 1 bit、tag 多
     S.org = [[1, 'one-way（direct-mapped）'], [2, 'two-way'], [4, 'four-way'], [8, 'eight-way（fully associative）']];
     S.show = (k) => {
       gone(S.cur); const [w, n] = S.org[k], sets = 8 / w; S.cur = [];
-      S.cur.push(hd(n + '：' + sets + ' 個 set', -2.0, 6.7));
+      S.cur.push(hd(n + '：' + sets + ' 個 set', 0, 6.75));
+      // centred block of sets; only the first entry of each set names its two boxes (the colours repeat)
+      const pw = 1.55, x0 = -((w - 1) * pw) / 2 - 0.42 + (sets > 1 ? 0.5 : 0);
       for (let s = 0; s < sets; s++) for (let c = 0; c < w; c++) {
-        const x = -6.0 + c * 1.7, y = 6.0 - s * 0.55; // tag and data a bit apart so their names don't touch
-        S.cur.push(bx('tag', NC.lilac, x, y, 0, 0.6, 0.42, 0.6), bx('data', NC.sky, x + 0.85, y, 0, 0.85, 0.42, 0.6));
+        const x = x0 + c * pw, y = 6.0 - s * 0.55, first = c === 0 && s === 0;
+        S.cur.push(bx(first ? 'tag' : '', NC.lilac, x, y, 0, 0.6, 0.42, 0.6), bx(first ? 'data' : '', NC.sky, x + 0.78, y, 0, 0.85, 0.42, 0.6));
       }
-      for (let s = 0; s < sets; s++) S.cur.push(sm(sets > 1 ? 'set ' + s : '', -6.95, 6.0 - s * 0.55));
+      if (sets > 1) for (let s = 0; s < sets; s++) S.cur.push(sm('set ' + s, x0 - 0.95, 6.0 - s * 0.55));
     };
     S.show(0);
     cap('同樣 8 個 block 的 cache', 'direct-mapped：每一格存 tag 和 data');
   },
   async (tok, S) => { // @1117.3 ~我們說要把Data跟Tag都擺進去
-    hot('tag size = address 去掉 index（與 offset）剩下的', 2.6, 1.6);
+    rem(S, 'tag size = address 去掉 index（與 offset）剩下的', 0, 1.25, 'ptr alt');
     cap('tag 的長度會隨組織不同', '其實要存整個 address，只是 index 那段是 redundant 的不用存');
   },
   async (tok, S) => { // @1156.0 ~你有 tag 跟 data data 跟 size 一樣好 2-way
@@ -3368,7 +3400,7 @@ scene('mh-24a-tagsize', '8 個 block 的四種組織：index 少 1 bit、tag 多
     cap('2-way：一個 set 兩個 entry', '變成 4 個 set');
   },
   async (tok, S) => { // @1186.8 ~你要把你的address block
-    sm('block address mod 4 → 那個 set 的兩個 tag 同時比', 2.6, 1.05);
+    rem(S, 'block address mod 4 → 那個 set 的兩個 tag 同時比', 0, 3.2, 'idx');
     cap('mapping 時 block address 除以 4', '找到 set，兩個 tag 拿出來同時比對');
   },
   async (tok, S) => { // @1205.6 ~是這個還是這個是hit還是miss
@@ -3380,24 +3412,24 @@ scene('mh-24a-tagsize', '8 個 block 的四種組織：index 少 1 bit、tag 多
     cap('8-way 就是 fully associative', '只有一個 set，8 個 tag 都要比對');
   },
   async (tok, S) => { // @1246.5 ~要八個tag在這邊比對好
-    S.q = hot('tag 越來越長還是越短？', 2.6, 0.45);
+    S.q = rem(S, 'tag 越來越長還是越短？', 0, 4.9, 'ptr alt');
     cap('從上到下', 'tag 的 bit 數怎麼變？');
   },
   async (tok, S) => { // @1295.4 ~比這上面多一個bit 這樣
-    gone(S.q); const AB = 5;
-    S.tb = S.org.map(([w], k) => { const idx = Math.log2(8 / w), tg = AB - idx; return mt('index ' + idx + ' bits | tag ' + tg + ' bits', 2.6, 0.45 - k * 0.5, 'ptr'); });
-    ok([1, 2, 4, 8].map((w) => AB - Math.log2(8 / w)).join() === '2,3,4,5', '示意 5-bit block address：tag 2 → 3 → 4 → 5，每次多 1 bit ✓', 2.6, -1.6);
+    const AB = 5;
+    S.tb = S.org.map(([w], k) => { const idx = Math.log2(8 / w), tg = AB - idx; return mt((w + '-way').padEnd(6) + 'index ' + idx + ' bits | tag ' + tg + ' bits', 0, 4.6 - k * 0.5, 'ptr'); });
+    remOk(S, [1, 2, 4, 8].map((w) => AB - Math.log2(8 / w)).join() === '2,3,4,5', '示意 5-bit block address：tag 2 → 3 → 4 → 5，每次多 1 bit ✓', 0, 2.3);
     cap('每往下一種', 'tag 就比上一個多一個 bit');
   },
   async (tok, S) => { // @1322.16 ~index變0個幣
-    sm('index 3 → 2 → 1 → 0；fully：全部都是 tag', 2.6, -2.15);
+    rem(S, 'index 3 → 2 → 1 → 0；fully：全部都是 tag', 0, 2.3, 'idx');
     cap('index 從 3 個 bit 變 0 個', '剩下全部都是 tag');
   },
   async (tok, S) => { // @1341.6 ~我們變來變去變去其實講的概念
-    note('只有一個概念：set number 當 index；1 個 entry/set = direct，全部一個 set = fully', 0, -2.75);
+    rem(S, '只有一個概念：set number 當 index；1 個 entry/set = direct，全部一個 set = fully', 0, 2.3);
     cap('變來變去其實只有一個概念', 'tag + set number（index）；兩個極端就是 direct-mapped 和 fully');
   },
-]);
+], null, [-6.4, 1.0, -0.3, 6.4, 7.1, 0.3]);
 
 const SEQ058 = [0, 8, 0, 6, 8];
 // 3 個小 cache 表：direct-mapped 4×1、2-way 2×2、fully 1×4
@@ -3414,9 +3446,12 @@ scene('mh-24a-058', 'P&H 例：0, 8, 0, 6, 8 → 5、4、3 次 miss', [
     ];
     hd('direct-mapped（4 set）', -5.0, 6.2); hd('2-way（2 set）', -1.0, 6.2); hd('fully（1 set）', 3.6, 6.2);
     S.R = [csim(SEQ058, 4, 1), csim(SEQ058, 2, 2), csim(SEQ058, 1, 4)];
-    S.L = [list(-5.6, 3.5, 0.4), list(-0.6, 3.5, 0.4), list(4.4, 3.5, 0.4)];
+    // under each cache: one result line (rewritten each access) and its summary line
+    S.X = [-5.0, -0.95, 3.65]; S.res = []; S.sm = [];
+    S.say = (o, t, cls) => { const l = S.res[o]; if (!l || !l.parent) S.res[o] = K.keep(tag(t, cls, S.X[o], 3.3)); else { txt(l, t); l.element.className = 'lab-label ' + cls; } };
+    S.sum = (o, g, t) => { if (!g) log('CHECK FAILED: ' + t, true); S.sm[o] = K.keep(tag(g ? t : t.replace(/✓/g, '✘'), g ? 'good' : 'bad', S.X[o], 2.6)); };
     // each column ends with its own summary line; one shared info line under the columns changes text
-    S.go = (o, k) => { const r = S.R[o][k]; S.T[o].calm(); if (!r.hit) S.T[o].put(r.s, r.way, 'M[' + r.b + ']', colOf(r.b)); S.T[o].fl(r.s, r.way, r.hit ? OKG : NG); S.seq.forEach((l, j) => { l.element.className = 'lab-label ' + (j === k ? 'ptr alt' : 'idx'); }); S.L[o].add(r.b + '：' + (r.hit ? 'hit' : 'miss') + (r.victim !== null ? '（踢掉 ' + r.victim + '）' : ''), r.hit ? 'good' : 'bad'); return r; };
+    S.go = (o, k) => { const r = S.R[o][k]; S.T[o].calm(); if (!r.hit) S.T[o].put(r.s, r.way, 'M[' + r.b + ']', colOf(r.b)); S.T[o].fl(r.s, r.way, r.hit ? OKG : NG); S.seq.forEach((l, j) => { l.element.className = 'lab-label ' + (j === k ? 'ptr alt' : 'idx'); }); S.say(o, r.b + '：' + (r.hit ? 'hit' : 'miss') + (r.victim !== null ? '（踢掉 ' + r.victim + '）' : ''), r.hit ? 'good' : 'bad'); return r; };
     cap('cache 只有 4 個 block', 'direct-mapped 4 個位置；2-way 2 個 set；fully 只有 1 個 set、沒有 index');
   },
   async (tok, S) => { // @1407.7 ~就幾個地址兩個set而已就只有
@@ -3439,11 +3474,11 @@ scene('mh-24a-058', 'P&H 例：0, 8, 0, 6, 8 → 5、4、3 次 miss', [
     S.go(0, 4); cap('再 access 8：同一個位置', '又把 0 踢出去：miss');
   },
   async (tok, S) => { // @1496.3 ~exit都是catch miss
-    { const g = S.R[0].filter((r) => !r.hit).length === 5; if (!g) log('CHECK FAILED: direct', true); S.L[0].add(g ? 'direct：5 miss ✓' : 'direct ✘', g ? 'good' : 'bad'); }
+    S.sum(0, S.R[0].filter((r) => !r.hit).length === 5, 'direct：5 miss ✓');
     cap('每一次都是 cache miss', '0、8 交替，同一個位置只能放一個：限制太大');
   },
   async (tok, S) => { // @1523.0 ~好 那我如果two-way set associative
-    S.T[1].cells.flat().forEach((m) => glow(m, HL)); await wt(tok, 400); S.T[1].calm();
+    gone(S.res[0]); S.T[0].calm(); S.T[1].cells.flat().forEach((m) => glow(m, HL)); await wt(tok, 400); S.T[1].calm();
     cap('2-way set associative', '4 個 block、一個 set 2 個 → 2 個 set，除以 2');
   },
   async (tok, S) => { // @1555.2 ~所以要除以2 除以2
@@ -3456,23 +3491,23 @@ scene('mh-24a-058', 'P&H 例：0, 8, 0, 6, 8 → 5、4、3 次 miss', [
     S.go(1, 2); cap('再 access 0', '還在裡面：hit！');
   },
   async (tok, S) => { // @1589.94 ~再來6 又map到為什麼
-    const r = S.go(1, 3); S.L[1].add(r.victim === 8 ? '↳ LRU 換掉 8 ✓' : '↳ LRU ✘', r.victim === 8 ? 'good' : 'bad');
+    const r = S.go(1, 3); { const g = r.victim === 8; if (!g) log('CHECK FAILED: LRU', true); S.say(1, '6：miss，LRU 換掉 8 ' + (g ? '✓' : '✘'), 'bad'); }
     cap('6 mod 2 = 0：set 變少，6 也擠到 set 0', '只有兩個 entry，把最不常用的 8 換出去');
   },
   async (tok, S) => { // @1630.1 ~有一個replacement的機制
     S.go(1, 4); cap('8 又來了：剛剛被搬出去', 'miss，位置不夠，把 0 換出去');
   },
   async (tok, S) => { // @1658.5 ~雖然它裡面增加兩個entry
-    S.info = note('set 內 entry 變多，但 set 數變少 → 更多人搶同一個 set', 0, 0.6);
+    S.info = rem(S, 'set 內 entry 變多，但 set 數變少 → 更多人搶同一個 set', 0, 1.55);
     cap('雖然一個 set 有兩個 entry', '但 set 變少，更多人 map 到這裡搶位置');
   },
   async (tok, S) => { // @1669.8 ~我們就幾個就有一個Hit
-    { const g = S.R[1].filter((r) => r.hit).length === 1; S.L[1].add(g ? '2-way：4 miss ✓' : '2-way ✘', g ? 'good' : 'bad'); }
+    S.sum(1, S.R[1].filter((r) => r.hit).length === 1, '2-way：4 miss ✓');
     cap('2-way 的結果', '1 個 hit、4 個 miss');
   },
   async (tok, S) => { // @1675.2 ~空位我就進來
-    for (let k = 0; k < 5; k++) { S.go(2, k); await wt(tok, 350); }
-    { const g = S.R[2].filter((r) => !r.hit).length === 3; S.L[2].add(g ? 'fully：3 miss ✓' : 'fully ✘', g ? 'good' : 'bad'); }
+    gone(S.res[1]); S.T[1].calm(); txt(S.info, 'fully：有空位就進來'); for (let k = 0; k < 5; k++) { S.go(2, k); await wt(tok, 350); }
+    S.sum(2, S.R[2].filter((r) => !r.hit).length === 3, 'fully：3 miss ✓');
     cap('fully associative：有空位就進來', '0、8 放進來；0 hit；6 再放進來；8 hit');
   },
   async (tok, S) => { // @1694.8 ~8又再 hit 所以它有兩個 hit
@@ -3483,7 +3518,7 @@ scene('mh-24a-058', 'P&H 例：0, 8, 0, 6, 8 → 5、4、3 次 miss', [
     txt(S.info, '每次比對：direct 1 個、2-way 2 個、fully 4 個 comparator');
     cap('每次找要比對幾個？', 'fully 要 4 個；2-way 2 個；direct-mapped 只要 1 個');
   },
-]);
+], null, [-6.4, 1.0, -0.3, 6.0, 7.6, 0.3]);
 
 scene('mh-24a-assoc', 'Associativity 的效果越來越小', [
   async (tok, S) => { // @1739.1 ~它會decrease misread
@@ -3498,14 +3533,14 @@ scene('mh-24a-assoc', 'Associativity 的效果越來越小', [
   },
   async (tok, S) => { // @1764.3 ~然後到8位的時候只增加
     const d = [S.v[0] - S.v[1], S.v[1] - S.v[2], S.v[2] - S.v[3]].map((x) => Math.round(x * 10) / 10);
-    ok(d[0] === 1.7 && d[1] === 0.3 && d[2] === 0.2, '改善：1.7% → 0.3% → 0.2%，越來越小 ✓', 0, 6.0);
+    K.keep(ok(d[0] === 1.7 && d[1] === 0.3 && d[2] === 0.2, '改善：1.7% → 0.3% → 0.2%，越來越小 ✓', 2.4, 5.75));
     cap('到 4-way 只再降 0.3%', '到 8-way 只降 0.2%：效果越來越低');
   },
   async (tok, S) => { // @1771.54 ~效果會越低而且不但你增加
-    bad('而且 comparator 要一直增加', 0, 5.4);
+    K.keep(bad('而且 comparator 要一直增加', 2.4, 5.15));
     cap('效果越來越低', '而且 comparator 還要增加');
   },
-]);
+], null, [-5.4, -0.9, -0.3, 5.4, 7.0, 0.3]);
 
 // 4-way set associative（P&H 圖）：256 sets、1-word block、32-bit：tag 22 | index 8 | byte 2
 scene('mh-24a-4way', '4-way set-associative cache 的實作', [
@@ -3515,16 +3550,16 @@ scene('mh-24a-4way', '4-way set-associative cache 的實作', [
     cap('用這張圖看 address 怎麼分配', 'index、tag 怎麼切');
   },
   async (tok, S) => { // @1797.6 ~structure 它是一個 4-way
-    S.way = [0, 1, 2, 3].map((w) => { const x = -4.8 + w * 3.2; hd('way ' + w, x, 5.05); return [0, 1, 2].map((r) => ({ v: bx('V', NC.mint, x - 1.1, 4.4 - r * 0.5, 0, 0.4, 0.4, 0.5), t: bx('tag', NC.lilac, x - 0.3, 4.4 - r * 0.5, 0, 1.1, 0.4, 0.5), d: bx('data', NC.sky, x + 0.85, 4.4 - r * 0.5, 0, 1.1, 0.4, 0.5) })); });
+    S.way = [0, 1, 2, 3].map((w) => { const x = -4.8 + w * 3.2; hd('way ' + w, x, 5.05); return [0, 1, 2].map((r) => ({ v: bx(r ? '' : 'V', NC.mint, x - 1.1, 4.4 - r * 0.5, 0, 0.4, 0.4, 0.5), t: bx(r ? '' : 'tag', NC.lilac, x - 0.3, 4.4 - r * 0.5, 0, 1.1, 0.4, 0.5), d: bx(r ? '' : 'data', NC.sky, x + 0.85, 4.4 - r * 0.5, 0, 1.1, 0.4, 0.5) })); }); // names on the first row only: the colours repeat
     sm('…共 256 個 set（每列是一個 set）', 0, 2.75);
     cap('一個 set 有 4 個 entry', '所以是 4-way set associative');
   },
   async (tok, S) => { // @1811.14 ~的mapping 的cache
-    S.q = hot('每個 block 多大？', -3.6, 2.2);
+    S.q = hot('每個 block 多大？', 0, 2.2);
     cap('每個 block 多大？', 'block 是搬進搬出的單位');
   },
   async (tok, S) => { // @1836.6 ~就是一個block啊搬了所以它的
-    gone(S.q); S.q = good('data 32 bits = 1 word = 4 bytes', -3.6, 2.2);
+    rem(S, 'data 32 bits = 1 word = 4 bytes', 0, 1.55, 'good');
     cap('data 是 32 bit', '一個 block 就是一個 word，4 個 byte');
   },
   async (tok, S) => { // @1841.4 ~bit就幾個幾個 byte 四個 byte
@@ -3532,33 +3567,33 @@ scene('mh-24a-4way', '4-way set-associative cache 的實作', [
     cap('最後 0、1 兩個 bit 不用（byte offset）', '從 bit 2 開始是 block address');
   },
   async (tok, S) => { // @1873.8 ~前半部就是block address 那你看那這個cash有多少個entry
-    S.q2 = hot('cache 有幾個 set？多大？', 2.8, 2.2);
+    gone(S.rem); txt(S.q, 'cache 有幾個 set？多大？');
     cap('這個 cache 有多少個 entry？', '幾個 set？size 多大？');
   },
   async (tok, S) => { // @1899.9 ~wall的話它有幾個block
-    ok(256 * 4 === 1024, '256 個 set × 4 = 1024 個 block ✓', 2.8, 1.6);
+    remOk(S, 256 * 4 === 1024, '256 個 set × 4 = 1024 個 block ✓', 0, 1.55);
     cap('256 個 set', '每個 set 4 個 block：256 × 4 = 1024 個 block');
   },
   async (tok, S) => { // @1931.9 ~但是呢這麼大cache
-    sm('set 數 = block 數 ÷ 4', 2.8, 1.05);
+    rem(S, 'set 數 = block 數 ÷ 4', 0, 1.55, 'idx');
     cap('從 cache size 看', '要除以 4 才是 set 的數目');
   },
   async (tok, S) => { // @1948.4 ~number 那現在有256個set
     S.bs.labels[1].visible = true; S.bs.cubes.forEach((m) => glow(m, null)); S.bs.cubes.slice(22, 30).forEach((m) => glow(m, HL));
-    ok(Math.log2(256) === 8, '256 個 set → index 8 bits ✓', -3.6, 1.6);
+    remOk(S, Math.log2(256) === 8, '256 個 set → index 8 bits ✓', 0, 1.55);
     cap('256 個 set', 'index 要 8 個 bit 去找第幾個 set');
   },
   async (tok, S) => { // @1979.4 ~所以呢 這個剛剛說這個block address
-    sm('block address 的後 8 bits = mod 256 = set index', -3.6, 1.05);
+    rem(S, 'block address 的後 8 bits = mod 256 = set index', 0, 1.55, 'idx');
     cap('用 block address 的後半 8 個 bit', '當 index 去找 cache set');
   },
   async (tok, S) => { // @1988.8 ~到底哪一個set 好 找到了對不對好
-    gone(S.q, S.q2); S.q = hot('tag 多大？', -3.6, 2.2);
+    gone(S.rem); txt(S.q, 'tag 多大？');
     cap('找到 set 了', '那 tag 多大？');
   },
   async (tok, S) => { // @2032.1 ~但是因為這個已經是index了這是
     S.bs.labels[0].visible = true; S.bs.cubes.forEach((m) => glow(m, null)); S.bs.cubes.slice(0, 22).forEach((m) => glow(m, HL));
-    ok(32 - 8 - 2 === 22, 'tag = 32 − 8 − 2 = 22 bits ✓', -3.6, 0.5);
+    remOk(S, 32 - 8 - 2 === 22, 'tag = 32 − 8 − 2 = 22 bits ✓', 0, 1.55);
     cap('index 那段已經 implied，不用再存', 'tag = 22 個 bit');
   },
   async (tok, S) => { // @2041.3 ~size多大對 22個bit 但是對一個set來講
@@ -3567,23 +3602,23 @@ scene('mh-24a-4way', '4-way set-associative cache 的實作', [
   },
   async (tok, S) => { // @2109.1 ~8個bit 就去直接去可以access
     S.way.forEach((w) => w.forEach((e) => glow(e.t, null))); S.way.forEach((w) => { glow(w[1].v, HL); glow(w[1].t, HL); glow(w[1].d, HL); });
-    sm('index 8 bits 直接選到這個 set（示意第 1 列）', 2.8, 0.5);
+    gone(S.q); rem(S, 'index 8 bits 直接選到這個 set（示意第 1 列）', 0, 1.55, 'idx');
     cap('8 個 bit 直接 access', '選到哪一個 set');
   },
   async (tok, S) => { // @2118.6 ~我們要跟每一個tag都比對這個也
-    S.cmp = [0, 1, 2, 3].map((w) => bx('=', NC.gold, -4.8 + w * 3.2 - 0.3, 3.15 - 0.0, 0.5, 0.45, 0.35, 0.4)).map((m) => { m.position.y = -0.2; return m; });
-    sm('4 個 tag 同時讀出 → 4 個 comparator', 0, -0.75);
+    S.cmp = [0, 1, 2, 3].map((w) => bx('=', NC.gold, -4.8 + w * 3.2 - 0.3, 2.2, 0, 0.45, 0.35, 0.4));
+    rem(S, '4 個 tag 同時讀出 → 4 個 comparator', 0, 1.55, 'idx');
     cap('4 個都有可能', '4 個 tag 讀出來，4 個 comparator 同時比對');
   },
   async (tok, S) => { // @2140.7 ~做比對比對的話如果如果一樣的話
-    glow(S.cmp[2], OKG); S.or = bx('OR → hit', NC.green, -6.0, -1.35, 0, 1.6, 0.42);
+    glow(S.cmp[2], OKG); gone(S.rem); S.or = bx('OR → hit', NC.green, -3.2, 1.2, 0, 1.6, 0.42); glow(S.or, OKG); K.flow(S.cmp[2], S.or, '', { color: '#2fc092', lift: 0.5 });
     cap('比對一樣就輸出 1', '任何一個是 1，經過 OR gate 就是 hit');
   },
   async (tok, S) => { // @2151.2 ~所以是一個all gate又在這個地方
-    S.mux = bx('4-to-1 MUX → data', NC.gold, 1.6, -1.35, 0, 2.6, 0.42); glow(S.way[2][1].d, OKG);
+    S.mux = bx('4-to-1 MUX → data', NC.gold, 2.4, 1.2, 0, 2.6, 0.42); glow(S.mux, HL); K.flow(S.cmp[2], S.mux, '', { lift: 0.5 }); glow(S.way[2][1].d, OKG);
     cap('hit 的話是哪一個？', '用比對結果控制 4-to-1 MUX，選出那個 data');
   },
-]);
+], null, [-6.6, 0.6, -0.3, 6.6, 7.2, 0.3]);
 
 scene('mh-24a-repl', 'Replacement：random、LRU、pseudo-LRU', [
   async (tok, S) => { // @2192.9 ~我們再看看placement的問題剛剛
@@ -3891,16 +3926,16 @@ scene('mh-24b-ooo', 'Cache miss 與 out-of-order superscalar', [
 
 scene('mh-24b-sort', 'Radix sort vs quicksort：instruction 少不一定快', [
   async (tok, S) => { // @741.5 ~interaction with software
-    hot('cache 與 software 的互動：兩種 sorting', 0, 6.6);
+    hot('cache 與 software 的互動：兩種 sorting', 0, 7.0);
     cap('interaction with software', '兩種 sorting algorithm：radix sort 和 quicksort');
   },
   async (tok, S) => { // @752.6 ~那個因為complexity來講的話
-    S.c = [bx('radix sort：O(n)', NC.orange, -3.0, 5.8, 0, 3.0, 0.55), bx('quicksort：O(n log n)', NC.blue, 3.0, 5.8, 0, 3.4, 0.55)];
+    S.c = [bx('radix sort：O(n)', NC.orange, -3.0, 6.15, 0, 3.0, 0.55), bx('quicksort：O(n log n)', NC.blue, 3.0, 6.15, 0, 3.4, 0.55)];
     cap('complexity：radix sort O(n)', 'quicksort O(n log n)');
   },
   async (tok, S) => { // @784.4 ~number of elements to be sorted
     S.ax = [0, 1, 2].map((k) => { const x0 = -6.0 + k * 4.3; seg(x0, 0.2, x0 + 3.4, 0.2); seg(x0, 0.2, x0, 4.4); sm('元素數 →', x0 + 1.7, -0.2); return x0; });
-    sm('（曲線為示意，趨勢同 P&H）', 0, -0.7);
+    rem(S, '（曲線為示意，趨勢同 P&H）', 0, 5.4, 'idx');
     cap('X 軸：要 sort 的 element 數目', '');
   },
   async (tok, S) => { // @789.5 ~一個item需要花多少的instrategy
@@ -3916,31 +3951,32 @@ scene('mh-24b-sort', 'Radix sort vs quicksort：instruction 少不一定快', [
     cap('可是真的跑：要多少個 clock cycle', 'quicksort 反而比較快');
   },
   async (tok, S) => { // @815.9 ~這要怎麼解釋它這怎麼去解釋它來
-    S.q = hot('為什麼？', 0, 5.35);
+    rem(S, '為什麼？', 0, 5.4, 'ptr alt');
     cap('要怎麼解釋？', '');
   },
   async (tok, S) => { // @838.3 ~任何一個element
-    S.arr = Array.from({ length: 12 }, (_, i) => bx('', NC.off, -3.3 + i * 0.6, 3.6 + 0.0, 1.2, 0.5, 0.35, 0.3)).map((m) => { m.position.y = -1.3; return m; });
+    // the array sits where the third chart will come later
+    S.arr = Array.from({ length: 12 }, (_, i) => bx('', NC.off, S.ax[2] + 0.2 + i * 0.29, 2.4, 0, 0.25, 0.35, 0.3));
     for (const i of [1, 9, 4, 11, 0, 7]) { tint(S.arr[i], NC.orange); await wt(tok, 180); }
-    sm('radix：element 丟到各個 bucket，散在 array 各處 → 沒有 locality', 0, -1.85);
+    rem(S, 'radix：element 丟到各個 bucket，散在 array 各處 → 沒有 locality', 0, 5.4, 'idx');
     cap('radix sort 把 element 放到 bucket', 'range 大時散在各地方，沒有 locality → 很多 cache miss');
   },
   async (tok, S) => { // @857.1 ~所以它的就有很多的catch miss 那quixel相對
     for (const i of [3, 4, 5, 6]) { tint(S.arr[i], NC.blue); }
-    sm('quicksort：相鄰的一直比對 → cache miss 少', 0, -2.35);
+    rem(S, 'quicksort：相鄰的一直比對 → cache miss 少', 0, 5.4, 'idx');
     cap('quicksort 相對來說', '相鄰的一直比對，cache miss 比較少');
   },
   async (tok, S) => { // @865.5 ~所以這下面這張圖就告訴但我們
     const curve = (x0, f, col) => Array.from({ length: 6 }, (_, i) => bx('', col, x0 + 0.3 + i * 0.6, 0.2 + f(i), 0, 0.2, 0.2, 0.2));
-    hd('cache misses / item', S.ax[2] + 1.7, 4.8);
+    gone(S.arr); hd('cache misses / item', S.ax[2] + 1.7, 4.8);
     S.m1 = curve(S.ax[2], (i) => 0.4 + i * 0.6, NC.orange); S.m2 = curve(S.ax[2], (i) => 0.3 + i * 0.08, NC.blue);
     cap('把 cache miss 拿出來看', 'radix sort 的 cache miss 高很多，所以整體反而慢');
   },
   async (tok, S) => { // @888.0 ~告訴我所以以後你在設計
-    gone(S.q); note('設計 algorithm 也要看 data access pattern', 0, 5.35);
+    rem(S, '設計 algorithm 也要看 data access pattern', 0, 5.4);
     cap('設計 algorithm 時', '不只看 big O，要把 data access 和 cache 一起考慮');
   },
-]);
+], null, [-6.3, -0.5, -0.3, 6.3, 7.3, 0.3]);
 
 scene('mh-24b-vmintro', 'Virtual memory：memory 當 disk 的 cache', [
   async (tok, S) => { // @932.9 ~所以以上cash的部分還有沒有不懂
@@ -4015,15 +4051,15 @@ scene('mh-24b-vmshare', '每個 program 有自己的 virtual address space', [
     cap('很多不同的 program', '要 share 同一個 main memory');
   },
   async (tok, S) => { // @1402.8 ~就結束啦就沒事了
-    sm('program 去做 I/O 時，processor 給別的 program 用', 0, 2.6);
+    rem(S, 'program 去做 I/O 時，processor 給別的 program 用', 0, 2.3, 'idx');
     cap('為什麼要同時 run 很多 program？', '一個 program 去做 I/O，processor 不能白白空等');
   },
   async (tok, S) => { // @1430.4 ~好幾個program同時一起做好幾個
-    sm('只有一個 physical memory；每個 program 有自己的 memory space（不 share）', 0, 2.1);
+    rem(S, '只有一個 physical memory；每個 program 有自己的 memory space（不 share）', 0, 2.3, 'idx');
     cap('只有一個 physical memory', '但每個 program 都有自己的 memory space');
   },
   async (tok, S) => { // @1461.8 ~同一個memory address space
-    hd('private virtual address space', -3.7, 3.0);
+    hd('private virtual address space', -3.7, 2.95);
     cap('每個 program 有自己的 virtual address space', 'private 的；physical 只有一個（例如 2³² 個 byte）');
   },
   async (tok, S) => { // @1486.9 ~你有你自己的address space
@@ -4031,26 +4067,26 @@ scene('mh-24b-vmshare', '每個 program 有自己的 virtual address space', [
     cap('全部可以放在 disk', '用到的時候，只把需要的幾塊搬到 memory（示意）');
   },
   async (tok, S) => { // @1509.0 ~private virtual address space 但他常常用到的地方呢
-    good('搬到 physical 任何空位都可以，只要 translation 對', 0, 1.5);
+    rem(S, '搬到 physical 任何空位都可以，只要 translation 對', 0, 2.3, 'good');
     cap('搬上來可以擺在 physical 任何地方', '只要有一個 translation 知道擺在哪裡就好');
   },
   async (tok, S) => { // @1570.1 ~需要的那幾塊就好了那 lower level 就叫 virtual
-    sm('lower：virtual address　→ translation →　upper：physical address', 0, 0.95);
+    rem(S, 'lower：virtual address　→ translation →　upper：physical address', 0, 2.3, 'idx');
     cap('lower level 叫 virtual address', 'upper level 叫 physical address，中間一個 translation');
   },
   async (tok, S) => { // @1585.1 ~那跟 cache那個比對就相當於什麼
-    sm('像 cache 用 index + tag 找位置；這裡 fully associative → 用一個 table 查', 0, 0.4);
+    rem(S, '像 cache 用 index + tag 找位置；這裡 fully associative → 用一個 table 查', 0, 2.3, 'idx');
     cap('跟 cache 比：cache 用 index + tag 找', '這裡是 fully associative，查一個 table 就知道在哪');
   },
   async (tok, S) => { // @1622.3 ~Program 它有自己的Virtual Address
-    good('protection：每個 program 只能 access 自己的', 0, -0.15);
+    rem(S, 'protection：每個 program 只能 access 自己的', 0, 2.3, 'good');
     cap('每個 program 有自己的 virtual address', '可以互相 protect，沒有權利就 access 不到');
   },
   async (tok, S) => { // @1638.0 ~還有一個好處是甚麼呢這個memory
-    good('virtual address space 可以大於 physical memory', 0, -0.7);
+    rem(S, 'virtual address space 可以大於 physical memory', 0, 2.3, 'good');
     cap('另一個好處', 'virtual address 可以比 physical address 還大，因為只搬一小部分上來');
   },
-]);
+], null, [-6.4, 1.6, -0.3, 6.4, 7.0, 0.3]);
 
 scene('mh-24b-terms', 'Page、page fault、frame 與 demand load', [
   async (tok, S) => { // @1656.5 ~這樣基本概念就是這樣
@@ -4094,55 +4130,57 @@ scene('mh-24b-terms', 'Page、page fault、frame 與 demand load', [
 
 scene('mh-24b-pagetable', 'Page size、fully associative 與 page table', [
   async (tok, S) => { // @1953.7 ~Block Size的問題
-    bad('page fault：要幾百萬個 cycle（disk 是 I/O）', 0, 6.6);
+    S.chain = [K.keep(bad('page fault：要幾百萬個 cycle（disk 是 I/O）', 0, 6.6))];
     cap('page size 的問題', 'page fault 的 penalty 非常大：幾百萬個 cycle');
   },
   async (tok, S) => { // @1994.1 ~那你趕快搬多一點上來了已經要OS
-    good('所以 page 要大（例：4 KB）', 0, 6.0);
+    S.chain.push(K.keep(good('所以 page 要大（例：4 KB）', 0, 6.0)));
     cap('OS 處理了半天，只搬一點點划不來', '所以 page size 都很大，例如 4K byte');
   },
   async (tok, S) => { // @2015.0 ~所以這個page size都很大好 再來
-    sm('reduce page fault：有空位就不能不給（不要 direct-mapped 那種限制）', 0, 5.4);
+    S.chain.push(sm('reduce page fault：有空位就不能不給（不要 direct-mapped 那種限制）', 0, 5.4));
     cap('reducing page fault 很重要', '明明有位置卻不給（像 direct-mapped），代價太大');
   },
   async (tok, S) => { // @2048.0 ~然後 page 4 要花很大時間我們不希望
-    hd('→ fully associative placement', 0, 4.85);
+    S.chain.push(hd('→ fully associative placement', 0, 4.85));
     cap('所以 virtual memory', '用 fully associative：memory 有位置就擺進去');
   },
   async (tok, S) => { // @2066.43 ~的問題 那既然是
-    hot('沒有 index → 用 page table 記錄', 0, 4.25);
+    S.chain.push(hot('沒有 index → 用 page table 記錄', 0, 4.25));
     cap('fully associative 就有找的問題', '不能一個一個去找，所以建一個 table：page table');
   },
   async (tok, S) => { // @2093.5 ~translation table就很簡單
-    S.pt = Array.from({ length: 8 }, (_, i) => ({ i: sm(String(i), -1.6, 3.3 - i * 0.45), e: bx('', NC.off, -0.4, 3.3 - i * 0.45, 0, 1.8, 0.38) }));
-    hd('page table', -0.4, 3.75);
+    gone(S.chain); S.ry = (i) => 5.75 - i * 0.56; // the reasoning is done: the table takes the stage
+    S.pt = Array.from({ length: 8 }, (_, i) => ({ i: sm(String(i), -1.6, S.ry(i)), e: bx('', NC.off, -0.4, S.ry(i), 0, 1.8, 0.38) }));
+    hd('page table', -0.4, 6.35);
     cap('table 很簡單', '你是第幾個 page，map 到第幾個 frame');
   },
   async (tok, S) => { // @2099.2 ~就這樣一個概念而已那這個table
     const map = { 0: 3, 2: 0, 3: 1, 5: 2 };
     S.pt.forEach((r, i) => { if (map[i] !== undefined) { relabel(r.e, 'V=1 frame ' + map[i]); tint(r.e, NC.mint); } else { relabel(r.e, 'V=0（disk）'); tint(r.e, NC.rose); } });
-    sm('像 array：page number 當 index（示意 8 個 page）', -0.4, -0.4);
+    rem(S, '像 array：page number 當 index（示意 8 個 page）', -0.4, 1.15, 'idx');
     cap('像 array 的 index', '16 個 page 就 16 個 entry；查第 i 個 entry 就知道 frame');
   },
   async (tok, S) => { // @2175.6 ~樣子假如這是 virtual address
-    S.vp = Array.from({ length: 8 }, (_, i) => bx('page ' + i, NC.sky, -5.0, 3.3 - i * 0.45, 0, 1.4, 0.38)); S.fr = Array.from({ length: 4 }, (_, i) => bx('frame ' + i, NC.blue, 3.6, 3.3 - i * 0.45, 0, 1.4, 0.38));
+    S.vp = Array.from({ length: 8 }, (_, i) => bx('page ' + i, NC.sky, -5.0, S.ry(i), 0, 1.4, 0.38)); S.fr = Array.from({ length: 4 }, (_, i) => bx('frame ' + i, NC.blue, 3.6, S.ry(i), 0, 1.4, 0.38));
+    hd('virtual', -5.0, 6.35); hd('physical', 3.6, 6.35);
     cap('virtual address 切成一塊塊 page', 'physical 切成一樣大的 frame，靠 page table mapping');
   },
   async (tok, S) => { // @2234.1 ~擺在Disk裡面所以我每次Access的
-    glow(S.vp[3], HL); glow(S.pt[3].e, OKG); glow(S.fr[1], OKG); lk(1.0, 3.3 - 3 * 0.45, 2.8, 3.3 - 1 * 0.45, 0x0f5a3a, 0.4);
-    good('page 3：valid → 在 memory（frame 1）', 3.4, 1.3);
+    glow(S.vp[3], HL); glow(S.pt[3].e, OKG); glow(S.fr[1], OKG); lk(-4.2, S.ry(3), -2.0, S.ry(3), 0x0f5a3a, 0.4); lk(0.6, S.ry(3), 2.8, S.ry(1), 0x0f5a3a, 0.4);
+    rem(S, 'page 3：valid → 在 memory（frame 1）', 2.4, 1.15, 'good');
     cap('每次 access 先查 page table', '在 memory 裡，就告訴我是哪個 frame');
   },
   async (tok, S) => { // @2243.5 ~還是在不在 不在的話就表示在disk
     glow(S.vp[4], HL); glow(S.pt[4].e, NG);
-    bad('page 4：不在 → page fault', 3.4, 0.7);
+    lk(-4.2, S.ry(4), -2.0, S.ry(4), 0x5a1010, 0.4); rem(S, 'page 4：不在 → page fault', -0.4, 1.15, 'bad');
     cap('不在的話', '表示在 disk 裡：產生 page fault');
   },
   async (tok, S) => { // @2270.0 ~如果不在的話就產生page 4
-    note('page fault 由 OS 處理（不是 hardware）', 0, -1.0);
+    rem(S, 'page fault 由 OS 處理（不是 hardware）', -0.4, 1.15);
     cap('一產生 page fault', '要做一大堆動作，是 OS 在做');
   },
-]);
+], null, [-6.0, 0.9, -0.3, 6.0, 7.0, 0.3]);
 
 scene('mh-24b-translate', 'Address translation：virtual page number → physical frame number', [
   async (tok, S) => { // @2285.3 ~那page table 要怎麼translation
