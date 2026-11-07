@@ -58,6 +58,12 @@ export default function (ctx) {
     lab.world.remove(o); o.traverse((c) => { if (c.element) c.element.remove(); });
   }
   const glow = (m, c) => { m.material.emissive = new THREE.Color(c || '#000000'); };
+  // An invisible box over the area a scene will use later (same idea as dm-8.js): the stage's auto framing
+  // measures it from the start, so the camera does not zoom in on the first few things and jump back out.
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
   const tint = (m, c) => { m.material.color.set(c); };
   const txt = (l, t) => { l.element.textContent = t; };
   const relabel = (m, t) => { if (m.userData.lbl) txt(m.userData.lbl, String(t)); };
@@ -106,6 +112,9 @@ export default function (ctx) {
     return n.m;
   }
   function killT(n) { tint(n.m, '#bdb2a0'); glow(n.m, null); n.x2 = mark('✕', C.R, n.x, n.y + 0.5); }
+  // a killed node never gets children, so its ✕ can sit just under it (off the crowded edges above);
+  // on the bottom row (deep = true) that is where the ✓ marks go, so it stays above there
+  function killBelow(n, deep = false) { killT(n); if (!deep) n.x2.position.set(n.x, n.y - 0.45, 0); }
 
   // ═════════════════════════ 回溯：學生坐椅子（Abdul Bari 6） ═════════════════════════
   const STU = [['B1', C.B], ['B2', C.P], ['G1', C.PK]];
@@ -196,6 +205,7 @@ export default function (ctx) {
     const mk = () => seatTree(false).root;
     const L = mk(), R = mk();
     layout(L, -6.4, -0.8, 6.6, 1.6); layout(R, 0.8, 6.4, 6.6, 1.6);
+    frameHold(-6.8, 1.3, -0.3, 6.8, 7.9, 0.3); // whole picture held from the start (no zoom-in then jump)
     const pre = []; (function p(n) { pre.push(n); n.kids.forEach(p); })(L);
     const bfs = []; { const q = [R]; while (q.length) { const n = q.shift(); bfs.push(n); q.push(...n.kids); } }
     tag('Backtracking：DFS', 'ptr', -3.6, 7.5); tag('Branch & Bound：BFS', 'ptr alt', 3.6, 7.5);
@@ -336,12 +346,12 @@ export default function (ctx) {
           say('x' + n.v + ' = ' + CN[n.c] + '：和頂點 ' + n.bad.join('、') + ' 同色', 'bounding function → 殺掉');
           await wait(tok, 900);
           n.bad.forEach((u) => g.E[ek(u, n.v)].material.color.set(EDGE));
-          killT(n);
+          killBelow(n, n.v === 4);
           tint(g.N[n.v], C.K);
         } else if (n.sol) {
           glow(n.m, GREEN);
           tag('✓', 'ptr alt', n.x, n.y - 0.55);
-          solT.push(tag(n.asg.join(' '), 'ptr alt', -5.3, 3.1 - solT.length * 0.5));
+          solT.push(tag(n.asg.join(' '), 'ptr alt', -6.6 + (solT.length % 2) * 1.85, 3.3 - Math.floor(solT.length / 2) * 0.65));
           say('找到一組解：' + n.asg.map((c) => CN[c]).join(' '), '走到最後一層都沒被殺 → 解');
           await wait(tok, 1100);
         } else {
@@ -575,7 +585,8 @@ export default function (ctx) {
       const a = tour[k], b = tour[k + 1], c = M5[a - 1][b - 1];
       sum += c;
       const r = rod(V3(...P[a]), V3(...P[b]), C.O, 0.07);
-      tag(String(c), 'ptr', (P[a][0] + P[b][0]) / 2, 0.8, (P[a][2] + P[b][2]) / 2);
+      { const mx = (P[a][0] + P[b][0]) / 2, mz = (P[a][2] + P[b][2]) / 2, dx = mx + 3.6, dz = mz - 0.4, d = Math.hypot(dx, dz) || 1;
+        tag(String(c), 'ptr', mx + dx / d * 0.55, 0.3, mz + dz / d * 0.55); } // the cost sits just outside its edge
       mv.hl(a - 1, b - 1);
       glow(g.N[b], GOLD);
       txt(st, '總成本 = ' + sum);
@@ -592,6 +603,7 @@ export default function (ctx) {
     const root = mkT('1', null, { path: [1] });
     (function grow(n) { for (const v of [2, 3, 4]) if (!n.path.includes(v)) grow(mkT(String(v), n, { path: [...n.path, v] })); })(root);
     layout(root, -5.2, 5.2, 6.6, 1.65);
+    frameHold(-5.6, 0.9, -0.3, 5.6, 7.2, 0.3); // the whole tree's area from the start
     say('4 個城市：從 1 出發的狀態空間樹', '每條 root→葉子的路徑 = 一條環路（最後回 1）');
     drawT(root, C.D, [0.5, 0.42, 0.42], false);
     await wait(tok, 2600);
@@ -1550,6 +1562,7 @@ function seatWorld(bound) {
 // 0:50 3 人 3 椅：所有坐法
 FRAG.push(['bt-intro-seats', '回溯：3 人坐 3 椅的狀態空間樹', async (tok) => {
   fresh([0, 4.6, 14.5], [0, 2.9, 0]);
+  frameHold(-6.6, 0, -0.3, 6.8, 8.1, 4.8);
   await step(tok);                                   // 0:50 take an example: 3 students
   const W = seatWorld(false);
   sayc('例子：3 位學生', '2 個男生 B1、B2，1 個女生 G1');
@@ -1557,7 +1570,7 @@ FRAG.push(['bt-intro-seats', '回溯：3 人坐 3 椅的狀態空間樹', async 
   for (const n of SNAME) W.kid[n].look(1);
   sayc('3 張椅子，要排他們坐');
   await step(tok);                                   // 1:19 3! = 6 ways
-  note('3! = 3 × 2 × 1 = 6 種', 0, 1.6, 2.8);
+  const n3 = note('3! = 3 × 2 × 1 = 6 種', 4.4, 0, 4.4); // front right, clear of the chair names           // in front of the chairs, clear of the tree
   sayc('有幾種坐法？3! = 6', '我們要把 6 種全部找出來');
   await step(tok);                                   // 1:33 state space tree
   hd('state space tree（狀態空間樹）', 0.5, 7.6);
@@ -1604,18 +1617,19 @@ FRAG.push(['bt-intro-seats', '回溯：3 人坐 3 椅的狀態空間樹', async 
   sayc('6 條路徑 = 6 種坐法', '一個都沒漏');
   await step(tok);                                   // 3:42 follow one path from the root
   W.path(['B2', 'B1', 'G1']).forEach((n) => glow(n.m, GOLD));
-  bub('root → 葉子的一條路 = 一組解', 0.5, 0.9, 0);
+  remove(n3); bub('root → 葉子的一條路 = 一組解', 4.4, 0, 4.4); // takes the 3! remark's place
   sayc('沿這條路：B2、B1、G1', 'root 到葉子 = 一組解');
 }]);
 
 // 3:52 加條件：女生不坐中間
 FRAG.push(['bt-intro-bound', '回溯：女生不坐中間 → bounding function', async (tok) => {
   fresh([0, 4.6, 14.5], [0, 2.9, 0]);
+  frameHold(-6.6, 0, -0.3, 6.8, 8.1, 4.8);
   await step(tok);                                   // 3:52 problems usually have constraints
   const W = seatWorld(true);
   sayc('回溯的問題通常有「限制條件」', '只要滿足條件的解');
   await step(tok);                                   // 4:03 girl should not sit in middle
-  bad('女生不能坐中間（椅子 2）', 0, 1.5, 2.8);
+  const rmk = bad('女生不能坐中間（椅子 2）', 4.4, 0, 4.4); // one remark, front right (clear of the chair names)
   W.kid.G1.mood('wow');
   sayc('條件：G1 不能坐椅子 2');
   await step(tok);                                   // 4:16 trace and draw the tree again
@@ -1634,10 +1648,10 @@ FRAG.push(['bt-intro-bound', '回溯：女生不坐中間 → bounding function'
   W.killNow();
   sayc('停！這個節點不再往下長', '把它「殺掉」(kill)');
   await step(tok);                                   // 5:04 the condition is the bounding function
-  hot('bounding function', W.lastKill.x, W.lastKill.y + 1.1);
+  hot('bounding function', W.lastKill.x, W.lastKill.y - 1.0); // where its (never drawn) subtree would be
   sayc('用來殺節點的條件', '叫做 bounding function');
   await step(tok);                                   // 5:15 save our work
-  good('底下整棵子樹都不用畫 → 省工夫', 0.5, 0.9, 0);
+  txt(rmk, '底下整棵子樹都不用畫 → 省工夫'); setCls(rmk, 'good');
   sayc('既得到正確的解，也省下工作');
   await step(tok);                                   // 5:21 boy two, boy one, girl → solution
   await W.run(tok, 7);
@@ -1655,7 +1669,7 @@ FRAG.push(['bt-intro-bound', '回溯：女生不坐中間 → bounding function'
   txt(W.cnt, '解：4');
   sayc('沒被殺、走到最後一層 = 解', '共 4 組（原本 6 組）');
   await step(tok);                                   // 6:02 n-queens, sum of subsets, graph coloring
-  ['N-Queens', 'Sum of Subsets', 'Graph Coloring'].forEach((t, k) => note(t, -4.2 + k * 2.6, 7.7, 0));
+  ['N-Queens', 'Sum of Subsets', 'Graph Coloring'].forEach((t, k) => note(t, -4.4 + k * 4.4, 7.8, 0));
   sayc('回溯的經典題', 'N-Queens、Sum of Subsets、Graph Coloring');
 }]);
 
@@ -1968,18 +1982,18 @@ FRAG.push(['bt-gc-backtrack', '回溯：正方形圖著色，bounding function',
         if (!all && adds >= target) break;
         i++; adds++;
         nodeAt(n, COL[n.c], [0.44, 0.4, 0.4]); tint(g.N[n.v], COL[n.c]); last = n;
-        if (n.killed) { n.bad.forEach((u) => g.E[ek(u, n.v)].material.color.set(C.R)); glow(n.m, REDEM); if (killIt || all) killT(n); }
-        else if (n.sol) { glow(n.m, GREEN); tag('✓', 'ptr alt', n.x, n.y - 0.55); solT.push(hot(n.asg.join(' '), -5.3, 3.1 - solT.length * 0.42)); }
+        if (n.killed) { n.bad.forEach((u) => g.E[ek(u, n.v)].material.color.set(C.R)); glow(n.m, REDEM); if (killIt || all) killBelow(n, n.v === 4); }
+        else if (n.sol) { glow(n.m, GREEN); tag('✓', 'ptr alt', n.x, n.y - 0.55); solT.push(hot(n.asg.join(' '), -6.6 + (solT.length % 2) * 1.85, 3.3 - Math.floor(solT.length / 2) * 0.65)); }
         if (all) await wt(tok, 50);
       } else {
-        if (n.killed && !n.x2) killT(n);
+        if (n.killed && !n.x2) killBelow(n, n.v === 4);
         i++; if (n.v > 1) tint(g.N[n.v], C.K);
         if (n.sol) glow(n.m, null);
         if (all) clr();
       }
     }
   }
-  const killLast = () => { if (last && last.killed && !last.x2) killT(last); };
+  const killLast = () => { if (last && last.killed && !last.x2) killBelow(last, last.v === 4); };
   await step(tok);                                   // 8:21 solve it using backtracking
   nodeAt(root, C.D, [0.5, 0.42, 0.42]);
   for (let d = 1; d <= 4; d++) tag('x' + d, 'ptr', -3.2, 7.0 - d * 1.5);
@@ -2139,8 +2153,8 @@ FRAG.push(['bt-bb-forms', '分支界限：最小化問題、解的兩種表示',
   bits = [1, 0, 0, 1].map((b, i) => cube(b, b ? C.G : C.K, [0.7, 0.6, 0.7], 1.6 + i * 0.95, 0.3, 0, 2.5));
   sayc('表示法二：(1, 0, 0, 1)', '做 = 1，不做 = 0');
   await step(tok);                                   // 1:13 variable size vs fixed size
-  tag('variable size', 'ptr alt', 3.0, 2.9);
-  tag('fixed size', 'ptr alt', 3.0, 1.2);
+  tag('variable size', 'ptr alt', 5.7, 2.2);         // right beside the subset it names
+  tag('fixed size', 'ptr alt', 6.1, 0.3);            // right beside the 0/1 vector
   sayc('子集合：variable size', '0/1 向量：fixed size');
   await step(tok);                                   // 1:19 sometimes 3 jobs, sometimes 1
   txt(sub, '{J2, J3, J4} 或 {J1}');
@@ -2388,12 +2402,16 @@ function tspRun() {
   const n4 = r.kids[2], n6 = n4.kids[0], n10 = n6.kids[1], n11 = n10.kids[0];
   const order = [r, ...r.kids, ...n4.kids, ...n6.kids, n11];
   const num = new Map(); order.forEach((n, i) => num.set(n, i + 1));
-  layout(r, -0.2, 6.6, 6.7, 1.42);
+  layout(r, -0.6, 7.6, 6.7, 1.42);                  // wide enough for the #numbers beside the nodes
   return { r, n4, n6, n10, n11, num, order };
 }
+// the stage area of the TSP B&B scenes (matrix left, tree right): held from the start
+const TSP_HOLD = [-6.9, 0.1, -0.3, 8.1, 7.6, 2.4];
+// #number to the right of a node; a killed node is a leaf, so its ✕ goes under its cost label
+const tspKill = (n) => { if (!n.x2) { killT(n); n.x2.position.set(n.x, n.y - 1.0, 0); } };
 function tspNode(T, n, cost = true) {
   nodeAt(n, n === T.r ? C.D : C.B, [0.48, 0.42, 0.42]);
-  n.nt = tag('#' + T.num.get(n), 'idx', n.x - 0.5, n.y + 0.3);
+  n.nt = tag('#' + T.num.get(n), 'idx', n.x + 0.52, n.y + 0.05);
   if (cost) n.ct = tag(String(n.cost), 'ptr', n.x, n.y - 0.58);
   return n;
 }
@@ -2409,6 +2427,7 @@ const mvAt = (A) => matrixView(A, -6.0, 6.0, 0.88, 0.62);
 // 0:00 問題：最短環路
 FRAG.push(['bt-tsp-problem', '分支界限 TSP：問題與成本矩陣', async (tok) => {
   fresh([0, 6, 12.5], [0, 1.6, 0]);
+  frameHold(-6.2, 0, -2.0, 6.0, 6.0, 2.8);           // graph (left) + matrix (right) area from the start
   const P = PENTA(-3.6, 0.4, 2.2);
   let g = null;
   await step(tok);                                   // 0:00 TSP using branch and bound
@@ -2444,6 +2463,7 @@ FRAG.push(['bt-tsp-small', '分支界限 TSP：4 城市的狀態空間樹', asyn
   const root = mkT('1', null, { path: [1] });
   (function grow(n) { for (const v of [2, 3, 4]) if (!n.path.includes(v)) grow(mkT(String(v), n, { path: [...n.path, v] })); })(root);
   layout(root, -1.6, 6.4, 6.6, 1.65);
+  frameHold(-7.6, 0, -0.3, 6.8, 7.2, 3.8);           // graph (left) + tree (right) area from the start
   const vc = { 2: C.B, 3: C.P, 4: C.O };
   const lines = [];
   const showTour = async (t) => { lines.forEach(kill); lines.length = 0; for (let k = 0; k + 1 < t.length; k++) { lines.push(rod(V3(...P[t[k]]), V3(...P[t[k + 1]]), C.O, 0.07)); await wt(tok, 200); } };
@@ -2494,6 +2514,7 @@ FRAG.push(['bt-tsp-btbb', '分支界限 TSP：回溯與分支界限的差別', a
   const root = mkT('1', null, { path: [1] });
   (function grow(n) { for (const v of [2, 3, 4]) if (!n.path.includes(v)) grow(mkT(String(v), n, { path: [...n.path, v] })); })(root);
   layout(root, -5.4, 5.4, 6.6, 1.65);
+  frameHold(-6.2, 0.2, -0.3, 6.2, 7.9, 1.6);         // both trees' area from the start
   const vc = { 2: C.B, 3: C.P, 4: C.O };
   const pre = []; (function p(n) { pre.push(n); n.kids.forEach(p); })(root);
   const bfs = []; { const q = [root]; while (q.length) { const n = q.shift(); bfs.push(n); q.push(...n.kids); } }
@@ -2542,6 +2563,7 @@ FRAG.push(['bt-tsp-btbb', '分支界限 TSP：回溯與分支界限的差別', a
 // 5:11 化簡成本矩陣 → 下界 25
 FRAG.push(['bt-tsp-reduce', '分支界限 TSP：reduced matrix，下界 25', async (tok) => {
   fresh([0, 4.4, 13.5], [-1.2, 3.6, 0]);
+  frameHold(-7.0, 1.2, -0.3, 2.9, 7.8, 0.3);
   const A = cp(M5);
   let mv = null; const rT = [], cT = [];
   await step(tok);                                   // 5:14 solve it with branch and bound
@@ -2550,7 +2572,7 @@ FRAG.push(['bt-tsp-reduce', '分支界限 TSP：reduced matrix，下界 25', asy
   sayc('全部用矩陣來算');
   await step(tok);                                   // 5:28 take the cost matrix, reduce it
   mv = mvAt(A);
-  hd('cost adjacency matrix', -4.2, 7.4);
+  const mh = hd('cost adjacency matrix', -4.2, 7.4);
   sayc('第一步：把成本矩陣「化簡」(reduce)');
   await step(tok);                                   // 5:41 minimum of row 1: 10
   mv.row(0, true); rT.push(hot('10', -1.5, 6.0));
@@ -2572,7 +2594,7 @@ FRAG.push(['bt-tsp-reduce', '分支界限 TSP：reduced matrix，下界 25', asy
   subR(A, 3, 3); subR(A, 4, 4); mv.set(A);
   sayc('第 4 列減 3、第 5 列減 4', '每列都有 0 了');
   await step(tok);                                   // 6:48 total row reduction 21
-  const tot = hot('列：10+2+2+3+4 = 21', -0.2, 3.2);
+  const tot = hot('列：10+2+2+3+4 = 21', 0.7, 3.4);
   sayc('列化簡總共減了 21');
   await step(tok);                                   // 6:57 reduce columns: minimum of each column
   [1, 0, 3, 0, 0].forEach((k, j) => cT.push(hot(String(k), -6.0 + j * 0.88, 2.7)));
@@ -2588,20 +2610,21 @@ FRAG.push(['bt-tsp-reduce', '分支界限 TSP：reduced matrix，下界 25', asy
   txt(tot, '21 + (1 + 3) = 25');
   sayc('總共減掉 21 + 4 = 25', '這就是 reduction 的成本');
   await step(tok);                                   // 7:51 reduced: every row and column has a 0
-  note('reduced matrix：每列、每行都至少有一個 0', -3.4, 0.4, 1.6);
+  note('reduced matrix：每列、每行都至少有一個 0', -4.2, 1.7, 0);   // right under the matrix
   sayc('reduced matrix：每列每行都有 0');
   await step(tok);                                   // 8:09 cost of any tour ≥ 25
-  good('任何 tour 的成本 ≥ 25（下界）', -3.4, 0.4, 2.5);
+  good('任何 tour 的成本 ≥ 25（下界）', 0.7, 2.6, 0);            // under the 25 it explains
   sayc('減掉的 25 是一定要付的', '所以 tour 至少 25 → lower bound');
   await step(tok);                                   // 8:32 continue with the reduced matrix
   rT.forEach(kill); cT.forEach(kill);
-  hd('reduced matrix（root 的矩陣）', 1.6, 6.0);
+  txt(mh, 'reduced matrix（root 的矩陣）');
   sayc('接下來都用這個 reduced matrix');
 }]);
 
 // 8:49 第一層：節點 2–5 的 cost
 FRAG.push(['bt-tsp-level1', '分支界限 TSP：第一層的 cost（35、53、25、31）', async (tok) => {
   fresh([0, 4.4, 14], [0, 3.6, 0]);
+  frameHold(...TSP_HOLD);
   const T = tspRun(), R0 = T.r.M;
   const mv = mvAt(R0);
   let A = cp(R0);
@@ -2677,6 +2700,7 @@ FRAG.push(['bt-tsp-level1', '分支界限 TSP：第一層的 cost（35、53、25
 // 15:15 LC：展開 cost 最小的 #4
 FRAG.push(['bt-tsp-level2', '分支界限 TSP：LC 展開 #4（28、50、36）', async (tok) => {
   fresh([0, 4.4, 14], [0, 3.6, 0]);
+  frameHold(...TSP_HOLD);
   const T = tspRun(), n4 = T.n4, M4 = n4.M;
   tspNode(T, T.r); T.r.kids.forEach((k) => tspNode(T, k));
   tag('upper = ∞', 'ptr alt', 5.6, 0.3, 1.6);
@@ -2686,7 +2710,7 @@ FRAG.push(['bt-tsp-level2', '分支界限 TSP：LC 展開 #4（28、50、36）',
   await step(tok);                                   // 15:18 what next? four nodes
   sayc('下一個展開誰？有 4 個節點可選');
   await step(tok);                                   // 15:32 in order → FIFO
-  T.r.kids.forEach((k, i) => tag(String(i + 1), 'idx', k.x + 0.45, k.y - 0.3));
+  T.r.kids.forEach((k, i) => tag(String(i + 1), 'ptr', k.x - 0.5, k.y + 0.05)); // FIFO order, left of each node
   sayc('照順序 #2、#3、#4、#5 → FIFO B&B');
   await step(tok);                                   // 15:46 the minimum cost: node 4 → LC
   glow(n4.m, GOLD); setCls(n4.ct, 'ptr alt');
@@ -2722,6 +2746,7 @@ FRAG.push(['bt-tsp-level2', '分支界限 TSP：LC 展開 #4（28、50、36）',
 // 19:23 第三層：#6 → #9、#10；#10 → #11
 FRAG.push(['bt-tsp-level3', '分支界限 TSP：展開 #6、#10（52、28、28）', async (tok) => {
   fresh([0, 4.4, 14], [0, 3.6, 0]);
+  frameHold(...TSP_HOLD);
   const T = tspRun(), n6 = T.n6, n10 = T.n10, M6 = n6.M;
   [T.r, ...T.r.kids, ...T.n4.kids].forEach((n) => tspNode(T, n));
   tag('upper = ∞', 'ptr alt', 5.6, 0.3, 1.6);
@@ -2785,6 +2810,7 @@ FRAG.push(['bt-tsp-level3', '分支界限 TSP：展開 #6、#10（52、28、28�
 // 23:23 走到葉子：upper = 28，其他全部殺掉
 FRAG.push(['bt-tsp-answer', '分支界限 TSP：upper = 28，最佳 tour', async (tok) => {
   fresh([0, 4.4, 14], [0.4, 3.6, 0]);
+  frameHold(...TSP_HOLD);
   const T = tspRun();
   T.order.forEach((n) => tspNode(T, n));
   const up = tag('upper = ∞', 'ptr alt', 5.6, 0.3, 1.6);
@@ -2802,7 +2828,7 @@ FRAG.push(['bt-tsp-answer', '分支界限 TSP：upper = 28，最佳 tour', async
   txt(up, 'upper = 28'); glow(T.n11.m, GOLD);
   sayc('到了葉子才更新 upper：upper = 28');
   await step(tok);                                   // 23:52 nodes with cost > upper are killed
-  T.order.filter((n) => n.kids.length === 0 && n !== T.n11).forEach((n) => killT(n));
+  T.order.filter((n) => n.kids.length === 0 && n !== T.n11).forEach(tspKill);
   sayc('cost 大於 upper 的活節點全部殺掉', '35、53、31、50、36、52 都 > 28');
   await step(tok);                                   // 24:10 which remains? the leaf → answer
   sayc('只剩這片葉子 → 它就是答案');
@@ -3011,6 +3037,7 @@ FRAG.push(['bt-nq-tree', '回溯：N-Queens 的排列樹（65 個節點）', asy
 // 8:15 加上 bounding function：找到 (2, 4, 1, 3)
 FRAG.push(['bt-nq-solve', '回溯：4-Queens 加 bounding function', async (tok) => {
   fresh([0, 5.0, 13.5], [0, 2.8, 0]);
+  frameHold(-8.2, -0.8, -0.8, 6.9, 7.2, 2.2);
   const B = qBoard(-6.4, -0.6, 0.9);
   const root = qTree(['', 0,
     ['1', 0, ['2', 1], ['3', 0, ['2', 1], ['4', 1]], ['4', 0, ['2', 0, ['3', 1]], ['3', 1]]],
@@ -3034,7 +3061,7 @@ FRAG.push(['bt-nq-solve', '回溯：4-Queens 加 bounding function', async (tok)
   nodeAt(root, C.D);
   sayc('照同樣方法，但這次加上 bounding function');
   await step(tok);                                   // 8:21 condition: not same row / column / diagonal
-  note('bounding function：不同列、不同行、不同斜線', 2.6, 0.4, 2.4);
+  K.keep(note('bounding function：不同列、不同行、不同斜線', -5.3, 6.0, 0)); // left column above the board, clear of the tree
   sayc('條件：不同列、不同行、不同斜線');
   await step(tok);                                   // 8:33 redraw the tree with the bounding function
   sayc('一邊產生樹，一邊檢查條件');
@@ -3091,18 +3118,18 @@ FRAG.push(['bt-nq-solve', '回溯：4-Queens 加 bounding function', async (tok)
   tag('✓', 'ptr alt', cur.x, cur.y - 0.55);
   sayc('Q4 第 3 行：沒被攻擊 → 找到一組解！');
   await step(tok);                                   // 12:34 solution 2 4 1 3
-  sols.push(good('(2, 4, 1, 3)', 2.6, 0.4, 3.2));
+  sols.push(good('(2, 4, 1, 3)', -5.3, 4.4, 0));
   sayc('解：(x1, x2, x3, x4) = (2, 4, 1, 3)');
   await step(tok);                                   // 12:47 continue: more answers
   sayc('繼續回溯，還有別的解嗎？');
   await step(tok);                                   // 12:58 the mirror image: 3 1 4 2
   B.set([3, 1, 4, 2]);
-  sols.push(good('(3, 1, 4, 2)', 2.6, 0.4, 4.0));
+  sols.push(good('(3, 1, 4, 2)', -5.3, 3.7, 0));
   sayc('它的鏡像：(3, 1, 4, 2)');
   await step(tok);                                   // 13:19 two solutions
   sayc('4-Queens 只有兩組解', '(2, 4, 1, 3) 和 (3, 1, 4, 2)');
   await step(tok);                                   // 13:31 used bounding function + backtracking
-  hot('回溯 + bounding function', 2.6, 0.4, 1.6);
+  hot('回溯 + bounding function', -5.3, 5.2, 0);
   sayc('先看全部可能，再用 bounding function 剪掉', '這就是用回溯解 N-Queens');
 }]);
 
@@ -3127,12 +3154,12 @@ const ssR = (p) => SSW.slice(p.length).reduce((a, b) => a + b, 0);
 // the part of the tree the lecturer draws; flag 1 = killed (s + w > m), 2 = answer, 3 = not generated (s + r < m)
 const SS_SPEC = [['', 0], ['1', 0], ['11', 0], ['111', 0], ['1111', 1], ['1110', 0], ['11101', 1], ['11100', 0], ['111001', 1], ['111000', 3],
   ['110', 0], ['1101', 0], ['11011', 1], ['11010', 0], ['110101', 1], ['110100', 3], ['1100', 0], ['11001', 2]];
-function ssTree() {
+function ssTree(x0 = -2.2, x1 = 6.6, yTop = 7.0, dy = 1.0) {
   const N = {};
   for (const [p, flag] of SS_SPEC) {
     N[p] = mkT(ssS(p) + ', ' + ssR(p), p ? N[p.slice(0, -1)] : null, { p, flag });
   }
-  layout(N[''], -2.2, 6.6, 7.0, 1.0);
+  layout(N[''], x0, x1, yTop, dy);
   const T = { N, cur: null };
   T.draw = (p, hl = true) => {
     const n = N[p];
@@ -3143,7 +3170,8 @@ function ssTree() {
     if (hl) { if (T.cur && T.cur.m) glow(T.cur.m, null); T.cur = n; glow(n.m, n.flag === 1 || n.flag === 3 ? REDEM : n.flag === 2 ? GREEN : GOLD); }
     return n;
   };
-  T.kill = (p) => { const n = N[p]; if (!n.x2) killT(n); };
+  // the ✕ sits under a killed node (where its never-drawn children would be), not on the edge above it
+  T.kill = (p) => { const n = N[p]; if (!n.x2) { killT(n); n.x2.position.set(n.x, n.y - 0.45, 0); } };
   return T;
 }
 
@@ -3221,17 +3249,18 @@ FRAG.push(['bt-ss-tree', '回溯：Sum of Subsets 的二元狀態空間樹', asy
 
 // 3:15 用 bounding function 解：s + w(k+1) ≤ m、s + r ≥ m
 FRAG.push(['bt-ss-bound', '回溯：Sum of Subsets 的兩個 bounding function', async (tok) => {
-  fresh([0, 4.4, 14], [0.2, 3.4, 0]);
-  const W = ssWeights();
-  const T = ssTree();
-  for (let d = 1; d <= 6; d++) tag('x' + d, 'ptr', -3.0, 7.0 - d * 1.0);
-  const sL = tag('s = 0　r = 73', 'ptr alt', -4.3, 1.5, 2.2);
+  fresh([0, 4.4, 14], [-0.7, 3.8, 0]);
+  frameHold(-8.4, -0.2, -0.3, 8.4, 7.9, 0.3);
+  const W = ssWeights(-7.9, 6.6, 0);                 // weights top-left, tree on the right
+  const T = ssTree(-2.6, 6.8, 7.4, 1.1);
+  for (let d = 1; d <= 6; d++) tag('x' + d, 'ptr', 7.9, 7.4 - d * 1.1);   // level names right of the tree
+  const sL = tag('s = 0　r = 73', 'ptr alt', -5.95, 5.4);
   const at = (p) => { T.draw(p); W.pick(p); txt(sL, 's = ' + ssS(p) + '　r = ' + ssR(p)); };
   await step(tok);                                   // 3:15 solve with backtracking: first node
   T.draw('');
   sayc('用回溯解，順便定義 bounding function');
   await step(tok);                                   // 3:25 two values: 0 and the total 73
-  note('節點 = (目前總和 s, 剩下的總和 r)', 2.4, 7.7, 0);
+  note('節點 = (目前總和 s, 剩下的總和 r)', -5.6, 4.5, 0); // left column, under s / r
   sayc('每個節點寫兩個數：s = 0、r = 73', '73 = 全部重量的總和');
   await step(tok);                                   // 3:43 include or not, one by one
   sayc('一個一個決定要不要放進來');
@@ -3251,7 +3280,7 @@ FRAG.push(['bt-ss-bound', '回溯：Sum of Subsets 的兩個 bounding function',
   T.kill('1111');
   sayc('再往下也不可能剛好 30 → 殺掉');
   await step(tok);                                   // 5:26 condition: s + w(k+1) ≤ m
-  const b1 = note('Bound 1：s + w(k+1) ≤ m', -4.4, 0.4, 3.6);
+  const b1 = K.keep(note('Bound 1：s + w(k+1) ≤ m', -5.95, 2.4, 0));
   sayc('Bound 1：目前總和 + 下一個重量 ≤ m', '超過就沒必要繼續');
   await step(tok);                                   // 6:03 without fourth: 27, 33
   at('1110');
@@ -3272,7 +3301,7 @@ FRAG.push(['bt-ss-bound', '回溯：Sum of Subsets 的兩個 bounding function',
   at('111000');
   sayc('不要 w6：s = 27、r = 0', '剩下的全加也到不了 30');
   await step(tok);                                   // 7:48 bound 2: s + r ≥ m
-  note('Bound 2：s + r ≥ m', -4.4, 0.4, 4.4);
+  K.keep(note('Bound 2：s + r ≥ m', -5.95, 1.6, 0));
   sayc('Bound 2：目前總和 + 剩下全部 ≥ m', '不夠的話，再怎麼加都湊不到');
   await step(tok);                                   // 8:19 27 + 0 < 30 → don't generate it
   T.kill('111000');
@@ -3281,13 +3310,14 @@ FRAG.push(['bt-ss-bound', '回溯：Sum of Subsets 的兩個 bounding function',
 
 // 8:34 繼續回溯：找到 {5, 10, 15}
 FRAG.push(['bt-ss-answer', '回溯：Sum of Subsets 找到 5 + 10 + 15 = 30', async (tok) => {
-  fresh([0, 4.4, 14], [0.2, 3.4, 0]);
-  const W = ssWeights();
-  const T = ssTree();
-  for (let d = 1; d <= 6; d++) tag('x' + d, 'ptr', -3.0, 7.0 - d * 1.0);
-  note('Bound 1：s + w(k+1) ≤ m', -4.4, 0.4, 3.6); note('Bound 2：s + r ≥ m', -4.4, 0.4, 4.4);
+  fresh([0, 4.4, 14], [-0.7, 3.8, 0]);
+  frameHold(-8.4, -0.2, -0.3, 8.4, 7.9, 0.3);
+  const W = ssWeights(-7.9, 6.6, 0);                 // same picture as the scene before
+  const T = ssTree(-2.6, 6.8, 7.4, 1.1);
+  for (let d = 1; d <= 6; d++) tag('x' + d, 'ptr', 7.9, 7.4 - d * 1.1);   // level names right of the tree
+  K.keep(note('Bound 1：s + w(k+1) ≤ m', -5.95, 2.4, 0)); K.keep(note('Bound 2：s + r ≥ m', -5.95, 1.6, 0));
   ['', '1', '11', '111', '1111', '1110', '11101', '11100', '111001', '111000'].forEach((p) => { T.draw(p, false); if (T.N[p].flag & 1 || T.N[p].flag === 3) T.kill(p); });
-  const sL = tag('s = 27　r = 0', 'ptr alt', -4.3, 1.5, 2.2);
+  const sL = tag('s = 27　r = 0', 'ptr alt', -5.95, 5.4);
   const at = (p) => { T.draw(p); W.pick(p); txt(sL, 's = ' + ssS(p) + '　r = ' + ssR(p)); };
   W.pick('111000');
   await step(tok);                                   // 8:34 without 3: 15, 46
@@ -3313,12 +3343,12 @@ FRAG.push(['bt-ss-answer', '回溯：Sum of Subsets 找到 5 + 10 + 15 = 30', as
   sayc('退回：不要 w4，s = 15、r = 33');
   await step(tok);                                   // 10:22 fifth included: 30 → the answer
   at('11001');
-  tag('✓', 'ptr alt', T.cur.x, T.cur.y - 0.5);
+  tag('✓', 'ptr alt', T.cur.x, T.cur.y - 0.45);
   sayc('要 w5 = 15：15 + 15 = 30', '剛好 30 → 找到答案！');
   await step(tok);                                   // 10:39 one answer; continuing gives more
   sayc('找到一組；繼續做（也包括不要 w1 的右半邊）', '樹會一直長，還會找到更多解');
   await step(tok);                                   // 10:52 x = 1 1 0 0 1 0
-  const xv = hot('x = (1, 1, 0, 0, 1, 0)', -4.4, 0.4, 1.0);
+  const xv = hot('x = (1, 1, 0, 0, 1, 0)', -5.95, 4.6);   // under s / r, next to the weights
   sayc('解：x = (1, 1, 0, 0, 1, 0)', 'w1、w2、w5 要，其他不要');
   await step(tok);                                   // 11:14 5 + 10 + 15 = 30
   sayc('5 + 10 + 15 = 30');
@@ -3330,7 +3360,7 @@ FRAG.push(['bt-ss-answer', '回溯：Sum of Subsets 找到 5 + 10 + 15 = 30', as
   sayc('5 + 12 + 13 = 30');
   await step(tok);                                   // 11:39 more than one solution; the point is the bounding function
   W.pick('110010');
-  good('三組解：{5,10,15}、{12,18}、{5,12,13}', 1.6, 0.4, 3.4);
+  good('三組解：{5,10,15}、{12,18}、{5,12,13}', -5.6, 3.6, 0); // the left column, under x
   sayc('解不只一組', '重點是 bounding function 怎麼剪');
   await step(tok);                                   // 11:55 recursive, DFS / preorder
   sayc('回溯演算法是遞迴的', '像 DFS、二元樹的 preorder');
@@ -3373,6 +3403,12 @@ const HC_CODE = [
   '    }',
   '  } until (false); }',
 ];
+// the two functions as two short panels side by side (one 19-line panel is taller than the stage);
+// hl(i) still takes the line number in HC_CODE
+function codeHC(xa, ya, xb, yb, dy = 0.4) {
+  const a = code(HC_CODE.slice(0, 7), xa, ya, dy), b = code(HC_CODE.slice(7), xb, yb, dy);
+  return { ls: [...a.ls, ...b.ls], hl(i) { a.hl(i >= 0 && i < 7 ? i : -1); b.hl(i >= 7 ? i - 7 : -1); }, kill() { a.kill(); b.kill(); } };
+}
 
 // 0:00 定義：每個頂點恰一次、回到起點
 FRAG.push(['bt-hc-def', '回溯：Hamiltonian cycle 是什麼', async (tok) => {
@@ -3514,16 +3550,18 @@ FRAG.push(['bt-hc-nocycle', '回溯：articulation point、pendant vertex', asyn
 // 5:39 演算法與例圖
 FRAG.push(['bt-hc-algo', '回溯：Hamiltonian cycle 演算法與鄰接矩陣', async (tok) => {
   fresh([0, 4.4, 13.5], [0, 3.4, 0]);
-  const P = ringP([1, 2, 3, 4, 5], -4.4, 2.4, 1.6);
+  frameHold(-7.2, 0, -0.3, 7.2, 7.6, 4.2);
+  // code along the top (Hamiltonian left, NextValue right); matrix bottom middle, x array over the graph
+  const P = ringP([1, 2, 3, 4, 5], -5.4, 2.6, 1.3);
   let cd = null, xs = [];
   await step(tok);                                   // 5:39 an algorithm and an example graph
   sayc('看演算法怎麼用回溯解');
   await step(tok);                                   // 5:51 a graph and its adjacency matrix
   hcGraph(P, HG5);
-  matrixView(hcAdj(HG5, 5), -5.6, 6.6, 0.62, 0.48);
+  matrixView(hcAdj(HG5, 5), -2.9, 2.6, 0.6, 0.48);
   sayc('一張圖和它的 adjacency matrix', 'G[i, j] = 1 表示 i、j 有邊');
   await step(tok);                                   // 6:00 two functions
-  cd = code(HC_CODE, 3.0, 7.2, 0.37);
+  cd = codeHC(-3.6, 7.2, 4.0, 7.2);
   sayc('演算法有兩個函式');
   await step(tok);                                   // 6:07 Hamiltonian backtracks, NextValue gets the next vertex
   cd.hl(0);
@@ -3532,8 +3570,8 @@ FRAG.push(['bt-hc-algo', '回溯：Hamiltonian cycle 演算法與鄰接矩陣', 
   cd.hl(11);
   sayc('判斷有沒有邊：查 adjacency matrix G');
   await step(tok);                                   // 6:34 uses array x; all filled → cycle found
-  xs = [1, 2, 3, 4, 5].map((k) => bx('', C.K, -5.8 + (k - 1) * 0.75, 3.6, 0, 0.6, 2, 0.5, 0.5));
-  [1, 2, 3, 4, 5].forEach((k) => tag('x' + k, 'idx', -5.8 + (k - 1) * 0.75, 3.05, 0.3));
+  xs = [1, 2, 3, 4, 5].map((k) => bx('', C.K, -6.7 + (k - 1) * 0.72, 3.6, 0, 0.6, 2, 0.5, 0.5));
+  [1, 2, 3, 4, 5].forEach((k) => tag('x' + k, 'idx', -6.7 + (k - 1) * 0.72, 3.05, 0.3));
   cd.hl(4);
   sayc('陣列 x[1..n] 存 cycle 的頂點順序', '全部填滿 → 找到一個 cycle，印出來');
   await step(tok);                                   // 6:43 initially all zero
@@ -3552,9 +3590,9 @@ function hcTrace() {
   [1, 2, 3, 4, 5].forEach((k) => tag('x' + k, 'idx', X(k), 5.65, 0.3));
   const root = qTree(['1', 0, ['2', 0, ['3', 0, ['4', 0, ['5', 2]]], ['4', 0, ['3', 0], ['5', 0]], ['5', 0, ['4', 0, ['3', 2]]]]]);
   layout(root, 0.4, 6.4, 6.9, 1.45);
-  for (let d = 0; d < 5; d++) tag('x' + (d + 1), 'ptr', -0.6, 6.9 - d * 1.45);
+  const lv = [0, 1, 2, 3, 4].map((d) => tag('x' + (d + 1), 'ptr', -0.6, 6.9 - d * 1.45));
   const x = [1, 0, 0, 0, 0];
-  const T = { g, A, xs, x, root };
+  const T = { g, A, xs, x, root, lv };
   const find = (path) => { let n = root; for (const v of path.slice(1)) n = n.kids.find((k) => k.label === String(v)); return n; };
   T.path = () => x.filter((v) => v);
   T.showX = () => xs.forEach((m, i) => { relabel(m, x[i]); tint(m, x[i] ? C.B : C.K); glow(m, null); });
@@ -3584,7 +3622,7 @@ FRAG.push(['bt-hc-trace1', '回溯：HC 追蹤，第一個 cycle 1-2-3-4-5', asy
   T.draw([1]); T.showX(); glow(T.xs[0], GOLD); T.light();
   sayc('避免重複的 cycle：起點固定 x1 = 1');
   await step(tok);                                   // 7:23 second position: 3, 2 or 5
-  note('1 的鄰居：2、3、5', -4.4, 0.4, 4.6);
+  note('1 的鄰居：2、3、5', -4.4, 0.4, 0.2);          // just behind the graph (above it on screen)
   sayc('第二個位置：可以去 2、3 或 5');
   await step(tok);                                   // 7:39 try 1: already there
   T.tryV(2, 1, false);
@@ -3612,11 +3650,11 @@ FRAG.push(['bt-hc-trace1', '回溯：HC 追蹤，第一個 cycle 1-2-3-4-5', asy
   sayc('最後一格：還要檢查 5 → 1 有邊', '有 → 找到 cycle！');
   await step(tok);                                   // 9:58 first answer printed
   T.xs.forEach((m) => glow(m, GREEN));
-  good('答案 1：1 2 3 4 5 (1)', 3.4, 0.4, 3.4);
+  K.keep(good('答案 1：1 2 3 4 5 (1)', -4.4, 5.0, 0)); // right under the x array it reads
   sayc('第一個答案：1→2→3→4→5→1');
   let cd = null;
   await step(tok);                                   // 10:08 x[k] = (x[k] + 1) mod (n + 1)
-  T.hideTree(); cd = code(HC_CODE.slice(7), 3.2, 7.0, 0.4);
+  T.hideTree(); T.lv.forEach(kill); gone(...bf); cd = code(HC_CODE.slice(7), 3.2, 6.5, 0.4); // the code takes the tree's place
   cd.hl(2);
   sayc('程式：x[k] = (x[k] + 1) mod (n + 1)', '取下一個值；變回 0 就代表試完了');
   await step(tok);                                   // 10:21 an edge? not a duplicate?
@@ -3626,7 +3664,7 @@ FRAG.push(['bt-hc-trace1', '回溯：HC 追蹤，第一個 cycle 1-2-3-4-5', asy
   cd.hl(8);
   sayc('如果是最後一格：還要有邊回到 x1');
   await step(tok);                                   // 11:10 bounding function ① no duplicate
-  const b = note('① 不能重複', -1.2, 0.4, 3.6);
+  const b = note('① 不能重複', 3.2, 1.6, 0);            // under the code
   sayc('bounding function 檢查三件事', '① 不能重複');
   await step(tok);                                   // 11:17 ② edge from the previous vertex
   txt(b, '① 不能重複　② 和前一個有邊');
@@ -3690,11 +3728,13 @@ FRAG.push(['bt-hc-trace2', '回溯：HC 繼續回溯，第二個 cycle 1-2-5-4-3
 // 14:52 演算法逐行
 FRAG.push(['bt-hc-code', '回溯：Hamiltonian / NextValue 逐行說明', async (tok) => {
   fresh([0, 4.4, 13.5], [0, 3.4, 0]);
-  const cd = code(HC_CODE, 2.6, 7.2, 0.37);
-  const X = (k) => -5.6 + (k - 1) * 0.78;
-  const xs = [1, 2, 3, 4, 5].map((k) => bx(k === 1 ? 1 : 0, k === 1 ? C.B : C.K, X(k), 4.6, 0, 0.62, 0, 0.5, 0.5));
-  [1, 2, 3, 4, 5].forEach((k) => tag('x' + k, 'idx', X(k), 4.05, 0.3));
-  const chk = note('', -4.0, 0.4, 2.6); showL(chk, false);
+  frameHold(-6.6, 0.8, -0.3, 6.8, 7.6, 0.3);
+  // left: x array with Hamiltonian under it; right: NextValue; the remark under the left panel
+  const cd = codeHC(-3.9, 5.3, 3.0, 7.2);
+  const X = (k) => -5.5 + (k - 1) * 0.78;
+  const xs = [1, 2, 3, 4, 5].map((k) => bx(k === 1 ? 1 : 0, k === 1 ? C.B : C.K, X(k), 6.7, 0, 0.62, 0, 0.5, 0.5));
+  [1, 2, 3, 4, 5].forEach((k) => tag('x' + k, 'idx', X(k), 6.15, 0.3));
+  const chk = note('', -3.9, 1.6, 0); showL(chk, false);
   const show = (t) => { txt(chk, t); showL(chk, true); };
   await step(tok);                                   // 14:52 explain the algorithm
   cd.hl(0);
@@ -3782,7 +3822,7 @@ function jsTree() {
     ['J1', 0, ['J2', 0, ['J3', 4], ['J4', 4]], ['J3', 1], ['J4', 1]],
     ['J2', 0, ['J3', 0, ['J4', 4]], ['J4', 1]],
     ['J3', 1], ['J4', 1]]);
-  layout(root, -0.6, 6.6, 6.6, 1.7);
+  layout(root, -1.4, 7.2, 6.6, 1.7);                 // wide enough that the c / u labels of neighbours do not touch
   const n = (...p) => { let x = root; for (const i of p) x = x.kids[i]; return x; };
   const N = { 1: root, 2: n(0), 3: n(1), 4: n(2), 5: n(3), 6: n(0, 0), 7: n(0, 1), 8: n(0, 2), 9: n(1, 0), 10: n(1, 1) };
   const T = { root, N, n };
@@ -3792,7 +3832,8 @@ function jsTree() {
     return x;
   };
   T.setU = (k, c, u) => { txt(N[k].ct, 'c=' + c + ' u=' + fmtI(u)); };
-  T.kill = (k) => { if (!N[k].x2) killT(N[k]); };
+  // ✕ at the node's upper right (its number sits upper left), off the edge to the parent
+  T.kill = (k) => { if (!N[k].x2) { killT(N[k]); N[k].x2.position.set(N[k].x, N[k].y - 0.98, 0); } };
   T.hl = (k) => { Object.values(N).forEach((x) => x.m && !x.x2 && glow(x.m, null)); if (k) glow(N[k].m, GOLD); };
   return T;
 }
@@ -3833,32 +3874,34 @@ FRAG.push(['bt-js-problem', '分支界限：Job sequencing，profit 改成 penal
 // 1:18 每個節點兩個值：cost、upper bound
 FRAG.push(['bt-js-bounds', '分支界限：Job sequencing 的 cost 與 upper bound', async (tok) => {
   fresh([0, 4.4, 12.5], [0, 3.0, 0]);
+  frameHold(-5.4, 0.4, -0.3, 5.4, 6.9, 0.3);
   jsTable(-3.6, 6.4, 1.2, 0.6);
   const ex = [];
   await step(tok);                                   // 1:18 solve by generating a state space tree
   sayc('用 B&B：產生狀態空間樹');
   await step(tok);                                   // 1:25 two values per node: cost, upper bound
-  const nd = bx('節點', C.B, 0, 2.4, 0, 1.4, 2, 0.6, 0.8);
-  ex.push(hd('cost  c', -2.0, 2.4), hd('upper bound  u', 2.4, 2.4));
+  const nd = bx('節點', C.B, 0, 3.4, 0, 1.4, 2, 0.6, 0.8);
+  ex.push(hd('cost  c', -2.0, 3.4), hd('upper bound  u', 2.4, 3.4));
   sayc('每個節點算兩個值', 'cost 和 upper bound');
   await step(tok);                                   // 1:37 u = penalties of all jobs not included
-  ex.push(note('u = 所有「沒選進來」的 job 的 penalty 總和', 0, 1.4));
+  ex.push(K.keep(note('u = 所有「沒選進來」的 job 的 penalty 總和', 0, 2.5)));
   sayc('upper bound：沒放進解的 job，penalty 全部加起來', '最多就付這麼多');
   await step(tok);                                   // 1:49 cost = penalties up to the job considered
-  ex.push(note('c = 到目前這個 job 為止，跳過的 penalty 總和', 0, 0.7));
+  ex.push(K.keep(note('c = 到目前這個 job 為止，跳過的 penalty 總和', 0, 1.8)));
   sayc('cost：到目前考慮的 job 為止', '已經確定跳過的 penalty 加總');
   await step(tok);                                   // 1:58 S = jobs in the solution: u = Σ(i ∉ S) p_i
-  ex.push(hot('u = Σ(i ∉ S) pᵢ', -2.6, 0.0, 1.0));
+  ex.push(hot('u = Σ(i ∉ S) pᵢ', -2.6, 0.9));
   sayc('S = 選進解的 job 集合', 'u = Σ(不在 S 的 pᵢ)');
   await step(tok);                                   // 2:10 cost = Σ(i ∉ S, i ≤ k) p_i
-  ex.push(hot('c = Σ(i ∉ S, i ≤ k) pᵢ', 2.4, 0.0, 1.0));
+  ex.push(hot('c = Σ(i ∉ S, i ≤ k) pᵢ', 2.4, 0.9));
   sayc('c = Σ(不在 S、而且 i ≤ k 的 pᵢ)', 'k = 目前考慮到的 job');
   void nd;
 }]);
 
 // 2:33 第一層：c、u、upper
 FRAG.push(['bt-js-level1', '分支界限：Job sequencing 第一層（upper 19 → 14）', async (tok) => {
-  fresh([0, 4.4, 13.5], [0, 3.4, 0]);
+  fresh([0, 4.4, 13.5], [0.2, 3.4, 0]);
+  frameHold(-6.9, -0.1, -0.3, 7.6, 7.4, 3.4);
   jsTable();
   const T = jsTree();
   const up = hot('upper = ∞', -4.4, 3.4);
@@ -3905,7 +3948,8 @@ FRAG.push(['bt-js-level1', '分支界限：Job sequencing 第一層（upper 19 �
 
 // 5:29 第二層：upper 9 → 8
 FRAG.push(['bt-js-level2', '分支界限：Job sequencing 第二層（upper 9 → 8）', async (tok) => {
-  fresh([0, 4.4, 13.5], [0, 3.4, 0]);
+  fresh([0, 4.4, 13.5], [0.2, 3.4, 0]);
+  frameHold(-6.9, -0.1, -0.3, 7.6, 7.4, 3.4);
   jsTable();
   const T = jsTree();
   T.draw(1, 0, INF); T.draw(2, 0, 19); T.draw(3, 5, 14); T.draw(4, 15); T.kill(4); T.draw(5, 21); T.kill(5);
@@ -3948,7 +3992,8 @@ FRAG.push(['bt-js-level2', '分支界限：Job sequencing 第二層（upper 9 �
 
 // 8:06 可行性：時間夠不夠
 FRAG.push(['bt-js-feasible', '分支界限：Job sequencing 可行性與答案 {J2, J3}', async (tok) => {
-  fresh([0, 4.4, 13.5], [0, 3.4, 0]);
+  fresh([0, 4.4, 13.5], [0.2, 3.4, 0]);
+  frameHold(-6.9, -0.1, -0.3, 7.6, 7.4, 3.4);
   jsTable();
   const T = jsTree();
   [[1, 0, INF], [2, 0, 19], [3, 5, 14], [4, 15], [5, 21], [6, 0, 9], [7, 10], [8, 16], [9, 5, 8], [10, 11]].forEach(([k, c, u]) => T.draw(k, c, u));
@@ -3973,17 +4018,17 @@ FRAG.push(['bt-js-feasible', '分支界限：Job sequencing 可行性與答案 {
   put(0, 0); await wt(tok, 300); put(1, 1);
   sayc('J1 做第 1 小時，J2 要 2 小時 → 用到第 3 小時', 'J3 的 deadline 2 已經過了');
   await step(tok);                                   // 9:10 J3 can't be done: don't generate
-  const x3 = T.n(0, 0, 0); nodeAt(x3, C.K, [0.5, 0.42, 0.42]); killT(x3);
+  const x3 = T.n(0, 0, 0); nodeAt(x3, C.K, [0.5, 0.42, 0.42]); killBelow(x3);
   sayc('J3 做不完 → 這個節點不用產生', '是「時間」不夠，不只看 deadline');
   await step(tok);                                   // 9:25 fourth job: same case
-  const x4 = T.n(0, 0, 1); nodeAt(x4, C.K, [0.5, 0.42, 0.42]); killT(x4);
+  const x4 = T.n(0, 0, 1); nodeAt(x4, C.K, [0.5, 0.42, 0.42]); killBelow(x4);
   sayc('J4 也一樣：沒有時間了');
   await step(tok);                                   // 9:33 last live node: expand J4
   clearB(); T.hl(9);
   sayc('最後一個活節點：9 = {J2, J3}', '試著再加 J4');
   await step(tok);                                   // 9:46 J2 + J3 fill 3 hours; J4 no time
   put(2, 0); await wt(tok, 250); put(1, 1);
-  const x5 = T.n(1, 0, 0); nodeAt(x5, C.K, [0.5, 0.42, 0.42]); killT(x5);
+  const x5 = T.n(1, 0, 0); nodeAt(x5, C.K, [0.5, 0.42, 0.42]); killBelow(x5);
   sayc('J3 先做（期限 2）、J2 接著（期限 3）', '3 小時用完，J4 沒時間 → 不可行');
   await step(tok);                                   // 10:04 the whole tree is finished
   sayc('整棵樹都處理完了');
@@ -4028,10 +4073,10 @@ function kpBag(x0 = -6.4, y = 0.35, z = 2.6, u = 0.27) {
 // the LC tree of the video: 1 root; 2/3 = x1 1/0; 4/5 = x2 1/0 under 2; 6/7 = x3 1/0 under 4; 8 = x4 1 under 6; 9/10 = x4 1/0 under 7
 function kpTree() {
   const root = qTree(['', 0, ['1', 0, ['1', 0, ['1', 0, ['1', 4]], ['0', 0, ['1', 2], ['0', 1]]], ['0', 1]], ['0', 1]]);
-  layout(root, -0.4, 6.6, 6.8, 1.45);
+  layout(root, -1.0, 7.2, 6.8, 1.45);                 // wide: the 'c=−38 u=−32' labels of neighbours stay apart
   const n = (...p) => { let x = root; for (const i of p) x = x.kids[i]; return x; };
   const N = { 1: root, 2: n(0), 3: n(1), 4: n(0, 0), 5: n(0, 1), 6: n(0, 0, 0), 7: n(0, 0, 1), 8: n(0, 0, 0, 0), 9: n(0, 0, 1, 0), 10: n(0, 0, 1, 1) };
-  for (let d = 1; d <= 4; d++) tag('x' + d, 'ptr', -1.3, 6.8 - d * 1.45);
+  for (let d = 1; d <= 4; d++) tag('x' + d, 'ptr', -1.9, 6.8 - d * 1.45);
   const T = { N };
   T.draw = (k, c, u) => {
     const x = N[k];
@@ -4039,7 +4084,8 @@ function kpTree() {
     if (c !== undefined) { if (x.ct) kill(x.ct); x.ct = tag('c=' + c + (u !== undefined ? ' u=' + u : ''), 'ptr', x.x, x.y - 0.58); }
     return x;
   };
-  T.kill = (k) => { if (!N[k].x2) killT(N[k]); };
+  // ✕ at the node's upper right (its number sits upper left), clear of the c / u label of the row above
+  T.kill = (k) => { if (!N[k].x2) { killT(N[k]); N[k].x2.position.set(N[k].x, N[k].y - 0.98, 0); } };
   T.hl = (...ks) => { Object.values(N).forEach((x) => x.m && glow(x.m, null)); ks.forEach((k) => glow(N[k].m, GOLD)); };
   return T;
 }
@@ -4063,13 +4109,13 @@ FRAG.push(['bt-kp-problem', '分支界限：0/1 Knapsack 問題', async (tok) =>
   B.fill([[0, 2], [1, 4], [2, 6]]);
   sayc('目標：總 profit 最大 → 最大化問題');
   await step(tok);                                   // 0:44 greedy, DP, backtracking too
-  note('也能用 greedy、DP、回溯解', 1.8, 0.4, -1.4);
+  note('也能用 greedy、DP、回溯解', 2.6, 4.2, 0);   // three rows on the right, one under another
   sayc('它也能用 greedy、DP、回溯解');
   await step(tok);                                   // 0:50 B&B only minimisation
-  bad('B&B 只解最小化', 1.8, 0.4, -0.6);
+  bad('B&B 只解最小化', 2.6, 3.4, 0);
   sayc('但 B&B 只能解最小化');
   await step(tok);                                   // 0:58 make profits negative
-  good('profit 取負號 → 最小化', 1.8, 0.4, 0.2);
+  good('profit 取負號 → 最小化', 2.6, 2.6, 0);
   sayc('把 profit 變成負的', '最大化 → 最小化');
   await step(tok);                                   // 1:13 convert the result back
   sayc('解完再把答案的正負號換回來');
@@ -4117,7 +4163,8 @@ FRAG.push(['bt-kp-bounds', '分支界限：0/1 Knapsack 的 cost 與 upper', asy
 
 // 3:02 root 與第一層
 FRAG.push(['bt-kp-root', '分支界限：0/1 Knapsack root（c = −38, u = −32）', async (tok) => {
-  fresh([0, 4.4, 13.5], [0, 3.4, 0]);
+  fresh([0, 4.4, 13.5], [0.2, 3.4, 0]);
+  frameHold(-6.9, -0.1, -0.3, 7.9, 7.4, 3.6);
   kpTable();
   const B = kpBag();
   const T = kpTree();
@@ -4171,7 +4218,8 @@ FRAG.push(['bt-kp-root', '分支界限：0/1 Knapsack root（c = −38, u = −3
 
 // 5:53 LC 展開：upper → −38，殺掉其他
 FRAG.push(['bt-kp-expand', '分支界限：0/1 Knapsack LC 展開（upper = −38）', async (tok) => {
-  fresh([0, 4.4, 13.5], [0, 3.4, 0]);
+  fresh([0, 4.4, 13.5], [0.2, 3.4, 0]);
+  frameHold(-6.9, -0.1, -0.3, 7.9, 7.4, 3.6);
   kpTable();
   const B = kpBag();
   const T = kpTree();
@@ -4231,7 +4279,8 @@ FRAG.push(['bt-kp-expand', '分支界限：0/1 Knapsack LC 展開（upper = −3
 
 // 9:04 最後兩個節點，得到答案
 FRAG.push(['bt-kp-answer', '分支界限：0/1 Knapsack 答案 (1, 1, 0, 1)', async (tok) => {
-  fresh([0, 4.4, 13.5], [0, 3.4, 0]);
+  fresh([0, 4.4, 13.5], [0.2, 3.4, 0]);
+  frameHold(-6.9, -0.1, -0.3, 7.9, 7.4, 3.6);
   kpTable();
   const B = kpBag();
   const T = kpTree();
@@ -4261,13 +4310,13 @@ FRAG.push(['bt-kp-answer', '分支界限：0/1 Knapsack 答案 (1, 1, 0, 1)', as
   B.fill([[0, 2], [1, 4], [3, 9]]);
   sayc('幾乎全被殺掉', '剩下的節點 9 就是答案');
   await step(tok);                                   // 10:13 1 1 0 1
-  good('x = (1, 1, 0, 1)', -4.4, 0.4, 3.6);
+  K.keep(good('x = (1, 1, 0, 1)', -5.2, 3.8, 0));      // the answer column under upper, clear of the bag
   sayc('x = (1, 1, 0, 1)', '放 1、2、4，不放 3');
   await step(tok);                                   // 10:26 profit 10 + 10 + 0 + 18 = 38
-  note('profit = 10 + 10 + 18 = 38（最大）', -1.6, 0.4, 3.6);
+  K.keep(note('profit = 10 + 10 + 18 = 38（最大）', -5.2, 3.0, 0));
   sayc('profit = 10 + 10 + 0 + 18 = 38', '最大 profit（把 −38 換回正號）');
   await step(tok);                                   // 10:35 weight 2 + 4 + 0 + 9 = 15
-  note('weight = 2 + 4 + 9 = 15', -1.6, 0.4, 4.4);
+  K.keep(note('weight = 2 + 4 + 9 = 15', -5.2, 2.2, 0));
   sayc('重量 2 + 4 + 0 + 9 = 15', '剛好裝滿');
 }]);
 
@@ -4717,7 +4766,7 @@ FRAG.push(['bt-ap-vc-proof', '近似演算法：證明 |C| ≤ 2|C*|', async (to
   const W = vcWorld(false);
   const M = [[1, 2], [5, 7], [3, 6]];
   const lines = [];
-  const ln = (t, cls = 'note') => { lines.push(tag(t, cls, 4.6, 0.4, -2.8 + lines.length * 0.72)); return lines[lines.length - 1]; };
+  const ln = (t, cls = 'note') => { lines.push(tag(t, cls, 4.6, 0.4, -3.3 + lines.length * 0.88)); return lines[lines.length - 1]; }; // rows far enough apart that faded ones don't sit under new ones
   await step(tok);                                   // 20:32 performance guarantee
   sayc('近似演算法要有 performance guarantee', '和最佳解比，最多差多少');
   await step(tok);                                   // 20:49 C by the algorithm, C* the optimum
@@ -4766,9 +4815,12 @@ FRAG.push(['bt-ap-vc-proof', '近似演算法：證明 |C| ≤ 2|C*|', async (to
 // dual：min 200y1 + 300y2 + 400y3，y1 + y3 ≥ 1、y2 + y3 ≥ 6、y ≥ 0 → (0, 5, 1)。
 // Simplex 例：max 2x1 + 5x2，2x1 − x2 ≤ 4、x1 + 2x2 ≤ 9、−x1 + x2 ≤ 3、x ≥ 0：(0,0) → (0,3) → (1,4) = 22。
 // a list of text lines that grows downward
-function panel(x, yTop, dy = 0.55, z = 0) {
+// roll = true: a long list keeps its still-visible lines packed from the top (faded remarks leave no gap),
+// so it never grows down into the picture under it
+function panel(x, yTop, dy = 0.55, z = 0, roll = false) {
   const ls = [];
-  return { ls, add(t, cls = 'note') { const l = tag(t, cls, x, yTop - ls.length * dy, z); ls.push(l); return l; }, mark(i, cls = 'ptr alt') { if (ls[i]) setCls(ls[i], cls); } };
+  const pack = () => ls.filter((l) => !l.userData.gone).forEach((l, i) => l.position.set(x, yTop - i * dy, z));
+  return { ls, add(t, cls = 'note') { const l = tag(t, cls, x, yTop - ls.length * dy, z); ls.push(l); if (roll) pack(); return l; }, mark(i, cls = 'ptr alt') { if (ls[i]) setCls(ls[i], cls); } };
 }
 // a 2D chart standing in the z = 0 plane: P(a, b) → world point
 function lpChart(ox, oy, s, maxA, maxB, la = 'x1', lb = 'x2') {
@@ -5308,6 +5360,7 @@ FRAG.push(['bt-lp-flow', '線性規劃：max flow = min cut 也是對偶', async
 // 51:14 Simplex 的幾何：頂點、鄰居
 FRAG.push(['bt-lp-vertex', '線性規劃：頂點與鄰居（n 條 constraint 定一點）', async (tok) => {
   fresh([0, 4.8, 12.5], [0, 2.6, 0]);
+  frameHold(-4.8, 0, -1.6, 6.0, 6.4, 1.2);
   const pn = panel(3.2, 6.0, 0.6);
   // a small polytope: a box with a cut corner, faces numbered like the slide
   const pts = { A: [-2.0, 2.6, 0.6], B: [-4.0, 2.6, 0.6], C: [-2.0, 2.6, -1.4], D: [-4.0, 2.6, -1.4], E: [-1.2, 1.6, 1.0], F: [-4.0, 0.3, 1.0], G: [-1.2, 0.3, 1.0], H: [-1.2, 0.3, -1.4] };
@@ -5347,7 +5400,7 @@ FRAG.push(['bt-lp-vertex', '線性規劃：頂點與鄰居（n 條 constraint �
   await step(tok);                                   // 54:24 a 3D example: x1, x2, x3
   sayc('立體的例子：三個變數 x1、x2、x3', '很多 constraints');
   await step(tok);                                   // 54:43 faces are numbered; letters are vertices
-  Object.keys(pts).forEach((k) => tag(k, 'ptr', pts[k][0], pts[k][1] + 0.45, pts[k][2]));
+  Object.keys(pts).forEach((k) => { const l = g.N[k].userData.lbl; if (l) setCls(l, 'ptr'); }); // the vertices' own letters, made prominent (no second copy)
   sayc('每一面有編號，英文字母是頂點');
   await step(tok);                                   // 55:04 2D: two constraints make a vertex
   sayc('2D：兩條線（兩個 constraint）交出一個頂點');
@@ -5848,6 +5901,7 @@ FRAG.push(['bt-mit8-rangeq', 'Sweep line：range index 查詢與 false positive'
 // 17:06 range index 的操作；未排序陣列的時間
 FRAG.push(['bt-mit8-ops', 'Range index：操作與未排序陣列的時間', async (tok) => {
   fresh([0, 3.6, 11], [0, 2.6, 0]);
+  frameHold(-6.2, 0.3, -0.3, 6.2, 6.8, 0.3);        // array (left) + list (right) area from the start
   const pn = (t, y, cls = 'note') => tag(t, cls, 3.6, y);
   let cells = null;
   await step(tok);                                   // 17:06 the range index is a data structure
@@ -6169,6 +6223,7 @@ const card = (t, c, x, y, z = 0, w = 2.6) => bx(t, c, x, y, z, w, 2, 0.55, 0.7);
 // 0:52 時脈的歷史：從 5 MHz 到 3 GHz，然後停住
 FRAG.push(['bt-mit24-clock', '研究主題：時脈停在 3 GHz → 多核心', async (tok) => {
   fresh([0, 3.6, 12], [0, 2.6, 0]);
+  frameHold(-5.8, 0, -0.3, 7.0, 6.5, 1.0);
   const X = (i) => -5.0 + i * 1.7;
   const bars = [];
   const bar = (i, mhz, label, c = C.B) => { const h = 1.05 * Math.log10(mhz); const m = cube('', c, [1.0, 1, 0.8], X(i), 0.01, 0); m.scale.y = 0.01; bars.push([m, h]); tag(label, 'idx', X(i), 0, 0.8); tag(mhz >= 1000 ? (mhz / 1000) + ' GHz' : mhz + ' MHz', 'ptr', X(i), h + 0.35); return anim(tok, 600, (u) => { m.scale.y = Math.max(0.01, h * u); m.position.y = m.scale.y / 2; }); };
@@ -6205,7 +6260,7 @@ FRAG.push(['bt-mit24-clock', '研究主題：時脈停在 3 GHz → 多核心', 
   await step(tok);                                   // 4:37 saturated at ~3 GHz; speed from more cores
   sayc('2005 年後時脈停在約 3 GHz', '效能改靠「更多核心」');
   await step(tok);                                   // 4:54 core = processor; quad-core = 4 x86 on one die
-  const cores = [0, 1, 2, 3].map((i) => cube('core', C.G, [0.8, 0.5, 0.6], 3.2 + (i % 2) * 1.0, 3.0 + Math.floor(i / 2) * 0.7, 0, 2));
+  const cores = [0, 1, 2, 3].map((i) => cube('core', C.G, [0.8, 0.5, 0.6], 5.4 + (i % 2) * 1.0, 0.4 + Math.floor(i / 2) * 0.7, 0, 2)); // beside the 4-core bar, not on it
   sayc('core 就是處理器', 'quad core = 同一塊矽晶片上 4 個 x86');
   await step(tok);                                   // 5:07 interconnected, talking to memory
   sayc('彼此相連、一起存取記憶體', '一顆晶片就是一台平行電腦');
@@ -6862,7 +6917,7 @@ FRAG.push(['bt-mit24r-fp', '期末複習：false positive 機率 1 − (1 − 1/
   fresh([0, 3.6, 12], [0, 2.0, 0]);
   const T = bitTable(12, 1.4, -4.3);
   [2, 7, 10, 4].forEach((h) => T.set(h));
-  const pn = panel(0, 6.2, 0.6);
+  const pn = panel(0, 6.2, 0.6, 0, true);          // 9 steps of derivation: only the live lines, packed above the table
   await step(tok);                                   // 21:33 a guess: less than n / m
   sayc('有人猜：小於 n / m');
   await step(tok);                                   // 21:56 check: compute h(f), look at T[h(f)]
@@ -7157,6 +7212,7 @@ FRAG.push(['rand-two-types', 'Las Vegas 與 Monte Carlo：哪個固定、哪個�
 // 1:52 例：Las Vegas 搜尋
 FRAG.push(['rand-lv-search', 'Las Vegas 搜尋：一直抽到 a 為止', async (tok) => {
   fresh([0, 3.4, 10.5], [0, 2.6, 0]);
+  frameHold(-5.8, 0.4, -0.3, 6.4, 6.0, 0.3);        // array + code area from the start (no zoom jump)
   let cells = null, cd = null, ptr = null, cnt = null, nt = null, found = null;
   await step(tok);                                   // 1:52 find a in an array of n elements
   cells = rsArray();
@@ -7165,7 +7221,7 @@ FRAG.push(['rand-lv-search', 'Las Vegas 搜尋：一直抽到 a 為止', async (
   nt = note('a 一定在陣列裡（只是不知道在哪）', -3.2, 2.7);
   sayc('前提：a 一定在陣列裡', '但我們不知道在哪一格');
   await step(tok);                                   // 2:25 while (true) randomly select an element
-  cd = code(LV_CODE, 3.9, 5.2, 0.5);
+  cd = code(LV_CODE, 3.9, 4.9, 0.5);
   cd.hl(1);
   ptr = hot('k = random', AX(0), 1.85);
   sayc('while (true)：每一圈從 n 格裡隨機挑一格', '');
@@ -7201,10 +7257,11 @@ FRAG.push(['rand-lv-search', 'Las Vegas 搜尋：一直抽到 a 為止', async (
 // 3:21 例：Monte Carlo 搜尋
 FRAG.push(['rand-mc-search', 'Monte Carlo 搜尋：只抽 x 次', async (tok) => {
   fresh([0, 3.4, 10.5], [0, 2.6, 0]);
+  frameHold(-5.8, 0.4, -0.3, 6.4, 6.0, 0.3);
   const cells = rsArray();
   let cd = null, ptr = null, cnt = null, fl = null, out = null;
   await step(tok);                                   // 3:22 Monte Carlo: array, n, and a parameter x
-  cd = code(MC_CODE, 3.7, 5.6, 0.5);
+  cd = code(MC_CODE, 3.7, 5.2, 0.5);
   cd.hl(0);
   hd('x = 4（固定）', -3.2, 4.4);
   sayc('Monte Carlo 版：多傳一個參數 x', '這裡 x = 4');
