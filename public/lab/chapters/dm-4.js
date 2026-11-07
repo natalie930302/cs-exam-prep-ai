@@ -681,8 +681,8 @@ export default function (ctx) {
     const N = 8;
     const A = makeBars(N, { color: '#4b9ee2', dx: 1.5, x0: -5.25 - 0.25, H: 2.4, base: 3.4, fixedMax: 21, w: 0.3, names: (i) => 'x' + (i === 0 ? '⁰' : i === 1 ? '¹' : i === 2 ? '²' : i === 3 ? '³' : '^' + i) });
     const B = makeBars(N, { color: '#d64545', dx: 1.5, x0: -5.25 + 0.25, H: 2.4, base: 3.4, fixedMax: 21, w: 0.3 });
-    tag('藍：f₀ = 0, f₁ = 1 → x/(1 − x − x²)', 'ptr', -2.5, 6.6);
-    tag('紅：當成 a₀ = a₁ = 1 → 1/(1 − x − x²)', 'ptr alt', 2.8, 6.1);
+    tag('藍：f₀ = 0, f₁ = 1 → x/(1 − x − x²)', 'ptr', -2.6, 6.3);  // 圖例放左上：左邊的柱子矮，不會蓋到
+    tag('紅：當成 a₀ = a₁ = 1 → 1/(1 − x − x²)', 'ptr alt', -2.6, 5.65);
     const fib = [0, 1]; for (let i = 2; i < N + 1; i++) fib.push(fib[i - 1] + fib[i - 2]);
     for (let i = 0; i < N; i++) { A.set(i, fib[i]); B.set(i, fib[i + 1]); await beat(tok, 380); }
     say('分母一樣，分子不同：整個數列錯位一格', 'G(x) − f₀ − f₁x = x(G(x) − f₀) + x²G(x)');
@@ -754,17 +754,27 @@ function seq(n0, init, f, nMax) { const a = {}; init.forEach((v, i) => { a[n0 + 
 function scene(id, title, steps, cam) {
   FRAG.push([id, title, async (tok) => {
     const c = cam || CAM; fresh(c[0], c[1]);
+    if (!cam) frameHold(...HOLD);
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
 }
 const CAM = [[0, 3.6, 14.5], [0, 3.0, 0]];
-// a board: text lines top → down; hi(i) lights line i (−1 = none)
+// An invisible box over the area the scenes use (title at the top, boards, the strip / table at the bottom):
+// the stage's auto framing measures it from the first step, so the camera does not zoom in on the first
+// few labels and then jump back out (labels sliding under the caption) when the rest arrives.
+const HOLD = [-5.6, -1.2, -0.3, 5.6, 7.4, 0.3];
+function frameHold(x0, y0, z0, x1, y1, z1) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+}
+// a board: text lines top → down; hi(i) lights line i (−1 = none). The lines are the subject itself, so
+// they are never retired like side remarks (a 'good' / 'note' / 'bad' line used to fade out 3 remarks later).
 function board(x, yTop, dy = 0.62) {
   const ls = [];
   return {
     ls,
-    add(t, cls = '') { const l = tag(t, cls, x, yTop - ls.length * dy); l.userData.base = cls; ls.push(l); return l; },
+    add(t, cls = '') { const l = tag(t, '', x, yTop - ls.length * dy); l.userData.base = cls; l.userData.keep = true; if (cls) l.element.className = 'lab-label ' + cls; ls.push(l); return l; },
     skip() { ls.push(null); },
     hi(i) { ls.forEach((l, k) => { if (l) l.element.className = 'lab-label' + (k === i ? ' ptr alt' : (l.userData.base ? ' ' + l.userData.base : '')); }); },
     last() { this.hi(ls.length - 1); },
@@ -928,7 +938,7 @@ scene('rr-12a-hrr', "k-th order linear homogeneous recurrence relation with cons
   },
   // 262.06
   async (tok, S) => {
-    S.st = strip('a', 0, 7, -3.0, 1.2); for (let n = 0; n < 4; n++) S.st.put(n, '?', FC.orange); S.kl = sm('k 個 initial conditions（示意 k = 4）', -1.7, 2.1); cap('跟前 k 個有關 → 要 k 個 initial condition', 'a₀, a₁, …, aₖ₋₁');
+    S.st = strip('a', 0, 7, -3.0, 1.2); for (let n = 0; n < 4; n++) S.st.put(n, '?', FC.orange); S.kl = sm('k 個 initial conditions（示意 k = 4）', -1.7, -0.05); cap('跟前 k 個有關 → 要 k 個 initial condition', 'a₀, a₁, …, aₖ₋₁');
   },
   // 287.52
   async (tok, S) => {
@@ -940,27 +950,27 @@ scene('rr-12a-hrr', "k-th order linear homogeneous recurrence relation with cons
   },
   // 335.08
   async (tok, S) => {
-    S.n1 = note('k-th order：跟前 k 項有關', -3.4, -0.1); cap('k-th order（k 階）', 'aₙ 跟前 k 項有關');
+    S.B.hi(2); S.nm = note('k-th order：跟前 k 項有關', 0, 2.2); cap('k-th order（k 階）', 'aₙ 跟前 k 項有關');
   },
   // 350.36
   async (tok, S) => {
-    S.n2 = note('linear：都是一次，沒有平方', 2.8, -0.1); cap('linear（線性）', '每項都是一次式，沒有平方');
+    txt(S.nm, 'linear：都是一次，沒有平方'); cap('linear（線性）', '每項都是一次式，沒有平方');
   },
   // 363.2
   async (tok, S) => {
-    S.n3 = note('homogeneous：右邊是 0', -3.4, -0.8); cap('homogeneous（齊次）', '移項後右邊只有 0');
+    txt(S.nm, 'homogeneous：右邊是 0'); cap('homogeneous（齊次）', '移項後右邊只有 0');
   },
   // 374.78
   async (tok, S) => {
-    S.n4 = bad('右邊有跟 n 有關的項 → non-homogeneous', 2.8, -0.8); cap('右邊不是 0 → non-homogeneous', '後面再教');
+    txt(S.nm, '右邊有跟 n 有關的項 → non-homogeneous'); S.nm.element.className = 'lab-label bad'; cap('右邊不是 0 → non-homogeneous', '後面再教');
   },
   // 389.52
   async (tok, S) => {
-    S.n5 = note('constant coefficients：c₁…cₖ 跟 n 無關', -0.3, -1.5); cap('constant coefficients（常係數）', 'c₁、c₂、…、cₖ 都跟 n 無關');
+    S.B.hi(3); txt(S.nm, 'constant coefficients：c₁…cₖ 跟 n 無關'); S.nm.element.className = 'lab-label note'; cap('constant coefficients（常係數）', 'c₁、c₂、…、cₖ 都跟 n 無關');
   },
   // 434.02
   async (tok, S) => {
-    gone(S.st, S.kl, S.n1, S.n2, S.n3, S.n4, S.n5); good('Fₙ − Fₙ₋₁ − Fₙ₋₂ = 0：k = 2（second order）', 0, 2.2); cap('剛才的 Fibonacci 就是二階的', 'k = 2');
+    gone(S.st, S.kl, S.nm); S.B.hi(-1); good('Fₙ − Fₙ₋₁ − Fₙ₋₂ = 0：k = 2（second order）', 0, 2.2); cap('剛才的 Fibonacci 就是二階的', 'k = 2');
   },
   // 452.04
   async (tok, S) => {
@@ -998,7 +1008,7 @@ scene('rr-12a-char', "特徵方程：aₙ₊₁ − 5aₙ + 6aₙ₋₁ = 0 → 
   },
   // 595.92
   async (tok, S) => {
-    note('從 aₙ₊₁ 開始也沒關係：二階', 3.0, 6.2); cap('從 aₙ₊₁ 開始也沒關係', '跟前兩個有關就是 second order');
+    S.n2 = note('從 aₙ₊₁ 開始也沒關係：二階', 3.0, 6.2); cap('從 aₙ₊₁ 開始也沒關係', '跟前兩個有關就是 second order');
   },
   // 607.36
   async (tok, S) => {
@@ -1026,11 +1036,11 @@ scene('rr-12a-char', "特徵方程：aₙ₊₁ − 5aₙ + 6aₙ₋₁ = 0 → 
   },
   // 714.27
   async (tok, S) => {
-    S.bb = bub('先猜樣子，解得出來＝猜對', 3.0, 3.4); cap('先猜一個樣子', '解得出來就表示樣子對');
+    S.bb = bub('先猜樣子，解得出來＝猜對', 3.0, 3.1); cap('先猜一個樣子', '解得出來就表示樣子對');
   },
   // 724.41
   async (tok, S) => {
-    S.B.clear(); S.B.add('aₙ₊₁ − 5aₙ + 6aₙ₋₁ = 0', 'ptr'); S.B.add('試 aₙ = rⁿ', 'ptr alt'); S.B.last(); cap('這裡就試 aₙ = rⁿ', '');
+    gone(S.R, S.n2); S.B.clear(); S.B.add('aₙ₊₁ − 5aₙ + 6aₙ₋₁ = 0', 'ptr'); S.B.add('試 aₙ = rⁿ', 'ptr alt'); S.B.last(); cap('這裡就試 aₙ = rⁿ', '');
   },
   // 749.8
   async (tok, S) => {
@@ -1050,15 +1060,15 @@ scene('rr-12a-char', "特徵方程：aₙ₊₁ − 5aₙ + 6aₙ₋₁ = 0 → 
   },
   // 800.89
   async (tok, S) => {
-    gone(S.bb); hot('characteristic equation（特徵方程式）', 3.0, 3.4); cap('這叫 characteristic equation', '特徵方程式');
+    gone(S.bb); hot('characteristic equation（特徵方程式）', 3.0, 5.4); cap('這叫 characteristic equation', '特徵方程式');
   },
   // 826.17
   async (tok, S) => {
-    good('(r − 2)(r − 3) = 0 → r = 2, 3', 3.0, 2.7); cap('可以因式分解', 'r = 2 或 r = 3');
+    good('(r − 2)(r − 3) = 0 → r = 2, 3', 3.0, 4.7); cap('可以因式分解', 'r = 2 或 r = 3');
   },
   // 841.91
   async (tok, S) => {
-    good('2ⁿ 是解，3ⁿ 也是解', 3.0, 2.0); cap('2ⁿ 是解，3ⁿ 也是解', '');
+    good('2ⁿ 是解，3ⁿ 也是解', 3.0, 4.0); cap('2ⁿ 是解，3ⁿ 也是解', '');
   },
 ]);
 scene('rr-12a-gen', "通解 α₁2ⁿ + α₂3ⁿ，代 a₁ = 1、a₂ = 5 → aₙ = 3ⁿ − 2ⁿ", [
@@ -1100,7 +1110,7 @@ scene('rr-12a-gen', "通解 α₁2ⁿ + α₂3ⁿ，代 a₁ = 1、a₂ = 5 → 
   },
   // 1041
   async (tok, S) => {
-    gone(S.r1, S.r2, S.r3, S.hn, S.ck); S.B.clear(); S.B.add('aₙ = α₁2ⁿ + α₂3ⁿ', 'good'); S.R = board(3.2, 6.2); S.R.add('α₁、α₂ 由 initial conditions 決定', 'ptr'); cap('還有兩個常數 α₁、α₂ 要決定', '');
+    gone(S.r1, S.r2, S.r3, S.hn, S.ck); S.B.clear(); S.B = board(0, 6.2); S.B.add('aₙ = α₁2ⁿ + α₂3ⁿ', 'good'); S.R = board(0, 5.4, 0.58); S.R.add('α₁、α₂ 由 initial conditions 決定', 'ptr'); cap('還有兩個常數 α₁、α₂ 要決定', '');
   },
   // 1062.98
   async (tok, S) => {
@@ -1128,11 +1138,11 @@ scene('rr-12a-gen', "通解 α₁2ⁿ + α₂3ⁿ，代 a₁ = 1、a₂ = 5 → 
   },
   // 1136.21
   async (tok, S) => {
-    S.R.hi(-1); S.A = seq(1, [1, 5], (a, n) => 5 * a[n - 1] - 6 * a[n - 2], 6); S.Bf = {}; for (let n = 1; n <= 6; n++) S.Bf[n] = Math.pow(3, n) - Math.pow(2, n); S.c = cmp([1, 2, 3, 4, 5, 6], S.A, S.Bf, -1.4, 1.2, '遞迴算', '3ⁿ − 2ⁿ'); cap('對所有 n ≥ 1 都成立', '藍：用遞迴算　綠：用公式算');
+    S.R.clear(); S.B.clear(); S.B.add('aₙ = −2ⁿ + 3ⁿ = 3ⁿ − 2ⁿ（n ≥ 1）', 'ptr alt'); S.A = seq(1, [1, 5], (a, n) => 5 * a[n - 1] - 6 * a[n - 2], 6); S.Bf = {}; for (let n = 1; n <= 6; n++) S.Bf[n] = Math.pow(3, n) - Math.pow(2, n); S.c = cmp([1, 2, 3, 4, 5, 6], S.A, S.Bf, -2.0, 4.2, '遞迴算', '3ⁿ − 2ⁿ'); cap('對所有 n ≥ 1 都成立', '藍：用遞迴算　綠：用公式算');
   },
   // 1153.72
   async (tok, S) => {
-    glow(S.c[S.c.length - 3], HL); good('a₆ = 3⁶ − 2⁶ = 729 − 64 = 665', 0.8, -1.0); cap('要算 a₆：n 用 6 代', '3⁶ − 2⁶ = 665');
+    glow(S.c[S.c.length - 3], HL); good('a₆ = 3⁶ − 2⁶ = 729 − 64 = 665', 0, 1.9); cap('要算 a₆：n 用 6 代', '3⁶ − 2⁶ = 665');
   },
 ]);
 scene('rr-12a-sum', "解法整理：特徵方程 → 根 → 通解 → 初始條件", [
@@ -1250,19 +1260,20 @@ scene('rr-12b-int', "無理數會剛好消掉：Fₙ 都是整數", [
   },
   // 240.62
   async (tok, S) => {
-    S.F = seq(0, [0, 1], (a, n) => a[n - 1] + a[n - 2], 8); S.st = strip('F', 0, 8, -3.4, 5.2); for (let n = 0; n <= 8; n++) S.st.put(n, S.F[n]); cap('Fibonacci number 都是整數', '0 1 1 2 3 5 8 …');
+    S.F = seq(0, [0, 1], (a, n) => a[n - 1] + a[n - 2], 8); S.st = strip('F', 0, 8, -3.4, 5.6); for (let n = 0; n <= 8; n++) S.st.put(n, S.F[n]); cap('Fibonacci number 都是整數', '0 1 1 2 3 5 8 …');
   },
   // 254.96
   async (tok, S) => {
-    bad('公式裡有 √5（無理數）？', 0, 3.8); cap('答案裡面有無理數', '乍看之下有點怪');
+    bad('公式裡有 √5（無理數）？', 0, 4.3); cap('答案裡面有無理數', '乍看之下有點怪');
   },
   // 259.75
   async (tok, S) => {
-    S.u = {}; S.v = {}; const r5 = Math.sqrt(5), ph = (1 + r5) / 2, ps = (1 - r5) / 2; for (let n = 0; n <= 6; n++) { S.u[n] = Math.pow(ph, n) / r5; S.v[n] = Math.pow(ps, n) / r5; } S.r1 = vrow('φⁿ/√5', [0, 1, 2, 3, 4, 5, 6].map((n) => S.u[n].toFixed(3)), -1.9, 2.6, FC.gold, 1.0); S.r2 = vrow('ψⁿ/√5', [0, 1, 2, 3, 4, 5, 6].map((n) => S.v[n].toFixed(3)), -1.9, 1.8, FC.purple, 1.0); S.r3 = vrow('相減', [0, 1, 2, 3, 4, 5, 6].map((n) => fmt(S.u[n] - S.v[n])), -1.9, 1.0, FC.green, 1.0); cap('無理數會剛好消掉', '兩排小數相減就是整數');
+    S.u = {}; S.v = {}; const r5 = Math.sqrt(5), ph = (1 + r5) / 2, ps = (1 - r5) / 2; for (let n = 0; n <= 6; n++) { S.u[n] = Math.pow(ph, n) / r5; S.v[n] = Math.pow(ps, n) / r5; } const wrow = (lb, vals, y, c) => { const all = [sm(lb, -4.7, y)]; const cells = vals.map((v, i) => bx(v, c, -3.4 + i * 1.45, y, 0, 1.25, 0.55, 0.55)); all.push(...cells); return { all, cells }; };  // 寬一點的格子：三位小數放得下
+    S.r1 = wrow('φⁿ/√5', [0, 1, 2, 3, 4, 5, 6].map((n) => S.u[n].toFixed(3)), 3.4, FC.gold); S.r2 = wrow('ψⁿ/√5', [0, 1, 2, 3, 4, 5, 6].map((n) => S.v[n].toFixed(3)), 2.6, FC.purple); S.r3 = wrow('相減', [0, 1, 2, 3, 4, 5, 6].map((n) => fmt(S.u[n] - S.v[n])), 1.8, FC.green); cap('無理數會剛好消掉', '兩排小數相減就是整數');
   },
   // 277.44
   async (tok, S) => {
-    good('任何 n 代進去都是整數', 0, -0.2); cap('任何 n 代進去都是整數', '整數 + 整數 永遠是整數');
+    good('任何 n 代進去都是整數', 0.85, 0.95); cap('任何 n 代進去都是整數', '整數 + 整數 永遠是整數');
   },
 ]);
 scene('rr-12b-golden', "Fₙ₊₁/Fₙ → (1 + √5)/2：Golden Ratio", [
@@ -1300,23 +1311,23 @@ scene('rr-12b-golden', "Fₙ₊₁/Fₙ → (1 + √5)/2：Golden Ratio", [
   },
   // 443.28
   async (tok, S) => {
-    gone(S.bars, S.lim, S.h); good('Golden Ratio（黃金比例）', 0, 2.6); cap('這叫 Golden Ratio', '黃金比例');
+    gone(S.bars, S.lim, S.h); good('Golden Ratio（黃金比例）', 0, 3.3); cap('這叫 Golden Ratio', '黃金比例');
   },
   // 465.86
   async (tok, S) => {
-    const u = 1.9; S.sa = bx('a', FC.gold, -4.5 + 1.618 * u / 2, 1.2, 0, 1.618 * u, 0.3, 0.3); S.sb = bx('b', FC.teal, -4.5 + 1.618 * u + u / 2 + 0.05, 1.2, 0, u, 0.3, 0.3); sm('a + b', -4.5 + 2.618 * u / 2, 0.6); cap('兩個線段：長的 a、短的 b', '全長 a + b');
+    const u = 1.9; S.sa = bx('a', FC.gold, -2.5 + 1.618 * u / 2, 2.4, 0, 1.618 * u, 0.3, 0.3); S.sb = bx('b', FC.teal, -2.5 + 1.618 * u + u / 2 + 0.05, 2.4, 0, u, 0.3, 0.3); sm('a + b', -2.5 + 2.618 * u / 2, 1.85); cap('兩個線段：長的 a、短的 b', '全長 a + b');
   },
   // 474.47
   async (tok, S) => {
-    pl('(a + b) / a  =  a / b', 0, 0.0); cap('全長比長段 = 長段比短段', '(a + b)/a = a/b');
+    pl('(a + b) / a  =  a / b', 0, 1.15); cap('全長比長段 = 長段比短段', '(a + b)/a = a/b');
   },
   // 489.96
   async (tok, S) => {
-    good('這個比 = (1 + √5)/2', 0, -0.7); cap('這個比例就是 (1 + √5)/2', '');
+    good('這個比 = (1 + √5)/2', 0, 0.5); cap('這個比例就是 (1 + √5)/2', '');
   },
   // 506.58
   async (tok, S) => {
-    note('Fibonacci 的成長速度 = 黃金比例', 0, -1.4); cap('Fibonacci 的成長速度', '剛好就是 Golden Ratio');
+    note('Fibonacci 的成長速度 = 黃金比例', 0, -0.15); cap('Fibonacci 的成長速度', '剛好就是 Golden Ratio');
   },
 ]);
 scene('rr-12b-double', "重根 r = 2：2ⁿ 與 n·2ⁿ", [
@@ -1408,19 +1419,19 @@ scene('rr-12b-multi', "多重根：r₀ⁿ、n r₀ⁿ、n² r₀ⁿ、…", [
   },
   // 965.38
   async (tok, S) => {
-    S.B.hi(-1); S.r = [fbox('r₁ⁿ', FC.blue, -3.2, 1.3, 1.4), fbox('r₂ⁿ', FC.purple, -1.2, 1.3, 1.4), fbox('n r₂ⁿ', FC.purple, 0.8, 1.3, 1.4), fbox('n² r₂ⁿ', FC.purple, 2.8, 1.3, 1.4)]; sm('單根 r₁', -3.2, 0.6); sm('三重根 r₂（示意：4 次多項式）', 0.8, 0.6); cap('例如一個單根 + 一個三重根', '4 次 → 需要 4 個獨立解');
+    S.B.hi(-1); S.r = [fbox('r₁ⁿ', FC.blue, -3.2, 2.5, 1.4), fbox('r₂ⁿ', FC.purple, -1.2, 2.5, 1.4), fbox('n r₂ⁿ', FC.purple, 0.8, 2.5, 1.4), fbox('n² r₂ⁿ', FC.purple, 2.8, 2.5, 1.4)]; sm('單根 r₁', -3.2, 1.85); sm('三重根 r₂（示意：4 次多項式）', 0.8, 1.85); cap('例如一個單根 + 一個三重根', '4 次 → 需要 4 個獨立解');
   },
   // 985.34
   async (tok, S) => {
-    good('看根的樣子，就能把 k 個獨立解都找到', 0, -0.4); cap('看根的樣子', '就可以把解都找到');
+    good('看根的樣子，就能把 k 個獨立解都找到', 0, 1.15); cap('看根的樣子', '就可以把解都找到');
   },
   // 993.36
   async (tok, S) => {
-    note('以上都假設根是實數', 0, -1.1); cap('這邊假設根都是實數', '');
+    note('以上都假設根是實數', 0, 0.5); cap('這邊假設根都是實數', '');
   },
   // 1006.06
   async (tok, S) => {
-    bad('根可能是複數 → 下堂課講', 0, -1.8); cap('實係數多項式的根可能是複數', '下堂課再講');
+    bad('根可能是複數 → 下堂課講', 0, -0.15); cap('實係數多項式的根可能是複數', '下堂課再講');
   },
 ]);
 
@@ -1876,7 +1887,7 @@ scene('rr-12d-part', "猜 pₙ = b：b − b − 2b = 1 → b = −1/2", [
 scene('rr-12d-const', "α₁ = 5/6、α₂ = 1/6", [
   // 1058.94
   async (tok, S) => {
-    hot('用 initial conditions 決定 α₁、α₂', 0, 7.2); S.B = board(-2.4, 6.2, 0.66); S.B.add('aₙ = α₁2ⁿ + α₂(−1)ⁿ − 1/2', 'ptr'); cap('最後兩個 constant', '用 initial condition 決定');
+    hot('用 initial conditions 決定 α₁、α₂', 0, 7.2); S.B = board(-2.9, 6.2, 0.66); S.B.add('aₙ = α₁2ⁿ + α₂(−1)ⁿ − 1/2', 'ptr'); cap('最後兩個 constant', '用 initial condition 決定');
   },
   // 1072.61
   async (tok, S) => {
@@ -1892,19 +1903,19 @@ scene('rr-12d-const', "α₁ = 5/6、α₂ = 1/6", [
   },
   // 1107.42
   async (tok, S) => {
-    S.B.add('aₙ = (5/6)2ⁿ + (1/6)(−1)ⁿ − 1/2', 'ptr alt'); S.B.last(); S.A = seq(1, [1, 3], (a, n) => a[n - 1] + 2 * a[n - 2] + 1, 7); S.Bf = {}; for (let n = 1; n <= 7; n++) S.Bf[n] = 5 / 6 * Math.pow(2, n) + Math.pow(-1, n) / 6 - 1 / 2; S.c = cmp([1, 2, 3, 4, 5, 6, 7], S.A, S.Bf, -2.4, 1.4, '遞迴', '公式'); cap('最後答案', '帶回去檢查');
+    S.B.add('aₙ = (5/6)2ⁿ + (1/6)(−1)ⁿ − 1/2', 'ptr alt'); S.B.last(); S.A = seq(1, [1, 3], (a, n) => a[n - 1] + 2 * a[n - 2] + 1, 7); S.Bf = {}; for (let n = 1; n <= 7; n++) S.Bf[n] = 5 / 6 * Math.pow(2, n) + Math.pow(-1, n) / 6 - 1 / 2; S.c = cmp([1, 2, 3, 4, 5, 6, 7], S.A, S.Bf, -2.8, 2.0, '遞迴', '公式', 1.05); cap('最後答案', '帶回去檢查');
   },
   // 1111.4
   async (tok, S) => {
-    S.B.hi(-1); note('= 齊次通解 + 特解', 3.6, 4.2); cap('兩部分', '前面是 homogeneous 的，後面是 particular');
+    S.B.hi(-1); note('= 齊次通解 + 特解', 3.5, 5.6); cap('兩部分', '前面是 homogeneous 的，後面是 particular');
   },
   // 1146.98
   async (tok, S) => {
-    bad('樣子不對 → 換樣子', 3.8, 3.5); cap('試什麼樣子解不出來', '就表示樣子不對，要試別的');
+    bad('樣子不對 → 換樣子', 3.5, 4.95); cap('試什麼樣子解不出來', '就表示樣子不對，要試別的');
   },
   // 1170.89
   async (tok, S) => {
-    note('下一講：什麼 f(n) 要猜什麼樣子', 3.6, 2.8); cap('後面再講', '什麼樣子要怎麼猜');
+    note('下一講：什麼 f(n) 要猜什麼樣子', 3.5, 4.3); cap('後面再講', '什麼樣子要怎麼猜');
   },
 ]);
 
@@ -1942,7 +1953,7 @@ scene('rr-13a-review', "複習：非齊次 = 齊次通解 + 猜一個特解", [
 scene('rr-13a-trial', "Trial sequence：常數、多項式、λⁿ、cos／sin", [
   // 92.6
   async (tok, S) => {
-    S.T = hot('要怎麼猜？', 0, 7.2); S.h1 = hd('f(n) 長這樣', -2.8, 6.3); S.h2 = hd('試解 pₙ 設成', 2.8, 6.3); S.L = board(-2.8, 5.6, 0.46); S.R = board(2.8, 5.6, 0.46); cap('要怎麼猜？', '');
+    S.T = hot('要怎麼猜？', 0, 7.2); S.h1 = hd('f(n) 長這樣', -3.3, 6.3); S.h2 = hd('試解 pₙ 設成', 2.5, 6.3); S.L = board(-3.3, 5.6, 0.56); S.R = board(2.5, 5.6, 0.56); cap('要怎麼猜？', '');
   },
   // 95.7
   async (tok, S) => {
@@ -1950,7 +1961,7 @@ scene('rr-13a-trial', "Trial sequence：常數、多項式、λⁿ、cos／sin",
   },
   // 125.62
   async (tok, S) => {
-    S.t1 = note('試的數列叫 trial sequence', 0, 1.35); cap('這叫 trial sequence', '再把它帶進去');
+    S.t1 = note('試的數列叫 trial sequence', 0, 0.3); cap('這叫 trial sequence', '再把它帶進去');
   },
   // 135.32
   async (tok, S) => {
@@ -1962,7 +1973,7 @@ scene('rr-13a-trial', "Trial sequence：常數、多項式、λⁿ、cos／sin",
   },
   // 183.28
   async (tok, S) => {
-    gone(S.t1); S.t2 = bad('f(n) 只有 b₁n 也要設 B₁n + B₀', 0, 1.35); cap('就算只有 b₁n', '兩個係數都要設');
+    gone(S.t1); S.t2 = bad('f(n) 只有 b₁n 也要設 B₁n + B₀', 0, 0.3); cap('就算只有 b₁n', '兩個係數都要設');
   },
   // 208.82
   async (tok, S) => {
@@ -1978,7 +1989,7 @@ scene('rr-13a-trial', "Trial sequence：常數、多項式、λⁿ、cos／sin",
   },
   // 294.17
   async (tok, S) => {
-    gone(S.t2); S.t3 = sm('例：f(n) = 2ⁿ → 設 B·2ⁿ', 0, 1.35); cap('例如 2ⁿ', '就設 B·2ⁿ');
+    gone(S.t2); S.t3 = sm('例：f(n) = 2ⁿ → 設 B·2ⁿ', 0, 0.3); cap('例如 2ⁿ', '就設 B·2ⁿ');
   },
   // 304.55
   async (tok, S) => {
@@ -2006,11 +2017,11 @@ scene('rr-13a-trial', "Trial sequence：常數、多項式、λⁿ、cos／sin",
   },
   // 486.73
   async (tok, S) => {
-    S.t4 = note('只要找到一個 particular solution 就好', 0, 0.85); cap('只要找一個 particular solution', '任何一個都 OK');
+    S.t4 = note('只要找到一個 particular solution 就好', 0, 0.3); cap('只要找一個 particular solution', '任何一個都 OK');
   },
   // 495.41
   async (tok, S) => {
-    gone(S.t4); note('只要找一個特解；f(n) 不只這些，但常見的大都在表裡', 0, 0.85); cap('f(n) 當然不只這些', '常見的大概都在這裡');
+    gone(S.t4); note('只要找一個特解；f(n) 不只這些，但常見的大都在表裡', 0, 0.3); cap('f(n) 當然不只這些', '常見的大概都在這裡');
   },
 ]);
 scene('rr-13a-ex', "一階非齊次：aₙ − 2aₙ₋₁ = n，設 pₙ = B₁n + B₀", [
@@ -2020,7 +2031,7 @@ scene('rr-13a-ex', "一階非齊次：aₙ − 2aₙ₋₁ = n，設 pₙ = B₁
   },
   // 555.79
   async (tok, S) => {
-    S.B = board(-3.0, 6.2, 0.5); S.B.add('aₙ − 2aₙ₋₁ = n，a₀ = 1', 'ptr'); cap('First order 的 non-homogeneous', '一個 initial condition：a₀ = 1');
+    S.B = board(-3.0, 6.2, 0.64); S.B.add('aₙ − 2aₙ₋₁ = n，a₀ = 1', 'ptr'); cap('First order 的 non-homogeneous', '一個 initial condition：a₀ = 1');
   },
   // 564.13
   async (tok, S) => {
@@ -2040,7 +2051,7 @@ scene('rr-13a-ex', "一階非齊次：aₙ − 2aₙ₋₁ = n，設 pₙ = B₁
   },
   // 656.9
   async (tok, S) => {
-    S.B.hi(-1); S.C = board(0.4, 3.5, 0.62); S.C.add('代入 pₙ − 2pₙ₋₁ = n'); cap('把 pₙ 帶進去', '要滿足 non-homogeneous');
+    S.B.hi(-1); S.C = board(1.2, 3.3, 0.66); S.C.add('代入 pₙ − 2pₙ₋₁ = n'); cap('把 pₙ 帶進去', '要滿足 non-homogeneous');
   },
   // 685.85
   async (tok, S) => {
@@ -2064,15 +2075,15 @@ scene('rr-13a-ex', "一階非齊次：aₙ − 2aₙ₋₁ = n，設 pₙ = B₁
   },
   // 756.72
   async (tok, S) => {
-    S.C.hi(-1); S.bd = bad('若沒設 B₀：常數項 2B₁ = −2 ≠ 0 → 矛盾', 0.4, -0.3); cap('如果沒有設 B₀', '就會 inconsistent');
+    S.C.hi(-1); S.bd = bad('若沒設 B₀：常數項 2B₁ = −2 ≠ 0 → 矛盾', 1.2, -0.55); cap('如果沒有設 B₀', '就會 inconsistent');
   },
   // 779.82
   async (tok, S) => {
-    S.pp = hot('pₙ = −n − 2', 0.4, -1.0); cap('particular solution', 'pₙ = −n − 2');
+    S.pp = hot('pₙ = −n − 2', 1.2, -1.15); cap('particular solution', 'pₙ = −n − 2');
   },
   // 796.16
   async (tok, S) => {
-    gone(S.C, S.bd, S.pp); S.B.add('pₙ = −n − 2', 'good'); S.B.add('aₙ = α·2ⁿ − n − 2', 'ptr alt'); S.B.last(); cap('加回 homogeneous 的通解', 'aₙ = α2ⁿ − n − 2');
+    gone(S.C, S.bd, S.pp); S.B.clear(); S.B.add('aₙ − 2aₙ₋₁ = n，a₀ = 1', 'ptr'); S.B.add('zₙ = α·2ⁿ', 'good'); S.B.add('pₙ = −n − 2', 'good'); S.B.add('aₙ = α·2ⁿ − n − 2', 'ptr alt'); S.B.last(); cap('加回 homogeneous 的通解', 'aₙ = α2ⁿ − n − 2');
   },
   // 830.66
   async (tok, S) => {
@@ -2520,7 +2531,7 @@ scene('rr-sub-solve', "n − k = 1 → T(n) = n(n + 1)/2 = O(n²)", [
   },
   // 671.75
   async (tok, S) => {
-    gone(S.T, S.T2, S.T3, S.T4); S.tri = []; for (let c = 1; c <= 5; c++) for (let r = 0; r < c; r++) S.tri.push(bx('', c % 2 ? FC.blue : FC.teal, -5.0 + (c - 1) * 0.55, -1.4 + r * 0.55, 0, 0.5, 0.5, 0.5)); S.tri.push(sm('1 + 2 + 3 + 4 + 5 = 15（示意 n = 5）', -3.9, -2.0)); cap('前 n 個自然數的和', '');
+    gone(S.T, S.T2, S.T3, S.T4); S.tri = []; for (let c = 1; c <= 5; c++) for (let r = 0; r < c; r++) S.tri.push(bx('', c % 2 ? FC.blue : FC.teal, -5.0 + (c - 1) * 0.55, -1.0 + r * 0.55, 0, 0.5, 0.5, 0.5)); S.tri.push(sm('1 + 2 + 3 + 4 + 5 = 15（示意 n = 5）', -3.9, -1.6)); cap('前 n 個自然數的和', '');
   },
   // 687.93
   async (tok, S) => {
@@ -2544,11 +2555,11 @@ scene('rr-sub-solve', "n − k = 1 → T(n) = n(n + 1)/2 = O(n²)", [
   },
   // 734.21
   async (tok, S) => {
-    note('Big-O 是上界；這題每次都剛好 n(n+1)/2 步，也是 Θ(n²)', 2.6, 2.6); cap('講者說用 Big-O 寫 worst case', 'Big-O 是上界，這題其實也是 Θ(n²)');
+    note('Big-O 是上界；這題每次都剛好 n(n+1)/2 步，也是 Θ(n²)', 0, 2.75); cap('講者說用 Big-O 寫 worst case', 'Big-O 是上界，這題其實也是 Θ(n²)');
   },
   // 751.87
   async (tok, S) => {
-    S.r.hi(-1); good('REC(n) 的 time complexity = O(n²)', -1.5, 2.0); cap('這個演算法的時間複雜度', 'O(n²)');
+    S.r.hi(-1); good('REC(n) 的 time complexity = O(n²)', 0, 2.1); cap('這個演算法的時間複雜度', 'O(n²)');
   },
 ]);
 
@@ -2576,7 +2587,7 @@ scene('rr-gf-def', "A(x) = a₀ + a₁x + a₂x² + … = Σ aᵣxʳ", [
   },
   // 85.3
   async (tok, S) => {
-    S.r = rack(['a₀', 'a₁', 'a₂', 'a₃', 'a₄', '…'], -2.2, -0.2, FC.blue, '數列'); cap('數列 a₀, a₁, a₂, …', '');
+    S.r = rack(['a₀', 'a₁', 'a₂', 'a₃', 'a₄', '…'], -2.2, 0.6, FC.blue, '數列'); cap('數列 a₀, a₁, a₂, …', '');
   },
   // 91.8
   async (tok, S) => {
@@ -2592,7 +2603,7 @@ scene('rr-gf-def', "A(x) = a₀ + a₁x + a₂x² + … = Σ aᵣxʳ", [
   },
   // 158.59
   async (tok, S) => {
-    gone(S.q); S.A = hot('A(x) = a₀ + a₁x + a₂x² + … + aᵣxʳ + …', 0.4, 2.0); cap('定義成 power series', 'A(x) = a₀ + a₁x + a₂x² + …');
+    gone(S.q); S.A = hot('A(x) = a₀ + a₁x + a₂x² + … + aᵣxʳ + …', 0.4, 2.3); cap('定義成 power series', 'A(x) = a₀ + a₁x + a₂x² + …');
   },
   // 199.04
   async (tok, S) => {
@@ -2600,11 +2611,11 @@ scene('rr-gf-def', "A(x) = a₀ + a₁x + a₂x² + … = Σ aᵣxʳ", [
   },
   // 214.01
   async (tok, S) => {
-    glow(S.r.cells[0], null); S.S = pl('= Σ aᵣxʳ（r 從 0 到 ∞）', 0.4, 1.3); cap('寫成 summation', 'Σ aᵣxʳ，r = 0 到 ∞');
+    glow(S.r.cells[0], null); S.S = pl('= Σ aᵣxʳ（r 從 0 到 ∞）', 0.4, 1.7); cap('寫成 summation', 'Σ aᵣxʳ，r = 0 到 ∞');
   },
   // 227.22
   async (tok, S) => {
-    good('A(x) 就是數列 (aᵣ) 的 generating function', 0.4, -1.3); cap('A(x) 是 (aᵣ) 的 generating function', '');
+    good('A(x) 就是數列 (aᵣ) 的 generating function', 0.4, -0.25); cap('A(x) 是 (aᵣ) 的 generating function', '');
   },
 ]);
 scene('rr-gf-ones', "1 + x + x² + … = 1/(1 − x)（|x| < 1）", [
@@ -2748,7 +2759,7 @@ scene('rr-gf-sum', "A(x) + B(x)：cᵣ = aᵣ + bᵣ", [
   },
   // 758.96
   async (tok, S) => {
-    S.B.add('B(x) = b₀ + b₁x + b₂x² + … = Σ bᵣxʳ'); S.B.last(); S.rb = rack([1, 2, 3, 4], 1.9, 3.3, FC.purple, 'bᵣ'); sm('（示意數字）', 3.2, 1.05); cap('B(x) = Σ bᵣxʳ', '');
+    S.B.add('B(x) = b₀ + b₁x + b₂x² + … = Σ bᵣxʳ'); S.B.last(); S.rb = rack([1, 2, 3, 4], 1.9, 3.3, FC.purple, 'bᵣ'); S.rb.all.splice(1, 4).forEach((l) => remove(l)); sm('（示意數字）', 3.2, 1.05); cap('B(x) = Σ bᵣxʳ', '');
   },
   // 777.44
   async (tok, S) => {
@@ -2760,7 +2771,7 @@ scene('rr-gf-sum', "A(x) + B(x)：cᵣ = aᵣ + bᵣ", [
   },
   // 799.04
   async (tok, S) => {
-    S.B.add('A + B = (a₀+b₀) + (a₁+b₁)x + …'); S.B.last(); S.rc = rack([2, 3, 4, 5], 1.9, 1.9, FC.green, 'cᵣ'); cap('(a₀ + b₀) + (a₁ + b₁)x + …', '');
+    S.B.add('A + B = (a₀+b₀) + (a₁+b₁)x + …'); S.B.last(); S.rc = rack([2, 3, 4, 5], 1.9, 1.9, FC.green, 'cᵣ'); S.rc.all.splice(1, 4).forEach((l) => remove(l)); cap('(a₀ + b₀) + (a₁ + b₁)x + …', '');
   },
   // 818.07
   async (tok, S) => {
@@ -2826,7 +2837,7 @@ scene('rr-gf-conv', "A(x)B(x)：dᵣ = a₀bᵣ + a₁bᵣ₋₁ + … + aᵣb�
   },
   // 1127.76
   async (tok, S) => {
-    note('這叫 convolution（卷積）', 3.4, 0.2); cap('這個性質叫 convolution', '');
+    note('這叫 convolution（卷積）', 3.6, 0.65); cap('這個性質叫 convolution', '');
   },
   // 1148.57
   async (tok, S) => {
@@ -2834,11 +2845,11 @@ scene('rr-gf-conv', "A(x)B(x)：dᵣ = a₀bᵣ + a₁bᵣ₋₁ + … + aᵣb�
   },
   // 1185.5
   async (tok, S) => {
-    for (const k of ['0,3', '1,2', '2,1', '3,0']) glow(S.cell[k], null); S.d = []; for (let r = 0; r < 4; r++) { let s = 0; for (let k = 0; k <= r; k++) s += 1 * 1; S.d.push(s); } S.dr = rack(S.d, -4.4, -0.9, FC.green, 'dᵣ'); sm('示意：aᵣ = bᵣ = 1 → dᵣ = r + 1', -2.6, -1.6); cap('回到 D(x) = A(x)B(x)', '第 r 項 dᵣ');
+    for (const k of ['0,3', '1,2', '2,1', '3,0']) glow(S.cell[k], null); S.d = []; for (let r = 0; r < 4; r++) { let s = 0; for (let k = 0; k <= r; k++) s += 1 * 1; S.d.push(s); } S.dr = rack(S.d, 2.0, -0.5, FC.green, 'dᵣ'); sm('示意：aᵣ = bᵣ = 1 → dᵣ = r + 1', 3.4, -1.15); cap('回到 D(x) = A(x)B(x)', '第 r 項 dᵣ');
   },
   // 1223.18
   async (tok, S) => {
-    good('dᵣ = Σ(k=0..r) aₖbᵣ₋ₖ', 3.4, -1.0); cap('dᵣ = Σ aₖbᵣ₋ₖ', '這就是乘積的定義');
+    good('dᵣ = Σ(k=0..r) aₖbᵣ₋ₖ', -3.4, 0.4); cap('dᵣ = Σ aₖbᵣ₋ₖ', '這就是乘積的定義');
   },
   // 1235.98
   async (tok, S) => {
@@ -2902,7 +2913,7 @@ scene('rr-gf-std', "1/(1 − x)ⁿ = Σ C(n + r − 1, r)xʳ", [
   },
   // 1453.08
   async (tok, S) => {
-    S.B.add('1/(1 − x)² = 1 + 2x + 3x² + 4x³ + …'); S.B.last(); S.r2 = rack([0, 1, 2, 3, 4].map((r) => C(-2, r) * Math.pow(-1, r)), 2.0, 1.35, FC.purple, '1/(1−x)²'); S.r2.all.splice(1, 5).forEach((l) => remove(l));  // 次方標籤同上排，只留第一排 cap('1/(1 − x)²', '1 + 2x + 3x² + 4x³ + …');
+    S.B.add('1/(1 − x)² = 1 + 2x + 3x² + 4x³ + …'); S.B.last(); S.r2 = rack([0, 1, 2, 3, 4].map((r) => C(-2, r) * Math.pow(-1, r)), 2.0, 1.35, FC.purple, '1/(1−x)²'); S.r2.all.splice(1, 5).forEach((l) => remove(l)); cap('1/(1 − x)²', '1 + 2x + 3x² + 4x³ + …');
   },
   // 1477.04
   async (tok, S) => {
@@ -2956,7 +2967,7 @@ scene('rr-gf-deriv', "d/dx：1/(1 − x) → 1/(1 − x)²，係數 1, 2, 3, …
   },
   // 1756.48
   async (tok, S) => {
-    S.d = rack([0, 1, 2, 3, 4], 2.6, 3.4, FC.purple, '逐項微分'); for (let i = 0; i < 5; i++) S.d.all.push(sm(['0', '1', '2x', '3x²', '4x³'][i], 2.6 + i * 0.86, 2.75)); cap('右邊逐項微分', '1 → 0、x → 1、x² → 2x、x³ → 3x²');
+    S.d = rack([0, 1, 2, 3, 4], 2.6, 3.4, FC.purple, '逐項微分'); S.d.all.splice(1, 5).forEach((l) => remove(l)); for (let i = 0; i < 5; i++) S.d.all.push(sm(['0', '1', '2x', '3x²', '4x³'][i], 2.6 + i * 0.86, 3.95)); cap('右邊逐項微分', '1 → 0、x → 1、x² → 2x、x³ → 3x²');
   },
   // 1785.12
   async (tok, S) => {
@@ -2964,7 +2975,7 @@ scene('rr-gf-deriv', "d/dx：1/(1 − x) → 1/(1 − x)²，係數 1, 2, 3, …
   },
   // 1802.52
   async (tok, S) => {
-    S.n = rack([1, 2, 3, 4, 5], 2.6, 1.0, FC.green, '新數列'); cap('得到的數列', '1, 2, 3, 4, …');
+    gone(S.r); S.n = rack([1, 2, 3, 4, 5], 2.6, 1.6, FC.green, '新數列'); cap('得到的數列', '1, 2, 3, 4, …');
   },
   // 1829.24
   async (tok, S) => {
