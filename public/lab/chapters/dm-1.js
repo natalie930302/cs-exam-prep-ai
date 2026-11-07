@@ -100,7 +100,7 @@ export default function (ctx) {
           if (onlyCols && !onlyCols.includes(c)) continue;
           if (cells[r][c]) continue;
           const v = T.val(r, c);
-          cells[r][c] = cube(TF(v), v ? TC : FC, [dx * 0.8, 0.55, 0.7], X(c), Y(r), 0, 2.5);
+          cells[r][c] = cube(TF(v), v ? TC : FC, [dx * 0.8, 0.55, 0.7], X(c), Y(r), 0, 0.3);
           if (w && ms) await w(ms);
         }
         T.filled = Math.max(T.filled, r + 1);
@@ -337,10 +337,10 @@ export default function (ctx) {
   function ruleValid(R) { return rowsFor(R.vars).every((e) => !R.prem.every(([, f]) => f(e)) || R.concl[1](e)); }
   const inf = { key: 'mp' };
   function drawArgument(R) {
-    const pm = R.prem.map(([nm], i) => cube(nm, '#9b7ef4', [2.6, 0.6, 1], -4.6, 4.6 - i * 0.85, 0, 3));
+    const pm = R.prem.map(([nm], i) => cube(nm, '#9b7ef4', [2.6, 0.6, 1], -4.6, 4.6 - i * 0.85, 0, 0.3));
     line(-6, 4.6 - R.prem.length * 0.85 + 0.35, 0, -3.2, 4.6 - R.prem.length * 0.85 + 0.35, 0, '#6e5f49');
     tag('∴', 'val', -6.3, 4.6 - R.prem.length * 0.85 - 0.1);
-    const cm = cube(R.concl[0], '#dd8238', [2.6, 0.6, 1], -4.6, 4.6 - R.prem.length * 0.85 - 0.45, 0, 4);
+    const cm = cube(R.concl[0], '#dd8238', [2.6, 0.6, 1], -4.6, 4.6 - R.prem.length * 0.85 - 0.45, 0, 0.3);
     return { pm, cm };
   }
   function enterInfer() {
@@ -473,7 +473,7 @@ export default function (ctx) {
   // ───────────────────────── 場景 ─────────────────────────
   // 趙啟超 1A：課程地圖（三大部分）
   async function scCourseMap(tok) {
-    fresh([0, 5.5, 15], [0, 3, 0]);
+    fresh([0, 4, 15], [0, 3, 0]);
     const part = (ctx.params || {}).part || 0;
     const COLS = [
       { x: -5.3, head: 'Fundamentals 13h', color: '#4b9ee2', items: ['Logic', 'Set Theory', 'Induction', 'Functions・鴿籠', 'Relations'] },
@@ -485,8 +485,8 @@ export default function (ctx) {
     say('離散與組合數學：分三大部分', 'Discrete and Combinatorial Mathematics');
     for (let c = 0; c < COLS.length; c++) {
       const C = COLS[c];
-      tag(C.head, c + 1 === part || (part === 3 && c === 3) ? 'ptr alt' : 'ptr', C.x, 0.1 + C.items.length * 0.62 + 0.7);
-      ms.push(C.items.map((it, i) => cube(it, C.color, [3.1, 0.55, 1.1], C.x, 0.3 + i * 0.62, 0, 4)));
+      tag(C.head, c + 1 === part || (part === 3 && c === 3) ? 'ptr alt' : 'ptr', C.x, 0.5 + C.items.length * 0.8);
+      ms.push(C.items.map((it, i) => cube(it, C.color, [3.1, 0.6, 1.1], C.x, 0.5 + i * 0.8, 0, 0.3)));
       await beat(tok, 700);
     }
     tag('Graph Theory ≈ 22h（含最佳化）', 'idx', 3.55, -0.1, 1.2);
@@ -502,7 +502,7 @@ export default function (ctx) {
     say(caps[part][0], caps[part][1]);
     await beat(tok, 3200);
     if (part === 2) {
-      for (const i of [2, 3]) { move(ms[1][i], -1.8, 0.3 + i * 0.62, 1.2); await beat(tok, 500); }
+      for (const i of [2, 3]) { move(ms[1][i], -1.8, 0.5 + i * 0.8, 1.2); await beat(tok, 500); }
       say('先解 homogeneous，再解 non-homogeneous', '生成函數也可直接計數（Partition of Integer）');
       await beat(tok, 3000);
     }
@@ -518,8 +518,8 @@ export default function (ctx) {
     const ms = [];
     for (let i = 0; i < S.length; i++) {
       const [s, v] = S[i];
-      const x = (i % 3 - 1) * 4.2, z = i < 3 ? -1 : 1.6;
-      ms.push(cube(s, v === 'T' ? TC : v === 'F' ? '#e0a37f' : '#bdb3a3', [3.6, 0.6, 1.2], x, 0.3, z, 3));
+      const x = (i % 3 - 1) * 4.2, y = i < 3 ? 3.2 : 1.6;
+      ms.push(cube(s, v === 'T' ? TC : v === 'F' ? '#e0a37f' : '#bdb3a3', [3.6, 0.6, 1.2], x, y, 0, 0.3));
       say(s, v === 'T' ? '命題，真值 T' : v === 'F' ? '命題，真值 F（假的也是命題）' : i === 3 ? '不是命題：x 未定，真假不確定' : '不是命題：不是陳述句');
       await beat(tok, 1500);
     }
@@ -567,7 +567,7 @@ export default function (ctx) {
   // 逆、否、逆否
   async function scConvContra(tok) {
     fresh([0, 4, 15.5], [0, 3.4, 0]);
-    const T = makeTable('pq', [['p → q', (e) => IMP(e.p, e.q)], ['q → p 逆', (e) => IMP(e.q, e.p)], ['¬p → ¬q 否', (e) => IMP(!e.p, !e.q)], ['¬q → ¬p 逆否', (e) => IMP(!e.q, !e.p)]], { dx: 2.2 });
+    const T = makeTable('pq', [['p → q', (e) => IMP(e.p, e.q)], ['q→p 逆', (e) => IMP(e.q, e.p)], ['¬p→¬q 否', (e) => IMP(!e.p, !e.q)], ['¬q→¬p 逆否', (e) => IMP(!e.q, !e.p)]], { dx: 2.2 });
     say('原命題 p → q 的三個兄弟', 'converse、inverse、contrapositive');
     await beat(tok, 2200);
     for (let r = 0; r < 4; r++) { await T.fillRow(r, W(tok), 100); await beat(tok, 300); }
@@ -646,7 +646,7 @@ export default function (ctx) {
     const ms = [];
     for (let i = 0; i < steps.length; i++) {
       ms.forEach((m) => glow(m, null));
-      const m = cube(steps[i][0], i === steps.length - 1 ? '#dd8238' : '#4b9ee2', [5.4, 0.55, 1], -1.4, 6.2 - i * 0.82, 0, 2);
+      const m = cube(steps[i][0], i === steps.length - 1 ? '#dd8238' : '#4b9ee2', [5.4, 0.55, 1], -1.4, 6.2 - i * 0.82, 0, 0.3);
       ms.push(m);
       glow(m, GOLD);
       tag(i ? '≡ ' + steps[i][1] : steps[i][1], 'idx', 3.4, 6.2 - i * 0.82);
@@ -778,18 +778,18 @@ export default function (ctx) {
   async function scSocrates(tok) {
     fresh([0, 5, 14], [0, 2.4, 0]);
     say('所有人都會死；蘇格拉底是人', '∀x (Man(x) → Mortal(x))，Man(Socrates)');
-    const p1 = cube('∀x (Man(x) → Mortal(x))', '#9b7ef4', [5.4, 0.6, 1.1], -3, 5, 0, 3);
+    const p1 = cube('∀x (Man(x) → Mortal(x))', '#9b7ef4', [5.4, 0.6, 1.1], -3, 5, 0, 0.3);
     await beat(tok, 1600);
-    const p2 = cube('Man(Socrates)', '#9b7ef4', [3.4, 0.6, 1.1], 3.6, 5, 0, 3);
+    const p2 = cube('Man(Socrates)', '#9b7ef4', [3.4, 0.6, 1.1], 3.6, 5, 0, 0.3);
     await beat(tok, 2200);
-    const s1 = cube('Man(Socrates) → Mortal(Socrates)', '#4b9ee2', [6, 0.6, 1.1], -3, 3.4, 0, 3);
+    const s1 = cube('Man(Socrates) → Mortal(Socrates)', '#4b9ee2', [6, 0.6, 1.1], -3, 3.4, 0, 0.3);
     glow(p1, GOLD);
     say('Universal instantiation：把 x 換成 Socrates', '∀x P(x) ⊢ P(c)');
     await beat(tok, 2800);
     glow(p1, null); glow(s1, GOLD); glow(p2, GOLD);
     say('再用 Modus ponens', '');
     await beat(tok, 1800);
-    const c = cube('Mortal(Socrates)', '#dd8238', [3.6, 0.6, 1.1], 0.3, 1.6, 0, 3);
+    const c = cube('Mortal(Socrates)', '#dd8238', [3.6, 0.6, 1.1], 0.3, 1.6, 0, 0.3);
     glow(c, GREEN);
     say('結論：蘇格拉底會死', 'Universal modus ponens');
     await beat(tok, 3000);
@@ -840,12 +840,22 @@ const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
 const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
 const C = { blue: '#4b9ee2', orange: '#dd8238', green: '#2fc092', purple: '#9b7ef4', pink: '#e55a9b', teal: '#31aab0', red: '#d64545', sand: '#e9dcc4', gray: '#d8cfc0', gold: '#c08a1f', mint: '#d2f1e6', sky: '#cfe6f7', lilac: '#dfd3fb', peach: '#f6d3b8', dark: '#8d8170' };
 const HL = '#6a4a00', OKG = '#0f5a3a', NG = '#5a1010';
-const card = (t, c, x, y, w = 4, h = 0.55, z = 0, drop = 1.2) => cube(t, c, [w, h, 0.8], x, y, z, drop);
+// a short drop only: a block never falls past the rows above it
+const card = (t, c, x, y, w = 4, h = 0.55, z = 0, drop = 0.3) => cube(t, c, [w, h, 0.8], x, y, z, drop);
 const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.g && o.body) return kill(o.g); if (o.ls) return gone(o.ls); kill(o); });
 const glowAll = (arr, c) => arr.forEach((m) => m && glow(m, c));
-function scene(id, title, cam, steps) {
+// invisible box over the area the scene will use later, so auto framing does not zoom in first and jump back
+function frameHold(x0, y0, z0, x1, y1, z1) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; m.userData.hold = true; lab.world.add(m); return m;
+}
+// the narration moved on: take everything off the stage except what is passed in
+const sweep = (...stay) => { const k = stay.flat().map((o) => (o && o.g && o.body ? o.g : o)); [...lab.world.children].forEach((o) => { if (o.userData.hold || k.includes(o)) return; let b = null; for (const q of lab.bodies) if (q.obj === o) b = q; if (b) lab.removeBody(b); else remove(o); }); };
+const keep = K.keep;
+function scene(id, title, cam, steps, hold = [-6.6, 0, -0.3, 6.6, 7.2, 0.3]) {
   FRAG.push([id, title, async (tok) => {
     fresh(cam[0], cam[1]);
+    frameHold(...hold);
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
@@ -862,12 +872,12 @@ function TT(vars, cols, o = {}) {
   const nC = all.length, dx = o.dx || Math.min(1.7, 12 / nC), cx = o.cx || 0, top = o.top || 5.5, dy = o.dy || (nR > 4 ? 0.62 : 0.85);
   const X = (c) => cx + (c - (nC - 1) / 2) * dx, Y = (r) => top - r * dy;
   const lb = (v) => (bin ? (v ? '1' : '0') : (v ? 'T' : 'F'));
-  const heads = all.map(([nm], c) => tag(nm, c < n ? 'idx' : 'ptr', X(c), top + 0.62));
+  const heads = all.map(([nm], c) => tag(nm, c < n ? 'idx' : 'ptr', X(c), top + (o.tiers ? 0.68 : 0.62) + (o.tiers && c % 2 ? 0.46 : 0)));
   const cells = rows.map(() => all.map(() => null));
   const T = {
     rows, cells, heads, X, Y, nR, nC, n, lb,
     val: (r, c) => !!all[c][1](rows[r]),
-    cell(r, c) { if (!cells[r][c]) { const v = T.val(r, c); cells[r][c] = cube(lb(v), v ? C.green : C.gray, [dx * 0.78, 0.46, 0.6], X(c), Y(r), 0, 1.4); } return cells[r][c]; },
+    cell(r, c) { if (!cells[r][c]) { const v = T.val(r, c); cells[r][c] = cube(lb(v), v ? C.green : C.gray, [dx * 0.78, 0.46, 0.6], X(c), Y(r), 0, 0.2); } return cells[r][c]; },
     async fill(tok, list, ms = 110) { for (const [r, c] of list) { T.cell(r, c); if (ms) await wt(tok, ms); } },
     async col(tok, c, ms = 110, rs) { await T.fill(tok, (rs || [...Array(nR).keys()]).map((r) => [r, c]), ms); },
     async row(tok, r, ms = 90, cs) { await T.fill(tok, (cs || [...Array(nC).keys()]).map((c) => [r, c]), ms); },
@@ -881,12 +891,19 @@ function TT(vars, cols, o = {}) {
   return T;
 }
 const IM = (a, b) => !a || b;
+const tb = (T) => [...T.heads, ...T.cells.flat().filter(Boolean)];
+// two columns compared: an arc under the table's last row, away from the heads
+const same = (T, c1, c2, t = '一樣') => K.flow(T.cells[T.nR - 1][c1], T.cells[T.nR - 1][c2], t, { bulge: V3(0, -1, 0.8), lift: 0.6 });
 // 真、假兩個小夥伴：結果是真，綠色那隻跳；結果是假，灰色那隻跳
 function duo(S, o = {}) {
   const x = o.x || 6.3;
   S.tb = buddy(o.tn || '真', o.bin ? '1' : 'T', C.green, -x, 0, o.z || 1.2, 0.8);
   S.fb = buddy(o.fn || '假', o.bin ? '0' : 'F', '#e0a37f', x, 0, o.z || 1.2, 0.8);
   S.tb.look(1); S.fb.look(-1);
+}
+async function swapDuo(tok, S) {
+  const a = S.tb.g.position.clone(), b = S.fb.g.position.clone();
+  await anim(tok, 900, (u) => { S.tb.g.position.lerpVectors(a, b, u); S.tb.g.position.y = a.y + Math.sin(Math.PI * u) * 1.7; S.fb.g.position.lerpVectors(b, a, u); });
 }
 async function cheer(tok, S, v) { const b = v ? S.tb : S.fb; if (!b) return; b.mood(v ? 'happy' : 'wow'); await b.hop(tok); }
 // 一行一行的等價推導：新的一行發亮，右邊寫用了哪條定律
@@ -917,7 +934,7 @@ function venn(cx, cy, r = 1.9, d = 1.05) {
   V.at = (k, i = 0, n = 1) => { const yy = cy + (n > 1 ? (0.6 - (1.2 * i) / (n - 1)) : 0); const xx = k === 'AB' ? cx : k === 'AmB' ? cx - d - r * 0.45 : k === 'BmA' ? cx + d + r * 0.45 : cx; return [xx, yy]; };
   return V;
 }
-const num = (v, x, y, c = C.blue, s = 0.62, drop = 1.4) => cube(String(v), c, [s, s, s], x, y, 0.3, drop);
+const num = (v, x, y, c = C.blue, s = 0.62, drop = 0.3) => cube(String(v), c, [s, s, s], x, y, 0.3, drop);
 // stop a dropped block's physics before a hand-made anim() moves it (otherwise a block still falling is pulled back)
 const hold = (os) => os.forEach((o) => { for (const b of lab.bodies) if (b.obj === o) { b.mode = 'rest'; b.vel.set(0, 0, 0); } });
 
@@ -928,8 +945,9 @@ function mapScene(id, title, part, color, items) {
     if (k === 0) { S.n = 0; S.chips = []; TABS.forEach((t, i) => (i === part ? hot : sm)(t, -4.4 + i * 4.4, 6.75)); S.g = buddy('', '', C.sky, -6.3, 0, 1.6, 0.75); S.g.look(1); }
     const [chip, sub, a, b, c2] = it;
     glowAll(S.chips, null);
-    if (chip) { const i = S.n++; const col = Math.floor(i / 5), r = i % 5; const x = -2.4 + col * 5.4, y = 5.7 - r * 1.25; const m = card(chip, c2 || color, x, y, 4.0); glow(m, HL); S.chips.push(m); S.last = [x, y]; S.subs = 0; }
-    if (sub && S.last) { if (S.subs++) sm(sub, S.last[0] + 4.6, S.last[1], 0.5); else note(sub, S.last[0], S.last[1] - 0.62, 0.5); }
+    if (chip) { const i = S.n++; const col = Math.floor(i / 5), r = i % 5; const x = -2.8 + col * 5.9, y = 5.7 - r * 1.25; const m = card(chip, c2 || color, x, y, 5.0); glow(m, HL); S.chips.push(m); S.last = [x, y]; S.subs = 0; }
+    if (chip && S.rem) txt(S.rem, '');
+    if (sub && S.last) { if (S.rem) txt(S.rem, sub); else S.rem = keep(note(sub, S.last[0], S.last[1] - 0.66, 0.5)); S.rem.position.set(S.last[0], S.last[1] - 0.66, 0.5); }
     cap(a, b);
     S.g.mood(k % 2 ? 'happy' : 'calm');
     await S.g.hop(tok);
@@ -993,7 +1011,7 @@ scene('lg-1a-hours', '1A：全課 50 小時怎麼來', CAM, [
   },
   async (tok, S) => { // 537.1 18 週扣掉期末考週，每週 3 小時
     S.wk = [];
-    for (let i = 0; i < 17; i++) { S.wk.push(cube('3h', C.sky, [0.62, 0.62, 0.62], -5.6 + i * 0.7, 5.2, 0, 1.2)); if (i % 4 === 3) await wt(tok, 60); }
+    for (let i = 0; i < 17; i++) { S.wk.push(cube('3h', C.sky, [0.62, 0.62, 0.62], -5.6 + i * 0.7, 5.2, 0, 0.3)); if (i % 4 === 3) await wt(tok, 60); }
     S.t1 = sm('18 週 − 期末考週 = 17 週，每週 3 小時 → 51 小時', 0, 4.4);
     cap('一學期 18 週，扣掉期末考週', '17 週 × 3 小時 = 51 小時');
   },
@@ -1005,7 +1023,7 @@ scene('lg-1a-hours', '1A：全課 50 小時怎麼來', CAM, [
   async (tok, S) => { // 547.5 三部分加起來剛好 50
     const parts = [['Fundamentals 13h', 13, C.blue], ['Enumeration ≈15h', 15, C.purple], ['Graph Theory 22h', 22, C.green]];
     let x = -6.75;
-    for (const [t, h, c] of parts) { const w = h * 0.27; cube(t, c, [w - 0.06, 0.7, 0.8], x + w / 2, 2.3, 0, 1.6); x += w; await wt(tok, 250); }
+    for (const [t, h, c] of parts) { const w = h * 0.27; cube(t, c, [w - 0.06, 0.7, 0.8], x + w / 2, 2.3, 0, 0.3); x += w; await wt(tok, 250); }
     sm('13 + 15 + 22 = 50', 0, 1.5);
     cap('三部分加起來剛好 50 小時', 'Enumeration 的 15 小時是 50 − 13 − 22 推算的');
   },
@@ -1022,42 +1040,43 @@ scene('lg-1b-stmt', '1B：statement 與真假值', CAM, [
     cap('邏輯的基本元件：statement', '一句可以判斷真假的話');
   },
   async (tok, S) => { // 22.3 用 p 表示
-    S.p = cube('p', C.purple, [0.9, 0.9, 0.9], -3.6, 5.2, 0, 2); hot('p 代表一個 statement', -3.6, 6.3);
+    S.p = cube('p', C.purple, [0.9, 0.9, 0.9], -3.6, 5.2, 0, 0.3); hot('p 代表一個 statement', -3.6, 6.3);
     cap('用 p 來表示一個 statement', '');
   },
   async (tok, S) => { // 36.0 兩個值：True、False
-    duo(S, { x: 3.2, tn: 'True 真', fn: 'False 假' });
+    duo(S, { x: 4.6, tn: 'True 真', fn: 'False 假' });
     cap('statement 只有兩個值', 'true（真）或 false（假）'); await cheer(tok, S, true);
   },
   async (tok, S) => { // 72.1 用 T/F 或 1/0
-    S.tb.set('T ＝ 1'); S.fb.set('F ＝ 0'); S.tf = sm('後面常用 T、F 或 1、0 表示', 0, 1.6);
+    S.tb.set('T ＝ 1'); S.fb.set('F ＝ 0'); S.tf = sm('後面常用 T、F 或 1、0 表示', 0, 3.6);
     cap('後面用 T、F，或用 1、0 來表示', '1 = true，0 = false'); await cheer(tok, S, false);
   },
   async (tok, S) => { // 98.2 例：20 is a multiple of 3
-    S.e = card('20 is a multiple of 3', C.sky, 0, 3.6, 5.2, 0.7);
+    sweep(S.tb, S.fb);
+    S.e = card('20 is a multiple of 3', C.sky, 0, 5.6, 5.2, 0.7);
     cap('例子：20 is a multiple of 3', '這是一個 statement');
   },
   async (tok, S) => { // 104.2 multiple = 倍數
-    sm('multiple ＝ 倍數', 3.6, 4.3);
+    sm('multiple ＝ 倍數', 0, 4.9);
     cap('multiple 是「倍數」', '「20 是 3 的倍數」');
   },
   async (tok, S) => { // 108.6 很明顯是 false
-    glow(S.e, NG); S.v = bad('False：20 不是 3 的倍數', 0, 2.7);
+    glow(S.e, NG); S.v = bad('False：20 不是 3 的倍數', 0, 4.2);
     cap('很明顯，這個 statement 是 false', '20 不是 3 的倍數'); await cheer(tok, S, false);
   },
   async (tok, S) => { // 118.0 倍數的定義
-    gone(S.tf); note('a 是 b 的倍數 ⇔ a = b × 某個整數', 0, 2.05);
-    sm('3 × 6 = 18，3 × 7 = 21 → 20 夾在中間', 0, 1.45);
+    note('a 是 b 的倍數 ⇔ a = b × 某個整數', 0, 3.4);
+    sm('3 × 6 = 18，3 × 7 = 21 → 20 夾在中間', 0, 2.75);
     cap('倍數：等於另一個數乘上一個整數', '因數、倍數都只對整數而言');
   },
 ]);
 scene('lg-1b-not', '1B：否定 ¬p 與它的真值表', CAM, [
   async (tok, S) => { // 134.0 原來的 statement p
-    S.p = card('p：20 is a multiple of 3', C.sky, -3.2, 6.0, 5.4, 0.6); S.pv = bad('0', 0.2, 6.0);
+    S.p = card('p：20 is a multiple of 3', C.sky, -3.4, 6.0, 6.2, 0.6); S.pv = keep(bad('0', 0.5, 6.0));
     cap('原來的 statement 是 p', '它有一個「否定」');
   },
   async (tok, S) => { // 143.5 寫成 ¬p，讀 not p
-    S.n = card('¬p', C.orange, 3.6, 6.0, 1.6, 0.6); sm('讀作 not p（也有人寫 ~p、p̄）', 3.6, 5.35);
+    S.n = card('¬p', C.orange, 3.6, 6.0, 1.6, 0.6); S.n2 = sm('讀作 not p（也有人寫 ~p、p̄）', 3.6, 5.35);
     cap('p 的否定寫成 ¬p', '叫做 not p；不同書符號可能不一樣');
   },
   async (tok, S) => { // 148.5 例子
@@ -1065,18 +1084,17 @@ scene('lg-1b-not', '1B：否定 ¬p 與它的真值表', CAM, [
     cap('剛才那句的否定是什麼？', '');
   },
   async (tok, S) => { // 177.3 20 is not a multiple of 3 → true
-    S.q = card('¬p：20 is NOT a multiple of 3', C.peach, -3.2, 4.4, 5.8, 0.6); S.qv = good('1', 0.4, 4.4);
+    S.q = card('¬p：20 is NOT a multiple of 3', C.peach, -3.4, 4.4, 6.2, 0.6); S.qv = keep(good('1', 0.5, 4.4));
     duo(S, { bin: true, tn: 'true', fn: 'false' });
     cap('20 is not a multiple of 3', '原本是 false，現在這句是 true'); await cheer(tok, S, true);
   },
   async (tok, S) => { // 188.0 true 的否定就 false
-    const a = S.tb.g.position.clone(), b = S.fb.g.position.clone();
-    await Promise.all([travel(tok, S.tb.g, a, b, 900), travel(tok, S.fb.g, b, a, 900)]);
+    await swapDuo(tok, S);
     cap('statement 是 true，否定就 false', '是 false，否定就 true：真假互換');
   },
   async (tok, S) => { // 191.3 真值表
-    gone(S.p, S.pv, S.n, S.a, S.q, S.qv);
-    S.T = TT(['p'], [['¬p', (e) => !e.p], ['¬(¬p)', (e) => e.p]], { bin: true, order: 'TF', dx: 2.2, top: 4.6 });
+    sweep(S.tb, S.fb);
+    S.T = TT(['p'], [['¬p', (e) => !e.p], ['¬(¬p)', (e) => e.p]], { bin: true, order: 'TF', dx: 2.2, top: 5.0 });
     cap('用真值表（truth table）來表示', '把所有可能列出來');
   },
   async (tok, S) => { // 209.6 p 有兩種可能 1、0
@@ -1084,7 +1102,7 @@ scene('lg-1b-not', '1B：否定 ¬p 與它的真值表', CAM, [
     cap('p 只有兩種可能：不是 true 就是 false', '用 1 跟 0 表示');
   },
   async (tok, S) => { // 219.3 1 是 true，0 是 false
-    sm('1 = true', -4.4, S.T.Y(0)); sm('0 = false', -4.4, S.T.Y(1));
+    sm('1 = true', -4.0, S.T.Y(0)); sm('0 = false', -4.0, S.T.Y(1));
     cap('1 是 true，0 是 false', '');
   },
   async (tok, S) => { // 221.5 not p：1 變 0、0 變 1
@@ -1100,38 +1118,39 @@ scene('lg-1b-not', '1B：否定 ¬p 與它的真值表', CAM, [
     cap('照同樣的規則：0 變 1，1 變 0', '');
   },
   async (tok, S) => { // 271.5 否定兩次變回原來
-    S.T.glowCol(0, OKG); S.T.glowCol(2, OKG); good('¬(¬p) 和 p 每一列都一樣', 0, 2.2);
+    S.T.glowCol(0, OKG); S.T.glowCol(2, OKG); K.flow(S.T.cells[1][0], S.T.cells[1][2], '', { bulge: V3(0, -1, 0.8) }); good('¬(¬p) 和 p 每一列都一樣', 0, 2.6);
     cap('否定兩次就變回原來的', 'double negation');
   },
 ]);
 scene('lg-1b-orand', '1B：p ∨ q 與 p ∧ q（1/0 真值表）', CAM, [
   async (tok, S) => { // 287.4 兩個 statement 之間的運算
-    S.p = cube('p', C.purple, [0.9, 0.9, 0.9], -5.6, 4.8, 0, 2); S.q = cube('q', C.blue, [0.9, 0.9, 0.9], -5.6, 3.6, 0, 2);
+    S.p = cube('p', C.purple, [0.9, 0.9, 0.9], -1.2, 5.2, 0, 0.3); S.q = cube('q', C.blue, [0.9, 0.9, 0.9], 1.2, 5.2, 0, 0.3);
     cap('兩個 statement 之間還有其他運算', 'p、q 都是 statement');
   },
   async (tok, S) => { // 293.4 or：p ∨ q
-    S.or = card('p ∨ q（p or q）', C.sky, -3.4, 1.6, 3.6);
+    S.or = card('p ∨ q（p or q）', C.sky, -2.6, 3.4, 4.2);
     cap('往上開口的這個是 or', 'p ∨ q');
   },
   async (tok, S) => { // 312.1 and：p ∧ q
-    S.and = card('p ∧ q（p and q）', C.peach, 0.6, 1.6, 3.6);
+    S.and = card('p ∧ q（p and q）', C.peach, 2.6, 3.4, 4.2);
     cap('有 or 就有 and', 'p ∧ q');
   },
   async (tok, S) => { // 326.5 or 的定義
-    note('∨：至少一個 true 就 true', -3.4, 0.85);
+    note('∨：至少一個 true 就 true', -2.6, 2.6);
     cap('or：兩個裡面有一個 true 就 true', '至少一個 true');
   },
   async (tok, S) => { // 335.0 and 的定義
-    note('∧：兩個都 true 才 true', 0.6, 0.85);
+    note('∧：兩個都 true 才 true', 2.6, 2.6);
     cap('and：兩個都要 true 才 true', '');
   },
   async (tok, S) => { // 339.0 真值表
-    S.T = TT(['p', 'q'], [['p ∨ q', (e) => e.p || e.q], ['p ∧ q', (e) => e.p && e.q]], { bin: true, dx: 1.9, cx: 1.2, top: 5.6 });
-    duo(S, { bin: true, x: 6.4 });
+    sweep();
+    S.T = TT(['p', 'q'], [['p ∨ q', (e) => e.p || e.q], ['p ∧ q', (e) => e.p && e.q]], { bin: true, dx: 1.9, top: 5.4 });
+    duo(S, { bin: true, x: 6.0 });
     cap('用 truth table 來看', '第一欄 p ∨ q，第二欄 p ∧ q');
   },
   async (tok, S) => { // 358.0 p 兩種、q 兩種
-    sm('p：2 種 × q：2 種 = 4 種', 1.2, 7.0);
+    sm('p：2 種 × q：2 種 = 4 種', 0, 6.75);
     cap('p 有 1、0 兩種，q 也有兩種', '擺在一起：2 × 2 = 4 種');
   },
   async (tok, S) => { // 364.6 四種可能
@@ -1157,7 +1176,7 @@ scene('lg-1b-orand', '1B：p ∨ q 與 p ∧ q（1/0 真值表）', CAM, [
 ]);
 scene('lg-1b-dm', '1B：De Morgan 由真值表推出來', CAMW, [
   async (tok, S) => { // 418.2 再配上 not
-    S.T = TT(['p', 'q'], [['p ∨ q', (e) => e.p || e.q], ['¬(p ∨ q)', (e) => !(e.p || e.q)], ['¬p', (e) => !e.p], ['¬q', (e) => !e.q], ['¬p ∧ ¬q', (e) => !e.p && !e.q]], { bin: true, dx: 1.62, top: 5.7 });
+    S.T = TT(['p', 'q'], [['p ∨ q', (e) => e.p || e.q], ['¬(p ∨ q)', (e) => !(e.p || e.q)], ['¬p', (e) => !e.p], ['¬q', (e) => !e.q], ['¬p ∧ ¬q', (e) => !e.p && !e.q]], { bin: true, dx: 1.62, top: 6.0 });
     S.T.now([0, 1, 2]);
     cap('剛才的 or，再配上 not', '');
   },
@@ -1183,43 +1202,44 @@ scene('lg-1b-dm', '1B：De Morgan 由真值表推出來', CAMW, [
   },
   async (tok, S) => { // 501.5 兩欄一模一樣
     S.T.hot(6, false); S.T.glowCol(3, OKG); S.T.glowCol(6, OKG);
-    S.eq = good('1000 ＝ 1000：四種情況都一樣！', 0, 2.4);
+    S.fl = same(S.T, 3, 6);
+    S.eq = good('1000 ＝ 1000：四種情況都一樣！', -2.2, 2.4);
     cap('¬(p ∨ q) 是 1000，¬p ∧ ¬q 也是 1000', '四種狀況結果都一模一樣');
   },
   async (tok, S) => { // 524.1 logical equivalent
-    S.c1 = card('兩者 logically equivalent（邏輯等價）', C.mint, 0, 1.5, 7.2, 0.6);
+    S.fl.kill(); S.c1 = card('兩者 logically equivalent（邏輯等價）', C.mint, 0, 1.7, 7.2, 0.6);
     cap('這兩個叫做 logically equivalent', '所有 true / false 的組合下結果都相同');
   },
   async (tok, S) => { // 568.0 符號 ≡
-    gone(S.eq); S.f1 = card('¬(p ∨ q) ≡ ¬p ∧ ¬q', C.sky, -2.6, 0.6, 5.0, 0.6); sm('≡：三條橫線', 1.6, 0.6);
+    gone(S.eq); S.f1 = card('¬(p ∨ q) ≡ ¬p ∧ ¬q', C.sky, -1.6, 0.9, 5.0, 0.6); S.s1 = sm('≡：三條橫線', 2.4, 0.9);
     cap('符號寫成三條橫線 ≡', '');
   },
   async (tok, S) => { // 589.7 不同書符號不一樣
-    sm('（也有書寫 ⇔）', 4.0, 0.6);
+    S.s2 = sm('（也有書寫 ⇔）', 4.6, 0.9);
     cap('符號怎麼寫，不同書會不一樣', '意思都是：在邏輯上一樣');
   },
   async (tok, S) => { // 608.5 把 and、or 反過來也成立
-    S.T.clear(); bub('把 ∨ 換成 ∧、∧ 換成 ∨，也一樣成立', 0, 7.2);
+    sweep(); S.f1 = card('¬(p ∨ q) ≡ ¬p ∧ ¬q', C.sky, 0, 5.0, 5.4, 0.6); S.b = bub('把 ∨ 換成 ∧、∧ 換成 ∨，也一樣成立', 0, 6.0);
     cap('同理，把 and、or 對調', '會得到同樣的結果');
   },
   async (tok, S) => { // 668.0 ¬(p ∧ q) ≡ ¬p ∨ ¬q
-    S.f2 = card('¬(p ∧ q) ≡ ¬p ∨ ¬q', C.sky, -2.6, -0.2, 5.0, 0.6);
+    S.f2 = card('¬(p ∧ q) ≡ ¬p ∨ ¬q', C.sky, 0, 4.0, 5.4, 0.6);
     cap('not (p and q) ≡ not p or not q', '');
   },
   async (tok, S) => { // 677.3 否定進括號、and/or 對調
-    const n = hot('¬', -4.6, 1.3); await travel(tok, n, V3(-4.6, 1.3, 0.6), V3(-3.4, 0.6, 0.6), 700); gone(n);
+    const n = hot('¬', -3.3, 5.0); await travel(tok, n, V3(-3.3, 5.0, 0.6), V3(-3.3, 4.0, 0.6), 700); gone(n);
     cap('括號外的否定，分給括號裡每一個', '再把 and、or 反過來');
   },
   async (tok, S) => { // 702.0 De Morgan's law
-    glow(S.f1, HL); glow(S.f2, HL); hot('De Morgan\'s Law', 4.4, 0.2);
+    gone(S.b); glow(S.f1, HL); glow(S.f2, HL); hot('De Morgan\'s Law', 0, 6.0);
     cap('這兩條叫 De Morgan\'s law', '');
   },
   async (tok, S) => { // 723.1 集合也有
-    sm('集合也有一版：之後 Set Theory', 4.4, -0.5);
+    sm('集合也有一版：之後 Set Theory', 0, 3.0);
     cap('這是邏輯版本', '後面集合那邊也有類似的 De Morgan\'s law');
   },
   async (tok, S) => { // 728.1 Augustus De Morgan
-    note('Augustus De Morgan（1806–1871）英國數學家，著有《Formal Logic》', 0, -1.2);
+    note('Augustus De Morgan（1806–1871）英國數學家，著有《Formal Logic》', 0, 2.2);
     cap('Augustus De Morgan，19 世紀英國數學家', '他的書 Formal Logic 裡就有這個定律');
   },
 ]);
@@ -1228,22 +1248,24 @@ scene('lg-1b-imp', '1B：p → q 的真值表為什麼這樣定義', CAM, [
     cap('not、and、or 之後', '接下來看跟「推論」有關的');
   },
   async (tok, S) => { // 760.1 if p then q
-    S.c1 = card('If p, then q（若 p 則 q）', C.lilac, 3.2, 5.8, 5.4, 0.6);
+    S.c1 = card('If p, then q（若 p 則 q）', C.lilac, 0, 5.4, 5.4, 0.6);
     cap('從 p 推到 q：if p then q', '如果 p 成立，q 就會成立');
   },
   async (tok, S) => { // 772.3 p implies q
-    S.c2 = card('p → q（p implies q）', C.lilac, 3.2, 5.0, 5.4, 0.6);
+    S.c2 = card('p → q（p implies q）', C.lilac, 0, 4.5, 5.4, 0.6);
     cap('也寫成 p implies q', 'p → q');
   },
   async (tok, S) => { // 821.0 premise 前提
-    note('p：premise 前提', 1.8, 4.2);
+    note('p：premise 前提', -2.0, 3.7);
     cap('前面的 p 叫 premise', '前提');
   },
   async (tok, S) => { // 840.0 conclusion 結論
-    note('q：conclusion 結論', 4.8, 4.2);
+    note('q：conclusion 結論', 2.0, 3.7);
     cap('後面的 q 是 conclusion', '結論');
   },
   async (tok, S) => { // 860.0 p→q 的 truth table
+    sweep();
+    S.c2 = card('p → q（p implies q）', C.lilac, 3.1, 5.8, 5.0, 0.6);
     S.T = TT(['p', 'q'], [['p → q', (e) => IM(e.p, e.q)]], { bin: true, dx: 1.7, cx: -3.2, top: 5.4 });
     duo(S, { bin: true, x: 6.4 });
     cap('p → q 的真假怎麼決定？', '看它的 truth table');
@@ -1265,20 +1287,20 @@ scene('lg-1b-imp', '1B：p → q 的真值表為什麼這樣定義', CAM, [
     cap('錯的推到錯的，這個推論是對的', '0 → 0：true');
   },
   async (tok, S) => { // 934.1 為什麼這樣定義？
-    S.q = bub('為什麼這樣定義？', 3.2, 2.8);
+    S.q = bub('為什麼這樣定義？', 3.1, 4.9);
     cap('為什麼要這樣定義呢？', '');
   },
   async (tok, S) => { // 951.1 premise 錯的時候
-    S.T.clear(); S.T.glowRow(0, HL); S.T.glowRow(1, HL);
-    note('p = 0：不管 q 是 0 還是 1 → p → q 都是 1', 2.6, 2.0);
+    S.T.clear(); S.T.glowRow(0, HL); S.T.glowRow(1, HL); gone(S.q);
+    note('p = 0：不管 q 是 0 還是 1 → p → q 都是 1', -3.2, 2.3);
     cap('premise 是錯的時候', '不管結論是對是錯，整個推論都定義成對');
   },
   async (tok, S) => { // 1003.4 要說錯必須確定它錯
-    S.e = card('要說它錯，必須有證據', C.peach, 3.2, 1.0, 4.8, 0.6);
+    S.e = card('要說它錯，必須有證據', C.peach, 3.1, 4.9, 4.8, 0.6);
     cap('這個 implication 要說錯', '必須確定它錯：有證據才能說錯');
   },
   async (tok, S) => { // 1012.3 innocent until proven guilty
-    S.j = icon('⚖️', '無罪推定', -5.6, 1.3); S.j2 = sm('innocent until proven guilty', 3.2, 0.2);
+    S.j2 = sm('innocent until proven guilty', 3.1, 4.2); S.j = icon('⚖️', '無罪推定', 3.1, 3.0);
     cap('像法律上說的', 'innocent until proven guilty：證明有罪前都假設無辜');
   },
   async (tok, S) => { // 1040.1 只有 1→0 才說錯
@@ -1303,7 +1325,7 @@ scene('lg-1b-eleph', '1B：大象會飛的例子', CAM, [
     cap('第二個推論：如果大象會飛', '道奇隊就「不會」贏');
   },
   async (tok, S) => { // 1119.6 兩個都只能說對
-    good('true', 6.8, 5.0); good('true', 6.8, 2.5);
+    keep(good('true', 5.3, 5.0)); keep(good('true', 5.3, 2.5));
     cap('根據前面的定義', '這兩個推論我們都只能說是對的');
   },
   async (tok, S) => { // 1141.0 因為大象不會飛
@@ -1313,7 +1335,7 @@ scene('lg-1b-eleph', '1B：大象會飛的例子', CAM, [
     await S.el.hop(tok);
   },
   async (tok, S) => { // 1181.6 換成日本大賽、台灣大賽
-    sm('換成 Japan Series、Taiwan Series：一樣都是 true', 1.4, 0.3);
+    sm('換成 Japan Series、Taiwan Series：一樣都是 true', 1.4, 0.5);
     cap('不喜歡這例子，可換成日本大賽或台灣大賽', '道理一樣：前提假 → 推論為真');
   },
 ]);
@@ -1327,36 +1349,36 @@ scene('lg-1b-xy1', '1B：x = y ⇒ x + 1 = y + 1（為什麼 0 → 0 要算真�
     cap('這個推論是對的', '相等的兩邊同加一個數，答案一樣');
   },
   async (tok, S) => { // 1219.3 不管 x、y 是多少都對
-    note('不管 x、y 是多少，這個 implication 都要是 1', 0, 4.6);
+    S.nt = note('不管 x、y 是多少，這個 implication 都要是 1', 0, 4.6);
     duo(S, { bin: true, x: 6.4 });
     cap('不管 x 跟 y 是多少，這都對', '帶兩個 case 進來看看');
   },
   async (tok, S) => { // 1238.4 x = 1/2, y = 0.5
-    hd('x = 1/2，y = 0.5', -4.4, 3.6); S.a1 = card('1/2 = 0.5', C.sky, -1.2, 3.6, 2.6); good('1', 0.7, 3.6);
+    hd('x = 1/2，y = 0.5', -4.6, 3.6); S.a1 = card('1/2 = 0.5', C.sky, -1.5, 3.6, 2.6); keep(good('1', 0.15, 3.6));
     cap('x 用 1/2，y 用 0.5 代', '1/2 = 0.5：對的');
   },
   async (tok, S) => { // 1268.3 1 → 1：true
-    card('1/2 + 1 = 0.5 + 1', C.sky, 3.0, 3.6, 3.4); good('1', 5.2, 3.6); arrow(V3(1.0, 3.6, 0.5), V3(1.3, 3.6, 0.5));
+    S.a2 = card('1/2 + 1 = 0.5 + 1', C.sky, 3.1, 3.6, 3.8); keep(good('1', 5.5, 3.6)); K.flow(V3(0.5, 3.6, 0.5), S.a2, '');
     cap('1/2 + 1 = 0.5 + 1 也是對的', '對的推到對的：true'); await cheer(tok, S, true);
   },
   async (tok, S) => { // 1278.2 x = 2, y = 3
-    hd('x = 2，y = 3', -4.4, 2.2);
+    gone(S.ok, S.nt); hd('x = 2，y = 3', -4.6, 2.4);
     cap('現在帶別的：x 帶 2，y 帶 3', '');
   },
   async (tok, S) => { // 1299.7 2 = 3 → false
-    card('2 = 3', C.peach, -1.2, 2.2, 2.6); bad('0', 0.7, 2.2);
+    card('2 = 3', C.peach, -1.5, 2.4, 2.6); keep(bad('0', 0.15, 2.4));
     cap('第一個：2 = 3', '這個 statement 是 false');
   },
   async (tok, S) => { // 1307.8 2+1 = 3+1 → 3 = 4 false
-    card('2+1 = 3+1（3=4）', C.peach, 3.2, 2.2, 3.6); bad('0', 5.9, 2.2); arrow(V3(1.0, 2.2, 0.5), V3(1.2, 2.2, 0.5));
+    S.b2 = card('2+1 = 3+1（3=4）', C.peach, 3.1, 2.4, 3.8); keep(bad('0', 5.5, 2.4)); K.flow(V3(0.5, 2.4, 0.5), S.b2, '');
     cap('2 + 1 = 3 + 1，也就是 3 = 4', '也是 false');
   },
   async (tok, S) => { // 1314.7 0 → 0 必須 true
-    S.must = good('0 → 0：必須定義成 true', 0, 1.2); await cheer(tok, S, true);
+    S.must = good('0 → 0：必須定義成 true', 0, 1.3); await cheer(tok, S, true);
     cap('false 推到 false 是 true', '因為不管 x、y 是多少，推論都對');
   },
   async (tok, S) => { // 1326.0 不然前面就不一致
-    bad('若定義成 false → 跟「這推論永遠對」矛盾', 0, 0.4); await cheer(tok, S, false);
+    bad('若定義成 false → 跟「這推論永遠對」矛盾', 0, 0.6); await cheer(tok, S, false);
     cap('如果把 false 推到 false 定義成 false', '就跟前面不一致了');
   },
 ]);
@@ -1371,29 +1393,30 @@ scene('lg-1b-xyz', '1B：x = y ⇒ xz = yz（為什麼 0 → 1 也算真）', CA
     cap('根據以前學的，這個推論是對的', '不管 x、y、z 是什麼數都成立');
   },
   async (tok, S) => { // 1398.4 x=2, y=3, z=0
-    hd('x = 2，y = 3，z = 0', -3.6, 4.2);
+    hd('x = 2，y = 3，z = 0', 0, 4.5);
     cap('隨便代：x 代 2、y 代 3', 'z 代 0');
   },
   async (tok, S) => { // 1415.3 2 = 3 false
-    card('2 = 3', C.peach, -3.6, 3.2, 2.6); bad('0', -1.8, 3.2);
+    S.l = card('2 = 3', C.peach, -3.0, 3.5, 2.6); keep(bad('0', -1.35, 3.5));
     cap('原來的 statement：2 = 3', 'false');
   },
   async (tok, S) => { // 1418.1 2·0 = 3·0 → 0 = 0 true
-    card('2·0 = 3·0（0 = 0）', C.mint, 2.0, 3.2, 3.8); good('1', 4.3, 3.2); arrow(V3(-1.5, 3.2, 0.5), V3(-0.2, 3.2, 0.5));
+    S.r = card('2·0 = 3·0（0 = 0）', C.mint, 2.2, 3.5, 3.8); keep(good('1', 4.85, 3.5)); K.flow(V3(-1.1, 3.5, 0.5), S.r, '');
     cap('得出來：2 × 0 = 3 × 0', '左右兩邊都是 0 → true');
   },
   async (tok, S) => { // 1426.0 false 推到 true 是 true
-    good('0 → 1：true', 0, 2.3); await cheer(tok, S, true);
+    good('0 → 1：true', 0, 2.5); await cheer(tok, S, true);
     cap('false 推到 true', '根據定義是 true');
   },
   async (tok, S) => { // 1436.0 不然又不一致
-    note('因為這推論對「所有」x、y、z 都要成立', 0, 1.7);
+    note('因為這推論對「所有」x、y、z 都要成立', 0, 1.8);
     cap('為什麼要 true？', '推論永遠成立，代 z = 0 也要成立，不然又不一致');
   },
   async (tok, S) => { // 1459.0 只有 1→0 才是錯
-    S.T = TT(['p', 'q'], [['p → q', (e) => IM(e.p, e.q)]], { bin: true, dx: 1.2, cx: -3.0, top: 0.3, dy: 0.62 });
+    sweep(S.tb, S.fb, S.c);
+    S.T = TT(['p', 'q'], [['p → q', (e) => IM(e.p, e.q)]], { bin: true, dx: 1.4, cx: -2.0, top: 4.6, dy: 0.72 });
     S.T.now(); S.T.glowRow(0, OKG); S.T.glowRow(1, OKG); S.T.glowRow(2, NG);
-    sm('0→0、0→1 都必須是 1', 3.4, 0.0);
+    sm('0→0、0→1 都必須是 1', 2.6, S.T.Y(0) - 0.35);
     cap('所以只有對的推到錯的才能說錯', '0 → 0、0 → 1 都必須定義成 true');
   },
 ]);
@@ -1410,27 +1433,28 @@ scene('lg-1b-conv', '1B：converse、↔、contrapositive', CAM, [
   },
   async (tok, S) => { // 1576.0 兩個方向推
     S.bi = card('p ↔ q', C.mint, 0, 4.2, 2.6, 0.7);
-    arrow(V3(-1.5, 4.5, 0.5), V3(1.5, 4.5, 0.5)); arrow(V3(1.5, 3.9, 0.5), V3(-1.5, 3.9, 0.5));
+    S.ar = [arrow(V3(-1.5, 4.5, 0.5), V3(1.5, 4.5, 0.5)), arrow(V3(1.5, 3.9, 0.5), V3(-1.5, 3.9, 0.5))];
     cap('還有兩個方向都推的', '若且唯若');
   },
   async (tok, S) => { // 1591.5 p if and only if q
-    sm('p if and only if q（若且唯若）', 0, 3.3);
+    S.b1 = sm('p if and only if q（若且唯若）', 0, 3.3);
     cap('寫成 p if and only if q', '');
   },
   async (tok, S) => { // 1604.1 = p→q 且 q→p
-    card('p ↔ q ＝ (p → q) ∧ (q → p)', C.mint, 0, 2.5, 6.0, 0.6);
+    S.b2 = card('p ↔ q ＝ (p → q) ∧ (q → p)', C.mint, 0, 2.5, 6.0, 0.6);
     cap('意思是：p 推到 q 成立', '而且 q 推到 p 也成立，兩個方向都要成立');
   },
   async (tok, S) => { // 1648.7 還有一個：¬q → ¬p
-    S.cp = card('¬q → ¬p（若非 q 則非 p）', C.peach, 0, 1.3, 5.6, 0.6);
+    sweep(S.o, S.c);
+    S.cp = card('¬q → ¬p（若非 q 則非 p）', C.peach, 0, 4.2, 5.6, 0.6);
     cap('還有一個從 p → q 變化出來的', '若非 q 則非 p：not q implies not p');
   },
   async (tok, S) => { // 1665.0 contrapositive
-    hot('contrapositive（逆否）', 0, 0.5); glow(S.cp, HL);
+    hot('contrapositive（逆否）', 0, 3.4); glow(S.cp, HL);
     cap('這叫原來那句的 contrapositive', '逆否命題');
   },
   async (tok, S) => { // 1683.0 用 truth table 來看
-    bub('從 truth table 看會怎樣？（下一講）', 0, -0.3);
+    bub('從 truth table 看會怎樣？（下一講）', 0, 2.6);
     cap('從 truth table 的觀點來看會怎麼樣？', '下一講接著算');
   },
 ]);
@@ -1438,7 +1462,7 @@ scene('lg-1b-conv', '1B：converse、↔、contrapositive', CAM, [
 // ════════ jBoa60H5XVU（趙啟超 1C：逆否、量詞、集合） ════════
 scene('lg-1c-tab', '1C：converse、↔、contrapositive、¬p ∨ q 一次比', CAMW, [
   async (tok, S) => { // 6.0 p → q：只有 1→0 是 0
-    S.T = TT(['p', 'q'], [['p→q', (e) => IM(e.p, e.q)], ['q→p', (e) => IM(e.q, e.p)], ['p↔q', (e) => e.p === e.q], ['¬p', (e) => !e.p], ['¬q', (e) => !e.q], ['¬q→¬p', (e) => IM(!e.q, !e.p)], ['¬p∨q', (e) => !e.p || e.q]], { bin: true, dx: 1.36, top: 5.6 });
+    S.T = TT(['p', 'q'], [['p→q', (e) => IM(e.p, e.q)], ['q→p', (e) => IM(e.q, e.p)], ['p↔q', (e) => e.p === e.q], ['¬p', (e) => !e.p], ['¬q', (e) => !e.q], ['¬q→¬p', (e) => IM(!e.q, !e.p)], ['¬p∨q', (e) => !e.p || e.q]], { bin: true, dx: 1.36, top: 5.6, tiers: true });
     S.T.now([0, 1, 2]); duo(S, { bin: true, x: 6.6 });
     cap('上次的：一共四種', '若 p 則 q：只有 true 推到 false 才是 false');
   },
@@ -1491,11 +1515,11 @@ scene('lg-1c-tab', '1C：converse、↔、contrapositive、¬p ∨ q 一次比',
     cap('看 truth table：p → q', '四種情況是 1 1 0 1');
   },
   async (tok, S) => { // 191.1 contrapositive 也是 1101
-    S.T.glowCol(2, OKG); S.T.glowCol(7, OKG); await cheer(tok, S, true);
+    S.T.glowCol(2, OKG); S.T.glowCol(7, OKG); S.fl = same(S.T, 2, 7); await cheer(tok, S, true);
     cap('它的 contrapositive 也是 1 1 0 1', '所以兩者 logically equivalent');
   },
   async (tok, S) => { // 199.0 p → q ≡ ¬q → ¬p
-    card('p → q ≡ ¬q → ¬p', C.mint, 0, 1.6, 5.0, 0.7);
+    S.fl.kill(); card('p → q ≡ ¬q → ¬p', C.mint, 0, 1.7, 5.0, 0.7);
     cap('若 p 則 q，邏輯等價於', '若非 q 則非 p');
   },
 ]);
@@ -1505,12 +1529,12 @@ scene('lg-1c-proof', '1C：用 contrapositive 來證明', CAM, [
     cap('後面很多證明', '要證「這個成立會推到那個成立」');
   },
   async (tok, S) => { // 229.2 證它的 contrapositive
-    S.c = card('改證：¬q → ¬p', C.peach, 3.2, 5.8, 4.2, 0.7); arrow(V3(-1.0, 5.8, 0.5), V3(1.0, 5.8, 0.5));
+    S.c = card('改證：¬q → ¬p', C.peach, 3.2, 5.8, 4.2, 0.7); K.flow(S.g, S.c, '');
     cap('老師說的「反證」：證它的 contrapositive', '課本叫 proof by contraposition');
   },
   async (tok, S) => { // 232.5 假設結論不成立 → 前提不成立
-    S.a = buddy('假設', '¬q', '#e0a37f', 1.6, 0, 3.0, 0.8); S.b = buddy('推出', '¬p', '#e0a37f', 4.8, 0, 3.0, 0.8);
-    arrow(V3(2.4, 0.5, 3.0), V3(4.0, 0.5, 3.0));
+    S.a = buddy('假設', '¬q', '#e0a37f', -2.0, 0, 1.2, 0.8); S.b = buddy('推出', '¬p', '#e0a37f', 2.0, 0, 1.2, 0.8);
+    S.ar = arrow(V3(-1.2, 0.5, 1.2), V3(1.2, 0.5, 1.2));
     cap('假設結論不成立', '去推出前提不成立'); await S.a.hop(tok); await S.b.hop(tok);
   },
   async (tok, S) => { // 255.5 為什麼可以：等價
@@ -1518,11 +1542,11 @@ scene('lg-1c-proof', '1C：用 contrapositive 來證明', CAM, [
     cap('因為兩者 logically equivalent', '前提成立時結論一定成立；結論不成立，前提當然不成立');
   },
   async (tok, S) => { // 294.4 converse 不一樣
-    S.v = card('q → p（converse）', C.gray, -3.6, 2.6, 4.0, 0.6); bad('不一樣！正向成立，反向不見得', -3.6, 1.9);
+    gone(S.a, S.b, S.ar); S.v = card('q → p（converse）', C.gray, -3.4, 2.6, 4.4, 0.6); keep(bad('不一樣！正向成立，反向不見得', -3.4, 1.9));
     cap('跟 converse 是不一樣的', '它成立，converse 不見得成立');
   },
   async (tok, S) => { // 309.0 contrapositive 一樣
-    good('contrapositive：一樣', 3.0, 2.6);
+    keep(good('contrapositive：一樣', 3.0, 2.6));
     cap('但 contrapositive 是一樣的', '');
   },
   async (tok, S) => { // 321.7 也 ≡ ¬p ∨ q
@@ -1540,7 +1564,7 @@ scene('lg-1c-proof', '1C：用 contrapositive 來證明', CAM, [
 ]);
 scene('lg-1c-quant', '1C：量詞 ∃、∀ 與自然數', CAM, [
   async (tok, S) => { // 355.4 quantifier
-    hot('quantifier 量詞', 0, 6.6);
+    S.h = hot('quantifier 量詞', 0, 6.6);
     cap('邏輯裡還有 quantifier', '量詞');
   },
   async (tok, S) => { // 368.0 ∃ there is
@@ -1561,27 +1585,28 @@ scene('lg-1c-quant', '1C：量詞 ∃、∀ 與自然數', CAM, [
   },
   async (tok, S) => { // 451.7 ℕ = {1, 2, 3, …}
     S.ns = [1, 2, 3, 4, 5, 6].map((v, i) => num(v, -3.6 + i * 1.3, 2.3, C.blue, 0.8));
-    sm('…', 4.4, 2.3); S.nl = hd('ℕ = {1, 2, 3, …}（自然數）', -4.0, 3.1);
+    sm('…', 4.4, 2.3); S.nl = hd('ℕ = {1, 2, 3, …}（自然數）', -3.0, 3.1);
     cap('ℕ：自然數，從 1、2、3 開始', '一直下去，無窮多個');
   },
   async (tok, S) => { // 466.8 ℤ、ℤ⁺
-    sm('ℤ：整數（正、負、0）；ℤ⁺：正整數', 2.4, 3.1);
+    sm('ℤ：整數（正、負、0）；ℤ⁺：正整數', 2.9, 3.1);
     cap('ℤ 是整數：正整數、負整數跟 0', 'ℤ⁺ 是正整數 1、2、3…');
   },
   async (tok, S) => { // 485.4 有些書從 0 開始
-    note('有些書 ℕ 從 0 開始；這門課 ℕ 從 1 開始', 0, 1.2);
+    note('有些書 ℕ 從 0 開始；這門課 ℕ 從 1 開始', 0, 1.4);
     cap('有些書的自然數從 0 開始', '這門課的自然數一律從 1 開始');
   },
   async (tok, S) => { // 516.3 3² = 9 是奇數
-    relabel(S.ns[2], '3²=9'); tint(S.ns[2], C.green); glow(S.ns[2], OKG); good('找到 n = 3：9 是奇數 → ∃ 這句為真', 0, 0.4);
+    relabel(S.ns[2], '3²=9'); tint(S.ns[2], C.green); glow(S.ns[2], OKG); good('找到 n = 3：9 是奇數 → ∃ 這句為真', 0, 0.75);
     cap('比方說 3：3 的平方是 9', '9 是奇數 → 存在這樣的 n');
   },
   async (tok, S) => { // 534.6 ∀ n ∈ ℕ, n² is odd
-    S.s2 = card('∀ n ∈ ℕ, n² is odd', C.peach, 0, -0.5, 5.0, 0.7);
+    sweep(S.h, S.e, S.a);
+    S.s2 = card('∀ n ∈ ℕ, n² is odd', C.peach, 0, 4.2, 5.0, 0.7);
     cap('另一句：所有 n 在自然數裡', 'n² 都是奇數');
   },
   async (tok, S) => { // 552.4 不見得對
-    bub('這句不見得對（只是一個 statement）', 0, -1.3);
+    bub('這句不見得對（只是一個 statement）', 0, 3.4);
     cap('這個 statement 不見得對', '一個是「存在」，一個是「所有」');
   },
 ]);
@@ -1598,16 +1623,16 @@ scene('lg-1c-qneg', '1C：量詞的否定與找反例', CAM, [
     cap('這個 statement 的否定是什麼？', '');
   },
   async (tok, S) => { // 606.8 找一個不成立就好
-    S.xs = [1, 2, 3, 4, 5].map((v, i) => num('x' + v, -3.2 + i * 1.6, 3.5, C.green, 0.75));
+    S.xs = [1, 2, 3, 4, 5].map((v, i) => num('x' + v, -3.2 + i * 1.6, 3.7, C.green, 0.75));
     tint(S.xs[3], C.red); glow(S.xs[3], NG); await wt(tok, 300);
     cap('要證它不對，只要找一個不成立的', '紅色那顆（示意）');
   },
   async (tok, S) => { // 609.7 ¬∀x P(x) ≡ ∃x ¬P(x)
-    S.r1 = card('¬∀x P(x) ≡ ∃x ¬P(x)', C.mint, 0, 2.4, 5.2, 0.7);
+    S.r1 = card('¬∀x P(x) ≡ ∃x ¬P(x)', C.mint, 0, 2.6, 5.2, 0.7);
     cap('否定就是：存在一個 x，性質不成立', '¬∀x P(x) ≡ ∃x ¬P(x)');
   },
   async (tok, S) => { // 625.0 像 De Morgan
-    sm('像 De Morgan：∀ 變 ∃，P 變 ¬P', 0, 1.7);
+    sm('像 De Morgan：∀ 變 ∃，P 變 ¬P', 0, 1.9);
     cap('有點像 De Morgan\'s law', 'for all 變 there is，再把性質否定');
   },
   async (tok, S) => { // 640.6 disprove：counterexample
@@ -1619,46 +1644,46 @@ scene('lg-1c-qneg', '1C：量詞的否定與找反例', CAM, [
     cap('說「所有都成立」的，找一個反例', '這個 statement 就不成立了');
   },
   async (tok, S) => { // 724.0 作業：先判斷對不對
-    S.hw = note('作業：先判斷對不對 → 對就證明，錯就找反例', 0, 1.0);
+    S.hw = note('作業：先判斷對不對 → 對就證明，錯就找反例', 0, 1.2);
     cap('作業會給一個 statement', '先判斷對錯：對就證，不對就找反例');
   },
   async (tok, S) => { // 755.6 ∃x P(x)
-    gone(S.xs, S.a, S.na, S.r1, S.hw);
-    S.e = card('∃x P(x)', C.sky, -3.4, 5.8, 3.0, 0.7);
+    sweep();
+    S.e = card('∃x P(x)', C.sky, -3.4, 5.6, 3.0, 0.7);
     cap('同理：存在一個 x，P(x) 成立', '它的否定是什麼？');
   },
   async (tok, S) => { // 779.3 否定：∀x ¬P(x)
-    S.r2 = card('¬∃x P(x) ≡ ∀x ¬P(x)', C.mint, 1.6, 5.8, 5.2, 0.7);
-    S.xs = [1, 2, 3, 4, 5].map((v, i) => num('x' + v, -3.2 + i * 1.6, 4.4, C.red, 0.7));
+    S.r2 = card('¬∃x P(x) ≡ ∀x ¬P(x)', C.mint, 1.6, 5.6, 5.2, 0.7); K.flow(S.e, S.r2, '');
+    S.xs = [1, 2, 3, 4, 5].map((v, i) => num('x' + v, -3.2 + i * 1.6, 3.6, C.red, 0.7));
     cap('否定：所有 x，那個性質都不成立', '就不會存在一個');
   },
   async (tok, S) => { // 795.3 也像 De Morgan
-    sm('一樣：全部否定，∃ 變 ∀', 1.6, 5.1);
+    sm('一樣：全部否定，∃ 變 ∀', 1.6, 4.9);
     cap('這也跟 De Morgan 有點像', '把全部否定，there is 變 for all');
   },
   async (tok, S) => { // 825.6 例：∀ n ∈ ℕ, n² is odd
-    gone(S.xs);
-    S.c = card('∀ n ∈ ℕ, n² is odd ？', C.peach, -1.6, 3.3, 5.4, 0.7);
-    S.ns = [1, 2, 3, 4, 5].map((v, i) => num(v + '²=' + v * v, -3.6 + i * 1.6, 2.2, (v * v) % 2 ? C.green : C.blue, 0.95));
+    sweep();
+    S.c = card('∀ n ∈ ℕ, n² is odd ？', C.peach, 0, 5.8, 5.4, 0.7);
+    S.ns = [1, 2, 3, 4, 5].map((v, i) => num(v + '²=' + v * v, -3.6 + i * 1.8, 4.5, (v * v) % 2 ? C.green : C.blue, 0.95));
     cap('例：所有自然數 n，n² 都是奇數', '先判斷對不對：很明顯不對');
   },
   async (tok, S) => { // 844.7 反例 n = 2
-    tint(S.ns[1], C.red); glow(S.ns[1], NG); S.ns[1].position.y += 0.3;
-    bad('反例 n = 2：2² = 4 不是奇數 → disproved', 0, 1.2);
+    hold(S.ns); S.ns[1].position.y = 4.8; tint(S.ns[1], C.red); glow(S.ns[1], NG);
+    bad('反例 n = 2：2² = 4 不是奇數 → disproved', 0, 3.4);
     cap('找一個平方不是奇數的就好', '比方說 2，平方是 4');
   },
   async (tok, S) => { // 856.0 對的證、錯的找反例
-    good('對 → 證出來；錯 → 找到反例', 0, 0.4);
+    good('對 → 證出來；錯 → 找到反例', 0, 2.7);
     cap('對的東西可以證出來', '不對的東西可以找到反例');
   },
   async (tok, S) => { // 861.7 判斷對錯不容易
-    note('先判斷對錯有時比證明還重要：題目若是錯的，一輩子也證不出來', 0, -0.4);
+    note('先判斷對錯有時比證明還重要：題目若是錯的，一輩子也證不出來', 0, 2.0);
     cap('有時候判斷對不對沒那麼容易', '題目根本不對，就一輩子證不出來');
   },
 ]);
 scene('lg-1c-set', '1C：集合、元素與兩種寫法', CAM, [
   async (tok, S) => { // 932.4 set：unordered collection of objects
-    hot('set（集合）：unordered collection of objects', 0, 6.7);
+    S.h = hot('set（集合）：unordered collection of objects', 0, 6.7);
     cap('什麼是集合？', 'unordered collection of objects');
   },
   async (tok, S) => { // 954.5 unordered：沒有順序
@@ -1666,55 +1691,55 @@ scene('lg-1c-set', '1C：集合、元素與兩種寫法', CAM, [
     cap('collection of objects：把東西放在一起', 'unordered：沒有順序');
   },
   async (tok, S) => { // 961.5 有順序要特別說
-    sm('（有順序要特別說：ordered）', 0, 5.6);
+    sm('（有順序要特別說：ordered）', 0, 5.65);
     cap('如果有順序，要特別說是 ordered', '沒講的時候集合都沒有順序');
   },
   async (tok, S) => { // 974.3 第一種：全部列出來
-    S.z = oval(-0.4, 4.4, 5.0, 0.9);
-    S.ns = [1, 2, 3, 4, 5, 6, 7, 8].map((v, i) => num(v, -4.6 + i * 0.98, 4.4, C.blue, 0.7));
-    S.l = hd('A = {1, 2, 3, 4, 5, 6, 7, 8}', 4.4, 5.05);
+    S.z = oval(0, 3.8, 5.0, 0.9);
+    S.ns = [1, 2, 3, 4, 5, 6, 7, 8].map((v, i) => num(v, -3.43 + i * 0.98, 3.8, C.blue, 0.7));
+    S.l = hd('A = {1, 2, 3, 4, 5, 6, 7, 8}', 0, 5.05);
     cap('表示集合的第一種方法：全部列出來', '中間用逗號分開，外面用大括號');
   },
   async (tok, S) => { // 1008.3 順序無關
     const order = [1, 2, 3, 4, 5, 6, 7, 0];
     hold(S.ns);
-    await anim(tok, 900, (u) => order.forEach((k, i) => { const x0 = -4.6 + k * 0.98, x1 = -4.6 + i * 0.98; S.ns[k].position.x = x0 + (x1 - x0) * u; S.ns[k].position.y = 4.4 + Math.sin(Math.PI * u) * (k === 0 ? 0.55 : -0.15); }));
-    S.l2 = sm('{2, 3, 4, 5, 6, 7, 8, 1} 也是同一個 A', 4.6, 3.7);
+    await anim(tok, 900, (u) => order.forEach((k, i) => { const x0 = -3.43 + k * 0.98, x1 = -3.43 + i * 0.98; S.ns[k].position.x = x0 + (x1 - x0) * u; S.ns[k].position.y = 3.8 - Math.sin(Math.PI * u) * (k === 0 ? 1.0 : 0); }));
+    S.l2 = sm('{2, 3, 4, 5, 6, 7, 8, 1} 也是同一個 A', 0, 2.65);
     cap('寫成 2、3、…、8、1 也一樣', '跟順序無關，只說裡面有這些東西');
   },
   async (tok, S) => { // 1019.3 元素
-    S.el = note('裡面的東西叫 element（元素）', -2.0, 2.9);
+    S.el = note('裡面的東西叫 element（元素）', -3.2, 1.9);
     cap('裡面的東西叫做元素', 'element');
   },
   async (tok, S) => { // 1028.6 2 ∈ A
-    glow(S.ns[1], HL); S.ns[1].position.y += 0.35; S.in = card('2 ∈ A', C.mint, 3.6, 2.6, 2.2, 0.6);
-    S.e1 = sm('2 is an element of A', 3.6, 1.95);
+    glow(S.ns[1], HL); S.ns[1].position.y += 0.35; S.in = card('2 ∈ A', C.mint, 3.2, 1.9, 2.2, 0.6);
+    S.e1 = sm('2 is an element of A', 3.2, 1.25);
     cap('2 是 A 的元素：2 ∈ A', '2 is in A / 2 is an element of A');
   },
   async (tok, S) => { // 1050.7 member
-    S.e2 = sm('也可以說 2 is a member of A', 3.6, 1.45);
+    S.e2 = sm('也可以說 2 is a member of A', 3.2, 0.65);
     cap('也有人叫 member', 'element 用得比較多');
   },
   async (tok, S) => { // 1082.2 第二種：寫共同性質
-    gone(S.ns, S.l, S.in, S.z, S.l2, S.el, S.e1, S.e2);
+    sweep(S.h);
     cap('元素太多、根本寫不完時', '第二種方法：把共同的性質寫出來');
   },
   async (tok, S) => { // 1105.3 B = {n ∈ ℕ : n 是 11 的倍數}
-    S.b = card('B = { n ∈ ℕ : n is a multiple of 11 }', C.lilac, 0, 5.0, 7.6, 0.7);
-    sm('n：代表元素（typical element）', -2.4, 4.3);
+    S.b = card('B = { n ∈ ℕ : n is a multiple of 11 }', C.lilac, 0, 5.6, 7.6, 0.7);
+    sm('n：代表元素（typical element）', -2.6, 4.9);
     cap('B 的代表元素叫 n', 'n 是自然數，而且是 11 的倍數');
   },
   async (tok, S) => { // 1117.6 冒號
-    sm('冒號「:」；也有人用直線「|」', 2.6, 4.3);
+    sm('冒號「:」；也有人用直線「|」', 2.6, 4.9);
     cap('老師習慣用冒號', '有人用一條直線，只是習慣不同');
   },
   async (tok, S) => { // 1158.5 11, 22, 33, …
-    S.bs = [11, 22, 33, 44, 55, 66, 77, 88].map((v, i) => num(v, -4.6 + i * 1.1, 3.0, C.purple, 0.8));
-    sm('…', 4.6, 3.0);
+    S.bs = [11, 22, 33, 44, 55, 66, 77, 88].map((v, i) => num(v, -4.2 + i * 1.1, 3.7, C.purple, 0.8));
+    sm('…', 4.8, 3.7);
     cap('一個一個列：11、22、33、44…', '寫成共同性質比較好寫');
   },
   async (tok, S) => { // 1190.0 empty set
-    card('∅：empty set（空集合）', C.gray, 0, 1.4, 5.0, 0.7); sm('一個元素都沒有', 0, 0.7);
+    card('∅：empty set（空集合）', C.gray, 0, 2.4, 5.0, 0.7); sm('一個元素都沒有', 0, 1.7);
     cap('一個元素都沒有的集合', '叫 empty set，空集合，符號 ∅');
   },
 ]);
@@ -1740,24 +1765,25 @@ scene('lg-1c-venn', '1C：交集、聯集與 Venn diagram', CAM, [
     cap('聯集：在 A 裡面或在 B 裡面', '這是 or');
   },
   async (tok, S) => { // 1319.1 兩個圓
-    S.V = venn(0, 1.6, 1.7, 0.95); S.V.draw();
+    sweep();
+    S.V = venn(0, 3.5, 1.7, 0.95); S.V.draw();
     cap('兩個集合畫成兩個圓', '左邊 A、右邊 B');
   },
   async (tok, S) => { // 1323.3 交集是重疊、聯集是全部
-    S.V.fill('AB', C.blue, 0.6); sm('A ∩ B', 0, 1.6, 0.3); await wt(tok, 900);
+    S.V.fill('AB', C.blue, 0.6); sm('A ∩ B', 0, 3.5, 0.3); await wt(tok, 900);
     S.V.fill('A', C.orange, 0.18); S.V.fill('B', C.orange, 0.18);
     cap('交集是中間重疊的部分', '聯集是兩個圓全部');
   },
   async (tok, S) => { // 1333.1 Venn diagram
-    hd('Venn diagram（文氏圖）', 4.8, 3.6);
+    hd('Venn diagram（文氏圖）', 0, 1.3);
     cap('這種圖叫 Venn diagram', '文氏圖');
   },
   async (tok, S) => { // 1358.0 John Venn
-    sm('John Venn（1834–1923）英國邏輯學家，《Symbolic Logic》', 0, -0.6);
+    sm('John Venn（1834–1923）英國邏輯學家，《Symbolic Logic》', 0, 0.7);
     cap('John Venn，英國邏輯學家', '在他的書 Symbolic Logic 裡用這種圖');
   },
   async (tok, S) => { // 1374.2 不能當證明
-    bad('幫助理解，不能拿來當證明', 4.8, 2.6);
+    bad('幫助理解，不能拿來當證明', 4.9, 3.5);
     cap('Venn diagram 幫你看懂交集、聯集', '但只是幫助瞭解，不能拿來當證明');
   },
 ]);
@@ -1771,7 +1797,7 @@ scene('lg-1c-comp', '1C：補集 complement 與 universe', CAM, [
     cap('很多種寫法：A bar', '有些書在右上角寫一個 c');
   },
   async (tok, S) => { // 1412.6 不在 A 裡的元素
-    card('Ā = { x : x ∉ A }', C.peach, 0, 4.8, 4.4, 0.6);
+    S.d = card('Ā = { x : x ∉ A }', C.peach, 0, 4.8, 4.4, 0.6);
     cap('complement：不在 A 裡面的那些元素', '');
   },
   async (tok, S) => { // 1435.3 必須先知道全部範圍
@@ -1779,25 +1805,25 @@ scene('lg-1c-comp', '1C：補集 complement 與 universe', CAM, [
     cap('講 complement 之前', '必須先知道你整個考慮的範圍是什麼');
   },
   async (tok, S) => { // 1448.0 universe
-    const w = 9.6, h = 3.4, cx = 0, cy = 1.5;
+    sweep();
+    S.d = card('Ā = { x : x ∉ A }', C.peach, 0, 6.3, 4.4, 0.6);
+    const w = 9.6, h = 3.4, cx = 0, cy = 1.8;
     const s = new THREE.Shape(); s.moveTo(cx - w / 2, cy - h / 2); s.lineTo(cx + w / 2, cy - h / 2); s.lineTo(cx + w / 2, cy + h / 2); s.lineTo(cx - w / 2, cy + h / 2); s.lineTo(cx - w / 2, cy - h / 2);
     const hole = new THREE.Path(); hole.absarc(-1.6, cy, 1.45, 0, Math.PI * 2, true); s.holes.push(hole);
     S.out = new THREE.Mesh(new THREE.ShapeGeometry(s, 48), new THREE.MeshBasicMaterial({ color: C.orange, transparent: true, opacity: 0.28, depthWrite: false, side: THREE.DoubleSide }));
     lab.world.add(S.out); ringL(-1.6, cy, 1.45);
-    hd('U（universe）', cx + w / 2 + 1.1, cy + h / 2 - 0.3); hd('A', -3.55, cy - 0.6); sm('Ā：外面這一圈', 2.6, cy - 1.15, 0.2);
+    hd('U（universe）', cx + w / 2 + 1.0, cy + h / 2 - 0.3); hd('A', -3.55, cy - 0.6); sm('Ā：外面這一圈', 2.6, cy - 1.3, 0.2);
     cap('整個考慮的大範圍叫 universe', 'A 的 complement 就是 A 外面的部分');
   },
   async (tok, S) => { // 1474.0 U = {1..10}
-    S.pos = {}; let k = 0;
-    for (let v = 1; v <= 10; v++) { const inA = v >= 2 && v <= 6; const x = inA ? null : 0.4 + (k % 3) * 1.25, y = inA ? null : 2.4 - Math.floor(k / 3) * 0.95; if (!inA) k++; S.pos[v] = [x, y]; }
-    gone(S.q); S.ns = []; for (let v = 1; v <= 10; v++) S.ns.push(num(v, -4.4 + (v - 1) * 0.98, 3.8, C.blue, 0.62));
-    sm('U = {1, 2, …, 10}', -3.2, 4.5);
+    S.ns = []; for (let v = 1; v <= 10; v++) S.ns.push(num(v, -4.4 + (v - 1) * 0.98, 4.2, C.blue, 0.62));
+    sm('U = {1, 2, …, 10}', -3.2, 5.0);
     cap('例：universe 是 1 到 10', '這 10 個正整數');
   },
   async (tok, S) => { // 1491.0 A = {2..6}
     const inA = [2, 3, 4, 5, 6];
     hold(inA.map((v) => S.ns[v - 1]));
-    await anim(tok, 1000, (u) => inA.forEach((v, i) => { const m = S.ns[v - 1]; const x0 = -4.4 + (v - 1) * 0.98, y0 = 3.8; const x1 = -2.6 + i * 0.5, y1 = i % 2 ? 1.1 : 1.9; m.position.x = x0 + (x1 - x0) * u; m.position.y = y0 + (y1 - y0) * u; }));
+    await anim(tok, 1000, (u) => inA.forEach((v, i) => { const m = S.ns[v - 1]; const x0 = -4.4 + (v - 1) * 0.98, y0 = 4.2; const x1 = -2.6 + i * 0.5, y1 = i % 2 ? 1.4 : 2.2; m.position.x = x0 + (x1 - x0) * u; m.position.y = y0 + (y1 - y0) * u; }));
     sm('A = {2, 3, 4, 5, 6}', -1.6, 0.0);
     cap('假設 A 是 2、3、4、5、6', '');
   },
@@ -1805,13 +1831,13 @@ scene('lg-1c-comp', '1C：補集 complement 與 universe', CAM, [
     const out = [1, 7, 8, 9, 10];
     hold(out.map((v) => S.ns[v - 1]));
     // bottom row (9, 10) moves first, then the top row (1, 7, 8): their paths never cross
-    await anim(tok, 1400, (u0) => out.forEach((v, i) => { const u = Math.min(1, Math.max(0, i >= 3 ? u0 * 2 : u0 * 2 - 1)); const m = S.ns[v - 1]; const x0 = -4.4 + (v - 1) * 0.98, y0 = 3.8; const x1 = 1.4 + (i % 3) * 1.1, y1 = 2.2 - Math.floor(i / 3) * 0.9; m.position.x = x0 + (x1 - x0) * u; m.position.y = y0 + (y1 - y0) * u; }));
+    await anim(tok, 1400, (u0) => out.forEach((v, i) => { const u = Math.min(1, Math.max(0, i >= 3 ? u0 * 2 : u0 * 2 - 1)); const m = S.ns[v - 1]; const x0 = -4.4 + (v - 1) * 0.98, y0 = 4.2; const x1 = 1.4 + (i % 3) * 1.1, y1 = 2.6 - Math.floor(i / 3) * 0.9; m.position.x = x0 + (x1 - x0) * u; m.position.y = y0 + (y1 - y0) * u; }));
     out.forEach((v) => { tint(S.ns[v - 1], C.orange); glow(S.ns[v - 1], HL); });
-    card('Ā = {1, 7, 8, 9, 10}', C.peach, 3.0, -0.4, 4.4, 0.6);
+    card('Ā = {1, 7, 8, 9, 10}', C.peach, 3.0, -0.3, 4.4, 0.6);
     cap('不在 A 裡的：1、7、8、9、10', '就是 A 的 complement');
   },
   async (tok, S) => { // 1524.1 要知道 universe
-    note('universe 換了，complement 就跟著換', -3.2, -0.4);
+    note('universe 換了，complement 就跟著換', 2.6, 5.0);
     cap('必須先知道 universe 是什麼', '才能說 complement 是什麼');
   },
 ]);
@@ -1821,58 +1847,59 @@ scene('lg-1c-diff', '1C：差集 A − B 與例題', CAM, [
     cap('最後介紹一個：difference', '可能平常比較少看到');
   },
   async (tok, S) => { // 1554.0 A − B
-    card('A − B（也寫 A \\ B）', C.lilac, -3.2, 6.0, 4.4, 0.6);
+    card('A − B（也寫 A \\ B）', C.lilac, -3.4, 6.0, 4.4, 0.6);
     cap('A 扣掉 B', '有人寫減號，也有人寫斜線');
   },
   async (tok, S) => { // 1568.1 在 A 裡、不在 B 裡
-    card('A − B = { x : x ∈ A ∧ x ∉ B }', C.lilac, 3.0, 6.0, 5.8, 0.6);
+    card('A − B = { x : x ∈ A ∧ x ∉ B }', C.lilac, 2.9, 6.0, 6.2, 0.6);
     cap('在 A 裡面、不在 B 裡面', '');
   },
   async (tok, S) => { // 1580.0 = A ∩ B̄
-    card('A − B = A ∩ B̄', C.mint, 3.0, 5.2, 4.0, 0.6);
+    card('A − B = A ∩ B̄', C.mint, 2.9, 5.2, 4.0, 0.6);
     cap('不在 B 裡 = 在 B 的 complement 裡', '所以 A − B 就是 A 交 B bar（因為是 and）');
   },
   async (tok, S) => { // 1599.0 跟誰寫前面有關
-    sm('誰寫前面有關係！', -3.2, 5.3);
+    sm('誰寫前面有關係！', -3.4, 5.3);
     cap('difference 跟哪個寫在前面有關', '');
   },
   async (tok, S) => { // 1608.2 relative complement
-    sm('又叫 relative complement of B in A', -3.2, 4.75);
+    sm('又叫 relative complement of B in A', -3.4, 4.75);
     cap('有人叫 relative complement', 'relative complement of B in A');
   },
   async (tok, S) => { // 1636.6 Venn
-    S.V = venn(0, 1.9, 1.6, 0.9); S.V.draw(); S.f1 = S.V.fill('AmB', C.purple, 0.5); S.t1 = hd('A − B', -2.6, 4.0);
+    sweep();
+    S.V = venn(0, 3.5, 1.7, 0.95); S.V.draw(); S.f1 = S.V.fill('AmB', C.purple, 0.5); S.t1 = hd('A − B', -3.9, 3.5);
     cap('用 Venn diagram 看', '在 A 裡面、不在 B 裡面：左邊這一塊');
   },
   async (tok, S) => { // 1667.0 不對稱
-    S.V.fill('BmA', C.teal, 0.5); hd('B − A', 2.6, 4.0); bad('A − B ≠ B − A（不對稱）', 0, 4.6);
+    S.V.fill('BmA', C.teal, 0.5); S.t2 = hd('B − A', 3.9, 3.5); S.ne = bad('A − B ≠ B − A（不對稱）', 0, 1.4);
     cap('A − B 跟 B − A 不一樣', '不對稱');
   },
   async (tok, S) => { // 1672.4 例 A={1,2,3,4}, B={3,4,5,6}
-    S.V.unfill();
+    S.V.unfill(); gone(S.ne, S.t1, S.t2);
     const at = { 1: ['AmB', 0, 2], 2: ['AmB', 1, 2], 3: ['AB', 0, 2], 4: ['AB', 1, 2], 5: ['BmA', 0, 2], 6: ['BmA', 1, 2] };
     S.ns = {}; for (let v = 1; v <= 6; v++) { const [k, i, n] = at[v]; const [x, y] = S.V.at(k, i, n); S.ns[v] = num(v, x, y, C.blue, 0.6); await wt(tok, 120); }
-    card('A = {1, 2, 3, 4}', C.sky, -4.6, 0.0, 3.4, 0.55); card('B = {3, 4, 5, 6}', C.sky, 4.6, 0.0, 3.4, 0.55);
+    card('A = {1, 2, 3, 4}', C.sky, -4.8, 5.4, 3.4, 0.55); card('B = {3, 4, 5, 6}', C.sky, 4.8, 5.4, 3.4, 0.55);
     cap('例：A = {1, 2, 3, 4}', 'B = {3, 4, 5, 6}');
   },
   async (tok, S) => { // 1687.3 A ∪ B
     for (let v = 1; v <= 6; v++) glow(S.ns[v], HL);
-    card('A ∪ B = {1, 2, 3, 4, 5, 6}', C.peach, 0, -0.8, 5.0, 0.55);
+    card('A ∪ B = {1, 2, 3, 4, 5, 6}', C.peach, 0, 1.2, 5.0, 0.55);
     cap('A 聯集 B：在 A 裡或在 B 裡', '全部寫出來：1 到 6');
   },
   async (tok, S) => { // 1708.0 A ∩ B
     for (let v = 1; v <= 6; v++) glow(S.ns[v], v === 3 || v === 4 ? HL : null);
-    card('A ∩ B = {3, 4}', C.sky, -4.6, -1.6, 3.4, 0.55);
+    card('A ∩ B = {3, 4}', C.sky, -4.4, 0.4, 3.4, 0.55);
     cap('A 交集 B：在 A 裡又在 B 裡', '1、2 只在 A，5、6 只在 B → 3 跟 4');
   },
   async (tok, S) => { // 1729.2 A − B
     for (let v = 1; v <= 6; v++) glow(S.ns[v], v <= 2 ? HL : null);
-    card('A − B = {1, 2}', C.lilac, 0, -1.6, 3.4, 0.55);
+    card('A − B = {1, 2}', C.lilac, 0, 0.4, 3.4, 0.55);
     cap('A 扣掉 B：在 A 裡不在 B 裡', '1 跟 2');
   },
   async (tok, S) => { // 1743.6 B − A
     for (let v = 1; v <= 6; v++) glow(S.ns[v], v >= 5 ? HL : null);
-    card('B − A = {5, 6}', C.mint, 4.6, -1.6, 3.4, 0.55);
+    card('B − A = {5, 6}', C.mint, 4.4, 0.4, 3.4, 0.55);
     cap('B 扣掉 A：5 跟 6', '看懂這個例子，前面的定義就 OK 了');
   },
 ]);
@@ -1945,19 +1972,19 @@ scene('lg-01-ex', 'Lec01：哪些是命題？（標準題）', CAM, [
     cap('常看到的標準題目', '先判斷是不是命題，是的話真值是什麼');
   },
   async (tok, S) => { // 348.3 a
-    glow(S.L[0], HL); good('命題，T（老師的答案）', 2.6, 5.9);
+    glow(S.L[0], HL); keep(good('命題，T（老師的答案）', 2.6, 5.9));
     cap('臺北是臺灣的首都', '可以判斷對錯、有答案 → 是命題');
   },
   async (tok, S) => { // 365.3 b
-    glow(S.L[0], null); glow(S.L[1], HL); good('命題，T', 2.6, 5.1);
+    glow(S.L[0], null); glow(S.L[1], HL); keep(good('命題，T', 2.6, 5.1));
     cap('2 + 3 = 5', '兩根手指加三根手指是五根 → 命題，真');
   },
   async (tok, S) => { // 382.0 c
-    glow(S.L[1], null); glow(S.L[2], HL); good('命題，F', 2.6, 4.3);
+    glow(S.L[1], null); glow(S.L[2], HL); keep(good('命題，F', 2.6, 4.3));
     cap('5 + 7 = 10', '算一算不對 → 是命題，但答案是假的');
   },
   async (tok, S) => { // 398.0 d
-    glow(S.L[2], null); glow(S.L[3], HL); bad('不是命題', 2.6, 3.5);
+    glow(S.L[2], null); glow(S.L[3], HL); keep(bad('不是命題', 2.6, 3.5));
     cap('x + 2 = 11', '這不是要你解方程式，是看它對或錯');
   },
   async (tok, S) => { // 413.1 x=9 對、x=8 錯
@@ -1965,15 +1992,15 @@ scene('lg-01-ex', 'Lec01：哪些是命題？（標準題）', CAM, [
     cap('x 如果是 9 就對，是 8 就錯', '不能判斷對錯 → 不是命題');
   },
   async (tok, S) => { // 441.3 e
-    glow(S.L[3], null); glow(S.L[4], HL); bad('不是命題', 2.6, 2.7);
+    glow(S.L[3], null); glow(S.L[4], HL); keep(bad('不是命題', 2.6, 2.7));
     cap('Good morning', '問候沒有對錯 → 不是命題');
   },
   async (tok, S) => { // 451.2 f
-    glow(S.L[4], null); glow(S.L[5], HL); bad('不是命題（問句）', 2.6, 1.9);
+    glow(S.L[4], null); glow(S.L[5], HL); keep(bad('不是命題（問句）', 2.6, 1.9));
     cap('Where are you going?', '你要去哪裡：沒有對錯的含義');
   },
   async (tok, S) => { // 462.0 g
-    glow(S.L[5], null); glow(S.L[6], HL); bad('不是命題（命令句）', 2.6, 1.1);
+    glow(S.L[5], null); glow(S.L[6], HL); keep(bad('不是命題（命令句）', 2.6, 1.1));
     cap('給我錢', '本身沒有對錯的概念 → 不是命題');
   },
 ]);
@@ -1991,11 +2018,11 @@ scene('lg-01-var', 'Lec01：命題變數與 propositional calculus', CAM, [
     cap('剛才寫了那麼多式子', '難道每次都要寫那麼長的東西嗎？');
   },
   async (tok, S) => { // 505.0 用符號代表
-    S.pp = cube('p', C.purple, [0.9, 0.9, 0.9], 0, 3.4, 0, 2); arrow(V3(0, 4.4, 0.5), V3(0, 3.95, 0.5));
+    S.pp = cube('p', C.purple, [0.9, 0.9, 0.9], 0, 3.4, 0, 0.3); arrow(V3(0, 4.4, 0.5), V3(0, 3.95, 0.5));
     cap('當然不是：用一個符號代表命題', '');
   },
   async (tok, S) => { // 508.7 p, q, r, s
-    ['q', 'r', 's'].forEach((v, i) => cube(v, C.blue, [0.9, 0.9, 0.9], 1.4 + i * 1.4, 3.4, 0, 2));
+    ['q', 'r', 's'].forEach((v, i) => cube(v, C.blue, [0.9, 0.9, 0.9], 1.4 + i * 1.4, 3.4, 0, 0.3));
     good('命題變數：小寫 p、q、r、s', 2.8, 2.5);
     cap('習慣用小寫的 p、q、r、s', '迫不得已才用 x、y、z');
   },
@@ -2025,7 +2052,7 @@ scene('lg-01-comp', 'Lec01：複合命題與邏輯運算子', CAM, [
     cap('比如：臺北是臺灣的首都', '新竹在臺灣的最北邊：這是兩個陳述');
   },
   async (tok, S) => { // 626.0 一對一錯
-    good('T', -0.2, 5.0); bad('F', 6.2, 5.0);
+    keep(good('T', -0.2, 5.0)); keep(bad('F', 6.2, 5.0));
     cap('第一個可能是對的', '第二個是錯的');
   },
   async (tok, S) => { // 635.0 而且
@@ -2063,42 +2090,42 @@ scene('lg-01-neg', 'Lec01：Negation ¬p 與第一張真值表', CAM, [
     cap('寫數學要嚴謹', '先說清楚：p 是一個命題變數');
   },
   async (tok, S) => { // 827.5 the negation of p
-    card('¬p：the negation of p', C.sky, 3.2, 5.9, 4.6, 0.6);
+    card('¬p：the negation of p', C.sky, 3.0, 5.9, 4.6, 0.6);
     cap('¬p 叫做 the negation of p', '這是一個新的陳述');
   },
   async (tok, S) => { // 858.0 It is not the case that p
-    card('"It is not the case that p."', C.sky, 3.2, 5.1, 5.4, 0.6);
+    card('"It is not the case that p."', C.sky, 3.0, 5.1, 5.4, 0.6);
     cap('它的意思：It is not the case that p', '簡單講：p 是錯的');
   },
   async (tok, S) => { // 877.9 例：新竹在臺灣最北邊
-    S.e1 = card('p：新竹在臺灣的最北邊', C.sand, -2.0, 3.6, 5.2, 0.6); S.e1v = bad('F', 1.0, 3.6);
+    sweep();
+    S.e1 = card('p：新竹在臺灣的最北邊', C.sand, -1.2, 5.4, 6.6, 0.6); S.e1v = keep(bad('F', 2.9, 5.4));
     duo(S, { x: 6.2 }); await cheer(tok, S, false);
     cap('例：新竹在臺灣的最北邊', '就我們所知，這是錯的');
   },
   async (tok, S) => { // 900.3 ¬p 對
-    S.e2 = card('¬p：「新竹在最北邊」這件事是錯的', C.peach, -1.0, 2.8, 6.6, 0.6); S.e2v = good('T', 2.7, 2.8); await cheer(tok, S, true);
+    S.e2 = card('¬p：「新竹在最北邊」這件事是錯的', C.peach, -1.2, 4.4, 6.6, 0.6); S.e2v = keep(good('T', 2.9, 4.4)); await cheer(tok, S, true);
     cap('NOT p 說「這件事情是錯的」', '它就講對了');
   },
   async (tok, S) => { // 922.0 相反
-    const a = S.tb.g.position.clone(), b = S.fb.g.position.clone();
-    await Promise.all([travel(tok, S.tb.g, a, b, 900), travel(tok, S.fb.g, b, a, 900)]);
+    await swapDuo(tok, S);
     cap('p 錯 → ¬p 對；p 對 → ¬p 錯', '兩者的答案剛好相反');
   },
   async (tok, S) => { // 987.2 p：Today is Friday
     gone(S.e1, S.e1v, S.e2, S.e2v);
-    S.f1 = card('p：Today is Friday.', C.sand, -2.6, 3.6, 4.6, 0.6);
+    S.f1 = card('p：Today is Friday.', C.sand, -2.0, 5.6, 4.6, 0.6);
     cap('再舉例：p 代表 Today is Friday', '');
   },
   async (tok, S) => { // 1005.4 It is not the case that today is Friday
-    S.f2 = card('¬p：It is not the case that today is Friday.', C.peach, 0, 2.8, 8.4, 0.6);
+    S.f2 = card('¬p：It is not the case that today is Friday.', C.peach, 0, 4.6, 8.8, 0.6);
     cap('先照定義套進來', 'It is not the case that today is Friday');
   },
   async (tok, S) => { // 1019.3 Today is not Friday
-    S.f3 = card('¬p：Today is not Friday.', C.peach, -1.6, 2.0, 5.2, 0.6);
+    S.f3 = card('¬p：Today is not Friday.', C.peach, -2.0, 3.6, 5.2, 0.6);
     cap('很饒舌，更直接的說法', 'Today is not Friday');
   },
   async (tok, S) => { // 1043.0 今天星期五
-    S.d = icon('📅', '今天星期五', 4.6, 3.6); S.v1 = good('p：T', 2.3, 3.6); S.v2 = bad('¬p：F', 1.6, 2.0); await cheer(tok, S, true);
+    S.d = icon('📅', '今天星期五', 3.6, 2.7); S.v1 = keep(good('p：T', 1.0, 5.6)); S.v2 = keep(bad('¬p：F', 1.4, 3.6)); await cheer(tok, S, true);
     cap('今天確實是星期五：p 是真的', '¬p「今天不是星期五」就是錯的');
   },
   async (tok, S) => { // 1059.2 假設今天星期二
@@ -2110,12 +2137,12 @@ scene('lg-01-neg', 'Lec01：Negation ¬p 與第一張真值表', CAM, [
     cap('每次寫句子再看意思，很麻煩', '只看對錯 → 用真值表（很重要）');
   },
   async (tok, S) => { // 1118.0 窮舉
-    S.T = TT(['p'], [['¬p', (e) => !e.p]], { dx: 2.2, cx: -1.6, top: 3.8 });
-    note('窮舉：把所有可能列出來', 3.6, 3.8);
+    S.T = TT(['p'], [['¬p', (e) => !e.p]], { dx: 2.2, cx: -2.6, top: 5.2 });
+    note('窮舉：把所有可能列出來', 2.6, 5.2);
     cap('把 negation 的所有可能列下來', '這種窮舉的格式叫真值表');
   },
   async (tok, S) => { // 1146.0 只有 p 一個變數
-    await S.T.col(tok, 0, 250); sm('只有 p 一個變數 → 2 列', 3.6, 3.1);
+    await S.T.col(tok, 0, 250); sm('只有 p 一個變數 → 2 列', 2.6, 4.5);
     cap('最原始的變數只有 p', 'p 只有真、假兩種可能');
   },
   async (tok, S) => { // 1166.1 p 真 → ¬p 假
@@ -2123,37 +2150,39 @@ scene('lg-01-neg', 'Lec01：Negation ¬p 與第一張真值表', CAM, [
     cap('p 真，¬p 一定假', 'p 不成立，¬p 反而對');
   },
   async (tok, S) => { // 1195.0 數位邏輯：簡化電路
-    S.chip = prop('cpu', 3.6, 0.6, 0, 1.1); sm('數位邏輯：100 個元件 → 簡化成 50、30 個（示意）', 0, -0.4);
+    S.chip = prop('cpu', 2.6, 2.6, 0, 1.0); sm('數位邏輯：100 個元件 → 簡化成 50、30 個（示意）', 1.2, 0.9);
     cap('以後學數位邏輯：簡化電路', '用真值表把 100 個元件省成 50 或 30 個');
   },
   async (tok, S) => { // 1237.5 像函式
-    bub('真值表像函式：輸入 p → 輸出 ¬p', -1.6, 1.4);
+    bub('真值表像函式：輸入 p → 輸出 ¬p', -2.6, 3.1);
     cap('真值表其實就像一個函式', '把輸入跟輸出的關係全部列出來');
   },
 ]);
 scene('lg-01-and', 'Lec01：Conjunction p ∧ q（老師 41 歲的例子）', CAM, [
   async (tok, S) => { // 1253.6 conjunction operator
-    hot('Conjunction operator', 3.2, 6.7);
+    hot('Conjunction operator', 0, 6.7);
     cap('第二個運算子', 'conjunction operator');
   },
   async (tok, S) => { // 1272.4 ∧ = and = 且
-    card('∧ ＝ and ＝ 且', C.peach, 3.2, 6.0, 3.6, 0.6);
+    card('∧ ＝ and ＝ 且', C.peach, 0, 5.8, 3.6, 0.6);
     cap('符號是 ∧', '就是 and，中文是「且」');
   },
   async (tok, S) => { // 1289.5 p、q 命題變數
-    sm('p、q 是兩個命題變數', 3.2, 5.35);
+    sm('p、q 是兩個命題變數', 0, 5.15);
     cap('一樣先定義', 'p 跟 q 是兩個命題變數');
   },
   async (tok, S) => { // 1307.6 p ∧ q
-    card('p ∧ q：the conjunction of p and q', C.sky, 3.2, 4.7, 5.8, 0.6);
+    card('p ∧ q：the conjunction of p and q', C.sky, 0, 4.4, 6.4, 0.6);
     cap('寫成 p ∧ q', 'the conjunction of p and q：p 且 q');
   },
   async (tok, S) => { // 1350.2 真值表
-    S.T = TT(['p', 'q'], [['p ∧ q', (e) => e.p && e.q]], { dx: 1.6, cx: -3.6, top: 5.4 });
+    sweep();
+    card('∧ ＝ and ＝ 且', C.peach, 2.8, 5.8, 3.6, 0.6);
+    S.T = TT(['p', 'q'], [['p ∧ q', (e) => e.p && e.q]], { dx: 1.6, cx: -3.4, top: 5.4 });
     cap('畫它的真值表', '');
   },
   async (tok, S) => { // 1365.5 2 × 2 = 4
-    sm('p：T/F × q：T/F → 4 種', -3.6, 6.7);
+    sm('p：T/F × q：T/F → 4 種', -3.4, 6.7);
     cap('兩個變數，各有真、假兩種', '總共 2 × 2 = 4 種變化');
   },
   async (tok, S) => { // 1398.6 列出 TT TF FT FF
@@ -2161,7 +2190,7 @@ scene('lg-01-and', 'Lec01：Conjunction p ∧ q（老師 41 歲的例子）', CA
     cap('把可能的輸入全部列出來', 'TT、TF、FT、FF');
   },
   async (tok, S) => { // 1408.4 例：41 歲、30 歲
-    card('p：老師今年 41 歲', C.sand, 3.2, 3.6, 4.0, 0.56); card('q：助教今年 30 歲', C.sand, 3.2, 2.9, 4.0, 0.56);
+    card('p：老師今年 41 歲', C.sand, 2.8, 4.7, 4.0, 0.56); card('q：助教今年 30 歲', C.sand, 2.8, 4.0, 4.0, 0.56);
     duo(S, { x: 6.4 });
     cap('例：p 是「我今年 41 歲」', 'q 是「助教今年 30 歲」');
   },
@@ -2183,7 +2212,7 @@ scene('lg-01-and', 'Lec01：Conjunction p ∧ q（老師 41 歲的例子）', CA
   },
   async (tok, S) => { // 1491.0 true when both true
     S.T.clear(); S.T.glowAt(0, 2, OKG);
-    note('p ∧ q is true when both p and q are true, and false otherwise.', 0, 0.9);
+    note('p ∧ q is true when both p and q are true, and false otherwise.', 0, 1.7);
     cap('只有兩個都為真時，答案才是真', '其他都是假');
   },
 ]);
@@ -2192,23 +2221,24 @@ scene('lg-01-or', 'Lec01：Disjunction p ∨ q 與三個命題串接', CAM, [
     cap('既然有「而且」', '就會有一個「或」');
   },
   async (tok, S) => { // 1558.6 disjunction
-    hot('Disjunction operator', 3.2, 6.7);
+    hot('Disjunction operator', 0, 6.7);
     cap('「或」叫做 disjunction operator', '');
   },
   async (tok, S) => { // 1569.4 ∨
-    card('∨ ＝ or ＝ 或', C.sky, 3.2, 6.0, 3.6, 0.6);
+    card('∨ ＝ or ＝ 或', C.sky, 0, 5.8, 3.6, 0.6);
     cap('符號是 ∨', '文字敘述也可以直接寫 or');
   },
   async (tok, S) => { // 1580.2 記法
-    sm('記法：∧ 像 A（And）；∨ 是它倒過來', 3.2, 5.35);
+    sm('記法：∧ 像 A（And）；∨ 是它倒過來', 0, 5.15);
     cap('符號怎麼記？', '∧ 像 and 的 A，開口朝下；∨ 跟它顛倒');
   },
   async (tok, S) => { // 1637.2 只有兩個都錯才錯
-    card('p ∨ q：只有 p、q 都錯才錯', C.sky, 3.2, 4.7, 5.4, 0.6);
+    card('p ∨ q：只有 p、q 都錯才錯', C.sky, 0, 4.4, 5.4, 0.6);
     cap('p ∨ q 比較特殊', '只有 p 跟 q 都是錯的，才是錯的');
   },
   async (tok, S) => { // 1685.0 真值表
-    S.T = TT(['p', 'q'], [['p ∨ q', (e) => e.p || e.q]], { dx: 1.6, cx: -3.6, top: 5.4 }); S.T.now([0, 1]);
+    sweep();
+    S.T = TT(['p', 'q'], [['p ∨ q', (e) => e.p || e.q]], { dx: 1.6, cx: -3.4, top: 5.6 }); S.T.now([0, 1]);
     duo(S, { x: 6.4 });
     cap('一樣畫真值表', '兩個變數，4 種可能');
   },
@@ -2221,43 +2251,43 @@ scene('lg-01-or', 'Lec01：Disjunction p ∨ q 與三個命題串接', CAM, [
     cap('兩個都是假的', '這個陳述才變成非事實');
   },
   async (tok, S) => { // 1722.7 例：p、q、r
-    S.vs = [['p：今天是星期五', 'T'], ['q：外面正在下雨', 'F'], ['r：教室裡有一隻狗', 'F']].map(([t, v], i) => { const c = card(t, C.sand, 2.6, 3.7 - i * 0.7, 4.2, 0.56); (v === 'T' ? good : bad)(v, 5.2, 3.7 - i * 0.7); return c; });
+    S.vs = [['p：今天是星期五', 'T'], ['q：外面正在下雨', 'F'], ['r：教室裡有一隻狗', 'F']].map(([t, v], i) => { const c = card(t, C.sand, 2.0, 5.6 - i * 0.75, 4.2, 0.56); return [c, keep((v === 'T' ? good : bad)(v, 4.5, 5.6 - i * 0.75))]; });
     cap('定義三個命題（老師上課那天）', '星期五：對；下雨：沒有；狗：沒有');
   },
   async (tok, S) => { // 1750.4 p ∧ q → F
-    S.r1 = card('p ∧ q：星期五而且在下雨 → T ∧ F = F', C.peach, -1.6, 1.4, 7.2, 0.56);
+    S.r1 = card('p ∧ q：星期五而且在下雨 → T ∧ F = F', C.peach, 0, 2.0, 7.4, 0.56);
     cap('p ∧ q：今天星期五而且外面在下雨', '一個對一個錯 → 錯');
   },
   async (tok, S) => { // 1770.1 p ∨ q → T
-    S.r2 = card('p ∨ q：星期五或在下雨 → T ∨ F = T', C.mint, -1.6, 0.7, 7.2, 0.56); await cheer(tok, S, true);
+    S.r2 = card('p ∨ q：星期五或在下雨 → T ∨ F = T', C.mint, 0, 1.3, 7.4, 0.56); await cheer(tok, S, true);
     cap('改成 or', '星期五已經對了，不管有沒有下雨 → 對');
   },
   async (tok, S) => { // 1801.0 p ∧ q ∧ r
-    gone(S.r1, S.r2); S.r3 = card('p ∧ q ∧ r：三件事都要真', C.peach, -1.6, 1.4, 7.2, 0.56);
+    gone(S.r1, S.r2); S.r3 = card('p ∧ q ∧ r：三件事都要真', C.peach, 0, 2.0, 7.4, 0.56);
     cap('不只兩個，可以串起來', 'p and q and r：三件事都要為真');
   },
   async (tok, S) => { // 1851.7 T ∧ F ∧ F → F
-    S.r4 = card('T ∧ F ∧ F = F（一個錯就錯）', C.peach, -1.6, 0.7, 7.2, 0.56); await cheer(tok, S, false);
+    S.r4 = card('T ∧ F ∧ F = F（一個錯就錯）', C.peach, 0, 1.3, 7.4, 0.56); await cheer(tok, S, false);
     cap('星期五對；沒下雨、沒有狗', '一對兩錯 → 答案是錯的');
   },
   async (tok, S) => { // 1883.1 p ∨ q ∨ r
-    gone(S.r3, S.r4); S.r5 = card('p ∨ q ∨ r：一件真就真', C.mint, -1.6, 1.4, 7.2, 0.56); await cheer(tok, S, true);
+    gone(S.r3, S.r4); S.r5 = card('p ∨ q ∨ r：一件真就真', C.mint, 0, 2.0, 7.4, 0.56); await cheer(tok, S, true);
     cap('p or q or r 也一樣', '只要有一件事是對的，馬上寫 true');
   },
   async (tok, S) => { // 1909.5 全部假才假
-    card('要寫 false：每一件都要是錯的', C.sand, -1.6, 0.7, 7.2, 0.56);
+    S.r6 = card('要寫 false：每一件都要是錯的', C.sand, 0, 1.3, 7.4, 0.56);
     cap('要說它是錯的', '必須三件事情每一件都錯');
   },
   async (tok, S) => { // 1936.0 ∧ 像乘、∨ 像加
-    gone(S.vs); hd('類比：∧ ≈ 乘法，∨ ≈ 加法', 3.0, 3.6);
+    gone(S.vs, S.r5, S.r6); hd('類比：∧ ≈ 乘法，∨ ≈ 加法', 2.6, 5.4);
     cap('以後可以把 and 想成乘法', 'or 想成加法');
   },
   async (tok, S) => { // 1957.0 有一個 0 就 0
-    sm('1 · 0 = 0：乘法只要有一個 0 就是 0（像 ∧）', 3.0, 3.0);
+    sm('1 · 0 = 0：乘法只要有一個 0 就是 0（像 ∧）', 2.6, 4.7);
     cap('0/1 的乘法：只要有一個 0', '答案就是 0：跟 ∧ 一樣');
   },
   async (tok, S) => { // 1976.6 加法：1+1 記成 1
-    sm('1 + 1 也記成 1：有一個 1 就是 1（像 ∨）', 3.0, 2.4);
+    sm('1 + 1 也記成 1：有一個 1 就是 1（像 ∨）', 2.6, 4.0);
     cap('加法：只要有一個 1，答案就是 1', '只能用 0、1，所以 1 + 1 還是寫 1');
   },
 ]);
@@ -2267,12 +2297,12 @@ scene('lg-01-xor', 'Lec01：Exclusive or p ⊕ q', CAM, [
     cap('再來：exclusive or', '中文叫互斥或');
   },
   async (tok, S) => { // 2033.6 符號與真值表
-    S.T = TT(['p', 'q'], [['p ∨ q', (e) => e.p || e.q], ['p ⊕ q', (e) => e.p !== e.q]], { dx: 1.6, cx: -3.0, top: 5.4 });
+    S.T = TT(['p', 'q'], [['p ∨ q', (e) => e.p || e.q], ['p ⊕ q', (e) => e.p !== e.q]], { dx: 1.6, cx: -3.2, top: 5.4 });
     card('p ⊕ q', C.sky, 3.0, 6.0, 2.4, 0.6);
     cap('直接給符號跟真值表', 'p ⊕ q');
   },
   async (tok, S) => { // 2050.5 operator / operand
-    sm('⊕、∧、∨：operator 運算子', 3.0, 5.3); sm('p、q：operand 運算元（被拿來算的）', 3.0, 4.8);
+    S.o1 = sm('⊕、∧、∨：operator 運算子', 3.0, 5.25); S.o2 = sm('p、q：operand 運算元（被拿來算的）', 3.0, 4.55);
     cap('這種符號叫 operator（運算子）', '被拿來計算的 p、q 叫 operand');
   },
   async (tok, S) => { // 2088.4 4 列
@@ -2289,73 +2319,73 @@ scene('lg-01-xor', 'Lec01：Exclusive or p ⊕ q', CAM, [
     cap('兩個都真，或兩個都假', '答案都是錯的');
   },
   async (tok, S) => { // 2130.6 口語「或」
-    bub('兩個都真，算「或」嗎？', 3.4, 4.0); sm('例：今天星期五或外面在下雨', 3.4, 3.35);
+    gone(S.o1, S.o2); bub('兩個都真，算「或」嗎？', 3.0, 5.2); sm('例：今天星期五或外面在下雨', 3.0, 4.5);
     cap('語意上會有一點問題', '我們口語的「或」到底包不包含兩個都真？');
   },
   async (tok, S) => { // 2156.0 but not both
     S.T.clear(); S.T.glowAt(0, 2, HL); S.T.glowAt(0, 3, HL);
-    note('看到 "but not both" → 用 ⊕', 2.6, 2.0); sm('∨ 和 ⊕ 只差在 TT 這一列', -3.0, 1.9);
+    note('看到 "but not both" → 用 ⊕', 3.0, 3.7); sm('∨ 和 ⊕ 只差在 TT 這一列', -3.2, 2.2);
     cap('要把兩個同時為真排除掉', '看到 but not both，就用 exclusive or');
   },
 ]);
 scene('lg-01-cond', 'Lec01：Conditional p → q（全勤拿 100 分）', CAM, [
   async (tok, S) => { // 2207.4 conditional operator
-    hot('Conditional operator', 0, 6.7);
+    S.h = hot('Conditional operator', 0, 6.7);
     cap('再來一個：conditional operator', '牽涉兩個運算元');
   },
   async (tok, S) => { // 2234.7 符號 →
-    card('p → q', C.lilac, -4.2, 6.0, 2.6, 0.6);
+    S.c1 = card('p → q', C.lilac, -3.9, 6.0, 2.6, 0.6);
     cap('condition 就是條件', '符號是箭頭：p → q');
   },
   async (tok, S) => { // 2246.2 若 p 則 q
-    card('conditional statement：若 p 則 q', C.lilac, 2.0, 6.0, 6.0, 0.6);
+    S.c2 = card('conditional statement：若 p 則 q', C.lilac, 2.0, 6.0, 6.8, 0.6);
     cap('叫做 conditional statement', '翻成中文：若 p 則 q');
   },
   async (tok, S) => { // 2269.2 例：每堂課都來 → 100 分
-    card('p：每堂課都來（全勤）', C.sand, -3.2, 5.1, 4.4, 0.56); card('q：期末拿 100 分', C.sand, 3.2, 5.1, 4.4, 0.56);
+    S.c3 = card('p：每堂課都來（全勤）', C.sand, -3.2, 5.1, 4.8, 0.56); S.c4 = card('q：期末拿 100 分', C.sand, 3.2, 5.1, 4.4, 0.56);
     S.st = buddy('學生', '', C.pink, -6.2, 0, 1.4, 0.8); S.st.look(1);
     cap('例：每次上課都來、沒缺席', '期末就拿到 100 分');
   },
   async (tok, S) => { // 2297.0 TT → T
     S.L = [];
-    S.L.push(card('全勤、100 分', C.mint, -2.6, 4.0, 3.8, 0.5), good('T', 0.2, 4.0));
+    S.L.push(card('全勤、100 分', C.mint, -2.6, 4.0, 3.8, 0.5), keep(good('T', 0.2, 4.0)));
     S.st.mood('happy'); cap('穿紅衣服的同學：每堂都來，也拿 100', '這個陳述為真'); await S.st.hop(tok);
   },
   async (tok, S) => { // 2328.0 TF → F
-    S.L.push(card('全勤、只拿 99 分', C.peach, -2.6, 3.3, 3.8, 0.5), bad('F', 0.2, 3.3));
+    S.L.push(card('全勤、只拿 99 分', C.peach, -2.6, 3.3, 3.8, 0.5), keep(bad('F', 0.2, 3.3)));
     S.st.mood('sad'); cap('每節都來，一題寫錯只拿 99', '真的來上課卻沒拿到 100 → 假'); await S.st.hop(tok);
   },
   async (tok, S) => { // 2354.0 FT → ?
-    S.L.push(card('沒全勤、拿 100 分', C.sand, -2.6, 2.6, 3.8, 0.5)); S.q3 = bub('?', 0.2, 2.6);
+    S.L.push(card('沒全勤、拿 100 分', C.sand, -2.6, 2.6, 3.8, 0.5)); S.q3 = keep(bub('?', 0.2, 2.6));
     S.st.mood('wow'); cap('有一節沒來，最後卻拿 100', '這是真的還是假的？');
   },
   async (tok, S) => { // 2386.5 → T
-    kill(S.q3); S.L.push(good('T', 0.2, 2.6));
+    kill(S.q3); S.L.push(keep(good('T', 0.2, 2.6)));
     cap('他其實沒講錯', '前提沒成立，就沒辦法說他錯 → 真');
   },
   async (tok, S) => { // 2390.3 FF → T
-    S.L.push(card('沒全勤、拿 99 分', C.sand, -2.6, 1.9, 3.8, 0.5), good('T', 0.2, 1.9));
+    S.L.push(card('沒全勤、拿 99 分', C.sand, -2.6, 1.9, 3.8, 0.5), keep(good('T', 0.2, 1.9)));
     cap('沒全勤、拿 99', '前後都沒成立：我們還是認為它是對的');
   },
   async (tok, S) => { // 2418.6 沒有因果關係
-    S.L.push(bad('沒有因果關係！只看真假的組合', -1.6, 1.1));
+    S.L.push(keep(bad('沒有因果關係！只看真假的組合', -1.6, 1.1)));
     cap('跟以前的認知不太一樣', '若…則…在這裡沒有因果關係');
   },
   async (tok, S) => { // 2437.3 真值表
-    S.T = TT(['p', 'q'], [['p → q', (e) => IM(e.p, e.q)]], { dx: 1.3, cx: 4.4, top: 4.0, dy: 0.7 });
+    gone(S.c1, S.c2, S.c3, S.c4); S.T = TT(['p', 'q'], [['p → q', (e) => IM(e.p, e.q)]], { dx: 1.3, cx: 4.0, top: 4.0, dy: 0.7 });
     await S.T.col(tok, 0, 60); await S.T.col(tok, 1, 60); S.T.hot(2); await S.T.col(tok, 2, 160); S.T.glowAt(1, 2, NG);
     cap('寫成真值表：T F T T', '只有前件真、後件假才是假');
   },
   async (tok, S) => { // 2490.5 穿紅衣 → 中大樂透
-    gone(S.L); S.r = card('If I\'m in red, then I win the lottery.', C.lilac, -3.0, 3.6, 6.4, 0.6);
+    sweep(tb(S.T), S.st); S.r = card('If I\'m in red, then I win the lottery.', C.lilac, -2.4, 4.2, 6.8, 0.6);
     cap('補充一個例子', '如果我今天穿紅衣服，我就中大樂透');
   },
   async (tok, S) => { // 2518.5 沒穿紅衣 → 真
-    note('老師沒穿紅衣 → 前提假 → 整句為真', -3.0, 2.8); S.T.glowRow(2, OKG); S.T.glowRow(3, OKG);
+    note('老師沒穿紅衣 → 前提假 → 整句為真', -2.4, 3.4); S.T.glowRow(2, OKG); S.T.glowRow(3, OKG);
     cap('我有沒有穿紅衣服？沒有', '前提不成立，不管有沒有中獎，句子都對');
   },
   async (tok, S) => { // 2545.2 再次強調
-    bad('穿紅衣跟中樂透：本來就沒有因果', -3.0, 2.0);
+    bad('穿紅衣跟中樂透：本來就沒有因果', -2.4, 2.6);
     cap('再次強調：不要想像任何因果關係', '只是前後真假的組合');
   },
 ]);
@@ -2364,41 +2394,41 @@ scene('lg-01-cex', 'Lec01：例題 If 2 + 3 = 4, then x = x + 1', CAM, [
     cap('當作一個例子', '給你兩個命題');
   },
   async (tok, S) => { // 2572.0 ①
-    S.a = card('① If 2 + 3 = 4, then x = x + 1.', C.lilac, -2.0, 6.0, 6.8, 0.6);
+    S.a = card('① If 2 + 3 = 4, then x = x + 1.', C.lilac, 0, 6.3, 6.8, 0.6);
     cap('第一句：如果 2 + 3 = 4', '則 x = x + 1');
   },
   async (tok, S) => { // 2583.3 ②
-    S.b = card('② If 2 + 3 = 5, then x = x + 1.', C.lilac, -2.0, 5.2, 6.8, 0.6);
+    S.b = card('② If 2 + 3 = 5, then x = x + 1.', C.lilac, 0, 5.5, 6.8, 0.6);
     cap('第二句：2 + 3 = 5', '則 x = x + 1');
   },
   async (tok, S) => { // 2593.0 設變數
-    S.v = [['p：2 + 3 = 4', -4.2], ['q：2 + 3 = 5', 0], ['r：x = x + 1', 4.2]].map(([t, x]) => card(t, C.sand, x, 3.9, 3.6, 0.56));
+    S.v = [['p：2 + 3 = 4', -4.2], ['q：2 + 3 = 5', 0], ['r：x = x + 1', 4.2]].map(([t, x]) => card(t, C.sand, x, 4.4, 3.6, 0.56));
     cap('先寫成像樣的式子', 'p、q、r 三個命題變數');
   },
   async (tok, S) => { // 2610.2 真值
-    bad('F', -4.2, 3.25); good('T', 0, 3.25); bad('F（不管 x 是多少都錯）', 4.2, 3.25);
+    keep(bad('F', -4.2, 3.75)); keep(good('T', 0, 3.75)); keep(bad('F（不管 x 是多少都錯）', 4.2, 3.75));
     cap('2 + 3 = 4 錯；2 + 3 = 5 對', 'x = x + 1 永遠錯：雖然不知道 x，仍是命題');
   },
   async (tok, S) => { // 2634.0 ① = p → r：F → F → T
-    S.e1 = card('① = p → r：F → F ⇒ T', C.mint, -1.6, 2.2, 5.6, 0.6); good('為真', 2.4, 2.2);
+    S.e1 = card('① = p → r：F → F ⇒ T', C.mint, -1.4, 2.8, 5.6, 0.6); keep(good('為真', 2.3, 2.8));
     cap('第一句寫成 p → r', '前提是錯的，後面不管對錯，答案是對的');
   },
   async (tok, S) => { // 2644.4 前提的名稱
-    sm('p：前提／假設／前件（hypothesis、antecedent、premise）', -1.0, 1.55);
+    S.pn = sm('p：前提／假設／前件（hypothesis、antecedent、premise）', 0, 2.2);
     cap('p 一般叫前提、假設或前件', '英文有三種說法，回去看課本');
   },
   async (tok, S) => { // 2672.1 ② = q → r：T → F → F
-    S.e2 = card('② = q → r：T → F ⇒ F', C.peach, -1.6, 0.8, 5.6, 0.6); bad('為假', 2.4, 0.8);
+    S.e2 = card('② = q → r：T → F ⇒ F', C.peach, -1.4, 1.5, 5.6, 0.6); keep(bad('為假', 2.3, 1.5));
     cap('第二句：前提對，結論（後件）錯', '這是唯一會錯的情況');
   },
   async (tok, S) => { // 2692.3 沒有因果
-    note('x = x + 1 永遠不會對，① 卻是真的：只看真假，沒有因果', 0, 0.0);
+    note('x = x + 1 永遠不會對，① 卻是真的：只看真假，沒有因果', 0, 0.8);
     cap('再強調一次：沒有任何因果關係', '純粹就對錯來判斷');
   },
 ]);
 scene('lg-01-four', 'Lec01：逆、否、逆否的真值表（逆否 ≡ 原命題）', CAMW, [
   async (tok, S) => { // 2708.6 各種組合
-    S.T = TT(['p', 'q'], [['¬p', (e) => !e.p], ['¬q', (e) => !e.q], ['p→q', (e) => IM(e.p, e.q)], ['q→p', (e) => IM(e.q, e.p)], ['¬p→¬q', (e) => IM(!e.p, !e.q)], ['¬q→¬p', (e) => IM(!e.q, !e.p)]], { dx: 1.48, top: 5.6 });
+    S.T = TT(['p', 'q'], [['¬p', (e) => !e.p], ['¬q', (e) => !e.q], ['p→q', (e) => IM(e.p, e.q)], ['q→p', (e) => IM(e.q, e.p)], ['¬p→¬q', (e) => IM(!e.p, !e.q)], ['¬q→¬p', (e) => IM(!e.q, !e.p)]], { dx: 1.48, top: 5.6, tiers: true });
     S.T.hot(4); cap('做個練習：p → q 有各種組合', '這個我們知道了');
   },
   async (tok, S) => { // 2732.0 q → p
@@ -2442,46 +2472,47 @@ scene('lg-01-four', 'Lec01：逆、否、逆否的真值表（逆否 ≡ 原命�
     cap('¬q 假 → 對；¬q 真、¬p 假 → 錯', 'T F T T');
   },
   async (tok, S) => { // 2951.0 跟 p → q 一致
-    S.T.clear(); S.T.hot(7, false); S.T.glowCol(4, OKG); S.T.glowCol(7, OKG); await cheer(tok, S, true);
+    S.T.clear(); S.T.hot(7, false); S.T.glowCol(4, OKG); S.T.glowCol(7, OKG); S.fl = same(S.T, 4, 7); await cheer(tok, S, true);
     cap('它的答案跟 p → q 在任何情況都一致', '長相不一樣，答案相同');
   },
   async (tok, S) => { // 2966.0 邏輯等價
-    card('這叫「邏輯等價」（下一節 1-2）', C.mint, 0, 1.6, 6.0, 0.6);
+    S.fl.kill(); card('這叫「邏輯等價」（下一節 1-2）', C.mint, 0, 1.9, 6.0, 0.6);
     cap('這個下一節會講', '叫做邏輯等價');
   },
   async (tok, S) => { // 2976.5 像 sin²θ + cos²θ = 1
-    sm('像 sin²θ + cos²θ = 1：需要時可以代換、讓運算變簡單', 0, 0.9);
+    sm('像 sin²θ + cos²θ = 1：需要時可以代換、讓運算變簡單', 0, 1.25);
     cap('像以前的恆等式', '兩邊在任何情況都一樣，才能互相代換');
   },
   async (tok, S) => { // 2996.0 ≡ 不是運算子
-    card('p → q ≡ ¬q → ¬p', C.sky, -2.4, 0.1, 4.6, 0.6); bad('≡ 不是運算子，只表示可以代換', 2.8, 0.1);
+    card('p → q ≡ ¬q → ¬p', C.sky, -2.4, 0.5, 4.6, 0.6); bad('≡ 不是運算子，只表示可以代換', 3.0, 0.5);
     cap('符號寫成 ≡', '它不是運算子，只表示兩個一樣、可以代換');
   },
 ]);
 scene('lg-01-bicond', 'Lec01：Biconditional p ↔ q', CAM, [
   async (tok, S) => { // 3017.0 biconditional operator
-    hot('Biconditional operator', 3.4, 6.7);
+    hot('Biconditional operator', 0, 6.7);
     cap('最後一個運算子', 'biconditional operator');
   },
   async (tok, S) => { // 3034.7 ↔
-    card('p ↔ q', C.mint, 3.4, 6.0, 2.6, 0.6);
+    card('p ↔ q', C.mint, 0, 5.9, 2.6, 0.6);
     cap('符號是雙箭頭', 'p ↔ q');
   },
   async (tok, S) => { // 3045.0 p→q 而且 q→p
-    card('意思：(p → q) 而且 (q → p)', C.mint, 3.4, 5.2, 5.4, 0.6);
+    card('意思：(p → q) 而且 (q → p)', C.mint, 0, 5.1, 5.4, 0.6);
     cap('利用這個符號的樣子', '意思就是 p 則 q，而且 q 則 p');
   },
   async (tok, S) => { // 3060.5 兩件都要對
-    sm('兩件事都要對', 3.4, 4.55);
+    sm('兩件事都要對', 0, 4.45);
     cap('要為真', '這件事要對，那件事也要對');
   },
   async (tok, S) => { // 3069.5 imply
-    sm('→ 也叫 imply（蘊含）', 3.4, 4.05);
+    sm('→ 也叫 imply（蘊含）', 0, 3.95);
     cap('剛才沒講：→ 有時也叫 imply', '隱含、蘊含');
   },
   async (tok, S) => { // 3076.1 真值表
-    S.T = TT(['p', 'q'], [['p → q', (e) => IM(e.p, e.q)], ['q → p', (e) => IM(e.q, e.p)], ['p ↔ q', (e) => e.p === e.q]], { dx: 1.55, cx: -2.6, top: 5.4 });
-    await S.T.col(tok, 0, 80); await S.T.col(tok, 1, 80); duo(S, { x: 6.4 });
+    sweep();
+    S.T = TT(['p', 'q'], [['p → q', (e) => IM(e.p, e.q)], ['q → p', (e) => IM(e.q, e.p)], ['p ↔ q', (e) => e.p === e.q]], { dx: 1.7, top: 5.6 });
+    await S.T.col(tok, 0, 80); await S.T.col(tok, 1, 80); duo(S, { x: 6.2 });
     cap('按部就班畫真值表', 'TTFF、TFTF');
   },
   async (tok, S) => { // 3097.3 p → q
@@ -2498,7 +2529,7 @@ scene('lg-01-bicond', 'Lec01：Biconditional p ↔ q', CAM, [
   },
   async (tok, S) => { // 3157.7 同真同假
     S.T.clear(); S.T.glowRow(0, OKG); S.T.glowRow(3, OKG); await cheer(tok, S, true);
-    note('p、q 同時為真或同時為假 → p ↔ q 為真', 0, 1.0);
+    note('p、q 同時為真或同時為假 → p ↔ q 為真', 0, 1.9);
     cap('記的時候看含義就好', '兩個要同時為真或同時為假，答案才是真');
   },
 ]);
@@ -2516,33 +2547,34 @@ scene('lg-01-suff', 'Lec01：充分條件與必要條件', CAM, [
     cap('以前數學課常講的', '若且唯若');
   },
   async (tok, S) => { // 3254.0 充分、必要條件
-    card('充分條件', C.sky, -3.2, 4.3, 3.0, 0.56); card('必要條件', C.peach, 3.2, 4.3, 3.0, 0.56);
+    card('充分條件', C.sky, -3.2, 4.2, 3.0, 0.56); card('必要條件', C.peach, 3.2, 4.2, 3.0, 0.56);
     cap('中文另一種說法', '充分條件、必要條件');
   },
   async (tok, S) => { // 3273.7 英文
-    sm('if and only if', 0, 4.3); sm('sufficient condition', -3.2, 3.7); sm('necessary condition', 3.2, 3.7);
+    sm('if and only if', 0, 4.5); sm('sufficient condition', -3.2, 3.55); sm('necessary condition', 3.2, 3.55);
     cap('英文直接照字面翻', 'sufficient condition、necessary condition');
   },
   async (tok, S) => { // 3288.4 p 真保證 q 真
-    S.p = buddy('p', 'T', C.purple, -2.0, 0, 1.2, 0.9); S.q = buddy('q', 'T', C.blue, 2.0, 0, 1.2, 0.9); arrow(V3(-1.2, 0.5, 1.2), V3(1.2, 0.5, 1.2));
+    sweep();
+    S.p = buddy('p', 'T', C.purple, -2.0, 0, 1.2, 0.9); S.q = buddy('q', 'T', C.blue, 2.0, 0, 1.2, 0.9); S.fl = K.flow(V3(-1.1, 0.5, 1.2), V3(1.1, 0.5, 1.2), '');
     cap('從 p → q 來看：要它為真', 'p 如果對，就保證 q 要對');
     await S.p.hop(tok); await S.q.hop(tok);
   },
   async (tok, S) => { // 3316.6 p 是 q 的充分條件
-    good('p 是 q 的充分條件（p 成立就夠了）', -3.0, 2.75);
+    keep(good('p 是 q 的充分條件（p 成立就夠了）', -3.2, 3.6));
     cap('正向思考：p 對一定保證 q 對', '所以 p 是 q 的充分條件');
   },
   async (tok, S) => { // 3343.0 q 是 p 的必要條件
-    good('q 是 p 的必要條件', 3.0, 2.75);
+    keep(good('q 是 p 的必要條件', 3.2, 3.6));
     cap('反過來講', 'q 是 p 的必要條件');
   },
   async (tok, S) => { // 3353.7 q 不成立 → p 不能成立
     S.q.set('F'); S.q.mood('sad'); S.p.set('F'); S.p.mood('sad');
-    S.nt = note('p 要成立，q 一定要成立；q 不成立 → p 也不可能成立', 0, 2.05);
+    S.nt = note('p 要成立，q 一定要成立；q 不成立 → p 也不可能成立', 0, 2.8);
     cap('p 如果要對，q 一定要對', 'q 不對時，p 絕對不能對'); await S.q.hop(tok);
   },
   async (tok, S) => { // 3376.0 15 種寫法
-    gone(S.nt); sm('英文常見約 15 種寫法：見課本', 0, 2.05);
+    gone(S.nt); sm('英文常見約 15 種寫法：見課本', 0, 2.8);
     cap('英文也有相對應的寫法', '常見大概有 15 種');
   },
 ]);
@@ -2560,7 +2592,7 @@ scene('lg-01-prec', 'Lec01：運算子的優先權', CAM, [
     cap('這叫運算子的優先權', '邏輯運算也有');
   },
   async (tok, S) => { // 3437.3 五個
-    S.ops = ['∧', '∨', '¬', '→', '↔'].map((o, i) => cube(o, C.lilac, [1.0, 1.0, 1.0], -4 + i * 2, 3.9, 0, 2.4));
+    S.ops = ['∧', '∨', '¬', '→', '↔'].map((o, i) => cube(o, C.lilac, [1.0, 1.0, 1.0], -4 + i * 2, 3.9, 0, 0.3));
     cap('講過常見的五個', 'and、or、not、imply、if and only if');
   },
   async (tok, S) => { // 3471.2 排順序
@@ -2581,32 +2613,33 @@ scene('lg-01-prec', 'Lec01：運算子的優先權', CAM, [
 ]);
 scene('lg-01-tt3', 'Lec01：(p ∨ q) → (p ∧ r) 的 8 列真值表', CAMW, [
   async (tok, S) => { // 3530.6 例子
-    S.f = card('p ∨ q → p ∧ r', C.lilac, 0, 7.6, 4.0, 0.6);
+    S.f = card('p ∨ q → p ∧ r', C.lilac, 0, 6.2, 4.0, 0.6);
     cap('看這個例子', '寫了一個邏輯式子，請列真值表');
   },
   async (tok, S) => { // 3548.0 真值表多大？
-    S.q = bub('要畫幾列？', 4.2, 7.6);
+    S.q = bub('要畫幾列？', 3.4, 6.2);
     cap('先回到真值表', 'not 只有兩排…');
   },
   async (tok, S) => { // 3561.3 兩個變數 4 列
-    S.n2 = sm('2 個變數 → 4 列', -4.2, 7.0);
+    S.n2 = sm('2 個變數 → 4 列', 0, 5.3);
     cap('p and q、p or q 只有兩個變數', '要畫四排');
   },
   async (tok, S) => { // 3567.7 p q r → 8
-    S.n3 = sm('p、q、r：2³ = 8 列', 0, 7.0);
+    S.n3 = sm('p、q、r：2³ = 8 列', 0, 4.8);
     cap('這裡有 p、q、r 三個變數', '每個兩種可能：2 的 3 次方 = 8 種');
   },
   async (tok, S) => { // 3588.5 4 → 16，5 → 32
-    S.n4 = sm('4 個 → 16、5 個 → 32：一倍一倍長', 4.2, 7.0);
+    S.n4 = sm('4 個 → 16、5 個 → 32：一倍一倍長', 0, 4.3);
     cap('4 個變數就要 2⁴ 排，5 個要 2⁵', '多一個變數就翻一倍');
   },
   async (tok, S) => { // 3598.7 只能處理小事情
-    kill(S.q); bad('變數一多，真值表就不切實際', 4.2, 8.25);
+    kill(S.q); bad('變數一多，真值表就不切實際', 0, 3.5);
     cap('真值表只能處理小事情', '但它可以幫助我們學習');
   },
   async (tok, S) => { // 3615.0 畫 p q r
-    gone(S.n2, S.n3, S.n4);
-    S.T = TT(['p', 'q', 'r'], [['p ∨ q', (e) => e.p || e.q], ['p ∧ r', (e) => e.p && e.r], ['(p∨q)→(p∧r)', (e) => IM(e.p || e.q, e.p && e.r)]], { dx: 1.75, top: 5.9, dy: 0.6 });
+    sweep();
+    S.f = card('p ∨ q → p ∧ r', C.lilac, 0, 7.25, 4.6, 0.6);
+    S.T = TT(['p', 'q', 'r'], [['p ∨ q', (e) => e.p || e.q], ['p ∧ r', (e) => e.p && e.r], ['(p∨q)→(p∧r)', (e) => IM(e.p || e.q, e.p && e.r)]], { dx: 1.85, top: 5.6, dy: 0.68, tiers: true });
     await S.T.col(tok, 0, 40); await S.T.col(tok, 1, 40); await S.T.col(tok, 2, 40);
     cap('真值表：p、q、r，總共 8 排', '');
   },
@@ -2635,10 +2668,10 @@ scene('lg-01-tt3', 'Lec01：(p ∨ q) → (p ∧ r) 的 8 列真值表', CAMW, [
     cap('前提真、結論真 → T；真推到假 → F', '最後兩列前提假 → T：T F T F F F T T');
   },
   async (tok, S) => { // 3777.3 總結
-    S.T.hot(5, false); note('學到：優先權、真值表大小（2ⁿ 列）', 0, 0.5);
+    S.T.hot(5, false); note('學到：優先權、真值表大小（2ⁿ 列）', 0, -0.05);
     cap('這個例子講了優先權', '也講了真值表大小跟變數個數的關係');
   },
-]);
+], [-6.6, -0.4, -0.3, 6.6, 7.7, 0.3]);
 scene('lg-01-qs', 'Lec01：兩個小問題（2⁶、真值表有幾種）', CAM, [
   async (tok, S) => { // 3795.4 兩個問題
     hot('最後給你們兩個問題', 0, 6.7);
@@ -2654,7 +2687,7 @@ scene('lg-01-qs', 'Lec01：兩個小問題（2⁶、真值表有幾種）', CAM,
   },
   async (tok, S) => { // 3834.0 3 個變數能有幾種
     card('② 3 個變數：能變出幾種不同的真值表？', C.peach, 0, 4.1, 7.2, 0.6);
-    S.cells = []; for (let r = 0; r < 8; r++) S.cells.push(cube('?', C.gray, [0.8, 0.42, 0.6], -3.5 + r, 2.9, 0, 1.4));
+    S.cells = []; for (let r = 0; r < 8; r++) S.cells.push(cube('?', C.gray, [0.8, 0.42, 0.6], -3.5 + r, 2.9, 0, 0.3));
     cap('三個變數的複合命題', '真值表可能有幾種變化？回去想');
   },
   async (tok, S) => { // 3856.1 提示 2^8
@@ -2665,41 +2698,42 @@ scene('lg-01-qs', 'Lec01：兩個小問題（2⁶、真值表有幾種）', CAM,
 ]);
 scene('lg-01-eng', 'Lec01：把英文句子寫成邏輯式（only if）', CAM, [
   async (tok, S) => { // 3886.0 小心語意
-    hot('進階：小心英文（中文）語意', 0, 6.7);
+    S.h = hot('進階：小心英文（中文）語意', 0, 6.7);
     cap('第一件事：注意英文', '要適切地表達一件事');
   },
   async (tok, S) => { // 3909.0 寫成邏輯式子
-    sm('不能直接判斷 → 寫成邏輯式子', 0, 6.1);
+    S.h2 = sm('不能直接判斷 → 寫成邏輯式子', 0, 6.1);
     cap('語意複雜、不清楚的時候', '就把它寫成邏輯式子來判斷');
   },
   async (tok, S) => { // 3921.3 句子
-    S.s1 = card('You can access the Internet from campus', C.sand, 0, 5.2, 8.0, 0.56);
-    S.s2 = card('only if you are a CS major or you are not a freshman.', C.sand, 0, 4.55, 8.6, 0.56);
+    S.s1 = card('You can access the Internet from campus', C.sand, 0, 5.3, 8.0, 0.56);
+    S.s2 = card('only if you are a CS major or you are not a freshman.', C.sand, 0, 4.65, 9.4, 0.56);
     cap('你可以在學校用網路', '唯有你是資工系學生，或你不是大一新生');
   },
   async (tok, S) => { // 3963.2 設變數
-    [['p：You can access the Internet from campus', 3.6], ['q：You are a CS major', 2.95], ['r：You are a freshman', 2.3]].forEach(([t, y]) => card(t, C.sky, -1.4, y, 7.0, 0.5));
-    sm('r 設成「是大一」，「不是大一」就寫 ¬r', 4.6, 2.3);
+    S.vs = [['p：You can access the Internet from campus', 3.75], ['q：You are a CS major', 3.15], ['r：You are a freshman', 2.55]].map(([t, y]) => card(t, C.sky, 0, y, 8.8, 0.5));
+    S.rn = sm('r 設成「是大一」，「不是大一」就寫 ¬r', 0, 1.95);
     cap('從頭開始：三個基本句子 → p、q、r', 'r 看你高興：設成 You are a freshman');
   },
   async (tok, S) => { // 3991.0 關鍵字
-    hd('only if', -2.4, 1.5); hd('or', 0, 1.5); hd('not', 2.0, 1.5);
+    S.kw = [hd('only if', -2.0, 1.2), hd('or', 0, 1.2), hd('not', 1.6, 1.2)];
     cap('再看關鍵字', 'only if、or、not');
   },
   async (tok, S) => { // 4009.0 p only if q ≡ p → q
-    card('p only if q ≡ if p then q（p → q）', C.mint, 0, 0.8, 6.6, 0.56);
+    S.rule = card('p only if q ≡ if p then q（p → q）', C.mint, 0, 0.55, 7.2, 0.56);
     cap('only if 是「唯有」', 'p only if q 其實就是 p → q');
   },
   async (tok, S) => { // 4046.2 優先權
-    sm('優先權：¬、∨ 先做，→ 最後', 0, 0.15);
+    S.pr = sm('優先權：¬、∨ 先做，→ 最後', 0, -0.05);
     cap('三個句子又有優先權的問題', '∨ 跟 ¬ 先做，再做 →');
   },
   async (tok, S) => { // 4071.1 p → (q ∨ ¬r)
-    S.ans = card('p → (q ∨ ¬r)', C.lilac, 0, -0.6, 4.4, 0.7); glow(S.ans, HL);
+    gone(S.kw, S.rule, S.pr);
+    S.ans = card('p → (q ∨ ¬r)', C.lilac, 0, 1.3, 4.4, 0.7); glow(S.ans, HL);
     cap('寫出來：p → q ∨ ¬r', '¬ 優先權最高，不用加括號');
   },
   async (tok, S) => { // 4141.9 加括號
-    sm('不放心就加括號，意思一樣', 3.8, -0.6);
+    sm('不放心就加括號，意思一樣', 0, 0.55);
     cap('優先權背得沒那麼好', '再加括號也 OK，都是同樣的意思');
   },
 ]);
@@ -2713,38 +2747,39 @@ scene('lg-01-coaster', 'Lec01：雲霄飛車的 unless', CAM, [
     cap('最基本的：你不能坐雲霄飛車', '');
   },
   async (tok, S) => { // 4158.3 under 4 feet
-    S.b = card('if you are under 4 feet tall', C.sand, 0, 5.25, 6.0, 0.56);
+    S.b = card('if you are under 4 feet tall', C.sand, 0, 5.25, 7.2, 0.56);
     cap('如果你身高低於 4 呎', '');
   },
   async (tok, S) => { // 4171.7 older than 16
-    S.c = card('unless you are older than 16 years old.', C.sand, 0, 4.6, 7.0, 0.56);
+    S.c = card('unless you are older than 16 years old.', C.sand, 0, 4.6, 7.2, 0.56);
     cap('除非你超過 16 歲', '三個基本句子');
   },
   async (tok, S) => { // 4175.0 if、unless
-    hd('if', -4.6, 5.25); hd('unless', -4.6, 4.6);
+    hd('if', -4.9, 5.25); hd('unless', -5.1, 4.6);
     cap('這邊有 if，還有 unless', 'unless 也在課本列的同義句法裡');
   },
   async (tok, S) => { // 4216.4 設變數
-    [['q：你可以坐雲霄飛車', 3.5], ['r：你身高低於 4 呎', 2.85], ['s：你超過 16 歲', 2.2]].forEach(([t, y]) => card(t, C.sky, -2.2, y, 5.0, 0.5));
-    sm('（變數名稱用課本的設法）', 3.4, 2.85);
+    [['q：你可以坐雲霄飛車', 3.8], ['r：你身高低於 4 呎', 3.2], ['s：你超過 16 歲', 2.6]].forEach(([t, y]) => card(t, C.sky, -2.2, y, 5.0, 0.5));
+    S.vn = sm('（變數名稱用課本的設法）', 2.3, 3.2);
     cap('三個基本變數這樣設', '');
   },
   async (tok, S) => { // 4225.0 字面意思
     S.st = buddy('矮個子', '16+?', C.pink, 5.6, 0, 1.4, 0.7); S.st.look(-1);
-    note('低於 4 呎就不能坐…除非你超過 16 歲', 0, 1.4);
+    S.lit = note('低於 4 呎就不能坐…除非你超過 16 歲', 0, 1.7);
     cap('字面上：身高低於 4 呎就不能坐', '除非年紀超過 16 歲，夠成熟能自己決定');
   },
   async (tok, S) => { // 4279.4 (r ∧ ¬s) → ¬q
-    S.ans = card('(r ∧ ¬s) → ¬q', C.lilac, 0, 0.5, 4.4, 0.7); glow(S.ans, HL);
-    sm('比 4 呎矮「而且」沒超過 16 歲 → 不能坐', 0, -0.2);
+    gone(S.lit, S.vn);
+    S.ans = card('(r ∧ ¬s) → ¬q', C.lilac, 0, 1.75, 4.4, 0.7); glow(S.ans, HL);
+    sm('比 4 呎矮「而且」沒超過 16 歲 → 不能坐', 0, 1.0);
     cap('字面翻成：如果矮於 4 呎而且沒超過 16 歲', '那你就不能坐雲霄飛車'); await S.st.hop(tok);
   },
   async (tok, S) => { // 4304.1 為什麼？1-2 再說
-    bub('為什麼可以化成這個形式？→ 1-2 邏輯等價再說', 0, -1.0);
+    bub('為什麼可以化成這個形式？→ 1-2 邏輯等價再說', 0, 0.3);
     cap('至少直覺上意思是 OK 的', '為什麼能這樣寫，學了邏輯等價再說');
   },
   async (tok, S) => { // 4319.6 英文文法優先權
-    bad('小心英文文法的「優先權」', -4.8, 0.5);
+    bad('小心英文文法的「優先權」', -4.2, 1.75);
     cap('牽涉英文文法怎麼解釋', 'unless 是最後的排除條件');
   },
 ]);
@@ -2759,15 +2794,15 @@ scene('lg-01-knight', 'Lec01：Logic puzzle：騎士與無賴', CAM, [
   },
   async (tok, S) => { // 4386.3 島上兩個人
     S.A = buddy('A', '?', C.sky, -3.6, 0, 1.0, 1.1); S.B = buddy('B', '?', C.lilac, 3.6, 0, 1.0, 1.1); S.A.look(1); S.B.look(-1);
-    note('knight（騎士）永遠說實話；knave（無賴）永遠說謊', 0, 5.3);
+    keep(note('knight（騎士）永遠說實話；knave（無賴）永遠說謊', 0, 5.3));
     cap('島上遇到兩個人 A、B', 'knight 只說實話，knave 只說謊話');
   },
   async (tok, S) => { // 4392.0 A：B 是 knight
-    S.sa = bub('A：「B 是 knight。」', -3.6, 3.1);
+    S.sa = keep(bub('A：「B 是 knight。」', -3.6, 3.1));
     cap('A 跟我說：B 是一個 knight', ''); await S.A.hop(tok);
   },
   async (tok, S) => { // 4414.0 B：我們兩個不同類
-    S.sb = bub('B：「我們兩個是不同類型的人。」', 3.6, 3.1);
+    S.sb = keep(bub('B：「我們兩個是不同類型的人。」', 3.6, 3.1));
     cap('B 跟我說', '我們兩個是不一樣類型的人'); await S.B.hop(tok);
   },
   async (tok, S) => { // 4435.2 結論？
@@ -2817,7 +2852,7 @@ scene('lg-01-bit', 'Lec01：Bit string 與 bitwise OR、AND、XOR', CAM, [
     cap('再補一個以後會用到的', 'bit operation');
   },
   async (tok, S) => { // 4676.0 bit string
-    S.bs = '010101'.split('').map((b, i) => cube(b, b === '1' ? C.green : C.gray, [0.8, 0.6, 0.7], -2.4 + i * 0.95, 5.6, 0, 1.4));
+    S.bs = '010101'.split('').map((b, i) => cube(b, b === '1' ? C.green : C.gray, [0.8, 0.6, 0.7], -2.4 + i * 0.95, 5.6, 0, 0.3));
     hd('bit string', -4.6, 5.6);
     cap('像 010101 這樣一連串的 0、1', '叫做 bit string');
   },
@@ -2830,7 +2865,7 @@ scene('lg-01-bit', 'Lec01：Bit string 與 bitwise OR、AND、XOR', CAM, [
     cap('如果兩個字串一樣長', '定義 bitwise operation');
   },
   async (tok, S) => { // 4728.1 兩個字串
-    const row = (s, y, nm, c) => { hd(nm, -5.4, y); return s.split('').map((b, i) => cube(b, b === '1' ? (c || C.green) : C.gray, [0.8, 0.55, 0.7], -3.3 + i * 0.95, y, 0, 1.2)); };
+    const row = (s, y, nm, c) => { hd(nm, -5.4, y); return s.split('').map((b, i) => cube(b, b === '1' ? (c || C.green) : C.gray, [0.8, 0.55, 0.7], -3.3 + i * 0.95, y, 0, 0.25)); };
     S.row = row; S.a = row('01010111', 4.1, 'a'); S.b = row('11000011', 3.35, 'b');
     sm('長度都是 8', 5.6, 3.7);
     cap('例：01010111', '另一個：11000011，長度都是 8');
@@ -2874,28 +2909,29 @@ scene('lg-02-taut', 'Lec02：tautology、contradiction、contingency', CAM, [
     cap('第一件事：先給一個定義', '');
   },
   async (tok, S) => { // 73.2 複合命題
-    sm('要是「複合」命題：單一命題可真可假，不會永遠為真', 3.4, 6.6);
+    sm('要是「複合」命題：單一命題可真可假，不會永遠為真', 0, 6.3);
     cap('記得是複合命題', '簡單命題可能真可能假，不可能永遠為真');
   },
   async (tok, S) => { // 84.0 tautology
-    card('永遠為真：tautology（恆真）', C.mint, 3.4, 5.8, 5.2, 0.56);
+    card('永遠為真：tautology（恆真）', C.mint, 0, 5.5, 5.6, 0.56);
     cap('如果一個複合命題永遠為真', '叫做 tautology');
   },
   async (tok, S) => { // 98.1 contradiction
-    card('永遠為假：contradiction（矛盾）', C.peach, 3.4, 5.1, 5.2, 0.56);
+    card('永遠為假：contradiction（矛盾）', C.peach, 0, 4.8, 5.6, 0.56);
     cap('如果永遠為假', '就是 contradiction，矛盾');
   },
   async (tok, S) => { // 115.7 contingency
-    card('都不是：contingency', C.sand, 3.4, 4.4, 5.2, 0.56);
+    card('都不是：contingency', C.sand, 0, 4.1, 5.6, 0.56);
     cap('既不是 tautology 也不是 contradiction', '叫 contingency（看看就好）');
   },
   async (tok, S) => { // 125.1 看例子
-    bub('命題怎麼會「永遠」為真？', 3.4, 3.5);
+    bub('命題怎麼會「永遠」為真？', 0, 3.3);
     cap('你會覺得很奇怪', '命題可真可假，怎麼會永遠為真？看例子');
   },
   async (tok, S) => { // 146.3 畫真值表 p
-    S.T = TT(['p'], [['¬p', (e) => !e.p], ['p ∧ ¬p', (e) => e.p && !e.p], ['p ∨ ¬p', (e) => e.p || !e.p]], { dx: 1.6, cx: -3.0, top: 5.0 });
-    await S.T.col(tok, 0, 200); duo(S, { x: 6.4 });
+    sweep();
+    S.T = TT(['p'], [['¬p', (e) => !e.p], ['p ∧ ¬p', (e) => e.p && !e.p], ['p ∨ ¬p', (e) => e.p || !e.p]], { dx: 1.9, top: 5.2 });
+    await S.T.col(tok, 0, 200); duo(S, { x: 6.2 });
     cap('畫真值表：p 在這邊', 'T、F');
   },
   async (tok, S) => { // 158.3 ¬p
@@ -2916,34 +2952,34 @@ scene('lg-02-taut', 'Lec02：tautology、contradiction、contingency', CAM, [
   },
   async (tok, S) => { // 194.0 第二列 → F → contradiction
     await S.T.col(tok, 2, 0, [1]); S.T.glowCol(2, NG); S.T.hot(2, false);
-    good('p ∧ ¬p：所有情況都是假 → contradiction', -2.0, 2.6);
+    keep(good('p ∧ ¬p：所有情況都是假 → contradiction', 0, 3.1));
     cap('一個 false 一個 true，也是 false', '在所有情況底下永遠為假：contradiction');
   },
   async (tok, S) => { // 215.6 p ∨ ¬p → tautology
     S.T.hot(3); await S.T.col(tok, 3, 250); S.T.glowCol(3, OKG); await cheer(tok, S, true);
-    good('p ∨ ¬p：任何情況都是真 → tautology', -2.0, 1.9);
+    keep(good('p ∨ ¬p：任何情況都是真 → tautology', 0, 2.4));
     cap('or：一個 true 一個 false → true', '在任何情況下永遠為真：tautology');
   },
 ]);
 scene('lg-02-equiv', 'Lec02：邏輯等價的正式定義', CAMW, [
   async (tok, S) => { // 241.4 重點：等價
-    hot('重點：什麼叫「等價」？', 0, 7.2);
+    S.h = hot('重點：什麼叫「等價」？', 0, 6.9);
     cap('有了這個定義', '重點是今天的標題：等價');
   },
   async (tok, S) => { // 251.2 正式定義
-    card('p ≡ q  ⇔  p ↔ q 是 tautology', C.mint, 0, 6.4, 6.4, 0.7);
+    S.d = card('p ≡ q  ⇔  p ↔ q 是 tautology', C.mint, 0, 6.1, 6.4, 0.7);
     cap('兩個複合命題 p、q 叫邏輯等價', 'if and only if：p ↔ q 是永遠為真的命題');
   },
   async (tok, S) => { // 287.0 符號 ≡
-    sm('≡：三條橫，表示兩個複合命題是同一回事', 0, 5.75);
+    S.s1 = sm('≡：三條橫，表示兩個複合命題是同一回事', 0, 5.4);
     cap('先看懂符號', '用三條橫的 ≡ 表示');
   },
   async (tok, S) => { // 300.2 像 sin²+cos² 寫 1
-    sm('像 sin²θ + cos²θ 懶得寫，就寫 1', 0, 5.3);
+    S.s2 = sm('像 sin²θ + cos²θ 懶得寫，就寫 1', 0, 4.9);
     cap('就像 sin²θ + cos²θ', '懶得寫就寫 1：一模一樣的意思');
   },
   async (tok, S) => { // 319.6 上次例題
-    S.T = TT(['p', 'q'], [['p → q', (e) => IM(e.p, e.q)], ['¬q → ¬p', (e) => IM(!e.q, !e.p)], ['(p→q)↔(¬q→¬p)', () => true]], { dx: 2.1, top: 3.8, cx: -0.6 });
+    gone(S.h, S.s1, S.s2); S.T = TT(['p', 'q'], [['p → q', (e) => IM(e.p, e.q)], ['¬q → ¬p', (e) => IM(!e.q, !e.p)], ['(p→q)↔(¬q→¬p)', () => true]], { dx: 2.1, top: 4.2, cx: -0.6, tiers: true });
     S.T.now([0, 1]); duo(S, { x: 6.6 });
     cap('記得上次叫你畫的真值表', '');
   },
@@ -2956,11 +2992,11 @@ scene('lg-02-equiv', 'Lec02：邏輯等價的正式定義', CAMW, [
     cap('同樣的情況底下：¬q → ¬p', 'T F T T');
   },
   async (tok, S) => { // 338.0 任何情況都一樣
-    S.T.hot(3, false); S.T.glowCol(2, OKG); S.T.glowCol(3, OKG);
+    S.T.hot(3, false); S.T.glowCol(2, OKG); S.T.glowCol(3, OKG); S.fl = same(S.T, 2, 3);
     cap('不管在哪一種情況', '兩個真值表上的值都一樣');
   },
   async (tok, S) => { // 366.0 組成 ↔
-    S.T.clear(); S.T.hot(4);
+    S.T.clear(); S.T.hot(4); S.fl.kill();
     cap('再把這兩個組成一個複合命題', '(p → q) ↔ (¬q → ¬p)');
   },
   async (tok, S) => { // 384.3 每列 T → tautology
@@ -2968,37 +3004,39 @@ scene('lg-02-equiv', 'Lec02：邏輯等價的正式定義', CAMW, [
     cap('畫下去：每一列都是 true', '所以它是 tautology → 兩者邏輯等價');
   },
   async (tok, S) => { // 434.5 ↔ 為真：同真同假
-    note('↔ 為真 ＝ 兩頭同時為真或同時為假 ＝ 兩欄每列都一樣', 0, 0.3);
+    note('↔ 為真 ＝ 兩頭同時為真或同時為假 ＝ 兩欄每列都一樣', 0, 0.95);
     cap('繞了一圈', '意思就是兩頭同時為真、或同時為假');
   },
 ]);
 scene('lg-02-dm', 'Lec02：用真值表證明 De Morgan', CAMW, [
   async (tok, S) => { // 447.0 集合 De Morgan
-    card('集合：(A ∪ B)ᶜ = Aᶜ ∩ Bᶜ', C.sand, -3.2, 7.2, 5.4, 0.6);
+    card('集合：(A ∪ B)ᶜ = Aᶜ ∩ Bᶜ', C.sand, 0, 6.3, 5.4, 0.6);
     cap('提醒一下集合的 De Morgan', 'A 聯集 B 的補集 = A 的補集交 B 的補集');
   },
   async (tok, S) => { // 465.1 對應
-    sm('補集 ↔ ¬，聯集 ∪ ↔ ∨，交集 ∩ ↔ ∧', 3.4, 7.2);
+    sm('補集 ↔ ¬，聯集 ∪ ↔ ∨，交集 ∩ ↔ ∧', 0, 5.6);
     cap('集合跟邏輯很多符號可以互相對應', '補集是 NOT、聯集是 OR、交集是 AND');
   },
   async (tok, S) => { // 487.1 邏輯版
-    S.f = card('邏輯：¬(p ∨ q) ≡ ¬p ∧ ¬q', C.sky, 0, 6.5, 5.4, 0.6);
+    card('邏輯：¬(p ∨ q) ≡ ¬p ∧ ¬q', C.sky, 0, 4.8, 5.4, 0.6);
     cap('邏輯這邊也有同樣的翻版', '這叫 De Morgan 律');
   },
   async (tok, S) => { // 499.6 優先權
-    sm('優先權：¬ 先，最後做 ∧', 4.6, 6.5);
+    sm('優先權：¬ 先，最後做 ∧', 0, 4.1);
     cap('記得運算子有優先順序', 'not 先做，最後再做 and');
   },
   async (tok, S) => { // 516.1 不能光背
-    bad('不能馬上背起來：要先說服自己', -4.6, 6.5);
+    bad('不能馬上背起來：要先說服自己', 0, 3.3);
     cap('不能只背', '一定要說服你自己它們確實一樣');
   },
   async (tok, S) => { // 525.5 唯一工具：真值表
-    hd('目前唯一的證明工具：真值表', 0, 5.8);
+    hd('目前唯一的證明工具：真值表', 0, 2.5);
     cap('目前沒有任何證明工具', '畫真值表就是證明這些基本等式的唯一工具');
   },
   async (tok, S) => { // 537.5 表格欄位
-    S.T = TT(['p', 'q'], [['¬p', (e) => !e.p], ['¬q', (e) => !e.q], ['p ∨ q', (e) => e.p || e.q], ['¬(p∨q)', (e) => !(e.p || e.q)], ['¬p ∧ ¬q', (e) => !e.p && !e.q], ['兩欄 ↔', () => true]], { dx: 1.48, top: 4.6 });
+    sweep();
+    S.f = card('¬(p ∨ q) ≡ ¬p ∧ ¬q', C.sky, 0, 7.0, 5.0, 0.6);
+    S.T = TT(['p', 'q'], [['¬p', (e) => !e.p], ['¬q', (e) => !e.q], ['p ∨ q', (e) => e.p || e.q], ['¬(p∨q)', (e) => !(e.p || e.q)], ['¬p ∧ ¬q', (e) => !e.p && !e.q], ['兩欄 ↔', () => true]], { dx: 1.48, top: 5.0, tiers: true });
     await S.T.col(tok, 0, 70); await S.T.col(tok, 1, 70);
     cap('兩個變數 p、q', '還要算 ¬p、¬q、p ∨ q…一個一個寫下來');
   },
@@ -3023,11 +3061,11 @@ scene('lg-02-dm', 'Lec02：用真值表證明 De Morgan', CAMW, [
     cap('not p and not q', '只有兩個都 true 才 true，其他都 false');
   },
   async (tok, S) => { // 636.2 一模一樣
-    S.T.hot(6, false); S.T.glowCol(5, OKG); S.T.glowCol(6, OKG); duo(S, { x: 6.6 }); await cheer(tok, S, true);
+    S.T.hot(6, false); S.T.glowCol(5, OKG); S.T.glowCol(6, OKG); S.fl = same(S.T, 5, 6); duo(S, { x: 6.6 }); await cheer(tok, S, true);
     cap('一模一樣，真的一模一樣', '');
   },
   async (tok, S) => { // 650.5 再做 ↔
-    S.T.clear(); S.T.hot(7);
+    S.T.clear(); S.T.hot(7); S.fl.kill();
     cap('跟 tautology 的定義對一下', '再把兩欄做 biconditional');
   },
   async (tok, S) => { // 676.0 全 T → tautology
@@ -3042,51 +3080,53 @@ scene('lg-02-dm', 'Lec02：用真值表證明 De Morgan', CAMW, [
     card('雙胞胎：¬(p ∧ q) ≡ ¬p ∨ ¬q', C.sky, 0, 0.8, 5.6, 0.6);
     cap('De Morgan 律其實有雙胞胎', 'and、or 全部換過去也是對的');
   },
-]);
+], [-6.6, 0, -0.3, 6.6, 7.4, 0.3]);
 scene('lg-02-assoc', 'Lec02：結合律與交換律', CAMW, [
   async (tok, S) => { // 770.3 加減乘除更基本
     cap('做加減乘除時', '其實還有更基本的東西');
   },
   async (tok, S) => { // 800.6 結合律
-    hot('Associative law 結合律', 0, 7.4);
+    hot('Associative law 結合律', 0, 7.0);
     cap('叫做結合律', '');
   },
   async (tok, S) => { // 808.4 p ∧ q ∧ r 括號？
-    S.f = card('p ∧ q ∧ r：括號為什麼可以不寫？', C.sand, 0, 6.7, 6.4, 0.6);
+    S.f = card('p ∧ q ∧ r：括號為什麼可以不寫？', C.sand, 0, 6.3, 6.4, 0.6);
     cap('p and q and r，之前偷偷用了', '三個運算元、兩個運算子，為什麼不用寫括號？');
   },
   async (tok, S) => { // 835.7 左邊先做 = 右邊先做
-    S.two = [card('(p ∧ q) ∧ r', C.sky, -3.0, 6.0, 3.2, 0.55), card('p ∧ (q ∧ r)', C.sky, 3.0, 6.0, 3.2, 0.55), hd('≡ ?', 0, 6.0)];
+    S.two = [card('(p ∧ q) ∧ r', C.sky, -3.0, 5.4, 3.2, 0.55), card('p ∧ (q ∧ r)', C.sky, 3.0, 5.4, 3.2, 0.55), hd('≡ ?', 0, 5.4)];
     cap('怎麼知道從左邊做', '跟從右邊做的答案一模一樣？');
   },
   async (tok, S) => { // 857.3 8 列大真值表
-    gone(S.two); S.T = TT(['p', 'q', 'r'], [['(p∧q)∧r', (e) => e.p && e.q && e.r], ['p∧(q∧r)', (e) => e.p && e.q && e.r]], { dx: 2.0, top: 5.0, dy: 0.56 });
+    gone(S.two); S.T = TT(['p', 'q', 'r'], [['(p∧q)∧r', (e) => e.p && e.q && e.r], ['p∧(q∧r)', (e) => e.p && e.q && e.r]], { dx: 2.3, top: 5.0, dy: 0.66 });
     for (let c = 0; c < 5; c++) await S.T.col(tok, c, 25);
     S.T.glowCol(3, OKG); S.T.glowCol(4, OKG);
     cap('畫一個很大很大的真值表：8 列', '會發現兩邊答案確實一模一樣：這就證明了結合律');
   },
   async (tok, S) => { // 871.6 交換律
-    card('Commutative law 交換律：p ∧ q ≡ q ∧ p', C.mint, 0, 0.3, 7.0, 0.6); sm('像 1 + 2 = 2 + 1', 0, -0.35);
+    sweep();
+    card('Commutative law 交換律：p ∧ q ≡ q ∧ p', C.mint, 0, 5.2, 7.4, 0.6); sm('像 1 + 2 = 2 + 1', 0, 4.5);
     cap('一樣有交換律', 'p and q 等於 q and p，就像 1 + 2 跟 2 + 1');
   },
   async (tok, S) => { // 897.0 雙胞胎
-    card('∨ 也一樣：(p ∨ q) ∨ r ≡ p ∨ (q ∨ r)，p ∨ q ≡ q ∨ p', C.mint, 0, -1.1, 8.6, 0.6);
+    card('∨ 也一樣：(p ∨ q) ∨ r ≡ p ∨ (q ∨ r)，p ∨ q ≡ q ∨ p', C.mint, 0, 3.5, 9.4, 0.6);
     cap('記得它也有雙胞胎', '背了一個等於背了兩個：or 也有結合律、交換律');
   },
   async (tok, S) => { // 920.6 直接寫 p ∨ q ∨ r
-    sm('以後直接寫 p ∨ q ∨ r，不用囉嗦加括號', 0, -1.8);
+    sm('以後直接寫 p ∨ q ∨ r，不用囉嗦加括號', 0, 2.8);
     cap('以後麻煩不要這麼囉嗦', '可以直接寫成 p ∨ q ∨ r');
   },
 ]);
 scene('lg-02-laws', 'Lec02：等價定律一覽', CAMW, [
   async (tok, S) => { // 932.0 熟悉基本公式
-    hot('基本等價定律（證明都是畫真值表）', 0, 7.2);
+    hot('基本等價定律（證明都是畫真值表）', 0, 7.65);
     S.k = 0; S.L = [];
-    S.add = (t) => { glowAll(S.L, null); const i = S.k++; const x = i < 5 || i > 9 ? -3.3 : 3.3, y = i > 9 ? 0.6 : 6.3 - (i % 5) * 1.12; const m = card(t, i % 2 ? C.sky : C.lilac, x, y, 6.2, 0.62); glow(m, HL); S.L.push(m); return m; };
+    S.add = (t) => { glowAll(S.L, null); txt(S.rem, ''); const i = S.k++; const m = card(t, i % 2 ? C.sky : C.lilac, 0, 6.4 - i * 0.63, 10.4, 0.48, 0, 0.15); glow(m, HL); S.L.push(m); return m; };
+    S.rem = sm('', 0, 7.05);
     cap('先熟悉有哪些基本公式', '要你證明時，做法都是畫真值表');
   },
   async (tok, S) => { // 949.1 一大堆公式
-    sm('（課本也有，抄一下）', 0, 6.7);
+    txt(S.rem, '（課本也有，抄一下）');
     cap('有一大堆公式', '課本也有，這邊還是抄一下');
   },
   async (tok, S) => { // 954.6 identity
@@ -3094,7 +3134,7 @@ scene('lg-02-laws', 'Lec02：等價定律一覽', CAMW, [
     cap('Identity laws', '跟 T 做 and、跟 F 做 or');
   },
   async (tok, S) => { // 983.0 沒作用
-    sm('跟 T 做 ∧、跟 F 做 ∨：沒有作用，答案永遠是 p', -3.3, 5.7);
+    txt(S.rem, '跟 T 做 ∧、跟 F 做 ∨：沒有作用，答案永遠是 p');
     cap('不管你前面說什麼', '答案永遠是 p：都沒有作用');
   },
   async (tok, S) => { // 994.4 domination
@@ -3130,7 +3170,7 @@ scene('lg-02-laws', 'Lec02：等價定律一覽', CAMW, [
     cap('再來是 De Morgan', '');
   },
   async (tok, S) => { // 1231.0 not 分進去
-    sm('¬ 分配進去，裡面 ∧ 變 ∨、∨ 變 ∧', 3.3, 0.85);
+    txt(S.rem, '¬ 分配進去，裡面 ∧ 變 ∨、∨ 變 ∧');
     cap('not 分配進去之後', '裡面的 and 變 or、or 變 and');
   },
   async (tok, S) => { // 1241.4 absorption
@@ -3142,10 +3182,10 @@ scene('lg-02-laws', 'Lec02：等價定律一覽', CAMW, [
     cap('Negation laws', '就是最早的例子：永遠為真、永遠為假');
   },
   async (tok, S) => { // 1287.6 記起來
-    glowAll(S.L, null); good('麻煩把這些記起來：等一下推演會用到', 0, -0.6);
+    glowAll(S.L, null); gone(S.rem); good('麻煩把這些記起來：等一下推演會用到', 0, 7.05);
     cap('麻煩把這些記起來', '不管用聯想法還是什麼方法');
   },
-]);
+], [-6.6, 0, -0.3, 6.6, 7.95, 0.3]);
 scene('lg-02-gen', 'Lec02：很多個 ∧、∨ 與廣義 De Morgan', CAM, [
   async (tok, S) => { // 1302.4 延伸
     hot('延伸：很多個串在一起', 0, 6.7);
@@ -3237,7 +3277,7 @@ scene('lg-02-alg1', 'Lec02：代數推演 ¬(p → q) ≡ p ∧ ¬q', CAM, [
     cap('試著用剛才背的公式來推演', '等於做恆等式的運算');
   },
   async (tok, S) => { // 1782.0 看到 → 先換掉
-    gone(S.old); S.x = bad('最討厭 →、↔：看到就先換掉', 3.4, 5.35);
+    gone(S.old); S.x = bad('最討厭 →、↔：看到就先換掉', 0, 5.35);
     cap('最討厭的就是 imply 跟 double condition', '看到二話不說，先把它換掉');
   },
   async (tok, S) => { // 1805.6 p → q ≡ ¬p ∨ q
@@ -3253,7 +3293,7 @@ scene('lg-02-alg1', 'Lec02：代數推演 ¬(p → q) ≡ p ∧ ¬q', CAM, [
     cap('接著：double negation，負負得正', '後面的不能動，就這樣');
   },
   async (tok, S) => { // 1862.5 這就是證明
-    good('這就是證明：¬(p → q) ≡ p ∧ ¬q', 0, 0.5);
+    good('這就是證明：¬(p → q) ≡ p ∧ ¬q', 0, 1.0);
     cap('這就是我們的證明', '活用公式：朝著簡單的方向走');
   },
 ]);
@@ -3307,7 +3347,7 @@ scene('lg-02-alg3', 'Lec02：證明 (p ∧ q) → (p ∨ q) 是 tautology', CAM,
     cap('以前叫你畫真值表全部為真', '現在不畫：直接推演，最後答案是 true');
   },
   async (tok, S) => { // 2046.0 → 換掉
-    S.ch = chain(-1.4, 4.6, 0.82, 6.4);
+    S.ch = chain(-1.4, 4.8, 0.72, 6.4);
     S.ch.add('(p ∧ q) → (p ∨ q)', '原式'); await wt(tok, 300);
     S.ch.add('¬(p ∧ q) ∨ (p ∨ q)', 'p → q ≡ ¬p ∨ q');
     cap('第一個一樣：最討厭的 → 讓它變不見', 'not (p and q) or (p or q)');
