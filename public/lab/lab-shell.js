@@ -112,7 +112,7 @@ function makeCtx() {
 }
 
 const ctx = makeCtx();
-const mod = await import('./chapters/' + CH + '.js?v=26');
+const mod = await import('./chapters/' + CH + '.js?v=27');
 const def = mod.default(ctx);
 const modes = def.modes || [];
 // the lab is for trying things by hand; quizzes live in the study room
