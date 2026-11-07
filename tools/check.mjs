@@ -8,7 +8,7 @@
 //    預設只跑「還沒 commit 的改動」動到的章節；--labs=all 全部（約 20 分鐘）、
 //    --labs=ds-4,os-1 指定、--labs=none 不跑。
 //
-// 伺服器：先找 http://localhost:3210（或 BASE 環境變數），沒開就自己在 3299 開一個。
+// 伺服器：先找 http://localhost:3210（或 BASE 環境變數），沒開就自己開一個（每次用不同的 port，同時跑多個檢查才不會互相關掉伺服器）。
 // 檢查雲端版：BASE=https://你的網址 SITE_PASSWORD=密碼 npm run check
 // 瀏覽器：CHROME_PATH 環境變數 → Playwright 的 Chromium → Chrome → Edge。
 import { spawn, execSync, spawnSync } from 'node:child_process';
@@ -70,8 +70,9 @@ console.log('資料');
 let BASE = process.env.BASE || 'http://localhost:3210';
 const up = async (u) => { try { return (await fetch(u + '/calendar')).ok; } catch (e) { return false; } };
 if (!(await up(BASE))) {
-  BASE = 'http://localhost:3299';
-  server = spawn(process.execPath, ['server.js'], { cwd: ROOT, env: { ...process.env, PORT: '3299' }, stdio: 'ignore' });
+  const PORT = String(3300 + Math.floor(Math.random() * 600));
+  BASE = 'http://localhost:' + PORT;
+  server = spawn(process.execPath, ['server.js'], { cwd: ROOT, env: { ...process.env, PORT }, stdio: 'ignore' });
   for (let i = 0; i < 40 && !(await up(BASE)); i++) await sleep(250);
 }
 function findBrowser() {
@@ -129,7 +130,7 @@ for (const w of [375, 1366]) {
     await open(p, w, 2000);
     // 等到載入完成（電腦忙的時候會比較久），最多 20 秒
     const r = JSON.parse(await evaluate(`(async () => {
-      for (let i = 0; i < 80 && (document.querySelector('.is-loading, [aria-busy="true"]') || document.body.classList.contains('st-booting')); i++) await new Promise((r) => setTimeout(r, 250));
+      for (let i = 0; i < 80 && (document.querySelector('.is-loading, [aria-busy="true"]') || document.body.classList.contains('st-booting') || (document.querySelector('main, .st-main') || document.body).innerText.trim().length < 20); i++) await new Promise((r) => setTimeout(r, 250));
       return JSON.stringify({
       wide: document.documentElement.scrollWidth > innerWidth + 1,
       loading: document.querySelectorAll('.is-loading, [aria-busy="true"]').length,
