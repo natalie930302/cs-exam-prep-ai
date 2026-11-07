@@ -126,10 +126,10 @@ export default function (ctx) {
     const fOf = (i) => { let k = 0; while (k + 1 < starts.length && starts[k + 1] <= i) k++; return k; };
     const n = 32, gaps = starts.slice(1), gapW = w * 0.45, total = (n - 1) * w + gaps.length * gapW;
     const xs = []; for (let i = 0; i < n; i++) xs.push(-total / 2 + i * w + gaps.filter((g) => g <= i).length * gapW);
-    const ms = xs.map((x, i) => { const m = lab.box(FCOL0[fOf(i)], [w * 0.86, 0.3, w * 0.86]); m.userData.lbl = small(lab.label('0', 'val'), 10); m.add(m.userData.lbl); m.position.set(x, y, 0); lab.world.add(m); return m; });
+    const ms = xs.map((x, i) => { const m = lab.box(FCOL0[fOf(i)], [w * 0.86, 0.3, w * 0.86]); m.userData.lbl = small(lab.label('0', 'val'), 10); Object.assign(m.userData.lbl.element.style, { minWidth: '0', padding: '0 1px' }); m.add(m.userData.lbl); m.position.set(x, y, 0); lab.world.add(m); return m; });
     const mid = (k) => (xs[starts[k]] + xs[starts[k] + widths[k] - 1]) / 2;
     return { ms, xs, starts, widths, mid, fOf, set(bits, upto = 99) {
-      bits.split('').forEach((b, i) => { const k = fOf(i); const on = k < upto; relabel(ms[i], on ? b : '·'); tint(ms[i], on && b === '1' ? FCOL[k] : FCOL0[k]); });
+      bits.split('').forEach((b, i) => { const k = fOf(i); const on = k < upto; relabel(ms[i], on ? b : ''); tint(ms[i], on && b === '1' ? FCOL[k] : FCOL0[k]); });
     } };
   }
 
@@ -202,7 +202,7 @@ export default function (ctx) {
       src: 'lw  $t0, 32($s3)    # 載入 A[8]：offset = 8 × 4 = 32\nadd $t0, $s2, $t0   # h + A[8]\nsw  $t0, 48($s3)    # 存回 A[12]：offset = 12 × 4 = 48' },
     ifelse: { name: 'if (i == j) f = g + h; else f = g − h;', regs: { $s1: 7, $s2: 3, $s3: 4, $s4: 4 }, win: 120,
       src: '  bne $s3, $s4, Else   # 條件反過來寫：i ≠ j 就跳 Else\n  add $s0, $s1, $s2    # then：f = g + h\n  j   Exit             # 跳過 else\nElse:\n  sub $s0, $s1, $s2    # else：f = g − h\nExit:' },
-    loop: { name: 'while (save[i] == k) i += 1;', regs: { $s3: 0, $s5: 5, $s6: 200 }, mem: { 200: 5, 204: 5, 208: 5, 212: 7, 216: 5, 220: 5 }, win: 200, names: (ad) => 'save[' + (ad - 200) / 4 + ']',
+    loop: { name: 'while (save[i] == k) i += 1;', regs: { $s3: 0, $s5: 5, $s6: 200 }, mem: { 200: 5, 204: 5, 208: 5, 212: 7, 216: 5, 220: 5 }, win: 200, cells: 6, names: (ad) => 'save[' + (ad - 200) / 4 + ']',
       src: 'Loop:\n  sll  $t1, $s3, 2      # $t1 = i × 4（byte offset）\n  add  $t1, $t1, $s6    # $t1 = save[i] 的位址\n  lw   $t0, 0($t1)      # $t0 = save[i]\n  bne  $t0, $s5, Exit   # save[i] ≠ k 就離開\n  addi $s3, $s3, 1      # i = i + 1\n  j    Loop             # 回到開頭\nExit:' },
     leaf: { name: 'leaf_example(g, h, i, j)', regs: { $a0: 5, $a1: 3, $a2: 4, $a3: 2, $s0: 11, $t0: 22, $t1: 33, $sp: 1000 }, win: 968,
       src: '  jal  leaf           # 呼叫：$ra = PC + 4\n  j    Done\nleaf:\n  addi $sp, $sp, -12   # 堆疊往下挪 3 個 word\n  sw   $t1, 8($sp)     # 存舊的 $t1\n  sw   $t0, 4($sp)     # 存舊的 $t0\n  sw   $s0, 0($sp)     # 存舊的 $s0\n  add  $t0, $a0, $a1   # $t0 = g + h\n  add  $t1, $a2, $a3   # $t1 = i + j\n  sub  $s0, $t0, $t1   # f = $t0 − $t1\n  add  $v0, $s0, $zero # 回傳值放 $v0\n  lw   $s0, 0($sp)     # 還原 $s0\n  lw   $t0, 4($sp)     # 還原 $t0\n  lw   $t1, 8($sp)     # 還原 $t1\n  addi $sp, $sp, 12    # 堆疊縮回\n  jr   $ra             # 回到呼叫者\nDone:' },
@@ -210,21 +210,30 @@ export default function (ctx) {
       src: '  addi $a0, $zero, 3  # n = 3\n  jal  fact           # 呼叫 fact(3)\n  j    Done\nfact:\n  addi $sp, $sp, -8   # 挪 2 個 word\n  sw   $ra, 4($sp)    # 存返回位址\n  sw   $a0, 0($sp)    # 存 n\n  slti $t0, $a0, 1    # n < 1 ?\n  beq  $t0, $zero, L1 # n ≥ 1 → 去 L1\n  addi $v0, $zero, 1  # 回傳 1\n  addi $sp, $sp, 8    # 彈出\n  jr   $ra            # 返回\nL1:\n  addi $a0, $a0, -1   # n − 1\n  jal  fact           # 呼叫 fact(n − 1)\n  lw   $a0, 0($sp)    # 還原 n\n  lw   $ra, 4($sp)    # 還原返回位址\n  addi $sp, $sp, 8    # 彈出\n  mul  $v0, $a0, $v0  # n × fact(n − 1)\n  jr   $ra            # 返回' + '\nDone:' },
   };
   const RX = (c) => -0.55 + c * 1.18, RY = (r) => 6.3 - r * 0.95; // wide enough for 4–5-digit values (1000, 80052)
-  function buildSim(key, over) {
+  // compact: all 32 cells stay, but only the registers this program touches carry a name and value (the rest are plain grey)
+  function buildSim(key, over, compact) {
     const P = PRESETS[key];
     const { prog, labels, disp } = parseProg(P.src);
     const S = { prog, labels, reg: Array(32).fill(0), mem: { ...(P.mem || {}) }, pc: 0, steps: 0, key };
     S.reg[29] = 1000;
     for (const [k, v] of Object.entries({ ...P.regs, ...(over || {}) })) S.reg[rIdx(k)] = v;
     const V = { S, regs: [], mem: [], win: [] };
+    const hold = new THREE.Mesh(new THREE.BoxGeometry(16, 7.8, 0.6), new THREE.MeshBasicMaterial({ visible: false })); // the whole simulator's area, from the first frame
+    hold.position.set(0.6, 3.7, 0); hold.userData.noDim = true; lab.world.add(hold);
+    const used = new Set(Object.keys({ ...P.regs, ...(over || {}) }).map(rIdx));
+    prog.forEach((ins) => { ins.args.forEach((a) => { const m = String(a).match(/$w+/); if (m && rIdx(m[0]) >= 0) used.add(rIdx(m[0])); }); if (ins.op === 'jal') used.add(31); });
+    const hasMem = !compact || Object.keys(P.mem || {}).length > 0 || prog.some((ins) => ins.op === 'lw' || ins.op === 'sw');
+    V.at = (i) => [RX(i % 8), RY(Math.floor(i / 8))];
     for (let i = 0; i < 32; i++) {
-      const r = Math.floor(i / 8), c = i % 8;
-      const m = cube(S.reg[i], RCOL(i), [0.8, 0.45, 0.6], RX(c), RY(r), 0);
+      const show = !compact || used.has(i), [x, y] = V.at(i);
+      const m = cube(S.reg[i], show ? RCOL(i) : '#e6dfd2', [0.8, 0.45, 0.6], x, y, 0);
       small(m.userData.lbl, 10);
-      small(tag(RN[i], 'idx', RX(c), RY(r) + 0.42), 9);
+      if (show) small(tag(RN[i], 'idx', x, y + 0.42), 9);
+      else m.userData.lbl.visible = false;
       V.regs.push(m);
     }
-    for (let k = 0; k < 8; k++) {
+    const cells = hasMem ? (P.cells || 8) : 0;
+    for (let k = 0; k < cells; k++) {
       const ad = P.win + 4 * k;
       V.win.push(ad);
       const m = cube(S.mem[ad] || 0, '#e9dcc4', [0.8, 0.45, 0.6], RX(k), 1.35, 0);
@@ -233,7 +242,7 @@ export default function (ctx) {
       if (P.names) small(tag(P.names(ad), 'idx', RX(k), 0.5), 9);
       V.mem.push(m);
     }
-    small(tag('Memory（byte address）', 'ptr', RX(3.5), 2.0), 10);
+    if (cells) small(tag('Memory（byte address）', 'ptr', RX((cells - 1) / 2), 2.0), 10);
     V.sp = tag('$sp', 'ptr alt', 0, 0.15);
     // a long program shows a window of 10 lines that follows the PC (22 lines never fit the stage)
     const WIN = disp.length > 12 ? 10 : disp.length, dy = disp.length > 12 ? 0.5 : 0.46;
@@ -258,7 +267,7 @@ export default function (ctx) {
     V.refresh();
     return V;
   }
-  const regPos = (i) => V3(RX(i % 8), RY(Math.floor(i / 8)), 0.5);
+  const regPos = (V, i) => { const [x, y] = V.at(i); return V3(x, y, 0.5); };
   async function simStep(V, tok, pace, talk) {
     const S = V.S;
     const ins = S.prog[S.pc];
@@ -272,8 +281,8 @@ export default function (ctx) {
       if (k >= 0) {
         glow(V.mem[k], out.mem.read ? GOLD : GREEN);
         const v = out.mem.read ? S.mem[out.mem.addr] || 0 : S.mem[out.mem.addr];
-        if (out.mem.read) { const to = regPos(out.writes[0]); mc = cube(v, '#c08a1f', [0.5, 0.35, 0.4], RX(k), 1.35, 0.6); move(mc, to.x, to.y, 0.6); }
-        else { const from = regPos(rIdx(ins.args[0])); mc = cube(v, '#2fc092', [0.5, 0.35, 0.4], from.x, from.y, 0.6); move(mc, RX(k), 1.35, 0.6); }
+        if (out.mem.read) { const to = regPos(V, out.writes[0]); mc = cube(v, '#c08a1f', [0.5, 0.35, 0.4], RX(k), 1.35, 0.6); move(mc, to.x, to.y, 0.6); }
+        else { const from = regPos(V, rIdx(ins.args[0])); mc = cube(v, '#2fc092', [0.5, 0.35, 0.4], from.x, from.y, 0.6); move(mc, RX(k), 1.35, 0.6); }
       }
     }
     if (talk) say(ins.cap || ins.text, out.desc);
@@ -283,7 +292,7 @@ export default function (ctx) {
     await W(tok, pace * 0.15);
     V.refresh();
     // a written register hops and springs back to its own slot (not to wherever an earlier hop left it)
-    out.writes.forEach((i) => { glow(V.regs[i], GREEN); const m = V.regs[i]; m.position.y = RY(Math.floor(i / 8)) + 0.5; move(m, RX(i % 8), RY(Math.floor(i / 8)), 0); });
+    out.writes.forEach((i) => { glow(V.regs[i], GREEN); const m = V.regs[i], [x, y] = V.at(i); m.position.z = 0.7; move(m, x, y, 0); });
     if (mc) kill(mc);
     await W(tok, pace * 0.55);
     V.regs.forEach((m) => glow(m, null)); V.mem.forEach((m) => glow(m, null));
@@ -293,7 +302,7 @@ export default function (ctx) {
   // ───────────────────────── 模式 1：MIPS 單步執行 ─────────────────────────
   const sim = { key: 'expr' };
   function enterSim() {
-    fresh([0.6, 3.7, 13.2], [0.6, 3.7, 0]);
+    fresh([0.6, 3.7, 11.5], [0.6, 3.7, 0]);
     controls('<select id="sPre">' + Object.keys(PRESETS).map((k) => '<option value="' + k + '">' + PRESETS[k].name + '</option>').join('') + '</select>'
       + '<button class="primary" id="sStep">執行一行</button><button id="sRun">全部跑完</button><button id="sReset">重來</button>');
     $('sPre').value = sim.key;
@@ -369,6 +378,8 @@ export default function (ctx) {
   const am = { kind: 'base', base: 100, off: 32, pc: 80012 };
   function amLayout() {
     lab.clear();
+    const hold = new THREE.Mesh(new THREE.BoxGeometry(13.2, 7.6, 0.6), new THREE.MeshBasicMaterial({ visible: false })); // keeps the framing still between modes
+    hold.position.set(0, 3.2, 0); hold.userData.noDim = true; lab.world.add(hold);
     const insBox = cube('', '#6e5f49', [6.6, 0.6, 0.6], -2.4, 5.6, 0);
     const insTag = tag('', 'ptr', -2.4, 6.35);
     const regBox = cube('Registers', '#9b7ef4', [2.4, 1.2, 0.8], -4.4, 2.6, 0);
@@ -377,7 +388,7 @@ export default function (ctx) {
     const memCells = [];
     for (let k = 0; k < 6; k++) { const ad = 124 + 4 * k; memCells.push(cube(ad === 136 ? 140 : ad === 140 ? 77 : ad === 132 ? 30 : 0, '#e9dcc4', [1.4, 0.55, 0.6], 4.8, 0.4 + k * 0.7, 0)); small(tag(String(ad), 'idx', 6.1, 0.4 + k * 0.7), 9); }
     tag('Memory', 'ptr', 4.8, 4.8);
-    const res = tag('', 'ptr alt', 1.2, 0.6);
+    const res = tag('', 'ptr alt', 0, 0.5);
     return { insBox, insTag, regBox, pcBox, alu, memCells, res, cellOf: (ad) => memCells[(ad - 124) / 4] };
   }
   async function amPlay(kind, tok, pace, talk) {
@@ -390,19 +401,19 @@ export default function (ctx) {
     const token = (t, c, x, y) => cube(t, c, [0.7, 0.45, 0.45], x, y, 0.6);
     if (kind === 'imm') {
       glow(L.insBox, GOLD);
-      const k = token('5', '#2fc092', 0.2, 5.6); move(k, 1.2, 3.4, 0.6);
-      const r = token('$s0', '#9b7ef4', -4.4, 2.6); move(r, 1.2, 3.0, 0.6);
+      const k = token('5', '#2fc092', 0.2, 5.6); move(k, 1.2, 3.7, 0.6);
+      const r = token('$s0', '#9b7ef4', -4.4, 2.6); move(r, 1.2, 1.5, 0.6);
       await W(tok, pace); txt(L.res, '$t0 = $s0 + 5');
       if (talk) say('常數 5 直接從指令拿', '不用另外讀記憶體');
     } else if (kind === 'reg') {
       glow(L.regBox, GOLD);
       const a = token('$s1', '#9b7ef4', -4.4, 2.6), b = token('$s2', '#9b7ef4', -4.4, 2.6);
-      move(a, 1.2, 3.4, 0.6); move(b, 1.2, 1.8, 0.6);
+      move(a, 1.2, 3.7, 0.6); move(b, 1.2, 1.5, 0.6);
       await W(tok, pace); txt(L.res, '$t0 = $s1 + $s2');
       if (talk) say('兩個運算元都從暫存器拿', 'R-format 的 rs、rt');
     } else if (kind === 'base') {
       const a = token('$s3=' + am.base, '#9b7ef4', -4.4, 2.6), b = token(String(am.off), '#2fc092', 0.2, 5.6);
-      glow(L.regBox, GOLD); move(a, 0.6, 2.6, 0.6); move(b, 1.8, 2.6, 0.6);
+      glow(L.regBox, GOLD); move(a, 1.2, 1.5, 0.6); move(b, 1.2, 3.7, 0.6);
       const ad = am.base + am.off;
       await W(tok, pace); txt(L.res, am.base + ' + ' + am.off + ' = ' + ad);
       if (talk) say('位址 = $s3 + 32 = ' + ad, '');
@@ -412,13 +423,13 @@ export default function (ctx) {
     } else if (kind === 'pc') {
       glow(L.pcBox, GOLD);
       const a = token('PC+4=' + (am.pc + 4), '#c08a1f', -1.0, 2.6), b = token('2×4', '#2fc092', 0.2, 5.6);
-      move(a, 0.4, 2.6, 0.6); move(b, 2.0, 2.6, 0.6);
+      move(a, 1.2, 1.5, 0.6); move(b, 1.2, 3.7, 0.6);
       await W(tok, pace); txt(L.res, (am.pc + 4) + ' + 8 = ' + (am.pc + 12));
       if (talk) say('分支目標 = PC + 4 + offset × 4', '16-bit offset 以「指令」為單位：±2¹⁵ 個指令');
     } else if (kind === 'pseudo') {
       glow(L.insBox, GOLD);
       const a = token('PC[31:28]', '#c08a1f', -1.0, 2.6), b = token('20000', '#2fc092', 0.2, 5.6), c = token('00', '#bdb3a2', 2.6, 3.6);
-      move(a, -0.4, 2.6, 0.6); move(b, 0.6, 2.6, 0.6); move(c, 1.6, 2.6, 0.6);
+      move(a, -0.9, 3.9, 0.6); move(b, 0.7, 3.9, 0.6); move(c, 2.0, 3.9, 0.6);
       await W(tok, pace); txt(L.res, '0000 ‖ 20000 ‖ 00 = 80000');
       if (talk) say('j 的目標：26-bit 欄位 × 4，接上 PC 高 4 bits', '20000 × 4 = 80000');
     } else if (kind === 'direct') {
@@ -566,8 +577,8 @@ export default function (ctx) {
     say('A 的 clock 快一倍，但每個指令要 2 個 cycle', 'B 的 clock 慢，但平均 1.2 個 cycle');
     await beat(tok, 3000);
     for (let k = 0; k < 5; k++) {
-      cube('I' + (k + 1), '#4b9ee2', [500 * sc - 0.08, 0.5, 0.6], -5.6 + 500 * sc * (k + 0.5), 4.2, 0, 1.5);
-      cube('I' + (k + 1), '#dd8238', [600 * sc - 0.08, 0.5, 0.6], -5.6 + 600 * sc * (k + 0.5), 1.8, 0, 1.5);
+      cube('I' + (k + 1), '#4b9ee2', [500 * sc - 0.08, 0.5, 0.6], -5.6 + 500 * sc * (k + 0.5), 4.2, 0, 0.3);
+      cube('I' + (k + 1), '#dd8238', [600 * sc - 0.08, 0.5, 0.6], -5.6 + 600 * sc * (k + 0.5), 1.8, 0, 0.3);
       await beat(tok, 600);
     }
     tag('500·I ps', 'ptr alt', -5.6 + 2500 * sc + 0.9, 4.2);
@@ -719,14 +730,14 @@ export default function (ctx) {
 
   // ───────────────────────── 場景：P&H 第 2 章例題 ─────────────────────────
   async function runPreset(tok, key, pace, over, intro) {
-    fresh([0.6, 3.7, 13.2], [0.6, 3.7, 0]);
-    const V = buildSim(key, over);
+    fresh([0.6, 3.7, 11.5], [0.6, 3.7, 0]);
+    const V = buildSim(key, over, true);
     if (intro) { say(intro[0], intro[1]); await beat(tok, 2600); }
     while (V.S.prog[V.S.pc] && V.S.steps < 80) await simStep(V, tok, pace, true);
     return V;
   }
   async function scRegisters(tok) {
-    fresh([0.6, 3.7, 13.2], [0.6, 3.7, 0]);
+    fresh([0.6, 3.7, 11.5], [0.6, 3.7, 0]);
     const V = buildSim('expr');
     say('MIPS 有 32 個 32-bit 暫存器', '暫存器比記憶體快很多（smaller is faster）');
     await beat(tok, 2600);
@@ -788,7 +799,7 @@ export default function (ctx) {
     for (let k = 0; k < 3; k++) {
       cd.hl(k);
       const enc = assemble(['lw $t0, 1200($t1)', 'add $t0, $s2, $t0', 'sw $t0, 1200($t1)'][k]);
-      dec[k].forEach((d, j) => cube(d, FCOL[j], [d.length > 2 ? 1.0 : 0.8, 0.5, 0.6], -0.4 + j * 1.05, 5.4 - k * 0.7, 0, 2));
+      dec[k].forEach((d, j) => cube(d, FCOL[j], [d.length > 2 ? 1.0 : 0.8, 0.5, 0.6], -0.4 + j * 1.05, 5.4 - k * 0.7, 0));
       say(['lw：op 35', 'add：op 0、funct 32', 'sw：op 43'][k], grp(bitsOf(enc)));
       await beat(tok, 2200);
     }
@@ -876,7 +887,7 @@ export default function (ctx) {
     await beat(tok, 3400);
   }
   async function scAddrModes(tok) {
-    fresh([0, 3.4, 13], [0, 3.0, 0]);
+    fresh([0, 3.4, 11.5], [0, 3.0, 0]);
     am.base = 100; am.off = 32; am.pc = 80012;
     for (const k of ['imm', 'reg', 'base', 'pc', 'pseudo']) await amPlay(k, tok, 1600, true);
     say('一般 ISA 還有 Direct 與 Indirect', 'MIPS 沒有（load-store、精簡）');
@@ -1057,11 +1068,25 @@ const bx = (t, c, x, y, z = 0, w = 1.6, h = 0.55, d = 0.7) => cube(t, c, [w, h, 
 const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.row && o.extra) return gone(o.ms, o.extra); if (o.ms && o.xs) return gone(o.ms); if (o.ls && typeof o.kill === 'function') return o.kill(); if (o.g && o.set) return kill(o.g); if (o.element) remove(o); else kill(o); });
 const near = (a, b, e = 1e-9) => Math.abs(a - b) <= e * Math.max(1, Math.abs(a), Math.abs(b));
 async function slide(tok, o, x, y, z = 0, ms = 600) { const a = o.position.clone(); await travel(tok, o, a, V3(x, y, z), ms); }
-const CAM = [[0, 3.4, 14.5], [0, 3.0, 0]];
+const CAM = [[0, 3.6, 11], [0, 3.2, 0]];
+// the framing box for the whole picture area, held from the first step (no zoom jumps)
+function frameHold(x0, y0, z0, x1, y1, z1) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+}
+// one remark for the scene: rewritten in place, wraps instead of stretching the stage
+const rem = (S, t, x, y, cls = 'note') => {
+  let l = S.rem;
+  if (!l || !l.parent) { l = S.rem = tag(t, cls, x, y); Object.assign(l.element.style, { whiteSpace: 'pre-line', maxWidth: '34em', textAlign: 'center' }); }
+  else { txt(l, t); l.element.className = 'lab-label ' + cls; l.position.set(x, y, 0); }
+  return l;
+};
+const remOk = (S, b, t, x, y) => rem(S, b ? t : t.replace(/✓/g, '✘'), x, y, b ? 'good' : 'bad');
 // a scene = a list of step functions; each runs when the video reaches its cue
 function scene(id, title, steps, cam) {
   FRAG.push([id, title, async (tok) => {
     const c = cam || CAM; fresh(c[0], c[1]);
+    if (!cam) frameHold(-6.6, -0.6, -0.3, 6.6, 7.0, 0.3);
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
@@ -1075,7 +1100,8 @@ function fields(text, y = 0.6, w = 0.36) {
   const show = (k) => { row.set(bits, k); };
   const label = (k, val) => {
     const [n, wd, v] = e.fields[k];
-    extra.push(small(tag(n + '（' + wd + '）', 'ptr', row.mid(k), y + 0.7), 11));
+    const nm = n + '（' + wd + '）';
+    if (!extra.some((l) => l.element && Math.abs(l.position.x - row.mid(k)) < 0.01 && Math.abs(l.position.y - (y + 0.7)) < 0.05)) extra.push(small(tag(nm, 'ptr', row.mid(k), y + 0.7), 11)); // the name may already be up
     extra.push(small(tag(val == null ? String(v) : val, 'idx', row.mid(k), y - 0.55), 11));
   };
   const hl = (k) => row.ms.forEach((m, i) => glow(m, k >= 0 && row.fOf(i) === k ? HL : null));
@@ -1089,7 +1115,7 @@ function mach(o) {
     const r = rIdx(n); M.reg[r] = v;
     const x = o.rx != null ? o.rx : -5.2, y = (o.ry != null ? o.ry : 5) - i * 0.78;
     M.R[n] = bx(String(v), RCOL(r), x, y, 0, 1.3, 0.55, 0.7);
-    M.extra.push(mono(tag(n + (o.rnames && o.rnames[i] ? '（' + o.rnames[i] + '）' : ''), 'idx', x - 1.45, y), 11));
+    { const nl = mono(tag(n + (o.rnames && o.rnames[i] ? '（' + o.rnames[i] + '）' : ''), 'idx', x - 0.8, y), 11); nl.center.set(1, 0.5); M.extra.push(nl); }
   });
   (o.mem || []).forEach(([a, v, nm], i) => {
     M.mem[a] = v;
@@ -1300,29 +1326,29 @@ scene('isA-4a-ab', '4A：同 ISA 的 A（250 ps, CPI 2.0）vs B（500 ps, CPI 1.
     cap('B 的 cycle 比較長', '一個 cycle 做比較多事：CPI 1.2');
   },
   async (tok, S) => { // 496.5 要算 CPU time
-    S.f = hot('哪台快？算 CPU time = IC × CPI × cycle time', 0.6, -0.9);
+    S.f = hot('哪台快？算 CPU time = IC × CPI × cycle time', 0.6, -0.35);
     cap('哪一台比較快？', '把 CPU time 算出來');
   },
   async (tok, S) => { // 541.6 A = 500·I ps
     const per = 2.0 * 250; S.pa = per;
-    for (let k = 0; k < 5; k++) { cube('I' + (k + 1), FC.blue, [per * S.sc - 0.08, 0.5, 0.6], -4.6 + per * S.sc * (k + 0.5), 3.55, 0, 1.2); await wt(tok, 120); }
-    S.ra = ok(per === 500, 4.8, 3.55, 'I × 2.0 × 250 = 500·I ps ✓');
+    for (let k = 0; k < 5; k++) { cube('I' + (k + 1), FC.blue, [per * S.sc - 0.08, 0.5, 0.6], -4.6 + per * S.sc * (k + 0.5), 3.55, 0, 0.3); await wt(tok, 120); }
+    S.ra = ok(per === 500, 3.9, 4.4, 'I × 2.0 × 250 = 500·I ps ✓');
     cap('A：I × 2.0 × 250 ps', '= 500·I ps');
   },
   async (tok, S) => { // 551.6 B = 600·I ps
     const per = 1.2 * 500; S.pb = per;
-    for (let k = 0; k < 5; k++) { cube('I' + (k + 1), FC.orange, [per * S.sc - 0.08, 0.5, 0.6], -4.6 + per * S.sc * (k + 0.5), 0.85, 0, 1.2); await wt(tok, 120); }
-    S.rb = ok(near(per, 600), 4.8, -0.2, 'I × 1.2 × 500 = 600·I ps ✓');
+    for (let k = 0; k < 5; k++) { cube('I' + (k + 1), FC.orange, [per * S.sc - 0.08, 0.5, 0.6], -4.6 + per * S.sc * (k + 0.5), 0.85, 0, 0.3); await wt(tok, 120); }
+    S.rb = ok(near(per, 600), 3.9, 1.7, 'I × 1.2 × 500 = 600·I ps ✓');
     cap('B：I × 1.2 × 500 ps', '= 600·I ps');
   },
   async (tok, S) => { // 569.3 A 比較快
     S.A.mood('happy'); await S.A.hop(tok);
-    S.g = good('A 比較快（500·I < 600·I）', -3.0, -1.6);
+    S.g = good('A 比較快（500·I < 600·I）', -3.0, -1.0);
     cap('A 比較快', '即使它每個指令要比較多 cycle');
   },
   async (tok, S) => { // 595.2 B 的時間放分子
     const r = S.pb / S.pa;
-    S.r = ok(near(r, 1.2), 2.6, -1.6, 'A 比 B 快 = 600·I ÷ 500·I = ' + +r.toFixed(6) + ' 倍 ✓');
+    S.r = ok(near(r, 1.2), 2.6, -1.0, 'A 比 B 快 = 600·I ÷ 500·I = ' + +r.toFixed(6) + ' 倍 ✓');
     cap('A 比 B 快幾倍：B 的時間放分子', '600 ÷ 500 = 1.2 倍');
   },
 ]);
@@ -1363,7 +1389,7 @@ scene('isA-4a-class', '4A：依指令類別加權的 CPI（A/B/C 類）', [
   },
   async (tok, S) => { // 799.7 seq1 = 10 cycles
     let x = -6.0; const sc = 0.62; S.blk = [];
-    for (let k = 0; k < 3; k++) for (let i = 0; i < S.n[0][k]; i++) { const w = S.cpi[k] * sc; S.blk.push(cube('ABC'[k], S.cc[k], [w - 0.05, 0.55, 0.7], x + w / 2, 1.8, 0, 1.2)); x += w; await wt(tok, 120); }
+    for (let k = 0; k < 3; k++) for (let i = 0; i < S.n[0][k]; i++) { const w = S.cpi[k] * sc; S.blk.push(cube('ABC'[k], S.cc[k], [w - 0.05, 0.55, 0.7], x + w / 2, 1.8, 0, 0.3)); x += w; await wt(tok, 120); }
     const cyc = S.n[0].reduce((s, n, k) => s + n * S.cpi[k], 0); S.cyc1 = cyc;
     S.r1 = ok(cyc === 10, 4.0, 1.8, '2×1 + 1×2 + 2×3 = ' + cyc + ' cycles ✓');
     cap('Sequence 1：2×1 + 1×2 + 2×3', '= 10 個 cycles');
@@ -1375,7 +1401,7 @@ scene('isA-4a-class', '4A：依指令類別加權的 CPI（A/B/C 類）', [
   },
   async (tok, S) => { // 822.5 seq2 = 9 cycles
     let x = -6.0; const sc = 0.62;
-    for (let k = 0; k < 3; k++) for (let i = 0; i < S.n[1][k]; i++) { const w = S.cpi[k] * sc; S.blk.push(cube('ABC'[k], S.cc[k], [w - 0.05, 0.55, 0.7], x + w / 2, -0.4, 0, 1.2)); x += w; await wt(tok, 120); }
+    for (let k = 0; k < 3; k++) for (let i = 0; i < S.n[1][k]; i++) { const w = S.cpi[k] * sc; S.blk.push(cube('ABC'[k], S.cc[k], [w - 0.05, 0.55, 0.7], x + w / 2, -0.4, 0, 0.3)); x += w; await wt(tok, 120); }
     const cyc = S.n[1].reduce((s, n, k) => s + n * S.cpi[k], 0); S.cyc2 = cyc;
     S.r2 = ok(cyc === 9, 4.0, -0.4, '4×1 + 1×2 + 1×3 = ' + cyc + ' cycles ✓');
     cap('Sequence 2：4×1 + 1×2 + 1×3', '= 9 個 cycles');
@@ -1591,11 +1617,11 @@ scene('isA-4a-bench', '4A：benchmark 與 SPEC', [
     cap('怎麼衡量機器是好還是壞？', '');
   },
   async (tok, S) => { // 2164.7 run 程式
-    S.f = prop('file', -2.2, 3.2, 0, 1.2, 'program'); S.c = prop('cpu', 1.8, 3.4, 0, 1.4, 'A、B、C 機器');
+    S.f = prop('file', -2.2, 2.5, 0, 1.2, 'program'); S.c = prop('cpu', 1.8, 2.7, 0, 1.4, 'A、B、C 機器');
     cap('拿一個 program 去 run', '看它跑得快還是慢');
   },
   async (tok, S) => { // 2242.2 矩陣相乘好不好
-    S.mx = note('例：拿「矩陣相乘」程式去測，好不好？', 0, 5.6);
+    rem(S, '例：拿「矩陣相乘」程式去測，好不好？', 0, 5.5);
     cap('用這個 program 測好不好？', '好，也不好');
   },
   async (tok, S) => { // 2268.4 看 workload
@@ -1605,41 +1631,41 @@ scene('isA-4a-bench', '4A：benchmark 與 SPEC', [
     cap('要看你平常做什麼', '科學家常做矩陣相乘，作家很少');
   },
   async (tok, S) => { // 2292.6 workload
-    S.wl = hot('依自己的 workload 來測：engineer → compiler、spreadsheet；author → word processing', 0, -0.9);
+    rem(S, '依自己的 workload 來測：\nengineer → compiler、spreadsheet；author → word processing', 0, 5.5);
     cap('根據你的 workload 測', '不同的人需求不同');
   },
   async (tok, S) => { // 2316.7 benchmark
-    gone(S.mx, S.b1, S.b2, S.w1, S.w2, S.wl);
+    gone(S.rem, S.b1, S.b2, S.w1, S.w2);
     S.set = []; for (let k = 0; k < 4; k++) { S.set.push(prop('file', -3.0 + k * 1.1, 0.0, 0, 0.8)); await wt(tok, 120); }
     S.bk = hot('Benchmark：已經寫好的一組程式', -1.4, 1.6);
     cap('自己建 workload 太辛苦', '所以有寫好的 benchmarks');
   },
   async (tok, S) => { // 2359.3 各公司自己做沒公信力
-    S.no = bad('A 公司、B 公司各自做 benchmark → 挑對自己有利的，沒有公信力', 0, 5.6);
+    rem(S, 'A 公司、B 公司各自做 benchmark\n→ 挑對自己有利的，沒有公信力', 0, 5.5, 'bad');
     cap('每家公司都自己做 benchmark？', '只挑對自己有利的，沒公信力');
   },
   async (tok, S) => { // 2391.7 industry standard → SPEC
-    S.sp = good('Industry standard：大家集資開一個公司 → SPEC', 0, 5.0);
+    rem(S, 'Industry standard：大家集資開一個公司 → SPEC', 0, 5.5, 'good');
     cap('需要 industry standard', '共同出錢成立 SPEC，大家用同一組測');
   },
   async (tok, S) => { // 2455 1989、SPEC2006
-    S.d = note('1989 年開始；最新 SPEC2006：CPU（integer、floating point）、HPC、client-server、mail…', 0, 4.4);
+    rem(S, '1989 年開始；最新 SPEC2006：\nCPU（integer、floating point）、HPC、client-server、mail…', 0, 5.5);
     cap('SPEC：1989 年開始做 benchmark', 'SPEC2006 測 CPU 的 integer 與 FP 等');
   },
   async (tok, S) => { // 2493.6 trick：針對 benchmark 優化
-    S.t1 = bad('問題 1：benchmark 是公開的 → compiler、library 專門對它做 optimization', 0, -0.7);
+    rem(S, '問題 1：benchmark 是公開的\n→ compiler、library 專門對它做 optimization', 0, 5.5, 'bad');
     cap('benchmarking 也有 trick', '專門針對那些 code 做最佳化，就不準');
   },
   async (tok, S) => { // 2531.5 system configuration
-    S.t2 = bad('問題 2：結果也受 system configuration 影響；規格可能對某台機器有利', 0, -1.3);
+    rem(S, '問題 2：結果也受 system configuration 影響\n規格可能對某台機器有利', 0, 5.5, 'bad');
     cap('還跟 system configuration 有關', '測試規格也可能偏袒某台機器');
   },
   async (tok, S) => { // 2553 small set、要換
-    S.t3 = bad('問題 3：只是一小組程式，cover 不了全部 → 要定期更換', 0, -1.9);
+    rem(S, '問題 3：只是一小組程式，cover 不了全部 → 要定期更換', 0, 5.5, 'bad');
     cap('benchmark 只是很小的 set', '一陣子就要換，不然大家只優化它');
   },
   async (tok, S) => { // 2572 研究所也做 benchmarking
-    S.r = note('做研究、做實驗也一樣：影像處理有標準圖，大家用同一組比', 0, 3.6);
+    rem(S, '做研究、做實驗也一樣：影像處理有標準圖，大家用同一組比', 0, 5.5);
     cap('將來做研究也要 benchmarking', '不同領域有自己的 benchmark set');
   },
 ]);
@@ -1708,7 +1734,7 @@ scene('isA-4a-spow', '4A：SPEC power（ssj_ops ÷ watts）', [
     cap('Power 的 benchmark', '要同時看 performance 和 power');
   },
   async (tok, S) => { // 2808.7 記錄 throughput、power
-    S.l = sm('藍 = ssj_ops（每秒完成的 operation，throughput）；橘 = watts', 0, 5.9);
+    S.l = sm('藍 = ssj_ops（每秒完成的 operation，throughput）；橘 = watts', 0, 6.0);
     cap('記錄兩樣：throughput', '和每秒消耗多少 power');
   },
   async (tok, S) => { // 2819.7 每 10% 一個 load
@@ -1716,30 +1742,30 @@ scene('isA-4a-spow', '4A：SPEC power（ssj_ops ÷ watts）', [
     for (let k = 0; k < S.loads.length; k++) {
       const x = -5.6 + k * 1.1;
       S.ops.push(bar(FC.blue, 0.42, 0.6, x - 0.22, 0)); S.pw.push(bar(FC.orange, 0.42, 0.6, x + 0.22, 0));
-      small(tag(S.loads[k] + '%', 'idx', x, -0.4, 0.8), 9);
+      small(tag(S.loads[k] + '%', 'idx', x, 0.45, 0.8), 9);
     }
     cap('不同的工作 loading', '從 100%、90%…到 0%，每 10% run 一次');
   },
   async (tok, S) => { // 2851.3 X4 結果
-    for (let k = 0; k < S.loads.length; k++) await Promise.all([growBar(tok, S.ops[k], S.loads[k] / 100 * 4.6, 120), growBar(tok, S.pw[k], (0.48 + 0.52 * S.loads[k] / 100) * 4.0, 120)]);
-    S.x = sm('X4：load 降低，ops 一路降，power 降得慢（高度示意）', 0, 5.3);
+    for (let k = 0; k < S.loads.length; k++) await Promise.all([growBar(tok, S.ops[k], S.loads[k] / 100 * 3.5, 120, 0.8), growBar(tok, S.pw[k], (0.48 + 0.52 * S.loads[k] / 100) * 3.0, 120, 0.8)]);
+    rem(S, 'X4：load 降低，ops 一路降，power 降得慢（高度示意）', 0, 5.2);
     cap('同一顆 X4 的結果', 'loading 往下，performance、power 都往下');
   },
   async (tok, S) => { // 2874.8 Σ ops ÷ Σ power
-    S.f = hot('overall = Σ ssj_ops ÷ Σ power：每一瓦能做多少事', 0, 4.6);
+    rem(S, 'overall = Σ ssj_ops ÷ Σ power：每一瓦能做多少事', 0, 5.2);
     cap('加總：全部 load 的 operation 加起來', '除以全部的 power：每瓦做多少事');
   },
   async (tok, S) => { // 2916.8 0% 也耗電
     glow(S.pw[10], HL);
-    S.z = bad('0% load：沒做任何事，卻還在耗電', 3.4, 3.4);
+    S.z = K.keep(bad('0% load：沒做任何事，卻還在耗電', 3.3, 3.5));
     cap('看 0 的時候', 'performance 是 0，power 卻不是 0');
   },
   async (tok, S) => { // 2931.3 static leakage
-    S.z2 = note('原因：static power（leakage 漏電）', 3.4, 2.8);
+    rem(S, '原因：static power（leakage 漏電）', 0, 5.2);
     cap('為什麼？static power', '電晶體關不緊，一直在漏電');
   },
   async (tok, S) => { // 2957.3 漏電比例大
-    S.z3 = sm('voltage 已降到約 1V，漏電占 power 很大的比例 → 研究要解決', 0, -1.2);
+    rem(S, 'voltage 已降到約 1V，漏電占 power 很大的比例 → 研究要解決', 0, 5.2);
     cap('漏電占很大比例', '怎麼解決是現在研究的題目');
   },
 ]);
@@ -2083,63 +2109,63 @@ scene('isA-4b-isa', '4B：Instruction set 入門：a = b + 5 變成 4 行', [
   },
   async (tok, S) => { // 1300.9 operators
     S.cc = code(['a = b + 5;', 'x = (y * 3) % 7;'], -4.4, 2.6);
-    S.op = sm('operator：+ − × ÷ %', -0.6, 2.6);
+    rem(S, 'operator：+ − × ÷ %', 0, -0.1);
     cap('C 程式裡有 operator', '加、減、乘、除、modular');
   },
   async (tok, S) => { // 1314.4 operands
-    S.od = sm('operand：variable（值會變）、constant', -0.6, 2.0);
+    rem(S, 'operand：variable（值會變）、constant', 0, -0.1);
     cap('operator 作用在 operand 上', 'operand 可以是 variable 或 constant');
   },
   async (tok, S) => { // 1339.1 expression、assignment
-    S.ex = sm('expression = operator 作用在 operand；做完 assign 給 variable', -0.6, 1.4);
+    rem(S, 'expression = operator 作用在 operand；做完 assign 給 variable', 0, -0.1);
     cap('合起來是 expression', '結果再 assign 到另一個 variable');
   },
   async (tok, S) => { // 1361.2 a = b + 5 → 4 行
     S.cc.hl(0);
     S.as = code(['load  $r1, M[b]', 'load  $r2, 5', 'add   $r3, $r1, $r2', 'store $r3, M[a]'], 2.6, 2.6);
-    S.as2 = sm('（一般的 assembly 寫法，示意）', 4.0, 0.2);
+    S.as2 = sm('（一般的 assembly 寫法，示意）', 2.6, 0.6);
     cap('a = b + 5 寫成 assembly', '一行變成四行：load、load、add、store');
   },
   async (tok, S) => { // 1409.9 operands：memory、register、constant
-    S.o1 = note('operand 從哪來：memory（M[b]）、register（$r1）、constant（5）', 0, -0.6);
+    rem(S, 'operand 從哪來：memory（M[b]）、register（$r1）、constant（5）', 0, -0.1);
     cap('這裡面都是 operand', 'memory 的資料、register、constant');
   },
   async (tok, S) => { // 1441.6 opcode
     S.as.hl(2);
-    S.o2 = note('每行最前面：op code（要做什麼動作：load、add、store）', 0, -1.2);
+    rem(S, '每行最前面：op code（要做什麼動作：load、add、store）', 0, -0.1);
     cap('還要描述做什麼動作', '這就是 op code（operator）');
   },
   async (tok, S) => { // 1462.8 每行對應硬體動作
     S.as.hl(-1);
-    S.o3 = sm('為什麼切這麼細？每一行都對應一個 hardware 動作', 0, -1.8);
+    rem(S, '為什麼切這麼細？每一行都對應一個 hardware 動作', 0, -0.1);
     cap('一行 C 要四行才做完', '因為每一行對應一個硬體動作');
   },
   async (tok, S) => { // 1477.4 ISA 包括：storage
-    gone(S.cc, S.as, S.as2, S.op, S.od, S.ex, S.o1, S.o2, S.o3, S.c);
-    S.k1 = bx('storage：幾個 register？memory 多大？怎麼 access？', FC.mint, 0, 3.6, 0, 9.0);
+    gone(S.cc.ls, S.as.ls, S.as2, S.rem, S.c, S.s1, S.s2, S.ar, S.ca);
+    S.k1 = bx('storage：幾個 register？memory 多大？怎麼 access？', FC.mint, 0, 5.6, 0, 9.0);
     cap('ISA 包括什麼？storage', 'register 要 32 個還是 16 個、memory 怎麼存取');
   },
   async (tok, S) => { // 1543.4 data type
-    S.k2 = bx('data type：同一串 0101，當 integer 或 floating point 意思不同', FC.lilac, 0, 2.9, 0, 9.0);
+    S.k2 = bx('data type：同一串 0101，當 integer 或 floating point 意思不同', FC.lilac, 0, 4.9, 0, 9.0);
     cap('Data type 怎麼定義', '同樣的 01 pattern，整數和浮點數意義不同');
   },
   async (tok, S) => { // 1594.9 instruction format
-    S.k3 = bx('instruction format：多長？32 bits、16 bits，還是有長有短？', FC.sky, 0, 2.2, 0, 9.0);
+    S.k3 = bx('instruction format：多長？32 bits、16 bits，還是有長有短？', FC.sky, 0, 4.2, 0, 9.0);
     cap('Instruction format', '每個指令多長、怎麼排');
   },
   async (tok, S) => { // 1616.1 operations
-    S.k4 = bx('operations：load、store、add、sub、mul、div…允許哪些？', FC.peach, 0, 1.5, 0, 9.0);
+    S.k4 = bx('operations：load、store、add、sub、mul、div…允許哪些？', FC.peach, 0, 3.5, 0, 9.0);
     cap('Operation', '這個 processor 允許做哪些動作');
   },
   async (tok, S) => { // 1640.2 MIPS：三種 format，都是 32 bits
-    S.m = []; for (let k = 0; k < 3; k++) S.m.push(bx(['R', 'I', 'J'][k] + '：32 bits', FC.green, -4.0, 0.4 - k * 0.65, 0, 2.6, 0.5, 0.6));
-    S.ml = good('MIPS：只有三種 format，全部一樣長 32 bits', -4.0, -1.6);
+    S.m = []; for (let k = 0; k < 3; k++) S.m.push(bx(['R', 'I', 'J'][k] + '：32 bits', FC.green, -3.6, 2.5 - k * 0.65, 0, 2.6, 0.5, 0.6));
+    S.ml = good('MIPS：只有三種 format，全部一樣長 32 bits', -3.0, 0.5);
     cap('這門課用 MIPS 當例子', '只有三種 format，都是 32 bits');
   },
   async (tok, S) => { // 1674.3 Intel 有長有短
-    let x = -1.0; S.x = [];
-    for (const w of [1, 3, 6, 2, 4, 1.5]) { S.x.push(bx('', FC.orange, x + w * 0.21, 0.4, 0, w * 0.42 - 0.05, 0.5, 0.6)); x += w * 0.42; }
-    S.xl = bad('Intel x86：有長有短 → 硬體要花 overhead 判斷', 3.6, -0.5);
+    let x = -0.6; S.x = [];
+    for (const w of [1, 3, 6, 2, 4, 1.5]) { S.x.push(bx('', FC.orange, x + w * 0.21, 2.5, 0, w * 0.42 - 0.05, 0.5, 0.6)); x += w * 0.42; }
+    S.xl = bad('Intel x86：有長有短 → 硬體要花 overhead 判斷', 2.9, 1.5);
     cap('Intel 的指令有長有短', '越複雜，hardware 要花越多力氣辨認');
   },
 ]);
@@ -2264,71 +2290,70 @@ scene('isA-4b-mregs', '4B：MIPS 的 32 個 register 與用途', [
   async (tok, S) => { // 2435.5 32 個 → 5 bits
     S.h = hd('MIPS：32 個 register → 編號要 5 bits', 0, 6.6);
     S.g = []; S.gl = [];
-    for (let i = 0; i < 32; i++) { const x = -5.2 + (i % 8) * 1.4, y = 4.8 - Math.floor(i / 8) * 1.0; S.g.push(bx(String(i), FC.gray, x, y, 0, 1.2, 0.5, 0.6)); S.gl.push(small(tag(RN[i], 'idx', x, y + 0.42), 9)); }
+    for (let i = 0; i < 32; i++) { const x = -4.9 + (i % 8) * 1.4, y = 5.0 - Math.floor(i / 8) * 1.0; S.g.push(bx(String(i), FC.gray, x, y, 0, 1.2, 0.5, 0.6)); S.gl.push(small(tag(RN[i], 'idx', x, y + 0.48), 9)); }
     cap('MIPS 有 32 個 register', '要 5 個 bits 指定');
   },
   async (tok, S) => { // 2458.6 64 → 6 bits、128 → 7 bits
-    S.t = sm('64 個 → ' + Math.log2(64) + ' bits；128 個 → ' + Math.log2(128) + ' bits', 0, 0.4);
+    rem(S, '64 個 → ' + Math.log2(64) + ' bits；128 個 → ' + Math.log2(128) + ' bits', 0, 0.8);
     cap('想要 64、128 個？', '比較 flexible，但要 6、7 個 bits');
   },
   async (tok, S) => { // 2506.8 三個 register = 15 bits
-    S.t2 = ok(3 * 5 === 15, 0, -0.2, 'add 要指定 3 個 register：3 × 5 = ' + 3 * 5 + ' bits（32 個時）✓');
+    remOk(S, 3 * 5 === 15, 'add 要指定 3 個 register：3 × 5 = ' + 3 * 5 + ' bits（32 個時）✓', 0, 0.8);
     cap('一個指令要描述三個 register', '5 bits × 3 = 15 bits，越多越佔位置');
   },
   async (tok, S) => { // 2542.4 32 個、每個 32 bits
-    S.t3 = note('MIPS：32 個 register，每個 32 bits（data、instruction 也都是 32 bits）', 0, -0.8);
+    rem(S, 'MIPS：32 個 register，每個 32 bits（data、instruction 也都是 32 bits）', 0, 0.8);
     cap('MIPS 選 32 個 register', '每個 register 是 32 bits');
   },
   async (tok, S) => { // 2560.2 smaller is faster
-    S.t4 = good('Design Principle 2：Smaller is faster', 0, -1.4);
+    rem(S, 'Design Principle 2：Smaller is faster', 0, 0.8, 'good');
     cap('為什麼不要 64 個？', '越大越慢：smaller is faster');
   },
   async (tok, S) => { // 2611.2 word
-    S.t5 = sm('32 bits 叫一個 word：存取 register、memory 都以 word 為單位', 0, -2.0);
+    rem(S, '32 bits 叫一個 word：存取 register、memory 都以 word 為單位', 0, 0.8);
     cap('32 bits 叫做一個 word', '讀進讀出都是一個 word');
   },
   async (tok, S) => { // 2631 編號 0～31 或名字
-    gone(S.t, S.t2, S.t3, S.t4, S.t5);
-    S.n = note('可以用編號 $0～$31，也可以用名字（$s0 就是 16 號）', 0, 0.4);
+    rem(S, '可以用編號 $0～$31，也可以用名字（$s0 就是 16 號）', 0, 0.8);
     cap('用 0 到 31 號稱呼', '也可以給名字');
   },
   async (tok, S) => { // 2656.9 $s0～$s7 = 16～23
     for (let i = 16; i <= 23; i++) { tint(S.g[i], RCOL(i)); glow(S.g[i], HL); }
-    S.s = sm('$s0～$s7 = 16～23：放一般的 variable', 0, -0.2);
+    rem(S, '$s0～$s7 = 16～23：放一般的 variable', 0, 0.8);
     cap('$s0～$s7（16～23 號）', '對應程式裡的 variable');
   },
   async (tok, S) => { // 2671.7 $t0～$t7 = 8～15
     for (let i = 16; i <= 23; i++) glow(S.g[i], null);
     for (let i = 8; i <= 15; i++) { tint(S.g[i], RCOL(i)); glow(S.g[i], HL); }
-    S.t = sm('$t0～$t7 = 8～15：temporary（算到一半的暫存）', 0, -0.8);
+    rem(S, '$t0～$t7 = 8～15：temporary（算到一半的暫存）', 0, 0.8);
     cap('$t0～$t7（8～15 號）', '放 temporary 的值');
   },
   async (tok, S) => { // 2700.5 $zero
     for (let i = 8; i <= 15; i++) glow(S.g[i], null);
     tint(S.g[0], '#bdb3a2'); glow(S.g[0], HL); relabel(S.g[0], '0');
-    S.z = sm('$zero：永遠是 0（0 太常用，直接放一個）', 0, -1.4);
+    rem(S, '$zero：永遠是 0（0 太常用，直接放一個）', 0, 0.8);
     cap('第 0 個 register', '永遠是 constant 0');
   },
   async (tok, S) => { // 2721.3 $v、$a：procedure
     glow(S.g[0], null);
     for (const i of [2, 3, 4, 5, 6, 7]) { tint(S.g[i], RCOL(i)); glow(S.g[i], HL); }
-    S.a = sm('$v0–$v1（2–3）回傳值、$a0–$a3（4–7）參數：寫 procedure 時用', 0, -2.0);
+    rem(S, '$v0–$v1（2–3）回傳值、$a0–$a3（4–7）參數：寫 procedure 時用', 0, 0.8);
     cap('2～7 號：procedure call 用', '放參數與回傳值');
   },
   async (tok, S) => { // 2756.6 OS、pointer、$ra
     for (const i of [2, 3, 4, 5, 6, 7]) glow(S.g[i], null);
     for (const i of [1, 26, 27, 28, 29, 30, 31]) { tint(S.g[i], RCOL(i)); glow(S.g[i], HL); }
-    S.o = sm('$at、$k0–$k1 給 assembler／OS；$gp、$sp、$fp 指標；$ra 返回位址（28–31）', 0, -2.6);
+    rem(S, '$at、$k0–$k1 給 assembler／OS；$gp、$sp、$fp 指標；$ra 返回位址（28–31）', 0, 0.8);
     cap('其他是特殊用途', 'OS 用的、指標、return address');
   },
   async (tok, S) => { // 2781.7 整體 organization
-    gone(S.g, S.gl, S.n, S.s, S.t, S.z, S.a, S.o);
-    S.mem = prop('warehouse', -5.0, 1.0, 0, 1.4, 'Memory');
-    S.cpu = zone('CPU', 0.4, 0.2, 0, 5.4, 4.4, '#efe4d0');
-    S.rr = bx('Registers $0～$31', FC.green, -0.6, 2.6, 0, 2.6); S.al = bx('Arithmetic unit', FC.orange, -0.6, 1.6, 0, 2.6);
-    S.hl = bx('Hi / Lo（乘除結果）', FC.purple, 2.0, 1.6, 0, 2.2, 0.55, 0.7);
-    S.cp = bx('Coprocessor 1：floating point', FC.sky, 5.6, 2.2, 0, 2.6, 1.0, 0.8);
-    S.hn = sm('乘法結果變長、除法有商和餘數 → 放 Hi、Lo', 0.4, -1.0);
+    gone(S.g, S.gl, S.rem);
+    S.mem = prop('warehouse', -4.8, 1.4, 0, 1.4, 'Memory');
+    S.cpu = zone('CPU', -0.4, 0.6, 0, 4.4, 3.4, '#efe4d0');
+    S.rr = bx('Registers $0～$31', FC.green, -0.4, 3.4, 0, 3.0); S.al = bx('Arithmetic unit', FC.orange, -0.4, 2.4, 0, 3.0);
+    S.hl = bx('Hi / Lo（乘除結果）', FC.purple, -0.4, 1.4, 0, 3.0, 0.55, 0.7);
+    S.cp = bx('Coprocessor 1：floating point', FC.sky, 4.2, 2.4, 0, 3.6, 1.0, 0.8);
+    S.hn = sm('乘法結果變長、除法有商和餘數 → 放 Hi、Lo', -0.4, -0.4);
     cap('MIPS 的整體 organization', 'memory、CPU 的 register、Hi/Lo，FP 在 coprocessor');
   },
 ]);
@@ -2339,43 +2364,43 @@ scene('isA-4b-mregs', '4B：MIPS 的 32 個 register 與用途', [
 scene('isA-5a-review', '5A：回顧：算術指令與 32 個 register', [
   async (tok, S) => { // 20 第一種指令：ALU 運算
     S.h = hd('回顧：MIPS 第一種指令：加減、邏輯（ALU operation）', 0, 6.6);
-    S.ins = ['op', 'dest', 'src1', 'src2'].map((t, k) => bx(t, [FC.gold, FC.green, FC.blue, FC.blue][k], -3.3 + k * 2.2, 5.0, 0, 1.9, 0.7, 0.7));
+    S.ins = ['op', 'dest', 'src1', 'src2'].map((t, k) => bx(t, [FC.gold, FC.green, FC.blue, FC.blue][k], -3.3 + k * 2.2, 5.7, 0, 1.9, 0.6, 0.6));
     cap('上次介紹的第一種指令', '在 ALU 做加減、邏輯運算');
   },
   async (tok, S) => { // 37.6 四個 field
-    S.e = mt('add  $t0,  $s1,  $s2', 0, 4.0, 14, 'note');
+    S.e = mt('add  $t0,  $s1,  $s2', 0, 4.9, 14, 'note');
     cap('四個 field', 'op code、destination、source 1、source 2');
   },
   async (tok, S) => { // 58.8 都要是 register
     [1, 2, 3].forEach((k) => glow(S.ins[k], HL));
-    S.r = hot('後面三個一定要是 register', 0, 3.3);
+    S.r = hot('後面三個一定要是 register', 0, 4.25);
     cap('destination 和兩個 source', '一定都要是 register');
   },
   async (tok, S) => { // 84.4 32 個 → 5 bits
     S.g = [];
-    for (let i = 0; i < 32; i++) { const x = -5.2 + (i % 8) * 1.4, y = 2.2 - Math.floor(i / 8) * 0.75; S.g.push(bx(RN[i], FC.gray, x, y, 0, 1.25, 0.45, 0.5)); }
-    S.b = ok(2 ** 5 === 32, 0, -1.2, '0～31 共 32 個：2⁵ = 32 → 位址要 5 bits ✓');
+    for (let i = 0; i < 32; i++) { const x = -4.9 + (i % 8) * 1.4, y = 3.45 - Math.floor(i / 8) * 0.72; const b = bx(RN[i], FC.gray, x, y, 0, 1.25, 0.45, 0.5); small(b.userData.lbl, 11); S.g.push(b); }
+    remOk(S, 2 ** 5 === 32, '0～31 共 32 個：2⁵ = 32 → 位址要 5 bits ✓', 0, 0.4);
     cap('32 個 register，地址幾個 bits？', '5 個 bits：這個很重要');
   },
   async (tok, S) => { // 114 越大越慢
-    S.s = sm('register file 越大越靈活，但越慢 → 怎麼選是重要的設計決定', 0, -1.8);
+    rem(S, 'register file 越大越靈活，但越慢 → 怎麼選是重要的設計決定', 0, 0.4);
     cap('register file 希望大一點', '但太大會慢：要取捨');
   },
   async (tok, S) => { // 127.5 用途：$t 8–15、$s 16–23
     for (let i = 8; i <= 15; i++) { tint(S.g[i], RCOL(i)); glow(S.g[i], HL); }
     for (let i = 16; i <= 23; i++) { tint(S.g[i], RCOL(i)); glow(S.g[i], HL); }
-    S.u = note('寫程式可用：8～15 = $t0～$t7（temporary）、16～23 = $s0～$s7', 0, 3.3 - 0.0);
+    rem(S, '寫程式可用：8～15 = $t0～$t7（temporary）、16～23 = $s0～$s7', 0, 0.4);
     gone(S.r);
     cap('有些 register 有特別用途', '我們能用的是 $t（8–15）和 $s（16–23）');
   },
   async (tok, S) => { // 159.5 CPU 結構
-    gone(S.g, S.b, S.s, S.u, S.e, S.ins);
-    S.mem = prop('warehouse', 4.8, 1.0, 0, 1.4, 'Memory');
-    S.cpu = zone('CPU', -2.2, 1.0, 0, 6.2, 3.6, '#efe4d0');
-    S.rf = bx('register file（32 個）', FC.green, -3.4, 3.0, 0, 3.0); S.alu = bx('ALU', FC.orange, -0.6, 2.0, 0, 1.6);
-    S.a1 = arrow(V3(-2.6, 2.7, 0.5), V3(-1.3, 2.2, 0.5)); S.a2 = arrow(V3(-0.6, 1.6, 0.5), V3(-2.8, 2.6, 0.6), 0x0f5a3a);
-    S.cp = bx('coprocessor：floating point', FC.sky, -2.2, 0.4, 0, 3.4);
-    S.l = sm('資料從 register 來，算完寫回 register；memory 在外面，放更多 data', 0, -1.6);
+    gone(S.g, S.rem, S.e, S.ins);
+    S.mem = prop('warehouse', 4.8, 2.2, 0, 1.4, 'Memory');
+    S.cpu = zone('CPU', -2.2, 2.2, 0, 6.2, 3.6, '#efe4d0');
+    S.rf = bx('register file（32 個）', FC.green, -3.4, 4.2, 0, 3.0); S.alu = bx('ALU', FC.orange, -0.6, 3.2, 0, 1.6);
+    S.a1 = arrow(V3(-2.6, 3.9, 0.5), V3(-1.3, 3.4, 0.5)); S.a2 = arrow(V3(-0.6, 2.8, 0.5), V3(-2.8, 3.8, 0.6), 0x0f5a3a);
+    S.cp = bx('coprocessor：floating point', FC.sky, -2.2, 1.6, 0, 3.4);
+    S.l = sm('資料從 register 來，算完寫回 register；memory 在外面，放更多 data', 0, -0.1);
     cap('CPU 裡有 register file', '運算完寫回 register；外面有大的 memory');
   },
 ]);
@@ -2383,41 +2408,41 @@ scene('isA-5a-review', '5A：回顧：算術指令與 32 個 register', [
 scene('isA-5a-fghij', '5A：f = (g + h) − (i + j) 編成三個指令', [
   async (tok, S) => { // 191.4 例子
     S.h = hd('上次的例子：f = (g + h) − (i + j)', 0, 6.6);
-    S.c = mt('f = (g + h) − (i + j);', -0.6, 5.8, 14, 'note');
+    S.c = mt('f = (g + h) − (i + j);', 0, 5.85, 14, 'note');
     cap('上次的例子', 'f = (g + h) − (i + j)，有四個 operand');
   },
   async (tok, S) => { // 202 只能兩個 source
-    S.r = bad('MIPS：一個指令只能 2 個 source、1 個 destination', -0.6, 5.1);
+    S.r = K.keep(bad('MIPS：一個指令只能 2 個 source、1 個 destination', 0, 5.2));
     cap('MIPS 一次只能兩個 source', '一個 destination');
   },
   async (tok, S) => { // 235.9 放在 $s0～$s4
-    S.M = mach({ regs: [['$s0', 0], ['$s1', 5], ['$s2', 3], ['$s3', 4], ['$s4', 2], ['$t0', 0], ['$t1', 0]], rnames: ['f', 'g', 'h', 'i', 'j', '', ''], rx: -4.2, ry: 4.0 });
-    S.v = sm('g、h、i、j 的值是示意', -4.2, -1.5);
+    S.M = mach({ regs: [['$s0', 0], ['$s1', 5], ['$s2', 3], ['$s3', 4], ['$s4', 2], ['$t0', 0], ['$t1', 0]], rnames: ['f', 'g', 'h', 'i', 'j', '', ''], rx: -3.6, ry: 4.4 });
+    S.v = sm('g、h、i、j 的值是示意', 1.9, 4.4);
     cap('變數要先在 register 裡', 'f～j 放在 $s0～$s4');
   },
   async (tok, S) => { // 259 add $t0, $s1, $s2
-    S.code = code(['add $t0, $s1, $s2', 'add $t1, $s3, $s4', 'sub $s0, $t0, $t1'], 1.6, 3.6); S.code.hl(0);
-    const o = await S.M.run(tok, 'add $t0, $s1, $s2'); S.o1 = sm(o.desc, 1.6, 1.4);
+    S.code = code(['add $t0, $s1, $s2', 'add $t1, $s3, $s4', 'sub $s0, $t0, $t1'], 1.9, 3.6); S.code.hl(0);
+    const o = await S.M.run(tok, 'add $t0, $s1, $s2'); rem(S, o.desc, 1.9, 1.5);
     cap('g + h：$s1 + $s2 → $t0', o.desc);
   },
   async (tok, S) => { // 272.1 add $t1, $s3, $s4
-    S.code.hl(1); gone(S.o1);
-    const o = await S.M.run(tok, 'add $t1, $s3, $s4'); S.o2 = sm(o.desc, 1.6, 1.4);
+    S.code.hl(1);
+    const o = await S.M.run(tok, 'add $t1, $s3, $s4'); rem(S, o.desc, 1.9, 1.5);
     cap('i + j：$s3 + $s4 → $t1', o.desc);
   },
   async (tok, S) => { // 283.2 sub $s0, $t0, $t1
-    S.code.hl(2); gone(S.o2);
+    S.code.hl(2);
     const o = await S.M.run(tok, 'sub $s0, $t0, $t1');
-    S.o3 = ok(S.M.reg[16] === (5 + 3) - (4 + 2), 1.6, 1.4, o.desc + '　＝ (5 + 3) − (4 + 2) ✓');
+    remOk(S, S.M.reg[16] === (5 + 3) - (4 + 2), o.desc + '\n＝ (5 + 3) − (4 + 2) ✓', 1.9, 1.5);
     cap('$t0 − $t1 → $s0（f）', o.desc);
   },
   async (tok, S) => { // 295.3 一個 statement → 三個
     S.code.hl(-1);
-    S.g = good('一個 C statement → 三個 assembly statement，每個都遵守規定', 1.6, 0.6);
+    rem(S, '一個 C statement → 三個 assembly statement\n每個都遵守規定', 1.9, 1.5, 'good');
     cap('一個 C statement 寫成三個', '每次只有三個 operand');
   },
   async (tok, S) => { // 319.2 不在 register 要搬進來
-    S.n = note('operand 一定要在 register；不在的話，要先從別的地方搬進來', 1.6, -0.2);
+    rem(S, 'operand 一定要在 register\n不在的話，要先從別的地方搬進來', 1.9, 1.5);
     cap('加、減、and、or 只能在 register 上做', '不在 register 的，後面教怎麼搬');
   },
 ]);
@@ -2522,30 +2547,32 @@ scene('isA-5a-cab', '5A：C = A + B 的四種寫法與比較', [
   },
   async (tok, S) => { // 1081.5 1975 後只剩兩種
     S.c0.ls.forEach((l) => { l.element.style.opacity = '0.4'; }); S.c1.ls.forEach((l) => { l.element.style.opacity = '0.4'; });
-    S.n = note('1975 年後已沒有 stack、accumulator 的機器；x86 屬 register-memory，RISC（MIPS）屬 load-store', 0, 1.9);
+    rem(S, '1975 年後已沒有 stack、accumulator 的機器\nx86 屬 register-memory，RISC（MIPS）屬 load-store', 0, 1.6);
     cap('現在只剩後兩種', 'Intel x86 是 register-memory，RISC 是 load-store');
   },
   async (tok, S) => { // 1099.9 比較三項
-    S.tb = mt('                  bytes/instr   # of instr   CPI', 0, 1.1, 12, 'ptr');
+    gone(S.rem, S.col[0], S.col[1], S.r0, S.r1); S.c0.ls.forEach(remove); S.c1.ls.forEach(remove);
+    [[S.col[2], S.c2.ls, S.r2, -2.2], [[S.col[3]][0], S.c3.ls, S.r3, 2.2]].forEach(([c, ls, r, x]) => { c.position.x = x; ls.forEach((l) => { l.position.x = x; }); r.position.x = x; });
+    S.tb = mt('                  bytes/instr   # of instr   CPI', 0, 2.1, 12, 'ptr');
     cap('比較：每個指令幾 bytes', '幾個指令、CPI 有什麼差別');
   },
   async (tok, S) => { // 1169.6 指令長度、指令數
-    S.t1 = mt('register-memory   比較長        3 個          ?', 0, 0.5, 12);
-    S.t2 = mt('load-store        比較短        4 個          ?', 0, -0.1, 12);
+    S.t1 = mt('register-memory   比較長        3 個          ?', 0, 1.5, 12);
+    S.t2 = mt('load-store        比較短        4 個          ?', 0, 0.9, 12);
     cap('register-memory 指令較長', '要放 memory address；但只要 3 個指令');
   },
   async (tok, S) => { // 1229.6 CPI：指令少不一定快
     txt(S.t1, 'register-memory   比較長        3 個          add 要等 memory，長');
     txt(S.t2, 'load-store        比較短        4 個          每個都短、單純');
-    S.w = bad('指令數比較少，不一定比較快：add R1, B 要先去 memory 拿 B', 0, -0.9);
+    rem(S, '指令數比較少，不一定比較快：add R1, B 要先去 memory 拿 B', 0, 0.1, 'bad');
     cap('3 個指令一定比 4 個快嗎？', '不一定：要去 memory 的 add 很久');
   },
   async (tok, S) => { // 1285.3 拆小 → optimization
-    S.g = good('指令拆小：總數多，cycle 不一定多；而且好做 optimization', 0, -1.5);
+    rem(S, '指令拆小：總數多，cycle 不一定多；而且好做 optimization', 0, 0.1, 'good');
     cap('把指令拆成小的', '指令數多，但比較好最佳化');
   },
   async (tok, S) => { // 1312.9 MIPS = load-store
-    S.m = hot('MIPS 是 load-store machine：做加減時，operand 一定在 register file', 0, -2.2);
+    rem(S, 'MIPS 是 load-store machine：做加減時，operand 一定在 register file', 0, 0.1);
     cap('MIPS 是 load-store machine', '算術邏輯運算的 operand 一定在 register');
   },
 ]);
@@ -2662,15 +2689,15 @@ scene('isA-5a-lwsw', '5A：lw $t0, 12($s0) 與 sw $t0, 12($s0)', [
     cap('寫成 lw $t0, 12($s0)', '$s0 的內容加 12 就是地址');
   },
   async (tok, S) => { // 2417.8 load word = 32 bits
-    S.w = sm('lw = load word：一次搬一個 word = 32 bits', 0, 4.3);
+    rem(S, 'lw = load word\n一次搬一個 word = 32 bits', -0.4,2.3);
     cap('lw 是 load word', '每次搬 32 個 bits 進來');
   },
   async (tok, S) => { // 2439.2 base register、offset
-    S.b = note('$s0 叫 base register；12 叫 offset', 0, 3.7);
+    rem(S, '$s0 叫 base register；12 叫 offset', -0.4,2.3);
     cap('$s0：base register', '12：offset');
   },
   async (tok, S) => { // 2451.7 對應 array
-    S.a = sm('就像 array：第一個元素的位置當 base，其他元素 = base + 多少', 0, 3.1);
+    rem(S, '就像 array：第一個元素的位置當 base\n其他元素 = base + 多少', -0.4,2.3);
     cap('對應到 array', '第一個元素當 base，往上加 offset');
   },
   async (tok, S) => { // 2477.5 例：Mem[1012] = 999、$s0 = 1000
@@ -2679,21 +2706,20 @@ scene('isA-5a-lwsw', '5A：lw $t0, 12($s0) 與 sw $t0, 12($s0)', [
   },
   async (tok, S) => { // 2491.5 1000 + 12 = 1012
     const a = S.M.reg[16] + 12;
-    S.ad = ok(a === 1012, -0.4, 1.9, '$s0 + 12 = 1000 + 12 = ' + a + ' ✓');
+    remOk(S, a === 1012, '$s0 + 12 = 1000 + 12 = ' + a + ' ✓', -0.4,2.3);
     cap('$s0 的內容加 12', '1000 + 12 = 1012');
   },
   async (tok, S) => { // 2530.2 拿 1012 裡面的東西 → 999
     const o = await S.M.run(tok, 'lw $t0, 12($s0)');
-    S.r = ok(S.M.reg[8] === 999, -0.4, 1.2, o.desc + ' ✓');
-    S.n2 = bad('$t0 不是 1012（那只是地址），而是 1012 裡面的 999', -0.4, 0.5);
+    remOk(S, S.M.reg[8] === 999, o.desc.replace(' = Mem[1012]', '\n= Mem[1012]') + ' ✓\n$t0 不是 1012（那只是地址）\n而是 1012 裡面的 999', -0.4,2.3);
     cap('$t0 是 1012 還是 999？', '999：拿的是地址裡面的東西');
   },
   async (tok, S) => { // 2581.1 為什麼間接
-    S.why = note('為什麼不直接寫地址？32-bit address 太大，指令放不下', -0.4, -0.2);
+    rem(S, '為什麼不直接寫地址？\n32-bit address 太大，指令放不下', -0.4,2.3);
     cap('為什麼不直接寫 32-bit 地址？', '太大了，所以用間接的方法');
   },
   async (tok, S) => { // 2609.9 store
-    gone(S.w, S.b, S.a, S.ad, S.r, S.n2, S.why, S.f, S.l1, S.l2, S.l3, S.l4);
+    gone(S.rem, S.f, S.l1, S.l2, S.l3, S.l4);
     S.h2 = hot('Store：register → memory（sw = store word）', 0, 5.6);
     S.M.calm();
     cap('反過來：運算完要搬回 memory', '叫 store：sw（store word）');
@@ -2708,11 +2734,11 @@ scene('isA-5a-lwsw', '5A：lw $t0, 12($s0) 與 sw $t0, 12($s0)', [
   },
   async (tok, S) => { // 2705.4 存到 1012
     const o = await S.M.run(tok, 'sw $t0, 12($s0)');
-    S.r = ok(S.M.mem[1012] === 25, -0.4, 1.6, o.desc + ' ✓');
+    remOk(S, S.M.mem[1012] === 25, o.desc.replace(' = Mem[1012]', '\n= Mem[1012]') + ' ✓', -0.4,2.3);
     cap('1000 + 12 = 1012', '執行完，1012 裡變成 25');
   },
   async (tok, S) => { // 2737.6 offset 正負都可以
-    S.pm = sm('offset 是一個 integer：正的、負的都可以（往上或往下）', -0.4, 0.9);
+    rem(S, 'offset 是一個 integer\n正的、負的都可以（往上或往下）', -0.4,2.3);
     cap('offset 可以正，也可以負', '詳細的指令格式下次講');
   },
 ]);
@@ -2724,46 +2750,46 @@ scene('isA-5a-array', '5A：g = h + A[8] 與 A[12] = h + A[8]', [
   },
   async (tok, S) => { // 2771 base 在 $s3
     S.M = mach({ regs: [['$s1', 0], ['$s2', 5], ['$s3', 1000], ['$t0', 0]], rnames: ['g', 'h', 'A 的 base', ''], mem: [[1048, 0, 'A[12]'], [1044, 0, 'A[11]'], [1036, 0, 'A[9]'], [1032, 30, 'A[8]'], [1004, 0, 'A[1]'], [1000, 0, 'A[0]']], rx: -3.8, ry: 4.8, mx: 3.6, my: 5.0 });
-    S.v = sm('h = 5、A 從 1000 開始、A[8] = 30 是示意', -3.8, 1.4);
+    S.v = sm('h = 5、A 從 1000 開始、A[8] = 30 是示意', 0, 6.0);
     cap('g 在 $s1、h 在 $s2', 'A 的第 0 個元素（base）在 $s3');
   },
   async (tok, S) => { // 2792.3 offset 32
     const off = 8 * 4;
-    S.o = ok(off === 32 && 1000 + off === 1032, -3.8, 0.7, 'A[8]：8 × 4 bytes = offset ' + off + ' ✓');
+    remOk(S, off === 32 && 1000 + off === 1032, 'A[8]：8 × 4 bytes = offset ' + off + ' ✓', -0.1, 1.2);
     cap('A[8] 的 offset 要寫多少？', '一個 word 4 bytes：8 × 4 = 32');
   },
   async (tok, S) => { // 2809.2 lw $t0, 32($s3)
-    S.code = code(['lw  $t0, 32($s3)', 'add $s1, $s2, $t0'], -1.0, 0.0); S.code.hl(0);
-    const o = await S.M.run(tok, 'lw $t0, 32($s3)'); S.d1 = sm(o.desc, 1.4, -1.4);
+    S.code = code(['lw  $t0, 32($s3)', 'add $s1, $s2, $t0'], -0.1, 5.0); S.code.hl(0);
+    const o = await S.M.run(tok, 'lw $t0, 32($s3)'); rem(S, o.desc, -0.1, 1.2);
     cap('先 load A[8] 到 $t0', o.desc);
   },
   async (tok, S) => { // 2821.2 add $s1, $s2, $t0
-    S.code.hl(1); gone(S.d1);
+    S.code.hl(1);
     const o = await S.M.run(tok, 'add $s1, $s2, $t0');
-    S.d2 = ok(S.M.reg[17] === 5 + 30, 1.4, -1.4, 'g = ' + o.desc.replace('$s1 = ', '') + ' ✓');
+    remOk(S, S.M.reg[17] === 5 + 30, 'g = ' + o.desc.replace('$s1 = ', '') + ' ✓', -0.1, 1.2);
     cap('再把 h 和 $t0 加起來放 g（$s1）', o.desc);
   },
   async (tok, S) => { // 2836.3 A[12] = h + A[8]
-    S.code.kill(); gone(S.d2, S.o); S.M.calm();
+    S.code.ls.forEach(remove); gone(S.rem); S.M.calm();
     txt(S.h, '再一個例子：A[12] = h + A[8]');
     cap('第二個例子', 'A[12] = h + A[8]');
   },
   async (tok, S) => { // 2855.9 lw、add $t0
-    S.code = code(['lw  $t0, 32($s3)', 'add $t0, $s2, $t0', 'sw  $t0, 48($s3)'], -1.0, 0.4); S.code.hl(0);
+    S.code = code(['lw  $t0, 32($s3)', 'add $t0, $s2, $t0', 'sw  $t0, 48($s3)'], -0.1, 5.0); S.code.hl(0);
     await S.M.run(tok, 'lw $t0, 32($s3)'); S.code.hl(1);
-    const o = await S.M.run(tok, 'add $t0, $s2, $t0'); S.d = sm(o.desc, 1.4, -1.6);
+    const o = await S.M.run(tok, 'add $t0, $s2, $t0'); rem(S, o.desc, -0.1, 1.2);
     cap('先 load A[8]，加上 h', '結果先放在 $t0');
   },
   async (tok, S) => { // 2867.1 sw $t0, 48($s3)
-    S.code.hl(2); gone(S.d);
+    S.code.hl(2);
     const off = 12 * 4;
     const o = await S.M.run(tok, 'sw $t0, ' + off + '($s3)');
-    S.d = ok(off === 48 && S.M.mem[1048] === 35, 1.4, -1.6, '12 × 4 = 48；' + o.desc + ' ✓');
+    remOk(S, off === 48 && S.M.mem[1048] === 35, '12 × 4 = 48\n' + o.desc + ' ✓', -0.1, 1.2);
     cap('存回 A[12]：base 還是 $s3', 'offset = 12 × 4 = 48');
   },
   async (tok, S) => { // 2890.8 base 不變只改 offset
     S.code.hl(-1);
-    S.g = good('存取 array：base 不用變，只改 offset（32、48）就能拿到任何一個元素', 0, -2.3);
+    rem(S, '存取 array：base 不用變\n只改 offset（32、48）就能拿到任何一個元素', -0.1, 1.2, 'good');
     cap('access array 時', 'base 不變，改 offset 就能存取任何元素');
   },
 ]);
@@ -2773,7 +2799,7 @@ scene('isA-5a-array', '5A：g = h + A[8] 與 A[12] = h + A[8]', [
 // add $t0, $s1, $s2 → 0 17 18 8 0 32、hex 例 eca8 6420、addi $21, $22, −50、lw $t0, 1200($t1)。
 // register 的值、0x12345678 的 endian 例子是示意。所有 bits／hex 由 assemble()／bitsOf()／hex8() 算出。
 // reveal some fields of a fieldRow (k in on → show the field's bits)
-function reveal(F, on) { F.bits.split('').forEach((b, i) => { const k = F.row.fOf(i); const o = on.includes(k); relabel(F.ms[i], o ? b : '·'); tint(F.ms[i], o && b === '1' ? FCOL[k] : FCOL0[k]); }); }
+function reveal(F, on) { F.bits.split('').forEach((b, i) => { const k = F.row.fOf(i); const o = on.includes(k); relabel(F.ms[i], o ? b : ''); tint(F.ms[i], o && b === '1' ? FCOL[k] : FCOL0[k]); }); }
 scene('isA-6a-review', '6A：回顧：load-store、base + offset、A[8] 與 A[12]', [
   async (tok, S) => { // 18.6 operand 在 register
     S.h = hd('回顧：load-store machine，運算的 operand 一定在 register', 0, 6.6);
@@ -2807,36 +2833,36 @@ scene('isA-6a-review', '6A：回顧：load-store、base + offset、A[8] 與 A[12
     gone(S.r, S.l, S.q, S.t, S.b, S.e);
     txt(S.h, '例：g = h + A[8]（g 在 $s1、h 在 $s2、A 的 base 在 $s3）');
     S.M = mach({ regs: [['$s1', 0], ['$s2', 5], ['$s3', 1000], ['$t0', 0]], rnames: ['g', 'h', 'A', ''], mem: [[1048, 0, 'A[12]'], [1044, 0, 'A[11]'], [1036, 0, 'A[9]'], [1032, 30, 'A[8]'], [1004, 0, 'A[1]'], [1000, 0, 'A[0]']], rx: -3.8, ry: 4.8, mx: 3.6, my: 5.0 });
-    S.v = sm('h = 5、A 從 1000 開始、A[8] = 30 是示意', -3.8, 1.4);
+    S.v = sm('h = 5、A 從 1000 開始、A[8] = 30 是示意', 0, 6.0);
     cap('Array 資料量大，放在 memory', '先把 A[8] 搬進來');
   },
   async (tok, S) => { // 253 offset = 8 × 4 = 32
-    S.o = ok(8 * 4 === 32, -3.8, 0.7, 'byte address、一個 data 4 bytes：8 × 4 = 32 ✓');
+    remOk(S, 8 * 4 === 32, 'byte address、一個 data 4 bytes\n8 × 4 = 32 ✓', -0.1, 1.2);
     cap('8 的 offset 要多少？', 'address 以 byte 算：8 × 4 = 32');
   },
   async (tok, S) => { // 271.5 lw $t0, 32($s3)
-    S.code = code(['lw  $t0, 32($s3)', 'add $s1, $s2, $t0'], -1.0, 0.0); S.code.hl(0);
-    const o = await S.M.run(tok, 'lw $t0, 32($s3)'); S.d = sm(o.desc, 1.4, -1.4);
+    S.code = code(['lw  $t0, 32($s3)', 'add $s1, $s2, $t0'], -0.1, 5.0); S.code.hl(0);
+    const o = await S.M.run(tok, 'lw $t0, 32($s3)'); rem(S, o.desc, -0.1, 1.2);
     cap('lw $t0, 32($s3)', o.desc);
   },
   async (tok, S) => { // 295.2 add $s1, $s2, $t0
-    S.code.hl(1); gone(S.d);
+    S.code.hl(1);
     const o = await S.M.run(tok, 'add $s1, $s2, $t0');
-    S.d = ok(S.M.reg[17] === 35, 1.4, -1.4, o.desc + ' ✓');
+    remOk(S, S.M.reg[17] === 35, o.desc + ' ✓', -0.1, 1.2);
     cap('再跟 h 相加，放到 g', o.desc);
   },
   async (tok, S) => { // 317.5 A[12] = h + A[8]
-    S.code.kill(); gone(S.d, S.o); S.M.calm();
+    S.code.ls.forEach(remove); gone(S.rem); S.M.calm();
     txt(S.h, '再複雜一點：A[12] = h + A[8]');
-    S.code = code(['lw  $t0, 32($s3)', 'add $t0, $s2, $t0', 'sw  $t0, 48($s3)'], -1.0, 0.4); S.code.hl(0);
+    S.code = code(['lw  $t0, 32($s3)', 'add $t0, $s2, $t0', 'sw  $t0, 48($s3)'], -0.1, 5.0); S.code.hl(0);
     await S.M.run(tok, 'lw $t0, 32($s3)'); S.code.hl(1);
-    const o = await S.M.run(tok, 'add $t0, $s2, $t0'); S.d = sm(o.desc, 1.4, -1.6);
+    const o = await S.M.run(tok, 'add $t0, $s2, $t0'); rem(S, o.desc, -0.1, 1.2);
     cap('A[8] load 進來，跟 h 相加', '先放在 $t0');
   },
   async (tok, S) => { // 364.9 sw $t0, 48($s3)
-    S.code.hl(2); gone(S.d);
+    S.code.hl(2);
     const o = await S.M.run(tok, 'sw $t0, 48($s3)');
-    S.d = ok(12 * 4 === 48 && S.M.mem[1048] === 35, 1.4, -1.6, '12 × 4 = 48；' + o.desc + ' ✓');
+    remOk(S, 12 * 4 === 48 && S.M.mem[1048] === 35, '12 × 4 = 48\n' + o.desc + ' ✓', -0.1, 1.2);
     cap('用 store word 存回 A[12]', 'base 還是 $s3，offset = 12 × 4 = 48');
   },
 ]);
@@ -2848,29 +2874,29 @@ scene('isA-6a-endian', '6A：byte address、alignment、big／little endian', [
     cap('早期 memory 很貴', '一個單位一個地址：Memory[0]、[1]、[2]…');
   },
   async (tok, S) => { // 430.1 memory 的基本單位
-    S.n = sm('這裡的「單位」是 memory 一次存取的基本單位；最早可能就是一個 byte', 0, 5.4);
+    rem(S, '這裡的「單位」是 memory 一次存取的基本單位；最早可能就是一個 byte', 0, 1.1);
     cap('這是 memory 的基本單位', '早期可能真的只有一個 byte');
   },
   async (tok, S) => { // 457.7 為什麼用 byte address
-    S.q = note('為什麼不用 word address（bits 比較少）？因為常常還是要存取單一個 byte', 0, 3.3);
+    rem(S, '為什麼不用 word address（bits 比較少）？\n因為常常還是要存取單一個 byte', 0, 1.1);
     cap('為什麼地址用 byte 算？', '因為還是常要存取 byte');
   },
   async (tok, S) => { // 499.2 word = 32 bits → 4 的倍數
     S.w = []; for (let k = 0; k < 3; k++) S.w.push(bx('word ' + k + '（地址 ' + 4 * k + '）', FC.blue, -5.8 + 1.575 + k * 4.2, 2.4, 0, 4.1, 0.55, 0.6));
-    S.wl = ok([0, 4, 8].every((a) => a % 4 === 0), 0, 1.7, 'MIPS 一個 word = 32 bits = 4 bytes → word 地址 0、4、8… ✓');
+    remOk(S, [0, 4, 8].every((a) => a % 4 === 0), 'MIPS 一個 word = 32 bits = 4 bytes → word 地址 0、4、8… ✓', 0, 1.1);
     cap('MIPS 一個 word 是 32 bits', 'word 地址就是 4 的倍數');
   },
   async (tok, S) => { // 529.7 alignment
-    S.al = hot('Alignment：一個 word 一定要從 4 的倍數開始放', 0, 1.0);
+    rem(S, 'Alignment：一個 word 一定要從 4 的倍數開始放', 0, 1.1);
     cap('重要概念：alignment', 'word 不能亂擺');
   },
   async (tok, S) => { // 555.1 不能從 1、2、3 開始
     S.bad = bx('word？', FC.red, -5.8 + 1.05 + 1.575, 3.4, 0, 4.1, 0.45, 0.6);
-    S.bl = ok(1 % 4 !== 0, 0, 0.3, '從地址 1 開始：1 不是 4 的倍數 → 不對齊，不可以 ✓');
+    remOk(S, 1 % 4 !== 0, '從地址 1 開始：1 不是 4 的倍數 → 不對齊，不可以 ✓', 0, 1.1);
     cap('不可以從 1、2、3 開始', '一定要對齊 0、4、8');
   },
   async (tok, S) => { // 611.5 big / little endian
-    gone(S.c, S.n, S.q, S.w, S.wl, S.al, S.bad, S.bl);
+    gone(S.c, S.w, S.bad, S.rem);
     S.v = 0x12345678; S.bytes = [24, 16, 8, 0].map((s) => ((S.v >>> s) & 255).toString(16).padStart(2, '0'));
     S.wd = mt('一個 word：0x12 34 56 78（示意）  12 是 most significant byte', 0, 5.6, 13, 'note');
     S.e = hd('word 裡 4 個 byte 怎麼編號？兩種習慣：big endian、little endian', 0, 6.6 - 0.0);
@@ -2878,17 +2904,17 @@ scene('isA-6a-endian', '6A：byte address、alignment、big／little endian', [
     cap('word 裡有 4 個 byte', '編號有兩種習慣');
   },
   async (tok, S) => { // 619.1 little endian
-    S.lt = hd('Little endian', -4.6, 4.2);
-    S.lc = [0, 1, 2, 3].map((a) => bx(S.bytes[3 - a], FC.orange, -2.6 + a * 1.2, 4.2, 0, 1.1, 0.55, 0.6));
-    S.la = [0, 1, 2, 3].map((a) => small(tag('地址 ' + a, 'idx', -2.6 + a * 1.2, 3.6), 10));
-    S.lok = ok(S.bytes[3] === '78', 3.6, 4.2, '地址 0 放 least significant byte（78）✓');
+    S.lt = hd('Little endian', -5.3, 4.2);
+    S.lc = [0, 1, 2, 3].map((a) => bx(S.bytes[3 - a], FC.orange, -3.4 + a * 1.2, 4.2, 0, 1.1, 0.55, 0.6));
+    S.la = [0, 1, 2, 3].map((a) => small(tag('地址 ' + a, 'idx', -3.4 + a * 1.2, 3.6), 10));
+    S.lok = ok(S.bytes[3] === '78', 3.9, 4.2, '地址 0 放 least significant byte（78）✓');
     cap('Little endian', '位址 0 放最「小」的那個 byte');
   },
   async (tok, S) => { // 650.8 big endian
-    S.bt = hd('Big endian', -4.6, 2.2);
-    S.bc = [0, 1, 2, 3].map((a) => bx(S.bytes[a], FC.blue, -2.6 + a * 1.2, 2.2, 0, 1.1, 0.55, 0.6));
-    S.ba = [0, 1, 2, 3].map((a) => small(tag('地址 ' + a, 'idx', -2.6 + a * 1.2, 1.6), 10));
-    S.bok = ok(S.bytes[0] === '12', 3.6, 2.2, '地址 0 放 most significant byte（12）✓');
+    S.bt = hd('Big endian', -5.3, 2.2);
+    S.bc = [0, 1, 2, 3].map((a) => bx(S.bytes[a], FC.blue, -3.4 + a * 1.2, 2.2, 0, 1.1, 0.55, 0.6));
+    S.ba = [0, 1, 2, 3].map((a) => small(tag('地址 ' + a, 'idx', -3.4 + a * 1.2, 1.6), 10));
+    S.bok = ok(S.bytes[0] === '12', 3.9, 2.2, '地址 0 放 most significant byte（12）✓');
     S.mi = sm('MIPS 是 big endian（課本）', 0, 0.7);
     cap('Big endian', '位址 0 放最「大」的那個 byte');
   },
@@ -3048,34 +3074,34 @@ scene('isA-6a-rfmt', '6A：R-format：add $t0, $s1, $s2 → 0x02324020', [
   },
   async (tok, S) => { // 1814.3 op = 0
     S.F.hl(0); reveal(S.F, [0]);
-    S.n1 = sm('op：R-type 全部同一個 pattern：000000', S.F.row.mid(0) + 1.8, 1.6);
+    rem(S, 'op：R-type 全部同一個 pattern：000000', 0, 1.2);
     cap('op code 告訴我們是什麼指令', 'R-type 全部給同一個：0');
   },
   async (tok, S) => { // 1845.6 funct 區分
     S.F.hl(5); reveal(S.F, [0, 5]);
-    S.n2 = sm('funct 再區分：add 32、sub 34、and 36、or 37', S.F.row.mid(5) - 2.4, 1.6);
+    rem(S, 'funct 再區分：add 32、sub 34、and 36、or 37', 0, 1.2);
     cap('到底是加、and 還是 or？', '用最後 6 bits 的 function code 區分');
   },
   async (tok, S) => { // 1888.2 rs rt rd 各 5 bits
     S.F.row.ms.forEach((m, i) => glow(m, [1, 2, 3].includes(S.F.row.fOf(i)) ? HL : null));
-    S.n3 = sm('rs、rt、rd：32 個 register → 各 5 bits', 0, 1.0);
+    rem(S, 'rs、rt、rd：32 個 register → 各 5 bits', 0, 1.2);
     cap('rs、rt、rd', '每個都描述一個 register：5 bits');
   },
   async (tok, S) => { // 1911.3 rs、rt 是 source，rd 是 destination
-    txt(S.n3, 'rs = 第一個 source、rt = 第二個 source（target）、rd = destination');
+    rem(S, 'rs = 第一個 source、rt = 第二個 source（target）、rd = destination', 0, 1.2);
     cap('rs 第一個 source、rt 第二個', 'rd 是 destination');
   },
   async (tok, S) => { // 1921.2 shamt 5 bits
     S.F.hl(4);
-    S.n4 = ok(2 ** 5 - 1 === 31, 0, 0.4, 'shamt（shift amount）：32-bit 資料最多 shift 31 → 0～31 → 5 bits ✓');
+    remOk(S, 2 ** 5 - 1 === 31, 'shamt（shift amount）：32-bit 資料最多 shift 31 → 0～31 → 5 bits ✓', 0, 1.2);
     cap('剩下 5 bits：shift amount', '最多 shift 31 個 bit，5 bits 夠了');
   },
   async (tok, S) => { // 2049.5 不用就填 0
-    S.n5 = sm('沒有 shift 的指令（例如 add）：shamt 填 0', 0, -0.2);
+    rem(S, '沒有 shift 的指令（例如 add）：shamt 填 0', 0, 1.2);
     cap('沒用到 shift 的指令', '這個 field 就填 0');
   },
   async (tok, S) => { // 2063.1 例：add $t0, $s1, $s2
-    gone(S.n1, S.n2, S.n3, S.n4, S.n5, S.sum); S.F.hl(-1);
+    gone(S.rem, S.sum); S.F.hl(-1);
     S.ex = mt('例：add $t0, $s1, $s2   （$t0 = $s1 + $s2）', 0, 5.6, 13, 'note');
     cap('看一個例子', 'add $t0, $s1, $s2');
   },
@@ -3090,34 +3116,34 @@ scene('isA-6a-rfmt', '6A：R-format：add $t0, $s1, $s2 → 0x02324020', [
   async (tok, S) => { // 2100.9 rd = 8、shamt 0
     reveal(S.F, [0, 1, 2, 3, 4, 5]); S.F.label(3, '$t0 = 8'); S.F.label(4);
     const d = S.F.e.fields.map((f) => f[2]).join(' ');
-    S.dec = ok(d === '0 17 18 8 0 32', 0, 0.6, '十進位：' + d + ' ✓');
+    remOk(S, d === '0 17 18 8 0 32', '十進位：' + d + ' ✓', 0, 1.2);
     cap('rd = $t0 = 8 號；shamt = 0', '欄位：0 17 18 8 0 32');
   },
   async (tok, S) => { // 2111.1 binary
-    S.bn = mt(S.F.e.fields.map(([, w, v]) => bin(v, w)).join(' '), 0, 0.0, 13);
+    rem(S, S.F.e.fields.map(([, w, v]) => bin(v, w)).join(' '), 0, 1.2);
     cap('每個欄位換成 binary', '6 bits、5 bits… 接起來');
   },
   async (tok, S) => { // 2125.2 跟 data 長得一樣
     const u = parseInt(S.F.bits, 2);
-    S.u = sm('同一串 bits 當成 unsigned integer = ' + u.toLocaleString('en-US') + '：長得跟 data 一樣，看你怎麼解釋', 0, -0.6);
+    rem(S, '同一串 bits 當成 unsigned integer = ' + u.toLocaleString('en-US') + '：長得跟 data 一樣，看你怎麼解釋', 0, 1.2);
     cap('機器看到的就是這串 0101', '跟 data 沒有不同，看怎麼解釋');
   },
   async (tok, S) => { // 2150.4 硬體照格式切開
     S.F.row.ms.forEach((m, i) => glow(m, S.F.row.fOf(i) % 2 ? HL : null)); await wt(tok, 500); S.F.row.ms.forEach((m) => glow(m, null));
-    S.cut = sm('知道是指令：前 6 個是 op，再 5、5、5、5、6 一段段拿出來', 0, -1.2);
+    rem(S, '知道是指令：前 6 個是 op，再 5、5、5、5、6 一段段拿出來', 0, 1.2);
     cap('告訴你這是指令', '就照格式 6、5、5、5、5、6 切開來解釋');
   },
   async (tok, S) => { // 2215.7 要記得 R-type
-    S.rm = note('R-type 長什麼樣子要記得：後面設計 hardware 就照這個', 0, -1.8);
+    rem(S, 'R-type 長什麼樣子要記得：後面設計 hardware 就照這個', 0, 1.2);
     cap('R-type 的格式一定要記得', '不然後面不會設計 hardware');
   },
   async (tok, S) => { // 2256.4 hexadecimal
-    S.hx = ok(S.F.hex === '0x02324020', 0, 4.8, '每 4 bits 一個 hex digit：' + grp(S.F.bits) + ' = ' + S.F.hex + ' ✓');
+    remOk(S, S.F.hex === '0x02324020', '每 4 bits 一個 hex digit：\n' + grp(S.F.bits) + ' = ' + S.F.hex + ' ✓', 0, 1.2);
     cap('0101 太難讀：用 hexadecimal', '4 個 bits 切一塊 = 一個 16 進位數字');
   },
   async (tok, S) => { // 2287.4 eca8 6420
     const h = 'eca86420', b = parseInt(h, 16).toString(2).padStart(32, '0');
-    S.ex2 = ok(parseInt(b, 2).toString(16) === h, 0, -2.4, '例：eca8 6420(hex) = ' + grp(b) + '(two) ✓');
+    remOk(S, parseInt(b, 2).toString(16) === h, '例：eca8 6420(hex) =\n' + grp(b) + '(two) ✓', 0, 1.2);
     cap('課本的例子：eca8 6420', '每個 hex digit 換成 4 個 bits');
   },
 ]);
@@ -3130,81 +3156,80 @@ scene('isA-6a-ifmt', '6A：I-format：addi $21, $22, −50 與 lw $t0, 1200($t1)
   async (tok, S) => { // 2334.1 op rs rt immediate
     S.F = fields('addi $21, $22, -50', 2.8); reveal(S.F, []);
     S.F.e.fields.forEach(([n, w], k) => S.F.extra.push(small(tag(n + '（' + w + '）', 'ptr', S.F.row.mid(k), 3.5), 11)));
-    S.s = ok(5 + 5 + 6 === 16, 0, 5.6, '原本 rd 5 + shamt 5 + funct 6 = 16 bits → 合成一個 immediate ✓');
+    S.s = ok(5 + 5 + 6 === 16, 0, 5.5, '原本 rd 5 + shamt 5 + funct 6 = 16 bits → 合成一個 immediate ✓');
     cap('op 一樣 6 bits，rs、rt 一樣', '後面 16 bits 合成 immediate');
   },
   async (tok, S) => { // 2387 lw、sw、addi
-    S.k = sm('屬於 I-type：lw、sw、addi（add immediate）…', 0, 1.6);
+    rem(S, '屬於 I-type：lw、sw、addi（add immediate）…', 0, 1.1);
     cap('I-type 包括', 'load、store、add immediate');
   },
   async (tok, S) => { // 2397.8 rs source、rt target
     S.F.row.ms.forEach((m, i) => glow(m, [1, 2].includes(S.F.row.fOf(i)) ? HL : null));
-    S.k2 = sm('只剩兩個 register：rs = source；rt = target（addi、lw 的目的地）', 0, 1.0);
+    rem(S, '只剩兩個 register：rs = source；rt = target（addi、lw 的目的地）', 0, 1.1);
     cap('只有兩個 register', 'rs 是 source，rt 有點像 destination');
   },
   async (tok, S) => { // 2428.5 immediate 是 signed、要 sign extend
     S.F.hl(3);
-    S.k3 = note('immediate 是 signed number；運算要 32 bits → sign extension', 0, 0.3);
+    rem(S, 'immediate 是 signed number；運算要 32 bits → sign extension', 0, 1.1);
     cap('16 bits 怎麼跟 32 bits 相加？', '先做 sign extension 變成 32 bits');
   },
   async (tok, S) => { // 2479.7 正數補 0、負數補 1
     const v16 = bin(-50, 16), v32 = (v16[0] === '1' ? '1'.repeat(16) : '0'.repeat(16)) + v16;
     const back = parseInt(v32, 2) | 0;
-    S.se = ok(back === -50, 0, -0.4, '−50：' + grp(v16) + ' → ' + grp(v32) + ' = ' + back + ' ✓');
-    S.se2 = sm('sign bit 是 0 → 前面補 0；是 1 → 前面補 1', 0, -1.0);
+    remOk(S, back === -50, 'sign bit 是 0 → 前面補 0；是 1 → 前面補 1\n−50：' + grp(v16) + '\n→ ' + grp(v32) + ' = ' + back + ' ✓', 0, 1.1);
     cap('sign bit 往前複製', '正數補 0，負數補 1');
   },
   async (tok, S) => { // 2528.9 範圍
-    S.rg = ok(-(2 ** 15) === -32768 && 2 ** 15 - 1 === 32767, 0, -1.6, '16-bit signed：−2¹⁵ ～ 2¹⁵ − 1 = −32768 ～ 32767 ✓');
+    remOk(S, -(2 ** 15) === -32768 && 2 ** 15 - 1 === 32767, '16-bit signed：−2¹⁵ ～ 2¹⁵ − 1 = −32768 ～ 32767 ✓', 0, 1.1);
     cap('常數不能任意大', '一定在 ±2¹⁵ 的範圍裡');
   },
   async (tok, S) => { // 2577.1 good design demands good compromise
-    gone(S.k, S.k2, S.k3, S.se, S.se2, S.rg); S.F.hl(-1);
-    S.p3 = good('Design Principle 3：Good design demands good compromise', 0, 1.4);
+    S.F.hl(-1);
+    rem(S, 'Design Principle 3：Good design demands good compromise', 0, 1.1, 'good');
     cap('第三個 design principle', 'good design demands good compromise');
   },
   async (tok, S) => { // 2594.4 shamt / funct 太小 → 合併
-    S.c1 = bad('只拿 shamt（5 bits）或 funct（6 bits）放常數？太小了', 0, 0.7);
-    S.c2 = good('所以把 rd、shamt、funct 合成一個 16-bit field', 0, 0.1);
+    rem(S, '只拿 shamt（5 bits）或 funct（6 bits）放常數？太小了\n所以把 rd、shamt、funct 合成一個 16-bit field', 0, 1.1);
     cap('不硬套 R-type 的格式', '把後面合成 16 bits，讓常數大一點');
   },
   async (tok, S) => { // 2632.1 前面一樣 → decode 相似
     S.F.row.ms.forEach((m, i) => glow(m, S.F.row.fOf(i) < 3 ? HL : null));
-    S.c3 = sm('格式不同，但 op、rs、rt 的位置和 R-type 一樣 → decode 很像', 0, -0.5);
+    rem(S, '格式不同，但 op、rs、rt 的位置和 R-type 一樣 → decode 很像', 0, 1.1);
     cap('格式不一樣，但盡量相似', '前 6 bits 是 op、接著 rs、rt');
   },
   async (tok, S) => { // 2676.5 addi $21, $22, −50：op 8
-    gone(S.p3, S.c1, S.c2, S.c3); S.F.row.ms.forEach((m) => glow(m, null));
+    gone(S.rem, S.s); S.F.row.ms.forEach((m) => glow(m, null));
     S.ex = mt('例：addi $21, $22, -50   （$21 = $22 + (−50)）', 0, 5.6, 13, 'note');
     reveal(S.F, [0]); S.F.label(0);
     cap('例：addi $21, $22, −50', 'addi 的 op code 是 8');
   },
   async (tok, S) => { // 2712.5 rs = 22、rt = 21
     reveal(S.F, [0, 1, 2]); S.F.label(1, '22'); S.F.label(2, '21');
-    S.o = note('注意：assembly 先寫 destination（21），格式裡 rs（22）在前、rt（21）在後', 0, 1.2);
+    rem(S, '注意：assembly 先寫 destination（21），格式裡 rs（22）在前、rt（21）在後', 0, 1.1);
     cap('rs = 22（source）、rt = 21（destination）', '順序跟 assembly 寫的不一樣');
   },
   async (tok, S) => { // 2738.3 −50 → 16 bits
     reveal(S.F, [0, 1, 2, 3]); S.F.label(3, '−50');
     const d = S.F.e.fields.map(([, w, v]) => bin(v, w)).join(' ');
-    S.b = ok(S.F.hex === '0x22D5FFCE', 0, 0.5, '8 22 21 −50 → ' + d + ' = ' + S.F.hex + ' ✓');
+    remOk(S, S.F.hex === '0x22D5FFCE', '8 22 21 −50 → ' + d + ' = ' + S.F.hex + ' ✓', 0, 1.1);
     cap('immediate = −50（16 bits）', '整個指令變成 binary');
   },
   async (tok, S) => { // 2785.5 lw $t0, 1200($t1)：op 35
-    gone(S.F, S.ex, S.o, S.b);
-    S.G = fields('lw $t0, 1200($t1)', 2.8); reveal(S.G, [0]); S.G.label(0);
+    gone(S.F, S.ex, S.rem);
+    S.G = fields('lw $t0, 1200($t1)', 2.8); reveal(S.G, [0]);
     S.G.e.fields.forEach(([n, w], k) => S.G.extra.push(small(tag(n + '（' + w + '）', 'ptr', S.G.row.mid(k), 3.5), 11)));
+    S.G.label(0);
     S.ex = mt('例：lw $t0, 1200($t1)   （$t0 ← Mem[$t1 + 1200]）', 0, 5.6, 13, 'note');
     cap('load / store 也是 I-type', 'lw 的 op code 是 35');
   },
   async (tok, S) => { // 2838 rs = 9、rt = 8、1200
     reveal(S.G, [0, 1, 2, 3]); S.G.label(1, '$t1 = 9（base）'); S.G.label(2, '$t0 = 8'); S.G.label(3, '1200（offset）');
     const d = S.G.e.fields.map((f) => f[2]).join(' ');
-    S.b = ok(d === '35 9 8 1200' && S.G.hex === '0x8D2804B0', 0, 0.6, d + ' → ' + S.G.hex + ' ✓');
+    remOk(S, d === '35 9 8 1200' && S.G.hex === '0x8D2804B0', d + ' → ' + S.G.hex + ' ✓', 0, 1.1);
     cap('rs = $t1（base）、rt = $t0', '16 bits 放 offset 1200');
   },
   async (tok, S) => { // 2903 offset 也是 signed、範圍有限
-    S.r = sm('offset 也是 16-bit signed、要 sign extend：base ± 2¹⁵ bytes 內；超過就要改 base', 0, -0.2);
+    rem(S, 'offset 也是 16-bit signed、要 sign extend\nbase ± 2¹⁵ bytes 內；超過就要改 base', 0, 1.1);
     cap('offset 不能任意大', '在 ±2¹⁵ 範圍內；超過就改 base 的位置');
   },
 ]);
@@ -3267,31 +3292,31 @@ scene('isA-am-reg', 'Register addressing：add $s1, $s2, $s3', [
   },
   async (tok, S) => { // 98.9 32 個 → 5 bits
     S.F.row.ms.forEach((m, i) => glow(m, [1, 2, 3].includes(S.F.row.fOf(i)) ? HL : null));
-    S.b = ok(2 ** 5 === 32, 0, 5.6, '32 個 register：2⁵ = 32 → 每個 register field 5 bits ✓');
+    remOk(S, 2 ** 5 === 32, '32 個 register：2⁵ = 32 → 每個 register field 5 bits ✓', 0, 1.5);
     cap('MIPS 有 32 個 register', '2⁵ = 32，所以每格 5 bits');
   },
   async (tok, S) => { // 127.7 shamt
     S.F.hl(4);
-    S.s = sm('shamt：只有 shift left / right 用；其他指令填 0（五個 bits 都是 0）', 0, 1.6);
+    rem(S, 'shamt：只有 shift left / right 用；其他指令填 0（五個 bits 都是 0）', 0, 1.5);
     cap('Shift amount', '只有 shift 指令用，其他填 0');
   },
   async (tok, S) => { // 146 funct：add 32、sub 34
     S.F.hl(5);
-    S.f = sm('funct 6 bits：add = 32 = ' + bin(32, 6) + '；sub = 34 = ' + bin(34, 6), 0, 1.0);
+    rem(S, 'funct 6 bits：add = 32 = ' + bin(32, 6) + '；sub = 34 = ' + bin(34, 6), 0, 1.5);
     cap('Function field 6 bits', 'add 放 32、subtract 放 34（換成 binary）');
   },
   async (tok, S) => { // 171.8 op = 000000
     S.F.hl(0);
-    S.o = sm('add、sub 的 op code：000000', 0, 0.4);
+    rem(S, 'add、sub 的 op code：000000', 0, 1.5);
     cap('add、sub 的 op code', '六個 bits 全是 0');
   },
   async (tok, S) => { // 179.6 這些值是設計者定的
     S.F.hl(-1);
-    S.d = note('0、32、34 是 MIPS 設計者定的；自己設計 processor 可以定別的值', 0, -0.3);
+    rem(S, '0、32、34 是 MIPS 設計者定的；自己設計 processor 可以定別的值', 0, 1.5);
     cap('這些數字從哪來？', 'MIPS 設計者定的，照著用');
   },
   async (tok, S) => { // 204.9 例：add $s1, $s2, $s3
-    gone(S.s, S.f, S.o, S.d, S.b);
+    gone(S.rem);
     S.ex = mt('add $s1, $s2, $s3    # $s1 = $s2 + $s3', 0, 5.6, 13, 'note');
     cap('例：add $s1, $s2, $s3', '$s2 + $s3 的結果放 $s1');
   },
@@ -3302,19 +3327,19 @@ scene('isA-am-reg', 'Register addressing：add $s1, $s2, $s3', [
   async (tok, S) => { // 248.3 funct 32、op 0、shamt 0
     reveal(S.F, [0, 1, 2, 3, 4, 5]); S.F.label(0); S.F.label(4); S.F.label(5);
     const d = S.F.e.fields.map((f) => f[2]).join(' ');
-    S.r = ok(d === '0 18 19 17 0 32', 0, 1.6, d + ' → ' + S.F.hex + ' ✓');
+    S.r = ok(d === '0 18 19 17 0 32', 0, 5.0, d + ' → ' + S.F.hex + ' ✓');
     cap('funct = 32，op、shamt 都是 0', '整個指令 = ' + S.F.hex);
   },
   async (tok, S) => { // 287.5 順序不同
-    S.n = note('assembly 裡 $s3 在最後、$s2 在中間；格式裡 rs（$s2）在前、rt（$s3）在中間、rd（$s1）在後', 0, 1.0);
+    rem(S, 'assembly 裡 $s3 在最後、$s2 在中間；\n格式裡 rs（$s2）在前、rt（$s3）在中間、rd（$s1）在後', 0, 1.3);
     cap('注意順序', '寫法和格式裡的位置不一樣');
   },
   async (tok, S) => { // 313.9 rt 可用 $t 或 $s
-    S.n2 = sm('rt 可以是 $t 也可以是 $s（換成 $t0 → 編號跟著變）；rd 一定放結果', 0, 0.4);
+    rem(S, 'rt 可以是 $t 也可以是 $s（換成 $t0 → 編號跟著變）；rd 一定放結果', 0, 1.3);
     cap('rt 可以用 $t 或 $s register', 'rd 一定是放結果的');
   },
   async (tok, S) => { // 352.3 為什麼叫 register addressing
-    S.g = good('所有 operand 都是 register → register addressing mode', 0, -0.3);
+    rem(S, '所有 operand 都是 register → register addressing mode', 0, 1.3, 'good');
     cap('為什麼叫 register addressing？', '所有 operand 都是 register');
   },
 ]);
@@ -3325,74 +3350,74 @@ scene('isA-am-base', 'Base（displacement）addressing：lw $s1, 32($s3)', [
     cap('第三種：base addressing', '也叫 displacement addressing');
   },
   async (tok, S) => { // 385.8 記住一個例子
-    S.k = sm('記住一個例子，就能畫圖說明', 0, 6.0);
+    S.k = sm('記住一個例子，就能畫圖說明', 0, 5.9);
     cap('說明 addressing mode', '一定要先給例子');
   },
   async (tok, S) => { // 411.2 lw $s1, 32($s3)
-    S.ex = mt('lw $s1, 32($s3)', 0, 5.4, 14, 'note');
+    S.ex = mt('lw $s1, 32($s3)', 0, 5.2, 14, 'note');
     S.M = mach({ regs: [['$s3', 1000], ['$s1', 0]], mem: [[1036, 0], [1032, 77], [1028, 0], [1000, 0]], rx: -4.6, ry: 3.4, mx: 4.6, my: 3.6 });
     S.v = sm('$s3 = 1000、Mem[1032] = 77 是示意', -4.6, 1.6);
     cap('例：load word $s1, 32($s3)', '');
   },
   async (tok, S) => { // 420.7 32 + $s3 = address
     const a = S.M.reg[19] + 32;
-    S.a = ok(a === 1032, 0, 4.5, '32 + $s3 的內容 = 32 + 1000 = ' + a + '：這是一個 address ✓');
+    remOk(S, a === 1032, '32 + $s3 的內容 = 32 + 1000 = ' + a + '\n：這是一個 address ✓', 0, 2.9);
     glow(S.M.R.$s3, HL); glow(S.M.C[1032], HL);
     cap('32 加上 $s3 的內容', '得到一個 address，指向 memory 的一格');
   },
   async (tok, S) => { // 441.9 word / half / byte
-    S.w = sm('word = 4 bytes、half word = 2 bytes、byte = 1 byte（8 bits）', 0, 3.9);
+    rem(S, 'word = 4 bytes、half word = 2 bytes\nbyte = 1 byte（8 bits）', 0, 2.9);
     cap('從那裡拿一個 word', 'word 4 bytes、half word 2、byte 1');
   },
   async (tok, S) => { // 451.6 load 4 bytes into $s1
     const o = await S.M.run(tok, 'lw $s1, 32($s3)');
-    S.r = ok(S.M.reg[17] === 77, 0, 0.9, o.desc + ' ✓');
+    remOk(S, S.M.reg[17] === 77, o.desc + ' ✓', 0, 2.9);
     cap('load word：從 memory 拿 4 bytes', '放進 $s1（register 都是 32 bits）');
   },
   async (tok, S) => { // 468.3 32 不是 data
-    S.nd = bad('這裡的 32 不是 data，是 address 的一部分', 0, 0.3);
+    rem(S, '這裡的 32 不是 data\n是 address 的一部分', 0, 2.9, 'bad');
     cap('32 直接寫在指令裡', '但它不是資料，是 address 的一部分');
   },
   async (tok, S) => { // 483.1 格式：兩個 register + address
-    gone(S.M.extra, Object.values(S.M.R), Object.values(S.M.C), S.v, S.a, S.w, S.r, S.nd, S.k);
+    gone(S.M.extra, Object.values(S.M.R), Object.values(S.M.C), S.v, S.rem, S.k);
     S.F = fields('lw $s1, 32($s3)', 2.6); reveal(S.F, []);
     S.F.e.fields.forEach(([n, w], k) => S.F.extra.push(small(tag((k === 3 ? 'address / offset' : n) + '（' + w + '）', 'ptr', S.F.row.mid(k), 3.3), 11)));
     cap('格式不一樣了', '沒有第三個 register，只有兩個 register 和一個 address field');
   },
   async (tok, S) => { // 497.1 直接給的值：data 或 address
     S.F.hl(3);
-    S.d = note('指令裡直接給的 16-bit 值：immediate mode → 是 data；base mode → 是 address', 0, 4.4);
+    rem(S, '指令裡直接給的 16-bit 值：\nimmediate mode → 是 data；base mode → 是 address', 0, 4.3);
     cap('指令裡直接給的值', 'immediate 時是 data，base 時是 address');
   },
   async (tok, S) => { // 515.4 op 35、rs = $s3、rt = $s1
     reveal(S.F, [0, 1, 2, 3]); S.F.label(0); S.F.label(1, '$s3 = 19（base）'); S.F.label(2, '$s1 = 17（結果）'); S.F.label(3, '32');
     S.F.hl(-1);
     const d = S.F.e.fields.map((f) => f[2]).join(' ');
-    S.e = ok(d === '35 19 17 32', 0, 1.2, d + ' → ' + S.F.hex + ' ✓');
+    remOk(S, d === '35 19 17 32', d + ' → ' + S.F.hex + ' ✓', 0, 4.3);
     cap('op 6 bits，rs = $s3', 'rt = $s1 放結果（填的是 register 編號）');
   },
   async (tok, S) => { // 557.9 instruction code vs op code
-    S.ic = sm('整個 32 bits 叫 instruction code；op code 只是前 6 bits', 0, 0.6);
+    rem(S, '整個 32 bits 叫 instruction code；op code 只是前 6 bits', 0, 4.3);
     S.F.row.ms.forEach((m, i) => glow(m, i < 6 ? HL : null));
     cap('分清楚 op code 和 instruction code', 'op code 6 bits，instruction code 32 bits');
   },
   async (tok, S) => { // 589.5 32 + $s3 → address → memory
     S.F.row.ms.forEach((m) => glow(m, null));
-    S.p = [bx('32', FC.blue, -3.0, -0.6, 0, 1.0), bx('$s3 = 1000', FC.purple, -0.8, -0.6, 0, 2.0), bx('+', FC.orange, 0.9, -0.6, 0, 0.6)];
-    S.p2 = bx('address 1032 → Memory', FC.sand, 3.6, -0.6, 0, 3.2);
-    S.ar = arrow(V3(1.3, -0.6, 0.4), V3(1.9, -0.6, 0.4));
+    S.p = [bx('32', FC.blue, -3.0, 0.7, 0, 1.0), bx('$s3 = 1000', FC.purple, -0.8, 0.7, 0, 2.0), bx('+', FC.orange, 0.9, 0.7, 0, 0.6)];
+    S.p2 = bx('address 1032 → Memory', FC.sand, 4.0, 0.7, 0, 3.2);
+    S.ar = arrow(V3(1.3, 0.7, 0.4), V3(1.9, 0.7, 0.4));
     cap('32 和 $s3 的值相加', '得到 address，再去 access memory');
   },
   async (tok, S) => { // 619.8 lw 4 bytes、lh、lb
-    S.lb = sm('lw 讀 4 bytes；lh 讀 2 bytes；lb 只讀 1 byte → 都放進 $s1', 0, -1.4);
+    rem(S, 'lw 讀 4 bytes；lh 讀 2 bytes；lb 只讀 1 byte → 都放進 $s1', 0, 4.3);
     cap('load word 讀 4 個 byte', 'load half word 2 個、load byte 1 個');
   },
   async (tok, S) => { // 663.7 base register、offset
-    S.nm = good('$s3 提供位址 → base register；32 是 offset（displacement）', 0, -2.0);
+    rem(S, '$s3 提供位址 → base register；32 是 offset（displacement）', 0, 4.3, 'good');
     cap('為什麼叫 base addressing？', '$s3 是 base register，32 是位移');
   },
   async (tok, S) => { // 720.6 間接由 register 給
-    S.ind = note('address 一部分由 register 間接提供 → 老師也稱 indirect（課本的名字是 base / displacement）', 0, -2.6);
+    rem(S, 'address 一部分由 register 間接提供 → 老師也稱 indirect\n（課本的名字是 base / displacement）', 0, 4.3);
     cap('address 有一部分由 register 間接給', '所以也有人叫 indirect');
   },
 ]);
@@ -3519,14 +3544,28 @@ const FC = { blue: '#4b9ee2', orange: '#dd8238', green: '#2fc092', purple: '#9b7
 const HL = '#6a4a00', OKG = '#0f5a3a', NG = '#5a1010';
 const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.ls && typeof o.kill === 'function') return o.kill(); if (o.cells) return gone(o.cells, o.lbl || [], o.extra || []); if (o.g) kill(o.g); else if (o.element) remove(o); else kill(o); });
 const setCls = (l, cls) => { l.element.className = 'lab-label' + (cls ? ' ' + cls : ''); };
+// the framing box for the whole picture area, held from the first step (no zoom jumps)
+function frameHold(x0, y0, z0, x1, y1, z1) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+}
+// one remark for the scene: rewritten in place, wraps instead of stretching the stage
+const rem = (S, t, x, y, cls = 'note') => {
+  let l = S.rem;
+  if (!l || !l.parent) { l = S.rem = tag(t, cls, x, y); Object.assign(l.element.style, { whiteSpace: 'pre-line', maxWidth: '34em', textAlign: 'center' }); }
+  else { txt(l, t); l.element.className = 'lab-label ' + cls; l.position.set(x, y, 0); }
+  return l;
+};
+const remOk = (S, b, t, x, y) => rem(S, b ? t : t.replace(/✓/g, '✘'), x, y, b ? 'good' : 'bad');
 function scene(id, title, cam, steps) {
   FRAG.push([id, title, async (tok) => {
     fresh(cam[0], cam[1]);
+    if (cam === CAM) frameHold(-6.6, -0.6, -0.3, 6.6, 7.0, 0.3);
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
 }
-const CAM = [[0, 3.4, 14], [0, 3.0, 0]];
+const CAM = [[0, 3.6, 11], [0, 3.2, 0]];
 const u32 = (n) => n >>> 0;
 const hex = (n) => '0x' + u32(n).toString(16).toUpperCase().padStart(8, '0');
 const b32 = (n) => u32(n).toString(2).padStart(32, '0');
@@ -3549,7 +3588,7 @@ function fmtRow(x, y, spec, o = {}) {
 function bitRow(x0, y, str, o = {}) {
   const w = o.w || 0.34, gap = o.gap == null ? 0.07 : o.gap, on = o.on || FC.blue, off = o.off || FC.sky;
   const xs = str.split('').map((b, i) => x0 + i * w + Math.floor(i / 4) * gap);
-  const cells = str.split('').map((b, i) => { const m = cube(b, b === '1' ? on : off, [w * 0.86, 0.3, 0.36], xs[i], y, 0); small(m.userData.lbl, 9); return m; });
+  const cells = str.split('').map((b, i) => { const m = cube(b, b === '1' ? on : off, [w * 0.86, 0.3, 0.36], xs[i], y, 0); Object.assign(small(m.userData.lbl, 9).element.style, { minWidth: '0', padding: '0 1px' }); return m; });
   return { cells, xs, set(s, c1 = on, c0 = off) { s.split('').forEach((b, i) => { relabel(cells[i], b); tint(cells[i], b === '1' ? c1 : c0); }); }, glowAll(c) { cells.forEach((m) => glow(m, c)); } };
 }
 // named register boxes in a row
@@ -3590,7 +3629,7 @@ scene('isB-6b-stored', 'Stored-program：指令和資料都是 0101', CAM, [
   },
   async (tok, S) => { // instruction、data 都是 32 bit
     S.w1 = pl(g4(b32(ADD_W)), -2.6, 4.6); mono(S.w1, 10); S.w2 = pl(g4(b32(ADD_W)), -2.6, 2.6); mono(S.w2, 10);
-    sm('一個 word = 32 bits', -2.6, 5.3);
+    S.ww = sm('一個 word = 32 bits', -2.6, 5.3);
     cap('instruction、data 都是 32 bits', '兩串一模一樣的 0101（示意）');
   },
   async (tok, S) => { // 你怎麼知道它是 instruction？
@@ -3600,8 +3639,8 @@ scene('isB-6b-stored', 'Stored-program：指令和資料都是 0101', CAM, [
   async (tok, S) => { // 不管 instruction 或 data 通通擺在 memory 裡
     remove(S.q);
     S.mem.set(2, hex(ADD_W)); S.mem.set(5, hex(ADD_W)); glow(S.mem.cells[2], HL); glow(S.mem.cells[5], HL);
-    await Promise.all([slide(tok, S.w1, 0.6, 4.4, 0, 700), slide(tok, S.w2, 0.6, 2.5, 0, 700)]);
-    gone(S.w1, S.w2);
+    await Promise.all([slide(tok, S.w1, -2.2, 4.4, 0, 700), slide(tok, S.w2, -2.2, 2.5, 0, 700)]);
+    gone(S.w1, S.w2, S.ww);
     cap('不管是 instruction 還是 data', '通通都是 0101，放在 memory 裡');
   },
   async (tok, S) => { // 例：你寫了一個 C code
@@ -3620,12 +3659,12 @@ scene('isB-6b-stored', 'Stored-program：指令和資料都是 0101', CAM, [
     cap('program、data 通通放 memory', '只是放在不同區塊');
   },
   async (tok, S) => { // 要當 data 讀就當 data；要當 instruction 就拿去執行
-    S.r1 = arrow(V3(1.8, 5.6 - 2 * 0.62, 0), V3(-1.2, 6.2, 0), 0x2fc092); S.t1 = sm('當指令：拿去執行', -2.4, 6.5);
-    S.r2 = arrow(V3(1.8, 5.6 - 5 * 0.62, 0), V3(-1.2, 2.6, 0), 0x4b9ee2); S.t2 = sm('當資料：' + u32(ADD_W).toLocaleString('en-US'), -2.4, 2.9);
+    S.r1 = arrow(V3(1.8, 5.6 - 2 * 0.62, 0), V3(-1.2, 5.2, 0), 0x2fc092); S.t1 = sm('當指令：拿去執行', -2.6, 5.4);
+    S.r2 = arrow(V3(1.8, 5.6 - 5 * 0.62, 0), V3(-1.2, 3.0, 0), 0x4b9ee2); S.t2 = sm('當資料：' + u32(ADD_W).toLocaleString('en-US'), -2.6, 3.2);
     cap('讀出來：要當 data 就當 data', '要當 instruction 就拿去執行');
   },
   async (tok, S) => { // instruction 也表示成 binary；program 可以 operate program
-    good('Stored program：指令像資料一樣存在 memory', -1.2, 7.0);
+    good('Stored program：指令像資料一樣存在 memory', -2.4, 6.4);
     cap('指令也用 binary 表示，跟 data 一樣', 'program 可以處理 program（compiler 就是）');
   },
 ]);
@@ -3634,8 +3673,9 @@ scene('isB-6b-stored', 'Stored-program：指令和資料都是 0101', CAM, [
 const R_SPEC = [['op', 6, 0], ['rs', 5], ['rt', 5], ['rd', 5], ['shamt', 5], ['funct', 6]];
 const I_SPEC = [['op', 6], ['rs', 5], ['rt', 5], ['immediate', 16]];
 function twoFormats(S) {
-  hd('R-format', -6.2, 5.4); S.R = fmtRow(0.4, 5.0, R_SPEC.map((f, i) => [f[0], f[1], i === 0 ? 'op' : f[0] === 'funct' ? 'funct' : '', FCOL0[i]]));
-  hd('I-format', -6.2, 2.8); S.I = fmtRow(0.4, 2.4, I_SPEC.map((f, i) => [f[0], f[1], i === 0 ? 'op' : '', FCOL0[i === 3 ? 4 : i]]));
+  if (!S.fmtHd) S.fmtHd = [hd('R-format', -6.2, 5.4), hd('I-format', -6.2, 2.8)];
+  S.R = fmtRow(0.4, 5.0, R_SPEC.map((f, i) => [f[0], f[1], i === 0 ? 'op' : f[0] === 'funct' ? 'funct' : '', FCOL0[i]]));
+  S.I = fmtRow(0.4, 2.4, I_SPEC.map((f, i) => [f[0], f[1], i === 0 ? 'op' : '', FCOL0[i === 3 ? 4 : i]]));
 }
 scene('isB-6b-funct', 'R-type 為什麼後面還有 funct', CAM, [
   async (tok, S) => { // 為什麼 R-type 後面要加一個 function code
@@ -3721,6 +3761,7 @@ scene('isB-6b-bitwise', 'Logical operations：把 word 看成 32 個 bit', CAM, 
 function bx2(t, c, x, y, w = 5.2) { const m = cube(t, c, [w, 0.6, 0.6], x, y, 0); return m; }
 
 const SH = 0x12345678, SHN = 0x92345678;   // 示意的 32-bit 值（老師投影片「0001 0010 …」的樣子）
+const rl = (t, y) => { const l = sm(t, -5.8, y); l.center.set(0, 0.5); return l; }; // a name over the left end of a bit row
 scene('isB-6b-shift', 'shift：sll、srl、sra', CAM, [
   async (tok, S) => { // C、Java 寫法 vs MIPS
     S.t = [['', 'C', 'Java', 'MIPS'], ['Shift left', '<<', '<<', 'sll'], ['Shift right', '>>', '>>>', 'srl'], ['Bitwise AND', '&', '&', 'and, andi'], ['Bitwise OR', '|', '|', 'or, ori'], ['Bitwise NOT', '~', '~', '？']]
@@ -3734,14 +3775,14 @@ scene('isB-6b-shift', 'shift：sll、srl、sra', CAM, [
   async (tok, S) => { // 格式：op、destination、source、shift amount
     gone(S.t);
     S.ins = mono(hot('sll  $t2, $s0, 4', -3.2, 6.2), 13);
-    sm('op　destination　source　shift amount', -3.2, 5.5);
+    S.o1 = sm('op　destination　source　shift amount', -3.2, 5.5);
     cap('寫法：sll 目的, 來源, 移幾位', '第四個欄位就是 shift amount（例：課本）');
   },
   async (tok, S) => { // shift left logical：空出來的位置補 0
-    S.r = bitRow(-2.0, 3.8, '10110110', { w: 0.5 }); sm('8-bit 示意', -2.6, 4.4);
+    S.r = bitRow(-2.0, 3.8, '10110110', { w: 0.5 }); S.o2 = sm('8-bit 示意', -2.6, 4.4);
     await wt(tok, 300);
     S.r.set('01101100', FC.green); glow(S.r.cells[7], HL);
-    S.lab = sm('sll 1：往左移，右邊補 0', 3.4, 3.8);
+    S.lab = sm('sll 1：往左移，右邊補 0', 4.2, 3.8);
     cap('shift left logical', '往左移，右邊空出的位置補 0');
   },
   async (tok, S) => { // shift right logical：也是補 0
@@ -3755,34 +3796,35 @@ scene('isB-6b-shift', 'shift：sll、srl、sra', CAM, [
     cap('shift right arithmetic（sra）', '當成 signed number：左邊補 sign bit');
   },
   async (tok, S) => { // 正數補 0、負數補 1
-    gone(S.r, S.lab);
-    sm('正數（sign bit = 0）：sra 補 0', -1, 3.9); sm('負數（sign bit = 1）：sra 補 1', -1, 3.3);
+    gone(S.r, S.lab, S.o2);
+    rem(S, '正數（sign bit = 0）：sra 補 0\n負數（sign bit = 1）：sra 補 1', -3.2, 3.9, 'idx');
     cap('正數補 0，負數補 1', 'srl 不管正負，一律補 0');
   },
   async (tok, S) => { // 例子：shift right 8 個 bit，前面補 0
-    S.a = bitRow(-6.0, 2.2, b32(SH)); S.al = sm('原本（示意）', -6.6, 2.75);
-    S.b = bitRow(-6.0, 1.4, b32(SH >>> 8), { on: FC.green, off: FC.mint }); sm('srl 8', -6.6, 1.95);
+    gone(S.rem, S.ins, S.o1);
+    S.a = bitRow(-5.7, 5.0, b32(SH)); S.al = rl('原本（示意）', 5.5);
+    S.b = bitRow(-5.7, 3.7, b32(SH >>> 8), { on: FC.green, off: FC.mint }); S.bl = rl('srl 8', 4.2);
     S.b.cells.slice(0, 8).forEach((m) => glow(m, HL));
-    ok(g4(b32(SH >>> 8)).startsWith('0000 0000 0001 0010'), '✓ srl 8：前面 8 個 bit 補 0', 3.2, 2.75);
+    remOk(S, g4(b32(SH >>> 8)).startsWith('0000 0000 0001 0010'), '✓ srl 8：前面 8 個 bit 補 0', 2.6, 4.2);
     cap('例：往右 shift 8 個 bit', '前面 8 個 bit 補 0');
   },
   async (tok, S) => { // 往左 shift 8：前面 8 個 bit 出去了，後面補 0
-    S.c = bitRow(-6.0, 0.6, b32(SH << 8), { on: FC.green, off: FC.mint }); sm('sll 8', -6.6, 1.15);
+    S.c = bitRow(-5.7, 2.4, b32(SH << 8), { on: FC.green, off: FC.mint }); S.cl = rl('sll 8', 2.9);
     S.c.cells.slice(24).forEach((m) => glow(m, HL));
     cap('往左 shift 8 個 bit', '最前面 8 個 bit 被擠出去，後面 8 個補 0');
   },
   async (tok, S) => { // sra：sign bit 是 0 → 前面補 0
-    gone(S.b, S.c);
-    S.b = bitRow(-6.0, 1.4, b32(SH >> 8), { on: FC.orange, off: FC.peach }); sm('sra 8', -6.6, 1.95);
+    gone(S.b, S.c, S.bl, S.cl, S.rem);
+    S.b = bitRow(-5.7, 3.7, b32(SH >> 8), { on: FC.orange, off: FC.peach }); S.bl = rl('sra 8', 4.2);
     S.b.cells.slice(0, 8).forEach((m) => glow(m, HL));
     cap('sra 8：sign bit 是 0', 'sign extension → 前面補 0（和 srl 一樣）');
   },
   async (tok, S) => { // 負數：前面是 1 → 補 1
-    gone(S.a, S.b, S.al);
-    S.a = bitRow(-6.0, 2.2, b32(SHN)); sm('負數（示意）', -6.6, 2.75);
-    S.b = bitRow(-6.0, 1.4, b32(SHN >> 8), { on: FC.orange, off: FC.peach }); sm('sra 8', -6.6, 1.95);
+    gone(S.a, S.b, S.al, S.bl);
+    S.a = bitRow(-5.7, 5.0, b32(SHN)); S.al = rl('負數（示意）', 5.5);
+    S.b = bitRow(-5.7, 3.7, b32(SHN >> 8), { on: FC.orange, off: FC.peach }); S.bl = rl('sra 8', 4.2);
     S.b.cells.slice(0, 8).forEach((m) => glow(m, HL));
-    ok((SHN >> 8) === ((SHN | 0) >> 8) && b32(SHN >> 8).startsWith('11111111'), '✓ sra 8：前面補 8 個 1，還是負數', 3.2, 0.7);
+    remOk(S, (SHN >> 8) === ((SHN | 0) >> 8) && b32(SHN >> 8).startsWith('11111111'), '✓ sra 8：前面補 8 個 1，還是負數', 2.6, 4.2);
     cap('最前面是 1 → 負數', 'sra 前面要補 1（sign extension）');
   },
 ]);
@@ -3837,30 +3879,30 @@ scene('isB-6b-andor', 'AND 取出某些 bit、OR 把某些 bit 設成 1', CAM, [
     cap('and：bit 跟 bit 一一做 AND', '兩個都是 1 才是 1');
   },
   async (tok, S) => { // given $t2，只要某一塊，其他設成 0
-    S.a = bitRow(-6.4, 3.4, b32(T2).slice(16), { w: 0.42 }); hd('$t2 低 16 bits', -6.6, 4.0).center.set(0, 0.5);
-    sm('（高 16 bits 都是 0；課本例子）', -1.0, 4.0);
+    S.a = bitRow(-6.4, 4.4, b32(T2).slice(16), { w: 0.42 }); hd('$t2 低 16 bits', -6.6, 4.95).center.set(0, 0.5);
+    sm('（高 16 bits 都是 0；課本例子）', -1.8, 4.95);
     cap('給定 $t2：只想留下某幾個 bit', '其他 bit 全部清成 0');
   },
   async (tok, S) => { // mask：要的位置設 1，其他設 0
-    S.m = bitRow(-6.4, 2.6, b32(T1M).slice(16), { w: 0.42, on: FC.purple, off: FC.lilac }); hd('$t1（mask）', -6.6, 3.15).center.set(0, 0.5);
+    S.m = bitRow(-6.4, 3.2, b32(T1M).slice(16), { w: 0.42, on: FC.purple, off: FC.lilac }); S.ml = hd('$t1（mask）', -6.6, 3.75); S.ml.center.set(0, 0.5);
     cap('做一個 mask：要的位置放 1', '其他位置放 0');
   },
   async (tok, S) => { // and 之後就 select 出來了
-    S.r = bitRow(-6.4, 1.6, b32(T2 & T1M).slice(16), { w: 0.42, on: FC.green, off: FC.mint }); hot('and $t0, $t1, $t2', -6.6, 2.15).center.set(0, 0.5);
-    ok((T2 & T1M) === 0x00000C00, '✓ $t0 = ' + hex(T2 & T1M), 3.6, 1.0);
+    S.r = bitRow(-6.4, 2.0, b32(T2 & T1M).slice(16), { w: 0.42, on: FC.green, off: FC.mint }); S.rl = hot('and $t0, $t1, $t2', -6.6, 2.55); S.rl.center.set(0, 0.5);
+    S.k = ok((T2 & T1M) === 0x00000C00, '✓ $t0 = ' + hex(T2 & T1M), 3.0, 2.0);
     cap('and 之後：要的 bit 被選出來', '其他地方都變成 0（clear）');
   },
   async (tok, S) => { // OR：把某些 bit 設成 1，其他不動
-    gone(S.m, S.r);
+    gone(S.m, S.r, S.ml, S.rl, S.k);
     cap('or：把某些 bit 設成 1', '其他 bit 不要動');
   },
   async (tok, S) => { // 那幾個 bit 寫 1，其他寫 0
-    S.m = bitRow(-6.4, 2.6, b32(T1M).slice(16), { w: 0.42, on: FC.purple, off: FC.lilac }); hd('$t1', -6.6, 3.15).center.set(0, 0.5);
+    S.m = bitRow(-6.4, 3.2, b32(T1M).slice(16), { w: 0.42, on: FC.purple, off: FC.lilac }); hd('$t1', -6.6, 3.75).center.set(0, 0.5);
     cap('要設成 1 的位置寫 1', '其他位置寫 0');
   },
   async (tok, S) => { // 跟 1 OR 一定是 1；跟 0 OR 不變
-    S.r = bitRow(-6.4, 1.6, b32(T2 | T1M).slice(16), { w: 0.42, on: FC.green, off: FC.mint }); hot('or $t0, $t1, $t2', -6.6, 2.15).center.set(0, 0.5);
-    ok((T2 | T1M) === 0x00003DC0, '✓ $t0 = ' + hex(T2 | T1M), 3.6, 1.0);
+    S.r = bitRow(-6.4, 2.0, b32(T2 | T1M).slice(16), { w: 0.42, on: FC.green, off: FC.mint }); hot('or $t0, $t1, $t2', -6.6, 2.55).center.set(0, 0.5);
+    ok((T2 | T1M) === 0x00003DC0, '✓ $t0 = ' + hex(T2 | T1M), 3.0, 2.0);
     cap('任何 bit OR 1 = 1；OR 0 = 不變', '指定的 bit 變 1，其他保持原樣');
   },
 ]);
@@ -3912,11 +3954,11 @@ scene('isB-6b-branch', 'beq、bne、j：做決定', CAM, [
     cap('寫程式最厲害的地方：做決定', 'if 怎樣就做 A，else 做 B');
   },
   async (tok, S) => { // 一段 code 重複做，直到條件滿足
-    S.lp = cube('loop：重複做', FC.purple, [2.4, 0.5, 0.6], -3.4, 4.4, 0); sm('↻ 直到條件不成立', -3.4, 3.8);
+    S.lp = cube('loop：重複做', FC.purple, [2.4, 0.5, 0.6], -3.4, 4.4, 0); S.ls = sm('↻ 直到條件不成立', -3.4, 3.8);
     cap('或是一段 code 重複做', '直到 condition 滿足為止');
   },
   async (tok, S) => { // branch equal：beq register1, register2, L1
-    gone(S.c, S.ifn, S.ta, S.tb, S.lp); S.lp = null;
+    gone(S.c, S.ifn, S.ta, S.tb, S.lp, S.ls); S.lp = null;
     S.l1 = mono(hot('beq  register1, register2, L1', -1.6, 6.2), 13);
     sm('if (register1 == register2) go to L1', -1.6, 5.6);
     cap('第一個：branch equal（beq）', '兩個 register 一樣 → 跳到 L1');
@@ -3949,13 +3991,13 @@ scene('isB-6b-branch', 'beq、bne、j：做決定', CAM, [
     cap('但兩者的 instruction format 不一樣', '跳的範圍也不一樣（後面再講）');
   },
   async (tok, S) => { // beq 是 I-type
-    gone(S.l1, S.l2, S.l3, S.l4); fresh(CAM[0], CAM[1]);
-    hd('beq / bne：I-format', -4.2, 5.6).center.set(0, 0.5);
+    gone(S.l1, S.l2, S.l3, S.l4); fresh(CAM[0], CAM[1]); frameHold(-6.6, -0.6, -0.3, 6.6, 7.0, 0.3);
+    hd('beq / bne：I-format', -4.2, 6.1).center.set(0, 0.5);
     S.I = fmtRow(0.6, 5.0, [['op', 6, 'op', FCOL0[0]], ['rs', 5, 'reg1', FCOL0[1]], ['rt', 5, 'reg2', FCOL0[2]], ['跳去哪裡？', 16, '16 bits', FCOL0[4]]]);
     cap('beq：op、兩個 register、後面 16 bits', '很像 I-type → 它就是 I-type');
   },
   async (tok, S) => { // j 是 J-type
-    hd('j：J-format', -4.2, 3.0).center.set(0, 0.5);
+    hd('j：J-format', -4.2, 3.5).center.set(0, 0.5);
     S.J = fmtRow(0.6, 2.4, [['op', 6, 'op', FCOL0[0]], ['address', 26, '26 bits', FCOL0[5]]]);
     cap('j 是第三種 format：J-type', 'op 一樣 6 bits，後面 26 bits 都用來描述位置');
   },
@@ -4023,12 +4065,12 @@ scene('isB-6b-loop', 'while (save[i] == k) i += 1;', CAM, [
     cap('第二種：loop', 'save[i] 等於 k 就一直把 i 加 1');
   },
   async (tok, S) => { // i 是 save array 的 index
-    S.arr = [0, 1, 2, 3, 4, 5].map((k) => cube('save[' + k + ']', FC.paper, [1.5, 0.5, 0.6], -4.4 + k * 1.6, 1.0, 0));
-    S.ad = [0, 1, 2, 3, 4, 5].map((k) => small(sm('+' + 4 * k, -4.4 + k * 1.6, 0.4), 10));
+    S.arr = [0, 1, 2, 3, 4, 5].map((k) => cube('save[' + k + ']', FC.paper, [1.5, 0.5, 0.6], -4.4 + k * 1.6, 1.6, 0));
+    S.ad = [0, 1, 2, 3, 4, 5].map((k) => small(sm('+' + 4 * k, -4.4 + k * 1.6, 1.0), 10));
     cap('save 是一個 array', 'i 是 index，offset 會跟著 i 變');
   },
   async (tok, S) => { // save 的起點在 $s6
-    S.b = hd('$s6 = save 的起始位址（base）', -3.0, 1.9); arrow(V3(-4.4, 1.7, 0), V3(-4.4, 1.3, 0));
+    S.b = hd('$s6 = save 的起始位址（base）', -3.0, 2.7); arrow(V3(-4.4, 2.5, 0), V3(-4.4, 1.95, 0));
     cap('save 的起始位址放在 $s6', 'base register');
   },
   async (tok, S) => { // i 放在 $s3
@@ -4073,10 +4115,10 @@ scene('isB-6b-loop', 'while (save[i] == k) i += 1;', CAM, [
   async (tok, S) => { // 模擬驗算（示意值）
     S.cd.hl(-1);
     const mem = { 200: 5, 204: 5, 208: 5, 212: 7 };
-    [5, 5, 5, 7, 0, 0].forEach((v, k) => relabel(S.arr[k], 'save[' + k + ']=' + v));
+    [5, 5, 5, 7, 0, 0].forEach((v, k) => { relabel(S.arr[k], 'save[' + k + ']=' + v); small(S.arr[k].userData.lbl, 10); });
     const r = runProg(LOOP, { $s3: 0, $s5: 5, $s6: 200 }, mem);
     S.R['$s3 = i'].set(r.R('$s3')); S.R['$s5 = k'].set(5);
-    ok(r.R('$s3') === 3 && r.St.steps === 3 * 6 + 4, '✓ 示意：save = 5,5,5,7、k = 5 → 跑完 i = 3（共 ' + r.St.steps + ' 個指令）', 0, -0.4);
+    ok(r.R('$s3') === 3 && r.St.steps === 3 * 6 + 4, '✓ 示意：save = 5,5,5,7、k = 5 → 跑完 i = 3（共 ' + r.St.steps + ' 個指令）', 0, 0.2);
     cap('這就是 loop 的寫法', '示意值跑一次：save[3] = 7 ≠ 5 就離開');
   },
 ]);
@@ -4458,27 +4500,27 @@ scene('isB-7a-leafc', 'leaf_example：需要哪些特別的 register', CAM, [
     cap('呼叫的 statement 和 procedure 在不同地方', '跳過去執行，算完再回來');
   },
   async (tok, S) => { // 要把 return address 存起來
-    S.ra = sm('要記住：回來時回到哪一行（return address）', -2.0, 1.2);
+    rem(S, '要記住：回來時回到哪一行（return address）', 0, 1.2);
     cap('第一：要記住回到哪裡', 'return address 一定要存起來');
   },
   async (tok, S) => { // 特別的 register：$ra
-    S.R = regs([['$ra', '返回位址']], -5.0, 0.3, 1.4, { w: 1.8 });
+    S.R = regs([['$ra', '返回位址']], -5.0, 0.0, 1.4, { w: 1.8 });
     cap('有一個特別的 register：$ra', '32 個 register 裡，規定一個當 return address');
   },
   async (tok, S) => { // procedure 的位址：label
-    sm('procedure address：用 label（leaf_example）表示', 2.2, 1.2);
+    rem(S, 'procedure address：用 label（leaf_example）表示', 0, 1.2);
     cap('要跳去哪裡：procedure 的 address', '像 jump 一樣給一個 label');
   },
   async (tok, S) => { // argument：$a0–$a3
-    Object.assign(S.R, regs([['$a0', 'g'], ['$a1', 'h'], ['$a2', 'i'], ['$a3', 'j']], -2.6, 0.3, 1.3, { w: 1.1 }));
+    Object.assign(S.R, regs([['$a0', 'g'], ['$a1', 'h'], ['$a2', 'i'], ['$a3', 'j']], -2.6, 0.0, 1.3, { w: 1.1 }));
     cap('參數放在特別的地方：$a0 ～ $a3', '這次 3、5、7、8，下次可能不一樣');
   },
   async (tok, S) => { // return value：$v0、$v1
-    Object.assign(S.R, regs([['$v0', 'f'], ['$v1', '']], 3.0, 0.3, 1.3, { w: 1.1 }));
+    Object.assign(S.R, regs([['$v0', 'f'], ['$v1', '']], 3.0, 0.0, 1.3, { w: 1.1 }));
     cap('回傳值放在 $v0、$v1', '');
   },
   async (tok, S) => { // 運算用 $s0–$s7
-    Object.assign(S.R, regs([['$s0–$s7', '運算']], 5.8, 0.3, 1.3, { w: 1.6 }));
+    Object.assign(S.R, regs([['$s0–$s7', '運算']], 5.8, 0.0, 1.3, { w: 1.6 }));
     cap('運算用的 register：$s0 ～ $s7', '每一種都有固定的位置');
   },
 ]);
@@ -4486,7 +4528,7 @@ scene('isB-7a-leafc', 'leaf_example：需要哪些特別的 register', CAM, [
 const RGRID = (S) => { S.g = RN.map((n, i) => { const x = -0.4 + (i % 8) * 0.98 - 3.0, y = RY(Math.floor(i / 8)) - 0.6; const m = cube(i, '#e6dfd2', [0.86, 0.48, 0.6], x, y, 0); small(m.userData.lbl, 10); const l = small(sm(n, x, y + 0.44), 9); return { m, l }; }); };
 const lightRegs = (S, ids, c) => ids.forEach((i) => { tint(S.g[i].m, c); glow(S.g[i].m, HL); });
 const dimRegs = (S) => S.g.forEach((r) => glow(r.m, null));
-scene('isB-7a-regmap', '32 個 register 的分工（register convention）', [[0, 3.6, 13.5], [0, 3.6, 0]], [
+scene('isB-7a-regmap', '32 個 register 的分工（register convention）', [[0, 3.6, 11], [0, 3.6, 0]], [
   async (tok, S) => { // $t0–$t7 = 8–15
     RGRID(S); lightRegs(S, [8, 9, 10, 11, 12, 13, 14, 15], FC.orange);
     cap('第 8 ～ 15 號：$t0 ～ $t7', '（$t8、$t9 是 24、25）');
@@ -4513,7 +4555,7 @@ scene('isB-7a-regmap', '32 個 register 的分工（register convention）', [[0
   },
   async (tok, S) => { // $gp、$sp、$fp、$k0/$k1
     dimRegs(S); lightRegs(S, [28, 29, 30], FC.gold); lightRegs(S, [26, 27], FC.dark);
-    sm('$gp 28、$sp 29、$fp 30；$k0、$k1 給 OS；$at 給 assembler', 0, -0.6);
+    sm('$gp 28、$sp 29、$fp 30；$k0、$k1 給 OS；$at 給 assembler', -0.5, 1.8);
     cap('$gp、$sp、$fp 有特殊用途', '$k0、$k1 是 OS 用的');
   },
   async (tok, S) => { // stack 等一下會用到
@@ -4674,23 +4716,23 @@ scene('isB-7a-callee', 'callee 也要用 $s0、$t0、$t1：衝突了', CAM, [
     cap('結果放 $v0 回傳', '');
   },
   async (tok, S) => { // caller 也在用 $s、$t
-    S.dad = buddy('caller', '$s0 $t0 $t1', FC.blue, -4.0, -0.6, 1.2, 0.9); S.son = buddy('callee', '$s0 $t0 $t1', FC.green, 0, -0.6, 1.2, 0.9);
+    S.dad = buddy('caller', '$s0 $t0 $t1', FC.blue, -4.0, 0.1, 1.2, 0.9); S.son = buddy('callee', '$s0 $t0 $t1', FC.green, 0, 0.1, 1.2, 0.9);
     S.dad.mood('wow');
     cap('問題：caller 自己也在用 $s、$t', 'callee 也要用 $s0、$t0、$t1，搶同一批 register');
   },
   async (tok, S) => { // 只有一個 register file
-    S.rf = cube('register file 只有一份（32 個）', FC.lilac, [5.6, 0.5, 0.6], -2.0, 1.0, 1.2); glow(S.rf, NG);
+    S.rf = cube('register file 只有一份（32 個）', FC.lilac, [5.6, 0.5, 0.6], -2.0, 2.0, 1.2); glow(S.rf, NG);
     S.dad.mood('sad');
     cap('因為 register file 只有一個', 'callee 一用，caller 的資料就被蓋掉');
   },
   async (tok, S) => { // 開 party：要恢復原狀
     glow(S.rf, null); S.son.mood('happy');
-    S.b = bub('在家開 party 可以，爸爸回來前要恢復原狀！', 0.6, 0.8, 1.2);
+    S.b = bub('在家開 party 可以，爸爸回來前要恢復原狀！', 3.6, 0.3, 0);
     cap('像爸爸出門，你在家開 party', '爸爸回來前要全部恢復原狀');
   },
   async (tok, S) => { // 用之前先存，用完再還原
     remove(S.b);
-    good('用之前先存起來 $s0、$t0、$t1 → 用完再還原', 0, 0.8, 1.2);
+    good('用之前先存起來 $s0、$t0、$t1 → 用完再還原', 3.6, 0.3, 0);
     cap('callee 要用 $s0、$t0、$t1', '使用前先存起來，做完再恢復');
   },
 ]);
@@ -4736,10 +4778,10 @@ scene('isB-7a-stack', '存到哪裡？memory 裡的 stack 與 $sp', CAM, [
   },
 ]);
 
-const LEAF_CAM = [[0.6, 3.7, 13.2], [0.6, 3.7, 0]];
+const LEAF_CAM = [[0.6, 3.7, 11.5], [0.6, 3.7, 0]];
 scene('isB-7a-leafrun', 'leaf_example 一行一行跑：sp − 12、存三個、算、還原、jr', LEAF_CAM, [
   async (tok, S) => { // leaf procedure 要做什麼
-    S.V = buildSim('leaf'); exec(S.V.S); S.V.refresh();   // 先默默執行 jal：$ra = PC + 4，PC 到 leaf
+    S.V = buildSim('leaf', null, true); exec(S.V.S); S.V.refresh();   // 先默默執行 jal：$ra = PC + 4，PC 到 leaf
     small(sm('暫存器初值示意；jal 已經執行：$ra = ' + (BASE + 4), 2.6, 7.3), 10);
     cap('leaf_example 被叫進來了', '它要先處理會被破壞的 register');
   },
@@ -4951,7 +4993,7 @@ const FACT_RUN = runProg(PRESETS.fact.src);
 const FACT_OK = FACT_RUN.R('$v0') === 6 && FACT_RUN.R('$sp') === 1000;
 const FACT_MINSP = Math.min(...FACT_RUN.trace.map((t) => t.sp));
 function factPanel(S) {
-  S.cd = code(FACT_LINES, -3.4, 6.7, 0.44);
+  S.cd = code(FACT_LINES, -3.4, 6.45, 0.44);
   S.m = memCol(4.4, 5.8, [1000, 996, 992, 988], ['caller 的資料', '', '', ''], { w: 2.4 });
   hd('stack', 4.4, 6.5); S.sp = hot('← $sp', 6.3, S.m.y(0));
 }
@@ -4959,16 +5001,16 @@ const lines = (S, a, b) => S.cd.ls.forEach((l, k) => setCls(l, k >= a && k <= b 
 scene('isB-7b-factsave', 'fact：呼叫前要存 $ra 和 $a0', CAM, [
   async (tok, S) => { // non-leaf 的例子
     factPanel(S); S.cd.ls.forEach((l) => { l.element.style.opacity = '0.35'; });
-    sm('int fact(int n) { if (n < 1) return 1; else return n * fact(n − 1); }', 0, 7.35);
+    rem(S, 'int fact(int n) {\n  if (n < 1) return 1;\n  else return n * fact(n − 1); }', 3.8, 2.4, 'idx');
     cap('non-leaf procedure 的例子：fact', '一直往下叫自己（recursive）');
   },
   async (tok, S) => { // argument 一直在改變，待會又要用
-    S.R = regs([['$a0 = n', 'n'], ['$ra', '回去']], 3.6, 1.4, 1.8, { w: 1.4 });
+    gone(S.rem); S.R = regs([['$a0 = n', 'n'], ['$ra', '回去']], 3.6, 2.4, 1.8, { w: 1.4 });
     cap('argument 一直在改變', '可是待會又要用到 → 要存起來');
   },
   async (tok, S) => { // $v0 需不需要存？不用
-    Object.assign(S.R, regs([['$v0', '']], 3.6, 0.0, 1.8, { w: 1.4 }));
-    S.v = bad('$v0：現在用不到 → 不用存', 4.6, -0.7);
+    Object.assign(S.R, regs([['$v0', '']], 3.6, 1.0, 1.8, { w: 1.4 }));
+    S.v = bad('$v0：現在用不到 → 不用存', 3.8, 0.2);
     cap('$v0 需不需要存？', '兒子等一下會用它回傳，但你現在不用 → 不必存');
   },
   async (tok, S) => { // 爸爸要存 n
@@ -5026,7 +5068,7 @@ scene('isB-7b-factrec', 'fact：L1 遞迴、還原、相乘', CAM, [
     cap('否則（n ≥ 1）：跳到 L1', '做 recursive call');
   },
   async (tok, S) => { // 叫完還沒結束：還要乘 n、再 return
-    S.k = ['① n − 1', '② 叫 fact', '③ × n', '④ return'].map((t, i) => small(note(t, 1.8 + i * 1.5, 0.2), 11));
+    S.k = ['① n − 1', '② 叫 fact', '③ × n', '④ return'].map((t, i) => K.keep(small(note(t, 1.8 + i * 1.5, 0.2), 11)));
     cap('else 不只是叫 subroutine', '回來還要乘以 n，再 return');
   },
   async (tok, S) => { // 先把 argument 減 1
@@ -5067,12 +5109,12 @@ scene('isB-7b-factrec', 'fact：L1 遞迴、還原、相乘', CAM, [
   },
   async (tok, S) => { // if 與 else 的差別
     lines(S, 5, 7);
-    S.d = sm('if（base case）：只恢復 $sp　｜　else：還要恢復 $a0、$ra', 0, -0.6);
+    rem(S, 'if（base case）：只恢復 $sp\nelse：還要恢復 $a0、$ra', 3.8, 1.3);
     cap('if 那邊沒動到 $a0、$ra，只恢復 $sp', 'else 叫過 procedure，$a0、$ra 都要拿回來');
   },
   async (tok, S) => { // 驗算 fact(3)
     lines(S, -1, -1);
-    ok(FACT_OK, '✓ 用模擬器跑 fact(3)：$v0 = ' + FACT_RUN.R('$v0') + '，$sp 回到 1000', 0, -1.2);
+    remOk(S, FACT_OK, '✓ 用模擬器跑 fact(3)：$v0 = ' + FACT_RUN.R('$v0') + '\n$sp 回到 1000', 3.8, 1.3);
     sm('最深時 $sp = ' + FACT_MINSP + '（4 層 × 8 bytes）', 4.4, 2.8);
     cap('multiply 之後 jump register', '用 n = 3 驗算（示意）：3 × 2 × 1 = 6');
   },
@@ -5292,11 +5334,11 @@ scene('isB-7b-lb', 'Byte / halfword：lb、lbu、sb', CAM, [
     cap('byte、halfword 的指令', 'halfword = 2 bytes');
   },
   async (tok, S) => { // 當 number 還是 character
-    sm('signed number？unsigned（或字元）？', 2.6, 6.4);
+    S.sg = sm('signed number？unsigned（或字元）？', 2.6, 6.4);
     cap('又分兩種：當 signed number', '或當 unsigned number／character');
   },
   async (tok, S) => { // register 還是 32 bits
-    S.rg = bitRow(-6.0, 2.8, '?'.repeat(32), { off: FC.gray }); hd('$t1（32 bits）', -6.4, 3.35).center.set(0, 0.5);
+    S.rg = bitRow(-6.0, 2.5, '?'.repeat(32), { off: FC.gray }); hd('$t1（32 bits）', -6.4, 3.05).center.set(0, 0.5);
     cap('register 永遠是 32 bits', 'memory 用 byte address：可拿 1、2、4 個 byte');
   },
   async (tok, S) => { // 搬一個 byte 只有 8 bits
@@ -5304,41 +5346,39 @@ scene('isB-7b-lb', 'Byte / halfword：lb、lbu、sb', CAM, [
     cap('從 memory 搬一個 byte：只有 8 bits', '放 register 哪裡？');
   },
   async (tok, S) => { // 放最右邊，左邊 24 bits 怎麼辦？
-    await slide(tok, S.by, 3.4, 2.8, 0.5, 600); kill(S.by);
+    await slide(tok, S.by, 3.4, 3.1, 0.5, 600); kill(S.by);
     S.rg.set('????????????????????????' + BYTE.toString(2).padStart(8, '0'), FC.orange, FC.gray);
-    S.q = bub('左邊 24 bits 怎麼辦？', -2.0, 3.8);
+    S.q = bub('左邊 24 bits 怎麼辦？', -2.0, 1.7);
     cap('規定放最右邊', '那左邊剩下的 24 bits 要填什麼？');
   },
   async (tok, S) => { // lb：sign extension
     remove(S.q); S.rg.set(b32(LB), FC.orange, FC.sky); S.rg.cells.slice(0, 24).forEach((m) => glow(m, HL));
-    S.k = sm('lb：當 signed number → 左邊填 sign bit（sign extension）', 0, 2.0);
+    rem(S, 'lb：當 signed number → 左邊填 sign bit（sign extension）', 0, 1.7);
     cap('lb：當 signed number', '左邊 24 bits 做 sign extension');
   },
   async (tok, S) => { // lbu：補 0
-    S.rg.set(b32(LBU), FC.orange, FC.sky); txt(S.k, 'lbu：當 unsigned → 左邊 24 bits 全部填 0（zero extension）');
+    S.rg.set(b32(LBU), FC.orange, FC.sky); rem(S, 'lbu：當 unsigned → 左邊 24 bits 全部填 0（zero extension）', 0, 1.7);
     cap('lbu：當 unsigned number', '左邊 24 bits 全部設成 0');
   },
   async (tok, S) => { // sb：搬最右邊的 byte
     S.rg.cells.forEach((m) => glow(m, null)); S.rg.cells.slice(24).forEach((m) => glow(m, OKG));
-    sm('sb：把最右邊那個 byte 存到 memory', 0, 1.4);
+    rem(S, 'sb：把最右邊那個 byte 存到 memory', 0, 1.7);
     cap('store byte：搬最右邊的那個 byte', '');
   },
   async (tok, S) => { // 例：$t0 指到 F7
-    gone(S.t); S.rg.cells.forEach((m) => glow(m, null));
+    gone(S.t, S.sg); S.rg.cells.forEach((m) => glow(m, null));
     S.mb = cube('F7', FC.orange, [0.9, 0.5, 0.6], 4.6, 5.4, 0); sm('memory 裡的一個 byte（hex F7 = 1111 0111）', 1.4, 6.1); hot('$t0 →', 3.4, 5.4);
     mono(hot('lb $t1, 0($t0)', -3.4, 5.4), 12);
     cap('例：$t0 是 base register', '指到一個 byte：F7（hex）');
   },
   async (tok, S) => { // lb：前面補 F
     S.rg.set(b32(LB), FC.orange, FC.sky); S.rg.cells.slice(0, 24).forEach((m) => glow(m, HL));
-    txt(S.k, 'lb  $t1, 0($t0)  →  $t1 = ' + hex(LB));
-    ok(u32(LB) === 0xFFFFFFF7, '✓ F 是 1111，前面全部 sign-extend 成 1', 0, 1.4);
+    remOk(S, u32(LB) === 0xFFFFFFF7, 'lb  $t1, 0($t0)  →  $t1 = ' + hex(LB) + '\n✓ F 是 1111，前面全部 sign-extend 成 1', 0, 1.7);
     cap('lb：最前面是 1 → sign extension', '$t1 = 0xFFFFFFF7');
   },
   async (tok, S) => { // lbu：前面補 0
     S.rg.set(b32(LBU), FC.orange, FC.sky);
-    txt(S.k, 'lbu $t1, 0($t0)  →  $t1 = ' + hex(LBU));
-    ok(LBU === 0xF7, '✓ lbu：前面補 0，$t1 = 0x000000F7', 0, 0.8);
+    remOk(S, LBU === 0xF7, 'lbu $t1, 0($t0)  →  $t1 = ' + hex(LBU) + '\n✓ lbu：前面補 0，$t1 = 0x000000F7', 0, 1.7);
     cap('lbu：一樣讀 F7，前面補 0', '$t1 = 0x000000F7，結果不同');
   },
 ]);
@@ -5421,7 +5461,7 @@ scene('isB-7b-strcpy2', 'strcpy 的 MIPS 程式：一個 byte 一個 byte 搬', 
   },
   async (tok, S) => { // callee 的責任：存 $s0
     S.R['$s0 (i)'].glow(null); S.cd.hl(0); await wt(tok, 500); S.cd.hl(1);
-    S.sv = sm('stack：存 $s0 = 77', 4.6, 2.4);
+    rem(S, 'stack：存 $s0 = 77', 3.4, 2.4, 'idx');
     cap('callee 的責任：先存 $s0', 'addi $sp, $sp, -4；sw $s0, 0($sp)');
   },
   async (tok, S) => { // i = 0
@@ -5446,11 +5486,11 @@ scene('isB-7b-strcpy2', 'strcpy 的 MIPS 程式：一個 byte 一個 byte 搬', 
   },
   async (tok, S) => { // 不能 memory 直接搬到 memory
     glow(S.x[0], null);
-    S.n = bad('✘ 不能直接 memory → memory；一定經過 register', 2.8, 2.4);
+    rem(S, '✘ 不能直接 memory → memory；一定經過 register', 3.4, 2.4, 'bad');
     cap('load-store machine', '不能把 y 直接搬到 x，要先搬進 register');
   },
   async (tok, S) => { // 測是不是 0
-    remove(S.n); S.cd.hl(7);
+    gone(S.rem); S.cd.hl(7);
     cap('搬完要測試：是不是 \\0？', 'beq $t2, $zero, L2：是 0 就結束');
   },
   async (tok, S) => { // 繼續 loop：整個跑完
@@ -5461,7 +5501,7 @@ scene('isB-7b-strcpy2', 'strcpy 的 MIPS 程式：一個 byte 一個 byte 搬', 
   },
   async (tok, S) => { // 恢復 stack，jr
     S.cd.hl(10); await wt(tok, 300); S.cd.hl(12); S.R['$s0 (i)'].set(SC_RUN.R[16]);
-    ok(SC_OK, '✓ 模擬：x = "Hi\\0"，$s0 還原成 77，$sp 回到 1000', 2.4, 1.6);
+    ok(SC_OK, '✓ 模擬：x = "Hi\\0"，$s0 還原成 77，$sp 回到 1000', 3.4, 2.4);
     cap('跳出去之前：恢復 $s0 和 stack', '再 jr $ra 回 caller');
   },
 ]);
@@ -5514,33 +5554,33 @@ scene('isB-7b-lui', '32-bit 常數：lui + ori', CAM, [
     cap('32-bit constant', '其實 data 不管多大，都是 32 bits');
   },
   async (tok, S) => { // 16 bits 內：直接放指令
-    sm('16 bits 放得下 → 直接放在 instruction 裡（addi 等）', 0, 4.9);
+    rem(S, '16 bits 放得下 → 直接放在 instruction 裡（addi 等）', 0, 3.75, 'idx');
     cap('16 bits 放得下', '就直接放在 instruction 裡');
   },
   async (tok, S) => { // load upper immediate
-    S.lui = mono(hot('lui：load upper immediate', 0, 4.3), 12);
+    S.lui = mono(hot('lui：load upper immediate', -2.8, 4.45), 12);
     cap('很大的話：用 load upper immediate', 'lui');
   },
   async (tok, S) => { // 想把這個大 number 放到 $s0
-    S.s0 = bitRow(-6.0, 2.6, '0'.repeat(32), { off: FC.gray }); hd('$s0', -6.4, 3.15).center.set(0, 0.5);
+    S.s0 = bitRow(-6.0, 2.9, '0'.repeat(32), { off: FC.gray }); hd('$s0', -6.4, 3.45).center.set(0, 0.5);
     small(sm('= ' + BIG.toLocaleString('en-US') + ' = ' + hex(BIG), 2.6, 6.15), 10);
     cap('想把這個大常數放進 $s0', '前面 16 bits 也有 1');
   },
   async (tok, S) => { // 拆成兩半
     S.goal.cells.slice(0, 16).forEach((m) => glow(m, HL));
     sm('前半 = ' + LUI_HI, -3.0, 5.0); sm('後半 = ' + ORI_LO, 3.2, 5.0);
-    ok(((LUI_HI << 16) | ORI_LO) === BIG, '✓ ' + LUI_HI + ' × 65536 + ' + ORI_LO + ' = ' + BIG.toLocaleString('en-US'), 0, 1.4);
+    remOk(S, ((LUI_HI << 16) | ORI_LO) === BIG, '✓ ' + LUI_HI + ' × 65536 + ' + ORI_LO + ' = ' + BIG.toLocaleString('en-US'), 0, 3.75);
     cap('把它拆成兩半', '前 16 bits = 61，後 16 bits = 2304');
   },
   async (tok, S) => { // lui 還是 I-type
     S.goal.cells.forEach((m) => glow(m, null));
     const v = fv('lui $s0, 61');
-    S.F = fmtRow(0, 0.2, [['op', 6, v[0], FCOL0[0]], ['rs', 5, v[1], FCOL0[1]], ['rt', 5, v[2] + '（$s0）', FCOL0[2]], ['immediate', 16, v[3], FCOL0[4]]], { sc: 0.3 });
-    S.Fk = ok(v.join(' ') === '15 0 16 61', '✓ lui $s0, 61 欄位 = 15 0 16 61', 0, -0.4);
+    S.F = fmtRow(0, 1.2, [['op', 6, v[0], FCOL0[0]], ['rs', 5, v[1], FCOL0[1]], ['rt', 5, v[2] + '（$s0）', FCOL0[2]], ['immediate', 16, v[3], FCOL0[4]]], { sc: 0.3 });
+    remOk(S, v.join(' ') === '15 0 16 61', '✓ lui $s0, 61 欄位 = 15 0 16 61', 0, 3.75);
     cap('lui 還是 I-type', '有 16-bit 常數；只用到一個 register（destination）');
   },
   async (tok, S) => { // lui $s0, 61
-    remove(S.lui); S.lui = mono(hot('lui $s0, 61', 0, 4.3), 13);
+    remove(S.lui); S.lui = mono(hot('lui $s0, 61', -2.8, 4.45), 13);
     cap('lui $s0, 61', 'destination 是 $s0，immediate 是 61');
   },
   async (tok, S) => { // 把 61 搬到 $s0 的上半部
@@ -5556,22 +5596,22 @@ scene('isB-7b-lui', '32-bit 常數：lui + ori', CAM, [
     cap('lui 把後面 16 bits 全部設成 0', '$s0 = 61 × 65536');
   },
   async (tok, S) => { // ori $s0, $s0, 2304
-    S.s0.cells.forEach((m) => glow(m, null)); gone(S.F, S.Fk);
-    S.ori = mono(hot('ori $s0, $s0, 2304', 0, 3.7), 13);
+    S.s0.cells.forEach((m) => glow(m, null)); gone(S.F, S.rem);
+    S.ori = mono(hot('ori $s0, $s0, 2304', 2.8, 4.45), 13);
     cap('再去 OR 一個 immediate', 'ori $s0, $s0, 2304');
   },
   async (tok, S) => { // 2304 的 bit
-    S.im = bitRow(-6.0, 1.8, b32(ORI_LO), { on: FC.green, off: FC.mint }); hd('2304', -6.4, 2.35).center.set(0, 0.5);
+    S.im = bitRow(-6.0, 1.6, b32(ORI_LO), { on: FC.green, off: FC.mint }); hd('2304', -6.4, 2.15).center.set(0, 0.5);
     S.im.cells.slice(16).forEach((m) => glow(m, HL));
     cap('2304 只有 16 bits', '前面補 0（ori 是 zero extension）');
   },
   async (tok, S) => { // 結果
     S.s0.set(b32(BIG), FC.purple, FC.lilac);
-    ok(enc('lui $s0, 61') >>> 26 === 15 && b32(BIG) === b32((LUI_HI << 16) | ORI_LO), '✓ $s0 = ' + hex(BIG) + ' = 4,000,000', 0, 1.0);
+    remOk(S, enc('lui $s0, 61') >>> 26 === 15 && b32(BIG) === b32((LUI_HI << 16) | ORI_LO), '✓ $s0 = ' + hex(BIG) + ' = 4,000,000', 0, 3.75);
     cap('OR 之後得到最後的結果', '$s0 = 0x003D0900');
   },
   async (tok, S) => { // 32-bit 常數要用 lui
-    good('要做 32-bit 常數：lui + ori，不用放 memory', 0, 0.2);
+    rem(S, '要做 32-bit 常數：lui + ori，不用放 memory', 0, 3.75, 'good');
     cap('程式裡一定會用到 lui', '不必先在 memory 準備這個常數');
   },
 ]);
@@ -5735,7 +5775,7 @@ scene('isB-8a-pcrel', 'branch 的目標：PC-relative addressing', CAM, [
 
 scene('isB-8a-near', '分支通常很近：16-bit 帶號 word offset', CAM, [
   async (tok, S) => { // immediate 16 bits，PC 32 bits
-    S.pc = fmtRow(0, 6.2, [['PC', 32, '32 bits', FC.peach]], { sc: 0.34 }); S.im = fmtRow(0, 5.3, [['immediate', 16, '16 bits', FCOL0[4]]], { sc: 0.34 });
+    S.pc = fmtRow(0, 6.2, [['PC', 32, '32 bits', FC.peach]], { sc: 0.34 }); S.im = fmtRow(0, 5.0, [['immediate', 16, '16 bits', FCOL0[4]]], { sc: 0.34 });
     cap('PC 是 32 bits，immediate 只有 16 bits', '怎麼用 PC 加 immediate 描述目標？');
   },
   async (tok, S) => { // PC 指著 branch 自己
@@ -5872,16 +5912,16 @@ scene('isB-8a-beqex2', 'immediate = 3：從下一個指令數起', CAM, [
   async (tok, S) => { // 1、2、3
     for (let k = 1; k <= 3; k++) { S.n = sm(String(k), 0.6, 6.2 - k * 0.6); await wt(tok, 350); }
     S.F.set(3, BEQ_OFF); glow(S.F.cells[3], OKG);
-    ok(BEQ_OFF === 3, '✓ 從下一個指令數到 End：3 個指令 → immediate = 3', 1.0, 1.4);
+    remOk(S, BEQ_OFF === 3, '✓ 從下一個指令數到 End：3 個指令 → immediate = 3', 2.6, 1.2);
     cap('數 1、2、3 到 End', 'immediate 就放 3');
   },
   async (tok, S) => { // 以 word 為單位
-    sm('以「指令（word）」為單位，不是 byte：後面的 00 自動補', 1.0, 0.8);
+    rem(S, '以「指令（word）」為單位，不是 byte\n後面的 00 自動補', 2.6, 1.2);
     cap('剛剛說的 × 4 是換算成 byte', '這裡用 word address，所以就是 3');
   },
   async (tok, S) => { // 4 9 0 3
     const v = fv('beq $9, $0, 3');
-    ok(v.join(' ') === '4 9 0 ' + BEQ_OFF, '✓ 機器碼欄位：4 9 0 3 = ' + hex(enc('beq $9, $0, 3')), 1.0, 0.2);
+    remOk(S, v.join(' ') === '4 9 0 ' + BEQ_OFF, '✓ 機器碼欄位：4 9 0 3 = ' + hex(enc('beq $9, $0, 3')), 2.6, 1.2);
     cap('變成 binary：4、9、0、3', '電腦就看得懂了');
   },
   async (tok, S) => { // 換成 byte address
@@ -5889,12 +5929,12 @@ scene('isB-8a-beqex2', 'immediate = 3：從下一個指令數起', CAM, [
   },
   async (tok, S) => { // X + 4 + 3 × 4
     const X = 1000;
-    S.f = mono(hot('目標 = X + 4 + 3 × 4 = X + 16', 1.0, 4.4), 13);
-    ok(X + 4 + BEQ_OFF * 4 === X + 4 * 4, '✓ 例：X = 1000 → 1016，正好是 End（第 4 個指令）', 1.0, 3.7);
+    S.f = mono(hot('目標 = X + 4 + 3 × 4 = X + 16', 3.6, 4.4), 13);
+    remOk(S, X + 4 + BEQ_OFF * 4 === X + 4 * 4, '✓ 例：X = 1000 → 1016\n正好是 End（第 4 個指令）', 2.6, 1.2);
     cap('PC = X 時：目標 = X + 4 + 3 × 4', '× 4 就是補兩個 0，word 變 byte');
   },
   async (tok, S) => { // 直接看程式：從下一個開始數
-    note('看程式時：從下一個指令開始數到目標就好', 1.0, -0.6);
+    rem(S, '看程式時：從下一個指令開始數到目標就好', 2.6, 1.2);
     cap('直接看 assembly 就很快', '從下一個指令開始數到要去的位置');
   },
 ]);
@@ -6037,7 +6077,7 @@ scene('isB-8a-jaddr', 'j 的新 PC：PC[31:28] ‖ address ‖ 00', CAM, [
     cap('真的要跳到任意 32-bit 位址？', '把位址放進 register，再用 jr 跳');
   },
   async (tok, S) => { // 三種跳法
-    ['beq/bne：PC-relative（附近）', 'j：pseudodirect（同一個 256 MB 區塊）', 'jr：register（任何地方）'].forEach((t, i) => good(t, -3.6 + i * 3.6, 0.6));
+    ['beq/bne：PC-relative（附近）', 'j：pseudodirect（同一個 256 MB 區塊）', 'jr：register（任何地方）'].forEach((t, i) => K.keep(good(t, 0, 1.0 - i * 0.6)));
     cap('jump 的幾種方式', 'PC-relative、pseudodirect、register');
   },
 ]);
@@ -6063,7 +6103,7 @@ scene('isB-8a-loopex', '例題：迴圈在 80000，bne 和 j 的欄位', CAM, [
     cap('直覺：要跳 3 個？', '再想一下 PC 在哪裡');
   },
   async (tok, S) => { // PC 已經 + 4 → 2
-    remove(S.g); S.pc = hot('PC + 4', -5.0, S.rows[4].y);
+    remove(S.g); S.pc = hot('PC + 4', -0.4, S.rows[4].y);
     for (let k = 4; k <= 6; k++) { small(sm(String(k - 4), 1.0, S.rows[k].y), 10); await wt(tok, 250); }
     txt(S.rows[3].f, LP_F[3]);
     ok(BNE_OFF === 2, '✓ immediate = 2（從 PC + 4 = 80016 數到 Exit）', 2.8, -0.2);
@@ -6123,9 +6163,9 @@ scene('isB-8a-far', '要跳很遠：beq 反過來 + j', CAM, [
   },
 ]);
 
-scene('isB-8a-modes', 'MIPS 的五種 addressing mode', [[0, 3.4, 13], [0, 3.0, 0]], [
+scene('isB-8a-modes', 'MIPS 的五種 addressing mode', [[0, 3.4, 11.5], [0, 3.0, 0]], [
   async (tok, S) => { // addressing mode
-    hot('MIPS addressing modes', 0, 6.6);
+    frameHold(-6.6, -0.4, -0.3, 6.6, 7.0, 0.3); hot('MIPS addressing modes', 0, 6.6);
     cap('複習 addressing mode', 'instruction set design 很重要的特性');
   },
   async (tok, S) => { am.base = 100; am.off = 32; am.pc = 80012; await amPlay('imm', tok, 700, true); },

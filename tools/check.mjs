@@ -73,7 +73,7 @@ if (!(await up(BASE))) {
   const PORT = String(3300 + Math.floor(Math.random() * 600));
   BASE = 'http://localhost:' + PORT;
   server = spawn(process.execPath, ['server.js'], { cwd: ROOT, env: { ...process.env, PORT }, stdio: 'ignore' });
-  for (let i = 0; i < 240 && !(await up(BASE)); i++) await sleep(250);
+  for (let i = 0; i < 720 && !(await up(BASE)); i++) await sleep(250); // 電腦很忙時伺服器要好一陣子才起得來
 }
 function findBrowser() {
   if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
