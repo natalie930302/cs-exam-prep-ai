@@ -77,9 +77,19 @@ export default function (ctx) {
   function tag(text, cls, x, y, z) { const l = lab.label(text, cls || ''); l.position.set(x, y, z); lab.world.add(l); return l; }
   function kill(o) { if (!o) return; lab.world.remove(o); o.traverse((c) => { if (c.element) c.element.remove(); }); }
   const txt = (l, t) => { l.element.textContent = t; };
+  // An invisible box over the area a scene will use later: the stage's auto framing measures it from the
+  // first step, so the camera does not zoom in on the first few things and then jump back out.
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
+  // a panel appears once the engine has spread its lines (no flash of lines piled on each other)
+  function revealCode(c) { c.ls.forEach((l) => { l.element.style.opacity = '0.01'; }); setTimeout(() => c.ls.forEach((l) => { l.element.style.opacity = ''; }), 600); return c; }
   function code(lines, x, zTop, dz = 0.5) {
-    const w = Math.max(...lines.map((s) => s.length));
-    const ls = lines.map((s, i) => { const l = tag(s.padEnd(w, ' '), '', x, 0.3, zTop + i * dz); Object.assign(l.element.style, MONO); return l; });
+    // one upright panel: all lines at the same x / z, so the engine spreads them evenly and they never overlap
+    const w = Math.max(...lines.map((s) => s.length)), mid = (lines.length - 1) / 2;
+    const ls = lines.map((s, i) => { const l = tag(s.padEnd(w, ' '), '', x, 0.3 + (mid - i) * 0.3, zTop + mid * dz); Object.assign(l.element.style, MONO); l.element.style.opacity = '0.01'; return l; });
+    setTimeout(() => ls.forEach((l) => { l.element.style.opacity = ''; }), 600);
     return { ls, hl(i) { ls.forEach((l, k) => { l.element.className = 'lab-label' + (k === i ? ' ptr alt' : ''); }); } };
   }
   function selectHtml(id, pairs, val) { return '<select id="' + id + '">' + pairs.map(([v, t]) => '<option value="' + v + '"' + (String(v) === String(val) ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>'; }
@@ -98,11 +108,11 @@ export default function (ctx) {
       const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.5, 28), new THREE.MeshStandardMaterial({ color: C.white, roughness: 0.5 }));
       mesh.castShadow = true;
       mesh.add(lab.label(name, 'val'));
-      const top = lab.label('', 'ptr'); top.position.set(0, 0.95, 0); top.element.style.display = 'none'; mesh.add(top);
-      const bot = lab.label('', 'idx'); bot.position.set(0, 0, 0.78 * ns + 0.1); bot.element.style.display = 'none'; mesh.add(bot);
+      const top = lab.label('', 'ptr'); top.position.set(0, 1.4, 0); top.visible = false; mesh.add(top);
+      const bot = lab.label('', 'idx'); bot.position.set(0, 0, 0.78 * ns + 0.1); bot.visible = false; mesh.add(bot);
       const home = V(G.pos[i][0] * sc + dx, 0.25, G.pos[i][1] * sc + dz);
       mesh.position.copy(home);
-      if (!o.noDrop) mesh.position.y = 4 + Math.random();
+      if (!o.noDrop) mesh.position.y = 1.2 + Math.random() * 0.4;
       const b = lab.addBody(mesh);
       if (!o.noDrop) lab.dropTo(b, home);
       gr.nodes.push({ mesh, b, top, bot, home });
@@ -179,11 +189,11 @@ export default function (ctx) {
   }
   function nodeTag(i, text, cls) {
     const t = GR.nodes[i].top;
-    t.element.style.display = text ? '' : 'none';
+    t.visible = !!text;
     t.element.textContent = text || '';
     t.element.className = 'lab-label ' + (cls || 'ptr');
   }
-  function nodeNote(i, text) { const t = GR.nodes[i].bot; t.element.style.display = text ? '' : 'none'; t.element.textContent = text || ''; }
+  function nodeNote(i, text) { const t = GR.nodes[i].bot; t.visible = !!text; t.element.textContent = text || ''; }
   // 把頂點移到新位置，移動途中邊跟著重畫
   async function relayout(tok, pos, ms = 1000) {
     pos.forEach((p, i) => { GR.nodes[i].home = V(p[0], 0.25, p[1]); lab.springTo(GR.nodes[i].b, GR.nodes[i].home); });
@@ -201,7 +211,8 @@ export default function (ctx) {
   // 一排方塊（queue、stack、輸出串列）：set() 時沒出現的方塊飛走，新方塊掉進來
   function makeStrip(x0, z, title, gap = 1.05) {
     const st = { items: new Map() };
-    if (title) tag(title, 'idx', x0 - 0.9, 0.3, z);
+    st.clear = () => { for (const b of st.items.values()) K.kill(b.obj); st.items.clear(); };
+    if (title) { const tl = tag(title, 'idx', x0 - 0.65, 0.3, z); tl.center.set(1, 0.5); }
     st.set = (list) => {
       const keep = new Set(list.map((it) => it.key));
       for (const [k, b] of st.items) if (!keep.has(k)) { lab.flyAway(b, V(0, 6, -2)); st.items.delete(k); }
@@ -211,7 +222,7 @@ export default function (ctx) {
         if (!b) {
           const m = lab.box(it.color || C.q, [gap * 0.88, 0.5, 0.72]);
           m.userData.l = lab.label(it.text, 'val'); m.add(m.userData.l);
-          m.position.copy(pos).setY(3.5);
+          m.position.copy(pos).setY(1.1);
           b = lab.addBody(m); lab.dropTo(b, pos); st.items.set(it.key, b);
         } else {
           lab.springTo(b, pos);
@@ -267,7 +278,7 @@ export default function (ctx) {
   function* bfsGen(s, o = {}) {
     const n = GR.n, k = o.k || 1;
     const d = Array(n).fill(INF), par = Array(n).fill(-1), col = Array(n).fill(0);
-    const qs = makeStrip(-4.6, -4.4, 'Queue');
+    const qs = makeStrip(-4.6, -4.9, 'Queue');
     const Q = [];
     const qset = () => qs.set(Q.map((v) => ({ key: 'q' + v, text: nm(v) + ' ' + d[v] })));
     const st = (extra) => ['BFS（起點 ' + nm(s) + '）', [...Array(n).keys()].map((v) => [nm(v), (d[v] === INF ? '∞' : d[v]) + (par[v] >= 0 ? '，π = ' + nm(par[v]) : '')]),
@@ -308,8 +319,8 @@ export default function (ctx) {
     const times = o.times !== false, classify = o.classify !== false;
     const counts = { tree: 0, back: 0, fwd: 0, cross: 0 };
     const stk = [], finished = [];
-    const ss = o.stack !== false ? makeStrip(-4.6, -4.4, '遞迴堆疊') : null;
-    const fs = o.topo ? makeStrip(-4.6, 4.1, o.topo === 'append' ? 'finished' : '輸出（插到最前）') : null;
+    const ss = o.stack !== false ? makeStrip(-4.6, -4.9, '遞迴堆疊') : null;
+    const fs = o.topo ? makeStrip(-4.6, 3.6, o.topo === 'append' ? 'finished' : '輸出（插到最前）') : null;
     const sset = () => ss && ss.set(stk.map((v) => ({ key: 's' + v, text: nm(v), color: '#d9cfbd' })));
     const fset = () => fs && fs.set((o.topo === 'append' ? finished : [...finished].reverse()).map((v) => ({ key: 'f' + v, text: nm(v), color: '#cfe3f7' })));
     const lab1 = (u) => { if (times) nodeTag(u, d[u] + '/' + (f[u] || ''), f[u] ? 'ptr' : 'ptr alt'); };
@@ -362,7 +373,7 @@ export default function (ctx) {
     const n = GR.n, k = o.k || 1;
     const indeg = Array(n).fill(0);
     GR.edges.forEach((e) => indeg[e.v]++);
-    const qs = makeStrip(-4.6, -4.4, 'Queue'), os = makeStrip(-4.6, 4.1, '輸出');
+    const qs = makeStrip(-4.6, -4.9, 'Queue'), os = makeStrip(-4.6, 3.6, '輸出');
     const Q = [], out = [];
     const upd = () => { qs.set(Q.map((v) => ({ key: 'q' + v, text: nm(v) }))); os.set(out.map((v) => ({ key: 'o' + v, text: nm(v), color: '#cfe3f7' }))); };
     const st = (extra) => ['Kahn（in-degree）', [...Array(n).keys()].map((v) => [nm(v), out.includes(v) ? '已輸出' : 'in-degree ' + indeg[v]]), (extra || '') + 'in-degree = 0 的頂點沒有前置工作，可以先做'];
@@ -435,7 +446,7 @@ export default function (ctx) {
     const n = GR.n, k = o.k || 1;
     const idx = Array(n).fill(-1), low = Array(n).fill(0), on = Array(n).fill(false), S = [];
     let index = 0, c = 0;
-    const ss = makeStrip(-4.6, -4.4, '堆疊 S');
+    const ss = makeStrip(-4.6, -4.9, '堆疊 S');
     const sset = () => ss.set(S.map((v) => ({ key: 's' + v, text: nm(v), color: '#d9cfbd' })));
     const t = (v) => nodeTag(v, 'i ' + idx[v] + '・low ' + low[v], 'ptr alt');
     const st = () => ['Tarjan SCC', [...Array(n).keys()].map((v) => [nm(v), idx[v] < 0 ? '—' : 'index ' + idx[v] + '，low ' + low[v]]), 'low[v] = v 的子樹經由（最多一條）back/cross 邊能碰到、還在堆疊上的最小 index<br>low = index → v 是 SCC 的根'];
@@ -709,7 +720,7 @@ export default function (ctx) {
     fresh([0, 12.5, 8], [0.6, 0, -0.3]);
     buildGraph(GRAPHS.fiset, { scale: 0.62, dx: 2.9, dz: -0.6 });
     const cd = code(['n = 12；g = adjacency list', 'visited = [false, …, false]', 'function dfs(at):', '  if visited[at]: return', '  visited[at] = true', '  for next in g[at]:', '    dfs(next)', 'start = 0；dfs(start)'], -3.7, -3.2, 0.62);
-    const ss = makeStrip(-0.6, 4.1, 'dfs 呼叫', 0.95);
+    const ss = makeStrip(-0.6, 4.1, 'dfs 呼叫', 1.2);
     const stk = [];
     const sset = () => ss.set(stk.slice(-7).map((x) => ({ key: x.key, text: 'dfs(' + nm(x.v) + ')', color: '#d9cfbd' })));
     const vis = Array(GR.n).fill(false);
@@ -1306,10 +1317,10 @@ function gbDfsEv(O, s) {
 }
 // a floor row of small cubes (queue / stack / result), x = 1.0 + 0.62 i
 function gbRow(z, label) {
-  tag(label, 'idx', 2.2, 0.05, z - 0.62);
+  tag(label, 'idx', 2.2, 0.05, z - 1.2); // clear of the cubes, which land from just above
   const R = { items: [], vals: [] };
   const X = (i) => 1.0 + i * 0.62;
-  R.push = (v, color) => { R.items.push(cube(v, color, [0.5, 0.5, 0.5], X(R.items.length), 0.25, z, 1.6)); R.vals.push(v); };
+  R.push = (v, color) => { R.items.push(cube(v, color, [0.5, 0.5, 0.5], X(R.items.length), 0.25, z, 0.5)); R.vals.push(v); };
   R.shift = () => { fly(R.items.shift(), V3(0, 6, -3)); R.vals.shift(); R.items.forEach((m, i) => move(m, X(i), 0.25, z)); };
   R.pop = () => { fly(R.items.pop(), V3(0, 6, -3)); R.vals.pop(); };
   R.top = () => R.items[R.items.length - 1];
@@ -1674,7 +1685,8 @@ FRAG.push(['graphbari-complexity', 'BFS、DFS 的時間複雜度', async (tok) =
 // 老師的例子（Kleinberg–Tardos 第 3 章）：13 個點的圖 1–2、1–3、2–3、2–4、2–5、3–5、3–7、3–8、4–5、5–6、7–8、9–10、
 // 11–12、12–13（1..8、9 10、11 12 13 三塊；11–13 這塊的邊影片沒唸，畫面是示意）；tree 1–{2,5,7}、2–{3,4}、5–6、7–{8,9}；
 // 七橋：島 5 座橋、其他三塊各 3 座。DFS 從 1 出發、編號小的先走：1 2 3 5 4 6 7 8。
-const { V3, fresh, tag, cube, kill, fly, move, glow, tint, txt, relabel, code, anim, line, arrow, step, buddy, prop, bob, travel, remove, icon, GOLD } = K;
+const { V3, fresh, tag, cube, kill, fly, move, glow, tint, txt, relabel, anim, line, arrow, step, buddy, prop, bob, travel, remove, icon, GOLD } = K;
+const code = (...a) => revealCode(K.code(...a));
 const JC = { idle: '#d9ccb4', seen: '#4b9ee2', red: '#d64545', hot: '#e8b02a', edge: '#a8987c', dim: '#e3d9c8', teal: '#2fc092', blue: '#4b9ee2', green: '#9bd34a', purple: '#9b7ef4', orange: '#dd8238', pink: '#e55a9b', gold: '#c08a1f', paper: '#efe6d2', ink: '#6e5f49', sand: '#c9b48e', water: '#7fb8e6', land: '#cdb98f', bridge: '#8a5a2b', gray: '#bdb3a2' };
 const LAYC = ['#e8b02a', '#4b9ee2', '#2fc092', '#9b7ef4'];
 const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
@@ -2017,6 +2029,7 @@ FRAG.push(['graphjiang1-def', 'Graph 的定義：vertex、edge、directed 與 ne
 const MINI = { pos: [[-3.6, 5.4], [-0.6, 6.0], [2.2, 5.0], [-2.6, 2.2], [1.2, 2.0]], edges: [[0, 1], [1, 2], [0, 3], [3, 4], [1, 4], [2, 4]] };
 FRAG.push(['graphjiang1-examples', '用 graph 表示各種問題', async (tok) => {
   fresh(CAM, LOOK);
+  frameHold(-7.0, -1.0, -0.3, 7.6, 8.2, 0.3); // the area all the examples use, held from the start (no zoom jumps)
   let cur = [];
   const clear = () => { cur.forEach((o) => (o.element ? remove(o) : kill(o))); cur = []; };
   // show one example: glyphs on the vertices, edge colours / directions, a title
@@ -3570,7 +3583,7 @@ FRAG.push(['graphjiang1-bfsimpl', '實作 BFS：L[i]、discovered 與 T', async 
   await step(tok); // 4536 我們就看一下怎麼去implementBFS
   say('來實作 BFS', '');
   await step(tok); // 4550 在這邊的話我們使用adgenesis list
-  note('用 adjacency list', 3.9, 7.6);
+  note('用 adjacency list', 3.9, 8.2);
   say('Graph 用 adjacency list 表示', '');
   await step(tok); // 4561 它儲存的方式跟我BFS的作用呢是可以完全match
   say('它的存法跟 BFS 的動作完全 match', '用 matrix 的話 complexity 會變高');
@@ -3651,7 +3664,7 @@ FRAG.push(['graphjiang1-bfsds', 'L[i] 用 queue 或 stack 都行；O(n + m)', as
   say('其實這裡兩個都可以', '因為每一層是分開存的');
   await step(tok); // 5005 其實沒有啊其實也是可以的
   const r2 = box[2];
-  await anim(tok, 800, (u) => r2.forEach((m, j) => { m.position.x = LX(j) + (LX(3 - j) - LX(j)) * u; }));
+  await anim(tok, 800, (u) => r2.forEach((m, j) => { m.position.x = LX(j) + (LX(3 - j) - LX(j)) * u; m.position.z = (j - 1.5) * 1.5 * Math.sin(Math.PI * u); }));
   say('用 stack，同一層的順序會反過來', '但還是對的');
   await step(tok); // 5017 但是有一個Case會不行
   say('但有一種情況不行', '');
@@ -3759,7 +3772,8 @@ FRAG.push(['graphjiang1-dfsimpl', '實作 DFS：recursive 或明著用 stack', a
 
   // ═══ graphjiang2.js ═══
   {
-const { V3, fresh, tag, cube, kill, glow, tint, txt, relabel, code, anim, line, arrow, ghostBox, GOLD, step, buddy, icon, travel, remove } = K;
+const { V3, fresh, tag, cube, kill, glow, tint, txt, relabel, anim, line, arrow, ghostBox, GOLD, step, buddy, icon, travel, remove } = K;
+const code = (...a) => revealCode(K.code(...a));
 // ─── 交大江蕙如 Lec08（r5CTlHdo9Oo）Graphs (3/4)：matrix vs list、BFS／DFS 的 data structure、Testing bipartiteness
 //     （定義、2-coloring、BFS 著色、正確性證明）、coloring 延伸（mask 多次曝光）、directed graph 的 strong connectivity、
 //     strongly connected 的 linear-time 測試
@@ -3876,6 +3890,7 @@ function topoGraph(o = {}) { return jgGraph(TP, TE, o); }
 // 00:29 Adjacency matrix vs adjacency list：六個問題
 FRAG.push(['graphjiang2-rep-compare', 'Adjacency matrix vs list：六個問題比一比', async (tok) => {
   jFresh();
+  frameHold(-6.8, -1.0, -0.3, 6.8, 7.4, 0.3);
   const ADJ = { 1: [2, 3], 2: [1, 3], 3: [1, 2, 4], 4: [3] };
   const mx = (c) => -5.8 + c * 0.72, my = (r) => 5.0 - r * 0.72;
   const lx = (k) => 2.9 + k * 0.92, ly = (r) => 5.1 - r * 0.85;
@@ -3890,7 +3905,7 @@ FRAG.push(['graphjiang2-rep-compare', 'Adjacency matrix vs list：六個問題�
   const win = async (w) => { const b = w ? lst : mat; sc[w]++; b.set(sc[w]); b.mood('happy'); (w ? mat : lst).mood('sad'); await b.hop(tok); };
   await seq(tok, [
     async () => {                                     // 29.0 很快 summarize 兩種表示法
-      G = jgGraph({ 1: [-1.1, 5.0], 2: [1.1, 5.0], 3: [-1.1, 2.8], 4: [1.1, 2.8] }, [['1', '2'], ['1', '3'], ['2', '3'], ['3', '4']], { undirected: true, drop: 2 });
+      G = jgGraph({ 1: [-1.1, 5.0], 2: [1.1, 5.0], 3: [-1.1, 2.8], 4: [1.1, 2.8] }, [['1', '2'], ['1', '3'], ['2', '3'], ['3', '4']], { undirected: true });
       for (let r = 0; r < 4; r++) {
         cell.push([]); idx(String(r + 1), mx(-1) + 0.25, my(r)); idx(String(r + 1), mx(r), my(-1) - 0.15);
         for (let c = 0; c < 4; c++) { const on = ADJ[r + 1].includes(c + 1); cell[r].push(cube(on ? 1 : 0, on ? JC.blue : JC.cell, [0.6, 0.6, 0.2], mx(c), my(r), 0)); }
@@ -3899,12 +3914,12 @@ FRAG.push(['graphjiang2-rep-compare', 'Adjacency matrix vs list：六個問題�
         ln[r + 1] = [cube(r + 1, JC.node, [0.6, 0.6, 0.3], lx(0), ly(r), 0)];
         ADJ[r + 1].forEach((v, k) => { ln[r + 1].push(cube(v, JC.orange, [0.6, 0.55, 0.3], lx(k + 1), ly(r), 0)); line(lx(k) + 0.32, ly(r), lx(k + 1) - 0.32, ly(r), 0); });
       }
-      ptr('adjacency matrix', mx(1.5), 6.05); ptr('adjacency list', lx(1.5), 6.05);
+      ptr('adjacency matrix', mx(1.5), 6.35); ptr('adjacency list', lx(1.5), 6.35);
       say('兩種最常用的表示法，比一比', '同一張小圖：1-2、1-3、2-3、3-4');
     },
     async () => { ask('Q1：edge (2, 3) 存在嗎？'); glow(G.N[2], GOLD); glow(G.N[3], GOLD); say('Q1：查一條給定的 edge', '哪一種比較快？'); },   // 54.4
     async () => {                                     // 65.5 matrix：直接 access entry，O(1)
-      glow(cell[1][2], GOLD); mark(pkt('看 A[2][3]', mx(2), my(1) + 0.55, 0.3)); mark(good('matrix：O(1)', mx(1.5), 1.5));
+      glow(cell[1][2], GOLD); mark(pkt('看 A[2][3]', mx(3) + 1.7, my(1), 0.3)); mark(good('matrix：O(1)', mx(1.5), 1.5));
       say('Matrix：直接看那一格 entry', 'O(1) 就知道 edge 在不在'); await win(0);
     },
     async () => {                                     // 81.0 list：要掃完一條 list
@@ -4046,7 +4061,7 @@ FRAG.push(['graphjiang2-bip-color', 'Bipartite = two coloring；odd cycle 塗不
   const A = ['1', '3', '4', '6'], B = ['2', '5', '7'];
   await seq(tok, [
     () => {                                           // 709.8 已知是 bipartite：畫得很美
-      G = jgGraph(BIP_NICE, BIP_E, { undirected: true, drop: 2 });
+      G = jgGraph(BIP_NICE, BIP_E, { undirected: true, drop: 0.6 });
       const h1 = ghostBox('#4b9ee2', 5.4, 1.2, 0.5); h1.position.set(-3.2, 5.0, -0.3);
       const h2 = ghostBox('#e8695e', 7.0, 1.2, 0.5); h2.position.set(-3.3, 1.8, -0.3); hs = [h1, h2];
       say('已知是 bipartite：畫得很美', '兩組分得很清楚，edge 都跨組');
@@ -4065,7 +4080,7 @@ FRAG.push(['graphjiang2-bip-color', 'Bipartite = two coloring；odd cycle 塗不
     () => { remove(qq); head('two coloring：two colorable', -3.2, 6.6); say('變成 two coloring 問題', '塗得成就叫 two colorable'); },   // 829.2
     async () => { await G.morph(tok, BIP_NICE, 1500); say('轉一下：2、5、7 一排，6、4 翻過來', '看起來不像，其實一模一樣'); },   // 847.8
     async () => {                                     // 881.3 三角形：塗不成
-      tri = jgGraph({ a: [4.4, 5.4], b: [3.2, 3.5], c: [5.6, 3.5] }, [['a', 'b'], ['b', 'c'], ['c', 'a']], { undirected: true, drop: 2 });
+      tri = jgGraph({ a: [4.4, 5.4], b: [3.2, 3.5], c: [5.6, 3.5] }, [['a', 'b'], ['b', 'c'], ['c', 'a']], { undirected: true, drop: 0.6 });
       await beat(tok, 300); tri.paint('a', JC.red); await beat(tok, 250); tri.paint('b', JC.blue); await beat(tok, 250); tri.paint('c', JC.red);
       tri.e('c', 'a').set(JC.pink); bad('✗ 一定有 edge 同色', 4.4, 2.6);
       say('三個點兩兩相連：不管怎麼塗', '一定有一條 edge 兩端同色');
@@ -4088,12 +4103,12 @@ FRAG.push(['graphjiang2-bip-procedure', 'BFS 著色：L0 紅、L1 藍、L2 紅�
   const LE = [['s', 'a'], ['s', 'b'], ['s', 'c'], ['a', 'd'], ['a', 'e'], ['b', 'e'], ['b', 'f'], ['c', 'g']];
   let G = null, H = null, ef = null, Ls = [];
   await seq(tok, [
-    () => { G = jgGraph(LP, LE, { undirected: true, drop: 2 }); head('給一張 graph：塗紅、藍兩色', 0, 6.75); say('想一個機制，讓塗色成功', '用藍色跟紅色'); },   // 952.0
+    () => { G = jgGraph(LP, LE, { undirected: true, drop: 0.6 }); head('給一張 graph：塗紅、藍兩色', 0, 6.75); say('想一個機制，讓塗色成功', '用藍色跟紅色'); },   // 952.0
     () => { note('規則：每條 edge 兩端不同色', 3.6, 5.6); say('重點：每條 edge 的兩端顏色不同', '塗得成 → bipartite'); },   // 981.0
     () => { note('做法：BFS ＋ 塗色', 3.6, 4.9); say('這個 procedure 其實就是 BFS', '只是 BFS 過程中配上塗色'); },   // 997.0
     () => { const h = ghostBox('#8fb8ef', 6.6, 4.6, 0.4); h.position.set(-2.8, 4.0, -0.4); ptr('假設 G 是 connected', -2.8, 1.4); say('先假設這張 graph 是 connected', '讓 procedure 好處理'); },   // 1009.2
     () => {                                           // 1020.8 不是 connected：每個 component 分開塗
-      H = jgGraph({ h: [3.4, 3.2], i: [5.2, 3.2], j: [4.3, 1.8] }, [['h', 'i'], ['i', 'j']], { undirected: true, drop: 2 });
+      H = jgGraph({ h: [3.4, 3.2], i: [5.2, 3.2], j: [4.3, 1.8] }, [['h', 'i'], ['i', 'j']], { undirected: true, drop: 0.6 });
       note('不同 component 之間沒有 edge → 分開塗', 3.6, 0.8); say('不是 connected 也沒關係', '每個 connected component 分開著色');
     },
     async () => { const p = pkt('起點？', -6.2, 6.4, 0.5); await travel(tok, p, V3(-6.2, 6.4, 0.5), V3(-2.6, 6.3, 0.5), 900); say('反正每個點都要塗', '隨便選一個點當起點'); },   // 1055.8
@@ -4122,7 +4137,7 @@ FRAG.push(['graphjiang2-bip-example', '例子：從 6 開始，紅藍交替塗�
   jFresh();
   let G = null, cp = null;
   await seq(tok, [
-    async () => { G = jgGraph(BIP_MESSY, BIP_E, { undirected: true, drop: 2 }); await beat(tok, 300); const p = pkt('random pick', 1.6, 6.4, 0.5); await travel(tok, p, V3(1.6, 6.4, 0.5), V3(-1.2, 2.1, 0.5), 800); say('Random pick 一個點', '就選 6 這個人'); },   // 1189.7
+    async () => { G = jgGraph(BIP_MESSY, BIP_E, { undirected: true, drop: 0.6 }); await beat(tok, 300); const p = pkt('random pick', 1.6, 6.4, 0.5); await travel(tok, p, V3(1.6, 6.4, 0.5), V3(-1.2, 2.1, 0.5), 800); say('Random pick 一個點', '就選 6 這個人'); },   // 1189.7
     async () => { G.paint('6', JC.red); await pulse(tok, G.N['6']); say('先把 6 塗成紅色', 'L0'); },   // 1196.8
     async () => { for (const k of ['2', '7']) { G.e('6', k).set(JC.ok); G.paint(k, JC.blue); await beat(tok, 300); } say('6 的鄰居 2、7 塗藍色', 'L1'); },   // 1200.5
     async () => { for (const [u, k] of [['2', '1'], ['2', '4'], ['7', '3']]) { G.e(u, k).set(JC.ok); G.paint(k, JC.red); await beat(tok, 260); } say('藍色的鄰居 1、4、3 塗紅色', 'L2'); },   // 1203.4
@@ -4152,14 +4167,14 @@ FRAG.push(['graphjiang2-bip-proof', '正確性：同層 edge ⇒ odd cycle', asy
     () => { h = head('這樣塗，所有 case 都會成功嗎？', 0, 6.75); say('例子很小，眼睛看好像會成功', '是不是所有的 case 都會成功？'); },   // 1313.0
     () => { txt(h, 'Proof：紅藍交替著色是對的'); say('要證明這個 procedure 的正確性', ''); },   // 1340.1
     () => {                                           // 1346.8 G connected，BFS 產生 L0、L1…
-      L = jgGraph(LA, EA, { undirected: true, drop: 2 });
+      L = jgGraph(LA, EA, { undirected: true, drop: 0.6 });
       for (const [t, y] of [['L0', 5.6], ['L1', 4.1], ['L2', 2.6]]) keep(idx(t, -6.75, y));
       say('G 是 connected graph，做 BFS', '順便產生 L0、L1、L2… 的 labeling');
     },
     () => { nt = note('下面兩件事，一定有一件成立', 0, 0.4); say('要證明：下面兩件事一定有一件成立', ''); },   // 1370.2
     () => { L.all(JC.ok); keep(ptr('(i) 沒有 edge 連同一層 → bipartite', -4.2, 1.5)); say('(i) 沒有 edge 連接同一層的兩個點', '→ 這張 graph 是 bipartite'); },   // 1381.8
     () => {                                           // 1403.6 (ii) 有同層 edge → odd cycle
-      R = jgGraph(RA, ER, { undirected: true, drop: 2 }); rr = R.add('d', 'e'); rr.set(JC.pink);
+      R = jgGraph(RA, ER, { undirected: true, drop: 0.6 }); rr = R.add('d', 'e'); rr.set(JC.pink);
       keep(ptr('(ii) 有同層 edge → 有 odd cycle → 不是', 3.4, 1.5)); say('(ii) 有 edge 連接同一層的兩個點', '→ G 有 odd cycle，不是 bipartite');
     },
     async () => { glow(R.N.d, '#7a1010'); glow(R.N.e, '#7a1010'); await pulse(tok, R.N.e); say('左邊：edge 只連相鄰兩層', '右邊：有一條紅色 edge 連同一層'); },   // 1438.4
@@ -4206,7 +4221,7 @@ FRAG.push(['graphjiang2-coloring-mask', 'Coloring 延伸：mask 拆成兩、三�
   const PC = { red: JC.red, blue: JC.blue, green: JC.green, yellow: JC.yellow };
   await seq(tok, [
     () => {                                           // 1778.8 bipartite test = two coloring
-      K0 = jgGraph({ a: [-4.6, 5.0], b: [-2.6, 5.0], c: [-3.6, 3.4], d: [-1.6, 3.4] }, [['a', 'b'], ['a', 'c'], ['b', 'c'], ['b', 'd'], ['c', 'd']], { undirected: true, drop: 2 });
+      K0 = jgGraph({ a: [-4.6, 5.0], b: [-2.6, 5.0], c: [-3.6, 3.4], d: [-1.6, 3.4] }, [['a', 'b'], ['a', 'c'], ['b', 'c'], ['b', 'd'], ['c', 'd']], { undirected: true, drop: 0.6 });
       pal.push(cube('', PC.red, [0.5, 0.5, 0.3], 1.6, 6.3, 0), cube('', PC.blue, [0.5, 0.5, 0.3], 2.3, 6.3, 0));
       nt = note('測 bipartite = two coloring', 4.6, 6.3); say('BFS 的 application：測 bipartite', '等同於做 two coloring');
     },
@@ -4244,7 +4259,7 @@ FRAG.push(['graphjiang2-dir-connect', 'Directed graph：從 1 出發永遠到不
   jFresh();
   let G = null, h = null, nb = null, nt = null, hz = null;
   await seq(tok, [
-    () => { G = jgGraph(D7_P, D7_E, { drop: 2 }); h = head('Directed graph 的 connectivity', 0, 6.75); say('接下來探討 directed graph', '上面的 connectivity'); },   // 2120.8
+    () => { G = jgGraph(D7_P, D7_E, { drop: 0.6 }); h = head('Directed graph 的 connectivity', 0, 6.75); say('接下來探討 directed graph', '上面的 connectivity'); },   // 2120.8
     () => { jgGraph({ u: [4.4, 6.0], v: [6.2, 6.0] }, [['u', 'v']], { undirected: true, size: 0.5, r: 0.3 }); note('undirected：edge 雙向', 5.3, 5.3); say('Undirected：edge 是雙向的', '只要看 connected component'); },   // 2125.8
     () => { note('directed：有方向，要求更嚴', 5.3, 4.6); say('Directed graph 比較困難', 'edge 有方向性'); },   // 2157.8
     async () => { G.e('2', '3').set(JC.ok); await zip(tok, G, '2', '3'); nb = good('2 → 3 ✓', -4.6, 6.3); say('2 到 3 有一條 edge', '2 可以 reach 到 3'); },   // 2174.8
@@ -4280,7 +4295,7 @@ FRAG.push(['graphjiang2-strong-def', 'Strong connectivity：可去可回', async
     async () => { path(B, JC.orange); v.look(-1); await ride(B, 'v'); u.mood('happy'); say('同時 v 也有一條 path 回到 u', '走過去又走得回來'); },   // 2414.8
     async () => { g1 = good('u、v：strongly connected', -3.7, -0.2); await u.hop(tok); say('可去可回', '這兩點才是 strongly connected'); },   // 2431.8
     () => {                                           // 2437.8 graph strongly connected：任兩點 mutually reachable
-      R = jgGraph({ a: [2.2, 5.0], b: [4.6, 5.0], c: [4.6, 2.6], d: [2.2, 2.6] }, [['a', 'b'], ['b', 'c'], ['c', 'd'], ['d', 'a'], ['a', 'c']], { drop: 2 });
+      R = jgGraph({ a: [2.2, 5.0], b: [4.6, 5.0], c: [4.6, 2.6], d: [2.2, 2.6] }, [['a', 'b'], ['b', 'c'], ['c', 'd'], ['d', 'a'], ['a', 'c']], { drop: 0.6 });
       b1 = good('任兩點都 mutually reachable → strongly connected', 3.4, 6.1); say('整張 directed graph strongly connected：', '任兩點之間都 mutually reachable');
     },
     () => { R.addNode('e', 6.2, 1.0, 1.5); R.add('c', 'e').set(JC.pink); glow(R.N.e, '#7a1010'); remove(b1); b1 = bad('e 回不去 → 整張不是 strongly connected', 3.4, 6.1); say('如果有些點沒辦法互相到達', '整張圖就不是 strongly connected'); },   // 2458.8
@@ -4329,7 +4344,7 @@ FRAG.push(['graphjiang2-sc-test', '判定 strongly connected：G 與 G^rev 各�
   let G = null, h = null, n1 = null, n2 = null, bfs = null;
   const reset = () => { for (const k in G.N) { G.paint(k, JC.node); glow(G.N[k], null); } };
   await seq(tok, [
-    () => { G = jgGraph(SC_P, SC_E, { drop: 2 }); h = head('這張 directed graph 是 strongly connected 嗎？', 0, 6.75); bfs = buddy('BFS', '', '#7cd1a8', 5.6, -0.6, 0.4, 0.5); say('給定一個 directed graph', '判定它本身是不是 strongly connected'); },   // 2660.4
+    () => { G = jgGraph(SC_P, SC_E, { drop: 0.6 }); h = head('這張 directed graph 是 strongly connected 嗎？', 0, 6.75); bfs = buddy('BFS', '', '#7cd1a8', 5.6, -0.6, 0.4, 0.5); say('給定一個 directed graph', '判定它本身是不是 strongly connected'); },   // 2660.4
     () => { note('希望 linear time', 4.3, 6.05); say('而且希望在 linear time 判定', '其實是可以的'); },   // 2683.8
     () => { note('做法：run 兩次 BFS', 4.3, 5.45); say('Run 兩次 BFS 就可以確定', ''); },   // 2692.8
     async () => { glow(G.N.s, GOLD); n1 = note('若是 strongly connected：任選 s，BFS 一定走到所有人', -2.6, 0.5); await zip(tok, G, 's', 'a'); say('如果是 strongly connected', '任選一點 s 做 BFS，一定 reach 到所有人'); },   // 2724.8
@@ -4427,7 +4442,7 @@ FRAG.push(['graphjiang2-l9-sctest', '判定 strongly connected：BFS on G 與 G^
   let G = null, h = null, n1 = null, bfs = null;
   const reset = () => { for (const k in G.N) { G.paint(k, JC.node); glow(G.N[k], null); } };
   await seq(tok, [
-    () => { G = jgGraph(SC_P, SC_E, { drop: 2 }); h = head('給一個 directed graph：是 strongly connected 嗎？', 0, 6.75); bfs = buddy('BFS', '', '#7cd1a8', 5.6, -0.6, 0.4, 0.5); say('給定一個 directed graph', '很快判定它是不是 strongly connected'); },   // 180.0
+    () => { G = jgGraph(SC_P, SC_E, { drop: 0.6 }); h = head('給一個 directed graph：是 strongly connected 嗎？', 0, 6.75); bfs = buddy('BFS', '', '#7cd1a8', 5.6, -0.6, 0.4, 0.5); say('給定一個 directed graph', '很快判定它是不是 strongly connected'); },   // 180.0
     () => { note('linear time：掃過 graph 少數幾次', 4.0, 6.05); say('多快？希望是 linear time', '掃過這個 graph 一兩次就判定'); },   // 200.0
     () => { note('用 BFS（換 DFS 也一樣）', 4.0, 5.45); say('Procedure 利用 BFS 的特性', '用 DFS 其實也一樣'); },   // 217.2
     () => { n1 = note('若是 strongly connected：任兩點都 mutually reachable', -2.6, 0.5); say('概念：如果它是 strongly connected', '任兩點之間都 mutually reachable'); },   // 234.0
@@ -4459,7 +4474,7 @@ FRAG.push(['graphjiang2-l9-scc-def', 'Strong component：長到最大（maximal�
   const ringIn = () => { if (rin) kill(rin); rin = ghostBox('#ffffff', 3.8, 3.4, 0.4); rin.position.set(-3.2, 3.8, -0.4); };
   const ringOut = () => { if (rout) kill(rout); rout = ghostBox('#2fc092', 6.4, 4.0, 0.5); rout.position.set(-2.0, 3.7, -0.6); };
   await seq(tok, [
-    () => { G = jgGraph(P, E, { drop: 2 }); h = head('測試失敗：不是單一個 strongly connected', 0, 6.75); say('如果 directed graph 沒通過測試', '它就不是單一個 strongly connected'); },   // 541.0
+    () => { G = jgGraph(P, E, { drop: 0.6 }); h = head('測試失敗：不是單一個 strongly connected', 0, 6.75); say('如果 directed graph 沒通過測試', '它就不是單一個 strongly connected'); },   // 541.0
     () => { nt = note('可以拆成一個到數個 strongly connected component', 0, 0.3); say('任何 directed graph 都可以拆成', '一個到數個 strongly connected component'); },   // 557.0
     () => { me = buddy('', '', '#f4a56a', 5.4, -0.6, 0.4, 0.55); me.mood('wow'); bub('猜得出 SCC 嗎？', 5.4, 1.4); say('隨便畫一個 directed graph', '你猜得出它的 SCC 嗎？'); },   // 572.0
     () => { me.mood('happy'); txt(nt, '答案：做兩次 DFS 就可以拆出來'); say('先告訴大家答案', '做兩次 DFS 就可以'); },   // 595.0
@@ -4490,7 +4505,7 @@ FRAG.push(['graphjiang2-l9-condense', '把每個 strong component 縮成一點 �
   const E = [['x', 'y', 0.18], ['y', 'x', 0.18], ['a', 'b'], ['b', 'c'], ['c', 'd'], ['d', 'a'], ['a', 'c'], ['x', 'a'], ['y', 'd']];
   let G = null, h = null, nt = null, hs = [], S1 = null, S2 = null, X = null;
   await seq(tok, [
-    () => { G = jgGraph(P, E, { drop: 2 }); h = head('任何 directed graph 都能找出 strong component', 0, 6.75); say('任何一個 directed graph', '都可以找出一些 strong component'); },   // 985.0
+    () => { G = jgGraph(P, E, { drop: 0.5 }); h = head('任何 directed graph 都能找出 strong component', 0, 6.75); say('任何一個 directed graph', '都可以找出一些 strong component'); },   // 985.0
     () => {                                           // 1003.0 兩個：外圈、左邊小圈
       const g1 = ghostBox('#2fc092', 5.6, 5.2, 0.5); g1.position.set(-0.4, 3.6, -0.6);
       const g2 = ghostBox('#e55a9b', 1.6, 4.4, 0.5); g2.position.set(-6.0, 3.6, -0.6); hs = [g1, g2];
@@ -4498,7 +4513,7 @@ FRAG.push(['graphjiang2-l9-condense', '把每個 strong component 縮成一點 �
       nt = note('兩個 strong component：外圈、左邊小圈', 0, 0.3); say('這張圖拆完有兩個 strong component', '外圈這個、左邊小的這個');
     },
     () => { txt(nt, 'strong component：一群緊密結合的點'); say('看起來就是一群緊密結合的點', '彼此都 mutually reachable'); },   // 1031.4
-    async () => { await G.morph(tok, { a: [-0.4, 3.6], b: [-0.4, 3.6], c: [-0.4, 3.6], d: [-0.4, 3.6], x: [-6.0, 3.6], y: [-6.0, 3.6] }, 1400); txt(nt, '把每個 strong component 縮成一個點'); say('把 strong component 縮成一個點', '縮起來變成一包'); },   // 1049.0
+    async () => { for (const k in G.N) if (G.N[k].userData.lbl) K.showL(G.N[k].userData.lbl, false); await G.morph(tok, { a: [-0.4, 3.6], b: [-0.4, 3.6], c: [-0.4, 3.6], d: [-0.4, 3.6], x: [-6.0, 3.6], y: [-6.0, 3.6] }, 1400); txt(nt, '把每個 strong component 縮成一個點'); say('把 strong component 縮成一個點', '縮起來變成一包'); },   // 1049.0
     () => {                                           // 1061.3 內部 edge 消失
       for (const ed of G.E) kill(ed.obj); G.E = []; for (const k in G.N) kill(G.N[k]); hs.forEach(kill);
       S1 = cube('SCC₂', JC.ok, [1.6, 1.2, 1.0], -0.4, 3.6, 0); S2 = cube('SCC₁', JC.pink, [1.4, 1.2, 1.0], -6.0, 3.6, 0);
@@ -4508,7 +4523,7 @@ FRAG.push(['graphjiang2-l9-condense', '把每個 strong component 縮成一點 �
     () => { good('縮起來的圖：directed acyclic graph（DAG）', 0, 1.3); say('任意 directed graph 縮完', '都是沒有 cycle 的 directed graph'); },   // 1073.8
     () => {                                           // 1098.0 若縮完有 cycle → 猜錯
       jFresh(); h = head('如果縮完之後，group 之間有 cycle？', 0, 6.75);
-      G = jgGraph({ A: [-4.6, 4.8], B: [0.4, 4.8], C: [-2.1, 1.6] }, [['A', 'B'], ['B', 'C'], ['C', 'A']], { size: 1.2, r: 0.8, drop: 2 });
+      G = jgGraph({ A: [-4.6, 4.8], B: [0.4, 4.8], C: [-2.1, 1.6] }, [['A', 'B'], ['B', 'C'], ['C', 'A']], { size: 1.2, r: 0.8, drop: 0.6 });
       nt = bad('那就是猜錯了：還找得不夠大', 3.8, 0.6); say('如果拆完的 strong component 之間', '居然有 cycle，那就是你猜錯了');
     },
     async () => { for (const k of ['A', 'B', 'C']) { G.paint(k, JC.ok); await pulse(tok, G.N[k], 260); } note('A、B、C 各自內部可去可回', 3.8, 5.6); say('A 這群可去可回、B 也是', 'C 也是'); },   // 1124.0
@@ -4529,7 +4544,7 @@ FRAG.push(['graphjiang2-l9-scc-thm', 'Theorem：兩個 strong component 不是�
   const clr = () => { ts.forEach(remove); ts = []; for (const k in G.N) glow(G.N[k], null); };
   await seq(tok, [
     () => {                                           // 1212.0 Theorem
-      G = jgGraph(P, E, { drop: 2 }); for (const k of ['a', 'b', 'c', 'd']) G.paint(k, JC.ok); for (const k of ['x', 'y']) G.paint(k, JC.pink);
+      G = jgGraph(P, E, { drop: 0.6 }); for (const k of ['a', 'b', 'c', 'd']) G.paint(k, JC.ok); for (const k of ['x', 'y']) G.paint(k, JC.pink);
       const g1 = ghostBox('#2fc092', 5.6, 5.2, 0.5); g1.position.set(-0.4, 3.6, -0.6); const g2 = ghostBox('#e55a9b', 1.6, 4.4, 0.5); g2.position.set(-6.0, 3.6, -0.6);
       h = head('Theorem：directed graph 裡任挑兩點 s、t', 0, 6.75); say('這邊有一個 theorem', '在 directed graph 當中');
     },
@@ -4551,8 +4566,8 @@ FRAG.push(['graphjiang2-l9-dag-intro', 'Topological ordering 與 DAG；沒 cycle
   let D = null, h = null, nt = null, T = null;
   await seq(tok, [
     () => { h = head('Topological ordering（topological sorting）', 0, 6.75); say('最後一個 application', 'topological ordering，也叫 topological sorting'); },   // 1342.0
-    () => { D = jgGraph({ p: [-5.6, 5.0], q: [-3.6, 5.0], r: [-5.6, 3.0], s: [-3.6, 3.0] }, [['p', 'q'], ['p', 'r'], ['q', 's'], ['r', 's']], { drop: 2 }); nt = note('只對 directed acyclic graph 討論', -4.6, 1.7); say('只針對有方向、而且沒有 cycle 的圖', 'directed acyclic graph'); },   // 1355.0
-    () => { const C = jgGraph({ i: [-0.2, 5.4], j: [0.9, 3.4], k: [-1.3, 3.4] }, [['i', 'j'], ['j', 'k'], ['k', 'i']], { size: 0.6, r: 0.4, drop: 2 }); C.all(JC.pink); bad('有 cycle：做不到', -0.2, 2.2); say('有 cycle 的圖', '沒辦法做 topological ordering'); },   // 1377.0
+    () => { D = jgGraph({ p: [-5.6, 5.0], q: [-3.6, 5.0], r: [-5.6, 3.0], s: [-3.6, 3.0] }, [['p', 'q'], ['p', 'r'], ['q', 's'], ['r', 's']], { drop: 0.6 }); nt = note('只對 directed acyclic graph 討論', -4.6, 1.7); say('只針對有方向、而且沒有 cycle 的圖', 'directed acyclic graph'); },   // 1355.0
+    () => { const C = jgGraph({ i: [-0.2, 5.4], j: [0.9, 3.4], k: [-1.3, 3.4] }, [['i', 'j'], ['j', 'k'], ['k', 'i']], { size: 0.6, r: 0.4, drop: 0.6 }); C.all(JC.pink); bad('有 cycle：做不到', -0.2, 2.2); say('有 cycle 的圖', '沒辦法做 topological ordering'); },   // 1377.0
     () => { ptr('directed acyclic graph', -4.6, 6.0); say('Directed acyclic graph', '蠻常出現、也常被拿出來討論'); },   // 1384.3
     () => { txt(h, 'DAG = Directed Acyclic Graph'); say('太常用了，很多書直接叫它 DAG', '把字頭挑出來'); },   // 1403.0
     () => { D.all(JC.ok); txt(nt, 'edge 有方向，而且找不到任何 cycle'); say('Edge 一定有方向性', '而且裡面找不到任何 cycle'); },   // 1413.5
@@ -4647,7 +4662,7 @@ FRAG.push(['graphjiang2-l9-topo-def', '定義：edge vi → vj ⇒ vi 排在 vj 
   const ORD = ['a', 'b', 'c', 'e', 'd'];
   let G = null, h = null, nt = null, arcs = [];
   await seq(tok, [
-    () => { G = jgGraph(P, E, { drop: 2 }); h = head('正式定義：給一個 directed graph G', 0, 6.8); say('正式定義：給定一個 directed graph G', ''); },   // 2109.0
+    () => { G = jgGraph(P, E, { drop: 0.6 }); h = head('正式定義：給一個 directed graph G', 0, 6.8); say('正式定義：給定一個 directed graph G', ''); },   // 2109.0
     () => { nt = note('topological ordering：把所有點排成一個順序', 0, 6.1); say('Topological ordering', '把 graph 裡所有的點拿出來排序'); },   // 2119.0
     async () => { arcs = await lineUp(tok, G, ORD, { x0: -4.8, dx: 2.4, color: JC.edge }); ORD.forEach((k, i) => idx('v' + (i + 1), -4.8 + i * 2.4, 0.35)); say('G 有 n 個點', '排成 v1、v2、…、vn 一個順序'); },   // 2129.3
     () => { for (const g of arcs) g.traverse((o) => { if (o.material) o.material.color.set(JC.ok); if (o.setColor) o.setColor(JC.ok); }); txt(nt, '嚴格要求：vi → vj 有 edge ⇒ vi 排在 vj 前面'); say('非常嚴格的要求：vi 到 vj 有 edge', 'vi 一定要排在前面、vj 在後面'); },   // 2138.3
@@ -4667,7 +4682,7 @@ FRAG.push(['graphjiang2-l9-topo-example', '例子：排好之後所有 edge 都�
   jFresh();
   let G = null, h = null, ts = [], arcs = [];
   await seq(tok, [
-    () => { G = topoGraph({ drop: 2 }); h = head('例子：一個 directed graph', 0, 6.75); say('這是一個 directed graph', '怎麼產生它的 topological order？'); },   // 2310.8
+    () => { G = topoGraph({ drop: 0.6 }); h = head('例子：一個 directed graph', 0, 6.75); say('這是一個 directed graph', '怎麼產生它的 topological order？'); },   // 2310.8
     () => { note('小心確認：沒有 cycle → DAG', 4.6, 6.0); say('它沒有 cycle，是一個 DAG', '大家可以小心確認一下'); },   // 2320.0
     async () => { for (const [i, k] of TORD.entries()) { ts.push(ordTag(G, k, i + 1)); await beat(tok, 160); } say('這是其中一種解法', '把點編號 1～7'); },   // 2332.4
     () => { txt(h, 'Topological order'); say('這個 order', '叫 topological order'); },   // 2340.0
@@ -4682,7 +4697,7 @@ FRAG.push(['graphjiang2-l9-source-idea', '誰可以當 1 號？沒有 incoming e
   jFresh();
   let G = null, h = null, nt = null, me = null, q = null;
   await seq(tok, [
-    () => { G = topoGraph({ drop: 2 }); h = head('怎麼做到這件事？', 0, 6.75); me = buddy('', '', '#f4a56a', 5.4, -0.6, 0.4, 0.55); say('現在問題是', '怎麼做到這件事？'); },   // 2403.4
+    () => { G = topoGraph({ drop: 0.6 }); h = head('怎麼做到這件事？', 0, 6.75); me = buddy('', '', '#f4a56a', 5.4, -0.6, 0.4, 0.55); say('現在問題是', '怎麼做到這件事？'); },   // 2403.4
     () => { nt = note('Lemma：有 topological ordering ⇒ DAG（這方向對）', 0, -0.3); say('剛剛的 lemma：有 topological ordering', '這個 G 就是 DAG'); },   // 2412.0
     () => { txt(nt, '反過來也對嗎？'); me.mood('wow'); say('接下來反過來問', '這個方向對嗎？'); },   // 2419.0
     () => { txt(h, 'G 是 DAG ⇒ 一定找得到 topological ordering？'); say('如果 G 是 DAG', '一定能幫它找到 topological ordering 嗎？'); },   // 2429.0
@@ -4715,7 +4730,7 @@ FRAG.push(['graphjiang2-l9-source-proof', '證明：一直往回走 n + 1 次，
   const back = async (a, b) => { G.e(b, a).set(JC.hot); await walk(tok, me, G.P[b][0], G.P[b][1] + 0.4, 450); visit(b); };
   await seq(tok, [
     () => { h = head('證明：反證法', 0, 6.75); say('用反證法證明這個 lemma', ''); },   // 2698.9
-    () => { G = jgGraph(P, E, { drop: 2 }); nt = note('suppose：G 是 DAG，但每個點都有 incoming edge', 0, 6.05); say('Suppose G 是一個 DAG', '但所有的人都有 incoming edge'); },   // 2707.0
+    () => { G = jgGraph(P, E, { drop: 0.6 }); nt = note('suppose：G 是 DAG，但每個點都有 incoming edge', 0, 6.05); say('Suppose G 是一個 DAG', '但所有的人都有 incoming edge'); },   // 2707.0
     async () => { for (const n in G.N) { glow(G.N[n], '#0f5a3a'); await beat(tok, 120); } txt(nt, '每個點至少一條 incoming edge'); say('說得明確一點', '每個點至少有一條 incoming edge'); },   // 2719.0
     () => { for (const n in G.N) glow(G.N[n], null); txt(nt, '目標：在 G 裡找到一個 cycle'); say('透過推導', '想辦法在 G 上找到一個 cycle'); },   // 2731.0
     () => { txt(nt, '找到 cycle → 跟「acyclic」矛盾'); say('一開始說 G 是 DAG', '找到 cycle 就跟 acyclic 矛盾'); },   // 2737.0
@@ -4747,7 +4762,7 @@ FRAG.push(['graphjiang2-l9-topo-run', '例子：抓出沒有 incoming 的點、�
   const num = (k, n) => { ts.push(ordTag(G, k, n)); G.paint(k, JC.ok); };
   const ung = () => { for (const k in G.N) glow(G.N[k], null); };
   await seq(tok, [
-    () => { G = topoGraph({ drop: 2 }); h = head('同一個例子：怎麼得到剛剛的結果？', 0, 6.75); say('剛剛的例子', '同樣一個 graph'); },   // 3074.9
+    () => { G = topoGraph({ drop: 0.6 }); h = head('同一個例子：怎麼得到剛剛的結果？', 0, 6.75); say('剛剛的例子', '同樣一個 graph'); },   // 3074.9
     () => { glow(G.N.A, GOLD); glow(G.N.B, GOLD); nt = note('沒有 incoming edge 的點：A、B 兩個', 0, -0.3); say('先把沒有 incoming edge 的點抓出來', '一開始找到這兩個'); },   // 3082.5
     () => { txt(nt, '這兩個誰當 1 號都沒關係'); say('不管怎樣，兩個人都可以編 1 號', '誰當 1 號都沒關係'); },   // 3090.9
     async () => { ung(); num('A', 1); await pulse(tok, G.N.A); say('就挑右下角這個人', '叫它 1 號'); },   // 3103.0
@@ -4776,7 +4791,7 @@ FRAG.push(['graphjiang2-l9-induct-idea', 'Lemma：DAG ⇒ 有 topological order�
   jFresh();
   let G = null, h = null, nt = null;
   await seq(tok, [
-    () => { G = topoGraph({ drop: 2 }); h = head('回到方法：怎麼決定 topological order？', 0, 6.75); say('看過例子之後', '接下來看這個方法到底怎麼做'); },   // 3710.3
+    () => { G = topoGraph({ drop: 0.6 }); h = head('回到方法：怎麼決定 topological order？', 0, 6.75); say('看過例子之後', '接下來看這個方法到底怎麼做'); },   // 3710.3
     () => { glow(G.N.A, GOLD); glow(G.N.B, GOLD); nt = note('只要是 DAG：一定有沒 incoming edge 的點', 0, -0.3); say('根據：只要是 DAG', '一定存在至少一個沒有 incoming edge 的點'); },   // 3722.0
     () => { ordTag(G, 'A', 1); G.paint('A', JC.ok); txt(nt, '沒有 dependency → 一定可以排在前面，編 1 號'); say('它沒有 dependency on 任何人', '可以排在前面，排在 1 號'); },   // 3735.7
     async () => { for (const [i, k] of TORD.slice(1).entries()) { ordTag(G, k, i + 2); G.paint(k, JC.ok); await beat(tok, 180); } txt(nt, '照這樣就能把所有點排序'); say('根據這樣的方式', '就可以把所有的點做排序'); },   // 3747.0
@@ -4837,7 +4852,7 @@ FRAG.push(['graphjiang2-l9-induct-step', '從 n 到 n + 1：v 放最前面，剩
   const Q = {}; for (const k of TORD.slice(1)) Q[k] = [TP[k][0] * 0.72 + 2.2, TP[k][1] * 0.95 + 0.2];
   let G = null, h = null, nt = null, halo = null, ts = [], arcs = [];
   await seq(tok, [
-    () => { G = topoGraph({ drop: 2 }); h = head('從 n 推到 n + 1：多出來的點挑誰？', 0, 6.75); say('怎麼從 n 進步到 n + 1？', '多出來的那個點要怎麼挑？'); },   // 4138.8
+    () => { G = topoGraph({ drop: 0.6 }); h = head('從 n 推到 n + 1：多出來的點挑誰？', 0, 6.75); say('怎麼從 n 進步到 n + 1？', '多出來的那個點要怎麼挑？'); },   // 4138.8
     () => { glow(G.N.A, GOLD); glow(G.N.B, GOLD); nt = note('前面的 lemma：DAG 一定有沒 incoming edge 的點', 0, -0.3); say('根據前面的 lemma', '只要是 DAG 就一定有沒有 incoming edge 的點'); },   // 4147.1
     () => { glow(G.N.B, null); relabel(G.N.A, 'v'); txt(nt, '有好多個？隨便挑一個，叫它 v'); say('有好多個怎麼辦？', '沒關係，隨便挑一個'); },   // 4160.9
     () => { txt(nt, 'G：n + 1 個點的 DAG'); say('現在討論的 G', '是有 n + 1 個點的 DAG'); },   // 4168.0
@@ -4874,7 +4889,7 @@ FRAG.push(['graphjiang2-l9-induct-domino', '骨牌效應；把證明倒過來就
     () => { glow(D[0], GOLD); pb = ptr('base case = 推倒第一張', -5.2, 2.5); say('第一張骨牌推倒', '就是 base case'); },   // 4499.6
     async () => { await anim(tok, 700, (u) => tipTo(D[0], u)); txt(nt, 'inductive step：前一張倒 → 後一張也倒'); say('前一張倒的時候，後一張就會倒', '就是 inductive step'); },   // 4507.8
     async () => { remove(pb); for (let i = 1; i < 7; i++) await anim(tok, 260, (u) => tipTo(D[i], u)); good('所有骨牌都倒下來', -2.4, 2.5); say('只要證明這兩大步驟', '所有的骨牌都會倒下來'); },   // 4520.8
-    () => { G = jgGraph(MP, TE, { size: 0.5, r: 0.32, drop: 2 }); txt(h, '證明很漂亮：證完 algorithm 就出來了'); say('這個證明很漂亮', '證完之後 algorithm 就出來了'); },   // 4537.9
+    () => { G = jgGraph(MP, TE, { size: 0.5, r: 0.32, drop: 0.6 }); txt(h, '證明很漂亮：證完 algorithm 就出來了'); say('這個證明很漂亮', '證完之後 algorithm 就出來了'); },   // 4537.9
     () => { txt(nt, 'proof 由 n 往上兜 n + 1；algorithm 倒過來做'); say('證明是從 n 個點兜 n + 1 個點', '發展 algorithm 時倒過來做'); },   // 4544.0
     async () => { glow(G.N.A, GOLD); ordTag(G, 'A', 1); G.paint('A', JC.ok); await pulse(tok, G.N.A); txt(nt, '先抓出一定擺前面的人，幫它編號'); say('先把這個人抓出來', '知道它一定擺前面，幫它編號'); },   // 4562.0
     () => { glow(G.N.A, null); dimNode(G, 'A'); txt(nt, '再處理剩下的人'); say('接下來', '再處理剩下的人'); },   // 4568.0
@@ -4890,7 +4905,7 @@ FRAG.push(['graphjiang2-l9-topo-algo', 'TopologicalOrder(G)：naive 要 O(n²)',
   const num = (k, n) => { ordTag(G, k, n); G.paint(k, JC.ok); };
   await seq(tok, [
     () => { h = head('Algorithm procedure', 0, 6.75); cp = code(['TopologicalOrder(G)：// G 是 DAG', '  找一個沒有 incoming edge 的點 v', '  給 v 一個 order（編號）', '  從 G 刪掉 v', '  TopologicalOrder(G − v)', '  直到 G 空了為止'], -3.4, 5.6, 0.62); cp.hl(-1); say('我們來寫下', '這個 algorithm procedure'); },   // 4596.0
-    () => { cp.hl(0); G = jgGraph(MP, TE, { size: 0.5, r: 0.32, drop: 2 }); say('Input：一個 directed acyclic graph G', ''); },   // 4607.3
+    () => { cp.hl(0); G = jgGraph(MP, TE, { size: 0.5, r: 0.32, drop: 0.6 }); say('Input：一個 directed acyclic graph G', ''); },   // 4607.3
     () => { nt = note('每一次都做同樣的事', 2.6, 1.2); say('它每一次', '都做同樣的事情'); },   // 4612.0
     () => { cp.hl(1); glow(G.N.A, GOLD); say('先找到一個點', '沒有 incoming edge'); },   // 4620.0
     () => { cp.hl(2); num('A', 1); say('找出來之後', '給它一個 order，編號它'); },   // 4627.0
@@ -4914,7 +4929,7 @@ FRAG.push(['graphjiang2-l9-ds-setup', 'Data structure：in-degree 欄位 ＋ set
   jFresh();
   let G = null, h = null, nt = null, T = null, S = null;
   await seq(tok, [
-    () => { G = topoGraph({ drop: 2 }); h = head('linear time：要配合 data structure', 0, 6.75); say('怎麼做到 linear time？', 'data structure 要配合'); },   // 4782.0
+    () => { G = topoGraph({ drop: 0.6 }); h = head('linear time：要配合 data structure', 0, 6.75); say('怎麼做到 linear time？', 'data structure 要配合'); },   // 4782.0
     () => { nt = note('基本 representation：adjacency list', 0, -0.3); say('用 adjacency list', '當作基本的 representation'); },   // 4788.0
     () => { glow(G.N.D, GOLD); txt(nt, 'incoming、outgoing 都 maintain（D：in ← A B C，out → E）'); say('要很容易看到 incoming edge 有誰', '和 outgoing edge 到誰，兩塊都 maintain'); },   // 4803.0
     () => { glow(G.N.D, null); T = inTags(G, indeg(G)); txt(nt, '每個點多一個欄位：in-degree（幾條 incoming edge）'); say('另外對每個點多 maintain 一個欄位', '記錄它有多少條 incoming edge'); },   // 4819.0
@@ -4932,7 +4947,7 @@ FRAG.push(['graphjiang2-l9-ds-init', 'Initialization：掃一次 edge，算出 i
   let G = null, h = null, nt = null, T = null;
   const d = {};
   await seq(tok, [
-    () => { G = topoGraph({ drop: 2 }); for (const k in G.N) d[k] = 0; T = inTags(G, d); h = head('Initialization 要花多少時間？', 0, 6.75); say('這樣做的話', 'initialization 需要花多少時間？'); },   // 4909.0
+    () => { G = topoGraph({ drop: 0.6 }); for (const k in G.N) d[k] = 0; T = inTags(G, d); h = head('Initialization 要花多少時間？', 0, 6.75); say('這樣做的話', 'initialization 需要花多少時間？'); },   // 4909.0
     () => { nt = note('要先準備 in-degree 欄位', 0, -0.3); say('因為需要準備', '這個 in-degree 欄位'); },   // 4917.2
     () => { txt(nt, '每個點：數一下有幾條 incoming edge'); say('每個點都要 check', 'incoming edge 有多少條'); },   // 4922.0
     () => { txt(nt, '做法：掃過整個 graph 一次'); say('基本上掃過整個 graph', '就可以得到這個資訊'); },   // 4935.0
@@ -4951,7 +4966,7 @@ FRAG.push(['graphjiang2-l9-ds-delete', '拔掉 v：outgoing 對到的人 in-degr
   let G = null, h = null, nt = null, T = null, S = null, d = null;
   const dec = (u) => { const z = []; for (const v of G.out(u)) { d[v]--; txt(T[v], 'in ' + d[v]); G.e(u, v).set(JC.hot); if (d[v] === 0) z.push(v); } return z; };
   await seq(tok, [
-    () => { G = topoGraph({ drop: 2 }); d = indeg(G); T = inTags(G, d); S = sBox(); S.push('A'); S.push('B'); h = head('第三行：概念上把點從圖中拔掉', 0, 6.75); say('重點是第三行要怎麼做', '把這個點從圖當中拔掉'); },   // 5046.3
+    () => { G = topoGraph({ drop: 0.6 }); d = indeg(G); T = inTags(G, d); S = sBox(); S.push('A'); S.push('B'); h = head('第三行：概念上把點從圖中拔掉', 0, 6.75); say('重點是第三行要怎麼做', '把這個點從圖當中拔掉'); },   // 5046.3
     () => { nt = note('拔掉的時候，有幾件事要做', 0, -0.3); say('從圖當中拔掉', '有幾件事情要去做'); },   // 5055.6
     async () => { S.pop('A'); ordTag(G, 'A', 1); G.paint('A', JC.ok); await pulse(tok, G.N.A); txt(nt, '① order 它：它也從 S pop 出來'); say('Order 它的時候', '它也從 S 裡面 pop 出來'); },   // 5064.0
     () => { txt(nt, '② 影響它 outgoing 到達的人：in-degree 要扣 1'); say('拔掉會影響它 outgoing 到達的人', '他們的 in-degree 要扣 1'); },   // 5080.0
@@ -4968,7 +4983,7 @@ FRAG.push(['graphjiang2-l9-ds-time', '總時間：n 次 order ＋ m 次 update =
   jFresh();
   let G = null, h = null, me = null;
   await seq(tok, [
-    async () => { G = topoGraph({ drop: 2 }); h = head('Overall 要花多少時間？', 0, 6.75); await beat(tok, 300); for (const k of TORD) { glow(G.N[k], GOLD); await beat(tok, 120); } idx('每個點最多 order 一次：n', 5.0, 5.4); say('每個點', '最多 order 一次'); },   // 5176.8
+    async () => { G = topoGraph({ drop: 0.6 }); h = head('Overall 要花多少時間？', 0, 6.75); await beat(tok, 300); for (const k of TORD) { glow(G.N[k], GOLD); await beat(tok, 120); } idx('每個點最多 order 一次：n', 5.0, 5.4); say('每個點', '最多 order 一次'); },   // 5176.8
     async () => { for (const k in G.N) glow(G.N[k], null); for (const ed of G.E) { ed.set(JC.hot); await beat(tok, 90); } idx('update in-degree：剛好 m 次', 5.0, 4.8); say('重點是 update in-degree 的時間', '有 m 條 edge，就 update 剛好 m 次'); },   // 5187.0
     () => { G.all(JC.edge); idx('每個點放進 S 一次：共 n 次', 5.0, 4.2); say('每個點剛好放進 S 一次', '一開始就是 0，或 in-degree 降到 0 時'); },   // 5199.0
     () => { idx('每個點進、出 S 各一次', 5.0, 3.6); say('每個點最多進出 S 一次', '進去一次、pop 一次'); },   // 5214.4
@@ -4986,7 +5001,7 @@ FRAG.push(['graphjiang2-l9-ds-run', '實際跑一次：pop、編號、in-degree 
   const dec = (u) => { const z = []; for (const v of G.out(u)) { d[v]--; txt(T[v], 'in ' + d[v]); G.e(u, v).set(JC.hot); if (d[v] === 0) z.push(v); } return z; };
   const step2 = (k, n) => { S.pop(k); num(k, n); const z = dec(k); z.forEach((v) => S.push(v)); dimNode(G, k); };
   await seq(tok, [
-    () => { G = topoGraph({ drop: 2 }); d = indeg(G); T = inTags(G); S = sBox(); h = head('Implementation：實際跑一次', 0, 6.75); say('根據剛剛的 implementation', '一開始做什麼？'); },   // 5278.0
+    () => { G = topoGraph({ drop: 0.6 }); d = indeg(G); T = inTags(G); S = sBox(); h = head('Implementation：實際跑一次', 0, 6.75); say('根據剛剛的 implementation', '一開始做什麼？'); },   // 5278.0
     async () => { for (const k of TORD) { txt(T[k], 'in ' + d[k]); await beat(tok, 140); } nt = note('先掃一次 graph，算出每個點的 in-degree：O(n + m)', 0, -0.3); say('掃過一次 graph', '算出每個點的 in-degree：O(n + m)'); },   // 5285.0
     () => { txt(nt, '看起來很多，但只花這一次，不會再長大'); say('看起來好像很多時間', '但只會花在這裡，不會再長大'); },   // 5294.0
     () => { txt(nt, '每個點身上都有 in-degree 欄位'); say('掃完一次之後', '每個點身上有一個 in-degree 欄位'); },   // 5302.0
@@ -5021,7 +5036,7 @@ FRAG.push(['graphjiang2-l9-topo-wrap', '小結：一層一層削掉的做法 vs 
   jFresh();
   let G = null, h = null, nt = null;
   await seq(tok, [
-    () => { G = topoGraph({ drop: 2 }); TORD.forEach((k, i) => ordTag(G, k, i + 1)); h = head('Topological ordering 小結', 0, 6.75); say('以上就是 topological ordering', '回去應該能自己寫一個'); },   // 5536.9
+    () => { G = topoGraph({ drop: 0.6 }); TORD.forEach((k, i) => ordTag(G, k, i + 1)); h = head('Topological ordering 小結', 0, 6.75); say('以上就是 topological ordering', '回去應該能自己寫一個'); },   // 5536.9
     () => { nt = note('這個版本：最自然、最直覺、最好寫', 0, -0.3); say('這個版本的 topological order', '最自然、最直覺、最好寫'); },   // 5547.4
     () => { txt(nt, '另一種做法：用 DFS'); say('Topological order 也有另一種做法', '用 DFS 來做'); },   // 5559.0
     () => { txt(nt, 'DFS 版：需要另一個 property 來 support'); say('但它的條件是', '需要另外一個 property 來 support 它'); },   // 5570.1
@@ -5035,7 +5050,8 @@ FRAG.push(['graphjiang2-l9-topo-wrap', '小結：一層一層削掉的做法 vs 
 
   // ═══ graphmisc.js ═══
   {
-const { V3, fresh, tag, cube, move, fly, kill, glow, tint, line, GOLD, step, travel, remove, anim, buddy, prop, bob, code, txt, arrow } = K;
+const { V3, fresh, tag, cube, move, fly, kill, glow, tint, line, GOLD, step, travel, remove, anim, buddy, prop, bob, txt, arrow } = K;
+const code = (...a) => revealCode(K.code(...a));
 // ═══ graphmisc：Abdul Bari AP／BFS-DFS、Tushar Roy 拓撲排序／SCC、MIT 6.006 Rec16 ═══
 // 每個場景都是 gmSeq(tok, [f1, f2, …])：每一項前面 await step(tok)，所以 fi 只在老師說到那句話時才執行。
 const GM = { idle: '#cdbfa6', vis: '#2fc092', done: '#1d8a68', edge: '#9c8b70', tree: '#c08a1f', hot: '#d64545', blue: '#4b9ee2', pink: '#e55a9b', purple: '#9b7fd1', amber: '#e0a030', gray: '#d8cfc0' };
@@ -5104,10 +5120,10 @@ function gmGraph(spec) {
 }
 // a floor row of small cubes, x = x0 + i dx
 function gmRow(x0, z, label, dx = 0.62) {
-  const R = { items: [], vals: [], lbl: label ? tag(label, 'idx', x0 - 0.2, 0.05, z - 0.62) : null };
+  const R = { items: [], vals: [], lbl: label ? tag(label, 'idx', x0 - 0.2, 0.05, z - 1.0) : null }; // clear of the cubes, which land from just above
   if (R.lbl) R.lbl.center.set(0, 0.5);
   const X = (i) => x0 + i * dx;
-  R.push = (v, color = GM.vis) => { R.items.push(cube(v, color, [0.5, 0.5, 0.5], X(R.items.length), 0.25, z, 1.4)); R.vals.push(v); };
+  R.push = (v, color = GM.vis) => { R.items.push(cube(v, color, [0.5, 0.5, 0.5], X(R.items.length), 0.25, z, 0.5)); R.vals.push(v); };
   R.shift = () => { const m = R.items.shift(); R.vals.shift(); if (m) fly(m, V3(0, 6, -3)); R.items.forEach((o, i) => move(o, X(i), 0.25, z)); };
   R.clear = () => { R.items.forEach((m) => kill(m)); R.items = []; R.vals = []; };
   R.tintAll = (c) => R.items.forEach((m) => tint(m, c));
@@ -5117,7 +5133,7 @@ function gmRow(x0, z, label, dx = 0.62) {
 function gmStack(x, z, label) {
   const S = { items: [], vals: [] };
   tag(label, 'idx', x, 0.05, z + 0.75);
-  S.push = (v, color = GM.blue) => { S.items.push(cube(v, color, [0.55, 0.5, 0.55], x, 0.28 + S.items.length * 0.54, z, 1.6)); S.vals.push(v); };
+  S.push = (v, color = GM.blue) => { S.items.push(cube(v, color, [0.55, 0.5, 0.55], x, 0.28 + S.items.length * 0.72, z, 0.5)); S.vals.push(v); };
   S.pop = () => { const m = S.items.pop(); S.vals.pop(); if (m) fly(m, V3(2, 6, -3)); };
   S.top = () => S.items[S.items.length - 1];
   return S;
@@ -5207,8 +5223,8 @@ FRAG.push(['graphmisc-ap-d', '步驟 2：每個頂點的 discovery time', async 
     () => one(1), () => one(4), () => one(3), () => one(5), () => one(6), () => one(2),
     () => {
       const xs = [1, 2, 3, 4, 5, 6];
-      tag('v', 'idx', -6.6, 0.1, 3.2); tag('d', 'idx', -6.6, 0.1, 4.0);
-      xs.forEach((v, i) => { tag(String(v), 'val', -5.6 + i * 1.0, 0.1, 3.2); tag(String(AP_D[v]), 'say', -5.6 + i * 1.0, 0.1, 4.0); });
+      tag('v', 'idx', 2.2, 0.1, 1.9); tag('d', 'idx', 2.2, 0.1, 2.6);
+      xs.forEach((v, i) => { tag(String(v), 'val', 2.9 + i * 0.7, 0.1, 1.9); K.keep(tag(String(AP_D[v]), 'say', 2.9 + i * 0.7, 0.1, 2.6)); });
       say('整理成表：頂點 1–6 的 d', '1→1、2→6、3→3、4→2、5→4、6→5');
     },
   ]);
@@ -5297,7 +5313,7 @@ FRAG.push(['graphmisc-topo-def', 'Topological sort：每條邊 u→v，u 排在 
     () => { G = gmGraph(TP7); n = tag('DAG：有方向、沒有環', 'note', 3.6, 1.2, -0.6); say('給一張 directed acyclic graph（DAG）'); },
     async () => { G.paint('A', 'C', GM.tree, true); G.note('A', 'u', 'ptr'); G.note('C', 'v', 'ptr alt'); await G.hop(tok, 'A', 'C'); remove(n); n = tag('每條邊 u → v：u 一定排在 v 前面', 'note', 3.6, 1.2, -0.6); say('排出頂點的順序：', '每條邊 u→v，u 都要在 v 前面'); },
     async () => { r1 = gmRow(-6.0, 2.8, '一種排法'); for (const v of 'ABCEDFG') { r1.push(v); await gmWait(tok, 160); } say('一種排法：A B C E D F G'); },
-    async () => { r2 = gmRow(-6.0, 4.0, '另一種'); for (const v of 'BDACEFG') { r2.push(v, GM.blue); await gmWait(tok, 160); } say('另一種：B D A C E F G', '答案不只一個'); },
+    async () => { r2 = gmRow(-6.0, 4.4, '另一種'); for (const v of 'BDACEFG') { r2.push(v, GM.blue); await gmWait(tok, 160); } say('另一種：B D A C E F G', '答案不只一個'); },
     async () => { for (const [u, v] of [['A', 'C'], ['B', 'C'], ['B', 'D'], ['C', 'E']]) { G.paint(u, v, GM.hot, true); await gmWait(tok, 250); } say('重點：C 不能在 A、B 前面', 'D 不能在 B 前面、E 不能在 C 前面……'); },
   ]);
 }]);
@@ -5363,7 +5379,7 @@ FRAG.push(['graphmisc-topo-walk', '用 DFS 做：visited set 與 stack', async (
     async () => { await G.hop(tok, 'A', 'C', '✗'); say('A 的 child C 已經拜訪過'); },
     () => { fin('A'); G.glow('A', null); say('A 沒有 child 可探索 → A 放進 stack'); },
     () => { nt('stack 裡就是 topological 順序', 'good'); say('這時 stack 裡就是拓撲排序'); },
-    async () => { res = gmRow(-6.0, 4.2, 'pop 出來的順序'); for (const v of [...S.vals].reverse()) { S.pop(); res.push(v, GM.amber); await gmWait(tok, 200); } say('一個一個 pop：A B D C E F G H'); },
+    async () => { res = gmRow(-6.0, 4.6, 'pop 出來的順序'); for (const v of [...S.vals].reverse()) { S.pop(); res.push(v, GM.amber); await gmWait(tok, 200); } say('一個一個 pop：A B D C E F G H'); },
     () => { nt('答案不唯一；但每條邊 u→v，u 都在 v 前', 'good'); say('拓撲順序有很多種', '都滿足：u→v 時 u 在 v 前面'); },
   ]);
 }]);
@@ -5372,16 +5388,16 @@ FRAG.push(['graphmisc-topo-walk', '用 DFS 做：visited set 與 stack', async (
 FRAG.push(['graphmisc-topo-code', '程式碼：topSort 與 topSortUtil', async (tok) => {
   fresh(GM_CAM, GM_LOOK);
   const G = gmGraph(TP2);
-  const C = code(['topSort(G):', '  stack, visited = [], set()', '  for v in G.vertices:', '    if v not in visited: util(v)', '  return stack', 'util(v):', '  visited.add(v)', '  for w in v.children:', '    if w in visited: continue', '    util(w)', '  stack.push(v)'], 4.6, 5.6, 0.48, -2.4);
+  const C = code(['topSort(G):', '  stack, visited = [], set()', '  for v in G.vertices:', '    if v not in visited: util(v)', '  return stack', 'util(v):', '  visited.add(v)', '  for w in v.children:', '    if w in visited: continue', '    util(w)', '  stack.push(v)'], 6.0, 2.0, 0.48, -1.5);
   C.ls.forEach((l) => { l.element.style.visibility = 'hidden'; });
   let setR = null, S = null, res = null, depth = null;
-  const rec = (list) => { if (!depth) depth = tag('', 'ptr', 1.6, 2.6, 2.6); depth.element.textContent = '呼叫：' + list; };
+  const rec = (list) => { if (!depth) depth = tag('', 'ptr', -3.2, 0.1, -3.4); depth.element.textContent = '呼叫：' + list; };
   const vis = (v) => { G.color(v, GM.vis); setR.push(v); };
   const fin = (v) => { G.color(v, GM.done); S.push(v); };
   await gmSeq(tok, [
-    () => { C.ls.forEach((l) => { l.element.style.visibility = ''; }); say('來看程式碼'); },
+    () => { C.ls.forEach((l) => { l.element.style.visibility = ''; }); revealCode(C); say('來看程式碼'); },
     () => { C.hl(0); say('主函式 topSort'); },
-    () => { C.hl(1); setR = gmRow(-6.2, 3.0, 'visited'); S = gmStack(1.6, -0.8, 'stack'); say('準備一個 stack、一個 set', '然後走過每個頂點'); },
+    () => { C.hl(1); setR = gmRow(-6.2, 2.8, 'visited'); S = gmStack(1.1, -0.8, 'stack'); say('準備一個 stack、一個 set', '然後走過每個頂點'); },
     async () => { C.hl(3); await G.go(tok, 'D'); rec('util(D)'); say('第一個遇到 D：不在 visited', '呼叫 util(D)'); },
     () => { C.hl(6); vis('D'); say('util：先把 D 加進 visited'); },
     async () => { C.hl(7); await G.hop(tok, 'D', 'F'); say('探索 D 的鄰居：只有 F'); },
@@ -5408,7 +5424,7 @@ FRAG.push(['graphmisc-topo-code', '程式碼：topSort 與 topSortUtil', async (
     async () => { C.hl(8); vis('A'); await G.hop(tok, 'A', 'C', '✗'); say('A 加進 visited；鄰居 C 已拜訪過'); },
     () => { C.hl(10); fin('A'); say('A 沒有其他鄰居 → A 放進 stack'); },
     () => { C.hl(4); rec('—'); say('沒有點要探索了 → 回傳 stack'); },
-    () => { res = gmRow(-6.2, 4.2, 'pop 出來的順序'); say('把元素一個一個 pop 出來', '就是拓撲順序'); },
+    () => { res = gmRow(-6.2, 4.6, 'pop 出來的順序'); say('把元素一個一個 pop 出來', '就是拓撲順序'); },
     async () => { for (const v of [...S.vals].reverse()) { S.pop(); res.push(v, GM.amber); await gmWait(tok, 220); } say('A B E C D F G'); },
   ]);
 }]);
@@ -5459,7 +5475,7 @@ FRAG.push(['graphmisc-bd-bfs', 'BFS：新拜訪的點進 queue，從 queue 取�
   const nt = (t, cls = 'note') => { remove(n); n = tag(t, cls, 3.0, 1.6, -1.4); };
   await gmSeq(tok, [
     () => { nt('BFS：breadth first search'); say('先講 BFS'); },
-    () => { res = gmRow(0.6, 1.2, '拜訪順序'); q = gmRow(0.6, 2.8, ''); qn = tag('資料結構', 'idx', 0.4, 0.05, 2.2); qn.center.set(0, 0.5); X = bdKit(G, res, q); say('左邊寫拜訪順序', '另外需要一個資料結構'); },
+    () => { res = gmRow(0.6, 1.2, '拜訪順序'); q = gmRow(0.6, 2.8, ''); qn = tag('資料結構', 'idx', 0.4, 0.05, 1.85); qn.center.set(0, 0.5); X = bdKit(G, res, q); say('左邊寫拜訪順序', '另外需要一個資料結構'); },
     async () => { for (const v of [1, 2, 3, 4, 5, 6, 7, 8, 9]) G.glow(v); await gmWait(tok, 500); for (const v of [1, 2, 3, 4, 5, 6, 7, 8, 9]) G.glow(v, null); nt('起點可以任選'); say('任何頂點都可以當起點'); },
     async () => { await G.go(tok, 1); nt('選 1 當起點'); say('這裡選 1'); },
     () => X.visit(tok, null, 1).then(() => say('拜訪 1，放進資料結構')),
@@ -5510,11 +5526,11 @@ FRAG.push(['graphmisc-bd-bfstree', 'BFS spanning tree', async (tok) => {
 FRAG.push(['graphmisc-bd-bfscheck', '判斷 BFS 是否合法', async (tok) => {
   fresh(GM_CAM, GM_LOOK);
   const G = gmGraph(BD);
-  let row = null, n = null, hist = 0;
+  let row = null, n = null; const hist = [0, 0];
   const cand = (label) => { if (row) { row.clear(); remove(row.lbl); } G.reset(); row = gmRow(0.6, 1.0, label); };
   const add = async (list, from) => { for (const v of list) { if (from) await G.hop(tok, from, v, '→', 260); G.color(v, GM.vis); row.push(v); } };
-  const verdict = (ok, text) => { tag((ok ? '✔ ' : '✘ ') + text, ok ? 'good' : 'bad', 3.2, 0.1, -3.0 + hist * 0.55); hist++; };
-  const nt = (t, cls = 'note') => { remove(n); n = tag(t, cls, 3.2, 2.6, 2.4); }; // above the row's name, not on it
+  const verdict = (ok, text) => { const c = ok ? 0 : 1; K.keep(tag((ok ? '✔ ' : '✘ ') + text, ok ? 'good' : 'bad', 2.4 + c * 3.4, 0.1, -3.9 + hist[c] * 0.95)); hist[c]++; };
+  const nt = (t, cls = 'note') => { remove(n); n = tag(t, cls, 3.2, 0.1, 2.3); }; // under the row
   await gmSeq(tok, [
     () => { nt('練習：寫出別的 BFS'); say('練習：再寫幾個 BFS'); },
     async () => { cand('從 1 開始'); await add([1]); await add([4, 2], 1); say('從 1 開始：這次先 4，再 2'); },
@@ -5605,11 +5621,11 @@ FRAG.push(['graphmisc-bd-dfstree', 'DFS spanning tree', async (tok) => {
 FRAG.push(['graphmisc-bd-dfscheck', '判斷 DFS 是否合法', async (tok) => {
   fresh(GM_CAM, GM_LOOK);
   const G = gmGraph(BD);
-  let row = null, n = null, hist = 0;
+  let row = null, n = null; const hist = [0, 0];
   const cand = (label) => { if (row) { row.clear(); remove(row.lbl); } G.reset(); row = gmRow(0.6, 1.0, label); };
   const add = async (list) => { for (const v of list) { const prev = row.vals[row.vals.length - 1]; if (prev !== undefined && G.e(prev, v)) await G.hop(tok, prev, v, '→', 240); else await gmWait(tok, 200); G.color(v, GM.vis); row.push(v); } };
-  const verdict = (ok, text) => { tag((ok ? '✔ ' : '✘ ') + text, ok ? 'good' : 'bad', 3.2, 0.1, -3.0 + hist * 0.55); hist++; };
-  const nt = (t, cls = 'note') => { remove(n); n = tag(t, cls, 3.2, 1.6, 2.4); };
+  const verdict = (ok, text) => { const c = ok ? 0 : 1; K.keep(tag((ok ? '✔ ' : '✘ ') + text, ok ? 'good' : 'bad', 2.4 + c * 3.4, 0.1, -3.9 + hist[c] * 0.95)); hist[c]++; };
+  const nt = (t, cls = 'note') => { remove(n); n = tag(t, cls, 3.2, 0.1, 2.3); }; // under the row
   await gmSeq(tok, [
     () => { nt('找找看不同的 DFS'); say('來找不同的 DFS'); },
     async () => { cand('第 1 個'); await add([1, 2, 3, 4, 5, 6, 7]); say('1 → 2 → 3 → 4 → 5 → 6 → 7'); },
@@ -5759,7 +5775,8 @@ FRAG.push(['graphmisc-scc-pass2', '第二遍：反向圖上，照 stack 的順�
 FRAG.push(['graphmisc-scc-cost', '時間 O(V+E)、空間 O(V)', async (tok) => {
   const { G, nt } = scBase();
   const t = [];
-  const row = (s, cls = 'say') => { t.push(tag(s, cls, 0, 0.1, 2.0 + t.length * 0.62)); };
+  const SL = [[-4.6, 3.0], [0, 3.0], [4.6, 3.0], [-3.0, 3.9], [3.0, 3.9]];
+  const row = (s, cls = 'say') => { const [x, z] = SL[t.length]; t.push(K.keep(tag(s, cls, x, 0.1, z))); };
   await gmSeq(tok, [
     () => { nt('時間與空間複雜度'); say('來分析時間、空間複雜度'); },
     async () => { for (const v of 'BCADEFIJKGH') { G.color(v, GM.vis); await gmWait(tok, 90); } row('第一遍 DFS：O(V + E)'); say('第一遍 DFS：O(V + E)', 'V = 頂點數、E = 邊數'); },
@@ -5822,7 +5839,7 @@ FRAG.push(['graphmisc-scc-why', '為什麼可行：把每個 SCC 縮成一點，
 // 16:15 程式碼：數字例子
 FRAG.push(['graphmisc-scc-code', '程式碼：兩遍 DFS（數字例子）', async (tok) => {
   const { G } = scBase(SN);
-  const C = code(['SCC(G):', '  stack, visited', '  for v in G: if v ∉ visited: dfs(v)', '  R = reverse(G); visited.clear()', '  while stack: v = stack.pop()', '    if v ∉ visited:', '      comp = {}; dfsR(v, comp)', '      result.add(comp)', 'dfs(v): visited.add(v)', '  for w in out(v): dfs(w) if new', '  stack.push(v)', 'dfsR(v, comp): visited.add(v)', '  comp.add(v)', '  for w in R.out(v): dfsR if new'], 4.8, 6.4, 0.44, -2.4);
+  const C = code(['SCC(G):', '  stack, visited', '  for v in G: if v ∉ visited: dfs(v)', '  R = reverse(G); visited.clear()', '  while stack: v = stack.pop()', '    if v ∉ visited:', '      comp = {}; dfsR(v, comp)', '      result.add(comp)', 'dfs(v): visited.add(v)', '  for w in out(v): dfs(w) if new', '  stack.push(v)', 'dfsR(v, comp): visited.add(v)', '  comp.add(v)', '  for w in R.out(v): dfsR if new'], 6.0, 1.8, 0.44, -1.0);
   let setR = null, S = null, comp = null, res = [], ci = -1;
   const CC = [GM.amber, GM.blue, GM.pink];
   const vis = async (u, v) => { if (u) await G.hop(tok, u, v, '→', 330); await G.go(tok, v, 330); G.color(v, GM.vis); setR.push(v); };
@@ -5831,7 +5848,7 @@ FRAG.push(['graphmisc-scc-code', '程式碼：兩遍 DFS（數字例子）', asy
   const addC = async (u, v) => { await G.hop(tok, u, v, '→', 330); await G.go(tok, v, 330); G.color(v, CC[ci]); setR.push(v); comp.push(v); txt(res[ci], '{' + comp.join(',') + '}'); };
   await gmSeq(tok, [
     () => { C.hl(0); say('主函式 SCC：回傳一串 set', '每個 set 是一個 SCC'); },
-    () => { C.hl(1); setR = gmRow(-6.4, 2.6, 'visited'); S = gmStack(2.6, -0.6, 'stack'); say('準備 stack 和 visited', '第一遍：每個點做 DFS'); },
+    () => { C.hl(1); setR = gmRow(-6.4, 2.6, 'visited'); S = gmStack(1.3, -0.6, 'stack'); say('準備 stack 和 visited', '第一遍：每個點做 DFS'); },
     async () => { C.hl(2); await G.go(tok, 2); say('從 2 開始：不在 visited → dfs(2)'); },
     () => { C.hl(8); say('dfs：做 DFS', '鄰居都探索完，才放進 stack'); },
     () => { G.color(2, GM.vis); setR.push(2); say('2 加進 visited'); },
@@ -5957,11 +5974,11 @@ FRAG.push(['graphmisc-rub-config', 'Configuration：24 格的陣列', async (tok
     () => { F = lab.box('#ffe9a8', [0.8, 0.8, 0.05]); F.position.set(0.45, 0.55, 0.5); W.add(F); tag('FUR', 'ptr alt', -2.4, 2.8, 0.4); say('前、上、右的那個 cubelet', '它的前面叫 FUR'); },
     () => { nt('configuration：把 plastic face 貼到 wireframe face'); say('一個 configuration', '= plastic face 貼在 wireframe 哪裡'); },
     async () => { for (let i = 0; i < 24; i++) { cells.push(cube('', GM.gray, [0.5, 0.4, 0.5], CX(i), 0.2, CZ(i), 0.6)); if (i % 4 === 3) await gmWait(tok, 60); } nt('configuration = 24 個元素的陣列'); say('它是 24 個元素的陣列'); },
-    () => { tint(cells[0], GM.amber); tag('FUR', 'idx', CX(0), 0.1, CZ(0) - 0.55); say('第一格：哪張 plastic face 貼在 FUR'); },
+    () => { tint(cells[0], GM.amber); tag('FUR', 'idx', CX(0), 0.1, CZ(0) - 0.75); say('第一格：哪張 plastic face 貼在 FUR'); },
     () => { cells.forEach((c, i) => { c.add(lab.label(String(i), 'idx')); }); nt('每張面編號 0 到 23（Python 從 0 開始）'); say('編號 0 到 23', 'Python 從 0 開始數'); },
     async () => { const a = V3(-4.5, 1.2, 0.5), b = V3(CX(0), 0.6, CZ(0)); const m = await rbFly(tok, RB_COL.pz, a, b, 700); m.add(lab.label('yob', 'val')); say('yob 那張貼在 FUR', '所以陣列第一格是 yob'); },
     () => { nt('名字的第一個字母 = 指的是哪一面（FUR ≠ RUF）'); say('字母順序：第一個字母', '說明指的是哪一面'); },
-    () => { tag('RUF', 'idx', CX(1), 0.1, CZ(1) - 0.55); tag('URF', 'idx', CX(2) + 0.1, 0.1, CZ(2) - 0.85); nt('假設 FUR = 0、RUF = 1、URF = 2', 'good'); say('假設 FUR 是 0 號、RUF 是 1 號……', '程式裡有真正的對照'); },
+    () => { tag('RUF', 'idx', CX(1), 0.1, CZ(1) - 0.75); tag('URF', 'idx', CX(2) + 0.1, 0.1, CZ(2) - 1.05); nt('假設 FUR = 0、RUF = 1、URF = 2', 'good'); say('假設 FUR 是 0 號、RUF 是 1 號……', '程式裡有真正的對照'); },
   ]);
 }]);
 
@@ -6040,7 +6057,7 @@ FRAG.push(['graphmisc-rub-inverse', 'Permutation 的 inverse：把 index 和值�
     () => { nt('π 作用在 A B C D E → C D A E B', 'good'); say('套用 π 的結果：C D A E B'); },
     () => { nt('inverse π⁻¹：把 π 的效果還原'); say('inverse π⁻¹ 是另一組箭頭', '要把 π 的效果還原'); },
     async () => { for (let i = 1; i <= 5; i++) { BK.push(cube('ABCDE'[i - 1], GM.pink, [0.6, 0.5, 0.6], X(i), 0.25, 4.2, 1.0)); await gmWait(tok, 120); } tag('π⁻¹ 之後', 'idx', -3.8, 0.1, 4.2); say('把 C D A E B 再丟進 π⁻¹', '要拿回 A B C D E'); },
-    () => { nt('作法：把兩列上下翻過來'); tag('翻轉：(3,1) (4,2) (1,3) (5,4) (2,5)', 'say', 3.6, 1.2, -1.2); say('把這兩列上下翻過來'); },
+    () => { nt('作法：把兩列上下翻過來'); tag('翻轉：(3,1) (4,2) (1,3) (5,4) (2,5)', 'say', 6.0, 0.1, 1.4); say('把這兩列上下翻過來'); },
     () => { tag('排好：π⁻¹ = 3 5 1 2 4', 'good', 3.6, 1.2, -0.4); say('再照上面那列排好', 'π⁻¹ = 3 5 1 2 4'); },
     () => { glow(IN[1], GOLD); nt('看 B：一開始在位置 2'); say('為什麼？看 B', 'B 一開始在位置 2'); },
     () => { glow(OUT[5], GOLD); nt('π(5) = 2 → 套用 π 之後，B 跑到位置 5'); say('π(5) = 2', '所以 B 跑到位置 5'); },
@@ -6093,7 +6110,7 @@ FRAG.push(['graphmisc-sc-state', '建圖：一個狀態要記哪些東西', asyn
   fresh(GM_CAM, GM_LOOK);
   let n = null; const rows = [];
   const nt = (t, cls = 'note') => { remove(n); n = tag(t, cls, 0, 3.4, -3.2); };
-  const card = (t, cls = 'say') => { rows.push(tag(t, cls, 2.6, 0.1, -1.6 + rows.length * 0.65)); say(t); };
+  const card = (t, cls = 'say') => { rows.push(K.keep(tag(t, cls, 3.2, 0.1, -2.2 + rows.length * 0.8))); say(t); };
   let A = null, B = null;
   await gmSeq(tok, [
     () => { nt('老方法：建一張圖'); say('跟之前的遊戲題一樣：建一張圖'); },
@@ -6214,11 +6231,12 @@ async function gmHop(tok, A, u, v, ms = 420, text = '→') {
   remove(h);
 }
 // a dictionary / table drawn as a column of labels
-function gmDict(x, z, title, dz = 0.5, cls = 'ptr') {
-  if (title) T(title, 'idx', x, z - 0.6);
+function gmDict(x, z, title, dz0 = 0.5, cls = 'ptr') {
+  const dz = Math.max(dz0, 0.72); // the rows must not touch at the usual camera
+  const tl = title ? T(title, 'idx', x, z - 0.95) : null;
   const rows = new Map();
   return {
-    rows,
+    rows, tl,
     set(k, v, c) { let l = rows.get(k); if (!l) { l = T('', c || cls, x, z + rows.size * dz); rows.set(k, l); } setT(l, k + (v === undefined ? '' : ': ' + v)); if (c) clsT(l, c); return l; },
     hl(k, on) { const l = rows.get(k); if (l) clsT(l, on ? 'ptr alt' : cls); },
   };
@@ -6227,7 +6245,8 @@ function gmDict(x, z, title, dz = 0.5, cls = 'ptr') {
 async function gmMove(tok, pos, ms = 1200) {
   const from = GR.nodes.map((nd) => nd.mesh.position.clone());
   pos.forEach((p, i) => { if (!p) return; GR.nodes[i].home = V(p[0], 0.25, p[1]); lab.springTo(GR.nodes[i].b, GR.nodes[i].home); });
-  await kan(tok, ms, (u) => { GR.nodes.forEach((nd, i) => { if (pos[i]) nd.mesh.position.lerpVectors(from[i], nd.home, u); }); GR.edges.forEach((e) => drawEdge(GR, e)); });
+  // each node rises by its own amount on the way, so nodes crossing each other do not pile up
+  await kan(tok, ms, (u) => { GR.nodes.forEach((nd, i) => { if (pos[i]) { nd.mesh.position.lerpVectors(from[i], nd.home, u); nd.mesh.position.y += (i % 3) * 1.1 * Math.sin(Math.PI * u); } }); GR.edges.forEach((e) => drawEdge(GR, e)); });
   GR.nodes.forEach((nd, i) => { if (pos[i]) nd.mesh.position.copy(nd.home); });
   GR.edges.forEach((e) => drawEdge(GR, e));
 }
@@ -6341,26 +6360,28 @@ FRAG.push(['graphmit-fiset-walk', '例子：從 0 出發 0 → 9 → 8 → 7 …
 const GM_FCODE = ['n = 節點數', 'g = adjacency list', 'visited = [false, …, false]', '', 'function dfs(at):', '  if visited[at]: return', '  visited[at] = true', '  neighbours = g[at]', '  for next in neighbours:', '    dfs(next)', '', 'start = 0', 'dfs(start)'];
 FRAG.push(['graphmit-fiset-code', '遞迴 dfs(at) 與 visited 陣列', async (tok) => {
   gmFresh(GM_CAM, [0.6, 0, -0.3]);
+  frameHold(-7, 0, -4.6, 6.4, 0.4, 4.7);
   await step(tok);                                   // 208.4 pseudocode
-  const cd = code(GM_FCODE, -3.9, -3.6, 0.52);
-  const A = gmG(GRAPHS.fiset, { scale: 0.55, dx: 3.4, dz: -1.4 });
+  const cd = code(GM_FCODE, -4.6, -2.6, 0.52);
+  const A = gmG(GRAPHS.fiset, { scale: 0.5, dx: 3.2, dz: -2.6, noDrop: true });
   say('來看遞迴版的 pseudocode', '');
   await step(tok);                                   // 218.0 n the number of nodes
-  cd.hl(0); T('n = 12', 'note', 3.4, 1.4);
+  cd.hl(0); const rm = K.keep(T('n = 12', 'note', 3.2, 0.05));
   say('第一個變數：n = 節點數', '');
   await step(tok);                                   // 230.0 g the adjacency list
   cd.hl(1);
-  const gl = T('g[0] = [9, 1]　g[7] = [8, 10, 11, 3, 6] …', 'say', 3.4, 2.0);
+  setT(rm, 'n = 12　g[0] = [9, 1]　g[7] = [8, 10, 11, 3, 6] …');
   say('g：adjacency list（每個節點的鄰居串列）', '');
   await step(tok);                                   // 233.5 visited boolean array, all false
   cd.hl(2);
   const vis = [];
-  for (let i = 0; i < 12; i++) { vis.push(K.cube('F', '#e8ddc8', [0.42, 0.3, 0.42], -0.1 + i * 0.5, 0.15, 3.9, 1.2)); T(String(i), 'idx', -0.1 + i * 0.5, 4.45, 0.1); }
-  T('visited', 'idx', -0.9, 3.9);
+  const VX = (i) => 1.0 + (i % 6) * 0.95, VZ = (i) => 1.0 + Math.floor(i / 6) * 1.5;
+  for (let i = 0; i < 12; i++) { vis.push(K.cube('F', '#e8ddc8', [0.5, 0.3, 0.5], VX(i), 0.15, VZ(i), 0.2)); T(String(i), 'idx', VX(i), VZ(i) + 0.72, 0.1); }
+  T('visited', 'idx', 0.0, 1.0);
   say('visited：一開始全部是 false', '還沒拜訪任何節點');
   await step(tok);                                   // 252.1 start = 0, call dfs
   cd.hl(12);
-  const ss = makeStrip(-4.2, 2.9, '呼叫', 1.15);
+  const ss = makeStrip(0.9, 4.3, '呼叫', 1.55);
   const stk = [];
   const sset = () => ss.set(stk.map((v, k) => ({ key: 'c' + k + v, text: 'dfs(' + v + ')', color: '#d9cfbd' })));
   stk.push('0'); sset();
@@ -6383,8 +6404,8 @@ FRAG.push(['graphmit-fiset-code', '遞迴 dfs(at) 與 visited 陣列', async (to
   }
   say('拿出鄰居，逐一遞迴呼叫 dfs', 'dfs(0) → dfs(9) → dfs(8) …');
   await step(tok);                                   // 303.8 that's all a DFS is
-  cd.hl(-1); remove(gl);
-  T('全部就這幾行', 'note', 3.4, 2.0);
+  cd.hl(-1);
+  setT(rm, '全部就這幾行');
   say('DFS 的核心就這幾行', '');
 }]);
 
@@ -6451,56 +6472,57 @@ FRAG.push(['graphmit-fiset-comp', '用 DFS 標記 connected components', async (
 }]);
 
 // 7:36 找 components 的 pseudocode
-const GM_CCODE = ['n, g, visited（同前）', 'count = 0', 'components = 整數陣列（長度 n）', '', 'function findComponents():', '  for i in [0, n):', '    if !visited[i]:', '      count++', '      dfs(i)', '  return (count, components)', '', 'function dfs(at):', '  visited[at] = true', '  components[at] = count', '  for next in g[at]:', '    if !visited[next]: dfs(next)'];
+const GM_CCODE = ['n, g, visited（同前）', 'count = 0', 'components = 整數陣列（長度 n）', 'function findComponents():', '  for i in [0, n):', '    if !visited[i]:', '      count++', '      dfs(i)', '  return (count, components)', 'function dfs(at):', '  visited[at] = true', '  components[at] = count', '  for next in g[at]:', '    if !visited[next]: dfs(next)'];
 FRAG.push(['graphmit-fiset-compcode', 'findComponents：count 與 components 陣列', async (tok) => {
   gmFresh(GM_CAM, [0.4, 0, -0.3]);
+  frameHold(-7, 0, -4.6, 6.4, 0.4, 3.8);
   await step(tok);                                   // 456.2 pseudocode
-  const cd = code(GM_CCODE, -3.6, -3.9, 0.42);
-  const A = gmG(GRAPHS.comps, { scale: 0.5, dx: 3.5, dz: -1.2 });
+  const cd = code(GM_CCODE, -4.7, -2.9, 0.46);
+  const A = gmG(GRAPHS.comps, { scale: 0.6, dx: 3.0, dz: -2.7, noDrop: true });
   say('找 components 的 pseudocode', '');
   await step(tok);                                   // 459.2 everything from before: n, g, visited
   cd.hl(0);
   say('沿用前面的 n、g、visited', '');
   await step(tok);                                   // 472.5 count and components array
   cd.hl(1);
-  const cnt = T('count = 0', 'ptr alt', 5.4, 1.6);
-  const X = (i) => -4.6 + i * 0.56;
+  const cnt = T('count = 0', 'ptr alt', 5.0, -0.2);
+  const X = (i) => 0.6 + (i % 9) * 0.66, Z = (i) => 1.25 + Math.floor(i / 9) * 1.35;
   const comp = [];
-  for (let i = 0; i < 18; i++) { comp.push(K.cube('·', '#e8ddc8', [0.42, 0.28, 0.42], X(i), 0.14, 3.7, 1.0)); T(String(i), 'idx', X(i), 4.25, 0.1); }
-  T('components', 'idx', -5.6, 3.2);
+  for (let i = 0; i < 18; i++) { comp.push(K.cube('·', '#e8ddc8', [0.46, 0.28, 0.46], X(i), 0.14, Z(i), 0.2)); T(String(i), 'idx', X(i), Z(i) + 0.6, 0.1); }
+  T('components', 'idx', 1.2, -0.2);
   say('多一個計數器 count 和整數陣列 components', 'components[i] = 節點 i 屬於第幾塊');
   await step(tok);                                   // 487.0 loop over every node, visited?
-  cd.hl(5);
-  const ptr = T('i', 'pkt', X(0), 3.1, 0.6);
+  cd.hl(4);
+  const ptr = T('i', 'pkt', X(0), Z(0) - 0.45, 0.6);
   say('findComponents：迴圈掃過每個節點', '檢查它有沒有被拜訪過');
   await step(tok);                                   // 497.1 a DFS for every unvisited node
-  cd.hl(6);
+  cd.hl(5);
   say('和前一版不同：每個「沒拜訪過」的節點都開一次 DFS', '');
   await step(tok);                                   // 508.1 DFS marks visited → never revisit
-  cd.hl(12);
+  cd.hl(10);
   say('DFS 會把走到的節點標成 visited', '同一個節點不會被拜訪第二次');
   await step(tok);                                   // 517.5 either skip or start a DFS
-  cd.hl(6);
+  cd.hl(5);
   say('迴圈裡：要嘛跳過，要嘛從它開一次 DFS', '');
   const fill = (k, c) => { for (const v of GM_COMPS[k]) { const i = Number(v); comp[i].material.color.set(SCC_COL[k]); K.relabel(comp[i], String(c)); A.col(v, SCC_COL[k], 0); } };
   await step(tok);                                   // 526.0 new DFS → count++
-  cd.hl(7); setT(cnt, 'count = 1');
+  cd.hl(6); setT(cnt, 'count = 1');
   say('開新的 DFS 前：count++', 'count = 目前做了幾次 DFS');
   await step(tok);                                   // 534.4 inside dfs: visited, components[at] = count
-  cd.hl(13);
+  cd.hl(11);
   for (const v of GM_COMPS[0]) { const i = Number(v); comp[i].material.color.set(SCC_COL[0]); K.relabel(comp[i], '1'); A.col(v, SCC_COL[0], 0.2); await kan(tok, 200, () => {}); }
   say('dfs 裡：標 visited，components[at] = count', '0、8、14、13、4 都記成 1');
   await step(tok);                                   // 545.2 recurse on unvisited neighbours
-  cd.hl(15);
+  cd.hl(13);
   for (let k = 1; k < GM_COMPS.length; k++) {
-    const from = ptr.position.x, to = X(Number(GM_COMPS[k][0]));
-    await kan(tok, 300, (u) => ptr.position.set(from + (to - from) * u, 0.6, 3.1));
+    const from = ptr.position.clone(), n0 = Number(GM_COMPS[k][0]), to = V(X(n0), 0.6, Z(n0) - 0.45);
+    await kan(tok, 300, (u) => ptr.position.lerpVectors(from, to, u));
     setT(cnt, 'count = ' + (k + 1)); fill(k, k + 1);
   }
   say('對還沒拜訪的鄰居遞迴；其他塊也一樣', '');
   await step(tok);                                   // 554.1 return count and components
-  cd.hl(9); remove(ptr);
-  T('回傳 (count = 5, components)', 'note', 3.5, 2.4);
+  cd.hl(8); remove(ptr);
+  setT(cnt, '回傳 (count = 5, components)');
   say('最後回傳 count 和 components 陣列', '共 5 塊；每個節點只拜訪一次');
 }]);
 
@@ -6638,11 +6660,11 @@ FRAG.push(['graphmit-r13-directed', '有向圖：in-degree 與 out-degree', asyn
   say('如果是有向圖呢？', '');
   await step(tok);                                   // 1532.0 A doesn't have a degree
   A.col('A', GM.hot, 0.3);
-  const q = T('deg(A) = ？', 'note', A.H('A').x, A.H('A').z - 1.0, 1.0);
+  const q = K.keep(T('deg(A) = ？', 'note', A.H('A').x, A.H('A').z - 1.3, 0.4));
   me.mood('wow');
   say('A 的 degree 是多少？陷阱題：沒有 degree', '');
   await step(tok);                                   // 1534.6 in-degree and out-degree
-  setT(q, '有向圖：out-degree 與 in-degree');
+  setT(q, '有向圖：out-degree 與 in-degree'); q.position.x = -3.0; q.position.z = -4.0;
   say('有向圖只有 out-degree 和 in-degree', 'out = 出去的邊，in = 進來的邊');
   await step(tok);                                   // 1543.6 out-degree of A: 2
   for (const v of ['B', 'C']) { A.ec('A', v, GM.hot, 2); await gmHop(tok, A, 'A', v, 380); }
@@ -6659,7 +6681,8 @@ FRAG.push(['graphmit-r13-directed', '有向圖：in-degree 與 out-degree', asyn
   say('D：in-degree = 2', '');
   await step(tok);                                   // 1583.3 handshaking lemma for directed?
   A.col('D', C.white); for (const v of ['B', 'C']) A.ec(v, 'D', C.edge, 1);
-  const s = T('有向版的 handshaking lemma？', 'say', 0, -4.2);
+  remove(q);
+  const s = K.keep(T('有向版的 handshaking lemma？', 'say', 0, -5.0));
   say('有向圖的 handshaking lemma 是什麼？', '');
   await step(tok);                                   // 1611.9 sum of in-degrees, sum of out-degrees
   const io = { A: [2, 0], B: [1, 1], C: [1, 1], D: [2, 2], E: [0, 1], F: [0, 1] };
@@ -6668,7 +6691,7 @@ FRAG.push(['graphmit-r13-directed', '有向圖：in-degree 與 out-degree', asyn
   say('把 out 加總、把 in 加總', '兩個加起來是 2|E|，但還有更好的');
   await step(tok);                                   // 1653.6 each edge: 1 to b's out, 1 to d's in
   A.ec('B', 'D', GM.hot, 2.4);
-  const hb = T('out +1', 'pkt', A.H('B').x, A.H('B').z, 1.1), hd = T('in +1', 'pkt', A.H('D').x, A.H('D').z, 1.1);
+  const hb = T('out +1', 'pkt', A.H('B').x - 1.1, A.H('B').z, 0.4), hd = T('in +1', 'pkt', A.H('D').x + 1.1, A.H('D').z, 0.4);
   await gmHop(tok, A, 'B', 'D', 600);
   say('每條邊 B → D：B 的 out +1、D 的 in +1', '');
   await step(tok);                                   // 1668.0 Σ out = Σ in = E
@@ -6691,10 +6714,10 @@ FRAG.push(['graphmit-r13-repr', 'Adjacency list（dict）vs adjacency matrix', a
   const row = (u) => -3.4 + A.I(u) * 1.0;
   const lists = {};
   await step(tok);                                   // 1775.2 dictionary: vertex → list
-  for (const u of ['A', 'B', 'C', 'D', 'E']) { K.cube(u, '#d9cfbd', [0.8, 0.45, 0.7], 0.4, 0.23, row(u), 1.2); lists[u] = []; }
+  for (const u of ['A', 'B', 'C', 'D', 'E']) { K.cube(u, '#d9cfbd', [0.8, 0.45, 0.7], 0.4, 0.23, row(u), 0.3); lists[u] = []; }
   T('dict', 'idx', 0.4, -4.2);
   say('用 dictionary：每個頂點對應一串鄰居', '');
-  const fillL = async (u) => { const ns = adjOf(A.I(u)).map((p) => nm(p.to)); ns.forEach((n, j) => lists[u].push(K.cube(n, C.q, [0.7, 0.4, 0.6], 1.4 + j * 0.85, 0.2, row(u), 2.0))); await kan(tok, 300, () => {}); return ns; };
+  const fillL = async (u) => { const ns = adjOf(A.I(u)).map((p) => nm(p.to)); ns.forEach((n, j) => lists[u].push(K.cube(n, C.q, [0.7, 0.4, 0.6], 1.4 + j * 0.85, 0.2, row(u), 0.3))); await kan(tok, 300, () => {}); return ns; };
   await step(tok);                                   // 1792.5 list for A
   await fillL('A');
   say('A 的串列：[B, C]', '');
@@ -6711,7 +6734,7 @@ FRAG.push(['graphmit-r13-repr', 'Adjacency list（dict）vs adjacency matrix', a
   setT(sp, 'dict 只存有邊的頂點 → 沒有邊時 O(1)');
   say('Python 的 dict 用多少長多少', '一條邊都沒有時只要 O(1)');
   await step(tok);                                   // 1868.0 don't store empty lists (stray node)
-  const ghost = K.cube('F', '#ece4d4', [0.8, 0.45, 0.7], 0.4, 0.23, 1.6, 1.2);
+  const ghost = K.cube('F', '#ece4d4', [0.8, 0.45, 0.7], 0.4, 0.23, 1.6, 0.3);
   T('[ ]？', 'note', 1.6, 1.6, 0.6);
   say('孤立的頂點：存不存空串列？', '存空串列就要付 O(V)；不存就不用');
   await step(tok);                                   // 1932.1 total size of the lists?
@@ -6720,7 +6743,7 @@ FRAG.push(['graphmit-r13-repr', 'Adjacency list（dict）vs adjacency matrix', a
   say('那串列裡的東西，總共有多少個？', '');
   await step(tok);                                   // 1971.2 A lists its neighbours = degree of A
   const dg = {};
-  for (const u of ['A', 'B', 'C', 'D', 'E']) dg[u] = T('= deg ' + lists[u].length, 'idx', 1.4 + lists[u].length * 0.85, row(u));
+  for (const u of ['A', 'B', 'C', 'D', 'E']) dg[u] = T('= deg ' + lists[u].length, 'idx', 1.5 + lists[u].length * 0.85, row(u));
   say('A 的串列長度 = deg(A)，B 的 = deg(B) …', '');
   await step(tok);                                   // 1997.2 sum of degrees = 2e
   setT(sp, '串列總長 = Σ deg = 2E = 12');
@@ -6742,7 +6765,7 @@ FRAG.push(['graphmit-r13-repr', 'Adjacency list（dict）vs adjacency matrix', a
   const one = (i, j, c = '#4b9ee2') => { const m = cells[i][j]; m.material.color.set(c); m.scale.y = 3; m.position.y = 0.18; m.userData.l.element.textContent = '1'; };
   say('換一種：用矩陣，上面和左邊都是 A～E', '');
   await step(tok);                                   // 2075.3 adjacency matrix
-  T('adjacency matrix', 'say', 2.8, -4.4);
+  T('adjacency matrix', 'say', 2.8, -4.8);
   say('它叫 adjacency matrix（相鄰矩陣）', '');
   await step(tok);                                   // 2088.4 (B, A): adjacent ⇔ edge
   one(1, 0); one(0, 1);
@@ -7036,9 +7059,10 @@ FRAG.push(['graphmit-l14-intro', 'DFS 像走迷宮：遞迴探索、必要時回
 // 4:15 DFS-visit 與外層 DFS 的程式碼
 FRAG.push(['graphmit-l14-code', 'DFS-visit 與外層 DFS：parent 字典', async (tok) => {
   gmFresh(GM_CAM, [0.6, 0, -0.3]);
+  frameHold(-7, 0, -4.6, 6.4, 0.4, 3.6);
   await step(tok);                                   // 255.4 super simple code
-  const cv = code(['DFS-visit(V, Adj, s):', '  for v in Adj[s]:', '    if v not in parent:', '      parent[v] = s', '      DFS-visit(V, Adj, v)'], -3.6, -3.8, 0.55);
-  const A = gmG(GRAPHS.af, { scale: 0.62, dx: 3.0, dz: -1.4 });
+  const cv = code(['DFS-visit(V, Adj, s):', '  for v in Adj[s]:', '    if v not in parent:', '      parent[v] = s', '      DFS-visit(V, Adj, v)'], -4.6, -4.4, 0.55);
+  const A = gmG(GRAPHS.af, { scale: 0.6, dx: 3.0, dz: -2.6, noDrop: true });
   say('DFS 的程式超簡單：四行', '');
   await step(tok);                                   // 309.4 visits everything reachable from s
   A.col('a', GM.src, 0.3); A.note('a', 's');
@@ -7054,7 +7078,7 @@ FRAG.push(['graphmit-l14-code', 'DFS-visit 與外層 DFS：parent 字典', async
   cv.hl(2);
   say('檢查：v 拜訪過了嗎？', '不能重複拜訪');
   await step(tok);                                   // 352.5 parent structure; parent[s] = None
-  const P = gmDict(-3.0, 0.4, 'parent', 0.48);
+  const P = gmDict(0.9, 0.3, 'parent', 0.52);
   P.set('a', 'None');
   say('用 parent 字典記錄「看過了沒」', '一開始 parent = {s: None}');
   await step(tok);                                   // 374.0 not in dict: parent[v] = s, recurse
@@ -7070,15 +7094,15 @@ FRAG.push(['graphmit-l14-code', 'DFS-visit 與外層 DFS：parent 字典', async
   say('看過的直接跳過：不會重複', '');
   await step(tok);                                   // 399.8 at most once; only reachable from s
   kill(x);
-  T('c、f 從 a 走不到', 'note', A.H('c').x, A.H('c').z + 0.9, 0.9);
+  T('c、f 從 a 走不到', 'note', A.H('f').x, A.H('f').z + 1.0, 0.4);
   say('每個頂點最多拜訪一次', '但只會走到從 s 走得到的點');
   await step(tok);                                   // 410.7 visiting all vertices: DFS
-  const co = code(['DFS(V, Adj):', '  parent = {}', '  for s in V:', '    if s not in parent:', '      parent[s] = None', '      DFS-visit(V, Adj, s)'], -3.6, 2.6, 0.48);
+  const co = code(['DFS(V, Adj):', '  parent = {}', '  for s in V:', '    if s not in parent:', '      parent[s] = None', '      DFS-visit(V, Adj, s)'], -4.6, 0.4, 0.55);
   cv.hl(-1);
   say('再加外層：拜訪全部頂點', '課本叫它 DFS；上面那段叫 DFS-visit');
   await step(tok);                                   // 428.3 iterate over the s's
   co.hl(2);
-  const row = makeStrip(1.2, 3.9, 's =', 0.8);
+  const row = makeStrip(2.6, 1.6, 's =', 0.7);
   row.set(['a', 'b', 'c', 'd', 'e', 'f'].map((v) => ({ key: v, text: v })));
   say('外層：對每個頂點 s', '');
   await step(tok);                                   // 467.9 looks the same, iterating over something else
@@ -7087,8 +7111,8 @@ FRAG.push(['graphmit-l14-code', 'DFS-visit 與外層 DFS：parent 字典', async
   await step(tok);                                   // 480.1 don't know where to start; multiple searches
   cv.hl(-1); co.hl(3);
   say('不知道從哪開始：圖可能不連通', '所以可能要開好幾次搜尋');
-  const ptr = T('▼', 'pkt', 1.2, 3.25, 0.6);
-  const at = async (i) => { const f = ptr.position.x, t = 1.2 + i * 0.8; await kan(tok, 300, (u) => ptr.position.set(f + (t - f) * u, 0.6, 3.25)); };
+  const ptr = T('▼', 'pkt', 2.6, 0.95, 0.6);
+  const at = async (i) => { const f = ptr.position.x, t = 2.6 + i * 0.7; await kan(tok, 300, (u) => ptr.position.set(f + (t - f) * u, 0.6, 0.95)); };
   await step(tok);                                   // 499.1 first vertex … skip … next unvisited
   await at(1); await kan(tok, 200, () => {}); await at(2);
   co.hl(4); A.col('c', GM.src, 0.3); A.note('c', 's'); P.set('c', 'None');
@@ -7117,7 +7141,7 @@ FRAG.push(['graphmit-l14-trace', 'a～f 的 DFS：parent 指標與粗線', async
   const row = makeStrip(-1.6, 3.9, '外層順序', 0.8);
   row.set(['a', 'b', 'c', 'd', 'e', 'f'].map((v) => ({ key: v, text: v })));
   say('照字母順序跑 DFS', '外層依字母；鄰居照講義（c 先看 f）');
-  const P = gmDict(4.6, -3.6, 'parent', 0.45);
+  const P = gmDict(6.0, -3.6, 'parent', 0.85);
   const tree = (u, v) => { A.ec(u, v, C.tree, 2.4); P.set(v, u); A.col(v, C.gray, 0.3); A.note(v, 'π = ' + u); };
   let w = null;
   await step(tok);                                   // 622.7 start with a: s1
@@ -7368,12 +7392,13 @@ FRAG.push(['graphmit-l14-cycle', '有 cycle ⇔ DFS 有 back edge', async (tok) 
   gmFresh();
   await step(tok);                                   // 1805.4 why care? two problems
   const me = gmHost(-6.3, 3.9);
-  T('cycle detection', 'say', -2.4, -4.3); T('topological sort', 'say', 2.4, -4.3);
+  const t1 = T('cycle detection', 'say', -2.4, -4.3), t2 = T('topological sort', 'say', 2.4, -4.3);
   say('邊的分類有什麼用？兩個問題', '');
   await step(tok);                                   // 1841.5 cycle detection first
   say('先做 cycle detection：圖裡有沒有 cycle？', '有向圖要看方向');
   await step(tok);                                   // 1857.0 G has a cycle ⇔ DFS has a back edge
-  const th = T('G 有 cycle ⇔ DFS 出現 back edge', 'ptr alt', 0, -3.6);
+  remove(t1); remove(t2); // the theorem takes over from the two topic names
+  const th = T('G 有 cycle ⇔ DFS 出現 back edge', 'ptr alt', 0, -4.3);
   say('定理：G 有 cycle ⇔ DFS 有 back edge', '跑「外層版」DFS，看整張圖');
   await step(tok);                                   // 1895.0 directed and undirected
   say('有向圖、無向圖都成立', '');
@@ -7393,14 +7418,14 @@ FRAG.push(['graphmit-l14-cycle', '有 cycle ⇔ DFS 有 back edge', async (tok) 
   say('⇒：有 cycle，一定有 back edge 嗎？', '這個方向比較難');
   await step(tok);                                   // 2051.6 a length-k cycle
   gmFresh(); const me2 = gmHost(-6.3, 3.9);
-  T('G 有 cycle ⇔ DFS 出現 back edge', 'ptr alt', 0, -4.4);
+  T('G 有 cycle ⇔ DFS 出現 back edge', 'ptr alt', 0, -5.0);
   const B = gmG(GM_CYC);
   say('畫一個長度 k 的 cycle', 'v0 → v1 → … → vk → v0');
   await step(tok);                                   // 2065.3 vk → v0 maybe the back edge
   B.ec('vk', 'v0', GM.hot, 2.2);
   say('猜：vk → v0 會是 back edge', '但要先說清楚怎麼標號');
   await step(tok);                                   // 2124.6 v0 = first vertex of the cycle visited
-  B.col('v0', C.gray, 0.3); B.top('v0', '第一個被拜訪', 'ptr alt');
+  B.col('v0', C.gray, 0.3); T('第一個被拜訪', 'ptr alt', B.H('v0').x - 2.1, B.H('v0').z);
   say('令 v0 = cycle 上「第一個」被 DFS 碰到的點', '其他依序叫 v1 … vk');
   await step(tok);                                   // 2180.1 claim: vk v0 is a back edge
   say('主張：vk → v0 是 back edge', '');
@@ -7431,7 +7456,7 @@ FRAG.push(['graphmit-l14-cycle', '有 cycle ⇔ DFS 有 back edge', async (tok) 
   say('線性時間就能判斷有沒有 cycle', '還能沿 tree edges 把 cycle 找出來');
   await step(tok);                                   // 2489.9 "no, here's a cycle" / "agree: no back edges"
   me2.mood('happy');
-  T('沒有 back edge → 只有 tree、forward、cross → 無 cycle', 'say', 0, -3.6);
+  T('沒有 back edge → 只有 tree、forward、cross → 無 cycle', 'say', -2.8, 3.0);
   say('有人說「這張圖沒有 cycle」？跑一次 DFS 就知道', '');
 }]);
 
@@ -7441,6 +7466,7 @@ const GM_DAG = { title: '工作排程 DAG', directed: true, names: ['a', 'b', 'c
   edges: [[6, 7], [0, 7], [7, 1], [3, 1], [1, 4], [4, 2], [2, 5], [5, 8], [4, 8]] };
 FRAG.push(['graphmit-l14-topo', 'Topological sort：DFS 結束時間反序', async (tok) => {
   gmFresh();
+  frameHold(-7, 0, -4.8, 6.6, 0.4, 3.8);
   await step(tok);                                   // 2511.9 application two: topological sort
   const me = gmHost(-6.3, 3.9);
   say('應用二：topological sort', '背景問題：job scheduling（工作排程）');
@@ -7448,19 +7474,19 @@ FRAG.push(['graphmit-l14-topo', 'Topological sort：DFS 結束時間反序', asy
   const A = gmG(GM_DAG);
   say('給一張 directed acyclic graph', '');
   await step(tok);                                   // 2541.9 order vertices: edges point low → high
-  T('排成一列：每條邊都從前面指向後面', 'note', 0, -4.2);
+  K.keep(T('排成一列：每條邊都從前面指向後面', 'note', -3.0, -4.3));
   say('要把頂點排成一個順序', '所有邊都從順序小的指向順序大的');
   await step(tok);                                   // 2572.4 called a DAG
-  T('DAG = Directed Acyclic Graph', 'ptr alt', 0, 4.4);
+  T('DAG = Directed Acyclic Graph', 'ptr alt', 3.4, -4.3);
   say('directed acyclic graph 簡稱 DAG', '');
   await step(tok);                                   // 2611.8 drawn left to right: no cycles
   say('畫成邊都往右，看得出沒有 cycle', '一般情況就跑 DFS 檢查');
   await step(tok);                                   // 2625.4 vertices = things to do; getting dressed
   const k = buddy('', '', '#9fd3f0', -3.0, 0, 3.8, 0.55);
-  T('襪子 → 鞋子', 'say', -3.0, 3.0, 1.0);
+  const sock = T('襪子 → 鞋子', 'say', -3.0, 3.0, 1.0);
   say('頂點 = 要做的事；課本例子：穿衣服', '先穿襪子才能穿鞋子');
   await step(tok);                                   // 2645.0 watch any time: unconstrained parts
-  T('手錶：什麼時候戴都行', 'say', 0.6, 3.0, 1.0);
+  const watch = T('手錶：什麼時候戴都行', 'say', 0.6, 3.6, 1.0);
   k.mood('happy');
   say('有些事沒有限制：手錶什麼時候戴都可以', '');
   await step(tok);                                   // 2668.7 choose an actual order: one thing at a time
@@ -7470,6 +7496,7 @@ FRAG.push(['graphmit-l14-topo', 'Topological sort：DFS 結束時間反序', asy
   for (let i = 0; i < ord.length; i++) { A.col(ord[i], GM.vis, 0.2); A.top(ord[i], '#' + (i + 1), 'ptr alt'); await kan(tok, 160, () => {}); }
   say('老師的順序：g, a, h, d, b, e, c, f, i', 'h 要等 g、a；b 要等 d');
   await step(tok);                                   // 2690.0 valid: every edge earlier → later
+  remove(sock); remove(watch); remove(k.g); // the dressing aside is finished
   await gmMove(tok, gmPos(A, Object.fromEntries(ord.map((v, i) => [v, [-5.6 + i * 1.4, 0.2]]))), 1400);
   A.g.edges.forEach((e, i) => { e.bend = (i % 2 ? 1 : -1) * 0.25; drawEdge(GR, e); });
   say('排成一列：每條邊都朝右 → 合法', '');
@@ -7477,16 +7504,16 @@ FRAG.push(['graphmit-l14-topo', 'Topological sort：DFS 結束時間反序', asy
   me.mood('wow');
   say('怎麼算？用 DFS', '這個演算法就叫 topological sort');
   await step(tok);                                   // 2734.0 run DFS, output reverse of finishing times
-  T('跑 DFS，依 finishing time 反序輸出', 'ptr alt', 0, -3.4);
+  T('跑 DFS，依 finishing time 反序輸出', 'ptr alt', 0, -2.6);
   say('跑 DFS，把頂點依「結束時間」反過來輸出', '');
   await step(tok);                                   // 2765.0 every time a vertex finishes, add to a list
   const fin = ['i', 'f', 'c', 'e', 'b', 'h', 'a', 'd', 'g'];
-  const fs = makeStrip(-4.4, 3.2, 'finished', 0.9);
+  const fs = makeStrip(-4.0, 2.6, 'finished', 1.0);
   const L = [];
   for (const v of fin) { L.push(v); fs.set(L.map((x) => ({ key: x, text: x, color: '#cfe3f7' }))); A.col(v, C.black); await kan(tok, 180, () => {}); }
   say('每結束一個點就加進 list（字母順序 DFS）', 'i, f, c, e, b, h, a, d, g');
   await step(tok);                                   // 2775.7 reverse it: a topological order
-  fs.set([...fin].reverse().map((x) => ({ key: x, text: x, color: '#cfe3f7' })));
+  fs.clear(); fs.set([...fin].reverse().map((x) => ({ key: x, text: x, color: '#cfe3f7' })));
   me.mood('happy');
   say('反過來：g, d, a, h, b, e, c, f, i', '也是合法順序（答案不唯一）');
 }]);
@@ -7562,7 +7589,8 @@ FRAG.push(['graphmit-r14-adj', 'Adjacency list：用 dict 存有向圖', async (
   await step(tok);                                   // 180.4 store it: adjacency list
   me.mood('wow');
   say('Python 裡怎麼存？adjacency list', '');
-  const AL = gmDict(4.6, -3.6, 'AL（dict）', 0.48);
+  await gmMove(tok, GRAPHS.rec14.pos.map(([x, z]) => [x * 0.6 - 3.0, z * 0.6 - 1.9]), 700);
+  const AL = gmDict(3.6, -3.2, 'AL（dict）', 0.85);
   await step(tok);                                   // 196.9 a dictionary: keys = vertices, values = lists
   for (const v of ['A', 'B', 'C', 'D', 'E', 'F', 'G']) AL.set(v, '[ … ]');
   say('就是一個 dict：key 是頂點，value 是一串頂點', '');
@@ -7579,7 +7607,7 @@ FRAG.push(['graphmit-r14-adj', 'Adjacency list：用 dict 存有向圖', async (
   say('B 的串列只有 [C]：邊有方向，B 走不回 A', '');
   await step(tok);                                   // 292.0 pseudo-python: class G with dict AL
   kill(x); AL.hl('B', false); A.ec('B', 'C', C.edge, 1);
-  const cd = code(['class G:', '  AL = { … }', '  def vertices(self):', '    return AL.keys()', '  def neighbors(self, v):', '    return AL[v]'], -3.6, 2.4, 0.42);
+  const cd = code(['class G:', '  AL = { … }', '  def vertices(self):', '    return AL.keys()', '  def neighbors(self, v):', '    return AL[v]'], -3.0, 1.8, 0.42);
   cd.hl(1);
   say('寫一點「差不多是 Python」：class G 裡有 dict AL', '');
   await step(tok);                                   // 309.3 all vertices: AL.keys()
@@ -7602,10 +7630,11 @@ const GM_R14V = [
 FRAG.push(['graphmit-r14-code', '遞迴 DFS：從 visited 到 parent', async (tok) => {
   gmFresh(GM_CAM, [0.6, 0, -0.3]);
   await step(tok);                                   // 372.0 let's write DFS
-  const cd = code(GM_R14V[0].map((s) => s.padEnd(28, ' ')), -3.5, -3.8, 0.5);
+  frameHold(-7, 0, -4.6, 6.4, 0.4, 3.6);
+  const cd = code(GM_R14V[0].map((s) => s.padEnd(28, ' ')), -4.6, -3.8, 0.5);
   const ver = (k) => GM_R14V[k].forEach((s, i) => setT(cd.ls[i], s.padEnd(28, ' ')));
-  const A = gmG(GRAPHS.rec14, { scale: 0.58, dx: 3.2, dz: -1.2 });
-  const me = gmHost(-6.3, 3.9);
+  const A = gmG(GRAPHS.rec14, { scale: 0.56, dx: 3.2, dz: -2.6, noDrop: true });
+  const me = gmHost(-0.2, 3.2);
   say('來寫 DFS：需要一張圖和起點 s', '');
   await step(tok);                                   // 399.2 keep following a path: first vertex in each list
   const w = gmWalker(A, 'A');
@@ -7620,24 +7649,24 @@ FRAG.push(['graphmit-r14-code', '遞迴 DFS：從 visited 到 parent', async (to
   await step(tok);                                   // 506.0 holes: recurse forever
   A.ec('C', 'A', C.back, 2.2);
   for (const v of ['A', 'B', 'C', 'A']) await gmGo(tok, A, w, v, 250);
-  const inf = T('A → B → C → A → … 永遠停不下來', 'note', 3.2, 2.2);
+  const inf = T('A → B → C → A → … 永遠停不下來', 'note', 3.2, -0.2);
   me.mood('sad');
   say('問題：A → B → C → A → … 無限遞迴', '');
   await step(tok);                                   // 521.6 check if already visited
   say('解法：記住去過哪裡，去過就不要再去', '');
   await step(tok);                                   // 548.0 dfsResult: the junk drawer
   remove(inf); A.ec('C', 'A', C.edge, 1);
-  const box = prop('parcel', -5.6, 0, 2.6, 0.9, 'r = DFSResult()');
+  const box = prop('parcel', 5.2, 0, 2.2, 0.9, 'r = DFSResult()');
   bob(box, 0.06, 2);
   ver(1); cd.hl(1);
   me.mood('happy');
   say('建一個 DFSResult 物件 r：雜物抽屜', '需要記的東西都往裡面丟');
   await step(tok);                                   // 610.6 visited: a list? slow → dictionary
-  const vl = T('visited 用 list？查詢很慢 → 用 dict', 'note', 3.2, 2.2);
+  const vl = T('visited 用 list？查詢很慢 → 用 dict', 'note', 3.2, -0.2);
   say('visited 用 list？DFS 很常查，太慢', '改用 dict');
   await step(tok);                                   // 638.5 visited dict: key node, value True
   remove(vl);
-  const VD = gmDict(1.4, 1.4, 'r.visited', 0.42);
+  const VD = gmDict(2.0, 1.2, 'r.visited', 0.5);
   VD.set('B', 'True');
   say('r.visited：key 是頂點，value 是 True', '只放去過的頂點，不用初始化');
   await step(tok);                                   // 712.7 if n not in r.visited
@@ -7654,8 +7683,9 @@ FRAG.push(['graphmit-r14-code', '遞迴 DFS：從 visited 到 parent', async (to
   say('改成一進 DFS_visit 就標記 r.visited[v] = True', '');
   await step(tok);                                   // 894.0 instead of visited, keep parent
   for (const l of VD.rows.values()) remove(l);
+  remove(VD.tl);
   say('再改：不記 visited，改記 parent', 'parent = 從哪個頂點走過來的');
-  const PD = gmDict(1.4, 1.4, 'r.parent', 0.42);
+  const PD = gmDict(2.0, 1.2, 'r.parent', 0.5);
   await step(tok);                                   // 917.9 parent of B = A, C = B; A = None
   PD.set('B', 'A'); PD.set('C', 'B'); PD.set('A', 'None');
   A.note('B', 'parent A'); A.note('C', 'parent B');
@@ -7665,7 +7695,7 @@ FRAG.push(['graphmit-r14-code', '遞迴 DFS：從 visited 到 parent', async (to
   say('程式改成 r.parent[n] = v', '');
   await step(tok);                                   // 988.0 in the dict? (not "is None")
   cd.hl(7);
-  T('判斷「在不在 dict」，不能判斷是不是 None', 'note', 1.4, 3.4);
+  T('判斷「在不在 dict」，不能判斷是不是 None', 'note', 3.2, -0.2);
   say('沒有 parent = 沒去過；但要判斷「在不在 dict」', '起點的 parent 就是 None');
   await step(tok);                                   // 1029.1 missing: r.parent[s] = None in DFS
   ver(4); cd.hl(2);
@@ -7678,8 +7708,8 @@ FRAG.push(['graphmit-r14-trace', 'A～G 依字母順序 trace：parent 指標', 
   gmFresh();
   await step(tok);                                   // 1092.5 trace this graph: parents dict + call structure
   const A = gmG(GRAPHS.rec14);
-  const PD = gmDict(5.0, -3.8, 'parent', 0.45);
-  const cs = makeStrip(-4.6, 4.1, '呼叫', 1.1);
+  const PD = gmDict(-6.2, -3.8, 'parent', 0.85);
+  const cs = makeStrip(-5.0, 4.1, '呼叫', 1.45);
   const calls = [];
   const cset = () => cs.set(calls.map((v, k) => ({ key: 'c' + v, text: v === 'A0' ? 'DFS(A)' : 'visit(' + v + ')', color: '#d9cfbd' })));
   say('在這張圖上 trace：記 parent 和呼叫順序', '');
@@ -7861,7 +7891,7 @@ FRAG.push(['graphmit-r14-courses', '修課順序：需要 DAG、finished 反轉'
   say('Topological sort：少數你以後真的會自己寫的演算法', '');
   await step(tok);                                   // 2343.0 vertices = classes, edges = prerequisites
   A.ec('A', 'B', GM.hot, 2.2);
-  T('A → B：先修 A（6.01）才能修 B（6.006）', 'note', -3.0, -3.6);
+  const rm = K.keep(T('A → B：先修 A（6.01）才能修 B（6.006）', 'note', -3.0, -3.6));
   say('頂點 = 課，邊 = 先修：A → B 代表先修 A', '');
   await step(tok);                                   // 2361.7 an order: prerequisites first
   A.ec('A', 'B', C.edge, 1);
@@ -7879,7 +7909,7 @@ FRAG.push(['graphmit-r14-courses', '修課順序：需要 DAG、finished 反轉'
   await step(tok);                                   // 2460.9 cycle: not a dependency graph
   say('有 cycle 就不是依賴關係圖', 'topological sort 只適用無環的圖');
   await step(tok);                                   // 2481.3 directed acyclic graph: DAG
-  T('DAG = Directed + Acyclic + Graph', 'ptr alt', 2.6, -4.3);
+  const dag = T('DAG = Directed + Acyclic + Graph', 'ptr alt', 2.6, -4.3);
   say('三個詞：directed、acyclic、graph → DAG', '');
   await step(tok);                                   // 2515.0 remove the edge; DFS, print reverse
   const ca = A.E('C', 'A');
@@ -7890,22 +7920,25 @@ FRAG.push(['graphmit-r14-courses', '修課順序：需要 DAG、finished 反轉'
   me.mood('happy');
   say('拿掉 C → A：跑 DFS，再把某個順序反過來', '');
   await step(tok);                                   // 2552.0 reverse of what? (visit order?)
-  T('反過來的是「拜訪順序」嗎？', 'note', 3.0, 3.6);
+  setT(rm, '反過來的是「拜訪順序」嗎？');
   say('反過來的是什麼？拜訪順序嗎？', '');
   await step(tok);                                   // 2654.1 the order they finish the recursions
-  T('不是：是遞迴「結束」的順序', 'note', 3.0, 4.3);
+  setT(rm, '不是：是遞迴「結束」的順序');
   say('不是：是每個頂點遞迴結束的順序', '');
-  const cd = code(['def DFS_visit(G, v, r):', '  for n in G.neighbors(v):', '    if n not in r.parent:', '      r.parent[n] = v', '      DFS_visit(G, n, r)', '  r.finished.append(v)'], 0.2, -3.5, 0.42);
+  // the code arrives: the graph moves to the right half, the code stands on the left (nothing on top of each other)
+  dag.position.set(3.2, 0.35, -4.5);
+  rm.position.set(3.2, 0.35, 0.1);
+  await gmMove(tok, GRAPHS.rec14.pos.map(([x, z]) => [x * 0.56 + 3.2, z * 0.56 - 2.6]), 800);
+  const cd = code(['def DFS_visit(G, v, r):', '  for n in G.neighbors(v):', '    if n not in r.parent:', '      r.parent[n] = v', '      DFS_visit(G, n, r)', '  r.finished.append(v)'], -4.4, -1.8, 0.42);
   cd.ls[5].element.style.visibility = 'hidden';
   await step(tok);                                   // 2707.2 a list finished, empty at first
-  const fs = makeStrip(-4.6, 2.9, 'finished', 0.9);
-  T('r.finished = [ ]', 'ptr', -4.6, 2.2);
+  T('r.finished = [ ]', 'ptr', 3.2, 1.0);
   say('建一個 list：finished，一開始是空的', '');
   await step(tok);                                   // 2737.7 where? after the loop (line 4)
   cd.ls[5].element.style.visibility = ''; cd.hl(5);
   say('加在哪？for 迴圈之後', '頂點要完全離開時才加');
   await step(tok);                                   // 2777.3 append v; then r.finished.reverse()
-  T('r.finished.reverse()', 'ptr alt', -4.6, 4.3);
+  T('r.finished.reverse()', 'ptr alt', 3.2, 2.0);
   say('加的是 v；最後 r.finished.reverse()', '這就是 topological sort');
 }]);
 
@@ -7953,7 +7986,7 @@ FRAG.push(['graphmit-r14-why', '第一個結束的，就是最後修的課', asy
   say('回到 A，進入 G；G → C 的 C 早已輸出；輸出 G', '');
   await step(tok);                                   // 3017.8 out of A: print A; reverse
   await gmGo(tok, A, w, 'A', 300); fin('A');
-  fs.set([...F].reverse().map((x) => ({ key: x, text: x, color: '#cfe3f7' })));
+  fs.clear(); fs.set([...F].reverse().map((x) => ({ key: x, text: x, color: '#cfe3f7' })));
   await gmMove(tok, gmPos(A, Object.fromEntries(GM_R14LINE.map((v, i) => [v, [-5.4 + i * 1.8, 0.6]]))), 1300);
   A.g.edges.forEach((e, i) => { e.bend = (i % 2 ? 1 : -1) * 0.22; drawEdge(GR, e); });
   w.g.visible = false;
@@ -8047,17 +8080,18 @@ const GM_L13U = { title: 'undirected', directed: false, names: ['a', 'b', 'c', '
 const GM_L13D = { title: 'directed', directed: true, names: ['a', 'b', 'c'], pos: [[1.8, -2.2], [5.0, -2.2], [3.4, 0.6]], edges: [[0, 2], [1, 0], [1, 2], [2, 1]] };
 FRAG.push(['graphmit-l13-def', '圖的定義：無向 vs 有向、怎麼表示', async (tok) => {
   gmFresh();
+  frameHold(-7, 0, -5.2, 6.6, 0.4, 4.8);
   await step(tok);                                   // 121.5 what a graph is
   const me = gmHost(-6.3, 3.9);
   say('先複習什麼是 graph', '6.042（離散數學）教過');
   await step(tok);                                   // 138.8 vertices V, edges E
-  T('G = (V, E)：V = 頂點集合，E = 邊集合', 'say', 0, -4.3);
+  T('G = (V, E)：V = 頂點集合，E = 邊集合', 'say', 0, -5.0);
   say('一個頂點集合 V、一個邊集合 E', '');
   await step(tok);                                   // 141.0 unordered pairs or ordered pairs
-  T('{u, v}：無序對', 'note', -3.6, -3.5); T('(u, v)：有序對', 'note', 3.4, -3.5);
+  const up = K.keep(T('{u, v}：無序對', 'note', -3.8, -3.9)), op = K.keep(T('(u, v)：有序對', 'note', 3.4, -3.9));
   say('邊是「無序對」{u, v} 或「有序對」(u, v)', '');
   await step(tok);                                   // 178.2 undirected / directed
-  T('→ undirected', 'ptr', -3.6, -2.9); T('→ directed', 'ptr', 3.4, -2.9);
+  setT(up, '{u, v}：無序對 → undirected'); setT(op, '(u, v)：有序對 → directed');
   say('無序對 → undirected；有序對 → directed', '');
   await step(tok);                                   // 184.8 usually only one type
   say('通常一張圖只有一種邊', '全部有向，或全部無向');
@@ -8329,16 +8363,17 @@ FRAG.push(['graphmit-l13-idea', 'BFS 的想法：0 步、1 步、2 步…，避�
 const GM_BFSCODE = ['BFS(s, Adj):', '  level = {s: 0}', '  parent = {s: None}', '  i = 1', '  frontier = [s]', '  while frontier:', '    next = []', '    for u in frontier:', '      for v in Adj[u]:', '        if v not in level:', '          level[v] = i', '          parent[v] = u', '          next.append(v)', '    frontier = next', '    i += 1'];
 FRAG.push(['graphmit-l13-run', 'BFS 程式：frontier、next、level', async (tok) => {
   gmFresh(GM_CAM, [0.6, 0, -0.3]);
-  const cd = code(GM_BFSCODE, -4.0, -3.9, 0.42);
+  frameHold(-7, 0, -4.6, 6.4, 0.4, 3.6);
+  const cd = code(GM_BFSCODE, -4.7, -2.5, 0.42);
   await step(tok);                                   // 2236.9 undirected example (works for directed too)
-  const A = gmG(GM_L13G, { scale: 0.62, dx: 3.4, dz: -1.2 });
+  const A = gmG(GM_L13G, { scale: 0.62, dx: 3.0, dz: -2.3, noDrop: true });
   say('在一張無向圖上跑', '有向圖也一樣能用');
   await step(tok);                                   // 2250.8 start vertex s; given Adj
   A.col('s', GM.src, 0.3);
   say('給起點 s 和 adjacency lists', '');
-  const frS = makeStrip(-1.0, 3.0, 'frontier', 0.85), nxS = makeStrip(-1.0, 3.9, 'next', 0.85);
+  const frS = makeStrip(1.4, 1.5, 'frontier', 0.85), nxS = makeStrip(1.4, 2.7, 'next', 0.85);
   const st = (S, list, c) => S.set(list.map((v) => ({ key: v, text: v, color: c })));
-  const it = T('i = ?', 'ptr alt', 5.4, 1.6);
+  const it = T('i = ?', 'ptr alt', 5.6, 1.5);
   await step(tok);                                   // 2267.2 initialisation; frontier = level i − 1
   cd.hl(4);
   say('frontier：上一層（第 i−1 層）的頂點', '用 i−1 步剛好走到的');
@@ -8410,11 +8445,11 @@ FRAG.push(['graphmit-l13-run', 'BFS 程式：frontier、next、level', async (to
 FRAG.push(['graphmit-l13-parent', 'Parent 指標：shortest path tree', async (tok) => {
   gmFresh();
   await step(tok);                                   // 2594.1 parent
-  const A = gmG(GM_L13G);
+  const A = gmG(GM_L13G, { noDrop: true });
   const me = gmHost(-6.3, 3.9);
   for (const v of A.g.G.names) { A.col(v, GM_LVC[GM_LV[v]], 0.1); A.top(v, 'L' + GM_LV[v]); }
   say('剛剛沒講的 parent', '');
-  const P = gmDict(5.6, -3.8, 'parent', 0.44);
+  const P = gmDict(-6.4, -3.6, 'parent', 0.85);
   const par = { a: 's', x: 's', z: 'a', d: 'x', c: 'x', f: 'd', v: 'c' };
   const ar = {};
   const ptr = (v) => { const a = A.H(v), b = A.H(par[v]); ar[v] = K.arrow(V(a.x, 0.75, a.z), V(b.x + (a.x - b.x) * 0.25, 0.75, b.z + (a.z - b.z) * 0.25), 0xa8730f); P.set(v, par[v]); };
