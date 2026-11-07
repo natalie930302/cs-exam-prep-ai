@@ -688,9 +688,19 @@ const ok = (x, y, t = 'T 真') => tag(t, 'good', x, y);
 const ng = (x, y, t = 'F 假') => tag(t, 'bad', x, y);
 const CAM = [[0, 4.2, 14], [0, 3.0, 0]];
 const FC = { blue: '#4b9ee2', orange: '#dd8238', green: '#2fc092', purple: '#9b7ef4', pink: '#e55a9b', teal: '#31aab0', red: '#d64545', sand: '#e9dcc4', gold: '#c08a1f' };
+// An invisible box over the area the scenes use (heading at the top, boards, the row of buddies / blocks at
+// the bottom): the stage's auto framing measures it from the first step, so the camera does not zoom in on the
+// first few labels and then jump back out (labels sliding under the caption) when the rest arrives.
+const HOLD = [-6.4, -0.6, -0.3, 6.4, 6.8, 0.3];
+const HOLD_IDS = ['pfA-l3-forall', 'pfA-l3-exists', 'pfA-l3-unique']; // the scenes whose row / board arrives after the first labels
+function frameHold(x0, y0, z0, x1, y1, z1) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+}
 function scene(id, title, steps, cam = CAM) {
   FRAG.push([id, title, async (tok) => {
     fresh(cam[0], cam[1]);
+    if (cam === CAM && HOLD_IDS.includes(id)) frameHold(...HOLD);
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
@@ -734,7 +744,7 @@ scene('pfA-l3-pred', '述詞邏輯：Alice is a girl → P(x)', [
     cap('is a girl 在描述 Alice', '這部分叫做述詞');
   },
   async (tok, S) => { // 72.3 其他人
-    S.o = ['John is a girl', 'Alan is a girl', 'Amy is a girl'].map((t, i) => T(t, 'say', 4.6, 3.2 - i * 0.65));
+    S.o = ['John is a girl', 'Alan is a girl', 'Amy is a girl'].map((t, i) => T(t, 'say', 4.6, 3.2 - i * 0.7));
     cap('也可能問 John、Alan、Amy…', '一大堆長得很像的命題');
   },
   async (tok, S) => { // 106.6 主詞空出來
@@ -742,25 +752,25 @@ scene('pfA-l3-pred', '述詞邏輯：Alice is a girl → P(x)', [
     cap('把主詞當成可以代換的空格', '只留下述詞，像一個函式');
   },
   async (tok, S) => { // 132.0 P(x)
-    S.px = T('P(x)：x is a girl', 'note', 0, 2.3);
+    S.px = K.keep(T('P(x)：x is a girl', 'note', 0.6, 2.9));
     cap('述詞函式 P(x)', 'x 代進主詞的位置');
   },
   async (tok, S) => { // 153.3 x 未知
-    S.nq = T('x 不知道是誰 → 不是命題', 'bad', 0, 1.6);
+    S.nq = T('x 不知道是誰 → 不是命題', 'bad', 0.6, 2.2);
     cap('x 不知道是誰的時候', 'P(x) 不能判斷真假，不是命題');
   },
   async (tok, S) => { // 163.2 代入 Andy
-    S.an = buddy('Andy', '', FC.blue, -3.6, 0); txt(S.s1, 'Andy'); kill(S.nq);
-    S.pa = T('P(Andy)：Andy is a girl', 'note', 0, 1.6);
+    S.an = buddy('Andy', '', FC.blue, -3.8, 0); txt(S.s1, 'Andy'); kill(S.nq); S.o.forEach(kill); // John / Alan / Amy are done: Andy is the subject now
+    S.pa = T('P(Andy)：Andy is a girl', 'note', 0.6, 2.2);
     await S.an.hop(tok);
     cap('把 x 代成 Andy', '函式值 P(Andy)：Andy is a girl');
   },
   async (tok, S) => { // 185.0 變成命題 → 假
-    ng(3.6, 1.6, 'F 假（Andy 是男生）'); S.an.mood('wow');
+    ng(0.6, 1.5, 'F 假（Andy 是男生）'); S.an.mood('wow');
     cap('代入後就是一個命題', 'Andy 是男生 → 這個命題為假');
   },
   async (tok, S) => { // 233.5 名詞
-    T('P 是 propositional function（命題函式）', 'ptr', 0, 0.6);
+    T('P 是 propositional function（命題函式）', 'ptr', 0.6, 0.8);
     cap('P 像 f、g 一樣是函式', '函式值是命題 → propositional function');
   },
 ]);
@@ -815,43 +825,43 @@ scene('pfA-l3-forall', '全稱量詞 ∀：班上每個人都高於 120？', [
     cap('常問的問題：', '班上同學是不是都高於 120 公分？');
   },
   async (tok, S) => { // 453.0 P(x)
-    T('P(x)：x 的身高 > 120', 'note', -3.6, 5.6);
+    K.keep(T('P(x)：x 的身高 > 120', 'note', -2.6, 5.6));
     cap('P(x)：x 這個同學身高 > 120', '');
   },
   async (tok, S) => { // 457.1 集合
-    S.z = zone('班上同學（集合）', 0, -0.05, 0, 11.5, 2.2); S.z.userData.name.position.set(-5.55, -0.55, 1.2);
+    S.z = zone('班上同學（集合）', -1.0, -0.05, 0, 10.6, 2.2); S.z.userData.name.position.set(-6.1, -0.8, 1.4);
     const H = [135, 128, 142, 131, 126];
-    S.k = ['A', 'B', 'C', 'D', 'E'].map((n, i) => buddy(n, H[i], [FC.blue, FC.green, FC.orange, FC.purple, FC.teal][i], -4.4 + i * 2.2, 0, 0, 0.8));
-    T('身高為示意', 'idx', 4.8, -0.6, 1.2);
+    S.k = ['A', 'B', 'C', 'D', 'E'].map((n, i) => buddy(n, H[i], [FC.blue, FC.green, FC.orange, FC.purple, FC.teal][i], -5.0 + i * 2.0, 0, 0, 0.8));
+    T('身高為示意', 'idx', 3.2, -0.6, 1.2);
     cap('把班上同學看成一個集合', '每個人帶進 P(x) 看看');
   },
   async (tok, S) => { // 508.0 ∀x P(x)
-    S.f = T('∀x P(x)', 'note', 3.2, 5.6);
+    S.f = K.keep(T('∀x P(x)', 'note', 2.6, 5.6));
     cap('每一個人都要高於 120', '寫成 ∀x P(x)');
   },
   async (tok, S) => { // 544.1 逐一檢查
     for (const b of S.k) { b.glow('#0f5a3a'); b.mood('happy'); await wt(tok, 260); }
-    S.r = ok(3.2, 4.9, '全部檢查都對 → T');
+    S.r = ok(0, 4.7, '全部檢查都對 → T'); // the one remark line of this scene: rewritten below
     cap('A、B、C… 一個一個量', '全部都超過 120，整句才為真');
   },
   async (tok, S) => { // 569.2 一個不符合
-    S.k[3].set(115); S.k[3].glow('#7a1010'); S.k[3].mood('sad'); kill(S.r);
-    S.r = ng(3.2, 4.9, '只要一人不符合 → F');
+    S.k[3].set(115); S.k[3].glow('#7a1010'); S.k[3].mood('sad');
+    cls(S.r, 'bad'); txt(S.r, '只要一人不符合 → F');
     cap('只要有一個人沒超過 120', '這個命題就為假');
   },
   async (tok, S) => { // 583.5 名稱
-    T('Universal Quantification（全稱量詞）', 'ptr', -1.6, 4.2);
-    T('讀作 for all x, P(x)', 'idx', -1.6, 3.6);
+    T('Universal Quantification（全稱量詞）', 'ptr', 0, 3.9);
+    T('讀作 for all x, P(x)', 'idx', 0, 3.3);
     cap('∀ 叫 universal quantification', '讀作 for all x');
   },
   async (tok, S) => { // 657.5 domain
-    S.k[3].set(131); S.k[3].glow(); S.k[3].mood('calm'); kill(S.r);
-    T('前提：只看「班上同學」= domain（論域）', 'say', -1.6, 3.0);
+    S.k[3].set(131); S.k[3].glow(); S.k[3].mood('calm');
+    cls(S.r, 'say'); txt(S.r, '前提：只看「班上同學」= domain（論域）');
     cap('「所有人」都有一個前提', '這個範圍就是 domain（論域）');
   },
   async (tok, S) => { // 683.0 加隔壁班
-    S.n = buddy('隔壁班', 112, FC.red, 6.4, 0, 0, 0.8); S.n.mood('sad'); S.n.glow('#7a1010');
-    ng(6.4, 2.4, '範圍變大 → 可能變 F');
+    S.n = buddy('隔壁班', 112, FC.red, 5.6, 0, 0, 0.8); S.n.mood('sad'); S.n.glow('#7a1010');
+    ng(5.6, 2.1, '範圍變大 → 可能變 F');
     cap('如果範圍包含隔壁班', '有人比較矮，答案就變成假');
   },
   async (tok, S) => { // 719.9 domain 英文
@@ -904,45 +914,46 @@ scene('pfA-l3-exists', '存在量詞 ∃：至少找到一個', [
     cap('另一個常用的：存在量詞', 'existential quantifier');
   },
   async (tok, S) => { // 914.2 班上有人 >120
-    S.k = ['A', 'B', 'C', 'D'].map((n, i) => buddy(n, [112, 118, 131, 109][i], [FC.blue, FC.green, FC.orange, FC.purple][i], -5.4 + i * 1.9, 0, 0, 0.8));
-    T('身高為示意', 'idx', -2.6, 2.3);
+    S.k = ['A', 'B', 'C', 'D'].map((n, i) => buddy(n, [112, 118, 131, 109][i], [FC.blue, FC.green, FC.orange, FC.purple][i], -2.85 + i * 1.9, 0, 0, 0.8));
+    S.sh = T('身高為示意', 'idx', 4.6, 0.3);
     S.k[2].glow('#0f5a3a'); S.k[2].mood('happy');
     cap('班上有沒有人高於 120？', '找到一個人，命題就為真');
   },
   async (tok, S) => { // 932.0 百萬富翁
-    S.m = board(1.6, 5.4, 0.62);
-    S.m.ln('有人身價超過百萬嗎？', 'say');
-    S.m.ln('1 個、2 個、全部都是 → 都對', 'good');
-    S.m.ln('大家都沒超過 → 才錯', 'bad');
+    S.m = board(-6.2, 5.5, 0.62);
+    K.keep(S.m.ln('有人身價超過百萬嗎？', 'say'));
+    K.keep(S.m.ln('1 個、2 個、全部都是 → 都對', 'good'));
+    K.keep(S.m.ln('大家都沒超過 → 才錯', 'bad'));
     cap('有沒有百萬富翁？', '一個兩個都行；全部都沒有才為假');
   },
   async (tok, S) => { // 951.5 符號
-    S.m.ln('∃x P(x)（∃ 是 E 反過來）', 'note');
+    K.keep(S.m.ln('∃x P(x)（∃ 是 E 反過來）', 'note'));
     cap('寫法 ∃x P(x)', '∃ 是大寫 E 左右翻過來');
   },
   async (tok, S) => { // 969.7 至少一個 + domain
-    S.m.ln('意思：至少一個 x 滿足 P(x)；一樣要講 domain', 'idx');
+    K.keep(S.m.ln('意思：至少一個 x 滿足 P(x)；一樣要講 domain', 'idx'));
     cap('意思：至少有一個', '一樣要注意 domain');
   },
-  async (tok, S) => { // 989.2 例
-    S.w = ['lily', 'apple', 'banana', 'cherry'].map((t, i) => blk(t, FC.sand, 0.8 + i * 1.75, 0.9, 1.5));
-    T('∃x ∈ U, P(x)：有字以 b 開頭嗎？', 'note', 3.4, 2.0);
+  async (tok, S) => { // 989.2 例：the class example is done, the four words take its place
+    S.k.forEach((b) => kill(b.g)); kill(S.sh);
+    S.w = ['lily', 'apple', 'banana', 'cherry'].map((t, i) => blk(t, FC.sand, -2.7 + i * 1.8, 1.2, 1.5));
+    T('∃x ∈ U, P(x)：有字以 b 開頭嗎？', 'note', 0, 2.15);
     cap('同一個 U，問：有沒有字以 b 開頭？', '∃x ∈ U, P(x)');
   },
   async (tok, S) => { // 1010.2 展開 OR
-    L('= P(lily) ∨ P(apple) ∨ P(banana) ∨ P(cherry)', 'say', -6.6, -0.4);
+    S.or = T('= P(lily) ∨ P(apple) ∨ P(banana) ∨ P(cherry)', 'say', 0, 0.3);
     cap('一個一個檢查，用 OR 接起來', '只要有一個對就為真');
   },
   async (tok, S) => { // 1026.6 T
     for (let i = 0; i < 4; i++) { (i === 2 ? pass : fail)(S.w[i]); await wt(tok, 250); }
-    ok(4.9, -0.4, '∃ 的答案：T');
+    K.note('∃ 的答案：T', S.w[3], 'right', 'good');
     cap('banana 確實以 b 開頭', '其他都錯也沒關係 → 為真');
   },
 ]);
 
 scene('pfA-l3-neg', '量詞的否定：¬∃ ≡ ∀¬，¬∀ ≡ ∃¬', [
   async (tok, S) => { // 1036.6 ¬∃
-    S.b = board(-6.6, 6.2, 0.6);
+    S.b = board(-6.6, 6.3, 0.66);
     S.b.ln('¬∃x P(x)：「有人高於 120」是錯的', 'note');
     cap('∃x P(x) 的否定是什麼？', '¬∃x P(x)');
   },
@@ -983,12 +994,14 @@ scene('pfA-l3-neg', '量詞的否定：¬∃ ≡ ∀¬，¬∀ ≡ ∃¬', [
     cap('說「並非所有人都超過 120」', '只要找出一個沒超過的人');
   },
   async (tok, S) => { // 1303.1 整理 ∀
-    S.t = board(-6.6, -0.2, 0.0);
-    T('∀x P(x)：真 → 每個都檢查；假 → 找一個反例', 'note', 0, 0.0);
+    // the derivation is done: only its two results stay (moved to the top), the summary goes under them
+    S.b.ls.forEach((l, i) => { if (i === 7 || i === 8) return; kill(l); });
+    S.b.ls[7].position.set(-3.2, 6.2, 0); S.b.ls[8].position.set(-3.2, 5.5, 0); K.keep(S.b.ls[7]); K.keep(S.b.ls[8]); txt(S.b.ls[7], '¬∃x P(x) ≡ ∀x ¬P(x)'); // on its own the result needs its left side
+    K.keep(T('∀x P(x)：真 → 每個都檢查；假 → 找一個反例', 'note', 0, 4.1));
     cap('整理：∀x P(x)', '真要全部檢查；假只要一個 x 不成立');
   },
   async (tok, S) => { // 1329.0 整理 ∃
-    T('∃x P(x)：真 → 找到一個；假 → 每個都不成立', 'note', 0, -0.7);
+    K.keep(T('∃x P(x)：真 → 找到一個；假 → 每個都不成立', 'note', 0, 3.4));
     cap('∃x P(x) 剛好相反', '真找一個就好；假要說每個都不成立');
   },
 ]);
@@ -1100,37 +1113,37 @@ scene('pfA-l3-negex', '寫出否定：¬∃x (x² > x)、¬∃x (x² = 2)', [
 
 scene('pfA-l3-unique', '∃!：剛好只有一個', [
   async (tok, S) => { // 1778.0
-    T('∃!x P(x)：剛好只有一個 x 滿足', 'note', 0, 6.4);
+    K.keep(T('∃!x P(x)：剛好只有一個 x 滿足', 'note', 0, 6.4)); // the heading of the whole scene
     cap('進階：∃ 後面加驚嘆號', '∃! = 剛好只有一個');
   },
   async (tok, S) => { // 1799.1 班上剛好一人
     S.k = [0, 1, 2, 3, 4, 5].map((i) => buddy('', i === 3 ? 125 : [110, 115, 108, 0, 112, 117][i], [FC.blue, FC.green, FC.orange, FC.pink, FC.purple, FC.teal][i], -5.5 + i * 2.2, 0, 0, 0.75));
     S.k[3].glow('#0f5a3a'); S.k[3].mood('happy');
-    T('身高為示意', 'idx', 5.4, 2.2);
-    S.r = ok(0, 5.6, '只有一人 > 120 → 真');
+    S.sh = T('身高為示意', 'idx', 5.5, -0.55, 1.0);
+    S.r = ok(0, 2.4, '只有一人 > 120 → 真'); // one remark over the row, rewritten below
     cap('剛好班上只有一人高於 120', '其他人都沒超過 → 為真');
   },
   async (tok, S) => { // 1830.4 兩個
-    S.k[0].set(126); S.k[0].glow('#0f5a3a'); kill(S.r);
-    S.r = ng(0, 5.6, '有兩人符合 → 唯一不成立');
+    S.k[0].set(126); S.k[0].glow('#0f5a3a');
+    cls(S.r, 'bad'); txt(S.r, '有兩人符合 → 唯一不成立');
     cap('如果有兩個人超過', '「唯一」就錯了 → 為假');
   },
-  async (tok, S) => { // 1855.3 x²=2 沒 domain
-    S.k.forEach((b) => kill(b.g)); kill(S.r);
-    S.b = board(-6.4, 4.8, 0.66);
-    S.b.ln('∃!x (x² = 2)：沒講 domain → 無法判斷', 'bad');
+  async (tok, S) => { // 1855.3 x²=2 沒 domain：the class is done, the board takes its place
+    S.k.forEach((b) => kill(b.g)); kill(S.r); kill(S.sh);
+    S.b = board(-3.4, 4.9, 0.7);
+    K.keep(S.b.ln('∃!x (x² = 2)：沒講 domain → 無法判斷', 'bad'));
     cap('∃!x (x² = 2)', '沒講 domain，沒辦法判斷');
   },
   async (tok, S) => { // 1885.0 ℕ
-    S.b.ln('x ∈ ℕ：一個都沒有 → F', 'say');
+    K.keep(S.b.ln('x ∈ ℕ：一個都沒有 → F', 'say'));
     cap('domain 是自然數', '一個都沒有 → 假');
   },
   async (tok, S) => { // 1906.0 ℝ
-    S.b.ln('x ∈ ℝ：√2 和 −√2 兩個 → F', 'say');
+    K.keep(S.b.ln('x ∈ ℝ：√2 和 −√2 兩個 → F', 'say'));
     cap('domain 是實數', '有 √2 和 −√2 兩個 → 還是假');
   },
   async (tok, S) => { // 1928.4 正實數
-    S.b.ln('x ∈ ℝ⁺：只有 √2 → T', 'good');
+    K.keep(S.b.ln('x ∈ ℝ⁺：只有 √2 → T', 'good'));
     cap('domain 是正實數', '剛好只有 √2 → 真');
   },
 ]);
@@ -2488,9 +2501,16 @@ const bx = (t, c, x, y, z = 0, w = 0.6, h = 0.6, d = 0.6) => cube(t, c, [w, h, d
 const FC = { blue: '#4b9ee2', orange: '#dd8238', green: '#2fc092', purple: '#9b7ef4', pink: '#e55a9b', teal: '#31aab0', red: '#d64545', gray: '#d8cfc0', dark: '#8d8170', sand: '#e9dcc4', paper: '#f6efe2', gold: '#c08a1f', tan: '#c9bba3', mint: '#d2f1e6', lilac: '#dfd3fb', sky: '#cfe6f7' };
 const HL = '#6a4a00', OKG = '#0f5a3a', NG = '#5a1010';
 const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.ls && o.add) return gone(o.ls); if (o.ls) return o.kill(); if (o.g) kill(o.g); else if (o.element) remove(o); else kill(o); });
+// invisible box over the usual picture area (heading at the top, board, number line / cubes at the bottom), held
+// from the first step so auto framing does not zoom in on the first labels and jump back out later
+function frameHold(x0, y0, z0, x1, y1, z1) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+}
 function scene(id, title, cam, steps) {
   FRAG.push([id, title, async (tok) => {
     fresh(cam[0], cam[1]);
+    if (cam === CAM) frameHold(-6.4, -0.2, -0.3, 6.4, 7.4, 0.3);
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
@@ -2665,20 +2685,21 @@ scene('pfB-l8-divalg', "除法演算法：101 = 11·9 + 2、−11 = 3·(−4) + 
         },
   // 450
   async (tok, S) => {
-          S.L.hi(-1); S.bars = []; for (let i = 0; i < 9; i++) S.bars.push(bx('11', FC.blue, 1.0 + i * 0.56, 4.8, 0, 0.48, 1.0, 0.5));
-          S.bars.push(bx('', FC.red, 6.1, 4.45, 0, 0.3, 0.3, 0.3), bx('', FC.red, 6.45, 4.45, 0, 0.3, 0.3, 0.3));
-          good('101 = 11·9 + 2', 3.6, 6.0); cap('101 = 11·9 + 2', '商 9、餘數 2');
+          S.L.hi(-1); S.bars = []; for (let i = 0; i < 9; i++) S.bars.push(bx('11', FC.blue, 0.9 + i * 0.6, 4.7, 0, 0.52, 1.0, 0.5));
+          S.bars.push(bx('', FC.red, 6.2, 4.35, 0, 0.3, 0.3, 0.3), bx('', FC.red, 6.55, 4.35, 0, 0.3, 0.3, 0.3));
+          S.ex = good('101 = 11·9 + 2', 3.7, 5.75); cap('101 = 11·9 + 2', '商 9、餘數 2');
         },
   // 451.4
   async (tok, S) => {
-          note('餘數 ≥ 0，且 < 除數', 3.6, 3.6); cap('餘數要 ≥ 0 而且比除數小', '');
+          S.nt = K.keep(note('餘數 ≥ 0，且 < 除數', 3.6, 3.65)); cap('餘數要 ≥ 0 而且比除數小', '');
         },
-  // 462
+  // 462: the 101 example is done; the rule stays (moved up into its place) and the number line comes in under it
   async (tok, S) => {
+          gone(S.bars, S.ex); S.nt.position.set(3.6, 5.0);
           S.nl = nline(0.9, 6.3, 1.8, -12, 0, 3);
           S.m = bx('−12', FC.purple, S.nl.X(-12), 2.4, 0, 0.5, 0.5, 0.5); await wt(tok, 500);
           S.ar = arrow(V3(S.nl.X(-12), 2.8, 0), V3(S.nl.X(-11), 2.8, 0), 0xd64545); S.p = bx('−11', FC.orange, S.nl.X(-11) + 0.2, 3.3, 0, 0.5, 0.5, 0.5);
-          good('−11 = 3·(−4) + 1', 3.6, 0.6); cap('−11 = 3·(−4) + 1', '商 −4、餘數 1（不是 −2）');
+          good('−11 = 3·(−4) + 1', 3.6, 4.2); cap('−11 = 3·(−4) + 1', '商 −4、餘數 1（不是 −2）');
         },
 ]);
 scene('pfB-l8-mod', "mod：取餘數運算", CAM, [
@@ -2835,7 +2856,7 @@ scene('pfB-l8-cantor', "實數不可數：對角線法", CAM, [
   // 1512.7
   async (tok, S) => {
           for (let i = 0; i < 4; i++) glow(S.cells[i][i], HL);
-          note('dᵢ = 4（若 dᵢᵢ ≠ 4）；dᵢ = 5（若 dᵢᵢ = 4）', -3.6, 1.0); cap('看對角線 dᵢᵢ', '≠ 4 放 4，= 4 放 5');
+          K.keep(note('dᵢ = 4（若 dᵢᵢ ≠ 4）；dᵢ = 5（若 dᵢᵢ = 4）', -3.6, 2.55)); // the rule, under the proof board; cap('看對角線 dᵢᵢ', '≠ 4 放 4，= 4 放 5');
         },
   // 1622.3
   async (tok, S) => {
@@ -2848,11 +2869,11 @@ scene('pfB-l8-cantor', "實數不可數：對角線法", CAM, [
   // 1646.1
   async (tok, S) => {
           relabel(S.r[2], '5'); relabel(S.r[3], '4'); glow(S.r[2], OKG); glow(S.r[3], OKG);
-          bad('r 和每個 rᵢ 在第 i 位都不同 → 不在清單上', 2.4, 0.6); cap('r 不在清單上', '');
+          bad('r 和每個 rᵢ 在第 i 位都不同 → 不在清單上', 2.4, 0.85); cap('r 不在清單上', '');
         },
   // 1664.8
   async (tok, S) => {
-          good('(0,1) 不可數 ⇒ ℝ 不可數', -3.6, -0.2); cap('矛盾 ⇒ ℝ 不可數', '');
+          good('(0,1) 不可數 ⇒ ℝ 不可數', -3.6, 1.8); cap('矛盾 ⇒ ℝ 不可數', '');
         },
 ]);
 
@@ -2916,16 +2937,16 @@ scene('pfB-l9-divsign', "除法公式：±11 除以 ±3", CAM, [
         },
   // 287.5
   async (tok, S) => {
-          S.L.hi(-1); S.nl = nline(0.3, 6.3, 2.0, -12, 12, 3); sm('10 ÷ 2 = 5 餘 0；11 ÷ 3 = 3 餘 2', 3.3, 5.6); cap('10 ÷ 2 = 5 餘 0', '11 ÷ 3 = 3 餘 2');
+          S.L.hi(-1); remove(S.q); S.nl = nline(0.3, 6.3, 0.7, -12, 12, 3); // the number line sits under the worked lines, not across them sm('10 ÷ 2 = 5 餘 0；11 ÷ 3 = 3 餘 2', 3.3, 5.6); cap('10 ÷ 2 = 5 餘 0', '11 ÷ 3 = 3 餘 2');
         },
   // 316.6
   async (tok, S) => {
-          S.m = bx('9', FC.blue, S.nl.X(9), 2.6, 0, 0.45, 0.45, 0.45); S.a1 = arrow(V3(S.nl.X(9), 3.0, 0), V3(S.nl.X(11), 3.0, 0), 0x2fc092);
-          S.R = board(3.3, 4.8, 0.62); S.R.add('11 = 3 · 3 + 2', 'good'); cap('11 = 3·3 + 2', '寫成等式才能運算');
+          S.m = bx('9', FC.blue, S.nl.X(9), 1.3, 0, 0.45, 0.45, 0.45); S.a1 = arrow(V3(S.nl.X(9), 1.7, 0), V3(S.nl.X(11), 1.7, 0), 0x2fc092);
+          S.R = board(3.3, 4.9, 0.6); S.R.add('11 = 3 · 3 + 2', 'good'); cap('11 = 3·3 + 2', '寫成等式才能運算');
         },
   // 326.9
   async (tok, S) => {
-          S.m2 = bx('−12', FC.purple, S.nl.X(-12), 2.6, 0, 0.45, 0.45, 0.45); S.a2 = arrow(V3(S.nl.X(-12), 3.0, 0), V3(S.nl.X(-11), 3.0, 0), 0xd64545);
+          S.m2 = bx('−12', FC.purple, S.nl.X(-12), 1.3, 0, 0.45, 0.45, 0.45); S.a2 = arrow(V3(S.nl.X(-12), 1.7, 0), V3(S.nl.X(-11), 1.7, 0), 0xd64545);
           S.R.add('−11 = 3 · (−4) + 1', 'good'); cap('−11 = 3·(−4) + 1', '商 −4、餘 1');
         },
   // 394.2
@@ -2977,7 +2998,7 @@ scene('pfB-l9-congr', "同餘：10、13、16、1 除以 3 都餘 1", CAM, [
         },
   // 678.7
   async (tok, S) => {
-          S.one = bx('1', FC.green, 3.6, 3.2, 0, 0.75, 0.75, 0.75); glow(S.one, HL); sm('最簡單的代表', 3.6, 2.4); cap('最簡單的代表：1', '');
+          S.one = bx('1', FC.green, 3.6, 3.2, 0, 0.75, 0.75, 0.75); glow(S.one, HL); S.oneL = sm('最簡單的代表', 3.6, 2.4); cap('最簡單的代表：1', '');
         },
   // 698.5
   async (tok, S) => {
@@ -2989,11 +3010,11 @@ scene('pfB-l9-congr', "同餘：10、13、16、1 除以 3 都餘 1", CAM, [
         },
   // 754
   async (tok, S) => {
-          bad('不要寫 10 = 13 ✘', -3.6, -0.1); cap('不要用等號', '只是餘數一樣，不是相等');
+          bad('不要寫 10 = 13 ✘', -3.6, 1.55); cap('不要用等號', '只是餘數一樣，不是相等');
         },
   // 777.3
   async (tok, S) => {
-          gone(S.cols.map((c) => [c[0], c[1]]), S.one); S.R = board(3.2, 5.6, 0.75); S.R.add('① a mod m = b mod m'); S.R.last(); cap('① 餘數相等', '直接但不好算');
+          gone(S.cols.map((c) => [c[0], c[1]]), S.one, S.oneL); S.R = board(3.2, 5.6, 0.75); S.R.add('① a mod m = b mod m'); S.R.last(); cap('① 餘數相等', '直接但不好算');
         },
   // 808.6
   async (tok, S) => {
@@ -3988,7 +4009,7 @@ scene('pfB-l10-crtintro', "韓信點兵：x ≡ 1 (mod 3)、x ≡ 2 (mod 5)", CA
         },
   // 4281.7
   async (tok, S) => {
-          gone(S.sold); S.L.hi(-1); S.R = board(3.6, 2.6, 0.62); S.R.add('x ≡ 1 (mod 3)'); S.R.add('x ≡ 2 (mod 5)'); S.R.hi(-1); cap('x ≡ 1 (mod 3)、x ≡ 2 (mod 5)', '');
+          gone(S.sold); S.L.hi(-1); S.R = board(3.6, 3.1, 0.62); // high enough that the last (widest) line is not pushed up into the one above S.R.add('x ≡ 1 (mod 3)'); S.R.add('x ≡ 2 (mod 5)'); S.R.hi(-1); cap('x ≡ 1 (mod 3)、x ≡ 2 (mod 5)', '');
         },
   // 4298
   async (tok, S) => {
@@ -4134,7 +4155,7 @@ scene('pfB-l11-noncop', "x ≡ 2 (mod 15) 拆成 mod 3 與 mod 5", CAM, [
         },
   // 173.2
   async (tok, S) => {
-          bad('15 和 3、5 都不互質', 2.8, 5.4); cap('15 和 3、5 不互質', '');
+          S.nb = bad('15 和 3、5 都不互質', 2.8, 5.4); cap('15 和 3、5 不互質', '');
         },
   // 201.4
   async (tok, S) => {
@@ -4162,7 +4183,7 @@ scene('pfB-l11-noncop', "x ≡ 2 (mod 15) 拆成 mod 3 與 mod 5", CAM, [
         },
   // 383.6
   async (tok, S) => {
-          gone(S.R, S.f); S.N = board(2.8, 5.0, 0.62); S.N.add('改成 x ≡ 8 (mod 15)？'); S.N.last(); S.tr = [2, 5, 8, 11].map((v, i) => bx(String(v), v === 8 ? FC.green : FC.gray, 1.6 + i * 0.9, 6.0, 0, 0.6, 0.6, 0.6)); cap('改成 8 試試', '');
+          gone(S.R, S.f, S.nb); S.N = board(2.8, 5.0, 0.62); S.N.add('改成 x ≡ 8 (mod 15)？'); S.N.last(); S.tr = [2, 5, 8, 11].map((v, i) => bx(String(v), v === 8 ? FC.green : FC.gray, 1.6 + i * 0.9, 6.0, 0, 0.6, 0.6, 0.6)); cap('改成 8 試試', '');
         },
   // 412.5
   async (tok, S) => {
@@ -4236,19 +4257,19 @@ scene('pfB-l11-noncop2', "不互質的除數：拆解、刪重複、保留 mod 4
         },
   // 813.2
   async (tok, S) => {
-          S.R.hi(-1); note('mod 4 比 mod 2 嚴格', 2.4, 0.6); cap('mod 4 比較嚴格', '');
+          S.R.hi(-1); note('mod 4 比 mod 2 嚴格', 2.4, 3.15); cap('mod 4 比較嚴格', '');
         },
   // 854.2
   async (tok, S) => {
-          sm('mod 2 只用來檢查，算答案留 mod 4', 2.4, -0.1); cap('留 mod 4，丟 mod 2', '');
+          sm('mod 2 只用來檢查，算答案留 mod 4', 2.4, 2.55); cap('留 mod 4，丟 mod 2', '');
         },
   // 909.2
   async (tok, S) => {
-          hot('x ≡ 2 (mod 4)，≡ 1 (mod 3)，≡ 0 (mod 5) → mod 60', -2.0, -1.0); good('（補算）x ≡ 10 (mod 60)', -2.0, -1.8); cap('4、3、5 互質 → mod 60', '補算：x ≡ 10');
+          hot('x ≡ 2 (mod 4)，≡ 1 (mod 3)，≡ 0 (mod 5) → mod 60', 0, 1.7); good('（補算）x ≡ 10 (mod 60)', 0, 1.05); cap('4、3、5 互質 → mod 60', '補算：x ≡ 10');
         },
   // 930.5
   async (tok, S) => {
-          S.L.hi(-1); bub('拆開 → 檢查矛盾 → 刪重複、留嚴格', 2.4, 7.0); cap('拆開、檢查、留嚴格', '');
+          S.L.hi(-1); bub('拆開 → 檢查矛盾 → 刪重複、留嚴格', 0, 0.4); cap('拆開、檢查、留嚴格', '');
         },
 ]);
 scene('pfB-l11-fermat', "費馬小定理：10⁶ ≡ 1 (mod 7)", CAM, [
@@ -4282,7 +4303,7 @@ scene('pfB-l11-fermat', "費馬小定理：10⁶ ≡ 1 (mod 7)", CAM, [
         },
   // 1172.5
   async (tok, S) => {
-          S.top = [0, 1, 2, 3, 4, 5, 6].map((v, i) => bx(String(v), FC.sand, 0.6 + i * 0.9, 6.0, 0, 0.65, 0.65, 0.65)); sm('mod 7 的餘數', 3.3, 6.8); cap('mod 7：7 種餘數', '');
+          S.top = [0, 1, 2, 3, 4, 5, 6].map((v, i) => bx(String(v), FC.sand, 0.2 + i * 1.05, 6.0, 0, 0.65, 0.65, 0.65)); sm('mod 7 的餘數', 3.3, 6.8); cap('mod 7：7 種餘數', '');
         },
   // 1186.5
   async (tok, S) => {
@@ -4294,7 +4315,7 @@ scene('pfB-l11-fermat', "費馬小定理：10⁶ ≡ 1 (mod 7)", CAM, [
         },
   // 1213.5
   async (tok, S) => {
-          S.bot = [1, 2, 3, 4, 5, 6].map((v, i) => bx(v + '·10', FC.lilac, 1.5 + i * 0.9, 3.8, 0, 0.8, 0.6, 0.6)); cap('每個都乘 10', '');
+          S.bot = [1, 2, 3, 4, 5, 6].map((v, i) => bx(v + '·10', FC.lilac, 1.25 + i * 1.05, 3.8, 0, 0.95, 0.6, 0.6)); cap('每個都乘 10', '');
         },
   // 1238
   async (tok, S) => {
@@ -4612,11 +4633,17 @@ const T = (t, c, x, y, z = 0) => tag(t, c, x, y, z);
 const L = (t, c, x, y, z = 0) => { const l = tag(t, c, x, y, z); if (l.center) l.center.set(0, 0.5); return l; };
 const cls = (l, c) => { if (l && l.element) l.element.className = 'lab-label ' + c; };
 const CAM = [[0, 4.2, 14], [0, 3.0, 0]];
+function frameHold(x0, y0, z0, x1, y1, z1) { // invisible box over the area the scene uses later, so auto framing does not zoom in first and jump back
+  const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+}
 const FC = { blue: '#4b9ee2', orange: '#dd8238', green: '#2fc092', purple: '#9b7ef4', pink: '#e55a9b', teal: '#31aab0', red: '#d64545', sand: '#e9dcc4', gold: '#c08a1f', gray: '#cfc6b6', sky: '#cfe6f7', mint: '#d2f1e6' };
 const OKG = '#0f5a3a', NG = '#7a1010', HL = '#6a4a00';
+const HOLDS = { 'pfC-3d-gen': [-6.6, -0.4, -0.3, 5.6, 6.6, 0.3] };
 function scene(id, title, steps, cam = CAM) {
   FRAG.push([id, title, async (tok) => {
     fresh(cam[0], cam[1]);
+    if (cam === CAM && HOLDS[id]) frameHold(...HOLDS[id]); // scenes whose picture grows late: frame that area from the first step (no zoom jump)
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
@@ -4809,7 +4836,7 @@ scene('pfC-12-modexp', '快速冪演算法（modular exponentiation）', [
   },
   async (tok, S) => { // 630.6
     S.B.clear(); S.lad.forEach((m) => kill(m)); kill(S.x); kill(S.bit); S.pw.forEach((l) => kill(l));
-    S.code = code(['procedure modexp(b, n = (aₖ₋₁…a₁a₀)₂, m)', 'x := 1', 'power := b mod m', 'for i := 0 to k − 1', '   if aᵢ = 1 then x := (x · power) mod m', '   power := (power · power) mod m', 'return x      { x = bⁿ mod m }'], -2.6, 6.4);
+    S.code = code(['procedure modexp(b, n = (aₖ₋₁…a₁a₀)₂, m)', 'x := 1', 'power := b mod m', 'for i := 0 to k − 1', '   if aᵢ = 1 then x := (x · power) mod m', '   power := (power · power) mod m', 'return x      { x = bⁿ mod m }'], -3.3, 6.2);
     S.code.hl(1); cls(S.code.ls[2], 'ptr alt');
     cap('寫成演算法：x := 1，power := b mod m', '底數太大沒用，先取餘數');
   },
@@ -4827,24 +4854,24 @@ scene('pfC-12-modexp', '快速冪演算法（modular exponentiation）', [
   },
   async (tok, S) => { // 774.0
     S.code.hl(-1);
-    T('例：13 = 8 + 4 + 1 → 2¹³ = 2⁸ · 2⁴ · 2¹', 'note', 3.4, 2.4);
-    ['i', 'aᵢ', 'power', 'x'].forEach((h, j) => T(h, 'ptr', [0.6, 2.0, 3.6, 6.2][j], 1.7));
+    K.keep(T('例：13 = 8 + 4 + 1 → 2¹³ = 2⁸ · 2⁴ · 2¹', 'note', 3.3, 1.75)); // the trace table sits right of the code, not under it; the example line under the table
+    ['i', 'aᵢ', 'power', 'x'].forEach((h, j) => T(h, 'ptr', [1.0, 2.2, 3.6, 5.5][j], 5.6));
     cap('不看 mod，用 2¹³ 走一次', '13 = 1101₂');
   },
   async (tok, S) => { // 797.6
-    ['0', '1', '2', '1 · 2 = 2'].forEach((v, j) => T(v, 'say', [0.6, 2.0, 3.6, 6.2][j], 1.15));
+    ['0', '1', '2', '1 · 2 = 2'].forEach((v, j) => K.keep(T(v, 'say', [1.0, 2.2, 3.6, 5.5][j], 4.85)));
     cap('i = 0：power = 2¹ = 2，位元 1 → x = 2', '');
   },
   async (tok, S) => { // 810.7
-    ['1', '0', '4', '2（不乘）'].forEach((v, j) => T(v, j === 3 ? 'idx' : 'say', [0.6, 2.0, 3.6, 6.2][j], 0.6));
+    ['1', '0', '4', '2（不乘）'].forEach((v, j) => K.keep(T(v, j === 3 ? 'idx' : 'say', [1.0, 2.2, 3.6, 5.5][j], 4.1)));
     cap('i = 1：power = 2·2 = 4，位元 0 → 不乘', '');
   },
   async (tok, S) => { // 836.6
-    ['2', '1', '16', '2 · 16 = 32'].forEach((v, j) => T(v, 'say', [0.6, 2.0, 3.6, 6.2][j], 0.05));
+    ['2', '1', '16', '2 · 16 = 32'].forEach((v, j) => K.keep(T(v, 'say', [1.0, 2.2, 3.6, 5.5][j], 3.35)));
     cap('i = 2：power = 4·4 = 16，位元 1 → x = 32', '');
   },
   async (tok, S) => { // 848.5
-    ['3', '1', '256', '32 · 256 = 8192'].forEach((v, j) => T(v, j === 3 ? 'good' : 'say', [0.6, 2.0, 3.6, 6.2][j], -0.5));
+    ['3', '1', '256', '32 · 256 = 8192'].forEach((v, j) => K.keep(T(v, j === 3 ? 'good' : 'say', [1.0, 2.2, 3.6, 5.5][j], 2.6)));
     cap('i = 3：power = 256 → x = 8192 = 2¹³', '16·16 = 256');
   },
   async (tok, S) => { // 860.4
@@ -5395,20 +5422,20 @@ scene('pfC-12-stamp', '郵票：4 元與 5 元湊出 ≥ 12 元', [
     cap('這次起始條件要好幾個', '為什麼？等一下看');
   },
   async (tok, S) => { // 3860.9
-    S.row = (y, a) => a.forEach((v, i) => chip(String(v), v === 4 ? FC.blue : FC.orange, 2.4 + i * 0.75, y, 0.6, 0.6, 1));
-    T('12', 'ptr', 1.4, 2.6); S.row(2.6, [4, 4, 4]);
+    S.row = (y, a) => a.forEach((v, i) => chip(String(v), v === 4 ? FC.blue : FC.orange, 2.4 + i * 0.75, y, 0.6, 0.6, 0.25));
+    T('12', 'ptr', 1.4, 3.4); S.row(3.4, [4, 4, 4]);
     cap('12 = 4 + 4 + 4', '');
   },
   async (tok, S) => { // 3870.0
-    T('13', 'ptr', 1.4, 1.9); S.row(1.9, [4, 4, 5]);
+    T('13', 'ptr', 1.4, 2.65); S.row(2.65, [4, 4, 5]);
     cap('13 = 4 + 4 + 5', '');
   },
   async (tok, S) => { // 3873.7
-    T('14', 'ptr', 1.4, 1.2); S.row(1.2, [4, 5, 5]);
+    T('14', 'ptr', 1.4, 1.9); S.row(1.9, [4, 5, 5]);
     cap('14 = 4 + 5 + 5', '');
   },
   async (tok, S) => { // 3876.4
-    T('15', 'ptr', 1.4, 0.5); S.row(0.5, [5, 5, 5]);
+    T('15', 'ptr', 1.4, 1.15); S.row(1.15, [5, 5, 5]);
     cap('15 = 5 + 5 + 5', '這 4 個是起始條件');
   },
   async (tok, S) => { // 3898.1
@@ -5417,7 +5444,7 @@ scene('pfC-12-stamp', '郵票：4 元與 5 元湊出 ≥ 12 元', [
   },
   async (tok, S) => { // 3921.7
     S.B.add('k+1：先貼一張 4 元，剩 k−3');
-    T('k+1', 'ptr', 1.4, -0.2); chip('4', FC.blue, 2.4, -0.2, 0.6, 0.6, 1); chip('k−3', FC.gray, 3.6, -0.2, 1.2, 0.6, 1);
+    T('k+1', 'ptr', 1.4, 0.4); chip('4', FC.blue, 2.4, 0.4, 0.6, 0.6, 0.25); chip('k−3', FC.gray, 3.6, 0.4, 1.2, 0.6, 0.25);
     cap('先貼一張 4 元郵票', '剩下只要湊 k−3');
   },
   async (tok, S) => { // 3947.5
