@@ -754,6 +754,14 @@ export default function (ctx) {
   // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
   const K = kit(ctx);
   const FRAG = [];
+  // An invisible box over the area a scene will use later: the stage's auto framing measures it from the
+  // first step, so the camera does not zoom in on the first few things and then jump back out when the rest arrives.
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
+  // restyle a remark label (note → bad / good) while rewriting it, so one label carries a subject's remarks
+  const reword = (l, t, c) => { K.txt(l, t); if (c) l.element.className = 'lab-label ' + c; };
   // ═══ np1.js ═══
   {
 const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, showL, code, anim, arrow, ghostBox, line, GOLD, GREEN, RED, step, buddy, prop, bob, travel } = K;
@@ -982,11 +990,13 @@ const PH = { P: { s: [-4.6, 0.3, 0.6], a: [-1.6, 0.3, -1.3], b: [-1.6, 0.3, 2.5]
   E: [['s', 'a', 2], ['s', 'b', 4], ['a', 'b', 1], ['a', 'c', 5], ['b', 'c', 2], ['c', 't', 3]] };
 FRAG.push(['np1-h-dec-path', '最短路徑 vs「有長度 ≤ k 的路嗎」', async (tok) => {
   fresh([0, 8.5, 9], [0, 0, 0.2]);
+  frameHold(-6.6, 0.2, -6.3, 6.6, 0.6, 3.9);           // boxes at the back, graph in the middle, result line in front
   await step(tok);                                   // 1:12 decision vs optimization
-  const O = bx('Optimization：找最好的', C.P, -3.2, 0.4, -3.4, 3.6, 2.5, 0.6, 0.8), D = bx('Decision：YES / NO', C.B, 3.2, 0.4, -3.4, 3.2, 2.5, 0.6, 0.8);
+  const O = bx('Optimization：找最好的', C.P, -3.2, 0.4, -4.3, 3.6, 2.5, 0.6, 0.8), D = bx('Decision：YES / NO', C.B, 3.2, 0.4, -4.3, 3.2, 2.5, 0.6, 0.8);
   say('第一件事：decision vs optimization');
   await step(tok);                                   // 1:18 NPC focuses on decision problems
-  glow(D, GOLD); note('證 NPC：只看 decision 版', 3.2, 1.2, -3.4);
+  // one remark under each box, rewritten as the talk goes on
+  glow(D, GOLD); const rD = K.keep(note('證 NPC：只看 decision 版', 3.2, 0.4, -3.3)); let rO = null;
   say('證明 NP-completeness 時', '主要看 decision problem');
   await step(tok);                                   // 1:27 optimization: shortest path between two nodes
   glow(D, null); glow(O, GOLD);
@@ -999,13 +1009,13 @@ FRAG.push(['np1-h-dec-path', '最短路徑 vs「有長度 ≤ k 的路嗎」', a
   say('Optimization 例子：s 到 t 的最短路徑');
   await step(tok);                                   // 1:44 decision version: a path of length k?
   glow(O, null); glow(D, GOLD); gReset(g); txt(st, '');
-  const qb = bub('s 到 t 有長度 ≤ k 的路嗎？', 0, 1.6, -1.6);
+  const qb = bub('s 到 t 有長度 ≤ k 的路嗎？', 3.0, 0.6, 2.4);   // the empty front-right corner
   say('Decision 版：有沒有長度 k 的路？');
   await step(tok);                                   // 2:00 the answer is yes or no
-  const yn = [good('YES', -1.0, 2.4, -1.6), bad('NO', 1.0, 2.4, -1.6)];
+  const yn = [good('YES', 2.2, 0.6, 3.3), bad('NO', 3.8, 0.6, 3.3)];   // under the question
   say('答案只有 yes 或 no');
   await step(tok);                                   // 2:01 a much simpler problem
-  note('比較簡單：只問一個問題', 3.2, 1.2, -2.6);
+  reword(rD, '比較簡單：只問一個問題');
   say('比 optimization 簡單得多');
   await step(tok);                                   // 2:10 equal to k or less than k
   yn.forEach(kill);
@@ -1014,24 +1024,24 @@ FRAG.push(['np1-h-dec-path', '最短路徑 vs「有長度 ≤ k 的路嗎」', a
   say('問「長度 = k 或 < k 的路」', '例如 k = 9 → YES');
   await step(tok);                                   // 2:20 decision versions are easier
   kill(qb);
-  const cmp = tag('難度：decision ≤ optimization', 'ptr alt', 0, 1.4, -3.4);
+  const cmp = tag('難度：decision ≤ optimization', 'ptr alt', 0, 0.4, -6.0);
   say('decision 版比 optimization 版簡單');
   await step(tok);                                   // 2:55 why focus on decision?
-  const me = pal('', '?', '#f4a56a', 5.8, 2.6, 0.5); me.mood('wow');
+  const me = pal('', '?', '#f4a56a', 5.8, 1.6, 0.5); me.mood('wow');
   say('為什麼證明時只看 decision 版？');
   await step(tok);                                   // 3:17 decision is NPC → no efficient algorithm
-  bad('連 decision 都沒有 efficient 演算法', 3.2, 1.2, -2.0);
+  reword(rD, '連 decision 都沒有 efficient 演算法', 'bad');
   tint(D, C.R);
   say('如果證明 decision 版是 NPC', '→ 設計不出 efficient 演算法');
   await step(tok);                                   // 3:36 optimization is harder
-  tint(O, C.R); bad('optimization 更不可能 ✗', -3.2, 1.2, -2.0);
+  tint(O, C.R); rO = K.keep(bad('optimization 更不可能 ✗', -3.2, 0.4, -3.3));
   say('optimization 要找出最短、最小', '比 decision 更難 → 也沒有 efficient 演算法');
   await step(tok);                                   // 4:04 at least as hard
   txt(cmp, 'optimization 至少和 decision 一樣難');
   me.mood('happy');
   say('optimization 至少和 decision 一樣難');
   await step(tok);                                   // 4:19 first step: find the decision version
-  note('第一步：先寫出 decision 版', 0, 0.4, -1.4);
+  reword(rD, '第一步：先寫出 decision 版', 'note'); glow(D, GOLD);
   say('所以證 NPC 的第一步', '先把問題寫成 decision 版');
 }]);
 
@@ -1210,6 +1220,7 @@ FRAG.push(['np1-h-steps', '證 NPC：L ∈ NP，且 L′ ≤p L（方向別反�
 // 00:26 polynomial vs exponential 的演算法，研究就是想讓它們更快
 FRAG.push(['np1-b-poly-exp', 'Polynomial vs exponential：研究在找更快的', async (tok) => {
   fresh([0, 4.0, 13], [0, 3.0, 0]);
+  frameHold(-5.6, -0.2, 0, 5.6, 6.8, 2.4);
   await step(tok);                                   // 0:26 this topic is a research topic
   const R = pal('研究者', '', '#f4a56a', 0, 0, 0.7); R.g.position.set(0, 0, 2.2);
   say('這個主題和「研究」有關');
@@ -1218,17 +1229,17 @@ FRAG.push(['np1-b-poly-exp', 'Polynomial vs exponential：研究在找更快的'
   say('學過的演算法分兩類', '左：polynomial time　右：exponential time');
   await step(tok);                                   // 0:58 searching: linear n, binary log n
   const L = [];
-  for (const s of ['Linear search：n', 'Binary search：log n']) { L.push(bx(s, C.G, -3.4, 5.4 - L.length * 0.95, 0, 3.6, 3, 0.6)); await beat(tok, 300); }
+  for (const s of ['Linear search：n', 'Binary search：log n']) { L.push(bx(s, C.G, -3.4, 5.4 - L.length * 0.95, 0, 3.6, 0, 0.6)); await beat(tok, 300); }
   say('Searching：linear n、binary log n');
   await step(tok);                                   // 1:07 sorting n², merge sort n log n
-  for (const s of ['Sorting：n²', 'Merge sort：n log n']) { L.push(bx(s, C.G, -3.4, 5.4 - L.length * 0.95, 0, 3.6, 3, 0.6)); await beat(tok, 300); }
+  for (const s of ['Sorting：n²', 'Merge sort：n log n']) { L.push(bx(s, C.G, -3.4, 5.4 - L.length * 0.95, 0, 3.6, 0, 0.6)); await beat(tok, 300); }
   say('Sorting：n²；merge sort 更快：n log n');
   await step(tok);                                   // 1:11 0/1 knapsack 2ⁿ, TSP 2ⁿ …
   const RP = ['0/1 Knapsack：2ⁿ', 'Traveling salesperson：2ⁿ', 'Sum of subsets：2ⁿ', 'Graph coloring：2ⁿ', 'Hamiltonian cycle：2ⁿ'];
-  for (let i = 0; i < RP.length; i++) { bx(RP[i], C.O, 3.4, 5.4 - i * 0.95, 0, 3.8, 3, 0.6); await beat(tok, 250); }
+  for (let i = 0; i < RP.length; i++) { bx(RP[i], C.O, 3.6, 5.4 - i * 0.95, 0, 4.2, 0, 0.6); await beat(tok, 250); }
   say('0/1 knapsack、TSP… 都要 2ⁿ');
   await step(tok);                                   // 1:20 could be n·2ⁿ, nⁿ — written as 2ⁿ
-  note('實際可能是 n·2ⁿ、nⁿ… 統一寫 2ⁿ = 指數', 3.4, 0.3, 0.6);
+  K.keep(note('實際可能是 n·2ⁿ、nⁿ… 統一寫 2ⁿ = 指數', 4.0, 0.75));   // under its column
   say('有的是 n·2ⁿ、有的是 nⁿ', '統一寫成 2ⁿ，表示都是指數');
   await step(tok);                                   // 1:48 want O(1) searching
   glow(L[1], GOLD); tag('→ O(1)?', 'ptr alt', -0.8, 4.45);
@@ -1239,17 +1250,17 @@ FRAG.push(['np1-b-poly-exp', 'Polynomial vs exponential：研究在找更快的'
   say('有沒有比 merge sort 更快的 O(n) 排序？');
   await step(tok);                                   // 2:19 polynomial time for exponential problems
   glow(L[3], null); R.look(1);
-  tag('→ polynomial?', 'ptr alt', 3.4, 0.9);
+  tag('→ polynomial?', 'ptr alt', 0.5, 3.5);           // in the gap, pointing at the 2ⁿ column
   say('指數時間的問題：想要 polynomial time 演算法');
   await step(tok);                                   // 2:39 even n¹⁰ < 2ⁿ for large n
-  note('n 夠大時：n¹⁰、甚至 n¹⁰⁰ 都 < 2ⁿ', 0, 0.9, 1.2);
+  const rM = note('n 夠大時：n¹⁰、甚至 n¹⁰⁰ 都 < 2ⁿ', -3.4, 1.3);   // one remark under the left column
   say('n 夠大時，n¹⁰ 甚至 n¹⁰⁰ 都比 2ⁿ 小', '所以指數時間非常耗時');
   await step(tok);                                   // 3:13 no solutions found so far
   R.mood('sad'); R.set('…');
   say('大家研究了很久', '還是沒找到 polynomial time 的解法');
   await step(tok);                                   // 3:35 framework: NP-hard and NP-complete
   R.mood('happy'); R.set('');
-  good('研究框架：NP-hard、NP-complete', 0, 1.7, 2.2);
+  reword(rM, '研究框架：NP-hard、NP-complete', 'good');
   say('研究白做也要有用 → 建立一套研究框架', '就是 NP-hard 和 NP-complete');
 }]);
 
@@ -1300,23 +1311,23 @@ FRAG.push(['np1-b-nd-search', 'Non-deterministic search：choice() 一步到位'
   txt(cd.ls[3], '  ??? 留白;      '); cd.hl(3);
   say('想寫 0/1 knapsack 的 poly 演算法', '大部分會寫，少數幾行不知道怎麼變 poly → 先留白');
   await step(tok);                                   // 6:36 preserve research work for the future
-  const fut = pal('未來的人', '', '#7cb8ee', 3.6, 1.2, 0.6);
-  bub('我來把它填好！', 3.6, 2.2, 1.2);
+  const fut = pal('未來的人', '', '#7cb8ee', 4.4, 1.2, 0.6);
+  const fb = bub('我來把它填好！', 4.4, 2.4, 1.2);
   say('研究成果就保存下來', '將來別人可以把留白變成 deterministic');
   await step(tok);                                   // 6:50 spent 10–12 years
   const me = pal('我', '花了 10 年', '#f4a56a', 1.2, 1.2, 0.6); me.mood('sad');
   say('就算花了十幾年沒解出來', '做過的工作也要用某種形式保存');
   await step(tok);                                   // 7:04 example: non-deterministic search
-  gone(fut, me); kill(qn); cd.kill();
+  gone(fut, me, fb); kill(qn); cd.kill();
   cd = code(['Algorithm NSearch(A, n, key)', '{', '  j = choice();', '  if (key = A[j]) {', '    write(j); success();', '  }', '  write(0); failure();', '}'], -3.4, 5.6, 0.52);
   const A = [8, 3, 5, 9, 6, 2];
   const M = A.map((v, i) => { tag(String(i + 1), 'idx', 0.9 + i * 1.0, 0.25, 0.6); return bx(v, C.K, 0.9 + i * 1.0, 1.0, 0, 0.85, 2.5, 0.75, 0.8); });
   say('例子：non-deterministic search', '在大小 n 的陣列裡找 key');
   await step(tok);                                   // 7:14 choice, success, failure: O(1) each
-  note('choice / success / failure：各算 1 個單位時間', 3.4, 5.4);
+  const rN = note('choice / success / failure：各算 1 個單位時間', 3.4, 5.4);   // one remark at the upper right
   say('choice、success、failure 是 ND 敘述', '假設每個都只花 O(1)');
   await step(tok);                                   // 7:43 looks O(1): faster than binary search
-  note('整個演算法 O(1) < binary search 的 log n', 3.4, 4.6);
+  reword(rN, '整個演算法 O(1) < binary search 的 log n');
   say('整個演算法看起來是 O(1)', '比 binary search 的 log n 還快！');
   await step(tok);                                   // 8:14 choice gives index j
   cd.hl(2);
@@ -1340,7 +1351,7 @@ FRAG.push(['np1-b-nd-search', 'Non-deterministic search：choice() 一步到位'
   glow(M[3], GOLD); await beat(tok, 500); tint(M[3], C.G); cd.hl(4);
   say('key = 9：choice 直接說在 index 4', '沒有任何搜尋邏輯，一步到位');
   await step(tok);                                   // 9:50 today unknown, tomorrow a method
-  note('今天不知道 → 明天可能找到方法', 3.4, 0.0, 1.2);
+  reword(rN, '今天不知道 → 明天可能找到方法');
   say('今天不知道怎麼做', '明天也許有人找到方法');
   await step(tok);                                   // 10:15 magic → technique
   txt(cd.ls[2], '  j = magic();     ');
@@ -1416,11 +1427,12 @@ const vec3 = (i) => [(i >> 2) & 1 ? 0 : 1, (i >> 1) & 1 ? 0 : 1, i & 1 ? 0 : 1];
 FRAG.push(['np1-b-sat-tree', 'SAT：CNF 公式與 state space tree（2³ = 8 種）', async (tok) => {
   fresh([0, 3.6, 13.5], [0, 3.0, 0]);
   const F = [[1, -2, 3], [-1, 2, -3]];
+  frameHold(-8.2, -0.9, 0, 6.8, 6.8, 0.6);            // the tree and its leaf row come later
   await step(tok);                                   // 13:46 second part: relate problems
   note('② 把問題關聯起來', 0, 6.6);
   say('接著第二部分：把問題關聯起來');
   await step(tok);                                   // 14:24 need a base problem
-  const base = pal('base problem', '?', '#9b7ef4', -5.4, 0, 0.6);
+  const base = pal('base problem', '?', '#9b7ef4', -7.6, 0, 0.6);   // left of the leaf row
   say('需要一個問題當「base problem」');
   await step(tok);                                   // 14:34 satisfiability: CNF formula
   base.set('SAT'); base.mood('happy');
@@ -1441,7 +1453,7 @@ FRAG.push(['np1-b-sat-tree', 'SAT：CNF 公式與 state space tree（2³ = 8 種
   vs.forEach(kill);
   const T = stTree([5.0, 3.9, 2.8, 1.7]);
   const C8 = [];
-  for (let i = 0; i < 8; i++) { C8.push(note(vec3(i).join(''), T.lv[3][i], 0.9, 0)); await beat(tok, 150); }
+  for (let i = 0; i < 8; i++) { C8.push(K.keep(note(vec3(i).join(''), T.lv[3][i], 0.9, 0))); await beat(tok, 150); }   // part of the picture: keep all 8
   say('每個變數 0 或 1', '000、001、…、111：共 8 種');
   await step(tok);                                   // 15:58 try all eight and check
   for (let i = 0; i < 8; i++) {
@@ -1452,7 +1464,7 @@ FRAG.push(['np1-b-sat-tree', 'SAT：CNF 公式與 state space tree（2³ = 8 種
   }
   say('8 種都代入檢查', '010 和 101 讓 F 為假，其餘為真');
   await step(tok);                                   // 16:18 8 = 2³ → n variables 2ⁿ: exponential
-  note('3 個變數：2³ = 8　n 個變數：2ⁿ → 指數時間', 3.4, 0.2, 1.2);
+  const rM = note('3 個變數：2³ = 8　n 個變數：2ⁿ → 指數時間', 0, -0.35, 0.6);   // one remark under the leaf row
   say('3 個變數 2³ = 8 種，n 個變數 2ⁿ 種', '→ 和 knapsack 一樣是指數時間');
   await step(tok);                                   // 16:44 state space tree
   await T.draw(tok, 400);
@@ -1464,7 +1476,7 @@ FRAG.push(['np1-b-sat-tree', 'SAT：CNF 公式與 state space tree（2³ = 8 種
   say('root 到 leaf 的一條路 = 一組 (x1, x2, x3)', '例如 1 → 0 → 1');
   await step(tok);                                   // 17:49 relate: SAT poly → all poly
   head.element.className = 'lab-label ptr';
-  note('這棵樹能 poly 解 → SAT 和其他問題都能', 0, 0.2, 2.2);
+  reword(rM, '這棵樹能 poly 解 → SAT 和其他問題都能');
   say('要證明它們很像', 'SAT 能 poly 解 → 其他問題也都能');
   void base;
 }]);
@@ -1508,37 +1520,38 @@ FRAG.push(['np1-b-knap-tree', '0/1 knapsack 也是這棵樹', async (tok) => {
 FRAG.push(['np1-b-reduce', 'SAT ∝ L：poly 轉換 → L 也是 NP-hard', async (tok) => {
   fresh([0, 4.4, 13], [0, 3.0, 0]);
   const names = ['0/1 Knapsack', 'TSP', 'Sum of subsets', 'Graph coloring', 'Hamiltonian'];
-  const H = names.map((s, i) => bx(s, C.K, -4.0 + i * 2.0, 6.0, -1.0, 1.9, 0, 0.5, 0.6));
+  const H = names.map((s, i) => bx(s, C.K, -3.7 + i * 2.35, 6.0, -1.0, 2.2, 0, 0.5, 0.6));
+  frameHold(-7.2, -0.2, -1.0, 6.8, 7.0, 0.6);
   await step(tok);                                   // 20:23 add SAT to the exponential list
-  const S = bx('Satisfiability', C.K, -6.0, 6.0, -1.0, 1.9, 2.5, 0.5, 0.6);
+  const S = bx('Satisfiability', C.K, -6.05, 6.0, -1.0, 2.2, 2.5, 0.5, 0.6);
   say('把 SAT 也加進指數時間的問題');
   await step(tok);                                   // 20:32 coin a term: hard problems
   H.forEach((m) => tint(m, C.O)); tag('hard problems', 'idx', 0, 6.7, -1.0);
   say('先把它們叫做 hard problems');
   await step(tok);                                   // 20:47 SAT is the base → NP-hard
-  tint(S, C.R); glow(S, GOLD); tag('NP-hard', 'ptr alt', -6.0, 6.7, -1.0);
+  tint(S, C.R); glow(S, GOLD); tag('NP-hard', 'ptr alt', -6.05, 6.7, -1.0);
   say('SAT 是 base problem → 叫它 NP-hard');
   await step(tok);                                   // 21:11 the procedure is reduction
   tag('怎麼關聯？→ reduction', 'ptr', 0, 5.2);
   say('要證明它們和 SAT 有關係', '方法是 reduction');
   await step(tok);                                   // 21:28 SAT reduces to 0/1 knapsack
   glow(S, null);
-  const a = bx('Satisfiability', C.R, -3.8, 3.2, 0, 3.0, 0, 0.8), b = bx('0/1 Knapsack', C.O, 3.8, 3.2, 0, 3.0, 0, 0.8);
-  arr(-2.2, 3.2, 0, 2.2, 3.2, 0, 0xc08a1f); const sym = tag('SAT ∝ 0/1 knapsack', 'ptr alt', 0, 3.8);
+  const a = bx('Satisfiability', C.R, -3.8, 3.4, 0, 3.0, 0, 0.8), b = bx('0/1 Knapsack', C.O, 3.8, 3.4, 0, 3.0, 0, 0.8);
+  arr(-2.2, 3.4, 0, 2.2, 3.4, 0, 0xc08a1f); const sym = tag('SAT ∝ 0/1 knapsack', 'ptr alt', 0, 4.0);
   say('Satisfiability reduces to 0/1 knapsack', '符號 ∝');
   await step(tok);                                   // 21:39 SAT instance (formula) → knapsack instance
-  const ex = pkt('一個 SAT 公式', -3.8, 2.2, 0.6);
-  await slide(tok, ex, 3.8, 2.2, 0.6, 1300);
+  const ex = pkt('一個 SAT 公式', -3.8, 2.5, 0.6);
+  await slide(tok, ex, 3.8, 2.5, 0.6, 1300);
   txt(ex, '一個 knapsack 例子');
   say('拿 SAT 的一個公式（instance）', '把它轉成 0/1 knapsack 的 instance');
   await step(tok);                                   // 21:59 knapsack poly → same algorithm solves SAT
   glow(b, GREEN); await beat(tok, 700); glow(a, GREEN);
   say('如果 knapsack 能 poly time 解', '同一個演算法也能 poly time 解 SAT');
   await step(tok);                                   // 22:24 whoever is solved first: both
-  note('任一個解出來 → 另一個自動解出來', 0, 1.2, 0.6);
+  const rC = K.keep(note('任一個解出來 → 另一個自動解出來', 0, 2.75, 0));   // one remark under the arrow
   say('誰先被解出來不重要', '任一個解出來，另一個也自動解出來');
   await step(tok);                                   // 22:39 conversion only polynomial time
-  good('轉換：polynomial time ✓', -2.2, 4.6); bad('轉換花 exponential：沒用 ✗', 2.6, 4.6);
+  reword(rC, '轉換：polynomial time ✓　花 exponential：沒用 ✗', 'good');
   say('轉換本身只能花 polynomial time', '花 exponential time 轉換就沒有用了');
   await step(tok);                                   // 22:59 SAT NP-hard → knapsack NP-hard
   glow(a, null); glow(b, null); tint(b, C.R); relabel(b, '0/1 Knapsack：NP-hard'); tint(H[0], C.R);
@@ -1547,11 +1560,12 @@ FRAG.push(['np1-b-reduce', 'SAT ∝ L：poly 轉換 → L 也是 NP-hard', async
   txt(sym, 'SAT ∝ L1、L1 ∝ L2 → L2 也 NP-hard');
   say('reduction 有遞移性', 'SAT ∝ L1、L1 ∝ L2 → L2 也是 NP-hard');
   await step(tok);                                   // 24:02 0/1 → coloring → subsets / Hamiltonian
-  const col = bx('Graph coloring', C.K, 3.8, 1.2, 0, 2.6, 2.5, 0.6);
-  arr(3.8, 2.75, 0, 3.8, 1.6, 0, 0xc08a1f); await beat(tok, 500); tint(col, C.R); tint(H[3], C.R);
-  for (const [s, y, k] of [['Sum of subsets', 1.6, 2], ['Hamiltonian', 0.4, 4]]) {
-    const m = bx(s, C.K, -1.4, y, 0, 2.6, 2.5, 0.6);
-    arr(2.4, 1.2, 0, 0.0, y, 0, 0xc08a1f);
+  kill(ex); kill(rC);                                // the instance story is done: the chain goes below
+  const col = bx('Graph coloring', C.K, 3.8, 1.4, 0, 2.6, 2.5, 0.6);
+  arr(3.8, 2.95, 0, 3.8, 1.8, 0, 0xc08a1f); await beat(tok, 500); tint(col, C.R); tint(H[3], C.R);
+  for (const [s, y, k] of [['Sum of subsets', 2.0, 2], ['Hamiltonian', 0.8, 4]]) {
+    const m = bx(s, C.K, -0.6, y, 0, 2.6, 2.5, 0.6);
+    arr(2.4, 1.4, 0, 0.8, y, 0, 0xc08a1f);
     await beat(tok, 500); tint(m, C.R); tint(H[k], C.R);
   }
   say('0/1 knapsack → graph coloring', '→ sum of subsets、Hamiltonian：不用每個都從 SAT 轉');
@@ -2033,19 +2047,20 @@ const mgW = (a, b) => MG.E.find((e) => ek(e[0], e[1]) === ek(a, b))[2];
 function mstGraph(drop = true) { const g = graph(MG.P, MG.E.map((e) => [e[0], e[1]]), { drop }); MG.E.forEach(([a, b, w]) => wt(MG.P, a, b, w)); return g; }
 FRAG.push(['np1-j-mst-dec', 'MST：最佳化版 vs 判定版（給 bound k）', async (tok) => {
   fresh([0, 8.5, 9], [0, 0, 0.2]);
+  frameHold(-6.4, 0.2, -6.0, 6.4, 0.6, 3.9);   // room above the boxes for a two-line caption           // boxes at the back, graph in the middle, result line in front
   await step(tok);                                   // 7:15 two forms: decision / optimization
-  const D = bx('Decision problem', C.B, -3.4, 0.4, -3.6, 3.0, 2.5, 0.5, 0.7), O = bx('Optimization problem', C.P, 3.4, 0.4, -3.6, 3.2, 2.5, 0.5, 0.7);
+  const D = bx('Decision problem', C.B, -3.4, 0.4, -4.4, 3.0, 2.5, 0.5, 0.7), O = bx('Optimization problem', C.P, 3.4, 0.4, -4.4, 3.2, 2.5, 0.5, 0.7);
   say('問題有兩種定義方式', 'decision problem 和 optimization problem');
   await step(tok);                                   // 7:48 optimization: find a solution with min/max cost
   glow(O, GOLD);
   const g = mstGraph();
   say('Optimization：input instance 進來', '找一個 solution，讓 cost 最小或最大');
   await step(tok);                                   // 8:07 objective function + constraint
-  note('objective function：cost 越小越好', 3.4, 1.0, -2.8); note('constraint：規定解要長什麼樣', 3.4, 1.0, -2.1);
+  note('objective function（cost 越小越好）＋ constraint（規定解要長什麼樣）', 3.4, 0.4, -3.45);   // one remark under its box   // under their box
   say('formulation 有兩部分', 'objective function ＋ constraint');
   await step(tok);                                   // 8:46 decision: only yes / no
   glow(O, null); glow(D, GOLD);
-  good('YES = 1', -4.2, 1.0, -2.8); bad('NO = 0', -2.6, 1.0, -2.8);
+  const yn = [good('YES = 1', -4.2, 0.4, -3.45), bad('NO = 0', -2.6, 0.4, -3.45)];
   say('Decision problem 只問 yes / no', '也常寫成 1 / 0');
   await step(tok);                                   // 9:28 example: MST
   glow(D, null);
@@ -2059,13 +2074,14 @@ FRAG.push(['np1-j-mst-dec', 'MST：最佳化版 vs 判定版（給 bound k）', 
   say('建一棵 spanning tree 連起所有點', 'cost 總和越低越好 → 最小 = 9');
   await step(tok);                                   // 10:34 decision can't ask for the minimum
   glow(O, null); glow(D, GOLD); gReset(g); txt(st, '');
-  bad('decision 版不能問「最小的是哪個」', -3.4, 1.0, -2.0);
+  yn.forEach(kill);
+  const rD = bad('decision 版不能問「最小的是哪個」', -3.4, 0.4, -3.45);   // one remark under the Decision box
   say('decision 版沒辦法問最小 cost 的解');
   await step(tok);                                   // 11:20 give a bound k
   txt(st, '多給一個 bound k');
   say('要多給一個參考的 bound k');
   await step(tok);                                   // 11:38 is there a spanning tree with cost ≤ k?
-  bub('有 cost ≤ k 的 spanning tree 嗎？', 0, 1.4, 3.0);
+  bub('有 cost ≤ k 的 spanning tree 嗎？', -4.0, 0.6, 2.4);   // the empty front-left corner
   say('問：是否存在 cost 最多 k 的 spanning tree？');
   await step(tok);                                   // 12:03 yes: found one
   MG.T.forEach(([a, b]) => eCol(g, a, b, C.Y));
@@ -2075,7 +2091,7 @@ FRAG.push(['np1-j-mst-dec', 'MST：最佳化版 vs 判定版（給 bound k）', 
   gReset(g); txt(st, 'k = 8：bound 太小，找不到 → NO');
   say('或回答：你給的 bound 太小，找不到');
   await step(tok);                                   // 12:45 a decision problem must give a bound
-  note('decision 版一定要給 bound！', 0, 1.0, -2.0);
+  reword(rD, 'decision 版一定要給 bound！', 'note'); glow(D, GOLD);
   say('描述 decision problem 一定要給 bound', '不然沒辦法回答 yes / no');
 }]);
 
@@ -2133,20 +2149,22 @@ FRAG.push(['np1-j-tsp-dec', 'TSP：最短 tour vs「有沒有 tour ≤ B」', as
 
 // 17:15 用判定版 binary search bound → 最佳值
 FRAG.push(['np1-j-bsearch', '只有判定版：二分搜 bound 找最佳值', async (tok) => {
-  fresh([0, 7.5, 9.5], [0, 0, 0.2]);
+  fresh([0, 3.8, 13], [0, 3.8, 0]);
+  frameHold(-7.0, -2.0, 0, 6.8, 9.9, 0.5);
   const X = (v) => -6 + v * 12 / 1000;
-  cube('', '#d8c29b', [12.4, 0.08, 0.3], 0, 0.04, 2.6);
-  [0, 250, 500, 750, 1000].forEach((v) => tag(String(v), 'idx', X(v), 0.1, 3.2));
+  // seen from the front: the number line at the bottom, every question on its own row above it
+  cube('', '#d8c29b', [12.4, 0.12, 0.3], 0, -0.5, 0);
+  [0, 250, 500, 750, 1000].forEach((v) => tag(String(v), 'idx', X(v), -1.0, 0));
   await step(tok);                                   // 17:15 decision only says "not over the bound"
-  const box = pal('decision 版', '', '#4b9ee2', -5.4, -2.6, 0.6);
-  bub('YES：沒超過 bound', -5.4, 1.8, -2.6);
-  note('但這個 bound 是不是最佳值？不知道', 1.2, 0.4, -3.2);
+  const box = pal('decision 版', '', '#4b9ee2', -6.0, 0, 0.6); box.g.position.set(-6.0, 6.0, -0.4);
+  bub('YES：沒超過 bound', -6.0, 7.7, -0.4);
+  const rH = K.keep(note('但這個 bound 是不是最佳值？不知道', 1.2, 8.8));   // one remark on top
   say('decision 只說「沒超過 bound」', '不知道這個 bound 是不是剛好最佳');
   await step(tok);                                   // 18:02 use binary search for the bound
-  tag('binary search 找 bound', 'ptr alt', 1.2, 0.4, -2.4);
+  reword(rH, 'binary search 找 bound', 'ptr alt');
   say('手上只有 decision 版', '用 binary search 決定 bound 設多少');
   const Q = [];
-  const ask = (k, i) => { const c = bx('≤' + k + '?', C.K, X(k), 0.3, -1.6 + i * 0.55, 1.0, 2.5, 0.4, 0.45); Q.push(c); return c; };
+  const ask = (k, i) => { const c = bx('≤' + k + '?', C.K, X(k), 8.0 - i * 0.95, 0, 1.0, 0, 0.4, 0.45); Q.push(c); return c; };
   const ans = (c, k, y) => { tint(c, y ? C.G : C.R); relabel(c, k + (y ? ' YES' : ' NO')); };
   await step(tok);                                   // 18:17 ≤ 1000? yes
   let c = ask(1000, 0); await beat(tok, 600); ans(c, 1000, 1); box.mood('happy');
@@ -2167,13 +2185,13 @@ FRAG.push(['np1-j-bsearch', '只有判定版：二分搜 bound 找最佳值', as
   for (const [k, y] of [[312, 1], [281, 0], [296, 0], [304, 1]]) { const d = ask(k, Q.length); await beat(tok, 250); ans(d, k, y); await beat(tok, 250); }
   say('這樣問幾次之後', '會收斂到某一個值');
   await step(tok);                                   // 19:05 a bit smaller: no; a bit bigger: yes
-  const fin = bx('≈300', C.Y, X(300) + 1.7, 0.3, 1.97, 0.7, 3, 0.45, 0.5); glow(fin, GOLD); // beside the 296 / 304 pair it sits between
+  const fin = bx('≈300', C.Y, X(300) + 1.5, 0.9, 0, 0.7, 3, 0.45, 0.5); glow(fin, GOLD); // beside the 296 / 304 pair it sits between
   say('小一點點就找不到', '大一點點一定找得到');
   await step(tok);                                   // 19:13 that bound is the optimum value
-  good('那個 bound = 最佳解的值（示意 ≈ 300）', 0, 0.4, 3.9);
+  good('那個 bound = 最佳解的值（示意 ≈ 300）', 0, -1.7, 0.3);
   say('那個 bound 剛好就是最佳解的值');
   await step(tok);                                   // 19:19 decision ⇄ optimization
-  tag('decision ⇄ optimization 可以互相轉換', 'ptr', 1.2, 0.4, -3.9);
+  reword(rH, 'decision ⇄ optimization 可以互相轉換', 'ptr');
   say('decision 和 optimization 可以互相轉換');
 }]);
 
@@ -2220,6 +2238,7 @@ FRAG.push(['np1-j-tsp-big', '13509 個城市的 TSP：真的很難', async (tok)
 // 21:36 Cook 證出第一個 NPC，Karp 一次 21 個 → 22 個
 FRAG.push(['np1-j-history', 'Cook 第一個 NPC → Karp 一次 21 個', async (tok) => {
   fresh([0, 4.5, 13], [0, 2.8, 0]);
+  frameHold(-6.4, -0.2, 0, 6.4, 5.8, 2.2);            // the whole timeline, held from the first step
   await step(tok);                                   // 21:36 the story starts in the early 1970s
   cube('', '#d8c29b', [12.6, 0.08, 0.3], 0, 0.04, 1.6);
   tag('1970 年代初期', 'ptr', -3.0, 0.2, 2.2);
@@ -2246,18 +2265,19 @@ FRAG.push(['np1-j-history', 'Cook 第一個 NPC → Karp 一次 21 個', async (
   const pp = prop('file', 3.4, 2.4, 0, 1.0, '新的 NPC → 一篇論文'); bob(pp, 0.05);
   say('那個年代：證明新問題是 NPC', '就可以寫一篇論文');
   await step(tok);                                   // 23:10 a famous little book: NPC dictionary
-  const bk = bx('NPC 字典（Garey & Johnson）', C.Y, 4.4, 0.6, 0.6, 3.2, 3, 0.7);
+  const bk = bx('NPC 字典（Garey & Johnson）', C.Y, 4.6, 0.6, 0.6, 3.2, 3, 0.7);
   say('1970 年代有一本很有名的小書', '等於是 NP-complete 問題的字典');
   await step(tok);                                   // 23:34 look up: is my problem NPC?
-  const me = pal('你', '?', '#f4a56a', 6.2, 1.4, 0.5);
-  bub('我的問題在字典裡嗎？', 6.0, 1.8, 1.4);
+  kill(pp);                                          // the paper story is told: the dictionary takes its place
+  const me = pal('你', '?', '#f4a56a', 4.6, 2.4, 0.5);   // in front of the dictionary
+  const rM = K.keep(bub('我的問題在字典裡嗎？', 4.2, 2.0, 0.6));   // above the dictionary
   say('翻一翻：手上的問題是不是 NPC？');
   await step(tok);                                   // 23:47 yes → heuristic / approximation
   me.set('NPC'); me.mood('happy');
-  note('不追求最佳解 → heuristic / approximation', 3.2, 5.6);
+  reword(rM, '是 NPC → 不追求最佳解，改找 heuristic / approximation');
   say('是的話：不追求 efficient 的最佳解', '退而求其次，找 heuristic 或 approximation');
   await step(tok);                                   // 24:53 everyone named things their own way
-  for (const [t, x] of [['NPC', -2.6], ['NP-complete', -1.0], ['universal', 0.8], ['…', 2.2]]) { note(t, x, 6.2); await beat(tok, 200); }
+  for (const [t, x] of [['NPC', -3.4], ['NP-complete', -1.5], ['universal', 0.6], ['…', 2.2]]) { K.keep(note(t, x, 5.4)); await beat(tok, 200); }
   say('當時大家各做各的', '同樣意思常用不同的名詞（terminology）');
   void bk;
 }]);
@@ -2451,23 +2471,24 @@ FRAG.push(['np1-j-verifier-mst', '驗證演算法 V(instance, solution)', async 
 // 41:16 TSP ∈ NP：猜一個 tour，三個 linear time 檢查
 FRAG.push(['np1-j-tsp-verify', 'TSP ∈ NP：猜一個 tour，linear time 檢查', async (tok) => {
   fresh([0, 7, 10], [0, 1, 0]);
+  frameHold(-6.4, 0.0, -3.6, 6.8, 2.4, 3.6);           // graph in the middle, checks on the right, notes left / front
   await step(tok);                                   // 41:15 TSP input: n cities, distances
   const g = tspGraph();
   say('TSP 的 input：n 個 city', '兩兩之間的距離');
   await step(tok);                                   // 41:24 plus a bound
-  const bt = note('bound B = 15', 4.4, 0.4, -1.7);
+  const bt = K.keep(note('bound B = 15', -5.2, 0.4, -1.7));   // left of city A
   say('還要給一個 bound', '用來判斷有沒有超過');
   await step(tok);                                   // 41:42 decision: is there a route ≤ bound?
-  bub('有起訖同城、每城一次、≤ B 的 route 嗎？', 0, 1.4, -2.9);
+  bub('有起訖同城、每城一次、≤ B 的 route 嗎？', 0, 0.6, -3.1);
   say('decision 版：是否存在符合條件', '而且總長 ≤ bound 的 route？');
   await step(tok);                                   // 42:15 is TSP in NP?
   const q = tag('TSP ∈ NP ?', 'ptr alt', -4.6, 0.4, 2.6);
   say('TSP 是不是屬於 NP？');
   await step(tok);                                   // 42:31 can we verify a solution in poly time?
-  const cd = code(['① 起點 = 終點？', '② 每個 city 恰一次？', '③ 總長 ≤ B？'], 0, 5.0, 0.6, -2.6);
+  const cd = code(['① 起點 = 終點？', '② 每個 city 恰一次？', '③ 總長 ≤ B？'], 5.3, 2.0, 0.6, -0.6);   // the checks stand right of the graph
   say('看能不能在 polynomial time 內', 'verify 一個 solution');
   await step(tok);                                   // 42:39 the solution is called a certificate
-  note('certificate = 拿來驗證的那個 solution', -4.6, 0.4, 3.3);
+  const rC = note('certificate = 拿來驗證的那個 solution', -4.6, 0.4, 3.3);
   say('這個 solution 有個特別的名字', 'certificate');
   await step(tok);                                   // 43:11 first, just guess a tour
   const cert = ['A', 'B', 'C', 'D', 'A'];
@@ -2491,7 +2512,7 @@ FRAG.push(['np1-j-tsp-verify', 'TSP ∈ NP：猜一個 tour，linear time 檢查
   cd.hl(-1); txt(q, 'TSP ∈ NP ✓'); q.element.className = 'lab-label good';
   say('檢查都是 linear time', '→ polynomial time 驗證完 → TSP ∈ NP');
   await step(tok);                                   // 45:21 homework 5, problem 2: step one
-  note('作業 5 第 2 題：先證 ∈ NP，再證 NPC', -4.6, 0.4, -2.6);
+  reword(rC, '作業 5 第 2 題：先證 ∈ NP，再證 NPC');
   say('這一步簡單但很重要', '作業 5 第 2 題的第一步就是它');
 }]);
 
@@ -2838,7 +2859,7 @@ FRAG.push(['np1-j-comic', '漫畫：找不到 efficient 演算法怎麼辦', asy
   const bSay = (t) => { if (bb) kill(bb); bb = bub(t, 3.8, 2.4); }, eSay = (t) => { if (eb) kill(eb); eb = bub(t, -3.8, 2.4); };
   await step(tok);                                   // 16:49 the boss assigns a task
   const task = pkt('task', 3.8, 1.2, 0.6);
-  await slide(tok, task, -3.8, 1.2, 0.6, 1000);
+  await slide(tok, task, -2.5, 0.9, 1.1, 1000);        // lands beside the employee, not on the name
   say('公司裡：老闆 assign 一個 task 給員工');
   await step(tok);                                   // 17:01 a week later: how's progress?
   bSay('上次的問題解得如何？');
@@ -2863,7 +2884,9 @@ FRAG.push(['np1-j-comic', '漫畫：找不到 efficient 演算法怎麼辦', asy
   say('再過一週，員工很有自信地去找老闆');
   await step(tok);                                   // 18:53 these famous people can't either
   eSay('這些名人、天才也都找不到！');
-  for (let j = 0; j < 5; j++) { const f = pal('名人', '', '#e0b23c', -5.6 + j * 1.1, -2.4, 0.5); f.mood('wow'); await beat(tok, 200); }
+  kill(task);                                        // the task story is told: make room
+  // the famous people line up in the open middle, behind the two characters
+  for (let j = 0; j < 5; j++) { const f = pal('名人', '', '#e0b23c', -2.6 + j * 1.3, -2.0, 0.5); f.mood('wow'); await beat(tok, 200); }
   boss.mood('wow');
   say('「不是只有我，這些名人也都找不到」');
   await step(tok);                                   // 19:02 NPC uses this argument
@@ -3326,28 +3349,29 @@ FRAG.push(['np2-axis', '難度軸：P、EXP、R 與無解問題', async (tok) =>
   AX_CAM();
   npAxis([]);
   tag('computational difficulty（計算難度）', 'ptr alt', 0, 4.6);
-  note('示意圖：不是精確的圖', 0, 3.8);
+  const rA = note('示意圖：不是精確的圖', -1.0, 3.7);   // one remark for the middle of the axis
   say('改畫成一條橫軸', '左邊簡單、右邊困難');
   await step(tok);                                   // 233.8 over here the easy problems: P
   npNotch('P'); npBand('P', 0.55);
-  bub('簡單的問題', -5.2, 1.4);
+  bub('簡單的問題', -4.4, 2.5);
   say('最左邊：P');
   await step(tok);                                   // 240.5 then EXP; something will be filled in the middle
   npNotch('EXP'); npBand('EXP', 1.1);
   const mid = tag('?', 'ptr alt', NX.NP, 0.6);
-  note('中間之後還要補一個刻度', NX.NP, 2.2);
+  reword(rA, '中間之後還要補一個刻度');
   say('再往右：EXP', '中間之後還會補一個');
   await step(tok);                                   // 248.8 and then this is something called R
   npNotch('R');
   say('再往右：R');
   await step(tok);                                   // 276.3 R = problems solvable in finite time
   npBand('R', 1.65);
-  note('R：有限時間內能解', NX.R - 1.2, 2.7);
+  const rR = note('R：有限時間內能解', 2.0, 2.5);     // one remark for R, over its band
   say('R：有限時間內能解的問題');
   await step(tok);                                   // 289.8 R stands for recursive (= computable)
-  note('R = recursive = 可計算（computable）', NX.R - 1.2, 3.3);
+  reword(rR, 'R = recursive = 可計算（computable）');
   say('R 來自 recursive', '意思是「可計算」');
   await step(tok);                                   // 307.8 the arrow keeps going: there are unsolvable problems
+  kill(rR);                                          // R is explained: the unsolvable side takes over
   const u = card('無解', NC.BAD, 5.1, 1.0, 1.1, 3);
   bad('根本解不了', 5.1, 1.9);
   say('R 的右邊還有問題', '根本解不了的問題');
@@ -3430,94 +3454,97 @@ FRAG.push(['np2-axis-rec', '難度軸最右端：Halting problem 與 R', async (
 // 05:43 例子：負權環、n×n chess、Go、Tetris、Halting
 FRAG.push(['np2-examples', '把問題放上難度軸', async (tok) => {
   AX_CAM();
+  frameHold(-6.4, -1.0, 0, 6.9, 6.4, 0.3);
   npAxis(['P', 'EXP', 'R']); npBand('P', 0.45); const bE = npBand('EXP', 0.95); npBand('R', 1.45);
   await step(tok);                                   // 343.3 negative-weight cycle detection
   const nc = pal('負權環偵測', '?', NC.P, -5.0, 3.6, 0, 0.55); nc.mood('wow');
   say('例一：負權環偵測', '前面學過的問題');
   await step(tok);                                   // 352.3 given a weighted graph: any negative-weight cycle?
   const G = miniG({ a: [0.4, 5.6], b: [3.0, 5.6], c: [1.7, 3.8] }, [['a', 'b', 2], ['b', 'c', -4], ['c', 'a', 1]]);
-  note('示意：2 + (−4) + 1 = −1 < 0', 4.8, 4.4);
+  const rE = note('示意：2 + (−4) + 1 = −1 < 0', 5.3, 4.7);   // next to the little graph
   say('給一張有權重的圖', '有沒有總和是負的環？');
   await step(tok);                                   // 359.8 P: Bellman-Ford, VE time
-  await slide(tok, nc, -5.0, 1.0, 0, 1000);
+  await slide(tok, nc, -4.3, 1.0, 0, 1000);
   nc.set('✓'); nc.mood('happy');
-  good('P：Bellman-Ford O(VE)', -4.8, 2.4);
+  const rNC = good('P：Bellman-Ford O(VE)', -4.3, 2.65);   // one remark over the problem
   say('答案：在 P', 'Bellman-Ford，O(VE) 時間');
   await step(tok);                                   // 368.8 add a source reaching everything with weight 0
   const s = cube('s', NC.O, [0.5, 0.5, 0.5], -1.4, 4.7, 0);
   const sl = [[0.4, 5.6], [3.0, 5.6], [1.7, 3.8]].map(([x, y]) => line(-1.4, 4.7, x, y, 0, NC.O));
-  note('0', -0.6, 5.4);
+  const w0 = K.keep(note('0', -0.6, 5.4));
   say('加一個源點 s，連到每個點', '權重都是 0 → 整張圖都檢查得到');
   await step(tok);                                   // 377.8 also in EXP: everything in P is in EXP
-  good('P 裡的問題也在 EXP', -1.8, 2.0);
+  reword(rNC, 'P 裡的問題也在 EXP');
   say('它也在 EXP', '多項式時間 ≤ 指數時間');
   await step(tok);                                   // 397.5 n × n chess
-  G.kill(); gone(s, sl);
+  G.kill(); gone(s, sl, w0, rE);                     // example 1 is done: only its character stays on the axis
   const brd = [];
   for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) brd.push(cube(null, (r + c) % 2 ? '#6e5f49' : '#efe3c8', [0.42, 0.42, 0.12], 1.6 + c * 0.44, 3.9 + r * 0.44, 0));
-  note('n × n 棋盤（畫 4 × 4 示意）', 2.3, 3.4);
+  const bc = note('n × n 棋盤（畫 4 × 4 示意）', 5.0, 4.5);   // right of the board
   const chs = pal('n×n chess', '?', NC.EXP, -1.4, 3.6, 0, 0.55);
   say('例二：n × n 的西洋棋');
   await step(tok);                                   // 405.3 does white win from here?
-  bub('白棋從這裡會贏嗎？', 2.3, 6.0);
+  const bq = bub('白棋從這裡會贏嗎？', 2.3, 6.0);
   say('給一個盤面', '白棋會不會贏？');
   await step(tok);                                   // 414.9 solvable in exponential time: play out all strategies
-  await slide(tok, chs, 0.6, 2.2, 0, 1000);
-  note('試遍所有走法 → EXP', 0.6, 3.6);
+  await slide(tok, chs, 1.7, 2.2, 0, 1000);
+  const rC = note('試遍所有走法 → EXP', -0.1, 2.9);   // left of the chess character (the board caption is above it)    // one remark over the chess character
   say('可以在指數時間解', '把所有走法都下下看');
   await step(tok);                                   // 424.9 and it's not in P
   chs.mood('sad');
-  bad('不在 P（已證明）', -0.6, 4.3);
+  reword(rC, '在 EXP，但不在 P（已證明）', 'bad');
   say('而且它不在 P', '沒有多項式時間的演算法');
   await step(tok);                                   // 442.9 order of growth: analyze n×n, not 8×8
-  note('看 n 變大時怎麼成長：8×8 是固定大小', 2.4, 6.6);
+  kill(bq);
+  const gN = note('看 n 變大時怎麼成長：8×8 是固定大小', 2.3, 5.9);   // over the board
   say('複雜度看的是「成長」', '所以分析 n×n，不是 8×8');
   await step(tok);                                   // 451.8 Go is also in EXP but not in P
-  const go = pal('Go', '', NC.EXP, 1.3, 1.0, 0, 0.5); go.mood('sad');
+  const go = pal('Go', '', NC.EXP, 2.6, 1.1, 0, 0.5); go.mood('sad');
   say('圍棋（Go）也一樣', '在 EXP，不在 P');
   await step(tok);                                   // 469.8 Tetris
-  gone(brd);
+  gone(brd, bc, gN, rC);                             // chess is done: its character stays on the axis
   const tt = pal('Tetris', '?', NC.NP, -2.6, 4.6, 0, 0.55);
   say('例三：Tetris', '照真正的 Tetris 規則');
   await step(tok);                                   // 481.8 the catch: all pieces are told in advance
   const pcs = [NC.O, NC.NP, NC.P, NC.R, NC.EXP].map((c, i) => cube(null, c, [0.4, 0.4, 0.4], -0.6 + i * 0.55, 5.2, 0, 1));
-  note('事先告訴你所有方塊', 0.5, 4.6);
+  const pn = note('事先告訴你所有方塊', 0.5, 4.6);
   say('唯一的條件', '之後會來的方塊全部先告訴你');
   await step(tok);                                   // 497.8 can I survive from this board?
-  bub('能活下來嗎？', -2.6, 6.1);
+  const tb = bub('能活下來嗎？', -2.6, 6.1);
   say('問題：能不能活下來？', 'YES / NO');
   await step(tok);                                   // 504.7 also solvable in exponential time: try all possibilities
   await slide(tok, tt, -1.6, 2.0, 0, 900);
   say('也能在指數時間解', '把所有可能都試一遍');
   await step(tok);                                   // 512.4 we don't know if it's in P; pretty sure not
-  const tq = tag('在 P 嗎？不知道', 'ptr alt', -1.6, 3.3);
+  const tq = tag('在 P 嗎？不知道', 'ptr alt', -1.6, 3.6);
   say('在不在 P？還不知道', '但很相信不在');
   await step(tok);                                   // 534.6 Tetris is actually right here (not defined yet)
-  gone(pcs);
+  gone(pcs, pn, tb);
   await slide(tok, tt, NX.NP, 2.0, 0, 800);
-  txt(tq, '其實在這裡（之後解釋）'); tq.position.x = NX.NP;
+  txt(tq, '其實在這裡（之後解釋）'); tq.position.x = NX.NP - 1.0;
   say('Tetris 其實在這個位置', '這個刻度之後才定義');
   await step(tok);                                   // 545.8 next: the halting problem
   const hp = pal('Halting', '?', NC.BAD, 3.0, 4.6, 0, 0.55);
   say('例四：Halting problem');
   await step(tok);                                   // 568.8 given a program: does it ever halt?
   const f = prop('file', 5.2, 3.9, 0, 0.8, '一支程式');
-  bub('它會停嗎？', 3.0, 6.1);
+  const rH = K.keep(bub('它會停嗎？', 3.0, 6.2));     // one remark for Halting, follows it
   say('給一支程式', '它最後會不會停下來？');
   await step(tok);                                   // 593.8 ran 5 hours: infinite loop bug, or just slow?
   hp.mood('sad');
-  note('跑 5 小時了：無窮迴圈？還是只是慢？', 0.2, 6.6);
+  reword(rH, '跑 5 小時了：無窮迴圈？還是只是慢？', 'note');
   say('很實用：程式跑了 5 小時', '是有 bug 卡住，還是只是慢？');
   await step(tok);                                   // 612.8 not in R: no correct algorithm
   gone(f);
-  await slide(tok, hp, 5.2, 1.4, 0, 900);
-  bad('不在 R：沒有正確的演算法', 4.6, 3.0);
+  rH.position.set(4.6, 3.9, 0); txt(rH, '');
+  await slide(tok, hp, 5.3, 1.0, 0, 900);
+  bad('不在 R：沒有正確的演算法', 5.0, 2.5);
   say('Halting 不在 R', '沒有演算法能對所有程式判斷');
   await step(tok);                                   // 625.5 special cases (empty program) are easy
-  good('空程式：看得出會停', 4.6, 3.7);
+  reword(rH, '空程式：看得出會停', 'good');
   say('特例可以判斷', '但沒有對「所有程式」都對的方法');
   await step(tok);                                   // 642.1 infinite time works: just run it
-  note('給無限時間：直接跑就知道；有限時間：不行', 2.2, 4.5);
+  reword(rH, '給無限時間：直接跑就知道；有限時間：不行', 'note');
   say('無限時間可以：直接執行', '有限時間內沒辦法');
 }]);
 
@@ -3528,7 +3555,7 @@ FRAG.push(['np2-programs-n', '程式 = 有限 bit 串 = 自然數', async (tok) 
   const claim = tag('要證明：幾乎所有問題都不在 R', 'ptr alt', 0, 6.0);
   say('先證一件比較簡單的事', '幾乎所有問題都不在 R');
   await step(tok);                                   // 689.6 decision problems: answer is yes or no
-  const y = card('YES', NC.P, -1.2, 4.6, 1.1, 3), n = card('NO', NC.BAD, 1.2, 4.6, 1.1, 3);
+  const y = card('YES', NC.P, -1.2, 4.6, 1.1, 0.8), n = card('NO', NC.BAD, 1.2, 4.6, 1.1, 0.8);
   say('decision problem（決策問題）', '答案只有 YES 或 NO');
   await step(tok);                                   // 697.3 negative cycle? white wins? survive Tetris? halts?
   const ex = [['負權環?', 'YES'], ['白棋贏?', 'NO'], ['Tetris 活?', 'YES'], ['會停?', 'NO']].map(([t, v], i) => {
@@ -3536,16 +3563,16 @@ FRAG.push(['np2-programs-n', '程式 = 有限 bit 串 = 自然數', async (tok) 
   });
   say('剛才的例子都是這種', '負權環？白棋贏？活得下來？會停？');
   await step(tok);                                   // 708.1 complexity theory focuses on decision problems
-  note('整個複雜度理論只看決策問題', 0, 3.5);
+  const fo = note('整個複雜度理論只看決策問題', 0, 3.5);
   say('複雜度理論只研究決策問題', '比較方便');
   await step(tok);                                   // 724.8 any problem converts to a decision problem; about as hard
-  gone(ex, y, n);
+  gone(ex, y, n, fo);
   const a = card('最短路徑有多長？', NC.O, -3.2, 2.2, 2.8, 2), b = card('有長度 ≤ k 的路嗎？', NC.P, 3.2, 2.2, 3.0, 2);
-  arrow(V3(-1.7, 2.2, 0), V3(1.6, 2.2, 0));
-  note('示意：最佳化問題 → 決策問題', 0, 1.2);
+  const ab = arrow(V3(-1.7, 2.2, 0), V3(1.6, 2.2, 0));
+  const an = note('示意：最佳化問題 → 決策問題', 0, 1.2);
   say('別的問題都能改成決策問題', '難度差不多');
   await step(tok);                                   // 740.3 claim: most decision problems are uncomputable
-  gone(a, b);
+  gone(a, b, ab, an);                                // the conversion example is finished: clear it all
   txt(claim, '主張：大部分決策問題都無法計算');
   say('主張：大部分都不可計算', '用一點集合論就能證');
   await step(tok);                                   // 755.0 problems on one hand, programs on the other
@@ -3556,7 +3583,7 @@ FRAG.push(['np2-programs-n', '程式 = 有限 bit 串 = 自然數', async (tok) 
   const cd = code(['def solve(x):', '    ...', '    return yes_or_no'], 3.0, 4.0, 0.5);
   say('程式很明確', '丟進 Python，能跑就是能跑');
   await step(tok);                                   // 788.5 in the end a program is a binary string
-  const bits = ['1', '0', '1', '1', '0'].map((v, i) => cube(v, NC.S, [0.6, 0.6, 0.6], 1.3 + i * 0.75, 1.7, 0, 2));
+  const bits = ['1', '0', '1', '1', '0'].map((v, i) => cube(v, NC.S, [0.6, 0.6, 0.6], 1.3 + i * 0.75, 1.7, 0, 0.5));
   say('程式最後都存成 0 和 1', '一個 binary string');
   await step(tok);                                   // 804.3 a binary string is a number in binary
   note('10110₂ = 22（示意）', 3.0, 0.8);
@@ -3571,62 +3598,63 @@ FRAG.push(['np2-programs-n', '程式 = 有限 bit 串 = 自然數', async (tok) 
 // 14:06 決策問題 = 無限 bit 串 = 實數；ℕ 可數、ℝ 不可數
 FRAG.push(['np2-problems-r', '決策問題 = 無限 bit 串 = 實數', async (tok) => {
   fresh([0, 4.4, 12.5], [0, 2.2, 0]);
+  frameHold(-6.4, -1.9, 0, 6.2, 6.0, 0.5);
   await step(tok);                                   // 845.8 a decision problem is a function: input → yes/no
   const fn = pal('決策問題', 'f', NC.R, -4.6, 3.9, 0, 0.7);
-  note('輸入 → YES / NO', -4.6, 3.3);
+  const fnN = note('輸入 → YES / NO', -4.6, 3.3);
   say('決策問題 = 一個函數', '輸入 → YES 或 NO');
   await step(tok);                                   // 874.0 output 1/0; input is a binary string → natural number
-  note('YES / NO 寫成 1 / 0；輸入也是 bit 串 → 自然數', -1.0, 5.6);
+  const rP = note('YES / NO 寫成 1 / 0；輸入也是 bit 串 → 自然數', 0.8, 5.6);
   say('YES / NO 寫成 1 / 0', '輸入也是 binary string → 自然數');
   await step(tok);                                   // 898.0 write it as a table of all answers
   const outs = ['0', '0', '1', '0', '1', '1'], X = (i) => -2.2 + i * 1.2;
-  const cs = [];
+  const cs = [], inT = [];
   for (let i = 0; i < outs.length; i++) {
-    tag('輸入 ' + i, 'idx', X(i), 4.0);
-    cs.push(cube(outs[i], outs[i] === '1' ? NC.P : NC.S, [0.9, 0.7, 0.7], X(i), 3.2, 0, 2));
+    inT.push(tag('輸入 ' + i, 'idx', X(i), 4.0));
+    cs.push(cube(outs[i], outs[i] === '1' ? NC.P : NC.S, [0.9, 0.7, 0.7], X(i), 3.2, 0, 0));
     await anim(tok, 180, () => {});
   }
   say('把所有輸入的答案列成一張表', '輸入 0 → 0、1 → 0、2 → 1……');
   await step(tok);                                   // 928.0 an infinite string of bits
-  tag('…', 'ptr', X(6), 3.2);
-  note('每個輸入都要有答案 → 無限長', X(3), 2.3);
+  const dots = tag('…', 'ptr', X(6), 3.2);
+  const rTb = K.keep(note('每個輸入都要有答案 → 無限長', X(3), 2.3));   // one remark under the table
   say('這是一條無限長的 bit 串', '任何一條都代表一個決策問題');
   await step(tok);                                   // 942.4 decision problem = infinite bits; program = finite bits
   const pg = ['1', '0', '1', '1', '0'].map((v, i) => cube(v, NC.NP, [0.6, 0.6, 0.6], -5.4 + i * 0.7, 1.0, 0, 2));
-  tag('程式：有限長', 'ptr', -4.0, 0.3);
-  tag('問題：無限長', 'ptr alt', 1.0, 4.7);
+  const fin = tag('程式：有限長', 'ptr', -4.0, 0.3);
+  const inf = tag('問題：無限長', 'ptr alt', X(3), 4.7);
   say('問題 = 無限 bit 串', '程式 = 有限 bit 串');
   await step(tok);                                   // 951.6 put a binary point in front: a real number in [0, 1)
-  tag('.', 'ptr alt', X(0) - 0.75, 3.0);
-  note('.001011…₂ = 0 到 1 之間的實數', X(3), 5.3);
+  const pt = tag('.', 'ptr alt', X(0) - 0.75, 3.0);
+  reword(rTb, '.001011…₂ = 0 到 1 之間的實數');
   say('前面加一個 binary point', '就變成 0 到 1 之間的實數');
   await step(tok);                                   // 980.0 problems ~ ℝ, programs ~ ℕ
-  const pr = card('programs ∈ ℕ', NC.NP, -4.0, -0.4, 2.4, 2), pb = card('problems ∈ ℝ', NC.BAD, 2.6, -0.4, 4.2, 2);
+  const pr = card('programs ∈ ℕ', NC.NP, -4.0, -0.7, 2.4, 0), pb = card('problems ∈ ℝ', NC.BAD, 2.6, -0.7, 4.2, 0);
   say('問題 ↔ 實數 ℝ', '程式 ↔ 自然數 ℕ');
   await step(tok);                                   // 999.0 reals are uncountable, integers countable
-  note('ℕ：可數（countable）', -4.0, -1.2);
-  note('ℝ：不可數（uncountable），多太多了', 2.6, -1.2);
+  const nN = note('ℕ：可數（countable）', -4.0, -1.5);
+  const nR = note('ℝ：不可數（uncountable），多太多了', 2.6, -1.5);
   say('ℝ 比 ℕ 大得多', 'uncountable vs. countable');
   await step(tok);                                   // 1021.1 bad news: way more problems than programs
   glow(pb, RED);
-  bad('問題遠比程式多', 2.6, 0.4);
+  const bd = bad('問題遠比程式多', 2.6, 0.4);
   say('壞消息：問題比程式多太多', '幾乎每個問題都沒有程式能解');
   await step(tok);                                   // 1060.8 every program only solves one problem
-  gone(cs, pg, fn);
+  gone(cs, pg, fn, inT, dots, pt, fin, inf, fnN, rP, rTb);   // the bit-string picture is done: clear it all
   const progs = [0, 1, 2].map((i) => { const b = pal('程式 ' + (i + 1), '', NC.NP, -5.0, 1.6 + i * 1.5, 0, 0.5); b.mood('happy'); return b; });
   const probs = [];
   for (let i = 0; i < 12; i++) probs.push(cube(null, i % 4 === 0 ? NC.P : NC.BAD, [0.4, 0.4, 0.4], -0.4 + (i % 6) * 0.9, 2.0 + Math.floor(i / 6) * 1.6, 0, 2));
-  [0, 4, 8].forEach((k, i) => { const p = K.land(probs[k]); arrow(V3(-4.4, 1.9 + i * 1.5, 0), V3(p.x - 0.3, p.y, 0)); });
-  note('每支程式只解一個問題；剩下的沒人解', 1.8, 4.6);
+  const arrs = [0, 4, 8].map((k, i) => { const p = K.land(probs[k]); return arrow(V3(-4.4, 1.9 + i * 1.5, 0), V3(p.x - 0.3, p.y, 0)); });
+  const one = note('每支程式只解一個問題；剩下的沒人解', 1.8, 4.6);
   say('每支程式只解一個問題', '程式根本不夠分');
   await step(tok);                                   // 1085.2 yet most problems we think about are computable?
-  bub('可是我們想到的問題，大多解得出來？', 1.8, 5.5);
+  const qq = K.keep(bub('可是我們想到的問題，大多解得出來？', 1.8, 5.5));
   say('奇怪的是', '我們平常想到的問題大多可計算');
   await step(tok);                                   // 1115.7 problems we think of are usually in EXP → computable
-  good('我們會描述的問題，多半在 EXP → 可計算', 1.8, 0.8);
+  reword(qq, '我們會描述的問題，多半在 EXP → 可計算', 'good');   // the answer replaces the question
   say('我們描述問題的方式很像演算法', '所以多半在 EXP 裡，算得出來');
   await step(tok);                                   // 1138.0 infinite line; the small solvable portion is what we care about
-  gone(progs, probs, pr, pb);
+  gone(progs, probs, pr, pb, arrs, one, qq, nN, nR, bd);   // programs vs problems is done
   line(-6.2, -0.6, 6.2, -0.6, 0, NC.K);
   const seg = ghostBox(NC.P, 2.6, 0.4, 0.6); seg.position.set(-4.9, -0.6, 0);
   note('我們在乎的：能解的這一小段', -4.4, 0.2);
@@ -3870,52 +3898,53 @@ FRAG.push(['np2-hard-complete', 'NP-hard 與 NP-complete：Tetris 的位置', as
   AX_CAM();
   const ns = npAxis(['P', 'NP', 'EXP', 'R']); npBand('P', 0.45); npBand('NP', 0.95);
   const MID = (NX.P + NX.NP) / 2;
+  frameHold(-6.4, -1.0, 0, 6.9, 4.8, 0.3);
   await step(tok);                                   // 2096.8 pretty sure Tetris is in NP − P
   const tt = card('Tetris', NC.NP, MID, 2.4, 1.3, 3);
-  tag('NP − P ？', 'ptr alt', MID, 3.3);
+  const st = tag('NP − P ？', 'ptr alt', MID, 3.3);   // Tetris's status tag, moves with it
   say('很相信：Tetris 在 NP − P', '在 NP 裡、不在 P 裡');
   await step(tok);                                   // 2110.7 we don't know: could be the empty set
-  note('但 NP − P 也可能是空的', MID, 4.0);
+  const rT = K.keep(note('但 NP − P 也可能是空的', NX.NP, 4.3));   // one remark line over Tetris's column
   say('但我們不確定', 'NP − P 可能根本是空集合');
   await step(tok);                                   // 2120.0 if anything is in NP − P, Tetris is one of them
   glow(tt, GOLD);
-  good('只要 NP − P 有東西，Tetris 一定在裡面', -0.6, 4.7);
+  reword(rT, '只要 NP − P 有東西，Tetris 一定在裡面', 'good');
   say('已經知道的是', '只要 NP − P 非空，Tetris 就在裡面');
   await step(tok);                                   // 2140.0 hardest in NP; lots of problems at that notch
-  ['3-Partition', 'SAT', '……'].forEach((t, i) => card(t, NC.N, 0.6 + i * 1.6, 2.4, 1.4, 2));
+  ['3-Partition', 'SAT', '……'].forEach((t, i) => card(t, NC.N, 1.0 + i * 1.6, 2.4, 1.4, 2));
   say('Tetris 是 NP 裡最難的之一', '這個刻度上還有很多問題');
   await step(tok);                                   // 2159.0 if you believe P ≠ NP: Tetris is not in P
-  note('相信 P ≠ NP → Tetris ∉ P', 3.6, 3.3);
+  reword(rT, '相信 P ≠ NP → Tetris ∉ P', 'note');
   say('只要相信 P ≠ NP', '就能證明 Tetris 不在 P');
   await step(tok);                                   // 2195.8 because Tetris is NP-hard
   const hd = tag('NP-hard', 'ptr', MID, 1.7);
   say('為什麼？因為 Tetris 是 NP-hard');
   await step(tok);                                   // 2208.0 as hard as every problem in NP (non-strict) → far right
   await slide(tok, tt, NX.NP, 2.4, 0, 900);
-  hd.position.x = NX.NP;
-  note('NP-hard：至少和 NP 每個問題一樣難（≥，不是 >）', -2.4, 5.4);
+  hd.position.x = NX.NP; st.position.x = NX.NP;
+  reword(rT, 'NP-hard：至少和 NP 每個問題一樣難（≥，不是 >）');
   say('NP-hard：至少和 NP 每個問題一樣難', '所以畫在 NP 的最右端');
   await step(tok);                                   // 2243.0 either P = NP: picture like this
   await anim(tok, 1200, (t) => { ns.P.l.position.x = (NX.NP - NX.P) * t; ns.P.t.position.x = NX.P + (NX.NP - NX.P) * t; });
-  note('情況一 P = NP：Tetris 也在 P（不有趣）', -3.2, 6.1);
+  reword(rT, '情況一 P = NP：Tetris 也在 P（不有趣）');
   say('情況一：P = NP', 'Tetris 還在最右端，也在 P 裡');
   await step(tok);                                   // 2255.2 or NP strictly bigger: Tetris is outside P
   await anim(tok, 1200, (t) => { ns.P.l.position.x = (NX.NP - NX.P) * (1 - t); ns.P.t.position.x = NX.NP - (NX.NP - NX.P) * t; });
   glow(tt, RED);
-  bad('情況二 P ≠ NP：最右端在 P 外 → Tetris ∉ P', 2.6, 6.1);
+  reword(rT, '情況二 P ≠ NP：最右端在 P 外 → Tetris ∉ P', 'bad');
   say('情況二：NP 比 P 大', '最右端在 P 外 → Tetris ∉ P');
   await step(tok);                                   // 2278.6 Tetris is NP-complete: NP-hard and in NP
   glow(tt, GOLD);
-  tag('NP-complete = NP ∩ NP-hard', 'ptr alt', NX.NP, 3.2);
+  txt(st, 'NP-complete = NP ∩ NP-hard');
   say('Tetris 是 NP-complete', '= NP-hard，而且在 NP 裡');
   await step(tok);                                   // 2318.4 NP-hard: everything from here to the right
-  hardBand(NX.NP, 1.5, 'NP-hard →');
+  kill(hd); hardBand(NX.NP, 1.5, 'NP-hard →');       // the band now carries the NP-hard name
   say('NP-hard：從這個刻度往右全部', '可能剛好在線上，也可能更右');
   await step(tok);                                   // 2332.1 Tetris is in NP too → both ranges → right here
-  tag('▼ 兩段重疊：剛好在這裡', 'ptr', NX.NP, 0.2 + 1.8);
+  reword(rT, '▼ 兩段重疊：剛好在這裡', 'ptr');
   say('Tetris 也在 NP 裡', '兩段的交集 → 剛好在刻度上');
   await step(tok);                                   // 2343.4 completeness tells you exactly where it falls
-  note('X-complete：知道它在軸上的確切位置', 2.8, 2.6);
+  reword(rT, 'X-complete：知道它在軸上的確切位置', 'note');
   say('complete 的好處', '知道它在難度軸上的確切位置');
 }]);
 
@@ -4082,9 +4111,10 @@ FRAG.push(['np2-reduce-more', '更多 reduction：log、取負號、改圖', asy
 // 46:26 3-Partition → Tetris：B 至少和 A 一樣難
 FRAG.push(['np2-3partition', '3-Partition → Tetris：證明 Tetris 很難', async (tok) => {
   fresh([0, 4.6, 12.5], [0, 2.4, 0]);
+  frameHold(-6.2, -1.9, 0, 6.2, 7.2, 0.5);
   await step(tok);                                   // 2786.3 reductions also prove things like Tetris is NP-hard
   const tb = pal('Tetris', '', NC.NP, 4.6, 0.3, 0, 0.7); tb.mood('wow');
-  bub('reduction 也能證明「很難」', 4.6, 2.0);
+  const b1 = bub('reduction 也能證明「很難」', 4.6, 2.0);
   say('reduction 不只能設計演算法', '也能證明 Tetris 是 NP-hard');
   await step(tok);                                   // 2798.1 we proved 3-Partition reduces to Tetris
   const pa = pal('3-Partition', '', NC.O, -4.6, 0.3, 0, 0.7);
@@ -4092,14 +4122,14 @@ FRAG.push(['np2-3partition', '3-Partition → Tetris：證明 Tetris 很難', as
   say('老師的團隊證明了', '3-Partition 可以歸約到 Tetris');
   await step(tok);                                   // 2817.8 3-Partition: n numbers → triples with equal sums
   const nums = [2, 3, 7, 4, 4, 4, 1, 5, 6], X = (i) => -5.2 + i * 1.3;
-  const cs = nums.map((v, i) => cube(v, NC.S, [0.8, 0.8, 0.8], X(i), 5.2, 0, 3));
+  const cs = nums.map((v, i) => cube(v, NC.S, [0.8, 0.8, 0.8], X(i), 5.2, 0, 1));
   note('自建例子：9 個數，總和 36', 0, 6.1);
   say('3-Partition：給 n 個數', '能不能分成三個三個、每組和相等？');
   await step(tok);                                   // 2826.2 n/3 groups of three, each sum equal
   const groups = [[0, 1, 2], [3, 4, 5], [6, 7, 8]], col = [NC.P, NC.NP, NC.O];
   for (let g = 0; g < 3; g++) {
-    groups[g].forEach((i, k) => { tint(cs[i], col[g]); move(cs[i], -4.2 + g * 4.2 + (k - 1) * 0.95, 3.8); });
-    tag('= 12', 'ptr', -4.2 + g * 4.2, 3.0);
+    groups[g].forEach((i, k) => { tint(cs[i], col[g]); move(cs[i], -4.2 + g * 4.2 + (k - 1) * 0.95, 4.3); });
+    tag('= 12', 'ptr', -4.2 + g * 4.2, 3.5);
     await anim(tok, 500, () => {});
   }
   say('分成 n/3 組，每組三個', '這裡每組都 = 12');
@@ -4108,29 +4138,30 @@ FRAG.push(['np2-3partition', '3-Partition → Tetris：證明 Tetris 很難', as
   say('聽起來簡單，其實是 NP-complete', '老師說是 Karp，其實是 Garey & Johnson 證的');
   await step(tok);                                   // 2856.7 just show Tetris is harder than 3-Partition
   pa.mood('sad');
-  bub('只要證明：Tetris 比 3-Partition 難', 0, 2.2);
+  kill(b1);
+  const rM = K.keep(bub('只要證明：Tetris 比 3-Partition 難', 1.1, 2.5));   // one remark over the reduce arrow
   say('站在巨人的肩膀上', '只要證明 Tetris 比它難');
   await step(tok);                                   // 2865.0 A reduces to B → B is at least as hard as A
   tag('A 歸約到 B ⇒ B 至少和 A 一樣難', 'ptr alt', 0, -0.5);
   say('A 能歸約到 B', '⇒ B 至少和 A 一樣難');
   await step(tok);                                   // 2880.6 because I can solve A by solving B
-  const tk = pkt('A 的題目', -4.6, 1.8);
-  await travel(tok, tk, V3(-4.6, 1.8, 0), V3(4.6, 1.8, 0), 1300);
+  const tk = pkt('A 的題目', -1.6, 1.8);
+  await travel(tok, tk, V3(-1.6, 1.8, 0), V3(4.4, 1.8, 0), 1300);
   txt(tk, '用 B 的解法 → A 也解了');
   say('因為解 B 就能解 A', '先轉換，再用 B 的解法');
   await step(tok);                                   // 2891.0 no good algorithm for 3-Partition → Tetris better not be in P
   tb.mood('sad');
-  bad('若 Tetris ∈ P，3-Partition 也 ∈ P', 2.6, 2.7);
+  reword(rM, '若 Tetris ∈ P，3-Partition 也 ∈ P', 'bad');
   say('3-Partition 應該很難', '所以 Tetris 最好也不在 P');
   await step(tok);                                   // 2910.7 all NP-complete problems reduce to each other
-  note('所有 NP-complete 問題都能互相歸約', 0, -1.2);
+  const rL = K.keep(note('所有 NP-complete 問題都能互相歸約', 0, -1.3));   // one remark under the rule
   say('所有 NP-complete 問題', '都能互相歸約');
   await step(tok);                                   // 2916.1 to show NP-complete: reduce a known NPC problem to yours
   glow(pa.body, RED);
-  good('方向：已知很難的 → 你的問題', -3.0, -1.9);
+  reword(rL, '方向：已知很難的 → 你的問題', 'good');
   say('要證 NP-complete', '拿已知的 NPC 問題歸約到你的問題');
   await step(tok);                                   // 2926.8 reductions: new algorithms and negative results
-  note('reduction：設計演算法，也能證明「很難」', 2.6, -1.9);
+  reword(rL, 'reduction：設計演算法，也能證明「很難」', 'note');
   say('reduction 兩用', '正面：新演算法；反面：證明很難');
 }]);
 
@@ -4319,16 +4350,18 @@ FRAG.push(['np2-coin-proof', '丟硬幣產生 proof：永遠丟對的機器', as
 // 11:55 P vs NP 未解；常識論證：RSA 的金鑰（61 × 53 = 3233 是補充的小例子）
 FRAG.push(['np2-rsa-key', 'RSA：公開 N = p × q，p、q 是祕密', async (tok) => {
   fresh([0, 4.2, 12.5], [0, 2.0, 0]);
+  frameHold(-6.2, -0.4, 0, 6.2, 6.4, 1.4);
   await step(tok);                                   // 715.1 use it to build a common-sense proof that P ≠ NP
   tag('常識論證：P ≠ NP', 'ptr alt', 0, 6.0);
   say('用這個模型做一個常識論證', '為什麼大家相信 P ≠ NP');
   await step(tok);                                   // 728.5 no rigorous proof either way — $1 million
-  note('P = NP？P ≠ NP？都沒有數學證明（一百萬美元）', 0, 5.3);
+  const pn = note('P = NP？P ≠ NP？都沒有數學證明（一百萬美元）', 0, 5.3);
   say('P = NP 還是 P ≠ NP', '都沒人證得出來');
   await step(tok);                                   // 766.6 solve NP problems in poly time → make a lot of money
   const money = prop('parcel', 5.2, 3.6, 0, 0.8, '賺翻'); bob(money, 0.05);
   say('能快速解 NP 問題的人', '能賺的遠超過一百萬');
   await step(tok);                                   // 794.8 suppose you want to impersonate a bank
+  kill(pn);                                          // the bank story starts: the open-problem remark is done
   const b1 = prop('warehouse', -4.8, 0, 0, 0.8, '銀行 A'), b2 = prop('warehouse', 4.8, 0, 0, 0.8, '銀行 B');
   const bad1 = pal('壞人', '', '#8a8f9a', 0, 0.2, 1.4, 0.6); bad1.mood('wow');
   say('假設你想冒充一家銀行', '（壞事，只是舉例）');
@@ -4349,8 +4382,8 @@ FRAG.push(['np2-rsa-key', 'RSA：公開 N = p × q，p、q 是祕密', async (to
   arrow(V3(-3.1, 3.6, 0), V3(1.6, 4.5, 0)); tag('p × q', 'ptr', -0.6, 4.6);
   say('公開金鑰：N = p × q', '全世界都看得到');
   await step(tok);                                   // 886.3 announce it so others can encrypt for you
-  const m2 = pkt('用 N 加密的訊息', 3.8, 5.6);
-  await travel(tok, m2, V3(3.8, 5.6, 0), V3(-3.8, 5.6, 0), 1000);
+  const m2 = pkt('用 N 加密的訊息', 3.8, 5.3);
+  await travel(tok, m2, V3(3.8, 5.3, 0), V3(-3.6, 5.3, 0), 1000);
   say('公開 N，別人才能加密訊息給你');
   await step(tok);                                   // 899.6 knowing p and q decrypts → pretend you're the bank
   glow(p, GOLD); glow(q, GOLD); bad1.mood('happy');
@@ -4409,43 +4442,45 @@ FRAG.push(['np2-rsa-verify', 'Factoring 的 verifier：N mod p = 0？', async (t
 // 18:13 factoring 不是最難的；NP-complete = NP 裡最難、彼此可歸約
 FRAG.push(['np2-npc-hub', 'NP-complete：最難的 NP 問題互相歸約', async (tok) => {
   fresh([0, 4.4, 12.5], [0, 2.2, 0]);
+  frameHold(-6.4, -1.0, -0.4, 7.2, 5.7, 1.2);
   const np = ghostBox(NC.NP, 12.4, 4.4, 0.3); np.position.set(0, 2.2, -0.4); tag('NP', 'ptr', -5.8, 4.2);
   const pp = ghostBox(NC.P, 3.0, 3.4, 0.34); pp.position.set(-4.4, 2.0, -0.3); tag('P', 'ptr', -4.4, 3.4);
   await step(tok);                                   // 1093.5 factoring is not the hardest NP problem; it's here
   const fx = card('Factoring', NC.O, -1.4, 2.2, 1.6, 3);
   say('Factoring 在這裡', '不是最難的那一種 NP 問題');
   await step(tok);                                   // 1119.3 (correction) factoring IS in NP, just not the hardest
-  note('更正：factoring 在 NP，只是不是最難的', -1.4, 3.1);
+  const rF = K.keep(note('更正：factoring 在 NP，只是不是最難的', -0.8, 3.0));   // the remark on Factoring
   say('（老師口誤更正）', 'factoring 在 NP，只是不是最難的');
   await step(tok);                                   // 1125.4 a common-sense proof, not a math proof
-  note('剛才是常識論證，不是數學證明', -1.4, 5.0);
+  const rS = K.keep(note('剛才是常識論證，不是數學證明', 0, 5.1));   // one story remark above the NP box
   say('剛才是常識論證', '不是數學證明');
   await step(tok);                                   // 1140.7 poly-size solution, poly verifier — why no poly solver?
-  const boss = pal('老闆', '?', '#8a8f9a', 5.0, -0.4, 1.2, 0.6); boss.mood('wow');
-  bub('能驗證，為什麼寫不出解題程式？', 3.4, 1.3, 1.2);
+  const boss = pal('老闆', '?', '#8a8f9a', 6.7, -0.4, 1.0, 0.6); boss.mood('wow');   // outside the NP box
+  const bq = bub('能驗證，為什麼寫不出解題程式？', 3.6, -0.5, 1.0);
   say('解是多項式大小，verifier 也快', '那為什麼寫不出快的解題程式？');
   await step(tok);                                   // 1165.4 theory people have thought about it 40+ years
-  note('理論學者想了 40 多年', 3.0, 5.0);
+  reword(rS, '理論學者想了 40 多年');
   say('理論學者已經想了 40 多年');
   await step(tok);                                   // 1177.1 try to prove it's impossible — fail too
-  bad('想不出演算法，也證不出 P ≠ NP', 3.0, 4.4);
+  reword(rS, '想不出演算法，也證不出 P ≠ NP', 'bad');
   say('想不出解法，就想證明不可能', '可是也證不出來');
   await step(tok);                                   // 1204.3 halting: proven nobody can; here we can't prove it
-  note('Halting：證明了沒人能解；這裡：證不出來', 3.0, 5.6);
+  reword(rS, 'Halting：證明了沒人能解；這裡：證不出來', 'note');
   say('Halting 能證明「沒人解得了」', 'P vs NP 還證不出來');
   await step(tok);                                   // 1220.3 next best: find the hardest NP problems → NP-complete
+  kill(bq);                                          // the boss's question has had its answer
   const names = ['3SAT', 'Knapsack', 'Clique', 'TSP', 'Ham-Cycle', '3-Color'];
   const cx = 3.0, cy = 2.2, R = 1.6;
   const at = (i) => [cx + R * Math.cos(i * Math.PI / 3), cy + R * 0.85 * Math.sin(i * Math.PI / 3)];
-  const ns = names.map((n, i) => { const [x, y] = at(i); return cube(n, NC.BAD, [1.3, 0.5, 0.6], x, y, 0, 3); });
-  tag('NP-complete', 'ptr alt', cx, 3.9);
+  const ns = names.map((n, i) => { const [x, y] = at(i); return cube(n, NC.BAD, [1.3, 0.5, 0.6], x, y, 0, 0.8); });
+  tag('NP-complete', 'ptr alt', cx, 4.15);
   say('退而求其次：找出最難的 NP 問題', '叫做 NP-complete');
   await step(tok);                                   // 1248.3 factoring is not one of them — "not with the cool kids"
   glow(fx, null);
-  bad('Factoring 不在這群', -1.4, 1.3);
+  reword(rF, 'Factoring 不在這群', 'bad');
   say('Factoring 不在這群裡', '雖然它能讓你發財');
   await step(tok);                                   // 1258.7 a few hundred, with practical implications
-  note('NP-complete 問題有好幾百個，很多很實用', cx, 0.0);
+  const rN = K.keep(note('NP-complete 問題有好幾百個，很多很實用', cx, 0.15));   // one remark under the group
   say('NP-complete 問題有好幾百個', '很多能幫公司省大錢');
   await step(tok);                                   // 1276.3 all interrelated: solve one → solve all (reductions)
   for (let i = 0; i < names.length; i++) {
@@ -4456,13 +4491,13 @@ FRAG.push(['np2-npc-hub', 'NP-complete：最難的 NP 問題互相歸約', async
   say('它們全部互相關聯', '透過 reduction：解一個 = 解全部');
   await step(tok);                                   // 1310.9 nobody solved any → they must be really hard
   boss.mood('sad');
-  bad('沒人解出任何一個 → 應該真的很難', cx, -0.6);
+  reword(rN, '沒人解出任何一個 → 應該真的很難', 'bad');
   say('沒人解出其中任何一個', '所以它們應該真的很難');
   await step(tok);                                   // 1327.2 a solution to one: transform the others into it
   glow(ns[0], GREEN);
   await anim(tok, 500, () => {});
   ns.forEach((m) => glow(m, GREEN));
-  note('如果：3SAT 有快的解法 → 其他都轉過來用', cx, 4.6);
+  reword(rN, '如果：3SAT 有快的解法 → 其他都轉過來用', 'good');
   say('如果解出其中一個', '其他都轉過來，跟圖的轉換一樣');
 }]);
 
@@ -4529,14 +4564,16 @@ FRAG.push(['np2-landmines', '解題地圖：笑臉終點與 NPC 地雷', async (
   const nd = {};
   const mk = (k, t, c, w = 1.2) => { const [x, z] = P[k]; nd[k] = cube(t, c, [w, 0.5, 0.8], x, 0.3, z, 2); return nd[k]; };
   const ar = (a, b, col = 0x6a4a00) => { const [ax, az] = P[a], [bx, bz] = P[b]; const d = Math.hypot(bx - ax, bz - az); return arrow(V3(ax + (bx - ax) * 0.7 / d, 0.4, az + (bz - az) * 0.7 / d), V3(bx - (bx - ax) * 0.9 / d, 0.4, bz - (bz - az) * 0.9 / d), col); };
+  frameHold(-7.0, 0.2, -6.6, 6.2, 0.6, 7.4);           // the whole map, held from the first step
   await step(tok);                                   // 1622.7 what does NP mean to us, in practical terms?
-  bub('NP-complete 對我們有什麼用？', 0, 0.8, -5.6);
+  // one remark line along the top edge of the map, one along the bottom edge
+  const rT = K.keep(bub('NP-complete 對我們有什麼用？', 0, 0.8, -6.2));
   say('NP-complete 在實務上有什麼用？');
   await step(tok);                                   // 1631.6 on an exam or interview, you start with a problem
   mk('S', '你的題目', NC.O, 1.6);
   say('考試或面試：從一個題目出發');
   await step(tok);                                   // 1633.7 all possible problems form a graph
-  note('把所有問題想成一張圖', -6, 0.8, -1.2);
+  reword(rT, '把所有問題想成一張圖', 'note');
   say('把所有可能的問題', '想成一張圖');
   await step(tok);                                   // 1645.0 destination: merge sort
   mk('D1', '☺ Merge sort', NC.P, 1.9);
@@ -4554,7 +4591,7 @@ FRAG.push(['np2-landmines', '解題地圖：笑臉終點與 NPC 地雷', async (
   mk('D5', '☺ Hashing / D&C', NC.P, 2.1);
   say('hashing、divide and conquer', '也都是笑臉');
   await step(tok);                                   // 1686.2 goal: get there via reductions
-  note('目標：靠 reduction 走到任何一個笑臉', 1.4, 0.8, -6.4);
+  reword(rT, '目標：靠 reduction 走到任何一個笑臉');
   say('目標：從起點靠 reduction', '走到任何一個笑臉');
   await step(tok);                                   // 1695.2 three possible reductions — pick the middle (easiest)
   ['A1', 'A2', 'A3'].forEach((k) => { mk(k, '?', NC.S, 0.8); ar('S', k); });
@@ -4566,30 +4603,30 @@ FRAG.push(['np2-landmines', '解題地圖：笑臉終點與 NPC 地雷', async (
   say('又能轉成三個問題', '挑一個有希望的');
   await step(tok);                                   // 1729.4 reduce to a happy problem: reduction × 3 → write it up
   ar('B1', 'D2', 0x0f5a3a); glow(nd.D2, GREEN);
-  good('reduction ×3 → 寫下來，交卷！', 2.6, 0.8, -3.4);
+  const win = good('reduction ×3 → 寫下來，交卷！', 2.5, 0.8, -3.3);   // over the winning path
   say('reduction、reduction、reduction', '走到笑臉，寫完交卷');
   await step(tok);                                   // 1744.0 what if the path goes far away from known problems?
-  glow(nd.A2, null); glow(nd.B1, null);
+  glow(nd.A2, null); glow(nd.B1, null); kill(win);
   glow(nd.A3, GOLD); mk('C1', '?', NC.S, 0.8); ar('A3', 'C1');
   say('如果走上另一條路', '越轉離會解的問題越遠');
   await step(tok);                                   // 1761.0 you run out of time
-  bub('時間到！考卷收回囉', -3.2, 0.8, 6.4);
+  const rB = K.keep(bub('時間到！考卷收回囉', -1.6, 0.8, 6.4));
   say('一直試，最後時間用完', '這是壞結局');
   await step(tok);                                   // 1785.0 NP-complete problems are landmines
   mk('L', '✗ Knapsack', NC.BAD, 1.8); ar('C1', 'L', 0x7a1010); glow(nd.L, RED);
   say('NP-complete 問題 = 地雷', '已經知道它們很難');
   await step(tok);                                   // 1806.0 "solve knapsack in polynomial time" → stop right there
-  bad('「多項式時間解 knapsack」→ 立刻回頭', 2.4, 0.8, 7.0);
+  rB.position.set(2.4, 0.8, 7.1); reword(rB, '「多項式時間解 knapsack」→ 立刻回頭', 'bad');   // under the landmine
   say('轉到「多項式時間解 knapsack」', '立刻停，換條路');
   await step(tok);                                   // 1838.3 read the CLRS NPC chapter: more sad faces
   mk('L2', '✗ 3SAT', NC.BAD, 1.4); mk('L3', '✗ TSP', NC.BAD, 1.3);
-  note('讀 CLRS 的 NP-complete 章 → 認得更多地雷', -2.0, 0.8, -6.4);
+  reword(rT, '讀 CLRS 的 NP-complete 章 → 認得更多地雷', 'note');
   say('讀 CLRS 的 NP-complete 章', '你會認得更多地雷');
   await step(tok);                                   // 1851.3 the search space is more bounded → better chances
-  good('知道哪裡不要去 → 搜尋範圍小很多', 2.6, 0.8, -1.2);
+  reword(rT, '知道哪裡不要去 → 搜尋範圍小很多', 'good');
   say('知道哪裡不能去', '更容易找到好的路');
   await step(tok);                                   // 1888.3 read the problem statements; don't worry about proofs
-  note('記住問題敘述就好，證明不用管', -2.0, 0.8, 7.0);
+  reword(rT, '記住問題敘述就好，證明不用管', 'note');
   say('記住問題的敘述就好', '證明可以不用管');
 }]);
 
@@ -4659,7 +4696,8 @@ FRAG.push(['np2-verifier-circuit', 'Verifier → 電路 → 3CNF → 3SAT', asyn
   fresh([0, 4.4, 12.5], [0, 2.2, 0]);
   const st = [['Verifier', NC.NP], ['電路', NC.O], ['布林式', NC.EXP], ['3CNF', NC.R], ['3SAT', NC.BAD]];
   const X = (i) => -5.2 + i * 2.6, bs = [];
-  const add = (i) => { bs[i] = cube(st[i][0], st[i][1], [1.8, 0.7, 0.9], X(i), 3.6, 0, 3); if (i) arrow(V3(X(i - 1) + 0.95, 3.6, 0), V3(X(i) - 0.95, 3.6, 0)); };
+  frameHold(-6.4, -0.4, 0, 6.4, 6.4, 0.5);            // the whole pipeline, held from the first step
+  const add = (i) => { bs[i] = cube(st[i][0], st[i][1], [1.8, 0.7, 0.9], X(i), 3.6, 0, 1); if (i) arrow(V3(X(i - 1) + 0.95, 3.6, 0), V3(X(i) - 0.95, 3.6, 0)); };
   await step(tok);                                   // 2187.0 3SAT is NP-complete: a three-minute proof
   tag('3 分鐘證明：3SAT 是 NP-complete', 'ptr alt', 0, 6.0);
   say('三分鐘證明', '3SAT 是 NP-complete');
@@ -4669,20 +4707,20 @@ FRAG.push(['np2-verifier-circuit', 'Verifier → 電路 → 3CNF → 3SAT', asyn
   say('拿任何 NP 問題的 verifier', '它要吃「輸入」和「proof」');
   await step(tok);                                   // 2205.6 write the verifier as a circuit; input & proof bits go in
   add(1);
-  const gates = ['AND', 'OR', 'NOT'].map((g, i) => cube(g, '#f1dcc0', [0.7, 0.4, 0.5], X(1) - 0.8 + i * 0.8, 2.6, 0));
+  const gates = ['AND', 'OR', 'NOT'].map((g, i) => cube(g, '#f1dcc0', [0.7, 0.4, 0.5], X(1) - 0.4 + i * 0.8, 2.6, 0));
   say('把 verifier 寫成電路', '輸入和 proof 都變成一串 bits');
   await step(tok);                                   // 2215.0 the circuit evaluates to true or false
-  note('電路輸出：true / false', X(1), 4.6);
+  const rU = K.keep(note('電路輸出：true / false', X(1), 4.6));   // one remark over the pipeline, next to the stage it is about
   say('電路最後算出 true 或 false');
   await step(tok);                                   // 2222.0 AND/OR gates → ANDs and ORs: a logic expression
   add(2);
   say('AND 閘、OR 閘', '直接變成邏輯式的 AND、OR');
   await step(tok);                                   // 2235.0 solve 3SAT → values for the proof bits. Bam.
   add(3); add(4);
-  good('3SAT 解出來 → 得到 proof 的 bits', X(4), 4.6);
+  rU.position.set(X(4) - 0.8, 4.6, 0); reword(rU, '3SAT 解出來 → 得到 proof 的 bits', 'good');
   say('再轉成 3SAT 解', '解出來就得到 proof 的 bits');
   await step(tok);                                   // 2280.0 poly-time verifier → poly-size circuit (proof poly too)
-  note('verifier 多項式時間 → 電路也是多項式大小', -1.2, 0.6);
+  const rB = K.keep(note('verifier 多項式時間 → 電路也是多項式大小', -1.6, 0.5));   // one remark under the pipeline
   say('verifier 是多項式時間', '所以電路也是多項式大小');
   await step(tok);                                   // 2310.6 input bits → Boolean variables; gates → Boolean functions
   tag('bits → 布林變數', 'idx', X(2), 2.8);
@@ -4692,19 +4730,19 @@ FRAG.push(['np2-verifier-circuit', 'Verifier → 電路 → 3CNF → 3SAT', asyn
   say('把布林式轉成 3CNF', '再丟給 3SAT');
   await step(tok);                                   // 2365.3 correction: the problem input is hard-coded in the circuit
   relabel(inp, '寫死'); tint(inp, NC.N);
-  note('更正：題目輸入寫死在電路裡；只有 proof bits 是變數', -1.2, -0.2);
+  reword(rB, '更正：題目輸入寫死在電路裡；只有 proof bits 是變數', 'bad');
   say('（老師更正）題目輸入寫死在電路裡', '只有 proof 的 bits 是變數');
   await step(tok);                                   // 2396.1 3SAT's satisfying assignment = the proof bits
-  const ans = cube('賦值 = proof bits', NC.P, [2.6, 0.6, 0.9], 2.6, 1.6, 0, 3);
-  arrow(V3(X(4), 3.1, 0), V3(3.4, 2.0, 0));
+  const ans = cube('賦值 = proof bits', NC.P, [2.6, 0.6, 0.9], 3.4, 1.4, 0, 0.6);
+  arrow(V3(X(4), 3.1, 0), V3(4.2, 1.8, 0));
   say('3SAT 給出能滿足的賦值', '那就是 proof 的 bits');
   await step(tok);                                   // 2408.0 feed the proof to the verifier → happy → solved
-  const back = pkt('proof', 2.6, 2.3);
-  await travel(tok, back, V3(2.6, 2.3, 0), V3(X(0), 2.7, 0), 1200);
+  const back = pkt('proof', 3.4, 2.0);
+  await travel(tok, back, V3(3.4, 2.0, 0), V3(X(0), 2.7, 0), 1200);
   glow(bs[0], GREEN);
   say('把 proof 餵回 verifier', '它開心 → 問題解決');
   await step(tok);                                   // 2415.4 true for any NP problem: it has a poly-time verifier
-  note('任何 NP 問題都有多項式時間的 verifier → 都能這樣做', 0, 5.3);
+  rU.position.set(0, 4.6, 0); reword(rU, '任何 NP 問題都有多項式時間的 verifier → 都能這樣做', 'note');
   say('任何 NP 問題都能這樣做', '因為它一定有多項式 verifier');
   await step(tok);                                   // 2424.7 factoring: the mod algorithm as a circuit; bits of p are inputs
   relabel(bs[0], 'N mod p'); relabel(pf, 'p 的 bits');
