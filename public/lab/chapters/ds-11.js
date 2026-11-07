@@ -72,9 +72,10 @@ export default function (ctx) {
 
   // ───────────────────────── 舞台：text 一排、pattern 一排 ─────────────────────────
   const ST = { text: '', pat: '', cw: 0.8, tB: [], pB: [], s: 0, cmp: 0, iPtr: null, jPtr: null, found: [] };
-  const TZ = -0.75, PZ = 0.75;
+  const TZ = -1, PZ = 1;
   const tx = (i) => (i - (ST.text.length - 1) / 2) * ST.cw;
-  function setupRows(text, pat, cam) {
+  // idx: 'all' = 每格都標索引；'none' = 不標；預設長字串只標 0, 5, 10…（i = … 指標會講確切位置）
+  function setupRows(text, pat, cam, idx) {
     epoch++;
     clearTimeout(timer);
     lab.clear();
@@ -87,21 +88,21 @@ export default function (ctx) {
       m.add(lab.label(c, 'val'));
       m.position.set(tx(i), 0.3, TZ);
       lab.world.add(m);
-      txt(String(i), 'idx', V(tx(i), 0.05, TZ - 0.85));
+      if (idx === 'all' || (idx !== 'none' && (text.length <= 10 || i % 5 === 0))) txt(String(i), 'idx', V(tx(i), 0.05, TZ - 1.15));
       return m;
     });
     ST.pB = [...pat].map((c, j) => {
       const m = lab.box(charColor(c), [w, 0.55, 0.95]);
       m.add(lab.label(c, 'val'));
-      m.position.set(tx(j), 4, PZ);
+      m.position.set(tx(j), 0.9, PZ);   // 小小落下：從高處掉會蓋過 text 那排
       const b = lab.addBody(m);
       lab.dropTo(b, V(tx(j), 0.3, PZ));
       return b;
     });
-    ST.iPtr = txt('i', 'ptr', V(0, 1.15, TZ));
+    ST.iPtr = txt('i', 'ptr', V(0, 1.6, TZ));
     ST.jPtr = txt('j', 'ptr alt', V(0, -0.35, PZ + 0.9));
-    ST.iPtr.element.style.display = 'none';
-    ST.jPtr.element.style.display = 'none';
+    ST.iPtr.visible = false;   // CSS2D 每格都會重設 style.display，要藏得用 visible
+    ST.jPtr.visible = false;
   }
   function slideTo(s, lift = 0) {
     ST.s = s;
@@ -117,10 +118,10 @@ export default function (ctx) {
     ST.cmp++;
   }
   function pointers(i, j) {
-    if (i === null) ST.iPtr.element.style.display = 'none';
-    else { ST.iPtr.element.style.display = ''; ST.iPtr.element.textContent = 'i = ' + i; ST.iPtr.position.set(tx(i), 1.15, TZ); }
-    if (j === null) ST.jPtr.element.style.display = 'none';
-    else { ST.jPtr.element.style.display = ''; ST.jPtr.element.textContent = 'j = ' + j; ST.jPtr.position.set(tx(ST.s + j), -0.35, PZ + 0.9); }
+    if (i === null) ST.iPtr.visible = false;
+    else { ST.iPtr.visible = true; ST.iPtr.element.textContent = 'i = ' + i; ST.iPtr.position.set(tx(i), 1.6, TZ); }
+    if (j === null) ST.jPtr.visible = false;
+    else { ST.jPtr.visible = true; ST.jPtr.element.textContent = 'j = ' + j; ST.jPtr.position.set(tx(ST.s + j), -0.35, PZ + 0.9); }
   }
 
   // 步進框架：每個演算法是 generator，先改畫面再 yield {cap, f, ms}
@@ -196,14 +197,13 @@ export default function (ctx) {
   }
 
   // ───────────────────────── Failure function ─────────────────────────
-  const FF = { p: 'abcabcacab', fLbl: [], piLbl: [] };
+  const FF = { p: 'abcabcacab', fLbl: [] };
   function* buildFailure() {
     const p = ST.pat, m = p.length, f = Array(m).fill(null);
     FF.cur = f;
     // 上排 = pattern（看 j），下排 = 同一個 pattern 的副本（看 i+1），副本往右滑讓 p[i+1] 對齊 p[j]
     const setF = (j) => {
       FF.fLbl[j].element.textContent = String(f[j]);
-      FF.piLbl[j].element.textContent = 'π ' + (f[j] + 1);
       FF.fLbl[j].element.className = 'lab-label ' + (f[j] >= 0 ? 'ptr' : 'idx');
     };
     const align = (j, i) => { slideTo(j - (i + 1)); };
@@ -252,19 +252,18 @@ export default function (ctx) {
     on('sAuto', autoPlay);
     on('sReset', () => { const v = clean($('fP').value, 12); if (v.length >= 2) FF.p = v; else log('pattern 至少 2 個字元。', true); clearLog(); enterFailure(); });
     // 上排用 text 列畫 pattern 本身；下排是可滑動的副本
-    setupRows(FF.p + ' '.repeat(Math.max(0, FF.p.length - 1)), FF.p, [0, 7.5, 10]);
+    setupRows(FF.p + ' '.repeat(Math.max(0, FF.p.length - 1)), FF.p, [0, 7.5, 10], 'all');
     // 把多出來的空白格藏起來（只是為了讓副本有地方滑）
     ST.tB.forEach((m, i) => { if (i >= FF.p.length) m.visible = false; });
-    lab.world.children.forEach((o) => { if (o.element && /^\d+$/.test(o.element.textContent) && Number(o.element.textContent) >= FF.p.length) o.element.style.display = 'none'; });
+    lab.world.children.forEach((o) => { if (o.element && /^\d+$/.test(o.element.textContent) && Number(o.element.textContent) >= FF.p.length) o.visible = false; });
     ST.pat = FF.p;
-    FF.fLbl = []; FF.piLbl = []; FF.cur = [];
+    FF.fLbl = []; FF.cur = [];
     for (let j = 0; j < FF.p.length; j++) {
-      FF.fLbl.push(txt('', 'idx', V(tx(j), 1.25, TZ)));
-      FF.piLbl.push(txt('', 'idx', V(tx(j), 1.75, TZ - 0.2)));
+      FF.fLbl.push(txt('', 'idx', V(tx(j), 1.5, TZ)));
     }
-    txt('f', 'ptr', V(tx(0) - ST.cw - 0.3, 1.25, TZ));
-    txt('j', 'idx', V(tx(0) - ST.cw - 0.3, 0.05, TZ - 0.85));
-    txt('副本', 'idx', V(tx(0) - ST.cw - 0.4, 0.3, PZ));
+    txt('f', 'ptr', V(tx(0) - ST.cw - 0.3, 1.5, TZ));
+    txt('j', 'idx', V(tx(0) - ST.cw - 0.3, 0.05, TZ - 1.15));
+    txt('副本', 'idx', V(tx(0) - ST.cw - 0.3, 0.3, PZ));
     RUN.gen = buildFailure(); RUN.done = false; RUN.onState = ffState;
     log('上排：pattern 本身（看 p[j]）。下排：同一個 pattern 的副本，滑到讓 p[i+1] 對齊 p[j]。');
     log('綠色重疊的部分 = 「前綴 = 後綴」，它的最後一個索引就是 f(j)。');
@@ -408,19 +407,17 @@ export default function (ctx) {
     const addToBucket = (v) => {
       const B = RK.buckets[v];
       const m3 = lab.box(v % 2 ? '#dd8238' : '#4b9ee2', [bw - 0.12, 0.3, 0.5]);
-      m3.position.set(B.x, 4, -3.9);
+      m3.position.set(B.x, 2.2, -3.9);
       const body = lab.addBody(m3);
       lab.dropTo(body, V(B.x, 0.2 + B.n * 0.32, -3.9));
       B.n++;
     };
-    // 每個視窗的 hash 值放在視窗起點正後方
-    txt('hash', 'idx', V(tx(0) - ST.cw - 0.2, 0.2, -2.25));
+    // 目前視窗的 hash 值：一個標籤跟著視窗走（不留下一整排）
+    const hashTag = txt('h', 'ptr', V(tx(1), -0.1, PZ + 1));   // 放在 pattern 下面，不和後面的直方圖擠
     const hashBlock = (s, v, hit) => {
-      const m3 = lab.box(hit ? '#c08a1f' : '#cbbd9f', [ST.cw - 0.1, 0.35, 0.6]);
-      m3.add(lab.label(String(v), 'val'));
-      m3.position.set(tx(s), 3, -2.25);
-      const body = lab.addBody(m3);
-      lab.dropTo(body, V(tx(s), 0.2, -2.25));
+      hashTag.element.textContent = 'h = ' + v;
+      hashTag.element.className = 'lab-label ptr' + (hit ? ' alt' : '');
+      hashTag.position.set(tx(s + (m - 1) / 2), -0.1, PZ + 1);
     };
     yield { cap: 'ACGT → 0,2,4,6；b = ' + b + '，mod ' + q, f: 'hash(「' + p + '」) = ' + hp, ms: 2400 };
     let hits = 0, spur = 0;
@@ -470,7 +467,7 @@ export default function (ctx) {
       else { RK.t = t; RK.p = p; }
       clearLog(); enterRK();
     });
-    setupRows(RK.t, RK.p, [0, 8.5, 10]);
+    setupRows(RK.t, RK.p, [0, 8.5, 10], 'none');
     RUN.gen = rabinKarp(); RUN.done = false; RUN.onState = rkState;
     log('MIT 6.006 Recitation 9b：把 DNA 字串看成 base b 的大數字，對 q 取餘數當 hash；視窗每右移一格只要 O(1) 更新。');
     log('最後一排是 hash 值的分布（每個桶 = 一個 hash table 的格子）。');
@@ -658,12 +655,12 @@ function smRow(s, z, o = {}) {
   const R = { s, n, cw, z, cs: [], at: (i) => x0 + i * cw };
   for (let i = 0; i < n; i++) {
     R.cs.push(cube(s[i], o.color || smC(s[i]), [cw - 0.08, 0.5, o.d || 0.85], R.at(i), 0.25, z, o.drop || 0));
-    if (o.idx !== false) tag(String(i + (o.base || 0)), 'idx', R.at(i), 0, z + (o.idz || 0.75));
+    if (o.idx !== false && (!o.sparse || i === 0 || (i + (o.base || 0)) % 5 === 0)) tag(String(i + (o.base || 0)), 'idx', R.at(i), 0, z + (o.idz || 0.75));
   }
   return R;
 }
 // a pattern row that slides under text row T (cube k sits under text index s + k)
-function smPat(T, p, z, drop = 2.5) {
+function smPat(T, p, z, drop = 0.7) {
   const P = { p, m: p.length, s: 0, z, cs: [] };
   for (let k = 0; k < p.length; k++) P.cs.push(cube(p[k], smC(p[k]), [T.cw - 0.08, 0.5, 0.85], T.at(k), 0.25, z, drop));
   P.slide = (s) => { P.s = s; P.cs.forEach((c, k) => move(c, T.at(s + k), 0.25, z)); };
@@ -700,7 +697,7 @@ FRAG.push(['strm-naive-def', '暴力法例一：abcdefgh 找 def', async (tok) =
   await step(tok);                                   // 0:08 is this pattern inside the string?
   const P = smPat(T, p, 1.0);
   tag('pattern', 'ptr alt', T.at(0) - 1.5, 0.3, 1.0);
-  const q = bubble('def 在 string 裡嗎？', 3.4, 1.3, 1.0);
+  const q = bubble('def 在 string 裡嗎？', 1.6, 0.3, 1.0);
   say('pattern 有沒有出現在 string 裡？', 'pattern = def');
   await step(tok);                                   // 0:15 if it is there, find its index
   txt(q, '在的話：在第幾個？');
@@ -708,12 +705,12 @@ FRAG.push(['strm-naive-def', '暴力法例一：abcdefgh 找 def', async (tok) =
   say('有的話，還要找出它的 index', 'index 從 1 開始數');
   await step(tok);                                   // 0:23 many algorithms; first the naive one
   txt(q, '先看暴力法，再看 KMP');
-  pkt('naive（暴力法）', -2.2, 1.6, -3.0); pkt('KMP', 2.2, 1.6, -3.0);
+  const ways = [pkt('naive（暴力法）', -2.2, 1.6, -3.0), pkt('KMP', 2.2, 1.6, -3.0)];
   say('解法很多：先看最基本的暴力法', '看懂它的缺點，才知道 KMP 好在哪');
   await step(tok);                                   // 0:46 start from the first letter of the string
-  remove(q); G.mood('calm');
-  const go = pkt('從第 1 個字母開始', T.at(0), 1.4, 1.0);
-  await travel(tok, go, V3(T.at(0) - 2, 1.4, 1.0), V3(T.at(1), 1.4, 1.0), 700);
+  remove(q); ways.forEach(remove); G.mood('calm');
+  const go = pkt('從第 1 個字母開始', T.at(0), 0.2, 2.5);
+  await travel(tok, go, V3(T.at(0) - 1, 0.2, 2.5), V3(T.at(1), 0.2, 2.5), 700);
   say('暴力法：pattern 對齊 string 開頭', '一個一個字母比');
   await step(tok);                                   // 0:56 a vs d: not matching
   remove(go);
@@ -763,17 +760,17 @@ FRAG.push(['strm-naive-backtrack', '暴力法例二：i 一直倒退', async (to
   G.mood('wow');
   say('d = d，但 a ≠ f：mismatch', '比到第 5 個才不一樣');
   await step(tok);                                   // 2:35 we started this pattern from here
-  mark = pkt('這次從 index 1 開始', T.at(0), 1.8, -1.4);
+  mark = pkt('這次從 index 1 開始', T.at(1), 2.0, -1.4);
   say('這一輪是從 string 第 1 個開始比的', 'mismatch → pattern 右移一格');
   await step(tok);                                   // 2:47 j back to the start, i back to index 2
-  far = bad('i 曾走到 5', T.at(4), 1.9, -1.4);
+  far = bad('i 曾走到 5', T.at(4), 2.0, -1.4);
   N.align(1);
   await travel(tok, N.ip, V3(T.at(4), 1.1, -1.4), V3(T.at(1), 1.1, -1.4), 900);
   remove(mark);
   say('j 回 pattern 開頭，i 退回 index 2', '從 b 重新開始');
   await step(tok);                                   // 3:01 this is the problem: i shifted back
   G.mood('sad');
-  const w = bubble('走到 5 又退回 2：白做工', -5.0, 1.6, 3.2);
+  const w = bubble('走到 5 又退回 2：白做工', 3.0, 0.3, 1.2);
   say('這就是暴力法的問題：i 倒退了', '比過的字母又要重比 → 浪費時間');
   await step(tok);                                   // 3:18 start again here: b vs a mismatch
   remove(w); remove(far); G.mood('calm');
@@ -792,7 +789,7 @@ FRAG.push(['strm-naive-backtrack', '暴力法例二：i 一直倒退', async (to
   N.look(4, 2); await beat(tok, 700); N.look(4, 3);
   say('c = c，但 a ≠ d：mismatch', 'j 回開頭，i 又要退回');
   await step(tok);                                   // 4:04 bring i back: it had checked three letters
-  far = bad('i 曾走到 8', T.at(7), 1.9, -1.4);
+  far = bad('i 曾走到 8', T.at(7), 2.0, -1.4);
   N.align(5);
   await travel(tok, N.ip, V3(T.at(7), 1.1, -1.4), V3(T.at(5), 1.1, -1.4), 900);
   say('i 從 8 退回 6', '這一輪比過 3 個字母，又要退回去重比');
@@ -810,10 +807,10 @@ FRAG.push(['strm-naive-backtrack', '暴力法例二：i 一直倒退', async (to
   await step(tok);                                   // 4:44 every character matches: found
   for (let k = 1; k < 5; k++) { N.look(7, k); await beat(tok, 450); }
   G.mood('happy');
-  good('找到：index 8 ～ 12', T.at(9), 1.9, -1.4);
+  good('找到：index 8 ～ 12', T.at(9), 2.0, -1.4);
   say('b、c、d、f 都相同 → 找到！', 'string[8..12] = abcdf');
   await step(tok);                                   // 4:50 lesson: i backtracks; we want to avoid it
-  bad('暴力法：mismatch 時 i 會倒退（backtrack）', 0, 1.6, 3.4);
+  bad('暴力法：mismatch 時 i 會倒退（backtrack）', -1.4, 0.1, 3.2);
   say('結論：暴力法會把 i 拉回去', 'KMP 要做的：讓 i 不倒退');
 }]);
 
@@ -830,7 +827,7 @@ FRAG.push(['strm-naive-worst', '暴力法最壞情況：O(mn)', async (tok) => {
   say('暴力法的最壞情況', 'string 幾乎全是 a，pattern = aaab');
   await step(tok);                                   // 5:24 i and j start: a = a
   N = smNaive(tok, T, P, -1.3, 2.2);
-  cnt = tag('比較 0 次', 'ptr', 4.6, 1.3, 2.6);
+  cnt = tag('比較 0 次', 'ptr', -3.6, 0.1, 3.2);
   N.look(0, 0); bump();
   say('a = a：相同 → i、j 都往前', '從 string 第 1 個開始');
   await step(tok);                                   // 5:39 match again
@@ -856,7 +853,7 @@ FRAG.push(['strm-naive-worst', '暴力法最壞情況：O(mn)', async (tok) => {
   say('問題：pattern 前面是一串重複的 a', '比過的 a 又在重比');
   await step(tok);                                   // 6:38 just check whether the next letter is b
   glow(P.cs[3], GREEN);
-  const tip = bubble('前面都是 a，只要看下一個是不是 b！', 1.0, 1.6, 3.3);
+  const tip = bubble('前面都是 a，只要看下一個是不是 b！', 1.6, 0.1, 3.2);
   say('其實只要檢查下一個是不是 b', '不必退回去從頭比');
   await step(tok);                                   // 6:51 the naive algorithm doesn't study the pattern
   remove(tip); G.mood('sad');
@@ -869,7 +866,7 @@ FRAG.push(['strm-naive-worst', '暴力法最壞情況：O(mn)', async (tok) => {
   note('n = 10（string）', -3.0, 1.4, -2.6); note('m = 4（pattern）', 1.6, 1.4, -2.6);
   say('string 長 n、pattern 長 m', '每個位置最多比 m 次');
   await step(tok);                                   // 7:17 m into n: O(mn)
-  bad('共 ' + N.cmp + ' 次 = 4 × 7 → O(mn)', 0, 1.6, 3.5);
+  bad('共 ' + N.cmp + ' 次 = 4 × 7 → O(mn)', -2.6, 0.3, 1.2);
   say('時間 O(mn)', '共 m(n − m + 1) = ' + N.cmp + ' 次比較');
 }]);
 
@@ -879,8 +876,8 @@ FRAG.push(['strm-prefix-suffix', 'Prefix 與 suffix：abcdabc', async (tok) => {
   const p = 'abcdabc', cw = 0.62, pre = [], suf = [];
   const G = pal(-6.3, 3.4, 0.55);
   let T;
-  const preRow = (L) => { const z = -0.9 + (L - 1) * 1.05, row = []; for (let k = 0; k < L; k++) row.push(cube(p[k], smC(p[k]), [cw - 0.06, 0.4, 0.6], -6.2 + k * cw, 0.2, z, 2)); smOff(T.cs); for (let k = 0; k < L; k++) glow(T.cs[k], GOLD); pre.push(row); };
-  const sufRow = (L) => { const z = -0.9 + (L - 1) * 1.05, s = p.slice(p.length - L), row = []; for (let k = 0; k < L; k++) row.push(cube(s[k], smC(s[k]), [cw - 0.06, 0.4, 0.6], 6.2 - (L - 1 - k) * cw, 0.2, z, 2)); smOff(T.cs); for (let k = p.length - L; k < p.length; k++) glow(T.cs[k], GREEN); suf.push(row); };
+  const preRow = (L) => { const z = -0.9 + (L - 1) * 1.05, row = []; for (let k = 0; k < L; k++) row.push(cube(p[k], smC(p[k]), [cw - 0.06, 0.4, 0.6], -5.8 + k * cw, 0.2, z, 0.6)); smOff(T.cs); for (let k = 0; k < L; k++) glow(T.cs[k], GOLD); pre.push(row); };
+  const sufRow = (L) => { const z = -0.9 + (L - 1) * 1.05, s = p.slice(p.length - L), row = []; for (let k = 0; k < L; k++) row.push(cube(s[k], smC(s[k]), [cw - 0.06, 0.4, 0.6], 5.8 - (L - 1 - k) * cw, 0.2, z, 2)); smOff(T.cs); for (let k = p.length - L; k < p.length; k++) glow(T.cs[k], GREEN); suf.push(row); };
   await step(tok);                                   // 7:32 can we study the pattern? the idea of KMP
   T = smRow(p, -2.8, { base: 1, cw: 0.95, drop: 1.5 });
   say('KMP 的想法：先研究 pattern 本身', 'pattern = abcdabc');
@@ -888,7 +885,7 @@ FRAG.push(['strm-prefix-suffix', 'Prefix 與 suffix：abcdabc', async (tok) => {
   tag('prefix', 'ptr', -5.3, 0.3, -1.6); tag('suffix', 'ptr alt', 5.3, 0.3, -1.6);
   say('兩個名詞：prefix、suffix', 'prefix = 前綴、suffix = 後綴');
   await step(tok);                                   // 7:53 prefix: must start from the beginning
-  const arrowL = pkt('→ 從開頭取', T.at(0), 1.2, -2.8);
+  const arrowL = pkt('→ 從開頭取', T.at(0), 0.95, -2.8);
   say('prefix：一定從開頭開始取', '要取幾個都可以');
   await step(tok);                                   // 8:05 a, then ab
   preRow(1); await beat(tok, 600); preRow(2);
@@ -898,7 +895,7 @@ FRAG.push(['strm-prefix-suffix', 'Prefix 與 suffix：abcdabc', async (tok) => {
   say('abc、abcd 也都是 prefix', '從開頭取 3 個、4 個');
   await step(tok);                                   // 8:20 suffix: start from the right-hand side
   remove(arrowL); smOff(T.cs);
-  pkt('從尾端取 ←', T.at(6), 1.2, -2.8);
+  pkt('從尾端取 ←', T.at(6), 0.95, -2.8);
   say('suffix：一定從尾端往回取', '要取幾個都可以');
   await step(tok);                                   // 8:34 c, bc, abc
   for (let L = 1; L <= 3; L++) { sufRow(L); await beat(tok, 500); }
@@ -920,7 +917,7 @@ FRAG.push(['strm-prefix-suffix', 'Prefix 與 suffix：abcdabc', async (tok) => {
   arrow(V3(T.at(1), 0.7, -3.4), V3(T.at(5), 0.7, -3.4), 0xa8730f);
   say('簡單講：開頭那段，後面有沒有再出現', 'abc……abc');
   await step(tok);                                   // 9:39 KMP builds a π table (LPS)
-  pkt('π 表 = LPS', 0, 1.6, 2.6);
+  pkt('π 表 = LPS', 0, 0.3, 2.4);
   say('KMP 會為 pattern 建一張 π 表', 'LPS：Longest Prefix that is also Suffix');
 }]);
 
@@ -928,20 +925,28 @@ FRAG.push(['strm-prefix-suffix', 'Prefix 與 suffix：abcdabc', async (tok) => {
 FRAG.push(['strm-pi-tables', '四個 pattern 的 π 表', async (tok) => {
   fresh([0, 8.5, 10], [0, 0, 0]);
   const pats = ['abcdabeabf', 'abcdeabfabc', 'aabcadaabe', 'aaaabaacd'], R = [];
-  const cw = 0.85, x0 = -4.0;
-  const G = pal(-6.4, -2.4, 0.5);
+  const cw = 0.95, x0 = -4.4;
+  const G = pal(-6.4, 3.0, 0.5);
+  // only the current pattern is on the stage; a finished one becomes one line on the back plane
+  const shelve = (r) => {
+    const W = R[r];
+    const l = tag('P' + (r + 1) + '  π = ' + W.f.join(' '), 'pkt', 0, 0.2, -5.4 + r * 0.95);
+    l.element.style.whiteSpace = 'pre';
+    W.cs.forEach(kill); W.tags.forEach(remove);
+  };
   const row = (r) => {
-    const p = pats[r], z = -3.3 + r * 1.95;
-    const cs = [...p].map((c, k) => cube(c, smC(c), [cw - 0.08, 0.45, 0.7], x0 + k * cw, 0.22, z, 2));
-    tag('P' + (r + 1), 'ptr alt', x0 - 1.1, 0.25, z); tag('π', 'ptr', x0 - 1.1, 0.1, z + 0.75);
-    R[r] = { p, z, cs, f: smLps(p), n: 0 };
+    if (r > 0) shelve(r - 1);
+    const p = pats[r], z = -0.8;
+    const cs = [...p].map((c, k) => cube(c, smC(c), [cw - 0.08, 0.5, 0.8], x0 + k * cw, 0.25, z, 0.8));
+    const tags = [tag('P' + (r + 1), 'ptr alt', x0 - 1.1, 0.25, z), tag('π', 'ptr', x0 - 1.1, 0.1, z + 0.95)];
+    R[r] = { p, z, cs, tags, f: smLps(p), n: 0 };
   };
   // write π values up to (not including) index `to`, briefly lighting each repeat
   const fill = async (r, to, ms = 160) => {
     const W = R[r];
     for (; W.n < to; W.n++) {
       const j = W.n, v = W.f[j];
-      tag(String(v), v ? 'ptr alt' : 'idx', x0 + j * cw, 0.05, W.z + 0.75);
+      W.tags.push(tag(String(v), v ? 'ptr alt' : 'idx', x0 + j * cw, 0.05, W.z + 0.95));
       if (v) { for (let k = 0; k < v; k++) { glow(W.cs[k], GOLD); glow(W.cs[j - v + 1 + k], GREEN); } await beat(tok, ms); W.cs.forEach((c) => glow(c, null)); }
     }
   };
@@ -957,10 +962,10 @@ FRAG.push(['strm-pi-tables', '四個 pattern 的 π 表', async (tok) => {
   await fill(0, 10, 450);
   say('π = 0 0 0 0 1 2 0 1 2 0', '數字 = 和開頭相同的那段有多長');
   await step(tok);                                   // 10:37 I'm not tracing the algorithm
-  note('建表有演算法，這裡先用眼睛看', 3.4, 1.2, -3.3);
+  const rem = note('建表有演算法，這裡先用眼睛看', 0, 0.2, 1.5);
   say('建表的程式先不追蹤', '用眼睛找重複；照程式追也是一樣的答案');
   await step(tok);                                   // 10:49 pattern 2: ab → 1 2
-  row(1); await fill(1, 8, 350);
+  remove(rem); row(1); await fill(1, 8, 350);
   say('pattern 2：ab 又出現 → 1 2', 'abcde ab f……');
   await step(tok);                                   // 11:01 abc appears too → 1 2 3
   await fill(1, 11, 400);
@@ -972,10 +977,10 @@ FRAG.push(['strm-pi-tables', '四個 pattern 的 π 表', async (tok) => {
   say('pattern 3：第 2 個 a 自己就配到開頭', 'π = 0 1 …');
   await step(tok);                                   // 11:21 a, then the next one too → 2
   await fill(2, 10, 300);
-  bad('影片說其餘是 0；其實 aab 也重複 → 1 2 3', 3.0, 1.2, 0.6 + 0.75);
+  const warn = bad('影片說其餘是 0；其實 aab 也重複 → 1 2 3', 0, 0.2, 1.5);
   say('π = 0 1 0 0 1 0 1 2 3 0', '注意：最後的 aab 也有重複');
   await step(tok);                                   // 11:27 pattern 4: a, aa, aaa → 1 2 3
-  row(3); await fill(3, 4, 400);
+  remove(warn); row(3); await fill(3, 4, 400);
   say('pattern 4：a 連續出現 → 0 1 2 3', '開頭的 a、aa、aaa 一直重複');
   await step(tok);                                   // 11:44 aa after b → 1 2, rest 0
   await fill(3, 9, 400);
@@ -995,12 +1000,12 @@ FRAG.push(['strm-kmp-trace', 'KMP 追蹤：ababcabcabababd 找 ababd', async (to
   const G = pal(-6.3, 3.0, 0.55);
   let T = null, ip = null, jp = null, i = part === 1 ? 1 : 9, j = 0, last = false;
   const pc = [null], piL = [null];
-  const iPos = (v) => V3(T.at(Math.min(v, 15) - 1), 1.05, -2.4), jPos = (v) => V3(px(v), 1.05, 1.0);
-  const mkT = () => { T = smRow(t, -2.4, { base: 1, cw, drop: part === 1 ? 1.5 : 0 }); };
+  const iPos = (v) => V3(T.at(Math.min(v, 15) - 1), 1.05, -2.4), jPos = (v) => V3(px(v), 1.35, 1.0);
+  const mkT = () => { T = smRow(t, -2.4, { base: 1, cw, sparse: true, drop: part === 1 ? 1 : 0 }); };
   const mkP = (drop) => { for (let k = 1; k <= 5; k++) pc.push(cube(p[k - 1], smC(p[k - 1]), [cw - 0.08, 0.5, 0.85], px(k), 0.25, 1.0, drop)); tag('pattern', 'ptr', px(0) - 1.5, 0.3, 1.0); };
-  const mkPi = (k) => { piL[k] = tag(String(pi[k]), pi[k] ? 'ptr alt' : 'idx', px(k), 0.05, 1.85); };
-  const mkIdx = () => { pc[0] = cube('', GRAY, [cw - 0.08, 0.3, 0.85], px(0), 0.15, 1.0); for (let k = 0; k <= 5; k++) tag(String(k), 'idx', px(k), 0, 0.3); tag('π', 'ptr', px(0) - 1.0, 0.05, 1.85); };
-  const mkPtr = () => { ip = tag('i = ' + i, 'ptr', 0, 1.05, -2.4); jp = tag('j = ' + j, 'ptr alt', 0, 1.05, 1.0); ip.position.copy(iPos(i)); jp.position.copy(jPos(j)); };
+  const mkPi = (k) => { piL[k] = tag(String(pi[k]), pi[k] ? 'ptr alt' : 'idx', px(k), 0.05, 2.35); };
+  const mkIdx = () => { pc[0] = cube('', GRAY, [cw - 0.08, 0.3, 0.85], px(0), 0.15, 1.0); for (let k = 0; k <= 5; k++) tag(String(k), 'idx', px(k), 0, 1.65); tag('π', 'ptr', px(0) - 1.0, 0.05, 2.35); };
+  const mkPtr = () => { ip = tag('i = ' + i, 'ptr', 0, 1.05, -2.4); jp = tag('j = ' + j, 'ptr alt', 0, 1.35, 1.0); ip.position.copy(iPos(i)); jp.position.copy(jPos(j)); };
   // one comparison: string[i] vs pattern[j + 1]
   const cmp = () => {
     const a = t[i - 1], b = p[j]; last = a === b;
@@ -1027,12 +1032,12 @@ FRAG.push(['strm-kmp-trace', 'KMP 追蹤：ababcabcabababd 找 ababd', async (to
     mkT();
     say('KMP 怎麼跑：一步一步追蹤', 'string = ababcabcabababd');
     await step(tok);                                 // 12:08 we will not backtrack in the main string
-    pkt('string 的 i：只往前，絕不倒退', 0, 1.0, -3.6);
+    const never = pkt('string 的 i：只往前，絕不倒退', 0, 0.9, -3.6);
     G.mood('wow');
     say('先記住：string 這邊不倒退', '暴力法的 i 會倒退，KMP 不會');
     await step(tok);                                 // 12:15 this is the pattern
-    G.mood('calm');
-    mkP(2);
+    G.mood('calm'); remove(never);
+    mkP(0.7);
     say('pattern = ababd', '比對之前，先建 π 表');
     await step(tok);                                 // 12:21 a appears again → 1
     for (let k = 1; k <= 3; k++) mkPi(k);
@@ -1067,7 +1072,7 @@ FRAG.push(['strm-kmp-trace', 'KMP 追蹤：ababcabcabababd 找 ababd', async (to
     await step(tok);                                 // 14:24 move j to π: ab came two times
     await act();
     [2, 3].forEach((k) => glow(T.cs[k], GOLD)); [1, 2].forEach((k) => glow(pc[k], GOLD));
-    const ab = note('ab 已經比過：不用重比', px(1.5), 1.9, 1.0);
+    const ab = note('ab 已經比過：不用重比', px(5) + 2.5, 0.3, 1.0);
     await beat(tok, 1200);
     [2, 3].forEach((k) => glow(T.cs[k], null)); [1, 2].forEach((k) => glow(pc[k], null));
     await step(tok);                                 // 14:47 still a mismatch: move j again
@@ -1076,7 +1081,7 @@ FRAG.push(['strm-kmp-trace', 'KMP 追蹤：ababcabcabababd 找 ababd', async (to
     await step(tok);                                 // 14:55 j is on 0: so move i
     await both();
     await step(tok);                                 // 15:04 only j moves; i never backtracks
-    good('mismatch 時只有 j 在動', 3.6, 1.6, 2.4);
+    good('mismatch 時只有 j 在動', px(5) + 2.5, 0.3, 1.0);
     G.mood('happy'); await G.hop(tok);
     say('i 只往前、從不倒退', '退的是 j，靠 π 表');
     await step(tok);                                 // 15:21 a matches, b matches
@@ -1102,7 +1107,7 @@ FRAG.push(['strm-kmp-trace', 'KMP 追蹤：ababcabcabababd 找 ababd', async (to
     await act(); await beat(tok, 300); await both();
     await step(tok);                                 // 16:55 ab is already there: no need to compare
     [10, 11].forEach((k) => glow(T.cs[k], GOLD)); [1, 2].forEach((k) => glow(pc[k], GOLD));
-    note('ab 出現兩次：跳過第一次', px(1.5), 1.9, 1.0);
+    note('ab 出現兩次：跳過第一次', px(5) + 2.5, 0.3, 1.0);
     G.mood('happy');
     say('前面的 ab 已知相同，不用重比', '從 pattern[3] 接著比');
     await step(tok);                                 // 17:12 j+1 matches: move
@@ -1121,7 +1126,7 @@ FRAG.push(['strm-kmp-trace', 'KMP 追蹤：ababcabcabababd 找 ababd', async (to
 // 17:46 KMP 總結：i 不回頭；建表 m + 搜尋 n（6 steps）
 FRAG.push(['strm-kmp-cost', 'KMP 時間：建表 m + 搜尋 n', async (tok) => {
   fresh([0, 8, 10], [0, 0, 0]);
-  const T = smRow('ababcabcabababd', -2.2, { base: 1, cw: 0.85 });
+  const T = smRow('ababcabcabababd', -2.2, { base: 1, cw: 0.85, sparse: true });
   const P = smRow('ababd', 1.4, { base: 1, cw: 0.85, x0: -1.7 });
   const G = pal(-6.3, 3.2, 0.55);
   await step(tok);                                   // 17:46 if the beginning repeats, don't compare again
@@ -1133,20 +1138,20 @@ FRAG.push(['strm-kmp-cost', 'KMP 時間：建表 m + 搜尋 n', async (tok) => {
   for (let k = 0; k < 15; k++) { cur.position.set(T.at(k), 1.05, -2.2); glow(T.cs[k], GOLD); await beat(tok, 120); }
   say('i 只往前走，從不倒退', '暴力法才會把 i 拉回去');
   await step(tok);                                   // 18:10 time: string n, pattern m
-  note('n = 15（string）', 5.4, 0.3, -1.2); note('m = 5（pattern）', 3.2, 0.3, 1.4);
+  note('n = 15（string）', 0, 1.1, -3.3); note('m = 5（pattern）', 3.8, 0.3, 1.4);
   smOff(T.cs);
   say('時間複雜度？string 長 n、pattern 長 m', '分兩部分算');
   await step(tok);                                   // 18:18 we went through the string once: n
   for (let k = 0; k < 15; k++) { glow(T.cs[k], GREEN); await beat(tok, 90); }
-  cube('n', '#c08a1f', [6.0, 0.4, 0.6], 0.0, 0.2, 3.2, 2);
+  cube('n', '#c08a1f', [6.0, 0.4, 0.6], 0.0, 0.2, 3.2, 0.8);
   say('搜尋：string 只走過一次 → n', '每個字元一次');
   await step(tok);                                   // 18:26 preparing the table: m
   const c2 = tag('建表', 'ptr', P.at(0), 1.05, 1.4);
   for (let k = 0; k < 5; k++) { c2.position.set(P.at(k), 1.05, 1.4); glow(P.cs[k], GREEN); await beat(tok, 250); }
-  cube('m', '#2fc092', [2.0, 0.4, 0.6], -4.0, 0.2, 3.2, 2);
+  cube('m', '#2fc092', [2.0, 0.4, 0.6], -4.0, 0.2, 3.2, 0.8);
   say('建 π 表：pattern 走過一次 → m', '');
   await step(tok);                                   // 18:41 total m + n: one of the faster algorithms
-  good('O(m + n)', 0, 1.2, 3.2);
+  good('O(m + n)', 4.6, 0.3, 3.2);
   G.mood('happy'); await G.hop(tok);
   say('總時間 O(m + n)', '暴力法是 O(mn)：KMP 快很多');
 }]);
@@ -1158,9 +1163,9 @@ const rkSum = (w) => [...w].reduce((a, c) => a + rkV(c), 0);
 const rk10 = (w) => rkV(w[0]) * 100 + rkV(w[1]) * 10 + rkV(w[2]);
 // a 3-letter window over row T with its hash label
 function rkWin(T, z, w = 3) {
-  const W = { box: ghostBox('#c08a1f', w * T.cw, 0.9, 1.2), h: tag('', 'ptr', 0, 1.3, z), s: -1 };
+  const W = { box: ghostBox('#c08a1f', w * T.cw, 0.9, 1.2), h: tag('', 'ptr', 0, 1.0, z), s: -1 };
   W.box.visible = false;
-  W.at = (s, h) => { W.s = s; W.box.visible = true; const xc = T.at(s + (w - 1) / 2); W.box.position.set(xc, 0.45, z); W.h.position.set(xc, 1.3, z); txt(W.h, 'h = ' + h); };
+  W.at = (s, h) => { W.s = s; W.box.visible = true; const xc = T.at(s + (w - 1) / 2); W.box.position.set(xc, 0.45, z); W.h.position.set(xc, 1.0, z); txt(W.h, 'h = ' + h); };
   return W;
 }
 
@@ -1173,13 +1178,13 @@ FRAG.push(['strm-rk-sum-aab', 'Rabin-Karp 基本想法：aaaaab 找 aab', async 
   await step(tok);                                   // 0:00 Rabin-Karp: a string matching algorithm
   say('Rabin-Karp：字串比對（string matching）演算法', '');
   await step(tok);                                   // 0:08 a text and a pattern: is it present?
-  T = smRow(t, -0.9, { base: 1, cw: 1.1, drop: 1.5 });
+  T = smRow(t, -0.9, { base: 1, cw: 1.1, drop: 0.7 });
   tag('text', 'ptr', T.at(0) - 1.3, 0.3, -0.9);
-  P = smRow(p, 2.0, { cw: 1.1, x0: -5.6, idx: false, drop: 2 });
-  tag('pattern', 'ptr alt', -4.5, 0.3, 2.9);
+  P = smRow(p, 2.0, { cw: 1.1, x0: -5.6, idx: false, drop: 0.7 });
+  tag('pattern', 'ptr alt', -4.5, 0.1, 3.5);
   say('text 裡有沒有這個 pattern？', 'text = aaaaab、pattern = aab');
   await step(tok);                                   // 0:29 basic idea → worst case → improve → actual algorithm
-  const road = ['基本想法', 'worst case', '怎麼改進', '真正的演算法'].map((s, k) => pkt((k + 1) + '. ' + s, -4.5 + k * 3.0, 1.4, -3.6));
+  const road = ['基本想法', 'worst case', '怎麼改進', '真正的演算法'].map((s, k) => pkt((k + 1) + '. ' + s, -5.1 + k * 3.4, 0.3, -2.8));
   say('今天的路線', '基本想法 → 最壞情況 → 改進 → 真正的演算法');
   await step(tok);                                   // 0:43 aab is here inside the text
   road.forEach(remove);
@@ -1187,34 +1192,34 @@ FRAG.push(['strm-rk-sum-aab', 'Rabin-Karp 基本想法：aaaaab 找 aab', async 
   say('看得出來 aab 在 text 裡', '問題是：電腦怎麼檢查？');
   await step(tok);                                   // 0:53 the naive way compares letters; we don't want that
   smOff(T.cs);
-  const nb = bubble('不想一個一個字母比', 2.0, 1.6, 2.0);
+  const nb = bubble('不想一個一個字母比', 1.4, 0.3, 2.0);
   say('暴力法：一個一個字母比', 'Rabin-Karp 不想這樣做');
   await step(tok);                                   // 1:02 make the three letters one single value
   txt(nb, '3 個字母 → 變成 1 個數？');
   G.mood('wow');
   say('把 pattern 變成一個數值', '比一個數，比比 3 個字母快');
   await step(tok);                                   // 1:15 ASCII codes: a is 97
-  note('ASCII：a = 97、b = 98 …', 3.5, 1.2, -3.4);
+  const asc = note('ASCII：a = 97、b = 98 …', 0, 0.3, -3.4);
   say('字母本來就有 ASCII code', '小寫 a = 97');
   await step(tok);                                   // 1:38 my own codes: a = 1, b = 2 … j = 10
-  remove(nb); G.mood('calm');
-  codes = rkCodes(-3.4);
+  remove(nb); remove(asc); G.mood('calm');
+  codes = rkCodes(-4.4);
   say('數字太大，改用自己的 code', 'a = 1、b = 2 … j = 10');
   await step(tok);                                   // 2:05 aab → 1 + 1 + 2 = 4
   P.cs.forEach((c, k) => tag(String(rkV(p[k])), 'idx', -5.6 + k * 1.1, 0, 2.75));
   hp = tag('h = 4', 'ptr alt', -4.5, 1.1, 2.0);
   say('aab = 1 + 1 + 2 = 4', '把 code 加起來（要乘也可以）');
   await step(tok);                                   // 2:21 call it the hash code; the hash function
-  note('4 = hash code；算它的方法 = hash function', 1.8, 0.3, 2.9);
+  const hn = note('4 = hash code；算它的方法 = hash function', 1.4, 0.3, 2.0);
   say('這個值叫 hash code', '算出它的 function 叫 hash function');
   await step(tok);                                   // 2:54 m = 3, n = 6
-  note('m = 3', -4.5, 1.9, 2.0); note('n = 6', 4.4, 0.3, -0.9);
+  remove(hn); note('m = 3', -2.3, 0.3, 2.0); note('n = 6', 4.4, 0.3, -0.9);
   say('pattern 長 m = 3、text 長 n = 6', '');
   await step(tok);                                   // 3:11 take three letters: 1 + 1 + 1 = 3
   W = rkWin(T, -0.9); W.at(0, 3);
   say('text 前 3 個：1 + 1 + 1 = 3', '一次取 m = 3 個字母');
   await step(tok);                                   // 3:26 3 ≠ 4: no need to check characters
-  bad('3 ≠ 4', T.at(1), 2.0, -0.9);
+  const ne = bad('3 ≠ 4', 4.4, 0.3, 0.6);
   say('3 ≠ 4：不用比字元', '比兩個數只要常數時間');
   await step(tok);                                   // 3:38 slide to the next three: 3 again
   W.at(1, 3);
@@ -1223,17 +1228,17 @@ FRAG.push(['strm-rk-sum-aab', 'Rabin-Karp 基本想法：aaaaab 找 aab', async 
   W.at(2, 3);
   say('再滑：aaa = 3', '還是不相符');
   await step(tok);                                   // 4:07 sliding = rolling hash function
-  pkt('滑動 = rolling hash', 3.6, 1.8, -0.9);
+  const rh = pkt('滑動 = rolling hash', 1.4, 0.3, 2.0);
   say('從目前的值得到下一個值', '這叫 rolling hash function');
   await step(tok);                                   // 4:15 include b: 4 — they match
-  W.at(3, 4); tint(W.box, '#2fc092');
+  remove(ne); W.at(3, 4); tint(W.box, '#2fc092');
   G.mood('wow');
   say('aab = 1 + 1 + 2 = 4', '和 pattern 的 4 相同！');
   await step(tok);                                   // 4:28 confirm: check the letters
   for (let k = 0; k < 3; k++) { glow(T.cs[3 + k], GREEN); glow(P.cs[k], GREEN); await beat(tok, 450); }
   say('hash 相同 → 再逐字確認', 'a = a、a = a、b = b');
   await step(tok);                                   // 4:35 found at index 4 to 6
-  good('找到：index 4 ～ 6', T.at(4), 2.0, -0.9);
+  remove(rh); good('找到：index 4 ～ 6', 1.4, 0.3, 2.0);
   G.mood('happy'); await G.hop(tok);
   say('pattern 在 index 4 到 6', '這就是 Rabin-Karp 的基本想法');
 }]);
@@ -1252,17 +1257,17 @@ FRAG.push(['strm-rk-sum-bce', 'Rolling hash：abcdabce 找 bce', async (tok) => 
     say('去掉 ' + t[s - 1] + '、加上 ' + t[s + 2] + '：' + prev + ' − ' + o + ' + ' + n + ' = ' + h, h === 10 ? '10 = 10：可能是 pattern！' : h + ' ≠ 10');
   };
   await step(tok);                                   // 5:01 first the hash of the pattern
-  rkCodes(-3.4);
-  T = smRow(t, -0.9, { base: 1, cw: 1.0, drop: 1.5 });
-  P = smRow(p, 2.1, { cw: 1.0, x0: -5.6, idx: false, drop: 2 });
-  tag('pattern', 'ptr alt', -4.6, 0.3, 3.0);
+  rkCodes(-4.4);
+  T = smRow(t, -0.9, { base: 1, cw: 1.0, drop: 0.7 });
+  P = smRow(p, 2.1, { cw: 1.0, x0: -5.6, idx: false, drop: 0.7 });
+  tag('pattern', 'ptr alt', -4.6, 0.1, 3.3);
   say('另一個例子：text abcdabce、pattern bce', '先算 pattern 的 hash');
   await step(tok);                                   // 5:11 b + c + e = 2 + 3 + 5 = 10
   tag('h = 10', 'ptr alt', -4.6, 1.1, 2.1);
-  note('這裡只是基本想法，還不是真正的演算法', 2.4, 0.3, 3.0);
+  const idea = note('這裡只是基本想法，還不是真正的演算法', 1.2, 0.3, 2.1);
   say('bce = 2 + 3 + 5 = 10', '');
   await step(tok);                                   // 5:26 first three letters: 1 + 2 + 3 = 6
-  W = rkWin(T, -0.9); W.at(0, 6);
+  remove(idea); W = rkWin(T, -0.9); W.at(0, 6);
   say('前 3 個 abc = 1 + 2 + 3 = 6', '6 ≠ 10');
   await step(tok);                                   // 5:39 slide: from 6 subtract a's 1 → 5
   glow(T.cs[0], RED);
@@ -1272,7 +1277,7 @@ FRAG.push(['strm-rk-sum-bce', 'Rolling hash：abcdabce 找 bce', async (tok) => 
   glow(T.cs[3], GREEN); h = 9; W.at(1, 9);
   say('再加上進來的 d', '5 + 4 = 9');
   await step(tok);                                   // 6:05 subtract the leaving code, add the new one: constant time
-  pkt('一減一加：O(1)', 3.6, 1.8, -0.9);
+  const o1 = pkt('一減一加：O(1)', 1.2, 0.3, 2.1);
   G.mood('happy');
   say('減掉離開的、加上進來的', '常數時間就得到下一組的值');
   await step(tok);                                   // 6:26 9 ≠ 10; take out b, add a → 8
@@ -1289,7 +1294,7 @@ FRAG.push(['strm-rk-sum-bce', 'Rolling hash：abcdabce 找 bce', async (tok) => 
   for (let k = 0; k < 3; k++) { glow(T.cs[5 + k], GREEN); glow(P.cs[k], GREEN); await beat(tok, 450); }
   say('逐字確認：b、c、e 都相同', 'hash 相同只是「可能」，一定要確認');
   await step(tok);                                   // 7:13 the pattern is there
-  good('找到：index 6 ～ 8', T.at(6), 2.0, -0.9);
+  remove(o1); good('找到：index 6 ～ 8', 1.2, 0.3, 2.1);
   G.mood('happy'); await G.hop(tok);
   say('找到 pattern！', '每次滑動只要一減一加');
 }]);
@@ -1314,13 +1319,16 @@ FRAG.push(['strm-rk-spurious', 'Spurious hit：ccaccaaedba 找 dba', async (tok)
   await step(tok);                                   // 7:25 the previous examples scanned the string once
   say('前兩個例子：text 只掃過一次', 'pattern 也只確認了一次');
   await step(tok);                                   // 7:37 time n − m + 1: the average time
-  note('平均時間：Θ(n − m + 1)', 0, 1.2, -3.4);
+  const avg = note('平均時間：Θ(n − m + 1)', 0, 0.3, -1.4);
   say('平均時間 Θ(n − m + 1)', '有 n − m + 1 個位置，每個 O(1)');
   await step(tok);                                   // 7:53 a worst-case example: n = 11, m = 3
-  T = smRow(t, -1.4, { base: 1, cw: 1.05, drop: 1.5 });
-  P = smRow(p, 2.0, { cw: 1.05, x0: -5.8, idx: false, drop: 2 });
+  remove(avg);
+  T = smRow(t, -1.4, { base: 1, cw: 1.05, drop: 0.7 });
+  P = smRow(p, 2.0, { cw: 1.05, x0: -5.8, idx: false, drop: 0.7 });
   tag('pattern', 'ptr alt', -4.8, 0.3, 2.9);
   cnt = tag('spurious hit：0', 'ptr', 4.6, 0.3, 2.0);
+  let rem = null;   // one remark at a time, beside the counter
+  const remark = (l) => { remove(rem); rem = l; };
   say('最壞情況的例子：n = 11、m = 3', 'text = ccaccaaedba、pattern = dba');
   await step(tok);                                   // 7:59 hash of dba = 4 + 2 + 1 = 7
   tag('h = 7', 'ptr alt', -4.8, 1.1, 2.0);
@@ -1346,20 +1354,20 @@ FRAG.push(['strm-rk-spurious', 'Spurious hit：ccaccaaedba 找 dba', async (tok)
   await win(2);
   await step(tok);                                   // 9:11 three matchings so far, none a pattern
   G.mood('sad');
-  bubble('hash 一直撞，卻都不是！', -4.0, 1.6, -3.4);
+  remark(bubble('hash 一直撞，卻都不是！', 0.6, 0.3, 2.0));
   say('已經 3 次 hash 相同，卻都不是 pattern', '每次都要逐字比');
   await step(tok);                                   // 9:31 continue: (cca) … caa = 5, not matching
   await win(3); await beat(tok, 700); await win(4);
   await step(tok);                                   // 9:44 aae = 7 matching again, but no pattern
   await win(5);
   await step(tok);                                   // 9:56 every time the hash matches: the drawback
-  note('hash 太簡單 → 很多不同子字串撞在一起（collision）', 1.6, 1.2, 3.5);
+  remark(note('hash 太簡單 → 很多子字串撞在一起', 0.6, 0.3, 2.0));
   say('缺點：hash function 太簡單', '不同子字串很容易得到同一個值');
   await step(tok);                                   // 10:20 these are called spurious hits
-  bad('spurious hit：hash 相同、但不是 pattern', 0, 1.9, -0.2);
+  remark(bad('spurious hit：hash 相同、但不是 pattern', 0.2, 0.3, 2.0));
   say('這種假命中叫 spurious hit', 'hash 對上了，字串卻不是');
   await step(tok);                                   // 10:38 the maximum time: Θ(mn)
-  note('最壞：Θ(mn)', 4.6, 1.2, 1.2);
+  remark(note('最壞：Θ(mn)', 0.6, 0.3, 2.0));
   say('spurious hit 很多時：最壞 Θ(mn)', '每個位置都要比 m 個字母');
   await step(tok);                                   // 10:55 we expect n − m + 1 if there are no spurious hits
   G.mood('calm');
@@ -1373,19 +1381,19 @@ FRAG.push(['strm-rk-base10', 'Rabin-Karp hash：dba = 421', async (tok) => {
   const G = pal(-6.3, 3.4, 0.55);
   let terms = [];
   await step(tok);                                   // 11:02 how to avoid spurious hits?
-  bubble('spurious hit 怎麼避免？', -4.0, 1.6, -3.4);
+  const qq = bubble('spurious hit 怎麼避免？', 0, 1.6, -4.0);
   say('怎麼避免 spurious hit？', '問題出在 hash function 太簡單');
   await step(tok);                                   // 11:13 we need a strong hash function: Rabin-Karp's idea
-  pkt('Rabin-Karp 的 hash function', 3.0, 1.6, -3.4);
+  remove(qq); pkt('Rabin-Karp 的 hash function', 0, 1.6, -4.0);
   say('要換一個「強」的 hash function', 'Rabin 和 Karp 提出的');
   await step(tok);                                   // 11:35 codes: d = 4, b = 2, a = 1
-  for (let k = 0; k < 3; k++) { cube(w[k], smC(w[k]), [1.0, 0.5, 0.85], xs[k], 0.25, -2.4, 2); tag('code ' + rkV(w[k]), 'idx', xs[k], 0, -1.6); }
+  for (let k = 0; k < 3; k++) { cube(w[k], smC(w[k]), [1.0, 0.5, 0.85], xs[k], 0.25, -2.4, 0.8); tag('code ' + rkV(w[k]), 'idx', xs[k], 0, -1.75); }
   say('同一個例子：dba', 'code：d = 4、b = 2、a = 1');
   await step(tok);                                   // 11:41 4 × 10² + 2 × 10¹ + 1 × 10⁰
   for (let k = 0; k < 3; k++) {
     const e = 2 - k, term = rkV(w[k]) * 10 ** e;
-    pw.push(tag('× 10' + smSup(e), 'ptr', xs[k], 0.3, -0.9));
-    terms.push(cube(term, '#e8dcc4', [1.3, 0.5, 0.85], xs[k], 0.25, 0.6, 2.5));
+    pw.push(tag('× 10' + smSup(e), 'ptr', xs[k], 0.3, -0.4));
+    terms.push(cube(term, '#e8dcc4', [1.3, 0.5, 0.85], xs[k], 0.25, 0.95, 0.8));
     await beat(tok, 450);
   }
   say('4 × 10² + 2 × 10¹ + 1 × 10⁰', '每個 code 乘上 10 的次方');
@@ -1393,32 +1401,33 @@ FRAG.push(['strm-rk-base10', 'Rabin-Karp hash：dba = 421', async (tok) => {
   pw.forEach((l) => { l.element.className = 'lab-label ptr alt'; });
   say('為什麼是 2、1、0 次方？', 'pattern 有 3 個字母：最高 3 − 1 = 2');
   await step(tok);                                   // 12:12 m letters: p₁·10^(m−1) + p₂·10^(m−2) + …
-  note('p₁·10^(m−1) + p₂·10^(m−2) + … + p_m·10⁰', 0, 1.2, 2.6);
+  note('p₁·10^(m−1) + p₂·10^(m−2) + … + p_m·10⁰', 0, 0.2, -3.4);
   say('m 個字母的公式', '第 k 個字母乘 10^(m−k)');
   await step(tok);                                   // 12:44 10 is the base: I use 10 letters
-  pkt('base = 10：只用了 a～j 10 個字母', 4.6, 1.6, -1.4);
+  const bs = pkt('base = 10（a～j）', 4.2, 0.3, -2.4);
   say('10 是 base（基底）', '因為只用了 10 個字母');
   await step(tok);                                   // 12:59 you can define your own hash function
   say('懂 hashing，也可以自己設計 hash function', '字串的話，他們建議用這種寫法');
   await step(tok);                                   // 13:10 26 letters → 26; all ASCII → 127
-  note('base 26（英文字母）；全部 ASCII：127（嚴格說 128）', 1.2, 0.3, -4.6);
+  txt(bs, '英文 26；全 ASCII 127');
   say('字母多，base 就跟著變大', '26 個字母用 26，全部字元用 127');
   await step(tok);                                   // 13:41 400 + 20 + 1 = 421
-  arrow(V3(1.8, 0.3, 0.6), V3(3.4, 0.3, 0.6));
-  cube(421, '#c08a1f', [1.6, 0.6, 1.0], 4.6, 0.3, 0.6, 3);
+  arrow(V3(1.8, 0.3, 0.95), V3(3.4, 0.3, 0.95));
+  cube(421, '#c08a1f', [1.6, 0.6, 1.0], 4.6, 0.3, 0.95, 0.8);
   say('hash(dba) = 400 + 20 + 1 = 421', '');
   await step(tok);                                   // 13:53 now use it on the same worst-case example
-  note('回到剛才的最壞例子：ccaccaaedba', 0, 0.3, 3.6);
+  const back = note('回到剛才的最壞例子：ccaccaaedba', 0, 0.3, 2.9);
   say('用新的 hash 再跑一次剛才的例子', '剛才那裡全是 spurious hit');
   await step(tok);                                   // 14:14 cca = 3 × 10² + 3 × 10 + 1 × 10⁰
-  const C = smRow('cca', 2.9, { cw: 1.0, x0: -3.2, idx: false, drop: 2 });
+  remove(back);
+  const C = smRow('cca', 2.9, { cw: 1.0, x0: -3.2, idx: false, drop: 0.7 });
   say('cca = 3 × 10² + 3 × 10 + 1 × 10⁰', '');
   await step(tok);                                   // 14:28 300 + 30 + 1 = 331 ≠ 421
-  cube(331, '#cbbd9f', [1.6, 0.6, 1.0], 4.6, 0.3, 2.9, 3);
+  cube(331, '#cbbd9f', [1.6, 0.6, 1.0], 4.6, 0.3, 2.9, 0.8);
   C.cs.forEach((c) => glow(c, RED));
   say('cca = 300 + 30 + 1 = 331', '331 ≠ 421');
   await step(tok);                                   // 14:43 not a spurious hit any more
-  good('換了 hash：不再是 spurious hit', 2.2, 1.4, 3.6);
+  good('不再是 spurious hit', 1.2, 0.3, 2.9);
   G.mood('happy'); await G.hop(tok);
   say('以前 cca 會撞，現在不會了', 'hash function 變強了');
 }]);
@@ -1433,18 +1442,18 @@ FRAG.push(['strm-rk-rolling', 'Rolling hash：331 → 313 → 133 …', async (t
   const sub = (s) => { const o = rkV(t[s - 1]); smOff(T.cs); glow(T.cs[s - 1], RED); W.at(s, '?'); h = h - o * 100; relabel(H, h); return o; };
   const mul = () => { h *= 10; relabel(H, h); };
   const add = (s) => { const n = rkV(t[s + 2]); glow(T.cs[s + 2], GREEN); h += n; show(h, s); return n; };
-  const mark = (s) => tag(String(h), h === 421 ? 'good' : 'idx', T.at(s + 1), 0.2, s % 2 ? -0.4 : -0.9);
+  const mark = (s) => tag(String(h), h === 421 ? 'good' : 'idx', T.at(s + 1), 0.2, -0.7);
   await step(tok);                                   // 14:56 rolling: so many powers — how to get the next one?
-  T = smRow(t, -2.4, { base: 1, cw: 1.05 });
+  T = smRow(t, -2.4, { base: 1, cw: 1.05, sparse: true });
   P = smRow('dba', 2.8, { cw: 1.0, x0: -5.8, idx: false });
   tag('h = 421', 'ptr alt', -4.8, 1.1, 2.8);
   W = { box: ghostBox('#c08a1f', 3.15, 0.9, 1.2), lbl: tag('', 'ptr', 0, 1.3, -2.4), at(s, v) { const xc = T.at(s + 1); this.box.position.set(xc, 0.45, -2.4); this.lbl.position.set(xc, 1.3, -2.4); txt(this.lbl, 'h = ' + v); } };
   W.at(0, 331);
-  H = cube(331, '#cbbd9f', [1.8, 0.6, 1.0], 1.5, 0.3, 1.2, 2.5);
+  H = cube(331, '#cbbd9f', [1.8, 0.6, 1.0], 1.5, 0.3, 1.2, 0.7);
   tag('目前 hash', 'idx', 1.5, 0, 2.0);
   say('cca = 331；下一組怎麼算？', '不想把次方全部重算');
   await step(tok);                                   // 15:09 the next three should be 3·10² + 1·10 + 3
-  const nx = note('下一組 cac = 3·10² + 1·10¹ + 3·10⁰', 4.0, 1.4, 1.2);
+  const nx = note('下一組 cac = 3·10² + 1·10¹ + 3·10⁰', 1.5, 0.2, -0.1);
   say('下一組 cac 應該是 3·10² + 1·10 + 3', 'c、a 的次方都要升一級');
   await step(tok);                                   // 15:17 so these two get multiplied by 10
   say('留下的 c、a 都要乘 10', '從 10¹、10⁰ 升成 10²、10¹');
@@ -1459,7 +1468,7 @@ FRAG.push(['strm-rk-rolling', 'Rolling hash：331 → 313 → 133 …', async (t
   say('再加上新的 c：3·10⁰', '');
   await step(tok);                                   // 16:22 subtract the first term, multiply by 10, add the next
   remove(nx);
-  rule = pkt('減掉首項 → ×10 → 加新項', 4.0, 1.6, 1.2);
+  rule = pkt('減掉首項 → ×10 → 加新項', 4.9, 0.3, 1.2);
   G.mood('wow');
   say('規則：減掉第一項、乘 base、加上新的一項', '');
   await step(tok);                                   // 17:05 331 − 300 = 31
@@ -1475,7 +1484,7 @@ FRAG.push(['strm-rk-rolling', 'Rolling hash：331 → 313 → 133 …', async (t
   await step(tok);                                   // 17:52 rolling: subtract, multiply, add
   say('一個值算出來，後面都靠減、乘、加', '這就是 rolling hash function');
   await step(tok);                                   // 17:59 313 ≠ 421: no spurious hit
-  bad('313 ≠ 421', 4.0, 0.3, 2.3);
+  bad('313 ≠ 421', 4.9, 0.3, 2.2);
   say('313 ≠ 421', '也沒有 spurious hit');
   await step(tok);                                   // 18:21 subtract 300 → 13
   sub(2);
@@ -1513,34 +1522,36 @@ FRAG.push(['strm-rk-mod', 'Rabin fingerprint 與 mod', async (tok) => {
   const G = pal(-6.3, 3.4, 0.55);
   let cs = [];
   await step(tok);                                   // 20:38 basic idea → drawback → better function
-  ['基本想法', '缺點：hash 太簡單', 'Rabin-Karp 的 hash'].forEach((s, k) => pkt(s, -4.2 + k * 4.2, 1.4, -3.6));
+  const past = ['基本想法', '缺點：hash 太簡單', 'Rabin-Karp 的 hash'].map((s, k) => pkt(s, -4.2 + k * 4.2, 0.3, -2.6));
   say('回顧：基本想法 → 缺點 → 更好的 hash', '');
   await step(tok);                                   // 20:58 base powers + rolling = Rabin fingerprint
-  good('Rabin fingerprint', 0, 1.6, -2.4);
+  past.push(good('Rabin fingerprint', 0, 0.3, -1.4));
   say('base 次方 + rolling：Rabin fingerprint', '');
   await step(tok);                                   // 21:05 average Θ(n − m + 1)
-  note('平均：Θ(n − m + 1)', -3.0, 1.2, -1.2);
+  past.push(note('平均：Θ(n − m + 1)', -3.0, 0.3, -0.2));
   say('平均時間 Θ(n − m + 1)', '');
   await step(tok);                                   // 21:14 still possible spurious hits: worst mn
-  note('最壞：還是 O(mn)', 3.0, 1.2, -1.2);
+  past.push(note('最壞：還是 O(mn)', 3.0, 0.3, -0.2));
   say('還是可能撞：最壞仍是 O(mn)', '只是機率變小');
   await step(tok);                                   // 21:36 powers give very large values
-  ['m = 3：10² = 100', 'm = 10：10⁹', 'm = 20：10¹⁹ !!'].forEach((s, k) => tag(s, k === 2 ? 'bad' : 'idx', -4.0 + k * 4.0, 0.3, 0.4));
+  past.forEach(remove);
+  const big = ['m = 3：10² = 100', 'm = 10：10⁹', 'm = 20：10¹⁹ !!'].map((s, k) => tag(s, k === 2 ? 'bad' : 'idx', -4.0 + k * 4.0, 0.3, -1.8));
   G.mood('wow');
   say('次方會讓值變得非常大', 'pattern 越長，10^(m−1) 越大');
   await step(tok);                                   // 21:55 four-byte int: the number will overflow
-  bubble('int 只有 4 bytes：overflow！', 2.4, 1.6, 1.4);
+  big.push(bubble('int 只有 4 bytes：overflow！', 2.8, 0.3, -0.5));
   say('超過資料型態的容量就 overflow', '例：4 bytes 的 int');
   await step(tok);                                   // 21:59 avoid overflow: take mod
   G.mood('calm');
-  pkt('取 mod：值留在範圍內', -3.4, 1.6, 1.4);
+  big.push(pkt('取 mod：值留在範圍內', -2.8, 0.3, -0.5));
   say('解法：對值取 mod', '');
   await step(tok);                                   // 22:18 32-bit: mod 2³¹ (only positive: 2³²)
-  note('32-bit：mod 2³¹（只用正數：2³²）', 0, 0.3, 2.4);
+  big.push(note('32-bit：mod 2³¹（只用正數：2³²）', 0, 0.3, 0.8));
   say('32-bit 有號：mod 2³¹', '只用正數：mod 2³²');
   await step(tok);                                   // 22:52 rolling with mod too (small mod 11 as a demo)
-  cs = ws.map((w, k) => { tag(w, 'idx', -6 + k * 1.5, 0, 3.0); return cube(hv[k] + '→' + (hv[k] % 11), k === 8 ? '#c08a1f' : '#cbbd9f', [1.3, 0.5, 0.8], -6 + k * 1.5, 0.25, 3.7, 2); });
-  note('示範用小模數：mod 11', 4.8, 1.0, 3.7);
+  big.forEach(remove);
+  cs = ws.map((w, k) => { tag(w, 'idx', -4.8 + k * 1.2, 0, -0.7); return cube(hv[k] + '→' + (hv[k] % 11), k === 8 ? '#c08a1f' : '#cbbd9f', [1.14, 0.5, 0.8], -4.8 + k * 1.2, 0.25, 0.6, 0.7); });
+  note('示範用小模數：mod 11', 0, 0.3, 2.0);
   say('rolling 時也可以取 mod', '示範：每個 hash mod 11');
   await step(tok);                                   // 23:04 with mod, spurious hits come back
   const target = hv[8] % 11;
@@ -1551,7 +1562,7 @@ FRAG.push(['strm-rk-mod', 'Rabin fingerprint 與 mod', async (tok) => {
   G.mood('calm');
   say('了解資料，就能自己設計 hash function', '');
   await step(tok);                                   // 23:36 core idea: compare codes, check only on a match
-  good('核心：先比 hash code，相同才逐字比', 0, 1.9, 0.4);
+  good('核心：先比 hash code，相同才逐字比', 0, 0.3, -2.0);
   G.mood('happy'); await G.hop(tok);
   say('Rabin-Karp 的核心', '用 hash code 避免逐字比；相同才檢查');
 }]);
@@ -1611,36 +1622,36 @@ FRAG.push(['strm-mit-goodhash', '好的 hash function：要分散', async (tok) 
   const xs = (k) => -3.5 + k * 1.0;
   const HC = ['#4b9ee2', '#9b7ef4', '#dd8238', '#31aab0', '#e55a9b', '#2fc092', '#c08a1f', '#5c7a4a'];
   const G = pal(-6.3, 3.2, 0.55);
-  let bad0 = [], spread = [];
+  let bad0 = [], spread = [], rem = null;
+  const remark = (t, cls = 'note') => { if (!rem) rem = tag(t, cls, 0, 0.3, -1.5); else { txt(rem, t); rem.element.className = 'lab-label ' + cls; } };
   await step(tok);                                   // 3:24 h = K mod 2^w
-  tag('h = K mod 2^w', 'ptr', 0, 0.3, -4.0);
+  tag('h = K mod 2^w', 'ptr', 0, 0.3, -4.3);
   say('令 h = K mod 2^w', '');
   await step(tok);                                   // 3:34 K is digits in base b
-  ['d₁', 'd₂', 'd₃', '…', 'd_L'].forEach((d, i) => cube(d, '#9b7ef4', [1.0, 0.5, 0.8], -2.8 + i * 1.4, 0.25, -3.0, 2));
+  ['d₁', 'd₂', 'd₃', '…', 'd_L'].forEach((d, i) => cube(d, '#9b7ef4', [1.0, 0.5, 0.8], -2.8 + i * 1.4, 0.25, -3.0, 0.7));
   say('K 是 base b 的 digits 組成的大數字', 'K = d₁ d₂ … d_L');
   await step(tok);                                   // 3:56 b = 2⁸ (ASCII, colors)
-  note('b = 2⁸：一個 byte（ASCII、顏色）', 4.2, 0.3, -2.2);
+  remark('b = 2⁸：一個 byte（ASCII、顏色）');
   say('base b = 2⁸', 'ASCII 字元、顏色剛好一個 byte');
   await step(tok);                                   // 4:24 lots of inputs → a small set of outputs
   for (let k = 0; k < 8; k++) { cube('', GRAY, [0.85, 0.1, 0.9], xs(k), 0.05, 1.6); tag(String(k), 'idx', xs(k), 0, 2.4); }
   tag('outputs（示意 8 格）', 'ptr alt', 0, 0.3, 3.2);
   say('hash：很多 inputs → 比較少的 outputs', '');
   await step(tok);                                   // 4:41 collisions no matter what
-  note('inputs ≫ outputs → 一定有 collision', 4.6, 0.3, 0.4);
+  remark('inputs ≫ outputs → 一定有 collision');
   say('不管怎麼設計，collision 一定會發生', 'inputs 遠多於 outputs');
   await step(tok);                                   // 4:47 a million characters: 2^(8·10⁶) strings vs 2³²
-  note('一百萬字元 → 2^(8·10⁶) 種字串', -4.0, 0.3, 0.4);
-  note('outputs：2³² 種', 0, 0.3, 3.9);
+  remark('一百萬字元 → 2^(8·10⁶) 種字串；outputs 只有 2³² 種');
   say('一百萬字元的字串有 2^(8·10⁶) 種', 'word size 的 output 只有 2³² 種');
   await step(tok);                                   // 5:05 no way to avoid collisions
-  for (const k of [3, 3]) { bad0.push(cube('', HC[bad0.length], [0.6, 0.3, 0.6], xs(k), 0.3 + bad0.length * 0.32, 1.6, 3)); await beat(tok, 400); }
+  for (const k of [3, 3]) { bad0.push(cube('', HC[bad0.length], [0.6, 0.3, 0.6], xs(k), 0.3 + bad0.length * 0.32, 1.6, 1)); await beat(tok, 400); }
   say('不可能完全沒有 collision', '兩個 input 掉進同一格');
   await step(tok);                                   // 5:11 what makes a good hash function?
   bad0.forEach((c) => fly(c)); bad0 = [];
-  bubble('怎樣才是好的 hash function？', -3.6, 1.6, -1.0);
+  remark('怎樣才是好的 hash function？', 'say');
   say('那什麼是好的 hash function？', '');
   await step(tok);                                   // 5:21 hash = 0 for all K: good?
-  for (let k = 0; k < 8; k++) { bad0.push(cube('', HC[k], [0.6, 0.3, 0.6], xs(0), 0.3 + k * 0.32, 1.6, 3)); await beat(tok, 150); }
+  for (let k = 0; k < 8; k++) { bad0.push(cube('', HC[k], [0.6, 0.3, 0.6], xs(0), 0.3 + k * 0.32, 1.6, 1)); await beat(tok, 150); }
   say('如果所有 K 都 hash 到 0 呢？', '全部擠在同一格');
   await step(tok);                                   // 5:36 searching takes a long time — horrible
   G.mood('sad');
@@ -1648,19 +1659,19 @@ FRAG.push(['strm-mit-goodhash', '好的 hash function：要分散', async (tok) 
   await step(tok);                                   // 5:53 something that looks random, but consistent
   bad0.forEach((c) => fly(c));
   const order = [5, 2, 7, 0, 3, 6, 1, 4];
-  for (let k = 0; k < 8; k++) { spread.push(cube('', HC[k], [0.6, 0.3, 0.6], xs(order[k]), 0.3, 1.6, 3)); await beat(tok, 200); }
+  for (let k = 0; k < 8; k++) { spread.push(cube('', HC[k], [0.6, 0.3, 0.6], xs(order[k]), 0.3, 1.6, 1)); await beat(tok, 200); }
   G.mood('happy');
   say('理想：看起來隨機', '而且同一個 input 永遠給同一個 output');
   await step(tok);                                   // 6:10 distribute is the keyword
-  good('關鍵字：distribute（分散）', 0, 1.6, 1.6);
+  remark('關鍵字：distribute（分散）', 'good');
   say('關鍵字：distribute', 'output 要均勻分散');
   await step(tok);                                   // 6:43 L much bigger than w is fine
   G.mood('calm');
-  note('L ≫ w 沒關係：這正是 substring matching 快的原因', 0, 0.3, -1.0);
+  remark('L ≫ w 沒關係：這正是 substring matching 快的原因');
   say('K 很長（L 很大）本身不是問題', '只要結果分散得均勻就好');
   await step(tok);                                   // 7:08 some simple real-life values make it behave badly
   G.mood('wow');
-  bubble('有些很普通的 input 會讓它很糟', -3.6, 1.6, 3.4);
+  remark('有些很普通的 input 會讓它很糟', 'say');
   say('問題：有些簡單的 input 會讓它表現很差', '而且真實世界真的會遇到');
 }]);
 
@@ -1668,24 +1679,24 @@ FRAG.push(['strm-mit-goodhash', '好的 hash function：要分散', async (tok) 
 FRAG.push(['strm-mit-evendigits', 'digit 全偶數 → hash 全偶數', async (tok) => {
   fresh([0, 8.5, 10], [0, 0, 0]);
   const G = pal(-6.3, 3.4, 0.55);
-  const xs = (k) => -6 + k * 0.8;
+  const xs = (k) => -5.6 + k * 0.75;
   let d256 = [], d10 = [], slots = [];
   await step(tok);                                   // 7:26 what if all the digits are even?
-  d256 = ['12', '200', '6', '34'].map((d, i) => cube(d, '#9b7ef4', [1.0, 0.5, 0.8], 0.6 + i * 1.3, 0.25, -3.0, 2));
-  tag('K 的 digits（示範）', 'ptr', 2.55, 0.3, -2.1);
+  d256 = ['12', '200', '6', '34'].map((d, i) => cube(d, '#9b7ef4', [1.0, 0.5, 0.8], 0.6 + i * 1.3, 0.25, -3.0, 0.7));
+  tag('K 的 digits（示範）', 'ptr', 2.55, 0.3, -1.8);
   say('如果每個 digit 都是偶數呢？', 'd ≡ 0 (mod 2)');
   await step(tok);                                   // 7:50 the modulo is 2^w, say 2³²
-  note('mod 2³²', 6.0, 0.3, -3.0);
+  const mb = note('mod 2³²', 2.55, 0.3, -4.4);
   say('模數還是 2^w，例如 2³²', '');
   await step(tok);                                   // 7:55 base 2⁸: digits 0 to 255
-  note('base 2⁸：digit 是 0～255', 2.55, 0.3, -4.0);
+  txt(mb, 'mod 2³²；base 2⁸：digit 是 0～255');
   say('base 2⁸：每個 digit 在 0～255', '');
   await step(tok);                                   // 8:14 substring matching: all characters even
   d256.forEach((c) => glow(c, GOLD));
   say('例如 substring 裡的字元碼全是偶數', '');
   await step(tok);                                   // 8:44 like base 10: 10 is divisible by 2
   d256.forEach((c) => glow(c, null));
-  d10 = ['3', '7', '4'].map((d, i) => cube(d, '#e8dcc4', [0.8, 0.5, 0.8], -5.6 + i * 0.95, 0.25, -3.0, 2));
+  d10 = ['3', '7', '4'].map((d, i) => cube(d, '#e8dcc4', [0.8, 0.5, 0.8], -5.6 + i * 0.95, 0.25, -3.0, 0.7));
   tag('base 10', 'ptr', -4.65, 0.3, -2.1);
   say('類比 base 10：10 可以被 2 整除', '例：374');
   await step(tok);                                   // 8:50 last digit even → the whole number even
@@ -1695,15 +1706,15 @@ FRAG.push(['strm-mit-evendigits', 'digit 全偶數 → hash 全偶數', async (t
   glow(d256[3], GREEN);
   say('base 256 也能被 2 整除', '末位 34 偶數 → K 是偶數');
   await step(tok);                                   // 9:13 K mod 2³² is also divisible by 2
-  good('K mod 2³² 也是偶數', 2.55, 1.3, -3.0);
+  good('K mod 2³² 也是偶數', 2.55, 0.3, -0.7);
   say('K mod 2³² 也一定是偶數', '因為 2³² 也是偶數');
   await step(tok);                                   // 9:35 this is supposed to be my universe of outputs
-  for (let k = 0; k < 16; k++) { slots.push(cube('', k % 2 ? '#ead2c8' : GRAY, [0.7, 0.1, 0.9], xs(k), 0.05, 1.4)); tag(String(k), 'idx', xs(k), 0, 2.2); }
+  for (let k = 0; k < 16; k++) { slots.push(cube('', k % 2 ? '#ead2c8' : GRAY, [0.66, 0.1, 0.9], xs(k), 0.05, 1.4)); if (k % 2 === 0) tag(String(k), 'idx', xs(k), 0, 2.2); }
   tag('所有 outputs（示意 16 格）', 'ptr alt', 0, 0.3, 3.0);
   say('outputs 本來應該用到整個範圍', '');
   await step(tok);                                   // 9:46 the hash always puts outputs in this half
   const cnt = Array(16).fill(0);
-  for (const v of [2, 10, 6, 14, 0, 8, 4, 12]) { cube('', '#4b9ee2', [0.55, 0.28, 0.6], xs(v), 0.25 + cnt[v] * 0.3, 1.4, 3); cnt[v]++; await beat(tok, 200); }
+  for (const v of [2, 10, 6, 14, 0, 8, 4, 12]) { cube('', '#4b9ee2', [0.55, 0.28, 0.6], xs(v), 0.25 + cnt[v] * 0.3, 1.4, 1); cnt[v]++; await beat(tok, 200); }
   say('hash 只會落在一半', '分布不均勻');
   await step(tok);                                   // 10:01 these are even, these are odd
   slots.forEach((s, k) => glow(s, k % 2 ? null : GREEN));
@@ -1719,35 +1730,37 @@ FRAG.push(['strm-mit-evendigits', 'digit 全偶數 → hash 全偶數', async (t
 FRAG.push(['strm-mit-even16', '全奇數也一樣；DNA 0, 2, 4, 6 → 一半的桶浪費', async (tok) => {
   fresh([0, 8.5, 10], [0, 0, 0]);
   const G = pal(-6.3, 3.4, 0.55);
-  const xs = (k) => -6 + k * 0.8, D = { A: 0, C: 2, G: 4, T: 6 };
+  const xs = (k) => -5.6 + k * 0.75, D = { A: 0, C: 2, G: 4, T: 6 };
   let dna, slots = [];
   await step(tok);                                   // 10:16 what about all odd digits?
-  const odd = ['13', '201', '7', '35'].map((d, i) => cube(d, '#dd8238', [1.0, 0.5, 0.8], -2.0 + i * 1.3, 0.25, -3.4, 2));
-  tag('全奇數 digits（示範）', 'ptr', -0.05, 0.3, -2.5);
+  const odd = ['13', '201', '7', '35'].map((d, i) => cube(d, '#dd8238', [1.0, 0.5, 0.8], -2.0 + i * 1.3, 0.25, -2.6, 0.7));
+  const oddTag = tag('全奇數 digits（示範）', 'ptr', -0.05, 0.3, -1.4);
   say('同學問：digit 全是奇數呢？', '');
   await step(tok);                                   // 10:31 last digit odd → result odd
   glow(odd[3], GREEN);
-  note('末位奇數 → K 奇數 → hash 奇數', 4.6, 0.3, -2.5);
+  const oddNote = note('末位奇數 → K 奇數 → hash 奇數', -0.05, 0.3, -0.2);
   say('末位奇數 → 結果一定是奇數', '');
   await step(tok);                                   // 10:44 always odd: not an even distribution
-  for (let k = 0; k < 16; k++) { slots.push(cube('', k % 2 ? '#ead2c8' : GRAY, [0.7, 0.1, 0.9], xs(k), 0.05, 2.6)); tag(String(k), 'idx', xs(k), 0, 3.4); }
-  for (const v of [5, 13, 1, 9]) { cube('', '#dd8238', [0.55, 0.28, 0.6], xs(v), 0.25, 2.6, 3); await beat(tok, 200); }
+  for (let k = 0; k < 16; k++) { slots.push(cube('', k % 2 ? '#ead2c8' : GRAY, [0.66, 0.1, 0.9], xs(k), 0.05, 2.6)); if (k % 2 === 0) tag(String(k), 'idx', xs(k), 0, 3.4); }
+  const oddHits = [];
+  for (const v of [5, 13, 1, 9]) { oddHits.push(cube('', '#dd8238', [0.55, 0.28, 0.6], xs(v), 0.25, 2.6, 1)); await beat(tok, 200); }
   say('hash 永遠是奇數：一樣不均勻', '只是換成另一半');
   await step(tok);                                   // 11:02 nucleotides A, C, G, T
-  dna = smRow('GATTACAG', -1.0, { cw: 0.9, idx: false, drop: 2 });
-  tag('DNA', 'ptr', dna.at(0) - 1.2, 0.3, -1.0);
+  odd.forEach(kill); oddHits.forEach(kill); remove(oddTag); remove(oddNote);
+  dna = smRow('GATTACAG', -2.2, { cw: 0.9, idx: false, drop: 0.7 });
+  tag('DNA', 'ptr', dna.at(0) - 1.2, 0.3, -2.2);
   say('實例：DNA 的 nucleotides', 'A、C、G、T');
   await step(tok);                                   // 11:15 encoded as 0, 2, 4, 6 — all even
-  [...'GATTACAG'].forEach((c, k) => tag(String(D[c]), 'idx', dna.at(k), 0, -0.25));
+  [...'GATTACAG'].forEach((c, k) => tag(String(D[c]), 'idx', dna.at(k), 0, -1.45));
   say('若編成 A, C, G, T = 0, 2, 4, 6', '全是偶數');
   await step(tok);                                   // 11:24 the hash is always even: wasting the last bit
-  note('二進位最後一個 bit 永遠是 0', 4.6, 0.3, -0.2);
+  note('二進位最後一個 bit 永遠是 0', 0, 0.3, -0.2);
   say('hash 永遠是偶數', '最後一個 bit 白白浪費');
   await step(tok);                                   // 11:29 a hash table: half the entries wasted
   const s = 'GATTACAGACTGATCAG', cnt = Array(16).fill(0);
   for (let k = 0; k + 3 <= s.length; k++) {
     const h = (D[s[k]] * 64 + D[s[k + 1]] * 8 + D[s[k + 2]]) % 16;
-    if (cnt[h] < 5) cube('', '#4b9ee2', [0.55, 0.22, 0.6], xs(h), 0.22 + cnt[h] * 0.24, 2.6, 2.5);
+    if (cnt[h] < 5) cube('', '#4b9ee2', [0.55, 0.22, 0.6], xs(h), 0.22 + cnt[h] * 0.24, 2.6, 1);
     cnt[h]++; await beat(tok, 120);
   }
   slots.forEach((c, k) => { if (k % 2) glow(c, RED); });
@@ -1764,44 +1777,45 @@ FRAG.push(['strm-mit-lowbits', 'mod 2^w 只看低位元', async (tok) => {
   let rnd = [];
   await step(tok);                                   // 11:44 random inputs: most hash functions do fine
   for (let k = 0; k < 8; k++) { cube('', GRAY, [0.65, 0.1, 0.8], xs(k), 0.05, -2.0); tag(String(k), 'idx', xs(k), 0, -1.35); }
-  tag('mod 8', 'ptr alt', 3.6, 0.3, -3.0);
-  for (const v of [3, 6, 1, 4, 7, 0, 5, 2]) { rnd.push(cube('', '#9b7ef4', [0.62, 0.3, 0.6], xs(v), 0.25, -2.0, 3)); await beat(tok, 150); }
+  tag('mod 8', 'ptr alt', 0.0, 0.3, -2.0);
+  for (const v of [3, 6, 1, 4, 7, 0, 5, 2]) { rnd.push(cube('', '#9b7ef4', [0.62, 0.3, 0.6], xs(v), 0.25, -2.0, 1)); await beat(tok, 150); }
   say('input 是隨機的：大多數 hash 都分得很好', '');
   await step(tok);                                   // 11:50 real-life inputs are not random
   rnd.forEach((c) => fly(c));
   G.mood('wow');
-  bubble('真實資料不隨機！', -4.0, 1.6, -3.0);
+  const real = bubble('真實資料不隨機！', -3.8, 0.3, -2.0);
   say('問題是：真實資料不隨機', '');
   await step(tok);                                   // 11:55 camera pixels: the last few bits are the same
   vals.forEach((v, r) => {
     const bits = v.toString(2).padStart(8, '0'), z = -3.0 + r * 1.0;
-    rows.push([...bits].map((b, k) => cube(b, b === '1' ? '#4b9ee2' : '#e8dcc4', [0.52, 0.4, 0.7], -6 + k * 0.6, 0.2, z + 3.0, 2)));
+    rows.push([...bits].map((b, k) => cube(b, b === '1' ? '#4b9ee2' : '#e8dcc4', [0.52, 0.4, 0.7], -6 + k * 0.6, 0.2, z + 3.0, 0.6)));
     tag(String(v), 'ptr', -6.8, 0.3, z + 3.0);
   });
+  remove(real);
   rows.forEach((row) => row.slice(5).forEach((c) => glow(c, GOLD)));
   say('例：相機像素因為雜訊，最後幾個 bit 都一樣', '180、100、220 的低 3 bit 都是 100（示範）');
   await step(tok);                                   // 12:09 Knuth's book: many real sequences look like that
   G.mood('calm');
-  note('Knuth 的書：真實世界很多序列長這樣', -3.4, 0.3, 3.4);
+  const knuth = note('Knuth 的書：真實世界很多序列長這樣', -3.4, 0.3, 3.4);
   say('真實世界很多序列都有這種規律', '');
   await step(tok);                                   // 12:26 a non-random property reflected in the output: bad
   rows.forEach((row) => row.slice(0, 5).forEach((c) => tint(c, GRAY)));
-  for (let r = 0; r < 3; r++) { cube(vals[r], '#dd8238', [0.62, 0.55, 0.6], xs(4), 0.38 + r * 0.6, -2.0, 3); await beat(tok, 300); }
+  for (let r = 0; r < 3; r++) { cube(vals[r], '#dd8238', [0.62, 0.55, 0.6], xs(4), 0.38 + r * 0.75, -2.0, 1); await beat(tok, 300); }
   G.mood('sad');
   say('mod 8 只看低 3 bit：三個全進第 4 格', 'input 的規律原封不動留在 output：壞 hash');
   await step(tok);                                   // 12:39 mod 2^n: just truncate the bits on the left
-  note('mod 2^n = 直接截掉左邊的 bit', 3.6, 0.3, -3.8);
+  remove(knuth); const cut = note('mod 2^n = 直接截掉左邊的 bit', -3.4, 0.3, 3.4);
   say('mod 2^n 很快：截掉高位就好', '');
   await step(tok);                                   // 12:54 faster — but the hash function is bad
   say('快是快，但換來很差的 hash', '');
   await step(tok);                                   // 13:00 in practice nicer hash functions are better overall
   for (let k = 0; k < 7; k++) { cube('', GRAY, [0.65, 0.1, 0.8], xs(k), 0.05, 1.5); tag(String(k), 'idx', xs(k), 0, 2.15); }
   tag('mod 7（質數）', 'ptr alt', 3.6, 0.3, 2.9);
-  for (let r = 0; r < 3; r++) { cube(vals[r], '#2fc092', [0.62, 0.3, 0.6], xs(vals[r] % 7), 0.25, 1.5, 3); await beat(tok, 300); }
+  for (let r = 0; r < 3; r++) { cube(vals[r], '#2fc092', [0.62, 0.3, 0.6], xs(vals[r] % 7), 0.25, 1.5, 1); await beat(tok, 300); }
   G.mood('happy');
   say('好一點的 hash（例如 mod 質數）分得開', '實務上整體反而更快（cache）');
   await step(tok);                                   // 13:21 that's why we don't use 2^w
-  good('所以不用 2^w 當模數', 0, 1.6, 0.0);
+  remove(cut); good('所以不用 2^w 當模數', -3.4, 0.3, 3.4);
   say('這才是不用 2^w 的原因', '不是因為反元素');
 }]);
 
@@ -1816,19 +1830,20 @@ FRAG.push(['strm-mit-slide', 'Rolling hash API：append、skip、slide', async (
   ['dnaseq.py', 'rolling.py', 'kfasta.py', 'main.py'].forEach((n, k) => { files[n] = prop('file', -4.5 + k * 3.0, 0, -3.8, 0.8, n); });
   say('這次的程式分成好幾個 module', '不是一個大檔案');
   await step(tok);                                   // 14:01 subsequence hashes, interval subsequence hashes
-  pkt('subsequence_hashes、interval_subsequence_hashes', -2.0, 2.0, -2.6);
+  const todo = pkt('subsequence_hashes、interval_subsequence_hashes', 0, 0.3, -2.3);
   say('要自己寫的：subsequence_hashes', '還有 interval_subsequence_hashes');
   await step(tok);                                   // 14:16 dnaseq: the only file you upload and modify
   bob(files['dnaseq.py'], 0.08);
-  good('唯一要改、要上傳的檔案', -4.5, 1.9, -2.6);
+  remove(todo); const only = good('唯一要改、要上傳的檔案', -3.8, 0.3, -2.3);
   G.mood('wow');
   say('它們都在 dnaseq.py', '這是唯一要修改、要上傳的檔案');
   await step(tok);                                   // 14:35 where is the rolling hash?
   G.mood('calm');
   bob(files['rolling.py'], 0.08);
-  T = smRow(s, -1.0, { cw: 1.1, drop: 2 });
+  remove(only);
+  T = smRow(s, -1.0, { cw: 1.1, drop: 0.7 });
   W = ghostBox('#c08a1f', 1.1, 0.9, 1.2); W.visible = false;
-  H = cube('h = 0', '#cbbd9f', [2.4, 0.6, 1.0], 0, 0.3, 1.6, 2.5);
+  H = cube('h = 0', '#cbbd9f', [2.4, 0.6, 1.0], 0, 0.3, 1.6, 0.7);
   note('A, C, G, T = 0, 2, 4, 6；b = 8、mod 13（示範）', 0, 0.3, 2.7);
   say('rolling hash 在另一個 module', '');
   await step(tok);                                   // 14:55 last time's API: append …
@@ -1850,7 +1865,7 @@ FRAG.push(['strm-mit-slide', 'Rolling hash API：append、skip、slide', async (
   }
   say('這次只要 slide(old, new)', '一步完成「去掉舊的、加上新的」');
   await step(tok);                                   // 15:35 slide is the code we had before breaking it up
-  pkt('slide = skip(old) + append(new)', 3.6, 1.8, 1.6);
+  pkt('slide = skip(old) + append(new)', 4.1, 0.3, 1.6);
   say('slide 就是上次拆開之前的那份程式', '不用再講一次');
   await step(tok);                                   // 15:43 this is the rolling hash; it is good
   G.mood('happy'); await G.hop(tok);
@@ -1862,22 +1877,23 @@ FRAG.push(['strm-mit-iterator', 'Iterator：一次給一個', async (tok) => {
   fresh([0, 8.5, 10], [0, 0, 0]);
   const f = 'GATTACAGGT';
   const G = pal(-6.3, 3.4, 0.55);
-  let F, mem, copies = [], cur, out = [];
+  let F, mem, memT, copies = [], cur, out = [], rem = null;
+  const remark = (t, cls = 'note') => { if (!rem) rem = tag(t, cls, 0, 0.3, -1.7); else { txt(rem, t); rem.element.className = 'lab-label ' + cls; } };
   await step(tok);                                   // 16:10 kfasta.py
   prop('file', -6.0, 0, -3.0, 0.8, 'kfasta.py');
-  F = smRow(f, -3.0, { cw: 0.9, idx: false, drop: 2 });
+  F = smRow(f, -3.0, { cw: 0.9, idx: false, drop: 0.7 });
   say('值得看的檔案：kfasta.py', '從檔案讀 DNA 序列');
   await step(tok);                                   // 16:21 a FASTA sequence class reads from a file
-  note('FASTA sequence class：讀檔案、回傳東西', 0, 0.3, -1.9);
+  remark('FASTA sequence class：讀檔案、回傳東西');
   say('FASTA sequence class 從檔案讀資料', '');
   await step(tok);                                   // 16:26 the important thing: it doesn't return a list
-  bubble('重點：它不回傳 list！', 3.6, 1.6, -1.0);
+  remark('重點：它不回傳 list！', 'say');
   G.mood('wow');
   say('重點：它不回傳 list', '');
   await step(tok);                                   // 16:35 docdist read the whole input into a list
   G.mood('calm');
   mem = ghostBox('#4b9ee2', 3.2, 1.4, 1.8); mem.position.set(-3.5, 0.7, 1.2);
-  tag('記憶體', 'idx', -3.5, 0, 2.4);
+  memT = tag('記憶體', 'idx', -3.5, 0, 2.4);
   for (let k = 0; k < f.length; k++) {
     const c = cube(f[k], smC(f[k]), [0.5, 0.4, 0.5], F.at(k), 0.25, -3.0); copies.push(c);
     const x = k < 6 ? -4.6 + (k % 3) * 1.0 : -1.2 + (k - 6) * 0.6, z = k < 6 ? 0.8 + Math.floor(k / 3) * 0.8 : 0.6 + (k % 2) * 0.9;
@@ -1886,42 +1902,42 @@ FRAG.push(['strm-mit-iterator', 'Iterator：一次給一個', async (tok) => {
   say('docdist 的作法：整個檔案讀進 list', '寫起來只要 5 行');
   await step(tok);                                   // 16:51 less memory: it wouldn't fit, it would crash
   tint(mem, '#c84a4a');
-  bad('放不下 → crash', -3.5, 2.0, 1.2);
+  remark('放不下 → crash', 'bad');
   G.mood('sad');
   say('檔案太大：記憶體放不下，程式 crash', '所以寧願寫 20 行');
   await step(tok);                                   // 17:11 this thing is called an iterator
-  copies.forEach((c) => fly(c)); tint(mem, '#4b9ee2');
+  copies.forEach((c) => fly(c)); kill(mem); remove(memT);
   G.mood('calm');
-  good('iterator', 3.6, 1.6, -3.0);
+  remark('iterator', 'good');
   say('改用的東西叫 iterator', '');
   await step(tok);                                   // 17:58 how does an iterator work? what to implement
-  note('要實作：__next__、__iter__', 3.6, 0.3, 2.6);
-  tag('使用端', 'ptr alt', 3.6, 0.3, 1.9);
+  remark('要實作：__next__、__iter__');
+  const user = tag('使用端', 'ptr alt', 3.1, 0.3, 2.2);
   say('自己寫 iterator 要實作什麼？', 'next 和 iter');
   await step(tok);                                   // 18:26 next gives you the next character
   cur = tag('next()', 'ptr', F.at(0), 1.0, -3.0);
   for (let k = 0; k < 3; k++) {
     cur.position.set(F.at(k), 1.0, -3.0);
-    const c = cube(f[k], smC(f[k]), [0.5, 0.4, 0.5], F.at(k), 0.25, -3.0); move(c, 2.4 + k * 0.7, 0.3, 1.2); out.push(c);
+    const c = cube(f[k], smC(f[k]), [0.5, 0.4, 0.5], F.at(k), 0.25, -3.0); move(c, 2.4 + k * 0.7, 0.3, 1.0); out.push(c);
     await beat(tok, 500);
   }
   say('next()：給你下一個元素', '要一個才給一個');
   await step(tok);                                   // 18:42 at the end? it raises an exception
   cur.position.set(F.at(9) + 0.9, 1.0, -3.0);
-  bad('StopIteration', F.at(9) + 0.9, 1.7, -3.0);
+  bad('StopIteration', F.at(9) + 1.5, 0.3, -3.0);
   say('走到結尾：raise 一個 exception', 'StopIteration');
   await step(tok);                                   // 18:55 next returns an element, or raises StopIteration
   say('next：回傳下一個元素，或 raise StopIteration', '');
   await step(tok);                                   // 19:13 iter: returns itself
-  pkt('__iter__ → 回傳自己', 3.6, 1.0, -1.6);
+  remark('__iter__ → 回傳自己', 'pkt');
   say('另一個方法 iter：iterator 回傳自己', '');
   await step(tok);                                   // 19:59 a list 1, 2, 3, 4: iter gives an iterator for it
-  out.forEach((c) => fly(c));
-  [1, 2, 3, 4].forEach((v, k) => cube(v, colorFor(v), [0.6, 0.45, 0.6], -2.0 + k * 0.7, 0.25, 3.6, 2));
-  note('iter([1, 2, 3, 4]) → iterator', 2.4, 0.3, 3.6);
+  out.forEach((c) => fly(c)); remove(user);
+  [1, 2, 3, 4].forEach((v, k) => cube(v, colorFor(v), [0.6, 0.45, 0.6], -2.8 + k * 0.7, 0.25, 1.4, 0.7));
+  remark('iter([1, 2, 3, 4]) → iterator');
   say('任何物件有 iter，就能拿到 iterator', '例：list [1, 2, 3, 4]');
   await step(tok);                                   // 20:10 for i in: iter, then next until StopIteration
-  const loop = pkt('for i in L：iter(L) → next → next → … → StopIteration', 0, 1.8, 1.0);
+  remark('for i in L：iter(L) → next → next → … → StopIteration', 'pkt');
   say('for … in 背後：先 iter，再一直 next', '直到 StopIteration');
   await step(tok);                                   // 20:31 behaves almost like a list, much less memory
   G.mood('happy'); await G.hop(tok);
@@ -1987,7 +2003,7 @@ FRAG.push(['strm-mit-genlist', 'List 版 vs generator 版', async (tok) => {
   say('12 行的 iterator 變成 3 行', '做的事完全一樣');
   await step(tok);                                   // 23:48 what does yield do?
   remove(cmpT);
-  bubble('yield 是什麼？', -3.6, 1.6, -3.0);
+  bubble('yield 是什麼？', 3.6, 1.6, -3.0);
   G.mood('wow');
   say('問題：yield 到底做什麼？', '');
   await step(tok);                                   // 24:10 a yield sign: you pause
@@ -2039,21 +2055,21 @@ FRAG.push(['strm-mit-yield', 'yield：凍結與解凍', async (tok) => {
   let C, box, st, it, e = 0;
   const vals = ['e₀', 'e₁'];
   await step(tok);                                   // 26:12 this returns an iterator
-  C = code(['def gen(seq):', '    for e in seq:', '        yield e', '    # 結束'], -3.2, 2.8, 0.56, -2.0);
+  C = code(['def gen(seq):', '    for e in seq:', '        yield e', '    # 結束'], -3.2, 1.8, 0.5, -2.0);
   say('第一個提示：這個函式會回傳 iterator', '');
   await step(tok);                                   // 26:38 the execution pauses — what happens?
   C.hl(2);
-  bubble('跑到 yield：暫停，然後呢？', 3.0, 1.6, -3.4);
+  const ask = bubble('跑到 yield：暫停，然後呢？', 3.2, 0.3, -0.6);
   say('執行到 yield 就暫停', '然後發生什麼事？');
   await step(tok);                                   // 27:31 the closest thing to a list: an iterator
-  it = good('iterator', 3.6, 0.3, 2.2);
+  remove(ask); it = good('iterator', 3.6, 0.3, 2.2);
   say('要能當 list 用 → 回傳 iterator', '最接近 list 的東西');
   await step(tok);                                   // 27:34 grab information, put it in a nice box
-  box = ghostBox('#4b9ee2', 4.6, 2.6, 0.8); box.position.set(-3.2, 1.9, -2.0);
-  st = tag('盒子', 'ptr', -3.2, 3.5, -2.0);
+  box = ghostBox('#4b9ee2', 5.6, 2.3, 0.8); box.position.set(-2.7, 1.1, -2.0);
+  st = tag('盒子', 'ptr', -2.7, 2.55, -2.0);
   say('把資訊收進一個盒子', '盒子表現得像 iterator');
   await step(tok);                                   // 27:48 put e away: next will spit it out
-  const ec = cube('e', '#dd8238', [0.7, 0.45, 0.6], -1.5, 1.7, -2.0, 1);
+  const ec = cube('e', '#dd8238', [0.7, 0.45, 0.6], -0.6, 0.9, -2.0, 0.5);
   say('先把 e 收起來', 'next() 時再交出去');
   await step(tok);                                   // 28:26 the code here is in a frozen state
   tint(box, '#4b9ee2'); txt(st, '凍結中');
@@ -2068,7 +2084,7 @@ FRAG.push(['strm-mit-yield', 'yield：凍結與解凍', async (tok) => {
   await beat(tok, 700); C.hl(2);
   say('next()：交出 e，函式解凍', '一直跑到下一個 yield');
   await step(tok);                                   // 29:31 yield again with a new element
-  const e1 = cube(vals[1], '#dd8238', [0.7, 0.45, 0.6], -1.5, 1.7, -2.0, 1);
+  const e1 = cube(vals[1], '#dd8238', [0.7, 0.45, 0.6], -0.6, 0.9, -2.0, 0.5);
   say('又遇到 yield：新的元素放進盒子', '');
   await step(tok);                                   // 29:47 and then it's frozen again
   tint(box, '#4b9ee2'); txt(st, '凍結中');
@@ -2077,7 +2093,7 @@ FRAG.push(['strm-mit-yield', 'yield：凍結與解凍', async (tok) => {
   note('迴圈跑到哪、變數多少：全部保留', -3.2, 0.3, 0.2);
   say('所有狀態都保存下來', '');
   await step(tok);                                   // 31:05 you don't implement next or iter: yield is like print
-  pkt('yield ≈ 「print 到 iterator」', 3.6, 1.6, -1.0);
+  pkt('yield ≈ 「print 到 iterator」', 3.2, 0.3, -0.6);
   say('不用自己寫 next、iter', '把 yield 想成「印出」要給的東西');
   await step(tok);                                   // 31:20 when the loop is done, we return
   move(e1, 4.4, 0.3, 1.2);
@@ -2086,7 +2102,7 @@ FRAG.push(['strm-mit-yield', 'yield：凍結與解凍', async (tok) => {
   tint(box, '#c84a4a'); txt(st, '結束');
   say('迴圈結束，函式 return', '');
   await step(tok);                                   // 32:01 next again: raise StopIteration
-  bad('StopIteration', 3.6, 1.2, 2.2);
+  bad('StopIteration', 3.6, 0.3, 3.0);
   G.mood('happy');
   say('之後再 next()：raise StopIteration', '');
 }]);
@@ -2096,11 +2112,12 @@ FRAG.push(['strm-mit-geninf', 'Generator 串接與無限序列', async (tok) => 
   fresh([0, 8.5, 10], [0, 0, 0]);
   const G = pal(-6.3, 3.4, 0.55);
   const fib = [1, 1, 2, 3, 5, 8, 13, 21, 34];
-  let k = 0, out = 0;
+  let k = 0, out = 0, rem = null;
+  const remark = (t, cls = 'note') => { if (!rem) rem = tag(t, cls, 0, 0.3, 3); else { txt(rem, t); rem.element.className = 'lab-label ' + cls; } };
   const pullTo = async (n) => {
     for (; k < n && k < fib.length; k++) {
       const v = fib[k], x = -4.6 + k * 1.2;
-      const c = cube(v, colorFor(v), [0.9, 0.5, 0.8], x, 0.25, -1.8, 2.5);
+      const c = cube(v, colorFor(v), [0.9, 0.5, 0.8], x, 0.25, -1.8, 0.7);
       if (v % 2) { await beat(tok, 250); continue; }
       glow(c, GREEN);
       const o = cube(v, colorFor(v), [0.9, 0.5, 0.8], x, 0.25, -1.8); move(o, -2.6 + out * 2.0, 0.25, 1.6); out++;
@@ -2108,7 +2125,7 @@ FRAG.push(['strm-mit-geninf', 'Generator 串接與無限序列', async (tok) => 
     }
   };
   await step(tok);                                   // 33:13 the argument can be a list or an iterator
-  note('參數：list 或 iterator 都可以（for … in）', 0, 0.3, -3.6);
+  remark('參數：list 或 iterator 都可以（for … in）');
   say('參數可以是 list，也可以是 iterator', '用 for … in 走訪就好');
   await step(tok);                                   // 33:20 nested generators: a chain of next
   tag('fib()', 'ptr', -6.2, 0.3, -1.8); tag('evens(fib())（示範）', 'ptr alt', -5.6, 0.3, 1.6);
@@ -2117,13 +2134,13 @@ FRAG.push(['strm-mit-geninf', 'Generator 串接與無限序列', async (tok) => 
   await step(tok);                                   // 33:32 a generator returns an iterator
   say('generator 回傳的是 iterator', 'next 時才解凍、往下跑');
   await step(tok);                                   // 33:50 an iterator is just next and iter
-  pkt('iterator = next + iter', 4.0, 1.6, -3.0);
+  remark('iterator = next + iter', 'pkt');
   say('iterator 就只有 next 和 iter', '有這兩個方法就是 iterator');
   await step(tok);                                   // 34:02 a generator: magic for shorter iterators
-  pkt('generator = 寫短一點的 iterator', 4.0, 1.6, 3.2);
+  remark('generator = 寫短一點的 iterator', 'pkt');
   say('generator：用更短的程式寫 iterator', '3 行對 12 行');
   await step(tok);                                   // 34:56 do I have len? no
-  bubble('有幾個？沒有 len！', -4.0, 1.6, 3.2);
+  remark('有幾個？沒有 len！', 'say');
   G.mood('wow');
   say('iterator 沒有 len', '只能一直走訪才知道有幾個');
   await step(tok);                                   // 35:09 some iterators never return
@@ -2135,19 +2152,19 @@ FRAG.push(['strm-mit-geninf', 'Generator 串接與無限序列', async (tok) => 
   say('Fibonacci 數列：無限序列', 'len 根本沒有定義');
   await step(tok);                                   // 35:35 no has-next: the exception is just raised
   G.mood('calm');
-  bad('沒有 has_next：直接 raise StopIteration', 0, 1.6, 3.4);
+  remark('沒有 has_next：直接 raise StopIteration', 'bad');
   say('沒有 has_next 這種方法', 'Python 直接 raise exception');
   await step(tok);                                   // 36:13 for-in catches it for you
-  good('for … in 會幫你接住', 4.0, 0.3, 3.6);
+  remark('for … in 會幫你接住', 'good');
   say('for … in 自動接住 StopIteration', '不用自己 catch');
   await step(tok);                                   // 36:37 constant memory instead of O(n)
-  note('記憶體 O(1)，不是 O(n)', -4.0, 0.3, 0.2);
+  remark('記憶體 O(1)，不是 O(n)');
   say('像 list 一樣用，記憶體卻是常數', '');
   await step(tok);                                   // 37:20 take in an iterator and yield its next
-  pkt('def same(it): for x in it: yield x', 0, 1.0, 0.2);
+  remark('def same(it): for x in it: yield x', 'pkt');
   say('收一個 iterator、把它的值再 yield 出去', '');
   await step(tok);                                   // 37:31 no delay
-  good('不會延遲一格', 4.4, 1.6, 0.2);
+  remark('不會延遲一格', 'good');
   G.mood('happy');
   say('結果完全一樣，不會延遲一格', '');
 }]);
@@ -2157,15 +2174,16 @@ FRAG.push(['strm-mit-subseq', 'Subsequence hashes 與 (i₁, i₂)', async (tok)
   fresh([0, 8.5, 10], [0, 0, 0]);
   const s1 = 'GATTACA', s2 = 'TACAGATAC', k = 3;
   const G = pal(-6.4, 3.6, 0.5);
-  let A, B, W1, W2, table = {}, cps = [], n = 0;
+  let A, B, W1, W2, table = {}, cps = [], tiny = [], rem = null, n = 0;
+  const remark = (t, cls = 'note') => { if (!rem) rem = tag(t, cls, 0, 0.3, -0.3); else { txt(rem, t); rem.element.className = 'lab-label ' + cls; } };
   const pair = (i, j) => {
     W1.visible = true; W1.position.set(A.at(i + 1), 0.45, -2.6);
     W2.visible = true; W2.position.set(B.at(j + 1), 0.45, 0.2);
     smOff(A.cs, B.cs); for (let d = 0; d < k; d++) { glow(A.cs[i + d], GREEN); glow(B.cs[j + d], GREEN); }
-    cube('(' + i + ', ' + j + ')', '#c08a1f', [1.7, 0.45, 0.7], -3.6 + n * 2.3, 0.25, 2.6, 2.5); n++;
+    cube('(' + i + ', ' + j + ')', '#c08a1f', [1.7, 0.45, 0.7], -3.45 + n * 2.3, 0.25, 2.6, 0.7); n++;
   };
   await step(tok);                                   // 37:48 subsequence hashes: build it as if a list…
-  A = smRow(s1, -2.6, { cw: 1.0, drop: 2 });
+  A = smRow(s1, -2.6, { cw: 1.0, drop: 0.7 });
   tag('seq 1', 'ptr', -5.0, 0.3, -2.6);
   W1 = ghostBox('#c08a1f', 3.0, 0.9, 1.2); W1.visible = false;
   say('dnaseq：subsequence_hashes', '每個長度 k 的子序列算一個 hash（k = 3）');
@@ -2180,10 +2198,10 @@ FRAG.push(['strm-mit-subseq', 'Subsequence hashes 與 (i₁, i₂)', async (tok)
   W1.visible = false;
   say('就像 range 加上 step', 'step = 2 → 位置 0, 2, 4');
   await step(tok);                                   // 38:57 copy and paste the code?
-  for (let c = 0; c < 2; c++) cps.push(prop('file', 3.0 + c * 1.4, 0, -4.0, 0.6, c ? '複製版' : '原版'));
+  for (let c = 0; c < 2; c++) cps.push(prop('file', 4.4 + c * 1.5, 0, -2.6, 0.6, c ? '複製版' : '原版'));
   say('一種作法：把程式碼複製貼上', '');
   await step(tok);                                   // 39:01 then you're not DRY
-  bad('不 DRY', 3.7, 1.8, -4.0);
+  remark('不 DRY', 'bad');
   say('這樣就不 DRY', 'DRY = Don’t Repeat Yourself');
   await step(tok);                                   // 39:10 find a bug later, fix it in one copy
   glow(cps[0].children[0], GREEN);
@@ -2191,15 +2209,16 @@ FRAG.push(['strm-mit-subseq', 'Subsequence hashes 與 (i₁, i₂)', async (tok)
   say('之後發現 bug，只修了其中一份', '另一份還有 bug');
   await step(tok);                                   // 39:24 call subsequence hashes from interval: DRY
   G.mood('happy');
-  good('interval 版呼叫原本的函式：DRY', 0, 1.6, -4.0);
+  remark('interval 版呼叫原本的函式：DRY', 'good');
   say('另一種：從 interval 版呼叫原本的函式', '這樣才 DRY');
   await step(tok);                                   // 39:40 20 copies: 5 fixed, 15 not
   G.mood('calm');
-  for (let c = 0; c < 20; c++) cube('', c < 5 ? '#2fc092' : '#c84a4a', [0.28, 0.28, 0.28], 3.2 + (c % 10) * 0.32, 0.15, -1.2 + Math.floor(c / 10) * 0.35);
-  note('20 份副本：5 份修好、15 份忘了', 4.6, 0.3, -0.2);
+  for (let c = 0; c < 20; c++) tiny.push(cube('', c < 5 ? '#2fc092' : '#c84a4a', [0.26, 0.26, 0.26], 3.7 + (c % 10) * 0.3, 0.15, -1.3 + Math.floor(c / 10) * 0.35));
+  remark('20 份副本：5 份修好、15 份忘了');
   say('大專案：20 份副本，只修好 5 份', '盡量保持 DRY');
   await step(tok);                                   // 40:00 the result: a list of tuples
-  B = smRow(s2, 0.2, { cw: 1.0, x0: -4.0, drop: 2 });
+  cps.forEach(remove); tiny.forEach(kill); remove(rem); rem = null;
+  B = smRow(s2, 0.2, { cw: 1.0, x0: -4.0, drop: 0.7 });
   tag('seq 2', 'ptr', -5.4, 0.3, 0.2);
   W2 = ghostBox('#4b9ee2', 3.0, 0.9, 1.2); W2.visible = false;
   say('比對結果：一串 tuple', '');
@@ -2252,69 +2271,70 @@ FRAG.push(['strm-mit-append', 'Append：滿了就加倍', async (tok) => {
   fresh([0, 8.5, 10], [0, 0, 0]);
   const G = pal(-6.3, 3.4, 0.55);
   const ax = (i) => -4.2 + i * 1.0, sx = (i) => -2.0 + i * 1.0;
-  let arr = [], ip, nodes = [], slots = [], els = [], ns = [], capT;
+  let arr = [], arrT = [], ip, nodes = [], slots = [], els = [], ns = [], capT;
   const slotRow = (n, z) => [...Array(n)].map((_, i) => cube('', GRAY, [0.9, 0.12, 0.9], sx(i), 0.06, z));
   await step(tok);                                   // 44:06 list expansion: the list is stored as an array
-  arr = [3, 1, 4, 1, 5, 9, 2, 6].map((v, i) => { tag(String(i), 'idx', ax(i), 0, -2.6); return cube(v, colorFor(v), [0.9, 0.5, 0.8], ax(i), 0.25, -3.4, 2); });
-  tag('list = array', 'ptr', -5.9, 0.3, -3.4);
+  arr = [3, 1, 4, 1, 5, 9, 2, 6].map((v, i) => { arrT.push(tag(String(i), 'idx', ax(i), 0, -1.0)); return cube(v, colorFor(v), [0.9, 0.5, 0.8], ax(i), 0.25, -1.8, 0.7); });
+  arrT.push(tag('list = array', 'ptr', -5.9, 0.3, -1.8));
   say('Python 的 list 存成 array', '');
   await step(tok);                                   // 44:19 indexing in constant time
-  ip = tag('L[0]', 'ptr alt', ax(0), 1.1, -3.4);
-  await beat(tok, 500); ip.position.set(ax(7), 1.1, -3.4); txt(ip, 'L[7]');
+  ip = tag('L[0]', 'ptr alt', ax(0), 1.1, -1.8);
+  await beat(tok, 500); ip.position.set(ax(7), 1.1, -1.8); txt(ip, 'L[7]');
   say('第 1 個、第一百萬個：都是 O(1)', '直接算出位置');
   await step(tok);                                   // 44:30 not true for a linked list
-  for (let i = 0; i < 4; i++) nodes.push(lnode(i + 1, -4.2 + i * 2.0, 0.35, -1.2));
-  const hand = pkt('一個一個走', -4.2, 1.3, -1.2);
-  await travel(tok, hand, V3(-4.2, 1.3, -1.2), V3(1.8, 1.3, -1.2), 1500);
+  for (let i = 0; i < 4; i++) nodes.push(lnode(i + 1, -4.2 + i * 2.0, 0.35, 1.2));
+  const hand = pkt('一個一個走', -4.2, 1.3, 1.2);
+  await travel(tok, hand, V3(-4.2, 1.3, 1.2), V3(1.8, 1.3, 1.2), 1500);
   say('linked list：第一百萬個要走一百萬步', 'O(i)');
   await step(tok);                                   // 44:54 append puts an element at the end
-  arr.forEach(kill); nodes.forEach(kill); remove(hand); remove(ip);
-  slots = slotRow(2, 0.8);
-  els.push(cube(1, colorFor(1), [0.7, 0.5, 0.75], sx(0), 0.4, 0.8, 2));
-  capT = tag('size 2', 'ptr', 0, 0.3, -0.4);
+  arr.forEach(kill); arrT.forEach(remove); nodes.forEach(remove); remove(hand); remove(ip);
+  slots = slotRow(2, -0.6);
+  els.push(cube(1, colorFor(1), [0.7, 0.5, 0.75], sx(0), 0.4, -0.6, 0.7));
+  capT = tag('size 2', 'ptr', -3.5, 0.3, -0.6);
   say('append：把元素放到 list 最後面', '');
   await step(tok);                                   // 45:07 a count variable: if length > count
-  const cntT = note('count = 1 < size 2：有空位', 3.4, 0.3, 0.8);
+  const cntT = note('count = 1 < size 2：有空位', 2.8, 0.3, -0.6);
   say('記一個 count（已經放了幾個）', '如果 size > count：還有空位');
   await step(tok);                                   // 45:29 then directly insert: constant time
-  els.push(cube(2, colorFor(2), [0.7, 0.5, 0.75], sx(1), 0.4, 0.8, 2.5));
+  els.push(cube(2, colorFor(2), [0.7, 0.5, 0.75], sx(1), 0.4, -0.6, 0.7));
   txt(cntT, 'count = 2 = size 2：滿了');
   say('有空位：直接放進去', 'O(1)');
   await step(tok);                                   // 45:51 otherwise not enough room: make it bigger
-  const nx = cube(3, colorFor(3), [0.7, 0.5, 0.75], sx(2), 1.4, 0.8);
-  bad('沒位置了！', sx(2), 2.2, 0.8);
+  const nx = cube(3, colorFor(3), [0.7, 0.5, 0.75], sx(2), 1.2, -0.6);
+  const full = bad('沒位置了！', sx(2), 2.0, -0.6);
   G.mood('wow');
   say('append(3)：沒有空位了', '要把 array 變大');
   await step(tok);                                   // 46:05 a new array of size 2 × count
-  ns = slotRow(4, 2.8);
+  ns = slotRow(4, 1.4);
   txt(capT, 'size 2 → 4');
   say('開一個新 array，大小 2 × count', 'size 2 → 4');
   await step(tok);                                   // 46:23 copy everything from array to array 2
-  els.forEach((c, i) => { move(c, sx(i), 0.4, 2.8); glow(c, GOLD); });
+  els.forEach((c, i) => { move(c, sx(i), 0.4, 1.4); glow(c, GOLD); });
   await beat(tok, 600);
   say('把舊元素全部複製過去', '這一步：O(n)');
   await step(tok);                                   // 46:35 array 2 becomes the array
-  slots.forEach(kill); slots = ns;
-  move(nx, sx(2), 0.4, 2.8); els.push(nx);
+  slots.forEach(kill); slots = ns; remove(cntT); remove(full);
+  capT.position.set(-3.5, 0.3, 1.4);
+  move(nx, sx(2), 0.4, 1.4); els.push(nx);
   G.mood('calm');
   say('新 array 取代舊的，再放進 3', '');
   await step(tok);                                   // 46:57 still room: constant
-  els.push(cube(4, colorFor(4), [0.7, 0.5, 0.75], sx(3), 0.4, 2.8, 2.5));
+  els.push(cube(4, colorFor(4), [0.7, 0.5, 0.75], sx(3), 0.4, 1.4, 0.7));
   say('還有空位的 append：O(1)', '');
   await step(tok);                                   // 47:10 if I have to resize, what's the cost?
-  bad('要擴充的那次：O(n)', 4.0, 0.3, 2.8);
+  bad('要擴充的那次：O(n)', 4.2, 0.3, 1.4);
   say('要擴充的那一次呢？', '要複製 n 個 → O(n)');
   await step(tok);                                   // 48:49 the only cost is copying
   els.slice(0, 2).forEach((c) => glow(c, GOLD));
   say('真正花時間的是「複製」', '');
   await step(tok);                                   // 48:55 we assume allocating the space is constant
-  note('配置新空間：假設 O(1)', -4.0, 0.3, 1.6);
+  note('配置新空間：假設 O(1)', 0, 0.3, -0.4);
   say('配置新空間：假設是 O(1)', '');
   await step(tok);                                   // 49:00 allocation O(1), copying O(n), insertion O(1)
-  pkt('配置 O(1)＋複製 O(n)＋插入 O(1)', 0, 1.6, -1.2);
+  pkt('配置 O(1)＋複製 O(n)＋插入 O(1)', 0, 0.3, -1.6);
   say('配置 O(1)、複製 O(n)、插入 O(1)', '');
   await step(tok);                                   // 49:26 even an O(n) allocation would be absorbed
-  note('就算配置是 O(n)，也會被複製的 O(n) 吸收', 0, 0.3, 4.0);
+  note('就算配置是 O(n)，也會被複製的 O(n) 吸收', 0, 0.3, 3.0);
   say('就算配置要 O(n) 也沒關係', '會被複製的 O(n) 吸收');
 }]);
 
@@ -2324,12 +2344,13 @@ FRAG.push(['strm-mit-linebyline', '逐行分析 O(n²) vs amortized', async (tok
   fresh([0, 7, 11], [0, 1.5, 0]);
   const xs = (i) => -6 + i * 0.8, n = 16;
   const G = pal(-6.3, 3.4, 0.55);
-  let C, gs = [], bars = [];
+  let C, gs = [], bars = [], rem = null;
+  const remark = (t, cls = 'note') => { if (!rem) rem = tag(t, cls, 3.4, 2.6, -2.5); else { txt(rem, t); rem.element.className = 'lab-label ' + cls; } };
   await step(tok);                                   // 49:53 copying makes one append O(n) worst case
-  for (let i = 0; i < n; i++) tag(String(i + 1), 'idx', xs(i), 0, 0.7);
+  for (let i = 0; i < n; i++) if (i === 0 || (i + 1) % 4 === 0) tag(String(i + 1), 'idx', xs(i), 0, 0.7);
   say('複製讓一次 append 最壞要 O(n)', '');
   await step(tok);                                   // 50:04 for 1..n: L.append; L is an empty list
-  C = code(['L = []', 'for i in 1..n:', '    L.append(i)'], 2.5, 4.6, 0.5, -2.5);
+  C = code(['L = []', 'for i in 1..n:', '    L.append(i)'], -3.4, 2.9, 0.5, -2.5);
   say('n 次 append 的總成本？', 'L = []，然後 append n 次');
   await step(tok);                                   // 50:27 line-by-line analysis: making a new list is constant
   C.hl(0);
@@ -2344,53 +2365,57 @@ FRAG.push(['strm-mit-linebyline', '逐行分析 O(n²) vs amortized', async (tok
   for (let i = 1; i < n; i++) { const g = ghostBox('#c84a4a', 0.62, n * 0.3, 0.62); g.position.set(xs(i), n * 0.15, 0); gs.push(g); await beat(tok, 80); }
   say('呼叫 n 次，每次都當最壞', 'n × O(n)');
   await step(tok);                                   // 51:56 O(n²): correct, but not the tight bound
-  bad('O(n²)：沒錯，但不緊', 4.0, 4.4, 0);
+  remark('O(n²)：沒錯，但不緊', 'bad');
   say('O(n²) 沒錯（不會超過）', '但不是 tight bound');
   await step(tok);                                   // 52:04 multiple choice: we ask for the tightest bound
   G.mood('sad');
-  note('選擇題選 O(n²)：沒分', 4.0, 3.6, 0);
+  remark('選擇題選 O(n²)：沒分');
   say('考試問的通常是最緊的界', '選 O(n²) 會沒分');
   await step(tok);                                   // 52:37 amortized: O(1) amortized
   G.mood('calm');
-  for (let i = 0; i < n; i++) { const c = amCost(i + 1); bars.push(cube(c, c > 1 ? '#dd8238' : '#4b9ee2', [0.6, c * 0.3, 0.6], xs(i), c * 0.15, 0, 1.5)); await beat(tok, 90); }
+  for (let i = 0; i < n; i++) { const c = amCost(i + 1); bars.push(cube(c, c > 1 ? '#dd8238' : '#4b9ee2', [0.6, c * 0.3, 0.6], xs(i), c * 0.15, 0, 0.7)); await beat(tok, 90); }
   say('實際上：大多數 append 只花 1', '只有擴充那幾次比較貴');
   await step(tok);                                   // 53:03 order 1 amortized → order n total
   gs.forEach(kill);
-  good('每次 O(1) amortized → n 次共 O(n)', 0, 4.4, -1.6);
+  remark('每次 O(1) amortized → n 次共 O(n)', 'good');
   G.mood('happy');
   say('amortized：每次 O(1)', 'n 次 append 共 O(n)');
   await step(tok);                                   // 53:46 amortized = averaged over multiple operations
   bars.forEach((b) => tint(b, '#9b7ef4'));
-  pkt('amortized = 平均到多次操作上', 0, 3.4, 1.4);
+  remark('amortized = 平均到多次操作上', 'pkt');
   say('amortized：把成本平均到很多次操作', '');
 }]);
 
 // 54:03 aggregate analysis：插入 n + 複製 1 + 2 + 4 + 8 … → O(n)（10 steps）
 FRAG.push(['strm-mit-aggregate', 'Aggregate analysis：加總成本', async (tok) => {
   fresh([0, 8, 10.5], [0, 0.6, 0]);
-  const xs = (i) => -6 + i * 0.8, n = 16, ins = [], cps = [];
+  const xs = (i) => -6 + i * 0.8, n = 16, ins = [], cps = [], idx = [];
+  let rem = null;
+  const remark = (t, cls = 'note') => { if (!rem) rem = tag(t, cls, 0, 0.3, -1.4); else { txt(rem, t); rem.element.className = 'lab-label ' + cls; } };
   const G = pal(-6.3, 3.6, 0.5);
-  for (let i = 0; i < n; i++) tag(String(i + 1), 'idx', xs(i), 0, 0.7);
+  for (let i = 0; i < n; i++) if (i === 0 || (i + 1) % 4 === 0) idx.push(tag(String(i + 1), 'idx', xs(i), 0, 0.7));
   await step(tok);                                   // 54:03 two useful methods in CLRS: aggregate analysis …
-  pkt('1. aggregate analysis', -3.4, 1.6, -2.6); pkt('2. accounting（cost-based）', 3.0, 1.6, -2.6);
+  const two = [pkt('1. aggregate analysis', -3.4, 0.3, -2.6), pkt('2. accounting（cost-based）', 3.0, 0.3, -2.6)];
   say('CLRS 裡常用的兩種方法', 'aggregate analysis、accounting');
   await step(tok);                                   // 54:19 order 1 a lot of times
-  for (let i = 0; i < n; i++) { ins.push(cube('', '#4b9ee2', [0.55, 0.3, 0.55], xs(i), 0.17, 0, 1.5)); await beat(tok, 80); }
+  remove(two[1]);
+  for (let i = 0; i < n; i++) { ins.push(cube('', '#4b9ee2', [0.55, 0.3, 0.55], xs(i), 0.17, 0, 0.7)); await beat(tok, 80); }
   say('大部分的 append：O(1)', '');
   await step(tok);                                   // 54:31 order n only for a power of 2
   for (let i = 0; i < n; i++) { const c = amCost(i + 1); for (let u = 1; u < c; u++) cps.push(cube('', '#dd8238', [0.55, 0.3, 0.55], xs(i), 0.17 + u * 0.34, 0, 1)); }
   say('只有在 2 的次方附近要擴充：O(k)', '');
   await step(tok);                                   // 55:01 sum: n × O(1) + Σ O(2^i)
   cps.forEach((c) => glow(c, GOLD));
-  note('總成本 = n·O(1) + Σ O(2ⁱ)（i 到 log n）', 0, 0.3, 2.0);
+  remove(two[0]); remark('總成本 = n·O(1) + Σ O(2ⁱ)（i 到 log n）');
   say('全部加起來', 'n 個 O(1) ＋ 2 的次方的總和');
   await step(tok);                                   // 55:20 clearly order n — this also order n
-  ins.forEach((c, k) => move(c, -6 + (k % 8) * 0.62, 0.17, 3.0 + Math.floor(k / 8) * 0.62));
-  cps.forEach((c, k) => move(c, 1.0 + (k % 8) * 0.62, 0.17, 3.0 + Math.floor(k / 8) * 0.62));
-  tag('插入 16', 'ptr', -3.8, 0.3, 4.4); tag('複製 15', 'ptr alt', 3.2, 0.3, 4.4);
+  idx.forEach(remove);
+  ins.forEach((c, k) => move(c, -5.0 + (k % 8) * 0.62, 0.17, 0.2 + Math.floor(k / 8) * 0.62));
+  cps.forEach((c, k) => move(c, 0.8 + (k % 8) * 0.62, 0.17, 0.2 + Math.floor(k / 8) * 0.62));
+  tag('插入 16', 'ptr', -2.8, 0.3, 1.8); tag('複製 15', 'ptr alt', 3.0, 0.3, 1.8);
   say('前半 O(n)，後半也是 O(n)', '插入 16 個、複製 1 + 2 + 4 + 8 = 15 個');
   await step(tok);                                   // 55:40 increase to 2 times, start with size 1
-  ['size 1', '2', '4', '8', '16'].forEach((s, k) => tag(s, 'note', -5.4 + k * 2.6, 0.3, -1.4));
+  remark('size 1 → 2 → 4 → 8 → 16');
   say('關鍵：每次擴充都變 2 倍', '大小從 1 開始：1, 2, 4, 8, 16 …');
   await step(tok);                                   // 56:07 first, second, fourth, eighth: resize
   G.mood('wow');
@@ -2399,11 +2424,11 @@ FRAG.push(['strm-mit-aggregate', 'Aggregate analysis：加總成本', async (tok
   G.mood('calm');
   say('O(n) 的那幾次很少、間隔很遠', '');
   await step(tok);                                   // 56:37 aggregate: add up n operations → O(n)
-  good('總和 31 < 3n → O(n)；每次 amortized O(1)', 0, 1.6, 1.2);
+  remark('總和 31 < 3n → O(n)；每次 amortized O(1)', 'good');
   G.mood('happy'); await G.hop(tok);
   say('aggregate：n 次操作的成本加總 → O(n)', '平均每次 O(1)');
   await step(tok);                                   // 56:48 look at the cost (accounting) method in CLRS
-  note('另一種：accounting method，請看 CLRS', 3.0, 0.3, -3.6);
+  remark('另一種：accounting method，請看 CLRS');
   say('另一種方法：accounting method', 'CLRS amortized analysis 那章');
 }]);
   }
