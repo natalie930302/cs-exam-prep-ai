@@ -25,6 +25,12 @@ export default function (ctx) {
 
   // ───────────────────────── 共用小工具 ─────────────────────────
   function fresh(pos, look) { stopTimer(); mtok++; busy = false; lab.clear(); controls(''); lab.frameCamera(pos, look); }
+  // An invisible box over the area a scene will use later: the stage's auto framing measures it from the
+  // first step, so the camera does not zoom in on the first few things and then jump back out when the rest arrives.
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
   function tag(text, cls, x, y, z = 0) { const l = lab.label(text, cls || ''); l.position.set(x, y, z); lab.world.add(l); return l; }
   function cube(text, color, size, x, y, z = 0, dropH = 0) {
     const m = lab.box(color, size);
@@ -119,7 +125,8 @@ export default function (ctx) {
         line(par.x, par.y, 0, x, y, 0, '#b9a684');
         const nm = names ? names[d][j % stages[d]] : String.fromCharCode(97 + d) + (j % stages[d] + 1);
         const m = ball('', [COL.ball, COL.pick, COL.green, COL.orange][j % stages[d] % 4], r, x, y, 0);
-        if (cnt <= 14) tag(nm, 'idx', x + 0.15, y + r + 0.22, 0);
+        // last level: the name sits right of its leaf (leaves are packed tight; above them it ran into the next leaf)
+        if (cnt <= 14) { if (d === levels - 1) { const l = tag(nm, 'idx', x + r + 0.12, y, 0); l.center.set(0, 0.5); } else tag(nm, 'idx', x + 0.15, y + r + 0.22, 0); }
         nodes.push({ x, y, m, path: par.path + nm });
       }
       say('第 ' + (d + 1) + ' 步有 ' + stages[d] + ' 種選法', '目前分支數 = ' + stages.slice(0, d + 1).join(' × ') + ' = ' + cnt);
@@ -127,7 +134,7 @@ export default function (ctx) {
       prev = nodes;
       await w(pace);
     }
-    tag('共 ' + L + ' 片葉子', 'ptr alt', x1 + 1.4, (yTop + yBot) / 2, 0);
+    tag('共 ' + L + ' 片葉子', 'ptr alt', x1 + 2.4, (yTop + yBot) / 2, 0);
     return prev;
   }
   const tr = { s: [3, 2, 2] };
@@ -317,7 +324,9 @@ export default function (ctx) {
     const r = ++ps.n, row = [];
     for (let k = 0; k <= r; k++) {
       const v = Cb(r, k);
-      row.push(cube(v, v === 1 ? COL.teal : ['#4b9ee2', '#9b7ef4', '#e55a9b', '#dd8238'][Math.min(3, Math.floor(Math.log2(v) / 2))], [0.78, 0.6, 0.6], pX(r, k), pY(r), 0, 2.5));
+      // slides in from the front (a drop from above fell through the rows already there)
+      const m = cube(v, v === 1 ? COL.teal : ['#4b9ee2', '#9b7ef4', '#e55a9b', '#dd8238'][Math.min(3, Math.floor(Math.log2(v) / 2))], [0.78, 0.6, 0.6], pX(r, k), pY(r), 1.8, 0);
+      move(m, pX(r, k), pY(r), 0); row.push(m);
     }
     ps.rows.push(row);
     if (r > 0) tag('r=' + r, 'idx', -4.6, pY(r), 0); else tag('r=0', 'idx', -4.6, pY(0), 0);
@@ -576,6 +585,7 @@ export default function (ctx) {
     fresh([0, 8.5, 9.5], [0, 0.8, -0.3]);
     const w = (ms) => beat(tok, ms);
     const P = grid(4, 4, 1.3, -2.6, 2.6);
+    frameHold(-3.4, 0, -4.0, 5.2, 3.6, 3.8); // the letter row above the grid comes later
     tag('A (0,0)', 'ptr', -2.6 - 0.5, 0.2, 3.2); tag('B (4,4)', 'ptr alt', 2.6 + 0.5, 0.2, -3.2);
     tag('E = 往東', 'idx', 4.6, 0, 2.2); tag('N = 往北', 'idx', 4.6, 0, 1.6);
     say('從 (0,0) 走到 (4,4)，只能往北或往東', '每條路 = 一個「字」');
@@ -930,23 +940,27 @@ export default function (ctx) {
     fresh([0, 6.5, 12], [0, 0.8, 0]);
     const w = (ms) => beat(tok, ms);
     const nums = {};
-    for (let v = 1; v <= 20; v++) nums[v] = cube(v, '#efe5d3', [0.6, 0.55, 0.6], ((v - 1) % 10 - 4.5) * 0.9, 0.28, (v > 10 ? 1.2 : 0.3) + 1.2);
+    for (let v = 1; v <= 20; v++) nums[v] = cube(v, '#efe5d3', [0.6, 0.55, 0.6], ((v - 1) % 10 - 4.5) * 0.9, 0.28, v > 10 ? 3.0 : 1.1);
     say('S = {1, 2, …, 20}，任選 11 個數', '必有兩數相加 = 21？');
     await w(2600);
     const H = []; for (let j = 0; j < 10; j++) H.push(crate((j - 4.5) * 1.25, -1.2, 1.1, 1.2, 0.35, '#c9a878', '{' + (j + 1) + ',' + (20 - j) + '}'));
     say('把和為 21 的兩數配成一對：10 個籠子', '{1,20} {2,19} … {10,11}');
-    for (let j = 0; j < 10; j++) { move(nums[j + 1], H[j].position.x - 0.25, 0.3, -1.2); move(nums[20 - j], H[j].position.x + 0.25, 0.3, -1.2); await w(260); }
+    // a pair stacks in its crate (side by side the two numbers covered each other): small on top, big below
+    for (let j = 0; j < 10; j++) {
+      move(nums[j + 1], H[j].position.x, 2.9, 0.2); move(nums[20 - j], H[j].position.x, 2.2, 0.2); await w(240);
+      move(nums[j + 1], H[j].position.x, 0.95, -1.2); move(nums[20 - j], H[j].position.x, 0.3, -1.2); await w(200);
+    }
     await w(1600);
     say('想反駁：每對只挑一個', '挑 1, 2, …, 10：任兩數和都 ≠ 21');
-    for (let v = 1; v <= 10; v++) { tint(nums[v], COL.green); move(nums[v], H[v - 1].position.x - 0.25, 1.1, -1.2); await w(220); }
+    for (let v = 1; v <= 10; v++) { tint(nums[v], COL.green); move(nums[v], H[v - 1].position.x, 1.6, -1.2); await w(220); }
     await w(2000);
     say('但要挑 11 個：第 11 個一定落進某一對', '');
     await w(1600);
-    tint(nums[19], COL.red); move(nums[19], H[1].position.x + 0.25, 1.1, -1.2);
+    tint(nums[19], COL.red); move(nums[19], H[1].position.x, 2.25, -1.2);
     glow(nums[2], RED); glow(nums[19], RED);
     say('挑 19 → 2 + 19 = 21', '');
     await w(2000);
-    tint(nums[12], COL.red); move(nums[12], H[8].position.x + 0.25, 1.1, -1.2);
+    tint(nums[12], COL.red); move(nums[12], H[8].position.x, 2.25, -1.2);
     glow(nums[9], RED); glow(nums[12], RED);
     say('挑 12 → 9 + 12 = 21', '11 個數放進 10 個籠子：⌈11/10⌉ = 2');
     await w(2600);
@@ -1016,7 +1030,7 @@ export default function (ctx) {
   // ═══ ct.js ═══
   {
 const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
-const icon = P.icon;
+const icon = P.icon, keep = P.keep;
 // (kit has no beat: short waits use ctx.beat)
 // ─── 離散數學 第 5 章（TrevTutor 鴿籠／排列組合複習、交大 易志偉 Lec14–15 Counting、清大 趙啟超 第5A–5D講 鴿籠原理、
 //     第9A–9D講 Principles of Counting）— cued scenes ───
@@ -1041,14 +1055,16 @@ function scene(id, title, steps, cam = CAM) {
 }
 // a board: lines appear one under another (left-aligned); add() lights the newest line
 // (max: keep only the last `max` lines — older ones scroll off the top, so the board never grows into the picture below)
-function board(x, yTop, dy = 0.6, max = 99) {
+// board lines are kept (exempt from the kit's "only the 3 newest remarks" rule, which left faded holes in the board)
+function board(x, yTop, dy = 0.6, max = 5) {
+  if (yTop >= 5.5) dy = Math.max(dy, 0.68); // closer lines touched once the camera backed off to fit the picture
   const ls = []; let last = null;
   return {
     ls,
     add(t, c = 'note', dx = 0) {
       if (last && last.userData.hot) { cls(last, 'say'); last.userData.hot = false; }
       if (ls.length >= max) { kill(ls.shift()); ls.forEach((l) => { l.position.y += dy; }); }
-      const l = L(t, c, x + dx, yTop - ls.length * dy); ls.push(l); l.userData.hot = c === 'note'; last = l; return l;
+      const l = keep(L(t, c, x + dx, yTop - ls.length * dy)); ls.push(l); l.userData.hot = c === 'note'; last = l; return l;
     },
     set(i, c) { cls(ls[i < 0 ? ls.length + i : i], c); },
     dim() { ls.forEach((l) => cls(l, 'idx')); last = null; },
@@ -1198,7 +1214,7 @@ scene('ct-php-friends', '一定有兩人朋友數相同', [
     cap('結論：一定有兩人朋友數相同', '');
   },
   async (tok, S) => { // four people
-    S.pos = [V3(-5.4, 0.4, -1.4), V3(-2.8, 0.4, -1.4), V3(-2.8, 0.4, 1.4), V3(-5.4, 0.4, 1.4)];
+    S.pos = [V3(-6.0, 0.4, -1.0), V3(-4.4, 0.4, 0.9), V3(-1.2, 0.4, 0.9), V3(-2.8, 0.4, -1.0)];
     S.pp = S.pos.map((p, i) => cube(i + 1, FC.blue, [0.75, 0.75, 0.75], p.x, p.y, p.z, 2));
     cap('舉例：4 個人，編號 1、2、3、4', '');
   },
@@ -1232,7 +1248,7 @@ scene('ct-php-friends', '一定有兩人朋友數相同', [
     cap('跟其他人全都是朋友：n − 1 位', '');
   },
   async (tok, S) => { // values = containers
-    S.C = crates(4, ['1 位', '2 位', '…', 'n−1 位'], 2.3, 0.2, 1.1, 0.3);
+    S.C = crates(4, ['1 位', '2 位', '…', 'n−1 位'], 3.0, 0.2, 1.1, 0.3);
     cap('把每一種朋友數當作一個籠子', '共 n − 1 個籠子');
   },
   async (tok, S) => {
@@ -1244,7 +1260,7 @@ scene('ct-php-friends', '一定有兩人朋友數相同', [
     cap('先讓 n − 1 個人各占一籠', '1 位、2 位、…、n − 1 位');
   },
   async (tok, S) => { // the n-th person
-    const m = chip('人n', FC.red, 2.3, 3.6, 0.62, 0.4, 0, 1.6);
+    const m = chip('人n', FC.red, 3.0, 3.6, 0.62, 0.4, 0, 1.6);
     const p = S.C.slot(1);
     await arc(tok, [m], [V3(p.x, p.y + 0.45, p.z)], 900, 0.8);
     S.C.hot(1);
@@ -1281,9 +1297,9 @@ scene('ct-php-birthday', '366 人必有兩人同天生日', [
     cap('結論永遠是「≥ 2」', '');
   },
   async (tok, S) => {
-    const p = dayCell(40);
-    S.tall = cube('365 人', FC.purple, [0.3, 3.0, 0.3], p.x, 1.55, p.z);
-    T('示意：也可能大家都同一天', 'idx', p.x, 3.4, p.z);
+    const p = dayCell(174);
+    S.tall = cube('365 人', FC.purple, [0.3, 2.0, 0.3], p.x, 1.05, p.z);
+    T('示意：也可能大家都同一天', 'idx', p.x, 2.35, p.z);
     cap('也可能 365 人都同一天生日', '「至少 2」照樣成立');
   },
   async (tok, S) => {
@@ -1295,23 +1311,23 @@ scene('ct-php-birthday', '366 人必有兩人同天生日', [
 scene('ct-php-sum21', '1～20 選 11 個：必有兩數和為 21', [
   async (tok, S) => {
     S.n = {};
-    for (let v = 1; v <= 20; v++) S.n[v] = chip(v, FC.card, ((v - 1) % 10 - 4.5) * 0.95, 0.3, 0.62, 0.55, 0, (v > 10 ? 2.6 : 1.7));
+    for (let v = 1; v <= 20; v++) S.n[v] = chip(v, FC.card, ((v - 1) % 10 - 4.5) * 0.95, 0.3, 0.62, 0.55, 0, (v > 10 ? 3.0 : 1.0));
     cap('S = {1, 2, …, 20}', '');
   },
   async (tok, S) => {
-    S.q = T('任挑 11 個 ⇒ 一定有兩數相加 = 21？', 'note', 0, 2.0, 3.6);
+    frameHold(-6.6, 0, -1.9, 6.6, 4.2, 3.0); // the crates and the remarks above them come later
+    S.q = keep(T('任挑 11 個 ⇒ 一定有兩數相加 = 21？', 'note', 0, 4.0, -1.2));
     cap('挑 11 個數，保證有兩個加起來是 21', '怎麼證？');
   },
-  async (tok, S) => { cap('難的是：籠子要怎麼設？', ''); T('籠子是什麼？', 'say', 0, 2.6, -1.2); },
+  async (tok, S) => { cap('難的是：籠子要怎麼設？', ''); S.r = keep(T('籠子是什麼？', 'say', 0, 3.2, -1.2)); },
   async (tok, S) => {
     S.H = []; for (let j = 0; j < 10; j++) S.H.push(crate((j - 4.5) * 1.25, -1.2, 1.1, 1.2, 0.35, '#c9a878', '{' + (j + 1) + ',' + (20 - j) + '}'));
     cap('把「加起來是 21」的兩數配成一組', '');
   },
   ...[[0, 4], [4, 8], [8, 10]].map(([a, b]) => async (tok, S) => {
-    const objs = [], tg = [];
-    // a pair stacks in its crate (side by side the two numbers covered each other): small on top, big below
-    for (let j = a; j < b; j++) { const h = S.H[j].position; objs.push(S.n[j + 1], S.n[20 - j]); tg.push(V3(h.x, 0.95, h.z), V3(h.x, 0.3, h.z)); }
-    await arc(tok, objs, tg, 650, objs.map((o, i) => 0.8 + Math.floor(i / 2) * 0.7)); // big numbers cross each other: different heights
+    // a pair stacks in its crate (side by side the two numbers covered each other): small on top, big below;
+    // one pair at a time (all at once, the flying numbers piled up mid-air)
+    for (let j = a; j < b; j++) { const h = S.H[j].position; await arc(tok, [S.n[20 - j], S.n[j + 1]], [V3(h.x, 0.3, h.z), V3(h.x, 0.95, h.z)], 420, [2.2, 2.9]); }
     cap(Array.from({ length: b - a }, (_, k) => '{' + (a + k + 1) + ',' + (20 - a - k) + '}').join(' '), '每組和都是 21');
   }),
   async (tok, S) => {
@@ -1324,8 +1340,8 @@ scene('ct-php-sum21', '1～20 選 11 個：必有兩數和為 21', [
     await arc(tok, objs, tg, 900, 0.5);
     cap('想反駁：每組只挑一個', '挑 1、2、3、…、10');
   },
-  async (tok, S) => { cap('這 10 個數，任兩個加起來都不是 21', '只有 10 個而已'); T('挑了 10 個：還沒有和為 21', 'say', 0, 2.6, 3.6); },
-  async (tok, S) => { cap('但要挑 11 個：第 11 個一定落進某一組', ''); kill(S.q); S.q = T('第 11 個只能從這些組裡拿', 'note', 0, 2.0, 3.6); },
+  async (tok, S) => { cap('這 10 個數，任兩個加起來都不是 21', '只有 10 個而已'); txt(S.r, '挑了 10 個：還沒有和為 21'); },
+  async (tok, S) => { cap('但要挑 11 個：第 11 個一定落進某一組', ''); txt(S.r, '第 11 個只能從這些組裡拿'); cls(S.r, 'note'); },
   async (tok, S) => {
     tint(S.n[19], FC.red); await arc(tok, [S.n[19]], [V3(S.H[1].position.x, 2.25, S.H[1].position.z)], 600, 0.8);
     glow(S.n[2], NG); glow(S.n[19], NG);
@@ -1336,8 +1352,8 @@ scene('ct-php-sum21', '1～20 選 11 個：必有兩數和為 21', [
     glow(S.n[9], NG); glow(S.n[12], NG);
     cap('挑 12 → 9 + 12 = 21', '挑 12 個、17 個也一樣');
   },
-  async (tok, S) => { T('⌈11/20⌉？ 錯！', 'bad', -3.6, 3.4, -1.2); cap('不是 ⌈11/20⌉', '籠子不是 20 個數'); },
-  async (tok, S) => { T('11 個數 → 10 組：⌈11/10⌉ = 2', 'good', 2.4, 3.4, -1.2); cap('11 個數放進 10 個籠子', '⌈11/10⌉ = 2：有一組兩個都被挑'); },
+  async (tok, S) => { txt(S.r, '⌈11/20⌉？ 錯！'); cls(S.r, 'bad'); S.r.position.x = -3.4; cap('不是 ⌈11/20⌉', '籠子不是 20 個數'); },
+  async (tok, S) => { keep(T('11 個數 → 10 組：⌈11/10⌉ = 2', 'good', 2.6, 3.2, -1.2)); cap('11 個數放進 10 個籠子', '⌈11/10⌉ = 2：有一組兩個都被挑'); },
   async (tok, S) => { cap('關鍵：先把數字分組成籠子', '這就是不明顯的地方'); },
 ], [[0, 6.5, 12], [0, 0.8, 0]]);
 
@@ -1462,7 +1478,7 @@ scene('ct-pc-barbaric', 'BARBARIC：8!/(2!·2!·2!) = 5040', [
 
 const CAML = [[0, 8.5, 9.5], [0, 0.8, -0.3]];
 scene('ct-pc-lattice', '格子路徑 (0,0)→(4,4)：8!/(4!4!) = 70', [
-  async (tok, S) => { S.P = grid(4, 4, 1.3, -2.6, 2.6); cap('格子路徑（lattice path）', '下一支影片會用到'); },
+  async (tok, S) => { S.P = grid(4, 4, 1.3, -2.6, 2.6); frameHold(-3.4, 0, -4.0, 5.2, 4.6, 4.2); cap('格子路徑（lattice path）', '下一支影片會用到'); },
   async (tok, S) => {
     T('A', 'ptr', -2.6 - 0.5, 0.2, 3.2); T('B', 'ptr alt', 2.6 + 0.5, 0.2, -3.2);
     T('E = 往東', 'idx', 4.6, 0, 2.2); T('N = 往北', 'idx', 4.6, 0, 1.6);
@@ -1551,15 +1567,15 @@ const CAMS = [[0, 6.5, 11], [0, 0.6, -0.5]];
 scene('ct-pc-sb12', '星棒法：x₁+x₂+x₃ = 12 → C(14,2) = 91', [
   async (tok, S) => { cap('換成「可以重複」的組合', 'combinations with repetition'); },
   async (tok, S) => { S.f = T('x₁ + x₂ + x₃ = 12 有幾組非負整數解？', 'note', 0, 3.4, -2.6); cap('x₁ + x₂ + x₃ = 12', '有幾組整數解？'); },
-  async (tok, S) => { [0, 1, 2].forEach((b) => crate((b - 1) * 3, -2.6, 2.2, 1.4, 0.4, '#c9a878', 'x' + (b + 1))); cap('3 個不同的箱子 x₁、x₂、x₃', '把 12 個東西分進去'); },
+  async (tok, S) => { S.cr = [0, 1, 2].map((b) => crate((b - 1) * 3, -2.6, 2.2, 1.4, 0.4, '#c9a878', 'x' + (b + 1))); cap('3 個不同的箱子 x₁、x₂、x₃', '把 12 個東西分進去'); },
   async (tok, S) => {
     S.pre = []; const comp = [6, 2, 4];
     comp.forEach((c, b) => { for (let i = 0; i < c; i++) { const p = slotIn((b - 1) * 3, -2.6, i, 0.3, 0.3, 0.2); S.pre.push(ball('', FC.gold, 0.16, p.x, p.y, p.z, 2)); } });
-    T('6 + 2 + 4', 'ptr', 0, 0.2, -1.2);
+    S.t624 = T('6 + 2 + 4', 'ptr', 0, 0.2, -1.2);
     cap('箱子可以是 0 個以上', '例如 6、2、4');
   },
   async (tok, S) => {
-    S.pre.forEach(kill);
+    S.pre.forEach(kill); S.cr.forEach(kill); kill(S.t624);
     S.S = sbBuild(12, 3, 0.8);
     S.S.bars.forEach((m) => { m.visible = false; }); S.S.gl.forEach((l) => { l.element.style.visibility = 'hidden'; });
     S.S.stars.forEach((m, i) => dropOn(m, (i - 5.5) * S.S.sp, S.S.y, S.S.z));
@@ -1571,9 +1587,9 @@ scene('ct-pc-sb12', '星棒法：x₁+x₂+x₃ = 12 → C(14,2) = 91', [
     cap('3 個箱子 → 插 2 根隔板', 'x₁ = 6，x₂ = 2，x₃ = 4');
   },
   async (tok, S) => { sbLayout(S.S, [0, 12, 0]); cap('隔板也可以都放兩端', 'x₁ = 0，x₂ = 12，x₃ = 0'); },
-  async (tok, S) => { S.S.bars.forEach((m) => glow(m, HL)); T('14 個位置挑 2 個放隔板', 'ptr alt', 0, 2.0, 0.8); cap('其實是 14 個位置', '挑 2 個放隔板'); },
+  async (tok, S) => { S.S.bars.forEach((m) => glow(m, HL)); S.r = keep(T('14 個位置挑 2 個放隔板', 'ptr alt', 0, 2.0, 0.8)); cap('其實是 14 個位置', '挑 2 個放隔板'); },
   async (tok, S) => { kill(S.f); S.f = T('C(14, 12) = C(14, 2) = ' + Cb(14, 2), 'good', 0, 3.4, -2.6); cap('14 選 2', '= 14 選 12 = 91'); },
-  async (tok, S) => { T('另一種看法：3 箱 + 12 個 − 1 = 14，選 12', 'say', 0, 2.8, 0.8); cap('箱數 + 物品數 − 1', '再選 12'); },
+  async (tok, S) => { txt(S.r, '另一種看法：3 箱 + 12 個 − 1 = 14，選 12'); cls(S.r, 'say'); cap('箱數 + 物品數 − 1', '再選 12'); },
   async (tok, S) => { T('x₁ + … + xₙ = k → C(n + k − 1, k) = C(n + k − 1, n − 1)', 'note', 0, 4.1, -2.6); cap('一般公式', 'C(n+k−1, k) = C(n+k−1, n−1)'); },
   async (tok, S) => { cap('這題 n = 3、k = 12', 'C(3 + 12 − 1, 12) = C(14,12)'); },
 ], CAMS);
@@ -1640,7 +1656,8 @@ scene('ct-pc-odd', 'x₄ 必為奇數：36 + 21 + 10 + 3 = 70', [
 
 // ════════ aLDHXK2M2yk（交大 易志偉 Lec14：Counting 1/2 — 加法／乘法原理、密碼、IP、樹狀圖） ════════
 // a small horizontal tree: nodes = list of prefixes (strings) that are allowed; leaves spread on y.
-function prefixTree(prefixes, alpha, x0, dx, yTop, yBot, sz = 0.42) {
+// (vert: the tree grows downward instead — x0 is then the root's y, dx the drop per level, yTop..yBot the leaves' x range)
+function prefixTree(prefixes, alpha, x0, dx, yTop, yBot, sz = 0.42, vert = false) {
   const leaves = prefixes.filter((p) => !prefixes.some((q) => q.length === p.length + 1 && q.startsWith(p)));
   leaves.sort((a, b) => (a < b ? -1 : 1));
   const pos = {}, sp = leaves.length > 1 ? (yTop - yBot) / (leaves.length - 1) : 0;
@@ -1652,8 +1669,9 @@ function prefixTree(prefixes, alpha, x0, dx, yTop, yBot, sz = 0.42) {
     pos, leaves, nodes,
     show(len, color = FC.blue) { // reveal every node of this length
       for (const p of prefixes.filter((q) => q.length === len)) {
-        const x = x0 + len * dx, y = pos[p];
-        if (len > 0) { const par = p.slice(0, -1); line(x0 + (len - 1) * dx, pos[par], 0, x, y, 0, '#b9a684'); }
+        const at = (q, k) => (vert ? [pos[q], x0 - k * dx] : [x0 + k * dx, pos[q]]);
+        const [x, y] = at(p, len);
+        if (len > 0) { const [px, py] = at(p.slice(0, -1), len - 1); line(px, py, 0, x, y, 0, '#b9a684'); }
         const m = cube(len ? p[p.length - 1] : '·', len ? color : FC.gray, [sz, sz, sz], x, y, 0, 0);
         nodes[p] = m;
       }
@@ -1691,7 +1709,7 @@ scene('ct-l14-rules', '加法原則與乘法原則', [
 ], [[0, 6.5, 12.5], [0, 1.6, 0]]);
 
 scene('ct-l14-seats', '座位標籤：字母 × 數字', [
-  async (tok, S) => { cap('例子：教室椅子的座號', '有兩個標籤'); S.B = board(-6.6, 6.0, 0.6); S.B.add('座號 = 英文字母 + 數字'); },
+  async (tok, S) => { cap('例子：教室椅子的座號', '有兩個標籤'); frameHold(-6.6, 0, -0.5, 1.6, 6.2, 0.5); S.B = board(-6.6, 6.0, 0.6); S.B.add('座號 = 英文字母 + 數字'); },
   async (tok, S) => { S.s = [cube('A', FC.blue, [0.9, 0.9, 0.9], -1.0, 0.45, 0), cube('1', FC.orange, [1.3, 0.9, 0.9], 0.4, 0.45, 0)]; cap('前面一個英文字母、後面一個數字', '像電影院 A1、A2、B1…'); },
   async (tok, S) => { S.B.add('A1、A2、A3、B1、B2…'); relabel(S.s[0], 'B'); relabel(S.s[1], '3'); cap('A1、A2、A3、B1、B2、B3…', '最多可以有幾個不同座位？'); },
   async (tok, S) => { S.B.add('字母：26 種'); T('26 種', 'ptr alt', -1.0, 1.4, 0); cap('兩格都要填', '字母有 26 種'); },
@@ -1713,28 +1731,30 @@ scene('ct-l14-bits7', '長度 7 的 bit string：2⁷ = 128', [
 function setDots(names, x, color, zc = 0) { return names.map((n, i) => { const z = zc + (i - (names.length - 1) / 2) * 1.1; const m = ball('', color, 0.25, x, 0.3, z); T(n, 'idx', x + (x < 0 ? -0.6 : 0.6), 0.3, z); return m; }); }
 scene('ct-l14-funcs', '函式個數 nᵐ 與一對一函式個數', [
   async (tok, S) => {
-    S.A = setDots(['a₁', 'a₂', 'a₃'], -2.5, FC.blue); S.Bd = setDots(['b₁', 'b₂', 'b₃', 'b₄'], 2.5, FC.green);
-    T('A：|A| = m（示意 3）', 'ptr', -2.5, 1.0, -2.6); T('B：|B| = n（示意 4）', 'ptr', 2.5, 1.0, -2.9);
+    frameHold(-6.6, 0, -2.9, 5.2, 4.6, 2.2);
+    S.A = setDots(['a₁', 'a₂', 'a₃'], -0.4, FC.blue); S.Bd = setDots(['b₁', 'b₂', 'b₃', 'b₄'], 4.0, FC.green);
+    T('A：|A| = m（示意 3）', 'ptr', -0.4, 1.0, -2.4); T('B：|B| = n（示意 4）', 'ptr', 4.0, 1.0, -2.9);
+    S.B = board(-6.6, 4.4, 0.62);
     cap('函式 f：A → B', '|A| = m、|B| = n');
   },
   async (tok, S) => {
     S.ar = [];
     for (let i = 0; i < 3; i++) { for (let j = 0; j < 4; j++) S.ar.push(arrow(S.A[i].position.clone().add(V3(0.3, 0.1, 0)), S.Bd[j].position.clone().add(V3(-0.3, 0.1, 0)), 0xb9a684)); await wt(tok, 200); }
-    T('每個人都有 n 種選擇', 'say', 0, 2.2, 0);
+    S.B.add('每個人都有 n 種選擇', 'say');
     cap('A 的每個元素都要對到 B 裡某一個', '每個都有 n 種選法');
   },
-  async (tok, S) => { T('m 個人各選 n 種 → n^m（|B|^|A|）＝ 示意 4³ = ' + 4 ** 3, 'good', 0, 2.9, 0); cap('m 個都要選：n × n × … × n', '= nᵐ 個函式'); },
+  async (tok, S) => { S.B.add('m 個人各選 n 種 → n^m（|B|^|A|）＝ 示意 4³ = ' + 4 ** 3, 'good'); cap('m 個都要選：n × n × … × n', '= nᵐ 個函式'); },
   async (tok, S) => {
     S.ar.forEach(kill);
-    T('一對一：不同的 a 要對到不同的 b → 必須 n ≥ m', 'note', 0, 3.6, 0);
+    S.B.add('一對一：不同的 a 要對到不同的 b → 必須 n ≥ m', 'note');
     cap('一對一函式', '先決條件：n ≥ m');
   },
   async (tok, S) => {
     const pick = [1, 3, 0], cnt = ['n = 4', 'n − 1 = 3', 'n − 2 = 2'];
-    for (let i = 0; i < 3; i++) { arrow(S.A[i].position.clone().add(V3(0.3, 0.1, 0)), S.Bd[pick[i]].position.clone().add(V3(-0.3, 0.1, 0)), 0xd64545); glw(S.Bd[pick[i]], HL); T(cnt[i] + ' 種', 'ptr alt', -1.2, 0.9, S.A[i].position.z); await wt(tok, 450); }
+    for (let i = 0; i < 3; i++) { arrow(S.A[i].position.clone().add(V3(0.3, 0.1, 0)), S.Bd[pick[i]].position.clone().add(V3(-0.3, 0.1, 0)), 0xd64545); glw(S.Bd[pick[i]], HL); const l = T(cnt[i] + ' 種', 'ptr alt', S.A[i].position.x - 1.15, 0.3, S.A[i].position.z); if (l.center) l.center.set(1, 0.5); await wt(tok, 450); } // left of its own a-dot (its name is between)
     cap('a₁ 隨便選 n 種；a₂ 要避開 → n − 1 種', '下一個再少一種…');
   },
-  async (tok, S) => { T('n(n − 1)(n − 2)…(n − m + 1)　示意 4·3·2 = ' + Pn(4, 3), 'good', 0, 4.3, 0); cap('一路乘到最後一個人', 'n − m + 1'); },
+  async (tok, S) => { S.B.add('n(n − 1)(n − 2)…(n − m + 1)　示意 4·3·2 = ' + Pn(4, 3), 'good'); cap('一路乘到最後一個人', 'n − m + 1'); },
 ], [[0, 6.5, 10], [0, 0.8, 0]]);
 
 scene('ct-l14-loops', '巢狀迴圈執行幾次：n₁·n₂·…·nₘ', [
@@ -1795,10 +1815,10 @@ scene('ct-l14-ipv4', 'IPv4 位址有幾個', [
     S.B.clear(); kill(S.ex); S.by.forEach(kill);
     // the prefix bits are in the row's name (A：0｜…); 32 cells are too narrow to carry digits
     S.ra = bitRow('.'.repeat(32), 1.2, 6.2, (i) => (i === 0 ? FC.red : i < 8 ? FC.blue : FC.green), 0.17);
-    L('A：0｜Net 7 bit', 'ptr', -6.6, 6.2);
+    S.an = L('A：0｜Net 7 bit', 'ptr', -6.6, 6.2);
     cap('Class A：最高位元是 0', '後面 7 bit 是 Net ID（藍）');
   },
-  async (tok, S) => { L('Host 24 bit', 'idx', -2.4, 6.2); cap('後面 24 bit 是 Host ID（綠）', '隨便填'); },
+  async (tok, S) => { txt(S.an, 'A：0｜Net 7｜Host 24'); cap('後面 24 bit 是 Host ID（綠）', '隨便填'); },
   async (tok, S) => {
     bitRow('.'.repeat(32), 1.2, 5.4, (i) => (i < 2 ? FC.red : i < 16 ? FC.blue : FC.green), 0.17);
     L('B：10｜Net 14｜Host 16', 'ptr', -6.6, 5.4);
@@ -1810,11 +1830,11 @@ scene('ct-l14-ipv4', 'IPv4 位址有幾個', [
     cap('Class C：開頭 1 1 0', 'Net ID 5 + 16 = 21 bit、Host ID 8 bit');
   },
   async (tok, S) => { S.ex = T('140 = 128 + 8 + 4 = 10001100₂ → 開頭 10 → Class B', 'note', 1.0, 3.8); cap('140 寫成二進位：10001100', '開頭是 1 0 → Class B'); },
-  async (tok, S) => { S.R = board(-6.6, 3.0, 0.55); S.R.add('A 的 Net ID ≠ 全 1'); cap('還有細節規定', 'Class A 的 Net ID 不能全 1'); },
+  async (tok, S) => { kill(S.ex); S.R = board(-6.6, 3.9, 0.66, 4); S.R.add('A 的 Net ID ≠ 全 1'); cap('還有細節規定', 'Class A 的 Net ID 不能全 1'); },
   async (tok, S) => { S.R.add('Host ID ≠ 全 0、全 1'); cap('Host ID 不能全 0、不能全 1', '各扣掉 2 個'); },
-  async (tok, S) => { T('A：(2⁷ − 1)(2²⁴ − 2) = ' + fmt(IPA), 'say', 3.4, 3.0); cap('Class A 有幾個？', '(2⁷ − 1)(2²⁴ − 2)'); },
-  async (tok, S) => { T('B：2¹⁴(2¹⁶ − 2) = ' + fmt(IPB), 'say', 3.4, 2.4); cap('Class B：Net ID 沒限制', '2¹⁴(2¹⁶ − 2)'); },
-  async (tok, S) => { T('C：2²¹(2⁸ − 2) = ' + fmt(IPC), 'say', 3.4, 1.8); T('合計 ' + fmt(IPA + IPB + IPC) + ' ≈ 3.7 × 10⁹', 'good', 3.4, 1.2); cap('Class C：2²¹(2⁸ − 2)', 'A + B + C 全部加起來'); },
+  async (tok, S) => { keep(T('A：(2⁷ − 1)(2²⁴ − 2) = ' + fmt(IPA), 'say', 3.4, 3.7)); cap('Class A 有幾個？', '(2⁷ − 1)(2²⁴ − 2)'); },
+  async (tok, S) => { keep(T('B：2¹⁴(2¹⁶ − 2) = ' + fmt(IPB), 'say', 3.4, 3.15)); cap('Class B：Net ID 沒限制', '2¹⁴(2¹⁶ − 2)'); },
+  async (tok, S) => { keep(T('C：2²¹(2⁸ − 2) = ' + fmt(IPC), 'say', 3.4, 2.6)); keep(T('合計 ' + fmt(IPA + IPB + IPC) + ' ≈ 3.7 × 10⁹', 'good', 3.4, 2.05)); cap('Class C：2²¹(2⁸ − 2)', 'A + B + C 全部加起來'); },
   async (tok, S) => { S.R.add('粗估 4 × 10⁹：差一點'); cap('和粗估的 4 × 10⁹ 差不多', '為什麼少了一些？'); },
   async (tok, S) => { S.R.add('開頭 111 → 另作他用'); S.R.add('約 7/8 合法：4 × 7/8 ≈ 3.5'); cap('開頭 3 bit 有 8 種，111 那種被排除', '大約 7/8 合法'); },
   async (tok, S) => { S.R.add('估算：2¹⁰ ≈ 1000', 'say'); cap('自己心裡要有個底', '2¹⁰ 當作 1000 來估'); },
@@ -1953,21 +1973,28 @@ scene('ct-l15-bomb', '拆炸彈：10 條電線依序剪 3 條', [
 ], [[0, 4.2, 12], [0, 2.2, 0]]);
 
 const LET8 = 'ABCDEFGH';
+// move cubes to new x on the same row; the ones that move step out of the row first (alternately front / back)
+async function reorder(tok, ms, xs, y = 0.4) {
+  const go = ms.filter((m, i) => Math.abs(P.land(m).x - xs[i]) > 0.05), dz = (m) => (go.indexOf(m) % 2 ? -1.1 : 1.1);
+  go.forEach((m) => move(m, P.land(m).x, y, dz(m))); await wt(tok, 380);
+  ms.forEach((m, i) => { if (go.includes(m)) move(m, xs[i], y, dz(m)); }); await wt(tok, 520);
+  ms.forEach((m, i) => move(m, xs[i], y, 0));
+}
 scene('ct-l15-abc', 'ABC 必須相鄰：6! 與 6!·3!', [
   async (tok, S) => { S.m = {}; LET8.split('').forEach((c, i) => { S.m[c] = cube(c, 'ABC'.includes(c) ? FC.orange : FC.blue, [0.8, 0.8, 0.8], (i - 3.5) * 1.0, 0.4, 0, 1.5); }); S.B = board(-6.6, 6.4, 0.7, 4); S.B.add('A～H 共 8 個字母，全部排列'); cap('A 到 H 八個字母', '全部排列有 8! 種'); },
   async (tok, S) => { S.B.add('要求：ABC 放在一起'); cap('老師比較龜毛：喜歡 ABC 放在一起', ''); },
-  async (tok, S) => { const ord = 'ADECBGFH'; ord.split('').forEach((c, i) => move(S.m[c], (i - 3.5) * 1.0, 0.4, 0)); cap('例如 A D E C B G F H', '這也是一種排列'); },
+  async (tok, S) => { const ord = 'ADECBGFH'; cap('例如 A D E C B G F H', '這也是一種排列'); await reorder(tok, ord.split('').map((c) => S.m[c]), ord.split('').map((c, i) => (i - 3.5) * 1.0)); },
   async (tok, S) => { S.B.add('contain the string ABC：要相鄰，而且照 A B C 順序'); cap('題目：包含字串 ABC', 'ABC 要連在一起，而且照這個順序'); },
-  async (tok, S) => { ['A', 'C', 'B'].forEach((c) => glow(S.m[c], NG)); S.bad = [T('A、B、C 沒在一起 ✗', 'bad', 0, 1.6, 0)]; cap('剛才那個：A、B、C 分散了', '不要'); },
-  async (tok, S) => { ['A', 'C', 'B'].forEach((c) => glow(S.m[c], '#000000')); 'BCADEFGH'.split('').forEach((c, i) => move(S.m[c], (i - 3.5) * 1.0, 0.4, 0)); S.bad.push(T('B C A 在一起但順序不對 ✗', 'bad', 0, 2.3, 0)); cap('B C A D E F…', '在一起，但不是 ABC 的順序，也不要'); },
-  async (tok, S) => { 'ABCDEFGH'.split('').forEach((c, i) => move(S.m[c], (i < 3 ? (i - 1) * 0.8 - 3.0 : (i - 3) * 1.1 - 0.8), 0.4, 0)); (S.bad || []).forEach(kill); S.blk = cube('', '#f3d36b', [2.6, 0.12, 1.0], -3.0, 0.02, 0); cap('ABC 其實是「連體嬰」', '綁成一個人'); },
+  async (tok, S) => { ['A', 'C', 'B'].forEach((c) => glow(S.m[c], NG)); S.bad = [keep(T('A、B、C 沒在一起 ✗', 'bad', 0, 1.7, 0))]; cap('剛才那個：A、B、C 分散了', '不要'); },
+  async (tok, S) => { ['A', 'C', 'B'].forEach((c) => glow(S.m[c], '#000000')); txt(S.bad[0], 'B C A 在一起但順序不對 ✗'); cap('B C A D E F…', '在一起，但不是 ABC 的順序，也不要'); await reorder(tok, 'BCADEFGH'.split('').map((c) => S.m[c]), 'BCADEFGH'.split('').map((c, i) => (i - 3.5) * 1.0)); },
+  async (tok, S) => { (S.bad || []).forEach(kill); S.blk = cube('', '#f3d36b', [2.6, 0.12, 1.0], -3.0, 0.02, 0); cap('ABC 其實是「連體嬰」', '綁成一個人'); await reorder(tok, 'ABCDEFGH'.split('').map((c) => S.m[c]), 'ABCDEFGH'.split('').map((c, i) => (i < 3 ? (i - 1) * 0.8 - 3.0 : (i - 3) * 1.1 - 0.8))); },
   async (tok, S) => { T('1', 'ptr', -3.0, 1.3, 0); 'DEFGH'.split('').forEach((c, i) => T(String(i + 2), 'ptr', i * 1.1 - 0.8, 1.3, 0)); cap('所以不是 8 個，只有 6 個', 'ABC、D、E、F、G、H'); },
   async (tok, S) => { S.B.add('6 個全部排列：6! = ' + fact(6), 'good'); cap('6 個全部排隊', '6! = 720'); },
   async (tok, S) => { S.B.add('變化型：ABC 要在一起，但順序不限'); cap('變化型：ABC 一定要在一起', '但不一定照 A B C 排'); },
   async (tok, S) => { S.B.add('ABC 自己內部可以換位置'); cap('代表 ABC 的那一塊', '裡面可以換位置'); },
   async (tok, S) => {
     const perms = ['ABC', 'ACB', 'BAC', 'BCA', 'CAB', 'CBA'];
-    perms.forEach((p, i) => T(p, 'say', -2.6 + i * 1.2, 1.9, 0));
+    perms.forEach((p, i) => keep(T(p, 'say', -3.0 + (i % 3 - 1) * 1.15, 2.1 + Math.floor(i / 3) * 0.7, 0))); // over the ABC block they belong to
     cap('ABC、ACB、BAC、BCA、CAB、CBA', '3! = 6 種');
   },
   async (tok, S) => { S.B.add('6! × 3! = ' + fact(6) * fact(3), 'good'); cap('每一種排列再乘 3!', '6! × 3! = 4320'); },
@@ -1976,8 +2003,8 @@ scene('ct-l15-abc', 'ABC 必須相鄰：6! 與 6!·3!', [
 
 const FRUIT = ['🍎', '🍊', '🍐', '🍌'];
 scene('ct-l15-fruit6', '可重複的排列：4 種水果放 6 個位置', [
-  async (tok, S) => { S.B = board(-6.6, 6.2, 0.58); S.B.add('可重複的排列'); cap('可重複的排列', '東西不會用完'); },
-  async (tok, S) => { FRUIT.forEach((g, i) => icon(g, ['蘋果', '柳丁', '梨子', '香蕉'][i], -1.2 + i * 1.5, 3.6, -1.5)); cap('一箱柳丁、很多蘋果、香蕉…', '每種都很多'); },
+  async (tok, S) => { frameHold(-6.6, 0, -1.5, 5.6, 6.4, 1.8); S.B = board(-6.6, 6.2, 0.58); S.B.add('可重複的排列'); cap('可重複的排列', '東西不會用完'); },
+  async (tok, S) => { FRUIT.forEach((g, i) => icon(g, ['蘋果', '柳丁', '梨子', '香蕉'][i], 0.6 + i * 1.5, 3.6, -1.5)); cap('一箱柳丁、很多蘋果、香蕉…', '每種都很多'); },
   async (tok, S) => { S.slots = []; for (let k = 0; k < 6; k++) { ctx.tile(V3(-1.5 + k * 1.3, 0.04, 1.2), 1.1, 1.1); S.slots.push(T('', 'ptr alt', -1.5 + k * 1.3, 1.3, 1.2)); } S.B.add('4 種水果、6 個位置'); cap('4 種水果、6 個位置', '把水果放上去'); },
   async (tok, S) => { S.B.add('水果很多，不會用完'); cap('數量非常多', '放不完'); },
   async (tok, S) => { txt(S.slots[0], '4'); icon(FRUIT[1], '', -1.5, 0.6, 1.2, 'sm'); cap('第一個位置：4 種', ''); },
@@ -1989,7 +2016,7 @@ scene('ct-l15-fruit6', '可重複的排列：4 種水果放 6 個位置', [
 
 scene('ct-l15-success', '有相同字母的排列：SUCCESS', [
   async (tok, S) => { S.w = 'SUCCESS'; S.m = S.w.split('').map((c, i) => cube(c, c === 'S' ? FC.blue : c === 'C' ? FC.orange : FC.gray, [0.85, 0.85, 0.85], (i - 3) * 1.1, 0.43, 0, 1.5)); S.B = board(-6.6, 6.4, 0.55); S.B.add('7 個字母重新排列'); cap('7 個英文字母：S U C C E S S', '重新排列有幾種？'); },
-  async (tok, S) => { cap('兩個 S 互換位置', '外表看起來沒有差別'); move(S.m[0], (5 - 3) * 1.1, 1.4, 0); move(S.m[5], (0 - 3) * 1.1, 1.4, 0); await wt(tok, 900); move(S.m[0], (5 - 3) * 1.1, 0.43, 0); move(S.m[5], (0 - 3) * 1.1, 0.43, 0); },
+  async (tok, S) => { cap('兩個 S 互換位置', '外表看起來沒有差別'); await reorder(tok, [S.m[0], S.m[5]], [(5 - 3) * 1.1, (0 - 3) * 1.1], 0.43); },
   async (tok, S) => { [[0, 'S₁'], [5, 'S₂'], [6, 'S₃']].forEach(([i, t]) => relabel(S.m[i], t)); cap('先假裝不一樣：標上 S₁、S₂、S₃', ''); },
   async (tok, S) => { relabel(S.m[2], 'C₁'); relabel(S.m[3], 'C₂'); cap('C 也標成 C₁、C₂', '其他都不一樣'); },
   async (tok, S) => { S.B.add('假裝都不同：7! = ' + fact(7)); cap('7 個都不同的話', '7! 種排法'); },
@@ -2002,10 +2029,10 @@ scene('ct-l15-success', '有相同字母的排列：SUCCESS', [
 ], [[0, 4.4, 12.5], [0, 2.6, 0]]);
 
 scene('ct-l15-comb', '組合：不管順序 → C(10,5) = P(10,5)/5!', [
-  async (tok, S) => { S.B = board(-6.6, 6.4, 0.7, 5); S.B.add('組合 combination'); cap('另一個概念：組合', '像抽獎、搬東西比賽'); },
+  async (tok, S) => { frameHold(-6.6, 0, -2.6, 4.0, 6.6, 2.0); S.B = board(-6.6, 6.4, 0.7, 5); S.B.add('組合 combination'); cap('另一個概念：組合', '像抽獎、搬東西比賽'); },
   async (tok, S) => { S.it = [icon('🧊', '冰箱', 1.5, 1.0, 0), icon('❄️', '冷氣', 3.5, 1.0, 0)]; cap('一分鐘內搬得出來的都是你的', '先搬冰箱、先搬冷氣，結果一樣'); },
   async (tok, S) => { S.B.add('沒有順序概念 → 組合'); cap('只看最後拿到什麼', '不管誰先誰後：組合'); },
-  async (tok, S) => { S.it.forEach(remove); S.bs = []; for (let i = 0; i < 10; i++) S.bs.push(ball(String(i + 1), FC.blue, 0.32, -1.6 + (i % 5) * 1.1 + (i < 5 ? 0 : 0.55), 0.35, -2.2 + Math.floor(i / 5) * 1.4)); S.B.add('集合 S 有 10 個東西，挑 5 樣'); cap('S 有 10 個東西', '隨便挑 5 樣'); },
+  async (tok, S) => { S.it.forEach(remove); S.bs = []; for (let i = 0; i < 10; i++) S.bs.push(ball(String(i + 1), FC.blue, 0.3, -2.6 + i * 0.8, 0.35, -1.6)); S.B.add('集合 S 有 10 個東西，挑 5 樣'); cap('S 有 10 個東西', '隨便挑 5 樣'); },
   async (tok, S) => { const pk = [1, 3, 4, 7, 8]; for (let k = 0; k < 5; k++) { move(S.bs[pk[k]], -1.6 + k * 1.1, 0.35, 1.6); tint(S.bs[pk[k]], FC.pink); await wt(tok, 200); } S.B.add('先當作有順序：P(10, 5)'); cap('先假裝順序有關：挑 5 個出來排隊', 'P(10,5)'); },
   async (tok, S) => { cap('組合不管挑出來的順序', '冰箱冷氣、冷氣冰箱算同一種'); },
   async (tok, S) => { S.B.add('同樣 5 個有 5! 種順序 → ÷ 5!'); cap('同樣這 5 個，排隊有 5! 種變化', '都算同一種，除掉'); },
@@ -2015,19 +2042,19 @@ scene('ct-l15-comb', '組合：不管順序 → C(10,5) = P(10,5)/5!', [
 
 const FR3 = (() => { const out = ['']; for (let a = 0; a <= 4; a++) { out.push(String(a)); for (let o = 0; o <= 4 - a; o++) { out.push(a + '' + o); out.push(a + '' + o + (4 - a - o)); } } return out; })();
 scene('ct-l15-fruit4', '挑 4 個水果：樹狀圖 15 種 = 星棒法 C(6,2)', [
-  async (tok, S) => { S.B = board(-6.6, 6.6, 0.7, 5); S.B.add('3 種水果挑 4 個（可重複）'); cap('只挑 4 個水果', '先用窮舉法'); },
-  async (tok, S) => { S.Tr = prefixTree(FR3, '', -1.6, 2.2, 6.6, 0.4, 0.34); S.Tr.show(0); S.Tr.show(1, FC.red); T('🍎 個數', 'idx', 0.6, 7.0); cap('第一層：蘋果挑 0、1、2、3、4 個', 'Decision tree'); },
-  async (tok, S) => { S.Tr.show(2, FC.orange); T('🍊 個數', 'idx', 2.8, 7.0); cap('再挑柳丁：蘋果 0 個 → 柳丁 0～4', '蘋果 1 個 → 柳丁只能 0～3'); },
-  async (tok, S) => { S.Tr.show(3, FC.green); T('🍐 補足 4', 'idx', 5.0, 7.0); cap('最後是梨子：只能補足 4 個', '沒有選擇了'); },
+  async (tok, S) => { frameHold(-6.6, 0, -0.3, 7.6, 6.8, 2.2); S.B = board(-6.6, 6.6, 0.7, 5); S.B.add('3 種水果挑 4 個（可重複）'); cap('只挑 4 個水果', '先用窮舉法'); },
+  async (tok, S) => { S.Tr = prefixTree(FR3, '', 6.4, 1.5, -1.4, 6.0, 0.36, true); S.Tr.show(0); S.Tr.show(1, FC.red); S.hd = [L('🍎 個數', 'idx', 6.4, 4.9)]; cap('第一層：蘋果挑 0、1、2、3、4 個', 'Decision tree'); },
+  async (tok, S) => { S.Tr.show(2, FC.orange); S.hd.push(L('🍊 個數', 'idx', 6.4, 3.4)); cap('再挑柳丁：蘋果 0 個 → 柳丁 0～4', '蘋果 1 個 → 柳丁只能 0～3'); },
+  async (tok, S) => { S.Tr.show(3, FC.green); S.hd.push(L('🍐 補足 4', 'idx', 6.4, 1.9)); cap('最後是梨子：只能補足 4 個', '沒有選擇了'); },
   async (tok, S) => { S.B.add('數葉子：' + S.Tr.leaves.length + ' 種', 'good'); cap('數一數：1、2、…、15', '列舉不會漏掉'); },
   async (tok, S) => { cap('難道每次都只會這個笨方法？', '有沒有新的想法'); },
-  async (tok, S) => { S.Tr2 = null; Object.values(S.Tr.nodes).forEach((m) => kill(m)); lab.world.children.filter((o) => o.isLine).forEach((o) => lab.world.remove(o)); S.B.add('想成結帳：4 顆星星'); S.S = sbBuild(4, 3, 0.9); S.S.bars.forEach((m) => { m.visible = false; }); S.S.gl.forEach((l) => { l.element.style.visibility = 'hidden'; }); S.S.stars.forEach((m, i) => dropOn(m, (i - 1.5) * S.S.sp, S.S.y, S.S.z)); cap('去大潤發、Costco 結帳', '要挑 4 個水果 = 4 顆星星'); },
-  async (tok, S) => { T('先放蘋果、再放柳丁、再放梨子', 'say', 0.8, 2.6, 0.9); cap('結帳時照種類排好', '蘋果、柳丁、梨子'); },
+  async (tok, S) => { S.Tr2 = null; S.hd.forEach(kill); Object.values(S.Tr.nodes).forEach((m) => kill(m)); lab.world.children.filter((o) => o.isLine).forEach((o) => lab.world.remove(o)); S.B.add('想成結帳：4 顆星星'); S.S = sbBuild(4, 3, 0.9); S.S.bars.forEach((m) => { m.visible = false; }); S.S.gl.forEach((l) => { l.element.style.visibility = 'hidden'; }); S.S.stars.forEach((m, i) => dropOn(m, (i - 1.5) * S.S.sp, S.S.y, S.S.z)); cap('去大潤發、Costco 結帳', '要挑 4 個水果 = 4 顆星星'); },
+  async (tok, S) => { S.r = keep(T('先放蘋果、再放柳丁、再放梨子', 'say', 0, 2.4, 0.9)); cap('結帳時照種類排好', '蘋果、柳丁、梨子'); },
   async (tok, S) => { S.S.bars.forEach((m) => { m.visible = true; }); S.S.gl.forEach((l) => { l.element.style.visibility = ''; }); sbLayout(S.S, [1, 2, 1]); S.S.gl.forEach((l, b) => txt(l, ['🍎', '🍊', '🍐'][b] + ' ' + [1, 2, 1][b])); cap('用分隔棒隔開三種', '要 2 根棒子'); },
   async (tok, S) => { cap('這樣隔：1 個蘋果、2 個柳丁、1 個梨子', ''); },
   async (tok, S) => { sbLayout(S.S, [0, 2, 2]); S.S.gl.forEach((l, b) => txt(l, ['🍎', '🍊', '🍐'][b] + ' ' + [0, 2, 2][b])); cap('也可以：沒買蘋果、2 個柳丁、2 個梨子', ''); },
   async (tok, S) => { S.B.add('買法 ↔ 星星和棒子的排法：一對一'); cap('每一種買法都對應一種排法', '一對一，沒有漏掉'); },
-  async (tok, S) => { sbLayout(S.S, [0, 0, 4]); S.S.gl.forEach((l, b) => txt(l, ['🍎', '🍊', '🍐'][b] + ' ' + [0, 0, 4][b])); T('004：棒棒★★★★', 'note', 0.8, 3.3, 0.9); cap('0 0 4：先兩根棒子，再四顆星', '0 1 3 也一樣對應'); },
+  async (tok, S) => { sbLayout(S.S, [0, 0, 4]); S.S.gl.forEach((l, b) => txt(l, ['🍎', '🍊', '🍐'][b] + ' ' + [0, 0, 4][b])); txt(S.r, '004：棒棒★★★★'); cls(S.r, 'note'); cap('0 0 4：先兩根棒子，再四顆星', '0 1 3 也一樣對應'); },
   async (tok, S) => { S.B.add('4 星 + 2 棒 = 6 個位置'); cap('4 顆星、2 根棒子，一共 6 個東西', '星星一樣、棒子一樣'); },
   async (tok, S) => { S.B.add('6! / (4!·2!) = ' + fact(6) / (fact(4) * fact(2)) + '，和樹狀圖一樣', 'good'); cap('6!/(4!·2!) = 15', '跟窮舉的一樣'); },
   async (tok, S) => { cap('這個最重要', '星棒法：可重複的組合'); },
@@ -2040,7 +2067,7 @@ scene('ct-l15-rones', '長度 n、有 r 個 1 的字串', [
 ], [[0, 4, 11], [0, 1.6, 0]]);
 
 scene('ct-l15-eq11', 'x₁ + x₂ + x₃ = 11 的自然數解', [
-  async (tok, S) => { S.B = board(-6.6, 6.2, 0.58); S.B.add('x₁ + x₂ + x₃ = 11'); cap('更數學的寫法：方程式', 'x₁ + x₂ + x₃ = 11'); },
+  async (tok, S) => { frameHold(-6.6, 0, -3.2, 6.0, 6.4, 2.2); S.B = board(-6.6, 6.2, 0.58); S.B.add('x₁ + x₂ + x₃ = 11'); cap('更數學的寫法：方程式', 'x₁ + x₂ + x₃ = 11'); },
   async (tok, S) => { S.B.add('自然數解：從 0 開始'); cap('自然數從 0 開始', '可以一個都不挑'); },
   async (tok, S) => { [0, 1, 2].forEach((b) => { crate((b - 1) * 2.6, -2.4, 2.0, 1.3, 0.4, '#c9a878', ['x₁ 🍎', 'x₂ 🍊', 'x₃ 🍐'][b]); }); cap('x₁ 蘋果、x₂ 柳丁、x₃ 梨子的個數', '跟挑水果同一題'); },
   async (tok, S) => { S.S = sbBuild(11, 3, 0.9); sbLayout(S.S, [4, 3, 4], true); cap('碗比較大：可以裝 11 個', ''); },
@@ -2250,22 +2277,22 @@ scene('ct-z5-tri', '等邊三角形放 5 點：必有兩點距離 < ½', [
 scene('ct-z5-friends', '有限人群中必有兩人朋友數相同', [
   async (tok, S) => { cap('多看一點例子就比較容易', '原理很簡單，應用要會想'); },
   async (tok, S) => { cap('這題乍看籠子很多', '仔細看其實沒那麼多'); },
-  async (tok, S) => { S.B = board(-6.6, 6.6, 0.5); S.B.add('任何有限的人群 A'); S.pos = [0, 1, 2, 3, 4].map((i) => { const a = (i / 5) * Math.PI * 2; return V3(1.4 + Math.cos(a) * 1.4, 0.35, -1.4 + Math.sin(a) * 1.4); }); S.pp = S.pos.map((p, i) => cube(i + 1, FC.blue, [0.6, 0.6, 0.6], p.x, p.y, p.z, 2)); cap('A 是一群人，人數有限', '（示意 5 人）'); },
+  async (tok, S) => { S.B = board(-6.6, 6.6, 0.6); S.B.add('任何有限的人群 A'); frameHold(-6.6, 0, -3.0, 6.8, 6.8, 2.6); S.pos = [0, 1, 2, 3, 4].map((i) => V3(-1.2 + i * 1.85, 0.35, i % 2 ? -1.2 : -2.6)); S.pp = S.pos.map((p, i) => cube(i + 1, FC.blue, [0.9, 0.6, 0.6], p.x, p.y, p.z, 2)); cap('A 是一群人，人數有限', '（示意 5 人）'); },
   async (tok, S) => { S.B.add('⇒ 有兩人在 A 裡的朋友數相同', 'good'); cap('一定有兩人朋友數一樣', '只算 A 裡面的朋友'); },
   async (tok, S) => { S.B.add('假設 |A| ≥ 2'); cap('至少要有 2 個人', '一個人就沒有「兩個人」了'); },
   async (tok, S) => { S.B.add('朋友是 mutual（互相的）'); cap('朋友是互相的', ''); },
   async (tok, S) => { cap('不容許單相思', '你當他朋友，他也當你朋友'); },
   async (tok, S) => { S.B.add('x 是 x′ 的朋友 ⇔ x′ 是 x 的朋友'); [[0, 1], [1, 2], [0, 3]].forEach(([a, b]) => rod(S.pos[a], S.pos[b], FC.pink, 0.05)); cap('x 是 x′ 的朋友', 'x′ 也是 x 的朋友（示意）'); },
   async (tok, S) => { S.B.clear(); S.B.add('定義 f(x) = x 在 A 裡的朋友數'); cap('定義一個函式 f', 'number of friends'); },
-  async (tok, S) => { [2, 2, 1, 1, 0].forEach((d, i) => T('f=' + d, 'ptr', S.pos[i].x, 1.0, S.pos[i].z)); cap('f(x)：x 在 A 裡有幾個朋友', '外面的不算'); },
+  async (tok, S) => { [2, 2, 1, 1, 0].forEach((d, i) => relabel(S.pp[i], (i + 1) + '｜f=' + d)); cap('f(x)：x 在 A 裡有幾個朋友', '外面的不算'); },
   async (tok, S) => { S.B.add('要證：存在 x₁ ≠ x₂，f(x₁) = f(x₂)'); cap('要證：有兩人 f 值一樣', ''); },
   async (tok, S) => { S.B.add('⇔ f 不是一對一（不是 injective）', 'good'); cap('也就是：f 不是一對一', '變成數學問題'); },
   async (tok, S) => { S.B.add('domain A：|A| = m'); cap('domain 的 size 是 m', 'm ≥ 2'); },
-  async (tok, S) => { S.C = crates(5, ['0', '1', '2', '3', 'm−1'], 3.6, 2.2, 0.8, 0.15); S.B.add('codomain B = {0, 1, …, m − 1}'); cap('朋友數可能是 0、1、2、…、m − 1', '最多 m − 1（自己不算）'); },
+  async (tok, S) => { S.C = crates(5, ['0', '1', '2', '3', 'm−1'], 2.5, 1.4, 0.8, 0.15); S.B.add('codomain B = {0, 1, …, m − 1}'); cap('朋友數可能是 0、1、2、…、m − 1', '最多 m − 1（自己不算）'); },
   async (tok, S) => { S.B.add('|B| = m：數目一樣，還不能說'); cap('兩邊都是 m', '光看數目沒辦法說不是一對一'); },
   async (tok, S) => { S.C.hot(4); S.B.add('有人 m − 1 個朋友 ⇒ 其他人都是他朋友'); cap('仔細看：有人有 m − 1 個朋友', '表示所有其他人都是他朋友'); },
   async (tok, S) => { S.B.add('⇒ 沒有人 0 個朋友'); cap('朋友是互相的', '所以沒有人沒有朋友'); },
-  async (tok, S) => { S.C.hot(0); T('0 與 m − 1 不會同時出現', 'bad', 3.6, 1.2, 2.2); cap('0 和 m − 1 不能同時是 f 的值', '有 0 就沒 m − 1；有 m − 1 就沒 0'); },
+  async (tok, S) => { S.C.hot(0); S.B.add('0 與 m − 1 不會同時出現', 'bad'); cap('0 和 m − 1 不能同時是 f 的值', '有 0 就沒 m − 1；有 m − 1 就沒 0'); },
   async (tok, S) => { S.B.add('f 的值域最多 m − 1 個值'); cap('f 的值域（range）最多 m − 1 個', ''); },
   async (tok, S) => { S.B.add('m 隻鴿子、≤ m − 1 個籠子 ⇒ 不是一對一', 'good'); cap('鴿籠原理：f 一定不是 injective', ''); },
   async (tok, S) => { S.B.add('⇒ 有 x₁、x₂ 朋友數一樣', 'good'); cap('就有兩人朋友數相同', '證完'); },
@@ -2290,9 +2317,9 @@ scene('ct-z5-balls', '10 顆球、天平用兩次：不可能', [
   async (tok, S) => { S.B.add('天平只准用兩次'); cap('只准用天平兩次', ''); },
   async (tok, S) => { S.B.add('能不能保證找到重球？'); cap('always 能決定哪顆比較重？', ''); },
   async (tok, S) => { cap('有人說他有方法', '判斷：這樣的方法存在嗎？'); },
-  async (tok, S) => { S.out = []; ['左重', '右重', '平'].forEach((t, i) => S.out.push(T(t, 'say', 1.0, 4.6 - i * 0.7))); cap('第一次：三種結果', '第二次：也是三種'); },
+  async (tok, S) => { S.out = []; ['左重', '右重', '平'].forEach((t, i) => S.out.push(keep(T(t, 'say', 1.0, 4.6 - i * 0.7)))); cap('第一次：三種結果', '第二次：也是三種'); },
   async (tok, S) => { const r = ['左', '右', '平']; let k = 0; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { T(r[i] + r[j], 'ptr', 3.2 + j * 1.1, 4.6 - i * 0.7); k++; } T('3 × 3 = 9 種看到的結果', 'good', 4.3, 5.4); cap('兩次一共只看到 3 × 3 = 9 種', ''); },
-  async (tok, S) => { S.bl.forEach((b, i) => T(String(i + 1), 'idx', b.position.x, 0.75, 2.2)); S.B.clear(); S.B.add('要分辨 10 種情況（哪顆重）'); cap('哪顆重：有 10 種情況', ''); },
+  async (tok, S) => { S.out.forEach(kill); S.bl.forEach((b, i) => T(String(i + 1), 'idx', b.position.x, 0.75, 2.2)); S.B.clear(); S.B.add('要分辨 10 種情況（哪顆重）'); cap('哪顆重：有 10 種情況', ''); },
   async (tok, S) => { S.B.add('9 < 10 → 不可能全部分出來', 'bad'); cap('3² = 9 < 10', '一定沒辦法全部分開'); },
   async (tok, S) => { glw(S.bl[3], NG); glw(S.bl[7], NG); cap('至少有兩種狀況', '天平看起來一模一樣 → 分不出來'); },
   async (tok, S) => { S.B.add('運氣好可能分得出來，但不是 always', 'say'); cap('by the pigeonhole principle', '有時運氣好，但不是一定'); },
@@ -2321,7 +2348,7 @@ scene('ct-z5-onto', 'onto 與 bijection：兩邊一樣大', [
 // ════════ 清大 趙啟超 第9A–9D講 Principles of Counting ════════
 function dotsIn(n, cx, cz, color, r = 0.6, labels = null) { return Array.from({ length: n }, (_, i) => { const a = (i / n) * Math.PI * 2 + 0.4, x = cx + Math.cos(a) * r * (n > 1 ? 1 : 0), z = cz + Math.sin(a) * r * (n > 1 ? 1 : 0); const m = ball('', color, 0.2, x, 0.25, z); if (labels) T(labels[i], 'idx', x, 0.65, z); return m; }); }
 scene('ct-z9-rules', '加法原理與乘法原理（集合寫法）', [
-  async (tok, S) => { S.B = board(-6.6, 6.6, 0.7, 6); S.B.add('第二部分 Enumeration：Principles of Counting'); cap('進入第二部分：Enumeration（計數）', '先教 principles of counting'); },
+  async (tok, S) => { frameHold(-6.6, 0, -1.3, 6.0, 6.6, 1.3); S.B = board(-6.6, 6.6, 0.7, 6); S.B.add('第二部分 Enumeration：Principles of Counting'); cap('進入第二部分：Enumeration（計數）', '先教 principles of counting'); },
   async (tok, S) => { S.B.add('兩個原理：加法原理、乘法原理'); cap('高中排列組合大概就兩個原理', '加法原理、乘法原理'); },
   async (tok, S) => { S.zA = zone('A', 1.4, 0.03, 0, 2.4, 2.4, '#dbe9f6'); S.zB = zone('B', 4.6, 0.03, 0, 2.4, 2.4, '#dcf1e6'); S.a = dotsIn(3, 1.4, 0, FC.blue); S.b = dotsIn(2, 4.6, 0, FC.green); S.B.add('加法原理：A、B 是有限集合'); cap('Addition Principle', 'A、B 都是 finite set（示意 3 個、2 個）'); },
   async (tok, S) => { S.B.add('A ∩ B = ∅（disjoint）'); T('沒有交集', 'say', 3.0, 1.6, 0); cap('A 和 B 沒有交集', 'disjoint'); },
@@ -2395,11 +2422,11 @@ scene('ct-z9-norep', '有順序、不重複：n(n−1)…(n−m+1)', [
 
 // 9B
 scene('ct-z9-inj', '一對一函式的個數', [
-  async (tok, S) => { S.A = setDots(['a₁', 'a₂', 'a₃'], -1.8, FC.blue, 0.4); S.Bd = setDots(['b₁', 'b₂', 'b₃', 'b₄'], 2.6, FC.green, 0.4); S.B = board(-6.6, 6.4, 0.55); S.B.add('|A| = m、|B| = n，一對一函式有幾個？'); cap('還是函式的例子', '這次要求 injective（一對一）'); },
-  async (tok, S) => { S.B.add('a₁ 對到 b₁ → a₂ 就不能對 b₁'); cap('兩個對到同一個就不是一對一', '（示意 m = 3、n = 4）'); },
-  async (tok, S) => { arrow(S.A[0].position.clone().add(V3(0.3, 0.1, 0)), S.Bd[0].position.clone().add(V3(-0.3, 0.1, 0)), 0xd64545); glw(S.Bd[0], HL); T('n 種', 'ptr alt', 0.4, 1.0, S.A[0].position.z); cap('a₁：n 種都可以', ''); },
-  async (tok, S) => { arrow(S.A[1].position.clone().add(V3(0.3, 0.1, 0)), S.Bd[3].position.clone().add(V3(-0.3, 0.1, 0)), 0xd64545); glw(S.Bd[3], HL); T('n − 1 種', 'ptr alt', 0.4, 1.0, S.A[1].position.z); cap('a₂ 不能選 b₁', '剩 n − 1 種'); },
-  async (tok, S) => { arrow(S.A[2].position.clone().add(V3(0.3, 0.1, 0)), S.Bd[1].position.clone().add(V3(-0.3, 0.1, 0)), 0xd64545); T('n − m + 1', 'ptr alt', 0.4, 1.0, S.A[2].position.z); S.B.add('n(n − 1)…(n − m + 1)', 'good'); cap('最後一個剩 n − m + 1 種', '示意 4 × 3 × 2 = ' + Pn(4, 3)); },
+  async (tok, S) => { frameHold(-6.6, 0, -1.6, 4.0, 6.6, 2.2); S.A = setDots(['a₁', 'a₂', 'a₃'], -1.8, FC.blue, 0.4); S.Bd = setDots(['b₁', 'b₂', 'b₃', 'b₄'], 2.6, FC.green, 0.4); S.B = board(-6.6, 6.4, 0.55); S.B.add('|A| = m、|B| = n，一對一函式有幾個？'); cap('還是函式的例子', '這次要求 injective（一對一）'); },
+  async (tok, S) => { S.cl = (i, t) => { const l = T(t, 'ptr alt', S.A[i].position.x - 1.15, 0.3, S.A[i].position.z); if (l.center) l.center.set(1, 0.5); return l; }; S.B.add('a₁ 對到 b₁ → a₂ 就不能對 b₁'); cap('兩個對到同一個就不是一對一', '（示意 m = 3、n = 4）'); },
+  async (tok, S) => { arrow(S.A[0].position.clone().add(V3(0.3, 0.1, 0)), S.Bd[0].position.clone().add(V3(-0.3, 0.1, 0)), 0xd64545); glw(S.Bd[0], HL); S.cl(0, 'n 種'); cap('a₁：n 種都可以', ''); },
+  async (tok, S) => { arrow(S.A[1].position.clone().add(V3(0.3, 0.1, 0)), S.Bd[3].position.clone().add(V3(-0.3, 0.1, 0)), 0xd64545); glw(S.Bd[3], HL); S.cl(1, 'n − 1 種'); cap('a₂ 不能選 b₁', '剩 n − 1 種'); },
+  async (tok, S) => { arrow(S.A[2].position.clone().add(V3(0.3, 0.1, 0)), S.Bd[1].position.clone().add(V3(-0.3, 0.1, 0)), 0xd64545); S.cl(2, 'n − m + 1'); S.B.add('n(n − 1)…(n − m + 1)', 'good'); cap('最後一個剩 n − m + 1 種', '示意 4 × 3 × 2 = ' + Pn(4, 3)); },
   async (tok, S) => { S.B.add('= ordered selection without repetition'); cap('跟「有順序、不重複」同一個問題', '選了就不能再選'); },
   async (tok, S) => { S.B.add('鴿籠原理：要 n ≥ m（最後一項 ≥ 1）', 'say'); cap('鴿籠原理告訴我們 n ≥ m', '才有一對一函式'); },
 ], [[0, 5.6, 11.5], [0.2, 1.4, 0]]);
@@ -2492,7 +2519,7 @@ scene('ct-z9-sub8', '8 個元素的集合：3、5、9 元素子集合', [
 ], [[0, 4.4, 13.5], [0, 2.8, 0]]);
 
 scene('ct-z9-pid', 'Pascal identity 的組合式證明', [
-  async (tok, S) => { S.B = board(-6.6, 6.4, 0.55); S.B.add('Pascal identity：(n r) = (n−1 r−1) + (n−1 r)'); cap('binomial coefficient 的性質', 'Pascal identity'); },
+  async (tok, S) => { frameHold(-6.6, 0, -0.3, 6.0, 6.6, 0.9); S.B = board(-6.6, 6.4, 0.66); S.B.add('Pascal identity：(n r) = (n−1 r−1) + (n−1 r)'); cap('binomial coefficient 的性質', 'Pascal identity'); },
   async (tok, S) => { S.B.add('可以畫出 Pascal triangle'); cap('用它可以畫出巴斯卡三角形', ''); },
   async (tok, S) => { S.B.add('證法一：代定義、整理', 'say'); cap('一種證法：把定義帶進去', '右邊加一加整理'); },
   async (tok, S) => { S.B.add('證法二：combinatorial argument'); cap('另一種：combinatorial argument', '組合的方式來講'); },
