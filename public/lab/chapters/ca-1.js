@@ -364,7 +364,8 @@ export default function (ctx) {
   }
   function floatRow(y = 0.4) {
     const r = bitRow(32, 0, y, 0, 0.38, fcol, [1, 9]);
-    tag('S', 'ptr', r.xs[0], 0, 1.0); tag('exponent（8）', 'ptr', (r.xs[1] + r.xs[8]) / 2, 0, 1.0); tag('fraction（23）', 'ptr', (r.xs[9] + r.xs[31]) / 2, 0, 1.0);
+    // field names right under their own row (for the default y = 0.4 this is where they always were)
+    r.extra = [tag('S', 'ptr', r.xs[0], y - 0.4, 1.0), tag('exponent（8）', 'ptr', (r.xs[1] + r.xs[8]) / 2, y - 0.4, 1.0), tag('fraction（23）', 'ptr', (r.xs[9] + r.xs[31]) / 2, y - 0.4, 1.0)];
     return r;
   }
   function decodeText(b) {
@@ -766,7 +767,7 @@ export default function (ctx) {
   async function scFpAdd(tok) {
     fresh([0, 4.2, 13.5], [0, 2.4, 0]);
     const slot = (k) => -1.6 + k * 1.0;
-    const mk = (bits, y, color) => bits.split('').map((b, k) => cube(b, color, [0.8, 0.6, 0.8], slot(k), y, 0, 2));
+    const mk = (bits, y, color) => bits.split('').map((b, k) => cube(b, color, [0.8, 0.6, 0.8], slot(k), y, 0, 0.4));
     const dot = (y) => tag('.', 'val', slot(0) + 0.5, y);
     say('例：0.5 + (−0.4375)，有效位數 4 bits', '');
     await beat(tok, 2000);
@@ -777,7 +778,7 @@ export default function (ctx) {
     await beat(tok, 1200);
     fly(Y[3], V3(3, 5, 3));
     for (let k = 2; k >= 0; k--) move(Y[k], slot(k + 1), 3.2);
-    Y = [cube('0', '#dd8238', [0.8, 0.6, 0.8], slot(0), 3.2, 0, 2), Y[0], Y[1], Y[2]];
+    Y = [cube('0', '#dd8238', [0.8, 0.6, 0.8], slot(0), 3.2, 0, 0.4), Y[0], Y[1], Y[2]];
     txt(ey, '× 2⁻¹');
     await beat(tok, 2400);
     line([[-2.4, 2.4, 0], [2.4, 2.4, 0]], '#6e5f49');
@@ -787,7 +788,7 @@ export default function (ctx) {
     say('3. 正規化：左移 3 位 → 1.000 × 2⁻⁴', '檢查 −126 ≤ −4 ≤ 127：沒有 overflow / underflow');
     for (let k = 0; k < 3; k++) fly(Z[k], V3(-4, 5, 3));
     move(Z[3], slot(0), 1.5);
-    Z = [Z[3], ...[1, 2, 3].map((k) => cube('0', '#2fc092', [0.8, 0.6, 0.8], slot(k), 1.5, 0, 2))];
+    Z = [Z[3], ...[1, 2, 3].map((k) => cube('0', '#2fc092', [0.8, 0.6, 0.8], slot(k), 1.5, 0, 0.4))];
     txt(ez, '× 2⁻⁴');
     await beat(tok, 3000);
     say('4. 捨入：剛好 4 bits，不用動', '結果 1.000 × 2⁻⁴ = 0.0625');
@@ -1053,9 +1054,17 @@ function list(x, yTop, dy = 0.55, cls = 'idx') {
 function vbar(c, x, h, w = 0.7, y0 = 0, d = 0.7) { const m = lab.box(c, [w, 1, d]); m.scale.y = Math.max(0.001, h); m.position.set(x, y0 + Math.max(0.001, h) / 2, 0); lab.world.add(m); return m; }
 const dbits = (x) => { const dv = new DataView(new ArrayBuffer(8)); dv.setFloat64(0, x); return dv.getUint32(0).toString(2).padStart(32, '0') + dv.getUint32(4).toString(2).padStart(32, '0'); };
 const fmtN = (n) => n.toLocaleString('en-US');
+// An invisible box over the area a scene will use later: the stage's auto framing measures it from the
+// first step, so the camera does not zoom in on the first few things and then jump back out.
+function frameHold(x0, y0, x1, y1, z0 = -0.3, z1 = 0.3) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+}
 function scene(id, title, steps, cam) {
   FRAG.push([id, title, async (tok) => {
     const c = cam || [[0, 4.2, 14], [0, 3.0, 0]]; fresh(c[0], c[1]);
+    // the usual picture area around where the camera looks, held from the first step (no zoom-in, then jump back)
+    frameHold(c[1][0] - 4.5, c[1][1] - 1.8, c[1][0] + 4.5, c[1][1] + 2.8);
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
@@ -1084,7 +1093,7 @@ scene('nuA-1a-binary', '為什麼電腦用二進位：電壓只分 high / low', 
   async (tok, S) => { // 58.8 電壓分 high、low
     const hs = [2.6, 0.5, 2.3, 0.6, 0.4, 2.7, 2.4, 0.5];
     S.hs = hs; S.bars = hs.map((h, i) => vbar(NC.tan, -3.5 + i * 1.0, h, 0.6, 0.3));
-    sm('signal 的電壓（示意）', -0.0, -0.2);
+    sm('signal 的電壓（示意）', 5.7, 0.8);
     cap('訊號的電壓分成 high 和 low', '');
   },
   async (tok, S) => { // 66.8 threshold
@@ -1094,12 +1103,12 @@ scene('nuA-1a-binary', '為什麼電腦用二進位：電壓只分 high / low', 
   },
   async (tok, S) => { // 79.0 只有兩種 state
     S.hs.forEach((h, i) => tag(h > 1.5 ? 'high' : 'low', 'idx', -3.5 + i * 1.0, h + 0.75));
-    note('只有兩種 state：high/low ＝ true/false ＝ 1/0', 0, 5.9);
+    gone(S.inf); S.nt = note('只有兩種 state：high/low ＝ true/false ＝ 1/0', 1.4, 4.9);
     cap('所以只有兩種狀態', '叫 high/low、true/false、1/0 都可以');
   },
   async (tok, S) => { // 91.0 bit
-    S.bits = S.hs.map((h, i) => hot(h > 1.5 ? '1' : '0', -3.5 + i * 1.0, -0.8));
-    good('一個 signal ＝ 一個 bit：只有 0 和 1', 0, 3.6);
+    S.bits = S.hs.map((h, i) => hot(h > 1.5 ? '1' : '0', -3.5 + i * 1.0, -0.5));
+    txt(S.nt, '一個 signal ＝ 一個 bit：只有 0 和 1（high/low ＝ true/false）'); S.nt.element.className = 'lab-label good';
     cap('這個 signal 就是一個 bit', '一個 bit 只有 0 跟 1');
   },
 ]);
@@ -1111,17 +1120,17 @@ scene('nuA-1a-nmos', 'Transistor：NMOS 怎麼當開關', [
     cap('要讓訊號運作，需要一個電子開關', 'switch 用 transistor 做');
   },
   async (tok, S) => { // 119.8 NMOS 結構：底座 p-type
-    mos(S, 0, 0.2, 'body');
+    gone(S.sw, S.t); mos(S, 0, 0.2, 'body');
     hd('NMOS transistor 剖面', 0, 4.8);
     cap('NMOS 的底座是 p-type silicon', 'silicon 是半導體，p-type 電洞比較多');
   },
   async (tok, S) => { // 143.0 n-type
     S.ns = [-2.4, 2.4].map((dx) => bx('n', '#9fc6ee', dx, 1.25, 0.2, 1.7, 0.5, 1.3));
-    sm('n-type：電子比較多（帶 −）', 0, 3.9);
+    S.nl = sm('n-type：電子比較多（帶 −）', 0, 3.9);
     cap('兩邊是 n-type silicon', '電子比較多，帶負電');
   },
   async (tok, S) => { // 168.0 oxide insulator
-    S.ox = bx('', '#f5f1e8', 0, 1.56, 0.2, 3.1, 0.12, 1.2); sm('oxide insulator（氧化物絕緣層）', 4.4, 2.4);
+    S.ox = bx('', '#f5f1e8', 0, 1.56, 0.2, 3.1, 0.12, 1.2); S.ol = sm('oxide insulator（氧化物絕緣層）', 4.4, 2.4);
     cap('中間一層 oxide insulator', '氧化的絕緣物質');
   },
   async (tok, S) => { // 177.0 gate
@@ -1129,15 +1138,15 @@ scene('nuA-1a-nmos', 'Transistor：NMOS 怎麼當開關', [
     cap('最上面是金屬層，叫 gate', '這就是一個基本的 switch');
   },
   async (tok, S) => { // 197.4 PMOS
-    note('PMOS：n 和 p 對調（底座 n-type，兩邊 p-type）', 0, 6.4);
+    note('PMOS：n 和 p 對調（底座 n-type，兩邊 p-type）', 0, 5.7);
     cap('相對的還有 PMOS', 'NMOS + PMOS 就能組成 gate，建出電腦');
   },
   async (tok, S) => { // 240.0 三個 terminal
-    hd('source', -2.4, 2.4); hd('drain', 2.4, 2.4); hd('gate', 0, 2.7);
+    gone(S.nl, S.ol); hd('source', -2.4, 2.4); hd('drain', 2.4, 2.4); hd('gate', 0, 2.7);
     cap('三個 terminal：source、drain、gate', '加不同電壓就能讓它開或關');
   },
   async (tok, S) => { // 279.0 gate 加 high voltage
-    hot('gate 加 high voltage', 0, 3.4); glow(S.gate.material ? S.gate : S.gate, HL);
+    S.hv = hot('gate 加 high voltage', 0, 3.5); glow(S.gate.material ? S.gate : S.gate, HL);
     S.e = [];
     for (let k = 0; k < 6; k++) { const m = cube('−', NC.blue, [0.28, 0.22, 0.28], -1.2 + k * 0.48, 0.5, 0.75); S.e.push(m); }
     for (let k = 0; k < 6; k++) await slide(tok, S.e[k], -1.2 + k * 0.48, 1.2, 0.75, 120);
@@ -1149,12 +1158,12 @@ scene('nuA-1a-nmos', 'Transistor：NMOS 怎麼當開關', [
     cap('electron 在 drain 和 source 之間', '形成一條 channel');
   },
   async (tok, S) => { // 321.0 加電位差 → 電流 → 開
-    S.a = lk(-2.4, 0.75, 2.4, 0.75, 0x2fc092, 0.9); good('有電流 → 開（ON）', 0, -0.9);
+    S.a = lk(-2.4, 0.75, 2.4, 0.75, 0x2fc092, 0.9); good('有電流 → 開（ON）', 5.4, 0.8);
     await runDot(tok, '電流', [[-2.4, 0.4], [2.4, 0.4]], 900, 'good');
     cap('source、drain 間加電位差', '電流流過去，開關是「開」');
   },
   async (tok, S) => { // 331.2 拿掉 gate voltage → 關
-    gone(S.ch, S.e, S.a); glow(S.gate, null); bad('gate 電壓拿掉：channel 消失 → 關（OFF）', 0, 3.4);
+    gone(S.ch, S.e, S.a, S.hv); glow(S.gate, null); bad('gate 電壓拿掉：channel 消失 → 關（OFF）', 0, 3.5);
     cap('把 gate 的電壓拿走', 'channel 不見了，開關是「關」');
   },
 ]);
@@ -1216,46 +1225,48 @@ scene('nuA-1a-nand', '用 NMOS、PMOS 組出 NAND gate', [
 
 scene('nuA-1a-units', '從 gate 到加法器、乘法、latch、register', [
   async (tok, S) => { // 567.6 有 NAND 就能做 function unit
-    hot('有了 NAND gate → 做 function unit', 0, 6.4);
+    frameHold(-6.0, 0.0, 6.6, 6.8);
+    S.t = hot('有了 NAND gate → 做 function unit', 0, 6.4);
     cap('有了邏輯閘', '就能做 function unit');
   },
   async (tok, S) => { // 572.0 full adder
-    S.fa = bx('full adder', NC.purple, -3.8, 4.4, 0, 2.2, 0.8, 1.0);
+    S.fa = bx('full adder', NC.purple, -3.6, 4.6, 0, 2.2, 0.8, 1.0);
     const a = 1, b = 1, ci = 0, s = a ^ b ^ ci, co = (a & b) | (a & ci) | (b & ci);
-    sm('3 個 input：a、b、carry-in', -3.8, 5.3); sm('2 個 output：sum、carry-out', -3.8, 3.6);
-    ok(s + 2 * co === a + b + ci, '示意：1 + 1 + 0 → sum ' + s + '、carry ' + co + '（= 2）✓', -3.8, 2.9);
+    S.fl = [sm('3 個 input：a、b、carry-in', -3.6, 5.5), sm('2 個 output：sum、carry-out', -3.6, 3.8)];
+    S.fk = ok(s + 2 * co === a + b + ci, '示意：1 + 1 + 0 → sum ' + s + '、carry ' + co + '（= 2）✓', -3.6, 3.1);
     cap('一個 bit 的 full adder', '三個 bit 相加 → sum 和 carry');
   },
   async (tok, S) => { // 600.0 重複 → 16、32 bits
-    S.row = []; for (let i = 0; i < 16; i++) S.row.push(cube('FA', NC.lilac, [0.36, 0.4, 0.5], 0.3 + i * 0.4, 4.4, 0));
-    sm('16 個串起來 → 16-bit 加法器；再加倍 → 32-bit', 3.3, 3.6);
+    S.row = []; for (let i = 0; i < 16; i++) { const m = cube('FA', NC.lilac, [0.4, 0.4, 0.5], -0.9 + i * 0.47, 4.6, 0); small(m.userData.lbl, 9); S.row.push(m); }
+    S.rl = sm('16 個串起來 → 16-bit 加法器；再加倍 → 32-bit', 2.6, 3.9);
     cap('會做 1 bit，就會做 16、32 bits', '每個 bit 做的事都一樣，重複就好');
   },
   async (tok, S) => { // 618.0 乘法 = shift and add
+    gone(S.fl, S.fk);
     const a = 3, b = 5; const pp = [0, 1, 2, 3].map((k) => ((b >> k) & 1 ? a << k : 0));
     const sum = pp.reduce((x, y) => x + y, 0);
-    S.m = list(-3.8, 2.2, 0.45, 'idx'); S.m.add('示意：0011 × 0101', 'ptr');
+    S.m = list(-3.4, 3.3, 0.45, 'idx'); S.m.add('示意：0011 × 0101', 'ptr');
     pp.forEach((v, k) => S.m.add('  ' + v.toString(2).padStart(7, '0') + (k ? '  （左移 ' + k + '）' : '')));
-    ok(sum === a * b, '加起來 ' + sum.toString(2) + ' = ' + sum + ' = 3 × 5 ✓', 2.6, 0.4);
+    S.mk = ok(sum === a * b, '加起來 ' + sum.toString(2) + ' = ' + sum + ' = 3 × 5 ✓', 2.6, 2.0);
     cap('乘法就是 shift and add', '把 partial product 移位再加起來');
   },
   async (tok, S) => { // 642.0 要儲存
-    gone(S.row, S.m, S.fa); hot('電腦也一定要能「儲存」', 0, 5.6);
+    gone(S.row, S.rl, S.m, S.mk, S.fa); txt(S.t, '電腦也一定要能「儲存」');
     cap('會運算還不夠', '電腦一定要能儲存');
   },
   async (tok, S) => { // 653.0 cross-coupled → latch
-    S.g1 = bx('NAND', NC.purple, -2.2, 4.4, 0, 1.3, 0.6, 0.8); S.g2 = bx('NAND', NC.purple, -2.2, 2.8, 0, 1.3, 0.6, 0.8);
-    lk(-1.5, 4.4, -2.0, 3.15, 0xc08a1f); lk(-1.5, 2.8, -2.0, 4.05, 0xc08a1f);
-    S.q = hot('Q = 1', 0.4, 4.4); good('cross-coupled → SR latch：存 1 個 bit', -2.2, 1.8);
+    S.g1 = bx('NAND', NC.purple, -3.6, 4.6, 0, 1.3, 0.6, 0.8); S.g2 = bx('NAND', NC.purple, -3.6, 3.0, 0, 1.3, 0.6, 0.8);
+    lk(-2.9, 4.6, -3.4, 3.35, 0xc08a1f); lk(-2.9, 3.0, -3.4, 4.25, 0xc08a1f);
+    S.q = hot('Q = 1', -1.7, 4.6); good('cross-coupled → SR latch：存 1 個 bit', -3.4, 2.0);
     cap('兩個 gate 交叉接起來 → latch', '存了 1 就一直是 1，存 0 就是 0');
   },
   async (tok, S) => { // 674.0 擴充 → register
-    S.reg = []; for (let i = 0; i < 16; i++) S.reg.push(cube(i % 3 ? '0' : '1', i % 3 ? NC.off : NC.blue, [0.36, 0.4, 0.5], 1.2 + i * 0.36, 3.0, 0));
-    hd('16（或 32）個 latch → register', 4.0, 3.8);
+    S.reg = []; for (let i = 0; i < 16; i++) S.reg.push(cube(i % 3 ? '0' : '1', i % 3 ? NC.off : NC.blue, [0.38, 0.4, 0.5], -0.2 + i * 0.44, 3.6, 0));
+    hd('16（或 32）個 latch → register', 3.1, 4.4);
     cap('一個 bit 擴充成 16、32 bits', '就是一個 register（暫存器）');
   },
   async (tok, S) => { // 687.0 元件都做得出來
-    good('會運算 ＋ 會記憶 → 電腦的元件都能做出來', 0, 0.4); sm('（這些在「數位邏輯設計」學過）', 0, -0.3);
+    good('會運算 ＋ 會記憶 → 電腦的元件都能做出來', 0, 1.1); sm('（這些在「數位邏輯設計」學過）', 0, 0.4);
     cap('運算和記憶都有了', '電腦的元件大體上都能做出來');
   },
 ]);
@@ -1398,47 +1409,47 @@ scene('nuA-1a-flow', '從 high-level language 到 machine language', [
 
 scene('nuA-1a-isa', 'Instruction set 規定了哪些事', [
   async (tok, S) => { // 1252.0 software 角度
-    S.sw = buddy('software 的人', '', NC.mint, -5.2, 3.6, 0, 0.9); bub('看到的是 conceptual structure ＋ functional behavior', -1.0, 6.4);
+    S.sw = buddy('software 的人', '', NC.mint, -6.1, 3.6, 0, 0.9); bub('看到的是 conceptual structure ＋ functional behavior', -1.0, 6.4);
     cap('從 software 的角度看', '只看概念結構和功能行為，不管怎麼實作');
   },
   async (tok, S) => { // 1266.0 三個 operand
-    const b = 2, c = 3; S.c3 = list(-1.8, 5.4, 0.5); S.c3.add('三個 operand（示意 b = 2、c = 3）：', 'ptr');
+    const b = 2, c = 3; S.c3 = list(-0.8, 5.4, 0.5); S.c3.add('三個 operand（示意 b = 2、c = 3）：', 'ptr');
     mono(S.c3.add('add a, b, c      # a = b + c = ' + (b + c)));
-    sm('1 個 instruction', 3.6, 4.9);
+    S.i1 = sm('1 個 instruction', 4.6, 4.9);
     cap('如果 instruction 有三個 operand', '兩個加起來放到第三個，一個指令就好');
   },
   async (tok, S) => { // 1277.0 只有兩個 operand
     const b = 2, c = 3; let a = 0; a = b; a = a + c;
-    S.c2 = list(-1.8, 3.9, 0.5); S.c2.add('只有兩個 operand（destination ＝ source）：', 'ptr');
+    S.c2 = list(-0.8, 3.9, 0.5); S.c2.add('只有兩個 operand（destination ＝ source）：', 'ptr');
     mono(S.c2.add('move a, b         # a = ' + b)); mono(S.c2.add('add  a, c         # a = a + c = ' + a));
-    ok(a === b + c, '2 個 instruction，結果一樣 ' + a + ' ✓', 3.6, 3.0);
+    S.k3 = ok(a === b + c, '2 個 instruction，結果一樣 ' + a + ' ✓', -0.8, 2.3);
     cap('只准兩個 operand', '就要兩個 instruction，也要不同 hardware');
   },
   async (tok, S) => { // 1335.0 16 還是 32 個 register
-    gone(S.c3, S.c2); S.regs = []; for (let i = 0; i < 32; i++) S.regs.push(cube('', i < 16 ? NC.sky : NC.lilac, [0.3, 0.35, 0.4], -4.6 + (i % 16) * 0.38, i < 16 ? 5.2 : 4.7, 0));
-    sm('16 個 → 數量少、可能比較快；32 個 → 結構不同', 2.6, 5.9);
+    gone(S.c3, S.c2, S.i1, S.k3); S.regs = []; for (let i = 0; i < 32; i++) S.regs.push(cube('', i < 16 ? NC.sky : NC.lilac, [0.3, 0.35, 0.4], -4.6 + (i % 16) * 0.38, i < 16 ? 5.2 : 4.7, 0));
+    S.rl = sm('16 個 → 數量少、可能比較快；32 個 → 結構不同', -1.75, 5.9);
     cap('storage 怎麼組織：16 還是 32 個 register', '影響很大');
   },
   async (tok, S) => { // 1358.0 data encoding
     const v = 5, two = bin(-v, 8), one = inv(bin(v, 8));
-    S.e = list(-1.8, 4.0, 0.5); S.e.add('data encoding：負數怎麼表示？（示意 −5，8 bits）', 'ptr');
+    gone(S.regs, S.rl); S.e = list(-0.8, 4.0, 0.5); S.e.add('data encoding：負數怎麼表示？（示意 −5，8 bits）', 'ptr');
     mono(S.e.add("2's complement：" + grp(two))); mono(S.e.add("1's complement：" + grp(one)));
-    ok(sval(two) === -v && uval(two) + v === 256, "2's：反相再 +1；兩種表示 adder 設計不同 ✓", 1.0, 2.4);
+    S.k5 = ok(sval(two) === -v && uval(two) + v === 256, "2's：反相再 +1；兩種表示 adder 設計不同 ✓", -0.8, 2.4);
     cap("負數用 2's complement 還是 1's complement？", '表示法不同，加減的硬體就不同');
   },
   async (tok, S) => { // 1380.0 有沒有乘法 instruction
-    gone(S.e); const a = 6, n = 4; let s = 0; for (let k = 0; k < n; k++) s += a;
-    S.m = list(-1.8, 4.0, 0.5); S.m.add('有沒有乘法 instruction？', 'ptr');
+    gone(S.e, S.k5); const a = 6, n = 4; let s = 0; for (let k = 0; k < n; k++) s += a;
+    S.m = list(-0.8, 4.0, 0.5); S.m.add('有沒有乘法 instruction？', 'ptr');
     S.m.add('有 → 要一個很大的乘法器（hardware、resource）'); S.m.add('沒有 → 用加減模擬，示意 6×4 = 6+6+6+6');
-    ok(s === a * n, n + ' 次加法 = ' + s + ' ✓（但要很多 cycle）', 1.0, 2.4);
+    S.k6 = ok(s === a * n, n + ' 次加法 = ' + s + ' ✓（但要很多 cycle）', -0.8, 2.4);
     cap('不常用乘法，可能不設乘法 instruction', '代價是要很多 cycle、很多時間');
   },
   async (tok, S) => { // 1422.0 format、addressing
-    gone(S.m); S.l = list(-1.8, 4.0, 0.5); S.l.add('instruction format：bits 怎麼排', 'ptr'); S.l.add('怎麼拿 data（addressing）', 'ptr');
+    gone(S.m, S.k6); S.l = list(-0.8, 4.0, 0.5); S.l.add('instruction format：bits 怎麼排', 'ptr'); S.l.add('怎麼拿 data（addressing）', 'ptr');
     cap('還要規定 instruction format', '以及怎麼拿到 data');
   },
   async (tok, S) => { // 1432.0 MIPS R3000
-    hot('本課範例：MIPS R3000 instruction set', 1.0, 2.6); sm('先學 instruction set，再看 hardware 怎麼建', 1.0, 2.0);
+    hot('本課範例：MIPS R3000 instruction set', -0.8, 2.8); sm('先學 instruction set，再看 hardware 怎麼建', -0.8, 2.2);
     cap('這門課用 MIPS R3000 當範例', '先介紹 ISA，再看 hardware 怎麼做');
   },
   async (tok, S) => { // 1458.0 只有三種 format
@@ -1503,7 +1514,8 @@ function yearAxis(y0, y1, yy = 0.2, xa = -6.0, xb = 6.0) {
   const X = (yr) => xa + (xb - xa) * (yr - y0) / (y1 - y0);
   seg(xa, yy, xb, yy, '#8a7a5c'); return X;
 }
-function yearMark(X, yr, text, row = 0, cls = 'idx', yy = 0.2) { cube('', NC.gold, [0.12, 0.3, 0.12], X(yr), yy + 0.15, 0); sm(String(yr), X(yr), yy - 0.45); return tag(text, cls, X(yr), yy + 0.9 + row * 0.6); }
+// ydy: drop the year number a little further, when a neighbouring year sits too close
+function yearMark(X, yr, text, row = 0, cls = 'idx', yy = 0.2, ydy = 0) { cube('', NC.gold, [0.12, 0.3, 0.12], X(yr), yy + 0.15, 0); sm(String(yr), X(yr), yy - 0.45 - ydy); return tag(text, cls, X(yr), yy + 0.9 + row * 0.6); }
 
 scene('nuA-2a-outline', '本單元三個主題：歷史、abstraction、technology 與 performance', [
   async (tok, S) => { // 5.6 三個部分
@@ -1596,28 +1608,28 @@ scene('nuA-2a-eniac', 'ENIAC：第一部全電子、可程式的通用電腦', [
   },
   async (tok, S) => { // 274.8 ENIAC 1943–1946
     S.X = yearAxis(1938, 1950, 0.2); S.e1 = yearMark(S.X, 1943, 'ENIAC 開始'); S.e2 = yearMark(S.X, 1946, '完成', 0, 'good');
-    sm('University of Pennsylvania 的 project', 0, 5.6);
+    S.up = sm('University of Pennsylvania 的 project', 0, 5.6);
     cap('ENIAC：1943 年在 U Penn 開始', '一直到 1946 年才完成');
   },
   async (tok, S) => { // 290.2 二次大戰
     S.w = bx('第二次世界大戰 1939–1945', NC.rose, (S.X(1939) + S.X(1945)) / 2, 2.4, 0, S.X(1945) - S.X(1939), 0.4, 0.5);
-    sm('老師：破解密碼要大量運算（ENIAC 實際是算火砲射表）', S.X(1942), 3.1);
+    S.wn = sm('老師：破解密碼要大量運算（ENIAC 實際是算火砲射表）', S.X(1942), 3.1);
     cap('那時候正在打二次世界大戰', '戰爭需要大量運算（ENIAC 原本是算彈道射表）');
   },
   async (tok, S) => { // 322.4 25 公尺
-    gone(S.w, S.e1, S.e2); S.track = vbar(NC.tan, 0, 0.15, 12.0, 4.6, 0.4); sm('100 m 跑道', -5.2, 5.1);
+    gone(S.w, S.e1, S.e2, S.wn, S.up); S.track = vbar(NC.tan, 0, 0.15, 12.0, 4.6, 0.4); S.sz = [sm('100 m 跑道', -5.2, 5.1)];
     S.en = bx('ENIAC 25 m', NC.gold, -6 + 12 * 25 / 100 / 2, 4.1, 0, 12 * 25 / 100, 0.5, 0.6);
-    ok(25 / 100 === 0.25, '25 m ÷ 100 m = 1/4 個跑道 ✓', 2.4, 4.1);
+    S.sz.push(ok(25 / 100 === 0.25, '25 m ÷ 100 m = 1/4 個跑道 ✓', 2.4, 4.1));
     cap('第一台電腦長 25 公尺', '是 100 公尺跑道的四分之一');
   },
   async (tok, S) => { // 334.9 2.5 公尺高
     S.tall = vbar(NC.gold, -4.0, 2.5, 0.9, 0.3); S.man = vbar(NC.sky, -2.8, 1.7, 0.6, 0.3);
-    sm('ENIAC 2.5 m', -4.0, 3.2); sm('人 170 cm', -2.8, 2.4); ok(2.5 > 1.7, '2.5 m 比 170 cm 的人還高 ' + Math.round((2.5 - 1.7) * 100) + ' cm ✓', 1.0, 2.4);
+    S.sz.push(sm('ENIAC 2.5 m', -4.0, 3.2), sm('人 170 cm', -2.8, 2.4)); S.sz.push(ok(2.5 > 1.7, '2.5 m 比 170 cm 的人還高 ' + Math.round((2.5 - 1.7) * 100) + ' cm ✓', 1.0, 2.4));
     cap('高 2.5 公尺', '比 170 公分的同學還高');
   },
   async (tok, S) => { // 343.5 真空管
-    S.tube = []; for (let i = 0; i < 6; i++) S.tube.push(cube('', '#f3e3b0', [0.3, 0.6, 0.3], 3.2 + i * 0.5, 0.6, 0));
-    sm('vacuum tube（真空管）當 switch', 4.4, 1.4);
+    gone(S.track, S.en, S.tall, S.man, S.sz); S.tube = []; for (let i = 0; i < 6; i++) S.tube.push(cube('', '#f3e3b0', [0.3, 0.6, 0.3], 3.2 + i * 0.5, 0.6, 0));
+    S.tl = sm('vacuum tube（真空管）當 switch', 4.4, 1.4);
     cap('用真空管當 switch', 'switch 是組成電腦最重要的元件');
   },
   async (tok, S) => { // 357.9 1900 個加法
@@ -1629,11 +1641,11 @@ scene('nuA-2a-eniac', 'ENIAC：第一部全電子、可程式的通用電腦', [
     cap('programming 不是寫程式', '是靠人去調整 cable 和 switch');
   },
   async (tok, S) => { // 396.1 電晶體
-    gone(S.tube); S.tr = bx('transistor（電晶體）', NC.blue, 4.4, 0.6, 0, 2.8, 0.5, 0.7); sm('比真空管 reliable', 4.4, 1.3);
+    gone(S.tube, S.tl); S.tr = bx('transistor（電晶體）', NC.blue, 4.4, 0.6, 0, 2.8, 0.5, 0.7); sm('比真空管 reliable', 4.4, 1.3);
     cap('差不多同時發明了電晶體', '跟真空管比，比較 reliable');
   },
   async (tok, S) => { // 415.5 switch → IC
-    sm('下一個時期：transistor 當 switch → 後來變成 IC', 2.0, -0.6);
+    sm('下一個時期：transistor 當 switch → 後來變成 IC', 2.0, 3.6);
     cap('之後用 transistor 當 switch', '再和其他元件做成 IC');
   },
 ]);
@@ -1645,7 +1657,7 @@ scene('nuA-2a-ic', '50 年代商品化、IBM、Integrated Circuit', [
     cap('50 年代電腦開始商品化', '很貴、很大台，要專門的房間');
   },
   async (tok, S) => { // 442.9 用途
-    sm('用途：商務辦公室自動化、科學計算', -3.0, 4.0);
+    S.use = sm('用途：商務辦公室自動化、科學計算', -3.0, 4.0);
     cap('主要用在商務、辦公室自動化', '或是科學計算');
   },
   async (tok, S) => { // 459.3 IBM 1401
@@ -1654,31 +1666,32 @@ scene('nuA-2a-ic', '50 年代商品化、IBM、Integrated Circuit', [
   },
   async (tok, S) => { // 472.9 IBM 原本做 punch card
     S.card = bx('', '#f6efd2', 3.4, 4.8, 0, 3.2, 1.4, 0.06);
-    S.holes = []; const pat = '10110010'; [...pat].forEach((b, i) => S.holes.push(cube(b === '1' ? '●' : '', b === '1' ? NC.dark : '#f6efd2', [0.28, 0.28, 0.08], 2.1 + i * 0.37, 4.8, 0.06)));
-    sm('punch card（打孔卡）', 3.4, 5.8);
+    S.holes = []; const pat = '10110010'; [...pat].forEach((b, i) => S.holes.push(cube(b === '1' ? '●' : '', b === '1' ? NC.dark : '#f6efd2', [0.3, 0.3, 0.08], 1.95 + i * 0.42, 4.8, 0.06)));
+    S.holes.forEach((m) => { if (m.userData.lbl) small(m.userData.lbl, 8); });
+    S.cl = [sm('punch card（打孔卡）', 3.4, 5.8)];
     cap('IBM 一開始只做 punch card', '以前寫程式、輸入 data 都要打卡片');
   },
   async (tok, S) => { // 489.5 打洞 → 光透過去或不透
-    mt('有洞 1、沒洞 0（示意）：10110010', 3.4, 3.7);
+    S.cl.push(mt('有洞 1、沒洞 0（示意）：10110010', 3.4, 3.7));
     cap('每個位置打洞或不打', '光透過去或不透過去 → 1 或 0');
   },
   async (tok, S) => { // 510.8 Big Blue
-    sm('IBM 50 年代才開始做電腦，人稱 Big Blue', 3.4, 3.1);
+    S.cl.push(sm('IBM 50 年代才開始做電腦，人稱 Big Blue', 3.4, 3.1));
     cap('IBM 常被稱為 Big Blue', '');
   },
   async (tok, S) => { // 522.3 Integrated Circuit
-    gone(S.room, S.big, S.card, S.holes); hot('Integrated Circuit（IC）的出現', 0, 6.4);
+    gone(S.room, S.big, S.card, S.holes, S.use, S.cl); hot('Integrated Circuit（IC）的出現', 0, 6.4);
     cap('這個時期另一件大事', 'Integrated Circuit（IC）出現');
   },
   async (tok, S) => { // 527.0 discrete components
     S.dc = [['T', NC.blue], ['R', NC.orange], ['C', NC.green], ['T', NC.blue], ['R', NC.orange]].map(([t, c], i) => bx(t, c, -5.4 + i * 1.3, 4.0, 0, 0.7, 0.6, 0.7));
-    for (let i = 0; i < 4; i++) seg(-5.05 + i * 1.3, 4.0, -4.75 + i * 1.3, 4.0, '#6e5f49', 0.2);
-    sm('discrete：transistor、電阻 R、電容 C 一個一個接 → 很佔空間', -2.8, 3.2);
+    S.sg = []; for (let i = 0; i < 4; i++) S.sg.push(seg(-5.05 + i * 1.3, 4.0, -4.75 + i * 1.3, 4.0, '#6e5f49', 0.2));
+    S.dl = sm('discrete：transistor、電阻 R、電容 C 一個一個接 → 很佔空間', -2.8, 3.2);
     cap('有了 transistor，還要電阻、電容', '一個一個 discrete component 接起來很佔空間');
   },
   async (tok, S) => { // 550.0 single semiconductor
     S.chip = bx('IC chip：全部做在一塊半導體上', NC.metal, 3.6, 4.0, 0, 3.4, 0.4, 1.6);
-    for (const m of S.dc) { const x0 = m.position.x; await slide(tok, m, 3.0 + (x0 + 5.4) * 0.3, 4.8, 0, 160); m.scale.set(0.35, 0.35, 0.35); }
+    gone(S.sg, S.dl); for (const [i, m] of S.dc.entries()) { await slide(tok, m, 2.4 + i * 0.6, 4.7, 0, 160); m.scale.set(0.5, 0.5, 0.5); small(m.userData.lbl, 9); }
     cap('IC：transistor、電阻、電容', '全部做在一個 single semiconductor 上');
   },
   async (tok, S) => { // 571.5 shrink
@@ -1686,7 +1699,7 @@ scene('nuA-2a-ic', '50 年代商品化、IBM、Integrated Circuit', [
     cap('不用再外接', 'size 可以一直縮小，小到手碰不到');
   },
   async (tok, S) => { // 605.7 更多 device → 更大 computation power；1958
-    yearMark(S.X, 1958, 'IC 發明（1958）', 0, 'ptr alt');
+    cube('', NC.gold, [0.12, 0.3, 0.12], S.X(1958), 0.35, 0); sm('1958', S.X(1958) - 0.25, -0.85); tag('IC 發明（1958）', 'ptr alt', S.X(1958), 1.1);
     cap('一個 chip 放更多 device', '就有更大的 computation power');
   },
 ]);
@@ -1698,9 +1711,9 @@ scene('nuA-2a-pc', 'Microprocessor、PC 與 open system', [
   },
   async (tok, S) => { // 634.5 用在計算機，12 → 1
     S.ch = []; for (let i = 0; i < 12; i++) S.ch.push(cube('', NC.metal, [0.4, 0.15, 0.4], -5.6 + (i % 6) * 0.55, 4.6 + Math.floor(i / 6) * 0.55, 0));
-    sm('原本要 12 顆 chip', -4.2, 3.9);
+    S.c12 = sm('原本要 12 顆 chip', -4.2, 3.9);
     for (const m of S.ch) await slide(tok, m, -0.6, 4.9, 0, 70);
-    gone(S.ch); S.one = bx('1 顆 microprocessor', NC.metal, -0.6, 4.9, 0, 2.6, 0.3, 0.9); good('整合成一顆 → 便宜', -0.6, 4.2);
+    gone(S.ch); S.one = bx('1 顆 microprocessor', NC.metal, -0.6, 4.9, 0, 2.6, 0.3, 0.9); S.oneL = good('整合成一顆 → 便宜', -0.6, 4.2);
     cap('第一顆微處理器用在計算機上', '原本 12 顆 chip 整合成 1 顆，便宜');
   },
   async (tok, S) => { // 651.3 Apple II 1977
@@ -1712,23 +1725,23 @@ scene('nuA-2a-pc', 'Microprocessor、PC 與 open system', [
     cap('IBM PC 晚了四年', '1981 年才出來');
   },
   async (tok, S) => { // 705.0 Microsoft
-    sm('PC 也造就了 Microsoft（OS）；1980 年代～2000 年 dominate PC 市場', 0, -0.6);
+    S.ms = sm('PC 也造就了 Microsoft（OS）；1980 年代～2000 年 dominate PC 市場', 0, -0.6);
     cap('PC 也造就了微軟', '兩者在 1980～2000 年 dominate PC 市場');
   },
   async (tok, S) => { // 720.2 為什麼 IBM PC 贏？
-    S.q = hot('Apple II 早 4 年，為什麼後來大多是 IBM PC？', 0, 6.4); bub('便宜！', -4.0, 5.6);
+    gone(S.one, S.oneL, S.c12, S.ap); S.q = hot('Apple II 早 4 年，為什麼後來大多是 IBM PC？', 0, 6.4); S.b = bub('便宜！', 0, 5.6);
     cap('為什麼後來大部分 PC 是 IBM 架構？', '同學說：相對便宜');
   },
   async (tok, S) => { // 764.6 open system
-    good('IBM PC 是 open system：spec 全部公開', -2.4, 2.8); sm('誰都能做相容的零件（例如臺灣周邊產業）', -2.4, 2.2);
+    S.op = [good('IBM PC 是 open system：spec 全部公開', 0, 4.7), sm('誰都能做相容的零件（例如臺灣周邊產業）', 0, 4.1)];
     cap('它是一個 open system', 'spec 全公開，大家都能參加、都能賺錢');
   },
   async (tok, S) => { // 818.9 手機：Android vs Apple
-    sm('現在手機：Android（open）vs Apple（closed）', -2.4, 1.4);
+    S.op.push(sm('現在手機：Android（open）vs Apple（closed）', 0, 3.3));
     cap('現在手機也有兩種', 'Android 開放、Apple 封閉，誰成功還不知道');
   },
   async (tok, S) => { // 840.6 Xerox Alto
-    gone(S.q); S.alto = list(-5.0, 6.2, 0.48); S.alto.add('Xerox 實驗性 PC：Alto（1973）', 'ptr alt'); S.alto.add('mouse、Ethernet'); S.alto.add('graphics、icon、menu'); S.alto.add('What you see is what you get 編輯');
+    gone(S.q, S.b, S.op, S.ms); S.alto = list(0, 6.2, 0.48); S.alto.add('Xerox 實驗性 PC：Alto（1973）', 'ptr alt'); S.alto.add('mouse、Ethernet'); S.alto.add('graphics、icon、menu'); S.alto.add('What you see is what you get 編輯');
     cap('70 年代 Xerox 的實驗 PC：Alto', 'mouse、Ethernet、icon、menu 都已出現');
   },
   async (tok, S) => { // 873.5 LAN、laser printer
@@ -1982,7 +1995,7 @@ scene('nuA-2a-gp', 'General purpose computer 的特性', [
 scene('nuA-2a-emb', 'Embedded computer 的特性', [
   async (tok, S) => { // 2194.5 embedded：在另一個 device 裡
     S.fr = bx('冰箱（device）', NC.sky, -4.4, 3.6, 0, 2.6, 2.4, 1.2); S.ch = prop('cpu', -4.4, 3.4, 0.7, 0.4);
-    hot('embedded：在另一個 device 裡的小 component', 1.2, 6.4);
+    hot('embedded：在另一個 device 裡的小 component', 0, 6.4);
     cap('embedded computer', '在另一個 device 裡，只是一個小 component');
   },
   async (tok, S) => { // 2219.0 predetermined application
@@ -1994,11 +2007,11 @@ scene('nuA-2a-emb', 'Embedded computer 的特性', [
     cap('用在 control、消費電子、遊戲、手機', '');
   },
   async (tok, S) => { // 2264.5 Lego 機器人
-    S.rb = buddy('Lego 機器人', 'µP', NC.orange, -1.4, 0.4, 1.0, 0.8); sm('刷馬桶、換燈泡、玩魔術方塊', -1.4, -0.5);
+    S.rb = buddy('Lego 機器人', 'µP', NC.orange, 1.4, 2.6, 1.0, 0.8); S.rbL = sm('刷馬桶、換燈泡、玩魔術方塊', 1.4, 1.7);
     cap('Lego 拼的機器人裡也裝了 microprocessor', '能做很多事');
   },
   async (tok, S) => { // 2316.0 沒有 floating point
-    S.d = list(4.0, 3.2, 0.45); S.d.add('跟 general purpose 不同：', 'ptr'); S.d.add('通常沒有 floating point');
+    gone(S.l, S.rb, S.rbL); S.d = list(1.4, 5.6, 0.45); S.d.add('跟 general purpose 不同：', 'ptr'); S.d.add('通常沒有 floating point');
     cap('跟 general purpose 不同：通常沒有 floating point', '功能固定，不需要那麼複雜');
   },
   async (tok, S) => { // 2330.6 沒有 MMU
@@ -2026,11 +2039,11 @@ scene('nuA-2a-emb', 'Embedded computer 的特性', [
     cap('量很大，而且一定要很便宜', '整台相機幾千元，裡面的 processor 能多貴？');
   },
   async (tok, S) => { // 2532.7 ARM vs x86
-    gone(S.rb); S.X = yearAxis(1993, 2005, -1.4, -6, -0.6); yearMark(S.X, 1995, 'x86 數量 #1', 0, 'idx', -1.4); yearMark(S.X, 2002, 'ARM #1', 0, 'ptr alt', -1.4);
+    gone(S.d); S.X = yearAxis(1993, 2005, 3.0, -1.4, 5.4); yearMark(S.X, 1995, 'x86 數量 #1', 0, 'idx', 3.0); yearMark(S.X, 2002, 'ARM #1', 0, 'ptr alt', 3.0);
     cap('1995 年 x86 數量第一', '2002 年 ARM 已經變第一（手機、controller）');
   },
   async (tok, S) => { // 2590.6 市場圖
-    good('embedded 是更重要的未來趨勢', 1.2, -1.6);
+    good('embedded 是更重要的未來趨勢', 2.0, 5.2);
     cap('processor 市場圖：手機用的成長最快', 'embedded computer 是未來的趨勢');
   },
 ]);
@@ -2063,23 +2076,23 @@ scene('nuA-3a-abs', 'Abstraction：分層看電腦', [
 scene('nuA-3a-layers', 'Hardware、system software、application software', [
   async (tok, S) => { // 65.0 hardware vs software
     S.hw = bx('hardware', NC.sky, -3.8, 5.4, 0, 2.6, 0.6, 0.8); S.sw = bx('software', NC.mint, 3.8, 5.4, 0, 2.6, 0.6, 0.8);
-    sm('單獨的硬體不會動作', -3.8, 4.7); sm('軟體去驅動硬體做事', 3.8, 4.7);
+    S.l1 = [sm('單獨的硬體不會動作', -3.8, 4.7), sm('軟體去驅動硬體做事', 3.8, 4.7)];
     cap('電腦分成硬體和軟體', '硬體自己不會動，軟體驅動它做事');
   },
   async (tok, S) => { // 85.7 軟體兩種
-    sm('軟體又分兩種：application、system', 3.8, 4.1);
+    S.l1.push(sm('軟體又分兩種：application、system', 3.8, 4.1));
     cap('軟體分兩種', 'application program 和 system program');
   },
   async (tok, S) => { // 93.7 最裡面 hardware
-    gone(S.hw, S.sw); S.r3 = bx('hardware', NC.sky, 0, 0.4, 0, 2.4, 0.7, 2.4);
+    gone(S.hw, S.sw, S.l1); S.r3 = bx('hardware', NC.sky, 0, 0.4, 0, 2.4, 0.7, 2.4);
     cap('層級是這樣：最裡面是 hardware', '');
   },
   async (tok, S) => { // 106.7 system software
-    S.r2 = bx('', NC.sand, 0, 0.2, 0, 5.0, 0.3, 5.0); sm('system software', 0, 1.4, 2.3);
+    S.r2 = bx('', NC.sand, 0, 0.2, 0, 5.0, 0.3, 5.0); sm('system software', -1.4, 0.55, 2.1);
     cap('再外面一層是 system software', '');
   },
   async (tok, S) => { // 110.0 application software
-    S.r1 = bx('', NC.mint, 0, 0.0, 0, 7.6, 0.1, 7.6); sm('application software', 0, 1.4, 3.6);
+    S.r1 = bx('', NC.mint, 0, 0.0, 0, 7.6, 0.1, 7.6); sm('application software', 2.0, 0.3, 3.5);
     S.apps = ['銀行系統', '機場系統', 'game'].map((t, i) => bub(t, -4.2 + i * 4.2, 4.8));
     cap('最外面是 application software', '銀行、機場的系統，甚至你玩的 game');
   },
@@ -2259,23 +2272,23 @@ scene('nuA-3a-inside', '打開 notebook：CPU、DRAM、cache', [
     cap('把 notebook 打開', '裡面有風扇');
   },
   async (tok, S) => { // 703.7 DVD、hard drive、battery
-    bx('DVD drive', NC.metal, -1.6, 0.5, -1.6, 2.0, 0.3, 1.4); bx('hard drive', NC.metal, 1.2, 0.5, -1.6, 1.8, 0.3, 1.4); bx('battery', NC.tan, 4.0, 0.5, -1.4, 2.0, 0.3, 1.8);
+    S.parts = [bx('DVD drive', NC.metal, -1.6, 0.5, -1.6, 2.0, 0.3, 1.4), bx('hard drive', NC.metal, 1.2, 0.5, -1.6, 1.8, 0.3, 1.4), bx('battery', NC.tan, 4.0, 0.5, -1.4, 2.0, 0.3, 1.8)];
     cap('還有 DVD drive、hard drive', '這裡放電池');
   },
   async (tok, S) => { // 708.3 DRAM memory
-    S.dram = [0, 1].map((i) => bx('DRAM', NC.sky, -1.2 + i * 1.0, 0.6, 1.2, 0.6, 0.35, 1.8)); sm('memory 插在板子的插槽上', -0.7, 2.0, 1.2);
+    S.dram = [0, 1].map((i) => bx('DRAM', NC.sky, -1.2 + i * 1.0, 0.6, 1.2, 0.6, 0.35, 1.8)); S.slot = sm('memory 插在板子的插槽上', -0.7, 2.0, 1.2);
     cap('DRAM memory 放在這裡', '插在板子的插槽上');
   },
   async (tok, S) => { // 718.5 CPU 小但最貴
-    S.cpu = prop('cpu', 3.2, 0.3, 1.2, 0.7); hot('CPU：很小一塊，但最貴', 3.2, 1.9, 1.2);
+    S.cpu = prop('cpu', 3.2, 0.3, 1.2, 0.7); S.cpuL = hot('CPU：很小一塊，但最貴', 3.2, 1.9, 1.2);
     cap('這邊是 processor（CPU）', '相對很小一塊，但它最貴');
   },
   async (tok, S) => { // 729.0 off-chip
-    S.a = lk(2.4, 0.9, -0.5, 0.9, 0xd64545, 1.4); bad('CPU 和 memory 不在同一個 chip → off-chip，比較慢', 0.6, 3.0);
+    S.a = lk(2.4, 0.9, -0.5, 0.9, 0xd64545, 1.4); S.off = bad('CPU 和 memory 不在同一個 chip → off-chip，比較慢', 0.6, 3.0);
     cap('CPU 和 memory 不在同一個 chip 上', '去 memory 拿東西是 off-chip，花比較久');
   },
   async (tok, S) => { // 747.4 processor 裡：datapath、control
-    gone(S.a); S.die = zone('processor 內部', 0, 4.0, 0, 9.0, 0.6, '#efe3cc');
+    gone(S.a, S.fan, S.parts, S.slot, S.cpuL, S.off); S.die = zone('processor 內部', 0, 4.0, 0, 9.0, 0.6, '#efe3cc');
     S.dp = bx('datapath（運算）', NC.purple, -2.8, 4.5, 0, 2.6, 0.6, 0.6); S.ct = bx('control（何時做什麼）', NC.orange, 0.6, 4.5, 0, 3.0, 0.6, 0.6);
     cap('processor 裡面：datapath 幫我們運算', 'control 告訴它哪個時間做什麼');
   },
@@ -2284,24 +2297,24 @@ scene('nuA-3a-inside', '打開 notebook：CPU、DRAM、cache', [
     cap('還有一個叫 cache memory', '不是已經有 DRAM 了嗎？');
   },
   async (tok, S) => { // 787.2 小但快、跟 processor 在一起
-    good('cache：在 processor 同一個 chip 上（on-chip），小但很快', 0.6, 5.5);
+    S.g8 = good('cache：在 processor 同一個 chip 上（on-chip），小但很快', 0.6, 5.5);
     cap('cache 和 processing unit 在一起', '比較小，但很快');
   },
   async (tok, S) => { // 802.0 off-chip 浪費時間
-    await runDot(tok, '資料', [[-1.0, 1.4], [3.6, 4.0]], 900, 'bad');
+    S.dot = await runDot(tok, '資料', [[-0.7, 1.2], [3.6, 4.0]], 900, 'bad');
     cap('如果每次都寫回 off-chip 的 memory 再讀出來', '很浪費時間');
   },
   async (tok, S) => { // 822.2 不能太大
-    sm('太大會拖慢 CPU、也比較貴 → 做小一點', 3.6, 3.6);
+    S.big = sm('太大會拖慢 CPU、也比較貴 → 做小一點', 3.6, 3.5);
     cap('cache 不能做太大', '太大會讓 CPU 變慢，也比較貴');
   },
   async (tok, S) => { // 852.0 4 核心
-    gone(S.die, S.dp, S.ct, S.ca); S.cores = []; for (let i = 0; i < 4; i++) { const x = -4.5 + i * 3.0; S.cores.push(bx('core ' + (i + 1), NC.lilac, x, 5.6, 0, 1.5, 0.5, 0.6)); bx('L1 I$', NC.mint, x - 0.45, 4.9, 0, 0.8, 0.4, 0.6); bx('L1 D$', NC.mint, x + 0.45, 4.9, 0, 0.8, 0.4, 0.6); }
-    bx('L2 shared cache', NC.teal, 0, 4.2, 0, 9.5, 0.45, 0.6); bx('L3 shared cache', '#7fc8b0', 0, 3.6, 0, 9.5, 0.45, 0.6);
+    gone(S.die, S.dp, S.ct, S.ca, S.g8, S.dot, S.big, S.board, S.dram, S.cpu); S.cores = []; for (let i = 0; i < 4; i++) { const x = -4.5 + i * 3.0; S.cores.push(bx('core ' + (i + 1), NC.lilac, x, 5.0, 0, 1.5, 0.5, 0.6)); small(bx('L1 I$', NC.mint, x - 0.55, 4.3, 0, 1.0, 0.4, 0.6).userData.lbl, 9); small(bx('L1 D$', NC.mint, x + 0.55, 4.3, 0, 1.0, 0.4, 0.6).userData.lbl, 9); }
+    bx('L2 shared cache', NC.teal, 0, 3.6, 0, 10.0, 0.45, 0.6); bx('L3 shared cache', '#7fc8b0', 0, 3.0, 0, 10.0, 0.45, 0.6);
     cap('一顆 4 core 的 processor', '每個 core 有 L1 data/instruction cache，還有 L2、L3 shared cache');
   },
   async (tok, S) => { // 875.1 cache 佔很大面積
-    S.cores.forEach((m) => glow(m, HL)); sm('真正執行（integer、floating point、load/store）的只有一小塊；cache 佔很大面積', 0, 6.4);
+    S.cores.forEach((m) => glow(m, HL)); sm('真正執行（integer、floating point、load/store）的只有一小塊；cache 佔很大面積', 0, 2.3);
     cap('cache 佔了相當大的面積', '真正做運算的只有一小塊');
   },
 ], [[0, 6.2, 12.5], [0, 2.0, 0]]);
@@ -2671,15 +2684,15 @@ scene('nuA-3a-cputime', 'CPU time = clock cycles × clock cycle time', [
 
 scene('nuA-3a-ex', '例題：A 是 2 GHz、10 秒；B 要 6 秒', [
   async (tok, S) => { // 2508.4 A：2 GHz、10 s
-    S.A = buddy('computer A', '2 GHz', NC.sky, -4.6, 3.6, 0, 0.9); sm('CPU time 10 s', -4.6, 3.0);
+    frameHold(-6.0, -0.6, 6.0, 6.8); S.A = buddy('computer A', '2 GHz', NC.sky, -5.0, 4.6, 0, 0.9); sm('CPU time 10 s', -5.0, 3.9);
     cap('例題：computer A 是 2 GHz', '跑這個程式 CPU time 10 秒');
   },
   async (tok, S) => { // 2522.0 B 要 6 s
-    S.B = buddy('computer B', '? GHz', NC.orange, 4.6, 3.6, 0, 0.9); sm('目標 CPU time 6 s', 4.6, 3.0);
+    S.B = buddy('computer B', '? GHz', NC.orange, 5.0, 4.6, 0, 0.9); sm('目標 CPU time 6 s', 5.0, 3.9);
     cap('新設計 B：希望降到 6 秒', '');
   },
   async (tok, S) => { // 2531.0 cycle 數 ×1.2
-    sm('但 B 的 clock cycles 會變成 A 的 1.2 倍', 4.6, 2.4);
+    S.n12 = sm('但 B 的 clock cycles 會變成 A 的 1.2 倍', 3.4, 3.3);
     cap('但 clock rate 變快，cycle 數不會維持', 'B 的 total cycle count 是 A 的 1.2 倍');
   },
   async (tok, S) => { // 2549.0 B 的 clock rate？
@@ -2687,7 +2700,7 @@ scene('nuA-3a-ex', '例題：A 是 2 GHz、10 秒；B 要 6 秒', [
     cap('B 的 clock rate 要多快', '才能降到 6 秒？');
   },
   async (tok, S) => { // 2591.7 clock rate_B = cycles_B / 6 s
-    S.l = list(-1.8, 5.6, 0.55, ''); mono(S.l.add('Clock Rate_B = Clock Cycles_B ÷ CPU Time_B'));
+    gone(S.n12); S.l = list(0, 3.6, 0.48, ''); mono(S.l.add('Clock Rate_B = Clock Cycles_B ÷ CPU Time_B'));
     mono(S.l.add('             = Clock Cycles_B ÷ 6 s'));
     cap('clock rate = 總 cycle 數 ÷ CPU time', 'CPU time 是 6 秒，已知');
   },
@@ -2697,18 +2710,18 @@ scene('nuA-3a-ex', '例題：A 是 2 GHz、10 秒；B 要 6 秒', [
   },
   async (tok, S) => { // 2650.4 cycles_A
     const cA = 10 * 2e9; mono(S.l.add('Clock Cycles_A = 10 s × 2 GHz = ' + cA / 1e9 + ' × 10⁹'));
-    S.stA = []; for (let k = 0; k < 10; k++) S.stA.push(cube(k === 9 ? '20×10⁹' : '', NC.sky, [1.2, 0.3, 0.8], -4.6, -0.6 + k * 0.33, 1.2));
-    ok(cA === 20e9, 'A 的 cycles：CPU time × clock rate = 20 × 10⁹ ✓', -4.6, -1.3);
+    S.stA = []; for (let k = 0; k < 10; k++) S.stA.push(cube(k === 9 ? '20×10⁹' : '', NC.sky, [1.2, 0.22, 0.8], -5.0, -0.4 + k * 0.25, 1.2));
+    ok(cA === 20e9, 'A 的 cycles：CPU time × clock rate = 20 × 10⁹ ✓', 0, 1.1);
     cap('A 的 cycle 數：一秒跑 2G 次、跑 10 秒', '相乘 = 20 × 10⁹');
   },
   async (tok, S) => { // 2691.9 代回 → 4 GHz
     const cB = 1.2 * 20e9, r = cB / 6; mono(S.l.add('Clock Rate_B = 1.2 × 20×10⁹ ÷ 6 s = ' + r / 1e9 + ' GHz'));
-    S.stB = []; for (let k = 0; k < 12; k++) S.stB.push(cube(k === 11 ? '24×10⁹' : '', NC.orange, [1.2, 0.3, 0.8], 4.6, -0.6 + k * 0.33, 1.2));
-    S.B.set(r / 1e9 + ' GHz'); S.B.mood('happy'); ok(Math.abs(r - 4e9) < 1, 'B 要 4 GHz 才能從 10 s 降到 6 s ✓', 0.0, 2.0);
+    S.stB = []; for (let k = 0; k < 12; k++) S.stB.push(cube(k === 11 ? '24×10⁹' : '', NC.orange, [1.2, 0.22, 0.8], 5.0, -0.4 + k * 0.25, 1.2));
+    S.B.set(r / 1e9 + ' GHz'); S.B.mood('happy'); ok(Math.abs(r - 4e9) < 1, 'B 要 4 GHz 才能從 10 s 降到 6 s ✓', 0, 0.5);
     cap('代進去：24 × 10⁹ ÷ 6 s', '= 4 GHz');
   },
   async (tok, S) => { // 2707.4 公式很簡單
-    sm('公式看起來複雜，其實比高中數學還簡單', 0, 1.3);
+    sm('公式看起來複雜，其實比高中數學還簡單', 0, -0.1);
     cap('這些公式其實都很簡單', '不要自己把自己搞複雜');
   },
 ]);
@@ -3012,19 +3025,19 @@ scene('nuA-9a-opt', 'Compiler optimization：只看 IC 或 CPI 會誤判', [
   async (tok, S) => { // 725.0 圖分析
     hot('compiler optimization 的效果（課本圖，bubble sort）', 0, 6.6);
     S.lv = ['none', 'O1', 'O2', 'O3']; S.D = { perf: [1.00, 2.37, 2.38, 2.41], cyc: [158615, 66990, 66521, 65747], ic: [114938, 37470, 39993, 44993], cpi: [1.38, 1.79, 1.66, 1.46] };
-    S.lv.forEach((n, i) => sm(n, -5.2 + i * 0.9, -0.3));
+    S.ax = S.lv.map((n, i) => sm(n, -5.2 + i * 0.9, -0.3));
     cap('看幾張圖：compiler optimization', '到底扮演什麼角色？');
   },
   async (tok, S) => { // 738.1 relative performance
-    S.bp = S.D.perf.map((v, i) => vbar(NC.green, -5.2 + i * 0.9, v * 1.6, 0.6, 0.2)); sm('relative performance', -3.9, 4.6);
+    S.bp = S.D.perf.map((v, i) => vbar(NC.green, -5.2 + i * 0.9, v * 1.6, 0.6, 0.2)); S.pl = sm('relative performance', -3.9, 4.6);
     cap('relative performance：不做 optimization 當 1', '做了 O1、O2、O3 各是多少？');
   },
   async (tok, S) => { // 755.7 誰最好？
-    bub('誰的 performance 最好？高好還是低好？', -3.9, 5.4);
+    S.q = bub('誰的 performance 最好？高好還是低好？', -3.9, 5.4);
     cap('這裡面誰的 performance 最好？', '一定要會看圖');
   },
   async (tok, S) => { // 804.1 O3
-    glow(S.bp[3], HL); good('performance 越高越好 → O3 最高', -3.9, 5.9);
+    gone(S.q); glow(S.bp[3], HL); S.g4 = good('performance 越高越好 → O3 最高', -3.9, 5.4);
     cap('應該是 O3', '雖然差不太多，但 O3 最高');
   },
   async (tok, S) => { // 814.0 clock cycles
@@ -3032,11 +3045,11 @@ scene('nuA-9a-opt', 'Compiler optimization：只看 IC 或 CPI 會誤判', [
     cap('下面這張是 clock cycle count', 'clock period 一樣，cycle 越少越好');
   },
   async (tok, S) => { // 830.1 execution time 比
-    const r = S.D.cyc[0] / S.D.cyc[3]; ok(Math.abs(r - 2.41) < 0.01, '158,615 ÷ 65,747 = ' + r.toFixed(2) + ' ＝ O3 的 relative performance ✓', 0.6, 5.4);
+    const r = S.D.cyc[0] / S.D.cyc[3]; ok(Math.abs(r - 2.41) < 0.01, '158,615 ÷ 65,747 = ' + r.toFixed(2) + ' ＝ O3 的 relative performance ✓', 1.4, 5.95);
     cap('execution time 當比較基準', '沒優化的時間放分子、O3 的放分母');
   },
   async (tok, S) => { // 864.0 instruction count
-    S.bi = S.D.ic.map((v, i) => vbar(NC.blue, 4.4 + i * 0.6, v / 40000, 0.45, 0.2)); sm('instruction count（M）', 5.3, 3.6);
+    gone(S.bp, S.ax, S.pl, S.g4); S.bi = S.D.ic.map((v, i) => vbar(NC.blue, 4.4 + i * 0.6, v / 40000, 0.45, 0.2)); sm('instruction count（M）', 5.3, 3.6);
     cap('再看 instruction count', '看起來好像越少越好');
   },
   async (tok, S) => { // 874.7 O1 最少？
@@ -3044,77 +3057,78 @@ scene('nuA-9a-opt', 'Compiler optimization：只看 IC 或 CPI 會誤判', [
     cap('O1 的 instruction count 最少', '可以說 O1 的 performance 最好嗎？');
   },
   async (tok, S) => { // 903.8 IC、CPI
-    S.cp = S.D.cpi.map((v, i) => mt(S.lv[i] + ' CPI ' + v.toFixed(2), 5.0, -0.5 - i * 0.4));
+    S.cp = S.D.cpi.map((v, i) => mt(S.lv[i] + ' CPI ' + v.toFixed(2), -3.9, 3.6 - i * 0.45));
     cap('這邊又告訴我們 CPI', '一個 instruction 平均要幾個 clock cycle');
   },
   async (tok, S) => { // 927.1 不能單獨看
-    bad('只看 IC 或只看 CPI 都不行', 0.6, -0.9);
+    bad('只看 IC 或只看 CPI 都不行', -3.9, 1.5);
     cap('單獨看 IC 或 CPI', '能判斷 execution time 嗎？不行');
   },
   async (tok, S) => { // 949.2 IC × CPI
     const c1 = S.D.ic[1] * S.D.cpi[1], c3 = S.D.ic[3] * S.D.cpi[3];
-    ok(c3 < c1, 'O1：37,470 × 1.79 ≈ ' + fmtN(Math.round(c1)) + '；O3：44,993 × 1.46 ≈ ' + fmtN(Math.round(c3)) + ' → O3 cycles 較少 ✓', 0.6, -1.5);
+    ok(c3 < c1, 'O1：37,470 × 1.79 ≈ ' + fmtN(Math.round(c1)) + '；O3：44,993 × 1.46 ≈ ' + fmtN(Math.round(c3)) + ' → O3 cycles 較少 ✓', 0, -0.45);
     cap('要把 IC × CPI 乘起來', '才是真正的 clock cycles');
   },
   async (tok, S) => { // 980.6 結論
-    good('評估 compiler：絕對不能單用 IC，也不能單用 CPI', 0.6, -2.1);
+    good('評估 compiler：絕對不能單用 IC，也不能單用 CPI', 0, -1.05);
     cap('記住：絕對不能單獨用 IC 或 CPI', '判斷 compiler 效果好壞');
   },
 ], [[0, 3.0, 15], [0, 2.2, 0]]);
 
 scene('nuA-9a-algo', 'Algorithm 比 compiler optimization 重要', [
   async (tok, S) => { // 994.1 bubble sort 圖
-    hot('Bubble Sort 的 relative performance（課本圖）', -2.4, 6.5);
+    S.lb = [hot('Bubble Sort 的 relative performance（課本圖）', -3.4, 6.5)];
     cap('下一張圖', 'bubble sort 的 relative performance');
   },
   async (tok, S) => { // 1003.4 C：none、O1、O2、O3
-    S.cb = [1.00, 2.37, 2.38, 2.41].map((v, i) => vbar(NC.green, -5.4 + i * 0.8, v * 1.4, 0.55, 0.2)); ['C none', 'O1', 'O2', 'O3'].forEach((n, i) => sm(n, -5.4 + i * 0.8, -0.3));
+    S.cb = [1.00, 2.37, 2.38, 2.41].map((v, i) => vbar(NC.green, -5.7 + i * 0.9, v * 1.4, 0.55, 0.2)); ['C none', 'O1', 'O2', 'O3'].forEach((n, i) => S.lb.push(sm(n, -5.7 + i * 0.9, -0.3)));
     cap('C：不做 optimization、O1、O2、O3', '');
   },
   async (tok, S) => { // 1009.2 Java interpreter、JIT
-    S.jb = [0.12, 2.13].map((v, i) => vbar(NC.orange, -2.0 + i * 0.8, v * 1.4, 0.55, 0.2)); ['Java int.', 'JIT'].forEach((n, i) => sm(n, -2.0 + i * 0.8, -0.3));
+    S.jb = [0.12, 2.13].map((v, i) => vbar(NC.orange, -1.85 + i * 1.0, v * 1.4, 0.55, 0.2)); ['Java int.', 'JIT'].forEach((n, i) => S.lb.push(sm(n, -1.85 + i * 1.0, -0.3)));
     cap('Java：interpreter', '還有 just-in-time compiler');
   },
   async (tok, S) => { // 1017.1 C 和 Java 差很多
-    sm('C 和 Java 的表現差很多', -3.0, 4.4);
+    S.lb.push(sm('C 和 Java 的表現差很多', -3.3, 5.9));
     cap('C 和 Java 做出來', '有很大的差別');
   },
   async (tok, S) => { // 1032.2 quicksort
-    hot('Quicksort（不同 algorithm）', 3.4, 6.5);
-    S.qb = [1.00, 1.50, 1.50, 1.91].map((v, i) => vbar(NC.blue, 1.4 + i * 0.8, v * 1.4, 0.55, 0.2)); ['C none', 'O1', 'O2', 'O3'].forEach((n, i) => sm(n, 1.4 + i * 0.8, -0.3));
+    S.lb.push(hot('Quicksort（不同 algorithm）', 3.3, 6.5));
+    S.qb = [1.00, 1.50, 1.50, 1.91].map((v, i) => vbar(NC.blue, 0.95 + i * 0.9, v * 1.4, 0.55, 0.2)); ['C none', 'O1', 'O2', 'O3'].forEach((n, i) => S.lb.push(sm(n, 0.95 + i * 0.9, -0.3)));
     cap('換 quicksort', '兩個是不同的 algorithm');
   },
   async (tok, S) => { // 1040.2 O1：2.37 vs 1.5
-    glow(S.cb[1], HL); glow(S.qb[1], HL); mt('O1：bubble 2.37 倍（約 2.5）vs quick 1.5 倍', 0, 4.9);
+    glow(S.cb[1], HL); glow(S.qb[1], HL); S.lb.push(mt('O1：bubble 2.37 倍（約 2.5）vs quick 1.5 倍', 0, 4.9));
     cap('bubble sort 的 O1 快了約 2.5 倍', 'quicksort 只有 1.5 倍');
   },
   async (tok, S) => { // 1049.9 Java 改善少
-    S.qj = [0.05, 0.29].map((v, i) => vbar(NC.orange, 4.6 + i * 0.8, Math.max(0.08, v * 1.4), 0.55, 0.2)); ['Java int.', 'JIT'].forEach((n, i) => sm(n, 4.6 + i * 0.8, -0.3));
+    S.qj = [0.05, 0.29].map((v, i) => vbar(NC.orange, 4.8 + i * 1.0, Math.max(0.08, v * 1.4), 0.55, 0.2)); ['Java int.', 'JIT'].forEach((n, i) => S.lb.push(sm(n, 4.8 + i * 1.0, -0.3)));
     cap('Java 的改善也比較少', '甚至比 C 不優化還差');
   },
   async (tok, S) => { // 1060.6 不同 program 不同結果
-    sm('同樣的 compiler optimization，不同 program、不同 language → 結果不同', 0, 4.3);
+    S.lb.push(sm('同樣的 compiler optimization，不同 program、不同 language → 結果不同', 0, 4.3));
     cap('不同的 program', '同樣的 optimization，結果不同');
   },
   async (tok, S) => { // 1074.7 quicksort vs bubble sort
-    gone(S.cb, S.jb, S.qb, S.qj); S.big = vbar(NC.blue, 2.4, 5.0, 1.2, 0.2); S.small = vbar(NC.green, -2.4, 2.41 / 2468 * 5.0, 1.2, 0.2);
+    gone(S.cb, S.jb, S.qb, S.qj, S.lb); S.big = vbar(NC.blue, -3.4, 5.0, 1.2, 0.2); S.small = vbar(NC.green, -5.4, 2.41 / 2468 * 5.0, 1.2, 0.2);
+    sm('bubble', -5.4, -0.3); sm('quick', -3.4, -0.3);
     hot('quicksort 比 bubble sort 快幾倍？', 0, 6.2);
     cap('最有意思的是這張', '拿 quicksort 跟 bubble sort 比');
   },
   async (tok, S) => { // 1130.8 2468 倍
-    const sp = 2468; ok(sp > 1000, 'C 不優化：quicksort 比 bubble sort 快 ' + fmtN(sp) + ' 倍（老師說約 2500）✓', 2.4, 5.6);
+    const sp = 2468; ok(sp > 1000, 'C 不優化：quicksort 比 bubble sort 快 ' + fmtN(sp) + ' 倍（老師說約 2500）✓', 2.6, 4.6);
     cap('進步是 2,000 多倍', '老師說大約 2500 倍');
   },
   async (tok, S) => { // 1138.9 compiler 只有 1.5～2.4
-    ok(2.41 < 2468, 'compiler 再厲害：最多 ×2.41；換 algorithm：×2,468 ✓', -2.4, 1.0);
+    ok(2.41 < 2468, 'compiler 再厲害：最多 ×2.41；換 algorithm：×2,468 ✓', 2.6, 3.6);
     cap('compiler 寫得再好', '改善也只有 1.5、2 倍多');
   },
   async (tok, S) => { // 1157.9 algorithm 重要
-    good('寫好 algorithm 最重要；越上層的 optimization 改善越大', 0, -0.6);
+    good('寫好 algorithm 最重要；越上層的 optimization 改善越大', 2.6, 2.6);
     cap('寫好 algorithm 非常重要', '越上層的 optimization 得到越大的 improvement');
   },
   async (tok, S) => { // 1186.4 lessons learnt
-    sm('Lessons：IC、CPI 不能單獨當 performance indicator；compiler optimization 對 algorithm 敏感；爛 program 差很遠', 0, -1.3);
+    sm('Lessons：IC、CPI 不能單獨當 performance indicator；compiler optimization 對 algorithm 敏感；爛 program 差很遠', 0, -1.0);
     cap('Lessons learned', 'IC、CPI 不能單獨用；優化效果看 algorithm；程式要寫好');
   },
 ]);
@@ -3125,58 +3139,58 @@ scene('nuA-9a-ptr', 'Arrays vs pointers：strength reduction、induction variabl
     cap('最後看 array 跟 pointer', '也是跟 compiler 有關的 optimization');
   },
   async (tok, S) => { // 1248.6 清 array
-    S.mem = []; for (let i = 0; i < 8; i++) S.mem.push(cube('?', NC.sand, [0.6, 0.5, 0.6], -5.2 + i * 0.7, 5.6, 0)); sm('array[0..size−1]，每個 4 bytes', -2.8, 5.0);
+    S.mem = []; for (let i = 0; i < 8; i++) S.mem.push(cube('?', NC.sand, [0.6, 0.5, 0.6], -5.2 + i * 0.7, 5.3, 0)); S.ml = sm('array[0..size−1]，每個 4 bytes', 2.6, 5.3);
     cap('把 array 全部清成 0', 'for i 從 0 到 size（例如 100）');
   },
   async (tok, S) => { // 1265.0 兩種寫法
-    S.c1 = code(['clear1(int array[], int size) {', '  int i;', '  for (i = 0; i < size; i += 1)', '    array[i] = 0;', '}'], -3.4, 4.2, 0.4);
-    S.c2 = code(['clear2(int *array, int size) {', '  int *p;', '  for (p = &array[0]; p < &array[size]; p = p + 1)', '    *p = 0;', '}'], 3.0, 4.2, 0.4);
+    S.c1 = code(['clear1(int array[], int size) {', '  int i;', '  for (i = 0; i < size; i += 1)', '    array[i] = 0;', '}'], -3.8, 4.0, 0.4);
+    S.c2 = code(['clear2(int *array, int size) {', '  int *p;', '  for (p = &array[0]; p < &array[size]; p = p + 1)', '    *p = 0;', '}'], 3.8, 4.0, 0.4); [S.c1, S.c2].forEach((c) => c.ls.forEach((l) => { l.element.style.fontSize = '10px'; }));
     cap('有兩種寫法', 'array index 的寫法、memory pointer 的寫法');
   },
   async (tok, S) => { // 1273.3 pointer：每次 +4
-    S.pp = hot('p', -5.2, 6.3); for (let i = 0; i < 3; i++) { await slide(tok, S.pp, -5.2 + (i + 1) * 0.7, 6.3, 0, 250); relabel(S.mem[i], '0'); }
+    S.pp = hot('p', -5.2, 5.95); for (let i = 0; i < 3; i++) { await slide(tok, S.pp, -5.2 + (i + 1) * 0.7, 5.95, 0, 250); relabel(S.mem[i], '0'); }
     cap('pointer：直接指到 memory', '下一個就加一個 element 的大小（4 bytes）');
   },
   async (tok, S) => { // 1285.0 index：每次算地址
-    sm('index：i = 0、1、2…，每次還要再算 address = base + i × 4', -2.8, 4.65);
+    S.s5 = sm('index：i = 0、1、2…，每次還要再算 address = base + i × 4', -2.8, 1.5);
     cap('array 寫法：i 一直 increment', '每次還要再算一次地址');
   },
   async (tok, S) => { // 1319.8 功能一樣
-    sm('兩個功能完全一樣：都把 array 清成 0', 0, 2.0);
+    S.s6 = sm('兩個功能完全一樣：都把 array 清成 0', 0, 0.9);
     cap('這兩個程式功能一樣', '一個用 index，一個用起始地址一路加');
   },
   async (tok, S) => { // 1395.8 array 版 assembly：×4 → sll
-    gone(S.c1, S.c2); S.a1 = code(['       move $t0,$zero      # i = 0', 'loop1: sll  $t1,$t0,2      # $t1 = i × 4', '       add  $t2,$a0,$t1    # &array[i]', '       sw   $zero,0($t2)   # array[i] = 0', '       addi $t0,$t0,1      # i = i + 1', '       slt  $t3,$t0,$a1    # i < size ?', '       bne  $t3,$zero,loop1'], -3.0, 4.4, 0.42);
-    S.a1.hl(1); const i = 5; ok((i << 2) === i * 4, 'i × 4 用 shift left 2 位（示意 i = 5：5 << 2 = 20）✓', -3.0, 1.2);
+    gone(S.c1, S.c2, S.s5, S.s6, S.mem, S.ml, S.pp); S.a1 = code(['       move $t0,$zero      # i = 0', 'loop1: sll  $t1,$t0,2      # $t1 = i × 4', '       add  $t2,$a0,$t1    # &array[i]', '       sw   $zero,0($t2)   # array[i] = 0', '       addi $t0,$t0,1      # i = i + 1', '       slt  $t3,$t0,$a1    # i < size ?', '       bne  $t3,$zero,loop1'], -3.8, 5.2, 0.42); S.a1.ls.forEach((l) => { l.element.style.fontSize = '10px'; });
+    S.a1.hl(1); const i = 5; S.k7 = ok((i << 2) === i * 4, 'i × 4 用 shift left 2 位（示意 i = 5：5 << 2 = 20）✓', -3.8, 1.25);
     cap('array 版轉成 assembly', 'i 要乘以 4，用 shift left 兩位來做');
   },
   async (tok, S) => { // 1440.4 迴圈 6 個 instruction
-    S.a1.hl(3); S.n1 = hot('loop 裡 6 個 instruction', -3.0, 0.5);
+    S.a1.hl(3); S.n1 = hot('loop 裡 6 個 instruction', -3.8, 5.95);
     cap('算出地址、存 0、i 加 1', '檢查條件再跳回去：loop 裡 6 個');
   },
   async (tok, S) => { // 1462.3 pointer 版
-    S.a2 = code(['       move $t0,$a0        # p = &array[0]', '       sll  $t1,$a1,2      # size × 4', '       add  $t2,$a0,$t1    # &array[size]', 'loop2: sw   $zero,0($t0)   # *p = 0', '       addi $t0,$t0,4      # p = p + 4', '       slt  $t3,$t0,$t2    # p < &array[size] ?', '       bne  $t3,$zero,loop2'], 3.4, 4.4, 0.42);
+    S.a2 = code(['       move $t0,$a0        # p = &array[0]', '       sll  $t1,$a1,2      # size × 4', '       add  $t2,$a0,$t1    # &array[size]', 'loop2: sw   $zero,0($t0)   # *p = 0', '       addi $t0,$t0,4      # p = p + 4', '       slt  $t3,$t0,$t2    # p < &array[size] ?', '       bne  $t3,$zero,loop2'], 3.8, 5.2, 0.42); S.a2.ls.forEach((l) => { l.element.style.fontSize = '10px'; });
     S.a2.hl(4);
     cap('pointer 版：直接給 memory 起始地址', '每次 p = p + 4');
   },
   async (tok, S) => { // 1506.5 loop 只剩 4 個
-    S.n2 = hot('loop 裡只剩 4 個', 3.4, 0.5);
+    S.n2 = hot('loop 裡只剩 4 個', 3.8, 5.95);
     cap('loop 裡沒有 i 的 increment', '也沒有乘以 4：搬到 loop 外面了');
   },
   async (tok, S) => { // 1521.7 跑 100 次省 200
-    const N = 100, saved = (6 - 4) * N; ok(saved === 200, '每圈省 6 − 4 = 2 個；跑 ' + N + ' 次省 ' + saved + ' 個 instruction ✓', 0, -0.2);
+    const N = 100, saved = (6 - 4) * N; gone(S.k7); ok(saved === 200, '每圈省 6 − 4 = 2 個；跑 ' + N + ' 次省 ' + saved + ' 個 instruction ✓', 0, 1.25);
     cap('loop 跑 100 次', '每次省兩個，就省了 200 個 instruction');
   },
   async (tok, S) => { // 1553.5 strength reduction
-    good('strength reduction：multiply → shift', -3.0, -0.9);
+    good('strength reduction：multiply → shift', -3.8, 0.6);
     cap('compiler 術語：strength reduction', '把乘法換成 shift');
   },
   async (tok, S) => { // 1584.5 induction variable elimination
-    good('induction variable elimination：6 → 4 個', 3.4, -0.9);
+    good('induction variable elimination：6 → 4 個', 3.8, 0.6);
     cap('另一個：induction variable elimination', '把 index 計算移出 loop，6 個變 4 個');
   },
   async (tok, S) => { // 1618.4 好 compiler 會做
-    sm('好的 compiler 會自動做；你應該寫看得懂的 array 版本', 0, -1.6);
+    sm('好的 compiler 會自動做；你應該寫看得懂的 array 版本', 0, -0.05);
     cap('好的 compiler 應該幫你做這些', '寫程式時還是寫 readable 的版本');
   },
 ], [[0, 3.2, 15], [0, 2.6, 0]]);
@@ -3264,7 +3278,7 @@ scene('nuA-9a-x86hist', 'x86：一路向後相容的演進', [
     cap('1978 年擴充到 16 bits', '8086');
   },
   async (tok, S) => { // 2154.0 1980 FP coprocessor
-    yearMark(S.X, 1980, '8087：floating point coprocessor', 2);
+    yearMark(S.X, 1980, '8087：floating point coprocessor', 2, 'idx', 0.2, 0.4);
     cap('1980 年有 floating point coprocessor', '原來只有 integer');
   },
   async (tok, S) => { // 2164.7 1982 MMU、24-bit address
@@ -3288,7 +3302,7 @@ scene('nuA-9a-x86hist', 'x86：一路向後相容的演進', [
     cap('Pentium 有 floating point divide bug', '之後 hardware 的 verification 變很重要');
   },
   async (tok, S) => { // 2253.5 Pentium Pro、II
-    yearMark(S.X, 1995, 'Pentium Pro、之後 Pentium II', 3);
+    yearMark(S.X, 1995, 'Pentium Pro、之後 Pentium II', 3, 'idx', 0.2, 0.4);
     cap('後面有 Pentium Pro、II', '新的 architecture 一直出來');
   },
   async (tok, S) => { // 2258.9 1999 SSE
@@ -3296,53 +3310,53 @@ scene('nuA-9a-x86hist', 'x86：一路向後相容的演進', [
     cap('1999 年之後：SSE', 'single instruction multiple data，主要做圖形');
   },
   async (tok, S) => { // 2294.9 compatibility 的負擔
-    good('extension 一定保留舊的 → 最大的 burden；technical elegance ≠ market success', 0, -0.7);
+    good('extension 一定保留舊的 → 最大的 burden；technical elegance ≠ market success', 0, -1.25);
     cap('Intel 的 extension 一定要 compatible', 'technical elegance 不等於 market success');
   },
 ]);
 
 scene('nuA-9a-x86isa', 'x86 的 register、addressing、encoding', [
   async (tok, S) => { // 2333.1 只有 8 個 GPR
-    S.r = ['EAX', 'ECX', 'EDX', 'EBX', 'ESP', 'EBP', 'ESI', 'EDI'].map((t, i) => bx(t, NC.sky, -5.4 + (i % 4) * 1.2, 5.6 - Math.floor(i / 4) * 0.6, 0, 1.1, 0.5, 0.6));
-    sm('general purpose 只有 8 個（32-bit），還跟特定用途共用', -3.6, 4.4);
+    S.r = ['EAX', 'ECX', 'EDX', 'EBX', 'ESP', 'EBP', 'ESI', 'EDI'].map((t, i) => bx(t, NC.sky, -5.9 + (i % 4) * 1.2, 5.6 - Math.floor(i / 4) * 0.6, 0, 1.1, 0.5, 0.6));
+    S.p1 = [sm('general purpose 只有 8 個（32-bit），還跟特定用途共用', -4.1, 4.4)];
     cap('x86 的 register file', 'general purpose 只有 8 個');
   },
   async (tok, S) => { // 2354.7 兩個 operand
-    mt('add  eax, ebx      # eax = eax + ebx', 2.6, 5.6, 'ptr'); sm('只有兩個 operand：一個同時是 source 和 destination', 2.6, 5.0);
+    S.p1.push(mt('add  eax, ebx      # eax = eax + ebx', 3.2, 5.6, 'ptr'), sm('只有兩個 operand：一個同時是 source 和 destination', 3.2, 5.0));
     cap('addressing 也很複雜', '只有兩個 operand，一個兼做 source 和 destination');
   },
   async (tok, S) => { // 2366.1 operand 可在 memory
-    mt('add  eax, [ebx+8]  # 一個 operand 在 memory', 2.6, 4.3, 'ptr');
-    sm('MIPS 是 load-store：運算只用 register 或 immediate', 2.6, 3.7);
+    S.p1.push(mt('add  eax, [ebx+8]  # 一個 operand 在 memory', 3.2, 4.3, 'ptr'),
+    sm('MIPS 是 load-store：運算只用 register 或 immediate', 3.2, 3.7));
     cap('其中一個 operand 可以在 memory', '不像我們的 load-store machine');
   },
   async (tok, S) => { // 2383.9 base + displacement、scaled index
-    mt('[base + index × scale + displacement]', 2.6, 3.1);
+    S.p1.push(mt('[base + index × scale + displacement]', 3.2, 3.1));
     cap('memory addressing 很複雜', 'base + displacement，還有 scaled index');
   },
   async (tok, S) => { // 2401.5 MIPS 固定 32 bits
-    S.m = []; for (let i = 0; i < 4; i++) S.m.push(bx('32 bits', NC.mint, -4.6 + i * 2.3, 1.8, 0, 2.2, 0.5, 0.6)); sm('MIPS／ARM：每個都 32 bits，一次拿 32 bits 就 decode', 0, 2.5);
+    gone(S.r, S.p1); S.m = []; for (let i = 0; i < 4; i++) S.m.push(bx('32 bits', NC.mint, -3.45 + i * 2.3, 4.6, 0, 2.2, 0.5, 0.6)); S.p2 = [sm('MIPS／ARM：每個都 32 bits，一次拿 32 bits 就 decode', 0, 5.3)];
     cap('MIPS、ARM 都是固定 32 bits', '每次拿 32 bits 去 decode 就好');
   },
   async (tok, S) => { // 2415.7 x86 長度不一
-    const L = [1, 3, 6, 2, 15, 4]; let x = -5.8; S.x = L.map((n) => { const W = n * 0.36; const m = bx(n + 'B', NC.orange, x + W / 2, 0.8, 0, W - 0.05, 0.5, 0.6); x += W; return m; });
-    sm('x86：1～15 bytes，長度各不相同（示意）', 0, 0.1);
+    const L = [1, 3, 6, 2, 15, 4]; let x = -5.6; S.x = L.map((n) => { const W = n * 0.36; const m = bx(n + 'B', NC.orange, x + W / 2, 3.4, 0, W - 0.05, 0.5, 0.6); x += W; return m; });
+    S.p2.push(sm('x86：1～15 bytes，長度各不相同（示意）', 0, 2.7));
     cap('x86 不是', '各式各樣長度不一樣的 instruction');
   },
   async (tok, S) => { // 2424.4 下一個多長？
-    bub('下一個 instruction 多長？要先看前面的 bits 才知道', 0, -0.6);
+    S.p2.push(bub('下一個 instruction 多長？要先看前面的 bits 才知道', 0, 1.9));
     cap('簡單的問題：下一個 instruction 多長？', '要很多 extra bits 去 encode，fetch 的 size 都不一樣');
   },
   async (tok, S) => { // 2459.7 簡單的一對一
-    gone(S.m); S.simple = bx('simple instruction → 直接 implement', NC.green, -3.4, 3.2, 0, 4.4, 0.5, 0.6);
+    gone(S.m, S.x, S.p2); S.simple = bx('simple instruction → 直接 implement', NC.green, -3.0, 4.6, 0, 4.4, 0.5, 0.6);
     cap('真正的 implementation', '簡單的 instruction 就 one-to-one 直接做');
   },
   async (tok, S) => { // 2484.8 complex → micro-op
-    S.cx = bx('complex instruction', NC.orange, 2.4, 3.2, 0, 3.0, 0.5, 0.6); S.uop = [0, 1, 2].map((i) => bx('µop', NC.lilac, 1.4 + i * 1.0, 2.4, 0, 0.9, 0.4, 0.6));
+    S.cx = bx('complex instruction', NC.orange, 2.8, 4.6, 0, 3.0, 0.5, 0.6); S.uop = [0, 1, 2].map((i) => bx('µop', NC.lilac, 1.8 + i * 1.0, 3.7, 0, 0.9, 0.4, 0.6));
     cap('complex 的 instruction', '拆成很多小的 micro-operation 去執行');
   },
   async (tok, S) => { // 2529.4 像 RISC
-    good('hardware 只要處理小而簡單的 micro-op → 像 RISC，容易 speed up；效能和 RISC 差不多', 0, 4.4);
+    good('hardware 只要處理小而簡單的 micro-op → 像 RISC，容易 speed up；效能和 RISC 差不多', 0, 2.7);
     cap('其實已經類似 RISC 的概念', '小的比較容易 optimize、speed up');
   },
 ]);
@@ -3427,7 +3441,7 @@ const hcol = (i, b) => (i === 0 ? (b === '1' ? '#d64545' : '#f2c4c4') : i <= 5 ?
 const dcolHi = (i, b) => (i === 0 ? (b === '1' ? '#d64545' : '#f2c4c4') : i <= 11 ? (b === '1' ? '#4b9ee2' : '#c6def5') : (b === '1' ? '#2fc092' : '#c2ecdc'));
 const dcolLo = (i, b) => (b === '1' ? '#2fc092' : '#c2ecdc');
 // a 32-bit single-precision row at height y, with its field names under it
-function frow(y) { const r = bitRow(32, 0, y, 0, 0.38, fcol, [1, 9]); sm('S', r.xs[0], y - 0.7); sm('exponent（8）', (r.xs[1] + r.xs[8]) / 2, y - 0.7); sm('fraction（23）', (r.xs[9] + r.xs[31]) / 2, y - 0.7); return r; }
+function frow(y) { const r = bitRow(32, 0, y, 0, 0.38, fcol, [1, 9]); r.lbls = [sm('S', r.xs[0], y - 0.7), sm('exponent（8）', (r.xs[1] + r.xs[8]) / 2, y - 0.7), sm('fraction（23）', (r.xs[9] + r.xs[31]) / 2, y - 0.7)]; return r; }
 
 scene('nuA-ieee-why', '為什麼需要 IEEE 754 標準', [
   async (tok, S) => { // 0.6 mantissa × exponent
@@ -3464,7 +3478,7 @@ scene('nuA-ieee-why', '為什麼需要 IEEE 754 標準', [
 
 scene('nuA-ieee-half', 'Biased exponent 與 half precision（binary16）', [
   async (tok, S) => { // 98.1 參數
-    S.t = list(-5.6, 6.3, 0.5); mono(S.t.add('格式       總長  sign+mantissa  exponent  bias', 'ptr'));
+    S.t = list(-1.6, 6.3, 0.5); mono(S.t.add('格式       總長  sign+mantissa  exponent  bias', 'ptr'));
     cap('每種格式要知道', 'sign + mantissa 幾個 bit、exponent 幾個 bit');
   },
   async (tok, S) => { // 103.4 biased exponent
@@ -3472,43 +3486,43 @@ scene('nuA-ieee-half', 'Biased exponent 與 half precision（binary16）', [
     cap('最重要的是 biased exponent', '');
   },
   async (tok, S) => { // 117.3 負的 exponent
-    sm('exponent 可能是負的 → 不好直接存；加一個 bias 變成非負', 0, 4.6);
+    S.s3 = sm('exponent 可能是負的 → 不好直接存；加一個 bias 變成非負', 0, 4.6);
     cap('exponent 是負的就不好表示', '所以要做 biasing：加一個偏移量');
   },
   async (tok, S) => { // 145.1 binary16
     const tot = 16, sm_ = 11, ex = tot - sm_; mono(S.t.add('binary16   16    ' + sm_ + '             ' + ex + '         ?'));
-    ok(ex === 5, '16 − 11 = 5 bits 給 exponent ✓', 3.6, 4.0);
+    S.k4 = ok(ex === 5, '16 − 11 = 5 bits 給 exponent ✓', 3.6, 4.0);
     cap('binary16：總共 16 bits', '11 bits 給 sign 和 mantissa，16 − 11 = 5 給 exponent');
   },
   async (tok, S) => { // 175.1 公式
-    mt('bias = 2^(n−1) − 1，n = exponent 的 bit 數', 0, 3.2, 'ptr alt');
+    mt('bias = 2^(n−1) − 1，n = exponent 的 bit 數', 0, 3.45, 'ptr alt');
     cap('exponent 有 5 bits，bias 是多少？', '公式：2^(n−1) − 1');
   },
   async (tok, S) => { // 186.5 n = 5 → 15
     const n = 5, b = 2 ** (n - 1) - 1; S.t.ls[1].element.textContent = 'binary16   16    11             5         ' + b;
-    ok(b === 15, 'n = 5：2⁴ − 1 = 16 − 1 = ' + b + ' ✓', 0, 2.6);
+    ok(b === 15, 'n = 5：2⁴ − 1 = 16 − 1 = ' + b + ' ✓', 0, 2.75);
     cap('n = 5：2 的 4 次方是 16', '16 − 1 = 15，bias 是 15');
   },
   async (tok, S) => { // 205.9 加 15
-    sm('真正的 exponent ＋ 15 才存進去（5 是 bit 數，不是 exponent）', 0, 2.0);
+    S.s7 = sm('真正的 exponent ＋ 15 才存進去（5 是 bit 數，不是 exponent）', 0, 2.05);
     cap('把原本的 exponent 加上 15', '注意 5 是 exponent 的 bit 數，不是 exponent');
   },
   async (tok, S) => { // 214.4 e = 8
-    const e = 8, be = e + 15; mt('e = 8  → 8 + 15 = ' + be + ' = ' + bin(be, 5), -2.6, 1.3); ok(be === 23, '✓', 0.6, 1.3);
+    const e = 8, be = e + 15; gone(S.s3, S.k4); S.x8 = [mt('e = 8  → 8 + 15 = ' + be + ' = ' + bin(be, 5), -1.0, 1.3), ok(be === 23, '✓', 2.2, 1.3)];
     cap('例：exponent 是 8', 'biased exponent = 8 + 15 = 23');
   },
   async (tok, S) => { // 223.1 e = −3
-    const e = -3, be = e + 15; mt('e = −3 → −3 + 15 = ' + be + ' = ' + bin(be, 5), -2.6, 0.8); ok(be === 12, '✓ 負數也變成正的', 1.2, 0.8);
+    const e = -3, be = e + 15; S.x9 = [mt('e = −3 → −3 + 15 = ' + be + ' = ' + bin(be, 5), -1.0, 0.7), ok(be === 12, '✓ 負數也變成正的', 2.8, 0.7)];
     cap('exponent 是 −3', 'biased exponent = −3 + 15 = 12');
   },
   async (tok, S) => { // 243.3 1 + 5 + 10
-    S.h = bitRow(16, 0, -0.4, 0, 0.62, hcol, [1, 6]); S.h.set('0' + bin(23, 5) + '0'.repeat(10));
-    sm('sign 1', S.h.xs[0], -1.2); sm('exponent 5（示意存 23）', (S.h.xs[1] + S.h.xs[5]) / 2, -1.2); sm('mantissa 10', (S.h.xs[6] + S.h.xs[15]) / 2, -1.2);
-    ok(1 + 5 + 10 === 16, '1 + 5 + 10 = 16 ✓', 4.8, 0.2);
+    gone(S.s7, S.x8, S.x9); S.h = bitRow(16, 0, 1.2, 0, 0.62, hcol, [1, 6]); S.h.set('0' + bin(23, 5) + '0'.repeat(10));
+    sm('sign 1', S.h.xs[0] - 0.3, 0.45); sm('exponent 5（示意存 23）', (S.h.xs[1] + S.h.xs[5]) / 2 + 0.2, 0.45); sm('mantissa 10', (S.h.xs[6] + S.h.xs[15]) / 2, 0.45);
+    ok(1 + 5 + 10 === 16, '1 + 5 + 10 = 16 ✓', 3.6, 2.0);
     cap('排法：1 bit sign、5 bits exponent', '剩下 10 bits 是 mantissa');
   },
   async (tok, S) => { // 256.4 不常用
-    sm('half precision 不太常用', -4.6, 0.2);
+    sm('half precision 不太常用', -4.2, 2.0);
     cap('half precision 不是主要使用的', '接下來看最重要的 32、64 bits');
   },
 ]);
@@ -3556,26 +3570,29 @@ scene('nuA-ieee-sd', 'Single（32）與 double（64）precision', [
 
 scene('nuA-ieee-116', '例：116 用 single precision 表示', [
   async (tok, S) => { // 371.0 例子 116
-    hot('例：116₁₀ 用 single precision 表示', 0, 6.6);
+    frameHold(-6.3, 1.0, 6.3, 6.9);
+    S.t = hot('例：116₁₀ 用 single precision 表示', 0, 6.6);
     cap('例子：十進位 116', '');
   },
   async (tok, S) => { // 382.1 步驟 1：轉二進位
-    S.dv = list(-5.4, 5.8, 0.42); let n = 116; const rs = [];
+    S.dv = list(-3.6, 5.8, 0.42); let n = 116; const rs = [];
     while (n > 0) { rs.push(n % 2); mono(S.dv.add(String(n).padStart(3) + ' ÷ 2 = ' + String(Math.floor(n / 2)).padStart(2) + ' 餘 ' + (n % 2))); n = Math.floor(n / 2); }
     S.rs = rs;
     cap('第一步：轉成二進位', '一直除以 2，記下餘數');
   },
   async (tok, S) => { // 419.7 1110100
-    const b = S.rs.slice().reverse().join(''); S.b = b; ok(b === (116).toString(2) && parseInt(b, 2) === 116, '餘數由下往上讀：116 = ' + b + '₂ ✓', 1.6, 5.8);
+    const b = S.rs.slice().reverse().join(''); S.b = b; S.r1 = ok(b === (116).toString(2) && parseInt(b, 2) === 116, '餘數由下往上讀：116 = ' + b + '₂ ✓', 2.4, 5.6);
     cap('116 的二進位', '1110100');
   },
   async (tok, S) => { // 434.0 normalization
-    const e = S.b.length - 1; S.e = e; mt('1110100. = 1.110100 × 2^' + e, 1.6, 5.1, 'ptr alt');
-    ok(parseInt(S.b, 2) === parseInt('1110100', 2) && e === 6, '小數點往左移 ' + e + ' 位 → × 2⁶ ✓', 1.6, 4.5);
+    const e = S.b.length - 1; S.e = e; S.nm = mt('1110100. = 1.110100 × 2^' + e, 2.4, 4.6, 'ptr alt');
+    S.r2 = ok(parseInt(S.b, 2) === parseInt('1110100', 2) && e === 6, '小數點往左移 ' + e + ' 位 → × 2⁶ ✓', 2.4, 4.0);
     cap('第二步：normalization', '小數點前只留一個 1：1.110100 × 2⁶');
   },
   async (tok, S) => { // 473.8 sign
-    S.row = frow(1.3); S.bits = '0' + '0'.repeat(31); S.row.set(S.bits, true);
+    gone(S.dv, S.r1, S.r2); S.nm.position.set(0, 5.8, 0);
+    S.row = frow(2.6); S.bits = '0' + '0'.repeat(31); S.row.set(S.bits, true);
+    S.sg = sm('116 是正數 → S = 0', S.row.xs[0] + 0.4, 3.5);
     cap('第三步：放進格式', '正數 → sign bit = 0');
   },
   async (tok, S) => { // 493.0 8 bits exponent
@@ -3583,50 +3600,52 @@ scene('nuA-ieee-116', '例：116 用 single precision 表示', [
     cap('接著 8 bits 放 exponent', '放的是 biased exponent');
   },
   async (tok, S) => { // 514.6 6 + 127
-    const be = S.e + 127; S.be = be; ok(be === 133, 'biased exponent = 6 + 127 = ' + be + ' ✓', -3.0, 3.0);
+    gone(S.sg); const be = S.e + 127; S.be = be; S.ex = ok(be === 133, 'biased exponent = 6 + 127 = ' + be + ' ✓', -3.0, 3.6);
     cap('single precision：原 exponent + 127', '6 + 127 = 133');
   },
   async (tok, S) => { // 534.4 133 = 10000101
     const eb = bin(S.be, 8); S.bits = '0' + eb + '0'.repeat(23); S.row.set(S.bits, true);
-    ok(eb === '10000101' && 128 + 4 + 1 === 133, '133 = 128 + 4 + 1 = ' + eb + ' ✓', -3.0, 2.4);
+    const okb = eb === '10000101' && 128 + 4 + 1 === 133; txt(S.ex, (okb ? '' : '✘ ') + 'exponent：6 + 127 = 133 = 128 + 4 + 1 = ' + eb + (okb ? ' ✓' : ''));
     cap('133 的二進位', '128 + 4 + 1 → 10000101');
   },
   async (tok, S) => { // 564.9 mantissa：去掉 1.
     S.row.clearGlow(); const fr = '110100'; S.bits = '0' + bin(S.be, 8) + fr + '0'.repeat(17); S.row.set(S.bits, true);
-    sm('1.110100 的「1.」不存（一定是 1）', 2.6, 3.0);
+    S.mn = sm('1.110100 的「1.」不存（一定是 1）', 3.0, 3.6);
     cap('再來 23 bits mantissa', '小數點前的 1 不用存：110100');
   },
   async (tok, S) => { // 590.8 補 0
     S.row.clearGlow(); const hx = hexOf(S.bits);
-    ok(S.bits === fbits(116) && hx === '42E80000', '剩下補 0 → ' + grp(S.bits) + ' = 0x' + hx + ' ✓', 0, -1.0);
+    ok(S.bits === fbits(116) && hx === '42E80000', '剩下補 0 → ' + grp(S.bits) + ' = 0x' + hx + ' ✓', 0, 1.2);
     cap('23 bits 還沒滿也沒關係', '剩下補 0：這就是 116 的 single precision');
   },
-], [[0, 3.6, 14], [0, 3.0, 0]]);
+], [[0, 3.6, 14], [0, 3.6, 0]]);
 
 scene('nuA-ieee-back', '驗算 116，再換成 double precision', [
   async (tok, S) => { // 599.2 公式
-    S.row = frow(5.2); S.row.set(fbits(116)); mt('value = (−1)^S × 1.M × 2^(E − 127)', 0, 3.9, 'ptr alt');
+    frameHold(-6.3, 0.6, 6.3, 5.3);
+    S.row = frow(4.6); S.row.set(fbits(116)); S.f = mt('value = (−1)^S × 1.M × 2^(E − 127)', 0, 3.3, 'ptr alt');
     cap('要算回原本的值', '(−1)^S × 1.M × 2^(E − 127)');
   },
   async (tok, S) => { // 616.0 S = 0、1.110100
-    mt('S = 0 → (−1)⁰ = 1；1.M = 1.110100', 0, 3.3);
+    S.l2 = mt('S = 0 → (−1)⁰ = 1；1.M = 1.110100', 0, 2.7);
     cap('S = 0，(−1)⁰ = 1', 'M 是 110100，所以 1.110100');
   },
   async (tok, S) => { // 633.0 2^(133−127)
-    const v = (1 + parseInt('110100', 2) / 64) * 2 ** (133 - 127); ok(v === 116, '2^(133 − 127) = 2⁶：1.110100 × 2⁶ = 1110100₂ = ' + v + ' ✓', 0, 2.7);
+    const v = (1 + parseInt('110100', 2) / 64) * 2 ** (133 - 127); S.l3 = ok(v === 116, '2^(133 − 127) = 2⁶：1.110100 × 2⁶ = 1110100₂ = ' + v + ' ✓', 0, 2.1);
     cap('2 的 (133 − 127) = 6 次方', '小數點往右移 6 位，就回到 116');
   },
   async (tok, S) => { // 661.6 double：binary 一樣
-    hot('double precision：二進位一樣是 1.110100 × 2⁶', 0, 1.9);
+    gone(S.row, S.row.lbls, S.f, S.l2, S.l3);
+    S.dh = hot('double precision：二進位一樣是 1.110100 × 2⁶', 0, 5.0);
     cap('如果要 double precision', '二進位和 normalization 都一樣');
   },
   async (tok, S) => { // 668.9 1029
-    const be = 6 + 1023; S.be = be; ok(be === 1029, 'biased exponent = 6 + 1023 = ' + be + ' ✓', 0, 1.3);
+    const be = 6 + 1023; S.be = be; S.ex = ok(be === 1029, 'biased exponent = 6 + 1023 = ' + be + ' ✓', 0, 4.4);
     cap('bias 換成 1023', '6 + 1023 = 1029');
   },
   async (tok, S) => { // 679.2 1 + 11 + 52
-    S.hi = bitRow(32, 0, 0.2, 0, 0.36, dcolHi, [1, 12]); S.lo = bitRow(32, 0, -0.8, 0, 0.36, dcolLo);
-    sm('S', S.hi.xs[0], 0.9); sm('exponent 11', (S.hi.xs[1] + S.hi.xs[11]) / 2, 0.9); sm('fraction 52（第一列 20 + 第二列 32）', (S.hi.xs[12] + S.hi.xs[31]) / 2, 0.9);
+    S.hi = bitRow(32, 0, 2.95, 0, 0.36, dcolHi, [1, 12]); S.lo = bitRow(32, 0, 2.15, 0, 0.36, dcolLo);
+    S.fl = [sm('S', S.hi.xs[0], 3.6), sm('exponent 11', (S.hi.xs[1] + S.hi.xs[11]) / 2, 3.6), sm('fraction 52（第一列 20 + 第二列 32）', (S.hi.xs[12] + S.hi.xs[31]) / 2, 3.6)];
     cap('double：1 bit sign、11 bits exponent', '52 bits mantissa（分兩列畫）');
   },
   async (tok, S) => { // 698.2 mantissa 110100 + 0
@@ -3635,19 +3654,19 @@ scene('nuA-ieee-back', '驗算 116，再換成 double precision', [
   },
   async (tok, S) => { // 708.1 1029 = 10000000101
     const eb = bin(S.be, 11); S.d = '0' + eb + S.d.slice(12); S.hi.clearGlow(); S.lo.clearGlow(); S.hi.set(S.d.slice(0, 32), true);
-    ok(eb === '10000000101' && 1024 + 4 + 1 === 1029, '1029 = 1024 + 4 + 1 = ' + eb + ' ✓', 0, -1.6);
+    const okb = eb === '10000000101' && 1024 + 4 + 1 === 1029; txt(S.ex, (okb ? '' : '✘ ') + 'exponent：6 + 1023 = 1029 = 1024 + 4 + 1 = ' + eb + (okb ? ' ✓' : ''));
     cap('exponent 放 1029', '1024 + 4 + 1 → 10000000101');
   },
   async (tok, S) => { // 735.4 double 結果
     S.hi.clearGlow(); const hx = hexOf(S.d.slice(0, 32)) + hexOf(S.d.slice(32));
-    ok(S.d === dbits(116) && hx === '405D000000000000', '116 的 double ＝ 0x' + hx + ' ✓', 0, -2.2);
+    ok(S.d === dbits(116) && hx === '405D000000000000', '116 的 double ＝ 0x' + hx + ' ✓', 0, 1.45);
     cap('這就是 double precision 的表示', '');
   },
   async (tok, S) => { // 747.6 下次：有小數
-    sm('下次：有小數部分的例子', 0, -2.8);
+    sm('下次：有小數部分的例子', 0, 0.85);
     cap('下次再舉一個例子', '包含小數部分的數字');
   },
-], [[0, 3.0, 14], [0, 1.8, 0]]);
+], [[0, 3.0, 14], [0, 3.0, 0]]);
   }
 
   // ═══ nuB.js ═══
@@ -3676,9 +3695,17 @@ const bx = (t, c, x, y, z = 0, w = 2.4, h = 0.6, d = 0.8) => cube(t, c, [w, h, d
 const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.ms && o.xs) return gone(o.ms, o.extra || []); if (o.ls && typeof o.kill === 'function') return o.kill(); if (o.g) kill(o.g); else if (o.element) remove(o); else kill(o); });
 const setL = (l, t) => { l.element.textContent = t; };
 const relbl = (m, t) => { if (m.userData.lbl) m.userData.lbl.element.textContent = String(t); };
+// An invisible box over the area a scene will use later: the stage's auto framing measures it from the
+// first step, so the camera does not zoom in on the first few things and then jump back out.
+function frameHold(x0, y0, x1, y1, z0 = -0.3, z1 = 0.3) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+}
 function scene(id, title, cam, steps, o = {}) {
   FRAG.push([id, title, async (tok) => {
     fresh(cam[0], cam[1]);
+    // the usual picture area around where the camera looks, held from the first step (no zoom-in, then jump back)
+    frameHold(cam[1][0] - 4.5, cam[1][1] - 1.8, cam[1][0] + 4.5, cam[1][1] + 2.8);
     const S = {};
     for (const f of o.pre || []) await f(tok, S);
     for (const f of steps) { await step(tok); await f(tok, S); }
@@ -4092,60 +4119,60 @@ scene('nuB-9b-nor', "9B：用 AND 做 NOR，control = 1100", CAM, [
 ]);
 scene('nuB-9b-slt', "9B：slt 的三個部分（bit 0、中間、sign bit）", WIDE, [
   async (tok, S) => {
-          S.c = code(['slt  $rd, $rs, $rt', 'rd = (rs < rt) ? 1 : 0'], -2.6, 6.6); cap('set on less than 怎麼做？', '先想它的 operation 是什麼');
+          frameHold(-7.2, -1.0, 7.4, 7.2); S.c = code(['slt  $rd, $rs, $rt', 'rd = (rs < rt) ? 1 : 0'], -1.6, 6.6); cap('set on less than 怎麼做？', '先想它的 operation 是什麼');
         },
   async (tok, S) => {
-          S.va = reg('a', 4, -2.6, 4.7, { w: 0.8, bits: '0011' }); S.va.val('= 3（示意）'); S.vb = reg('b', 4, -2.6, 3.8, { w: 0.8, bits: '0101' }); S.vb.val('= 5（示意）');
+          S.va = reg('a', 4, -1.6, 4.9, { w: 0.8, bits: '0011' }); S.va.val('= 3（示意）'); S.vb = reg('b', 4, -1.6, 4.0, { w: 0.8, bits: '0101' }); S.vb.val('= 5（示意）');
           cap('兩個 register 比大小', 'a 有沒有小於 b');
         },
   async (tok, S) => {
-          S.no = bad('另做比較器？很麻煩', 3.6, 4.6); cap('要做一個比較器嗎？', '很麻煩，已經有加減了');
+          S.no = bad('另做比較器？很麻煩', 3.4, 4.45); cap('要做一個比較器嗎？', '很麻煩，已經有加減了');
         },
   async (tok, S) => {
-          gone(S.no); const r = addB('0011', inv('0101'), 1); S.d = reg('a − b', 4, -2.6, 2.9, { w: 0.8, bits: r.s }); S.d.val('= ' + sval(r.s));
-          S.d.hi(0, 1, '#7a1010'); ok(sval(r.s) === 3 - 5, 3.6, 2.9, '0011 + 1010 + 1 = ' + r.s + ' = −2 ✓'); cap('只要做 A − B', '是負數就滿足條件');
+          gone(S.no); const r = addB('0011', inv('0101'), 1); S.d = reg('a − b', 4, -1.6, 3.1, { w: 0.8, bits: r.s }); S.d.val('= ' + sval(r.s));
+          S.d.hi(0, 1, '#7a1010'); S.dk = ok(sval(r.s) === 3 - 5, 4.2, 3.1, '0011 + 1010 + 1 = ' + r.s + ' = −2 ✓'); cap('只要做 A − B', '是負數就滿足條件');
         },
   async (tok, S) => {
-          S.rd = reg('rd', 32, 0.4, 1.4, { w: 0.36 }); S.rd.val(''); cap('只要 set 一個 bit', 'destination 只看一個 bit');
+          S.rd = reg('rd', 32, 0.3, 1.3, { w: 0.42 }); S.rd.val(''); cap('只要 set 一個 bit', 'destination 只看一個 bit');
         },
   async (tok, S) => {
           S.rd.set('0'.repeat(31) + '1', true); S.rd.val('= 1'); cap('bit 0 設 1 表示小於', '其他 bit 都是 0');
         },
   async (tok, S) => {
           S.rd.hi(0, 1, '#7a1010'); S.rd.ms.slice(1, 31).forEach((m) => glow(m, '#3a3a3a')); glow(S.rd.ms[31], HL);
-          S.p3 = [sm('sign bit', S.rd.xs[0], 0.7), sm('bit 1～30', S.rd.xs[16], 0.7), sm('bit 0', S.rd.xs[31], 0.7)]; cap('分三個部分', 'sign bit、中間、bit 0');
+          S.p3 = [sm('sign bit', S.rd.xs[0], 0.6), sm('bit 1～30', S.rd.xs[16], 0.6), sm('bit 0', S.rd.xs[31], 0.6)]; cap('分三個部分', 'sign bit、中間、bit 0');
         },
   async (tok, S) => {
-          gone(S.c, S.va, S.vb, S.d); S.rd.clearGlow(); S.ch = chain4(4.2); S.ch.top.forEach((l, i) => setL(l, i === 3 ? 'MSB' : 'bit ' + i));
+          gone(S.c, S.va, S.vb, S.d, S.dk); S.rd.clearGlow(); S.ch = chain4(4.7); S.ch.top.forEach((l, i) => setL(l, i === 3 ? 'MSB' : 'bit ' + i));
           cap('bit 1 到 bit 30', '通通直接給 0');
         },
   async (tok, S) => {
-          [1, 2].forEach((i) => sm('Less = 0', S.ch.sx(i), 6.0)); setL(S.ch.out[1], 'Result1 = 0'); setL(S.ch.out[2], 'Result2 = 0');
+          S.less = [0, 1, 2, 3].map((i) => sm(i === 1 || i === 2 ? 'Less = 0' : '', S.ch.sx(i), 6.5)); setL(S.ch.out[1], 'Result1 = 0'); setL(S.ch.out[2], 'Result2 = 0');
           cap('MUX 的 11 還沒用到', '接 Less = 0');
         },
   async (tok, S) => {
           glow(S.ch.sl[3], HL); cap('sign bit：減法早就做好了', '只要設成減');
         },
   async (tok, S) => {
-          S.setW = wire([[S.ch.sx(3), 3.3], [S.ch.sx(3), 2.2], [S.ch.sx(0) + 1.3, 2.2], [S.ch.sx(0) + 1.3, 5.5], [S.ch.sx(0) + 0.4, 5.5]], FC.red);
-          hot('Set', S.ch.sx(3) - 0.6, 2.0); cap('把 sign bit 拉出來', '這條叫 Set');
+          S.setW = wire([[S.ch.sx(3), 3.8], [S.ch.sx(3), 2.6], [S.ch.sx(0) + 1.3, 2.6], [S.ch.sx(0) + 1.3, 6.0], [S.ch.sx(0) + 0.4, 6.0]], FC.red);
+          S.setL = hot('Set', S.ch.sx(3) - 0.9, 2.6); cap('把 sign bit 拉出來', '這條叫 Set');
         },
   async (tok, S) => {
           const r = addB('0011', inv('0101'), 1); S.set = r.s[0]; S.ch.top.forEach((l, i) => setL(l, 'a' + i + '−b' + i));
-          sm('示意：a = 0011、b = 0101', 0, 6.8); hot('Set = ' + S.set, S.ch.sx(3) + 0.9, 2.0); cap('a − b 是負數', 'sign bit 就是 1');
+          S.sy = sm('示意：a = 0011、b = 0101', 0, 7.2); setL(S.setL, 'Set = ' + S.set); cap('a − b 是負數', 'sign bit 就是 1');
         },
   async (tok, S) => {
-          sm('Less = Set', S.ch.sx(0), 6.0); setL(S.ch.out[0], 'Result0 = ' + S.set); glow(S.ch.sl[0], HL); cap('拉到 bit 0', '1 就是 set');
+          setL(S.less[0], 'Less = Set'); setL(S.ch.out[0], 'Result0 = ' + S.set); glow(S.ch.sl[0], HL); cap('拉到 bit 0', '1 就是 set');
         },
   async (tok, S) => {
-          sm('Less = 0', S.ch.sx(3), 6.0); setL(S.ch.out[3], 'Result3 = 0'); glow(S.ch.sl[3], null);
-          const res = '000' + S.set; ok(res === '0001' && (3 < 5), 0, 0.5, 'slt 結果 = ' + res + '（3 < 5 成立）✓'); cap('sign bit 自己還是給 0', '只有 bit 0 是 0 或 1');
+          setL(S.less[3], 'Less = 0'); setL(S.ch.out[3], 'Result3 = 0'); glow(S.ch.sl[3], null);
+          const res = '000' + S.set; ok(res === '0001' && (3 < 5), 0, 2.05, 'slt 結果 = ' + res + '（3 < 5 成立）✓'); cap('sign bit 自己還是給 0', '只有 bit 0 是 0 或 1');
         },
   async (tok, S) => {
           S.rd.hi(31, 32); cap('相減之後放 000…001', '不小於就全部是 0');
         },
   async (tok, S) => {
-          S.cc = reg('slt', 4, 4.6, -0.3, { w: 0.6, bits: '0111' }); S.cc.hi(1, 4); cap('control = 0111', 'B negate + 選 11');
+          S.cc = reg('slt', 4, 4.6, -0.4, { w: 0.6, bits: '0111' }); S.cc.hi(1, 4); cap('control = 0111', 'B negate + 選 11');
         },
   async (tok, S) => {
           S.ch.sl.forEach((m) => glow(m, HL)); cap('你做 select 時，其他也都做了', 'AND、OR、加都同時在算');
@@ -4154,23 +4181,24 @@ scene('nuB-9b-slt', "9B：slt 的三個部分（bit 0、中間、sign bit）", W
           S.ch.sl.forEach((m) => glow(m, null)); glow(S.ch.sl[0], HL); cap('只是沒選中，白做了', '但 slt 可以借用減法的結果');
         },
   async (tok, S) => {
-          bub('parallel data flow：都做了，MUX 只負責選', 0, 7.0); cap('parallel data flow', 'input 一來 output 就變');
+          gone(S.sy); bub('parallel data flow：都做了，MUX 只負責選', 0, 7.2); cap('parallel data flow', 'input 一來 output 就變');
         },
   async (tok, S) => {
-          code(['AND 0000  OR 0001  add 0010', 'sub 0110  slt 0111  NOR 1100'], -2.2, -0.5); cap('00 AND、01 OR、10 加', 'sub、slt 都有 B negate');
+          code(['AND 0000  OR 0001  add 0010', 'sub 0110  slt 0111  NOR 1100'], -2.4, -0.2); cap('00 AND、01 OR、10 加', 'sub、slt 都有 B negate');
         }
 ]);
 scene('nuB-9b-range', "9B：4-bit two's complement 的範圍", CAM, [
   async (tok, S) => {
-          hot('什麼是 overflow？', 0, 6.4); cap('還要考慮 overflow', '先看 representation');
+          frameHold(-5.6, 1.2, 5.6, 6.8); hot('什麼是 overflow？', 0, 6.4); cap('還要考慮 overflow', '先看 representation');
         },
   async (tok, S) => {
           S.cells = [];
-          for (let v = -8; v <= 7; v++) { const x = -6.0 + (v + 8) * 0.8; S.cells.push(bx(bin(v, 4), v < 0 ? FC.pink : FC.sky, x, 3.6, 0, 0.74, 0.5, 0.6)); sm(String(v), x, 2.8); }
+          for (let v = -8; v <= 7; v++) { const k = (v + 8) % 8, y = v < 0 ? 4.6 : 2.6, x = -3.85 + k * 1.1; S.cells.push(bx(bin(v, 4), v < 0 ? FC.pink : FC.sky, x, y, 0, 1.0, 0.5, 0.6)); sm(String(v), x, y - 0.65); }
+          sm('負數', -5.1, 4.6); sm('正數', -5.1, 2.6);
           cap('4 bits：正數 0 到 7', '負數 −1 到 −8');
         },
   async (tok, S) => {
-          glow(S.cells[0], HL); glow(S.cells[15], HL); good('範圍：−8 ～ 7（2⁴ = 16 種）✓', 0, 1.6); cap('16 個 combination', '最大 7、最小 −8');
+          glow(S.cells[0], HL); glow(S.cells[15], HL); good('範圍：−8 ～ 7（2⁴ = 16 種）✓', 0, 1.3); cap('16 個 combination', '最大 7、最小 −8');
         }
 ]);
 scene('nuB-9b-ovf', "9B：7 + 3、−4 + (−5)，看 sign bit 的 carry in／out", CAM, [
@@ -4312,44 +4340,44 @@ scene('nuB-10a-ripple', "10A：full adder 與 ripple carry 的 delay", CAM, [
 ]);
 scene('nuB-10a-subst', "10A：展開成 sum of products，用硬體換時間", CAM, [
   async (tok, S) => {
-          S.b0 = unit('bit 0', FC.orange, 3.2, 3.2, 1.8, 1.2); S.b1 = unit('bit 1', FC.orange, -1.2, 3.2, 1.8, 1.2);
-          sm('a0 b0', 3.2, 4.2); sm('a1 b1', -1.2, 4.2); sm('c0 →', 5.0, 3.2); cap('先看兩個 bit', 'least significant 開始');
+          frameHold(-5.4, 0.6, 5.6, 7.0); S.b0 = unit('bit 0', FC.orange, 3.2, 2.4, 1.8, 1.2); S.b1 = unit('bit 1', FC.orange, -1.2, 2.4, 1.8, 1.2);
+          sm('a0 b0', 3.2, 3.4); sm('a1 b1', -1.2, 3.4); sm('c0 →', 5.0, 2.4); cap('先看兩個 bit', 'least significant 開始');
         },
   async (tok, S) => {
-          wire([[2.3, 3.2], [-0.3, 3.2]], '#c08a1f'); hot('c1', 1.0, 3.6); cap('bit 0 的 carry out', '= bit 1 的 carry in（同一個東西）');
+          wire([[2.3, 2.4], [-0.3, 2.4]], '#c08a1f'); hot('c1', 1.0, 2.8); cap('bit 0 的 carry out', '= bit 1 的 carry in（同一個東西）');
         },
   async (tok, S) => {
-          S.e1 = code(['c1 = b0·c0 + a0·c0 + a0·b0'], 0, 6.4); cap('c1 = b0c0 + a0c0 + a0b0', '任兩個 bit 是 1');
+          S.e1 = code(['c1 = b0·c0 + a0·c0 + a0·b0'], 0, 6.6); cap('c1 = b0c0 + a0c0 + a0b0', '任兩個 bit 是 1');
         },
   async (tok, S) => {
-          S.e2 = code(['c2 = b1·c1 + a1·c1 + a1·b1'], 0, 5.8); cap('c2 = b1c1 + a1c1 + a1b1', '');
+          S.e2 = code(['c2 = b1·c1 + a1·c1 + a1·b1'], 0, 6.0); cap('c2 = b1c1 + a1c1 + a1b1', '');
         },
   async (tok, S) => {
-          S.e2.ls[0].element.style.color = '#b42318'; bad('c2 要等 c1 → 等 bit 0 算完', -1.2, 1.8); cap('這裡用到 C1', '要等那邊算完才有');
+          S.e2.ls[0].element.style.color = '#b42318'; S.bd = bad('c2 要等 c1 → 等 bit 0 算完', -1.2, 1.25); cap('這裡用到 C1', '要等那邊算完才有');
         },
   async (tok, S) => {
-          sm('sum of products：先 AND（同時）再 OR → two-level', 0, 5.2); cap('sum of products', '兩個 gate delay');
+          S.sp = sm('sum of products：先 AND（同時）再 OR → two-level', 0, 5.4); cap('sum of products', '兩個 gate delay');
         },
   async (tok, S) => {
           cap('但 c1 還是要等前面做完', '這就是 ripple carry 的問題');
         },
   async (tok, S) => {
-          S.ar = arrow(V3(-1.6, 6.15, 0), V3(-0.4, 5.95, 0), 0xc08a1f); cap('空間換取時間：duplicate', '把 c1 的式子帶進去');
+          S.ar = arrow(V3(-1.6, 6.4, 0), V3(-0.4, 6.15, 0), 0xc08a1f); cap('空間換取時間：duplicate', '把 c1 的式子帶進去');
         },
   async (tok, S) => {
-          gone(S.e2, S.ar); S.e3 = code(['c2 = a1a0b0 + a1a0c0 + a1b0c0', '   + b1a0b0 + b1a0c0 + b1b0c0 + a1b1'], 0, 5.8);
+          gone(S.e2, S.ar, S.sp, S.bd); S.e3 = code(['c2 = a1a0b0 + a1a0c0 + a1b0c0', '   + b1a0b0 + b1a0c0 + b1b0c0 + a1b1'], 0, 6.0);
           let all = true; for (let v = 0; v < 32; v++) { const [a0, b0, a1, b1, c0] = [0, 1, 2, 3, 4].map((k) => v >> k & 1); const c1 = (b0 & c0) | (a0 & c0) | (a0 & b0); const ref = (b1 & c1) | (a1 & c1) | (a1 & b1);
             const flat = (a1 & a0 & b0) | (a1 & a0 & c0) | (a1 & b0 & c0) | (b1 & a0 & b0) | (b1 & a0 & c0) | (b1 & b0 & c0) | (a1 & b1); all = all && flat === ref; }
-          ok(all, 0, 0.6, '展開式 = 原式（32 種組合）✓'); cap('帶進去再展開', '就得到這個式子');
+          ok(all, 0, 1.25, '展開式 = 原式（32 種組合）✓'); cap('帶進去再展開', '就得到這個式子');
         },
   async (tok, S) => {
-          gone(S.e1); good('只用一開始就有的 a、b、c0 → 不用等 c1', 0, 4.6); cap('每一項都可以馬上拿到', '還是 two level');
+          gone(S.e1); good('只用一開始就有的 a、b、c0 → 不用等 c1', 0, 4.7); cap('每一項都可以馬上拿到', '還是 two level');
         },
   async (tok, S) => {
-          sm('3-input AND × 6 + 2-input AND × 1，再一個 OR', 0, 4.0); cap('gate 變多了', '用 hardware 去換取時間');
+          sm('3-input AND × 6 + 2-input AND × 1，再一個 OR', 0, 4.15); cap('gate 變多了', '用 hardware 去換取時間');
         },
   async (tok, S) => {
-          bub('不等前一級：carry lookahead', 0, 7.0); cap('我不等你了，一起做', 'carry lookahead adder 的概念');
+          bub('不等前一級：carry lookahead', 0, 6.7); cap('我不等你了，一起做', 'carry lookahead adder 的概念');
         }
 ]);
 scene('nuB-10a-gp', "10A：gi = ai·bi，pi：一個 1 就能把 carry 傳下去", CAM, [
@@ -4744,7 +4772,7 @@ scene('nuB-11a-paper', "11A：1000 × 1001（課本例）", CAM, [
 ]);
 scene('nuB-11a-v1', "11A：第一版（64-bit multiplicand、64-bit ALU）跑 0010 × 0011", CAM, [
   async (tok, S) => {
-          S.R = buildRegs(V1); S.S = multV1(2, 3); showStep(S.R, V1, S.S[0], false); cap('第一個 version', 'multiplicand 擺在 64-bit 的最右邊');
+          frameHold(-5.6, -1.7, 6.0, 7.0); S.R = buildRegs(V1); S.S = multV1(2, 3); showStep(S.R, V1, S.S[0], false); cap('第一個 version', 'multiplicand 擺在 64-bit 的最右邊');
         },
   async (tok, S) => {
           S.R.Multiplier.row.ms.forEach((m, i) => glow(m, i === 3 ? HL : null)); cap('看 multiplier 最右邊的 bit', '告訴我要不要加進去');
@@ -4762,7 +4790,7 @@ scene('nuB-11a-v1', "11A：第一版（64-bit multiplicand、64-bit ALU）跑 00
           cap('multiplier 幾個 bit', '就做幾個 iteration（32 bits → 32 次）');
         },
   async (tok, S) => {
-          S.f = code(['1. Multiplier0 = 1 ? Prod += Mcand', '2. Mcand 左移 1', '3. Mplier 右移 1', '   做 n 次'], -1.2, -0.2, 0.42); cap('0 不做事、1 就加', '然後 Mcand 左移、Mplier 右移');
+          S.f = code(['1. Multiplier0 = 1 ? Prod += Mcand', '2. Mcand 左移 1', '3. Mplier 右移 1', '   做 n 次'], -1.2, -0.1, 0.42); cap('0 不做事、1 就加', '然後 Mcand 左移、Mplier 右移');
         },
   async (tok, S) => {
           S.R.Multiplier.row.clearGlow(); cap('看個例子', 'multiplicand 0010、multiplier 0011');
@@ -4788,7 +4816,7 @@ scene('nuB-11a-v1', "11A：第一版（64-bit multiplicand、64-bit ALU）跑 00
         },
   async (tok, S) => {
           for (let k = 10; k < 13; k++) { S.f.hl(k - 10); showStep(S.R, V1, S.S[k], true); await wt(tok, 350); } S.f.hl(-1);
-          const last = S.S[12]; ok(uval(last.r.Product) === 2 * 3, 0.6, 0.9 - 0.0, 'Product = ' + grp(last.r.Product) + ' = 6 = 2 × 3 ✓');
+          const last = S.S[12]; ok(uval(last.r.Product) === 2 * 3, 0.6, 0.6, 'Product = ' + grp(last.r.Product) + ' = 6 = 2 × 3 ✓');
           cap('第 4 輪做完', 'Product = 0000 0110 = 6');
         }
 ]);
@@ -5001,17 +5029,17 @@ scene('nuB-11a-booth', "11A：0011 1110 = 0100 0000 − 0000 0010（示意）", 
           hot('Booth multiplication', 0, 7.1); cap('Booth multiplication', '先看它的意思');
         },
   async (tok, S) => {
-          S.m = reg('乘數（示意）', 8, 0.8, 5.0, { w: 0.7, bits: '00111110' }); S.m.hi(2, 7); S.cnt = hot('要加 5 次', 5.0, 4.2); cap('碰到 1 就加進去', '五個 1 → 五個 iteration 的加');
+          S.m = reg('乘數（示意）', 8, 0.8, 5.0, { w: 0.7, bits: '00111110' }); S.m.hi(2, 7); S.cnt = hot('要加 5 次', 5.6, 5.0); cap('碰到 1 就加進去', '五個 1 → 五個 iteration 的加');
         },
   async (tok, S) => {
           S.p1 = reg('', 8, 0.8, 3.6, { w: 0.7, bits: '01000000' }); S.p1.val('= 64'); S.p2 = reg('−', 8, 0.8, 2.8, { w: 0.7, bits: '00000010' }); S.p2.val('= 2');
-          ok(uval('01000000') - uval('00000010') === uval('00111110'), 0.8, 1.9, '0100 0000 − 0000 0010 = 0011 1110（64 − 2 = 62）✓'); cap('這個數字可以表示成', '兩個數相減');
+          S.k3 = ok(uval('01000000') - uval('00000010') === uval('00111110'), 0.8, 2.05, '0100 0000 − 0000 0010 = 0011 1110（64 − 2 = 62）✓'); cap('這個數字可以表示成', '兩個數相減');
         },
   async (tok, S) => {
           S.e = code(['A × 0011 1110 = A × 0100 0000 − A × 0000 0010'], 0.6, 6.35); cap('A 乘以這個數字', '可以寫成這樣');
         },
   async (tok, S) => {
-          S.p1.hi(1, 2); S.p2.hi(6, 7, '#7a1010'); setL(S.cnt, '只要 2 次（1 減 1 加）'); const A = 3; ok(A * 62 === A * 64 - A * 2, 5.0, 3.0, '示意 A = 3：186 = 192 − 6 ✓'); cap('原來五個 iteration', '現在只要兩個：一個減、一個加');
+          S.p1.hi(1, 2); S.p2.hi(6, 7, '#7a1010'); setL(S.cnt, '只要 2 次（1 減 1 加）'); const A = 3; ok(A * 62 === A * 64 - A * 2, 0.8, 1.3, '示意 A = 3：186 = 192 − 6 ✓'); cap('原來五個 iteration', '現在只要兩個：一個減、一個加');
         },
   async (tok, S) => {
           cap('加跟減是一樣的', 'ALU 的減就是 complement 再加');
@@ -5030,7 +5058,7 @@ scene('nuB-11a-booth', "11A：0011 1110 = 0100 0000 − 0000 0010（示意）", 
           S.m.ms.forEach((m, k) => glow(m, k === 1 ? OKG : null)); setL(S.act, '1 結束 → 加'); S.act.position.x = S.m.xs[1]; cap('一串 1 結束了', '做加（加回 multiplicand）');
         },
   async (tok, S) => {
-          bub('一邊掃乘數、一邊決定加／減／不做', 0.6, 0.6); cap('從這邊就可以判斷要做什麼', '這就是 Booth multiply 的精神');
+          bub('一邊掃乘數、一邊決定加／減／不做', 0.6, 0.5); cap('從這邊就可以判斷要做什麼', '這就是 Booth multiply 的精神');
         }
 ]);
 
@@ -5065,7 +5093,7 @@ scene('nuB-12a-rule', "12A：10 減、01 加、00／11 不動", CAM, [
           S.m.hi(6, 8); S.pr = sm('（current, 右邊）', S.m.xs[7] - 0.35, 4.9); cap('要看兩個 bit', 'current bit 跟右邊的 bit');
         },
   async (tok, S) => {
-          S.t = code(['current 右邊   動作', '   1     0    減（開始）', '   1     1    不動（中間）', '   0     1    加（結束）', '   0     0    不動'], 0.6, 2.8, 0.45); S.t.ls.slice(2).forEach((l) => { l.element.style.visibility = 'hidden'; }); S.t.hl(1);
+          S.t = code(['current 右邊   動作', '   1     0    減（開始）', '   1     1    不動（中間）', '   0     1    加（結束）', '   0     0    不動'], 0.6, 4.1, 0.45); S.t.ls.slice(2).forEach((l) => { l.element.style.visibility = 'hidden'; }); S.t.hl(1);
           cap('現在是 1、右邊是 0', 'beginning of run → 減');
         },
   async (tok, S) => {
@@ -5079,8 +5107,8 @@ scene('nuB-12a-rule', "12A：10 減、01 加、00／11 不動", CAM, [
           cap('記錄 current bit', '以及 bit to the right');
         },
   async (tok, S) => {
-          S.r = reg('右移前', 8, 0.8, 0.4 - 0.0, { w: 0.6, bits: '11100111' }); await wt(tok, 300); S.r2 = reg('右移後', 8, 0.8, -0.4, { w: 0.6, bits: '1' + '11100111'.slice(0, 7) }); S.r2.hi(0, 1);
-          ok(sval(S.r2.bits) === Math.floor(sval('11100111') / 2), 4.6, -1.1, '補 sign bit：−25 → −13 ✓'); cap('shift 的時候', '不要忘記 sign extension');
+          S.r = reg('右移前', 8, 0.8, 1.3, { w: 0.6, bits: '11100111' }); await wt(tok, 300); S.r2 = reg('右移後', 8, 0.8, 0.5, { w: 0.6, bits: '1' + '11100111'.slice(0, 7) }); S.r2.hi(0, 1);
+          ok(sval(S.r2.bits) === Math.floor(sval('11100111') / 2), 0.8, -0.3, '補 sign bit：−25 → −13 ✓'); cap('shift 的時候', '不要忘記 sign extension');
         },
   async (tok, S) => {
           cap('只是加快速度', '其他都沒有改變');
@@ -5174,52 +5202,53 @@ scene('nuB-12a-b23', "12A：Booth 0010 × 1101 逐步", CAM, [
 ]);
 scene('nuB-12a-comb', "12A：用 AND 同時產生所有 partial product，再一起加", CAM, [
   async (tok, S) => {
-          hot('sequential multiplier', 0, 7.0); cap('Booth 和前面的方法', '都叫 sequential multiplier');
+          frameHold(-5.6, 0.0, 5.8, 6.8); hot('sequential multiplier', 0, 6.6); cap('Booth 和前面的方法', '都叫 sequential multiplier');
         },
   async (tok, S) => {
-          S.l = bx('sequential：存起來，下一個 cycle 再做', FC.sky, -2.8, 5.8, 0, 5.2, 0.6); S.r = bx('combinational：一個 cycle 做完', FC.mint, 3.2, 5.8, 0, 4.2, 0.6);
+          S.l = bx('sequential：存起來，下一個 cycle 再做', FC.sky, 0, 5.75, 0, 7.0, 0.55); S.r = bx('combinational：一個 cycle 做完', FC.mint, 0, 5.05, 0, 7.0, 0.55);
           cap('sequential vs combinational', '存起來 vs 一次做完');
         },
   async (tok, S) => {
-          S.pp = reg('partial product', 8, 0.6, 3.8, { w: 0.6 }); for (let k = 1; k <= 3; k++) { S.pp.set(bin([0, 2, 6, 6][k], 8), true); S.pp.val('cycle ' + k); await wt(tok, 420); }
+          S.pp = reg('partial product', 8, 0.6, 3.6, { w: 0.6 }); for (let k = 1; k <= 3; k++) { S.pp.set(bin([0, 2, 6, 6][k], 8), true); S.pp.val('cycle ' + k); await wt(tok, 420); }
           cap('一個 bit 做完存回 partial product', '再下一個 cycle');
         },
   async (tok, S) => {
           cap('很多個 bit 就要很多個 cycle', '這叫 sequential multiplier');
         },
   async (tok, S) => {
-          gone(S.pp); cap('可不可以同一時間做出來？', '用空間換取時間');
+          gone(S.pp, S.l, S.r); cap('可不可以同一時間做出來？', '用空間換取時間');
         },
   async (tok, S) => {
-          S.mc = reg('Mcand', 4, 1.4, 4.6, { w: 0.6, bits: '1000' }); S.mp = reg('Mplier', 4, 1.4, 3.9, { w: 0.6, bits: '1001' }); sm('課本例：1000 × 1001', 4.8, 4.2);
+          S.mc = reg('Mcand', 4, 1.4, 5.6, { w: 0.6, bits: '1000' }); S.mp = reg('Mplier', 4, 1.4, 4.95, { w: 0.6, bits: '1001' }); S.ex = sm('課本例：1000 × 1001', 4.6, 5.25);
           cap('1000、0000、0000、1000', '一開始可不可以知道？');
         },
   async (tok, S) => {
           const mp = '1001', mc = '1000'; S.P = [];
-          for (let k = 0; k < 4; k++) { const b = mp[3 - k]; const row = mc.split('').map((c) => String(+c & +b)).join(''); S.P.push(reg('AND × b' + k, 4, 1.4 - k * 0.6, 3.0 - k * 0.6, { w: 0.6, bits: row })); }
+          for (let k = 0; k < 4; k++) { const b = mp[3 - k]; const row = mc.split('').map((c) => String(+c & +b)).join(''); S.P.push(reg('AND × b' + k, 4, 1.4 - k * 0.6, 4.05 - k * 0.65, { w: 0.6, bits: row })); }
           cap('就是做一個 AND 的動作', '四個 AND 同時產生');
         },
   async (tok, S) => {
           const sum = [0, 1, 2, 3].reduce((a, k) => a + uval(S.P[k].bits) * 2 ** k, 0);
-          S.res = reg('一起加', 8, 0.2, 0.2, { w: 0.6, bits: bin(sum, 8) }); ok(sum === 8 * 9, 3.6, -0.6, '1000 + 0 + 0 + 1000000 = ' + bin(sum, 7) + ' = 72 ✓');
+          S.res = reg('一起加', 8, 0.2, 1.1, { w: 0.6, bits: bin(sum, 8) }); S.k8 = ok(sum === 8 * 9, 0.2, 0.35, '1000 + 0 + 0 + 1000000 = ' + bin(sum, 7) + ' = 72 ✓');
           cap('同時加起來就好', 'combinational multiplier');
         },
   async (tok, S) => {
-          gone(S.mc, S.mp, S.P, S.res); S.add1 = bx('一個加法器（每個 cycle 重複用）', FC.orange, -2.8, 3.8, 0, 4.6, 0.7); cap('sequential：只有一個加法器', '每個 iteration 都用同一個');
+          gone(S.mc, S.mp, S.P, S.res, S.ex, S.k8); S.add1 = bx('一個加法器（每個 cycle 重複用）', FC.orange, -3.0, 4.4, 0, 4.6, 0.7); cap('sequential：只有一個加法器', '每個 iteration 都用同一個');
         },
   async (tok, S) => {
           cap('同時加就不能只有一個加法器', 'combinational 不能 share');
         },
   async (tok, S) => {
-          const A = [bx('PP0', FC.green, 1.6, 4.6, 0, 1.0, 0.5), bx('PP1', FC.green, 2.8, 4.6, 0, 1.0, 0.5), bx('PP2', FC.green, 4.0, 4.6, 0, 1.0, 0.5), bx('PP3', FC.green, 5.2, 4.6, 0, 1.0, 0.5)];
-          S.ad = [bx('+', FC.orange, 2.2, 3.5, 0, 1.2, 0.6), bx('+', FC.orange, 4.6, 3.5, 0, 1.2, 0.6), bx('+', FC.orange, 3.4, 2.3, 0, 1.2, 0.6)];
-          ok(4 - 1 === 3, 3.4, 1.4, '4 個 partial product → 3 個加法器 ✓'); cap('兩個兩個先加', '至少要三個加法器');
+          const A = [bx('PP0', FC.green, 1.6, 5.2, 0, 1.0, 0.5), bx('PP1', FC.green, 2.8, 5.2, 0, 1.0, 0.5), bx('PP2', FC.green, 4.0, 5.2, 0, 1.0, 0.5), bx('PP3', FC.green, 5.2, 5.2, 0, 1.0, 0.5)];
+          S.ad = [bx('+', FC.orange, 2.2, 4.0, 0, 1.2, 0.6), bx('+', FC.orange, 4.6, 4.0, 0, 1.2, 0.6), bx('+', FC.orange, 3.4, 2.8, 0, 1.2, 0.6)];
+          [[1.6, 2.2, 4.95, 4.3], [2.8, 2.2, 4.95, 4.3], [4.0, 4.6, 4.95, 4.3], [5.2, 4.6, 4.95, 4.3], [2.2, 3.4, 3.7, 3.1], [4.6, 3.4, 3.7, 3.1]].forEach(([x1, x2, y1, y2]) => wire([[x1, y1], [x2, y2]]));
+          ok(4 - 1 === 3, 3.4, 1.9, '4 個 partial product → 3 個加法器 ✓'); cap('兩個兩個先加', '至少要三個加法器');
         },
   async (tok, S) => {
           S.ad.forEach((m) => glow(m, HL)); cap('一層一層加起來', '整個在一個 clock cycle 內');
         },
   async (tok, S) => {
-          bad('critical path 很長 → 之後可加 pipeline', 3.4, 0.6); cap('critical path 很長', '可以在中間加 pipeline');
+          bad('critical path 很長 → 之後可加 pipeline', 3.4, 1.2); cap('critical path 很長', '可以在中間加 pipeline');
         }
 ]);
 scene('nuB-12a-seqadd', "12A：只用一個 full adder，一個 cycle 一個 bit", CAM, [
@@ -5565,10 +5594,10 @@ scene('nuB-12b-why', "12B：整數表示法的範圍、科學記號、小數點�
           hot('floating point：先表示，再設計硬體', 0, 7.0); cap('先介紹怎麼表示它', '再設計加減乘除的 hardware');
         },
   async (tok, S) => {
-          S.l = [bx('unsigned：0 ～ 255', FC.sky, -2.6, 5.6, 0, 4.4, 0.6)]; sm('示意：n = 8', 3.4, 5.6); cap('n 個 bit 當 unsigned', '0 到 2ⁿ − 1');
+          S.l = [bx('unsigned：0 ～ 255', FC.sky, -2.6, 5.6, 0, 4.4, 0.6)]; S.n8 = sm('示意：n = 8', 3.4, 5.6); cap('n 個 bit 當 unsigned', '0 到 2ⁿ − 1');
         },
   async (tok, S) => {
-          S.l.push(bx('two\'s complement：−128 ～ 127', FC.pink, -2.6, 4.8, 0, 4.4, 0.6)); ok(-(2 ** 7) === -128 && 2 ** 7 - 1 === 127, 3.4, 4.8, '−2⁷ ～ 2⁷ − 1 ✓'); cap('two\'s complement', '有正有負：−2ⁿ⁻¹ ～ 2ⁿ⁻¹ − 1');
+          S.l.push(bx('two\'s complement：−128 ～ 127', FC.pink, -2.6, 4.8, 0, 4.4, 0.6)); S.k3 = ok(-(2 ** 7) === -128 && 2 ** 7 - 1 === 127, 3.4, 4.8, '−2⁷ ～ 2⁷ − 1 ✓'); cap('two\'s complement', '有正有負：−2ⁿ⁻¹ ～ 2ⁿ⁻¹ − 1');
         },
   async (tok, S) => {
           S.l.push(bx('1\'s complement：−127 ～ 127', FC.mint, -2.6, 4.0, 0, 4.4, 0.6)); S.l.push(bx('excess（bias）：看 bias', FC.lilac, -2.6, 3.2, 0, 4.4, 0.6)); cap('one\'s complement、excess', '各有一個 range');
@@ -5577,10 +5606,10 @@ scene('nuB-12b-why', "12B：整數表示法的範圍、科學記號、小數點�
           cap('同一個 bit pattern', '不同的解釋方法，都是整數');
         },
   async (tok, S) => {
-          bad('很大（6.02 × 10²³）、很小（1.6 × 10⁻¹⁹）？', 2.0, 2.2); cap('很大或很小的數目', '沒辦法表示');
+          S.bd = bad('很大（6.02 × 10²³）、很小（1.6 × 10⁻¹⁹）？', 0, 2.4); cap('很大或很小的數目', '沒辦法表示');
         },
   async (tok, S) => {
-          gone(S.l); cap('新的表示方法：floating point', '先把科學符號表示出來');
+          gone(S.l, S.n8, S.k3, S.bd); cap('新的表示方法：floating point', '先把科學符號表示出來');
         },
   async (tok, S) => {
           S.e = code(['1.0110 × 2^−3', 'significand   base^exponent'], 0, 5.6); cap('significand（mantissa）', '乘以 2 的 exponent 次方');
@@ -5696,13 +5725,13 @@ scene('nuB-12b-hidden', "12B：23 bits 存的 fraction + 隱藏的 1 = 24-bit si
 ]);
 scene('nuB-12b-cmp', "12B：比大小先比 sign、再比 exponent；comparator 要的是「直接比」", CAM, [
   async (tok, S) => {
-          hot('exponent：怎麼表示、為什麼在中間？', 0, 7.0); cap('exponent 要怎麼表示', '為什麼擺在中間');
+          frameHold(-6.4, 0.6, 6.4, 6.8); hot('exponent：怎麼表示、為什麼在中間？', 0, 6.7); cap('exponent 要怎麼表示', '為什麼擺在中間');
         },
   async (tok, S) => {
-          S.a = floatRow(5.0); S.b = floatRow(2.6); S.a.set(f32(-3.5)); S.b.set(f32(12)); cap('比較兩個 floating point', '從哪邊開始比？');
+          S.a = floatRow(5.4); S.b = floatRow(3.6); S.a.set(f32(-3.5)); S.b.set(f32(12)); cap('比較兩個 floating point', '從哪邊開始比？');
         },
   async (tok, S) => {
-          glow(S.a.ms[0], HL); glow(S.b.ms[0], HL); ok(12 > -3.5, 0, 0.8, 'sign 0 > sign 1：+12 > −3.5，後面不用比 ✓'); cap('先從 sign 開始比', '你 0 我 1，比到這就好');
+          glow(S.a.ms[0], HL); glow(S.b.ms[0], HL); S.k3 = ok(12 > -3.5, 0, 2.2, 'sign 0 > sign 1：+12 > −3.5，後面不用比 ✓'); cap('先從 sign 開始比', '你 0 我 1，比到這就好');
         },
   async (tok, S) => {
           S.a.clearGlow(); S.b.clearGlow(); S.a.set(f32(3.5), true); S.a.ms.slice(1, 9).forEach((m) => glow(m, HL)); S.b.ms.slice(1, 9).forEach((m) => glow(m, HL)); cap('兩個都是 0 的話', '下一步比 exponent');
@@ -5711,25 +5740,25 @@ scene('nuB-12b-cmp', "12B：比大小先比 sign、再比 exponent；comparator 
           cap('exponent 一樣才比 significand', '所以 exponent 放第二位');
         },
   async (tok, S) => {
-          gone(S.a, S.b); cap('exponent 要怎麼表示', '比較容易比？');
+          gone(S.a, S.b, S.k3); cap('exponent 要怎麼表示', '比較容易比？');
         },
   async (tok, S) => {
-          S.sub = bx('two\'s complement：要用減法比', FC.pink, -3.0, 5.4, 0, 4.4, 0.7); cap('用 two\'s complement', '要做一個減的動作才能比');
+          S.sub = bx('two\'s complement：要用減法比', FC.pink, -3.0, 5.4, 0, 5.2, 0.7); cap('用 two\'s complement', '要做一個減的動作才能比');
         },
   async (tok, S) => {
-          S.cmp = bx('comparator：從最高位比，一分高下就停', FC.mint, 3.0, 5.4, 0, 4.6, 0.7); cap('comparator 很簡單', '第一個 bit 比你大就比你大');
+          S.cmp = bx('comparator：從最高位比，一分高下就停', FC.mint, 3.0, 4.5, 0, 5.6, 0.7); cap('comparator 很簡單', '第一個 bit 比你大就比你大');
         },
   async (tok, S) => {
           cap('減法要等 carry', 'comparator 很快');
         },
   async (tok, S) => {
-          S.e1 = reg('½ 的 exponent −1', 8, 1.0, 3.2, { w: 0.6, bits: bin(-1, 8) }); S.e2 = reg('2 的 exponent +1', 8, 1.0, 2.4, { w: 0.6, bits: bin(1, 8) }); cap('二分之一：−1', '2：+1');
+          S.e1 = reg('½ 的 exponent −1', 8, 1.0, 3.3, { w: 0.6, bits: bin(-1, 8) }); S.e2 = reg('2 的 exponent +1', 8, 1.0, 2.4, { w: 0.6, bits: bin(1, 8) }); cap('二分之一：−1', '2：+1');
         },
   async (tok, S) => {
-          S.e1.hi(0, 1, '#7a1010'); ok(uval(bin(-1, 8)) > uval(bin(1, 8)) && -1 < 1, 1.0, 1.4, '當 pattern 比：1111 1111 > 0000 0001，但 −1 < 1 → 比錯 ✓'); cap('直接比：這個比較大', '可是它其實是 −1');
+          S.e1.hi(0, 1, '#7a1010'); ok(uval(bin(-1, 8)) > uval(bin(1, 8)) && -1 < 1, 0.4, 1.6, '當 pattern 比：1111 1111 > 0000 0001，但 −1 < 1 → 比錯 ✓'); cap('直接比：這個比較大', '可是它其實是 −1');
         },
   async (tok, S) => {
-          good('→ 用 biased notation', 1.0, 0.6); cap('不用 1\'s、2\'s complement', '改用 biased notation');
+          good('→ 用 biased notation', 0.4, 0.9); cap('不用 1\'s、2\'s complement', '改用 biased notation');
         },
   async (tok, S) => {
           cap('看到 number 馬上比大小', '小就是小、大就是大');
@@ -5737,24 +5766,25 @@ scene('nuB-12b-cmp', "12B：比大小先比 sign、再比 exponent；comparator 
 ]);
 scene('nuB-12b-bias', "12B：bias 7 的例子、IEEE 的 bias 127／1023", CAM, [
   async (tok, S) => {
-          S.cells = []; for (let v = 0; v < 16; v++) { const x = -6.0 + v * 0.8; S.cells.push(bx(bin(v, 4), FC.sky, x, 4.6, 0, 0.74, 0.5, 0.6)); }
+          frameHold(-5.6, 0.8, 5.6, 6.8); const PX = (v) => -3.85 + (v % 8) * 1.1, PY = (v) => (v < 8 ? 5.0 : 3.6); S.PX = PX; S.PY = PY;
+          S.cells = []; for (let v = 0; v < 16; v++) S.cells.push(bx(bin(v, 4), FC.sky, PX(v), PY(v), 0, 1.0, 0.5, 0.6));
           S.lbl = []; cap('什麼叫 bias 7？', '把 number 從 000 列下來');
         },
   async (tok, S) => {
-          for (let v = 0; v < 16; v++) { S.lbl.push(sm(String(v - 7), -6.0 + v * 0.8, 3.9)); if (v % 4 === 3) await wt(tok, 120); }
+          for (let v = 0; v < 16; v++) { S.lbl.push(sm(String(v - 7), S.PX(v), S.PY(v) - 0.65)); if (v % 4 === 3) await wt(tok, 120); }
           tint(S.cells[0], FC.pink); cap('000 就是最負的 −7', '−7、−6、−5…一路排下來');
         },
   async (tok, S) => {
-          tint(S.cells[7], FC.green); hot('0111 = 0', -6.0 + 7 * 0.8, 5.4); cap('number 有個 shift', 'shift 七個位置');
+          tint(S.cells[7], FC.green); S.h0 = hot('0111 = 0', S.PX(7), 5.7); cap('number 有個 shift', 'shift 七個位置');
         },
   async (tok, S) => {
           ok([...Array(15).keys()].every((v) => (v + 1 - 7) > (v - 7)), 0, 6.4, 'pattern 越大 → 值越大（可以直接比）✓'); cap('這個最小、第二小', '一比就知道誰大');
         },
   async (tok, S) => {
-          S.f = code(['值 = unsigned 值 − bias'], 0, 2.6); cap('用 unsigned 算出來', '再減 7 就對了');
+          S.f = code(['值 = unsigned 值 − bias'], -3.0, 2.1); cap('用 unsigned 算出來', '再減 7 就對了');
         },
   async (tok, S) => {
-          glow(S.cells[11], HL); ok(uval('1011') - 7 === 4, 0, 1.8, '1011 = 11，11 − 7 = 4 ✓'); cap('看它 unsigned 是 11', '11 − 7 = 4');
+          glow(S.cells[11], HL); S.k6 = ok(uval('1011') - 7 === 4, -3.0, 1.4, '1011 = 11，11 − 7 = 4 ✓'); cap('看它 unsigned 是 11', '11 − 7 = 4');
         },
   async (tok, S) => {
           for (let v = 0; v < 7; v++) glow(S.cells[v], '#3a1a3a'); cap('前七位要給負的用', '每個人往前推 7 個位置');
@@ -5769,17 +5799,17 @@ scene('nuB-12b-bias', "12B：bias 7 的例子、IEEE 的 bias 127／1023", CAM, 
           tint(S.cells[15], FC.green); cap('000 最 negative', '111 最 positive');
         },
   async (tok, S) => {
-          S.ie = code(['single：E − 127', 'double：E − 1023'], 4.4, 2.6); cap('IEEE 754：single 用 127', 'double 用 1023');
+          S.ie = code(['single：E − 127', 'double：E − 1023'], 3.4, 2.1); cap('IEEE 754：single 用 127', 'double 用 1023');
         },
   async (tok, S) => {
-          gone(S.cells, S.lbl); S.m1 = reg('−1', 8, 0, 4.8, { w: 0.6, bits: bin(-1 + 127, 8) }); S.p1 = reg('+1', 8, 0, 4.0, { w: 0.6, bits: bin(1 + 127, 8) });
+          gone(S.cells, S.lbl, S.h0, S.f, S.k6); S.m1 = reg('−1', 8, 0, 4.8, { w: 0.6, bits: bin(-1 + 127, 8) }); S.p1 = reg('+1', 8, 0, 4.0, { w: 0.6, bits: bin(1 + 127, 8) });
           S.m1.val('= 126 − 127'); S.p1.val('= 128 − 127'); cap('−1 表示成這樣', '1 表示成這樣');
         },
   async (tok, S) => {
-          S.m1.hi(0, 1); S.p1.hi(0, 1); ok(uval(S.p1.bits) > uval(S.m1.bits) && 1 > -1, 0, 3.0, '第一個 bit 就分出：1000 0000 > 0111 1110 ✓'); cap('看第一個 bit', '你比我小就不用再比');
+          S.m1.hi(0, 1); S.p1.hi(0, 1); ok(uval(S.p1.bits) > uval(S.m1.bits) && 1 > -1, 0, 3.2, '第一個 bit 就分出：1000 0000 > 0111 1110 ✓'); cap('看第一個 bit', '你比我小就不用再比');
         },
   async (tok, S) => {
-          good('sign → exponent（bias，直接比）→ significand', 0, 1.6); cap('先比 sign，再比 exponent', '一分出高下就停');
+          good('sign → exponent（bias，直接比）→ significand', -3.0, 2.1); cap('先比 sign，再比 exponent', '一分出高下就停');
         }
 ]);
 scene('nuB-12b-f2d', "12B：(−1)^S × (1 + F) × 2^(E − 127)", CAM, [
@@ -5870,7 +5900,7 @@ scene('nuB-13a-rev', "13A：single precision 的三個欄位", CAM, [
 ]);
 scene('nuB-13a-d2f', "13A：分數用乘、整數用除，再 normalize、加 bias", CAM, [
   async (tok, S) => {
-          hot('decimal → floating point', 0, 7.0); cap('上次第二個例子講了一半', '先變成二進位的科學符號');
+          frameHold(-5.6, 0.6, 5.6, 6.8); hot('decimal → floating point', 0, 6.8); cap('上次第二個例子講了一半', '先變成二進位的科學符號');
         },
   async (tok, S) => {
           S.i = bx('整數：divide（÷2）', FC.sky, -3.4, 5.8, 0, 3.2, 0.6); cap('如果是整數', '用除');
@@ -5894,22 +5924,22 @@ scene('nuB-13a-d2f', "13A：分數用乘、整數用除，再 normalize、加 bi
           S.row.set('1' + bin(-1 + 127, 8) + '0'.repeat(23), true); S.t = hot('E = −1 + 127 = 126', (S.row.xs[1] + S.row.xs[8]) / 2, 3.6); cap('exponent 是 −1', '加 127 → 126');
         },
   async (tok, S) => {
-          S.row.set(S.b, true); ok(S.b === '1' + '01111110' + '1' + '0'.repeat(22), 0, 1.0, '−0.75 = 1 01111110 100…0 = 0x' + hexOf(S.b) + ' ✓'); cap('hidden one 不用表示', 'fraction 是 1，後面都 0');
+          S.row.set(S.b, true); S.k9 = ok(S.b === '1' + '01111110' + '1' + '0'.repeat(22), 0, 1.0, '−0.75 = 1 01111110 100…0 = 0x' + hexOf(S.b) + ' ✓'); cap('hidden one 不用表示', 'fraction 是 1，後面都 0');
         },
   async (tok, S) => {
           cap('分數：先用乘變 binary', '再用 representation');
         },
   async (tok, S) => {
-          gone(S.c, S.row, S.t); S.c = code(['43.57 = 43 + 0.57'], 0, 6.2); cap('43.57 怎麼辦？', '有整數也有分數');
+          gone(S.c, S.row, S.t, S.k9); S.c = code(['43.57 = 43 + 0.57'], 0, 6.0); cap('43.57 怎麼辦？', '有整數也有分數');
         },
   async (tok, S) => {
           let v = 43, ib = ''; while (v) { ib = (v % 2) + ib; v = Math.floor(v / 2); }
           let f = 0.57, fb = ''; for (let k = 0; k < 6; k++) { f *= 2; const d = Math.floor(f + 1e-12); fb += d; f -= d; }
           S.r1 = sm('43 ÷2… → ' + ib, -2.6, 5.2); S.r2 = sm('0.57 ×2… → 0.' + fb + '…', 2.6, 5.2);
-          ok(ib === (43).toString(2) && fb === '100100', 0, 4.4, '43.57 ≈ ' + ib + '.' + fb + '…₂ ✓'); cap('整數用除、分數用乘', '再表示成二進位');
+          S.k12 = ok(ib === (43).toString(2) && fb === '100100', 0, 4.4, '43.57 ≈ ' + ib + '.' + fb + '…₂ ✓'); cap('整數用除、分數用乘', '再表示成二進位');
         },
   async (tok, S) => {
-          gone(S.c, S.r1, S.r2); S.c = code(['1/3 = 0.3333…'], 0, 6.2); cap('三分之一', '0.3333… 一直下去');
+          gone(S.c, S.r1, S.r2, S.k12); S.c = code(['1/3 = 0.3333…'], 0, 6.0); cap('三分之一', '0.3333… 一直下去');
         },
   async (tok, S) => {
           let f = 1 / 3, fb = ''; for (let k = 0; k < 8; k++) { f *= 2; const d = Math.floor(f); fb += d; f -= d; }
@@ -5977,20 +6007,20 @@ scene('nuB-13a-range', "13A：最小 1.0 × 2⁻¹²⁶、最大 ≈ 2.0 × 2¹�
 ]);
 scene('nuB-13a-zero', "13A：E 分三類；E = 0、F = 0 → ±0", CAM, [
   async (tok, S) => {
-          S.row = floatRow(3.0); S.row.set('0'.repeat(32)); cap('0 還有一些 special number', '怎麼表示？');
+          frameHold(-6.0, 0.6, 6.0, 6.6); S.row = floatRow(3.6); S.row.set('0'.repeat(32)); cap('0 還有一些 special number', '怎麼表示？');
         },
   async (tok, S) => {
           S.row.ms.slice(1, 9).forEach((m) => glow(m, HL)); cap('reserve 什麼？', 'exponent 全 0、全 1');
         },
   async (tok, S) => {
-          S.tb = [['E = 0', 'F = 0'], ['E = 0', 'F ≠ 0'], ['E = 255', 'F = 0'], ['E = 255', 'F ≠ 0']].map(([a, b], i) => bx(a + '、' + b + '：?', FC.pink, -4.2 + (i % 2) * 4.6, 6.4 - Math.floor(i / 2) * 0.8, 0, 4.0, 0.6));
+          S.tb = [['E = 0', 'F = 0'], ['E = 0', 'F ≠ 0'], ['E = 255', 'F = 0'], ['E = 255', 'F ≠ 0']].map(([a, b], i) => bx(a + '、' + b + '：?', FC.pink, -2.4 + (i % 2) * 4.8, 6.2 - Math.floor(i / 2) * 0.7, 0, 4.4, 0.55));
           S.tb.slice(2).forEach((m) => { m.visible = false; }); cap('exponent 是 0', 'significand 可以是 0 或非 0');
         },
   async (tok, S) => {
           S.tb.forEach((m) => { m.visible = true; }); cap('exponent 是 255', '也是 0 或非 0：四種組合');
         },
   async (tok, S) => {
-          S.row.clearGlow(); S.cat = [bx('E = 0：特殊', FC.pink, -4.2, 1.0, 0, 2.6, 0.6), bx('E = 1～254：正常', FC.mint, 0, 1.0, 0, 3.0, 0.6), bx('E = 255：特殊', FC.pink, 4.2, 1.0, 0, 2.6, 0.6)];
+          S.row.clearGlow(); S.cat = [bx('E = 0：特殊', FC.pink, -4.0, 4.55, 0, 2.8, 0.5), bx('E = 1～254：正常', FC.mint, 0, 4.55, 0, 3.4, 0.5), bx('E = 255：特殊', FC.pink, 4.0, 4.55, 0, 2.8, 0.5)];
           cap('exponent 分三大類', '000、1 到 254、255');
         },
   async (tok, S) => {
@@ -6006,13 +6036,13 @@ scene('nuB-13a-zero', "13A：E 分三類；E = 0、F = 0 → ±0", CAM, [
           glow(S.cat[0], null); glow(S.cat[2], null); relbl(S.tb[0], 'E = 0、F = 0：0'); tint(S.tb[0], FC.green); S.row.set('0'.repeat(32), true); cap('exponent 0、significand 0', '就代表 0');
         },
   async (tok, S) => {
-          S.no = bad('沒有 hidden 1、不要算 0 − 127', 0, 5.0); cap('exponent 是 0', '沒有 hidden one');
+          S.no = bad('沒有 hidden 1、不要算 0 − 127', 0, 2.5); cap('exponent 是 0', '沒有 hidden one');
         },
   async (tok, S) => {
           cap('不要去算 0 − 127', '這是特別的解釋方法');
         },
   async (tok, S) => {
-          gone(S.no); S.row2 = floatRow(1.9); S.row2.set(f32(-0), true); ok(f32(0) === '0'.repeat(32) && f32(-0) === '1' + '0'.repeat(31) && 0 === -0, 0, 5.0, '+0 = 0 0…0、−0 = 1 0…0，值相等 ✓');
+          gone(S.no); S.row2 = floatRow(2.4); S.row2.set(f32(-0), true); ok(f32(0) === '0'.repeat(32) && f32(-0) === '1' + '0'.repeat(31) && 0 === -0, 0, 1.2, '+0 = 0 0…0、−0 = 1 0…0，值相等 ✓');
           cap('sign 0 跟 1', '正 0 跟負 0');
         },
   async (tok, S) => {
@@ -6158,8 +6188,9 @@ scene('nuB-13a-fpex', "13A：1.000 × 2⁻¹ + (−1.110 × 2⁻²) = 1.000 × 2
 ]);
 scene('nuB-13a-fphw', "13A：small ALU、MUX、shifter、big ALU、normalize、rounding", WIDE, [
   async (tok, S) => {
-          S.A = [bx('Sign', FC.red, -6.2, 6.8, 0, 0.9, 0.5), bx('Exp A', FC.blue, -4.9, 6.8, 0, 1.4, 0.5), bx('Fraction A', FC.green, -2.9, 6.8, 0, 2.2, 0.5)];
-          S.B = [bx('Sign', FC.red, 1.0, 6.8, 0, 0.9, 0.5), bx('Exp B', FC.blue, 2.3, 6.8, 0, 1.4, 0.5), bx('Fraction B', FC.green, 4.3, 6.8, 0, 2.2, 0.5)];
+          frameHold(-7.2, -0.6, 7.2, 7.8);
+          S.A = [bx('Sign', FC.red, -6.95, 6.8, 0, 0.8, 0.5), bx('Exp A', FC.blue, -5.15, 6.8, 0, 2.0, 0.5), bx('Fraction A', FC.green, -2.8, 6.8, 0, 2.5, 0.5)];
+          S.B = [bx('Sign', FC.red, 0.05, 6.8, 0, 0.8, 0.5), bx('Exp B', FC.blue, 1.85, 6.8, 0, 2.0, 0.5), bx('Fraction B', FC.green, 4.3, 6.8, 0, 2.5, 0.5)];
           cap('floating point 加法的 hardware', '很複雜');
         },
   async (tok, S) => {
@@ -6179,27 +6210,27 @@ scene('nuB-13a-fphw', "13A：small ALU、MUX、shifter、big ALU、normalize、r
           S.rd = bx('Rounding hardware', FC.lilac, 0, -0.2, 0, 3.0, 0.6); cap('加：ALU；normalize：shift', 'exponent 加減；rounding');
         },
   async (tok, S) => {
-          S.sa = bx('Small ALU（Exp A − Exp B）', FC.orange, -3.6, 5.6, 0, 3.4, 0.6); wire([[-4.9, 6.5], [-4.2, 5.9]]); wire([[2.3, 6.5], [-2.6, 5.9]]); cap('把 exponent 拿出來', '做一個比較');
+          S.sa = bx('Small ALU（Exp A − Exp B）', FC.orange, -3.6, 5.6, 0, 3.4, 0.6); wire([[-5.15, 6.5], [-4.2, 5.9]]); wire([[1.85, 6.5], [-2.6, 5.9]]); cap('把 exponent 拿出來', '做一個比較');
         },
   async (tok, S) => {
           S.sh = bx('Shift right', FC.mint, -1.6, 3.6, 0, 2.0, 0.6); cap('這個比較小', '這個就要 right shift');
         },
   async (tok, S) => {
-          S.m1 = muxB('MUX', -1.6, 4.6, 0.6, 1.4); wire([[-2.9, 6.5], [-1.9, 4.9]]); wire([[4.3, 6.5], [-1.3, 4.9]]); cap('不知道是誰要被 shift', '前面一個 2-to-1 MUX 選');
+          S.m1 = muxB('MUX', -1.6, 4.6, 0.6, 1.4); wire([[-2.8, 6.5], [-1.9, 4.9]]); wire([[4.3, 6.5], [-1.3, 4.9]]); cap('不知道是誰要被 shift', '前面一個 2-to-1 MUX 選');
         },
   async (tok, S) => {
-          S.m2 = muxB('MUX', 1.8, 4.0, 0.6, 1.4); wire([[-2.9, 6.5], [1.5, 4.3]]); wire([[4.3, 6.5], [2.1, 4.3]]); wire([[-1.6, 3.3], [-0.8, 2.75]]); wire([[1.8, 3.7], [0.8, 2.75]]);
+          S.m2 = muxB('MUX', 1.8, 4.0, 0.6, 1.4); wire([[-2.8, 6.5], [1.5, 4.3]]); wire([[4.3, 6.5], [2.1, 4.3]]); wire([[-1.6, 3.3], [-0.8, 2.75]]); wire([[1.8, 3.7], [0.8, 2.75]]);
           cap('不 shift 的也可能是 A 或 B', '也要一個 2-to-1 MUX');
         },
   async (tok, S) => {
-          S.ctl = bx('Control', FC.dark, -5.2, 4.2, 0, 1.6, 0.6); wire([[-3.6, 5.3], [-5.0, 4.5]]); cap('control logic', 'exponent 相減就知道誰小');
+          S.ctl = bx('Control', FC.dark, -5.6, 4.4, 0, 1.6, 0.6); wire([[-3.6, 5.3], [-5.3, 4.7]]); cap('control logic', 'exponent 相減就知道誰小');
         },
   async (tok, S) => {
           S.ea = -2; S.eb = -1; relbl(S.A[1], 'Exp A = −2'); relbl(S.B[1], 'Exp B = −1'); relbl(S.A[2], '−1.110'); relbl(S.B[2], '1.000');
           relbl(S.m1, '0'); relbl(S.m2, '1'); glow(S.m1, HL); glow(S.m2, HL); cap('左邊比較小：左 MUX 選 0', '右 MUX 選 1');
         },
   async (tok, S) => {
-          const d = S.eb - S.ea; relbl(S.sa, 'Small ALU：差 = ' + d); relbl(S.sh, 'Shift right ' + d + ' → −0.111'); ok(d === 1, -3.6, 2.9, 'exponent difference = 1 → 右移 1 位 ✓'); cap('shift 多少位？', 'exponent difference 告訴它');
+          const d = S.eb - S.ea; relbl(S.sa, 'Small ALU：差 = ' + d); relbl(S.sh, 'Shift right ' + d + ' → −0.111'); ok(d === 1, 4.4, 3.05, 'exponent difference = 1 → 右移 1 位 ✓'); cap('shift 多少位？', 'exponent difference 告訴它');
         },
   async (tok, S) => {
           glow(S.big, HL); relbl(S.big, 'Big ALU：0.001'); cap('big ALU 做加減', 'mantissa 比 precision 更大');
@@ -6218,10 +6249,10 @@ scene('nuB-13a-fphw', "13A：small ALU、MUX、shifter、big ALU、normalize、r
           glow(S.rd, null); cap('用 MUX 控制不同 path', 'algorithm 對應到 hardware');
         },
   async (tok, S) => {
-          S.m4 = muxB('MUX', -4.6, 3.0, 0.6, 1.2); wire([[-4.9, 6.5], [-4.75, 3.6]]); wire([[2.3, 6.5], [-4.45, 3.6]]); cap('這邊也有一個 2-to-1 MUX', '做什麼的？');
+          S.m4 = muxB('MUX', -4.6, 3.0, 0.6, 1.2); wire([[-5.15, 6.5], [-4.75, 3.6]]); wire([[1.85, 6.5], [-4.45, 3.6]]); cap('這邊也有一個 2-to-1 MUX', '做什麼的？');
         },
   async (tok, S) => {
-          relbl(S.m4, '大'); glow(S.m4, HL); ok(Math.max(S.ea, S.eb) === -1 && 1.0 * 2 ** -4 === 0.5 - 0.4375, -4.6, -0.6, '選 Exp = −1 → normalize 後 −4：1.000 × 2⁻⁴ = 0.0625 ✓'); cap('選比較大的 exponent', '小的已經變成跟大的一樣');
+          relbl(S.m4, '大'); glow(S.m4, HL); ok(Math.max(S.ea, S.eb) === -1 && 1.0 * 2 ** -4 === 0.5 - 0.4375, -2.6, 0.45, '選 Exp = −1 → normalize 後 −4：1.000 × 2⁻⁴ = 0.0625 ✓'); cap('選比較大的 exponent', '小的已經變成跟大的一樣');
         }
 ]);
 scene('nuB-13a-pipe', "13A：切成幾個 stage", CAM, [
