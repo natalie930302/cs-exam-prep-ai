@@ -48,6 +48,11 @@ export default function (ctx) {
   const wait = (tok, ms) => (tok !== undefined ? beat(tok, ms) : sleep(ms));
   const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
   const pickOne = (a) => a[Math.floor(Math.random() * a.length)];
+  // invisible box over the area a scene will use later: the auto framing measures it from the first step (no zoom-in-then-jump)
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
 
   // ───────────────────────── 磁碟排程（模式 + 場景共用） ─────────────────────────
   const BOOK_Q = [98, 183, 37, 122, 14, 124, 65, 67];   // 恐龍書：head 在 53，cylinder 0–199
@@ -94,7 +99,8 @@ export default function (ctx) {
       mk[r] = cube('', C.orange, [0.16, 0.5, 0.16], cx(r, maxC), 0.25, -3);
       tag(String(r), 'ptr', cx(r, maxC), 0.6, i % 2 ? -3.55 : -4.1);
     });
-    const hd = tag('head ' + head, 'ptr alt', cx(head, maxC), 0.6, -2.2);
+    const hd = tag('head ' + head, 'ptr alt', cx(head, maxC) - 1.2, 0.6, -2.2);   // 磁頭左邊，不壓到刻度
+    frameHold(-6.9, 0, -4.5, 6.9, 0.9, 4.9);   // 整條路線＋右下的移動量，從一開始就框好
     return mk;
   }
   async function runSched(o, tok) {
@@ -650,7 +656,7 @@ export default function (ctx) {
     fresh([0, 6, 10], [0, 0.6, 0]);
     say('raw partition 的 swap：管理很簡單', '每個 slot 一個 counter');
     const cnt = [0, 0, 0, 0, 0, 0, 0, 0];
-    const slots = cnt.map((_, i) => { ctx.tile(V3(-5.25 + i * 1.5, 0.04, 0), 1.3, 1.3); return tag('0', 'ptr alt', -5.25 + i * 1.5, 0.9, 0.8); });
+    const slots = cnt.map((_, i) => { ctx.tile(V3(-5.25 + i * 1.5, 0.04, 0), 1.3, 1.3); return tag('0', 'ptr alt', -5.25 + i * 1.5, 0.05, 1.05); });   // counter 貼在自己那格的前緣（不跟掉下來的 page 疊）
     const pages = [];
     const put = async (i, name, c) => { pages[i] = cube(name, C.orange, [1.1, 0.4, 1.1], -5.25 + i * 1.5, 0.2, 0, 3); cnt[i] = c; txt(slots[i], String(c)); await beat(tok, 500); };
     await put(0, 'A:p3', 1); await put(1, 'B:p0', 2); await put(3, 'A:p7', 1); await put(4, 'C:p1', 3);
@@ -826,6 +832,19 @@ const CAM = [[0, 4.2, 14], [0, 3.0, 0]];
 const CAMW = [[0, 4.6, 15.5], [0, 3.0, 0]];
 const CAMD = [[0, 10.5, 8.6], [0, 0, 0.3]];          // disk-scheduling view (from above)
 const CAMP = [[0, 7.0, 9.5], [0, 0.8, 0]];           // platter view
+const CAMT = [[0, 6.2, 11.5], [0, 1.2, 0]];          // one track (bad sector scenes): a little from above, so the tiles read
+// one remark label per scene (S.rm): rewritten and moved next to its subject instead of adding a new label each step
+function say1(S, t, cls = 'note', x = 0, y = 2.0, z = 0) {
+  if (!S.rm) S.rm = tag(t, cls, x, y, z);
+  else { S.rm.element.className = 'lab-label ' + cls; txt(S.rm, t); S.rm.position.set(x, y, z); }
+  return S.rm;
+}
+// a finished subject steps back and greys out (as in ds-1): it stays as context, out of the way of the new one
+async function recede(tok, objs, dz = -2.6) {
+  const z0 = objs.map((o) => o.position.z);
+  objs.forEach((o) => o.traverse((c) => { if (c.isMesh && c.material && !Array.isArray(c.material) && c.material.color) c.material.color.set('#d8cfc0'); }));
+  await anim(tok, 600, (u) => objs.forEach((o, k) => { o.position.z = z0[k] + dz * u; }));
+}
 
 // ── 磁碟（platter）：沿用模組的 buildPlatter()，慢慢轉 ──
 function platter() {
@@ -840,6 +859,8 @@ const X = (c) => -6 + c * 12 / 199;
 function dsk(head, reqs, o = {}) {
   const z0 = -3.3;
   const D = { cur: head, z: -2.7, tot: 0, dz: o.dz || 0.6, mk: {}, parts: [], lbl: {} };
+  D.zEnd = D.z + D.dz * (o.n || 9);                  // where the path will end (o.n = number of moves)
+  frameHold(-6.9, 0, -4.6, 6.9, 0.9, D.zEnd + 2.1);  // the whole picture area, from the first step
   bx('', '#6e5f49', 0, 0.03, z0, 12.2, 0.06, 0.06);
   for (const t of [0, 199]) sm(String(t), X(t), 0.05, z0 + 0.55);
   sm('cylinder', 6.75, 0.05, z0);
@@ -849,7 +870,14 @@ function dsk(head, reqs, o = {}) {
   });
   D.hm = bx('', MC.blue, X(head), 0.2, D.z, 0.4, 0.4, 0.4);
   D.hl = hot('head ' + head, X(head) - 0.9, 0.6, D.z);
-  D.tl = hot('總移動 0', 4.8, 0.6, 4.3);
+  D.tl = hot('總移動 0', 2.2, 0.6, D.zEnd + 0.9);
+  // one remark label under the path, rewritten (and moved next to its subject) instead of piling up new ones
+  D.say = (t, cls = 'note', x = -0.6, z = D.zEnd + 1.75) => {
+    if (!D.rm) D.rm = tag(t, cls, x, 0.6, z);
+    else { D.rm.element.className = 'lab-label ' + cls; txt(D.rm, t); D.rm.position.set(x, 0.6, z); }
+    return D.rm;
+  };
+  D.sum = (extra = '') => txt(D.tl, sumText(D) + extra);
   D.go = async (tok, to, jump = false) => {
     const from = D.cur, d = Math.abs(to - from), zA = D.z, z1 = D.z + D.dz;
     seg(V3(X(from), 0.2, zA), V3(X(to), 0.2, z1), jump ? '#d64545' : '#2f6fb0');
@@ -889,14 +917,15 @@ const sumText = (D) => D.parts.join('+') + ' = ' + D.tot;
 // ════════ Ui3Pei65U80（第 26A 講：Disk scheduling） ════════
 scene('io-26a-goal', 'Disk scheduling 的目的：減少 seek time', CAMP, [
   async (tok, S) => {                                   // 21 接續：disk scheduling 目的
-    S.P = platter(); sm('platter', -1.5, 0.2, 3.9); hd('read-write head', 4.8, 1.4, 0);
+    frameHold(-6.4, 0, -2.4, 6.4, 5.0, 3.9);
+    S.P = platter(); sm('platter', -1.5, 0.2, 3.9);
     cap('Disk scheduling', '目的：改善硬碟讀取資料的時間');
   },
   async (tok, S) => {                                   // 45 access time = seek + rotation + transfer
     S.b1 = bx('seek', MC.blue, -3.6, 4.4, -2, 2.6, 0.55, 0.6);
     S.b2 = bx('rotation', MC.purple, -0.8, 4.4, -2, 2.6, 0.55, 0.6);
     S.b3 = bx('transfer', MC.green, 1.8, 4.4, -2, 2.4, 0.55, 0.6);
-    sm('+', -2.2, 4.4, -1.5); sm('+', 0.5, 4.4, -1.5); hot('讀一次的時間 =', -3.6, 5.2, -2);
+    S.pl = [sm('+', -2.2, 4.4, -1.5), sm('+', 0.5, 4.4, -1.5)]; S.t = hot('讀一次的時間 =', -5.0, 4.4, -2); S.t.center.set(1, 0.5);
     cap('讀一次 = 三段時間相加', 'seek ＋ rotational latency ＋ transfer');
   },
   async (tok, S) => {                                   // 58 能減少的是 seek：讀寫頭移動
@@ -909,23 +938,26 @@ scene('io-26a-goal', 'Disk scheduling 的目的：減少 seek time', CAMP, [
     cap('讀寫頭移動是機械式的', '相對很久 → 目標：minimize seek time');
   },
   async (tok, S) => {                                   // 82 seek time ≈ seek distance
-    good('seek time ≈ seek distance（移動距離）', 0, 3.4, -2);
+    S.sd = good('seek time ≈ seek distance（移動距離）', -3.6, 3.6, -2);
     cap('seek time 就看 seek distance', '磁頭要移動多遠');
   },
   async (tok, S) => {                                   // 91 介紹幾個基本演算法
-    ['FCFS', 'SSTF', 'SCAN', 'C-SCAN', 'LOOK', 'C-LOOK'].forEach((n, i) => hd(n, -5 + i * 2, 6.2, -2));
+    gone(S.b2, S.b3, S.pl, S.t); K.keep(S.sd);
+    ['FCFS', 'SSTF', 'SCAN', 'C-SCAN', 'LOOK', 'C-LOOK'].forEach((n, i) => hd(n, -5 + i * 2, 4.4, -2));
+    kill(S.b1);
     cap('接下來介紹幾個基本演算法', '實際系統以它們為基礎再修改');
   },
 ]);
 
 scene('io-26a-input', '排程的輸入：request queue 與 track number', CAMP, [
   async (tok, S) => {                                   // 105 FCFS 最基本
+    frameHold(-6.6, 0, -3.4, 6.2, 5.3, 3.4);
     S.P = platter();
-    hd('FCFS：first come, first served', -1.0, 5.6, -2);
+    hd('FCFS：first come, first served', -1.0, 5.0, -2);
     cap('第一個：first come, first served', '最基本的做法，很多管理問題都用得上');
   },
   async (tok, S) => {                                   // 119 input = list of locations
-    note('input：一串要讀的位置（request）', -1.0, 4.9, -2);
+    say1(S, 'input：一串要讀的位置（request）', 'note', -1.0, 4.3, -2);
     cap('排程的輸入', '一串要讀寫的位置（request）');
   },
   async (tok, S) => {                                   // 126 位置 = cylinder + track + sector
@@ -934,47 +966,47 @@ scene('io-26a-input', '排程的輸入：request queue 與 track number', CAMP, 
   },
   async (tok, S) => {                                   // 137 只有 track number 跟磁頭移動有關
     const x0 = S.P.arm.position.x; await anim(tok, 900, (u) => { S.P.arm.position.x = x0 - 1.8 * u; });
-    good('磁頭移動距離只看 track（cylinder）number', -1.0, 4.2, -2);
+    say1(S, '磁頭移動距離只看 track（cylinder）number', 'good', -1.0, 4.3, -2);
     cap('跟磁頭移動有關的只有 track number', '所以只看這個號碼');
   },
   async (tok, S) => {                                   // 158 系統送來的 request
-    QQ.forEach((r, i) => bx(String(r), MC.orange, -5.2 + i * 1.5, 6.6, -2, 1.2, 0.5, 0.5));
-    sm('queue', -6.6, 6.6, -2);
+    QQ.forEach((r, i) => bx(String(r), MC.orange, -5.2 + i * 1.5, 3.3, -2.6, 1.2, 0.5, 0.5));   // 放在盤面後上方的一排
+    sm('queue', -6.0, 3.3, -2.6).center.set(1, 0.5);
     cap('driver 看到的 request queue', '98, 183, 37, 122, 14, 124, 65, 67');
   },
 ]);
 
 scene('io-26a-fcfs', 'FCFS：照到達順序（總移動 640）', CAMD, [
   async (tok, S) => {                                   // 172 head 目前在 53
-    S.D = dsk(QH, QQ, { dz: 0.68 });
+    S.D = dsk(QH, QQ, { dz: 0.68, n: 8 });
     cap('磁頭目前在 cylinder 53', 'queue：98, 183, 37, 122, 14, 124, 65, 67');
   },
   async (tok, S) => {                                   // 184 FCFS：照順序
-    QQ.forEach((r, i) => sm('#' + (i + 1), X(r), 0.9, -3.3 + (i % 2 ? -0.45 : -0.95) - 0.4));
+    QQ.forEach((r, i) => txt(S.D.lbl[r], '#' + (i + 1) + ' ' + r));   // 到達順序直接寫在 request 自己的標籤上
     cap('FCFS：不管現在在哪', '就照到達順序一個一個讀');
   },
   ...moves('fcfs', null, 'FCFS'),                      // 185–204 一句一個 request
   async (tok, S) => {                                   // 206 加起來
-    const want = chk(S.D, 'fcfs'); hot(sumText(S.D), -1.0, 0.6, 4.6);
+    const want = chk(S.D, 'fcfs'); S.D.sum();
     cap('把每段距離加起來 = ' + want + ' cylinders', '移動距離就代表花的時間');
   },
   async (tok, S) => {                                   // 212 看運氣
-    note('沒有任何安排：看運氣', -3.0, 0.6, 5.4);
+    S.D.say('沒有任何安排：看運氣');
     cap('FCFS 沒有任何安排', '好不好全看運氣');
   },
   async (tok, S) => {                                   // 224 zigzag
-    bad('來回 zigzag → 很多重複的距離', 2.6, 0.6, 5.4);
+    S.D.say('來回 zigzag → 很多重複的距離', 'bad');
     cap('路徑一直左右來回（zigzag）', '重複走很多距離 → 效能差');
   },
 ]);
 
 scene('io-26a-sstf', 'SSTF：每次挑最近的（總移動 236）', CAMD, [
   async (tok, S) => {                                   // 242 避免移太遠
-    S.D = dsk(QH, QQ, { dz: 0.68 });
+    S.D = dsk(QH, QQ, { dz: 0.68, n: 8 });
     cap('第二種：避免移動太遠', '每次都移到最近的下一個位置');
   },
   async (tok, S) => {                                   // 253 SSTF
-    hot('SSTF：Shortest Seek Time First', -1.0, 0.6, 5.2);
+    S.D.say('SSTF：Shortest Seek Time First', 'ptr alt');
     cap('Shortest Seek Time First（SSTF）', '以目前的距離來挑');
   },
   async (tok, S) => {                                   // 258 一樣在 53
@@ -982,39 +1014,40 @@ scene('io-26a-sstf', 'SSTF：每次挑最近的（總移動 236）', CAMD, [
     cap('同樣這些 request，head 一樣在 53', '先看每個 request 離 53 多遠');
   },
   async (tok, S) => {                                   // 262 列出距離
-    S.dl = QQ.map((r) => sm('|' + r + '−53|=' + Math.abs(r - QH), X(r), 0.2, -2.2 + (r % 3) * 0.35));
+    QQ.forEach((r) => txt(S.D.lbl[r], r + '：' + Math.abs(r - QH)));   // 距離寫在每個 request 自己的標籤上
+    S.D.lbl[65].element.className = 'lab-label ptr alt';
     cap('距離：98→45、183→130、37→16 …', '65 只差 12，最近');
   },
-  ...moves('sstf', null, 'SSTF').map((f, i) => (i ? f : async (tok, S) => { gone(S.dl); glow(S.D.hm, null); await f(tok, S); })),   // 268–285 一句一個
+  ...moves('sstf', null, 'SSTF').map((f, i) => (i ? f : async (tok, S) => { QQ.forEach((r) => txt(S.D.lbl[r], String(r))); S.D.lbl[65].element.className = 'lab-label ptr'; glow(S.D.hm, null); await f(tok, S); })),   // 268–285 一句一個
   async (tok, S) => {                                   // 286 236
-    const want = chk(S.D, 'sstf'); hot(sumText(S.D), -1.0, 0.6, 4.9);
+    const want = chk(S.D, 'sstf'); S.D.sum();
     cap('總移動 ' + want + ' cylinders', '比 FCFS 的 640 好很多');
   },
   async (tok, S) => {                                   // 295 不保證最好
-    bad('但不保證是最好的', -3.4, 0.6, 5.6);
+    S.D.say('但不保證是最好的', 'bad');
     cap('注意：SSTF 不保證最好', '它只看「目前」的結果');
   },
   async (tok, S) => {                                   // 307 online：新 request 不斷進來
-    const n = bx('新', MC.pink, X(160), 0.25, -3.3, 0.16, 0.5, 0.16); sm('新 request（示意）', X(160), 1.0, -4.3);
+    const n = bx('', MC.pink, X(160), 0.25, -3.3, 0.16, 0.5, 0.16); sm('新 request（示意）', X(160), 0.6, -2.1);
     cap('系統一直在跑（online）', '移動完又會有新的 request 進來');
   },
   async (tok, S) => {                                   // 321 greedy
-    note('greedy：只挑眼前最近的', 2.4, 0.6, 5.6);
+    S.D.say('greedy：只挑眼前最近的');
     cap('看不見未來，只是 greedy 地移到最近', '可能一下子被拉到很遠');
   },
   async (tok, S) => {                                   // 358 還是有 zigzag
-    bad('67 → 37：往回走的重複路徑', 0, 0.6, 6.3);
+    S.D.say('67 → 37：往回走的重複路徑', 'bad', 0.6, -2.7 + 0.68 * 2.5);   // 緊貼 67→37 那一段的右邊
     cap('結果裡還是有回頭路（zigzag）', '兩邊距離很接近時，往哪走都不一定好');
   },
 ]);
 
 scene('io-26a-scan', 'SCAN：先往一邊掃到底再折返（總移動 236）', CAMD, [
   async (tok, S) => {                                   // 390 第三種 SCAN
-    S.D = dsk(QH, QQ, { dz: 0.62 });
+    S.D = dsk(QH, QQ, { dz: 0.62, n: 9 });
     cap('第三種：SCAN', '先往一邊走，再往另一邊走');
   },
   async (tok, S) => {                                   // 401 不管 request，traverse
-    note('不管 request 在哪：一路掃過去', -2.6, 0.6, 5.3);
+    S.D.say('不管 request 在哪：一路掃過去');
     cap('不管有什麼 request', '就是一路 traverse 整顆磁碟');
   },
   async (tok, S) => {                                   // 408 從 53 先往左
@@ -1023,15 +1056,15 @@ scene('io-26a-scan', 'SCAN：先往一邊掃到底再折返（總移動 236）',
   },
   ...moves('scan', 'down', 'SCAN').map((f, i) => (i ? f : async (tok, S) => { gone(S.ar); await f(tok, S); })),   // 411–431
   async (tok, S) => {                                   // 437 = 236
-    const want = chk(S.D, 'scan', 'down'); hot(sumText(S.D) + '（= 53 + 183）', -1.0, 0.6, 4.6);
+    const want = chk(S.D, 'scan', 'down'); S.D.sum('（= 53 + 183）');
     cap('總移動 ' + want + ' cylinders', '這個例子剛好跟 SSTF 一樣');
   },
   async (tok, S) => {                                   // 443 SSTF 容易來回擺動
-    good('SCAN 只來回一趟，不會左右擺動', -1.0, 0.6, 5.5);
+    S.D.say('SCAN 只來回一趟，不會左右擺動', 'good');
     cap('有時 SCAN 反而更好', 'SSTF 受 request 位置影響，容易來回擺');
   },
   async (tok, S) => {                                   // 455 IO 很慢，queue 裡又有新 request
-    [30, 110, 170].forEach((c) => bx('', MC.pink, X(c), 0.25, -3.3, 0.16, 0.5, 0.16)); sm('移動時新來的 request（示意）', X(110), 1.0, -4.4);
+    [30, 110, 170].forEach((c) => bx('', MC.pink, X(c), 0.25, -3.3, 0.16, 0.5, 0.16)); S.D.say('粉紅：移動時新來的 request（示意）');
     cap('I/O 很慢，掃的同時 queue 又進來很多', '順路就把它們讀掉');
   },
 ]);
@@ -1070,52 +1103,52 @@ scene('io-26a-wait', 'SCAN 的問題：兩端的等待時間不平均', CAMD, [
 
 scene('io-26a-cscan', 'C-SCAN：只單向服務，到底直接拉回（總移動 183）', CAMD, [
   async (tok, S) => {                                   // 589 C-SCAN
-    S.D = dsk(QH, QQ, { dz: 0.56 });
+    S.D = dsk(QH, QQ, { dz: 0.56, n: 10 });
     cap('改善等待時間：C-SCAN', 'Circular SCAN');
   },
   async (tok, S) => {                                   // 598 等待時間都平均
-    note('目標：不管 request 在哪，等待時間都一樣', -1.0, 0.6, 5.6);
+    S.D.say('目標：不管 request 在哪，等待時間都一樣');
     cap('不管 request 在哪個位置', '大家的等待時間都很平均');
   },
   async (tok, S) => {                                   // 613 round robin 最 fair
-    hd('像 round robin：輪完一圈再從頭', -1.0, 0.6, 6.2);
+    S.D.say('像 round robin：輪完一圈再從頭', 'ptr');
     cap('概念就是 round robin', 'round robin 最公平');
   },
   ...moves('cscan', 'up', 'C-SCAN').slice(0, 7),       // 622–634 往右服務、走到 199
   moves('cscan', 'up', 'C-SCAN')[7],                   // 637 直接拉回 0
   async (tok, S) => {                                   // 639 這段距離不算
-    bad('紅線：看起來很長，但途中不讀資料 → 不算', -1.6, 0.6, 3.3);
+    S.D.say('紅線：看起來很長，但途中不讀資料 → 不算', 'bad', 1.8, S.D.z + 0.4);   // 貼在紅線下方（右半邊，左邊等一下還要畫）
     cap('中間這段看似很長，其實不算', '沒讀任何資料，直接拉過去很快');
   },
   ...moves('cscan', 'up', 'C-SCAN').slice(8),          // 646–649 再往右讀 14、37
   async (tok, S) => {                                   // 659 只往一個方向
-    good('只往一個方向讀寫', 3.4, 0.6, 5.0);
+    S.D.say('只往一個方向讀寫', 'good');
     cap('C-SCAN 只往一個方向做讀寫', '到底就直接拉回原點');
   },
   async (tok, S) => {                                   // 669 wait time uniform；總移動
-    const want = chk(S.D, 'cscan', 'up'); hot(sumText(S.D) + '（回程 199 不算）', -1.0, 0.6, 6.4);
+    const want = chk(S.D, 'cscan', 'up'); S.D.sum('（回程 199 不算）');
     cap('錯過了也只要等一趟 → 等待平均', '總移動 ' + want + '（不算跳回的 199）');
   },
 ]);
 
 scene('io-26a-look', 'LOOK / C-LOOK：只走到最遠的 request（C-LOOK 總移動 153）', CAMD, [
   async (tok, S) => {                                   // 713 SCAN 一格一格移動
-    S.D = dsk(QH, QQ, { dz: 0.5 });
+    S.D = dsk(QH, QQ, { dz: 0.5, n: 8 });
     cap('回頭看 SCAN', '不管 request 在哪，一個 position 一個 position 移');
   },
   async (tok, S) => {                                   // 739 一定走到 0 和最後
-    S.e0 = bad('request 裡沒有 0，SCAN 還是走到 0', X(0) + 1.4, 0.6, -1.9);
+    S.e0 = bad('request 裡沒有 0，SCAN 還是走到 0', X(0) - 0.2, 0.6, -1.5); S.e0.center.set(0, 0.5);
     cap('SCAN 一定走到 0 和最後一格', '我們的 request 其實沒有 0');
   },
   async (tok, S) => {                                   // 751 183 → 199 多餘
-    S.e1 = bad('最後是 183，卻走到 199', X(199) - 1.5, 0.6, -1.9);
+    S.e1 = bad('最後是 183，卻走到 199', X(199) + 0.2, 0.6, -1.5); S.e1.center.set(1, 0.5);
     cap('最後一個 request 是 183', '卻走到 199：兩端多走了冤枉路');
   },
   async (tok, S) => {                                   // 787 LOOK 與 C-LOOK
     gone(S.e0, S.e1);
     const look = seekTotal(QH, schedule('look', QH, QQ, 'down'), false).tot;
-    note('LOOK：雙向（像 SCAN）；C-LOOK：單向（像 C-SCAN）', -1.0, 0.6, 5.6);
-    sm('同一組 queue：LOOK 先往 0 = ' + look, -1.0, 0.6, 6.3);
+    S.D.say('LOOK：雙向（像 SCAN）；C-LOOK：單向（像 C-SCAN）');
+    S.lk = sm('同一組 queue：LOOK 先往 0 = ' + look, -4.6, 0.6, S.D.zEnd + 0.9);
     cap('另一種做法：LOOK', '分 LOOK（雙向）和 C-LOOK（單向）');
   },
   async (tok, S) => {                                   // 800 例子是 C-LOOK
@@ -1123,49 +1156,54 @@ scene('io-26a-look', 'LOOK / C-LOOK：只走到最遠的 request（C-LOOK 總移
   },
   ...moves('clook', 'up', 'C-LOOK'),                   // 801–809 一句一個（含跳回 14）
   async (tok, S) => {                                   // 811 跟 SCAN 很像
-    note('看起來跟 C-SCAN 很像', 3.4, 0.6, 3.6);
+    S.D.say('看起來跟 C-SCAN 很像');
     cap('C-LOOK 跟 C-SCAN 看起來很像', '最大差別在兩端');
   },
   async (tok, S) => {                                   // 818 不會走到 0 和 199
-    const want = chk(S.D, 'clook', 'up'); hot(sumText(S.D) + '（跳回 169 不算）', -1.0, 0.6, 4.6);
+    const want = chk(S.D, 'clook', 'up'); S.D.sum('（跳回 169 不算）');
     cap('不走到 0 和 199，只到最遠的 request', '總移動 ' + want + ' cylinders');
   },
   async (tok, S) => {                                   // 827 look = lookup queue
-    good('LOOK = 先 look（查看）queue 裡的 request', -1.0, 0.6, 5.4);
+    S.D.say('LOOK = 先 look（查看）queue 裡的 request', 'good');
     cap('為什麼叫 LOOK？', '它會先看 queue 裡 request 的位置再決定');
   },
   async (tok, S) => {                                   // 839 往單側最近的移動
-    note('往單一方向最近的那個走', -1.0, 0.6, 6.1);
+    S.D.say('往單一方向最近的那個走');
     cap('決定方式：往單側最近的 request 移動', '其實跟 SSTF 很像');
   },
   async (tok, S) => {                                   // 866 SSTF 不管左右；C-LOOK 只往右
-    sm('SSTF：左右都看，挑最近 ｜ C-LOOK：只看右邊的最近', -1.0, 0.6, 6.8);
+    S.D.say('SSTF：左右都看，挑最近 ｜ C-LOOK：只看右邊的最近');
     cap('SSTF 不管左右，挑最近的', 'C-LOOK 只挑右邊最近的');
   },
 ]);
 
 scene('io-26a-compare', 'LOOK 的缺點與各演算法比較', CAM, [
   async (tok, S) => {                                   // 889 runtime 時 C-LOOK 像 SSTF
+    frameHold(-5.8, -0.2, -0.5, 5.8, 5.7, 1.0);
     S.rows = [['SSTF', MC.blue], ['SCAN', MC.green], ['C-SCAN', MC.teal], ['LOOK / C-LOOK', MC.purple]].map(([n, c], i) => bx(n, c, -4.2, 5.2 - i * 1.2, 0, 3.0, 0.7, 0.8));
-    note('request 不斷變動時：C-LOOK 的行為像 SSTF', 1.6, 5.2 - 3 * 1.2);
+    // 每一列一個說明，貼在自己那個方塊右邊；換話題時改寫它（不再另外加新標籤）
+    S.rr = S.rows.map((r, i) => { const l = K.keep(tag('', 'note', -2.5, 5.2 - i * 1.2, 0)); l.center.set(0, 0.5); return l; });
+    S.say = (i, t, cls = 'note') => { S.rr[i].element.className = 'lab-label ' + cls; txt(S.rr[i], t); };
+    S.say(3, 'request 不斷變動時：C-LOOK 的行為像 SSTF');
     cap('執行時 queue 一直在變', 'C-LOOK 的長相其實比較像 SSTF');
   },
   async (tok, S) => {                                   // 899 好處：不到兩端極側
-    good('LOOK 好處：不走到兩端', 1.6, 1.0);
+    S.say(3, 'LOOK 好處：不走到兩端', 'good');
     cap('LOOK 的好處', '跟 SCAN 比，不會移到最極端的兩側');
   },
   async (tok, S) => {                                   // 915 缺點：移動太快
-    bad('LOOK 缺點：一次就跳到下一個 request', 1.6, 0.3);
+    S.say(3, 'LOOK 缺點：一次就跳到下一個 request', 'bad');
     cap('缺點：行為接近 SSTF', '有時移動得太快');
   },
   async (tok, S) => {                                   // 925 SCAN 每個位置檢查
-    S.h = bx('', MC.blue, -1.6, 1.4 + 2.4, 0, 0.35, 0.35, 0.35);
-    await anim(tok, 1200, (u) => { S.h.position.x = -1.6 + 5.2 * u; }); bx('', MC.pink, 1.0, 3.8, 0, 0.16, 0.5, 0.16); tint(S.rows[1], MC.green);
-    good('SCAN：每個位置都看 → 路上新來的順便讀', 1.6, 4.4);
+    // 示範軌道放在最下面（不跟各列的說明疊在一起）
+    S.ax = bx('', '#6e5f49', 0.4, 0.1, 0, 7.0, 0.06, 0.06); S.h = bx('', MC.blue, -2.6, 0.35, 0, 0.35, 0.35, 0.35);
+    await anim(tok, 1200, (u) => { S.h.position.x = -2.6 + 5.2 * u; }); bx('', MC.pink, 0.0, 0.35, 0, 0.16, 0.5, 0.16); tint(S.rows[1], MC.green);
+    S.say(1, 'SCAN：每個位置都看 → 路上新來的順便讀', 'good');
     cap('SCAN 每一個位置都會檢查', '路上有新 request 就順便讀出來');
   },
   async (tok, S) => {                                   // 952 LOOK 直接跳 → miss
-    bad('LOOK：直接跳過去 → 中間新來的都 miss', 1.6, 2.0);
+    S.say(3, 'LOOK：直接跳過去 → 中間新來的都 miss', 'bad');
     cap('LOOK 從這裡直接跳到那裡', '這段時間新來的 request 全都 miss');
   },
   async (tok, S) => {                                   // 976 總結：SSTF 最直覺
@@ -1173,46 +1211,47 @@ scene('io-26a-compare', 'LOOK 的缺點與各演算法比較', CAM, [
     cap('總結：SSTF 最直覺', '但不一定給出最好的結果');
   },
   async (tok, S) => {                                   // 995 移動快 → miss
-    sm('移動快 → 途中 miss 比較多 request', 1.6, 5.8);
+    S.say(0, '移動快 → 途中 miss 比較多 request', 'note');
     cap('SSTF 移動比較快', '移動途中可能 miss 掉比較多 request');
   },
   async (tok, S) => {                                   // 1008 左右擺盪
-    sm('會左右擺盪 → 長期效能不一定好', 1.6, 5.3);
+    S.say(0, '會左右擺盪 → 長期效能不一定好', 'note');
     cap('還可能左右擺盪', '長期來看效能不一定最好');
   },
   async (tok, S) => {                                   // 1020 loading 重 → SCAN
     glow(S.rows[0], null); glow(S.rows[1], OKG);
-    good('loading 重（到處都有 request）→ SCAN 好', 1.6, 6.6);
+    S.say(1, 'loading 重（到處都有 request）→ SCAN 好', 'good');
     cap('loading 很重時：SCAN 比較好', '移動途中一直有 request 可以順便讀');
   },
   async (tok, S) => {                                   // 1040 loading 輕 → SSTF
     glow(S.rows[0], OKG);
-    good('loading 輕 → SSTF 好（直接跳過去）', -4.2, 6.6);
+    S.say(0, 'loading 輕 → SSTF 好（直接跳過去）', 'good');
     cap('loading 輕時：SSTF 比較好', '中間沒人來，乾脆直接跳過去');
   },
   async (tok, S) => {                                   // 1059 SCAN 不會 starvation
     glow(S.rows[0], null); glow(S.rows[1], null);
-    sm('SCAN：不會 starvation', -1.6, 4.0);
+    S.say(1, 'SCAN：不會 starvation', 'good');
     cap('SCAN 乖乖一步一步讀', '而且不會 starvation');
   },
   async (tok, S) => {                                   // 1069 C-SCAN、C-LOOK 等待平均
-    glow(S.rows[2], OKG); sm('C-SCAN / C-LOOK：等待平均', -1.6, 2.8);
+    glow(S.rows[2], OKG); S.say(2, 'C-SCAN / C-LOOK：等待平均', 'good');
     cap('C-SCAN、C-LOOK', '等待時間很平均');
   },
   async (tok, S) => {                                   // 1079 SSTF starvation
     glow(S.rows[2], null); glow(S.rows[0], NG);
-    bad('SSTF：可能卡在某一區 → 遠處 request starvation', -1.6, 6.0);
+    S.say(0, 'SSTF：可能卡在某一區 → 遠處 request starvation', 'bad');
     cap('SSTF 可能一直卡在某個區域', '另一側的 request 等非常久：starvation');
   },
   async (tok, S) => {                                   // 1090 LOOK 像 SSTF 但沒有 starvation
     glow(S.rows[0], null); glow(S.rows[3], OKG);
-    good('LOOK：像 SSTF，但一次只往一個方向、到頭才回頭 → 不會 starvation', -1.6, 1.6);
+    S.say(3, 'LOOK：像 SSTF，但一次只往一個方向、到頭才回頭 → 不會 starvation', 'good');
     cap('LOOK 像 SSTF', '但一次只往一個方向，到最遠的 request 才回頭，不會被困住 → 沒有 starvation');
   },
 ]);
 
 scene('io-26a-fs', 'Disk scheduling 要和 file system 配合', CAM, [
   async (tok, S) => {                                   // 1114 減 seek distance
+    frameHold(-6.2, -0.4, -0.6, 5.6, 5.2, 0.6);
     S.dk = prop('disk', 4.6, 0, 0, 1.4, 'disk');
     cap('disk scheduling：減少 seek distance', '但要從整個 I/O 的角度來看');
   },
@@ -1225,32 +1264,32 @@ scene('io-26a-fs', 'Disk scheduling 要和 file system 配合', CAM, [
     cap('讀寫凌亂、分散', '跟 FS 怎麼放 data 息息相關');
   },
   async (tok, S) => {                                   // 1151 不連續 → 最佳化有限
-    bad('FS 沒有連續擺 → 底層再怎麼排也有限', -2.0, 1.8);
+    say1(S, 'FS 沒有連續擺 → 底層再怎麼排也有限', 'bad', -2.0, 2.0);
     cap('如果 FS 一開始就沒連續擺', '底層再怎麼最佳化都有限');
   },
   async (tok, S) => {                                   // 1165 很多使用者
-    gone(S.bl);
+    gone(S.bl); remove(S.rm); S.rm = null; await recede(tok, [S.fs]);   // FS 那段講完：退到後面
     S.u1 = buddy('使用者 A', '', MC.blue, -5.2, 0, 1.5, 0.7); S.u2 = buddy('使用者 B', '', MC.purple, -3.2, 0, 1.5, 0.7);
     cap('就算 FS 擺得很連續', '硬碟也不是只有一個使用者在用');
   },
   async (tok, S) => {                                   // 1180 request 混在一起
-    S.ra = [1, 2, 3].map((k) => bx('A' + k, MC.blue, -4.6 + k * 0.9, 3.0, 0, 0.8, 0.5, 0.6));
-    S.rb = [1, 2, 3].map((k) => bx('B' + k, MC.purple, -4.6 + k * 0.9, 2.3, 0, 0.8, 0.5, 0.6));
+    S.ra = [1, 2, 3].map((k) => bx('A' + k, MC.blue, -4.6 + k * 0.9, 3.2, 0, 0.8, 0.5, 0.6));
+    S.rb = [1, 2, 3].map((k) => bx('B' + k, MC.purple, -4.6 + k * 0.9, 2.1, 0, 0.8, 0.5, 0.6));
     cap('大家同時用同一顆硬碟', 'request 會混在一起');
   },
   async (tok, S) => {                                   // 1192 兩個人都在 sequential 讀
-    note('A、B 各自都是循序（sequential）讀', -2.4, 3.8);
+    say1(S, 'A、B 各自都是循序（sequential）讀', 'note', -2.8, 3.9);
     cap('兩個人各自都是循序在讀', '…');
   },
   async (tok, S) => {                                   // 1204 合起來 → random
     const ord = [S.ra[0], S.rb[0], S.ra[1], S.rb[1], S.ra[2], S.rb[2]];
     const st = ord.map((m) => m.position.clone());
     await anim(tok, 1000, (u) => ord.forEach((m, i) => { m.position.set(st[i].x + (-3.6 + i * 0.9 - st[i].x) * u, st[i].y + (2.0 - st[i].y) * u, 0); }));
-    bad('到了硬碟：A1 B1 A2 B2 … 變成 random', 1.0, 1.5);
+    say1(S, '到了硬碟：A1 B1 A2 B2 … 變成 random', 'bad', -1.35, 1.3);
     cap('合起來到了硬碟', 'I/O pattern 就變成 random 了');
   },
   async (tok, S) => {                                   // 1213 disk scheduling 重組回連續
-    good('disk scheduling 把它重組回比較連續的順序', 1.0, 0.6);
+    say1(S, 'disk scheduling 把它重組回比較連續的順序', 'good', -1.35, 1.3);
     cap('最底層的 disk scheduling', '把它重組回有效率的連續順序：上下層都要配合');
   },
 ]);
@@ -1333,11 +1372,12 @@ scene('io-26b-format', 'Low-level formatting：header／data／trailer', CAM, [
 
 scene('io-26b-boot', 'Booting：ROM → boot block → FS → OS', CAM, [
   async (tok, S) => {                                   // 185 boot 需要 code
+    frameHold(-6.4, -0.3, -0.5, 6.4, 5.2, 0.5);
     S.disk = prop('disk', 4.8, 0, 0, 1.4, 'disk');
     cap('開機需要 code', '最後都是放在硬碟上');
   },
   async (tok, S) => {                                   // 202 放在 FS 裡讀不到
-    S.fs = bx('file system（還沒架起來）', MC.green, 0.6, 3.0, 0, 4.4, 0.6, 0.8); prop('lock', 3.2, 3.4, 0, 0.9);
+    S.fs = bx('file system（還沒架起來）', MC.green, 0.6, 3.0, 0, 4.4, 0.6, 0.8); S.lock = prop('lock', 3.2, 3.4, 0, 0.9);
     cap('如果 boot code 放在 file system 裡', 'FS 還沒架起來，根本讀不出來');
   },
   async (tok, S) => {                                   // 223 raw data
@@ -1346,11 +1386,11 @@ scene('io-26b-boot', 'Booting：ROM → boot block → FS → OS', CAM, [
   },
   async (tok, S) => {                                   // 236 bootstrap 初始化
     S.rom = bx('bootstrap', MC.purple, -4.6, 1.9, 0, 2.6, 0.6, 0.8);
-    note('初始化 CPU、register、memory', -4.6, 2.8);
+    S.n1 = note('初始化 CPU、register、memory', -4.6, 2.8);
     cap('最一開始：bootstrap program', '做最基本的初始化：CPU、register、memory');
   },
   async (tok, S) => {                                   // 249 放在 ROM
-    hd('主機板的 ROM', -4.6, 1.0);
+    S.n2 = hd('主機板的 ROM', -4.6, 1.0);
     cap('這部分燒在主機板（motherboard）的 ROM', '');
   },
   async (tok, S) => {                                   // 274 其他的放 disk
@@ -1359,7 +1399,7 @@ scene('io-26b-boot', 'Booting：ROM → boot block → FS → OS', CAM, [
   },
   async (tok, S) => {                                   // 299 boot disk、boot block
     glow(S.raw, null); relabel(S.raw, 'boot block');
-    good('有這段 code 的磁碟 = system drive / boot disk', 0.6, 5.0);
+    S.n3 = good('有這段 code 的磁碟 = system drive / boot disk', 0.6, 4.3);
     cap('可以開機的硬碟叫 boot disk', '最前面存 boot code 的空間叫 boot block');
   },
   async (tok, S) => {                                   // 334 boot code 後面是 partition → FS
@@ -1367,11 +1407,13 @@ scene('io-26b-boot', 'Booting：ROM → boot block → FS → OS', CAM, [
     cap('boot code 後面是 partition', 'partition 裡就是 file system');
   },
   async (tok, S) => {                                   // 359 流程：ROM → MBR → 選 OS
-    S.chain = [['ROM', MC.purple], ['MBR', MC.orange], ['選 OS', MC.gold]].map(([n, c], i) => bx(n, c, -5.4 + i * 2.2, 6.4, -1.5, 1.9, 0.6, 0.8));
+    // 整個流程是新的主題：剛剛的硬碟配置退到後面，流程排成前面一排
+    gone(S.n1, S.n2, S.n3); await recede(tok, [S.disk, S.fs, S.lock, S.raw, S.rom, S.part]);
+    S.chain = [['ROM', MC.purple], ['MBR', MC.orange], ['選 OS', MC.gold]].map(([n, c], i) => bx(n, c, -5.5 + i * 2.2, 4.0, 1.6, 1.9, 0.6, 0.8));
     cap('流程：ROM 的 code 先跑', '偵測各硬碟的 MBR（boot block）→ 讓你選 OS');
   },
   async (tok, S) => {                                   // 391 讀開機程式 → load FS → OS
-    [['partition', MC.teal], ['FS', MC.green], ['OS kernel', MC.blue]].forEach(([n, c], i) => bx(n, c, 1.2 + i * 2.2, 6.4, -1.5, 1.9, 0.6, 0.8));
+    [['partition', MC.teal], ['FS', MC.green], ['OS kernel', MC.blue]].forEach(([n, c], i) => bx(n, c, 1.1 + i * 2.2, 4.0, 1.6, 1.9, 0.6, 0.8));
     relabel(S.fs, 'file system（已架起來）');
     cap('選好之後讀開機程式、load partition 與 FS', '再從 FS 讀出作業系統');
   },
@@ -1380,7 +1422,8 @@ scene('io-26b-boot', 'Booting：ROM → boot block → FS → OS', CAM, [
 // 一條 track：10 個 sector（physical 0–9）+ 2 個 spare（10、11）
 function track(z = 0) {
   for (let p = 0; p < NS + NSP; p++) { ctx.tile(V3(sx(p), 0.04, z), 0.9, 1.2, p >= NS ? '#d6e7d9' : '#e9dcc4'); sm(String(p), sx(p), 0.05, z + 0.9); }
-  sm('spare', sx(NS + 0.5), 0.05, z + 1.4); sm('physical 位置', -6.6, 0.05, z + 0.9);
+  sm('spare', sx(NS + 0.5), 0.05, z + 1.4); sm('physical 位置', sx(0) - 0.55, 0.05, z + 0.9).center.set(1, 0.5);
+  frameHold(sx(0) - 2.4, 0, z - 0.6, sx(NS + NSP - 1) + 0.6, 3.4, z + 1.5);   // strip + the two label rows above it
   const M = {}; for (let lg = 0; lg < NS; lg++) M[lg] = bx(String(lg), MC.blue, sx(lg), 0.2, z, 0.8, 0.4, 1.0);
   return M;
 }
@@ -1396,21 +1439,21 @@ async function readAlong(tok, map, z = 0) {
   h.position.x = sx(prev); return dist;
 }
 
-scene('io-26b-bad', '壞軌：simple disk 只能標記', CAM, [
+scene('io-26b-bad', '壞軌：simple disk 只能標記', CAMT, [
   async (tok, S) => {                                   // 416 壞軌 → 資料遺失
     S.M = track();
     cap('第三個議題：壞軌', '硬碟常見的問題，資料會遺失');
   },
   async (tok, S) => {                                   // 436 兩種
-    note('看 controller：簡單的 vs 有計算能力的', 0, 3.2);
+    say1(S, '看 controller：簡單的 vs 有計算能力的');
     cap('處理方式分兩種', '看 disk controller 有沒有計算能力');
   },
   async (tok, S) => {                                   // 447 IDE：每個 sector 有 ECC
-    hd('早期 IDE = simple disk', -3.6, 2.4); glow(S.M[4], NG);
+    hd('早期 IDE = simple disk', 0, 3.0); glow(S.M[4], NG); say1(S, '每個 sector 有 ECC → 偵測到 4 壞了', 'note', sx(4), 1.4);
     cap('早期 IDE 就是 simple disk', '靠每個 sector 的 ECC 偵測錯誤');
   },
   async (tok, S) => {                                   // 468 能重建就重建，不行就遺失
-    note('ECC 能修就修；修不了 → 資料遺失', 2.6, 2.4);
+    say1(S, 'ECC 能修就修；修不了 → 資料遺失', 'note', sx(4), 1.4);
     cap('能重建就幫你重建', '不行，資料就遺失了');
   },
   async (tok, S) => {                                   // 479 mark 起來以後不用
@@ -1418,14 +1461,14 @@ scene('io-26b-bad', '壞軌：simple disk 只能標記', CAM, [
     cap('它能做的只有把這格 mark 成壞軌', '以後不再使用');
   },
   async (tok, S) => {                                   // 490 對上層沒有處理
-    bad('上層軟體不管：資料遺失，甚至開不了機', 0, 1.6);
+    say1(S, '上層軟體不管：資料遺失，甚至開不了機', 'bad', 0, 2.0);
     cap('對上面的軟體沒有任何處理', '資料可能遺失，甚至系統開不了機');
   },
 ]);
 
-scene('io-26b-spare', 'Sector sparing：spare 頂替 sector 4', CAM, [
+scene('io-26b-spare', 'Sector sparing：spare 頂替 sector 4', CAMT, [
   async (tok, S) => {                                   // 502 SCSI 新做法
-    S.M = track(); hd('SCSI controller（比較聰明）', -3.0, 2.6);
+    S.M = track(); S.h = hd('SCSI controller（比較聰明）', 0, 3.0);
     cap('第二種：比較新的 SCSI 這類 controller', '');
   },
   async (tok, S) => {                                   // 517 不只知道哪壞，還讓 sector 能再用
@@ -1434,52 +1477,52 @@ scene('io-26b-spare', 'Sector sparing：spare 頂替 sector 4', CAM, [
   },
   async (tok, S) => {                                   // 532 forwarding / remap：最後有空位
     for (const p of [NS, NS + 1]) ctx.tile(V3(sx(p), 0.06, 0), 0.9, 1.2, '#bfe3c8');
-    note('方法一：sector sparing（forwarding / remap）', 0, 3.4); hd('空的 spare', sx(NS + 0.5), 1.0, 0);
+    txt(S.h, 'SCSI 方法一：sector sparing（forwarding / remap）'); S.sp = hd('空的 spare', sx(NS + 0.5), 1.0, 0);
     cap('方法一：forwarding（remap）', 'sector 4 壞了，最後面有空的位置');
   },
   async (tok, S) => {                                   // 544 spare 當 sector 4
-    glow(S.M[4], null); await slide(tok, S.M[4], sx(4), 1.7, 0, 300); await slide(tok, S.M[4], sx(NS), 1.7, 0, 600); await slide(tok, S.M[4], sx(NS), 0.2, 0, 300); tint(S.M[4], MC.green); // hops over the other sectors
+    remove(S.sp); glow(S.M[4], null); await slide(tok, S.M[4], sx(4), 1.7, 0, 300); await slide(tok, S.M[4], sx(NS), 1.7, 0, 600); await slide(tok, S.M[4], sx(NS), 0.2, 0, 300); tint(S.M[4], MC.green); // hops over the other sectors
     S.x = bx('✕', MC.red, sx(4), 0.2, 0, 0.8, 0.4, 1.0);
-    good('瞬間解決', sx(NS), 1.5, 0);
+    say1(S, '瞬間解決', 'good', sx(NS), 1.2);
     cap('把後面的空位當 sector 4 來用', '很快，瞬間就解決');
   },
   async (tok, S) => {                                   // 554 logical 連續、physical 不連續
-    bad('logical 0–9 連續，physical 卻 3 → 10 → 5', 0, 2.4);
+    say1(S, 'logical 0–9 連續，physical 卻 3 → 10 → 5', 'bad');
     cap('但 physical 位置不再連續', 'logical sector number 還是連續的');
   },
   async (tok, S) => {                                   // 562 影響 disk scheduling
     const map = Array.from({ length: NS }, (_, i) => (i === 4 ? NS : i));
     const d = await readAlong(tok, map);
-    hot('依序讀 0–9：磁頭移動 ' + d + ' 格（原本 9 格）', 0, 1.6, 2.2);
+    say1(S, '依序讀 0–9：磁頭移動 ' + d + ' 格（原本 9 格）', 'ptr alt');
     cap('依序讀 0–9，磁頭要跳過去再跳回來', '移動 ' + d + ' 格：scheduling 效能受影響');
   },
 ]);
 
-scene('io-26b-slip', 'Sector slipping：大家往後挪一格', CAM, [
+scene('io-26b-slip', 'Sector slipping：大家往後挪一格', CAMT, [
   async (tok, S) => {                                   // 572 slipping = shift
     S.M = track(); glow(S.M[4], NG);
-    note('方法二：sector slipping（shift）', 0, 3.4);
+    hd('方法二：sector slipping（shift）', 0, 3.0);
     cap('另一個做法：slipping', '也就是 shift');
   },
   async (tok, S) => {                                   // 584 4 空掉，5 重新 label 成 4，往後移
     kill(S.M[4]); S.x = bx('✕', MC.red, sx(4), 0.2, 0, 0.8, 0.4, 1.0);
     const ms = [5, 6, 7, 8, 9].map((lg) => S.M[lg]);
     await anim(tok, 1200, (u) => ms.forEach((m, i) => { m.position.x = sx(5 + i) + u * 1.0; }));
-    S.n4 = bx('4', MC.green, sx(5), 0.2, 0, 0.8, 0.4, 1.0); hd('physical 5 現在叫 sector 4', sx(5), 1.2, 0);
+    S.n4 = bx('4', MC.green, sx(5), 0.2, 0, 0.8, 0.4, 1.0); say1(S, 'physical 5 現在叫 sector 4', 'ptr', sx(5), 1.2);
     cap('原來的 5 重新 label 成 sector 4', '以此類推，大家往後移一格');
   },
   async (tok, S) => {                                   // 597 代價高
-    bad('要搬動後面所有資料 → 修補時間很長', 0, 2.4);
+    say1(S, '要搬動後面所有資料 → 修補時間很長', 'bad');
     cap('代價很高', '後面所有資料都要搬');
   },
   async (tok, S) => {                                   // 610 修補完效能好
     const map = Array.from({ length: NS }, (_, i) => (i < 4 ? i : i + 1));
     const d = await readAlong(tok, map);
-    good('之後依序讀 0–9：移動 ' + d + ' 格，仍然連續', 0, 1.6, 2.2);
+    say1(S, '之後依序讀 0–9：移動 ' + d + ' 格，仍然連續', 'good');
     cap('但修補完之後', '讀取仍連續，效能比較好（移動 ' + d + ' 格）');
   },
   async (tok, S) => {                                   // 625 只有聰明 controller；simple disk 越來越少
-    note('sparing、slipping 都要聰明的 controller；simple disk 空間只會越來越少', 0, 4.2);
+    say1(S, 'sparing、slipping 都要聰明的 controller；simple disk 空間只會越來越少');
     cap('這兩種都只有聰明的 controller 才會做', 'simple disk 的空間只會越來越少');
   },
 ]);
@@ -1532,23 +1575,23 @@ scene('io-26b-swappolicy', 'Swap 策略：只在 page out 時存動態資料', C
     cap('什麼資料、什麼時候放到 swap space？', '');
   },
   async (tok, S) => {                                   // 837 慢、佔空間 → 越少越好
-    note('swap 在硬碟：慢、又佔空間 → 存越少越好', 0, 6.4);
+    say1(S, 'swap 在硬碟：慢、又佔空間 → 存越少越好', 'note', 3.8, 0.5);
     cap('swap space 比較慢，而且是有限的空間', '能存越少越好');
   },
   async (tok, S) => {                                   // 846 swap 滿 → crash
-    bad('swap 也滿了 → 系統可能直接 crash', 0, 0.8);
+    say1(S, 'swap 也滿了 → 系統可能直接 crash', 'bad', 3.8, 0.5);
     cap('swap space 也滿的時候', '系統很可能就直接 crash');
   },
   async (tok, S) => {                                   // 858 傳統：全部 copy 一份
-    S.cp = S.kinds.map(([k, c], i) => bx(k, c, 1.8 + (i % 3) * 1.4, 2.4 + Math.floor(i / 3) * 0.7, 0, 1.2, 0.5, 0.8));
+    S.cp = S.kinds.map(([k, c], i) => bx(k, c, 2.6 + (i % 3) * 1.4, 2.9 + Math.floor(i / 3) * 0.7, 0, 1.2, 0.5, 0.8));   // 疊在 swap 區上方，不壓到它的名字
     cap('最傳統：load 到 memory 就 copy 一份', '放在 swap space 當 backup');
   },
   async (tok, S) => {                                   // 877 浪費空間
-    bad('不管需不需要都存 → 浪費', 3.8, 4.2);
+    say1(S, '不管需不需要都存 → 浪費', 'bad', 3.8, 0.5);
     cap('不管需不需要都存一份', '造成很大的空間浪費');
   },
   async (tok, S) => {                                   // 891 改：要 swap 時才 copy
-    gone(S.cp); good('改進：被 swap out（memory 放不下）時才 copy', 0, 6.0);
+    gone(S.cp); say1(S, '改進：被 swap out（memory 放不下）時才 copy', 'good', 3.8, 0.5);
     cap('第二種：load 時先不 copy', 'memory 已經有一份了，被 swap out 時才放到硬碟');
   },
   async (tok, S) => {                                   // 909 進一步：code
@@ -1557,20 +1600,20 @@ scene('io-26b-swappolicy', 'Swap 策略：只在 page out 時存動態資料', C
   },
   async (tok, S) => {                                   // 928 code 在 FS：直接丟
     prop('file', -6.2, 1.2, 0, 0.9, 'binary 檔');
-    await slide(tok, S.mem[0], -4.8, 7.0, 0, 700); kill(S.mem[0]);
+    await slide(tok, S.mem[0], -6.2, 2.2, 0, 700); kill(S.mem[0]);   // 回到它的 binary 檔
     cap('code 本來就在 FS 的 binary file 裡', '被 swap 時直接丟掉，需要再從 binary load');
   },
   async (tok, S) => {                                   // 959 只存 run time 的 stack/heap
     glow(S.mem[1], null);
-    await slide(tok, S.mem[4], 3.2, 2.4, 0, 800); await slide(tok, S.mem[3], 4.6, 2.4, 0, 600);
+    await slide(tok, S.mem[4], 2.6, 3.3, 0, 800); await slide(tok, S.mem[3], 4.9, 3.3, 0, 600);
     cap('只有 run time 動態產生的 stack、heap', '被 swap 時才放進 swap space');
   },
   async (tok, S) => {                                   // 980 static 不存
-    note('static（像 code）：本來就從 FS 載入 → 不存', -3.4, 2.6);
+    say1(S, 'static（像 code）：本來就從 FS 載入 → 不存', 'note', -6.2, 3.2).center.set(0, 0.5);
     cap('static 的資料（像 code）', '本來就是從 FS 讀出來的，不用存');
   },
   async (tok, S) => {                                   // 1036 總結
-    good('只存「動態的」，而且只在「page out」時存 → swap 用量最小', 0, 0.2);
+    say1(S, '只存「動態的」，而且只在「page out」時存 → swap 用量最小', 'good', 0, 0.2).center.set(0.5, 0.5);
     cap('總結：creation 時不 copy，page out 才 copy', '而且只存動態的 → 用量最小');
   },
 ]);
@@ -1578,22 +1621,23 @@ scene('io-26b-swappolicy', 'Swap 策略：只在 page out 時存動態資料', C
 scene('io-26b-swapmap', 'Swap map：每個 slot 一個 counter', CAM, [
   async (tok, S) => {                                   // 1087 raw partition 管理快：size 固定
     S.cnt = [0, 0, 0, 0, 0, 0, 0, 0];
-    S.slots = S.cnt.map((_, i) => { ctx.tile(V3(-5.25 + i * 1.5, 0.04, 0), 1.3, 1.3); return hot('0', -5.25 + i * 1.5, 1.1, 0.8); });
-    hd('swap slots（每格大小固定 = 1 page）', -1.0, 2.4);
+    frameHold(-6.6, 0, -0.7, 5.9, 3.4, 1.5);
+    S.slots = S.cnt.map((_, i) => { ctx.tile(V3(-5.25 + i * 1.5, 0.04, 0), 1.3, 1.3); return hot('0', -5.25 + i * 1.5, 0.05, 1.05); });   // counter：貼在自己那格的前緣
+    hd('swap slots（每格大小固定 = 1 page）', -0.5, 2.9);
     cap('raw partition 的 swap 為什麼快？', '每格大小都固定');
   },
   async (tok, S) => {                                   // 1108 一個 array：存哪個 process 的第幾 page
     S.pg = {}; [[0, 'A:p3'], [1, 'B:p0'], [3, 'A:p7'], [4, 'C:p1']].forEach(([i, n]) => { S.pg[i] = bx(n, MC.orange, -5.25 + i * 1.5, 0.25, 0, 1.15, 0.45, 1.1); });
-    sm('（示意）', 5.4, 0.3, 0);
+    sm('（示意）', 5.4, 0.9, 0);
     cap('用一個簡單的 array', '記每格存哪個 process 的第幾個 page');
   },
   async (tok, S) => {                                   // 1120 誰用、何時回收
-    note('什麼時候回收？看還有沒有人要 access 這個 page', -1.0, 3.2);
+    say1(S, '什麼時候回收？看還有沒有人要 access 這個 page', 'note', -0.5, 2.0);
     cap('哪些格子是空的、誰在用', '什麼時候能回收：看還有沒有人 access');
   },
   async (tok, S) => {                                   // 1133 counter
     [[0, 1], [1, 2], [3, 1], [4, 3]].forEach(([i, c]) => { S.cnt[i] = c; txt(S.slots[i], String(c)); });
-    sm('counter = 有幾個 process 在用（示意）', -1.0, 1.7, 1.5);
+    sm('counter = 有幾個 process 在用（示意）', -0.5, 1.4, 0);
     cap('每格存一個 counter', '記有多少 process reference 這個 page');
   },
   async (tok, S) => {                                   // 1142 process 離開 → −1
@@ -1601,23 +1645,24 @@ scene('io-26b-swapmap', 'Swap map：每個 slot 一個 counter', CAM, [
     cap('process 離開、不要那個 page 了', '它用到的 counter 就 −1');
   },
   async (tok, S) => {                                   // 1145 到 0 → 給別人
-    await slide(tok, S.pg[0], -5.25, 3.0, 0, 600); kill(S.pg[0]);
-    good('counter = 0 → 沒人用，可以存別人的 page', -3.8, 3.8);
+    await slide(tok, S.pg[0], -5.25, 1.6, -1.5, 600); kill(S.pg[0]);
+    say1(S, 'counter = 0 → 沒人用，可以存別人的 page', 'good', -0.5, 2.0);
     cap('counter 降到 0', '這格沒人用了，可以拿去放別人的 page');
   },
   async (tok, S) => {                                   // 1156 不需要 FS
-    note('一個 integer array 就管好了，不需要 file system', 0, 4.6);
+    say1(S, '一個 integer array 就管好了，不需要 file system', 'note', -0.5, 2.0);
     cap('只要 counter 就能管理', '非常簡單，不需要透過 file system');
   },
 ]);
 
 scene('io-26b-raidwhy', 'RAID 的目的與三個技巧', CAM, [
   async (tok, S) => {                                   // 1167 RAID：一種 storage system
-    hd('RAID：一種 storage system', 0, 6.6);
+    frameHold(-5.6, 0, -1.6, 5.6, 5.6, 0.6);
+    S.t = hd('RAID：一種 storage system', 0, 5.3);
     cap('最後：RAID', '很重要，它是一種 storage system');
   },
   async (tok, S) => {                                   // 1191 每單位價格越來越便宜
-    note('硬體越來越便宜（看「每單位儲存空間」的價格）', 0, 5.9);
+    say1(S, '硬體越來越便宜（看「每單位儲存空間」的價格）', 'note', 0, 2.6, -1);
     cap('背景：硬體越來越便宜', '每單位儲存空間的價格一直下降');
   },
   async (tok, S) => {                                   // 1217 很多便宜 disk 兜在一起
@@ -1625,8 +1670,8 @@ scene('io-26b-raidwhy', 'RAID 的目的與三個技巧', CAM, [
     cap('想法：把很多便宜的 disk 兜在一起', '便宜 = 容易壞、效能較差');
   },
   async (tok, S) => {                                   // 1242 ≈ 昂貴硬碟；名稱
-    good('≈ 一顆昂貴硬碟的可靠度 / 效能，甚至更好', 0, 2.6, -1);
-    hot('Redundant Arrays of Inexpensive（課本：Independent）Disks', 0, 5.2);
+    say1(S, '≈ 一顆昂貴硬碟的可靠度 / 效能，甚至更好', 'good', 0, 2.6, -1);
+    txt(S.t, 'RAID：一種 storage system ＝ Redundant Arrays of Inexpensive（課本：Independent）Disks');
     cap('達到跟昂貴硬碟一樣、甚至更好', 'RAID = Redundant Arrays of Inexpensive Disks（課本今稱 Independent）');
   },
   async (tok, S) => {                                   // 1267 reliability
@@ -1635,22 +1680,23 @@ scene('io-26b-raidwhy', 'RAID 的目的與三個技巧', CAM, [
   },
   async (tok, S) => {                                   // 1293 performance
     S.r2 = bx('目的二：performance', MC.blue, 3.0, 4.2, 0, 4.4, 0.6, 0.8);
-    sm('一顆約 100–150 MB/s → 兩顆一起讀 ≈ 兩倍', 3.0, 3.5);
+    S.bw = sm('一顆約 100–150 MB/s → 兩顆一起讀 ≈ 兩倍', 3.0, 3.5);
     cap('目的二：performance（平行讀取）', '一顆 100–150 MB/s，兩顆一起讀約兩倍');
   },
   async (tok, S) => {                                   // 1318 striping
+    remove(S.bw); await recede(tok, [S.r1, S.r2], -2.2);   // 兩個目的講完：退到後面，換三個技巧
     ['A0', 'A1', 'A2', 'A3'].forEach((n, i) => bx(n, MC.blue, -4.5 + i * 3, 1.35, -1, 1.4, 0.4, 0.8));
-    note('① striping：切開放到多顆 → 平行', -4.0, 3.0, -1);
+    say1(S, '① striping：切開放到多顆 → 平行', 'note', 0, 2.9, -1);
     cap('技巧一：striping', '把資料切開放到很多顆上 → 平行');
   },
   async (tok, S) => {                                   // 1338 mirror
-    bx('A0 副本', MC.purple, -1.5, 1.8, -1, 1.4, 0.4, 0.8);
-    note('② mirroring / replication：備份', 0.4, 3.0, -1);
+    bx('A0 副本', MC.purple, -1.5, 2.0, -1, 1.4, 0.4, 0.8);
+    say1(S, '② mirroring / replication：備份', 'note', -1.5, 2.9, -1);
     cap('技巧二：mirroring（replication）', '把資料備份 → 更可靠');
   },
   async (tok, S) => {                                   // 1352 coding
-    bx('P', MC.gold, 4.5, 1.8, -1, 1.4, 0.4, 0.8);
-    note('③ coding：多存 redundant code', 4.4, 3.0, -1);
+    bx('P', MC.gold, 4.5, 2.0, -1, 1.4, 0.4, 0.8);
+    say1(S, '③ coding：多存 redundant code', 'note', 4.0, 2.9, -1);
     cap('技巧三：coding', '多存 redundant code，用來偵錯甚至修正');
   },
 ]);
@@ -1661,7 +1707,7 @@ function disks(n, o = {}) {
   const w = o.w || 2.2, z = o.z || 0, xs = [];
   for (let i = 0; i < n; i++) {
     const x = (i - (n - 1) / 2) * w + (o.x || 0); xs.push(x);
-    ctx.tile(V3(x, 0.04, z), w - 0.3, 1.4); sm(o.names ? o.names[i] : 'disk ' + i, x, 0.05, z + 1.0);
+    ctx.tile(V3(x, 0.04, z), w - 0.3, 1.4); sm(o.names ? o.names[i] : 'disk ' + i, x, o.ny != null ? o.ny : 0.05, z + 1.0);
   }
   return { xs, z, put: (t, c, i, r, bw) => bx(t, c, xs[i], 0.35 + r * 0.6, z, bw || Math.min(1.9, w - 0.4), 0.5, 1.0) };
 }
@@ -1767,11 +1813,12 @@ const HAM = { d: [1, 1, 0, 1], cover: [[1, 2, 3], [0, 1, 3], [0, 2, 3]] };   // 
 const hamP = (d) => HAM.cover.map((c) => xor(...c.map((i) => d[i])));
 scene('io-26c-r2', 'RAID 2：Hamming code', CAMW, [
   async (tok, S) => {                                   // 333 2、3、4：做 error correction
-    hd('RAID 2、3、4：用 coding 做 error correction', 0, 7.0);
+    frameHold(-6.2, -0.4, -0.7, 6.2, 5.9, 1.0);
+    S.t = hd('RAID 2、3、4：用 coding 做 error correction', 0, 5.6);
     cap('接下來 RAID 2、3、4', '要更有效率地做 error correction');
   },
   async (tok, S) => {                                   // 349 RAID 1 浪費一半
-    bad('RAID 1：兩份 copy → 浪費一半空間', 0, 6.3);
+    say1(S, 'RAID 1：兩份 copy → 浪費一半空間', 'bad', 0, 4.7);
     cap('RAID 1 兩份 copy 就浪費一半空間', 'data redundancy 比例太高');
   },
   async (tok, S) => {                                   // 370 RAID 2 coding
@@ -1780,24 +1827,24 @@ scene('io-26c-r2', 'RAID 2：Hamming code', CAMW, [
     cap('RAID 2 用 coding 解決', '每顆放一個 bit：D = data');
   },
   async (tok, S) => {                                   // 383 要先知道哪顆壞
-    note('bit flip 常常沒有徵兆 → 先要知道「哪一顆」錯', 0, 5.6);
+    say1(S, 'bit flip 常常沒有徵兆 → 先要知道「哪一顆」錯', 'note', 0, 4.7);
     cap('第一件事：知道是哪顆出錯', '有時只是 bit flip，沒有任何徵兆');
   },
   async (tok, S) => {                                   // 407 Hamming code
-    hot('Hamming code', 0, 4.8);
+    txt(S.t, 'RAID 2：Hamming code'); S.t.element.className = 'lab-label ptr alt';
     cap('RAID 2 用的是 Hamming code', '常見的 error-correcting code');
   },
   async (tok, S) => {                                   // 421 D 與 P；bit level
-    sm('D = data bit　P = parity bit　（每格只是一個 0 或 1：bit level）', 0, 4.1);
+    say1(S, 'D = data bit　P = parity bit　（每格只是一個 0 或 1：bit level）', 'note', 0, 4.7);
     cap('D 是 data，P 是 parity bit', '只用在 bit level：每格就是 0 或 1');
   },
   async (tok, S) => {                                   // 442 交錯區域算 parity
-    HAM.cover.forEach((c, k) => sm('P' + (k + 1) + ' = ' + c.map((i) => 'D' + (i + 1)).join(' ⊕ '), S.D.xs[4 + k], 2.0 + (k % 2) * 0.5));
+    HAM.cover.forEach((c, k) => sm('P' + (k + 1) + ' = ' + c.map((i) => 'D' + (i + 1)).join(' ⊕ '), S.D.xs[4 + k], 1.6 + k * 0.55));   // 每條式子在自己那顆 P 的正上方，一層一列
     cap('四個 data，照圈圈交錯的地方算 parity', '每個 P 管三個 data bit');
   },
   async (tok, S) => {                                   // 464 1101 → 010
     S.p = hamP(HAM.d).map((v, k) => S.D.put(String(v), MC.gold, 4 + k, 0, 1.0));
-    hot('data 1101 → parity ' + hamP(HAM.d).join(''), 0, 3.3);
+    say1(S, 'data 1101 → parity ' + hamP(HAM.d).join(''), 'ptr alt', 0, 4.7);
     cap('例子：data 1101', '照規則算出 parity = ' + hamP(HAM.d).join(''));
   },
   async (tok, S) => {                                   // 477 一個 bit flip → 找到並修正
@@ -1806,37 +1853,38 @@ scene('io-26c-r2', 'RAID 2：Hamming code', CAMW, [
     const chk = hamP(d2).map((v, k) => v !== hamP(HAM.d)[k]);
     chk.forEach((f, k) => glow(S.p[k], f ? NG : OKG));
     const who = HAM.d.findIndex((_, i) => HAM.cover.every((c, k) => c.includes(i) === chk[k]));
-    bad('D' + (bad1 + 1) + ' flip：' + chk.map((f, k) => 'P' + (k + 1) + (f ? '✕' : '✓')).join(' ') + ' → 只有 D' + (who + 1) + ' 剛好被 ✕ 的 P 都管到', 0, 6.3);
+    say1(S, 'D' + (bad1 + 1) + ' flip：' + chk.map((f, k) => 'P' + (k + 1) + (f ? '✕' : '✓')).join(' ') + ' → 只有 D' + (who + 1) + ' 剛好被 ✕ 的 P 都管到', 'bad', 0, 4.7);
     await wt(tok, 900);
     relabel(S.b[bad1], String(HAM.d[bad1])); tint(S.b[bad1], MC.green);
     cap('任一 bit flip，會讓它所在的 parity 對不上', '找出是 D' + (who + 1) + '，0 改回 1');
   },
   async (tok, S) => {                                   // 496 一個可修，兩個只能偵測
     S.p.forEach((m) => glow(m, null));
-    good('1 個 bit 錯 → 可以 recover', -3.4, 5.6); note('2 個 bit 錯 → 只能 detect', 3.4, 5.6);
+    say1(S, '1 個 bit 錯 → 可以 recover　｜　2 個 bit 錯 → 只能 detect', 'good', 0, 4.7);
     cap('只有一個 bit 錯：能修回來', '兩個錯：只能偵測，不能更正');
   },
   async (tok, S) => {                                   // 537 4 + 3 = 7 顆
-    hot('4 個 data + 3 個 parity → 一定要 7 顆硬碟', 0, 4.8);
+    say1(S, '4 個 data + 3 個 parity → 一定要 7 顆硬碟', 'ptr alt', 0, 4.7);
     cap('硬碟數量跟 coding 綁在一起', '(7,4)：四顆 data 加三顆 parity = 7 顆');
   },
   async (tok, S) => {                                   // 576 overhead 75% vs 100%
-    sm('mirroring：多 4 顆 = 100%　｜　Hamming：多 3 顆 = 75%', 0, 4.1);
+    say1(S, 'mirroring：多 4 顆 = 100%　｜　Hamming：多 3 顆 = 75%', 'note', 0, 4.7);
     cap('一樣能修一顆壞掉的', '多存的比例：copy 100%，Hamming 只要 3/4 = 75%');
   },
 ]);
 
 scene('io-26c-r34', 'RAID 3 / 4：一個 parity 就夠', CAMW, [
   async (tok, S) => {                                   // 635 Hamming 太數學
-    note('Hamming code：用純數學的方式在想', 0, 7.0);
+    frameHold(-5.6, -0.4, -0.7, 5.6, 5.9, 1.0);
+    say1(S, 'Hamming code：用純數學的方式在想', 'note', 0, 4.7);
     cap('Hamming code 還不夠好', '它純粹從 0、1 的數學去想');
   },
   async (tok, S) => {                                   // 658 sector 本來就有 ECC
-    hd('每個 sector 本來就有 ECC', 0, 6.3);
+    S.t = hd('每個 sector 本來就有 ECC', 0, 5.6);
     cap('想想真實的硬碟', '每個 sector 本來就有 error-correcting code');
   },
   async (tok, S) => {                                   // 674 detection 已做掉 → 只需 recovery
-    good('哪一顆壞了？硬碟自己會說 → RAID 只要負責 recovery', 0, 5.6);
+    say1(S, '哪一顆壞了？硬碟自己會說 → RAID 只要負責 recovery', 'good', 0, 4.7);
     cap('不能更正時，它至少知道誰壞了', 'detection 已經做掉，RAID 只要做 recovery');
   },
   async (tok, S) => {                                   // 682 一個 parity 就夠
@@ -1846,48 +1894,48 @@ scene('io-26c-r34', 'RAID 3 / 4：一個 parity 就夠', CAMW, [
     cap('只考慮一顆壞掉：一個 parity bit 就夠', 'P = 所有 data 的 XOR（1 的個數是奇是偶）');
   },
   async (tok, S) => {                                   // 709 disk 1 壞 → 算回 A2
-    tint(S.b[1], MC.red); relabel(S.b[1], 'A2 = ?'); bad('知道 disk 1 壞了', S.D.xs[1], 1.4);
+    tint(S.b[1], MC.red); relabel(S.b[1], 'A2 = ?'); S.k = bad('知道 disk 1 壞了', S.D.xs[1], 1.5);
     await wt(tok, 700);
     const back = xor(S.v[0], S.v[2], xor(...S.v));
     relabel(S.b[1], 'A2 = ' + back); tint(S.b[1], MC.green);
-    hot('A2 = A1 ⊕ A3 ⊕ P = ' + S.v[0] + '⊕' + S.v[2] + '⊕' + xor(...S.v) + ' = ' + back + '（示意）', 0, 5.0);
+    say1(S, 'A2 = A1 ⊕ A3 ⊕ P = ' + S.v[0] + '⊕' + S.v[2] + '⊕' + xor(...S.v) + ' = ' + back + '（示意）', 'ptr alt', 0, 4.7);
     cap('知道是 A2 壞了，值是多少？', '用一個 parity bit 就能算回來');
   },
   async (tok, S) => {                                   // 728 3 data + 1 parity → 33%
-    hot('3 data + 1 parity → 多存 1/3 ≈ 33%', 0, 4.3);
+    remove(S.k); say1(S, '3 data + 1 parity → 多存 1/3 ≈ 33%', 'ptr alt', 0, 4.7);
     cap('space efficiency 大幅改善', '三顆 data 配一個 parity：多存 33%');
   },
   async (tok, S) => {                                   // 750 4 data → 25%
-    sm('4 data + 1 parity → 25%：data 硬碟越多，比例越低', 0, 3.6);
+    S.s2 = sm('4 data + 1 parity → 25%：data 硬碟越多，比例越低', 0, 4.0);
     cap('data 用的硬碟越多', 'overhead 越少：四顆 data 配一個 parity 只要 25%');
   },
   async (tok, S) => {                                   // 762 代價：多顆同時壞機率升高
-    bad('代價：硬碟越多，同時壞兩顆的機率越高', 0, 6.3);
+    say1(S, '代價：硬碟越多，同時壞兩顆的機率越高', 'bad', 0, 4.7);
     cap('減少是有代價的', '硬碟越多，多顆一起壞的機率越高（這裡假設只壞一顆）');
   },
   async (tok, S) => {                                   // 786 RAID 3 = bit level
-    hd('RAID 3：bit level（每格 1 bit）', -3.6, 7.0);
+    remove(S.s2); txt(S.t, 'RAID 3：bit level（每格 1 bit）'); S.t.position.x = -2.6;
     cap('RAID 3 和 4 差在哪？', 'RAID 3 是 bit level：每個 A 是一個 bit');
   },
   async (tok, S) => {                                   // 809 RAID 4 = block level
-    hd('RAID 4：block level（每格一個 block，例如 8 bits）', 3.0, 7.6);
+    hd('RAID 4：block level（每格一個 block，例如 8 bits）', 2.2, 5.05);
     cap('RAID 4 是 block level', '每個 A 是一個 block，parity 每個位置各自算');
   },
   async (tok, S) => {                                   // 836 原理一樣，效能不同
-    note('原理完全一樣，只差「單位」→ 效能不同', 0, 2.6);
+    say1(S, '原理完全一樣，只差「單位」→ 效能不同', 'note', 0, 4.3);
     cap('原理一模一樣', '差在單位，所以效能不同');
   },
   async (tok, S) => {                                   // 849 讀一個 byte：bit level 要同步
     S.D.xs.slice(0, 3).forEach((x) => arrow(V3(x, 2.0, 0), V3(x, 3.4, 0), 0x2f6fb0));
-    bad('RAID 3：讀一個 byte 也要所有 disk 一起讀、互相同步 → 要等', 0, 1.6, 1.5);
+    say1(S, 'RAID 3：讀一個 byte 也要所有 disk 一起讀、互相同步 → 要等', 'bad', 0, 4.0);
     cap('讀一個 byte，bit level 要讀好幾顆', '硬碟之間要同步，就會浪費時間');
   },
   async (tok, S) => {                                   // 889 block level 不用同步
-    good('RAID 4：小資料只讀一顆，不用同步 → 快', 0, 1.0, 2.0);
+    say1(S, 'RAID 4：小資料只讀一顆，不用同步 → 快', 'good', 0, 4.0);
     cap('block level 讀一個 block 就好', '不用同步，比較快');
   },
   async (tok, S) => {                                   // 916 多使用者仍可平行
-    good('不同使用者讀不同 block → 各顆一起工作，平行度還在', 0, 0.4, 2.5);
+    say1(S, '不同使用者讀不同 block → 各顆一起工作，平行度還在', 'good', 0, 4.0);
     cap('一個人用不到其他顆？', '系統有很多使用者，大家讀不同 block，照樣平行');
   },
 ]);
@@ -1941,9 +1989,10 @@ scene('io-26c-r5', 'RAID 5：parity 輪流放', CAMW, [
 const RW = { d: [0b1010, 0b0110, 0b0011], nd: 0b0101 };
 scene('io-26c-write', 'RAID 5 寫入：怎麼更新 parity', CAMW, [
   async (tok, S) => {                                   // 1141 write 效能看 parity 怎麼算
+    frameHold(-5.6, -0.4, -0.7, 5.6, 5.8, 1.6);
     S.D = disks(4, { w: 2.8, names: ['disk 0', 'disk 1', 'disk 2', 'parity'] });
     S.b = RW.d.map((v, i) => S.D.put(bin4(v), MC.blue, i, 0)); S.p = S.D.put(bin4(xor(...RW.d)), MC.gold, 3, 0);
-    sm('（數值為示意）', 4.9, 0.4, 1.2);
+    sm('（數值為示意）', 4.2, 1.25, 0);
     cap('write 的效能', '要看 parity 怎麼更新');
   },
   async (tok, S) => {                                   // 1164 改第三顆的資料
@@ -1952,44 +2001,44 @@ scene('io-26c-write', 'RAID 5 寫入：怎麼更新 parity', CAMW, [
   },
   async (tok, S) => {                                   // 1175 方法一：把其他 data 讀出來
     glow(S.b[0], OKG); glow(S.b[1], OKG);
-    hd('方法一：讀出其他 data（N−2 = 2 個 read）', -1.6, 5.2);
+    S.t = hd('方法一：讀出其他 data（N−2 = 2 個 read）', 0, 5.4);
     cap('方法一（最笨的）：其他兩個 data 我不知道', '要先讀出來：N−2 個 read');
   },
   async (tok, S) => {                                   // 1188 算新 parity，寫回 data + parity
     const np = xor(RW.d[0], RW.d[1], RW.nd);
     relabel(S.b[2], bin4(RW.nd)); tint(S.b[2], MC.green); relabel(S.p, bin4(np)); glow(S.p, HL);
-    sm('新 P = ' + bin4(RW.d[0]) + ' ⊕ ' + bin4(RW.d[1]) + ' ⊕ ' + bin4(RW.nd) + ' = ' + bin4(np) + '；寫回 data、P（2 個 write）', 0, 4.5);
+    say1(S, '新 P = ' + bin4(RW.d[0]) + ' ⊕ ' + bin4(RW.d[1]) + ' ⊕ ' + bin4(RW.nd) + ' = ' + bin4(np) + '；寫回 data、P（2 個 write）', 'note', 0, 4.5);
     cap('算出新的 parity', '再寫回新 data 和 parity：2 個 write');
   },
   async (tok, S) => {                                   // 1208 共 N 個 request → 跟一顆一樣
-    bad('一共 (N−2) + 2 = N 個 request：N 顆硬碟只完成一次寫 → 跟一顆一樣', 0, 6.0);
+    say1(S, '一共 (N−2) + 2 = N 個 request：N 顆硬碟只完成一次寫 → 跟一顆一樣', 'bad', 0, 4.5);
     cap('N 顆硬碟，卻發了 N 個 request', '效能跟只有一顆一樣，沒有任何 improvement');
   },
   async (tok, S) => {                                   // 1231 方法二：只讀舊 data 和舊 parity
     [0, 1].forEach((i) => glow(S.b[i], null)); glow(S.p, null);
     relabel(S.b[2], bin4(RW.d[2])); tint(S.b[2], MC.blue); relabel(S.p, bin4(xor(...RW.d)));
     glow(S.b[2], OKG); glow(S.p, OKG);
-    hd('方法二：只讀「舊 data」和「舊 parity」', 1.6, 6.8);
+    txt(S.t, '方法二：只讀「舊 data」和「舊 parity」'); remove(S.rm); S.rm = null;
     cap('方法二：真的要把大家都讀出來嗎？', '只要讀 parity 和要改的那個舊值');
   },
   async (tok, S) => {                                   // 1242 差值加到 parity
     const np = xor(xor(...RW.d), RW.d[2], RW.nd);
-    sm('新 P = 舊 P ⊕ 舊 data ⊕ 新 data = ' + bin4(xor(...RW.d)) + ' ⊕ ' + bin4(RW.d[2]) + ' ⊕ ' + bin4(RW.nd) + ' = ' + bin4(np), 0, 3.8, 1.4);
+    say1(S, '新 P = 舊 P ⊕ 舊 data ⊕ 新 data = ' + bin4(xor(...RW.d)) + ' ⊕ ' + bin4(RW.d[2]) + ' ⊕ ' + bin4(RW.nd) + ' = ' + bin4(np), 'note', 0, 4.5);
     if (np !== xor(RW.d[0], RW.d[1], RW.nd)) log('RAID5 parity update mismatch', true);
     cap('新舊值的差，加到 parity 上', '就得到新的 parity（跟方法一算的一樣）');
   },
   async (tok, S) => {                                   // 1256 always 2 read + 2 write
     const np = xor(xor(...RW.d), RW.d[2], RW.nd);
     relabel(S.b[2], bin4(RW.nd)); tint(S.b[2], MC.green); relabel(S.p, bin4(np));
-    good('不管幾顆硬碟：永遠 2 個 read + 2 個 write', 0, 3.1, 1.4);
+    say1(S, '不管幾顆硬碟：永遠 2 個 read + 2 個 write', 'good', 0, 4.5);
     cap('不管有幾顆硬碟', '永遠是 2 個 read、2 個 write');
   },
   async (tok, S) => {                                   // 1273 bandwidth n/4
-    hot('write bandwidth ≈ n ÷ 4', 0, 6.6);
+    say1(S, 'write bandwidth ≈ n ÷ 4', 'ptr alt', 0, 4.5);
     cap('n 顆一起工作是 n 倍', '但一次寫要 4 個 request → n ÷ 4');
   },
   async (tok, S) => {                                   // 1296 4 顆 = 一顆；越多越快
-    sm('4 顆：4 ÷ 4 = 1（跟一顆一樣）；8 顆：8 ÷ 4 = 2 倍', 0, 7.3);
+    S.t2 = sm('4 顆：4 ÷ 4 = 1（跟一顆一樣）；8 顆：8 ÷ 4 = 2 倍', 0, 3.9);
     cap('只有四顆時算起來跟一顆一樣', '五顆、六顆…越多，write 也能跟著加速');
   },
 ]);
@@ -2017,45 +2066,47 @@ scene('io-26c-r6', 'RAID 6：多顆壞掉也能救', CAMW, [
 
 scene('io-26c-hybrid', 'Hybrid：RAID 0+1 與 1+0', CAMW, [
   async (tok, S) => {                                   // 1414 hybrid
-    hd('Hybrid：把不同 RAID 的概念拼在一起', 0, 7.2);
+    frameHold(-6.4, -0.6, -1.9, 6.4, 5.6, 0.2);
+    hd('Hybrid：把不同 RAID 的概念拼在一起', 0, 5.3);
     cap('最後：hybrid RAID', '把不同 RAID 的概念拼起來');
   },
   async (tok, S) => {                                   // 1428 最常見 0 + 1
-    note('parity 那些太複雜 → 最常見是 0 和 1 的結合', 0, 6.5);
+    say1(S, 'parity 那些太複雜 → 最常見是 0 和 1 的結合', 'note', 0, 4.4, -1.2);
     cap('常見的就是 RAID 0 和 1 的結合', '分 0+1 和 1+0：先做哪個的差別');
   },
   async (tok, S) => {                                   // 1439 0+1：先 striping 再 mirror
-    S.L = disks(4, { w: 1.6, x: -3.4, z: -1.2 }); hd('RAID 0+1', -3.4, 4.6, -1.2);
-    ['A1', 'A2', 'A1', 'A2'].forEach((n, i) => S.L.put(n, i < 2 ? MC.blue : MC.purple, i, 0, 1.2));
+    S.L = disks(4, { w: 1.6, x: -3.4, z: -1.2, ny: -0.45 }); S.l01 = hd('RAID 0+1', -3.4, 3.1, -1.2);
+    S.LA = ['A1', 'A2', 'A1', 'A2'].map((n, i) => S.L.put(n, i < 2 ? MC.blue : MC.purple, i, 0, 1.2));
     ['A3', 'A4', 'A3', 'A4'].forEach((n, i) => S.L.put(n, i < 2 ? MC.blue : MC.purple, i, 1, 1.2));
-    sm('stripe 組 1', -4.2, 2.0, -1.2); sm('stripe 組 2（mirror）', -2.2, 2.0, -1.2);
+    sm('stripe 組 1', -5.0, 2.05, -1.2); sm('stripe 組 2（mirror）', -1.8, 2.05, -1.2);   // 每組名字在自己那兩顆上面
     cap('0+1：先做 RAID 0（striping）', '再把整組 mirror 一份');
   },
   async (tok, S) => {                                   // 1450 1+0：先 copy 再 striping
-    S.R = disks(4, { w: 1.6, x: 3.4, z: -1.2 }); hd('RAID 1+0', 3.4, 4.6, -1.2);
+    S.R = disks(4, { w: 1.6, x: 3.4, z: -1.2, ny: -0.45 }); S.l10 = hd('RAID 1+0', 3.4, 3.1, -1.2);
     ['A1', 'A1', 'A2', 'A2'].forEach((n, i) => S.R.put(n, i % 2 ? MC.purple : MC.blue, i, 0, 1.2));
     ['A3', 'A3', 'A4', 'A4'].forEach((n, i) => S.R.put(n, i % 2 ? MC.purple : MC.blue, i, 1, 1.2));
-    sm('mirror 對 1', 2.6, 2.0, -1.2); sm('mirror 對 2', 4.2, 2.0, -1.2);
+    sm('mirror 對 1', 1.8, 2.05, -1.2); sm('mirror 對 2', 5.0, 2.05, -1.2);
     cap('1+0：反過來', '先 copy（mirror），再做 striping');
   },
   async (tok, S) => {                                   // 1462 看起來一樣
-    note('兩邊都是 4 顆、資料都存兩份 → 看起來一模一樣', 0, 5.8);
+    say1(S, '兩邊都是 4 顆、資料都存兩份 → 看起來一模一樣', 'note', 0, 4.4, -1.2);
     cap('兩個看起來完全一模一樣', '仔細看有一個小差別');
   },
   async (tok, S) => {                                   // 1473 1+0 fail 機率小
-    good('1+0 通常比較好', 3.4, 5.2, -1.2);
+    txt(S.l10, 'RAID 1+0：通常比較好'); S.l10.element.className = 'lab-label good';
     cap('通常 RAID 1+0', '讀資料失敗的機率比較小');
   },
   async (tok, S) => {                                   // 1489 階層：底層 controller 先處理
-    sm('1+0：底層每一對 mirror 有自己的 controller → 一顆壞了，直接拿旁邊的副本', 3.4, 3.2, 1.4);
+    say1(S, '1+0：底層每一對 mirror 有自己的 controller → 一顆壞了，直接拿旁邊的副本', 'note', 0, 4.4, -1.2);
     cap('RAID 是有階層的：每層有 controller', '1+0 的底層是 mirror：壞一顆，當場拿副本');
   },
   async (tok, S) => {                                   // 1518 0+1：A2 壞 → report error → 上層再找另一組
-    bad('0+1：A2 壞 → 這組 stripe 讀不出 → 回報上層 → 再請另一組讀 → 溝通多、delay 大', -3.4, 3.2, 1.4);
+    tint(S.LA[1], MC.red);   // 左邊 stripe 組 1 的 A2 壞了
+    say1(S, '0+1：A2 壞 → 這組 stripe 讀不出 → 回報上層 → 再請另一組讀 → 溝通多、delay 大', 'bad', 0, 4.4, -1.2);
     cap('0+1：底層是 stripe 組，A2 壞了就讀不出來', '要回報上層，再去另一組讀：來回溝通');
   },
   async (tok, S) => {                                   // 1551 1+0 local 解決
-    good('1+0：在底層 locally 就把 failure 解決', 3.4, 2.4, 1.4);
+    say1(S, '1+0：在底層 locally 就把 failure 解決', 'good', 0, 4.4, -1.2);
     cap('1+0 在 local 就先解決 failure', '0+1 需要跨 controller 溝通，比較慢');
   },
 ]);
@@ -2064,7 +2115,7 @@ scene('io-26c-hybrid', 'Hybrid：RAID 0+1 與 1+0', CAMW, [
 scene('io-26d-why', 'I/O subsystem：多樣的 device，統一的 interface', CAM, [
   async (tok, S) => {                                   // 57 系統不是計算就是 I/O
     S.cpu = prop('cpu', -4.6, 4.4, 0, 1.2, 'CPU'); S.mem = bx('memory', MC.blue, -1.8, 4.6, 0, 2.2, 0.8, 0.9);
-    hd('計算', -3.2, 6.0); hd('I/O', 3.6, 6.0);
+    hd('計算', -3.2, 5.6); hd('I/O', 3.6, 5.6);
     cap('系統運作：要嘛在計算，要嘛在 I/O', 'I/O system 負責跟 storage、各種 device 溝通');
   },
   async (tok, S) => {                                   // 82 各式各樣的 device
@@ -2085,36 +2136,37 @@ scene('io-26d-why', 'I/O subsystem：多樣的 device，統一的 interface', CA
     cap('演進的結果：OS 最下層有一層 driver', '由 device 的廠商自己實作、安裝');
   },
   async (tok, S) => {                                   // 152 依統一 interface 實作 → isolation
-    good('廠商照 OS 規定的 interface 寫 driver → 上層看不到差異（isolation）', 0, 6.8);
+    say1(S, '廠商照 OS 規定的 interface 寫 driver → 上層看不到差異（isolation）', 'good', 0, -1.3);
     cap('照統一的 interface 實作怎麼溝通', '把各種 device 的差異隔離在 driver 裡');
   },
   async (tok, S) => {                                   // 171 分類：storage
-    glow(S.drv[3], OKG); note('storage 類（SSD、hard drive、tape）：行為類似 → 一種 interface', 2.4, -0.9);
+    glow(S.drv[3], OKG); say1(S, 'storage 類（SSD、hard drive、tape）：行為類似 → 一種 interface', 'note', 0, -1.3);
     cap('interface 不好定 → 先把 device 分類', 'storage 類（SSD、HDD、tape）行為很像');
   },
   async (tok, S) => {                                   // 194 networking
-    note('network 類：不管哪種網卡，運作方式類似 → 另一種 interface', -2.4, -1.5);
+    say1(S, 'network 類：不管哪種網卡，運作方式類似 → 另一種 interface', 'note', 0, -1.3);
     cap('networking 也是一類', '不管哪種 network adapter，用類似的 interface');
   },
   async (tok, S) => {                                   // 212 不同型別不同 interface；還有後門
-    bad('還有「開後門」：直接操作 device → 很多 bug 從這來', 3.6, 5.3);
+    say1(S, '還有「開後門」：直接操作 device → 很多 bug 從這來', 'bad', 0, -1.3);
     cap('不同型別設計不同 interface', '還有一種：開後門，隨你直接控制');
   },
   async (tok, S) => {                                   // 224 新 device → 新 interface
-    sm('新 device（像 touch screen 有位置資訊）→ 可能加新的 interface', 0, -2.1);
+    say1(S, '新 device（像 touch screen 有位置資訊）→ 可能加新的 interface', 'note', 0, -1.3);
     cap('interface 也隨時代改變', '像手機的 touch screen，就可能需要新的 interface');
   },
 ]);
 
 scene('io-26d-hw', 'I/O 硬體：port、bus、controller', CAMW, [
   async (tok, S) => {                                   // 258 port
+    frameHold(-6.2, -1.6, -1.6, 5.8, 6.0, 1.4);
     S.cpu = prop('cpu', -5.0, 5.6, 0, 1.1, 'CPU');
     S.port = bx('port', MC.gold, 2.6, 2.2, 0, 1.2, 0.5, 0.8);
-    S.dv = prop('monitor', 2.6, 0, 0, 0.8, 'device');
+    S.dv = prop('monitor', 2.6, -1.1, 0, 0.8, 'device');   // 由下而上：device → controller → port → bus
     cap('device 連到系統的那個點', '叫做 port（一個 endpoint）');
   },
   async (tok, S) => {                                   // 277 插 USB → port 就是 device 的 ID
-    hot('port number = 這個 device 的 ID', 2.6, 3.0);
+    hot('port number = 這個 device 的 ID', 3.4, 2.2, 0.5).center.set(0, 0.5);   // 貼在 port 右邊
     cap('像插 USB、接投影機', '一定是插到某個 port：port 就是 device 的 ID');
   },
   async (tok, S) => {                                   // 297 bus
@@ -2122,7 +2174,7 @@ scene('io-26d-hw', 'I/O 硬體：port、bus、controller', CAMW, [
     cap('資料要透過 bus 傳進來', 'bus 就是連接 controller、device 的那些線');
   },
   async (tok, S) => {                                   // 316 bus 兩層意義
-    sm('① physical：電線上怎麼傳　② protocol：一個 message 幾個 byte、怎麼解讀', 0, 4.4);
+    S.bm = sm('① physical：電線上怎麼傳　② protocol：一個 message 幾個 byte、怎麼解讀', 0, 4.4);
     cap('bus 有兩層意義', '物理上怎麼傳，以及溝通的規則（protocol）');
   },
   async (tok, S) => {                                   // 339 PCI bus
@@ -2130,20 +2182,20 @@ scene('io-26d-hw', 'I/O 硬體：port、bus、controller', CAMW, [
     cap('最常聽到的是 PCI bus', '主機板上支援 I/O device 的 bus');
   },
   async (tok, S) => {                                   // 360 controller
-    S.ctl = bx('controller', MC.teal, 2.6, 1.4, 0, 2.0, 0.6, 0.8);
+    S.ctl = bx('controller', MC.teal, 2.6, 1.0, 0, 2.0, 0.6, 0.8);
     cap('controller：控制這些溝通的硬體', '上面也有自己的 code');
   },
   async (tok, S) => {                                   // 379 smart controller
-    good('聰明的 controller（如 SCSI）自己就能修硬碟 → 減輕 CPU 負擔（但比較貴）', 0, 6.9);
+    say1(S, '聰明的 controller（如 SCSI）自己就能修硬碟 → 減輕 CPU 負擔（但比較貴）', 'good', 0, -2.1, 0.8);
     cap('有比較 smart 的 controller', '像 SCSI：自己處理，不用 OS 幫忙 → CPU 輕鬆');
   },
   async (tok, S) => {                                   // 419 典型 PC 架構
-    S.c2 = bx('disk controller', MC.teal, -2.6, 1.4, 0, 2.6, 0.6, 0.8); S.d2 = prop('disk', -2.6, -0.2, 0, 0.8);
+    S.c2 = bx('disk controller', MC.teal, -2.6, 1.0, 0, 2.6, 0.6, 0.8); S.d2 = prop('disk', -2.6, -1.1, 0, 0.8);
     cap('一般電腦：同類 device 由一個 controller 管', 'controller 最後再跟 processor 溝通');
   },
   async (tok, S) => {                                   // 439 controller ↔ controller
-    S.cc = arrow(V3(-1.2, 1.4, 0.6), V3(1.5, 1.4, 0.6), 0x2f6fb0);
-    sm('資料從一個 port 進、直接從另一個 port 出，不經過 CPU', 0, 0.6, 1.2);
+    S.cc = arrow(V3(-1.2, 1.0, 0.6), V3(1.5, 1.0, 0.6), 0x2f6fb0);
+    say1(S, '資料從一個 port 進、直接從另一個 port 出，不經過 CPU', 'note', 0, -2.1, 0.8);
     cap('controller 之間也可以直接溝通', '一樣透過 bus');
   },
   async (tok, S) => {                                   // 463 PCIe、IDE bus
@@ -2152,23 +2204,24 @@ scene('io-26d-hw', 'I/O 硬體：port、bus、controller', CAMW, [
     cap('現在主要是 PCIe bus', '另外還有自己的 IDE bus、IDE controller');
   },
   async (tok, S) => {                                   // 472 北橋
-    S.nb = bx('北橋（快：memory、高頻寬）', MC.orange, -2.0, 5.6, 0, 3.6, 0.6, 0.8);
+    remove(S.bm); S.nb = bx('北橋（快：memory、高頻寬）', MC.orange, -1.0, 5.5, 0, 3.6, 0.6, 0.8);   // 兩座橋上下錯開，名字不互相蓋住
     cap('CPU 晶片組有南橋、北橋', '北橋管快的：memory、high bandwidth、low latency');
   },
   async (tok, S) => {                                   // 505 南橋
-    S.sb = bx('南橋（慢：IDE 等傳統 controller）', MC.lilac, 3.6, 5.6, 0, 3.8, 0.6, 0.8);
+    S.sb = bx('南橋（慢：IDE 等傳統 controller）', MC.lilac, 1.8, 4.65, 0, 3.8, 0.6, 0.8);
     cap('南橋管速度慢的傳統 controller', '快慢分開管，慢的才不會拖累快的');
   },
 ]);
 
 scene('io-26d-port', 'Port-mapped I/O：I/O instruction 寫到 port', CAMW, [
   async (tok, S) => {                                   // 541 軟體怎麼下指令
+    frameHold(-6.4, -1.5, -1.2, 5.6, 5.8, 2.2);
     S.cpu = prop('cpu', -4.8, 4.0, 0, 1.2, 'CPU');
     S.ctl = bx('device controller', MC.teal, 3.2, 1.0, 0, 3.2, 0.6, 0.9);
     cap('有了 port、controller、bus', '軟體到底怎麼對 device 下指令？');
   },
   async (tok, S) => {                                   // 559 port-mapped I/O
-    hd('最傳統：port-mapped I/O', 0, 6.6);
+    hd('最傳統：port-mapped I/O', 0, 5.6);
     cap('最傳統的方式', '叫 port-mapped I/O');
   },
   async (tok, S) => {                                   // 571 port number 一開始就固定
@@ -2184,7 +2237,7 @@ scene('io-26d-port', 'Port-mapped I/O：I/O instruction 寫到 port', CAMW, [
     cap('controller 上有幾個 register', 'data、command（control）、status');
   },
   async (tok, S) => {                                   // 646 寫 register → 做 I/O
-    const pk = bx('寫 command', MC.orange, -3.6, 4.2, 0.8, 1.6, 0.4, 0.5); await slide(tok, pk, 0.3, 4.8, 0.8, 900); kill(pk); glow(S.reg[3], HL);   // stops at the register's edge, clear of its name
+    const pk = bx('寫 command', MC.orange, -3.6, 4.2, 0.8, 1.6, 0.4, 0.5); await slide(tok, pk, -0.4, 4.8, 0.8, 900); kill(pk); glow(S.reg[3], HL);   // stops at the register's edge, clear of its name
     cap('把值寫進這些 register', '要 read 還是 write、多少資料 → 就開始做 I/O');
   },
   async (tok, S) => {                                   // 658 I/O instruction：欄位是 port address
@@ -2194,32 +2247,34 @@ scene('io-26d-port', 'Port-mapped I/O：I/O instruction 寫到 port', CAMW, [
     cap('對 port 下的指令叫 I/O instruction', '欄位裡一定有 port address，不是 memory address');
   },
   async (tok, S) => {                                   // 691 IN / OUT
-    good('常見的 I/O instruction：IN、OUT（後面接 port number 和資料）', -1.6, -1.2, 2.0);
+    S.io = good('常見的 I/O instruction：IN、OUT（後面接 port number 和資料）', -1.6, -1.1, 2.0);
     cap('常見的有 IN 和 OUT', 'issue 時要給 port number，後面是資料');
   },
   async (tok, S) => {                                   // 700 典型 port 位址
     const T = [['DMA controller', '000–00F'], ['interrupt controller', '020–021'], ['timer', '040–043'], ['game controller', '200–20F'], ['serial port', '2F8–2FF']];
-    T.forEach(([n, r], i) => { sm(n, -5.4, 2.4 - i * 0.5, -1.0); sm(r, -2.8, 2.4 - i * 0.5, -1.0); });
-    hd('PC 的 I/O port 位址（課本表）', -4.2, 3.0, -1.0);
+    S.ins.kill(); remove(S.io);   // 指令講完了：收掉，表格放在下面那塊空出來的地方
+    T.forEach(([n, r], i) => { sm(n, -4.6, 1.3 - i * 0.55, 0.6); sm(r, -1.8, 1.3 - i * 0.55, 0.6); });
+    hd('PC 的 I/O port 位址（課本表）', -3.2, 2.0, 0.6);
     cap('典型的 port number', 'DMA controller、timer、serial port …一開始就 hardcode');
   },
 ]);
 
 scene('io-26d-mmio', 'Port-mapped vs memory-mapped I/O', CAMW, [
   async (tok, S) => {                                   // 743 第一種分法：addressing
-    hd('分法一：怎麼指定要寫給誰（addressing）', 0, 7.2);
+    frameHold(-6.2, -0.6, -1.6, 5.8, 5.9, 2.4);
+    S.t = hd('分法一：怎麼指定要寫給誰（addressing）', 0, 5.6);
     S.cpu = prop('cpu', -5.0, 4.4, 0, 1.1, 'CPU');
     S.ctl = bx('controller buffer', MC.teal, 4.4, 1.0, 0, 2.8, 0.6, 0.9);
     cap('把資料寫到 I/O device 有幾種分法', '第一種：用什麼方式定位要寫給誰');
   },
   async (tok, S) => {                                   // 762 port-mapped
-    S.p1 = arrow(V3(-4.0, 4.4, 0), V3(3.2, 1.4, 0), 0x2f6fb0); sm('OUT port, data', -0.6, 3.4, 0.4);
+    S.p1 = arrow(V3(-4.0, 4.4, 0), V3(3.2, 1.4, 0), 0x2f6fb0); S.p1l = sm('OUT port, data', -0.6, 3.4, 0.4);
     cap('port-mapped I/O', '用 I/O instruction 直接指定 port number');
   },
   async (tok, S) => {                                   // 785 memory-mapped I/O
-    kill(S.p1);
+    kill(S.p1); remove(S.p1l);
     S.mem = bx('memory 的一段區間', MC.blue, 0, 4.6, 0, 3.4, 0.7, 0.9);
-    hd('memory-mapped I/O：寫到 memory', 0, 6.4);
+    txt(S.t, '分法一（addressing）：memory-mapped I/O：寫到 memory'); S.t.position.x = 1.8;
     cap('第二種：memory-mapped I/O', '不寫 port，寫到 memory');
   },
   async (tok, S) => {                                   // 807 用 MOV、沒有 port number
@@ -2228,7 +2283,7 @@ scene('io-26d-mmio', 'Port-mapped vs memory-mapped I/O', CAMW, [
   },
   async (tok, S) => {                                   // 818 像 memory-mapped file
     S.lnk = arrow(V3(1.6, 4.4, 0), V3(4.2, 1.5, 0), 0x31aab0);
-    note('先把 controller 的 buffer map 到 memory 的某一段（像 memory-mapped file）', 0, 5.6);
+    say1(S, '先把 controller 的 buffer map 到 memory 的某一段（像 memory-mapped file）', 'note', -2.6, 2.3, 1.4);
     cap('寫 memory 怎麼會寫到 device？', '事先把 controller 的 buffer map 到 memory');
   },
   async (tok, S) => {                                   // 837 寫那段 memory = 寫到 port
@@ -2236,15 +2291,15 @@ scene('io-26d-mmio', 'Port-mapped vs memory-mapped I/O', CAMW, [
     cap('寫到那段 memory', '就等於寫到那個 port 上的 buffer');
   },
   async (tok, S) => {                                   // 862 好處：大量資料
-    good('適合大量資料：CPU 只要寫 memory 就好', -3.8, 2.4);
+    say1(S, '適合大量資料：CPU 只要寫 memory 就好', 'good', -2.6, 2.3, 1.4);
     cap('好處：很適合大量資料傳輸', 'CPU 最快，不希望它為了 I/O 在那邊等');
   },
   async (tok, S) => {                                   // 886 交給 DMA / controller
-    sm('剩下的交給 DMA 或 controller，CPU 空出來', -3.8, 1.8);
+    S.s2 = sm('剩下的交給 DMA 或 controller，CPU 空出來', -2.6, 1.7, 1.4);
     cap('CPU 寫完 memory 就不管了', '剩下的交給 DMA 或 controller');
   },
   async (tok, S) => {                                   // 906 缺點
-    bad('缺點：不太 reliable（crash 可能遺失）；資料小時 map / setup 很浪費', 0, 0.4, 1.6);
+    remove(S.s2); say1(S, '缺點：不太 reliable（crash 可能遺失）；資料小時 map / setup 很浪費', 'bad', -2.6, 2.3, 1.4);
     cap('缺點：跟 memory-mapped file 一樣', '不太 reliable；資料量小時光 setup 就不划算');
   },
   async (tok, S) => {                                   // 926 顯示卡
@@ -2253,7 +2308,7 @@ scene('io-26d-mmio', 'Port-mapped vs memory-mapped I/O', CAMW, [
   },
   async (tok, S) => {                                   // 950 keyboard 很糟
     prop('keyboard', -4.6, 0, 1.6, 0.8, 'keyboard');
-    bad('keyboard 一次一個 byte → 用 memory-mapped 很不划算 → 用 port', -2.0, 1.2, 2.4);
+    say1(S, 'keyboard 一次一個 byte → 用 memory-mapped 很不划算 → 用 port', 'bad', -3.6, 0.2, 1.6).center.set(0, 0.5);
     cap('資料很小的，像 keyboard', '用 memory-mapped 很糟：看 I/O 特性選方式');
   },
 ]);
@@ -2294,26 +2349,27 @@ scene('io-26d-poll', 'Polling vs interrupt：主動還是被動', CAMW, [
 
 scene('io-26d-dma', 'Programmed I/O vs DMA：誰來搬資料', CAMW, [
   async (tok, S) => {                                   // 1041 分法三：誰執行搬移
-    hd('分法三：誰來搬資料？', 0, 7.2);
+    frameHold(-6.2, -1.2, -0.6, 6.0, 5.9, 1.6);
+    hd('分法三：誰來搬資料？', 0, 5.6);
     S.cpu = prop('cpu', -4.8, 4.2, 0, 1.2, 'CPU'); S.mem = bx('memory', MC.blue, 4.4, 4.4, 0, 2.6, 0.8, 0.9);
     S.ctl = bx('device controller', MC.teal, 0, 0.6, 0, 3.0, 0.6, 0.9);
     cap('知道給誰、用哪種方式之後', '到底由誰執行搬移？');
   },
   async (tok, S) => {                                   // 1055 device 是被動的
-    note('device 只是被動的空間；會執行指令的只有 processor', 0, 2.2);
+    say1(S, 'device 只是被動的空間；會執行指令的只有 processor', 'note', 0, -0.5, 1.0);
     cap('搬資料需要一個 processor', 'I/O device 是被動的，只會被讀寫');
   },
   async (tok, S) => {                                   // 1067 programmed I/O
-    hot('programmed I/O：CPU 自己搬', -4.8, 6.0);
+    hot('programmed I/O：CPU 自己搬', -4.8, 2.9);   // 貼在 CPU 下面
     cap('傳統做法：用 CPU 下指令搬', '叫 programmed I/O');
   },
   async (tok, S) => {                                   // 1091 每搬一次一個 instruction
     for (let k = 0; k < 3; k++) { const b = bx('4B', MC.orange, 0, 1.4, 0.8, 0.6, 0.35, 0.4); await slide(tok, b, -4.4, 4.6, 0.8, 350); await slide(tok, b, 4.0, 4.6, 0.8, 350); kill(b); }
-    bad('每搬一次就一個 instruction → CPU 被綁住', -4.8, 2.6);
+    say1(S, '每搬一次就一個 instruction → CPU 被綁住', 'bad', 0, -0.5, 1.0);
     cap('每搬一筆，就要一個 CPU instruction', 'CPU 一直在下 I/O instruction，被綁住了');
   },
   async (tok, S) => {                                   // 1111 DMA
-    hd('DMA：Direct Memory Access', 2.6, 6.0);
+    hd('DMA：Direct Memory Access', 3.9, 1.2);   // 等一下 DMA controller 就放在它上面
     cap('最重要的：DMA（Direct Memory Access）', '用 controller 直接搬，CPU 不用參與');
   },
   async (tok, S) => {                                   // 1133 DMA controller
@@ -2322,7 +2378,7 @@ scene('io-26d-dma', 'Programmed I/O vs DMA：誰來搬資料', CAMW, [
     cap('系統裡專門裝一個 DMA controller', '不屬於任何 device，只負責搬資料、不做計算');
   },
   async (tok, S) => {                                   // 1160 資料量大才需要
-    note('資料量大時才值得請它幫忙', 2.6, 0.0, 1.4);
+    say1(S, '資料量大時才值得請它幫忙', 'note', 0, -0.5, 1.0);
     cap('什麼時候需要另一個人幫忙？', '資料量很大的時候');
   },
   async (tok, S) => {                                   // 1175 CPU initiate → interrupt
@@ -2330,17 +2386,18 @@ scene('io-26d-dma', 'Programmed I/O vs DMA：誰來搬資料', CAMW, [
     cap('CPU 跟 DMA 發起一個 I/O request', '之後等 interrupt 通知就好');
   },
   async (tok, S) => {                                   // 1201 DMA = memory-mapped + interrupt
-    good('DMA：通常搭配 memory-mapped + interrupt', 3.0, -0.6, 2.0);
+    say1(S, 'DMA：通常搭配 memory-mapped + interrupt', 'good', 0, -0.5, 1.0);
     cap('CPU 只想看到「資料已經在 memory 裡」', '所以 DMA 通常是 memory-mapped + interrupt');
   },
   async (tok, S) => {                                   // 1225 programmed I/O = polling
-    note('programmed I/O：通常搭配 polling（busy-waiting，一個 byte 一個 byte）', -3.0, -1.2, 2.0);
+    say1(S, 'programmed I/O：通常搭配 polling（busy-waiting，一個 byte 一個 byte）', 'note', 0, -0.5, 1.0);
     cap('三種分法可以組合', 'programmed I/O 常配 polling，一個 byte 一個 byte push');
   },
 ]);
 
 scene('io-26d-dmastep', 'DMA 一步一步：讀 100 MB 的檔案', CAMW, [
   async (tok, S) => {                                   // 1243 從 CPU 開始
+    frameHold(-6.4, -1.3, -0.6, 5.9, 5.9, 2.0);
     S.cpu = prop('cpu', -5.0, 5.0, 0, 1.1, 'CPU');
     S.mem = bx('memory：buffer X', MC.blue, 4.2, 5.2, 0, 3.0, 0.8, 0.9);
     S.drv = bx('device driver', MC.purple, -2.0, 5.2, 0, 2.4, 0.6, 0.8);
@@ -2358,7 +2415,7 @@ scene('io-26d-dmastep', 'DMA 一步一步：讀 100 MB 的檔案', CAMW, [
   },
   async (tok, S) => {                                   // 1315 ② driver 告訴 disk controller
     S.a2 = arrow(V3(-2.2, 4.8, 0.6), V3(-3.2, 1.6, 0.6), 0x2f6fb0); hot('②', -3.4, 3.4, 0.6);
-    sm('從 disk 的哪裡 → 放到 buffer X，長度 C = 100 MB', -1.4, 3.0, 1.4);
+    say1(S, '從 disk 的哪裡 → 放到 buffer X，長度 C = 100 MB', 'note', 1.0, -0.5, 1.6);
     cap('② driver 跟 disk controller 說', '資料在 disk 哪裡、要放到 memory 的 X、長度 C');
   },
   async (tok, S) => {                                   // 1356 ③ 要用 DMA
@@ -2367,16 +2424,16 @@ scene('io-26d-dmastep', 'DMA 一步一步：讀 100 MB 的檔案', CAMW, [
   },
   async (tok, S) => {                                   // 1378 ④ 請 DMA controller set up
     S.a3 = arrow(V3(-1.9, 1.4, 0.6), V3(1.0, 2.2, 0.6), 0x2f6fb0);
-    sm('DMA 知道：來源在哪、目的 X、還剩 C', 2.4, 3.1, 0.6);
+    say1(S, 'DMA 知道：來源在哪、目的 X、還剩 C', 'note', 1.0, -0.5, 1.6);
     cap('④ disk controller 請 DMA controller 搬', '提供來源、目的位址（initiate 一個 I/O）');
   },
   async (tok, S) => {                                   // 1399 ⑤ buffer 只有 4 bytes → 一次 4 bytes
     for (let k = 0; k < 3; k++) { const b = bx('4B', MC.gold, -3.4, 1.6, 1.0, 0.6, 0.35, 0.4); await slide(tok, b, 2.4, 2.8, 1.0, 400); await slide(tok, b, 4.2, 4.3, 1.0, 350); kill(b); } // each 4 bytes stops just under buffer X (its name stays clear)
-    sm('controller buffer 只有 4 bytes（示意）→ 來回非常多次，全由 DMA 執行', 1.0, 0.6, 1.8);
+    say1(S, 'controller buffer 只有 4 bytes（示意）→ 來回非常多次，全由 DMA 執行', 'note', 1.0, -0.5, 1.6);
     cap('⑤ controller 的 buffer 假設只有 4 bytes', '就 4 bytes 4 bytes 慢慢搬，DMA 一直來回');
   },
   async (tok, S) => {                                   // 1419 ⑥ 寫到 X，知道何時寫完
-    S.cnt = hot('X += 4、C −= 4 … 直到 C = 0', 4.2, 6.2);
+    S.cnt = hot('X += 4、C −= 4 … 直到 C = 0', 4.4, 3.6);   // 在 buffer X 下方
     cap('⑥ 每搬 4 bytes 就寫到 X 的位置', 'DMA 自己算位址，知道什麼時候寫完');
   },
   async (tok, S) => {                                   // 1433 ⑦ 寫完 → interrupt CPU
@@ -2384,19 +2441,19 @@ scene('io-26d-dmastep', 'DMA 一步一步：讀 100 MB 的檔案', CAMW, [
     cap('⑦ 全部寫完，DMA 產生一個 interrupt', '告訴 CPU：剛剛的 I/O request 做完了');
   },
   async (tok, S) => {                                   // 1444 ⑧ 通知 program
-    glow(S.mem, OKG); good('資料都在 memory 了', 4.2, 6.9);
+    glow(S.mem, OKG); say1(S, '資料都在 memory 了', 'good', 1.0, -0.5, 1.6);
     cap('⑧ 再通知當初做 I/O 的 program', '它一看 memory，資料都在了');
   },
   async (tok, S) => {                                   // 1477 CPU 只接到一次 interrupt
-    hot('CPU 只接到 1 次 interrupt', -5.0, 6.6);
+    say1(S, 'CPU 只接到 1 次 interrupt', 'ptr alt', 1.0, -0.5, 1.6);
     cap('整個過程 CPU 只接到一個 interrupt', '中間其實來來回回非常多次（都是 DMA 在做）');
   },
   async (tok, S) => {                                   // 1487 對比 programmed I/O
-    bad('programmed I/O：每 4 bytes CPU 都要處理一次（100 MB ÷ 4 B → 上千萬次）', 0, -0.6, 2.0);
+    say1(S, 'programmed I/O：每 4 bytes CPU 都要處理一次（100 MB ÷ 4 B → 上千萬次）', 'bad', 1.0, -0.5, 1.6);
     cap('如果是 programmed I/O', 'CPU 每 4 bytes 就要處理一次：速度一直被拖慢');
   },
   async (tok, S) => {                                   // 1521 總結
-    note('driver → disk controller → DMA controller 搬 → interrupt CPU', 0, 7.4);
+    say1(S, 'driver → disk controller → DMA controller 搬 → interrupt CPU', 'note', 1.0, -0.5, 1.6);
     cap('總結 DMA', 'disk controller 找 DMA setup，搬完 DMA 再 signal CPU');
   },
 ]);
@@ -2633,7 +2690,7 @@ scene('io-scan2-prob', 'SCAN 題目：head 在 53，上一個 request 在 60', C
 
 scene('io-scan2-dir', 'SCAN 的方向：看磁頭原本往哪裡走', CAMD, [
   async (tok, S) => {                                   // 66 依遞增順序排好
-    S.D = dsk(QH, QQ, { dz: 0.6 }); kill(S.D.hm); remove(S.D.hl);
+    S.D = dsk(QH, QQ, { dz: 0.6, n: 5 }); kill(S.D.hm); remove(S.D.hl); remove(S.D.tl);   // 這裡還不走，不需要總移動
     cap('把 0、199 和所有 request 依遞增順序排好', '0, 14, 37, 65, 67, 98, 122, 124, 183, 199');
   },
   async (tok, S) => {                                   // 75 把 53 放進去
@@ -2646,16 +2703,16 @@ scene('io-scan2-dir', 'SCAN 的方向：看磁頭原本往哪裡走', CAMD, [
     cap('上一個在 60，現在在 53：60 → 53 是遞減', '讀寫頭有往小編號移動的「慣性」');
   },
   async (tok, S) => {                                   // 116 先到 0，再上到 183
-    good('所以：53 → 37 → 14 → 0，再 → 65 → … → 183', 0, 0.6, 0.6);
+    S.D.say('所以：53 → 37 → 14 → 0，再 → 65 → … → 183', 'good', 0, -0.1);
     cap('所以先往 0 一路走到底', '再折返往上，走到 183');
   },
   async (tok, S) => {                                   // 123 如果上一個是 6
-    arrow(V3(X(53), 0.9, 1.6), V3(X(190), 0.9, 1.6), 0xe55a9b);
-    bad('假設上一個是 6：6 → 53 遞增 → 先 183、199，再折返服務 37、14', 0, 0.6, 2.4);
+    arrow(V3(X(53), 0.9, 0.8), V3(X(190), 0.9, 0.8), 0xe55a9b);
+    S.D.say('假設上一個是 6：6 → 53 遞增 → 先 183、199，再折返服務 37、14', 'bad', 0, 1.5);
     cap('如果上一個是 6 呢？', '6 → 53 是遞增：先走到 183、199，再折返服務 37、14');
   },
   async (tok, S) => {                                   // 140 SCAN 需要這個資訊
-    note('SCAN 要知道磁頭原本的移動方向', 0, 0.6, 3.6);
+    S.D.say('SCAN 要知道磁頭原本的移動方向', 'note', 0, 2.3);
     cap('所以 SCAN 需要「上一個 request」這個資訊', '才知道一開始要往哪個方向掃');
   },
 ]);
@@ -2664,13 +2721,15 @@ scene('io-scan2-dir', 'SCAN 的方向：看磁頭原本往哪裡走', CAMD, [
 const SCAN2 = [[53, 37], [37, 14], [14, 0], [65, 0], [67, 65], [98, 67], [122, 98], [124, 122], [183, 124]];
 scene('io-scan2-run', 'SCAN 的服務順序與總移動（236）', CAMD, [
   async (tok, S) => {                                   // 146 從 53 開始
-    S.D = dsk(QH, QQ, { dz: 0.6 }); S.D.tl.position.set(-4.6, 0.6, 3.6);
+    S.D = dsk(QH, QQ, { dz: 0.6, n: 9 }); S.D.tl.position.z = S.D.zEnd + 3.0;
+    frameHold(-6.9, 0, S.D.zEnd, 6.9, 0.9, S.D.zEnd + 4.3);   // 下面還要放 9 段減法
     bx('', MC.gray, X(60), 0.2, S.D.z, 0.3, 0.3, 0.3); sm('上一個 60', X(60) + 0.9, 0.6, -2.1);
     cap('從 53 開始，先往遞減方向', '（上一個在 60）');
   },
   ...moves('scan', 'down', 'SCAN'),                     // 154–170 37, 14, 0, 65, 67, 98, 122, 124, 183
   async (tok, S) => {                                   // 175 每一段的移動量
-    S.r = SCAN2.map(([a, b], i) => sm(a + '−' + b, -5.6 + i * 1.4, 0.6, i % 2 ? 5.3 : 4.6));
+    // 9 段減法排成路線下方的 3 × 3 小表，閱讀順序就是走的順序
+    S.r = SCAN2.map(([a, b], i) => sm(a + '−' + b, -3.6 + (i % 3) * 3.6, 0.6, S.D.zEnd + 0.8 + Math.floor(i / 3) * 0.7));
     cap('每一段的移動量：大的減小的', '53−37、37−14、14−0、65−0、67−65 …');
   },
   async (tok, S) => {                                   // 206 算出來
@@ -2679,7 +2738,7 @@ scene('io-scan2-run', 'SCAN 的服務順序與總移動（236）', CAMD, [
   },
   async (tok, S) => {                                   // 241 加總 236
     const want = chk(S.D, 'scan', 'down');
-    good(SCAN2.map(([a, b]) => a - b).join('+') + ' = ' + want, 0, 0.6, 6.1);
+    S.D.sum(); S.D.say('先往下 53 格，再往上 183 格', 'good', -0.6, S.D.zEnd + 3.85);
     cap('全部加起來：總移動 ' + want + ' cylinders', '跟 53 + 183 一樣');
   },
 ]);
