@@ -96,7 +96,7 @@ export default function (ctx) {
     stopTimer();
     lab.clear();
     loop.cubes = [];
-    lab.frameCamera([0, 9, 13], [0, 1.5, 0]);
+    lab.frameCamera([0, 13, 8.5], [0, 1.0, 0]);
     // a floor grid of slots: n × n, so you can see how much of it fills up
     controls(
       '<select id="lKind"><option value="single">單層迴圈</option><option value="nested">雙層迴圈</option><option value="tri">三角形雙層（j &lt; i）</option><option value="double">i *= 2</option><option value="sqrt">p += i</option></select>'
@@ -431,6 +431,11 @@ export default function (ctx) {
     const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([V3(x1, y1, z), V3(x2, y2, z)]), new THREE.LineBasicMaterial({ color }));
     lab.world.add(l); return l;
   }
+  // an invisible box over the area a scene uses: the auto framing then holds the whole picture from the start
+  function holdBox(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
   function ghostBox(color, h, d) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(1, h, d), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.16, depthWrite: false }));
     lab.world.add(m); return m;
@@ -580,7 +585,7 @@ export default function (ctx) {
     fresh([0, 5, 15], [0, 3.2, 0]);
     cube('24B', '#9b7ef4', [1.6, 1, 1.4], -4.6, 0.5, 0);
     tag('迴圈版 sum()', 'ptr', -4.6, 1.6); tag('不論 n 多大都 24 bytes', 'idx', -4.6, 0, 1.3);
-    tag('遞迴版 rsum 的呼叫', 'ptr alt', 1.8, 6.9);
+    tag('遞迴版 rsum 的呼叫', 'ptr alt', 1.8, 7.9);
     const cnt = tag('擱著的任務：0 bytes', 'ptr', 4.0, 0.3); cnt.center.set(0, 0.5);
     let arc = null;
     say('rsum 看起來只有 list、n、回傳值：約 16 bytes', '比迴圈版的 24 bytes 還少？');
@@ -588,16 +593,16 @@ export default function (ctx) {
     const frames = [];
     for (let n = 10; n >= 1; n--) {
       const k = 10 - n;
-      frames.push(cube('rsum(n=' + n + ')  16B', '#4b9ee2', [3.4, 0.5, 1.4], 1.8, 0.27 + k * 0.56, 0, 3));
+      frames.push(cube('rsum(n=' + n + ')  16B', '#4b9ee2', [3.4, 0.6, 1.4], 1.8, 0.32 + k * 0.68, 0));
       if (arc) arc.kill();
-      if (k) arc = K.flow(V3(3.55, 0.27 + (k - 1) * 0.56, 0), V3(3.55, 0.27 + k * 0.56, 0), '呼叫 rsum(' + n + ')', { lift: 0.8, bulge: V3(1, 0, 0.4), cls: 'pkt' });
-      cnt.position.y = 0.27 + k * 0.56;
+      if (k) arc = K.flow(V3(3.55, 0.32 + (k - 1) * 0.68, 0), V3(3.55, 0.32 + k * 0.68, 0), '呼叫 rsum(' + n + ')', { lift: 0.8, bulge: V3(1, 0, 0.4), cls: 'pkt' });
+      cnt.position.y = 0.32 + k * 0.68;
       txt(cnt, '擱著的任務：' + 16 * (k + 1) + ' bytes');
       say(n === 10 ? '10 號任務要等 9 號的結果' : n + ' 號任務開始，' + (n + 1) + ' 號還擱在一邊', '同時存在 ' + (k + 1) + ' 份 × 16 bytes');
       await beat(tok, 750);
     }
     if (arc) { arc.kill(); arc = null; }
-    const base = tag('rsum(n=0) → return 0', 'ptr alt', 1.8, 6.1);
+    const base = tag('rsum(n=0) → return 0', 'ptr alt', 1.8, 7.3);
     say('解到 0 號任務前，10～1 號全都擱著', '16 × 10 = 160 bytes（約 16n）');
     await beat(tok, 2800);
     kill(base);
@@ -607,8 +612,8 @@ export default function (ctx) {
       fly(frames.pop(), V3(3, 6, 3));
       if (arc) { arc.kill(); arc = null; }
       const top = frames.length;
-      if (top) arc = K.flow(V3(0.05, 0.27 + top * 0.56, 0), V3(0.05, 0.27 + (top - 1) * 0.56, 0), '回傳 ' + ret, { lift: 0.8, bulge: V3(-1, 0, 0.4), cls: 'pkt' });
-      cnt.position.y = 0.27 + Math.max(0, top - 1) * 0.56;
+      if (top) arc = K.flow(V3(0.05, 0.32 + top * 0.68, 0), V3(0.05, 0.32 + (top - 1) * 0.68, 0), '回傳 ' + ret, { lift: 0.8, bulge: V3(-1, 0, 0.4), cls: 'pkt' });
+      cnt.position.y = 0.32 + Math.max(0, top - 1) * 0.68;
       txt(cnt, '擱著的任務：' + 16 * frames.length + ' bytes');
       say('rsum(' + n + ') 做完，回傳 ' + ret, prev + ' + list[' + (n - 1) + '] = ' + prev + ' + ' + RL[n - 1] + ' = ' + ret);
       await beat(tok, n === 10 ? 1800 : 520);
@@ -620,12 +625,12 @@ export default function (ctx) {
   async function scMatrixAdd(tok) {
     fresh([0, 10, 9.5], [0, 1.6, 0]); // looking down more steeply so the three rows of each matrix stay apart on screen
     const A = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 1, 2, 3]], B = [[2, 0, 1, 3], [1, 4, 2, 0], [3, 2, 5, 1]];
-    const cell = (cx, i, j) => [cx + (j - 1.5) * 0.82, 0.15, (i - 1) * 1.0];
-    const am = A.map((r, i) => r.map((v, j) => cube(v, '#4b9ee2', [0.6, 0.3, 0.6], ...cell(-4.4, i, j))));
+    const cell = (cx, i, j) => [cx + (j - 1.5) * 0.95, 0.15, (i - 1) * 1.25];
+    const am = A.map((r, i) => r.map((v, j) => cube(v, '#4b9ee2', [0.6, 0.3, 0.6], ...cell(-5.0, i, j))));
     const bm = B.map((r, i) => r.map((v, j) => cube(v, '#9b7ef4', [0.6, 0.3, 0.6], ...cell(0, i, j))));
-    for (let i = 0; i < 3; i++) for (let j = 0; j < 4; j++) { const [x, , z] = cell(4.4, i, j); ctx.tile(V3(x, 0.04, z), 0.6, 0.6); }
-    tag('A', 'ptr', -4.4, 0.5, -1.6); tag('B', 'ptr', 0, 0.5, -1.6); tag('C', 'ptr alt', 4.4, 0.5, -1.6);
-    tag('+', 'val', -2.2, 0.3); tag('=', 'val', 2.2, 0.3);
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 4; j++) { const [x, , z] = cell(5.0, i, j); ctx.tile(V3(x, 0.04, z), 0.6, 0.6); }
+    tag('A', 'ptr', -5.0, 0.5, -2.1); tag('B', 'ptr', 0, 0.5, -2.1); tag('C', 'ptr alt', 5.0, 0.5, -2.1);
+    tag('+', 'val', -2.5, 0.3); tag('=', 'val', 2.5, 0.3);
     const cd = code(['for (i = 0; i < rows; i++)', '  for (j = 0; j < cols; j++)', '    c[i][j] = a[i][j] + b[i][j];'], 0, 5.6);
     const cost = tag('成本 ≈ 0', 'ptr alt', 0, 3.6);
     say('兩個 dense 矩陣相加，A、B、C 空間都配置好', 'rows = 3、cols = 4，兩層 for 迴圈');
@@ -636,7 +641,7 @@ export default function (ctx) {
       await beat(tok, 900);
       for (let j = 0; j < 4; j++) {
         cd.hl(2); glow(am[i][j], GOLD); glow(bm[i][j], GOLD);
-        cube(A[i][j] + B[i][j], '#2fc092', [0.6, 0.3, 0.6], ...cell(4.4, i, j), 2.5);
+        cube(A[i][j] + B[i][j], '#2fc092', [0.6, 0.3, 0.6], ...cell(5.0, i, j), 0.8);
         txt(cost, '這一列：p × ' + (j + 1));
         await beat(tok, 480);
         glow(am[i][j], null); glow(bm[i][j], null);
@@ -732,7 +737,7 @@ export default function (ctx) {
     const A = [3, 8, 12, 17, 23, 31, 38, 45, 52, 60], X = 38;
     const xs = (k) => -5.4 + k * 1.2;
     const cs = A.map((v, k) => { tag('[' + k + ']', 'idx', xs(k), 0, 0.95); return cube(v, '#4b9ee2', [1, 0.7, 1], xs(k), 0.35, 0); });
-    const cd = code(['while (left <= right) {', '  middle = (left + right) / 2;', '  switch (COMPARE(list[middle], x)) {', '    case -1: left = middle + 1; break;', '    case  0: return middle;', '    case  1: right = middle - 1;', '  }', '}', 'return -1;'], 0, 6.6, 0.48);
+    const cd = code(['while (left <= right) {', '  middle = (left + right) / 2;', '  switch (COMPARE(list[middle], x)) {', '    case -1: left = middle + 1; break;', '    case  0: return middle;', '    case  1: right = middle - 1;', '  }', '}', 'return -1;'], 0, 5.3, 0.44, -3.0);
     const Lp = tag('left', 'ptr', xs(0), 0, 1.7), Rp = tag('right', 'ptr', xs(9), 0, 2.4), Mp = tag('middle', 'ptr alt', xs(4), 1.4, 0);
     showL(Mp, false);
     tag('x = 38', 'pkt', xs(9) + 1.6, 1.2, 0);
@@ -744,7 +749,7 @@ export default function (ctx) {
       const m = (l + r) >> 1;
       cd.hl(1); showL(Mp, true); move(Mp, xs(m), 1.4, 0); glow(cs[m], GOLD);
       if (cmpA) cmpA.kill();
-      cmpA = K.flow(cs[m], V3(xs(9) + 1.2, 1.0, 0), A[m] + (A[m] < X ? ' < ' : A[m] > X ? ' > ' : ' = ') + '38', { lift: 1.2, cls: A[m] === X ? 'good' : 'say' });
+      cmpA = K.flow(cs[m], V3(xs(9) + 1.2, 1.0, 0), A[m] + (A[m] < X ? ' < ' : A[m] > X ? ' > ' : ' = ') + '38', { lift: 0.9, bulge: V3(0, 0.4, 1), cls: A[m] === X ? 'good' : 'say' });
       say('middle = (' + l + ' + ' + r + ') / 2 = ' + m, 'list[' + m + '] = ' + A[m] + '，跟 38 比');
       await beat(tok, 1400);
       cmp++;
@@ -818,15 +823,15 @@ export default function (ctx) {
     await beat(tok, 3200);
   }
   async function scPermLoops(tok) {
-    fresh([0, 7, 12], [0, 1, 0]);
-    const cd = code(['for (i = 0; i < 3; i++)', '  for (j = 0; j < 3; j++)', '    for (k = 0; k < 3; k++)', '      print(s[i], s[j], s[k]);'], 0, 5.2);
+    fresh([0, 12, 7.5], [0, 0.6, 0]);
+    const cd = code(['for (i = 0; i < 3; i++)', '  for (j = 0; j < 3; j++)', '    for (k = 0; k < 3; k++)', '      print(s[i], s[j], s[k]);'], 0, 3.4, 0.56, -3.6);
     say('不用遞迴也可以：多層 for，每個位置都試 a、b、c', '3 × 3 × 3 = 27 種組合');
     await beat(tok, 2000);
     const S = 'abc', all = [];
     cd.hl(3);
     for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) for (let k = 0; k < 3; k++) {
       const s = S[i] + S[j] + S[k], n = all.length;
-      all.push({ s, dup: new Set(s).size < 3, m: cube(s, '#4b9ee2', [1.1, 0.45, 0.8], -5.6 + (n % 9) * 1.4, 0.23, -1.2 + Math.floor(n / 9) * 1.2, 3) });
+      all.push({ s, dup: new Set(s).size < 3, m: cube(s, '#4b9ee2', [1.1, 0.45, 0.8], -5.6 + (n % 9) * 1.4, 0.23, -1.3 + Math.floor(n / 9) * 1.8, 1.2) });
       await beat(tok, 110);
     }
     cd.hl(-1);
@@ -837,7 +842,7 @@ export default function (ctx) {
     await beat(tok, 1600);
     all.filter((e) => e.dup).forEach((e) => fly(e.m));
     await beat(tok, 1200);
-    all.filter((e) => !e.dup).forEach((e, q) => { tint(e.m, '#2fc092'); move(e.m, -3.5 + q * 1.4, 0.23, 0); });
+    all.filter((e) => !e.dup).forEach((e, q) => { tint(e.m, '#2fc092'); move(e.m, -3.5 + q * 1.4, 0.23, 0.5); });
     say('剩下 6 種，跟遞迴版一樣', '同一個問題不只一種 solution');
     await beat(tok, 4200);
   }
@@ -879,7 +884,7 @@ export default function (ctx) {
     await beat(tok, 2200);
     const ins = ['load', 'add', 'store', 'load', 'sub', 'store', 'add', 'load'];
     const IC = { load: '#31aab0', add: '#dd8238', sub: '#e55a9b', store: '#9b7ef4' };
-    const im = ins.map((t, k) => cube(t, IC[t], [1.15, 0.45, 0.9], 1.6 + (k % 4) * 1.3, 0.23, k < 4 ? -0.7 : 0.7, 3));
+    const im = ins.map((t, k) => cube(t, IC[t], [1.15, 0.45, 0.9], 1.6 + (k % 4) * 1.3, k < 4 ? 0.23 : 0.75, 0, 3));
     say('CPU 真正跑的是 add、sub、load、store 指令', '時間取決於 instruction set → 太瑣碎');
     await beat(tok, 3000);
     im.forEach((m) => fly(m));
@@ -1008,9 +1013,10 @@ export default function (ctx) {
   }
   async function scMinIndex(tok) {
     fresh([0, 6, 13.5], [0, 2.6, 0]);
+    holdBox(-5.0, -0.4, -2.6, 5.0, 6.6, 3.0);
     const cs = minArray();
-    const cd = code(['int getMinIndex(int arr[], int len) {', '  int minPos = 0;', '  for (int i = 1; i < len; i++)', '    if (arr[i] < arr[minPos])', '      minPos = i;', '  return minPos;', '}'], 0, 6.8, 0.5);
-    const ip = tag('i', 'ptr', mx(1), 1.5), mp = tag('minPos', 'ptr alt', mx(0), 0, 1.8);
+    const cd = code(['int getMinIndex(int arr[], int len) {', '  int minPos = 0;', '  for (int i = 1; i < len; i++)', '    if (arr[i] < arr[minPos])', '      minPos = i;', '  return minPos;', '}'], 0, 6.0, 0.5, -2.6);
+    const ip = tag('i', 'ptr', mx(1), 0, 3.1), mp = tag('minPos', 'ptr alt', mx(0), 0, 1.8);
     const cnt = tag('比較 0 次', 'ptr', 5.9, 0.4);
     showL(ip, false);
     say('給一個 array 和長度，回傳最小值的 index', 'getMinIndex(arr, len)');
@@ -1021,10 +1027,10 @@ export default function (ctx) {
     let m = 0, cmp = null;
     for (let i = 1; i < MINA.length; i++) {
       if (cmp) { cmp.kill(); cmp = null; }
-      cd.hl(2); showL(ip, true); move(ip, mx(i), 1.5, 0); glow(cs[i], GOLD);
+      cd.hl(2); showL(ip, true); move(ip, mx(i), 0, 3.1); glow(cs[i], GOLD);
       await beat(tok, 420);
       cd.hl(3); txt(cnt, '比較 ' + i + ' 次');
-      cmp = K.flow(cs[i], cs[m], MINA[i] + ' < ' + MINA[m] + '？', { lift: 0.9, cls: MINA[i] < MINA[m] ? 'good' : 'bad' });
+      cmp = K.flow(cs[i], cs[m], MINA[i] + ' < ' + MINA[m] + '？', { lift: 1.3, cls: MINA[i] < MINA[m] ? 'good' : 'bad' });
       if (MINA[i] < MINA[m]) {
         glow(cs[m], null); m = i; glow(cs[m], GREEN); move(mp, mx(m), 0, 1.8); cd.hl(4);
         say('arr[' + i + '] = ' + MINA[i] + ' 比較小：更新', 'minPos = ' + i);
@@ -1120,12 +1126,13 @@ export default function (ctx) {
     const cs = A.map((v, k) => { tag('[' + k + ']', 'idx', ax(k), 0, 0.9); return cube(v, '#4b9ee2', [0.9, 0.7, 0.9], ax(k), 0.35, 0, 3); });
     // the pointers sit on what they point at: minPos above its cube, i below
     const mv = tag('minPos = ?', 'ptr alt', 0, 1.25, 0.2), iv = tag('i = ?', 'ptr', 0, -0.75, 0.2);
+    showL(mv, false); showL(iv, false); // shown once the cubes have landed and the trace starts
     const at = (l, k, y) => { l.position.set(ax(k), y, 0.2); };
     let cmp = null;
     say('拿 A = [4, 9, 2, 6] 一行一行 trace', 'len = 4');
     await beat(tok, 1800);
     const step = async (ln, cap, f, ms = 1150) => { cP.hl(ln); say(cap, f); await beat(tok, ms); };
-    txt(mv, 'minPos = 0'); at(mv, 0, 1.25); showL(iv, false); glow(cs[0], GREEN);
+    txt(mv, 'minPos = 0'); at(mv, 0, 1.25); showL(mv, true); showL(iv, false); glow(cs[0], GREEN);
     await step(1, 'minPos ← 0', 'A[0] = 4');
     let m = 0;
     for (let i = 1; i < 4; i++) {
@@ -1133,7 +1140,7 @@ export default function (ctx) {
       await step(2, 'for：i ← ' + i, '');
       const yes = A[i] < A[m];
       if (cmp) cmp.kill();
-      cmp = K.flow(cs[i], cs[m], A[i] + ' < ' + A[m] + '？', { lift: 1.0, cls: yes ? 'good' : 'bad' });
+      cmp = K.flow(cs[i], cs[m], A[i] + ' < ' + A[m] + '？', { lift: 1.9, cls: yes ? 'good' : 'bad' });
       await step(3, 'A[' + i + '] < A[minPos]？', A[i] + ' < ' + A[m] + ' → ' + (yes ? '是' : '否'));
       if (yes) { glow(cs[m], null); m = i; glow(cs[m], GREEN); txt(mv, 'minPos = ' + m); at(mv, m, 1.25); await step(4, 'minPos ← ' + i, ''); }
       else glow(cs[i], null);
@@ -1192,8 +1199,8 @@ export default function (ctx) {
       say('把最小值 ' + a[m] + ' 換到第 ' + i + ' 個位置', m === i ? '本來就在位置上，不用換' : 'swap A[' + i + '] ↔ A[' + m + ']');
       if (m !== i) {
         const A1 = cs[i], B1 = cs[m];
-        move(A1, mx(i), 0.4, 1.2); move(B1, mx(m), 0.4, -1.2); await beat(tok, 300);
-        move(A1, mx(m), 0.4, 1.2); move(B1, mx(i), 0.4, -1.2); await beat(tok, 350);
+        move(A1, mx(i), 2.6, 0); await beat(tok, 300);
+        move(A1, mx(m), 2.6, 0); move(B1, mx(i), 0.4, 0); await beat(tok, 350);
         move(A1, mx(m), 0.4, 0); move(B1, mx(i), 0.4, 0);
         [a[i], a[m]] = [a[m], a[i]]; [cs[i], cs[m]] = [cs[m], cs[i]];
       }
@@ -1205,7 +1212,7 @@ export default function (ctx) {
     await beat(tok, 3200);
   }
   async function scExamPapers(tok) {
-    fresh([0, 7, 12], [0, 0.6, 0]);
+    fresh([0, 10, 8.5], [0, 0, 0.2]); // looking down, so the two rows of papers do not cover each other
     const ID = [3, 17, 8, 12, 20, 1, 15, 6, 11, 19, 4, 14, 9, 2, 16, 7, 13, 10, 18, 5];
     const SC = [72, 95, 60, 88, 45, 99, 67, 81, 53, 90, 76, 38, 84, 92, 70, 58, 63, 87, 49, 79];
     const pad = (v) => (v < 10 ? '0' : '') + v;
@@ -1213,11 +1220,12 @@ export default function (ctx) {
       const x = (Math.random() - 0.5) * 2, z = (Math.random() - 0.5) * 1.6;
       const m = cube(pad(id), '#efe6d2', [0.8, 0.12, 0.6], x, 0.06 + k * 0.13, z, 3);
       m.rotation.y = (Math.random() - 0.5) * 1.2;
+      if (k < ID.length - 1) showL(m.userData.lbl, false); // a heap: only the top paper can be read
       return { id, sc: SC[k], m };
     });
     say('200 份考卷（這裡用 20 份）隨意疊', '放進去最快，要找某個人就得一份份翻');
     await beat(tok, 3000);
-    const grid = (list, lab2) => list.forEach((p, r) => { p.m.rotation.y = 0; relabel(p.m, lab2(p)); showL(p.m.userData.lbl, true); move(p.m, -4.5 + (r % 10), 0.06, r < 10 ? -0.7 : 0.7); });
+    const grid = (list, lab2) => list.forEach((p, r) => { p.m.rotation.y = 0; relabel(p.m, lab2(p)); showL(p.m.userData.lbl, false); setTimeout(() => showL(p.m.userData.lbl, true), 900); move(p.m, -4.5 + (r % 10), 0.06, r < 10 ? -1.0 : 1.0); });
     grid([...P].sort((a, b) => b.sc - a.sc), (p) => p.sc);
     say('依分數高低排（標籤 = 分數）', '方便看排名、找前幾名');
     await beat(tok, 3200);
@@ -1229,11 +1237,11 @@ export default function (ctx) {
     const h = new Array(10).fill(0);
     [...P].sort((a, b) => a.id - b.id).forEach((p) => {
       const d = p.id % 10;
-      tint(p.m, COL[d]); showL(p.m.userData.lbl, true);
+      tint(p.m, COL[d]); showL(p.m.userData.lbl, false);
       move(p.m, -4.5 + d, 0.06 + h[d] * 0.14, 0);
       h[d]++;
     });
-    P.forEach((p) => { if ([...P].some((q) => q.id % 10 === p.id % 10 && q.id > p.id)) showL(p.m.userData.lbl, false); });
+    setTimeout(() => P.forEach((p) => showL(p.m.userData.lbl, ![...P].some((q) => q.id % 10 === p.id % 10 && q.id > p.id))), 900);
     say('依學號尾數分成 10 堆', '發回考卷時一堆一堆發，最省事');
     await beat(tok, 3400);
     say('怎麼收納，取決於要拿資料做什麼', 'Data structure = 在電腦裡整理（收納）資料的方式');
@@ -1245,7 +1253,7 @@ export default function (ctx) {
     const tidyV = [3, 8, 15, 21, 30, 37, 50], messyV = [37, 3, 50, 21, 8, 30, 15];
     const T = tidyV.map((v, k) => ({ v, m: cube(v, '#4b9ee2', [0.65, 0.6, 0.65], tx(k), 0.3, 0) }));
     const M = messyV.map((v, k) => ({ v, m: cube(v, '#dd8238', [0.65, 0.6, 0.65], rx(k), 0.3, 0) }));
-    tag('愛整理（隨時排好序）', 'ptr', -3.5, 0, -1.4); tag('隨便丟（來一個放一個）', 'ptr alt', 3.4, 0, -1.4);
+    tag('愛整理（隨時排好序）', 'ptr', -3.5, 1.3, 0); tag('隨便丟（來一個放一個）', 'ptr alt', 3.4, 1.3, 0);
     const tc = tag('', 'idx', -3.5, 0, 1.3), mc = tag('', 'idx', 3.4, 0, 1.3);
     say('兩種收納習慣：愛整理 vs 隨便丟', '');
     await beat(tok, 2200);
@@ -1482,9 +1490,16 @@ async function recede(tok, objs, dz = -2.6) {
   await anim(tok, 600, (u) => objs.forEach((o, k) => { o.position.z = z0[k] + dz * u; if (o.userData.ix) o.userData.ix.position.z = iz[k] + dz * u; }));
 }
 // a checklist that grows downwards: add(text, cls)
-function list(x, yTop, z = 0, dy = 0.55) {
+function list(x, yTop, z = 0, dy = 0.55, left = false) {
   const items = [];
-  return { items, add(t, cls = 'note') { const l = P.keep(tag(t, cls, x, yTop - items.length * dy, z)); items.push(l); return l; } };
+  return { items, add(t, cls = 'note') { const l = P.keep(tag(t, cls, x, yTop - items.length * dy, z)); if (left) l.center.set(0, 0.5); items.push(l); return l; } };
+}
+// an invisible box over the area a scene will use later: the stage's auto
+// framing measures it from the first step, so the camera does not zoom in on
+// the first small thing and jump back out when the rest arrives
+function frameHold(x0, y0, z0, x1, y1, z1) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; ctx.lab.world.add(m); return m;
 }
 // draw y = f(u) for u in [0,1] as a polyline over the box (x0..x1, y0..y1)
 async function curve(tok, f, x0, x1, y0, y1, z, color, ms = 1200) {
@@ -1655,78 +1670,85 @@ FRAG.push(['cplx-lin-why', '為什麼需要分析工具：怎麼比較好壞', a
 
 // 3:33 什麼是好程式
 FRAG.push(['cplx-lin-goodprog', '好程式：requirements、correctness、文件、易讀', async (tok) => {
-  P.fresh([0, 6, 12], [0, 1.2, 0]);
+  P.fresh([0, 6, 12], [0, 1.8, 0]);
+  frameHold(-6.4, 0, -0.5, 6.4, 4.8, 2.6);
   let me, chk;
   await run(tok, [
-    () => { prop('file', -3.5, 0, 0, 1.6, '你的程式'); me = buddy('你', '', C_B, -5.6, 0, 1.2, 0.8); chk = list(2.4, 4.0, 0); say('什麼叫做「好的程式」？'); },
+    () => { prop('file', -3.4, 0, 0, 1.6, '你的程式'); me = buddy('你', '', C_B, -5.4, 0, 1.2, 0.8); chk = list(-0.4, 4.6, 0, 0.62, true); say('什麼叫做「好的程式」？'); },
     () => { chk.add('⏰ 期限內寫完（一種 requirement）'); say('也許在期限內寫完就算好', '這是一種 requirement'); },
     () => { chk.add('🎯 輸出符合題目的要求'); say('滿足題目對輸出的要求', '也是 requirement'); },
-    () => { chk.add('✓ 合理的 case 都跑對', 'good'); no('segmentation fault ✗', -3.5, 2.4, 0.6); say('合理的輸入都要正確執行', '不能跑出奇怪的 segmentation fault'); },
+    () => { chk.add('✓ 合理的 case 都跑對', 'good'); no('segmentation fault ✗', -3.4, 2.6, 0); say('合理的輸入都要正確執行', '不能跑出奇怪的 segmentation fault'); },
     () => { chk.add('= requirements + correctness（基本要求）', 'ptr'); me.mood('happy'); say('這些是基本要求', 'requirements 和 correctness'); },
     () => { chk.add('🏢 給很多人用：不只寫程式本身'); say('如果程式要在業界、給很多人用', '好不好就不只看程式本身'); },
-    () => { prop('file', -1.6, 0, 1.6, 0.9, '使用說明'); chk.add('📄 寫說明文件，別人好上手'); say('要寫說明文件', '讓別人很簡單就會用'); },
-    async () => { chk.add('👀 程式碼易讀：好修改、好討論、好 code review'); buddy('同事', '', C_C, -0.2, 0, 2.6, 0.7); await me.hop(tok); say('程式碼要讓別人看得懂', '修改、討論、code review 都容易'); },
+    () => { prop('file', -3.6, 0, 2.2, 0.9, '使用說明'); chk.add('📄 寫說明文件，別人好上手'); say('要寫說明文件', '讓別人很簡單就會用'); },
+    async () => { chk.add('👀 程式碼易讀：好修改、好討論、好 code review'); buddy('同事', '', C_C, -1.6, 0, 2.2, 0.7); await me.hop(tok); say('程式碼要讓別人看得懂', '修改、討論、code review 都容易'); },
   ]);
 }]);
 
 // 6:10 時間資源與空間資源
 FRAG.push(['cplx-lin-resources', '程式用了多少資源：時間與空間', async (tok) => {
-  P.fresh([0, 6.5, 12.5], [0, 1.2, 0]);
-  let cpu, disk, net, man, clock, mem, xfer;
+  P.fresh([0, 6.5, 12.5], [0, 1.8, 0]);
+  frameHold(-6.6, 0, -1.0, 6.6, 5.8, 3.2);
+  // time on the left (CPU + its questions above it), space on the right (disk +
+  // its questions); one headline at the top is rewritten, never stacked
+  let cpu, disk, net, man, clock, mem, xfer, head, mid;
   await run(tok, [
-    () => { prop('file', 0, 0, 0, 1.3, '你的程式'); say('衡量程式的一個面向', '到底用了多少資源'); },
+    () => { prop('file', 0, 0, 1.0, 1.3, '你的程式'); say('衡量程式的一個面向', '到底用了多少資源'); },
     () => {
-      cpu = prop('cpu', -4.6, 0, -1.4, 1, '計算'); disk = prop('disk', 4.6, 0, -1.4, 1, '儲存');
-      net = icon('🌐', '網路', -4.6, 0.6, 2.2); man = icon('👩‍💻', '人力', 4.6, 0.6, 2.2);
+      cpu = prop('cpu', -4.4, 0, 0, 1, '計算'); disk = prop('disk', 4.4, 0, 0, 1, '儲存');
+      net = icon('🌐', '網路', -2.2, 0.6, 2.2); man = icon('👩‍💻', '人力', 2.2, 0.6, 2.2);
       say('資源有很多種', '計算、儲存、網路、人力…');
     },
-    () => { dim(net); dim(man); say('程式「執行時」的資源', '主要看兩個面向'); },
+    () => { remove(net); remove(man); say('程式「執行時」的資源', '主要看兩個面向'); },
     () => { cpu.userData.label.element.textContent = '計算資源：CPU、GPU'; glow(cpu.children[0], '#5a3a00'); say('一個是計算資源', 'CPU、GPU 做的運算'); },
-    () => { clock = list(-4.6, 3.4, -1.4); clock.add('100 筆資料：1 秒？10 秒？100 秒？'); say('傳統上用「要花多少時間跑完」衡量', '→ 時間'); },
+    () => { clock = list(-6.4, 3.9, 0, 0.62, true); clock.add('100 筆資料：1 秒？10 秒？100 秒？'); say('傳統上用「要花多少時間跑完」衡量', '→ 時間'); },
     () => { clock.add('跑了 10 分：再 2 分？還是 2000 分？', 'bad'); say('作業跑了十分鐘', '再兩分鐘還是兩千分鐘？差很多'); },
     () => { disk.userData.label.element.textContent = '記憶體、硬碟暫存'; say('另一個：程式要耗多少記憶體', '或硬碟暫存空間'); },
-    () => { mem = list(4.6, 3.4, -1.4); mem.add('6.4G 讀進來：佔 6.4G？64G？640G？'); say('6.4G 資料讀進記憶體', '佔 6.4G、64G 還是 640G？'); },
-    () => { mem.add('沒有 640G → 程式掛掉', 'bad'); say('記憶體不夠，存完之前就掛了', '改用硬碟暫存，量多少也重要'); },
+    () => { mem = list(6.4, 3.9, 0, 0.62); mem.add('6.4G 讀進來：佔 6.4G？64G？640G？'); mem.items[0].center.set(1, 0.5); say('6.4G 資料讀進記憶體', '佔 6.4G、64G 還是 640G？'); },
+    () => { mem.add('沒有 640G → 程式掛掉', 'bad').center.set(1, 0.5); say('記憶體不夠，存完之前就掛了', '改用硬碟暫存，量多少也重要'); },
     async () => {
-      xfer = pkt('6MB？60MB？600MB？', -4.0, 1.3, 3.2);
-      await travel(tok, xfer, V3(-4.0, 1.3, 3.2), V3(4.0, 1.3, 3.2), 1400);
+      xfer = pkt('6MB？60MB？600MB？', -4.0, 1.3, 2.6);
+      await travel(tok, xfer, V3(-4.0, 1.3, 2.6), V3(4.0, 1.3, 2.6), 1400);
       say('分散式環境：資料在電腦間傳來傳去', '要傳多少也重要');
     },
-    () => { T('跟資料量有關 → 統稱 Space（空間）', 3.0, 4.6, -1.4); say('儲存、傳輸都跟資料量有關', '統稱 space'); },
-    () => { T('時間複雜度 ／ 空間複雜度', -2.0, 5.3, -1.4); say('對應到空間複雜度', '「複雜度」= 這件事有多難、多費力'); },
-    () => { ok('好演算法：時間效率高', -4.6, 2.2, 0.4); ok('好資料結構：空間效率好', 4.6, 2.2, 0.4); say('好的演算法：時間複雜度低', '好的資料結構：空間效率好'); },
-    () => { note('互相搭配：合理的空間換合理的時間', 0, 0.4, 2.0); say('兩者互相搭配', '不一定要追求最小的空間'); },
-    () => { prop('lock', 0, 0, 3.2, 0.8); note('嵌入式系統：每個 byte 都要省', 0, 1.2, 3.4); say('記憶體很小的嵌入式系統', '就真的要把資料壓到極限'); },
-    () => { T('描述複雜度的「專有名詞」＝ 本講內容', 0, 6.0, -1.4); say('我們要的是一種「說法」', '描述複雜度的專有名詞'); },
+    () => { kill(xfer); head = T('跟資料量有關 → 統稱 Space（空間）', 0, 5.6, -0.6); say('儲存、傳輸都跟資料量有關', '統稱 space'); },
+    () => { txt(head, '時間複雜度 ／ 空間複雜度'); say('對應到空間複雜度', '「複雜度」= 這件事有多難、多費力'); },
+    () => { ok('好演算法：時間效率高', -4.4, 4.75, 0); ok('好資料結構：空間效率好', 4.4, 4.75, 0); say('好的演算法：時間複雜度低', '好的資料結構：空間效率好'); },
+    () => { mid = note('互相搭配：合理的空間換合理的時間', 0, 2.4, 0.2); say('兩者互相搭配', '不一定要追求最小的空間'); },
+    () => { prop('lock', 0, 0, 2.6, 0.8); txt(mid, '嵌入式系統：每個 byte 都要省'); say('記憶體很小的嵌入式系統', '就真的要把資料壓到極限'); },
+    () => { txt(head, '描述複雜度的「專有名詞」＝ 本講內容'); say('我們要的是一種「說法」', '描述複雜度的專有名詞'); },
   ]);
 }]);
 
 // 12:10 空間範例：迴圈加總
 FRAG.push(['cplx-lin-spaceloop', '迴圈加總的額外空間：固定 24 bytes', async (tok) => {
-  P.fresh([0, 6.5, 12.5], [0, 1.0, 0]);
-  let data, dl, cd, vars = [], tot, badge;
+  P.fresh([0, 6.5, 12.5], [0, 1.2, 0]);
+  frameHold(-6.0, 0, -1.6, 6.0, 3.8, 2.4);
+  // the data on a back row with its caption above it, the code on the right,
+  // the five variables in front; one remark (rm) above them is rewritten
+  let data, dl, cd, vars = [], tot, badge, rm;
   const V = (name, b, x) => { const v = buddy(name, b, C_E, x, 0, 1.8, 0.62); vars.push(v); return v; };
   await run(tok, [
-    () => { data = row([3, 1, 4, 1, 5, 9, 2, 6], -4.2, -1.4, 0.95, C_ROW, 0.75, false); say('例子：一個 array（或 linked list）'); },
+    () => { data = row([3, 1, 4, 1, 5, 9, 2, 6], -4.2, -2.2, 0.95, C_ROW, 0.75, false); say('例子：一個 array（或 linked list）'); },
     async () => {
       cd = code(['total = 0', 'for i = 0 … n−1:', '  total += list[i]', 'return total'], 4.2, 3.6, 0.5, -1.4);
-      tot = pkt('total', -4.2, 1.4, -1.4);
-      await travel(tok, tot, V3(-4.2, 1.4, -1.4), V3(2.4, 1.4, -1.4), 1400);
+      tot = pkt('total', -4.2, 1.4, -2.2);
+      await travel(tok, tot, V3(-4.2, 1.4, -2.2), V3(4.2, 1.4, -1.4), 1400);
       say('把裡面所有數字加起來', '算總和');
     },
-    () => { dl = note('資料已經放在那裡（例如 20 個櫃子）', -0.9, 0.0, -0.3); say('算空間時：資料已經給你、放好了'); },
-    () => { say('在那 20 個櫃子之外', '這段演算法還要多花多少空間？'); T('額外要多少空間？', -0.9, 2.4, 0.6); },
+    () => { dl = P.keep(note('資料已經放在那裡（例如 20 個櫃子）', -0.9, 1.25, -2.2)); say('算空間時：資料已經給你、放好了'); },
+    () => { say('在那 20 個櫃子之外', '這段演算法還要多花多少空間？'); rm = T('額外要多少空間？', -2.2, 3.8, 1.8); },
     () => { say('幾乎就只看：宣告了多少變數'); cd.hl(-1); },
     () => { V('total', '', -5.0); cd.hl(0); say('total：暫存總和'); },
     () => { V('i', '', -3.6); cd.hl(1); say('i：迴圈裡從頭跑到尾'); },
     () => { V('回傳值', '', -2.2); cd.hl(3); say('回傳值也可能佔一格'); },
     () => { V('list 指標', '', -0.8); V('n（長度）', '', 0.6); cd.hl(-1); say('傳進來的資料在哪、多長', 'array 指標、array 長度'); },
-    () => { vars.forEach((v) => v.mood('happy')); T('就這 5 個變數', -2.2, 3.2, 1.8); say('除了資料和程式碼本身', '就是這五個變數'); },
+    () => { vars.forEach((v) => v.mood('happy')); txt(rm, '就這 5 個變數'); say('除了資料和程式碼本身', '就是這五個變數'); },
     () => { vars[3].set('8B？4B？'); say('各系統不一樣', '指標是 8 byte 還是 4 byte？'); },
     () => { [4, 4, 4, 8, 4].forEach((b, i) => vars[i].set(b + 'B')); badge = tag('合計 24 bytes', 'ptr alt', 2.6, 1.0, 1.8); say('在某個系統上合計 24 bytes'); },
     async () => {
       for (const N of ['200 筆', '2000 筆', '2 萬筆']) { txt(dl, '資料 ' + N); await wait(tok, 500); }
-      ok('資料再多，還是 24 bytes', 2.6, 2.0, 1.8);
+      txt(rm, '資料再多，還是 24 bytes ✓'); rm.element.className = 'lab-label good';
       say('20、200、2000、2 萬筆都一樣', '額外空間跟資料量無關');
     },
   ]);
@@ -1770,34 +1792,38 @@ FRAG.push(['cplx-lin-rec2', '遞迴加總：recursive formula ＋ terminating co
 
 // 19:30 遞迴版真的比較省空間嗎？
 FRAG.push(['cplx-lin-recstack', '遞迴求和：每層都擱在一邊 → 約 16n bytes', async (tok) => {
-  P.fresh([0, 7, 13], [0, 2.2, 0]);
-  let vs = [], badge, loopB, frames = [], cmp;
+  P.fresh([0, 7, 13], [0, 2.4, 0]);
+  frameHold(-6.4, 0, -1.2, 6.4, 6.2, 1.2);
+  // left: the three variables and their byte counts; right: the stack of
+  // waiting tasks with one remark beside it; one headline at the top.
+  // Each remark is rewritten as the lecture moves on, never stacked
+  let vs = [], badge, loopB, frames = [], cmp, head, rr;
   const frame = (k) => {
-    const y = 0.25 + frames.length * 0.45;
-    const m = cube(k + ' 號任務：16B', k === 10 ? C_A : '#f3c99a', [3.0, 0.4, 1.4], 3.0, y, -0.4);
+    const y = 0.27 + frames.length * 0.6;
+    const m = cube(k + ' 號任務：16B', k === 10 ? C_A : '#f3c99a', [3.0, 0.5, 1.4], 2.6, y, -0.4);
     frames.push(m); return m;
   };
   await run(tok, [
-    () => { T('那遞迴版要花多少空間？', 0, 4.8, -1.6); say('遞迴版要花多少空間？', '一樣看函式裡有哪些變數'); },
+    () => { head = T('那遞迴版要花多少空間？', -1.6, 5.6, -1.2); say('遞迴版要花多少空間？', '一樣看函式裡有哪些變數'); },
     () => {
       vs = [buddy('list', '8B', C_E, -5.6, 0, 0.6, 0.65), buddy('n', '4B', C_E, -4.3, 0, 0.6, 0.65), buddy('回傳值', '4B', C_E, -3.0, 0, 0.6, 0.65)];
       say('輸入：list 和 n', '輸出：一個回傳值 → 三個變數');
     },
-    () => { badge = tag('16 bytes', 'ptr alt', -4.3, 2.3, 0.6); loopB = note('迴圈版：24 bytes', -4.3, 2.9, 0.6); say('看起來只要 16 bytes', '上一個例子要 24'); },
+    () => { badge = P.keep(tag('16 bytes', 'ptr alt', -4.3, 2.3, 0.6)); loopB = P.keep(note('迴圈版：24 bytes', -4.3, 2.9, 0.6)); say('看起來只要 16 bytes', '上一個例子要 24'); },
     () => { cmp = T('真的比較省嗎？', -4.3, 3.6, 0.6); say('真的只要 16 個 byte 嗎？', '遞迴真的比較省空間嗎？'); },
     () => { txt(cmp, '答案：沒有比較好'); vs.forEach((v) => v.mood('wow')); say('答案：沒有比前一個好'); },
-    () => { frame(10); note('rsum(10) = rsum(9) + list[9]', 3.0, 0.2, 1.2); say('算 10 個元素', '換成 list[9] 加上前 9 個'); },
+    () => { frame(10); rr = P.note('rsum(10) = rsum(9) + list[9]', frames[0], 'right', 'note'); say('算 10 個元素', '換成 list[9] 加上前 9 個'); },
     () => { frame(9); say('再把前 9 個換成 list[8] + 前 8 個', '一步一步置換'); },
-    () => { tag('10 號還沒做完！', 'bad', 6.0, 0.6, -0.4); say('做 9 號時，10 號還沒做完', '要等 9 號的結果（例如 5566）才能 +3'); },
-    () => { tint(frames[0], '#d9b48a'); note('先擱在一邊', 6.0, 1.2, -0.4); say('電腦要有地方記住', '10 號任務先擱在一邊'); },
-    () => { frame(8); tint(frames[1], '#d9b48a'); say('做 8 號時，9 號也擱在一邊'); },
-    async () => { for (let k = 7; k >= 1; k--) { frame(k); await wait(tok, 160); } say('一路做到 1 號', '2～10 號全都擱在一邊'); },
-    () => { T('擱在一邊 = 佔用額外空間', 3.0, 5.2, -0.4); say('「擱在一邊」要佔額外的記憶體'); },
+    () => { txt(rr, '10 號還沒做完！'); rr.element.className = 'lab-label bad'; say('做 9 號時，10 號還沒做完', '要等 9 號的結果（例如 5566）才能 +3'); },
+    () => { tint(frames[0], '#d9b48a'); txt(rr, '10 號先擱在一邊'); rr.element.className = 'lab-label note'; say('電腦要有地方記住', '10 號任務先擱在一邊'); },
+    () => { frame(8); tint(frames[1], '#d9b48a'); txt(rr, '9 號也擱在一邊'); rr.position.y = frames[1].position.y; say('做 8 號時，9 號也擱在一邊'); },
+    async () => { for (let k = 7; k >= 1; k--) { frame(k); await wait(tok, 160); } txt(rr, '2～10 號全都擱在一邊'); rr.position.y = 3.0; say('一路做到 1 號', '2～10 號全都擱在一邊'); },
+    () => { txt(rr, '擱在一邊 = 佔用額外空間'); say('「擱在一邊」要佔額外的記憶體'); },
     () => { txt(badge, '16 × n = 160 bytes（n = 10）'); frames.forEach((f) => glow(f, '#5a3a00')); say('每個任務各有自己的 16 bytes', '同時存在 → 16n，n = 10 就是 160'); },
-    () => { no('n 夠大時比迴圈版（固定 24B）更耗空間', 0, 0.2, 2.8); say('n 夠大時', '反而比固定 24 bytes 的迴圈版更耗空間'); },
-    () => { note('觀念不清楚：去讀課本的 recursion', -4.3, 4.3, 0.6); say('對 recursion 不熟的', '強烈建議去讀課本'); },
-    () => { note('tail recursion：某些語言可以省下來（閱讀作業）', -2.0, 5.6, -1.6); say('課本的 tail recursion', '某些語言可以變精簡，不佔那麼多空間'); },
-    () => { T('要能比較：花多少空間、多少時間', 0, 6.3, -1.6); say('看程式碼要能算出空間、時間', '再拿來比較'); },
+    () => { txt(cmp, 'n 夠大時比迴圈版（固定 24B）更耗空間'); cmp.element.className = 'lab-label bad'; say('n 夠大時', '反而比固定 24 bytes 的迴圈版更耗空間'); },
+    () => { txt(head, '觀念不清楚：去讀課本的 recursion'); head.element.className = 'lab-label note'; say('對 recursion 不熟的', '強烈建議去讀課本'); },
+    () => { txt(head, 'tail recursion：某些語言可以省下來（閱讀作業）'); say('課本的 tail recursion', '某些語言可以變精簡，不佔那麼多空間'); },
+    () => { txt(head, '要能比較：花多少空間、多少時間'); head.element.className = 'lab-label say'; say('看程式碼要能算出空間、時間', '再拿來比較'); },
   ]);
 }]);
 
@@ -1881,8 +1907,11 @@ FRAG.push(['cplx-intro-recipe', '演算法是什麼：程式譜', async (tok) =>
 
 // 17:40 看待演算法的五個面向
 FRAG.push(['cplx-intro-five', '演算法的五個面向（Knuth）', async (tok) => {
-  P.fresh([0, 6.5, 12.5], [0, 1.2, 0]);
-  let inp, algo, out, pg, pc, cards = list(0, 4.6, -2.4, 0.55);
+  P.fresh([0, 6.5, 12.5], [0, 2.2, 0]);
+  frameHold(-6.0, 0, -2.4, 6.0, 7.0, 3.0);
+  // the five cards: a left-aligned column on the back plane; the input →
+  // algorithm → output picture in front; one remark (r) between them is rewritten
+  let inp, algo, out, pg, pc, r, cards = list(-2.8, 6.1, -2.4, 0.74, true);
   await run(tok, [
     async () => {
       algo = prop('file', 0, 0, 0, 1.2, '演算法'); inp = prop('parcel', -4.8, 0, 0, 0.8, '輸入資料');
@@ -1897,14 +1926,14 @@ FRAG.push(['cplx-intro-five', '演算法的五個面向（Knuth）', async (tok)
       say('經過運算，變成想要的形式', '→ 輸出（少數短程式可以沒有輸入）');
     },
     () => { pg = buddy('programmer', '', C_B, -3.0, 0, 2.2, 0.8); cards.add('③ Definiteness：寫清楚、不模稜兩可'); say('描述要明確', '不能模稜兩可'); },
-    () => { pg.set('打蛋！'); pg.mood('happy'); note('食譜寫「打蛋」→ 廚師看了就做', -3.0, 2.4, 2.2); say('像番茄炒蛋的食譜寫「打蛋」', '看的人照著就做得到'); },
+    () => { pg.set('打蛋！'); pg.mood('happy'); r = note('食譜寫「打蛋」→ 廚師看了就做', 0, 2.5, 1.4); say('像番茄炒蛋的食譜寫「打蛋」', '看的人照著就做得到'); },
     () => { pc = prop('cpu', 3.0, 0, 2.2, 0.9, 'computer'); cards.add('④ Effectiveness：電腦做得到'); say('Effectiveness：電腦要做得到', '不能天馬行空變魔術'); },
-    () => { note('平行演算法 → 一般平台做不到', 3.0, 1.4, 3.2); say('跟平台有關', '平行演算法放到一般平台就做不到'); },
+    () => { txt(r, '平行演算法 → 一般平台做不到'); say('跟平台有關', '平行演算法放到一般平台就做不到'); },
     () => { idx('Definiteness 給人看', -3.0, -0.1, 3.2); idx('Effectiveness 給電腦做', 3.0, -0.1, 3.6); say('Definiteness 是給 programmer 看', 'Effectiveness 是給 computer 做'); },
     () => { cards.add('⑤ Finiteness：照步驟做，最後會停'); say('程式要跑得完、要能停下來', '不能跑到天荒地老'); },
-    () => { no('不是「程式碼行數有限」', 0, 2.4, 1.0); say('不是說程式只有有限行', '兩三行就能寫出無窮迴圈'); },
-    () => { ok('Output 隱含：要正確', 4.8, 2.0, 0); say('輸出隱含著「要正確」', '不能隨便吐一個答案'); },
-    () => { T('五個面向：Stanford 的 Knuth 提出', 0, 5.4, -2.4); say('這五個面向由演算法大師', 'Stanford 退休教授 Knuth 提出'); },
+    () => { txt(r, '不是「程式碼行數有限」'); r.element.className = 'lab-label bad'; say('不是說程式只有有限行', '兩三行就能寫出無窮迴圈'); },
+    () => { txt(r, 'Output 隱含：要正確'); r.element.className = 'lab-label good'; say('輸出隱含著「要正確」', '不能隨便吐一個答案'); },
+    () => { T('五個面向：Stanford 的 Knuth 提出', 0, 6.9, -2.4); say('這五個面向由演算法大師', 'Stanford 退休教授 Knuth 提出'); },
   ]);
 }]);
 
@@ -1948,15 +1977,18 @@ FRAG.push(['cplx-intro-minidx', '找最小值的 index：先抓第 0 個，再�
 
 // 30:57 正確性證明：loop invariant
 FRAG.push(['cplx-intro-invariant', 'Loop invariant：每輪結束都成立的性質', async (tok) => {
-  P.fresh([0, 6.5, 12.5], [0, 1.0, 0]);
+  P.fresh([0, 6.5, 12.5], [0, 1.6, 0]);
+  frameHold(-5.0, 0, -1.4, 6.4, 4.8, 1.6);
   const arr = row(MIN8, -3.5, 0, 1.0);
-  let claim, inv, box, kL, hand;
+  // one centred column over the array: the claim (back), one remark r under it
+  // (rewritten), the invariant in front, the covered range right on the array
+  let claim, inv, box, kL, hand, r;
   const cover = (k) => { box.scale.x = (k + 1); box.position.x = -3.5 + k / 2; txt(kL, 'arr[0..' + k + '] 的最小值'); kL.position.x = -3.5 + k / 2; };
   await run(tok, [
     () => { claim = T('先把「正確」寫成數學命題', 0, 4.4, -1.4); say('先把正確性', '變成一個數學命題'); },
     () => { hand = buddy('m', '5', C_A, 5.6, 0, 1.0, 0.75); say('演算法回傳一個 m'); },
     () => { txt(claim, 'arr[m] ≤ 任何其他 arr[j]'); glow(arr[5], '#5a3a00'); say('m 的性質：arr[m] 不比任何 arr[j] 大', '也就是最小值'); },
-    () => { note('len = 1000 要跑 1000 步…不好直接證', 0, 3.6, -1.4); say('跑了上千步', '乍看不容易證明'); },
+    () => { r = note('len = 1000 要跑 1000 步…不好直接證', 0, 3.6, -1.4); say('跑了上千步', '乍看不容易證明'); },
     () => { inv = T('改證：第 k 輪結束時…', 0, 2.8, 1.6); glow(arr[5], null); say('改成看迴圈的每一輪', '每一輪結束時發生什麼事'); },
     async () => {
       box = P.ghostBox('#e8b04a', 1, 1.2, 1.2); box.position.set(-3.5, 0.5, 0);
@@ -1967,15 +1999,15 @@ FRAG.push(['cplx-intro-invariant', 'Loop invariant：每輪結束都成立的性
     },
     async () => { cover(2); await wait(tok, 400); say('第 2 輪：第 2 個跟目前比較小的比', '9 比 4 大 → m 還是 1；每輪多檢查一個'); },
     () => { txt(inv, '第 k 輪結束：m 存的是 arr[0..k] 的最小值'); say('第 k 輪結束時', 'm 存的是 0 到 k 範圍內的最小值'); },
-    () => { ok('k = 1 成立：容易驗證', -4.6, 3.4, 1.6); say('i = 1 時不難證明'); },
-    () => { ok('假設 k 成立 → 證 k+1 也成立', 0, 3.4, 2.6); say('假設 i = k 對', '證明 i = k+1 也對 → 數學歸納法'); },
+    () => { txt(r, 'k = 1 成立：容易驗證'); r.element.className = 'lab-label good'; say('i = 1 時不難證明'); },
+    () => { txt(r, '假設 k 成立 → 證 k+1 也成立'); say('假設 i = k 對', '證明 i = k+1 也對 → 數學歸納法'); },
     async () => {
       for (let k = 3; k <= 7; k++) { cover(k); if (MIN8[k] < MIN8[Number(hand.val.element.textContent)]) { arr.forEach((a) => glow(a, null)); glow(arr[k], '#5a3a00'); hand.set(String(k)); } await wait(tok, 300); }
       hand.mood('happy');
       say('1、2、3 … 一路到 len−1 都對', '演算法最後就是對的');
     },
-    () => { note('離散數學：證明技巧與數學工具', -4.6, 2.6, 2.6); say('像數學歸納法這類工具', '離散數學課會教'); },
-    () => { tag('loop invariant：迴圈裡維持不變的性質', 'ptr alt', 0, 5.2, -1.4); say('這種每輪結束都成立的性質', '叫做 loop invariant'); },
+    () => { txt(r, '離散數學：證明技巧與數學工具'); r.element.className = 'lab-label note'; say('像數學歸納法這類工具', '離散數學課會教'); },
+    () => { txt(claim, 'loop invariant：迴圈裡維持不變的性質'); claim.element.className = 'lab-label ptr alt'; say('這種每輪結束都成立的性質', '叫做 loop invariant'); },
   ]);
 }]);
 
@@ -2126,54 +2158,67 @@ FRAG.push(['cplx-intro-arrow', '問答：pseudocode 和註解差在哪、← 是
 
 // 1:08:12 Data structure 是什麼
 FRAG.push(['cplx-intro-dsdef', 'Data structure：在電腦裡收納資料的方式', async (tok) => {
-  P.fresh([0, 6.5, 13], [0, 1.4, 0]);
-  let papers = [], lbl;
+  P.fresh([0, 6.5, 13], [0, 1.8, 0]);
+  frameHold(-5.6, 0, -1.8, 5.6, 5.2, 2.0);
+  // headline + definition at the top stay; below them one example at a time
+  // (cupboards → input/output data → wardrobes → exam papers), each cleared
+  // before the next; one remark r under the definition is rewritten
+  let papers = [], piles = [], lbl, head, r, ex = [];
+  const clear = () => { ex.forEach(remove); ex = []; };
   const pile = (x, z, n, color) => { const g = []; for (let k = 0; k < n; k++) g.push(cube('', color || '#ffffff', [0.9, 0.06, 1.2], x, 0.04 + k * 0.08, z)); return g; };
   await run(tok, [
-    () => { T('接下來：data structure 是什麼？', 0, 4.8, -1.8); say('講完 algorithm', '接下來是 data structure'); },
+    () => { head = T('接下來：data structure 是什麼？', 0, 4.8, -1.8); say('講完 algorithm', '接下來是 data structure'); },
     () => { tag('organizing your data：整理資料的方式', 'ptr alt', 0, 4.1, -1.8); say('Data structure：在電腦裡', '整理你的資料的方式'); },
-    () => { icon('👕', '衣櫃：收衣服', -5.0, 2.6, -1.0); icon('🧂', '調味料櫃', -3.0, 2.6, -1.0); say('其實就是「收納」', '衣櫃收衣服、櫃子收調味料'); },
-    () => { note('structure = 一種收納方式；這裡收的是資料', 0, 3.3, -1.8); say('structure 是收納的方式', '這裡要收納的是資料'); },
-    () => { icon('🧊', '冰箱：food structure', -1.0, 2.6, -1.0); say('冰箱是你的 food structure'); },
-    () => { icon('🎻', '樂團：player structure', 1.0, 2.6, -1.0); say('交響樂團是收納演奏者的方式', '對應樂譜：player structure'); },
-    async () => { const d = pkt('input → algorithm → output：都是 data', 3.6, 2.6, -1.0); await wait(tok, 300); say('algorithm 把 input 變成 output', '從宏觀看，這些都是 data'); },
-    () => { prop('disk', 5.2, 0, 1.0, 0.8, '記憶體？磁碟？'); say('這些 data 要怎麼擺、放在哪', '就是 data structure'); },
-    () => { icon('🗄️', '整整齊齊／依顏色分', -5.0, 0.6, 1.6); icon('🌀', '亂七八糟丟進去', -3.0, 0.6, 1.6); say('每個人的衣櫃收法不一樣', '有的整齊，有的亂丟'); },
-    () => { papers = pile(-0.4, 1.6, 12); lbl = T('200 份考卷要發回去', 0.6, 1.6, 2.8); say('例子：200 份考卷要發回去', '怎麼收納才能讓大家很快拿到？'); },
-    () => { papers.forEach((p, k) => { p.position.x = -0.4 + (k % 3 - 1) * 0.12; p.rotation.y = (k % 4) * 0.2; }); txt(lbl, '① 照交卷順序隨便疊'); say('隨便疊：交來或改完的順序'); },
-    () => { papers.forEach((p) => { p.rotation.y = 0; p.position.x = -0.4; }); txt(lbl, '② 依分數高到低排'); say('依分數從高排到低', '方便看分布、比較'); },
+    () => { ex.push(icon('👕', '衣櫃：收衣服', -4.5, 2.0, -1.0), icon('🧂', '調味料櫃', -1.5, 2.0, -1.0)); say('其實就是「收納」', '衣櫃收衣服、櫃子收調味料'); },
+    () => { r = note('structure = 一種收納方式；這裡收的是資料', 0, 3.3, -1.8); say('structure 是收納的方式', '這裡要收納的是資料'); },
+    () => { ex.push(icon('🧊', '冰箱：food structure', 1.5, 2.0, -1.0)); say('冰箱是你的 food structure'); },
+    () => { ex.push(icon('🎻', '樂團：player structure', 4.5, 2.0, -1.0)); say('交響樂團是收納演奏者的方式', '對應樂譜：player structure'); },
+    async () => { clear(); ex.push(pkt('input → algorithm → output：都是 data', 0, 2.0, -1.0)); await wait(tok, 300); say('algorithm 把 input 變成 output', '從宏觀看，這些都是 data'); },
+    () => { ex.push(prop('disk', 0, 0, 0.4, 0.8, '記憶體？磁碟？')); say('這些 data 要怎麼擺、放在哪', '就是 data structure'); },
+    () => { clear(); ex.push(icon('🗄️', '整整齊齊／依顏色分', -2.2, 2.0, -1.0), icon('🌀', '亂七八糟丟進去', 2.2, 2.0, -1.0)); say('每個人的衣櫃收法不一樣', '有的整齊，有的亂丟'); },
+    () => { clear(); papers = pile(0, 1.0, 12); lbl = T('200 份考卷要發回去', 0, 1.6, 1.0); say('例子：200 份考卷要發回去', '怎麼收納才能讓大家很快拿到？'); },
+    () => { papers.forEach((p, k) => { p.position.x = (k % 3 - 1) * 0.12; p.rotation.y = (k % 4) * 0.2; }); txt(lbl, '① 照交卷順序隨便疊'); say('隨便疊：交來或改完的順序'); },
+    () => { papers.forEach((p) => { p.rotation.y = 0; p.position.x = 0; }); txt(lbl, '② 依分數高到低排'); say('依分數從高排到低', '方便看分布、比較'); },
     () => { txt(lbl, '③ 依學號排'); say('依學號排', '老師登記成績比較方便'); },
-    () => { papers.forEach(kill); papers = []; for (let d = 0; d < 10; d++) pile(-1.8 + (d % 5) * 0.75, 1.0 + Math.floor(d / 5) * 1.3, 2, d % 2 ? '#f3e7c8' : '#ffffff'); txt(lbl, '④ 依學號尾數分 10 堆'); say('依學號尾數分成 10 堆', '發回去時大家各自去找'); },
-    () => { note('領口罩：身分證尾數奇偶分流', 4.6, 0.3, 2.8); say('就像領口罩用身分證尾數分流', '也是一種收納（人潮）'); },
-    () => { tag('怎麼收納 ← 看使用情境', 'ptr alt', 0.6, 3.5, 2.8); say('要怎麼整理', '跟使用情境有關'); },
-    () => { T('用什麼 data structure ↔ 要解決的問題（algorithm）', 0, 5.6, -1.8); say('電腦裡：用什麼 data structure', '跟要用的 algorithm 有關'); },
+    () => { papers.forEach(kill); papers = []; for (let d = 0; d < 10; d++) piles.push(...pile(-1.5 + (d % 5) * 0.75, 0.4 + Math.floor(d / 5) * 1.3, 2, d % 2 ? '#f3e7c8' : '#ffffff')); txt(lbl, '④ 依學號尾數分 10 堆'); say('依學號尾數分成 10 堆', '發回去時大家各自去找'); },
+    () => { txt(r, '領口罩：身分證尾數奇偶分流'); say('就像領口罩用身分證尾數分流', '也是一種收納（人潮）'); },
+    () => { txt(r, '怎麼收納 ← 看使用情境'); r.element.className = 'lab-label ptr alt'; say('要怎麼整理', '跟使用情境有關'); },
+    () => { txt(head, '用什麼 data structure ↔ 要解決的問題（algorithm）'); say('電腦裡：用什麼 data structure', '跟要用的 algorithm 有關'); },
   ]);
 }]);
 
 // 1:15:20 資料結構可以加速演算法
 FRAG.push(['cplx-intro-dsfast', '收納得好，演算法就快：1000 → 10', async (tok) => {
-  P.fresh([0, 6.5, 12.5], [0, 1.2, 0]);
-  let arr, cost, l;
+  P.fresh([0, 6.5, 12.5], [0, 1.8, 0]);
+  frameHold(-5.6, 0, -1.6, 6.2, 5.0, 1.0);
+  // the list on the back plane at the left, the cost on the right in front,
+  // the array in the middle; the headline at the top is rewritten at the end
+  let arr, cost, l, head;
   await run(tok, [
-    () => { T('想設計有效率的演算法 → 從收納資料下手', 0, 4.6, -1.6); say('想要有效率的演算法', '可以從收納資料的方式下手'); },
-    () => { arr = row(MIN8, -3.5, 0, 1.0); l = list(-4.0, 3.6, 1.8); l.add('selection sort：每次選最小的放前面'); say('selection sort', '每次選一個最小的放到最前面'); },
+    () => { head = T('想設計有效率的演算法 → 從收納資料下手', 0, 4.8, -1.6); say('想要有效率的演算法', '可以從收納資料的方式下手'); },
+    () => { arr = row(MIN8, -3.5, 0, 1.0); l = list(-5.4, 3.7, -1.6, 0.58, true); l.add('selection sort：每次選最小的放前面'); say('selection sort', '每次選一個最小的放到最前面'); },
     () => { l.add('最花力氣的：找出最小的在哪', 'bad'); say('它最花力氣的步驟', '是找出最小的在哪裡'); },
     () => { l.add('之後會教：很快就找到最小的資料結構', 'good'); say('之後會教好幾個資料結構', '能很快找到最小的'); },
-    async () => { cost = tag('1000 筆亂放：一個一個找 → 1000', 'ptr alt', 3.0, 2.0, 0); const h = pkt('找', -3.5, 1.3, 0); await travel(tok, h, V3(-3.5, 1.3, 0), V3(3.5, 1.3, 0), 1400); remove(h); say('1000 筆隨便亂放', '一個一個找要花 1000'); },
+    async () => { cost = tag('1000 筆亂放：一個一個找 → 1000', 'ptr alt', 3.0, 1.8, 0); const h = pkt('找', -3.5, 1.05, 0.4); await travel(tok, h, V3(-3.5, 1.05, 0.4), V3(3.5, 1.05, 0.4), 1400); remove(h); say('1000 筆隨便亂放', '一個一個找要花 1000'); },
     () => { txt(cost, '用特別方式排好 → 約 10'); glow(arr[5], '#0f5a3a'); say('用某種特別方式排好', '只要大概 10 的力氣'); },
-    () => { ok('selection sort 就快得多', 3.0, 2.7, 0); say('從 1000 變成 10', 'selection sort 就快得多'); },
-    () => { icon('📖', '食譜', 3.4, 3.8, -1.6); icon('🧂', '廚房收納', 5.2, 3.8, -1.6); say('做菜要好食譜', '也要把廚房收納好'); },
-    () => { T('algorithm ≈ 食譜　data structure ≈ 調味料和食材的擺法', 0, 5.4, -1.6); say('演算法和資料結構', '就像食譜和廚房擺放的關係'); },
+    () => { ok('selection sort 就快得多', 3.0, 2.5, 0); say('從 1000 變成 10', 'selection sort 就快得多'); },
+    () => { icon('📖', '食譜', 3.4, 3.9, -1.6); icon('🧂', '廚房收納', 5.4, 3.9, -1.6); say('做菜要好食譜', '也要把廚房收納好'); },
+    () => { txt(head, 'algorithm ≈ 食譜　data structure ≈ 調味料和食材的擺法'); say('演算法和資料結構', '就像食譜和廚房擺放的關係'); },
   ]);
 }]);
 
 // 1:18:20 get、insert 與維護規則
 FRAG.push(['cplx-intro-dsops', '每個資料結構：get、insert，還有維護規則', async (tok) => {
-  P.fresh([0, 6.5, 12.5], [0, 1.2, 0]);
-  let l, stacks = [], cl;
+  P.fresh([0, 6.5, 12.5], [0, 1.8, 0]);
+  frameHold(-5.8, 0, -1.6, 6.4, 5.0, 2.6);
+  // part 1: the wardrobe and a left-aligned checklist; part 2 (the piles of
+  // clothes) pushes the checklist back and greys it, with one remark r beside
+  // the piles; part 3 clears the checklist and starts a short new one
+  let l, l2, stacks = [], cl, r;
+  const fade = (on) => l.items.forEach((x) => { x.element.style.transition = 'opacity .5s'; x.element.style.opacity = on ? '0.25' : ''; });
   const pileAt = (x, n) => { const s = []; for (let k = 0; k < n; k++) s.push(cube('', k % 2 ? '#f4a56a' : '#7cb8ee', [1.0, 0.25, 0.8], x, 0.13 + k * 0.27, 1.6)); return s; };
   await run(tok, [
-    () => { cl = prop('warehouse', -4.6, 0, -1.0, 1.0, '衣櫃（資料結構）'); l = list(2.6, 4.4, -1.6); l.add('get：把東西拿出來'); say('每個資料結構至少兩件事', '一：怎麼拿出來（get）'); },
+    () => { cl = prop('warehouse', -4.6, 0, -1.0, 1.0, '衣櫃（資料結構）'); l = list(0.2, 4.8, -1.6, 0.68, true); l.add('get：把東西拿出來'); say('每個資料結構至少兩件事', '一：怎麼拿出來（get）'); },
     () => { l.add('insert：把東西放進去'); say('二：怎麼放進去（insert）'); },
     async () => { const s = pkt('紅衣服', -1.4, 1.4, 1.0); await travel(tok, s, V3(-1.4, 1.4, 1.0), V3(-4.2, 1.0, -0.4), 1000); say('get、insert 本身就是一段程式', '衣櫃依顏色分：放進去前要先看顏色'); },
     () => { l.add('照大小排：先檢查、再塞到適當位置'); say('衣服照大小排', '放進去時還要檢查、塞到適當位置'); },
@@ -2181,51 +2226,65 @@ FRAG.push(['cplx-intro-dsops', '每個資料結構：get、insert，還有維護
     () => { l.add('規則下：怎麼放才持續符合？怎麼拿最想要的？'); say('資料結構定義了一種規則', '放進去要符合規則，拿出想要的'); },
     () => { l.add('常拿的放近一點 → 效率好', 'good'); say('常拿的東西放在快拿得到的地方', '整體效率就好'); },
     () => { l.add('還要「維護」規則', 'ptr'); say('收納規則下不只有放和拿', '還要維護規則'); },
-    () => { stacks = [pileAt(-2.0, 5), pileAt(0, 4), pileAt(2.0, 5)]; say('一開始：怎麼建構出符合規則的衣櫃'); },
-    () => { note('規則：每疊差不多一樣高（5 件、4 件 OK）', 0, 2.2, 2.6); say('例如每疊衣服要差不多一樣高', '5 件和 4 件可以'); },
-    async () => { const top = stacks[1].pop(); await travel(tok, top, top.position.clone(), V3(0, 2.6, 3.2), 600); kill(top); no('5 件 vs 3 件：落差太大！', 0, 1.6, 3.4); say('從 4 件那疊拿走一件，剩 3 件', '落差太大 → 要調整'); },
-    async () => { const mv = stacks[0].pop(); await travel(tok, mv, mv.position.clone(), V3(0, 0.13 + 3 * 0.27, 1.6), 800); ok('維護：調整成符合規則', 0, 3.0, 3.4); say('get 只是偷看一下', '真的拿走（移除）後要維護'); },
-    () => { l.add('維護的工作也是程式 = 演算法'); say('規則要有對應的程式碼來維護', '這些程式碼都是演算法'); },
-    () => { l.add('最隱藏的力氣：維護', 'bad'); say('資料結構最隱藏的力氣', '就是維護'); },
-    () => { T('重點：DS 是收納資料的方式；DS 和演算法相輔相成', 0, 5.6, -1.6); say('兩個重點：DS 是收納資料的方式', 'DS 和 algorithm 相輔相成'); },
+    () => { fade(true); stacks = [pileAt(-2.0, 5), pileAt(0, 4), pileAt(2.0, 5)]; say('一開始：怎麼建構出符合規則的衣櫃'); },
+    () => { r = P.note('規則：每疊差不多一樣高（5 件、4 件 OK）', stacks[2][4], 'right', 'note'); say('例如每疊衣服要差不多一樣高', '5 件和 4 件可以'); },
+    async () => { const top = stacks[1].pop(); await travel(tok, top, top.position.clone(), V3(0, 2.6, 3.2), 600); kill(top); txt(r, '5 件 vs 3 件：落差太大！'); r.element.className = 'lab-label bad'; say('從 4 件那疊拿走一件，剩 3 件', '落差太大 → 要調整'); },
+    async () => { const mv = stacks[0].pop(); await travel(tok, mv, mv.position.clone(), V3(0, 0.13 + 3 * 0.27, 1.6), 800); txt(r, '維護：調整成符合規則'); r.element.className = 'lab-label good'; say('get 只是偷看一下', '真的拿走（移除）後要維護'); },
+    () => { l.items.forEach(kill); l2 = list(0.2, 4.6, -1.6, 0.58, true); l2.add('維護的工作也是程式 = 演算法'); say('規則要有對應的程式碼來維護', '這些程式碼都是演算法'); },
+    () => { l2.add('最隱藏的力氣：維護', 'bad'); say('資料結構最隱藏的力氣', '就是維護'); },
+    () => { T('重點：DS 是收納資料的方式；DS 和演算法相輔相成', 0, 5.4, -1.6); say('兩個重點：DS 是收納資料的方式', 'DS 和 algorithm 相輔相成'); },
   ]);
 }]);
 
 // 1:25:24 為什麼要學 DSA：計算與儲存資源
 FRAG.push(['cplx-intro-resources', '計算與儲存：電腦的兩大資源', async (tok) => {
-  P.fresh([0, 6.5, 12.5], [0, 1.2, 0]);
-  let st, cp, l;
+  P.fresh([0, 6.5, 12.5], [0, 1.8, 0]);
+  frameHold(-6.0, 0, -2.6, 6.0, 5.0, 1.8);
+  // part 1: CPU (left) and storage (right), each remark above its own prop;
+  // part 2 (using them well): both step back and grey, a short list in the
+  // middle and the three examples in one row in front
+  let st, cp, l, n1, n2, t;
   await run(tok, [
     () => { T('為什麼要學這門課？', 0, 4.8, -1.6); say('為什麼要學 DSA？'); },
     () => { note('algorithm：電腦怎麼執行　DS：電腦怎麼收納資料', 0, 4.1, -1.6); say('Algorithm 描述電腦執行的方式', 'Data structure 描述收納資料的方式'); },
     () => { st = prop('disk', 4.4, 0, -0.6, 1.1, 'DS ↔ Storage：記憶體、硬碟'); say('Data structure 對應 storage 資源', '記憶體、硬碟'); },
     () => { cp = prop('cpu', -4.4, 0, -0.6, 1.1, 'Algorithm ↔ CPU、GPU、雲端機器'); say('Algorithm 對應另一種資源', 'CPU、GPU、雲端的多台機器'); },
-    () => { note('計算很珍貴：花時間、花能量', -4.4, 1.8, 1.0); say('演算法在節省計算資源', '計算要花時間、花能量'); },
-    () => { note('儲存也珍貴：再便宜也有限', 4.4, 1.8, 1.0); say('儲存也是珍貴的資源', '硬碟、RAM 再便宜也有限'); },
+    () => { n1 = note('計算很珍貴：花時間、花能量', -4.4, 2.7, -0.6); say('演算法在節省計算資源', '計算要花時間、花能量'); },
+    () => { n2 = note('儲存也珍貴：再便宜也有限', 4.4, 2.7, -0.6); say('儲存也是珍貴的資源', '硬碟、RAM 再便宜也有限'); },
     () => { tag('Computation ＋ Storage = 兩大資源', 'ptr alt', 0, 3.3, -1.0); say('傳統電腦的兩大資源', '計算和儲存'); },
-    async () => { const t = pkt('多一點計算 ⇄ 少一點儲存', 0, 1.2, -0.6); await travel(tok, t, V3(-2, 1.2, -0.6), V3(2, 1.2, -0.6), 900); say('兩者相輔相成，也常有 trade-off', '用多一點計算換少一點儲存'); },
-    () => { l = list(0, 0.6, 2.0); l.add('妥善使用 = 把使用情境考慮進去：要很快？儲存很小？'); say('妥善使用資源', '要把使用情境考慮進去'); },
+    async () => { t = pkt('多一點計算 ⇄ 少一點儲存', 0, 1.2, -0.6); await travel(tok, t, V3(-2, 1.2, -0.6), V3(2, 1.2, -0.6), 900); say('兩者相輔相成，也常有 trade-off', '用多一點計算換少一點儲存'); },
+    async () => { [n1, n2, t].forEach(kill); await recede(tok, [cp, st]); l = list(0, 2.6, 0.8, 0.6); l.add('妥善使用 = 把使用情境考慮進去：要很快？儲存很小？'); say('妥善使用資源', '要把使用情境考慮進去'); },
     () => { l.add('要考慮：執行時間、記憶體、電力…'); say('想要的執行時間、能忍受的記憶體', '還有電力'); },
-    () => { icon('⌚', '穿戴裝置：太耗電 30 分鐘就要充', -5.4, 0.6, 3.2); say('穿戴式裝置太耗電', '30 分鐘就要充一次'); },
-    () => { icon('🌐', '網路頻寬', 0, 0.6, 3.6); say('網路年代：要用多少頻寬'); },
-    () => { icon('👩‍💻', '人力：要花多少人寫', 5.4, 0.6, 3.2); say('甚至：要花多少人力把程式寫出來'); },
+    () => { icon('⌚', '穿戴裝置：太耗電 30 分鐘就要充', -4.2, 0.9, 1.8); say('穿戴式裝置太耗電', '30 分鐘就要充一次'); },
+    () => { icon('🌐', '網路頻寬', 0, 0.9, 1.8); say('網路年代：要用多少頻寬'); },
+    () => { icon('👩‍💻', '人力：要花多少人寫', 4.2, 0.9, 1.8); say('甚至：要花多少人力把程式寫出來'); },
   ]);
 }]);
 
 // 1:31:25 各種 trade-off
 FRAG.push(['cplx-intro-tradeoff', 'Trade-off：愛整理 vs 隨便丟', async (tok) => {
-  P.fresh([0, 6.5, 12.5], [0, 1.2, 0]);
-  let tidy, messy;
+  P.fresh([0, 6.5, 12.5], [0, 1.8, 0]);
+  frameHold(-5.8, 0, -2.6, 5.8, 5.0, 2.0);
+  // part 1: the two people, each with a short column of remarks above them;
+  // part 2 (platforms): the people step back and grey, their remarks fade,
+  // and one remark r beside the platform props is rewritten
+  let tidy, messy, head, tl, ml, r;
+  const fadeL = (lst) => lst.items.forEach((x) => { x.element.style.transition = 'opacity .5s'; x.element.style.opacity = '0.25'; });
   await run(tok, [
-    () => { T('5 分鐘寫好，卻要跑很久：划算嗎？看情境', 0, 4.8, -1.6); say('花 5 分鐘寫的短程式，卻要跑很久', '划不划算，看情境'); },
-    () => { tidy = buddy('愛整理的人', '', C_C, -3.6, 0, 0.6, 0.9); messy = buddy('隨便丟的人', '', C_A, 3.6, 0, 0.6, 0.9); say('時間和空間之間也有 trade-off'); },
-    async () => { tidy.mood('wow'); for (let k = 0; k < 3; k++) await tidy.hop(tok); note('一天到晚在整理', -3.6, 2.6, 0.6); say('有潔癖的人一天到晚在整理'); },
-    () => { tidy.mood('happy'); ok('要拿東西：一目瞭然、很快', -3.6, 3.3, 0.6); no('維護力氣：很多', -3.6, 4.0, 0.6); say('要拿東西一下子就拿到', '但花在維護的力氣比較多'); },
-    () => { messy.mood('happy'); ok('放進去、維護：力氣很低', 3.6, 2.6, 0.6); no('找東西：找很久', 3.6, 3.3, 0.6); messy.set('找…'); say('隨便丟的人：放進去、維護都很省力', '可是找東西要找很久'); },
-    () => { tag('知道哪些重要 → 做決定（prioritize）', 'ptr alt', 0, 5.6, -1.6); say('好的程式設計師要知道面對哪些 trade-off', '哪些重要，才能做決定'); },
-    () => { prop('cpu', -2.0, 0, 3.0, 0.5); prop('cpu', -1.0, 0, 3.0, 0.5); note('平行：用平行演算法嗎？', -1.5, 1.0, 3.0); say('不同平台有不同 trade-off', '平行運算平台'); },
-    () => { note('分散式：分出去（傳輸多）或單一節點（負荷重）', 2.6, 1.6, 3.4); say('分散式：分散出去要花傳輸', '集中在一個節點負荷又很重'); },
-    () => { icon('🎮', 'GPU vs CPU', 2.6, 0.4, 2.4); say('深度學習用 GPU', '和 CPU 各有好處'); },
+    () => { head = T('5 分鐘寫好，卻要跑很久：划算嗎？看情境', 0, 4.8, -1.6); say('花 5 分鐘寫的短程式，卻要跑很久', '划不划算，看情境'); },
+    () => { tidy = buddy('愛整理的人', '', C_C, -3.6, 0, 0.6, 0.9); messy = buddy('隨便丟的人', '', C_A, 3.6, 0, 0.6, 0.9); tl = list(-3.6, 3.8, 0.6, 0.6); ml = list(3.6, 3.8, 0.6, 0.6); say('時間和空間之間也有 trade-off'); },
+    async () => { tidy.mood('wow'); for (let k = 0; k < 3; k++) await tidy.hop(tok); tl.add('一天到晚在整理'); say('有潔癖的人一天到晚在整理'); },
+    () => { tidy.mood('happy'); tl.add('要拿東西：一目瞭然、很快', 'good'); tl.add('維護力氣：很多', 'bad'); say('要拿東西一下子就拿到', '但花在維護的力氣比較多'); },
+    () => { messy.mood('happy'); ml.add('放進去、維護：力氣很低', 'good'); ml.add('找東西：找很久', 'bad'); messy.set('找…'); say('隨便丟的人：放進去、維護都很省力', '可是找東西要找很久'); },
+    () => { txt(head, '知道哪些重要 → 做決定（prioritize）'); head.element.className = 'lab-label ptr alt'; say('好的程式設計師要知道面對哪些 trade-off', '哪些重要，才能做決定'); },
+    async () => {
+      fadeL(tl); fadeL(ml);
+      prop('cpu', -1.4, 0, 1.6, 0.5); prop('cpu', -0.4, 0, 1.6, 0.5); r = note('平行：用平行演算法嗎？', -0.9, 1.3, 1.6);
+      say('不同平台有不同 trade-off', '平行運算平台');
+      await recede(tok, [tidy.g, messy.g]);
+    },
+    () => { txt(r, '分散式：分出去（傳輸多）或單一節點（負荷重）'); say('分散式：分散出去要花傳輸', '集中在一個節點負荷又很重'); },
+    () => { icon('🎮', 'GPU vs CPU', 2.6, 0.6, 1.6); say('深度學習用 GPU', '和 CPU 各有好處'); },
   ]);
 }]);
 
@@ -2258,18 +2317,21 @@ FRAG.push(['cplx-intro-programming', 'Programming ≠ Coding：從需求到交�
 
 // 0:13 演算法與資料結構的關係
 FRAG.push(['cplx-peng2-algds', '演算法與資料結構：誰在上層、怎麼互相影響', async (tok) => {
-  P.fresh([0, 6.5, 12.5], [0, 1.2, 0]);
+  P.fresh([0, 6.5, 12.5], [0, 1.8, 0]);
+  frameHold(-6.4, 0, -1.6, 6.0, 5.0, 1.8);
+  // algorithm → pseudocode → data structure spread along one line, each
+  // remark right above its own prop; the conclusion sits in the middle
   let st, algo, ds, l;
   await run(tok, [
-    () => { buddy('同學', '？', C_C, -5.4, 0, 1.6, 0.75); T('演算法和資料結構有什麼關係？', 0, 4.8, -1.6); say('同學問：演算法和資料結構', '到底什麼關係？'); },
-    () => { algo = prop('file', -2.4, 0, -1.0, 1.1, '演算法：解決問題'); say('演算法在解決問題'); },
-    () => { note('設計理念：greedy、各種方法…', -2.4, 2.4, -1.0); say('用各種演算法設計理念', '設計出解決問題的方法'); },
-    () => { prop('file', 0.4, 0, -1.0, 0.9, 'pseudocode'); arrow(V3(-1.6, 0.6, -1.0), V3(-0.3, 0.6, -1.0), 0xa8730f); say('設計好的演算法', '先用 pseudocode 寫出來'); },
-    () => { ds = prop('warehouse', 3.6, 0, -1.0, 0.9, '資料結構：怎麼 implement'); arrow(V3(1.1, 0.6, -1.0), V3(2.6, 0.6, -1.0), 0xa8730f); say('資料結構：學怎麼把演算法', 'implement 出來'); },
-    () => { l = list(3.6, 2.6, 1.0); l.add('array'); l.add('linked list'); l.add('tree …'); say('implement 的方式很多', 'array、linked list、tree…'); },
-    () => { tag('演算法比較上層', 'ptr alt', -2.4, 3.3, -1.0); say('演算法比較上層', '資料結構往下談實作'); },
-    async () => { const a = pkt('互相影響', 3.6, 1.6, 0.4); await travel(tok, a, V3(3.6, 1.6, 0.4), V3(-2.4, 1.6, 0.4), 1000); say('兩者互相影響', '選不同的資料結構，效率就不一樣'); },
-    () => { ok('好的資料結構 → 幫你找出更棒的演算法', 0, 0.3, 2.6); say('資料結構也可能', '幫你找出更好的演算法'); },
+    () => { buddy('同學', '？', C_C, -6.0, 0, 1.6, 0.75); T('演算法和資料結構有什麼關係？', 0, 4.8, -1.6); say('同學問：演算法和資料結構', '到底什麼關係？'); },
+    () => { algo = prop('file', -4.0, 0, -1.0, 1.1, '演算法：解決問題'); say('演算法在解決問題'); },
+    () => { note('設計理念：greedy、各種方法…', -4.0, 2.4, -1.0); say('用各種演算法設計理念', '設計出解決問題的方法'); },
+    () => { prop('file', 0, 0, -1.0, 0.9, 'pseudocode'); arrow(V3(-3.0, 0.6, -1.0), V3(-0.8, 0.6, -1.0), 0xa8730f); say('設計好的演算法', '先用 pseudocode 寫出來'); },
+    () => { ds = prop('warehouse', 4.0, 0, -1.0, 0.9, '資料結構：怎麼 implement'); arrow(V3(0.8, 0.6, -1.0), V3(2.9, 0.6, -1.0), 0xa8730f); say('資料結構：學怎麼把演算法', 'implement 出來'); },
+    () => { l = list(4.0, 3.0, -1.0, 0.62); l.add('array、linked list、tree …'); say('implement 的方式很多', 'array、linked list、tree…'); },
+    () => { tag('演算法比較上層', 'ptr alt', -4.0, 3.0, -1.0); say('演算法比較上層', '資料結構往下談實作'); },
+    async () => { const a = pkt('互相影響', 4.0, 0.5, 1.4); await travel(tok, a, V3(4.0, 0.5, 1.4), V3(-4.0, 0.5, 1.4), 1000); say('兩者互相影響', '選不同的資料結構，效率就不一樣'); },
+    () => { ok('好的資料結構 → 幫你找出更棒的演算法', 0, 3.8, -1.0); say('資料結構也可能', '幫你找出更好的演算法'); },
   ]);
 }]);
 
@@ -2299,11 +2361,14 @@ FRAG.push(['cplx-peng2-reckinds', '遞迴：direct、indirect 與 boundary condi
 
 // 4:33 遞迴乘法與 1 加到 n
 FRAG.push(['cplx-peng2-mult', '遞迴乘法：a × b = a × (b−1) + a', async (tok) => {
-  P.fresh([0, 6.5, 12.5], [0, 1.4, 0]);
-  let f, cd, calls = [], s, l;
-  const callBox = (t, i) => { const m = cube(t, '#f3c99a', [2.6, 0.45, 1.0], -3.6 + i * 0.35, 0.25 + i * 0.5, 1.0); calls.push(m); return m; };
+  P.fresh([0, 6.5, 12.5], [0, 2.0, 0]);
+  frameHold(-5.4, 0, -1.6, 6.0, 5.4, 1.0);
+  // the calls as a staircase on the left, the code (and later the list) on
+  // the right; one headline at the top is rewritten, the formula under it
+  let f, cd, calls = [], s, l, head, okL;
+  const callBox = (t, i) => { const m = cube(t, '#f3c99a', [2.6, 0.45, 1.0], -3.4 + i * 0.5, 0.4 + i * 0.6, 0); calls.push(m); return m; };
   await run(tok, [
-    () => { T('遞迴函式其實不難：例如乘法', 0, 5.0, -1.6); say('遞迴 function 還蠻簡單的', '像乘法'); },
+    () => { head = T('遞迴函式其實不難：例如乘法', 0, 5.0, -1.6); say('遞迴 function 還蠻簡單的', '像乘法'); },
     () => { f = tag('a × b = a × (b−1) + a', 'ptr alt', 0, 4.2, -1.6); say('a 乘 b', '= a 乘 (b−1)，再加 a'); },
     async () => {
       callBox('5 × 4 = 5×3 + 5', 0); await wait(tok, 300); callBox('5 × 3 = 5×2 + 5', 1); await wait(tok, 300); callBox('5 × 2 = 5×1 + 5', 2);
@@ -2317,8 +2382,8 @@ FRAG.push(['cplx-peng2-mult', '遞迴乘法：a × b = a × (b−1) + a', async 
       for (let i = 2; i >= 0; i--) { P.relabel(calls[i], '= ' + vals[2 - i]); glow(calls[i], '#0f5a3a'); await wait(tok, 350); }
       say('否則回傳 mult(a, b−1) + a', '一路返回：5 → 10 → 15 → 20');
     },
-    () => { ok('先把遞迴式寫出來 → 成功一半', 3.4, 4.6, -0.6); say('設計遞迴的重點', '把遞迴式寫出來，就成功一半'); },
-    () => { calls.forEach(kill); calls = []; cd.kill(); txt(f, 'sum(n) = 1 + 2 + … + n'); say('1 加到 n 也能寫成遞迴'); },
+    () => { okL = ok('先把遞迴式寫出來 → 成功一半', 3.4, 0.9, -0.6); say('設計遞迴的重點', '把遞迴式寫出來，就成功一半'); },
+    () => { calls.forEach(kill); calls = []; cd.kill(); kill(okL); txt(f, 'sum(n) = 1 + 2 + … + n'); say('1 加到 n 也能寫成遞迴'); },
     async () => {
       txt(f, 'sum(n) = sum(n−1) + n');
       callBox('sum(4) = sum(3) + 4', 0); await wait(tok, 250); callBox('sum(3) = sum(2) + 3', 1); await wait(tok, 250); callBox('sum(2) = sum(1) + 2', 2); await wait(tok, 250); callBox('sum(1) = 1', 3);
@@ -2327,8 +2392,8 @@ FRAG.push(['cplx-peng2-mult', '遞迴乘法：a × b = a × (b−1) + a', async 
     () => { s = buddy('你', '？', C_B, 4.0, 0, 1.0, 0.8); say('要算 1 加到 n', '需要搞得這麼複雜嗎？'); },
     () => { l = list(4.0, 3.6, -0.6); l.add('公式：n(n+1)/2'); l.add('for 迴圈：一路加'); s.set('!'); say('用公式，或用 for 迴圈', '更直接'); },
     () => { l.add('遞迴不是唯一解：多想自己的辦法', 'good'); s.mood('happy'); say('遞迴不是唯一解', '要多想自己的辦法'); },
-    () => { T('for 迴圈 vs 遞迴：誰比較好？', 0, 5.6, -1.6); say('用 for 和用遞迴', '哪個比較好？'); },
-    () => { no('遞迴：每次呼叫要記得回到哪裡 → overhead', -1.0, -0.1, 2.8); say('迴圈通常比較有效率', '遞迴要記錄並跳回原呼叫處'); },
+    () => { txt(head, 'for 迴圈 vs 遞迴：誰比較好？'); say('用 for 和用遞迴', '哪個比較好？'); },
+    () => { no('遞迴：每次呼叫要記得回到哪裡 → overhead', -1.9, 3.4, 0); say('迴圈通常比較有效率', '遞迴要記錄並跳回原呼叫處'); },
   ]);
 }]);
 
@@ -2404,39 +2469,44 @@ FRAG.push(['cplx-peng2-perm', '遞迴產生排列：perm(abc, 1, 3)', async (tok
 
 // 25:18 不用遞迴的排列
 FRAG.push(['cplx-peng2-permloop', '不用遞迴：三層迴圈，再去掉重複', async (tok) => {
-  P.fresh([0, 6.5, 12.5], [0, 1.2, 0]);
+  P.fresh([0, 6.5, 12.5], [0, 1.6, 0]);
+  frameHold(-6.4, 0, -1.6, 6.6, 5.0, 1.8);
   let cd, grid = [], st;
   await run(tok, [
     () => { T('不用遞迴，怎麼解 permutation？', 0, 4.8, -1.6); say('再問一個問題', '不用遞迴，怎麼產生排列？'); },
     () => { ['第 1 位', '第 2 位', '第 3 位'].forEach((t, i) => { idx(t, -5.6 + i * 1.7, -0.1, 1.3); }); ['a', 'b', 'c'].forEach((ch, r) => { for (let i = 0; i < 3; i++) grid.push(cube(ch, C_ROW, [0.6, 0.45, 0.6], -5.6 + i * 1.7, 0.25 + (2 - r) * 0.6, -1.4 + r * 0.9)); }); say('每個位置都可以是 a、b、c'); },
     () => { cd = code(['for x in {a,b,c}', '  for y in {a,b,c}', '    for z in {a,b,c}', '      output x y z'], 3.2, 3.4, 0.46, -1.0); say('用多層 for 迴圈', '一層管一個位置'); },
-    () => { st = list(3.6, 1.2, 0.8); st.add('aaa, aab, aac, aba, abb, abc …（27 種）'); say('不用遞迴也做得到'); },
+    () => { st = list(3.6, 1.7, 0.8, 0.72); st.add('aaa, aab, aac, aba, abb, abc …（27 種）'); say('不用遞迴也做得到'); },
     () => { st.add('aaa、aab… 有重複字元 → 偵測後排除', 'bad'); say('但會產生字元重複的組合', '要偵測已經出現過的，排掉'); },
     () => { st.add('考試不一定考；重點：解法不只一種', 'good'); say('同一個問題', '不只一種 solution'); },
-    () => { buddy('你', '💡', C_B, -1.2, 0, 3.8, 0.8).mood('happy'); say('做研究沒有標準答案', '鼓勵多想自己的解法'); },
+    () => { buddy('你', '💡', C_B, -0.6, 0, 1.2, 0.8).mood('happy'); say('做研究沒有標準答案', '鼓勵多想自己的解法'); },
   ]);
 }]);
 
 // 29:12 效能評估與空間複雜度
 FRAG.push(['cplx-peng2-space', '效能評估：S(P) = c + S_P', async (tok) => {
-  P.fresh([0, 6.5, 12.5], [0, 1.2, 0]);
-  let flow, l, sp, c;
-  const st = (t, i) => tag(t, 'note', -5.4 + i * 2.7, 4.6, -1.6);
+  P.fresh([0, 6.5, 12.5], [0, 1.8, 0]);
+  frameHold(-6.4, 0, -1.6, 6.4, 5.0, 2.2);
+  // the four-stage chain stays along the top; under it one subject at a time:
+  // the two levels of evaluation (a list) → the two complexities (props) →
+  // S(P) = c + S_P as a short list beside the disk, with n numbers in front
+  let l, sl, cpu, disk;
+  const st = (t, i) => P.keep(tag(t, 'note', -5.4 + i * 3.6, 4.6, -1.6));
   await run(tok, [
     () => { st('發現問題', 0); say('解決問題的流程', '先發現問題、知道問題是什麼'); },
     () => { st('提出想法 → solution', 1); say('提出想法', '把 solution 設計出來'); },
-    () => { st('寫成程式', 2); prop('cpu', 4.8, 0, -1.0, 0.8); say('寫成程式', '讓電腦執行'); },
+    () => { st('寫成程式', 2); cpu = prop('cpu', 4.8, 0, -1.0, 0.8); say('寫成程式', '讓電腦執行'); },
     () => { st('評估效能？', 3); say('接著要問：這個解法的效能如何？'); },
-    () => { l = list(-3.2, 3.2, -0.4); l.add('① 與機器無關：複雜度分析', 'good'); say('performance evaluation 有兩個層次', '第一：與機器無關'); },
-    async () => { l.add('② 實測：程式從開始跑到結束'); const t = pkt('⏱ 開始 → 結束', -3.2, 1.4, 1.2); await travel(tok, t, V3(-5.2, 1.4, 1.2), V3(-1.2, 1.4, 1.2), 1000); say('第二：實際量測', '程式從開始到結束的時間'); },
+    () => { remove(cpu); l = list(0, 3.6, -0.4, 0.72); l.add('① 與機器無關：複雜度分析', 'good'); say('performance evaluation 有兩個層次', '第一：與機器無關'); },
+    async () => { l.add('② 實測：程式從開始跑到結束'); const t = pkt('⏱ 開始 → 結束', -2.0, 1.0, 1.2); await travel(tok, t, V3(-2.0, 1.0, 1.2), V3(2.0, 1.0, 1.2), 1000); remove(t); say('第二：實際量測', '程式從開始到結束的時間'); },
     () => { l.add('實測會受 CPU、memory 影響', 'bad'); say('實測時間會受 CPU、memory 影響', '好機器通常就跑得好'); },
     () => { l.add('→ 通常用 complexity 分析'); say('所以評估通常用 complexity 分析'); },
-    () => { prop('disk', 1.6, 0, 1.4, 0.8, 'space complexity：用多少 memory'); say('常用兩個複雜度', '第一：space complexity'); },
-    () => { prop('cpu', 4.6, 0, 1.4, 0.8, 'time complexity'); say('第二：time complexity'); },
-    () => { sp = tag('S(P) = c + S_P', 'ptr alt', 1.6, 3.2, 0.6); say('空間複雜度：S(P) = c + S_P'); },
-    () => { c = note('c：固定部分（存程式碼本身…）', 1.6, 2.6, 1.4); say('c 是固定部分', '例如存放程式碼的空間'); },
-    () => { note('S_P：跟輸入資料量有關 → 分析的重點', 1.6, 2.0, 1.8); say('S_P 跟輸入的資料量有關', '比較確定、也是分析的重點'); },
-    () => { row(['', '', '', '', '', ''], -5.0, 2.6, 0.7, C_B, 0.55, false); idx('給你 n 個數字 → 要存 n 個', -3.2, -0.1, 3.3); say('例如給你 n 個數字', '就要空間存這 n 個'); },
+    () => { l.items.forEach(kill); disk = prop('disk', -2.6, 0, 0.4, 0.8, 'space complexity：用多少 memory'); say('常用兩個複雜度', '第一：space complexity'); },
+    () => { cpu = prop('cpu', 2.6, 0, 0.4, 0.8, 'time complexity'); say('第二：time complexity'); },
+    () => { remove(cpu); sl = list(0.4, 3.4, 0.4, 0.72, true); sl.add('S(P) = c + S_P', 'ptr alt'); say('空間複雜度：S(P) = c + S_P'); },
+    () => { sl.add('c：固定部分（存程式碼本身…）'); say('c 是固定部分', '例如存放程式碼的空間'); },
+    () => { sl.add('S_P：跟輸入資料量有關 → 分析的重點'); say('S_P 跟輸入的資料量有關', '比較確定、也是分析的重點'); },
+    () => { row(['', '', '', '', '', ''], 0.8, 1.6, 0.7, C_B, 0.55, false); idx('給你 n 個數字 → 要存 n 個', 2.55, -0.1, 2.4); say('例如給你 n 個數字', '就要空間存這 n 個'); },
   ]);
 }]);
 
@@ -2484,7 +2554,8 @@ FRAG.push(['cplx-peng2-count', '在程式裡放 count：加總 n 個數 = 2n + 3
 
 // 43:31 Tabular method
 FRAG.push(['cplx-peng2-table', 'Tabular method：s/e × frequency', async (tok) => {
-  P.fresh([0, 6.5, 12.5], [0, 2.0, 0]);
+  P.fresh([0, 6.5, 12.5], [0, 2.6, 0]);
+  frameHold(-5.6, 0.4, -1.6, 5.6, 6.4, 0);
   const L = ['float sum(float list[], int n)', '{ float tempsum = 0;', '  int i;', '  for (i = 0; i < n; i++)', '    tempsum += list[i];', '  return tempsum;', '}'];
   let tb, se = [], fr = [], to = [], sum;
   const col = (arr, x, vals, i0 = 0) => vals.forEach((v, i) => { arr[i0 + i] = idx(v, x, 5.0 - (i0 + i) * 0.55, -1.6); });
@@ -2495,25 +2566,30 @@ FRAG.push(['cplx-peng2-table', 'Tabular method：s/e × frequency', async (tok) 
     () => { col(fr, 3.2, ['1'], 1); col(to, 4.8, ['1'], 1); say('frequency：執行幾次？', '只執行 1 次 → total 1'); },
     () => { tb.hl(3); col(se, 1.6, ['1'], 3); col(fr, 3.2, ['n+1'], 3); col(to, 4.8, ['n+1'], 3); say('for 迴圈要執行 n+1 次', '最後多一次判斷才結束'); },
     () => { tb.hl(4); col(se, 1.6, ['1'], 4); col(fr, 3.2, ['n'], 4); col(to, 4.8, ['n'], 4); tb.hl(5); col(se, 1.6, ['1'], 5); col(fr, 3.2, ['1'], 5); col(to, 4.8, ['1'], 5); say('每一行：s/e × frequency', '= 這行的 total steps'); },
-    () => { tb.hl(-1); sum = tag('1 + (n+1) + n + 1 = 2n + 3', 'ptr alt', 1.6, 0.6, 0); say('把最右邊加起來', '= 2n + 3'); },
-    () => { note('矩陣加法也能這樣列表', 1.6, 0.0, 0.8); say('矩陣加法', '也可以這樣算'); },
+    () => { tb.hl(-1); sum = tag('1 + (n+1) + n + 1 = 2n + 3', 'ptr alt', 3.2, 1.4, -1.6); say('把最右邊加起來', '= 2n + 3'); },
+    () => { note('矩陣加法也能這樣列表', 3.2, 0.8, -1.6); say('矩陣加法', '也可以這樣算'); },
   ]);
 }]);
 
 // 45:28 Big-O 的定義
 FRAG.push(['cplx-peng2-bigo', 'Big-O：f(n) ≤ c·g(n)，對所有 n ≥ n₀', async (tok) => {
-  P.fresh([0, 6, 13], [0, 2.2, 0]);
+  P.fresh([0, 6, 13], [0, 2.4, 0]);
+  frameHold(-6.4, 0, -1.6, 6.6, 5.8, 0.4);
+  // the graph on the left; on the right one left-aligned column: the list of
+  // what step counts are for, then (cleared) the definition, the example and
+  // one remark r that is rewritten
   const X0 = -6, X1 = 0.4, Y0 = 0.2, Y1 = 4.6;
-  let def, l, ex, ax;
+  let def, l, ex, ax, r;
+  const L = (lbl) => { lbl.center.set(0, 0.5); return lbl; };
   const nAt = (n) => X0 + (X1 - X0) * n / 6;            // n ∈ [0, 6]
   const yAt = (v) => Y0 + (Y1 - Y0) * v / 26;           // value ∈ [0, 26]
   await run(tok, [
-    () => { T('最終目的：求複雜度 Big-O', 3.4, 5.6, -1.6); say('算 step 最重要的目的', '是求出複雜度 Big-O'); },
-    () => { l = list(3.4, 4.9, -1.6); l.add('看 best、worst、average case'); say('看程式在最好、最差', '或平均情況下要多少步'); },
+    () => { P.keep(L(T('最終目的：求複雜度 Big-O', 2.2, 5.6, -1.6))); say('算 step 最重要的目的', '是求出複雜度 Big-O'); },
+    () => { l = list(2.2, 5.0, -1.6, 0.74, true); l.add('看 best、worst、average case'); say('看程式在最好、最差', '或平均情況下要多少步'); },
     () => { l.add('step 數 ≠ 實際執行時間'); say('program step', '並不代表真正的執行時間'); },
     () => { l.add('重點：跟 n 的關係', 'good'); say('我們看的是', '它跟 n 的關係'); },
     () => { l.add('n² + … vs 10n：後者效率較好'); say('一個要 n² 步、一個要 10n 步', '很明顯後者比較好'); },
-    () => { def = tag('f(n) = O(g(n))', 'ptr alt', 3.4, 2.4, 0); say('f(n) 是算出來的 program step', '要找 g(n)'); },
+    () => { l.items.forEach(kill); def = L(tag('f(n) = O(g(n))', 'ptr alt', 2.2, 4.6, -1.6)); say('f(n) 是算出來的 program step', '要找 g(n)'); },
     () => { txt(def, '存在常數 c 和 n₀'); say('定義：存在常數 c', '還有 n₀'); },
     () => { txt(def, 'f(n) ≤ c·g(n)，對所有 n ≥ n₀'); say('使得 f(n) ≤ c·g(n)', '對所有 n ≥ n₀（注意是 ≤）'); },
     async () => {
@@ -2522,11 +2598,11 @@ FRAG.push(['cplx-peng2-bigo', 'Big-O：f(n) ≤ c·g(n)，對所有 n ≥ n₀',
       say('例：3n + 2 = O(n)');
     },
     async () => { await curve(tok, (u) => (4 * u * 6) / 26, X0, X1, Y0, Y1, 0, '#2f7fc4', 900); ptr('c·g(n) = 4n', X1 + 0.2, yAt(24) + 0.5, 0); say('因為 3n + 2 ≤ 4n'); },
-    () => { line(nAt(2), Y0, nAt(2), Y1, 0, '#0f5a3a'); ok('c = 4，n₀ = 2：n ≥ 2 起 4n 都在上面', nAt(2) + 0.6, Y1 + 0.6, 0); say('c = 4、n₀ = 2', '這個不等式就成立'); },
-    () => { ex = note('10n² + 4n + 2 = O(n²)', 3.4, 1.6, 0.6); say('同樣：10n² + 4n + 2', 'Big-O 是 n²'); },
+    () => { line(nAt(2), Y0, nAt(2), Y1, 0, '#0f5a3a'); P.keep(ok('c = 4，n₀ = 2：n ≥ 2 起 4n 都在上面', nAt(2) + 0.6, Y1 + 0.6, 0)); say('c = 4、n₀ = 2', '這個不等式就成立'); },
+    () => { ex = L(note('10n² + 4n + 2 = O(n²)', 2.2, 3.8, -1.6)); say('同樣：10n² + 4n + 2', 'Big-O 是 n²'); },
     () => { txt(ex, '10n² + 4n + 2 ≤ 11n²（c = 11，n₀ = 10）'); say('取 c = 11、n₀ = 10', '不等式成立'); },
-    () => { no('3n + 2 也 ≤ c·n² → g(n) = n² 也算？', 3.4, 1.0, 1.2); say('g(n) 可以有很多種', '3n + 2 也 ≤ c·n²'); },
-    () => { ok('要取所有 upper bound 裡最小的那個', 3.4, 0.4, 1.8); say('但我們要的 g(n)', '是所有 upper bound 裡最小的'); },
+    () => { r = L(no('3n + 2 也 ≤ c·n² → g(n) = n² 也算？', 2.2, 3.0, -1.6)); say('g(n) 可以有很多種', '3n + 2 也 ≤ c·n²'); },
+    () => { txt(r, '要取所有 upper bound 裡最小的那個'); r.element.className = 'lab-label good'; say('但我們要的 g(n)', '是所有 upper bound 裡最小的'); },
   ]);
 }]);
 
@@ -2626,45 +2702,52 @@ FRAG.push(['cplx-peng1-docs', '別忘了：document、error code、comment', asy
 
 // 13:00 評估一個 system
 FRAG.push(['cplx-peng1-evaluate', '怎麼評估一個程式：正確、可讀、省空間、夠快', async (tok) => {
-  P.fresh([0, 6.5, 12.5], [0, 1.2, 0]);
-  let l, v, disk, ph, r;
+  P.fresh([0, 6.5, 12.5], [0, 1.8, 0]);
+  frameHold(-6.6, 0, -1.6, 6.6, 6.0, 1.2);
+  // the checklist is a left-aligned column on the left; the right side shows
+  // one example at a time (names → storage → runtime), cleared before the
+  // next, with one remark r above it that is rewritten
+  let l, v, disk, ph, r, b1, b2;
   await run(tok, [
-    () => { l = list(-3.0, 4.6, -1.6); T('System life cycle 長這樣 → 再看怎麼 evaluate', 2.6, 5.4, -1.6); say('剛才看了 system life cycle', '再細看怎麼評估'); },
+    () => { l = list(-6.4, 4.7, -1.6, 0.74, true); T('System life cycle 長這樣 → 再看怎麼 evaluate', 0, 5.5, -1.6); say('剛才看了 system life cycle', '再細看怎麼評估'); },
     () => { l.add('output 符合 spec、requirement？'); say('輸出是否符合預期的 spec'); },
     () => { l.add('能正常運作？'); say('是不是可以正常運作'); },
     () => { l.add('document 有寫？每個 function 都能運作？'); say('document 有沒有寫', '每個 data object 的 function 能不能運作'); },
     () => { l.add('code 讀得懂嗎？'); say('code 可不可以讀'); },
-    () => { v = code(['int XXYY;', 'int tmp, tmp2, tmp3;'], 3.0, 3.6, 0.48, -1.6); no('看不懂的變數名', 3.0, 2.6, -1.6); say('有老師的變數都叫 XXYY', '或 tmp、tmp2、tmp3…'); },
-    () => { txt(v.ls[0], 'int studentCount;'); txt(v.ls[1], 'int maxScore;'); v.hl(0); ok('取有意義的名字：舉手之勞', 3.0, 2.0, -1.6); say('取變數時要有意義', '舉手之勞，code 就好讀'); },
-    () => { l.add('儲存空間用得有效率嗎？'); disk = prop('disk', -4.8, 0, 1.6, 0.8); say('執行時用的儲存空間', '有沒有效率'); },
-    () => { note('1995：64 MB 就很強；現在 1 TB 很便宜', -4.8, 1.4, 2.6); say('現在 terabyte 硬碟很便宜', '1995 年 64 MB 就覺得很強'); },
-    () => { ph = icon('📱', '手機、平板：空間有限', -1.8, 0.6, 2.2); say('但寫 app 要放在手機、平板', 'storage 和 memory 都不大'); },
+    () => { v = code(['int XXYY;', 'int tmp, tmp2, tmp3;'], 4.4, 4.2, 0.48, -1.6); r = no('看不懂的變數名', 4.4, 3.0, -1.6); say('有老師的變數都叫 XXYY', '或 tmp、tmp2、tmp3…'); },
+    () => { txt(v.ls[0], 'int studentCount;'); txt(v.ls[1], 'int maxScore;'); v.hl(0); txt(r, '取有意義的名字：舉手之勞'); r.element.className = 'lab-label good'; say('取變數時要有意義', '舉手之勞，code 就好讀'); },
+    () => { v.kill(); kill(r); l.add('儲存空間用得有效率嗎？'); disk = prop('disk', 2.6, 0, 0.6, 0.8); say('執行時用的儲存空間', '有沒有效率'); },
+    () => { r = note('1995：64 MB 就很強；現在 1 TB 很便宜', 4.4, 3.0, -1.6); say('現在 terabyte 硬碟很便宜', '1995 年 64 MB 就覺得很強'); },
+    () => { ph = icon('📱', '手機、平板：空間有限', 5.0, 0.6, 0.6); say('但寫 app 要放在手機、平板', 'storage 和 memory 都不大'); },
     () => { l.add('執行時間可以接受（acceptable）嗎？'); say('最後：執行時間是否可以接受'); },
-    () => { r = note('acceptable 很主觀', 3.0, 1.0, 1.0); say('acceptable 這個詞很主觀'); },
-    () => { buddy('用 1 GHz 的人', '還好', C_C, 1.4, 0, 2.6, 0.65); buddy('用高效能電腦的人', '1 秒都不等', C_A, 4.4, 0, 2.6, 0.65).mood('sad'); say('用慢電腦的人覺得可以', '用慣快電腦的人 1 秒都不能等'); },
-    () => { ok('目標：runtime 越小越好', 3.0, 1.6, 1.0); say('最終希望', 'runtime 越小、越快越好'); },
+    () => { remove(disk); remove(ph); txt(r, 'acceptable 很主觀'); say('acceptable 這個詞很主觀'); },
+    () => { b1 = buddy('用 1 GHz 的人', '還好', C_C, 2.4, 0, 0.6, 0.65); b2 = buddy('用高效能電腦的人', '1 秒都不等', C_A, 5.2, 0, 0.6, 0.65); b2.mood('sad'); say('用慢電腦的人覺得可以', '用慣快電腦的人 1 秒都不能等'); },
+    () => { txt(r, '目標：runtime 越小越好'); r.element.className = 'lab-label good'; say('最終希望', 'runtime 越小、越快越好'); },
   ]);
 }]);
 
 // 17:45 Data abstraction 與 ADT
 FRAG.push(['cplx-peng1-adt', 'Data abstraction：struct 與 ADT', async (tok) => {
-  P.fresh([0, 6.5, 12.5], [0, 1.2, 0]);
-  let st, l, nat, fn;
+  P.fresh([0, 6.5, 12.5], [0, 1.8, 0]);
+  frameHold(-6.2, 0, -1.6, 6.4, 6.2, 1.6);
+  // code on the left (struct, later the NaturalNumber ADT), what we know about
+  // the type as a left-aligned column on the right, one remark r under the code
+  let st, l, nat, fn, pg, r;
   await run(tok, [
-    () => { T('什麼是 data abstraction？', 0, 5.0, -1.6); say('什麼叫做 data abstraction？'); },
-    () => { icon('🐧', 'UNIX、Linux 用 C 寫', -5.2, 0.6, 1.6); say('C 其實很厲害', 'UNIX、Linux 都是用 C 寫的'); },
-    () => { st = code(['struct student {', '  char id[10];', '  char name[20];', '  int  grade;', '};'], -2.6, 3.8, 0.46, -1.4); say('C 裡有 structure', '就像一筆 data record'); },
-    () => { st.hl(1); buddy('student', '', C_B, 1.2, 0, 0.6, 0.8); say('student 這個 record', '有三個欄位：學號、名字、分數'); },
-    () => { l = list(4.4, 4.0, -1.4); l.add('object 叫什麼：student'); l.add('有哪些 attribute：id、name、grade'); st.hl(-1); say('從型態可以知道兩件事', '物件叫什麼、有哪些 attribute'); },
+    () => { T('什麼是 data abstraction？', 0, 5.3, -1.6); say('什麼叫做 data abstraction？'); },
+    () => { pg = icon('🐧', 'UNIX、Linux 用 C 寫', -2.6, 1.6, 0.6); say('C 其實很厲害', 'UNIX、Linux 都是用 C 寫的'); },
+    () => { st = code(['struct student {', '  char id[10];', '  char name[20];', '  int  grade;', '};'], -2.6, 3.8, 0.46, -1.4); remove(pg); say('C 裡有 structure', '就像一筆 data record'); },
+    () => { st.hl(1); buddy('student', '', C_B, -5.4, 0, 1.0, 0.8); say('student 這個 record', '有三個欄位：學號、名字、分數'); },
+    () => { l = list(1.2, 4.4, -1.4, 0.74, true); l.add('object 叫什麼：student'); l.add('有哪些 attribute：id、name、grade'); st.hl(-1); say('從型態可以知道兩件事', '物件叫什麼、有哪些 attribute'); },
     () => { l.add('operation：+ − × ÷ % ==（像 integer）'); say('還有可以做的 operation', '例如整數的加減乘除、餘數、相等'); },
     () => { l.add('大小看型態：char 1 byte、int 4 bytes'); say('它佔多大空間', '要看你用哪種資料型態實作'); },
     () => { l.add('重點：這個 data type 有哪些功能', 'ptr'); say('重點是知道', '這個 data type 有哪些功能'); },
-    () => { tag('ADT：machine independent、implementation independent', 'ptr alt', 0, 5.7, -1.6); say('所以有 abstract data type（ADT）', '跟機器、跟實作都無關'); },
+    () => { tag('ADT：machine independent、implementation independent', 'ptr alt', 0, 6.0, -1.6); say('所以有 abstract data type（ADT）', '跟機器、跟實作都無關'); },
     () => { st.kill(); nat = code(['ADT NaturalNumber', '  objects: 0 … INT_MAX 之間的有序整數', '  functions:', '    IsZero(x), Add(x, y), Equal(x, y), …'], -2.6, 3.8, 0.48, -1.4); say('例子：自然數 Natural Number'); },
     () => { nat.hl(1); say('object：落在 0 到最大值之間', '最大值由電腦決定'); },
     () => { nat.hl(3); say('function：能對自然數做什麼', '例如判斷是不是 0'); },
-    () => { nat.hl(-1); no('int？float？char？無關', -2.6, 1.0, 0.4); say('它是 integer、float 還是 character', '一點關係都沒有'); },
-    () => { ok('ADT 的精神：跳脫實作，只講是什麼、能做什麼', 0, 0.3, 2.2); say('ADT 的精神', '跳脫 implementation'); },
+    () => { nat.hl(-1); r = no('int？float？char？無關', 0.4, 1.0, 0.8); say('它是 integer、float 還是 character', '一點關係都沒有'); },
+    () => { txt(r, 'ADT 的精神：跳脫實作，只講是什麼、能做什麼'); r.element.className = 'lab-label good'; say('ADT 的精神', '跳脫 implementation'); },
   ]);
 }]);
 
@@ -2813,7 +2896,7 @@ FRAG.push(['cplx-peng1-bsearch2', '找 25：找不到；還有 BST、hash', asyn
     () => { range(-1, -1); kill(m); txt(q, '沒有 25 → 回報找不到'); say('都沒看到 25', '回報：這堆數字裡沒有 25'); },
     () => { r = note('方法一：一個一個看　方法二：排序後二分', 0, -0.9, 1.4); say('最笨：一個一個看', '第二種：先排序再二分'); },
     // other ways to search: the array steps back, the new ideas come to the front
-    async () => { await recede(tok, arr); kill(r); txt(q, '還有別的找法'); icon('🌳', '建 binary search tree 去走', -3.2, 0.8, 1.6); say('還有：把數字建成 binary search tree', '在 tree 上找'); },
+    async () => { await recede(tok, arr); arr.forEach((c) => { kill(c.userData.ix); c.userData.ix = null; }); kill(r); txt(q, '還有別的找法'); icon('🌳', '建 binary search tree 去走', -3.2, 0.8, 1.6); say('還有：把數字建成 binary search tree', '在 tree 上找'); },
     () => { icon('🪣', 'hash：丟到對應的 bucket 再找', 3.2, 0.8, 1.6); say('將來還會學 hash', '用 hash function 丟進 bucket'); },
     () => { txt(q, '同一個問題，可以想出好多種演算法'); say('光是「找數字」這個問題', '就能想出好多種方法'); },
   ]);
@@ -2844,10 +2927,10 @@ FRAG.push(['cplx-peng1-bspseudo', 'Binary search 的 pseudocode：left、right�
   await run(tok, [
     () => { arr = row(V, -6.3, 0, 0.9, C_ROW, 0.7); say('演算法：先排序、找中間、切一半'); },
     () => { hd = T('想好了 → 下一步：怎麼 implement', 0, 2.6, -1.6); say('知道演算法之後', '下一階段：怎麼 implement'); },
-    () => { remove(hd); ps = code(['while (還有數字沒檢查) {', '  middle = (left + right) / 2;', '  if (searchnum < list[middle])', '    right = middle − 1;', '  else if (searchnum == list[middle])', '    return middle;', '  else left = middle + 1;', '}'], 0, 5.6, 0.48, -2.2); say('implement 之前', '先寫 pseudocode'); },
+    () => { remove(hd); ps = code(['while (還有數字沒檢查) {', '  middle = (left + right) / 2;', '  if (searchnum < list[middle])', '    right = middle − 1;', '  else if (searchnum == list[middle])', '    return middle;', '  else left = middle + 1;', '}'], 0, 5.5, 0.46, -2.6); say('implement 之前', '先寫 pseudocode'); },
     () => { ps.hl(0); L = ptr('left', X(0), -0.75, 0.9); R = ptr('right', X(14), -0.75, 0.9); say('while：中間還有數字沒檢查'); },
     async () => { ps.hl(1); await lift(tok, arr[7], true, 0.4); M = ptr('middle', X(7), 1.45, 0); say('middle = (left + right) / 2', '中位數的位置'); },
-    () => { ps.hl(2); P.note('searchnum = 6', arr[0], 'left', 'pkt'); say('searchnum 比 list[middle] 小', '就找左半邊'); },
+    () => { ps.hl(2); P.note('searchnum = 6', arr[0], 'top', 'pkt'); say('searchnum 比 list[middle] 小', '就找左半邊'); },
     async () => { ps.hl(3); for (let i = 7; i < 15; i++) tint(arr[i], '#d8cfc0'); await travel(tok, R, R.position.clone(), V3(X(6), -0.75, 0.9), 700); say('左半邊怎麼表示？', '把 right 設成 middle − 1（12 那格）'); },
     () => { ps.hl(5); say('如果剛好等於 list[middle]', '直接 return 它的位置'); },
     () => { ps.hl(6); r = note('否則往右：left = middle + 1', 0, -1.5, 1.4); say('不是的話就往右', 'left 設成 middle + 1'); },
@@ -2931,18 +3014,21 @@ FRAG.push(['cplx-peng1-kth', 'Selection problem：找第 k 大', async (tok) => 
 
 // 1:05:30 遞迴演算法與階乘
 FRAG.push(['cplx-peng1-rec', '遞迴演算法：n! 與 boundary condition', async (tok) => {
-  P.fresh([0, 6.5, 12.5], [0, 1.4, 0]);
-  let cd, calls = [], cnt;
-  const callBox = (t, i) => { const m = cube(t, '#f3c99a', [2.4, 0.45, 1.0], 2.6 + i * 0.3, 0.25 + i * 0.5, 0.6); calls.push(m); return m; };
+  P.fresh([0, 6.5, 12.5], [0, 1.8, 0]);
+  frameHold(-6.0, 0, -1.6, 6.0, 5.4, 1.6);
+  // one subject at a time: the two kinds of recursion (buddies) → the rules
+  // for stopping (a centred column) → n! (calls on the right, code on the left)
+  let cd, calls = [], cnt, part1 = [], col;
+  const callBox = (t, i) => { const m = cube(t, '#f3c99a', [2.4, 0.45, 1.0], 2.6 + i * 0.3, 0.3 + i * 0.55, 0.6); calls.push(m); return m; };
   await run(tok, [
     () => { T('Recursive algorithm：自己呼叫自己', 0, 5.2, -1.6); say('演算法裡還有一種', 'recursive algorithm'); },
-    () => { buddy('f', '', C_A, -5.2, 0, 0.6, 0.75); note('f 呼叫 f：direct', -5.2, 2.0, 0.6); say('function 呼叫自己', '叫 direct recursive'); },
-    () => { buddy('f1', '', C_B, -3.2, 0, 1.6, 0.6); buddy('f2', '', C_C, -1.8, 0, 1.6, 0.6); note('f1 → f2 → f1（繞回來）：indirect', -2.5, 1.6, 2.4); say('A 呼叫 B，B 再呼叫回 A', '呼叫形成環 → indirect recursive'); },
-    () => { tag('C(n, m) = C(n−1, m) + C(n−1, m−1)', 'ptr alt', 0, 4.4, -1.6); say('例：n 個取 m 個的組合數', '可以拆成兩個 n−1 的問題'); },
-    () => { no('不要讓它無限呼叫下去', 0, 3.7, -1.6); say('設計遞迴時', '不要讓它進入無限的呼叫'); },
-    () => { note('演算法要會停止', 0, 3.1, -1.6); say('演算法有個條件', '要讓它停止'); },
-    () => { tag('boundary condition = 停的條件', 'ptr', 0, 2.5, -1.6); say('什麼時候停？', '要注意 boundary condition'); },
-    () => { cnt = tag('n! = n × (n−1)!', 'ptr alt', 4.0, 4.4, 0.6); say('例：n 階乘 = n × (n−1)!'); },
+    () => { part1.push(buddy('f', '', C_A, -4.4, 0, 0.6, 0.75).g, note('f 呼叫 f：direct', -4.4, 2.0, 0.6)); say('function 呼叫自己', '叫 direct recursive'); },
+    () => { part1.push(buddy('f1', '', C_B, 1.4, 0, 0.6, 0.75).g, buddy('f2', '', C_C, 3.4, 0, 0.6, 0.75).g, note('f1 → f2 → f1（繞回來）：indirect', 2.4, 2.0, 0.6)); say('A 呼叫 B，B 再呼叫回 A', '呼叫形成環 → indirect recursive'); },
+    () => { part1.forEach(remove); col = list(0, 4.4, -1.6, 0.62); col.add('C(n, m) = C(n−1, m) + C(n−1, m−1)', 'ptr alt'); say('例：n 個取 m 個的組合數', '可以拆成兩個 n−1 的問題'); },
+    () => { col.add('不要讓它無限呼叫下去', 'bad'); say('設計遞迴時', '不要讓它進入無限的呼叫'); },
+    () => { col.add('演算法要會停止'); say('演算法有個條件', '要讓它停止'); },
+    () => { col.add('boundary condition = 停的條件', 'ptr'); say('什麼時候停？', '要注意 boundary condition'); },
+    () => { col.items.forEach(kill); cnt = tag('n! = n × (n−1)!', 'ptr alt', 3.4, 3.6, 0.6); say('例：n 階乘 = n × (n−1)!'); },
     async () => { for (const [t, i] of [['fact(4) = 4 × fact(3)', 0], ['fact(3) = 3 × fact(2)', 1], ['fact(2) = 2 × fact(1)', 2], ['fact(1) = 1 × fact(0)', 3]]) { callBox(t, i); await wait(tok, 260); } say('寫成 fact(n) = n × fact(n−1)', '自己呼叫自己'); },
     () => { callBox('fact(0) = 1 → 停', 4); tint(calls[4], '#9fd8b0'); say('n = 0 時就必須停止', '0! = 1 就是 boundary condition'); },
     () => { cd = code(['int fact(int n) {', '  if (n == 0) return 1;', '  return n * fact(n − 1);', '}'], -3.4, 3.4, 0.48, 0.4); cd.hl(1); say('程式裡寫在 if n == 0', '直接 return 1'); },
