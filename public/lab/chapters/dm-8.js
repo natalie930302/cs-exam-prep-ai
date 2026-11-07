@@ -896,7 +896,7 @@ export default function (ctx) {
     const cells = [];
     for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
       const v = Lm[i][j];
-      cells.push({ i, j, m: cube(v, i === j ? COL.blue : v ? COL.pink : '#e6ddcf', [0.66, 0.3, 0.66], 1.2 + j * 0.8, 0.15, -1.2 + i * 0.8, 2.5) });
+      cells.push({ i, j, m: cube(v, i === j ? COL.blue : v ? COL.pink : '#e6ddcf', [0.66, 0.3, 0.66], 1.0 + j * 1.0, 0.15, -1.5 + i * 1.0) }); // a cell apart: the −1 labels do not touch
       await beat(tok, 70);
     }
     say('Laplacian L = D − A：對角線放度數，相鄰放 −1', 'deg = 3, 2, 3, 2');
@@ -1345,6 +1345,13 @@ export default function (ctx) {
     if (typeof ResizeObserver === 'function') new ResizeObserver(() => { while (ls.length > 1 && col.offsetHeight > maxH) ls.shift().element.remove(); }).observe(col);
     return { hold, ls, line, clear() { ls.forEach((l) => l.element.remove()); ls.length = 0; } };
   }
+  // An invisible box over the area a scene will use later: the stage's auto framing measures it from the
+  // first step, so the camera does not zoom in on the first few things and then jump back out (labels
+  // sliding under the caption meanwhile) when the rest arrives.
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
   // ═══ g8a.js ═══
   {
 const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
@@ -1363,9 +1370,13 @@ const GC = { v: '#cdbfa6', e: '#9c8b70', hot: '#d64545', ok: '#2fc092', blue: '#
 const CAM = [[0, 12.5, 7.8], [0, 0, 0.6]];
 // scenes with pictures on both sides: look a little to the left so the pictures leave the board's strip free
 const CAMR = [[-3.3, 13.4, 8.4], [-3.3, 0, 0.6]];
+// the stage area the pictures use (the river map is the biggest): held from the first step, so the camera
+// neither zooms in on the first small thing nor jumps back out later, and the board keeps its place
+const HOLD = [-6.8, 0.2, -5.0, 6.8, 0.6, 4.7];
 function scene(id, title, steps, cam = CAM) {
   FRAG.push([id, title, async (tok) => {
     fresh(cam[0], cam[1]);
+    if (cam === CAM) frameHold(...HOLD);
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
@@ -1551,7 +1562,7 @@ scene('g8a-konig-map', 'Königsberg 七橋問題', [
     S.w = walker(S.g.pos('C'));
     const path = [[0, 'C'], [2, 'A'], [3, 'B'], [1, 'A'], [5, 'C'], [4, 'D']];
     for (const [i, from] of path) { await go(tok, S.w, S.g.E[i], from, 380, null); S.M.br[i].material.color.set(GC.hot); }
-    S.x1 = T('卡在 A：橋 7 沒走到 ✗（示意）', 'bad', -1.8, -0.9, 1.2);
+    S.x1 = T('卡在 A：橋 7 沒走到 ✗（示意）', 'bad', -1.8, 0.0, 1.2);
     cap('試走一次：走了 6 座橋就回不去了', '還剩一座橋沒走到');
   },
   async (tok, S) => { // try 2 from D
@@ -1586,18 +1597,18 @@ scene('g8a-konig-parity', '為什麼不可能：看島 A 的橋數', [
   async (tok, S) => {
     S.w = walker(S.g.pos('C'));
     await go(tok, S.w, S.g.E[0], 'C', 600, null); S.M.br[0].material.color.set(GC.blue);
-    S.in1 = T('進', 'good', -2.6, -1.45, 1.0);
+    S.in1 = K.keep(T('進', 'good', -3.05, -1.45, 1.0));
     cap('假設不是從 A 出發：要到 A，得先「進來」', '進來用掉一座橋');
   },
   async (tok, S) => {
     await go(tok, S.w, S.g.E[2], 'A', 600, null); S.M.br[2].material.color.set(GC.orange);
-    S.out1 = T('出', 'bad', -2.6, 1.45, 1.0);
+    S.out1 = K.keep(T('出', 'bad', -3.05, 1.45, 1.0));
     cap('最後要回到出發點，所以進來後一定要「離開」', '離開又用掉一座橋');
   },
   async (tok, S) => {
     await go(tok, S.w, S.g.E[3], 'B', 600, null); S.M.br[3].material.color.set(GC.blue);
     await go(tok, S.w, S.g.E[1], 'A', 600, null); S.M.br[1].material.color.set(GC.orange);
-    T('進', 'good', -1.0, 1.45, 1.0); T('出', 'bad', -1.0, -1.45, 1.0);
+    K.keep(T('進', 'good', -1.45, 1.45, 1.0)); K.keep(T('出', 'bad', -1.45, -1.45, 1.0));
     cap('再到 A：再進來、再出去', '每到 A 一次，就是一進一出');
   },
   async (tok, S) => {
@@ -2224,7 +2235,7 @@ scene('g8a-ex-matrix', '例子：用 adjacency matrix 描述的圖', [
 scene('g8a-ex-run1', '從 A 出發照字母順序走，第一次 break out', [
   async (tok, S) => { exSetup(S); cap('直接在 adjacency matrix 上走', '矩陣就完整描述了這張圖'); },
   async (tok, S) => {
-    S.B = board(-6.9, 2.2, 0.55); S.B.add('起點 A；可選時照 alphabetical order', 'say');
+    S.B = board(-6.9, 2.2, 0.55, { max: 4, maxH: 125 }); // low on the stage: keep it short so it stays above the caption S.B.add('起點 A；可選時照 alphabetical order', 'say');
     S.w = walker(S.g.pos('A')); settxt(S.circ, 'A');
     cap('每次都從 A 開始', '有好幾條邊可選時，照 A、B、C、D 的字母順序');
   },
@@ -2257,7 +2268,7 @@ scene('g8a-ex-run2', '再 break out 一次，得到 Euler circuit', [
     [['A', 'B'], ['B', 'A'], ['A', 'C'], ['C', 'D'], ['D', 'A']].forEach(([a, b]) => exUse(S, a, b));
     Object.values(S.cell).forEach((l) => cls(l, 'say val'));
     S.w = walker(S.g.pos('B')); settxt(S.circ, 'B A C D A B');
-    S.B = board(-6.9, 2.2, 0.55);
+    S.B = board(-6.9, 2.2, 0.55, { max: 4, maxH: 125 }); // low on the stage: keep it short so it stays above the caption
     cap('從 B break out，走出去', '目前的 circuit：B A C D A B');
   },
   async (tok, S) => { await exGo(tok, S, 'B', 'D'); settxt(S.circ, 'B A C D A B D'); cap('B 還有沒用的邊：B 走到 D', 'B–D 從 2 變 1'); },
@@ -2982,7 +2993,7 @@ scene('g8a-evi-proof', '推導 e ≤ g(v−2)/(g−2)', [
   async (tok, S) => { S.B = board(-7, -4.8, 0.6); S.B.add('推導這個不等式'); cap('先把這個不等式推導出來', '後面再拿來用'); },
   async (tok, S) => { S.B.add('它是 Euler 定理的 corollary（系理）', 'say'); cap('它可以看成', 'Euler theorem for planar graphs 的 corollary'); },
   async (tok, S) => { S.B.add('v − e + r = 2：用 Σdeg(R) = 2e 把 r 消掉', 'say'); cap('從 v − e + r = 2 出發', '用「region degree 總和 = 2e」把 r 消掉'); },
-  async (tok, S) => { S.t = regTop(3.6, 1.2, 0.8); ['R1', 'R2', 'R3'].forEach((n, i) => { const f = regFill(S.t, n, RG[i]); settxt(f.l, n + ':' + [5, 3, 3][i]); }); T('示意：g = 3', 'idx', 3.6, -1.4); cap('看每個 region 的 degree', '例如 5、3、3'); },
+  async (tok, S) => { S.t = regTop(3.0, 0.6, 1.25); ['R1', 'R2', 'R3'].forEach((n, i) => { const f = regFill(S.t, n, RG[i]); settxt(f.l, n + ':' + [5, 3, 3][i]); }); T('示意：g = 3', 'idx', 5.6, -2.4); cap('看每個 region 的 degree', '例如 5、3、3'); },
   async (tok, S) => { S.B.add('每個 region 的 boundary 至少 g 條邊', 'note'); cap('每個 region 的邊界', '至少有 g 條邊（g 是 girth）'); },
   async (tok, S) => { S.B.add('沒有 cycle 時 g = 全部邊數，也成立', 'say'); cap('沒有 cycle 的時候', 'g 定義成全部邊數，唯一的 region 也至少這麼多（伸出去的邊算兩次）'); },
   async (tok, S) => { S.B.add('cycle 不重複；closed walk 可重複只會更多 → deg(R) ≥ g', 'say'); cap('girth 是最短 cycle', 'region 的邊界 closed walk 還可能重複算，只會更長：deg(R) ≥ g'); },
@@ -3193,9 +3204,18 @@ const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
 const pl = (t, x, y, z = 0) => tag(t, '', x, y, z);
 const ok = (b, x, y, t) => (b ? good(t, x, y) : bad(t.replace(/✓/g, '✘'), x, y));
 const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (typeof o.all === 'function') return gone(o.all()); if (o.element) remove(o); else kill(o); });
+// a line of a column whose left edge is at x (beside a picture, instead of centred over it)
+const col = (l) => { if (l.center) l.center.set(0, 0.5); return l; };
+// a short running derivation under the picture: the newest line at the bottom, only the last 3 stay
+function proof(S, l) {
+  S.pf = S.pf || []; S.pf.push(l); while (S.pf.length > 3) gone(S.pf.shift());
+  S.pf.forEach((x, k) => { x.position.y = 1.2 - k * 0.62; });
+  return l;
+}
 function scene(id, title, steps, cam) {
   FRAG.push([id, title, async (tok) => {
     const c = cam || CAM; fresh(c[0], c[1]);
+    if (!cam) frameHold(-6.6, -0.9, -0.3, 6.6, 7.5, 0.3); // the usual picture area, held from the first step (no zoom jumps)
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
@@ -3610,7 +3630,7 @@ scene('g8b-p3ind', '23B：用數學歸納法證 |V| = |E| + 1', [
     S.l1 = pl('basis：最少的 case 是 1 個端點', -3.4, 6.2); const g = mkGraph(0.8); g.v('v', -5.6, 5.4); S.g0 = g; cap('induction basis', '最少只有一個端點');
   },
   async (tok, S) => { // @430.6
-    ok(S.g0.edges().length === 0, -3.0, 5.4, '沒有邊：|E| = 0 = 1 − 1 ✓'); cap('一個端點沒有邊', '|E| = 0，成立');
+    S.b0 = ok(S.g0.edges().length === 0, -3.0, 5.4, '沒有邊：|E| = 0 = 1 − 1 ✓'); cap('一個端點沒有邊', '|E| = 0，成立');
   },
   async (tok, S) => { // @478.6
     pl('hypothesis：所有端點個數 ≤ k 的 tree 都成立（k ≥ 1）', 0, 4.6); cap('induction hypothesis', '1 到 k 個端點都成立');
@@ -3619,8 +3639,8 @@ scene('g8b-p3ind', '23B：用數學歸納法證 |V| = |E| + 1', [
     hot('induction step：證 k + 1 個端點也成立', 0, 3.9); cap('induction step', '');
   },
   async (tok, S) => { // @537.1
-    gone(S.l1, S.g0); S.T = shift(T9P, 0, -3.3, 0.8);
-    S.g = mkGraph(0.75); await grow(tok, S.g, S.T, T9E, { names: {} }); note('示意：k + 1 = 9', 4.4, 2.0);
+    gone(S.l1, S.g0, S.b0); S.T = shift(T9P, -3.8, -3.3, 0.8); // the tree on the left, the induction step as a column on its right
+    S.g = mkGraph(0.75); await grow(tok, S.g, S.T, T9E, { names: {} }); note('示意：k + 1 = 9', -7.0, 1.0);
     cap('考慮 k + 1 個端點的 tree T', '');
   },
   async (tok, S) => { // @568.0
@@ -3632,26 +3652,26 @@ scene('g8b-p3ind', '23B：用數學歸納法證 |V| = |E| + 1', [
   },
   async (tok, S) => { // @651.0
     const E2 = minus(T9E, 'a', 'b'); S.n = S.cs.map((c) => [c.length, E2.filter(([u]) => c.includes(u)).length]);
-    pl('T1：|V1| = ' + S.n[0][0] + '、|E1| = ' + S.n[0][1], 3.2, 3.3); pl('T2：|V2| = ' + S.n[1][0] + '、|E2| = ' + S.n[1][1], -3.6, 3.3);
+    pl('T1：|V1| = ' + S.n[0][0] + '、|E1| = ' + S.n[0][1], -0.6, 3.3); pl('T2：|V2| = ' + S.n[1][0] + '、|E2| = ' + S.n[1][1], -7.2, 3.3);
     S.g.vcol('a', TC.a); cap('T1 有 V1、E1；T2 有 V2、E2', '');
   },
   async (tok, S) => { // @693.0
-    ok(S.n[0][0] + S.n[1][0] === 9, 0, 0.5, '|V1| + |V2| = |V| = k + 1（端點沒少）　例：' + S.n[0][0] + ' + ' + S.n[1][0] + ' = 9 ✓'); cap('端點總數不變', '|V1| + |V2| = k + 1');
+    col(ok(S.n[0][0] + S.n[1][0] === 9, 0.3, 2.5, '|V1| + |V2| = |V| = k + 1（端點沒少）　例：' + S.n[0][0] + ' + ' + S.n[1][0] + ' = 9 ✓')); cap('端點總數不變', '|V1| + |V2| = k + 1');
   },
   async (tok, S) => { // @716.5
-    ok(S.n[0][1] + S.n[1][1] === 8 - 1, 0, -0.1, '|E1| + |E2| = |E| − 1（少一條邊）　例：' + S.n[0][1] + ' + ' + S.n[1][1] + ' = 8 − 1 ✓'); cap('邊少了一條', '|E1| + |E2| = |E| − 1');
+    col(ok(S.n[0][1] + S.n[1][1] === 8 - 1, 0.3, 1.9, '|E1| + |E2| = |E| − 1（少一條邊）　例：' + S.n[0][1] + ' + ' + S.n[1][1] + ' = 8 − 1 ✓')); cap('邊少了一條', '|E1| + |E2| = |E| − 1');
   },
   async (tok, S) => { // @741.4
-    pl('兩棵各至少有 1 個端點（a 一邊、b 一邊）→ 兩棵都 ≤ k 個端點', 0, -0.7); cap('兩棵都至少一個端點', '所以都不超過 k');
+    col(pl('兩棵各至少有 1 個端點（a 一邊、b 一邊）→ 兩棵都 ≤ k 個端點', 0.3, 1.3)); cap('兩棵都至少一個端點', '所以都不超過 k');
   },
   async (tok, S) => { // @848.1
-    ok(S.n.every(([v, e]) => v === e + 1), 0, -1.3, 'hypothesis 可用：|V1| = |E1| + 1、|V2| = |E2| + 1 ✓'); cap('套用 induction hypothesis', '兩棵都端點比邊多一');
+    col(ok(S.n.every(([v, e]) => v === e + 1), 0.3, 0.7, 'hypothesis 可用：|V1| = |E1| + 1、|V2| = |E2| + 1 ✓')); cap('套用 induction hypothesis', '兩棵都端點比邊多一');
   },
   async (tok, S) => { // @876.6
-    S.eq = hot('|V| = |V1| + |V2| = (|E1| + 1) + (|E2| + 1) = (|E| − 1) + 2', 0, -1.95); cap('代進去', '');
+    S.eq = col(hot('|V| = |V1| + |V2| = (|E1| + 1) + (|E2| + 1) = (|E| − 1) + 2', 0.3, 0.1)); cap('代進去', '');
   },
   async (tok, S) => { // @926.5
-    gone(S.eq); good('|V| = (|E| − 1) + 2 = |E| + 1　induction step 完成 ✓', 0, -1.95); cap('= |E| + 1', 'induction step 完成');
+    gone(S.eq); col(good('|V| = (|E| − 1) + 2 = |E| + 1　induction step 完成 ✓', 0.3, 0.1)); cap('= |E| + 1', 'induction step 完成');
   },
   async (tok, S) => { // @934.0
     let okAll = true, cnt = 0;
@@ -3780,7 +3800,7 @@ scene('g8b-cd1', '23C：(c) ⇒ (d) 第一部分——T 沒有 cycle', [
     sm('每多考慮一個端點，至少多一條新的邊', 3.4, 4.2); cap('每多一個端點', '至少多一條新的邊');
   },
   async (tok, S) => { // @1061.1
-    S.g.v('y', 3.4, 5.8, TC.b); S.g.e('y', 'x', TC.b); sm('y 不一定直接連到 cycle（經過 x）', 3.8, 6.4);
+    S.g.v('y', 3.4, 5.8, TC.b); S.g.e('y', 'x', TC.b); sm('y 不一定直接連到 cycle（經過 x）', 5.6, 5.1);
     txt(S.cnt, '加上 y：' + S.g.names().length + ' 個端點、' + S.g.edges().length + ' 條邊'); cap('不見得直接連到 cycle', '但還是多一條新的邊');
   },
   async (tok, S) => { // @1105.0
@@ -3925,17 +3945,17 @@ scene('g8b-rooted', '23D：Rooted tree 的定義', [
   },
   async (tok, S) => { // @534.6
     for (const [u, v] of RTE) S.g2.e(u, v, TC.green, true);
-    pl('每條邊都 directed away from the root', 3.4, 2.4); cap('每條邊的方向', '都從 root 往外');
+    S.r1 = pl('每條邊都 directed away from the root', 3.4, 2.4); cap('每條邊的方向', '都從 root 往外');
   },
   async (tok, S) => { // @571.0
-    good('A 是 root、全部往外 → rooted tree', 3.4, 1.8); cap('例子：A 是 root', '所有方向都往外');
+    S.r2 = good('A 是 root、全部往外 → rooted tree', 3.4, 1.8); cap('例子：A 是 root', '所有方向都往外');
   },
   async (tok, S) => { // @606.0
     Object.values(S.g2.E).forEach((e) => { if (e.userData.cone) e.userData.cone.visible = false; });
-    sm('方向都知道是往下 → 平常不畫箭頭', 3.4, 1.2); cap('平常畫 rooted tree', '不畫方向');
+    S.r3 = sm('方向都知道是往下 → 平常不畫箭頭', 3.4, 1.2); cap('平常畫 rooted tree', '不畫方向');
   },
   async (tok, S) => { // @675.0
-    gone(S.g2); S.g2 = mkGraph(0.8); S.up = shift(Object.fromEntries(Object.entries(RT).map(([n, [x, y]]) => [n, [x, -y]])), 3.4, 1.4);
+    gone(S.g2, S.r1, S.r2, S.r3); S.g2 = mkGraph(0.8); S.up = shift(Object.fromEntries(Object.entries(RT).map(([n, [x, y]]) => [n, [x, -y]])), 3.4, 1.4);
     for (const n of Object.keys(S.up)) S.g2.v(n, ...S.up[n], n === 'A' ? TC.gold : TC.node); for (const [u, v] of RTE) S.g2.e(u, v);
     sm('真的樹：根在下面、往上長', 5.6, 0.6); cap('跟平常的樹相反', '樹是根在下往上長');
   },
@@ -4094,50 +4114,50 @@ scene('g8b-count', '24A：complete m-ary tree：n = mi + 1、l = (m − 1)i + 1'
   async (tok, S) => { // @291.0
     hd('complete m-ary tree：n 個 vertices、l 個 leaves、i 個 internal vertices', 0, 7.0);
     S.g = mkGraph(0.7); for (const n of Object.keys(BT)) S.g.v(n, BTP[n][0] - 2.2, BTP[n][1] - 0.2, BTK[n].length ? TC.orange : TC.green, ''); parEdges(BT).forEach(([u, v]) => S.g.e(u, v));
-    note('示意：m = 2', -5.4, 6.2); pl('n = ' + BTn + '　l = ' + BTl + '　i = ' + BTi, 4.3, 5.6); cap('complete m-ary tree', 'n、l、i 三個數');
+    note('示意：m = 2', -5.4, 6.2); col(pl('n = ' + BTn + '　l = ' + BTl + '　i = ' + BTi, 1.6, 5.6)); cap('complete m-ary tree', 'n、l、i 三個數');
   },
   async (tok, S) => { // @308.8
-    sm('vertex 不是 leaf 就是 internal：n = l + i', 4.3, 5.0); cap('四個數 m、n、l、i', '中間有關係');
+    col(sm('vertex 不是 leaf 就是 internal：n = l + i', 1.6, 5.0)); cap('四個數 m、n、l、i', '中間有關係');
   },
   async (tok, S) => { // @335.1
-    ['① n = mi + 1', '② l = (m − 1)i + 1', '③ i = (l − 1)/(m − 1) = (n − 1)/m'].forEach((t, k) => pl(t, 4.3, 4.2 - k * 0.6)); cap('三個關係式', '');
+    ['① n = mi + 1', '② l = (m − 1)i + 1', '③ i = (l − 1)/(m − 1) = (n − 1)/m'].forEach((t, k) => { S.f = S.f || []; S.f[k] = col(pl(t, 1.6, 4.3 - k * 0.6)); }); cap('三個關係式', '');
   },
   async (tok, S) => { // @380.0
-    sm('只要懂 ①，② ③ 都推得出來', 4.3, 2.2); cap('主要是第一式', '其他推得出來');
+    S.only = col(sm('只要懂 ①，② ③ 都推得出來', 1.6, 2.5)); cap('主要是第一式', '其他推得出來');
   },
   async (tok, S) => { // @397.6
-    pl('除了 root，每個 vertex 都是某個 internal vertex 的 child', 0, 1.3); S.g.vcol('r', TC.gold, HL); cap('除了 root 以外', '每個 vertex 都是某個 internal vertex 的 child');
+    proof(S, pl('除了 root，每個 vertex 都是某個 internal vertex 的 child', 0, 0)); S.g.vcol('r', TC.gold, HL); cap('除了 root 以外', '每個 vertex 都是某個 internal vertex 的 child');
   },
   async (tok, S) => { // @448.3
     const inn = Object.keys(BT).filter((n) => BTK[n].length); const col = [TC.a, TC.b, TC.purple, TC.teal];
     inn.forEach((p, k) => BTK[p].forEach((c) => { S.g.ecol(p, c, col[k], true); }));
-    sm('同色的邊：同一個 parent 的 children', 0, 0.75); cap('這是它的 child、這是它的 child…', '');
+    proof(S, sm('同色的邊：同一個 parent 的 children', 0, 0)); cap('這是它的 child、這是它的 child…', '');
   },
   async (tok, S) => { // @489.3
-    sm('complete：每個 internal vertex 剛好 m 個 children', 0, 0.25); cap('complete 的定義', '每個 internal 剛好 m 個 children');
+    proof(S, sm('complete：每個 internal vertex 剛好 m 個 children', 0, 0)); cap('complete 的定義', '每個 internal 剛好 m 個 children');
   },
   async (tok, S) => { // @531.7
-    pl('i 個 internal × 每個 m 個 children = mi', 0, -0.3); cap('i 個 internal vertex', '乘上 m');
+    proof(S, pl('i 個 internal × 每個 m 個 children = mi', 0, 0)); cap('i 個 internal vertex', '乘上 m');
   },
   async (tok, S) => { // @550.4
-    ok(2 * BTi === BTn - 1, 0, -0.85, 'mi 數到 root 以外的全部 vertex、不重複（parent 唯一）：2 × ' + BTi + ' = ' + (2 * BTi) + ' = n − 1 ✓'); cap('mi 數到 root 以外全部', '每個 parent 唯一，不重複');
+    proof(S, ok(2 * BTi === BTn - 1, 0, 0, 'mi 數到 root 以外的全部 vertex、不重複（parent 唯一）：2 × ' + BTi + ' = ' + (2 * BTi) + ' = n − 1 ✓')); cap('mi 數到 root 以外全部', '每個 parent 唯一，不重複');
   },
   async (tok, S) => { // @606.5
-    good('再加 root：n = mi + 1', 0, -1.4); cap('加上 root', 'n = mi + 1');
+    proof(S, good('再加 root：n = mi + 1', 0, 0)); S.f[0].element.className = 'lab-label good'; cap('加上 root', 'n = mi + 1');
   },
   async (tok, S) => { // @668.0
-    sm('要 complete 才成立（不 complete 時 children 不一定剛好 m 個）', 0, -1.95); cap('要 complete 才成立', '');
+    proof(S, sm('要 complete 才成立（不 complete 時 children 不一定剛好 m 個）', 0, 0)); cap('要 complete 才成立', '');
   },
   async (tok, S) => { // @689.3
-    ok(BTl === (2 - 1) * BTi + 1, 4.3, 1.6, '② l = n − i = (m − 1)i + 1：' + BTl + ' = ' + BTi + ' + 1 ✓'); cap('第二式', 'l = n − i，再代入 n = mi + 1');
+    gone(S.f[1], S.only); S.f[1] = col(ok(BTl === (2 - 1) * BTi + 1, 1.6, 3.7, '② l = n − i = (m − 1)i + 1：' + BTl + ' = ' + BTi + ' + 1 ✓')); cap('第二式', 'l = n − i，再代入 n = mi + 1');
   },
   async (tok, S) => { // @745.0
-    ok(BTi === (BTl - 1) / (2 - 1) && BTi === (BTn - 1) / 2, 4.3, 1.0, '③ 從 ①② 解 i：' + BTi + ' = ' + (BTl - 1) + '/1 = ' + (BTn - 1) + '/2 ✓'); cap('第三式', '用一、二解出 i');
+    gone(S.f[2]); S.f[2] = col(ok(BTi === (BTl - 1) / (2 - 1) && BTi === (BTn - 1) / 2, 1.6, 3.1, '③ 從 ①② 解 i：' + BTi + ' = ' + (BTl - 1) + '/1 = ' + (BTn - 1) + '/2 ✓')); cap('第三式', '用一、二解出 i');
   },
   async (tok, S) => { // @784.5
     let cnt = 0, bad0 = 0;
     for (const m of [2, 3]) for (let i = 0; i <= (m === 2 ? 5 : 4); i++) for (const t of complete(m, i)) { cnt++; const n = tN(t), l = tL(t), ii = tI(t); if (n !== m * ii + 1 || l !== (m - 1) * ii + 1 || ii !== i) bad0++; }
-    ok(bad0 === 0, 0, -2.5, '電腦列出 m = 2、3 的 ' + cnt + ' 棵小 complete tree，三式全對 ✓'); cap('理解第一式就夠', '不要硬背');
+    gone(S.pf); S.pf = []; proof(S, ok(bad0 === 0, 0, 0, '電腦列出 m = 2、3 的 ' + cnt + ' 棵小 complete tree，三式全對 ✓')); cap('理解第一式就夠', '不要硬背');
   },
 ]);
 
@@ -4361,7 +4381,7 @@ function travScene(id, title, kind, head, seq) {
     for (const v of s) {
       const want = order[S.k];
       S.g.vcol(want, TC.hot, HL); const n = S.k + 1; S.k++;
-      const l = lab.label(String(n), 'idx'); l.position.set(0.56, 0.05, 0); S.g.V[want].add(l);
+      const l = lab.label(String(n), 'idx'); l.position.set('pt'.includes(want) ? -1.15 : 1.15, 0.4, 0); S.g.V[want].add(l); // the visit number up-right of its vertex, clear of the name
       S.row.push(cube(want, TC.yel, [0.5, 0.45, 0.4], -5.4 + (n - 1) * 0.6, 0.95, 0, 0.4));
       await wt(tok, 120); S.g.vcol(want, TC.gold, null);
       if (want !== v) bad('（預期 ' + v + '）', 0, 0.3);
@@ -4402,6 +4422,14 @@ const cap = (a, b = '') => say(a, b);
 const hd = (t, x, y, z = 0) => tag(t, 'ptr', x, y, z);
 const hot = (t, x, y, z = 0) => tag(t, 'ptr alt', x, y, z);
 const sm = (t, x, y, z = 0) => tag(t, 'idx', x, y, z);
+// a remark whose left edge is at x (a column beside the code panel, not centred over it)
+const rcol = (l) => { if (l.center) l.center.set(0, 0.5); return l; };
+// a short running derivation under the picture: newest line at the bottom, only the last 3 stay
+function drv(S, l, y0 = 0.4) {
+  S.dv = S.dv || []; S.dv.push(l); while (S.dv.length > 3) gone(S.dv.shift());
+  S.dv.forEach((x, k) => { x.position.y = y0 - k * 0.6; });
+  return l;
+}
 const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
 const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
 const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
@@ -4419,6 +4447,7 @@ const CAM = [[0, 3.6, 15], [0, 3.1, 0]];
 function scene(id, title, steps, cam) {
   FRAG.push([id, title, async (tok) => {
     const c = cam || CAM; fresh(c[0], c[1]);
+    if (!cam) frameHold(-6.6, -0.9, -0.3, 6.6, 7.5, 0.3); // the usual picture area, held from the first step (no zoom jumps)
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
@@ -4683,7 +4712,7 @@ scene('g8c-polish-eval', '25A：Polish notation 從右到左計算', [
     evalRow(S, 0); cap('把值帶進 Polish notation', '一步一步從右邊算');
   },
   async (tok, S) => { // @652.1
-    hiOp(S, 0); S.op = note('從右 scan：3、2，碰到 ↑', 5.3, 5.0); cap('從右邊 scan：3、2，碰到 ↑', '運算子作用在它後面兩個數');
+    hiOp(S, 0); S.op = rcol(note('從右 scan：3、2，碰到 ↑', 5.7, 5.0)); cap('從右邊 scan：3、2，碰到 ↑', '運算子作用在它後面兩個數');
   },
   async (tok, S) => { // @686.0
     gone(S.op); S.op = good(opText(PRUN.ops[0]), 5.3, 5.0); cap('算 2 的 3 次方 = 8', '後面這三個用 8 換掉');
@@ -4711,7 +4740,7 @@ scene('g8c-polish-eval', '25A：Polish notation 從右到左計算', [
   },
   async (tok, S) => { // @947.2
     const { t, u, v, w, x, y, z } = VAL; const direct = t + (u * v) / (w + x - y ** z);
-    ok(direct === PRUN.states[6][0], 0, -2.2, '直接代入：4 + (2·3) / (1 + 9 − 2³) = 4 + 6/2 = ' + direct + ' ✓');
+    gone(S.sum); ok(direct === PRUN.states[6][0], 0, -1.6, '直接代入：4 + (2·3) / (1 + 9 − 2³) = 4 + 6/2 = ' + direct + ' ✓');
     cap('用原來的式子直接算，也是 7', '跟平常手算一樣');
   },
 ]);
@@ -4856,13 +4885,13 @@ scene('g8c-bfs-code', '25B：BFS（breadth-first search）虛擬碼', [
     hd('BFS：Breadth-First Search（廣度先）', 0, 7.3); cap('另一個：breadth-first search', 'breadth 是廣度，簡稱 BFS');
   },
   async (tok, S) => { // @803.1
-    S.g = drawG(G8sm, G8); note('示意圖', 6.2, 6.6); S.code = code(BFS_CODE, 0, 3.4, 0.48); cap('看 BFS 的 pseudocode', '除了 T，還多一個 L');
+    S.g = drawG(G8sm, G8); note('示意圖', 6.2, 6.6); S.code = code(BFS_CODE, -3.0, 3.05, 0.48); // code on the left under the graph; the queue and the remarks on its right cap('看 BFS 的 pseudocode', '除了 T，還多一個 L');
   },
   async (tok, S) => { // @854.1
-    queueRow(S, 1.4, -0.1); S.qdraw([]); S.qn = sm('queue：First In First Out（FIFO）', -2.6, -0.7); cap('L 是一個 queue', 'First In First Out，先進先出');
+    queueRow(S, 2.8, 2.65); S.qdraw([]); S.qn = rcol(sm('queue：First In First Out（FIFO）', 0.9, 2.0)); cap('L 是一個 queue', 'First In First Out，先進先出');
   },
   async (tok, S) => { // @879.0
-    S.st = sm('（stack 才是先進後出 FILO）', 3.0, -0.7); cap('就像排隊：先進去的先出來', '先進後出的那種叫 stack');
+    S.st = rcol(sm('（stack 才是先進後出 FILO）', 0.9, 1.45)); cap('就像排隊：先進去的先出來', '先進後出的那種叫 stack');
   },
   async (tok, S) => { // @901.0
     S.code.hl(0); cap('L 一開始是 empty list', 'L 放「還沒處理的端點」');
@@ -4893,15 +4922,15 @@ scene('g8c-bfs-code', '25B：BFS（breadth-first search）虛擬碼', [
   },
   async (tok, S) => { // @1189.8
     const lv = {}; Object.entries(B8.lev).forEach(([v, l]) => (lv[l] = (lv[l] || []).concat(v)));
-    S.lv = sm('level：' + Object.keys(lv).map((l) => l + '｛' + lv[l].join(' ') + '｝').join('　'), 0, -1.3);
+    S.lv = sm('level：' + Object.keys(lv).map((l) => l + '｛' + lv[l].join(' ') + '｝').join('　'), 0.9, 0.9); rcol(S.lv);
     cap('level 1 全部長完，才長 level 2', '這就是廣度先');
   },
   async (tok, S) => { // @1209.0
     await runEv(tok, S.g, S, S.ev.length - S.ei, 220); cur(S.g, S, null);
-    ok(S.ei === S.ev.length && isTree(G8.vs, B8.tree), 0, -1.9, 'L 空了：BFS 順序 ' + B8.order.join(' ') + ' → spanning tree ✓'); cap('讓每個端點的 level 越小越好', 'L 空了就做完');
+    rcol(ok(S.ei === S.ev.length && isTree(G8.vs, B8.tree), 0.9, 0.35, 'L 空了：BFS 順序 ' + B8.order.join(' ') + ' → spanning tree ✓')); cap('讓每個端點的 level 越小越好', 'L 空了就做完');
   },
   async (tok, S) => { // @1258.1
-    S.more = note('還有其他方法：例如邊上有 weight 的 minimal spanning tree（之後講）', 0, -2.5); cap('還有其他找 spanning tree 的方法', '邊有 weight 的以後再講');
+    S.more = note('還有其他方法：例如邊上有 weight 的 minimal spanning tree（之後講）', 0, -0.95); cap('還有其他找 spanning tree 的方法', '邊有 weight 的以後再講');
   },
 ]);
 
@@ -5020,7 +5049,7 @@ scene('g8c-erdos', '25C：collaboration graph 與 Erdős number', [
     sm('simple graph：合寫兩篇也只連一條邊', 0, 1.6); cap('它是 simple graph', '沒有 multiple edge');
   },
   async (tok, S) => { // @1309.4
-    S.g.v('Erdős', GC.pink); S.g.e('Erdős', 'A'); note('示意：假設 Erdős 和 A 合寫過', 3.0, 6.6);
+    S.g.v('Erdős', GC.pink); S.g.e('Erdős', 'A'); note('示意：假設 Erdős 和 A 合寫過', 5.4, 6.6);
     cap('從 Paul Erdős 開始建 BFS tree', '他當成 v₁');
   },
   async (tok, S) => { // @1332.3
@@ -5341,25 +5370,25 @@ scene('g8c-ms-levels', '26A：n = 2ʰ 時 splitting tree 每層的數量', [
   async (tok, S) => { // @800.4
     for (let k = 0; k <= H3; k++) sm('2ʰ⁻' + k + ' = ' + 2 ** (H3 - k) + ' 個', 6.0, 6.3 - k * 1.5);
     const okk = S.lvn.every((ns, k) => ns.length === 2 ** k && ns.length * 2 ** (H3 - k) === 2 ** H3);
-    ok(okk, 0, 0.4, 'level k：2ᵏ 個端點、每個 2ʰ⁻ᵏ 個元素 ✓'); cap('level k：每個端點有 2ʰ⁻ᵏ 個元素', 'level 1 是 2ʰ⁻¹');
+    drv(S, ok(okk, 0, 0, 'level k：2ᵏ 個端點、每個 2ʰ⁻ᵏ 個元素 ✓')); cap('level k：每個端點有 2ʰ⁻ᵏ 個元素', 'level 1 是 2ʰ⁻¹');
   },
   async (tok, S) => { // @842.4
     S.lvn[H3].forEach((m) => glow(m, HL)); cap('level h：每個只有 2⁰ = 1 個元素', '就是葉子');
   },
   async (tok, S) => { // @858.2
     S.lvn.flat().forEach((m) => glow(m, null)); S.lvn[1].forEach((m) => glow(m, HL));
-    pl('同一個 parent 的兩個叫一對（pair）：level 1 有 2⁰ = 1 對', 0, -0.2); cap('兩個一組叫一對', 'level 1 只有一對');
+    drv(S, pl('同一個 parent 的兩個叫一對（pair）：level 1 有 2⁰ = 1 對', 0, 0)); cap('兩個一組叫一對', 'level 1 只有一對');
   },
   async (tok, S) => { // @903.4
     S.lvn[1].forEach((m) => glow(m, null)); S.lvn[H3].forEach((m) => glow(m, HL));
     const pairs = S.lvn[H3].length / 2;
-    ok(pairs === 2 ** (H3 - 1), 0, -0.8, 'level k 有 2ᵏ⁻¹ 對；level h：2ʰ⁻¹ = ' + pairs + ' 對（共 2ʰ = 8 片葉子）✓'); cap('level k 有 2ᵏ⁻¹ 對', '最後一層有 2ʰ⁻¹ 對');
+    drv(S, ok(pairs === 2 ** (H3 - 1), 0, 0, 'level k 有 2ᵏ⁻¹ 對；level h：2ʰ⁻¹ = ' + pairs + ' 對（共 2ʰ = 8 片葉子）✓')); cap('level k 有 2ᵏ⁻¹ 對', '最後一層有 2ʰ⁻¹ 對');
   },
   async (tok, S) => { // @918.4
-    hot('level h：每對各 1 個 → 1 + 1 − 1 = 1 次比較', 0, -1.4); cap('先看最後一層：每對比一次', '1 + 1 − 1 = 1');
+    drv(S, hot('level h：每對各 1 個 → 1 + 1 − 1 = 1 次比較', 0, 0)); cap('先看最後一層：每對比一次', '1 + 1 − 1 = 1');
   },
   async (tok, S) => { // @942.4
-    ok(2 ** (H3 - 1) * 1 === 4, 0, -2.0, 'level h 共 2ʰ⁻¹ × 1 = ' + 2 ** (H3 - 1) + ' 次比較 ✓'); cap('有 2ʰ⁻¹ 對，每對 1 次', 'merge 回來要 2ʰ⁻¹ 次比較');
+    drv(S, ok(2 ** (H3 - 1) * 1 === 4, 0, 0, 'level h 共 2ʰ⁻¹ × 1 = ' + 2 ** (H3 - 1) + ' 次比較 ✓')); cap('有 2ʰ⁻¹ 對，每對 1 次', 'merge 回來要 2ʰ⁻¹ 次比較');
   },
 ]);
 
@@ -5455,7 +5484,7 @@ scene('g8c-sp-setup', '26B：shortest path problem 的設定', [
     fresh(CAM[0], CAM[1]); hd('例：weighted simple graph', 0, 7.3); drawWG(S, false); cap('舉個例子：一個 connected simple graph', '六個端點 A 到 F');
   },
   async (tok, S) => { // @1008.0
-    WG.es.forEach(([a, b, w]) => { const [x1, y1] = WG.pos[a], [x2, y2] = WG.pos[b]; const l = tag(String(w), WG.guess.includes(S.g.k(a, b)) ? 'note' : 'idx', (x1 + x2) / 2 + 0.22, (y1 + y2) / 2 + 0.22); S.g.list.push(l); });
+    WG.es.forEach(([a, b, w]) => { const [x1, y1] = WG.pos[a], [x2, y2] = WG.pos[b]; const l = K.keep(tag(String(w), WG.guess.includes(S.g.k(a, b)) ? 'note' : 'idx', (x1 + x2) / 2 + 0.22, (y1 + y2) / 2 + 0.22)); S.g.list.push(l); });
     note('黃色數字：位置示意', 5.0, 6.4); cap('每個 edge 加一個 weight', '變成 weighted simple graph');
   },
   async (tok, S) => { // @1025.0
@@ -5469,28 +5498,28 @@ scene('g8c-sp-path', '26B：path 的 weight', [
     drawWG(S); note('黃色數字：位置示意', 5.0, 6.4); hd('path 的 weight', 0, 7.3); cap('有了 edge weight', '就能定義一條 path 的 weight');
   },
   async (tok, S) => { // @1084.6
-    pl('path 的 weight = 它經過的 edge 的 weight 加起來', 0, 0.4); cap('把 path 上每個 edge 的 weight 加起來', 'sum of the weights of its edges');
+    drv(S, pl('path 的 weight = 它經過的 edge 的 weight 加起來', 0, 0), 0.3); cap('把 path 上每個 edge 的 weight 加起來', 'sum of the weights of its edges');
   },
   async (tok, S) => { // @1123.0
     const p = ['A', 'D', 'C', 'B', 'F']; for (let i = 1; i < p.length; i++) { S.g.pe(p[i - 1], p[i], GC.hot, 2.6); await wt(tok, 250); }
     cap('例：path A D C B F', '講出端點順序就知道路徑');
   },
   async (tok, S) => { // @1143.1
-    S.b1 = pl('w(A,D) + w(D,C) + w(C,B) + w(B,F)', 0, -0.2); cap('weight = AD + DC + CB + BF', '對應的邊加起來');
+    S.b1 = drv(S, pl('w(A,D) + w(D,C) + w(C,B) + w(B,F)', 0, 0), 0.3); cap('weight = AD + DC + CB + BF', '對應的邊加起來');
   },
   async (tok, S) => { // @1173.1
     const w = pathW(['A', 'D', 'C', 'B', 'F']);
-    S.b2 = ok(w === 22, 0, -0.8, '= 7 + 2 + 5 + 8 = ' + w + ' ✓'); cap('7 + 2 + 5 + 8 = 22', '這條 A 到 F 的 path weight 是 22');
+    S.b2 = drv(S, ok(w === 22, 0, 0, '= 7 + 2 + 5 + 8 = ' + w + ' ✓'), 0.3); cap('7 + 2 + 5 + 8 = 22', '這條 A 到 F 的 path weight 是 22');
   },
   async (tok, S) => { // @1192.2
     WG.es.forEach(([a, b]) => S.g.pe(a, b, GC.e)); S.g.pe('A', 'D', GC.blue, 2.6); S.g.pe('D', 'F', GC.blue, 2.6);
-    const w = pathW(['A', 'D', 'F']); S.b3 = ok(w === 12 && w < 22, 0, -1.4, 'A D F：7 + 5 = ' + w + '，比 22 小 ✓'); cap('A 到 F 不止一條：A D F', 'weight 12，比較小');
+    const w = pathW(['A', 'D', 'F']); S.b3 = drv(S, ok(w === 12 && w < 22, 0, 0, 'A D F：7 + 5 = ' + w + '，比 22 小 ✓'), 0.3); cap('A 到 F 不止一條：A D F', 'weight 12，比較小');
   },
   async (tok, S) => { // @1213.0
-    S.b4 = sm('還有 A C E F、A B E F……很多條', 0, -2.0); cap('A C E F、A B E F 也都是 path', '到 F 有很多很多條');
+    S.b4 = drv(S, sm('還有 A C E F、A B E F……很多條', 0, 0), 0.3); cap('A C E F、A B E F 也都是 path', '到 F 有很多很多條');
   },
   async (tok, S) => { // @1223.2
-    WG.es.forEach(([a, b]) => S.g.pe(a, b, GC.e)); gone(S.b1, S.b2, S.b3, S.b4); hot('要找：從某點到另一點、weight 最小的 path', 0, -0.4); cap('找所有 path 裡 weight 最小的', '這就是 shortest path problem');
+    WG.es.forEach(([a, b]) => S.g.pe(a, b, GC.e)); gone(S.dv); S.dv = []; hot('要找：從某點到另一點、weight 最小的 path', 0, -0.4); cap('找所有 path 裡 weight 最小的', '這就是 shortest path problem');
   },
   async (tok, S) => { // @1288.5
     sm('weight 可想成距離，或應用裡的某種 metric', 0, -1.1); cap('weight 想成距離就是最短路徑', '也可以是其他的量');
@@ -5563,14 +5592,21 @@ const bub = (t, x, y, z = 0) => tag(t, 'say', x, y, z);
 const pl = (t, x, y, z = 0) => tag(t, '', x, y, z);
 const ok = (b, x, y, t) => (b ? good(t, x, y) : bad(t.replace(/✓/g, '✘'), x, y));
 const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.ls && typeof o.kill === 'function') return o.kill(); if (typeof o.all === 'function') return gone(o.all()); if (o.element) remove(o); else kill(o); });
+// a label whose left edge sits at x (a remark right next to the table row it talks about); w: wrap width in px
+const lft = (l, w) => { if (l.center) l.center.set(0, 0.5); if (w) Object.assign(l.element.style, { whiteSpace: 'normal', maxWidth: w + 'px' }); return l; };
+// one table row in a fixed-width font, so a whole matrix row is one label and the columns line up
+const mono = (l) => { Object.assign(l.element.style, { fontFamily: 'ui-monospace, Consolas, Menlo, monospace', whiteSpace: 'pre' }); return l; };
 const setCls = (l, cls) => { l.element.className = 'lab-label' + (cls ? ' ' + cls : ''); };
 const CAM = [[0, 3.6, 15], [0, 3.1, 0]];
 const TC = { node: '#cdbfa6', edge: '#9c8b70', faint: '#e4dccd', a: '#4b9ee2', b: '#e55a9b', hot: '#d64545', gold: '#c08a1f', green: '#2fc092', yel: '#e9c53a', purple: '#9b7ef4', orange: '#dd8238' };
 // a scene = a list of step functions; each runs when the video reaches its cue.
 // o.pre: functions run silently first (to rebuild the state a later section starts from).
+// the graph on the left and the table / code on the right: held from the first step so the camera stays put
+const HOLD = [-7.0, -0.6, -0.3, 6.6, 7.3, 0.3];
 function scene(id, title, steps, o = {}) {
   FRAG.push([id, title, async (tok) => {
     const c = o.cam || CAM; fresh(c[0], c[1]);
+    if (o.hold !== null) frameHold(...(o.hold || HOLD));
     const S = {};
     for (const f of o.pre || []) await f(tok, S, true);
     for (const f of steps) { await step(tok); await f(tok, S, false); }
@@ -5726,7 +5762,7 @@ const DCODE = [
   '      L(v) = L(u) + w(u,v)',
   '      label v = (L(v), u)',
 ];
-function mkCode(S, x = 3.4, y = 6.5, upto = DCODE.length) { S.code = code(DCODE, x, y, 0.5); S.code.ls.forEach((l, i) => showL(l, i < upto)); S.reveal = (k) => S.code.ls.forEach((l, i) => { if (i < k) showL(l, true); }); }
+function mkCode(S, x = 3.4, y = 6.5, upto = DCODE.length) { S.code = code(DCODE, x, y, 0.56); S.code.ls.forEach((l, i) => showL(l, i < upto)); S.reveal = (k) => S.code.ls.forEach((l, i) => { if (i < k) showL(l, true); }); }
 
 scene('g8d-sp-intro', '27A：Shortest path 問題與 principle of optimality', [
   async (tok, S) => { // @4.4
@@ -5768,13 +5804,13 @@ scene('g8d-sp-intro', '27A：Shortest path 問題與 principle of optimality', [
 
 scene('g8d-dij-setup', '27A：Dijkstra 的輸入與 initialization', [
   async (tok, S) => { // @134.0
-    S.g = gH(); note('示意圖', -3.5, -0.2); hd('weighted、undirected、connected、simple', -3.4, 7.0); cap('輸入：weighted connected simple graph', '');
+    S.g = gH(); note('示意圖', -3.5, -0.2); hd('weighted、undirected、connected、simple', -4.2, 7.0); cap('輸入：weighted connected simple graph', '');
   },
   async (tok, S) => { // @149.3
-    sm('端點編號 v₁ … vₙ（這裡 n = ' + HN.length + '）只是為了好講', -3.4, 6.5); cap('端點編成 v₁ 到 vₙ', '編號順序沒有影響');
+    S.num = sm('端點編號 v₁ … vₙ（這裡 n = ' + HN.length + '）只是為了好講', 3.4, 6.5); cap('端點編成 v₁ 到 vₙ', '編號順序沒有影響');
   },
   async (tok, S) => { // @164.7
-    S.g.ecol('3', '5', TC.orange, true); S.w = bub('w(v₃, v₅) = ' + wOf(HE, '3', '5'), -2.6, 4.6); cap('edge {vᵢ, vⱼ} 上的 weight', '');
+    S.g.ecol('3', '5', TC.orange, true); S.w = bub('w(v₃, v₅) = ' + wOf(HE, '3', '5'), 3.4, 5.6); cap('edge {vᵢ, vⱼ} 上的 weight', '');
   },
   async (tok, S) => { // @170.0
     S.g.ecol('3', '5', TC.edge, false); gone(S.w);
@@ -5782,7 +5818,7 @@ scene('g8d-dij-setup', '27A：Dijkstra 的輸入與 initialization', [
     cap('沒有 edge：weight 當成 ∞', '永遠不會被選到');
   },
   async (tok, S) => { // @194.0
-    gone(S.nd, S.w); mkCode(S, 3.4, 6.5, 2); S.code.hl(1); cap('initialization', '最後輸出 v₁ 到每點的最短距離');
+    gone(S.nd, S.w, S.num); mkCode(S, 3.4, 6.5, 2); S.code.hl(1); cap('initialization', '最後輸出 v₁ 到每點的最短距離');
   },
   async (tok, S) => { // @218.6
     hLabels(S); HN.forEach((n) => n !== '1' && txt(S.vl[n], 'L = ∞')); cap('其他端點的 L 值先設成 ∞', '');
@@ -5794,7 +5830,7 @@ scene('g8d-dij-setup', '27A：Dijkstra 的輸入與 initialization', [
     S.reveal(3); S.code.hl(2); txt(S.vl['1'], hl('1', 0, null)); S.tp = bub('label = (L 值, 前一個端點)：v₁ 沒有前一個', 3.4, 0.9); cap('每個端點有一個 2-tuple label', '');
   },
   async (tok, S) => { // @260.9
-    gone(S.tp); S.s = hot('S = ∅', -6.0, 6.3); sm('S：已經處理過的端點', -6.0, 5.8); cap('S 一開始是空集合', 'S 放處理過的端點');
+    gone(S.tp); S.s = hot('S = ∅', -6.2, 0.5); lft(sm('S：已經處理過的端點', -5.6, 0.5)); cap('S 一開始是空集合', 'S 放處理過的端點');
   },
   async (tok, S) => { // @275.4
     S.reveal(4); S.code.hl(3); S.tp = bub('n 個端點一個一個處理 → n 次 iteration', 3.4, 0.9); cap('S 包含所有端點就結束', '共 n 次 iteration');
@@ -5811,19 +5847,19 @@ scene('g8d-dij-loop', '27A：while loop——挑 u、加進 S、更新 L 值', [
     mkCode(S); S.code.hl(3); cap('主要就是這個 while loop', '');
   },
   async (tok, S) => { // @328.5
-    S.s = hot('S = {' + H1.S.map(vn).join(', ') + '} ≠ V → 繼續', -5.0, 6.8); cap('條件：還有端點不在 S 裡', '全部都在 S 就結束');
+    S.s = hot('S = {' + H1.S.map(vn).join(', ') + '} ≠ V → 繼續', -5.6, 0.5); cap('條件：還有端點不在 S 裡', '全部都在 S 就結束');
   },
   async (tok, S) => { // @351.0
-    S.b1 = bub('每一輪挑一個端點出來處理，叫 u', 3.4, 0.9); cap('每次找一個端點 u 來處理', '');
+    S.b1 = bub('每一輪挑一個端點出來處理，叫 u', 3.4, 0.65); cap('每次找一個端點 u 來處理', '');
   },
   async (tok, S) => { // @367.0
     gone(S.b1); S.code.hl(4);
-    const out = H2.out; S.b1 = pl('不在 S：' + out.map((n) => vn(n) + '=' + fmt(H2.Lbefore[n])).join('  '), 3.4, 1.0);
-    S.b2 = good('L 最小 → u = ' + vn(H2.u), 3.4, 0.4); S.g.vcol(H2.u, TC.orange, '#5a2a00');
+    const out = H2.out; S.b1 = pl('不在 S：' + out.map((n) => vn(n) + '=' + fmt(H2.Lbefore[n])).join('  '), 3.4, 0.65);
+    S.b2 = good('L 最小 → u = ' + vn(H2.u), 3.4, 0.0); S.g.vcol(H2.u, TC.orange, '#5a2a00');
     cap('u：不在 S、L 值最小', '');
   },
   async (tok, S) => { // @392.1
-    sm('最小的不只一個時隨便挑一個；最短 path 也不一定唯一', 3.4, -0.1); cap('平手就隨便挑一個', '答案不一定唯一，但一定最短');
+    S.tie = sm('最小的不只一個時隨便挑一個；最短 path 也不一定唯一', 3.4, -0.65); cap('平手就隨便挑一個', '答案不一定唯一，但一定最短');
   },
   async (tok, S) => { // @418.5
     S.code.hl(5); txt(S.s, 'S = {' + H2.S.map(vn).join(', ') + '}'); S.g.vcol(H2.u, TC.green);
@@ -5831,28 +5867,28 @@ scene('g8d-dij-loop', '27A：while loop——挑 u、加進 S、更新 L 值', [
     cap('把 u 加進 S', '代表 u 處理過了');
   },
   async (tok, S) => { // @457.1
-    gone(S.b1, S.b2); S.b1 = sm('找 u：' + H2.out.length + ' 個候選 → 比較 ' + (H2.out.length - 1) + ' 次（comparison）', 3.4, 1.0); cap('找最小要做 comparison', '');
+    gone(S.b1, S.b2, S.tie); S.b1 = sm('找 u：' + H2.out.length + ' 個候選 → 比較 ' + (H2.out.length - 1) + ' 次（comparison）', 3.4, 0.65); cap('找最小要做 comparison', '');
   },
   async (tok, S) => { // @480.6
     S.code.hl(6); txt(S.b1, '對每個不在 S 的 v：' + H2.ch.map((c) => vn(c.v)).join('、')); cap('for：每個還沒處理的 v', '處理過的就不管');
   },
   async (tok, S) => { // @506.3
-    S.b2 = bub('L 值 = 到目前為止 v₁ 到這點的最短距離（還不一定是最後答案）', 3.4, 0.3); cap('L 值是什麼？', '到現在為止的最短距離');
+    S.b2 = bub('L 值 = 到目前為止 v₁ 到這點的最短距離（還不一定是最後答案）', 3.4, 0.0); cap('L 值是什麼？', '到現在為止的最短距離');
   },
   async (tok, S) => { // @548.2
     gone(S.b2); const c = H2.ch.find((x) => x.v === '5');
-    S.b2 = pl('L(u) = L(' + vn(H2.u) + ') = ' + H2.Lu + '；L(v₅) = ' + fmt(c.old) + '（上一輪的）', 3.4, 0.3); S.g.vcol('5', TC.a);
+    S.b2 = pl('L(u) = L(' + vn(H2.u) + ') = ' + H2.Lu + '；L(v₅) = ' + fmt(c.old) + '（上一輪的）', 3.4, 0.0); S.g.vcol('5', TC.a);
     cap('拿 v₅ 當例子', '');
   },
   async (tok, S) => { // @567.0
     S.code.hl(7); const c = H2.ch.find((x) => x.v === '5'); S.g.ecol(H2.u, '5', TC.green, true);
-    S.b3 = ok(c.upd, 3.4, -0.35, fmt(c.old) + ' > ' + H2.Lu + ' + ' + c.w + ' = ' + c.cand + '：先到 u 再到 v 比較短 ✓');
+    S.b3 = ok(c.upd, 3.4, -0.65, fmt(c.old) + ' > ' + H2.Lu + ' + ' + c.w + ' = ' + c.cand + '：先到 u 再到 v 比較短 ✓');
     cap('先到 u 再到 v 比較短？', '那就應該經過 u');
   },
   async (tok, S) => { // @595.6
     S.code.hl(8); const c = H2.ch.find((x) => x.v === '5'); txt(S.vl['5'], 'L = ' + c.cand);
     const c2 = H2.ch.find((x) => x.v === '2'); txt(S.vl['2'], 'L = ' + c2.cand); S.g.ecol(H2.u, '2', TC.green, true);
-    gone(S.b3); S.b3 = sm('v₂ 也一樣：' + fmt(c2.old) + ' > ' + H2.Lu + ' + ' + c2.w + ' → L(v₂) = ' + c2.cand, 3.4, -0.35);
+    gone(S.b3); S.b3 = sm('v₂ 也一樣：' + fmt(c2.old) + ' > ' + H2.Lu + ' + ' + c2.w + ' → L(v₂) = ' + c2.cand, 3.4, -0.65);
     cap('L(v) 改成經過 u 的距離', '');
   },
   async (tok, S) => { // @608.1
@@ -5860,47 +5896,47 @@ scene('g8d-dij-loop', '27A：while loop——挑 u、加進 S、更新 L 值', [
     cap('label 後面記「前一個端點」u', '');
   },
   async (tok, S) => { // @629.3
-    HN.forEach((n) => S.setV(n, H2.L[n], H2.pre[n])); S.g.vcol('5', TC.node); S.b4 = sm('每個端點都帶著 (距離, 前一點)', -3.4, 6.6); cap('每個端點都有一個 2-tuple', '');
+    HN.forEach((n) => S.setV(n, H2.L[n], H2.pre[n])); S.g.vcol('5', TC.node); S.b4 = sm('每個端點都帶著 (距離, 前一點)', -5.0, 7.0); cap('每個端點都有一個 2-tuple', '');
   },
   async (tok, S) => { // @665.7
     const p = back(H2.pre, '5'); S.g.reset(); paintPath(S.g, p, TC.hot);
-    gone(S.b4); S.b4 = good('v₅ ← ' + p.slice(0, -1).reverse().map(vn).join(' ← ') + '：倒著找回去就是路徑', -3.4, 6.6); cap('知道前一點，就能 backtrack', '');
+    gone(S.b4); S.b4 = good('v₅ ← ' + p.slice(0, -1).reverse().map(vn).join(' ← ') + '：倒著找回去就是路徑', -4.6, 7.0); cap('知道前一點，就能 backtrack', '');
   },
-]);
+], { hold: [-7.0, -1.5, -0.3, 6.6, 7.3, 0.3] }); // three remark lines under the code panel: keep them above the caption
 
 scene('g8d-dij-meaning', '27A：結束時 label 的意義', [
   async (tok, S) => { // @688.6
     S.g = gH(); note('示意圖：Dijkstra 跑完', -3.4, -0.2); hLabels(S); HN.forEach((n) => S.setV(n, HD.L[n], HD.pre[n]));
-    S.t = hd('結束時每個 vᵢ 都有 label (L(vᵢ), u)', 3.0, 6.4); cap('做完後每個端點的 label', '');
+    S.t = lft(hd('結束時每個 vᵢ 都有 label (L(vᵢ), u)', 0.3, 6.4)); cap('做完後每個端點的 label', '');
   },
   async (tok, S) => { // @697.6
     const p = back(HD.pre, '4'); paintPath(S.g, p, TC.a);
-    S.a = pl('L(v₄) = ' + HD.L['4'] + ' = ' + cycleEdges(p).map(([u, v]) => wOf(HE, u, v)).join(' + ') + '（edge weight 的和）', 3.0, 5.4);
-    S.b = ok(HD_OK, 3.0, 4.7, '列舉所有 path：每個 L 都是真的最短 ✓'); cap('L(vᵢ) = v₁ 到 vᵢ 最短 path 的 weight', '');
+    S.a = lft(pl('L(v₄) = ' + HD.L['4'] + ' = ' + cycleEdges(p).map(([u, v]) => wOf(HE, u, v)).join(' + ') + '（edge weight 的和）', 0.3, 5.4));
+    S.b = lft(ok(HD_OK, 0.3, 4.7, '列舉所有 path：每個 L 都是真的最短 ✓')); cap('L(vᵢ) = v₁ 到 vᵢ 最短 path 的 weight', '');
   },
   async (tok, S) => { // @718.2
-    S.c = pl('u = predecessor vertex：v₄ 的前一個是 ' + vn(HD.pre['4']), 3.0, 3.8); S.g.vcol(HD.pre['4'], TC.orange); cap('u 是最短 path 上的前一個端點', '');
+    S.c = lft(pl('u = predecessor vertex：v₄ 的前一個是 ' + vn(HD.pre['4']), 0.3, 3.8)); S.g.vcol(HD.pre['4'], TC.orange); cap('u 是最短 path 上的前一個端點', '');
   },
   async (tok, S) => { // @739.0
     const p = back(HD.pre, '4'); S.g.reset(); paintPath(S.g, p, TC.hot);
-    S.d = good('v₄ ← ' + p.slice(0, -1).reverse().map(vn).join(' ← ') + '：一個一個找回去', 3.0, 3.0); cap('一個一個往回找，就得到 path', '');
+    S.d = lft(good('v₄ ← ' + p.slice(0, -1).reverse().map(vn).join(' ← ') + '：一個一個找回去', 0.3, 3.0)); cap('一個一個往回找，就得到 path', '');
   },
   async (tok, S) => { // @749.0
     S.g.reset(); preEdges(HE, HD.pre).forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true)); S.g.vcol(HD.pre['4'], TC.node);
-    S.e = sm('所有端點都這樣 → v₁ 到每一點的最短 path 和距離都有了', 3.0, 2.2); cap('v₁ 到所有端點的最短 path', '');
+    S.e = lft(sm('所有端點都這樣 → v₁ 到每一點的最短 path 和距離都有了', 0.3, 2.2)); cap('v₁ 到所有端點的最短 path', '');
   },
 ]);
 
 scene('g8d-dij-idea', '27A：從頭想一遍——為什麼每次挑 L 最小', [
   async (tok, S) => { // @793.9
     S.g = gH(); note('示意圖', -3.4, -0.2); hLabels(S); S.t = hd('過程中：L = 只考慮處理過的端點時的最短距離', 1.6, 6.9);
-    mkTab(S, HN.map(vn)); HN.forEach((n) => setCls(S.rows[vn(n)], '')); S.s = hot('S = ∅', 2.0, 1.0); cap('中間過程 label 的意思', '');
+    mkTab(S, HN.map(vn)); HN.forEach((n) => setCls(S.rows[vn(n)], '')); S.s = hot('S = ∅', 1.0, 1.45); cap('中間過程 label 的意思', '');
   },
   async (tok, S) => { // @825.0
     HN.forEach((n) => { const L = n === '1' ? 0 : Infinity; S.setV(n, L, null); S.setRow(vn(n), L, null); }); cap('一開始：v₁ 是 0，其他都是 ∞', '什麼都還沒處理');
   },
   async (tok, S) => { // @872.0
-    S.g.vcol(HD.it[0].u, TC.orange, '#5a2a00'); setCls(S.rows[vn(HD.it[0].u)], 'ptr alt'); S.u = pl('u = ' + vn(HD.it[0].u) + '（其他都是 ∞）', 4.6, 1.0); cap('挑 L 最小的 → 第一個一定是 v₁', '');
+    S.g.vcol(HD.it[0].u, TC.orange, '#5a2a00'); setCls(S.rows[vn(HD.it[0].u)], 'ptr alt'); S.u = pl('u = ' + vn(HD.it[0].u) + '（其他都是 ∞）', 1.0, 0.85); cap('挑 L 最小的 → 第一個一定是 v₁', '');
   },
   async (tok, S) => { // @898.0
     S.g.vcol('1', TC.green); txt(S.s, 'S = {v₁}'); setCls(S.rows.v1, 'good'); cap('v₁ 加進 S', '其他 v₂…vₙ 都要比一比');
@@ -5919,7 +5955,7 @@ scene('g8d-dij-idea', '27A：從頭想一遍——為什麼每次挑 L 最小', 
   async (tok, S) => { // @1037.3
     const it = HD.it[1]; S.g.reset(); preEdges(HE, it.pre).forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true));
     for (const c of it.ch) if (c.upd) { S.setV(c.v, c.cand, it.u); S.setRow(vn(c.v), c.cand, vn(it.u)); }
-    S.up = sm('經過 ' + vn(it.u) + ' 比較近的：' + it.ch.filter((c) => c.upd).map((c) => vn(c.v) + ' ' + fmt(c.old) + '→' + c.cand).join('，'), 3.0, 0.4);
+    S.up = sm('經過 ' + vn(it.u) + ' 比較近的：' + it.ch.filter((c) => c.upd).map((c) => vn(c.v) + ' ' + fmt(c.old) + '→' + c.cand).join('，'), 3.0, 0.05);
     cap('經過 ' + vn(it.u) + ' 會不會比較近？', '近的就更新 L 和 predecessor');
   },
   async (tok, S, q) => { // @1071.7
@@ -5933,22 +5969,22 @@ scene('g8d-dij-idea', '27A：從頭想一遍——為什麼每次挑 L 最小', 
     cap('範圍慢慢擴大到所有端點', '');
   },
   async (tok, S) => { // @1078.8
-    S.w1 = bub('挑進來的是目前 L 最小的：繞別的點（weight ≥ 0）只會更長', 3.0, 0.4); cap('為什麼挑最小？', '走別條不會比較短');
+    S.w1 = bub('挑進來的是目前 L 最小的：繞別的點（weight ≥ 0）只會更長', 3.0, 0.05); cap('為什麼挑最小？', '走別條不會比較短');
   },
   async (tok, S) => { // @1100.0
-    gone(S.w1); S.w1 = bub('一直維持：只經過 S 裡的點時，L 就是最短距離', 3.0, 0.4); cap('一直維持同一件事', '');
+    gone(S.w1); S.w1 = bub('一直維持：只經過 S 裡的點時，L 就是最短距離', 3.0, 0.05); cap('一直維持同一件事', '');
   },
   async (tok, S) => { // @1132.8
-    S.w2 = ok(HD_OK, 3.0, -0.2, '最後 S = 全部 → L 就是真正最短（和列舉比對 ✓）'); cap('到最後就是最短路徑', '可以用歸納法證');
+    S.w2 = ok(HD_OK, 3.0, -0.65, '最後 S = 全部 → L 就是真正最短（和列舉比對 ✓）'); cap('到最後就是最短路徑', '可以用歸納法證');
   },
   async (tok, S) => { // @1176.0
-    gone(S.w1, S.w2); S.w1 = pl('花時間 ①：找最小的 L(u) → comparison', 3.0, 0.4); cap('複雜度主要在哪？', '先是找 minimum');
+    gone(S.w1, S.w2); S.w1 = pl('花時間 ①：找最小的 L(u) → comparison', 3.0, 0.05); cap('複雜度主要在哪？', '先是找 minimum');
   },
   async (tok, S) => { // @1185.0
-    S.w2 = pl('花時間 ②：for 迴圈裡每個 v 一次比較 + 一次加法', 3.0, -0.2); cap('再來是一個比較、一個加法', '');
+    S.w2 = pl('花時間 ②：for 迴圈裡每個 v 一次比較 + 一次加法', 3.0, -0.65); cap('再來是一個比較、一個加法', '');
   },
   async (tok, S) => { // @1200.9
-    S.w3 = hot('下一段：用前面那張 A–F 的圖實際跑一次', 0, 7.4); cap('實際 run 一個例子', '');
+    gone(S.t); S.w3 = hot('下一段：用前面那張 A–F 的圖實際跑一次', 1.6, 7.3); cap('實際 run 一個例子', '');
   },
 ]);
 
@@ -5957,11 +5993,11 @@ function cmpOp(k, v, extra) {
   return async (tok, S) => {
     const it = DJ.it[k], c = it.ch.find((x) => x.v === v), u = it.u;
     gone(S.cmp); paintPre(S, GE); const y = S.rows[v].position.y;
-    S.cmp = [pl('L(' + v + ') = ' + fmt(c.old) + '  vs  L(' + u + ') + w(' + u + v + ') = ' + it.Lu + ' + ' + fmt(c.w) + ' = ' + fmt(c.cand), 4.5, y)];
+    S.cmp = [lft(pl('L(' + v + ') = ' + fmt(c.old) + '  vs  L(' + u + ') + w(' + u + v + ') = ' + it.Lu + ' + ' + fmt(c.w) + ' = ' + fmt(c.cand), 2.6, y))];
     if (c.w !== Infinity) S.g.ecol(u, v, c.upd ? TC.green : TC.hot, true);
-    if (c.upd) { S.setRow(v, c.cand, u); paintPre(S, GE); S.g.ecol(u, v, TC.green, true); S.cmp.push(good('比較短 → 改成 (' + c.cand + ', ' + u + ')', 4.5, y - 0.36)); }
-    else S.cmp.push(note(c.w === Infinity ? u + ' 到 ' + v + ' 沒有 edge → 維持' : '沒有比較短 → 維持', 4.5, y - 0.36));
-    if (extra) S.cmp.push(sm(extra, 4.5, y - 0.72));
+    if (c.upd) { S.setRow(v, c.cand, u); paintPre(S, GE); S.g.ecol(u, v, TC.green, true); S.cmp.push(lft(good('比較短 → 改成 (' + c.cand + ', ' + u + ')', 2.6, y - 0.7))); }
+    else S.cmp.push(lft(note(c.w === Infinity ? u + ' 到 ' + v + ' 沒有 edge → 維持' : '沒有比較短 → 維持', 2.6, y - 0.7)));
+    if (extra) S.cmp.push(lft(sm(extra, 2.6, y - 1.4), 230));
     cap(v + '：經過 ' + u + ' 會不會比較短？', c.upd ? '會 → 更新 label' : '不會 → 不動');
   };
 }
@@ -5970,7 +6006,7 @@ function pickOp(k, sayIt) {
     const it = DJ.it[k]; gone(S.cmp); paintPre(S, GE);
     if (S.cur) { setCls(S.rows[S.cur], 'good'); S.g.vcol(S.cur, TC.green); }
     const out = it.out.slice().sort((a, b) => it.Lbefore[a] - it.Lbefore[b]);
-    S.cmp = [pl('不在 S：' + out.map((n) => n + ' ' + fmt(it.Lbefore[n])).join('，') + ' → 最小 ' + it.u, 3.4, 0.55)];
+    S.cmp = [lft(pl('不在 S：' + out.map((n) => n + ' ' + fmt(it.Lbefore[n])).join('，') + ' → 最小 ' + it.u, 0.2, 0.05))];
     S.cur = it.u; setCls(S.rows[it.u], 'ptr alt'); S.g.vcol(it.u, TC.orange, '#5a2a00');
     txt(S.sl, 'S = {' + it.S.join(', ') + '}'); txt(S.ul, 'u = ' + it.u);
     cap(sayIt || ('挑 L 最小的 → u = ' + it.u), '先把 ' + it.u + ' 加進 S');
@@ -5979,41 +6015,43 @@ function pickOp(k, sayIt) {
 const RUN = [
   async (tok, S) => { // 0 @4.4
     S.g = gG(); S.g.vcol('A', TC.a, '#0b2a4a'); S.t = hd('v₁ = A：找 A 到其他每點的最短 path 和 weight', 0.6, 7.1);
-    S.n = note('端點擺放為示意；邊和 weight 照老師的圖', -3.4, -0.2); cap('前面的例子，起點 v₁ = A', '');
+    S.n = note('端點擺放為示意；邊和 weight 照老師的圖', -4.2, -0.65); cap('前面的例子，起點 v₁ = A', '');
   },
   async (tok, S) => { // 1 @7.3
-    S.mx = []; const x0 = 1.4, y0 = 6.1, d = 0.82, dy = 0.66; S.cell = {};
-    GN.forEach((n, j) => { S.mx.push(sm(n, x0 + (j + 1) * d, y0)); S.mx.push(sm(n, x0, y0 - (j + 1) * dy)); });
-    GN.forEach((a, i) => GN.forEach((b, j) => { const l = pl(a === b ? '–' : (wOf(GE, a, b) < Infinity ? '1' : '0'), x0 + (j + 1) * d, y0 - (i + 1) * dy); S.cell[a + b] = l; S.mx.push(l); }));
-    S.mx.push(sm('adjacency matrix（有 edge = 1）', x0 + 3.4, y0 - 7 * dy)); cap('存成矩陣：先看 adjacency matrix', '');
+    // one label per matrix row (fixed-width font): 7 lines instead of 48 separate numbers
+    S.mx = []; const x0 = 3.6, y0 = 6.1, dy = 0.66; S.row = {};
+    S.rowTxt = (a, f) => a + ' │' + GN.map((b) => (a === b ? '–' : f(b)).padStart(3)).join('');
+    S.mx.push(mono(sm('  │' + GN.map((n) => n.padStart(3)).join(''), x0, y0)));
+    GN.forEach((a, i) => { const l = mono(pl(S.rowTxt(a, (b) => (wOf(GE, a, b) < Infinity ? '1' : '0')), x0, y0 - (i + 1) * dy)); S.row[a] = l; S.mx.push(l); });
+    S.mx.push(sm('adjacency matrix（有 edge = 1）', x0, y0 - 7 * dy)); cap('存成矩陣：先看 adjacency matrix', '');
   },
   async (tok, S) => { // 2 @58.4
-    GN.forEach((a) => GN.forEach((b) => { if (a !== b) txt(S.cell[a + b], fmt(wOf(GE, a, b))); }));
+    GN.forEach((a) => txt(S.row[a], S.rowTxt(a, (b) => fmt(wOf(GE, a, b)))));
     txt(S.mx[S.mx.length - 1], 'weight matrix：0 → ∞、1 → 那條 edge 的 weight'); cap('0 換成 ∞，1 換成 weight', '後面只看這個矩陣');
   },
   async (tok, S) => { // 3 @93.1
-    gone(S.mx, S.t); mkTab(S, GN); S.setRow('A', 0, null); S.sl = hot('S = ∅', 1.0, 1.3); S.ul = pl('u = ?', 3.0, 1.3);
+    gone(S.mx, S.t); mkTab(S, GN); S.setRow('A', 0, null); S.sl = hot('S = ∅', 1.0, 0.75); S.ul = lft(pl('u = ?', 3.3, 0.75));
     cap('一開始 A 的 label 是 (0, –)', '其他 L 值都是 ∞');
   },
   pickOp(0, 'L 最小的是 A → u = A'), // 4 @103.5
   async (tok, S) => { // 5 @118.2
     gone(S.cmp); const nb = GE.filter((e) => e[0] === 'A' || e[1] === 'A'); nb.forEach(([u, v]) => S.g.ecol(u, v, TC.orange, true));
-    S.cmp = [pl('A 連到：' + nb.map((e) => (e[0] === 'A' ? e[1] : e[0])).join('、') + ' → 這些會被 update', 3.4, 0.55)]; cap('跟 A 相連的 B、C、D 會被 update', '');
+    S.cmp = [lft(pl('A 連到：' + nb.map((e) => (e[0] === 'A' ? e[1] : e[0])).join('、') + ' → 這些會被 update', 0.2, 0.05))]; cap('跟 A 相連的 B、C、D 會被 update', '');
   },
   async (tok, S) => { // 6 @160.8
     gone(S.cmp); const it = DJ.it[0]; S.cmp = [];
-    for (const c of it.ch) if (c.upd) { S.setRow(c.v, c.cand, 'A'); S.cmp.push(sm('0 + ' + c.w + ' = ' + c.cand + ' < ∞', 3.6, S.rows[c.v].position.y)); }
+    for (const c of it.ch) if (c.upd) { S.setRow(c.v, c.cand, 'A'); S.cmp.push(lft(sm('0 + ' + c.w + ' = ' + c.cand + ' < ∞', 2.6, S.rows[c.v].position.y))); }
     paintPre(S, GE); cap('L 值就是 AB、AC、AD 的 weight', '前一個端點都是 A');
   },
   async (tok, S) => { // 7 @188.0
-    S.cmp.push(note('E、F 還是 ∞：挑最小時不會挑到', 3.8, S.rows.E.position.y - 0.3)); cap('E、F 還是 ∞', '');
+    S.cmp.push(lft(note('E、F 還是 ∞：挑最小時不會挑到', 2.6, S.rows.E.position.y - 0.33))); cap('E、F 還是 ∞', '');
   },
   pickOp(1, '挑最小的 3 → u = B'), // 8 @212.3
   async (tok, S) => { // 9 @230.1
-    S.lockA = sm('（處理過，不會再變）', 3.2, S.rows.A.position.y); cap('處理過的端點不會變', '');
+    S.lockA = lft(sm('（處理過，不會再變）', 2.6, S.rows.A.position.y)); cap('處理過的端點不會變', '');
   },
   async (tok, S) => { // 10 @249.5
-    gone(S.cmp); S.cmp = [pl('還沒處理：' + DJ.it[1].ch.map((c) => c.v).join(' ') + '：經過 B 會不會比較好？', 3.4, 0.55)]; cap('C D E F：改走 B 會不會比較好？', '');
+    gone(S.cmp); S.cmp = [lft(pl('還沒處理：' + DJ.it[1].ch.map((c) => c.v).join(' ') + '：經過 B 會不會比較好？', 0.2, 0.05))]; cap('C D E F：改走 B 會不會比較好？', '');
   },
   cmpOp(1, 'C'), // 11 @266.1
   cmpOp(1, 'D'), // 12 @307.8
@@ -6021,63 +6059,63 @@ const RUN = [
   cmpOp(1, 'F'), // 14 @364.9
   async (tok, S) => { // 15 @396.5
     gone(S.cmp); paintPre(S, GE);
-    S.cmp = [bub('金色 = 每點 label 的「前一點」連起來；其實只存 label，路徑倒著找', 3.2, -0.1)]; cap('把 L 值對應的路徑畫出來', '實際上只存 label');
+    S.cmp = [lft(bub('金色 = 每點 label 的「前一點」連起來；其實只存 label，路徑倒著找', 0.2, -0.55))]; cap('把 L 值對應的路徑畫出來', '實際上只存 label');
   },
   pickOp(2, 'C D E F 是 8、7、9、11 → u = D'), // 16 @435.4
   async (tok, S) => { // 17 @496.0
-    S.cmp.push(bub('加進 S 的都是當時 L 最小的：從別處繞過來不會更短', 3.2, -0.1)); cap('處理過的一定是最好的', '因為每次都挑最小的');
+    S.cmp.push(lft(bub('加進 S 的都是當時 L 最小的：從別處繞過來不會更短', 0.2, -0.55))); cap('處理過的一定是最好的', '因為每次都挑最小的');
   },
   cmpOp(2, 'C'), // 18 @540.0
   cmpOp(2, 'E', '（老師這裡順口算了 C→E：8+4=12，那是處理 C 時的比較，結果一樣維持 9）'), // 19 @566.7
   cmpOp(2, 'F'), // 20 @598.5
   async (tok, S) => { // 21 @622.1
-    gone(S.cmp); const any = DJ.it[2].ch.some((c) => c.upd); S.cmp = [ok(!any, 3.4, 0.55, '加了 D 以後 label 都沒變 ✓')]; cap('加了 D，路徑和 L 值都沒變', '');
+    gone(S.cmp); const any = DJ.it[2].ch.some((c) => c.upd); S.cmp = [lft(ok(!any, 0.2, 0.05, '加了 D 以後 label 都沒變 ✓'))]; cap('加了 D，路徑和 L 值都沒變', '');
   },
   pickOp(3, 'C E F 是 8、9、11 → u = C'), // 22 @630.7
   cmpOp(3, 'E'), // 23 @701.5
   cmpOp(3, 'F'), // 24 @725.9
   async (tok, S) => { // 25 @745.0
     gone(S.cmp); const any = DJ.it[2].ch.some((c) => c.upd) || DJ.it[3].ch.some((c) => c.upd);
-    S.cmp = [ok(!any, 3.4, 0.55, '加 D、加 C 都沒改變任何 label ✓')]; cap('加 D、加 C 都不影響', '再兩個就做完');
+    S.cmp = [lft(ok(!any, 0.2, 0.05, '加 D、加 C 都沒改變任何 label ✓'))]; cap('加 D、加 C 都不影響', '再兩個就做完');
   },
   pickOp(4, 'E 是 9、F 是 11 → u = E'), // 26 @760.4
   cmpOp(4, 'F'), // 27 @832.5
   pickOp(5, '剩下只有 F → u = F'), // 28 @872.1
   async (tok, S) => { // 29 @895.7
     gone(S.cmp); setCls(S.rows.F, 'good'); S.g.vcol('F', TC.green); S.cur = null;
-    S.cmp = [pl('先把 F 加進 S，再處理「不在 S 的 v」——已經沒有了 → 結束', 3.4, 0.55)]; cap('F 加進 S 後沒有端點要處理', 'if 不會執行，結束');
+    S.cmp = [lft(pl('先把 F 加進 S，再處理「不在 S 的 v」——已經沒有了 → 結束', 0.2, 0.05))]; cap('F 加進 S 後沒有端點要處理', 'if 不會執行，結束');
   },
   async (tok, S) => { // 30 @955.7
-    gone(S.cmp); S.cmp = [ok(DJ_OK && BRUTE_OK, 3.4, 0.55, '和老師算的一樣，也和列舉所有 path 的最小值一樣 ✓')]; cap('最後的 label', 'A 0、B 3A、C 8B、D 7A、E 9B、F 10E');
+    gone(S.cmp); S.cmp = [lft(ok(DJ_OK && BRUTE_OK, 0.2, 0.05, '和老師算的一樣，也和列舉所有 path 的最小值一樣 ✓'))]; cap('最後的 label', 'A 0、B 3A、C 8B、D 7A、E 9B、F 10E');
   },
 ];
 const RES = [
   async (tok, S) => { // @981.4
     gone(S.cmp); const p = back(DJ.pre, 'F'); S.g.reset(); paintPath(S.g, p, TC.hot);
-    S.r1 = pl('A → F：weight ' + DJ.L.F + '；F ← ' + p.slice(0, -1).reverse().join(' ← ') + ' → path ' + p.join(' '), 3.4, -0.1); cap('A 到 F：weight 10', '從 predecessor 倒著找');
+    S.r1 = lft(pl('A → F：weight ' + DJ.L.F + '；F ← ' + p.slice(0, -1).reverse().join(' ← ') + ' → path ' + p.join(' '), 0.2, -0.5)); cap('A 到 F：weight 10', '從 predecessor 倒著找');
   },
   async (tok, S) => { // @1000.5
-    S.r2 = sm(['E', 'C', 'D'].map((v) => v + '：' + back(DJ.pre, v).join(' ')).join('　'), 3.4, -0.6); cap('A B E、A B C、A D', '每個端點都找得回去');
+    S.r2 = lft(sm(['E', 'C', 'D'].map((v) => v + '：' + back(DJ.pre, v).join(' ')).join('　'), 0.2, -1.15)); cap('A B E、A B C、A D', '每個端點都找得回去');
   },
   async (tok, S) => { // @1019.4
-    gone(S.r1, S.r2); paintPre(S, GE); S.r1 = pl('金色的邊：包含全部 ' + GN.length + ' 個端點 → spanning', 3.4, -0.1); cap('結果一定是 spanning tree', '包含所有端點');
+    gone(S.r1, S.r2); paintPre(S, GE); S.r1 = lft(pl('金色的邊：包含全部 ' + GN.length + ' 個端點 → spanning', 0.2, -0.5)); cap('結果一定是 spanning tree', '包含所有端點');
   },
   async (tok, S) => { // @1033.0
-    const es = preEdges(GE, DJ.pre); S.r2 = ok(isST(GN, es), 3.4, -0.6, es.length + ' 條邊、connected、沒有 cycle → tree ✓'); cap('connected、沒有 cycle → tree', '每點只留一個前一點');
+    const es = preEdges(GE, DJ.pre); S.r2 = lft(ok(isST(GN, es), 0.2, -1.15, es.length + ' 條邊、connected、沒有 cycle → tree ✓')); cap('connected、沒有 cycle → tree', '每點只留一個前一點');
   },
   async (tok, S) => { // @1066.6
-    S.r3 = sm('tree：A 到每一點 exactly 一條 path', 3.4, -1.1); cap('A 到每點只有唯一一條 path', '');
+    S.r3 = lft(sm('tree：A 到每一點 exactly 一條 path', 0.2, -1.85)); cap('A 到每點只有唯一一條 path', '');
   },
   async (tok, S) => { // @1138.3
     gone(S.r1, S.r2, S.r3); const p = back(DJ.pre, 'F'); paintPre(S, GE); paintPath(S.g, p, TC.hot);
-    S.r1 = pl('A B E F：' + cycleEdges(p).map(([u, v]) => wOf(GE, u, v)).join(' + ') + ' = ' + pathW(p), 3.4, -0.1); cap('A 到 F：A B E F，weight 10', '');
+    S.r1 = lft(pl('A B E F：' + cycleEdges(p).map(([u, v]) => wOf(GE, u, v)).join(' + ') + ' = ' + pathW(p), 0.2, -0.5)); cap('A 到 F：A B E F，weight 10', '');
   },
   async (tok, S) => { // @1178.4
     const p = back(DJ.pre, 'C'); paintPre(S, GE); paintPath(S.g, p, TC.a);
-    S.r2 = pl('A B C：' + cycleEdges(p).map(([u, v]) => wOf(GE, u, v)).join(' + ') + ' = ' + pathW(p), 3.4, -0.6); cap('A 到 C：A B C，weight 8', '只存 label 就看得出來');
+    S.r2 = lft(pl('A B C：' + cycleEdges(p).map(([u, v]) => wOf(GE, u, v)).join(' + ') + ' = ' + pathW(p), 0.2, -1.15)); cap('A 到 C：A B C，weight 8', '只存 label 就看得出來');
   },
   async (tok, S) => { // @1203.5
-    S.r3 = good('每次加進 L 最小的 → 留下的一定是最短的', 3.4, -1.1); cap('每次都加 L 最小的', '所以留下的一定最短');
+    S.r3 = lft(good('每次加進 L 最小的 → 留下的一定是最短的', 0.2, -1.85)); cap('每次都加 L 最小的', '所以留下的一定最短');
   },
 ];
 function runScene(id, title, a, b) { scene(id, title, RUN.slice(a, b), { pre: RUN.slice(0, a) }); }
@@ -6089,35 +6127,37 @@ scene('g8d-run-result', '27B：結果——最短 path 與 spanning tree', [RUN[
 
 scene('g8d-dij-cost', '27B：Direct implementation 的複雜度 O(n²)', [
   async (tok, S) => { // @1304.2
-    mkCode(S, -3.2, 6.4); S.t = hd('算一下 Dijkstra 的複雜度（n = 端點數）', 2.6, 7.0); cap('算 Dijkstra 的複雜度', '');
+    mkCode(S, -3.2, 6.4); S.t = lft(hd('算一下 Dijkstra 的複雜度（n = 端點數）', -0.6, 7.0)); cap('算 Dijkstra 的複雜度', '');
   },
   async (tok, S) => { // @1318.6
-    S.code.hl(3); S.a = pl('真正有運算的：n − 1 個 iteration（最後一輪只剩一點）', 2.6, 6.3); cap('n − 1 個 iteration', '最後一輪不用比');
+    S.code.hl(3); S.a = lft(pl('真正有運算的：n − 1 個 iteration（最後一輪只剩一點）', -0.6, 6.3)); cap('n − 1 個 iteration', '最後一輪不用比');
   },
   async (tok, S) => { // @1389.0
-    S.code.hl(4); S.b = pl('第 1 輪：找最小的 L(u)，n − 1 個候選 → 最多 n − 1 次比較', 2.6, 5.6); cap('第 1 輪找 u：n − 1 次比較', '');
+    S.code.hl(4); S.b = lft(pl('第 1 輪：找最小的 L(u)，n − 1 個候選 → 最多 n − 1 次比較', -0.6, 5.6)); cap('第 1 輪找 u：n − 1 次比較', '');
   },
   async (tok, S) => { // @1455.4
-    S.code.hl(7); S.c = pl('for 迴圈：每個 v 最多 1 次比較 + 1 次加法 → 各 n − 1', 2.6, 4.9); cap('更新：比較、加法各 n − 1', '');
+    S.code.hl(7); S.c = lft(pl('for 迴圈：每個 v 最多 1 次比較 + 1 次加法 → 各 n − 1', -0.6, 4.9)); cap('更新：比較、加法各 n − 1', '');
   },
   async (tok, S) => { // @1527.7
-    const n = GN.length; S.d = pl('第 i 輪：找 u 比 n − i 次、更新比 n − i 次、加 n − i 次', 2.6, 4.2);
-    S.rowsI = []; for (let i = 1; i < n; i++) S.rowsI.push(sm('n = ' + n + '，i = ' + i + '：比較 ' + 2 * (n - i) + '、加法 ' + (n - i), 2.6, 3.7 - (i - 1) * 0.42));
+    const n = GN.length; S.d = lft(pl('第 i 輪：找 u 比 n − i 次、更新比 n − i 次、加 n − i 次', -0.6, 4.2));
+    // the n − 1 rounds as one small table (one label, one line per round) under the general line
+    const rs = []; for (let i = 1; i < n; i++) rs.push('n = ' + n + '，i = ' + i + '：比較 ' + 2 * (n - i) + '、加法 ' + (n - i));
+    S.rowsI = [lft(sm(rs.join('\n'), -0.3, 2.55))]; S.rowsI[0].element.style.whiteSpace = 'pre-line'; // centred in the free band between the lines above and the totals below
     cap('一般的第 i 輪：n − i', '例：老師的圖 n = 6');
   },
   async (tok, S) => { // @1651.6
     const n = GN.length; let c = 0; for (let i = 1; i < n; i++) c += 2 * (n - i);
-    S.e = ok(c === n * (n - 1), -3.2, 0.3, '比較總數 Σ 2(n − i) = n(n − 1)；n = 6：' + c + ' ✓'); cap('比較次數加起來 = n(n − 1)', '');
+    S.e = ok(c === n * (n - 1), -3.2, 0.3, '比較總數 Σ 2(n − i) = n(n − 1)；n = 6：' + c + ' ✓'); S.e.position.x = -3.7; cap('比較次數加起來 = n(n − 1)', '');
   },
   async (tok, S) => { // @1730.7
     const n = GN.length; let a = 0; for (let i = 1; i < n; i++) a += n - i;
-    S.f = ok(a === n * (n - 1) / 2, -3.2, -0.3, '加法總數 Σ (n − i) = n(n − 1)/2；n = 6：' + a + ' ✓'); cap('加法次數 = n(n − 1)/2', '');
+    S.f = ok(a === n * (n - 1) / 2, -3.2, -0.3, '加法總數 Σ (n − i) = n(n − 1)/2；n = 6：' + a + ' ✓'); S.f.position.x = -3.7; cap('加法次數 = n(n − 1)/2', '');
   },
   async (tok, S) => { // @1763.6
-    S.g = hot('不管算比較還是加法：worst case O(n²)', 2.6, 0.9); cap('worst-case complexity：O(n²)', '');
+    S.g = lft(hot('不管算比較還是加法：worst case O(n²)', 0.4, 0.9)); cap('worst-case complexity：O(n²)', '');
   },
   async (tok, S) => { // @1805.3
-    S.h = sm('這叫 direct implementation：照剛剛的步驟直接寫', 2.6, 0.3); cap('這是 direct implementation', '');
+    S.h = lft(sm('這叫 direct implementation：照剛剛的步驟直接寫', 0.4, 0.3)); cap('這是 direct implementation', '');
   },
 ]);
 
@@ -6157,47 +6197,48 @@ scene('g8d-mst-def', '27C：Minimal spanning tree 的定義', [
     S.t = hd('第二個問題：minimal spanning tree（也叫 minimum spanning tree）', 0, 7.0); cap('第二個問題：minimal spanning tree', 'minimal、minimum 意思一樣');
   },
   async (tok, S) => { // @50.4
-    S.g = gG(); S.a = pl('G = (V, E)：weighted、undirected、connected、simple', 2.8, 6.2);
-    S.b = sm('這張圖：n = |V| = ' + GN.length + '，e = |E| = ' + GE.length, 2.8, 5.6); cap('給一個 weighted connected simple graph', '');
+    S.g = gG(); S.a = lft(pl('G = (V, E)：weighted、undirected、connected、simple', 0.2, 6.2));
+    S.b = lft(sm('這張圖：n = |V| = ' + GN.length + '，e = |E| = ' + GE.length, 0.2, 5.6)); cap('給一個 weighted connected simple graph', '');
   },
   async (tok, S) => { // @114.1
-    T3.forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true)); S.c = pl('首先它是 spanning tree：tree、含所有端點', 2.8, 4.8); cap('MST 首先是 spanning tree', '');
+    T3.forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true)); S.c = lft(pl('首先它是 spanning tree：tree、含所有端點', 0.2, 4.8)); cap('MST 首先是 spanning tree', '');
   },
   async (tok, S) => { // @148.9
-    S.d = hot('minimal：edge weight 和是所有 spanning tree 裡最小的', 2.8, 4.0); cap('weight 的和要最小', '');
+    S.d = lft(hot('minimal：edge weight 和是所有 spanning tree 裡最小的', 0.2, 4.0)); cap('weight 的和要最小', '');
   },
   async (tok, S) => { // @170.3
-    S.e = ok(STS.length > 1, 2.8, 3.2, '這張圖的 spanning tree 一共 ' + STS.length + ' 棵（程式列舉）✓'); cap('spanning tree 通常不唯一', '');
+    S.e = lft(ok(STS.length > 1, 0.2, 3.2, '這張圖的 spanning tree 一共 ' + STS.length + ' 棵（程式列舉）✓')); cap('spanning tree 通常不唯一', '');
   },
   async (tok, S) => { // @194.7
-    S.f = sm('DFS、BFS、Dijkstra 都會給你一棵 spanning tree，但目的不同', 2.8, 2.5); cap('DFS、BFS、Dijkstra 都給 spanning tree', '');
+    S.f = lft(sm('DFS、BFS、Dijkstra 都會給你一棵 spanning tree，但目的不同', 0.2, 2.5)); cap('DFS、BFS、Dijkstra 都給 spanning tree', '');
   },
   async (tok, S) => { // @219.7
-    S.h = good('現在要找：所有 spanning tree 中 weight 和最小 = ' + MST_W, 2.8, 1.8); cap('現在要找 weight 和最小的', '');
+    S.h = lft(good('現在要找：所有 spanning tree 中 weight 和最小 = ' + MST_W, 0.2, 1.8)); cap('現在要找 weight 和最小的', '');
   },
 ]);
 
 scene('g8d-mst-ex', '27C：例子——三棵 spanning tree 比 weight', [
   async (tok, S) => { // @237.6
-    S.G = gG({ s: 0.5, dx: -3.6, dy: 2.3, er: 0.035, off: 0.22, r: 0.6 }); S.Gl = pl('G', -5.1, 6.0); cap('看一個例子', '');
+    S.G = gG({ s: 0.5, dx: -3.6, dy: 2.3, er: 0.035, r: 0.6, weights: false }); /* at this size its ten numbers sat on each other; each tree beside it shows its own edges' weights */ S.Gl = pl('G', -5.1, 6.0); cap('看一個例子', '');
   },
   async (tok, S) => { // @288.2
-    S.n = note('跟 Dijkstra 例子是同一張圖', -5.1, 1.4); cap('跟 Dijkstra 用的是同一個圖', '');
+    S.n = note('跟 Dijkstra 例子是同一張圖', -5.6, 0.75); cap('跟 Dijkstra 用的是同一個圖', '');
   },
   ...[0, 1, 2].map((k) => async (tok, S) => { // @302.8 @318.8 @321.3
     S.T = S.T || []; S.T[k] = gG({ s: 0.5, dx: TSX[k] + 1.6, dy: 2.3, er: 0.04, off: 0.22, r: 0.6, only: TS[k] });
     TS[k].forEach(([u, v]) => S.T[k].ecol(u, v, TC.gold, false)); pl('T' + (k + 1), TSX[k], 6.0);
-    if (k === 1) note('形狀示意', TSX[k], 6.55);
+    if (k === 1) note('形狀示意', TSX[k], 6.75);
     cap('T' + (k + 1) + ' 也是一棵 spanning tree', '');
   }),
   ...[0, 1, 2].map((k) => async (tok, S) => { // @426.1 @465.9 @488.2
     const ws = TS[k].map((e) => e[2]);
-    S['w' + k] = ok(isST(GN, TS[k]), TSX[k], 1.2, ws.join('+') + ' = ' + sum(TS[k]) + ' ✓');
-    if (k === 0) S.d0 = sm('= Dijkstra 的結果', TSX[k], 0.6);
+    if (k === 0) gone(S.n);
+    S['w' + k] = K.keep(ok(isST(GN, TS[k]), TSX[k], 1.2, ws.join('+') + '\n= ' + sum(TS[k]) + ' ✓')); S['w' + k].element.style.whiteSpace = 'pre-line';
+    if (k === 0) S.d0 = sm('= Dijkstra 的結果', TSX[k], 0.35);
     cap('T' + (k + 1) + ' 的 weight = ' + sum(TS[k]), k === 0 ? '就是剛才 Dijkstra 的結果' : '');
   }),
   async (tok, S) => { // @510.1
-    S.best = hot('三棵裡 T3 的 ' + sum(T3) + ' 最小', TSX[2], 0.0); cap('15 最好', 'Dijkstra 的樹不一定 weight 最小');
+    S.best = hot('三棵裡 T3 的 ' + sum(T3) + ' 最小', TSX[2], 0.3); cap('15 最好', 'Dijkstra 的樹不一定 weight 最小');
   },
   async (tok, S) => { // @552.1
     const p1 = treePath(T1, 'A', 'E'), p3 = treePath(T3, 'A', 'E');
@@ -6205,10 +6246,10 @@ scene('g8d-mst-ex', '27C：例子——三棵 spanning tree 比 weight', [
     S.pe = pl('A 到 E：T1 走 ' + p1.join('') + ' = ' + pathW(p1) + '，T3 走 ' + p3.join('') + ' = ' + pathW(p3), 1.6, -0.7); cap('目的不同，結果就不同', 'T1 讓 A 到各點最短');
   },
   async (tok, S) => { // @581.6
-    S.ms = ok(sum(T3) === MST_W, -4.3, -0.1, '列舉全部 ' + STS.length + ' 棵：最小 = ' + MST_W + ' ✓ → T3 是 MST'); cap('T3 就是 minimal spanning tree', '不會比 15 更低');
+    gone(S.pe); S.ms = ok(sum(T3) === MST_W, 1.6, -0.7, '列舉全部 ' + STS.length + ' 棵：最小 = ' + MST_W + ' ✓ → T3 是 MST'); cap('T3 就是 minimal spanning tree', '不會比 15 更低');
   },
   async (tok, S) => { // @590.0
-    S.un = sm('一般 MST 不一定唯一（這張圖 weight ' + MST_W + ' 的有 ' + MST_N + ' 棵）；algorithm 給你其中一棵', -4.3, -0.65); cap('MST 不一定唯一', 'algorithm 給你一個就對了');
+    S.un = sm('一般 MST 不一定唯一（這張圖 weight ' + MST_W + ' 的有 ' + MST_N + ' 棵）；algorithm 給你其中一棵', 1.6, -1.3); cap('MST 不一定唯一', 'algorithm 給你一個就對了');
   },
 ]);
 
@@ -6245,7 +6286,7 @@ scene('g8d-prim-algo', "27C：Prim's algorithm——讓一棵 tree 慢慢長大"
     S.t = hd("兩個 greedy algorithm 都會 work；先講 Prim's algorithm", 0, 7.0); cap("第一個：Prim's algorithm", '');
   },
   async (tok, S) => { // @863.7
-    S.code = code(PCODE, 3.4, 6.3, 0.52); S.code.hl(0); S.a = sm('一條 edge 一條 edge 加，直到變成 spanning tree', 3.4, 2.4); cap('一個 edge 一個 edge 加進去', '');
+    S.code = code(PCODE, 3.4, 6.3, 0.52); S.code.hl(0); S.a = sm('一條 edge 一條 edge 加，直到變成 spanning tree', 3.4, 2.15); cap('一個 edge 一個 edge 加進去', '');
   },
   async (tok, S) => { // @918.6
     S.g = mkG(QP, QE); note('示意圖', -3.4, 0.9); S.zone = blob(-4.4, 3.8, 1.9, 1.6, TC.green); pl('T', -5.9, 5.6);
@@ -6253,7 +6294,7 @@ scene('g8d-prim-algo', "27C：Prim's algorithm——讓一棵 tree 慢慢長大"
     S.b = sm('T 一直是一棵 tree（growing tree）', -3.4, 0.35); cap('T 一直維持是 tree', '慢慢長大');
   },
   async (tok, S) => { // @963.2
-    S.code.hl(1); S.c = sm('一開始：T = 任何一個端點都可以', 3.4, 1.85); cap('一開始選任何一個端點', '');
+    S.code.hl(1); S.c = sm('一開始：T = 任何一個端點都可以', 3.4, 1.55); cap('一開始選任何一個端點', '');
   },
   async (tok, S) => { // @975.9
     S.code.hl(3); QC.forEach(([u, v]) => S.g.ecol(u, v, TC.orange, true));
@@ -6267,10 +6308,10 @@ scene('g8d-prim-algo', "27C：Prim's algorithm——讓一棵 tree 慢慢長大"
     S.e = good('greedy：挑 weight 最小的 → ' + en(QBEST) + '（' + QBEST[2] + '）', -3.4, 6.6); cap('很多選擇 → 挑 weight 最小的', 'greedy 就在這裡');
   },
   async (tok, S) => { // @1102.5
-    S.code.hl(2); S.f = sm('每次多 1 個端點、1 條邊：做 n − 1 次 → n 點、n − 1 邊', 3.4, 1.3); cap('做 n − 1 次就是 spanning tree', '');
+    S.code.hl(2); S.f = sm('每次多 1 個端點、1 條邊：做 n − 1 次 → n 點、n − 1 邊', 3.4, 0.95); cap('做 n − 1 次就是 spanning tree', '');
   },
   async (tok, S) => { // @1157.2
-    S.code.hl(6); S.h = good('每步都是 tree、每次 weight 最小 → minimal spanning tree（後面證明）', 1.0, -0.8); cap('結果是 MST', '後面會證明');
+    S.code.hl(6); gone(S.d); S.h = good('每步都是 tree、每次 weight 最小 → minimal spanning tree（後面證明）', 0.4, -0.5); cap('結果是 MST', '後面會證明');
   },
 ]);
 
@@ -6282,9 +6323,9 @@ function primOp(k, said) {
   return async (tok, S) => {
     const st = PR.steps[k]; primPaint(S, k); st.cand.forEach(([u, v]) => S.g.ecol(u, v, TC.orange, true)); S.g.ecol(st.e[0], st.e[1], TC.hot, true);
     gone(S.c1, S.c2);
-    S.c1 = pl('T = {' + st.T.join(', ') + '}；可以加：' + st.cand.map((e) => en(e) + ' ' + e[2]).join('，'), 2.6, 5.3);
-    S.c2 = good('最小 → 加 ' + en(st.e) + '（' + st.e[2] + '）', 2.6, 4.7);
-    S.log.push(sm('第 ' + (k + 1) + ' 步：+' + en(st.e) + ' ' + st.e[2], 2.6, 3.9 - k * 0.45));
+    S.c1 = lft(pl('T = {' + st.T.join(', ') + '}；可以加：' + st.cand.map((e) => en(e) + ' ' + e[2]).join('，'), 0.3, 5.3));
+    S.c2 = lft(good('最小 → 加 ' + en(st.e) + '（' + st.e[2] + '）', 0.3, 4.7));
+    S.log.push(lft(sm('第 ' + (k + 1) + ' 步：+' + en(st.e) + ' ' + st.e[2], 0.3, 3.95 - k * 0.5)));
     cap(said || ('加 ' + en(st.e) + '（weight ' + st.e[2] + '）'), '一端在 T、一端不在 T 裡最小的');
   };
 }
@@ -6293,20 +6334,20 @@ scene('g8d-prim-run', "27C：Prim's algorithm 跑老師的圖", [
     S.g = gG(); S.log = []; S.n = note('同一張圖（擺放為示意）', -3.4, -0.2); cap('例子還是原來那張圖', '');
   },
   async (tok, S) => { // @1282.3
-    S.t = hd(GN.length + ' 個端點：一開始 1 個，再做 ' + (GN.length - 1) + ' 次', 2.6, 6.6); cap('6 個端點：再做 5 次', '');
+    S.t = lft(hd(GN.length + ' 個端點：一開始 1 個，再做 ' + (GN.length - 1) + ' 次', 0.3, 6.6)); cap('6 個端點：再做 5 次', '');
   },
   async (tok, S) => { // @1297.7
-    primPaint(S, 0); S.c1 = pl('T = {A}', 2.6, 5.3); cap('從 A 開始', 'T 只有 A');
+    primPaint(S, 0); S.c1 = lft(pl('T = {A}', 0.3, 5.3)); cap('從 A 開始', 'T 只有 A');
   },
   ...PR.steps.map((st, k) => primOp(k)),   // @1322.1 @1371.3 @1453.2 @1560.5 @1593.7
   async (tok, S) => { // @1646.0
-    gone(S.c1, S.c2); primPaint(S, PR.steps.length); S.c1 = ok(isST(GN, PR.es), 2.6, 5.3, '全部端點都進來；一直是 tree → spanning tree ✓'); cap('全部端點都加進來了', 'T 一直是 tree');
+    gone(S.c1, S.c2); primPaint(S, PR.steps.length); S.c1 = lft(ok(isST(GN, PR.es), 0.3, 5.3, '全部端點都進來；一直是 tree → spanning tree ✓')); cap('全部端點都加進來了', 'T 一直是 tree');
   },
   async (tok, S) => { // @1691.2
-    S.c2 = ok(PR_W === 15 && PR_W === MST_W && PR_W === sum(T3), 2.6, 4.7, 'total weight = ' + PR.es.map((e) => e[2]).join('+') + ' = ' + PR_W + ' = 前面的 T3 ✓'); cap('total weight = 15', '就是前面的 T3');
+    S.c2 = lft(ok(PR_W === 15 && PR_W === MST_W && PR_W === sum(T3), 0.3, 4.7, 'total weight = ' + PR.es.map((e) => e[2]).join('+') + ' = ' + PR_W + ' = 前面的 T3 ✓')); cap('total weight = 15', '就是前面的 T3');
   },
   async (tok, S) => { // @1714.9
-    S.c3 = hot('接下來：證明 Prim 一定給出 MST', 2.6, 1.3); cap('接下來證明 correctness', '');
+    S.c3 = lft(hot('接下來：證明 Prim 一定給出 MST', 0.3, 1.2)); cap('接下來證明 correctness', '');
   },
 ]);
 
@@ -6330,7 +6371,8 @@ function kBase(S, M, T) {
   M.forEach(([u, v]) => S.g.ecol(u, v, TC.a, true));
   if (T) T.forEach((n) => S.g.vcol(n, TC.green));
 }
-const ln = (S, k, t, cls = '') => { S.LN = S.LN || []; gone(S.LN[k]); S.LN[k] = tag(t, cls, 2.9, 6.4 - k * 0.62); return S.LN[k]; };
+// the argument's lines: a column whose left edge is just right of the graph (centred lines ran over its right side)
+const ln = (S, k, t, cls = '') => { S.LN = S.LN || []; gone(S.LN[k]); S.LN[k] = lft(tag(t, cls, 0.1, 6.4 - k * 0.62)); return S.LN[k]; };
 
 scene('g8d-prim-st', '27D：證明第一步——Prim 的 output 是 spanning tree', [
   async (tok, S) => { // @9.0
@@ -6462,13 +6504,13 @@ scene('g8d-prim-recap', '28A：回顧 Prim——一直維持 tree', [
 const sortedTags = (S, x = 1.8, y = 6.3, dy = 0.55) => { S.sl = KR_ORDER.map((e, i) => pl(en(e) + '  ' + e[2], x, y - i * dy)); };
 scene('g8d-kr-idea', "28A：Kruskal's algorithm 的想法", [
   async (tok, S) => { // @76.6
-    S.g = gG(); S.t = hd("另一個 greedy：Kruskal's algorithm", 2.6, 7.0); cap("另一個 greedy：Kruskal's algorithm", '');
+    S.g = gG(); S.t = lft(hd("另一個 greedy：Kruskal's algorithm", 0.1, 7.05)); cap("另一個 greedy：Kruskal's algorithm", '');
   },
   async (tok, S) => { // @94.9
     ln(S, 1, 'Prim 一直維持 tree；Kruskal 不要求', 'idx'); cap('Kruskal 不要求一直是 tree', '');
   },
   async (tok, S) => { // @116.0
-    sortedTags(S, 1.4, 5.0, 0.5); ln(S, 2, '從 weight 小的 edge 開始，一條一條加', ''); cap('從 weight 最小的開始一條條加', '');
+    S.sl = KR_ORDER.map((e, i) => pl(en(e) + '  ' + e[2], i < 5 ? 1.2 : 3.6, 2.95 - (i % 5) * 0.66)); // two columns under the explanation lines ln(S, 2, '從 weight 小的 edge 開始，一條一條加', ''); cap('從 weight 最小的開始一條條加', '');
   },
   async (tok, S) => { // @132.4
     ln(S, 3, '會形成 cycle 的就不加，換下一條', 'bad'); cap('會形成 cycle 就不加', '換下一個');
@@ -6481,22 +6523,22 @@ scene('g8d-kr-idea', "28A：Kruskal's algorithm 的想法", [
 const KCODE = ['Kruskal', 'T = ∅', 'for i = 1 to n − 1:', '  e = 不在 T、加進 T 不會形成 cycle', '      的 edge 中 weight 最小的', '  T = T ∪ {e}', 'return T'];
 scene('g8d-kr-algo', "28A：Kruskal's algorithm 的步驟", [
   async (tok, S) => { // @204.2
-    S.code = code(KCODE, -2.6, 6.3, 0.55); S.code.hl(1); S.a = pl('T 是原圖的 subgraph，一開始是空集合', 3.4, 6.3); cap('T 一開始是空集合', '');
+    S.code = code(KCODE, -2.6, 6.3, 0.55); S.code.hl(1); S.a = lft(pl('T 是原圖的 subgraph，一開始是空集合', 1.2, 6.3)); cap('T 一開始是空集合', '');
   },
   async (tok, S) => { // @220.2
-    S.b = pl('n 個 vertices → spanning tree 要 n − 1 條 edge', 3.4, 5.6); cap('spanning tree 有 n − 1 條 edge', 'tree 的邊比點少 1');
+    S.b = lft(pl('n 個 vertices → spanning tree 要 n − 1 條 edge', 1.2, 5.6)); cap('spanning tree 有 n − 1 條 edge', 'tree 的邊比點少 1');
   },
   async (tok, S) => { // @239.7
-    S.code.hl(2); S.c = pl('for 迴圈做 n − 1 次，每次加一條', 3.4, 4.9); cap('for 迴圈做 n − 1 次', '');
+    S.code.hl(2); S.c = lft(pl('for 迴圈做 n − 1 次，每次加一條', 1.2, 4.9)); cap('for 迴圈做 n − 1 次', '');
   },
   async (tok, S) => { // @264.1
-    S.code.hl(3); S.d = pl('挑不在 T 裡、weight 最小的', 3.4, 4.2); cap('挑 weight 最小的 edge', '');
+    S.code.hl(3); S.d = lft(pl('挑不在 T 裡、weight 最小的', 1.2, 4.2)); cap('挑 weight 最小的 edge', '');
   },
   async (tok, S) => { // @282.0
-    S.code.hl(4); S.e = bad('條件：加進 T 不會形成 cycle', 3.4, 3.5); cap('條件：不會形成 cycle', '');
+    S.code.hl(4); S.e = lft(bad('條件：加進 T 不會形成 cycle', 1.2, 3.5)); cap('條件：不會形成 cycle', '');
   },
   async (tok, S) => { // @321.9
-    S.code.hl(6); S.f = sm('後面證明：結果是 spanning tree，而且是 MST', 3.4, 2.8); cap('後面證明它是 MST', '');
+    S.code.hl(6); S.f = lft(sm('後面證明：結果是 spanning tree，而且是 MST', 1.2, 2.8)); cap('後面證明它是 MST', '');
   },
   async (tok, S) => { // @330.7
     S.h = ok(KR_SORTED, 0.4, 1.4, '要先 sort：' + KR_ORDER.map((e) => en(e) + ' ' + e[2]).join(' ≤ ') + ' ✓'); cap('要先把 edge 照 weight 排好', 'sort');
@@ -6517,28 +6559,29 @@ scene('g8d-kr-run', "28A：Kruskal's algorithm 跑老師的圖", [
     S.g = gG(); S.t = hd('同一張圖：' + GN.length + ' 個端點、' + GE.length + ' 條 edge', 0.8, 7.0); note('擺放為示意', -3.4, -0.7); cap('同一個圖：6 個端點、10 條 edge', '');
   },
   async (tok, S) => { // @462.7
-    S.sl = KR_ORDER.map((e, i) => pl(en(e) + '  ' + e[2], i < 5 ? 1.2 : 4.6, 6.3 - (i % 5) * 0.55)); S.s = ok(KR_SORTED, 3.6, 3.5, '照 weight sort 好 ✓'); // the sorted list in two columns, the remarks under it cap('先 sort', '從小排到大');
+    S.sl = KR_ORDER.map((e, i) => pl(en(e) + '  ' + e[2], i < 5 ? 1.6 : 4.8, 6.35 - (i % 5) * 0.62)); S.s = ok(KR_SORTED, 3.6, 3.2, '照 weight sort 好 ✓'); // the sorted list in two columns, the remarks under it cap('先 sort', '從小排到大');
   },
   krOp(0), krOp(1), krOp(2), // @473.7 @520.4 @569.7
   async (tok, S) => { // @596.2
-    gone(S.s); S.cnt = pl('要 ' + (GN.length - 1) + ' 條邊：已 3 條，再 2 步', 3.6, 3.4); cap('共要 5 條邊：再兩步', '');
+    gone(S.s); S.cnt = pl('要 ' + (GN.length - 1) + ' 條邊：已 3 條，再 2 步', 3.6, 3.2); cap('共要 5 條邊：再兩步', '');
   },
   krOp(3), krOp(4), krOp(5), // @616.0 @712.0 @731.3
   async (tok, S) => { // @748.0
     gone(S.cy, S.cnt); S.g.reset(); KR.acc.forEach(([u, v]) => S.g.ecol(u, v, TC.gold, true));
     S.cnt = ok(isST(GN, KR.acc) && KR_W === PR_W && KR_W === MST_W, 3.6, 3.4, 'spanning tree：' + KR.acc.map((e) => e[2]).join('+') + ' = ' + KR_W + ' = Prim ✓');
+    S.cnt.position.y = 3.2;
     cap('total weight 15', '和 Prim 找到的一樣');
   },
   async (tok, S) => { // @781.1
-    S.p = pl('Prim：只加一端在 T 內的邊 → 一直是 tree', 3.6, 2.65); cap('Prim 的 T 一直是 tree', '');
+    S.p = pl('Prim：只加一端在 T 內的邊 → 一直是 tree', 3.6, 2.55); cap('Prim 的 T 一直是 tree', '');
   },
   async (tok, S) => { // @804.8
     const cs = [2, 3, 4, 5].map((m) => compCount(KR.acc.slice(0, m)));
-    S.q = pl('Kruskal：2～5 條邊時 ' + cs.join('、') + ' 個 component', 3.6, 1.9); S.q2 = sm('過程中不一定 connected（只算接到邊的點）', 3.6, 1.2);
+    S.q = pl('Kruskal：2～5 條邊時 ' + cs.join('、') + ' 個 component', 3.6, 1.9); S.q2 = sm('過程中不一定 connected（只算接到邊的點）', 3.6, 1.3);
     cap('Kruskal 過程中不一定 connected', '最後才變一個 component');
   },
   async (tok, S) => { // @843.5
-    S.r = good('都是 greedy：一個顧 tree，一個顧 weight', 3.6, 0.45); cap('都是 greedy，出發點不同', '');
+    S.r = good('都是 greedy：一個顧 tree，一個顧 weight', 3.6, 0.65); cap('都是 greedy，出發點不同', '');
   },
 ], { cam: [[0, 3.6, 15], [0.4, 3.3, 0]] });
 
@@ -6578,7 +6621,7 @@ scene('g8d-kr-st', '28A：證明一——Kruskal 的 output 是 spanning tree', 
   },
   async (tok, S) => { // @1323.8
     const n = GN.length; ln(S, 9, 'k 個 component → 端點數 = 邊數 + k；n = ' + n + '：' + [1, 2, 3].map((k) => 'k=' + k + '→' + (n - 1 + k)).join('，'));
-    S.c3 = bad('5 條邊、2 個 component → ' + (3 + 2 + 2) + ' 個端點', -3.2, 1.8); cap('k 個 component：多 k 個端點', '');
+    S.c3 = bad('5 條邊、2 個 component → ' + (3 + 2 + 2) + ' 個端點', -3.6, 0.55); cap('k 個 component：多 k 個端點', '');
   },
   async (tok, S) => { // @1342.8
     ln(S, 10, 'k ≥ 2 → 端點數 > n，但 T ⊆ G 只有 n 點 → 矛盾', 'bad'); cap('超過 n 個端點 → 矛盾', '');
@@ -6744,10 +6787,20 @@ const T = (t, c, x, z, y = 0.4) => tag(t, c, x, y, z);
 const LL = (t, c, x, z, y = 0.4) => { const l = tag(t, c, x, y, z); if (l.center) l.center.set(0, 0.5); return l; };
 const ok = (b, x, z, t) => T(b ? t : t.replace(/✓/g, '✘'), b ? 'good' : 'bad', x, z);
 const SI = (x, z) => T('示意', 'idx', x, z);
+// one remark label per scene, rewritten in place (S.r), instead of a new label under the last one each step
+// (no x: it starts just right of the boys' column, at the height of the rows it talks about)
+const remark = (S, t, c = 'say', x = null, z = -2.5) => {
+  if (S.r && S.r.element && S.r.element.isConnected) { settxt(S.r, t); cls(S.r, c); S.r.position.set(x ?? 3.8, 0.4, z); } else S.r = x === null ? LL(t, c, 3.8, z) : T(t, c, x, z);
+  return S.r;
+};
+const okR = (S, b, t, x, z) => remark(S, b ? t : t.replace(/✓/g, '✘'), b ? 'good' : 'bad', x, z);
 const CAM = [[0, 12.5, 7.8], [0, 0, 0.6]];
-function scene(id, title, steps, cam = CAM) {
+// the area the party graph (and the tree on its right) uses: held from the first step so the camera stays put
+const HOLD = [-0.6, 0.2, -4.1, 6.6, 0.5, 4.5];
+function scene(id, title, steps, cam = CAM, hold = HOLD) {
   FRAG.push([id, title, async (tok) => {
     fresh(cam[0], cam[1]);
+    if (hold) frameHold(...hold);
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
@@ -6911,22 +6964,22 @@ scene('g8e-party', 'Dance party：每個女生能不能配到喜歡的男生？'
   async (tok, S) => { S.B.add('你是 organizer：幫每個女生配一個男伴', 'note'); cap('你是 party 的 organizer', '這是 dance party，要幫每個女生配一個舞伴'); },
   async (tok, S) => { S.B.add('能不能讓每個女生都跟她喜歡的男生跳舞？', 'note'); cap('Is it possible for each girl', 'to dance with a boy she likes?'); },
   async (tok, S) => {
-    S.g.e('A', 'a', 'ok'); S.c1 = T('Alice–Art ✓（她喜歡）', 'good', 5.6, -3.5);
+    S.g.e('A', 'a', 'ok'); S.c1 = LL('Alice–Art ✓（她喜歡）', 'good', 4.5, pz(0));
     cap('例如 Art 配給 Alice：可以', '因為 Art 在 Alice 的清單裡');
   },
   async (tok, S) => {
-    S.g.e('A', 'd', 'bad'); S.c2 = T('Alice–Don ✘（她不喜歡）', 'bad', 5.6, -2.9);
+    S.g.e('A', 'd', 'bad'); settxt(S.c1, 'Alice–Don ✘（她不喜歡）'); cls(S.c1, 'bad'); S.c1.position.z = pz(3);
     cap('Don 配給 Alice：不可以', 'Alice 不喜歡 Don');
   },
   async (tok, S) => {
-    S.g.hide('A', 'a'); S.g.hide('A', 'd'); kill(S.c1); kill(S.c2);
+    S.g.hide('A', 'a'); S.g.hide('A', 'd'); kill(S.c1);
     S.B.add('希望配到的越多越好；最好每個女生都配到');
     cap('organizer 當然希望越多人配到越好', '最好是每一個女生都配到喜歡的舞伴');
   },
   async (tok, S) => { S.B.add('條件 1：每個女生 exactly 配一個她喜歡的男生', 'note'); cap('條件一：每個女生配一個男生', '而且這個男生要在她喜歡的清單裡'); },
   async (tok, S) => {
     S.B.add('條件 2：每個男生只能配一個女生', 'note');
-    S.g.e('B', 'c', 'bad'); S.g.e('C', 'c', 'bad'); S.c3 = T('Carl 不能同時配 Betty 和 Cindy ✘', 'bad', 5.6, -1.5);
+    S.g.e('B', 'c', 'bad'); S.g.e('C', 'c', 'bad'); S.c3 = LL('Carl 不能同時配 Betty 和 Cindy ✘', 'bad', 4.5, pz(2));
     cap('條件二：每個男生只能配一個女生', 'Betty、Cindy 都喜歡 Carl，但 Carl 不能配兩個');
   },
   async (tok, S) => {
@@ -6939,7 +6992,7 @@ scene('g8e-party', 'Dance party：每個女生能不能配到喜歡的男生？'
 scene('g8e-draw', '把喜歡關係畫成 bipartite graph', [
   async (tok, S) => {
     S.B = board(); S.B.add('matching problem＝配對問題'); S.B.add('要配對，而且配得越多越好', 'say');
-    LL('喜歡清單', 'ptr', 4.6, -4.4); GIRLS.forEach((x, i) => LL(x + '：' + LIKE[x].split('').join(' '), 'say', 4.6, -3.5 + i));
+    LL('喜歡清單', 'ptr', 4.6, -4.4); GIRLS.forEach((x, i) => K.keep(LL(x + '：' + LIKE[x].split('').join(' '), 'say', 4.6, -3.5 + i)));
     cap('這叫 matching problem', '中文就是「配對問題」');
   },
   async (tok, S) => {
@@ -7054,18 +7107,18 @@ scene('g8e-maxcomp', 'Maximum matching 與 complete matching', [
   async (tok, S) => { S.B = board(); S.g = party(); S.B.add('「maximal matching」（老師的用詞）'); cap('最大的 matching', '老師稱為 maximal matching'); },
   async (tok, S) => { S.B.add('沒有其他 matching 的 cardinality |M| 比它大', 'note'); cap('沒有別的 matching 有比較大的 cardinality', 'cardinality 就是集合裡有幾個元素'); },
   async (tok, S) => {
-    paintM(S.g, M5); S.t1 = T('M₁：|M₁| = ' + msize(M5) + '（5 個女生配到）', 'say', 5.4, -3.4);
-    ok(isMatching(M5) && inGraph(ADJ, M5), 5.4, -2.8, 'M₁ 是 matching ✓');
+    paintM(S.g, M5); S.t1 = LL('M₁：|M₁| = ' + msize(M5) + '（5 個女生配到）', 'say', 3.8, -3.6);
+    okR(S, isMatching(M5) && inGraph(ADJ, M5), 'M₁ 是 matching ✓');
     cap('例如一個 matching 配到 5 個女生', '');
   },
   async (tok, S) => {
-    paintM(S.g, M6); settxt(S.t1, 'M₂：|M₂| = ' + msize(M6) + '（6 個女生配到）');
+    paintM(S.g, M6); settxt(S.t1, 'M₂：|M₂| = ' + msize(M6) + '（6 個女生配到）'); okR(S, isMatching(M6) && inGraph(ADJ, M6), 'M₂ 也是 matching ✓');
     S.B.add('配到 6 個的比配到 5 個的大');
     cap('另一個配到 6 個女生', '那個就比較大');
   },
   async (tok, S) => { S.B.add('|M| = 邊數 = 配到的女生數'); S.B.add('（標準名稱：maximum matching）', 'say'); cap('matching 是一些邊的集合', '它有幾條邊，就有幾個女生被配到'); },
   async (tok, S) => { S.B.add('最好：每個女生都配到 → complete matching', 'note'); cap('最好的情況：每個女生都配到', '那時候的 matching 叫做 complete matching'); },
-  async (tok, S) => { S.B.add('complete matching：|M| = |X|（這裡 = 8）', 'note'); kill(S.t1); T('|X| = 8', 'ptr', PX, 4.4); cap('complete matching 就是 |M| = |X|', '這個例子 X 有 8 個女生，所以要 |M| = 8'); },
+  async (tok, S) => { S.B.add('complete matching：|M| = |X|（這裡 = 8）', 'note'); kill(S.t1); kill(S.r); T('|X| = 8', 'ptr', PX, 4.4); cap('complete matching 就是 |M| = |X|', '這個例子 X 有 8 個女生，所以要 |M| = 8'); },
   async (tok, S) => { S.B.add('原問題 ⇔ 這個 bipartite graph 有沒有 complete matching？', 'good'); cap('原來的問題換成 graph theory 語言', '這個 bipartite graph 存不存在 complete matching？'); },
   async (tok, S) => { S.B.add('沒有的話：maximum matching 有多大？'); cap('如果存在，就是每個女生都配到（size 8）', '如果不存在，最多能配到幾個？'); },
   async (tok, S) => { paintM(S.g, {}); S.B.add('怎麼找最大的 matching？先拿例子試試', 'say'); cap('這種問題有很多例子', '要怎麼找最大的 matching 呢？'); },
@@ -7074,42 +7127,42 @@ scene('g8e-maxcomp', 'Maximum matching 與 complete matching', [
 scene('g8e-greedy', '先配配看：能配就配，配到 E 卡住', [
   async (tok, S) => { S.B = board(); S.g = party(); S.B.add('用這個例子試試看，有問題再說'); cap('我們就用原來這個例子', '先試試看，有問題再說'); },
   async (tok, S) => { GIRLS.forEach((x) => S.B.add(x + '：' + LIKE[x].split('').join(' '), 'say')); cap('把喜歡清單再抄一次', 'A: aefgh、B: bch、C: cefg、D: dh、E: bcd、F: bd、G: abcd、H: bcd'); },
-  async (tok, S) => { S.ttl = T('先配配看', 'ptr', 5.6, -4.2); cap('我們就先來配配看', ''); },
-  async (tok, S) => { S.t0 = T('想方法：先找例子試試，看出端倪', 'say', 5.6, -3.5); cap('想方法的第一步', '找個例子試試看，試多了就看出端倪'); },
+  async (tok, S) => { S.ttl = LL('先配配看', 'ptr', 3.8, -4.7); cap('我們就先來配配看', ''); },
+  async (tok, S) => { S.t0 = LL('想方法：先找例子試試，看出端倪', 'say', 3.8, -3.6); cap('想方法的第一步', '找個例子試試看，試多了就看出端倪'); },
   async (tok, S) => {
     kill(S.t0); S.M = { A: 'a' }; S.g.set('A', 'a', 'm');
-    S.ms = T('M = {A–a}', 'note', 5.6, -3.5); cap('能配就先配：Alice 配給 Art', '把 Aa 這條邊丟進 matching');
+    S.ms = LL('M = {A–a}', 'note', 3.8, -3.6); cap('能配就先配：Alice 配給 Art', '把 Aa 這條邊丟進 matching');
   },
   async (tok, S) => { S.M.B = 'b'; S.g.set('B', 'b', 'm'); settxt(S.ms, 'M = {' + mtxt(S.M) + '}'); cap('照字母順序配 B', 'Betty 第一個喜歡的 b 還沒人配，就配給她'); },
   async (tok, S) => { S.M.C = 'c'; S.g.set('C', 'c', 'm'); settxt(S.ms, 'M = {' + mtxt(S.M) + '}'); cap('Cindy 喜歡 c、e、f、g', 'c 還 available，就把 c 配給 Cindy'); },
   async (tok, S) => {
     S.M.D = 'd'; S.g.set('D', 'd', 'm'); settxt(S.ms, 'M = {' + mtxt(S.M) + '}');
-    ok(isMatching(S.M) && sameM(S.M, M4), 5.6, -2.9, '|M| = ' + msize(S.M) + '，是 matching ✓');
+    okR(S, isMatching(S.M) && sameM(S.M, M4), '|M| = ' + msize(S.M) + '，是 matching ✓');
     cap('Doris 喜歡 d 和 h：把 d 配給 Doris', '能做就先做，有問題再說');
   },
   async (tok, S) => {
     S.g.glow('E', '#661111'); ['b', 'c', 'd'].forEach((y) => S.g.glow(y, '#553300'));
     const free = ADJ.E.filter((y) => !Object.values(S.M).includes(y));
-    ok(free.length === 0, 5.6, -2.3, 'E 喜歡的 b、c、d 都被配走了 ✓');
+    okR(S, free.length === 0, 'E 喜歡的 b、c、d 都被配走了 ✓');
     cap('再來是 E：她喜歡 b、c、d', '很不幸，b、c、d 都已經配給別人了');
   },
   async (tok, S) => {
-    S.g.set('E', 'b', 'bad'); S.t2 = T('再加 E–b：和 B–b 共用 b ✘', 'bad', 5.6, -1.7);
+    S.g.set('E', 'b', 'bad'); remark(S, '再加 E–b：和 B–b 共用 b ✘', 'bad');
     cap('再畫一條線就違反 matching 的條件', '兩條邊會有同樣的端點');
   },
   async (tok, S) => {
-    S.g.set('E', 'b', 'g'); kill(S.t2);
-    S.t3 = T('A、B 其實不只喜歡一個男生', 'say', 5.6, -1.7);
+    S.g.set('E', 'b', 'g');
+    remark(S, 'A、B 其實不只喜歡一個男生', 'say');
     cap('那怎麼辦？也許可以調整一下前面的配法', 'Alice、Betty 其實都不只喜歡一個男生');
   },
-  async (tok, S) => { S.t4 = T('卡在這裡 → 想辦法調整（下一段）', 'note', 5.6, -1.1); cap('配到這邊卡住了', '想辦法調整，把 E 也配上去'); },
+  async (tok, S) => { remark(S, '卡在這裡 → 想辦法調整（下一段）', 'note'); cap('配到這邊卡住了', '想辦法調整，把 E 也配上去'); },
 ]);
 
 // ════════ Xl7Giuc-Adk（第29B講：調整配法、augmenting alternating path、Hungarian algorithm 的基本想法） ════════
 scene('g8e-aug1', '調整：E–b–B–h，把 matching 變大', [
   async (tok, S) => {
     S.B = board(); S.g = party({ M: M4 }); S.g.glow('E', '#661111');
-    S.ms = T('M = {' + mtxt(M4) + '}，|M| = 4', 'note', 5.6, -4.2);
+    S.ms = LL('M = {' + mtxt(M4) + '}，|M| = 4', 'note', 3.8, -3.6);
     S.B.add('配了 A、B、C、D，E 配不上去');
     cap('做到這裡配了 4 個', '要配 E 的時候，她喜歡的三個男生都被配走了');
   },
@@ -7119,7 +7172,7 @@ scene('g8e-aug1', '調整：E–b–B–h，把 matching 變大', [
   async (tok, S) => {
     S.g.set('B', 'h', 'p'); S.g.glow('h', '#004422');
     const taken = ['b', 'c'].every((y) => Object.values(M4).includes(y)) && !Object.values(M4).includes('h');
-    ok(taken, 5.6, -3.5, 'Betty：b、c 已配，h 還沒配 ✓');
+    okR(S, taken, 'Betty：b、c 已配，h 還沒配 ✓');
     S.B.add('Betty 喜歡 b、c、h：h 還沒被配！', 'note');
     cap('Betty 喜歡 b、c、h', 'b、c 都配了，但 h 還沒有被配');
   },
@@ -7140,7 +7193,7 @@ scene('g8e-aug1', '調整：E–b–B–h，把 matching 變大', [
   async (tok, S) => {
     ['A', 'C', 'D'].forEach((x) => S.g.glow(x));
     settxt(S.ms, 'M = {' + mtxt(S.M) + '}，|M| = ' + msize(S.M));
-    ok(isMatching(S.M) && inGraph(ADJ, S.M) && sameM(S.M, M5), 5.6, -3.5, '還是 matching，|M| 從 4 變 5 ✓');
+    okR(S, isMatching(S.M) && inGraph(ADJ, S.M) && sameM(S.M, M5), '還是 matching，|M| 從 4 變 5 ✓');
     cap('這樣還是滿足 matching 的條件', 'size 從 4 變成 5，E 也配到了');
   },
   async (tok, S) => {
@@ -7281,7 +7334,7 @@ scene('g8e-treeG', '從 G 長 alternating tree：G–a–A–f', [
   async (tok, S) => {
     const mate = { a: 'A', b: 'F', c: 'E', d: 'D' };
     ['a', 'b', 'c', 'd'].forEach((y, k) => { tnode(S.t, mate[y], k, 4, 2); tedge(S.t, y, mate[y], 'pm'); S.g.set(mate[y], y, 'pm'); });
-    ok(Object.entries(mate).every(([y, x]) => M6[x] === y), 6.0, -0.2, 'a–A、b–F、c–E、d–D 都在 M ✓');
+    okR(S, Object.entries(mate).every(([y, x]) => M6[x] === y), 'a–A、b–F、c–E、d–D 都在 M ✓', 1.7, 4.5);
     S.B.add('下一層要在 M（沒得選）：A、F、E、D');
     cap('下一層要在 matching 裡，都沒得選', 'a 配 A、b 配 F、c 配 E、d 配 D');
   },
@@ -7291,20 +7344,20 @@ scene('g8e-treeG', '從 G 長 alternating tree：G–a–A–f', [
     cap('再從 A 開始：A 喜歡 a、e、f、g、h', 'a 已經在 tree 上，e 可以長出來');
   },
   async (tok, S) => {
-    ok(M6.C === 'e', 4.6, 0.6, 'e 已配給 C ✓');
+    okR(S, M6.C === 'e', 'e 已配給 C ✓', 1.7, 4.5);
     S.B.add('但 e 有配到（給 C）→ 還不行，試下一個', 'say');
     cap('但 e 已經 match 到了', '還不能結束，再試下一個');
   },
   async (tok, S) => {
     tnode(S.t, 'f', 1, 4, 3); S.t.P.tf[0] = TX(1, 4) - 0.2; S.t.V.tf.position.x = S.t.P.tf[0]; tedge(S.t, 'A', 'f', 'p'); S.g.set('A', 'f', 'p');
     S.t.glow('tf', '#004422'); S.g.glow('f', '#004422');
-    ok(!Object.values(M6).includes('f'), 5.8, 0.6, 'f 沒配到 ✓');
+    okR(S, !Object.values(M6).includes('f'), 'f 沒配到 ✓', 1.7, 4.5);
     S.B.add('下一個 f：unmatched！', 'good');
     cap('下一個是 f', 'f 沒有被 match，bingo，找到了');
   },
   async (tok, S) => {
     const r = altTree(ADJ, M6, 'G');
-    ok(r.found === 'f' && r.path.join('') === 'GaAf', 5.6, 4.4, '程式：augmenting path G–a–A–f ✓');
+    okR(S, r.found === 'f' && r.path.join('') === 'GaAf', '程式：augmenting path G–a–A–f ✓', 1.7, 4.5);
     paintM(S.g, M6); paintPath(S.g, ['G', 'a', 'A', 'f'], M6);
     S.B.add('碰到 unmatched y 就停：G–a–A–f', 'note');
     cap('tree 只要碰到一個 unmatched y-vertex 就停', '找到 augmenting alternating path：G–a–A–f');
@@ -7316,7 +7369,7 @@ scene('g8e-treeG', '從 G 長 alternating tree：G–a–A–f', [
   async (tok, S) => { S.M = flip(M6, ['G', 'a', 'A', 'f']); paintM(S.g, S.M); S.g.glow('G'); S.g.glow('f'); S.B.add('A 改配 f，a 配給 G', 'note'); cap('原來 a 配 Alice', '現在 a 配給 G、f 配給 A'); },
   async (tok, S) => { S.B.add('A–f B–h C–e D–d E–c F–b G–a', 'say'); cap('新的 matching', 'A–f、B–h、C–e、D–d、E–c、F–b、G–a'); },
   async (tok, S) => {
-    ok(isMatching(S.M) && inGraph(ADJ, S.M) && sameM(S.M, M7), 0.4, 4.4, '|M| = ' + msize(S.M) + ' ✓');
+    okR(S, isMatching(S.M) && inGraph(ADJ, S.M) && sameM(S.M, M7), '|M| = ' + msize(S.M) + ' ✓', 1.7, 4.5);
     S.B.add('|M|：6 → 7', 'good'); cap('cardinality 從 6 變成 7', '還剩 H 沒配到');
   },
 ]);
@@ -7324,7 +7377,7 @@ scene('g8e-treeG', '從 G 長 alternating tree：G–a–A–f', [
 scene('g8e-hungtree', '從 H 長不出來：Hungarian tree', [
   async (tok, S) => {
     S.B = board(-7.3, -4.7, 0.6, 14); S.g = party({ M: M7 }); S.g.glow('H', '#661111');
-    S.t = G(); tnode(S.t, 'H', 0, 1, 0); T('alternating tree', 'zone', 6.0, -4.6);
+    S.t = G(); tnode(S.t, 'H', 0, 1, 0); S.zt = T('alternating tree', 'zone', 6.0, -4.6);
     S.B.add('最後 H 還沒配：H 喜歡 b、c、d');
     cap('最後還有 H 沒配到', '從 H 開始找，方法都一樣；H 喜歡 b、c、d');
   },
@@ -7343,16 +7396,16 @@ scene('g8e-hungtree', '從 H 長不出來：Hungarian tree', [
   async (tok, S) => {
     S.t.glow('tB', '#661111');
     const r = altTree(ADJ, M7, 'H');
-    ok(!r.found, 5.6, 4.4, '程式跑 modified BFS：找不到 unmatched y ✓');
+    okR(S, !r.found, '程式跑 modified BFS：找不到 unmatched y ✓', 1.7, 4.5);
     S.B.add('B：b、c、h 都在 tree → 長不下去了');
     cap('Betty 喜歡 b、c、h', '全都在 tree 上，這棵 alternating tree 長不下去了');
   },
   async (tok, S) => { S.t.glow('tB'); S.B.add('從 H 出發的 alternating paths 全在這；沒有一條 augmenting'); cap('從 H 出發的 alternating path 全部就這樣', '沒有一條停在 unmatched 的 y-vertex'); },
-  async (tok, S) => { S.ht = T('Hungarian tree', 'ptr alt', 6.0, 4.4); S.B.add('這棵叫 Hungarian tree', 'note'); cap('這種長不出 augmenting path 的 alternating tree', '叫做 Hungarian tree'); },
+  async (tok, S) => { settxt(S.zt, 'Hungarian tree'); cls(S.zt, 'ptr alt'); S.B.add('這棵叫 Hungarian tree', 'note'); cap('這種長不出 augmenting path 的 alternating tree', '叫做 Hungarian tree'); },
   async (tok, S) => { S.t.glow('tH', '#661111'); S.B.add('它的 root 叫 Hungarian acorn（橡實）', 'note'); cap('Hungarian tree 的 root', '叫 Hungarian acorn；acorn 是橡樹的果實「橡實」'); },
   async (tok, S) => {
     const others = GIRLS.filter((x) => x !== 'H').every((x) => M7[x]);
-    ok(others, 0.4, 4.4, '其他女生都配到了 ✓');
+    okR(S, others, '其他女生都配到了 ✓', 1.7, 4.5);
     S.B.add('H 是 Hungarian acorn → algorithm 停');
     cap('從 H 沒辦法把 matching 變大', '其他人都配到了，剩下的是 Hungarian acorn，algorithm 就停了');
   },
@@ -7364,7 +7417,7 @@ scene('g8e-hungtree', '從 H 長不出來：Hungarian tree', [
   async (tok, S) => { ['b', 'c', 'd', 'h'].forEach((y) => S.g.glow(y, '#553300')); S.B.add('卻只有 4 個男生：b、c、d、h'); cap('tree 上只有 4 個男生', 'b、c、d、h'); },
   async (tok, S) => {
     const R = Rof(ADJ, ['B', 'D', 'E', 'F', 'H']);
-    ok(R.join('') === 'bcdh', 5.4, 3.7, 'B、D、E、F、H 喜歡的聯集 = {' + R.join(', ') + '}：4 < 5 ✓');
+    okR(S, R.join('') === 'bcdh', 'B、D、E、F、H 喜歡的聯集 = {' + R.join(', ') + '}：4 < 5 ✓', 1.7, 4.5);
     S.B.add('5 個女生喜歡的聯集只有 4 個男生', 'note');
     cap('這五個女生喜歡的男生聯集起來', '只有 b、c、d、h 四個');
   },
@@ -7372,7 +7425,7 @@ scene('g8e-hungtree', '從 H 長不出來：Hungarian tree', [
   async (tok, S) => {
     ['H', 'F', 'E', 'D', 'B', 'b', 'c', 'd', 'h'].forEach((n) => S.g.glow(n)); paintM(S.g, M7);
     const mm = maxMatch(ADJ);
-    ok(mm.n === 7 && msize(M7) === 7, 0.4, 4.4, '暴力試所有配法：最大就是 ' + mm.n + ' ✓');
+    okR(S, mm.n === 7 && msize(M7) === 7, '暴力試所有配法：最大就是 ' + mm.n + ' ✓', 1.7, 4.5);
     S.B.add('結果 |M| = 7 是 maximum matching', 'good');
     cap('Hungarian algorithm 停下來的結果', '這個 size 7 的 matching 已經是最大的');
   },
@@ -7650,14 +7703,14 @@ scene('g8e-dpf1', '證明（一）：任何 matching ≤ |X| − δ', [
     S.B.add('存在 A₀ ⊆ X：|A₀| − |R(A₀)| = δ', 'note');
     S.g = party({ M: M7 }); A0.forEach((x) => S.g.glow(x, '#661111'));
     const R = Rof(ADJ, A0); const d = deficiency(ADJ).d;
-    ok(A0.length - R.length === d, 5.6, 4.4, '派對：A₀ = {B,D,E,F,H}，5 − 4 = 1 = δ ✓');
+    S.r = ok(A0.length - R.length === d, 5.6, 4.4, '派對：A₀ = {B,D,E,F,H}，5 − 4 = 1 = δ ✓');
     cap('有一個 subset 叫 A₀', '|A₀| − |R(A₀)| 剛好等於 δ（maximum，不是 supremum）');
   },
   async (tok, S) => { S.B.add('光看 A₀：不管怎麼配，都差 δ 個'); cap('光考慮 A₀ 這幾個女生', '她們喜歡的男生比她們少 δ 個，怎麼配都會差 δ'); },
   async (tok, S) => {
     S.B.add('任何 matching：A₀ 至少 δ 人 unmatched', 'note');
     const allM = [M5, M6, M7].every((M) => A0.filter((x) => !M[x]).length >= 1);
-    ok(allM, 5.6, 3.7, '老師 run 出的 M₅、M₆、M₇：A₀ 都有人沒配 ✓');
+    settxt(S.r, allM ? '老師 run 出的 M₅、M₆、M₇：A₀ 都有人沒配 ✓' : '老師 run 出的 M₅、M₆、M₇：A₀ 都有人沒配 ✘'); cls(S.r, allM ? 'good' : 'bad');
     cap('所以任何 matching', 'A₀ 裡至少有 δ 個人會 remain unmatched');
   },
   async (tok, S) => { A0.forEach((x) => S.g.glow(x)); S.B.add('⇒ 任何 matching 的 size ≤ |X| − δ（upper bound）', 'good'); cap('所以任何 matching 的 size', '都 ≤ |X| − δ，這是 upper bound'); },
@@ -7749,9 +7802,12 @@ const vis = (o, on) => { if (!o) return; o.visible = on; if (o.element) o.elemen
 const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.element) remove(o); else kill(o); });
 const CAM = [[0, 3.6, 15], [0, 3.1, 0]];
 const FC = { v: '#cdbfa6', S: '#e55a9b', T: '#4b9ee2', e: '#9c8b70', hot: '#d64545', ok: '#2fc092', sat: '#c08a1f', back: '#9b7ef4', fwd: '#dd8238', dim: '#e2d8c6', blue: '#4b9ee2' };
-function scene(id, title, steps, cam = CAM) {
+// the network plus the board above it: held from the first step so the camera does not jump when they arrive
+const HOLD = [-6.3, -0.2, -0.3, 6.3, 8.9, 0.3];
+function scene(id, title, steps, cam = CAM, hold = HOLD) {
   FRAG.push([id, title, async (tok) => {
     fresh(cam[0], cam[1]);
+    if (hold) frameHold(...hold);
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
@@ -7760,7 +7816,7 @@ function scene(id, title, steps, cam = CAM) {
 function board(o = {}) {
   // 3 lines fit between the top of the stage and the network's top vertex a (4 printed over a and its edge labels)
   // o.pin: pinned to the left edge as a wrapped column (for scenes whose picture sits on the right)
-  const st = stackBoard(o.x ?? 0, o.y ?? 10.2, 0.3, o.pin !== undefined ? { max: o.max ?? 3, pin: o.pin, maxW: o.maxW ?? 230 } : { max: o.max ?? 3, center: true }); const ls = st.ls;
+  const st = stackBoard(o.x ?? 0, o.y ?? 8.7, 0.3, o.pin !== undefined ? { max: o.max ?? 3, pin: o.pin, maxW: o.maxW ?? 230 } : { max: o.max ?? 3, center: true }); const ls = st.ls;
   return {
     ls,
     add(t, c = 'note') {
@@ -7864,7 +7920,7 @@ function mkNet(o = {}) {
   NE.forEach(([u, w, c]) => {
     const k = u + w, d = dEdge(N.p(u), N.p(w), { gap: 0.44 });
     const q = d.mid.clone().addScaledVector(d.side, 0.36);
-    const l = tag(String(c), 'note', q.x, q.y, 0.3);
+    const l = K.keep(tag(String(c), 'note', q.x, q.y, 0.3)); // a number on the picture, not a remark: tag() would retire it after 3 newer notes
     N.e[k] = { k, u, w, c, ...d, l, mode: 'cap' };
     vis(d.g, o.show !== false); vis(l, o.show !== false && o.labels !== false);
   });
@@ -7889,7 +7945,7 @@ function mkNet(o = {}) {
   N.uncut = () => { VS.forEach((v) => { N.halo(v, null); N.vc(v); }); };
   N.paintCut = (S) => { N.reset(); fwdE(S).forEach((k) => N.pe(k, FC.fwd, true)); bwdE(S).forEach((k) => N.pe(k, FC.back, true)); };
   N.ptag = (n, t, c = 'ptr', dy = -0.75) => { const p = N.p(n); return lb(t, c, p.x, p.y + dy); };
-  N.mtag = (k, t, c = 'ptr alt', off = -0.42) => { const e = N.e[k]; const q = e.mid.clone().addScaledVector(e.side, off); return lb(t, c, q.x, q.y); };
+  N.mtag = (k, t, c = 'ptr alt', off = -0.42) => { const e = N.e[k]; const q = e.mid.clone().addScaledVector(e.side, off); return K.keep(lb(t, c, q.x, q.y)); };
   return N;
 }
 async function pop(tok, m, k = 0.35, ms = 420) { await anim(tok, ms, (u) => m.scale.setScalar(1 + k * Math.sin(Math.PI * u))); m.scale.setScalar(1); }
@@ -7912,11 +7968,11 @@ function pathRow(y = -1.4) {
   Object.entries(PROW).forEach(([n, x]) => { const m = lab.box('#efe3c8', [0.6, 0.6, 0.4]); m.userData.lbl = lab.label(n, 'val'); m.add(m.userData.lbl); m.position.set(x, y, 0); lab.world.add(m); R.v[n] = m; });
   ['sa', 'ad', 'cd', 'ct'].forEach((k) => {
     const d = dEdge(V3(PROW[k[0]], y, 0), V3(PROW[k[1]], y, 0), { gap: 0.42 });
-    const l = lb(String(CAPS[k]), 'note', (PROW[k[0]] + PROW[k[1]]) / 2, y + 0.55);
+    const l = K.keep(lb(String(CAPS[k]), 'note', (PROW[k[0]] + PROW[k[1]]) / 2, y + 0.55));
     R.e[k] = { ...d, l };
   });
   R.show = (F) => Object.entries(R.e).forEach(([k, e]) => { cls(e.l, 'say'); e.l.element.innerHTML = '<b style="color:#c62828">' + F[k] + '</b><span style="color:#8a6a00">/' + CAPS[k] + '</span>'; });
-  R.mark = (k, t, c) => lb(t, c, (PROW[k[0]] + PROW[k[1]]) / 2, y - 0.62);
+  R.mark = (k, t, c) => K.keep(lb(t, c, (PROW[k[0]] + PROW[k[1]]) / 2, y - 0.62)); // one per edge of the row: Δ = min(...) needs them all
   return R;
 }
 const SADCT = [['s', 'sa', 'f'], ['a', 'ad', 'f'], ['d', 'cd', 'b'], ['c', 'ct', 'f']];
@@ -8148,7 +8204,7 @@ scene('g8f-flow8', '一個 flow 的例子：逐邊 check', [
     cap('先 check feasibility', '每個紅色要 ≤ 黃色');
   },
   async (tok, S) => {
-    S.tk = [];
+    S.tk = []; S.N.labs('none'); // each tag repeats the edge's two numbers: one number per edge on screen
     for (const k of KEYS) { const g = F8[k] <= CAPS[k]; S.N.pe(k, g ? FC.ok : FC.hot, true); S.tk.push(S.N.mtag(k, F8[k] + '≤' + CAPS[k] + (g ? ' ✓' : ' ✘'), g ? 'good' : 'bad')); await wt(tok, 230); }
     cap('3 ≤ 5、2 ≤ 4、3 ≤ 3、…', '一條一條比');
   },
@@ -8157,7 +8213,7 @@ scene('g8f-flow8', '一個 flow 的例子：逐邊 check', [
     cap('全部都滿足', 'feasibility ✓');
   },
   async (tok, S) => {
-    gone(S.tk); S.N.reset();
+    gone(S.tk); S.N.reset(); S.N.labs('flow');
     S.B.add('再 check conservation：a, b, c, d 的 inflow = outflow');
     cap('再 check conservation', '流量守恆');
   },
@@ -8400,7 +8456,7 @@ scene('g8f-cutproof-ex', '證明前：把例子寫清楚', [
 const PR_X = -6.9;
 scene('g8f-cutproof', '證明：val(f) = 流過去 − 流回來（只用 conservation）', [
   async (tok, S) => {
-    S.N = mkNet({ s: 0.62, ox: 3.4, oy: 0.6 }); S.N.setF(F8); S.N.cut(CUT1); // picture lower right, the derivation above it, the worked example on the left
+    S.N = mkNet({ s: 0.62, ox: 3.4, oy: 0.6 }); S.N.setF(F8); S.N.labs('none'); S.N.cut(CUT1); // (numbers too small to read here: the left column carries them) picture lower right, the derivation above it, the worked example on the left
     S.L = board({ x: -0.6, max: 3 });
     S.L.add('要證：val(f) = Σ over x∈S,y∈T f(x,y) − Σ over u∈T,v∈S f(u,v)');
     S.n = lb('右邊用例子對照：S = ' + setS(CUT1) + '（示意對照）', 'idx', -3.2, 3.7);
@@ -8778,7 +8834,7 @@ scene('g8f-sadct-intro', '再找一條：s-a-d-c-t（有反方向的邊）', [
 // ════════ YnPS5TFJiFE（第31D講：s-a-d-c-t 加 1 → F2、cut {s,b}、f-augmenting path、Δ_P） ════════
 scene('g8f-sadct', 's-a-d-c-t：最多可以加多少？', [
   async (tok, S) => {
-    S.B = board(); S.N = mkNet({ s: 0.62, ox: 0, oy: 2.2 }); S.N.setF(F9);
+    S.B = board(); S.N = mkNet({ s: 0.62, ox: 0, oy: 2.2 }); S.N.setF(F9); S.N.labs('none'); // the small picture only shows the path
     SADCT.forEach(([, k]) => S.N.pe(k, k === 'cd' ? FC.back : FC.hot, true));
     S.B.add('path s-a-d-c-t（underlying undirected graph 的 path）');
     cap('上次找到的 path：s a d c t', '');
@@ -8818,7 +8874,7 @@ scene('g8f-sadct', 's-a-d-c-t：最多可以加多少？', [
     cap('逆向的怎麼辦？', '原本 c → d 流 1，往這邊加等於把它抵消');
   },
   async (tok, S) => {
-    gone(S.bk); S.bk = S.R.mark('cd', '最多 ' + F9.cd + '（減到 0）', 'good');
+    gone(S.bk); S.bk = S.R.mark('cd', '最多 ' + F9.cd, 'good');
     cap('最多只能加 1', '再多就變負的，不合 flow 的定義');
   },
   async (tok, S) => {
@@ -8882,8 +8938,8 @@ scene('g8f-f2', '新的 flow F2：value = 10', [
     cap('sink 的 inflow', '3 + 4 + 3 也是 10');
   },
   async (tok, S) => {
-    S.N.reset();
-    S.k = ok(val(F8) === 8 && val(F9) === 9 && val(F10) === 10, 'value：' + val(F8) + '（f）→ ' + val(F9) + '（s-a-t）→ ' + val(F10) + '（s-a-d-c-t）✓', 0, -2.3);
+    S.N.reset(); gone(S.k1, S.v1, S.v2); // the checks are done: the summary line takes their place, above the caption
+    S.k = ok(val(F8) === 8 && val(F9) === 9 && val(F10) === 10, 'value：' + val(F8) + '（f）→ ' + val(F9) + '（s-a-t）→ ' + val(F10) + '（s-a-d-c-t）✓', 0, -0.9);
     cap('一開始 8', '沿 s a t 變 9，沿 s a d c t 變 10');
   },
 ]);
@@ -8968,6 +9024,7 @@ scene('g8f-augdef', 'f-augmenting path 的定義', [
     cap('從 source 到 sink 的 path P', 'network 的 path = 無向圖上的 path');
   },
   async (tok, S) => {
+    KEYS.filter((k) => !SADCT.some((e) => e[1] === k)).forEach((k) => S.N.lab(k, 'none')); // only the path's numbers stay beside its tags
     S.m = SADCT.map(([, k, d]) => S.N.mtag(k, d === 'f' ? 'forward' : 'backward', d === 'f' ? 'ptr' : 'bad'));
     SADCT.forEach(([, k, d]) => S.N.pe(k, d === 'f' ? FC.fwd : FC.back, true));
     S.B.add('P 上的邊有兩種：順向 forward、逆向 backward', 'say');
@@ -9364,7 +9421,7 @@ scene('g8f-ek', 'Edmonds–Karp algorithm', [
   },
   async (tok, S) => {
     S.C = codeBox(EKC, -4.8, 2.2);
-    S.N = mkNet({ s: 0.62, ox: 3.5, oy: 1.2 });
+    S.N = mkNet({ s: 0.62, ox: 3.5, oy: 1.2, labels: false });
     S.n = lb('右邊：在老師的 network 上跑一次（示意）', 'idx', 3.3, 0.2);
     S.B.add('Edmonds–Karp algorithm：找 maximum flow，也給 min cut（high-level）', 'say');
     cap('介紹 Edmonds–Karp algorithm', 'pseudocode 是比較 high level 的');
@@ -9375,7 +9432,7 @@ scene('g8f-ek', 'Edmonds–Karp algorithm', [
     cap('這兩個人', '1972 年提出來的');
   },
   async (tok, S) => {
-    S.C.hl(1); S.F = { ...ZERO }; S.N.setF(S.F);
+    S.C.hl(1); S.F = { ...ZERO }; S.N.setF(S.F); S.N.labs('none'); /* small picture: val below carries the number */
     S.v = lb('val = 0', 'ptr alt', 3.3, -0.6);
     cap('一開始 flow 全部設為 0', 'network 已經 given');
   },
@@ -9413,7 +9470,7 @@ scene('g8f-ek', 'Edmonds–Karp algorithm', [
   async (tok, S) => {
     S.C.hl(6); gone(S.r);
     const p = S.it.p; S.N.reset(); p.forEach(([, k]) => S.N.pe(k, FC.hot, true));
-    S.F = S.it.F; S.N.setF(S.F); S.v.element.textContent = 'val = ' + val(S.F);
+    S.F = S.it.F; S.N.setF(S.F); S.N.labs('none'); S.v.element.textContent = 'val = ' + val(S.F);
     S.r = lb('path ' + pathNames(p).join('-') + '，Δ = ' + S.it.D, 'say', 3.3, -1.3);
     cap('照前面的方法增大', 'Δ = path 上 Δ_e 的最小值');
   },
@@ -9423,7 +9480,7 @@ scene('g8f-ek', 'Edmonds–Karp algorithm', [
     S.hist = [S.it];
     for (const it of rest) {
       S.N.reset(); it.p.forEach(([, k]) => S.N.pe(k, FC.hot, true));
-      S.F = it.F; S.N.setF(S.F); S.v.element.textContent = 'val = ' + val(S.F); S.hist.push(it);
+      S.F = it.F; S.N.setF(S.F); S.N.labs('none'); S.v.element.textContent = 'val = ' + val(S.F); S.hist.push(it);
       await wt(tok, 750);
     }
     S.r = lb('（示意）' + S.hist.map((it) => pathNames(it.p).join('') + '+' + it.D).join('，'), 'say', 3.3, -1.3);
@@ -9481,8 +9538,8 @@ scene('g8f-ekwhy', '為什麼 Edmonds–Karp 對；和 Ford–Fulkerson 的關�
 
 scene('g8f-recap', 'Maximum flow 單元回顧', [
   async (tok, S) => {
-    S.B = board({ max: 4, y: 10.8 });
-    S.N = mkNet({ s: 0.8, ox: 0, oy: 0.2 }); S.N.setF(F10);
+    S.B = board({ max: 4, y: 9.6 });
+    S.N = mkNet({ s: 0.95, ox: 0, oy: 0 }); S.N.setF(F10);
     S.B.add('network：source、sink、每條邊的 capacity');
     cap('Maximum flow 這部分講完了', '先介紹 network');
   },
@@ -9586,7 +9643,7 @@ function eulerOK(G, seq) {
 }
 function degTags(gv, cls = 'ptr alt') {
   const d = degs(gv.G), out = {};
-  gv.G.V.forEach((v) => { const p = gv.pos(v); out[v] = tag('deg ' + d[v], d[v] % 2 ? 'bad' : cls, p.x + 0.55, p.y + 0.6, p.z - 0.45); });
+  gv.G.V.forEach((v) => { const p = gv.pos(v); out[v] = K.keep(tag('deg ' + d[v], d[v] % 2 ? 'bad' : cls, p.x + 0.55, p.y + 0.6, p.z - 0.45)); });
   return out;
 }
 
@@ -9905,6 +9962,7 @@ scene('g8g-st-dfs-code', 'Tree edge、back edge 與 DFS 虛擬碼', [
 
 scene('g8g-st-bfs', 'BFS 例子：從 e 出發、一層一層', [
   async (tok, S) => {
+    frameHold(-6.9, 0.2, -3.6, 5.6, 0.5, 4.0); // the graph and the queue line arrive later: frame for them now
     S.B = board(-6.9, -3.4);
     S.B.add('BFS（breadth-first search）建 spanning tree');
     cap('接下來：breadth-first search', '一樣可以建 spanning tree');
@@ -9924,7 +9982,7 @@ scene('g8g-st-bfs', 'BFS 例子：從 e 出發、一層一層', [
   async (tok, S) => {
     S.gv = drawGraph(BFSG, { s: 0.74, ox: 1.9, oz: 0.3 });
     S.st = travSteps(BFSG, 'e', 'bfs');
-    S.q = tag('', 'ptr alt', 1.9, 0.3, 3.0);
+    S.q = tag('', 'ptr alt', 1.9, 0.3, 3.65);
     S.on = (x) => set(S.q, 'L = [ ' + x.ds.join(' ') + ' ]');
     cap('例子：用 BFS 找這張圖的 spanning tree', '');
   },
@@ -9990,7 +10048,7 @@ const VS_BFS = { f: 'ecgj', e: 'bdif' };
 scene('g8g-st-vs', '同一張圖：DFS 與 BFS 的差別', [
   async (tok, S) => {
     S.L = drawGraph(BFSG, { s: 0.5, ox: -3.4, oz: 0.2 }); S.R = drawGraph(BFSG, { s: 0.5, ox: 3.4, oz: 0.2 });
-    S.tl = tag('DFS，根 e（路線示意）', 'ptr', -3.4, 0.3, -2.3); S.tr = tag('BFS', 'ptr alt', 3.4, 0.3, -2.3);
+    S.tl = tag('DFS，根 e（路線示意）', 'ptr', -3.4, 0.3, -3.0); S.tr = tag('BFS', 'ptr alt', 3.4, 0.3, -3.0);
     S.a = travSteps(BFSG, 'e', 'dfs', VS_DFS); S.b = travSteps(BFSG, 'f', 'bfs', VS_BFS);
     S.pa = tag('', 'idx', -3.4, 0.3, 2.4);
     await playSnaps(tok, S.L, S.a, 0, 0, 0);
@@ -10266,7 +10324,7 @@ scene('g8g-col-map', '地圖著色：相鄰國家不同色', [
     S.ox = 0; S.oz = -0.2; S.cs = 1.8;
     S.map = drawMap(S.ox, S.oz, S.cs);
     S.x = {};
-    S.mark = (r, t, c = 'bad') => { if (S.x[r]) kill(S.x[r]); const [x, z] = mapCtr(r, S.ox, S.oz, S.cs); S.x[r] = tag(t, c, x, 0.9, z + 0.55); };
+    S.mark = (r, t, c = 'bad') => { if (S.x[r]) kill(S.x[r]); const [x, z] = mapCtr(r, S.ox, S.oz, S.cs); S.x[r] = K.keep(tag(t, c, x, 0.9, z + 0.55)); };
     tag('虛構大陸（示意）', 'idx', 3.6, 0.3, -2.4);
     cap('虛構的大陸分成 A～E 幾個國家', '相鄰國家的國旗不想同色');
   },
@@ -10388,7 +10446,7 @@ scene('g8g-col-kn', 'Chromatic number 與完全圖 Kₙ', [
   },
   async (tok, S) => { cap('找出每個的 chromatic number', '再看能不能推廣'); },
   async (tok, S) => {
-    S.paint = async (k) => { const G = S.Ks[k]; for (let i = 0; i < G.V.length; i++) { vcol(S.gvs[k], G.V[i], CC[i]); await wt(tok, 300); } const x = chi(colorClasses(G)); tag('χ = ' + x + (x === G.V.length ? ' ✓' : ' ✗'), 'good', -2.2 + k * 3.4, 0.3, -1.4); };
+    S.paint = async (k) => { const G = S.Ks[k]; for (let i = 0; i < G.V.length; i++) { vcol(S.gvs[k], G.V[i], CC[i]); await wt(tok, 300); } const x = chi(colorClasses(G)); K.keep(tag('χ = ' + x + (x === G.V.length ? ' ✓' : ' ✗'), 'good', -2.2 + k * 3.4, 0.3, -1.4)); };
     await S.paint(0); cap('K₂：兩點相連 → 要 2 色', '');
   },
   async (tok, S) => { await S.paint(1); cap('K₃：B 碰到 A、C 碰到 A 和 B', '要 3 色'); },
@@ -10721,7 +10779,7 @@ scene('g8g-dj-setup', 'Dijkstra 演算法：起始條件', [
   async (tok, S) => { S.Sl = tag('S = { }', 'ptr', 2.4, 0.3, 3.2); S.B.add('S = 空集合'); cap('集合 S 一開始是空的', ''); },
   async (tok, S) => { S.B.add('S：已經「確定」最短距離的點', 'say'); cap('S 放的是已經確定最短距離的城市', '就像剛才桃園 30 確定後寫在旁邊'); },
   async (tok, S) => { S.B.add('迴圈：每次挑「不在 S、L 最小」的點'); cap('接著是一個迴圈', '每次挑還沒確定、但距離最近的那一個'); },
-  async (tok, S) => { S.tb = tag('表：A B C D E F 各一格 L，外加集合 S', 'idx', 2.4, 0.3, -3.3); cap('我們列一個表來追蹤', '每個點目前的最短距離，和集合 S'); },
+  async (tok, S) => { S.tb = tag('表：A B C D E F 各一格 L，外加集合 S', 'idx', 2.4, 0.3, 3.75); /* under S: above the graph it sat on B's L label */ cap('我們列一個表來追蹤', '每個點目前的最短距離，和集合 S'); },
   async (tok, S) => { G_all(S, Infinity); cap('第一步：全部先設成 ∞', '（老師口誤說 0，馬上改成無窮大）'); },
   async (tok, S) => { S.D.L.A = 0; S.D.show('A'); cap('第二步：A 自己寫 0', 'S 目前是空的'); },
   async (tok, S) => { S.B.add('如果 F 已經在 S → 停（已找到）'); cap('要找到高雄（F）', '迴圈先檢查 F 在不在 S 裡'); },
@@ -10827,7 +10885,7 @@ scene('g8g-dj12', 'Dijkstra 再一例：12 個節點', [
   async (tok, S) => { for (const e of S.gv.em) { e.g.visible = true; showL(e.wl, true); await wt(tok, 90); } cap('數字隨便填', '1、2、3、4…'); },
   async (tok, S) => {
     S.D = djState(V12, S.gv, { dz: 0.62 }); S.D.showAll();
-    S.st = tag('', 'ptr alt', -1.0, 0.3, -3.4);
+    S.st = tag('', 'ptr alt', 1.2, 0.3, 4.3); // the running remark under the graph (above it, it covered the top row's L labels)
     cap('一樣畫一個表 L', '一開始全部 ∞');
   },
   async (tok, S) => { glow(S.gv.vm.V1, null); S.D.L.V1 = 0; S.D.show('V1'); cap('V1 是出發點', 'L(V1) = 0'); },
@@ -10969,7 +11027,7 @@ scene('g8g-euler-alg', '怎麼找 Euler path：先走一段、再兜圈接上', 
     S.dt && Object.values(S.dt).forEach((l) => kill(l));
     const rest = HZ.E.filter((e) => !((e.u === 'A' && e.v === 'x') || (e.u === 'x' && e.v === 'B')));
     const d = Object.fromEntries(HZ.V.map((v) => [v, 0])); rest.forEach((e) => { d[e.u]++; d[e.v]++; });
-    HZ.V.forEach((v) => { const p = S.gv.pos(v); tag('剩 ' + d[v], d[v] % 2 ? 'bad' : 'ptr alt', p.x + 0.55, p.y + 0.6, p.z - 0.45); });
+    HZ.V.forEach((v) => { const p = S.gv.pos(v); K.keep(tag('剩 ' + d[v], d[v] % 2 ? 'bad' : 'ptr alt', p.x + 0.55, p.y + 0.6, p.z - 0.45)); });
     set(S.t, '剩餘圖（residual graph）：每個點的連線數都是偶數 ' + (Object.values(d).every((x) => x % 2 === 0) ? '✓' : '✗'));
     cap('剩下的圖叫 residual graph', '每個點剩下的連線數都是偶數');
   },
@@ -11273,6 +11331,7 @@ scene('g8w-cay-4', '四個頂點：數出 16 棵', [
 
 scene('g8w-cay-thm', 'Cayley 定理：n^(n−2) 棵', [
   async (tok, S) => {
+    frameHold(-3.6, 0.2, -0.8, 6.8, 0.5, 3.0); // the three K_n pictures come one by one: frame for all three now
     S.B = board(-6.9, -3.4, 0.62);
     S.B.add('3 個頂點 3 棵、4 個頂點 16 棵');
     S.B.add('5、6、7……100 個頂點呢？有公式嗎？');
