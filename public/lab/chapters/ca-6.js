@@ -85,20 +85,20 @@ export default function (ctx) {
       const has = p in INIT_PT;
       const y = 6.45 - p * 0.36;
       const mesh = cube('', GRAY, [1.9, 0.3, 0.7], -1.2, y, 0);
-      tag(String(p), 'idx', -2.55, y);
+      Object.assign(tag(String(p), 'idx', -2.4, y).element.style, { fontSize: '9px', lineHeight: '1.1', padding: '0 3px' });
       M.pt.push({ v: has, ppn: has ? INIT_PT[p] : -1, dirty: false, ref: 0, mesh, y });
     }
-    tag('實體記憶體 frames', 'ptr', 2.4, 7.0);
+    tag('實體記憶體 frames', 'ptr', 2.6, 7.0);
     for (let f = 0; f < M.nFrames; f++) {
       const y = 6.45 - f * 0.36;
       M.frames.push({ vpn: -1, mesh: cube('', '#efe6d6', [1.7, 0.3, 0.7], 2.4, y, 0), y });
-      tag(String(f), 'idx', 1.2, y);
+      Object.assign(tag(String(f), 'idx', 1.3, y).element.style, { fontSize: '9px', lineHeight: '1.1', padding: '0 3px' });
     }
     for (let p = 0; p < 16; p++) if (M.pt[p].v) M.frames[M.pt[p].ppn].vpn = p;
     if (M.nFrames < 16) M.freeOrder = M.freeOrder.filter((f) => f < M.nFrames && M.frames[f].vpn < 0);
     M.disk = cube('Disk', '#c9b48e', [1.4, 3.2, 1.4], 5.7, 3.6, -0.3);
     M.vaL = tag('', 'ptr alt', 0, 0.2, 1.4);
-    M.statL = tag('', 'ptr', 4.6, 7.0);
+    M.statL = tag('', 'ptr', 5.7, 5.9);
     M.draw = () => {
       M.tlb.forEach((e) => { relabel(e.mesh, e.v ? '1   ' + e.vpn + '   ' + e.ppn : '0   ' + e.vpn + '   ' + e.ppn); tint(e.mesh, e.v ? colOf(e.vpn) : GRAY); });
       M.pt.forEach((e, p) => { relabel(e.mesh, e.v ? 'V PPN ' + e.ppn + (e.dirty ? ' D' : '') : '0 disk'); tint(e.mesh, e.v ? colOf(p) : GRAY); });
@@ -616,12 +616,12 @@ export default function (ctx) {
       say(mode === 'low' ? 'Low-order：bank = address mod 4' : 'High-order：bank = 位址最高 2 bits', mode === 'low' ? '連續位址輪流放進不同 bank' : '連續位址都在同一個 module');
       for (let a = 0; a < 16; a++) {
         const b = mode === 'low' ? a % banks : Math.floor(a / 4), slot = mode === 'low' ? Math.floor(a / banks) : a % 4;
-        objs.push(cube(String(a), a < 4 ? '#e55a9b' : '#4b9ee2', [1.2, 0.5, 0.8], -4.5 + b * 3, 5.6 - slot * 0.75, 0, 3));
+        objs.push(cube(String(a), a < 4 ? '#e55a9b' : '#4b9ee2', [1.2, 0.5, 0.8], -4.5 + b * 3, 5.6 - slot * 0.75, 0));
         await beat(tok, 160);
       }
       say(mode === 'low' ? '一個 block（0–3）分在 4 個 bank → 可同時存取' : 'block 0–3 全在 bank 0 → 只能一個一個來', mode === 'low' ? '適合 cache 的 block 傳輸' : '好處：模組可獨立擴充、不同程式用不同 module');
       await beat(tok, 3400);
-      objs.forEach(kill);
+      if (mode === 'low') objs.forEach(kill);
     }
     say('考題多半問 low-order：bank = address mod banks', '');
     await beat(tok, 2400);
@@ -693,9 +693,25 @@ const fx = (v, d = 3) => String(Math.round(v * Math.pow(10, d)) / Math.pow(10, d
 const lg2 = (n) => Math.round(Math.log2(n));
 const b2 = (v, n) => v.toString(2).padStart(n, '0');
 const grp = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-function scene(id, title, steps, cam) {
+// invisible box over the area a scene will use later, so the auto framing does not zoom in at the start and jump back
+function frameHold(x0, y0, z0, x1, y1, z1) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+}
+// one remark for the scene: rewritten in place instead of a new label each step
+const rem = (S, t, x, y, cls = 'note') => {
+  let l = S.rem;
+  if (!l || !l.parent) l = S.rem = K.keep(tag(t, cls, x, y));
+  else { txt(l, t); l.element.className = 'lab-label ' + cls; l.position.set(x, y, 0); }
+  return l;
+};
+const remOk = (S, b, t, x, y) => { if (!b) log('CHECK FAILED: ' + t, true); return rem(S, b ? t : t.replace(/✓/g, '✘'), x, y, b ? 'good' : 'bad'); };
+// push a finished thing back and grey it (instead of piling the next subject on top of it)
+const recede = (os, dz = -1.2) => [].concat(os).flat().forEach((o) => { if (!o) return; if (o.element) { o.position.z += dz; o.element.style.opacity = '0.28'; } else if (o.position) { o.position.z += dz; o.traverse && o.traverse((m) => { if (m.element) m.element.style.opacity = '0.28'; if (m.material && !m.userData.noDim) { m.material = m.material.clone(); m.material.transparent = true; m.material.opacity = 0.35; } }); } });
+function scene(id, title, steps, cam, hold) {
   FRAG.push([id, title, async (tok) => {
     const c = cam || [[0, 4.0, 14], [0, 3.1, 0]]; fresh(c[0], c[1]);
+    if (hold) frameHold(...hold);
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
@@ -745,9 +761,9 @@ scene('dram-hier', 'DIMM 的階層：rank → chip → bank → array → row／
     cap('DRAM 記憶體模組：DIMM', '一條插在主機板上的記憶體條');
   },
   async (tok, S) => { // @12 ~four DIM slots
-    S.slots = [0, 1, 2, 3].map((i) => bx('', NC.dark, 0.4, 3.5 - i * 0.42, 0, 5.6, 0.14, 0.3));
-    S.sl = [0, 1, 2, 3].map((i) => sm('slot ' + i, -3.1, 3.5 - i * 0.42));
-    S.t1 = note('主機板通常 4 個 DIMM 插槽 → 最多裝 4 條', 0, 1.35);
+    S.slots = [0, 1, 2, 3].map((i) => bx('', NC.dark, 0.4, 3.5 - i * 0.56, 0, 5.6, 0.14, 0.3));
+    S.sl = [0, 1, 2, 3].map((i) => sm('slot ' + i, -3.1, 3.5 - i * 0.56));
+    S.t1 = note('主機板通常 4 個 DIMM 插槽 → 最多裝 4 條', 0, 1.05);
     cap('主機板通常有 4 個 DIMM 插槽', '最多同時裝 4 條');
   },
   async (tok, S) => { // @18 ~one rank of eight chips on one face
@@ -769,9 +785,9 @@ scene('dram-hier', 'DIMM 的階層：rank → chip → bank → array → row／
     gone(S.slots, S.sl, S.t1, S.r0);
     await anim(tok, 700, (u) => { S.d.g.rotation.y = Math.PI * (1 + u); });
     S.d.back.forEach((c) => glow(c, null)); glow(S.d.chips[0], HL);
-    S.banks = []; for (let i = 0; i < 8; i++) S.banks.push(bx('bank ' + i, NC.sky, -3.5 + i * 1.0, 3.0, 0, 0.9, 0.55, 0.5));
+    S.banks = []; for (let i = 0; i < 8; i++) S.banks.push(bx(String(i), NC.sky, -3.5 + i * 1.0, 3.0, 0, 0.9, 0.55, 0.5));
     S.a1 = lk(S.d.cx(0), 4.3, -3.5, 3.35);
-    S.t2 = sm('chip 0 裡面：8 個 bank', 3.6, 3.75);
+    S.t2 = sm('chip 0 裡面：8 個 bank（bank 0–7）', 3.6, 3.75);
     cap('每顆晶片裡有好幾個 bank');
   },
   async (tok, S) => { // @34 ~each bank contains multiple arrays
@@ -918,14 +934,14 @@ scene('dram-chmode', 'Single／dual／quad channel 與 rank', [
   },
   async (tok, S) => { // @196 ~single-channel mode
     S.h = hot('single-channel mode', 0, 6.7);
-    S.L = list(0, 2.6, 0.5);
-    S.L.push(ok(fx(BW / 1e9) === '17.064', '一次只走 1 條通道：' + fx(BW / 1e9) + ' GB/s（2,133 MT/s × 8 B）✓', 0, 2.6));
+    S.L = list(0, 1.9, 0.5);
+    K.keep(S.L.push(ok(fx(BW / 1e9) === '17.064', '一次只走 1 條通道：' + fx(BW / 1e9) + ' GB/s（2,133 MT/s × 8 B）✓', 0, 1.9)));
     cap('這叫 single-channel mode');
   },
   async (tok, S) => { // @200 ~each of two DIMMs has its own memory channel
     gone(S.ar, S.ct);
     S.ar = [lk(-3.4, 4.4, 2.6, 5.8, 0x4b9ee2), lk(-3.4, 4.2, 2.6, 4.8, 0xdd8238)];
-    S.ct = [sm('channel A', -0.6, 5.6), sm('channel B', 0.2, 4.0)];
+    S.ct = sm('每條 DIMM 各有一條 channel（A、B）', -0.4, 5.6); relabel(S.D[0], 'DIMM 0 · A'); relabel(S.D[1], 'DIMM 1 · B');
     glow(S.D[0], OKG); glow(S.D[1], OKG);
     cap('如果每條 DIMM 有自己的通道', 'memory controller 可以同時存取兩條');
   },
@@ -934,46 +950,46 @@ scene('dram-chmode', 'Single／dual／quad channel 與 rank', [
     cap('這叫 dual-channel mode');
   },
   async (tok, S) => { // @210 ~twice as fast
-    S.L.push(ok(fx(2 * BW / 1e9) === '34.128', '理論頻寬 × 2 = ' + fx(2 * BW / 1e9) + ' GB/s ✓', 0, 2.1));
+    K.keep(S.L.push(ok(fx(2 * BW / 1e9) === '34.128', '理論頻寬 × 2 = ' + fx(2 * BW / 1e9) + ' GB/s ✓', 0, 1.4)));
     cap('理論上存取速度變兩倍');
   },
   async (tok, S) => { // @217 ~four DIMMs ... quad-channel mode
-    S.D.push(...[2, 3].map((i) => bx('DIMM ' + i, NC.pcb, 3.8, 5.8 - i * 1.0, 0, 2.2, 0.5, 0.2)));
+    S.D.push(...[2, 3].map((i) => bx('DIMM ' + i + ' · ' + 'ABCD'[i], NC.pcb, 3.8, 5.8 - i * 1.0, 0, 2.2, 0.5, 0.2)));
     S.ar.push(lk(-3.4, 4.0, 2.6, 3.8, 0x2fc092), lk(-3.4, 3.9, 2.6, 2.8, 0x9b7ef4));
-    S.ct.push(sm('channel C', 0.2, 3.25), sm('channel D', -0.6, 2.95));
+    txt(S.ct, '每條 DIMM 各有一條 channel（A、B、C、D）');
     txt(S.h, 'quad-channel mode（高階電競 PC）');
-    S.L.push(ok(fx(4 * BW / 1e9) === '68.256', '4 條通道：理論頻寬 × 4 = ' + fx(4 * BW / 1e9) + ' GB/s ✓', 0, 1.6));
+    K.keep(S.L.push(ok(fx(4 * BW / 1e9) === '68.256', '4 條通道：理論頻寬 × 4 = ' + fx(4 * BW / 1e9) + ' GB/s ✓', 0, 0.9)));
     cap('4 條 DIMM 各有通道：quad-channel', '有些高階電競 PC 才有');
   },
   async (tok, S) => { // @228 ~depends on the design of the motherboard and ... CPU
-    S.L.push(note('能不能多通道：看主機板設計 + CPU 能力；多數 PC 有 dual', 0, 1.1));
+    K.keep(S.L.push(note('能不能多通道：看主機板設計 + CPU 能力；多數 PC 有 dual', 0, 0.4)));
     cap('能不能用多通道', '要看主機板設計和 CPU；多數 PC 有 dual');
   },
   async (tok, S) => { // @241 ~power constraints on how many DIMMs can share one memory channel
-    S.L.kill(); S.L = list(0, 2.1, 0.5);
+    S.L.kill(); S.L = list(0, 1.4, 0.5);
     gone(S.ar.slice(1), S.ct, S.D.slice(2)); S.D.length = 2; S.ar.length = 1;
-    S.ar.push(lk(-3.4, 4.3, 2.6, 4.8, 0x4b9ee2)); S.ct = sm('channel A', -0.4, 5.6);
+    S.ar.push(lk(-3.4, 4.3, 2.6, 4.8, 0x4b9ee2)); S.ct = sm('channel A（兩條共用）', -0.4, 5.6); relabel(S.D[0], 'DIMM 0'); relabel(S.D[1], 'DIMM 1');
     glow(S.D[0], null); glow(S.D[1], null);
-    S.L.push(note('一條通道能掛幾條 DIMM，有電氣（power）限制', 0, 2.1));
+    K.keep(S.L.push(note('一條通道能掛幾條 DIMM，有電氣（power）限制', 0, 1.4)));
     cap('一條通道能掛幾條 DIMM', '受到電氣限制');
   },
   async (tok, S) => { // @247 ~signals are weakened when split
-    S.L.push(bad('訊號分給好幾條 DIMM → 變弱', 0, 1.6));
+    K.keep(S.L.push(bad('訊號分給好幾條 DIMM → 變弱', 0, 0.9)));
     cap('訊號分岔給好幾條 DIMM 會變弱');
   },
   async (tok, S) => { // @251 ~maximum of two DIMMs can share one channel
-    S.L.push(good('通常一條通道最多 2 條 DIMM', 0, 1.1));
+    K.keep(S.L.push(good('通常一條通道最多 2 條 DIMM', 0, 0.4)));
     cap('通常一條通道最多掛 2 條 DIMM');
   },
   async (tok, S) => { // @254 ~two ranks ... share the same memory channel ... same slot
     gone(S.D[1], S.ar[1]); txt(S.h, 'DIMM 0：rank 0（正面）+ rank 1（背面）');
-    S.rk = [sm('rank 0', 5.4, 6.0), sm('rank 1', 5.4, 5.6)];
-    S.L.push(note('同一條 DIMM 的 2 個 rank 在同一個插槽 → 一定共用同一條通道', 0, 0.6));
+    S.rk = [sm('rank 0', 5.65, 6.0), sm('rank 1', 5.65, 5.6)];
+    K.keep(S.L.push(note('同一條 DIMM 的 2 個 rank 在同一個插槽 → 一定共用同一條通道', 0, -0.1)));
     cap('一條 DIMM 的兩個 rank', '插在同一插槽，必定共用通道');
   },
   async (tok, S) => { // @263 ~Dual and quad-rank ... higher capacity ... more power ... little extra speed
-    S.L.kill(); S.L = list(0, 2.1, 0.5);
-    S.L.push(good('dual／quad-rank：容量 ↑', 0, 2.1)); S.L.push(bad('耗電 ↑', 0, 1.6)); S.L.push(sm('速度：幾乎沒變（還是同一條通道）', 0, 1.1));
+    S.L.kill(); S.L = list(0, 1.4, 0.5);
+    K.keep(S.L.push(good('dual／quad-rank：容量 ↑', 0, 1.4))); K.keep(S.L.push(bad('耗電 ↑', 0, 0.9))); K.keep(S.L.push(sm('速度：幾乎沒變（還是同一條通道）', 0, 0.4)));
     cap('多 rank：容量大、比較耗電', '速度卻幾乎沒變');
   },
 ]);
@@ -1012,12 +1028,13 @@ scene('dram-ddr', 'DDR：一個 clock 傳兩次；8 顆晶片各管 8 條線', [
   },
   async (tok, S) => { // @308 ~Each chip ... wired to eight lines of the data bus
     gone(S.cell, S.t1, S.t2, S.t4, S.t3, S.k);
+    recede([S.wave, S.tx, S.wl, S.h], -1.4);
     S.chips = []; S.cl = [];
     for (let i = 0; i < 8; i++) { S.chips.push(bx('chip ' + i, NC.chip, -4.9 + i * 1.4, 3.2, 0, 1.15, 0.8, 0.4)); S.cl.push(sm('8 條', -4.9 + i * 1.4, 2.6)); }
     cap('DIMM 上每顆晶片接 data bus 的 8 條線');
   },
   async (tok, S) => { // @314 ~eight bits of a 64-bit word ... each of eight chips simultaneously
-    S.word = []; for (let i = 0; i < 8; i++) S.word.push(bx('bit ' + (i * 8) + '–' + (i * 8 + 7), [NC.blue, NC.orange, NC.green, NC.purple, NC.pink, NC.teal, NC.gold, NC.red][i], -4.9 + i * 1.4, 1.85, 0, 1.3, 0.4, 0.3));
+    S.word = []; for (let i = 0; i < 8; i++) S.word.push(bx('b' + (i * 8) + '–' + (i * 8 + 7), [NC.blue, NC.orange, NC.green, NC.purple, NC.pink, NC.teal, NC.gold, NC.red][i], -4.9 + i * 1.4, 1.85, 0, 1.3, 0.4, 0.3));
     S.k = ok(8 * 8 === 64, '8 顆 × 8 bits = 64 bits，同時讀寫 ✓', 0, 1.2);
     cap('一個 64-bit word 拆成 8 份', '8 顆晶片同時各讀寫 8 bits');
   },
@@ -1059,8 +1076,8 @@ scene('dram-ddr', 'DDR：一個 clock 傳兩次；8 顆晶片各管 8 條線', [
     cap('各晶片中位置相同的 bank', '共用位址線和控制訊號');
   },
   async (tok, S) => { // @369 ~8 bits are written to each chip ... banks in equivalent positions
-    S.L.kill();
-    await anim(tok, 900, (u) => S.word.forEach((m) => { m.position.y = 1.85 + u * 1.0; }));
+    S.L.kill(); gone(S.cl);
+    await anim(tok, 900, (u) => S.word.forEach((m) => { m.position.y = 1.85 + u * 0.7; }));
     S.L.push(ok(8 * 8 === 64, '64 bits 拆 8 份 → 同時寫進 8 顆晶片的 bank 0 ✓', 0, 0.65));
     cap('8 bits 同時寫進每顆晶片', '寫進的都是位置相同的 bank');
   },
@@ -1299,63 +1316,64 @@ scene('dram-bankint', '關 row 要 18 cycles；bank interleaving 讓 bus 不停'
 
 scene('dram-banks', '要放幾個 bank：速度 vs 容量', [
   async (tok, S) => { // @652 ~This chip has 8 banks
-    S.chip = zone('chip（8 banks）', -3.2, 2.0, 0, 5.0, 3.6, '#e2d6c0');
-    S.chip.userData.name.position.set(-5.6, 6.15, 0); // chip name above the banks, clear of the long notes on the right
-    S.b8 = []; for (let i = 0; i < 8; i++) S.b8.push(bx('bank ' + i, NC.sky, -4.95 + (i % 4) * 1.17, 4.7 - Math.floor(i / 4) * 1.4, 0, 1.05, 1.2, 0.3));
-    S.L = list(3.4, 5.6, 0.5); S.L.push(sm('這顆晶片 8 個 bank（也有更多或更少）', 3.4, 5.6));
+    S.chip = zone('chip（8 banks：0–7）', -3.2, 2.0, 0, 5.0, 3.6, '#e2d6c0');
+    S.chip.userData.name.position.set(-5.6, 1.75, 0); // chip name under the banks, clear of the long notes on the right
+    S.b8 = []; for (let i = 0; i < 8; i++) S.b8.push(bx(String(i), NC.sky, -4.95 + (i % 4) * 1.17, 4.7 - Math.floor(i / 4) * 1.4, 0, 1.05, 1.2, 0.3));
+    S.L = list(3.4, 5.7, 0.6); S.L.push(sm('這顆晶片 8 個 bank（也有更多或更少）', 3.4, 5.7));
     cap('這顆晶片有 8 個 bank', '也有的多、有的少');
   },
   async (tok, S) => { // @656 ~important decision that DRAM designers have to make
-    S.L.push(hot('放幾個 bank：DRAM 設計者的重要決定', 3.4, 5.1));
+    S.hdr = hot('放幾個 bank：DRAM 設計者的重要決定', 3.4, 6.5);
     cap('放幾個 bank', '是 DRAM 設計者的重要決定');
   },
   async (tok, S) => { // @664 ~More banks offer more parallelism and lower latency
-    S.L.push(good('bank 多 → 平行度高、延遲低', 3.4, 4.6));
+    K.keep(S.L.push(good('bank 多 → 平行度高、延遲低', 3.4, 5.1)));
     cap('bank 越多，平行度越高', '延遲越低');
   },
   async (tok, S) => { // @669 ~keeping the data bus busy ... faster memory
-    S.L.push(good('→ data bus 更常保持忙碌 → 記憶體更快', 3.4, 4.1));
+    K.keep(S.L.push(good('→ data bus 更常保持忙碌 → 記憶體更快', 3.4, 4.5)));
     cap('越能讓 data bus 保持忙碌', 'bank 越多，記憶體越快');
   },
   async (tok, S) => { // @676 ~for a given area of silicon more banks means smaller banks
     gone(S.b8);
     S.b16 = []; for (let i = 0; i < 16; i++) S.b16.push(bx('', NC.sky, -5.05 + (i % 4) * 1.17, 5.05 - Math.floor(i / 4) * 0.7, 0, 1.05, 0.58, 0.3));
     S.chip.userData.name.element.textContent = 'chip（同樣面積，16 banks，示意）';
-    S.L.push(note('但面積固定：bank 越多，每個 bank 越小', 3.4, 3.6));
+    S.L.kill(); S.C = list(3.4, 5.7, 0.6);
+    K.keep(S.C.push(note('但面積固定：bank 越多，每個 bank 越小', 3.4, 5.7)));
     cap('但矽晶片面積固定', 'bank 越多，每個 bank 就越小');
   },
   async (tok, S) => { // @684 ~smaller arrays and more of them
     S.b16.forEach((m) => tint(m, NC.mint));
-    S.L.push(sm('→ array 更小、數量更多', 3.4, 3.1));
+    S.C.push(sm('→ array 更小、數量更多', 3.4, 5.1));
     cap('array 變小、數量變多');
   },
   async (tok, S) => { // @687 ~each array has its own peripheral components ... decoders sense amplifiers and multiplexers
     S.per = S.b16.map((m) => bx('', NC.orange, m.position.x, m.position.y - 0.33, 0.1, 1.05, 0.1, 0.32));
-    S.L.push(bad('每個 array 都有自己的周邊電路：decoder、sense amp、mux（橘色）', 3.4, 2.6));
+    K.keep(S.C.push(bad('每個 array 都有自己的周邊電路：decoder、sense amp、mux（橘色）', 3.4, 4.5)));
     cap('每個 array 都要自己的周邊元件', 'decoder、sense amplifier、multiplexer');
   },
   async (tok, S) => { // @693 ~highest possible storage capacity ... minimize the number of supporting components
-    S.L.push(sm('要容量最大 → 周邊元件越少越好，空間留給 cell', 3.4, 2.1));
+    S.C.push(sm('要容量最大 → 周邊元件越少越好，空間留給 cell', 3.4, 3.9));
     cap('想要容量最大', '就要減少周邊元件、空間留給 cell');
   },
   async (tok, S) => { // @705 ~more banks means lower capacity
     const area = 100, per = 1.5, cap8 = area - 8 * per, cap16 = area - 16 * per;
-    S.L.push(ok(cap8 === 88 && cap16 === 76, '示意：面積 100、每個 bank 周邊 1.5 → 8 banks 剩 88、16 banks 剩 76 ✓', 3.4, 1.6));
+    S.k = K.keep(ok(cap8 === 88 && cap16 === 76, '示意：面積 100、每個 bank 周邊 1.5 → 8 banks 剩 88、16 banks 剩 76 ✓', 3.4, 3.3));
     cap('所以 bank 越多，容量越低');
   },
   async (tok, S) => { // @711 ~fewer banks ... larger arrays ... higher capacity
-    gone(S.b16, S.per);
+    gone(S.b16, S.per); S.C.kill(); S.k.position.set(3.4, 5.7, 0); S.F = list(3.4, 5.1, 0.6);
     S.b4 = []; for (let i = 0; i < 4; i++) S.b4.push(bx('bank ' + i, NC.sky, -4.4 + (i % 2) * 2.4, 4.4 - Math.floor(i / 2) * 1.8, 0, 2.2, 1.6, 0.3));
     S.chip.userData.name.element.textContent = 'chip（同樣面積，4 banks，示意）';
-    S.L.push(good('bank 少 → bank、array 都大 → 容量可能更高', 3.4, 1.1));
+    K.keep(S.F.push(good('bank 少 → bank、array 都大 → 容量可能更高', 3.4, 5.1)));
     cap('bank 少：bank 大、array 大', '容量可能更高');
   },
   async (tok, S) => { // @718 ~larger arrays have longer bit lines ... slower ... more power
     S.bitl = S.b4.map((m) => line(m.position.x, m.position.y - 0.75, m.position.x, m.position.y + 0.75, 0.2, '#7a1010'));
-    S.L.push(bad('但大 array 的 bit line 長 → 較慢、較耗電（紅線）', 3.4, 0.6));
+    K.keep(S.F.push(bad('但大 array 的 bit line 長 → 較慢、較耗電（紅線）', 3.4, 4.5)));
     cap('但大 array 的 bit line 比較長', '比較慢，也比較耗電');
   },
-]);
+], null, [-6.0, 0.0, -0.3, 6.8, 6.6, 0.3]);
 
 // ════════ 0dTWcYk1rts（Memory Interleaving concept：定義、層級、7 / 28 / 10 cycles、n-way、low/high-order、優缺點） ════════
 scene('dram-ilv-gap', '為什麼要 interleaving：CPU 太快、記憶體跟不上', [
@@ -1395,7 +1413,7 @@ scene('dram-ilv-what', 'Interleaving：連續位址輪流放到不同 bank', [
   },
   async (tok, S) => { // @58 ~assign successive memory addresses across multiple memory units
     S.a = [];
-    for (let a = 0; a < 8; a++) { S.a.push(cube('位址 ' + a, [NC.blue, NC.orange, NC.green, NC.purple][a % 4], [1.6, 0.42, 0.5], -4.5 + (a % 4) * 3, 1.6 + Math.floor(a / 4) * 0.5, 0, 2.5)); await wt(tok, 180); }
+    for (let a = 0; a < 8; a++) { S.a.push(cube('位址 ' + a, [NC.blue, NC.orange, NC.green, NC.purple][a % 4], [1.6, 0.42, 0.5], -4.5 + (a % 4) * 3, 1.6 + Math.floor(a / 4) * 0.5, 0, 1.0)); await wt(tok, 180); }
     S.k = ok([0, 1, 2, 3, 4, 5, 6, 7].every((a) => a % 4 === (a & 3)), '連續位址 0,1,2,3,… 輪流放：bank = 位址 mod 4 ✓（示意 4 banks）', 0, 3.3);
     cap('把連續的位址輪流分到不同 bank', '位址 0、1、2、3 各在不同 bank');
   },
@@ -1414,15 +1432,15 @@ scene('dram-ilv-what', 'Interleaving：連續位址輪流放到不同 bank', [
   },
   async (tok, S) => { // @96 ~first memory unit is sending data ... second unit will receive the address
     glow(S.B[0], OKG); glow(S.B[1], HL);
-    const d = hot('data（bank 0）', -4.5, 1.9), ad = hot('address → bank 1', 0, 4.4);
-    await anim(tok, 1000, (u) => { d.position.set(-4.5 + 3.9 * u, 1.9 + 2.5 * u, 0); ad.position.set(-1.5 * u, 4.4 - 2.5 * u, 0); });
+    const d = hot('data（bank 0）', -4.5, 2.8), ad = hot('address → bank 1', 0, 4.4);
+    await anim(tok, 1000, (u) => { d.position.set(-4.5 + 3.0 * u, 2.8 + 1.6 * u, 0); ad.position.set(-1.5 * u, 4.4 - 1.6 * u, 0); });
     S.p = [d, ad];
     cap('bank 0 把資料送給 CPU 的同時', 'bank 1 接收 CPU 送來的位址');
   },
   async (tok, S) => { // @103 ~when the second unit will send data, the first unit can be accessed again
     gone(S.p, S.rec); glow(S.B[1], OKG); glow(S.B[0], HL);
-    const d = hot('data（bank 1）', -1.5, 1.9), ad = hot('address → bank 0', 0, 4.4);
-    await anim(tok, 1000, (u) => { d.position.set(-1.5 + 2.1 * u, 1.9 + 2.5 * u, 0); ad.position.set(-4.5 * u, 4.4 - 2.5 * u, 0); });
+    const d = hot('data（bank 1）', -1.5, 2.8), ad = hot('address → bank 0', 0, 4.4);
+    await anim(tok, 1000, (u) => { d.position.set(-1.5 + 3.0 * u, 2.8 + 1.6 * u, 0); ad.position.set(-4.5 * u, 4.4 - 1.6 * u, 0); });
     S.p = [d, ad];
     cap('bank 1 送資料時', 'bank 0 又可以被存取了');
   },
@@ -1492,15 +1510,15 @@ const ilvTimes = () => [0, 1, 2, 3].map((k) => ({ a: k, m: k + T_A, d: k + T_A +
 const qx = (c) => -5.6 + c * 0.4;
 scene('dram-ilv-cycles', '非交錯 vs 交錯：7 cycles、28 vs 10', [
   async (tok, S) => { // @191 ~example ... non-interleaved ... interleaved memory access
-    S.ax = [line(qx(0), 0.55, qx(28), 0.55), sm('cycle →', qx(28) + 0.3, 0.2)];
+    S.ax = [line(qx(0), 0.55, qx(28), 0.55), sm('cycle →', qx(28) + 0.75, 0.8)];
     S.tk = [0, 7, 10, 14, 21, 28].map((c) => sm(String(c), qx(c), 0.2));
-    S.l1 = sm('非交錯', qx(0) - 0.15, 5.9); S.l1.center && S.l1.center.set(1, 0.5);
-    S.l2 = sm('交錯', qx(0) - 0.15, 3.5); S.l2.center && S.l2.center.set(1, 0.5);
+    S.l1 = sm('非交錯', qx(0) - 0.15, 4.4); S.l1.center && S.l1.center.set(1, 0.5);
+    S.l2 = sm('交錯', qx(0) - 0.15, 2.65); S.l2.center && S.l2.center.set(1, 0.5);
     cap('用例子比較：非交錯 vs 交錯存取');
   },
   async (tok, S) => { // @201 ~non-interleaved ... only when the previous memory access is completed
     S.n = [];
-    for (let w = 0; w < NW; w++) { const t = w * 7; S.n.push(tbar(qx(t), qx(t + 7), 5.4, [NC.blue, NC.orange, NC.green, NC.purple][w], 'w' + w)); await wt(tok, 200); }
+    for (let w = 0; w < NW; w++) { const t = w * 7; S.n.push(tbar(qx(t), qx(t + 7), 4.4, [NC.blue, NC.orange, NC.green, NC.purple][w], 'w' + w)); await wt(tok, 200); }
     cap('非交錯：前一次存取完成', '才能存取下一個位址');
   },
   async (tok, S) => { // @209 ~interleaved ... can be overlapped
@@ -1509,36 +1527,36 @@ scene('dram-ilv-cycles', '非交錯 vs 交錯：7 cycles、28 vs 10', [
   },
   async (tok, S) => { // @224 ~considering cycle times
     gone(S.n, S.iv); S.n = []; S.iv = [];
-    S.L = list(3.2, 6.6, 0.45);
+    S.L = list(0, 7.2, 0.55);
     cap('用 cycle 數來算算看');
   },
   async (tok, S) => { // @232 ~one cycle to send the address ... five cycles to access ... one cycle to return
-    S.one = [tbar(qx(0), qx(T_A), 5.4, NC.sky, 'A'), tbar(qx(T_A), qx(T_A + T_M), 5.4, NC.tan, '存取 5'), tbar(qx(T_A + T_M), qx(T_A + T_M + T_D), 5.4, NC.green, 'D')];
+    S.one = [tbar(qx(0), qx(T_A), 4.4, NC.sky, 'A'), tbar(qx(T_A), qx(T_A + T_M), 4.4, NC.tan, '存取 5'), tbar(qx(T_A + T_M), qx(T_A + T_M + T_D), 4.4, NC.green, 'D')];
     S.L.add('送位址 1 + 存取 5 + 回傳 1（cycles）');
     cap('送位址 1 cycle、存取一個 word 5 cycles', '回傳資料 1 cycle');
   },
   async (tok, S) => { // @244 ~seven clock cycles
-    S.L.push(ok(T_A + T_M + T_D === 7, '取 1 個 word：1 + 5 + 1 = 7 cycles ✓', 3.2, 6.15));
+    S.L.push(K.keep(ok(T_A + T_M + T_D === 7, '取 1 個 word：1 + 5 + 1 = 7 cycles ✓', 0, 6.65)));
     cap('取一個 word 要 7 個 cycle');
   },
   async (tok, S) => { // @252 ~non-interleaved ... four words ... 28 clock cycles
     gone(S.one);
-    for (let w = 0; w < NW; w++) { const t = w * 7; S.n.push(tbar(qx(t), qx(t + T_A), 5.4, NC.sky), tbar(qx(t + T_A), qx(t + T_A + T_M), 5.4, NC.tan, 'w' + w), tbar(qx(t + T_A + T_M), qx(t + 7), 5.4, NC.green)); await wt(tok, 150); }
-    S.L.push(ok(NW * (T_A + T_M + T_D) === 28, '非交錯 4 個 word：4 × 7 = 28 cycles ✓', 3.2, 5.7));
+    for (let w = 0; w < NW; w++) { const t = w * 7; S.n.push(tbar(qx(t), qx(t + T_A), 4.4, NC.sky), tbar(qx(t + T_A), qx(t + T_A + T_M), 4.4, NC.tan, 'w' + w), tbar(qx(t + T_A + T_M), qx(t + 7), 4.4, NC.green)); await wt(tok, 150); }
+    S.L.push(K.keep(ok(NW * (T_A + T_M + T_D) === 28, '非交錯 4 個 word：4 × 7 = 28 cycles ✓', 0, 6.1)));
     cap('非交錯取 4 個 word：28 cycles');
   },
   async (tok, S) => { // @262 ~interleaved ... only 10 clock cycles
     const R = ilvTimes();
     R.forEach((r, k) => { const y = 3.4 - k * 0.5; S.iv.push(tbar(qx(r.a), qx(r.m), y, NC.sky), tbar(qx(r.m), qx(r.d), y, NC.tan, 'bank ' + k), tbar(qx(r.d), qx(r.end), y, NC.green)); });
     const end = Math.max(...R.map((r) => r.end));
-    S.L.push(ok(end === 10 && end === T_A + T_M + NW * T_D, '交錯 4 個 bank：位址每 cycle 送一個 → 最後在 cycle ' + end + ' 結束 = 1 + 5 + 4 × 1 ✓', 3.2, 5.25));
+    S.L.push(K.keep(ok(end === 10 && end === T_A + T_M + NW * T_D, '交錯 4 個 bank：位址每 cycle 送一個 → 最後在 cycle ' + end + ' 結束 = 1 + 5 + 4 × 1 ✓', 0, 5.55)));
     cap('交錯：同樣 4 個 word', '只要 10 cycles');
   },
   async (tok, S) => { // @270 ~access time is reduced considerably
-    S.L.push(ok(fx(28 / 10, 1) === '2.8', '28 ÷ 10 = 快 2.8 倍 ✓', 3.2, 4.8));
+    S.L.push(K.keep(ok(fx(28 / 10, 1) === '2.8', '28 ÷ 10 = 快 2.8 倍 ✓', 0, 5.0)));
     cap('交錯存取大幅縮短存取時間');
   },
-]);
+], null, [-7.0, -0.2, -0.3, 7.0, 7.5, 0.3]);
 
 scene('dram-ilv-nway', 'n-way interleaving：分成幾個 bank', [
   async (tok, S) => { // @276 ~n-way interleaving
@@ -1782,9 +1800,25 @@ const fx = (v, d = 2) => String(Math.round(v * Math.pow(10, d)) / Math.pow(10, d
 const lg2 = (n) => Math.round(Math.log2(n));
 const b2 = (v, n) => (n <= 0 ? '' : v.toString(2).padStart(n, '0'));
 const KB = (n) => (n >= 2 ** 30 ? n / 2 ** 30 + ' GiB' : n >= 2 ** 20 ? n / 2 ** 20 + ' MiB' : n >= 1024 ? n / 1024 + ' KiB' : n + ' B');
-function scene(id, title, steps, cam) {
+// invisible box over the area a scene will use later, so the auto framing does not zoom in at the start and jump back
+function frameHold(x0, y0, z0, x1, y1, z1) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+}
+// one remark for the scene: rewritten in place instead of a new label each step
+const rem = (S, t, x, y, cls = 'note') => {
+  let l = S.rem;
+  if (!l || !l.parent) l = S.rem = K.keep(tag(t, cls, x, y));
+  else { txt(l, t); l.element.className = 'lab-label ' + cls; l.position.set(x, y, 0); }
+  return l;
+};
+const remOk = (S, b, t, x, y) => { if (!b) log('CHECK FAILED: ' + t, true); return rem(S, b ? t : t.replace(/✓/g, '✘'), x, y, b ? 'good' : 'bad'); };
+// push a finished thing back and grey it (instead of piling the next subject on top of it)
+const recede = (os, dz = -1.2) => [].concat(os).flat().forEach((o) => { if (!o) return; if (o.element) { o.position.z += dz; o.element.style.opacity = '0.28'; } else if (o.position) { o.position.z += dz; o.traverse && o.traverse((m) => { if (m.element) m.element.style.opacity = '0.28'; if (m.material && !m.userData.noDim) { m.material = m.material.clone(); m.material.transparent = true; m.material.opacity = 0.35; } }); } });
+function scene(id, title, steps, cam, hold) {
   FRAG.push([id, title, async (tok) => {
     const c = cam || [[0, 4.0, 14], [0, 3.1, 0]]; fresh(c[0], c[1]);
+    if (hold) frameHold(...hold);
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
@@ -2111,7 +2145,7 @@ scene('cvm-25a-valid', 'Page table 的 valid bit：一開始是空的', [
     cap('拿 virtual address 去查：invalid', '還沒搬進來 → 產生 page fault');
   },
   async (tok, S) => { // @1231 ~OS就會到這個disk
-    glow(S.D, HL); S.g = bx('page 2', NC.purple, 5.4, 4.6, 0.6, 1.4, 0.45);
+    glow(S.D, HL); S.g = bx('page 2', NC.purple, 5.4, 5.85, 0.6, 1.4, 0.45);
     await slide(tok, S.g, 2.0, S.mm.y(1), 0.6, 900); kill(S.g); S.mm.put(1, 'VP 2', NC.purple); glow(S.D, null);
     cap('OS 到 disk 把你要的 page', '搬到 main memory');
   },
@@ -2450,7 +2484,8 @@ scene('cvm-25b-board', '黑板例子：4 個 page、2 個 frame 的 translation'
   },
   async (tok, S) => { // @127 ~假設是virtual address space我分成四個page
     gone(S.t0, S.t1, S.t2);
-    S.v = slots(16, -4.0, 6.5, { w: 1.2, h: 0.3, gap: 0.06, rl: (i) => b2(i, 4), rlw: 0.5, color: (i) => [NC.sky, NC.rose, NC.mint, NC.lilac][i >> 2] });
+    S.v = slots(16, -4.0, 6.5, { w: 1.2, h: 0.32, gap: 0.08, rl: (i) => b2(i, 4), rlw: 0.5, color: (i) => [NC.sky, NC.rose, NC.mint, NC.lilac][i >> 2] });
+    S.v.lbls.forEach((l) => Object.assign(l.element.style, { fontSize: '9px', lineHeight: '1.1', padding: '0 3px' }));
     S.vt = hd('virtual：4 個 page，每個 4 bytes', -4.0, 7.1);
     cap('Virtual space 分成 4 個 page', '一個 page 裡只有 4 個 byte：0000、0001、0010…');
   },
@@ -2463,7 +2498,8 @@ scene('cvm-25b-board', '黑板例子：4 個 page、2 個 frame 的 translation'
     cap('後面兩個 bit 是 page offset', '00、01、10、11：page 裡的第幾個');
   },
   async (tok, S) => { // @213 ~那在physical裡面只有兩個frame而已
-    S.p = slots(8, 3.2, 6.5, { w: 1.4, h: 0.3, gap: 0.06, rl: (i) => b2(i >> 2, 2) + b2(i & 3, 2), rlw: 0.55, color: () => NC.off });
+    S.p = slots(8, 3.2, 6.5, { w: 1.4, h: 0.32, gap: 0.08, rl: (i) => b2(i >> 2, 2) + b2(i & 3, 2), rlw: 0.55, color: () => NC.off });
+    S.p.lbls.forEach((l) => Object.assign(l.element.style, { fontSize: '9px', lineHeight: '1.1', padding: '0 3px' }));
     S.pt0 = hd('physical：2 個 frame', 3.2, 7.1);
     S.fn = [0, 1].map((f) => hot('frame ' + b2(f, 2), 5.2, S.p.y(f * 4 + 1.5)));
     cap('Physical 只有兩個 frame', '地址前面就是 frame number：00、01');
@@ -2475,7 +2511,7 @@ scene('cvm-25b-board', '黑板例子：4 個 page、2 個 frame 的 translation'
     cap('紅色的 page 01 常被用到', '整塊搬進來，放在 frame 00');
   },
   async (tok, S) => { // @282 ~所以我的page table
-    S.v.calm();
+    S.v.calm(); gone(S.ar);
     S.pt = slots(4, 0.3, 6.3, { w: 1.5, h: 0.42, rl: (i) => b2(i, 2), rlw: 0.4, fill: (i) => (i === 1 ? '→ 00' : '—'), color: (i) => (i === 1 ? NC.rose : NC.gray), title: 'page table' });
     S.pt.fl(1, OKG);
     cap('Page table 有 4 個 entry', '第 01 個 entry 記：page 01 → frame 00');
@@ -2490,12 +2526,13 @@ scene('cvm-25b-board', '黑板例子：4 個 page、2 個 frame 的 translation'
   },
   async (tok, S) => { // @347 ~我現在給你一個virtual address被叫01 01 10
     gone(S.t3, S.t4);
-    S.va = fields([{ n: 'page', b: 2, c: NC.rose, v: b2(BB.vpn, 2) }, { n: 'offset', b: 2, c: NC.orange, v: b2(BB.off, 2) }], 0.3, 2.6, { minW: 0.9 });
+    S.va = fields([{ n: 'page', b: 2, c: NC.rose, v: b2(BB.vpn, 2) }, { n: 'offset', b: 2, c: NC.orange, v: b2(BB.off, 2) }], 0.3, 2.6, { minW: 1.2, noBits: true });
     S.pt.fl(1, HL);
     cap('給你 virtual address 0110', '先拿 page number 01 去 table 查 → 00');
   },
   async (tok, S) => { // @365 ~好然後這個page offset有沒有改變沒變
-    S.pa = fields([{ n: 'frame', b: 2, c: NC.green, v: b2(BB.pfn, 2) }, { n: 'offset', b: 2, c: NC.orange, v: b2(BB.off, 2) }], 0.3, 1.0, { minW: 0.9 });
+    S.pa = fields([{ n: 'frame', b: 2, c: NC.green, v: b2(BB.pfn, 2) }, { n: 'offset', b: 2, c: NC.orange, v: b2(BB.off, 2) }], 0.3, 1.0, { minW: 1.2, noBits: true });
+    S.paA = lk(0.3, 2.2, 0.3, 1.45);
     S.k = ok(BB.ok, 'virtual 0110 → physical ' + b2(BB.pa, 4) + ' ✓', 0.3, -0.1);
     cap('Offset 10 不變', 'physical address 就是 0010');
   },
@@ -2646,7 +2683,8 @@ scene('cvm-25b-twolevel', 'Two-level page table：用到才展開', [
   },
   async (tok, S) => { // @1269 ~你看你這個address的關係
     gone(S.va, S.t2, S.l1, S.l2, S.g, S.k);
-    S.full = slots(16, -4.2, 6.6, { w: 1.3, h: 0.3, gap: 0.05, rl: (i) => b2(i, 4), rlw: 0.5, color: (i) => [NC.sky, NC.rose, NC.mint, NC.lilac][i >> 2] });
+    S.full = slots(16, -4.2, 6.6, { w: 1.3, h: 0.32, gap: 0.08, rl: (i) => b2(i, 4), rlw: 0.5, color: (i) => [NC.sky, NC.rose, NC.mint, NC.lilac][i >> 2] });
+    S.full.lbls.forEach((l) => Object.assign(l.element.style, { fontSize: '9px', lineHeight: '1.1', padding: '0 3px' }));
     cap('再講一次：小例子 page number 4 bits', '00 開頭一塊、01 一塊、10、11 各一塊');
   },
   async (tok, S) => { // @1305 ~這是第一塊第0第1所以我這個entry只要幾個entry
@@ -2658,6 +2696,7 @@ scene('cvm-25b-twolevel', 'Two-level page table：用到才展開', [
     S.top.put(0, '1', NC.mint); S.top.put(1, '1', NC.mint);
     S.s0 = slots(4, 3.6, 6.4, { w: 1.4, h: 0.3, gap: 0.05, rl: (i) => '00' + b2(i, 2), rlw: 0.55, color: () => NC.sky });
     S.s1 = slots(4, 3.6, 4.6, { w: 1.4, h: 0.3, gap: 0.05, rl: (i) => '01' + b2(i, 2), rlw: 0.55, color: () => NC.rose });
+    [...S.s0.lbls, ...S.s1.lbls].forEach((l) => Object.assign(l.element.style, { fontSize: '9px', lineHeight: '1.1', padding: '0 3px' }));
     cap('00 有用到才展開', '01 有用到也展開');
   },
   async (tok, S) => { // @1339 ~可是假如這個沒有用到的話
@@ -2923,16 +2962,16 @@ const CB25 = [['hit', 'hit', 'miss'], ['miss', 'hit', 'hit'], ['miss', 'hit', 'm
 const CB25_ANS = [true, true, true, true, false, false, false];
 scene('cvm-25b-combos', 'TLB／page table／cache：哪些組合可能發生', [
   async (tok, S) => { // @2492 ~那我們來看看說這個所有的Combination
-    S.b = { t: bx('TLB', NC.blue, -4.0, 5.2, 0, 2.2, 0.9), p: bx('Page table', NC.purple, 0, 5.2, 0, 2.2, 0.9), c: bx('Cache', NC.green, 4.0, 5.2, 0, 2.2, 0.9) };
-    S.l = { t: tag('', 'ptr', -4.0, 4.2), p: tag('', 'ptr', 0, 4.2), c: tag('', 'ptr', 4.0, 4.2) };
-    S.res = list(0, 3.2, 0.48);
+    S.b = { t: bx('TLB', NC.blue, -4.0, 6.0, 0, 2.2, 0.9), p: bx('Page table', NC.purple, 0, 6.0, 0, 2.2, 0.9), c: bx('Cache', NC.green, 4.0, 6.0, 0, 2.2, 0.9) };
+    S.l = { t: tag('', 'ptr', -4.0, 5.05), p: tag('', 'ptr', 0, 5.05), c: tag('', 'ptr', 4.0, 5.05) };
+    S.res = list(0, 4.2, 0.6);
     cap('所有的 combination', '有沒有可能發生？');
   },
   ...CB25.map((k, i) => async (tok, S) => { // @2524, 2566, 2615, 2637, 2701, 2754, 2818
     const [t, p, c] = k; const yes = combo(t, p, c);
     glow(S.b.t, t === 'hit' ? OKG : NG); glow(S.b.p, p === 'hit' ? OKG : NG); glow(S.b.c, c === 'hit' ? OKG : NG);
     txt(S.l.t, t); txt(S.l.p, p === 'hit' ? 'hit' : 'miss（page fault）'); txt(S.l.c, c);
-    S.res.add('TLB ' + t + '、PT ' + p + '、cache ' + c + ' → ' + (yes ? '可能' : '不可能') + (yes === CB25_ANS[i] ? ' ✓' : ' ✘'), yes ? 'good' : 'bad');
+    K.keep(S.res.add('TLB ' + t + '、PT ' + p + '、cache ' + c + ' → ' + (yes ? '可能' : '不可能') + (yes === CB25_ANS[i] ? ' ✓' : ' ✘'), yes ? 'good' : 'bad'));
     if (yes !== CB25_ANS[i]) log('CHECK FAILED combo ' + k.join(','), true);
     cap('TLB ' + t + '、page table ' + p + '、cache ' + c, [
       '可能：data 不在 cache（TLB hit 時 page table 根本不查）',
@@ -2944,7 +2983,7 @@ scene('cvm-25b-combos', 'TLB／page table／cache：哪些組合可能發生', [
       '不可能：page 不在 memory，怎麼會在 cache',
     ][i]);
   }),
-], [[0, 3.6, 14.5], [0, 3.0, 0]]);
+], [[0, 3.6, 14.5], [0, 3.6, 0]], [-5.6, 0.2, -0.3, 5.6, 6.6, 0.3]);
 // a translucent box marking a region (MMU)
 function ghostBoxAt(x, y, w, h) { const g = P.ghostBox('#4b9ee2', w, h, 1.2); g.position.set(x, y, 0); return g; }
 
@@ -3068,77 +3107,79 @@ scene('cvm-26a-vipt', 'Virtually indexed, physically tagged：index 落在 page 
     cap('Cache 基本上還是用 physical address', '只要是 physical 就 unique');
   },
   async (tok, S) => { // @696 ~我們看到這個address translation假如這是一個TLB
-    S.va = fields([{ n: 'virtual page number', b: 20, c: NC.purple }, { n: 'page offset', b: VI.pageOff, c: NC.orange }], 0, 5.0, { unit: 0.2 });
-    S.pa = fields([{ n: 'frame number（會變）', b: 20, c: NC.green }, { n: 'page offset（不變）', b: VI.pageOff, c: NC.orange }], 0, 3.6, { unit: 0.2 });
+    S.va = fields([{ n: 'virtual page number', b: 20, c: NC.purple }, { n: 'page offset', b: VI.pageOff, c: NC.orange }], 0, 5.0, { unit: 0.26 });
+    S.pa = fields([{ n: 'frame number（會變）', b: 20, c: NC.green }, { n: 'page offset（不變）', b: VI.pageOff, c: NC.orange }], 0, 3.6, { unit: 0.26 });
     cap('TLB：page number → frame number', 'page offset 不會變');
   },
   async (tok, S) => { // @734 ~這個cache的地址我們通常是用一部分
-    S.ca = fields([{ n: 'tag', b: VI.tag, c: NC.pink }, { n: 'index', b: VI.idx, c: NC.sky }, { n: 'block offset', b: VI.blkOff, c: NC.rose }], 0, 1.8, { unit: 0.2 });
-    S.n = sm('（index 10 bits 為示意）', 4.8, 0.9);
+    S.ca = fields([{ n: 'tag', b: VI.tag, c: NC.pink }, { n: 'index', b: VI.idx, c: NC.sky }, { n: 'block offset', b: VI.blkOff, c: NC.rose }], 0, 1.8, { unit: 0.26 });
+    S.ca.ls[2].position.set(S.ca.xs[2] + 0.3, 2.86, 0);
+    S.n = sm('（index 10 bits 為示意）', 3.6, 1.05); gone(S.t1);
     cap('Cache 的地址：block 4 bytes', '最後 2 bits 是 block offset，不理它');
   },
   async (tok, S) => { // @760 ~那我把這個block number的這個low order的bit當作一個index
     S.ca.fl(1); cap('Block number 的 low-order bits 當 index', '剩下的是 tag');
   },
   async (tok, S) => { // @785 ~如果說我要做這個這個跟這個是同時做的
-    S.pa.fl(0, NG); S.t2 = bad('index 若用到會變的 frame number → 不正確，要等 translation 完', 0, 0.6);
+    S.pa.fl(0, NG); rem(S, 'index 若用到會變的 frame number → 不正確，要等 translation 完', 0, 0.5, 'bad');
     cap('如果 index 用到會變的部分', '就要等 translation 做完才能 access cache');
   },
   async (tok, S) => { // @862 ~32個幣的地址的話這個地方是我的index
-    gone(S.t2); S.pa.fl(0, null);
-    S.t3 = sm('換個角度：translation 只會改 frame number 那一段', 0, 0.6);
+    S.pa.fl(0, null);
+    rem(S, '換個角度：translation 只會改 frame number 那一段', 0, 0.5, 'idx');
     cap('換個角度看 32-bit 的地址', 'translation 會變的只有前面那一段');
   },
   async (tok, S) => { // @966 ~所以我才說我要sequential
-    S.t4 = bad('沒 translation 就不知道 PA → sequential → 很慢', 0, -0.1);
+    rem(S, 'translation 只會改 frame number；但沒 translation 就不知道 PA → sequential → 很慢', 0, 0.5, 'bad');
     cap('沒 translation 就不知道 physical address', '所以 sequential，很慢');
   },
   async (tok, S) => { // @1001 ~translation的時候變的是哪裡啊
-    gone(S.t3, S.t4); S.pa.fl(0); S.pa.fl(1, OKG);
+    gone(S.rem); S.pa.fl(0); S.pa.fl(1, OKG);
     cap('Translation 變的是哪裡？', '只有 frame number 那一小塊，page offset 不變');
   },
   async (tok, S) => { // @1018 ~那所以我如果能夠把page size變大的話
     S.ca.fl(1, OKG); S.ca.fl(2, OKG);
-    S.k = ok(VI.fits, 'block offset ' + VI.blkOff + ' + index ' + VI.idx + ' = ' + (VI.blkOff + VI.idx) + ' ≤ page offset ' + VI.pageOff + ' ✓', 0, 0.6);
+    remOk(S, VI.fits, 'block offset ' + VI.blkOff + ' + index ' + VI.idx + ' = ' + (VI.blkOff + VI.idx) + ' ≤ page offset ' + VI.pageOff + ' ✓', 0, 0.75);
     cap('把 page size 變大', 'index 就落在不變的 page offset 裡');
   },
   async (tok, S) => { // @1050 ~那我就用這個virtual address去access這個cache
-    S.t5 = good('index 在 VA、PA 都一樣 → 直接用 VA 的 index 去 access cache', 0, -0.1);
+    rem(S, 'index 在 VA、PA 都一樣 → 直接用 VA 的 index 去 access cache', 0, 0.5, 'good');
     cap('Index 部分 virtual 和 physical 一樣', '直接用 virtual address 去 access cache');
   },
   async (tok, S) => { // @1060 ~他access出來他就得到一個tag
-    gone(S.t5); S.rd = bx('讀出 tag（physical）', NC.pink, -3.6, -0.1, 0, 2.6, 0.5); S.tl = bx('TLB 同時翻譯', NC.blue, 0.6, -0.1, 0, 2.6, 0.5);
+    gone(S.rem); S.rd = bx('讀出 tag（physical）', NC.pink, -3.6, -0.6, 0, 2.6, 0.5); S.tl = bx('TLB 同時翻譯', NC.blue, 0.6, -0.6, 0, 2.6, 0.5);
     cap('Cache 讀出 tag 要時間', '同時 TLB 也在做 translation');
   },
   async (tok, S) => { // @1080 ~我這就可以比對啦我就沒浪費時間啊
-    S.cmp = bx('比對', NC.gold, 4.4, -0.1, 0, 1.4, 0.5); glow(S.cmp, OKG);
+    S.cmp = bx('比對', NC.gold, 4.4, -0.6, 0, 1.4, 0.5); glow(S.cmp, OKG);
+    S.fl = [K.flow(S.rd, S.cmp, '', { lift: 0.5 }), K.flow(S.tl, S.cmp, '', { lift: 0.3 })];
     cap('Tag 讀出來，translation 也做完', '馬上比對，沒浪費時間');
   },
   async (tok, S) => { // @1138 ~也就是說這樣子就virtually index
-    S.n2 = hot('virtually indexed（index 和 VA 相同）, physically tagged（tag 是 PA）', 0, -0.8);
+    rem(S, 'virtually indexed（index 和 VA 相同）, physically tagged（tag 是 PA）', 0, 0.5, 'ptr alt');
     cap('Index 部分跟 virtual 一樣：virtually indexed', '其實 cache 還是 physical address');
   },
   async (tok, S) => { // @1180 ~所以假如一個地址一個給你一個virtual just給你
-    gone(S.n2); S.va.fl(1); S.va.fl(0, HL);
+    gone(S.rem); S.va.fl(1); S.va.fl(0, HL);
     cap('給你一個 virtual address', 'page offset 部分拿去 index；page number 去 TLB');
   },
   async (tok, S) => { // @1203 ~那這個得到的是什麼東西呢比對
-    S.va.fl(0, null); S.va.fl(1, null); S.t6 = good('PA 的 tag == cache 讀出的 tag 且 valid → hit，資料給 CPU', 0, -0.8);
+    S.va.fl(0, null); S.va.fl(1, null); rem(S, 'PA 的 tag == cache 讀出的 tag 且 valid → hit，資料給 CPU', 0, 0.5, 'good');
     cap('Translation 好了就比對', 'tag 一樣又 valid → hit');
   },
   async (tok, S) => { // @1255 ~那如果cache不是valid
-    gone(S.t6); S.t7 = sm('cache miss、TLB hit → 1 次 memory access（拿 block）', 0, -0.8);
+    rem(S, 'cache miss、TLB hit → 1 次 memory access（拿 block）', 0, 0.5, 'idx');
     cap('Cache miss 但 TLB hit', '只要一次 memory access 把 data 拿進來');
   },
   async (tok, S) => { // @1275 ~如果這邊也是miss這邊也是miss那就什麼
-    S.t8 = bad('兩個都 miss → 2 次（page table entry + block）', 0, -1.4);
+    rem(S, 'cache miss、TLB hit → 1 次；兩個都 miss → 2 次（page table entry + block）', 0, 0.5, 'bad');
     cap('兩邊都 miss', '正常要兩個 memory access');
   },
   async (tok, S) => { // @1296 ~但是這個問題是什麼你一定要讓你的page的size夠大
-    gone(S.t7, S.t8); S.t9 = hot('條件：page size 夠大，index + block offset 落在 page offset 裡', 0, -0.8);
+    rem(S, '條件：page size 夠大，index + block offset 落在 page offset 裡', 0, 0.5, 'ptr alt');
     cap('條件：page size 一定要夠大', '這樣 index 部分才不會變');
   },
-], [[0, 3.2, 15], [0, 2.6, 0]]);
+], [[0, 3.2, 15], [0, 3.0, 0]], [-6.6, -1.0, -0.3, 6.6, 7.2, 0.3]);
 
 scene('cvm-26a-protect', 'Memory protection：OS、supervisor mode、system call', [
   async (tok, S) => { // @1323 ~Memory Protection
@@ -3199,7 +3240,7 @@ scene('cvm-26a-place', 'Memory hierarchy 共同架構：放在哪裡、怎麼找
     cap('複習整個 memory hierarchy', '每一層都利用 principle of locality，像 cache 一樣');
   },
   async (tok, S) => { // @1516 ~你要解決這四個問題
-    S.q = list(-4.8, 5.3, 0.45); ['① block placement', '② finding a block', '③ replacement', '④ write policy'].forEach((t) => S.q.add(t));
+    S.q = list(-4.8, 5.3, 0.58); ['① block placement', '② finding a block', '③ replacement', '④ write policy'].forEach((t) => S.q.add(t));
     cap('每一層都要解決四個問題', '');
   },
   async (tok, S) => { // @1520 ~第一個就是block placement
@@ -3207,11 +3248,11 @@ scene('cvm-26a-place', 'Memory hierarchy 共同架構：放在哪裡、怎麼找
     cap('第一個：block placement', 'direct map、set associative、fully associative');
   },
   async (tok, S) => { // @1573 ~Block Placement有Direct Map
-    S.dm = slots(4, 0, 4.8, { w: 1.2, h: 0.4, rl: (i) => 'set ' + i, title: 'direct map（1-way）', rlw: 0.6 }); S.dm.fl(2, OKG);
+    S.dm = slots(4, 0, 4.8, { w: 1.2, h: 0.4, gap: 0.2, rl: (i) => 'set ' + i, title: 'direct map（1-way）', rlw: 0.6 }); S.dm.fl(2, OKG);
     cap('Direct map = one-way set associative', 'index 算出來只有一個位置');
   },
   async (tok, S) => { // @1605 ~那n-way set associate是什麼意思
-    S.sa = [0, 1].map((w) => slots(2, 2.4 + w * 1.25, 4.8, { w: 1.1, h: 0.82, gap: 0.08 })); S.sat = hd('2-way：一個 set 兩個位置', 3.0, 5.45);
+    S.sa = [0, 1].map((w) => slots(2, 2.4 + w * 1.25, 4.8, { w: 1.1, h: 0.82, gap: 0.08 })); S.sat = [hd('2-way', 3.0, 5.45), sm('一個 set 兩個位置', 3.0, 3.05)];
     S.sa.forEach((T) => T.fl(1, OKG));
     cap('n-way set associative：index 選 set', 'set 裡有 2 或 4 個 entry，選任何一個都可以');
   },
@@ -3220,31 +3261,31 @@ scene('cvm-26a-place', 'Memory hierarchy 共同架構：放在哪裡、怎麼找
     cap('Fully associative：一個 set 有 N 個 element', '任何位置都可以');
   },
   async (tok, S) => { // @1666 ~那越高的associative當然會reduce miss rate
-    S.t1 = sm('associativity ↑ → miss rate ↓（好處越來越小），但 complexity、cost、access time ↑', 1.6, 2.2);
+    S.t1 = sm('associativity ↑ → miss rate ↓（好處越來越小），但 complexity、cost、access time ↑', 0.8, 2.5);
     cap('Associativity 越高，miss rate 越低', '但好處遞減，complexity、cost、access time 增加');
   },
   async (tok, S) => { // @1689 ~我們就怎麼去找一個block呢
     S.q.ls[0].element.className = 'lab-label idx'; S.q.ls[1].element.className = 'lab-label ptr alt';
-    gone(S.t1); S.c1 = sm('direct map：1 個 tag comparison', 0, 2.2);
+    gone(S.t1); S.c1 = sm('direct map：1 個 tag comparison', 0.8, 2.5);
     cap('第二個：怎麼找 block？', 'direct map：做一個 tag comparison');
   },
   async (tok, S) => { // @1705 ~那N-Way的setassociation
-    S.c2 = sm('n-way：n 個 tag 同時比較 → n 個 comparator', 3.0, 1.6);
+    S.c2 = sm('n-way：n 個 tag 同時比較 → n 個 comparator', 0.8, 1.95);
     cap('N-way：n 個 tag 同時比較', 'n 越大，hardware 越多');
   },
   async (tok, S) => { // @1737 ~那Fully Associated有兩種一種是cash裡面的
-    S.c3 = sm('fully associative cache：1024 個 entry → 1024 個 tag 同時比對', 3.0, 1.0);
+    S.c3 = sm('fully associative cache：1024 個 entry → 1024 個 tag 同時比對', 0.8, 1.4);
     cap('Fully associative 的 cache', '1024 個 entry 就要 1024 個 tag 同時比對');
   },
   async (tok, S) => { // @1761 ~另外一個就是virtual memory裡面它也是fully associate
-    S.c4 = good('virtual memory：建完整的 lookup table（page table），用 page number index → 不用比 tag', 1.0, 0.4);
+    S.c4 = K.keep(good('virtual memory：建完整的 lookup table（page table），用 page number index → 不用比 tag', 0.8, 0.85));
     cap('Virtual memory 也是 fully associative', '但建一張完整的 page table，用 page number 直接 index');
   },
   async (tok, S) => { // @1855 ~那這個Hardware的Cache主要是用這個Cache
-    S.c5 = sm('代價：查 page table 多一次 memory access；好處：miss rate 低', 1.0, -0.2);
+    S.c5 = sm('代價：查 page table 多一次 memory access；好處：miss rate 低', 0.8, 0.3);
     cap('Cache 靠 hardware 比對', 'page table 要多一次 access，但 fully associative 讓 miss rate 降低');
   },
-], [[0, 3.4, 14.5], [0, 3.0, 0]]);
+], [[0, 3.4, 14.5], [0, 3.2, 0]], [-6.6, -0.1, -0.3, 6.6, 6.7, 0.3]);
 
 scene('cvm-26a-repwrite', '共同架構：replacement 與 write policy', [
   async (tok, S) => { // @1890 ~在replacement的問題
@@ -3316,17 +3357,17 @@ scene('cvm-26a-3c', 'Miss 的三個來源：compulsory、capacity、conflict', [
   },
   async (tok, S) => { // @2152 ~或direct map的話因為你為了要快速
     gone(S.t1, S.k, S.t2);
-    S.dm = slots(4, -2.4, 3.6, { w: 1.4, h: 0.4, rl: (i) => 'line ' + i, title: 'direct map 4 blocks（示意）', rlw: 0.7 });
-    S.r = list(2.4, 3.8, 0.42);
-    for (const [i, r] of C3.dm.entries()) { S.dm.put(r.b % 4, 'block ' + r.b, NC.rose); S.r.add('block ' + r.b + '：' + (r.hit ? 'hit' : r.first ? 'miss（compulsory）' : 'miss（conflict）'), r.hit ? 'good' : 'bad'); if (i < 3) await wt(tok, 350); }
-    S.k2 = ok(C3.ok, 'line 1–3 都空著，0 和 4 卻一直搶 line 0；fully associative 只 miss 2 次 ✓', 0, 0.4);
+    S.dm = slots(4, -2.4, 3.6, { w: 1.4, h: 0.44, gap: 0.16, rl: (i) => 'line ' + i, title: 'direct map 4 blocks（示意）', rlw: 0.7 });
+    S.r = list(2.6, 3.8, 0.62);
+    for (const [i, r] of C3.dm.entries()) { S.dm.put(r.b % 4, 'block ' + r.b, NC.rose); K.keep(S.r.add('block ' + r.b + '：' + (r.hit ? 'hit' : r.first ? 'miss（compulsory）' : 'miss（conflict）'), r.hit ? 'good' : 'bad')); if (i < 3) await wt(tok, 350); }
+    S.k2 = ok(C3.ok, 'line 1–3 都空著，0 和 4 卻一直搶 line 0；fully associative 只 miss 2 次 ✓', 0, 0.8); K.keep(S.k2);
     cap('Direct map 只准坐自己的位置', '別的位置空著也不能過去 → conflict miss');
   },
   async (tok, S) => { // @2196 ~那是在不是fully associated的地方
-    S.t3 = hot('三種 miss：compulsory、capacity、conflict', 0, -0.3);
+    txt(S.t0, '三種 miss 都會發生：compulsory、capacity、conflict（conflict 只在非 fully associative）');
     cap('這三種不同的 miss 都會發生', 'conflict 只在不是 fully associative 時出現');
   },
-], [[0, 3.4, 14.5], [0, 2.8, 0]]);
+], [[0, 3.4, 14.5], [0, 3.6, 0]], [-6.0, 0.3, -0.3, 6.0, 7.0, 0.3]);
 
 // fixed-size cache：block 變大 → block 數變少（16 KiB 為示意）
 const BLK = (() => { const cache = 16 * 1024; return [16, 64, 1024].map((b) => ({ b, n: cache / b })); })();
@@ -3541,15 +3582,15 @@ scene('cvm-26b-fsm', 'Cache controller 的 finite state machine', [
     cap('CPU 送來 valid = 1', '就 transition 到 Compare Tag state');
   },
   async (tok, S) => { // @544 ~然後做Tag的Comparison之後如果是Valid Hit的話
-    S.t1 = good('valid 且 tag 一樣 → cache hit', 0.8, 6.3);
+    rem(S, 'valid 且 tag 一樣 → cache hit', 2.6, 6.4, 'good');
     cap('Compare Tag：valid 又 tag 一樣', '就是 cache hit，data 可以用');
   },
   async (tok, S) => { // @562 ~然後繼續這邊如果都沒有在Excel我就在這邊一直轉
-    S.t2 = sm('沒有 request：每個 clock 都留在 Idle', -4.2, 4.6);
+    rem(S, '沒有 request：每個 clock 都留在 Idle', -4.2, 4.6, 'note');
     cap('沒有 access 時', '每個 clock 都在 Idle 這邊轉');
   },
   async (tok, S) => { // @573 ~如果是write的話write它也是一個write的話
-    S.t3 = sm('if write：set dirty、set valid、set tag（一起寫）', 0.8, 4.6);
+    rem(S, 'if write：set dirty、set valid、set tag（一起寫）', 0.8, 4.45, 'note');
     cap('如果是 write', '要 set dirty bit，連 valid、tag 一起寫');
   },
   async (tok, S) => { // @611 ~這hit的話出來是hit的話呢當然你就就回到idle
@@ -3557,11 +3598,11 @@ scene('cvm-26b-fsm', 'Cache controller 的 finite state machine', [
     cap('Hit 的話', '回到 Idle');
   },
   async (tok, S) => { // @617 ~那如果是miss的話catch miss的話那你就要去看它這是dirty的
-    glow(S.st.idle, null); glow(S.st.cmp, NG); S.d = sm('miss：舊的 block 是 dirty 嗎？', 3.6, 4.0);
+    glow(S.st.idle, null); glow(S.st.cmp, NG); rem(S, 'miss：舊的 block 是 dirty 嗎？', 4.4, 6.3, 'note');
     cap('Cache miss：看舊的 block 是不是 dirty', 'dirty 就要先 write back');
   },
   async (tok, S) => { // @637 ~那這要花很多時間去寫因為你就要通知memory說我要開始寫
-    lk(0.8, 4.9, 0.8, 2.5); glow(S.st.wb, HL); S.w = sm('Write-Back：等 memory ready 前一直留在這', 0.8, 1.1);
+    lk(0.8, 4.9, 0.8, 2.5); glow(S.st.wb, HL); rem(S, 'Write-Back：等 memory ready 前一直留在這', 0.8, 1.2, 'note');
     cap('Miss 且 dirty → Write-Back state', '通知 memory 寫，沒 ready 就一直在這裡轉');
   },
   async (tok, S) => { // @653 ~那就tell這邊allocate這個stay來
@@ -3569,27 +3610,28 @@ scene('cvm-26b-fsm', 'Cache controller 的 finite state machine', [
     cap('Memory ready（寫好了）', '就到 Allocate state');
   },
   async (tok, S) => { // @671 ~那如果說不是dirty的話你就直接跳到這個stay來
-    lk(2.1, 5.0, 4.6, 2.5, 0x0f5a3a); S.cl = sm('miss + clean → 直接 Allocate', 4.2, 3.6);
+    lk(2.05, 5.1, 4.3, 2.45, 0x0f5a3a); S.cl = sm('miss + clean', 2.0, 3.4);
+    rem(S, '舊 block 不是 dirty → 不用寫回，直接 Allocate', 4.4, 1.2, 'note');
     cap('不是 dirty', '直接跳到 Allocate，不用寫回');
   },
   async (tok, S) => { // @696 ~其實到allocate這個state其實有兩種狀況
-    S.a = sm('Allocate：read、write 都要；從 memory 讀新 block 寫進 cache', 4.4, 1.1);
+    rem(S, 'Allocate：read、write 都要；從 memory 讀新 block 寫進 cache', 2.6, 1.2, 'note');
     cap('Allocate：read 或 write 都要做', '把 block 從 memory 寫到 cache');
   },
   async (tok, S) => { // @710 ~寫完之後你會再回到這邊來再回到這個compare tag
-    glow(S.st.al, null); glow(S.st.cmp, OKG); lk(4.8, 2.5, 2.0, 5.0, 0x0f5a3a);
-    S.k = ok(FSMR.ok, 'write miss（dirty）：' + FSMR.p1.join(' → ') + ' ✓', 0, 0.2);
+    glow(S.st.al, null); glow(S.st.cmp, OKG); lk(5.3, 2.45, 2.05, 5.5, 0x0f5a3a);
+    S.k = ok(FSMR.ok, 'write miss（dirty）：' + FSMR.p1.join(' → ') + ' ✓', 0, 0.45); K.keep(S.k);
     cap('回到 Compare Tag：tag 一樣了 → hit', '再回 Idle；write 的話設 dirty');
   },
   async (tok, S) => { // @728 ~為什麼write也要allocate呢
-    S.blk = [0, 1, 2, 3].map((i) => bx(i === 2 ? '寫這個 word' : 'word ' + i, i === 2 ? NC.orange : NC.sky, -5.4 + i * 1.3, 0.2, 0, 1.2, 0.5));
+    S.blk = [0, 1, 2, 3].map((i) => bx(i === 2 ? '寫 word 2' : 'word ' + i, i === 2 ? NC.orange : NC.sky, -5.6 + i * 1.6, -0.4, 0, 1.4, 0.5));
     cap('為什麼 write 也要 allocate？', 'block 是一個整體：寫其中一個，整塊都要搬上來');
   },
   async (tok, S) => { // @773 ~但是你把整個搬上來之後呢譬如你是搬舊的data進來啊
-    S.e = sm('搬進來的是舊 data → 回 Compare Tag 再寫一次、set dirty（另一種 policy：write no-allocate）', 0, -0.6);
+    rem(S, '搬進來的是舊 data → 回 Compare Tag 再寫一次、set dirty（另一種 policy：write no-allocate）', 0, -1.15, 'idx');
     cap('搬進來的是舊的 data', '回到 Compare Tag 再寫一次，設成 dirty');
   },
-], [[0, 3.2, 15], [0, 2.7, 0]]);
+], [[0, 3.2, 15], [0, 2.7, 0]], [-6.2, -1.6, -0.3, 6.6, 6.8, 0.3]);
 
 scene('cvm-26b-impl', 'FSM 怎麼變成硬體：state register 與 combinational logic', [
   async (tok, S) => { // @796 ~所以這個finance statement是呢它就把catch controller分在這些state
@@ -3780,20 +3822,20 @@ scene('cvm-26b-intel', '例子：Intel 四核心的三層 cache', [
 const PF = (() => { const a = 32; const w = a - lg2(4), blk = a - lg2(32), pg = a - lg2(4096); return { w, blk, pg, offB: lg2(32), offP: lg2(4096) }; })();
 scene('cvm-26b-pitfall', 'Pitfall：byte address 與 word／block／page address', [
   async (tok, S) => { // @1616 ~那最後呢好還有一些注意事項
-    S.t0 = hot('Pitfalls：不要犯的錯', 0, 6.8);
+    S.t0 = hot('Pitfalls：不要犯的錯', 0, 7.0);
     cap('最後一些注意事項', '不要犯的錯');
   },
   async (tok, S) => { // @1625 ~buy address跟award address不要搞錯
-    S.t1 = sm('byte address ≠ word address：先搞清楚 word、block、page 的 size', 0, 6.2);
+    txt(S.t0, 'Pitfall：byte address ≠ word address — 先搞清楚 word、block、page 的 size');
     cap('Byte address 和 word address 不要搞錯', '算 index、page number 前先搞清楚 size');
   },
   async (tok, S) => { // @1641 ~也就是32個bit是byte address
-    S.a = fields([{ n: 'byte address', b: 32, c: NC.tan }], 0, 5.0, { unit: 0.3 });
+    S.a = fields([{ n: 'byte address', b: 32, c: NC.tan }], 0, 5.8, { unit: 0.3 });
     cap('2³² 個 byte：32 bits 是 byte address', '不是 word address');
   },
   async (tok, S) => { // @1650 ~假如我告訴你說一個word是4個byte的話
-    S.w = fields([{ n: 'word address', b: PF.w, c: NC.sky }, { n: 'byte', b: 2, c: NC.rose }], 0, 3.8, { unit: 0.3 });
-    S.k1 = ok(PF.w === 30, 'word 4 bytes → 後 2 bits 是 offset → word address = 前 ' + PF.w + ' bits ✓', 0, 3.1);
+    S.w = fields([{ n: 'word address', b: PF.w, c: NC.sky }, { n: 'byte', b: 2, c: NC.rose }], 0, 4.0, { unit: 0.3 });
+    S.k1 = ok(PF.w === 30, 'word 4 bytes → 後 2 bits 是 offset → word address = 前 ' + PF.w + ' bits ✓', 0, 3.4); K.keep(S.k1);
     cap('一個 word 4 個 byte', 'word address 看前 30 個 bit');
   },
   async (tok, S) => { // @1714 ~那我現在變化一下block catch your block也是32筆
@@ -3801,23 +3843,23 @@ scene('cvm-26b-pitfall', 'Pitfall：byte address 與 word／block／page address
     cap('Cache block 32 個 byte', 'block address 有幾個 bit？');
   },
   async (tok, S) => { // @1767 ~如果是32個byte的話2的4的8 16 32 32要用掉5個bit
-    S.k2 = ok(PF.offB === 5 && PF.blk === 27, '32 = 2⁵ → offset 5 bits → block address ' + PF.blk + ' bits ✓', 0, 1.5);
+    S.k2 = ok(PF.offB === 5 && PF.blk === 27, '32 = 2⁵ → offset 5 bits → block address ' + PF.blk + ' bits ✓', 0, 1.6); K.keep(S.k2);
     cap('32 = 2⁵ 用掉 5 個 bit', 'block address 是 27 bits');
   },
   async (tok, S) => { // @1801 ~那現在配舉也是2的32字方那一個page是4K byte
-    S.p = fields([{ n: 'page number', b: PF.pg, c: NC.purple }, { n: 'page offset', b: PF.offP, c: NC.orange }], 0, 0.6, { unit: 0.3 });
-    S.k3 = ok(PF.offP === 12, '4K = 4 × 1024 = 2¹² → 12 bits ✓', -3.0, -0.1);
+    S.p = fields([{ n: 'page number', b: PF.pg, c: NC.purple }, { n: 'page offset', b: PF.offP, c: NC.orange }], 0, 0.4, { unit: 0.3 });
+    S.k3 = ok(PF.offP === 12, '4K = 4 × 1024 = 2¹² → 12 bits ✓', -3.4, -0.25); K.keep(S.k3);
     cap('Page 4K bytes 用掉幾個 bit？', '4 × 1024 = 2¹² → 12 bits');
   },
   async (tok, S) => { // @1833 ~好所以他的page number是幾個bit
-    S.k4 = ok(PF.pg === 20, 'page number = 32 − 12 = ' + PF.pg + ' bits ✓', 3.0, -0.1);
+    S.k4 = ok(PF.pg === 20, 'page number = 32 − 12 = ' + PF.pg + ' bits ✓', 3.4, -0.25); K.keep(S.k4);
     cap('Page number 幾個 bit？', '32 − 12 = 前面 20 個 bit');
   },
   async (tok, S) => { // @1874 ~所以它概念其實是一樣
-    S.t2 = good('同一個概念：word／block／page number = 去掉 size 那幾個 low-order bits', 0, -0.8);
+    S.t2 = good('同一個概念：word／block／page number = 去掉 size 那幾個 low-order bits', 0, -1.0);
     cap('Page、block、word number 概念一樣', '看 size 多大，剩下的部分就是它的 address');
   },
-], [[0, 3.0, 15], [0, 2.6, 0]]);
+], [[0, 3.0, 15], [0, 2.9, 0]], [-6.0, -1.5, -0.3, 6.0, 7.4, 0.3]);
 
 // 2-D array（示意）：4 × 4 row-major，每個 block 放 4 個 element，cache 只放得下 2 個 block（LRU）
 const ARR = (() => { const N = 4, run = (order) => { const c = []; let miss = 0; for (const [r, k] of order) { const blk = r; const i = c.indexOf(blk); if (i >= 0) c.splice(i, 1); else { miss++; if (c.length === 2) c.shift(); } c.push(blk); } return miss; }; const row = [], col = []; for (let r = 0; r < N; r++) for (let k = 0; k < N; k++) row.push([r, k]); for (let k = 0; k < N; k++) for (let r = 0; r < N; r++) col.push([r, k]); return { row: run(row), col: run(col) }; })();
