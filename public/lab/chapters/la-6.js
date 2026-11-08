@@ -68,6 +68,7 @@ export default function (ctx) {
     shaft.castShadow = head.castShadow = true;
     const g = new THREE.Group(); g.add(shaft, head); g.visible = false; lab.world.add(g);
     g.setW = (a, b) => {
+      g.ends = [a.clone(), b.clone()];
       const d = b.clone().sub(a), L = d.length();
       g.visible = L > 1e-4;
       if (g.lbl) showL(g.lbl, g.visible);
@@ -79,10 +80,18 @@ export default function (ctx) {
       if (g.lbl) g.lbl.position.copy(b).addScaledVector(u, 0.32).add(V3(0, 0.14, 0));
       return g;
     };
-    g.tag = (t, cls) => { if (!g.lbl) { g.lbl = lab.label('', cls || 'ptr'); lab.world.add(g.lbl); } txt(g.lbl, t); return g; };
+    // a name given after the arrow is placed goes straight to its tip (not to the world origin)
+    g.tag = (t, cls) => { if (!g.lbl) { g.lbl = lab.label('', cls || 'ptr'); lab.world.add(g.lbl); if (g.ends) g.setW(...g.ends); } txt(g.lbl, t); return g; };
     g.glow = (c) => { mat.emissive = new THREE.Color(c || '#000000'); };
     g.color = (c) => mat.color.set(c);
     return g;
+  }
+  // An invisible box over the area a scene will use later: the stage's auto framing measures it from the
+  // first step, so the camera does not zoom in on the first few things and then jump back out (labels
+  // sliding under the caption meanwhile) when the rest arrives. (Same idea as dm-8.js.)
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
   }
   function dotBall(color, r = 0.12) { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), new THREE.MeshStandardMaterial({ color, roughness: 0.4 })); m.castShadow = true; lab.world.add(m); return m; }
   function planeMesh(S, u, v, color, ext, opacity = 0.2, center = [0, 0, 0]) {
@@ -686,16 +695,19 @@ export default function (ctx) {
     eigLine(F, [1, 1], COL.d); eigLine(F, [1, -1], COL.r);
     say('差分方程 uₖ₊₁ = A uₖ', '答案：u_k = Aᵏu₀，但怎麼真的算出來？');
     await beat(tok, 2800);
-    const u0 = [1, 0.2], c1 = 0.6, c2 = 0.4;
-    F.arrow(u0, COL.g, 'u₀');
-    say('把 u₀ 拆成特徵向量的組合', 'u₀ = c₁x₁ + c₂x₂ = 0.6(1, 1) + 0.4(1, −1)');
+    const u0 = [2, 0.4], c1 = 1.2, c2 = 0.8;
+    // the pieces carry their names at their middle (u_k keeps the tip), so the three never sit on one spot
+    const mid = (a, from, v, off) => { if (a.lbl) a.lbl.position.copy(F.w(addv(addv(from, scl(v, 0.5)), off), 0.3)); };
+    const as = F.arrow(u0, COL.b, 'u₀');
+    say('把 u₀ 拆成特徵向量的組合', 'u₀ = c₁x₁ + c₂x₂ = 1.2(1, 1) + 0.8(1, −1)');
     const a1 = F.arrow(scl([1, 1], c1), COL.d, 'c₁x₁'), a2 = F.arrow(scl([1, -1], c2), COL.r, 'c₂x₂', '', scl([1, 1], c1));
+    mid(a1, [0, 0], scl([1, 1], c1), [-0.5, 0.5]); mid(a2, scl([1, 1], c1), scl([1, -1], c2), [0.3, -1.1]);
     await beat(tok, 2800);
-    const as = F.arrow(u0, COL.b, 'u_k');
-    for (let k = 1; k <= 5; k++) {
+    as.tag('u_k');
+    for (let k = 1; k <= 3; k++) {
       const s1 = c1 * Math.pow(1.5, k), s2 = c2 * Math.pow(0.5, k);
-      await tw(tok, 700, () => { F.set(a1, scl([1, 1], s1)); F.set(a2, scl([1, -1], s2), scl([1, 1], s1)); F.set(as, addv(scl([1, 1], s1), scl([1, -1], s2))); });
-      say('k = ' + k + '：每一塊各走各的', 'u_k = 0.6·1.5' + toSup(k) + '·x₁ + 0.4·0.5' + toSup(k) + '·x₂');
+      await tw(tok, 700, () => { F.set(a1, scl([1, 1], s1)); F.set(a2, scl([1, -1], s2), scl([1, 1], s1)); F.set(as, addv(scl([1, 1], s1), scl([1, -1], s2))); mid(a1, [0, 0], scl([1, 1], s1), [-0.5, 0.5]); mid(a2, scl([1, 1], s1), scl([1, -1], s2), [0.3, -1.1]); });
+      say('k = ' + k + '：每一塊各走各的', 'u_k = 1.2·1.5' + toSup(k) + '·x₁ + 0.8·0.5' + toSup(k) + '·x₂');
       await beat(tok, 1000);
     }
     say('u_k = c₁λ₁ᵏx₁ + c₂λ₂ᵏx₂ = SΛᵏc', '前提：u₀ 能用特徵向量展開（n 個獨立）');
@@ -772,6 +784,7 @@ export default function (ctx) {
   }
   async function scMarkovSteady(tok) {
     fresh([0, 3.6, 12.5], [0, 3.2, 0]);
+    frameHold(-4.4, -0.2, -0.8, 6.4, 6.9, 1.4); // the bars and the k counter arrive later: frame for them now
     const E = eigInfo(MK);
     say('關鍵事實：λ = 1 一定是特徵值', '其他特徵值 |λ| < 1（這裡 ≈ ' + E.groups.filter((g) => Math.abs(g.re - 1) > 1e-6).map((g) => g.re.toFixed(3)).join('、') + '）');
     await beat(tok, 3000);
@@ -800,12 +813,12 @@ export default function (ctx) {
     fresh([0, 3.4, 12.5], [0, 3.4, 0]);
     const AI = MK.map((r, i) => r.map((x, j) => Math.round((x - (i === j ? 1 : 0)) * 100) / 100));
     const g = mgrid(MK, -4.2, 5.4, 0, { size: 0.82, gap: 1.05, color: () => COL.a });
-    tag('A', 'ptr', -3.15, 6.25);
+    const hA = tag('A', 'ptr', -3.15, 6.25);
     say('為什麼 λ = 1？看 A − I 是否奇異', '');
     await beat(tok, 1800);
     AI.forEach((r, i) => r.forEach((v, j) => g.set(i, j, v)));
     g.c.forEach((r, i) => tint(r[i], COL.r));
-    tag('A − I', 'ptr', -3.15, 6.25);
+    txt(hA, 'A − I'); // the same name label is rewritten (a second one sat on top of it)
     say('對角線各減 1：A − I', '每一行加起來變成 0');
     await beat(tok, 2600);
     say('行和全 0 ⇒ 三列相加 = 零列', '(1, 1, 1) 乘上各列：列1 + 列2 + 列3 = 0');
@@ -819,14 +832,16 @@ export default function (ctx) {
     tag('x₁', 'ptr alt', 0.6, 6.25);
     say('A 自己的特徵向量 x₁ 在 N(A − I)', '解出 x₁ = (0.6, 33, 0.7)：分量都是正的');
     await beat(tok, 2800);
-    mono(tag('第 1 列：−0.9(0.6) + 0.01(33) + 0.3(0.7) = −0.54 + 0.33 + 0.21 = 0', '', 2.6, 3.0));
-    await beat(tok, 2400);
+    g.row(0, GOLD); // the check sits beside its own row: row 1 of A − I times x₁
+    const chk = mono(tag('第 1 列 · x₁ = −0.54 + 0.33 + 0.21 = 0', '', 1.35, 5.4)); chk.center.set(0, 0.5);
+    await beat(tok, 2400); g.clearGlow();
     say('附帶一提：A 和 Aᵀ 特徵值相同', 'det(A − λI) = det(Aᵀ − λI)；特徵向量不同');
     await beat(tok, 3200);
     void zr;
   }
   async function scCalMass(tok) {
     fresh([0, 3.6, 12.5], [0, 3.2, 0]);
+    frameHold(-4.4, -0.2, -0.8, 4.4, 7.0, 1.4); // bars grow later: frame for the whole picture from the start
     const A = [[0.9, 0.2], [0.1, 0.8]];
     const g = mgrid(A, -0.7, 6.6, 0, { size: 0.7, gap: 0.9, color: () => '#e7dcc8' }); void g;
     say('兩個狀態：California、Massachusetts', '加州 90% 留下、10% 搬去麻州；麻州 80% 留下、20% 搬去加州');
@@ -849,7 +864,7 @@ export default function (ctx) {
     }
     say('λ = 1（必有）、λ = 0.7（trace 1.7 − 1）', 'x₁ = (2, 1)、x₂ = (−1, 1)');
     await beat(tok, 2800);
-    mono(tag('u_k = (1000/3)(2, 1) + (2000/3)(0.7)ᵏ(−1, 1)', 'ptr', 0, 5.5));
+    mono(tag('u_k = (1000/3)(2, 1) + (2000/3)(0.7)ᵏ(−1, 1)', 'ptr', 0, 4.5));
     say('穩定狀態 = (2/3, 1/3) × 1000 ≈ (667, 333)', '0.7ᵏ 那一項逐漸消失');
     await beat(tok, 3200);
     say('有些書用列向量：u A，改成「每列和 = 1」', '只是轉置，觀念一樣');
@@ -1122,9 +1137,11 @@ const trM = (A) => A.reduce((s, r, i) => s + r[i], 0);
 const r3 = (x) => Math.round(x * 1000) / 1000;
 const cmul = (a, b) => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]];
 // 右邊的「黑板」：一列一列往下寫
-const X0 = 3.0, R = (k) => 5.7 - k * 0.7;
-const row = (f, t, k) => f(t, X0, R(k));
-const mlab = (name, M, k, cls = 'ptr') => tag(name + ' = ' + mstr(M), cls, X0, R(k));
+// one line per row: writing row k again takes the old row k away (never two lines on one spot)
+const X0 = 3.0, R = (k) => 5.7 - k * 0.7, SLOT = new Map();
+const put = (k, l) => { const o = SLOT.get(k); if (o && o !== l) remove(o); SLOT.set(k, l); return l; };
+const row = (f, t, k) => put(k, f(t, X0, R(k)));
+const mlab = (name, M, k, cls = 'ptr') => put(k, tag(name + ' = ' + mstr(M), cls, X0, R(k)));
 const ln = (o) => { if (o) remove(o); };
 // everything added after mark() can be wiped in one go
 const mark = () => lab.world.children.length;
@@ -1132,7 +1149,8 @@ function wipe(n) { while (lab.world.children.length > n) { const o = lab.world.c
 const CAM = [[0, 3.1, 12], [0, 3.0, 0]];
 function scene(id, title, steps, o = {}) {
   FRAG.push(['egA-' + id, title, async (tok) => {
-    const c = o.cam || CAM; fresh(c[0], c[1]);
+    const c = o.cam || CAM; fresh(c[0], c[1]); SLOT.clear();
+    if (!o.cam) frameHold(-6.2, 0.2, -0.2, 6.2, 6.0, 0.2); // plane (left) + board (right): framed from the first step
     const S = {};
     if (o.init) await o.init(tok, S);
     for (const f of steps) { await step(tok); await f(tok, S); }
@@ -1145,6 +1163,7 @@ function arw(color, r = 0.05) {
   const g = new THREE.Group(); g.add(sh, hh); g.visible = false; lab.world.add(g);
   const UPV = V3(0, 1, 0);
   g.setW = (a, b) => {
+    g.ends = [a.clone(), b.clone()];
     const d = b.clone().sub(a), L = d.length(); g.visible = L > 1e-4;
     if (g.lbl) g.lbl.element.style.visibility = g.visible ? '' : 'hidden';
     if (!g.visible) return g;
@@ -1155,7 +1174,7 @@ function arw(color, r = 0.05) {
     if (g.lbl) g.lbl.position.copy(b).addScaledVector(u, 0.3).add(V3(0, 0.12, 0.1));
     return g;
   };
-  g.tag = (t, cls) => { if (!g.lbl) { g.lbl = lab.label('', cls || 'idx'); lab.world.add(g.lbl); } txt(g.lbl, t); return g; };
+  g.tag = (t, cls) => { if (!g.lbl) { g.lbl = lab.label('', cls || 'idx'); lab.world.add(g.lbl); if (g.ends) g.setW(...g.ends); } txt(g.lbl, t); return g; };
   g.glow = (c) => { mt.emissive = new THREE.Color(c || '#000000'); };
   g.col = (c) => mt.color.set(c);
   return g;
@@ -1179,10 +1198,12 @@ function plane2(ox = -3.4, oy = 3.0, s = 0.42, ext = 6) {
   F.arrow = (v, color, t, cls, from = [0, 0]) => { const a = arw(color); if (t) a.tag(t, cls); F.set(a, v, from); return a; };
   F.set = (a, v, from = [0, 0]) => { a.v = v.slice(); a.setW(F.w(from, 0.06), F.w(addv(from, v), 0.06)); };
   F.line = (v, color, r = 0.025) => { const m = rod(color, r); const e = clip(scl(v, -100 / norm(v)), scl(v, 100 / norm(v)), ext); m.setW(F.w(e[0], 0.02), F.w(e[1], 0.02)); return m; };
-  F.dot = (p, color, r = 0.1) => { const b = dotBall(color, r); b.position.copy(F.w(p, 0.08)); return b; };
+  F.dots = []; F.dot = (p, color, r = 0.1) => { const b = dotBall(color, r); b.position.copy(F.w(p, 0.08)); F.dots.push(b); return b; };
   F.lab = (t, p, cls = 'idx') => { const q = F.w(p, 0.2); return tag(t, cls, q.x, q.y, q.z); };
   return F;
 }
+const dropA = (a) => { if (!a) return; if (a.lbl) remove(a.lbl); kill(a); };
+const midTag = (F, a, from, v, off) => { if (a.lbl) a.lbl.position.copy(F.w(addv(addv(from, scl(v, 0.5)), off), 0.2)); };
 const isPar = (x, y) => Math.abs(x[0] * y[1] - x[1] * y[0]) < 0.03 * Math.max(1e-9, norm(x) * norm(y));
 // x 繞一圈：Ax 跟 x 共線時兩支都發金光
 async function sweep(tok, F, M, ax, aAx, a0, a1, ms, len = 1.6, k = 1) {
@@ -1277,8 +1298,10 @@ async function sweep(tok, F, M, ax, aAx, a0, a1, ms, len = 1.6, k = 1) {
     async (tok, S) => { cap('哪個向量的 λ = 1？', '交換之後不變'); },
     async (tok, S) => {
       const x = [1.6, 1.6]; cap('(1, 1)！交換後還是自己', 'Ax = x，λ = 1');
+      remove(S.aAx.lbl); S.aAx.lbl = null;
       await anim(tok, 900, (u) => { const v = addv(S.x, scl(addv(x, scl(S.x, -1)), u)); S.F.set(S.ax, v); S.F.set(S.aAx, mulMV(A, v)); });
-      S.ax.glow(GOLD); S.aAx.glow(GOLD); row(ok, nearV(mulMV(A, [1, 1]), [1, 1]), 'x = (1, 1)：Ax = x ✓ λ = 1', 2);
+      S.ax.glow(GOLD); S.aAx.glow(GOLD); S.ax.tag('x = Ax');
+      row(ok, nearV(mulMV(A, [1, 1]), [1, 1]), 'x = (1, 1)：Ax = x ✓ λ = 1', 2);
     },
     async (tok, S) => { cap('2×2 應該還有第二個特徵值', '和第二個特徵向量'); },
     async (tok, S) => { cap('老師先說：另一個 λ = −1', '正數矩陣也會有負的特徵值'); row(hot, '另一個 λ = −1', 3); },
@@ -1436,13 +1459,13 @@ async function sweep(tok, F, M, ax, aAx, a0, a1, ms, len = 1.6, k = 1) {
     async (tok, S) => { cap('應該是 singular：是的', ''); row(ok, det2(addM(A, I2, -3)) === 0, 'det(A − 3I) = 0：singular ✓', 7); },
     async (tok, S) => {
       const x = [1, 0]; cap('null space：x₁ = (1, 0)', 'Ax₁ = 3x₁'); S.F.line(x, COL.d);
-      S.F.arrow([1.4, 0], COL.a, 'x₁'); S.F.arrow(scl(mulMV(A, [1.4, 0]), 1), COL.b, 'Ax₁').glow(GOLD);
+      S.x1 = S.F.arrow([1.4, 0], COL.a, 'x₁'); S.x1b = S.F.arrow(scl(mulMV(A, [1.4, 0]), 1), COL.b, 'Ax₁'); S.x1b.glow(GOLD);
       ln(S.r5); S.r5 = row(ok, nearV(mulMV(A, x), [3, 0]), 'x₁ = (1, 0)：Ax₁ = 3x₁ ✓', 5);
     },
     async (tok, S) => {
-      cap('λ₂ = 3 也要一個獨立的特徵向量', '掃一圈找找看');
-      S.ax = S.F.arrow([1.5, 0], COL.a, 'x'); S.aAx = S.F.arrow([4.5, 0], COL.b, 'Ax').tag('Ax（×½）');
-      await sweep(tok, S.F, A, S.ax, S.aAx, 0, 2 * Math.PI, 2500, 1.5, 0.5);
+      cap('λ₂ = 3 也要一個獨立的特徵向量', '掃一圈找找看'); dropA(S.x1); dropA(S.x1b);
+      S.ax = S.F.arrow([1.5, 0], COL.a, 'x'); S.aAx = S.F.arrow([4.5, 0], COL.b, 'Ax');
+      await sweep(tok, S.F, A, S.ax, S.aAx, 0, 2 * Math.PI, 2500, 1.5, 1);
     },
     async (tok, S) => {
       cap('沒有！退化（degenerate）矩陣', '只有一條特徵向量的線'); const E = eigInfo(A);
@@ -1508,7 +1531,7 @@ async function sweep(tok, F, M, ax, aAx, a0, a1, ms, len = 1.6, k = 1) {
     async (tok, S) => { cap('A²x = λAx = λ²x', ''); row(hot, 'A²x = λ(Ax) = λ²x', 2); },
     async (tok, S) => {
       cap('特徵值平方、特徵向量不變', ''); const x = [1.4, 1.4];
-      S.F.arrow(x, COL.a, 'x₁'); S.a = S.F.arrow(mulMV(A, x), COL.b, 'Ax₁'); S.b = S.F.arrow(mulMV(mm(A, A), x), COL.g, 'A²x₁');
+      S.x1 = S.F.arrow(x, COL.a, 'x₁'); S.a = S.F.arrow(mulMV(A, x), COL.b, 'Ax₁'); S.b = S.F.arrow(mulMV(mm(A, A), x), COL.g, 'A²x₁');
       row(ok, nearV(mulMV(mm(A, A), x), scl(x, 1.5 * 1.5)), 'x₁ = (1, 1)：A²x₁ = 1.5²x₁ = 2.25x₁ ✓', 3);
     },
     async (tok, S) => { cap('用公式再看一次', 'A² = SΛS⁻¹ · SΛS⁻¹'); row(pl, 'A² = SΛS⁻¹SΛS⁻¹', 4); },
@@ -1516,7 +1539,7 @@ async function sweep(tok, F, M, ax, aAx, a0, a1, ms, len = 1.6, k = 1) {
     async (tok, S) => { cap('S 一樣（特徵向量一樣）、Λ 平方', 'Λ² = diag(λ₁², …, λₙ²)'); row(pl, 'Λ² = diag(' + fmt(2.25) + ', ' + fmt(0.25) + ')', 6); },
     async (tok, S) => {
       cap('k 次方：S⁻¹S 一直消', 'Aᵏ = SΛᵏS⁻¹'); S.k = row(hot, 'Aᵏ = SΛᵏS⁻¹', 7);
-      kill(S.a); kill(S.b); const u0 = [1.2, -0.4]; let u = u0; const au = S.F.arrow(u, COL.k, 'u');
+      dropA(S.x1); dropA(S.a); dropA(S.b); const u0 = [1.2, -0.4]; let u = u0; const au = S.F.arrow(u, COL.k, 'u');
       for (let k = 1; k <= 3; k++) { const v = mulMV(A, u), from = u.slice(); await anim(tok, 600, (t) => S.F.set(au, addv(from, scl(addv(v, scl(from, -1)), t)))); u = v; S.F.dot(u, COL.b, 0.07); }
       au.tag('A³u');
     },
@@ -1609,7 +1632,7 @@ async function sweep(tok, F, M, ax, aAx, a0, a1, ms, len = 1.6, k = 1) {
   const A = [[1, 0.5], [0.5, 1]], Sm = [[1, 1], [1, -1]], u0 = [1, 0.2], c = mulMV(inv2(Sm), u0), lam = [1.5, 0.5];
   const uk = (k) => addv(scl([1, 1], c[0] * lam[0] ** k), scl([1, -1], c[1] * lam[1] ** k));
   scene('l22-uk', 'L22：uₖ₊₁ = Auₖ → uₖ = c₁λ₁ᵏx₁ + c₂λ₂ᵏx₂', [
-    async (tok, S) => { cap('可以對角化的重要情況', '來解一個方程式'); S.F = plane2(); S.F.line([1, 1], COL.d); S.F.line([1, -1], COL.r); row(sm, '示意 A = [1 0.5; 0.5 1]', 0); },
+    async (tok, S) => { cap('可以對角化的重要情況', '來解一個方程式'); S.F = plane2(-3.4, 3.0, 0.8, 3.4); S.F.line([1, 1], COL.d); S.F.line([1, -1], COL.r); row(sm, '示意 A = [1 0.5; 0.5 1]', 0); },
     async (tok, S) => { cap('從 u₀ 開始，每一步乘 A', 'uₖ₊₁ = Auₖ'); S.au = S.F.arrow(u0, COL.k, 'u₀'); row(hd, 'uₖ₊₁ = A uₖ', 1); },
     async (tok, S) => {
       cap('u₁ = Au₀、u₂ = A²u₀ …', 'u_k = Aᵏu₀'); let u = u0;
@@ -1619,18 +1642,19 @@ async function sweep(tok, F, M, ax, aAx, a0, a1, ms, len = 1.6, k = 1) {
     async (tok, S) => { cap('一階差分方程（difference equation）', '下一講是微分方程'); row(pl, '一階、系統（向量 + 矩陣）', 3); },
     async (tok, S) => { cap('u₁₀₀ = A¹⁰⁰u₀ 很簡潔', '但要怎麼真的算出來？'); },
     async (tok, S) => {
-      cap('把 u₀ 寫成特徵向量的組合', 'u₀ = c₁x₁ + c₂x₂'); kill(S.au);
+      cap('把 u₀ 寫成特徵向量的組合', 'u₀ = c₁x₁ + c₂x₂'); dropA(S.au); S.F.dots.forEach((d) => kill(d));
       S.a0 = S.F.arrow(u0, COL.k, 'u₀'); S.a1 = S.F.arrow(scl([1, 1], c[0]), COL.d, 'c₁x₁'); S.a2 = S.F.arrow(scl([1, -1], c[1]), COL.r, 'c₂x₂', '', scl([1, 1], c[0]));
+      S.mids = (s1, s2) => { midTag(S.F, S.a1, [0, 0], scl([1, 1], s1), [-0.55, 0.55]); midTag(S.F, S.a2, scl([1, 1], s1), scl([1, -1], s2), [0.7, -0.7]); }; S.mids(c[0], c[1]);
       row(ok, nearV(addv(scl([1, 1], c[0]), scl([1, -1], c[1])), u0), 'u₀ = ' + fmt(c[0]) + '(1, 1) + ' + fmt(c[1]) + '(1, −1) ✓', 4);
     },
     async (tok, S) => {
       cap('乘 A：每一塊各走各的', 'Au₀ = c₁λ₁x₁ + c₂λ₂x₂');
-      await anim(tok, 900, (t) => { const k = t; const s1 = c[0] * lam[0] ** k, s2 = c[1] * lam[1] ** k; S.F.set(S.a1, scl([1, 1], s1)); S.F.set(S.a2, scl([1, -1], s2), scl([1, 1], s1)); S.F.set(S.a0, addv(scl([1, 1], s1), scl([1, -1], s2))); });
+      await anim(tok, 900, (t) => { const k = t; const s1 = c[0] * lam[0] ** k, s2 = c[1] * lam[1] ** k; S.F.set(S.a1, scl([1, 1], s1)); S.F.set(S.a2, scl([1, -1], s2), scl([1, 1], s1)); S.F.set(S.a0, addv(scl([1, 1], s1), scl([1, -1], s2))); S.mids(s1, s2); });
       S.a0.tag('Au₀'); row(ok, nearV(mulMV(A, u0), uk(1)), 'Au₀ = 1.5·c₁x₁ + 0.5·c₂x₂ ✓', 5);
     },
     async (tok, S) => {
       cap('乘 A¹⁰⁰：每塊多一個 λ¹⁰⁰', '示意先走到 k = 4');
-      await anim(tok, 1800, (t) => { const k = 1 + 3 * t; const s1 = c[0] * lam[0] ** k, s2 = c[1] * lam[1] ** k; S.F.set(S.a1, scl([1, 1], s1)); S.F.set(S.a2, scl([1, -1], s2), scl([1, 1], s1)); S.F.set(S.a0, addv(scl([1, 1], s1), scl([1, -1], s2))); });
+      await anim(tok, 1800, (t) => { const k = 1 + 3 * t; const s1 = c[0] * lam[0] ** k, s2 = c[1] * lam[1] ** k; S.F.set(S.a1, scl([1, 1], s1)); S.F.set(S.a2, scl([1, -1], s2), scl([1, 1], s1)); S.F.set(S.a0, addv(scl([1, 1], s1), scl([1, -1], s2))); S.mids(s1, s2); });
       S.a0.tag('A⁴u₀'); row(hot, 'A¹⁰⁰u₀ = c₁λ₁¹⁰⁰x₁ + c₂λ₂¹⁰⁰x₂', 6);
     },
     async (tok, S) => { cap('這其實就是 SΛ¹⁰⁰c', ''); row(ok, nearV(mulMV(powM(A, 4), u0), mulMV(Sm, mulMV(diagM([1.5 ** 4, 0.5 ** 4]), c))), 'A⁴u₀ = SΛ⁴c ✓', 7); },
@@ -1643,34 +1667,40 @@ async function sweep(tok, F, M, ax, aAx, a0, a1, ms, len = 1.6, k = 1) {
   const A = [[1, 1], [1, 0]], l1 = (1 + Math.sqrt(5)) / 2, l2 = (1 - Math.sqrt(5)) / 2;
   const fib = [0, 1]; for (let k = 2; k <= 40; k++) fib.push(fib[k - 1] + fib[k - 2]);
   const ctr = (f, t, y) => f(t, 0, y);
+  const cl = (f, t, y) => f(t, -1.2, y); // the derivation column sits left of A and its checks
   scene('l22-fib1', 'L22：Fibonacci 化成 uₖ₊₁ = Auₖ；λ = (1 ± √5)/2', [
-    async (tok, S) => { cap('例子：Fibonacci 數列', ''); S.cs = []; },
-    async (tok, S) => { cap('F₀ = 0、F₁ = 1', ''); for (let k = 0; k < 2; k++) { S.cs.push(cube(fib[k], COL.a, [0.7, 0.7, 0.7], -6 + k * 0.9, 6.0, 0, 2)); sm('F' + k, -6 + k * 0.9, 5.3); } },
-    async (tok, S) => { cap('下一個 = 前兩個相加', '0 + 1 = 1'); S.cs.push(cube(1, COL.a, [0.7, 0.7, 0.7], -6 + 2 * 0.9, 6.0, 0, 2)); sm('F2', -6 + 1.8, 5.3); },
-    async (tok, S) => { cap('1 + 1 = 2、1 + 2 = 3', '看起來像 1, 2, 3, 4…？'); for (let k = 3; k <= 4; k++) { cube(fib[k], COL.a, [0.7, 0.7, 0.7], -6 + k * 0.9, 6.0, 0, 2); sm('F' + k, -6 + k * 0.9, 5.3); } },
-    async (tok, S) => { cap('不是：5、8、13…', ''); for (let k = 5; k <= 7; k++) { cube(fib[k], COL.a, [0.7, 0.7, 0.7], -6 + k * 0.9, 6.0, 0, 2); sm('F' + k, -6 + k * 0.9, 5.3); } },
-    async (tok, S) => { cap('F₁₀₀ 是多少？', ''); hot('F₁₀₀ = ?', 2.0, 6.0); },
+    async (tok, S) => { cap('例子：Fibonacci 數列', ''); S.cs = []; S.fl = []; },
+    async (tok, S) => { cap('F₀ = 0、F₁ = 1', ''); for (let k = 0; k < 2; k++) S.fcube(k); },
+    async (tok, S) => { cap('下一個 = 前兩個相加', '0 + 1 = 1'); S.fcube(2); },
+    async (tok, S) => { cap('1 + 1 = 2、1 + 2 = 3', '看起來像 1, 2, 3, 4…？'); for (let k = 3; k <= 4; k++) S.fcube(k); },
+    async (tok, S) => { cap('不是：5、8、13…', ''); for (let k = 5; k <= 7; k++) S.fcube(k); },
+    async (tok, S) => { cap('F₁₀₀ 是多少？', ''); hot('F₁₀₀ = ?', 2.0, 5.0); },
     async (tok, S) => { cap('長得多快？一定在長', '不穩定：特徵值不會都小於 1'); },
     async (tok, S) => { cap('答案在特徵值裡：先找出矩陣', ''); },
-    async (tok, S) => { cap('Fₖ₊₂ = Fₖ₊₁ + Fₖ', '一條方程式、二階'); S.e1 = ctr(hd, 'Fₖ₊₂ = Fₖ₊₁ + Fₖ　（純量、二階）', 4.4); },
-    async (tok, S) => { cap('小技巧：令 uₖ = (Fₖ₊₁, Fₖ)', '把未知數變成向量'); ctr(pl, 'uₖ = (Fₖ₊₁, Fₖ)', 3.7); },
-    async (tok, S) => { cap('再加一條：Fₖ₊₁ = Fₖ₊₁', '得到 2×2 的一階系統'); ctr(pl, '補一條：Fₖ₊₁ = Fₖ₊₁', 3.0); },
+    // the numbers are done: they go grey (still readable) and the derivation starts below them
+    async (tok, S) => { S.cs.forEach((m) => P.tint(m, '#d8cfc0')); S.fl.forEach(ln); cap('Fₖ₊₂ = Fₖ₊₁ + Fₖ', '一條方程式、二階'); S.e1 = cl(hd, 'Fₖ₊₂ = Fₖ₊₁ + Fₖ　（純量、二階）', 3.8); },
+    async (tok, S) => { cap('小技巧：令 uₖ = (Fₖ₊₁, Fₖ)', '把未知數變成向量'); S.e2 = cl(pl, 'uₖ = (Fₖ₊₁, Fₖ)', 3.1); },
+    async (tok, S) => { cap('再加一條：Fₖ₊₁ = Fₖ₊₁', '得到 2×2 的一階系統'); S.e3 = cl(pl, '補一條：Fₖ₊₁ = Fₖ₊₁', 2.4); },
     async (tok, S) => {
-      cap('矩陣 A = [1 1; 1 0]', 'uₖ₊₁ = Auₖ'); S.g = mgrid(A, 3.6, 4.6, 0, { color: () => COL.b }); tag('A', 'ptr', 4.0, 5.3);
-      const u6 = mulMV(powM(A, 6), [1, 0]); ok(nearV(u6, [fib[7], fib[6]]), 'A⁶(1, 0) = (13, 8) ✓', 4.0, 3.1);
+      cap('矩陣 A = [1 1; 1 0]', 'uₖ₊₁ = Auₖ'); S.g = mgrid(A, 3.6, 4.0, 0, { color: () => COL.b }); tag('A', 'ptr', 4.0, 4.7);
+      const u6 = mulMV(powM(A, 6), [1, 0]); S.c6 = ok(nearV(u6, [fib[7], fib[6]]), 'A⁶(1, 0) = (13, 8) ✓', 4.0, 2.4);
     },
     async (tok, S) => { cap('二階純量 → 一階 2×2 系統', ''); },
-    async (tok, S) => { cap('A 對稱 → 特徵值是實數', '特徵向量互相垂直'); ctr(sm, 'A 對稱 → λ 實數、特徵向量垂直', 2.3); },
-    async (tok, S) => { cap('λ₁ + λ₂ = trace = 1', 'λ₁λ₂ = det = −1'); ctr(pl, 'λ₁ + λ₂ = trace = ' + fmt(trM(A)) + '　λ₁λ₂ = det = ' + fmt(det2(A)), 1.6); },
-    async (tok, S) => { cap('det(A − λI) = λ² − λ − 1', ''); ctr((t, x, y) => ok(nearV(charPoly(A), [1, -1, -1]), t, x, y), 'det(A − λI) = λ² − λ − 1 ✓', 0.9); },
-    async (tok, S) => { cap('跟遞迴式長得一樣', 'Fₖ₊₂ − Fₖ₊₁ − Fₖ = 0'); S.g.c.forEach((r) => r.forEach((m) => glow(m, GOLD))); ctr(note, 'λ² − λ − 1 ↔ Fₖ₊₂ − Fₖ₊₁ − Fₖ', 0.2); },
+    // new subject (the eigenvalues of A): the derivation rows make way, A stays
+    async (tok, S) => { [S.e1, S.e2, S.e3, S.c6].forEach(ln); cap('A 對稱 → 特徵值是實數', '特徵向量互相垂直'); cl(sm, 'A 對稱 → λ 實數、特徵向量垂直', 3.8); },
+    async (tok, S) => { cap('λ₁ + λ₂ = trace = 1', 'λ₁λ₂ = det = −1'); cl(pl, 'λ₁ + λ₂ = trace = ' + fmt(trM(A)) + '　λ₁λ₂ = det = ' + fmt(det2(A)), 3.1); },
+    async (tok, S) => { cap('det(A − λI) = λ² − λ − 1', ''); cl((t, x, y) => ok(nearV(charPoly(A), [1, -1, -1]), t, x, y), 'det(A − λI) = λ² − λ − 1 ✓', 2.4); },
+    async (tok, S) => { cap('跟遞迴式長得一樣', 'Fₖ₊₂ − Fₖ₊₁ − Fₖ = 0'); S.g.c.forEach((r) => r.forEach((m) => glow(m, GOLD))); cl(note, 'λ² − λ − 1 ↔ Fₖ₊₂ − Fₖ₊₁ − Fₖ', 1.7); },
     async (tok, S) => {
       S.g.clearGlow(); cap('二次公式：λ = (1 ± √5)/2', ''); const rs = roots(charPoly(A)).map((z) => z[0]).sort((a, b) => b - a);
       ok(near(rs[0], l1, 1e-6) && near(rs[1], l2, 1e-6), 'λ = (1 ± √5)/2 ✓', 4.0, 2.4);
     },
     async (tok, S) => { cap('加起來 1、乘起來 −1', ''); ok(near(l1 + l2, 1) && near(l1 * l2, -1), 'λ₁ + λ₂ = 1 ✓　λ₁λ₂ = −1 ✓', 4.0, 1.7); },
     async (tok, S) => { cap('λ₁ ≈ 1.618、λ₂ ≈ −0.618', ''); hot('λ₁ ≈ ' + l1.toFixed(3) + '、λ₂ ≈ ' + l2.toFixed(3), 4.0, 1.0); },
-  ]);
+  ], { init: async (tok, S) => {
+    // the numbers sit in one row under the caption; each cube keeps its Fk name right under it
+    S.fcube = (k) => { S.cs.push(cube(fib[k], COL.a, [0.7, 0.7, 0.7], -6 + k * 0.9, 5.0, 0, 2)); S.fl.push(sm('F' + k, -6 + k * 0.9, 4.35)); };
+  } });
 }
 // L22-8：Fibonacci 的成長率
 {
@@ -1678,32 +1708,36 @@ async function sweep(tok, F, M, ax, aAx, a0, a1, ms, len = 1.6, k = 1) {
   const fib = [0, 1]; for (let k = 2; k <= 100; k++) fib.push(fib[k - 1] + fib[k - 2]);
   scene('l22-fib2', 'L22：Fibonacci 的成長率 ≈ 1.618', [
     async (tok, S) => { cap('一個 λ > 1，一個 |λ| < 1', 'λ₁ ≈ 1.618、λ₂ ≈ −0.618'); hd('λ₁ ≈ 1.618 > 1　λ₂ ≈ −0.618', 3.2, 6.3); },
-    async (tok, S) => { cap('特徵值相異 → 可以對角化', ''); ok(Math.abs(l1 - l2) > 1e-9, '相異 → 可對角化 ✓', 3.2, 5.6); },
+    async (tok, S) => { cap('特徵值相異 → 可以對角化', ''); S.l2 = ok(Math.abs(l1 - l2) > 1e-9, '相異 → 可對角化 ✓', 3.2, 5.6); },
     async (tok, S) => {
-      cap('長多快？不是每步加倍', '5、8、13、21、34…');
-      for (let k = 1; k <= 9; k++) { const h = fib[k] * 0.12, x = -6.2 + k * 0.62; const m = lab.box(COL.a, [0.45, 1, 0.45]); m.scale.y = 0.001; lab.world.add(m); await anim(tok, 220, (t) => { m.scale.y = Math.max(0.001, h * t); m.position.set(x, h * t / 2, 0); }); sm(String(fib[k]), x, h + 0.3); }
+      cap('長多快？不是每步加倍', '5、8、13、21、34…'); S.bars = []; S.bl = [];
+      for (let k = 1; k <= 9; k++) { const h = fib[k] * 0.12, x = -6.2 + k * 0.62; const m = lab.box(COL.a, [0.45, 1, 0.45]); m.scale.y = 0.001; lab.world.add(m); S.bars.push(m); await anim(tok, 220, (t) => { m.scale.y = Math.max(0.001, h * t); m.position.set(x, h * t / 2, 0); }); S.bl.push(sm(String(fib[k]), x, h + 0.3)); }
     },
     async (tok, S) => { cap('什麼控制成長？特徵值', '大的那個：λ₁'); },
     async (tok, S) => {
-      cap('F₁₀₀ ≈ c₁·((1 + √5)/2)¹⁰⁰', '每一步大約乘 λ₁'); hot('F₁₀₀ ≈ c₁ · 1.618¹⁰⁰', 3.2, 4.8);
-      ok(near(fib[30] / fib[29], l1, 1e-9), 'F₃₀ / F₂₉ = ' + (fib[30] / fib[29]).toFixed(6) + ' ≈ λ₁ ✓', 3.2, 4.1);
+      cap('F₁₀₀ ≈ c₁·((1 + √5)/2)¹⁰⁰', '每一步大約乘 λ₁'); S.l3 = hot('F₁₀₀ ≈ c₁ · 1.618¹⁰⁰', 3.2, 4.8);
+      S.l4 = ok(near(fib[30] / fib[29], l1, 1e-9), 'F₃₀ / F₂₉ = ' + (fib[30] / fib[29]).toFixed(6) + ' ≈ λ₁ ✓', 3.2, 4.1);
     },
     async (tok, S) => { cap('u₀ 是特徵向量的組合', '乘 A 一百次：λ₁¹⁰⁰ 那一項接管'); },
-    async (tok, S) => { const t = Math.abs(l2) ** 100; cap('第二項幾乎是 0', '(−0.618)¹⁰⁰ 非常小'); ok(t < 1e-20, '|λ₂|¹⁰⁰ ≈ ' + t.toExponential(1) + ' ✓', 3.2, 3.4); },
+    async (tok, S) => { const t = Math.abs(l2) ** 100; cap('第二項幾乎是 0', '(−0.618)¹⁰⁰ 非常小'); S.l5 = ok(t < 1e-20, '|λ₂|¹⁰⁰ ≈ ' + t.toExponential(1) + ' ✓', 3.2, 3.4); },
     async (tok, S) => { cap('動態問題：A、A²、A³…隨時間演化', '靜態 Ax = b 看 pivot；動態看 λ'); },
-    async (tok, S) => { cap('補完特徵向量：A − λI', '[1 − λ 1; 1 −λ]'); pl('A − λI = [1−λ 1; 1 −λ]', 3.2, 2.7); },
+    // new subject (the eigenvectors): the growth picture goes grey without its numbers, its lines make way
+    async (tok, S) => {
+      S.bars.forEach((m) => P.tint(m, '#d8cfc0')); S.bl.forEach(ln); [S.l2, S.l3, S.l4, S.l5].forEach(ln);
+      cap('補完特徵向量：A − λI', '[1 − λ 1; 1 −λ]'); pl('A − λI = [1−λ 1; 1 −λ]', 3.2, 5.6);
+    },
     async (tok, S) => {
       cap('特徵向量 x = (λ, 1)', '第二列 λ − λ = 0；第一列用 λ² − λ − 1 = 0');
-      ok([l1, l2].every((l) => nearV(mulMV(addM(A, I2, -l), [l, 1]), [0, 0], 1e-12)), 'x₁ = (λ₁, 1)、x₂ = (λ₂, 1) ✓', 3.2, 2.0);
+      ok([l1, l2].every((l) => nearV(mulMV(addM(A, I2, -l), [l, 1]), [0, 0], 1e-12)), 'x₁ = (λ₁, 1)、x₂ = (λ₂, 1) ✓', 3.2, 4.9);
     },
-    async (tok, S) => { cap('u₀ = (F₁, F₀) = (1, 0)', ''); pl('u₀ = (F₁, F₀) = (1, 0)', 3.2, 1.3); },
+    async (tok, S) => { cap('u₀ = (F₁, F₀) = (1, 0)', ''); pl('u₀ = (F₁, F₀) = (1, 0)', 3.2, 4.2); },
     async (tok, S) => {
       cap('找 c₁、c₂ 組出 u₀', '（補充：老師沒算完）c₁ = 1/√5、c₂ = −1/√5'); const c1 = 1 / s5, c2 = -1 / s5;
       const okc = nearV(addv(scl([l1, 1], c1), scl([l2, 1], c2)), [1, 0], 1e-12) && Math.round((l1 ** 10 - l2 ** 10) / s5) === fib[10];
-      ok(okc, '補充：F_k = (λ₁ᵏ − λ₂ᵏ)/√5，F₁₀ = ' + fib[10] + ' ✓', 3.2, 0.6);
+      ok(okc, '補充：F_k = (λ₁ᵏ − λ₂ᵏ)/√5，F₁₀ = ' + fib[10] + ' ✓', 3.2, 3.5);
     },
     async (tok, S) => { cap('一階系統隨時間演化：先找 λ、x', '特徵值就告訴你：爆掉？趨近 0？'); },
-    async (tok, S) => { cap('再把 u₀ 展開、每個特徵向量各走各的', 'Aᵏ = SΛᵏS⁻¹'); note('Aᵏ = SΛᵏS⁻¹', -3.4, 6.3); },
+    async (tok, S) => { cap('再把 u₀ 展開、每個特徵向量各走各的', 'Aᵏ = SΛᵏS⁻¹'); note('Aᵏ = SΛᵏS⁻¹', -3.4, 4.6); },
   ]);
 }
 
@@ -1739,7 +1773,7 @@ scene('l23-eig', 'L23：例子 A = [−1 2; 1 −2]：λ = 0、−3', [
   async (tok, S) => { cap('trace = −3 → 另一個 λ = −3', '0 + λ₂ = −3'); row(ok, trM(A23) === -3, 'trace = −1 − 2 = −3 → λ₂ = −3 ✓', 5); },
   async (tok, S) => { cap('照算：det(A − λI) = λ² + 3λ', ''); row(ok, nearV(charPoly(A23), [1, 3, 0]), 'det(A − λI) = λ² + 3λ ✓', 6); },
   async (tok, S) => { const rs = roots(charPoly(A23)).map((z) => z[0]).sort((a, b) => b - a); cap('λ(λ + 3)：λ₁ = 0、λ₂ = −3', ''); row(ok, nearV(rs, [0, -3]), 'λ(λ + 3) = 0 → λ₁ = 0、λ₂ = −3 ✓', 7); },
-  async (tok, S) => { cap('e⁻³ᵗ 會消失、e⁰ᵗ = 1 不動', '→ 穩定狀態（steady state）'); S.nt = note('e⁻³ᵗ → 0；e⁰ᵗ = 1', 5.5, R(1)); },
+  async (tok, S) => { cap('e⁻³ᵗ 會消失、e⁰ᵗ = 1 不動', '→ 穩定狀態（steady state）'); S.nt = row(note, 'e⁻³ᵗ → 0；e⁰ᵗ = 1', 2); }, // in the board's own column (the t = 0 line above has faded by now)
   async (tok, S) => {
     cap('λ = 0 的特徵向量：null space', 'x₁ = (2, 1)'); S.F.line(X1, COL.d); S.F.arrow(X1, COL.d, 'x₁');
     wipe(S.n1); row(hot, 'λ₁ = 0、λ₂ = −3', 3); row(ok, nearV(mulMV(A23, X1), [0, 0]), 'x₁ = (2, 1)：Ax₁ = 0 ✓', 4);
@@ -1937,12 +1971,16 @@ function mtx(M, x, y, cls = '') {
   return pre(tag(cells.map((r) => '[ ' + r.map((s) => s.padStart(w)).join('  ') + ' ]').join('\n'), cls, x, y));
 }
 const gkill = (g) => g.c.flat().forEach((m) => kill(m));
-// left-aligned lines going down
-function stack(x, yTop, dy = 0.54, z = 0) {
-  const ls = [];
+// left-aligned lines going down. At most STACK_MAX lines stay: when a new one comes in, the oldest is
+// taken away and the rest move up (one subject at a time; the column never runs into the picture).
+// The lines are the subject itself, so keep() stops the kit's "old remark" fading from taking them early.
+const STACK_MAX = 5;
+function stack(x, yTop, dy = 0.54, z = 0, max = STACK_MAX) {
+  const ls = []; dy = Math.max(dy, 0.62); yTop = Math.min(yTop, 6.1); // the first line stays clear of the caption
+  const lay = () => ls.forEach((l, k) => l.position.set(x, yTop - k * dy, z));
   const S = {
     ls,
-    add(t, cls = '') { const l = tag(t, cls, x, yTop - ls.length * dy, z); l.center.set(0, 0.5); ls.push(l); return l; },
+    add(t, cls = '') { const l = P.keep(tag(t, cls, x, yTop - ls.length * dy, z)); l.center.set(0, 0.5); ls.push(l); while (ls.length > max) remove(ls.shift()); lay(); return l; },
     ok(b, t) { return S.add(b ? t : t.replace(/✓/g, '✘'), b ? 'good' : 'bad'); },
     clear() { ls.forEach((l) => remove(l)); ls.length = 0; },
   };
@@ -2010,7 +2048,8 @@ function plane2() {
   W.dropAll = (keep = []) => W.items.slice().forEach((it) => { if (!keep.includes(it)) W.drop(it); });
   return W;
 }
-const fslots = () => [slot(0, 0.4, 'ptr', -5.2), slot(0, 0.4, '', -6.1), slot(0, 0.4, '', 4.4)];
+// two remark lines behind the plane, far enough apart not to touch; the check line in front
+const fslots = () => [slot(0, 0.4, 'ptr', -4.9), slot(0, 0.4, '', -6.3), slot(0, 0.4, '', 4.4)];
 const crossZ = (a, b) => a[0] * b[1] - a[1] * b[0];
 // vertical 2D board: math (x, y) → world (ox + x·s, oy + y·s, 0)
 function board(ox, oy, s, xr, yr) {
@@ -2023,21 +2062,22 @@ function polyline(pts, color) { const l = new THREE.Line(new THREE.BufferGeometr
 
 // ═════════════════════════ MIT 18.06 L24（8MF3pz-oYHo）Markov Matrices; Fourier Series ═════════════════════════
 scene('l24-props', 'L24：Markov 矩陣的兩個性質', [
-  async (tok, S) => { cap('Markov 矩陣：隨手寫一個 3×3', 'A = [.1 .01 .3; .2 .99 .3; .7 0 .4]'); S.g = mgrid(MK, -5.6, 5.4, 0, { size: 0.8, gap: 1.0, color: () => COL.a }); hd('A', -4.6, 6.2); },
-  async (tok, S) => { cap('性質 1：每個元素 ≥ 0', '（機率不會是負的）'); S.g.c.flat().forEach((m) => glow(m, GREEN)); S.st = stack(-6.2, 1.8, 0.5); S.st.ok(MK.flat().every((v) => v >= 0), '性質 1：所有元素 ≥ 0 ✓'); },
+  async (tok, S) => { cap('Markov 矩陣：隨手寫一個 3×3', 'A = [.1 .01 .3; .2 .99 .3; .7 0 .4]'); S.g = mgrid(MK, -5.6, 5.5, 0, { size: 0.7, gap: 0.86, color: () => COL.a }); hd('A', -4.74, 6.25); },
+  async (tok, S) => { cap('性質 1：每個元素 ≥ 0', '（機率不會是負的）'); S.g.c.flat().forEach((m) => glow(m, GREEN)); S.st = stack(-6.2, 2.35, 0.62, 0, 4); S.st.ok(MK.flat().every((v) => v >= 0), '性質 1：所有元素 ≥ 0 ✓'); },
   async (tok, S) => {
     S.g.clearGlow(); S.A2 = mm(MK, MK);
     cap('平方之後元素還是 ≥ 0', '我們關心的是冪次 Aᵏ');
-    S.g2 = mgrid(S.A2.map((r) => r.map((v) => Math.round(v * 100) / 100)), 1.4, 5.4, 0, { size: 0.8, gap: 1.0, color: () => COL.c }); hd('A²（四捨五入）', 2.4, 6.2);
+    S.g2 = mgrid(S.A2.map((r) => r.map((v) => Math.round(v * 100) / 100)), 1.4, 5.5, 0, { size: 0.7, gap: 0.86, color: () => COL.c }); hd('A²（四捨五入）', 2.26, 6.25);
     S.st.ok(S.A2.flat().every((v) => v >= -1e-12), 'A² 的元素也都 ≥ 0 ✓');
   },
   async (tok, S) => {
-    cap('性質 2：每一行加起來 = 1', '0.1 + 0.2 + 0.7 = 1'); const cs = colSums(MK);
-    for (let j = 0; j < 3; j++) { S.g.col(j, GOLD); cube('Σ ' + ff(cs[j]), COL.g, [0.9, 0.45, 0.3], S.g.xs[j], 2.5, 0, 1.2); await wt(tok, 400); S.g.clearGlow(); }
+    cap('性質 2：每一行加起來 = 1', '0.1 + 0.2 + 0.7 = 1'); const cs = colSums(MK); S.sums = [];
+    for (let j = 0; j < 3; j++) { S.g.col(j, GOLD); S.sums.push(cube('Σ ' + ff(cs[j]), COL.g, [0.8, 0.42, 0.3], S.g.xs[j], 2.95, 0, 1.2)); await wt(tok, 400); S.g.clearGlow(); }
     S.st.ok(cs.every((s) => near(s, 1)), '性質 2：每一行和 = 1 ✓');
   },
-  async (tok, S) => { cap('A² 的每一行也加起來 = 1', 'A 的冪次全都是 Markov 矩陣'); const cs = colSums(S.A2); cs.forEach((s, j) => cube('Σ ' + ff(s), COL.g, [0.9, 0.45, 0.3], S.g2.xs[j], 2.5, 0, 1.2)); S.st.ok(cs.every((s) => near(s, 1)), 'A² 的每一行和也 = 1 ✓'); },
-  async (tok, S) => { cap('要看特徵值、特徵向量和穩定狀態', 'u_k = Aᵏu₀：一直乘下去會停在哪？'); S.st.add('問題：u_k = Aᵏu₀ 最後停在哪？（steady state）', 'ptr'); },
+  async (tok, S) => { cap('A² 的每一行也加起來 = 1', 'A 的冪次全都是 Markov 矩陣'); const cs = colSums(S.A2); cs.forEach((s, j) => S.sums.push(cube('Σ ' + ff(s), COL.g, [0.8, 0.42, 0.3], S.g2.xs[j], 2.95, 0, 1.2))); S.st.ok(cs.every((s) => near(s, 1)), 'A² 的每一行和也 = 1 ✓'); },
+  // new subject (eigenvalues and the steady state): the column sums and the property lines make way
+  async (tok, S) => { S.sums.forEach((m) => kill(m)); S.st.clear(); S.st = stack(-6.2, 2.9, 0.62, 0, 4); cap('要看特徵值、特徵向量和穩定狀態', 'u_k = Aᵏu₀：一直乘下去會停在哪？'); S.st.add('問題：u_k = Aᵏu₀ 最後停在哪？（steady state）', 'ptr'); },
   async (tok, S) => { cap('回想微分方程：λ = 0 給穩定狀態', 'e⁰ᵗ = 1，一直不變'); S.st.add('微分方程：λ = 0 → e⁰ᵗ = 1 不變 → 穩定'); },
   async (tok, S) => { cap('矩陣冪次：λ = 0 那一份一步就消失', '0ᵏ = 0（k ≥ 1）'); S.st.add('冪次 Aᵏ：λ = 0 → 0ᵏ = 0，一步就消失', 'bad'); },
   async (tok, S) => { cap('冪次裡真正重要的是 λ = 1', '1ᵏ = 1 永遠留著 → 穩定狀態 = λ = 1 的特徵向量'); S.st.add('λ = 1 → 1ᵏ = 1 → 穩定狀態 = 它的特徵向量', 'ptr alt'); },
@@ -2059,20 +2099,20 @@ scene('l24-keys', 'L24：λ = 1 與其他 |λ| < 1', [
   async (tok, S) => {
     cap('λ₁ = 1；其他 |λ| < 1 → λᵏ → 0', '那些項隨 k 變大而消失');
     const ls = [1, ...S.oth], xs = [-5.6, -4.6, -3.6];
-    const bs = ls.map((l, i) => { const m = lab.box([COL.d, COL.b, COL.c][i], [0.6, 1, 0.6]); m.position.set(xs[i], 0.5, 0); lab.world.add(m); return m; });
-    ['1ᵏ', '|λ₂|ᵏ', '|λ₃|ᵏ'].forEach((t, i) => sm(t, xs[i], -0.35));
-    const kl = hot('k = 0', -4.6, 3.0);
-    const set = (k) => ls.forEach((l, i) => { const h = Math.max(0.02, Math.pow(Math.abs(l), k) * 2.2); bs[i].scale.y = h; bs[i].position.y = h / 2; });
+    const B0 = 0.6, bs = ls.map((l, i) => { const m = lab.box([COL.d, COL.b, COL.c][i], [0.6, 1, 0.6]); m.position.set(xs[i], B0 + 0.5, 0); lab.world.add(m); return m; });
+    ['1ᵏ', '|λ₂|ᵏ', '|λ₃|ᵏ'].forEach((t, i) => sm(t, xs[i], B0 - 0.35));
+    const kl = hot('k = 0', -4.6, 3.4);
+    const set = (k) => ls.forEach((l, i) => { const h = Math.max(0.02, Math.pow(Math.abs(l), k) * 2.2); bs[i].scale.y = h; bs[i].position.y = B0 + h / 2; });
     set(0); await anim(tok, 2200, (u) => { set(u * 12); txt(kl, 'k = ' + Math.round(u * 12)); });
   },
   async (tok, S) => { cap('剩下的就是穩定狀態 c₁x₁', 'u₀ 裡「x₁ 的那一份」'); S.st.add('u_∞ = c₁x₁', 'ptr alt'); },
   async (tok, S) => {
     const x1 = eigInfo(MK).groups.find((g) => near(g.re, 1, 1e-6)).vecs[0], sx = x1.reduce((a, b) => a + b, 0), xn = x1.map((v) => v / sx);
     cap('特徵向量 x₁ 的分量全都 ≥ 0', '從平均分配開始一直乘 A：收斂到 x₁');
-    const xs = [3.4, 4.8, 6.2], H = 1.5;
-    const bs = xs.map((x, i) => { const m = lab.box([COL.b, COL.a, COL.c][i], [1.0, 1, 1.0]); m.position.set(x, 0.5, 0); lab.world.add(m); sm('狀態 ' + (i + 1), x, -0.35); return m; });
+    const xs = [2.6, 4.0, 5.4], H = 1.5, B0 = 0.6;
+    const bs = xs.map((x, i) => { const m = lab.box([COL.b, COL.a, COL.c][i], [1.0, 1, 1.0]); m.position.set(x, B0 + 0.5, 0); lab.world.add(m); sm('狀態 ' + (i + 1), x, B0 - 0.35); return m; });
     const ls = xs.map((x) => sm('', x, 1));
-    const show = (v) => v.forEach((p, i) => { const h = Math.max(0.02, p * H); bs[i].scale.y = h; bs[i].position.y = h / 2; ls[i].position.y = h + 0.3; txt(ls[i], nf(p * 100, 1) + '%'); });
+    const show = (v) => v.forEach((p, i) => { const h = Math.max(0.02, p * H); bs[i].scale.y = h; bs[i].position.y = B0 + h / 2; ls[i].position.y = B0 + h + 0.3; txt(ls[i], nf(p * 100, 1) + '%'); });
     const us = [[1 / 3, 1 / 3, 1 / 3]]; for (let k = 0; k < 20; k++) us.push(mulMV(MK, us[k]));
     await anim(tok, 2400, (u) => { const t = u * 20, k = Math.min(19, Math.floor(t)), f = t - k; show(us[k].map((v, i) => v + (us[k + 1][i] - v) * f)); });
     const okx = x1.every((v) => v * sx >= -1e-9) && nearV(xn, [0.6, 33, 0.7].map((v) => v / 34.3), 1e-6) && nearV(us[20], xn, 1e-2);
@@ -2103,52 +2143,53 @@ scene('l24-why', 'L24：為什麼 λ = 1：A − I 是奇異的', [
 ]);
 
 scene('l24-trans', 'L24：A 與 Aᵀ 特徵值相同；解出 x₁', [
-  async (tok, S) => { cap('A 和 Aᵀ 的特徵值有什麼關係？', '答案：一樣'); S.st = stack(-6.2, 6.7, 0.46); S.st.add('A 和 Aᵀ 的特徵值相同', 'ptr alt'); },
+  async (tok, S) => { cap('A 和 Aᵀ 的特徵值有什麼關係？', '答案：一樣'); S.st = stack(-6.2, 6.3, 0.46); S.st.add('A 和 Aᵀ 的特徵值相同', 'ptr alt'); },
   async (tok, S) => { cap('A 的特徵值：det(A − λI) = 0', ''); S.st.add('det(A − λI) = 0'); },
   async (tok, S) => { cap('行列式性質 10：det Mᵀ = det M', '把整個矩陣轉置'); S.st.add('⇔ det((A − λI)ᵀ) = 0　（性質 10）'); },
   async (tok, S) => { const a = charPoly(MK), b = charPoly(T(MK)); cap('(λI)ᵀ 還是 λI', '⇒ det(Aᵀ − λI) = 0：同一組 λ'); S.st.add('⇔ det(Aᵀ − λI) = 0'); S.st.ok(nearV(a, b, 1e-12), 'A、Aᵀ 的特徵多項式完全相同 ✓'); },
   async (tok, S) => { const r = mulMV(T(MK), [1, 1, 1]); cap('Aᵀ 的 λ = 1 特徵向量是 (1, 1, 1)', 'A 的 λ = 1 特徵向量是另一個（null space ≠ left null space）'); S.st.ok(nearV(r, [1, 1, 1], 1e-12), 'Aᵀ(1, 1, 1) = (1, 1, 1) ✓；A 的 x₁ 要另外找'); },
   async (tok, S) => {
     S.st.clear(); S.st.add('A、Aᵀ 特徵值相同；Aᵀ 的 λ = 1 特徵向量是 (1, 1, 1)', 'ptr alt');
-    S.AI = shift(MK, 1); S.g = mgrid(S.AI.map((r) => r.map((v) => Math.round(v * 100) / 100)), -6.4, 1.8, 0, { size: 0.68, gap: 0.82, widths: [0.92, 0.82, 0.92], color: () => '#e7dcc8' }); sm('A − I', -5.2, 2.45);
-    S.x = [cube('0.6', COL.d, [0.68, 0.68, 0.3], -3.0, 1.8, 0, 1), cube('?', COL.d, [0.68, 0.68, 0.3], -3.0, 0.98, 0, 1), cube('0.7', COL.d, [0.68, 0.68, 0.3], -3.0, 0.16, 0, 1)]; sm('x₁', -3.0, 2.45);
+    S.AI = shift(MK, 1); S.g = mgrid(S.AI.map((r) => r.map((v) => Math.round(v * 100) / 100)), -6.4, 4.8, 0, { size: 0.68, gap: 0.82, widths: [0.92, 0.82, 0.92], color: () => '#e7dcc8' }); sm('A − I', -5.2, 2.4);
+    S.x = [cube('0.6', COL.d, [0.68, 0.68, 0.3], -3.0, 4.8, 0, 1), cube('?', COL.d, [0.68, 0.68, 0.3], -3.0, 3.98, 0, 1), cube('0.7', COL.d, [0.68, 0.68, 0.3], -3.0, 3.16, 0, 1)]; sm('x₁', -3.0, 2.4);
     const r3 = S.AI[2][0] * 0.6 + S.AI[2][2] * 0.7;
     cap('先放 0.6 和 0.7：第 3 列就成立', '0.7·0.6 + 0·x₂ − 0.6·0.7 = 0');
-    S.c3 = slot(-2.3, 0.16).ok(near(r3, 0, 1e-12) && S.AI[2][1] === 0, '第 3 列：0.42 − 0.42 = 0 ✓'); S.c3.center.set(0, 0.5);
+    S.c3 = slot(-2.3, 3.16).ok(near(r3, 0, 1e-12) && S.AI[2][1] === 0, '第 3 列：0.42 − 0.42 = 0 ✓'); S.c3.center.set(0, 0.5);
   },
   async (tok, S) => {
     const x2 = -(S.AI[0][0] * 0.6 + S.AI[0][2] * 0.7) / S.AI[0][1]; S.x2 = x2;
     cap('第 1 列：−0.54 + 0.01·x₂ + 0.21 = 0', '−0.33 + 0.01·x₂ = 0 → x₂ = 33');
     relabel(S.x[1], fmt(Math.round(x2 * 1e6) / 1e6)); glow(S.x[1], GOLD);
-    const l = slot(-2.3, 1.8).ok(near(x2, 33, 1e-9), '第 1 列：x₂ = 0.33 / 0.01 = 33 ✓'); l.center.set(0, 0.5);
+    const l = slot(-2.3, 4.8).ok(near(x2, 33, 1e-9), '第 1 列：x₂ = 0.33 / 0.01 = 33 ✓'); l.center.set(0, 0.5);
   },
   async (tok, S) => {
     const x = [0.6, S.x2, 0.7], r = mulMV(S.AI, x);
     cap('x₁ = (0.6, 33, 0.7)：分量全是正的', '跟理論預測的一樣');
-    const l = slot(-2.3, 0.98).ok(r.every((v) => near(v, 0, 1e-9)), '第 2 列也 = 0 ✓'); l.center.set(0, 0.5);
+    const l = slot(-2.3, 3.98).ok(r.every((v) => near(v, 0, 1e-9)), '第 2 列也 = 0 ✓'); l.center.set(0, 0.5);
     S.st.ok(r.every((v) => near(v, 0, 1e-9)) && x.every((v) => v > 0), '(A − I)(0.6, 33, 0.7) = 0 ✓，分量都 > 0');
   },
 ]);
 
 scene('l24-calmass', 'L24：加州／麻州人口流動', [
-  async (tok, S) => { cap('Markov 矩陣從哪裡來？', 'uₖ₊₁ = A uₖ，A 是 Markov'); S.s = [slot(-3.3, 5.8, 'ptr'), slot(-3.3, 5.1), slot(-3.3, 4.4), slot(-3.3, 3.7)]; S.s[0].set('uₖ₊₁ = A uₖ，A 是 Markov 矩陣'); },
+  async (tok, S) => { frameHold(-6.4, -0.2, -0.4, 5.8, 6.4, 1.2); cap('Markov 矩陣從哪裡來？', 'uₖ₊₁ = A uₖ，A 是 Markov'); S.s = [slot(-3.3, 5.8, 'ptr'), slot(-3.3, 5.1), slot(-3.3, 4.4), slot(-3.3, 3.7)]; S.s[0].set('uₖ₊₁ = A uₖ，A 是 Markov 矩陣'); },
   async (tok, S) => {
     cap('兩個狀態：California、Massachusetts', '看兩州的人口');
-    S.H = 0.0032; const mk = (x, c) => { const m = lab.box(c, [1.5, 1, 1.3]); m.position.set(x, 0.01, 0); m.scale.y = 0.02; lab.world.add(m); return m; };
-    S.bc = mk(1.6, COL.b); S.bm = mk(4.4, COL.a); sm('California', 1.6, -0.35, 0.8); sm('Massachusetts', 4.4, -0.35, 0.8);
-    S.lc = sm('', 1.6, 0.4, 0.8); S.lm = sm('', 4.4, 0.4, 0.8);
-    S.show = (u) => { [[S.bc, S.lc], [S.bm, S.lm]].forEach(([b, l], i) => { const h = Math.max(0.02, u[i] * S.H); b.scale.y = h; b.position.y = h / 2; l.position.y = h + 0.35; txt(l, String(Math.round(u[i]))); }); S.u = u.slice(); };
+    S.H = 0.0026; const mk = (x, c) => { const m = lab.box(c, [1.5, 1, 1.3]); m.position.set(x, 0.01, 0); m.scale.y = 0.02; lab.world.add(m); return m; };
+    // the two states stand on y = 0.6 so their names stay above the bottom line
+    S.bc = mk(1.6, COL.b); S.bm = mk(4.4, COL.a); sm('California', 1.6, 0.25, 0.8); sm('Massachusetts', 4.4, 0.25, 0.8);
+    S.lc = sm('', 1.6, 1.0, 0.8); S.lm = sm('', 4.4, 1.0, 0.8);
+    S.show = (u) => { [[S.bc, S.lc], [S.bm, S.lm]].forEach(([b, l], i) => { const h = Math.max(0.02, u[i] * S.H); b.scale.y = h; b.position.y = 0.6 + h / 2; l.position.y = 0.6 + h + 0.35; txt(l, String(Math.round(u[i]))); }); S.u = u.slice(); };
   },
   async (tok, S) => { cap('元素是「搬家的比例」', '不會是負的；每行加起來 = 1：沒有人憑空消失或多出來'); S.s[1].set('比例 ≥ 0、每行和 = 1 → 總人口守恆'); },
   async (tok, S) => {
     cap('加州：90% 留下、10% 搬去麻州', '第 1 行 = (0.9, 0.1)，加起來 = 1');
-    S.g = mgrid([[0.9, '?'], [0.1, '?']], 2.1, 6.3, 0, { size: 0.7, gap: 0.9, color: () => '#e7dcc8' }); hd('A', 1.2, 5.9); S.g.col(0, GOLD);
-    sm('90% 留下', 1.6, 4.3); sm('10% →', 3.0, 3.9);
+    S.g = mgrid([[0.9, '?'], [0.1, '?']], 2.1, 5.9, 0, { size: 0.7, gap: 0.9, color: () => '#e7dcc8' }); hd('A', 1.2, 5.5); S.g.col(0, GOLD);
+    S.ann = [sm('90% 留下', 1.6, 4.25), sm('10% →', 3.0, 3.9)];
   },
   async (tok, S) => {
     S.A = [[0.9, 0.2], [0.1, 0.8]]; S.g.clearGlow(); S.g.set(0, 1, 0.2); S.g.set(1, 1, 0.8); S.g.col(1, GOLD);
     cap('麻州：80% 留下、20% 搬去加州', '第 2 行 = (0.2, 0.8)，加起來 = 1');
-    sm('80% 留下', 4.4, 4.3); sm('← 20%', 3.0, 3.5);
+    S.ann.push(sm('80% 留下', 4.4, 4.25), sm('← 20%', 3.0, 3.55));
     S.s[2].ok(colSums(S.A).every((s) => near(s, 1)) && S.A.flat().every((v) => v >= 0), 'A = [.9 .2; .1 .8]：Markov ✓');
   },
   async (tok, S) => { S.g.clearGlow(); cap('一開始：加州 0 人、麻州 1000 人', 'u₀ = (0, 1000)'); S.show([0, 0]); await anim(tok, 1000, (u) => S.show([0, 1000 * u])); S.s[3].set('u₀ = (0, 1000)', 'ptr alt'); },
@@ -2156,7 +2197,7 @@ scene('l24-calmass', 'L24：加州／麻州人口流動', [
   async (tok, S) => {
     S.flow = async (to) => {
       const from = S.u.slice(), d1 = dotBall(COL.b, 0.14), d2 = dotBall(COL.a, 0.14);
-      await anim(tok, 1200, (t) => { S.show(from.map((v, i) => v + (to[i] - v) * t)); d1.position.set(1.6 + 2.8 * t, 3.4 + Math.sin(t * Math.PI) * 0.6, 0.8); d2.position.set(4.4 - 2.8 * t, 3.0 + Math.sin(t * Math.PI) * 0.4, 0.8); });
+      await anim(tok, 1200, (t) => { S.show(from.map((v, i) => v + (to[i] - v) * t)); d1.position.set(1.6 + 2.8 * t, 4.2 + Math.sin(t * Math.PI) * 0.6, 0.8); d2.position.set(4.4 - 2.8 * t, 3.8 + Math.sin(t * Math.PI) * 0.4, 0.8); });
       kill(d1); kill(d2);
     };
     const u1 = mulMV(S.A, [0, 1000]); cap('一年後：乘一次 A', '1000 × 第 2 行 = (200, 800)');
@@ -2167,7 +2208,7 @@ scene('l24-calmass', 'L24：加州／麻州人口流動', [
     await S.flow(u2); S.s[2].ok(nearV(u2, [340, 660]) && near(u2[0] + u2[1], 1000), 'u₂ = (340, 660)，總和 1000 ✓');
   },
   async (tok, S) => {
-    S.s.forEach((l) => l.set(' ')); S.st = stack(-6.3, 6.0, 0.52); const ev = realEigs(S.A);
+    S.s.forEach((l) => l.set(' ')); S.ann.forEach((l) => remove(l)); S.st = stack(-6.3, 6.0, 0.52); const ev = realEigs(S.A);
     cap('特徵值：λ₁ = 1（Markov 一定有）', 'trace = 1.7 → λ₂ = 1.7 − 1 = 0.7');
     S.st.add('λ₁ = 1；λ₂ = trace − 1 = 1.7 − 1 = 0.7', 'ptr');
     S.st.ok(nearV(ev, [1, 0.7], 1e-9) && near(det2(S.A), 0.7), 'det = 0.72 − 0.02 = 0.7 = λ₁λ₂ ✓');
@@ -2188,7 +2229,7 @@ scene('l24-calmass', 'L24：加州／麻州人口流動', [
   async (tok, S) => {
     cap('0.7ᵏ 那一項逐漸消失', '從 (0, 1000) 一路靠近 (667, 333)');
     const uk = (k) => [S.c[0] * 2 - S.c[1] * Math.pow(0.7, k), S.c[0] + S.c[1] * Math.pow(0.7, k)];
-    const kl = hot('k = 0', 3.0, 5.0); S.show(uk(0));
+    const kl = hot('k = 0', 3.0, 4.3); S.show(uk(0));
     await anim(tok, 2400, (t) => { const k = t * 15; S.show(uk(k)); txt(kl, 'k = ' + Math.round(k)); });
     S.st.ok(nearV(uk(0), [0, 1000], 1e-9), '0.7ᵏ → 0：u_k → (1000/3)(2, 1) ✓');
   },
@@ -2199,7 +2240,7 @@ scene('l24-ortho', 'L24：標準正交基底展開 xᵢ = qᵢᵀv', [
   async (tok, S) => {
     cap('標準正交基底 q₁, …, qₙ', 'qᵢᵀqⱼ = 0（i ≠ j）、qᵢᵀqᵢ = 1');
     S.Sp = space3(2.6, 2.4, 0, 1, 2.4); const R = rodrigues([1, 2, 2], 0.7); S.q = [0, 1, 2].map((j) => R.map((r) => r[j]));
-    S.qa = S.q.map((v, i) => S.Sp.arrow(v, [COL.d, COL.r, COL.a][i], 'q' + '₁₂₃'[i])); S.st = stack(-6.6, 6.6, 0.5);
+    S.qa = S.q.map((v, i) => S.Sp.arrow(v, [COL.d, COL.r, COL.a][i], 'q' + '₁₂₃'[i])); S.st = stack(-6.6, 5.5, 0.8);
   },
   async (tok, S) => { S.v = [1.2, 0.8, 1.6]; S.Sp.arrow(S.v, COL.k, 'v'); cap('任何向量 v 都能用這組基底展開', 'v = x₁q₁ + x₂q₂ + x₃q₃'); S.st.add('v = x₁q₁ + x₂q₂ + x₃q₃', 'ptr'); },
   async (tok, S) => { cap('x₁ 是多少？', '基底是標準正交 → 應該有很簡單的公式'); S.st.add('x₁ = ?', 'ptr alt'); },
@@ -2289,7 +2330,7 @@ scene('qr-scope', 'L24b：小考 2 的範圍', [
 
 const QA = [2, 1, 2], QP = mscl([[4, 2, 4], [2, 1, 2], [4, 2, 4]], 1 / 9);
 scene('qr-proj', 'L24b：投影到直線 a = (2, 1, 2)', [
-  async (tok, S) => { cap('第 1 題：a = (2, 1, 2)', '求投影到「通過 a 的直線」的投影矩陣 P'); S.Sp = space3(0, 1.8, 0, 0.75, 2.6); S.line = S.Sp.line(QA, COL.g, 3.4); S.a = S.Sp.arrow(QA, COL.g, 'a'); S.st = stack(-6.4, 6.4, 0.52); },
+  async (tok, S) => { cap('第 1 題：a = (2, 1, 2)', '求投影到「通過 a 的直線」的投影矩陣 P'); S.Sp = space3(0, 1.8, 0, 0.75, 2.6); S.line = S.Sp.line(QA, COL.g, 3.4); S.a = S.Sp.arrow(QA, COL.g, 'a'); S.st = stack(-6.4, 5.5, 0.8); },
   async (tok, S) => {
     const b = [1, 2, 0], p = scl(QA, dot(QA, b) / dot(QA, QA)); cap('把任何 b 投影到這條線上', '（示意 b = (1, 2, 0)）P 就是「乘上 b 就得到投影」的矩陣');
     S.Sp.arrow(b, COL.k, 'b（示意）'); const pa = S.Sp.arrow(scl(p, 0.001), COL.b, 'p'); await anim(tok, 1000, (t) => S.Sp.set(pa, scl(p, t))); rod(COL.r, 0.02).setW(S.Sp.w(b), S.Sp.w(p));
@@ -2313,7 +2354,7 @@ scene('qr-proj', 'L24b：投影到直線 a = (2, 1, 2)', [
 ], { cam: [[3.5, 5.0, 10.5], [0, 2.4, 0]] });
 
 scene('qr-iter', 'L24b：uₖ₊₁ = P uₖ', [
-  async (tok, S) => { cap('解 uₖ₊₁ = P uₖ，u₀ = (9, 9, 0)', '求 u_k'); S.Sp = space3(3.4, 0.8, 0, 0.28, 3.4); S.Sp.line(QA, COL.g, 12); S.Sp.arrow(QA, COL.g, 'a'); S.Sp.arrow([9, 9, 0], COL.k, 'u₀'); S.st = stack(-6.4, 6.4, 0.52); },
+  async (tok, S) => { cap('解 uₖ₊₁ = P uₖ，u₀ = (9, 9, 0)', '求 u_k'); S.Sp = space3(3.4, 0.8, 0, 0.28, 3.4); S.Sp.line(QA, COL.g, 12); S.Sp.arrow(QA, COL.g, 'a'); S.Sp.arrow([9, 9, 0], COL.k, 'u₀'); S.st = stack(-6.4, 4.9, 0.8); },
   async (tok, S) => {
     const u1 = mulMV(QP, [9, 9, 0]); S.u1 = u1; cap('u₁ = P u₀ = a (aᵀu₀) / (aᵀa)', 'aᵀu₀ = 18 + 9 = 27、aᵀa = 9 → 3a = (6, 3, 6)');
     const a = S.Sp.arrow(scl(u1, 0.001), COL.b, 'u₁'); await anim(tok, 1200, (t) => S.Sp.set(a, scl(u1, t))); rod(COL.r, 0.02).setW(S.Sp.w([9, 9, 0]), S.Sp.w(u1));
@@ -2354,14 +2395,15 @@ scene('qr-lsq', 'L24b：最小平方——過原點的直線', [
 ]);
 
 scene('qr-gs', 'L24b：Gram–Schmidt：a₁ = (1, 2, 3)、a₂ = (1, 1, 1)', [
-  async (tok, S) => { cap('Gram–Schmidt：兩個向量變正交', 'a₁ = (1, 2, 3)、a₂ = (1, 1, 1)：在它們張成的平面裡找兩個正交向量'); S.Sp = space3(4.0, 0.8, 0, 0.62, 2.6); S.a1 = S.Sp.arrow([1, 2, 3], COL.d, 'a₁'); S.Sp.arrow([1, 1, 1], COL.a, 'a₂'); S.st = stack(-6.4, 6.4, 0.52); },
+  async (tok, S) => { cap('Gram–Schmidt：兩個向量變正交', 'a₁ = (1, 2, 3)、a₂ = (1, 1, 1)：在它們張成的平面裡找兩個正交向量'); S.Sp = space3(4.0, 0.8, 0, 0.62, 2.6); S.a1 = S.Sp.arrow([1, 2, 3], COL.d, 'a₁'); S.Sp.arrow([1, 1, 1], COL.a, 'a₂'); S.st = stack(-6.4, 5.5, 0.8); },
   async (tok, S) => { cap('兩個向量張成一個平面 = A 的行空間', '要找這個平面的正交基底'); S.Sp.plane([1, 2, 3], [1, 1, 1], COL.c, 0.16); S.st.add('平面 = C(A)，A = [a₁ a₂]'); },
   async (tok, S) => { S.a1.glow(GOLD); cap('答案不只一個；Gram–Schmidt：第一個留著', '先保留 a₁'); S.st.add('第一個向量：a₁ 不動'); },
   async (tok, S) => { cap('第二個：a₂ 減掉它在 a₁ 方向的投影', 'B = a₂ − (a₁ᵀa₂ / a₁ᵀa₁) a₁'); S.st.add('B = a₂ − (a₁ᵀa₂ / a₁ᵀa₁) a₁', 'ptr'); },
   async (tok, S) => {
     const a1 = [1, 2, 3], p = scl(a1, 6 / 14), Bv = [1, 1, 1].map((v, i) => v - p[i]); S.Bv = Bv;
     cap('a₂ 投影到 a₁ 的直線上：那是已經有的方向', '把它減掉，留下垂直的部分');
-    const pa = S.Sp.arrow(scl(p, 0.001), COL.g, '投影'); await anim(tok, 900, (t) => S.Sp.set(pa, scl(p, t)));
+    // its name beside its middle (the tip is crowded by a₁, a₂)
+    const pa = S.Sp.arrow(scl(p, 0.001), COL.g, '投影'); await anim(tok, 900, (t) => { S.Sp.set(pa, scl(p, t)); pa.lbl.position.copy(S.Sp.w(scl(p, 0.5 * t))).add(V3(-0.6, 0, 0)); });
     rod(COL.r, 0.02).setW(S.Sp.w(p), S.Sp.w([1, 1, 1]));
     const ba = S.Sp.arrow(scl(Bv, 0.001), COL.b, 'B'); await anim(tok, 900, (t) => S.Sp.set(ba, scl(Bv, t)));
   },
@@ -2428,7 +2470,7 @@ scene('qr-tri', 'L24b：三對角全 1 矩陣的行列式', [
 
 const A92 = (n) => Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (j === i + 1 ? i + 1 : i === j + 1 ? j + 1 : 0)));
 scene('qr-92', 'L24b：1992 期末考的矩陣家族', [
-  async (tok, S) => { cap('1992 期末考：一個矩陣家族', 'A₄ = [0 1 0 0; 1 0 2 0; 0 2 0 3; 0 0 3 0]'); S.g4 = mgrid(A92(4), -6.2, 6.2, 0, { size: 0.55, gap: 0.66, color: () => COL.a }); hd('A₄', -5.2, 6.8); S.st = stack(-6.2, 3.3, 0.5); },
+  async (tok, S) => { cap('1992 期末考：一個矩陣家族', 'A₄ = [0 1 0 0; 1 0 2 0; 0 2 0 3; 0 0 3 0]'); frameHold(-6.6, 0.6, -0.3, 4.2, 7.0, 0.3); S.g4 = mgrid(A92(4), -6.2, 6.2, 0, { size: 0.55, gap: 0.66, color: () => COL.a }); hd('A₄', -5.2, 6.8); S.st = stack(-6.2, 3.3, 0.5, 0, 3); },
   async (tok, S) => { cap('它是對稱的：A₄ = A₄ᵀ', '對角線全 0，旁邊是 1, 2, 3'); S.st.ok(nearM(A92(4), T(A92(4))), 'A₄ = A₄ᵀ ✓（對稱）'); },
   async (tok, S) => { cap('求 C(A₃) 的投影矩陣', 'A₃ = [0 1 0; 1 0 2; 0 2 0]'); S.g3 = mgrid(A92(3), 1.6, 6.2, 0, { size: 0.55, gap: 0.66, color: () => COL.c }); hd('A₃', 2.3, 6.8); },
   async (tok, S) => { const A = A92(3); cap('A₃ 奇異：第 3 行 = 2 × 第 1 行', '（也可以算行列式 = 0）'); S.g3.col(2, GOLD); S.g3.col(0, GOLD); S.st.ok(near(detN(A), 0) && A.every((r) => r[2] === 2 * r[0]), '第 3 行 = 2 × 第 1 行、det A₃ = 0 ✓'); },
@@ -2438,11 +2480,11 @@ scene('qr-92', 'L24b：1992 期末考的矩陣家族', [
     S.st.add('P = (1/5)[1 0 2; 0 5 0; 2 0 4]（老師沒算完，畫面補算）');
     S.st.ok(nearM(mm(Pm, Pm), Pm, 1e-12) && nearM(mscl(Pm, 5), [[1, 0, 2], [0, 5, 0], [2, 0, 4]], 1e-9), 'P² = P ✓');
   },
-  async (tok, S) => { S.st.clear(); S.st = stack(-6.2, 3.3, 0.5); cap('A₃ 的特徵值：det(A₃ − λI) = 0', '對角線減 λ'); S.st.add('det [−λ 1 0; 1 −λ 2; 0 2 −λ] = 0', 'ptr'); },
+  async (tok, S) => { S.st.clear(); S.st = stack(-6.2, 3.3, 0.5, 0, 3); cap('A₃ 的特徵值：det(A₃ − λI) = 0', '對角線減 λ'); S.st.add('det [−λ 1 0; 1 −λ 2; 0 2 −λ] = 0', 'ptr'); },
   async (tok, S) => { const cp = charPoly(A92(3)); cap('3×3 直接展開', '= −λ³ + 5λ（1·1 + 2·2 = 5）'); S.st.ok(nearV(cp, [1, 0, -5, 0], 1e-12), 'det(A₃ − λI) = −λ³ + 5λ ✓'); },
   async (tok, S) => { const ev = realEigs(A92(3)); cap('λ(−λ² + 5) = 0', 'λ = 0、√5、−√5'); S.st.ok(nearV(ev, [Math.sqrt(5), 0, -Math.sqrt(5)], 1e-6), 'λ = √5、0、−√5 ✓'); },
   async (tok, S) => { cap('用 trace 檢查：特徵值總和 = 對角線和', '0 + √5 − √5 = 0 = trace'); S.st.ok(near(trace(A92(3)), 0), '總和 0 = trace 0 ✓（但抓不到 5 寫錯成 4）'); },
-  async (tok, S) => { S.st.clear(); S.st = stack(-6.2, 3.3, 0.5); cap('求 C(A₄) 的投影矩陣：「這題不難」', ''); S.g4.c.flat().forEach((m) => glow(m, GOLD)); S.st.add('C(A₄) 的投影矩陣 = ?', 'ptr'); },
+  async (tok, S) => { S.st.clear(); S.st = stack(-6.2, 3.3, 0.5, 0, 3); cap('求 C(A₄) 的投影矩陣：「這題不難」', ''); S.g4.c.flat().forEach((m) => glow(m, GOLD)); S.st.add('C(A₄) 的投影矩陣 = ?', 'ptr'); },
   async (tok, S) => { cap('先問：A₄ 可逆嗎？', '可逆 → 行空間 = 整個 R⁴ → P = I'); S.st.add('若 A₄ 可逆：C(A₄) = R⁴ → P = I₄'); },
   async (tok, S) => { S.g4.clearGlow(); const d = detN(A92(4)); cap('用 cofactor：第一列只有一個 1', '一路展開 → det A₄ = 9'); S.st.ok(near(d, 9, 1e-9), 'det A₄ = 9 ≠ 0 ✓ → 可逆 → P = I'); },
   async (tok, S) => { const ds = [1, 2, 3, 4, 5, 6].map((n) => Math.round(detN(A92(n)))); cap('老師的猜測：奇數階奇異、偶數階可逆', '（畫面驗算到 n = 6）'); S.st.ok(ds.every((d, i) => (i % 2 === 0 ? d === 0 : d !== 0)), 'det A₁…A₆ = ' + ds.map(ff).join(', ') + ' ✓'); },
@@ -2558,7 +2600,7 @@ scene('l28-j2', 'L28：重根：4I 與 Jordan block [4 1; 0 4]', [
   async (tok, S) => { const C = [[5, 1], [-1, 3]]; cap('更多成員：trace 要 8、det 要 16', '例如 [5 1; −1 3]'); mgrid(C, -0.8, 6.0, 0, { color: () => COL.b }); hd('[5 1; −1 3]', -0.4, 6.7); S.st.ok(near(trace(C), 8) && near(det2(C), 16), '[5 1; −1 3]：trace 8、det 16 → λ = 4, 4 ✓'); },
   async (tok, S) => { cap('它不能對角化', '若能，對角形式就得是 4I；但 4I 只跟自己相似'); S.st.add('若可對角化 → 跟 4I 相似 → 不可能', 'bad'); },
   async (tok, S) => { const C = [[4, 0], [17, 4]]; cap('再一個：[4 0; 17 4]', '全都跟 J 相似'); mgrid(C, 1.8, 6.0, 0, { color: () => COL.b }); hd('[4 0; 17 4]', 2.2, 6.7); S.st.ok(near(trace(C), 8) && near(det2(C), 16), '[4 0; 17 4]：trace 8、det 16 ✓'); },
-  async (tok, S) => { cap('一般：對角線 a、8 − a，再調到 det = 16', '（不是 4I 的）全都相似'); mtx([['a', 'b'], ['c', '8−a']], 5.0, 5.6); sm('a(8−a) − bc = 16', 5.0, 4.6); S.st.add('[a b; c 8−a]，det = 16（不是 4I）→ 全部相似'); },
+  async (tok, S) => { cap('一般：對角線 a、8 − a，再調到 det = 16', '（不是 4I 的）全都相似'); mtx([['a', 'b'], ['c', '8−a']], 3.6, 4.1); sm('a(8−a) − bc = 16', 3.6, 3.1); S.st.add('[a b; c 8−a]，det = 16（不是 4I）→ 全部相似'); },
   async (tok, S) => {
     const fam = [J44, [[5, 1], [-1, 3]], [[4, 0], [17, 4]]]; cap('相似 ⇒ 特徵值相同、獨立特徵向量個數也相同', '這個家族：都只有 1 個');
     S.st.ok(fam.every((M) => { const g = eigInfo(M).groups; return g.length === 1 && near(g[0].re, 4, 1e-6) && g[0].gm === 1; }), '三個成員：λ = 4, 4，特徵向量都只有 1 個 ✓');
@@ -2568,7 +2610,7 @@ scene('l28-j2', 'L28：重根：4I 與 Jordan block [4 1; 0 4]', [
 const JA = [[0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]], JA7 = [[0, 1, 7, 0], [0, 0, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]], JB = [[0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 0, 0]];
 const jcol = (M, blocks) => (i, j) => { if (blocks) for (const [a, b, c] of blocks) if (i >= a && i <= b && j >= a && j <= b) return c; return M[i][j] ? COL.b : '#e7dcc8'; };
 scene('l28-j4', 'L28：只數特徵向量還不夠（4×4）', [
-  async (tok, S) => { cap('只數特徵向量還不夠', '看 4×4 的例子'); S.st = stack(-6.2, 3.4, 0.48); },
+  async (tok, S) => { cap('只數特徵向量還不夠', '看 4×4 的例子'); frameHold(-6.6, 0.6, -0.3, 5.2, 7.0, 0.3); S.st = stack(-6.2, 3.4, 0.48, 0, 3); }, // J₂ arrives later: framed now; 3 lines stay above the bottom line
   async (tok, S) => { cap('4×4：對角線上方放兩個 1', '[0 1 0 0; 0 0 1 0; 0 0 0 0; 0 0 0 0]'); S.gA = mgrid(JA, -6.2, 6.2, 0, { size: 0.55, gap: 0.64, color: jcol(JA) }); hd('J₁', -5.2, 6.8); },
   async (tok, S) => { cap('特徵值：四個 0', '嚴格上三角 → 對角線全 0'); S.st.ok(near(detN(JA), 0) && nearM(mpow(JA, 4), mscl(eye(4), 0)), '特徵值 0, 0, 0, 0 ✓'); },
   async (tok, S) => { cap('有幾個特徵向量？看零空間', 'rank 2 → 零空間 4 − 2 = 2 維'); S.st.ok(rankOf(JA) === 2, 'rank 2 → 2 個獨立特徵向量 ✓'); },
@@ -2576,7 +2618,7 @@ scene('l28-j4', 'L28：只數特徵向量還不夠（4×4）', [
   async (tok, S) => { cap('Jordan 的選法：每缺一個特徵向量', '就在對角線上方放一個 1（這裡缺 2 個 → 兩個 1）'); S.st.add('每缺 1 個特徵向量 → 上方放 1 個 1', 'ptr'); },
   async (tok, S) => { cap('第二個例子：把 1 移個位置', '[0 1 0 0; 0 0 0 0; 0 0 0 1; 0 0 0 0]'); S.gB = mgrid(JB, 2.2, 6.2, 0, { size: 0.55, gap: 0.64, color: jcol(JB) }); hd('J₂', 3.2, 6.8); },
   async (tok, S) => { cap('又是四個 0、rank 又是 2', '一樣是 2 個特徵向量、缺 2 個'); S.st.ok(rankOf(JB) === 2 && nearM(mpow(JB, 2), mscl(eye(4), 0)), 'J₂：λ 全 0、rank 2 ✓'); },
-  async (tok, S) => { S.st.clear(); S.st = stack(-6.2, 3.4, 0.48); cap('但 J₂ 跟 J₁ 不相似！', '特徵向量個數一樣也不夠'); S.st.add('J₁ 和 J₂ 不相似！', 'bad'); },
+  async (tok, S) => { S.st.clear(); S.st = stack(-6.2, 3.4, 0.48, 0, 3); cap('但 J₂ 跟 J₁ 不相似！', '特徵向量個數一樣也不夠'); S.st.add('J₁ 和 J₂ 不相似！', 'bad'); },
   async (tok, S) => {
     cap('J₁ = 3×3 block + 1×1 block', 'J₂ = 2×2 block + 2×2 block');
     S.gA.c.forEach((r, i) => r.forEach((m, j) => P.tint(m, jcol(JA, [[0, 2, COL.c], [3, 3, COL.d]])(i, j))));
@@ -2635,7 +2677,7 @@ scene('3b-span', '3B1B：留在自己 span 上的向量', [
   async (tok, S) => { cap('這些特殊向量叫 eigenvector（特徵向量）', '被拉長的倍數叫 eigenvalue（特徵值）：3 和 2'); S.s[2].ok(nearV(realEigs(A3B), [3, 2], 1e-9), 'eigenvalue：λ = 3（x 軸）、λ = 2（對角線）✓'); },
   async (tok, S) => {
     cap('特徵值也可以是負的', '（示意）λ = −½：翻轉、再壓成一半；但還是在同一條直線上');
-    await S.W.to(tok, I2, 700); S.W.dropAll([S.i, S.j]); S.s[1].set(' ');
+    await S.W.to(tok, I2, 700); S.W.dropAll(); S.s[1].set(' ');
     const N = [[-0.5, 0], [0, 1.5]]; S.n = S.W.vec([3, 0], COL.b, '示意'); await S.W.to(tok, N, 1500);
     S.s[2].ok(nearV(mulMV(N, [3, 0]), [-1.5, 0]), '示意：(3, 0) → (−1.5, 0) = −½·(3, 0) ✓');
   },
@@ -2724,19 +2766,24 @@ scene('3b-eigenbasis', '3B1B：eigenbasis 與對角化', [
 ], { cam: FLAT });
 
 // ═════════════════════════ 3Blue1Brown 第 15 集（e50Bj7jn9IQ）A quick trick for computing eigenvalues ═════════════════════════
-// number line on y = 2.0 from lo to hi
+// number line on y = 2.0 from lo to hi (long lines: a number under every second tick).
+// X.objs holds everything drawn for it (mpSpread adds its dots and λ labels), so a finished line can go.
 function nline(lo, hi, y = 2.0) {
-  const X = (v) => -5.5 + (v - lo) / (hi - lo) * 11;
-  rod('#8a7b66', 0.02).setW(V3(-5.8, y, 0), V3(5.8, y, 0));
-  for (let k = Math.ceil(lo); k <= hi; k++) { rod('#8a7b66', 0.015).setW(V3(X(k), y - 0.18, 0), V3(X(k), y + 0.18, 0)); sm(String(k).replace('-', '−'), X(k), y - 0.45); }
+  const X = (v) => -5.5 + (v - lo) / (hi - lo) * 11; X.objs = [];
+  X.objs.push(rod('#8a7b66', 0.02).setW(V3(-5.8, y, 0), V3(5.8, y, 0)));
+  const every = hi - lo > 8 ? 2 : 1;
+  for (let k = Math.ceil(lo); k <= hi; k++) { X.objs.push(rod('#8a7b66', 0.015).setW(V3(X(k), y - 0.18, 0), V3(X(k), y + 0.18, 0))); if (k % every === 0) X.objs.push(sm(String(k).replace('-', '−'), X(k), y - 0.45)); }
   return X;
 }
+const nkill = (X) => { if (X && X.objs) X.objs.forEach((o) => { kill(o); remove(o); }); };
 const mean2 = (M) => (M[0][0] + M[1][1]) / 2;
 async function mpSpread(tok, X, m, d, y = 2.0) {
-  const c = dotBall(COL.k, 0.14); c.position.set(X(m), y, 0); sm('m', X(m), y + 0.5);
+  const c = dotBall(COL.k, 0.14); c.position.set(X(m), y, 0); const lm = sm('m', X(m), y + 0.5);
   const a = dotBall(COL.d, 0.16), b = dotBall(COL.r, 0.16);
+  if (X.objs) X.objs.push(c, lm, a, b);
   await anim(tok, 1200, (t) => { a.position.set(X(m + d * t), y, 0); b.position.set(X(m - d * t), y, 0); });
-  hot('λ = ' + nf(m + d, 3), X(m + d), y + 1.0); hot('λ = ' + nf(m - d, 3), X(m - d), y + 1.0);
+  const h1 = hot('λ = ' + nf(m + d, 3), X(m + d), y + 1.0), h2 = hot('λ = ' + nf(m - d, 3), X(m - d), y + 1.0);
+  if (X.objs) X.objs.push(h1, h2);
 }
 scene('tr-intro', '3B1B 15：快速算 2×2 特徵值', [
   async (tok, S) => { cap('給已經會特徵值的人：2×2 的快速算法', ''); S.st = stack(-5.6, 6.0, 0.6); S.st.add('2×2 矩陣：快速求特徵值', 'ptr alt'); },
@@ -2764,9 +2811,9 @@ scene('tr-facts', '3B1B 15：三個事實 → λ = m ± √(m² − p)', [
   async (tok, S) => { cap('例：對角線 8 和 6 → 平均 7', '（示意 A = [8 4; 2 6]）'); mgrid(T86, 2.2, 6.0, 0, { color: (i, j) => (i === j ? COL.g : '#e7dcc8') }); sm('示意 A', 2.9, 6.7); S.X = nline(0, 12); S.st.ok(near(mean2(T86), 7), 'm = (8 + 6)/2 = 7 ✓'); },
   async (tok, S) => { cap('行列式：48 − 8 = 40', '特徵值乘積 p = 40'); S.st.ok(near(det2(T86), 40), 'p = 8·6 − 4·2 = 48 − 8 = 40 ✓'); },
   async (tok, S) => { cap('事實 3：知道平均和乘積，怎麼找回兩個數？', '自己先想想看'); S.st.add('③ 已知平均、乘積 → 兩個數？', 'ptr'); },
-  async (tok, S) => { cap('兩個數對稱地分在 7 的兩邊', '寫成 7 ± d（d 是距離）'); const c = dotBall(COL.k, 0.14); c.position.set(S.X(7), 2.0, 0); sm('7 ± d', S.X(7), 2.6); },
+  async (tok, S) => { cap('兩個數對稱地分在 7 的兩邊', '寫成 7 ± d（d 是距離）'); S.c7 = dotBall(COL.k, 0.14); S.c7.position.set(S.X(7), 2.0, 0); S.pd = sm('7 ± d', S.X(7), 2.6); },
   async (tok, S) => { cap('乘積展開是平方差', '(7 + d)(7 − d) = 49 − d² = 40'); S.st.add('(7 + d)(7 − d) = 7² − d² = 40'); },
-  async (tok, S) => { cap('d² = 49 − 40 = 9 → d = 3', '兩個特徵值 = 4 和 10'); await mpSpread(tok, S.X, 7, 3); S.st.ok(nearV(realEigs(T86), [10, 4], 1e-9), 'd = 3 → λ = 10、4 ✓（det(A − 4I) = 0）'); },
+  async (tok, S) => { cap('d² = 49 − 40 = 9 → d = 3', '兩個特徵值 = 4 和 10'); remove(S.pd); kill(S.c7); await mpSpread(tok, S.X, 7, 3); S.st.ok(nearV(realEigs(T86), [10, 4], 1e-9), 'd = 3 → λ = 10、4 ✓（det(A − 4I) = 0）'); },
   async (tok, S) => { cap('包成通用公式', '平均 m、乘積 p：d² = m² − p'); S.st.add('一般：d² = m² − p'); },
   async (tok, S) => { cap('第三個事實', 'λ = m ± √(m² − p)'); S.st.add('λ = m ± √(m² − p)', 'ptr alt'); },
   async (tok, S) => { cap('其實就是平方差公式換個說法', '值得背起來，隨時拿來用'); S.st.add('（平方差公式的改寫，值得背）', 'idx'); },
@@ -2780,11 +2827,11 @@ scene('tr-ex', '3B1B 15：用 mean–product 直接寫答案', [
   async (tok, S) => { cap('跟一開始同一個矩陣', '但直接多了'); S.st.add('跟特徵多項式算法答案一樣，但快很多', 'idx'); },
   async (tok, S) => {
     const M = [[2, 7], [1, 8]]; S.M = M;
-    cap('再一個：[2 7; 1 8]', 'm = (2 + 8)/2 = 5'); gkill(S.g); S.g = mgrid(M, -6.0, 6.0, 0, { color: (i, j) => (i === j ? COL.g : '#e7dcc8') }); S.st.clear(); S.st = stack(-3.4, 6.2, 0.55);
+    cap('再一個：[2 7; 1 8]', 'm = (2 + 8)/2 = 5'); gkill(S.g); nkill(S.X); S.g = mgrid(M, -6.0, 6.0, 0, { color: (i, j) => (i === j ? COL.g : '#e7dcc8') }); S.st.clear(); S.st = stack(-3.4, 6.2, 0.55);
     S.st.ok(near(mean2(M), 5), 'm = 5 ✓');
   },
   async (tok, S) => { cap('p = 2·8 − 7·1 = 9', ''); S.st.ok(near(det2(S.M), 9), 'p = 16 − 7 = 9 ✓'); },
-  async (tok, S) => { cap('λ = 5 ± √(25 − 9) = 5 ± 4', '= 9 和 1'); S.X2 = nline(-1, 11, 0.6); await mpSpread(tok, S.X2, 5, 4, 0.6); S.st.ok(nearV(realEigs(S.M), [9, 1], 1e-9), 'λ = 9、1 ✓'); },
+  async (tok, S) => { cap('λ = 5 ± √(25 − 9) = 5 ± 4', '= 9 和 1'); S.X2 = nline(-1, 11); await mpSpread(tok, S.X2, 5, 4); S.st.ok(nearV(realEigs(S.M), [9, 1], 1e-9), 'λ = 9、1 ✓'); },
   async (tok, S) => { cap('盯著矩陣就能直接寫出特徵值', '最後只要一點點化簡'); S.st.add('看著矩陣直接寫答案', 'ptr alt'); },
 ]);
 
@@ -2793,6 +2840,7 @@ const PAULI = [[[C0, C1], [C1, C0]], [[C0, CmI], [CI, C0]], [[C1, C0], [C0, Cm1]
 scene('tr-pauli', '3B1B 15：Pauli 自旋矩陣', [
   async (tok, S) => {
     cap('有趣的例子：量子力學的 Pauli spin matrices', 'σx = [0 1; 1 0]、σy = [0 −i; i 0]、σz = [1 0; 0 −1]');
+    frameHold(-6.0, 0.8, -0.3, 6.0, 6.6, 0.3); // the three matrices and the column below: framed from the start
     mtx([['0', '1'], ['1', '0']], -4.0, 5.4); mtx([['0', '−i'], ['i', '0']], 0, 5.4); mtx([['1', '0'], ['0', '−1']], 4.0, 5.4);
     sm('σx', -4.0, 6.3); sm('σy', 0, 6.3); sm('σz', 4.0, 6.3); S.st = stack(-5.6, 3.9, 0.55);
   },
@@ -2817,7 +2865,7 @@ scene('tr-quad', '3B1B 15：mean–product 公式與二次方程式', [
   async (tok, S) => { cap('mean–product 公式可以解任何二次方程式', ''); S.st.add('mean–product 公式 = 解二次方程式的方法'); },
   async (tok, S) => { cap('求二次式的根：其實是知道兩根的和與積', '要找回那兩個數'); S.st.add('二次式：已知兩根的「和」與「積」'); },
   async (tok, S) => { cap('首項係數 1 時：平均 = −½ × 一次項係數', '（示意 x² − 10x + 21）m = 5'); S.st.add('（示意）x² − 10x + 21：m = −½(−10) = 5'); },
-  async (tok, S) => { cap('乘積就是常數項', 'p = 21 → 5 ± √(25 − 21) = 7、3'); S.X = nline(0, 10, 0.5); await mpSpread(tok, S.X, 5, 2, 0.5); const r = roots([1, -10, 21]); S.st.ok(r.every((z) => near(z[1], 0)) && nearV(r.map((z) => z[0]).sort((a, b) => b - a), [7, 3], 1e-6), 'x = 7、3 ✓（7 + 3 = 10、7 × 3 = 21）'); },
+  async (tok, S) => { cap('乘積就是常數項', 'p = 21 → 5 ± √(25 − 21) = 7、3'); S.X = nline(0, 10, 1.6); await mpSpread(tok, S.X, 5, 2, 1.6); const r = roots([1, -10, 21]); S.st.ok(r.every((z) => near(z[1], 0)) && nearV(r.map((z) => z[0]).sort((a, b) => b - a), [7, 3], 1e-6), 'x = 7、3 ✓（7 + 3 = 10、7 × 3 = 21）'); },
   async (tok, S) => { cap('像是輕量版的二次公式', '好處：每個符號都有意義'); S.st.add('比二次公式少記，而且每個符號有意義'); },
   async (tok, S) => { cap('矩陣直接讀出 m、p', '跳過寫特徵多項式這一步'); S.st.add('矩陣 → 直接讀 m、p → 寫出 λ', 'ptr alt'); },
   async (tok, S) => { cap('順便複習：trace = 和、det = 積', ''); S.st.add('trace = λ₁ + λ₂、det = λ₁λ₂', 'ptr'); },
