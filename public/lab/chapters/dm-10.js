@@ -37,6 +37,11 @@ export default function (ctx) {
   const move = (o, x, y, z = 0) => lab.springTo(bodyOf(o), V3(x, y, z));
   const relabel = (m, t) => { if (m.userData.lbl) txt(m.userData.lbl, String(t)); };
   async function anim(tok, ms, fn) { const steps = 14; for (let k = 1; k <= steps; k++) { fn(k / steps); if (tok === undefined) await sleep(ms / steps); else await beat(tok, ms / steps); } }
+  // 看不見的取景框：自動取景從第一步就量到之後會用到的範圍，不會先放大再跳回來
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
 
   // ───────────────────────── 代數結構：資料 ─────────────────────────
   // S₃：用 [σ(0),σ(1),σ(2)] 表示；r = 旋轉 120°、f = 固定頂點 0 的翻轉
@@ -383,7 +388,7 @@ export default function (ctx) {
     const S = structure('zadd', 4), T = cayleyTable(S, { empty: true });
     say('（課本）(ℤ₄, +) 的 Cayley 表', '第 a 列第 b 行 = (a + b) mod 4');
     await beat(tok, 2200);
-    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { T.fill(i, j); say(i + ' + ' + j + ' = ' + (i + j) + (i + j >= 4 ? ' → mod 4 = ' + (i + j) % 4 : ''), ''); await beat(tok, 330); }
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { T.fill(i, j, 0.5); say(i + ' + ' + j + ' = ' + (i + j) + (i + j >= 4 ? ' → mod 4 = ' + (i + j) % 4 : ''), ''); await beat(tok, 330); }
     await beat(tok, 900);
     T.cells.flat().forEach((m) => glow(m, GREEN));
     say('① 封閉：16 格全是 0～3', ''); await beat(tok, 2200); T.clearGlow();
@@ -453,7 +458,8 @@ export default function (ctx) {
     await beat(tok, 2800);
     for (let r = 0; r < 4; r++) {
       const C = H.map((h) => (h + r) % n);
-      C.forEach((x, t) => { blocks[x].material.color.set(PAL[r + 1]); move(blocks[x], -3.3 + r * 2.2, 0.25 + t * 0.55, 0); });
+      // 陪集排成地上的一行（不疊高：從上往下看疊起來的方塊會互相蓋住），放在圓圈內側，不碰到還沒搬的方塊
+      C.forEach((x, t) => { blocks[x].material.color.set(PAL[r + 1]); move(blocks[x], -1.65 + r * 1.1, 0.25, -0.9 + t * 0.9); });
       say(r + ' + H = {' + C.join(', ') + '}', '陪集（coset）：H 整塊平移 ' + r);
       await beat(tok, 1700);
     }
@@ -620,6 +626,8 @@ function scene(id, title, steps, o = {}) {
 }
 const lines = (arr, x, y, dy = 0.62, cls = '') => arr.map((t, i) => tag(t, cls, x, y - i * dy));
 const setCls = (l, cls) => { l.element.className = 'lab-label' + (cls ? ' ' + cls : ''); };
+// 講完的字退後：變淡（仍看得到前後文，但不搶眼）
+const fade = (l) => { if (l && l.element) Object.assign(l.element.style, { transition: 'opacity .4s', opacity: '0.35' }); };
 // 物件小方塊（代表集合裡的元素）
 const blk = (t, c, x, y) => cube(t, c, [0.62, 0.62, 0.3], x, y, 0);
 // 「階梯」：group → ring → field（性質由少到多）
@@ -653,10 +661,10 @@ const qS = (u) => { const a = u[0], b = u[1]; const s = (a === 1 ? '' : a === -1
 // ════════ vfyUU_prh9s（Algebraic Structures: Groups, Rings, and Fields） ════════
 scene('ab-what', '什麼是 algebraic structure（代數結構）', [
   async (tok, S) => { S.t = hd('Algebraic structures：groups、rings、fields', 0, 7.0); ladder(S, 0, 5.6); cap('簡介：群、環、體', ''); },
-  async (tok, S) => { gone(S.lad); S.big = cube('', '#efe5d3', [5.6, 2.6, 0.1], -2.2, 4.4, -0.3); S.d = pl('一堆物件（objects）組成的集合', -2.2, 6.1); cap('代數結構：一堆物件', ''); },
-  async (tok, S) => { S.o = [['3', AC.g], ['f(x)', AC.r], ['[1 2;3 4]', AC.f], ['−1/2', AC.g], ['x²+1', AC.r]].map(([t, c], i) => blk(t, c, -4.2 + i * 1.0, 4.4)); S.n = sm('可以是數字、函數、矩陣…什麼都可以', -2.2, 2.7); cap('物件可以是數字，也可以不是', ''); },
-  async (tok, S) => { S.op = hot('再加上一個或多個運算：⊕、★…', 3.4, 4.6); S.op2 = sm('（加起來、乘起來、或別的）', 3.4, 3.9); cap('再加上一個或多個運算', ''); },
-  async (tok, S) => { S.c = note('依「運算有幾個、有哪些性質」來分類', 3.4, 2.9); cap('依運算的個數與性質分類', ''); },
+  async (tok, S) => { gone(S.lad); S.big = cube('', '#efe5d3', [6.4, 1.6, 0.1], 0, 4.9, -0.3); S.d = pl('一堆物件（objects）組成的集合', 0, 6.1); cap('代數結構：一堆物件', ''); },
+  async (tok, S) => { S.o = [['3', AC.g], ['f(x)', AC.r], ['[1 2;3 4]', AC.f], ['−1/2', AC.g], ['x²+1', AC.r]].map(([t, c], i) => blk(t, c, -2.4 + i * 1.2, 4.9)); S.n = sm('可以是數字、函數、矩陣…什麼都可以', 0, 3.75); cap('物件可以是數字，也可以不是', ''); },
+  async (tok, S) => { S.op = hot('再加上一個或多個運算：⊕、★…', 0, 2.9); S.op2 = sm('（加起來、乘起來、或別的）', 0, 2.3); cap('再加上一個或多個運算', ''); },
+  async (tok, S) => { S.c = note('依「運算有幾個、有哪些性質」來分類', 0, 1.4); cap('依運算的個數與性質分類', ''); },
 ]);
 scene('ab-why', '為什麼要分類代數結構', [
   async (tok, S) => { S.t = hd('為什麼要分類？', 0, 7.0); cap('為什麼要這樣分類？', ''); },
@@ -688,10 +696,10 @@ scene('ab-zgroup', '例：(ℤ, +) 是 group', [
   async (tok, S) => { S.op = hot('運算：一般的加法 +', 3.6, 6.2); cap('運算就是加法', ''); },
   async (tok, S) => { S.ck = pl('要檢查三件事', 3.6, 5.4); cap('要檢查三件事', ''); },
   async (tok, S) => {
-    const a = 2, b = 3, c = 4; S.l1 = ok((a + b) + c === a + (b + c), '① 結合：(a + b) + c = a + (b + c)；示意 (2+3)+4 = 2+(3+4) = 9 ✓', -0.4, 3.4); cap('加法有結合律', '');
+    const a = 2, b = 3, c = 4; S.l1 = K.keep(ok((a + b) + c === a + (b + c), '① 結合：(a + b) + c = a + (b + c)；示意 (2+3)+4 = 2+(3+4) = 9 ✓', -0.4, 3.4)); cap('加法有結合律', '');
   },
-  async (tok, S) => { S.l2 = ok([-3, 0, 5].every((a) => a + 0 === a && 0 + a === a), '② 單位元是 0：a + 0 = 0 + a = a ✓', -0.4, 2.6); cap('單位元就是 0', ''); },
-  async (tok, S) => { S.l3 = ok([-3, 2, 7].every((a) => a + -a === 0), '③ a 的反元素是 −a：a + (−a) = 0，例 3 + (−3) = 0 ✓', -0.4, 1.8); cap('a 的反元素是 −a', ''); },
+  async (tok, S) => { S.l2 = K.keep(ok([-3, 0, 5].every((a) => a + 0 === a && 0 + a === a), '② 單位元是 0：a + 0 = 0 + a = a ✓', -0.4, 2.6)); cap('單位元就是 0', ''); },
+  async (tok, S) => { S.l3 = K.keep(ok([-3, 2, 7].every((a) => a + -a === 0), '③ a 的反元素是 −a：a + (−a) = 0，例 3 + (−3) = 0 ✓', -0.4, 1.8)); cap('a 的反元素是 −a', ''); },
   async (tok, S) => { S.done = good('三條都成立 ⇒ (ℤ, +) 是 group', -0.4, 0.9); cap('所以 (ℤ, +) 是 group', ''); },
 ]);
 const MA = [[1, 1], [0, 1]], MB = [[1, 0], [1, 1]], MC = [[2, 0], [0, 1]];   // 示意矩陣（行列式都不是 0）
@@ -705,14 +713,14 @@ scene('ab-more', '更多 group：ℤ_n、ℚ、ℝ*、可逆函數、可逆矩�
   async (tok, S) => { S.b = pl('(ℚ, +)：分數相加', 1.6, 5.3); cap('有理數加法：group', ''); },
   async (tok, S) => { S.c = pl('(ℝ*, ×)：非零實數相乘，單位元是 1', 1.6, 4.6); cap('非零實數乘法，單位元是 1', ''); },
   async (tok, S) => { S.d = sm('還有 (ℚ*, ×)、(ℝ, +)…列不完', 1.6, 3.9); cap('這不是全部，還有很多', ''); },
-  async (tok, S) => { gone(S.tb, S.tl); S.e = pl('可逆函數，運算是合成 ∘', -3.6, 6.1); cap('另一種：可逆函數與合成', ''); },
+  async (tok, S) => { gone(S.tb, S.tl); [S.a, S.b, S.c, S.d].forEach((l) => fade(l)); S.e = pl('可逆函數，運算是合成 ∘', -3.6, 6.1); cap('另一種：可逆函數與合成', ''); },
   async (tok, S) => { S.e2 = sm('f ∘ (g ∘ h) = (f ∘ g) ∘ h：結合', -3.6, 5.4); cap('函數合成有結合律', ''); },
   async (tok, S) => { S.e3 = sm('可逆 ⇒ 有反函數；單位元 I(x) = x', -3.6, 4.8); cap('單位元是 I(x) = x', ''); },
   async (tok, S) => { gone(S.a, S.b, S.c, S.d, S.e, S.e2, S.e3); S.m = pl('2 × 2 可逆矩陣，運算是矩陣乘法', 0, 6.1); S.m0 = sm('示意：A = ' + mS(MA) + '，B = ' + mS(MB) + '（det = ' + det(MA) + '、' + det(MB) + '）', 0, 5.4); cap('2×2 可逆矩陣與乘法', ''); },
   async (tok, S) => { S.m1 = sm('單位元：I = [1 0 ; 0 1]', 0, 4.8); cap('單位元是單位矩陣', ''); },
-  async (tok, S) => { const AB = mm(MA, MB), BA = mm(MB, MA); S.m2 = ok(!mEq(AB, BA), 'AB = ' + mS(AB) + ' ≠ BA = ' + mS(BA) + ' ✓', 0, 3.9); cap('AB 不一定等於 BA', ''); },
-  async (tok, S) => { S.m3 = ok(mEq(mm(mm(MA, MB), MC), mm(MA, mm(MB, MC))), '但 (AB)C = A(BC) = ' + mS(mm(MA, mm(MB, MC))) + ' ✓（結合）', 0, 3.1); cap('但矩陣乘法有結合律', ''); },
-  async (tok, S) => { S.ab = hot('若一定有 a ⊕ b = b ⊕ a：commutative / abelian group', 0, 2.0); S.ab2 = sm('group 本身不要求交換律', 0, 1.35); cap('會交換的叫 abelian group', ''); },
+  async (tok, S) => { const AB = mm(MA, MB), BA = mm(MB, MA); S.m2 = K.keep(ok(!mEq(AB, BA), 'AB = ' + mS(AB) + ' ≠ BA = ' + mS(BA) + ' ✓', 0, 3.9)); cap('AB 不一定等於 BA', ''); },
+  async (tok, S) => { S.m3 = K.keep(ok(mEq(mm(mm(MA, MB), MC), mm(MA, mm(MB, MC))), '但 (AB)C = A(BC) = ' + mS(mm(MA, mm(MB, MC))) + ' ✓（結合）', 0, 3.1)); cap('但矩陣乘法有結合律', ''); },
+  async (tok, S) => { gone(S.m0, S.m1); [S.m, S.m2, S.m3].forEach((l) => fade(l)); S.ab = hot('若一定有 a ⊕ b = b ⊕ a：commutative / abelian group', 0, 2.0); S.ab2 = sm('group 本身不要求交換律', 0, 1.35); cap('會交換的叫 abelian group', ''); },
   async (tok, S) => {
     const Z5 = zGroup(5); S.y = good('abelian：ℤ、ℤ_n' + (Z5.com ? '' : '?') + '、ℚ、ℝ*', -2.6, 0.5); S.nn = bad('不是 abelian：可逆函數、2×2 可逆矩陣', 2.8, 0.5); cap('有些例子會交換，有些不會', '');
   },
@@ -726,7 +734,7 @@ scene('ab-ring', 'Ring（環）：兩個運算的公理', [
   async (tok, S) => { S.l3 = pl('③ 乘法單位元，通常叫 1', -1.2, 2.75); cap('要有乘法單位元 1', ''); },
   async (tok, S) => { S.l4 = pl('④ 分配律：a★(b⊕c) = a★b ⊕ a★c、(b⊕c)★a = b★a ⊕ c★a', -1.2, 2.1); cap('分配律：左分配、右分配', ''); },
   async (tok, S) => { S.l5 = note('★ 不必交換：a ★ b 不一定等於 b ★ a（所以左右分配律都要寫）', -1.2, 1.35); cap('乘法不一定交換', ''); },
-  async (tok, S) => { setCls(S.l3, 'ptr alt'); cap('注意這一條：乘法單位元', ''); },
+  async (tok, S) => { gone(S.l1n, S.q); [S.l1, S.l2, S.l4, S.l5].forEach((l) => fade(l)); setCls(S.l3, 'ptr alt'); cap('注意這一條：乘法單位元', ''); },
   async (tok, S) => { S.r1 = sm('有些人研究「其他都有、就是沒有 1」的結構：rng（ring 去掉 i）', 0, 0.65); cap('沒有 1 的叫 rng', ''); },
   async (tok, S) => { S.r2 = sm('也有人叫它 rong（"wrong"）：沒有 1 不太對', 0, 0.05); cap('也有人叫 rong', ''); },
   async (tok, S) => { setCls(S.l3, 'good'); gone(S.r1, S.r2); S.r3 = good('本片的標準定義：ring 要有乘法單位元 1', 0, 0.65); S.r4 = sm('（Grimaldi 的 ring 不要求 1；有 1 的叫 ring with unity）', 0, 0.05); cap('標準的 ring 要有 1', ''); },
@@ -771,14 +779,14 @@ scene('ab-q2', 'ℚ[√2]：加法、FOIL 乘法、用有理化找乘法反元�
   async (tok, S) => { S.a = sm('運算就是一般數字的加法、乘法', 0, 6.4); cap('示範運算怎麼做', ''); },
   async (tok, S) => { S.l = [pl('(' + qS(Q1) + ') + (' + qS(Q2) + ')', -3.0, 5.6)]; cap('加法：3√2 + 4 加上 4√2 + 6', ''); },
   async (tok, S) => { const s = qAdd(Q1, Q2); S.l.push(ok(s[0] === 7 && s[1] === 10, '= (3 + 4)√2 + (4 + 6) = ' + qS(s) + ' ✓（同類項合併）', -3.0, 5.0)); cap('同類項合併：7√2 + 10', ''); },
-  async (tok, S) => { S.m = [pl('(' + qS(Q3) + ')(' + qS(Q4) + ')', 2.6, 4.1)]; cap('乘法：用 FOIL 展開', ''); },
+  async (tok, S) => { S.l.forEach((l) => fade(l)); S.m = [pl('(' + qS(Q3) + ')(' + qS(Q4) + ')', 2.6, 4.1)]; cap('乘法：用 FOIL 展開', ''); },
   async (tok, S) => { S.m.push(sm('First：2√2 × (−5√2) = ' + (2 * -5 * 2), 2.6, 3.5)); cap('First：前 × 前', ''); },
   async (tok, S) => { S.m.push(sm('Outer：2√2 × 3 = ' + (2 * 3) + '√2', 2.6, 3.0)); cap('Outer：外 × 外', ''); },
   async (tok, S) => { S.m.push(sm('Inner：(−4) × (−5√2) = ' + (-4 * -5) + '√2', 2.6, 2.5)); cap('Inner：內 × 內', ''); },
   async (tok, S) => { S.m.push(sm('Last：(−4) × 3 = ' + (-4 * 3), 2.6, 2.0)); cap('Last：後 × 後', ''); },
   async (tok, S) => { S.m.push(pl('= −20 + 6√2 + 20√2 − 12', 2.6, 1.4)); cap('化簡四項', ''); },
   async (tok, S) => { const p = qMul(Q3, Q4); S.m.push(ok(p[0] === 26 && p[1] === -32 && Math.abs((2 * Math.SQRT2 - 4) * (-5 * Math.SQRT2 + 3) - (26 * Math.SQRT2 - 32)) < 1e-9, '= ' + qS(p) + ' ✓', 2.6, 0.75)); cap('合併：26√2 − 32', ''); },
-  async (tok, S) => { gone(S.l, S.m); S.w = hot('為什麼是 field？難的是：乘法反元素', 0, 6.0); cap('為什麼有乘法反元素？', ''); },
+  async (tok, S) => { gone(S.l, S.m, S.a); S.w = hot('為什麼是 field？難的是：乘法反元素', 0, 6.0); cap('為什麼有乘法反元素？', ''); },
   async (tok, S) => { S.k = [pl('想找 a√2 + b，使 (3√2 + 4)(a√2 + b) = 1', 0, 5.2)]; cap('找一個數，乘起來等於 1', ''); },
   async (tok, S) => { S.k.push(pl('想要 1 / (3√2 + 4)，但它不是 a√2 + b 的樣子', 0, 4.5)); cap('1/(3√2+4) 形式不對', ''); },
   async (tok, S) => { S.k.push(pl('上下同乘 3√2 − 4（分母有理化）', 0, 3.8)); cap('上下同乘 3√2 − 4', ''); },
@@ -787,7 +795,7 @@ scene('ab-q2', 'ℚ[√2]：加法、FOIL 乘法、用有理化找乘法反元�
     const inv = [1.5, -2], pr = qMul(QX, inv); S.k.push(ok(pr[0] === 0 && pr[1] === 1, '= (3√2 − 4)/2 = ' + qS(inv) + '；驗算 (3√2 + 4)(' + qS(inv) + ') = 1 ✓', 0, 2.4));
     cap('反元素：3/2 √2 − 2', '');
   },
-  async (tok, S) => { S.k.push(sm('3/2 可以，因為係數在 ℚ 裡；3 和 4 沒什麼特別，任何非零元素都能這樣做', 0, 1.7)); cap('換成別的數也一樣做得到', ''); },
+  async (tok, S) => { S.k.slice(0, 3).forEach((l) => fade(l)); S.k.push(sm('3/2 可以，因為係數在 ℚ 裡；3 和 4 沒什麼特別，任何非零元素都能這樣做', 0, 1.7)); cap('換成別的數也一樣做得到', ''); },
   async (tok, S) => { S.k.push(note('這不是完整證明，但說明了為什麼每個非零元素都有反元素', 0, 1.0)); cap('這是證明的想法', ''); },
 ]);
 scene('ab-vspace', 'Vector space（向量空間）：兩個集合、純量乘法', [
@@ -801,6 +809,7 @@ scene('ab-vspace', 'Vector space（向量空間）：兩個集合、純量乘法
   async (tok, S) => { S.d2 = pl('(ab)·v = a·(b·v)', -1.2, 1.8); cap('兩個純量：先乘再乘一樣', ''); },
   async (tok, S) => { S.d3 = pl('a(u + v) = au + av、(a + b)v = av + bv', 3.2, 1.8); cap('分配律兩條', ''); },
   async (tok, S) => {
+    gone(S.d); [S.a, S.b, S.c, S.d1, S.d2, S.d3].forEach((l) => fade(l));
     const v = [1, 2, 3], s = 2, w = [4, -1, 0], sv = v.map((x) => s * x), vw = v.map((x, i) => x + w[i]);
     S.e = ok(sv.join() === '2,4,6' && vw.join() === '5,1,3', 'ℝⁿ（n 元組）：示意 (1,2,3) + (4,−1,0) = (' + vw.join(',') + ')，2·(1,2,3) = (' + sv.join(',') + ') ✓', 0, 0.9); cap('最常見：ℝⁿ', '');
   },
