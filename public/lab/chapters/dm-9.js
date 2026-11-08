@@ -591,8 +591,8 @@ export default function (ctx) {
     await beat(tok, 2600);
     say('反身：a − a = 0；對稱：3|(a−b) ⇒ 3|(b−a)', '遞移：(a−b)+(b−c) = a−c');
     await beat(tok, 3000);
-    for (const x of S) { const r = x % 3, k = Math.floor(x / 3); blocks[x].material.color.set(CLS[r]); move(blocks[x], -3.4 + r * 3.4, 0.28 + k * 0.58, 1.2); await beat(tok, 220); }
-    ['[0]', '[1]', '[2]'].forEach((s, r) => tag(s, 'ptr alt', -3.4 + r * 3.4, 0.3, 2.3));
+    for (const x of S) { const r = x % 3, k = Math.floor(x / 3); blocks[x].material.color.set(CLS[r]); move(blocks[x], -3.4 + r * 3.4 + ((k % 2) - 0.5) * 0.9, 0.28, 0.6 + Math.floor(k / 2) * 0.9); await beat(tok, 220); }   // 每類排成 2×2 平放：不疊高，數字才不會互相蓋住
+    ['[0]', '[1]', '[2]'].forEach((s, r) => tag(s, 'ptr alt', -3.4 + r * 3.4, 0.3, 2.6));
     say('三個等價類：[0]、[1]、[2]', '[a] = {x | x R a}；同類的元素彼此等價');
     await beat(tok, 3000);
     say('等價類兩兩不相交、聯集是全部 → 一個分割', '[0] ∩ [1] = ∅，[0] ∪ [1] ∪ [2] = ℤ');
@@ -604,12 +604,12 @@ export default function (ctx) {
     const cls = (x) => parts.findIndex((p) => p.includes(x));
     const blocks = A.map((x, i) => cube(x, CLS[cls(x)], [0.6, 0.55, 0.6], -5 + (i % 3) * 0.9, 0.28, -1.2 + Math.floor(i / 3) * 1.2));
     say('（課本）分割 {1,2,3} | {4,5} | {6}', '→ 定義 a R b ⇔ a、b 在同一塊');
-    parts.forEach((p, r) => p.forEach((x, k) => move(blocks[N(x) - 1], -5.2 + r * 1.3, 0.28 + k * 0.58, 1.6)));
+    parts.forEach((p, r) => p.forEach((x, k) => move(blocks[N(x) - 1], -5.6 + r * 1.3, 0.28, 0.4 + k * 0.85)));   // 每塊排成一直排平放（不疊高）
     await beat(tok, 2600);
-    const cs = 0.62, mx = 0.4, mz = -1.6;
+    const cs = 0.8, mx = 0.2, mz = -2.2;   // 格子放大：斜看時深度方向會被壓扁，0.62 的格子上下兩列的 1 會疊在一起
     A.forEach((a, i) => { tag(a, 'idx', mx - cs, 0.1, mz + i * cs); tag(a, 'idx', mx + i * cs, 0.1, mz - cs); });
     for (let i = 0; i < 6; i++) {
-      for (let j = 0; j < 6; j++) { const one = cls(A[i]) === cls(A[j]); cube(one ? '1' : '', one ? CLS[cls(A[i])] : '#efe5d3', [cs * 0.86, one ? 0.36 : 0.1, cs * 0.86], mx + j * cs, one ? 0.18 : 0.05, mz + i * cs, one ? 1.5 : 0); }
+      for (let j = 0; j < 6; j++) { const one = cls(A[i]) === cls(A[j]); cube(one ? '1' : '', one ? CLS[cls(A[i])] : '#efe5d3', [cs * 0.86, one ? 0.36 : 0.1, cs * 0.86], mx + j * cs, one ? 0.18 : 0.05, mz + i * cs, one ? 0.6 : 0); }
       await beat(tok, 380);
     }
     say('矩陣變成對角線上的實心方塊', '方塊大小 3×3、2×2、1×1：|R| = 9 + 4 + 1 = 14');
@@ -769,6 +769,14 @@ export default function (ctx) {
   // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
   const K = kit(ctx);
   const FRAG = [];
+  // invisible box over the stage area a scene will use later: the auto framing measures what exists, so without it
+  // a scene that starts with one small thing zooms in on it and jumps back out when the rest arrives
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
+  // (only for scenes whose pictures arrive late: scene(..., { hold: [x0, y0, z0, x1, y1, z1] }) — a big default box zooms
+  //  the whole stage out and the text-column lines, 0.58 apart, start to overlap)
   // ═══ reA.js ═══
   {
 const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
@@ -801,17 +809,18 @@ const BLK = [TC.a, TC.b, TC.green, TC.orange, TC.purple, TC.teal, TC.gold, '#5c7
 function scene(id, title, steps, o = {}) {
   FRAG.push([id, title, async (tok) => {
     const c = o.cam || CAM; fresh(c[0], c[1]);
+    if (o.hold) frameHold(...o.hold);
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
 }
 // a column of text lines that appear one by one (left-aligned)
 // (max: keep only the last `max` lines — older ones scroll off the top)
-function board(x, y, dy = 0.58, max = 99) {
+function board(x, y, dy = 0.58, max = 8) {   // 文字欄最多 8 行（再多就把最舊的推出去）
   const B = { ls: [], y };
   B.add = (t, cls = '') => {
     if (B.ls.length >= max) { remove(B.ls.shift()); B.ls.forEach((l) => { l.position.y += dy; }); B.y += dy; }
-    const l = left(tag(t, cls, x, B.y)); B.ls.push(l); B.y -= dy; return l;
+    const l = K.keep(left(tag(t, cls, x, B.y))); B.ls.push(l); B.y -= dy; return l;   // 欄裡的行由 max 管：不要讓 good/bad 行被自動收掉，留下空行
   };
   B.gap = (k = 0.5) => { B.y -= dy * k; };
   B.clear = () => { gone(B.ls); B.ls = []; B.y = y; };
@@ -957,7 +966,7 @@ scene('reA-6a-pair', '6A：例子——A、B 兩個集合與 ordered pair', [
     setB(S); cap('B = {x, y}', '兩個 symbol');
   },
   async (tok, S) => { // @9.6
-    S.B = board(0.6, 5.6); S.r = S.B.add('R = {' + R6.map(pS).join(', ') + '}', 'ptr alt'); cap('考慮這個集合 R', '');
+    S.B = board(0.6, 5.6, 0.58, 5); S.r = S.B.add('R = {' + R6.map(pS).join(', ') + '}', 'ptr alt'); cap('考慮這個集合 R', '');
   },
   async (tok, S) => { // @64.0
     S.B.add('R 裡有 ' + R6.length + ' 個 ordered pair（有序對）'); cap('R 有四個 ordered pair', '');
@@ -977,7 +986,7 @@ scene('reA-6a-pair', '6A：例子——A、B 兩個集合與 ordered pair', [
   },
   async (tok, S) => { // @131.6
     S.B.add('A × B = 所有 (a, b)，a ∈ A、b ∈ B');
-    S.g = AXB.map(([a, b], k) => pl(pS([a, b]), 1.2 + (k % 2) * 1.7, S.B.y - 0.1 - Math.floor(k / 2) * 0.55));
+    S.g = AXB.map(([a, b], k) => pl(pS([a, b]), 1.2 + (k % 2) * 1.7, S.B.y - 0.3 - Math.floor(k / 2) * 0.72));
     cap('所有前面在 A、後面在 B 的 pair', '');
   },
 ]);
@@ -985,7 +994,7 @@ scene('reA-6a-pair', '6A：例子——A、B 兩個集合與 ordered pair', [
 scene('reA-6a-subset', '6A：relation = Cartesian product 的 subset', [
   async (tok, S) => { // @160.8
     S.g = {}; AXB.forEach(([a, b], k) => { S.g[PR(a, b)] = pl(pS([a, b]), -5.4 + (k % 2) * 1.9, 5.2 - Math.floor(k / 2) * 0.8); });
-    S.t = hd('A × B', -4.5, 6.2); S.B = board(0.2, 6.3);
+    S.t = hd('A × B', -4.5, 6.2); S.B = board(0.2, 6.3, 0.58, 5);
     S.B.add('relation 的定義（binary relation）', 'ptr'); cap('什麼叫 relation', '');
   },
   async (tok, S) => { // @171.6
@@ -1036,7 +1045,7 @@ function markRow(S, a) {
 
 scene('reA-6a-div', '6A：例子——{1,2,3,4} 上的整除關係', [
   async (tok, S) => { // @400.0
-    grid44(S); S.t = hd('A = {1, 2, 3, 4}；A × A 有 ' + A4.length ** 2 + ' 個 pair', -4.3, 6.4); S.B = board(0.2, 6.0);
+    grid44(S); S.t = hd('A = {1, 2, 3, 4}；A × A 有 ' + A4.length ** 2 + ' 個 pair', -4.3, 6.4); S.B = board(0.2, 6.0, 0.58, 3);   // 文字欄最多 3 行：方格的 16 個 pair 已經很多字
     cap('舉個例子：A = {1, 2, 3, 4}', '');
   },
   async (tok, S) => { // @429.0
@@ -1065,13 +1074,13 @@ scene('reA-6a-div', '6A：例子——{1,2,3,4} 上的整除關係', [
     S.B.add('R = {' + DIV4_LIST.map(pS).join(' ') + '}，共 ' + DIV4.size + ' 個' + ck(DIV4.size === 8), 'good'); cap('這就是 A² 的一個 subset', '共 8 個 ordered pair');
   },
   async (tok, S) => { // @553.1
-    S.B.add('意思：前面是後面的因數。任何 A² 的 subset 都是 relation，這個比較有意思'); cap('有些 relation 比較有意思', '');
+    S.B.add('意思：前面是後面的因數'); S.B.add('任何 A² 的 subset 都是 relation，這個比較有意思');   // 太長的一行拆兩行 cap('有些 relation 比較有意思', '');
   },
 ]);
 
 scene('reA-6a-matrix', '6A：表示 relation——列出 pair、zero-one matrix', [
   async (tok, S) => { // @586.0
-    S.B = board(0.2, 6.3); S.B.add('表示法 1：把所有 ordered pair 列出來', 'ptr');
+    S.B = board(0.2, 6.3, 0.58, 5); S.B.add('表示法 1：把所有 ordered pair 列出來', 'ptr');
     S.B.add('R = {' + R6.map(pS).join(', ') + '}'); cap('怎麼表示一個 relation？', '第一種：全部列出來');
   },
   async (tok, S) => { // @608.5
@@ -1164,7 +1173,7 @@ scene('reA-6a-equiv', '6A：Equivalence relation 的三個條件', [
   },
   async (tok, S) => { // @1101.4
     S.V = {}; A4.forEach((a) => { S.V[a] = dot(a, DG[a][0] + 0.4, DG[a][1] - 0.2, TC.node, 0.9); S.V[a].userData.l = loopAt([DG[a][0] + 0.4, DG[a][1] - 0.2], TC.green); });
-    S.n = note('像整除例子：(1,1)…(4,4) 都在' + ck(DIV4_P.ref), -3.3, 0.0);
+    S.n = note('像整除例子：(1,1)…(4,4) 都在' + ck(DIV4_P.ref), -3.3, 6.4);   // 放在四個點上方：放底下會被字幕推上來壓到 1、2
     S.B.add('① 對每個 a ∈ A：(a, a) ∈ R（自己跟自己有關係）'); cap('第一：自己跟自己要有關係', '');
   },
   async (tok, S) => { // @1127.2
@@ -1305,7 +1314,7 @@ scene('reA-6b-cong', '6B：推廣——congruence modulo n', [
   },
   async (tok, S) => { // @663.4
     S.B.add('也就是 n | (a − b)');
-    S.ex = note('示意：' + EX_A + ' − ' + EX_B + ' = ' + (EX_A - EX_B) + ' = ' + (EX_A - EX_B) / EX_N + ' × ' + EX_N + ' → ' + EX_A + ' ≡ ' + EX_B + ' (mod ' + EX_N + ')' + ck(md(EX_A - EX_B, EX_N) === 0), 3.0, 3.8);
+    S.ex = note('示意：' + EX_A + ' − ' + EX_B + ' = ' + (EX_A - EX_B) + ' = ' + (EX_A - EX_B) / EX_N + ' × ' + EX_N + ' → ' + EX_A + ' ≡ ' + EX_B + ' (mod ' + EX_N + ')' + ck(md(EX_A - EX_B, EX_N) === 0), 4.0, 4.5);   // 放在 ≡ 符號下面、文字欄短行的右邊：不要壓到長的行
     cap('n 整除 a − b', '同一件事');
   },
   async (tok, S) => { // @688.6
@@ -1313,7 +1322,7 @@ scene('reA-6b-cong', '6B：推廣——congruence modulo n', [
   },
   async (tok, S) => { // @749.0
     S.B.add('另一種看法：a mod n = b mod n', 'ptr');
-    S.ex2 = note(EX_A + ' mod ' + EX_N + ' = ' + md(EX_A, EX_N) + '，' + EX_B + ' mod ' + EX_N + ' = ' + md(EX_B, EX_N) + ck(md(EX_A, EX_N) === md(EX_B, EX_N)), 3.0, 3.0);
+    S.ex2 = note(EX_A + ' mod ' + EX_N + ' = ' + md(EX_A, EX_N) + '，' + EX_B + ' mod ' + EX_N + ' = ' + md(EX_B, EX_N) + ck(md(EX_A, EX_N) === md(EX_B, EX_N)), 4.0, 3.8);
     cap('另一種看法：除以 n 的餘數一樣', '');
   },
 ]);
@@ -1643,7 +1652,7 @@ scene('reA-7a-qa', '7A：問答——x R y 的假設一直都在', [
 const FL = [[-6.0, 5.6], [-3.1, 2.0], [-1.0, 4.9], [-4.6, 3.4], [-0.6, 1.8], [-5.4, 1.4], [-2.4, 5.8], [-3.6, 4.2], [-1.6, 2.9]];
 scene('reA-7a-flock', '7A：equivalence classes 的直觀——物以類聚', [
   async (tok, S) => { // @1065.0
-    S.v = A9.map((v) => dot(String(v), ...FL[v])); S.n = note('示意：mod 3', -3.4, 6.6); S.B = board(0.8, 5.6);
+    S.v = A9.map((v) => dot(String(v), ...FL[v])); S.n = note('示意：mod 3', -3.4, 6.6); S.B = board(0.0, 5.6, 0.66);   // 文字欄往左、行距拉開：長的行才不會被推回來壓到上一行
     S.B.add('A 裡每個元素都有自己的 equivalence class'); cap('整個集合 A，每個元素都有 class', '');
   },
   async (tok, S) => { // @1081.7
@@ -1655,13 +1664,13 @@ scene('reA-7a-flock', '7A：equivalence classes 的直觀——物以類聚', [
     S.B.add('互相 equivalent 的 → 同一個 class'); cap('equivalent 的就聚在同一個 class', '');
   },
   async (tok, S) => { // @1104.6
-    S.B.add('自己在自己的 class；同一個 class 裡的元素，class 都一樣'); cap('同一群的 class 都一樣', '');
+    S.B.add('自己在自己的 class；'); S.B.add('同一個 class 裡的元素，class 都一樣'); cap('同一群的 class 都一樣', '');   // 太長的一行拆兩行：超出右邊會被推回來壓到上一行
   },
   async (tok, S) => { // @1123.4
     S.B.add('不同 class 交集是空的：有交集就會被橋樑接成同一個'); cap('不同 class 沒有交集', '');
   },
   async (tok, S) => { // @1141.7
-    S.bf = bub('Birds of a feather flock together：物以類聚', 3.2, 2.2); cap('Birds of a feather flock together', '物以類聚');
+    S.bf = bub('Birds of a feather flock together：物以類聚', -3.4, 1.0);   // 放在三群下面（文字欄現在比較長） cap('Birds of a feather flock together', '物以類聚');
   },
   async (tok, S) => { // @1169.6
     S.B.add('equivalence relation 把元素分成不同的 classes', 'good'); cap('把元素分成不同的 class', '');
@@ -2027,7 +2036,7 @@ scene('reA-7c-equal', '7C：等號是最強的 equivalence relation', [
   async (tok, S) => { // @684.9
     S.B.add('equivalence relation 的重點：classes 物以類聚、兩兩交集是空的', 'good'); cap('equivalence relation 講到這裡', '');
   },
-]);
+], { hold: [-6.6, 2.2, -0.3, -1.4, 5.4, 0.3] });   // 六個點後來才出現：先把它們的位置框進取景，開頭不會只對著文字欄放大
 
 scene('reA-7c-po', '7C：partial order 的定義', [
   async (tok, S) => { // @702.0
@@ -2195,7 +2204,7 @@ scene('reA-7d-hasse', '7D：Hasse diagram 的畫法', [
     S.ab = dash([S.P.a, S.P.b], TC.hot); S.x = bad('有 c 在中間 → a、b 不連', -5.6, 3.4);
     S.B.add('有這樣的 c：a、b 就不連；其他情況就連', 'good'); cap('有中間人就不連', '');
   },
-]);
+], { hold: [-5.0, 1.0, -0.3, -2.6, 5.9, 0.3] });   // 三個點後來才出現：先把它們的位置框進取景，開頭不會只對著文字欄放大
 function dash(pts, c = TC.hot, r = 0.04) {
   const out = [];
   for (let i = 0; i + 1 < pts.length; i++) {
@@ -2540,13 +2549,14 @@ const KROW = { mx: ['maximal', 0.0], mn: ['minimal', -0.65], g: ['greatest', -1.
 const KROWB = { mx: 2.6, mn: 1.95, g: 1.3, l: 0.65 };
 function exRes(S, i, k) {
   const e = EXS[i], v = e[k], okk = v.join(',') === SAID8[i][k];
-  S.res.push(ok(okk, e.x, i === 1 ? KROWB[k] : KROW[k][1], KROW[k][0] + '：' + none(v) + ' ✓'));
+  if (k === 'mx') S.res.forEach((l) => setCls(l, 'idx'));   // 換下一個例子：前一個例子的答案退成灰色
+  S.res.push(K.keep(ok(okk, e.x, i === 1 ? KROWB[k] : KROW[k][1], KROW[k][0] + '：' + none(v) + ' ✓')));   // 答案是圖的一部分：不要被「三個以後自動收掉」收走
   const col = { mx: [TC.orange, '#5a2a00'], mn: [TC.a, '#0b2a4a'], g: [TC.hot, '#5a0000'], l: [TC.green, '#0f5a3a'] }[k];
   v.forEach((n) => paint(S.H[i].V[n], col[0], col[1]));
 }
 scene('reA-8b-great', '8B：greatest 與 least element', [
   async (tok, S) => { // @4.2
-    S.B = board(0.2, 6.3); S.B.add('前面：maximal、minimal；現在：greatest', 'ptr'); cap('再來是 greatest element', '');
+    S.B = board(0.2, 6.3, 0.66, 7); S.B.add('前面：maximal、minimal；現在：greatest', 'ptr');   // 行距拉開：good/bad 行不再自動消失後，0.58 太擠 cap('再來是 greatest element', '');
   },
   async (tok, S) => { // @5.8
     S.H = hasse(V3P, coversOf(V3S, V3LE)); S.n = note('示意：{1,2,3}、整除', -3.6, 6.4);
@@ -2633,7 +2643,7 @@ scene('reA-8b-ex', '8B：三個例子——找 maximal、minimal、greatest、le
   async (tok, S) => { // @354.3
     gone(S.b1); S.b1 = bub('partial order：不是任兩個都能比 → maximal 不一定是 greatest', -1.0, 7.9); cap('不是任兩個都能比', '世界上很多東西不能比');
   },
-]);
+], { hold: [-6.6, -2.3, -0.3, 6.9, 8.2, 0.3] });
 
 // 示意：A = 12 的因數、整除；B = {4, 6}
 const D12 = ['1', '2', '3', '4', '6', '12'];
@@ -2673,13 +2683,13 @@ scene('reA-8b-bound', '8B：lower bound、upper bound、glb、lub', [
   },
   async (tok, S) => { // @534.6
     glow(S.H.V[GLB[0]], '#0f5a3a'); S.g = good('glb = ' + GLB[0], D12P[GLB[0]][0] - 1.2, D12P[GLB[0]][1]);
-    S.B.add('greatest lower bound（glb）：本身是 lower bound，又比所有 lower bound 大', 'good'); cap('glb：最大的下界', '');
+    S.B.add('greatest lower bound（glb）：', 'good'); S.B.add('本身是 lower bound，又比所有 lower bound 大', 'good');   // 太長的一行拆兩行（超出舞台右邊） cap('glb：最大的下界', '');
   },
   async (tok, S) => { // @598.3
     S.u = good('lub = ' + LUB[0], D12P[LUB[0]][0] + 1.3, D12P[LUB[0]][1]);
     S.B.add('least upper bound（lub）：upper bound 裡最小的', 'good'); cap('lub：最小的上界', '');
   },
-]);
+], { hold: [-6.0, 0.4, -0.3, -2.2, 6.6, 0.3] });   // Hasse 圖晚一步才出現：先框進取景
 
 // B = {1/n}：在數線 [0, 1] 上
 const QX = (v) => -6.0 + v * 11.0;
@@ -2752,7 +2762,7 @@ const LATT_LE = NUP.slice(0, 10).every((x) => NUP.slice(0, 10).every((y) => lubI
 const LATT_DV = NUP.slice(0, 10).every((x) => NUP.slice(0, 10).every((y) => lubIn(DV_N, x, y)[0] === lcm(x, y) && glbIn(DV_N, x, y)[0] === gcd(x, y)));
 scene('reA-8b-lattice', '8B：lattice——任兩個元素都有 lub 和 glb', [
   async (tok, S) => { // @925.6
-    S.B = board(0.2, 6.4, 0.52, 9); S.B.add('最後一個定義', 'ptr'); cap('最後一點點定義', '');
+    S.B = board(0.2, 6.4, 0.64, 7); S.B.add('最後一個定義', 'ptr');   // 行距拉開：good/bad 行不再自動消失後，0.52 太擠 cap('最後一點點定義', '');
   },
   async (tok, S) => { // @932.0
     S.B.add('poset 裡任何兩個元素 x、y 都有 lub 也都有 glb'); cap('任兩個都有 lub 和 glb', '');
@@ -2830,6 +2840,7 @@ const CLS = ['#4b9ee2', '#e55a9b', '#2fc092', '#dd8238', '#9b7ef4'];
 function scene(id, title, steps, o = {}) {
   FRAG.push([id, title, async (tok) => {
     const c = o.cam || CAM; fresh(c[0], c[1]);
+    if (o.hold) frameHold(...o.hold);
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
@@ -2907,9 +2918,9 @@ function mkG(Pm, o = {}) {
 }
 
 // ── 0/1 矩陣（每格一個小方塊） ──
-function mkM(rn, cn, x0, y0, cs = 0.55, title) {
+function mkM(rn, cn, x0, y0, cs = 0.55, title, rows = true) {   // rows = false：列名和左邊並排的矩陣一樣、同一高度，就不再標一次
   const M = { c: {}, rn, cn, ex: [] };
-  rn.forEach((r, i) => M.ex.push(sm(r, x0 - cs * 0.6 - 0.32, y0 - i * cs)));   // 列名／行名離格子遠一點：格子裡的 0／1 標籤比格子寬，太近會被「標籤不重疊」推開而對不上列
+  if (rows) rn.forEach((r, i) => M.ex.push(sm(r, x0 - cs * 0.6 - 0.32, y0 - i * cs)));   // 列名／行名離格子遠一點：格子裡的 0／1 標籤比格子寬，太近會被「標籤不重疊」推開而對不上列
   cn.forEach((c, j) => M.ex.push(sm(c, x0 + j * cs, y0 + cs * 0.55 + 0.25)));
   if (title) M.ex.push(hd(title, x0 + (cn.length - 1) * cs / 2, y0 + cs * 0.55 + 0.85));
   rn.forEach((r, i) => cn.forEach((c, j) => { const m = cube('0', TC.zero, [cs * 0.86, cs * 0.86, 0.1], x0 + j * cs, y0 - i * cs, 0); relabel(m, ''); M.c[kp(r, c)] = m; }));
@@ -2935,7 +2946,7 @@ scene('reB-l20-mat', 'Lec20：關係的箭頭圖與關係矩陣 M_R', [
     cap('從 A 到 B 的一個關係 R', '');
   },
   async (tok, S) => {
-    S.t2 = pl('R ⊆ A × B：R 是一堆有序對 (a, b)', 1.6, 6.0); cap('關係 R 是 A × B 的子集合', '');
+    S.t2 = pl('R ⊆ A × B：R 是一堆有序對 (a, b)', 1.6, 6.15); cap('關係 R 是 A × B 的子集合', '');
   },
   async (tok, S) => {
     S.bA = blob(-6.2, 4.5, 0.75, 2.0, TC.a); S.bB = blob(-4.4, 4.5, 0.75, 1.6, TC.b);
@@ -2944,11 +2955,11 @@ scene('reB-l20-mat', 'Lec20：關係的箭頭圖與關係矩陣 M_R', [
   async (tok, S) => { S.g.add('1', 'a', TC.orange); cap('1 和 a 有關係：畫一條 1 → a', ''); },
   async (tok, S) => {
     S.g.col('1', 'a', TC.edge); for (const [u, v] of [['1', 'b'], ['2', 'b'], ['2', 'c'], ['4', 'a']]) S.g.add(u, v);
-    S.r = pl('R = ' + fmtR(L20R, [...L20A, ...L20B]), -3.0, 1.2); cap('1b、2b、2c、4a 也有關係', '');
+    S.r = pl('R = ' + fmtR(L20R, [...L20A, ...L20B]), -4.4, 1.0); cap('1b、2b、2c、4a 也有關係', '');
   },
-  async (tok, S) => { S.M = mkM(L20A, L20B, 1.2, 5.0, 0.72, 'M_R'); cap('把同一個關係寫成矩陣 M_R', ''); },
+  async (tok, S) => { S.M = mkM(L20A, L20B, 1.2, 4.3, 0.72, 'M_R'); cap('把同一個關係寫成矩陣 M_R', ''); },   // 矩陣往下放：標題不要壓到上面那行 R ⊆ A × B
   async (tok, S) => {
-    S.n1 = note('列（橫的）= A 的元素，行（直的）= B 的元素', 2.0, 1.9);
+    S.n1 = note('列（橫的）= A 的元素，行（直的）= B 的元素', 3.7, 1.35);
     S.M.hiRow('1', TC.yel); cap('A 標在列，B 標在行', '');
     await wt(tok, 700); S.M.blank();
   },
@@ -2957,7 +2968,7 @@ scene('reB-l20-mat', 'Lec20：關係的箭頭圖與關係矩陣 M_R', [
   async (tok, S) => { S.M.set('2', 'c', 1); cap('2 和 c 有關係 → 填 1', ''); },
   async (tok, S) => {
     S.M.load(L20R); const ones = Object.keys(S.M.c).filter((k) => L20R.has(k)).length;
-    S.ck = ok(ones === L20R.size && L20R.size === 5, '4a 填 1，其他填 0：5 個 1 = 5 個有序對 ✓', 2.0, 1.9);
+    S.ck = ok(ones === L20R.size && L20R.size === 5, '4a 填 1，其他填 0：5 個 1 = 5 個有序對 ✓', 3.7, 1.35);
     cap('其他沒有關係的地方都填 0', '');
   },
 ]);
@@ -2970,7 +2981,7 @@ scene('reB-l20-comp', 'Lec20：合成關係 S∘R 與 Boolean 矩陣乘法', [
     cap('再來一個從 B 到 C 的關係 S，看合成', '');
   },
   async (tok, S) => {
-    S.g.path(['1', 'a', 'x'], TC.orange);
+    S.g.path(['1', 'a', 'x'], TC.orange); gone(S.n);   // 「合成：S∘R」由下面的定義接手，不要留著和後面的行疊在一起
     S.d = lines(['S∘R = {(p, r) | 有某個 q：pRq 且 qSr}', '先走 R，再走 S'], 1.8, 2.2, 0.6); cap('R 先、S 後：1 → a → x', '');
   },
   async (tok, S) => {
@@ -3030,12 +3041,12 @@ scene('reB-l20-power', 'Lec20：R on A、M_R 是方陣、R² 與 R³ 的矩陣',
   async (tok, S) => { S.M1 = mkM(L20A, L20A, -2.2, 5.9, 0.58, 'M_R'); S.M1.load(L20Q); cap('列、行都是 A：n × n 的方陣', ''); },
   async (tok, S) => { S.d = pl('R 可以和自己合成：R∘R = R²', 1.6, 2.3); cap('R 自己跟自己合成', ''); },
   async (tok, S) => {
-    S.M2 = mkM(L20A, L20A, 1.0, 5.9, 0.58, 'M(R²)'); S.M2.load(pow(L20Q, 2));
+    S.M2 = mkM(L20A, L20A, 1.0, 5.9, 0.58, 'M(R²)', false); S.M2.load(pow(L20Q, 2));
     let okM = true; for (const i of L20A) for (const j of L20A) { const v = L20A.some((q) => L20Q.has(kp(i, q)) && L20Q.has(kp(q, j))); if (v !== pow(L20Q, 2).has(kp(i, j))) okM = false; }
     S.c2 = ok(okM, 'M(R²) = M_R ⊙ M_R ✓', 1.6, 1.6); cap('M(R²) = M_R ⊙ M_R', '');
   },
   async (tok, S) => {
-    S.M3 = mkM(L20A, L20A, 4.2, 5.9, 0.58, 'M(R³)'); S.M3.load(pow(L20Q, 3));
+    S.M3 = mkM(L20A, L20A, 4.2, 5.9, 0.58, 'M(R³)', false); S.M3.load(pow(L20Q, 3));
     S.c3 = pl('R 連續合成三次：M(R³) = M_R ⊙ M_R ⊙ M_R', 1.6, 0.9); cap('合成三次 = 矩陣的三次方', '');
   },
   async (tok, S) => { S.c4 = note('簡寫：Rⁿ = R 自己合成 n 次，M(Rⁿ) = M_R^[n]', 1.6, 0.2); cap('記號：R 的 n 次方', ''); },
@@ -3337,23 +3348,23 @@ scene('reB-l21-tclo', 'Lec21：遞移閉包：所有到得了的地方都拉一�
 
 const BCODE = ['A := M_R；B := A', 'for i := 2 to n:', '  A := A ⊙ M_R    // 長度 i', '  B := B ∨ A      // 聯集', 'return B         // = M(R*)'];
 scene('reB-l21-brute', 'Lec21：路徑、cycle、connected 的名詞；照定義算遞移閉包', [
-  async (tok, S) => { S.g = g7(); S.t = hd('長度 n 的路徑：a→x₁→x₂→…→xₙ₋₁→b', 0.8, 7.0); S.d = pl('共 n 個有序對，長度就是 n', 2.6, 6.2); cap('長度為 n 的路徑', ''); },
+  async (tok, S) => { S.g = g7(); S.t = hd('長度 n 的路徑：a→x₁→x₂→…→xₙ₋₁→b', 0.8, 7.0); S.d = pl('共 n 個有序對，長度就是 n', 3.2, 6.2); cap('長度為 n 的路徑', ''); },
   async (tok, S) => { txt(S.d, 'directed graph（有向圖）、edge（邊）、path（路徑）'); cap('名詞：有向圖、邊、路徑', ''); },
-  async (tok, S) => { S.g.path(['F', 'F'], TC.orange); S.d2 = pl('從自己出發、回到自己：cycle（圖上只有 F→F）', 2.6, 5.5); cap('從自己走回自己：cycle', ''); },
+  async (tok, S) => { S.g.path(['F', 'F'], TC.orange); S.d2 = pl('從自己出發、回到自己：cycle（圖上只有 F→F）', 3.2, 5.5); cap('從自己走回自己：cycle', ''); },
   async (tok, S) => {
     S.g.paint(); S.g.add('D', 'G', TC.purple); S.g.path(['G', 'F', 'D', 'G'], TC.orange);
-    S.n = sm('（假設多一條 D→G）', 2.6, 4.9); txt(S.d2, 'G→F→D→G：也是一個 cycle'); cap('假設多一條邊：G→F→D→G', '');
+    S.n = sm('（假設多一條 D→G）', 3.2, 4.75); txt(S.d2, 'G→F→D→G：也是一個 cycle'); cap('假設多一條邊：G→F→D→G', '');
   },
   async (tok, S) => {
     S.g.del('D', 'G'); S.g.paint(); gone(S.n); const rs = rowOf(G7REACH, V7, 'G'); rs.forEach((b) => S.g.vcol(b, TC.green));
     txt(S.d2, 'connected：G 可以連到 ' + rs.join('、')); cap('G 可以連到 F、D、C、E、B', '');
   },
-  async (tok, S) => { S.g.vreset(); S.d3 = pl('遞移閉包 = 所有走得到的地方', 2.6, 4.9); cap('遞移閉包 = 你可以走到哪裡', ''); },
-  async (tok, S) => { gone(S.d, S.d2, S.d3); S.d = pl('照定義：R ∪ R² ∪ … 要算到無窮大？', 2.6, 6.2); cap('問題：程式不能算到無窮大', ''); },
-  async (tok, S) => { S.d2 = pl('7 個點：最長有用的路 = 把其他點都走過再繞回來', 2.6, 5.5); cap('7 個點，最長的路走多遠？', ''); },
+  async (tok, S) => { S.g.vreset(); S.d3 = pl('遞移閉包 = 所有走得到的地方', 3.2, 4.9); cap('遞移閉包 = 你可以走到哪裡', ''); },
+  async (tok, S) => { gone(S.d, S.d2, S.d3); S.d = pl('照定義：R ∪ R² ∪ … 要算到無窮大？', 3.2, 6.2); cap('問題：程式不能算到無窮大', ''); },
+  async (tok, S) => { S.d2 = pl('7 個點：最長有用的路 = 把其他點都走過再繞回來', 3.2, 5.5); cap('7 個點，最長的路走多遠？', ''); },
   async (tok, S) => {
     let k = 1; while (k < 7 && !sub(pow(G7, k + 1), uni(...Array.from({ length: k }, (_, i) => pow(G7, i + 1))))) k++;
-    S.d3 = ok(same(uni(...Array.from({ length: 7 }, (_, i) => pow(G7, i + 1))), G7REACH), '算到 Rⁿ（n = 點數）就夠：R ∪ … ∪ R⁷ = 所有到得了的 ✓', 2.6, 4.8); cap('只要算到 n 次方', '');
+    S.d3 = ok(same(uni(...Array.from({ length: 7 }, (_, i) => pow(G7, i + 1))), G7REACH), '算到 Rⁿ（n = 點數）就夠：R ∪ … ∪ R⁷ = 所有到得了的 ✓', 3.2, 4.8); cap('只要算到 n 次方', '');
   },
   async (tok, S) => { gone(S.g, S.d, S.d2, S.d3, S.t); S.c = code(BCODE, -4.6, 6.4, 0.6); S.c.hl(0); cap('最簡單的演算法：照定義', ''); },
   async (tok, S) => { S.c.hl(2); S.d = pl('Boolean 乘法：1 + 1 = 1', -3.6, 2.6); cap('矩陣乘法裡 1 + 1 = 1', ''); },
@@ -3505,7 +3516,7 @@ scene('reB-l21-classes', 'Lec21：除以 5 的餘數：五堆 = 五個等價類 
     NUMS.forEach((n, i) => { S.cb[n] = cube(String(n), TC.node, [0.6, 0.5, 0.3], -5.6 + (i % 10) * 1.24, 6.0 - Math.floor(i / 10) * 0.8, 0); });
     cap('整數用它的餘數來代表', '');
   },
-  async (tok, S) => { S.h = []; const go = (r) => { const ms = NUMS.filter((n) => md(n, 5) === r); ms.forEach((n, j) => { P.move(S.cb[n], COLX[r], 3.7 - j * 0.66, 0); S.cb[n].material.color.set(CLS[r]); }); S.h.push(sm('餘 ' + r, COLX[r], 4.35)); }; S.go = go; go(0); cap('0、5、10、−5：一群人', ''); },
+  async (tok, S) => { S.h = []; const go = (r) => { const ms = NUMS.filter((n) => md(n, 5) === r); ms.forEach((n, j) => { const lb = S.cb[n].userData.lbl; if (lb) { showL(lb, false); setTimeout(() => showL(lb, true), 900); } P.move(S.cb[n], COLX[r], 3.7 - j * 0.66, 0);   /* 飛過去的途中先藏數字：不和停著的方塊、「餘 r」疊在一起 */ S.cb[n].material.color.set(CLS[r]); }); S.h.push(sm('餘 ' + r, COLX[r], 4.35)); }; S.go = go; go(0); cap('0、5、10、−5：一群人', ''); },
   async (tok, S) => { S.go(1); cap('1、6、11、−4：除以 5 餘 1', ''); },
   async (tok, S) => { S.go(2); S.go(3); S.go(4); cap('餘 2、餘 3、餘 4', ''); },
   async (tok, S) => { const okA = NUMS.every((n) => [0, 1, 2, 3, 4].filter((r) => md(n, 5) === r).length === 1); S.ck = ok(okA, '總共 5 堆，每個數剛好在一堆 ✓', 0, 0.9); cap('總共分成五堆', ''); },
@@ -3521,12 +3532,12 @@ const PA = ['1', '2', '3', '4', '5'], PBL = [['1', '2'], ['3', '4'], ['5']];
 const PREL = new Set(PBL.flatMap((b) => b.flatMap((x) => b.map((y) => kp(x, y)))));
 scene('reB-l21-partition', 'Lec21：partition（分割）的兩個條件，和等價關係是一體兩面', [
   async (tok, S) => { S.t = hd('partition（分割）', 0, 7.0); cap('另一個講法：分割', ''); },
-  async (tok, S) => { S.bx = [0, 1, 2, 3, 4].map((r) => blob(COLX[r], 3.4, 1.15, 1.25, CLS[r], 0.25)); S.lb = [0, 1, 2, 3, 4].map((r) => [hot('[' + r + ']', COLX[r], 4.4), ...[-5, 0, 5].map((q, j) => sm(String(q + r) + (j === 2 ? ', …' : ','), COLX[r], 3.7 - j * 0.5))]); cap('所有整數在 mod 5 底下分成五類', ''); },
+  async (tok, S) => { S.bx = [0, 1, 2, 3, 4].map((r) => blob(COLX[r], 3.4, 1.15, 1.25, CLS[r], 0.25)); S.lb = [0, 1, 2, 3, 4].map((r) => [hot('[' + r + ']', COLX[r], 4.4), sm([-5, 0, 5].map((q) => String(q + r)).join(', ') + ', …', COLX[r], 3.3)]); cap('所有整數在 mod 5 底下分成五類', ''); },   // 每塊的成員寫成一行：一塊一個標籤
   async (tok, S) => { S.d = pl('每個人只能挑自己所屬的那一群', 0, 6.1); cap('每個人只能在自己那一群', ''); },
   async (tok, S) => { txt(S.d, '整數被切割成五塊：這叫 partition'); cap('整數被切成五塊：partition', ''); },
   async (tok, S) => { S.d2 = pl('partition 有兩個特性', 0, 5.4); cap('分割有兩個特性', ''); },
-  async (tok, S) => { S.c1 = pl('① 每個人只屬於其中一塊（5 只在 [0]）', 0, 2.3); cap('第一：每個人只屬於唯一一塊', ''); },
-  async (tok, S) => { S.c2 = pl('② 每個人一定有歸屬（餘數一定是 0–4 之一）', 0, 1.6); cap('第二：每個人一定要有歸屬', ''); },
+  async (tok, S) => { S.c1 = pl('① 每個人只屬於其中一塊（5 只在 [0]）', 0, 1.55); cap('第一：每個人只屬於唯一一塊', ''); },
+  async (tok, S) => { S.c2 = pl('② 每個人一定有歸屬（餘數一定是 0–4 之一）', 0, 0.9); cap('第二：每個人一定要有歸屬', ''); },
   async (tok, S) => {
     gone(S.bx, S.lb, S.c1, S.c2, S.d, S.d2); S.big = blob(-3.0, 3.8, 3.0, 2.3, '#cdbfa6', 0.2);
     S.bl = [[-4.8, 4.9], [-2.9, 5.1], [-1.2, 4.3], [-4.4, 2.7], [-2.0, 2.6]].map(([x, y], i) => { const b = blob(x, y, 0.8, 0.7, CLS[i], 0.35); return [b, pl('A' + (i + 1), x, y)]; });
@@ -3580,7 +3591,7 @@ scene('reB-l21-more', 'Lec21：更多等價關係（字串長度、|a|、小數�
     S.d = ok(okd, '1.3 ~ 2.3 ~ 3.3（差都是整數）✓', 0, 6.0); cap('1.3 跟 2.3、3.3 一樣', '');
   },
   async (tok, S) => {
-    S.n13 = [cube('', TC.hot, [0.18, 0.4, 0.18], NL(-1.3), 3.0, 0), sm('−1.3', NL(-1.3), 3.6)];
+    S.n13 = [cube('', TC.hot, [0.18, 0.4, 0.18], NL(-1.3), 3.0, 0), sm('−1.3', NL(-1.3), 4.0)];   // 和旁邊的 −1.7 錯開高度
     S.d2 = bad('但 1.3 和 −1.3：差 2.6 不是整數 ✘', 0, 5.3); cap('但跟 −1.3 不一樣', '');
   },
   async (tok, S) => { S.d3 = pl('定義是「相減等於整數」，不是「看起來小數一樣」', 0, 4.6); cap('記得定義：兩個相減是整數', ''); },
@@ -3611,7 +3622,7 @@ const ER = { R1: R_('00 11 22 33'), R2: R_('00 02 20 22 23 32 33'), R3: R_('00 1
 function eqBoard(S, name, R, o = {}) {
   S.g = mkG(EQP); S.g.load(R); S.M = mkM(EA, EA, -0.9, 5.9, 0.55, 'M_' + name); S.M.load(R);
   S.t = hd(name + ' = ' + (R.size === 0 ? '∅' : R.size === 16 ? 'A × A（16 對）' : fmtR(R, EA)), 0, 7.8);
-  S.rows = {}; S.mk = (k, v, t) => { gone(S.rows[k]); const y = { ref: 5.6, sym: 4.9, tra: 4.2, eq: 3.2 }[k]; S.rows[k] = v === null ? pl(t, 4.1, y) : v ? good(t, 4.1, y) : bad(t, 4.1, y); };
+  S.rows = {}; S.mk = (k, v, t) => { gone(S.rows[k]); const y = { ref: 5.6, sym: 4.9, tra: 4.2, eq: 3.2 }[k]; S.rows[k] = v === null ? pl(t, 4.1, y) : K.keep(v ? good(t, 4.1, y) : bad(t, 4.1, y)); };   // 檢查結果是表的一部分：不要被自動收掉
 }
 scene('reB-eq-def', 'Equivalence relation 的定義', [
   async (tok, S) => { S.t = hd('Equivalence relation（等價關係）', 0, 6.6); cap('先看定義', ''); },
