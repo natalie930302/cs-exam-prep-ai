@@ -39,6 +39,12 @@ export default function (ctx) {
   }
   const glow = (m, c) => { if (m && m.material) m.material.emissive = new THREE.Color(c || '#000000'); };
   const txt = (l, t) => { l.element.textContent = t; };
+  // an invisible box over the area a scene will use later: the stage's auto framing measures what exists,
+  // so without it a scene that starts small zooms in and later jumps back out (things enter below the frame)
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
   const ease = (t) => t * t * (3 - 2 * t);
   async function tween(w, ms, fn) { const steps = 14; for (let k = 1; k <= steps; k++) { fn(k / steps); await w(ms / steps); } }
   async function wait(my, ms) { await sleep(ms); if (my !== mtok) throw new Error('stale'); }
@@ -657,6 +663,7 @@ export default function (ctx) {
   }
   async function scCnWnQn(tok) {
     fresh([0, 7, 11], [0, 1.6, 0]);
+    const HC = [-2.9, 0.3, -2.9, 2.9, 4.6, 2.9]; frameHold(...HC); // C₆/W₆ first, the taller Q₃ later: one framing for both
     const w = (ms) => beat(tok, ms);
     let D = cn(6), G = mkGraph(D.names, D.pos, []);
     for (const [u, v] of D.edges) { addEdge(G, u, v, 0, COL.blue); await w(300); }
@@ -667,7 +674,7 @@ export default function (ctx) {
     for (let i = 0; i < 6; i++) { addEdge(G, i, 6, 0, COL.gold); await w(220); }
     say('輪 W₆：C₆ 加一個中心點連到每個點', 'Wₙ 有 n + 1 個點、2n 條邊');
     await w(2600);
-    lab.clear();
+    lab.clear(); frameHold(...HC);
     D = qn(3); G = mkGraph(D.names, D.pos, [], { r: 0.3 });
     for (const [u, v] of D.edges) { addEdge(G, u, v, 0, PAL[Math.log2(u ^ v)]); await w(160); }
     say('超立方體 Q₃：頂點 = 3 位元字串', '只差一個 bit 的兩點相連');
@@ -814,6 +821,7 @@ export default function (ctx) {
   }
   async function scHamFail(tok) {
     fresh([0, 7, 10.5], [0, 1.0, 0]);
+    const HF = [-2.4, 0.3, -2.2, 2.4, 4.1, 2.2]; frameHold(...HF); // K₂,₃ first, the taller Q₃ later: one framing for both
     const w = (ms) => beat(tok, ms);
     let D = kmn(2, 3), G = mkGraph(D.names, D.pos, D.edges);
     G.V.forEach((v, i) => paintV(G, i, i < 2 ? COL.blue : COL.pink));
@@ -824,7 +832,7 @@ export default function (ctx) {
     for (let k = 1; k < tryP.length; k++) { paintE(G.E[ek(tryP[k - 1], tryP[k])], COL.gold, true); await w(700); }
     say('迴路一定藍、粉交替 → 兩邊點數要相等', '粉 v3 → 藍？藍都用完了 ✘');
     await w(3200);
-    lab.clear();
+    lab.clear(); frameHold(...HF);
     D = cube3(); G = mkGraph(D.names, D.pos, D.edges);
     say('Q₃：每點度數 3 < 8/2，Dirac 不成立', '但還是有 Hamilton 迴路');
     await w(2400);
@@ -939,6 +947,8 @@ export default function (ctx) {
   {
 const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
 const icon = P.icon;
+// labels that are part of the picture (table cells, matrix rows, lists) must not retire like side remarks
+const keep = P.keep;
 // (kit has no beat: short waits use ctx.beat)
 // ─── 離散數學 第 7 章（清大 趙啟超 第18A–19C講、交大 易志偉 Lec22–23 Graphs）— cued scenes ───
 // 每個 scene 是一串 steps；每一步等老師講到那一句（notes 的 cues）才動一下。不重播、不循環。
@@ -949,9 +959,13 @@ const cap = (a, b = '') => say(a, b);
 const CAMG = [[0, 7.2, 11.2], [0, 1.3, 0]];
 const CAMW = [[0, 8.2, 12.4], [0, 1.0, 0]];
 const CAMT = [[0, 9.5, 8.6], [0, 0.4, 0.2]];
-function scene(id, title, steps, cam = CAMG) {
+// board on the left + graph on the floor to the right: the usual picture area of the CAMW scenes, held from the first step
+const HOLDW = [-6.6, 0.3, -2.6, 6.0, 5.0, 3.0];
+const hold = (h = HOLDW) => frameHold(...h);
+function scene(id, title, steps, cam = CAMG, hd) {
   FRAG.push([id, title, async (tok) => {
     fresh(cam[0], cam[1]);
+    if (hd !== null && (hd || cam === CAMW)) hold(hd || HOLDW);
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
@@ -967,6 +981,9 @@ const DEMO = (x, y, z = 0) => T('示意', 'idx', x, y, z);
 function board(x, yTop, dy = 0.56, z = -2.6, max = 7) {
   // lines closer than this print over each other on the 640×360 stage; keep the board's height (fewer lines, they scroll off sooner)
   { const h = max * dy; dy = Math.max(dy, z < -3 ? 0.9 : 0.82); max = Math.max(3, Math.floor(h / dy + 0.35)); }
+  // only the latest three remarks stay readable anyway (older ones fade out): scroll after three lines, so faded
+  // lines never sit under the live ones and the board keeps to the top-left corner
+  max = 3;
   const ls = []; let last = null;
   return {
     ls,
@@ -1010,8 +1027,8 @@ async function walk(tok, G, tk, a, b, ms = 650, color = COL.gold) {
 // a small matrix drawn as monospace rows; rows appear one by one with row(i)
 function matrix(head, rows, x, yTop, dy = 0.48, z = -2.4) {
   dy = Math.max(dy, z < -2 ? 0.74 : dy);
-  const H = M(head, x, yTop, z, 'say'); const R = [];
-  return { H, R, row(i) { R[i] = M(rows[i], x, yTop - (i + 1) * dy, z, 'note'); if (i > 0 && R[i - 1]) cls(R[i - 1], 'say'); return R[i]; }, all() { rows.forEach((_, i) => { if (!R[i]) this.row(i); }); }, kill() { kill(H); R.forEach((l) => l && kill(l)); } };
+  const H = keep(M(head, x, yTop, z, 'say')); const R = [];
+  return { H, R, row(i) { R[i] = keep(M(rows[i], x, yTop - (i + 1) * dy, z, 'note')); if (i > 0 && R[i - 1]) cls(R[i - 1], 'say'); return R[i]; }, all() { rows.forEach((_, i) => { if (!R[i]) this.row(i); }); }, kill() { kill(H); R.forEach((l) => l && kill(l)); } };
 }
 
 
@@ -1095,22 +1112,22 @@ scene('gr-18a-adj', 'Adjacency matrix：無向圖對稱、有向圖不一定', [
   async (tok, S) => { S.B.add('adjacency matrix（相鄰矩陣）'); cap('這個矩陣叫 adjacency matrix', 'adjacent：在旁邊、有邊連著'); },
   async (tok, S) => { S.B.add('0–1 矩陣：描述有哪些邊'); cap('它是一個 0、1 矩陣', ''); },
   async (tok, S) => { S.B.add('用前面的 undirected graph'); cap('繼續用前面那個 undirected graph', 'ab、ac、ad、bd、cd'); },
-  async (tok, S) => { S.Mx = matrix('    a b c d', UND.map((r, i) => 'abcd'[i] + ' │ ' + r), -6.4, 2.6); S.B.add('先說好順序：a, b, c, d'); cap('先講好端點的順序', 'a、b、c、d'); },
+  async (tok, S) => { S.Mx = matrix('    a b c d', UND.map((r, i) => 'abcd'[i] + ' │ ' + r), -6.4, 2.2, 0.86); S.B.add('先說好順序：a, b, c, d'); cap('先講好端點的順序', 'a、b、c、d'); },
   async (tok, S) => { S.Mx.row(0); ['b', 'c', 'd'].forEach((n) => paintE(findE(S.G, 'a', n), COL.gold, true)); cap('有 edge 標 1：a 跟 b、c、d 都有邊', 'a 跟 a 沒有：0'); },
   async (tok, S) => { S.G.E.forEach((e) => paintE(e, COL.edge, false)); S.Mx.row(1); paintE(findE(S.G, 'b', 'a'), COL.gold, true); paintE(findE(S.G, 'b', 'd'), COL.gold, true); cap('b：ba 有邊、bd 有邊', ''); },
   async (tok, S) => { S.G.E.forEach((e) => paintE(e, COL.edge, false)); S.Mx.row(2); paintE(findE(S.G, 'c', 'a'), COL.gold, true); paintE(findE(S.G, 'c', 'd'), COL.gold, true); cap('c：ca 有邊、cd 有邊', ''); },
   async (tok, S) => { S.G.E.forEach((e) => paintE(e, COL.edge, false)); S.Mx.row(3); ['a', 'b', 'c'].forEach((n) => paintE(findE(S.G, 'd', n), COL.gold, true)); cap('d：跟 a、b、c 都有邊', ''); },
   async (tok, S) => { S.G.E.forEach((e) => paintE(e, COL.edge, false)); S.B.add('第 i 列第 j 行：兩點之間有沒有邊'); cap('矩陣描述兩個端點之間有沒有邊', '有邊寫 1、沒邊寫 0'); },
-  async (tok, S) => { S.ex = ge(S.G, 'a', 'c', { bend: 0.8, color: COL.pink }); T('示意：若 a、c 之間有 2 條邊 → 寫 2', 'idx', 3.0, 2.4, 2.8); cap('有些 case 兩點之間不只一條邊', '例如 ac 有兩條，就寫 2'); },
-  async (tok, S) => { removeEdge(S.G, S.ex); S.B.add('undirected：有 ab 就有 ba'); cap('undirected graph：有 ab 就有 ba', '邊沒有方向'); },
+  async (tok, S) => { S.ex = ge(S.G, 'a', 'c', { bend: 0.8, color: COL.pink }); S.exL = T('示意：若 a、c 之間有 2 條邊 → 寫 2', 'idx', 3.3, 0.3, 2.9); cap('有些 case 兩點之間不只一條邊', '例如 ac 有兩條，就寫 2'); },
+  async (tok, S) => { removeEdge(S.G, S.ex); kill(S.exL); S.B.add('undirected：有 ab 就有 ba'); cap('undirected graph：有 ab 就有 ba', '邊沒有方向'); },
   async (tok, S) => { S.B.add('→ symmetric matrix（對稱矩陣）', 'good'); cap('所以矩陣一定是 symmetric', '沿著對角線兩邊對稱'); },
   async (tok, S) => { S.B.add('4 × 4 方陣'); cap('它是 4 × 4 的正方形矩陣', ''); },
   async (tok, S) => {
     S.Mx.kill(); S.G.E.slice().forEach((e) => removeEdge(S.G, e)); ['ab', 'ac', 'ad', 'bd', 'cd'].forEach((s) => ge(S.G, s[0], s[1], { dir: true }));
-    S.Mx = matrix('    a b c d', DIR.map((r, i) => 'abcd'[i] + ' │ ' + r), -6.4, 2.6); S.B.add('再看 directed graph 的例子'); cap('再看 directed graph 的例子', '');
+    S.Mx = matrix('    a b c d', DIR.map((r, i) => 'abcd'[i] + ' │ ' + r), -6.4, 2.2, 0.86); S.B.add('再看 directed graph 的例子'); cap('再看 directed graph 的例子', '');
   },
   async (tok, S) => { S.Mx.row(0); cap('a 到 b、a 到 c、a 到 d 都有', 'a 那一列：0 1 1 1'); },
-  async (tok, S) => { S.Mx.row(1); S.Mx.row(2); S.Mx.row(3); T('不對稱', 'bad', -3.0, 0.5, -2.4); cap('b 只到 d、c 只到 d、d 沒有出去的', '有方向：不一定對稱'); },
+  async (tok, S) => { S.Mx.row(1); S.Mx.row(2); S.Mx.row(3); L('不對稱', 'bad', -3.4, 2.2, -2.4); cap('b 只到 d、c 只到 d、d 沒有出去的', '有方向：不一定對稱'); },
   async (tok, S) => { S.B.add('V 上的 binary relation ↔ digraph'); cap('以前講的 binary relation', '也可以畫成 directed graph'); },
   async (tok, S) => { S.B.add('那個 0–1 矩陣就是 adjacency matrix', 'good'); cap('relation 的 0、1 矩陣', '就是這裡的 adjacency matrix'); },
   async (tok, S) => { S.B.add('要記住一個圖：存這個矩陣就好'); cap('要把圖存起來', '把這個矩陣存起來就好'); },
@@ -1223,11 +1240,11 @@ scene('gr-18b-petersen', 'Petersen graph：10 點、15 邊、每點 3 度', [
   async (tok, S) => { for (let k = 10; k < 15; k++) ge(S.G, PET_E[k][0], PET_E[k][1]); cap('裡面也是五個點', '這樣連（隔一個連一個）'); },
   async (tok, S) => { for (let k = 5; k < 10; k++) ge(S.G, PET_E[k][0], PET_E[k][1]); cap('內外對應的點再連起來', '標上名字 a～j'); },
   async (tok, S) => { S.B.add('Petersen graph', 'good'); cap('這個圖很有名：Petersen graph', ''); },
-  async (tok, S) => { cap('很漂亮、很對稱', '有很多數學性質'); T('Petersen graph', 'ptr', -3.3, 0.1, 3.2); },
-  async (tok, S) => { T('|V| = ' + S.G.V.length, 'ptr alt', -3.3, 3.6, -1.5); cap('有幾個端點？' + S.G.V.length + ' 個', ''); },
-  async (tok, S) => { T('|E| = 5 + 5 + 5 = ' + S.G.E.length, 'ptr alt', -3.3, 3.0, -1.5); [0, 1, 2, 3, 4].forEach((k) => paintE(S.G.E[k], COL.blue, true)); [5, 6, 7, 8, 9].forEach((k) => paintE(S.G.E[k], COL.gold, true)); [10, 11, 12, 13, 14].forEach((k) => paintE(S.G.E[k], COL.pink, true)); cap('邊：外 5、內 5、中間 5', '共 ' + S.G.E.length + ' 條'); },
+  async (tok, S) => { cap('很漂亮、很對稱', '有很多數學性質'); S.nm = T('Petersen graph', 'ptr', -3.3, 0.1, 3.0); },
+  async (tok, S) => { S.cnt = T('|V| = ' + S.G.V.length, 'ptr alt', -3.3, 0.1, -4.2); cap('有幾個端點？' + S.G.V.length + ' 個', ''); },
+  async (tok, S) => { txt(S.cnt, '|V| = ' + S.G.V.length + '，|E| = 5 + 5 + 5 = ' + S.G.E.length); [0, 1, 2, 3, 4].forEach((k) => paintE(S.G.E[k], COL.blue, true)); [5, 6, 7, 8, 9].forEach((k) => paintE(S.G.E[k], COL.gold, true)); [10, 11, 12, 13, 14].forEach((k) => paintE(S.G.E[k], COL.pink, true)); cap('邊：外 5、內 5、中間 5', '共 ' + S.G.E.length + ' 條'); },
   async (tok, S) => { showDeg(S.G); S.B.add('每個端點都連 3 條邊（3 度）'); cap('每個端點都有 3 條邊相連', '非常對稱'); },
-  async (tok, S) => { S.G.E.forEach((e) => paintE(e, COL.edge, false)); plainLab(S.G); T('G₁', 'ptr', -3.3, 0.1, 2.6); cap('這是其中一個圖', ''); },
+  async (tok, S) => { S.G.E.forEach((e) => paintE(e, COL.edge, false)); plainLab(S.G); txt(S.nm, 'G₁：Petersen graph'); cap('這是其中一個圖', ''); },
   async (tok, S) => {
     S.H = petH(3.4, '#f2c6da'); petEdgesH().forEach(([p, q]) => ge(S.H, p, q)); DEMO(3.4, 0.4, 3.2); showDeg(S.H);
     cap('另一個圖：也是 ' + S.H.V.length + ' 點、' + S.H.E.length + ' 邊', '每個端點也是 3 度');
@@ -1246,12 +1263,12 @@ scene('gr-18b-petersen', 'Petersen graph：10 點、15 邊、每點 3 度', [
 
 scene('gr-18b-apps', 'Graph isomorphism 的應用與手算技巧', [
   async (tok, S) => { S.B = board(-6.8, 5.2, 0.5, -3.4, 5); S.B.add('graph isomorphism 有什麼應用？'); cap('graph isomorphism 有沒有應用？', '有'); },
-  async (tok, S) => { icon('⚗️', '化學：molecular graph', -4.8, 2.2, 0); S.B.add('化學：分子圖是不是同一種分子'); cap('化學：用 molecular graph 描述分子', '比對兩個分子是不是一樣'); },
-  async (tok, S) => { icon('🔌', '電路 layout', -2.0, 2.2, 0); S.B.add('電路：兩個 schematic 是否相同'); cap('電路 layout', 'check 兩個 schematic design 是不是一樣'); },
-  async (tok, S) => { icon('🕵️', '抓抄襲', 0.8, 2.2, 0); S.B.add('抓抄襲：轉個方向還是同一個'); cap('還可以抓抄襲', '稍微轉個方向，其實是同一個 layout'); },
-  async (tok, S) => { icon('🧬', 'bioinformatics', 3.4, 2.2, 0); icon('👁️', 'computer vision', 5.6, 2.2, 0); S.B.add('bioinformatics、computer vision'); cap('Bioinformatics 和 computer vision', '也都有應用'); },
+  async (tok, S) => { icon('⚗️', '化學：molecular graph', -4.8, 3.0, 0); S.B.add('化學：分子圖是不是同一種分子'); cap('化學：用 molecular graph 描述分子', '比對兩個分子是不是一樣'); },
+  async (tok, S) => { icon('🔌', '電路 layout', -2.4, 1.2, 0); S.B.add('電路：兩個 schematic 是否相同'); cap('電路 layout', 'check 兩個 schematic design 是不是一樣'); },
+  async (tok, S) => { icon('🕵️', '抓抄襲', 0.0, 3.0, 0); S.B.add('抓抄襲：轉個方向還是同一個'); cap('還可以抓抄襲', '稍微轉個方向，其實是同一個 layout'); },
+  async (tok, S) => { icon('🧬', 'bioinformatics', 2.4, 1.2, 0); icon('👁️', 'computer vision', 4.8, 3.0, 0); S.B.add('bioinformatics、computer vision'); cap('Bioinformatics 和 computer vision', '也都有應用'); },
   async (tok, S) => {
-    lab.clear(); S.B = board(-6.8, 5.4, 0.48, -3.4, 3);
+    lab.clear(); hold(); S.B = board(-6.8, 5.4, 0.48, -3.4, 3);
     S.G = petG(-3.3, '#bcd3ee'); PET_E.forEach(([p, q]) => ge(S.G, p, q)); S.H = petH(3.4, '#f2c6da'); petEdgesH().forEach(([p, q]) => ge(S.H, p, q)); DEMO(3.4, 0.4, 3.2);
     S.B.add('自己用手算試試看'); cap('回到剛剛的 Petersen 例子', '自己用手算試試看');
   },
@@ -1303,8 +1320,8 @@ scene('gr-19a-sum', '例子：Σ deg = 12 = 2 × 6，定理與證明', [
   async (tok, S) => { S.G = gnew(DGP); DGE.forEach(([p, q]) => ge(S.G, p, q, p === q ? { color: COL.purple } : {})); DEMO(2.8, 0.3, 3.4); S.B.add('6 個 vertices：a, b, c, d, e, f'); cap('這個 graph 有 a～f 六個 vertices', '每個 vertex 的 degree 是多少？'); },
   async (tok, S) => { vlab(S.G, 'f', 'f:' + degOf(S.G, 'f')); paintE(findE(S.G, 'c', 'f'), COL.gold, true); cap('deg(f) = ' + degOf(S.G, 'f'), ''); },
   async (tok, S) => { paintE(findE(S.G, 'c', 'f'), COL.edge, false); vlab(S.G, 'a', 'a:' + degOf(S.G, 'a')); vglow(S.G, 'a', GOLD); cap('a：loop 貢獻 2，再加 1', 'deg(a) = ' + degOf(S.G, 'a')); },
-  async (tok, S) => { vglow(S.G, 'a', null); S.tmp = ge(S.G, 'a', 'c', { bend: 0.8, color: COL.pink }); T('示意：多一條 → 兩端各 +1', 'idx', 1.7, 1.6, -2.4); cap('如果這邊再多一條邊', '兩端又各多 1'); },
-  async (tok, S) => { removeEdge(S.G, S.tmp); showDeg(S.G); S.B.add('把所有 vertex 的 degree 加起來'); cap('把所有 vertex 的 degree 加起來', ''); },
+  async (tok, S) => { vglow(S.G, 'a', null); S.tmp = ge(S.G, 'a', 'c', { bend: 0.8, color: COL.pink }); S.tmpL = T('示意：多一條 → 兩端各 +1', 'idx', 1.7, 1.6, -2.4); cap('如果這邊再多一條邊', '兩端又各多 1'); },
+  async (tok, S) => { removeEdge(S.G, S.tmp); kill(S.tmpL); showDeg(S.G); S.B.add('把所有 vertex 的 degree 加起來'); cap('把所有 vertex 的 degree 加起來', ''); },
   async (tok, S) => { S.B.add('Σ deg = ' + deg(S.G).join(' + ')); cap(deg(S.G).join(' + '), ''); },
   async (tok, S) => { S.B.add('= ' + sumDeg(S.G)); cap('= ' + sumDeg(S.G), '12 跟什麼有關？'); },
   async (tok, S) => { S.G.E.forEach((e, k) => paintE(e, PAL[k % 8], true)); T('|E| = ' + S.G.E.length, 'good', 2.8, 2.4, -2.6); cap('數邊：' + S.G.E.length + ' 條', ''); },
@@ -1332,7 +1349,7 @@ scene('gr-19a-parity', '奇數度的端點有偶數個', [
   async (tok, S) => { S.B.set(-1, 'good'); cap('2|E| 一定是偶數', ''); },
   async (tok, S) => { const d = deg(S.G); T('V_E 部分：' + d.filter((x) => !(x % 2)).join(' + ') + ' = 偶數', 'say', 2.8, 3.0, -2.6); cap('V_E 那一堆：每個都是偶數', '偶數加偶數還是偶數'); },
   async (tok, S) => { S.B.add('→ Σ over V_O deg 也必須是偶數'); cap('偶數 = ? + 偶數', '所以 V_O 那一堆的和也要是偶數'); },
-  async (tok, S) => { const d = deg(S.G); T('V_O 部分：' + d.filter((x) => x % 2).join(' + ') + ' = ' + d.filter((x) => x % 2).reduce((a, b) => a + b, 0), 'say', 2.8, 2.4, -2.6); cap('但 V_O 裡每一個 degree 都是奇數', ''); },
+  async (tok, S) => { const d = deg(S.G); T('V_O 部分：' + d.filter((x) => x % 2).join(' + ') + ' = ' + d.filter((x) => x % 2).reduce((a, b) => a + b, 0), 'say', 2.8, 2.1, -2.6); cap('但 V_O 裡每一個 degree 都是奇數', ''); },
   async (tok, S) => { const n = deg(S.G).filter((x) => x % 2).length; S.B.add('偶數個奇數相加才是偶數 → |V_O| 是偶數', 'good'); cap('奇數要有偶數個，加起來才是偶數', '這裡 |V_O| = ' + n); },
 ], CAMW);
 
@@ -1409,7 +1426,7 @@ scene('gr-19b-walk', 'Walk：v₀ e₁ v₁ e₂ … eₙ vₙ', [
   async (tok, S) => { S.B.add('第一個：walk'); S.G = wkG(); DEMO(3.0, 0.3, 3.3); cap('第一個：walk', ''); },
   async (tok, S) => { cap('walk 就是在圖上走來走去', ''); T('在圖上走來走去', 'ptr', 3.0, 2.6, -2.8); },
   async (tok, S) => { S.B.add('有限的交替序列'); cap('undirected graph 上的 walk', '是一個 finite alternating sequence'); },
-  async (tok, S) => { S.tk = tokenAt(S.G, 'A'); vglow(S.G, 'A', GOLD); S.seq = T('v₀=A', 'say', 3.0, 3.5, -2.8); cap('從 v₀ 開始', 'v₀ = A'); },
+  async (tok, S) => { S.tk = tokenAt(S.G, 'A'); vglow(S.G, 'A', GOLD); S.seq = L('v₀=A', 'say', 0.2, 3.5, -2.8); cap('從 v₀ 開始', 'v₀ = A'); },
   ...[['A', 'B', 'e₁', 'v₁'], ['B', 'C', 'e₂', 'v₂'], ['C', 'A', 'e₃', 'v₃']].map(([p, q, e, v], k) => async (tok, S) => {
     await walk(tok, S.G, S.tk, p, q, 650, PAL[k]); txt(S.seq, S.seq.element.textContent + ' ' + e + ' ' + v + '=' + q);
     cap('經過 ' + e + ' 到 ' + v, v + ' = ' + q);
@@ -1450,18 +1467,18 @@ scene('gr-19b-trail', 'Trail、circuit、path、cycle', [
 
 scene('gr-19b-table', '整理成表：walk／trail／path × open／closed', [
   async (tok, S) => {
-    S.hd = [M('                 open          closed', -6.2, 3.6, -1.2, 'say')];
+    S.hd = [keep(M('                 open          closed', -6.2, 3.6, -1.2, 'say'))];
     cap('把剛剛的名詞整理一下', '');
   },
-  async (tok, S) => { S.r1 = M('點可重複、邊可重複', -6.2, 2.9, -1.2, 'note'); cap('第一種：完全沒有限制', '可以重複端點、可以重複 edge'); },
-  async (tok, S) => { M('open walk', -0.4, 2.9, -1.2, 'good'); cap('open 的叫 open walk', ''); },
-  async (tok, S) => { M('closed walk', 3.2, 2.9, -1.2, 'good'); cap('closed 的叫 closed walk', '最廣義的是 walk'); },
-  async (tok, S) => { cls(S.r1, 'say'); S.r2 = M('點可重複、邊不重複', -6.2, 2.0, -1.2, 'note'); cap('第二種：edge 不能重複', '端點可以重複'); },
-  async (tok, S) => { M('trail', -0.4, 2.0, -1.2, 'good'); cap('open 的叫 trail', '中文：小徑'); },
-  async (tok, S) => { M('circuit', 3.2, 2.0, -1.2, 'good'); cap('closed 的叫 circuit', ''); },
-  async (tok, S) => { cls(S.r2, 'say'); S.r3 = M('點不重複（邊也不重複）', -6.2, 1.1, -1.2, 'note'); cap('第三種：端點不能重複', 'edge 也就一定不重複'); },
-  async (tok, S) => { M('path', -0.4, 1.1, -1.2, 'good'); cap('open 的叫 path', ''); },
-  async (tok, S) => { M('cycle', 3.2, 1.1, -1.2, 'good'); cap('closed 的叫 cycle', ''); },
+  async (tok, S) => { S.r1 = keep(M('點可重複、邊可重複', -6.2, 2.9, -1.2, 'note')); cap('第一種：完全沒有限制', '可以重複端點、可以重複 edge'); },
+  async (tok, S) => { keep(M('open walk', -0.4, 2.9, -1.2, 'good')); cap('open 的叫 open walk', ''); },
+  async (tok, S) => { keep(M('closed walk', 3.2, 2.9, -1.2, 'good')); cap('closed 的叫 closed walk', '最廣義的是 walk'); },
+  async (tok, S) => { cls(S.r1, 'say'); S.r2 = keep(M('點可重複、邊不重複', -6.2, 2.0, -1.2, 'note')); cap('第二種：edge 不能重複', '端點可以重複'); },
+  async (tok, S) => { keep(M('trail', -0.4, 2.0, -1.2, 'good')); cap('open 的叫 trail', '中文：小徑'); },
+  async (tok, S) => { keep(M('circuit', 3.2, 2.0, -1.2, 'good')); cap('closed 的叫 circuit', ''); },
+  async (tok, S) => { cls(S.r2, 'say'); S.r3 = keep(M('點不重複（邊也不重複）', -6.2, 1.1, -1.2, 'note')); cap('第三種：端點不能重複', 'edge 也就一定不重複'); },
+  async (tok, S) => { keep(M('path', -0.4, 1.1, -1.2, 'good')); cap('open 的叫 path', ''); },
+  async (tok, S) => { keep(M('cycle', 3.2, 1.1, -1.2, 'good')); cap('closed 的叫 cycle', ''); },
   async (tok, S) => { cls(S.r3, 'say'); T('各書用法不統一，這門課照這張表', 'bad', 0, 0.2, 0.8); cap('各地方的叫法不統一', '至少這門課都照這張表用'); },
 ], CAMT);
 
@@ -1583,18 +1600,18 @@ scene('gr-l22-po-intro', 'Partial ordering：不是所有東西都能比', [
 
 scene('gr-l22-po-axioms', 'Partial order = reflexive + antisymmetric + transitive', [
   async (tok, S) => { S.B = board(-6.6, 4.9, 0.52, -2.6, 8); S.B.add('≤ 應該選哪三個性質？'); cap('想一想：≤ 該有哪三個性質？', ''); },
-  async (tok, S) => { S.l1 = T('a ≤ a', 'note', 2.6, 3.6, -2.0); cap('自己跟自己能不能比？', '可以：a ≤ a'); },
+  async (tok, S) => { S.l1 = T('a ≤ a', 'note', 2.6, 4.0, -2.0); cap('自己跟自己能不能比？', '可以：a ≤ a'); },
   async (tok, S) => { S.B.add('① reflexive：a ≤ a', 'good'); cap('所以要 reflexive', '集合裡每個東西都跟自己有關係'); },
   async (tok, S) => { S.B.add('② symmetric 還是 antisymmetric？'); cap('第二個：symmetric？', '還是 antisymmetric？'); },
-  async (tok, S) => { cap('有一種叫 antisymmetric', ''); T('antisymmetric（反對稱）', 'ptr', 2.6, 2.9, -2.0); },
+  async (tok, S) => { cap('有一種叫 antisymmetric', ''); T('antisymmetric（反對稱）', 'ptr', 2.6, 3.1, -2.0); },
   async (tok, S) => { S.l2 = T('a ≤ b 且 b ≤ a', 'note', 2.6, 2.2, -2.0); cap('如果 a ≤ b 而且 b ≤ a', '應該怎樣？'); },
   async (tok, S) => { S.B.add('a ≤ b 且 b ≤ a ⇒ a = b', 'good'); cap('a、b 一定是同一個數', '這就是 antisymmetric'); },
-  async (tok, S) => { T('symmetric：2 ≤ 3 ⇒ 3 ≤ 2 ✘', 'bad', 2.6, 1.5, -2.0); cap('symmetric 會說：2 ≤ 3 則 3 ≤ 2', '違反我們的概念'); },
+  async (tok, S) => { T('symmetric：2 ≤ 3 ⇒ 3 ≤ 2 ✘', 'bad', 2.6, 1.3, -2.0); cap('symmetric 會說：2 ≤ 3 則 3 ≤ 2', '違反我們的概念'); },
   async (tok, S) => { S.B.add('③ transitive？'); cap('第三個：要不要 transitive？', ''); },
-  async (tok, S) => { T('a ≤ b、b ≤ c ⇒ a ≤ c', 'note', 2.6, 0.8, -2.0); cap('a ≤ b 而且 b ≤ c', 'a 跟 c 應該是 a ≤ c'); },
+  async (tok, S) => { T('a ≤ b、b ≤ c ⇒ a ≤ c', 'note', 2.6, 0.4, -2.0); cap('a ≤ b 而且 b ≤ c', 'a 跟 c 應該是 a ≤ c'); },
   async (tok, S) => { S.B.add('③ transitive', 'good'); cap('越來越大：transitive', ''); },
   async (tok, S) => { S.B.add('三個都有 → partial order（部分有序）', 'good'); cap('reflexive + antisymmetric + transitive', '叫 partial order'); },
-  async (tok, S) => { T('例：實數 vs 虛數不能比大小', 'say', 2.6, 0.1, -2.0); cap('但允許有些東西不能比', '自己跟自己一定 ≤'); },
+  async (tok, S) => { T('例：實數 vs 虛數不能比大小', 'say', 2.6, -0.5, -2.0); cap('但允許有些東西不能比', '自己跟自己一定 ≤'); },
 ], CAMW);
 
 scene('gr-l22-po-ex', '例子：整除、⊆；total order', [
@@ -1623,12 +1640,12 @@ scene('gr-l22-lex', '兩個 poset 的直積與字典順序', [
   async (tok, S) => { S.B.add('例：A = {2, 3, 4, 6}，用整除'); cap('例：A = {2, 3, 4, 6}', '配上整除'); },
   async (tok, S) => { S.B.add('B（板書：1, 2, 3, …），也用整除'); cap('B 集合也配上整除', '兩個都是 poset'); },
   async (tok, S) => { S.B.add('A × B 上定義大小：'); cap('在 A × B 上再定義一個大小關係', ''); },
-  async (tok, S) => { T('(a₁,b₁) ≼ (a₂,b₂) 若 a₁ ≺ a₂', 'note', 2.6, 3.6, -2.2); cap('如果 a₁ 本來就比 a₂ 小', '就比 a₁ 那一個小'); },
-  async (tok, S) => { T('或 a₁ = a₂ 且 b₁ ≼ b₂', 'note', 2.6, 3.0, -2.2); cap('或者 a₁ = a₂ 一樣', '再比第二順位 b'); },
-  async (tok, S) => { T('都不是 → 不能比', 'bad', 2.6, 2.4, -2.2); cap('兩個條件都不成立', '就沒有大小關係'); },
-  async (tok, S) => { T('(2,1) vs (4,3)：2 | 4 → (2,1) ≼ (4,3)', 'good', 2.6, 1.6, -2.2); cap('(2, 1) 跟 (4, 3)', '2 整除 4：第一個就比得出 (4,3) 大'); },
-  async (tok, S) => { T('(3,1) vs (2,4)：3、2 不能比 → 不能比', 'bad', 2.6, 1.0, -2.2); cap('(3, 1) 跟 (2, 4)', '3 和 2 不能比 → 整個不能比'); },
-  async (tok, S) => { T('(3,1) vs (3,4)：3 = 3、1 | 4 → (3,4) 大', 'good', 2.6, 0.4, -2.2); cap('(3, 1) 跟 (3, 4)', '第一個一樣，比第二個：1 整除 4'); },
+  async (tok, S) => { S.d1 = keep(L('(a₁,b₁) ≼ (a₂,b₂) 若 a₁ ≺ a₂', 'note', 0.0, 3.9, -2.2)); cap('如果 a₁ 本來就比 a₂ 小', '就比 a₁ 那一個小'); },
+  async (tok, S) => { cls(S.d1, 'say'); S.d2 = keep(L('或 a₁ = a₂ 且 b₁ ≼ b₂', 'note', 0.0, 3.1, -2.2)); cap('或者 a₁ = a₂ 一樣', '再比第二順位 b'); },
+  async (tok, S) => { cls(S.d2, 'say'); keep(L('都不是 → 不能比', 'bad', 0.0, 2.3, -2.2)); cap('兩個條件都不成立', '就沒有大小關係'); },
+  async (tok, S) => { L('(2,1) vs (4,3)：2 | 4 → (2,1) ≼ (4,3)', 'good', 0.0, 1.3, -2.2); cap('(2, 1) 跟 (4, 3)', '2 整除 4：第一個就比得出 (4,3) 大'); },
+  async (tok, S) => { L('(3,1) vs (2,4)：3、2 不能比 → 不能比', 'bad', 0.0, 0.5, -2.2); cap('(3, 1) 跟 (2, 4)', '3 和 2 不能比 → 整個不能比'); },
+  async (tok, S) => { L('(3,1) vs (3,4)：3 = 3、1 | 4 → (3,4) 大', 'good', 0.0, -0.3, -2.2); cap('(3, 1) 跟 (3, 4)', '第一個一樣，比第二個：1 整除 4'); },
   async (tok, S) => { S.B.add('lexicographic order（字典順序）', 'good'); cap('這叫 lexicographic order', '字典順序'); },
 ], CAMW);
 
@@ -1683,7 +1700,7 @@ scene('gr-l22-hasse-ex', '例：A = {2,3,4,6,9,10} 的整除 Hasse diagram', [
   async (tok, S) => { vglow(S.G, '4', RED); vglow(S.G, '9', RED); T('4、9 沒有線連：不能比', 'bad', 3.1, 2.3, 1.0); cap('沒有上下線連著的', '例如 4 和 9：不能比大小'); },
 ], CAMW);
 
-const MX = [['1', -1.4, 0.7], ['2', 1.0, 0.7], ['3', 3.4, 0.7], ['4', -0.2, 2.5], ['5', 2.2, 2.5], ['6', -1.2, 4.3], ['7', 1.2, 4.3]];
+const MX = [['1', 2.2, 0.7], ['2', 3.9, 0.7], ['3', 5.6, 0.7], ['4', 3.2, 2.5], ['5', 5.0, 2.5], ['6', 2.6, 4.3], ['7', 4.6, 4.3]]; // right of the board, clear of its lines
 scene('gr-l22-maxmin', 'Maximal／greatest、minimal／least', [
   async (tok, S) => { S.B = board(-6.8, 5.0, 0.5, -2.6, 7); S.B.add('再介紹一些名詞'); cap('再來介紹一些名詞', ''); },
   async (tok, S) => {
@@ -1691,21 +1708,21 @@ scene('gr-l22-maxmin', 'Maximal／greatest、minimal／least', [
     S.curve = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: COL.blue })); lab.world.add(S.curve);
     cap('以前學函數：最大值、極大值', '');
   },
-  async (tok, S) => { S.t1 = T('極大值：附近的都比它小（局部）', 'say', 2.0, 4.4, -1.5); cap('極大值：附近的都比我小', '區域性的概念'); },
-  async (tok, S) => { S.t2 = T('最大值：整個區間都比它小', 'good', 2.0, 5.0, -1.5); cap('最大值：所有人都比它小', ''); },
+  async (tok, S) => { S.t1 = T('極大值：附近的都比它小（局部）', 'say', -0.2, 4.4, -1.5); cap('極大值：附近的都比我小', '區域性的概念'); },
+  async (tok, S) => { S.t2 = T('最大值：整個區間都比它小', 'good', 2.8, 5.3, -1.5); cap('最大值：所有人都比它小', ''); },
   async (tok, S) => { S.t3 = T('極小值、最小值同理', 'say', 2.0, 0.4, -1.5); cap('極小值、最小值也一樣', ''); },
   async (tok, S) => { kill(S.curve); [S.t1, S.t2, S.t3].forEach(kill); S.B.add('maximal element（極大元素）'); cap('poset 裡：maximal element', '概念像極大值'); },
   async (tok, S) => { S.B.add('找不到比它大的（不能比也算）'); cap('找不到任何元素比 a 大', '可能是因為根本不能比'); },
   async (tok, S) => { S.B.add('greatest element（最大元素）'); cap('greatest element', '翻成最大值'); },
   async (tok, S) => { S.B.add('所有其他元素都 ≼ 它'); cap('所有其他元素都要小於等於它', ''); },
-  async (tok, S) => { S.G = hv(MX); hasseUp(S.G, [['1', '4'], ['2', '4'], ['2', '5'], ['3', '5'], ['4', '6'], ['4', '7'], ['5', '7']]); DEMO(1.0, 0.0, 0.6); S.B.add('最大值可能不存在'); cap('poset 裡最大值可能不存在', '看這個圖'); },
+  async (tok, S) => { S.G = hv(MX); hasseUp(S.G, [['1', '4'], ['2', '4'], ['2', '5'], ['3', '5'], ['4', '6'], ['4', '7'], ['5', '7']]); DEMO(6.6, 0.3, 0); S.B.add('最大值可能不存在'); cap('poset 裡最大值可能不存在', '看這個圖'); },
   async (tok, S) => { vglow(S.G, '4', RED); cap('4 是 maximal 嗎？', '不行：有人比它大（6、7）'); },
   async (tok, S) => { vglow(S.G, '4', null); vcol(S.G, '6', COL.gold); cap('6 上面沒有人比它大', '是 maximal'); },
   async (tok, S) => { vcol(S.G, '7', COL.gold); cap('7 上面也沒有人', '也是 maximal'); },
-  async (tok, S) => { T('沒有 greatest：6、7 不能比', 'bad', 0.0, 5.2, 0); cap('有沒有一個大家都比它小的？', '沒有：最大值不存在'); },
+  async (tok, S) => { S.ng = T('沒有 greatest：6、7 不能比', 'bad', 3.6, 5.3, 0); cap('有沒有一個大家都比它小的？', '沒有：最大值不存在'); },
   async (tok, S) => { ['1', '2', '3'].forEach((n) => vcol(S.G, n, COL.green)); cap('有極大值；同理有極小值', '1、2、3 都是 minimal'); },
-  async (tok, S) => { T('沒有 least', 'bad', 1.0, 0.2, 1.0); cap('有沒有最小值？', '沒有'); },
-  async (tok, S) => { S.G.V.forEach((v) => { v.p.y += 0.8; v.m.position.copy(v.p); }); updateEdges(S.G); gv(S.G, '0', 1.0, 0, 0.5, COL.pink); ['1', '2', '3'].forEach((n) => ge(S.G, '0', n, { color: COL.pink })); cap('要有最小值：往下加一個點', '所有線都從它開始 → 它就是 least'); },
+  async (tok, S) => { S.nl = T('沒有 least', 'bad', 3.9, -0.1, 1.0); cap('有沒有最小值？', '沒有'); },
+  async (tok, S) => { S.G.V.forEach((v) => { v.p.y += 0.8; v.m.position.copy(v.p); }); updateEdges(S.G); if (S.ng) S.ng.position.y += 0.8; kill(S.nl); gv(S.G, '0', 3.9, 0, 0.5, COL.pink); ['1', '2', '3'].forEach((n) => ge(S.G, '0', n, { color: COL.pink })); cap('要有最小值：往下加一個點', '所有線都從它開始 → 它就是 least'); },
   async (tok, S) => { S.B.add('定理：有限非空 poset 一定有 maximal 和 minimal', 'good'); cap('有限、非空的 poset', '一定至少有一個極大、一個極小'); },
   async (tok, S) => { S.B.add('反例：(ℤ, ≤) 無限 → 沒有極大、極小'); cap('所有整數用 ≤', '10 上面有 20、25、100…沒有極大值'); },
   async (tok, S) => { S.B.add('證明：不是極小 → 找更小的；有限所以會停'); cap('證明：a 不是極小，就找比它小的', '有限集合，只能做有限次'); },
@@ -1736,7 +1753,7 @@ scene('gr-l22-lattice', 'Lattice：任兩元素都有 LUB 與 GLB', [
   async (tok, S) => { vcol(S.G, 'd', COL.blue); vcol(S.G, 'e', COL.blue); vcol(S.G, 'c', COL.green); cap('d 和 e：最大下界是 c', ''); },
   async (tok, S) => { T('d、e 沒有上界 → 沒有 LUB', 'bad', 1.0, 5.0, 0); S.B.add('d、e 沒有 LUB → 不是 lattice', 'bad'); cap('但 d、e 沒有最小上界', '所以不是 lattice'); },
   async (tok, S) => { S.B.add('分成兩堆、不能比的也不是'); cap('分成兩堆、彼此不能比的', '也不會是 lattice'); },
-  async (tok, S) => { gkill(S.G); lab.clear(); S.B = board(-6.8, 5.0, 0.5, -2.6, 6); S.G = hv(LT); hasseUp(S.G, [['a', 'b'], ['a', 'e'], ['a', 'c'], ['b', 'f'], ['e', 'f'], ['c', 'd'], ['f', 'i'], ['f', 'h'], ['d', 'h']]); DEMO(1.0, 0.0, 0.6); S.B.add('再看這個圖：是 lattice 嗎？'); cap('再看這個圖', '是不是 lattice？'); },
+  async (tok, S) => { gkill(S.G); lab.clear(); hold(); S.B = board(-6.8, 5.0, 0.5, -2.6, 6); S.G = hv(LT); hasseUp(S.G, [['a', 'b'], ['a', 'e'], ['a', 'c'], ['b', 'f'], ['e', 'f'], ['c', 'd'], ['f', 'i'], ['f', 'h'], ['d', 'h']]); DEMO(1.0, 0.0, 0.6); S.B.add('再看這個圖：是 lattice 嗎？'); cap('再看這個圖', '是不是 lattice？'); },
   async (tok, S) => { vcol(S.G, 'c', COL.blue); vcol(S.G, 'a', COL.blue); ['c', 'd', 'h'].forEach((n) => vglow(S.G, n, GOLD)); cap('c 和 a：同時比兩個都大的', '有 c、d、h'); },
   async (tok, S) => { vcol(S.G, 'c', COL.green); S.B.add('LUB(c, a) = c'); cap('其中最小的是 c', 'c 是最小上界'); },
   async (tok, S) => { S.B.add('GLB(c, a) = a'); cap('同時比 a、c 小的只有 a', 'a 是最大下界'); },
@@ -1814,9 +1831,9 @@ scene('gr-l22-multi', '五種圖：multigraph、pseudograph', [
   async (tok, S) => { S.G = gnew([['a', 1.0, -1.6], ['b', 4.4, -1.6], ['c', 1.0, 1.6], ['d', 4.4, 1.6]]); ['0', '0.9', '-0.9'].forEach((b) => ge(S.G, 'a', 'b', { bend: Number(b) })); S.B.add('無向、兩點之間可以有好幾條邊'); cap('無向圖，兩點之間可以有好幾條邊', '例如 a、b 之間三條'); },
   async (tok, S) => { T('{a,b}, {a,b}, {a,b} ✘ 集合會合併', 'bad', 2.7, 2.6, -2.6); S.B.add('問題：集合寫 {a,b} 三次 = 一次'); cap('用集合寫：{a,b} 寫三次', '集合裡重複沒有意義，就完蛋了'); },
   async (tok, S) => { S.B.add('簡單寫法不適用 → 要給邊名字'); cap('最簡單的記法不適用', '要用進階的寫法'); },
-  async (tok, S) => { gkill(S.G); lab.clear(); S.B = board(-6.6, 4.9, 0.52, -2.6, 8); S.B.add('例：V = {a, b, c, d}'); S.G = gnew([['a', 1.0, -1.6], ['b', 4.4, -1.6], ['c', 1.0, 1.6], ['d', 4.4, 1.6]]); cap('畫一個 multigraph（示意）', ''); DEMO(2.7, 0.3, 3.0); },
+  async (tok, S) => { gkill(S.G); lab.clear(); hold(); S.B = board(-6.6, 4.9, 0.52, -2.6, 8); S.B.add('例：V = {a, b, c, d}'); S.G = gnew([['a', 1.0, -1.6], ['b', 4.4, -1.6], ['c', 1.0, 1.6], ['d', 4.4, 1.6]]); cap('畫一個 multigraph（示意）', ''); DEMO(2.7, 0.3, 3.0); },
   async (tok, S) => { S.lp = ge(S.G, 'a', 'a', { color: COL.purple }); S.lt = T('✘ multigraph 不能自己連自己', 'bad', 1.0, 2.4, -2.4); cap('multigraph 一樣不能自己連自己', '這個是錯的'); },
-  async (tok, S) => { removeEdge(S.G, S.lp); kill(S.lt); S.e = [ge(S.G, 'c', 'd', { bend: 0.5 }), ge(S.G, 'c', 'd', { bend: -0.5 }), ge(S.G, 'b', 'd', { bend: 0.5 }), ge(S.G, 'b', 'd', { bend: -0.5 })]; cap('c、d 之間兩條；b、d 之間兩條', ''); },
+  async (tok, S) => { removeEdge(S.G, S.lp); kill(S.lt); S.e = [ge(S.G, 'c', 'd', { bend: 0.5 }), ge(S.G, 'c', 'd', { bend: -0.5 }), ge(S.G, 'b', 'd', { bend: 1.0 }), ge(S.G, 'b', 'd', { bend: -1.0 })]; cap('c、d 之間兩條；b、d 之間兩條', ''); },
   async (tok, S) => { S.e.forEach((e, k) => eTag(e, 'e' + (k + 1))); S.B.add('每條邊取名字：e₁, e₂, e₃, e₄'); cap('給每條邊一個名字', 'e₁、e₂、e₃、e₄'); },
   async (tok, S) => { paintE(S.e[0], COL.gold, true); paintE(S.e[1], COL.gold, true); S.B.add('e₁、e₂ 都連 c、d'); cap('e₁ 連 c 和 d', 'e₂ 也連 c 和 d'); },
   async (tok, S) => { paintE(S.e[2], COL.green, true); paintE(S.e[3], COL.green, true); S.B.add('e₃、e₄ 都連 b、d'); cap('e₃ 連 b 和 d、e₄ 也是', '名字不同，就不會是同一件事'); },
@@ -1834,11 +1851,11 @@ scene('gr-l22-dirtypes', '有向的兩種與分類表', [
   async (tok, S) => {
     gkill(S.G); lab.clear();
     const rows = ['類型               邊     多重邊  loop', 'simple graph       無向   ✘      ✘', 'multigraph         無向   ✔      ✘', 'pseudograph        無向   ✔      ✔', 'directed graph     有向   ✘      ✔', 'directed multigraph 有向  ✔      ✔'];
-    S.Mx = matrix(rows[0], rows.slice(1), -5.6, 3.6, 0.6, -1.0); S.Mx.all(); cap('最後幫你分類一下', '');
+    S.Mx = matrix(rows[0], rows.slice(1), -5.6, 3.9, 0.8, -1.0); S.Mx.all(); cap('最後幫你分類一下', '');
   },
-  async (tok, S) => { T('前三種無向、後兩種有向', 'good', 0, 0.2, 1.4); cap('前三個無向', '後兩個有方向'); },
-  async (tok, S) => { T('多重邊：simple、directed graph 不行', 'say', 0, -0.0, 2.2); cap('兩點之間多條邊', 'simple 和 directed graph 不行，其他都可以'); },
-  async (tok, S) => { T('loop：前兩種不行，後三種可以', 'say', 0, -0.2, 3.0); cap('能不能自己連自己', '前兩種不行、後三種可以'); },
+  async (tok, S) => { T('前三種無向、後兩種有向', 'good', 3.4, 2.6, -1.0); cap('前三個無向', '後兩個有方向'); },
+  async (tok, S) => { T('多重邊：simple、directed graph 不行', 'say', 3.4, 1.7, -1.0); cap('兩點之間多條邊', 'simple 和 directed graph 不行，其他都可以'); },
+  async (tok, S) => { T('loop：前兩種不行，後三種可以', 'say', 3.4, 0.8, -1.0); cap('能不能自己連自己', '前兩種不行、後三種可以'); },
 ], CAMT);
 
 scene('gr-l22-terms', '無向圖的用語：adjacent、endpoint、incident', [
@@ -1948,7 +1965,10 @@ scene('gr-l23-wn', '輪 Wₙ：n + 1 點、2n 邊', [
 
 // n-cube: reuse the module's qn(n) layout, moved to the right; copies are split by the highest bit
 function qG(n, dx = 2.6, maxBit = n) {
-  const D = qn(n); const G = gnew(D.names.map((nm, i) => [nm, D.pos[i].x + dx, D.pos[i].z, D.pos[i].y - 0.4]), { r: 0.24 });
+  const D = qn(n);
+  // Q₄: open the outer copy a little wider so its labels clear the inner copy's
+  if (n === 4) D.pos.forEach((p, i) => { if (!(i >> 3 & 1)) { p.x *= 2.3 / 1.9; p.z *= 2.3 / 1.9; p.y = 2.5 + (p.y - 2.5) * 2.3 / 1.9; } });
+  const G = gnew(D.names.map((nm, i) => [nm, D.pos[i].x + dx, D.pos[i].z, D.pos[i].y - 0.4]), { r: 0.24 });
   D.edges.forEach(([u, v]) => { const b = Math.log2(u ^ v); if (b < maxBit) addEdge(G, u, v, 0, PAL[b]); });
   return G;
 }
@@ -2006,7 +2026,7 @@ scene('gr-l23-sub', '子圖與圖的聯集', [
   async (tok, S) => { S.B.add('E(H) ⊆ E(G)', 'good'); cap('H 的邊也是 G 邊的子集合', '定義就這樣'); },
   async (tok, S) => { S.bad = ge(S.H, 'c', 'a', { color: COL.hot }); kill(S.H.V[0].m); S.x = T('a 沒拿，卻留下邊 ca ✘', 'bad', 4.6, 2.4, -1.4); cap('如果這邊沒有節點 a', '卻把連到 a 的邊帶過來'); },
   async (tok, S) => { S.B.add('邊的兩頭節點必須都在裡面', 'bad'); cap('就不是一個圖', '不能叫子圖'); },
-  async (tok, S) => { lab.clear(); S.B = board(-6.8, 5.0, 0.5, -2.6, 7); S.B.add('圖的聯集 G₁ ∪ G₂'); S.U = gnew([['a', 1.0, -1.4], ['b', 3.4, -1.4], ['c', 3.4, 1.4], ['d', 5.6, 0]]); ge(S.U, 'a', 'b', { color: COL.blue }); ge(S.U, 'b', 'c', { color: COL.blue }); ge(S.U, 'b', 'd', { color: COL.pink }); ge(S.U, 'c', 'd', { color: COL.pink }); S.B.add('V₁ ∪ V₂，E₁ ∪ E₂', 'good'); DEMO(3.3, 0.3, 2.8); cap('聯集：節點集合聯集', '邊集合也聯集（藍 = G₁、粉 = G₂）'); },
+  async (tok, S) => { lab.clear(); hold(); S.B = board(-6.8, 5.0, 0.5, -2.6, 7); S.B.add('圖的聯集 G₁ ∪ G₂'); S.U = gnew([['a', 1.0, -1.4], ['b', 3.4, -1.4], ['c', 3.4, 1.4], ['d', 5.6, 0]]); ge(S.U, 'a', 'b', { color: COL.blue }); ge(S.U, 'b', 'c', { color: COL.blue }); ge(S.U, 'b', 'd', { color: COL.pink }); ge(S.U, 'c', 'd', { color: COL.pink }); S.B.add('V₁ ∪ V₂，E₁ ∪ E₂', 'good'); DEMO(3.3, 0.3, 2.8); cap('聯集：節點集合聯集', '邊集合也聯集（藍 = G₁、粉 = G₂）'); },
 ], CAMW);
 
 
@@ -2019,20 +2039,20 @@ scene('gr-l23-rep', '圖的表示法：邊列表、adjacency list', [
   async (tok, S) => { S.B.add('電腦裡怎麼存節點和邊？'); cap('節點和邊', '要怎麼在電腦裡寫出來？'); },
   async (tok, S) => { S.B.add('矩陣：最重要、最簡單'); cap('我們會的：矩陣', '相鄰矩陣是最重要、最簡單的'); },
   async (tok, S) => { S.G = rpG(); DEMO(3.0, 0.3, 3.2); S.B.add('例：V = {A, B, C, D, E, F}'); cap('以這個圖為例', '節點 A～F'); },
-  async (tok, S) => { S.L = M('E = {AB, AC, BC, BE, BF, CF}', -6.6, 2.6, -2.6, 'note'); S.G.E.forEach((e) => paintE(e, COL.gold, true)); cap('最簡單：把所有邊寫下來', '無向圖：AB、AC、BC、BE、BF、CF'); },
+  async (tok, S) => { S.L = keep(M('E = {AB, AC, BC, BE, BF, CF}', -6.6, 2.5, -2.6, 'note')); S.G.E.forEach((e) => paintE(e, COL.gold, true)); cap('最簡單：把所有邊寫下來', '無向圖：AB、AC、BC、BE、BF、CF'); },
   async (tok, S) => { S.G.E.forEach((e) => paintE(e, COL.edge, false)); cls(S.L, 'say'); S.B.add('adjacency list（相鄰清單）'); cap('adjacency list', '寫下每個節點的鄰居'); },
   ...['A', 'B', 'C', 'D', 'E', 'F'].map((n, k) => async (tok, S) => {
     S.G.V.forEach((v, i) => vglow(S.G, i, null)); vglow(S.G, n, GOLD); const nb = nbrs(S.G, n); nb.forEach((m) => vcol(S.G, m, COL.green));
-    M(n + ' : ' + (nb.join(', ') || '（空）'), -6.6, 2.0 - k * 0.6, -2.6, 'note');
+    S.rows = S.rows || []; S.rows.forEach((l) => cls(l, 'say')); S.rows.push(keep(M(n + ' : ' + (nb.join(', ') || '（空）'), -6.6, 1.6 - k * 0.9, -2.6, 'note')));
     cap(n + ' 的鄰居：' + (nb.join('、') || '沒有'), '');
     await wt(tok, 400); nb.forEach((m) => vcol(S.G, m, COL.node));
   }),
   async (tok, S) => { S.G.V.forEach((v, i) => vglow(S.G, i, null)); S.B.add('空間大約和邊數成正比（list）'); cap('每個表示法都有優缺點', 'list 的記憶體大約跟邊數成正比'); },
-  async (tok, S) => { lab.clear(); S.B = board(-6.8, 5.0, 0.5, -2.6, 4); S.B.add('有向圖的 adjacency list'); S.G = gnew(RP); cap('有向圖要把方向考慮進去', ''); },
+  async (tok, S) => { lab.clear(); hold(); S.B = board(-6.8, 5.0, 0.5, -2.6, 4); S.B.add('有向圖的 adjacency list'); S.G = gnew(RP); cap('有向圖要把方向考慮進去', ''); },
   async (tok, S) => { for (const [p, q] of [['A', 'B'], ['B', 'C'], ['C', 'B'], ['B', 'E'], ['C', 'A'], ['F', 'B'], ['F', 'C']]) ge(S.G, p, q, { dir: true, bend: (p === 'B' && q === 'C') || (p === 'C' && q === 'B') ? 0.4 : 0 }); DEMO(3.0, 0.3, 3.2); cap('每條邊加上方向（BF、CF 的方向是示意）', ''); },
   async (tok, S) => { S.B.add('只寫「從我出去」的邊的頭'); cap('清單裡寫的是邊的頭', '從這個節點出去，指到誰'); },
   async (tok, S) => {
-    ['A', 'B', 'C', 'D', 'E', 'F'].forEach((n, k) => { const out = S.G.E.filter((e) => e.u === vi(S.G, n)).map((e) => S.G.V[e.v].name).sort(); M(n + ' → ' + (out.join(', ') || '（空）'), -6.6, 2.4 - k * 0.6, -2.6, k < 3 ? 'note' : 'say'); });
+    ['A', 'B', 'C', 'D', 'E', 'F'].forEach((n, k) => { const out = S.G.E.filter((e) => e.u === vi(S.G, n)).map((e) => S.G.V[e.v].name).sort(); keep(M(n + ' → ' + (out.join(', ') || '（空）'), -6.6, 2.4 - k * 0.9, -2.6, k < 3 ? 'note' : 'say')); });
     cap('A → B；B → C、E；C → A、B', '');
   },
 ], CAMW);
@@ -2042,20 +2062,20 @@ scene('gr-l23-mat', 'Adjacency matrix、incidence matrix、Aᵏ 數路徑', [
   async (tok, S) => { S.B = board(-6.8, 5.0, 0.5, -2.6, 4); S.B.add('兩種矩陣表示'); S.G = rpG(); cap('另外兩種：矩陣表示', ''); },
   async (tok, S) => {
     S.A = S.G.V.map((_, i) => S.G.V.map((_, j) => (findE(S.G, i, j) ? 1 : 0)));
-    S.Mx = matrix('    A B C D E F', S.A.map((r, i) => 'ABCDEF'[i] + ' │ ' + r.join(' ')), -6.6, 2.8, 0.42, -2.6); S.Mx.all();
+    S.Mx = matrix('    A B C D E F', S.A.map((r, i) => 'ABCDEF'[i] + ' │ ' + r.join(' ')), -6.6, 1.9, 0.9, -2.6); S.Mx.all();
     S.B.add('adjacency matrix（相鄰矩陣）'); cap('adjacency matrix', '就是之前 relation 的矩陣表示法');
   },
   async (tok, S) => { S.B.add('無向 → 對稱', 'good'); cap('無向圖：A、B 相鄰，B、A 也相鄰', '是對稱矩陣'); },
   async (tok, S) => { S.B.add('有向圖：從列看到行，不一定對稱'); cap('有向圖要記方向', '從列看到行：不一定對稱'); },
-  async (tok, S) => { S.Mx.kill(); lab.clear(); S.B = board(-6.8, 5.0, 0.5, -2.6, 3); S.B.add('incidence matrix（關聯矩陣）'); S.G = gnew([['v1', 1.0, -1.6], ['v2', 3.4, -2.0], ['v3', 2.0, 0.6], ['v4', 5.2, -0.4], ['v5', -0.2, 2.6], ['v6', 4.0, 2.4]]); DEMO(3.0, 0.3, 3.3); cap('另一種：incidence matrix', '物件不一樣'); },
+  async (tok, S) => { S.Mx.kill(); lab.clear(); hold(); S.B = board(-6.8, 5.0, 0.5, -2.6, 3); S.B.add('incidence matrix（關聯矩陣）'); S.G = gnew([['v1', 1.0, -1.6], ['v2', 3.4, -2.0], ['v3', 2.0, 0.6], ['v4', 5.2, -0.4], ['v5', -0.2, 2.6], ['v6', 4.0, 2.4]]); DEMO(3.0, 0.3, 3.3); cap('另一種：incidence matrix', '物件不一樣'); },
   async (tok, S) => { cap('這個圖有 ' + S.G.V.length + ' 個節點', 'v1～v6'); },
   async (tok, S) => { S.IE = [['v1', 'v2'], ['v1', 'v3'], ['v2', 'v4'], ['v3', 'v5'], ['v3', 'v6']]; S.IE.forEach(([p, q], k) => eTag(ge(S.G, p, q), 'e' + (k + 1))); cap('5 條邊', '（e3～e5 的位置是示意）'); },
-  async (tok, S) => { S.H = M('     v1 v2 v3 v4 v5 v6', -6.6, 2.55, -2.6, 'say'); T('Rosen 課本是轉置：列是節點、行是邊', 'idx', -3.6, 3.2, -2.6); cap('矩陣 5 列 6 行', '列是邊、行是節點（老師的寫法）'); },
-  async (tok, S) => { S.IE.forEach(([p, q], k) => { if (k) return; M('e' + (k + 1) + ' │ ' + S.G.V.map((v) => (v.name === p || v.name === q ? ' 1' : ' 0')).join(' '), -6.6, 1.9 - k * 0.62, -2.6, 'note'); }); paintE(S.G.E[0], COL.gold, true); cap('e1 從 v1 連到 v2', 'v1、v2 那兩格是 1'); },
+  async (tok, S) => { S.H = keep(M('     v1 v2 v3 v4 v5 v6', -6.6, 1.9, -2.6, 'say')); T('Rosen 課本是轉置：列是節點、行是邊', 'idx', 3.6, 3.6, -2.6); cap('矩陣 5 列 6 行', '列是邊、行是節點（老師的寫法）'); },
+  async (tok, S) => { S.IE.forEach(([p, q], k) => { if (k) return; S.ir = [keep(M('e' + (k + 1) + ' │ ' + S.G.V.map((v) => (v.name === p || v.name === q ? ' 1' : ' 0')).join(' '), -6.6, 1.0 - k * 0.9, -2.6, 'note'))]; }); paintE(S.G.E[0], COL.gold, true); cap('e1 從 v1 連到 v2', 'v1、v2 那兩格是 1'); },
   async (tok, S) => { S.B.add('每一列恰好兩個 1', 'good'); cap('特色：每一列只有兩個 1', '一條邊兩個端點'); },
-  async (tok, S) => { S.IE.forEach(([p, q], k) => { if (!k) return; M('e' + (k + 1) + ' │ ' + S.G.V.map((v) => (v.name === p || v.name === q ? ' 1' : ' 0')).join(' '), -6.6, 1.9 - k * 0.62, -2.6, k === 1 ? 'note' : 'say'); }); paintE(S.G.E[0], COL.edge, false); paintE(S.G.E[1], COL.gold, true); cap('e2 從 v1 連到 v3', ''); },
+  async (tok, S) => { S.IE.forEach(([p, q], k) => { if (!k) return; S.ir.forEach((l) => cls(l, 'say')); keep(M('e' + (k + 1) + ' │ ' + S.G.V.map((v) => (v.name === p || v.name === q ? ' 1' : ' 0')).join(' '), -6.6, 1.0 - k * 0.9, -2.6, k === 1 ? 'note' : 'say')); }); paintE(S.G.E[0], COL.edge, false); paintE(S.G.E[1], COL.gold, true); cap('e2 從 v1 連到 v3', ''); },
   async (tok, S) => { S.B.add('較少用；一眼看出每條邊的兩端'); cap('incidence matrix 用得比較少', '好處：很快看出邊連哪兩個節點'); },
-  async (tok, S) => { lab.clear(); S.B = board(-6.8, 5.0, 0.5, -2.6, 4); S.G = rpG(); S.A = S.G.V.map((_, i) => S.G.V.map((_, j) => (findE(S.G, i, j) ? 1 : 0))); S.B.add('相鄰矩陣的次方 A²、A³…'); cap('回到相鄰矩陣：它的次方', '以前講 relation 的複合 R²、R³'); },
+  async (tok, S) => { lab.clear(); hold(); S.B = board(-6.8, 5.0, 0.5, -2.6, 4); S.G = rpG(); S.A = S.G.V.map((_, i) => S.G.V.map((_, j) => (findE(S.G, i, j) ? 1 : 0))); S.B.add('相鄰矩陣的次方 A²、A³…'); cap('回到相鄰矩陣：它的次方', '以前講 relation 的複合 R²、R³'); },
   async (tok, S) => { S.B.add('布林運算（1+1=1）：有沒有長度 3 的路'); cap('用布林代數 1 + 1 = 1', 'A³ 某格是 1 ⇔ 有長度 3 的 walk'); },
   async (tok, S) => { S.A3 = matMul(matMul(S.A, S.A), S.A); S.B.add('一般加法：A³ 的數字 = 長度 3 的 walk 條數', 'good'); cap('用一般加法 1 + 1 = 2', 'A³ 的數字 = 長度 3 的 walk 有幾條'); },
   async (tok, S) => {
@@ -2105,8 +2125,8 @@ scene('gr-l23-inv', '怎麼判斷不同構：節點數、邊數、degree', [
   async (tok, S) => { showDeg(S.G1); showDeg(S.G2); ['c', 'd'].forEach((n) => { vcol(S.G1, n, COL.orange); vcol(S.G2, n, COL.orange); }); cap('看 degree 3 的點', '兩邊都只有兩個，要互相對應'); },
   async (tok, S) => { ['b', 'e'].forEach((n) => { vcol(S.G1, n, COL.purple); vcol(S.G2, n, COL.purple); }); ['a', 'f'].forEach((n) => { vcol(S.G1, n, COL.green); vcol(S.G2, n, COL.green); }); cap('degree 4 的兩個、degree 2 的兩個', '也各自對應'); },
   async (tok, S) => { cap('a→a、b→b、c→c、d→d、e→e、f→f', '（名字相同的對應）'); T('同名對應', 'ptr', 0, 2.6, -2.4); },
-  async (tok, S) => { await mv(tok, S.G2, S.G1.V.map((v) => v.p.clone().add(V3(6.6, 0, 0))), 700); T('翻一翻：一模一樣 ✔', 'good', 3.0, 1.6, 2.8); cap('雖然長得不一樣', '對應之後一模一樣'); },
-  async (tok, S) => { lab.clear(); S.B = board(-6.8, 5.2, 0.48, -3.4, 4); S.P = gnew([['a', -5.4, -1.4], ['b', -2.4, -1.4], ['c', -1.2, 1.0], ['d', -3.9, 2.4], ['e', -5.8, 0.8]], { color: '#bcd3ee' }); ges(S.P, 'ab bc cd de ea ac bd'); S.Q = gnew([['p', 1.8, -1.4], ['q', 5.4, -1.4], ['r', 1.4, 1.6], ['s', 3.6, 2.2], ['t', 5.8, 1.6]], { color: '#f2c6da' }); ges(S.Q, 'pq pr ps pt qr qs qt'); DEMO(0, 0.3, 3.2); cap('例二：這兩個', ''); },
+  async (tok, S) => { S.G2.V.forEach((v) => txt(v.m.userData.lbl, '')); await mv(tok, S.G2, S.G1.V.map((v) => v.p.clone().add(V3(6.6, 0, 0))), 700); showDeg(S.G2); T('翻一翻：一模一樣 ✔', 'good', 3.3, 1.2, -2.8); cap('雖然長得不一樣', '對應之後一模一樣'); },
+  async (tok, S) => { lab.clear(); hold(); S.B = board(-6.8, 5.2, 0.48, -3.4, 4); S.P = gnew([['a', -5.4, -1.4], ['b', -2.4, -1.4], ['c', -1.2, 1.0], ['d', -3.9, 2.4], ['e', -5.8, 0.8]], { color: '#bcd3ee' }); ges(S.P, 'ab bc cd de ea ac bd'); S.Q = gnew([['p', 1.8, -1.4], ['q', 5.4, -1.4], ['r', 1.4, 1.6], ['s', 3.6, 2.2], ['t', 5.8, 1.6]], { color: '#f2c6da' }); ges(S.Q, 'pq pr ps pt qr qs qt'); DEMO(0, 0.3, 3.2); cap('例二：這兩個', ''); },
   async (tok, S) => { T('5 點、' + S.P.E.length + ' 邊', 'ptr', -3.6, 3.4, -2.4); T('5 點、' + S.Q.E.length + ' 邊', 'ptr alt', 3.6, 3.4, -2.4); cap('都是 5 個節點', '邊數 ' + S.P.E.length + ' 和 ' + S.Q.E.length + '：一樣'); },
   async (tok, S) => { showDeg(S.P); showDeg(S.Q); const d2 = (G) => deg(G).filter((x) => x === 2).length; [S.P, S.Q].forEach((G) => deg(G).forEach((x, i) => { if (x === 2) vcol(G, i, COL.hot); })); cap('degree 2 的點', '左邊 ' + d2(S.P) + ' 個、右邊 ' + d2(S.Q) + ' 個'); },
   async (tok, S) => { S.B.add('degree 不同 → 不同構', 'bad'); cap('degree 的分布不一樣', '這兩個不同構'); },
