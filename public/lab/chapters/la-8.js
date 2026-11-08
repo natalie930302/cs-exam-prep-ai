@@ -92,6 +92,12 @@ export default function (ctx) {
   function tag(text, cls, x, y, z = 0) { const l = lab.label(text, cls || ''); l.position.set(x, y, z); lab.world.add(l); return l; }
   const txt = (l, t) => { l.element.textContent = t; };
   function kill(o) { if (!o) return; if (o.kill && o.g) { o.kill(); return; } lab.world.remove(o); o.traverse((c) => { if (c.element) c.element.remove(); }); }
+  // An invisible box over the area a scene will use later: the stage's auto framing measures it from the
+  // first step, so the camera does not zoom in on the first few things and then jump back out.
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
   function mtag(rows, x, y, z = 0, cls = '') {
     const cells = rows.map((r) => r.map((v) => (typeof v === 'number' ? frac(v) : String(v))));
     const w = Math.max(...cells.flat().map((s) => s.length));
@@ -315,6 +321,7 @@ export default function (ctx) {
   // ───────────────────────── 場景（課本）：正交對角化 PᵀSP = D ─────────────────────────
   async function scOrthDiag(tok) {
     fresh([0, 3.4, 12.5], [0, 3.2, 0]);
+    frameHold(-5.6, 0.7, 0, 5.6, 6.6, 0);
     const S = [[6, 2], [2, 3]];
     const steps = [
       ['① 特徵方程式', 'det(S − λI) = λ² − 9λ + 14 = 0', 'λ = 7、2（實數）'],
@@ -323,16 +330,19 @@ export default function (ctx) {
       ['④ 正規化', 'q₁ = (2, 1)/√5', 'q₂ = (1, −2)/√5'],
       ['⑤ 排成 P、D', 'P = (1/√5)[2 1; 1 −2]', 'D = [7 0; 0 2]'],
     ];
-    tag('S =', 'idx', -5.0, 6.4); mtag(S, -4.0, 6.4, 0, 'ptr');
+    tag('S =', 'idx', -5.25, 6.4); mtag(S, -4.0, 6.4, 0, 'ptr');
     say('考古題最愛：找正交矩陣 P 使 PᵀSP = D', 'S = [6 2; 2 3]');
     await beat(tok, 2800);
     const P = board2(3.2, 2.8, 0.75, [-2.6, 3.2], [-2.8, 2.2]);
+    let prev = [];
     for (let k = 0; k < steps.length; k++) {
       const [h, a, b] = steps[k];
       const y = 5.4 - k * 1.05;
-      const m = cube(h, k === 4 ? C.p : C.a, [2.4, 0.5, 0.5], -4.3, y + 2.5, 0);
-      lab.dropTo(lab.addBody(m), V3(-4.3, y, 0));
-      tag(a, 'idx', -1.2, y + 0.18); tag(b, 'idx', -1.2, y - 0.2);
+      // the step's block appears in place (dropping from above it fell onto the earlier blocks and stuck there);
+      // the previous step's two lines step back so only the current working is in full colour
+      const m = cube(h, k === 4 ? C.p : C.a, [2.4, 0.5, 0.5], -4.3, y, 0);
+      if (k > 0) prev.forEach((l) => { l.element.style.opacity = '0.25'; });
+      prev = [tag(a, 'idx', -1.2, y + 0.23), tag(b, 'idx', -1.2, y - 0.23)];
       say(h, a + '；' + b);
       if (k === 1) { rod(C.p, 0.03).set(W2(P, [-2.4, -1.2]), W2(P, [3, 1.5])); rod(C.q, 0.03).set(W2(P, [-1.1, 2.2]), W2(P, [1.3, -2.6])); }
       if (k === 2) rightAngle(P(0, 0), W2(P, [2, 1]).sub(P(0, 0)), W2(P, [1, -2]).sub(P(0, 0)), 0.3);
@@ -698,6 +708,31 @@ const eqM = (A, B, e = 1e-9) => A.every((r, i) => r.every((v, j) => Math.abs(v -
 const hl = (l, cls) => { l.element.className = 'lab-label ' + cls; };
 const CAM = [[0, 3.2, 11.5], [0, 3.2, 0]];
 const CAM3 = [[5.6, 7.4, 7.6], [0, 2.4, 0]];
+// a finished subject steps back: labels fade to a faint grey, meshes go see-through and move back a little
+// (one subject at a time; still there to refer to, but no longer competing with the new thing)
+function recede(...os) {
+  for (const o of os.flat(Infinity)) {
+    if (!o) continue;
+    if (o.element) { o.element.style.transition = ''; o.element.style.opacity = '0.25'; o.userData.keep = true; continue; }
+    const g = o.g || o;
+    if (g.position && g.userData.z0 == null) { g.userData.z0 = g.position.z; g.position.z -= 0.6; }
+    g.traverse && g.traverse((c) => { if (c.material && !c.userData.noDim && !c.userData.mat0) { c.userData.mat0 = c.material; c.material = c.material.clone(); c.material.transparent = true; c.material.opacity = Math.min(c.material.opacity, 0.3); } if (c.element) c.element.style.opacity = '0.25'; });
+    if (o.lbl) o.lbl.element.style.opacity = '0.25';
+  }
+}
+// … and comes forward again when the narration returns to it
+function unrecede(...os) {
+  for (const o of os.flat(Infinity)) {
+    if (!o) continue;
+    if (o.element) { o.element.style.opacity = ''; continue; }
+    const g = o.g || o;
+    if (g.position && g.userData.z0 != null) { g.position.z = g.userData.z0; g.userData.z0 = null; }
+    g.traverse && g.traverse((c) => { if (c.userData.mat0) { c.material = c.userData.mat0; c.userData.mat0 = null; } if (c.element) c.element.style.opacity = ''; });
+    if (o.lbl) o.lbl.element.style.opacity = '';
+  }
+}
+// everything fn() adds to the stage (to recede / remove a drawn group later as one subject)
+function grab(fn) { const before = new Set(lab.world.children); const r = fn(); return { r, objs: lab.world.children.filter((o) => !before.has(o)) }; }
 // a scene = a list of step functions; each runs when the video reaches its cue
 function scene(id, title, steps, cam = CAM) {
   FRAG.push([id, title, async (tok) => {
@@ -791,36 +826,42 @@ const residualOK = (M, vals, vecs) => vals.every((l, k) => mv(M, vecs[k]).every(
 // 6 steps
 scene('sp-l25-facts', 'L25：對稱矩陣的兩大事實', [
   (tok, S) => {
+    frameHold(-5.8, 0.3, 0, 5.6, 6.2, 0);
     sm('A =', -5.7, 5.0); S.m = mtag(A3, -4.3, 5.0, 0, 'ptr');
-    ok(eqM(A3, tr(A3)), 'Aᵀ = A ✓（沿對角線鏡射）', -4.3, 3.8); nt('數字是示意', -4.3, 3.25);
+    K.keep(ok(eqM(A3, tr(A3)), 'Aᵀ = A ✓（沿對角線鏡射；數字是示意）', -4.3, 3.8));
     cap('對稱矩陣：A = Aᵀ', '最重要的一類矩陣');
   },
   (tok, S) => { S.q1 = hot('特徵值有什麼特別？', 0.6, 6.1); S.q2 = hot('特徵向量有什麼特別？', 0.6, 5.55); cap('看到特殊的矩陣，就問：', '它的特徵值、特徵向量有什麼特別？'); },
-  (tok, S) => { sm('對照：Markov 矩陣 → 一定有 λ = 1', 0.6, 4.95); cap('像 Markov 矩陣一定有 λ = 1', '特殊的矩陣 → 特殊的特徵值'); },
+  (tok, S) => { S.mk = sm('對照：Markov 矩陣 → 一定有 λ = 1', 0.6, 4.95); cap('像 Markov 矩陣一定有 λ = 1', '特殊的矩陣 → 特殊的特徵值'); },
   async (tok, S) => {
+    recede(S.mk);
     const { vals, vecs } = symEig(A3); S.vecs = vecs; S.vals = vals;
-    const y = 1.3, x0 = -3.2, sc = 0.42; S.y = y; S.x0 = x0;
-    rod('#9c8d70', 0.02).set(V3(-5.6, y, 0), V3(2.4, y, 0)); sm('實數線', 2.9, y);
-    for (const k of [0, 4, 8, 12]) { rod('#9c8d70', 0.012).set(V3(x0 + sc * k, y - 0.1, 0), V3(x0 + sc * k, y + 0.1, 0)); sm(String(k), x0 + sc * k, y - 0.35); }
-    for (let k = 0; k < 3; k++) { const b = ball(V3(x0 + sc * vals[k], y + 1.2, 0), C.p, 0.12); await anim(tok, 350, (t) => { b.position.y = y + 1.2 * (1 - t); }); sm('λ ≈ ' + f2(vals[k]), x0 + sc * vals[k] + (k === 2 ? -0.75 : k === 1 ? 0.7 : 0), y + 0.4); }
-    ok(residualOK(A3, vals, vecs), '三個 λ 都落在實數線上 ✓', -1.6, 0.4);
+    const y = 1.3, x0 = -3.2, sc = 0.42; S.y = y; S.x0 = x0; S.line = [];
+    S.line.push(rod('#9c8d70', 0.02).set(V3(-5.6, y, 0), V3(2.4, y, 0)), sm('實數線', 2.9, y));
+    for (const k of [0, 4, 8, 12]) { S.line.push(rod('#9c8d70', 0.012).set(V3(x0 + sc * k, y - 0.1, 0), V3(x0 + sc * k, y + 0.1, 0))); if (k === 0) S.line.push(sm(String(k), x0 + sc * k, y - 0.35)); }
+    for (let k = 0; k < 3; k++) { const b = ball(V3(x0 + sc * vals[k], y + 1.2, 0), C.p, 0.12); S.line.push(b); await anim(tok, 350, (t) => { b.position.y = y + 1.2 * (1 - t); }); S.line.push(sm('λ ≈ ' + f2(vals[k]), x0 + sc * vals[k] + (k === 2 ? -0.75 : k === 1 ? 0.7 : 0), y + 0.4)); }
+    S.chk = residualOK(A3, vals, vecs);
+    S.rem = ok(S.chk, '三個 λ 都落在實數線上 ✓', 1.7, 0.35);
     txt(S.q1, '① 特徵值都是實數');
     cap('事實一：對稱矩陣的特徵值都是實數', '程式算：Ax = λx 驗證過');
   },
   (tok, S) => {
     const R = [[0, -1], [1, 0]], i = cx(0, 1), chk = [i, cx(0, -1)].every((l) => cNear(cAdd(cMul(l, l), cx(1)), cx(0)));
-    ball(V3(S.x0, S.y + 0.95, 0), C.e, 0.1); ball(V3(S.x0, S.y - 0.95, 0), C.e, 0.1);
-    sm('i', S.x0 - 0.3, S.y + 0.95); sm('−i', S.x0 - 0.35, S.y - 0.95);
-    ok(chk, '對照：旋轉 [0 −1; 1 0] 的 λ² + 1 = 0 → λ = ±i ✓（不在線上）', -2.4, 2.75);
+    S.line.push(ball(V3(S.x0, S.y + 0.95, 0), C.e, 0.1), ball(V3(S.x0, S.y - 0.95, 0), C.e, 0.1));
+    S.line.push(sm('i', S.x0 - 0.3, S.y + 0.95), sm('−i', S.x0 - 0.35, S.y - 0.95));
+    // the same remark under the line, rewritten: the rotation is the contrast case
+    txt(S.rem, chk ? '對照：旋轉 [0 −1; 1 0] 的 λ² + 1 = 0 → λ = ±i ✓（不在線上）' : '對照：旋轉 [0 −1; 1 0] 的 λ = ±i ✘'); hl(S.rem, chk ? 'good' : 'bad');
+    txt(S.q1, '① 特徵值都是實數' + (S.chk ? ' ✓' : ' ✘'));
     void R; cap('旋轉矩陣的特徵值是複數', '對稱矩陣不會發生這種事');
   },
   async (tok, S) => {
-    const T = space3(V3(4.3, 3.0, 0), 0.95, 1.3), cols = [C.a, C.b, C.q];
+    recede(S.line, S.rem);
+    const T = space3(V3(4.1, 3.4, 0), 1.15, 1.3), cols = [C.a, C.b, C.q];
     const as = S.vecs.map((v, k) => arrow(cols[k], 0.045));
     await anim(tok, 900, (t) => as.forEach((a, k) => a.set(T([0, 0, 0]), T(mul(1.1 * t, S.vecs[k])))));
     as.forEach((a, k) => a.label('q' + '₁₂₃'[k], 'idx'));
     const d = [dot(S.vecs[0], S.vecs[1]), dot(S.vecs[0], S.vecs[2]), dot(S.vecs[1], S.vecs[2])];
-    ok(d.every((x) => near(x, 0, 1e-9)), 'q₁·q₂ = q₁·q₃ = q₂·q₃ = 0 ✓', 4.3, 0.7);
+    ok(d.every((x) => near(x, 0, 1e-9)), 'q₁·q₂ = q₁·q₃ = q₂·q₃ = 0 ✓', 4.3, 0.9);
     txt(S.q2, '② 特徵向量互相垂直');
     cap('事實二：特徵向量互相垂直（orthogonal）', '三支箭頭兩兩成直角');
   },
@@ -888,14 +929,15 @@ scene('sp-l25-chosen', 'L25：特徵向量「可以選成」互相垂直', [
 const S2 = [[2, 1], [1, 2]]; // 示意
 scene('sp-l25-qlq', 'L25：A = QΛQᵀ（譜定理）', [
   (tok, S) => {
+    frameHold(-6.0, 0.2, 0, 5.6, 6.2, 0);
     S.F = hot('A = S Λ S⁻¹', -3.4, 6.0);
-    sm('S 的行 = 特徵向量，Λ = 特徵值', -3.4, 5.4);
+    S.sd = sm('S 的行 = 特徵向量，Λ = 特徵值', -3.4, 5.4);
     S.P = board2(3.2, 3.0, 0.95, [-2.4, 2.4], [-2.3, 2.3]);
     cap('一般矩陣（有完整特徵向量）', 'A = SΛS⁻¹');
   },
   (tok, S) => {
-    sm('A =', -5.6, 4.4); mtag(S2, -4.6, 4.4, 0, 'ptr'); sm('Λ =', -3.2, 4.4); mtag([[3, 0], [0, 1]], -2.2, 4.4, 0, 'ptr alt'); nt('示意', -0.9, 4.4);
-    const ev = symEig(S2).vals; ok(near(ev[0], 3) && near(ev[1], 1), 'λ = 3, 1 ✓ 實數，放在對角線', -3.4, 3.5);
+    S.al = [sm('A =', -5.6, 4.4), mtag(S2, -4.6, 4.4, 0, 'ptr'), sm('Λ =', -3.5, 4.4), mtag([[3, 0], [0, 1]], -2.1, 4.4, 0, 'ptr alt'), K.keep(nt('示意', -0.75, 4.4))];
+    const ev = symEig(S2).vals; S.lr = K.keep(ok(near(ev[0], 3) && near(ev[1], 1), 'λ = 3, 1 ✓ 實數，放在對角線', -3.4, 3.5));
     cap('對稱的情況：λ 是實數', '還是放在 Λ 的對角線上');
   },
   async (tok, S) => {
@@ -903,37 +945,40 @@ scene('sp-l25-qlq', 'L25：A = QΛQᵀ（譜定理）', [
     await anim(tok, 800, (t) => { S.a1.set(S.P(0, 0), W2(S.P, mul(t, [1, 1]))); S.a2.set(S.P(0, 0), W2(S.P, mul(t, [1, -1]))); });
     S.a1.label('(1, 1)', 'idx'); S.a2.label('(1, −1)', 'idx');
     S.ra = rightAngle(S.P(0, 0), W2(S.P, [1, 1]).sub(S.P(0, 0)), W2(S.P, [1, -1]).sub(S.P(0, 0)), 0.3);
-    ok(dot([1, 1], [1, -1]) === 0 && eqM([mv(S2, [1, 1]), mv(S2, [1, -1])], [[3, 3], [1, -1]]), '(1, 1)·(1, −1) = 0 ✓ 互相垂直', 3.2, 0.3);
+    // one remark under the board, rewritten in step 4
+    S.rr = K.keep(ok(dot([1, 1], [1, -1]) === 0 && eqM([mv(S2, [1, 1]), mv(S2, [1, -1])], [[3, 3], [1, -1]]), '(1, 1)·(1, −1) = 0 ✓ 互相垂直', 3.2, 0.45));
     cap('特徵向量互相垂直', '');
   },
   async (tok, S) => {
     const s = 1 / Math.SQRT2;
     await anim(tok, 800, (t) => { const k = 1 + (s - 1) * t; S.a1.set(S.P(0, 0), W2(S.P, mul(k, [1, 1]))); S.a2.set(S.P(0, 0), W2(S.P, mul(k, [1, -1]))); });
     S.a1.label('q₁ = (1, 1)/√2', 'idx'); S.a2.label('q₂ = (1, −1)/√2', 'idx');
-    ok(near(norm(mul(s, [1, 1])), 1), '長度縮成 1 ✓：orthonormal', 3.2, -0.25);
+    const o = near(norm(mul(s, [1, 1])), 1); txt(S.rr, '互相垂直 ✓、長度縮成 1 ' + (o ? '✓' : '✘') + '：orthonormal'); hl(S.rr, o ? 'good' : 'bad');
     cap('再把長度縮成 1', '單位向量 + 互相垂直 = orthonormal');
   },
   (tok, S) => {
-    txt(S.F, 'A = Q Λ Q⁻¹');
-    sm('Q =', -5.6, 2.6); S.Q = [[1 / Math.SQRT2, 1 / Math.SQRT2], [1 / Math.SQRT2, -1 / Math.SQRT2]]; mtag(S.Q, -4.2, 2.6, 0, 'ptr');
+    txt(S.F, 'A = Q Λ Q⁻¹'); txt(S.sd, 'Q 的行 = orthonormal 的特徵向量，Λ = 特徵值'); recede(S.lr);
+    S.Q = [[1 / Math.SQRT2, 1 / Math.SQRT2], [1 / Math.SQRT2, -1 / Math.SQRT2]]; S.ql = [sm('Q =', -5.75, 2.7), mtag(S.Q, -3.9, 2.7, 0, 'ptr')];
     cap('特徵向量矩陣改叫 Q', 'Q 的行 = orthonormal 的特徵向量');
   },
   (tok, S) => {
-    ok(eqM(mm(tr(S.Q), S.Q), [[1, 0], [0, 1]]), 'QᵀQ = I ✓ ⇒ Q⁻¹ = Qᵀ', -3.4, 1.6);
+    S.ql.push(K.keep(ok(eqM(mm(tr(S.Q), S.Q), [[1, 0], [0, 1]]), 'QᵀQ = I ✓ ⇒ Q⁻¹ = Qᵀ', -0.6, 2.7)));
     cap('Q 的反矩陣就是 Qᵀ', 'orthonormal 的行 ⇒ QᵀQ = I');
   },
   (tok, S) => {
     txt(S.F, 'A = Q Λ Qᵀ');
-    ok(eqM(mm(S.Q, mm([[3, 0], [0, 1]], tr(S.Q))), S2), 'QΛQᵀ = [2 1; 1 2] ✓', -3.4, 1.0);
+    // one remark line under Q, rewritten in step 8
+    S.rl = K.keep(ok(eqM(mm(S.Q, mm([[3, 0], [0, 1]], tr(S.Q))), S2), 'QΛQᵀ = [2 1; 1 2] ✓', -3.4, 1.6));
     cap('對稱矩陣的分解：A = QΛQᵀ', '正交 × 對角 × 正交的轉置');
   },
   (tok, S) => {
     const M = mm(S.Q, mm([[3, 0], [0, 1]], tr(S.Q)));
-    ok(eqM(tr(M), M), '(QΛQᵀ)ᵀ = QΛᵀQᵀ = QΛQᵀ ✓ 一定對稱', -3.4, 0.4);
+    const o = eqM(tr(M), M); txt(S.rl, 'QΛQᵀ = [2 1; 1 2] ✓；(QΛQᵀ)ᵀ = QΛᵀQᵀ = QΛQᵀ ' + (o ? '✓' : '✘') + ' 一定對稱'); hl(S.rl, o ? 'good' : 'bad');
     cap('反過來：這種乘積轉置後不變', '所以一定是對稱的');
   },
-  (tok, S) => { sm('spectral theorem（譜定理）', -3.4, -0.2); cap('這叫 spectral theorem（譜定理）', 'spectrum = 特徵值的集合（像光譜）'); },
+  (tok, S) => { S.st = sm('spectral theorem（譜定理）', -3.4, 1.0); cap('這叫 spectral theorem（譜定理）', 'spectrum = 特徵值的集合（像光譜）'); },
   async (tok, S) => {
+    recede(S.sd, S.al, S.ql, S.rr);  // the geometry on the board is the subject now
     const cp = circlePts(), ang = Math.PI / 4, L = [[3, 0], [0, 1]];
     poly(cp.map((u) => W2(S.P, u)), '#d8cfc0', true); const sh = poly(cp.map((u) => W2(S.P, u)), C.b, true);
     const draw = (M) => sh.setPts(cp.map((u) => W2(S.P, mv(M, u))));
@@ -1090,7 +1135,7 @@ scene('sp-l25-proj', 'L25：A = λ₁q₁q₁ᵀ + λ₂q₂q₂ᵀ（投影的�
 // 9 steps
 const B3s = [[1, 2, 0], [2, 1, 0], [0, 0, 3]]; // 示意
 scene('sp-l25-signs', 'L25：pivots 的正負號 = 特徵值的正負號', [
-  (tok, S) => { S.F = hot('λ 是實數 → 正的還是負的？', -2.4, 6.0); cap('λ 是實數，接著問：正或負？', ''); },
+  (tok, S) => { frameHold(-5.6, 0.2, 0, 5.4, 6.2, 0); S.F = hot('λ 是實數 → 正的還是負的？', -2.4, 6.0); cap('λ 是實數，接著問：正或負？', ''); },
   (tok, S) => { S.t2 = sm('微分方程：λ 的正負決定穩定或不穩定', -2.4, 5.4); cap('微分方程裡，這決定穩不穩定', ''); },
   (tok, S) => {
     S.g = []; for (let k = 0; k < 50; k++) S.g.push(cube('', C.gray, [0.32, 0.32, 0.32], -4.5 + (k % 10) * 0.42, 3.9 - Math.floor(k / 10) * 0.42, 0));
@@ -1107,23 +1152,27 @@ scene('sp-l25-signs', 'L25：pivots 的正負號 = 特徵值的正負號', [
   (tok, S) => {
     gone(S.g, S.t50, S.bd, S.gd, S.t28, S.t2);
     const pv = pivots(B3s), ev = symEig(B3s).vals; S.pv = pv; S.ev = ev;
-    mtag(B3s, -4.6, 3.9, 0, 'ptr'); nt('示意 A', -4.6, 2.9);
-    pv.forEach((v, k) => bar(-2.6 + k * 0.75, 2.3, v, frac(v))); sm('pivots', -1.85, 0.2);
-    ev.forEach((v, k) => bar(0.2 + k * 0.75, 2.3, v, f2(v))); sm('特徵值', 0.95, 0.2);
+    mtag(B3s, -4.6, 3.9, 0, 'ptr'); K.keep(nt('示意 A', -4.6, 2.9));
+    // pivots and eigenvalues side by side on one baseline, group names above, one remark line below
+    S.pb = pv.map((v, k) => bar(-2.6 + k * 0.75, 2.7, v, frac(v))); S.pb.push(sm('pivots', -1.85, 4.75));
+    ev.forEach((v, k) => bar(0.2 + k * 0.75, 2.7, v, f2(v))); sm('特徵值', 0.95, 4.75);
     const cnt = (a) => a.filter((v) => v > 1e-9).length;
-    ok(cnt(pv) === cnt(ev) && pv.length - cnt(pv) === ev.length - cnt(ev), '正的個數 2 = 2、負的個數 1 = 1 ✓', -0.8, -0.5);
+    S.rem = ok(cnt(pv) === cnt(ev) && pv.length - cnt(pv) === ev.length - cnt(ev), '正的個數 2 = 2、負的個數 1 = 1 ✓', -0.4, 0.45);
     cap('對稱矩陣：pivots 的正負號 = λ 的正負號', '數值不同，個數相同');
   },
   (tok, S) => {
     const sh = B3s.map((r, i) => r.map((v, j) => v - (i === j ? 2 : 0))), pv = pivots(sh);
-    pv.forEach((v, k) => bar(3.0 + k * 0.75, 2.3, v, frac(v))); sm('A − 2I 的 pivots', 3.75, 0.2);
+    recede(S.pb);  // now A − 2I's pivots are compared with A's eigenvalues
+    S.sb = pv.map((v, k) => bar(3.0 + k * 0.75, 2.7, v, frac(v))); S.sb.push(sm('A − 2I 的 pivots', 3.75, 4.75));
     const neg = pv.filter((v) => v < -1e-9).length, below = S.ev.filter((v) => v < 2).length;
-    ok(neg === below, '1 個負 pivot ⇒ A 有 1 個 λ < 2 ✓', 3.75, 4.5); nt('老師說移 7I；這裡用 2I 示意', 3.75, 5.0);
+    txt(S.rem, '1 個負 pivot ⇒ A 有 1 個 λ < 2' + (neg === below ? ' ✓' : ' ✘') + '（老師說移 7I；這裡用 2I 示意）'); hl(S.rem, neg === below ? 'good' : 'bad');
     cap('把 A 移成 A − 7I（這裡用 2I）', '數 pivots 就知道幾個 λ 比 7 小');
   },
   (tok, S) => {
     const pp = S.pv.reduce((a, b) => a * b, 1), pe = S.ev.reduce((a, b) => a * b, 1);
-    ok(near(pp, det(B3s)) && near(pe, det(B3s), 1e-8), 'pivots 乘積 = λ 乘積 = det = ' + frac(det(B3s)) + ' ✓', -1.6, 5.35);
+    recede(S.sb); unrecede(S.pb);
+    const okP = near(pp, det(B3s)) && near(pe, det(B3s), 1e-8);
+    txt(S.rem, 'pivots 乘積 = λ 乘積 = det = ' + frac(det(B3s)) + (okP ? ' ✓' : ' ✘')); hl(S.rem, okP ? 'good' : 'bad');
     cap('乘積一樣：都等於 det', '但正負號的事實多告訴我們每一個的符號');
   },
 ]);
@@ -1156,21 +1205,22 @@ scene('sp-l25-pd', 'L25：正定矩陣入門：[5 2; 2 3]', [
 // 10 steps
 const BN = [[-1, 0], [0, -3]];
 scene('sp-l25-dets', 'L25：行列式測試要看「每個左上角」', [
-  (tok, S) => { hot('行列式呢？', -3.0, 6.0); sm('A =', -5.6, 4.9); mtag(A5, -4.6, 4.9, 0, 'ptr'); cap('再加一個相關的事實：行列式', ''); },
-  (tok, S) => { const ev = symEig(A5).vals; ok(near(ev[0] * ev[1], det(A5)) && det(A5) > 0, '正定 ⇒ det = λ₁λ₂ = 11 > 0 ✓', -3.0, 4.0); cap('λ 全正 → det 也是正的', ''); },
-  (tok, S) => { sm('B =', 1.2, 4.9); mtag(BN, 2.3, 4.9, 0, 'ptr alt'); cap('可是看這個：B = [−1 0; 0 −3]', ''); },
-  (tok, S) => { ok(det(BN) === 3, 'det B = 3 > 0 ✓', 2.3, 4.0); cap('B 的行列式也是正的：3', ''); },
+  (tok, S) => { frameHold(-5.9, 0.0, 0, 5.0, 6.2, 0); S.h = hot('行列式呢？', -3.0, 6.0); sm('A =', -5.6, 4.9); mtag(A5, -4.6, 4.9, 0, 'ptr'); cap('再加一個相關的事實：行列式', ''); },
+  (tok, S) => { const ev = symEig(A5).vals; S.dA = ok(near(ev[0] * ev[1], det(A5)) && det(A5) > 0, '正定 ⇒ det = λ₁λ₂ = 11 > 0 ✓', -3.0, 4.0); cap('λ 全正 → det 也是正的', ''); },
+  (tok, S) => { sm('B =', 0.95, 4.9); mtag(BN, 2.3, 4.9, 0, 'ptr alt'); cap('可是看這個：B = [−1 0; 0 −3]', ''); },
+  (tok, S) => { S.dB = ok(det(BN) === 3, 'det B = 3 > 0 ✓', 2.3, 4.0); cap('B 的行列式也是正的：3', ''); },
   (tok, S) => {
-    pivots(BN).forEach((v, k) => bar(1.5 + k * 0.7, 2.9, v, frac(v))); sm('pivots', 1.85, 3.45);
-    symEig(BN).vals.forEach((v, k) => bar(3.4 + k * 0.7, 2.9, v, frac(v))); sm('特徵值', 3.75, 3.45);
-    bad('pivots、λ 都是負的 → 不是正定 ✘', 2.6, 0.75);
+    S.bars = [];
+    pivots(BN).forEach((v, k) => S.bars.push(bar(1.5 + k * 0.7, 2.9, v, frac(v)))); S.bars.push(sm('pivots', 1.85, 3.45));
+    symEig(BN).vals.forEach((v, k) => S.bars.push(bar(3.4 + k * 0.7, 2.9, v, frac(v)))); S.bars.push(sm('特徵值', 3.75, 3.45));
+    S.bd = bad('pivots、λ 都是負的 → 不是正定 ✘', 2.6, 0.75);
     cap('B 的 pivots 和 λ 都是負的', '只看整個 det 不夠');
   },
-  (tok, S) => { sm('還要看左上角的小行列式：1×1、2×2', -3.0, 3.3); cap('要檢查左上角的「子行列式」', '從左上往下'); },
+  (tok, S) => { recede(S.h, S.dA, S.dB, S.bd); sm('還要看左上角的小行列式：1×1、2×2', -3.0, 3.3); cap('要檢查左上角的「子行列式」', '從左上往下'); },
   (tok, S) => { hot('③ 所有左上子行列式 > 0', -3.0, 2.7); cap('全部 n 個都要 > 0', '不是只有最大的那個'); },
   (tok, S) => { const m = minors(A5); ok(m[0] === 5 && m[1] === 11, 'A：5 > 0、11 > 0 → 通過 ✓', -3.0, 2.0); cap('A：5 和 11 都 > 0', '通過'); },
   (tok, S) => { const m = minors(BN); ok(false, 'B：−1 < 0 → 不通過 ✓（雖然 det = ' + m[1] + '）', -3.0, 1.4); cap('B：第一個就是 −1', '不通過'); },
-  (tok, S) => { cube('pivots', C.a, [1.5, 0.5, 0.5], -3.4, -0.2, 0, 2); cube('行列式', C.b, [1.5, 0.5, 0.5], -1.6, -0.2, 0, 2); cube('特徵值', C.q, [1.5, 0.5, 0.5], 0.2, -0.2, 0, 2); cap('pivots、行列式、特徵值', '在對稱矩陣這裡全部連起來'); },
+  (tok, S) => { recede(S.bars); cube('pivots', C.a, [1.5, 0.5, 0.5], -3.4, -0.2, 0, 0.5); cube('行列式', C.b, [1.5, 0.5, 0.5], -1.6, -0.2, 0, 0.5); cube('特徵值', C.q, [1.5, 0.5, 0.5], 0.2, -0.2, 0, 0.5); cap('pivots、行列式、特徵值', '在對稱矩陣這裡全部連起來'); },
 ]);
 
 // ═════════════════════════ MIT 18.06 L26：Complex Matrices; Fast Fourier Transform ═════════════════════════
@@ -1208,67 +1258,74 @@ scene('sp-l26-intro', 'L26：複數進場：Fourier 矩陣與 FFT', [
 // 13 steps
 const Z1 = [cx(1), cx(0, 1)];
 scene('sp-l26-length', 'L26：複數向量的長度：z̄ᵀz = zᴴz', [
-  (tok, S) => { S.F = hot('複數向量 z 的長度？', -3.4, 6.0); cap('重點：長度怎麼算？', ''); },
+  (tok, S) => { frameHold(-5.8, 0.3, 0, 5.8, 6.2, 0); S.F = hot('複數向量 z 的長度？', -3.4, 6.0); cap('重點：長度怎麼算？', ''); },
   (tok, S) => {
-    sm('z = (z₁, z₂, …, zₙ) 在 Cⁿ 裡', -3.4, 5.4);
-    S.p1 = cplane(1.9, 2.6, 0.8); S.p2 = cplane(4.6, 2.6, 0.8); hd('z₁', 1.9, 4.1); hd('z₂', 4.6, 4.1);
+    S.cn = sm('z = (z₁, z₂, …, zₙ) 在 Cⁿ 裡', -3.4, 5.4);
+    S.pl = grab(() => { S.p1 = cplane(1.9, 2.6, 0.8); S.p2 = cplane(4.6, 2.6, 0.8); hd('z₁', 1.9, 4.1); hd('z₂', 4.6, 4.1); }).objs;
     cap('z 的每個分量都是複數', '不在 Rⁿ，而在 Cⁿ');
   },
   (tok, S) => { S.l1 = sm('zᵀz = z₁² + ⋯ + zₙ²？', -3.4, 4.8); cap('zᵀz 行不行？', '長度平方一定要是正的'); },
   async (tok, S) => {
     S.a1 = arrow(C.a, 0.045); S.a2 = arrow(C.a, 0.045);
     await anim(tok, 700, (t) => { S.a1.set(S.p1(0, 0), W2(S.p1, [t, 0])); S.a2.set(S.p2(0, 0), W2(S.p2, [0, t])); });
-    S.a1.label('1', 'idx'); S.a2.label('i', 'idx');
+    // names beside the arrows, clear of the planes' Re / Im labels at the tips
+    S.an = [sm('1', ...W2(S.p1, [0.5, 0.25]).toArray()), sm('i', ...W2(S.p2, [-0.28, 0.55]).toArray())];
     const zt = cdotT(Z1, Z1);
-    ok(false, 'z = (1, i)：zᵀz = 1 + i² = ' + cs(zt) + '，可是 z ≠ 0', -3.4, 4.2);
+    S.bd = ok(false, 'z = (1, i)：zᵀz = 1 + i² = ' + cs(zt) + '，可是 z ≠ 0', -3.4, 4.2);
     cap('例：z = (1, i)', 'zᵀz = 1 + i² = 0，不對！');
   },
-  (tok, S) => { sm('要的是 z̄₁z₁ = |z₁|²', -3.4, 3.6); cap('真正要的是 z̄₁z₁', '= |z₁|²，像 3²、5² 那樣'); },
+  (tok, S) => { recede(S.l1, S.bd); S.zz = sm('要的是 z̄₁z₁ = |z₁|²', -3.4, 3.6); cap('真正要的是 z̄₁z₁', '= |z₁|²，像 3²、5² 那樣'); },
   async (tok, S) => {
-    const b = arrow(C.q, 0.045); await anim(tok, 600, (t) => b.set(S.p2(0, 0), W2(S.p2, [0, -t]))); b.label('ī = −i', 'idx');
-    ok(cNear(cMul(cConj(I_), I_), cx(1)), '(−i)(i) = 1 ✓', 4.6, 0.9);
+    const b = arrow(C.q, 0.045); S.b = b; await anim(tok, 600, (t) => b.set(S.p2(0, 0), W2(S.p2, [0, -t]))); b.label('ī = −i', 'idx');
+    S.ii = ok(cNear(cMul(cConj(I_), I_), cx(1)), '(−i)(i) = 1 ✓', 4.6, 0.9);
     cap('分量 i：共軛是 −i', '(−i)·i = +1');
   },
-  (tok, S) => { sm('z̄ᵀz = |z₁|² + |z₂|² + ⋯ + |zₙ|²', -3.4, 3.0); cap('z̄ᵀz：每一項都是模長平方', ''); },
-  (tok, S) => { sm('= 0 只發生在 z = 0', -3.4, 2.4); cap('只有零向量是 0', '其他向量都 > 0：正確的長度'); },
-  (tok, S) => { const h = cdotH(Z1, Z1); ok(cNear(h, cx(2)), 'z = (1, i)：z̄ᵀz = 1 + 1 = 2 → 長度 √2 ✓', -3.4, 1.8); cap('z = (1, i) 的長度', '1 + 1 = 2，長度 √2'); },
+  // the z̄₁z₁ line grows into the whole sum (same line, rewritten)
+  (tok, S) => { recede(S.ii); txt(S.zz, 'z̄ᵀz = |z₁|² + |z₂|² + ⋯ + |zₙ|²'); cap('z̄ᵀz：每一項都是模長平方', ''); },
+  (tok, S) => { sm('= 0 只發生在 z = 0', -3.4, 3.0); cap('只有零向量是 0', '其他向量都 > 0：正確的長度'); },
+  (tok, S) => { const h = cdotH(Z1, Z1); K.keep(ok(cNear(h, cx(2)), 'z = (1, i)：z̄ᵀz = 1 + 1 = 2 → 長度 √2 ✓', -3.4, 2.4)); cap('z = (1, i) 的長度', '1 + 1 = 2，長度 √2'); },
   (tok, S) => { txt(S.F, 'zᴴz = z̄ᵀz（H：Hermitian）'); cap('轉置時一律取共軛：記成 H', 'zᴴ 念 z Hermitian（數學家 Hermite）'); },
-  (tok, S) => { sm('內積：yᴴx（不再是 yᵀx）', -3.4, 1.2); cap('內積：yᴴx', '轉置的那個要取共軛'); },
-  (tok, S) => { const y = [cx(1), cx(1)], h = cdotH(y, Z1); nt('示意 y = (1, 1)、x = (1, i)：yᴴx = ' + cs(h), -3.4, 0.6); cap('內積通常是複數', ''); },
-  (tok, S) => { good('y = x = z：zᴴz = ‖z‖² ✓', -3.4, 0.0); cap('自己跟自己的內積 = 長度平方', '這個定義是被逼出來的'); },
+  // inner products: a new subject, the two little planes step back
+  (tok, S) => { recede(S.pl, S.a1, S.a2, S.an, S.b, S.cn); sm('內積：yᴴx（不再是 yᵀx）', -3.4, 1.8); cap('內積：yᴴx', '轉置的那個要取共軛'); },
+  (tok, S) => { const y = [cx(1), cx(1)], h = cdotH(y, Z1); nt('示意 y = (1, 1)、x = (1, i)：yᴴx = ' + cs(h), -3.4, 1.2); cap('內積通常是複數', ''); },
+  (tok, S) => { good('y = x = z：zᴴz = ‖z‖² ✓', -3.4, 0.6); cap('自己跟自己的內積 = 長度平方', '這個定義是被逼出來的'); },
 ]);
 
 // 14 steps
 const HM2 = [[cx(2), cx(3, 1)], [cx(3, -1), cx(5)]];
 scene('sp-l26-herm', 'L26：Hermitian（Aᴴ = A）與 unitary（QᴴQ = I）', [
-  (tok, S) => { S.F = hot('對稱矩陣的複數版本？', -3.0, 6.0); cap('還要改「對稱」的定義', ''); },
-  (tok, S) => { sm('實數：Aᵀ = A（複數時不夠好）', -3.0, 5.4); cap('對稱：Aᵀ = A', '複數矩陣這樣不行'); },
+  (tok, S) => { frameHold(-5.8, 0.4, 0, 6.2, 6.2, 0); S.F = hot('對稱矩陣的複數版本？', -3.0, 6.0); cap('還要改「對稱」的定義', ''); },
+  (tok, S) => { S.t2 = sm('實數：Aᵀ = A（複數時不夠好）', -3.0, 5.4); cap('對稱：Aᵀ = A', '複數矩陣這樣不行'); },
   (tok, S) => { txt(S.F, '複數版對稱：Āᵀ = A'); cap('要轉置「再取共軛」等於自己', ''); },
   (tok, S) => { sm('A =', -5.6, 4.0); S.m = mtag([['2', '·'], ['·', '5']], -4.4, 4.0, 0, 'ptr'); cap('對角線必須是實數', '翻過去、取共軛還要是自己'); },
-  (tok, S) => { gone(S.m); S.m = mtag(cmat(HM2), -4.2, 4.0, 0, 'ptr'); sm('3+i 翻過去 → 共軛 3−i', -4.2, 3.2); cap('右上 3+i ⇒ 左下一定是 3−i', ''); },
-  (tok, S) => { const h = cHerm(HM2).every((r, i) => r.every((z, j) => cNear(z, HM2[i][j]))); ok(h, 'Aᴴ = A ✓：Hermitian 矩陣', -4.2, 2.5); cap('這種矩陣叫 Hermitian', 'Aᴴ = A'); },
+  (tok, S) => { gone(S.m); S.m = mtag(cmat(HM2), -4.2, 4.0, 0, 'ptr'); S.n = sm('3+i 翻過去 → 共軛 3−i', -4.2, 3.2); cap('右上 3+i ⇒ 左下一定是 3−i', ''); },
+  (tok, S) => { const h = cHerm(HM2).every((r, i) => r.every((z, j) => cNear(z, HM2[i][j]))); S.h = ok(h, 'Aᴴ = A ✓：Hermitian 矩陣', -4.2, 2.5); cap('這種矩陣叫 Hermitian', 'Aᴴ = A'); },
   (tok, S) => {
     const t = 7, d = cMul(HM2[0][0], HM2[1][1]).re - cAbs2(HM2[0][1]), r = Math.sqrt(t * t - 4 * d); S.ev = [(t + r) / 2, (t - r) / 2];
-    ok(near(S.ev[0], 7) && near(S.ev[1], 0), 'λ² − 7λ + 0 = 0 → λ = 7、0：實數 ✓（程式算）', -2.2, 1.8);
+    S.e = ok(near(S.ev[0], 7) && near(S.ev[1], 0), 'λ² − 7λ + 0 = 0 → λ = 7、0：實數 ✓（程式算）', -2.2, 1.8);
     cap('Hermitian 矩陣的特徵值是實數', '');
   },
   (tok, S) => {
     const v7 = [cx(3, 1), cx(5)], v0 = [cx(3, 1), cx(-2)];
     const e = cmv(HM2, v7).every((z, i) => cNear(z, cMul(cx(7), v7[i]))) && cmv(HM2, v0).every((z) => cNear(z, cx(0)));
-    ok(e && cNear(cdotH(v0, v7), cx(0)), 'x₇ = (3+i, 5)、x₀ = (3+i, −2)：x₀ᴴx₇ = 0 ✓', -2.2, 1.2);
+    K.keep(ok(e && cNear(cdotH(v0, v7), cx(0)), 'x₇ = (3+i, 5)、x₀ = (3+i, −2)：x₀ᴴx₇ = 0 ✓', -2.2, 1.2));
     cap('特徵向量互相垂直', '垂直要用 xᴴy = 0 來檢查');
   },
-  (tok, S) => { S.d = hot('q₁, q₂, …, qₙ：互相垂直的單位向量', 3.2, 5.4); cap('垂直的單位向量 q₁ … qₙ', 'orthonormal basis'); },
-  (tok, S) => { sm('q̄ᵢᵀqⱼ = qᵢᴴqⱼ = 0（i ≠ j）、1（i = j）', 3.2, 4.8); cap('檢查垂直：qᵢᴴqⱼ', '轉置之外還要共軛'); },
+  // orthonormal q's: a new subject; the Hermitian steps that are done step back (the eigenvectors stay, step 11 uses them)
+  (tok, S) => { recede(S.t2, S.n, S.h, S.e); S.d = hot('q₁, q₂, …, qₙ：互相垂直的單位向量', 3.2, 5.4); cap('垂直的單位向量 q₁ … qₙ', 'orthonormal basis'); },
+  (tok, S) => { S.qq = sm('q̄ᵢᵀqⱼ = qᵢᴴqⱼ = 0（i ≠ j）、1（i = j）', 3.2, 4.8); cap('檢查垂直：qᵢᴴqⱼ', '轉置之外還要共軛'); },
   (tok, S) => {
     const v0 = [cx(3, 1), cx(-2)], v7 = [cx(3, 1), cx(5)], n0 = Math.sqrt(cdotH(v0, v0).re), n7 = Math.sqrt(cdotH(v7, v7).re);
     const Q = [[cMul(v0[0], cx(1 / n0)), cMul(v7[0], cx(1 / n7))], [cMul(v0[1], cx(1 / n0)), cMul(v7[1], cx(1 / n7))]];
-    ok(cEye(cmm(cHerm(Q), Q)), 'QᵀQ = I → QᴴQ = I ✓（用上面兩個特徵向量 ÷ 長度 √14、√35）', 3.2, 4.2);
+    K.keep(ok(cEye(cmm(cHerm(Q), Q)), 'QᵀQ = I → QᴴQ = I ✓（用上面兩個特徵向量 ÷ 長度 √14、√35）', 3.2, 4.2));
     cap('原本 QᵀQ = I', '現在變成 QᴴQ = I');
   },
   (tok, S) => {
     const rows = [['Rⁿ', 'Cⁿ'], ['xᵀy', 'xᴴy'], ['‖x‖² = xᵀx', '‖x‖² = xᴴx'], ['對稱 Aᵀ = A', 'Hermitian Aᴴ = A']];
-    rows.forEach(([a, b], k) => { sm(a, 2.2, 3.4 - k * 0.5); sm('→', 3.5, 3.4 - k * 0.5); sm(b, 4.9, 3.4 - k * 0.5); });
+    // the dictionary is one table: one aligned label, not twelve
+    recede(S.qq);
+    const w = Math.max(...rows.map((r) => r[0].length));
+    const dl = sm(rows.map(([a, b]) => a.padEnd(w + 1, ' ') + '→  ' + b).join('\n'), 3.6, 2.65); Object.assign(dl.element.style, MONO, { textAlign: 'left' });
     cap('實數 ↔ 複數 的對照字典', '');
   },
   (tok, S) => { sm('正交 QᵀQ = I', 2.2, 1.4); sm('→', 3.5, 1.4); hot('unitary QᴴQ = I', 4.9, 1.4); cap('orthogonal 也改名：unitary', ''); },
@@ -1280,28 +1337,29 @@ const W6 = cExp((2 * Math.PI) / 6);
 scene('sp-l26-fourier', 'L26：Fourier 矩陣 (F)ⱼₖ = wʲᵏ', [
   (tok, S) => { S.F = hot('Fourier 矩陣：最有名的複數矩陣', 3.4, 6.0); cap('最有名的複數矩陣', '它的行互相正交'); },
   (tok, S) => {
-    S.c = []; for (let j = 0; j < 6; j++) { S.c.push([]); for (let k = 0; k < 6; k++) S.c[j].push(cube('', '#e6dccb', [0.62, 0.62, 0.3], -3.4 + k * 0.72, 5.0 - j * 0.72, 0)); }
-    nt('n = 6 示意', -1.6, 0.4);
+    S.c = []; for (let j = 0; j < 6; j++) { S.c.push([]); for (let k = 0; k < 6; k++) S.c[j].push(cube(' ', '#e6dccb', [0.62, 0.62, 0.3], -3.4 + k * 0.72, 5.0 - j * 0.72, 0)); }
+    txt(S.F, 'Fourier 矩陣：最有名的複數矩陣（n = 6 示意）');
     cap('先看 n×n 的情況', '');
   },
   (tok, S) => { for (let j = 0; j < 6; j++) { relabel(S.c[j][0], '1'); glow(S.c[j][0], '#3a2a00'); } cap('第一行：全部是 1', ''); },
-  (tok, S) => { for (let k = 0; k < 6; k++) { sm(String(k), -3.4 + k * 0.72, 5.6); sm(String(k), -4.1, 5.0 - k * 0.72); } sm('從 0 開始數（電機系習慣）', 3.4, 5.4); cap('電機系從 0 開始數', '第 0 行、第 1 行 … 第 n−1 行'); },
+  (tok, S) => { S.ix = []; for (let k = 0; k < 6; k++) S.ix.push(sm(String(k), -3.4 + k * 0.72, 5.6), sm(String(k), -4.1, 5.0 - k * 0.72)); S.z0 = sm('從 0 開始數（電機系習慣）', 3.4, 5.4); cap('電機系從 0 開始數', '第 0 行、第 1 行 … 第 n−1 行'); },
   (tok, S) => { for (let j = 0; j < 6; j++) { glow(S.c[j][0], null); relabel(S.c[j][1], j ? 'w' + (j > 1 ? sup(j) : '') : '1'); glow(S.c[j][1], '#3a2a00'); } cap('第 1 行：1, w, w², …, wⁿ⁻¹', 'w 的次方'); },
-  (tok, S) => { for (let j = 0; j < 6; j++) { glow(S.c[j][1], null); relabel(S.c[j][2], j ? 'w' + sup(2 * j) : '1'); glow(S.c[j][2], '#3a2a00'); } cap('第 2 行：w² 的次方', '1, w², w⁴, w⁶, …'); },
+  (tok, S) => { recede(S.z0); for (let j = 0; j < 6; j++) { glow(S.c[j][1], null); relabel(S.c[j][2], j ? 'w' + sup(2 * j) : '1'); glow(S.c[j][2], '#3a2a00'); } cap('第 2 行：w² 的次方', '1, w², w⁴, w⁶, …'); },
   (tok, S) => {
     for (let j = 0; j < 6; j++) { glow(S.c[j][2], null); for (let k = 0; k < 6; k++) relabel(S.c[j][k], j * k ? 'w' + (j * k > 1 ? sup(j * k) : '') : '1'); }
-    const F = fourier(6); ok(F.every((r, j) => r.every((z, k) => cNear(z, F[k][j]))), 'Fᵀ = F ✓（對稱，但不是 Hermitian）', 3.4, 4.8);
+    const F = fourier(6); S.ft = K.keep(ok(F.every((r, j) => r.every((z, k) => cNear(z, F[k][j]))), 'Fᵀ = F ✓（對稱，但不是 Hermitian）', 3.4, 4.8));
     cap('沿著列看也一樣：F 是對稱的', '數字是複數，所以不是 Hermitian');
   },
-  (tok, S) => { glow(S.c[2][3], '#5a1a00'); hot('(F)ⱼₖ = wʲᵏ（j, k 從 0 到 n−1）', 3.4, 4.2); sm('例：第 2 列、第 3 行 = w⁶', 3.4, 3.6); cap('第 j 列、第 k 行的元素 = w 的 jk 次方', ''); },
-  (tok, S) => { ok(cNear(cPow(W6, 6), cx(1)), 'wⁿ = 1 ✓（n = 6：w⁶ = 1）', 3.4, 2.9); cap('w 是 n 次方等於 1 的那個特別的數', ''); },
+  (tok, S) => { recede(S.ft); glow(S.c[2][3], '#5a1a00'); hot('(F)ⱼₖ = wʲᵏ（j, k 從 0 到 n−1）', 3.4, 4.2); sm('例：第 2 列、第 3 行 = w⁶', 3.4, 3.6); cap('第 j 列、第 k 行的元素 = w 的 jk 次方', ''); },
+  (tok, S) => { recede(S.ix); ok(cNear(cPow(W6, 6), cx(1)), 'wⁿ = 1 ✓（n = 6：w⁶ = 1）', 3.4, 2.9); cap('w 是 n 次方等於 1 的那個特別的數', ''); },
   (tok, S) => { hd('w = e^(i·2π/n)', 3.4, 2.2); cap('w = e 的 i 乘 2π/n 次方', '角度 2π/n'); },
 ]);
 
 // 10 steps
 scene('sp-l26-roots', 'L26：單位根：w⁶ = 1、F₄ 的 w = i', [
   async (tok, S) => {
-    S.Pc = cplane(0.6, 3.0, 2.0); S.b = [];
+    frameHold(-6.4, 0.6, 0, 3.4, 6.0, 0);
+    S.Pc = cplane(0.6, 3.0, 2.0); S.b = []; S.n6 = [];
     S.w = ball(W2(S.Pc, [1, 0]), C.e, 0.13);
     await anim(tok, 700, (t) => S.w.position.copy(W2(S.Pc, [Math.cos((t * Math.PI) / 3), Math.sin((t * Math.PI) / 3)])));
     S.wl = sm('w', ...W2(S.Pc, [0.65, 1.0]).toArray());
@@ -1314,30 +1372,32 @@ scene('sp-l26-roots', 'L26：單位根：w⁶ = 1、F₄ 的 w = i', [
     cap('寫成實部 + 虛部', 'cos(2π/n) + i sin(2π/n)');
   },
   (tok, S) => { gone(S.d); hot('取次方用 e^(iθ)：w¹⁰ = e^(i·20π/n)', -4.0, 5.0); cap('但取次方時，用 e^(iθ) 的形式', '角度直接乘 10'); },
-  (tok, S) => { const arc = []; for (let k = 0; k <= 20; k++) { const a = (k / 20) * (Math.PI / 3); arc.push(W2(S.Pc, [0.35 * Math.cos(a), 0.35 * Math.sin(a)])); } poly(arc, C.b); sm('60°', ...W2(S.Pc, [0.5, 0.2]).toArray()); hd('n = 6：w = e^(2πi/6)', -4.0, 4.4); cap('n = 6：w 在 60°', '繞一圈的六分之一'); },
+  (tok, S) => { const arc = []; for (let k = 0; k <= 20; k++) { const a = (k / 20) * (Math.PI / 3); arc.push(W2(S.Pc, [0.35 * Math.cos(a), 0.35 * Math.sin(a)])); } S.n6.push(poly(arc, C.b), sm('60°', ...W2(S.Pc, [0.5, 0.2]).toArray())); S.nl = hd('n = 6：w = e^(2πi/6)', -4.0, 4.4); cap('n = 6：w 在 60°', '繞一圈的六分之一'); },
   async (tok, S) => {
     const b = ball(S.w.position.clone(), C.q, 0.11); S.b.push(b);
     await anim(tok, 700, (t) => { const a = (Math.PI / 3) * (1 + t); b.position.copy(W2(S.Pc, [Math.cos(a), Math.sin(a)])); });
-    sm('w²', ...W2(S.Pc, [-0.62, 1.05]).toArray()); ok(near(cAbs2(cPow(W6, 2)), 1), '|w²| = 1，角度加倍到 120° ✓', -4.0, 3.8);
+    // one remark line under the n = 6 line, rewritten as the powers go round
+    S.n6.push(sm('w²', ...W2(S.Pc, [-0.62, 1.05]).toArray())); S.rem = K.keep(ok(near(cAbs2(cPow(W6, 2)), 1), '|w²| = 1，角度加倍到 120° ✓', -4.0, 3.8));
     cap('平方：長度還是 1，角度加倍', 'w² 在 120°');
   },
   async (tok, S) => {
-    for (let k = 3; k <= 5; k++) { const a = (k * Math.PI) / 3, b = ball(W2(S.Pc, [Math.cos(a), Math.sin(a)]), C.q, 0.11); S.b.push(b); sm('w' + sup(k), ...W2(S.Pc, [1.25 * Math.cos(a), 1.2 * Math.sin(a)]).toArray()); await wt(tok, 250); }
+    for (let k = 3; k <= 5; k++) { const a = (k * Math.PI) / 3, b = ball(W2(S.Pc, [Math.cos(a), Math.sin(a)]), C.q, 0.11); S.b.push(b); S.n6.push(sm('w' + sup(k), ...W2(S.Pc, [1.25 * Math.cos(a), 1.2 * Math.sin(a)]).toArray())); await wt(tok, 250); }
     cap('w³、w⁴、w⁵ 一個接一個', '每次再轉 60°');
   },
-  (tok, S) => { const b = ball(W2(S.Pc, [1, 0]), C.p, 0.13); S.b.push(b); sm('w⁶ = 1', ...W2(S.Pc, [1.3, -0.15]).toArray()); ok(cNear(cPow(W6, 6), cx(1)), 'w⁶ = 1 ✓ 回到原點', -4.0, 3.2); cap('w⁶ 轉回 1', ''); },
-  (tok, S) => { S.hex = poly([0, 1, 2, 3, 4, 5].map((k) => W2(S.Pc, [Math.cos((k * Math.PI) / 3), Math.sin((k * Math.PI) / 3)])), C.q, true); sm('1 的六個 6 次方根；w 是 primitive（第一個）', -4.0, 2.6); cap('1 的六個六次方根', 'w 是 primitive root'); },
+  (tok, S) => { const b = ball(W2(S.Pc, [1, 0]), C.p, 0.13); S.b.push(b); S.n6.push(sm('w⁶ = 1', ...W2(S.Pc, [1.3, -0.15]).toArray())); const o = cNear(cPow(W6, 6), cx(1)); txt(S.rem, 'w⁶ = 1 ' + (o ? '✓' : '✘') + ' 回到原點'); hl(S.rem, o ? 'good' : 'bad'); cap('w⁶ 轉回 1', ''); },
+  (tok, S) => { S.hex = poly([0, 1, 2, 3, 4, 5].map((k) => W2(S.Pc, [Math.cos((k * Math.PI) / 3), Math.sin((k * Math.PI) / 3)])), C.q, true); txt(S.rem, '1 的六個 6 次方根；w 是 primitive（第一個）'); hl(S.rem, 'idx'); cap('1 的六個六次方根', 'w 是 primitive root'); },
   (tok, S) => {
-    gone(S.b, S.hex, S.w, S.wl);
+    // n = 4: the n = 6 picture is finished, its point names go with it; the n line is rewritten
+    gone(S.b, S.hex, S.w, S.wl, S.n6, S.rem);
     const w4 = cExp(Math.PI / 2); S.w4 = w4;
     S.w = ball(W2(S.Pc, [0, 1]), C.e, 0.13);
-    ok(cNear(w4, I_), 'n = 4：w = e^(2πi/4) = e^(iπ/2) = i ✓', -4.0, 1.9);
+    const o = cNear(w4, I_); txt(S.nl, 'n = 4：w = e^(2πi/4) = e^(iπ/2) = i ' + (o ? '✓' : '✘')); hl(S.nl, o ? 'good' : 'bad');
     cap('換成 n = 4', 'w = i：四分之一圈');
   },
   async (tok, S) => {
     const pts = [[0, 1], [-1, 0], [0, -1], [1, 0]], nm = ['i', 'i² = −1', 'i³ = −i', 'i⁴ = 1'];
-    for (let k = 1; k < 4; k++) { ball(W2(S.Pc, pts[k]), C.q, 0.11); sm(nm[k], ...W2(S.Pc, [pts[k][0] * 1.4, pts[k][1] * 1.25]).toArray()); await wt(tok, 250); }
-    ok([1, 2, 3, 4].every((k) => cNear(cPow(S.w4, k), [I_, cx(-1), cx(0, -1), cx(1)][k - 1])), 'w, w², w³, w⁴ = i, −1, −i, 1 ✓', -4.0, 1.3);
+    for (let k = 1; k < 4; k++) { ball(W2(S.Pc, pts[k]), C.q, 0.11); sm(nm[k], ...W2(S.Pc, [pts[k][0] * 1.4, pts[k][1] * 1.25 - (k === 3 ? 0.22 : 0)]).toArray()); await wt(tok, 250); }
+    ok([1, 2, 3, 4].every((k) => cNear(cPow(S.w4, k), [I_, cx(-1), cx(0, -1), cx(1)][k - 1])), 'w, w², w³, w⁴ = i, −1, −i, 1 ✓', -4.0, 3.8);
     cap('次方：i、−1、−i、1', '');
   },
 ]);
@@ -1347,27 +1407,30 @@ const F4 = fourier(4);
 scene('sp-l26-f4', 'L26：F₄ 的行互相正交，反矩陣 = 共軛轉置', [
   (tok, S) => {
     S.c = []; for (let j = 0; j < 4; j++) { S.c.push([]); for (let k = 0; k < 4; k++) S.c[j].push(cube(j * k ? 'i' + (j * k > 1 ? sup(j * k) : '') : '1', '#e6dccb', [0.75, 0.75, 0.3], -4.6 + k * 0.88, 4.8 - j * 0.88, 0)); }
+    frameHold(-6.2, 0.0, 0, 5.8, 6.0, 0);
     sm('F₄ =', -5.9, 3.5);
     cap('寫出 4×4 的 Fourier 矩陣', 'w = i');
   },
-  (tok, S) => { for (let k = 0; k < 4; k++) { sm(String(k), -4.6 + k * 0.88, 5.5); sm(String(k), -5.25, 4.8 - k * 0.88); } hot('次方 = 列號 × 行號（從 0 數）', -3.3, 0.9); cap('指數 = 列號 × 行號', '例如右下角 i⁹'); },
+  (tok, S) => { for (let k = 0; k < 4; k++) { sm(String(k), -4.6 + k * 0.88, 5.5); sm(String(k), -5.25, 4.8 - k * 0.88); } S.h = hot('次方 = 列號 × 行號（從 0 數）', -3.3, 0.9); cap('指數 = 列號 × 行號', '例如右下角 i⁹'); },
   (tok, S) => {
     for (let j = 0; j < 4; j++) for (let k = 0; k < 4; k++) relabel(S.c[j][k], cs(F4[j][k]));
     const o = cx(1), m = cx(-1), p = I_, q = cx(0, -1), want = [[o, o, o, o], [o, p, m, q], [o, m, o, m], [o, q, m, p]];
-    ok(F4.every((r, j) => r.every((z, k) => cNear(z, want[j][k]))), '代入 i² = −1、i³ = −i … ✓', -3.3, 0.3);
+    S.h3 = K.keep(ok(F4.every((r, j) => r.every((z, k) => cNear(z, want[j][k]))), '代入 i² = −1、i³ = −i … ✓', -3.3, 0.3));
     cap('代入數字', '1、i、−1、−i');
   },
-  (tok, S) => { sm('y = F₄x：四點 Fourier 轉換；反轉換乘 F₄⁻¹', 2.8, 5.6); cap('四點 Fourier 轉換：乘 F₄', '逆轉換：乘 F₄⁻¹'); },
-  (tok, S) => { sm('Fourier 知道反矩陣：因為行互相正交', 2.8, 5.0); cap('反矩陣很好算', '因為行互相正交'); },
-  (tok, S) => { sm('Fourier 沒發現：F 能拆成很多 0 的因子 → FFT', 2.8, 4.4); cap('他沒注意到的：可以拆成很多 0 的因子', '乘起來非常快'); },
-  (tok, S) => { const g = (k, c) => S.c.forEach((r) => glow(r[k], c)); g(0, '#3a2a00'); g(1, '#3a2a00'); ok(cNear(cdotH(colC(F4, 0), colC(F4, 1)), cx(0)), '第 0 行 · 第 1 行 = 1 + i − 1 − i = 0 ✓', 2.8, 3.6); S.g = g; cap('檢查行互相正交', ''); },
-  (tok, S) => { S.g(1, null); S.g(2, '#3a2a00'); ok(cNear(cdotH(colC(F4, 0), colC(F4, 2)), cx(0)), '第 0 行 · 第 2 行 = 1 − 1 + 1 − 1 = 0 ✓', 2.8, 3.0); cap('第 0 行和第 2 行也正交', ''); },
-  (tok, S) => { S.g(0, null); S.g(2, null); S.g(1, '#5a1a00'); S.g(3, '#5a1a00'); const t = cdotT(colC(F4, 1), colC(F4, 3)); ok(false, '第 1 行 × 第 3 行，不取共軛：1 + 1 + 1 + 1 = ' + cs(t) + ' ≠ 0', 2.8, 2.4); cap('第 1 行和第 3 行：直接乘', '1·1 + i·(−i) + … = 4？'); },
-  (tok, S) => { ok(cNear(cdotH(colC(F4, 1), colC(F4, 3)), cx(0)), '先取共軛：1 − 1 + 1 − 1 = 0 ✓', 2.8, 1.8); cap('內積要先取共軛', 'i 變 −i，結果就是 0'); },
-  (tok, S) => { S.g(1, null); S.g(3, null); ok([0, 1, 2, 3].every((k) => cNear(cdotH(colC(F4, k), colC(F4, k)), cx(4))), '每一行：長度² = 4，長度 = 2 ✓', 2.8, 1.2); cap('每一行長度是 2', '還不是單位長度'); },
-  (tok, S) => { for (let j = 0; j < 4; j++) for (let k = 0; k < 4; k++) relabel(S.c[j][k], cs(cMul(F4[j][k], cx(0.5)))); sm('除以 2：½F₄ 的行 orthonormal', 2.8, 0.6); cap('全部除以 2', '行變成 orthonormal'); },
-  (tok, S) => { const H = F4.map((r) => r.map((z) => cMul(z, cx(0.5)))); ok(cEye(cmm(cHerm(H), H)), '(½F₄)ᴴ(½F₄) = I ✓', 2.8, 0.0); cap('共軛轉置 × 自己 = I', ''); },
-  (tok, S) => { const H = F4.map((r) => r.map((z) => cMul(z, cx(0.5)))); ok(cEye(cmm(H, cHerm(H))), '反矩陣 = 共軛轉置 ✓（像正交矩陣的 Q⁻¹ = Qᵀ）', 2.8, -0.6); cap('反矩陣 = 共軛轉置', 'F 的好性質，反矩陣也都有'); },
+  // right column, top to bottom: what F₄ is for (3 lines), the column checks, lengths, ½F₄ — finished groups step back
+  (tok, S) => { recede(S.h, S.h3); S.ctx = [sm('y = F₄x：四點 Fourier 轉換；反轉換乘 F₄⁻¹', 2.8, 5.6)]; cap('四點 Fourier 轉換：乘 F₄', '逆轉換：乘 F₄⁻¹'); },
+  (tok, S) => { S.ctx.push(sm('Fourier 知道反矩陣：因為行互相正交', 2.8, 5.0)); cap('反矩陣很好算', '因為行互相正交'); },
+  (tok, S) => { S.ctx.push(sm('Fourier 沒發現：F 能拆成很多 0 的因子 → FFT', 2.8, 4.4)); cap('他沒注意到的：可以拆成很多 0 的因子', '乘起來非常快'); },
+  (tok, S) => { recede(S.ctx); const g = (k, c) => S.c.forEach((r) => glow(r[k], c)); g(0, '#3a2a00'); g(1, '#3a2a00'); S.ck = [K.keep(ok(cNear(cdotH(colC(F4, 0), colC(F4, 1)), cx(0)), '第 0 行 · 第 1 行 = 1 + i − 1 − i = 0 ✓', 2.8, 3.8))]; S.g = g; cap('檢查行互相正交', ''); },
+  (tok, S) => { S.g(1, null); S.g(2, '#3a2a00'); S.ck.push(K.keep(ok(cNear(cdotH(colC(F4, 0), colC(F4, 2)), cx(0)), '第 0 行 · 第 2 行 = 1 − 1 + 1 − 1 = 0 ✓', 2.8, 3.25))); cap('第 0 行和第 2 行也正交', ''); },
+  (tok, S) => { S.g(0, null); S.g(2, null); S.g(1, '#5a1a00'); S.g(3, '#5a1a00'); const t = cdotT(colC(F4, 1), colC(F4, 3)); S.ck.push(K.keep(ok(false, '第 1 行 × 第 3 行，不取共軛：1 + 1 + 1 + 1 = ' + cs(t) + ' ≠ 0', 2.8, 2.7))); cap('第 1 行和第 3 行：直接乘', '1·1 + i·(−i) + … = 4？'); },
+  (tok, S) => { S.ck.push(K.keep(ok(cNear(cdotH(colC(F4, 1), colC(F4, 3)), cx(0)), '先取共軛：1 − 1 + 1 − 1 = 0 ✓', 2.8, 2.15))); cap('內積要先取共軛', 'i 變 −i，結果就是 0'); },
+  (tok, S) => { recede(S.ck); S.g(1, null); S.g(3, null); K.keep(ok([0, 1, 2, 3].every((k) => cNear(cdotH(colC(F4, k), colC(F4, k)), cx(4))), '每一行：長度² = 4，長度 = 2 ✓', 2.8, 1.6)); cap('每一行長度是 2', '還不是單位長度'); },
+  // ½F₄: one line, rewritten as the steps add to it
+  (tok, S) => { for (let j = 0; j < 4; j++) for (let k = 0; k < 4; k++) relabel(S.c[j][k], cs(cMul(F4[j][k], cx(0.5)))); S.hf = sm('除以 2：½F₄ 的行 orthonormal', 2.8, 1.05); cap('全部除以 2', '行變成 orthonormal'); },
+  (tok, S) => { const H = F4.map((r) => r.map((z) => cMul(z, cx(0.5)))), o = cEye(cmm(cHerm(H), H)); txt(S.hf, '除以 2：½F₄ 的行 orthonormal，(½F₄)ᴴ(½F₄) = I ' + (o ? '✓' : '✘')); hl(S.hf, o ? 'good' : 'bad'); cap('共軛轉置 × 自己 = I', ''); },
+  (tok, S) => { const H = F4.map((r) => r.map((z) => cMul(z, cx(0.5)))); K.keep(ok(cEye(cmm(H, cHerm(H))), '反矩陣 = 共軛轉置 ✓（像正交矩陣的 Q⁻¹ = Qᵀ）', 2.8, 0.5)); cap('反矩陣 = 共軛轉置', 'F 的好性質，反矩陣也都有'); },
 ]);
 
 // 13 steps
@@ -1544,32 +1607,35 @@ scene('sp-l27-xax', 'L27：xᵀAx = 2x₁² + 12x₁x₂ + 18x₂²', [
 
 // 18 steps
 scene('sp-l27-saddle', 'L27：c = 7：馬鞍面（saddle）', [
+  // the text stays in a short panel above the surface's left side (4 lines + one remark line rewritten in place)
   (tok, S) => { S.L = panel3(['A = [2 6; 6 7]（18 改成 7）', '', '', '']); cap('把 18 改成 7', '這下完全失敗'); },
   (tok, S) => { txt(S.L[1], '正定嗎？絕對不是'); cap('這個是正定嗎？', '絕對不是'); },
-  (tok, S) => { const ev = symEig(S7).vals; ok(ev.filter((v) => v < 0).length === 1, '有一個 λ < 0 ✓', -4.7, 4.3); cap('不知道 λ 是多少', '但一定有一個是負的'); },
+  (tok, S) => { const ev = symEig(S7).vals, o = ev.filter((v) => v < 0).length === 1; txt(S.L[1], '正定嗎？絕對不是：有一個 λ < 0 ' + (o ? '✓' : '✘')); cap('不知道 λ 是多少', '但一定有一個是負的'); },
   (tok, S) => { txt(S.L[2], 'pivots：2，…'); cap('pivots：第一個 2', '第二個 = det / 2'); },
-  (tok, S) => { ok(near(det(S7), -22), 'det = 14 − 36 = −22 ✓', -4.7, 3.8); cap('行列式 = 14 − 36 = −22', ''); },
-  (tok, S) => { const pv = pivots(S7); ok(near(pv[0], 2) && near(pv[1], -11), 'pivots = 2、−11 ✓（乘積 −22）', -4.7, 3.3); txt(S.L[2], 'pivots：2，−11'); cap('pivots：2 和 −11', '不是正定'); },
+  (tok, S) => { S.R = K.keep(ok(near(det(S7), -22), 'det = 14 − 36 = −22 ✓', -4.7, 4.3)); cap('行列式 = 14 − 36 = −22', ''); },
+  (tok, S) => { const pv = pivots(S7), o = near(pv[0], 2) && near(pv[1], -11); txt(S.R, 'pivots = 2、−11 ' + (o ? '✓' : '✘') + '（乘積 = det = −22）'); hl(S.R, o ? 'good' : 'bad'); txt(S.L[2], 'pivots：2，−11'); cap('pivots：2 和 −11', '不是正定'); },
   (tok, S) => { txt(S.L[3], 'f = 2x² + 12xy + 7y²'); cap('看 xᵀAx', '一定有某個 x 讓它是負的'); },
-  (tok, S) => { sm('試 x = (1, −1)？', -4.7, 2.8); cap('試試 (1, −1)', ''); },
-  (tok, S) => { ok(near(qf2(S7, 1, -1), -3), 'f(1, −1) = 2 − 12 + 7 = −3 < 0 ✓', -4.7, 2.3); cap('2 − 12 + 7 = −3', '是負的'); },
+  (tok, S) => { txt(S.R, '試 x = (1, −1)？'); hl(S.R, 'idx'); cap('試試 (1, −1)', ''); },
+  (tok, S) => { const o = near(qf2(S7, 1, -1), -3); txt(S.R, 'f(1, −1) = 2 − 12 + 7 = −3 < 0 ' + (o ? '✓' : '✘')); hl(S.R, o ? 'good' : 'bad'); cap('2 − 12 + 7 = −3', '是負的'); },
   async (tok, S) => {
     S.surf = surface(1, 2.6, 2.2, 2.6);
     await anim(tok, 1200, (t) => S.surf.set([[2 * t, 6 * t], [6 * t, 7 * t]].map((r) => r.map((v) => v || 1e-6))));
     S.surf.set(S7);
     cap('畫出 z = f(x, y) 的圖', '');
   },
-  (tok, S) => { S.o = ball(V3(0, 2.68, 0), C.gold, 0.1); good('f(0, 0) = 0：通過原點', 0.5, 2.0); cap('一定通過原點', ''); },
-  (tok, S) => { S.px = pathOn(S.surf, S7, [1, 0], C.p); sm('x 方向：2x² 往上', ...onSurf(S.surf, S7, 1, 0).add(V3(0.4, 0.3, 0)).toArray()); cap('沿 x 軸：2x²，往上的拋物線', ''); },
-  (tok, S) => { pathOn(S.surf, S7, [0, 1], C.p); sm('y 方向：7y² 往上', ...onSurf(S.surf, S7, 0, 1).add(V3(0, 0.4, 0)).toArray()); cap('沿 y 軸：7y²，也往上', ''); },
-  (tok, S) => { const d = unit([1, 1]); pathOn(S.surf, S7, d, C.p); ok(qf2(S7, 1, 1) === 21, 'x = y：2 + 12 + 7 = 21 > 0 往上 ✓', -4.7, 1.8); cap('45° 方向：也往上', ''); },
+  (tok, S) => { S.o = ball(V3(0, 2.68, 0), C.gold, 0.1); S.ol = K.keep(good('f(0, 0) = 0：通過原點', 0.5, 2.0)); cap('一定通過原點', ''); },
+  (tok, S) => { S.px = pathOn(S.surf, S7, [1, 0], C.p); S.up = [sm('x 方向：2x² 往上', ...onSurf(S.surf, S7, 1, 0).add(V3(0.4, 0.3, 0)).toArray())]; cap('沿 x 軸：2x²，往上的拋物線', ''); },
+  (tok, S) => { pathOn(S.surf, S7, [0, 1], C.p); S.up.push(sm('y 方向：7y² 往上', ...onSurf(S.surf, S7, 0, 1).add(V3(0, 0.4, 0)).toArray())); cap('沿 y 軸：7y²，也往上', ''); },
+  // the 45° check sits at the end of its own path, not in the text column
+  (tok, S) => { recede(S.up); const d = unit([1, 1]); pathOn(S.surf, S7, d, C.p); S.up.push(K.keep(ok(qf2(S7, 1, 1) === 21, 'x = y：2 + 12 + 7 = 21 > 0 往上 ✓', ...onSurf(S.surf, S7, d[0], d[1]).add(V3(0.2, 0.45, 0)).toArray()))); cap('45° 方向：也往上', ''); },
   async (tok, S) => {
+    recede(S.up);
     const d = unit([1, -1]); pathOn(S.surf, S7, d, C.e);
     const b = ball(V3(0, 2.68, 0), C.e, 0.11); await anim(tok, 900, (t) => b.position.copy(onSurf(S.surf, S7, d[0] * t, d[1] * t)));
-    bad('x = −y 方向：往下！', ...b.position.clone().add(V3(0.3, 0.4, 0)).toArray());
+    K.keep(bad('x = −y 方向：往下！', ...b.position.clone().add(V3(0.3, 0.4, 0)).toArray()));
     cap('沿 x = −y 方向：往下', '失敗的方向');
   },
-  (tok, S) => { hot('saddle point（鞍點）', -4.7, 1.3); cap('有的方向往上、有的方向往下', '這叫馬鞍面'); },
+  (tok, S) => { txt(S.ol, 'saddle point（鞍點）：f(0, 0) = 0'); hl(S.ol, 'ptr alt'); cap('有的方向往上、有的方向往下', '這叫馬鞍面'); },
   (tok, S) => { sm('某些方向是最大值、某些方向是最小值', 4.4, 6.3); cap('鞍點：某些方向最大、某些方向最小', ''); },
   (tok, S) => {
     const { vals, vecs } = symEig(S7);
@@ -1582,68 +1648,73 @@ scene('sp-l27-saddle', 'L27：c = 7：馬鞍面（saddle）', [
 // 16 steps
 scene('sp-l27-bowl', 'L27：c = 20：碗與最小值', [
   async (tok, S) => {
-    S.L = panel3(['A = [2 6; 6 20]（7 改成 20）', '', '']);
+    S.L = panel3(['A = [2 6; 6 20]（7 改成 20）', '', '', ''], -4.7, 6.15);
     S.surf = surface(1, 2.6, 2.2, 2.6);
     await anim(tok, 1500, (t) => S.surf.set(lerpM(S7, S20, t)));
     cap('把 7 改成 20', '讓它真正正定');
   },
-  (tok, S) => { const pv = pivots(S20); ok(near(pv[0], 2) && near(pv[1], 2), 'pivots：2、2 > 0 ✓', -4.7, 4.8); cap('pivot 測試：通過', ''); },
-  (tok, S) => { txt(S.L[1], '不求 λ，怎麼知道 λ > 0？'); cap('不算出 λ，怎麼知道它們是正的？', ''); },
-  (tok, S) => { const ev = symEig(S20).vals; S.ev = ev; ok(near(ev[0] * ev[1], 4) && near(det(S20), 4), 'λ₁λ₂ = det = 40 − 36 = 4 > 0 ✓', -4.7, 4.3); cap('λ₁λ₂ = 行列式 = 4', '同號：都正或都負'); },
-  (tok, S) => { ok(near(S.ev[0] + S.ev[1], 22), 'λ₁ + λ₂ = trace = 22 > 0 ⇒ 都是正的 ✓', -4.7, 3.8); cap('λ₁ + λ₂ = trace = 22', '都負的話加不出 22'); },
-  (tok, S) => { txt(S.L[2], 'xᵀAx > 0（除了 x = 0）'); cap('所以 xᵀAx 除了原點都 > 0', ''); },
-  (tok, S) => { sm('f = 2x² + 12xy + 20y²', -4.7, 3.3); cap('它的圖長什麼樣？', ''); },
-  (tok, S) => { sm('平方項（2x²、20y²）壓過可正可負的 12xy', -4.7, 2.8); cap('純平方項夠大', '就能壓過 12xy'); },
+  (tok, S) => { const pv = pivots(S20), o = near(pv[0], 2) && near(pv[1], 2); txt(S.L[1], 'pivots：2、2 > 0 ' + (o ? '✓' : '✘')); cap('pivot 測試：通過', ''); },
+  (tok, S) => { txt(S.L[2], '不求 λ，怎麼知道 λ > 0？'); cap('不算出 λ，怎麼知道它們是正的？', ''); },
+  // one remark line under the panel, growing as the argument goes on
+  (tok, S) => { const ev = symEig(S20).vals; S.ev = ev; S.R = K.keep(ok(near(ev[0] * ev[1], 4) && near(det(S20), 4), 'λ₁λ₂ = det = 40 − 36 = 4 > 0 ✓ → 同號', -4.7, 4.15)); cap('λ₁λ₂ = 行列式 = 4', '同號：都正或都負'); },
+  (tok, S) => { const o = near(S.ev[0] + S.ev[1], 22); txt(S.R, 'λ₁λ₂ = 4 > 0、λ₁ + λ₂ = trace = 22 > 0 ⇒ 都是正的 ' + (o ? '✓' : '✘')); hl(S.R, o ? 'good' : 'bad'); cap('λ₁ + λ₂ = trace = 22', '都負的話加不出 22'); },
+  (tok, S) => { txt(S.L[3], 'xᵀAx > 0（除了 x = 0）'); cap('所以 xᵀAx 除了原點都 > 0', ''); },
+  (tok, S) => { txt(S.L[2], 'f = 2x² + 12xy + 20y²'); cap('它的圖長什麼樣？', ''); },
+  (tok, S) => { txt(S.R, '平方項（2x²、20y²）壓過可正可負的 12xy'); hl(S.R, 'idx'); cap('純平方項夠大', '就能壓過 12xy'); },
   async (tok, S) => {
     const b = ball(onSurf(S.surf, S20, 0.15, 0.4), C.e, 0.11);
     await anim(tok, 1200, (t) => b.position.copy(onSurf(S.surf, S20, 0.15 * (1 - t), 0.4 * (1 - t))));
     cap('離開原點往哪走都是往上', '原點是最低點');
   },
-  (tok, S) => { hot('像一個碗（bowl）', -4.7, 2.3); cap('圖形像一個碗', '最小值在原點'); },
+  (tok, S) => { hot('像一個碗（bowl）', 1.2, 2.3, 2.4); cap('圖形像一個碗', '最小值在原點'); },
+  // derivatives: a new subject, the eigenvalue argument steps back; its lines go in a column on the right
   (tok, S) => {
+    recede(S.L[1], S.R);
     const m = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.6), new THREE.MeshBasicMaterial({ color: C.a, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false }));
     m.rotation.x = -Math.PI / 2; m.position.set(0, 2.62, 0); lab.world.add(m);
-    sm('原點的切平面是水平的：一階導數 = 0', 4.4, 6.3); cap('原點：一階導數都是 0', '切平面是平的');
+    sm('原點的切平面是水平的：一階導數 = 0', 4.9, 6.3); cap('原點：一階導數都是 0', '切平面是平的');
   },
-  (tok, S) => { hot('決定一切的是二階導數', 4.4, 5.8); cap('但這不夠：要看二階導數', ''); },
-  (tok, S) => { sm('微積分：f′(x) = 0，還要看 f″', 4.4, 5.3); cap('微積分怎麼判斷最小值？', 'f′ = 0 只說明是平的'); },
-  (tok, S) => { pathOn(S.surf, S20, [1, 0], C.e); good('f″ > 0：曲線往上彎 → 最小值 ✓', 4.4, 4.8); cap('二階導數 > 0：往上彎', '斜率越來越大'); },
-  (tok, S) => { hot('多變數：二階導數矩陣要正定', 4.4, 4.3); cap('n 個變數：二階導數矩陣正定', ''); },
-  (tok, S) => { sm('一個數 > 0  ↔  一個矩陣正定', 4.4, 3.8); cap('「正的數」變成「正定的矩陣」', 'pivots、行列式、λ、最小值，全連在一起'); },
+  (tok, S) => { hot('決定一切的是二階導數', 4.9, 5.8); cap('但這不夠：要看二階導數', ''); },
+  (tok, S) => { S.d2 = sm('微積分：f′(x) = 0，還要看 f″', 4.9, 5.3); cap('微積分怎麼判斷最小值？', 'f′ = 0 只說明是平的'); },
+  (tok, S) => { pathOn(S.surf, S20, [1, 0], C.e); txt(S.d2, '微積分：f′ = 0 還不夠，f″ > 0（往上彎）→ 最小值 ✓'); hl(S.d2, 'good'); cap('二階導數 > 0：往上彎', '斜率越來越大'); },
+  (tok, S) => { hot('多變數：二階導數矩陣要正定', 4.9, 4.8); cap('n 個變數：二階導數矩陣正定', ''); },
+  (tok, S) => { sm('一個數 > 0  ↔  一個矩陣正定', 4.9, 4.3); cap('「正的數」變成「正定的矩陣」', 'pivots、行列式、λ、最小值，全連在一起'); },
 ], CAM3);
 
 // 15 steps
 scene('sp-l27-square', 'L27：配方：2(x + 3y)² + 2y²', [
+  // panel: f, the plan, the result line; two work lines under it are rewritten in place
   (tok, S) => { S.L = panel3(['f = 2x² + 12xy + 20y²', '', '']); S.surf = surface(1, 2.6, 2.2, 2.6); S.surf.set(S20); cap('圖往上：為什麼它一定是正的？', ''); },
   (tok, S) => { txt(S.L[1], '寫成平方和 → 一定 ≥ 0'); cap('寫成平方的和', '平方不可能是負的'); },
-  (tok, S) => { sm('麻煩來自 12xy（x、y 可以異號）', -4.7, 4.8); cap('麻煩全來自 xy 這一項', '把它塞進一個平方裡'); },
-  (tok, S) => { hot('completing the square（配方）', -4.7, 4.3); cap('配方', ''); },
-  (tok, S) => { S.e = sm('2(x + ? y)²', -4.7, 3.8); cap('2(x + ?y)²', '2x² 已經對了'); },
-  (tok, S) => { txt(S.e, '2(x + 3y)² = 2x² + 12xy + 18y²'); ok(sameF((x, y) => 2 * (x + 3 * y) ** 2, (x, y) => 2 * x * x + 12 * x * y + 18 * y * y), '? = 3：2·2·3 = 12 ✓', -4.7, 3.3); cap('放 3：交叉項 2·6xy = 12xy ✓', ''); },
-  (tok, S) => { sm('這個平方帶出 18y²（又是 18！）', -4.7, 2.8); cap('平方裡出來 18y²', '18 正是剛才的關鍵數字'); },
-  (tok, S) => { txt(S.L[2], 'f = 2(x + 3y)² + 2y²'); ok(sameF((x, y) => qf2(S20, x, y), (x, y) => 2 * (x + 3 * y) ** 2 + 2 * y * y), '20 − 18 = 2：f = 2(x + 3y)² + 2y² ✓', -4.7, 2.3); cap('要 20，還剩 2y²', '配方完成'); },
-  (tok, S) => { good('兩個平方相加，係數 > 0 → f > 0', -4.7, 1.8); cap('兩個平方加起來', '不可能是負的'); },
+  (tok, S) => { S.w1 = sm('麻煩來自 12xy（x、y 可以異號）', -4.7, 4.8); cap('麻煩全來自 xy 這一項', '把它塞進一個平方裡'); },
+  (tok, S) => { txt(S.L[2], 'completing the square（配方）'); hl(S.L[2], 'ptr alt'); cap('配方', ''); },
+  (tok, S) => { S.e = sm('2(x + ? y)²', -4.7, 4.3); cap('2(x + ?y)²', '2x² 已經對了'); },
+  (tok, S) => { const o = sameF((x, y) => 2 * (x + 3 * y) ** 2, (x, y) => 2 * x * x + 12 * x * y + 18 * y * y); txt(S.e, '2(x + 3y)² = 2x² + 12xy + 18y²：? = 3，2·2·3 = 12 ' + (o ? '✓' : '✘')); hl(S.e, o ? 'good' : 'bad'); cap('放 3：交叉項 2·6xy = 12xy ✓', ''); },
+  (tok, S) => { txt(S.w1, '這個平方帶出 18y²（又是 18！）'); cap('平方裡出來 18y²', '18 正是剛才的關鍵數字'); },
+  (tok, S) => { const o = sameF((x, y) => qf2(S20, x, y), (x, y) => 2 * (x + 3 * y) ** 2 + 2 * y * y); txt(S.L[2], 'f = 2(x + 3y)² + 2y²'); hl(S.L[2], 'idx'); txt(S.e, '20 − 18 = 2：f = 2(x + 3y)² + 2y² ' + (o ? '✓' : '✘')); hl(S.e, o ? 'good' : 'bad'); cap('要 20，還剩 2y²', '配方完成'); },
+  (tok, S) => { txt(S.w1, '兩個平方相加，係數 > 0 → f > 0'); hl(S.w1, 'good'); cap('兩個平方加起來', '不可能是負的'); },
   async (tok, S) => {
     await anim(tok, 1500, (t) => S.surf.set(lerpM(S20, S7, t)));
     txt(S.L[2], 'c = 7：f = 2(x + 3y)² − 11y²');
-    ok(sameF((x, y) => qf2(S7, x, y), (x, y) => 2 * (x + 3 * y) ** 2 - 11 * y * y), '7 − 18 = −11 ✓ → 馬鞍', -4.7, 1.3);
+    const o = sameF((x, y) => qf2(S7, x, y), (x, y) => 2 * (x + 3 * y) ** 2 - 11 * y * y);
+    recede(S.w1); txt(S.e, '7 − 18 = −11 ' + (o ? '✓' : '✘') + ' → 馬鞍'); hl(S.e, o ? 'good' : 'bad');
     cap('如果是 7：要減掉 11y²', '一個負號 → 馬鞍面');
   },
   async (tok, S) => {
     await anim(tok, 1200, (t) => S.surf.set(lerpM(S7, S18, t)));
-    txt(S.L[2], 'c = 18：f = 2(x + 3y)²');
-    S.v = pathOn(S.surf, S18, unit([-3, 1]), C.e); sm('谷底 x = −3y：f = 0', 4.4, 6.3);
+    txt(S.L[2], 'c = 18：f = 2(x + 3y)²'); recede(S.e);
+    S.v = pathOn(S.surf, S18, unit([-3, 1]), C.e); S.vl = sm('谷底 x = −3y：f = 0', 4.4, 6.3);
     cap('18 是邊界：什麼都不剩', '沿著 x = −3y 是 0 的谷底');
   },
-  async (tok, S) => { gone(S.v); await anim(tok, 1200, (t) => S.surf.set(lerpM(S18, S20, t))); txt(S.L[2], 'f = 2(x + 3y)² + 2y²'); cap('回到 20：碗往上', ''); },
+  async (tok, S) => { gone(S.v, S.vl); await anim(tok, 1200, (t) => S.surf.set(lerpM(S18, S20, t))); txt(S.L[2], 'f = 2(x + 3y)² + 2y²'); cap('回到 20：碗往上', ''); },
   (tok, S) => { const h = S.surf.H0 + S.surf.Hs * 0.15 * S.surf.scale; S.d = disc(S.surf, h); cap('用一個水平面去切碗', 'z = 常數（老師說 z = 1）'); },
-  (tok, S) => { S.c1 = slice(S.surf, S20, 0.15, C.q); S.c2 = levelCurve(S20, 0.15, S.surf.sx, S.surf.H0, S.surf.R); hd('切口是橢圓', 4.4, 5.8); cap('切口是一個橢圓', 'f = 常數 的曲線'); },
+  (tok, S) => { S.c1 = slice(S.surf, S20, 0.15, C.q); S.c2 = levelCurve(S20, 0.15, S.surf.sx, S.surf.H0, S.surf.R); S.cl = hd('切口是橢圓', 4.4, 6.3); cap('切口是一個橢圓', 'f = 常數 的曲線'); },
   async (tok, S) => {
-    gone(S.c1, S.c2, S.d);
+    gone(S.c1, S.c2, S.d, S.cl);
     await anim(tok, 1500, (t) => S.surf.set(lerpM(S20, S7, t)));
     const k = 0.12 * Math.max(...symEig(S7).vals.map(Math.abs));
     slice(S.surf, S7, k, C.q); slice(S.surf, S7, -k, C.e);
-    bad('切馬鞍面 → 雙曲線', 4.4, 5.3);
+    bad('切馬鞍面 → 雙曲線', 4.4, 6.3);
     cap('切馬鞍面得到雙曲線', '');
   },
 ], CAM3);
@@ -1655,23 +1726,26 @@ scene('sp-l27-elim', 'L27：配方 = 消去法（pivots 在外、乘數在內）
     S.t = S.parts.map(([t, c], k) => tag(t, c, -4.6 + [0, 0.75, 1.5, 2.2, 3.05, 3.7][k], 5.6));
     cap('看這幾個數字：外面 2、裡面 3、外面 2', '');
   },
-  (tok, S) => { sm('它們都來自消去法', -2.6, 5.0); cap('這些數字不是巧合', '它們來自消去法（Gaussian elimination）'); },
-  (tok, S) => { sm('A =', -5.6, 3.8); S.m = mtag(S20, -4.5, 3.8, 0, 'ptr'); cap('對 [2 6; 6 20] 做消去', '第一個 pivot 是 2'); },
-  (tok, S) => { ok(6 / 2 === 3, '乘數 ℓ₂₁ = 6 / 2 = 3 ✓：第 2 列減 3 倍第 1 列', -1.6, 3.8); cap('第 2 列要減掉幾倍第 1 列？', '3 倍'); },
-  (tok, S) => { hl(S.t[0], 'ptr'); hl(S.t[4], 'ptr'); hl(S.t[2], 'ptr alt'); sm('pivots 在括號外，乘數在括號裡', -2.6, 4.5); cap('配方：pivots 在外面', '乘數在括號裡面'); },
-  (tok, S) => { const pv = pivots(S20); ok(near(pv[1], 2), '第二個 pivot = 20 − 3·6 = 2 ✓', -1.6, 3.2); cap('20 − 18 = 2', '第二個 pivot 也是 2'); },
+  // one line under the formula says what the numbers are, rewritten as the idea grows
+  (tok, S) => { frameHold(-5.9, -0.6, 0, 5.2, 6.0, 0); S.r1 = sm('它們都來自消去法', -2.6, 5.0); cap('這些數字不是巧合', '它們來自消去法（Gaussian elimination）'); },
+  (tok, S) => { S.mA = [sm('A =', -5.6, 3.8), mtag(S20, -4.5, 3.8, 0, 'ptr')]; cap('對 [2 6; 6 20] 做消去', '第一個 pivot 是 2'); },
+  (tok, S) => { S.r2 = K.keep(ok(6 / 2 === 3, '乘數 ℓ₂₁ = 6 / 2 = 3 ✓：第 2 列減 3 倍第 1 列', 0.2, 3.8)); cap('第 2 列要減掉幾倍第 1 列？', '3 倍'); },
+  (tok, S) => { hl(S.t[0], 'ptr'); hl(S.t[4], 'ptr'); hl(S.t[2], 'ptr alt'); txt(S.r1, '都來自消去法：pivots 在括號外，乘數在括號裡'); cap('配方：pivots 在外面', '乘數在括號裡面'); },
+  (tok, S) => { const pv = pivots(S20), o = near(pv[1], 2); txt(S.r2, '減 3 倍第 1 列：第二個 pivot = 20 − 3·6 = 2 ' + (o ? '✓' : '✘')); hl(S.r2, o ? 'good' : 'bad'); cap('20 − 18 = 2', '第二個 pivot 也是 2'); },
   (tok, S) => {
     const L = [[1, 0], [3, 1]], U = [[2, 6], [0, 2]];
-    sm('L =', -5.6, 2.2); mtag(L, -4.6, 2.2, 0, 'ptr'); sm('U =', -3.3, 2.2); mtag(U, -2.3, 2.2, 0, 'ptr');
-    ok(eqM(mm(L, U), S20), 'LU = A ✓', -0.6, 2.2);
+    recede(S.r2);
+    S.lu = [sm('L =', -5.6, 2.5), mtag(L, -4.6, 2.5, 0, 'ptr'), sm('U =', -3.3, 2.5), mtag(U, -2.3, 2.5, 0, 'ptr')];
+    S.lu.push(K.keep(ok(eqM(mm(L, U), S20), 'LU = A ✓', -0.6, 2.5)));
     cap('U = [2 6; 0 2]、L = [1 0; 3 1]', '');
   },
-  (tok, S) => { hot('配方 = 消去法', -2.6, 1.3); cap('配方就是消去法', ''); },
-  (tok, S) => { sm('消去法對 n×n 都能做 → 配方也能推到 n 維', -2.6, 0.7); cap('消去法 n×n 都會做', '所以配方也能推廣'); },
-  (tok, S) => { sm('xᵀAx = Σ pivotₖ ×（含乘數的式子）²', -2.6, 0.1); cap('括號外的數字就是 pivots', ''); },
+  (tok, S) => { txt(S.r1, '配方 = 消去法：pivots 在括號外，乘數在括號裡'); hl(S.r1, 'ptr alt'); cap('配方就是消去法', ''); },
+  // generalising: the 2×2 work steps back
+  (tok, S) => { recede(S.mA, S.lu); sm('消去法對 n×n 都能做 → 配方也能推到 n 維', -2.6, 1.6); cap('消去法 n×n 都會做', '所以配方也能推廣'); },
+  (tok, S) => { sm('xᵀAx = Σ pivotₖ ×（含乘數的式子）²', -2.6, 1.0); cap('括號外的數字就是 pivots', ''); },
   async (tok, S) => {
     const ch = ['pivots > 0', '平方和', 'f > 0', '碗往上', '原點最小'];
-    for (let k = 0; k < ch.length; k++) { cube(ch[k], [C.a, C.q, C.p, C.b, C.c][k], [1.75, 0.5, 0.5], -4.6 + k * 2.0, -0.6, 0, 1.5); await wt(tok, 200); }
+    for (let k = 0; k < ch.length; k++) { cube(ch[k], [C.a, C.q, C.p, C.b, C.c][k], [1.75, 0.5, 0.5], -4.6 + k * 2.0, -0.3, 0, 0.6); await wt(tok, 200); }
     cap('全部連在一起', 'pivots > 0 → 平方和 → 往上 → 最小值');
   },
 ]);
@@ -1702,23 +1776,26 @@ scene('sp-l27-hess', 'L27：二階導數矩陣（Hessian）要正定', [
 
 // 13 steps
 scene('sp-l27-k3', 'L27：3×3：[2 −1 0; −1 2 −1; 0 −1 2]', [
-  (tok, S) => { hot('3×3 的例子', -3.4, 6.6); cap('3×3 的例子', ''); },
-  (tok, S) => { sm('A =', -5.9, 5.9); S.m = mtag(K3, -4.3, 5.9, 0, 'ptr'); cap('老朋友：[2 −1 0; −1 2 −1; 0 −1 2]', ''); },
+  // right column: one line per idea (minors, pivots, eigenvalues, checks), each rewritten as its step adds to it
+  (tok, S) => { frameHold(-6.4, 0.1, 0, 5.8, 6.8, 0); S.h = hot('3×3 的例子', -3.4, 6.6); cap('3×3 的例子', ''); },
+  (tok, S) => { recede(S.h); sm('A =', -5.9, 5.9); S.m = mtag(K3, -4.3, 5.9, 0, 'ptr'); cap('老朋友：[2 −1 0; −1 2 −1; 0 −1 2]', ''); },
   (tok, S) => { sm('問題：正定嗎？xᵀAx 是什麼？原點是最小值嗎？幾何？', 2.6, 6.2); cap('要問的事：', '正定？xᵀAx？最小值？幾何？'); },
-  (tok, S) => { S.dm = minors(K3); bar(-5.6, 1.6, S.dm[0], '2'); sm('左上行列式', -5.0, 0.3); ok(near(S.dm[0], 2), '1×1：2 ✓', 3.0, 5.4); cap('先算行列式：1×1 是 2', ''); },
-  (tok, S) => { bar(-5.0, 1.6, S.dm[1], '3'); ok(near(S.dm[1], 3), '2×2：4 − 1 = 3 ✓', 3.0, 4.9); cap('2×2：3', ''); },
-  (tok, S) => { bar(-4.4, 1.6, S.dm[2], '4'); ok(near(S.dm[2], 4), '3×3：4 ✓（2、3、4 線性增加）', 3.0, 4.4); cap('3×3：4', '這類矩陣的行列式 2、3、4…'); },
-  (tok, S) => { S.pv = pivots(K3); ['2', '3/2', '4/3'].forEach((t, k) => bar(-3.6 + k * 0.6, 1.6, S.pv[k], t)); sm('pivots', -3.0, 0.3); ok(near(S.pv[1], 1.5) && near(S.pv[2], 4 / 3), 'pivots = 2、3/2、4/3 ✓', 3.0, 3.9); cap('pivots：2、3/2、4/3', ''); },
-  (tok, S) => { ok(near(S.pv[0] * S.pv[1], 3) && near(S.pv[0] * S.pv[1] * S.pv[2], 4), 'pivot 乘積 = 2、3、4 = 行列式 ✓', 3.0, 3.4); cap('前幾個 pivot 相乘 = 行列式', ''); },
-  (tok, S) => { sm('特徵值：要解三次方程式', 3.0, 2.9); cap('特徵值：三次方程式', ''); },
-  (tok, S) => { sm('相信：全部 > 0', 3.0, 2.4); cap('今天的結論：它們全是正的', ''); },
+  (tok, S) => { S.dm = minors(K3); S.db = [bar(-5.6, 1.6, S.dm[0], '2'), sm('左上行列式', -5.0, 0.3)]; S.rd = K.keep(ok(near(S.dm[0], 2), '1×1：2 ✓', 3.0, 5.4)); cap('先算行列式：1×1 是 2', ''); },
+  (tok, S) => { S.db.push(bar(-5.0, 1.6, S.dm[1], '3')); const o = near(S.dm[1], 3); txt(S.rd, '1×1：2、2×2：4 − 1 = 3 ' + (o ? '✓' : '✘')); hl(S.rd, o ? 'good' : 'bad'); cap('2×2：3', ''); },
+  (tok, S) => { S.db.push(bar(-4.4, 1.6, S.dm[2], '4')); const o = near(S.dm[2], 4); txt(S.rd, '左上行列式 2、3、4 ' + (o ? '✓' : '✘') + '（線性增加）'); hl(S.rd, o ? 'good' : 'bad'); cap('3×3：4', '這類矩陣的行列式 2、3、4…'); },
+  (tok, S) => { S.pv = pivots(K3); ['2', '3/2', '4/3'].forEach((t, k) => bar(-3.6 + k * 0.6, 1.6, S.pv[k], t)); sm('pivots', -3.0, 0.3); S.rp = K.keep(ok(near(S.pv[1], 1.5) && near(S.pv[2], 4 / 3), 'pivots = 2、3/2、4/3 ✓', 3.0, 4.8)); cap('pivots：2、3/2、4/3', ''); },
+  (tok, S) => { const o = near(S.pv[0] * S.pv[1], 3) && near(S.pv[0] * S.pv[1] * S.pv[2], 4); txt(S.rp, 'pivots 2、3/2、4/3：乘積 2、3、4 = 行列式 ' + (o ? '✓' : '✘')); hl(S.rp, o ? 'good' : 'bad'); cap('前幾個 pivot 相乘 = 行列式', ''); },
+  // eigenvalues: the determinants are done and step back
+  (tok, S) => { recede(S.db, S.rd); S.re = sm('特徵值：要解三次方程式', 3.0, 4.2); cap('特徵值：三次方程式', ''); },
+  (tok, S) => { txt(S.re, '特徵值：要解三次方程式；相信：全部 > 0'); cap('今天的結論：它們全是正的', ''); },
   (tok, S) => {
     S.ev = symEig(K3).vals.slice().reverse(); ['2−√2', '2', '2+√2'].forEach((t, k) => bar(-1.6 + k * 0.6, 1.6, S.ev[k], t)); sm('特徵值', -1.0, 0.3);
-    ok(near(S.ev[0], 2 - Math.SQRT2) && near(S.ev[1], 2) && near(S.ev[2], 2 + Math.SQRT2), 'λ = 2 − √2、2、2 + √2 ✓', 3.0, 1.75);
+    const o = near(S.ev[0], 2 - Math.SQRT2) && near(S.ev[1], 2) && near(S.ev[2], 2 + Math.SQRT2);
+    txt(S.re, 'λ = 2 − √2、2、2 + √2 ' + (o ? '✓' : '✘') + '（全部 > 0）'); hl(S.re, o ? 'good' : 'bad'); K.keep(S.re);
     cap('λ = 2 − √2、2、2 + √2', '');
   },
-  (tok, S) => { ok(near(S.ev.reduce((a, b) => a + b, 0), 6), '檢查 trace：和 = 6 = 2 + 2 + 2 ✓', 3.0, 1.2); cap('檢查一：trace = 6', ''); },
-  (tok, S) => { ok(near((2 - Math.SQRT2) * 2 * (2 + Math.SQRT2), 4), '檢查 det：(4 − 2)·2 = 4 ✓', 3.0, 0.65); cap('檢查二：乘積 = det = 4', ''); },
+  (tok, S) => { S.rc = K.keep(ok(near(S.ev.reduce((a, b) => a + b, 0), 6), '檢查 trace：和 = 6 = 2 + 2 + 2 ✓', 3.0, 3.6)); cap('檢查一：trace = 6', ''); },
+  (tok, S) => { const o = near((2 - Math.SQRT2) * 2 * (2 + Math.SQRT2), 4); txt(S.rc, '檢查 trace：和 = 6 ✓；檢查 det：(4 − 2)·2 = 4 ' + (o ? '✓' : '✘')); hl(S.rc, o ? 'good' : 'bad'); cap('檢查二：乘積 = det = 4', ''); },
 ]);
 
 // 16 steps
