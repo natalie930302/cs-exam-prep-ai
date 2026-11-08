@@ -18,12 +18,13 @@ export default function (ctx) {
 
   // ───────────────────────── 網路 ─────────────────────────
   const NETS = {
-    clrs: { title: '課本 CLRS 圖 26.1', names: ['s', 'v1', 'v2', 'v3', 'v4', 't'], s: 0, t: 5,
+    // rows: false = scenes on these nets talk only through the caption (no remark rows at z = ±4.3 to frame)
+    clrs: { title: '課本 CLRS 圖 26.1', rows: false, names: ['s', 'v1', 'v2', 'v3', 'v4', 't'], s: 0, t: 5,
       pos: [[-5.4, 0], [-1.8, -2.4], [-1.8, 2.4], [1.8, -2.4], [1.8, 2.4], [5.4, 0]],
       edges: [[0, 1, 16], [0, 2, 13], [2, 1, 4], [1, 3, 12], [3, 2, 9], [2, 4, 14], [4, 3, 7], [3, 5, 20], [4, 5, 4]] },
-    bad: { title: '課本 CLRS 圖 26.7（壞情況）', names: ['s', 'u', 'v', 't'], s: 0, t: 3,
+    bad: { title: '課本 CLRS 圖 26.7（壞情況）', rows: false, names: ['s', 'u', 'v', 't'], s: 0, t: 3,
       pos: [[-4.6, 0], [0, -2.6], [0, 2.6], [4.6, 0]], edges: [[0, 1, 1e6], [0, 2, 1e6], [1, 2, 1], [1, 3, 1e6], [2, 3, 1e6]] },
-    bip: { title: '二分圖匹配（自訂 4 × 4）', names: ['s', 'A', 'B', 'C', 'D', '1', '2', '3', '4', 't'], s: 0, t: 9,
+    bip: { title: '二分圖匹配（自訂 4 × 4）', rows: false, lt: 0.3, /* labels nearer the tail: crossing edges' labels no longer meet in the middle */ names: ['s', 'A', 'B', 'C', 'D', '1', '2', '3', '4', 't'], s: 0, t: 9,
       pos: [[-5.6, 0], [-2.4, -2.7], [-2.4, -0.9], [-2.4, 0.9], [-2.4, 2.7], [2.4, -2.7], [2.4, -0.9], [2.4, 0.9], [2.4, 2.7], [5.6, 0]],
       edges: [[0, 1, 1], [0, 2, 1], [0, 3, 1], [0, 4, 1], [1, 5, 1], [1, 6, 1], [2, 5, 1], [3, 6, 1], [3, 7, 1], [4, 7, 1], [4, 8, 1], [5, 9, 1], [6, 9, 1], [7, 9, 1], [8, 9, 1]] },
   };
@@ -44,12 +45,27 @@ export default function (ctx) {
   function selectHtml(id, pairs, val) { return '<select id="' + id + '">' + pairs.map(([v, t]) => '<option value="' + v + '"' + (String(v) === String(val) ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>'; }
 
   // ───────────────────────── 畫圖 ─────────────────────────
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
+  // the area a network will use (nodes + the remark rows at z = ±4.3); a scene that starts with only a remark
+  // calls it before buildNet so the camera does not zoom in on the remark and jump back when the net arrives
+  function netHold(G, x1) {
+    if (typeof G === 'string') G = NETS[G];
+    const xs = G.pos.map((p) => p[0]), zs = G.pos.map((p) => p[1]);
+    if (G.rows === false) return frameHold(Math.min(...xs) - 0.8, 0, Math.min(...zs) - 0.9, Math.max(...xs) + 0.8, 1, Math.max(...zs) + 0.9);
+    return frameHold(Math.min(...xs) - 1, 0, Math.min(Math.min(...zs) - 1.9, -4.5), Math.max(Math.max(...xs) + 1, x1 || 0), 1, Math.max(Math.max(...zs) + 1.9, 4.5));
+  }
   const NR = 0.42;
   let GR = null;
   const nm = (i) => GR.G.names[i];
   function buildNodes(G, o = {}) {
     const gr = { G, n: G.names.length, nodes: [], edges: [], directed: true, ns: 1 };
     GR = gr;
+    // invisible framing box over the whole network (and the remark rows above / below it), so the camera
+    // frames the final picture from the first moment instead of zooming in on the dropping nodes and jumping back
+    netHold(G);
     G.names.forEach((name, i) => {
       const mesh = new THREE.Mesh(new THREE.CylinderGeometry(NR, NR, 0.5, 28), new THREE.MeshStandardMaterial({ color: i === G.s || i === G.t ? '#e6d7b8' : C.white, roughness: 0.5 }));
       mesh.castShadow = true;
@@ -57,7 +73,7 @@ export default function (ctx) {
       const top = lab.label('', 'ptr'); top.position.set(0, 0.95, 0); top.element.style.display = 'none'; mesh.add(top);
       const home = V(G.pos[i][0], 0.25, G.pos[i][1]);
       mesh.position.copy(home);
-      if (!o.noDrop) mesh.position.y = 4 + Math.random();
+      if (!o.noDrop) mesh.position.y = 1.4 + 0.5 * Math.random(); // a short drop: high nodes would fly past the camera
       const b = lab.addBody(mesh);
       if (!o.noDrop) lab.dropTo(b, home);
       gr.nodes.push({ mesh, b, top, home });
@@ -92,7 +108,11 @@ export default function (ctx) {
     g.add(cone);
     e.group = g; e.mat = mat;
     lab.world.add(g);
-    if (e.lbl) e.lbl.position.copy(curve.getPoint(0.5).addScaledVector(perp, e.bend >= 0 ? 0.34 : -0.34).setY(0.42));
+    // GR.G.lt (bipartite net): labels nearer the column of people, where the fan edges from s / to t have spread
+    // apart and the crossing pair edges have not met yet
+    const st = (x) => x === GR.G.s || x === GR.G.t;
+    const lt = !GR.G.lt ? 0.5 : st(e.u) ? 1 - GR.G.lt : st(e.v) ? GR.G.lt : GR.G.lt;
+    if (e.lbl) e.lbl.position.copy(curve.getPoint(lt).addScaledVector(perp, e.bend >= 0 ? 0.34 : -0.34).setY(0.42));
   }
   function clearEdges() {
     GR.edges.forEach((e) => { if (e.group) lab.world.remove(e.group); if (e.lbl) { lab.world.remove(e.lbl); e.lbl.element.remove(); } });
@@ -339,7 +359,7 @@ export default function (ctx) {
   function enterMatch(keep) {
     fresh();
     if (!keep || !BM.E.length) BM.E = randBip();
-    NETS.rand = { title: '隨機二分圖', names: ['s', 'A', 'B', 'C', 'D', '1', '2', '3', '4', 't'], s: 0, t: 9, pos: NETS.bip.pos,
+    NETS.rand = { title: '隨機二分圖', rows: false, names: ['s', 'A', 'B', 'C', 'D', '1', '2', '3', '4', 't'], s: 0, t: 9, pos: NETS.bip.pos,
       edges: [[0, 1, 1], [0, 2, 1], [0, 3, 1], [0, 4, 1], ...BM.E.map(([l, r]) => [1 + l, 5 + r, 1]), [5, 9, 1], [6, 9, 1], [7, 9, 1], [8, 9, 1]] };
     buildNet('rand');
     run.gen = (function* () {
@@ -533,7 +553,7 @@ export default function (ctx) {
     NG.F = [...CLRS_F19]; augment([{ i: 1, dir: 1, cap: 5 }, { i: 4, dir: -1, cap: 4 }, { i: 7, dir: 1, cap: 5 }].map((r) => ({ ...r, cap: 4 })));
     renderFlow();
     const items = ['① f 是最大流', '② 殘餘網路沒有 augmenting path', '③ 存在 cut 使 |f| = c(S, T)'];
-    items.forEach((s2, i) => tag(s2, 'ptr', -3.6 + i * 3.6, 0.3, 4.1));
+    items.forEach((s2, i) => tag(s2, 'ptr', 0, 0.3, 3.5 + i * 0.6)); // one column under the network (a row of three ran into each other)
     say('Max-flow min-cut theorem：三件事等價', '');
     await wait(tok, 3000);
     say('①⇒②：有 augmenting path 就能再推，矛盾', '');
@@ -564,7 +584,7 @@ export default function (ctx) {
   }
   async function scSuperSource(tok) {
     fresh();
-    const G = { title: '多個源點與匯點', names: ['s1', 's2', 'a', 'b', 't1', 't2', 'S', 'T'], s: 6, t: 7,
+    const G = { title: '多個源點與匯點', rows: false, names: ['s1', 's2', 'a', 'b', 't1', 't2', 'S', 'T'], s: 6, t: 7,
       pos: [[-3.4, -2.2], [-3.4, 2.2], [-0.4, -1.4], [-0.4, 1.4], [2.8, -2.2], [2.8, 2.2], [-5.8, 0], [5.6, 0]],
       edges: [[0, 2, 8], [1, 3, 6], [2, 3, 3], [2, 4, 5], [3, 5, 9], [3, 4, 2]] };
     NETS.multi = G;
@@ -668,7 +688,7 @@ function flCut(S, o = {}) {
   return cap;
 }
 function flUncolor() { for (let v = 0; v < GR.n; v++) nodeColor(v, v === NG.G.s || v === NG.G.t ? '#e6d7b8' : C.white, 0); }
-function flVal(text) { return tag(text, 'ptr alt', 0, 0.3, 4.3); }
+function flVal(text, z = 4.3) { return tag(text, 'ptr alt', 0, 0.3, z); } // z = -4.3: the top row, when the bottom row holds the remark
 // 地面上的程式／公式面板（一行一個標籤，沿 z 排）
 function flCode(lines, x, z0, dz = 0.62) {
   const w = Math.max(...lines.map((s) => s.length));
@@ -686,7 +706,7 @@ function bipBuild(showST) {
   buildNodes(NETS.bip5);
   NG.G = NETS.bip5; NG.F = NG.G.edges.map(() => 0); NG.val = 0;
   GR.nodes[0].mesh.visible = !!showST; GR.nodes[11].mesh.visible = !!showST;
-  tag('男生', 'idx', -2.4, 0.3, -4.3); tag('女生', 'idx', 2.4, 0.3, -4.3);
+  tag('男生', 'idx', -3.9, 0.3, -3.2); tag('女生', 'idx', 3.9, 0.3, -3.2); // beside the top pair, clear of the remark rows
 }
 function bipRender(M, o = {}) {
   clearEdges();
@@ -729,7 +749,7 @@ function tapBucket(sx = -6.5, tx = 6.5, z = -1.9) {
 // ════════════════ Iwc3Uj4aaF4：Ford-Fulkerson（英文短片） ════════════════
 // 00:09 問題：flow network、capacity、source/sink、兩個限制
 FRAG.push(['flow-v1-problem', '短片：flow network 與兩個限制（A → F）', async (tok) => {
-  fresh();
+  fresh(); netHold('ffv'); // the network arrives on step 2
   await step(tok);                                   // 9.4 what is the maximum flow problem
   const Q = SAY('問題：從起點最多能送多少「流量」到終點？', 0, -4.3);
   say('Maximum flow problem', '先講問題，再講名詞與演算法');
@@ -1012,9 +1032,9 @@ FRAG.push(['flow-l20-push2', 'Lec20：先沿 s → a → b → t 推 2 單位', 
 // 12:08 undo flow：s → b → a → t，a → b 從 2 退成 1，總共 3
 FRAG.push(['flow-l20-undo', 'Lec20：undo flow，a → b 退回 1，總量 3', async (tok) => {
   fresh(); buildNet('lsm'); flSet([2, 0, 2, 0, 2]); renderFlow();
-  const tb = tapBucket(); tb.bucket.set(2);
-  const N = NOTE('', 0, 4.3);
-  let X = null;
+  const tb = tapBucket(-6.5, 6.5, 1.9); tb.bucket.set(2); // below s / t: the tags above s and t stay clear
+  const N = NOTE('', 0, 4.3); // the one remark row: rewritten each step (no extra labels over the pipes)
+  const rem = (t, c = 'note') => { txt(N, t); N.element.className = 'lab-label ' + c; N.element.style.visibility = t ? '' : 'hidden'; };
   await step(tok);                                   // 729.2 can we push more?
   txt(N, '還能再推更多水嗎？');
   say('還能再推更多水嗎？', '大家都點頭');
@@ -1025,41 +1045,41 @@ FRAG.push(['flow-l20-undo', 'Lec20：undo flow，a → b 退回 1，總量 3', a
   renderFlow(new Set([2]));
   say('每段水管要順著方向灌水', '');
   await step(tok);                                   // 802.6 a → b only from a to b, not back
-  X = BAD('b → a 逆流？', 1.4, 0);
+  rem('b → a 逆流？', 'bad');
   say('a → b 只能由 a 灌到 b', '不能由 b 灌回 a');
   await step(tok);                                   // 828.8 if empty: s → b → a → t?
   flSet([0, 0, 0, 0, 0]); renderFlow(new Set([1, 3])); flPaint(2, C.back, 2.2); tb.bucket.set(0);
   say('如果一開始是空的', '可以 s → b → a → t 嗎？');
   await step(tok);                                   // 840.4 no — but s → b → t is fine
-  txt(X, '空管：不能逆流 ✗'); renderFlow(new Set([1, 4]));
+  rem('空管：不能逆流 ✗', 'bad'); renderFlow(new Set([1, 4]));
   say('空管時不行', '只能順著灌，例如 s → b → t');
   await step(tok);                                   // 849.2 back to our flow: s → b can take 1 unit
-  remove(X); X = null; flSet([2, 0, 2, 0, 2]); renderFlow(new Set([1])); tb.bucket.set(2);
+  rem(''); flSet([2, 0, 2, 0, 2]); renderFlow(new Set([1])); tb.bucket.set(2);
   say('回到現在：s → b 還能灌 1', '');
   await step(tok);                                   // 858.8 the trouble: can b → a go backwards?
-  flPaint(2, C.back, 2.4); X = NOTE('b → a 能倒過來嗎？', 1.6, 0);
+  flPaint(2, C.back, 2.4); rem('b → a 能倒過來嗎？');
   say('麻煩在 b → a', '能不能倒過來灌？');
   await step(tok);                                   // 877.6 one more unit from below: it works
-  remove(X); X = null;
+  rem('');
   await flPkt(tok, ['s', 'b', 'a', 't'], '+1');
   say('其實可以：從下面多送 1 單位', 's → b → a → t');
   await step(tok);                                   // 895.2 cancellation: a → b already carries water down
   addEdge(2, 1, '往上 1', 0.25, C.back, 1.6);
   say('a → b 已經有 2 往下流', '往上送 1 會互相抵消');
   await step(tok);                                   // 911.8 undo flow
-  X = GOOD('undo flow：把水退回去', 1.8, 0);
+  rem('undo flow：把水退回去', 'good');
   say('這叫 undo flow', '把水退回去');
   await step(tok);                                   // 918.8 down 2, up 1 → only 1 flows down
   flSet([2, 1, 1, 1, 2]); renderFlow(new Set([1, 2, 3])); await cheer(tok, tb.bucket, 3);
   say('往下 2、往上 1', '實際 2 − 1 = 1 往下流');
   await step(tok);                                   // 939.8 legal; allowed in every flow network
-  txt(N, '合法！任何 flow network 都允許 undo flow');
+  rem('合法！任何 flow network 都允許 undo flow');
   say('這是合法的', '有退水機制就不會卡住');
   await step(tok);                                   // 969.8 precondition: there must be water to undo
   txt(N, '前提：管內原本要有水；沒水就不能送反方向');
   say('前提：管內要有水才能退', '最多退回原本的量');
   await step(tok);                                   // 989.0 maximum network flow: as much as possible
-  remove(X); X = null; txt(N, 'maximum network flow：灌的水越多越好');
+  txt(N, 'maximum network flow：灌的水越多越好');
   say('maximum network flow', '求能灌的最大水量');
   await step(tok);                                   // 1012.8 all full, can't pour more
   renderFlow(); [0, 1, 3, 4].forEach((i) => flPaint(i, C.sat, 2.6));
@@ -1095,7 +1115,7 @@ FRAG.push(['flow-l20-value', 'Lec20：f/c 標示與 flow value v(f) = 3', async 
   renderFlow(); txt(N, '前面那個：flow f（某一刻管裡流的水）');
   say('前面是 flow', '任何時刻管裡的水量');
   await step(tok);                                   // 1111.9 a variable v: value
-  VT = flVal('v(f) = ?');
+  VT = flVal('v(f) = ?', -4.3);
   say('v 代表 value', '這種灌法的總水量');
   await step(tok);                                   // 1133.5 this way of pouring is f, value 3
   txt(VT, 'v(f) = 2 + 1 = 3');
@@ -1104,10 +1124,10 @@ FRAG.push(['flow-l20-value', 'Lec20：f/c 標示與 flow value v(f) = 3', async 
   flView((i, c, f) => 'f = ' + f); txt(N, 'f：每條 edge → 一個實數（流量）');
   say('s-t flow f：E → 實數', '');
   await step(tok);                                   // 1172.8 must be ≥ 0
-  const B = BAD('f = −1 ✗ 不能是負的', 0, -4.3);
+  txt(N, 'f = −1 ✗ 不能是負的'); N.element.className = 'lab-label bad'; // the remark row says it; v(f) keeps the top row
   say('flow 一定 ≥ 0', '頂多不灌，不能是負的');
   await step(tok);                                   // 1188.9 every edge gets a value
-  remove(B); flView((i, c, f) => 'f = ' + f, new Set([0, 1, 2, 3, 4]));
+  txt(N, 'f：每條 edge → 一個實數（流量）'); N.element.className = 'lab-label note'; flView((i, c, f) => 'f = ' + f, new Set([0, 1, 2, 3, 4]));
   say('每條 edge 都要給值', '完整的 assignment');
   await step(tok);                                   // 1208.4 value of f: what the source sends out
   renderFlow(); flPaint(0, C.hot, 2.6); flPaint(1, C.hot, 2.6); nodeColor(0, C.hot, 0.4);
@@ -1126,7 +1146,7 @@ FRAG.push(['flow-l20-value', 'Lec20：f/c 標示與 flow value v(f) = 3', async 
 FRAG.push(['flow-l20-constraints', 'Lec20：capacity constraint 與 conservation', async (tok) => {
   fresh(); buildNet('lsm'); flSet([2, 1, 1, 1, 2]); flView();
   const N = NOTE('', 0, 4.3);
-  const VT = flVal('');
+  const VT = flVal('', -4.3); // top row: the bottom row is the constraint remark
   await step(tok);                                   // 1362.8 goal: the maximum flow value
   txt(VT, '目標：最大的 v(f)');
   say('目標：找最大 flow 的值', '');
@@ -1164,6 +1184,7 @@ FRAG.push(['flow-l20-constraints', 'Lec20：capacity constraint 與 conservation
 FRAG.push(['flow-l20-cuts', 'Lec20：切一刀得 upper bound（21、20）', async (tok) => {
   fresh();
   const N = NOTE('', 0, 4.3);
+  let N2 = null; // the remark row of the network part (one label, rewritten)
   await step(tok);                                   // 1497.0 step back: maximization
   const g = buddy('flow', '?', '#9fd3f0', 0, 0, 1.6, 0.9);
   txt(N, '最大化問題：flow 越大越好');
@@ -1178,7 +1199,7 @@ FRAG.push(['flow-l20-cuts', 'Lec20：切一刀得 upper bound（21、20）', asy
   say('upper bound 越緊越好', '越接近最佳值');
   await step(tok);                                   // 1583.8 an example: capacities on the edges
   fresh(); buildNet('kt'); flView();
-  txt(tag('', 'note', 0, 0.3, 4.3), '邊上標的是 capacity');
+  N2 = NOTE('邊上標的是 capacity', 0, 4.3);
   say('新例子：邊上是 capacity', '想辦法灌越多越好');
   await step(tok);                                   // 1606.8 the inside may be complicated
   flView(null, new Set([2, 3, 4, 5, 6]));
@@ -1192,7 +1213,7 @@ FRAG.push(['flow-l20-cuts', 'Lec20：切一刀得 upper bound（21、20）', asy
   flCut(new Set([0, 1, 2]));
   say('s 在一側、t 在另一側', '同一側沒有意義');
   await step(tok);                                   // 1691.8 the cut pipes each have a limit
-  const N2 = NOTE('截面上的水管：最多灌滿，不能超過', 0, 4.3);
+  txt(N2, '截面上的水管：最多灌滿，不能超過');
   say('切到的水管都有上限', '最多就是灌滿');
   await step(tok);                                   // 1729.3 4 + 8 + 9 = 21: an upper bound
   txt(N2, '4 + 8 + 9 = 21：flow 不可能超過 21');
@@ -1237,7 +1258,7 @@ FRAG.push(['flow-l20-cutdiag', 'Lec20：斜切，反向邊不算（10 + 9 = 19�
   txt(N, '這一刀：10 + 9 = ' + c + '，那條 2 不算');
   say('只算 forward：10 + 9 = ' + c, '2 不要算');
   await step(tok);                                   // 2030.8 the optimum here is 19
-  const VT = flVal('最佳解 = 19');
+  const VT = flVal('最佳解 = 19', -4.3);
   say('這個例子的最佳解就是 19', '');
 }]);
 
@@ -1667,7 +1688,7 @@ FRAG.push(['flow-l20-ffsum', 'Lec20：Ford-Fulkerson 步驟總結', async (tok) 
   P.hl(3); gf.set('b');
   say('算 bottleneck', '最多能灌多少');
   await step(tok);                                   // 4115.9 pour it in
-  P.hl(4); const w = tag('+b', 'pkt', 5.2, 0.9, 0); await travel(tok, w, V3(5.2, 0.9, 0), V3(-5.2, 0.9, 0), 1400); remove(w);
+  P.hl(4); const w = tag('+b', 'pkt', 5.2, 0.9, 3.0); await travel(tok, w, V3(5.2, 0.9, 3.0), V3(-5.2, 0.9, 3.0), 1400); remove(w); // under the code panel, not across it
   say('把 bottleneck 灌進去', '');
   await step(tok);                                   // 4130.5 correction: update the ORIGINAL flow network
   P.hl(5); g.set('f + b'); await turn(g);
@@ -1689,7 +1710,6 @@ FRAG.push(['flow-l20-mfmc', 'Lec20：max-flow min-cut（27、21、19）', async 
   fresh(); buildNet('kt'); flSet(KT19); renderFlow();
   const N = NOTE('', 0, 4.3);
   const pr = buddy('max flow', '19', '#9fd3f0', -6.3, 0, -3.7, 0.7), du = buddy('min cut', '?', '#f3d2c8', 6.3, 0, -3.7, 0.7);
-  let VT = null;
   await step(tok);                                   // 4229.1 primal: max flow; dual: min cut
   txt(N, 'primal（主問題）：max flow；dual（對偶問題）：min cut');
   say('primal：max flow', 'dual：min cut');
@@ -1712,19 +1732,18 @@ FRAG.push(['flow-l20-mfmc', 'Lec20：max-flow min-cut（27、21、19）', async 
   txt(N, '只加 forward 方向的 capacity；反方向的叫它不要送水');
   say('只加 forward 邊的 capacity', '反向的不算');
   await step(tok);                                   // 4399.8 find the tightest
-  VT = flVal('');
   say('找最緊的 upper bound', '');
   await step(tok);                                   // 4404.8 loose: 10 + 8 + 9 = 27 (6 not counted)
-  txt(VT, 'cut = ' + flCut(new Set([0, 1, 2, 3])) + '（10 + 8 + 9，6 不算）');
+  txt(N, 'cut = ' + flCut(new Set([0, 1, 2, 3])) + '（10 + 8 + 9，6 不算）'); N.element.className = 'lab-label ptr alt'; // the one remark row turns into the cut value
   say('這刀很鬆：27', '6 是反向，不算');
   await step(tok);                                   // 4423.4 4 + 8 + 9 = 21
-  txt(VT, 'cut = ' + flCut(new Set([0, 1, 2])) + '（4 + 8 + 9）');
+  txt(N, 'cut = ' + flCut(new Set([0, 1, 2])) + '（4 + 8 + 9）');
   say('這刀：4 + 8 + 9 = 21', '');
   await step(tok);                                   // 4429.5 the smallest: 19
-  txt(VT, 'cut = ' + flCut(new Set([0, 2])) + '（10 + 9）最小');
+  txt(N, 'cut = ' + flCut(new Set([0, 2])) + '（10 + 9）最小');
   say('最小的是 19', '');
   await step(tok);                                   // 4434.8 the optimum sits on the min cut
-  txt(VT, 'max flow = min cut = 19'); await cheer(tok, pr); du.mood('happy');
+  txt(N, 'max flow = min cut = 19'); await cheer(tok, pr); du.mood('happy');
   say('最佳解出現在 min cut 上', '');
 }]);
 
@@ -1745,8 +1764,7 @@ FRAG.push(['flow-l20-resource', 'Lec20：資源分配 → model 成 flow network
   nodeTag(4, 'R1：最多 3'); nodeTag(5, 'R2：最多 2');
   say('管子就是資源，每個資源都有上限', 'capacity：最多就只能用這麼多');
   await step(tok);                                   // 4504 many people (objects) want to use them
-  flView((i, c) => raCap(c), new Set([0, 1, 2, 3, 4, 5, 6]));
-  nodeTag(1, '要 2'); nodeTag(2, '要 3'); nodeTag(3, '要 2');
+  flView((i, c) => (i < 3 ? '要 ' + c : raCap(c)), new Set([0, 1, 2, 3, 4, 5, 6])); // the demand sits on each person's s-edge
   const N = NOTE('s → 人：每人要多少；人 → 資源：誰能用哪個資源', 0, 4.3);
   say('很多人都要用這些資源', '要怎麼分配？');
   await step(tok);                                   // 4516.2 allocate with network flow
@@ -1765,7 +1783,7 @@ FRAG.push(['flow-l20-resource', 'Lec20：資源分配 → model 成 flow network
 
 // 76:52 Bipartite matching：3 對 vs 最多 4 對
 FRAG.push(['flow-l20-bip-problem', 'Lec20：bipartite matching，3 對與最多 4 對', async (tok) => {
-  fresh();
+  fresh(); netHold('bip5'); // the graph arrives on step 4
   const N = NOTE('', 0, 4.5);
   await step(tok);                                   // 4612.0 a famous application: bipartite matching
   const T = SAY('應用：bipartite matching', 0, -4.6);
@@ -1801,7 +1819,7 @@ FRAG.push(['flow-l20-bip-problem', 'Lec20：bipartite matching，3 對與最多 
   bipRender(M4); txt(N, '最好可以配到 4 對');
   say('最好可以配 4 對', '');
   await step(tok);                                   // 4841.8 5 pairs impossible
-  BAD('5 對？做不到', 0, -3.8);
+  txt(N, '最好 4 對；5 對？做不到 ✗'); N.element.className = 'lab-label bad';
   say('配不出 5 對', '');
 }]);
 
@@ -1900,9 +1918,9 @@ FRAG.push(['flow-l20-bip-alt', 'Lec20：alternating augmenting path，3 對 → 
 // ════════════════ NOYNTuhXDGU：江蕙如 Lec21 Network Flow (2/2) ════════════════
 // 00:16 回顧：flow network、capacity、v(f) 從 source 或 sink 量
 FRAG.push(['flow-l21-recap', 'Lec21：回顧 flow network 與 flow value', async (tok) => {
-  fresh();
+  fresh(); netHold('lsm', 7.2); // the network (step 3) and the tap / bucket (step 4) arrive later
   const N = NOTE('', 0, 4.3);
-  let tb = null, VT = null;
+  let tb = null;
   await step(tok);                                   // 16.8 today: the max-flow min-cut theorem
   const T = SAY('今天：max-flow min-cut theorem', 0, -4.4);
   say('Network flow 最後一個單元', 'max-flow min-cut theorem');
@@ -1927,10 +1945,10 @@ FRAG.push(['flow-l21-recap', 'Lec21：回顧 flow network 與 flow value', async
   flSet([2, 1, 1, 1, 2]); renderFlow(); txt(N, '目標：灌出最大的 flow');
   say('maximum network flow', '找能灌出的最大 flow');
   await step(tok);                                   // 106.8 measure it at the source
-  VT = flVal('source 送出：2 + 1 = 3'); flPaint(0, C.hot, 2.6); flPaint(1, C.hot, 2.6); await tb.tap.hop(tok);
+  txt(N, 'source 送出：2 + 1 = 3'); N.element.className = 'lab-label ptr alt'; flPaint(0, C.hot, 2.6); flPaint(1, C.hot, 2.6); await tb.tap.hop(tok);
   say('by definition 從 source 量', '送出 2 + 1 = 3');
   await step(tok);                                   // 117.0 or at the sink
-  renderFlow(); flPaint(3, C.hot, 2.6); flPaint(4, C.hot, 2.6); txt(VT, 'sink 收到：1 + 2 = 3'); await cheer(tok, tb.bucket, 3);
+  renderFlow(); flPaint(3, C.hot, 2.6); flPaint(4, C.hot, 2.6); txt(N, 'sink 收到：1 + 2 = 3'); await cheer(tok, tb.bucket, 3);
   say('也可以從 sink 量', '收到 1 + 2 = 3');
 }]);
 
@@ -1946,7 +1964,7 @@ FRAG.push(['flow-l21-code', 'Lec21：Ford-Fulkerson 虛擬碼逐行看', async (
     '6      if e forward: f(e) ← f(e) + b',
     '7      else:  f(eᴿ) ← f(eᴿ) − b',
     '8    update G_f',
-    '9  return f'], -1.4, -3.2, 0.68);
+    '9  return f'], -1.4, -3.2, 0.72); // a little more room between lines
   const g = buddy('G', '', '#8fc6ec', 5.8, 0, -2.4, 0.7), gf = buddy('G_f', '', '#c9b6f7', 5.8, 0, 1.4, 0.7);
   const N = NOTE('', 0, 4.4);
   await step(tok);                                   // 143.8 lines 1–2: initialization, all 0
@@ -1977,7 +1995,7 @@ FRAG.push(['flow-l21-code', 'Lec21：Ford-Fulkerson 虛擬碼逐行看', async (
   txt(N, 'b = path 上 residual capacity 的最小值（最緊的那段）');
   say('b = 最小的 residual capacity', '');
   await step(tok);                                   // 314.8 pour along P back into the flow network
-  P.hl(4); const w = tag('+b', 'pkt', 5.8, 0.9, 1.4); await travel(tok, w, V3(5.8, 0.9, 1.4), V3(5.8, 0.9, -2.4), 1000); remove(w);
+  P.hl(4); const w = tag('+b', 'pkt', 5.8, 0.9, 1.4); await travel(tok, w, V3(5.8, 0.9, 1.4), V3(5.8, 0.9, -1.2), 1000); remove(w); // stops short of G's name tag
   say('沿著 path 灌回 flow network', '每條邊看是 forward 還是 backward');
   await step(tok);                                   // 344.6 forward: add b
   P.hl(5); g.set('f + b'); await cheer(tok, g);
@@ -2017,7 +2035,7 @@ FRAG.push(['flow-l21-mincut', 'Lec21：回顧例子，min cut = 19', async (tok)
   flCut(new Set([0, 2]), { flow: true });
   say('min cut 在這裡', 'A = {s, b}');
   await step(tok);                                   // 513.9 add forward capacities: 10 + 9
-  const VT = flVal('min cut = 10 + 9 = 19');
+  const VT = flVal('min cut = 10 + 9 = 19', -4.3);
   say('加 forward 方向的 capacity', '10 + 9 = 19');
   await step(tok);                                   // 523.4 backward edges don't count
   flPaint(2, C.back, 2.6); txt(N, 'a → b（紫）是反方向：不算');
@@ -2174,7 +2192,7 @@ FRAG.push(['flow-l21-conserve', 'Lec21：path 上的點進出都多 b，仍守�
 
 // 25:28 integer capacity：先 normalize；bottleneck 每次都是整數
 FRAG.push(['flow-l21-integer', 'Lec21：capacity 先 normalize 成整數', async (tok) => {
-  fresh();
+  fresh(); netHold('lsm', 6.9); // the network and the meter arrive on step 2
   const N = NOTE('', 0, 4.3);
   let M = null;
   await step(tok);                                   // 1527.8 a very important property
@@ -2260,7 +2278,7 @@ FRAG.push(['flow-l21-runtime', 'Lec21：最多 C 輪、每輪 O(m) → O(mC)', a
   fresh(); buildNet('kt'); flView();
   const VT = flVal('');
   const N = NOTE('', 0, -4.4);
-  const it = buddy('iteration', '0', '#f3d2c8', 6.2, 0, -3.7, 0.7);
+  const it = buddy('iteration', '0', '#f3d2c8', 6.4, 0, 3.3, 0.7); // bottom right: the long remark row runs along the top
   await step(tok);                                   // 2026.8 how long until it ends?
   txt(VT, '多久會結束？');
   say('要花多久才會結束？', '');
@@ -2304,7 +2322,7 @@ FRAG.push(['flow-l21-runtime', 'Lec21：最多 C 輪、每輪 O(m) → O(mC)', a
 
 // 38:42 壞例子：每輪只 +1，要 200 輪；好的選法 2 輪
 FRAG.push(['flow-l21-bad', 'Lec21：壞例子要 200 輪，好路徑 2 輪', async (tok) => {
-  fresh();
+  fresh(); netHold('b100', 6.9); // the net and the |f| meter arrive on step 2
   const N = NOTE('', 0, 4.3);
   let M = null, p = null;
   await step(tok);                                   // 2322.0 if C is huge, it may crawl: the paper's counterexample
@@ -2477,9 +2495,9 @@ FRAG.push(['flow-l21-three', 'Lec21：max-flow min-cut 的三個敘述', async (
 
 // 49:44 重新錄影：定理重述（量測、cut、三個敘述）
 FRAG.push(['flow-l21-three2', 'Lec21：定理重述與 cut 的定義', async (tok) => {
-  fresh();
+  fresh(); netHold('kt'); // the network arrives on step 4
   const T = SAY('', 0, -4.4);
-  let N = null, VT = null, s1 = null, s2 = null, s3 = null;
+  let VT = null, s1 = null, s2 = null, s3 = null;
   await step(tok);                                   // 2985.8 (re-recorded) the theorem
   txt(T, 'Max-flow min-cut theorem');
   say('今天的主角', 'max-flow min-cut theorem');
@@ -2494,7 +2512,7 @@ FRAG.push(['flow-l21-three2', 'Lec21：定理重述與 cut 的定義', async (to
   VT = flVal('v(f) = source 送出 = 10 + 9 = 19');
   say('flow 從 source 端量', 'source 只會 generate flow');
   await step(tok);                                   // 3055.0 a cut: any partition with s ∈ A, t ∈ B
-  flCut(new Set([0, 2]), { flow: true }); N = NOTE('cut：把點分成兩半，s ∈ A、t ∈ B', 0, 4.3);
+  flCut(new Set([0, 2]), { flow: true }); txt(T, 'cut：把點分成兩半，s ∈ A、t ∈ B'); // the title row says it (the value row below stays apart)
   say('cut：任何一種分成兩半的 partition', 's、t 在不同側');
   await step(tok);                                   // 3077.0 its value: capacities of the cut edges
   txt(VT, 'cut 的值：切到的邊的 capacity 總和');
@@ -2503,7 +2521,7 @@ FRAG.push(['flow-l21-three2', 'Lec21：定理重述與 cut 的定義', async (to
   flPaint(0, C.sat, 2.8); flPaint(5, C.sat, 2.8); txt(VT, '只算 A → B：10 + 9');
   say('只算從 A 流向 B 的邊', '');
   await step(tok);                                   // 3094.0 backward edges B → A don't count
-  flPaint(2, C.back, 2.6); txt(N, 'B → A（從 sink 側倒流回來）的邊不計：可以讓它不流水');
+  flPaint(2, C.back, 2.6); txt(T, 'B → A（從 sink 側倒流回來）的邊不計：可以讓它不流水');
   say('倒流回來的 backward 邊不計', '');
   await step(tok);                                   // 3128.0 at the optimum they are equal
   txt(VT, 'optimal 時：v(f) = 19 = cap(A, B) = 19');
@@ -2560,11 +2578,11 @@ FRAG.push(['flow-l21-2to3', 'Lec21：② ⇒ ③，用反證法', async (tok) =>
   augment(p); renderFlow(new Set([1, 2, 3])); await cheer(tok, M, 3);
   say('bottleneck > 0：flow 增加', '2 → 3');
   await step(tok);                                   // 3345.0 then f wasn't maximum: contradiction
-  BAD('flow 還能變大 ⇒ f 不是最大：矛盾！', 0, 4.3);
+  txt(VT, 'flow 還能變大 ⇒ f 不是最大：矛盾！'); VT.element.className = 'lab-label bad'; // same row, rewritten
   say('那 f 就不是最大的', 'contradiction');
   await step(tok);                                   // 3358.0 proved: ② ⇒ ③
   renderResidual(); const S = reachS(); for (let v = 0; v < GR.n; v++) nodeColor(v, S.has(v) ? C.S : C.T, 0);
-  txt(VT, '得證：f 是 max flow ⇒ G_f 中 s 走不到 t');
+  txt(VT, '得證：f 是 max flow ⇒ G_f 中 s 走不到 t'); VT.element.className = 'lab-label ptr alt';
   say('證完：2 推到 3', '');
 }]);
 
