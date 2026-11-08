@@ -22,6 +22,12 @@ export default function (ctx) {
     else { m.position.set(x, y, z); lab.world.add(m); }
     return m;
   }
+  // An invisible box over the area a scene will use: the stage's auto framing measures it from the first
+  // step, so the camera does not zoom in on the first few things and jump back out when the rest arrives.
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
   function bodyOf(o) { for (const b of lab.bodies) if (b.obj === o) return b; return lab.addBody(o); }
   const move = (o, x, y, z = 0) => lab.springTo(bodyOf(o), V3(x, y, z));
   function kill(o) {
@@ -156,7 +162,7 @@ export default function (ctx) {
     return grid;
   }
   const POL = { single: '單一 thread（superscalar）', coarse: 'Coarse-grained MT', fine: 'Fine-grained MT', smt: 'SMT（simultaneous）' };
-  async function drawGrid(tok, policy, xc, animate, ms = 160) {
+  async function drawGrid(tok, policy, xc, animate, ms = 160, small = false) {
     const g = schedule(policy);
     const sp = 0.42, rowH = 0.44;
     tag(POL[policy], 'ptr', xc, 6.9);
@@ -165,13 +171,15 @@ export default function (ctx) {
       for (let k = 0; k < 4; k++) {
         const n = g[c][k];
         const x = xc + (k - 1.5) * sp, y = 6.2 - c * rowH;
-        cube(n || '', n ? THC[n] : '#efe6d6', [sp * 0.9, rowH * 0.85, 0.4], x, y, 0);
+        const cb = cube(n || '', n ? THC[n] : '#efe6d6', [sp * 0.9, rowH * 0.85, 0.4], x, y, 0);
+        if (small && cb.userData.lbl) Object.assign(cb.userData.lbl.element.style, { fontSize: '8px', padding: '0 2px', minWidth: '0' });   // four grids side by side: small letters stay inside their slot
         if (n) filled++;
       }
       if (animate) await wait(tok, ms);
     }
     const pctUsed = Math.round(filled / (g.length * 4) * 100);
-    tag('用掉 ' + filled + ' / ' + g.length * 4 + ' 個 slot（' + pctUsed + '%）', 'ptr alt', xc, 6.2 - g.length * rowH - 0.1);
+    // usage sits above the policy name (under the grid it covered the last rows and slid under the caption)
+    const ul = tag('用掉 ' + filled + ' / ' + g.length * 4 + ' 個 slot' + String.fromCharCode(10) + '（' + pctUsed + '%）', 'ptr alt', xc, 7.75); ul.element.style.whiteSpace = 'pre-line'; ul.element.style.textAlign = 'center';   // two short lines: four of them sit side by side
     return { filled, total: g.length * 4, pct: pctUsed };
   }
   const MT = { policy: 'smt' };
@@ -187,7 +195,7 @@ export default function (ctx) {
     legend();
     drawGrid(undefined, MT.policy, 0, false).then(mtState);
   }
-  function legend() { tag('A', 'ptr', -5.6, 6.2).element.style.background = THC.A; tag('B', 'ptr', -5.6, 5.6).element.style.background = THC.B; tag('C', 'ptr', -5.6, 5.0).element.style.background = THC.C; }
+  function legend() { tag('A', 'ptr', -6.35, 6.2).element.style.background = THC.A; tag('B', 'ptr', -6.35, 5.6).element.style.background = THC.B; tag('C', 'ptr', -6.35, 5.0).element.style.background = THC.C; }
   function mtState(r) {
     const why = { single: '一個 thread 的 ILP 有限、stall 時整個 cycle 浪費', coarse: '只在長 stall 換 thread；換的時候 pipeline 要重新填（浪費 1 cycle），短 stall 照樣浪費', fine: '每個 cycle 換一個 ready 的 thread → 藏住 stall；但每個 cycle 只發一個 thread 的指令', smt: '同一個 cycle 從多個 thread 發指令，把 slot 塞滿' };
     setState(POL[MT.policy], [['用掉的 slot', r.filled + ' / ' + r.total], ['使用率', r.pct + '%']], why[MT.policy]);
@@ -204,7 +212,7 @@ export default function (ctx) {
     C.bus = cube('', '#b9a98c', [11.6, 0.14, 0.3], 0, 3.2, 0);
     tag('snooping bus', 'idx', -5.6, 2.8, 0.4);
     C.memM = cube('', '#c9b48e', [2.6, 0.9, 1.1], 0, 1.6, 0);
-    C.busL = tag('', 'ptr alt', 0, 3.75);
+    C.busL = tag('', 'ptr alt', 3.7, 2.55);   // beside the bus, off the packets' path
     C.draw = () => {
       for (let p = 0; p < 2; p++) { tint(C.cache[p], STC[C.st[p]]); relabel(C.cache[p], C.st[p] + '（' + STN[C.st[p]] + '）' + (C.st[p] !== 'I' ? '  X=' + C.val[p] : '')); }
       relabel(C.memM, 'Memory X=' + C.mem);
@@ -215,7 +223,7 @@ export default function (ctx) {
       glow(C.bus, GOLD);
       const g = cube(text.split('（')[0], '#e55a9b', [1.5, 0.4, 0.6], from === 0 ? -3.8 : 3.8, 4.8, 0.8);
       move(g, 0, 3.2, 0.8); await wait(tok, 450);
-      move(g, toMem ? 0 : from === 0 ? 3.8 : -3.8, toMem ? 1.6 : 4.8, 0.8); await wait(tok, 450);
+      move(g, toMem ? 0 : from === 0 ? 3.8 : -3.8, toMem ? 2.3 : 4.8, 0.8); await wait(tok, 450);   // stops on memory's top edge, not on its label
       kill(g); glow(C.bus, null);
     }
     // 回傳一句說明
@@ -530,15 +538,16 @@ export default function (ctx) {
     await beat(tok, 3200);
   }
   async function scFlynn(tok) {
-    fresh([0, 4.5, 13.5], [0, 3.2, 0]);
+    fresh([0, 4.5, 13.5], [0, 3.2, 0]); frameHold(-6.0, 0.6, -0.3, 6.0, 7.4, 0.3);
     const Q = [['SISD', -3.2, 5.2, 1, 1, '傳統 uniprocessor'], ['SIMD', 3.2, 5.2, 1, 4, 'vector／SSE：一個指令 × 多筆資料'], ['MISD', -3.2, 1.8, 4, 1, '幾乎沒有實際產品'], ['MIMD', 3.2, 1.8, 4, 4, 'multicore、cluster']];
     tag('單一資料流 ← → 多資料流', 'idx', 0, 7.1);
     say('Flynn 分類：指令流 × 資料流', 'Single／Multiple Instruction × Data');
     await beat(tok, 2600);
     for (const [n, x, y, is, ds, cap] of Q) {
       tag(n, 'ptr', x, y + 1.1);
-      for (let i = 0; i < is; i++) cube('I', '#9b7ef4', [0.45, 0.4, 0.5], x - 2.2, y + 0.6 - i * 0.45, 0, 2);
-      for (let d = 0; d < ds; d++) cube('D', '#2fc092', [0.45, 0.4, 0.5], x - 0.8 + d * 0.6, y + 0.1, 0, 2);
+      // blocks appear in place (falling from above they slid across the labels of the quadrant above)
+      for (let i = 0; i < is; i++) cube('I', '#9b7ef4', [0.45, 0.4, 0.5], x - 2.2, y + 0.75 - i * 0.58, 0);
+      for (let d = 0; d < ds; d++) cube('D', '#2fc092', [0.45, 0.4, 0.5], x - 0.8 + d * 0.6, y + 0.1, 0);
       say(n + '：' + cap, '');
       await beat(tok, 2200);
     }
@@ -554,7 +563,7 @@ export default function (ctx) {
     const res = {};
     for (const [k, x] of [['single', -4.8], ['coarse', -1.6], ['fine', 1.6], ['smt', 4.8]]) {
       say(caps[k], k === 'coarse' ? '換 thread 要重新填 pipeline，浪費一個 cycle' : k === 'fine' ? '短 stall 也藏得住；但每列只有一個 thread' : '');
-      res[k] = await drawGrid(tok, k, x, true, 110);
+      res[k] = await drawGrid(tok, k, x, true, 110, true);
       await beat(tok, 1200);
     }
     say('slot 使用率：' + res.single.pct + '% → ' + res.coarse.pct + '% → ' + res.fine.pct + '% → ' + res.smt.pct + '%', 'SMT 同時利用 thread-level 與 instruction-level 平行度');
@@ -821,8 +830,8 @@ const PX = [-4.8, -1.6, 1.6, 4.8], PY = 6.35, CY = 5.25, IBY = 4.3, SBY = 2.75, 
 function quad(S, o = {}) {
   S.p = PX.map((x, i) => cube('P' + (i + 1), '#31aab0', [1.5, 0.65, 1.0], x, PY));
   S.c = PX.map((x) => cube('cache：—', '#d8cfc0', [2.7, 0.75, 1.0], x, CY));
-  S.ib = cube('', '#c08a1f', [12.0, 0.1, 0.25], 0, IBY); S.ibL = sm('internal bus', -5.6, IBY + 0.3);
-  S.sb = cube('', '#b9a98c', [12.0, 0.14, 0.3], 0, SBY); S.sbL = sm('system bus', -5.6, SBY + 0.32);
+  S.ib = cube('', '#c08a1f', [12.0, 0.1, 0.25], 0, IBY); S.ibL = sm('internal bus', -6.4, IBY + 0.42);
+  S.sb = cube('', '#b9a98c', [12.0, 0.14, 0.3], 0, SBY); S.sbL = sm('system bus', -6.4, SBY + 0.44);
   S.wv = PX.map((x) => wire(x, SBY, x, CY - 0.38, '#b9a98c', 0.06));
   S.mm = cube('Main memory：A = ' + (o.a ?? 7), '#c9b48e', [4.0, 0.9, 1.1], MM[0], MM[1]);
   S.mw = wire(0, SBY, 0, MM[1] + 0.45, '#b9a98c', 0.08);
@@ -833,7 +842,7 @@ function showC(S, C, i, withState = true) {
   tint(S.c[i], s === 'V' ? '#4b9ee2' : STC[s] || '#d8cfc0');
 }
 const showAll = (S, C, ws = true) => { for (let i = 0; i < C.n; i++) showC(S, C, i, ws); relabel(S.mm, 'Main memory：A = ' + C.mem); };
-const up = (i) => [[PX[i], CY], [PX[i], SBY], [MM[0], SBY], [MM[0], MM[1]]];
+const up = (i) => [[PX[i], CY - 0.5], [PX[i], SBY], [MM[0], SBY], [MM[0], MM[1] + 0.75]];   // from a cache's bottom edge to memory's top edge (not across their labels)
 const down = (i) => up(i).slice().reverse();
 
 // ════════ r_ZE1XVT8Ao（Cache Coherence Problem & Cache Coherency Protocols） ════════
@@ -847,10 +856,10 @@ scene('cpar-org', '多核心：private cache 與 shared storage', [
     cap('dual-core processor 的結構', '每個 core 都有自己的 cache');
   },
   async (tok, S) => { // @45.9
-    S.sb = cube('', '#b9a98c', [10.0, 0.14, 0.3], 0, 2.8); S.sbL = sm('system bus', -5.4, 3.12);
+    S.sb = cube('', '#b9a98c', [10.0, 0.14, 0.3], 0, 2.8); S.sbL = sm('system bus', -6.4, 3.24);
     S.mm = cube('Main memory', '#c9b48e', [4.0, 0.9, 1.1], 0, 1.4);
     S.w = [wire(0, 2.8, 0, 3.7, '#b9a98c', 0.08), wire(0, 1.85, 0, 2.8, '#b9a98c', 0.08)];
-    await chip(tok, 'data', [[0, 1.4], [0, 2.8], [0, 4.0]], 900);
+    await chip(tok, 'data', [[0, 1.95], [0, 2.8], [0, 3.62]], 900);   // memory's top edge → L3's bottom edge
     cap('processor 經 system bus', '接到 main memory');
   },
   async (tok, S) => { // @51.1
@@ -861,7 +870,7 @@ scene('cpar-org', '多核心：private cache 與 shared storage', [
   async (tok, S) => { // @60.2
     [...S.l1, ...S.l2].forEach((m) => glow(m, null)); gone(S.pv);
     glow(S.l3, '#0f5a3a'); glow(S.mm, '#0f5a3a');
-    S.sh = good('L3 與 main memory：大家共用（shared）', 3.6, 1.4);
+    S.sh = good('L3 與 main memory：大家共用（shared）', 0, 3.3);   // between the two shared boxes
     cap('L3 與 main memory', '是 shared storage');
   },
   async (tok, S) => { // @64.7
@@ -876,14 +885,14 @@ scene('cpar-org', '多核心：private cache 與 shared storage', [
     cap('四個處理器 P1～P4', '簡化：各只有一個 private cache');
   },
   async (tok, S) => { // @96.4
-    S.sb = cube('', '#b9a98c', [12.0, 0.14, 0.3], 0, SBY); S.sbL = sm('system bus', -5.6, SBY + 0.32);
+    S.sb = cube('', '#b9a98c', [12.0, 0.14, 0.3], 0, SBY); S.sbL = sm('system bus', -6.4, SBY + 0.44);
     S.wv = PX.map((x) => wire(x, SBY, x, CY - 0.38, '#b9a98c', 0.06));
     S.mm = cube('Main memory（shared）', '#c9b48e', [4.0, 0.9, 1.1], MM[0], MM[1]);
     S.mw = wire(0, SBY, 0, MM[1] + 0.45, '#b9a98c', 0.08);
     cap('共用的是 main memory', '經 system bus 連接');
   },
   async (tok, S) => { // @103.7
-    S.ib = cube('', '#c08a1f', [12.0, 0.1, 0.25], 0, IBY); S.ibL = sm('internal bus', -5.6, IBY + 0.3);
+    S.ib = cube('', '#c08a1f', [12.0, 0.1, 0.25], 0, IBY); S.ibL = sm('internal bus', -6.4, IBY + 0.42);
     glow(S.ib, '#6a4a00');
     await chip(tok, '↔', [[PX[0], IBY], [PX[3], IBY]], 1200);
     glow(S.ib, null);
@@ -922,7 +931,7 @@ scene('cpar-incoh', '例子：A = 7，四個處理器各改一次 → 四個不�
   },
   async (tok, S) => { // @175.3
     S.C.write(0, S.C.v[0] + 1); showAll(S, S.C, false); glow(S.c[0], '#6a4a00');
-    S.r1 = ok(S.C.v[0] === 8, PX[0], 3.6, 'P1：7 + 1 = 8 ✓');
+    S.r1 = P.keep(ok(S.C.v[0] === 8, PX[0], 3.6, 'P1：7 + 1 = 8 ✓'));
     cap('P1 把 A 加 1', 'A = 8');
   },
   async (tok, S) => { // @184.0
@@ -935,7 +944,7 @@ scene('cpar-incoh', '例子：A = 7，四個處理器各改一次 → 四個不�
   },
   async (tok, S) => { // @205.5
     S.C.write(1, S.C.v[1] + 2); showAll(S, S.C, false); glow(S.c[1], '#6a4a00');
-    S.r2 = ok(S.C.v[1] === 9, PX[1], 3.6, 'P2：7 + 2 = 9 ✓');
+    S.r2 = P.keep(ok(S.C.v[1] === 9, PX[1], 3.6, 'P2：7 + 2 = 9 ✓'));
     cap('P2 把 A 加 2', 'A = 9');
   },
   async (tok, S) => { // @217.8
@@ -943,7 +952,7 @@ scene('cpar-incoh', '例子：A = 7，四個處理器各改一次 → 四個不�
     S.op.push(hot('A − 1', PX[2], PY + 0.75));
     await chip(tok, '7', down(2), 1100);
     S.C.read(2); S.C.write(2, S.C.v[2] - 1); showAll(S, S.C, false); glow(S.c[2], '#6a4a00');
-    S.r3 = ok(S.C.v[2] === 6, PX[2], 3.6, 'P3：7 − 1 = 6 ✓');
+    S.r3 = P.keep(ok(S.C.v[2] === 6, PX[2], 3.6, 'P3：7 − 1 = 6 ✓'));
     cap('P3 把 A 減 1', '一樣從 memory 拿 7 → 6');
   },
   async (tok, S) => { // @240.0
@@ -951,7 +960,7 @@ scene('cpar-incoh', '例子：A = 7，四個處理器各改一次 → 四個不�
     S.op.push(hot('A − 2', PX[3], PY + 0.75));
     await chip(tok, '7', down(3), 1100);
     S.C.read(3); S.C.write(3, S.C.v[3] - 2); showAll(S, S.C, false); glow(S.c[3], '#6a4a00');
-    S.r4 = ok(S.C.v[3] === 5, PX[3], 3.6, 'P4：7 − 2 = 5 ✓');
+    S.r4 = P.keep(ok(S.C.v[3] === 5, PX[3], 3.6, 'P4：7 − 2 = 5 ✓'));
     cap('P4 把 A 減 2', 'A = 5');
   },
   async (tok, S) => { // @257.0
@@ -997,33 +1006,36 @@ scene('cpar-def', 'cache coherence 與 cache coherence problem 的定義', [
 
 scene('cpar-msi', 'cache line 的狀態：Modified、Shared、Invalid', [
   async (tok, S) => { // @327.9
-    S.lines = [0, 1, 2, 3].map((k) => cube('line ' + k, '#efe6d6', [3.2, 0.5, 0.9], -3.2, 6.4 - k * 0.6));
-    S.t = hd('cache 邏輯上分成一條條 line（block）', -3.2, 7.4);
+    frameHold(-6.4, 0.6, -0.5, 6.4, 7.6, 0.5);
+    S.lines = [0, 1, 2, 3].map((k) => cube('line ' + k, '#efe6d6', [3.2, 0.5, 0.9], -4.6, 6.3 - k * 0.8));
+    S.t = hd('cache 邏輯上分成一條條 line（block）', -4.6, 7.2);
     cap('每個 cache 分成 lines（blocks）', '');
   },
   async (tok, S) => { // @334.7
-    S.ctl = cube('cache controller', '#31aab0', [2.6, 0.8, 1.0], 2.6, 6.4);
-    S.stc = [0, 1, 2, 3].map((k) => cube('狀態 ?', '#d8cfc0', [1.3, 0.45, 0.9], -0.9, 6.4 - k * 0.6));
-    S.n = note('cache controller 替每一條 block 記一個「狀態」', 2.6, 5.4);
+    S.ctl = cube('cache controller', '#31aab0', [2.6, 0.8, 1.0], -4.6, 2.0);
+    S.stc = [0, 1, 2, 3].map((k) => cube('狀態 ?', '#d8cfc0', [1.3, 0.45, 0.9], -2.3, 6.3 - k * 0.8));
+    const row = (l) => { if (l.center) l.center.set(0, 0.5); return P.keep(l); };   // a row's meaning, left-aligned beside its state block
+    S.row = (t, k, f) => row(f(t, -1.4, 6.3 - k * 0.8));
+    S.n = P.keep(note('cache controller 替每一條 block 記一個「狀態」', -3.1, 2.0)); if (S.n.center) S.n.center.set(0, 0.5);   // right of the controller
     cap('cache controller 記錄資訊', '每個 block 都有一個 state');
   },
   async (tok, S) => { // @346.8
     relabel(S.stc[0], 'M'); tint(S.stc[0], STC.M);
-    S.dM = bad('M（Modified）：被自己的處理器改過，和 main memory 不一致', 2.6, 4.5);
+    S.dM = S.row('M（Modified）：被自己的處理器改過，和 main memory 不一致', 0, bad);
     cap('Modified', '自己改過、和 memory 不一致');
   },
   async (tok, S) => { // @360.4
     relabel(S.stc[1], 'S'); tint(S.stc[1], STC.S);
-    S.dS = hot('S（Shared）：沒被改過，可以出現在一個以上的 cache', 2.6, 3.7);
+    S.dS = S.row('S（Shared）：沒被改過，可以出現在一個以上的 cache', 1, hot);
     cap('Shared', '沒改過，可以在好幾個 cache 中');
   },
   async (tok, S) => { // @374.7
-    S.n2 = note('一個 block 要同時出現在多個 cache，只能是 Shared', 2.6, 2.9);
+    txt(S.n, '一個 block 要同時出現在多個 cache，只能是 Shared'); glow(S.stc[1], '#0f2a5a'); S.n2 = null;
     cap('要出現在多個 cache', '只能是 Shared 狀態');
   },
   async (tok, S) => { // @380.2
     relabel(S.stc[2], 'I'); tint(S.stc[2], STC.I);
-    S.dI = sm('I（Invalid）：別的處理器寫了這份資料 → 我的副本作廢', 2.6, 2.2);
+    glow(S.stc[1], null); S.dI = S.row('I（Invalid）：別的處理器寫了這份資料 → 我的副本作廢', 2, sm);
     cap('Invalid', '別人寫了 → 我的副本作廢');
   },
   async (tok, S) => { // @393.1
@@ -1039,13 +1051,13 @@ scene('cpar-msi', 'cache line 的狀態：Modified、Shared、Invalid', [
     gone(S.r);
     S.C.write(0, 8);
     showC(S, S.C, 0); relabel(S.mm, 'Main memory：A = ' + S.C.mem); glow(S.c[0], '#6a4a00');
-    S.inv = tag('invalidate A', 'pkt', PX[0], IBY, 0.9);
+    S.inv = tag('invalidate A', 'pkt', PX[0] + 0.6, IBY, 0.9);
     S.r = ok(S.C.st[0] === 'M' && S.C.v[0] === 8 && S.C.mem === 7, 0, 3.6, 'P1 寫 A = 8：S → M（memory 還是 7）✓');
     cap('自己要改這條 line', 'S 升成 Modified');
   },
   async (tok, S) => { // @411.8
     gone(S.r);
-    await travel(tok, S.inv, V3(PX[0], IBY, 0.9), V3(PX[1], IBY, 0.9), 900); remove(S.inv);
+    await travel(tok, S.inv, V3(PX[0] + 0.6, IBY, 0.9), V3(PX[1], IBY, 0.9), 900); remove(S.inv);
     showC(S, S.C, 1); glow(S.c[1], '#7a1010');
     S.r = ok(S.C.st[1] === 'I', 0, 3.6, '從 P2 看：別人先改了 → P2 的 S 降成 I ✓');
     cap('別的處理器先改了', '我的 line：S 降成 Invalid');
@@ -1129,7 +1141,7 @@ scene('cpar-snoop', 'Snooping：write update vs write invalidate（× write-thro
   async (tok, S) => { // @549.6
     S.C = mkCoh(4, 7, 'MSI'); [0, 1, 2, 3].forEach((i) => S.C.read(i)); showAll(S, S.C);
     glow(S.ib, '#6a4a00');
-    S.ears = [1, 2, 3].map((i) => tag('監聽 bus', 'pkt', PX[i], IBY + 0.45, 0.9));
+    S.ears = [1, 2, 3].map((i) => tag('監聽 bus', 'pkt', PX[i], IBY - 0.72, 0.9));
     await chip(tok, '廣播：P1 要寫 A', [[PX[0], IBY], [PX[3], IBY]], 1400);
     glow(S.ib, null);
     S.n = note('一個處理器在 bus 上廣播 → 其他 cache controller 都在 snoop（監聽），各自處理自己的副本', 0, 0.35);
@@ -1173,7 +1185,7 @@ scene('cpar-snoop', 'Snooping：write update vs write invalidate（× write-thro
   },
   async (tok, S) => { // @623.1
     gone(S.r);
-    S.grid = [['update + write-through', -4.4, 1.95], ['update + write-back', 4.4, 1.95], ['invalidate + write-through', -4.4, 1.35], ['invalidate + write-back', 4.4, 1.35]].map(([t, x, y]) => hot(t, x, y));
+    S.grid = [['update + write-through', -3.2, 3.85], ['update + write-back', 3.2, 3.85], ['invalidate + write-through', -3.2, 3.2], ['invalidate + write-back', 3.2, 3.2]].map(([t, x, y]) => hot(t, x, y));
     S.r = ok(S.grid.length === 2 * 2, 0, 0.95, '2 種做法 × 2 種寫入策略 = 4 種 ✓');
     txt(S.n, 'snooping 共四種組合');
     cap('snooping 共四種', 'update／invalidate × WT／WB');
@@ -1189,7 +1201,7 @@ scene('cpar-dir', 'Directory-based protocol：點對點，不廣播', [
   async (tok, S) => { // @641.4
     S.C = mkCoh(4, 7, 'MSI'); S.C.read(0); S.C.read(2); showAll(S, S.C);
     S.pres = S.C.st.map((s) => (s === 'I' ? 0 : 1));
-    S.dir = cube('directory：A → S，在 [' + S.pres.join(' ') + ']', '#e9dcc4', [4.6, 0.7, 1.0], 3.6, MM[1]);
+    S.dir = cube('directory：A → S，在 [' + S.pres.join(' ') + ']', '#e9dcc4', [3.8, 0.7, 1.0], 4.7, MM[1]);
     S.n = note('集中的 directory 記錄每個資料在哪些 cache 裡（示意：P1、P3）', -3.0, 0.35);
     cap('集中的 directory', '記錄每個資料的去向');
   },
@@ -1200,8 +1212,8 @@ scene('cpar-dir', 'Directory-based protocol：點對點，不廣播', [
   },
   async (tok, S) => { // @652.7
     const others = S.pres.map((b, i) => (b && i !== 0 ? i : -1)).filter((i) => i >= 0);
-    await chip(tok, '我要寫 A', [[PX[0], CY], [PX[0], SBY], [3.6, SBY], [3.6, MM[1]]], 900);
-    for (const i of others) await chip(tok, 'invalidate', [[3.6, MM[1]], [3.6, SBY], [PX[i], SBY], [PX[i], CY]], 900);
+    await chip(tok, '我要寫 A', [[PX[0], CY - 0.5], [PX[0], SBY], [4.7, SBY], [4.7, MM[1] + 0.45]], 900);
+    for (const i of others) await chip(tok, 'invalidate', [[4.7, MM[1] + 0.45], [4.7, SBY], [PX[i], SBY], [PX[i], CY - 0.5]], 900);
     S.C.write(0, 8); showAll(S, S.C);
     relabel(S.dir, 'directory：A → M，只在 [1 0 0 0]');
     S.r = ok(others.length === 1 && S.C.st.join() === 'M,I,I,I', 0, 3.6, '只送 1 個點對點訊息（給 P3）；snooping 要廣播給其他 3 個 ✓');
@@ -1327,7 +1339,7 @@ scene('cpar-am-norm', '正規化：全部指令 = 1，f 被增強、1 − f 不�
   },
   async (tok, S) => { // @225.3
     gone(S.c1);
-    S.s = hot('快了 s 倍（scale s）', BX + (1 - FX / 2) * BW, 5.5);
+    gone(S.one); S.s = hot('快了 s 倍（scale s）', BX + (1 - FX / 2) * BW, 5.5);
     glow(S.f, '#6a4a00');
     txt(S.n, '題目會告訴你被增強的部分「快了幾倍」：記作 s');
     cap('增強的倍數會給你', '記作 s');
