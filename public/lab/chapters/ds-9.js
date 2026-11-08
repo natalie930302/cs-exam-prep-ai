@@ -112,7 +112,8 @@ export default function (ctx) {
       tray.receiveShadow = true;
       lab.world.add(tray);
       view.statics.push(tray);
-      if (k > m - 1) view.statics.push(txt('overflow', 'ptr', V(p.x + (k * KW * s) / 2 + 0.6, p.y, 0)));
+      // overflow tag just above the node's right end (the right side is often a sibling node)
+      if (k > m - 1) { const o = txt('overflow', 'ptr', V(p.x + (k * KW * s) / 2 - 0.1, p.y + 0.62, 0)); if (o.center) o.center.set(0, 0.5); view.statics.push(o); }
       n.keys.forEach((key, i) => {
         const id = opts.ids ? opts.ids(n, key) : String(key);
         seen.add(id);
@@ -813,8 +814,22 @@ const pkt = (t, x, y, z = 0) => tag(t, 'pkt', x, y, z);
 const good = (t, x, y, z = 0) => tag(t, 'good', x, y, z);
 const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
 const setCls = (l, cls) => { l.element.className = 'lab-label ' + cls; };
+// An invisible box over the area a scene will use later (as in dm-8): the stage's auto framing measures it
+// from the first step, so the camera does not zoom in on the first few things and jump back out later.
+function frameHold(x0, y0, z0, x1, y1, z1) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+}
+// a finished subject steps back to a plane behind and greys out (as in ds-1), so the next one has the front
+async function recede(tok, objs, dz = -2.6) {
+  const z0 = objs.map((o) => o.position.z);
+  objs.forEach((o) => o.traverse((c) => { if (c.isMesh && c.material && !Array.isArray(c.material) && c.material.color) c.material.color.set('#d8cfc0'); }));
+  await anim(tok, 600, (u) => objs.forEach((o, k) => { o.position.z = z0[k] + dz * u; }));
+}
 // 共用：用本章的 B-tree 引擎（BT / renderTree）畫出講者自己的樹
 function btShow(m, root, mode) { KB = null; NAMES = []; BT.m = m; enterBTree(mode || 'ins'); BT.root = root; btRender(); }
+// a tree that is already there at the start of a scene: put its keys in place now (no drop through the labels above)
+function btSnap() { for (const b of BT.view.bodies.values()) b.obj.position.copy(b.target); }
 // 指定「第幾個 key 往上」的插入（講者用的 split 規則不一定是 ⌈m/2⌉）
 function* midInsert(k, mid) {
   const m = BT.m;
@@ -900,11 +915,17 @@ function* findKey(k) {
     n = isLeaf(n) ? null : n.kids[i];
   }
 }
-// name tags beside nodes (A, B, C …); call again after the tree changes
+// name tags with their nodes (A, B, C …): a leaf's under it (leaves sit close side by side), an inner
+// node's hugging its left end; call again after the tree changes
 let NAMES = [];
 function nameNodes(pairs) {
   NAMES.forEach(kill); NAMES = [];
-  for (const [n, name] of pairs) { if (!n) continue; const p = nodePos(n); NAMES.push(tag(name, 'ptr', p.x - p.w / 2 - 0.45, p.y + 0.1)); }
+  for (const [n, name] of pairs) {
+    if (!n) continue; const p = nodePos(n);
+    const l = isLeaf(n) ? tag(name, 'ptr', p.x, p.y - 0.85) : tag(name, 'ptr', p.x - p.w / 2 - 0.2, p.y + 0.1);
+    if (!isLeaf(n)) l.center.set(1, 0.5);
+    NAMES.push(l);
+  }
 }
 // B+ tree（Ramakrishnan 的 order d）畫法：葉子串 link、索引 key 灰色、葉子下面的 * 是 data pointer
 function bpTree(root) {
@@ -933,6 +954,8 @@ function bpStars(v, back) {
   return out;
 }
 const bpRing = (v, n) => ringAt(v, v.pos, n, v.s);
+// a B+ tree that is simply there (not being built): keys in place at once, no drop through the labels
+const bpSnap = (v) => { for (const b of v.bodies.values()) b.obj.position.copy(b.target); return v; };
 const bpLit = (v, ids) => { for (const [id, b] of v.bodies) if (id[0] === 'L') b.obj.material.emissive = new THREE.Color(ids.has(id) ? '#1d5a2c' : '#000000'); };
 const RK1 = () => T([40], T([20, 33], T([10, 15]), T([20, 27]), T([33, 37])), T([51, 63], T([40, 46]), T([51, 55]), T([63, 97])));
 const RK2 = () => T([13, 17, 24, 30], T([2, 3, 5, 7]), T([14, 16]), T([19, 20, 22]), T([24, 27, 29]), T([33, 34, 38, 39]));
@@ -953,9 +976,16 @@ function bpAt(v, n, k) {
 const HI = [5, 3, 21, 9, 1, 13, 2, 7, 10, 12, 4];
 function hiPre(n) { BT.m = 4; BT.root = null; for (const k of HI.slice(0, n)) for (const _ of btInsert(k)) { /* silent */ } return BT.root; }
 // the lecturer's key list across the top; keys already inserted turn blue
-function hiRow(done, y = 5.6) { return HI.map((k, i) => tag(String(k), i < done ? 'idx' : 'note', -4.5 + i * 0.9, y)); }
+// one label (the sticky-note strip): it is part of the picture, so it never fades like a side remark
+function hiRow(done, y = 5.6) {
+  const l = tag('', '', 0, y); l.element.style.padding = '2px 4px';
+  const paint = () => { l.element.innerHTML = HI.map((k, i) => '<span style="display:inline-block;min-width:1.6em;margin:0 1px;padding:0 3px;border-radius:4px;text-align:center;' + (i < done ? 'background:#d6e8fa;color:#2a6db0' : 'background:#fff1a6;color:#4a3a00') + '">' + k + '</span>').join(''); };
+  paint();
+  return { l, done(n) { done = Math.max(done, n); paint(); } };
+}
 FRAG.push(['btree-hi-rules', 'order 4 的 B-tree：最多 3 個 key、至少 1 個', async (tok) => {
   fresh([0, 5, 12], [0, 1.6, 0]);
+  frameHold(-6.2, -0.4, -0.5, 6.2, 5.0, 0.5);
   await step(tok);                                   // 0:05 要把這些 key 插進 B-tree
   hiRow(0, 4.7);
   const kb = buddy('新 key', '?', '#f3d36b', -5.4, 0, 2.2, 0.75);
@@ -995,19 +1025,20 @@ FRAG.push(['btree-hi-rules', 'order 4 的 B-tree：最多 3 個 key、至少 1 �
 FRAG.push(['btree-hi-split5', '插入 5 3 21，再插 9 第一次分裂', async (tok) => {
   fresh([0, 5.2, 14.5], [0, 2.6, 0]);
   btShow(4, null); courier();
+  frameHold(-6.6, -0.6, -0.5, 6.6, 5.9, 0.5);
   await step(tok);                                   // 1:56 例子
   const row = hiRow(0);
   say('例子：order 4，依序插入這 11 個 key', '一個 node 最多放 3 個 key');
-  await cIns(tok, 5); setCls(row[0], 'idx');         // 2:11 第一個是 5
-  await cIns(tok, 3); setCls(row[1], 'idx');         // 2:19 3 放到 5 前面
-  await cIns(tok, 21); setCls(row[2], 'idx');        // 2:35 21，node 滿了
+  await cIns(tok, 5); row.done(1);         // 2:11 第一個是 5
+  await cIns(tok, 3); row.done(2);         // 2:19 3 放到 5 前面
+  await cIns(tok, 21); row.done(3);        // 2:35 21，node 滿了
   let ch = [];
   await cIns(tok, 9, { split: async () => {          // 2:43 9 沒位置
     await step(tok);                                 // 2:49 兩個中間值可選
     ch = [bubble('5 往上？', -2.2, 3.6), bubble('9 往上？', 2.2, 3.6)];
     say('3, 5, 9, 21：偶數個，中間有兩個', '選 5 或 9 往上都可以 → left / right biased');
     await step(tok);                                 // 3:19 老師讓 5 往上
-    ch.forEach(kill); setCls(row[3], 'idx');
+    ch.forEach(kill); row.done(4);
   } });
   await step(tok);                                   // 3:33 右邊是 9, 21
   ringN(BT.root.kids[1]);
@@ -1015,41 +1046,44 @@ FRAG.push(['btree-hi-split5', '插入 5 3 21，再插 9 第一次分裂', async 
 }]);
 FRAG.push(['btree-hi-split9', '插入 1 13 2 7：9 往上', async (tok) => {
   fresh([0, 5.2, 14.5], [0, 2.6, 0]);
-  btShow(4, hiPre(4)); courier();
+  btShow(4, hiPre(4)); btSnap(); courier();
+  frameHold(-6.6, -0.6, -0.5, 6.6, 5.9, 0.5);
   const row = hiRow(4);
   await step(tok);                                   // 3:41 下一個要插入的是…
   ringN(BT.root);
   say('目前：root 5，左 [3]，右 [9, 21]', '接著插入 1, 13, 2, 7');
-  await cIns(tok, 1); setCls(row[4], 'idx');         // 3:46
-  await cIns(tok, 13); setCls(row[5], 'idx');        // 3:50
-  await cIns(tok, 2); setCls(row[6], 'idx');         // 4:00
+  await cIns(tok, 1); row.done(5);         // 3:46
+  await cIns(tok, 13); row.done(6);        // 3:50
+  await cIns(tok, 2); row.done(7);         // 4:00
   await cIns(tok, 7, { split: true });               // 4:11 7 比 5 大 → 右邊，overflow；4:30 9 往上
-  setCls(row[7], 'idx');
+  row.done(8);
   await step(tok);                                   // 4:45 重畫
   ringN(BT.root);
   say('重畫：root [5, 9]，三個 child', 'leaf：[1, 2, 3]、[7]、[13, 21]');
 }]);
 FRAG.push(['btree-hi-split12', '插入 10 12：12 往上', async (tok) => {
   fresh([0, 5.2, 14.5], [0, 2.6, 0]);
-  btShow(4, hiPre(8)); courier();
+  btShow(4, hiPre(8)); btSnap(); courier();
+  frameHold(-6.6, -0.6, -0.5, 6.6, 5.9, 0.5);
   const row = hiRow(8);
   await step(tok);                                   // 4:50 接著是 10
   KB.set(10);
   say('下一個是 10', '10 要插在哪？');
-  await cIns(tok, 10); setCls(row[8], 'idx');        // 4:55 9 < 10 < 13
+  await cIns(tok, 10); row.done(9);        // 4:55 9 < 10 < 13
   await step(tok);                                   // 5:00 這個 node 滿了
   const leaf = BT.root.kids[2]; ringN(leaf);
-  const p = nodePos(leaf); const full = bad('滿了', p.x, p.y + 0.9);
+  const p = nodePos(leaf); const full = bad('滿了', p.x + p.w / 2 + 0.25, p.y); full.center.set(0, 0.5);
   say('[10, 13, 21]：這個 node 已經滿了', '再來一個就要 split');
-  await cIns(tok, 12, { split: true });              // 5:04 12 也插進來 → overflow；5:10 12 送到 root
-  kill(full); setCls(row[9], 'idx');
+  await cIns(tok, 12, { split: true, place: () => kill(full) }); // 5:04 12 也插進來 → overflow；5:10 12 送到 root
+  kill(full); row.done(10);
   await step(tok);                                   // 5:16 左 10、右 13, 21
   ringN(BT.root);
   say('12 的左邊 [10]、右邊 [13, 21]', 'root 變成 [5, 9, 12]：又滿了');
 }]);
 FRAG.push(['btree-hi-cascade', '插入 4：連續分裂，5 成為新根', async (tok) => {
   fresh([0, 5.2, 14.5], [0, 2.6, 0]);
-  btShow(4, hiPre(10)); courier();
+  btShow(4, hiPre(10)); btSnap(); courier();
+  frameHold(-6.6, -0.6, -0.5, 6.6, 5.9, 0.5);
   const row = hiRow(10);
   let warn = null;
   await cIns(tok, 4, {                               // 5:20 4 < 5、4 > 3
@@ -1064,7 +1098,7 @@ FRAG.push(['btree-hi-cascade', '插入 4：連續分裂，5 成為新根', async
       } else await step(tok);                        // 5:36 2 上去 parent
     },
   });
-  setCls(row[10], 'idx');
+  row.done(11);
   await step(tok);                                   // 5:56 重畫：5 上到 parent
   ringN(BT.root);
   say('5 成為新的 root', '分裂兩次，樹高 +1');
@@ -1092,6 +1126,7 @@ function circle(r, y, color, parent, seg = 64) {
 function seg3(a, b, color, parent) { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), new THREE.LineBasicMaterial({ color })); (parent || lab.world).add(l); return l; }
 FRAG.push(['btree-ab-disk', 'Disk：track、sector、block、offset', async (tok) => {
   fresh([0, 10, 7.5], [0, 0, 0.4]);
+  frameHold(-6.4, 0, -4.5, 6.0, 0.6, 4.5);
   await step(tok);                                   // 1:22 先看 disk 結構
   const hd = prop('disk', -5.6, 0, -2.6, 1.3, '硬碟'); bob(hd, 0.05);
   const pg = new THREE.Group(); lab.world.add(pg);   // the platter and everything drawn on it (turns together)
@@ -1103,7 +1138,8 @@ FRAG.push(['btree-ab-disk', 'Disk：track、sector、block、offset', async (tok
   R.forEach((r) => circle(r + 0.35, 0.01, '#8a7a60', pg)); circle(0.85, 0.01, '#8a7a60', pg);
   say('盤面上劃出一圈圈同心圓', '這些圓是邏輯上的，不是真的刻上去');
   await step(tok);                                   // 1:37 這些圓叫 track
-  R.forEach((r, i) => pg.add(tag('track ' + i, 'idx', r, 0.1, 0.25)));
+  // fanned across the back of the platter, each on its own ring, so the four never touch
+  R.forEach((r, i) => { const a = -Math.PI / 2 + (i - 1.5) * 0.75; pg.add(tag('track ' + i, 'idx', Math.cos(a) * r, 0.1, Math.sin(a) * r)); });
   say('每一圈叫 track（磁軌）', 'track 0、1、2、3');
   await step(tok);                                   // 1:43 扇形叫 sector
   for (let s = 0; s < 6; s++) { const a = (s / 6) * Math.PI * 2; seg3(V3(Math.cos(a) * 0.85, 0.01, Math.sin(a) * 0.85), V3(Math.cos(a) * 3.65, 0.01, Math.sin(a) * 3.65), '#8a7a60', pg); }
@@ -1134,18 +1170,28 @@ FRAG.push(['btree-ab-disk', 'Disk：track、sector、block、offset', async (tok
   remove(car);
   say('從 disk 讀或寫，一次就是一整個 block', '不會只讀 1 個 byte');
   await step(tok);                                   // 3:22 block 裡 byte 0 ～ 511
-  const cells = []; for (let i = 0; i < 8; i++) cells.push(cube('', '#f6deb0', [0.5, 0.2, 0.5], -1.75 + i * 0.5, 1.6, 2.8));
-  tag('0', 'idx', -1.75, 1.6, 3.4); tag('511', 'idx', 1.75, 1.6, 3.4);
+  // the platter steps aside (small, its labels hidden); the opened block gets the right half to itself
+  const onPlate = pg.children.filter((c) => c.element);
+  onPlate.forEach((l) => Object.assign(l.element.style, { transition: 'opacity .4s', opacity: '0' }));
+  await anim(tok, 700, (t) => { pg.position.x = -2.8 * t; pg.scale.setScalar(1 - 0.4 * t); });
+  const cells = []; for (let i = 0; i < 8; i++) cells.push(cube('', '#f6deb0', [0.5, 0.2, 0.5], 1.4 + i * 0.5, 0.3, 0.4));
+  const strip = [tag('0', 'idx', 0.9, 0.3, 0.4), tag('511', 'idx', 5.4, 0.3, 0.4)];
+  strip[0].center.set(1, 0.5); strip[1].center.set(0, 0.5);
+  sz.position.set(3.15, 0.3, -0.5);
   say('把一個 block 攤開：byte 0 ～ 511', '');
   await step(tok);                                   // 3:32 每個 byte 的位址 = offset
-  glow(cells[2], RED); pkt('offset', -0.75, 2.3, 2.8);
+  glow(cells[2], RED); strip.push(pkt('offset', 2.4, 0.3, 1.15));
   say('block 裡每個 byte 的位置叫 offset', '');
   await step(tok);                                   // 4:09 要知道三樣東西
-  note('track + sector + offset', 0, 2.9, 2.8);
+  strip.push(note('track + sector + offset', 3.15, 0.3, 1.9));
   say('找到 disk 上某個 byte', '= track 編號 + sector 編號 + offset');
   await step(tok);                                   // 4:30 主軸和磁頭臂
-  const head = cube('head', '#6e5f49', [2.4, 0.15, 0.3], 4.6, 0.5, 0.9);
-  kill(sz);
+  // done with the opened block: it goes, the platter comes back
+  cells.forEach(kill); strip.forEach(kill); kill(sz);
+  await anim(tok, 700, (t) => { pg.position.x = -2.8 * (1 - t); pg.scale.setScalar(0.6 + 0.4 * t); });
+  onPlate.forEach((l) => { if (!l.userData.gone) l.element.style.opacity = ''; });
+  const head = cube('', '#6e5f49', [2.4, 0.15, 0.3], 4.6, 0.5, 0.9);
+  const hl = lab.label('head', 'val'); hl.position.set(1.0, 0, 0.3); head.add(hl);   // name at the arm's outer end
   say('disk 裝在主軸上，旁邊有一支磁頭臂（head）', 'head 負責讀、寫資料');
   await step(tok);                                   // 4:36 轉動盤面 → 換 sector
   await anim(tok, 1800, (t) => { pg.rotation.y = -t * Math.PI / 3; });
@@ -1197,6 +1243,7 @@ function blockGrid(n, cols, x0, z0, dx, dz, color, y = 0.25) {
 }
 FRAG.push(['btree-ab-table', '100 筆 record 要 25 個 block', async (tok) => {
   fresh([0, 9, 9], [0, 0, 0.5]);
+  frameHold(-6.2, 0, -3.8, 5.6, 3.4, 3.2);
   await step(tok);                                   // 6:39 範例資料表，100 列
   const tb = cube('employee table（100 rows）', '#e2d3b6', [4.2, 0.3, 1.4], -3.6, 0.15, 2.4);
   say('例子：一張 employee table', '有 100 列（100 筆 record）');
@@ -1236,6 +1283,7 @@ FRAG.push(['btree-ab-table', '100 筆 record 要 25 個 block', async (tok) => {
 }]);
 FRAG.push(['btree-ab-index', 'Dense index：4 + 1 = 5 次 block 存取', async (tok) => {
   fresh([0, 9, 9.5], [0, 0, 0.4]);
+  frameHold(-6.0, 0, -3.0, 6.0, 1.4, 3.6);
   const tb = blockGrid(25, 5, 0.6, -1.6, 1.3, 0.95, '#f0a030'); tag('table：25 blocks', 'ptr', 3.2, 1.2, -2.6);
   await step(tok);                                   // 9:46 index 存 key 和 pointer
   const ent = []; for (let i = 0; i < 5; i++) ent.push(cube('eid ' + (i + 1), '#9b7ef4', [1.4, 0.3, 0.45], -4.8, 0.2, -2.6 + i * 0.75));
@@ -1245,24 +1293,24 @@ FRAG.push(['btree-ab-index', 'Dense index：4 + 1 = 5 次 block 存取', async (
   say('eid 1 在這個 block、eid 2 在那裡…', '每個 entry 都有一根指標指過去');
   await step(tok);                                   // 10:19 record pointer
   ars.forEach((a) => a.setColor(new THREE.Color(0x2fc092)));
-  pkt('record pointer', -2.0, 1.2, -1.8);
+  const rp = pkt('record pointer', -1.9, 0.6, -0.4);
   say('指向 record 的指標叫 record pointer', '指到 disk 上某個 block 裡那筆 record');
   await step(tok);                                   // 10:26 每筆都有 entry → dense index
-  good('每筆 record 一個 entry → dense index', -3.6, 0.7, 1.5);
+  const dn = good('每筆 record 一個 entry → dense index', -4.1, 0.3, 1.5);
   say('每一筆 record 在 index 裡都有一個 entry', '這種 index 叫 dense index');
   await step(tok);                                   // 10:34 index 也存在 disk 上
-  ent.forEach(kill); ars.forEach(kill);
+  ent.forEach(kill); ars.forEach(kill); kill(rp); kill(dn);
   const ib = blockGrid(4, 1, -4.6, -1.8, 1.6, 1.0, '#9b7ef4'); ib.forEach((b, i) => { b.visible = i === 0; });
   tag('index 也放在 disk 的 block 裡', 'ptr alt', -4.6, 1.2, -2.6);
   say('index 也存在 disk 上', '一樣佔 block');
   await step(tok);                                   // 10:56 entry 多大？eid 10 bytes
-  const sz = note('entry = 10（eid）', -1.6, 1.8, 2.6);
+  const sz = note('entry = 10（eid）', -2.0, 0.3, 2.4);
   say('index 要佔多少空間？', 'employee ID 是 10 bytes');
   await step(tok);                                   // 11:11 pointer 6 bytes → 16
   txt(sz, 'entry = 10 + 6 = 16 bytes');
   say('record pointer 假設 6 bytes', '一個 entry = 16 bytes，共 100 個 entry');
   await step(tok);                                   // 11:34 512 / 16 = 32
-  const per = note('512 ÷ 16 = 32 entries / block', -1.6, 1.8, 3.4);
+  const per = note('512 ÷ 16 = 32 entries / block', -2.0, 0.3, 3.1);
   say('512 / 16 = 32', '一個 block 放 32 個 entry');
   await step(tok);                                   // 11:55 100 / 32 = 3.x
   txt(per, '100 ÷ 32 = 3.125');
@@ -1279,11 +1327,12 @@ FRAG.push(['btree-ab-index', 'Dense index：4 + 1 = 5 次 block 存取', async (
   say('找到 entry，用它的 pointer 直接讀那 1 個 block', '+ 1');
   await step(tok);                                   // 12:59 4 + 1 = 5
   kill(a2);
-  good('4 + 1 = 5 次（不是 25 次）', 1.6, 1.6, 2.2);
+  good('4 + 1 = 5 次（不是 25 次）', 3.2, 0.3, 3.1);
   say('存取任何一筆 record：4 + 1 = 5 個 block', '不用看整張表 → 這就是 index 的好處');
 }]);
 FRAG.push(['btree-ab-multilevel', 'Multi-level index：再蓋一層 sparse index', async (tok) => {
   fresh([0, 6.5, 12], [0, 2.2, 0]);
+  frameHold(-6.4, -0.2, -0.5, 6.4, 6.3, 0.5);
   await step(tok);                                   // 13:19 index 也一直變大呢？
   const ix0 = []; for (let i = 0; i < 4; i++) ix0.push(cube('', '#9b7ef4', [0.42, 0.4, 0.8], -0.75 + i * 0.5, 2.4, 0));
   say('如果 index 自己也一直變大呢？', '接著講 multi-level index');
@@ -1303,7 +1352,7 @@ FRAG.push(['btree-ab-multilevel', 'Multi-level index：再蓋一層 sparse index
   kill(qq);
   const hi = [cube('1', '#2fc092', [0.9, 0.5, 0.8], -1, 4.6, 0, 3)];
   const a1 = arrow(V3(-1, 4.3, 0), V3(-4.75, 2.7, 0));
-  tag('high-level index', 'ptr alt', 0, 5.5, 1.2);
+  tag('high-level index', 'ptr alt', -1.6, 4.6, 0).center.set(1, 0.5);
   say('上層不是每個 entry 都放一筆', '而是 index 的每個 block 放一筆');
   await step(tok);                                   // 14:15 一筆管 32 個 entry
   ix.slice(0, 4).forEach((b) => glow(b, GOLD));
@@ -1314,11 +1363,11 @@ FRAG.push(['btree-ab-multilevel', 'Multi-level index：再蓋一層 sparse index
   ix.slice(0, 4).forEach((b) => glow(b, null)); ix.slice(4, 8).forEach((b) => glow(b, GOLD));
   say('第一筆 key 1 → 第一個 block', '下一筆 key 33 → 下一個 block');
   await step(tok);                                   // 14:27 sparse index
-  good('不是每筆都有 entry → sparse index', 3.8, 5.0, 0);
+  const rm = K.note('不是每筆都有 entry → sparse index', hi[1], 'right', 'good');
   say('這種 index 叫 sparse index', '每個 block 一個 entry，不是每筆 record 一個');
   await step(tok);                                   // 14:53 上層只要 2 個 block
   ix.slice(4, 8).forEach((b) => glow(b, null));
-  note('40 ÷ 32 ≈ 1.x → 2 blocks', -4.0, 5.3, 0);
+  txt(rm, '上層 40 entries：40 ÷ 32 ≈ 1.x → 2 blocks');
   say('上層有 40 個 entry，一個 block 放 32 個', '→ 只要 2 個 block');
   await step(tok);                                   // 15:12 2 + 1 + 1
   glow(hi[0], GOLD); await beat(tok, 500);
@@ -1327,7 +1376,7 @@ FRAG.push(['btree-ab-multilevel', 'Multi-level index：再蓋一層 sparse index
   say('查詢：上層 2 個 block + index 1 個 + table 1 個', '2 + 1 + 1 = 4 次');
   await step(tok);                                   // 15:31 多加一層，block 存取變少
   kill(a1); kill(a2);
-  good('多一層 index → 存取更少 block', 0, 6.0, 0);
+  txt(rm, '多一層 index → 存取更少 block');
   say('多加一層 index，就減少了 block 存取次數', '這就是 B-tree、B+ tree 的出發點');
 }]);
 FRAG.push(['btree-ab-index-tree', '多層 index 轉過來就是一棵樹', async (tok) => {
@@ -1566,7 +1615,8 @@ FRAG.push(['btree-ab-ins1', 'degree 4 插入 10 20 40 50：40 往上', async (to
 }]);
 FRAG.push(['btree-ab-ins2', '插入 60 70 80、30 35', async (tok) => {
   fresh([0, 5.2, 14.5], [0, 2.6, 0]);
-  btShow(4, abPre(4)); courier();
+  btShow(4, abPre(4)); btSnap(); courier();
+  frameHold(-6.6, -0.6, -0.5, 6.6, 5.9, 0.5);
   await cIns(tok, 60, { mid: 2 });                   // 31:46 60
   await cIns(tok, 70, { mid: 2 });                   // 31:51 70
   await cIns(tok, 80, { mid: 2, split: true });      // 31:54 80 沒空間；31:59 分裂，70 上去
@@ -1577,21 +1627,22 @@ FRAG.push(['btree-ab-ins2', '插入 60 70 80、30 35', async (tok) => {
   say('30 到 root：root 變 [30, 40, 70]', '下面四個 child');
   await step(tok);                                   // 33:10 node 滿了就 split
   if (BT.view.ring) BT.view.ring.visible = false;
-  note('node 滿了 → split，送一個 key 到 parent', 0, 5.4);
+  note('node 滿了 → split，送一個 key 到 parent', 0, 5.0);
   say('每當 node 滿了就分裂', '把其中一個 key 送到 parent');
 }]);
 FRAG.push(['btree-ab-ins3', '插入 5 15：連續分裂，40 成為新根', async (tok) => {
   fresh([0, 5.2, 14.5], [0, 2.6, 0]);
-  btShow(4, abPre(9)); courier();
+  btShow(4, abPre(9)); btSnap(); courier();
+  frameHold(-6.6, -0.6, -0.5, 6.6, 5.9, 0.5);
   await cIns(tok, 5, { mid: 2 });                    // 33:20 5
   await cIns(tok, 15, { mid: 2, split: async (st) => { // 33:31 15 沒空間
     if (st.up === 15) { await step(tok); return; }     // 33:44 5, 10 | 15 上去 | 20
     await step(tok);                                   // 34:00 為什麼送第 3 個 key？
-    const bias = bubble('送第 2 個或第 3 個都可以：偏左 / 偏右', 0, 5.6);
+    const bias = bubble('送第 2 個或第 3 個都可以：偏左 / 偏右', 0, 5.3);
     say('老師送第 3 個 key（左邊多一個 → left biased）', '要送第 2 個也行，兩種都可以');
     await step(tok);                                   // 34:20 這裡也沒空間了
     kill(bias);
-    bad('root 也滿了：15, 30, 40, 70', 3.8, 5.4);
+    { const p = nodePos(BT.root); bad('root 也滿了：15, 30, 40, 70', p.x + p.w / 2 + 0.3, p.y - 0.05).center.set(0, 0.5); }
     say('[15, 30, 40, 70]：root 也沒空間了', '也要分裂');
     await step(tok);                                   // 34:28 15, 30 | 40 上去 | 70
   } });
@@ -1601,7 +1652,7 @@ FRAG.push(['btree-ab-ins3', '插入 5 15：連續分裂，40 成為新根', asyn
   await step(tok);                                   // 34:55 三層
   if (BT.view.ring) BT.view.ring.visible = false;
   KB.mood('happy');
-  note('三層', -5.2, 4.4);
+  { const p = nodePos(BT.root); note('三層', p.x - p.w / 2 - 0.3, p.y).center.set(1, 0.5); }
   say('現在有三層：一、二、三', '插入 key 就這樣長出三層 index');
   await step(tok);                                   // 35:12 高度增加，跟多層 index 一樣
   say('B-tree 的高度一層層增加', '跟 multi-level index 一樣');
@@ -1612,7 +1663,7 @@ FRAG.push(['btree-ab-ins3', '插入 5 15：連續分裂，40 成為新根', asyn
 }]);
 FRAG.push(['btree-ab-recptr', 'B-tree：每個 key 都有 record pointer', async (tok) => {
   fresh([0, 5.4, 14.5], [0, 2.4, 0.6]);
-  btShow(4, abPre(11));
+  btShow(4, abPre(11)); btSnap();
   await step(tok);                                   // 35:43 回到 database：細節很重要
   say('這棵 B-tree 怎麼拿來當 database 的 index？', '有些小細節很重要');
   await step(tok);                                   // 35:48 child pointer + record pointer
@@ -1632,17 +1683,20 @@ FRAG.push(['btree-ab-recptr', 'B-tree：每個 key 都有 record pointer', async
 FRAG.push(['btree-ab-bplus', 'B+ tree：key 全部複製到 leaf，leaf 串成 list', async (tok) => {
   fresh([0, 5.4, 14.5], [0, 2.4, 0.4]);
   await step(tok);                                   // 37:08 B+ tree：改一下就好
-  btShow(4, abPre(11));
+  btShow(4, abPre(11)); btSnap();
+  frameHold(-6.4, -0.8, -0.5, 6.4, 5.8, 0.5);
   say('什麼是 B+ tree？', '把剛才的 B-tree 改一下');
   await step(tok);                                   // 37:15 只有 leaf 有 record pointer
   lab.clear(); lab.frameCamera([0, 5.4, 14.5], [0, 2.4, 0.4]);
   const root = T([40], T([15, 30], T([5, 10]), T([15, 20]), T([30, 35])), T([70], T([40, 50, 60]), T([70, 80])));
   const v = bpView(root, 1, 4);
+  for (const b of v.bodies.values()) b.obj.position.copy(b.target);   // already built: no drop through the labels
+  frameHold(-6.4, -0.8, -0.5, 6.4, 5.8, 0.5);
   v.links.forEach((a) => { a.visible = false; });
   ['L15', 'L30', 'L40', 'L70'].forEach((id) => { v.bodies.get(id).obj.visible = false; });
   const rp = (ids) => v.leaves.forEach((l) => { const p = v.pos.get(l); l.keys.forEach((key, i) => { if (!ids.includes(key)) return; const x = keyX(p, i, l.keys.length, v.s); arrow(V3(x, p.y - 0.2, 0.45), V3(x, p.y - 0.65, 1.7), 0x2fc092); }); });
   rp([5, 10, 20, 35, 50, 60, 80]);
-  bad('上層：沒有 record pointer', -4.6, 5.2);
+  const noRp = bad('上層：沒有 record pointer', -4.6, 5.2);
   say('不是每個 node 都有 record pointer', '只有 leaf node 才有');
   const lit = new Set();
   const show = (ids) => { ids.forEach((id) => { v.bodies.get(id).obj.visible = true; lit.add(id); }); bpLit(v, lit); };
@@ -1662,14 +1716,18 @@ FRAG.push(['btree-ab-bplus', 'B+ tree：key 全部複製到 leaf，leaf 串成 l
   v.links.forEach((a) => { a.visible = true; });
   say('leaf node 像 linked list 一樣串起來', 'leaf 層就是一個 dense index');
   await step(tok);                                   // 38:25 所有 key 都在 leaf
-  lit.clear(); bpLit(v, lit);
-  note('① 所有 key 都在 leaf，上層只是副本', 3.6, 5.6);
+  lit.clear(); bpLit(v, lit); kill(noRp);
+  note('① 所有 key 都在 leaf，上層只是副本', -3.4, 5.5);
   say('B-tree 和 B+ tree 的差別', '① 所有 key 都在 leaf；非 leaf 只放副本');
   await step(tok);                                   // 38:37 record pointer 只從 leaf 出來
-  note('② record pointer 只從 leaf 出來；leaf 串成 list', 3.6, 5.0);
+  note('② record pointer 只從 leaf 出來；leaf 串成 list', -3.4, 4.9);
   say('② 非 leaf 沒有 record pointer', '③ leaf 在同一層，串成 linked list');
   await step(tok);                                   // 38:50 dense / sparse
-  tag('dense index', 'ptr alt', 5.8, 0.6); tag('sparse index', 'ptr', 4.4, 2.3); tag('sparse index', 'ptr', 2.6, 4.1);
+  // each level's name right of its last node
+  [v.leaves[v.leaves.length - 1], root.kids[root.kids.length - 1], root].forEach((n, i) => {
+    const p = v.pos.get(n); const l = tag(i ? 'sparse index' : 'dense index', i ? 'ptr' : 'ptr alt', p.x + (n.keys.length * KW * v.s) / 2 + 0.3, p.y);
+    l.center.set(0, 0.5);
+  });
   say('leaf 層 = dense index', '上面幾層 = sparse index');
   await step(tok);                                   // 38:56 更像多層 index
   good('B+ tree 更像 multi-level index', -3.6, 0.0, 1.6);
@@ -1728,8 +1786,10 @@ FRAG.push(['btree-p-search', '2-3 tree 搜尋的四種情況', async (tok) => {
 FRAG.push(['btree-p-insert60', '2-3 tree 插入 60：連鎖 split', async (tok) => {
   fresh([0, 5.2, 13], [0, 2.4, 0]);
   btShow(3, P23());
+  frameHold(-6.4, -0.6, -0.5, 6.4, 6.5, 2.6);
   const rules = [];
-  const rule = (t) => rules.push(note(t, -4.4, 5.8 - rules.length * 0.55));
+  // the rules are the subject here: a list that stays (K.keep), one line under the other
+  const rule = (t) => rules.push(K.keep(note(t, -4.4, 6.2 - rules.length * 0.68)));
   await step(tok);                                   // 2:46 insert：先找到 node
   ringN(BT.root.kids[2]);
   say('insert：先找到要放的 node u', 'u 一定是 leaf');
@@ -1764,21 +1824,21 @@ FRAG.push(['btree-p-insert60', '2-3 tree 插入 60：連鎖 split', async (tok) 
   await cIns(tok, 60, { split: async (st) => {       // 4:18 60 落在 C
     if (st.up === 70) {
       await step(tok);                               // 4:27 C 要 split
-      warn = bad('60, 70, 80：3 個 → split', 4.2, 1.0);
+      { const c = nodePos(BT.root.kids[2]); warn = bad('60, 70, 80：3 個 → split', c.x, c.y - 1.5); }   // under C (and its name)
       say('C 變成 60, 70, 80', '很明顯要 split');
       await step(tok);                               // 4:45 中間 70 往 parent 走
       kill(warn); NAMES.forEach(kill); NAMES = [];
     } else {
       await step(tok);                               // 4:52 C 的 parent 是 A
       ringN(BT.root);
-      warn = bad('A = [20, 40, 70]：也滿了', 3.8, 5.4);
+      { const a = nodePos(BT.root); warn = bad('A = [20, 40, 70]：也滿了', a.x + a.w / 2 + 0.3, a.y - 0.1); warn.center.set(0, 0.5); }
       say('C 的 parent 是 A', '70 放進 A → A 也有 3 個數字');
       await step(tok);                               // 5:01 A 也 split
       kill(warn);
     }
   } });
   await step(tok);                                   // 5:11 連鎖反應
-  pkt('連鎖反應：C split → A split', 0, 5.8);
+  pkt('連鎖反應：C split → A split', 3.4, 5.4);
   say('下面的 node insert → split', '送上去又讓 parent split：連鎖反應');
   await step(tok);                                   // 5:30 A split → 新 root
   ringN(BT.root);
@@ -1831,7 +1891,7 @@ FRAG.push(['btree-p-del-rotate', '刪 60 要 rotate、刪 95 要 combine', async
   btShow(3, T([50, 80], T([10, 20]), T([60]), T([95])), 'del');
   await step(tok);                                   // 9:06 delete 60（投影片寫 50）
   pdNames();
-  bubble('投影片寫 delete 50，應該是 60', 3.8, 5.6);
+  const fixNote = bubble('投影片寫 delete 50，應該是 60', 0, 5.0);
   say('接著 delete 60', '老師更正：投影片寫成 50');
   await cDel(tok, 60, { fix: async () => {           // 9:15 60 刪掉，C 空了
     await step(tok);                                 // 9:33 回收是大工程
@@ -1843,6 +1903,7 @@ FRAG.push(['btree-p-del-rotate', '刪 60 要 rotate、刪 95 要 combine', async
   } });
   pdNames();
   await step(tok);                                   // 10:16 delete 95
+  kill(fixNote);
   say('再 delete 95', '');
   await cDel(tok, 95, { step: false, fix: async () => {
     await step(tok);                                 // 10:26 combine
@@ -1916,10 +1977,12 @@ FRAG.push(['btree-p-rotate-cases', 'Rotate 的三種情況', async (tok) => {
 }]);
 FRAG.push(['btree-p-234', '2-3-4 tree 與 red-black tree', async (tok) => {
   fresh([0, 5, 12], [0, 2, 0]);
+  frameHold(-6.2, -0.8, -0.5, 5.4, 5.8, 0.5);
   await step(tok);                                   // 14:22 2-3 order 3、2-3-4 order 4
   [10, 20, 30].forEach((k, i) => cube(k, '#4b9ee2', [0.9, 0.7, 0.9], -4.4 + i * 1.0, 2.6, 0, 3));
   for (let i = 0; i < 4; i++) line(-4.9 + i * 1.0, 2.2, -5.6 + i * 1.5, 1.0);
-  tag('2-3-4 tree：order 4（最多 4 個 pointer）', 'ptr', -3.4, 3.8);
+  await beat(tok, 700);                              // (the keys land first, then their name)
+  tag('2-3-4 tree：order 4（最多 4 個 pointer）', 'ptr', -3.4, 3.6);
   say('2-3 tree 的 order 是 3', '2-3-4 tree 的 order 是 4');
   await step(tok);                                   // 14:39 高度 log₄(n+1) ～ log₂(n+1)
   note('高度：log₄(n+1) ～ log₂(n+1)', -3.4, 0.2);
@@ -1927,7 +1990,7 @@ FRAG.push(['btree-p-234', '2-3-4 tree 與 red-black tree', async (tok) => {
   await step(tok);                                   // 14:48 有些優點
   say('2-3-4 tree 比 2-3 tree 好的地方', '老師說：這段聽聽就好');
   await step(tok);                                   // 15:08 只調整一次
-  good('insert / delete 只調整一次，不連鎖', 3.4, 4.6);
+  good('insert / delete 只調整一次，不連鎖', -3.4, -0.45);
   say('insert / delete 時只要調整一次', '不會像 2-3 tree 連鎖反應');
   await step(tok);                                   // 15:21 表示法有效率：red-black tree
   const b = cube('20', '#333333', [0.9, 0.7, 0.9], 3, 3.4, 0, 3), r1 = cube('10', '#d64545', [0.9, 0.7, 0.9], 1.8, 1.6, 0, 3), r2 = cube('30', '#d64545', [0.9, 0.7, 0.9], 4.2, 1.6, 0, 3);
@@ -1992,11 +2055,12 @@ FRAG.push(['btree-p-range-naive', 'Range search：為什麼要 B+ tree', async (
 }]);
 FRAG.push(['btree-p-bp-d1', 'B+ tree（order d = 1）例子', async (tok) => {
   fresh([0, 5.2, 14.5], [0, 2.4, 0.3]);
+  frameHold(-7.2, -0.9, -0.5, 6.6, 6.2, 3.0);
   await step(tok);                                   // 21:14 database 用 B+ tree
-  const db = prop('disk', -5.6, 0, 2.4, 1.0, 'database'); bob(db, 0.04);
+  const db = prop('disk', -6.5, 0, 2.9, 1.0, 'database'); bob(db, 0.04);
   say('database 都用 B+ tree 存放 index', '');
   await step(tok);                                   // 21:26 node 的 pointer 超過兩個
-  const root = RK1(); const v = bpView(root, 1);
+  const root = RK1(); const v = bpSnap(bpView(root, 1));
   say('B+ tree 跟 B-tree 很像', '一個 node 的 pointer 可以超過兩個');
   await step(tok);                                   // 21:32 balanced
   line(-6.5, -0.15, 6.5, -0.15, 0.6, '#2fc092');
@@ -2004,12 +2068,12 @@ FRAG.push(['btree-p-bp-d1', 'B+ tree（order d = 1）例子', async (tok) => {
   await step(tok);                                   // 21:38 看一個例子
   say('看一個例子', '');
   await step(tok);                                   // 21:44 order 定義跟 B-tree 不一樣
-  const od = bad('order d = 1', -4.8, 5.2);
+  const od = bad('order d = 1', -4.4, 5.9);
   say('紅字是 order', 'B+ tree 的 order 和 B-tree 的 order 定義不太一樣');
   await step(tok);                                   // 21:51 order 1
   say('這個例子 order d = 1', '');
   await step(tok);                                   // 22:01 至少 1 個 entry
-  note('每個 node：1 ～ 2 個 entry（key）', -3.6, 6.0);
+  note('每個 node：1 ～ 2 個 entry（key）', -4.4, 5.3);
   say('每個 node 至少包含 1 個 entry', 'entry 就是 key 的數值');
   await step(tok);                                   // 22:11 root 40 一個 entry
   bpRing(v, root);
@@ -2023,12 +2087,12 @@ FRAG.push(['btree-p-bp-d1', 'B+ tree（order d = 1）例子', async (tok) => {
   say('leaf 裡 k* 的 * 代表 pointer', '');
   await step(tok);                                   // 23:09 例如用年紀建 index
   kill(od);
-  note('key = 年紀', -4.8, 5.2);
+  note('key = 年紀', -4.4, 5.9);
   say('假設 key 是每個人的年紀', '用年紀這個欄位建 index structure');
   await step(tok);                                   // 23:25 63*：資料在 pointer 指的地方
   const l63 = v.pos.get(root.kids[1].kids[2]);
-  const hand = pkt('63*', keyX(l63, 0, 2, v.s), l63.y - 0.9, 0.6);
-  await travel(tok, hand, V3(keyX(l63, 0, 2, v.s), l63.y - 0.9, 0.6), V3(-5.6, 1.4, 2.4), 1300);
+  const hand = pkt('63*', keyX(l63, 0, 2, v.s), l63.y - 0.9, 1.8);   // travels in front of the k* row
+  await travel(tok, hand, V3(keyX(l63, 0, 2, v.s), l63.y - 0.9, 1.8), V3(-6.5, 1.4, 2.9), 1300);
   say('年紀 63 的人，資料在哪？', '跟著 63* 這個 pointer 去 disk 拿 record');
   await step(tok);                                   // 23:43 上面的 63 只拿來比較
   remove(hand);
@@ -2036,7 +2100,7 @@ FRAG.push(['btree-p-bp-d1', 'B+ tree（order d = 1）例子', async (tok) => {
   say('上面那個 63 只是比較用的鍵值', '真正的資料不在那裡');
   await step(tok);                                   // 24:16 leaf：doubly linked list
   v.bodies.get('I63').obj.material.emissive = new THREE.Color('#000000');
-  bpStars(v, true);
+  bpStars(v, true).filter((o) => o.element).forEach(kill);   // only the back links: the k* are already there
   say('最下面一層是 leaf node', 'leaf 用 doubly linked list 串起來，前後都能走');
   await step(tok);                                   // 24:40 < 40 都在左邊 subtree
   bpRing(v, root.kids[0]);
@@ -2050,7 +2114,8 @@ FRAG.push(['btree-p-bp-d1', 'B+ tree（order d = 1）例子', async (tok) => {
 }]);
 FRAG.push(['btree-p-bp-find27', 'B+ tree 找 key 27', async (tok) => {
   fresh([0, 5.2, 14.5], [0, 2.4, 0.3]);
-  const root = RK1(); const v = bpView(root, 1); bpStars(v, true);
+  frameHold(-6.6, -0.9, -0.5, 6.6, 6.2, 2.6);
+  const root = RK1(); const v = bpSnap(bpView(root, 1)); bpStars(v, true);
   const path = bpDescend(root, 27);
   await step(tok);                                   // 25:48 找 27
   const kb = buddy('找', '27', '#f3d36b', -5.8, 0, 2.4, 0.7);
@@ -2108,13 +2173,14 @@ FRAG.push(['btree-p-bp-format', 'B+ tree 節點格式與 d ≤ n ≤ 2d', async 
 }]);
 FRAG.push(['btree-p-bp-d2-search', 'order 2 的 B+ tree：找 5、找 15', async (tok) => {
   fresh([0, 4.6, 13.5], [0, 1.6, 0.3]);
+  frameHold(-7.0, -0.9, -0.5, 6.6, 5.4, 3.9);
   await step(tok);                                   // 28:58 order 2 的 B+ tree
-  const root = RK2(); const v = bpView(root, 2); bpStars(v, false);
+  const root = RK2(); const v = bpSnap(bpView(root, 2)); bpStars(v, false);
   say('一棵 order d = 2 的 B+ tree', 'root [13, 17, 24, 30]，下面 5 個 leaf');
   await step(tok);                                   // 29:09 三個 query
   note('Q1：年紀 5', -4.4, 5.0); note('Q2：年紀 15', 0, 5.0); note('Q3：年紀 ≥ 24', 4.4, 5.0);
   say('三個查詢', '年紀 5、年紀 15、年紀 ≥ 24 的全部資料');
-  const kb = buddy('找', '5', '#f3d36b', -6.0, 0, 2.6, 0.65);
+  const kb = buddy('找', '5', '#f3d36b', -6.3, 0, 3.5, 0.65);
   await step(tok);                                   // 29:27 找 5：從 root 下來
   bpRing(v, root);
   say('找 5：從 root 下來', '');
@@ -2139,8 +2205,10 @@ FRAG.push(['btree-p-bp-d2-search', 'order 2 的 B+ tree：找 5、找 15', async
 }]);
 FRAG.push(['btree-p-bp-d2-range', 'Range query：≥ 24、< 24、15 ～ 24', async (tok) => {
   fresh([0, 4.6, 13.5], [0, 1.6, 0.3]);
-  const root = RK2(); const v = bpView(root, 2); bpStars(v, false);
+  frameHold(-6.8, -0.9, -0.5, 7.6, 5.4, 2.8);
+  const root = RK2(); const v = bpSnap(bpView(root, 2)); bpStars(v, false);
   const hl = new Set();
+  const under = (n) => { const p = v.pos.get(n); return [p.x, p.y - 1.45]; };   // below a leaf's k* row
   const leaf24 = root.kids[3];
   await step(tok);                                   // 30:28 ≥ 24：先 search 24
   bpAt(v, root, 24);
@@ -2158,8 +2226,9 @@ FRAG.push(['btree-p-bp-d2-range', 'Range query：≥ 24、< 24、15 ～ 24', asy
   for (let n = leaf24; n; n = n.next) { bpRing(v, n); n.keys.filter((k) => k >= 24).forEach((k) => hl.add('L' + k)); bpLit(v, hl); await beat(tok, 700); }
   say('沿著 linked list 往右走', '');
   await step(tok);                                   // 31:19 null → 停
-  const nullT = bad('null → 停', 6.0, 0.4);
-  const allT = good('24, 27, 29, 33, 34, 38, 39', 2.6, 3.6);
+  const lastL = v.leaves[v.leaves.length - 1], lp = v.pos.get(lastL);
+  const nullT = bad('null → 停', lp.x + (lastL.keys.length * KW * v.s) / 2 + 0.3, lp.y); nullT.center.set(0, 0.5);
+  const allT = good('24, 27, 29, 33, 34, 38, 39', ...under(leaf24));
   say('後面是 null：停止', '一下子就拿到所有 ≥ 24 的資料');
   await step(tok);                                   // 31:26 < 24 呢？
   hl.clear(); bpLit(v, hl); v.links.forEach((a) => a.setColor(new THREE.Color(0x2fc092)));
@@ -2181,7 +2250,7 @@ FRAG.push(['btree-p-bp-d2-range', 'Range query：≥ 24、< 24、15 ～ 24', asy
   for (let n = l15; n; n = n.next) { bpRing(v, n); let stop = false; for (const k of n.keys) { if (k > 24) { stop = true; break; } if (k >= 15) hl.add('L' + k); } bpLit(v, hl); await beat(tok, 700); if (stop || n.keys.includes(24)) break; }
   say('從 15 的位置沿 link 往右走', '看到 27 > 24 就停');
   await step(tok);                                   // 32:40 夾在中間的都符合
-  good('16, 19, 20, 22, 24', -2.4, 3.6);
+  good('16, 19, 20, 22, 24', ...under(root.kids[2]));
   say('夾在中間的 leaf 都符合條件', '16, 19, 20, 22, 24');
   await step(tok);                                   // 32:49 range query
   say('這就是 B+ tree 很容易做到的 range query', '有範圍的查詢');
