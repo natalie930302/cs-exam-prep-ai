@@ -515,18 +515,20 @@ export default function (ctx) {
   async function scCtlTable(tok) {
     fresh([0, 4.6, 13.5], [0, 2.4, 0]);
     const rows = Object.keys(CT);
-    SIG.forEach((s, j) => small(tag(s, 'ptr', -4.6 + j * 1.25, 5.0), 10));
+    // columns 1.4 apart so the nine signal names fit in one row above their cells
+    SIG.forEach((s, j) => small(tag(s, 'ptr', -5.0 + j * 1.4, 4.75), 9));
     const cells = {};
     say('課本圖 4.18：Control 的真值表', '9 個控制訊號 × 4 類指令');
     await beat(tok, 2200);
     const why = { R: ['R-format：寫 rd、ALU 看 funct', 'RegDst 1、RegWrite 1、ALUOp 10'], lw: ['lw：用立即值、讀記憶體、寫回', 'ALUSrc 1、MemtoReg 1、MemRead 1'], sw: ['sw：寫記憶體、不寫暫存器', 'RegDst、MemtoReg = X（don\'t care）'], beq: ['beq：ALU 做減法、Branch = 1', 'ALUOp 01；Zero 決定要不要跳'] };
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
-      tag(r === 'R' ? 'R-format' : r, 'ptr alt', -6.4, 4.0 - i * 1.1);
+      tag(r === 'R' ? 'R-format' : r, 'ptr alt', -6.6, 4.0 - i * 1.0);
       cells[r] = [];
       for (let j = 0; j < 9; j++) {
         const v = CT[r][j];
-        cells[r].push(cube(v, v === 1 ? '#2fc092' : v === 0 ? '#e9dcc4' : '#d8cfc0', [1.05, 0.5, 0.7], -4.6 + j * 1.25, 4.0 - i * 1.1, 0, 2));
+        // each cell drops only a little, so it never passes through the row above
+        cells[r].push(cube(v, v === 1 ? '#2fc092' : v === 0 ? '#e9dcc4' : '#d8cfc0', [1.15, 0.5, 0.7], -5.0 + j * 1.4, 4.0 - i * 1.0, 0, 0.35));
         await beat(tok, 120);
       }
       say(why[r][0], why[r][1]);
@@ -735,11 +737,22 @@ function bitRow(bits, x, y, w = 0.42, c1 = CC.blue, c0 = CC.sky, px = 10) {
   return [...bits].map((b, i) => { const m = cube(b, b === '1' ? c1 : b === '0' ? c0 : CC.gray, [w - 0.05, 0.42, 0.4], x + i * w, y, 0); if (m.userData.lbl) fsz(m.userData.lbl, px); return m; });
 }
 // an instruction-format bar: fields [[name, bits, color], …], total width W, starting at x
-function fmtBar(fields, x, y, W = 10, h = 0.6) {
+function fmtBar(fields, x, y, W = 10, h = 0.6, inName = false) {
   const tot = fields.reduce((s, f) => s + f[1], 0); let cx = x; const out = [];
-  for (const [n, b, c] of fields) { const w = W * b / tot; const m = cube(n, c, [w - 0.05, h, 0.5], cx + w / 2, y, 0); if (m.userData.lbl) fsz(m.userData.lbl, w < 0.8 ? 9 : 11); out.push(m); out.push(fsz(sm(String(b), cx + w / 2, y - h / 2 - 0.28), 9)); cx += w; }
+  // inName: the bit count goes into the field's own label ("rs 5"), one label per field instead of two
+  for (const [n, b, c] of fields) { const w = W * b / tot; const m = cube(inName ? n + ' ' + b : n, c, [w - 0.05, h, 0.5], cx + w / 2, y, 0); if (m.userData.lbl) fsz(m.userData.lbl, w < 0.8 ? 9 : 11); out.push(m); if (!inName) out.push(fsz(sm(String(b), cx + w / 2, y - h / 2 - 0.28), 9)); cx += w; }
   out.tot = tot; return out;
 }
+// An invisible box over the area a scene will use later: the stage's auto framing measures it from the
+// first step, so the camera does not zoom in on the first few things and then jump back out.
+function frameHold(x0, y0, x1, y1) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), 0.2), new THREE.MeshBasicMaterial({ visible: false }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, 0); m.userData.noDim = true; lab.world.add(m); return m;
+}
+// take the value labels off a row of bit cells (the colours stay; the bits are written once, above)
+const unlabel = (row) => row.forEach((m) => { if (m.userData.lbl) { remove(m.userData.lbl); m.userData.lbl = null; } });
+// a bit string split into groups of the given widths
+const groups = (bits, ws) => { let i = 0; return ws.map((w) => bits.slice(i, (i += w))).join(' '); };
 // a token travelling along a polyline [[x, y], …]
 async function flow(tok, pts, text, color = CC.gold, ms = 900, z = 0.35) {
   const m = cube(text, color, [0.42, 0.26, 0.3], pts[0][0], pts[0][1], z);
@@ -935,36 +948,40 @@ scene('cpu-cop1', '14A：Floating point 在 Coprocessor 1', [
 
 scene('cpu-fpfall', '14A：同一串 bits 的不同解釋、範圍有限、associativity', [
   async (tok, S) => {   // 1 當 integer
+    frameHold(-6.0, 0.9, 6.0, 7.4);
     S.u = 0x8C080004;
     S.bits = (S.u >>> 0).toString(2).padStart(32, '0');
     cap('同樣 32 bits：當作 two\'s complement integer', '= ' + (S.u | 0));
-    S.row = bitRow(S.bits, -5.5, 6.4, 0.355, CC.blue, CC.sky, 9);
+    S.row = bitRow(S.bits, -5.5, 6.4, 0.355, CC.blue, CC.sky, 9); unlabel(S.row);
+    S.bs = mt(groups(S.bits, [8, 8, 8, 8]), 0, 7.05, 13);
     S.l1 = mt('integer：' + (S.u | 0), -5.6, 5.5, 13); S.l1.center && S.l1.center.set(0, 0.5);
   },
   async (tok, S) => {   // 2 當 instruction
     const op = S.u >>> 26, rs = (S.u >>> 21) & 31, rt = (S.u >>> 16) & 31, imm = S.u & 0xffff;
     cap('當 instruction：前 6 bits 是 opcode', 'op ' + op + '、rs ' + rs + '、rt ' + rt + '、imm ' + imm);
+    txt(S.bs, groups(S.bits, [6, 5, 5, 16]));
     S.l2 = mt('instruction：lw $t0, ' + imm + '($zero)', -5.6, 4.8, 13); S.l2.center && S.l2.center.set(0, 0.5);
-    S.k2 = ok(op === 35 && rs === 0 && rt === 8, 'op = ' + op + '（lw）、rt = ' + rt + '（$t0）', 2.6, 4.8);
+    S.k2 = ok(op === 35 && rs === 0 && rt === 8, 'op = ' + op + '（lw）、rt = ' + rt + '（$t0）', 1.4, 4.8); S.k2.center && S.k2.center.set(0, 0.5);
   },
   async (tok, S) => {   // 3 當 floating point
     const f = u2f(S.u), e = (S.u >>> 23) & 255;
     cap('同樣 32 bits 當 floating point', 'sign 1、exponent ' + e + ' → 2^(' + e + '−127)');
     S.l3 = mt('floating point：' + f.toExponential(4), -5.6, 4.1, 13); S.l3.center && S.l3.center.set(0, 0.5);
-    S.k3 = ok(f < 0 && Math.abs(f) < 1e-30, 'sign = 1、exponent = ' + e + ' → 很小的負數', 2.6, 4.1);
+    S.k3 = ok(f < 0 && Math.abs(f) < 1e-30, 'sign = 1、exponent = ' + e + ' → 很小的負數', 1.4, 4.1); S.k3.center && S.k3.center.set(0, 0.5);
     S.row.forEach((m, i) => tint(m, i === 0 ? CC.pink : i < 9 ? CC.orange : (S.bits[i] === '1' ? CC.blue : CC.sky)));
+    txt(S.bs, groups(S.bits, [1, 8, 23]));
   },
   async (tok, S) => {   // 4 解釋不同 → hardware 不同
     cap('解釋不同，做「加法」的 hardware 就不同', 'integer：carry-lookahead adder；floating point：一大串步驟');
-    S.h1 = bx('integer add：carry-lookahead adder', CC.orange, -3.2, 2.7, 5.0, 0.7);
-    S.h2 = bx('FP add：對齊 exponent → 加 → normalize → round', CC.orange, 2.6, 2.4, 5.4, 1.3);
+    S.h1 = bx('integer add：carry-lookahead adder', CC.orange, 0, 3.1, 6.4, 0.6);
+    S.h2 = bx('FP add：對齊 exponent → 加 → normalize → round', CC.orange, 0, 2.3, 7.6, 0.6);
   },
   async (tok, S) => {   // 5 information 的意義看你怎麼解釋
     cap('資訊的意義看你怎麼解釋', '依照解釋來設計 hardware');
-    S.h5 = hot('bits 本身沒有意義：解釋 → 決定 hardware', 0, 1.3);
+    S.h5 = hot('bits 本身沒有意義：解釋 → 決定 hardware', 0, 1.5);
   },
   async (tok, S) => {   // 6 finite range 與 precision
-    gone(S.row, S.l1, S.l2, S.l3, S.k2, S.k3, S.h1, S.h2, S.h5);
+    gone(S.row, S.bs, S.l1, S.l2, S.l3, S.k2, S.k3, S.h1, S.h2, S.h5);
     cap('不管怎麼表示，range 和 precision 都有限', 'bits 數有限：32 不夠換 64，64 還是有極限');
     S.b32 = bx('32 bits', CC.sky, -3.0, 6.3, 3.2, 0.5); S.b64 = bx('64 bits', CC.blue, 1.6, 6.3, 6.4, 0.5);
     S.fin = bad('都有限：finite range、finite precision', 0, 5.5);
@@ -1038,6 +1055,7 @@ scene('cpu-shift', '14A：乘除 2 的次方用 shift、sign extension', [
 scene('cpu-common', '14A：結語：解釋決定 hardware、make the common case fast', [
   async (tok, S) => {   // 1 結語
     cap('本章結語：bits 的意義看你怎麼解釋', '解釋好之後，再設計加、減、乘、除的 hardware');
+    frameHold(-6.0, 1.4, 6.0, 7.0);
     const L = lister(-5.8, 6.6, 0.7); S.L = L;
     L('• 同一串 bits：integer、floating point、instruction…', 'ptr');
   },
@@ -1048,24 +1066,24 @@ scene('cpu-common', '14A：結語：解釋決定 hardware、make the common case
   async (tok, S) => {   // 3 常用的只有少數指令
     cap('設計了很多 instructions，常用的只有一小部分', '老師引述投影片：常用的約 54 個');
     S.L.skip(0.4);
-    S.big = bx('常用 instructions ≈ 54 個（投影片）', CC.gold, -1.5, 3.4, 6.0, 0.8);
+    S.big = bx('常用 instructions ≈ 54 個（投影片）', CC.gold, -0.6, 4.6, 6.0, 0.7);
   },
   async (tok, S) => {   // 4 SPEC 的覆蓋率
     cap('用 SPEC benchmark 測：這些常用指令就幾乎全部涵蓋', '老師說：SPEC int 100%、SPEC fp 97%');
-    S.b1 = bx('SPEC integer：100%', CC.blue, -3.2, 2.2, 3.6, 0.55); S.b2 = bx('SPEC floating point：97%', CC.teal, 1.4, 2.2, 4.4, 0.55);
+    S.b1 = bx('SPEC integer：100%', CC.blue, -3.0, 3.7, 3.6, 0.55); S.b2 = bx('SPEC floating point：97%', CC.teal, 1.6, 3.7, 4.4, 0.55);
   },
   async (tok, S) => {   // 5 trade-off：便宜的設計用 software 模擬
     cap('trade-off：做便宜的 processor', '不常用的指令乾脆不做，用 software emulate');
-    S.c1 = note('便宜的設計：rare 指令 → software emulate', -2.0, 1.2);
+    S.c1 = note('便宜的設計：rare 指令 → software emulate', -2.8, 2.8);
   },
   async (tok, S) => {   // 6 make the common case fast
     cap('Make the common case fast', '同樣的代價，加速最常用的指令，整體跑得最快');
     glow(S.big, HL);
-    S.c2 = hot('Make the common case fast', 2.6, 0.4);
+    S.c2 = hot('Make the common case fast', 3.2, 2.8);
   },
   async (tok, S) => {   // 7 研究例子：小 decoder
     cap('研究例子：常用的部分給一個小而快的 decoder', '不常用的給大的、省電的 decoder');
-    S.d1 = bx('小 decoder（常用）', CC.green, -3.2, -0.6, 3.2, 0.55); S.d2 = bx('大 decoder（少用、省電）', CC.gray, 1.6, -0.6, 4.0, 0.55);
+    S.d1 = bx('小 decoder（常用）', CC.green, -3.0, 1.9, 3.2, 0.55); S.d2 = bx('大 decoder（少用、省電）', CC.gray, 1.6, 1.9, 4.0, 0.55);
   },
 ]);
 
@@ -1103,6 +1121,7 @@ scene('cpu-intro', '14A：設計 processor：single cycle 先、pipeline 後', [
 scene('cpu-perf', '14A：CPU time = IC × CPI × cycle time', [
   async (tok, S) => {   // 1 fetch → decode → execute 迴圈
     cap('general-purpose processor：一直重複同一件事', 'fetch 一個 instruction → decode → execute → 再 fetch');
+    frameHold(-6.0, 0.3, 6.0, 7.4);
     const pos = [[-3.0, 5.6], [3.0, 5.6], [0, 3.6]];
     S.st = ['Fetch', 'Decode', 'Execute'].map((t, i) => bx(t, [CC.blue, CC.purple, CC.orange][i], pos[i][0], pos[i][1], 2.2, 0.7));
     const m = await flow(tok, [[-1.8, 5.6], [1.8, 5.6], [1.6, 4.5], [-1.6, 4.5], [-1.8, 5.3]], 'instr', CC.gold, 1800); // runs between the boxes, not over their names
@@ -1114,24 +1133,25 @@ scene('cpu-perf', '14A：CPU time = IC × CPI × cycle time', [
   },
   async (tok, S) => {   // 3 IC ← ISA、compiler
     cap('instruction count 由誰決定？', 'instruction set 有哪些指令、compiler 聰不聰明');
-    S.a = note('IC ← instruction set、compiler', -3.6, 1.2);
+    S.a = small(note('IC ← instruction set、compiler', -2.4, 1.45), 10);
   },
   async (tok, S) => {   // 4 CPI、cycle time ← hardware
     cap('CPI 和 cycle time：由 hardware 決定', '例如加法器設計得快或簡單，要的 cycle 不一樣');
-    S.b = note('CPI、cycle time ← hardware（datapath 怎麼設計）', 2.6, 0.4);
+    S.b = small(note('CPI、cycle time ← hardware（datapath 怎麼設計）', 1.6, 0.8), 10);
   },
   async (tok, S) => {   // 5 single cycle：CPI = 1
+    gone(S.a, S.b);
     const n = 100, cyc = n * 1;
     cap('single cycle：一個指令一個 cycle，CPI = 1', '示意：100 個 instructions → ' + cyc + ' 個 cycles');
-    S.c = ok(cyc === 100, '示意：100 instructions × CPI 1 = ' + cyc + ' cycles', -2.4, -0.5);
+    S.c = ok(cyc === 100, '示意：100 instructions × CPI 1 = ' + cyc + ' cycles', 0, 1.45); small(S.c, 10);
   },
   async (tok, S) => {   // 6 但 clock period 要等最長的
     cap('但 clock period 很長', '一定要等最長的那個 instruction 做完，clock 才能變');
-    S.d = bad('clock period = 最長的 instruction → 不 efficient', 2.4, -1.2);
+    S.d = small(bad('clock period = 最長的 instruction → 不 efficient', 0, 0.8), 10);
   },
   async (tok, S) => {   // 7 兩個版本
     cap('會講兩個版本', 'simplified version（single cycle）和 pipeline version');
-    S.v = [bx('① single cycle（簡化版）', CC.sky, -3.0, 7.0, 3.8, 0.55), bx('② pipeline（真正在用的）', CC.green, 2.0, 7.0, 3.8, 0.55)];
+    S.v = [bx('① single cycle（簡化版）', CC.sky, -3.3, 7.0, 4.2, 0.55), bx('② pipeline（真正在用的）', CC.green, 3.0, 7.0, 4.2, 0.55)];
   },
 ]);
 
@@ -1142,32 +1162,33 @@ scene('cpu-subset', '14A：要實作的 MIPS 指令與三種 format', [
   },
   async (tok, S) => {   // 2 memory reference
     cap('memory reference：lw、sw', '和 memory 溝通');
-    S.m = bx('lw   sw', CC.green, -4.0, 6.0, 2.6, 0.6); sm('memory', -4.0, 5.4);
+    frameHold(-6.4, 1.4, 6.4, 7.2);
+    S.m = bx('lw   sw', CC.green, -4.0, 6.0, 2.6, 0.6); S.ml = sm('memory', -4.0, 5.4);
   },
   async (tok, S) => {   // 3 arithmetic-logical
     cap('arithmetic-logical：add、sub、and、or、slt', '都是 R-type');
-    S.r = bx('add sub and or slt', CC.orange, 0, 6.0, 4.0, 0.6); sm('運算（R-type）', 0, 5.4);
+    S.r = bx('add sub and or slt', CC.orange, 0, 6.0, 4.0, 0.6); S.rl = sm('運算（R-type）', 0, 5.4);
   },
   async (tok, S) => {   // 4 control
     cap('control：beq（或 bne）、j', '改變執行的順序');
-    S.c = bx('beq  (bne)  j', CC.purple, 4.2, 6.0, 2.8, 0.6); sm('control flow', 4.2, 5.4);
+    S.c = bx('beq  (bne)  j', CC.purple, 4.2, 6.0, 2.8, 0.6); S.cl = sm('control flow', 4.2, 5.4);
   },
   async (tok, S) => {   // 5 包含所有大類
     cap('雖然只有這幾個，已經包含各大類別', 'memory、運算、改變 control sequence');
     [S.m, S.r, S.c].forEach((m) => glow(m, HL));
   },
   async (tok, S) => {   // 6 三種 format
-    [S.m, S.r, S.c].forEach((m) => glow(m, null));
+    gone(S.h, S.m, S.r, S.c, S.ml, S.rl, S.cl);
     cap('MIPS 只有三種 instruction format', 'R-type、I-type、J-type');
     const R = [['op', 6, CC.gray], ['rs', 5, CC.purple], ['rt', 5, CC.purple], ['rd', 5, CC.purple], ['shamt', 5, CC.sky], ['funct', 6, CC.orange]];
     const I = [['op', 6, CC.gray], ['rs', 5, CC.purple], ['rt', 5, CC.purple], ['immediate', 16, CC.teal]];
     const J = [['op', 6, CC.gray], ['target address', 26, CC.gold]];
-    [[R, 'R', 4.2], [I, 'I', 2.9], [J, 'J', 1.6]].forEach(([f, n, y]) => { pl(n, -5.8, y); const b = fmtBar(f, -5.3, y, 10.6, 0.5); sm('= ' + b.tot, 5.8, y); });
-    S.k = ok([R, I, J].every((f) => f.reduce((s, x) => s + x[1], 0) === 32), '三種都是 32 bits', 3.6, 0.6);
+    [[R, 'R', 6.2], [I, 'I', 5.0], [J, 'J', 3.8]].forEach(([f, n, y]) => { pl(n, -5.8, y); const b = fmtBar(f, -5.3, y, 10.6, 0.5, true); sm('= ' + b.tot, 5.8, y); });
+    S.k = ok([R, I, J].every((f) => f.reduce((s, x) => s + x[1], 0) === 32), '三種都是 32 bits', 0, 2.9);
   },
   async (tok, S) => {   // 7 format 越少越好
     cap('一種 format 最簡單，不得已才 compromise 成三種', 'format 越少、越一致，hardware 越簡單');
-    S.n = note('format 越少、越一致 → 設計越簡單', -2.4, 0.0);
+    S.n = note('format 越少、越一致 → 設計越簡單', 0, 2.1);
   },
 ]);
 
@@ -1377,6 +1398,7 @@ scene('cpu-edge', '14A：edge-triggered 與 write enable', [
 scene('cpu-clockm', '14A：clocking methodology 與 critical path', [
   async (tok, S) => {   // 1 state → combinational → state
     cap('clocking methodology（邏輯設計學過）', 'state element → combinational logic → state element');
+    frameHold(-6.0, 0.9, 6.0, 6.6);
     S.s1 = bx('State element 1', CC.gold, -4.4, 4.6, 2.4, 1.0); S.cl = bx('Combinational logic', CC.blue, 0, 4.6, 3.6, 1.2); S.s2 = bx('State element 2', CC.gold, 4.4, 4.6, 2.4, 1.0);
     line([[-3.2, 4.6], [-1.8, 4.6]], WCOL); line([[1.8, 4.6], [3.2, 4.6]], WCOL);
   },
@@ -1386,7 +1408,7 @@ scene('cpu-clockm', '14A：clocking methodology 與 critical path', [
   },
   async (tok, S) => {   // 3 path delay
     cap('經過 AND gate、OR gate… 要時間：path delay', '算完才會到 output');
-    S.g = [['AND', 2], ['OR', 1.5], ['AND', 2.5]].map(([t, d], i) => bx(t + ' ' + d, CC.brown, -1.2 + i * 1.2, 3.4, 1.1, 0.45));
+    S.g = [['AND', 2], ['OR', 1.5], ['AND', 2.5]].map(([t, d], i) => bx(t + ' ' + d, CC.brown, -1.5 + i * 1.5, 3.4, 1.2, 0.45));
     S.gs = sm('示意 delay', 0, 2.8);
   },
   async (tok, S) => {   // 4 delay < clock period
@@ -1397,8 +1419,10 @@ scene('cpu-clockm', '14A：clocking methodology 與 critical path', [
   async (tok, S) => {   // 5 critical path
     const paths = [3, 5.5, 2], crit = Math.max(...paths);
     cap('input 走的路不一樣，有快有慢', '要用最長的那條：critical path，決定 clock period');
-    S.p = paths.map((d, i) => { const b = bx('path ' + (i + 1) + '：' + d + ' ns', d === crit ? CC.red : CC.sky, -5.6 + d * 0.9 / 2 + 0.6, 1.0 - i * 0.6, d * 0.9, 0.42); return b; });
-    S.k = ok(crit === 5.5, '示意：critical path = max(3, 5.5, 2) = ' + crit + ' ns → clock period ≥ ' + crit + ' ns', 2.6, 0.4);
+    gone(S.g, S.gs);
+    S.p = paths.map((d, i) => { const b = bx('path ' + (i + 1) + '：' + d + ' ns', d === crit ? CC.red : CC.sky, -4.0 + d * 1.2 / 2, 3.5 - i * 0.6, d * 1.2, 0.42); return b; });
+    S.r.position.y = 1.75;
+    S.k = ok(crit === 5.5, '示意：critical path = max(3, 5.5, 2) = ' + crit + ' ns → clock period ≥ ' + crit + ' ns', 0, 1.1);
   },
   async (tok, S) => {   // 6 同一個 state element 也可以
     cap('起點和終點也可以是同一個 state element', '每個 clock 來，state element 就換成新的值');
@@ -1465,9 +1489,10 @@ scene('cpu-steps2', '14B：今天做前三步：分析指令、選元件、組 d
 scene('cpu-formats', '14B：複習 R／I／J format：每個欄位做什麼', [
   async (tok, S) => {   // 1 三種 type
     cap('Step 1：分析 instruction', '複習三種 type：R-type、I-type、J-type');
-    pl('R', -6.2, 6.4); S.R = fmtBar([['op', 6, CC.gray], ['rs', 5, CC.purple], ['rt', 5, CC.purple], ['rd', 5, CC.purple], ['shamt', 5, CC.sky], ['funct', 6, CC.orange]], -5.8, 6.4, 11.4, 0.55);
-    pl('I', -6.2, 4.6); S.I = fmtBar([['op', 6, CC.gray], ['rs', 5, CC.purple], ['rt', 5, CC.purple], ['immediate', 16, CC.teal]], -5.8, 4.6, 11.4, 0.55);
-    pl('J', -6.2, 2.8); S.J = fmtBar([['op', 6, CC.gray], ['target address', 26, CC.gold]], -5.8, 2.8, 11.4, 0.55);
+    frameHold(-6.6, 1.2, 6.0, 7.7);
+    pl('R', -6.2, 6.4); S.R = fmtBar([['op', 6, CC.gray], ['rs', 5, CC.purple], ['rt', 5, CC.purple], ['rd', 5, CC.purple], ['shamt', 5, CC.sky], ['funct', 6, CC.orange]], -5.8, 6.4, 11.4, 0.55, true);
+    pl('I', -6.2, 4.9); S.I = fmtBar([['op', 6, CC.gray], ['rs', 5, CC.purple], ['rt', 5, CC.purple], ['immediate', 16, CC.teal]], -5.8, 4.9, 11.4, 0.55, true);
+    S.jl = pl('J', -6.2, 2.3); S.J = fmtBar([['op', 6, CC.gray], ['target address', 26, CC.gold]], -5.8, 2.3, 11.4, 0.55, true);
   },
   async (tok, S) => {   // 2 R-type 的欄位
     cap('R-type：op 6、rs／rt／rd／shamt 各 5、funct 6', '6 + 5 + 5 + 5 + 5 + 6 = ' + (6 + 5 + 5 + 5 + 5 + 6));
@@ -1487,7 +1512,7 @@ scene('cpu-formats', '14B：複習 R／I／J format：每個欄位做什麼', [
   async (tok, S) => {   // 5 funct
     S.R.filter((m) => m.isMesh).forEach((m) => glow(m, null)); glow(S.R.filter((m) => m.isMesh)[5], HL);
     cap('funct：R-type 的 op 全都是 000000', '加、減…靠後面 6 bits 的 funct 再區分');
-    S.k3 = mt('op 000000 + funct ' + FUNCT.add + ' = add    op 000000 + funct ' + FUNCT.sub + ' = sub', 0, 5.55, 11);
+    S.k3 = mt('op 000000 + funct ' + FUNCT.add + ' = add    op 000000 + funct ' + FUNCT.sub + ' = sub', 0, 5.65, 11);
   },
   async (tok, S) => {   // 6 I-type
     gone(S.k1, S.k2);
@@ -1497,21 +1522,23 @@ scene('cpu-formats', '14B：複習 R／I／J format：每個欄位做什麼', [
   async (tok, S) => {   // 7 immediate 當 offset
     S.I.filter((m) => m.isMesh).forEach((m) => glow(m, null)); glow(S.I.filter((m) => m.isMesh)[3], HL);
     cap('用途 1：load / store 的 offset', 'address = base register（rs）的內容 + offset');
-    S.u1 = mt('lw / sw ：address = R[rs] + offset', -5.8, 3.85, 11); S.u1.center && S.u1.center.set(0, 0.5);
+    S.u1 = mt('用途 1  lw / sw：address = R[rs] + offset', -5.8, 4.15, 11); S.u1.center && S.u1.center.set(0, 0.5);
   },
   async (tok, S) => {   // 8 當 constant
     cap('用途 2：當 constant（例如 addi）', '16 bits 的 two\'s complement 小數字，可正可負');
-    S.u2 = mt('addi：R[rs] + constant', -0.4, 3.85, 11); S.u2.center && S.u2.center.set(0, 0.5);
+    S.u2 = mt('用途 2  addi：R[rs] + constant', -5.8, 3.6, 11); S.u2.center && S.u2.center.set(0, 0.5);
   },
   async (tok, S) => {   // 9 branch：加到 PC
     cap('用途 3：beq 的 offset', '加到 Program Counter 上，決定跳去哪裡');
-    S.u3 = mt('beq：PC + 4 + offset × 4', 3.4, 3.85, 11); S.u3.center && S.u3.center.set(0, 0.5);
+    S.u3 = mt('用途 3  beq：PC + 4 + offset × 4', -5.8, 3.05, 11); S.u3.center && S.u3.center.set(0, 0.5);
   },
   async (tok, S) => {   // 10 J：26 bits + 00 + PC 前 4 bits
     S.I.filter((m) => m.isMesh).forEach((m) => glow(m, null)); S.J.filter((m) => m.isMesh).forEach((m) => glow(m, HL));
+    gone(S.u1, S.u2, S.u3, S.k3);
+    S.J.forEach((m) => move(m, m.position.x, 3.6, m.position.z)); S.jl.position.y = 3.6;
     cap('J-type：target address 只有 26 bits', '後面補 00（以 4 bytes 為單位），前面接 PC 的前 4 bits');
-    S.j = fmtBar([['PC+4 前 4', 4, CC.gold], ['target 26 bits', 26, CC.yel], ['00', 2, CC.gray]], -5.8, 1.3, 11.4, 0.55);
-    S.k4 = ok(4 + 26 + 2 === 32, '4 + 26 + 2 = ' + (4 + 26 + 2) + ' bits 的 jump address', 0, 0.3);
+    S.j = fmtBar([['PC+4 前 4', 4, CC.gold], ['target 26 bits', 26, CC.yel], ['00', 2, CC.gray]], -5.8, 2.5, 11.4, 0.55);
+    S.k4 = ok(4 + 26 + 2 === 32, '4 + 26 + 2 = ' + (4 + 26 + 2) + ' bits 的 jump address', 0, 1.45);
   },
 ]);
 
@@ -1742,6 +1769,7 @@ scene('cpu-comb', '14B：combinational components：都是 32 bits', [
 scene('cpu-regfile', '14B：Register file：RA、RB、RW、busA、busB、busW、WrEn', [
   async (tok, S) => {   // 1 sequential：PC 與 register
     cap('sequential components：PC 和 register', 'register 就是一排 32 個 D flip-flop');
+    frameHold(-6.0, 1.2, 6.2, 7.3);
     S.reg = bx('Register（32 bits）', CC.gold, -4.4, 6.2, 3.0, 0.7);
   },
   async (tok, S) => {   // 2 一定要 write enable
@@ -1754,8 +1782,9 @@ scene('cpu-regfile', '14B：Register file：RA、RB、RW、busA、busB、busW、
   },
   async (tok, S) => {   // 4 RA、RB：讀兩個 operand
     cap('每次要讀兩個 operand：rs 和 rt', '給它兩個地址：RA、RB → 兩個 read port');
+    gone(S.reg, S.we);
     S.ra = line([[-4.4, 4.4], [-1.7, 4.4]], CC.brown); S.rb = line([[-4.4, 3.8], [-1.7, 3.8]], CC.brown);
-    S.la = small(pl('RA（5）', -3.6, 4.65), 10); S.lb = small(pl('RB（5）', -3.6, 4.05), 10);
+    S.la = small(pl('RA（5）', -5.2, 4.4), 10); S.lb = small(pl('RB（5）', -5.2, 3.8), 10);
   },
   async (tok, S) => {   // 5 只讀一個就只要一個 port
     cap('如果一個 cycle 只讀一個 operand', '只要一個 port 就好；port 越多，hardware 越貴');
@@ -1768,26 +1797,26 @@ scene('cpu-regfile', '14B：Register file：RA、RB、RW、busA、busB、busW、
   },
   async (tok, S) => {   // 7 三個地址
     cap('所以要三個地址：兩個 read、一個 write', 'RA、RB、RW 各 5 bits');
-    S.rw = line([[-4.4, 2.6], [-1.7, 2.6]], CC.brown); S.lw = small(pl('RW（5）', -3.6, 2.85), 10);
+    S.rw = line([[-4.4, 2.6], [-1.7, 2.6]], CC.brown); S.lw = small(pl('RW（5）', -5.2, 2.6), 10);
   },
   async (tok, S) => {   // 8 write enable
     cap('很重要：write enable', '有時候只讀不寫，要靠 WrEn 控制這個 cycle 准不准寫');
-    S.wen = line([[0, 6.2], [0, 5.0]], CC.pink); S.lwe = small(hot('WrEn', 0.6, 6.0), 10);
+    S.wen = line([[-0.6, 6.2], [-0.6, 5.0]], CC.pink); S.lwe = small(hot('WrEn', -0.6, 6.5), 10);
   },
   async (tok, S) => {   // 9 busA、busB 輸出
     cap('RA 說讀第 3 個、RB 說讀第 8 個', '讀出來的 data 放在 busA、busB（各 32 bits）');
     S.oa = line([[1.7, 4.4], [4.6, 4.4]], CC.brown); S.ob = line([[1.7, 3.6], [4.6, 3.6]], CC.brown);
-    small(pl('busA（32）', 3.5, 4.65), 10); small(pl('busB（32）', 3.5, 3.85), 10);
+    small(pl('busA（32）', 5.45, 4.4), 10); small(pl('busB（32）', 5.45, 3.6), 10);
     const [a, b] = await Promise.all([flow(tok, [[-4.4, 4.4], [-1.7, 4.4]], '3', CC.purple, 600), flow(tok, [[-4.4, 3.8], [-1.7, 3.8]], '8', CC.purple, 600)]); kill(a); kill(b);
     const [c, d] = await Promise.all([flow(tok, [[1.7, 4.4], [4.6, 4.4]], 'R[3]', CC.lilac, 600), flow(tok, [[1.7, 3.6], [4.6, 3.6]], 'R[8]', CC.lilac, 600)]); kill(c); kill(d);
   },
   async (tok, S) => {   // 10 busW 寫入
     cap('要寫回去：data 放在 busW（32 bits）', '在 cycle 結束時寫進去');
-    S.bw = line([[-4.4, 2.1], [-1.7, 2.1]], CC.brown); small(pl('busW（32）', -3.6, 1.85), 10);
+    S.bw = line([[-4.4, 2.1], [-1.7, 2.1]], CC.brown); small(pl('busW（32）', -5.25, 2.1), 10);
   },
   async (tok, S) => {   // 11 地址為什麼 5 bits
     cap('RA、RB 是地址：要第幾個 register？', '32 個 register → 2⁵ = 32 → 5 bits');
-    S.k = ok(Math.log2(32) === 5, 'log₂32 = ' + Math.log2(32) + ' bits', -3.0, 0.9);
+    S.k = ok(Math.log2(32) === 5, 'log₂32 = ' + Math.log2(32) + ' bits', 3.4, 2.5);
   },
   async (tok, S) => {   // 12 RW 告訴寫在哪
     cap('寫的時候：RW 告訴它寫在第幾個', '例如寫第 5 個 register，data 從 busW 送進去');
@@ -1796,7 +1825,7 @@ scene('cpu-regfile', '14B：Register file：RA、RB、RW、busA、busB、busW、
   },
   async (tok, S) => {   // 13 clock：edge + WrEn
     cap('clock 怎麼控制？clock edge（這張是 negative edge）', '而且 WrEn = 1 才寫；一個 cycle：讀兩筆、寫一筆');
-    S.clk = line([[1.0, 6.2], [1.0, 5.0]], CC.brown); S.lclk = small(pl('Clk', 1.4, 6.0), 10);
+    S.clk = line([[0.9, 6.2], [0.9, 5.0]], CC.brown); S.lclk = small(pl('Clk', 0.9, 6.5), 10);
     glow(S.rf, HL);
   },
 ]);
@@ -2567,7 +2596,7 @@ scene('cpu-twonot', '15A：兩個不是直接由 opcode 決定的：PCSrc 與 AL
   },
   async (tok, S) => {   // 10 lw/sw、beq 看 opcode 就知道
     cap('但 load / store 看 opcode 就知道要做加（算地址）', 'branch 就知道要做減：opcode 給了部分資訊');
-    S.g = small(note('opcode → 哪一個 group：加、減、或要看 funct', 3.6, 1.5), 10);
+    S.g = small(note('opcode → 哪一個 group：加、減、或要看 funct', -2.8, 7.95), 10);
   },
   async (tok, S) => {   // 11 ALU control = 部分解碼 + funct
     cap('opcode 做部分的解碼，再加上 funct', '兩個合起來，才決定 ALU control（綠色）');
@@ -2622,9 +2651,9 @@ scene('cpu-recap4', '16A：回顧：datapath 靠 mux 共用，controller 決定 
 scene('cpu-obs4', '16A：main control 的觀察：欄位位置固定', [
   async (tok, S) => {   // 1 main controller
     cap('main controller：很重要的 observation', '因為 instruction 的設計方式');
-    pl('R', -6.2, 6.4); S.R = fmtBar([['op', 6, CC.gray], ['rs', 5, CC.purple], ['rt', 5, CC.purple], ['rd', 5, CC.purple], ['shamt', 5, CC.sky], ['funct', 6, CC.orange]], -5.8, 6.4, 11.4, 0.5);
-    pl('lw/sw', -6.4, 5.2); S.L = fmtBar([['op', 6, CC.gray], ['rs', 5, CC.purple], ['rt', 5, CC.purple], ['address', 16, CC.teal]], -5.8, 5.2, 11.4, 0.5);
-    pl('beq', -6.3, 4.0); S.B = fmtBar([['op', 6, CC.gray], ['rs', 5, CC.purple], ['rt', 5, CC.purple], ['address', 16, CC.teal]], -5.8, 4.0, 11.4, 0.5);
+    S.nm = [pl('R', -6.2, 6.4)]; S.R = fmtBar([['op', 6, CC.gray], ['rs', 5, CC.purple], ['rt', 5, CC.purple], ['rd', 5, CC.purple], ['shamt', 5, CC.sky], ['funct', 6, CC.orange]], -5.8, 6.4, 11.4, 0.5, true);
+    S.nm.push(pl('lw/sw', -6.4, 5.2)); S.L = fmtBar([['op', 6, CC.gray], ['rs', 5, CC.purple], ['rt', 5, CC.purple], ['address', 16, CC.teal]], -5.8, 5.2, 11.4, 0.5, true);
+    S.nm.push(pl('beq', -6.3, 4.0)); S.B = fmtBar([['op', 6, CC.gray], ['rs', 5, CC.purple], ['rt', 5, CC.purple], ['address', 16, CC.teal]], -5.8, 4.0, 11.4, 0.5, true);
     S.all = [S.R, S.L, S.B];
   },
   async (tok, S) => {   // 2 op code 在 bits 31–26
@@ -2632,24 +2661,24 @@ scene('cpu-obs4', '16A：main control 的觀察：欄位位置固定', [
     cap('op code 一定在同一個地方：bits 31–26', '');
   },
   async (tok, S) => {   // 3 兩個讀的 register：rs、rt
-    S.all.forEach((b) => { glow(b[0], null); glow(b[2], HL); glow(b[4], HL); });
+    S.all.forEach((b) => { glow(b[0], null); glow(b[1], HL); glow(b[2], HL); });
     cap('要讀的兩個 register：rs、rt', 'bits 25–21、20–16');
   },
   async (tok, S) => {   // 4 rt 有時是 destination
-    S.all.forEach((b) => glow(b[2], null)); glow(S.R[4], null); glow(S.B[4], null); glow(S.R[6], HL);
+    S.all.forEach((b) => glow(b[1], null)); glow(S.R[2], null); glow(S.B[2], null); glow(S.R[3], HL);
     cap('destination：load 是 rt，R-type 是 rd', '所以這裡有 mux');
     S.d = small(bad('寫入：rt（lw）或 rd（R）', 3.0, 7.1), 10);
   },
   async (tok, S) => {   // 5 base 永遠在 rs
-    S.all.forEach((b) => b.filter((m) => m.isMesh).forEach((m) => glow(m, null))); glow(S.L[2], HL);
+    S.all.forEach((b) => b.filter((m) => m.isMesh).forEach((m) => glow(m, null))); glow(S.L[1], HL);
     cap('load / store 的 base register 永遠在 rs', '考試考過：rs 當 base，加 offset 就是 memory 地址');
   },
   async (tok, S) => {   // 6 immediate
-    glow(S.L[2], null); glow(S.L[6], HL); glow(S.B[6], HL);
+    glow(S.L[1], null); glow(S.L[3], HL); glow(S.B[3], HL);
     cap('後面 16 bits：offset，也可能是 immediate value', '盡量讓各種 type 共用同一個 format：control 就越簡單');
   },
   async (tok, S) => {   // 7 datapath
-    S.all.forEach((b) => gone(b)); gone(S.d);
+    S.all.forEach((b) => gone(b)); gone(S.d, S.nm);
     S.D = buildDP(99, false); S.D.c && S.D.c.CTRL && glow(S.D.c.CTRL, HL);
     S.D.ex = [];
     cap('上次合成的 datapath', '從前到後有很多控制點');
@@ -2780,7 +2809,7 @@ scene('cpu-addctl', '16A：add 的 control signals 一個一個設', [
     glow(S.D.c.MUXP, null);
     const ok7 = [CT.R[0] === 1, CT.R[1] === 0, CT.R[2] === 0, CT.R[3] === 1].every(Boolean);
     cap('每個指令走一遍，就知道每個 control signal 怎麼設', '這是合成 control logic 的第一步');
-    S.k = ok(ok7, 'add：RegDst 1、ALUSrc 0、MemtoReg 0、RegWrite 1、PCSrc 0', -1.2, -0.4);
+    S.k = ok(ok7, 'add：RegDst 1、ALUSrc 0、MemtoReg 0、RegWrite 1、PCSrc 0', 1.2, 7.95);
   },
 ], DPC);
 
@@ -2898,11 +2927,11 @@ scene('cpu-aluop', '16A：ALUOp：opcode 先分成三組', [
     cap('ALU 比較複雜', '從 opcode 一半知道、一半不知道');
   },
   async (tok, S) => {   // 4 lw / sw 做加
-    S.g1 = bx('lw / sw → 加', CC.green, -4.6, 1.2, 2.2, 0.55);
+    S.g1 = bx('lw / sw → 加', CC.green, -4.6, 1.2, 3.4, 0.55);
     cap('lw / sw：知道要做加', '');
   },
   async (tok, S) => {   // 5 beq 做減、R-type 不知道
-    S.g2 = bx('beq → 減', CC.green, -1.6, 1.2, 2.0, 0.55); S.g3 = bx('R-type → ?', CC.red, 1.3, 1.2, 2.0, 0.55);
+    S.g2 = bx('beq → 減', CC.green, -0.7, 1.2, 3.4, 0.55); S.g3 = bx('R-type → ?', CC.red, 3.2, 1.2, 3.4, 0.55);
     cap('beq：知道要做減；R-type：不知道', '');
   },
   async (tok, S) => {   // 6 三個類別
@@ -2910,10 +2939,11 @@ scene('cpu-aluop', '16A：ALUOp：opcode 先分成三組', [
   },
   async (tok, S) => {   // 7 三種要幾個 bit
     cap('三種狀態要幾個 bit？', '2 bits（2² = 4 ≥ 3）');
-    S.k = ok(Math.ceil(Math.log2(3)) === 2, 'ceil(log₂3) = 2 bits', 4.4, 1.2);
+    S.k = ok(Math.ceil(Math.log2(3)) === 2, 'ceil(log₂3) = 2 bits', 3.8, 2.1);
   },
   async (tok, S) => {   // 8 00 加、01 減、10 看 funct
     relabel(S.g1, 'ALUOp 00：加（lw / sw）'); relabel(S.g2, 'ALUOp 01：減（beq）'); relabel(S.g3, 'ALUOp 10：看 funct');
+    [S.g1, S.g2, S.g3].forEach((m) => fsz(m.userData.lbl, 10));
     cap('00 = 加、01 = 減、10 = 不知道', '要靠 function code 決定：這 2 bits 叫 ALUOp');
     S.l = line([[-4.0, 5.4], [-0.6, 3.9]], CC.brown); S.ll = small(pl('ALUOp（2）', -2.6, 4.9), 10);
   },
@@ -2950,12 +2980,13 @@ scene('cpu-aluop', '16A：ALUOp：opcode 先分成三組', [
 scene('cpu-alutt', '16A：ALU control 的 truth table', [
   async (tok, S) => {   // 1 opcode 6 bits 進 main control
     cap('main control：opcode 6 bits 進來', '');
-    S.mc = bx('Main control', CC.brown, -4.4, 6.0, 2.6, 0.9);
-    small(pl('op（6）', -4.4, 7.0), 10);
+    frameHold(-6.2, 1.2, 6.2, 7.7);
+    S.mc = bx('Main control', CC.brown, -5.0, 6.0, 2.4, 0.9);
+    small(pl('op（6）', -5.0, 7.0), 10);
   },
   async (tok, S) => {   // 2 七個 mux 的 signal + 2-bit ALUOp
     cap('發出 7 個 control signal + 2 bits 的 ALUOp', '');
-    S.L = lister(-2.6, 6.6, 0.42); SIG7.forEach((s) => small(S.L(s, 'idx'), 9)); small(S.L('ALUOp（2 bits）', 'ptr alt'), 10);
+    S.L = lister(-3.6, 6.6, 0.42); SIG7.forEach((s) => small(S.L(s, 'idx'), 9)); small(S.L('ALUOp（2 bits）', 'ptr alt'), 10);
   },
   async (tok, S) => {   // 3 ALUOp：加、減、不知道
     cap('ALUOp 的意思：add、減、或不知道', '從 opcode 不能知道全部的資訊');
@@ -2964,9 +2995,9 @@ scene('cpu-alutt', '16A：ALU control 的 truth table', [
     cap('只有三種 group，所以 2 bits', '把知道的部分 encode 起來');
   },
   async (tok, S) => {   // 5 lw / sw → 00
-    S.th = mt('ALUOp   funct    → ALU control', 1.6, 7.0, 12, 'ptr');
+    S.th = mt('ALUOp   funct    → ALU control', 2.5, 7.0, 12, 'ptr');
     S.rows = [];
-    const put = (i) => { const [op, f, o, n] = AC_ROWS[i]; S.rows.push(mt(op + '      ' + f + '  →  ' + o + '   ' + n, 1.6, 6.4 - i * 0.55, 12)); };
+    const put = (i) => { const [op, f, o, n] = AC_ROWS[i]; S.rows.push(mt(op + '      ' + f + '  →  ' + o + '   ' + n, 2.5, 6.4 - i * 0.55, 12)); };
     S.put = put; put(0);
     cap('lw / sw：ALUOp = 00', '表示要做加');
   },
@@ -2984,35 +3015,36 @@ scene('cpu-alutt', '16A：ALU control 的 truth table', [
   },
   async (tok, S) => {   // 9 00 XXXXXX → 0010
     cap('碰到 00 XXXXXX：發出 0010（加）', '碰到 01：不管 funct，發出 0110（減）');
-    S.k1 = ok(acOp('00', '000000') === '0010' && acOp('01', '111111') === '0110', '00 → 0010、01 → 0110', 1.6, 2.2);
+    S.k1 = ok(acOp('00', '000000') === '0010' && acOp('01', '111111') === '0110', '00 → 0010、01 → 0110', 2.5, 2.2);
   },
   async (tok, S) => {   // 10 10：搭配 funct
     [0, 1].forEach((i) => setc(S.rows[i], '')); for (let i = 2; i < 7; i++) setc(S.rows[i], 'ptr alt');
     cap('10 表示 unknown', '要搭配 funct 才發出 control signal');
-    S.k2 = ok(AC_ROWS.slice(2).every(([op, f, o]) => acOp(op, f) === o), 'add 0010、sub 0110、and 0000、or 0001、slt 0111', 1.6, 1.6);
+    S.k2 = ok(AC_ROWS.slice(2).every(([op, f, o]) => acOp(op, f) === o), 'add 0010、sub 0110、and 0000、or 0001、slt 0111', 2.5, 1.6);
   },
   async (tok, S) => {   // 11 左邊 input、右邊 output
     for (let i = 0; i < 7; i++) setc(S.rows[i], '');
     cap('左邊是 input，右邊是 output', 'truth table 的 input 和 output');
-    S.ia = small(hot('input', -0.2, 7.5), 10); S.oa = small(hot('output', 4.6, 7.5), 10);
+    S.ia = small(hot('input', 1.0, 7.5), 10); S.oa = small(hot('output', 4.4, 7.5), 10);
   },
 ]);
 
 scene('cpu-alueq', '16A：ALU control 的邏輯式（8 個 input、4 個 output）', [
   async (tok, S) => {   // 1 input 8 bits
     cap('這個 truth table 的 input 幾個 bits？', 'ALUOp 2 + funct 6 = ' + (2 + 6));
-    S.rows = AC_ROWS.map(([op, f, o, n], i) => mt(op + ' ' + f + ' → ' + o + '  ' + n, -3.6, 6.4 - i * 0.52, 12));
+    frameHold(-6.4, 1.8, 7.0, 7.4);
+    S.rows = AC_ROWS.map(([op, f, o, n], i) => mt(op + ' ' + f + ' → ' + o + '  ' + n, -4.3, 6.4 - i * 0.52, 12));
   },
   async (tok, S) => {   // 2 output 4 bits
     cap('output 幾個 bits？4 個', '一個 8-input、4-output 的 truth table');
-    S.k = ok(AC_ROWS.every((r) => (r[0] + r[1]).length === 8 && r[2].length === 4), '8 inputs → 4 outputs', 3.0, 6.4);
+    S.k = ok(AC_ROWS.every((r) => (r[0] + r[1]).length === 8 && r[2].length === 4), '8 inputs → 4 outputs', 1.9, 6.4);
   },
   async (tok, S) => {   // 3 Karnaugh map 合成
     cap('邏輯設計教過：Karnaugh map 合成', 'truth table 出來就會合成');
   },
   async (tok, S) => {   // 4 左 8 input、右 output
     cap('左邊 8 個 input，右邊是 output', '');
-    S.in = small(hot('ALUOp1 ALUOp0 F5…F0', -3.6, 7.0), 10);
+    S.in = small(hot('ALUOp1 ALUOp0 F5…F0', -4.3, 7.0), 10);
   },
   async (tok, S) => {   // 5 一個 output 一個 output 看
     cap('合成時一次看一個 output', 'Operation3、Operation2、Operation1、Operation0');
@@ -3020,7 +3052,7 @@ scene('cpu-alueq', '16A：ALU control 的邏輯式（8 個 input、4 個 output�
   async (tok, S) => {   // 6 bit 3 全是 0
     const all0 = AC_ROWS.every((r) => r[2][0] === '0');
     cap('第一個 output（bit 3）：全部都是 0', '');
-    S.e3 = ok(all0, 'Operation3 = 0（7 列都是 0）', 3.0, 5.6);
+    S.e3 = ok(all0, 'Operation3 = 0（7 列都是 0）', 1.9, 5.6);
   },
   async (tok, S) => {   // 7 constant 0
     cap('它是 constant 0', '不管 input 怎麼變，永遠是 0：不需要邏輯');
@@ -3032,37 +3064,38 @@ scene('cpu-alueq', '16A：ALU control 的邏輯式（8 個 input、4 個 output�
   },
   async (tok, S) => {   // 9 sum of products → 化簡
     cap('ALUOp0 = 1，或 ALUOp1 = 1 且 sub / slt', 'sum of products；用 don\'t care 化簡');
-    S.e2 = mt('Operation2 = ALUOp0 + ALUOp1·F1', 3.0, 4.9, 12, 'ptr alt');
+    S.e2 = mt('Operation2 = ALUOp0 + ALUOp1·F1', 1.9, 4.9, 12, 'ptr alt');
   },
   async (tok, S) => {   // 10 bit 1、bit 0
     AC_ROWS.forEach((r, i) => setc(S.rows[i], ''));
     cap('同樣的方法做 bit 1、bit 0', '把 1 的部分做邏輯合成');
-    S.e1 = mt('Operation1 = ¬ALUOp1 + ¬F2', 3.0, 4.3, 12, 'ptr alt');
-    S.e0 = mt('Operation0 = ALUOp1·(F3 + F0)', 3.0, 3.7, 12, 'ptr alt');
+    S.e1 = mt('Operation1 = ¬ALUOp1 + ¬F2', 1.9, 4.3, 12, 'ptr alt');
+    S.e0 = mt('Operation0 = ALUOp1·(F3 + F0)', 1.9, 3.7, 12, 'ptr alt');
     const good7 = AC_ROWS.every(([op, f, o]) => acEq(+op[0], +op[1], fbits(f === 'XXXXXX' ? '000000' : f)) === o) && ['XXXXXX'].every(() => ['111111', '101010', '000101'].every((ff) => acEq(0, 0, fbits(ff)) === '0010' && acEq(0, 1, fbits(ff)) === '0110'));
     S.kk = ok(good7, '4 個式子算出 7 列的 output 全對（00／01 任何 funct 都對）', 0.4, 2.4);
   },
   async (tok, S) => {   // 11 gate 圖
     cap('畫成 gate：input 可以共用', '');
-    S.g = [['OR', 4.9], ['OR', 4.3], ['AND', 3.7]].map(([t, y]) => bx(t, CC.brown, 6.3, y, 0.7, 0.4));
+    S.g = [['OR', 4.9], ['OR', 4.3], ['AND', 3.7]].map(([t, y]) => bx(t, CC.brown, 6.0, y, 0.8, 0.4));
   },
   async (tok, S) => {   // 12 bit 3 接 ground
     cap('bit 3 是 constant 0：直接接到 ground', '四個 output 的 ALU control 就完成了');
-    S.gnd = bx('GND → Op3', CC.gray, 6.0, 5.6, 1.4, 0.4);
+    S.gnd = bx('GND → Op3', CC.gray, 6.0, 5.6, 1.5, 0.4);
   },
 ]);
 
 scene('cpu-mainctl', '16A：main control 的 truth table', [
   async (tok, S) => {   // 1 ALU controller 完成
     cap('ALU controller 完成了', '順序：main controller decode → ALUOp + funct → ALU control');
-    S.a = bx('ALU control ✓', CC.green, 4.6, 7.0, 2.4, 0.5);
+    frameHold(-6.4, 1.0, 6.4, 7.4);
+    S.a = bx('ALU control ✓', CC.green, 4.4, 7.0, 2.4, 0.5);
   },
   async (tok, S) => {   // 2 main controller
     cap('現在看 main controller', '只看 opcode（第一個 field）就決定大部分 control');
   },
   async (tok, S) => {   // 3 truth table
     cap('這張圖就是 main controller 的 truth table', 'input 在上面（opcode），output 在下面');
-    S.T = ctlTable(-3.6, 6.6, 1.5, 0.55);
+    S.T = ctlTable(-4.6, 6.6, 1.4, 0.55);
   },
   async (tok, S) => {   // 4 000000 = R-type
     S.T.show('R');
@@ -3071,7 +3104,7 @@ scene('cpu-mainctl', '16A：main control 的 truth table', [
   async (tok, S) => {   // 5 100011 = lw
     S.T.show('lw');
     cap('opcode 100011（35）：load', '把它的 mux 設定寫出來');
-    S.k = ok(toB(35, 6) === '100011' && toB(43, 6) === '101011' && toB(4, 6) === '000100', 'lw 35 = 100011、sw 43 = 101011、beq 4 = 000100', 2.6, -0.2);
+    S.k = ok(toB(35, 6) === '100011' && toB(43, 6) === '101011' && toB(4, 6) === '000100', 'lw 35 = 100011、sw 43 = 101011、beq 4 = 000100', 2.2, 4.8); small(S.k, 10); S.k.center && S.k.center.set(0, 0.5);
   },
   async (tok, S) => {   // 6 RegDst
     S.T.cells.R.forEach((m, i) => glow(m, i === 0 ? HL : null));
@@ -3092,7 +3125,7 @@ scene('cpu-mainctl', '16A：main control 的 truth table', [
   },
   async (tok, S) => {   // 10 input 在上、output 在下
     cap('上面是 input（opcode），下面是 output', '就是一張 truth table，只是寫成矩陣的樣子');
-    S.k2 = ok(Object.keys(CT).every((k) => CT[k].length === 9), '4 種 opcode × 9 個 control signals', 2.6, -0.8);
+    S.k2 = ok(Object.keys(CT).every((k) => CT[k].length === 9), '4 種 opcode × 9 個 control signals', 2.2, 3.9); small(S.k2, 10); S.k2.center && S.k2.center.set(0, 0.5);
   },
 ]);
 
@@ -3115,7 +3148,7 @@ scene('cpu-pla', '16A：每個 output 一條式子：PLA', [
     cap('opcode = 000000 或 100011 時設 1', 'AND gate 認出 opcode，再 OR 起來');
     S.l1 = line([[-1.3, 6.4], [1.9, 5.4]], CC.purple); S.l2 = line([[-1.3, 5.4], [1.9, 5.4]], CC.purple);
     const f = (op) => { const k = decode(op); return k === 'R' || k === 'lw' ? 1 : 0; };
-    S.k = ok(Object.keys(OPC).every((k) => f(OPC[k]) === CT[k][3]), 'RegWrite = Rformat + lw（對照真值表）', 3.2, 4.6);
+    S.k = ok(Object.keys(OPC).every((k) => f(OPC[k]) === CT[k][3]), 'RegWrite = Rformat + lw（對照真值表）', -2.6, 1.9);
   },
   async (tok, S) => {   // 5 PLA
     S.ops.forEach((m) => glow(m, null));
@@ -3127,7 +3160,7 @@ scene('cpu-pla', '16A：每個 output 一條式子：PLA', [
     cap('ALUSrc 什麼時候是 1？', on.map((k) => ROWN[k]).join('、') + ' 的時候');
     S.as = bx('OR：ALUSrc', CC.orange, 3.2, 4.4, 2.6, 0.6);
     S.l3 = line([[-1.3, 5.4], [1.9, 4.4]], CC.orange); S.l4 = line([[-1.3, 4.4], [1.9, 4.4]], CC.orange);
-    S.k2 = ok(on.join() === 'lw,sw', 'ALUSrc = lw + sw', 3.2, 3.6);
+    S.k2 = ok(on.join() === 'lw,sw', 'ALUSrc = lw + sw', -2.6, 1.3);
   },
   async (tok, S) => {   // 7 其他 output 一樣
     cap('每個 output 都這樣接一條線過來', 'AND、OR 就做出 PLA');
@@ -3232,6 +3265,7 @@ scene('cpu-worst', '17A：worst case：lw 決定 single cycle 的 clock', [
     S.tot = CLASSES.map(([, u]) => u.reduce((s, on_, i) => s + (on_ ? tm.lat[i] : 0), 0));
     S.sc = 11 / Math.max(...S.tot); S.x0 = -5.8;
     cap('看 worst case 的 delay', 'load 要最多的時間（示意：IF 200、Reg 100、ALU 200、Mem 200、WB 100 ps）');
+    frameHold(-6.8, 0.6, 6.0, 7.4);
     hd('lw（示意 ps）', -4.8, 7.0);
   },
   async (tok, S) => {   // 2 lw 的各段
@@ -3244,7 +3278,7 @@ scene('cpu-worst', '17A：worst case：lw 決定 single cycle 的 clock', [
     const clk = Math.max(...S.tot);
     cap('single cycle：cycle 長度固定', '要用最長的指令當 clock period');
     S.cl = line([[S.x0 + clk * S.sc, 6.7], [S.x0 + clk * S.sc, 1.2]], CC.red);
-    S.k = ok(clk === S.tot[0] && clk === 800, '示意：clock period = max = ' + clk + ' ps（lw）', 0.6, 0.6);
+    S.k = ok(clk === S.tot[0] && clk === 800, '示意：clock period = max = ' + clk + ' ps（lw）', 0.6, 1.6);
   },
   async (tok, S) => {   // 4 其他指令也要等
     cap('其他指令不需要那麼長，但大家都要一樣', 'clock 不能變來變去');
@@ -3252,16 +3286,16 @@ scene('cpu-worst', '17A：worst case：lw 決定 single cycle 的 clock', [
   },
   async (tok, S) => {   // 5 CPI = 1
     cap('CPI 是多少？每個指令都 1 個 cycle', 'CPI = 1，但 clock period 很長');
-    S.c = hot('CPI = 1', -4.6, 0.6);
+    S.c = hot('CPI = 1', -4.8, 1.6);
   },
   async (tok, S) => {   // 6 沒效率
     const waste = S.tot.map((t) => 800 - t);
     cap('這樣的 implementation 不 efficient', '例如 R-type 每次白等 ' + waste[2] + ' ps（示意）');
-    S.w = bad('短的指令白白等待', -1.6, 0.0);
+    S.w = bad('短的指令白白等待', -3.4, 0.9);
   },
   async (tok, S) => {   // 7 pipeline 會用到同樣的 datapath、control
     cap('但這個 datapath 和 control 都會用到', '現在的 processor 都是 pipeline，從 single cycle 改過去');
-    S.p = small(note('single cycle 的 datapath + control → pipeline', 2.8, -0.6), 11);
+    S.p = small(note('single cycle 的 datapath + control → pipeline', 2.0, 0.9), 11);
   },
 ]);
 
@@ -3542,7 +3576,7 @@ scene('cpu-preg', '17A：pipeline register：把每個 stage 切乾淨', [
   },
   async (tok, S) => {   // 9 變短：只剩一個 stage
     cap('變短了：只要一個 stage 的時間', 'clock 變快');
-    S.k = ok(200 < 800, '示意：clock 800 ps → 200 ps（一個 stage）', 0, -0.5);
+    S.k = ok(200 < 800, '示意：clock 800 ps → 200 ps（一個 stage）', 0, 8.3);
   },
 ], DPC);
 
