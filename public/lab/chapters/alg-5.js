@@ -55,6 +55,7 @@ export default function (ctx) {
   const showL = (l, v) => { l.element.style.visibility = v ? '' : 'hidden'; };
   const setCls = (l, cls) => { l.element.className = 'lab-label' + (cls ? ' ' + cls : ''); };
   function code(lines, x, yTop, dy = 0.5, z = 0) {
+    frameHold(x, yTop, z, x, yTop + 1.2, z); // headroom: the top line is not framed under the caption
     const w = Math.max(...lines.map((s) => s.length));
     const ls = lines.map((s, i) => { const l = tag(s.padEnd(w, ' '), '', x, yTop - i * dy, z); Object.assign(l.element.style, MONO); return l; });
     return { ls, hl(i) { ls.forEach((l, k) => setCls(l, k === i ? 'ptr alt' : '')); }, kill() { ls.forEach(kill); } };
@@ -843,6 +844,14 @@ export default function (ctx) {
   // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
   const K = kit(ctx);
   const FRAG = [];
+  // An invisible box over the area a scene will use later (or headroom above a code panel, so the top line
+  // is not framed right under the caption): the stage's auto framing measures it from the first step.
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
+  // every code panel keeps headroom above its top line (the caption sits at the top of the stage)
+  { const kc = K.code; K.code = (lines, x, yTop, dy, z = 0) => { frameHold(x, yTop, z, x, yTop + 1.2, z); return kc(lines, x, yTop, dy, z); }; }
   // ═══ grbari.js ═══
   {
 // ─── Abdul Bari：Greedy 導論、3.1 Knapsack、3.2 Job sequencing、3.3 Optimal merge pattern、Huffman coding ───
@@ -1117,7 +1126,7 @@ FRAG.push(['grbari-hire', '徵人：1000 人層層篩選錄取一人', async (to
 // ════════ oTTzNMHM05I（3.1 Knapsack Problem - Greedy Method） ════════
 const KP = [10, 5, 15, 7, 6, 18, 3], KW = [2, 3, 5, 7, 1, 4, 1], KM = 15;
 const KR = ['5', '1.67', '3', '1', '6', '4.5', '3'];
-const kx = (k) => -5.6 + k * 1.45;
+const kx = (k) => -6.3 + k * 1.62; // wide enough for 'p 10  w 2' under each item
 // 7 個物品（紙箱，高度跟重量成比例）＋ 標籤
 function ksItems(y = 0.4, withTags = true) {
   return KP.map((p, k) => {
@@ -1129,7 +1138,7 @@ function ksItems(y = 0.4, withTags = true) {
 }
 // 背包：一個半透明高箱，裡面依序疊上放進去的重量
 function ksBag(x = 5.6) {
-  const kk = 0.3, H = KM * kk;
+  const kk = 0.36, H = KM * kk; // a 1 kg block tall enough for its label
   const bag = lab.box('#e9dcc4', [1.6, H + 0.1, 1.3]); bag.material.transparent = true; bag.material.opacity = 0.35; bag.material.depthWrite = false;
   bag.position.set(x, H / 2, 0); lab.world.add(bag);
   ptr('knapsack m = 15', x, H + 0.5);
@@ -1281,7 +1290,7 @@ FRAG.push(['grbari-ks-fill', 'Greedy 裝背包：依 p/w 放，最後切一塊',
 FRAG.push(['grbari-ks-sum', '驗算：總重 15、總 profit', async (tok) => {
   fresh([0, 4.2, 14], [0, 3.0, 0]);
   const X = ['1', '2/3', '1', '0', '1', '1', '1'];
-  X.forEach((x, k) => { alt('x' + (k + 1) + '=' + x, kx(k), 6.6); ptr('p ' + KP[k] + '  w ' + KW[k], kx(k), 6.0); });
+  X.forEach((x, k) => { alt('x' + (k + 1) + '=' + x, kx(k), 7.0); ptr('p ' + KP[k] + '  w ' + KW[k], kx(k), 6.3); });
   const B = ksBag(6.0);
   [[1, '#5'], [2, '#1'], [4, '#6'], [5, '#3'], [1, '#7']].forEach(([w, l]) => B.put(w, l));
   B.put(2, '2/3', GB.green);
@@ -1368,7 +1377,7 @@ function jCards(P, D, y, x0 = -5.6, dx = 1.25) {
   return P.map((p, k) => {
     const x = x0 + k * dx;
     const c = cube('J' + (k + 1), GB.blue, [1.0, 0.6, 0.6], x, y, 0, 1.2);
-    return { c, x, y, t: [ptr('p ' + p, x, y - 0.6, 0.4), ptr('d ' + D[k], x, y - 1.05, 0.4)] };
+    return { c, x, y, t: [ptr('p ' + p, x, y - 0.62, 0.4), ptr('d ' + D[k], x, y - 1.2, 0.4)] }; // p and d one row apart
   });
 }
 async function jPlace(tok, S, cards, k, d, ms = 700) {
@@ -2892,7 +2901,7 @@ FRAG.push(['grjiang1-depth', 'Depth d：resource 的 lower bound', async (tok) =
   say('每一個都要一台自己的 resource', '');
   await step(tok);                                   // 699.0 至少 d 個；夠不夠等一下看
   B.forEach((b) => glow(b, null));
-  note('至少 d 個；夠不夠？等一下看', 0, 0.1);
+  note('至少 d 個；夠不夠？等一下看', 0, -0.7);
   say('所以至少要 d 個', '它只是 lower bound，夠不夠再看');
   await step(tok);                                   // 736.0 回家想：O(n log n) 內算出 d
   bub('能在 O(n log n) 內算出 d 嗎？', 0, 7.4);
@@ -2995,14 +3004,14 @@ FRAG.push(['grjiang1-partition-run', '每個 label 記 finish 水位：10 個 in
   const sl = vline(ax, 3, 6.3, 0.8);
   say('新 interval j：拿 s(j) 跟水位比', '');
   await step(tok);                                   // 1356.0 開始得比水位早 → 一定 overlap
-  bad('s(j) < 水位 → conflict', 3.4, 6.7);
+  const r1 = bad('s(j) < 水位 → conflict', 3.4, 6.7);
   say('開始時間比水位早', '一定 overlap，這個 label 不能用');
   await step(tok);                                   // 1372.0 開始時間 ≥ 水位 → compatible
-  good('s(j) ≥ 水位 → compatible', -2.6, 6.7);
+  const r2 = good('s(j) ≥ 水位 → compatible', -2.6, 6.7);
   say('開始時間 ≥ 水位', '就 compatible，可以指派');
   await step(tok);                                   // 1395.0 例子：依 starting time 排好 I1..I10
   kill(demo); kill(sl);
-  const names = IP10.map(([s], i) => tag('I' + (i + 1) + '：s=' + s, 'idx', -5 + i * 1.1, 0.05));
+  const names = IP10.map(([s], i) => tag('I' + (i + 1) + '：s=' + s, 'idx', -5 + i * 1.1, i % 2 ? -0.5 : 0.05));
   say('例子：依 starting time 排好', 'I1 … I10，depth = 3');
   await step(tok);                                   // 1454.0 一開始水位都是 0，I1 放 L1
   lit(0, true); put(0, 0); await beat(tok, 600); lit(0, false);
@@ -3027,11 +3036,11 @@ FRAG.push(['grjiang1-partition-run', '每個 label 記 finish 水位：10 個 in
   await step(tok);                                   // 1621.0 靠水位就能快速檢查
   say('每個 label 都記水位', '檢查只要比大小，很快');
   await step(tok);                                   // 1672.0 第 6 行永遠不會發生
-  good('第 6 行從來沒用到', 3.4, 6.7);
+  K.txt(r1, '第 6 行從來沒用到'); ((l, c) => { l.element.className = 'lab-label ' + c; })(r1, 'good');
   say('第 6 行永遠不會發生', '每個人都塞得到適當的顏色');
   await step(tok);                                   // 1742.0 每個 resource 不 overlap，只用 3 個
   W.forEach((w, k) => lit(k, true));
-  pkt('只用 3 個 = depth（lower bound）', -2.4, 6.7);
+  K.txt(r2, '只用 3 個 = depth（lower bound）'); ((l, c) => { l.element.className = 'lab-label ' + c; })(r2, 'pkt');
   say('每個 label 內都不 overlap', '只用 3 個 = lower bound');
 }]);
 
@@ -3109,7 +3118,7 @@ FRAG.push(['grjiang1-partition-proof', '證明：t + 1 ≤ d，一定剩一個 l
   await step(tok);                                   // 2356.0 每個 interval 有 label、overlap 不同 label
   say('① 每個 interval 都拿到 label', '② overlap 的不在同一個 label');
   await step(tok);                                   // 2394.0 先證：第 6 行不會發生
-  pkt('先證 ①：第 6 行不會發生', 0, 0.1);
+  const pk = pkt('先證 ①：第 6 行不會發生', 0, -0.7);
   say('先證第一件事', '第 6 行（skip）不會發生');
   await step(tok);                                   // 2432.0 假設 Ij 跟前面 t 個 overlap
   Ij = gBar(ax, 'Ij（I8）', s, f, 6.0, GJ.sand, 2, 0.34);
@@ -3122,7 +3131,7 @@ FRAG.push(['grjiang1-partition-proof', '證明：t + 1 ≤ d，一定剩一個 l
   glow(Ij, GOLD);
   say('這 t + 1 個 interval', '一定同時穿過這一點');
   await step(tok);                                   // 2489.0 depth：最大 overlap
-  note('depth d = 最大的 overlap', 3.6, 0.6);
+  note('depth d = 最大的 overlap', 3.6, -1.4);
   say('depth 是整條時間軸的最大 overlap', '');
   await step(tok);                                   // 2511.0 所以 t + 1 ≤ d
   say('所以 t + 1 ≤ d', '');
@@ -3136,7 +3145,7 @@ FRAG.push(['grjiang1-partition-proof', '證明：t + 1 ≤ d，一定剩一個 l
   say('d 個 label 至少剩一個', '第 4 行一定指派得到');
   await step(tok);                                   // 2617.4 第 6 行可以不用寫
   [5, 6].forEach((i) => glow(B[i], null));
-  good('① 成立：第 6 行可以不寫', 0, 0.1);
+  K.txt(pk, '① 成立：第 6 行可以不寫'); ((l, c) => { l.element.className = 'lab-label ' + c; })(pk, 'good');
   say('每個 interval 都有 label', '程式不寫第 6 行也沒關係');
 }]);
 
@@ -4393,6 +4402,7 @@ function j2Clrs(o = {}) {
 // 50:57 CLRS 例子（Lec12）
 FRAG.push(['grjiang2-dijkstra-clrs', 'Dijkstra（CLRS 例子）：Extract-Min 依序 0、5、7、8、9', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
+  frameHold(-6.4, 0, 0, 6.4, 8.4, 0); // frame for the whole graph now
   let C = null;
   await step(tok);                                   // 3057 例子取自 CLRS
   const book = prop('file', 5.8, 5.2, 0, 1.0, 'CLRS 課本');
@@ -4649,6 +4659,7 @@ FRAG.push(['grjiang2-clrs-update', 'CLRS 例子：Extract-Min 與只 update 鄰�
 // 12:40 min-priority queue 的操作次數與三種實作（Lec13）
 FRAG.push(['grjiang2-pq-costs', 'Min-priority queue：操作次數與 array／binary heap／Fibonacci heap', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.2, 0]);
+  frameHold(-6.4, 0, 0, 6.4, 8.6, 0); // the table arrives later: frame for it now
   const cols = [-5.2, -2.6, -0.4, 2.4, 5.0];
   const rows = [['Insert', 'n', 'O(1)', 'O(log n)', 'O(1)'], ['ExtractMin', 'n', 'O(n)', 'O(log n)', 'O(log n)*'], ['ChangeKey', 'm', 'O(1)', 'O(log n)', 'O(1)*'], ['IsEmpty', 'n', 'O(1)', 'O(1)', 'O(1)']];
   const cells = rows.map((r, ri) => r.map((v, c) => { const l = tag(v, c < 2 ? 'ptr alt' : 'idx', cols[c], 5.2 - ri * 0.95); showL(l, false); return l; }));
@@ -5555,7 +5566,8 @@ function g3Forest(G) {
   return { find, paint, same: (a, b) => find(a) === find(b), union(a, b) { par[find(a)] = find(b); paint(); } };
 }
 // a column of tags (a sorted edge list) at x from yTop down
-function g3List(items, x, yTop, dy = 0.55) { return items.map((s, i) => tag(s, 'idx', x, yTop - i * dy, 0.2)); }
+// a long list wraps into two columns, rows 0.72 apart, so neighbours never touch at a phone zoom
+function g3List(items, x, yTop, dy = 0.55) { const per = items.length > 6 ? Math.ceil(items.length / 2) : items.length, d = Math.max(dy, 0.72); return items.map((s, i) => tag(s, 'idx', x - (items.length > 6 ? 0.8 : 0) + Math.floor(i / per) * 1.6, yTop - (i % per) * d, 0.2)); }
 const g3Name = (e) => e[0] + e[1] + ' ' + e[2];
 // Prim: edges with exactly one end in the tree
 const g3Front = (G, inT) => G.E.filter((e) => inT.has(e.u) !== inT.has(e.v));
@@ -5823,6 +5835,7 @@ FRAG.push(['grjiang3-prim-vs-kruskal', 'Prim vs Kruskal：一棵樹往外長 vs 
 // 09:33 Reverse-delete：從整張圖開始，從大的 cost 拔起
 FRAG.push(['grjiang3-reverse-delete', 'Reverse-delete：從貴的 edge 開始拔，不能拔斷', async (tok) => {
   fresh([0.4, 3.4, 14.4], [0.4, 3.0, 0]);
+  frameHold(-6.4, 0, 0, 6.4, 8.4, 0); // frame for the whole graph and headroom now
   const title = tag('', 'ptr alt', 0, 7.2);
   const rv = pal3('reverse', -6.4, -1.3, '#e8a0c8');
   const DESC = G3E.slice().reverse();
@@ -5935,6 +5948,7 @@ const G3Q = { a: [-5, 5.2], b: [-2.6, 3.4], c: [-5, 1.4], d: [2.8, 5.2], e: [5.2
 const G3QE = [['d', 'e', 2], ['b', 'c', 3], ['a', 'b', 4], ['c', 'f', 5], ['e', 'f', 6], ['b', 'd', 7], ['a', 'd', 9], ['a', 'c', 10], ['b', 'e', 12]];
 FRAG.push(['grjiang3-cut-statement', 'Cut property：剪一刀，被剪到的最便宜 edge 一定安全', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
+  frameHold(-6.4, 0, 0, 6.4, 8.4, 0); // the graph arrives later: frame for it (and headroom) now
   const title = tag('', 'ptr alt', 0, 7.2);
   let G = null, sc = null, S = null, R = null, h = null;
   const left = ['a', 'b', 'c'], right = ['d', 'e', 'f'];
@@ -6209,6 +6223,7 @@ FRAG.push(['grjiang3-cut-proof2-feasible', 'T\' 仍是 tree：繞路還連得到
 // 30:45 Cycle property：cycle 上最貴的 edge 可以安全砍掉
 FRAG.push(['grjiang3-cycle-property', 'Cycle property：cycle 上最貴的 edge 可以砍掉', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
+  frameHold(-6.4, 0, 0, 6.4, 8.4, 0); // the graph arrives later: frame for it (and headroom) now
   const title = tag('', 'ptr alt', 0, 7.2);
   const rv = pal3('reverse', 6.2, -1.3, '#e8a0c8');
   let G = null, h = null;

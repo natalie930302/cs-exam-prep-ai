@@ -38,6 +38,7 @@ export default function (ctx) {
   const showL = (l, on) => { l.element.style.visibility = on ? '' : 'hidden'; };
   const cls = (l, c) => { l.element.className = 'lab-label' + (c ? ' ' + c : ''); };
   function code(lines, x, yTop, dy = 0.5, z = 0) {
+    frameHold(x, yTop, z, x, yTop + 1.2, z); // headroom: the top line is not framed under the caption
     const w = Math.max(...lines.map((s) => s.length));
     const ls = lines.map((s, i) => { const l = tag(s.padEnd(w, ' '), '', x, yTop - i * dy, z); Object.assign(l.element.style, MONO); return l; });
     return { ls, hl(i) { ls.forEach((l, k) => cls(l, k === i ? 'ptr alt' : '')); }, set(i, s) { txt(ls[i], s.padEnd(w, ' ')); }, kill() { ls.forEach(kill); } };
@@ -496,14 +497,14 @@ export default function (ctx) {
   const SUMA = [8, 3, 9, 7, 2];
   async function scFreqSum(tok) {
     fresh([0, 6, 14], [0, 2.6, 0]);
-    const cd = code(['Algorithm Sum(A, n)', '{', '  s = 0;', '  for (i = 0; i < n; i++)', '    s = s + A[i];', '  return s;', '}'], -3.4, 6.8, 0.5);
-    const fq = [null, null, tag('', 'ptr alt', -0.2, 5.8), tag('', 'ptr alt', -0.2, 5.3), tag('', 'ptr alt', -0.2, 4.8), tag('', 'ptr alt', -0.2, 4.3)];
+    const cd = code(['Algorithm Sum(A, n)', '{', '  s = 0;', '  for (i = 0; i < n; i++)', '    s = s + A[i];', '  return s;', '}'], -3.4, 7.4, 0.66);
+    const fq = [2, 3, 4, 5].reduce((o, r) => { o[r] = tag('', 'ptr alt', -0.2, 7.4 - r * 0.66); return o; }, []);
     const xs = (k) => -5 + k * 1.2;
     const cs = SUMA.map((v, k) => { tag('A[' + k + ']', 'idx', xs(k), 0, 0.95); return cube(v, C.blue, [1, 0.7, 1], xs(k), 0.35, 0); });
     const ip = tag('i', 'ptr', xs(0), 1.5);
     const stk = { 3: [], 4: [] };
     const sx = { 3: 3.2, 4: 4.6 };
-    tag('條件檢查', 'idx', 3.2, 0, 1.2); tag('迴圈本體', 'idx', 4.6, 0, 1.2);
+    const sl = [tag('條件檢查', 'idx', 3.2, -0.35, 0), tag('迴圈本體', 'idx', 4.6, -0.35, 0)];
     const push = (ln, col) => { stk[ln].push(cube('', col, [1, 0.32, 1], sx[ln], 0.17 + stk[ln].length * 0.36, 0, 2.5)); };
     say('n = 5：每個敘述執行一次算 1 單位', 'frequency count method');
     await beat(tok, 2200);
@@ -529,7 +530,8 @@ export default function (ctx) {
     await beat(tok, 2600);
     say('空間：A 佔 n 個 word，n、s、i 各 1 個', 'S(n) = n + 3 → O(n)');
     cs.forEach((m) => glow(m, GOLD));
-    ['n', 's', 'i'].forEach((v, k) => cube(v, C.teal, [0.8, 0.6, 0.8], 2.6 + k * 1, 0.3, 2.4, 3));
+    [...stk[3], ...stk[4], ...sl].forEach((o) => kill(o)); // time is done: the stacks make room for the space count
+    ['n', 's', 'i'].forEach((v, k) => cube(v, C.teal, [0.8, 0.6, 0.8], 2.8 + k * 1, 0.3, 0, 3));
     await beat(tok, 3200);
   }
 
@@ -542,8 +544,8 @@ export default function (ctx) {
         ? ['for (i = 0; i < n; i++)', '  for (j = 0; j < n; j++) {', '    C[i][j] = 0;', '    for (k = 0; k < n; k++)', '      C[i][j] += A[i][k] * B[k][j];', '  }']
         : ['for (i = 0; i < n; i++)', '  for (j = 0; j < n; j++)', '    C[i][j] = A[i][j] + B[i][j];'];
       const freq = mul ? ['n + 1', 'n(n + 1)', 'n²', 'n²(n + 1)', 'n³', ''] : ['n + 1', 'n(n + 1)', 'n²'];
-      const cd = code(lines, -2.8, 6.8, 0.48);
-      const fl = lines.map((_, i) => tag('', 'ptr alt', 2.6, 6.8 - i * 0.48));
+      const cd = code(lines, -2.8, 7.4, 0.66);
+      const fl = lines.map((_, i) => tag('', 'ptr alt', 2.8, 7.4 - i * 0.66));
       const n = 3, cell = (i, j) => [-1.2 + j * 1.2, (i - 1) * 1.2];
       for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const [x, z] = cell(i, j); ctx.tile(V3(x, 0.04, z), 1, 1); }
       tag('C（n = 3）', 'ptr', -3.4, 0.2, 0);
@@ -599,17 +601,18 @@ export default function (ctx) {
 
   // ─── 9TlHvipP5yA：j < i 的三角形 ───
   async function scTriangle(tok) {
-    fresh([0, 6.5, 13], [0, 1.8, 0]);
+    fresh([0, 4.4, 13], [0, 3.4, 0]);
     const n = 6;
-    code(['for (i = 0; i < n; i++)', '  for (j = 0; j < i; j++)', '    stmt;'], -3.5, 6.6, 0.5);
+    code(['for (i = 0; i < n; i++)', '  for (j = 0; j < i; j++)', '    stmt;'], -3.5, 6.6, 0.56);
     const tot = tag('累計 0 次', 'ptr alt', 3.6, 6.2);
     say('內層 j < i：和 n × n 不一樣', '用追蹤表算每個 i 跑幾次（n = 6）');
     await beat(tok, 2200);
     let sum = 0;
     for (let i = 0; i < n; i++) {
-      tag('i = ' + i, 'ptr', -5.6, 0.2, -2.5 + i * 0.9);
-      for (let j = 0; j < i; j++) { cube('j=' + j, C.blue, [0.85, 0.35, 0.7], -4.2 + j * 0.95, 0.18, -2.5 + i * 0.9, 3); sum++; txt(tot, '累計 ' + sum + ' 次'); await beat(tok, 200); }
-      tag(i + ' 次', 'idx', 1.4, 0.2, -2.5 + i * 0.9);
+      const ry = 4.5 - i * 0.66;
+      tag('i = ' + i, 'ptr', -5.6, ry);
+      for (let j = 0; j < i; j++) { cube('j=' + j, C.blue, [0.85, 0.46, 0.4], -4.2 + j * 0.95, ry, 0); sum++; txt(tot, '累計 ' + sum + ' 次'); await beat(tok, 200); }
+      tag(i + ' 次', 'idx', 1.4, ry);
       say('i = ' + i + '：j = ' + (i === 0 ? '（無）' : Array.from({ length: i }, (_, q) => q).join(', ')) + ' → ' + i + ' 次', '0 + 1 + … + ' + i + ' = ' + sum);
       await beat(tok, 1000);
     }
@@ -647,31 +650,32 @@ export default function (ctx) {
 
   // ─── 9SgLBjXqwd4：i *= 2，n = 8 與 n = 10，取 ceil ───
   async function scDoubling(tok) {
-    fresh([0, 6, 13.5], [0, 1.6, 0]);
+    fresh([0, 4.4, 13.5], [0, 2.8, 0]);
     const X = (v) => -5.6 + v * 0.7;
-    code(['for (i = 1; i < n; i = i * 2)', '  stmt;'], -2, 6.4, 0.5);
-    for (let v = 0; v <= 16; v += 2) tag(String(v), 'idx', X(v), 0, 3.4);
-    const runRow = async (n, z) => {
-      const w = lab.box(C.red, [0.08, 1.6, 1.2]); w.position.set(X(n), 0.8, z); lab.world.add(w);
-      tag('n = ' + n, 'ptr alt', X(n), 1.9, z);
+    code(['for (i = 1; i < n; i = i * 2)', '  stmt;'], -2, 6.2, 0.56);
+    for (let v = 0; v <= 16; v += 2) tag(String(v), 'idx', X(v), -0.3, 0);
+    const runRow = async (n, y) => {
+      const z = 0;
+      const w = lab.box(C.red, [0.08, 1.3, 0.3]); w.position.set(X(n), y + 0.15, z); lab.world.add(w);
+      tag('n = ' + n, 'ptr alt', X(n) + 0.75, y + 0.65, z);
       let c = 0;
       for (let i = 1; ; i *= 2) {
         const ok = i < n;
-        const m = cube('i=' + i, ok ? C.blue : C.red, [0.6, 0.6, 0.6], X(Math.min(i, 16)), 0.3, z, 3);
+        const m = cube('i=' + i, ok ? C.blue : C.red, [0.62, 0.6, 0.3], X(Math.min(i, 16)), y, z);
         if (ok) c++;
         say('n = ' + n + '：i = ' + i + (ok ? ' < ' + n + ' → 執行（第 ' + c + ' 次）' : ' ≥ ' + n + ' → 停'), 'i = 1, 2, 2², 2³ …');
         await beat(tok, 900);
         if (!ok) { glow(m, RED); break; }
       }
-      tag(c + ' 次', 'ptr', 6.2, 0.4, z);
+      tag(c + ' 次', 'ptr', 6.4, y, z);
       return c;
     };
     say('i 每次乘 2：設 k 次後 2ᵏ ≥ n 停', '2ᵏ = n → k = log₂ n');
     await beat(tok, 2400);
-    await runRow(8, -1);
+    await runRow(8, 3.4);
     say('n = 8：3 次 = log₂ 8', '');
     await beat(tok, 1600);
-    await runRow(10, 1.6);
+    await runRow(10, 1.4);
     say('n = 10：4 次，但 log₂ 10 ≈ 3.32', '→ 次數是 ⌈log₂ n⌉，要取 ceil');
     await beat(tok, 3000);
     say('計數變數是「乘」的迴圈 → O(log n)', 'i *= 3 就是 log₃ n');
@@ -711,23 +715,24 @@ export default function (ctx) {
 
   // ─── 9SgLBjXqwd4：獨立迴圈 2n、p = log n 再 log p ───
   async function scLogLog(tok) {
-    fresh([0, 6, 14], [0, 2.4, 0]);
+    fresh([0, 4.4, 14], [0, 3.4, 0]);
     say('先看兩個一前一後的獨立迴圈', 'for i < n {…}  for j < n {…}');
-    const n1 = 12;
-    for (let k = 0; k < n1; k++) { cube('', C.blue, [0.4, 0.4, 0.6], -5.6 + k * 0.46, 0.2, -2.4, 2); await beat(tok, 60); }
-    for (let k = 0; k < n1; k++) { cube('', C.purple, [0.4, 0.4, 0.6], -5.6 + (k + n1) * 0.46, 0.2, -2.4, 2); await beat(tok, 60); }
-    tag('n + n = 2n → O(n)，不是 n²', 'ptr alt', 0, 1, -2.4);
+    const n1 = 12, two = [];
+    for (let k = 0; k < n1; k++) { two.push(cube('', C.blue, [0.4, 0.4, 0.3], -5.6 + k * 0.46, 3.4, 0)); await beat(tok, 60); }
+    for (let k = 0; k < n1; k++) { two.push(cube('', C.purple, [0.4, 0.4, 0.3], -5.6 + (k + n1) * 0.46, 3.4, 0)); await beat(tok, 60); }
+    two.push(tag('n + n = 2n → O(n)，不是 n²', 'ptr alt', -0.3, 4.1, 0));
     await beat(tok, 2400);
-    code(['for (p = 0, i = 1; i < n; i = i * 2)', '  p++;', 'for (j = 1; j < p; j = j * 2)', '  stmt;'], -2.6, 6.8, 0.5);
+    two.forEach((o) => kill(o)); // next subject: the log log loops
+    code(['for (p = 0, i = 1; i < n; i = i * 2)', '  p++;', 'for (j = 1; j < p; j = j * 2)', '  stmt;'], -2.6, 6.6, 0.56);
     say('第一個迴圈：i 乘 2，p 數它跑了幾次', 'n = 256');
     let p = 0;
-    for (let i = 1; i < 256; i *= 2) { p++; cube('i=' + i, C.teal, [0.95, 0.45, 0.8], -5.3 + (p - 1) * 1.05, 0.23, 0.6, 3); await beat(tok, 380); }
-    const pl = tag('p = ' + p + ' = log₂ 256', 'ptr alt', 3.5, 1.3, 0.6);
+    for (let i = 1; i < 256; i *= 2) { p++; cube('i=' + i, C.teal, [0.95, 0.5, 0.3], -5.3 + (p - 1) * 1.05, 3.4, 0); await beat(tok, 380); }
+    const pl = tag('p = ' + p + ' = log₂ 256', 'ptr alt', 4.6, 3.4, 0);
     await beat(tok, 1800);
     say('第二個迴圈：j 乘 2，直到 j ≥ p = 8', '跑 log p 次');
     let c = 0;
-    for (let j = 1; j < p; j *= 2) { c++; cube('j=' + j, C.orange, [0.95, 0.45, 0.8], -5.3 + (c - 1) * 1.05, 0.23, 2.2, 3); await beat(tok, 700); }
-    tag('stmt ' + c + ' 次 = log₂ 8', 'ptr', 0.2, 1, 2.2);
+    for (let j = 1; j < p; j *= 2) { c++; cube('j=' + j, C.orange, [0.95, 0.5, 0.3], -5.3 + (c - 1) * 1.05, 2.2, 0); await beat(tok, 700); }
+    tag('stmt ' + c + ' 次 = log₂ 8', 'ptr', -0.6, 2.2, 0);
     cls(pl, 'ptr alt');
     say('p = log n 代入 → log p = log log n', 'n = 256：log log n = 3 → O(log log n)');
     await beat(tok, 3400);
@@ -735,14 +740,16 @@ export default function (ctx) {
 
   // ─── 9SgLBjXqwd4：外層 n、內層 j *= 2 ───
   async function scNLogN(tok) {
-    fresh([0, 7, 12.5], [0, 1.2, 0]);
-    code(['for (i = 0; i < n; i++)', '  for (j = 1; j < n; j = j * 2)', '    stmt;'], -2.4, 6.4, 0.5);
+    fresh([0, 4.4, 13], [0, 3.2, 0]);
+    code(['for (i = 0; i < n; i++)', '  for (j = 1; j < n; j = j * 2)', '    stmt;'], -3.4, 6.9, 0.56);
     const n = 8;
+    [1, 2, 4].forEach((j, q) => tag('j=' + j, 'ptr', -1 + q * 1.4, 5.0));
     say('外層 n 次；內層 j 乘 2，每次 log n 次', 'n = 8');
     await beat(tok, 2000);
     for (let i = 0; i < n; i++) {
-      tag('i=' + i, 'idx', -4.6, 0.2, -2.8 + i * 0.75);
-      for (let j = 1, q = 0; j < n; j *= 2, q++) { cube('j=' + j, C.purple, [1.1, 0.35, 0.6], -3 + q * 1.3, 0.18, -2.8 + i * 0.75, 2.5); await beat(tok, 110); }
+      const ry = 4.4 - i * 0.56;
+      tag('i=' + i, 'idx', -2.4, ry);
+      for (let j = 1, q = 0; j < n; j *= 2, q++) { cube('', C.purple, [1.1, 0.42, 0.4], -1 + q * 1.4, ry, 0); await beat(tok, 110); }
       if (i === 0) { say('i = 0：j = 1, 2, 4 → 3 次 = log₂ 8', ''); await beat(tok, 1400); }
     }
     say('8 列 × 3 = 24 = n log n', '總計約 2n log n + n → O(n log n)');
@@ -780,14 +787,16 @@ export default function (ctx) {
       say('代幾個 n 進去比比看', '高度用對數尺度：每高一格 ×2');
       await beat(tok, 2200);
       const NS = [1, 2, 4, 8, 9];
+      let prev = [];
       for (let c = 0; c < NS.length; c++) {
         const n = NS[c], x0 = -5.2 + c * 2.6;
+        prev.forEach((l) => showL(l, false)); prev = []; // only the group being read keeps its numbers
         tag('n = ' + n, 'ptr alt', x0 + 0.6, 0, 1.4);
         const vals = F.map(([, f]) => f(n));
         for (let q = 0; q < 4; q++) {
           const v = vals[q], h = 0.08 + lg(v + 1) * 0.62;
           const m = bar(F[q][2], 0.45, 0.6, x0 + q * 0.42, 0); await growBar(tok, m, h, 200);
-          tag(fmt(v), 'idx', x0 + q * 0.42, h + 0.3 + (q % 2) * 0.32);
+          prev.push(tag(fmt(v), 'idx', x0 + q * 0.42, h + 0.3 + (q % 2) * 0.32));
         }
         say(n === 2 || n === 4 ? 'n = ' + n + '：n² = 2ⁿ = ' + n * n + '，剛好相等' : n === 8 ? 'n = 8：n² = 64、2ⁿ = 256，突然拉開' : n === 9 ? 'n = 9：81 vs 512，差距越來越大' : 'n = 1：log n = 0', '');
         await beat(tok, n >= 8 ? 2200 : 1600);
@@ -807,7 +816,7 @@ export default function (ctx) {
       say('n = ' + n + '：n¹⁰⁰ ≈ 10^' + Math.round(a) + '，2ⁿ ≈ 10^' + Math.round(b), b > a ? '2ⁿ 已經超過' : 'n¹⁰⁰ 還比較大');
       await beat(tok, 1500);
     }
-    tag('紫 = n¹⁰⁰、紅 = 2ⁿ', 'ptr', 0, 6.6);
+    tag('紫 = n¹⁰⁰、紅 = 2ⁿ', 'ptr', -4.6, 5.2);
     say('交點約在 n ≈ 996，之後 2ⁿ 永遠比較大', '任何 nᵏ 最後都輸給 2ⁿ');
     await beat(tok, 3200);
   }
@@ -991,16 +1000,16 @@ export default function (ctx) {
   // ─── CyknhZbfMqc：遞減型 Master Theorem ───
   async function scMasterDec(tok) {
     fresh([0, 5.5, 14.5], [0, 2.6, 0]);
-    const bins = [['a < 1', 'O(nᵏ) = O(f(n))', -4.4, C.green], ['a = 1', 'O(nᵏ⁺¹) = O(n·f(n))', 0, C.blue], ['a > 1', 'O(nᵏ·a^(n/b))', 4.4, C.red]];
-    const ansT = bins.map(([nm, ans, x]) => { ctx.tile(V3(x, 0.04, 0), 3.8, 2.6, '#efe6d2'); tag(nm, 'ptr', x, 0.2, 1.7); const t = tag(ans, 'ptr alt', x, 6.3); showL(t, false); return t; });
-    tag('T(n) = aT(n − b) + f(n)，f(n) = O(nᵏ)', 'ptr', 0, 7.2);
+    const bins = [['a < 1', 'O(nᵏ) = O(f(n))', -4.7, C.green], ['a = 1', 'O(nᵏ⁺¹) = O(n·f(n))', 0, C.blue], ['a > 1', 'O(nᵏ·a^(n/b))', 4.7, C.red]];
+    const ansT = bins.map(([nm, ans, x]) => { ctx.tile(V3(x, 0.04, 0), 4.2, 2.6, '#efe6d2'); tag(nm, 'ptr', x, 0.2, 1.7); const t = tag(ans, 'ptr alt', x, 4.4); showL(t, false); return t; });
+    tag('T(n) = aT(n − b) + f(n)，f(n) = O(nᵏ)', 'ptr', 0, 6.4);
     say('先看已經解過的遞減式', '');
     await beat(tok, 1800);
     const EX = [['T(n−1) + 1', 'O(n)', 1], ['T(n−1) + n', 'O(n²)', 1], ['T(n−1) + log n', 'O(n log n)', 1], ['2T(n−1) + 1', 'O(2ⁿ)', 2], ['3T(n−1) + 1', 'O(3ⁿ)', 2], ['2T(n−1) + n', 'O(n·2ⁿ)', 2], ['0.5T(n−1) + n', 'O(n)', 0]];
     const cnt = [0, 0, 0];
     for (const [r, a, bi] of EX) {
-      const x = bins[bi][2], y = 0.35 + cnt[bi] * 0.75; cnt[bi]++;
-      const m = cube(r + ' → ' + a, bins[bi][3], [3.4, 0.6, 1.2], 0, 5, 0);
+      const x = bins[bi][2], y = 0.35 + cnt[bi] * 0.95; cnt[bi]++;
+      const m = cube(r + ' → ' + a, bins[bi][3], [4.0, 0.6, 0.6], 0, 5.4, 0);
       say(r + ' → ' + a, bi === 1 ? 'a = 1：f(n) 被乘上 n' : bi === 2 ? 'a > 1：f(n) 被乘上 aⁿ' : 'a < 1：就是 f(n)');
       await beat(tok, 900); move(m, x, y, 0); await beat(tok, 1300);
     }
@@ -1103,14 +1112,15 @@ export default function (ctx) {
     eq.hl(-1);
     say('邊界：T(1) = 1，但 c·1·lg1 = 0 → 不成立', '改從 n₀ = 2 開始：T(2) = 4、T(3) = 5');
     const vals = { 1: 1 }; for (let n = 2; n <= 16; n++) vals[n] = 2 * vals[Math.floor(n / 2)] + n;
+    eq.ls.slice(2).forEach((l) => showL(l, false)); // the proof is done: the numeric check takes the stage
     for (let n = 2; n <= 16; n++) {
       const x = -5.6 + (n - 2) * 0.8;
-      const m1 = bar(C.blue, 0.32, 0.6, x - 0.17, 1.6), m2 = bar(C.green, 0.32, 0.6, x + 0.17, 1.6);
+      const m1 = bar(C.blue, 0.32, 0.4, x - 0.17, 0), m2 = bar(C.green, 0.32, 0.4, x + 0.17, 0);
       setBar(m1, vals[n] * 0.045); setBar(m2, 2 * n * lg(n) * 0.045);
-      tag(String(n), 'idx', x, 0, 2.3);
+      tag(String(n), 'idx', x, -0.3, 0.4);
       await beat(tok, 120);
     }
-    tag('藍 = T(n)、綠 = 2n lg n', 'ptr alt', 0, 4.4, 1.6);
+    tag('藍 = T(n)、綠 = 2n lg n', 'ptr alt', -3.4, 4.6, 0);
     say('取 c = 2：n ≥ 2 時 T(n) ≤ 2n lg n 都成立', 'T(n) = O(n lg n)');
     await beat(tok, 3200);
   }
@@ -1379,6 +1389,14 @@ export default function (ctx) {
   // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
   const K = kit(ctx);
   const FRAG = [];
+  // An invisible box over the area a scene will use later (or headroom above a code panel, so the top line
+  // is not framed right under the caption): the stage's auto framing measures it from the first step.
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
+  // every code panel keeps headroom above its top line (the caption sits at the top of the stage)
+  { const kc = K.code; K.code = (lines, x, yTop, dy, z = 0) => { frameHold(x, yTop, z, x, yTop + 1.2, z); return kc(lines, x, yTop, dy, z); }; }
   // ═══ algbari1.js ═══
   {
 const { V3, fresh, tag, cube, move, fly, kill, glow, tint, txt, relabel, code, anim, arrow, ghostBox, lnode, GOLD, GREEN, RED, GRAY, step, buddy, prop, bob, travel, remove, zone } = K;
@@ -1463,14 +1481,15 @@ const AB_A = [8, 3, 9, 7, 2];
 FRAG.push(['algbari1-freq-sum', 'Frequency count：陣列求和 2n + 3', async (tok) => {
   const part = (ctx.params || {}).part || 'trace';
   fresh([0, 6.5, 14], [0, 2.4, 0]);
+  frameHold(0, 0, 0, 0, 8.4, 0); // headroom above the code panel (caption)
   const L = ['Algorithm Sum(A, n)', '{', '  s = 0;', '  for (i = 0; i < n; i++)', '    s = s + A[i];', '  return s;', '}'];
   const xs = (k) => -5 + k * 1.2;
-  const fq = {}; [2, 3, 4, 5].forEach((r) => { fq[r] = tag('', 'ptr alt', 0.4, 6.8 - r * 0.5); });
+  const fq = {}; [2, 3, 4, 5].forEach((r) => { fq[r] = tag('', 'ptr alt', 0.6, 7.0 - r * 0.62); });
   const stk = { 3: [], 4: [] }, SX = { 3: 3.0, 4: 4.4 };
   const push = (ln, col) => { stk[ln].push(cube('', col, [1, 0.3, 1], SX[ln], 0.15 + stk[ln].length * 0.34, 0, 2.5)); };
   let cd = null, cs = [];
-  const showCode = () => { cd = code(L, -3.4, 6.8, 0.5); tag('條件 i < n', 'idx', SX[3], 0, 1.2); tag('迴圈本體', 'idx', SX[4], 0, 1.2); };
-  const showArr = (drop) => { cs = AB_A.map((v, k) => { tag('A[' + k + ']', 'idx', xs(k), 0, 0.95); return cube(v, AB.blue, [1, 0.7, 1], xs(k), 0.35, 0, drop ? 3 : 0); }); tag('n = 5（內容是示意）', 'ptr', -2.6, 1.6, -1); };
+  const showCode = () => { cd = code(L, -3.4, 7.0, 0.62); tag('條件 i < n', 'idx', SX[3], 0, 1.2); tag('迴圈本體', 'idx', SX[4], 0, 1.2); };
+  const showArr = (drop) => { cs = AB_A.map((v, k) => { tag('A[' + k + ']', 'idx', xs(k), 0, 0.95); return cube(v, AB.blue, [1, 0.7, 1], xs(k), 0.35, 0, drop ? 3 : 0); }); tag('n = 5（內容是示意）', 'ptr', xs(2), -0.7, 2.0); };
   if (part === 'trace') {
     say('Frequency count method', '先看一個例子：陣列求和');
     await step(tok);                                 // 12.8 algorithm for the sum of all elements
@@ -1481,7 +1500,7 @@ FRAG.push(['algbari1-freq-sum', 'Frequency count：陣列求和 2n + 3', async (
     say('A 是大小 n = 5 的陣列，裡面放一些數字', '');
     await step(tok);                                 // 55.8 one unit of time for each statement
     const clerk = buddy('計時員', 0, AB.gold, 6.0, 0, -1.6, 0.75); clerk.look(-1);
-    const bb = bub('每行做一次 = 1 單位時間', 6.0, 2.1, -1.6);
+    const bb = K.keep(bub('每行做一次 = 1 單位時間', 6.0, 3.1, -1.6));
     say('每個敘述執行一次，就算 1 單位時間', '重複的敘述，就數它執行幾次（frequency）');
     await step(tok);                                 // 78.8 a repeating statement → find its frequency
     cd.hl(4); txt(bb, '這行會重複！數它做幾次'); clerk.mood('wow');
@@ -1504,7 +1523,7 @@ FRAG.push(['algbari1-freq-sum', 'Frequency count：陣列求和 2n + 3', async (
     txt(fq[3], 'n + 1'); txt(bb, '成立 5 次 + 不成立 1 次 = 6'); clerk.mood('happy'); await clerk.hop(tok);
     say('條件檢查了 6 次 = 5 + 1 = n + 1', '成立 n 次，最後 1 次不成立才離開');
     await step(tok);                                 // 163.8 2n + 2 in detail, but we write n + 1
-    note('細算 i = 0、i++ → 2n + 2', 4.2, 3.6, -1);
+    txt(bb, '細算 i = 0、i++ → 2n + 2');
     say('連 i = 0、i++ 都算，會是 2n + 2', '但只在乎跟 n 有關的部分 → 習慣寫 n + 1');
     return;
   }
@@ -1515,7 +1534,7 @@ FRAG.push(['algbari1-freq-sum', 'Frequency count：陣列求和 2n + 3', async (
   say('條件 n + 1 次已經數好；接著看迴圈本體', '');
   await step(tok);                                   // 200.8 the statement inside the loop: n times
   cd.hl(4); let s = 0;
-  const sv = buddy('s', 0, AB.orange, 6.0, 0, -1.4, 0.7);
+  const sv = buddy('s', 0, AB.orange, 6.0, 0, 2.2, 0.7);
   for (let i = 0; i < 5; i++) { s += AB_A[i]; glow(cs[i], GOLD); push(4, AB.blue); txt(fq[4], stk[4].length + ' 次'); sv.set(s); await beat(tok, 420); glow(cs[i], null); }
   txt(fq[4], 'n'); sv.mood('happy');
   say('迴圈裡的 s = s + A[i] 跟著迴圈做 n 次', '');
@@ -1530,24 +1549,25 @@ FRAG.push(['algbari1-freq-sum', 'Frequency count：陣列求和 2n + 3', async (
   txt(fx, 'f(n) = 2n + 3 → 次數 1 → O(n)'); glow(cs[2], null);
   say('多項式的最高次數是 1 → 時間是 order of n', 'O(n)');
   await step(tok);                                   // 258.8 not saying Big-O or Theta yet
-  note('先說 order；Big-O、Θ 之後再學', -1.6, 2.1, 2.4);
+  const later = note('先說 order；Big-O、Θ 之後再學', -1.6, 2.1, 2.4);
   say('這裡只說 order of n', 'Big-O、Θ 的正式定義後面的影片才講');
   await step(tok);                                   // 264.8 space: the variables used
-  cs.forEach((m) => glow(m, GOLD));
-  buddy('n', 5, AB.teal, 4.8, 0, 2.2, 0.6); buddy('i', 5, AB.teal, 6.0, 0, 2.2, 0.6);
+  cs.forEach((m) => glow(m, GOLD)); kill(later); K.dim(fx);
+  buddy('n', 5, AB.teal, 4.7, 0, 2.2, 0.6); buddy('i', 5, AB.teal, 7.3, 0, 2.2, 0.6);
   say('空間：用到哪些變數？A、n、s、i', '');
   await step(tok);                                   // 282.8 A is n words, the others one word each
-  tag('A：n 個 word', 'ptr alt', -2.6, 1.0, 1.6);
-  note('n、s、i：各 1 個 word', 5.4, 1.6, 3.0);
+  tag('A：n 個 word', 'ptr alt', xs(2), 0, 2.9);
+  note('n、s、i：各 1 個 word', 6.0, 2.0, 2.2);
   say('A 有 n 格 → n 個 word；n、s、i 各 1 個 word', '合起來 n + 3');
   await step(tok);                                   // 291.8 S(n) = n + 3 → O(n)
-  okT('S(n) = n + 3 → O(n)', -1.6, 1.4, 2.4);
+  okT('S(n) = n + 3 → O(n)', -1.6, 2.1, 2.4);
   sv.mood('happy'); await sv.hop(tok);
   say('空間 S(n) = n + 3 → 也是 O(n)', '時間 O(n)、空間 O(n)');
 }]);
 
 FRAG.push(['algbari1-mat-add', '矩陣相加：f(n) = 2n² + 2n + 1', async (tok) => {
   fresh([0, 6.5, 14], [0, 2.4, 0]);
+  frameHold(0, 0, 0, 0, 8.4, 0); // headroom above the code panel (caption)
   const n = 3;
   const grid = (x0, col, lbl) => { const ms = []; for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) ms.push(cube('', col, [0.7, 0.12, 0.7], x0 + j * 0.8, 0.06, 0.6 + i * 0.8, 2)); tag(lbl, 'ptr', x0 + 0.8, 0.2, -0.3); return ms; };
   say('下一個：兩個矩陣相加', '');
@@ -1557,15 +1577,15 @@ FRAG.push(['algbari1-mat-add', '矩陣相加：f(n) = 2n² + 2n + 1', async (tok
   const GC = grid(1.0, GRAY, 'C');
   say('A、B 都是 n×n 的方陣，例如 3×3', '就是二維陣列');
   await step(tok);                                   // 339.8 the algorithm
-  const cd = code(['Algorithm Add(A, B, n)', '{', '  for (i = 0; i < n; i++)', '    for (j = 0; j < n; j++)', '      C[i][j] = A[i][j] + B[i][j];', '}'], -1.4, 7, 0.5);
-  const fq = [2, 3, 4].map((r) => tag('', 'ptr alt', 4.6, 7 - r * 0.5));
+  const cd = code(['Algorithm Add(A, B, n)', '{', '  for (i = 0; i < n; i++)', '    for (j = 0; j < n; j++)', '      C[i][j] = A[i][j] + B[i][j];', '}'], -1.4, 7.2, 0.62);
+  const fq = [2, 3, 4].map((r) => tag('', 'ptr alt', 4.8, 7.2 - r * 0.62));
   const cnt = buddy('加法次數', 0, AB.gold, 5.6, 0, 1.0, 0.7);
   say('相加的演算法：兩層 for', '來數每一行做幾次');
   await step(tok);                                   // 346.8 outer for: n + 1
   cd.hl(2); txt(fq[0], 'n + 1');
   say('外層 for：條件 n + 1 次', '');
   await step(tok);                                   // 355.8 everything inside: n times
-  const ins = note('裡面每一行 × n', 4.6, 6.0, -1);
+  const ins = note('裡面每一行 × n', 4.8, 6.6, -1);
   say('外層迴圈裡面的每一行，都會跑 n 次', '');
   await step(tok);                                   // 370.8 inner for: n(n + 1)
   cd.hl(3); txt(fq[1], 'n(n + 1)'); remove(ins);
@@ -1577,48 +1597,50 @@ FRAG.push(['algbari1-mat-add', '矩陣相加：f(n) = 2n² + 2n + 1', async (tok
   say('C[i][j] = A[i][j] + B[i][j] 在兩層迴圈裡', 'n × n = 9 次');
   await step(tok);                                   // 385.8 f(n) = 2n² + 2n + 1
   cd.hl(-1);
-  const fx = tag('f(n) = (n+1) + n(n+1) + n² = 2n² + 2n + 1', 'ptr', 1.2, 3.6, -1);
+  const fx = tag('f(n) = (n+1) + n(n+1) + n² = 2n² + 2n + 1', 'ptr', 1.2, 3.4, -1);
   say('時間函數 f(n) = 2n² + 2n + 1', '');
   await step(tok);                                   // 403.8 highest degree 2 → O(n²)
-  okT('最高次數 2 → O(n²)', 1.2, 3.0, -1);
+  txt(fx, 'f(n) = 2n² + 2n + 1：最高次數 2 → O(n²)'); cls(fx, 'good');
   await cnt.hop(tok);
   say('最高次數是 2 → O(n²)', '');
   await step(tok);                                   // 419.8 not "equal to"; just the degree
-  note('O(n²)：寫的是次數，不是說 f(n) 等於 n²', 1.2, 2.4, -1);
+  const deg = note('O(n²)：寫的是次數，不是說 f(n) 等於 n²', 1.2, 2.6, -1);
   say('O(n²) 不是說 f(n) 等於 n²', '只是說這個多項式的次數是 2');
   await step(tok);                                   // 430.8 space: A, B, C, i, j
   [...GA, ...GB, ...GC].forEach((m) => glow(m, GOLD));
+  kill(deg); K.dim(fx); remove(cnt.g); // time is done: space takes the stage
   say('空間：用到 A、B、C 和 n、i、j', '');
   await step(tok);                                   // 454.8 A, B, C are matrices: n² each
   [-5.0, -1.6, 1.8].forEach((x) => tag('n² 個 word', 'idx', x, 0.1, 3.1));
   say('A、B、C 是矩陣，各佔 n² 個 word', '');
   await step(tok);                                   // 464.8 n, i, j scalars → 3n² + 3
   ['n', 'i', 'j'].forEach((v, k) => buddy(v, '', AB.teal, 3.9 + k * 1.0, 0, 3.0, 0.5));
-  tag('S(n) = 3n² + 3', 'ptr', 5.0, 2.0, 3.0);
+  const sn = tag('S(n) = 3n² + 3', 'ptr', 4.9, 1.6, 3.0);
   say('n、i、j 是一般變數，各 1 個 word', 'S(n) = 3n² + 3');
   await step(tok);                                   // 485.8 degree → space O(n²)
-  okT('空間 O(n²)、時間 O(n²)', 5.0, 2.6, 3.0);
+  txt(sn, 'S(n) = 3n² + 3 → 空間 O(n²)、時間 O(n²)'); cls(sn, 'good');
   cnt.mood('happy'); await cnt.hop(tok);
   say('空間也是 O(n²)', '這個演算法：時間 O(n²)、空間 O(n²)');
 }]);
 
 FRAG.push(['algbari1-mat-mul', '矩陣相乘：f(n) = 2n³ + 3n² + 2n + 1', async (tok) => {
   fresh([0, 6.5, 14], [0, 2.6, 0]);
+  frameHold(0, 0, 0, 0, 9.0, 0); // headroom above the code panel (caption)
   const n = 3, cell = (i, j) => [-3.4 + j * 1.1, 0.6 + i * 1.0];
   const tiles = [];
   for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const [x, z] = cell(i, j); tiles.push(cube('', GRAY, [0.9, 0.08, 0.8], x, 0.04, z)); }
   tag('C（n = 3）', 'ptr', -2.3, 0.2, -0.3);
   say('下一個：兩個矩陣相乘', '');
   await step(tok);                                   // 515.8 three nested loops
-  const cd = code(['for (i = 0; i < n; i++)', '{', '  for (j = 0; j < n; j++)', '  {', '    C[i][j] = 0;', '    for (k = 0; k < n; k++)', '      C[i][j] += A[i][k] * B[k][j];', '  }', '}'], -2.2, 7.6, 0.46);
-  const fq = {}; [0, 2, 4, 5, 6].forEach((r) => { fq[r] = tag('', 'ptr alt', 3.4, 7.6 - r * 0.46); });
+  const cd = code(['for (i = 0; i < n; i++)', '{', '  for (j = 0; j < n; j++)', '  {', '    C[i][j] = 0;', '    for (k = 0; k < n; k++)', '      C[i][j] += A[i][k] * B[k][j];', '  }', '}'], -2.2, 8.0, 0.58);
+  const fq = {}; [0, 2, 4, 5, 6].forEach((r) => { fq[r] = tag('', 'ptr alt', 3.6, 8.0 - r * 0.58); });
   const cnt = buddy('乘法次數', 0, AB.gold, 4.6, 0, 1.4, 0.7);
   say('三層迴圈，一層包一層', '一樣一行一行數');
   await step(tok);                                   // 534.8 n + 1
   cd.hl(0); txt(fq[0], 'n + 1');
   say('外層 for：n + 1 次', '');
   await step(tok);                                   // 540.8 everything inside: n times
-  const ins = note('裡面每一行 × n', 5.6, 6.6, -1);
+  const ins = note('裡面每一行 × n', 5.8, 7.4, -1);
   say('外層裡面的每一行，都跑 n 次', '');
   await step(tok);                                   // 553.8 again a loop: n(n + 1)
   cd.hl(2); txt(fq[2], 'n(n + 1)');
@@ -1640,22 +1662,24 @@ FRAG.push(['algbari1-mat-mul', '矩陣相乘：f(n) = 2n³ + 3n² + 2n + 1', asy
   say('C[i][j] = 0 只在前兩層裡 → n² 次', '');
   await step(tok);                                   // 614.8 f(n)
   cd.hl(-1); tiles.forEach((m) => glow(m, null));
-  tag('f(n) = 2n³ + 3n² + 2n + 1', 'ptr', 4.4, 3.4, -1);
+  const fx = tag('f(n) = 2n³ + 3n² + 2n + 1', 'ptr', 4.6, 2.6, -1);
   say('全部加起來：f(n) = 2n³ + 3n² + 2n + 1', '');
   await step(tok);                                   // 645.8 degree 3 → O(n³)
-  okT('次數 3 → 時間 O(n³)', 4.4, 2.8, -1); await cnt.hop(tok);
+  txt(fx, 'f(n) = 2n³ + 3n² + 2n + 1：次數 3 → 時間 O(n³)'); cls(fx, 'good'); await cnt.hop(tok);
   say('最高次數 3 → 時間 O(n³)', '');
   await step(tok);                                   // 662.8 space: A, B, C, i, j, k
+  K.dim(fx); remove(cnt.g); // time is done: space takes the stage
   ['A', 'B', 'C'].forEach((v, k) => cube(v + '：n²', AB.blue, [1.3, 0.5, 0.8], -5.6 + k * 1.45, 0.25, 4.0, 3));
   ['n', 'i', 'j', 'k'].forEach((v, k) => buddy(v, '', AB.teal, -0.6 + k * 0.85, 0, 4.0, 0.45));
   say('空間：A、B、C 三個矩陣，加上 n、i、j、k', '');
   await step(tok);                                   // 683.8 3n² + 4 → O(n²)
-  tag('S(n) = 3n² + 4 → O(n²)', 'ptr', -2.2, 1.5, 4.0);
+  const sn = tag('S(n) = 3n² + 4 → O(n²)', 'ptr', -2.2, 1.5, 4.0);
   say('矩陣各 n²，變數各 1 → S(n) = 3n² + 4', '空間 O(n²)');
   await step(tok);                                   // 693.8 time O(n³), space O(n²)
-  note('時間 O(n³) ≠ 空間 O(n²)：要分開算', 4.4, 2.2, -1);
+  K.dim(fx, false); txt(fx, '時間 O(n³) ≠ 空間 O(n²)：要分開算'); cls(fx, 'note');
   say('時間是 O(n³)，空間只有 O(n²)', '時間和空間要分開分析');
   await step(tok);                                   // 723.8 three algorithms: n, n², n³
+  K.dim(fx); K.dim(sn);
   [['O(n)', 0.5], ['O(n²)', 1.3], ['O(n³)', 2.4]].forEach(([s, h], k) => { const b = abBar([AB.green, AB.orange, AB.purple][k], 0.8, 0.8, 4.6 + k * 1.0, 4.0); abSet(b, h); tag(s, 'idx', 4.6 + k * 1.0, h + 0.3, 4.0); });
   tag('求和、相加、相乘', 'ptr alt', 5.6, 3.2, 4.0);
   say('三個演算法：O(n)、O(n²)、O(n³)', '花的時間各不相同');
@@ -1719,9 +1743,10 @@ FRAG.push(['algbari1-loop-variants', 'i++、i--、i += 2 都是 O(n)；巢狀 n�
 }]);
 
 FRAG.push(['algbari1-triangle', '內層 j < i：1 + 2 + … + n → O(n²)', async (tok) => {
-  fresh([0, 6.5, 13], [0, 1.8, 0]);
-  const n = 6, Z = (i) => -2.5 + i * 0.9;
-  const cd = code(['for (i = 0; i < n; i++)', '  for (j = 0; j < i; j++)', '    stmt;'], -3.2, 6.6, 0.5);
+  fresh([0, 4.6, 13], [0, 3.6, 0]);
+  frameHold(-6.4, 0, 0, 6.4, 8.6, 0); // the table fills in row by row; headroom above the code (caption)
+  const n = 6, Y = (i) => 4.7 - i * 0.66; // the trace table stands on a wall: one row per i
+  const cd = code(['for (i = 0; i < n; i++)', '  for (j = 0; j < i; j++)', '    stmt;'], -3.2, 7.4, 0.56);
   const tot = buddy('stmt 累計', 0, AB.gold, 5.4, 0, -1.4, 0.75);
   say('又是兩層 for……', '');
   await step(tok);                                   // 172.9 but j < i
@@ -1729,13 +1754,13 @@ FRAG.push(['algbari1-triangle', '內層 j < i：1 + 2 + … + n → O(n²)', asy
   say('看起來很像，但內層條件是 j < i', '');
   await step(tok);                                   // 183.8 trace i and j
   remove(hint);
-  tag('i', 'ptr', -5.6, 0.2, -3.4); tag('j 跑過的值', 'ptr', -2.2, 0.2, -3.4); tag('stmt 次數', 'ptr', 1.6, 0.2, -3.4);
+  tag('i', 'ptr', -5.6, 5.4); tag('j 跑過的值', 'ptr', -2.2, 5.4); tag('stmt 次數', 'ptr', 1.6, 5.4);
   say('用追蹤表：一列一個 i，看 j 跑幾次', 'n = 6（示意）');
   let sum = 0;
   const rowI = async (i, ms) => {
-    tag('i = ' + i, 'ptr', -5.6, 0.2, Z(i));
-    for (let j = 0; j < i; j++) { cube('j=' + j, AB.blue, [0.85, 0.35, 0.7], -4.2 + j * 0.95, 0.18, Z(i), 3); sum++; tot.set(sum); await beat(tok, ms); }
-    tag(i + ' 次', 'idx', 1.6, 0.2, Z(i));
+    tag('i = ' + i, 'ptr', -5.6, Y(i));
+    for (let j = 0; j < i; j++) { cube('j=' + j, AB.blue, [0.85, 0.46, 0.4], -4.2 + j * 0.95, Y(i), 0); sum++; tot.set(sum); await beat(tok, ms); }
+    tag(i + ' 次', 'idx', 1.6, Y(i));
   };
   await step(tok);                                   // 197.3 i = 0: 0 < 0 no → 0 times
   await rowI(0, 0); tot.mood('calm');
@@ -1753,23 +1778,24 @@ FRAG.push(['algbari1-triangle', '內層 j < i：1 + 2 + … + n → O(n²)', asy
   await rowI(4, 120); await rowI(5, 120); tot.mood('happy');
   say('i 多 1，stmt 就多做 1 次……一直到 n', '0、1、2、3、4、5');
   await step(tok);                                   // 307.6 1 + 2 + … + n = n(n + 1)/2
-  tag('1 + 2 + … + n = n(n + 1)/2', 'ptr alt', 3.6, 3.4, -1);
+  const sumL = tag('1 + 2 + … + n = n(n + 1)/2', 'ptr alt', 4.6, 3.4, 0);
   say('總共 1 + 2 + 3 + … + n = n(n + 1)/2', '（精確是 0 + 1 + … + (n−1)，這裡 = 15）');
   await step(tok);                                   // 321.5 degree 2 → O(n²)
-  okT('f(n) = (n² + n)/2 → O(n²)', 3.6, 2.8, -1); await tot.hop(tok);
+  txt(sumL, 'n(n + 1)/2 = (n² + n)/2 → O(n²)'); cls(sumL, 'good'); await tot.hop(tok);
   say('展開是 (n² + n)/2，最高次數 2', 'O(n²)');
   await step(tok);                                   // 337.7 not the same as n×n, still n²
-  const gb = ghostBox(AB.blue, 5.9, 0.5, 5.6); gb.position.set(-1.8, 0.25, -0.25);
-  note('n × n 的一半左右，但一樣是 n²', -1.8, 1.4, 2.6);
+  const gb = ghostBox(AB.blue, 5.9, 4.0, 0.3); gb.position.set(-1.8, Y(0) - 1.65, -0.3);
+  note('n × n 的一半左右，但一樣是 n²', -1.8, Y(5) - 0.75, 0);
   say('跟上一題 n × n 不一樣，只有一半', '但次數一樣是 2 → O(n²)');
 }]);
 
 FRAG.push(['algbari1-p-plus-i', 'p = p + i：k(k+1)/2 > n → O(√n)', async (tok) => {
   fresh([0, 5, 14], [0, 3.4, 0]);
+  frameHold(-6, 0, 0, 6, 9.0, 0); // bars grow up to the n line later; headroom above the code (caption)
   const n = 25, SY = 0.2, BX = (k) => -5 + (k - 1) * 1.3;
   say('下一段：條件換了', '');
   await step(tok);                                   // 354.8 the condition is p <= n, not i <= n
-  const cd = code(['p = 0;', 'for (i = 1; p <= n; i++)', '  p = p + i;'], -3.4, 7.8, 0.5);
+  const cd = code(['p = 0;', 'for (i = 1; p <= n; i++)', '  p = p + i;'], -3.4, 7.8, 0.56);
   cd.hl(1);
   const hint = bub('條件看的是 p，不是 i！', 2.6, 7.6, 0);
   say('條件是 p <= n，不是 i <= n', '所以不會剛好跑 n 次');
@@ -1789,7 +1815,7 @@ FRAG.push(['algbari1-p-plus-i', 'p = p + i：k(k+1)/2 > n → O(√n)', async (t
   await one(); await one();
   say('接著 p = 1 + 2 + 3 = 6、1 + 2 + 3 + 4 = 10', '一直加下去');
   await step(tok);                                   // 409.8 k times: 1 + 2 + … + k
-  tag('跑 k 次：p = 1 + 2 + … + k', 'ptr alt', 1.6, 4.6, -1);
+  const der = tag('跑 k 次：p = 1 + 2 + … + k', 'ptr alt', -3.4, 5.8, 0); // one derivation line, rewritten step by step
   say('假設跑了 k 次，p = 1 + 2 + … + k', '');
   await step(tok);                                   // 440 stops when p > n
   const wall = lab.box(AB.red, [10.5, 0.05, 0.05]); wall.position.set(-0.4, n * SY, 0); lab.world.add(wall);
@@ -1797,16 +1823,16 @@ FRAG.push(['algbari1-p-plus-i', 'p = p + i：k(k+1)/2 > n → O(√n)', async (t
   await one(); await one(); const last = await one(); glow(last, RED); pb.mood('wow');
   say('p 一超過 n 就停', 'p = 28 > 25 → 停');
   await step(tok);                                   // 465.5 p = k(k + 1)/2
-  tag('p = k(k + 1)/2', 'ptr', 1.6, 6.2, -1);
+  txt(der, '跑 k 次：p = 1 + 2 + … + k = k(k + 1)/2');
   say('1 + 2 + … + k = k(k + 1)/2', '');
   await step(tok);                                   // 477.7 k(k + 1)/2 > n
-  tag('停：k(k + 1)/2 > n', 'ptr alt', 1.6, 6.8, -1);
+  txt(der, '停：k(k + 1)/2 > n');
   say('停止條件：k(k + 1)/2 > n', '');
   await step(tok);                                   // 490 k² ≈ n → k ≈ √n
-  okT('k² ≈ n → k ≈ √n → O(√n)', 1.6, 7.4, -1); pb.mood('happy'); await pb.hop(tok);
+  txt(der, '停：k(k + 1)/2 > n → k² ≈ n → k ≈ √n → O(√n)'); cls(der, 'good'); pb.mood('happy'); await pb.hop(tok);
   say('大約 k² > n → k ≈ √n', 'O(√n)；n = 25 跑了 7 次');
   await step(tok);                                   // 514.4 recap: a different condition → trace it
-  note('條件不同 → 要追蹤才知道跑幾次', -3.4, 6.0, 0);
+  note('條件不同 → 要追蹤才知道跑幾次', -3.4, 5.0, 0);
   say('重點：條件不是 i < n 的時候', '要追蹤才知道跑幾次');
 }]);
 
@@ -1819,7 +1845,7 @@ FRAG.push(['algbari1-doubling', 'i = i * 2：⌈log₂ n⌉ 次', async (tok) =>
     const host = buddy('i', 1, AB.blue, 5.6, 0, -1.2, 0.75);
     say('下一段程式碼', '');
     await step(tok);                                 // 0.6 i is multiplied by two
-    const cd = code(['for (i = 1; i < n; i = i * 2)', '  stmt;'], -2.4, 7.6, 0.5);
+    const cd = code(['for (i = 1; i < n; i = i * 2)', '  stmt;'], -2.4, 7.6, 0.56);
     cd.hl(0);
     say('i 從 1 開始，每次乘 2', '');
     await step(tok);                                 // 18.8 we cannot blindly say n times
@@ -1841,26 +1867,26 @@ FRAG.push(['algbari1-doubling', 'i = i * 2：⌈log₂ n⌉ 次', async (tok) =>
     tag('n', 'ptr', 4.2, 6.1);
     say('i ≥ n 時迴圈結束', '');
     await step(tok);                                 // 86.9 i = 2ᵏ → 2ᵏ ≥ n
-    tag('2ᵏ ≥ n 時停', 'ptr alt', 1.0, 6.8);
+    const der = tag('2ᵏ ≥ n 時停', 'ptr alt', 2.2, 6.7); // one derivation line, rewritten
     say('i 是 2ᵏ，所以 2ᵏ ≥ n 時停', '');
     await step(tok);                                 // 101.8 2ᵏ = n → k = log₂ n
-    tag('令 2ᵏ = n → k = log₂ n', 'ptr', 1.0, 7.4, -0.6);
+    txt(der, '2ᵏ ≥ n 時停 → 令 2ᵏ = n → k = log₂ n');
     say('取 2ᵏ = n，k 就是 log₂ n', '');
     await step(tok);                                 // 112.8 → O(log₂ n)
-    okT('O(log₂ n)', 5.6, 2.4, -1.2); host.mood('happy'); await host.hop(tok);
+    const res = okT('O(log₂ n)', 5.6, 2.4, -1.2); host.mood('happy'); await host.hop(tok);
     say('stmt 執行 O(log₂ n) 次', '');
     await step(tok);                                 // 121.1 multiplied by 2 or 3 → log
-    note('計數變數是用「乘」的 → log', -4.0, 6.4, 0);
+    note('計數變數是用「乘」的 → log', -4.2, 6.1, 0);
     say('計數變數不是加，而是乘（乘 2、乘 3）', '→ log 次');
     await step(tok);                                 // 141.9 compare: +1 k times = n → k = n
     for (let k = 0; k < 12; k++) { cube('', AB.green, [0.36, 0.3, 0.6], -5.2 + k * 0.42, 0.15, 2.6, 2); await beat(tok, 60); }
-    tag('+1 +1 +1 …（k 次）= n → k = n', 'ptr alt', -2.6, 0.9, 2.6);
+    tag('+1 +1 +1 …（k 次）= n → k = n', 'ptr alt', -2.6, 0.75, 2.6);
     say('對照 i++：每次加 1，加 k 次到 n', 'k = n');
     await step(tok);                                 // 176.8 ×2 k times = 2ᵏ = n → k = log₂ n
-    tag('×2 ×2 ×2 …（k 次）= 2ᵏ = n → k = log₂ n', 'ptr', -1.4, 0.9, 1.3);
+    tag('×2 ×2 ×2 …（k 次）= 2ᵏ = n → k = log₂ n', 'ptr', 2.0, 4.2, 0); // next to the doubling bars
     say('i *= 2：乘 k 次 2 → 2ᵏ = n', 'k = log₂ n');
     await step(tok);                                 // 222.8 take it as a formula
-    okT('公式：乘 → log n', 5.6, 3.0, -1.2); await host.hop(tok);
+    txt(res, '公式：乘 → O(log n)'); await host.hop(tok);
     say('記成公式：計數變數用乘的 → log n', '');
     return;
   }
@@ -1911,7 +1937,7 @@ FRAG.push(['algbari1-halving-sqrt', 'i /= 2 → log n；i·i < n → √n', asyn
   const SY = 0.14, BX = (c) => -5.6 + c * 1.1;
   say('另一段程式碼', '');
   await step(tok);                                   // 392 i starts from n
-  const cd = code(['for (i = n; i >= 1; i = i / 2)', '  stmt;'], -3.6, 6.8, 0.5);
+  const cd = code(['for (i = n; i >= 1; i = i / 2)', '  stmt;'], -3.6, 6.8, 0.56);
   const ib = buddy('i', 'n', AB.blue, -0.6, 0, 2.6, 0.7);
   say('i 從 n 開始，每次除以 2', '');
   let c = 0;
@@ -1921,20 +1947,21 @@ FRAG.push(['algbari1-halving-sqrt', 'i /= 2 → log n；i·i < n → √n', asyn
   say('i：n、n/2、n/2²、n/2³……', 'n = 32（示意）');
   await step(tok);                                   // 407.8 after k times: n/2ᵏ
   await bar(2, 'n/2⁴'); await bar(1, 'n/2⁵');
-  tag('k 次後 i = n/2ᵏ', 'ptr alt', 0.4, 5.0, -1);
+  const der = tag('k 次後 i = n/2ᵏ', 'ptr alt', 0.2, 4.9, -1); // one derivation line, rewritten
   say('假設跑 k 次，i = n/2ᵏ', '');
   await step(tok);                                   // 418.8 stops when i < 1
   const z = cube('i = 0', AB.red, [0.9, 0.12, 0.9], BX(c), 0.06, -1, 2); glow(z, RED); ib.set(0); ib.mood('wow');
   tag('i < 1 → 停', 'ptr', BX(c), 0.8, -1);
   say('i 小於 1 時停', '');
   await step(tok);                                   // 429.8 n/2ᵏ = 1 → k = log₂ n
-  tag('n/2ᵏ = 1 → n = 2ᵏ → k = log₂ n', 'ptr', 0.4, 5.6, -1);
+  txt(der, 'k 次後 i = n/2ᵏ：令 n/2ᵏ = 1 → n = 2ᵏ → k = log₂ n');
   say('令 n/2ᵏ = 1 → n = 2ᵏ', 'k = log₂ n');
   await step(tok);                                   // 449.6 → O(log n)
-  okT('除 2 也是 O(log n)', 0.4, 6.2, -1); ib.mood('happy');
+  txt(der, 'k = log₂ n：除 2 也是 O(log n)'); cls(der, 'good'); ib.mood('happy');
   say('除以 2 的迴圈也是 O(log n)', '乘 2 從 1 往上、除 2 從 n 往下，都是 log n');
   await step(tok);                                   // 474.8 i * i < n
-  const cd2 = code(['for (i = 0; i * i < n; i++)', '  stmt;'], 3.4, 6.8, 0.5);
+  K.dim(der); cd.ls.forEach((l) => K.dim(l)); // the halving loop is done
+  const cd2 = code(['for (i = 0; i * i < n; i++)', '  stmt;'], 3.6, 6.8, 0.56);
   cd2.hl(0);
   say('第 7 個例子：條件是 i * i < n', '');
   await step(tok);                                   // 487.8 runs while i*i < n
@@ -1946,98 +1973,100 @@ FRAG.push(['algbari1-halving-sqrt', 'i /= 2 → log n；i·i < n → √n', asyn
   tag('i = 5：25 ≥ 25 → 停', 'ptr alt', 3.3, 1.2, 3.0);
   say('i² < n 就繼續；i² ≥ n 就停', 'n = 25（示意）：方塊面積 = i²');
   await step(tok);                                   // 502.8 i² = n → i = √n
-  okT('i² = n → i = √n → O(√n)', 3.4, 4.4, 0);
+  okT('i² = n → i = √n → O(√n)', 3.6, 4.2, 0);
   say('i² = n 時停 → i = √n', 'O(√n)');
 }]);
 
 FRAG.push(['algbari1-loglog', '獨立迴圈 2n；p = log n 再 log p', async (tok) => {
-  fresh([0, 6, 14], [0, 2.4, 0]);
+  fresh([0, 4.6, 14], [0, 3.6, 0]);
+  frameHold(-6, 1.4, 0, 6, 7.6, 0); // both pictures use this wall area
   say('兩個 for 迴圈', '');
-  let cd = null;
+  let cd = null; const two = []; // the first picture (n + n) is cleared when the p loops come in
   await step(tok);                                   // 519.8 two independent loops, one after another
   cd = code(['for (i = 0; i < n; i++)  stmt;', 'for (j = 0; j < n; j++)  stmt;'], -2.4, 7.2, 0.5);
   say('兩個迴圈一前一後，彼此獨立', '不是一個包一個');
   await step(tok);                                   // 531.4 first loop: n times
   cd.hl(0);
-  for (let k = 0; k < 12; k++) { cube('', AB.blue, [0.4, 0.4, 0.6], -5.6 + k * 0.46, 0.2, -2.4, 2); await beat(tok, 70); }
+  for (let k = 0; k < 12; k++) { two.push(cube('', AB.blue, [0.4, 0.4, 0.3], -5.6 + k * 0.46, 3.6, 0)); await beat(tok, 70); }
   say('第一個迴圈：n 次 → O(n)', 'n = 12（示意）');
   await step(tok);                                   // 540.8 second loop: n times
   cd.hl(1);
-  for (let k = 0; k < 12; k++) { cube('', AB.purple, [0.4, 0.4, 0.6], -5.6 + (k + 12) * 0.46, 0.2, -2.4, 2); await beat(tok, 70); }
+  for (let k = 0; k < 12; k++) { two.push(cube('', AB.purple, [0.4, 0.4, 0.3], -5.6 + (k + 12) * 0.46, 3.6, 0)); await beat(tok, 70); }
   say('第二個迴圈也是 n 次', '接在後面');
   await step(tok);                                   // 546.8 n + n = 2n → O(n)
-  cd.hl(-1); okT('n + n = 2n → O(n)', -0.4, 1.2, -2.4);
+  cd.hl(-1); two.push(okT('n + n = 2n → O(n)', -2.6, 2.9, 0));
   say('合起來 n + n = 2n → O(n)', '');
   await step(tok);                                   // 559.8 not n²
-  noT('不是 n²（沒有巢狀）', 4.0, 1.2, -2.4);
+  two.push(noT('不是 n²（沒有巢狀）', 2.6, 2.9, 0));
   say('不是 n²：它們是相加，不是相乘', '');
   await step(tok);                                   // 566.8 next: two loops with p
-  cd.kill();
-  cd = code(['p = 0;', 'for (i = 1; i < n; i = i * 2)', '  p++;', 'for (j = 1; j < p; j = j * 2)', '  stmt;'], -2.4, 7.6, 0.46);
+  cd.kill(); two.forEach((o) => kill(o));
+  cd = code(['p = 0;', 'for (i = 1; i < n; i = i * 2)', '  p++;', 'for (j = 1; j < p; j = j * 2)', '  stmt;'], -2.4, 7.6, 0.56);
   const pb = buddy('p', 0, AB.orange, 5.4, 0, 0.6, 0.7);
   say('下一個：也是兩個獨立迴圈', '要算 stmt 做幾次');
   await step(tok);                                   // 573.9 second loop alone: j *= 2, j < p → log p
-  cd.hl(3); tag('j 乘 2、j < p → log p 次', 'ptr alt', 3.6, 6.3);
+  cd.hl(3); tag('j 乘 2、j < p → log p 次', 'ptr alt', 3.9, 5.92);
   say('先只看第二個：j 每次乘 2，條件 j < p', '→ 跑 log p 次');
   await step(tok);                                   // 590.8 what is p? counted in the first loop
   cd.hl(1);
   let p = 0;
-  for (let i = 1; i < 256; i *= 2) { p++; cube('i=' + i, AB.teal, [0.95, 0.45, 0.8], -5.3 + (p - 1) * 1.05, 0.23, 0.6, 3); pb.set(p); await beat(tok, 250); }
+  for (let i = 1; i < 256; i *= 2) { p++; cube('i=' + i, AB.teal, [0.95, 0.5, 0.3], -5.3 + (p - 1) * 1.05, 3.6, 0); pb.set(p); await beat(tok, 250); }
   say('p 是什麼？第一個迴圈每跑一次 p 就 +1', 'n = 256（示意）：p = 8');
   await step(tok);                                   // 605.8 i *= 2 → log n → p = log n
-  tag('p = log₂ n', 'ptr alt', 3.6, 1.4, 0.6); pb.mood('happy');
+  tag('p = log₂ n', 'ptr alt', 3.7, 3.6, 0); pb.mood('happy');
   say('第一個迴圈 i 乘 2 → 跑 log n 次', '所以 p = log n');
   await step(tok);                                   // 619.8 stmt repeats log p times
   cd.hl(4);
   let c2 = 0;
-  for (let j = 1; j < p; j *= 2) { c2++; cube('j=' + j, AB.orange, [0.95, 0.45, 0.8], -5.3 + (c2 - 1) * 1.05, 0.23, 2.2, 3); await beat(tok, 400); }
-  tag('stmt ' + c2 + ' 次 = log₂ 8', 'ptr', -0.6, 1, 2.2);
+  for (let j = 1; j < p; j *= 2) { c2++; cube('j=' + j, AB.orange, [0.95, 0.5, 0.3], -5.3 + (c2 - 1) * 1.05, 2.4, 0); await beat(tok, 400); }
+  tag('stmt ' + c2 + ' 次 = log₂ 8', 'ptr', -0.9, 2.4, 0);
   say('第二個迴圈：stmt 做 log p 次', 'p = 8 → 3 次');
   await step(tok);                                   // 629.4 log p = log log n
-  okT('log p = log log n → O(log log n)', 3.2, 2.0, 2.2); await pb.hop(tok);
+  okT('log p = log log n → O(log log n)', 0, 1.3, 0); await pb.hop(tok);
   say('p = log n 代進去：log p = log log n', 'O(log log n)');
 }]);
 
 FRAG.push(['algbari1-nlogn', '外層 n × 內層 log n = n log n', async (tok) => {
-  fresh([0, 7, 12.5], [0, 1.2, 0]);
-  const n = 8, Z = (i) => -2.8 + i * 0.75;
-  const cd = code(['for (i = 0; i < n; i++)', '  for (j = 1; j < n; j = j * 2)', '    stmt;'], -2.4, 6.4, 0.5);
-  const cnt = buddy('stmt', 0, AB.gold, 5.2, 0, -1.6, 0.75);
+  fresh([0, 4.6, 13], [0, 3.2, 0]);
+  frameHold(-6, 0.4, 0, 6, 6.6, 0); // the 8 rows arrive later: frame for them now
+  const n = 8, Y = (i) => 4.3 - i * 0.5; // the rows stand on a wall, one row per i
+  const cd = code(['for (i = 0; i < n; i++)', '  for (j = 1; j < n; j = j * 2)', '    stmt;'], -2.4, 6.6, 0.56);
+  const cnt = buddy('stmt', 0, AB.gold, 5.4, 0, 0, 0.75);
   say('巢狀迴圈', '');
   await step(tok);                                   // 643.8 outer loop: O(n)
-  cd.hl(0); tag('n 次', 'ptr alt', 2.4, 6.4);
+  cd.hl(0); tag('n 次', 'ptr alt', 3.6, 6.6);
   say('外層 i++：O(n)', '');
   await step(tok);                                   // 649.8 everything inside: n times
-  for (let i = 0; i < n; i++) tag('i=' + i, 'idx', -4.6, 0.2, Z(i));
+  for (let i = 0; i < n; i++) tag('i=' + i, 'idx', -4.4, Y(i));
   say('裡面的每一行都跑 n 次', 'n = 8（示意）：8 列');
   let c = 0;
-  const rowJ = async (i, ms) => { for (let j = 1, q = 0; j < n; j *= 2, q++) { cube('j=' + j, AB.purple, [1.1, 0.35, 0.6], -3 + q * 1.3, 0.18, Z(i), 2.5); c++; cnt.set(c); await beat(tok, ms); } };
+  const rowJ = async (i, ms) => { for (let j = 1, q = 0; j < n; j *= 2, q++) { cube(i === 0 ? 'j=' + j : '', AB.purple, [1.1, 0.38, 0.3], -3 + q * 1.3, Y(i), 0); c++; cnt.set(c); await beat(tok, ms); } };
   await step(tok);                                   // 662.8 inner loop: j *= 2 → log n
-  cd.hl(1); tag('log n 次', 'ptr alt', 3.0, 5.9);
+  cd.hl(1); tag('log n 次', 'ptr alt', 3.6, 6.04);
   await rowJ(0, 300);
   say('內層 j 每次乘 2 → log n 次', 'j = 1、2、4 → 3 次 = log₂ 8');
   await step(tok);                                   // 672.9 the statement inside: log n each time
-  cd.hl(2); tag('n log n 次', 'ptr alt', 1.6, 5.4);
+  cd.hl(2); tag('n log n 次', 'ptr alt', 3.6, 5.48);
   say('裡面的 stmt，每一列也是 log n 次', '');
   await step(tok);                                   // 682.8 all rows; n + 1 makes no difference
   for (let i = 1; i < n; i++) await rowJ(i, 70);
-  note('n + 1 寫不寫都沒差', 4.6, 1.2, 1.2);
+  const rm = K.keep(note('n + 1 寫不寫都沒差', 4.6, 2.6, 0));
   say('8 列都做完：8 × 3 = 24', '條件寫 n + 1 或 n 都一樣');
   await step(tok);                                   // 688.5 2n log n + n → O(n log n)
-  cd.hl(-1); okT('2n log n + n → O(n log n)', 4.6, 2.0, 1.2); cnt.mood('happy'); await cnt.hop(tok);
+  cd.hl(-1); txt(rm, '2n log n + n → O(n log n)'); cls(rm, 'good'); cnt.mood('happy'); await cnt.hop(tok);
   say('總共約 2n log n + n，最高項是 n log n', 'O(n log n)');
 }]);
 
 FRAG.push(['algbari1-loop-summary', '迴圈複雜度總整理（n = 64）', async (tok) => {
   fresh([0, 5, 14.5], [0, 3, 0]);
   const R = [['i++', 64, 'O(n)', AB.blue], ['i += 2', 32, 'O(n)', AB.blue], ['i--', 64, 'O(n)', AB.blue], ['i *= 2', 6, 'O(log₂ n)', AB.green], ['i *= 3', 4, 'O(log₃ n)', AB.green], ['i /= 2', 6, 'O(log₂ n)', AB.green]];
-  tag('n = 64（示意）：常見迴圈各跑幾次', 'ptr', 0, 7.6);
+  tag('n = 64（示意）：常見迴圈各跑幾次', 'ptr', 0, 6.4);
   say('把到目前的迴圈整理一下', '');
   const one = async (r, sub) => {
     const [nm, c, big, col] = R[r], x = -5.5 + r * 2.2;
     tag(nm, 'ptr', x, 0, 1.4);
-    const m = abBar(col, 1.3, 1.3, x, 0); await abGrow(tok, m, 0.15 + c * 0.085, 500);
-    tag(c + ' 次', 'idx', x, 0.4 + c * 0.085); tag(big, 'ptr alt', x, 1.1 + c * 0.085);
+    const m = abBar(col, 1.3, 1.3, x, 0); await abGrow(tok, m, 0.15 + c * 0.065, 500);
+    tag(c + ' 次', 'idx', x, 0.4 + c * 0.065); tag(big, 'ptr alt', x, 1.0 + c * 0.065);
     say(nm + '：' + c + ' 次 → ' + big, sub);
   };
   await step(tok);                                   // 721 i++ → O(n)
@@ -2053,19 +2082,20 @@ FRAG.push(['algbari1-loop-summary', '迴圈複雜度總整理（n = 64）', asyn
   await step(tok);                                   // 785 i /= 2 → log₂ n
   await one(5, 'i 從 n 開始除 2，i > 1 就繼續');
   await step(tok);                                   // 806.8 +1, +2, +10, +100 → O(n)
-  note('加或減（1、2、10、100）→ O(n)', -3.3, 7.0, 0);
+  note('加或減（1、2、10、100）→ O(n)', 3.3, 4.0, 0);
   say('當公式記：用加減的 → O(n)', '每次加 1、2、10、100 都一樣');
   await step(tok);                                   // 817.8 n/2, n/200 → O(n)
-  note('n/2、n/200 都寫 O(n)', -3.3, 6.4, 0);
+  note('n/2、n/200 都寫 O(n)', 3.3, 3.3, 0);
   say('n/2、n/200 也都是 O(n)', '寫的是多項式的次數');
   await step(tok);                                   // 833.8 n²/2 → n²
-  note('n²/2 → 寫 n²', 3.3, 6.7, 0);
+  note('n²/2 → 寫 n²', 3.3, 2.6, 0);
   say('n²/2 就寫 n²', '只寫那一項，不寫係數');
 }]);
 
 // ═══ p1EnSvS3urU：1.5.3 while、if ═══
 FRAG.push(['algbari1-loop-kinds', 'for、while、do-while、repeat-until', async (tok) => {
   fresh([0, 6, 14.5], [0, 2.4, 0]);
+  frameHold(0, 0, 0, 0, 7.8, 0);
   const X = [-4.8, -1.6, 1.6, 4.8];
   const head = (q, a, b) => { tag(a, 'ptr', X[q], 6.6); tag(b, 'idx', X[q], 6.0); };
   const cnt = X.map((x) => tag('', 'ptr alt', x, 5.0));
@@ -2079,8 +2109,8 @@ FRAG.push(['algbari1-loop-kinds', 'for、while、do-while、repeat-until', async
   head(1, 'while', 'while (cond) {…}'); head(2, 'do-while', 'do {…} while (cond);');
   say('C 語言的迴圈：for、while、do-while', 'while 和 do-while 有差別');
   await step(tok);                                   // 27.2 do-while ≥ 1; for and while are the same
-  note('至少執行 1 次', X[2], 4.3, 0);
-  note('C 的 for ⇄ while 可以互換', X[1], 4.3, 0);
+  const n1 = note('至少執行 1 次', X[2], 3.7, 0);
+  const n2 = note('C 的 for ⇄ while 可以互換', X[1], 4.3, 0);
   say('do-while 至少做 1 次', 'for 能做的 while 都能做，反過來也是');
   await step(tok);                                   // 43.1 before C, for looked different
   head(0, 'Pascal 的 for', '');
@@ -2089,11 +2119,11 @@ FRAG.push(['algbari1-loop-kinds', 'for、while、do-while、repeat-until', async
   tag('for i := 1 to n do', 'idx', X[0], 6.0);
   say('Pascal：for i := 1 to n do', '');
   await step(tok);                                   // 65.3 i goes 1 to n, +1 at a time
-  for (let i = 1; i <= 5; i++) { cube('i=' + i, AB.blue, [1.3, 0.4, 0.9], X[0], 0.2 + (i - 1) * 0.45, 0, 3); txt(cnt[0], i + ' 次'); await beat(tok, 300); }
+  for (let i = 1; i <= 5; i++) { cube('i=' + i, AB.blue, [1.2, 0.4, 0.9], X[0] - 0.7, 0.22 + (i - 1) * 0.56, 0, 3); txt(cnt[0], i + ' 次'); await beat(tok, 300); }
   say('i 從 1 到 n，一次只能加 1', 'n = 5（示意）');
   await step(tok);                                   // 84.3 step 2: 1, 3, 5
-  [1, 3, 5].forEach((i, k) => cube('i=' + i, AB.teal, [1.3, 0.4, 0.9], X[0], 0.2 + k * 0.45, 1.8, 3));
-  tag('step 2', 'idx', X[0], 1.6, 1.8);
+  [1, 3, 5].forEach((i, k) => cube('i=' + i, AB.teal, [1.2, 0.4, 0.9], X[0] + 0.7, 0.22 + k * 0.56, 0, 3)); // beside the step-1 stack
+  tag('step 2', 'idx', X[0] + 0.7, 1.95, 0);
   say('要加 2 得寫 step 2：i = 1、3、5……', '還是線性增加');
   await step(tok);                                   // 124.8 such a for: n times, condition n + 1
   txt(cnt[0], '本體 n 次、條件 n + 1');
@@ -2105,8 +2135,8 @@ FRAG.push(['algbari1-loop-kinds', 'for、while、do-while、repeat-until', async
   const q1 = bub('何時停？跑幾次？', X[1], 2.0, 0); host.mood('wow');
   say('得研究它什麼時候停、跑了幾次', '再做分析');
   await step(tok);                                   // 168.8 old for: blindly n; while: cannot say n
-  remove(q1);
-  okT('直接說 n', X[0], 3.6, 0); noT('不能直接說 n', X[1], 3.6, 0);
+  remove(q1); kill(n1); kill(n2); // the C remarks are done
+  const dn = okT('直接說 n', X[0], 3.6, 0); noT('不能直接說 n', X[1], 3.6, 0);
   say('舊式 for 可以直接說 n', 'while 沒研究過不能說 n');
   await step(tok);                                   // 186 do-while: post-tested, runs once even if false
   cube('body', AB.purple, [1.4, 0.45, 0.9], X[2], 0.23, 0, 3);
@@ -2121,18 +2151,18 @@ FRAG.push(['algbari1-loop-kinds', 'for、while、do-while、repeat-until', async
   await step(tok);                                   // 243.8 repeats while false, stops when true
   const seq = ['false', 'false', 'true'];
   for (let k = 0; k < 3; k++) {
-    cube('body', AB.orange, [1.4, 0.4, 0.9], X[3], 0.2 + k * 0.45, 0, 3); txt(cnt[3], (k + 1) + ' 次');
-    const g = cube(seq[k], k < 2 ? AB.sand : AB.green, [1.2, 0.38, 0.8], X[3], 0.19 + k * 0.42, 1.8, 2);
+    cube('body', AB.orange, [1.2, 0.4, 0.9], X[3] - 0.7, 0.22 + k * 0.56, 0, 3); txt(cnt[3], (k + 1) + ' 次');
+    const g = cube(seq[k], k < 2 ? AB.sand : AB.green, [1.1, 0.4, 0.9], X[3] + 0.6, 0.22 + k * 0.56, 0, 2); // the check beside its body
     if (k === 2) glow(g, GREEN);
     await beat(tok, 600);
   }
   say('repeat-until：條件 false 就繼續，true 就停', '');
   await step(tok);                                   // 257.9 like do-while ≥ 1, but opposite condition
-  note('do-while：true 繼續｜repeat-until：true 停', 3.2, 3.6, 0);
+  const cmp = note('do-while：true 繼續｜repeat-until：true 停', 3.2, 3.6, 0);
   say('跟 do-while 一樣至少做 1 次', '但條件相反');
   await step(tok);                                   // 294.8 all three: study them (n, log n, √n…)
   host.set('n？log n？'); host.mood('calm');
-  okT('for → 直接 O(n)', X[0], 2.9, 0); note('while 這三種：要研究，可能 n、log n、√n…', 1.6, 2.6, 1.8);
+  txt(dn, 'for → 直接 O(n)'); txt(cmp, 'while 這三種：要研究，可能 n、log n、√n…');
   say('while、do-while、repeat-until 都得研究', '可能是 n、log n、√n……');
 }]);
 
@@ -2143,10 +2173,10 @@ FRAG.push(['algbari1-while-3n2', 'while (i < n) i++：f(n) = 3n + 2', async (tok
   const push = (r, col) => { cube('', col, [1.1, 0.24, 1], SX[r], 0.12 + st[r] * 0.27, 0, 2.5); st[r]++; txt(fq[r], String(st[r])); };
   say('用 while 寫的程式', '');
   await step(tok);                                   // 319.6 a piece of code using a while loop
-  cd = code(['i = 0;', 'while (i < n)', '{', '  stmt;', '  i++;', '}'], -3.8, 7, 0.5);
-  fq = { 0: tag('', 'ptr alt', -1.6, 7), 1: tag('', 'ptr alt', -1.6, 6.5), 3: tag('', 'ptr alt', -1.6, 5.5), 4: tag('', 'ptr alt', -1.6, 5) };
+  cd = code(['i = 0;', 'while (i < n)', '{', '  stmt;', '  i++;', '}'], -3.8, 7.4, 0.6);
+  fq = {}; [0, 1, 3, 4].forEach((r) => { fq[r] = tag('', 'ptr alt', -1.5, 7.4 - r * 0.6); });
   tag('條件', 'idx', SX[1], 0, 1.2); tag('stmt', 'idx', SX[3], 0, 1.2); tag('i++', 'idx', SX[4], 0, 1.2);
-  ib = buddy('i', '', AB.blue, -4.6, 0, 1.6, 0.7);
+  ib = buddy('i', '', AB.blue, -0.2, 0, 1.6, 0.7);
   say('stmt 會執行幾次？', '');
   await step(tok);                                   // 330.8 i = 0: one unit
   cd.hl(0); txt(fq[0], '1'); ib.set(0);
@@ -2168,23 +2198,23 @@ FRAG.push(['algbari1-while-3n2', 'while (i < n) i++：f(n) = 3n + 2', async (tok
   say('i = 10：10 < 10 不成立 → 停', '條件比 stmt 多 1 次 = n + 1');
   await step(tok);                                   // 383.8 3n + 2
   txt(fq[1], 'n + 1'); txt(fq[3], 'n'); txt(fq[4], 'n'); cd.hl(-1);
-  const fx = tag('f(n) = 1 + (n+1) + n + n = 3n + 2', 'ptr', 3.2, 4.4, -1);
+  const fx = tag('f(n) = 1 + (n+1) + n + n = 3n + 2', 'ptr', 3.2, 4.3, -1);
   say('加起來 1 + (n + 1) + n + n', 'f(n) = 3n + 2');
   await step(tok);                                   // 391.8 → Θ(n), O(n)
-  okT('3n + 2 → Θ(n)，也就是 O(n)', 3.2, 3.8, -1); ib.mood('happy');
+  txt(fx, 'f(n) = 3n + 2 → Θ(n)，也就是 O(n)'); cls(fx, 'good'); ib.mood('happy');
   say('f(n) = 3n + 2 → Θ(n)，也就是 O(n)', '');
   await step(tok);                                   // 402.8 the same code with a C for
-  const cf = code(['for (i = 0; i < n; i++)', '  stmt;'], -3.8, 3.6, 0.5);
+  const cf = code(['for (i = 0; i < n; i++)', '  stmt;'], -3.8, 3.5, 0.6);
   cf.hl(0);
   say('同一段用 C 的 for 寫', '');
   await step(tok);                                   // 423.8 counting everything: also 3n + 2
-  tag('1 + (n+1) + n + n = 3n + 2', 'ptr alt', -3.8, 2.4);
+  tag('1 + (n+1) + n + n = 3n + 2', 'ptr alt', -3.8, 2.2);
   say('每一部分都數：一樣 3n + 2', '');
   await step(tok);                                   // 436.8 we ignored i = 0, i++ → 2n + 1
-  note('寫 for 時習慣省略 i = 0、i++ → 2n + 1', -3.8, 1.8);
+  const rm = note('寫 for 時習慣省略 i = 0、i++ → 2n + 1', -3.8, 1.5);
   say('以前寫 for 時省略那兩項，記成 2n + 1', '');
   await step(tok);                                   // 451.2 only the degree → O(n)
-  okT('只在乎次數 → 都是 O(n)', -3.8, 1.2); await ib.hop(tok);
+  txt(rm, '省略也好、不省略也好：只在乎次數 → 都是 O(n)'); cls(rm, 'good'); await ib.hop(tok);
   say('我們只在乎最高次數 → 都是 O(n)', 'while 能寫的，for 也能寫');
 }]);
 
@@ -2196,13 +2226,13 @@ FRAG.push(['algbari1-while-double', 'while：a *= 2、i /= 2 → log n', async (
   if (part === 'double') {
     say('下一段程式', '');
     await step(tok);                                 // 463.8 a = 1; while (a < b) a = a * 2; no n
-    const cd = code(['a = 1;', 'while (a < b) {', '  stmt;', '  a = a * 2;', '}'], -4.4, 7.2, 0.5);
+    const cd = code(['a = 1;', 'while (a < b) {', '  stmt;', '  a = a * 2;', '}'], -4.4, 7.2, 0.56);
     cd.hl(1);
     const ab = buddy('a', '', AB.blue, -5.4, 0, 2.0, 0.7);
-    bub('條件裡沒有 n！', -2.0, 7.4, 0);
+    const nb = bub('條件裡沒有 n！', -1.4, 6.64, 0);
     say('a 從 1 開始，每次乘 2', '條件裡沒有 n：跑幾次不知道');
     await step(tok);                                 // 488.9 trace: a is 1
-    cd.hl(3); ab.set(1); await bar(0, 1, 'a = 1');
+    cd.hl(3); remove(nb); ab.set(1); await bar(0, 1, 'a = 1');
     say('追蹤：a 一開始是 1', '');
     await step(tok);                                 // 500.7 1×2 = 2, 2×2 = 2²
     ab.set(2); await bar(1, 2, '1×2 = 2'); ab.set(4); await bar(2, 4, '2×2 = 2²');
@@ -2211,42 +2241,42 @@ FRAG.push(['algbari1-while-double', 'while：a *= 2、i /= 2 → log n', async (
     ab.set(8); await bar(3, 8, '2³'); tag('…', 'ptr alt', BX(4), 0.4);
     say('再來 2³……一直乘下去', '');
     await step(tok);                                 // 525.4 stops somewhere: 2ᵏ, k times
-    tag('跑 k 次：a = 2ᵏ', 'ptr alt', 3.6, 3.4);
+    const der = tag('跑 k 次：a = 2ᵏ', 'ptr alt', 3.8, 3.4); // one derivation line, rewritten
     say('假設在某處停下，那時 a = 2ᵏ', '跑了 k 次，要求出 k');
     await step(tok);                                 // 544.8 ends when a ≥ b
     const lim = lab.box(AB.red, [8.5, 0.05, 0.05]); lim.position.set(1.4, 16 * SY, 0); lab.world.add(lim);
     tag('b', 'ptr', 5.9, 16 * SY + 0.3); ab.mood('wow');
     say('a ≥ b 時結束', '');
     await step(tok);                                 // 567.8 2ᵏ = b → k = log₂ b
-    tag('2ᵏ ≥ b → 令 2ᵏ = b → k = log₂ b', 'ptr', 1.6, 6.0, -1);
+    txt(der, '跑 k 次：2ᵏ ≥ b → 令 2ᵏ = b → k = log₂ b'); der.position.set(2.2, 5.6, 0);
     say('2ᵏ ≥ b，取等號 2ᵏ = b', 'k = log₂ b');
     await step(tok);                                 // 585.8 call b n → O(log n)
-    okT('把 b 叫做 n → O(log n)', 1.6, 6.6, -1); ab.mood('happy'); await ab.hop(tok);
+    txt(der, 'k = log₂ b：把 b 叫做 n → O(log n)'); cls(der, 'good'); ab.mood('happy'); await ab.hop(tok);
     say('習慣用 n：把 b 叫做 n', 'O(log n)');
     await step(tok);                                 // 605.8 the same with a for loop
-    tag('for (a = 1; a < b; a = a * 2)', 'ptr alt', 1.6, 7.3, -1);
+    tag('for (a = 1; a < b; a = a * 2)', 'ptr alt', 2.2, 6.6, 0);
     say('之前用 for 寫過同一件事', 'for (a = 1; a < b; a = a * 2)');
     await step(tok);                                 // 656 C's for: write anything, as long as it stops
-    note('C 的 for：三個部分想寫什麼都行，只要會停', -2.2, 1.0, 2.4);
+    note('C 的 for：三個部分想寫什麼都行，只要會停', 2.2, 7.3, 0);
     say('C 的 for 很自由：初始化、條件、更新都能隨便寫', '只要迴圈有限步會停');
     return;
   }
   // part 'halve'
   say('再一個 while', '');
   await step(tok);                                   // 702 i starts from n and is divided by 2
-  const cd = code(['i = n;', 'while (i > 1) {', '  stmt;', '  i = i / 2;', '}'], -4.4, 7.2, 0.5);
+  const cd = code(['i = n;', 'while (i > 1) {', '  stmt;', '  i = i / 2;', '}'], -4.4, 7.2, 0.56);
   cd.hl(3);
   const ib = buddy('i', 'n', AB.blue, -5.4, 0, 2.0, 0.7);
   for (const [k, v, l] of [[0, 16, 'n'], [1, 8, 'n/2'], [2, 4, 'n/2²'], [3, 2, 'n/2³']]) { ib.set(v); await bar(k, v, l); }
   say('i 從 n 開始，每次除以 2', 'n = 16（示意）');
   await step(tok);                                   // 709.6 → log n (a formula already)
-  okT('除 2 → O(log n)', 3.6, 5.6); ib.mood('happy');
+  okT('除 2 → O(log n)', 3.8, 5.6); ib.mood('happy');
   say('上一支已經當公式：除 2 的迴圈是 log n', '');
   await step(tok);                                   // 716.8 the same with a for loop
-  tag('for (i = n; i > 1; i = i / 2)', 'ptr alt', 1.2, 7.3, -1);
+  tag('for (i = n; i > 1; i = i / 2)', 'ptr alt', 2.2, 6.6, 0);
   say('也能寫成 for (i = n; i > 1; i = i / 2)', '');
   await step(tok);                                   // 732.1 the same thing → the same time
-  note('for 或 while 寫，時間一樣', 3.6, 4.6);
+  note('for 或 while 寫，時間一樣', 2.2, 7.3, 0);
   await ib.hop(tok);
   say('同一件事用 for 或 while 寫', '時間都一樣');
 }]);
@@ -2256,11 +2286,11 @@ FRAG.push(['algbari1-while-ksum', 'k = k + i：m(m+1)/2 ≥ n → √n', async (
   const N = 20, SY = 0.22, BX = (m) => -2.4 + (m - 1) * 1.3;
   say('再一個迴圈', '');
   await step(tok);                                   // 745.8 k < n; k grows by i; i grows by 1
-  const cd = code(['i = 1; k = 1;', 'while (k < n) {', '  stmt;', '  k = k + i;', '  i++;', '}'], -4.2, 7.6, 0.48);
+  const cd = code(['i = 1; k = 1;', 'while (k < n) {', '  stmt;', '  k = k + i;', '  i++;', '}'], -4.2, 7.6, 0.54);
   cd.hl(3);
   say('k 每次加上 i，i 每次也加 1', '跑幾次看不出來');
   await step(tok);                                   // 761.8 i and k both start at 1
-  const ib = buddy('i', 1, AB.blue, -5.6, 0, 0.6, 0.65), kb = buddy('k', 1, AB.orange, -5.6, 0, 2.2, 0.65);
+  const ib = buddy('i', 1, AB.blue, -5.8, 0, 0.6, 0.65), kb = buddy('k', 1, AB.orange, -4.4, 0, 0.6, 0.65); // side by side
   say('追蹤 i、k：一開始都是 1', '');
   const SUM = ['1 + 1', '2 + 2', '2 + 2 + 3', '2+2+3+4', '2+…+5', '2+…+6'];
   let i = 1, k = 1, m = 0;
@@ -2276,10 +2306,10 @@ FRAG.push(['algbari1-while-ksum', 'k = k + i：m(m+1)/2 ≥ n → √n', async (
   say('k = 2 + 2 + 3 = 7，再 2 + 2 + 3 + 4 = 11', '一直加下去');
   await step(tok);                                   // 816.8 call it m times
   await one();
-  tag('跑了 m 次：k = 2 + 2 + 3 + … + m', 'ptr alt', 1.6, 6.4, -1);
+  const der = tag('跑了 m 次：k = 2 + 2 + 3 + … + m', 'ptr alt', 1.6, 6.1, -1); // one derivation line, rewritten
   say('跑幾次不知道，叫它 m 次', 'k = 2 + 2 + 3 + … + m');
   await step(tok);                                   // 826.8 ≈ 1 + 2 + … + m = m(m + 1)/2
-  tag('≈ 1 + 2 + … + m = m(m + 1)/2', 'ptr', 1.6, 7.0, -1);
+  txt(der, '跑了 m 次：k ≈ 1 + 2 + … + m = m(m + 1)/2');
   say('把開頭的 2 看成 1：就是 1 + 2 + … + m', '= m(m + 1)/2');
   await step(tok);                                   // 856.8 stops when k ≥ n
   const lim = lab.box(AB.red, [9.5, 0.05, 0.05]); lim.position.set(1.4, N * SY, 0); lab.world.add(lim);
@@ -2287,10 +2317,10 @@ FRAG.push(['algbari1-while-ksum', 'k = k + i：m(m+1)/2 ≥ n → √n', async (
   const last = await one(); glow(last, RED); kb.mood('wow');
   say('k < n 就繼續；k ≥ n 就停', 'k = 22 ≥ 20 → 停');
   await step(tok);                                   // 869.8 m(m + 1)/2 ≥ n → m² ≈ n
-  tag('m(m + 1)/2 ≥ n → m² ≈ n', 'ptr', 1.6, 7.6, -1);
+  txt(der, '停：m(m + 1)/2 ≥ n → m² ≈ n');
   say('停止時 m(m + 1)/2 ≥ n', '大約 m² ≈ n');
   await step(tok);                                   // 876.8 m ≈ √n → O(√n)
-  okT('m ≈ √n → O(√n)', 5.6, 6.2, -1); kb.mood('happy'); await kb.hop(tok);
+  txt(der, '停：m(m + 1)/2 ≥ n → m² ≈ n → m ≈ √n → O(√n)'); cls(der, 'good'); kb.mood('happy'); await kb.hop(tok);
   say('m 大約是 √n → O(√n)', 'n = 20 跑了 6 次');
   await step(tok);                                   // 902.9 also with a for, harder to read
   note('for (k = 1, i = 1; k < n; i++) k = k + i;', -2.0, 1.4, 2.6);
@@ -2361,42 +2391,43 @@ FRAG.push(['algbari1-if-cases', 'if 讓時間分成 best / worst case', async (t
   fresh([0, 6, 14], [0, 2.6, 0]);
   say('最後看條件句 if', '');
   await step(tok);                                   // 1162.8 a random code: Test(n)
-  const cd = code(['Algorithm Test(n)', '{', '  if (n < 5)', '    printf("%d", n);', '  else', '  {', '    for (i = 0; i < n; i++)', '      stmt;', '  }', '}'], -3.6, 7.4, 0.46);
-  const me = buddy('', '?', AB.gold, 5.6, 0, -1.8, 0.7);
+  const cd = code(['Algorithm Test(n)', '{', '  if (n < 5)', '    printf("%d", n);', '  else', '  {', '    for (i = 0; i < n; i++)', '      stmt;', '  }', '}'], -3.6, 7.6, 0.52);
+  const me = buddy('', '?', AB.gold, 6.4, 0, -2.4, 0.7);
   say('隨手寫的 Test(n)，沒有特別意義', '');
   await step(tok);                                   // 1175.8 n < 5 → print; else → the loop
   cd.hl(2);
-  note('n < 5：印出 n', -0.2, 6.5, 0); note('n ≥ 5：進 else 跑迴圈', -0.2, 4.6, 0);
+  note('n < 5：印出 n', 0.6, 6.56, 0); note('n ≥ 5：進 else 跑迴圈', 0.6, 4.48, 0);
   say('n < 5 就印出 n；n ≥ 5 就進 else 跑迴圈', '');
   await step(tok);                                   // 1195.8 the loop: n times; the print: once
-  cd.hl(6); tag('n 次', 'ptr alt', 2.2, 4.64); tag('1 次', 'ptr alt', 2.2, 6.02);
+  cd.hl(6); tag('n 次', 'ptr alt', 3.4, 4.48); tag('1 次', 'ptr alt', 3.4, 6.04);
   say('迴圈跑 n 次；印出只做 1 次', '');
   await step(tok);                                   // 1206.7 conditions decide different amounts of time
-  cd.hl(-1); bub('時間要看條件！', 5.6, 1.8, -1.8); me.mood('wow');
+  cd.hl(-1); const qb = bub('時間要看條件！', 6.4, 2.0, -2.4); me.mood('wow');
   say('有條件句時，花的時間可能依條件而不同', '');
-  const run = async (n, z) => {
-    tag('n = ' + n, 'ptr alt', -0.4, 0.2, z);
+  const run = async (n, y) => { // the two runs are two rows on a wall
+    const z = 0; remove(qb);
+    tag('n = ' + n, 'ptr alt', -0.4, y, z);
     cd.hl(2); await beat(tok, 400);
-    if (n < 5) { cd.hl(3); cube('print', AB.green, [1.0, 0.5, 0.8], 1.2, 0.25, z, 3); await beat(tok, 500); }
-    else { cd.hl(6); for (let i = 0; i < n; i++) { cube('', AB.purple, [0.42, 0.5, 0.8], 1.0 + i * 0.5, 0.25, z, 2.5); await beat(tok, 140); } }
+    if (n < 5) { cd.hl(3); cube('print', AB.green, [1.0, 0.5, 0.4], 1.2, y, z); await beat(tok, 500); }
+    else { cd.hl(6); for (let i = 0; i < n; i++) { cube('', AB.purple, [0.42, 0.5, 0.4], 1.0 + i * 0.5, y, z); await beat(tok, 140); } }
   };
   await step(tok);                                   // 1218.8 true → one statement → O(1)
-  await run(3, 0.6);
-  tag('O(1)', 'ptr', 3.2, 0.4, 0.6);
+  await run(3, 1.7);
+  const o1 = tag('O(1)', 'ptr', 2.4, 1.7);
   say('條件成立（例 n = 3）：只做一個敘述', 'O(1)');
   await step(tok);                                   // 1227.2 false → n times → O(n)
-  await run(10, 2.2);
-  tag('O(n)', 'ptr', 6.4, 0.4, 2.2);
+  await run(10, 0.7);
+  const on = tag('O(n)', 'ptr', 6.4, 0.7);
   say('條件不成立（例 n = 10）：迴圈跑 n 次', 'O(n)');
   await step(tok);                                   // 1235.3 best case / worst case
-  okT('best case', 3.2, 1.0, 0.6); noT('worst case', 6.4, 1.0, 2.2); me.mood('happy');
+  txt(o1, 'O(1)：best case'); cls(o1, 'good'); txt(on, 'O(n)：worst case'); cls(on, 'bad'); on.position.x = 6.9; me.mood('happy');
   say('前者是 best case，後者是 worst case', '');
   await step(tok);                                   // 1263.9 not a rule
-  note('有 if ≠ 一定有 best / worst case', 5.4, 3.4, -1.8);
+  const rule = note('有 if ≠ 一定有 best / worst case', 4.4, 3.2, 0);
   say('但這不是規則', '有 if 不代表一定會有最好、最壞');
   await step(tok);                                   // 1274.2 change the condition: only one case
   txt(cd.ls[2], '  if (n > 5)        '); cd.hl(2);
-  note('改成：n > 5 才跑迴圈，否則什麼都不做 → 只有一種情況', -0.6, 3.1, 3.4);
+  txt(rule, '改成：n > 5 才跑迴圈，否則什麼都不做 → 只有一種情況');
   me.mood('calm');
   say('改一下條件：n > 5 就跑 n 次', '沒有最好最壞之分，只剩一種情況');
 }]);
@@ -2405,10 +2436,11 @@ FRAG.push(['algbari1-if-cases', 'if 讓時間分成 best / worst case', async (t
 FRAG.push(['algbari1-classes', '函數類別：constant、log、linear…', async (tok) => {
   fresh([0, 6, 14.5], [0, 2.6, 0]);
   const COLS = [['O(1)', 'constant', AB.teal], ['O(log n)', 'logarithmic', AB.green], ['O(n)', 'linear', AB.blue], ['O(n²)', 'quadratic', AB.purple], ['O(n³)', 'cubic', AB.orange], ['O(2ⁿ)', 'exponential', AB.red]];
-  const X = (c) => -5.5 + c * 2.2, h = [0, 0, 0, 0, 0, 0];
-  const col = (c) => { tag(COLS[c][0], 'ptr', X(c), 0.1, 1.6); tag(COLS[c][1], 'idx', X(c), 0.1, 2.4); };
-  const ex = async (c, s) => { cube(s, COLS[c][2], [2, 0.55, 1.1], X(c), 0.28 + h[c] * 0.6, 0, 3); h[c]++; await beat(tok, 350); };
-  const sorter = buddy('分類員', '', AB.gold, 0, 0, 4.2, 0.7);
+  const X = (c) => -6 + c * 2.4, h = [0, 0, 0, 0, 0, 0];
+  const col = (c) => { tag(COLS[c][0], 'ptr', X(c), 0.1, 1.2); tag(COLS[c][1], 'idx', X(c), -0.6, 1.2); }; // class under its column, name under it
+  const ex = async (c, s) => { cube(s, COLS[c][2], [1.9, 0.55, 1.1], X(c), 0.28 + h[c] * 0.6, 0, 3); h[c]++; await beat(tok, 350); };
+  frameHold(-7, -0.8, 0, 7.6, 6.8, 0); // all six columns and the title arrive later
+  const sorter = buddy('分類員', '', AB.gold, 7.4, 0, 0.4, 0.7);
   say('到目前為止得到哪些時間複雜度？', '');
   await step(tok);                                   // 3.8 the types of time functions so far
   pkt('時間函數有哪幾種？', 0, 5.6, 0);
@@ -2440,10 +2472,10 @@ FRAG.push(['algbari1-classes', '函數類別：constant、log、linear…', asyn
   await sorter.hop(tok);
   say('它們都是次數 1 的多項式', '寫的是那一項 n，不寫係數');
   await step(tok);                                   // 112.8 n²: quadratic
-  col(3); await ex(3, 'n²'); tag('例：矩陣相加', 'idx', X(3), 1.1, 0.9);
+  col(3); await ex(3, 'n²'); tag('例：矩陣相加', 'idx', X(3), 1.0, 0);
   say('n² 叫 quadratic', '矩陣相加');
   await step(tok);                                   // 123.8 n³: cubic (matrix multiplication)
-  col(4); await ex(4, 'n³'); tag('例：矩陣相乘', 'idx', X(4), 1.1, 0.9);
+  col(4); await ex(4, 'n³'); tag('例：矩陣相乘', 'idx', X(4), 1.0, 0);
   say('n³ 叫 cubic', '矩陣相乘');
   await step(tok);                                   // 131.8 2ⁿ: exponential
   col(5); await ex(5, '2ⁿ');
@@ -2458,7 +2490,7 @@ FRAG.push(['algbari1-classes', '函數類別：constant、log、linear…', asyn
 
 // ═══ 5v-tKX2uRAk：1.7 Compare Class of Functions ═══
 FRAG.push(['algbari1-class-values', '代值比較：log n、n、n²、2ⁿ', async (tok) => {
-  fresh([0, 9, 9.5], [0, 0, 0.2]);
+  fresh([0, 12.5, 6], [0, 0, 0.4]); // steeper: the table's rows (in depth) read apart
   const X = [-2.1, -0.3, 1.5, 3.3], COL = [AB.green, AB.blue, AB.purple, AB.red];
   const rows = {};
   const ROW = { 1: ['0', '1', '1', '2'], 2: ['1', '2', '4', '4'], 4: ['2', '4', '16', '16'], 8: ['3', '8', '64', '256'], 9: ['≈3.17', '9', '81', '512'] };
@@ -2491,16 +2523,16 @@ FRAG.push(['algbari1-class-values', '代值比較：log n、n、n²、2ⁿ', asy
   [2, 4].forEach((n) => { glow(rows[n][2], GOLD); glow(rows[n][3], GOLD); });
   say('前面 n² 和 2ⁿ 曾經相等', '有時小、有時相等');
   await step(tok);                                   // 138.8 from here on 2ⁿ grows faster
-  note('從這裡開始，2ⁿ 永遠比較快', 5.6, 0.3, 1.2);
+  note('從這裡開始，2ⁿ 永遠比較快', 6.6, 0.3, 1.15);
   say('但從某個 n 之後，2ⁿ 一定長得比較快', '');
   await step(tok);                                   // 143 n = 9
   const r9 = await put(9); glow(r9[3], RED);
   say('n = 9：log 約 3.17、n² = 81、2ⁿ = 512', '');
   await step(tok);                                   // 159.6 n² only +17, 2ⁿ doubles
-  tag('+17', 'idx', X[2], 0.9, 2.3); tag('×2', 'idx', X[3], 0.9, 2.3);
+  tag('+17', 'idx', X[2], 0.25, 3.0); tag('×2', 'idx', X[3], 0.25, 3.0);
   say('n 從 8 到 9：n² 只多 17', '2ⁿ 直接翻倍');
   await step(tok);                                   // 184.8 so they are arranged in this order
-  okT('log n < n < n² < 2ⁿ', 0, 0.3, 3.3);
+  okT('log n < n < n² < 2ⁿ', 0, 0.3, 3.7);
   say('所以順序是 log n < n < n² < 2ⁿ', '小 n 時也許相等，之後就固定');
 }]);
 
@@ -2777,20 +2809,22 @@ FRAG.push(['algbari1-abuse-eq', 'O、Ω、Θ 回顧：「=」其實是「∈」'
   fresh([0, 5.5, 14], [0, 2.4, 0]);
   const T = [['Big-O', 'upper bound', AB.green], ['Big-Ω', 'lower bound', AB.purple], ['Θ', 'tight bound', AB.gold]];
   say('上次的三個 notation', 'upper bound、lower bound、tight bound');
-  for (let k = 0; k < 3; k++) { const x = -3.6 + k * 3.6; cube(T[k][0], T[k][2], [2.4, 0.7, 1], x, 0.35, -2.2, 3); tag(T[k][1], 'idx', x, 1.2, -2.2); await beat(tok, 700); }
+  const three = [];
+  for (let k = 0; k < 3; k++) { const x = -3.6 + k * 3.6; three.push(cube(T[k][0], T[k][2], [2.4, 0.7, 1], x, 0.35, 0, 3), tag(T[k][1], 'idx', x, 1.2, 0)); await beat(tok, 700); }
   await beat(tok, 1200);
   say('證明要 by definition', '找出適當的 c 和 n₀，讓不等式成立');
   await beat(tok, 2800);
-  const gb = ghostBox(AB.green, 7.4, 1.6, 2.4); gb.position.set(0, 0.8, 1.6);
-  tag('O(f(n))：一群函數（集合）', 'ptr alt', 0, 2.1, 1.6);
-  const mem = ['g₁(n)', 'g₂(n)', 'g₃(n)'].map((s, k) => cube(s, AB.blue, [1.5, 0.5, 0.9], -2.4 + k * 1.6, 0.25, 1.6, 2.5));
+  three.forEach((o) => kill(o)); // the recap is done: the set takes the stage
+  const gb = ghostBox(AB.green, 7.4, 1.6, 2.4); gb.position.set(0, 0.8, 0);
+  tag('O(f(n))：一群函數（集合）', 'ptr alt', 0, 2.1, 0);
+  const mem = ['g₁(n)', 'g₂(n)', 'g₃(n)'].map((s, k) => cube(s, AB.blue, [1.5, 0.5, 0.9], -2.4 + k * 1.6, 0.25, 0, 2.5));
   say('O(f(n)) 是一個集合', '所有以 f(n) 為上界的函數');
   await beat(tok, 2600);
-  const t = cube('T(n)', AB.red, [1.5, 0.5, 0.9], 2.6, 0.25, 1.6, 4);
+  const t = cube('T(n)', AB.red, [1.5, 0.5, 0.9], 2.6, 0.25, 0, 4);
   say('習慣寫 T(n) = O(f(n))', '這個等號其實是 abuse');
   await beat(tok, 2400);
   glow(t, GOLD); mem.forEach((m) => glow(m, null));
-  tag('T(n) ∈ O(f(n))', 'ptr', 2.6, 1.2, 2.9);
+  tag('T(n) ∈ O(f(n))', 'ptr', 2.6, 1.0, 1.4);
   say('寫等號，心裡要知道是「屬於」', 'T(n) = O(f(n))  ≡  T(n) ∈ O(f(n))');
   await beat(tok, 3200);
 }]);
@@ -2854,17 +2888,19 @@ FRAG.push(['algbari1-rule-sums', 'Rule of sums：加起來 = 取 max', async (to
 }]);
 
 FRAG.push(['algbari1-rule-products', 'Rule of products：迴圈 = 圈數 × 每圈', async (tok) => {
-  fresh([0, 7, 12.5], [0, 1.4, 0]);
-  code(['for (…)            // 跑 f₁ 圈', '{', '  每圈要做的事    // 每圈 f₂', '}'], -1.8, 6.8, 0.5);
+  fresh([0, 4.6, 13], [0, 3.6, 0]);
+  frameHold(-5.6, 0.6, 0, 3.4, 6.8, 0); // the rounds arrive later
+  code(['for (…)            // 跑 f₁ 圈', '{', '  每圈要做的事    // 每圈 f₂', '}'], -1.8, 7.0, 0.56);
+  const Y = (r) => 3.7 - r * 0.62; // one row per round, on a wall
   say('for / while loop 的長相', '先看跑幾圈，再看每圈做多少');
   await beat(tok, 2400);
   const R = 5, W = 3;
-  tag('f₁ = 5 圈（示意）', 'ptr alt', -5, 0.2, -2.6);
-  for (let r = 0; r < R; r++) { tag('第 ' + (r + 1) + ' 圈', 'idx', -4.6, 0.2, -1.8 + r * 0.9); }
+  tag('f₁ = 5 圈（示意）', 'ptr alt', -4.6, 4.4);
+  for (let r = 0; r < R; r++) { tag('第 ' + (r + 1) + ' 圈', 'idx', -4.6, Y(r)); }
   await beat(tok, 1400);
   say('每一圈內部做 f₂ 的工作', 'f₂ = 3（示意）');
-  for (let r = 0; r < R; r++) { for (let c = 0; c < W; c++) { cube('', AB.purple, [0.9, 0.4, 0.7], -2.6 + c * 1.1, 0.2, -1.8 + r * 0.9, 2.5); await beat(tok, 120); } await beat(tok, 200); }
-  tag('5 × 3 = 15', 'ptr', 2.4, 0.4, 0);
+  for (let r = 0; r < R; r++) { for (let c = 0; c < W; c++) { cube('', AB.purple, [0.9, 0.44, 0.3], -2.6 + c * 1.1, Y(r), 0); await beat(tok, 120); } await beat(tok, 200); }
+  tag('5 × 3 = 15', 'ptr', 1.6, Y(2));
   say('total = f₁ × f₂', '');
   await beat(tok, 2200);
   say('f₁ = O(g₁)、f₂ = O(g₂)', '⇒ f₁·f₂ = O(g₁·g₂)；Ω、Θ 也成立');
@@ -2873,6 +2909,7 @@ FRAG.push(['algbari1-rule-products', 'Rule of products：迴圈 = 圈數 × 每�
 
 FRAG.push(['algbari1-poly-ladder', '常見複雜度：polynomial 與更高', async (tok) => {
   fresh([0, 6, 14.5], [0, 2.2, 0]);
+  frameHold(-6.4, 0, 0, 6.4, 4.8, 0); // the exponential shelf arrives later
   const P1 = [['O(1)', 'constant'], ['O(log n)', 'logarithmic'], ['O(n^0.5)', 'sublinear'], ['O(n)', 'linear'], ['O(n log n)', 'loglinear'], ['O(n²)', 'quadratic'], ['O(n³)', 'cubic'], ['O(n⁴)', 'quartic']];
   say('polynomial time：O(p(n))', 'p(n) 是 nᵈ 的形式，d 是常數');
   await beat(tok, 2600);
@@ -2883,11 +2920,12 @@ FRAG.push(['algbari1-poly-ladder', '常見複雜度：polynomial 與更高', asy
     say(P1[k][0] + '：' + P1[k][1], k === 0 ? 'n⁰ = 1：跟 input size 無關' : k === 2 ? '√n：還不到 n¹，比 linear 小' : k === 4 ? 'linear × log' : '');
     await beat(tok, k === 0 || k === 2 ? 2000 : 1200);
   }
-  tag('n¹⁰⁰、n^10000000 也是 polynomial', 'ptr alt', 0, 3.4, 0);
+  tag('n¹⁰⁰、n^10000000 也是 polynomial', 'ptr alt', -2.6, 3.0, 0);
   say('n 的超大次方仍是 polynomial', '理論上符合，實務上用不了');
   await beat(tok, 2600);
   const NP = [['O(2ⁿ)', 'exponential'], ['O(n!)', 'factorial'], ['O(nⁿ)', '']];
-  for (let k = 0; k < NP.length; k++) { const x = -2.4 + k * 2.4; cube(NP[k][0], AB.red, [1.8, 0.8, 1], x, 0.4, 2.8, 3); if (NP[k][1]) tag(NP[k][1], 'idx', x, 0.1, 3.7); await beat(tok, 700); }
+  // beyond polynomial: a separate shelf up on the right, not in front of the ladder
+  for (let k = 0; k < NP.length; k++) { const x = 0.8 + k * 2.2; cube(NP[k][0], AB.red, [1.8, 0.8, 1], x, 4.3, 0); if (NP[k][1]) tag(NP[k][1], 'idx', x, 3.65, 0.5); await beat(tok, 700); }
   say('2ⁿ、3ⁿ…都叫 exponential', 'n! factorial、nⁿ 更大');
   await beat(tok, 2400);
   for (let k = 0; k < 6; k++) glow(ms[k], GREEN);
@@ -2954,9 +2992,9 @@ FRAG.push(['algbari1-gs-four-ops', 'line 2、3、4、6 各要 O(1)', async (tok)
 }]);
 
 FRAG.push(['algbari1-gs-arrays', '男生女生編號 1..n、ManPref 用 array', async (tok) => {
-  fresh([0, 7.5, 11.5], [0, 0.8, 0]);
+  fresh([0, 9.5, 9.5], [0, 0.4, 0.2]); // steeper: the table rows (in depth) read apart
   const MX = [-5, -3.9, -2.8], WX = [2.8, 3.9, 5];
-  tag('男生', 'ptr', -3.9, 1.2, -2.8); tag('女生', 'ptr', 3.9, 1.2, -2.8);
+  tag('男生', 'ptr', -3.9, 1.0, -3.6); tag('女生', 'ptr', 3.9, 1.0, -3.6);
   const men = ['X', 'Y', 'Z'].map((s, k) => cube(s, AB.blue, [1, 0.6, 0.9], MX[k], 0.3, -2.8, 3));
   const wom = ['Amy', 'Bertha', 'Clare'].map((s, k) => cube(s, AB.pink, [1, 0.6, 0.9], WX[k], 0.3, -2.8, 3));
   say('不存名字，用數字代表', 'n 個男生、n 個女生');
@@ -2964,14 +3002,14 @@ FRAG.push(['algbari1-gs-arrays', '男生女生編號 1..n、ManPref 用 array', 
   men.forEach((m, k) => relabel(m, k + 1)); wom.forEach((m, k) => relabel(m, k + 1));
   say('男生 1..n、女生也 1..n', '兩邊 index 不會打架，不用 n+1..2n');
   await beat(tok, 2800);
-  tag('兩個長度 n 的 array', 'ptr alt', 0, 1.6, -2.8);
+  tag('兩個長度 n 的 array', 'ptr alt', 0, 0.3, -2.8);
   await beat(tok, 1400);
-  tag('ManPref', 'ptr', -3.6, 0.3, -0.6);
+  tag('ManPref', 'ptr', -3.6, 0.3, -0.7);
   const PREF = [[1, 2, 3], [2, 1, 3], [1, 2, 3]], NAMES = ['Amy', 'Bertha', 'Clare'];
   const cells = [];
   for (let r = 0; r < 3; r++) {
-    tag('男 ' + (r + 1), 'ptr alt', -3.6, 0.3, 0.5 + r * 1.1);
-    cells.push(PREF[r].map((w, c) => cube(NAMES[w - 1], AB.sand, [1.3, 0.45, 0.85], -1.6 + c * 1.5, 0.23, 0.5 + r * 1.1, 2.5)));
+    tag('男 ' + (r + 1), 'ptr alt', -3.6, 0.3, 0.5 + r * 1.3);
+    cells.push(PREF[r].map((w, c) => cube(NAMES[w - 1], AB.sand, [1.3, 0.45, 0.85], -1.6 + c * 1.5, 0.23, 0.5 + r * 1.3, 2.5)));
     await beat(tok, 600);
   }
   say('男生 1：Amy、Bertha、Clare', '名字換成編號');
@@ -2986,10 +3024,10 @@ FRAG.push(['algbari1-gs-arrays', '男生女生編號 1..n、ManPref 用 array', 
 FRAG.push(['algbari1-free-why', 'free man 數量會變：不適合 static array', async (tok) => {
   fresh([0, 6.5, 12.5], [0, 1, 0]);
   const n = 5, X = (k) => -4 + k * 1.6;
-  tag('男生 1..5 的狀態', 'ptr', 0, 0.4, -2.6);
+  tag('男生 1..5 的狀態', 'ptr', 0, 2.2, -1.4); // name above the row, the count under the name
   const ms = [];
   for (let k = 0; k < n; k++) ms.push(cube(String(k + 1), AB.green, [1.2, 0.6, 1], X(k), 0.3, -1.4, 3));
-  const cnt = tag('free：5 人', 'ptr alt', 0, 1.6, -1.4);
+  const cnt = tag('free：5 人', 'ptr alt', 0, 1.5, -1.4);
   say('line 2：要很快判斷有沒有 free man', '希望 O(1) 取出一個');
   await beat(tok, 2600);
   const EV = [[0, false, '男 1 訂婚'], [1, false, '男 2 訂婚'], [0, true, '男 1 被甩，又變 free'], [2, false, '男 3 訂婚']];
@@ -3001,7 +3039,7 @@ FRAG.push(['algbari1-free-why', 'free man 數量會變：不適合 static array'
   }
   say('free 名單長度一直在變（dynamic）', '→ 不適合 static array');
   await beat(tok, 2600);
-  tag('ManPref[1]：長度固定 n', 'ptr', 0, 0.4, 1.2);
+  tag('ManPref[1]：長度固定 n', 'ptr', 0, 1.2, 2.3);
   [1, 2, 3, 4, 5].forEach((v, k) => cube(String(v), AB.sand, [1.2, 0.45, 0.9], X(k), 0.23, 2.3, 2.5));
   say('preference list 長度不變 → array OK', '');
   await beat(tok, 2400);
@@ -3101,13 +3139,13 @@ const AB_WP = [3, 1, 4, 5, 6, 2], AB_RK = [2, 6, 1, 3, 4, 5];
 FRAG.push(['algbari1-gs-scan', 'line 6：掃 preference list 是 O(n)', async (tok) => {
   fresh([0, 7.5, 11], [0, 0.6, 0]);
   const X = (k) => -3.75 + k * 1.5;
-  tag('WomanPref[1]（第 1 → 6 名）', 'ptr', 0, 0.3, -2.4);
-  const cs = AB_WP.map((m, k) => { tag('第 ' + (k + 1) + ' 名', 'idx', X(k), 0.1, -1.6); return cube('男 ' + m, AB.sand, [1.3, 0.5, 0.9], X(k), 0.25, -0.6, 3); });
-  tag('Current[1] = 6', 'ptr alt', -2.8, 0.3, 2.2);
+  tag('WomanPref[1]（第 1 → 6 名）', 'ptr', 0, 2.0, -0.6); // the array's name above it, rank under each cell
+  const cs = AB_WP.map((m, k) => { tag('第 ' + (k + 1) + ' 名', 'idx', X(k), 0, 0.35); return cube('男 ' + m, AB.sand, [1.3, 0.5, 0.9], X(k), 0.25, -0.6, 3); });
+  tag('Current[1] = 6', 'ptr alt', -2.8, 0.3, 2.4);
   say('女 1 的偏好：3 1 4 5 6 2', '目前和男 6 訂婚');
   await beat(tok, 2600);
   const cur = tag('▼', 'ptr alt', X(0), 1.2, -0.6);
-  const prop = cube('男 1 求婚', AB.blue, [2, 0.6, 1], 2.8, 0.3, 2.2, 3);
+  const prop = cube('男 1 求婚', AB.blue, [2, 0.6, 1], 2.8, 0.3, 2.4, 3);
   say('男 1 來求婚：她比較喜歡誰？', '要知道兩人的名次');
   await beat(tok, 2000);
   const scan = async (target) => {
@@ -3130,11 +3168,11 @@ FRAG.push(['algbari1-gs-scan', 'line 6：掃 preference list 是 O(n)', async (t
 FRAG.push(['algbari1-gs-ranking', 'Ranking[w][m]：反過來存名次，O(1)', async (tok) => {
   fresh([0, 7.5, 11], [0, 0.6, 0]);
   const X = (k) => -3.75 + k * 1.5;
-  tag('WomanPref[1]：依名次存男生', 'ptr', 0, 0.3, -2.9);
-  AB_WP.forEach((m, k) => cube('男 ' + m, AB.sand, [1.3, 0.45, 0.8], X(k), 0.23, -2, 2));
+  tag('WomanPref[1]：依名次存男生', 'ptr', 0, 1.1, -2.6); // each array's name sits right above it
+  AB_WP.forEach((m, k) => cube('男 ' + m, AB.sand, [1.3, 0.45, 0.8], X(k), 0.23, -2.6, 2));
   say('改成：依男生編號存他的名次', '反過來存（inverse）');
   await beat(tok, 2600);
-  tag('Ranking[1][m]：m 排第幾', 'ptr', 0, 0.3, -0.6);
+  tag('Ranking[1][m]：m 排第幾', 'ptr', 0, 1.25, 0.4);
   const rs = AB_RK.map((r, k) => { tag('m=' + (k + 1), 'idx', X(k), 0.1, 1.3); return cube(r, AB.gold, [1.3, 0.5, 0.9], X(k), 0.25, 0.4, 3); });
   await beat(tok, 1200);
   say('意義相同：男 3 第 1、男 1 第 2…', 'Ranking = [2, 6, 1, 3, 4, 5]');
@@ -3143,7 +3181,7 @@ FRAG.push(['algbari1-gs-ranking', 'Ranking[w][m]：反過來存名次，O(1)', a
   glow(rs[5], GOLD);
   say('未婚夫男 6：直接看第 6 格', 'Ranking[1][6] = 5 → indexing O(1)');
   await beat(tok, 2600);
-  cube('男 1 求婚', AB.blue, [2, 0.6, 1], 2.8, 0.3, 2.6, 3);
+  cube('男 1 求婚', AB.blue, [2, 0.6, 1], 3.4, 0.3, 2.8, 3);
   glow(rs[0], GREEN);
   say('男 1 求婚：看第 1 格 = 2', '2 < 5 → accept，O(1)');
   await beat(tok, 2800);
@@ -3152,26 +3190,28 @@ FRAG.push(['algbari1-gs-ranking', 'Ranking[w][m]：反過來存名次，O(1)', a
 }]);
 
 FRAG.push(['algbari1-gs-build-rank', '建 Ranking：O(n²)，只做一次', async (tok) => {
-  fresh([0, 7.5, 11], [0, 0.6, 0]);
-  const X = (k) => -3.75 + k * 1.5;
-  tag('WomanPref[1]', 'ptr', 0, 0.3, -2.9);
-  const ps = AB_WP.map((m, k) => cube('男 ' + m, AB.sand, [1.3, 0.45, 0.8], X(k), 0.23, -2, 2));
-  tag('Ranking[1]', 'ptr', 0, 0.3, -0.6);
-  for (let k = 0; k < 6; k++) { tag('m=' + (k + 1), 'idx', X(k), 0.1, 1.3); cube('', GRAY, [1.3, 0.08, 0.9], X(k), 0.04, 0.4); }
+  fresh([0, 4.4, 12], [0, 2.0, 0]);
+  frameHold(-7.2, -0.8, 0, 6, 4.6, 0); // the totals arrive under the arrays later
+  const X = (k) => -3.75 + k * 1.5; // the two arrays are two rows on a wall, each named on its left
+  tag('WomanPref[1]', 'ptr', -6.1, 3.4);
+  const ps = AB_WP.map((m, k) => cube('男 ' + m, AB.sand, [1.3, 0.45, 0.3], X(k), 3.4, 0));
+  tag('Ranking[1]', 'ptr', -6.1, 1.9);
+  for (let k = 0; k < 6; k++) { tag('m=' + (k + 1), 'idx', X(k), 1.35); cube('', GRAY, [1.3, 0.5, 0.06], X(k), 1.9, -0.2); }
   say('Ranking 要先建好：多做的工作', '開始前 preprocess 一次');
   await beat(tok, 2400);
-  const cur = tag('▼', 'ptr alt', X(0), 1.1, -2);
+  const cur = tag('▼', 'ptr alt', X(0), 4.05, 0);
   for (let k = 0; k < 6; k++) {
     const m = AB_WP[k];
-    cur.position.set(X(k), 1.1, -2); glow(ps[k], GOLD);
-    cube(String(k + 1), AB.gold, [1.2, 0.5, 0.85], X(m - 1), 0.3, 0.4, 3);
+    cur.position.set(X(k), 4.05, 0); glow(ps[k], GOLD);
+    cube(String(k + 1), AB.gold, [1.2, 0.5, 0.3], X(m - 1), 1.9, 0);
     say('第 ' + (k + 1) + ' 名是男 ' + m, 'Ranking[1][' + m + '] = ' + (k + 1));
     await beat(tok, k < 2 ? 1500 : 800); glow(ps[k], null);
   }
   say('邊掃邊填：每個女生 O(n)', 'n 個女生 → O(n²)');
   await beat(tok, 2600);
   const R = [['Ranking 初始化', 'O(n²)'], ['line 1、line 9', 'O(n)'], ['while：n² 圈 × O(1)', 'O(n²)']];
-  for (let r = 0; r < 3; r++) { cube(R[r][0] + '：' + R[r][1], [AB.purple, AB.teal, AB.red][r], [4.2, 0.45, 0.8], -3 + (r % 2) * 5.4, 0.23, 2.4 + (r > 1 ? 1 : 0), 3); await beat(tok, 900); }
+  const RP = [[-2.6, 0.4], [2.6, 0.4], [0, -0.4]];
+  for (let r = 0; r < 3; r++) { cube(R[r][0] + '：' + R[r][1], [AB.purple, AB.teal, AB.red][r], [4.6, 0.5, 0.3], RP[r][0], RP[r][1], 0); await beat(tok, 900); }
   say('總共：O(n²) ✓', '沒有破壞目標');
   await beat(tok, 3000);
 }]);
@@ -3206,12 +3246,13 @@ FRAG.push(['algbari1-gs-compare', 'Data structure 決定 running time', async (t
 FRAG.push(['algbari1-log-compare', '取 log 比成長率：n^(1/3)、lg n、2^√lg n', async (tok) => {
   fresh([0, 6, 13.5], [0, 2.4, 0]);
   const X = [-4, 0, 4], NM = ['f₁', 'f₂', 'f₃'];
-  const fs = ['n^(1/3)', 'lg n', '2^√(lg n)'].map((s, k) => { tag(NM[k], 'ptr', X[k], 5.6); return cube(s, AB.blue, [2.8, 0.7, 1], X[k], 4.6, 0, 3); });
+  // each name rides on its block, so it stays right when the blocks are reordered
+  const fs = ['n^(1/3)', 'lg n', '2^√(lg n)'].map((s, k) => { const m = cube(s, AB.blue, [2.8, 0.7, 1], X[k], 4.6, 0, 3); const nl = lab.label(NM[k], 'ptr'); nl.position.set(0, 1.05, 0); m.add(nl); return m; });
   say('依 growth rate 排大小', 'lg = log₂（log₁₀ 另外區分）');
   await beat(tok, 2600);
   say('長得差很多：先取 log', 'log 單調遞增，大小關係不變');
   await beat(tok, 2400);
-  tag('令 z = lg n', 'ptr alt', 0, 6.6);
+  tag('令 z = lg n', 'ptr alt', 0, 6.9);
   const L = [['lg f₁ = (1/3) lg n', 'z/3'], ['lg f₂ = lg lg n', 'lg z'], ['lg f₃ = √(lg n)·lg 2', '√z']];
   for (let k = 0; k < 3; k++) {
     relabel(fs[k], L[k][0]); tint(fs[k], AB.purple);
@@ -3327,20 +3368,20 @@ async function ab2Ladder(tok) {
   const mark = AB2_marks();
   const k0 = ex === 'n5' ? 3 : 5;
   let fb = null;
-  const goTo = (k, n, ms2 = 900) => AB2_walk(tok, fb, X(k, n), 0, 1.8, ms2);
+  const goTo = (k, n, ms2 = 900) => AB2_walk(tok, fb, X(k, n), 0, 3.2, ms2);
   const paint = (fn) => ms.forEach((m, k) => { if (m) tint(m, fn(k)); });
   const up = () => paint((k) => (k >= k0 ? C.green : GRAY));
   const lo = () => paint((k) => (k > k0 ? C.green : k < k0 ? C.purple : C.teal));
   const A = {
     // 常見類別（Simplified 開頭）
-    intro: () => { fb = buddy('演算法', '', C.teal, 0, 0, 2.4, 0.8); mark('我要跑多久？', 'say', 0, 2.1, 2.4); S2('漸近符號：用來表示演算法的時間複雜度', ''); },
+    intro: () => { fb = buddy('演算法', '', C.teal, 0, 0, 3.2, 0.8); mark('我要跑多久？', 'say', 0, 2.1, 3.2); S2('漸近符號：用來表示演算法的時間複雜度', ''); },
     g1: () => { mk(0); mk(1); S2('時間可能是常數 1，或對數 log n', ''); },
     g2: () => { mk(2); mk(3); mk(4); S2('也可能是線性 n、n log n、平方 n²', ''); },
     g3: () => { mk(5); mk(6); S2('還有立方 n³、指數 2ⁿ', '1 < log n < n < n log n < n² < n³ < 2ⁿ'); },
     any: async () => { mark.clear(); S2('任何演算法都是其中一類，或它們的組合、倍數', ''); await goTo(4); glow(ms[4], GOLD); await fb.hop(tok); },
     fq: () => { glow(ms[4], null); mark('frequency count：數每個敘述執行幾次', 'say', 0, 4.2); S2('先用 frequency count 算幾個演算法', ''); },
     // n² log n 自成一類
-    none: () => { fb = buddy('n² log n', '', C.gold, 0, 0, 2.4, 0.7); fb.mood('wow'); mark('？', 'say', 0, 2.0, 2.4); S2('類別表上沒有 n² log n', ''); },
+    none: () => { fb = buddy('n² log n', '', C.gold, 0, 0, 3.2, 0.7); fb.mood('wow'); mark('？', 'say', 0, 2.0, 3.2); S2('類別表上沒有 n² log n', ''); },
     insert: async () => {
       mark.clear(); ms.forEach((m, k) => move(m, X(k >= 6 ? k + 1 : k, 11), m.position.y, 0));
       ms.push(cube('n² log n', C.gold, [1.1, 1.17, 1], X(6, 11), 0.58, 0, 3));
@@ -3348,7 +3389,7 @@ async function ab2Ladder(tok) {
     },
     own: async () => { glow(ms[ms.length - 1], GOLD); mark('n² × log n：自成一類', 'good', X(6, 11), 2.4); fb.mood('happy'); S2('它是 n² 與 log n 的組合，可以另立一類', ''); await fb.hop(tok); },
     // n! 找不到位置
-    fa: () => { fb = buddy('n!', '', C.red, X(0), 0, 1.8, 0.7); S2('n! 找不到 tight bound（Θ）', ''); },
+    fa: () => { fb = buddy('n!', '', C.red, X(0), 0, 3.2, 0.7); S2('n! 找不到 tight bound（Θ）', ''); },
     fb: () => { fb.mood('wow'); mark('n! 在哪一格？', 'say', 0, 3.6); S2('想把 n! 放進類別表：表上沒有它', ''); },
     fc: async () => { mark.clear(); S2('n 小時靠近小的類別，n 大時一路往上逼近 nⁿ', '找不到固定的一格'); await goTo(9, N, 2400); },
     fd: async () => { mark('n¹⁰ < n! < n¹¹ ？ ✗', 'bad', 0, 3.6); fb.mood('sad'); S2('不能說 n! 永遠大於 n¹⁰、又小於 n¹¹', ''); await goTo(5, N, 1200); },
@@ -3357,7 +3398,7 @@ async function ab2Ladder(tok) {
     // 2n² + 3n + 2：上界、下界、tight bound
     show: () => { S2('時間複雜度會是表上其中一類', '1 < log n < √n < n < … < 2ⁿ < 3ⁿ < nⁿ'); },
     order: async () => { S2('類別已經照大小排好：左小右大', ''); const pk = tag('由小到大 →', 'pkt', X(0), 2.4); await travel(tok, pk, V3(X(0), 2.4, 0), V3(X(9), 2.4, 0), 1600); kill(pk); },
-    fq2: async () => { fb = buddy('f = 2n² + 3n + 2', '', C.red, 0, 0, 3.0, 0.75); S2('例：f(n) = 2n² + 3n + 2', ''); await fb.hop(tok); },
+    fq2: async () => { fb = buddy('f = 2n² + 3n + 2', '', C.red, 0, 0, 3.2, 0.75); S2('例：f(n) = 2n² + 3n + 2', ''); await fb.hop(tok); },
     deg: async () => { S2('最高次項是 n² → 它站在 n² 這格', ''); await goTo(k0); glow(ms[k0], GOLD); },
     up: () => { up(); S2('≥ ' + L[k0] + ' 的類別（含 ' + L[k0] + '）都是上界', 'upper bound（綠）'); },
     lo: () => { lo(); S2('≤ ' + L[k0] + ' 的類別（含 ' + L[k0] + '）都是下界', 'lower bound（紫）'); },
@@ -3372,7 +3413,7 @@ async function ab2Ladder(tok) {
     W2: () => { mark('Ω(n)、Ω(log n)…', 'good', X(1.5), 2.0); S2('f = Ω(n)、Ω(log n) 也都對', '比 n² 小的都是下界'); },
     list: () => { S2('上界、下界只在這張排好的類別表裡找', '比 f 的最高次大 → 上界；小 → 下界'); },
     T: async () => { mark('Θ(n²)', 'note', X(k0), 3.7); fb.mood('happy'); S2('O 和 Ω 都是 n² → f = Θ(n²)', ''); await fb.hop(tok); },
-    fq5: async () => { fb = buddy('f = n + 5', '', C.red, 0, 0, 3.0, 0.75); S2('再一例：f(n) = n + 5，最高次 n', ''); await goTo(k0); glow(ms[k0], GOLD); },
+    fq5: async () => { fb = buddy('f = n + 5', '', C.red, 0, 0, 3.2, 0.75); S2('再一例：f(n) = n + 5，最高次 n', ''); await goTo(k0); glow(ms[k0], GOLD); },
     lo5: async () => { lo(); tint(ms[k0], C.gold); mark('tight bound', 'note', X(k0), 2.0); fb.mood('happy'); S2('≤ n 的都是下界；n 本身是 tight bound', 'f = Θ(n)'); await fb.hop(tok); },
   };
   await AB2_run(tok, plan, A);
@@ -3772,7 +3813,7 @@ async function ab2LinearSearch(tok) {
   if (cases) list();
   let kb = null;
   const reset = () => cs.forEach((m) => { tint(m, C.blue); glow(m, null); });
-  const keyAt = (i) => V3(xs(i), 1.35, 1.5); // above the row so the key never sits on a value
+  const keyAt = (i) => V3(xs(i), 1.45, 0); // floats right above its cell, clear of the value and index labels
   // the key walks along the list, comparing one cell at a time
   const scan = async (from, to, msEach, key) => {
     for (let i = from; i <= to; i++) {
@@ -3786,20 +3827,20 @@ async function ab2LinearSearch(tok) {
   const A = {
     intro: () => { mark('linear search：在一串元素裡找 key', 'say', 0, 4.6); S2('Linear search：在一串元素裡找某個 key', ''); },
     list: () => { list(); S2('這裡有 10 個元素', '[8, 6, 12, 5, 9, 7, 4, 3, 16, 18]'); },
-    key7: async () => { mark.clear(); kb = buddy('key', 7, C.gold, -6.6, 0, 1.5, 0.6); S2('要找 key = 7', ''); await kb.hop(tok); },
+    key7: async () => { mark.clear(); kb = buddy('key', 7, C.gold, -6.6, 0, 0, 0.6); S2('要找 key = 7', ''); await kb.hop(tok); },
     scan7: async () => { S2('從左邊開始，一次比一個：是 7 嗎？不是…', ''); await scan(0, 4, 450, 7); },
-    found7: async () => { await scan(5, 5, 450, 7); mark('比較 6 次', 'good', xs(5), 2.6); S2('第 6 次比較，在 index 5 找到 7', '成功的搜尋'); await kb.hop(tok); },
-    key20: async () => { reset(); mark.clear(); kb.set(20); kb.mood('calm'); S2('換成找 key = 20', ''); await travel(tok, kb.g, kb.g.position.clone(), V3(-6.6, 0, 1.5), 700); },
+    found7: async () => { await scan(5, 5, 450, 7); mark('比較 6 次', 'good', xs(5), 3.2); S2('第 6 次比較，在 index 5 找到 7', '成功的搜尋'); await kb.hop(tok); },
+    key20: async () => { reset(); mark.clear(); kb.set(20); kb.mood('calm'); S2('換成找 key = 20', ''); await travel(tok, kb.g, kb.g.position.clone(), V3(-6.6, 0, 0), 700); },
     scan20: async () => { S2('第一個不是、下一個、下一個…', ''); await scan(0, 9, 240, 20); },
     fail: () => { kb.mood('sad'); mark('比完 10 個都沒有', 'bad', 0, 2.6); S2('整串比完都沒有 → 失敗的搜尋', '比較了 n = 10 次'); },
     both: () => { mark.clear(); mark('key 7：成功（index 5）', 'good', -3, 3.4); mark('key 20：失敗', 'bad', 3, 3.4); S2('搜尋可能成功，也可能失敗', ''); },
     // best / worst
     bw: () => { mark('best case？worst case？', 'say', 0, 4.6); S2('什麼是 best case？什麼是 worst case？', ''); },
-    best: () => { mark.clear(); glow(cs[0], GOLD); mark('第一個 index', 'note', xs(0), 2.0); S2('best case：要找的 key 剛好在第一個 index', ''); },
-    key8: async () => { kb = buddy('key', 8, C.gold, -6.6, 0, 1.5, 0.6); S2('例：找 8，比 1 次就找到', '常數時間'); await scan(0, 0, 500, 8); await kb.hop(tok); },
+    best: () => { mark.clear(); glow(cs[0], GOLD); mark('第一個 index', 'note', xs(0), 3.0); S2('best case：要找的 key 剛好在第一個 index', ''); },
+    key8: async () => { kb = buddy('key', 8, C.gold, -6.6, 0, 0, 0.6); S2('例：找 8，比 1 次就找到', '常數時間'); await scan(0, 0, 500, 8); await kb.hop(tok); },
     B: () => { mark('B(n) = 1 → O(1)', 'good', -2, 3.6); S2('best case 時間 B(n) = 1 → O(1)', ''); },
-    worst: () => { reset(); glow(cs[9], GOLD); mark('最後一個 index', 'note', xs(9), 2.0); kb.mood('calm'); S2('worst case：key 在最後一個 index', '花最多時間'); },
-    key18: async () => { kb.set(18); S2('例中最後一個是 18', ''); await travel(tok, kb.g, kb.g.position.clone(), V3(-6.6, 0, 1.5), 700); },
+    worst: () => { reset(); glow(cs[9], GOLD); mark('最後一個 index', 'note', xs(9), 3.0); kb.mood('calm'); S2('worst case：key 在最後一個 index', '花最多時間'); },
+    key18: async () => { kb.set(18); S2('例中最後一個是 18', ''); await travel(tok, kb.g, kb.g.position.clone(), V3(-6.6, 0, 0), 700); },
     scan18: async () => { S2('要把 n 個元素都比過才找到', ''); await scan(0, 9, 240, 18); },
     W: async () => { mark('W(n) = n → O(n)', 'good', 2.5, 3.6); S2('worst case 時間 W(n) = n → O(n)', ''); await kb.hop(tok); },
   };
@@ -3810,6 +3851,7 @@ async function ab2LinearSearch(tok) {
 // ───────── 12. 平均情況 (n + 1)/2 ─────────
 async function ab2LsAverage(tok) {
   fresh([0, 4.6, 13], [0, 2, 0]);
+  frameHold(-6, -0.4, 0, 6, 6.6, 0); // the bars arrive later; headroom above the top remark (caption)
   const xs = (i) => -5.4 + i * 1.2, H = 0.42;
   const mark = AB2_marks();
   const bs = [];
@@ -3911,15 +3953,15 @@ async function ab2BstCases(tok) {
 async function ab2BinSearch(tok) {
   fresh([0, 5.5, 14], [0, 3, 0]);
   const L = ['i = 1;', 'j = n;', 'while (i < j) {', '  mid = (i + j) / 2;', '  if (key == A[mid]) return mid;', '  else if (key < A[mid]) j = mid − 1;', '  else i = mid + 1;', '}'];
-  const cd = code(L, -2.8, 7.2, 0.5);
-  const fq = L.map((_, i) => tag('', 'ptr alt', 2.8, 7.2 - i * 0.5));
+  const cd = code(L, -2.8, 7.6, 0.58);
+  const fq = L.map((_, i) => tag('', 'ptr alt', 2.8, 7.6 - i * 0.58));
   const n = 16, xs = (k) => -5.6 + k * 0.75;
   for (let k = 1; k <= n; k++) { ctx.tile(V3(xs(k - 1), 0.04, 1.2), 0.68, 0.9, '#efe6d2'); tag(String(k), 'idx', xs(k - 1), -0.3, 1.9); }
   const zone = ghostBox('#2fc092', 1, 0.9, 1.0);
   const setZone = (i, j) => { zone.scale.x = (j - i + 1) * 0.75; zone.position.set((xs(i - 1) + xs(j - 1)) / 2, 0.45, 1.2); };
-  const pi = tag('i', 'ptr', xs(0), 1.3, 1.2), pj = tag('j', 'ptr', xs(n - 1), 1.3, 1.2), pm = tag('mid', 'ptr alt', 0, 1.9, 1.2);
+  const pi = tag('i', 'ptr', xs(0), 1.3, 1.2), pj = tag('j', 'ptr', xs(n - 1), 1.8, 1.2), pm = tag('mid', 'ptr alt', 0, 2.4, 1.2); // i, j, mid on three heights: they can meet
   setZone(1, n);
-  const cnt = tag('', 'ptr alt', 4.8, 3.6);
+  const cnt = tag('', 'ptr alt', 5.4, 2.9);
   const A = {
     init: () => { cd.hl(0); txt(fq[0], '1'); txt(fq[1], '1'); S2('binary search：i = 1、j = n 各執行 1 次', '例：n = 16，key 比所有元素都大'); },
     halve: async () => {
@@ -3934,7 +3976,7 @@ async function ab2BinSearch(tok) {
     },
     logn: () => { cd.hl(2); txt(fq[2], 'log n'); txt(fq[3], 'log n'); S2('所以迴圈重複 log n 次', '16 → 4 圈 = log₂ 16'); },
     either: () => { cd.hl(4); txt(fq[4], 'log n（if / else 只走一個）'); S2('if 或 else 每圈只會執行其中一個', '所以也只算 log n'); },
-    f: () => { cd.hl(-1); tag('f(n) = 3 log n + 2', 'note', 4.6, 2.6); S2('加起來：f(n) = 3 log n + 2', ''); },
+    f: () => { cd.hl(-1); tag('f(n) = 3 log n + 2', 'note', 1.6, 2.9); S2('加起來：f(n) = 3 log n + 2', ''); },
     cls: () => { S2('最高項是 log n → 對數時間', 'Θ(log n)'); },
   };
   await AB2_run(tok, ['init', 'halve', 'logn', 'either', 'f', 'cls'], A);
@@ -3943,6 +3985,7 @@ async function ab2BinSearch(tok) {
 // ───────── 16. Frequency count（Simplified 用的 cued 版本）：Sum、矩陣 ─────────
 async function ab2FreqSum(tok) {
   fresh([0, 6, 14], [0, 2.6, 0]);
+  frameHold(-6, -0.4, 0, 6, 7.4, 1); // the array and the code arrive later: frame for them now
   const mark = AB2_marks();
   const SUMA = [8, 3, 9, 7, 2];
   let cd = null, fq = [], ip = null, cs = [];
@@ -3952,8 +3995,8 @@ async function ab2FreqSum(tok) {
     one: () => { mark('只有一個敘述 → f = 1：常數', 'note', 0, 5.8); S2('只有一個敘述：f = 1 → 常數時間', ''); },
     sum: () => {
       mark.clear();
-      cd = code(['Algorithm Sum(A, n)', '{', '  s = 0;', '  for (i = 0; i < n; i++)', '    s = s + A[i];', '  return s;', '}'], -3.4, 6.8, 0.5);
-      fq = [null, null, tag('', 'ptr alt', -0.2, 5.8), tag('', 'ptr alt', -0.2, 5.3), tag('', 'ptr alt', -0.2, 4.8), tag('', 'ptr alt', -0.2, 4.3)];
+      cd = code(['Algorithm Sum(A, n)', '{', '  s = 0;', '  for (i = 0; i < n; i++)', '    s = s + A[i];', '  return s;', '}'], -3.4, 7.0, 0.6);
+      fq = [0, 1, 2, 3, 4, 5].map((r) => (r < 2 ? null : tag('', 'ptr alt', 0, 7.0 - r * 0.6)));
       cs = SUMA.map((v, k) => { tag('A[' + k + ']', 'idx', xs(k), 0, 0.95); return cube(v, C.blue, [1, 0.7, 1], xs(k), 0.35, 0, 2); });
       cd.hl(2); txt(fq[2], '1'); txt(fq[3], 'n + 1');
       S2('陣列求和：s = 0 執行 1 次、for 執行 n + 1 次', '例：n = 5');
@@ -3965,9 +4008,9 @@ async function ab2FreqSum(tok) {
       for (let i = 0; i <= 5; i++) { ip.position.x = xs(Math.min(i, 5)); cube('', i < 5 ? C.purple : C.red, [0.8, 0.3, 0.8], 4.4, 0.17 + i * 0.34, 0, 2); if (i < 5) glow(cs[i], GOLD); await beat(tok, 380); }
       tag('檢查 6 次 = n + 1', 'ptr alt', 4.4, 2.6);
     },
-    tot: () => { cd.hl(-1); mark('f(n) = 1 + (n + 1) + n + 1 = 2n + 3', 'note', 2.6, 6.6); S2('加起來：f(n) = 2n + 3', ''); },
+    tot: () => { cd.hl(-1); mark('f(n) = 1 + (n + 1) + n + 1 = 2n + 3', 'note', 3.6, 6.6); S2('加起來：f(n) = 2n + 3', ''); },
     poly: () => { S2('一行一行算，得到的是一個多項式', '2n + 3'); },
-    lin: () => { mark('最高次 n → 線性', 'good', 2.6, 5.9); S2('最高次是 n → 線性時間', 'O(n)'); },
+    lin: () => { mark('最高次 n → 線性', 'good', 3.6, 5.9); S2('最高次是 n → 線性時間', 'O(n)'); },
   };
   await AB2_run(tok, ['method', 'one', 'sum', 'body', 'why', 'tot', 'poly', 'lin'], A);
 }
@@ -3979,8 +4022,8 @@ async function ab2FreqMatrix(tok) {
     const lines = mul
       ? ['for (i = 0; i < n; i++)', '  for (j = 0; j < n; j++) {', '    C[i][j] = 0;', '    for (k = 0; k < n; k++)', '      C[i][j] += A[i][k] * B[k][j];', '  }']
       : ['for (i = 0; i < n; i++)', '  for (j = 0; j < n; j++)', '    C[i][j] = A[i][j] + B[i][j];'];
-    cd = code(lines, -2.8, 6.8, 0.48);
-    fl = lines.map((_, i) => tag('', 'ptr alt', 2.8, 6.8 - i * 0.48));
+    cd = code(lines, -2.8, 7.4, 0.62);
+    fl = lines.map((_, i) => tag('', 'ptr alt', 3.0, 7.4 - i * 0.62));
     for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const [x, z] = cell(i, j); ctx.tile(V3(x, 0.04, z), 1, 1); }
     tag('C（n = 3）', 'ptr', -3.4, 0.2, 0);
   };
@@ -4325,22 +4368,22 @@ const AB2_MS = {
 async function ab2MtSort(tok) {
   const B = AB2_B(tok, (ctx.params || {}).set === 'c2p' ? 1.4 : (ctx.params || {}).set === 'c1' || (ctx.params || {}).set === 'k2' ? 0.85 : 1), set = AB2_P().set || 'c1', E = AB2_MS[set] || AB2_MS.c1;
   fresh([0, 5.5, 15], [0, 3, 0]);
-  const BX = [-4.5, 0, 4.5], BN = ['case 1：log_b a > k', 'case 2：log_b a = k', 'case 3：log_b a < k'], BC = [C.green, C.blue, C.red];
-  BX.forEach((x, i) => { ctx.tile(V3(x, 0.04, 0), 4.2, 2.4, '#efe6d2'); tag(BN[i], 'ptr', x, 0.2, 1.6); });
+  const BX = [-5.3, 0, 5.3], BN = ['case 1：log_b a > k', 'case 2：log_b a = k', 'case 3：log_b a < k'], BC = [C.green, C.blue, C.red];
+  BX.forEach((x, i) => { ctx.tile(V3(x, 0.04, 0), 5.0, 2.4, '#efe6d2'); tag(BN[i], 'ptr', x, 0.2, 1.6); });
   tag('T(n) = aT(n/b) + Θ(nᵏ logᵖ n)', 'ptr alt', 0, 7.4);
   say('比 log_b a 與 k（n 的次方）', '');
   await B(2000);
   const stacks = [[], [], []];
   for (const [r, a, b, k, p, ans] of E) {
     const lba = Math.log(a) / Math.log(b), ci = Math.abs(lba - k) < 1e-9 ? 1 : lba > k ? 0 : 2;
-    const m = cube('T(n) = ' + r, GRAY, [3.9, 0.6, 1], 0, 5.6, 0, 2);
+    const m = cube('T(n) = ' + r, GRAY, [4.8, 0.6, 1], 0, 5.8, 0, 2);
     const lbs = (Math.round(lba * 100) / 100).toString();
     say('T(n) = ' + r, 'log_' + b + ' ' + a + ' = ' + lbs + '，k = ' + k + (p ? '，p = ' + p : ''));
     await B(2000);
     if (stacks[ci].length >= 5) fly(stacks[ci].shift());
-    stacks[ci].forEach((o, j) => move(o, BX[ci], 0.4 + j * 0.7, 0));
+    stacks[ci].forEach((o, j) => move(o, BX[ci], 0.4 + j * 0.8, 0));
     tint(m, BC[ci]); relabel(m, r + ' → ' + ans);
-    move(m, BX[ci], 0.4 + stacks[ci].length * 0.7, 0); stacks[ci].push(m);
+    move(m, BX[ci], 0.4 + stacks[ci].length * 0.8, 0); stacks[ci].push(m);
     const why = ci === 0 ? '取 n^(log_b a)' : ci === 1 ? (p > -1 ? 'f(n) 再乘一個 log n' : p === -1 ? 'p = −1 → log log n' : 'p < −1 → 只留 nᵏ') : (p >= 0 ? '直接取 f(n)' : 'p < 0 → O(nᵏ)');
     say(ans, why);
     await B(1800);
@@ -4552,7 +4595,7 @@ function A3stage(tok) {
   // left-anchored label
   S.L = (t, cls, x, y, z = 0) => { const l = tag(t, cls, x, y, z); l.center.set(0, 0.5); return l; };
   // ── equation board: newest line lit, older lines plain ──
-  S.board = (x = -7.2, y = 7.5, dy = 0.6, z = 0) => { S.b = { x, y, dy, z, ls: [], n: 0 }; };
+  S.board = (x = -7.2, y = 7.5, dy = 0.6, z = 0) => { dy = Math.max(dy, 0.7); S.b = { x, y, dy, z, ls: [], n: 0 }; frameHold(x, y, z, x, y + 1.2, z); }; // lines ≥ 0.7 apart (note lines are tall); headroom: the caption sits above
   S.eq = (t, cls = 'ptr alt') => {
     const b = S.b; b.ls.forEach((l) => { if (l.userData.live) { l.element.className = 'lab-label ptr'; l.userData.live = false; } });
     // a long board scrolls: the oldest line goes, the rest move up (b.max is set where the space below is taken)
@@ -4564,10 +4607,11 @@ function A3stage(tok) {
   };
   S.gap = (k = 0.5) => { S.b.n += k; };
   // ── a friendly guide in the front-left corner who reacts to each step ──
-  S.guide = (x = -6.3, z = 2.6, color = '#f4c06a') => { S.g = buddy('小助教', '', color, x, 0, z, 0.7); S.gb = tag('…', 'say', x, 1.75, z); };
+  S.guide = (x = -6.3, z = 2.6, color = '#f4c06a') => { S.g = buddy('小助教', '', color, x, 0, z, 0.7); S.gb = K.keep(tag('…', 'say', x, 2.3, z)); }; // the bubble clears the guide's name
   S.talk = async (t, mood = 'happy', hop = false) => { if (!S.g) return; txt(S.gb, t); S.g.mood(mood); if (hop) await S.g.hop(tok); };
   // ── a code panel with a cost column ──
   S.code = (lines, x = -7.2, y = 7.5, dy = 0.5) => {
+    frameHold(x, y, 0, x, y + 1.2, 0); // headroom: the caption sits above
     const w = Math.max(...lines.map((s) => s.length));
     const ls = lines.map((s, i) => { const l = S.L(s.padEnd(w, ' '), '', x, y - i * dy); Object.assign(l.element.style, A3_MONO); return l; });
     S.c = { ls, x, y, dy, hl(i) { ls.forEach((l, k) => { l.element.className = 'lab-label' + (k === i ? ' ptr alt' : ''); }); } };
@@ -4591,7 +4635,7 @@ function A3stage(tok) {
     if (p) line(p.x, p.y - 0.27, x, y + 0.27, -0.05, '#a99470');
     S.nodes[key] = { m, x, y }; return m;
   };
-  S.side = (y, t, x = 6.5) => { const l = tag(t, 'note', x, y); S.sides.push(l); return l; };
+  S.side = (y, t, x = 6.5) => { frameHold(x - 0.6, y, 0, x + 0.6, y, 0); const l = tag(t, 'note', x, y); S.sides.push(l); return l; }; // framed: the column stays on stage
   // ── staircase of arguments: a little "T" walks down, one coin per added term ──
   S.stairs = (labels, x0 = 1.0, dx = 1.05, h = 0.5) => {
     const N = labels.length;
@@ -4621,7 +4665,7 @@ function A3stage(tok) {
   };
   S.pans = (l, r) => { txt(S.sc.l, l); txt(S.sc.r, r); };
   S.tilt = async (d) => { const g = S.sc.g, a = g.rotation.z, b = Math.max(-0.28, Math.min(0.28, d * 0.12)); await anim(tok, 700, (u) => { g.rotation.z = a + (b - a) * u; }); };
-  S.hist0 = (x = -7.2, y = 7.5, dy = 0.56) => { S.hb = { x, y, dy }; };
+  S.hist0 = (x = -7.2, y = 7.6, dy = 0.7) => { S.hb = { x, y, dy }; frameHold(x, y, 0, x, y + 1.2, 0); }; // lines far enough apart to read zoomed out; headroom for the caption
   // the history keeps its newest 6 lines (older ones scroll off), so it never reaches the balance below
   S.histAdd = (t) => {
     const h = S.hb; S.hist.forEach((l) => { l.element.className = 'lab-label ptr'; });
@@ -4775,7 +4819,7 @@ sc('algbari3-bs-dec-n', 'Back substitution：T(n) = T(n−1) + n', (S) => { S.ca
 
 // ═══════════ MhT7XmxhaCE：2.1.3 T(n) = T(n−1) + log n ═══════════
 const A3_CODE3 = ['void Test(int n) {', '  if (n > 0) {', '    for (i = 1; i < n; i = i * 2)', '      printf("%d", i);', '    Test(n - 1);', '  }', '}'];
-sc('algbari3-rr-dec-log', '寫出 T(n) = T(n−1) + log n', (S) => { S.cam(); S.guide(); S.board(-3.0, 3.7, 0.62); say('i 每次乘 2 的迴圈', ''); }, [
+sc('algbari3-rr-dec-log', '寫出 T(n) = T(n−1) + log n', (S) => { S.cam(); S.guide(); S.board(-3.0, 3.7, 0.8); say('i 每次乘 2 的迴圈', ''); }, [
   async (S) => { S.code(A3_CODE3); say('Test(n)：迴圈 i 每次乘 2，再呼叫 Test(n − 1)', ''); },
   async (S) => { S.c.hl(0); S.cost(0, 'T(n)', -0.9, 'ptr alt'); say('整個函式花 T(n)', ''); },
   async (S) => { S.c.hl(2); const xs = [1, 2, 4, 8]; for (let k = 0; k < 4; k++) { const p = tag('i = ' + xs[k], 'pkt', 1.6 + k * 1.3, 8.5); await travel(S.tok, p, V3(1.6, 9.1, 0), V3(1.6 + k * 1.3, 8.5, 0), 350); } say('i = 1、2、4、8…每次乘 2', ''); await S.talk('翻倍跳！'); },
@@ -5247,7 +5291,7 @@ sc('algbari3-hanoi-trace', '追蹤 TOH(3, 1, 2, 3)', (S) => { S.cam(); say('追�
 const A3_MOVES = [[0, 2], [0, 1], [2, 1], [0, 2], [1, 0], [1, 2], [0, 2]];
 const A3_MV = (k) => (A3_MOVES[k][0] + 1) + '→' + (A3_MOVES[k][1] + 1);
 sc('algbari3-hanoi-play', '照著印出的 7 步搬', (S) => { S.cam([0, 5.5, 15], [0, 2.4, 0]); S.guide(-6.6, 2.8); say('照著 printf 搬', ''); }, [
-  async (S) => { S.H = a3Hanoi(S, 3, ['1', '2', '3']); S.ms = A3_MOVES.map((m, k) => tag(A3_MV(k), 'note', -4.8 + k * 1.6, 6.6)); say('把所有 printf 收集起來', ''); },
+  async (S) => { frameHold(-5.6, 0, 0, 5.6, 7.9, 0); S.H = a3Hanoi(S, 3, ['1', '2', '3']); S.ms = A3_MOVES.map((m, k) => K.keep(tag(A3_MV(k), 'note', -4.8 + k * 1.6, 6.6))); /* the 7 moves are the plan: framed and kept */ say('把所有 printf 收集起來', ''); },
   async (S) => { S.ms.forEach((l) => { l.element.className = 'lab-label pkt'; }); say('1→3、1→2、3→2、1→3、2→1、2→3、1→3', '共 7 步'); },
   async (S) => { S.ms[0].element.className = 'lab-label good'; await S.H.move(0, 2); say('第一步：1 → 3', ''); },
   async (S) => { S.ms[1].element.className = 'lab-label good'; await S.H.move(0, 1); say('第二步：1 → 2', ''); },
@@ -5258,7 +5302,7 @@ sc('algbari3-hanoi-play', '照著印出的 7 步搬', (S) => { S.cam([0, 5.5, 15
 ]);
 
 // ═══════════ SLsHKh_OUEM：Master's Theorem Explained ═══════════
-sc('algbari3-mtx-form', 'Master Theorem：形式與 a、b、f(n)', (S) => { S.cam(); S.board(-7.2, 7.6, 0.6); say('Master Theorem', ''); }, [
+sc('algbari3-mtx-form', 'Master Theorem：形式與 a、b、f(n)', (S) => { S.cam(); S.board(-7.2, 7.6, 0.6); S.b.max = 9; say('Master Theorem', ''); }, [
   async (S) => { S.eq('T(n) = aT(n/b) + f(n)'); say('Master Theorem 解這種形式', ''); },
   async (S) => { S.eq('aT(n/b)：遞迴部分　f(n)：非遞迴部分', 'note'); say('遞迴部分 + 非遞迴部分', ''); },
   async (S) => { S.eq('遞迴部分有常數 a、b；非遞迴部分是 f(n)', 'note'); say('a、b 在遞迴部分；f(n) 在非遞迴部分', ''); },
@@ -5406,29 +5450,29 @@ FRAG.push(['algjiang1-io-func', 'Input ≥ 0、Output ≥ 1：像 C 函數', asy
   A[0].set('a'); A[0].mood('happy');
   say('第一個特性：input', '演算法把 input 拿來處理');
   await step(tok);                                    // 12.8 may not take any input
-  note('0 個 input', 0, 2.4, 0);
+  const io = [note('0 個 input', 0, 2.6, 0)]; // the input / output remarks (cleared when the C function comes in)
   A[1].mood('calm');
   say('有些演算法完全不拿 input', '例如：印出 1 到 10');
   await step(tok);                                    // 20.8 zero or more input
   const ins = ['x', 'y', 'z'].map((v, k) => pkt(tok, v, V3(3.3 + k * 0.9, 3.6, 0), bpos(A[2]), 800));
   for (const p of ins) remove(await p);
   A[2].set('x y z'); A[2].mood('wow');
-  note('1 個', -4.2, 2.4, 0); note('3 個', 4.2, 2.4, 0);
-  bub('input ≥ 0', 0, 3.4, 0);
+  io.push(note('1 個', -4.2, 2.6, 0), note('3 個', 4.2, 2.6, 0), bub('input ≥ 0', 0, 3.5, 0));
   say('可以有 0 個或更多個 input', 'input ≥ 0');
   await step(tok);                                    // 32.5 at least one output
   tint(pr[1], J.green); glow(pr[1], GOLD);
-  await Promise.all(A.map((b, i) => pkt(tok, '結果', bpos(b, 0.4), V3(xs[i], 0.25, 2.3), 900).then((l) => { l.element.className = 'lab-label good'; })));
+  await Promise.all(A.map((b, i) => pkt(tok, '結果', bpos(b, 0.4), V3(xs[i], 0.25, 2.3), 900).then((l) => { l.element.className = 'lab-label good'; io.push(l); })));
   A.forEach((b) => b.mood('happy')); await hops(tok, ...A);
-  bub('output ≥ 1', 0, 1.6, 2.3);
+  io.push(bub('output ≥ 1', 0, 1.6, 2.3));
   say('output 至少要有 1 個', '什麼都不產生，寫它就沒意義');
   await step(tok);                                    // 37.8 like a function in C
-  const cd = code(['void show()', '{', '  printf("Hi");', '}'], 0, 5.0, 0.42, 1.2);
+  io.forEach((l) => remove(l)); // next subject: the C function
+  const cd = code(['void show()', '{', '  printf("Hi");', '}'], 0, 5.4, 0.56, 0);
   say('想像成 C 語言的函數', '函數可以沒有參數（沒有 input）');
   await step(tok);                                    // 47.8 returns void but does something
   cd.hl(2);
   const mon = prop('monitor', 6.0, 0, -1.2, 0.8, '螢幕');
-  const hi = await pkt(tok, 'Hi', V3(0.8, 4.2, 1.2), V3(6.0, 1.0, -1.0), 900);
+  const hi = await pkt(tok, 'Hi', V3(0.8, 4.3, 0), V3(6.0, 1.0, -1.0), 900);
   hi.element.className = 'lab-label good';
   say('就算回傳 void，也一定做了事', '印出 Hi → 這就是它的 output');
   await step(tok);                                    // 56.8 gives some result definitely
@@ -5563,7 +5607,7 @@ FRAG.push(['algjiang1-lab-recipe', '化學實驗、物理實驗、食譜都是 p
   await step(tok);                                    // 269.8 there must be some solution
   qs.forEach(remove);
   const OUT = ['溶液', '實驗結果', '一道菜'];
-  await Promise.all(P.map((b, i) => pkt(tok, OUT[i], bpos(b, 0.4), V3(xs[i], 0.25, 2.4), 800).then((l) => { l.element.className = 'lab-label good'; })));
+  await Promise.all(P.map((b, i) => pkt(tok, OUT[i], bpos(b, 0.4), V3(xs[i] + 1.6, 0.3, 0), 800).then((l) => { l.element.className = 'lab-label good'; })));
   P.forEach((b) => b.mood('happy')); await hops(tok, ...P);
   say('一定要有結果（output）', '至少一個');
   await step(tok);                                    // 275.1 definiteness: only known steps
@@ -5673,15 +5717,15 @@ FRAG.push(['algjiang1-avp-who', 'Algorithm vs Program：誰來寫', async (tok) 
   say('誰來寫演算法？', 'programmer 有能力的話也可以');
   await step(tok);                                    // 408.0 domain knowledge
   const ds = buddy('designer', '', C_ALG, -3.6, 0, 1.6, 0.85);
-  note('domain knowledge', -3.6, 1.9, 1.6);
+  note('domain knowledge', -3.6, 2.5, 1.6);
   say('要有 domain knowledge 的人', '懂這個問題、也知道怎麼解');
   await step(tok);                                    // 426.8 accounting → accountant
   const ac = buddy('會計師', '', C_PPL, -6.4, 0, 3.6, 0.7); ac.mood('happy');
-  note('會計軟體', -6.4, 1.5, 3.6);
+  note('會計軟體', -6.4, 2.2, 3.6);
   say('寫會計軟體？', '會計師最懂會計');
   await step(tok);                                    // 436.0 hospital → doctors, admin staff
   const dr = buddy('醫師', '', C_PPL, -0.8, 0, 3.6, 0.7); dr.mood('happy');
-  note('醫院系統', -0.8, 1.5, 3.6);
+  note('醫院系統', -0.8, 2.2, 3.6);
   say('醫院的系統？', '醫師、行政人員比 programmer 更懂');
   await step(tok);                                    // 447.0 the one with domain knowledge writes it
   T.fill(0); await hops(tok, ds, ac, dr);
@@ -5801,7 +5845,7 @@ const SWAPC = ['Algorithm Swap(a, b)', '{', '    temp = a;', '    a = b;', '    
 FRAG.push(['algjiang1-swap-write', 'Algorithm Swap(a, b)：沒有固定語法', async (tok) => {
   fresh([0, 6, 14], [0, 2.8, 0]);
   await step(tok);                                    // 0.2 how to write an algorithm
-  bub('怎麼寫一個演算法？', 0, 6.4, -1);
+  const hq = bub('怎麼寫一個演算法？', 0, 6.4, -1);
   say('怎麼寫一個演算法？', '');
   await step(tok);                                    // 2.0 algorithm for swapping two numbers
   let cd = code(SWAPC, -3.4, 5.6, 0.55);
@@ -5812,18 +5856,18 @@ FRAG.push(['algjiang1-swap-write', 'Algorithm Swap(a, b)：沒有固定語法', 
   cd.hl(-1); a.mood('happy'); b.mood('happy');
   say('Swap：交換兩個數', 'a = 5、b = 8 → a = 8、b = 5');
   await step(tok);                                    // 9.0 C language like syntax
-  const n0 = note('C 語言風格', -0.6, 6.4, 0);
+  remove(hq); const n0 = note('C 語言風格', -0.6, 6.4, 0); // one remark next to the code, rewritten below
   say('用的是 C 語言風格的語法', '');
   await step(tok);                                    // 11.0 wrote "Algorithm": it is not a program
   cd.hl(0); txt(n0, '← 寫 Algorithm：這不是程式');
   say('開頭寫 Algorithm', '表示這是演算法，不是程式');
   await step(tok);                                    // 18.3 no data type of parameters
   txt(n0, '← 參數沒寫 data type');
-  const ty = [note('型別？', 1.4, 1.6, 0), note('型別？', 3.2, 1.6, 0)];
+  const ty = [note('a、b 的型別？', 2.3, 2.4, 0)]; // one note over both parameters
   a.mood('wow'); b.mood('wow');
   say('跟 C 程式比：參數沒寫 data type', '');
   await step(tok);                                    // 24.0 data types decided when writing the program
-  ty.forEach((l) => txt(l, '寫程式時再決定'));
+  ty.forEach((l) => txt(l, 'a、b 的型別：寫程式時再決定'));
   say('型別在寫程式時才決定', '演算法階段不管');
   await step(tok);                                    // 33.8 temp is not declared
   cd.hl(2); txt(n0, '← temp 沒宣告就直接用');
@@ -6016,23 +6060,23 @@ FRAG.push(['algjiang1-swap-space', '空間分析：3 個 word → O(1)', async (
   say('接著是空間分析', '用到哪些變數？');
   await step(tok);                                    // 558.0 a is a parameter
   cd.hl(0);
-  const a = buddy('a', '1 word', C_MAN, 1.4, 0, 0, 0.85); note('參數', 1.4, 1.4, 0.6);
+  const a = buddy('a', '1 word', C_MAN, 1.4, 0, 0, 0.85); note('參數', 1.4, 2.2, 0.6);
   say('a 是參數', '');
   await step(tok);                                    // 563.8 b is a parameter, temp is local
-  const b = buddy('b', '1 word', C_WOM, 3.2, 0, 0, 0.85); note('參數', 3.2, 1.4, 0.6);
+  const b = buddy('b', '1 word', C_WOM, 3.2, 0, 0, 0.85); note('參數', 3.2, 2.2, 0.6);
   cd.hl(2);
-  const t = buddy('temp', '1 word', C_PPL, 5.0, 0, 0, 0.85); note('區域變數', 5.0, 1.4, 0.6);
+  const t = buddy('temp', '1 word', C_PPL, 5.0, 0, 0, 0.85); note('區域變數', 5.0, 2.2, 0.6);
   say('b 也是參數，temp 是區域變數', '');
   await step(tok);                                    // 570.8 three variables: S(n) = 3, constant
   cd.hl(-1);
-  const s = bub('S(n) = 3', 3.2, 3.0, 0);
+  const s = bub('S(n) = 3', 3.2, 3.2, 0);
   await hops(tok, a, b, t);
   say('一共 3 個變數：S(n) = 3', '又是常數');
   await step(tok);                                    // 580.1 constant: written O(1)
   txt(s, 'S(n) = 3 → O(1)');
   say('常數通常寫成 O(1)', '讀作 order of 1');
   await step(tok);                                    // 596.5 1 means constant: 3 or 3000
-  ok('3 → O(1)　3000 → 還是 O(1)', 3.2, 3.8, 0);
+  ok('3 → O(1)　3000 → 還是 O(1)', 3.2, 4.0, 0);
   say('1 代表「常數」', '是 3 或 3000，都寫 O(1)');
   await step(tok);                                    // 608.0 statement = 1 unit, variable = 1 word
   bub('每個敘述 1 單位時間・每個變數 1 個 word', 0, 0.2, 2.6);
@@ -6361,7 +6405,7 @@ FRAG.push(['algjiang1-knuth-fde', 'Finite、Definite、Effective', async (tok) =
   bub('有限步驟內一定停', xs[0], 4.8, -1.0);
   say('Finite：procedure 一定要在有限步驟內停下來', '');
   await step(tok);                                    // 1333.0 a program that falls into an infinite loop
-  lp = jCard('while (true) { … }', J.blue, xs[0], 3.6, -0.4, 2.8, 2, 0.5);
+  lp = jCard('while (true) { … }', J.blue, xs[0], 3.4, -0.4, 2.8, 2, 0.5);
   cnt = tag('第 0 圈', 'pkt', xs[0], 2.6, 0);
   await countUp(tok, cnt, 0, 99999, 1500, (v) => '第 ' + v + ' 圈 …');
   pg.mood('wow');
@@ -6378,7 +6422,7 @@ FRAG.push(['algjiang1-knuth-fde', 'Finite、Definite、Effective', async (tok) =
   say('描述要很乾淨', '不會讓人有所誤解');
   await step(tok);                                    // 1372.0 student A does one thing, student B another
   const A = buddy('A 同學', '', C_PPL, xs[1] - 1.1, 0, 0.6, 0.7), Bq = buddy('B 同學', '', C_PPL, xs[1] + 1.1, 0, 0.6, 0.7);
-  note('由大到小排好', xs[1] - 1.1, 1.6, 1.4); note('只把最大的移到第一格', xs[1] + 1.1, 1.6, 1.4);
+  note('由大到小排好', xs[1] - 1.5, 2.1, 1.4); note('只把最大的移到第一格', xs[1] + 1.5, 2.1, 1.4); // each over its student, apart
   A.mood('happy'); Bq.mood('wow');
   say('A 同學看了做這件事', 'B 同學看了卻做另一件事');
   await step(tok);                                    // 1382.0 misleading → not an algorithm
@@ -6389,10 +6433,10 @@ FRAG.push(['algjiang1-knuth-fde', 'Finite、Definite、Effective', async (tok) =
   say('Effective：每一個步驟都必須有效', '');
   await step(tok);                                    // 1409.0 doable with pen and paper
   prop('file', xs[2] - 1.0, 0, 0.6, 0.9, '紙筆');
-  const e1 = jCard('紙上能模擬的步驟', J.green, xs[2], 3.6, -0.4, 2.8, 2, 0.5);
+  const e1 = jCard('紙上能模擬的步驟', J.green, xs[2], 3.4, -0.4, 2.8, 2, 0.5);
   say('不能天花亂墜亂寫', '每一步拿紙筆都能在紙上做出來');
   await step(tok);                                    // 1418.0 can't even simulate it on paper → not effective
-  const e2 = jCard('「直接猜出答案」', J.orange, xs[2], 2.7, -0.4, 2.8, 2, 0.5);
+  const e2 = jCard('「直接猜出答案」', J.orange, xs[2], 2.5, -0.4, 2.8, 2, 0.5);
   await beat(tok, 500); glow(e2, RED);
   say('連在紙上模擬都做不到', '就不算有效的步驟');
   await step(tok);                                    // 1433.0 every step definitely executable
@@ -6466,21 +6510,21 @@ FRAG.push(['algjiang1-design-flow', '設計演算法的流程：問題 → 證�
   card(0); me.look(1);
   say('會想發展演算法', '一定是因為遇到一個問題要解決');
   await step(tok);                                    // 142.0 practical: we really ran into it
-  note('practical：真的遇到了', X(0), Y(0) - 0.6, -1.2);
+  note('practical：真的遇到了', X(0), Y(0) + 0.8, -1.2); // above its card, clear of the next one
   say('而且通常是很實際（practical）的問題', '真的遇到了，才想解決它');
   await step(tok);                                    // 171.0 second: describe the problem
   card(1);
   say('第二步：把問題描述下來', '描述問題本身就是一門學問');
   await step(tok);                                    // 190.0 a master's student: solving technique
-  const ms = buddy('碩士生', '', '#b9c8f0', -4.6, 0, 4.6, 0.7);
-  note('學會 solving technique → 畢業', -4.6, 1.4, 4.6);
+  const ms = buddy('碩士生', '', '#b9c8f0', -5.2, 0, 4.6, 0.7);
+  const stu = [note('學會 solving technique → 畢業', -5.2, 1.9, 4.6)]; // the two students leave when the narration moves on
   say('碩士生學會解題技巧', '就可以畢業');
   await step(tok);                                    // 199.0 a PhD student: define the problem — hardest
-  const phd = buddy('博士生', '', '#f6c99a', -2.0, 0, 4.6, 0.7);
-  note('學會 define problem → 畢業', -2.0, 1.4, 4.6);
-  ok('定義問題反而最難', -3.3, 2.2, 4.6); phd.mood('wow');
+  const phd = buddy('博士生', '', '#f6c99a', -1.2, 0, 4.6, 0.7);
+  stu.push(note('學會 define problem → 畢業', -1.2, 1.9, 4.6), ok('定義問題反而最難', -3.2, 2.7, 4.6)); phd.mood('wow');
   say('博士生要學會定義問題', '定義問題反而最困難');
   await step(tok);                                    // 217.0 a problem looks like a mess at first
+  stu.forEach((l) => remove(l)); remove(ms.g); remove(phd.g);
   const mess = []; for (let i = 0; i < 8; i++) mess.push(cube('', [J.blue, J.orange, J.purple, J.teal][i % 4], [0.4, 0.4, 0.4], 0.4 + (i % 4) * 0.7, 0.3 + (i % 3) * 0.5, 2.6 + Math.floor(i / 4) * 0.6));
   me.mood('wow');
   say('剛遇到時，問題亂七八糟', '不知道它的本質是什麼');
@@ -6526,23 +6570,24 @@ FRAG.push(['algjiang1-sm-dating', 'Stable matching：交友公司的配對', asy
   tag('100 位男生（畫 5 位代表）', 'idx', -4.2, 0, 1.9); tag('100 位女生（畫 5 位代表）', 'idx', 4.2, 0, 1.9);
   say('有 100 位男生、100 位女生客戶', '');
   await step(tok);                                    // 454.7 help them pair up
-  bub('幫他們配對', 0, 2.2, -1.6);
+  bub('幫他們配對', 0, 2.8, -1.6);
   say('你要幫他們配對', '');
   await step(tok);                                    // 462.0 everyone knows who is on the other side
   men.forEach((b) => b.look(1)); wom.forEach((b) => b.look(-1));
-  note('每個人都認識對面的 100 人', 0, 3.0, 1.0);
+  const know = note('每個人都認識對面的 100 人', 0, 3.0, 1.0);
   say('一開始大家都知道對面 100 人是誰', '');
   await step(tok);                                    // 483.0 each ranks all 100: first choice … 100th
   const RK = ['1st', '2nd', '3rd', '…', '100th'];
-  const lm = RK.map((r, k) => cube(r, J.paper, [0.7, 0.32, 0.5], MX(0), 1.0 + k * 0.36, 1.0));
-  const lw = RK.map((r, k) => cube(r, J.paper, [0.7, 0.32, 0.5], WX(4), 1.0 + k * 0.36, 1.0));
+  remove(know);
+  const lm = RK.map((r, k) => cube(r, J.paper, [0.8, 0.4, 0.3], MX(0), 1.1 + k * 0.5, 1.0)); // a list: one rank per row, rows apart
+  const lw = RK.map((r, k) => cube(r, J.paper, [0.8, 0.4, 0.3], WX(4), 1.1 + k * 0.5, 1.0));
   say('每個人都替對面 100 人排名次', '第一喜歡、第二喜歡……一直到第 100 名');
   await step(tok);                                    // 513.0 preference list
-  note('preference list', MX(0), 3.0, 1.0); note('preference list', WX(4), 3.0, 1.0);
+  const pl = [note('preference list', MX(0), 3.8, 1.0), note('preference list', WX(4), 3.8, 1.0)];
   say('這個依喜好程度的排序', '叫 preference list');
   await step(tok);                                    // 538.0 boss: make 100 happy pairs
-  lm.forEach(kill); lw.forEach(kill);
-  bub('配出 100 對 happy 的配對', 0, 2.2, -0.2);
+  lm.forEach(kill); lw.forEach(kill); pl.forEach((l) => remove(l));
+  bub('配出 100 對 happy 的配對', 0, 3.0, -1.6);
   boss.mood('wow');
   say('拿到這 200 張 list', '你要配出 100 對 happy 的配對');
   await step(tok);                                    // 559.0 condition 1: all 100 pairs, nobody left out
@@ -6559,7 +6604,7 @@ FRAG.push(['algjiang1-sm-dating', 'Stable matching：交友公司的配對', asy
   ok('一對一', 0, 1.9, 2.4);
   say('也不能一個人配好幾個', '一定是一對一');
   await step(tok);                                    // 594.0 condition 2: happy and stable
-  bub('條件二：happy and stable', 0, 2.8, -1.6);
+  bub('條件二：happy and stable', 0, 3.6, -1.6);
   say('第二：配完要 happy and stable', '快樂，而且穩定');
   await step(tok);                                    // 625.6 no pair prefers each other to their partners
   const cr = line(MX(1), 0.6, WX(3), 0.6, 1.2, J.red);
@@ -6642,10 +6687,10 @@ FRAG.push(['algjiang1-sm-perfect-stable', 'Perfect matching ＋ 沒有 unstable 
   let c1, c2;
   await step(tok);                                    // 1001.0 X was forced into his last choice
   glow(B.ML.X.C, RED); B.M.X.glow('#5a1010');
-  note('X 被迫選了最不喜歡的 C', -1.6, 1.2, 1.0);
+  note('X 被迫選了最不喜歡的 C', -3.0, 1.0, 1.0);
   say('Z 選 A、Y 選 B', '輪到 X 時，被迫選最不喜歡的 C');
   await step(tok);                                    // 1015.0 not arranged by personal wishes
-  no('沒照個人意願安排', 1.6, 1.2, 1.0);
+  no('沒照個人意願安排', 3.0, 1.0, 1.0);
   say('問題出在：不是照每個人的意願安排', '');
   await step(tok);                                    // 1030.0 respect everyone's free will
   B.all().forEach((b) => b.mood('wow'));
@@ -6663,7 +6708,7 @@ FRAG.push(['algjiang1-sm-perfect-stable', 'Perfect matching ＋ 沒有 unstable 
   note('每個人都剛好配到一個（一對一）', -4.6, -0.4, 1.4);
   say('每個人都有配到對象', '不是「幸福美滿」，只是「都配完了」');
   await step(tok);                                    // 1101.0 in some problems not everyone can be matched
-  note('有些問題：不一定人人配得到', 1.0, -0.4, 1.4);
+  note('有些問題：不一定人人配得到', -4.6, -1.1, 1.4); // under the perfect-matching card it belongs to
   say('有些問題不一定每個人都配得到', '跟那比起來，全部配完已經夠棒了');
   await step(tok);                                    // 1115.0 not only perfect, also stable
   c2 = jCard('Stability', J.blue, 4.6, 0.3, 1.4, 2.2, 2, 0.5);
@@ -6693,8 +6738,8 @@ FRAG.push(['algjiang1-sm-perfect-stable', 'Perfect matching ＋ 沒有 unstable 
   say('問題：給定 n 個男生、n 個女生', '以及他們的 preference list');
   await step(tok);                                    // 1200.0 complete, no ties
   B.off();
-  no('「這兩個我一樣喜歡」✗', -4.6, 4.6, 0.6);
-  note('完整、不能平手', 4.6, 4.6, 0.6);
+  no('「這兩個我一樣喜歡」✗', -4.6, 6.2, 0); // above the lists, not on them
+  note('完整、不能平手', 4.6, 6.2, 0);
   say('list 要完整，而且沒有平手', '一定要分出高低');
   await step(tok);                                    // 1216.0 find a stable matching, if one exists
   B.all().forEach((b) => b.mood('happy'));
@@ -6708,7 +6753,7 @@ FRAG.push(['algjiang1-swap-cycle', '直覺法：有 unstable 就 swap → 可能
   const Mp = { X: 'ABC', Y: 'BAC', Z: 'ABC' }, Fp = { A: 'YZX', B: 'ZYX', C: 'XYZ' };
   const B = jBoard(Mp, Fp, { y0: 4.2 });
   tag('（示意例子：會繞圈的偏好表）', 'idx', 0, -0.3, 1.0);
-  const cd = code(['1 隨便先 match', '2 有 unstable pair 就 swap', '3 重複，直到沒有 unstable'], 0, 6.6, 0.45, -1.0);
+  const cd = code(['1 隨便先 match', '2 有 unstable pair 就 swap', '3 重複，直到沒有 unstable'], 0, 7.0, 0.56, -1.0);
   const cur = {};
   const cnt = tag('swap 0 次', 'pkt', 4.6, 0.6, 1.0);
   let k = 0;
@@ -6723,14 +6768,14 @@ FRAG.push(['algjiang1-swap-cycle', '直覺法：有 unstable 就 swap → 可能
   await step(tok);                                    // 1234.0 an intuitive method (which won't work)
   say('先想一個很直覺的方法', '先預告：很簡單，但其實不行');
   await step(tok);                                    // 1269.0 fix it when there is a problem
-  bub('有問題，修正就好？', 0, 0.6, 1.0);
+  const rem = bub('有問題，修正就好？', 0, 0.6, 1.0); // one remark under the board, rewritten below
   say('直覺：有問題就去修正它', '');
   await step(tok);                                    // 1276.0 match arbitrarily first
   cd.hl(0);
   for (const [m, w] of [['X', 'A'], ['Y', 'B'], ['Z', 'C']]) { cur[m] = w; B.link(m, w); await beat(tok, 250); }
   say('第一行：隨便先 match', '每個人先選喜歡的，被選走就退而求其次');
   await step(tok);                                    // 1309.0 lucky: already stable, done
-  note('運氣好：直接 stable，結束', 0, 5.4, 0.6);
+  txt(rem, '運氣好：直接 stable，結束');
   say('運氣好的話，已經 stable', '就結束了');
   await step(tok);                                    // 1315.0 unlucky: an unstable pair
   cd.hl(1);
@@ -6744,10 +6789,10 @@ FRAG.push(['algjiang1-swap-cycle', '直覺法：有 unstable 就 swap → 可能
   cd.hl(2);
   say('反覆這樣做', '直到沒有 unstable pair 為止');
   await step(tok);                                    // 1354.0 is this procedure valid?
-  bub('這個 procedure 可行嗎？', 0, 0.6, 1.0);
+  txt(rem, '這個 procedure 可行嗎？');
   say('這個 procedure 可行（valid）嗎？', '');
   await step(tok);                                    // 1380.0 line 1 is fine; the trouble is lines 2 and 3
-  cd.hl(1); note('問題出在第 2、3 行', 3.6, 6.6, -1.0);
+  cd.hl(1); note('問題出在第 2、3 行', 4.4, 6.6, -1.0);
   say('只有三行', '第一行沒問題，問題在第二、三行');
   await step(tok);                                    // 1402.0 a swap may create a new unstable pair
   await swap('Z', 'A', 700);
@@ -6755,16 +6800,16 @@ FRAG.push(['algjiang1-swap-cycle', '直覺法：有 unstable 就 swap → 可能
   say('swap 解掉一個 unstable', '卻可能產生新的 unstable（Z–A）');
   await step(tok);                                    // 1421.5 it can go round in a cycle
   await swap('Y', 'A', 500); await swap('Y', 'B', 500);
-  no('回到最初的配對！cycle', 0, 5.4, 0.6);
+  txt(rem, '回到最初的配對！cycle'); cls(rem, 'bad');
   say('解開、產生、解開、產生', '繞一圈又回到最初的配對');
   await step(tok);                                    // 1437.0 the loop may never stop
   await countUp(tok, cnt, 4, 40, 1500, (v) => 'swap ' + v + ' 次 …');
   say('這個迴圈不一定停得下來', '一直有人 unstable');
   await step(tok);                                    // 1452.0 recall: finite
-  bub('procedure 要 finite！', 0, 0.6, 1.0);
+  txt(rem, 'procedure 要 finite！'); cls(rem, 'say');
   say('還記得 procedure 的原則嗎？', 'finite：有限步驟內一定要停');
   await step(tok);                                    // 1466.0 invalid
-  no('停不下來 → invalid，不能用', 3.6, 5.6, -1.0);
+  no('停不下來 → invalid，不能用', 4.4, 5.9, -1.0);
   say('停不下來 → 這個方法不行', '');
 }]);
 
@@ -6779,18 +6824,19 @@ FRAG.push(['algjiang1-gs-states', 'Gale–Shapley：free → engaged → married
   await step(tok);                                    // 1495.0 one principle: everyone seeks their own best
   m = buddy('m', '', C_MAN, -5.6, 0, 2.6, 0.8); w = buddy('w', '', C_WOM, -4.2, 0, 2.6, 0.8);
   m.mood('happy'); w.mood('happy');
-  note('原則：每個人追求自己的最大利益', -4.9, 1.6, 2.6);
+  const hist = [note('原則：每個人追求自己的最大利益', -4.9, 2.4, 2.6)]; // the background (cleared when the method starts running)
   say('原則只有一個', '每個人都盡量追求自己最大的幸福');
   await step(tok);                                    // 1501.8 Gale and Shapley, 1962
-  jCard('Gale & Shapley（1962）', J.blue, -2.4, 5.0, -1.5, 3.4, 2, 0.5);
+  hist.push(jCard('Gale & Shapley（1962）', J.blue, -2.4, 5.0, -1.5, 3.4, 2, 0.5));
   say('Gale 和 Shapley', '在 1962 年提出');
   await step(tok);                                    // 1519.0 Nobel prize in economics, 2012
-  jCard('2012 諾貝爾經濟學獎', J.gold, 2.4, 5.0, -1.5, 3.2, 2, 0.5);
+  hist.push(jCard('2012 諾貝爾經濟學獎', J.gold, 2.4, 5.0, -1.5, 3.2, 2, 0.5));
   say('2012 年得到諾貝爾經濟學獎', '');
   await step(tok);                                    // 1529.0 the inventor Shapley + the economist who applied it
-  note('Shapley：發明人', 1.4, 4.2, -1.5); note('Roth：應用在經濟問題', 3.6, 4.2, -1.5);
+  hist.push(note('Shapley：發明人', 2.4, 4.3, -1.5), note('Roth：應用在經濟問題', 2.4, 3.6, -1.5)); // stacked under the prize card
   say('頒給兩位：發明人 Shapley', '和把它應用到很多經濟問題的學者');
   await step(tok);                                    // 1607.0 how does it run?
+  hist.forEach((o) => kill(o)); // next subject: how it runs
   Z = ['free（單身）', 'engaged（訂婚）', 'married（結婚）'].map((s, i) => zone(s, xs[i], 0, 0.6, 3.6, 2.8, ['#e9dcc4', '#d6e4f5', '#d8efe0'][i]));
   await Promise.all([walk(tok, m, -5.0, 0, 0.2, 700), walk(tok, w, -3.8, 0, 0.2, 700)]);
   say('它到底怎麼跑？', '');
@@ -6799,13 +6845,13 @@ FRAG.push(['algjiang1-gs-states', 'Gale–Shapley：free → engaged → married
   w.mood('wow');
   say('男生向女生 propose（求婚）', '每個 iteration 一次');
   await step(tok);                                    // 1624.9 a woman accepts or rejects
-  note('accept 或 reject', -3.8, 1.5, 0.2);
+  const acc = note('accept 或 reject', -3.8, 2.3, 0.2);
   say('女生決定 accept 或 reject', '機制就這樣而已');
   await step(tok);                                    // 1639.0 deferred decision making
   jCard('deferred decision making', J.teal, 0, 3.6, -1.0, 3.8, 2, 0.5);
   say('設計概念：deferred decision making', '「延後」做最後決定');
   await step(tok);                                    // 1653.0 accepting a proposal ≠ deciding to marry
-  bub('先答應……還沒決定要不要嫁', -3.8, 2.4, 0.2);
+  txt(acc, '先答應……還沒決定要不要嫁'); cls(acc, 'say');
   say('女生 accept 只是當下的決定', '並沒有真的決定要嫁給他');
   await step(tok);                                    // 1668.0 three states: everyone starts free
   Z[0].material.color.set('#f3d79a');
@@ -6816,7 +6862,7 @@ FRAG.push(['algjiang1-gs-states', 'Gale–Shapley：free → engaged → married
   m.mood('happy'); w.mood('happy');
   say('過程中有些人進入 engaged', '訂婚');
   await step(tok);                                    // 1690.0 an engagement can be broken
-  note('訂婚可以毀約', 0, 1.6, 1.2);
+  const brk = note('訂婚可以毀約', 0, 2.4, 1.2);
   say('訂婚只是有婚約', '可以毀約');
   await step(tok);                                    // 1711.0 men go free → engaged → free …
   m2 = buddy('m′', '', C_MAN, -5.4, 0, 1.4, 0.8);
@@ -6829,6 +6875,7 @@ FRAG.push(['algjiang1-gs-states', 'Gale–Shapley：free → engaged → married
   m.mood('happy'); w2.mood('happy');
   say('m 再向下一位求婚', '等到所有人都 engaged，就停下來');
   await step(tok);                                    // 1726.0 engaged → married
+  remove(brk);
   await Promise.all([walk(tok, m, 3.8, 0, -0.6, 900), walk(tok, w2, 5.0, 0, -0.6, 900), walk(tok, m2, 3.8, 0, 1.4, 900), walk(tok, w, 5.0, 0, 0.2, 900)]);
   [m, w, m2, w2].forEach((b) => b.mood('happy'));
   say('結果不再改變', '把 engaged 的配對轉成 married');
@@ -6843,13 +6890,13 @@ FRAG.push(['algjiang1-gs-states', 'Gale–Shapley：free → engaged → married
 // 30:41 GS 的 pseudocode：三種 case（用 demo 的 V→B、X→B、V→A、Y→A）
 FRAG.push(['algjiang1-gs-code', 'Gale–Shapley pseudocode：三種 case', async (tok) => {
   fresh([0, 6, 14.5], [0, 2.8, 0]);
-  const cd = code(['1 initialize each person to be free', '2 while (some man is free and', '         hasn\'t proposed to every woman)', '3   choose such a man m', '4   w = 1st woman on m\'s list', '        not yet proposed to', '5   if w is free: m, w engaged', '6   else if w prefers m to fiancé m\'', '7       m, w engaged; m\' free', '8   else w rejects m', '9 output engaged pairs as married'], -3.4, 6.6, 0.5);
+  const cd = code(['1 initialize each person to be free', '2 while (some man is free and', '         hasn\'t proposed to every woman)', '3   choose such a man m', '4   w = 1st woman on m\'s list', '        not yet proposed to', '5   if w is free: m, w engaged', '6   else if w prefers m to fiancé m\'', '7       m, w engaged; m\' free', '8   else w rejects m', '9 output engaged pairs as married'], -4.2, 6.8, 0.54); // the code on the left; the people move right, clear of it
   const H = (i) => cd.hl(i);
-  const wB = buddy('', 'B', C_WOM, 3.2, 3.6, 0, 0.7), wA = buddy('', 'A', C_WOM, 3.2, 1.0, 0, 0.7);
-  const lB = 'XWYVZ'.split('').map((q, k) => cube(q, J.paper, [0.42, 0.42, 0.42], 4.2 + k * 0.5, 4.0, 0));
-  const lA = 'ZVWYX'.split('').map((q, k) => cube(q, J.paper, [0.42, 0.42, 0.42], 4.2 + k * 0.5, 1.4, 0));
-  tag('B 的偏好（左 = 最愛）', 'idx', 5.2, 4.6); tag('A 的偏好', 'idx', 5.2, 2.0);
-  const V = buddy('', 'V', C_MAN, 0.4, 2.2, 1.6, 0.6), X = buddy('', 'X', C_MAN, 0.4, 0.8, 2.4, 0.6), Y = buddy('', 'Y', C_MAN, 0.4, -0.4, 2.4, 0.6);
+  const wB = buddy('', 'B', C_WOM, 4.0, 3.6, 0, 0.7), wA = buddy('', 'A', C_WOM, 4.0, 1.0, 0, 0.7);
+  const lB = 'XWYVZ'.split('').map((q, k) => cube(q, J.paper, [0.42, 0.42, 0.42], 5.0 + k * 0.5, 4.0, 0));
+  const lA = 'ZVWYX'.split('').map((q, k) => cube(q, J.paper, [0.42, 0.42, 0.42], 5.0 + k * 0.5, 1.4, 0));
+  tag('B 的偏好（左 = 最愛）', 'idx', 6.0, 4.6); tag('A 的偏好', 'idx', 6.0, 2.0);
+  const V = buddy('', 'V', C_MAN, 1.2, 2.2, 1.6, 0.6), X = buddy('', 'X', C_MAN, 1.2, 0.8, 2.4, 0.6), Y = buddy('', 'Y', C_MAN, 1.2, -0.4, 2.4, 0.6);
   let lvB, lxB, lvA;
   await step(tok);                                    // 1845.0 line 1: everyone free
   H(0);
@@ -6864,14 +6911,14 @@ FRAG.push(['algjiang1-gs-code', 'Gale–Shapley pseudocode：三種 case', async
   H(1);
   say('來看核心：第 2 到第 8 行', '');
   await step(tok);                                    // 1889.0 loop while a free man hasn't proposed to everyone
-  note('有 free 的男生，而且他還沒向所有女生求過婚', -3.4, 0.6, 1.2);
+  note('有 free 的男生，而且他還沒向所有女生求過婚', -4.2, 0.4, 1.2);
   say('只要有男生是 free', '而且他還沒向每個女生都求過婚，就跑一圈');
   await step(tok);                                    // 1905.0 pick such a man
   H(3); V.glow(GOLD); V.mood('wow');
   say('隨便挑一個這樣的男生', '這裡挑 V');
   await step(tok);                                    // 1916.0 his favourite among those not yet proposed to
   H(4);
-  const vl = 'BADEC'.split('').map((q, k) => cube(q, J.paper, [0.36, 0.36, 0.36], -0.6 + k * 0.42, 3.2, 1.6));
+  const vl = 'BADEC'.split('').map((q, k) => cube(q, J.paper, [0.36, 0.36, 0.36], 0.36 + k * 0.42, 3.1, 1.6));
   glow(vl[0], GOLD);
   say('他從還沒求過婚的女生裡', '挑最喜歡的那一位：B');
   await step(tok);                                    // 1931.0 first iteration: starts from his favourite
@@ -6882,7 +6929,7 @@ FRAG.push(['algjiang1-gs-code', 'Gale–Shapley pseudocode：三種 case', async
   H(6);
   say('換女生考慮', 'case 1：B 目前是 free');
   await step(tok);                                    // 1977.0 accept (can change later) → engaged
-  lvB = line(0.8, 2.6, 2.8, 3.9, 1.0, J.eng); V.glow(null); V.mood('happy'); wB.mood('happy');
+  lvB = line(1.6, 2.6, 3.6, 3.9, 1.0, J.eng); V.glow(null); V.mood('happy'); wB.mood('happy');
   say('free 就先 accept', '反正可以反悔 → V、B engaged');
   await step(tok);                                    // 1991.0 case 2: she is already engaged
   H(7); X.glow(GOLD);
@@ -6892,23 +6939,23 @@ FRAG.push(['algjiang1-gs-code', 'Gale–Shapley pseudocode：三種 case', async
   glow(lB[0], GOLD); glow(lB[3], GRAY); wB.look(-1);
   say('B 比較兩個人', '她的偏好：X 第 1、V 第 4');
   await step(tok);                                    // 2024.0 prefers the new one: dump fiancé
-  H(8); kill(lvB); lxB = line(0.8, 1.2, 2.8, 3.9, 1.0, J.eng);
+  H(8); kill(lvB); lxB = line(1.6, 1.2, 3.6, 3.9, 1.0, J.eng);
   X.glow(null); X.mood('happy'); V.mood('sad'); V.glow('#5a1010');
   say('比較喜歡 X → dump 原未婚夫 V', '改和 X engaged；V 回到 free');
   await step(tok);                                    // 2036.8 case 3: do nothing
   glow(lB[0], null); glow(lB[3], null); V.glow(null);
-  lvA = line(0.8, 2.6, 2.8, 1.3, 1.0, J.eng); V.mood('happy'); wA.mood('happy');
+  lvA = line(1.6, 2.6, 3.6, 1.3, 1.0, J.eng); V.mood('happy'); wA.mood('happy');
   H(9); Y.glow(GOLD);
   remove(await pkt(tok, '求婚', bpos(Y), bpos(wA), 800));
   say('（V 改向 A 求婚，A 先 accept）', 'case 3：Y 也來向 A 求婚');
   await step(tok);                                    // 2051.0 she prefers her fiancé → reject
   glow(lA[1], GOLD); glow(lA[3], GRAY);
   Y.mood('sad'); Y.glow('#5a1010');
-  no('A 比較愛 V → reject', 3.2, -0.2, 1.2);
+  no('A 比較愛 V → reject', 4.0, -0.2, 1.2);
   say('A 比較喜歡未婚夫 V', 'reject Y，什麼都不變；Y 還是 free');
   await step(tok);                                    // 2064.0 he proposes to the next one on his list
   H(4); Y.glow(null);
-  const nx = await pkt(tok, '→ 下一位', bpos(Y), V3(2.4, -0.2, 2.6), 800);
+  const nx = await pkt(tok, '→ 下一位', bpos(Y), V3(3.2, -0.2, 2.6), 800);
   say('Y 只好向排名下一位的女生求婚', '一圈一圈繼續下去');
 }]);
 
@@ -7050,18 +7097,18 @@ FRAG.push(['algjiang1-gs-fair', '男生 propose：對男生最好、對女生最
   const rk = (m) => SM5M[m].indexOf(R[m]) + 1;
   await step(tok);                                    // 2582.0 some men are lucky
   glow(B.ML.X[R.X], GREEN); B.M.X.mood('happy'); await B.M.X.hop(tok);
-  note('X：第 ' + rk('X') + ' 志願', -1.6, B.y.X + 0.6, 0.6);
+  const nX = note('X：第 ' + rk('X') + ' 志願', 0, B.y.X + 0.45, 0.6); // between the two columns, on X's row
   say('有些男生運氣很好', '配到他很喜歡的女生');
   await step(tok);                                    // 2588.0 some go through hardships
   glow(B.ML.Y[R.Y], RED); B.M.Y.mood('sad');
-  note('Y：第 ' + rk('Y') + ' 志願', -1.6, B.y.Y + 0.6, 0.6);
+  const nY = note('Y：第 ' + rk('Y') + ' 志願', 0, B.y.Y + 0.45, 0.6);
   say('有些男生歷經挫折', '被拒絕好多次');
   await step(tok);                                    // 2596.0 for women the opposite happens
   B.wom.forEach((w) => B.W[w].mood('wow'));
   say('對女生來說', '情況剛好相反');
   await step(tok);                                    // 2601.0 men propose; women only accept / reject
-  B.off();
-  bub('男生：主動 propose', -3.4, 6.2, 0); bub('女生：只能 accept／reject', 3.4, 6.2, 0);
+  B.off(); remove(nX); remove(nY);
+  const mb = bub('男生：主動 propose', -3.4, 6.8, 0), wb = bub('女生：只能 accept／reject', 3.4, 6.8, 0);
   say('男生主動求婚', '女生只能決定 accept 或 reject');
   await step(tok);                                    // 2609.9 men's best interest: start from the favourite
   B.men.forEach((m) => glow(B.ML[m][SM5M[m][0]], GOLD));
@@ -7069,7 +7116,7 @@ FRAG.push(['algjiang1-gs-fair', '男生 propose：對男生最好、對女生最
   await step(tok);                                    // 2624.0 women: take one for now
   B.off();
   B.wom.forEach((w) => B.W[w].mood('calm'));
-  note('沒有更好的 → 先 take', 3.4, 5.6, 0);
+  txt(wb, '女生：沒有更好的 → 先 take');
   say('女生只能 accept 或 reject', '沒有更好的對象，就先 take 再說');
   await step(tok);                                    // 2635.0 a better one comes: switch
   note('有更好的 → 毫不猶豫換人', 3.4, -0.4, 1.0);
@@ -7085,7 +7132,7 @@ FRAG.push(['algjiang1-gs-fair', '男生 propose：對男生最好、對女生最
   say('女生可能覺得不公平', '為什麼都是男生 propose？');
   await step(tok);                                    // 2709.0 swap roles: women propose, symmetric
   B.wom.forEach((w) => { B.W[w].mood('happy'); B.W[w].look(-1); });
-  bub('換女生 propose → 對稱的效果', 0, 6.8, -0.6);
+  remove(mb); remove(wb); bub('換女生 propose → 對稱的效果', 0, 6.8, -0.6);
   say('沒關係：換成女生 propose 也可以', '效果是對稱的');
   await step(tok);                                    // 2728.6 male-optimal: each man gets his best possible partner
   B.men.forEach((m) => B.M[m].glow('#0f3a20'));
@@ -7164,9 +7211,10 @@ function jobs(withAxis = true) {
 // 50:02 interval scheduling（選最多）
 FRAG.push(['algjiang1-interval', 'Interval scheduling：不重疊、選最多', async (tok) => {
   fresh([0, 6, 14], [0, 2.8, 0]);
+  frameHold(-6.4, 0, 0, 7.2, 7.4, 3.0); // the chart and the machine arrive later: frame for them now
   let bars, mc;
   await step(tok);                                    // 3002.0 problem 1: interval scheduling
-  bub('代表性問題 ①：Interval scheduling', 0, 6.6, -1);
+  const hb = bub('代表性問題 ①：Interval scheduling', 0, 6.6, -1); // the top remark, rewritten later
   say('第一個代表性問題', 'Interval scheduling');
   await step(tok);                                    // 3011.0 a scheduling problem
   say('它是一個排程（scheduling）問題', '');
@@ -7174,16 +7222,16 @@ FRAG.push(['algjiang1-interval', 'Interval scheduling：不重疊、選最多', 
   bars = jobs();
   say('有一些工作要做', '橫軸是時間');
   await step(tok);                                    // 3035.0 each job: start, finish = an interval
-  note('[0, 3]：開始到結束 = interval', IX(1.5), IY(0) + 0.55, 0.6);
+  note('[0, 3]：開始到結束 = interval', IX(1.5), IY(0) + 0.8, 0);
   say('每個工作都有開始和結束時間', '這一段叫一個 interval');
   await step(tok);                                    // 3049.0 only one machine
   mc = prop('cpu', 6.2, 0, 1.0, 0.8, '機器（只有一台）');
   say('可以做這些工作的機器只有一台', '');
   await step(tok);                                    // 3057.0 one thing at a time
-  note('一次只能做一件事', 6.0, 1.6, 1.0);
+  note('一次只能做一件事', 6.2, 2.5, 1.0);
   say('同一時間只能處理一件事', '');
   await step(tok);                                    // 3069.0 use the machine as much as possible
-  bub('目標：做越多工作越好', 0, 6.6, -1);
+  txt(hb, '目標：做越多工作越好');
   say('希望機器的能力發揮到最大', '處理越多工作越好');
   await step(tok);                                    // 3092.0 choose many, but no overlap
   ok('條件：選出的 interval 不能 overlap', 0, 7.2, -1.6);
@@ -7197,14 +7245,15 @@ FRAG.push(['algjiang1-interval', 'Interval scheduling：不重疊、選最多', 
   say('這個例子很小', '用眼睛看、配合紙筆就找得到');
   await step(tok);                                    // 3149.0 best: these three jobs
   let k = 0;
-  for (const n of ['A', 'C', 'E']) { const j = J6.find((q) => q[0] === n); glow(bars[n], GOLD); move(bars[n], IX((j[1] + j[2]) / 2), 0.4, 1.4); k++; await beat(tok, 350); }
-  ok('最佳：A、C、E 共 3 個', 0, 1.2, 2.4);
+  for (const n of ['A', 'C', 'E']) { const j = J6.find((q) => q[0] === n); glow(bars[n], GOLD); move(bars[n], IX((j[1] + j[2]) / 2), 0.4, 0.6); k++; await beat(tok, 350); }
+  txt(hb, '最佳：A、C、E 共 3 個'); cls(hb, 'good');
   say('最好的選法：選這三個工作', '能選到最多的數量');
 }]);
 
 // 52:49 weighted interval scheduling（weight 和最大）
 FRAG.push(['algjiang1-interval-w', 'Weighted interval scheduling：weight 總和最大', async (tok) => {
   fresh([0, 6, 14], [0, 2.8, 0]);
+  frameHold(-6.4, 0, 0, 7.6, 7.6, 3.0);
   const bars = jobs();
   let tot;
   await step(tok);                                    // 3169.0 problem 2: also scheduling
@@ -7234,15 +7283,15 @@ FRAG.push(['algjiang1-interval-w', 'Weighted interval scheduling：weight 總和
   no('還是不能 overlap', 0, 7.2, -1.6);
   say('但選出來的工作', '彼此仍然不能重疊');
   await step(tok);                                    // 3291.0 best: these two jobs
-  tot = tag('總 weight = 0', 'pkt', 0, 1.4, 2.4);
-  for (const n of ['B', 'D']) { const j = J6.find((q) => q[0] === n); move(bars[n], IX((j[1] + j[2]) / 2), 0.4, 1.4); await beat(tok, 350); }
+  tot = tag('總 weight = 0', 'pkt', 5.6, 0.5, 0.6); // the result sits beside the chosen jobs
+  for (const n of ['B', 'D']) { const j = J6.find((q) => q[0] === n); move(bars[n], IX((j[1] + j[2]) / 2), 0.4, 0.6); await beat(tok, 350); }
   txt(tot, '選 B、D：總 weight = 10'); tot.element.className = 'lab-label good';
   say('最好的反而是只選這兩個', 'weight 總和最大');
   await step(tok);                                    // 3308.0 compare with the three before
-  note('剛才的 A、C、E：只有 1 + 1 + 1 = 3', 0, 0.7, 2.4);
+  note('剛才的 A、C、E：只有 1 + 1 + 1 = 3', 5.6, 1.2, 0.6);
   say('跟剛剛選三個比', '這次只選兩個，weight 卻大很多');
   await step(tok);                                    // 3323.0 different problem → different solution design
-  bub('問題本質不同 → 解法也不同', 0, 2.2, 2.4);
+  bub('問題本質不同 → 解法也不同', 5.6, 1.9, 0.6);
   say('問題的本質不同', '解法的設計也會不一樣');
 }]);
 
@@ -7253,6 +7302,7 @@ FRAG.push(['algjiang1-bipartite', 'Bipartite matching：配出最多對', async 
   const Y = (i) => 4.6 - i * 1.3;
   const E = [['A', 'E'], ['A', 'F'], ['B', 'E'], ['C', 'F'], ['C', 'G'], ['D', 'G'], ['D', 'H']];
   const P = {}, ln = {};
+  frameHold(-5.6, 0, 0, 5.6, 7.4, 0); // the two columns arrive later: frame for them now
   const yy = (v) => Y(L.includes(v) ? L.indexOf(v) : R.indexOf(v));
   await step(tok);                                    // 3328.0 problem 3: a matching problem
   bub('代表性問題 ③：matching', 0, 6.4, -1);
@@ -7306,11 +7356,12 @@ FRAG.push(['algjiang1-indep-set', 'Independent set：選彼此沒連線的點', 
   const pos = { 1: [-1.5, -3.0], 2: [-3.4, -0.8], 3: [0.4, -0.8], 4: [-5, 1.6], 5: [-2.5, 1.6], 6: [2.2, 1.6], 7: [0, 3.4] };
   const E = [[1, 2], [1, 3], [2, 4], [2, 5], [3, 6], [3, 7], [4, 7], [5, 7], [6, 7]];
   const N = {};
+  frameHold(-5.6, 0, -4.8, 4.6, 0.8, 3.8); // the graph arrives later: frame for it now
   await step(tok);                                    // 3489.8 now a harder problem
-  bub('接下來：比較難的問題', 0, 4.6, -3.6);
+  const hb = bub('接下來：比較難的問題', 0, 4.6, -3.6);
   say('前面的問題比較單純', '接下來看難度比較高的');
   await step(tok);                                    // 3507.0 independent set
-  bub('代表性問題 ④：Independent set', 0, 4.6, -4.6);
+  txt(hb, '代表性問題 ④：Independent set');
   say('非常有代表性的問題', 'independent set');
   await step(tok);                                    // 3513.8 input: a graph — points
   for (const v in pos) N[v] = buddy('', v, C_ALG, pos[v][0], 0, pos[v][1], 0.7);
@@ -7586,7 +7637,7 @@ FRAG.push(['algjiang1-pseudo-style', 'Pseudocode 怎麼寫：名稱、行號、�
   pt(0, '括號裡：input／output 參數');
   say('有些會在後面加括號', '定義 input、output 的參數');
   await step(tok);                                    // 4501.0 number every line
-  const nums = []; for (let i = 1; i <= 9; i++) { nums.push(tag(String(i), 'note', -6.6, 6.4 - i * 0.55)); }
+  const nums = []; for (let i = 1; i <= 9; i++) { nums.push(tag(String(i), 'idx', -6.6, 6.4 - i * 0.55)); } // small line numbers: they sit exactly one code line apart
   pt(1, '每一行都要編號');
   say('每一行都要給一個編號', '請不要省略');
   await step(tok);                                    // 4507.0 "line 2" leaves no misunderstanding
@@ -7601,11 +7652,11 @@ FRAG.push(['algjiang1-pseudo-style', 'Pseudocode 怎麼寫：名稱、行號、�
   await step(tok);                                    // 4549.0 anyone doing it does exactly the same
   me = [buddy('', '', C_PPL, 3.0, 0, 2.4, 0.6), buddy('', '', C_PPL, 4.2, 0, 2.4, 0.6), buddy('', '', C_PPL, 5.4, 0, 2.4, 0.6)];
   me.forEach((b) => { b.mood('happy'); b.look(-1); });
-  ok('誰照做都一模一樣', 4.2, 1.4, 2.4);
+  const okA = ok('誰照做都一模一樣', 4.2, 1.4, 2.4);
   say('條件一：任何人照著做', '做出來的事都一模一樣');
   await step(tok);                                    // 4556.0 doable: simulate with pen and paper
   prop('file', 1.6, 0, 2.6, 0.8, '紙筆');
-  ok('紙上模擬得出來', 4.2, 2.0, 2.4);
+  const okB = ok('紙上模擬得出來', 4.2, 2.0, 2.4);
   say('條件二：一定要做得到', '用紙筆就能在紙上模擬');
   await step(tok);                                    // 4589.0 keywords
   pt(2, 'keyword');
@@ -7621,7 +7672,8 @@ FRAG.push(['algjiang1-pseudo-style', 'Pseudocode 怎麼寫：名稱、行號、�
   say('要輸出就用 return', '跟寫程式很像');
   await step(tok);                                    // 4621.0 one line = many lines of C
   pt(4, '翻成 C：要寫好幾行');
-  const cl = code(['for (k = 0; k < n; k++)', '  if (!asked[m][k]) {', '    w = pref[m][k]; break;', '  }'], 3.4, 4.4, 0.42, 1.2);
+  remove(okA); remove(okB);
+  const cl = code(['for (k = 0; k < n; k++)', '  if (!asked[m][k]) {', '    w = pref[m][k]; break;', '  }'], 3.6, 3.2, 0.5, 1.2);
   say('但不完全一樣：這裡的一行', '翻成 C 可能要寫很多行（抽象層次比較高）');
   await step(tok);                                    // 4641.0 think at a high level: prove + analyse first
   cl.kill(); cd.hl(-1); remove(nt);
@@ -7646,7 +7698,7 @@ FRAG.push(['algjiang1-n2-proposals', 'GS 最多 n² 次 iteration 就停', async
   const X = (k) => -1.0 + k * 1.0, Y = (i) => 5.0 - i * 1.0;
   let cell = {}, cnt, guys = {};
   await step(tok);                                    // 4722.0 only two proof tricks, mostly
-  bub('最常用的兩招證明', -4.0, 6.6, -1);
+  bub('最常用的兩招證明', -4.0, 7.0, -1);
   say('演算法課最常用的證明招數', '只有兩招');
   await step(tok);                                    // 4731.0 contradiction and induction
   jCard('反證法', J.blue, -5.2, 5.8, -1, 1.8, 2, 0.5); jCard('數學歸納法', J.blue, -2.9, 5.8, -1, 2.2, 2, 0.5);
@@ -7655,7 +7707,7 @@ FRAG.push(['algjiang1-n2-proposals', 'GS 最多 n² 次 iteration 就停', async
   ok('要證：最多 n² 次 iteration 就停', -4.0, 5.0, -1);
   say('第一件事：Gale–Shapley', '最多 n² 次 iteration 一定會停');
   await step(tok);                                    // 4777.0 how many times does the while loop run?
-  const cd = code(['2 while (some man is free and', '         hasn\'t proposed to every woman)'], -4.0, 4.2, 0.45, -1);
+  const cd = code(['2 while (some man is free and', '         hasn\'t proposed to every woman)'], -5.0, 4.2, 0.5, -1);
   cd.hl(0);
   say('重點：這個 while 迴圈', '要執行幾次？');
   await step(tok);                                    // 4788.0 usual idea: count when the condition holds
@@ -7789,10 +7841,10 @@ FRAG.push(['algjiang1-perfect-proof', '反證：結束時不會有男生 free', 
   const steps = ['假設相反的結論', '照 procedure 推導', '推出矛盾', '假設錯 → 原結論對'];
   let sc, ar = [], ll;
   await step(tok);                                    // 5288.0 correctness: perfect and stable
-  bub('正確性 = perfect ＋ stable', 0, 6.4, -1);
+  const hb = bub('正確性 = perfect ＋ stable', 2.8, 6.6, -1); // one top remark (right of the code), rewritten below
   say('stable matching 的正確性', '要證兩件事：perfect、stable');
   await step(tok);                                    // 5300.0 first: perfect — every man gets a woman
-  ok('先證 perfect：每個男生都配到一個女生', 0, 5.6, -1);
+  txt(hb, '先證 perfect：每個男生都配到一個女生'); cls(hb, 'good');
   say('先證 perfect matching', '跑完之後每個男生都配到一個女生');
   await step(tok);                                    // 5322.0 use proof by contradiction
   sc = steps.map((s, i) => jCard(s, GRAY, -5.4 + i * 3.6, -1.2, 1.6, 3.2, 0, 0.5));
@@ -7817,7 +7869,7 @@ FRAG.push(['algjiang1-perfect-proof', '反證：結束時不會有男生 free', 
   note('假設：GS 結束時 Z 還是 free', M.Z.g.position.x, 5.0, 0);
   say('假設 Gale–Shapley 結束時', '有一個男生是 free（叫他 Z）');
   await step(tok);                                    // 5458.0 the proof must stick to the procedure
-  const cd = code(['2 while (some man is free and', '         hasn\'t proposed to every woman)'], -3.0, 6.4, 0.42, -1.2);
+  const cd = code(['2 while (some man is free and', '         hasn\'t proposed to every woman)'], -3.8, 6.6, 0.5, -1.2);
   say('提醒：證明要緊咬 procedure 做的事', '根據 procedure 推論，不能亂講');
   await step(tok);                                    // 5508.7 look at the while loop
   glow(sc[0], null); glow(sc[1], GOLD); cd.hl(0);
@@ -7851,7 +7903,7 @@ FRAG.push(['algjiang1-perfect-proof', '反證：結束時不會有男生 free', 
   say('所以一開始的假設是錯的', '結束時，沒有任何男生是 free');
   await step(tok);                                    // 5734.0 every man is matched: perfect
   await hops(tok, M.Z, W.E);
-  ok('GS 的結果是 perfect matching ✓', 0, 6.4, -1);
+  txt(hb, 'GS 的結果是 perfect matching ✓'); cls(hb, 'good');
   say('結束時每個男生都配到一個女生', 'Gale–Shapley 的結果是 perfect matching');
 }]);
 
@@ -7967,7 +8019,7 @@ FRAG.push(['algjiang2-gs-states', 'Gale-Shapley 回顧：free → engaged → ma
   cls(st[2], 'good');
   say('結果穩定之後，所有人同時變 married', '然後就結束');
   await step(tok); // 88.8 each iteration
-  const cd = code(J2_GS, 0, 8.7, 0.44);
+  const cd = code(J2_GS, 0, 8.7, 0.5);
   say('每個 iteration：一個男生向一個女生 propose', '女生依喜好決定 accept 或 reject');
   await step(tok); // 117.8 lines 2-8: the while loop
   cd.hl(1); m1.glow(GOLD);
@@ -8814,6 +8866,7 @@ FRAG.push(['algjiang2-input-2n2', 'Stable matching 的 input size = 2n²', async
 // 22:28 Worst case vs average case
 FRAG.push(['algjiang2-worst-avg', 'Worst case vs Average case', async (tok) => {
   fresh([0, 4.2, 13.5], [0, 2.6, 0]);
+  frameHold(0, 0, 0, 0, 8.2, 0);
   const hs = [1.8, 3.1, 1.2, 5.2, 2.4, 1.6, 3.6, 2.0], bars = [];
   say('real input instance 又是什麼？', '');
   await step(tok); // 1347 we never know how people will use it
@@ -8821,36 +8874,35 @@ FRAG.push(['algjiang2-worst-avg', 'Worst case vs Average case', async (tok) => {
   bub('我要這樣用！', -5.8, 1.9, 2.6);
   say('寫程式的人常常不知道', '別人會怎麼用我們的程式');
   await step(tok); // 1350.8 torture it with odd cases
-  user.mood('wow'); note('用各式各樣奇怪的 case 折磨程式', -3.4, 6.4);
+  user.mood('wow'); const r1 = note('用各式各樣奇怪的 case 折磨程式', -3.6, 7.0);
   say('可能拿去很暴力地折磨它', '用各式各樣奇怪的 case 測試');
   await step(tok); // 1364.8 fair: everyone compares the worst
   for (let k = 0; k < 8; k++) { bars.push(j2bar('I' + (k + 1), J2.sand, -5.25 + k * 1.5, hs[k], 1.0)); await beat(tok, 140); }
   say('不知道 instance 的全貌', '取公平一點：大家都拿最差的來比');
   await step(tok); // 1386.8 worst, not best: "no worse than this"
   glow(bars[3].m, RED); tag('worst case', 'ptr', bars[3].m.position.x, 5.9);
-  okT('最差也不過如此', -0.8, 6.6);
+  txt(r1, '拿 worst case 比：最差也不過如此'); cls(r1, 'good');
   say('拿最差的比，不拿最好的', '最差都能接受 → 平常的表現會更滿意');
   await step(tok); // 1424.8 why not the average?
-  const q = bub('為什麼不用 average case？', 3.6, 6.6);
+  const q = bub('為什麼不用 average case？', 3.6, 7.0);
   say('為什麼不用平均的表現？', '實務上確實有人用');
   await step(tok); // 1450.8 average needs the input distribution
-  remove(q);
   const avg = hs.reduce((s, h) => s + h, 0) / hs.length;
   line(-6.2, avg, 6.2, avg, 0.6, '#2f6fb0'); tag('average？', 'ptr alt', 6.4, avg + 0.4);
-  note('average 要先知道 input 的分布', 3.6, 6.6);
+  txt(q, 'average 要先知道 input 的分布'); cls(q, 'note');
   say('理論上用 worst case', 'average 要先知道所有 input 的分布長相');
   await step(tok); // 1470.8 unknown distribution
-  noT('分布不知道 → 說不清楚什麼是 average', 3.6, 7.3);
+  txt(q, '分布不知道 → 說不清楚什麼是 average'); cls(q, 'bad');
   say('不知道 input 的分布', '就沒辦法說明什麼叫 average case');
   await step(tok); // 1493.8 contests: a benchmark
   const bm = prop('file', -5.8, 3.4, 0, 1.0, 'benchmark'); bob(bm, 0.05);
   [0, 1, 2].forEach((k) => tint(bars[k].m, J2.ok));
   say('程式競賽：主辦單位拿一組 benchmark', '測大家的程式');
   await step(tok); // 1521.8 average over that benchmark
-  okT('在這組 benchmark 上取平均 ✓', -3.0, 4.6);
+  txt(r1, '在這組 benchmark 上取平均 ✓'); cls(r1, 'good');
   say('在這組 benchmark 上可以取平均', '競賽常用這種方式');
   await step(tok); // 1541.8 theory: we don't know the instances
-  note('理論分析：不知道 instance 長相', 0, 7.3);
+  txt(q, '理論分析：不知道 instance 長相'); cls(q, 'note');
   say('但理論分析時', '我們不知道 input instance 長怎樣');
   await step(tok); // 1563.8 one runs great, another badly
   glow(bars[2].m, GREEN); okT('跑很好', bars[2].m.position.x, 1.9); noT('跑很差', bars[3].m.position.x, 6.6);
@@ -9123,7 +9175,8 @@ FRAG.push(['algjiang2-runtime-table', 'Running time 表：每秒 10⁶ 個指令
     if (ly > 25) return 'very long'; if (ly < 5) return Math.round(Math.pow(10, ly)).toLocaleString('en-US') + ' 年';
     const e = Math.floor(ly); return Math.round(Math.pow(10, ly - e)) + '×10' + sup(e) + ' 年';
   };
-  const X = (j) => -4.5 + j * 1.75, Y = (i) => 7.0 - i * 0.78, cells = [], heads = [];
+  const X = (j) => -5.0 + j * 2.0, Y = (i) => 7.0 - i * 0.78, cells = [], heads = [];
+  frameHold(-7, 0.4, 0, 8, 10.4, 0);
   const foot = note(' ', 0, 0.6, 0.8);
   say('結論與一張對照表', '');
   await step(tok); // 3012.8 polynomial worst case = efficient
@@ -9317,6 +9370,7 @@ FRAG.push(['algjiang2-nine-quiz', '九題 yes/no：T(n) = 1.62n² + 3.5n + 8', a
   const X = (j) => -3.4 + j * 3.4, Y = (i) => 5.6 - i * 1.9, g = [];
   const mark = (i, j) => { tint(g[i][j], ans[i][j] ? J2.ok : J2.bad); relabel(g[i][j], ops[i] + '(' + fs[j] + ') ' + (ans[i][j] ? '✓' : '✗')); };
   const side = note(' ', 0, 0.3, 1.0);
+  frameHold(-4.8, 0, 0, 4.8, 7.8, 0);
   say('來做小練習', '');
   await step(tok); // 4199.8 nine yes/no questions
   tag('T(n) = 1.62n² + 3.5n + 8', 'ptr alt', 0, 7.3);
@@ -9533,16 +9587,18 @@ FRAG.push(['algjiang2-rule-sums', 'Rule of sums：加起來 = 取 max', async (t
 
 // 6:00 Rule of products
 FRAG.push(['algjiang2-rule-products', 'Rule of products：迴圈 = 圈數 × 每圈', async (tok) => {
-  fresh([0, 7, 12.5], [0, 1.4, 0]);
+  fresh([0, 4.6, 13], [0, 3.8, 0]);
+  frameHold(-6, 0.8, 0, 6, 7.6, 0);
+  const Y = (r) => 4.4 - r * 0.62;
   say('下面這個也非常常用', '');
   await step(tok); // 361.8 rule of products
-  pkt('Rule of products（乘積）', 0, 0.3, -3.6);
+  pkt('Rule of products（乘積）', -3.0, 7.2, 0);
   say('Rule of products：乘積的 rule', '');
   await step(tok); // 367.8 f1 bounded by g1, f2 by g2
-  note('f₁ 的 bound 是 g₁；f₂ 的 bound 是 g₂', 0, 0.3, -3.0);
+  note('f₁ 的 bound 是 g₁；f₂ 的 bound 是 g₂', -3.0, 6.55, 0);
   say('f₁ 的 bound 是 g₁', 'f₂ 的 bound 是 g₂');
   await step(tok); // 379.8 product: g1·g2
-  okT('f₁ · f₂ 的 bound = g₁ · g₂', 0, 0.3, -2.4);
+  okT('f₁ · f₂ 的 bound = g₁ · g₂', -3.0, 5.9, 0);
   say('兩個相乘之後的 bound', '就是 g₁、g₂ 相乘');
   await step(tok); // 396.8 loops
   const cd = code(['for (…)            // 跑 f₁ 圈', '{', '  每圈要做的事    // 每圈 f₂', '}'], 3.0, 6.0, 0.5);
@@ -9553,21 +9609,21 @@ FRAG.push(['algjiang2-rule-products', 'Rule of products：迴圈 = 圈數 × 每
   await step(tok); // 414.8 how many iterations -> f1
   cd.hl(0);
   const R = 5, W = 3;
-  tag('f₁ = 5 圈（示意）', 'ptr alt', -5.2, 0.2, -1.4);
-  for (let r = 0; r < R; r++) tag('第 ' + (r + 1) + ' 圈', 'idx', -4.6, 0.2, -0.6 + r * 0.8);
+  tag('f₁ = 5 圈（示意）', 'ptr alt', -4.6, 5.05);
+  for (let r = 0; r < R; r++) tag('第 ' + (r + 1) + ' 圈', 'idx', -4.6, Y(r));
   say('第一件事：這個 loop 執行幾圈', '得到 f₁');
   await step(tok); // 422.8 work inside each iteration -> f2
   cd.hl(2);
-  for (let r = 0; r < R; r++) for (let c = 0; c < W; c++) { cube('', J2.purple, [0.9, 0.4, 0.6], -2.8 + c * 1.1, 0.2, -0.6 + r * 0.8, 2); await beat(tok, 50); }
+  for (let r = 0; r < R; r++) for (let c = 0; c < W; c++) { cube('', J2.purple, [0.9, 0.44, 0.3], -2.8 + c * 1.1, Y(r), 0); await beat(tok, 50); }
   say('第二件事：每個 iteration 內部做多少', '得到 f₂（示意：3）');
   await step(tok); // 436.8 total = f1 × f2
-  cd.hl(-1); okT('total = f₁ × f₂ = 5 × 3 = 15', 1.6, 0.3, 3.4);
+  cd.hl(-1); okT('total = f₁ × f₂ = 5 × 3 = 15', 2.6, 3.6, 0);
   say('整個 loop 要花多少時間', '次數 × 每次的時間 = f₁ × f₂');
   await step(tok); // 444.8 analyse separately, multiply
-  note('分開看：圈數的 bound × 每圈的 bound', 1.6, 0.3, 4.0);
+  note('分開看：圈數的 bound × 每圈的 bound', 2.6, 2.9, 0);
   say('分析 Big-O 時就拆開看', '圈數最多幾次 × 每圈的 bound，相乘就行');
   await step(tok); // 464.8 the two most common tricks
-  pkt('rule of sums + rule of products：最常用的兩招', 0, 0.3, 4.6);
+  pkt('rule of sums + rule of products：最常用的兩招', 2.2, 2.2, 0);
   say('這兩招分析 algorithm 時非常常用', '大家可能很直覺地就在用了');
 }]);
 
@@ -9609,19 +9665,19 @@ FRAG.push(['algjiang2-poly-ladder', '常見複雜度：polynomial 與更高', as
   const put = (k) => { const x = -5.6 + k * 1.6, h = 0.4 + k * 0.28; ms[k] = cube(P1[k][0], J2.man, [1.4, h, 1], x, h / 2, 0, 3); tag(P1[k][1], 'idx', x, 0.1, 1.0); };
   say('複雜度的最後一頁整理', '');
   await step(tok); // 579.8 polynomial: O(p(n))
-  pkt('polynomial time：running time = O(p(n))', 0, 6.4);
+  const top = [pkt('polynomial time：running time = O(p(n))', 0, 6.4)];
   say('Polynomial running time 有特殊定義', '算出來會是 O(p(n))，p(n) 是多項式');
   await step(tok); // 602.8 n to a constant power
-  note('p(n) = n 的「常數」次方', 0, 5.8);
+  top.push(note('p(n) = n 的「常數」次方', 0, 5.8));
   say('多項式就是 n 的多少次方', '那個次方是一個常數');
   await step(tok); // 625.8 common names
-  bub('常見的 polynomial 名稱 → 再來是更高的', 0, 5.1);
+  top.push(bub('常見的 polynomial 名稱 → 再來是更高的', 0, 5.1));
   say('下面列一些常見的', '再列一些已經不是 polynomial 的');
   await step(tok); // 637.8 the lowest: n^0 = 1
   put(0);
   say('最低是多少？n 的 0 次方 = 1', '寫成 O(1)');
   await step(tok); // 659.8 constant: independent of n
-  note('constant：跟 input size 完全無關', -5.6, 1.6, 1.0);
+  note('constant：跟 input size 完全無關', -5.0, 2.1, 0);
   say('O(1) 是 constant running time', '不管怎麼跑，都跟 input size 完全無關');
   await step(tok); // 690.8 log
   put(1);
@@ -9642,18 +9698,19 @@ FRAG.push(['algjiang2-poly-ladder', '常見複雜度：polynomial 與更高', as
   arrow(V3(-5.6, 2.9, 0), V3(5.6, 2.9, 0), 0x6e5f49); tag('由小到大', 'idx', 0, 3.3);
   say('有照順序排', 'O(1)、log、√n、n、n log n、n²……');
   await step(tok); // 774.9 n^100 is still polynomial
-  note('n¹⁰⁰、n 的一千萬次方：還是 polynomial（但用不了）', 0, 4.4);
+  top.push(note('n¹⁰⁰、n 的一千萬次方：還是 polynomial（但用不了）', 0, 4.4));
   say('n¹⁰⁰、n 的一千萬次方都還是 polynomial', '理論上符合，實際上不可能使用');
   await step(tok); // 803.8 2^n: exponential
-  cube('O(2ⁿ)', J2.bad, [1.8, 0.8, 1], -2.4, 0.4, 2.8, 3); tag('exponential', 'idx', -2.4, 0.1, 3.7);
+  top.forEach((l) => remove(l)); // the polynomial notes are done: the shelf above takes their place
+  cube('O(2ⁿ)', J2.bad, [1.8, 0.8, 1], -2.4, 5.4, 0); tag('exponential', 'idx', -2.4, 4.75, 0.5);
   say('2ⁿ、3ⁿ……任何常數的 n 次方', '都叫 exponential');
   await step(tok); // 820.8 n!, n^n
-  cube('O(n!)', J2.bad, [1.8, 0.8, 1], 0, 0.4, 2.8, 3); tag('factorial', 'idx', 0, 0.1, 3.7);
-  cube('O(nⁿ)', J2.bad, [1.8, 0.8, 1], 2.4, 0.4, 2.8, 3);
+  cube('O(n!)', J2.bad, [1.8, 0.8, 1], 0, 5.4, 0); tag('factorial', 'idx', 0, 4.75, 0.5);
+  cube('O(nⁿ)', J2.bad, [1.8, 0.8, 1], 2.4, 5.4, 0);
   say('n! 是 factorial', '還有更大的 nⁿ 等等');
   await step(tok); // 844.8 aim for n^2 or less
   for (let k = 0; k < 6; k++) glow(ms[k], GREEN);
-  okT('實作上：希望做到 n² 以下', 4.6, 2.0, 2.8);
+  okT('實作上：希望做到 n² 以下', -3.2, 3.9, 0);
   say('實作上希望演算法盡量在 n² 以下', '就能處理蠻大的 problem size');
 }]);
 
@@ -9715,13 +9772,13 @@ FRAG.push(['algjiang2-gs-budget', 'GS 的 running time：n² 圈 × O(1)', async
   const cd = code(J2_GS9, -1.6, 7.6, 0.48);
   say('GS 的 running time 怎麼算？', '');
   await step(tok); // 1078.8 only "≤ n² iterations" so far
-  note('只知道：最多 n² 個 proposal → 一定停', 0, 0.3, 2.6);
+  const rm = note('只知道：最多 n² 個 proposal → 一定停', 0, 0.3, 2.6);
   say('之前只說最多 n² 種 proposal 都試過就停', '還不知道 running time');
   await step(tok); // 1104.8 rule of sums
-  note('rule of sums：每一行的時間加起來', 0, 0.3, 3.2);
+  txt(rm, 'rule of sums：每一行的時間加起來');
   say('Apply rule of sums', '把每一行要花的時間加起來');
   await step(tok); // 1115.8 three parts
-  tag('三大段：line 1｜line 2–8｜line 9', 'ptr', 0, 0.3, 3.8);
+  txt(rm, '三大段：line 1｜line 2–8｜line 9'); cls(rm, 'ptr');
   say('這個 algorithm 分三大段', 'line 1、line 2–8 的 while loop、line 9');
   await step(tok); // 1130.6 line 1: O(n)
   cd.hl(0); tag('O(n)', 'ptr alt', 5.2, 7.6);
@@ -9733,7 +9790,7 @@ FRAG.push(['algjiang2-gs-budget', 'GS 的 running time：n² 圈 × O(1)', async
   cd.hl(1); const w = tag('≤ n² 圈 × ?', 'ptr alt', 5.2, 7.12);
   say('重點是 line 2–8', 'while loop 最多 n² 圈');
   await step(tok); // 1192.8 rounds × time per round
-  note('rule of products：圈數 × 每圈內部的 upper bound', 0, 0.3, 4.4);
+  txt(rm, 'rule of products：圈數 × 每圈內部的 upper bound'); cls(rm, 'note');
   say('除了圈數，還要知道每圈內部的工作', 'n² × 內部的 upper bound');
   await step(tok); // 1228.5 at best O(1) per round -> O(n²)
   cd.hl(-1); txt(w, '≤ n² 圈 × O(1)');
@@ -9767,10 +9824,10 @@ FRAG.push(['algjiang2-gs-four-ops', 'line 2、3、4、6 各要 O(1)', async (tok
   cd.hl(1); card(0);
   say('line 2：判定是否存在 free 男生', '要隨時都能 identify 一個');
   await step(tok); // 1391.8 which one first doesn't matter
-  note('從哪個 free man 開始都可以：結果一樣', -3, 0.3, 0.2);
+  const rm = note('從哪個 free man 開始都可以：結果一樣', -3, 0.3, 0.2);
   say('100 個 free 男生，從哪個開始？', '無所謂，output 都一模一樣');
   await step(tok); // 1408.8 just pull one out fast
-  okT('重點：O(1) 吐一個出來', -3, 0.3, -0.5);
+  txt(rm, '從哪個 free man 開始都可以；重點：O(1) 吐一個出來'); cls(rm, 'good');
   say('重點是每次都能很快吐一個出來', '希望 O(1)');
   await step(tok); // 1423.8 line 3: highest-ranked not yet proposed
   cd.hl(2); card(1);
@@ -9791,33 +9848,33 @@ FRAG.push(['algjiang2-gs-four-ops', 'line 2、3、4、6 各要 O(1)', async (tok
 
 // 25:34 表示法：編號與 ManPref array
 FRAG.push(['algjiang2-gs-arrays', '男生女生編號 1..n、ManPref 用 array', async (tok) => {
-  fresh([0, 7.5, 11.5], [0, 0.8, 0]);
+  fresh([0, 9.5, 9.5], [0, 0.4, 0.2]);
   const MX = [-5, -3.9, -2.8], WX = [2.8, 3.9, 5];
   say('真正 implement 之前', '');
   await step(tok); // 1536.8 how to represent men and women?
   bub('男生、女生要用什麼 data structure 表示？', 0, 1.6, -3.6);
   say('有一個 fundamental 的問題', '男生和女生要怎麼表示？');
   await step(tok); // 1549.8 design a representation
-  tag('男生', 'ptr', -3.9, 1.2, -2.8); tag('女生', 'ptr', 3.9, 1.2, -2.8);
+  tag('男生', 'ptr', -3.9, 1.0, -3.6); tag('女生', 'ptr', 3.9, 1.0, -3.6);
   const men = ['X', 'Y', 'Z'].map((s, k) => cube(s, J2.man, [1, 0.6, 0.9], MX[k], 0.3, -2.8, 3));
   const wom = ['Amy', 'Bertha', 'Clare'].map((s, k) => cube(s, J2.wom, [1, 0.6, 0.9], WX[k], 0.3, -2.8, 3));
   say('設計一種表示方式', '來 identify 這些男生和女生');
   await step(tok); // 1570.9 numbers, not names
-  note('不記名字，用數字代表', 0, 0.3, -1.8);
+  const rm = note('不記名字，用數字代表', 0, 0.3, -1.6);
   say('n 個男生、n 個女生', '不記整個名字，用數字代表');
   await step(tok); // 1585.8 men 1..n
   men.forEach((m, k) => relabel(m, k + 1));
   say('男生編號 1 號、2 號……n 號', '');
   await step(tok); // 1590.8 women 1..n too: no clash
   wom.forEach((m, k) => relabel(m, k + 1));
-  note('兩邊 index 不會打架 → 不用 n+1..2n', 0, 0.3, -1.2);
+  txt(rm, '兩邊 index 不會打架 → 不用 n+1..2n');
   say('女生也是 1 號到 n 號', '兩邊不會打架，不需要 n+1 到 2n');
   await step(tok); // 1615.8 an array of n for each
-  okT('男生、女生各一個 n 格的 array', 0, 1.6, -2.8);
+  okT('男生、女生各一個 n 格的 array', 0, 0.3, -2.8);
   say('男生開一個 n 格的 array', '女生也開一個 n 格的 array');
   await step(tok); // 1641.8 most important input: men's preference lists
   tag('ManPref', 'ptr', -3.6, 0.3, -0.4);
-  for (let r = 0; r < 3; r++) tag('男 ' + (r + 1), 'ptr alt', -3.6, 0.3, 0.6 + r * 1.1);
+  for (let r = 0; r < 3; r++) tag('男 ' + (r + 1), 'ptr alt', -3.6, 0.3, 0.6 + r * 1.3);
   say('最重要的 input', '每個男生的 preference list');
   await step(tok); // 1662.8 strings -> numbers
   note('原本是字串（名字）→ 改記數字', 2.4, 0.3, -0.4);
@@ -9828,10 +9885,10 @@ FRAG.push(['algjiang2-gs-arrays', '男生女生編號 1..n、ManPref 用 array',
   await beat(tok, 700); cells[0].forEach((m, c) => relabel(m, PREF[0][c]));
   say('1 號男生：Amy、Bertha、Clare', '分別是 1、2、3 → 記 1、2、3');
   await step(tok); // 1697.8 man 2: 2,1,3; man 3: 1,2,3
-  for (let r = 1; r < 3; r++) cells.push(PREF[r].map((w, c) => cube(w, J2.sand, [1.3, 0.45, 0.85], -1.6 + c * 1.5, 0.23, 0.6 + r * 1.1, 2.5)));
+  for (let r = 1; r < 3; r++) cells.push(PREF[r].map((w, c) => cube(w, J2.sand, [1.3, 0.45, 0.85], -1.6 + c * 1.5, 0.23, 0.6 + r * 1.3, 2.5)));
   say('2 號男生：2、1、3', '3 號男生：1、2、3');
   await step(tok); // 1703.8 each man: an array of length n
-  okT('每個男生後面串一個 n 格的 array', 2.0, 0.3, 4.0);
+  okT('每個男生後面串一個 n 格的 array', 2.0, 0.3, 4.4);
   say('每個男生後面串一串數字', '長度 n 的 array');
 }]);
 
@@ -9992,7 +10049,7 @@ FRAG.push(['algjiang2-llist-ops', 'free man 的 linked list：取出與放回', 
 
 // 39:01 line 3：Next 欄位
 FRAG.push(['algjiang2-gs-next', 'Next[m]：下一個要求婚的名次', async (tok) => {
-  fresh([0, 8, 10.5], [0, 0.4, 0.4]);
+  fresh([0, 10, 8], [0, 0.3, 0.5]);
   const PREF = [[1, 2, 3], [2, 1, 3], [1, 2, 3]], Z = (r) => -1.2 + r * 1.4, CX = (c) => -2.6 + c * 1.3;
   say('接下來：line 3', '');
   await step(tok); // 2340.8 whom does he propose to?
@@ -10039,10 +10096,10 @@ FRAG.push(['algjiang2-gs-next', 'Next[m]：下一個要求婚的名次', async (
   const cur = tag('▼', 'ptr alt', CX(2), 1.1, Z(2)); glow(nx[2], GREEN);
   say('很容易 identify：', '他要向心目中的第 3 名 propose');
   await step(tok); // 2581.8 pick a free man, look at Next
-  note('取出 free man → 直接看 Next → O(1)', -1.3, 0.3, 3.0);
+  note('取出 free man → 直接看 Next → O(1)', -1.3, 0.3, 4.3);
   say('identify 一個 free man 之後', '直接看 Next 就知道要找第幾名');
   await step(tok); // 2615.8 Next++ after every proposal
-  okT('propose 完就 Next++（accept 或 reject 都一樣）', -1.3, 0.3, 3.6);
+  okT('propose 完就 Next++（accept 或 reject 都一樣）', -1.3, 0.3, 4.9);
   say('Next 什麼時候加 1？', '只要 propose 了就加 1，不管 accept 或 reject');
 }]);
 
@@ -10086,7 +10143,7 @@ FRAG.push(['algjiang2-gs-current', 'Current[w]：女生目前的未婚夫', asyn
 // 46:26 line 6：掃 preference list 太慢
 const J2_WP = [3, 1, 4, 5, 6, 2], J2_RK = [2, 6, 1, 3, 4, 5];
 FRAG.push(['algjiang2-gs-scan', 'line 6：掃 preference list 是 O(n)', async (tok) => {
-  fresh([0, 7.5, 11], [0, 0.6, 0]);
+  fresh([0, 10.5, 7.5], [0, 0.3, 0.4]);
   const X = (k) => -3.75 + k * 1.5;
   say('line 6', '');
   await step(tok); // 2789.2 the one line needing a trick
@@ -10138,10 +10195,10 @@ FRAG.push(['algjiang2-gs-ranking', 'Ranking[w][m]：反過來存名次，O(1)', 
   await step(tok); // 3004.8 by rank: you have to scan
   tag('WomanPref[1]：照名次存男生', 'ptr', 0, 0.3, -2.9);
   const wp = J2_WP.map((m, k) => cube('男 ' + m, J2.sand, [1.3, 0.45, 0.8], X(k), 0.23, -2, 2));
-  note('給一個男生 → 要掃一遍才知道名次', 4.2, 0.3, -2.9);
+  const rk = note('給一個男生 → 要掃一遍才知道名次', 0, 1.8, -2.0);
   say('前面照喜好高低存 preference list', '給一個男生，要掃完才知道他排第幾');
   await step(tok); // 3026.8 we know his number, not his rank
-  note('手上知道的：男生編號；不知道的：名次', 0, 0.3, -1.2);
+  txt(rk, '手上知道的：男生編號；不知道的：名次');
   say('比較的對象是男生，編號是知道的', '不知道的是他的排名');
   await step(tok); // 3048.8 store the ranking by index
   tag('Ranking[1][m]：m 號男生排第幾', 'ptr', 0, 0.3, -0.6);
@@ -10168,7 +10225,7 @@ FRAG.push(['algjiang2-gs-ranking', 'Ranking[w][m]：反過來存名次，O(1)', 
 
 // 53:14 建立 Ranking 與總時間
 FRAG.push(['algjiang2-gs-build-rank', '建 Ranking：O(n²)，只做一次', async (tok) => {
-  fresh([0, 7.5, 11], [0, 0.6, 0]);
+  fresh([0, 10.5, 7.5], [0, 0.3, 0.4]);
   const X = (k) => -3.75 + k * 1.5;
   tag('WomanPref[1]', 'ptr', 0, 0.3, -2.9);
   const ps = J2_WP.map((m, k) => cube('男 ' + m, J2.sand, [1.3, 0.45, 0.8], X(k), 0.23, -2, 2));
@@ -10194,22 +10251,23 @@ FRAG.push(['algjiang2-gs-build-rank', '建 Ranking：O(n²)，只做一次', asy
   for (let k = 2; k < 6; k++) { await beat(tok, 260); glow(ps[k - 1], null); fill(k); }
   glow(ps[5], null);
   await step(tok); // 3270.8 done once, at the start
-  note('一開始 preprocess 一次，之後不用再改', 0, 0.3, 2.4);
+  const rm = note('一開始 preprocess 一次，之後不用再改', 0, 0.3, 2.4);
   say('什麼時候做？一開始就先 prepare 好', '寫好就不用再改，只做一次');
   await step(tok); // 3287.8 n² to fill
-  note('每個女生 n 格 × n 個女生 = O(n²)', 0, 0.3, 3.0);
+  txt(rm, '每個女生 n 格 × n 個女生 = O(n²)');
   say('整個填完要花多少？', 'n 個女生 × n 格 = O(n²)');
   await step(tok); // 3301.8 the pieces
-  note('初始化 O(n²)｜line 1、9：O(n)｜while：n² 圈 × O(1)', 0, 0.3, 3.6);
+  txt(rm, '初始化 O(n²)｜line 1、9：O(n)｜while：n² 圈 × O(1)');
   say('initialization O(n²)、line 1 和 9 各 O(n)', 'while：n² 圈，每圈 O(1)');
   await step(tok); // 3316.8 overall O(n²)
-  okT('總共 O(n²) ✓ 達成目標', 0, 1.3, 3.6);
+  okT('總共 O(n²) ✓ 達成目標', 0, 0.3, 3.4);
   say('Overall 整個 algorithm', 'O(n²)：達到目標');
 }]);
 
 // 55:34 Data structure 決定 running time
 FRAG.push(['algjiang2-gs-compare', 'Data structure 決定 running time', async (tok) => {
   fresh([0, 5.5, 13.5], [0, 2.6, 0]);
+  frameHold(0, 0, 0, 0, 9.8, 0);
   const b1 = j2vbar(J2.bad, 1.6, 1.6, -2.4, 0), b2 = j2vbar(J2.ok, 1.6, 1.6, 2.4, 0);
   tag('line 6 用 preference list 掃', 'ptr', -2.4, 0, 1.6); tag('line 6 用 Ranking 查', 'ptr', 2.4, 0, 1.6);
   say('第六行讓我們發現', '');
@@ -10229,17 +10287,17 @@ FRAG.push(['algjiang2-gs-compare', 'Data structure 決定 running time', async (
   const a = buddy('同學 A', 'n³', J2.orange, -5.6, 0, 2.0, 0.7), b = buddy('同學 B', 'n²', J2.teal, 5.6, 0, 2.0, 0.7); a.mood('sad'); b.mood('happy');
   say('同一個 procedure', '不同人寫程式，running time 可能不同');
   await step(tok); // 3394.8 tailor-made data structure
-  note('implement 之前：為它量身訂做 data structure', 0, 6.3);
+  note('implement 之前：為它量身訂做 data structure', 4.0, 5.3);
   say('真正 implement 之前', '要為它量身訂做一個好的 data structure');
   await step(tok); // 3401.2 no absolute best
   cube('array', J2.sand, [1.6, 0.6, 1], -1.2, 7.8, 0, 2); cube('linked list', J2.sand, [2.0, 0.6, 1], 1.4, 7.8, 0, 2);
   noT('沒有誰 always 比較好', 0, 8.6);
   say('什麼叫好？沒有絕對', 'linked list 不一定比 array 好，反之亦然');
   await step(tok); // 3422.8 depends on algorithm and operations
-  note('看用什麼 algorithm、要做什麼 operation', 0, 5.6);
+  note('看用什麼 algorithm、要做什麼 operation', 4.0, 4.6);
   say('一定 depends on 用什麼 algorithm', '要做什麼 operation');
   await step(tok); // 3435.8 GS: O(n²)
-  okT('Gale-Shapley：O(n²) 內做完', 0, 4.9); b.hop && await b.hop(tok);
+  okT('Gale-Shapley：O(n²) 內做完', 4.0, 3.9); b.hop && await b.hop(tok);
   say('結論：Gale-Shapley', '可以在 O(n²) 內做完');
 }]);
 
@@ -10909,7 +10967,7 @@ FRAG.push(['algmit1-ram', 'Random access machine：load / compute / store', asyn
   const t1 = cube('RAM = Random Access Machine', M.purple, [5.4, 0.6, 0.6], 0, 6.6, 0, 1.5);
   say('第一種模型：random access machine，簡稱 RAM', '');
   await step(tok);                                   // 491.5 also random access memory (real computer)
-  pkt('真的電腦裡也有 RAM：random access memory（記憶體）', 0, 5.8);
+  const ramT = pkt('真的電腦裡也有 RAM：random access memory（記憶體）', 0, 5.8);
   say('RAM 也是 random access memory', '數學模型和真實記憶體幾乎一樣');
   await step(tok);                                   // 549.4 a giant array; any cell in constant time
   mem = V.map((v, i) => mBox(v, M.sand, X(i), 0.5, 0.9, 0.8, 0.8, 1.5 + i * 0.1));
@@ -10924,7 +10982,7 @@ FRAG.push(['algmit1-ram', 'Random access machine：load / compute / store', asyn
   ix = V.map((_, i) => tag(String(i), 'idx', X(i), -0.3)); tag('address', 'idx', -5.6, -0.3);
   say('記憶體以 word（字組）為單位：address 0、1、2 …', '');
   await step(tok);                                   // 617.8 load a constant number of words
-  const cpu = prop('cpu', 0, 3.2, -0.6, 1.4); tag('CPU', 'ptr', -1.4, 3.6);
+  remove(ramT); const cpu = prop('cpu', 0, 3.2, -0.6, 1.4); tag('CPU', 'ptr', -1.4, 3.6);
   RX.forEach((x, i) => { cube('', '#e8dcc2', [1.0, 0.9, 0.9], x, 4.4, 0); tag('r' + (i + 1), 'idx', x, 5.2); });
   glow(mem[5], GOLD); const c1 = mBox(6, M.blue, X(5), 0.5); move(c1, RX[0], 4.4); await beat(tok, 600);
   glow(mem[2], GOLD); const c2 = mBox(9, M.blue, X(2), 0.5); move(c2, RX[1], 4.4); await beat(tok, 600);
@@ -10937,7 +10995,7 @@ FRAG.push(['algmit1-ram', 'Random access machine：load / compute / store', asyn
   move(c3, X(7), 1.6); await beat(tok, 700); kill(c3); relabel(mem[7], 15); glow(mem[7], GREEN);
   say('再把結果寫回記憶體：store', 'M[7] ← r3');
   await step(tok);                                   // 669.8 constant number of registers; assembly
-  note('常數個暫存器：就像寫 assembly', -4.6, 5.6);
+  const rn = note('常數個暫存器：就像寫 assembly', -4.6, 6.4);
   say('暫存器只有常數個；這就是 assembly programming 的樣子', 'load、compute、store 都是 Θ(1)');
   await step(tok);                                   // 702.7 a word is w bits
   glow(mem[7], null);
@@ -10953,7 +11011,7 @@ FRAG.push(['algmit1-ram', 'Random access machine：load / compute / store', asyn
   say('w 至少要是 log（記憶體大小），word 才能當作 index', '');
   await step(tok);                                   // 777.7 unit 4: giant integers
   void t1; void cpu; void ix;
-  note('第 4 單元：超大整數放不進一個 word', -4.6, 4.8);
+  txt(rn, '第 4 單元：超大整數放不進一個 word');
   say('之後（第 4 單元）才談放不進一個 word 的超大整數', '其他時候：一個輸入 = 一個 word');
 }]);
 
@@ -11026,23 +11084,26 @@ FRAG.push(['algmit1-pointer-machine', 'Pointer machine：雙向 linked list', as
 // 17:42 Python 的 cost model；list 是 array：L[i] = L[j] + 5 是 Θ(1)（12 steps）
 FRAG.push(['algmit1-py-list-array', 'Python list = array：L[i] = L[j] + 5', async (tok) => {
   fresh([0, 3.6, 13], [0, 2.4, 0]);
+  frameHold(0, 0, 0, 0, 7.8, 0);
+  const intro = [];
   const V = [5, 8, 2, 9, 4, 7, 1, 3], X = mX(8, 1.1);
   let cs = [], cd = null, me = null;
   await step(tok);                                   // 1064.8 a reasonable model for Python
   me = buddy('Python', '', M.blue, -5.6, 0, 1.6, 0.8);
   say('這門課用 Python 實作：Python 的計算模型長怎樣？', '');
   await step(tok);                                   // 1097.8 both RAM (arrays) and pointer machine (references)
-  okT('有 array → RAM', -2.0, 6.6); okT('有 reference → pointer machine', 2.6, 6.6);
+  intro.push(okT('有 array → RAM', -2.0, 6.6), okT('有 reference → pointer machine', 2.6, 6.6));
   say('Python 兩種觀點都有', 'array 像 RAM，reference 像 pointer machine');
   await step(tok);                                   // 1117.9 lots of operations, each with a cost
-  ['sort', 'append', 'L1 + L2', 'x in L'].forEach((t, i) => pkt(t, -4.2 + i * 2.3, 5.6));
+  ['sort', 'append', 'L1 + L2', 'x in L'].forEach((t, i) => intro.push(pkt(t, -4.2 + i * 2.3, 5.6)));
   say('但 Python 有很多高階操作', 'sort、append、串接…每個都有 cost');
   await step(tok);                                   // 1137.9 some are slow, even exponential
-  noT('有些很慢，甚至指數時間！', 0, 4.8); me.mood('wow');
+  intro.push(noT('有些很慢，甚至指數時間！', 0, 4.8)); me.mood('wow');
   say('有些操作很花時間，甚至是指數時間：要知道哪些快、哪些慢', '');
   await step(tok);                                   // 1175.8 a Python list is an array
   me.mood('calm');
   cs = V.map((v, i) => mBox(v, M.sand, X(i), 1.2, 0.9, 0.8, 0.8, 1.5 + i * 0.08));
+  intro.forEach((l) => remove(l));
   V.forEach((_, i) => tag('L[' + i + ']', 'idx', X(i), 0.4));
   say('Python 的 list 其實是 array（陣列）', '名字很容易讓人搞混');
   await step(tok);                                   // 1198.6 not a linked list
@@ -11373,6 +11434,7 @@ FRAG.push(['algmit1-docdist-times', '三步驟；8 個版本 228.1 s → 0.2 s',
 // 45:24 數頻率（dict，線性 w.h.p.）、排序再數、掃描切字、regex 要小心（10 steps）
 FRAG.push(['algmit1-doc-count-dict', '用 dict 數 word 頻率：線性時間', async (tok) => {
   fresh([0, 3.8, 13], [0, 2.8, 0]);
+  frameHold(0, 0, 0, 0, 8.4, 0);
   const W = ['the', 'cat', 'and', 'the', 'dog'], X = mX(5, 1.3);
   const keys = ['the', 'cat', 'and', 'dog'], KX = mX(4, 1.8), bins = {}, cnt = {};
   let ws = [];
@@ -11856,13 +11918,13 @@ FRAG.push(['algmit1-rec-2d-recur', '2D 遞迴式：Θ(m) + T(n/2, m) = Θ(m log 
   let eq = null, cd = null, lv = [];
   await step(tok);                                   // 2838.7 running time T(n, m)
   eq = cube('T(n, m) = ?', M.paper, [6.4, 0.7, 0.6], 0, 7.6, 0, 1.5);
-  cd = code(['1. 選中間那一欄', '2. 找這一欄的最大值（m 個數）', '3. 看左右：都比較小 → peak', '4. 否則往大的那邊遞迴'], 3.6, 6.6, 0.5);
+  cd = code(['1. 選中間那一欄', '2. 找這一欄的最大值（m 個數）', '3. 看左右：都比較小 → peak', '4. 否則往大的那邊遞迴'], 3.6, 6.6, 0.56);
   say('來算執行時間：T(n, m)，n 欄、m 列', '');
   await step(tok);                                   // 2859.4 pick the middle column: constant
   cd.hl(0); tag('Θ(1)', 'ptr', 6.6, 6.6);
   say('第一步選中間那一欄：常數時間', '');
   await step(tok);                                   // 2867.5 maximum of m numbers: Θ(m)
-  cd.hl(1); tag('Θ(m)', 'ptr', 6.6, 6.1);
+  cd.hl(1); tag('Θ(m)', 'ptr', 6.6, 6.04);
   const col = mRow([3, 9, 5, 7], 3.2, { gap: 0.8, s: 0.6, cx: -3.6, col: M.sand });
   const me = buddy('', '', M.gold, -6.0, 0, 1.4, 0.5);
   for (const m of col) { glow(m, '#333333'); await beat(tok, 200); glow(m, null); }
@@ -11891,7 +11953,7 @@ FRAG.push(['algmit1-rec-2d-recur', '2D 遞迴式：Θ(m) + T(n/2, m) = Θ(m log 
   relabel(eq, 'T(n, m) = Θ(1) + Θ(m) + T(n/2, m) = Θ(m) + T(n/2, m)'); glow(eq, GOLD);
   say('T(n, m) = Θ(1) + Θ(m) + T(n/2, m)', '= Θ(m) + T(n/2, m)');
   await step(tok);                                   // 3077.5 base case: one column → max is a peak
-  pkt('base case：只剩一欄 → 最大值就是 peak', 0, 5.4);
+  pkt('base case：只剩一欄 → 最大值就是 peak', -2.6, 4.6);
   say('base case：只剩一欄，找最大值就一定是 peak', '');
   await step(tok);                                   // 3118.1 m never changes → like the 1D recurrence
   note('m 不變 → 當常數 → 就像 T(n) = c + T(n/2)', -2.0, 6.6);
@@ -12077,10 +12139,12 @@ const GWFS = [' 9 word_list = []', '10 character_list = []', '11 for c in line:'
   '22   word_list.append(word)', '23 return word_list'];
 const GW_C = [['1', '1'], ['1', '1'], ['1', 'n'], ['1', 'n'], ['1', 'n·w/(w+1)'], ['1', 'n/(w+1)'], ['w', 'n/(w+1)'], ['w', 'n/(w+1)'], ['1', 'n/(w+1)'], ['1', 'n/(w+1)'],
   ['1', '≤ 1'], ['w', '≤ 1'], ['w', '≤ 1'], ['1', '≤ 1'], ['1', '≤ 1']];
-function gwfsSheet(dy = 0.44, y0 = 7.4) {
+function gwfsSheet(dy = 0.48, y0 = 7.8) {
   const cd = code(GWFS, -2.4, y0, dy);
   tag('cost', 'ptr', 2.6, y0 + 0.55); tag('times', 'ptr', 4.6, y0 + 0.55);
-  const put = (i, which) => tag(GW_C[i][which], 'idx', which ? 4.6 : 2.6, y0 - i * dy);
+  // one label per cell: a cell filled again is rewritten, not stacked
+  const cells = {};
+  const put = (i, which) => { const k = i + ':' + which; if (cells[k]) { txt(cells[k], GW_C[i][which]); return cells[k]; } return (cells[k] = tag(GW_C[i][which], 'idx', which ? 4.6 : 2.6, y0 - i * dy)); };
   return { cd, put, y: (i) => y0 - i * dy };
 }
 
@@ -12092,7 +12156,7 @@ FRAG.push(['algmit1-gwfs-cost', 'get_words_from_string：cost × times', async (
   const ex = pkt('"The fox is outside." → [the, fox, is, outside]', 0, 8.2);
   say('get_words_from_string：一行字串 → word list', '轉小寫、略過標點和空白');
   await step(tok);                                   // 762.0 per line: cost × number of runs
-  note('每一行：跑一次的 cost × 跑幾次 = 這行的總時間', -4.0, 0.2);
+  const rm = note('每一行：跑一次的 cost × 跑幾次 = 這行的總時間', -1.0, 0.2);
   say('方法：每一行看「跑一次的 cost」和「跑幾次」，相乘', '');
   await step(tok);                                   // 781.1 line numbers 9 … 23
   remove(ex); sh = gwfsSheet();
@@ -12113,17 +12177,17 @@ FRAG.push(['algmit1-gwfs-cost', 'get_words_from_string：cost × times', async (
   sh.cd.hl(4);
   say('第 13 行只在英數字元時跑：要對文件做一點假設', '');
   await step(tok);                                   // 962.1 English words: same length w
-  bub('英文 word 長度差不多：都當成 w', -5.0, 2.8);
+  txt(rm, '英文 word 長度差不多：都當成 w'); cls(rm, 'say');
   say('英文 word 長度差不多（5 到 10 個字元），全部當成 w', '');
   await step(tok);                                   // 1007.5 n/(w+1) words per line
-  pkt('word␣word␣word␣ → 約 n/(w+1) 個 word', -4.0, 1.6);
+  txt(rm, 'word␣word␣word␣ → 約 n/(w+1) 個 word'); cls(rm, 'pkt');
   say('word 之間隔一個空白', '每個 word 佔 w + 1 個字元，約 n/(w+1) 個');
   await step(tok);                                   // 1021.0 w is a constant → O(n) words
   sh.put(4, 1);
   say('w 是常數，所以 word 數其實就是 O(n)；先保留 w 比較正式', '第 13 行跑 n·w/(w+1) 次');
   await step(tok);                                   // 1070.6 append: constant (table doubling)
   sh.put(4, 0);
-  okT('append：Θ(1)（table doubling）', 4.4, 1.0);
+  okT('append：Θ(1)（table doubling）', 4.4, 0.2);
   say('append 是常數時間：Python 用 table doubling', '');
 }]);
 
@@ -12215,10 +12279,10 @@ FRAG.push(['algmit1-gwfs-sum', 'get_words_from_string：逐行加總 = O(n)', as
   say('第 19 行看長度', '常數；20–22 跟 15–17 一樣：w、w、1；23 回傳：1');
   await step(tok);                                   // 1666.2 dot product of the two columns
   remove(buf); sh.cd.hl(-1);
-  note('cost 欄 · times 欄（內積）= 總時間', 0, 0.2);
+  note('cost 欄 · times 欄（內積）= 總時間', -1.0, 0.2);
   say('把 cost 欄和 times 欄做「內積」：就是函式的總時間', '');
   await step(tok);                                   // 1701.7 the important part is n
-  okT('主要的項：常數 × n', 4.4, 0.9);
+  okT('主要的項：常數 × n', 4.4, 0.2);
   say('重要的是 n 那一項：常數乘以 n', '');
   await step(tok);                                   // 1734.0 O(n + 1) = O(n)
   const z = cube('O(n + 1) = O(n)', M.green, [3.6, 0.6, 0.6], -3.4, 0.9, 0.8, 1.2); glow(z, GREEN);
@@ -12332,7 +12396,7 @@ FRAG.push(['algmit1-inner-nested', 'inner_product：兩層迴圈 Θ(L1·L2)', as
   const A = ['the', 'fox', 'is', 'in', 'hat'], B = ['the', 'fox', 'is', 'out'], gx = 0.8, gy = 0.62;
   const X = mX(4, gx, 3.6), Y = (i) => 6.0 - i * gy;
   let cd = null, cells = [], f1 = [], f2 = [];
-  const cost = (i, c, t) => { tag(c, 'idx', -0.2, 6.8 - i * 0.5); tag(t, 'idx', 0.7, 6.8 - i * 0.5); };
+  const cc = {}; const cost = (i, c, t) => { if (cc[i]) { txt(cc[i][0], c); txt(cc[i][1], t); return; } cc[i] = [tag(c, 'idx', -0.2, 6.8 - i * 0.5), tag(t, 'idx', 0.7, 6.8 - i * 0.5)]; }; // a line's cost is rewritten, not stacked
   await step(tok);                                   // 2435.6 the running time of inner_product
   cd = code(['1 def inner_product(L1, L2):', '2   sum = 0.0', '3   for word1, count1 in L1:', '4     for word2, count2 in L2:', '5       if word1 == word2:', '6         sum += count1 * count2', '7   return sum'], -3.8, 6.8, 0.5);
   say('來分析 inner_product：這個比較簡單', '');
@@ -12356,7 +12420,7 @@ FRAG.push(['algmit1-inner-nested', 'inner_product：兩層迴圈 Θ(L1·L2)', as
   say('兩層迴圈巢狀：第 5、6 行也跑 L1·L2 次（5 × 4 = 20 格）', '');
   await step(tok);                                   // 2526.1 the if check: constant?
   cd.hl(4);
-  const me = buddy('', '?', M.gold, -5.9, 0, 1.0, 0.55);
+  const me = buddy('', '?', M.gold, -5.3, 0, 1.0, 0.55);
   say('第 5 行的 if：比較兩個字串，是常數時間嗎？', '');
   await step(tok);                                   // 2550.8 compare char by char, stop at a difference
   f1 = mRow(['f', 'o', 'x'], 1.6, { cx: 2.6, gap: 0.6, s: 0.5, col: M.blue }); f2 = mRow(['t', 'h', 'e'], 0.8, { cx: 2.6, gap: 0.6, s: 0.5, col: M.blue });
@@ -12478,6 +12542,7 @@ const m2item = (v, color, x, z, drop = 0, w = 0.9, y = 0.45) => cube(v, color, [
 // ══════════════ r5pXu1PAUkI：Rec5 Recursion Trees, Binary Search Trees ══════════════
 FRAG.push(['algmit2-ms-recurrence', 'Merge sort 的遞迴式：2T(n/2) + Θ(n)', async (tok) => {
   fresh([0, 4.2, 13.5], [0, 3.2, 0]);
+  frameHold(-6, 0, 0, 6, 8.5, 0);
   const X = (i) => -4.2 + i * 1.2;
   const ms = buddy('merge sort', '', M2.orange, -6.2, 0, 1.6, 0.75);
   let cs = [];
@@ -12814,6 +12879,7 @@ FRAG.push(['algmit2-heap-checkri', 'Max Heap 的 insert 與 checkRI 除錯', asy
   say('為什麼要拿掉？', '它可能比 query、update 本身慢很多');
   await step(tok); // 1244 for example, a heap
   fresh([0, 3.8, 13.5], [0, 3.6, 0]);
+  frameHold(-6.2, 0, 0, 6.2, 8.2, 0);
   const P = [[0, 6.2], [-3, 4.7], [3, 4.7], [-4.5, 3.2], [-1.5, 3.2], [1.5, 3.2], [4.5, 3.2], [-5.3, 1.7]];
   const v = [50, 30, 40, 10, 20, 35, 25], ns = [];
   for (let i = 0; i < 7; i++) { ns.push(cube(v[i], M2.purple, [0.9, 0.9, 0.9], P[i][0], P[i][1], 0)); if (i) line(P[(i - 1) >> 1][0], P[(i - 1) >> 1][1], P[i][0], P[i][1], -0.05); }
@@ -12840,7 +12906,7 @@ FRAG.push(['algmit2-heap-checkri', 'Max Heap 的 insert 與 checkRI 除錯', asy
   say('max Heap 的 RI：父節點 ≥ 孩子', '50 ≥ 30、50 ≥ 40');
   await step(tok); // 1407 by induction the root is the max
   glow(ns[1], null); glow(ns[2], null);
-  note('一路往下都成立 → 根最大', 1.6, 7.0);
+  txt(top, '一路往下都成立 → 根最大');
   say('用歸納法：每一層都成立', '→ 根比所有人都大，就是 max');
   await step(tok); // 1420 insert: add it at the bottom
   glow(ns[0], null);
@@ -12869,10 +12935,10 @@ FRAG.push(['algmit2-heap-checkri', 'Max Heap 的 insert 與 checkRI 除錯', asy
   glow(ns[0], null); glow(ns[1], null);
   say('最壞情況：從最底下一路換到根');
   await step(tok); // 1446 insert = O(height)
-  tag('insert = O(高度)', 'ptr', -4.6, 7.0);
+  tag('insert = O(高度)', 'ptr', -4.6, 6.4);
   say('insert = O(樹高)');
   await step(tok); // 1458 a full binary tree has height log n
-  tag('complete → 高度 = ⌊log n⌋', 'ptr alt', -4.6, 6.4);
+  tag('complete → 高度 = ⌊log n⌋', 'ptr alt', -4.6, 5.8);
   say('complete binary tree 的高度是 ⌊log n⌋', 'n = 節點數 → insert = O(log n)');
   await step(tok); // 1486 in an array, the parent is index / 2
   const AX = (i) => -4.2 + i * 1.2, ac = [];
@@ -13086,7 +13152,7 @@ FRAG.push(['algmit2-bst-successor', 'next_larger（successor）的兩種情況',
   await at(8, RED);
   say('也叫 successor', '例：next_larger(8)');
   await step(tok); // 2138 strictly larger than 8, smaller than anything else
-  bub('比 8 大的 key 裡，最小的那個', 3.6, 7.0);
+  const rm = bub('比 8 大的 key 裡，最小的那個', 3.6, 7.0);
   say('要找：比 8 大的 key 中最小的');
   await step(tok); // 2146 write them in order: the one right after
   ord.forEach((k, i) => { oc[k] = cube(k, M2.sand, [0.9, 0.6, 0.6], IX(i), 0.1, 2.2); });
@@ -13117,7 +13183,7 @@ FRAG.push(['algmit2-bst-successor', 'next_larger（successor）的兩種情況',
   await at(8, GREEN);
   say('往上一步就到 8 → 答案 8');
   await step(tok); // 2253 going up-right: everything is greater
-  bub('往「右上」走：一定比較大', 3.6, 7.0);
+  txt(rm, '往「右上」走：一定比較大'); cls(rm, 'say');
   say('4 是 8 的左孩子：往右上走', '8 比 4 大，而且是最接近的');
   await step(tok); // 2278 something like this … successor for this guy
   clear(); glow(oc[4], null); glow(oc[8], null);
@@ -13130,13 +13196,13 @@ FRAG.push(['algmit2-bst-successor', 'next_larger（successor）的兩種情況',
   await at(23, GREEN); glow(oc[23], GREEN);
   say('8 是 23 的左孩子 → 停', 'next_larger(16) = 23');
   await step(tok); // 2343 everything in that branch is less
-  note('往左上走的那段都比 16 小', -3.6, 6.8);
+  note('往左上走的那段都比 16 小', -3.6, 6.2);
   say('一路往「左上」走的節點都比 16 小', '第一次往「右上」轉，就是答案');
   await step(tok); // 2369 if you get to the root: no successor
   clear(); ord.forEach((k) => glow(oc[k], null));
   await at(42, RED); glow(oc[42], RED);
   await at(23, GOLD);
-  noT('走到根都沒轉彎 → 沒有 successor', 3.6, 7.0);
+  txt(rm, '走到根都沒轉彎 → 沒有 successor'); cls(rm, 'bad');
   say('next_larger(42)：一路往上到根', '42 是最大的，沒有 successor');
   await step(tok); // 2395 code: go up through the parent chain
   clear();
@@ -13152,7 +13218,7 @@ FRAG.push(['algmit2-bst-successor', 'next_larger（successor）的兩種情況',
   await step(tok); // 2456 if not, go up
   say('沒有左子樹 → 往上走', '這次要等自己是「右孩子」才停');
   await step(tok); // 2513 copy-paste: swap left/right, min/max
-  bub('複製程式：left ↔ right、min ↔ max', 3.6, 7.0);
+  txt(rm, '複製程式：left ↔ right、min ↔ max'); cls(rm, 'say');
   say('寫法：把 successor 的程式複製一份', 'left 換 right、min 換 max');
 }]);
 
@@ -13536,7 +13602,7 @@ FRAG.push(['algmit2-direct-access', 'Direct access table：key 當 index', async
   tag('T（一個大 array）', 'ptr', -5.6, 0.6, -1.0);
   say('一個大 array，index 就是 key', 'T[key] = item');
   await step(tok); // 871 Python's notation is the same as for arrays
-  note("D[key] 長得跟 array 的 A[i] 一樣", 0, 2.4, -1.0);
+  note("D[key] 長得跟 array 的 A[i] 一樣", 0, 3.0, -1.0);
   say('Python 查 dict 的寫法跟 array 一模一樣', '但 array 的 index 只能是 0…n−1 的整數');
   await step(tok); // 892 key 2 → item 2 goes there
   const a = m2item('item2', M2.blue, X(2), 0, 3);
@@ -13570,7 +13636,7 @@ FRAG.push(['algmit2-direct-access', 'Direct access table：key 當 index', async
   await step(tok); // 1006 a gigantic memory hog
   kill(cur); remove(q);
   me.mood('sad');
-  noT('問題 2：超級吃記憶體', 3, 2.2, 0);
+  txt(q, '問題 2：超級吃記憶體');
   say('問題 2：超級吃記憶體（memory hog）', '每個「可能的」key 都要一格');
   await step(tok); // 1039 64-bit keys → 2^64 slots
   const gb = ghostBox(M2.red, 13, 0.3, 0.9); gb.position.set(0.3, 0.15, 2.4);
@@ -13901,6 +13967,7 @@ FRAG.push(['algmit2-division', 'Division method：h(k) = k mod m', async (tok) =
 
 FRAG.push(['algmit2-multiplication', 'Multiplication method：取乘積中間的 r 位元', async (tok) => {
   fresh([0, 4.4, 12.5], [0, 3.4, 0]);
+  frameHold(-6.2, 0, 0, 6.2, 8.2, 0);
   const w = 8, r = 3, k = 181, a = 155, P = k * a, h = (P % 256) >> (w - r);
   const BX = (b) => -3.75 + (15 - b) * 0.5;
   const row = (val, n, y, shift, color, drop = 0) => { const ms = []; for (let b = 0; b < n; b++) ms[b] = cube((val >> b) & 1, color, [0.42, 0.42, 0.42], BX(b + shift), y, 0, drop); return ms; };
@@ -13911,7 +13978,7 @@ FRAG.push(['algmit2-multiplication', 'Multiplication method：取乘積中間的
   pkt('h(k) = [(a·k) mod 2ʷ] >> (w − r)', 0, 7.4);
   say('k 乘上整數 a，mod 2ʷ，再右移 w − r 位');
   await step(tok); // 2683 a w-bit machine
-  note('w = 一個 word 有幾個 bit（示意 w = 8）', -4.0, 6.8);
+  note('w = 一個 word 有幾個 bit（示意 w = 8）', 3.8, 6.8);
   say('w 是什麼？機器的 word 大小', '假設電腦一次處理 w 個 bits');
   await step(tok); // 2696 our key k, w bits long
   row(k, 8, 6.4, 0, M2.blue, 1.5); tag('k = 181', 'ptr', -2.3, 6.4);
@@ -14164,7 +14231,7 @@ FRAG.push(['algmit2-rehash', 'Grow：建新 table、用 h′ 全部 rehash', asy
   tag("m → m′", 'ptr alt', 0, 1.4, 0);
   say("從大小 m 變成新的大小 m′", '暖身題：要做什麼？');
   await step(tok); // 471 works for growing or shrinking
-  note("m′ 可以比 m 大，也可以比 m 小", 0, 0.8, 0.6);
+  note("m′ 可以比 m 大，也可以比 m 小", 3.6, 1.4, 0);
   say('放大、縮小都適用');
   await step(tok); // 493 allocate the memory and rehash
   say('同學答：配置記憶體，再全部 rehash');
@@ -14185,7 +14252,7 @@ FRAG.push(['algmit2-rehash', 'Grow：建新 table、用 h′ 全部 rehash', asy
   pkt("Θ(n + m + m′)", 4.6, 1.6, -4.4);
   say("一般來說是 Θ(n + m + m′)");
   await step(tok); // 603 visit every slot (m), every list (n), build T′ (m′)
-  note('走過 m 格 + n 個 item + 初始化 m′ 格', 4.0, 0.8, 3.6);
+  const cost = note('走過 m 格 + n 個 item + 初始化 m′ 格', 4.0, 0.8, 3.6);
   say('要走過舊表每一格（m）、每條 list（n）', "還要把新表 m′ 格初始化成空的");
   await step(tok); // 622 we have to build a new hash function
   say('另一個重點：要換新的 hash function', "叫它 h′");
@@ -14193,7 +14260,7 @@ FRAG.push(['algmit2-rehash', 'Grow：建新 table、用 h′ 全部 rehash', asy
   say('hash function 就是把 universe 映到 m 格', 'm 變了，h 一定要換');
   await step(tok); // 644 the old h would only use the beginning
   const gb = ghostBox(M2.red, 6.4, 0.3, 0.9); gb.position.set(3.2 + 0.4, 0.15, 1.6);
-  noT('舊的 h 只會用到前 8 格', 3.6, 1.2, 3.4);
+  txt(cost, '舊的 h 只會用到前 8 格'); cls(cost, 'bad');
   say('用舊的 h，只會用到前面 8 格', '新加的格子永遠用不到');
 }]);
 
@@ -14444,7 +14511,7 @@ FRAG.push(['algmit2-shrink-quarter', '縮表要在 n = m/4：避免來回抖動'
 }]);
 
 FRAG.push(['algmit2-python-list', 'Python list：table doubling 的 resizable array', async (tok) => {
-  fresh([0, 6.5, 11], [0, 0.4, 0.6]);
+  fresh([0, 9.5, 8.5], [0, 0.4, 0.8]);
   let X = null; const L = [];
   await step(tok); // 1545 we can also solve Python lists
   prop('file', -6.0, 0, 2.2, 0.8, 'Python list');
@@ -14476,7 +14543,7 @@ FRAG.push(['algmit2-python-list', 'Python list：table doubling 的 resizable ar
   m2item('t', M2.green, X2(8), 2.2, 2.5, 0.7);
   say('list 用 array 實作', '滿了就 table doubling：搬到兩倍大的 array');
   await step(tok); // 1613 any constant, deletion constant smaller
-  note('縮表的門檻要比放大的寬', 0, 1.6, 3.4);
+  note('縮表的門檻要比放大的寬', 0, 2.6, 1.0);
   say('不一定是 2 倍，任何常數都行', '只要縮表的比例比放大的小');
   await step(tok); // 1625 append and pop are constant amortized
   okT('append、pop：constant amortized', 3.6, 2.4, -1.2);
@@ -14588,10 +14655,10 @@ FRAG.push(['algmit2-rolling-window', 'Rolling hash ADT：append、skip、r()', a
   const me = buddy('學生', '', M2.orange, 5.8, 0, 1.6, 0.7); me.look(-1);
   let win = null, xs = [];
   await step(tok); // 2096 ideas? using hashing
-  bub('怎麼用 hashing 變快？', 3.4, 4.6);
+  const hb = bub('怎麼用 hashing 變快？', 3.4, 4.6);
   say('怎麼用 hashing 做到線性？');
   await step(tok); // 2124 split into words? not necessary
-  note('切成單字？（舊搜尋引擎這樣做，但不需要）', -1.6, 4.6);
+  const cut = note('切成單字？（舊搜尋引擎這樣做，但不需要）', -2.6, 5.4);
   say('有人說：切成單字', '可行，但不需要');
   await step(tok); // 2144 an algorithm guaranteed (in expectation)
   say('今天的演算法：保證線性時間', '期望值意義下（因為用了隨機）');
@@ -14610,11 +14677,11 @@ FRAG.push(['algmit2-rolling-window', 'Rolling hash ADT：append、skip、r()', a
   say('如果每次 O(1) 就太好了', '難的是怎麼做到');
   await step(tok); // 2248 rolling hashes
   remove(hv);
-  bub('新工具：rolling hash（滾動雜湊）', 3.4, 4.6);
+  txt(hb, '新工具：rolling hash（滾動雜湊）');
   say('需要一個新的資料結構：rolling hash');
   await step(tok); // 2268 recomputing each window's hash costs |s|
   for (let i = 0; i < 4; i++) { glow(T[i], GOLD); await beat(tok, 120); }
-  noT('每個視窗重算 hash：O(|s|) → 沒省到', 0, 3.4);
+  const slow = noT('每個視窗重算 hash：O(|s|) → 沒省到', 0, 3.4);
   say('每個視窗都從頭算 hash', '每次要 O(|s|)，沒有比較快');
   await step(tok); // 2293 compute the next window's hash in constant time
   for (let i = 0; i < 4; i++) glow(T[i], null);
@@ -14628,6 +14695,7 @@ FRAG.push(['algmit2-rolling-window', 'Rolling hash ADT：append、skip、r()', a
   say('只差兩個字元：', '開頭那個被刪掉、尾巴加一個新的');
   await step(tok); // 2323 r: a rolling hash value
   kill(g2); [0, 1, 2, 3, 4].forEach((i) => glow(T[i], null));
+  remove(slow); remove(cut); remove(hb);
   tag('r 維護的字串 x', 'ptr', -5.0, 3.4);
   xs = [...M2T.slice(0, 4)].map((c, j) => cube(c, M2.blue, [0.85, 0.7, 0.7], X(j), 3.4, 0, 1.5));
   say('rolling hash 叫 r', 'r 心裡維護一個字串 x');
@@ -14702,7 +14770,7 @@ FRAG.push(['algmit2-karp-rabin', 'Karp-Rabin：比 hash，相等才逐字比', a
   for (let q = 1; q < 5; q++) glow(T[q], GOLD);
   say('rs() == rt()：5 = 5', '「可能」match');
   await step(tok); // 2621 only potentially: collisions exist
-  bub('hash 相等 ≠ 字串相等（會有碰撞）', 0, 4.4);
+  const hb = bub('hash 相等 ≠ 字串相等（會有碰撞）', -4.0, 2.9);
   say('只是「可能」：因為有碰撞', '不同字串也可能 hash 到同一個值');
   await step(tok); // 2638 so check character by character
   cd.hl(7);
@@ -14726,7 +14794,7 @@ FRAG.push(['algmit2-karp-rabin', 'Karp-Rabin：比 hash，相等才逐字比', a
   cd.hl(-1);
   say('skip、append 是 O(1)，再加上假警報期望 O(1)', '→ 整體線性時間');
   await step(tok); // 2752 |s| + |t| + |s| per reported match
-  pkt('O(|s| + |t| + #match · |s|)', 0, 4.4);
+  txt(hb, 'O(|s| + |t| + #match · |s|)'); cls(hb, 'pkt');
   say('精確地說：O(|s| + |t|)', '再加上每個要回報的 match 各 |s|');
   await step(tok); // 2773 one match → linear
   say('只找一個 match → 線性時間');
@@ -15476,10 +15544,10 @@ FRAG.push(['algmit3-window-the', '滑動視窗：在 "the fox is" 找 "the"', as
   B('取文件的前 k = 3 個字元（空白也算）');
   say('取前 k 個字元', '"t"、"h"、"e"');
   await step(tok);                                   // 202.8 call this our sliding window: it has "the"
-  const wl = tag('sliding window', 'note', X(1), 1.25, 0.9);
+  const wl = tag('sliding window', 'note', X(1), -0.55, 1.6);
   say('這個框叫 sliding window', '目前框住 "the"');
   await step(tok);                                   // 210.1 hash of the window matches the hash of the key
-  const hw = tag('h("the") = h(key)', 'ptr', X(1), 1.8, 0);
+  const hw = tag('h("the") = h(key)', 'ptr', X(1), 2.0, 0);
   say('視窗的 hash = key 的 hash', '先記著，等一下處理');
   await step(tok);                                   // 224.3 slide right: take out t, put in the space
   glow(cs[0], RED); glow(cs[3], GREEN);
@@ -16285,7 +16353,7 @@ FRAG.push(['algmit3-amort-sum', 'Amortized 總結：看整串操作，平均比 
 }]);
 // ═══ -FElVPKykgw：Rec10 Quiz 1 Review ═══
 FRAG.push(['algmit3-resize-cost', 'Resize 成本：滿或空都是 Θ(m)', async (tok) => {
-  fresh([0, 6, 13], [0, 1.5, 0]);
+  fresh([0, 10, 9], [0, 1.0, 0.6]);
   const X = (i) => -5.2 + i * 0.95, NX = (j) => -6 + j * 0.78, m = 8;
   const B = m3Board(0, 5.6, -1);
   let stu = null, mixed = [];
@@ -16313,7 +16381,7 @@ FRAG.push(['algmit3-resize-cost', 'Resize 成本：滿或空都是 Θ(m)', async
   await m3Pkt(tok, '@1000', V3(X(0), 0.9, 0), V3(NX(5), 3.1, -1.4), 1100);
   say('搬的只是位址：一個小數字', '永遠 O(1)，跟物件多大無關');
   await step(tok);                                   // 143.0 a completely full table vs a completely empty one
-  fresh([0, 6, 13], [0, 1.5, 0]);
+  fresh([0, 10, 9], [0, 1.0, 0.6]);
   tag('空 table', 'ptr', -6.3, 0.3, -1.6); tag('滿 table', 'ptr', -6.3, 0.3, 1.6);
   const full = [];
   for (let i = 0; i < m; i++) {
@@ -16470,6 +16538,7 @@ function m3Scale(nCoins, fake) {
 }
 FRAG.push(['algmit3-coin-a', '假硬幣：天平的三種結果', async (tok) => {
   fresh([0, 6, 14], [0, 2.4, 0]);
+  frameHold(0, 0, 0, 0, 7.2, 0);
   const B = m3Board(0, 6.4, -1);
   const fake = 6;
   let coins = [], beam = null;
@@ -16533,7 +16602,7 @@ FRAG.push(['algmit3-coin-a', '假硬幣：天平的三種結果', async (tok) =>
   B('再分三份：7 vs 8 → 7 比較輕 → 找到！共 2 次 = log₃ 9');
   say('再分成三份', '7 比較輕：找到假幣');
   await step(tok);                                   // 1082.0 not divisible by 3: add good coins
-  tag('不能被 3 整除？補幾枚真幣進去', 'note', 0, 0.7, 3.6);
+  tag('不能被 3 整除？補幾枚真幣進去', 'note', 0, -0.5, 3.8);
   say('不能被 3 整除？', '補幾枚真幣湊整');
   await step(tok);                                   // 1093.0 a lower bound: you cannot do better than log₃ N
   B('lower bound：任何方法都不可能少於 log₃ N 次');
@@ -16758,6 +16827,7 @@ FRAG.push(['algmit3-bunker-1d', 'Bunker hill：左上角、再到整塊 rolling 
 
 FRAG.push(['algmit3-bunker-2d', 'Hash of hashes：直向 rolling hash', async (tok) => {
   fresh([0, 8.5, 9.5], [0, 0.4, 0.4]);
+  frameHold(-6.4, 0, -4.2, 6.4, 1.2, 5.0);
   const t = m3DrawMap(); m3DrawPat();
   const B = m3Board(0, 2.6, -3.4);
   const colH = [];
@@ -16830,7 +16900,7 @@ function m3Lists(drop) {
 }
 
 FRAG.push(['algmit3-kth-merge', '兩個已排序串列：merge 到第 k 個', async (tok) => {
-  fresh([0, 6.5, 13], [0, 1.2, 0.6]);
+  fresh([0, 10, 9.5], [0, 0.8, 0.6]);
   const B = m3Board(0, 3.4, -1.6);
   let ma, mb, merged = [];
   await step(tok);                                   // 2230.5 two sorted lists of size about N
@@ -16880,7 +16950,7 @@ FRAG.push(['algmit3-kth-merge', '兩個已排序串列：merge 到第 k 個', as
 }]);
 
 FRAG.push(['algmit3-kth-15-43', '比 15 與 43：兩頭各丟一段', async (tok) => {
-  fresh([0, 6.5, 13], [0, 1.2, 0.6]);
+  fresh([0, 10, 9.5], [0, 0.8, 0.6]);
   const [ma, mb] = m3Lists();
   const B = m3Board(0, 3.6, -1.6);
   const kT = tag('', 'ptr alt', 4.8, 3.0, 1.2);
@@ -17204,7 +17274,7 @@ FRAG.push(['algmit3-shift-findk', 'Binary search 找 k：跟第一個元素比',
   say('那就用 binary search', '');
   await step(tok);                                   // 581.0 if you knew where the min is, that's k
   tint(bars[3], M3.green);
-  tag('最小值的位置 = n − k', 'good', m3SX(3), 1.5, 0.6);
+  tag('最小值的位置 = n − k', 'good', m3SX(3), -0.6, 1.4);
   say('找到最小值 1 的位置就知道 k', 'index 3 = n − k → k = 7 − 3 = 4');
   await step(tok);                                   // 609.0 a discontinuity here
   tag('斷崖（discontinuity）', 'bad', (m3SX(2) + m3SX(3)) / 2, 5.6, 0);
@@ -17276,6 +17346,7 @@ function m3Heap(dx = 0, arr = true) {
 
 FRAG.push(['algmit3-heap-pop', 'Heap 第 k 小：sort 或 pop k 次', async (tok) => {
   fresh([0, 5, 13], [0, 2.8, 0.4]);
+  frameHold(-6, -0.2, 0, 6, 8.2, 3.0);
   const B = m3Board(0, 7.0, 0);
   let nd = null, you = null;
   await step(tok);                                   // 878.9 a min-heap: looks like this
@@ -17319,7 +17390,7 @@ FRAG.push(['algmit3-heap-pop', 'Heap 第 k 小：sort 或 pop k 次', async (tok
   B('O(n log n) → O(k log n)');
   say('變成 O(k log n)', '');
   await step(tok);                                   // 1030.3 the answer is k log k: only a log factor apart
-  tag('O(k log n) vs O(k log k)：只差一個 log', 'note', 0, 6.3, 0);
+  tag('O(k log n) vs O(k log k)：只差一個 log', 'note', 3.6, 6.2, 0);
   say('跟 k log k 只差一個 log', '作業裡幾乎分不出來');
   await step(tok);                                   // 1062.7 why log n? just take the first k of the array?
   [0, 1, 2].forEach((q) => glow(arr[q], RED));
@@ -17639,26 +17710,26 @@ FRAG.push(['algmit3-rmq-tradeoff', 'Range minimum：全部預算 vs 每次現算
   B('預處理時間不限 → 把所有答案都先算好？');
   say('預處理時間不限的話', '全部先算好');
   await step(tok);                                   // 2702.3 sorting first? not valid
-  const tSort = tag('先 sort？位置就亂了 ✗', 'bad', 3.6, 1.2, -1.0);
+  const tSort = tag('先 sort？位置就亂了 ✗', 'bad', 0, 1.8, -2.4);
   say('學生想先 sort', '但查詢看的是原本的位置');
   await step(tok);                                   // 2723.1 if it stops making sense, back out
-  const tBack = tag('想不通就退回來，換方向', 'note', 3.6, 1.9, -1.0);
+  const tBack = tSort; txt(tSort, '先 sort？位置就亂了 ✗ → 想不通就退回來，換方向');
   say('想一陣子不合理', '就退回來');
   await step(tok);                                   // 2754.9 a hash of all intervals (i, j)
   const S = 0.8, SZ = 0.72;
   const tbl = [];
   kill(tSort); kill(tBack);                          // the table takes their place
-  tag('min(i..j) 表', 'ptr', 4.6, 0.3, 0.4);
+  tag('min(i..j) 表', 'ptr', 5.4, 0.3, 0.4);
   for (let i = 0; i < 8; i++) for (let j = i; j < 8; j++) tbl.push(cube('', M3.teal, [0.45, 0.2, 0.45], -2.8 + j * S, 0.1, -0.8 + i * SZ));
   say('把每個區間 (i, j) 存進 hash', '');
   await step(tok);                                   // 2778.1 store the min; a hash lookup is O(1)
   B('每格存 min(i..j)：查詢 = hash 查表 O(1)');
   say('查詢只要 O(1)', '');
   await step(tok);                                   // 2790.6 how much storage? n²
-  tag('空間 ≈ n²', 'bad', 4.6, 0.3, 1.4);
+  tag('空間 ≈ n²', 'bad', 5.4, 0.3, 1.4);
   say('要存多少格？', '約 n² 格');
   await step(tok);                                   // 2814.3 brute force each: n³
-  tag('每格各自掃 → 建表 O(n³)', 'bad', 4.6, 0.3, 2.4);
+  tag('每格各自掃 → 建表 O(n³)', 'bad', 5.4, 0.3, 2.4);
   say('每格各掃一次', 'n² 格 × O(n) = O(n³)');
   await step(tok);                                   // 2832.9 grow each interval by one: compare old min with the next
   tbl.forEach(kill);
@@ -17724,7 +17795,7 @@ FRAG.push(['algmit3-rmq-half', 'Range minimum：對半切的想法', async (tok)
 }]);
 
 FRAG.push(['algmit3-rmq-split', 'Partial minima：S(n) = 2S(n/2) + n', async (tok) => {
-  fresh([0, 6.5, 12], [0, 1.2, 0.4]);
+  fresh([0, 10, 9], [0, 0.8, 0.2]);
   const B = m3Board(0, 4.0, -1.2);
   const F = m3Board(0, 3.2, -1, 'ptr alt');
   const suf = [], pre = [], pm = [];

@@ -58,6 +58,7 @@ export default function (ctx) {
   const showL = (l, v) => { l.element.style.visibility = v ? '' : 'hidden'; };
   const setCls = (l, cls) => { l.element.className = 'lab-label' + (cls ? ' ' + cls : ''); };
   function code(lines, x, yTop, dy = 0.5, z = 0) {
+    frameHold(x, yTop, z, x, yTop + 1.2, z); // headroom: the top line is not framed under the caption
     const w = Math.max(...lines.map((s) => s.length));
     const ls = lines.map((s, i) => { const l = tag(s.padEnd(w, ' '), '', x, yTop - i * dy, z); Object.assign(l.element.style, MONO); return l; });
     return { ls, hl(i) { ls.forEach((l, k) => setCls(l, k === i ? 'ptr alt' : '')); }, kill() { ls.forEach(kill); } };
@@ -365,6 +366,8 @@ export default function (ctx) {
       [6, 9, 6], [6, 10, 5], [7, 9, 4], [7, 10, 3], [8, 10, 5], [8, 11, 6], [9, 12, 4], [10, 12, 2], [11, 12, 5]],
     order: [12, 9, 10, 11, 6, 7, 8, 2, 3, 4, 5, 1],
   };
+  // spread out: the edge weights and the cost tags need room between the vertices
+  for (const v in MSG.pos) { const [x, y] = MSG.pos[v]; MSG.pos[v] = [x * 1.2, 4.6 + (y - 4.6) * 1.25]; }
   function msgSolve() {
     const cost = {}, d = {}, steps = [];
     for (const v of MSG.order) {
@@ -389,10 +392,10 @@ export default function (ctx) {
     for (const v of Object.keys(MSG.pos)) {
       const [x, y] = MSG.pos[v];
       G.node[v] = cube(v, v === '1' || v === '12' ? PURPLE : BLUE, [0.62, 0.5, 0.5], x, y, 0, ms ? 1.5 : 0);
-      G.costL[v] = tag('', 'ptr alt', x, y + 0.5, 0.3); showL(G.costL[v], false);
+      G.costL[v] = tag('', 'ptr alt', x - 0.5, y + 0.45, 0.3); showL(G.costL[v], false);
     }
-    [1, 2, 3, 4, 5].forEach((s) => tag('stage ' + s, 'idx', -6 + (s - 1) * 3, 7.4));
-    if (table) G.g = grid({ rows: 2, cols: 12, cw: 0.95, ch: 0.55, x0: -5.25, y0: 1.25, colHdr: Array.from({ length: 12 }, (_, k) => k + 1), rowHdr: ['cost', 'd'], rowDx: 0.55 });
+    [1, 2, 3, 4, 5].forEach((s) => tag('stage ' + s, 'idx', (-6 + (s - 1) * 3) * 1.2, 8.0));
+    if (table) G.g = grid({ rows: 2, cols: 12, cw: 1.1, ch: 0.55, x0: -6.05, y0: 0.75, colHdr: Array.from({ length: 12 }, (_, k) => k + 1), rowHdr: ['cost', 'd'], rowDx: 0.55 });
     return G;
   }
   function msgFill(G, v, show = true) {
@@ -977,7 +980,7 @@ export default function (ctx) {
   }
   function lcsGrid(X, Y) {
     const m = X.length, n = Y.length;
-    const cw = Math.min(0.85, 8.4 / (n + 1)), ch = Math.min(0.68, 6 / (m + 1));
+    const cw = Math.min(1.0, 8.4 / (n + 1)), ch = Math.min(0.8, 6.6 / (m + 1)); // cells big enough for "2↑" at a phone zoom
     const g = grid({ rows: m + 1, cols: n + 1, cw, ch, x0: -cw * n / 2, y0: 6.5, colHdr: ['', ...Y.split('')], rowHdr: ['', ...X.split('')], colCls: 'ptr', rowCls: 'ptr', rowDx: 0.2 });
     for (let j = 0; j <= n; j++) g.set(0, j, 0, GRAY, 0);
     for (let i = 1; i <= m; i++) g.set(i, 0, 0, GRAY, 0);
@@ -1327,6 +1330,14 @@ export default function (ctx) {
   // 每段影片的場景片段（由 sync pass 加入）：每個片段把 [id, 標題, play] 放進 FRAG。
   const K = kit(ctx);
   const FRAG = [];
+  // An invisible box over the area a scene will use later (or headroom above a code panel, so the top line
+  // is not framed right under the caption): the stage's auto framing measures it from the first step.
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
+  // every code panel keeps headroom above its top line (the caption sits at the top of the stage)
+  { const kc = K.code; K.code = (lines, x, yTop, dy, z = 0) => { frameHold(x, yTop, z, x, yTop + 1.2, z); return kc(lines, x, yTop, dy, z); }; }
   // ═══ dpbari3.js ═══
   {
 // ─── Abdul Bari：9iE9Mj4m8jk（4.1 多段圖，分段填表）、FcScLYJI42E（4.1.1 程式：8 頂點 4 stage → 9，1→2→6→8）、
@@ -1688,7 +1699,7 @@ const pickOut = (G, v) => outE(v).forEach(([, l, w]) => { tint(edgeOf(G, v, l), 
 const cellXY = (G, v) => { const p = G.g.pos(0, v - 1); return V3(p.x, p.y + 0.3, 0.6); };
 const nodeXY = (v, dy = 0.45) => V3(MSG.pos[v][0], MSG.pos[v][1] + dy, 0.5);
 // a formula line on top of the stage
-const msgF = (t) => mono(tag(t, 'say', 0, 8.05));
+const msgF = (t) => mono(tag(t, 'say', 0, 8.65));
 // a traveller who walks the graph
 function walker(v, name = '我', color = ORANGE) { return buddy(name, '', color, MSG.pos[v][0], MSG.pos[v][1] + 0.3, 0.6, 0.42); }
 const walkTo = (tok, w, v, ms = 800) => slide(tok, w.g, MSG.pos[v][0], ms, MSG.pos[v][1] + 0.3, 0.6);
@@ -1698,7 +1709,7 @@ FRAG.push(['dpbari3-msg-graph', '多段圖是什麼、為什麼能用 DP', async
   const G = buildMSG(false, true);
   say('多段圖（multistage graph）', '可以用 DP 解');
   await step(tok);                                   // 0:11 what is the problem / why DP / forward method
-  const ag = [note('① 問題是什麼', -4.6, 8.0), note('② 為什麼能用 DP', 0, 8.0), note('③ 用 forward method 解', 4.6, 8.0)];
+  const ag = [note('① 問題是什麼', -4.6, 8.65), note('② 為什麼能用 DP', 0, 8.65), note('③ 用 forward method 解', 4.6, 8.65)];
   say('這支影片三件事', '問題 → 能不能用 DP → 怎麼解');
   await step(tok);                                   // 0:23 directed weighted graph
   ag.forEach(remove);
@@ -1756,7 +1767,7 @@ FRAG.push(['dpbari3-msg-s4', '多段圖：sink 與 stage 4 的 cost', async (tok
   fresh([0, 4.4, 15.5], [0, 3.8, 0]);
   const G = buildMSG(false, false);
   await step(tok);                                   // 2:00 tabulation method: fill the table
-  G.g = grid({ rows: 2, cols: 12, cw: 0.95, ch: 0.55, x0: -5.25, y0: 1.25, colHdr: Array.from({ length: 12 }, (_, k) => k + 1), rowHdr: ['cost', 'd'], rowDx: 0.55 });
+  G.g = grid({ rows: 2, cols: 12, cw: 1.1, ch: 0.55, x0: -6.05, y0: 0.75, colHdr: Array.from({ length: 12 }, (_, k) => k + 1), rowHdr: ['cost', 'd'], rowDx: 0.55 });
   say('用 tabulation：把資料填進表', '每個頂點一格');
   await step(tok);                                   // 2:03 for each vertex find the cost
   bub('cost = 從這個頂點走到 sink 的最小成本', 0, 8.05);
@@ -2041,6 +2052,8 @@ const MP = {
   pos: { 1: [-6.2, 5.6], 2: [-4.5, 7.0], 3: [-4.5, 5.6], 4: [-4.5, 4.2], 5: [-2.6, 7.0], 6: [-2.6, 5.6], 7: [-2.6, 4.2], 8: [-0.9, 5.6] },
   E: [[1, 2, 2], [1, 3, 1], [1, 4, 3], [2, 5, 2], [2, 6, 3], [3, 5, 6], [3, 6, 7], [4, 5, 6], [4, 6, 8], [4, 7, 9], [5, 8, 6], [6, 8, 4], [7, 8, 5]],
 };
+// spread out a little: weights and cost tags need room between the vertices
+for (const v in MP.pos) { const [x, y] = MP.pos[v]; MP.pos[v] = [-3.55 + (x + 3.55) * 1.3, 5.6 + (y - 5.6) * 1.15]; }
 const mpC = (i, k) => { const e = MP.E.find((x) => x[0] === i && x[1] === k); return e ? e[2] : 0; };
 const MPS = (() => {
   const cost = [], d = [], log = {}; cost[8] = 0;
@@ -2062,9 +2075,9 @@ function mpBuild(drop, table = true) {
   for (const v of Object.keys(MP.pos)) {
     const [x, y] = MP.pos[v];
     G.node[v] = cube(v, v === '1' || v === '8' ? PURPLE : BLUE, [0.5, 0.45, 0.45], x, y, 0, drop ? 1.4 : 0);
-    G.cl[v] = tag('', 'ptr alt', x, y + 0.45, 0.3); showL(G.cl[v], false);
+    G.cl[v] = tag('', 'ptr alt', x - 0.45, y + 0.42, 0.3); showL(G.cl[v], false);
   }
-  G.st = [-6.2, -4.5, -2.6, -0.9].map((x, s) => tag('stage ' + (s + 1), 'idx', x, 7.75));
+  G.st = [1, 2, 5, 8].map((v, s) => tag('stage ' + (s + 1), 'idx', MP.pos[v][0], 8.05));
   if (table) mpTable(G);
   return G;
 }
@@ -2092,8 +2105,8 @@ FRAG.push(['dpbari3-msgp-data', '多段圖程式：c[9][9]、cost、d、p', asyn
   G.st.forEach((l) => { l.element.className = 'lab-label ptr'; });
   say('4 個 stage、8 個頂點', '1 是 source、8 是 sink');
   await step(tok);                                   // 0:52 cost adjacency matrix
-  M = grid({ rows: 9, cols: 9, cw: 0.44, ch: 0.34, x0: 2.5, y0: 7.3, colHdr: Array.from({ length: 9 }, (_, k) => k), rowHdr: Array.from({ length: 9 }, (_, k) => k), rowDx: 0.05 });
-  bub('c：cost adjacency matrix', 4.3, 8.25);
+  M = grid({ rows: 9, cols: 9, cw: 0.56, ch: 0.44, x0: 2.4, y0: 7.4, colHdr: Array.from({ length: 9 }, (_, k) => k), rowHdr: Array.from({ length: 9 }, (_, k) => k), rowDx: 0.05 });
+  bub('c：cost adjacency matrix', 4.6, 8.35);
   say('cost adjacency matrix c', '記錄每條邊的成本');
   await step(tok);                                   // 1:00 indices start from 0 → size 9
   for (let k = 0; k < 9; k++) { M.mark(0, k, '#f0b8a8'); M.mark(k, 0, '#f0b8a8'); }
@@ -2348,7 +2361,7 @@ const KP = KN.items.map(([w, p]) => ({ w, p }));           // p = 1 2 5 6、w = 
 const KV = knapSteps(KN.items, KN.W).V;
 const KCOL = [ORANGE, PINK, BLUE, TEAL];
 // the four objects as little characters (profit / weight on the belly)
-function kItems(x0 = -4.8, y = 0, z = 2.3, dx = 1.75, size = 0.62) {
+function kItems(x0 = -4.8, y = 0, z = 2.3, dx = 1.9, size = 0.82) { // big enough that the name clears the p/w on the belly
   return KP.map((o, k) => buddy('物品 ' + (k + 1), 'p' + o.p + ' w' + o.w, KCOL[k], x0 + k * dx, y, z, size));
 }
 // V table: rows i = 0..4, columns w = 0..8
@@ -2364,7 +2377,7 @@ FRAG.push(['dpbari3-knap-problem', '0/1 knapsack：4 件物品、容量 m = 8', 
   fresh([0, 4.2, 14], [0, 3.4, 0]);
   let I, bag, f;
   await step(tok);                                   // 0:25 four objects
-  I = kItems(-5.6, 2.6, 0.6, 1.5, 0.7);
+  I = kItems(-5.8, 2.6, 0.6, 1.7, 0.8);
   say('有 4 件物品', '');
   await step(tok);                                   // 0:33 profit and weight
   I.forEach((b) => b.mood('happy'));
@@ -2669,7 +2682,7 @@ FRAG.push(['dpbari3-knap-sets', '0/1 knapsack sets 法：S⁰ → S³', async (t
   const merge = (i, add) => { const M = S.concat(add); tag('S' + (i + 1), 'ptr', -6.3, Y[i + 1]); const ms = M.map((q, k) => pairCube(q, k < S.length ? TEAL : ORANGE, -5.0 + k * 1.0, Y[i + 1], 1.2)); S = M; return ms; };
   let add;
   await step(tok);                                   // 19:20 solve it using sets method
-  I = kItems(-4.8, 0, 2.6, 1.75, 0.55);
+  I = kItems(-4.8, 0, 2.6, 1.9, 0.75);
   say('同一題，改用 sets 法', '');
   await step(tok);                                   // 19:25 find all possibilities, pick best
   say('sets 法也是列出所有可能', '再挑最好的');
@@ -2774,7 +2787,7 @@ FRAG.push(['dpbari3-knap-sets-trace', '0/1 knapsack sets 法：(8,8) 往回找 x
   const SS = [[[0, 0]], [[0, 0], [1, 2]], [[0, 0], [1, 2], [2, 3], [3, 5]], [[0, 0], [1, 2], [2, 3], [5, 4], [6, 6], [7, 7]], [[0, 0], [1, 2], [2, 3], [5, 4], [6, 5], [7, 7], [8, 8]]];
   const Y = [7.4, 6.3, 5.2, 4.1, 3.0];
   const C = SS.map((S, i) => { tag('S' + i, 'ptr', -6.3, Y[i]); return S.map((q, k) => pairCube(q, TEAL, -5.0 + k * 1.0, Y[i])); });
-  const I = kItems(-4.8, 0, 2.6, 1.75, 0.55);
+  const I = kItems(-4.8, 0, 2.6, 1.9, 0.75);
   const find = (i, q) => SS[i].findIndex((r) => r[0] === q[0] && r[1] === q[1]);
   const off = () => C.flat().forEach((m) => glow(m, null));
   const xl = (i, v) => tag('x' + i + ' = ' + v, v ? 'good' : 'bad', -4.8 + (i - 1) * 1.75, 1.6, 2.6);
@@ -2820,14 +2833,14 @@ FRAG.push(['dpbari3-knap-sets-trace', '0/1 knapsack sets 法：(8,8) 往回找 x
 // ════════════════ zRza99HPvkQ：0/1 knapsack 程式（k[5][9]） ════════════════
 const KCODE = ['for (i = 0; i <= n; i++)', ' for (w = 0; w <= m; w++) {', '  if (i == 0 || w == 0)', '   k[i][w] = 0;', '  else if (wt[i] <= w)', '   k[i][w] = max(p[i] +', '     k[i-1][w-wt[i]],', '     k[i-1][w]);', '  else', '   k[i][w] = k[i-1][w];', ' }'];
 function kpArrays(drop) {
-  const A = grid({ rows: 2, cols: 5, cw: 0.64, ch: 0.5, x0: 0.75, y0: 3.0, colHdr: [0, 1, 2, 3, 4], rowHdr: ['p', 'wt'], rowDx: 0.25 });
+  const A = grid({ rows: 2, cols: 5, cw: 0.74, ch: 0.55, x0: 0.75, y0: 2.6, colHdr: [0, 1, 2, 3, 4], rowHdr: ['p', 'wt'], rowDx: 0.25 });
   [0, ...KP.map((o) => o.p)].forEach((v, k) => A.set(0, k, v, k ? ORANGE : GRAY, drop ? 1.2 : 0));
   [0, ...KP.map((o) => o.w)].forEach((v, k) => A.set(1, k, v, k ? PINK : GRAY, drop ? 1.2 : 0));
-  tag('n = 4，m = 8', 'ptr', 5.0, 2.75);
+  tag('n = 4，m = 8', 'ptr', 5.6, 2.35);
   return A;
 }
 function kpGrid() {
-  const g = grid({ rows: 5, cols: 9, cw: 0.64, ch: 0.56, x0: 0.75, y0: 6.9, colHdr: Array.from({ length: 9 }, (_, k) => k), rowHdr: [0, 1, 2, 3, 4], rowDx: 0.15 });
+  const g = grid({ rows: 5, cols: 9, cw: 0.74, ch: 0.62, x0: 0.75, y0: 7.0, colHdr: Array.from({ length: 9 }, (_, k) => k), rowHdr: [0, 1, 2, 3, 4], rowDx: 0.15 });
   tag('w →', 'idx', 0.1, 7.45); tag('i ↓', 'idx', -0.3, 6.9);
   return g;
 }
@@ -2857,7 +2870,7 @@ FRAG.push(['dpbari3-knapp-data', '0/1 knapsack 程式：p[5]、wt[5]、k[5][9]',
   let A, g, cd;
   await step(tok);                                   // 0:48 data: profits, weights, n, m
   A = kpArrays(true);
-  const I = kItems(-5.4, 0, 1.8, 1.3, 0.55);
+  const I = kItems(-5.6, 0, 1.8, 1.5, 0.7);
   say('程式需要的資料', '利潤 p[]、重量 wt[]、物品數 n = 4、容量 m = 8');
   await step(tok);                                   // 0:59 four objects but size five
   for (let k = 0; k < 5; k++) A.mark(0, k, k ? '#efe6d2' : '#f0b8a8');
@@ -4152,6 +4165,7 @@ FRAG.push(['dpbari3-lcs-dp-bd', 'LCS 的 DP 表：bd vs abcd → bd', async (tok
 }]);
 FRAG.push(['dpbari3-lcs-stone', 'LCS 填表：stone vs longest', async (tok) => {
   fresh([0, 4.2, 14], [0, 4.4, 0]);
+  frameHold(-6, 0, 0, 6, 8.8, 0); // the table / chart arrives later: frame for it (and headroom) now
   const X = 'STONE', Y = 'LONGEST', L = lcsSteps(X, Y);
   let g, f, R;
   const row = async (r) => { if (R) await travel(tok, R, R.position.clone(), V3(g.pos(r, 0).x - 1.0, g.pos(r, 0).y, 0.6), 300); };
@@ -4311,6 +4325,7 @@ const fibT = (n) => ({ n, kids: n <= 1 ? [] : [fibT(n - 1), fibT(n - 2)] });
 // 03:35 Divide & Conquer 回顧：divide → conquer → combine
 FRAG.push(['dpjiang1-dc-review', 'Divide & Conquer 回顧：拆、遞迴解、合併', async (tok) => {
   fresh([0, 4.2, 14], [0, 3.8, 0]);
+  frameHold(-6.4, 0, 0, 6.4, 8.4, 0); // the table / chart arrives later: frame for it (and headroom) now
   await step(tok);                                   // 215.0 先 review D&C：和 DP 像雙胞胎
   const dc = pal('D&C', -5.6, C.blue), dp = pal('DP', -4.2, C.orange);
   dc.look(1); dp.look(-1);
@@ -4507,6 +4522,7 @@ FRAG.push(['dpjiang1-wis-greedy', 'Weighted interval scheduling：greedy 失效�
 // 18:12 第一個企圖：induction on time（刻度 Δ 不好控制）
 FRAG.push(['dpjiang1-wis-time', 'Induction on time：Δ 的刻度不好控制', async (tok) => {
   fresh([0, 4.2, 14], [0, 4.0, 0]);
+  frameHold(-6.6, 0, 0, 6.6, 8.6, 0); // the table / chart arrives later: frame for it (and headroom) now
   const me = pal('', -6.4, C.orange, 1.6, 0.7);
   await step(tok);                                   // 1097.0 給一些 request，各有 value
   const ms = drawJobs(true);
@@ -4565,6 +4581,7 @@ FRAG.push(['dpjiang1-wis-time', 'Induction on time：Δ 的刻度不好控制', 
 // 24:39 Induction on index；p(j)：往前最後一個不重疊的
 FRAG.push(['dpjiang1-wis-p', 'p(j)：往前最後一個不會 overlap 的 request', async (tok) => {
   fresh([0, 4.2, 14], [0, 4.0, 0]);
+  frameHold(-6.6, 0, 0, 6.6, 8.6, 0); // the table / chart arrives later: frame for it (and headroom) now
   const me = pal('', -6.4, C.orange, 1.6, 0.7);
   await step(tok);                                   // 1478.9 第二個企圖：每次多考慮一個 request
   const ms = drawJobs(true);
@@ -5533,6 +5550,7 @@ const colGlow = (cells, i, c) => BV.forEach((v) => glow(cells[v][i], c));
 // 00:16 Bellman-Ford 回顧：一欄一欄填；b 在 i = 5：min(−2, −1 + 2, −2 + 0)
 FRAG.push(['dpjiang1-bf-cell', 'Bellman-Ford 填表：OPT(5, b) = −2', async (tok) => {
   fresh([0, 4.2, 13.5], [0.4, 3.9, 0]);
+  frameHold(-6.8, 0, 0, 5.6, 8.4, 0); // the table / chart arrives later: frame for it (and headroom) now
   const X0 = -4.6, CW = 0.95;
   let cells = null, opt = null;
   const me = pal('', -6.4, C.orange, 1.6, 0.7);
@@ -7891,7 +7909,7 @@ FRAG.push(['dpjiang2-bf-code', 'Bellman-Ford 實作：M 表 = 點 × edge 數', 
 // 88:54 課本例子：6 個點、最多 5 條 edge；逐欄填表
 FRAG.push(['dpjiang2-bf-table', '課本例子：逐欄填 M[i, v]', async (tok) => {
   fresh([0, 4.0, 15], [0, 3.8, 0]);
-  const G = bfGraph(-3.9, 4.0, 0.6);
+  const G = bfGraph(-4.6, 4.0, 0.72);
   const M = bfTable();
   let T = null, cur = null;
   const rowsL = [];
@@ -7981,7 +7999,7 @@ FRAG.push(['dpjiang2-bf-table', '課本例子：逐欄填 M[i, v]', async (tok) 
 // 93:23 每欄只參考左邊一欄 → 只要算值的話一兩個 column 就夠；要還原 path 才需要整張表
 FRAG.push(['dpjiang2-bf-space', '每欄只看左邊一欄：只要值就不用 n × n', async (tok) => {
   fresh([0, 4.0, 15], [0, 3.8, 0]);
-  const G = bfGraph(-3.9, 4.0, 0.6);
+  const G = bfGraph(-4.6, 4.0, 0.72);
   const T = bfGrid(1.3, 7.0, 1.0, 0.85);
   const M = bfTable();
   for (let i = 0; i <= 5; i++) bfCol(T, M, i, 0);
@@ -8048,7 +8066,7 @@ FRAG.push(['dpjiang2-bf-space', '每欄只看左邊一欄：只要值就不用 n
 // 96:17 還原 a 到 t 的最短路徑：−6 ← 抄左邊；a→b（−4）+ M[3, b] = −2；→ a b e c t
 FRAG.push(['dpjiang2-bf-trace', '倒推 a 的最短路徑：a→b→e→c→t = −6', async (tok) => {
   fresh([0, 4.0, 15], [0, 3.8, 0]);
-  const G = bfGraph(-3.9, 4.0, 0.6);
+  const G = bfGraph(-4.6, 4.0, 0.72);
   const T = bfGrid(1.3, 7.0, 1.0, 0.85);
   const M = bfTable();
   for (let i = 0; i <= 5; i++) bfCol(T, M, i, 0);
@@ -8115,7 +8133,7 @@ FRAG.push(['dpjiang2-bf-trace', '倒推 a 的最短路徑：a→b→e→c→t = 
 // 99:16 Space O(n²)；naive time O(n³)；細算每欄只看每條 edge 一次 → O(nm)
 FRAG.push(['dpjiang2-bf-time', 'Bellman-Ford：space O(n²)、time O(nm)', async (tok) => {
   fresh([0, 4.0, 15], [0, 3.8, 0]);
-  const G = bfGraph(-3.9, 4.0, 0.6);
+  const G = bfGraph(-4.6, 4.0, 0.72);
   const T = bfGrid(1.3, 7.0, 1.0, 0.85);
   const f = tag(' ', 'ptr alt', 0, -0.4);
   const ek = Object.keys(G.E);
@@ -9804,7 +9822,7 @@ FRAG.push(['dpmit1-bj-guess', 'Perfect-information blackjack：猜與子問題',
   say('保證贏最多錢', '因為每一步都最佳');
   await step(tok);                                   // 2544.8 perfect information: I know the whole deck
   for (let k = 0; k < n; k++) { cards.push(cardM(DECK[k], X(k), CY, 0, false, 1.4)); await anim(tok, 80, () => {}); }
-  tag('（牌堆為示意）', 'idx', 4.8, CY + 0.9);
+  tag('（牌堆為示意）', 'idx', X(n - 1) + 1.4, CY);
   Tb('perfect information：事先知道整副牌的順序');
   say('perfect information', '事先看到整副牌的順序');
   await step(tok);                                   // 2564.9 each time: hit or stand?
@@ -10162,6 +10180,7 @@ FRAG.push(['dpmit1-knap-state', '決策 dᵢ、狀態 (i, w)、邊權 −vᵢ', 
 // 08:17 例子：S = 5；雕像 $10 4 磅、水晶球 $4 2 磅、鋼筆 $7 3 磅
 FRAG.push(['dpmit1-knap-example', '例子：雕像、水晶球、鋼筆，S = 5', async (tok) => {
   fresh([0, 4.0, 14], [0, 3.4, 0]);
+  frameHold(0, 0, 0, 0, 8.6, 0); // headroom: the top line is not framed under the caption
   const Tb = board(0, 7.6, 0, 'ptr');
   const home = [-5.0, -3.0, -1.0];
   await step(tok);                                   // 496.8 an example with three items
@@ -10749,6 +10768,7 @@ FRAG.push(['dpmit1-pseudo-poly', 'DP 的執行時間 O(nS)：pseudo-polynomial',
 // 51:06 32-bit vs 64-bit；b = log S → 時間 n·2ᵇ：pseudo-polynomial
 FRAG.push(['dpmit1-pseudo-bits', '32-bit vs 64-bit：為什麼是 pseudo', async (tok) => {
   fresh([0, 4.0, 14], [0, 3.6, 0]);
+  frameHold(0, 0, 0, 0, 8.6, 0); // headroom: the top line is not framed under the caption
   const Tb = board(0, 7.7, 0, 'ptr'), Fm = board(0, 6.9, 0, 'ptr alt'), Nb = board(0, -0.8, 0.6, 'note');
   const bar = (x, h, c, label) => { const m = box('', c, x, 0.3 + h / 2, 1.0, h, 0.8); tag(label, 'idx', x, 0.6 + h + 0.25); return m; };
   await step(tok);                                   // 3066.8 a 100-item input
@@ -11286,6 +11306,7 @@ FRAG.push(['dpmit2-crazy-graph', 'Crazy Eights 建圖：權重 −1，最長變�
 // 09:24 DAG 的距離公式
 FRAG.push(['dpmit2-dag-formulas', 'DAG 最短路徑：d(S,v) = min(入邊起點 + 權重)', async (tok) => {
   fresh([0, 4.2, 13], [0, 4.0, 0]);
+  frameHold(0, 0, 0, 0, 8.6, 0); // headroom: the top line is not framed under the caption
   const top = board(0, 8.2), fm = board(0.4, -0.2, 0.5, 'note'), side = board(5.0, 3.6, 0.3, 'good');
   const you = me(-5.6, 0.0, 1.0, 0.7);
   let G = null; const vt = {};
@@ -11658,6 +11679,7 @@ FRAG.push(['dpmit2-grid-code', '格子 DP：for i, for j 逐列填 d[i,j]', asyn
 // 32:13 Optimal substructure
 FRAG.push(['dpmit2-opt-sub', 'Optimal substructure：最短路徑的一段也最短', async (tok) => {
   fresh([0, 4.2, 13], [0, 4.0, 0]);
+  frameHold(0, 0, 0, 0, 8.6, 0); // headroom: the top line is not framed under the caption
   const G = mDag();
   DORD.forEach((v) => relabel(G.nodes[v], v + ' ' + DD[v]));
   const top = board(0, 8.2), low = board(0, -0.4, 0.5, 'note');
@@ -11963,6 +11985,7 @@ FRAG.push(['dpmit2-layers-bf', '分層圖 = Bellman-Ford：V−1 層，O(VE)', a
 // 49:19 讀答案：每個點取各層最小
 FRAG.push(['dpmit2-layers-read', '讀答案：δ(S,v) = 各層 d_k(S,v) 取最小', async (tok) => {
   fresh([0, 4.2, 13], [0, 4.2, 0]);
+  frameHold(0, 0, 0, 0, 8.6, 0); // headroom: the top line is not framed under the caption
   const L = mLayers();
   const top = board(0, 8.3), low = board(0, 0.6, 0.4, 'note');
   const you = me(-6.1, -0.6, 1.0, 0.6);
@@ -12260,6 +12283,7 @@ FRAG.push(['dpmit2-bj-dag', 'Blackjack 圖是 DAG：拓撲排序 + relax，O(V+E
 // 18:01 DP：dp[i] = max over h (O[1] + dp[i + O[0]])
 FRAG.push(['dpmit2-bj-dp', 'Blackjack DP：dp[i] = max(O[1] + dp[i + O[0]])', async (tok) => {
   fresh([0, 4.0, 13], [0, 4.0, 0]);
+  frameHold(0, 0, 0, 0, 8.6, 0); // headroom: the top line is not framed under the caption
   const L = ['# dp[i]：從第 i 張開新的一局，最多淨賺多少', 'for h in 0 .. 52 − i:', '  o = round_outcome(i, h)', '  畫邊 i → i + o[0]', '  choices.append(o[1] + dp[i + o[0]])', 'dp[i] = max(choices)'];
   const cd = code(L, -0.4, 7.2, 0.55); cd.ls.forEach((l) => showL(l, false));
   const show = (k) => { showL(cd.ls[k], true); cd.hl(k); };
@@ -12444,6 +12468,7 @@ FRAG.push(['dpmit2-bj-order', 'dp[i] 依賴右邊 → i 從 n 往 0 算', async 
 // 31:24 走人（0）與 parent pointers
 FRAG.push(['dpmit2-bj-parent', '走人 = 0 的選項；parent pointer 存 (值, h)', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.4, 0]);
+  frameHold(0, 0, 0, 0, 8.6, 0); // headroom: the top line is not framed under the caption
   const A = mBjSolve(false), S = mBjSolve(true), n = DECK.length;
   const cx = (k) => -6.0 + k * 1.0;
   DECK.forEach((c, k) => mBox(cardName(c), M.card, cx(k), 5.6, 0.7, 0.95, 0.08));
@@ -12669,6 +12694,7 @@ FRAG.push(['dpmit2-lis-def', 'LIS：dp[i] = 從 a[i] 開始的最長遞增子序
 // 41:00 pseudocode：預設 1、j 從 i+1 起、a[j] > a[i] 才能接
 FRAG.push(['dpmit2-lis-code', 'LIS 的 pseudocode：choices = [1]，a[j] > a[i] 才加 1 + dp[j]', async (tok) => {
   fresh([0, 4.0, 13], [0, 4.2, 0]);
+  frameHold(0, 0, 0, 0, 8.6, 0); // headroom: the top line is not framed under the caption
   const L = ['dp = 陣列，n 格        # 原陣列叫 a', 'for i in n−1 … 0:', '  choices = [1]', '  for j in i+1 … n−1:', '    if a[j] > a[i]:', '      choices.append(1 + dp[j])', '  dp[i] = max(choices)'];
   const cd = code(L, -0.4, 7.5, 0.5); cd.ls.forEach((l) => showL(l, false));
   const show = (k, t) => { showL(cd.ls[k], true); if (t) txt(cd.ls[k], t); cd.hl(k); };
@@ -12744,6 +12770,7 @@ FRAG.push(['dpmit2-lis-code', 'LIS 的 pseudocode：choices = [1]，a[j] > a[i] 
 // 45:39 實跑 8 3 5 2 4 9 7 11
 FRAG.push(['dpmit2-lis-run', 'LIS 實跑：dp 由右往左 = 3 4 3 4 3 2 2 1', async (tok) => {
   fresh([0, 3.6, 12.5], [0, 3.6, 0]);
+  frameHold(0, 0, 0, 0, 8.6, 0); // headroom: the top line is not framed under the caption
   const top = board(0, 7.3), chb = board(0, 1.3, 0.4, 'pkt'), low = board(0, 0.4, 0.4, 'note');
   const you = me(-6.2, -0.9, 1.0, 0.55);
   let c = [], d = [];
