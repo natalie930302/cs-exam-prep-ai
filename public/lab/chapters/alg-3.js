@@ -381,27 +381,114 @@ export default function (ctx) {
     return { cost, d, steps };
   }
   const MS = msgSolve();
+  // The graph and the table live on their own planes (groups): G.focus('table')
+  // pushes the graph back and greys its stage labels, G.focus('graph') does the
+  // reverse, G.focus('both') brings both to the front. Edge weights and cost
+  // tags show only for what the current step is about (G.wOn / G.costOn), and
+  // the table shows only the columns already computed plus the current one.
+  let msgCur = null;
+  function msgTween(o, z) {
+    const z0 = o.position.z; if (Math.abs(z0 - z) < 1e-3) return;
+    let u = 0; const off = lab.onFrame((dt) => { u = Math.min(1, u + dt / 0.6); o.position.z = z0 + (z - z0) * (1 - (1 - u) * (1 - u)); if (u >= 1) off(); });
+  }
+  // a table on its own plane (a group): columns can be shown one at a time
+  // (only what is computed, plus the current one), the whole plane can step
+  // back (t.back(true)) and its labels grey out
+  function ctab(o) {
+    const tg = new THREE.Group(); lab.world.add(tg);
+    const R = o.rows || 2, C = o.cols;
+    const t = { tg, cells: {}, plates: {}, hdr: [], rowL: [], shown: new Set() };
+    const inT = (x) => { tg.add(x); return x; };
+    t.pos = (r, c) => V3(o.x0 + c * o.cw, o.y0 - r * o.ch, 0);
+    t.wpos = (r, c) => t.plates[r + ',' + c].getWorldPosition(V3(0, 0, 0));
+    for (let c = 0; c < C; c++) {
+      for (let r = 0; r < R; r++) { const p = t.pos(r, c); t.plates[r + ',' + c] = inT(plate(p.x, p.y, o.cw * 0.94, o.ch * 0.92)); }
+      const h = o.colHdr ? o.colHdr[c] : null;
+      t.hdr[c] = inT(tag(h === null || h === undefined ? '' : String(h), 'idx', t.pos(0, c).x, o.y0 + o.ch * (o.hdrK || 0.92)));
+    }
+    (o.rowHdr || []).forEach((s, r) => { t.rowL[r] = inT(tag(String(s), 'idx', o.x0 - o.cw * 0.6 - (o.rowDx || 0.45), t.pos(r, 0).y)); });
+    t.col = (c, on = true) => {
+      if (on) t.shown.add(c); else t.shown.delete(c);
+      for (let r = 0; r < R; r++) { t.plates[r + ',' + c].visible = on; const m = t.cells[r + ',' + c]; if (m) m.visible = on; }
+      showL(t.hdr[c], on);
+    };
+    t.only = (cols) => { for (let c = 0; c < C; c++) t.col(c, cols.includes(c)); };
+    t.set = (r, c, v, color = BLUE, dropH = 1) => {
+      const k = r + ',' + c; if (t.cells[k]) kill(t.cells[k]);
+      if (!t.shown.has(c) && !t.plates[k].visible) t.col(c);
+      const p = t.pos(r, c), m = inT(cube(v, color, [o.cw * 0.8, o.ch * 0.72, 0.32], p.x, p.y, 0.2, 0));
+      // a new value pops up in its own slot (a drop from above would pass through the header row)
+      if (dropH) { let u = 0; m.scale.setScalar(0.05); const off = lab.onFrame((dt) => { u = Math.min(1, u + dt / 0.3); m.scale.setScalar(0.05 + 0.95 * (1 - (1 - u) * (1 - u))); if (u >= 1) off(); }); }
+      return (t.cells[k] = m);
+    };
+    t.get = (r, c) => t.cells[r + ',' + c];
+    t.mark = (r, c, color) => { const p = t.plates[r + ',' + c]; if (p) p.material.color.set(color || PAPER); };
+    t.unglow = () => Object.values(t.cells).forEach((m) => glow(m, null));
+    t.arrows = [];
+    t.arrow = (r1, c1, r2, c2, color) => { const a = t.pos(r1, c1), b = t.pos(r2, c2); a.z = b.z = 0.6; const h = arrow(a, b, color); t.arrows.push(h); return h; };
+    t.arc = (r1, c1, r2, c2, color, below = true) => {
+      const a = t.pos(r1, c1), b = t.pos(r2, c2), s = below ? -1 : 1;
+      a.z = b.z = 0.6; a.y += s * o.ch * 0.3; b.y += s * o.ch * 0.3;
+      const h = arc(a, b, s * (0.3 + 0.16 * Math.abs(c2 - c1)), color); t.arrows.push(h); return h;
+    };
+    t.clearArrows = () => { t.arrows.forEach(kill); t.arrows = []; };
+    t.labels = () => [...t.hdr, ...t.rowL].filter(Boolean);
+    // step back / come forward: the plane moves dz deep, its headers grey out
+    t.back = (on, dz = -2.6, op = '0.4') => { msgTween(tg, on ? dz : 0); t.labels().forEach((l) => { l.element.style.opacity = on ? op : ''; }); };
+    // gone from view (the subject moved on) / back again
+    t.hide = (on) => { tg.visible = !on; };
+    return t;
+  }
+  function msgTable(G) {
+    const t = ctab({ cols: 12, cw: 1.1, ch: 0.74, x0: -6.05, y0: 0.85, colHdr: Array.from({ length: 12 }, (_, k) => k + 1), rowHdr: ['cost', 'd'], rowDx: 0.55 });
+    t.only([]); G.tg = t.tg;
+    return t;
+  }
   function buildMSG(table, ms) {
-    const G = { node: {}, edge: {}, costL: {} };
+    const G = { node: {}, edge: {}, costL: {}, wL: {}, stL: [], gg: new THREE.Group(), mode: 'both' };
+    lab.world.add(G.gg);
+    const inG = (x) => { G.gg.add(x); return x; };
     for (const [a, b, w] of MSG.E) {
       const A = V3(...MSG.pos[a]), B = V3(...MSG.pos[b]);
       A.z = B.z = -0.05;
-      G.edge[a + '-' + b] = rod(A, B, SAND, 0.03);
-      const p = A.clone().lerp(B, 0.36); tag(String(w), 'idx', p.x, p.y + 0.18, 0.1);
+      G.edge[a + '-' + b] = inG(rod(A, B, SAND, 0.03));
+      const p = A.clone().lerp(B, 0.36); G.wL[a + '-' + b] = inG(tag(String(w), 'idx', p.x, p.y + 0.18, 0.1));
+      if (table) showL(G.wL[a + '-' + b], false); // with a table: weights only on the edges the step is about
     }
     for (const v of Object.keys(MSG.pos)) {
       const [x, y] = MSG.pos[v];
       G.node[v] = cube(v, v === '1' || v === '12' ? PURPLE : BLUE, [0.62, 0.5, 0.5], x, y, 0, ms ? 1.5 : 0);
-      G.costL[v] = tag('', 'ptr alt', x - 0.5, y + 0.45, 0.3); showL(G.costL[v], false);
+      if (!ms) inG(G.node[v]);
+      G.costL[v] = inG(tag('', 'ptr alt', x, y + 0.66, 0.3)); showL(G.costL[v], false);
     }
-    [1, 2, 3, 4, 5].forEach((s) => tag('stage ' + s, 'idx', (-6 + (s - 1) * 3) * 1.2, 8.0));
-    if (table) G.g = grid({ rows: 2, cols: 12, cw: 1.1, ch: 0.55, x0: -6.05, y0: 0.75, colHdr: Array.from({ length: 12 }, (_, k) => k + 1), rowHdr: ['cost', 'd'], rowDx: 0.55 });
+    [1, 2, 3, 4, 5].forEach((s) => G.stL.push(inG(tag('stage ' + s, 'idx', (-6 + (s - 1) * 3) * 1.2, 8.0))));
+    if (table) G.g = msgTable(G);
+    // show exactly these weights (edges [a, b] or 'a-b' keys) / cost tags (vertices)
+    G.wOn = (es) => { const ks = new Set(es.map((e) => (Array.isArray(e) ? e[0] + '-' + e[1] : e))); for (const k in G.wL) showL(G.wL[k], ks.has(k)); };
+    G.costOn = (vs) => { const s = new Set(vs.map(String)); for (const k in G.costL) showL(G.costL[k], s.has(k) && !!G.costL[k].element.textContent); };
+    G.focus = (mode) => {
+      G.mode = mode;
+      msgTween(G.gg, mode === 'table' ? -2.6 : 0);
+      G.stL.forEach((l) => { l.element.style.opacity = mode === 'table' ? '0.25' : ''; });
+      if (G.tg) {
+        msgTween(G.tg, mode === 'graph' ? -2.6 : 0);
+        [...G.g.hdr, ...G.g.rowL].forEach((l) => { l.element.style.opacity = mode === 'graph' ? '0.4' : ''; });
+      }
+    };
+    msgCur = G;
     return G;
   }
-  function msgFill(G, v, show = true) {
+  // the step is about vertex v: its out-edges' weights and the costs it uses
+  function msgAbout(G, v) {
+    const out = MSG.E.filter((e) => e[0] === v);
+    G.wOn(out);
+    G.costOn([v, ...out.map((e) => e[1])].filter((u) => MS.cost[u] !== undefined && G.costL[u].element.textContent));
+    if (G.g) G.g.col(v - 1);
+  }
+  function msgFill(G, v, show = false) {
     const c = MS.cost[v], dd = MS.d[v];
     txt(G.costL[v], 'cost ' + c); showL(G.costL[v], show);
-    if (G.g) { G.g.set(0, v - 1, c, TEAL, 1); G.g.set(1, v - 1, v === 12 ? '—' : dd.join('/'), PURPLE, 1); }
+    if (G.g) { G.g.set(0, v - 1, c, TEAL, show ? 1 : 0); G.g.set(1, v - 1, v === 12 ? '—' : dd.join('/'), PURPLE, show ? 1 : 0); }
     tint(G.node[v], TEAL);
   }
   const edgeOf = (G, a, b) => G.edge[a + '-' + b];
@@ -409,6 +496,7 @@ export default function (ctx) {
     const v = st.v;
     Object.values(G.edge).forEach((e) => tint(e, SAND));
     glow(G.node[v], GOLD);
+    msgAbout(G, v);
     if (!st.out.length) {
       say('sink 12：到自己的成本 = 0', 'cost(5, 12) = 0');
       await wait(tok, ms);
@@ -422,7 +510,7 @@ export default function (ctx) {
       await wait(tok, ms * 0.5);
       st.out.forEach(([, l]) => glow(G.node[l], null));
     }
-    msgFill(G, v);
+    msgFill(G, v, true);
     glow(G.node[v], null);
     await wait(tok, ms * 0.4);
   }
@@ -458,6 +546,7 @@ export default function (ctx) {
   }
   async function scMsgCostTable(tok) {
     fresh([0, 4.4, 15.5], [0, 3.8, 0]);
+    frameHold(-7.9, -1.2, 0, 7.9, 9.0, 0);
     const G = buildMSG(true, false);
     say('從 sink 往回算每個頂點到 sink 的成本', 'tabulation：先填小的，再填大的');
     await wait(tok, 2600);
@@ -467,12 +556,13 @@ export default function (ctx) {
   }
   async function scMsgFormula(tok) {
     fresh([0, 4.4, 15.5], [0, 3.8, 0]);
+    frameHold(-7.9, -1.2, 0, 7.9, 9.0, 0);
     const G = buildMSG(true, false);
     for (const v of [12, 9, 10, 11, 6, 7, 8]) msgFill(G, v);
     say('stage 3、4 已經填好', '現在算 stage 2 的頂點 2');
     await wait(tok, 2400);
     const st = MS.steps.find((s) => s.v === 2);
-    glow(G.node[2], GOLD);
+    glow(G.node[2], GOLD); msgAbout(G, 2);
     for (const c of st.cands) {
       tint(edgeOf(G, 2, c.l), ORANGE); glow(G.node[c.l], GOLD);
       say('走 2→' + c.l + '：c(2,' + c.l + ') + cost(3,' + c.l + ')', c.w + ' + ' + MS.cost[c.l] + ' = ' + c.s);
@@ -480,7 +570,7 @@ export default function (ctx) {
       glow(G.node[c.l], null);
     }
     st.cands.forEach((c) => tint(edgeOf(G, 2, c.l), c.s === st.best ? TEAL : GRAY));
-    msgFill(G, 2);
+    msgFill(G, 2, true);
     say('cost(2,2) = min(11, 7, 8) = 7，d = 7', 'cost(3,7) 已經算過，直接用：重疊子問題');
     await wait(tok, 3000);
     say('cost(i, j) = min{ c(j,l) + cost(i+1, l) }', 'l 在 stage i+1，且 (j, l) 是一條邊');
@@ -489,11 +579,13 @@ export default function (ctx) {
   }
   async function scMsgPath(tok) {
     fresh([0, 4.4, 15.5], [0, 3.8, 0]);
+    frameHold(-7.9, -1.2, 0, 7.9, 9.0, 0);
     const G = buildMSG(true, false);
     for (const v of MSG.order) msgFill(G, v);
     say('表填完了，現在才開始「做決策」', '從 source 往前走：forward method');
     await wait(tok, 2600);
     const tk = cube('', ORANGE, [0.36, 0.36, 0.36], MSG.pos[1][0], MSG.pos[1][1] + 0.9, 0.4);
+    const walked = [];
     async function walk(first, color) {
       let v = 1, path = [1];
       move(tk, MSG.pos[1][0], MSG.pos[1][1] + 0.9, 0.4);
@@ -502,7 +594,7 @@ export default function (ctx) {
         const nx = v === 1 ? first : MS.d[v][0];
         G.g.mark(1, v - 1, '#f3d27a');
         say('d(' + MSG.stage[v] + ', ' + v + ') = ' + nx + '：走到 ' + nx, '');
-        tint(edgeOf(G, v, nx), color);
+        tint(edgeOf(G, v, nx), color); walked.push([v, nx]); G.wOn(walked);
         move(tk, MSG.pos[nx][0], MSG.pos[nx][1] + 0.9, 0.4);
         v = nx; path.push(v);
         await wait(tok, 1400);
@@ -1454,13 +1546,14 @@ const fibPar = (T, t) => T.all.find((p) => p.kids.includes(t)) || null;
 const fibDone = (t, v) => { t.v = v; relabel(t.m, t.n + '→' + v); tint(t.m, TEAL); };
 FRAG.push(['dpbari3-fib-tree', 'fib(5) 遞迴：tracing tree、15 次呼叫、O(2ⁿ)', async (tok) => {
   fresh([0, 4.6, 15.5], [0, 3.7, 0]);
+  frameHold(-6.6, -0.4, 0, 6.6, 8.7, 0); // the tree comes later: frame for it now (no zoom jump)
   const T = treeGeom(5), N = T.all;
   const draw = (...ix) => ix.forEach((i) => fibNode(T, N[i], fibPar(T, N[i])));
   await step(tok);                                   // 2:45 recursive definition of Fibonacci
   const cd = code(['fib(n):', '  if n <= 1: return n', '  return fib(n-2) + fib(n-1)'], -4.6, 7.7, 0.45);
   say('Fibonacci 的遞迴定義 → 遞迴函式', 'fib(n) = fib(n−2) + fib(n−1)');
   await step(tok);                                   // 2:59 starts from 0 and 1
-  const seq = [0, 1, 1, 2, 3, 5, 8, 13].map((v, k) => { tag('第 ' + k + ' 項', 'idx', -4.2 + k * 1.2, 0.2); return cube(v, BLUE, [0.8, 0.6, 0.5], -4.2 + k * 1.2, 0.9, 0, 0.8 + k * 0.15); });
+  const seqL = [tag('第 n 項：', 'idx', -5.6, 0.2)], seq = [0, 1, 1, 2, 3, 5, 8, 13].map((v, k) => { seqL.push(tag(String(k), 'idx', -4.2 + k * 1.2, 0.2)); return cube(v, BLUE, [0.8, 0.6, 0.5], -4.2 + k * 1.2, 0.9, 0, 0.8 + k * 0.15); });
   say('數列從 0、1 開始', '0 1 1 2 3 5 8 13 …');
   await step(tok);                                   // 3:06 every term: add previous two
   for (const k of [3, 4, 5]) {
@@ -1471,10 +1564,10 @@ FRAG.push(['dpbari3-fib-tree', 'fib(5) 遞迴：tracing tree、15 次呼叫、O(
   say('每一項 = 前兩項相加', '1 + 2 = 3、2 + 3 = 5、3 + 5 = 8');
   await step(tok);                                   // 3:24 want the 10th term: call the function
   seq.forEach((m) => glow(m, null));
-  note('想要第 n 項 → 呼叫 fib(n)', 3.6, 7.6);
+  const want = note('想要第 n 項 → 呼叫 fib(n)', 3.6, 7.6);
   say('想知道第 n 項，就呼叫這個函式', '它是怎麼算出來的？來追蹤');
   await step(tok);                                   // 3:40 trace fib(5)
-  seq.forEach((m) => kill(m));
+  seq.forEach((m) => kill(m)); seqL.forEach(remove); remove(want); // the sequence is done: it leaves with its labels
   draw(0); glow(N[0].m, GOLD);
   const cnt = tag('呼叫 1 次', 'ptr alt', 5.6, 7.6);
   say('追蹤 fib(5)', '');
@@ -1620,7 +1713,7 @@ FRAG.push(['dpbari3-fib-memo', 'Memoization：F[] 先填 −1，只呼叫 n+1 �
   note('fib(n)：n + 1 次呼叫 → O(n)', 0, 8.3);
   say('fib(n) 只要 n + 1 次呼叫', '時間是 O(n)');
   await step(tok);                                   // 10:24 this is memoization
-  bub('Memoization：把函式結果存起來，避免同樣的呼叫', 0, -0.9, 2.2);
+  bub('Memoization：把函式結果存起來，避免同樣的呼叫', 0, -1.6, 2.2);
   say('這就是 memoization', '存下結果，同樣的呼叫不再做');
   await step(tok);                                   // 10:58 2ⁿ → n
   say('時間從 O(2ⁿ) 降到 O(n)', '指數 → 線性；別的題目至少也會快一些');
@@ -1687,6 +1780,7 @@ const outE = (v) => MSG.E.filter((e) => e[0] === v);
 const msgW = (a, b) => MSG.E.find((e) => e[0] === a && e[1] === b)[2];
 function msgBase(pre, drop) {
   fresh([0, 4.4, 15.5], [0, 3.8, 0]);
+  frameHold(-7.9, -1.2, 0, 7.9, 9.0, 0); // the planes move back and forth: keep the framing still
   const G = buildMSG(true, drop);
   pre.forEach((v) => msgFill(G, v));
   return G;
@@ -1694,15 +1788,15 @@ function msgBase(pre, drop) {
 // fill only the cost (and the node), or only d
 function msgCost(G, v) { const c = MS.cost[v]; G.g.set(0, v - 1, c, TEAL, 1); txt(G.costL[v], 'cost ' + c); showL(G.costL[v], true); tint(G.node[v], TEAL); }
 function msgD(G, v) { G.g.set(1, v - 1, v === 12 ? '—' : MS.d[v].join('/'), PURPLE, 1); }
-const hiOut = (G, v, c = ORANGE) => outE(v).forEach(([, l]) => { tint(edgeOf(G, v, l), c); glow(G.node[l], c === SAND ? null : GOLD); });
+const hiOut = (G, v, c = ORANGE) => { outE(v).forEach(([, l]) => { tint(edgeOf(G, v, l), c); glow(G.node[l], c === SAND ? null : GOLD); }); if (c === SAND) { G.wOn([]); G.costOn([]); } else msgAbout(G, v); };
 const pickOut = (G, v) => outE(v).forEach(([, l, w]) => { tint(edgeOf(G, v, l), w + MS.cost[l] === MS.cost[v] ? TEAL : GRAY); glow(G.node[l], null); });
-const cellXY = (G, v) => { const p = G.g.pos(0, v - 1); return V3(p.x, p.y + 0.3, 0.6); };
-const nodeXY = (v, dy = 0.45) => V3(MSG.pos[v][0], MSG.pos[v][1] + dy, 0.5);
+const cellXY = (G, v) => { const p = G.g.wpos(0, v - 1); return V3(p.x, p.y + 0.3, p.z + 0.6); };
+const nodeXY = (v, dy = 0.45) => { const p = msgCur.node[v].getWorldPosition(V3(0, 0, 0)); return V3(p.x, p.y + dy, p.z + 0.5); };
 // a formula line on top of the stage
 const msgF = (t) => mono(tag(t, 'say', 0, 8.65));
 // a traveller who walks the graph
-function walker(v, name = '我', color = ORANGE) { return buddy(name, '', color, MSG.pos[v][0], MSG.pos[v][1] + 0.3, 0.6, 0.42); }
-const walkTo = (tok, w, v, ms = 800) => slide(tok, w.g, MSG.pos[v][0], ms, MSG.pos[v][1] + 0.3, 0.6);
+function walker(v, name = '我', color = ORANGE) { return buddy(name, '', color, MSG.pos[v][0], MSG.pos[v][1] + 0.62, 0.6, 0.42); }
+const walkTo = (tok, w, v, ms = 800) => slide(tok, w.g, MSG.pos[v][0], ms, MSG.pos[v][1] + 0.62, 0.6);
 FRAG.push(['dpbari3-msg-graph', '多段圖是什麼、為什麼能用 DP', async (tok) => {
   fresh([0, 4.4, 15], [0, 4.4, 0]);
   await step(tok);                                   // 0:01 multistage graph, solved by DP
@@ -1765,17 +1859,23 @@ FRAG.push(['dpbari3-msg-graph', '多段圖是什麼、為什麼能用 DP', async
 }]);
 FRAG.push(['dpbari3-msg-s4', '多段圖：sink 與 stage 4 的 cost', async (tok) => {
   fresh([0, 4.4, 15.5], [0, 3.8, 0]);
+  frameHold(-7.9, -1.2, 0, 7.9, 9.0, 0); // the table arrives later and the planes move: keep the framing still
   const G = buildMSG(false, false);
   await step(tok);                                   // 2:00 tabulation method: fill the table
-  G.g = grid({ rows: 2, cols: 12, cw: 1.1, ch: 0.55, x0: -6.05, y0: 0.75, colHdr: Array.from({ length: 12 }, (_, k) => k + 1), rowHdr: ['cost', 'd'], rowDx: 0.55 });
+  G.wOn([]);
+  G.g = msgTable(G); G.g.only([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  G.focus('table');
   say('用 tabulation：把資料填進表', '每個頂點一格');
   await step(tok);                                   // 2:03 for each vertex find the cost
-  bub('cost = 從這個頂點走到 sink 的最小成本', 0, 8.05);
+  G.focus('both');
+  const what = bub('cost = 從這個頂點走到 sink 的最小成本', 0, 8.65);
   say('每個頂點都要算 cost', '');
   await step(tok);                                   // 2:08 start from here: edges go that side
+  remove(what); G.g.only([11]); G.focus('graph');
   await fling(tok, '← 從 sink 這邊開始', V3(6, 7.4, 0.5), V3(-3, 7.4, 0.5), 1500);
   say('從 sink 那一邊開始算', '邊都往 sink 走：要算一個點，就看它到 sink 的所有路');
   await step(tok);                                   // 2:29 sink: cost zero
+  G.focus('both');
   glow(G.node[12], GOLD); msgCost(G, 12); msgD(G, 12);
   say('sink 自己：cost = 0', '已經到終點了');
   await step(tok);                                   // 2:42 write cost(5, 12) = 0
@@ -1783,29 +1883,31 @@ FRAG.push(['dpbari3-msg-s4', '多段圖：sink 與 stage 4 的 cost', async (tok
   say('寫成 cost(5, 12) = 0', '前面是 stage 編號，後面是頂點編號');
   await step(tok);                                   // 3:09 cost(4, 9) = 4
   glow(G.node[12], null); remove(f);
-  glow(G.node[9], GOLD); tint(edgeOf(G, 9, 12), ORANGE);
+  glow(G.node[9], GOLD); tint(edgeOf(G, 9, 12), ORANGE); msgAbout(G, 9);
   await fling(tok, '4', nodeXY(9), cellXY(G, 9), 700);
   msgCost(G, 9);
   say('stage 4：cost(4, 9) = 4', '只有一條邊到 sink');
   await step(tok);                                   // 3:30 cost(4, 10) = 2
-  glow(G.node[9], null); glow(G.node[10], GOLD); tint(edgeOf(G, 10, 12), ORANGE);
+  glow(G.node[9], null); glow(G.node[10], GOLD); tint(edgeOf(G, 10, 12), ORANGE); msgAbout(G, 10);
   await fling(tok, '2', nodeXY(10), cellXY(G, 10), 700);
   msgCost(G, 10);
   say('cost(4, 10) = 2', '');
   await step(tok);                                   // 3:41 cost(4, 11) = 5
-  glow(G.node[10], null); glow(G.node[11], GOLD); tint(edgeOf(G, 11, 12), ORANGE);
+  glow(G.node[10], null); glow(G.node[11], GOLD); tint(edgeOf(G, 11, 12), ORANGE); msgAbout(G, 11);
   await fling(tok, '5', nodeXY(11), cellXY(G, 11), 700);
   msgCost(G, 11);
   say('cost(4, 11) = 5', '');
   await step(tok);                                   // 3:51 they all reach 12 → d = 12
-  glow(G.node[11], null);
+  glow(G.node[11], null); G.wOn([]); G.costOn([]); G.focus('table');
   [9, 10, 11].forEach((v) => { msgD(G, v); G.g.mark(1, v - 1, LT); });
   say('9、10、11 下一步都到 12', '表的 d 列寫 12（d 的意思等一下說）');
 }]);
 FRAG.push(['dpbari3-msg-s3', '多段圖：stage 3 與重疊子問題', async (tok) => {
   const G = msgBase([12, 9, 10, 11]);
   let f;
+  const inG = (l) => { G.gg.add(l); return l; };
   await step(tok);                                   // 4:08 third stage: 6, 7, 8
+  G.focus('graph');
   [6, 7, 8].forEach((v) => glow(G.node[v], GOLD));
   say('stage 3：頂點 6、7、8', '一個一個算');
   await step(tok);                                   // 4:15 cost(3,6): two edges 6→9, 6→10
@@ -1815,52 +1917,66 @@ FRAG.push(['dpbari3-msg-s3', '多段圖：stage 3 與重疊子問題', async (to
   f = msgF('cost(3,6) = min{ c(6,9) + cost(4,9) , c(6,10) + cost(4,10) }');
   say('兩條都算，再取最小', '邊的成本 + 下一個點的 cost');
   await step(tok);                                   // 5:13 c = edge weight, cost = vertex cost
-  note('小寫 c：邊的權重', -4.6, 0.0, 0.6); note('cost：頂點到 sink 的成本', 3.4, 0.0, 0.6);
+  // each remark sits on what it names: the weight 6 on edge 6→9, the cost tag of 9
+  const w69 = G.wL['6-9'].position, c9 = G.costL[9].position;
+  const n1 = inG(note('小寫 c：邊的權重', w69.x - 0.4, w69.y + 0.62, 0.6)), n2 = inG(note('cost：頂點到 sink 的成本', c9.x + 2.2, c9.y + 0.55, 0.6));
   say('c 是一條邊的權重', 'cost 是一個頂點到 sink 的成本');
   await step(tok);                                   // 5:23 min(6 + 4, 5 + 2)
-  await Promise.all([fling(tok, '4', cellXY(G, 9), V3(-1.2, 7.6, 0.6), 800), fling(tok, '2', cellXY(G, 10), V3(2.6, 7.6, 0.6), 800)]);
+  remove(n1); remove(n2); G.focus('table');
+  await Promise.all([fling(tok, '4', cellXY(G, 9), V3(-1.2, 7.8, 0.6), 800), fling(tok, '2', cellXY(G, 10), V3(2.6, 7.8, 0.6), 800)]);
   txt(f, 'cost(3,6) = min{ 6 + 4 , 5 + 2 }');
   say('代入數字', 'min(6 + 4, 5 + 2)');
   await step(tok);                                   // 5:47 vertex 10 gives smaller: 7
   txt(f, 'cost(3,6) = min{ 10 , 7 } = 7');
+  G.focus('both');
   pickOut(G, 6); msgCost(G, 6); glow(G.node[6], null);
   say('10 和 7 取小：cost(3, 6) = 7', '是經過頂點 10 得到的');
   await step(tok);                                   // 6:07 write that vertex in d
+  G.focus('table');
   msgD(G, 6); G.g.mark(1, 5, LT);
   say('d 寫下「給出最小值的頂點」', 'd(3, 6) = 10');
   await step(tok);                                   // 6:12 cost(3,7): two edges out
+  G.focus('graph');
   hiOut(G, 7); glow(G.node[7], GOLD);
   say('cost(3, 7)：也有兩條邊', '要知道 9 和 10 的 cost，再加上邊的成本');
   await step(tok);                                   // 6:34 formula for 7
   txt(f, 'cost(3,7) = min{ c(7,9) + cost(4,9) , c(7,10) + cost(4,10) }');
   say('同樣的寫法', '兩項取最小');
   await step(tok);                                   // 7:01 4 + cost of 9 from the table
-  await fling(tok, '4', cellXY(G, 9), V3(-1.2, 7.6, 0.6), 800);
+  G.focus('table');
+  await fling(tok, '4', cellXY(G, 9), V3(-1.2, 7.8, 0.6), 800);
   txt(f, 'cost(3,7) = min{ 4 + 4 , c(7,10) + cost(4,10) }');
   say('c(7, 9) = 4，cost(4, 9) 直接查表', '');
   await step(tok);                                   // 7:09 the value of 9 was useful for 6 and for 7: overlapping
+  G.focus('graph');
   glow(G.node[9], GOLD); glow(G.g.get(0, 8), GOLD);
-  tint(edgeOf(G, 6, 9), PINK); tint(edgeOf(G, 7, 9), PINK);
-  const ov = good('cost(4,9) 算一次，6 用、7 也用', 3.4, 7.0, 0.8);
+  tint(edgeOf(G, 6, 9), PINK); tint(edgeOf(G, 7, 9), PINK); G.wOn([[6, 9], [7, 9]]); G.costOn([9]);
+  const ov = inG(good('cost(4,9) 算一次，6 用、7 也用', 4.6, 7.2, 0.6));
   say('9 的 cost 早就算好：6 用過、7 又用', '這就是 overlapping subproblems（重疊子問題）');
   await step(tok);                                   // 7:24 3 + cost(10) = 2 → min 5
   remove(ov); glow(G.g.get(0, 8), null); tint(edgeOf(G, 6, 9), GRAY); hiOut(G, 7);
-  await fling(tok, '2', cellXY(G, 10), V3(2.6, 7.6, 0.6), 800);
+  G.focus('table');
+  await fling(tok, '2', cellXY(G, 10), V3(2.6, 7.8, 0.6), 800);
   txt(f, 'cost(3,7) = min{ 4 + 4 , 3 + 2 } = min{ 8 , 5 } = 5');
+  G.focus('both');
   pickOut(G, 7); msgCost(G, 7); glow(G.node[7], null);
   say('min(4 + 4, 3 + 2) = 5', 'cost(3, 7) = 5');
   await step(tok);                                   // 7:46 due to vertex 10 → d = 10
+  G.focus('table');
   msgD(G, 7); G.g.mark(1, 6, LT);
   say('是頂點 10 給的 → d(3, 7) = 10', 'd 記的就是「最短的那條往哪走」');
   await step(tok);                                   // 7:52 cost of 8: edges to 10 and 11
+  G.focus('graph');
   hiOut(G, 8); glow(G.node[8], GOLD);
   txt(f, 'cost(3,8) = min{ c(8,10) + cost(4,10) , c(8,11) + cost(4,11) }');
   say('cost(3, 8)：邊到 10 和 11', '');
   await step(tok);                                   // 8:22 replace: 5 + 2, 6 + 5
-  await Promise.all([fling(tok, '2', cellXY(G, 10), V3(-1.2, 7.6, 0.6), 800), fling(tok, '5', cellXY(G, 11), V3(2.6, 7.6, 0.6), 800)]);
+  G.focus('table');
+  await Promise.all([fling(tok, '2', cellXY(G, 10), V3(-1.2, 7.8, 0.6), 800), fling(tok, '5', cellXY(G, 11), V3(2.6, 7.8, 0.6), 800)]);
   txt(f, 'cost(3,8) = min{ 5 + 2 , 6 + 5 } = min{ 7 , 11 } = 7');
   say('min(5 + 2, 6 + 5)', '= min(7, 11) = 7');
   await step(tok);                                   // 8:50 7, given by vertex 10
+  G.focus('both');
   pickOut(G, 8); msgCost(G, 8); msgD(G, 8); G.g.mark(1, 7, LT); glow(G.node[8], null);
   say('cost(3, 8) = 7，d = 10', 'stage 3 全部算完');
 }]);
@@ -1868,25 +1984,30 @@ FRAG.push(['dpbari3-msg-s2', '多段圖：stage 2 的 cost', async (tok) => {
   const G = msgBase([12, 9, 10, 11, 6, 7, 8]);
   let f;
   await step(tok);                                   // 9:04 cost of vertex 2: three edges to 6, 7, 8
+  G.focus('graph');
   glow(G.node[2], GOLD); hiOut(G, 2);
   say('stage 2：頂點 2', '有三條邊：到 6、7、8');
   await step(tok);                                   // 9:16 formula with three terms
   f = msgF('cost(2,2) = min{ c(2,6)+cost(3,6) , c(2,7)+cost(3,7) , c(2,8)+cost(3,8) }');
   say('三條邊，三項取最小', '每項都是「邊 + 下一個點的 cost」');
   await step(tok);                                   // 9:47 4 + 7, 2 + 5, 1 + 7
-  await Promise.all([6, 7, 8].map((v, k) => fling(tok, String(MS.cost[v]), cellXY(G, v), V3(-3 + k * 3, 7.6, 0.6), 800)));
+  G.focus('table');
+  await Promise.all([6, 7, 8].map((v, k) => fling(tok, String(MS.cost[v]), cellXY(G, v), V3(-3 + k * 3, 7.8, 0.6), 800)));
   txt(f, 'cost(2,2) = min{ 4 + 7 , 2 + 5 , 1 + 7 }');
   say('代入：4 + 7、2 + 5、1 + 7', 'cost(3, 6)、cost(3, 7)、cost(3, 8) 都在表上');
   await step(tok);                                   // 10:15 11, 7, 8 → 7 is smaller
   txt(f, 'cost(2,2) = min{ 11 , 7 , 8 } = 7');
+  G.focus('both');
   pickOut(G, 2); msgCost(G, 2);
   say('11、7、8 → 最小是 7', 'cost(2, 2) = 7');
   await step(tok);                                   // 10:28 vertex 7 gave the minimum → d = 7
+  G.focus('table');
   msgD(G, 2); G.g.mark(1, 1, LT); glow(G.node[2], null);
   say('是頂點 7 給的', 'd(2, 2) = 7');
   await step(tok);                                   // 10:44 cost(2,4): only one edge → 11 + 7
+  G.focus('both');
   glow(G.node[4], GOLD); hiOut(G, 4);
-  await fling(tok, '7', cellXY(G, 8), V3(0, 7.6, 0.6), 800);
+  await fling(tok, '7', cellXY(G, 8), V3(0, 7.8, 0.6), 800);
   txt(f, 'cost(2,4) = c(4,8) + cost(3,8) = 11 + 7');
   say('頂點 4 只有一條邊到 8', '11 + cost(3, 8) = 11 + 7');
   await step(tok);                                   // 11:07 18, given by 8
@@ -1894,33 +2015,39 @@ FRAG.push(['dpbari3-msg-s2', '多段圖：stage 2 的 cost', async (tok) => {
   pickOut(G, 4); msgCost(G, 4); msgD(G, 4); G.g.mark(1, 3, LT); glow(G.node[4], null);
   say('cost(2, 4) = 18，d = 8', '只有一個選擇，它就是最小');
   await step(tok);                                   // 11:19 cost(2,5): edges to 7 and 8
+  G.focus('graph');
   glow(G.node[5], GOLD); hiOut(G, 5);
   txt(f, 'cost(2,5) = min{ c(5,7)+cost(3,7) , c(5,8)+cost(3,8) }');
   say('頂點 5：兩條邊到 7、8', '');
   await step(tok);                                   // 11:45 min(11 + 5, 8 + 7)
-  await Promise.all([fling(tok, '5', cellXY(G, 7), V3(-1.2, 7.6, 0.6), 800), fling(tok, '7', cellXY(G, 8), V3(2.6, 7.6, 0.6), 800)]);
+  G.focus('table');
+  await Promise.all([fling(tok, '5', cellXY(G, 7), V3(-1.2, 7.8, 0.6), 800), fling(tok, '7', cellXY(G, 8), V3(2.6, 7.8, 0.6), 800)]);
   txt(f, 'cost(2,5) = min{ 11 + 5 , 8 + 7 }');
   say('min(11 + 5, 8 + 7)', '');
   await step(tok);                                   // 12:07 16 and 15 → 15, by 8
   txt(f, 'cost(2,5) = min{ 16 , 15 } = 15');
+  G.focus('both');
   pickOut(G, 5); msgCost(G, 5); msgD(G, 5); G.g.mark(1, 4, LT); glow(G.node[5], null);
   say('16、15 → 15，由頂點 8 給出', 'cost(2, 5) = 15，d = 8');
   await step(tok);                                   // 12:21 almost filled; one value remaining
-  remove(f); msgFill(G, 3); G.g.mark(1, 2, LT);
-  note('頂點 3（影片沒逐項算）：min(2 + 7, 7 + 5) = 9，d = 6', 0, 8.05);
-  G.g.mark(0, 0, '#f0b8a8');
+  remove(f); G.focus('table');
+  msgFill(G, 3); G.g.mark(1, 2, LT); msgAbout(G, 3); G.costOn([3, 6, 7]);
+  note('頂點 3（影片沒逐項算）：min(2 + 7, 7 + 5) = 9，d = 6', 0, 8.65);
+  G.g.col(0); G.g.mark(0, 0, '#f0b8a8');
   say('表幾乎填滿了', '只剩起點 1 那一格');
 }]);
 FRAG.push(['dpbari3-msg-s1', '多段圖：cost(1,1) = 16', async (tok) => {
   const G = msgBase([12, 9, 10, 11, 6, 7, 8, 2, 3, 4, 5]);
   let f;
   await step(tok);                                   // 12:27 cost of the starting vertex: source → sink
+  G.focus('graph'); G.g.col(0);
   glow(G.node[1], GOLD);
   say('最後算起點 1', '它的 cost 就是 source 到 sink 的最小成本');
   await step(tok);                                   // 12:39 edges to 2, 3, 4, 5
-  hiOut(G, 1);
+  hiOut(G, 1); G.wOn([]); G.costOn([]);
   say('cost(1, 1)：頂點 1 有四條邊', '到 2、3、4、5，全部都要考慮');
   await step(tok);                                   // 12:49 do I have their costs? yes, filled
+  G.focus('table');
   [2, 3, 4, 5].forEach((v) => glow(G.g.get(0, v - 1), GOLD));
   say('2、3、4、5 的 cost 都已經在表上', '所以很好算');
   await step(tok);                                   // 12:53 formula
@@ -1928,10 +2055,12 @@ FRAG.push(['dpbari3-msg-s1', '多段圖：cost(1,1) = 16', async (tok) => {
   f = msgF('cost(1,1) = min{ c(1,2)+cost(2,2) , c(1,3)+cost(2,3) , c(1,4)+… , c(1,5)+… }');
   say('同樣：邊 + 下一個點的 cost', '四項取最小');
   await step(tok);                                   // 13:10 edge values 9 7 3 2
-  [2, 3, 4, 5].forEach((v) => tag(String(msgW(1, v)), 'pkt', (MSG.pos[1][0] + MSG.pos[v][0]) / 2, (MSG.pos[1][1] + MSG.pos[v][1]) / 2 + 0.2, 0.5));
+  G.focus('graph');
+  G.wOn(outE(1)); [2, 3, 4, 5].forEach((v) => { const l = G.wL['1-' + v], A = V3(...MSG.pos[1]), B = V3(...MSG.pos[v]), p = A.lerp(B, 0.64); l.position.set(p.x, p.y + 0.2, 0.3); setCls(l, 'pkt'); });
   say('四條邊的成本：9、7、3、2', '');
   await step(tok);                                   // 13:17 9 + 7, 7 + 9, 3 + 18, 2 + 15
-  await Promise.all([2, 3, 4, 5].map((v, k) => fling(tok, String(MS.cost[v]), cellXY(G, v), V3(-4.5 + k * 3, 7.6, 0.6), 800)));
+  G.focus('table');
+  await Promise.all([2, 3, 4, 5].map((v, k) => fling(tok, String(MS.cost[v]), cellXY(G, v), V3(-4.5 + k * 3, 7.8, 0.6), 800)));
   txt(f, 'cost(1,1) = min{ 9 + 7 , 7 + 9 , 3 + 18 , 2 + 15 }');
   say('9 + 7、7 + 9、3 + 18、2 + 15', '');
   await step(tok);                                   // 13:47 16, 16, 21, 17
@@ -1939,6 +2068,7 @@ FRAG.push(['dpbari3-msg-s1', '多段圖：cost(1,1) = 16', async (tok) => {
   say('= 16、16、21、17', '');
   await step(tok);                                   // 13:55 two same answers → 16
   txt(f, 'cost(1,1) = 16');
+  G.focus('both');
   pickOut(G, 1); msgCost(G, 1);
   say('兩個一樣小：答案就是 16', 'cost(1, 1) = 16');
   await step(tok);                                   // 14:02 via vertex 2 and 3 → d = 2 or 3
@@ -1946,32 +2076,43 @@ FRAG.push(['dpbari3-msg-s1', '多段圖：cost(1,1) = 16', async (tok) => {
   say('經過 2 或經過 3 都是 16', 'd 寫「2 或 3」（只寫一個也可以）');
   await step(tok);                                   // 14:14 first smaller values, then the larger
   glow(G.node[2], null); glow(G.node[3], null); glow(G.node[1], null);
-  await fling(tok, '先填小的 → 再得到大的', V3(5, 0.3, 0.8), V3(-5, 0.3, 0.8), 1500, true);
+  remove(f); G.wOn([]); G.costOn([]); G.focus('table');
+  await fling(tok, '先填小的 → 再得到大的', V3(5, -0.95, 0.8), V3(-5, -0.95, 0.8), 1500, true);
   say('先填小問題的值，再得到大問題的答案', '從多段圖的最後面往回算');
   await step(tok);                                   // 14:23 still called forward method
-  bub('從後面算，卻叫 forward method？', 0, -0.3, 0.8);
+  G.focus('graph');
+  bub('從後面算，卻叫 forward method？', 0, 8.65, 0.8);
   say('雖然從最後一個 stage 往回算', '仍然叫 forward method：下一段揭曉');
 }]);
 FRAG.push(['dpbari3-msg-formula', 'cost(i, j) = min{ c(j, l) + cost(i+1, l) }', async (tok) => {
   const G = msgBase(MSG.order);
   let f;
+  const inG = (l) => { G.gg.add(l); return l; };
   await step(tok);                                   // 14:33 frame the formula
+  G.focus('table');
   f = msgF('cost( i , j ) = ?');
   say('把剛剛的步驟寫成公式', '');
   await step(tok);                                   // 14:43 i = stage, j = vertex
-  note('i：stage 編號', -3.6, 7.2, 0.6); note('j：頂點編號', 3.6, 7.2, 0.6);
+  // i names the stage row of labels, j a vertex: each remark sits on what it names
+  G.focus('graph');
+  G.stL.forEach((l) => setCls(l, 'ptr'));
+  const nj = inG(note('j：頂點編號', MSG.pos[2][0] + 0.55, MSG.pos[2][1] + 0.05, 0.6)); nj.center.set(0, 0.5);
+  const ni = inG(note('i：stage 編號', -7.4, 8.55, 0.6)); ni.center.set(0, 0.5);
   say('cost(i, j)', 'i 是 stage 編號，j 是頂點編號');
   await step(tok);                                   // 14:59 min of c(j, l) + cost(…, l)
+  remove(ni); remove(nj); G.stL.forEach((l) => setCls(l, 'idx'));
   txt(f, 'cost( i , j ) = min{ c( j , l ) + cost( ? , l ) }');
   say('從 j 走一條邊到某個頂點 l', '邊的成本 + l 的 cost，取最小');
   await step(tok);                                   // 15:18 j = 2, l = 6
   glow(G.node[2], GOLD); glow(G.node[6], GOLD); tint(edgeOf(G, 2, 6), ORANGE);
-  bub('j = 2、l = 6：c(2,6) + cost(3,6)', 0, 0.0, 0.8);
+  G.wOn([[2, 6]]); G.costOn([6]);
+  const ex = inG(bub('j = 2、l = 6：c(2,6) + cost(3,6)', MSG.pos[6][0] + 0.5, MSG.pos[6][1] + 0.85, 0.6)); ex.center.set(0, 0.5);
   say('例：j = 2、l = 6', 'c(2, 6) + cost(3, 6)');
   await step(tok);                                   // 15:25 stage number i + 1
   txt(f, 'cost( i , j ) = min{ c( j , l ) + cost( i+1 , l ) }');
   say('l 那一項的 stage 是 i + 1', '');
   await step(tok);                                   // 15:32 vertex 2 has three edges → three times
+  remove(ex); glow(G.node[6], null);
   hiOut(G, 2); glow(G.node[2], GOLD);
   say('頂點 2 有三條邊', '同樣的式子寫三次，再取最小');
   await step(tok);                                   // 15:41 example: cost(2, 3)
@@ -1980,9 +2121,11 @@ FRAG.push(['dpbari3-msg-formula', 'cost(i, j) = min{ c(j, l) + cost(i+1, l) }', 
   say('再看 cost(2, 3)', 'c(3, 6) + cost(3, 6) 是其中一項');
   await step(tok);                                   // 16:02 l is definitely in the next stage: i + 1
   [6, 7].forEach((v) => glow(G.node[v], GREEN));
+  setCls(G.stL[2], 'ptr');
   say('l 一定在下一個 stage', 'i = 2 → l 在 stage 2 + 1 = 3');
   await step(tok);                                   // 16:26 (j, l) ∈ E, l ∈ next stage
-  hiOut(G, 3, SAND); glow(G.node[3], null); [6, 7].forEach((v) => glow(G.node[v], null));
+  hiOut(G, 3, SAND); glow(G.node[3], null); [6, 7].forEach((v) => glow(G.node[v], null)); setCls(G.stL[2], 'idx');
+  G.focus('both');
   txt(f, 'cost(i, j) = min{ c(j, l) + cost(i+1, l) }   ( j, l ) ∈ E ， l ∈ V(i+1)');
   say('條件：(j, l) 是一條邊', '而且 l 在下一個 stage');
   await step(tok);                                   // 16:45 the formula in textbooks
@@ -1993,20 +2136,24 @@ FRAG.push(['dpbari3-msg-path', '跟著 d 往前決策：兩條成本 16 的路�
   const G = msgBase(MSG.order);
   let me;
   await step(tok);                                   // 16:50 now actual DP starts: formula and table ready
-  bub('公式 ✓　表格 ✓', 0, 8.05);
+  const ready = bub('公式 ✓　表格 ✓', 0, 8.65);
   say('公式和表格都準備好了', '真正的 DP 現在才開始');
   await step(tok);                                   // 16:57 DP = sequence of decisions; none taken yet
   say('DP 是靠一連串的決策解題', '到目前為止，我們一個決策都還沒做');
   await step(tok);                                   // 17:10 d values: whichever vertex gave minimum
+  G.focus('table');
   for (let v = 1; v <= 11; v++) G.g.mark(1, v - 1, LT);
   say('d 列記的是「給出最小值的頂點」', '用它來做決策：每一步該往哪走');
   await step(tok);                                   // 17:28 decisions from vertex 1 towards sink
+  remove(ready); G.focus('graph');
   me = walker(1);
   say('從頂點 1 出發，往 sink 的方向做決策', '');
   await step(tok);                                   // 17:38 forward direction → forward method
-  await fling(tok, '決策方向 →', V3(-5, 0.0, 0.8), V3(5, 0.0, 0.8), 1500, true);
+  await fling(tok, '決策方向 →', V3(-5, 8.65, 0.8), V3(5, 8.65, 0.8), 1500, true);
   say('決策往前走', '所以叫 forward method');
-  const go = async (a, b, color) => { glow(G.g.get(1, a - 1), GOLD); tint(edgeOf(G, a, b), color); await walkTo(tok, me, b); glow(G.g.get(1, a - 1), null); };
+  // the d cell being read lights up; the edge walked shows its weight (for the sum at the end)
+  const walked = [];
+  const go = async (a, b, color) => { glow(G.g.get(1, a - 1), GOLD); tint(edgeOf(G, a, b), color); walked.push([a, b]); G.wOn(walked); await walkTo(tok, me, b); glow(G.g.get(1, a - 1), null); };
   await step(tok);                                   // 18:15 d(1,1) = 2
   await go(1, 2, TEAL);
   say('d(1, 1) = 2', '走到頂點 2');
@@ -2021,9 +2168,11 @@ FRAG.push(['dpbari3-msg-path', '跟著 d 往前決策：兩條成本 16 的路�
   me.mood('happy'); await me.hop(tok);
   say('d(4, 10) = 12', '到 sink 了');
   await step(tok);                                   // 19:05 path 1 → 2 → 7 → 10 → 12
-  good('1 → 2 → 7 → 10 → 12 ＝ 9 + 2 + 3 + 2 = 16', 0, -0.3, 0.8);
+  const p1 = good('1 → 2 → 7 → 10 → 12 ＝ 9 + 2 + 3 + 2 = 16', 0, -0.95, 0.8);
   say('最短路徑 1 → 2 → 7 → 10 → 12', '一連串決策就得到答案');
   await step(tok);                                   // 19:29 once more for 3
+  remove(p1); walked.length = 0; G.wOn([]);
+  [[1, 2], [2, 7], [7, 10]].forEach(([a, b]) => tint(edgeOf(G, a, b), GRAY));
   await walkTo(tok, me, 1, 900);
   me.mood('calm');
   say('d(1, 1) 也可以是 3', '再走一次看看');
@@ -2041,9 +2190,12 @@ FRAG.push(['dpbari3-msg-path', '跟著 d 往前決策：兩條成本 16 的路�
   me.mood('happy'); await me.hop(tok);
   say('d(4, 10) = 12', '');
   await step(tok);                                   // 20:36 another route with the minimum
-  bub('1 → 3 → 6 → 10 → 12 ＝ 7 + 2 + 5 + 2 = 16', 0, 0.5, 0.8);
+  bub('1 → 3 → 6 → 10 → 12 ＝ 7 + 2 + 5 + 2 = 16', 0, -0.95, 0.8);
   say('另一條路徑：1 → 3 → 6 → 10 → 12', '成本也是 16');
   await step(tok);                                   // 20:52 optimal result only one, two paths
+  [[1, 2], [2, 7], [7, 10]].forEach(([a, b]) => tint(edgeOf(G, a, b), TEAL));
+  G.wOn([[1, 2], [2, 7], [7, 10], [1, 3], [3, 6], [6, 10], [10, 12]]);
+  G.costOn([1]);
   say('最佳成本只有一個：16', '只是剛好有兩條路徑都達到它');
 }]);
 
@@ -2053,7 +2205,7 @@ const MP = {
   E: [[1, 2, 2], [1, 3, 1], [1, 4, 3], [2, 5, 2], [2, 6, 3], [3, 5, 6], [3, 6, 7], [4, 5, 6], [4, 6, 8], [4, 7, 9], [5, 8, 6], [6, 8, 4], [7, 8, 5]],
 };
 // spread out a little: weights and cost tags need room between the vertices
-for (const v in MP.pos) { const [x, y] = MP.pos[v]; MP.pos[v] = [-3.55 + (x + 3.55) * 1.3, 5.6 + (y - 5.6) * 1.15]; }
+for (const v in MP.pos) { const [x, y] = MP.pos[v]; MP.pos[v] = [-3.55 + (x + 3.55) * 1.3, 5.6 + (y - 5.6) * 1.33]; }
 const mpC = (i, k) => { const e = MP.E.find((x) => x[0] === i && x[1] === k); return e ? e[2] : 0; };
 const MPS = (() => {
   const cost = [], d = [], log = {}; cost[8] = 0;
@@ -2065,48 +2217,58 @@ const MPS = (() => {
   return { cost, d, log };
 })();
 const MPCODE = ['cost[n] = 0;', 'for (i = n-1; i >= 1; i--) {', '  min = 32767;', '  for (k = i+1; k <= n; k++)', '    if (c[i][k] != 0 &&', '        c[i][k]+cost[k] < min) {', '      min = c[i][k] + cost[k];', '      d[i] = k;', '    }', '  cost[i] = min;', '}'];
+// where along each edge its weight sits: crossing edges keep theirs apart
+const MPW = { '2-6': 0.72, '3-5': 0.28, '4-5': 0.3, '4-6': 0.22 };
 function mpBuild(drop, table = true) {
-  const G = { node: {}, edge: {}, cl: {} };
+  const G = { node: {}, edge: {}, cl: {}, wL: {} };
   for (const [a, b, w] of MP.E) {
     const A = V3(MP.pos[a][0], MP.pos[a][1], -0.05), B = V3(MP.pos[b][0], MP.pos[b][1], -0.05);
     G.edge[a + '-' + b] = rod(A, B, SAND, 0.028);
-    const p = A.clone().lerp(B, 0.4); tag(String(w), 'idx', p.x, p.y + 0.17, 0.1);
+    const p = A.clone().lerp(B, MPW[a + '-' + b] || 0.5); G.wL[a + '-' + b] = tag(String(w), 'idx', p.x, p.y + 0.17, 0.1);
   }
   for (const v of Object.keys(MP.pos)) {
     const [x, y] = MP.pos[v];
     G.node[v] = cube(v, v === '1' || v === '8' ? PURPLE : BLUE, [0.5, 0.45, 0.45], x, y, 0, drop ? 1.4 : 0);
-    G.cl[v] = tag('', 'ptr alt', x - 0.45, y + 0.42, 0.3); showL(G.cl[v], false);
+    G.cl[v] = tag('', 'ptr alt', x, y + 0.66, 0.3); showL(G.cl[v], false);
   }
-  G.st = [1, 2, 5, 8].map((v, s) => tag('stage ' + (s + 1), 'idx', MP.pos[v][0], 8.05));
+  G.st = [1, 2, 5, 8].map((v, s) => tag('stage ' + (s + 1), 'idx', MP.pos[v][0], 8.35));
+  // show exactly these weights / cost tags: the ones the step is about
+  G.wOn = (es) => { const ks = new Set(es.map((e) => (Array.isArray(e) ? e[0] + '-' + e[1] : e))); for (const k in G.wL) showL(G.wL[k], es === 'all' || ks.has(k)); };
+  G.costOn = (vs) => { const s = new Set(vs.map(String)); for (const k in G.cl) showL(G.cl[k], s.has(k) && !!G.cl[k].element.textContent); };
+  G.stOn = (on) => G.st.forEach((l) => showL(l, on));
   if (table) mpTable(G);
   return G;
 }
-function mpTable(G) {
-  G.g = grid({ rows: 2, cols: 9, cw: 0.74, ch: 0.55, x0: -5.4, y0: 2.6, colHdr: Array.from({ length: 9 }, (_, k) => k), rowHdr: ['cost', 'd'], rowDx: 0.5 });
+function mpTable(G, all = true) {
+  G.g = ctab({ cols: 9, cw: 0.74, ch: 0.62, x0: -5.4, y0: 2.5, colHdr: Array.from({ length: 9 }, (_, k) => k), rowHdr: ['cost', 'd'], rowDx: 0.5 });
   G.g.mark(0, 0, DIM); G.g.mark(1, 0, DIM);
+  if (!all) G.g.only([]);
 }
 function mpCost(G, i, drop = 1) { G.g.set(0, i, MPS.cost[i], TEAL, drop); tint(G.node[i], TEAL); txt(G.cl[i], String(MPS.cost[i])); showL(G.cl[i], true); }
 function mpD(G, i, drop = 1) { G.g.set(1, i, i === 8 ? '—' : MPS.d[i], PURPLE, drop); }
 function mpFill(G, i, drop = 1) { mpCost(G, i, drop); mpD(G, i, drop); }
 const mpXY = (v, dy = 0.5) => V3(MP.pos[v][0], MP.pos[v][1] + dy, 0.5);
-const mpCell = (G, i) => { const p = G.g.pos(0, i); return V3(p.x, p.y + 0.3, 0.6); };
-const mpF = (t) => mono(tag(t, 'say', -3.5, 8.35));
+const mpCell = (G, i) => { const p = G.g.wpos(0, i); return V3(p.x, p.y + 0.3, p.z + 0.6); };
+const mpF = (t) => mono(tag(t, 'say', -3.5, 8.9));
 FRAG.push(['dpbari3-msgp-data', '多段圖程式：c[9][9]、cost、d、p', async (tok) => {
   fresh([0, 4.4, 15], [0, 4.4, 0]);
+  frameHold(-7.6, -0.9, 0, 7.6, 9.4, 0); // graph, matrix and arrays come in later: frame for them now
   let G, M;
   await step(tok);                                   // 0:33 simple C/C++: everything inside main
-  const mainC = code(['int main() {', '  // 資料、迴圈全部寫在這裡', '}'], -3.6, 1.2, 0.45);
-  const pc = prop('file', -6.6, 0.2, 1.4, 0.9, '程式'); bob(pc, 0.05);
+  const mainC = code(['int main() {', '  // 資料、迴圈全部寫在這裡', '}'], 0, 4.6, 0.5);
+  const pc = prop('file', -3.6, 4.0, 0, 0.9, '程式'); bob(pc, 0.05);
   say('簡單的 C / C++ 程式', '全部寫在 main 裡');
   await step(tok);                                   // 0:40 data structures; graphical representation
+  mainC.kill(); kill(pc.g || pc);
   G = mpBuild(true, false);
   say('需要哪些資料結構？', '先看這張圖');
   await step(tok);                                   // 0:46 four stages
   G.st.forEach((l) => { l.element.className = 'lab-label ptr'; });
   say('4 個 stage、8 個頂點', '1 是 source、8 是 sink');
   await step(tok);                                   // 0:52 cost adjacency matrix
-  M = grid({ rows: 9, cols: 9, cw: 0.56, ch: 0.44, x0: 2.4, y0: 7.4, colHdr: Array.from({ length: 9 }, (_, k) => k), rowHdr: Array.from({ length: 9 }, (_, k) => k), rowDx: 0.05 });
-  bub('c：cost adjacency matrix', 4.6, 8.35);
+  G.st.forEach((l) => { l.element.className = 'lab-label idx'; });
+  M = ctab({ rows: 9, cols: 9, cw: 0.68, ch: 0.56, x0: 1.9, y0: 7.45, colHdr: Array.from({ length: 9 }, (_, k) => k), rowHdr: Array.from({ length: 9 }, (_, k) => k), rowDx: 0.3, hdrK: 1.05 });
+  const mt = bub('c：cost adjacency matrix', 4.6, 8.75);
   say('cost adjacency matrix c', '記錄每條邊的成本');
   await step(tok);                                   // 1:00 indices start from 0 → size 9
   for (let k = 0; k < 9; k++) { M.mark(0, k, '#f0b8a8'); M.mark(k, 0, '#f0b8a8'); }
@@ -2115,14 +2277,19 @@ FRAG.push(['dpbari3-msgp-data', '多段圖程式：c[9][9]、cost、d、p', asyn
   for (let k = 0; k < 9; k++) { M.set(0, k, 0, GRAY, 0.6); if (k) M.set(k, 0, 0, GRAY, 0.6); }
   say('第 0 列、第 0 行全部是 0', '矩陣只畫了一部分');
   await step(tok);                                   // 1:13 1→2, 1→3, 1→4 costs
+  G.wOn([]); G.wOn(['1-2', '1-3', '1-4']);
   ['1-2', '1-3', '1-4'].forEach((k) => tint(G.edge[k], ORANGE));
-  for (const k of [2, 3, 4]) { await fling(tok, String(mpC(1, k)), mpXY(1), V3(M.pos(1, k).x, M.pos(1, k).y + 0.3, 0.6), 500); M.set(1, k, mpC(1, k), ORANGE, 0.6); }
+  for (const k of [2, 3, 4]) { const p = M.wpos(1, k); await fling(tok, String(mpC(1, k)), mpXY(1), V3(p.x, p.y + 0.3, 0.6), 500); M.set(1, k, mpC(1, k), ORANGE, 0.6); }
   say('1→2 = 2、1→3 = 1、1→4 = 3', '填在第 1 列；沒有邊的格子是 0');
   await step(tok);                                   // 1:29 input given directly, not from keyboard
   ['1-2', '1-3', '1-4'].forEach((k) => tint(G.edge[k], SAND));
-  note('資料直接寫在程式裡（想換題目可改成從鍵盤讀入）', 0, -0.4, 1.2);
+  const inp = note('資料直接寫在程式裡（想換題目可改成從鍵盤讀入）', 4.8, 2.4, 0.6);
   say('資料直接寫進程式', '這個程式只解這一題');
   await step(tok);                                   // 1:43 cost array
+  // the matrix is done: it steps back and greys; the arrays below the graph are the subject now
+  remove(inp); remove(mt); M.back(true, -3, '0.2'); M.labels().forEach((l) => showL(l, false));
+  Object.values(M.cells).forEach((m) => { if (m.userData.lbl) m.userData.lbl.element.style.opacity = '0.2'; });
+  G.wOn([]);
   mpTable(G);
   G.g.mark(1, 0, DIM); for (let k = 0; k < 9; k++) G.g.mark(1, k, DIM);
   say('cost 陣列：每個頂點到 sink 的成本', '');
@@ -2130,43 +2297,47 @@ FRAG.push(['dpbari3-msgp-data', '多段圖程式：c[9][9]、cost、d、p', asyn
   for (let k = 1; k < 9; k++) G.g.mark(1, k, '#efe6d2');
   say('d 陣列：最短路徑經過哪個頂點', 'd[i]：從 i 出發，最短那條路的下一站');
   await step(tok);                                   // 1:52 p array for the path
-  const P = grid({ rows: 1, cols: 5, cw: 0.74, ch: 0.5, x0: -5.4, y0: 1.2, colHdr: [0, 1, 2, 3, 4], rowHdr: ['p'], rowDx: 0.5 });
+  const P = ctab({ rows: 1, cols: 5, cw: 0.74, ch: 0.55, x0: -5.4, y0: 0.45, colHdr: [0, 1, 2, 3, 4], rowHdr: ['p'], rowDx: 0.5, hdrK: 1.05 });
   say('最後還要一個 p 陣列', '存找到的路徑');
   await step(tok);                                   // 2:05 all size 9: vertices from 1, indices from 0
-  G.g.mark(0, 0, '#f0b8a8'); G.g.mark(1, 0, '#f0b8a8');
-  note('index 0 不用', -6.0, 3.1, 0.6);
+  G.g.mark(0, 0, '#f0b8a8'); G.g.mark(1, 0, '#f0b8a8'); P.mark(0, 0, '#f0b8a8');
+  const p0 = G.g.pos(0, 0);
+  const ix = note('index 0 不用', p0.x, -0.5, 0.6);
   say('c 是 9×9，cost、d 大小 9', '頂點從 1 開始，index 從 0 → 0 號空著');
 }]);
 FRAG.push(['dpbari3-msgp-loop', '多段圖程式：i 從 n−1 往回，追蹤 i = 4', async (tok) => {
   fresh([0, 4.4, 15], [0, 4.4, 0]);
+  frameHold(-7.6, -0.9, 0, 7.6, 9.4, 0);
   const G = mpBuild(false);
-  const cd = code(MPCODE, 3.7, 7.4, 0.45);
+  G.g.only([]); G.wOn([]); G.stOn(false); // weights, costs and table columns appear as the steps reach them
+  const cd = code(MPCODE, 5.3, 7.4, 0.45, -1.5); // the code sits on a plane behind, beside the graph
   let I, kp, f;
-  const tryK = async (k, text) => { await travel(tok, kp, kp.position.clone(), mpXY(k, -0.55), 500); glow(G.node[k], GOLD); if (mpC(4, k)) tint(G.edge['4-' + k], ORANGE); if (text) txt(f, text); };
+  const tryK = async (k, text) => { await travel(tok, kp, kp.position.clone(), V3(MP.pos[k][0] + 0.62, MP.pos[k][1] - 0.1, 0.5), 500); glow(G.node[k], GOLD); if (mpC(4, k)) { tint(G.edge['4-' + k], ORANGE); G.wOn(MP.E.filter((e) => e[0] === 4 && e[1] <= k)); G.costOn([4, ...[5, 6, 7].filter((u) => u <= k)]); } if (text) txt(f, text); };
   await step(tok);                                   // 2:22 forward method: start from the last vertex 8, 7, 6 …
-  await fling(tok, '8 → 7 → 6 → 5 …', V3(-0.9, 3.4, 0.6), V3(-5.8, 3.4, 0.6), 1600);
+  await fling(tok, '8 → 7 → 6 → 5 …', V3(-0.1, 3.4, 0.6), V3(-6.4, 3.4, 0.6), 1600);
   say('從最後一個頂點 8 開始', '再 7、6、5……往回算');
   await step(tok);                                   // 2:46 cost[8] = 0
-  cd.hl(0); glow(G.node[8], GOLD); mpFill(G, 8);
+  cd.hl(0); glow(G.node[8], GOLD); mpFill(G, 8); G.costOn([8]);
   say('cost[8] = 0', '8 是 sink，不用再走');
   await step(tok);                                   // 2:56 loop from n−1 to 1
   glow(G.node[8], null); cd.hl(1);
-  I = buddy('i', 7, ORANGE, 3.0, 0, 1.6, 0.55);
+  I = buddy('i', 7, ORANGE, 4.7, -0.4, 1.2, 0.55);
   say('n = 8：外圈 i 從 n−1 跑到 1', '');
   await step(tok);                                   // 3:19 decrementing loop; everything inside
   I.mood('wow');
-  bub('遞減的迴圈：i = 7, 6, 5, …, 1', 3.0, 1.6, 1.6);
+  const dec = bub('遞減的迴圈：i = 7, 6, 5, …, 1', 4.7, 1.25, 1.2);
   say('i 每次減 1', '所有計算都在這個迴圈裡');
   await step(tok);                                   // 3:32 7: single edge, cost 5
-  I.set(7); I.mood('calm'); tint(G.edge['7-8'], TEAL); mpCost(G, 7);
+  remove(dec);
+  I.set(7); I.mood('calm'); tint(G.edge['7-8'], TEAL); mpCost(G, 7); G.wOn(['7-8']); G.costOn([7, 8]);
   say('i = 7：只有一條邊到 8', 'cost[7] = 5');
   await step(tok);                                   // 3:40 6: direct edge 4; 5: direct edge 6
-  I.set(6); tint(G.edge['6-8'], TEAL); mpCost(G, 6);
+  I.set(6); tint(G.edge['6-8'], TEAL); mpCost(G, 6); G.wOn(['6-8']); G.costOn([6, 8]);
   await beat(tok, 700);
-  I.set(5); tint(G.edge['5-8'], TEAL); mpCost(G, 5);
+  I.set(5); tint(G.edge['5-8'], TEAL); mpCost(G, 5); G.wOn(['5-8']); G.costOn([5, 8]);
   say('6、5 也各只有一條邊到 8', 'cost[6] = 4、cost[5] = 6');
   await step(tok);                                   // 3:54 vertex 4: trace this one
-  I.set(4); glow(G.node[4], GOLD);
+  I.set(4); glow(G.node[4], GOLD); G.wOn([]); G.costOn([]); G.g.col(4);
   say('i = 4：這個要仔細追蹤', '它有好幾條邊');
   await step(tok);                                   // 4:01 formula cost[i] = min{c[i][k] + cost[k]}
   f = mpF('cost[i] = min{ c[i][k] + cost[k] }');
@@ -2179,13 +2350,13 @@ FRAG.push(['dpbari3-msgp-loop', '多段圖程式：i 從 n−1 往回，追蹤 i
   say('k 要試哪些頂點？只看比 4 大的', '多段圖的邊只往前走');
   await step(tok);                                   // 5:09 i+1 to n loop
   [5, 6, 7, 8].forEach((v) => glow(G.node[v], null));
-  cd.hl(3); kp = tag('k', 'pkt', MP.pos[4][0] + 0.6, MP.pos[4][1] - 0.55, 0.5);
+  cd.hl(3); kp = tag('k', 'pkt', MP.pos[4][0] + 0.62, MP.pos[4][1] - 0.1, 0.5); // k walks beside the vertex it tries
   say('內圈 k 從 i+1 跑到 n', 'k = 5, 6, 7, 8');
   await step(tok);                                   // 5:38 k = 5: c[4][5] = 6
   cd.hl(5); await tryK(5, 'cost[4] = min{ 6 + cost[5] , … }');
   say('k = 5：c[4][5] = 6', '');
   await step(tok);                                   // 6:01 + cost[5] = 6 → 12
-  await fling(tok, '6', mpCell(G, 5), V3(-2.6, 8.1, 0.6), 700);
+  await fling(tok, '6', mpCell(G, 5), V3(-2.6, 8.9, 0.6), 700);
   txt(f, 'cost[4] = min{ 6 + 6 = 12 , … }'); cd.hl(6);
   say('加上 cost[5] = 6（已經算好）', '6 + 6 = 12');
   await step(tok);                                   // 6:18 k = 6: 8 + 4 = 12
@@ -2199,43 +2370,45 @@ FRAG.push(['dpbari3-msgp-loop', '多段圖程式：i 從 n−1 往回，追蹤 i
   say('k 還會變成 8', '迴圈從 i+1 = 5 跑到 8');
   await step(tok);                                   // 7:33 condition c[i][k] != 0
   cd.hl(4);
-  const z = bad('c[4][8] = 0：沒有邊 → 跳過', -0.9, 4.4, 0.6);
+  txt(kp, 'k = 8：c[4][8] = 0 → 跳過'); setCls(kp, 'bad'); kp.center.set(0.5, 1); kp.position.set(MP.pos[8][0], MP.pos[8][1] - 0.4, 0.5); // the remark rides on k, under vertex 8
   say('if 條件：c[i][k] != 0 才計算', 'c[4][8] = 0，不算');
   await step(tok);                                   // 7:52 if less than minimum, change minimum
-  remove(z); glow(G.node[8], null); cd.hl(6);
+  txt(kp, 'k'); setCls(kp, 'pkt'); kp.center.set(0.5, 0.5); kp.position.set(MP.pos[8][0] + 0.62, MP.pos[8][1] - 0.1, 0.5); glow(G.node[8], null); cd.hl(6);
   say('每次比較：比目前 min 小就換掉', '');
   await step(tok);                                   // 8:00 12, 12, 14 → take 12
   txt(f, 'cost[4] = min{ 12 , 12 , 14 } = 12');
   tint(G.edge['4-5'], TEAL); tint(G.edge['4-6'], GRAY); tint(G.edge['4-7'], GRAY);
   say('12、12、14：最小 12', '兩個 12 取哪個都可以');
   await step(tok);                                   // 8:12 answer 12, k was 5 → d[4] = 5
-  cd.hl(7); remove(kp); mpFill(G, 4); glow(G.node[4], null);
+  cd.hl(7); remove(kp); mpFill(G, 4); glow(G.node[4], null); G.costOn([4]);
   I.mood('happy'); await I.hop(tok);
   say('cost[4] = 12，d[4] = 5', '給出最小值的 k 是 5（用 <，留住先找到的）');
   await step(tok);                                   // 8:25 store min after the for loop
   cd.hl(9);
   say('內圈結束後，把 min 存進 cost[i]', '');
   await step(tok);                                   // 8:37 same for 3, 2, 1
-  I.set(3); I.mood('calm');
+  I.set(3); I.mood('calm'); G.wOn([]); G.costOn([]); G.g.col(3);
   say('同樣的做法：i = 3、2、1', '');
 }]);
 FRAG.push(['dpbari3-msgp-rest', '多段圖程式：i = 3、2、1 → cost[1] = 9', async (tok) => {
   fresh([0, 4.4, 15], [0, 4.4, 0]);
+  frameHold(-7.6, -0.9, 0, 7.6, 9.4, 0);
   const G = mpBuild(false);
   [8, 7, 6, 5].forEach((v) => mpCost(G, v, 0)); mpFill(G, 4, 0); mpD(G, 8, 0);
-  const R = grid({ rows: 1, cols: 9, cw: 0.5, ch: 0.42, x0: 2.0, y0: 7.2, colHdr: Array.from({ length: 9 }, (_, k) => k), rowHdr: ['c[3]'], rowDx: 0.2 });
+  G.g.only([4, 5, 6, 7, 8]); G.wOn([]); G.costOn([]); G.stOn(false);
+  const R = ctab({ rows: 1, cols: 9, cw: 0.62, ch: 0.5, x0: 1.9, y0: 7.0, colHdr: Array.from({ length: 9 }, (_, k) => k), rowHdr: ['c[3]'], rowDx: 0.25, hdrK: 0.85 });
   let I, kp, f;
   await step(tok);                                   // 8:46 d for 7, 6, 5: all go to 8
   [7, 6, 5].forEach((v) => mpD(G, v));
   say('補上 d：7、6、5 都是走到 8', 'd[7] = d[6] = d[5] = 8');
   await step(tok);                                   // 9:04 i becomes 3
-  I = buddy('i', 3, ORANGE, 3.0, 0, 1.6, 0.55); glow(G.node[3], GOLD);
+  I = buddy('i', 3, ORANGE, 4.7, -0.4, 1.2, 0.55); glow(G.node[3], GOLD); G.g.col(3);
   say('i 減 1，變成 3', '');
   await step(tok);                                   // 9:35 k from 4 to 8
-  kp = tag('k = 4…8', 'pkt', 4.0, 6.3, 0.6);
+  kp = tag('k = 4…8', 'pkt', 4.4, 6.1, 0.6);
   say('k 從 i+1 = 4 試到 8', '');
   await step(tok);                                   // 9:53 edges from 3 go to 5 and 6 only
-  tint(G.edge['3-5'], ORANGE); tint(G.edge['3-6'], ORANGE);
+  tint(G.edge['3-5'], ORANGE); tint(G.edge['3-6'], ORANGE); G.wOn(['3-5', '3-6']);
   say('但 3 只有到 5、6 的邊', '其他都是 0');
   await step(tok);                                   // 10:09 fill row 3: 3→5 = 6, 3→6 = 7, rest 0
   for (let k = 0; k < 9; k++) R.set(0, k, mpC(3, k), mpC(3, k) ? ORANGE : GRAY, 0.6);
@@ -2245,36 +2418,42 @@ FRAG.push(['dpbari3-msgp-rest', '多段圖程式：i = 3、2、1 → cost[1] = 9
   say('k 雖然試 4～8', '真正計算的只有 5 和 6');
   await step(tok);                                   // 10:29 c[3][5] + cost[5] = 6 + 6
   f = mpF('cost[3] = min{ 6 + 6 , … }');
-  await fling(tok, '6', mpCell(G, 5), V3(-3.2, 8.1, 0.6), 700);
+  G.costOn([5]);
+  await fling(tok, '6', mpCell(G, 5), V3(-3.2, 8.9, 0.6), 700);
   say('k = 5：c[3][5] + cost[5]', '6 + 6 = 12');
   await step(tok);                                   // 10:46 7 + 4 = 11 → 11, via 6
-  await fling(tok, '4', mpCell(G, 6), V3(-1.8, 8.1, 0.6), 700);
+  G.costOn([5, 6]);
+  await fling(tok, '4', mpCell(G, 6), V3(-1.8, 8.9, 0.6), 700);
   txt(f, 'cost[3] = min{ 12 , 7 + 4 = 11 } = 11');
-  tint(G.edge['3-5'], GRAY); tint(G.edge['3-6'], TEAL); mpFill(G, 3); glow(G.node[3], null);
+  tint(G.edge['3-5'], GRAY); tint(G.edge['3-6'], TEAL); mpFill(G, 3); glow(G.node[3], null); G.costOn([3, 6]);
   say('k = 6：7 + 4 = 11，比較小', 'cost[3] = 11，d[3] = 6');
   await step(tok);                                   // 10:58 fill the others directly
-  remove(kp);
-  I.set(2); mpFill(G, 2); tint(G.edge['2-6'], TEAL); tint(G.edge['2-5'], GRAY);
+  // row c[3] is finished: its plane steps back; vertices 2 and 1 are the subject
+  remove(kp); R.back(true, -3, '0.2'); Object.values(R.cells).forEach((m) => { if (m.userData.lbl) m.userData.lbl.element.style.opacity = '0.2'; });
+  I.set(2); mpFill(G, 2); tint(G.edge['2-6'], TEAL); tint(G.edge['2-5'], GRAY); G.wOn(['2-5', '2-6']); G.costOn([2]);
   await beat(tok, 800);
-  I.set(1); mpFill(G, 1); tint(G.edge['1-2'], TEAL); tint(G.edge['1-3'], GRAY); tint(G.edge['1-4'], GRAY);
+  I.set(1); mpFill(G, 1); tint(G.edge['1-2'], TEAL); tint(G.edge['1-3'], GRAY); tint(G.edge['1-4'], GRAY); G.wOn(['1-2', '1-3', '1-4']); G.costOn([1, 2, 3, 4]);
   txt(f, 'cost[2] = min{2+6, 3+4} = 7 ， cost[1] = min{2+7, 1+11, 3+12} = 9');
   say('其他直接填好', 'cost[2] = 7（d = 6）、cost[1] = 9（d = 2）');
   await step(tok);                                   // 11:06 cost of graph is 9
-  glow(G.node[1], GREEN); glow(G.g.get(0, 1), GREEN);
+  glow(G.node[1], GREEN); glow(G.g.get(0, 1), GREEN); G.wOn([]); G.costOn([1]);
   I.mood('happy'); await I.hop(tok);
   say('cost[1] = 9', 'source 到 sink 的最短距離');
 }]);
 FRAG.push(['dpbari3-msgp-path', '多段圖程式：p[i] = d[p[i−1]] 找路徑', async (tok) => {
   fresh([0, 4.4, 15], [0, 4.4, 0]);
+  frameHold(-7.6, -0.9, 0, 7.6, 9.4, 0);
   const G = mpBuild(false);
   for (let v = 8; v >= 1; v--) mpFill(G, v, 0);
+  G.wOn([]); G.costOn([1]);
   let cd, P;
   await step(tok);                                   // 11:21 which vertices? 4 stages → 4 vertices
   G.st.forEach((l) => { l.element.className = 'lab-label ptr'; });
   say('知道成本 9 了，那路徑呢？', '4 個 stage → 路徑上剛好 4 個頂點');
   await step(tok);                                   // 11:28 code for finding the path
-  cd = code(['p[1] = 1;', 'p[stages] = n;', 'for (i = 2; i < stages; i++)', '  p[i] = d[p[i-1]];'], 3.6, 7.0, 0.5);
-  P = grid({ rows: 1, cols: 9, cw: 0.74, ch: 0.55, x0: -5.4, y0: 0.95, colHdr: Array.from({ length: 9 }, (_, k) => k), rowHdr: ['p'], rowDx: 0.5 });
+  G.stOn(false); // the stages were the point of the last step
+  cd = code(['p[1] = 1;', 'p[stages] = n;', 'for (i = 2; i < stages; i++)', '  p[i] = d[p[i-1]];'], 4.6, 7.0, 0.5, -1.5);
+  P = ctab({ rows: 1, cols: 9, cw: 0.74, ch: 0.55, x0: -5.4, y0: 0.45, colHdr: Array.from({ length: 9 }, (_, k) => k), rowHdr: ['p'], rowDx: 0.5, hdrK: 1.05 });
   P.mark(0, 0, DIM);
   say('找路徑的程式碼', '結果放進 p 陣列');
   await step(tok);                                   // 11:33 p[1] = 1
@@ -2291,29 +2470,31 @@ FRAG.push(['dpbari3-msgp-path', '多段圖程式：p[i] = d[p[i−1]] 找路徑'
   say('中間的頂點：p[i] = d[p[i−1]]', 'i 從 2 到 stages − 1');
   await step(tok);                                   // 12:15 i = 2: d[p[1]] = d[1]
   glow(P.get(0, 1), GOLD); glow(G.g.get(1, 1), GOLD);
-  await fling(tok, 'p[1] = 1 → 看 d[1]', V3(P.pos(0, 1).x, 1.5, 0.6), V3(G.g.pos(1, 1).x, 2.4, 0.6), 900);
+  let look = K.flow(P.get(0, 1), G.g.get(1, 1), '', { color: '#c08a1f', lift: 0.5, bulge: V3(-1, 0, 0.6) });
   say('i = 2：p[2] = d[p[1]] = d[1]', '');
   await step(tok);                                   // 12:27 d[1] = 2 → p[2] = 2
-  await fling(tok, '2', V3(G.g.pos(1, 1).x, 2.0, 0.6), V3(P.pos(0, 2).x, 1.3, 0.6), 700);
+  look.kill();
+  await fling(tok, '2', V3(G.g.pos(1, 1).x, 1.6, 0.6), V3(P.pos(0, 2).x, 0.45, 0.6), 700);
   P.set(0, 2, 2, ORANGE); glow(G.node[2], GOLD); tint(G.edge['1-2'], ORANGE);
   glow(P.get(0, 1), null); glow(G.g.get(1, 1), null);
   say('d[1] = 2 → p[2] = 2', '從 1 走到 2');
   await step(tok);                                   // 12:35 p[3] = d[p[2]] = d[2]
   glow(G.g.get(1, 2), GOLD);
-  await fling(tok, 'p[2] = 2 → 看 d[2]', V3(P.pos(0, 2).x, 1.5, 0.6), V3(G.g.pos(1, 2).x, 2.4, 0.6), 900);
+  look = K.flow(P.get(0, 2), G.g.get(1, 2), '', { color: '#c08a1f', lift: 0.5, bulge: V3(-1, 0, 0.6) });
   say('i = 3：p[3] = d[p[2]] = d[2]', '');
   await step(tok);                                   // 12:47 d[2] = 6 → p[3] = 6
-  await fling(tok, '6', V3(G.g.pos(1, 2).x, 2.0, 0.6), V3(P.pos(0, 3).x, 1.3, 0.6), 700);
+  look.kill();
+  await fling(tok, '6', V3(G.g.pos(1, 2).x, 1.6, 0.6), V3(P.pos(0, 3).x, 0.45, 0.6), 700);
   P.set(0, 3, 6, ORANGE); glow(G.node[6], GOLD); tint(G.edge['2-6'], ORANGE); glow(G.g.get(1, 2), null);
   say('d[2] = 6 → p[3] = 6', '');
   await step(tok);                                   // 12:56 path 1 → 2 → 6 → 8
-  tint(G.edge['6-8'], ORANGE);
+  tint(G.edge['6-8'], ORANGE); G.wOn(['1-2', '2-6', '6-8']);
   const w = buddy('', '', ORANGE, MP.pos[1][0], MP.pos[1][1] + 0.25, 0.6, 0.38);
   for (const v of [2, 6, 8]) await slide(tok, w.g, MP.pos[v][0], 500, MP.pos[v][1] + 0.25, 0.6);
   w.mood('happy');
   say('最短路徑 1 → 2 → 6 → 8', '2 + 3 + 4 = 9 = cost[1]');
   await step(tok);                                   // 13:05 used the program and solved
-  good('用程式追蹤完：最短距離 9', 3.6, 4.6, 0.6);
+  good('用程式追蹤完：最短距離 9', 4.6, 4.4, 0.6);
   say('用這個程式就把多段圖解出來了', '');
 }]);
 FRAG.push(['dpbari3-msgp-time', '多段圖程式：內圈 1+2+…+n → O(n²)', async (tok) => {
@@ -2362,11 +2543,12 @@ const KV = knapSteps(KN.items, KN.W).V;
 const KCOL = [ORANGE, PINK, BLUE, TEAL];
 // the four objects as little characters (profit / weight on the belly)
 function kItems(x0 = -4.8, y = 0, z = 2.3, dx = 1.9, size = 0.82) { // big enough that the name clears the p/w on the belly
-  return KP.map((o, k) => buddy('物品 ' + (k + 1), 'p' + o.p + ' w' + o.w, KCOL[k], x0 + k * dx, y, z, size));
+  // p / w sit under the feet, so the name above and the numbers never share a spot
+  return KP.map((o, k) => { const b = buddy('物品 ' + (k + 1), '', KCOL[k], x0 + k * dx, y, z, size); const l = ctx.lab.label('p' + o.p + ' w' + o.w, 'idx'); l.position.set(0, -0.3, 0.3); b.g.add(l); b.pw = l; return b; });
 }
 // V table: rows i = 0..4, columns w = 0..8
 function kTable(zeros) {
-  const g = grid({ rows: 5, cols: 9, cw: 0.9, ch: 0.72, x0: -2.9, y0: 6.6, colHdr: Array.from({ length: 9 }, (_, k) => 'w=' + k), rowHdr: ['i=0', ...KP.map((o, k) => 'i=' + (k + 1) + ' (p' + o.p + ',w' + o.w + ')')], rowDx: 1.0 });
+  const g = ctab({ rows: 5, cols: 9, cw: 0.9, ch: 0.72, x0: -2.9, y0: 6.6, colHdr: Array.from({ length: 9 }, (_, k) => 'w=' + k), rowHdr: ['i=0', ...KP.map((o, k) => 'i=' + (k + 1) + ' (p' + o.p + ',w' + o.w + ')')], rowDx: 1.0, hdrK: 0.85 }); // cells pop in place
   if (zeros) { for (let w = 0; w <= 8; w++) g.set(0, w, 0, GRAY, 0); for (let i = 1; i <= 4; i++) g.set(i, 0, 0, GRAY, 0); }
   return g;
 }
@@ -2391,6 +2573,7 @@ FRAG.push(['dpbari3-knap-problem', '0/1 knapsack：4 件物品、容量 m = 8', 
   bub('把物品裝進背包', 4.2, 3.4, 0.6);
   say('目標：把物品裝進背包', '');
   await step(tok);                                   // 0:49 all of them? total 14 > 8
+  I.forEach((b) => showL(b.pw, false)); // squeezed into the bag: the weights are summed in the remark below
   await Promise.all(I.map((b, k) => slide(tok, b.g, 3.0 + k * 0.8, 900, 0.1, 0.6)));
   I.forEach((b) => b.mood('sad'));
   f = bad('全放：2 + 3 + 4 + 5 = 14 > 8', 4.2, -0.4, 1.2);
@@ -2398,7 +2581,7 @@ FRAG.push(['dpbari3-knap-problem', '0/1 knapsack：4 件物品、容量 m = 8', 
   await step(tok);                                   // 1:01 carry only a subset, sell elsewhere
   remove(f);
   await Promise.all(I.map((b, k) => slide(tok, b.g, -5.6 + k * 1.5, 900, 2.6, 0.6)));
-  I.forEach((b) => b.mood('calm'));
+  I.forEach((b) => { b.mood('calm'); showL(b.pw, true); });
   say('只能帶其中一部分（子集合）', '帶到別的地方賣掉');
   await step(tok);                                   // 1:07 sell → profit; maximize total profit
   bub('總利潤要最大', 4.2, 3.4, 0.6).element.className = 'lab-label good';
@@ -2485,10 +2668,10 @@ FRAG.push(['dpbari3-knap-rows', '0/1 knapsack 表格法：直覺填前三列', a
   g = kTable(false); I = kItems();
   say('表格法（tabulation）', '先畫一張表');
   await step(tok);                                   // 4:32 columns 0..8: weight one by one
-  await fling(tok, '容量 0 → 8', kXY(g, 0, 0, 0.9), kXY(g, 0, 8, 0.9), 1500);
+  await fling(tok, '容量 0 → 8', kXY(g, 0, 0, 1.45), kXY(g, 0, 8, 1.45), 1500); // above the w= headers, not through them
   say('行：背包容量 0 到 8', '不一次看容量 8，而是一格一格加大');
   await step(tok);                                   // 4:54 rows 0..4: one object at a time
-  await fling(tok, '物品 0 → 4', V3(-4.6, 6.6, 0.6), V3(-4.6, 3.7, 0.6), 1300);
+  await fling(tok, '物品 0 → 4', V3(-6.9, 6.6, 0.6), V3(-6.9, 3.7, 0.6), 1300); // left of the i= headers
   say('列：0 到 4，一次多考慮一件物品', '第 0 列：什麼都不放');
   await step(tok);                                   // 5:11 row 0: no object → profit 0
   for (let w = 0; w <= 8; w++) g.set(0, w, 0, GRAY, 0.8);
@@ -2500,7 +2683,7 @@ FRAG.push(['dpbari3-knap-rows', '0/1 knapsack 表格法：直覺填前三列', a
   I[0].mood('happy'); [1, 2, 3].forEach((k) => I[k].mood('calm'));
   say('第 1 列：只考慮物品 1', '其他先不管');
   await step(tok);                                   // 5:55 i-th row: also previous objects
-  bub('第 i 列：考慮物品 1 … i', 3.9, 7.7);
+  bub('第 i 列：考慮物品 1 … i', 3.9, 8.25);
   say('到第 i 列時', '前面各列的物品也一起考慮');
   await step(tok);                                   // 6:14 weight 2 → at capacity 2, profit 1
   kSet(g, 1, 1, BLUE); await fling(tok, '1', V3(-4.8, 1.2, 2.3), kXY(g, 1, 2), 700); kSet(g, 1, 2, TEAL);
@@ -2553,7 +2736,7 @@ FRAG.push(['dpbari3-knap-formula', '0/1 knapsack：用公式填第 4 列', async
   fresh([0, 4.2, 14.5], [0, 3.6, 0]);
   const g = kTable(true); kRows(g, 3); const I = kItems();
   let f, fa;
-  const show = (t) => { if (!f) f = mono(tag('', 'say', 1.0, 8.0)); txt(f, t); };
+  const show = (t) => { if (!f) f = mono(tag('', 'say', 1.0, 8.3)); txt(f, t); };
   const deps = (w) => { g.clearArrows(); g.unglow(); g.arrow(3, w, 4, w, TRY); glow(g.get(3, w), GOLD); if (w >= 5) { g.arrow(3, w - 5, 4, w, OKC); glow(g.get(3, w - 5), GREEN); } };
   await step(tok);                                   // 10:09 the formula; call the table V
   I[3].mood('happy');
@@ -2571,7 +2754,7 @@ FRAG.push(['dpbari3-knap-formula', '0/1 knapsack：用公式填第 4 列', async
   say('V[4, 1]：物品 4 重 5、利潤 6', 'max(V[3,1], V[3,1−5] + 6)');
   await step(tok);                                   // 11:33 V[3, −4]: no such location
   show('V[4,1] = max( V[3,1] , V[3, −4] + 6 )');
-  fa = bad('V[3, −4]：沒有這一格', 4.0, 4.6, 0.6);
+  fa = bad('V[3, −4]：沒有這一格', -2.4, 3.0, 0.6); // under the table, by column 0: w = −4 would be off its left edge
   say('1 − 5 = −4：沒有這一格', '這一項不算');
   await step(tok);                                   // 11:41 only V[3,1] = 0 → 0
   remove(fa); kSet(g, 4, 1); show('V[4,1] = V[3,1] = 0');
@@ -2630,15 +2813,16 @@ FRAG.push(['dpbari3-knap-trace', '0/1 knapsack：從 8 往回決定 x', async (t
   fresh([0, 4.2, 14.5], [0, 3.6, 0]);
   const g = kTable(true); kRows(g, 4); const I = kItems();
   const xs = [];
-  const xl = (i, v) => { xs[i] = tag('x' + i + ' = ' + v, v ? 'good' : 'bad', -4.8 + (i - 1) * 1.75, 1.75, 2.3); };
+  // one label per x: the '?' is rewritten with the answer (and kept, it is the result)
+  const xl = (i, v) => { const l = xs[i]; txt(l, 'x' + i + ' = ' + v); setCls(l, v ? 'good' : 'bad'); K.keep(l); };
   const where = (i, P) => { const out = []; for (let w = 0; w <= 8; w++) if (KV[i][w] === P) out.push(w); return out; };
   const lit = (i, P, c) => where(i, P).forEach((w) => { glow(g.get(i, w), c); g.mark(i, w, c === GREEN ? LG : LT); });
   let P = 8;
   await step(tok);                                   // 16:57 write x1 … x4
-  KP.forEach((o, k) => tag('x' + (k + 1) + ' = ?', 'pkt', -4.8 + k * 1.75, 1.75, 2.3));
+  KP.forEach((o, k) => { xs[k + 1] = tag('x' + (k + 1) + ' = ?', 'pkt', -4.8 + k * 1.9, 2.2, 2.3); });
   say('要寫出 x1、x2、x3、x4', '哪件放、哪件不放');
   await step(tok);                                   // 17:08 sequence of decisions; need data
-  bub('表格 = 決策需要的資料 ✓', 3.9, 7.7);
+  const data = bub('表格 = 決策需要的資料 ✓', 3.9, 8.25);
   say('現在才開始做一連串決策', '先有資料才能決策：表已經填好了');
   await step(tok);                                   // 17:27 start with the maximum profit 8
   glow(g.get(4, 8), GOLD);
@@ -2668,7 +2852,7 @@ FRAG.push(['dpbari3-knap-trace', '0/1 knapsack：從 8 往回決定 x', async (t
   g.unglow(); remove(pk);
   say('x = (0, 1, 0, 1)', '放物品 2 和物品 4');
   await step(tok);                                   // 19:12 total profit 8
-  good('最大利潤 = 2 + 6 = 8', 3.9, 7.7);
+  remove(data); good('最大利潤 = 2 + 6 = 8', 3.9, 8.25);
   say('總利潤 8：0/1 knapsack 的最佳解', '');
 }]);
 // sets 法：(p, w) 有序對
@@ -2826,26 +3010,27 @@ FRAG.push(['dpbari3-knap-sets-trace', '0/1 knapsack sets 法：(8,8) 往回找 x
   await step(tok);                                   // 28:02 same solution with sets
   say('用 sets 法得到同樣的答案', '');
   await step(tok);                                   // 28:14 both methods appear in different places
-  bub('有的書用表格法，有的用 sets 法：兩種都要會', 0, 0.9, 1.6);
+  bub('有的書用表格法，有的用 sets 法：兩種都要會', 0, 8.4, 0); // above the sets, not on the items' names
   say('有的地方用表格法，有的用 sets 法', '兩種都要會');
 }]);
 
 // ════════════════ zRza99HPvkQ：0/1 knapsack 程式（k[5][9]） ════════════════
 const KCODE = ['for (i = 0; i <= n; i++)', ' for (w = 0; w <= m; w++) {', '  if (i == 0 || w == 0)', '   k[i][w] = 0;', '  else if (wt[i] <= w)', '   k[i][w] = max(p[i] +', '     k[i-1][w-wt[i]],', '     k[i-1][w]);', '  else', '   k[i][w] = k[i-1][w];', ' }'];
 function kpArrays(drop) {
-  const A = grid({ rows: 2, cols: 5, cw: 0.74, ch: 0.55, x0: 0.75, y0: 2.6, colHdr: [0, 1, 2, 3, 4], rowHdr: ['p', 'wt'], rowDx: 0.25 });
+  const A = ctab({ rows: 2, cols: 5, cw: 0.74, ch: 0.58, x0: 0.75, y0: 2.6, colHdr: [0, 1, 2, 3, 4], rowHdr: ['p', 'wt'], rowDx: 0.25 });
   [0, ...KP.map((o) => o.p)].forEach((v, k) => A.set(0, k, v, k ? ORANGE : GRAY, drop ? 1.2 : 0));
   [0, ...KP.map((o) => o.w)].forEach((v, k) => A.set(1, k, v, k ? PINK : GRAY, drop ? 1.2 : 0));
   tag('n = 4，m = 8', 'ptr', 5.6, 2.35);
   return A;
 }
 function kpGrid() {
-  const g = grid({ rows: 5, cols: 9, cw: 0.74, ch: 0.62, x0: 0.75, y0: 7.0, colHdr: Array.from({ length: 9 }, (_, k) => k), rowHdr: [0, 1, 2, 3, 4], rowDx: 0.15 });
-  tag('w →', 'idx', 0.1, 7.45); tag('i ↓', 'idx', -0.3, 6.9);
+  // (cells pop up in their slot instead of dropping through the rows above)
+  const g = ctab({ rows: 5, cols: 9, cw: 0.74, ch: 0.62, x0: 0.75, y0: 7.0, colHdr: Array.from({ length: 9 }, (_, k) => k), rowHdr: [0, 1, 2, 3, 4], rowDx: 0.15 });
+  const ij = tag('i ↓  w →', 'idx', 0.45, 8.05); ij.center.set(1, 0.5); // one label over the corner: rows i go down, columns w go right
   return g;
 }
 function kpBuild(rowsFilled, drop) {
-  const g = kpGrid(); kpArrays(drop);
+  const g = kpGrid(); g.A = kpArrays(drop);
   for (let i = 0; i < rowsFilled; i++) for (let w = 0; w <= 8; w++) g.set(i, w, KV[i][w], i && w ? BLUE : GRAY, 0);
   return g;
 }
@@ -2859,25 +3044,26 @@ function kpStep(i, w) {
     cap: 'wt[' + i + '] = ' + wt + ' ≤ ' + w + '：取 max', formula: 'max(' + p + ' + k[' + (i - 1) + '][' + (w - wt) + '], k[' + (i - 1) + '][' + w + ']) = max(' + take + ', ' + skip + ') = ' + v } };
 }
 // i / w loop counters as two little characters under the code
-function kpCounters(i, w) { return { I: buddy('i', i, ORANGE, -5.4, 0, 1.6, 0.6), W: buddy('w', w, BLUE, -4.1, 0, 1.6, 0.6) }; }
+function kpCounters(i, w) { return { I: buddy('i', i, ORANGE, -5.5, 0, 1.6, 0.75), W: buddy('w', w, BLUE, -3.9, 0, 1.6, 0.75) }; }
 // fill cells (i, w) for the listed w, each quickly, with the code line lit
 async function kpCells(tok, g, cd, C, i, ws, ms = 450) {
   for (const w of ws) { const { line, s } = kpStep(i, w); cd.hl(line); C.I.set(i); C.W.set(w); await playStep(g, s, tok, ms, true); }
 }
-const kpF = (t) => mono(tag(t, 'say', 2.5, 8.1));
+const kpF = (t) => mono(tag(t, 'say', 2.5, 8.7));
 FRAG.push(['dpbari3-knapp-data', '0/1 knapsack 程式：p[5]、wt[5]、k[5][9]', async (tok) => {
   fresh([0, 4.4, 14.5], [0, 4.4, 0]);
   let A, g, cd;
   await step(tok);                                   // 0:48 data: profits, weights, n, m
+  frameHold(-7.2, -0.6, 0, 7.0, 9.0, 0); // the table and the code come later: frame for them now
   A = kpArrays(true);
-  const I = kItems(-5.6, 0, 1.8, 1.5, 0.7);
+  const I = kItems(-6.1, 0, 1.8, 1.75, 0.82);
   say('程式需要的資料', '利潤 p[]、重量 wt[]、物品數 n = 4、容量 m = 8');
   await step(tok);                                   // 0:59 four objects but size five
   for (let k = 0; k < 5; k++) A.mark(0, k, k ? '#efe6d2' : '#f0b8a8');
   say('只有 4 件物品，陣列卻開 5 格', '想從 1 開始數：第一件就叫 1');
   await step(tok);                                   // 1:12 zeroth index empty
   glow(A.get(0, 0), GOLD); glow(A.get(1, 0), GOLD);
-  note('index 0 空著（填 0）', 2.0, 1.8, 0.6);
+  note('index 0 空著（填 0）', 2.0, 1.25, 0.6);
   say('index 0 空著，放 0', '');
   await step(tok);                                   // 1:18 table k[5][9]
   glow(A.get(0, 0), null); glow(A.get(1, 0), null);
@@ -2888,17 +3074,17 @@ FRAG.push(['dpbari3-knapp-data', '0/1 knapsack 程式：p[5]、wt[5]、k[5][9]',
   for (let k = 0; k < 9; k++) g.mark(0, k, LT); for (let k = 0; k < 5; k++) g.mark(k, 0, LT);
   say('容量多大就幾行、物品幾件就幾列', '再多加第 0 列、第 0 行');
   await step(tok);                                   // 1:45 5 rows, 9 columns
-  await fling(tok, '5 × 9', V3(0.75, 7.6, 0.6), V3(5.9, 7.6, 0.6), 1000);
+  await fling(tok, '5 × 9', V3(0.75, 3.85, 0.6), V3(5.9, 3.85, 0.6), 1000);
   say('所以是 5 列 × 9 行', '');
   await step(tok);                                   // 1:53 just a main function
-  cd = code(['int main() {', '  int p[5] = {0,1,2,5,6};', '  int wt[5] = {0,2,3,4,5};', '  int m = 8, n = 4;', '  int k[5][9];', '  …', '}'], -3.6, 7.2, 0.5);
+  cd = code(['int main() {', '  int p[5] = {0,1,2,5,6};', '  int wt[5] = {0,2,3,4,5};', '  int m = 8, n = 4;', '  int k[5][9];', '  …', '}'], -3.6, 7.2, 0.5, -1.2);
   say('全部寫在 main 裡', '這裡不需要拆成好幾個函式');
   await step(tok);                                   // 2:09 works only for this example; change values
   cd.hl(1); await beat(tok, 500); cd.hl(2);
   say('這個程式只解這一組資料', '要換題目：改值、重新編譯執行');
   await step(tok);                                   // 2:20 or read from the keyboard
   cd.hl(-1);
-  note('也可以改成從鍵盤讀：幾件？容量？重量？利潤？', -3.0, 3.6, 0.6);
+  const kb = note('也可以改成從鍵盤讀：幾件？容量？重量？利潤？', -0.7, 3.3, 0.6); kb.center.set(1, 0.5);
   I.forEach((b) => b.mood('wow'));
   say('也可以改成從鍵盤輸入', '物品數、容量、重量、利潤');
   await step(tok);                                   // 2:34 remaining part: the logic
@@ -2907,7 +3093,8 @@ FRAG.push(['dpbari3-knapp-data', '0/1 knapsack 程式：p[5]、wt[5]、k[5][9]',
 }]);
 FRAG.push(['dpbari3-knapp-row01', '0/1 knapsack 程式：追蹤第 0、1 列', async (tok) => {
   fresh([0, 4.4, 14.5], [0, 4.4, 0]);
-  const cd = code(KCODE, -3.6, 7.4, 0.45);
+  frameHold(-7.2, -0.6, 0, 7.0, 9.0, 0);
+  const cd = code(KCODE, -3.6, 7.2, 0.5, -1.2);
   const g = kpBuild(0, false);
   let C, f;
   await step(tok);                                   // 2:38 nested for: i from 0 to n — rows
@@ -2921,7 +3108,7 @@ FRAG.push(['dpbari3-knapp-row01', '0/1 knapsack 程式：追蹤第 0、1 列', a
   say('開始追蹤：i = 0、w = 0', '');
   await step(tok);                                   // 3:24 if i == 0 || w == 0 is true; three cases
   cd.hl(2);
-  note('三種情況：① if　② else if　③ else', -3.6, 2.4, 0.6);
+  note('三種情況：① if　② else if　③ else', -3.6, 8.1, 0.6);
   say('if (i == 0 || w == 0) 成立', '程式共有三種情況');
   await step(tok);                                   // 3:29 k[0][0] = 0
   await kpCells(tok, g, cd, C, 0, [0], 600);
@@ -2971,7 +3158,8 @@ FRAG.push(['dpbari3-knapp-row01', '0/1 knapsack 程式：追蹤第 0、1 列', a
 }]);
 FRAG.push(['dpbari3-knapp-row2', '0/1 knapsack 程式：追蹤第 2 列', async (tok) => {
   fresh([0, 4.4, 14.5], [0, 4.4, 0]);
-  const cd = code(KCODE, -3.6, 7.4, 0.45);
+  frameHold(-7.2, -0.6, 0, 7.0, 9.0, 0);
+  const cd = code(KCODE, -3.6, 7.2, 0.5, -1.2);
   const g = kpBuild(2, false);
   const C = kpCounters(2, 0);
   let f;
@@ -3022,7 +3210,8 @@ FRAG.push(['dpbari3-knapp-row2', '0/1 knapsack 程式：追蹤第 2 列', async 
 }]);
 FRAG.push(['dpbari3-knapp-row34', '0/1 knapsack 程式：第 3、4 列與答案', async (tok) => {
   fresh([0, 4.4, 14.5], [0, 4.4, 0]);
-  const cd = code(KCODE, -3.6, 7.4, 0.45);
+  frameHold(-7.2, -0.6, 0, 7.0, 9.0, 0);
+  const cd = code(KCODE, -3.6, 7.2, 0.5, -1.2);
   const g = kpBuild(3, false);
   const C = kpCounters(3, 0);
   let f;
@@ -3081,11 +3270,12 @@ FRAG.push(['dpbari3-knapp-row34', '0/1 knapsack 程式：第 3、4 列與答案'
 }]);
 FRAG.push(['dpbari3-knapp-trace', '0/1 knapsack 程式：while 迴圈印出 x', async (tok) => {
   fresh([0, 4.4, 14.5], [0, 4.4, 0]);
-  const cd = code(['i = n; j = m;', 'while (i > 0 && j > 0) {', ' if (k[i][j] == k[i-1][j]) {', '   cout << i << " = 0";', '   i--;', ' } else {', '   cout << i << " = 1";', '   j = j - wt[i]; i--;', ' }', '}'], -3.6, 7.4, 0.48);
+  frameHold(-7.2, -0.6, 0, 7.0, 9.0, 0);
+  const cd = code(['i = n; j = m;', 'while (i > 0 && j > 0) {', ' if (k[i][j] == k[i-1][j]) {', '   cout << i << " = 0";', '   i--;', ' } else {', '   cout << i << " = 1";', '   j = j - wt[i]; i--;', ' }', '}'], -3.6, 7.4, 0.48, -1.2);
   const g = kpBuild(5, false);
-  const I = buddy('i', 4, ORANGE, -5.4, 0, 1.6, 0.6), J = buddy('j', 8, BLUE, -4.1, 0, 1.6, 0.6);
+  const I = buddy('i', 4, ORANGE, -5.5, 0, 1.6, 0.75), J = buddy('j', 8, BLUE, -3.9, 0, 1.6, 0.75);
   const outs = [];
-  const print = (i, v) => outs.push(mono(tag(i + ' = ' + v, v ? 'good' : 'bad', 5.4 - outs.length * 1.2, 1.3)));
+  const print = (i, v) => outs.push(K.keep(mono(tag(i + ' = ' + v, v ? 'good' : 'bad', 5.6 - outs.length * 1.7, 1.3)))); // the printed x stays (it is the answer)
   const look = (i, j) => { g.unglow(); glow(g.get(i, j), GOLD); glow(g.get(i - 1, j), GOLD); };
   await step(tok);                                   // 13:33 i = n, j = m → (4, 8)
   cd.hl(0); look(4, 8);
@@ -11059,12 +11249,14 @@ const gwh = (i, j) => ((i * 7 + j * 3) % 5) + 1;   // (i,j) → (i,j+1)
 const gwv = (i, j) => ((i * 3 + j * 5) % 4) + 1;   // (i,j) → (i+1,j)
 const GDIST = (() => { const d = {}; for (let i = 1; i <= GN; i++) for (let j = 1; j <= GM; j++) { if (i === 1 && j === 1) { d['1,1'] = 0; continue; } const c = []; if (i > 1) c.push(d[(i - 1) + ',' + j] + gwv(i - 1, j)); if (j > 1) c.push(d[i + ',' + (j - 1)] + gwh(i, j - 1)); d[i + ',' + j] = Math.min(...c); } return d; })();
 function mGrid(x0, y0, dx, dy, drop = 0) {
-  const P = (i, j) => [x0 + (j - 1) * dx, y0 - (i - 1) * dy], n = {}, eh = {}, ev = {}, wl = [];
+  const P = (i, j) => [x0 + (j - 1) * dx, y0 - (i - 1) * dy], n = {}, eh = {}, ev = {}, wl = [], wh = {}, wv = {};
   for (let i = 1; i <= GN; i++) for (let j = 1; j <= GM; j++) { const p = P(i, j); n[i + ',' + j] = mBox('', M.sand, p[0], p[1], 0.5, 0.5, 0.3, drop); }
   return {
-    P, n, eh, ev, wl,
+    P, n, eh, ev, wl, wh, wv,
+    // show only these weights: keys 'h:i,j' / 'v:i,j', or 'all'
+    wOn(ks) { const s = new Set(ks === 'all' ? [] : ks); for (const k in wh) showL(wh[k], ks === 'all' || s.has('h:' + k)); for (const k in wv) showL(wv[k], ks === 'all' || s.has('v:' + k)); },
     edges() { for (let i = 1; i <= GN; i++) for (let j = 1; j <= GM; j++) { const p = P(i, j); if (j < GM) eh[i + ',' + j] = mEdge(p, P(i, j + 1), M.brown, 0.32); if (i < GN) ev[i + ',' + j] = mEdge(p, P(i + 1, j), M.brown, 0.32); } },
-    weights() { for (let i = 1; i <= GN; i++) for (let j = 1; j <= GM; j++) { const p = P(i, j); if (j < GM) wl.push(tag(String(gwh(i, j)), 'idx', p[0] + dx / 2, p[1] + 0.22)); if (i < GN) wl.push(tag(String(gwv(i, j)), 'idx', p[0] + 0.22, p[1] - dy / 2)); } },
+    weights() { for (let i = 1; i <= GN; i++) for (let j = 1; j <= GM; j++) { const p = P(i, j); if (j < GM) wl.push(wh[i + ',' + j] = tag(String(gwh(i, j)), 'idx', p[0] + dx / 2, p[1] + 0.22)); if (i < GN) wl.push(wv[i + ',' + j] = tag(String(gwv(i, j)), 'idx', p[0] + 0.22, p[1] - dy / 2)); } },
   };
 }
 
@@ -11518,6 +11710,7 @@ FRAG.push(['dpmit2-dag-topo', '拓撲排序：BFS 會被 C→G 騙；O(V+E)', as
 // 22:14 曼哈頓格子：d(i,j) 的遞迴式
 FRAG.push(['dpmit2-grid-rec', '曼哈頓格子：d(i,j) = min(上 + w, 左 + w)', async (tok) => {
   fresh([0, 3.8, 12.5], [0, 3.8, 0]);
+  frameHold(-5.6, -1.3, 0, 5.6, 8.9, 0); // the grid, the remarks below and the top line: framed from the start
   const top = board(0, 8.0), fm = board(0, 0.2, 0.5, 'note');
   let g = null, you = null;
   await step(tok);                                   // 1339.6 something like Manhattan's map: a lattice
@@ -11529,10 +11722,10 @@ FRAG.push(['dpmit2-grid-rec', '曼哈頓格子：d(i,j) = min(上 + w, 左 + w)'
   top('只能往右、往下走');
   say('只能往右或往下走');
   await step(tok);                                   // 1363.6 all the streets are one way
-  tag('全部都是單行道', 'note', 4.3, 6.6);
-  tag('↑ ✗', 'bad', 0.7 + 0.35, 4.0); tag('← ✗', 'bad', -0.7 - 0.2, 2.9);
+  const ow = [tag('全部都是單行道', 'note', 4.3, 6.6), tag('↑ ✗', 'bad', 0.7 + 0.35, 4.0), tag('← ✗', 'bad', -0.7 - 0.2, 2.9)];
   say('每條街都是單行道', '不能往上、不能往左');
   await step(tok);                                   // 1384.2 from s to t
+  ow.forEach(remove); // one-way: said; the ✗ marks would sit on the weights that come next
   const p11 = g.P(1, 1), p54 = g.P(GN, GM);
   tag('s', 'ptr', p11[0] - 0.7, p11[1]); tag('t', 'ptr', p54[0] + 0.7, p54[1]);
   glow(g.n['1,1'], GOLD); glow(g.n['5,4'], GOLD);
@@ -11541,27 +11734,29 @@ FRAG.push(['dpmit2-grid-rec', '曼哈頓格子：d(i,j) = min(上 + w, 左 + w)'
   g.weights();
   say('每條邊的成本都不一樣', '（數字為自擬）');
   await step(tok);                                   // 1394.0 an n by m matrix
-  tag('n = 5 列', 'say', -3.8, 3.9); tag('m = 4 行', 'say', 0, 7.3);
+  const nm = [tag('n = 5 列', 'say', -3.8, 3.9), tag('m = 4 行', 'say', 0, 7.3)];
   say('整張圖是 n × m 的格子', '這裡 n = 5、m = 4');
   await step(tok);                                   // 1398.0 from s to t in the shortest possible way
   you = me(p11[0] - 2.3, p11[1] - 0.5, 0.3, 0.5, '你'); you.look(1); you.mood('wow');
   top('從 s 到 t：總成本最小的路');
   say('要從 s 走到 t，總成本越小越好');
   await step(tok);                                   // 1438.0 this is 1,1 and this is 5,4
-  tag('(1,1)', 'idx', p11[0], p11[1] + 0.5); tag('(5,4)', 'idx', p54[0], p54[1] - 0.5);
+  nm.forEach(remove); g.wOn([]); // naming the nodes now: the weights step aside
+  const co = [tag('(1,1)', 'idx', p11[0], p11[1] + 0.5), tag('(5,4)', 'idx', p54[0], p54[1] - 0.5)];
   say('幫節點編號 (i, j)', '左上 (1,1)，右下 (5,4)');
   await step(tok);                                   // 1442.6 2,1  3,1  4,1  5,1
-  for (let i = 2; i <= GN; i++) { const p = g.P(i, 1); tag('(' + i + ',1)', 'idx', p[0] - 0.75, p[1]); await beat(tok, 150); }
+  for (let i = 2; i <= GN; i++) { const p = g.P(i, 1); co.push(tag('(' + i + ',1)', 'idx', p[0] - 0.75, p[1])); await beat(tok, 150); }
   say('第一行往下：(2,1)、(3,1)、(4,1)、(5,1)', 'i = 第幾列');
   await step(tok);                                   // 1453.1 1,2  1,3  1,4
-  for (let j = 2; j <= GM; j++) { const p = g.P(1, j); tag('(1,' + j + ')', 'idx', p[0], p[1] + 0.5); await beat(tok, 150); }
+  for (let j = 2; j <= GM; j++) { const p = g.P(1, j); co.push(tag('(1,' + j + ')', 'idx', p[0], p[1] + 0.5)); await beat(tok, 150); }
   say('第一列往右：(1,2)、(1,3)、(1,4)', 'j = 第幾行');
   await step(tok);                                   // 1466.8 this problem has tripped up people on exams
-  tag('看不出「DP ＝ 圖」的人，考試常栽在這題', 'bad', 0, -0.8, 0.5);
+  const trap = tag('看不出「DP ＝ 圖」的人，考試常栽在這題', 'bad', 0, -0.8, 0.5);
   you.mood('sad');
   say('這題在考試中考倒過很多人', '看不出 DP 和圖的關係就會卡住');
   await step(tok);                                   // 1484.8 solve it with DP: recursion formulas
   top('用 DP：寫出遞迴式');
+  co.forEach(remove); remove(trap); g.wOn([]); // the recursion is about one cell at a time: its weights come with it
   you.mood('calm');
   say('改用 dynamic programming', '寫出每個點的遞迴式');
   await step(tok);                                   // 1490.1 shortest distance to (1,1)?
@@ -11578,11 +11773,11 @@ FRAG.push(['dpmit2-grid-rec', '曼哈頓格子：d(i,j) = min(上 + w, 左 + w)'
   fm('從上面 (i−1, j) 來…');
   say('它只能從上面那格 (i−1, j) 走下來…');
   await step(tok);                                   // 1534.4 the weight from (i−1, j) to (i, j)
-  mCol(g.ev['2,3'], M.ok);
+  mCol(g.ev['2,3'], M.ok); g.wOn(['v:2,3']);
   fm('d(i−1, j) + w((i−1,j) → (i,j))');
   say('上面那格的距離 + 往下那條邊的成本', '例：d(2,3) + ' + gwv(2, 3));
   await step(tok);                                   // 1544.0 or from (i, j−1) plus that weight
-  glow(g.n['3,2'], GREEN); mCol(g.eh['3,2'], M.ok);
+  glow(g.n['3,2'], GREEN); mCol(g.eh['3,2'], M.ok); g.wOn(['v:2,3', 'h:3,2']);
   fm('或  d(i, j−1) + w((i,j−1) → (i,j))');
   say('或是從左邊那格 (i, j−1) 走過來', '例：d(3,2) + ' + gwh(3, 2));
   await step(tok);                                   // 1557.7 these are the recursions
@@ -11595,9 +11790,9 @@ FRAG.push(['dpmit2-grid-rec', '曼哈頓格子：d(i,j) = min(上 + w, 左 + w)'
 FRAG.push(['dpmit2-grid-code', '格子 DP：for i, for j 逐列填 d[i,j]', async (tok) => {
   fresh([0, 3.8, 13], [0, 3.8, 0]);
   const L = ['for i in 1..n:', '  for j in 1..m:', '    if i == 1 and j == 1:', '      d[i,j] = 0', '    else:', '      d[i,j] = min(上 + w, 左 + w)', '      （第一列／第一行：少一個鄰居）'];
-  const cd = code(L, -3.6, 6.4, 0.6); cd.ls.forEach((l) => showL(l, false));
+  const cd = code(L, -3.6, 6.4, 0.6, -1.2); // the code on a plane behind, beside the grid cd.ls.forEach((l) => showL(l, false));
   const show = (...ks) => ks.forEach((k) => showL(cd.ls[k], true));
-  const g = mGrid(1.4, 6.4, 1.4, 1.3); g.edges(); g.weights();
+  const g = mGrid(1.4, 6.4, 1.4, 1.3); g.edges(); g.weights(); g.wOn([]); // weights come in when the formula uses them
   const top = board(-1.0, 7.7), low = board(-3.2, 1.0, 0.5, 'note');
   const you = me(-6.0, -0.6, 1.0, 0.6);
   const fill = (i, j) => { const k = i + ',' + j; relabel(g.n[k], GDIST[k]); tint(g.n[k], M.teal); };
@@ -11619,7 +11814,7 @@ FRAG.push(['dpmit2-grid-code', '格子 DP：for i, for j 逐列填 d[i,j]', asyn
   show(2, 3); cd.hl(3); fill(1, 1);
   say('i = 1 且 j = 1：d = 0', '這是 base case（起點）');
   await step(tok);                                   // 1622.0 otherwise d(i,j) = the big formula
-  show(4, 5); cd.hl(5);
+  show(4, 5); cd.hl(5); g.wOn('all');
   say('其他格子：套用剛剛的遞迴式', 'min(上 + w, 左 + w)');
   await step(tok);                                   // 1648.0 this is a DP solution
   cd.hl(-1);
@@ -11628,6 +11823,7 @@ FRAG.push(['dpmit2-grid-code', '格子 DP：for i, for j 逐列填 d[i,j]', asyn
   you.mood('happy');
   say('照順序填完整張表：這就是 DP', '不用建圖，直接寫遞迴');
   await step(tok);                                   // 1655.0 an implicit representation of the graph
+  g.wOn([]);
   low('圖沒有畫出來：藏在遞迴式裡（implicit）');
   say('圖還在，只是「隱含」在遞迴式裡', '上、左兩個鄰居就是入邊');
   await step(tok);                                   // 1664.0 most people are afraid of it: the hardest unit
@@ -11657,7 +11853,7 @@ FRAG.push(['dpmit2-grid-code', '格子 DP：for i, for j 逐列填 d[i,j]', asyn
   you.mood('wow');
   say('唯一難的是：狀態要定成什麼', '狀態想通了，其他都很自然');
   await step(tok);                                   // 1865.6 it depends on these two: in the dictionary?
-  glow(g.n['3,3'], GOLD); glow(g.n['2,3'], GREEN); glow(g.n['3,2'], GREEN);
+  glow(g.n['3,3'], GOLD); glow(g.n['2,3'], GREEN); glow(g.n['3,2'], GREEN); g.wOn(['v:2,3', 'h:3,2']);
   top('算 (3,3) 要用上面、左邊：表裡有了嗎？');
   say('算 (3,3) 要用 (2,3) 和 (3,2)', '它們已經在表裡了嗎？');
   await step(tok);                                   // 1877.0 line one, then line two: already there
@@ -11666,7 +11862,7 @@ FRAG.push(['dpmit2-grid-code', '格子 DP：for i, for j 逐列填 d[i,j]', asyn
   you.mood('happy');
   say('因為是一列一列算', '用到的格子一定早就算好了');
   await step(tok);                                   // 1891.1 no memoization if you know the topological sort
-  ['3,3', '2,3', '3,2'].forEach((k) => glow(g.n[k], null));
+  ['3,3', '2,3', '3,2'].forEach((k) => glow(g.n[k], null)); g.wOn([]);
   top('知道拓撲順序 → 不需要 memoization');
   say('知道拓撲順序，就不需要 memoization', '不知道順序時才需要');
   await step(tok);                                   // 1912.1 it would refer to zero, which doesn't exist
