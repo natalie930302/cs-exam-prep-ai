@@ -151,6 +151,9 @@ for (const w of [375, 1366]) {
     const r = JSON.parse(await evaluate(`(async () => {
       const f = document.querySelector('.fab-nav');
       if (!f) return JSON.stringify({ missing: true });
+      // 進場動畫（m-in，往下 5px 淡入）要等 body 加上 ui-ready 才開始；電腦忙時可能還沒開始，先等它
+      for (let i = 0; i < 80 && !document.body.classList.contains('ui-ready'); i++) await new Promise((r) => setTimeout(r, 250));
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       await Promise.all(f.getAnimations({ subtree: true }).map((a) => a.finished.catch(() => {})));
       await Promise.all((document.getElementById('main')?.getAnimations() || []).map((a) => a.finished.catch(() => {})));
       scrollTo(0, 0); await new Promise((r) => setTimeout(r, 200));
