@@ -111,7 +111,7 @@ export default function (ctx) {
   }
   async function runTE(ins, fix, P, tok) {
     const I = INS[ins];
-    const t = cube(ins, C.red, [1.1, 0.4, 0.4], -3.6, 1.9, 1.2);
+    const t = cube(ins, C.red, [1.1, 0.4, 0.4], -0.9, 1.9, 1.2);   // comes out at the guest kernel's right end (on the bar it covered the bar's name)
     say('guest kernel 執行' + I.short, I.name + '；guest 以為在 kernel mode，其實是 user mode');
     await wait(tok, 1500);
     await travel(t, [V3(0, 0.9, 1.2)], tok, 600);
@@ -121,7 +121,7 @@ export default function (ctx) {
       glow(P.cpu, RED); say('user mode 跑 privileged → trap', ''); await wait(tok, 1300);
       await travel(t, [V3(3.6, 1.9, 1.2)], tok, 600); glow(P.vmm, GOLD);
       say('VMM 檢查並 emulate：改這台 VM 的虛擬狀態', '例：只關掉這台 VM 的虛擬 interrupt'); await wait(tok, 2000);
-      await travel(t, [V3(-3.6, 1.9, 1.2)], tok, 700);
+      await travel(t, [V3(-0.9, 1.9, 1.2)], tok, 700);
       say('回到 guest，從下一個指令繼續', 'trap-and-emulate'); path = 'trap → VMM emulate → 回 guest'; await wait(tok, 1500);
     } else {
       if (fix === 'none') {
@@ -399,14 +399,14 @@ export default function (ctx) {
     const M = buildMatrix();
     say('ACL：沿著直行切', '每個 object 存 <domain, rights>');
     for (let i = 0; i < 4; i++) { glow(M[i][2], GOLD); await beat(tok, 400); }
-    tag('F3 的 ACL：<D1,read> <D3,execute> <D4,read write>', 'ptr alt', -0.9, 1.0, 3.4);
+    const acl = tag('F3 的 ACL：<D1,read> <D3,execute> <D4,read write>', 'ptr alt', -0.9, 1.0, 3.4);
     await beat(tok, 2600);
     say('查「誰能用 F3」很快，撤銷也容易', 'UNIX 的 rwx 就是簡化的 ACL');
     await beat(tok, 2400);
-    M.forEach((r) => r.forEach((m) => glow(m, null)));
+    M.forEach((r) => r.forEach((m) => glow(m, null))); kill(acl);   // the ACL line gives its place (in front of the table) to the capability line
     say('Capability list：沿著橫列切', '每個 domain 拿一串（object, rights）');
     for (let j = 0; j < 4; j++) { glow(M[3][j], GOLD); await beat(tok, 400); }
-    tag('D4 的 capability：F1:{read,write}  F3:{read,write}', 'ptr', -0.9, 1.0, 2.6);
+    tag('D4 的 capability：F1:{read,write}  F3:{read,write}', 'ptr', -0.9, 1.0, 3.4);   // in front of row D4, not printed over it
     await beat(tok, 2600);
     say('像通行證：出示就能用', '缺點：權限散在各處，撤銷困難');
     await beat(tok, 3000);
@@ -503,9 +503,16 @@ const bx = (t, c, x, y, z = 0, w = 2.4, h = 0.6, d = 0.9) => cube(t, c, [w, h, d
 const MC = { hw: '#8a7a60', vmm: '#c08a1f', host: '#31aab0', guest: '#4b9ee2', app: '#2fc092', red: '#d64545', purple: '#9b7ef4', orange: '#dd8238', gray: '#c9bba3', pink: '#e55a9b' };
 const HL = '#6a4a00', OKG = '#0f5a3a', NG = '#5a1010';
 const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.g) kill(o.g); else if (o.element) remove(o); else kill(o); });
+// An invisible box over the area the scene uses: the stage's auto framing measures it from the first step, so the
+// camera does not zoom in on the first bars and then jump back out when the rest arrives.
+function frameHold(x0, y0, z0, x1, y1, z1) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), new THREE.MeshBasicMaterial({ visible: false }));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+}
 function scene(id, title, cam, steps) {
   FRAG.push([id, title, async (tok) => {
     fresh(cam[0], cam[1]);
+    frameHold(-6.4, -1.3, -0.3, 6.4, 6.9, 0.3);
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
@@ -526,7 +533,7 @@ scene('hv-what', 'Hypervisor 是什麼', CAM, [
     cap('hypervisor：一個軟體', '專門建立和管理 virtual machine（VM）');
   },
   async (tok, S) => {                                   // 5 也叫 VMM
-    hot('= VMM（virtual machine monitor）', 0, 2.2, 0.8);
+    relabel(S.hv, 'hypervisor = VMM（virtual machine monitor）');   // the other name goes on the bar itself (above it the guests come next)
     cap('又叫 virtual machine monitor', '簡稱 VMM');
   },
   async (tok, S) => {                                   // 10 一台 host 跑好幾台 guest
@@ -551,7 +558,7 @@ scene('hv-what', 'Hypervisor 是什麼', CAM, [
   },
   async (tok, S) => {                                   // 48 VM 跟硬體無關 → 可搬到別台 server
     S.h2 = bx('另一台 server', MC.hw, 6.0, 0.4, -2.6, 2.6, 0.8, 1.2);
-    const [o, a] = S.vms[2]; await anim(tok, 1200, (u) => { o.position.set(3 + 3 * u, 2.9 - 1.8 * u, -2.6 * u); a.position.set(3 + 3 * u, 3.55 - 1.8 * u, -2.6 * u); });
+    const [o, a] = S.vms[2]; await anim(tok, 1200, (u) => { o.position.set(3 + 3 * u, 2.9 - 1.5 * u, -2.6 * u); a.position.set(3 + 3 * u, 3.55 - 1.5 * u, -2.6 * u); });   // lands on top of the server, clear of its name
     cap('VM 不綁定底下的硬體', '所以可以很容易地搬（migrate）到別台 server');
   },
 ]);
@@ -587,8 +594,8 @@ scene('hv-types', 'Type 1（bare metal） vs Type 2（hosted）', CAM, [
   },
   async (tok, S) => {                                   // 90 跑在已安裝的 OS 上
     S.os2 = bx('host OS（Windows / macOS / Linux）', MC.host, 3.4, 1.15, 0, 5.0, 0.6, 1.1);
-    S.v2 = bx('Type 2 hypervisor', MC.vmm, 2.2, 1.8, 0, 2.5, 0.6, 1.0); bx('一般 app', MC.app, 4.7, 1.8, 0, 2.2, 0.6, 1.0);
-    S.g2 = vm('guest', 2.2, 2.45);
+    S.v2 = bx('Type 2 hypervisor', MC.vmm, 1.9, 1.8, 0, 2.6, 0.6, 1.0); bx('一般 app', MC.app, 4.6, 1.8, 0, 1.8, 0.6, 1.0);   // a gap between the two names
+    S.g2 = vm('guest', 1.9, 2.45);
     cap('跑在一個已經裝好的作業系統上面', '就像一般的應用程式');
   },
   async (tok, S) => {                                   // 96 先裝 host OS
@@ -603,26 +610,26 @@ scene('hv-pros', 'Hypervisor 的優缺點', CAM, [
     S.g = [];
     for (let i = 0; i < 3; i++) { S.g.push(vm('VM' + (i + 1), -5.0 + i * 1.6, 1.9 + 0 * i)); await wt(tok, 250); }
     S.g.forEach(([o, a], i) => { o.scale.x = 0.65; a.scale.x = 0.8; });
-    good('① quickness：VM 很快就能開好', -3.4, 3.6);
+    K.keep(good('① quickness：VM 很快就能開好', -3.4, 3.6));   // the pros / cons are two lists: every item stays
     cap('優點一：quickness', '開一台 VM 比準備一台實體 server 快很多');
   },
   async (tok, S) => {                                   // 113 優點二：效率
-    good('② efficiency：一台 server 跑多台 VM，硬體不閒置', -3.4, 4.3);
+    K.keep(good('② efficiency：一台 server 跑多台 VM，硬體不閒置', -3.4, 4.3));
     cap('優點二：efficiency', '一台 server 同時跑多台 VM，硬體用得更充分');
   },
   async (tok, S) => {                                   // 123 缺點一：要外部管理介面
     S.adm = prop('monitor', 3.4, 2.2, -1.0, 0.8, '外部管理機');
-    bad('① 要另一台機器 / 介面來管理 hypervisor', 3.4, 4.6);
+    K.keep(bad('① 要另一台機器 / 介面來管理 hypervisor', 3.4, 5.8));   // the cons list runs down from the top right
     cap('缺點一：需要外部的管理介面', '要控制 hypervisor，得靠另一台系統');
   },
   async (tok, S) => {                                   // 135 缺點二：較不安全（依賴 host OS）
     S.os = bx('host OS', MC.host, 3.4, 0.4, 1.2, 4.4, 0.6, 1.0);
     S.t2 = bx('Type 2 hypervisor', MC.vmm, 3.4, 0.95, 1.2, 3.4, 0.5, 0.9);
-    bad('② 依賴 host OS → host 有漏洞，VM 也跟著曝險', 3.4, 5.3);
+    K.keep(bad('② 依賴 host OS → host 有漏洞，VM 也跟著曝險', 3.4, 5.2));
     cap('缺點二：比較不安全', 'hypervisor 依賴 host OS 時，整個系統就暴露在風險中');
   },
   async (tok, S) => {                                   // 143 缺點三：host OS 壞了全倒
-    tint(S.os, MC.red); tint(S.t2, MC.red); bad('③ host OS 掛掉 → hypervisor 和上面的 VM 全部掛', 3.4, 6.0);
+    tint(S.os, MC.red); tint(S.t2, MC.red); K.keep(bad('③ host OS 掛掉 → hypervisor 和上面的 VM 全部掛', 3.4, 4.6));
     cap('缺點三：比較不可靠', 'host OS 一掛，上面的 hypervisor 和 VM 全掛');
   },
   async (tok, S) => {                                   // 150 缺點四：資源受限
@@ -634,7 +641,7 @@ scene('hv-pros', 'Hypervisor 的優缺點', CAM, [
     cap('缺點五（影片的說法）', '不是設計來在個人桌機上跑 VM');
   },
   async (tok, S) => {                                   // 171 也有不需要 hypervisor 的工具；結論
-    note('也有不需要 hypervisor 的虛擬化工具（例如 container）', 0, 6.8);
+    note('也有不需要 hypervisor 的虛擬化工具（例如 container）', 0, 6.6);
     cap('也有一些不需要 hypervisor 的虛擬化工具', '結論：介紹了 hypervisor 和它的分類');
   },
 ]);
