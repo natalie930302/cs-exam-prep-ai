@@ -850,6 +850,37 @@ export default function (ctx) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
     m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
   }
+  // labels a scene dims stay dim: the engine's own overlap fade resets opacity when it lets go, so re-assert it
+  function dimLabels(els, on = true) {
+    els = els.filter(Boolean);
+    for (const el of els) { el.__dim = on; el.style.transition = 'opacity .4s'; el.style.opacity = on ? '0.22' : ''; }
+    if (on) { const off = lab.onFrame(() => { let any = false; for (const el of els) if (el.__dim) { any = true; if (!el.__faded && el.style.opacity !== '0.22') el.style.opacity = '0.22'; } if (!any) off(); }); }
+  }
+  // a finished part steps back (greyed, faint labels, pushed dz behind); setBack(objs, false) brings it forward again
+  function setBack(objs, on = true, dz = -1.2) {
+    for (const o of objs) {
+      if (!o || !!o.userData.backed === on) continue;
+      o.userData.backed = on; o.position.z += on ? dz : -dz;
+      const els = [];
+      o.traverse((c) => {
+        if (c.isMesh && c.material && !Array.isArray(c.material) && c.material.color && !c.userData.noDim) {
+          if (on) { c.userData.c0 = c.material.color.getHex(); c.material.color.set('#e4dccd'); } else if (c.userData.c0 !== undefined) c.material.color.setHex(c.userData.c0);
+        }
+        if (c.element) els.push(c.element);
+      });
+      dimLabels(els, on);
+    }
+  }
+  // a move along waypoints (its own lane), so a swapped block does not slide across other labels;
+  // each leg hands over early while playing, and on settle when the stage is fast-forwarded
+  function laneMove(o, pts) {
+    const b = bodyOf(o), id = {}; let k = 0; b.lane = id; // a newer laneMove (or move) on this block takes over
+    const mine = () => b.lane === id && b.target.distanceTo(pts[k]) < 1e-6;
+    const next = () => { if (k >= pts.length - 1 || !mine()) return; k++; lab.springTo(b, pts[k], k < pts.length - 1 ? next : undefined); };
+    lab.springTo(b, pts[0], pts.length > 1 ? next : undefined);
+    if (pts.length < 2) return;
+    const off = lab.onFrame(() => { if (k >= pts.length - 1 || !mine()) { off(); return; } if (o.position.distanceTo(pts[k]) < 0.22) next(); });
+  }
   // every code panel keeps headroom above its top line (the caption sits at the top of the stage)
   { const kc = K.code; K.code = (lines, x, yTop, dy, z = 0) => { frameHold(x, yTop, z, x, yTop + 1.2, z); return kc(lines, x, yTop, dy, z); }; }
   // ═══ grbari.js ═══
@@ -1141,7 +1172,7 @@ function ksBag(x = 5.6) {
   const kk = 0.36, H = KM * kk; // a 1 kg block tall enough for its label
   const bag = lab.box('#e9dcc4', [1.6, H + 0.1, 1.3]); bag.material.transparent = true; bag.material.opacity = 0.35; bag.material.depthWrite = false;
   bag.position.set(x, H / 2, 0); lab.world.add(bag);
-  ptr('knapsack m = 15', x, H + 0.5);
+  ptr('knapsack m = 15', x, -0.45); // under the bag: the top stays free for blocks dropping in
   const B = { x, kk, used: 0, blocks: [] };
   B.put = (w, label, color = GB.teal) => { const h = w * kk; const m = cube(label, color, [1.4, h - 0.03, 1.1], x, B.used * kk + h / 2, 0, 1.5); B.used += w; B.blocks.push(m); return m; };
   return B;
@@ -1150,8 +1181,9 @@ function ksBag(x = 5.6) {
 // 00:00 問題：7 個物品、背包容量 15、最大化 profit
 FRAG.push(['grbari-ks-problem', 'Knapsack 問題：7 個物品、容量 15', async (tok) => {
   fresh([0, 4.2, 14], [0, 2.4, 0]);
+  frameHold(-8.6, -1.4, 0, 7.0, 7.4, 0);
   await step(tok);                                   // 0.4 knapsack：有名的問題，greedy 可以用在這裡
-  const me = pal('搬運工', -6.2, GB.orange, 2.4, 0.65); me.mood('happy');
+  const me = pal('搬運工', -8.0, GB.orange, 2.4, 0.65); me.mood('happy');
   pkt('Knapsack problem（greedy）', 0, 5.6);
   say('Knapsack problem', '看問題、怎麼解、為什麼是 greedy');
   await step(tok);                                   // 18.6 7 個物品，每個有 profit 和 weight
@@ -1161,11 +1193,11 @@ FRAG.push(['grbari-ks-problem', 'Knapsack 問題：7 個物品、容量 15', asy
   const B = ksBag(5.8); void B;
   say('背包叫 knapsack：容量 m = 15', '單位就當 kg');
   await step(tok);                                   // 70.0 把物品裝進背包，運到別處賣掉，就賺到 profit
-  await walkTo(tok, me, -6.6, 400);
-  bub('運過去賣掉 → 賺 profit', -6.0, 1.5, 2.4);
+  await walkTo(tok, me, -8.2, 400);
+  bub('運過去賣掉 → 賺 profit', -8.4, 2.7, 2.4);
   say('裝進背包、運到別的地方賣', '賣掉就得到 profit');
   await step(tok);                                   // 95.1 也可以叫 container：container loading problem
-  note('container loading problem', 5.8, 6.4);
+  note('container loading problem', 5.8, 6.9);
   say('背包也可以叫 container', '日常的貨運就是這種問題');
   await step(tok);                                   // 114.0 總重量超過容量時，才是問題
   bad('總重 2+3+5+7+1+4+1 = 23 > 15', 0, 4.8);
@@ -1179,11 +1211,11 @@ FRAG.push(['grbari-ks-problem', 'Knapsack 問題：7 個物品、容量 15', asy
   say('限制：裝進去的總重 ≤ 15 kg', '這是題目的 constraint');
   await step(tok);                                   // 182.0 很多解：只放一個不夠多；全放放不下（不 feasible）
   glow(it[4].g.children[0], GOLD);
-  note('只放一個？profit 不是最大', kx(4), 3.4);
+  const one = note('只放一個？profit 不是最大', kx(4), 3.4);
   me.mood('calm');
   say('只放一個？不是最大', '全部放？放不下，不 feasible');
   await step(tok);                                   // 201.1 給最大結果的那個 feasible 解 = optimal
-  glow(it[4].g.children[0], null);
+  glow(it[4].g.children[0], null); remove(one);
   pkt('feasible 中 profit 最大的 = optimal', 0, 3.6, 1.6);
   say('解很多，profit 最大的才是 optimal', '接下來看怎麼解');
 }]);
@@ -1191,7 +1223,9 @@ FRAG.push(['grbari-ks-problem', 'Knapsack 問題：7 個物品、容量 15', asy
 // 03:29 x 介於 0..1（可以切）；選擇標準 profit / weight
 FRAG.push(['grbari-ks-ratio', '可以切的物品：依 profit / weight 挑', async (tok) => {
   fresh([0, 4.2, 14], [0, 2.4, 0]);
+  frameHold(-8.0, -1.8, 0, 7.2, 7.4, 0);
   const it = ksItems(0.9);
+  const pw = it.flatMap((o) => o.t.slice(1)).map((l) => l.element); // the p / w tags: faint while the cutting example plays
   await step(tok);                                   // 209.0 每個物品寫一個 x：放不放、放多少
   const xl = KP.map((p, k) => alt('x' + (k + 1), kx(k), -1.4, 0.6));
   say('每個物品寫一個 x', 'x 表示放不放、放多少');
@@ -1199,6 +1233,7 @@ FRAG.push(['grbari-ks-ratio', '可以切的物品：依 profit / weight 挑', as
   pkt('0 ≤ x ≤ 1：可以拿一部分', 0, 5.4);
   say('x 可以是 0 到 1 之間', '也就是可以拿「一部分」');
   await step(tok);                                   // 245.3 這種 knapsack 的物品可以切
+  dimLabels(pw);
   const cut = cube('5 kg', GB.sand, [1.2, 0.6, 0.6], 5.4, 3.6, 0, 1.5);
   await beat(tok, 500);
   move(cut, 5.4, 3.0, 0);
@@ -1212,14 +1247,15 @@ FRAG.push(['grbari-ks-ratio', '可以切的物品：依 profit / weight 挑', as
   bad('洗衣機不能拿一半', 5.6, 4.0);
   say('不是洗衣機這種不能切的東西', '洗衣機只能整台拿');
   await step(tok);                                   // 306.0 用什麼標準挑？profit 最高的先放？
-  const a = pal('你', -6.4, GB.purple, 2.4, 0.6); a.mood('happy');
-  const ba = bub('profit 最高的先放！', -6.0, 1.5, 2.4);
+  dimLabels(pw, false); dimLabels(xl.map((l) => l.element)); // x1 … x7 are done: faint
+  const a = pal('你', -8.0, GB.purple, 2.4, 0.6); a.mood('happy');
+  const ba = bub('profit 最高的先放！', -7.4, 2.2, 2.4);
   glow(it[5].g.children[0], GOLD);
   say('怎麼挑？profit 最高的先放？', '18 最大，先放物品 6');
   await step(tok);                                   // 326.0 或者：先放重量小的，能裝更多個
   glow(it[5].g.children[0], null);
   const b = pal('我', 6.3, GB.cyan, 2.4, 0.6); b.mood('happy');
-  bub('輕的先放，裝更多個！', 5.8, 1.5, 2.4);
+  bub('輕的先放，裝更多個！', 5.6, 2.2, 2.4);
   [4, 6].forEach((k) => glow(it[k].g.children[0], GOLD));
   say('還是重量小的先放？', '輕的多裝幾個，profit 也多');
   await step(tok);                                   // 357.0 正確：看 profit / weight（每 kg 賺多少）
@@ -1243,15 +1279,18 @@ FRAG.push(['grbari-ks-ratio', '可以切的物品：依 profit / weight 挑', as
 // 07:19 照 p/w 由大到小放：5、1、6、3、7、2（2/3）
 FRAG.push(['grbari-ks-fill', 'Greedy 裝背包：依 p/w 放，最後切一塊', async (tok) => {
   fresh([0, 4.2, 14], [0, 2.4, 0]);
+  frameHold(-7.2, -1.8, 0, 7.2, 7.6, 0);
   const it = ksItems(0.9);
   KR.forEach((r, k) => tag(r, 'val', kx(k), 2.9, 0.6));
   const B = ksBag(5.9);
   const xl = KP.map((p, k) => alt('x' + (k + 1) + ' = ?', kx(k), -1.4, 0.6));
-  const remL = ptr('剩 15 kg', 5.9, 5.6);
+  const remL = ptr('剩 15 kg', 5.9, -1.05);
   const put = async (k, take, rem, label) => {
     glow(it[k].g.children[0], GOLD);
-    await travel(tok, it[k].g, it[k].g.position.clone(), V3(5.9, 5.2, 0), 700);
-    kill(it[k].g);
+    // its own lane: straight up above every label, across, then down into the bag
+    const p0 = it[k].g.position.clone(), up = V3(p0.x, 7.0, p0.z), over = V3(5.9, 7.0, 0);
+    await travel(tok, it[k].g, p0, up, 260); await travel(tok, it[k].g, up, over, 300); await travel(tok, it[k].g, over, V3(5.9, 6.2, 0), 160);
+    kill(it[k].g); dimLabels(it[k].t.map((l) => l.element)); // its tags stay as a faint column
     B.put(take, label || ('#' + (k + 1)), take < KW[k] ? GB.green : GB.teal);
     txt(remL, '剩 ' + rem + ' kg');
   };
@@ -1275,7 +1314,7 @@ FRAG.push(['grbari-ks-fill', 'Greedy 裝背包：依 p/w 放，最後切一塊',
   say('物品 7（3）：1 kg', '3 − 1 = 2');
   await step(tok);                                   // 564.5 物品 2 要 3 kg，只剩 2 kg → 拿 2/3
   await put(1, 2, 0, '#2 的 2/3'); txt(xl[1], 'x2 = 2/3');
-  note('3 kg 只拿 2 kg', kx(1), 2.2);
+  note('3 kg 只拿 2 kg', 3.8, 4.3);
   say('物品 2 重 3 kg，只剩 2 kg', '只拿 2/3：2 − 2 = 0');
   await step(tok);                                   // 597.5 物品可切，所以拿一部分；物品 4 沒放
   txt(xl[3], 'x4 = 0');
@@ -2820,6 +2859,7 @@ FRAG.push(['grjiang1-review11', '複習：greedy 與兩種證明', async (tok) =
 // 02:45 Interval partitioning：multiple resource、用最少台機器（coloring）
 FRAG.push(['grjiang1-partition-intro2', 'Interval partitioning：最少幾台機器', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.2, 0]);
+  frameHold(-6.4, -0.8, 0, 6.4, 7.2, 0); // the bars and axis arrive later: frame for them now
   let ax, B, cpus;
   await step(tok);                                   // 165.0 interval partitioning
   tag('Interval partitioning', 'ptr alt', 0, 6.7);
@@ -3728,7 +3768,20 @@ function j2Heap(vals, o = {}) {
   H.edges = () => { H.lines.forEach(kill); H.lines = []; for (let i = 2; i <= H.n; i++) H.lines.push(line(HX(i >> 1), HY(i >> 1) - 0.35, HX(i), HY(i) + 0.35, -0.1)); };
   H.edges();
   H.place = (i) => { if (H.T[i]) move(H.T[i], HX(i), HY(i), 0); if (H.R[i]) move(H.R[i], AX(i), 0.4, 0); };
-  H.swap = (i, j) => { [H.A[i], H.A[j]] = [H.A[j], H.A[i]]; [H.T[i], H.T[j]] = [H.T[j], H.T[i]]; [H.R[i], H.R[j]] = [H.R[j], H.R[i]]; H.place(i); H.place(j); H.swaps++; };
+  // a swap moves both blocks in their own lanes: in the tree the one going up bows out sideways;
+  // in the array the one going right rides a lane just above the row, the one going left a lane above that
+  H.swap = (i, j) => {
+    [H.A[i], H.A[j]] = [H.A[j], H.A[i]]; [H.T[i], H.T[j]] = [H.T[j], H.T[i]]; [H.R[i], H.R[j]] = [H.R[j], H.R[i]]; H.swaps++;
+    const lo = Math.min(i, j), hi = Math.max(i, j);
+    if (H.T[hi]) { bodyOf(H.T[hi]).lane = null; move(H.T[hi], HX(hi), HY(hi), 0); }
+    if (H.T[lo]) {
+      const dx = HX(lo) - HX(hi), dy = HY(lo) - HY(hi), L = Math.hypot(dx, dy) || 1;
+      let nx = -dy / L, ny = dx / L; if (ny < 0) { nx = -nx; ny = -ny; }
+      laneMove(H.T[lo], [V3((HX(lo) + HX(hi)) / 2 + nx * 0.9, (HY(lo) + HY(hi)) / 2 + ny * 0.9, 0), V3(HX(lo), HY(lo), 0)]);
+    }
+    if (H.R[hi]) laneMove(H.R[hi], [V3(AX(lo), 1.0, 0), V3(AX(hi), 1.0, 0), V3(AX(hi), 0.4, 0)]);
+    if (H.R[lo]) laneMove(H.R[lo], [V3(AX(hi), 1.5, 0), V3(AX(lo), 1.5, 0), V3(AX(lo), 0.4, 0)]);
+  };
   H.hi = (i, c) => { if (H.T[i]) glow(H.T[i], c); if (H.R[i]) glow(H.R[i], c); };
   H.tint = (i, c) => { if (H.T[i]) tint(H.T[i], c); if (H.R[i]) tint(H.R[i], c); };
   H.unhi = () => { for (let i = 1; i < H.A.length; i++) H.hi(i, null); };
@@ -4377,8 +4430,10 @@ FRAG.push(['grjiang2-pq-lec12', '實作：把 d 值放進 min-priority queue，�
 // CLRS 例子共用：圖、d 值、min-PQ 列、Extract-Min 與 relax
 function j2Clrs(o = {}) {
   const G = j2Graph(J2C_P, J2C_E, { drop: o.drop || 0 });
+  // y and z sit under the long z → s edge: their d values go under the node, clear of that edge
+  for (const k of ['y', 'z']) G.D[k].position.y = G.P[k][1] - 0.78;
   const d = { s: 0, t: Infinity, x: Infinity, y: Infinity, z: Infinity }, par = {}, done = new Set();
-  const Q = tag('', 'ptr', -0.8, -0.8);
+  const Q = tag('', 'ptr', -0.8, -1.1);
   const C = { G, d, done, Q, checked: 0 };
   C.showD = () => { for (const k of Object.keys(d)) txt(G.D[k], j2F(d[k])); };
   C.showQ = () => txt(Q, 'min-PQ：' + Object.keys(d).filter((k) => !done.has(k)).sort((a, b) => d[a] - d[b]).map((k) => k + ':' + j2F(d[k])).join('  '));
@@ -4412,7 +4467,7 @@ FRAG.push(['grjiang2-dijkstra-clrs', 'Dijkstra（CLRS 例子）：Extract-Min �
   C = j2Clrs({ drop: 1.5 });
   say('一開始：一個 directed graph', 'edge 上有距離');
   await step(tok);                                   // 3083.5 圈圈數字 = 當下 d 值
-  note('點上的數字 = 當下記錄的 d 值', 0.4, 7.0);
+  const dn = note('點上的數字 = 當下記錄的 d 值', 0.4, 7.0);
   say('每個點上的數字 = 當下記錄的 d 值', '');
   await step(tok);                                   // 3089 source 是 0
   txt(C.G.D.s, '0'); glow(C.G.N.s, GOLD);
@@ -4430,7 +4485,7 @@ FRAG.push(['grjiang2-dijkstra-clrs', 'Dijkstra（CLRS 例子）：Extract-Min �
   glow(C.G.N.s, null); C.extract('s');
   say('一開始吐出 s（0），從 s 開始做', '');
   await step(tok);                                   // 3133 黑色 = 放進 S
-  note('黑色 = 正在處理、已放進 S', -4.6, -1.6);
+  const bk = note('黑色 = 正在處理、已放進 S', -4.6, -1.6);
   say('變成黑色 = 正在處理，已放進 S', '');
   await step(tok);                                   // 3154 看能不能 update 別人
   say('接著看：透過 s 能不能 update 別人', '');
@@ -4465,14 +4520,15 @@ FRAG.push(['grjiang2-dijkstra-clrs', 'Dijkstra（CLRS 例子）：Extract-Min �
   C.extract('x');
   say('最後吐出 x（9）', '所有人都放進 S，結束');
   await step(tok);                                   // 3301 d 從 ∞ 往下降
-  note('每個 d：∞ → 往下降 → 停住', -2.0, 7.0);
+  txt(dn, '每個 d：∞ → 往下降 → 停住');
   say('每個點的 d 都從 ∞ 往下降', '降到最後就不再動');
   await step(tok);                                   // 3307 visit 順序 d 遞增
+  setBack([ex, bk], true, 0);
   const ord = [['s', 0], ['y', 5], ['z', 7], ['t', 8], ['x', 9]];
-  for (let k = 0; k < ord.length; k++) { cube(ord[k][0] + ':' + ord[k][1], J2.exp, [1.0, 0.5, 0.5], 1.6 + k * 1.15, -1.6, 0.6, 1); await beat(tok, 250); }
+  for (let k = 0; k < ord.length; k++) { cube(ord[k][0] + ':' + ord[k][1], J2.exp, [1.0, 0.5, 0.5], 1.6 + k * 1.15, -2.0, 0.6); await beat(tok, 250); }
   say('explore 的順序：0、5、7、8、9', 'd 值由小到大');
   await step(tok);                                   // 3329 greedy：由近到遠
-  good('greedy：從近的走到遠的', 3.9, -2.4);
+  good('greedy：從近的走到遠的', 3.9, -3.3);
   say('從比較近的走到比較遠的', '這就是 greedy 的 idea');
   void ex;
 }]);
@@ -4575,7 +4631,7 @@ FRAG.push(['grjiang2-clrs-update', 'CLRS 例子：Extract-Min 與只 update 鄰�
   const cnt = tag('', 'ptr alt', 4.8, -1.6);
   const showCnt = () => txt(cnt, '檢查過的 edge：' + C.checked + ' / m = 10');
   await step(tok);                                   // 338 數字 = shortest-path estimate
-  note('點上的數字 = shortest-path estimate', 0.4, 7.0);
+  const en = note('點上的數字 = shortest-path estimate', 0.4, 7.0);
   say('圈圈裡的數字 = 當下的 shortest-path estimate', '');
   await step(tok);                                   // 349 source 是 0
   txt(C.G.D.s, '0');
@@ -4584,7 +4640,7 @@ FRAG.push(['grjiang2-clrs-update', 'CLRS 例子：Extract-Min 與只 update 鄰�
   C.showD();
   say('其他人還不知道要走多遠：設 ∞', '');
   await step(tok);                                   // 365 unreachable 的 ∞ 不會變
-  const ur = cube('w', J2.gray, [0.7, 0.7, 0.7], 6.2, 2.8, 0, 1.2), urT = tag('∞', 'ptr', 6.2, 3.6);
+  const ur = cube('w', J2.gray, [0.7, 0.7, 0.7], 6.2, 2.8, 0), urT = tag('∞', 'ptr', 6.2, 3.6);
   const urN = note('（示意）到不了的點：一直是 ∞', 5.2, 1.8);
   say('有些 ∞ 降不下來：s 根本到不了', 'unreachable，無路可走');
   await step(tok);                                   // 385 有路可走就會降到最短
@@ -4625,7 +4681,7 @@ FRAG.push(['grjiang2-clrs-update', 'CLRS 例子：Extract-Min 與只 update 鄰�
   C.relax('y', 't'); showCnt();
   say('y → t：5 + 3 = 8，比 10 小', '');
   await step(tok);                                   // 579 找到更短的路，10 → 8
-  bub('找到更短的路！', -1.4, 7.0, 0.6);
+  bub('找到更短的路！', -4.4, 6.0, 0.6);
   say('找到另一條到 t 更短的路', '10 降成 8');
   await step(tok);                                   // 588 x、z 從 ∞ 降下來
   C.relax('y', 'x'); C.relax('y', 'z'); showCnt();
@@ -4651,7 +4707,7 @@ FRAG.push(['grjiang2-clrs-update', 'CLRS 例子：Extract-Min 與只 update 鄰�
   j2Cls(cnt, 'good'); txt(cnt, 'update 的總次數 ≤ edge 總數 m = 10');
   say('每條 edge 只會被看一次', 'update 總次數 = edge 總數 m');
   await step(tok);                                   // 743 比 high-level 版本快
-  good('比一開始 high-level 的版本快', 0.4, 7.0);
+  j2Cls(en, 'good'); txt(en, '比一開始 high-level 的版本快');
   say('比一開始 high-level 的演算法更快', '');
   void m;
 }]);
@@ -4958,7 +5014,7 @@ FRAG.push(['grjiang2-heap-pop', 'Heap pop：拔 root、尾巴補上、往下沉'
   H.hi(1, GOLD);
   say('Max heap 要 remove 誰？', 'remove root（21）');
   await step(tok);                                   // 2306 還要維持大小關係
-  note('remove 後，剩下的還要是 max heap', 0, -1.2);
+  const rm = note('remove 後，剩下的還要是 max heap', 0, -1.2);
   say('remove 後還要讓剩下的人', '維持正常的 max heap 大小關係');
   await step(tok);                                   // 2325 現在 7 筆
   tag('7 筆 → 6 筆', 'ptr alt', 4.6, 6.6);
@@ -4994,29 +5050,31 @@ FRAG.push(['grjiang2-heap-pop', 'Heap pop：拔 root、尾巴補上、往下沉'
   say('2 再往下 check：2 ≥ 1，正常', '停下來：20 15 2 14 10 1');
   await step(tok);                                   // 2456 拔 root O(1)
   H.unhi();
-  note('① 拔 root：O(1)', -4.0, -1.2);
+  setBack([rm], true, 0);
+  note('① 拔 root：O(1)', -4.2, -1.2);
   say('Complexity：拔掉 root 是 O(1)', '');
   await step(tok);                                   // 2464 搬尾巴 O(1)
-  note('② 尾巴搬上來：O(1)', 0, -1.2);
+  note('② 尾巴搬上來：O(1)', 0, -1.85);
   say('把尾巴搬上來也是 O(1)', '');
   await step(tok);                                   // 2477 沉到 leaf：log n
-  tag('③ 最多沉到 leaf：O(log n)', 'ptr alt', 4.0, -1.2);
+  tag('③ 最多沉到 leaf：O(log n)', 'ptr alt', 4.2, -1.2);
   say('最花時間的：一路沉到 leaf', 'log n 次 → O(log n)');
 }]);
 
 // 41:45 MAX-HEAPIFY 的想法
 FRAG.push(['grjiang2-max-heapify', 'MAX-HEAPIFY：假設兩個 subtree 都是 heap，只修正自己', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
+  frameHold(-6.8, -2.0, 0, 6.8, 7.6, 0); // tree, array and notes arrive later: frame for them now
   let H = null, cnt = null, sub = [];
   const st = buddy('', '', '#f4a56a', 6.2, 0, 1.2, 0.55);
   await step(tok);                                   // 2509 很重要的 operation
-  tag('MAX-HEAPIFY', 'ptr alt', 0, 7.0);
+  tag('MAX-HEAPIFY', 'ptr alt', -4.4, 7.0);
   say('Heap 很重要的 operation：MAX-HEAPIFY', '');
   await step(tok);                                   // 2527 -ify：使它變成 heap
-  note('-ify = 動詞：使它變成 heap', 0, 6.3);
+  note('-ify = 動詞：使它變成 heap', -4.4, 6.35);
   say('-ify 是動詞：讓資料變成 max heap 的形式', '');
   await step(tok);                                   // 2553 min heap 也有 MIN-HEAPIFY
-  note('min heap 對應 MIN-HEAPIFY', 0, 5.6);
+  note('min heap 對應 MIN-HEAPIFY', -4.4, 5.7);
   say('min priority queue 就有對應的', 'MIN-HEAPIFY');
   await step(tok);                                   // 2562 亂放的 array 怎麼修？
   H = j2Heap([1, 5, 2, 9, 8, 7, 6], { drop: 1.5 });
@@ -5031,7 +5089,7 @@ FRAG.push(['grjiang2-max-heapify', 'MAX-HEAPIFY：假設兩個 subtree 都是 he
   H.hi(1, RED); H.hi(2, RED);
   say('不對就換上來；換下去又違反，再換', '');
   await step(tok);                                   // 2640 很多 redundant 交換
-  bad('上面又壞了（5 < 9）→ 還要再換', 0.0, 1.6);
+  bad('上面又壞了（5 < 9）→ 還要再換', 1.4, 2.2);
   txt(cnt, '換了又換…');
   st.mood('sad');
   say('這樣會做很多 redundant 的交換', '');
@@ -5040,11 +5098,11 @@ FRAG.push(['grjiang2-max-heapify', 'MAX-HEAPIFY：假設兩個 subtree 都是 he
   bub('用遞迴（recursive）？', 4.6, 1.6, 1.2);
   say('同學說：用遞迴', '那真正是從誰開始修？');
   await step(tok);                                   // 2723 bottom-up
-  pkt('↑ bottom-up：從下面修上來', -4.8, 2.4);
+  const bu = pkt('↑ bottom-up：從下面修上來', -4.8, 2.4);
   st.mood('happy');
   say('真正的修正是 bottom-up', '從下面修上來');
   await step(tok);                                   // 2732 也可以 iterative
-  note('recursive 和 iterative 可以互換', -4.8, 1.6);
+  const ri = note('recursive 和 iterative 可以互換', -4.8, 1.6);
   say('可以 recursive，也可以 iterative', '從最下層一個一個掃上來');
   await step(tok);                                   // 2757 本質是數學歸納法
   tag('本質：數學歸納法', 'ptr alt', 4.6, 5.6);
@@ -5055,6 +5113,7 @@ FRAG.push(['grjiang2-max-heapify', 'MAX-HEAPIFY：假設兩個 subtree 都是 he
   H.hi(1, GOLD);
   say('修正自己時：先假設下面的小孩都正常', '');
   await step(tok);                                   // 2794 左右 subtree 各自是 heap
+  setBack([bu, ri], true, 0);
   for (const [x, y] of [[HX(2), HY(2) - 0.7], [HX(3), HY(3) - 0.7]]) { const g = ghostBox('#1f9e6e', 5.0, 2.4, 1.0); g.position.set(x, y, -0.2); sub.push(g); }
   good('左 subtree 是 heap', HX(2), HY(5) - 0.9); good('右 subtree 是 heap', HX(3), HY(7) - 0.9);
   say('假設左、右 subtree 各自已是 heap', '');
@@ -5076,7 +5135,7 @@ FRAG.push(['grjiang2-max-heapify', 'MAX-HEAPIFY：假設兩個 subtree 都是 he
   say('最下面要修的是：leaf 的 parent', '');
   await step(tok);                                   // 2928 一個 node 就是一個 heap
   for (const i of [4, 5, 6, 7]) H.hi(i, GREEN);
-  note('leaf：只有一個 node，自己就是 heap', 0, 0.0);
+  const lf = note('leaf：只有一個 node，自己就是 heap', 0, -1.05);
   say('leaf 下面沒人：一個 node 自己就是 heap', '');
   await step(tok);                                   // 2944 從 leaf 的 parent 開始做
   H.unhi(); H.hi(3, GOLD); H.hi(2, GOLD);
@@ -5086,7 +5145,7 @@ FRAG.push(['grjiang2-max-heapify', 'MAX-HEAPIFY：假設兩個 subtree 都是 he
   say('修完再往上一層：下面一定都是 heap', '每次只要檢查自己和小孩');
   await step(tok);                                   // 3009 時間看這個點多高
   H.unhi();
-  tag('時間 = 這個點的高度（最多換到底）', 'ptr alt', 0, -1.2);
+  j2Cls(lf, 'ptr alt'); txt(lf, '時間 = 這個點的高度（最多換到底）'); // the leaf remark is done: rewritten in place
   say('修正一個點要多久？', '看它在多高：最多換到底');
 }]);
 
@@ -5098,7 +5157,7 @@ FRAG.push(['grjiang2-heapify-example', 'MAX-HEAPIFY 例子：從 ⌊n/2⌋ 開�
   await step(tok);                                   // 3043 從 leaf 端開始修
   say('實際做的時候：先從 leaf 端開始修正', '');
   await step(tok);                                   // 3058 最後一個 leaf 的 parent：n/2
-  pkt('從 ⌊n/2⌋ 開始（最後一個 leaf 的 parent）', -2.6, -1.2);
+  pkt('從 ⌊n/2⌋ 開始（最後一個 leaf 的 parent）', -2.6, -1.45);
   say('從最後一個 leaf 的 parent 開始', 'heap size = n → 從 n/2 開始');
   await step(tok);                                   // 3069 從右側往上修
   say('從右邊往上一個一個修正', '');
@@ -5132,7 +5191,7 @@ FRAG.push(['grjiang2-heapify-example', 'MAX-HEAPIFY 例子：從 ⌊n/2⌋ 開�
   say('1 再和 14、10 比：還是不對，再沉', '沉到底：15 14 2 1 10');
   await step(tok);                                   // 3150 complexity 看高度
   H.unhi();
-  tag('最多沉到底：看這個點的高度', 'ptr', 0, -1.9);
+  tag('最多沉到底：看這個點的高度', 'ptr', 1.6, -2.2);
   say('Complexity 看當下這個點的高度', 'worst case 沉到底');
   await step(tok);                                   // 3166 這就是 MAX-HEAPIFY
   txt(it, '這就是 MAX-HEAPIFY');
@@ -5142,6 +5201,7 @@ FRAG.push(['grjiang2-heapify-example', 'MAX-HEAPIFY 例子：從 ⌊n/2⌋ 開�
 // 53:16 BUILD-MAX-HEAP（CLRS 例子）
 FRAG.push(['grjiang2-build-heap', 'Build max heap：i = ⌊n/2⌋ 到 1 依序 MAX-HEAPIFY', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
+  frameHold(-6.8, -2.0, 0, 6.8, 7.6, 0); // tree, array and notes arrive later: frame for them now
   let H = null;
   const it = tag('', 'ptr alt', 4.4, 6.9);
   const bld = buddy('', '', '#f4a56a', -6.4, 4.6, 0.6, 0.5);
@@ -5165,7 +5225,7 @@ FRAG.push(['grjiang2-build-heap', 'Build max heap：i = ⌊n/2⌋ 到 1 依序 M
   say('16 ≥ 7：直接符合，結束', '');
   await step(tok);                                   // 3294 5、4、3、2、1 往上
   H.unhi();
-  for (let i = 5; i >= 1; i--) { tag('i=' + i, 'ptr', HX(i) + 0.7, HY(i) + 0.45); await beat(tok, 200); }
+  for (let i = 5; i >= 1; i--) { tag('i=' + i, 'ptr', HX(i) + 0.85, HY(i) + 0.5); await beat(tok, 200); }
   say('接下來就是 5、4、3、2、1 往上做', '');
   await step(tok);                                   // 3301 index 4：2 和 14、8 → swap
   txt(it, 'MAX-HEAPIFY(4)'); H.hi(4, GOLD);
@@ -5245,25 +5305,27 @@ FRAG.push(['grjiang2-build-heap-cost', 'Build heap 的時間：每點最多換�
 // 58:51 heapsort
 FRAG.push(['grjiang2-heapsort', 'Heapsort：root 換到尾巴、heap size − 1、MAX-HEAPIFY', async (tok) => {
   fresh([0, 3.4, 14], [0, 3.0, 0]);
+  frameHold(-6.8, -2.0, 0, 6.8, 7.6, 0); // tree, array and notes arrive later: frame for them now
   let H = null;
   const sorter = buddy('', '', '#9fb8ff', -6.4, 4.6, 0.6, 0.5);
   const takeOut = (n) => { H.swap(1, n); H.n = n - 1; H.edges(); H.tint(n, J2.gray); if (H.T[n]) { kill(H.T[n]); H.T[n] = null; } };
   const hs = tag('', 'ptr alt', 4.4, 6.9);
   await step(tok);                                   // 3531 能不能用 heap 從小排到大？
   sorter.mood('wow');
-  bub('建好 max heap 後，能排序嗎？', -4.4, 6.0, 0.6);
+  const q0 = bub('建好 max heap 後，能排序嗎？', -4.4, 6.0, 0.6);
   say('建好 max heap 之後', '能不能用它從小排到大？');
   await step(tok);                                   // 3553 小的在前、大的在後
   const arr = [1, 2, 3, 4, 7].map((v, k) => cube(v, J2.gray, [0.8, 0.5, 0.5], -1.6 + k * 0.9, -1.0, 0.4, 1));
   say('希望 output 的 array', '最小的在最前面、最大的在最後面');
   await step(tok);                                   // 3589 會 extract max、會 build heap
   arr.forEach(kill);
-  note('已經會：extract max、build heap', 0, -1.2);
+  const kn = note('已經會：extract max、build heap', 0, -1.2);
   say('我們已經會：extract max', '拿出最大值後剩下還能恢復成 heap');
   await step(tok);                                   // 3604 最大值 16 應該在最尾巴
-  pkt('16 → 最後一格', 4.6, 2.2);
+  const p16 = pkt('16 → 最後一格', 4.6, 2.2);
   say('最大值是誰？16', '它應該在 output 的最尾巴');
   await step(tok);                                   // 3669 第一階段：build heap
+  setBack([q0], true, 0);
   H = j2Heap([16, 14, 10, 8, 7, 9, 3, 2, 4, 1], { drop: 1.5 });
   txt(hs, '第一階段：build max heap');
   say('第一階段：把亂放的數字 build 成 max heap', '16 14 10 8 7 9 3 2 4 1');
@@ -5284,7 +5346,7 @@ FRAG.push(['grjiang2-heapsort', 'Heapsort：root 換到尾巴、heap size − 1�
   say('左邊是 heap、右邊也是 heap', '只有換上來的 1 不對');
   await step(tok);                                   // 3738 MAX-HEAPIFY on root
   H.unhi(); H.hi(1, GOLD);
-  tag('MAX-HEAPIFY(1)', 'ptr', -4.2, 6.9);
+  const mh = tag('MAX-HEAPIFY(1)', 'ptr', -4.2, 6.9);
   say('所以要做：MAX-HEAPIFY on root', '');
   await step(tok);                                   // 3752 heap size 改成 9
   H.n = 9; H.edges(); H.tint(10, J2.gray); kill(H.T[10]); H.T[10] = null;
@@ -5302,12 +5364,15 @@ FRAG.push(['grjiang2-heapsort', 'Heapsort：root 換到尾巴、heap size − 1�
   txt(hs, 'heap size：9 → 8');
   say('把它放到第 9 個位置', '換上來的人再做 MAX-HEAPIFY');
   await step(tok);                                   // 3800 iteratively，一個個固定
-  for (let n = 8; n >= 2; n--) { takeOut(n); await beat(tok, 90); await H.sink(tok, 1, 70); txt(hs, 'heap size：' + (n - 1)); }
+  const rv = H.R.filter(Boolean).map((m) => m.userData.lbl.element); dimLabels(rv); // many quick swaps: the array numbers go faint until the round is done
+  for (let n = 8; n >= 2; n--) { takeOut(n); await beat(tok, 200); await H.sink(tok, 1, 150); txt(hs, 'heap size：' + (n - 1)); }
+  await beat(tok, 500); dimLabels(rv, false);
   H.unhi(); H.tint(1, J2.gray); if (H.T[1]) kill(H.T[1]);
   H.lines.forEach(kill);
   txt(hs, '1 2 3 4 7 8 9 10 14 16');
   say('iteratively 一直做', '一個一個把位置都固定好');
   await step(tok);                                   // 3806 build n log n + 第二階段 n log n
+  setBack([kn, p16, mh], true, 0);
   tag('build：n log n　＋　第二階段：n log n', 'ptr', 0, 6.0);
   say('前面 build heap：n log n', '第二階段 restructure：也是 n log n');
   await step(tok);                                   // 3824 這叫 heapsort

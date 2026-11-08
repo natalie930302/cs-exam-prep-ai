@@ -1395,6 +1395,27 @@ export default function (ctx) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
     m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
   }
+  // labels a scene dims stay dim: the engine's own overlap fade resets opacity when it lets go, so re-assert it
+  function dimLabels(els, on = true) {
+    els = els.filter(Boolean);
+    for (const el of els) { el.__dim = on; el.style.transition = 'opacity .4s'; el.style.opacity = on ? '0.22' : ''; }
+    if (on) { const off = lab.onFrame(() => { let any = false; for (const el of els) if (el.__dim) { any = true; if (!el.__faded && el.style.opacity !== '0.22') el.style.opacity = '0.22'; } if (!any) off(); }); }
+  }
+  // a finished part steps back (greyed, faint labels, pushed dz behind); setBack(objs, false) brings it forward again
+  function setBack(objs, on = true, dz = -1.2) {
+    for (const o of objs) {
+      if (!o || !!o.userData.backed === on) continue;
+      o.userData.backed = on; o.position.z += on ? dz : -dz;
+      const els = [];
+      o.traverse((c) => {
+        if (c.isMesh && c.material && !Array.isArray(c.material) && c.material.color && !c.userData.noDim) {
+          if (on) { c.userData.c0 = c.material.color.getHex(); c.material.color.set('#e4dccd'); } else if (c.userData.c0 !== undefined) c.material.color.setHex(c.userData.c0);
+        }
+        if (c.element) els.push(c.element);
+      });
+      dimLabels(els, on);
+    }
+  }
   // every code panel keeps headroom above its top line (the caption sits at the top of the stage)
   { const kc = K.code; K.code = (lines, x, yTop, dy, z = 0) => { frameHold(x, yTop, z, x, yTop + 1.2, z); return kc(lines, x, yTop, dy, z); }; }
   // ═══ algbari1.js ═══
@@ -3952,11 +3973,12 @@ async function ab2BstCases(tok) {
 // ───────── 15. Binary search 的 frequency：3 log n + 2 ─────────
 async function ab2BinSearch(tok) {
   fresh([0, 5.5, 14], [0, 3, 0]);
+  frameHold(-6.4, -0.8, 0, 6.4, 9.4, 1.2); // code on top, array below: framed from the start
   const L = ['i = 1;', 'j = n;', 'while (i < j) {', '  mid = (i + j) / 2;', '  if (key == A[mid]) return mid;', '  else if (key < A[mid]) j = mid − 1;', '  else i = mid + 1;', '}'];
   const cd = code(L, -2.8, 7.6, 0.58);
-  const fq = L.map((_, i) => tag('', 'ptr alt', 2.8, 7.6 - i * 0.58));
+  const fq = L.map((_, i) => { const l = tag('', 'ptr alt', 2.3, 7.6 - i * 0.58); l.center.set(0, 0.5); return l; }); // left-aligned: a long count grows away from the code
   const n = 16, xs = (k) => -5.6 + k * 0.75;
-  for (let k = 1; k <= n; k++) { ctx.tile(V3(xs(k - 1), 0.04, 1.2), 0.68, 0.9, '#efe6d2'); tag(String(k), 'idx', xs(k - 1), -0.3, 1.9); }
+  const ix = []; for (let k = 1; k <= n; k++) { ctx.tile(V3(xs(k - 1), 0.04, 1.2), 0.68, 0.9, '#efe6d2'); ix.push(tag(String(k), 'idx', xs(k - 1), -0.3, 1.9)); }
   const zone = ghostBox('#2fc092', 1, 0.9, 1.0);
   const setZone = (i, j) => { zone.scale.x = (j - i + 1) * 0.75; zone.position.set((xs(i - 1) + xs(j - 1)) / 2, 0.45, 1.2); };
   const pi = tag('i', 'ptr', xs(0), 1.3, 1.2), pj = tag('j', 'ptr', xs(n - 1), 1.8, 1.2), pm = tag('mid', 'ptr alt', 0, 2.4, 1.2); // i, j, mid on three heights: they can meet
@@ -3970,7 +3992,7 @@ async function ab2BinSearch(tok) {
       while (i < j) {
         c++; cd.hl(3); txt(cnt, '第 ' + c + ' 圈');
         const mid = Math.floor((i + j) / 2); pm.position.x = xs(mid - 1); await beat(tok, 300);
-        cd.hl(6); i = mid + 1; pi.position.x = xs(i - 1); setZone(i, j); await beat(tok, 300);
+        cd.hl(6); i = mid + 1; pi.position.x = xs(i - 1); setZone(i, j); dimLabels(ix.slice(0, i - 1).map((l) => l.element)); await beat(tok, 300); // cut-off half goes faint
       }
       cd.hl(-1);
     },
@@ -6890,12 +6912,12 @@ FRAG.push(['algjiang1-gs-states', 'Gale–Shapley：free → engaged → married
 // 30:41 GS 的 pseudocode：三種 case（用 demo 的 V→B、X→B、V→A、Y→A）
 FRAG.push(['algjiang1-gs-code', 'Gale–Shapley pseudocode：三種 case', async (tok) => {
   fresh([0, 6, 14.5], [0, 2.8, 0]);
-  const cd = code(['1 initialize each person to be free', '2 while (some man is free and', '         hasn\'t proposed to every woman)', '3   choose such a man m', '4   w = 1st woman on m\'s list', '        not yet proposed to', '5   if w is free: m, w engaged', '6   else if w prefers m to fiancé m\'', '7       m, w engaged; m\' free', '8   else w rejects m', '9 output engaged pairs as married'], -4.2, 6.8, 0.54); // the code on the left; the people move right, clear of it
+  const cd = code(['1 initialize each person to be free', '2 while (some man is free and', '         hasn\'t proposed to every woman)', '3   choose such a man m', '4   w = 1st woman on m\'s list', '        not yet proposed to', '5   if w is free: m, w engaged', '6   else if w prefers m to fiancé m\'', '7       m, w engaged; m\' free', '8   else w rejects m', '9 output engaged pairs as married'], -4.8, 6.8, 0.54); // the code on the left; the people move right, clear of it
   const H = (i) => cd.hl(i);
   const wB = buddy('', 'B', C_WOM, 4.0, 3.6, 0, 0.7), wA = buddy('', 'A', C_WOM, 4.0, 1.0, 0, 0.7);
-  const lB = 'XWYVZ'.split('').map((q, k) => cube(q, J.paper, [0.42, 0.42, 0.42], 5.0 + k * 0.5, 4.0, 0));
-  const lA = 'ZVWYX'.split('').map((q, k) => cube(q, J.paper, [0.42, 0.42, 0.42], 5.0 + k * 0.5, 1.4, 0));
-  tag('B 的偏好（左 = 最愛）', 'idx', 6.0, 4.6); tag('A 的偏好', 'idx', 6.0, 2.0);
+  const lB = 'XWYVZ'.split('').map((q, k) => cube(q, J.paper, [0.42, 0.42, 0.42], 5.0 + k * 0.58, 4.0, 0));
+  const lA = 'ZVWYX'.split('').map((q, k) => cube(q, J.paper, [0.42, 0.42, 0.42], 5.0 + k * 0.58, 1.4, 0));
+  tag('B 的偏好（左 = 最愛）', 'idx', 6.16, 4.6); tag('A 的偏好', 'idx', 6.16, 2.0);
   const V = buddy('', 'V', C_MAN, 1.2, 2.2, 1.6, 0.6), X = buddy('', 'X', C_MAN, 1.2, 0.8, 2.4, 0.6), Y = buddy('', 'Y', C_MAN, 1.2, -0.4, 2.4, 0.6);
   let lvB, lxB, lvA;
   await step(tok);                                    // 1845.0 line 1: everyone free
@@ -6918,7 +6940,7 @@ FRAG.push(['algjiang1-gs-code', 'Gale–Shapley pseudocode：三種 case', async
   say('隨便挑一個這樣的男生', '這裡挑 V');
   await step(tok);                                    // 1916.0 his favourite among those not yet proposed to
   H(4);
-  const vl = 'BADEC'.split('').map((q, k) => cube(q, J.paper, [0.36, 0.36, 0.36], 0.36 + k * 0.42, 3.1, 1.6));
+  const vl = 'BADEC'.split('').map((q, k) => cube(q, J.paper, [0.38, 0.38, 0.38], 0.9 + k * 0.48, 3.1, 1.6));
   glow(vl[0], GOLD);
   say('他從還沒求過婚的女生裡', '挑最喜歡的那一位：B');
   await step(tok);                                    // 1931.0 first iteration: starts from his favourite
@@ -6955,7 +6977,7 @@ FRAG.push(['algjiang1-gs-code', 'Gale–Shapley pseudocode：三種 case', async
   say('A 比較喜歡未婚夫 V', 'reject Y，什麼都不變；Y 還是 free');
   await step(tok);                                    // 2064.0 he proposes to the next one on his list
   H(4); Y.glow(null);
-  const nx = await pkt(tok, '→ 下一位', bpos(Y), V3(3.2, -0.2, 2.6), 800);
+  const nx = await pkt(tok, '→ 下一位', bpos(Y), V3(3.2, -0.95, 2.6), 800);
   say('Y 只好向排名下一位的女生求婚', '一圈一圈繼續下去');
 }]);
 
@@ -9178,6 +9200,8 @@ FRAG.push(['algjiang2-runtime-table', 'Running time 表：每秒 10⁶ 個指令
   const X = (j) => -5.0 + j * 2.0, Y = (i) => 7.0 - i * 0.78, cells = [], heads = [];
   frameHold(-7, 0.4, 0, 8, 10.4, 0);
   const foot = note(' ', 0, 0.6, 0.8);
+  // only the columns the step talks about stay sharp (null = the whole table)
+  const focusCols = (js) => cols.forEach((c, j) => dimLabels([heads[j], ...cells.map((r) => r[j])].filter(Boolean).map((l) => l.element), !!js && !js.includes(j)));
   say('結論與一張對照表', '');
   await step(tok); // 3012.8 polynomial worst case = efficient
   pkt('polynomial worst-case running time → efficient', 0, 9.3);
@@ -9196,10 +9220,10 @@ FRAG.push(['algjiang2-runtime-table', 'Running time 表：每秒 10⁶ 個指令
   txt(foot, 'very long = 超過 10²⁵ 年');
   say('格子是需要的時間', 'very long 表示超過 10²⁵ 年');
   await step(tok); // 3117.8 n log n and n^2: bearable
-  cls(heads[1], 'good'); cls(heads[2], 'good');
+  cls(heads[1], 'good'); cls(heads[2], 'good'); focusCols([1, 2]);
   say('n log n、n² 在這個範圍', '大家大概還等得下去');
   await step(tok); // 3136.8 n^3: 32 years at n = 10^5
-  cls(cells[6][3], 'bad'); cls(heads[3], 'bad');
+  cls(cells[6][3], 'bad'); cls(heads[3], 'bad'); focusCols([3]);
   say('寫成 n³ 的話', 'input 不用太大：n = 10 萬就要 32 年');
   await step(tok); // 3152.8 real machines are faster
   txt(foot, '現在的電腦是 GHz，快一些等級，但 n³ 能處理的 n 還是不大');
@@ -9211,9 +9235,11 @@ FRAG.push(['algjiang2-runtime-table', 'Running time 表：每秒 10⁶ 個指令
   txt(foot, '→ 設計有效率的演算法非常重要');
   say('input 很大時，簡單的事也變很難', '所以設計有效率的演算法非常重要');
   await step(tok); // 3206.8 1.5^n, 2^n, n!: unbearable early
+  focusCols([4, 5, 6]);
   const gz = ghostBox('#d64545', 5.4, 6.6, 0.2); gz.position.set(X(5), Y(3.5), -0.3);
   say('1.5ⁿ、2ⁿ、n!', 'input 非常小的時候就已經受不了');
   await step(tok); // 3225.8 polynomial vs non-polynomial
+  focusCols(null);
   okT('polynomial：c · nᵈ', X(1.5), 8.6); noT('non-polynomial：exponential、階乘', X(5), 8.6);
   say('左邊屬於 polynomial（c · nᵈ）', '右邊寫不成 c · nᵈ → non-polynomial');
   await step(tok); // 3273.8 classify problem difficulty
@@ -10190,36 +10216,37 @@ FRAG.push(['algjiang2-gs-ranking', 'Ranking[w][m]：反過來存名次，O(1)', 
   const X = (k) => -3.75 + k * 1.5;
   say('可以更快嗎？可以', '');
   await step(tok); // 2992.8 do it the other way round
-  pkt('反過來做！', 0, 0.3, -3.6);
+  const rev = pkt('反過來做！', 0, 0.3, -5.6);
   say('怎麼做？反過來做', '');
   await step(tok); // 3004.8 by rank: you have to scan
-  tag('WomanPref[1]：照名次存男生', 'ptr', 0, 0.3, -2.9);
-  const wp = J2_WP.map((m, k) => cube('男 ' + m, J2.sand, [1.3, 0.45, 0.8], X(k), 0.23, -2, 2));
-  const rk = note('給一個男生 → 要掃一遍才知道名次', 0, 1.8, -2.0);
+  const wt = tag('WomanPref[1]：照名次存男生', 'ptr', 0, 0.3, -4.7);
+  const wp = J2_WP.map((m, k) => cube('男 ' + m, J2.sand, [1.3, 0.45, 0.8], X(k), 0.23, -3.7, 0.6));
+  const rk = note('給一個男生 → 要掃一遍才知道名次', 0, 0.3, -2.45);
   say('前面照喜好高低存 preference list', '給一個男生，要掃完才知道他排第幾');
   await step(tok); // 3026.8 we know his number, not his rank
   txt(rk, '手上知道的：男生編號；不知道的：名次');
   say('比較的對象是男生，編號是知道的', '不知道的是他的排名');
   await step(tok); // 3048.8 store the ranking by index
-  tag('Ranking[1][m]：m 號男生排第幾', 'ptr', 0, 0.3, -0.6);
-  for (let k = 0; k < 6; k++) { tag('m=' + (k + 1), 'idx', X(k), 0.1, 1.3); cube('', GRAY, [1.3, 0.08, 0.9], X(k), 0.04, 0.4); }
+  tag('Ranking[1][m]：m 號男生排第幾', 'ptr', 0, 0.3, -1.15);
+  for (let k = 0; k < 6; k++) { tag('m=' + (k + 1), 'idx', X(k), 0.1, 0.95); cube('', GRAY, [1.3, 0.08, 0.9], X(k), 0.04, 0); }
   say('不照 ranking 排 preference list', '改照男生的 index 記錄他的 ranking');
   await step(tok); // 3066.8 her list: 3 1 4 5 6 2
   wp.forEach((m) => glow(m, GOLD));
   say('1 號女生的 list：3 1 4 5 6 2', '3 號男生、1 號男生、4 號……');
   await step(tok); // 3083.8 store "m1 ranks __, m2 ranks __"
   wp.forEach((m) => glow(m, null));
-  const rs = J2_RK.map((r, k) => cube(r, J2.gold, [1.3, 0.5, 0.9], X(k), 0.25, 0.4, 3));
+  const rs = J2_RK.map((r, k) => cube(r, J2.gold, [1.3, 0.5, 0.9], X(k), 0.25, 0, 0.6));
   say('反過來存：1 號男生排第幾、2 號排第幾……', 'Ranking = [2, 6, 1, 3, 4, 5]');
   await step(tok); // 3098.7 same meaning, faster
-  okT('存的意義相同，但處理比較快', 4.2, 0.3, -1.2);
+  okT('存的意義相同，但處理比較快', 4.4, 0.3, -1.9);
   say('存的意義是相同的', '但處理上會快');
   await step(tok); // 3124.8 fiancé m6: index 6 -> 5, O(1)
-  tag('Current[1] = 6', 'ptr alt', -2.8, 0.3, 2.6); glow(rs[5], GOLD);
+  setBack([rev, wt, rk, ...wp], true, 0);
+  tag('Current[1] = 6', 'ptr alt', -2.8, 0.3, 2.3); glow(rs[5], GOLD);
   say('fiancé 是 6 號：直接 indexing 第 6 格', '內容是 5 → 排第 5 名，O(1)');
   await step(tok); // 3162.8 m1 proposes: cell 1 = 2 -> accept
-  cube('男 1 求婚', J2.man, [2, 0.6, 1], 2.8, 0.3, 2.6, 3); glow(rs[0], GREEN);
-  okT('2 < 5 → accept，O(1)', 2.8, 1.3, 2.6);
+  cube('男 1 求婚', J2.man, [2, 0.6, 1], 2.8, 0.3, 2.3, 0.6); glow(rs[0], GREEN);
+  okT('2 < 5 → accept，O(1)', 2.8, 0.3, 3.3);
   say('1 號男生來 propose：查第 1 格是 2', '排名 2 比 5 高 → accept，O(1) 結束');
 }]);
 
@@ -12145,7 +12172,9 @@ function gwfsSheet(dy = 0.48, y0 = 7.8) {
   // one label per cell: a cell filled again is rewritten, not stacked
   const cells = {};
   const put = (i, which) => { const k = i + ':' + which; if (cells[k]) { txt(cells[k], GW_C[i][which]); return cells[k]; } return (cells[k] = tag(GW_C[i][which], 'idx', which ? 4.6 : 2.6, y0 - i * dy)); };
-  return { cd, put, y: (i) => y0 - i * dy };
+  // focus(rows): the rows the step is about stay sharp, the rest go faint (null = all sharp)
+  const focus = (rows) => { for (let i = 0; i < GWFS.length; i++) dimLabels([cd.ls[i], cells[i + ':0'], cells[i + ':1']].filter(Boolean).map((l) => l.element), !!rows && !rows.includes(i)); };
+  return { cd, put, focus, y: (i) => y0 - i * dy };
 }
 
 // 12:18 get_words_from_string（上）：cost × times、n 個字元、w 長的 word（12 steps）
@@ -12194,13 +12223,14 @@ FRAG.push(['algmit1-gwfs-cost', 'get_words_from_string：cost × times', async (
 // 18:42 跑一次 "The fox is␣␣outside"：連續空白靠長度檢查（12 steps）
 FRAG.push(['algmit1-gwfs-trace', '追蹤 "The fox is␣␣outside"', async (tok) => {
   fresh([0, 3.6, 13], [0, 3.2, 0]);
-  const S = 'The fox is  outside', X = mX(S.length, 0.36);
+  frameHold(-5.6, 1.0, 0, 5.6, 7.2, 0);
+  const S = 'The fox is  outside', X = mX(S.length, 0.52);
   let ch = [], cur = null, buf = [], words = 0, wl = [];
   const push = async (i) => { cur.position.set(X(i), 6.6, 0); buf.push(mBox(S[i], M.blue, -2.6 + buf.length * 0.45, 4.2, 0.4, 0.45, 0.4)); await beat(tok, 200); };
   const joined = () => buf.map((m) => m.userData.lbl.element.textContent).join('');
   let wd = null;
   await step(tok);                                   // 1122.1 example "The fox is outside"
-  ch = S.split('').map((c, i) => mBox(c === ' ' ? '␣' : c, c === ' ' ? GRAY : M.paper, X(i), 6.0, 0.32, 0.4, 0.32));
+  ch = S.split('').map((c, i) => mBox(c === ' ' ? '␣' : c, c === ' ' ? GRAY : M.paper, X(i), 6.0, 0.44, 0.44, 0.44));
   say('用一行 "The fox is outside" 跑一遍', '');
   await step(tok);                                   // 1133.7 both lists start empty
   tag('character_list', 'ptr', -4.6, 4.2); tag('word_list', 'ptr', -4.6, 1.6);
@@ -12254,38 +12284,40 @@ FRAG.push(['algmit1-gwfs-sum', 'get_words_from_string：逐行加總 = O(n)', as
   await step(tok);                                   // 1379.3 now count runs and costs
   say('現在算每一行跑幾次、成本多少', '前面幾行已經填好');
   await step(tok);                                   // 1420.8 line 14: runs for the spaces
-  sh.cd.hl(5); sh.put(5, 0); sh.put(5, 1);
+  sh.cd.hl(5); sh.put(5, 0); sh.put(5, 1); sh.focus([5]);
   say('第 14 行在非英數字元（空白）時跑：n/(w+1) 次', '');
   await step(tok);                                   // 1455.5 line 15 join: cost = list length = w
-  sh.cd.hl(6); sh.put(6, 0);
+  sh.cd.hl(6); sh.put(6, 0); sh.focus([6]);
   say('第 15 行 join：成本是 list 長度，也就是 w', '');
   await step(tok);                                   // 1519.5 lines 15–18 all run n/(w+1) times
   for (const i of [6, 7, 8, 9]) sh.put(i, 1);
+  sh.focus([6, 7, 8, 9]);
   say('第 15–18 行在同一個 if 裡：都跑 n/(w+1) 次', '');
   await step(tok);                                   // 1528.0 line 16 lower: w
-  sh.cd.hl(7); sh.put(7, 0);
+  sh.cd.hl(7); sh.put(7, 0); sh.focus([7]);
   say('第 16 行轉小寫：每個字元都要處理，成本 w', '');
   await step(tok);                                   // 1550.0 line 17 append, line 18 reset: constant
-  sh.cd.hl(8); sh.put(8, 0); await beat(tok, 300); sh.cd.hl(9); sh.put(9, 0);
+  sh.cd.hl(8); sh.put(8, 0); sh.focus([8, 9]); await beat(tok, 300); sh.cd.hl(9); sh.put(9, 0);
   say('第 17 行 append、第 18 行清空：常數', '');
   await step(tok);                                   // 1571.6 lines 19–23 run at most once
   sh.cd.hl(10); for (let i = 10; i < 15; i++) sh.put(i, 1);
+  sh.focus([10, 11, 12, 13, 14]);
   say('第 19–23 行最多跑一次', '');
   await step(tok);                                   // 1603.5 they catch the last word
-  buf = pkt('迴圈結束時 character_list 還有 outside', -2.4, 0.2);
+  buf = pkt('迴圈結束時 character_list 還有 outside', -2.4, -0.35);
   say('迴圈結束時 outside 還在 character_list 裡', '19–22 行把最後一個 word 收進來');
   await step(tok);                                   // 1631.1 costs: 1, w, w, 1, 1
   for (let i = 10; i < 15; i++) sh.put(i, 0);
   say('第 19 行看長度', '常數；20–22 跟 15–17 一樣：w、w、1；23 回傳：1');
   await step(tok);                                   // 1666.2 dot product of the two columns
-  remove(buf); sh.cd.hl(-1);
-  note('cost 欄 · times 欄（內積）= 總時間', -1.0, 0.2);
+  remove(buf); sh.cd.hl(-1); sh.focus(null);
+  note('cost 欄 · times 欄（內積）= 總時間', -1.0, -0.35);
   say('把 cost 欄和 times 欄做「內積」：就是函式的總時間', '');
   await step(tok);                                   // 1701.7 the important part is n
-  okT('主要的項：常數 × n', 4.4, 0.2);
+  okT('主要的項：常數 × n', 4.4, -0.35); sh.focus([2, 3, 4, 5, 6, 7, 8, 9]);
   say('重要的是 n 那一項：常數乘以 n', '');
   await step(tok);                                   // 1734.0 O(n + 1) = O(n)
-  const z = cube('O(n + 1) = O(n)', M.green, [3.6, 0.6, 0.6], -3.4, 0.9, 0.8, 1.2); glow(z, GREEN);
+  const z = cube('O(n + 1) = O(n)', M.green, [3.6, 0.6, 0.6], 0.6, -1.2, 0.8); glow(z, GREEN);
   say('加起來 O(n + 1) = O(n)：n 是一行的長度', '');
 }]);
 
@@ -12534,8 +12566,9 @@ async function m2go(tok, cur, x, y, ms = 450) {
 async function m2goN(tok, cur, m, ms) { await m2go(tok, cur, m.position.x, m.position.y, ms); }
 // 一排 hash table 格子（沿 x），回傳 X(i)
 function m2row(m, x0, dx, z, w = 0.9, idx = (i) => String(i)) {
-  for (let i = 0; i < m; i++) { cube('', GRAY, [w, 0.12, w], x0 + i * dx, 0.06, z); tag(idx(i), 'idx', x0 + i * dx, 0, z + w / 2 + 0.35); }
-  return (i) => x0 + i * dx;
+  const X = (i) => x0 + i * dx; X.ls = []; // X.ls: the index labels (to fade a finished table)
+  for (let i = 0; i < m; i++) { cube('', GRAY, [w, 0.12, w], x0 + i * dx, 0.06, z); X.ls.push(tag(idx(i), 'idx', x0 + i * dx, 0, z + w / 2 + 0.35)); }
+  return X;
 }
 const m2item = (v, color, x, z, drop = 0, w = 0.9, y = 0.45) => cube(v, color, [w, 0.6, w], x, y, z, drop);
 
@@ -13305,6 +13338,7 @@ FRAG.push(['algmit2-bst-delete', 'BST delete 三種情況（刪 15、16、8）',
 
 FRAG.push(['algmit2-bst-delete-cost', 'delete 的程式與 O(h)', async (tok) => {
   fresh([0, 4, 13.5], [0, 3.4, 0]);
+  frameHold(-7.8, -0.8, 0, 6.6, 8.4, 0); // the code panel arrives later on the left: frame for it now
   const B = {};
   const bar = async (key, nm, h, x, c, t) => { const b = m2bar(c, 1, 0.9, x, 1.4); tag(nm, 'idx', x, 0, 2.3); await anim(tok, 600, (u) => m2set(b, h * u)); B[key] = tag(t, 'ptr', x, h + 0.4, 1.4); };
   await step(tok); // 2979 first: search for the key, O(h)
@@ -13329,7 +13363,7 @@ FRAG.push(['algmit2-bst-delete-cost', 'delete 的程式與 O(h)', async (tok) =>
   await step(tok); // 3041 insert O(h), delete O(h)
   say('insert O(h)、delete 也是 O(h)');
   await step(tok); // 3048 if I give you the node, no find needed
-  note('直接給節點：省掉找 key', 2.0, 3.8);
+  note('直接給節點：省掉找 key', 2.0, -0.6, 2.3);
   say('第一個 O(h) 是找 key', '如果直接給你節點，就不用找');
   await step(tok); // 3071 the code for delete
   const cd = code([
@@ -13344,7 +13378,7 @@ FRAG.push(['algmit2-bst-delete-cost', 'delete 的程式與 O(h)', async (tok) =>
     '14   else:',
     '15     s = self.next_larger(); 交換 key',
     '16     return s.delete()',
-  ], -3.4, 7.0, 0.5);
+  ], -3.6, 7.0, 0.5, -1.5); // a back plane beside the bars
   say('看 delete 的程式');
   await step(tok); // 3121 BST.delete finds the node and calls node.delete
   cd.hl(0);
@@ -13931,20 +13965,21 @@ FRAG.push(['algmit2-division', 'Division method：h(k) = k mod m', async (tok) =
     const X = m2row(m, x0, 1.2, z, 0.9);
     tag('m = ' + m, 'ptr', x0 - 1.4, 0.2, z);
     const cnt = Array(m).fill(0);
-    for (const k of keys) { const s = k % m; cube(k, m === 8 ? M2.orange : M2.green, [0.8, 0.45, 0.8], X(s), 0.35 + cnt[s] * 0.5, z, 2); cnt[s]++; await beat(tok, 220); }
+    for (const k of keys) { const s = k % m; cube(k, m === 8 ? M2.orange : M2.green, [0.8, 0.45, 0.8], X(s), 0.35 + cnt[s] * 0.8, z, 0.8); cnt[s]++; await beat(tok, 220); }
     return X;
   };
   await step(tok); // 2527 last topic: hash functions — how do I construct h?
   say('最後一個主題：h 到底怎麼做？', '從巨大的 key space 映到 m 格');
   await step(tok); // 2549 three hash functions
-  tag('① division', 'ptr', -4.5, 0.2, -4.2); tag('② multiplication', 'ptr', -0.5, 0.2, -4.2); tag('③ universal', 'ptr alt', 3.8, 0.2, -4.2);
+  const hd = [tag('① division', 'ptr', -4.5, 0.2, -4.9), tag('② multiplication', 'ptr', -0.5, 0.2, -4.9), tag('③ universal', 'ptr alt', 3.8, 0.2, -4.9)];
   say('三個 hash function', '前兩個實務常用；第三個理論上好');
   await step(tok); // 2558 the first two are not good theoretically
   say('前兩個理論上可以證明不好', '但很多時候還 OK，所以很常見');
   await step(tok); // 2576 the division method
+  setBack(hd.slice(1), true, 0);
   say('第一個：division method（除法）');
   await step(tok); // 2584 k mod m
-  pkt('h(k) = k mod m', 0, 1.6, -2.8);
+  pkt('h(k) = k mod m', 0.6, 0.2, -4.0);
   say('h(k) = k mod m', 'k 除以 m 的餘數：一定在 0 … m−1');
   await step(tok); // 2604 bad if m has common factors with k
   say('如果 m 和 k 有公因數，就很糟');
@@ -13953,13 +13988,13 @@ FRAG.push(['algmit2-division', 'Division method：h(k) = k mod m', async (tok) =
   say('例：key 都是偶數、m = 8 也是偶數', '示意 key');
   await step(tok); // 2617 you use only half the table
   for (let s = 1; s < 8; s += 2) { const gb = ghostBox(M2.red, 0.9, 0.4, 0.9); gb.position.set(A(s), 0.25, -1.6); }
-  noT('奇數格全空 → 只用到一半', 4.0, 1.4, -1.6);
+  noT('奇數格全空 → 只用到一半', 6.9, 0.2, -1.6);
   say('只會用到偶數格', '一半的 table 浪費掉');
   await step(tok); // 2621 in practice: choose m prime
   await run(7, 1.8, -3.6);
   say('實務上：m 取質數，就沒有公因數', 'm = 7：分散多了');
   await step(tok); // 2631 not close to a power of 2 or 10
-  note('也不要靠近 2 或 10 的次方', 3.0, 1.4, 3.0);
+  note('也不要靠近 2 或 10 的次方', 0, 0.2, 3.4);
   say('m 也不要太靠近 2 或 10 的次方', '真實資料常出現這些數');
   await step(tok); // 2634 very hackish: works a lot of the time, not always
   say('很「土法煉鋼」（hackish）', '常常能用，但不保證');
@@ -13971,58 +14006,59 @@ FRAG.push(['algmit2-multiplication', 'Multiplication method：取乘積中間的
   const w = 8, r = 3, k = 181, a = 155, P = k * a, h = (P % 256) >> (w - r);
   const BX = (b) => -3.75 + (15 - b) * 0.5;
   const row = (val, n, y, shift, color, drop = 0) => { const ms = []; for (let b = 0; b < n; b++) ms[b] = cube((val >> b) & 1, color, [0.42, 0.42, 0.42], BX(b + shift), y, 0, drop); return ms; };
-  let pm = null;
+  let pm = null; const cps = [];
   await step(tok); // 2642 a cooler method: multiplication
   say('比較酷的方法：multiplication method', '理論上一樣證明不了什麼');
   await step(tok); // 2664 multiply k by a, mod 2^w, shift right w − r
-  pkt('h(k) = [(a·k) mod 2ʷ] >> (w − r)', 0, 7.4);
+  pkt('h(k) = [(a·k) mod 2ʷ] >> (w − r)', 0, 7.7);
   say('k 乘上整數 a，mod 2ʷ，再右移 w − r 位');
   await step(tok); // 2683 a w-bit machine
-  note('w = 一個 word 有幾個 bit（示意 w = 8）', 3.8, 6.8);
+  note('w = 一個 word 有幾個 bit（示意 w = 8）', -3.9, 7.05);
   say('w 是什麼？機器的 word 大小', '假設電腦一次處理 w 個 bits');
   await step(tok); // 2696 our key k, w bits long
-  row(k, 8, 6.4, 0, M2.blue, 1.5); tag('k = 181', 'ptr', -2.3, 6.4);
+  row(k, 8, 6.4, 0, M2.blue); tag('k = 181', 'ptr', -2.3, 6.4);
   say('key k：w 個 bits', '示意 k = 181');
   await step(tok); // 2703 a: a random w-bit integer
-  row(a, 8, 5.8, 0, M2.purple, 1.5); tag('a = 155', 'ptr', -2.3, 5.8);
+  row(a, 8, 5.8, 0, M2.purple); tag('a = 155', 'ptr', -2.3, 5.8);
   say('a：隨機的 w-bit 整數', '有些 0、有些 1（示意 a = 155）');
   await step(tok); // 2718 multiplication in binary: one copy of k per 1 in a
   let y = 5.0;
-  for (let b = 0; b < 8; b++) if ((a >> b) & 1) { row(k, 8, y, b, M2.sand); await beat(tok, 260); y -= 0.5; }
+  for (let b = 0; b < 8; b++) if ((a >> b) & 1) { cps.push(...row(k, 8, y, b, M2.sand)); await beat(tok, 260); y -= 0.55; }
   say('二進位乘法：a 的每個 1 → 一份左移的 k');
   await step(tok); // 2740 add them up — gobbledygook
-  pm = row(P, 16, 1.6, 0, M2.teal, 1.5);
-  tag('a·k = ' + P, 'ptr alt', -5.4, 2.3);
+  pm = row(P, 16, 1.5, 0, M2.teal);
+  tag('a·k = ' + P, 'ptr alt', -5.4, 2.2);
   say('全部加起來', '得到一串亂七八糟的 bits');
   await step(tok); // 2751 two words long
   say('乘積最多兩個 word 長', '16 bits');
   await step(tok); // 2759 take the right word (mod 2^w)
-  for (let b = 8; b < 16; b++) tint(pm[b], GRAY);
-  const g = ghostBox(M2.gold, 4.1, 0.7, 0.7); g.position.set(2.0, 1.6, 0);
+  setBack(cps, true, 0); for (let b = 8; b < 16; b++) tint(pm[b], GRAY);
+  const g = ghostBox(M2.gold, 4.1, 0.7, 0.7); g.position.set(2.0, 1.5, 0);
   say('mod 2ʷ：只留右邊那個 word', '左邊那個 word 丟掉');
   await step(tok); // 2772 shift right by w − r
   for (let b = 0; b < 5; b++) tint(pm[b], GRAY);
   say('>> (w − r)：右移，把右邊 w − r 位丟掉');
   await step(tok); // 2784 the leftmost r bits of the rightmost w bits
   for (let b = 5; b < 8; b++) glow(pm[b], GOLD);
-  tag('h(k) = ' + h, 'ptr', 0.75, 0.6);
+  tag('h(k) = ' + h, 'ptr', 0.75, 0.55);
   say('留下：右邊那個 word 最左邊的 r 位', 'h(k) = ' + h + '（示意 r = 3）');
   await step(tok); // 2792 m = 2^r
-  note('m = 2ʳ = 8 → 0 … 7', 4.4, 0.6);
+  note('m = 2ʳ = 8 → 0 … 7', 4.4, 0.55);
   say('m = 2ʳ', '結果一定在 0 … m−1');
   await step(tok); // 2812 why it works: shifted copies, carries mix things
+  setBack(cps, false);
   say('為什麼有效？很多份移位的 k 加在一起', '進位把東西混在一起 → 這就是「切碎攪拌」');
   await step(tok); // 2831 the last bits aren't mixed much; the middle is
   glow(pm[0], RED);
   note('最右邊：只來自一份 k，沒混到', 4.4, 2.6);
   say('最右邊幾位沒什麼混到', '中間大家都撞在一起 → 混得最勻');
   await step(tok); // 2853 a should be odd
-  glow(pm[0], null);
+  glow(pm[0], null); setBack(cps, true, 0);
   say('a 要是奇數', '不然會丟掉資訊');
   await step(tok); // 2857 not very close to a power of 2
   say('a 不要太靠近 2 的次方', '介於 2^(w−1) 和 2ʷ 之間（老師口誤說 r）');
   await step(tok); // 2872 theoretically this can be bad
-  noT('理論上：還是找得到壞的 key', 0, 3.4);
+  noT('理論上：還是找得到壞的 key', -3.6, 0.55);
   say('理論上這還是可能很糟', '老師留作練習：找出壞的 key');
 }]);
 
@@ -14206,13 +14242,15 @@ FRAG.push(['algmit2-m-theta-n', 'm 要多大：太小變慢、太大浪費', asy
 
 FRAG.push(['algmit2-rehash', 'Grow：建新 table、用 h′ 全部 rehash', async (tok) => {
   fresh([0, 7.8, 10], [0, 0, 0.3]);
-  let X = null, X2 = null; const keys = [16, 9, 2, 11, 20, 13, 22, 31], it = {};
+  frameHold(-8.4, 0, -4.6, 6.6, 0.4, 3.8);
+  let X = null, X2 = null, ex = null, mm = null, mn = null, nn = null; const oldL = []; const keys = [16, 9, 2, 11, 20, 13, 22, 31], it = {};
   await step(tok); // 399 for example: want m ≥ n at all times
-  bub('例：隨時保持 m ≥ n', 0, 1.6, -4.4);
+  ex = bub('例：隨時保持 m ≥ n', 0, 1.6, -4.4);
   say('例：希望隨時 m ≥ n');
   await step(tok); // 415 start with m = 8, an empty table
-  X = m2row(8, -3.5, 1, -2.6, 0.85);
-  tag('T（m = 8）', 'ptr', -5.4, 0.2, -2.6);
+  X = (i) => -3.5 + i;
+  for (let i = 0; i < 8; i++) { cube('', GRAY, [0.85, 0.12, 0.85], X(i), 0.06, -2.6); oldL.push(tag(String(i), 'idx', X(i), 0, -2.6 + 0.425 + 0.35)); }
+  oldL.push(tag('T（m = 8）', 'ptr', -5.4, 0.2, -2.6));
   say('從 m = 8、空的 table 開始');
   await step(tok); // 424 insert eight things
   for (const k of keys) { it[k] = m2item(k, M2.blue, X(k % 8), -2.6, 2, 0.75); await beat(tok, 150); }
@@ -14221,30 +14259,31 @@ FRAG.push(['algmit2-rehash', 'Grow：建新 table、用 h′ 全部 rehash', asy
   it[25] = m2item(25, M2.orange, 5.4, -2.6, 3, 0.75);
   say('再 insert 第 9 個');
   await step(tok); // 429 now n > m: what should I do?
-  noT('n = 9 > m = 8', 5.4, 1.4, -2.6);
+  nn = noT('n = 9 > m = 8', 5.4, 1.4, -2.6);
   say('n > m 了，怎麼辦？');
   await step(tok); // 445 at the end of insert: grow the table
   say('在 insert 演算法的最後檢查', 'n > m 就 grow table');
   await step(tok); // 453 what does growing a table mean?
   say('grow 一個 table 是什麼意思？');
   await step(tok); // 464 from size m to a new size m′
-  tag("m → m′", 'ptr alt', 0, 1.4, 0);
+  mm = tag("m → m′", 'ptr alt', -1.6, 0.1, 0);
   say("從大小 m 變成新的大小 m′", '暖身題：要做什麼？');
   await step(tok); // 471 works for growing or shrinking
-  note("m′ 可以比 m 大，也可以比 m 小", 3.6, 1.4, 0);
+  mn = note("m′ 可以比 m 大，也可以比 m 小", 2.2, 0.1, 0);
   say('放大、縮小都適用');
   await step(tok); // 493 allocate the memory and rehash
   say('同學答：配置記憶體，再全部 rehash');
   await step(tok); // 502 build an entirely new table, size m′
+  setBack([mm, mn, nn], true, 0);
   X2 = m2row(16, -6, 0.8, 1.6, 0.65);
-  tag("T′（m′ = 16）", 'ptr alt', 0, 0.2, 3.0);
+  tag("T′（m′ = 16）", 'ptr alt', -7.4, 0.2, 1.6);
   say('建一個全新的 table T′', "大小 m′ = 16");
   await step(tok); // 534 for each item in the old table, insert into T′
-  const cnt = {};
+  const cnt = {}; setBack(oldL, true, 0);
   for (const k of [...keys, 25]) { const s = k % 16, c = cnt[s] || 0; cnt[s] = c + 1; glow(it[k], GOLD); move(it[k], X2(s), 0.45 + c * 0.62, 1.6); await beat(tok, 200); glow(it[k], null); }
   say("舊 table 的每個 item，重新 insert 到 T′", "h′(k) = k mod 16：25 和 9 撞在第 9 格，照樣串起來");
   await step(tok); // 565 how much time does this take?
-  bub('這要花多少時間？', 0, 1.6, -4.4);
+  txt(ex, '這要花多少時間？');
   say('重點：rehash 要花多少時間？');
   await step(tok); // 578 order n
   say('同學答：O(n)', 'm 和 m′ 都是 Θ(n) 時沒錯');
@@ -14518,7 +14557,7 @@ FRAG.push(['algmit2-python-list', 'Python list：table doubling 的 resizable ar
   say('table doubling 也解開了 Python list');
   await step(tok); // 1558 resizable arrays
   X = m2row(8, -4.2, 1.2, -1.2, 1.0);
-  tag('capacity 8', 'ptr', -6.2, 0.2, -1.2);
+  const cap8 = tag('capacity 8', 'ptr', -6.2, 0.2, -1.2);
   ['a', 'b', 'c', 'd', 'e'].forEach((v, i) => L.push(m2item(v, M2.blue, X(i), -1.2, 2, 0.9)));
   say('Python list 也叫 resizable array（可變長陣列）');
   await step(tok); // 1565 random access: L[i] in constant time
@@ -14538,6 +14577,7 @@ FRAG.push(['algmit2-python-list', 'Python list：table doubling 的 resizable ar
   say('刪第一個不是常數時間', '後面全部往前搬 → O(n)');
   await step(tok); // 1602 implemented by arrays, with table doubling
   for (const v of ['p', 'q', 'r', 's']) { L.push(m2item(v, M2.blue, X(L.length), -1.2, 2.5, 0.9)); await beat(tok, 200); }
+  dimLabels([...X.ls, cap8].map((l) => l.element)); // the old array is done: its labels go faint before the items move out
   const X2 = m2row(16, -6, 0.8, 2.2, 0.7);
   for (let i = 0; i < L.length; i++) move(L[i], X2(i), 0.45, 2.2);
   m2item('t', M2.green, X2(8), 2.2, 2.5, 0.7);
@@ -15243,14 +15283,15 @@ FRAG.push(['algmit2-linear-probing', 'Linear probing 與 clustering', async (tok
 
 FRAG.push(['algmit2-double-hashing', 'Double hashing：h2(k) 與 m 互質', async (tok) => {
   fresh([0, 6.8, 10], [0, 0, 0.4]);
-  const m = 8;
+  frameHold(-7.0, 0, -4.4, 5.4, 0.4, 3.8);
+  const m = 8, probes = [];
   const run = async (h2, z, color) => {
     const X = m2row(m, -4.2, 1.2, z, 0.9);
     tag('h2 = ' + h2, 'ptr', -6.0, 0.2, z);
     const seen = new Set();
     for (let i = 0; i < m; i++) {
       const s = (3 + i * h2) % m, again = seen.has(s); seen.add(s);
-      tag('#' + (i + 1), again ? 'idx' : 'ptr alt', X(s) + (again ? 0.3 : 0), 1.0 + (again ? 0.5 : 0), z);
+      probes.push(tag('#' + (i + 1), again ? 'idx' : 'ptr alt', X(s) + (again ? 0.3 : 0), 1.0 + (again ? 0.5 : 0), z));
       if (!again) cube('', color, [0.8, 0.3, 0.8], X(s), 0.27, z);
       await beat(tok, 180);
     }
@@ -15272,23 +15313,24 @@ FRAG.push(['algmit2-double-hashing', 'Double hashing：h2(k) 與 m 互質', asyn
   await step(tok); // 2235 what property of h2 and m?
   say('懂數論的同學：h2 和 m 要有什麼性質？');
   await step(tok); // 2255 relatively prime
-  pkt('h2(k) 與 m 互質', 0, 1.8, -4.0);
+  pkt('h2(k) 與 m 互質', 0, 1.55, -4.0);
   say('同學答：互質（relatively prime）', '最大公因數是 1');
   await step(tok); // 2272 that implies a permutation
   const a = await run(3, -1.6, M2.green);
   say('互質 → 一定是 permutation', '示意：h1 = 3、h2 = 3、m = 8：走遍 ' + a + ' 格');
   await step(tok); // 2290 multiplying by i, you roll around
+  setBack(probes.splice(0), true, 0);
   const b = await run(2, 1.8, M2.red);
   say('i 一直變大，mod m 一直繞圈', '對照：h2 = 2 和 8 不互質 → 只走到 ' + b + ' 格');
   await step(tok); // 2300 e.g. m = 2^r and h2(k) always odd
-  note('m = 2ʳ、h2(k) 永遠是奇數', 3.0, 1.8, 3.4);
+  note('m = 2ʳ、h2(k) 永遠是奇數', 0, 0.2, 3.5);
   say('簡單做法：m 取 2 的次方', 'h2(k) 永遠取奇數 → 一定互質');
   await step(tok); // 2311 then you're in great shape
   say('這樣就沒問題了', 'array 大小剛好是 2 的次方，很理想');
   await step(tok); // 2321 e.g. truncate a regular hash to make it odd
   say('h2 可以拿一般的 hash function', '再把它改成奇數（例如最後一位設成 1）');
   await step(tok); // 2335 double hashing works fairly well in practice
-  okT('double hashing：實務上效果很好', 0, 1.2, -4.0);
+  okT('double hashing：實務上效果很好', 0, 0.7, -4.0);
   say('double hashing 實務上效果很好', '讓 open addressing 真的好用');
 }]);
 
@@ -17373,7 +17415,7 @@ FRAG.push(['algmit3-heap-pop', 'Heap 第 k 小：sort 或 pop k 次', async (tok
   say('Heap 其實是陣列', '2 5 7 6 9 8');
   await step(tok);                                   // 949.7 sort the array, take the k-th: n log n
   const srt = [0, 1, 3, 2, 5, 4];
-  srt.forEach((src, pos) => move(arr[src], -2.9 + pos * 0.8, 0.2, 3.4));
+  srt.forEach((src, pos) => move(arr[src], -2.9 + pos * 0.8, 1.05, 2));
   B('整個 sort 再取第 k 個：O(n log n)');
   say('sort 再取第 k 個', 'O(n log n)');
   await step(tok);                                   // 964.3 we have a solution: not empty-handed
@@ -17381,7 +17423,7 @@ FRAG.push(['algmit3-heap-pop', 'Heap 第 k 小：sort 或 pop k 次', async (tok
   say('有一個解了', '不會空手');
   await step(tok);                                   // 987.1 extract-min is log n; call it k times
   const out = [2, 5, 6], idx = [1, 2, 4];
-  for (let q = 0; q < 3; q++) { glow(nd[idx[q]], GREEN); cube(out[q], M3.green, [0.6, 0.45, 0.6], 4.4 + q * 0.8, 0.23, -1.2, 1.5); await beat(tok, 600); }
+  for (let q = 0; q < 3; q++) { glow(nd[idx[q]], GREEN); cube(out[q], M3.green, [0.6, 0.45, 0.6], 2.9 + q * 0.8, 0.23, -1.2, 0.8); await beat(tok, 600); }
   say('extract-min 呼叫 k 次', '每次 O(log n)');
   await step(tok);                                   // 1002.1 heap sort pops n times; we stop after k
   B('heap sort = pop n 次；我們 pop k 次就停');
@@ -17393,8 +17435,9 @@ FRAG.push(['algmit3-heap-pop', 'Heap 第 k 小：sort 或 pop k 次', async (tok
   tag('O(k log n) vs O(k log k)：只差一個 log', 'note', 3.6, 6.2, 0);
   say('跟 k log k 只差一個 log', '作業裡幾乎分不出來');
   await step(tok);                                   // 1062.7 why log n? just take the first k of the array?
+  arr.forEach((c, i) => move(c, -2.9 + i * 0.8, 0.2, 2));
   [0, 1, 2].forEach((q) => glow(arr[q], RED));
-  tag('陣列前 3 個 = 2 5 7？第 3 小是 6 ✗', 'bad', -0.5, 1.2, 3.4);
+  tag('陣列前 3 個 = 2 5 7？第 3 小是 6 ✗', 'bad', -0.9, 1.15, 2);
   you.mood('wow');
   say('學生：直接拿陣列前 k 個？', '2 5 7 → 錯，第 3 小是 6');
   await step(tok);                                   // 1075.0 without keeping the heap invariant, the next pop fails
