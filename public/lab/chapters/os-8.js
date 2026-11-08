@@ -67,6 +67,12 @@ export default function (ctx) {
     const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts.map(([x, y]) => V3(x, y, z))), new THREE.LineBasicMaterial({ color }));
     lab.world.add(l); return l;
   }
+  // An invisible box over the area a scene will use later: the stage's auto framing measures it from the
+  // first step, so the camera does not zoom in on the first things and jump back out when the rest arrives.
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
   function ghost(color, w, h, d, x, y, z = 0, op = 0.14) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, depthWrite: false }));
     m.position.set(x, y, z); lab.world.add(m); return m;
@@ -118,8 +124,8 @@ export default function (ctx) {
 
   // 3D 格子：每個 reference 一欄，欄裡由上到下是各 frame
   function makeGrid(ref, F, top, opts = {}) {
-    const L = ref.length, cw = Math.min(0.62, (opts.width || 12.4) / L), x0 = (opts.x0 === undefined ? -6.2 : opts.x0) + cw / 2;
-    const X = (i) => x0 + i * cw, rowY = (r) => top - 0.75 - r * 0.56, faultY = top - 0.75 - F * 0.56 - 0.05;
+    const L = ref.length, cw = opts.cw || Math.min(0.62, (opts.width || 12.4) / L), x0 = (opts.x0 === undefined ? -6.2 : opts.x0) + cw / 2;
+    const X = (i) => x0 + i * cw, rowY = (r) => top - 0.75 - r * 0.62, faultY = top - 0.75 - F * 0.62 - 0.05;
     const g = { L, F, cw, X, rowY, faultY, top, refs: [], cols: [], marks: [], count: 0 };
     ref.forEach((p, i) => g.refs.push(cube(p, pcol(p), [cw * 0.84, 0.46, 0.5], X(i), top, 0)));
     if (opts.name) tag(opts.name, 'ptr', X(0) - cw / 2 - 1.1, top);
@@ -133,7 +139,7 @@ export default function (ctx) {
       const p = st.frames[r];
       if (p === null) { col.push(null); continue; }
       const isNew = st.fault && r === st.slot;
-      const m = cube(p, isNew ? pcol(p) : '#efe5d3', [g.cw * 0.84, 0.46, 0.5], g.X(st.i), g.rowY(r), 0, isNew && drop ? 1.8 : 0);
+      const m = cube(p, isNew ? pcol(p) : '#efe5d3', [g.cw * 0.84, 0.46, 0.5], g.X(st.i), g.rowY(r), 0); // appears in place (no fall through the cells above)
       if (!isNew) tint(m, '#e3d6bf');
       col.push(m);
     }
@@ -485,7 +491,7 @@ export default function (ctx) {
     tag('page table', 'ptr', -2.8, 6.9);
     const rows = PT.map((f, i) => ({ f: cube(f === null ? '' : f, PALE, [0.8, 0.5, 0.6], -3.2, 6.2 - i * 0.66), v: cube('', GRAY, [0.6, 0.5, 0.6], -2.3, 6.2 - i * 0.66) }));
     tag('physical memory', 'ptr', 1.4, 6.9);
-    const fy = (f) => 6.3 - f * 0.48;
+    const fy = (f) => 6.3 - f * 0.52;
     for (let f = 0; f < 12; f++) { tag(String(f), 'idx', 0.3, fy(f)); ctx.tile(V3(1.4, fy(f) - 0.2, 0), 1.6, 0.4, '#efe5d3'); }
     tag('backing store', 'ptr', 5.0, 6.9);
     PAGES.forEach((n, i) => cube(n, pcol(i), [0.7, 0.45, 0.6], 4.5 + (i % 2) * 0.9, 6.0 - Math.floor(i / 2) * 0.66));
@@ -494,7 +500,7 @@ export default function (ctx) {
     say('lazy swapper（pager）：只載入需要的 page', '這裡只有 A、C、F 被用到');
     for (const [p, f] of [[0, 4], [2, 6], [5, 9]]) {
       glow(lm[p], GOLD);
-      cube(PAGES[p], pcol(p), [1.4, 0.38, 0.6], 1.4, fy(f), 0, 2.5);
+      cube(PAGES[p], pcol(p), [1.4, 0.38, 0.6], 1.4, fy(f), 0); // appears in its frame (no fall through the frames above)
       await beat(tok, 900);
       relabel(rows[p].v, 'v'); tint(rows[p].v, GREEN); glow(lm[p], null);
       await beat(tok, 500);
@@ -523,12 +529,12 @@ export default function (ctx) {
     const stepL = tag('', 'ptr alt', 0, 0.2);
     const st = async (n, cap, f, ms = 2600) => { txt(stepL, '步驟 ' + n); say(cap, f); await beat(tok, ms); };
     const pk = cube('M', ORANGE, [0.8, 0.45, 0.5], -5.6, 5.6, 0.6);
-    move(pk, -2.6, 5.6, 0.7);
+    move(pk, -3.75, 5.6, 0.7);
     await st('①', '① 參考 M：查 page table', 'bit = i：M 不在 memory');
     glow(ent, BADR);
-    move(pk, -2.6, 1.4, 0.7); glow(os, GOLD);
+    move(pk, -2.6, 2.25, 0.7); glow(os, GOLD);
     await st('②', '② trap：page fault 交給 OS', '先確認是合法存取（不合法就終止 process）');
-    move(pk, 5.6, 4.0, 0.7); glow(dm, GOLD);
+    move(pk, 5.6, 4.75, 0.7); glow(dm, GOLD);
     await st('③', '③ page 在 backing store 上', '找一個 free frame，排 disk 讀取');
     const inn = cube('M', TEAL, [1.0, 0.5, 0.6], 5.6, 4.0, 0.8);
     move(inn, 2.0, 3.6, 0.8);
@@ -538,7 +544,7 @@ export default function (ctx) {
     await st('⑤', '⑤ 更新 page table：bit 改成 v', '記下 frame number');
     glow(os, null); move(pk, -5.6, 5.6, 0.6);
     await beat(tok, 700);
-    move(pk, 2.0, 3.6, 0.7); glow(free, OKG);
+    move(pk, 0.65, 3.6, 0.7); glow(free, OKG);
     await st('⑥', '⑥ 重新執行被中斷的指令', '這次 M 已經在 memory：成功', 3000);
     txt(stepL, '');
     say('page fault 是 trap，指令必須能 restart', '例如 block move 要先檢查兩端都在 memory');
@@ -654,14 +660,15 @@ export default function (ctx) {
   }
   async function scBelady(tok) {
     fresh([0, 3.6, 14], [0, 3.4, 0]);
+    frameHold(-6.6, -0.9, -0.3, 6.6, 7.0, 0.3); // the 4-frame grid comes later under the first one: no zoom jump
     say('FIFO，reference string 1 2 3 4 1 2 5 1 2 3 4 5', '先給 3 個 frame');
     await beat(tok, 2400);
-    const g3 = await playGrid(tok, BELADY, 3, 'fifo', 6.6, { ms: 650, hitMs: 450, name: '3 frames', width: 9, x0: -4.8, cntX: 5.4, formula: 'FIFO，3 frames' });
+    const g3 = await playGrid(tok, BELADY, 3, 'fifo', 6.6, { ms: 650, hitMs: 450, name: '3 frames', cw: 0.78, x0: -5.0, cntX: 5.6, formula: 'FIFO，3 frames' });
     say('3 個 frame：9 次 page fault', '');
     await beat(tok, 2000);
     say('多給一個 frame，應該會比較少吧？', '改成 4 個 frame');
     await beat(tok, 2000);
-    const g4 = await playGrid(tok, BELADY, 4, 'fifo', 3.3, { ms: 650, hitMs: 450, name: '4 frames', width: 9, x0: -4.8, cntX: 5.4, formula: 'FIFO，4 frames' });
+    const g4 = await playGrid(tok, BELADY, 4, 'fifo', 3.3, { ms: 650, hitMs: 450, name: '4 frames', cw: 0.78, x0: -5.0, cntX: 5.6, formula: 'FIFO，4 frames' });
     txt(g3.cnt, 'page fault：9'); txt(g4.cnt, 'page fault：10 !');
     say('4 個 frame 反而 10 次！', 'Belady\'s anomaly：frame 變多，fault 變多');
     await beat(tok, 3400);
@@ -684,7 +691,7 @@ export default function (ctx) {
       const p = REF[i];
       glow(rm[i], GOLD); if (i) glow(rm[i - 1], null);
       stack = [p, ...stack.filter((x) => x !== p)];
-      if (!sm.has(p)) sm.set(p, cube(p, pcol(p), [1.2, 0.55, 0.7], 3.6, sy(stack.length - 1) + 2, 0, 0));
+      if (!sm.has(p)) sm.set(p, cube(p, pcol(p), [1.2, 0.55, 0.7], 3.6, sy(0) + 0.8, 0, 0)); // a new page comes in from above the top
       stack.forEach((x, k) => move(sm.get(x), 3.6, sy(k), 0));
       say('參考 ' + p + '：移到最上面', 'stack：' + stack.join(' '));
       if (i === 9) { txt(snap, 'a 之前：' + stack.join(' ')); await beat(tok, 2600); }
@@ -703,7 +710,7 @@ export default function (ctx) {
     const pages = [['page X', '11000100'], ['page Y', '01110111']];
     const rows = pages.map(([n, b], r) => {
       tag(n, 'ptr', -5.4, 4.8 - r * 1.8);
-      return b.split('').map((ch, i) => cube(ch, ch === '1' ? BLUE : PALE, [0.6, 0.6, 0.6], -3.6 + i * 0.75, 4.8 - r * 1.8, 0, 2));
+      return b.split('').map((ch, i) => cube(ch, ch === '1' ? BLUE : PALE, [0.6, 0.6, 0.6], -3.6 + i * 0.75, 4.8 - r * 1.8, 0));
     });
     tag('← 最近', 'idx', -3.6, 5.6); tag('8 個週期前 →', 'idx', 1.6, 5.6);
     say('additional-reference-bits：8-bit 位移暫存器', '每個週期右移，新的 reference bit 放最左邊');
@@ -888,7 +895,7 @@ export default function (ctx) {
   // ═══ vm.js ═══
   {
 const P = K; const { V3, tag, cube, kill, glow, code, anim, arrow, zone, travel, remove, step, buddy, prop, bob, fresh } = P;
-const { txt, tint, line, relabel } = P;
+const { txt, tint, line, relabel, keep } = P;
 // (kit has no beat: short waits use ctx.beat)
 // ─── 作業系統 第 8 章 Virtual Memory（清大 周志遠 13A–14D 講 + LRU/Optimal 例題 + Page Fault Handling）— cued scenes ───
 // 每個場景是一串 step；每個 step 等老師講到那句話（notes 的 cues）才做一個短動作，不重播、不循環。
@@ -921,7 +928,10 @@ const CAM = [[0, 4.2, 14], [0, 3.0, 0]];
 const CAMW = [[0, 4.4, 15.5], [0, 3.2, 0]];
 // a list of short lines (a slide's bullet points), shown one at a time
 // (left-aligned at x)
-function bullets(x, yTop, dy = 0.62) { let n = 0; return (t, kind = 'note') => { const l = tag(t, kind, x, yTop - (n++) * dy); l.center.set(0, 0.5); return l; }; }
+// (kept: a list is the subject, its earlier lines must not be retired like side remarks)
+// the same list, laid out at given [x, y] spots (two short columns instead of one tall one)
+function bulletsAt(pts) { let n = 0; return (t, kind = 'note') => { const [x, y] = pts[Math.min(n++, pts.length - 1)]; const l = keep(tag(t, kind, x, y)); l.center.set(0, 0.5); return l; }; }
+function bullets(x, yTop, dy = 0.62) { let n = 0; return (t, kind = 'note') => { const l = keep(tag(t, kind, x, yTop - (n++) * dy)); l.center.set(0, 0.5); return l; }; }
 // a polyline from [x, y] points
 function poly(pts, color = '#8d6b3a', z = 0) { const ls = []; for (let i = 1; i < pts.length; i++) ls.push(line(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1], z, color)); return ls; }
 // small axes: origin (x0, y0), width w, height h
@@ -933,7 +943,7 @@ function axes(x0, y0, w, h, xl, yl) {
 // a page table: rows [page, frame, bit]; columns: page # | frame # | v/i
 function ptable(x, yTop, rows, o = {}) {
   const dy = o.dy || 0.6, w = o.w || 0.9;
-  const head = o.head === false ? [] : [sm(o.h0 || 'page', x - w - 0.05, yTop + 0.55), sm(o.h1 || 'frame', x, yTop + 0.95), sm('v / i', x + w * 0.8, yTop + 0.55)];
+  const head = o.head === false ? [] : [sm(o.h0 || 'page', x - w - 0.1, yTop + 0.5), sm(o.h1 || 'frame', x, yTop + 1.05), sm('v / i', x + w * 0.85 + 0.15, yTop + 0.5)];
   const cells = rows.map(([p, f, b], i) => {
     const y = yTop - i * dy;
     const c0 = bx(String(p), o.pcol ? o.pcol(p) : MC.sand, x - w - 0.05, y, 0, w - 0.08, dy - 0.08, 0.6);
@@ -1000,7 +1010,7 @@ function rgrid(ref, F, alg, o = {}) {
         const cubes = [];
         vals.forEach((v, r) => {
           if (v === null) return;
-          const m = cube(String(v), pc(v), [cs, cs, cs], x, yH - 0.75 - r * dy, 0, v === s.p && s.fault ? 1.2 : 0);
+          const m = cube(String(v), pc(v), [cs, cs, cs], x, yH - 0.75 - r * dy, 0); // appears in place, no drop through the column
           cubes.push(m); if (v === s.p) cur = m;
         });
         glow(cur, s.fault ? NG : OKG);
@@ -1018,6 +1028,11 @@ function rgrid(ref, F, alg, o = {}) {
   };
   return G;
 }
+// one remark spot: the first call makes the label, later calls rewrite it (text and kind) instead of adding labels
+function remark(S, t, kind, x, y) {
+  if (!S.rm || !S.rm.parent) { S.rm = tag(t, kind, x, y); return S.rm; }
+  S.rm.element.className = 'lab-label ' + kind; txt(S.rm, t); S.rm.position.set(x, y, 0); return S.rm;
+}
 // a cycle of boxes around a centre, with arrows between them
 function cycle(names, cx, cy, r, color = MC.sand) {
   const n = names.length, pts = names.map((t, i) => { const a = Math.PI / 2 - (i * 2 * Math.PI) / n; return [cx + Math.cos(a) * r * 1.6, cy + Math.sin(a) * r]; });
@@ -1029,6 +1044,7 @@ function cycle(names, cx, cy, r, color = MC.sand) {
 // ════════ TnmN_KNIbc4（第 13A 講：Virtual Memory 背景） ════════
 scene('vm-13a-plan', '本章談什麼：virtual memory', CAM, [
   async (tok, S) => {                                   // 14.8 第九章 virtual memory：memory 管理會用到硬碟
+    frameHold(-6.4, -0.4, -0.3, 5.0, 6.9, 0.3); // the plan list comes later at the top
     S.ram = zone('memory', -2.6, 0, 0, 4.4, 2.4); S.ram.userData.name.position.y = 1.2; S.disk = prop('disk', 3.4, 0, 0, 1.1, 'disk');
     S.p = [0, 1, 2].map((i) => bx('page', MC.blue, -3.8 + i * 1.2, 0.4, 0, 1.0, 0.5, 0.8));
     const g = pkt('page', MC.orange, -1.4, 1.2, 0.6, 1.0); await slide(tok, g, 3.4, 2.3, 0.6, 700);
@@ -1062,6 +1078,7 @@ scene('vm-13a-plan', '本章談什麼：virtual memory', CAM, [
 
 scene('vm-13a-why', '為什麼不必把整支程式放進 memory', CAM, [
   async (tok, S) => {                                   // 122.6 不希望一開始就把整個 process 放進 memory
+    frameHold(-6.0, -0.2, -0.3, 6.4, 6.9, 0.3); // remarks and the list come later
     hd('一支 program 的內容', -4.2, 6.6);
     S.parts = [['main code', MC.blue], ['error 處理', MC.red], ['很少走的 branch', MC.orange], ['library', MC.purple], ['int a[10000]', MC.teal]]
       .map(([t, c], i) => bx(t, c, -4.2, 5.8 - i * 0.75, 0, 3.0, 0.6, 0.8));
@@ -1093,9 +1110,8 @@ scene('vm-13a-why', '為什麼不必把整支程式放進 memory', CAM, [
     cap('array、variable allocate 了卻沒用', '多打幾個零就很浪費：這個還沒解決過');
   },
   async (tok, S) => {                                   // 241.3 VM：沒被 access 的 page 就不放 memory
-    const used = pkt('用到的 page', MC.blue, -4.2, 5.8, 0.6, 1.6);
-    await slide(tok, used, 2.0, 1.4, 0.6, 700);
-    const u2 = pkt('用到的 page', MC.teal, -4.2, 2.8, 0.6, 1.6); await slide(tok, u2, 3.9, 1.4, 0.6, 600);
+    const used = pkt('用到的 page', MC.blue, 1.9, 1.4, 0.6, 1.6); S.f1 = P.flow(S.parts[0], used, '', { lift: 1.2 }); await wt(tok, 500);
+    const u2 = pkt('用到的 page', MC.teal, 4.1, 1.4, 0.6, 1.6); S.f2 = P.flow(S.parts[4], u2, '', { lift: 0.8 });
     cap('virtual memory 可以做到更 low level', 'page 沒被 access 到，就不放在 memory 裡');
   },
   async (tok, S) => {                                   // 260.6 utilization：放進去的東西真的被 access
@@ -1106,6 +1122,7 @@ scene('vm-13a-why', '為什麼不必把整支程式放進 memory', CAM, [
 
 scene('vm-13a-benefit', 'Virtual memory 的四個好處', CAM, [
   async (tok, S) => {                                   // 287.5 logical 跟 physical 切開的極致
+    frameHold(-6.2, -0.6, -0.3, 6.4, 7.8, 0.3); // the list below and the remarks above come later
     hd('logical（virtual）', -4.4, 6.4); hd('physical memory', 0.6, 6.4);
     S.lg = [0, 1, 2, 3, 4, 5].map((i) => bx('page ' + i, MC.lilac, -4.4, 5.6 - i * 0.62, 0, 1.6, 0.52, 0.7));
     S.ph = [0, 1, 2].map((i) => bx('frame', MC.paper, 0.6, 5.6 - i * 0.62, 0, 1.6, 0.52, 0.7));
@@ -1118,7 +1135,7 @@ scene('vm-13a-benefit', 'Virtual memory 的四個好處', CAM, [
     cap('既然切開了，不一定要 map 到 physical', '甚至可以 map 到 disk，使用者根本不 care');
   },
   async (tok, S) => {                                   // 338.7 ① process 可以比 physical memory 大
-    S.b = bullets(-6.0, 1.7, 0.5); S.b('① program 可以比 physical memory 還大（例：physical 只有 16 GB）', 'good');
+    S.b = bullets(-6.0, 1.7, 0.68); S.b('① program 可以比 physical memory 還大（例：physical 只有 16 GB）', 'good');
     cap('好處一：可以 run 非常大的 program', 'logical space 可以比 physical 還大，慢一點但能跑');
   },
   async (tok, S) => {                                   // 380.4 ② 增加資源使用率：硬碟也當 memory
@@ -1139,11 +1156,11 @@ scene('vm-13a-benefit', 'Virtual memory 的四個好處', CAM, [
   },
   async (tok, S) => {                                   // 529.1 demand paging：一次只搬 4KB，不是 10MB
     const a = pkt('4 KB', MC.green, 4.6, 2.9, 0.8, 0.9); await slide(tok, a, 0.6, 3.7, 0.8, 600);
-    bad('整支 10 MB 一次 load：慢', 4.4, 6.9); good('demand paging：一次 4 KB', 4.4, 6.3);
+    bad('整支 10 MB 一次 load：慢', 5.0, 6.9); good('demand paging：一次 4 KB', 5.0, 6.3);
     cap('demand paging 一開始什麼都不 load', '要用的 page 才放進來，一次只搬 4KB');
   },
   async (tok, S) => {                                   // 576.0 VM 包含 virtual address，又更進一步到 disk
-    note('virtual memory ⊃ virtual address：還多用到 disk', 0.4, -0.6);
+    note('virtual memory ⊃ virtual address：還多用到 disk', -2.2, 7.4);
     cap('跟第八章 virtual address 的好處有重疊', 'virtual memory 更進一步：用到 disk');
   },
 ]);
@@ -1261,6 +1278,7 @@ scene('vm-13a-novm', '沒有 virtual memory 時，程式怎麼跑', CAM, [
 // ════════ VAaunFe_lRs（第 13B 講：Demand Paging & Process Creation） ════════
 scene('vm-13b-what', 'Demand paging：要了才搬', CAM, [
   async (tok, S) => {                                   // 14.8 demand：你要才做
+    frameHold(-6.4, -0.6, -0.3, 6.2, 6.3, 0.3); // the list comes later above: no zoom jump
     S.mem = zone('memory', -2.8, 0, 0, 5.0, 2.6); S.mem.userData.name.position.y = 2.3; S.disk = prop('disk', 4.2, 0, 0, 1.1, 'disk');
     S.pg = ['A', 'B', 'C', 'D', 'E'].map((n, i) => bx(n, pc(i + 1), 2.6 + i * 0.75, 2.5, 0, 0.65, 0.5, 0.6));
     cap('demand paging 的 demand', '就是「你要了，我才去做」');
@@ -1270,7 +1288,7 @@ scene('vm-13b-what', 'Demand paging：要了才搬', CAM, [
     cap('不是一次把 page 全部 load 進去', '你要這個 page，我才搬它');
   },
   async (tok, S) => {                                   // 38.4 ① I/O 少：一次 4KB
-    S.b = bullets(-6.2, 6.2); S.b('① I/O 少、load time 短：一次只搬一個 page（4KB），不是 10MB', 'good');
+    S.b = bullets(-6.2, 5.7, 0.6); S.b('① I/O 少、load time 短：一次只搬一個 page（4KB），不是 10MB', 'good');
     cap('好處一：I/O 比較少', '一次只搬一個 4KB 的 page，速度當然快');
   },
   async (tok, S) => {                                   // 53.0 ② memory 使用率提高，剩下給別人
@@ -1283,7 +1301,7 @@ scene('vm-13b-what', 'Demand paging：要了才搬', CAM, [
     cap('別的程式也能 load 進 memory', '增加 degree of multiprogramming');
   },
   async (tok, S) => {                                   // 74.7 就算沒有 dynamic loading，也能以 page 為單位決定
-    note('不靠 dynamic loading／linking：以 page 為單位，決定放 memory 或先留在 disk', 0, 3.0);
+    note('不靠 dynamic loading／linking：以 page 為單位，決定放 memory 或先留在 disk', 0, 3.65);
     cap('就算沒有 dynamic loading、linking', '光看 process 用 memory 的行為，以 page 為單位決定');
   },
 ]);
@@ -1296,28 +1314,29 @@ scene('vm-13b-invalid', '無效位址 vs 還沒搬進來', CAM, [
     cap('用 demand paging 要處理一件事', 'access 一個 memory 時，要判斷它是什麼情況');
   },
   async (tok, S) => {                                   // 108.3 invalid reference：超過 allocate 範圍
-    glow(S.out, NG); bad('invalid reference：超出範圍，真的不該 access', 2.4, 3.3);
+    glow(S.out, NG); S.inv = P.note('invalid reference：超出範圍，真的不該 access', S.out, 'right', 'bad');
     cap('invalid reference', '真的沒有 allocate、超出使用範圍的 address');
   },
   async (tok, S) => {                                   // 130.1 另一種：有效但不在 memory
-    glow(S.sp[2], HL); good('有效，只是還沒搬進 memory', 2.4, 4.6);
+    glow(S.sp[2], HL); S.ok = P.note('有效，只是還沒搬進 memory', S.sp[2], 'right', 'good');
     cap('另一種情況要區分', 'address 有效，只是還沒搬進 memory');
   },
   async (tok, S) => {                                   // 151.0 fault，但是告訴 OS demand 來了
-    hot('→ 發出 fault：告訴 OS「demand 來了」去做 paging', 2.2, 5.4);
+    S.ok.element.className = 'lab-label ptr alt'; txt(S.ok, '有效但不在 memory → 發出 fault：告訴 OS「demand 來了」去做 paging');
     cap('這個 access 會造成錯誤（fault）', '但它是在告訴 OS：demand 來了，去做 paging');
   },
   async (tok, S) => {                                   // 164.1 pure demand paging：一開始 memory 什麼都沒有
-    S.mem = zone('memory（空的）', 2.6, 0, 0, 4.4, 2.0);
-    S.pt = bx('page table', MC.sand, 0.4, 1.3, 0, 1.6, 0.5, 0.7); S.pcb = bx('PCB', MC.sand, 0.4, 0.6, 0, 1.6, 0.5, 0.7);
+    gone(S.inv, S.ok); glow(S.out, null); glow(S.sp[2], null);   // the invalid / valid comparison is done
+    S.mem = zone('memory（空的）', 3.4, 2.6, 0, 4.0, 2.0);
+    S.pt = bx('page table', MC.sand, 0.2, 5.6, 0, 1.6, 0.5, 0.7); S.pcb = bx('PCB', MC.sand, 0.2, 4.9, 0, 1.6, 0.5, 0.7);
     cap('pure demand paging', 'load process 時只建 page table、PCB，memory 什麼都沒有');
   },
   async (tok, S) => {                                   // 177.1 run 時才把 page 放到 memory
-    const c = pkt('page 2', MC.lilac, -3.0, 4.56, 0.6, 1.2); await slide(tok, c, 3.6, 1.0, 0.6, 800);
+    const c = pkt('page 2', MC.lilac, -3.0, 4.56, 0.6, 1.2); await slide(tok, c, 4.6, 3.0, 0.6, 800);
     cap('真的開始 run', '用到哪個 page，才把它放到 memory');
   },
   async (tok, S) => {                                   // 192.2 pure 比較極端；實際可能先 load 一定會用的
-    note('pure 是極端；實際系統可能先 load 前面一定會用的', 2.6, 2.6);
+    note('pure 是極端；實際系統可能先 load 前面一定會用的', 3.4, 1.7);
     cap('pure 是比較極端的做法', '實際系統可能先 load 前面一定會用到的內容');
   },
 ]);
@@ -1351,7 +1370,7 @@ scene('vm-13b-pager', 'Swapper（process 為單位）vs pager（page 為單位�
 
 scene('vm-13b-vbit', 'Valid-invalid bit', CAM, [
   async (tok, S) => {                                   // 296.9 怎麼知道有效還無效
-    hot('怎麼分辨？', 0, 6.7);
+    hot('怎麼分辨？', 0, 7.4);
     cap('要做 paging 就要處理', '怎麼知道這個 address reference 有效還是無效');
   },
   async (tok, S) => {                                   // 312.9 page table 的 valid-invalid bit
@@ -1368,7 +1387,7 @@ scene('vm-13b-vbit', 'Valid-invalid bit', CAM, [
   },
   async (tok, S) => {                                   // 339.3 看到 0 → page fault，OS 搬進來
     S.prop = prop('disk', 4.2, 1.0, 0, 0.8, 'disk');
-    const a = pkt('page 1', pc(2), 4.2, 2.0, 0.7, 1.1); await slide(tok, a, 1.0, 5.0, 0.7, 700);
+    const a = pkt('page 1', pc(2), 4.2, 2.0, 0.7, 1.1); await slide(tok, a, 1.0, 2.6, 0.7, 350); await slide(tok, a, 1.0, 5.0, 0.7, 350); // under the remarks, then up beside the table
     S.t.set(1, 9, 'v'); glow(S.t.cells[1][2], OKG); gone(a);
     cap('access 時看到 0 → page fault', 'OS 接到 fault，把這個 page 搬進 memory');
   },
@@ -1389,6 +1408,7 @@ scene('vm-13b-vbit', 'Valid-invalid bit', CAM, [
 
 scene('vm-13b-run', '例子：pure demand paging 一步步跑', CAM, [
   async (tok, S) => {                                   // 424.1 同樣的例子用 demand paging
+    frameHold(-6.8, -1.0, -0.3, 6.8, 7.8, 0.3); // OS, disk and the bottom remark come later
     hd('program', -5.0, 6.6);
     S.code = ['inst 0', 'inst 1', 'inst 2', 'inst 3'].map((n, i) => bx(n, MC.lilac, -5.0, 5.8 - i * 0.62, 0, 1.6, 0.52, 0.7));
     sm('示意：一個 page 只放一個 instruction', -5.0, 3.0);
@@ -1398,7 +1418,7 @@ scene('vm-13b-run', '例子：pure demand paging 一步步跑', CAM, [
     S.t = ptable(-1.4, 5.8, [[0, null, 'i'], [1, null, 'i'], [2, null, 'i'], [3, null, 'i']], { w: 0.8 });
     bx('PCB', MC.sand, -1.6, 2.6, 0, 1.4, 0.5, 0.7); hd('physical memory', 3.6, 6.6);
     S.fr = [0, 1, 2, 3].map((i) => bx('', MC.paper, 3.6, 5.8 - i * 0.62, 0, 1.6, 0.52, 0.7));
-    sm('frame 2', 4.8, 5.8); sm('frame 5', 4.8, 5.18); sm('frame 6', 4.8, 4.56); sm('frame 7', 4.8, 3.94);
+    sm('frame 2', 5.15, 5.8); sm('frame 5', 5.15, 5.18); sm('frame 6', 5.15, 4.56); sm('frame 7', 5.15, 3.94);
     cap('load 時只 create page table', '裡面是空的；PCB 還是要建，但 memory 什麼都沒放');
   },
   async (tok, S) => {                                   // 446.9 執行第一個 instruction → 查 page table
@@ -1406,7 +1426,7 @@ scene('vm-13b-run', '例子：pure demand paging 一步步跑', CAM, [
     cap('開始執行第一個 instruction', 'memory access 一樣先去看 page table');
   },
   async (tok, S) => {                                   // 458.4 invalid → page fault
-    S.f = bad('i → page fault！', -1.2, 6.9); glow(S.t.cells[0][2], NG);
+    S.f = bad('i → page fault！', -1.2, 7.5); glow(S.t.cells[0][2], NG);
     cap('發現 valid bit 是 invalid', '產生 page fault（不是 segmentation fault）');
   },
   async (tok, S) => {                                   // 472.2 call OS，OS 知道內容在 disk 哪裡
@@ -1414,7 +1434,7 @@ scene('vm-13b-run', '例子：pure demand paging 一步步跑', CAM, [
     cap('fault 產生後會 call OS（interrupt）', 'OS 處理 paging：知道那行指令放在 disk 的哪裡');
   },
   async (tok, S) => {                                   // 486.6 load 到 memory
-    const a = pkt('inst 0', MC.lilac, 5.8, 1.6, 0.7, 1.2); await slide(tok, a, 3.6, 5.8, 0.7, 800); gone(a);
+    const a = pkt('inst 0', MC.lilac, 5.8, 1.6, 0.7, 1.2); await slide(tok, a, 3.6, 1.6, 0.7, 350); await slide(tok, a, 3.6, 5.8, 0.7, 450); gone(a);
     relabel(S.fr[0], 'inst 0'); tint(S.fr[0], MC.lilac);
     cap('把它 load 到 memory 裡', 'load 進去之後就知道它在哪個 frame');
   },
@@ -1423,17 +1443,17 @@ scene('vm-13b-run', '例子：pure demand paging 一步步跑', CAM, [
     cap('update page table', '填上 frame 的位置，把 valid bit 設起來');
   },
   async (tok, S) => {                                   // 503.5 PC 減 4，重新執行
-    gone(S.f); S.re = hot('PC − 4：重做同一個 instruction', -2.4, 6.9);
+    gone(S.f); S.re = hot('PC − 4：重做同一個 instruction', -1.2, 7.5);
     cap('program counter 本來會 +4', 'page fault 處理完後把它 −4，移回去重新 fetch');
   },
   async (tok, S) => {                                   // 528.3 這次有東西，正常執行
-    gone(S.re); good('這次有了 → 正常執行', -1.6, 6.9); S.os.mood('happy');
+    gone(S.re); good('這次有了 → 正常執行', -1.2, 7.5); S.os.mood('happy');
     cap('重複執行一模一樣的指令', '這一次就發現有東西了，正常執行');
   },
   async (tok, S) => {                                   // 544.1 下一個不同 page → 再 fault、搬、update、重做
     for (let i = 1; i < 3; i++) {
       S.pc.position.y = 5.8 - i * 0.62; glow(S.code[i - 1], null); glow(S.code[i], HL);
-      const a = pkt('inst ' + i, MC.lilac, 5.8, 1.6, 0.7, 1.2); await slide(tok, a, 3.6, 5.8 - i * 0.62, 0.7, 500); gone(a);
+      const a = pkt('inst ' + i, MC.lilac, 5.8, 1.6, 0.7, 1.2); await slide(tok, a, 3.6, 1.6, 0.7, 250); await slide(tok, a, 3.6, 5.8 - i * 0.62, 0.7, 300); gone(a);
       relabel(S.fr[i], 'inst ' + i); tint(S.fr[i], MC.lilac); S.t.set(i, [5, 6][i - 1], 'v'); glow(S.t.cells[i][2], OKG);
     }
     cap('下一個指令一樣先檢查', '不同的 page 就 fault → 搬進來 → update → 再做一次');
@@ -1446,10 +1466,11 @@ scene('vm-13b-run', '例子：pure demand paging 一步步跑', CAM, [
 
 scene('vm-13b-steps', 'Page fault 處理步驟', CAMW, [
   async (tok, S) => {                                   // 619.1 pure demand paging 的步驟
+    frameHold(-8.2, -0.2, -0.3, 8.2, 6.9, 0.3); // the step list comes later below
     S.cpu = prop('cpu', -5.6, 4.6, 0, 0.9, 'CPU'); S.t = ptable(-1.6, 5.6, [[0, 3, 'v'], [1, null, 'i'], [2, 7, 'v']], { w: 0.8, pcol: (p) => pc(p + 1) });
-    S.os = buddy('OS', '', MC.orange, 1.1, 3.6, 0, 0.55); S.disk = prop('disk', 5.4, 0.4, 0, 1.0, 'disk');
+    S.os = buddy('OS', '', MC.orange, 1.1, 3.75, 0, 0.55); S.disk = prop('disk', 5.8, 4.2, 0, 1.0, 'disk');
     hd('physical memory', 3.0, 6.6); S.fr = [0, 1, 2, 3].map((i) => bx(['', '', '', 'free'][i], [MC.blue, MC.purple, MC.green, MC.paper][i], 3.0, 5.8 - i * 0.62, 0, 1.6, 0.52, 0.7));
-    S.st = bullets(-6.6, 3.0, 0.7);
+    S.st = bulletsAt([[-8.2, 2.9], [-8.2, 2.2], [-8.2, 1.5], [-8.2, 0.8], [1.6, 2.9], [1.6, 1.5], [1.6, 0.8]]); // ①–③ left, ④–⑥ right
     cap('pure demand paging 的步驟', '把剛剛的流程列下來');
   },
   async (tok, S) => {                                   // 626.1 ① access → invalid → page fault trap
@@ -1470,7 +1491,7 @@ scene('vm-13b-steps', 'Page fault 處理步驟', CAMW, [
     cap('第二步：找一個 empty frame', '用 free list，O(1) 時間就找到');
   },
   async (tok, S) => {                                   // 719.9 swap：從 disk copy 進 frame
-    const a = pkt('page 1', pc(2), 5.4, 1.6, 0.7, 1.2); await slide(tok, a, 3.0, 3.94, 0.7, 800); gone(a);
+    const a = pkt('page 1', pc(2), 5.8, 5.2, 0.7, 1.2); await slide(tok, a, 3.0, 3.94, 0.7, 800); gone(a);
     relabel(S.fr[3], 'page 1'); tint(S.fr[3], pc(2)); glow(S.fr[3], null);
     S.st('④ 從 disk 把 page copy 進來');
     cap('做 swapping', '就是把 memory content 從 disk copy 過來');
@@ -1485,11 +1506,11 @@ scene('vm-13b-steps', 'Page fault 處理步驟', CAMW, [
     cap('最後一步千萬別忘了：restart', 'program counter 減 4，重新執行之前的指令');
   },
   async (tok, S) => {                                   // 758.5 整理：先 access，bit 無效 → interrupt 被 pager catch
-    hot('page fault 由 OS 的 pager 接住', 0, -1.95);
+    remark(S, 'page fault 由 OS 的 pager 接住', 'ptr alt', 1.6, 0.1).center.set(0, 0.5);
     cap('整理一下：不管三七二十一先 access', '看到 bit 無效就產生 interrupt，被 OS 的 pager 接住');
   },
   async (tok, S) => {                                   // 780.6 disk 位置在 load／搬出時就記下來
-    sm('page 在 disk 的位置：load 或搬出時就記下了', 0, -2.6);
+    remark(S, 'page 在 disk 的位置：load 或搬出時就記下了', 'ptr alt', 1.6, 0.1);
     cap('page 在 disk 的哪裡？', 'load 或搬到 disk 時就記下來了，所以找得到');
   },
 ]);
@@ -1538,7 +1559,7 @@ scene('vm-13b-eat', 'Demand paging 的 effective access time', CAM, [
     cap('沒有 page fault 的機率是 1 − p', '就乘上 memory access time（ma）');
   },
   async (tok, S) => {                                   // 957.9 ma 不是定值：TLB、還要 transfer bytes
-    sm('ma：含 TLB hit／miss、把 bytes 從 memory 傳到 register 的時間', -1.6, 4.7);
+    S.maN = sm('ma：含 TLB hit／miss、把 bytes 從 memory 傳到 register 的時間', -1.6, 4.7);
     cap('ma 細算其實不是定值', '看 TLB 有沒有 hit，還包含把 bytes 讀回 CPU 的時間');
   },
   async (tok, S) => {                                   // 1002.6 + p × page fault time
@@ -1549,7 +1570,7 @@ scene('vm-13b-eat', 'Demand paging 的 effective access time', CAM, [
     S.ma = bx('ma = 200 ns', MC.mint, -3.4, 4.0, 0, 2.6, 0.6, 0.8); S.pf = bx('page fault time = 8 ms', '#f3c9c9', 1.6, 4.0, 0, 3.6, 0.6, 0.8);
     S.bar1 = bx('', MC.green, -5.0, 3.35, 0, 0.1, 0.35, 0.5); S.bar2 = bx('', MC.red, -5.0, 2.9, 0, 0.1, 0.35, 0.5);
     await anim(tok, 900, (u) => { S.bar2.scale.x = 1 + 99 * u; S.bar2.position.x = -5.0 + 0.05 * 99 * u; });
-    sm('（長度只是示意：實際差 4 萬倍）', 0.0, 2.45);
+    S.len = sm('（長度只是示意：實際差 4 萬倍）', 0.0, 2.45);
     cap('memory access 很快（200 ns）', 'page fault 要讀 disk，是 ms 等級（8 ms）');
   },
   async (tok, S) => {                                   // 1065.6 整理：EAT ∝ p × page fault time
@@ -1565,21 +1586,23 @@ scene('vm-13b-eat', 'Demand paging 的 effective access time', CAM, [
     cap('結果 EAT ≈ 8.2 µs', '原本只要 200 ns，慢了 40 倍（不是 40%）');
   },
   async (tok, S) => {                                   // 1136.3 只想慢 10% → p < 0.0000025
-    gone(S.p1, S.r); good('只慢 10%：220 > 200 + 7,999,800p → p < 0.0000025（約 40 萬次才 1 次）', 0, 1.0);
+    gone(S.p1, S.r); S.ten = good('只慢 10%：220 > 200 + 7,999,800p → p < 0.0000025（約 40 萬次才 1 次）', 0, 1.0);
     cap('如果只能容忍慢 10%', 'page fault rate 要極低：p < 0.0000025');
   },
   async (tok, S) => {                                   // 1174.3 為什麼不覺得慢：locality
-    S.loc = note('為什麼電腦不覺得慢？locality', -3.4, 0.3);
+    gone(S.bar1, S.bar2, S.len, S.maN, S.ma, S.pf);           // the numbers part is done: the result moves up, locality below it
+    await slide(tok, S.f3, 0, 4.1, 0, 500); S.ten.position.y = 3.35;
+    S.loc = note('為什麼電腦不覺得慢？locality', -3.4, 2.3);
     cap('為什麼有 virtual memory 卻不覺得慢？', '跟 TLB 一樣的道理：locality');
   },
   async (tok, S) => {                                   // 1189.7 一次搬 4KB，之後的 access 都 hit
-    const pg = bx('4 KB page', MC.blue, 3.0, 0.3, 0.6, 1.6, 0.5, 0.6);
-    for (let i = 0; i < 5; i++) { cube('', MC.green, [0.2, 0.2, 0.2], 2.2 + i * 0.4, 0.75, 0.6); await wt(tok, 120); }
-    sm('fault 一次，後面的 access 都在同一頁', 3.0, -0.25);
+    const pg = bx('4 KB page', MC.blue, 2.6, 2.3, 0.6, 1.6, 0.5, 0.6);
+    for (let i = 0; i < 5; i++) { cube('', MC.green, [0.2, 0.2, 0.2], 1.8 + i * 0.4, 2.75, 0.6); await wt(tok, 120); }
+    sm('fault 一次，後面的 access 都在同一頁', 2.6, 1.7);
     cap('一次 page fault 就搬進一整個 4KB page', '後面的 access（像 for loop）都能 reuse');
   },
   async (tok, S) => {                                   // 1247.7 breakdown：時間被 disk access dominate
-    note('拆開看：trap、restore、reset page table 都很快；時間全被 disk access 主宰', 0, -0.8);
+    note('拆開看：trap、restore、reset page table 都很快；時間全被 disk access 主宰', 0, 0.9);
     cap('把步驟拆開來看', '主要時間都花在 disk access，其他都很快');
   },
 ]);
@@ -2050,19 +2073,19 @@ scene('vm-14b-fifo', 'FIFO：3 個 frame，9 次 page fault', CAMW, [
     cap('第二個需要：physical memory 有幾個 frame', '簡單的例子：只有 3 個 frame');
   },
   async (tok, S) => {                                   // 645.4 被 access 的一定要在 frame；其他留誰
-    note('現在被 access 的 page 一定要在 frame；問題是其他位置留給誰', 0, 1.6);
+    remark(S, '現在被 access 的 page 一定要在 frame；問題是其他位置留給誰', 'note', 0, 1.8);
     cap('現在被 access 的 page 一定要放進 frame', '重點是：要踢掉人時，踢誰？');
   },
   async (tok, S) => {                                   // 673.0 從全部都空的開始
-    sm('一開始 memory 全空', S.G.x(0), 2.3);
+    S.e0 = sm('一開始 memory 全空', S.G.x(0) + 0.6, 4.6);
     cap('例子通常從全部都空的開始', '前面發生什麼我們也不知道');
   },
   async (tok, S) => {                                   // 685.8 ref 1 → page fault
-    await S.G.go(tok, 1);
+    gone(S.e0); await S.G.go(tok, 1);
     cap('要 page 1：有空位，直接放進去', '紅色 F 代表一次 page fault');
   },
   async (tok, S) => {                                   // 695.4 順序不重要；FIFO 用 queue（head、tail）
-    sm('（畫的是 FIFO queue：上面最新、下面最舊）', 0, 1.1);
+    remark(S, '畫的是 FIFO queue：上面最新、下面最舊（head、tail）', 'note', 0, 1.8);
     cap('三個位置的順序不重要', '這樣畫是 FIFO queue：head、tail 兩個 pointer');
   },
   async (tok, S) => {                                   // 727.0 紅 = page fault；算次數
@@ -2084,7 +2107,7 @@ scene('vm-14b-fifo', 'FIFO：3 個 frame，9 次 page fault', CAMW, [
     cap('page 4 來了：滿了，要 replace', 'FIFO：最早進來的 1 被踢掉');
   },
   async (tok, S) => {                                   // 861.7 順序只是 queue，page 沒真的搬
-    note('page 在 frame 裡沒有移動：只是 queue 這個 data structure 在變', 0, 0.5);
+    remark(S, 'page 在 frame 裡沒有移動：只是 queue 這個 data structure 在變', 'note', 0, 1.8);
     cap('畫起來好像 page 在搬，其實沒有', '這只是 maintain queue 的 data structure');
   },
   async (tok, S) => {                                   // 898.1 ref 1 又來 → fault
@@ -2112,7 +2135,7 @@ scene('vm-14b-fifo', 'FIFO：3 個 frame，9 次 page fault', CAMW, [
     cap('大家就這樣 go through', '4 是 fault，最後的 5 是 hit');
   },
   async (tok, S) => {                                   // 957.2 數紅色：9 次
-    good('FIFO、3 個 frame：' + S.G.faults + ' 次 page fault', 0, -0.1);
+    remark(S, 'FIFO、3 個 frame：' + S.G.faults + ' 次 page fault', 'good', 0, 1.8);
     cap('最後數有幾個紅色', 'FIFO 會造成 ' + S.G.faults + ' 次 page fault');
   },
 ]);
@@ -2233,11 +2256,11 @@ scene('vm-14c-optex', 'OPT 例子：4 個 frame，6 次', CAMW, [
     cap('4 來了：唯一不能丟的是 5', '1、2、3 以後都不會再用，丟誰都可以');
   },
   async (tok, S) => {                                   // 289.5 考試 tiebreaker 誰都行
-    sm('考試遇到這種平手：丟誰都 OK', S.G.x(5), 1.4);
+    S.ex = sm('考試遇到這種平手：丟誰都 OK', S.G.x(5), 1.4);
     cap('考試遇到最後的 tiebreaker', '丟誰都無所謂；如果後面還有 2、3、1，就丟 1');
   },
   async (tok, S) => {                                   // 306.2 規則：最晚用到的丟掉；5 是 hit
-    gone(S.t); await S.G.go(tok, 1);
+    gone(S.t, S.ex); await S.G.go(tok, 1);
     cap('就 follow 這個簡單的規則', '最晚才會用到的丟掉；最後的 5 是 hit');
   },
   async (tok, S) => {                                   // 319.0 總共 6 次
@@ -2423,6 +2446,7 @@ scene('vm-14c-stack', 'Stack algorithm：frame 變多不會更糟', CAMW, [
 
 scene('vm-14c-approx', 'LRU 的變形：additional-reference-bits、second chance', CAM, [
   async (tok, S) => {                                   // 1069.8 cache／replacement 演算法非常多
+    frameHold(-6.4, -0.9, -0.3, 6.0, 7.0, 0.3); // the ring and page 6 come later: no zoom jump
     hd('LRU 的變形（課本）', 0, 6.7);
     cap('cache 的 replacement algorithm 非常多', '不會一一 go through，知道 concept 就好');
   },
@@ -2873,7 +2897,7 @@ scene('vm-ex-lru', 'LRU 例題：14 次 page fault', CAMW, [
     cap('題目也可能加一個條件', 'frame 一開始全空，放進去也算 page fault');
   },
   async (tok, S) => {                                   // 42.3 LRU：替換最久沒用的
-    note('LRU：換掉最久沒被用到的 page', 0, 0.4);
+    S.rule = note('LRU：換掉最久沒被用到的 page', 0, 0.4);
     cap('LRU：least recently used', '換掉最長一段時間沒被用到的 page');
   },
   nx(1, '先要 page 3：沒有 → page fault', '放進 f1'),                                   // 64.2
@@ -2885,11 +2909,11 @@ scene('vm-ex-lru', 'LRU 例題：14 次 page fault', CAMW, [
     cap('下一個是 4：不在 → miss', '3 個 frame 都滿了，放不下');
   },
   async (tok, S) => {                                   // 143.5 OS 選一個 page swap out
-    gone(S.e0); sm('選一個 swap out 到 secondary memory，4 swap in', S.G.x(4), 1.25);
+    gone(S.e0); S.sw = sm('選一個 swap out 到 secondary memory，4 swap in', S.G.x(4), 1.25);
     cap('OS 要選一個 page swap out', '換成 4 swap in；選誰由 LRU 決定');
   },
   async (tok, S) => {                                   // 184.5 trick：從右往左看 → 2 最久沒用
-    gone(S.q); S.tr = arrow(V3(S.G.x(3), 6.55, 0.3), V3(S.G.x(0), 6.55, 0.3));
+    gone(S.q, S.sw); S.tr = arrow(V3(S.G.x(3), 6.55, 0.3), V3(S.G.x(0), 6.55, 0.3));
     await S.G.go(tok, 1);
     cap('技巧：從 4 往左看 reference string', '先看到 3、再 1、最後才是 2：2 最久沒用，換掉 2');
   },
@@ -2908,7 +2932,7 @@ scene('vm-ex-lru', 'LRU 例題：14 次 page fault', CAMW, [
   nx(1, 'page 3：miss', '1、2、5 中最左的是 5：換掉 5'),                                 // 405.5
   nx(1, 'page 4：miss', '3、1、2 中最左的是 2：換掉 2'),                                 // 417.6
   async (tok, S) => {                                   // 431.2 數：14 次
-    gone(S.tr); good('LRU：page fault = ' + S.G.faults + ' 次', -2.6, 0.7);
+    gone(S.tr, S.rule); good('LRU：page fault = ' + S.G.faults + ' 次', -2.6, 0.7);
     cap('數一數 page fault', '1 到 ' + S.G.faults + '：共 ' + S.G.faults + ' 次');
   },
   async (tok, S) => {                                   // 439.3 hit ratio = 5/19
@@ -2923,11 +2947,11 @@ scene('vm-ex-lru', 'LRU 例題：14 次 page fault', CAMW, [
 
 scene('vm-ex-opt', 'Optimal 例題：10 次 page fault', CAMW, [
   async (tok, S) => {                                   // 479.2 用 optimal 解同一題
-    S.G = G19('opt', 'OPT'); sm('reference string', -4.8, 6.75);
+    S.G = G19('opt', 'OPT'); S.rs = sm('reference string', -4.8, 6.75);
     cap('同一題，改用 optimal', '看會有幾次 page fault');
   },
   async (tok, S) => {                                   // 495.4 換掉未來最久不會用的
-    note('OPT：換掉未來最久不會被用到的 page（看未來）', 0, 0.7);
+    S.rule = note('OPT：換掉未來最久不會被用到的 page（看未來）', 0, 0.7);
     cap('criteria：換掉 near future 不會用的', '未來最長一段時間不會用到的 page');
   },
   async (tok, S) => {                                   // 517.9 3、2、1：miss
@@ -2965,16 +2989,16 @@ scene('vm-ex-opt', 'Optimal 例題：10 次 page fault', CAMW, [
     cap('這種情況就套 FIFO', '三個裡最早進來的是 2：換掉 2');
   },
   async (tok, S) => {                                   // 801.0 4：沒有未來 → FIFO 換 1
-    gone(S.ff); sm('又沒有未來 → FIFO：換掉 1', S.G.x(14), 1.9);
+    gone(S.ff); S.ff = sm('又沒有未來 → FIFO：換掉 1', S.G.x(14), 1.9);
     await S.G.go(tok, 1);
     cap('4 也是 miss，後面沒有 request 了', '一樣用 FIFO：5、3、1 裡最早進來的是 1');
   },
   async (tok, S) => {                                   // 821.3 10 次 page fault、9 次 hit
-    gone(S.tr); good('OPT：page fault ' + S.G.faults + ' 次，hit ratio ' + S.G.hits + '/' + R19.length, 0, 0.1);
+    gone(S.tr, S.rule, S.ff); S.res = good('OPT：page fault ' + S.G.faults + ' 次，hit ratio ' + S.G.hits + '/' + R19.length, 0, 0.1);
     cap('page fault 共 ' + S.G.faults + ' 次', 'hit ' + S.G.hits + ' 次：hit ratio ' + S.G.hits + '/' + R19.length + '、miss ratio ' + S.G.faults + '/' + R19.length);
   },
   async (tok, S) => {                                   // 849.6 最好，但無法 implement
-    S.G.clear();
+    S.G.clear(); gone(S.rs, S.res);
     hd('optimal：page fault 最少，但無法 implement（要預測未來）', 0, 6.4);
     cap('optimal 給你最少的 page fault', '但要預測未來，幾乎不可能實作');
   },
@@ -3018,6 +3042,7 @@ scene('vm-pf-what', 'Process A 與 page fault', CAM, [
 
 scene('vm-pf-steps', 'Page fault handling 六步驟', CAMW, [
   async (tok, S) => {                                   // 107.4 CPU 在執行 P2 的 load X
+    frameHold(-8.6, -0.1, -0.3, 9.2, 7.2, 0.3); // list, disk and remarks come later
     S.cpu = prop('cpu', -5.8, 5.2, 0, 0.9, 'CPU'); S.ins = bx('P2：load X', pc(2), -5.8, 4.1, 0, 1.8, 0.55, 0.7);
     hd('main memory', 4.0, 6.9);
     S.mem = [['F7', 'P1', pc(1)], ['F8', 'P2', pc(2)], ['F9', 'P4', pc(4)], ['', '✗ 已占用', MC.gray], ['F34', 'free', MC.paper]].map(([f, t, c], i) => { sm(f, 2.9, 6.2 - i * 0.62); return bx(t, c, 4.0, 6.2 - i * 0.62, 0, 1.6, 0.52, 0.7); });
@@ -3025,13 +3050,13 @@ scene('vm-pf-steps', 'Page fault handling 六步驟', CAMW, [
     cap('CPU 正在執行 process A 的 P2', 'P2 裡有一個指令：load X');
   },
   async (tok, S) => {                                   // 119.8 load X 需要 P3 → 發出 request
-    S.req = hot('需要 P3', -5.8, 3.3);
+    S.req = hot('需要 P3', -5.8, 3.45);
     cap('load X 需要 P3', 'CPU 發出要 P3 的 request');
   },
   async (tok, S) => {                                   // 128.8 CPU 不知道 → MMU 查 page table（step 1）
     S.mmu = bx('MMU', MC.teal, -3.2, 4.1, 0, 1.0, 0.6, 0.7);
     S.t = ptable(-0.7, 6.2, [['P1', 'F7', 'v'], ['P2', 'F8', 'v'], ['P3', null, 'i'], ['P4', 'F9', 'v']], { w: 0.85, pcol: (p) => pc(Number(String(p).slice(1))) });
-    S.b = bullets(-6.8, 2.4, 0.68); S.b('① MMU 查 page table');
+    S.b = bulletsAt([[-8.6, 2.5], [-8.6, 1.75], [-8.6, 1.0], [0.6, 1.75], [0.6, 1.0], [0.6, 0.25]]); S.b('① MMU 查 page table'); // ①–③ left, ④–⑥ right
     cap('CPU 不知道 P3 不在 memory', 'MMU 拿 P3 去查 process A 的 page table（step 1）');
   },
   async (tok, S) => {                                   // 167.0 第一欄 page number、第二欄 frame number
@@ -3054,7 +3079,7 @@ scene('vm-pf-steps', 'Page fault handling 六步驟', CAMW, [
     cap('trap 是很高優先的 signal', 'OS 不能 preempt、不能忽略，一定要處理');
   },
   async (tok, S) => {                                   // 255.9 step 3：OS 在 secondary storage 找到 P3
-    S.disk = prop('disk', 5.6, -0.2, 0, 1.0, 'secondary storage'); S.p3 = bx('P3', pc(3), 5.6, 2.0, 0, 1.0, 0.5, 0.6); glow(S.p3, HL);
+    S.disk = prop('disk', 8.4, 2.0, 0, 1.0, 'secondary storage'); S.p3 = bx('P3', pc(3), 8.4, 4.2, 0, 1.0, 0.5, 0.6); glow(S.p3, HL);
     S.b('③ OS 在 secondary storage 找到 P3');
     cap('step 3：OS 到 secondary storage', '在當作 virtual memory 的那塊找到 P3');
   },
@@ -3063,7 +3088,7 @@ scene('vm-pf-steps', 'Page fault handling 六步驟', CAMW, [
     cap('step 4：把缺的 page 帶回 main memory', 'F34 是空的（✗ 那塊被占用），P3 載入 F34');
   },
   async (tok, S) => {                                   // 316.9 不連續也沒關係：page table 當 index
-    sm('P1、P2 在 F7、F8；P3 在 F34：不連續也沒關係', 4.0, 2.7);
+    remark(S, 'P1、P2 在 F7、F8；P3 在 F34：不連續也沒關係', 'idx', 2.6, 3.2);
     cap('P1、P2 緊鄰在 F7、F8，P3 卻在 F34', '不連續也沒關係：page table 就像 index');
   },
   async (tok, S) => {                                   // 367.5 step 5：update page table
@@ -3075,7 +3100,7 @@ scene('vm-pf-steps', 'Page fault handling 六步驟', CAMW, [
     cap('step 6：restart the instruction', 'CPU 重新執行 load X，這次在 page table 找到 P3');
   },
   async (tok, S) => {                                   // 409.8 如果 P3 本來就在：1 直接到 6
-    note('如果 P3 本來就在 F34：step 1 → step 6，不需要 2～5', 0, -1.8);
+    remark(S, '如果 P3 本來就在 F34：step 1 → step 6，不需要 2～5', 'note', 2.6, 3.2);
     cap('如果 P3 原本就在 F34', '就不會 page fault：從 step 1 直接到 step 6');
   },
 ]);
@@ -3126,28 +3151,29 @@ scene('vm-pf-thrash', 'Thrashing：working set 太大時', CAM, [
     cap('最後談 thrashing', '照著理論一句句看');
   },
   async (tok, S) => {                                   // 667.9 初始化後只用少量 code／data pages
-    sm('剛啟動：loading 很久；之後只用少量 page', -2.6, 3.4);
+    S.s0 = sm('剛啟動：loading 很久；之後只用少量 page', -2.6, 3.4);
     cap('初始化完成後，多數程式', '只用到一小部分的 code 與 data pages（像遊戲先 loading）');
   },
   async (tok, S) => {                                   // 712.5 最常被 access 的 pages = working set
-    S.ws = [0, 1].map((i) => bx('WS', MC.blue, -3.6 + i * 1.0, 0.5, 0, 0.9, 0.5, 0.7));
+    S.ws = [0, 1].map((i) => bx('WS', MC.blue, -4.1 + i * 1.0, 0.5, 0, 0.9, 0.5, 0.7));
     cap('最常被 access 的那些 pages', '叫做 working set');
   },
   async (tok, S) => {                                   // 724.8 working set 小 → 很少 page fault
-    good('working set 小 → 很少 page fault，VM 很有效率', -2.6, 2.6);
+    S.g0 = good('working set 小 → 很少 page fault，VM 很有效率', -2.6, 2.6);
     cap('working set 只占總 page 的一小部分', 'virtual memory 最有效率，處理 page fault 的計算很少');
   },
   async (tok, S) => {                                   // 758.8 working set 變大 → RAM 滿，page 來回
-    for (let i = 2; i < 8; i++) { S.ws.push(bx('WS', MC.blue, -4.6 + (i % 4) * 1.0, 0.5 + Math.floor(i / 4) * 0.6, 0, 0.9, 0.5, 0.7)); await wt(tok, 120); }
-    for (let r = 0; r < 2; r++) { const a = pkt('page', MC.orange, -1.2, 1.6, 0.6, 0.9); await slide(tok, a, 3.6, 1.0, 0.6, 400); await slide(tok, a, -1.2, 1.6, 0.6, 400); gone(a); }
+    gone(S.s0, S.g0);                                   // the small-working-set remarks are done
+    for (let i = 2; i < 8; i++) { S.ws.push(bx('WS', MC.blue, -4.1 + (i % 4) * 1.0, 0.5 + Math.floor(i / 4) * 0.6, 0, 0.9, 0.5, 0.7)); await wt(tok, 120); }
+    for (let r = 0; r < 2; r++) { const a = pkt('page', MC.orange, 0.1, 1.2, 0.6, 0.9); await slide(tok, a, 3.6, 1.0, 0.6, 400); await slide(tok, a, 0.1, 1.2, 0.6, 400); gone(a); }
     cap('working set 變大，RAM 被塞滿', '有些 page 被搬到 virtual memory，需要時又搬回來');
   },
   async (tok, S) => {                                   // 789.3 fault 劇增，處理時間壓過運算 → thrashing
-    bad('page fault 劇增：處理 fault 的時間壓過運算 → thrashing', 0.4, 4.2);
+    bad('page fault 劇增：處理 fault 的時間壓過運算 → thrashing', 0.4, 3.0);
     cap('page fault 急遽增加', '處理 fault 的時間壓過運算時間：這就叫 thrashing');
   },
   async (tok, S) => {                                   // 814.5 簡單說：失控的 swapping
-    note('一句話：因為 page fault，page 在 RAM 與 virtual memory 之間失控地來回 swap', 0.4, 5.0);
+    note('一句話：因為 page fault，page 在 RAM 與 virtual memory 之間失控地來回 swap', 0.4, 3.8);
     cap('簡單說：thrashing 是 uncontrolled swapping', '因為 page fault，page 在 RAM 跟 VM 之間一直來回');
   },
 ]);
