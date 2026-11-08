@@ -48,6 +48,13 @@ export default function (ctx) {
   const W = (tok) => { const e = epoch; return async (ms) => { if (tok !== undefined) return beat(tok, ms); await sleep(Math.min(ms, 260)); if (e !== epoch) throw new Error('mode changed'); }; };
   async function anim(w, ms, fn) { const steps = 10; for (let k = 1; k <= steps; k++) { fn(k / steps); await w(ms / steps); } }
   const gcd = (a, b) => (b ? gcd(b, a % b) : Math.abs(a));
+  // An invisible box over the area a scene will use later: the stage's auto framing measures it from the
+  // first step, so the camera does not zoom in on the first few things and then jump back out (labels
+  // sliding under the caption meanwhile) when the rest arrives.
+  function frameHold(x0, y0, z0, x1, y1, z1) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.01, x1 - x0), Math.max(0.01, y1 - y0), Math.max(0.01, z1 - z0)), new THREE.MeshBasicMaterial({ visible: false }));
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.userData.noDim = true; lab.world.add(m); return m;
+  }
 
   // ───────────────────────── 文氏圖（InstancedMesh 的地磚，塗色 = 升高） ─────────────────────────
   const CIRC = {
@@ -199,9 +206,11 @@ export default function (ctx) {
     stopTimer(); lab.clear(); busy = false;
     pw.k = 0;
     lab.frameCamera([0, 5.2, 14], [0, 2.4, 0]);
+    if (pw.n) frameHold(PX(0, 1 << pw.n) - 0.6, -0.8, -2.4, -PX(0, 1 << pw.n) + 0.6, 6.4, 0.8); // the row of subsets arrives later: frame for it now
     const S = ELS.slice(0, pw.n);
-    S.forEach((e, i) => cube(e, ECOL[e], [0.8, 0.6, 0.8], -1.2 * (pw.n - 1) / 2 + i * 1.2, 6, -2));
-    tag('S = {' + S.join(', ') + '}', 'ptr', 0, 7, -2);
+    // S sits just above the row it makes (it was high up under the caption, with an empty gap below)
+    S.forEach((e, i) => cube(e, ECOL[e], [0.8, 0.6, 0.8], -1.2 * (pw.n - 1) / 2 + i * 1.2, 4.6, -2));
+    tag('S = {' + S.join(', ') + '}', 'ptr', 0, 5.6, -2);
     controls('<label>|S| = <input id="pN" type="number" min="0" max="4" value="' + pw.n + '"></label><button class="primary" id="pStep">下一個子集</button><button id="pAll">全部列出</button>');
     $('pN').onchange = (e) => { pw.n = Math.max(0, Math.min(4, Math.round(Number(e.target.value)) || 0)); clearLog(); enterPower(); };
     on('pStep', () => powerStep());
@@ -220,7 +229,7 @@ export default function (ctx) {
     try {
       tag(bits.join('') || '—', 'idx', x, -0.3, 0.8);
       if (!mem.length) { cube('∅', '#efe6d6', [0.8, 0.12, 0.8], x, 0.06, 0, 1); }
-      for (let i = 0; i < mem.length; i++) { cube(mem[i], ECOL[mem[i]], [0.8, 0.6, 0.8], x, 0.3 + i * 0.64, 0, 3); await w(tok ? 140 : 30); }
+      for (let i = 0; i < mem.length; i++) { cube(mem[i], ECOL[mem[i]], [0.8, 0.6, 0.8], x, 0.3 + i * 0.64, 0, 0.6); await w(tok ? 260 : 30); } // short drop: a cube does not fall through the one under it
       tag('{' + mem.join(',') + '}', 'idx', x, 0.4 + mem.length * 0.64 + 0.2);
       pw.k++;
       if (tok) say('bit ' + (bits.join('') || '（空）') + ' → {' + mem.join(', ') + '}', '第 ' + pw.k + ' / ' + N + ' 個子集');
@@ -775,7 +784,8 @@ const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
 const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
 const C = { blue: '#4b9ee2', orange: '#dd8238', green: '#2fc092', purple: '#9b7ef4', pink: '#e55a9b', teal: '#31aab0', red: '#d64545', sand: '#e9dcc4', gray: '#d8cfc0', gold: '#c08a1f', mint: '#d2f1e6', sky: '#cfe6f7', lilac: '#dfd3fb', peach: '#f6d3b8' };
 const HL = '#6a4a00', OKG = '#0f5a3a', NG = '#5a1010';
-const card = (t, c, x, y, w = 4, h = 0.55, z = 0, drop = 1.2) => cube(t, c, [w, h, 0.8], x, y, z, drop);
+// short default drop (was 1.2): a falling card / cube no longer passes through the labels above its place
+const card = (t, c, x, y, w = 4, h = 0.55, z = 0, drop = 0.5) => cube(t, c, [w, h, 0.8], x, y, z, drop);
 const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.kill && o.el) return o.kill(); kill(o); });
 function scene(id, title, cam, steps, init) {
   FRAG.push([id, title, async (tok) => {
@@ -817,7 +827,7 @@ async function hop(tok, m, X, u, Y, v, ms = 700) { const [x1, y1] = X.pos[u], [x
 // 一行一行的推導：新的一行發亮，右邊寫理由
 function chain(x, yTop, dy = 0.66, w = 6.4, whyX) {
   const ls = [];
-  return { ls, add(e, why, c) { ls.forEach((m) => glow(m, null)); const y = yTop - ls.length * dy; const m = card(e, c || C.sky, x, y, w, 0.5); glow(m, HL); if (why) sm(why, whyX === undefined ? x + w / 2 + 1.3 : whyX, y); ls.push(m); return m; } };
+  return { ls, add(e, why, c) { ls.forEach((m) => glow(m, null)); const y = yTop - ls.length * dy; const m = card(e, c || C.sky, x, y, w, 0.5, 0, 0.3); glow(m, HL); /* short drop: never through the line above */ if (why) sm(why, whyX === undefined ? x + w / 2 + 1.3 : whyX, y); ls.push(m); return m; } };
 }
 
 // ── 文氏圖（模組內建的地磚版；塗色 = 升高）。n = 1 時只畫一個集合 A ──
@@ -1521,14 +1531,14 @@ const FA = ['a₁', 'a₂', 'a₃'], FB = ['b₁', 'b₂', 'b₃'], FC = ['c₁'
 const F1 = { 'a₁': 'b₂', 'a₂': 'b₁', 'a₃': 'b₃' }, G1 = { 'b₁': 'c₁', 'b₂': 'c₂', 'b₃': 'c₂' };
 scene('sfA-comp', '4A：合成函數 g ∘ f：先 f 再 g', CAM, [
   async (tok, S) => { // 4.3
-    S.ch = [card('one-to-one（injective）', C.sky, -4.3, 5.6, 3.6), card('onto（surjective）', C.sky, 0, 5.6, 3.4), card('1-1 correspondence（bijective）', C.sky, 4.4, 5.6, 4.2)];
+    S.ch = [card('one-to-one（injective）', C.sky, 0, 5.8, 5.6, 0.55, 0, 0.3), card('onto（surjective）', C.sky, 0, 5.1, 5.6, 0.55, 0, 0.3), card('1-1 correspondence（bijective）', C.sky, 0, 4.4, 5.6, 0.55, 0, 0.3)]; // a short list, one per line (side by side the names ran into each other)
     cap('前面：函數的定義、1-1、onto、1-1 correspondence', 'injective、surjective、bijective');
   },
   async (tok, S) => { // 7.2
     gone(S.ch);
     S.A = oval('A', FA, -4.5, 2.8, { dir: 'col' }); S.B = oval('B', FB, 0, 2.8, { dir: 'col', color: C.orange });
     S.fa = FA.map((a) => farrow(S.A, a, S.B, F1[a], 0x2a6fb0));
-    hd('f: A → B', -2.25, 5.4); sm('示意', 0, 0.3);
+    hd('f: A → B', -2.25, 5.4); sm('示意', -4.5, 0.85); // under set A, not under the formula card that comes later
     cap('第一個函數 f：domain A，codomain B', '把兩個函數「合成」，可以看成一種運算');
   },
   async (tok, S) => { // 34.3
@@ -1552,7 +1562,7 @@ scene('sfA-comp', '4A：合成函數 g ∘ f：先 f 再 g', CAM, [
   },
   async (tok, S) => { // 110.2
     glow(S.d, null);
-    note('裡面的先做：f 先、g 後；f 寫在右邊', 0, 6.35); kill(S.t);
+    S.n = note('裡面的先做：f 先、g 後；f 寫在右邊', 0, 6.35); kill(S.t);
     cap('括號裡面的先做', 'f 在右邊先做，g 在左邊後做');
   },
   async (tok, S) => { // 119.5
@@ -1577,7 +1587,7 @@ scene('sfA-comp', '4A：合成函數 g ∘ f：先 f 再 g', CAM, [
   },
   async (tok, S) => { // 232.2
     FA.forEach((a) => farrow(S.A, a, S.C, G1[F1[a]], 0x0f5a3a, 1.2, 0.12));
-    hot('g ∘ f：直接從 A 到 C', 0, 6.4);
+    remove(S.n); hot('g ∘ f：直接從 A 到 C', 0, 6.4); // takes the top line over from the order note
     cap('直接看從這邊到這邊：就是合成函數', 'A 到 C 的函數');
   },
 ]);
@@ -1813,7 +1823,7 @@ scene('sfA-uniqintro', '4B：an inverse vs the inverse：唯一性是性質', CA
     cap('定義裡說：g 是 f 的 an inverse', 'an 是不定冠詞');
   },
   async (tok, S) => { // 85.0
-    glow(S.a, null); note('定義只說「存在一個」，沒排除可能有兩個', 0, 5.5);
+    glow(S.a, null); S.n = note('定義只說「存在一個」，沒排除可能有兩個', 0, 5.5); // the one remark of this scene (rewritten at the end)
     cap('定義只說「如果有一個 g…」', '並沒有排除可能有兩個');
   },
   async (tok, S) => { // 103.6
@@ -1826,14 +1836,15 @@ scene('sfA-uniqintro', '4B：an inverse vs the inverse：唯一性是性質', CA
   },
   async (tok, S) => { // 163.0
     glow(S.p, null);
-    S.A = oval('A', LA, -5.2, 1.8, { dir: 'col' }); S.B = oval('B', LB, -2.4, 1.8, { dir: 'col', color: C.orange });
+    // the example sits a little lower so the set names stay under the 性質 card
+    S.A = oval('A', LA, -5.2, 1.45, { dir: 'col', drop: 0.4 }); S.B = oval('B', LB, -2.4, 1.45, { dir: 'col', color: C.orange, drop: 0.4 });
     farrow(S.A, 1, S.B, 'x', 0x2a6fb0); farrow(S.A, 2, S.B, 'y', 0x2a6fb0);
-    card('g₁：x→1，y→2，z→1', C.sky, 2.6, 2.6, 4.4); card('g₂：x→1，y→2，z→2', C.peach, 2.6, 1.8, 4.4);
-    sm('g₁ ∘ f = g₂ ∘ f = 1_A：兩個不同的 left inverse（示意）', 1.6, 0.9);
+    card('g₁：x→1，y→2，z→1', C.sky, 2.6, 2.25, 4.4); card('g₂：x→1，y→2，z→2', C.peach, 2.6, 1.45, 4.4);
+    sm('g₁ ∘ f = g₂ ∘ f = 1_A：兩個不同的 left inverse（示意）', 2.6, 0.65); // under the two g cards, clear of set B
     cap('只有 left inverse 或 right inverse 時', '不見得唯一：隨便一個小例子就看得出來');
   },
   async (tok, S) => { // 197.0
-    note('像矩陣：方陣的 inverse 唯一；長方形矩陣可能有 left / right inverse，但不唯一', 0, 0.1);
+    txt(S.n, '像矩陣：方陣的 inverse 唯一；長方形矩陣可能有 left / right inverse，但不唯一'); // the remark line is rewritten (at the bottom it sat under the caption)
     cap('有點像矩陣', '方陣才有 inverse；長方形的左右 inverse 不見得唯一');
   },
 ]);
@@ -1845,7 +1856,7 @@ scene('sfA-uniqpf', '4B：證明 inverse 唯一：g = g′', CAM, [
     cap('證「唯一」的標準做法', '假設有兩個，推一推發現它們相等');
   },
   async (tok, S) => { // 274.2
-    card('g ∘ f = 1_A，f ∘ g = 1_B', C.sky, -3.4, 5.35, 5.6); card('g′ ∘ f = 1_A，f ∘ g′ = 1_B', C.peach, 3.4, 5.35, 5.6);
+    card('g ∘ f = 1_A，f ∘ g = 1_B', C.sky, -3.4, 5.35, 5.6, 0.55, 0, 0.35); card('g′ ∘ f = 1_A，f ∘ g′ = 1_B', C.peach, 3.4, 5.35, 5.6, 0.55, 0, 0.35); // short drops: not through the note above
     cap('假設 g 和 g′ 都滿足 inverse 的條件', '把可以用的條件先寫下來');
   },
   async (tok, S) => { // 312.0
@@ -2030,14 +2041,24 @@ const bad = (t, x, y, z = 0) => tag(t, 'bad', x, y, z);
 const note = (t, x, y, z = 0) => tag(t, 'note', x, y, z);
 const C = { blue: '#4b9ee2', orange: '#dd8238', green: '#2fc092', purple: '#9b7ef4', pink: '#e55a9b', teal: '#31aab0', red: '#d64545', sand: '#e9dcc4', gray: '#d8cfc0', gold: '#e2b13c', mint: '#d2f1e6', sky: '#cfe6f7', lilac: '#dfd3fb', peach: '#f6d3b8', dark: '#8d8170' };
 const HL = '#6a4a00', OKG = '#0f5a3a', NG = '#5a1010';
-const card = (t, c, x, y, w = 4, h = 0.55, z = 0, drop = 1.2) => cube(t, c, [w, h, 0.8], x, y, z, drop);
-const num = (v, x, y, c = C.blue, s = 0.62, drop = 1.4) => cube(String(v), c, [Math.max(s, 0.24 * String(v).length + 0.2), s, s], x, y, 0.3, drop);
+// short default drop (was 1.2): a falling card / cube no longer passes through the labels above its place
+const card = (t, c, x, y, w = 4, h = 0.55, z = 0, drop = 0.5) => cube(t, c, [w, h, 0.8], x, y, z, drop);
+const num = (v, x, y, c = C.blue, s = 0.62, drop = 0.6) => cube(String(v), c, [Math.max(s, 0.24 * String(v).length + 0.2), s, s], x, y, 0.3, drop);
 const gone = (...os) => os.forEach((o) => { if (!o) return; if (Array.isArray(o)) return gone(...o); if (o.g && o.body) return kill(o.g); if (o.ls) return gone(o.ls); if (o.all) return gone(o.all); kill(o); });
 const glowAll = (arr, c) => arr.forEach((m) => m && glow(m, c));
 const CAM = [[0, 4, 15], [0, 3.2, 0]];
+// scenes whose lower / later parts arrive after the first labels: the area they will use is framed from the
+// first step (frameHold), so the camera does not zoom in on the first things and jump back out later
+const HOLDS = {
+  'sfB-l7-zn': [-6.9, -0.7, -0.3, 6.9, 7.0, 0.3],
+  'sfB-l6-ie3': [-6.8, -1.7, -0.3, 6.8, 6.9, 0.3],
+  'sfB-l5-cases': [-7.0, -0.1, -0.3, 7.0, 6.9, 0.3],
+  'sfB-l5-roster': [-6.6, -1.2, -0.3, 6.6, 6.9, 0.3],
+};
 function scene(id, title, steps, cam = CAM) {
   FRAG.push([id, title, async (tok) => {
     fresh(cam[0], cam[1]);
+    if (HOLDS[id]) frameHold(...HOLDS[id]);
     const S = {};
     for (const f of steps) { await step(tok); await f(tok, S); }
   }]);
@@ -2045,7 +2066,7 @@ function scene(id, title, steps, cam = CAM) {
 // 一疊卡片：新的一張發亮
 function board(x, yTop, w = 6, dy = 0.74) {
   const ls = [];
-  return { ls, add(t, c = C.sky, ww) { ls.forEach((m) => glow(m, null)); const y = yTop - ls.length * dy; const m = card(t, c, x, y, ww || w, 0.56); glow(m, HL); ls.push(m); return m; }, last() { return ls[ls.length - 1]; } };
+  return { ls, add(t, c = C.sky, ww) { ls.forEach((m) => glow(m, null)); const y = yTop - ls.length * dy; const m = card(t, c, x, y, ww || w, 0.56, 0, 0.3); glow(m, HL); /* a short drop: a new card never falls through the ones above it */ ls.push(m); return m; }, last() { return ls[ls.length - 1]; } };
 }
 // 平面上的圓／橢圓（集合的框）
 function ringL(cx, cy, r, color = '#8a7a60', z = 0.04) {
@@ -2058,12 +2079,12 @@ function disc(cx, cy, r, color, op = 0.28) {
   m.position.set(cx, cy, 0.02); lab.world.add(m); return m;
 }
 // 一個集合：框 + 名字 + 元素方塊
-function blob(name, items, cx, cy, rx, ry, color = C.blue, cols) {
+function blob(name, items, cx, cy, rx, ry, color = C.blue, cols, drop = 0.6) {
   const ring = oval(cx, cy, rx, ry);
   const nm = name ? hd(name, cx - rx * 0.7, cy + ry + 0.15) : null;
   const n = items.length; cols = cols || Math.max(1, Math.min(n, Math.round(Math.sqrt(n * rx / ry))));
   const rows = Math.ceil(n / cols);
-  const cubes = items.map((v, i) => { const r = Math.floor(i / cols), c = i % cols; return num(v, cx + (c - (cols - 1) / 2) * Math.min(1.1, (rx * 1.5) / cols), cy + ((rows - 1) / 2 - r) * Math.min(0.85, (ry * 1.5) / rows), color, 0.56); });
+  const cubes = items.map((v, i) => { const r = Math.floor(i / cols), c = i % cols; return num(v, cx + (c - (cols - 1) / 2) * Math.min(1.1, (rx * 1.5) / cols), cy + ((rows - 1) / 2 - r) * Math.min(0.85, (ry * 1.5) / rows), color, 0.56, drop); });
   return { ring, nm, cubes, all: [ring, nm, ...cubes] };
 }
 // 數線
@@ -2089,7 +2110,7 @@ scene('sfB-l5-cases', 'Lec05：列舉法要把情況列完（y 是整數）', [
   async (tok, S) => { // 34.0 1,2,3,4；−1,−2,−3；0
     S.pos = []; for (const v of [1, 2, 3, 4]) { S.pos.push(num(v, S.L.X(v), 1.6, C.blue)); await wt(tok, 120); }
     S.neg = []; for (const v of [-1, -2, -3]) { S.neg.push(num('−' + -v, S.L.X(v), 1.6, C.pink)); await wt(tok, 120); }
-    S.z = num(0, S.L.X(0), 1.6, C.gold); glow(S.z, HL); hot('別忘了 0', S.L.X(0), 2.45);
+    S.z = num(0, S.L.X(0), 1.6, C.gold, 0.62, 0.4); glow(S.z, HL); hot('別忘了 0', S.L.X(0), 2.45); // short drop: not through its tag
     cap('正：1, 2, 3, 4…　負：−1, −2, −3…', '整數裡還有一個 0');
   },
   async (tok, S) => { // 46.3 題目：把「y 是整數」切成幾個 case
@@ -2114,7 +2135,7 @@ scene('sfB-l5-cases', 'Lec05：列舉法要把情況列完（y 是整數）', [
   },
   async (tok, S) => { // 141.0 WLOG
     S.b.add('只要多寫幾行字：WLOG', C.lilac);
-    note('Without Loss of Generality（同理可證）', -3.7, 3.3);
+    note('Without Loss of Generality（同理可證）', -3.7, 3.65); // right under the WLOG card
     cap('那幾行字就是 WLOG', 'Without Loss of Generality');
   },
   async (tok, S) => { // 165.2 y = ±1、|y| ≥ 2
@@ -2122,7 +2143,7 @@ scene('sfB-l5-cases', 'Lec05：列舉法要把情況列完（y 是整數）', [
     cap('更懶的寫法', 'y = ±1，|y| ≥ 2（用絕對值）');
   },
   async (tok, S) => { // 193.0 一定要全部列舉到
-    good('最重要：所有情況都要列舉到', 0, 3.0);
+    good('最重要：所有情況都要列舉到', 3.7, 2.85); // under the list of cases it is about
     cap('怎麼分類沒有一定', '但一定要把所有情況都列完');
   },
 ]);
@@ -2175,13 +2196,13 @@ scene('sfB-l5-1729', 'Lec05：存在性證明（一）直接給答案 1729', [
     cap('最後收尾：存在性的證明', '存在一個 x，讓 P(x) 成立');
   },
   async (tok, S) => { // 321.5 第一類
-    S.l = card('第一類：直接給一個答案', C.mint, -3.6, 5.6, 6.2); glow(S.l, HL);
-    note('不管有上百上千個答案，給一個就夠（constructive）', -3.6, 4.95);
+    S.l = card('第一類：直接給一個答案（constructive）', C.mint, -3.6, 5.6, 6.6); glow(S.l, HL);
+    S.n = note('不管有上百上千個答案，給一個就夠', -3.6, 4.95); // the one remark of this pair: it moves to the card being explained
     cap('第一類：真的給你一個答案', '只要給一個，就證明存在');
   },
   async (tok, S) => { // 332.4 第二類
     glow(S.l, null); S.r = card('第二類：答案不好找 → 說服你一定有', C.peach, 3.6, 5.6, 6.6); glow(S.r, HL);
-    note('配合列舉法、矛盾證法…（nonconstructive）', 3.6, 4.95);
+    S.n.position.x = 3.6; txt(S.n, '配合列舉法、矛盾證法…（nonconstructive）');
     cap('第二類：答案不好找', '用別的方法說服你「真的有」');
   },
   async (tok, S) => { // 375.6 題目
@@ -2223,7 +2244,7 @@ scene('sfB-l5-sqrt2', 'Lec05：存在性證明（二）√2 的 √2 次方', [
   },
   async (tok, S) => { // 559.3 考慮 √2^√2
     glow(S.k, null); S.top = card('考慮 √2^√2', C.gold, 0, 4.2, 3.6); glow(S.top, HL);
-    note('它是有理數還是無理數？算不出來！', 0, 3.55);
+    S.q = note('它是有理數還是無理數？算不出來！', 0, 3.55);
     cap('考慮 √2 的 √2 次方', '不直接證它是不是無理數，因為算不出來');
   },
   async (tok, S) => { // 577.2 分兩個 case
@@ -2241,12 +2262,12 @@ scene('sfB-l5-sqrt2', 'Lec05：存在性證明（二）√2 的 √2 次方', [
     cap('case 2：√2^√2 是無理數', '改取 x = √2^√2、y = √2');
   },
   async (tok, S) => { // 664.0 x^y = 2
-    S.calc = card('x^y = (√2^√2)^√2 = √2^(√2·√2) = √2² = 2', C.sky, 3.0, 0.65, 7.6); glow(S.calc, HL);
+    S.calc = card('x^y = (√2^√2)^√2 = √2^(√2·√2) = √2² = 2', C.sky, 0, 0.6, 9.4); // centred under both cases: the long line fits on its card glow(S.calc, HL);
     cap('指數律：次方再次方 = 指數相乘', '(√2^√2)^√2 = √2² = 2');
   },
   async (tok, S) => { // 681.3 兩個 case 都有答案
-    glow(S.calc, null); good('2 是有理數 → 兩種 case 都找得到答案', -3.4, 0.4);
-    note('但到底是哪一組？不知道（nonconstructive）', -3.4, -0.25);
+    glow(S.calc, null); good('2 是有理數 → 兩種 case 都找得到答案', -3.2, -0.15); // the conclusion under the calculation, side by side (lower they sit under the caption)
+    note('但到底是哪一組？不知道（nonconstructive）', 3.4, -0.15);
     cap('不管哪個 case 都有答案', '但不知道是哪一組 → 非構造性證明');
   },
 ]);
@@ -2385,7 +2406,7 @@ scene('sfB-l5-collatz', 'Lec05：3x + 1 猜想（x = 3 走到 1）', [
 
 scene('sfB-l5-setdef', 'Lec05：集合的定義（element、∈、∉）', [
   async (tok, S) => { // 1228.0 定義看清楚
-    S.b = board(3.4, 6.6, 7.0, 0.72); S.b.add('先把定義、用的名詞看清楚', C.gold);
+    S.b = board(3.4, 6.6, 7.0, 0.66); S.b.add('先把定義、用的名詞看清楚', C.gold);
     cap('第二章：集合', '第一件事：把定義看清楚');
   },
   async (tok, S) => { // 1244.3 set = unordered collection
@@ -2400,7 +2421,7 @@ scene('sfB-l5-setdef', 'Lec05：集合的定義（element、∈、∉）', [
   },
   async (tok, S) => { // 1265.0 element / member
     S.b.add('裡面每個東西：element 或 member（元素）');
-    bub('element', S.s.cubes[0].position.x - 1.2, 4.8);
+    bub('element', S.s.cubes[0].position.x - 1.3, S.s.cubes[0].position.y); // right beside the element it names
     cap('裡面每一個東西', '專有名詞叫 element 或 member');
   },
   async (tok, S) => { // 1273.3 contains / belongs to
@@ -2409,7 +2430,7 @@ scene('sfB-l5-setdef', 'Lec05：集合的定義（element、∈、∉）', [
   },
   async (tok, S) => { // 1297.4 大寫 S、T、U
     S.b.add('集合用大寫：S、T、U（S = Set）、A、B', C.lilac);
-    glow(S.s.cubes[0], null); hot('大寫 S', -5.7, 5.4);
+    glow(S.s.cubes[0], null); txt(S.s.nm, '大寫 S'); // the set's own name tag says it (no second tag on top of it)
     cap('集合習慣用大寫英文字', 'S、T、U（Set 的 S），或 A、B');
   },
   async (tok, S) => { // 1316.8 元素小寫
@@ -2417,11 +2438,11 @@ scene('sfB-l5-setdef', 'Lec05：集合的定義（element、∈、∉）', [
     cap('集合裡的元素', '習慣用小寫的 a、b、c');
   },
   async (tok, S) => { // 1328.7 a ∈ S
-    glow(S.s.cubes[0], OKG); S.in = good('a ∈ S（a 屬於 S）', -3.6, 0.6);
+    glow(S.s.cubes[0], OKG); S.in = good('a ∈ S（a 屬於 S）', -3.6, 0.5);
     cap('不想每次寫「屬於」', '直接寫 a ∈ S');
   },
   async (tok, S) => { // 1344.0 a ∉ S
-    S.out = num('z', 1.0, 2.0, C.gray, 0.56); bad('z ∉ S（S 裡找不到 z）', 1.0, 0.6);
+    S.out = num('z', 1.0, 1.15, C.gray, 0.56, 0.5); bad('z ∉ S（S 裡找不到 z）', 1.0, 0.5); // under the board, beside the set
     cap('把 ∈ 加一撇', 'z ∉ S：S 裡面找不到 z');
   },
 ]);
@@ -2436,24 +2457,25 @@ scene('sfB-l5-roster', 'Lec05：列舉法寫集合 {…}', [
     cap('逗點隔開的就是一個元素', '裡面不管多複雜，只算一個');
   },
   async (tok, S) => { // 1387.6 S = {1,2,3,4}
-    S.s = blob('S = {1, 2, 3, 4}', [1, 2, 3, 4], -4.6, 3.6, 1.9, 1.3, C.blue, 2);
-    sm('1∈S、2∈S、3∈S、4∈S', -4.6, 1.9);
+    // layout: the two finite examples side by side on top, the infinite Z row centred under them
+    S.s = blob('S = {1, 2, 3, 4}', [1, 2, 3, 4], -3.4, 3.9, 1.9, 1.2, C.blue, 2);
+    sm('1∈S、2∈S、3∈S、4∈S', -3.4, 2.35);
     cap('S = {1, 2, 3, 4}', '可以寫 1∈S、2∈S、3∈S、4∈S');
   },
   async (tok, S) => { // 1397.5 V = {a,e,i,o,u}
-    S.v = blob('V = {a, e, i, o, u}', ['a', 'e', 'i', 'o', 'u'], 0.4, 3.6, 2.2, 1.3, C.green, 3);
-    sm('英文的母音字母', 0.4, 1.9);
+    S.v = blob('V = {a, e, i, o, u}', ['a', 'e', 'i', 'o', 'u'], 3.2, 3.9, 2.2, 1.2, C.green, 3);
+    sm('英文的母音字母', 3.2, 2.35);
     cap('V = {a, e, i, o, u}', '特性：英文的母音字母');
   },
   async (tok, S) => { // 1414.4 無窮但有規律 → …
-    note('無窮無盡、但看得出規律 → 用「…」點下去', 4.6, 5.0);
+    note('無窮無盡、但看得出規律 → 用「…」點下去', 0, 1.6); // right above where the infinite set comes
     cap('如果東西無窮無盡', '但看得出規律，就點點點下去');
   },
   async (tok, S) => { // 1431.2 Z
-    S.L = nline(-3, 3, 0.4, 1.0, 3.0);
-    for (let v = -3; v <= 3; v++) num(v < 0 ? '−' + -v : v, 3.0 + v, 1.0, C.purple, 0.5);
-    sm('…', -0.6, 1.0); sm('…', 6.6, 1.0);
-    hd('Z = {…, −2, −1, 0, 1, 2, …}', 3.0, 2.0);
+    S.L = nline(-3, 3, -0.6, 1.0, 0);
+    for (let v = -3; v <= 3; v++) num(v < 0 ? '−' + -v : v, v, 0.0, C.purple, 0.5);
+    sm('…', -3.8, 0.0); sm('…', 3.8, 0.0);
+    hd('Z = {…, −2, −1, 0, 1, 2, …}', 0, 0.85); // its name right above its row
     cap('Z = {…, −2, −1, 0, 1, 2, …}', '以後 Z 都表示整數集合，要記起來');
   },
 ]);
@@ -2492,15 +2514,16 @@ scene('sfB-l5-builder', 'Lec05：set builder 寫法與常用集合', [
 
 scene('sfB-l5-equal', 'Lec05：集合相等：順序、重複、區間', [
   async (tok, S) => { // 1568.4 順序沒關係
-    blob('{1, 2, 3}', [1, 2, 3], -4.2, 4.6, 1.8, 1.0, C.blue, 3); hot('=', -1.6, 4.6); blob('{3, 1, 2}', [3, 1, 2], 1.0, 4.6, 1.8, 1.0, C.blue, 3);
+    // three rows, one per idea, centred: order / repeats / interval
+    blob('{1, 2, 3}', [1, 2, 3], -2.6, 4.8, 1.8, 1.0, C.blue, 3); hot('=', 0, 4.8); blob('{3, 1, 2}', [3, 1, 2], 2.6, 4.8, 1.8, 1.0, C.blue, 3);
     cap('集合跟順序沒關係', '{1, 2, 3} 和 {3, 1, 2} 是同一個集合');
   },
   async (tok, S) => { // 1577.0 重複只算一個
-    blob('{1, 2, 2, 2}', [1, 2, 2, 2], -4.2, 1.9, 2.1, 1.0, C.green, 4); hot('=', -1.6, 1.9); blob('{1, 2}', [1, 2], 1.0, 1.9, 1.4, 1.0, C.green, 2);
+    blob('{1, 2, 2, 2}', [1, 2, 2, 2], -2.6, 1.9, 2.1, 1.0, C.green, 4, 0.5); hot('=', 0, 1.9); blob('{1, 2}', [1, 2], 2.6, 1.9, 1.4, 1.0, C.green, 2, 0.5); // short drop: the cubes do not fall through the row above
     cap('同一個 2 寫兩次、三次', '都只算一個，只是浪費墨水');
   },
   async (tok, S) => { // 1587.7 區間
-    card('[1, 10] = { x | 1 ≤ x ≤ 10 }', C.lilac, 4.6, 3.3, 5.0);
+    card('[1, 10] = { x | 1 ≤ x ≤ 10 }', C.lilac, 0, -0.4, 5.0);
     cap('區間也可以這樣寫', '兩種寫法指的都是 1 到 10 之間的 x');
   },
 ]);
@@ -2540,7 +2563,7 @@ scene('sfB-l5-card', 'Lec05：cardinality |S|：有限與無窮', [
 // 元素方塊：外層一個 = 一格；內層集合寫在方塊上
 function topRow(items, y, c = C.sky) {
   const w = items.map((t) => 0.3 + 0.2 * t.length), gap = 0.25, tot = w.reduce((a, b) => a + b, 0) + gap * (items.length - 1);
-  let x = -tot / 2; const cs = items.map((t, i) => { const m = cube(t, c, [w[i], 0.62, 0.62], x + w[i] / 2, y, 0.3, 1.2); x += w[i] + gap; return m; });
+  let x = -tot / 2; const cs = items.map((t, i) => { const m = cube(t, c, [w[i], 0.62, 0.62], x + w[i] / 2, y, 0.3, 0.5); x += w[i] + gap; return m; });
   const L = hd('{', -tot / 2 - 0.45, y), R = hd('}', tot / 2 + 0.45, y);
   return { cs, all: [...cs, L, R] };
 }
@@ -2624,7 +2647,7 @@ scene('sfB-l5-subset', 'Lec05：子集合 ⊆ 與真子集合', [
     cap('另一個名詞', 'proper subset 真子集合');
   },
   async (tok, S) => { // 2054.1 排除 A = B
-    S.w = num('w', -1.6, 3.0, C.orange, 0.5); glow(S.w, HL); bub('B 裡至少有一個不在 A', -1.6, 4.0);
+    S.w = num('w', -1.6, 3.0, C.orange, 0.5); glow(S.w, HL); K.note('B 裡至少有一個不在 A', S.w, 'bottom', 'say'); // right under w, away from the board
     cap('排除 A 跟 B 相等的可能', 'B 裡面至少有一個元素不在 A');
   },
   async (tok, S) => { // 2064.6 式子
@@ -2632,11 +2655,11 @@ scene('sfB-l5-subset', 'Lec05：子集合 ⊆ 與真子集合', [
     cap('寫出來：A 是 B 的子集合', '而且另外找得到一個 x 在 B、不在 A');
   },
   async (tok, S) => { // 2086.8 ∅ ⊆ S
-    good('定理：任何集合 S，∅ ⊆ S', -3.4, 0.3);
+    good('定理：任何集合 S，∅ ⊆ S', -3.4, 0.35); // under the picture
     cap('定理：任何集合', '一定有空集合這個子集合');
   },
   async (tok, S) => { // 2094.3 S ⊆ S
-    good('而且 S ⊆ S（自己是自己的子集合）', 3.4, 0.3);
+    good('而且 S ⊆ S（自己是自己的子集合）', 3.4, 0.85); // under the board
     cap('另外', '它自己是自己的一個子集合');
   },
 ]);
@@ -2666,7 +2689,7 @@ function fdiag(as, bs, xa = -3, xb = 3, yc = 3.3, dy = 0.85, na = 'A', nb = 'B')
 function table(heads, x0, yTop, dx, dy) {
   const X = (c) => x0 + c * dx, Y = (r) => yTop - (r + 1) * dy;
   const hs = heads.map((h, c) => tag(h, 'ptr', X(c), yTop));
-  return { hs, X, Y, cell(r, c, v, col) { return cube(v, col || (v === 'T' ? C.green : C.gray), [dx * 0.8, dy * 0.75, 0.5], X(c), Y(r), 0, 1.0); } };
+  return { hs, X, Y, cell(r, c, v, col) { return cube(v, col || (v === 'T' ? C.green : C.gray), [dx * 0.8, dy * 0.75, 0.5], X(c), Y(r), 0, 0.4); } };
 }
 const curve = (G, f, x0, x1, color) => { const pts = []; for (let k = 0; k <= 40; k++) { const x = x0 + ((x1 - x0) * k) / 40; pts.push(V3(G.X(x), G.Y(f(x)), 0.05)); } const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color })); lab.world.add(l); return l; };
 
@@ -2752,7 +2775,8 @@ scene('sfB-l6-ie2', 'Lec06：排容原理：|A ∪ B| = |A| + |B| − |A ∩ B|'
 
 scene('sfB-l6-div', 'Lec06：1 到 100 能被 2 或 3 整除的有幾個？', [
   async (tok, S) => { // 247.7
-    S.c = []; for (let n = 1; n <= 100; n++) { const r = Math.floor((n - 1) / 10), c = (n - 1) % 10; S.c.push(cube(String(n), C.sand, [0.47, 0.47, 0.3], -6.6 + c * 0.52, 6.3 - r * 0.52, 0)); }
+    // 100 small cubes: the numbers use a small font (no padding) so neighbours never touch
+    S.c = []; for (let n = 1; n <= 100; n++) { const r = Math.floor((n - 1) / 10), c = (n - 1) % 10; const m = cube(String(n), C.sand, [0.5, 0.5, 0.3], -6.9 + c * 0.58, 6.3 - r * 0.58, 0); Object.assign(m.userData.lbl.element.style, { fontSize: '9px', padding: '0', minWidth: '0', boxShadow: 'none', background: 'transparent' }); S.c.push(m); }
     S.b = board(3.2, 6.4, 6.6, 0.7); S.b.add('1～100 能被 2 或 3 整除的有幾個？', C.gold);
     cap('計算題：1 到 100', '可以被 2 或 3 整除的有幾個？');
   },
@@ -2780,23 +2804,23 @@ scene('sfB-l6-div', 'Lec06：1 到 100 能被 2 或 3 整除的有幾個？', [
     cap('所以 |A ∪ B|', '= |A| + |B| − |A ∩ B|');
   },
   async (tok, S) => { // 352.5 |A| = 50
-    good('|A| = 100 ÷ 2 = 50', 3.2, 2.2);
+    K.keep(good('|A| = 100 ÷ 2 = 50', 3.2, 2.15)); // the three counts are the parts of the answer: they stay
     cap('|A| 是多少？', '100 ÷ 2 = 50');
   },
   async (tok, S) => { // 364.5 100/3 = 33.33 → 33
-    good('|B| = 100 ÷ 3 = 33.33… → 33', 3.2, 1.6);
+    K.keep(good('|B| = 100 ÷ 3 = 33.33… → 33', 3.2, 1.45));
     cap('|B| = 100 ÷ 3', '除出來是 33.33…，小數沒有用（最後一個是 99）');
   },
   async (tok, S) => { // 388.5 floor
-    note('只取整數部分：下高斯 floor，⌊100/3⌋ = 33', 3.2, 1.0);
+    note('只取整數部分：下高斯 floor，⌊100/3⌋ = 33', 3.2, 0.75);
     cap('有一個函式叫下高斯', 'floor：取不比它大的最大整數');
   },
   async (tok, S) => { // 431.6 ⌊100/6⌋ = 16
-    good('|A ∩ B| = ⌊100 ÷ 6⌋ = ⌊16.67⌋ = 16', 3.2, 0.4);
+    K.keep(good('|A ∩ B| = ⌊100 ÷ 6⌋ = ⌊16.67⌋ = 16', 3.2, 0.05));
     cap('|A ∩ B| = 100 ÷ 6', '16.67 取下高斯 = 16（最後一個是 96）');
   },
   async (tok, S) => { // 434.3 67
-    S.ans = card('50 + 33 − 16 = 67', C.mint, -4.2, 0.4, 4.6); glow(S.ans, OKG);
+    S.ans = card('50 + 33 − 16 = 67', C.mint, -4.29, -0.75, 4.6); glow(S.ans, OKG);
     cap('答案', '50 + 33 − 16 = 67');
   },
 ]);
@@ -2831,7 +2855,7 @@ scene('sfB-l6-ie3', 'Lec06：排容原理：三個集合', [
     for (const k in R3) ringL(S.ox + R3[k][0], S.oy + R3[k][1], 1.9);
     hd('A', S.ox - 3.1, S.oy + 2.2); hd('B', S.ox + 3.1, S.oy + 2.2); hd('C', S.ox + 2.0, S.oy - 3.0);
     S.cnt = {}; for (const k in REG) S.cnt[k] = hot('0', S.ox + REG[k][0], S.oy + REG[k][1]);
-    note('數字 = 這一塊被算了幾次', S.ox, -0.1);
+    K.keep(note('數字 = 這一塊被算了幾次', S.ox, -0.65)); // the legend of the picture: stays
     cap('先看三個：A ∪ B ∪ C', '回去看文氏圖');
   },
   async (tok, S) => { // 540.5 |A|+|B|+|C|
@@ -2851,7 +2875,7 @@ scene('sfB-l6-ie3', 'Lec06：排容原理：三個集合', [
   },
   async (tok, S) => { // 567.7 − |B∩C|
     txt(S.cnt.bc, '1'); txt(S.cnt.abc, '0'); disc(S.ox + 0.8, S.oy - 0.4, 0.7, C.red, 0.3);
-    S.oops = bad('中間被扣成 0 次了！', S.ox, S.oy - 0.55);
+    S.oops = bad('中間被扣成 0 次了！', S.ox, -1.3); // under the picture, not on its numbers
     S.b.add('− |B ∩ C|', C.peach);
     cap('B 跟 C 也多算一次', '扣掉 |B ∩ C|——但中間被多扣了');
   },
@@ -2889,15 +2913,15 @@ scene('sfB-l6-ien', 'Lec06：排容原理的一般式', [
     cap('最後一項', '一個取正、兩個取負：(−1)ⁿ⁺¹');
   },
   async (tok, S) => { // 723.0 精簡 Σ|Ai|
-    S.s = board(1.2, 1.9, 9.6, 0.62); S.s.add('精簡：Σᵢ |Aᵢ|', C.sky, 3.4);
+    S.s = board(1.2, 2.0, 9.6, 0.66); S.s.add('精簡：Σᵢ |Aᵢ|', C.sky, 3.4);
     cap('寫得更精簡', '先 Σ（i = 1 到 n）|Aᵢ|');
   },
   async (tok, S) => { // 737.8 − Σ_{i<j}
-    S.s.add('− Σ over 1≤i<j≤n |Aᵢ ∩ Aⱼ|（i、j 不一樣）', C.peach, 6.4);
+    S.s.add('− Σ over 1≤i<j≤n |Aᵢ ∩ Aⱼ|（i、j 不一樣）', C.peach, 7.6);
     cap('兩個的怎麼表示？', 'i、j 在 1 到 n 中而且不一樣');
   },
   async (tok, S) => { // 778.5 + Σ_{i<j<k}
-    S.s.add('+ Σ over 1≤i<j<k≤n |Aᵢ ∩ Aⱼ ∩ Aₖ|', C.mint, 6.4);
+    S.s.add('+ Σ over 1≤i<j<k≤n |Aᵢ ∩ Aⱼ ∩ Aₖ|', C.mint, 7.0);
     cap('三個的依此類推', 'i、j、k 在 1 到 n 中、彼此不同');
   },
   async (tok, S) => { // 835.2 … + (−1)^{n+1}|⋂|
@@ -2924,7 +2948,7 @@ scene('sfB-l6-power', 'Lec06：冪集合 P({1, 2, 3})', [
     cap('它的意義', '把 A 所有可能的子集合收集起來');
   },
   async (tok, S) => { // 932.6 ∅
-    S.row = (i, t, y) => { const m = cube(t, C.mint, [0.25 * t.length + 0.4, 0.55, 0.5], -4.6 + i * 2.3, y, 0.3, 1.2); glow(m, HL); return m; };
+    S.row = (i, t, y) => { const m = cube(t, C.mint, [0.25 * t.length + 0.4, 0.55, 0.5], -4.6 + i * 2.3, y, 0.3, 0.4); glow(m, HL); return m; }; // short drop: not through the row above
     S.all = [S.row(0, '∅', 3.4)];
     cap('第一個：空集合', '空集合是任何集合的子集合');
   },
@@ -2962,7 +2986,7 @@ scene('sfB-l6-pow2', 'Lec06：為什麼是 2 的 n 次方：挑或不挑', [
     cap('B 的 power set', '空集合、{0}、{1}、{0, 1} 都是 B 的子集合');
   },
   async (tok, S) => { // 1070.1 4 個
-    good('4 個', 5.2, 5.0);
+    K.keep(K.note('4 個', S.pb, 'right', 'good')); // the count stays with the set it counts
     cap('數一數', '一、二、三、四：4 個');
   },
   async (tok, S) => { // 1078.1 8 怎麼來
@@ -2971,7 +2995,7 @@ scene('sfB-l6-pow2', 'Lec06：為什麼是 2 的 n 次方：挑或不挑', [
   },
   async (tok, S) => { // 1098.8 {1}：挑 1
     ['1', '2', '3'].forEach((t, i) => hd(t, -2.0 + i * 1.3, 3.4)); hd('子集合', -4.4, 3.4);
-    S.sw = (r, bits, name) => { hd(name, -4.4, 2.6 - r * 0.8); return bits.map((b, i) => cube(b ? '要' : '不要', b ? C.green : C.gray, [1.0, 0.55, 0.5], -2.0 + i * 1.3, 2.6 - r * 0.8, 0, 1.0)); };
+    S.sw = (r, bits, name) => { hd(name, -4.4, 2.6 - r * 0.8); return bits.map((b, i) => cube(b ? '要' : '不要', b ? C.green : C.gray, [1.0, 0.55, 0.5], -2.0 + i * 1.3, 2.6 - r * 0.8, 0, 0.4)); };
     S.sw(0, [1, 0, 0], '{1}');
     cap('子集合 {1} 的意思', '從 A 裡挑了 1，2、3 不要');
   },
@@ -2980,19 +3004,19 @@ scene('sfB-l6-pow2', 'Lec06：為什麼是 2 的 n 次方：挑或不挑', [
     cap('{2, 3} 呢？', '挑了 2 跟 3，1 不要');
   },
   async (tok, S) => { // 1139.6 2³
-    S.c = card('每個元素：挑或不挑 → 2 × 2 × 2 = 2³ = 8', C.lilac, 3.6, 1.0, 7.0); glow(S.c, HL);
+    S.c = card('每個元素：挑或不挑 → 2 × 2 × 2 = 2³ = 8', C.lilac, -0.7, 0.6, 7.0); glow(S.c, HL); // right under the table it sums up
     cap('三個東西給你挑', '每一個都有挑、不挑兩種：2³');
   },
   async (tok, S) => { // 1188.0 所以寫 2^A
-    note('「2」= 挑或不挑兩種選擇 → 所以寫成 2^A', 3.6, 0.3);
+    note('「2」= 挑或不挑兩種選擇 → 所以寫成 2^A', -0.7, -0.05);
     cap('這也是為什麼寫 2^A', '2 表示挑或不挑兩種選擇');
   },
   async (tok, S) => { // 1191.5 |2^B| = 2^|B| = 4
-    glow(S.c, null); S.f = card('|2^B| = 2^|B| = 2² = 4', C.mint, -4.4, 0.6, 4.6); glow(S.f, HL);
+    glow(S.c, null); S.f = card('|2^B| = 2^|B| = 2² = 4', C.mint, -3.2, -1.0, 4.6); glow(S.f, HL); // the two results side by side at the bottom
     cap('B 的 power set', '0、1 兩個東西給你選：2² = 4 種');
   },
   async (tok, S) => { // 1213.5 P(A) = 2^A
-    glow(S.f, null); S.g = card('P(A) = 2^A，|P(A)| = 2^|A|', C.gold, -4.4, -0.2, 4.6); glow(S.g, HL);
+    glow(S.f, null); S.g = card('P(A) = 2^A，|P(A)| = 2^|A|', C.gold, 2.4, -1.0, 4.8); glow(S.g, HL);
     cap('寫成函式形式就是 P(A)', '很重要的公式：|P(A)| = 2^|A|');
   },
 ]);
@@ -3017,7 +3041,7 @@ scene('sfB-l6-cart', 'Lec06：笛卡兒積 {1, 2, 3} × {a, b}', [
     cap('舉例：A = {1, 2, 3}', 'B = {a, b}，一邊三個、一邊兩個');
   },
   async (tok, S) => { // 1306.0 固定 1
-    S.cell = (i, j) => { const m = cube('(' + (i + 1) + ', ' + 'ab'[j] + ')', C.mint, [1.6, 0.6, 0.5], -2.6 + j * 2.6, 3.6 - i * 0.95, 0, 1.0); glow(m, HL); return m; };
+    S.cell = (i, j) => { const m = cube('(' + (i + 1) + ', ' + 'ab'[j] + ')', C.mint, [1.6, 0.6, 0.5], -2.6 + j * 2.6, 3.6 - i * 0.95, 0, 0.4); glow(m, HL); return m; }; // short drop: not through the row above
     S.cs = [S.cell(0, 0), S.cell(0, 1)];
     cap('固定前面是 1', '後面可以換 a 或 b');
   },
@@ -3481,7 +3505,7 @@ scene('sfB-l6-terms', 'Lec06：domain、codomain、image、pre-image', [
 
 scene('sfB-l6-floor', 'Lec06：下高斯 floor ⌊x⌋', [
   async (tok, S) => { // 3138.3
-    S.b = board(-4.4, 6.6, 5.0, 0.7); S.b.add('floor 地板函式：⌊x⌋ 下高斯', C.gold);
+    S.b = board(-4.3, 6.6, 5.4, 0.7); S.b.add('floor 地板函式：⌊x⌋ 下高斯', C.gold);
     cap('下高斯，或者是地板函式', 'the floor function');
   },
   async (tok, S) => { // 3154.9 ⌊1.5⌋ = 1
@@ -3498,7 +3522,7 @@ scene('sfB-l6-floor', 'Lec06：下高斯 floor ⌊x⌋', [
   },
   async (tok, S) => { // 3211.3 R → R
     S.b.add('f : R → R，定義域 = 所有實數', C.lilac);
-    S.G = axes(2.2, 3.2, 1.1, 1.0, -3, 3, -2.5, 2.5);
+    S.G = axes(4.4, 3.2, 1.1, 1.0, -3, 3, -2.5, 2.5); // clear of the board's longest lines
     cap('考慮 f 從 R 到 R', '定義域：所有實數');
   },
   async (tok, S) => { // 3237.8 值域 Z
@@ -3522,7 +3546,7 @@ scene('sfB-l6-floor', 'Lec06：下高斯 floor ⌊x⌋', [
     const G = S.G;
     for (const v of [-3, -2, -1, 0, 2]) { bar(G.X(v), G.X(v + 1), G.Y(v), C.blue, 0.1); if (v < 0) dotF(G.X(v), G.Y(v), C.blue); }
     for (const w of [-2, -1, 0, 1, 2, 3]) dotO(G.X(w), G.Y(w - 1));
-    bub('左端實心、右端空心圈', 4.6, 6.2);
+    bub('左端實心、右端空心圈', 4.4, 6.2);
     cap('終點那邊會誤會', '用空心圈表示「不是這點」，要看上面');
   },
 ]);
@@ -3848,7 +3872,7 @@ scene('sfB-l7-defs', 'Lec07：一對一與映成：圖和邏輯式', [
 
 scene('sfB-l7-sq', 'Lec07：y = x²：換定義域、對應域，答案不同', [
   async (tok, S) => { // 362.0
-    S.b = board(-3.9, 6.6, 6.0, 0.7); S.b.add('判斷：一對一？映成？對射？', C.gold);
+    S.b = board(-3.7, 6.7, 6.4, 0.6); S.b.add('判斷：一對一？映成？對射？', C.gold); // 11 cards: tight rows so the last one stays above the conclusion
     cap('課本習題常叫你判斷', '再舉一個例子');
   },
   async (tok, S) => { // 377.4 y = x²
@@ -3902,7 +3926,7 @@ scene('sfB-l7-sq', 'Lec07：y = x²：換定義域、對應域，答案不同', 
     cap('它也是 onto、也是 one-to-one', '所以是一個 bijection');
   },
   async (tok, S) => { // 645.2 結論
-    good('同一個式子，定義域、對應域不同 → 答案不同', 0, -0.4);
+    good('同一個式子，定義域、對應域不同 → 答案不同', 0, -0.2);
     cap('講函式要說清楚定義域、對應域', '同一個函式，A、B 取得不一樣，答案就不一樣');
   },
 ]);
@@ -3932,7 +3956,7 @@ scene('sfB-l7-inv1', 'Lec07：反函數的動機：G-sensor 與 cos θ', [
     cap('常常要知道的', '是兩個向量的夾角 θ');
   },
   async (tok, S) => { // 744.4 內積
-    S.b = board(3.4, 1.5, 7.4, -0.7); S.b.add('g₁ · g₂ = |g₁| |g₂| cos θ', C.lilac);
+    S.b = board(2.5, 1.3, 7.4, 0.62); S.b.add('g₁ · g₂ = |g₁| |g₂| cos θ', C.lilac); // under the vectors, growing down (not up into them)
     cap('熟知的公式：內積', 'g₁ · g₂ = |g₁| 乘 |g₂| 乘 cos θ');
   },
   async (tok, S) => { // 769.6 cos θ 可算
@@ -3965,7 +3989,7 @@ scene('sfB-l7-inv2', 'Lec07：限制成對射：cos 在 [0, π]', [
   async (tok, S) => { // 893.4
     S.G = axes(-3.0, 3.4, 0.9, 1.6, -4.2, 4.2, -1.2, 1.2, 100);
     S.cos = curve(S.G, (u) => Math.cos((u * Math.PI) / 2), -4.1, 4.1, '#9db7d0'); sm('θ（每格 90°）', -1.0, 1.25);
-    S.b = board(4.0, 6.7, 6.0, 0.66); S.b.add('做一個比較嚴格的限定', C.gold);
+    S.b = board(4.3, 6.7, 6.0, 0.66); S.b.add('做一個比較嚴格的限定', C.gold);
     cap('要問人家當初的自變數', '函式也不是隨便問，要嚴格限定');
   },
   async (tok, S) => { // 911.3 對射
@@ -3990,8 +4014,8 @@ scene('sfB-l7-inv2', 'Lec07：限制成對射：cos 在 [0, π]', [
   },
   async (tok, S) => { // 987.4 60° 在框內
     line(S.G.X(-4.2), S.G.Y(0.5), S.G.X(4.2), S.G.Y(0.5), 0.06, '#c08a1f');
-    dotF(S.G.X(60 / 90), S.G.Y(0.5), C.green); good('60° ✓', S.G.X(60 / 90), S.G.Y(0.5) + 0.45);
-    dotF(S.G.X(-60 / 90), S.G.Y(0.5), C.gray); bad('−60° 不在框裡', S.G.X(-60 / 90) - 1.2, S.G.Y(0.5) + 0.45);
+    dotF(S.G.X(60 / 90), S.G.Y(0.5), C.green); K.keep(good('60° ✓', S.G.X(60 / 90) + 0.25, S.G.Y(0.5) + 0.45));
+    dotF(S.G.X(-60 / 90), S.G.Y(0.5), C.gray); const l60 = K.keep(bad('−60° 不在框裡', S.G.X(-60 / 90) - 0.25, S.G.Y(0.5) + 0.45)); l60.center.set(1, 0.5); // each mark next to its own dot, outward
     cap('這時 60° 是我要的', '−60° 在另一邊，不在我畫的框框裡');
   },
   async (tok, S) => { // 1014.6 [−1, 1]
@@ -4007,7 +4031,7 @@ scene('sfB-l7-inv2', 'Lec07：限制成對射：cos 在 [0, π]', [
     cap('給我一個 y 值，反查 x', '把反查的動作當作函式：反函式');
   },
   async (tok, S) => { // 1080.9 一定有答案
-    S.c = board(-3.0, 0.3, 8.4, -0.62); S.c.add('f⁻¹ 也是函式：①放進去一定要有答案', C.sky);
+    S.c = board(-3.0, -0.2, 8.4, -0.62); S.c.add('f⁻¹ 也是函式：①放進去一定要有答案', C.sky); // under the graph, clear of its axis labels
     cap('反函式還是一個函式', '第一：放進去一定要有答案');
   },
   async (tok, S) => { // 1090.4 不會兩個答案
@@ -4015,15 +4039,15 @@ scene('sfB-l7-inv2', 'Lec07：限制成對射：cos 在 [0, π]', [
     cap('第二', '放進去絕對不會有兩個答案');
   },
   async (tok, S) => { // 1102.1 onto 保證有答案
-    glow(S.c.ls[0], OKG); sm('← onto 保證', 2.6, 0.3);
+    glow(S.c.ls[0], OKG); sm('← onto 保證', 2.6, -0.2);
     cap('對射是 onto', '每個 y 至少有一個 x 對到它 → 保證有答案');
   },
   async (tok, S) => { // 1116.1 一對一保證唯一
-    glow(S.c.ls[1], OKG); sm('← one-to-one 保證', 2.8, 0.92);
+    glow(S.c.ls[1], OKG); sm('← one-to-one 保證', 2.8, 0.42);
     cap('一對一保證', '找回去的答案只有一個');
   },
   async (tok, S) => { // 1131.5 bijection
-    good('所以講反函式，一定要 bijection', 3.8, 0.0);
+    good('所以講反函式，一定要 bijection', 4.3, 1.1); // under the board it concludes
     cap('講反函式的前提', '一定要是 bijection');
   },
   async (tok, S) => { // 1149.5 y = cos x；放 0.5 → 60°
@@ -4459,11 +4483,11 @@ scene('sfB-l7-split', 'Lec07：切兩段、倒過來加、兩兩一組', [
     cap('另一個式子', 'Σ（n = 0 到 k）f(k − n)');
   },
   async (tok, S) => { // 2941.7 前：f0…fk
-    S.f = [...Array(5)].map((_, i) => num('f' + i, -4.8 + i * 1.6, 6.2, C.blue, 0.6));
+    S.f = [...Array(5)].map((_, i) => num('f' + i, -3.2 + i * 1.6, 6.5, C.blue, 0.6, 0.5));
     cap('原來的 Σ f(n)', '是 f₀、f₁、f₂ 一直到 fₖ');
   },
   async (tok, S) => { // 2951.6 後：fk…f0
-    S.g = [...Array(5)].map((_, i) => num('f' + (4 - i), -4.8 + i * 1.6, 5.35, C.orange, 0.6));
+    S.g = [...Array(5)].map((_, i) => num('f' + (4 - i), -3.2 + i * 1.6, 5.4, C.orange, 0.6, 0.4)); // a short drop: the row does not fall through the one above
     cap('n = 0 代進去是 fₖ', 'n = 1 是 fₖ₋₁…n = k 是 f₀');
   },
   async (tok, S) => { // 2977.6 反序加法
@@ -4475,7 +4499,7 @@ scene('sfB-l7-split', 'Lec07：切兩段、倒過來加、兩兩一組', [
     cap('小學算數就這樣', '把兩項兩項相加');
   },
   async (tok, S) => { // 3004.1 f0+f1, f2+f3
-    S.pr = []; for (let i = 0; i < 4; i++) { S.pr.push(card('f' + 2 * i + ' + f' + (2 * i + 1), C.lilac, -4.8 + i * 3.2, 5.6, 2.6)); await wt(tok, 150); }
+    S.pr = []; for (let i = 0; i < 4; i++) { S.pr.push(card('f' + 2 * i + ' + f' + (2 * i + 1), C.lilac, -4.8 + i * 3.2, 5.6, 2.6, 0.55, 0, 0.6)); await wt(tok, 150); }
     cap('n = 0 是 f₀ + f₁', 'n = 1 是 f₂ + f₃，一路到最後');
   },
   async (tok, S) => { // 3025.6 項次沒變
@@ -4717,8 +4741,8 @@ scene('sfB-l7-zn', 'Lec07：整數 Z 跟自然數 N 一樣多', [
     cap('來看整數集合和自然數集合', '你覺得哪一個集合比較大？');
   },
   async (tok, S) => { // 4088.6 兩列
-    S.Z = [-3, -2, -1, 0, 1, 2, 3].map((v, i) => num(v < 0 ? '−' + -v : v, -4.2 + i * 1.4, 5.4, C.purple, 0.6)); sm('…', -5.5, 5.4); sm('…', 5.5, 5.4); hd('Z', -6.6, 5.4);
-    S.N = [0, 1, 2, 3, 4, 5, 6].map((v, i) => num(v, -4.2 + i * 1.4, 2.0, C.green, 0.6)); sm('…', 5.5, 2.0); hd('N', -6.6, 2.0);
+    S.Z = [-3, -2, -1, 0, 1, 2, 3].map((v, i) => num(v < 0 ? '−' + -v : v, -4.2 + i * 1.4, 5.4, C.purple, 0.6, 0.4)); // short drops: the cubes do not fall through the heading sm('…', -5.5, 5.4); sm('…', 5.5, 5.4); hd('Z', -6.6, 5.4);
+    S.N = [0, 1, 2, 3, 4, 5, 6].map((v, i) => num(v, -4.2 + i * 1.4, 2.0, C.green, 0.6, 0.4)); sm('…', 5.5, 2.0); hd('N', -6.6, 2.0);
     cap('Z：…、−2、−1、0、1、2、…', 'N：0、1、2、3 這樣下去');
   },
   async (tok, S) => { // 4106.7 直覺
@@ -4775,7 +4799,7 @@ scene('sfB-l7-zn', 'Lec07：整數 Z 跟自然數 N 一樣多', [
     cap('負數：先乘 −2 變正的', '−1 × (−2) = 2，要得到 1 再減 1：−2z − 1');
   },
   async (tok, S) => { // 4329.7 完成證明
-    hot('f 是 bijection → 證明完成', 0, 6.15);
+    S.f.add('f 是 bijection → 證明完成', C.mint); // on the formula board, not a second heading under the question
     cap('找出這個函式', '就等於完成證明（記得說明它是 bijection）');
   },
   async (tok, S) => { // 4341.1 跳脫直覺
@@ -4792,8 +4816,8 @@ scene('sfB-l7-grid', 'Lec07：格子點 N × N 也可數（沿斜線數）', [
   },
   async (tok, S) => { // 4370.1 格子點
     S.P = {}; for (let m = 0; m <= 4; m++) for (let n = 0; n <= 4; n++) S.P[m + ',' + n] = cube(null, C.gray, [0.32, 0.32, 0.32], GX(m), GY(n), 0.2);
-    line(GX(0) - 0.4, GY(0), GX(4) + 0.6, GY(0)); line(GX(0), GY(0) - 0.4, GX(0), GY(4) + 0.6); sm('m', GX(4) + 0.8, GY(0)); sm('n', GX(0), GY(4) + 0.85);
-    S.b = board(3.6, 6.0, 6.4, 0.7); S.b.add('格子點 { (m, n) | m, n ∈ N }', C.sky);
+    line(GX(0) - 0.4, GY(0), GX(4) + 0.6, GY(0)); line(GX(0), GY(0) - 0.4, GX(0), GY(4) + 0.6); sm('m', GX(4) + 1.0, GY(0) + 0.25); sm('n', GX(0), GY(4) + 0.85);
+    S.b = board(3.6, 5.85, 6.4, 0.7); S.b.add('格子點 { (m, n) | m, n ∈ N }', C.sky);
     cap('座標都是整數的點：格子點', '這個集合就是 N × N');
   },
   async (tok, S) => { // 4402.8 會不會比較多
@@ -4843,7 +4867,7 @@ scene('sfB-l7-grid', 'Lec07：格子點 N × N 也可數（沿斜線數）', [
     cap('這條線的特徵', 'm + n = 0、m + n = 1、m + n = 2…');
   },
   async (tok, S) => { // 4608.1 m+n=3：前面 6 點
-    gone(S.b.ls); S.c = board(3.6, 6.0, 6.6, 0.72);
+    gone(S.b.ls); S.c = board(3.6, 5.85, 6.6, 0.72);
     glow(S.P['2,1'], '#7a1010'); bub('示意：點 (2, 1)', GX(2) + 0.2, GY(1) + 0.85);
     S.c.add('(2, 1) 在 m + n = 3 上：前面有 1 + 2 + 3 = 6 點', C.sky);
     cap('假設落在 m + n = 3 這條線', '前面幾排：1 + 2 + 3 = 6 個點');
@@ -4873,7 +4897,7 @@ scene('sfB-l7-cantor', 'Lec07：實數比自然數多（對角線法預告）', 
     cap('有沒有東西比自然數大？', '有：實數');
   },
   async (tok, S) => { // 4746.8 困境
-    S.b = board(3.6, 6.0, 6.8, 0.7); S.b.add('困境：要說「不存在」對射，不能把函式全列出來', C.peach);
+    S.b = board(3.6, 5.85, 6.8, 0.7); S.b.add('困境：要說「不存在」對射，不能把函式全列出來', C.peach);
     cap('現在的困境', '要說不存在這個函式，卻沒辦法列舉所有函式');
   },
   async (tok, S) => { // 4760.9 反證法
@@ -4888,13 +4912,13 @@ scene('sfB-l7-cantor', 'Lec07：實數比自然數多（對角線法預告）', 
   async (tok, S) => { // 4789.0 寫小數位
     const D = ['4159', '2718', '3341', '5002']; S.d = [];
     D.forEach((ds, i) => { sm('0.', -5.6, 5.2 - i * 0.9); S.d.push([...ds].map((c, j) => num(c, -4.8 + j * 0.8, 5.2 - i * 0.9, C.sand, 0.55))); });
-    sm('（數字是示意）', -3.6, 1.6);
+    sm('（數字是示意）', -3.6, 1.95);
     cap('把它們的小數位寫出來', '1 號是 0.多多多，2 號是 0.多多多…');
   },
   async (tok, S) => { // 4815.5 找一個數
     for (let i = 0; i < 4; i++) { glow(S.d[i][i], HL); await wt(tok, 200); }
-    const nd = ['5', '4', '5', '4']; nd.forEach((c, j) => num(c, -4.8 + j * 0.8, 0.8, C.mint, 0.55)); sm('r = 0.', -5.9, 0.8);
-    note('第 i 位：對角數字 ≠ 4 就寫 4，= 4 就寫 5', -3.6, 0.1);
+    const nd = ['5', '4', '5', '4']; nd.forEach((c, j) => num(c, -4.8 + j * 0.8, 0.95, C.mint, 0.55, 0.35)); sm('r = 0.', -5.9, 0.95); // short drop: not through the 示意 line
+    note('第 i 位：對角數字 ≠ 4 就寫 4，= 4 就寫 5', -3.6, 0.25);
     cap('我找一個數字', '它跟 r₁ 第 1 位不同、跟 r₂ 第 2 位不同…');
   },
   async (tok, S) => { // 4825.7 對應不到
