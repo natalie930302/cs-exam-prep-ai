@@ -8,7 +8,8 @@
   // /study/<subj>/<chapter, from 1>?v=<video>&t=<tab>
   const params = new URLSearchParams(location.search);
   // read the requested tab now: opening the first video rewrites the address
-  const askedTab = params.get('t');
+  // the old 自製課 links (?mode=lesson) open the chapter's 講義 instead
+  const askedTab = params.get('t') || (params.get('mode') === 'lesson' ? 'handout' : null);
   // ?at=<sec> (from search): open the video at that moment
   if (params.get('v') && params.get('at') != null) {
     try { localStorage.setItem('yt-pos-' + params.get('v'), String(Math.max(0, Number(params.get('at')) || 0))); } catch (e) {}
@@ -806,7 +807,8 @@
   let lsTimes = null, lsAudio = null, lsSpeed = Number(store.get('lesson-speed')) || 1;
   const lsFirst = [];
   const getJson = function(u){ return fetch(u, {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : null; }); };
-  getJson('/lessons/index.json').then(function(have){
+  // the narrated 自製課 was replaced by the 講義 tab (2026-11): nothing is loaded
+  Promise.resolve(null).then(function(have){
     const me = have && have[chId];
     if (!me || !hasStage) return null;
     return Promise.all([getJson('/lessons/' + chId + '.json'), me.audio ? getJson('/lessons/audio/' + chId + '/times.json').catch(function(){ return null; }) : null]);
@@ -826,7 +828,7 @@
   // ?mode=lesson (the 自製課 button on the chapter card): open straight into
   // the lesson, once both it and the first video's notes are in (setting up
   // the video's notes would otherwise close the lesson again)
-  let lsAuto = params.get('mode') === 'lesson', notesShown = false;
+  let lsAuto = false, notesShown = false;
   function lsAutoStart(){ if (lsAuto && lesson && notesShown && !lsOn) { lsAuto = false; enterLesson(); } }
   const renderNotesOnly = renderNotes;
   renderNotes = async function(){ await renderNotesOnly(); notesShown = true; lsAutoStart(); };
@@ -1308,7 +1310,7 @@
   window.__studyCheck = {sectionChallenge: sectionChallenge, endCard: endCard, plan: function(){ return curNotes && quizPlan(curNotes); }, seek: function(t){ if (playerReady) player.seekTo(t, true); }, yt: function(){ return player && playerReady ? {cc: (function(){ try { return player.getOption('captions', 'track'); } catch (e) { return 'n/a'; } })(), state: player.getPlayerState(), data: player.getVideoData(), err: lastYtError} : {ready: playerReady}; }};
 
   // ── Tabs ──
-  const TABS = ['videos', 'full', 'lab', 'quiz', 'goals'];
+  const TABS = ['handout', 'videos', 'full', 'lab', 'quiz', 'goals'];
   // The address carries the open video (v) and the open tab (t), so a
   // refresh or a shared link reopens exactly this view.
   let currentTab = 'videos';
@@ -1321,6 +1323,7 @@
     history.replaceState(null, '', roomUrl());
     document.querySelectorAll('.st-tabs button').forEach(function(b){ b.setAttribute('aria-selected', String(b.dataset.tab === tab)); });
     TABS.forEach(function(t){ $('panel-' + t).hidden = t !== tab; });
+    if (tab === 'handout') renderHandout();
     if (tab === 'lab') renderLab();
     if (tab === 'quiz') renderQuiz();
     store.set('study-tab', tab);
@@ -1332,6 +1335,82 @@
     const cur = current && notesIndex[current.id];
     $('notesCount').textContent = cur ? cur.points + ' 個重點' : '';
     $('fullTab').innerHTML = '重點全文' + (cur ? '<span class="count">' + cur.points + '</span>' : '');
+  }
+
+  // ── 講義: public/handouts/<subj>-<n>.md, one merged handout per chapter to
+  // read before the videos. A small Markdown subset (see the handout brief):
+  // headings, paragraphs, lists, bold, code, fenced blocks, tables, callouts.
+  let handoutMd = null;
+  // handouts/index.json lists the chapters that have one (tools/handout-index.mjs)
+  fetch('/handouts/index.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : []; }).then(function(have){
+    return have.indexOf(chId) < 0 ? null : fetch('/handouts/' + chId + '.md', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.text() : null; });
+  }).then(function(t){
+    if (!t || !/^#\s/.test(t)) { if (currentTab === 'handout') setTab('videos'); return; }
+    handoutMd = t;
+    $('handoutTab').hidden = false;
+    if (currentTab === 'handout') renderHandout();
+  }).catch(function(){ if (currentTab === 'handout') setTab('videos'); });
+  function mdEsc(x){ return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function mdInline(x){
+    const codes = [];
+    x = mdEsc(x).replace(/`([^`]+)`/g, function(m, c){ codes.push(c); return '\u0000' + (codes.length - 1) + '\u0000'; });
+    x = x.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    return x.replace(/\u0000(\d+)\u0000/g, function(m, i){ return '<code>' + codes[i] + '</code>'; });
+  }
+  function mdToHtml(md){
+    const lines = md.replace(/\r/g, '').split('\n'), out = [];
+    let i = 0;
+    const isBlockStart = function(l){ return /^(#{1,3}\s|```|>|\s*[-*]\s|\s*\d+\.\s|\|)/.test(l); };
+    while (i < lines.length) {
+      const l = lines[i];
+      if (!l.trim()) { i++; continue; }
+      let m;
+      if ((m = l.match(/^(#{1,3})\s+(.*)$/))) { const n = m[1].length; out.push('<h' + (n + 1) + '>' + mdInline(m[2]) + '</h' + (n + 1) + '>'); i++; continue; }
+      if (/^```/.test(l)) {
+        const buf = []; i++;
+        while (i < lines.length && !/^```/.test(lines[i])) buf.push(lines[i++]);
+        i++;
+        out.push('<pre><code>' + mdEsc(buf.join('\n')) + '</code></pre>'); continue;
+      }
+      if (/^>/.test(l)) {
+        const buf = [];
+        while (i < lines.length && /^>/.test(lines[i])) buf.push(lines[i++].replace(/^>\s?/, ''));
+        const kind = (buf[0].match(/^\*\*(重點|例題|陷阱|比喻|觀念)\*\*/) || [])[1];
+        out.push('<div class="ho-call' + (kind ? ' ho-' + {'重點': 'key', '例題': 'ex', '陷阱': 'trap', '比喻': 'meta', '觀念': 'idea'}[kind] : '') + '">' + mdToHtml(buf.join('\n')) + '</div>'); continue;
+      }
+      if (/^\|/.test(l)) {
+        const rows = [];
+        while (i < lines.length && /^\|/.test(lines[i])) rows.push(lines[i++]);
+        const cells = function(r){ return r.replace(/^\||\|\s*$/g, '').split('|').map(function(c){ return c.trim(); }); };
+        const body = rows.filter(function(r){ return !/^\|[\s:|-]+\|?\s*$/.test(r); });
+        out.push('<div class="ho-table"><table>' + body.map(function(r, ri){
+          const tag = ri === 0 && rows.length > 1 && /^\|[\s:|-]+\|?\s*$/.test(rows[1]) ? 'th' : 'td';
+          return '<tr>' + cells(r).map(function(c){ return '<' + tag + '>' + mdInline(c) + '</' + tag + '>'; }).join('') + '</tr>';
+        }).join('') + '</table></div>'); continue;
+      }
+      if (/^\s*([-*]|\d+\.)\s/.test(l)) {
+        const ordered = /^\s*\d+\./.test(l), items = [];
+        while (i < lines.length && /^\s*([-*]|\d+\.)\s|^\s{2,}\S/.test(lines[i])) {
+          const li = lines[i++];
+          if (/^\s{2,}/.test(li) && items.length) items[items.length - 1].sub.push(li.replace(/^\s{2}/, ''));
+          else items.push({text: li.replace(/^\s*([-*]|\d+\.)\s+/, ''), sub: []});
+        }
+        out.push('<' + (ordered ? 'ol' : 'ul') + '>' + items.map(function(it){
+          return '<li>' + mdInline(it.text) + (it.sub.length ? mdToHtml(it.sub.join('\n')) : '') + '</li>';
+        }).join('') + '</' + (ordered ? 'ol' : 'ul') + '>'); continue;
+      }
+      const buf = [];
+      while (i < lines.length && lines[i].trim() && !isBlockStart(lines[i])) buf.push(lines[i++]);
+      if (!buf.length) buf.push(lines[i++]);
+      out.push('<p>' + mdInline(buf.join('\n')).replace(/\n/g, '<br>') + '</p>');
+    }
+    return out.join('');
+  }
+  function renderHandout(){
+    const el = $('handoutBody');
+    if (!handoutMd || el.dataset.loaded) return;
+    el.dataset.loaded = '1';
+    el.innerHTML = mdToHtml(handoutMd);
   }
 
   function renderLab(){

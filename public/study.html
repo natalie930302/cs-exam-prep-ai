@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap">
 <link rel="stylesheet" href="theme.css?v=20261007e">
-<link rel="stylesheet" href="study.css?v=20261106b">
+<link rel="stylesheet" href="study.css?v=20261116a">
 </head>
 <body class="st-booting">
 <script>setTimeout(function(){ document.body.classList.remove('st-booting'); }, 4000);</script>
@@ -90,6 +90,7 @@
 
   <section class="st-more">
     <div class="st-tabs" role="tablist">
+      <button role="tab" data-tab="handout" id="handoutTab" hidden>講義</button>
       <button role="tab" data-tab="videos" aria-selected="true">本章影片</button>
       <button role="tab" data-tab="full" id="fullTab" hidden>重點全文</button>
       <button role="tab" data-tab="lab" id="labTab" hidden>實驗室</button>
@@ -103,6 +104,7 @@
       <div class="st-series" id="seriesChips"></div>
       <ol class="st-vlist" id="vlist"></ol>
     </div>
+    <div class="st-panel" id="panel-handout" hidden><article class="st-handout" id="handoutBody"></article></div>
     <div class="st-panel" id="panel-full" hidden><div class="st-notes-body st-notes-full" id="notesFull"></div></div>
     <div class="st-panel" id="panel-lab" hidden></div>
     <div class="st-panel" id="panel-quiz" hidden></div>
@@ -125,7 +127,7 @@
 <script src="motion.js?v=1"></script>
 <script src="data.js?v=20261020a"></script>
 <script src="video-order.js?v=20261008m"></script>
-<script src="chapter-core.js?v=20261008p"></script>
-<script src="study.js?v=20261106d"></script>
+<script src="chapter-core.js?v=20261116a"></script>
+<script src="study.js?v=20261116b"></script>
 </body>
 </html>

@@ -3694,6 +3694,16 @@ body#appRoot .ch-mat.done .cb { background: var(--ch-color, var(--ac)) !importan
 body#appRoot .ch-mat.done .cb::after { content: ''; position: absolute; left: 50%; top: 45%; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: translate(-50%, -50%) rotate(45deg); }
 /* 按下去縮一下只留給小按鈕；日曆格、影片列、清單項目按下去不縮 */
 body#appRoot :is(.cal-cell, .ch-mat, .calday-list li a, .global-search-item):active { transform: none !important; }
-/* 學習空間與自製課兩顆按鈕並排；窄螢幕自動換行 */
+/* 學習空間與講義兩顆按鈕並排；窄螢幕自動換行 */
 body#appRoot .ch-study-row { display: flex; flex-wrap: wrap; gap: 8px; }
 body#appRoot .ch-lesson-link { background: var(--surf) !important; color: var(--ch-color, var(--ac)) !important; border: 1.5px solid var(--ch-color, var(--ac)); }
+
+/* 2026-11-16: other teachers' videos (optional, not on the calendar) fold
+   under the chapter's main-teacher list */
+body#appRoot .ch-opt-group { display: flex; flex-direction: column; gap: var(--gap-i); margin-top: 8px; }
+body#appRoot .ch-opt-group > summary { cursor: pointer; font-size: 13px; color: var(--mt); padding: 8px 4px; list-style: none; border-radius: var(--cell-r); transition: background .16s; }
+body#appRoot .ch-opt-group > summary::-webkit-details-marker { display: none; }
+body#appRoot .ch-opt-group > summary::before { content: '▸ '; }
+body#appRoot .ch-opt-group[open] > summary::before { content: '▾ '; }
+@media (hover: hover) { body#appRoot .ch-opt-group > summary:hover { background: var(--surf2); } }
+body#appRoot .ch-opt-group > .ch-mat.ch-video { padding: 12px 16px !important; border-radius: var(--cell-r) !important; opacity: .8; }

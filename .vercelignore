@@ -15,3 +15,5 @@ node_modules/
 .env*
 # lesson audio being re-encoded right now
 *.tmp.mp3
+# 自製課 voice is retired (replaced by the 講義 tab); its mp3s stay local only
+public/lessons/audio/

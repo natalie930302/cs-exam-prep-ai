@@ -47,7 +47,7 @@ const CONVERGENCE_DAYS = 21; // last N days before exam = pure convergence, no n
 function chapterStudyHtml(subjectId, idx){
   const room = studyRoomUrl(subjectId, idx);
   return '<div class="ch-study-row"><a class="ch-study-link" href="'+room+'">'+svgIcon('film',14)+'進入學習空間：邊看影片邊學</a>'
-    +(chapterLabUrl(subjectId, idx) ? '<a class="ch-study-link ch-lesson-link" href="'+room+'?mode=lesson">'+svgIcon('headphones',14)+'自製課：一堂課聽完整章</a>' : '')
+    +'<a class="ch-study-link ch-lesson-link" href="'+room+'?t=handout">'+svgIcon('book-open',14)+'講義：看影片前先讀</a>'
     +'</div>';
 }
 // Subject overview uses one canonical YouTube playlist link per adopted
@@ -341,7 +341,7 @@ function foundationVideoMinutes(videos){
 function foundationWeekVideos(wk){
   const out = [];
   SUBJECTS.forEach(function(s){
-    s.chapters.forEach(function(c){ if(c.wk === wk) out.push.apply(out, chapterDisplayMaterials(c)); });
+    s.chapters.forEach(function(c){ if(c.wk === wk) out.push.apply(out, scheduledMaterials(s.id, c)); });
   });
   return out;
 }
@@ -419,8 +419,8 @@ function refreshVisibleSubjectProgress(el){
   const row = el && el.closest('.ch-row');
   const panel = el && el.closest('.sp');
   if(row){
-    const tasks = row.querySelectorAll('.ch-mat');
-    const done = row.querySelectorAll('.ch-mat.done').length;
+    const tasks = row.querySelectorAll('.ch-mat:not(.ch-opt)');
+    const done = row.querySelectorAll('.ch-mat.done:not(.ch-opt)').length;
     const count = row.querySelector('.ch-progress-count');
     if(count) count.textContent = done+'/'+tasks.length;
     const complete = tasks.length > 0 && done === tasks.length;
@@ -429,8 +429,8 @@ function refreshVisibleSubjectProgress(el){
     if(dot){ dot.classList.toggle('done',complete); dot.textContent = complete ? '✓' : String(Array.from(row.parentNode.children).indexOf(row)+1); }
   }
   if(panel){
-    const tasks = panel.querySelectorAll('.ch-mat');
-    const done = panel.querySelectorAll('.ch-mat.done').length;
+    const tasks = panel.querySelectorAll('.ch-mat:not(.ch-opt)');
+    const done = panel.querySelectorAll('.ch-mat.done:not(.ch-opt)').length;
     const pct = tasks.length ? Math.round(done/tasks.length*100) : 100;
     const pctEl = panel.querySelector('.sp-donut-pct');
     const subEl = panel.querySelector('.sp-donut-sub');
@@ -519,7 +519,7 @@ function foundationVideoQueue(){
     SUBJECTS.forEach(function(sub){
       sub.chapters.forEach(function(c, ci){
         if(c.wk !== wk) return;
-        chapterDisplayMaterials(c).forEach(function(m, vi, all){
+        scheduledMaterials(sub.id, c).forEach(function(m, vi, all){
           if(done.has(chapterMaterialTaskId(sub.id, c, m))) return;
           // a video listed in two chapters is scheduled once (where it first appears)
           if(m.videoId){ if(seen.has(m.videoId)) return; seen.add(m.videoId); }
@@ -836,22 +836,28 @@ async function init(){
     var chaptersHtml = s.chapters.map(function(c, idx){
       // A chapter is its videos: every one is required and checked off on its
       // own, listed in teaching order (teacher by teacher, playlist order).
-      var displayMats = chapterDisplayMaterials(c);
+      // only the subject's main teacher counts (MAIN_TEACHERS); the other
+      // teachers' videos are listed below as optional, not on the calendar
+      var displayMats = scheduledMaterials(s.id, c);
+      var otherMats = chapterDisplayMaterials(c).filter(function(m){ return displayMats.indexOf(m) === -1 && !displayMats.some(function(d){ return d.taskKey === m.taskKey; }); });
       var chapterTaskIds = displayMats.map(function(m){ return chapterMaterialTaskId(s.id,c,m); });
       var chapterDoneCount = chapterTaskIds.filter(function(id){ return DONE_TASK_IDS.indexOf(id) !== -1; }).length;
 
-      var matsHtml = displayMats.map(function(m, vi){
+      var matHtml = function(m, vi, opt){
         var matTaskId = chapterMaterialTaskId(s.id,c,m);
         var matDone = DONE_TASK_IDS.indexOf(matTaskId) !== -1;
         var href = m.videoId ? studyRoomUrl(s.id, idx, m.videoId) : m.url;
-        return '<div class="ch-mat ch-video'+(matDone?' done':'')+'" data-material-task="'+matTaskId+'" role="checkbox" tabindex="0" aria-checked="'+matDone+'" onclick="toggleTask(\''+matTaskId+'\', this)">'
+        return '<div class="ch-mat ch-video'+(opt?' ch-opt':'')+(matDone?' done':'')+'" data-material-task="'+matTaskId+'" role="checkbox" tabindex="0" aria-checked="'+matDone+'" onclick="toggleTask(\''+matTaskId+'\', this)">'
           +'<div class="cb"></div>'
           +'<span class="video-series-order">'+String(vi+1).padStart(2,'0')+'</span>'
           +'<a class="mat-link video-series-label" href="'+href+'" onclick="event.stopPropagation();">'+m.text+'</a>'
           +(m.series?'<span class="ch-video-teacher">'+m.series+'</span>':'')
           +(videoPlaylistUrl(m.videoId)?'<a class="ch-video-pl" href="'+videoPlaylistUrl(m.videoId)+'" target="_blank" rel="noopener" onclick="event.stopPropagation();" title="在原本的 YouTube 播放清單中開啟">播放清單</a>':'')
           +(m.dur?'<span class="mat-dur">'+m.dur+'</span>':'')+'</div>';
-      }).join('');
+      };
+      var matsHtml = displayMats.map(function(m, vi){ return matHtml(m, vi, false); }).join('');
+      var otherHtml = otherMats.length ? '<details class="ch-opt-group"><summary>其他老師的影片（選看，不排進日曆）・'+otherMats.length+' 支</summary>'
+        +otherMats.map(function(m, vi){ return matHtml(m, vi, true); }).join('')+'</details>' : '';
       var priKey = c.pri==='must'?'must':c.pri==='hi'?'hi':'lo';
       var priClass = priKey==='must'?'p-must':priKey==='hi'?'p-hi':'p-lo';
       var priLabel = priKey==='must'?'必考':priKey==='hi'?'高頻':'補充';
@@ -870,14 +876,14 @@ async function init(){
         // key points and peer notes live inside the chapter (study room), next
         // to the video parts that teach them; the card stays a plain list
         +'<div class="ch-section">'+chapterStudyHtml(s.id,idx)+'</div>'
-        +'<div class="ch-section"><div class="ch-mats">'+(matsHtml||'<div class="ch-video-empty">這章沒有指定影片</div>')+'</div></div>'
+        +'<div class="ch-section"><div class="ch-mats">'+(matsHtml||'<div class="ch-video-empty">這章沒有指定影片</div>')+otherHtml+'</div></div>'
         +'</div></div>'
         +'</div></div>';
     }).join('');
 
     var subjTasks = [];
     s.chapters.forEach(function(c){
-      chapterDisplayMaterials(c).forEach(function(m){ subjTasks.push({id:chapterMaterialTaskId(s.id,c,m)}); });
+      scheduledMaterials(s.id, c).forEach(function(m){ subjTasks.push({id:chapterMaterialTaskId(s.id,c,m)}); });
     });
     var subjDone = subjTasks.filter(function(tk){ return DONE_TASK_IDS.indexOf(tk.id) !== -1; }).length;
     var subjPct = subjTasks.length ? Math.round((subjDone/subjTasks.length)*100) : 0;
@@ -887,12 +893,12 @@ async function init(){
     // segments are the actual unit of "done", matching how the dots above
     // light up too).
     var chapterDoneFlags = s.chapters.map(function(c){
-      var ids = chapterDisplayMaterials(c).map(function(m){ return chapterMaterialTaskId(s.id,c,m); });
+      var ids = scheduledMaterials(s.id, c).map(function(m){ return chapterMaterialTaskId(s.id,c,m); });
       return ids.length > 0 && ids.every(function(id){ return DONE_TASK_IDS.indexOf(id) !== -1; });
     });
     var doneChapterCount = chapterDoneFlags.filter(Boolean).length;
     var remainingHours = Math.round(s.chapters.reduce(function(sum,c){
-      return sum + chapterDisplayMaterials(c).filter(function(m){ return DONE_TASK_IDS.indexOf(chapterMaterialTaskId(s.id,c,m)) === -1; })
+      return sum + scheduledMaterials(s.id, c).filter(function(m){ return DONE_TASK_IDS.indexOf(chapterMaterialTaskId(s.id,c,m)) === -1; })
         .reduce(function(t,m){ return t + durationToMinutes(m.dur); },0);
     },0)/6)/10;
     var donutHtml = '<div class="sp-donut"><div class="sp-donut-svg">'+buildDonutSVG(chapterDoneFlags, s.color)+'</div>'

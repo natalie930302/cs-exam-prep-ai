@@ -163,6 +163,28 @@ function chapterDisplayMaterials(c){
   });
   return videos;
 }
+// Each subject is scheduled with one teacher (the user's pick, 2026-11). A
+// chapter uses the first tier that has videos in it; a chapter none of the
+// tiers teach falls back to all of its videos. The other teachers' videos
+// stay listed and can still be watched, they just aren't on the calendar.
+const MAIN_TEACHERS = {
+  ds:[['台大 林軒田 DSA'],['交大OCW 彭文志'],['Abdul Bari']],
+  alg:[['Abdul Bari'],['交大OCW 江蕙如'],['MIT OCW 6.006']],
+  la:[['3Blue1Brown','MIT OCW 18.06']],
+  dm:[['清大OCW 趙啟超'],['交大OCW 易志偉']],
+  os:[['清大OCW 周志遠']],
+  ca:[['清大 黃婷婷']]
+};
+// The chapter's videos that count: on the calendar, in progress and in "done".
+function scheduledMaterials(subjectId, c){
+  const all = chapterDisplayMaterials(c);
+  const tiers = MAIN_TEACHERS[subjectId] || [];
+  for(let i = 0; i < tiers.length; i++){
+    const pick = all.filter(function(m){ return tiers[i].indexOf(m.series) !== -1; });
+    if(pick.length) return pick;
+  }
+  return all;
+}
 // The video opened inside its original YouTube course playlist, or '' when
 // it isn't part of one of the tracked playlists (video-order.js).
 function videoPlaylistUrl(videoId){
@@ -179,7 +201,7 @@ function weekMaterialTasks(wk){
   SUBJECTS.forEach(function(s){
     s.chapters.forEach(function(c){
       if(c.wk !== wk) return;
-      chapterDisplayMaterials(c).forEach(function(m){
+      scheduledMaterials(s.id,c).forEach(function(m){
         rows.push({id:chapterMaterialTaskId(s.id,c,m),type:m.type});
       });
     });
@@ -230,7 +252,7 @@ function youtubeId(url){
 function subjectVideoProgress(subject, doneSet){
   let done = 0, total = 0;
   subject.chapters.forEach(function(c){
-    chapterDisplayMaterials(c).forEach(function(m){
+    scheduledMaterials(subject.id, c).forEach(function(m){
       total++;
       if(doneSet.has(chapterMaterialTaskId(subject.id, c, m))) done++;
     });
@@ -238,7 +260,7 @@ function subjectVideoProgress(subject, doneSet){
   return {done:done, total:total};
 }
 function chapterVideosDone(subjectId, chapter, doneSet){
-  const videos = chapterDisplayMaterials(chapter);
+  const videos = scheduledMaterials(subjectId, chapter);
   return videos.length > 0 && videos.every(function(m){ return doneSet.has(chapterMaterialTaskId(subjectId, chapter, m)); });
 }
 
