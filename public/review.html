@@ -8,8 +8,8 @@
 <link rel="icon" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap">
-<link rel="stylesheet" href="theme.css?v=20261007e">
-<link rel="stylesheet" href="study.css?v=20261118c">
+<link rel="stylesheet" href="theme.css?v=20261119a">
+<link rel="stylesheet" href="study.css?v=20261119a">
 <style>
   /* 複習: 今日複習 (cards due + quiz answers still wrong), 速記卡 (each
      chapter's 重點整理 on one page) and one chapter's 自我檢查 round */
@@ -67,7 +67,7 @@
 <script src="video-order.js?v=20261008m"></script>
 <script src="chapter-core.js?v=20261118a"></script>
 <script src="md.js?v=20261118b"></script>
-<script src="recall.js?v=20261118d"></script>
+<script src="recall.js?v=20261119a"></script>
 <script>
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function(){});
 (async function(){
@@ -165,6 +165,20 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').cat
     const qs = (notesBy[r.vid] || {}).quiz || [];
     const cur = qs.find(function(q){ return q.q === r.q; }) || qs.find(function(q){ return q.ans === r.ans && Array.isArray(q.opts) && optKey(q.opts) === optKey(r.opts); });
     if (cur && cur.opts.indexOf(cur.ans) >= 0) { r.histQ = r.q; r.q = cur.q; r.opts = cur.opts.slice(); r.ans = cur.ans; r.why = cur.why || r.why; }
+  });
+  // the handout section that teaches the part of the video the question came from
+  let hoLinks = {};
+  if (wrong.length) { try { const r = await fetch('/handouts/links.json'); if (r.ok) hoLinks = await r.json(); } catch (e) {} }
+  wrong.forEach(function(r){
+    const ls = hoLinks[r.subj + '-' + (r.ch + 1)] || {};
+    let best = null;
+    Object.keys(ls).forEach(function(title){
+      const l = ls[title];
+      if (l.v !== r.vid) return;
+      const score = l.t <= (r.at || 0) + 5 ? l.t : -1e9 + l.t;
+      if (!best || score > best.score) best = {title: title, score: score};
+    });
+    if (best) r.hoHref = videoRoomUrl(r.subj, r.ch) + '?t=handout&sec=' + encodeURIComponent(best.title);
   });
   const items = cards.concat(wrong.map(function(r){ return {mcq: r}; }));
   // mix subjects and kinds: interleaving helps more than one topic in a row

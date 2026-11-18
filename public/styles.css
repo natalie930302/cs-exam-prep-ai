@@ -3708,15 +3708,111 @@ body#appRoot .ch-opt-group[open] > summary::before { content: '▾ '; }
 @media (hover: hover) { body#appRoot .ch-opt-group > summary:hover { background: var(--surf2); } }
 body#appRoot .ch-opt-group > .ch-mat.ch-video { padding: 12px 16px !important; border-radius: var(--cell-r) !important; opacity: .8; }
 /* 2026-11-18: the subject's 速記卡 link sits under the course list */
-body#appRoot .sp-review-link { display: inline-flex; margin: 0 0 16px; }
 
-/* 2026-11-18b: 今日複習 link on top of today's list (review.html) */
-.calday-review { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0 0 12px; padding: 12px 16px; border-radius: 14px; text-decoration: none; color: var(--tx); background: color-mix(in srgb, var(--ac) 10%, var(--surf)); border: 1px solid color-mix(in srgb, var(--ac) 35%, var(--bd)); transition: border-color .16s; animation: m-in .22s ease both; }
-.calday-review svg { color: var(--ac); flex: 0 0 auto; }
-.calday-review b { font-size: 14px; }
-.calday-review span { font-size: 13px; color: var(--mt2); }
-@media (hover: hover) { .calday-review:hover { border-color: var(--ac); } }
 /* 今日複習 in the floating buttons: a link, with the number due as a badge */
 body#appRoot .fab-nav a.fab-btn { position: relative; text-decoration: none; }
 body#appRoot .fab-nav .fab-badge { position: absolute; top: 0; right: -2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--red); color: #fff; font-size: 11px; font-weight: 700; line-height: 16px; text-align: center; box-sizing: border-box; pointer-events: none; }
 body#appRoot .fab-nav .fab-badge[hidden] { display: none; }
+
+/* ══ 2026-11-19 設計規則（theme.css 的 --sp-*／--r-*／--sh-*；見 docs 討論頁）══ */
+
+/* 懸浮鈕：平板與電腦的內容讓出它的寬度，任何東西都不會被它蓋住 */
+@media (min-width: 641px) {
+  body#appRoot #main > .sec, body#appRoot #main > #sec-subjects { padding-right: 98px !important; }
+  body#appRoot .sec > .sh { padding-right: 0 !important; }
+  body#appRoot #main #sec-subjects.on > .stabs { width: 100% !important; }
+}
+@media (min-width: 1100px) { body#appRoot #main > .sec, body#appRoot #main > #sec-subjects { padding-right: 90px !important; } }
+/* 手機：直排懸浮鈕維持在右上；日曆格子讓出它那一欄；往下捲時先收起，往上捲再出現（app.js） */
+@media (max-width: 640px) {
+  body#appRoot #sec-schedule .cal-grid { width: calc(100% - 52px) !important; max-width: calc(100% - 52px) !important; }
+  body#appRoot #sec-schedule .cal-head .cal-nav { margin-right: 52px !important; }
+  body#appRoot .fab-nav { transition: translate .22s var(--ease), opacity .22s ease; }
+  body#appRoot.fab-away .fab-nav { translate: calc(100% + 24px) 0; opacity: 0; pointer-events: none; }
+}
+body#appRoot .fab-nav { box-shadow: var(--sh-float) !important; }
+
+/* 月份切換：一組分段按鈕（不再是外框裡三顆有框的按鈕） */
+body#appRoot #sec-schedule .cal-nav { border: 0 !important; background: var(--surf2) !important; padding: 3px !important; border-radius: 12px !important; gap: 2px !important; box-shadow: none !important; }
+body#appRoot #sec-schedule .cal-nav :is(.nav-btn, .collapse-all-btn) { border: 0 !important; background: transparent !important; height: 32px !important; min-height: 32px !important; border-radius: var(--r-ctl) !important; box-shadow: none !important; }
+@media (hover: hover) { body#appRoot #sec-schedule .cal-nav :is(.nav-btn, .collapse-all-btn):hover { background: var(--surf) !important; } }
+body#appRoot #sec-schedule .cal-nav .nav-btn { width: 32px !important; }
+@media (min-width: 641px) { body#appRoot #sec-schedule .cal-head .cal-nav { margin-right: 0 !important; } }
+/* 過去的日子：字淡一點，矮一點 */
+body#appRoot .cal-cell.past { background: var(--bg) !important; }
+body#appRoot .cal-cell.past .cal-daynum { color: var(--mt) !important; }
+body#appRoot .cal-cell.past :is(.cal-tag, .cal-what, .cal-howmuch) { display: none !important; }
+
+/* 日曆格：不讀書的日子（休息、打工）用淡色標籤，讀書日才是重點；最小字 12 */
+body#appRoot .cal-tag[style*="var(--mt)"] { background: var(--surf2) !important; color: var(--mt) !important; }
+body#appRoot .cal-cell .cal-howmuch { font-size: 12px !important; }
+/* 已經過去、沒有排東西的日子：矮一點（整週都過去時那一列就很薄） */
+@media (min-width: 641px) { body#appRoot .cal-cell.past { min-height: 44px !important; } }
+
+/* 手機日曆：小月曆，每格只有日期和一個科目色點；內容看下面的當天清單 */
+@media (max-width: 640px) {
+  body#appRoot #sec-schedule .cal-grid { gap: 2px !important; grid-auto-rows: auto !important; grid-template-rows: none !important; }
+  body#appRoot #sec-schedule .cal-cell { min-height: 44px !important; height: 44px !important; padding: 4px 0 !important; border: 0 !important; background: transparent !important; border-radius: var(--r-ctl) !important; display: flex !important; flex-direction: column !important; align-items: center !important; gap: 4px !important; box-shadow: none !important; }
+  body#appRoot .cal-cell .cal-daynum { font-size: 14px !important; margin: 0 !important; line-height: 1.3 !important; }
+  body#appRoot .cal-cell :is(.cal-what, .cal-howmuch) { display: none !important; }
+  body#appRoot .cal-cell .cal-tag { font-size: 0 !important; width: 6px !important; height: 6px !important; min-width: 0 !important; padding: 0 !important; border-radius: 50% !important; margin: 0 !important; }
+  body#appRoot .cal-cell .cal-tag[style*="var(--mt)"] { background: var(--bd2) !important; }
+  body#appRoot .cal-cell.out { opacity: .45; }
+  body#appRoot .cal-cell.today { background: transparent !important; border: 0 !important; }
+  body#appRoot .cal-cell.today .cal-daynum { color: var(--ac) !important; font-weight: 900 !important; }
+  body#appRoot #sec-schedule .cal-cell.selected { outline: 0 !important; background: color-mix(in srgb, var(--ac) 14%, var(--surf)) !important; }
+}
+
+
+/* 六科：標籤（圓角 6、淡底、不加框）；必考是預設不標，只標高頻（琥珀）和補充（灰） */
+body#appRoot .pri { border-radius: var(--r-tag) !important; border: 0 !important; padding: 2px 8px !important; font-size: 12px !important; letter-spacing: 0 !important; }
+body#appRoot .pri.p-hi { background: var(--warn-soft) !important; color: var(--warn) !important; }
+body#appRoot .pri.p-lo { background: var(--surf2) !important; color: var(--mt) !important; }
+/* 章節列右邊的數字：等寬數字、靠右對齊 */
+body#appRoot .ch-hrs { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+body#appRoot .ch-hrs b { color: var(--tx); }
+/* 每章一條細進度條（科目色） */
+body#appRoot .ch-pbar { height: 4px; border-radius: 2px; background: var(--surf2); overflow: hidden; margin: var(--sp-2) 0 0 28px; }
+body#appRoot .ch-pbar i { display: block; height: 100%; background: var(--ch-color); border-radius: 2px; transition: width .28s var(--ease); }
+body#appRoot .ch-row-done .ch-pbar { display: none; }
+/* 速記卡與自我檢查：進度卡裡這一科的一個動作 */
+body#appRoot .subject-overview-card .sp-review-link { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); height: var(--h-btn); margin-top: var(--sp-4); border: var(--line) !important; border-radius: var(--r-ctl) !important; background: var(--surf); color: var(--tx); font-size: 13px; font-weight: 700; text-decoration: none; transition: border-color .16s; }
+body#appRoot .subject-overview-card .sp-review-link svg { color: var(--subj, var(--ac)); }
+@media (hover: hover) { body#appRoot .subject-overview-card .sp-review-link:hover { border-color: color-mix(in srgb, var(--ac) 45%, var(--bd)); } }
+body#appRoot .subject-overview-card { flex-wrap: wrap !important; }
+body#appRoot .subject-overview-card .sp-review-link { flex: 1 0 100%; width: 100%; box-sizing: border-box; }
+body#appRoot .ch-pbar[hidden] { display: none; }
+
+/* 搜尋：結果依種類分組；搜尋視窗是大陰影的彈出層；手機上是整頁 */
+body#appRoot .gs-group { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; font-weight: 700; color: var(--mt); padding: var(--sp-3) var(--sp-3) var(--sp-1); letter-spacing: .04em; }
+body#appRoot .gs-group:first-child { padding-top: var(--sp-1); }
+body#appRoot .gs-group span { font-weight: 400; font-variant-numeric: tabular-nums; }
+body#appRoot .global-search-dialog { box-shadow: var(--sh-pop) !important; border-radius: var(--r-panel) !important; }
+body#appRoot .global-search-item small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 640px) {
+  body#appRoot .global-search-panel { padding: 0 !important; align-items: stretch !important; }
+  body#appRoot .global-search-dialog { width: 100% !important; max-width: none !important; height: 100% !important; max-height: none !important; margin: 0 !important; border-radius: 0 !important; display: flex !important; flex-direction: column !important; }
+  body#appRoot .global-search-results { flex: 1 1 auto !important; max-height: none !important; }
+}
+body#appRoot .gs-close { display: none; }
+@media (max-width: 640px) { body#appRoot .gs-close { display: inline-flex; align-items: center; height: var(--h-btn); padding: 0 var(--sp-2); border: 0; background: none; font: inherit; font-size: 14px; font-weight: 700; color: var(--ac); cursor: pointer; flex: 0 0 auto; } }
+
+/* 「今天」：日曆最上面三個下一步（複習、讀講義、看影片），左邊科目色條 */
+body#appRoot .today-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--sp-2); margin: 0 0 var(--sp-5); }
+body#appRoot .today-act { position: relative; display: grid; gap: 2px; padding: var(--sp-3) var(--sp-4) var(--sp-3) 20px !important; background: var(--surf) !important; border: var(--line) !important; border-radius: var(--r-card) !important; text-decoration: none; color: var(--tx); min-width: 0; transition: border-color .16s; }
+body#appRoot .today-act::before { content: ""; position: absolute; left: 8px; top: 12px; bottom: 12px; width: 3px; border-radius: 2px; background: var(--c); }
+body#appRoot .today-act .today-k { font-size: 12px; font-weight: 700; color: var(--mt); }
+body#appRoot .today-act b { font-size: 14px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body#appRoot .today-act small { font-size: 12px; color: var(--mt); }
+@media (hover: hover) { body#appRoot .today-act:hover { border-color: color-mix(in srgb, var(--c) 50%, var(--bd)); } }
+@media (max-width: 640px) { body#appRoot .today-strip { margin: 0 52px var(--sp-4) 0; grid-template-columns: minmax(0, 1fr); } }
+body#appRoot .task-toast { box-shadow: var(--sh-float) !important; }
+body#appRoot .today-strip .today-act { border: 1px solid var(--bd) !important; }
+/* 手機：三件事放在同一張卡裡，一行一件，不佔太高 */
+@media (max-width: 640px) {
+  body#appRoot .today-strip { gap: 0 !important; background: var(--surf); border: 1px solid var(--bd); border-radius: var(--r-card); overflow: hidden; }
+  body#appRoot .today-strip .today-act { border: 0 !important; border-radius: 0 !important; padding: var(--sp-2) var(--sp-4) var(--sp-2) 20px !important; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--sp-2); align-items: baseline; }
+  body#appRoot .today-strip .today-act + .today-act { border-top: 1px solid var(--bd) !important; }
+  body#appRoot .today-strip .today-act::before { top: 10px; bottom: 10px; }
+  body#appRoot .today-strip .today-act small { grid-column: 2; }
+}

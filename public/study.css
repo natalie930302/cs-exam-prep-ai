@@ -239,8 +239,8 @@ button { font: inherit; color: inherit; }
   border: 1px solid var(--bd); background: var(--surf2); color: var(--tx); cursor: pointer;
 }
 @media (hover: hover) { .st-qz-opts button:hover { border-color: var(--subj, var(--ac)); } }
-.st-qz-opts button.ok { background: color-mix(in srgb, #2fc092 18%, var(--surf)); border-color: #2fc092; }
-.st-qz-opts button.no { background: color-mix(in srgb, #d9534f 14%, var(--surf)); border-color: #d9534f; }
+.st-qz-opts button.ok { background: color-mix(in srgb, var(--grn) 18%, var(--surf)); border-color: var(--grn); }
+.st-qz-opts button.no { background: color-mix(in srgb, var(--red) 14%, var(--surf)); border-color: var(--red); }
 .st-qz.right { animation: stQzPop .4s ease; }
 
 .st-qz-why { margin-top: 9px; font-size: 12px; line-height: 1.6; color: var(--tx); }
@@ -464,12 +464,12 @@ button { font: inherit; color: inherit; }
 .st-qh-filter button { border: 0; background: transparent; font: inherit; font-size: 12px; padding: 5px 12px; border-radius: 8px; cursor: pointer; color: var(--mt2, var(--mt)); transition: background-color .16s ease, color .16s ease; }
 .st-qh-filter button.on { background: var(--surf); color: var(--tx); box-shadow: 0 1px 3px rgba(46, 36, 24, .12); }
 .st-qh-item { background: var(--surf); border: 1px solid var(--bd); border-radius: 14px; padding: 14px 16px; display: grid; gap: 6px; animation: m-in .22s ease both; }
-.st-qh-item.no { border-left: 3px solid #d9534f; }
-.st-qh-item.ok { border-left: 3px solid #2fc092; }
+.st-qh-item.no { border-left: 3px solid var(--red); }
+.st-qh-item.ok { border-left: 3px solid var(--grn); }
 .st-qh-q { font-size: 14px; font-weight: 700; line-height: 1.6; display: flex; gap: 8px; }
 .st-qh-mark { flex: 0 0 auto; font-weight: 700; }
-.st-qh-item.ok .st-qh-mark { color: #2fc092; }
-.st-qh-item.no .st-qh-mark { color: #d9534f; }
+.st-qh-item.ok .st-qh-mark { color: var(--grn); }
+.st-qh-item.no .st-qh-mark { color: var(--red); }
 .st-qh-a { font-size: 13px; line-height: 1.6; color: var(--tx); }
 .st-qh-why { font-size: 12px; line-height: 1.6; color: var(--mt2, var(--mt)); }
 .st-qh-src { justify-self: start; border: 0; background: none; padding: 0; font: inherit; font-size: 12px; color: var(--subj, var(--ac)); cursor: pointer; text-align: left; }
@@ -899,3 +899,67 @@ body:not(.st-booting) .st-top, body:not(.st-booting) .st-main { animation: m-in 
 .st-toast.show { opacity: 1; }
 .rc-src-link { font-size: 13px; color: color-mix(in srgb, var(--subj, var(--ac)) 75%, var(--tx)); text-decoration: none; }
 @media (hover: hover) { .rc-src-link:hover { text-decoration: underline; } }
+
+/* ══ 2026-11-19 設計規則（theme.css 的 --sp-*／--r-*／--sh-*）══ */
+/* 手機／平板：影片在最上面，切換列與段落時間軸在影片正下方（跟電腦版同一個順序） */
+@media (max-width: 900px) {
+  .st-player-wrap { order: 0 !important; }
+  .st-now { order: 1 !important; margin: 0 !important; }
+  .st-timeline { order: 2 !important; margin: 0 !important; }
+}
+/* 講解裡的關鍵詞：粗體＋科目色底線，不再一格一格的色塊（解釋看下面的名詞卡） */
+.st-term-w { background: none !important; padding: 0 !important; border-radius: 0 !important; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--subj) 55%, transparent); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+/* 手機：名詞卡直排，不會被右邊截掉 */
+@media (max-width: 640px) {
+  .st-terms { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; overflow: visible !important; }
+  .st-terms .st-tcard { flex: none !important; }
+}
+.st-pt { border-radius: var(--r-ctl) !important; }
+
+/* 講義的版面：電腦上目錄在右邊一欄，捲動時跟著，標出目前這一節 */
+.ho-layout { display: block; }
+.ho-side { display: none; }
+.st-handout .ho-toc li.cur > a { color: color-mix(in srgb, var(--subj) 80%, var(--tx)); font-weight: 700; }
+
+/* 電腦（≥1100）讀講義：影片縮到右下角小視窗，講義用整個寬度 */
+.st-mini-bar { display: none; }
+@media (min-width: 1100px) {
+  /* a fixed window inside an element with translate/transform/animation is placed against that element, not the screen */
+  .st-main.reading { animation: none !important; translate: none !important; transform: none !important; }
+  .st-main.reading :is(.st-side, .st-teach, .st-now, .st-timeline) { display: none !important; }
+  .st-main.reading .st-more { grid-row: 1 !important; grid-column: 1 / -1 !important; }
+  .st-main.reading .st-player-wrap { position: fixed !important; right: 24px; bottom: 24px; width: 360px; z-index: 40; box-shadow: var(--sh-pop); border-radius: var(--r-card) !important; grid-row: auto !important; }
+  .st-main.reading.mini-off .st-player-wrap { display: none !important; }
+  .st-main.reading .st-mini-bar { display: flex; position: absolute; top: 0; left: 0; right: 0; z-index: 6; justify-content: space-between; gap: var(--sp-2); padding: var(--sp-2); background: linear-gradient(rgba(20, 16, 10, .72), rgba(20, 16, 10, 0)); opacity: 0; transition: opacity .16s; }
+  .st-main.reading .st-player-wrap:hover .st-mini-bar, .st-main.reading .st-mini-bar:focus-within { opacity: 1; }
+  .st-mini-bar button { font: inherit; font-size: 12px; font-weight: 700; color: #fff; background: rgba(255, 255, 255, .16); border: 0; border-radius: var(--r-ctl); height: 28px; padding: 0 var(--sp-3); cursor: pointer; }
+  .st-mini-bar button[data-a="hide"] { width: 28px; padding: 0; font-size: 16px; }
+  .st-main.reading .st-handout { max-width: 1140px; }
+  .st-main.reading .ho-layout { display: grid; grid-template-columns: minmax(0, 820px) 260px; gap: var(--sp-7); align-items: start; }
+  .st-main.reading .ho-main > .ho-toc { display: none; }
+  .st-main.reading .ho-side { display: block; position: sticky; top: 74px; max-height: calc(100vh - 90px); overflow-y: auto; }
+  .st-main.reading .ho-side .ho-toc { margin: 0; background: none; padding: 0 0 0 var(--sp-4); border-left: var(--line); border-radius: 0; font-size: 13px; }
+  .st-main.reading .ho-side .ho-toc ol { columns: 1; padding-left: 20px; }
+  .st-main.reading .ho-side .ho-toc li { margin: 4px 0; }
+}
+@media (min-width: 1100px) {
+  .st-main.reading:not(.mini-off) .ho-side { max-height: calc(100vh - 90px - 240px); }
+  .st-main.reading .st-sub { font-size: 12px !important; padding: 2px 8px !important; }
+  .st-main.reading .st-skip { display: none !important; }
+}
+/* 自我檢查：答案下面「回講義看這一節」；手機可滑動打分 */
+.rc-a .rc-ho { display: inline-block; margin-top: var(--sp-2); }
+.rc-swipe { display: none; width: 100%; font-size: 12px; color: var(--mt2); }
+@media (hover: none) { .rc-swipe { display: block; } .rc-card kbd { display: none; } }
+.rc-big { transition: translate .16s ease, opacity .16s ease; }
+.rc-big.swipe-r { translate: 40px 0; opacity: .3; }
+.rc-big.swipe-l { translate: -40px 0; opacity: .3; }
+@media (hover: none) { .rc-big .rc-grade button, .rc-big .rc-show { height: var(--h-btn-lg); padding: 0 var(--sp-5); font-size: 15px; } }
+/* 跳到某一節時，標題不會躲在上方固定的標題列下面 */
+.st-handout details.ho-sec { scroll-margin-top: 72px; }
+/* 浮起來的東西才有陰影：提示訊息用小陰影 */
+.st-toast { box-shadow: var(--sh-float) !important; }
+@media (min-width: 641px) and (max-width: 900px) {
+  .st-terms { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important; overflow: visible !important; }
+  .st-terms .st-tcard { flex: none !important; }
+}

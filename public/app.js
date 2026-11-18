@@ -432,6 +432,8 @@ function refreshVisibleSubjectProgress(el){
     const done = row.querySelectorAll('.ch-mat.done:not(.ch-opt)').length;
     const count = row.querySelector('.ch-progress-count');
     if(count) count.textContent = done+'/'+tasks.length;
+    const bar = row.querySelector('.ch-pbar i');
+    if(bar){ bar.style.width = (tasks.length ? Math.round(done/tasks.length*100) : 0)+'%'; bar.parentNode.hidden = !done; }
     const complete = tasks.length > 0 && done === tasks.length;
     row.classList.toggle('ch-row-done',complete);
     const dot = row.querySelector('.ch-dot');
@@ -590,16 +592,25 @@ function dayCountText(items, short){
   return (ho ? '講義' + (v ? ' + ' : '') : '') + (v ? (short ? '' : '共 ') + v + ' 支' : '');
 }
 function fmtMin(m){ m = Math.round(m); const h = Math.floor(m/60), r = m%60; return h ? h+' 小時'+(r ? ' '+r+' 分' : '') : r+' 分'; }
-// 今日複習 (review.html): cards due today plus video-quiz answers still wrong;
-// shown on top of today's list only when there is something to review.
-function reviewBanner(iso){
-  if(iso !== isoDate(new Date()) || typeof srsDue !== 'function') return '';
-  const n = reviewDueCount();
-  if(!n) return '';
-  return '<a class="calday-review" href="/review.html">'+svgIcon('clipboard',14)+'<b>今日複習 '+n+' 題</b><span>先花幾分鐘把該複習的卡片與錯題做完</span></a>';
-}
 function renderCalDayDetail(iso){
-  return reviewBanner(iso) + renderCalDayDetailInner(iso);
+  return renderCalDayDetailInner(iso);
+}
+// 「今天」: the next three things to do, each one tap away — today's review,
+// the handout to read, the video to watch (from where it was left off)
+function todayStripHtml(){
+  const iso = isoDate(new Date());
+  const items = dayPlan().get(iso) || [];
+  const n = typeof srsDue === 'function' ? reviewDueCount() : 0;
+  const parts = [];
+  if(n) parts.push({href: '/review.html', k: '複習', t: '今日複習 '+n+' 題', s: '約 '+Math.max(1, Math.round(n*0.75))+' 分鐘', c: 'var(--ac)'});
+  const ho = items.find(function(x){ return x.kind === 'handout'; });
+  if(ho) parts.push({href: ho.href, k: '讀講義', t: ho.title.replace(/^讀講義：/, ''), s: '約 '+fmtMin(ho.take), c: 'var('+(SUBJ_COLOR_VAR[ho.subj] || '--ac2')+')'});
+  const v = items.find(function(x){ return x.kind !== 'handout'; });
+  if(v) parts.push({href: v.href, k: '看影片', t: v.title, s: v.cont ? '從 '+fmtMin(v.from)+' 處接著看' : (v.dur || ''), c: 'var('+(SUBJ_COLOR_VAR[v.subj] || '--ac2')+')'});
+  if(!parts.length) return '';
+  return '<div class="today-strip" aria-label="今天">'+parts.map(function(p){
+    return '<a class="today-act" href="'+p.href+'" style="--c:'+p.c+'"><span class="today-k">'+p.k+'</span><b>'+escapeHtml(p.t)+'</b><small>'+escapeHtml(p.s)+'</small></a>';
+  }).join('')+'</div>';
 }
 // due cards of chapters that still have cards (as review.html counts them)
 function reviewDueCount(){
@@ -685,6 +696,7 @@ function buildCalMonthCells(y, m, ctx){
     const classes = ['cal-cell'];
     if(!inMonth) classes.push('out');
     if(beforeStart) classes.push('disabled');
+    if(!beforeStart && d < today0) classes.push('past');
     if(iso === todayIso) classes.push('today');
     if(iso === (calSelectedIso || todayIso)) classes.push('selected');
     const onclick = beforeStart ? '' : ' onclick="goCalDay(\''+iso+'\')"';
@@ -707,7 +719,8 @@ function renderCalMonthView(container){
   const dowRowHtml = dowLabels.map(function(l){ return '<div class="cal-dow">'+l+'</div>'; }).join('');
 
   container.innerHTML =
-    '<div class="cal-wrap">'
+    todayStripHtml()
+    +'<div class="cal-wrap">'
     +'<div class="cal-head">'
       +'<div class="cal-title">'+y+'年'+(m+1)+'月</div>'
       +'<div class="cal-nav">'
@@ -908,7 +921,9 @@ async function init(){
         +'<div class="ch-content">'
         +'<div class="ch-head" data-chtoggle role="button" tabindex="0" aria-expanded="false"><span class="expand-icon ch-chevron" aria-hidden="true"></span><div style="flex:1;"><div class="ch-title">'+c.t+'</div><div class="ch-sub">'+c.sub+'</div></div>'
         +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">'
-        +'<span class="pri '+priClass+'">'+priLabel+'</span><span class="ch-hrs">'+chapterVideoHours(displayMats)+' · <b class="ch-progress-count">'+chapterDoneCount+'/'+chapterTaskIds.length+'</b></span></div></div>'
+        // 必考 is the default and carries no tag; only 高頻 and 補充 are marked
+        +(priKey==='must' ? '' : '<span class="pri '+priClass+'">'+priLabel+'</span>')+'<span class="ch-hrs"><b class="ch-progress-count">'+chapterDoneCount+'/'+chapterTaskIds.length+'</b> 支・'+chapterVideoHours(displayMats).replace('hr',' 小時')+'</span></div></div>'
+        +'<div class="ch-pbar" aria-hidden="true"'+(chapterDoneCount ? '' : ' hidden')+'><i style="width:'+(chapterTaskIds.length ? Math.round(chapterDoneCount/chapterTaskIds.length*100) : 0)+'%"></i></div>'
         +'<div class="ch-body"><div>'
         // key points and peer notes live inside the chapter (study room), next
         // to the video parts that teach them; the card stays a plain list
@@ -954,12 +969,13 @@ async function init(){
         +'<div class="sm"><div class="sm-n" style="color:'+s.color+';">'+remainingHours+'hr</div><div class="sm-l">剩餘影片長度</div></div>'
         +'<div class="sm"><div class="sm-n" style="color:'+s.color+';">'+doneChapterCount+'/'+s.chapters.length+'</div><div class="sm-l">完成章節</div></div>'
       +'</div>'
-      +'</div></div>'
+      +'</div>'
+      // every chapter's 重點整理 on one page and each chapter's 自我檢查, for review
+      +'<a class="sp-review-link" href="/review.html?s='+s.id+'">'+svgIcon('clipboard',14)+'速記卡與自我檢查</a>'
+      +'</div>'
       // the series list sits on its own row below; the progress card above is
       // small enough to share the header row with the title and subject tabs
       +'<div class="rec-row sp-rec-row">'+booksHtml+videosHtml+'</div>'
-      // every chapter's 重點整理 on one page, for the last round of review
-      +'<a class="ch-study-link ch-lesson-link sp-review-link" style="--ch-color:'+s.color+'" href="/review.html?s='+s.id+'">'+svgIcon('clipboard',14)+s.name+' 速記卡與自我檢查：每章重點一頁看完、逐章練題</a>'
       +'<div class="filter-bar"><div class="filter-chips" data-chfilter>'
         +'<button class="filter-chip ui-btn active" type="button" data-pri="all" aria-pressed="true">全部</button>'
         +'<button class="filter-chip ui-btn" type="button" data-pri="must" aria-pressed="false">必考</button>'
@@ -1084,10 +1100,12 @@ function renderGlobalSearch(query){
   globalSearchActive = 0;
   if(!q){ out.innerHTML='<div class="global-search-empty">輸入章節、考點或影片名稱，例如 AVL、Page Fault、Jordan</div>'; if(announcement)announcement.textContent=''; return; }
   const all = globalSearchCatalog().filter(function(x){ return (x.title+' '+x.detail+' '+(x.searchText||'')+' '+x.subj.name).toLowerCase().includes(q); });
-  // chapters first, then videos; at most 30
-  const matches = all.filter(function(x){return x.kind==='章節';}).concat(all.filter(function(x){return x.kind==='影片';})).slice(0,30);
+  // grouped: chapters, handout sections, self-check cards, videos, notes and subtitles
+  const chs = all.filter(function(x){return x.kind==='章節';}).slice(0,4);
+  const vids = all.filter(function(x){return x.kind==='影片';}).slice(0,5);
+  const matches = chs.concat(vids);
   if(announcement) announcement.textContent = matches.length ? '找到 '+matches.length+' 筆結果' : '找不到符合的結果';
-  out.innerHTML = renderSearchItems(matches);
+  out.innerHTML = renderSearchGroups([['章節', chs], ['影片', vids]]);
   if(!matches.length) out.innerHTML = '<div class="global-search-empty">搜尋筆記與字幕內容…</div>';
   // then the full-text hits (notes + subtitles), fetched from the server
   clearTimeout(searchTimer);
@@ -1103,9 +1121,21 @@ function renderGlobalSearch(query){
         return {kind: h.src === 'note' ? '筆記' : '字幕', subj: p.subj, title: h.text, detail: p.label + '・' + fmtClock(h.t) + (h.sec && h.src === 'note' && h.sec !== h.text ? '・' + h.sec : ''),
           href: studyRoomUrl(p.subj.id, p.idx, h.vid) + '&at=' + h.t + '&t=full'};
       }).filter(Boolean);
-      const all = matches.concat(hits).slice(0, 60);
-      if(announcement) announcement.textContent = all.length ? '找到 '+all.length+' 筆結果' : '找不到符合的結果';
-      out.innerHTML = all.length ? renderSearchItems(all) : '<div class="global-search-empty">找不到符合的章節、影片或內容</div>';
+      const chName = function(ch){ const p = ch.split('-'); const sj = SUBJECTS.find(function(x){ return x.id === p[0]; }); return {subj: sj, idx: Number(p[1]) - 1}; };
+      const handouts = (j.handouts||[]).map(function(h){
+        const p = chName(h.ch); if(!p.subj) return null;
+        const c = p.subj.chapters[p.idx] || {};
+        return {kind: '講義', subj: p.subj, title: h.title, detail: '第'+(p.idx+1)+'章 '+(c.t||'')+(h.snippet ? '・'+h.snippet : ''),
+          href: studyRoomUrl(p.subj.id, p.idx)+'?t=handout&sec='+h.si};
+      }).filter(Boolean);
+      const cards = (j.cards||[]).map(function(k){
+        const p = chName(k.ch); if(!p.subj) return null;
+        return {kind: '自我檢查', subj: p.subj, title: k.q, detail: '第'+(p.idx+1)+'章・'+k.sec, href: '/review.html?ch='+k.ch};
+      }).filter(Boolean);
+      const total = matches.length + handouts.length + cards.length + hits.length;
+      if(announcement) announcement.textContent = total ? '找到 '+total+' 筆結果' : '找不到符合的結果';
+      out.innerHTML = total ? renderSearchGroups([['章節', chs], ['講義', handouts], ['自我檢查題', cards], ['影片', vids], ['筆記與字幕', hits.slice(0, 12)]])
+        : '<div class="global-search-empty">找不到符合的章節、講義、影片或內容</div>';
       globalSearchActive = 0;
     }catch(e){ if(!matches.length) out.innerHTML = '<div class="global-search-empty">找不到符合的章節或影片</div>'; }
   }, 220);
@@ -1118,11 +1148,21 @@ function videoPlaceMap(){
   return (videoPlaceCache = m);
 }
 function fmtClock(t){ t = Math.max(0, Math.floor(t)); const h = Math.floor(t/3600), m = Math.floor(t%3600/60), s = t%60; return (h ? h+':'+String(m).padStart(2,'0') : m)+':'+String(s).padStart(2,'0'); }
-function renderSearchItems(matches){
+// results under a small heading per kind; the first item of the first group is active
+function renderSearchGroups(groups){
+  let first = true;
+  return groups.filter(function(g){ return g[1].length; }).map(function(g){
+    const html = '<div class="gs-group" role="presentation">'+g[0]+'<span>'+g[1].length+'</span></div>'+renderSearchItems(g[1], first);
+    first = false;
+    return html;
+  }).join('');
+}
+function renderSearchItems(matches, firstActive){
+  if(firstActive === undefined) firstActive = true;
   return matches.map(function(x,i){
     const open = x.href ? 'a href="'+x.href+'"' : 'button type="button" onclick="goSearchChapter(\''+x.subject+'\','+x.index+')"';
     const close = x.href ? 'a' : 'button';
-    return '<'+open+' class="global-search-item'+(i===0?' active':'')+'" style="--gs-c:'+(x.subj.color||'var(--ac)')+'">'
+    return '<'+open+' class="global-search-item'+(i===0 && firstActive?' active':'')+'" style="--gs-c:'+(x.subj.color||'var(--ac)')+'">'
       +'<b>'+escapeHtml(x.title)+'</b>'
       +'<small><span class="gs-subj">'+escapeHtml(x.subj.name)+'</span>'+x.kind+(x.detail?'・'+escapeHtml(x.detail):'')+'</small></'+close+'>';
   }).join('');
@@ -1141,6 +1181,18 @@ function goSearchChapter(subjectName,index){
   const row=document.querySelectorAll('#sp-'+s.id+' .ch-row')[index];if(row){row.classList.remove('collapsed');const h=row.querySelector('[data-chtoggle]');if(h)h.setAttribute('aria-expanded','true');row.scrollIntoView({block:'start'});}
   writeRoute(subjectsRoute(), true);
 }
+// phone: the floating buttons step aside while scrolling down (so they never
+// sit on the content being read) and come back on any scroll up
+(function(){
+  let lastY = 0;
+  window.addEventListener('scroll', function(){
+    const y = window.scrollY;
+    const b = document.body.classList;
+    if(window.innerWidth > 640 || y <= 120 || y < lastY - 4) b.remove('fab-away');
+    else if(y > lastY + 4) b.add('fab-away');
+    lastY = y;
+  }, {passive: true});
+})();
 document.addEventListener('DOMContentLoaded', function(){
   // how many are due today, on the 今日複習 button
   const rb = document.getElementById('fabReviewBadge');

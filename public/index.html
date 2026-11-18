@@ -10,8 +10,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=20261007e">
-<link rel="stylesheet" href="styles.css?v=20261118b">
+<link rel="stylesheet" href="theme.css?v=20261119a">
+<link rel="stylesheet" href="styles.css?v=20261119a">
 </head>
 <body id="appRoot">
 <script>setTimeout(function(){ document.body.classList.add('ui-ready'); }, 4000);</script>
@@ -50,6 +50,7 @@
       <svg class="gs-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input id="globalSearchInput" type="search" aria-label="搜尋章節與影片" placeholder="搜尋章節、考點或影片…" autocomplete="off">
       <button class="gs-btn voice-input-btn" type="button" onclick="startVoiceInput('globalSearchInput',this)" aria-label="語音輸入" title="語音輸入"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="22"/></svg></button>
+      <button class="gs-close" type="button" onclick="closeGlobalSearch()">取消</button>
     </div>
     <div class="sr-only" id="globalSearchAnnouncement" role="status" aria-live="polite"></div>
     <div class="global-search-results" id="globalSearchResults"></div>
@@ -63,7 +64,7 @@
 <script src="data.js?v=20261020a"></script>
 <script src="video-order.js?v=20261008m"></script>
 <script src="chapter-core.js?v=20261118a"></script>
-<script src="recall.js?v=20261118d"></script>
-<script src="app.js?v=20261118c"></script>
+<script src="recall.js?v=20261119a"></script>
+<script src="app.js?v=20261119a"></script>
 </body>
 </html>

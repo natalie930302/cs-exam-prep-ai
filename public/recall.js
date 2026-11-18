@@ -166,6 +166,7 @@ function recallSession(host, items, opts){
         const src = typeof videoRoomUrl === 'function' && r.vid ? videoRoomUrl(r.subj, r.ch, r.vid) + '&at=' + Math.max(0, Math.floor(r.at || 0)) : '';
         card.insertAdjacentHTML('beforeend', (r.why ? '<div class="rc-a">' + mdEsc(r.why) + '</div>' : '')
           + '<div class="rc-row"><button type="button" class="rc-next">下一張 →</button>'
+          + (r.hoHref ? '<a class="rc-src-link" href="' + mdEsc(r.hoHref) + '" target="_blank" rel="noopener">回講義看這一節</a>' : '')
           + (src ? '<a class="rc-src-link" href="' + mdEsc(src) + '" target="_blank" rel="noopener">回影片看這段' + (r.label ? '（' + mdEsc(r.label) + '）' : '') + '</a>' : '') + '</div>');
         card.querySelector('.rc-next').onclick = next;
         keyFn = function(ev){ if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); next(); } };
@@ -175,11 +176,15 @@ function recallSession(host, items, opts){
       keyFn = function(ev){ let k = 'abcdefgh'.indexOf(String(ev.key).toLowerCase()); if (k < 0 || ev.key.length !== 1) k = Number(ev.key) - 1; if (k >= 0 && k < r.opts.length) { ev.preventDefault(); pick(k); } };
       return;
     }
+    // where the card's section is in the handout (not inside the study room itself)
+    const p = it.ch.split('-');
+    const hoHref = opts.handoutLinks !== false && typeof videoRoomUrl === 'function' && it.sec ? videoRoomUrl(p[0], Number(p[1]) - 1) + '?t=handout&sec=' + encodeURIComponent(it.sec) : '';
     card.innerHTML = '<div class="rc-q">' + cardHtml(it.q) + '</div>'
       + '<textarea class="rc-try" rows="2" aria-label="你的答案（不會存）" placeholder="先寫下（或說出）你的答案，再看答案。這裡寫的不會存。"></textarea>'
       + '<div class="rc-row"><button type="button" class="rc-show">看答案<kbd>空白鍵</kbd></button></div>'
-      + '<div class="rc-a" hidden>' + cardHtml(it.a) + '</div>'
-      + '<div class="rc-grade" hidden><span>你答得：</span><button type="button" data-g="bad">忘了<kbd>1</kbd></button><button type="button" data-g="meh">模糊<kbd>2</kbd></button><button type="button" data-g="good">記得<kbd>3</kbd></button></div>';
+      + '<div class="rc-a" hidden>' + cardHtml(it.a) + (hoHref ? '<a class="rc-src-link rc-ho" href="' + mdEsc(hoHref) + '" target="_blank" rel="noopener">回講義看這一節</a>' : '') + '</div>'
+      + '<div class="rc-grade" hidden><span>你答得：</span><button type="button" data-g="bad">忘了<kbd>1</kbd></button><button type="button" data-g="meh">模糊<kbd>2</kbd></button><button type="button" data-g="good">記得<kbd>3</kbd></button>'
+      + '<span class="rc-swipe">手機：往右滑記得、往左滑忘了</span></div>';
     const show = function(){
       if (!card.querySelector('.rc-a').hidden) return;
       card.querySelector('.rc-row').hidden = true;
@@ -196,6 +201,17 @@ function recallSession(host, items, opts){
       next();
     };
     card.querySelector('.rc-show').onclick = show;
+    // phones: after the answer shows, swipe right = 記得, left = 忘了
+    let tx = null, ty = null;
+    card.addEventListener('touchstart', function(ev){ const t = ev.touches[0]; tx = t.clientX; ty = t.clientY; }, {passive: true});
+    card.addEventListener('touchend', function(ev){
+      if (tx == null || card.querySelector('.rc-a').hidden) return;
+      const t = ev.changedTouches[0], dx = t.clientX - tx, dy = t.clientY - ty;
+      tx = null;
+      if (Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      card.classList.add(dx > 0 ? 'swipe-r' : 'swipe-l');
+      setTimeout(function(){ grade(dx > 0 ? 'good' : 'bad'); }, 160);
+    }, {passive: true});
     card.querySelector('.rc-grade').onclick = function(ev){ const b = ev.target.closest('button[data-g]'); if (b) grade(b.dataset.g); };
     // Ctrl+Enter in the answer box also shows the answer
     card.querySelector('.rc-try').onkeydown = function(ev){ if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); this.blur(); show(); } };

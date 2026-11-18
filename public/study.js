@@ -300,7 +300,7 @@
     if (!s) { $('chProg').innerHTML = ''; return; }
     const w = s.options.filter(function(o){ return done.has(vidTask(youtubeId(o.url))); }).length;
     const leftSec = s.options.filter(function(o){ return !done.has(vidTask(youtubeId(o.url))); }).reduce(function(a, o){ return a + durToSec(o.dur); }, 0);
-    $('chProg').innerHTML = '<span class="st-pill' + (w === s.options.length ? ' ok' : '') + '"><span class="pl-long">影片 </span>' + w + '/' + s.options.length + (leftSec ? '<span class="pl-long">・還剩 ' + hm(leftSec) + '</span>' : '') + '</span>';
+    $('chProg').innerHTML = '<span class="st-pill' + (w === s.options.length ? ' ok' : '') + '">看完 ' + w + '/' + s.options.length + ' 支' + (leftSec ? '<span class="pl-long">・還剩 ' + hm(leftSec) + '</span>' : '') + '</span>';
   }
 
   // ── Video list ──
@@ -1336,12 +1336,28 @@
     history.replaceState(null, '', roomUrl());
     document.querySelectorAll('.st-tabs button').forEach(function(b){ b.setAttribute('aria-selected', String(b.dataset.tab === tab)); });
     TABS.forEach(function(t){ $('panel-' + t).hidden = t !== tab; });
+    // 講義 on a wide screen: the video shrinks to a corner window and the
+    // handout takes the page (study.css .st-main.reading)
+    document.querySelector('.st-main').classList.toggle('reading', tab === 'handout');
+    if (tab !== 'handout') document.querySelector('.st-main').classList.remove('mini-off');
     if (tab === 'handout') renderHandout();
     if (tab === 'lab') renderLab();
     if (tab === 'quiz') renderQuiz();
     store.set('study-tab', tab);
   }
   document.querySelectorAll('.st-tabs button').forEach(function(b){ b.onclick = function(){ setTab(b.dataset.tab); }; });
+  // the corner video window while reading: back to the video, or put it away
+  (function(){
+    const bar = document.createElement('div');
+    bar.className = 'st-mini-bar';
+    bar.innerHTML = '<button type="button" data-a="open">回到影片</button><button type="button" data-a="hide" aria-label="收起影片小視窗">×</button>';
+    bar.onclick = function(e){
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.a === 'open') { setTab('videos'); window.scrollTo({top: 0, behavior: 'smooth'}); }
+      else { document.querySelector('.st-main').classList.add('mini-off'); try { if (player && player.pauseVideo) player.pauseVideo(); } catch (err) {} }
+    };
+    document.querySelector('.st-player-wrap').appendChild(bar);
+  })();
   function updateCounts(){
     const q = chapterHistory().length;
     document.querySelector('[data-tab=quiz]').innerHTML = '小測驗' + (q ? '<span class="count">' + q + '</span>' : '');
@@ -1424,7 +1440,7 @@
     // sections already read are ticked in the contents
     function markRead(){
       const pos = Number(store.get('ho-pos-' + chId)) || 0;
-      toc.querySelectorAll('li').forEach(function(li, i){ li.classList.toggle('read', done.has(handoutTaskId(subject.id, chIndex)) || i < pos); });
+      el.querySelectorAll('.ho-toc').forEach(function(t){ t.querySelectorAll('li').forEach(function(li, i){ li.classList.toggle('read', done.has(handoutTaskId(subject.id, chIndex)) || i < pos); }); });
     }
     // how many of the chapter's cards have been answered at least once
     function renderCheckCount(){
@@ -1444,7 +1460,37 @@
     }
     markRead();
     renderCheckCount();
-    function goSec(i){ secs[i].det.open = true; secs[i].det.scrollIntoView({behavior: 'smooth', block: 'start'}); }
+    // ?sec=<n> (from search or review): open at that section
+    const wantSec = params.get('sec');
+    const wantI = wantSec == null ? -1 : /^\d+$/.test(wantSec) ? Number(wantSec) : raw.indexOf(wantSec);
+    // (an instant jump, so the sections in between are not counted as read)
+    if (secs[wantI]) setTimeout(function(){ goSec(wantI, true); }, 60);
+    // wide screens: the contents move to a column beside the text (sticky);
+    // the section on screen is marked in it
+    const layout = document.createElement('div');
+    layout.className = 'ho-layout';
+    const mainCol = document.createElement('div');
+    mainCol.className = 'ho-main';
+    const side = document.createElement('aside');
+    side.className = 'ho-side';
+    while (el.firstChild) mainCol.appendChild(el.firstChild);
+    layout.appendChild(mainCol); layout.appendChild(side);
+    el.appendChild(layout);
+    const tocSide = toc.cloneNode(true);
+    tocSide.classList.add('ho-toc-side');
+    side.appendChild(tocSide);
+    tocSide.onclick = toc.onclick;
+    if ('IntersectionObserver' in window) {
+      const cur = new IntersectionObserver(function(es){
+        es.forEach(function(en){
+          if (!en.isIntersecting) return;
+          const i = Number(en.target.dataset.i);
+          tocSide.querySelectorAll('li').forEach(function(li, k){ li.classList.toggle('cur', k === i); });
+        });
+      }, {rootMargin: '-20% 0px -70% 0px'});
+      secs.forEach(function(x){ cur.observe(x.det); });
+    }
+    function goSec(i, instant){ secs[i].det.open = true; secs[i].det.scrollIntoView({behavior: instant ? 'auto' : 'smooth', block: 'start'}); }
     toc.onclick = function(e){ const a = e.target.closest('a[data-i]'); if (!a) return; e.preventDefault(); goSec(Number(a.dataset.i)); };
     tools.querySelector('.ho-fold').onclick = function(){
       const anyOpen = secs.some(function(x){ return x.det.open; });
@@ -1479,7 +1525,7 @@
     end.innerHTML = '<label class="ho-done"><input type="checkbox"' + (done.has(tid) ? ' checked' : '') + '> 讀完了</label>'
       + (handoutCards.length ? '<button type="button" class="ho-quiz">' + handoutCards.length + ' 題自我檢查一次練完 →</button>' : '')
       + '<button type="button" class="ho-videos">開始看影片 →</button>';
-    el.appendChild(end);
+    mainCol.appendChild(end);
     end.querySelector('input').onchange = function(e){
       const box = e.target;
       setTask(tid, box.checked).then(markRead, function(){ box.checked = !box.checked; toast(NOT_SAVED); });
@@ -1649,6 +1695,7 @@
     const host = document.createElement('div');
     el.appendChild(host);
     recallSession(host, cards, {
+      handoutLinks: false,
       endButtons: '<button type="button" class="rc-back">回到小測驗</button>',
       // (onStart runs again for a 「再練忘了的」 round)
       onStart: function(){ recallRunning = true; },

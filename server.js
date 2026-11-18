@@ -6,7 +6,7 @@ const express = require('express');
 const compression = require('compression');
 const db = require('./db.js');
 const auth = require('./auth.js');
-const { search } = require('./search.js');
+const { search, searchStudy } = require('./search.js');
 
 const app = express();
 app.use(compression());
@@ -149,7 +149,7 @@ app.put('/api/state/:key', route(async (req, res) => {
 }));
 
 // ── Full-text search over notes and subtitles (search.js) ──
-app.get('/api/search', (req, res) => res.json({ results: search(req.query.q) }));
+app.get('/api/search', (req, res) => res.json(Object.assign({ results: search(req.query.q) }, searchStudy(req.query.q))));
 
 // Locally: `npm start`. On Vercel, api/index.js imports the app instead.
 if (require.main === module) {

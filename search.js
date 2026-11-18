@@ -114,4 +114,66 @@ function search(query, limit = 50) {
   return out;
 }
 
-module.exports = { search };
+// The 講義 (public/handouts/<ch>.md, one row per "## " section) and their
+// 自我檢查卡 (<ch>.cards.json): searched with the same words and synonyms.
+let STUDY_INDEX = null;
+function buildStudyIndex() {
+  const dir = path.join(PUBLIC_DIR, 'handouts');
+  const sections = [], cards = [];
+  let files = [];
+  try { files = fs.readdirSync(dir).filter((f) => /^[a-z]+-\d+\.md$/.test(f)); } catch (e) { return { sections, cards }; }
+  for (const f of files) {
+    const ch = f.slice(0, -3);
+    let md = '';
+    try { md = fs.readFileSync(path.join(dir, f), 'utf8').replace(/\r/g, ''); } catch (e) { continue; }
+    // "## " headings outside code blocks, in order (as md.js mdSections)
+    let fence = false, cur = null, si = -1;
+    for (const l of md.split('\n')) {
+      if (/^\s*```/.test(l)) { fence = !fence; if (cur) cur.body.push(l); continue; }
+      const m = !fence && l.match(/^##\s+(.*)$/);
+      if (m) { si++; cur = { ch, si, title: m[1].trim(), body: [] }; sections.push(cur); continue; }
+      if (cur) cur.body.push(l);
+    }
+    try {
+      for (const c of JSON.parse(fs.readFileSync(path.join(dir, ch + '.cards.json'), 'utf8')).cards || []) {
+        if (c && c.q) cards.push({ ch, sec: c.sec, q: c.q, a: c.a || '', low: (c.q + ' ' + (c.a || '')).toLowerCase() });
+      }
+    } catch (e) { /* no cards */ }
+  }
+  for (const x of sections) {
+    x.text = x.body.join('\n');
+    x.low = (x.title + '\n' + x.text).toLowerCase();
+    x.titleLow = x.title.toLowerCase();
+    delete x.body;
+  }
+  return { sections, cards };
+}
+const SKIP_SECTIONS = /^(學完這章要會|重點整理|名詞對照)/;
+function searchStudy(query, limit = 8) {
+  const q = String(query || '').trim().toLowerCase().slice(0, 60);
+  if (q.length < 2) return { handouts: [], cards: [] };
+  if (!STUDY_INDEX) STUDY_INDEX = buildStudyIndex();
+  const syn = synonyms();
+  const whole = syn.get(q);
+  const words = q.split(/\s+/).filter(Boolean).flatMap((w) => w.match(/[\x00-\x7f]+|[^\x00-\x7f]+/g) || []);
+  const groups = (whole ? [q] : words).map((w) => [w].concat(Array.from(syn.get(w) || [])).map(termTest));
+  const all = (low) => groups.every((g) => g.some((test) => test(low)));
+  const handouts = STUDY_INDEX.sections.filter((x) => !SKIP_SECTIONS.test(x.title) && all(x.low))
+    .map((x) => {
+      // a heading that names the term first, then how often the section uses it
+      let n = 0; const k = words[0] || q; let i = -1;
+      while ((i = x.low.indexOf(k, i + 1)) >= 0 && n < 50) n++;
+      return { x, score: (all(x.titleLow) ? 100 : 0) + n };
+    })
+    .sort((a, b) => b.score - a.score).slice(0, limit)
+    .map(({ x }) => {
+      const k = words[0] || q, at = Math.max(0, x.low.indexOf(k));
+      const snip = x.text.slice(Math.max(0, at - 30), at + 70).replace(/[#>*`|]/g, ' ').replace(/\s+/g, ' ').trim();
+      return { ch: x.ch, si: x.si, title: x.title, snippet: snip };
+    });
+  const cards = STUDY_INDEX.cards.filter((c) => all(c.low)).slice(0, limit)
+    .map((c) => ({ ch: c.ch, sec: c.sec, q: c.q.slice(0, 140) }));
+  return { handouts, cards };
+}
+
+module.exports = { search, searchStudy };
