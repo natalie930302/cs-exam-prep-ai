@@ -95,7 +95,7 @@
     setTimeout(function(){ $('side').classList.remove('is-loading'); }, 15000);
     $('stage').src = labUrl + '&stage=1';
     $('fullTab').hidden = false;
-    $('labTab').hidden = false;
+    // (the 實驗室 tab was removed 2026-11-19 at the user's request; the stage and 計算練習 stay)
   } else {
     $('side').classList.remove('is-loading');
     $('notesSide').hidden = false;
@@ -1323,7 +1323,7 @@
   window.__studyCheck = {sectionChallenge: sectionChallenge, endCard: endCard, plan: function(){ return curNotes && quizPlan(curNotes); }, seek: function(t){ if (playerReady) player.seekTo(t, true); }, yt: function(){ return player && playerReady ? {cc: (function(){ try { return player.getOption('captions', 'track'); } catch (e) { return 'n/a'; } })(), state: player.getPlayerState(), data: player.getVideoData(), err: lastYtError} : {ready: playerReady}; }};
 
   // ── Tabs ──
-  const TABS = ['handout', 'videos', 'full', 'lab', 'quiz', 'goals'];
+  const TABS = ['handout', 'videos', 'full', 'quiz', 'goals'];
   // The address carries the open video (v) and the open tab (t), so a
   // refresh or a shared link reopens exactly this view.
   let currentTab = 'videos';
@@ -1760,7 +1760,7 @@
     else { $('player').outerHTML = '<div class="st-empty-player">這章沒有指定影片。</div>'; renderSeriesChips(); renderVideoList(); }
     $('followChk').onchange = function(e){ follow = e.target.checked; };
     const tab = askedTab || store.get('study-tab');
-    const usable = tab && $('panel-' + tab) && !((tab === 'lab' || tab === 'full') && !hasStage);
+    const usable = tab && tab !== 'lab' && $('panel-' + tab) && !(tab === 'full' && !hasStage);
     setTab(usable ? tab : 'videos');
     // opened for a tab (講義, 小測驗…) from a chapter card or search: go to the
     // tabs; opened for the videos: stay at the top with the player

@@ -140,7 +140,7 @@ const external = (l) => /youtube|ytimg|googleapis|gstatic|doubleclick|ERR_INTERN
 
 // ───────────────────────── 2. 頁面 ─────────────────────────
 console.log('頁面');
-const PAGES = ['/calendar', '/calendar/2026-10-20', '/subjects', '/subjects/ds/4', '/study/ds/4', '/study/ds/4?t=handout', '/study/ds/4?t=full', '/study/ds/4?t=quiz', '/study/ds/4?t=goals', '/study/os/1?t=lab', '/review.html', '/review.html?s=os', '/review.html?ch=ds-4'];
+const PAGES = ['/calendar', '/calendar/2026-10-20', '/subjects', '/subjects/ds/4', '/study/ds/4', '/study/ds/4?t=handout', '/study/ds/4?t=full', '/study/ds/4?t=quiz', '/study/ds/4?t=goals', '/study/os/1', '/review.html', '/review.html?s=os', '/review.html?ch=ds-4'];
 for (const w of [375, 1366]) {
   for (const p of PAGES) {
     await open(p, w, 2000);
