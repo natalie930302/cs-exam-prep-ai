@@ -522,7 +522,7 @@
    "why": "8 個 cubelet × 3 張外露的面。"
   },
   {
-   "q": "configuration 在程式中怎麼表示？",
+   "q": "2×2×2 魔術方塊的 configuration（每張 plastic face 貼在哪個位置）在程式中怎麼表示？",
    "opts": [
     "24 個元素的陣列（每個位置貼哪張 plastic face）",
     "8 個 cubelet 的座標與朝向（x, y, z 與旋轉角度）",
@@ -533,7 +533,7 @@
    "why": "它是一個 permutation。"
   },
   {
-   "q": "為什麼 Rubik's cube 要用 implicit graph？",
+   "q": "為什麼 2×2×2 魔術方塊的最短解要用 implicit graph（只給起點和產生鄰居的方法）？",
    "opts": [
     "configuration 太多，整張圖存不下",
     "BFS 不能用在明確的圖上，只能用在 implicit graph",
@@ -555,7 +555,7 @@
    "why": "位置與值對調後再排序。"
   },
   {
-   "q": "在不記錢和時間的狀態圖中，邊的權重代表什麼？",
+   "q": "把簡化版 StarCraft 的 build order 建成狀態圖（頂點 = 遊戲狀態、邊 = 動作）。狀態裡不記錢和時間時，邊的權重代表什麼？",
    "opts": [
     "存夠錢要等的秒數",
     "花掉的錢（每次購買的金額）",
@@ -566,7 +566,7 @@
    "why": "所以邊權重不同，要用 Dijkstra。"
   },
   {
-   "q": "為什麼 Dijkstra 能處理每 120 秒的騷擾規則？",
+   "q": "StarCraft build order 狀態圖（狀態不記時間、邊權重 = 等待秒數）用 Dijkstra 求最快完成。新規則要求每 120 秒派出足夠的 zergling 騷擾，為什麼 Dijkstra 能處理？",
    "opts": [
     "取出一個點時，它的最短時間已確定，可檢查邊是否跨過 120 秒",
     "Dijkstra 會自動忽略時間",
@@ -577,7 +577,7 @@
    "why": "產生鄰居時就能判斷該邊是否合法。"
   },
   {
-   "q": "如果狀態裡同時記錄時間與錢，每條邊代表過 1 秒，該用什麼演算法？",
+   "q": "StarCraft build order 狀態圖中，如果狀態同時記錄時間與錢，每條邊代表過 1 秒，求最快達成目標該用什麼演算法？",
    "opts": [
     "BFS",
     "Dijkstra",

@@ -1177,7 +1177,7 @@
    "why": "某時間點有 d 個 interval 同時 overlap，必須放在 d 台不同機器；而 greedy 剛好用 d 台，所以 d 也是答案。"
   },
   {
-   "q": "掃描端點算 depth 時，同一時刻有 finish 也有 start，排序應該？",
+   "q": "Interval partitioning 中掃描端點算 depth 時（interval 為 [s, f)），同一時刻有 finish 也有 start，排序應該？",
    "opts": [
     "先 start 再 finish",
     "先 finish 再 start",
@@ -1199,7 +1199,7 @@
    "why": "依 s 排序後，Ij 前面跟它 overlap 的至多 d − 1 個，一定剩下一個 label 可用。"
   },
   {
-   "q": "Minimize lateness 中，這題的目標函數是？",
+   "q": "Scheduling to minimize lateness（job i 完成時間 f_i、截止 d_i）的目標函數是？",
    "opts": [
     "max_i max(0, f_i − d_i)",
     "Σ max(0, f_i − d_i)",
@@ -1207,10 +1207,10 @@
     "最後一個 job 的完成時間"
    ],
    "ans": "max_i max(0, f_i − d_i)",
-   "why": "老師強調只取最大遲交量、不加總；加總或有 weight 是另外的題目。"
+   "why": "只取最大遲交量、不加總；加總或有 weight 是另外的題目。"
   },
   {
-   "q": "t = (1, 10)、d = (2, 10)，用 smallest slack first 的 max lateness 是？",
+   "q": "Minimize lateness：兩個 job，t = (1, 10)、d = (2, 10)，從時間 0 開始做。用 smallest slack first（slack = d − t）的 max lateness 是？",
    "opts": [
     "0",
     "1",
@@ -1221,7 +1221,7 @@
    "why": "slack 分別是 1 和 0，先做第 2 個到 10，第 1 個到 11 才完成，11 − 2 = 9；反過來只有 1。"
   },
   {
-   "q": "交換相鄰 inversion（i 在前、d_j < d_i）後，為什麼 max lateness 不會變大？",
+   "q": "Minimize lateness 的 exchange argument：交換相鄰 inversion（i 在前、d_j < d_i）後，為什麼 max lateness 不會變大？",
    "opts": [
     "ℓ'_i = f_j − d_i ≤ f_j − d_j = ℓ_j",
     "ℓ'_i = f_i − d_j ≤ f_j − d_j = ℓ_j",

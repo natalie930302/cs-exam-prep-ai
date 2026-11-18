@@ -198,7 +198,7 @@
    "why": "它上面的 alternating path 都不能 augment；它的 root 叫 Hungarian acorn。"
   },
   {
-   "q": "同上題的喜歡清單，Hungarian algorithm 最後從 H 長出的 Hungarian tree 上，女生和男生各有幾個？",
+   "q": "派對的喜歡清單（女生 A～H、男生 a～h）：A: a e f g h、B: b c h、C: c e f g、D: d h、E: b c d、F: b d、G: a b c d、H: b c d。Hungarian algorithm 跑完時，從沒配到的 H 長出的 Hungarian tree 上，女生和男生各有幾個？",
    "opts": [
     "女生 5、男生 4",
     "女生 4、男生 4",
@@ -209,7 +209,7 @@
    "why": "B、D、E、F、H 只喜歡 b、c、d、h，所以不可能全部配到。"
   },
   {
-   "q": "同上題的喜歡清單，maximum matching size 是多少？",
+   "q": "派對的喜歡清單（女生 A～H、男生 a～h）：A: a e f g h、B: b c h、C: c e f g、D: d h、E: b c d、F: b d、G: a b c d、H: b c d。maximum matching size 是多少？",
    "opts": [
     "7",
     "8",

@@ -117,7 +117,7 @@
  ],
  "quiz": [
   {
-   "q": "這題（P1 1/3、P2 2/4、P3 1/2、P4 4/4，non-preemptive SJF）0～1 的 CPU 狀態？",
+   "q": "Non-preemptive SJF：P1（arrival 1、burst 3）、P2（2、4）、P3（1、2）、P4（4、4）。時間 0～1 的 CPU 狀態？",
    "opts": [
     "idle",
     "執行 P1",
@@ -128,7 +128,7 @@
    "why": "沒有任何 process 在 0 到達，CPU 只能閒置。"
   },
   {
-   "q": "t = 1 時 P1（BT 3）與 P3（BT 2）都到了，先選誰？",
+   "q": "Non-preemptive SJF：P1（arrival 1、burst 3）、P2（2、4）、P3（1、2）、P4（4、4）。t = 1 時 P1 與 P3 都到了，先選誰？",
    "opts": [
     "P3",
     "P1",
@@ -139,7 +139,7 @@
    "why": "SJF 比 burst time，2 < 3。"
   },
   {
-   "q": "t = 6 時 P2 與 P4 的 burst time 都是 4，選誰？",
+   "q": "Non-preemptive SJF：P1（arrival 1、burst 3）、P2（2、4）、P3（1、2）、P4（4、4）。t = 6 時 CPU 空出來，P2 與 P4 的 burst 都是 4，選誰？",
    "opts": [
     "P2，因為 arrival time 較早",
     "P4，因為比較晚到、等待較短",
@@ -150,7 +150,7 @@
    "why": "平手先比 arrival time；arrival 也相同才比 process id。"
   },
   {
-   "q": "這題的平均 waiting time？",
+   "q": "Non-preemptive SJF：P1（arrival 1、burst 3）、P2（2、4）、P3（1、2）、P4（4、4）。平均 waiting time？",
    "opts": [
     "3",
     "6.25",
@@ -161,7 +161,7 @@
    "why": "WT = 2、4、0、6，總和 12，除以 4。"
   },
   {
-   "q": "這題的平均 turnaround time？",
+   "q": "Non-preemptive SJF：P1（arrival 1、burst 3）、P2（2、4）、P3（1、2）、P4（4、4）。平均 turnaround time？",
    "opts": [
     "6.25",
     "7.25",

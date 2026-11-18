@@ -305,7 +305,7 @@
  ],
  "quiz": [
   {
-   "q": "下列哪一個「不是」課堂提到 process 需要 IPC 的理由？",
+   "q": "下列哪一個「不是」process 需要 IPC（cooperating process）的理由？",
    "opts": [
     "讓每個 process 的 memory 互相隔離",
     "information sharing（如共用檔案）",

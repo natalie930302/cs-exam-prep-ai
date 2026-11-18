@@ -635,7 +635,7 @@
  ],
  "quiz": [
   {
-   "q": "P1(0,7)、P2(2,4)、P3(4,1)、P4(5,4)，non-preemptive SJF 的平均 waiting time？",
+   "q": "P1(0,7)、P2(2,4)、P3(4,1)、P4(5,4)（括號內為 arrival time、CPU burst），non-preemptive SJF 的平均 waiting time？",
    "opts": [
     "4",
     "3",
@@ -646,7 +646,7 @@
    "why": "P1 0–7、P3 7–8、P2 8–12、P4 12–16；WT = 0、6、3、7。"
   },
   {
-   "q": "同一組用 SRTF（preemptive SJF），平均 waiting time？",
+   "q": "P1(0,7)、P2(2,4)、P3(4,1)、P4(5,4)（括號內為 arrival time、CPU burst），SRTF（preemptive SJF）的平均 waiting time？",
    "opts": [
     "3",
     "4",
@@ -690,7 +690,7 @@
    "why": "等越久 priority 越高，遲早被執行。"
   },
   {
-   "q": "MLFQ 例子（Q0 RR q=8、Q1 RR q=16、Q2 FCFS）中，process 何時被降到下一層？",
+   "q": "MLFQ 有三層：Q0 RR q=8、Q1 RR q=16、Q2 FCFS。process 何時會被降到下一層？",
    "opts": [
     "用完該層的 time quantum 還沒做完",
     "做了一次 I/O、主動讓出 CPU 時",
@@ -701,15 +701,15 @@
    "why": "用完 8 ms → 判定 CPU burst 長 → 往下踢；等太久是 aging，往上提。"
   },
   {
-   "q": "本講介紹的 MLQ 在多個 queue 之間如何選？",
+   "q": "MLFQ（multilevel feedback queue）在多個 queue 之間，如何決定下一個從哪個 queue 挑 process？",
    "opts": [
-    "依 weight 的機率挑 queue",
     "永遠先挑最上層、非空的 queue",
+    "依 weight 的機率挑 queue",
     "輪流各挑一個 process",
     "挑目前最長的 queue"
    ],
-   "ans": "依 weight 的機率挑 queue",
-   "why": "本講的 MLQ 上下沒有意義，純粹看權重；MLFQ 才是從最上層開始。"
+   "ans": "永遠先挑最上層、非空的 queue",
+   "why": "上層 queue 空了才輪到下層；依 weight 機率或時間比例分配給各 queue 是另一種 MLQ 的設計。"
   },
   {
    "q": "Deterministic modeling 的主要缺點？",

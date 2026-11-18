@@ -411,7 +411,7 @@
  ],
  "quiz": [
   {
-   "q": "用老師的 code（a=1,…,j=10）與「加總」hash，pattern aab 的 hash 是？",
+   "q": "字元編碼 a=1, b=2, …, j=10，用「字元碼加總」當 hash，pattern aab 的 hash 是？",
    "opts": [
     "4",
     "3",
@@ -422,7 +422,7 @@
    "why": "1 + 1 + 2 = 4。"
   },
   {
-   "q": "加總 hash 下，text 視窗從 abc 滑到 bcd，新 hash 怎麼算？",
+   "q": "字元編碼 a=1, b=2, c=3, d=4，用字元碼加總當 hash，text 視窗從 abc 滑到 bcd，新 hash 怎麼算？",
    "opts": [
     "6 − 1 + 4 = 9",
     "6 + 4 = 10",
@@ -455,7 +455,7 @@
    "why": "4·10² + 2·10¹ + 1·10⁰ = 421。"
   },
   {
-   "q": "base 10 時，視窗從 cca（331）滑到 cac，新 hash 是？",
+   "q": "Rabin-Karp 用 base 10、字元編碼 a=1、c=3，視窗從 cca（331）滑到 cac，新 hash 是？",
    "opts": [
     "313",
     "331",

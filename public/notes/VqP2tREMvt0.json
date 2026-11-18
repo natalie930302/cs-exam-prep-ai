@@ -331,7 +331,7 @@
    "why": "消去後 pivot 在第 1、3 行，第 2、4 行沒有 pivot。"
   },
   {
-   "q": "上面的 A，free 變數取 x₂ = 1、x₄ = 0 時的 special solution 是？",
+   "q": "A = [1 2 2 2; 2 4 6 8; 3 6 8 10]（free 變數是 x₂、x₄），取 x₂ = 1、x₄ = 0 時的 special solution 是？",
    "opts": [
     "(−2, 1, 0, 0)",
     "(2, 0, −2, 1)",

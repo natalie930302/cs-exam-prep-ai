@@ -786,7 +786,7 @@
  ],
  "quiz": [
   {
-   "q": "naive 遞迴算 Fibonacci 時，老師用 T(n) ≥ 2T(n−2) 推出什麼？",
+   "q": "分析 naive 遞迴算 Fibonacci 的時間時，由 T(n) ≥ 2T(n−2) 可推出什麼？",
    "opts": [
     "T(n) = Ω(2^{n/2})，至少是指數",
     "T(n) = O(n²)，是多項式",

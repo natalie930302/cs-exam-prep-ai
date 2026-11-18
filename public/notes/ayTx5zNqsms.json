@@ -233,7 +233,7 @@
    "why": "1 + 6 + 3 + 3 + 6 = 19。"
   },
   {
-   "q": "其中有幾個是 total order？",
+   "q": "{1,2,3} 上的 19 個 partial order 中，有幾個是 total order？",
    "opts": [
     "19",
     "6",
@@ -244,7 +244,7 @@
    "why": "total order 的 Hasse diagram 是一條線，3! = 6。"
   },
   {
-   "q": "「兩點連、一點獨立」形狀的 partial order 有幾個？",
+   "q": "{1,2,3} 上的 partial order 中，Hasse diagram 是「兩點連一條線、第三點獨立」形狀的有幾個？",
    "opts": [
     "2",
     "1",

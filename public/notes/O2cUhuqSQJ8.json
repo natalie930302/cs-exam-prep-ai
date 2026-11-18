@@ -319,7 +319,7 @@
    "why": "s 只流出、t 只流進，所以它們不要求守恆。"
   },
   {
-   "q": "老師的例子 flow：(s,a) 3、(s,b) 2、(s,c) 3。這個 flow 的 value 是？",
+   "q": "某 transport network 中，source s 只有三條邊 (s,a)、(s,b)、(s,c)，flow 分別是 3、2、3。這個 flow 的 value 是？",
    "opts": [
     "8",
     "3",
@@ -327,10 +327,10 @@
     "9"
    ],
    "ans": "8",
-   "why": "value = source 的 outflow = 3 + 2 + 3 = 8（也等於 sink 的 inflow 2 + 4 + 2）。"
+   "why": "value = source 的 outflow = 3 + 2 + 3 = 8（也等於 sink 的 inflow）。"
   },
   {
-   "q": "例子中端點 d 的 inflow 是 (a,d) 1、(b,d) 2、(c,d) 1，(d,t) 必須是多少才守恆？",
+   "q": "transport network 中，端點 d 的 inflow 是 (a,d) 1、(b,d) 2、(c,d) 1，而 d 唯一的出邊是 (d,t)。(d,t) 的 flow 必須是多少才守恆？",
    "opts": [
     "4",
     "2",
@@ -338,7 +338,7 @@
     "5"
    ],
    "ans": "4",
-   "why": "1 + 2 + 1 = 4，outflow 只有 (d,t) 一條，所以要是 4（剛好等於它的 capacity 4）。"
+   "why": "1 + 2 + 1 = 4，outflow 只有 (d,t) 一條，所以要是 4。"
   }
  ]
 }

@@ -931,7 +931,7 @@
    "why": "每次 append 只要 magic·base mod p，維持 O(1)。"
   },
   {
-   "q": "skip 時算 hash − old·magic 為什麼要先加上 p·base？",
+   "q": "Karp-Rabin 的 rolling hash（mod p，magic = base^size mod p）做 skip 時算 hash − old·magic，為什麼要先加上 p·base？",
    "opts": [
     "old·magic < base·p，加上後一定非負，mod p 結果不變",
     "為了讓 hash 變大以減少 false positive",

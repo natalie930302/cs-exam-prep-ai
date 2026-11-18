@@ -964,7 +964,7 @@
    "why": "B-tree 只要求至少半滿、root 至少 2 個 child、leaf 同層；不要求每個 node 全滿。"
   },
   {
-   "q": "degree 4、送第 3 個 key 上去，依序插入 10, 20, 40, 50 後 root 是？",
+   "q": "order 4 的 B-tree，overflow 時送第 3 個 key 上去，依序插入 10, 20, 40, 50 後 root 是？",
    "opts": [
     "[20]",
     "[40]",

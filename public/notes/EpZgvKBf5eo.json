@@ -381,7 +381,7 @@
     "四種轉換都會"
    ],
    "ans": "running → waiting 與 running → terminate",
-   "why": "這兩種情況 CPU burst 已經自己結束；② ③ 只有 preemptive 會換人。"
+   "why": "這兩種情況 CPU burst 已經自己結束；running → ready（timer interrupt）與 waiting → ready（I/O 完成）只有 preemptive 會藉機換人。"
   },
   {
    "q": "下列哪個描述是 I/O-bound 程式的特徵？",

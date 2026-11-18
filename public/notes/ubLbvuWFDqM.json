@@ -806,7 +806,7 @@
    "why": "n 次 insert 與 n 次 delete，每次 O(log n)。"
   },
   {
-   "q": "影片例句有 26 個字元，若用每字 8 bits 的 ASCII 儲存，需要多少 bits？",
+   "q": "「Eerie eyes seen near lake.」共 26 個字元，若用每字 8 bits 的 ASCII 儲存，需要多少 bits？",
    "opts": [
     "208",
     "182",

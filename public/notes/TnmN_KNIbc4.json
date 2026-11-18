@@ -279,7 +279,7 @@
    "why": "老師強調：使用率不是放了多少，而是放進去的內容真的有被存取。"
   },
   {
-   "q": "下列哪一個不是課堂提到的 virtual memory 好處？",
+   "q": "下列哪一個不是 virtual memory 的好處？",
    "opts": [
     "program 可以比 physical memory 大",
     "提高 degree of multiprogramming",

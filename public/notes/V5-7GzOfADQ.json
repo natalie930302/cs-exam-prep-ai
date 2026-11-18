@@ -541,7 +541,7 @@
    "why": "a 連續出現讓前 4 格是 0 1 2 3；b 後面的 aa 配到開頭的 aa → 1 2。"
   },
   {
-   "q": "在影片的 KMP 寫法中，string[i] ≠ pattern[j+1] 且 j > 0 時要做什麼？",
+   "q": "KMP（π 表 1-based，j 是目前已比對成功的長度，下一個要比 pattern[j+1]）中，string[i] ≠ pattern[j+1] 且 j > 0 時要做什麼？",
    "opts": [
     "j = π[j]，i 不動",
     "i 退回 i − j + 1，j = 0",

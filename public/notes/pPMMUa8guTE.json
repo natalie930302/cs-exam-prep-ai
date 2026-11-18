@@ -1325,7 +1325,7 @@
    "why": "X.rightChild 現在指向真正的子節點 R，不是 thread，所以 rightThread=false（老師口誤說 true）。"
   },
   {
-   "q": "頻率 2,3,5,7,9,13 建 Huffman tree（左 0 右 1，依課堂圖），頻率 2 的字的碼長為？",
+   "q": "頻率 2,3,5,7,9,13 建 Huffman tree，頻率 2 的字的碼長為？",
    "opts": [
     "2",
     "3",

@@ -858,7 +858,7 @@
    "why": "比 4 小的有 1、3、2、3 共四個，所以 4 寫到 out[4]。"
   },
   {
-   "q": "用「尾端放 n、由右往左」原地把 count 轉成 pos 時，sum 的初值是？",
+   "q": "Counting sort 要原地把 count[] 轉成 pos[]（pos[v] = 比 v 小的元素個數），做法是從最大的 key 往左：sum −= count[i]、pos[i] = sum。sum 的初值是？",
    "opts": [
     "n（元素總數）",
     "0（尚未累加）",
@@ -869,7 +869,7 @@
    "why": "所有 count 加起來 = n；每步 sum −= pos[i]、pos[i] = sum。"
   },
   {
-   "q": "放進 out 時，為什麼每寫一個就要 pos[A[i]] += 1？",
+   "q": "Counting sort 依 pos[] 把 A 的元素寫進 out 時，為什麼每寫一個就要 pos[A[i]] += 1？",
    "opts": [
     "下一個相同的 key 要放在下一格，不會蓋掉前一個",
     "為了讓演算法變成 in place，不需要額外的 out 陣列",

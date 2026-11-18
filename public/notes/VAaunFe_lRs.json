@@ -434,7 +434,7 @@
    "why": "0.999×200 + 0.001×8,000,000 = 8199.8 ns ≈ 8.2 µs。"
   },
   {
-   "q": "承上，若只容忍變慢 10%，p 需小於？",
+   "q": "Demand paging：memory access 200 ns、page fault service time 8 ms。若只容忍比 200 ns 慢 10%，page fault rate p 需小於？",
    "opts": [
     "0.0000025",
     "0.001",

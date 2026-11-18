@@ -246,7 +246,7 @@
    "why": "每個 fork 讓 process 數加倍：2³ = 8。"
   },
   {
-   "q": "ex1.c 中 execv(\"./ex2\", args); 之後的 printf(\"Back to ex1.c\") 為什麼沒有印出來？",
+   "q": "ex1.c 中 execv(\"./ex2\", args); 執行成功，之後的 printf(\"Back to ex1.c\") 為什麼沒有印出來？",
    "opts": [
     "process 的內容已被 ex2 取代，不會回到 ex1 的程式碼",
     "printf 寫錯了",

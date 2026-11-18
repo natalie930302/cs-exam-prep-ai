@@ -386,7 +386,7 @@
    "why": "每塊資料存兩份，容量剩一半。"
   },
   {
-   "q": "依課堂例子，data 1101 用 Hamming code 算出 parity 010。哪一種 RAID 用這種 bit-level 的 Hamming code？",
+   "q": "哪一種 RAID 使用 bit-level 的 Hamming code（例如 4 個 data bit 配 3 個 parity bit）做錯誤更正？",
    "opts": [
     "RAID 2",
     "RAID 3",

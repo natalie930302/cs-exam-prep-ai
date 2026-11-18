@@ -294,7 +294,7 @@
    "why": "Σ deg(R) = 2e = 18。"
   },
   {
-   "q": "Edge–Vertex Inequality 是？",
+   "q": "connected planar simple graph（girth g ≥ 3）的 Edge–Vertex Inequality 是？",
    "opts": [
     "e ≥ g(v−2)/(g−2)",
     "e ≤ g(v−2)/(g−2)",
@@ -305,7 +305,7 @@
    "why": "適用 connected planar simple graph、g ≥ 3。"
   },
   {
-   "q": "用不等式檢查 K₅ 時，上界是多少？",
+   "q": "用 edge–vertex inequality e ≤ g(v − 2)/(g − 2) 檢查 K₅ 時，上界是多少？",
    "opts": [
     "8",
     "9",

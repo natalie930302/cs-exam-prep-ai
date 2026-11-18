@@ -367,14 +367,14 @@
    "why": "沒有排隊，先 call 的人先搶到。"
   },
   {
-   "q": "Swap 解法中，進入 critical section 的條件是？",
+   "q": "Swap 解法（key = true; while (key) Swap(&lock, &key);）中，進入 critical section 的條件是？",
    "opts": [
-    "和 lock 交換後拿到 false（紅球）",
+    "和 lock 交換後 key 拿到 false",
     "key 一直是 true，表示鎖還空著可以進入",
     "lock 是 true",
     "自己 PID 最小"
    ],
-   "ans": "和 lock 交換後拿到 false（紅球）",
+   "ans": "和 lock 交換後 key 拿到 false",
    "why": "全場只有一個 false，所以只有一個人能進去。"
   }
  ]

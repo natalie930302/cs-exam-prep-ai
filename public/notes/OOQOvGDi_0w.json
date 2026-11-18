@@ -250,7 +250,7 @@
    "why": "B 之後先 D，D 走不下去回 B → E → F，再 H，最後 C → G → I、J。"
   },
   {
-   "q": "同一張圖用 BFS（字母順序、從 A 開始）的順序是？",
+   "q": "connected graph 的邊為 A–B、A–C、A–D、B–D、B–E、E–F、E–H、C–G、G–I、G–J。用 BFS（字母順序、從 A 開始）加入端點的順序是？",
    "opts": [
     "A B C D E G F H I J",
     "A B D E F H C G I J",
@@ -294,7 +294,7 @@
    "why": "BFS 一層一層往外擴，第 k 層的端點離起點的最短距離恰為 k，例如 collaboration graph 上的 Erdős number。"
   },
   {
-   "q": "A–J 那張圖（10 個點）的 spanning tree 有幾條邊？",
+   "q": "connected graph 有 10 個點 A～J、10 條邊（A–B、A–C、A–D、B–D、B–E、E–F、E–H、C–G、G–I、G–J），它的 spanning tree 有幾條邊？",
    "opts": [
     "9",
     "10",

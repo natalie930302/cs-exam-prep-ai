@@ -900,7 +900,7 @@
    "why": "greatest 必須 ≥ 所有元素；兩個 maximal 彼此不能比，所以都不是 greatest。"
   },
   {
-   "q": "依本課分類表，哪一種圖不允許多重邊但允許 loop？",
+   "q": "Rosen 的圖分類表（simple graph、multigraph、pseudograph、directed graph、directed multigraph）中，哪一種不允許多重邊但允許 loop？",
    "opts": [
     "directed graph",
     "pseudograph",
@@ -908,7 +908,7 @@
     "simple graph"
    ],
    "ans": "directed graph",
-   "why": "表中多重邊只有 simple graph 與 directed graph 不允許；loop 後三種允許。"
+   "why": "simple graph 兩者都不允許；pseudograph、directed multigraph 兩者都允許；directed graph 不允許多重邊、允許 loop。"
   },
   {
    "q": "無向圖有 5 條邊，所有節點 degree 的總和是？",

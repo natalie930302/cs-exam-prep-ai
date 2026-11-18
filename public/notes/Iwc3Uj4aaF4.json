@@ -254,7 +254,7 @@
    "why": "每次找 augmenting path 加流，找不到時目前的 flow 就是最大流。"
   },
   {
-   "q": "影片稱為 minimal cut 的東西，標準名稱是？",
+   "q": "Ford-Fulkerson 中，augmenting path 上各邊剩餘容量的最小值（決定這次能送多少流量），標準名稱是？",
    "opts": [
     "bottleneck capacity",
     "min cut",

@@ -364,7 +364,7 @@
    "why": "只有前 4 次、5、以及後面的 4 會 fault。"
   },
   {
-   "q": "同一串、4 個 frame，LRU 的 page fault 次數？",
+   "q": "Reference string 1 2 3 4 1 2 5 1 2 3 4 5、4 個 frame，LRU 的 page fault 次數？",
    "opts": [
     "8",
     "6",

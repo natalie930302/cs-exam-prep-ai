@@ -798,7 +798,7 @@
    "why": "3³ = 27。"
   },
   {
-   "q": "Bunker hill 用「每欄直向 rolling hash + 欄 hash 上的 Karp-Rabin」的時間與額外空間？",
+   "q": "Bunker hill：在 W × H 的圖中找 w × h 樣式出現幾次。用「每欄直向 rolling hash + 欄 hash 上的 Karp-Rabin」的時間與額外空間？",
    "opts": [
     "O(WH) 時間、O(W) 空間",
     "O(WH·wh) 時間、O(1) 空間",

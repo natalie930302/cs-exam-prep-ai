@@ -533,7 +533,7 @@
  ],
  "quiz": [
   {
-   "q": "依本講的 ALU control 編碼，sub（減法）是哪一組？",
+   "q": "MIPS ALU 的 4-bit ALU control 依序是 Ainvert、Bnegate、Operation（2 bits：00 AND、01 OR、10 加法器、11 slt），sub（減法）是哪一組？",
    "opts": [
     "0110",
     "0010",

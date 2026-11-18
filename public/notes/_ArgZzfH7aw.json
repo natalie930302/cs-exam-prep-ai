@@ -222,7 +222,7 @@
    "why": "每層 O(n)，共 log₂ n 層。"
   },
   {
-   "q": "n = 2ʰ 時，level k merge 回來最多要比幾次？",
+   "q": "merge sort 對 n = 2ʰ 個數（splitting tree 的 root 在 level 0），把 level k 的各對 merge 回 level k − 1，最多要比幾次？",
    "opts": [
     "2ʰ − 2ᵏ⁻¹",
     "2ʰ⁻ᵏ⁺¹ − 1",
@@ -233,7 +233,7 @@
    "why": "2ᵏ⁻¹ 對 × (2ʰ⁻ᵏ⁺¹ − 1) 次。"
   },
   {
-   "q": "例題中 A–D、D–C、C–B、B–F 的 weight 依序是 7、2、5、8。path A D C B F 的 weight 是？",
+   "q": "A–D、D–C、C–B、B–F 的 weight 依序是 7、2、5、8。path A D C B F 的 weight 是？",
    "opts": [
     "22",
     "12",

@@ -300,7 +300,7 @@
  ],
  "quiz": [
   {
-   "q": "課程說的兩類重要 binary relation 是？",
+   "q": "離散數學最重要的兩類 binary relation：一類滿足 reflexive、symmetric、transitive，另一類滿足 reflexive、antisymmetric、transitive。它們依序是？",
    "opts": [
     "equivalence relation 與 partial ordering",
     "function 與 inverse function",
@@ -308,7 +308,7 @@
     "bijection 與 injection"
    ],
    "ans": "equivalence relation 與 partial ordering",
-   "why": "基礎部分講 relation 時特別挑出 equivalence relation 和 partial order。"
+   "why": "前者把集合分成互不重疊的等價類，後者用來排先後順序（如 ≤、⊆）。"
   },
   {
    "q": "用 Generating Function 解 recurrence relation，被類比成微分方程裡的哪個工具？",

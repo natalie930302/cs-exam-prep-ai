@@ -993,7 +993,7 @@
    "why": "最早結束 = 最早釋放 resource；前三個都有反例（例如最少 conflict 的反例中選它只能湊到 3 個，最佳是 4 個）。"
   },
   {
-   "q": "request [1, 4) 與 [4, 8) 在這門課的定義下是什麼關係？",
+   "q": "Interval scheduling 中 request 以左閉右開區間表示，[1, 4) 與 [4, 8) 是什麼關係？",
    "opts": [
     "overlap，不能同時選",
     "compatible，可以無縫接",
@@ -1004,7 +1004,7 @@
    "why": "區間左閉右開，f(i) = s(j) 時一個結束馬上接下一個，不算 overlap。"
   },
   {
-   "q": "Stays ahead 證明中的 lemma 是哪一個？（A = {i1..ik} 依選取順序，O = {j1..jm} 依時間排序）",
+   "q": "Interval scheduling 的 greedy（最早結束先選）用 stays ahead 證明時，A = {i1..ik} 是 greedy 依選取順序的解、O = {j1..jm} 是依時間排序的最佳解。lemma 是哪一個？",
    "opts": [
     "f(i_r) ≤ f(j_r)",
     "s(i_r) ≥ s(j_r)",
@@ -1015,7 +1015,7 @@
    "why": "greedy 每一步選的都比 O 對應的那個早結束或一樣，所以一路領先。"
   },
   {
-   "q": "證明 |A| = |O| 時假設 m > k，矛盾出在哪裡？",
+   "q": "Interval scheduling 的 stays ahead 證明（greedy 解 A = {i1..ik}、最佳解 O = {j1..jm}，已證 f(i_r) ≤ f(j_r)；R 是還沒被選或刪掉的 request）中，證明 |A| = |O| 時假設 m > k，矛盾出在哪裡？",
    "opts": [
     "選完 i_k 後 j_{k+1} 仍在 R，迴圈還會再選",
     "O 一定有兩個 interval overlap，與 O 是 feasible 矛盾",
@@ -1026,7 +1026,7 @@
    "why": "f(i_k) ≤ f(j_k) ≤ s(j_{k+1})，j_{k+1} 沒被槓掉，所以 A 應該有第 k+1 個，與 |A| = k 矛盾。"
   },
   {
-   "q": "照 pseudocode 直接實作，每次選完都跟剩下的所有 request 比 overlap，總時間是？",
+   "q": "Interval scheduling 的 greedy（最早結束先選，再刪掉與它 overlap 的 request）若直接實作，每次選完都跟剩下的所有 request 比 overlap，總時間是？",
    "opts": [
     "O(n)",
     "O(n log n)",
@@ -1037,7 +1037,7 @@
    "why": "(n−1)+(n−2)+…+1 = O(n²)；改成只掃一次 S 才能讓整體回到 O(n log n)。"
   },
   {
-   "q": "改良版實作（依 finish 排序後只掃一次 starting time sequence）的總時間由什麼決定？",
+   "q": "Interval scheduling 的 greedy 改良版實作（依 finish 排序後只掃一次 starting time sequence）的總時間由什麼決定？",
    "opts": [
     "掃描 O(n)",
     "排序 O(n log n)",

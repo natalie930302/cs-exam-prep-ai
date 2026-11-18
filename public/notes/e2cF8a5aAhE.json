@@ -541,7 +541,7 @@
  ],
  "quiz": [
   {
-   "q": "Bari 的 non-deterministic search 中，choice()、success()、failure() 假設花多少時間？",
+   "q": "Non-deterministic 演算法（如 non-deterministic search）中，choice()、success()、failure() 假設花多少時間？",
    "opts": [
     "O(1)",
     "O(log n)",
@@ -596,7 +596,7 @@
    "why": "Reduction 有遞移性，不必每個都直接從 SAT 轉。"
   },
   {
-   "q": "依 Bari 的圖，NP-complete 是哪兩個集合的交集？",
+   "q": "NP-complete 是哪兩個集合的交集？",
    "opts": [
     "NP-hard 和 NP",
     "P 和 NP",

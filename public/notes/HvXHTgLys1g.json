@@ -500,7 +500,7 @@
    "why": "Available 3：P1 要 2 → 做完 5；P0 要 5 → 10；P2 要 7 → 可以。"
   },
   {
-   "q": "同上，但 P2 持有 3 台，則？",
+   "q": "12 台 tape drive：P0 Max 10 持有 5、P1 Max 4 持有 2、P2 Max 9 持有 3。這個狀態？",
    "opts": [
     "unsafe，但目前還不是 deadlock",
     "已經 deadlock，所有 process 都在等",
@@ -511,7 +511,7 @@
    "why": "剩 2：P1 做完 → 4；P0 要 5、P2 要 6 都不夠 → 找不到 safe sequence。unsafe 只是可能 deadlock。"
   },
   {
-   "q": "恐龍書例（A/B/C = 10/5/7）中，Available 是？",
+   "q": "Banker：資源 A/B/C 總數 (10,5,7)，Allocation P0 (0,1,0)、P1 (2,0,0)、P2 (3,0,2)、P3 (2,1,1)、P4 (0,0,2)。Available 是？",
    "opts": [
     "(3,3,2)",
     "(7,2,5)",
@@ -522,7 +522,7 @@
    "why": "ΣAllocation = (7,2,5)，Available = (10,5,7) − (7,2,5)。"
   },
   {
-   "q": "同一例，P1 request (1,0,2)，假設給之後的 Available？",
+   "q": "Banker：Available (3,3,2)；Allocation P0 (0,1,0)、P1 (2,0,0)、P2 (3,0,2)、P3 (2,1,1)、P4 (0,0,2)；Need P0 (7,4,3)、P1 (1,2,2)、P2 (6,0,0)、P3 (0,1,1)、P4 (4,3,1)。P1 request (1,0,2)，假設給之後的 Available？",
    "opts": [
     "(2,3,0)",
     "(4,3,4)",
@@ -533,7 +533,7 @@
    "why": "(3,3,2) − (1,0,2) = (2,3,0)；之後仍找得到 < P1, P3, P4, P0, P2 >，所以可以給。"
   },
   {
-   "q": "同一例（原狀態），P4 request (3,3,0)，結果？",
+   "q": "Banker：Available (3,3,2)；Allocation P0 (0,1,0)、P1 (2,0,0)、P2 (3,0,2)、P3 (2,1,1)、P4 (0,0,2)；Need P0 (7,4,3)、P1 (1,2,2)、P2 (6,0,0)、P3 (0,1,1)、P4 (4,3,1)。P4 request (3,3,0)，結果？",
    "opts": [
     "不給：假設給後找不到 safe sequence",
     "給：Available 足夠，且給了之後仍 safe",

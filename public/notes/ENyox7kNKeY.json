@@ -932,7 +932,7 @@
  ],
  "quiz": [
   {
-   "q": "DP 的五個步驟中，第 2 步是什麼？",
+   "q": "MIT 6.006 的 DP 五個步驟中，第 2 步是什麼？",
    "opts": [
     "猜（guess）解的某個特徵，數有幾種選擇",
     "建 DP 表，先決定子問題的 topological order",
@@ -976,7 +976,7 @@
    "why": "猜完第一行後剩下的是 suffix；suffix 只有 n 種，2ⁿ 是每個字要不要開新行的組合數。"
   },
   {
-   "q": "DP(i) = min_j badness(i, j) + DP(j) 要按什麼順序算？",
+   "q": "Text justification（n 個字，DP(i) = 從第 i 個字起排版的最小總 badness）的 DP(i) = min_j badness(i, j) + DP(j) 要按什麼順序算？",
    "opts": [
     "i 從 n−1 往下到 0（DP(n) = 0）",
     "i 從 1 往上到 n（base case DP(0) = 0）",

@@ -279,7 +279,7 @@
    "why": "L V R：先走完 A 的左子樹 B D，印 A，再處理 C 的左子樹 G E、C、右子樹 H F I。"
   },
   {
-   "q": "同一棵樹的 Preorder 是？",
+   "q": "樹 A(B(,D),C(E(G,),F(H,I)))（括號內為左,右子）的 Preorder 是？",
    "opts": [
     "A B C D E F G H I",
     "A B D C E G F H I",
@@ -290,7 +290,7 @@
    "why": "V L R：A、左子樹 B D、右子樹 C E G F H I。A B C D… 是 level-order。"
   },
   {
-   "q": "同一棵樹的 Postorder 是？",
+   "q": "樹 A(B(,D),C(E(G,),F(H,I)))（括號內為左,右子）的 Postorder 是？",
    "opts": [
     "D B G E H I F C A",
     "D B G E C H I F A",

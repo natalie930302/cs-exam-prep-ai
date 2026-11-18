@@ -1094,7 +1094,7 @@
    "why": "C 可以極大而邊很少，像 Knapsack 的 O(nW)。"
   },
   {
-   "q": "四條容量 100、中間容量 1 的例子，亂選路徑最壞要幾輪？",
+   "q": "Ford-Fulkerson 經典壞例子：s→u 100、s→v 100、u→t 100、v→t 100，中間 u→v 容量 1。若每次都挑經過中間那條邊（或其反向邊）的 augmenting path，最壞要幾輪？",
    "opts": [
     "200",
     "2",
@@ -1102,10 +1102,10 @@
     "101"
    ],
    "ans": "200",
-   "why": "每次經過中間那條只推 1，C = 100 + 100 = 200。"
+   "why": "每次只能推 1，max flow = 100 + 100 = 200，所以要 200 輪。"
   },
   {
-   "q": "證明 ③ ⇒ ① 時，cut 的 A 側怎麼取？",
+   "q": "max-flow min-cut 定理證明「G_f 中沒有 augmenting path ⇒ 存在 cut (A, B) 使 v(f) = cap(A, B)」時，cut 的 A 側怎麼取？",
    "opts": [
     "G_f 中從 s 走得到的點",
     "flow 為 0 的點",
@@ -1124,10 +1124,10 @@
     "任何兩個 s-t cut 的 capacity 一定都相等"
    ],
    "ans": "任何 flow 的值 ≤ 任何 cut 的 capacity",
-   "why": "v(f) = f_out(A) − f_in(A) ≤ f_out(A) ≤ cap(A, B)；等號成立就推得 ① ⇒ ②。"
+   "why": "v(f) = f_out(A) − f_in(A) ≤ f_out(A) ≤ cap(A, B)；等號成立時 f 就是 max flow、(A, B) 就是 min cut。"
   },
   {
-   "q": "下列何者不是課堂提到的挑選 augmenting path 策略？",
+   "q": "下列何者不是挑選 augmenting path 以加快 Ford-Fulkerson 的常見策略？",
    "opts": [
     "挑 bottleneck 最小的 path",
     "挑 bottleneck 最大的 path",
@@ -1135,7 +1135,7 @@
     "Δ-scaling"
    ],
    "ans": "挑 bottleneck 最小的 path",
-   "why": "挑最小 bottleneck 正是壞例子那種慢的走法。"
+   "why": "挑最小 bottleneck 會每次只推一點點，正是壞例子那種慢的走法。"
   }
  ]
 }

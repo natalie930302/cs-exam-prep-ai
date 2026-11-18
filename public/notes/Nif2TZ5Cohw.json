@@ -221,7 +221,7 @@
    "why": "step 2：產生 page trap signal。"
   },
   {
-   "q": "P3 被載入 F34 之後，下一步是？",
+   "q": "Page fault 處理中，OS 已把缺的 page P3 從 disk 讀進 free frame F34，下一步是？",
    "opts": [
     "update page table（P3 → F34）",
     "把 F34 標成 free frame",
@@ -232,7 +232,7 @@
    "why": "再 restart 指令。"
   },
   {
-   "q": "memory access 100 ms、overhead 10 ms、p = 0.1，EAT = ？",
+   "q": "memory access 100 ms、page fault service time 10 ms、page fault rate p = 0.1，EAT = (1 − p) × ma + p × service time = ？",
    "opts": [
     "91 ms",
     "100 ms",
@@ -243,15 +243,15 @@
    "why": "0.9×100 + 0.1×10 = 90 + 1。"
   },
   {
-   "q": "如果需要的 page 本來就在 memory 中？",
+   "q": "MMU 查 page table，發現需要的 page 本來就在 memory（valid），會怎樣？",
    "opts": [
-    "step 1 直接到 step 6",
-    "仍要走完 6 步，只是 step 4 較快",
-    "要先做 step 3 確認 disk 位置",
+    "直接存取 memory，不會 trap 給 OS",
+    "仍要 trap 給 OS，只是不必讀 disk",
+    "要先查 page 在 disk 上的位置再存取",
     "一定會 thrashing"
    ],
-   "ans": "step 1 直接到 step 6",
-   "why": "不需要 step 2～5。"
+   "ans": "直接存取 memory，不會 trap 給 OS",
+   "why": "page 在 memory 就是一般的存取：不產生 page fault trap，也不必讀 disk、更新 page table。"
   },
   {
    "q": "Thrashing 是指？",

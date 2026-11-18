@@ -361,7 +361,7 @@
    "why": "send(Q, msg)、receive(P, msg)，對象寫死，要換人得重建連線。"
   },
   {
-   "q": "Indirect communication 中，多個 receiver 同時 receive 同一個 message，下列哪個「不是」課堂提到的解法？",
+   "q": "Indirect communication（mailbox）中，若多個 receiver 同時 receive 同一個 message，下列哪個「不是」恐龍書提出的解法？",
    "opts": [
     "讓每個 receiver 都拿到一份並刪除 mailbox",
     "限制一個 link 只能連結兩個 process",

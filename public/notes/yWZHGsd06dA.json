@@ -735,7 +735,7 @@
  ],
  "quiz": [
   {
-   "q": "江老師說證明 greedy algorithm 能達到最佳解，常用的兩種策略是？",
+   "q": "證明 greedy algorithm 能達到最佳解，常用的兩種策略是？",
    "opts": [
     "greedy stays ahead 與 exchange argument",
     "divide and conquer 與 recursion tree method",
@@ -757,7 +757,7 @@
    "why": "兩個要件都成立，就能把別人的 optimal 一步步改成 greedy 的解而不損失品質。"
   },
   {
-   "q": "小例子中 S = {s, u, v}，d(u)=1、d(v)=2，edge u→x 1、u→y 3、v→z 3、s→x 4。下一個放進 S 的點與它的 d？",
+   "q": "Dijkstra 進行中：S = {s, u, v}，d(s) = 0、d(u) = 1、d(v) = 2；從 S 出去的邊只有 u→x 1、u→y 3、v→z 3、s→x 4。下一個放進 S 的點與它的 d？",
    "opts": [
     "x，d = 2",
     "y，d = 4",
@@ -779,7 +779,7 @@
    "why": "證明中 y ⇝ v 那段必須 ≥ 0；有負 weight 時，已放進 S 的點可能還有更短的路，Dijkstra 會算錯。"
   },
   {
-   "q": "老師證明 Dijkstra 正確時，用的是哪種方式？",
+   "q": "Kleinberg & Tardos 課本證明 Dijkstra 正確時，用的是哪種方式？",
    "opts": [
     "loop invariant，對 |S| 做 induction",
     "exchange argument，交換一條邊後比較 cost",
@@ -790,7 +790,7 @@
    "why": "invariant：S 裡每個點的 d 都是最短距離。basis 是 S = {s}，inductive step 用 weak induction 從 k 推到 k+1。"
   },
   {
-   "q": "CLRS 例子（s→t 10、s→y 5、y→t 3、y→z 2、y→x 9、z→x 6、t→x 1…）Extract-Min 的順序是？",
+   "q": "有向圖 s→t 10、s→y 5、t→y 2、t→x 1、x→z 4、y→t 3、y→x 9、y→z 2、z→s 7、z→x 6，從 s 跑 Dijkstra，Extract-Min 的順序是？",
    "opts": [
     "s, y, z, t, x",
     "s, t, y, x, z",

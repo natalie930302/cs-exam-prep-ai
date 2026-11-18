@@ -568,7 +568,7 @@
  ],
  "quiz": [
   {
-   "q": "老師的改良版除法器做 7 ÷ 2（4 bits），最後 Remainder register 是？",
+   "q": "改良版除法器（8-bit Remainder register，左半放餘數、右半放商，每輪左移）做 7 ÷ 2（4 bits），最後 Remainder register 是？",
    "opts": [
     "0001 0011",
     "0011 0001",

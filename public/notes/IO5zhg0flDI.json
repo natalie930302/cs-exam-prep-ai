@@ -517,7 +517,7 @@
    "why": "短的段做完也要等最慢的段，所以切 stage 要盡量 balance。"
   },
   {
-   "q": "若 instruction memory 與 data memory 合成一塊，lw 後面接三個指令時，哪個 cycle 會發生 structural hazard？",
+   "q": "五級 pipeline 中若 instruction memory 與 data memory 合成一塊，lw 在 cycle 1 fetch、後面緊接三個指令，哪個 cycle 會發生 structural hazard？",
    "opts": [
     "cycle 4",
     "cycle 2",

@@ -354,7 +354,7 @@
    "why": "每個 word 1 + 5 + 1 = 7，一個接一個：4 × 7 = 28。"
   },
   {
-   "q": "同上條件，4 個 bank 的 interleaving 取 4 個 word 要幾個 cycle？",
+   "q": "送位址 1、存取 5、回傳 1 cycle；4 個 bank 的 interleaving 取 4 個 word 要幾個 cycle？",
    "opts": [
     "10",
     "28",

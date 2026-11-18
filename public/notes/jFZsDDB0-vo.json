@@ -292,7 +292,7 @@
    "why": "定義就是：移除後圖變得不連通。"
   },
   {
-   "q": "影片的圖做 DFS 得樹邊 1–4、4–3、3–5、5–6、3–2，back edge 6–3、2–1；d 依序為 1:1、4:2、3:3、5:4、6:5、2:6。L[5] 是多少？",
+   "q": "某無向圖做 DFS 得樹邊 1–4、4–3、3–5、5–6、3–2，back edge 6–3、2–1；d 依序為 1:1、4:2、3:3、5:4、6:5、2:6。L[u] 定義為從 u 沿樹邊往下、再走最多一條 back edge 能到的最小 d。L[5] 是多少？",
    "opts": [
     "3",
     "1",
@@ -325,7 +325,7 @@
    "why": "root 的兩個子樹之間沒有別的路（否則 DFS 會把它們放在同一支），拿掉 root 就斷開；只有一個 child 時拿掉 root 不會斷。"
   },
   {
-   "q": "影片中消除 articulation point 3 的方法是？",
+   "q": "某無向圖中頂點 3 是 articulation point（拿掉它圖會分成兩個 component）。要讓 3 不再是 articulation point，可以怎麼做？",
    "opts": [
     "在兩邊的 component 之間加一條邊",
     "把頂點 3 和它的邊全部刪掉",
@@ -333,10 +333,10 @@
     "重新做 BFS 找出新的 spanning tree"
    ],
    "ans": "在兩邊的 component 之間加一條邊",
-   "why": "加上 4–5，拿掉 3 也不會斷。"
+   "why": "加一條連接兩邊 component 的邊，拿掉 3 之後兩邊仍有路相通。"
   },
   {
-   "q": "計算 L 時，最多可以走幾條 back edge？",
+   "q": "找 articulation point 時，low 值 L[u]（從 u 沿樹邊往下走，再走 back edge 能到的最小 discovery time）的計算中，最多可以走幾條 back edge？",
    "opts": [
     "一條",
     "零條",

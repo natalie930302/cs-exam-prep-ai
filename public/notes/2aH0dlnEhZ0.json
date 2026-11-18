@@ -364,7 +364,7 @@
    "why": "Cₙ 有 n 個點、n 條邊，是 2-regular。"
   },
   {
-   "q": "依本課教科書，「edge 不重複、起點 = 終點」的 walk 叫？",
+   "q": "依 Grimaldi 的用語（walk、trail、circuit、path、cycle），「edge 不重複、起點 = 終點」的 walk 叫？",
    "opts": [
     "circuit",
     "cycle",

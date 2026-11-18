@@ -801,7 +801,7 @@
    "why": "Greedy 一步一步做決定且不 revisit；GS 中女生可以換人（決定可反悔），所以雖有 greedy 味道，通常不算 greedy algorithm。"
   },
   {
-   "q": "Stability 證明的 Case 2：m 曾向 w′ propose 但被拒絕。w′ 為什麼會拒絕他？",
+   "q": "證明男生 propose 的 Gale–Shapley 結果 stable：假設 (m, w′) 是 unstable pair（m 配到 w 但較喜歡 w′，w′ 最後配 m′）。Case 2：m 曾向 w′ propose 但被拒絕。w′ 為什麼會拒絕他？",
    "opts": [
     "她那時有更喜歡的男生",
     "她那時已經 married，不能再換",
@@ -834,7 +834,7 @@
    "why": "男生 propose 的版本是 male-optimal，對女生則是最悲觀的結果；男女互換就反過來。"
   },
   {
-   "q": "Male-optimal 的反證法挑哪一個事件來討論？",
+   "q": "證明男生 propose 的 Gale–Shapley 結果是 male-optimal（每個男生都配到 best valid partner）時，反證法挑哪一個事件來討論？",
    "opts": [
     "整個執行 E 中最後一次有男生被拒絕的那個 proposal",
     "整個執行 E 中第一次有男生被 valid partner 拒絕",
@@ -845,7 +845,7 @@
    "why": "挑第一次，才能說那時還沒有人被 valid partner 拒絕過，進而推出 m′ 喜歡 w 勝過 w′。"
   },
   {
-   "q": "為什麼不管誰來執行 GS（任意挑 free 男生的順序），結果都一樣？",
+   "q": "為什麼不管誰來執行 Gale–Shapley（任意挑 free 男生的順序），結果都一樣？",
    "opts": [
     "因為 GS 是 greedy，每步都選局部最好的",
     "因為每個男生都配到 best(m)，而 best(m) 唯一",

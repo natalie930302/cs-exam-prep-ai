@@ -157,7 +157,7 @@
  ],
  "quiz": [
   {
-   "q": "Kruskal 證明二的 induction hypothesis 為什麼用 subgraph 而不是 subtree？",
+   "q": "證明 Kruskal 得到 MST 時，induction hypothesis 寫成「目前的 T 是某棵 MST 的 subgraph」而不是 subtree，為什麼？",
    "opts": [
     "因為過程中的 T 可能有好幾個 component，不一定是 tree",
     "因為 T 一定是 tree，subtree 這個詞範圍太狹義",
@@ -179,7 +179,7 @@
    "why": "這正是「加進去不會形成 cycle」的意思。"
   },
   {
-   "q": "證明中為什麼 w(e) ≤ w(e′)？",
+   "q": "證明 Kruskal 正確：目前的 T 包含於某棵 MST M，algorithm 下一條選的 e 不在 M 裡；M + e 的 cycle 上有一條不在 T 的邊 e′，加進 T 也不會形成 cycle。為什麼 w(e) ≤ w(e′)？",
    "opts": [
     "e、e′ 都可以加，而 algorithm 選了 weight 最小的 e",
     "因為 e′ 在 M 裡，而 M 是 minimum spanning tree 的一部分",

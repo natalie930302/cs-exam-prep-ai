@@ -266,7 +266,7 @@
  ],
  "quiz": [
   {
-   "q": "用 edge–vertex inequality 檢查 K₃,₃，上界是？",
+   "q": "用 edge–vertex inequality e ≤ g(v − 2)/(g − 2) 檢查 K₃,₃，上界是？",
    "opts": [
     "8",
     "9",
@@ -299,7 +299,7 @@
    "why": "充分必要條件。"
   },
   {
-   "q": "Petersen graph 的 girth 和 edge–vertex inequality 上界是？",
+   "q": "Petersen graph（10 點、15 邊）的 girth g 和 edge–vertex inequality e ≤ g(v − 2)/(g − 2) 的上界是？",
    "opts": [
     "g = 3，上界 3v − 6 = 24",
     "g = 5，上界 40/3 ≈ 13.3",

@@ -1516,7 +1516,7 @@
    "why": "左 → 自己 → 右是 in-order，自己 → 左 → 右是 pre-order。"
   },
   {
-   "q": "比較兩棵 binary tree 一不一樣，老師建議用哪種 traversal？",
+   "q": "要比較兩棵 binary tree 是否相同，用哪種 traversal 最能及早發現不同、不白做工？",
    "opts": [
     "pre-order",
     "in-order",

@@ -395,7 +395,7 @@
    "why": "影片的第一個例子就是 tail recursion。"
   },
   {
-   "q": "main 呼叫 A(3)（例一的 A），Stack 上最多同時有幾個 activation record？",
+   "q": "void A(int n){ if(n>0){ printf(\"%d \",n); A(n-1);} }，main 呼叫 A(3)，Stack 上最多同時有幾個 activation record（含 main）？",
    "opts": [
     "5",
     "4",

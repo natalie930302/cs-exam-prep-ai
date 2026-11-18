@@ -191,7 +191,7 @@
    "why": "n 個端點的 tree 一定有 n − 1 條邊。"
   },
   {
-   "q": "DFS 為什麼不會產生 cycle？",
+   "q": "用 DFS 建 spanning tree T 時，為什麼不會產生 cycle？",
    "opts": [
     "每次加入的新端點都還不在 T 裡",
     "每次都選 weight 最小的邊",
@@ -224,7 +224,7 @@
    "why": "邊的取法不同就得到不同的 spanning tree（G 本身是 tree 時才唯一）。"
   },
   {
-   "q": "DFS／BFS 有多個鄰居可以選時，課堂上怎麼處理？",
+   "q": "用 DFS／BFS 建 spanning tree，有多個鄰居可以選時，怎麼處理才能讓結果唯一？",
    "opts": [
     "事先給端點排序 v₁…vₙ，照順序選",
     "隨機選",

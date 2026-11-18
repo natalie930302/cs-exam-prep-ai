@@ -1737,7 +1737,7 @@
    "why": "每個 iteration 一次 propose；每個男生最多 propose n 次，共 n 個男生。"
   },
   {
-   "q": "證明 Gale–Shapley 的 termination 時，老師改數什麼，而不是數 free man？",
+   "q": "證明 Gale–Shapley 會終止時，常改數什麼，而不是數 free man？",
    "opts": [
     "propose 的次數",
     "女生被 dump 的次數",
@@ -1759,7 +1759,7 @@
    "why": "提出方（男生）是 optimal；被動的一方是 pessimal。"
   },
   {
-   "q": "課堂列出的經典問題中，哪一個可以用 network flow 有效率地解？",
+   "q": "下列經典問題中，哪一個可以用 network flow 有效率地解？",
    "opts": [
     "Bipartite matching",
     "Independent set",
@@ -1770,7 +1770,7 @@
    "why": "Bipartite matching 可轉成 max flow 求解；independent set 是 NP-complete，competitive facility location 是 PSPACE-complete。"
   },
   {
-   "q": "下列哪個問題老師歸為 NP-complete？",
+   "q": "下列哪個問題是 NP-complete？",
    "opts": [
     "Independent set",
     "Interval scheduling",

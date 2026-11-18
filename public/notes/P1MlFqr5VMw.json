@@ -313,7 +313,7 @@
    "why": "實際模擬：前 4 次與 1、2、5、3、4 共 9 次 fault。"
   },
   {
-   "q": "同一串改用 4 個 frame 的 FIFO，page fault 次數？這現象叫？",
+   "q": "Reference string 1 2 3 4 1 2 5 1 2 3 4 5，FIFO 用 3 個 frame 時是 9 次 fault；改用 4 個 frame，page fault 次數？這現象叫？",
    "opts": [
     "10 次，Belady's anomaly",
     "8 次，thrashing",

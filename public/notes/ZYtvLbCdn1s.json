@@ -348,7 +348,7 @@
  ],
  "quiz": [
   {
-   "q": "Königsberg 七橋問題中，島 A 連了幾座橋？這說明了什麼？",
+   "q": "Königsberg 七橋問題中，河中央那座島（Kneiphof）連了幾座橋？這說明了什麼？",
    "opts": [
     "4 座，偶數，所以有 Euler circuit",
     "5 座，奇數，所以不可能有 Euler circuit",

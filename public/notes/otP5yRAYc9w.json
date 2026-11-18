@@ -249,7 +249,7 @@
    "why": "r = 2 − v + e = 2 − 7 + 11 = 6。"
   },
   {
-   "q": "Euler's formula 的證明是對什麼做數學歸納？",
+   "q": "Euler 公式 v − e + r = 2 的一種證明：基底是 0 條與 1 條邊的圖，歸納時拿掉一條邊，再分「在 cycle 上」與「是橋」兩種情況。這是對什麼做數學歸納？",
    "opts": [
     "vertices 數",
     "edges 數",
@@ -257,7 +257,7 @@
     "degree"
    ],
    "ans": "edges 數",
-   "why": "老師對 edge 個數做 induction，基底是 0 和 1 條邊。"
+   "why": "拿掉一條邊後套用歸納假設，所以是對 edge 個數做 induction。"
   },
   {
    "q": "只有一個點和一個 loop 的圖，v − e + r 是？",
@@ -271,7 +271,7 @@
    "why": "v=1、e=1、r=2（loop 裡、外），1 − 1 + 2 = 2。"
   },
   {
-   "q": "Case 1 中拿掉一條（非橋）邊後，region 數怎麼變？",
+   "q": "用對邊數的歸納法證 Euler 公式 v − e + r = 2 時，從 connected planar graph 拿掉一條在 cycle 上（不是橋）的邊後，region 數怎麼變？",
    "opts": [
     "不變",
     "少 1",

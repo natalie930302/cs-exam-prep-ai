@@ -393,7 +393,7 @@
    "why": "不要搞反。"
   },
   {
-   "q": "第 10 題（code 佔 1 frame、共 3 frame、A 佔 4 page、順序 1 2 3 4 4 3 2 1）共幾次 page fault？",
+   "q": "共 3 個 frame，一開始全空。程式 code 佔 1 個 page，每個 instruction 都用到它（一直留在 frame）；陣列 A 佔 4 個 page，存取順序 1 2 3 4 4 3 2 1，只能用剩下 2 個 frame（LRU）。共幾次 page fault（含 code）？",
    "opts": [
     "7",
     "5",

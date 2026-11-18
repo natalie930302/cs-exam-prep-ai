@@ -500,7 +500,7 @@
    "why": "Adj[b] 是 b 一步走得到的頂點：b → a、b → c。"
   },
   {
-   "q": "老師的 BFS（frontier 版本）用什麼避免重複拜訪？",
+   "q": "MIT 6.006 的 BFS 寫法（用 level 與 parent 兩個字典，一層一層擴展 frontier）用什麼避免重複拜訪？",
    "opts": [
     "檢查 v 是否已經在 level 字典裡",
     "檢查 v 是否在目前的 frontier 串列裡",
@@ -511,7 +511,7 @@
    "why": "一設了 level，就不會再加進 next；起點的 parent 是 None 所以不能用它判斷。"
   },
   {
-   "q": "例子中（s–a、a–z、s–x、x–d、x–c、d–c、d–f、c–f、c–v、f–v），從 s 做 BFS，level[f] 是？",
+   "q": "無向圖（s–a、a–z、s–x、x–d、x–c、d–c、d–f、c–f、c–v、f–v）從 s 做 BFS，level[f] 是？",
    "opts": [
     "3",
     "2",

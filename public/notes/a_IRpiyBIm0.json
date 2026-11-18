@@ -327,7 +327,7 @@
  ],
  "quiz": [
   {
-   "q": "要證 L 是 NP-complete，第二步的 reduction 方向是？",
+   "q": "要證 L 是 NP-complete，除了證 L ∈ NP，還要做 reduction，方向是？",
    "opts": [
     "已知 NPC 的 L′ ≤p L",
     "L ≤p 已知 NPC 的 L′",
@@ -349,7 +349,7 @@
    "why": "Decision 版設計不出 efficient 演算法，optimization 版只會更難。"
   },
   {
-   "q": "Reduction 除了 poly time 之外，還要滿足？",
+   "q": "Reduction A ≤p B 除了 poly time 之外，還要滿足？",
    "opts": [
     "A 的 yes 對應 B 的 yes、no 對應 no",
     "B 必須是 NPC",

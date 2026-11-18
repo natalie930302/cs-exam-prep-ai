@@ -586,7 +586,7 @@
    "why": "把「重」的乘法換成「輕」的 shift；把 index 計算移出 loop 叫 induction variable elimination。"
   },
   {
-   "q": "清 array 的 loop：array 版 6 個 instruction、pointer 版 4 個，跑 100 次省多少個 instruction？",
+   "q": "清 array 的 loop 每一圈：array 版 6 個 instruction、pointer 版 4 個，跑 100 圈省多少個 instruction？",
    "opts": [
     "200",
     "100",

@@ -678,7 +678,7 @@
  ],
  "quiz": [
   {
-   "q": "江老師比較 adjacency matrix 與 list：查詢「一條給定的 edge 是否存在」哪個快？",
+   "q": "比較 adjacency matrix 與 adjacency list：查詢「一條給定的 edge 是否存在」哪個快？",
    "opts": [
     "matrix，O(1)",
     "list，O(1)",
@@ -711,7 +711,7 @@
    "why": "同層 edge 兩端同色；而且可以找到長度 1 + 2(j − i) 的 odd cycle。不 connected 只要各 component 分開塗。"
   },
   {
-   "q": "證明中，同層 edge (x, y) 在 Lj、lowest common ancestor z 在 Li，找到的 cycle 長度是？",
+   "q": "BFS 判定 bipartite 的證明：若同層 edge (x, y) 兩端都在 L_j，x、y 在 BFS tree 上的 lowest common ancestor z 在 L_i，則找到的 cycle 長度是？",
    "opts": [
     "2(j − i) + 1",
     "2(j − i)",
@@ -733,7 +733,7 @@
    "why": "Bipartite graph 不會有 odd cycle；tree 和偶數 cycle 都能塗兩色。"
   },
   {
-   "q": "判定一張 graph 能不能塗成三種顏色（3-coloring），老師說屬於？",
+   "q": "判定一張 graph 能不能塗成三種顏色（3-coloring），屬於哪一類問題？",
    "opts": [
     "NP-complete 的困難問題",
     "用 BFS 就能 linear time 解",

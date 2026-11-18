@@ -284,7 +284,7 @@
    "why": "h = ⌈log₂ 9⌉ = ⌈3.17…⌉ = 4。"
   },
   {
-   "q": "證明 l > m^(h−1) 用到了哪些條件？",
+   "q": "高度 h 的 m-ary tree 有 l 個 leaves，證明 l > m^(h−1)（因而 h = ⌈log_m l⌉）時用到了哪些條件？",
    "opts": [
     "complete 且 balanced",
     "只要 complete，不需 balanced",

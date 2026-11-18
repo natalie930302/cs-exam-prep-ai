@@ -235,7 +235,7 @@
    "why": "a 是子問題數、b 是縮小倍數。"
   },
   {
-   "q": "遞迴樹深度為？",
+   "q": "T(n) = aT(n/b) + f(n) 的遞迴樹深度為？",
    "opts": [
     "log_b n",
     "log_a n",
@@ -246,7 +246,7 @@
    "why": "n/bᵏ = 1 → k = log_b n。"
   },
   {
-   "q": "葉子數 a^(log_b n) 等於？",
+   "q": "T(n) = aT(n/b) + f(n) 的遞迴樹葉子數 a^(log_b n) 等於？",
    "opts": [
     "n^(log_b a)",
     "n^(log_a b)",
@@ -268,7 +268,7 @@
    "why": "case 2 延伸，k = 1 → 再乘一個 log n。"
   },
   {
-   "q": "Case 3 除了 f 較大，還要檢查？",
+   "q": "Master theorem（T(n) = aT(n/b) + f(n)）的 Case 3 除了 f(n) 較大，還要檢查？",
    "opts": [
     "Regularity：a·f(n/b) ≤ c·f(n)，c < 1",
     "a = b，且 f(n) = Θ(n)",

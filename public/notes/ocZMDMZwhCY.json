@@ -872,7 +872,7 @@
    "why": "算 DP(i, j) 前，比它短的 DP(i, k)、DP(k, j) 都要先算好。"
   },
   {
-   "q": "Edit distance 的子問題 DP(i, j) 中，「刪除 xᵢ」這個選項接到哪個子問題？",
+   "q": "Edit distance 用 suffix 子問題 DP(i, j)（把 x[i:] 變成 y[j:] 的最小成本）中，「刪除 xᵢ」這個選項接到哪個子問題？",
    "opts": [
     "DP(i+1, j)",
     "DP(i, j+1)",

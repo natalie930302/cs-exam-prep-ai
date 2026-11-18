@@ -224,7 +224,7 @@
    "why": "然後 state[k] = EATING、self[k].signal()。"
   },
   {
-   "q": "pickup(i) 中 test 失敗時會？",
+   "q": "Dining philosophers 的 monitor 解法中，pickup(i) 裡 test(i) 失敗時會？",
    "opts": [
     "self[i].wait()，等鄰居 putdown 時 test 並 signal",
     "一直 busy waiting，在迴圈裡反覆呼叫 test(i) 直到成功",
@@ -235,7 +235,7 @@
    "why": "不會 hold and wait，所以不會 deadlock。"
   },
   {
-   "q": "putdown(i) 之後要做什麼？",
+   "q": "Dining philosophers 的 monitor 解法中，putdown(i) 之後要做什麼？",
    "opts": [
     "test 左右鄰居 (i+4)%5、(i+1)%5",
     "什麼都不做，鄰居會自己重新 test",

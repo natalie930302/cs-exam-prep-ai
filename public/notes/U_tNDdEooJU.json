@@ -1599,7 +1599,7 @@
    "why": "條件是 p->link 不為 0；p->link == 0 時停下，p 就是尾巴，接著 p->link = b.first。"
   },
   {
-   "q": "GetNode 在 av 不是空的時候，正確的做法是？",
+   "q": "可用 node 串列 av（free pool）不是空的時候，GetNode 正確的做法是？",
    "opts": [
     "x = av; av = av->link; return x;",
     "av = av->link; x = av; return x;",

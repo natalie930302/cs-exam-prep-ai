@@ -532,7 +532,7 @@
  ],
  "quiz": [
   {
-   "q": "count_frequency 中哪一行主導執行時間？",
+   "q": "文件距離的 count_frequency：L = []；對每個 new_word 掃 L 的每個 entry，若 new_word == entry[0] 就 entry[1] += 1 並 break，都沒有就 L.append([new_word, 1])。共 W 個字、L 個不同字、平均字長 w̄，哪一行主導執行時間？",
    "opts": [
     "if new_word == entry[0]：O(W·L·w̄)",
     "for new_word in word_list：O(W·w̄)",
@@ -543,7 +543,7 @@
    "why": "它執行 L·W 次，且字串比較成本與字長 w̄ 成正比。"
   },
   {
-   "q": "count_frequency 的 entry[1] += 1 精確執行幾次？",
+   "q": "文件距離的 count_frequency（對每個字線性掃清單 L，找到就 entry[1] += 1，沒找到就 append [new_word, 1]）處理 W 個字、其中 L 個不同字，entry[1] += 1 精確執行幾次？",
    "opts": [
     "W − L",
     "L",
@@ -565,7 +565,7 @@
    "why": "兩字串只差最後一個字元時要比到底；只有字長有界時才能當常數。"
   },
   {
-   "q": "把 word_list = word_list + words_in_line 改成 extend 後，get_words_from_line_list 變成？",
+   "q": "文件距離的 get_words_from_line_list 逐行（Z 行、每行 K 個字，W = ZK）把字加進 word_list。把 word_list = word_list + words_in_line 改成 extend 後，這個函式變成？",
    "opts": [
     "O(W)",
     "O(W²)",
@@ -598,7 +598,7 @@
    "why": "每次約 log N 步，共 N 次；兩指標只要 2N。"
   },
   {
-   "q": "count_frequency 中，if new_word == entry[0] 這一行在最壞情況下執行幾次？",
+   "q": "文件距離的 count_frequency（對 W 個字中的每個字，線性掃目前 L 個不同字的清單比對 new_word == entry[0]）中，這一行比較在最壞情況下執行幾次？",
    "opts": [
     "L·W 次",
     "W 次",

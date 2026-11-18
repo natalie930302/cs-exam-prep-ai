@@ -511,7 +511,7 @@
  ],
  "quiz": [
   {
-   "q": "Binary search 用 frequency count 算出的 f(n)？",
+   "q": "Binary search 用 frequency count（i = 1、j = n 各算 1 次；while 迴圈約 log n 圈，迴圈內 3 行各算 1 次）算出的 f(n)？",
    "opts": [
     "3 log n + 2",
     "2n + 3",

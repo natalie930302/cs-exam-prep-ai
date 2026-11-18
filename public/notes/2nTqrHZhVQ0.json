@@ -374,7 +374,7 @@
    "why": "multiprogramming 做完（或去 I/O）才換；time sharing 每幾 ms 就換。"
   },
   {
-   "q": "課堂說「實現 spooling 的機制」是什麼？",
+   "q": "Spooling 讓 CPU 不必參與 I/O 的過程；I/O 做完時，是靠什麼機制通知 CPU？",
    "opts": [
     "interrupt",
     "virtual memory",
@@ -396,7 +396,7 @@
    "why": "disk → memory 是 job scheduling；memory → CPU 是 CPU scheduling。"
   },
   {
-   "q": "下列何者不是課堂提到的 time sharing 衍生問題？",
+   "q": "下列何者不是 time sharing 系統帶來、OS 必須處理的新問題？",
    "opts": [
     "卡片讀取速度",
     "virtual memory",

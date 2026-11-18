@@ -1028,7 +1028,7 @@
    "why": "only if（唯有）：p 成立時 q 一定要成立。"
   },
   {
-   "q": "A 說「B 是 knight」，B 說「我們兩個不同類」。答案是？",
+   "q": "島上有 knight（只說真話）與 knave（只說謊話）。A 說「B 是 knight」，B 說「我們兩個不同類」。A、B 各是哪一種？",
    "opts": [
     "A、B 都是 knave",
     "A、B 都是 knight",

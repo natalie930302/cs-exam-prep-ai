@@ -373,7 +373,7 @@
    "why": "檔案來來去去產生碎片，後面被佔就得整個搬走。"
   },
   {
-   "q": "Extent-based（每個 extent 3 塊，用 linked list 串），讀第 7 個 block 需要幾次 I/O？",
+   "q": "Extent-based allocation：每個 extent 3 個 block，下一個 extent 的 pointer 存在每個 extent 的最後一個 block，第一個 extent 的位置已知。讀檔案第 7 個 block 需要幾次 disk I/O？",
    "opts": [
     "3",
     "1",

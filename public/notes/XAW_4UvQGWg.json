@@ -227,7 +227,7 @@
    "why": "D、F 已透過 D C E F 連通，加 DF 會形成 cycle。"
   },
   {
-   "q": "同上題的圖，Kruskal 得到的 total weight 是？",
+   "q": "無向圖的邊與 weight：A–B 3、A–C 9、A–D 7、B–C 5、B–E 6、B–F 8、C–D 2、C–E 4、D–F 5、E–F 1。用 Kruskal 得到的 total weight 是？",
    "opts": [
     "15",
     "16",
@@ -249,7 +249,7 @@
    "why": "兩者都是 greedy，都會找到 MST。"
   },
   {
-   "q": "證明 Kruskal 的 output connected 時，用到什麼關係？",
+   "q": "Kruskal 的 output 有 n − 1 條邊且沒有 cycle（n 為端點數）。證明它 connected 時用到什麼關係？",
    "opts": [
     "k 個 component 的 forest 有「邊數 + k」個端點",
     "tree 的邊數 = 端點數",

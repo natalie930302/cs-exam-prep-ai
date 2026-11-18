@@ -794,7 +794,7 @@
  ],
  "quiz": [
   {
-   "q": "用表示法 3 存 A(x) = 2x¹⁰⁰⁰ + 1，termArray 佔幾格？",
+   "q": "多項式只把非 0 項以 (係數, 指數) 存進 termArray，A(x) = 2x¹⁰⁰⁰ + 1 佔幾格？",
    "opts": [
     "2",
     "1001",
@@ -805,7 +805,7 @@
    "why": "只存非 0 項：(2, 1000) 與 (1, 0)。"
   },
   {
-   "q": "termArray 中 A 佔 0…1、B 佔 2…5，再加入 C(x) = x¹⁰⁰ + 1 後，C.finish 與 free 是？",
+   "q": "所有多項式共用一個 termArray（各記 start、finish，free 指向下一個空格）。A 佔 0…1、B 佔 2…5，再加入 C(x) = x¹⁰⁰ + 1 後，C.finish 與 free 是？",
    "opts": [
     "C.finish = 7，free = 8",
     "C.finish = 6，free = 7",
@@ -838,7 +838,7 @@
    "why": "free 只往後走；要回收需 free list 或把在用的項往前搬（像磁碟重組）。"
   },
   {
-   "q": "Horowitz 的 6 × 6 例子用 <row, col, value> 存，排序規則是？",
+   "q": "Horowitz 課本把 sparse matrix 的非 0 項存成 <row, col, value>，排序規則是？",
    "opts": [
     "依 value 由小到大排序",
     "依 column，同 column 再依 row",

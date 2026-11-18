@@ -1884,7 +1884,7 @@
  ],
  "quiz": [
   {
-   "q": "林軒田老師畫的樹 A(B(E(K,L),F), C(G), D(H(M),I,J)) 中，若依洪逸／Horowitz 課本（root 在 level 1），這棵樹的 height 是多少？",
+   "q": "樹 A(B(E(K,L),F), C(G), D(H(M),I,J)) 中，若規定 root 在 level 1，這棵樹的 height 是多少？",
    "opts": [
     "2",
     "3",
@@ -1892,7 +1892,7 @@
     "13"
    ],
    "ans": "4",
-   "why": "最深的 K、L、M 在老師的 depth 3（root=0）；課本 root 為 level 1，所以最大 level = 4，即 height = 4。"
+   "why": "最深的 K、L、M 離 root 3 條邊（root 為 level 0 時 depth 3）；root 為 level 1 時最大 level = 4，即 height = 4。"
   },
   {
    "q": "同一棵樹 A(B(E(K,L),F), C(G), D(H(M),I,J)) 的 degree 是多少？",
@@ -1958,7 +1958,7 @@
     "h+1 ≤ n ≤ 2^(h+2) − 1"
    ],
    "ans": "h+1 ≤ n ≤ 2^(h+1) − 1",
-   "why": "最少是每代單傳的 skewed tree（h+1 個），最多是每層都滿的 full binary tree（1+2+…+2^h = 2^(h+1) − 1）。若用洪逸 root=level 1、depth k，最多為 2^k − 1。"
+   "why": "最少是每代單傳的 skewed tree（h+1 個），最多是每層都滿的 full binary tree（1+2+…+2^h = 2^(h+1) − 1）。若改用 root=level 1、depth k，最多為 2^k − 1。"
   },
   {
    "q": "在依 level order 從 1 開始編號的 full binary tree 中，6 號 node（二進位 110）從 root 出發的路徑是？",

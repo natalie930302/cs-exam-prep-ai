@@ -348,7 +348,7 @@
    "why": "每次都切在一端，一邊是空的。"
   },
   {
-   "q": "Worst case 的比較次數總和是？",
+   "q": "Quicksort（pivot 取第一個元素）在已排序輸入的 worst case，比較次數總和約是？",
    "opts": [
     "n(n+1)/2",
     "n log n",

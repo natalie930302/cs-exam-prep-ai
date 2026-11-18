@@ -194,7 +194,7 @@
  ],
  "quiz": [
   {
-   "q": "(d) ⇒ (a) 的證明中，從兩個不同 component 各取一點 a、b 加上 {a,b}，會產生幾個 cycle？",
+   "q": "證明「T 沒有 cycle，且加上任何原本沒有的邊都剛好產生一個 cycle ⇒ T connected」：假設 T 不 connected，從兩個不同 component 各取一點 a、b 加上 {a,b}，會產生幾個 cycle？",
    "opts": [
     "0 個",
     "1 個",
@@ -202,7 +202,7 @@
     "不一定"
    ],
    "ans": "0 個",
-   "why": "有 cycle 就表示 a、b 原本相連；它們在不同 component，所以沒有 cycle，與 (d) 矛盾。"
+   "why": "有 cycle 就表示 a、b 原本相連；它們在不同 component，所以沒有 cycle，與「剛好產生一個 cycle」矛盾。"
   },
   {
    "q": "rooted tree 中每條邊的方向是？",

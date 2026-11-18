@@ -350,7 +350,7 @@
    "why": "兩人都在裡面時 flag 都是 true，只剩 turn 的條件，而 turn 不可能同時是 0 又是 1。"
   },
   {
-   "q": "Peterson 中剛出來的 P1 沒被 context switch、又想進，會怎樣？",
+   "q": "Peterson's solution：P0 已在 entry section 等待（flag[0] = true），P1 剛離開 critical section、沒被 context switch 又立刻想再進，會怎樣？",
    "opts": [
     "它先把 turn 交給 P0，被擋在 while 直到換 P0 進去",
     "立刻再進 critical section，因為自己的 flag 還是 true",

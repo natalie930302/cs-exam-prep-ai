@@ -758,7 +758,7 @@
    "why": "topological sort O(V + E)，再依序每條邊 relax 一次。"
   },
   {
-   "q": "影片的 DAG 依拓撲序為 r、S、a、b、c、d，邊為 r→S 5、r→a 3、S→a 2、S→b 6、a→b 7、a→c 4、a→d 2、b→c −1、b→d 1、c→d −2。從 S 出發，r、S、a、b、c、d 最終的 d 值是？",
+   "q": "DAG 依拓撲序為 r、S、a、b、c、d，邊為 r→S 5、r→a 3、S→a 2、S→b 6、a→b 7、a→c 4、a→d 2、b→c −1、b→d 1、c→d −2。從 S 出發做 DAG 最短路徑，r、S、a、b、c、d 最終的 d 值是？",
    "opts": [
     "∞、0、2、6、5、3",
     "∞、0、2、6、5、4",
@@ -780,7 +780,7 @@
    "why": "Dijkstra 要求非負權重但允許 cycle；DAG 演算法允許負邊但不能有 cycle。"
   },
   {
-   "q": "影片 5 頂點例子（起點 A；A→B 10、A→C 3、C→B 4、C→D 8、C→E 2，另有 B 出發的邊等）：取出 A、C 之後，A、B、C、D、E 的 d 值是？",
+   "q": "Dijkstra 例子（起點 A；A→B 10、A→C 3、C→B 4、C→D 8、C→E 2，另有 B 出發的邊）：取出 A、C 之後，A、B、C、D、E 的 d 值是？",
    "opts": [
     "0, 7, 3, 11, 5",
     "0, 10, 3, ∞, ∞",

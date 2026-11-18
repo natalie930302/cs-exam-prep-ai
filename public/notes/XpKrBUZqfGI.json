@@ -279,7 +279,7 @@
    "why": "assign edge 是 resource → process。"
   },
   {
-   "q": "Galvin 例中（P3 沒有再 request），三個 process 的完成順序？",
+   "q": "RAG：R1、R3 各 1 個 instance，R2 有 2 個。R1 配給 P2，R2 分別配給 P1、P2，R3 配給 P3；P1 request R1，P2 request R3，P3 沒有 request。三個 process 的完成順序？",
    "opts": [
     "P3 → P2 → P1",
     "P1 → P2 → P3",
@@ -290,7 +290,7 @@
    "why": "P3 放 R3 → P2 做完放 R1、R2 → P1 拿到 R1。"
   },
   {
-   "q": "同一例加上 P3 → R2 後？",
+   "q": "RAG：R1、R3 各 1 個 instance，R2 有 2 個。R1 配給 P2，R2 分別配給 P1、P2，R3 配給 P3；P1 request R1，P2 request R3，再加上 P3 request R2。結果？",
    "opts": [
     "deadlock",
     "沒有 deadlock",

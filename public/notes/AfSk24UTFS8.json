@@ -525,7 +525,7 @@
  ],
  "quiz": [
   {
-   "q": "DFS 例子（a→b, a→d, b→e, e→d, d→b, c→f, f→f, c→e，依字母順序）中，d → b 是哪種邊？",
+   "q": "有向圖 a→b、a→d、b→e、e→d、d→b、c→f、f→f、c→e，從 a 開始依字母順序做 DFS，d → b 是哪種邊？",
    "opts": [
     "back edge",
     "forward edge",
@@ -536,7 +536,7 @@
    "why": "看到 d → b 時 b 還在遞迴堆疊上，是 d 的祖先。"
   },
   {
-   "q": "同一個例子中 a → d 是哪種邊？",
+   "q": "有向圖 a→b、a→d、b→e、e→d、d→b、c→f、f→f、c→e，從 a 開始依字母順序做 DFS，a → d 是哪種邊？",
    "opts": [
     "forward edge",
     "back edge",
@@ -547,7 +547,7 @@
    "why": "d 已經經由 a → b → e → d 被拜訪，是 a 的後代；a → d 是捷徑。"
   },
   {
-   "q": "同一個例子中 c → e 是哪種邊？",
+   "q": "有向圖 a→b、a→d、b→e、e→d、d→b、c→f、f→f、c→e，從 a 開始依字母順序做 DFS，c → e 是哪種邊？",
    "opts": [
     "cross edge",
     "forward edge",

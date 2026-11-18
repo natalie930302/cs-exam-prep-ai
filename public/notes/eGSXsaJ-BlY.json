@@ -672,7 +672,7 @@
    "why": "連續地掃會跑不完；只在有事發生時模擬。"
   },
   {
-   "q": "事件 [x, 0, id, 'add', wire] 與 [x, 1, id, 'query', wire] 在同一個 x 時，排序結果？",
+   "q": "Sweep line 程式把事件寫成 list：[x, 0, id, 'add', wire] 與 [x, 1, id, 'query', wire]，依字典序排序。同一個 x 時排序結果？",
    "opts": [
     "add 在 query 前面",
     "query 在 add 前面",
@@ -683,7 +683,7 @@
    "why": "字典序比較：第二格 0 < 1。"
   },
   {
-   "q": "在排序陣列上做 list(l, h) 的時間？",
+   "q": "Range index 存在排序陣列上，list(l, h) 回傳所有 l ≤ key ≤ h 的 key（共 i 個），時間？",
    "opts": [
     "O(log n + i)",
     "O(i · log n)",
@@ -694,7 +694,7 @@
    "why": "binary search 找起點 O(log n)，再輸出 i 個 key。"
   },
   {
-   "q": "陣列 [2, 3, 5, 8, 11]，用 search(11) − search(4) 計算 count(4, 11) 會得到？",
+   "q": "search(k) 回傳 k 在排序陣列中的插入位置（0-based，第一個 ≥ k 的位置）。陣列 [2, 3, 5, 8, 11]，用 search(11) − search(4) 計算 count(4, 11)（4 ≤ key ≤ 11 的個數）會得到？",
    "opts": [
     "2（少算一個）",
     "3（剛好正確）",
@@ -705,7 +705,7 @@
    "why": "search(11) = 4、search(4) = 2；正確答案是 5、8、11 共 3 個。"
   },
   {
-   "q": "KeyWirePairL 的 wire id 設成像 −∞ 有什麼用？",
+   "q": "Range index 存 (key, wire) 配對，先比 key、相同再比 wire id。查詢用的 KeyWirePairL(key) 把 wire id 設成像 −∞，有什麼用？",
    "opts": [
     "當查詢下界時，比所有同 key 的真 wire 都小，且永遠不在 index 裡",
     "讓同一條 wire 可以重複加入 index，不會被當成重複 key",
@@ -727,7 +727,7 @@
    "why": "不限比較時用 hashing 才能 O(1)。"
   },
   {
-   "q": "在高度 h 的 BST 上做 list(l, h) 回傳 i 個 key，時間是？",
+   "q": "BST 高度為 h，做 range query list(lo, hi) 回傳 i 個 key，時間是？",
    "opts": [
     "O(h + i)",
     "O(n)",

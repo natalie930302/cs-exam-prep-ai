@@ -755,7 +755,7 @@
    "why": "Bellman-Ford 是 O(VE)，E = O(V²) 時就是 O(V³)。"
   },
   {
-   "q": "證明中為什麼可以說最短路徑 v0…vk 的 k ≤ |V| − 1？",
+   "q": "Bellman-Ford 正確性證明中，為什麼可以說（沒有負 cycle 時）最短路徑 v0…vk 的 k ≤ |V| − 1？",
    "opts": [
     "沒有負 cycle 時最短路徑是簡單路徑，超過就會重複頂點",
     "因為 Bellman-Ford 演算法本身就只做 |V| − 1 輪 relax",

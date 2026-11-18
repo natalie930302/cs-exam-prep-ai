@@ -1287,7 +1287,7 @@
    "why": "forward = c − f = 1；backward = f = 2（最多退 2）。"
   },
   {
-   "q": "課堂例子中，切到 s→a(10)、a→b(2，從 sink 側指回 source 側)、b→d(9) 的 cut 容量是？",
+   "q": "某個 s-t cut (S, T) 跨過的邊有 s→a 10、b→d 9（都從 S 側指向 T 側），以及 a→b 2（從 T 側指回 S 側）。cut 容量是？",
    "opts": [
     "19",
     "21",

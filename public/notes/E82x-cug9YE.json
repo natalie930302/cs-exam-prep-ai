@@ -309,7 +309,7 @@
  ],
  "quiz": [
   {
-   "q": "影片中，CPU 與 I/O 資料傳輸真正的 source 與 target 是？",
+   "q": "CPU 與 I/O 裝置之間的資料傳輸，真正的 source 與 target 是？",
    "opts": [
     "Memory unit",
     "CPU 暫存器",
@@ -364,7 +364,7 @@
    "why": "CPU 只發動傳輸（給起始位址等），之後 DMA 直接存取 memory；課本稱 cycle stealing。"
   },
   {
-   "q": "影片提到 DMA 的缺點是？",
+   "q": "相較 programmed I/O 與 interrupt I/O，DMA 的缺點是？",
    "opts": [
     "需要 DMA controller 增加成本，且可能有 cache coherence 問題",
     "CPU busy waiting，在傳輸期間無法做別的事",

@@ -323,7 +323,7 @@
    "why": "單週期的週期必須容納最慢的指令（Load 10 ns），所以 add 也要等 10 ns。"
   },
   {
-   "q": "依影片，FSM（多週期）處理器相對單週期的主要優點是？",
+   "q": "FSM（多週期）處理器相對單週期處理器的主要優點是？",
    "opts": [
     "CPI 永遠等於 1，控制單元最簡單",
     "clock 週期配合最慢指令，所以不會出錯",
@@ -345,7 +345,7 @@
    "why": "這是 load-use hazard：資料在 Memory Access 才出現，比 Add 的 Execute 晚一個 cycle，至少 stall 一個 cycle。"
   },
   {
-   "q": "影片中解決「Fetch 與 Memory Access 同時搶記憶體」的方法是？",
+   "q": "pipeline 中「Fetch 與 Memory Access 同時搶同一個記憶體」的常見解法是？",
    "opts": [
     "分開 I-cache 與 D-cache",
     "加上 branch prediction",

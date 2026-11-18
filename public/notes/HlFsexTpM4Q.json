@@ -299,7 +299,7 @@
  ],
  "quiz": [
   {
-   "q": "影片的圖（s–a 1、s–b 3、a–b 1、a–c 10、b–c 4），explore s 與 a 之後 c 的 D 是？",
+   "q": "無向圖 s–a 1、s–b 3、a–b 1、a–c 10、b–c 4。從 s 跑 Dijkstra，explore s 與 a 之後 c 的 D 是？",
    "opts": [
     "11",
     "6",
@@ -310,7 +310,7 @@
    "why": "只能經過 explored 的 s、a：1 + 10 = 11；經過 b 的 6 要等 b 被 explore 之後才會出現。"
   },
   {
-   "q": "同一張圖，s 到 c 的最短路徑是？",
+   "q": "無向圖 s–a 1、s–b 3、a–b 1、a–c 10、b–c 4。s 到 c 的最短路徑是？",
    "opts": [
     "s → a → b → c，cost 6",
     "s → a → c，cost 11",
@@ -332,7 +332,7 @@
    "why": "Greedy：非負權重下，D 最小的那個不可能再被別的路改短。"
   },
   {
-   "q": "explore a 時發現經過 a 到 b 是 2，原本 D(b) = 3，要怎麼做？",
+   "q": "Dijkstra 從 s 出發，explore a（D(a) = 1）時發現經過 a 到 b 是 2，原本 D(b) = 3，要怎麼做？",
    "opts": [
     "D(b) 改成 2、P(b) 改成 a",
     "保持 3，因為 b 先被 s 找到",
@@ -343,7 +343,7 @@
    "why": "找到更短的路才更新，並同時更新 parent。"
   },
   {
-   "q": "P（parent）的用途是？",
+   "q": "Dijkstra 中記錄的 P（parent）有什麼用途？",
    "opts": [
     "回推出實際的最短路徑",
     "算時間複雜度",

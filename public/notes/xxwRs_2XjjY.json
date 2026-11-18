@@ -376,7 +376,7 @@
    "why": "只有 loader 知道位置，執行中要換就得 kill 掉重新 load；但不用重新 compile。"
   },
   {
-   "q": "老師的例子：程式放在 0x2000，指令裡的位址是 0x18。Execution-time binding 下，真正送到 memory 的是？",
+   "q": "程式被放在 physical 0x2000，指令裡的位址是 0x18。Execution-time binding 下，真正送到 memory 的是？",
    "opts": [
     "0x18",
     "0x2018",

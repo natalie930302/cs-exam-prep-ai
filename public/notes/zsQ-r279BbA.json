@@ -319,7 +319,7 @@
    "why": "h ∘ (g ∘ f) = (h ∘ g) ∘ f；但 g ∘ f 和 f ∘ g 一般不同。"
   },
   {
-   "q": "證 g ∘ f 是 injective 時，從 g(f(a₁)) = g(f(a₂)) 推到 f(a₁) = f(a₂)，用的是？",
+   "q": "f: A → B、g: B → C 都是 injective。證 g ∘ f 是 injective 時，從 g(f(a₁)) = g(f(a₂)) 推到 f(a₁) = f(a₂)，用的是？",
    "opts": [
     "g 是 injective",
     "f 是 injective",
@@ -330,7 +330,7 @@
    "why": "g 一對一：g 的值相同 ⇒ 輸入相同。"
   },
   {
-   "q": "證 g ∘ f 是 onto 時，中間的「橋樑」是什麼？",
+   "q": "f: A → B、g: B → C 都是 onto。證 g ∘ f 是 onto 時，任給 c ∈ C，中間的「橋樑」是什麼？",
    "opts": [
     "B 裡的元素 b，g(b) = c",
     "C 裡的兩個元素",

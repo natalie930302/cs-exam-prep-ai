@@ -216,7 +216,7 @@
  ],
  "quiz": [
   {
-   "q": "依影片，演算法的 input 與 output 數量限制為何？",
+   "q": "依演算法特性的定義（Knuth），演算法的 input 與 output 數量限制為何？",
    "opts": [
     "input ≥ 0，output ≥ 1",
     "input ≥ 1，output ≥ 1",
@@ -260,7 +260,7 @@
    "why": "影片的 effectiveness：不寫沒有用途的多餘敘述。"
   },
   {
-   "q": "影片用 C 語言的 void 函數說明哪一點？",
+   "q": "說明演算法特性時，常拿 C 語言回傳 void 的函數當例子，它說明的是哪一點？",
    "opts": [
     "回傳 void 仍做了某件事（有 output）",
     "演算法一定要回傳整數值",

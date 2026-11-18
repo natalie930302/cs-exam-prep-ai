@@ -322,7 +322,7 @@
    "why": "disk 慢，存取時間又難以掌握，無法保證 deadline。"
   },
   {
-   "q": "課堂提到的 real-time 排程演算法是？",
+   "q": "下列哪一個排程演算法最常用於 real-time 系統？",
    "opts": [
     "Earliest deadline first",
     "First come first served",

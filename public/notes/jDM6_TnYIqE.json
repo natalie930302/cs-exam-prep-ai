@@ -1102,7 +1102,7 @@
    "why": "只看失衡節點往下的前兩步：右、左 → RL rotation，45 升上來。"
   },
   {
-   "q": "Abdul Bari 的 balance factor 定義是？",
+   "q": "Horowitz 課本與多數教材的 AVL balance factor 定義是？",
    "opts": [
     "左子樹高度 − 右子樹高度",
     "右子樹高度 − 左子樹高度",

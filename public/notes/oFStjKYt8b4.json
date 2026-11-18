@@ -207,7 +207,7 @@
    "why": "tree 到不了 t 表示沒有 f-augmenting path，done = 1。"
   },
   {
-   "q": "停下來時，min cut 的 S 是什麼？",
+   "q": "Edmonds–Karp 停下來時，min cut 的 S 是什麼？",
    "opts": [
     "最後那棵 BFS tree 的端點",
     "所有滿載邊的終點",
@@ -229,7 +229,7 @@
    "why": "Ford–Fulkerson（1956）沒規定怎麼找 path；Edmonds–Karp（1972）規定用 BFS。"
   },
   {
-   "q": "定理證明中，從 T 指回 S 的 backward edge 的 flow 一定是？",
+   "q": "證明 Max-Flow Min-Cut 時，S = 從 s 經 incomplete f-augmenting path 能到達的端點、T = V − S。從 T 指回 S 的邊，flow 一定是？",
    "opts": [
     "0",
     "等於 capacity",

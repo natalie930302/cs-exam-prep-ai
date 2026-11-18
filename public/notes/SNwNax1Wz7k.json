@@ -172,7 +172,7 @@
  ],
  "quiz": [
   {
-   "q": "monitor 解法中，P1 正在吃時 P2 呼叫 pickup(2)，會？",
+   "q": "Dining philosophers 的 monitor 解法中，P1 正在吃時鄰居 P2 呼叫 pickup(2)，會？",
    "opts": [
     "state[2] = HUNGRY，test 失敗 → self[2].wait()",
     "state[2] = EATING，P2 與 P1 同時開始吃",
@@ -183,7 +183,7 @@
    "why": "鄰居 P1 是 EATING。"
   },
   {
-   "q": "P1 putdown 後 P2 怎麼開始吃？",
+   "q": "Dining philosophers 的 monitor 解法中，P2 因鄰居 P1 正在吃而在 self[2].wait() 等待；P1 putdown 後 P2 怎麼開始吃？",
    "opts": [
     "putdown 裡 test(2) 成功 → state[2] = EATING 並 self[2].signal()",
     "P2 自己用 busy waiting 不斷檢查 state[1] 是否已變回 THINKING 狀態",

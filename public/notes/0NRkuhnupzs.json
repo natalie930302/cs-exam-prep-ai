@@ -447,7 +447,7 @@
    "why": "RM 是 static priority；EDF 才是 dynamic。"
   },
   {
-   "q": "T1 (4,1)、T2 (5,2)、T3 (20,5) 用 RM，t = 4 時發生什麼？",
+   "q": "Rate-Monotonic 排程：T1（period 4、執行 1）、T2（5、2）、T3（20、5），三者都在 t = 0 到達。t = 4 時發生什麼？",
    "opts": [
     "T1 到達，搶佔正在跑的 T3",
     "T3 繼續跑完，T1 要等它做完",
@@ -458,7 +458,7 @@
    "why": "T3 在 3–4 才做 1 單位，T1 period 最短 priority 最高。"
   },
   {
-   "q": "EDF 例子 T1 (2, 0.9)、T2 (5, 2.3)，t = 4 時誰先做？",
+   "q": "EDF 排程：T1（period 2、執行 0.9）、T2（period 5、執行 2.3），deadline 為下一個 period 開始，都在 t = 0 到達。t = 4 時誰先做？",
    "opts": [
     "T2，因為 deadline 5 < 6",
     "T1，因為 period 較短",

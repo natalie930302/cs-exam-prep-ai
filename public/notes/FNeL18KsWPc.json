@@ -1042,7 +1042,7 @@
    "why": "BST 的 in-order 一定是排序好的。"
   },
   {
-   "q": "以 leaf 高度 = 0、空 child = −1，上面那棵樹 root 41 的 height？",
+   "q": "以 leaf 高度 = 0、空 child = −1，樹 41(20(11, 29(26)), 65(50)) 的 root 41 height？",
    "opts": [
     "2",
     "3",
@@ -1075,7 +1075,7 @@
    "why": "N_h > F_h ≈ φ^h/√5 → h < log_φ n ≈ 1.44 log₂ n（簡單版可證 2 log₂ n）。"
   },
   {
-   "q": "在 41/20/65… 那棵樹（23 已修好）插入 55，怎麼修？",
+   "q": "AVL tree 41(20(11, 26(23, 29)), 65(50)) 插入 55，怎麼修？",
    "opts": [
     "right rotate(65) 再 left rotate(50)",
     "left rotate(50) 再 right rotate(65)",

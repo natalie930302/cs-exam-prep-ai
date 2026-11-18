@@ -695,10 +695,10 @@
    "why": "每個 cycle 完成 4 個指令 → IPC = 4、CPI = 1/4；每秒最多 4 × 10⁹ × 4 = 16 billion 個指令。"
   },
   {
-   "q": "MIPS pipeline 中，4C 的 add 在 EX 偵測到 overflow，下列處理何者正確？",
+   "q": "MIPS 五級 pipeline 依序執行 and、or、add $1, $2, $1、slt、lw，add 在 EX 偵測到 overflow，下列處理何者正確？",
    "opts": [
     "前面的 and、or 繼續完成；add、slt、lw flush 成 bubble；PC 改成 8000 0180",
-    "所有指令（包含 and、or）都 flush 成 bubble，從 40 重新執行，PC 改成 8000 0180",
+    "所有指令（包含 and、or）都 flush 成 bubble，從 and 重新執行，PC 改成 8000 0180",
     "add 先寫回 $1 再跳到 handler，後面的 slt、lw 繼續完成",
     "等 lw 做完再處理 exception"
    ],

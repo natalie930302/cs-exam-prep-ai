@@ -292,7 +292,7 @@
    "why": "E 處理時 F 經過 E 是 9 + 1 = 10 < 11，改成 (10, E)。"
   },
   {
-   "q": "同上題的圖，第 3 個加入 S 的端點是哪個？",
+   "q": "無向圖的邊與 weight：A–B 3、A–C 9、A–D 7、B–C 5、B–E 6、B–F 8、C–D 2、C–E 4、D–F 5、E–F 1。從 A 跑 Dijkstra，第 3 個加入 S 的端點是哪個？",
    "opts": [
     "D",
     "C",
@@ -303,7 +303,7 @@
    "why": "處理完 A、B 後，C D E F 是 8、7、9、11，D 最小。"
   },
   {
-   "q": "同上題的圖，處理完 B 之後，C 的 label 是什麼？",
+   "q": "無向圖的邊與 weight：A–B 3、A–C 9、A–D 7、B–C 5、B–E 6、B–F 8、C–D 2、C–E 4、D–F 5、E–F 1。從 A 跑 Dijkstra，處理完 A、B 之後，C 的 label（L 值, predecessor）是什麼？",
    "opts": [
     "(8, B)",
     "(9, A)",
@@ -314,7 +314,7 @@
    "why": "經過 B 是 3 + 5 = 8，比直接從 A 的 9 短。"
   },
   {
-   "q": "同上題的圖，A 到 F 的最短 path 是哪一條？",
+   "q": "無向圖的邊與 weight：A–B 3、A–C 9、A–D 7、B–C 5、B–E 6、B–F 8、C–D 2、C–E 4、D–F 5、E–F 1。A 到 F 的最短 path 是哪一條？",
    "opts": [
     "A B E F",
     "A D F",

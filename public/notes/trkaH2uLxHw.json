@@ -1209,7 +1209,7 @@
    "why": "影片說 n log n 是上界；高度 h 的點約 n/2^(h+1) 個，加總 Σ h·n/2^(h+1) = O(n)。"
   },
   {
-   "q": "Heapsort 的哪個特點是老師強調的？",
+   "q": "下列何者是 heapsort 的特點？",
    "opts": [
     "in-place：只用原本的 array",
     "stable：相同 key 順序不變",
@@ -1220,7 +1220,7 @@
    "why": "build heap 後反覆把 root 換到尾巴、縮小 heap size、MAX-HEAPIFY，全在原 array 上做，O(n log n)。"
   },
   {
-   "q": "Dijkstra 每取出一個點只 update 它的鄰居，整個過程 ChangeKey 最多幾次？",
+   "q": "Dijkstra（n 點、m 條 edge，用 heap）每取出一個點只 update 它往外連的鄰居，整個過程 ChangeKey 最多幾次？",
    "opts": [
     "m（edge 數）",
     "n（點數）",

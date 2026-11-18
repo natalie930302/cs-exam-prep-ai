@@ -173,7 +173,7 @@
    "why": "影片強調：它只是一段 code segment。"
   },
   {
-   "q": "影片中 entry section 與 exit section 的角色？",
+   "q": "Critical section 的 entry section 與 exit section 的角色？",
    "opts": [
     "entry 取得 lock、exit 解開 lock",
     "entry 解開 lock、exit 取得 lock",

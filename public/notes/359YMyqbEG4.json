@@ -1249,7 +1249,7 @@
    "why": "M = 0, 2, 4, 6, 7, 8, 8；M[6] = max(1 + M[3], M[5]) = max(7, 8) = 8。"
   },
   {
-   "q": "OPT(j) 的 recurrence 正確的是哪一個？",
+   "q": "Weighted interval scheduling（依結束時間排序，p(j) = 與 j 相容的最後一筆）的 OPT(j) recurrence 正確的是哪一個？",
    "opts": [
     "OPT(j) = vⱼ + OPT(j − 1)",
     "OPT(j) = max(vⱼ + OPT(p(j)), OPT(j − 1))",

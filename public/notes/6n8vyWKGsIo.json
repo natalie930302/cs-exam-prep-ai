@@ -833,7 +833,7 @@
    "why": "HC 剛好用 n 條 cost 1 的邊，總和 n。"
   },
   {
-   "q": "為什麼 TSP 找到總長 ≤ n 的 tour，就代表 G 有 Hamiltonian cycle？",
+   "q": "HC ≤p TSP 的轉換（G 有的邊 cost 1、沒有的 cost 2，bound B = n）中，為什麼 TSP 找到總長 ≤ n 的 tour，就代表 G 有 Hamiltonian cycle？",
    "opts": [
     "n 條邊、每條 ≥ 1、總和 ≤ n → 每條都是 1，全是 G 的邊",
     "因為 TSP 一定有解，而 complete graph 的任何 tour 都對應 G 的 HC",

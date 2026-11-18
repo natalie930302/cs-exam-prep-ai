@@ -527,7 +527,7 @@
    "why": "linked index 越後面要 lookup 越多個 index block。"
   },
   {
-   "q": "周老師課堂上 bit vector 的慣例，0 代表？",
+   "q": "依恐龍書的慣例，free-space 管理的 bit vector 中，bit = 1 代表？",
    "opts": [
     "free",
     "occupied",
@@ -535,7 +535,7 @@
     "index block"
    ],
    "ans": "free",
-   "why": "課堂：0 = free、1 = occupied；恐龍書相反（1 = free）。"
+   "why": "恐龍書：1 = free、0 = allocated；有些課堂採相反慣例（0 = free），作答時要看題目的定義。"
   },
   {
    "q": "Free-space 的 counting 對應到哪種配置方式的概念？",

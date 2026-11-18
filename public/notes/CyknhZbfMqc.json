@@ -205,7 +205,7 @@
    "why": "b = 2：a^(n/b)。"
   },
   {
-   "q": "a < 1 時答案是？",
+   "q": "減法型遞迴的 master theorem：T(n) = aT(n−b) + f(n)、f(n) = O(nᵏ)，a < 1 時答案是？",
    "opts": [
     "O(f(n))",
     "O(n·f(n))",

@@ -551,7 +551,7 @@
  ],
  "quiz": [
   {
-   "q": "影片說 2005 年後處理器效能主要靠什麼提升？",
+   "q": "2005 年後處理器效能主要靠什麼提升？",
    "opts": [
     "一顆晶片放多個核心",
     "時脈每年持續倍增",
@@ -573,7 +573,7 @@
    "why": "缺點是 context 有好幾 kilobit，比一個資料字大。"
   },
   {
-   "q": "成本模型中，遠端存取 access(s, d) 的成本是？",
+   "q": "多核心 execution migration 的成本模型（dist 為處理器間距離，C 為搬移 context 的成本）中，從 s 遠端存取 d 上的資料 access(s, d) 的成本是？",
    "opts": [
     "2 · dist(s, d)",
     "dist(s, d) + C",
@@ -584,7 +584,7 @@
    "why": "一來一回；migrate 才是 dist + C。"
   },
   {
-   "q": "q 個處理器、n 次存取的 migration DP，總時間？",
+   "q": "Execution migration 的 DP（DP[k][p] = 處理完前 k 次存取、最後在處理器 p 的最小成本），q 個處理器、n 次存取，總時間？",
    "opts": [
     "O(n q²)",
     "O(n q)",

@@ -259,7 +259,7 @@
  ],
  "quiz": [
   {
-   "q": "老師的例子（A–B 2、A–C 1、A–D 1、B–D 2、C–D 3），D 的 degree 是多少？",
+   "q": "multigraph：A–B 有 2 條邊、A–C 1 條、A–D 1 條、B–D 2 條、C–D 3 條。D 的 degree 是多少？",
    "opts": [
     "3",
     "4",
@@ -270,7 +270,7 @@
    "why": "D 連到 A 一條、B 兩條、C 三條，共 6。"
   },
   {
-   "q": "上題的圖照字母順序從 A 出發，第一次 get stuck 時走出的 circuit 是？",
+   "q": "multigraph：A–B 有 2 條邊、A–C 1 條、A–D 1 條、B–D 2 條、C–D 3 條。從 A 出發，每次照字母順序挑還沒用過的邊走，第一次 get stuck 時走出的 circuit 是？",
    "opts": [
     "A B D C D A",
     "A B A C D A",
@@ -281,7 +281,7 @@
    "why": "A→B，B→A（A 優先），A→C，C→D，D→A，A 的邊用完。"
   },
   {
-   "q": "上題的圖，最後得到的 Euler circuit 是？",
+   "q": "multigraph：A–B 有 2 條邊、A–C 1 條、A–D 1 條、B–D 2 條、C–D 3 條。下列哪一個是它的 Euler circuit？",
    "opts": [
     "C D A B D B A C D C",
     "A B C D A",
@@ -289,7 +289,7 @@
     "C D C A B"
    ],
    "ans": "C D A B D B A C D C",
-   "why": "經過兩次 break out（在 B、在 C）後得到，共 9 條邊各一次。"
+   "why": "它用到 CD 3 次、AB 2 次、BD 2 次、AC、AD 各 1 次，9 條邊各一次且回到起點 C；A B C D A 用了不存在的 BC，B D B A C D A B D C 用了 3 次 BD，C D C A B 沒走完也沒回到起點。"
   },
   {
    "q": "connected graph 有 Euler trail（非 circuit）的條件是？",

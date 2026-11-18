@@ -257,7 +257,7 @@
    "why": "必須對每一個 subset 都成立。"
   },
   {
-   "q": "老師證明 Hall's theorem 的充分性時用了什麼工具？",
+   "q": "證明 Hall's theorem 的充分性（對所有 A ⊆ X 都有 |R(A)| ≥ |A| ⇒ 有 complete matching），可以用什麼工具？",
    "opts": [
     "Hungarian algorithm 停下時的 Hungarian tree",
     "Euler 公式",
@@ -268,7 +268,7 @@
    "why": "取 A＝tree 上的 x，R(A)＝tree 上的 y，|R(A)| = |A| − 1。"
   },
   {
-   "q": "派對例子有 8 個女生（X），其中 B、D、E、F、H 喜歡的男生合起來只有 b、c、d、h；maximum matching 是 7。deficiency δ(G) 是多少？",
+   "q": "派對例子有 8 個女生（X），其中 B、D、E、F、H 喜歡的男生合起來只有 b、c、d、h；maximum matching 是 7。deficiency δ(G) = max_{A⊆X} (|A| − |R(A)|) 是多少？",
    "opts": [
     "1",
     "0",
@@ -279,7 +279,7 @@
    "why": "A = {B, D, E, F, H} 時 5 − 4 = 1，而且沒有更大的；maximum matching = 8 − 1 = 7。"
   },
   {
-   "q": "為什麼 δ(G) ≥ 0？",
+   "q": "bipartite graph 的 deficiency δ(G) = max_{A⊆X} (|A| − |R(A)|)。為什麼 δ(G) ≥ 0？",
    "opts": [
     "取 A = ∅ 時 |A| − |R(A)| = 0，最大值至少是 0",
     "因為 |X| ≥ |Y|",

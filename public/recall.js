@@ -147,7 +147,9 @@ function recallSession(host, items, opts){
     card.className = 'rc-card rc-big';
     box.appendChild(card);
     if (it.mcq) {
-      const r = it.mcq;
+      // options in a fresh random order each time (the data often lists the answer first)
+      const r = Object.assign({}, it.mcq, {opts: it.mcq.opts.slice()});
+      for (let i = r.opts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = r.opts[i]; r.opts[i] = r.opts[j]; r.opts[j] = t; }
       card.innerHTML = '<div class="rc-q">' + mdEsc(r.q) + '</div><div class="rc-opts">'
         + r.opts.map(function(o, i){ return '<button type="button" data-i="' + i + '"><b>' + 'ABCDEFGH'[i] + '</b><span>' + mdEsc(o) + '</span></button>'; }).join('') + '</div>';
       const pick = function(i){

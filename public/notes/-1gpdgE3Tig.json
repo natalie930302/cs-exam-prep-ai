@@ -208,7 +208,7 @@
    "why": "splitting 只是切開，不需要比較。"
   },
   {
-   "q": "n = 2ʰ 時，splitting tree 的 level k 有幾對（pair）？",
+   "q": "merge sort 對 n = 2ʰ 個數一路對半切，splitting tree 的 root 在 level 0。level k 的端點有幾對（同一個 parent 的兩個 child 算一對）？",
    "opts": [
     "2ᵏ⁻¹",
     "2ᵏ",
@@ -219,7 +219,7 @@
    "why": "level k 有 2ᵏ 個端點，兩兩一對。"
   },
   {
-   "q": "n = 2ʰ 時，最底層 level h merge 回來最多要比幾次？",
+   "q": "merge sort 對 n = 2ʰ 個數（splitting tree 的 root 在 level 0），把最底層 level h 的單一元素兩兩 merge 回來，最多要比幾次？",
    "opts": [
     "2ʰ⁻¹",
     "2ʰ",

@@ -189,7 +189,7 @@
    "why": "只要求「某一棵」MST 包含 T。"
   },
   {
-   "q": "Case 2 中，e′ 是怎麼找到的？",
+   "q": "證明 Prim 正確：目前的 T 是某棵 MST M 的 subtree，algorithm 下一步加的邊 e 不在 M 裡。e′ 是怎麼找到的？",
    "opts": [
     "把 e 加進 M 產生 cycle，沿 cycle 找另一條跨過 T 邊界的邊",
     "在整個 M 裡找 weight 最大的邊，直接把它從 M 拿掉再補上 e",
@@ -200,7 +200,7 @@
    "why": "cycle 從 T 經 e 跨出去，一定要再跨回來，那條就是 e′。"
   },
   {
-   "q": "為什麼 w(e′) ≥ w(e)？",
+   "q": "證明 Prim 正確：e 是 algorithm 新加入 T 的邊（不在 MST M 裡），e′ 是 M + e 的 cycle 上另一條一端在 T、一端不在 T 的邊。為什麼 w(e′) ≥ w(e)？",
    "opts": [
     "e′ 也是可加的候選，但 algorithm 選了 weight 最小的 e",
     "因為 e′ 在 M 裡，而 M 的邊 weight 一定不小於 T 裡的邊",
@@ -211,7 +211,7 @@
    "why": "如果 e′ 更小，algorithm 會選 e′。"
   },
   {
-   "q": "M′ = M + e − e′ 為什麼還是 MST？",
+   "q": "證明 Prim 正確：e 是 algorithm 新加的邊（不在 MST M 裡），e′ 是 M + e 的 cycle 上另一條跨過 T 邊界的邊，且 w(e) ≤ w(e′)。M′ = M + e − e′ 為什麼還是 MST？",
    "opts": [
     "它是 spanning tree 且 weight ≤ w(M)",
     "因為它包含 e，而 e 是全圖 weight 最小的邊",

@@ -412,15 +412,15 @@
    "why": "最後寫回的人決定值：4（consumer 最後寫）、6（producer 最後寫）、5（不交錯）。"
   },
   {
-   "q": "課堂的 race 例子中，producer 做完幾個指令後被 context switch？",
+   "q": "counter = 5。producer 的 counter++ 拆成 load、加 1、store，做完 load、加 1 後被 context switch；consumer 完整執行 counter--（讀到 5、寫回 4）；再切回 producer 做 store。最後 counter 是？",
    "opts": [
-    "2 個（load、加 1）",
-    "1 個（load）",
-    "3 個（load、加 1、store）",
-    "0 個"
+    "6",
+    "4",
+    "5",
+    "7"
    ],
-   "ans": "2 個（load、加 1）",
-   "why": "還沒寫回就被切走，consumer 讀到的還是 5。"
+   "ans": "6",
+   "why": "producer 的 register 裡已是 5 + 1 = 6，最後寫回的人決定結果，consumer 的 −1 被蓋掉；反過來 consumer 最後寫就變 4。"
   },
   {
    "q": "下列哪個不是 race condition 發生的必要條件？",
@@ -434,7 +434,7 @@
    "why": "要 preemptive 才會在 CPU burst 中途被打斷；non-preemptive 不會。"
   },
   {
-   "q": "「廁所空著卻進不去」違反哪個條件？",
+   "q": "Critical section 問題中，「廁所空著，想進去的人卻進不去」違反哪個條件？",
    "opts": [
     "progress",
     "mutual exclusion",
@@ -445,7 +445,7 @@
    "why": "空著時想進的人要能進。"
   },
   {
-   "q": "「一直被插隊，永遠輪不到」違反哪個條件？",
+   "q": "Critical section 問題中，「想進去的人一直被插隊，永遠輪不到」違反哪個條件？",
    "opts": [
     "bounded waiting",
     "progress",

@@ -447,7 +447,7 @@
  ],
  "quiz": [
   {
-   "q": "Rec14 的圖（A→B, A→G, B→C, C→A, C→D, C→F, D→E, D→F, G→C）依字母順序 DFS，G → C 是？",
+   "q": "有向圖 A→B、A→G、B→C、C→A、C→D、C→F、D→E、D→F、G→C，依字母順序做 DFS（先從 A 出發），G → C 是哪種邊？",
    "opts": [
     "cross edge",
     "forward edge",
@@ -458,7 +458,7 @@
    "why": "C 在 B 那一支、早已結束；C 和 G 沒有祖先關係。"
   },
   {
-   "q": "同一個 DFS 中，C → F 是？",
+   "q": "有向圖 A→B、A→G、B→C、C→A、C→D、C→F、D→E、D→F、G→C，依字母順序做 DFS（先從 A 出發），C → F 是哪種邊？",
    "opts": [
     "forward edge",
     "tree edge",
@@ -480,7 +480,7 @@
    "why": "parent[s] = None，但 s 已經拜訪過。"
   },
   {
-   "q": "拿掉 C → A 後做 DFS 版 topological sort，finished list 是 E, F, D, C, B, G, A，答案是？",
+   "q": "有向無環圖 A→B、A→G、B→C、C→D、C→F、D→E、D→F、G→C，依字母順序做 DFS 版 topological sort，finished list 是 E, F, D, C, B, G, A，答案是？",
    "opts": [
     "A, G, B, C, D, F, E",
     "E, F, D, C, B, G, A",
@@ -491,7 +491,7 @@
    "why": "把 finished 反轉。"
   },
   {
-   "q": "把同一張圖當無向圖做 DFS，會出現哪些邊？",
+   "q": "把一張有向圖的邊全部當成無向邊再做 DFS，會出現哪些邊？",
    "opts": [
     "tree edge 與 back edge",
     "四種都有",

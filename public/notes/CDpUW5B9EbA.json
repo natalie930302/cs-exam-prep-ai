@@ -449,7 +449,7 @@
  ],
  "quiz": [
   {
-   "q": "黑板例子：page 01 放在 frame 00，virtual address 0110 的 physical address 是？",
+   "q": "4-bit 位址：高 2 bits 是 page／frame number、低 2 bits 是 offset。page 01 放在 frame 00，virtual address 0110 的 physical address 是？",
    "opts": [
     "0010",
     "0110",

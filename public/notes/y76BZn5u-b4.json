@@ -530,7 +530,7 @@
    "why": "discrete component 要一個個接起來很佔空間；IC 一次全部做出來，一顆 chip 能放更多 device。"
   },
   {
-   "q": "老師講的 Moore's Law 是？",
+   "q": "Moore's Law 常見的說法是？",
    "opts": [
     "每 18 個月，一顆 chip 上的 transistor 數量 double",
     "每 18 個月，一顆 chip 的 clock rate 與功耗都 double",

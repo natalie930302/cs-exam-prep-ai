@@ -329,7 +329,7 @@
    "why": "0.7 × (20 + 100) + 0.3 × (20 + 100 + 100) = 84 + 66 = 150 ns。"
   },
   {
-   "q": "同上，hit rate 98% 時 EMAT 是？",
+   "q": "TLB 20 ns、memory 100 ns、TLB hit rate 98%（one-level page table），EMAT 是？",
    "opts": [
     "122 ns",
     "120 ns",

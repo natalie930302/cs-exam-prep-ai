@@ -877,7 +877,7 @@
    "why": "整副牌已知，開局後只要決定 hit 幾張；莊家照固定規則補牌。"
   },
   {
-   "q": "已玩掉 i = 5 張，round_outcome(5, 1) = (6, +1)，圖上的邊應從 5 連到？",
+   "q": "Perfect-information blackjack：round_outcome(i, h) = (這局用掉的牌數, 這局輸贏)。已玩掉 i = 5 張，round_outcome(5, 1) = (6, +1)，圖上的邊應從 5 連到？",
    "opts": [
     "6",
     "11",
@@ -899,7 +899,7 @@
    "why": "沒有往回的邊就沒有環，可以用拓撲排序 + relax，O(V+E)。"
   },
   {
-   "q": "dp[i] 的遞迴式（不含走人）是？",
+   "q": "Perfect-information blackjack：O = round_outcome(i, h) = (這局用掉的牌數 O[0], 這局輸贏 O[1])，h 是這局要牌的次數。dp[i]（從第 i 張牌起最多能贏多少）的遞迴式（不含走人）是？",
    "opts": [
     "dp[i] = max_h (O[1] + dp[i + O[0]])",
     "dp[i] = max_h (O[0] + dp[i + O[1]])",

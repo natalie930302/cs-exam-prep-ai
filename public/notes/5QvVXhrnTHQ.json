@@ -296,7 +296,7 @@
    "why": "唯一性是另外證明的性質。"
   },
   {
-   "q": "證明 inverse 唯一時，g(b) = g′((f ∘ g)(b)) 這一步用了什麼？",
+   "q": "設 g、g′ 都是 f: A → B 的 inverse。證明 inverse 唯一時，把 g′(f(g(b))) 寫成 g′((f ∘ g)(b))，也就是 (g′ ∘ f) ∘ g = g′ ∘ (f ∘ g)，用了什麼？",
    "opts": [
     "合成的結合律",
     "合成的交換律",
@@ -318,7 +318,7 @@
    "why": "invertible ⇔ bijective（iff）。"
   },
   {
-   "q": "證 invertible ⇒ surjective 時，對 b 要取哪個 a？",
+   "q": "f: A → B 有 inverse f⁻¹。證 f 是 surjective 時，任給 b ∈ B，要取哪個 a？",
    "opts": [
     "a = f⁻¹(b)",
     "a = (f⁻¹)⁻¹(b)",

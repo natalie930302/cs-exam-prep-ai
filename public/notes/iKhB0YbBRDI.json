@@ -1104,7 +1104,7 @@
  ],
  "quiz": [
   {
-   "q": "老師的例子用 Kruskal（edge 從小到大：AD 5、CE 5、DF 6、AB 7、BE 7、BC 8、EF 8、BD 9、EG 9…），第一條被跳過的是哪一條？為什麼？",
+   "q": "無向圖的邊依權重由小到大：AD 5、CE 5、DF 6、AB 7、BE 7、BC 8、EF 8、BD 9、EG 9、FG 11、DE 15。用 Kruskal 時，第一條被跳過的是哪一條？為什麼？",
    "opts": [
     "BC 8：B、C 已經連通，加了會形成 cycle",
     "DF 6：cost 比前兩條高，Kruskal 先跳過",
@@ -1126,7 +1126,7 @@
    "why": "把點分成 S 與 V − S，跨過去的 edge 中最便宜的那條是 safe edge；Prim、Kruskal 都靠它保證正確。"
   },
   {
-   "q": "Cut property 第一版證明（砍掉任一條跨 cut 的 f、換成 e）錯在哪？",
+   "q": "證明 MST 的 cut property（e 是跨 cut 最便宜的邊，T 是不含 e 的 spanning tree）時，第一版證明「把 e 加進 T，砍掉 T 中任一條跨 cut 的 f」錯在哪？",
    "opts": [
     "換完不一定還是 tree：可能有點變孤兒（disconnected）",
     "e 不一定比 f 便宜，換完 cost 可能變大",
@@ -1148,7 +1148,7 @@
    "why": "Prim 只在乎 v 用多便宜的 edge 黏上目前的樹，不累加從 source 來的距離；Dijkstra 才用 d[u] + w(u,v)。"
   },
   {
-   "q": "老師的 reverse-delete demo（邊 AD 5、CE 5、DF 6、AB 7、BE 7、BC 8、EF 8、BD 9、EG 9、FG 11、DE 15，從最貴的開始拔：DE、FG、BD、EG…）中，哪一條 edge 拔了之後必須恢復？",
+   "q": "Reverse-delete 求 MST（無向圖，邊 AD 5、CE 5、DF 6、AB 7、BE 7、BC 8、EF 8、BD 9、EG 9、FG 11、DE 15），從最貴的開始拔：DE、FG、BD、EG…。哪一條 edge 拔了之後必須恢復？",
    "opts": [
     "EG 9：拔了 G 變孤兒",
     "DE 15：最貴的一定要留",

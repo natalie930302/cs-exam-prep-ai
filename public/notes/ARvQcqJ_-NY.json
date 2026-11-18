@@ -257,7 +257,7 @@
    "why": "for i = 1 to n：x = Select(a)；if Feasible(x) then Solution = Solution + x。"
   },
   {
-   "q": "影片的「篩選應徵者」例子說明了 greedy 的什麼特點？",
+   "q": "把 greedy 比喻成「從 1000 位應徵者中依篩選關卡直接選出錄取者」，這說明了 greedy 的什麼特點？",
    "opts": [
     "照已知的選擇程序快速得到解，而不是檢查所有可能",
     "一定要讓每個人考完所有關卡，才能比較出要錄取誰",

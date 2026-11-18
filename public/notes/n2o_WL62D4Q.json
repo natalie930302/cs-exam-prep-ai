@@ -377,7 +377,7 @@
    "why": "WT = 0、24、27，平均 51/3 = 17。"
   },
   {
-   "q": "同一組工作改成 P2、P3、P1 的順序到達（FCFS），平均 waiting time？",
+   "q": "FCFS：P1、P2、P3 的 CPU burst 為 24、3、3，都在時間 0 到達，但依 P2、P3、P1 的順序排隊，平均 waiting time？",
    "opts": [
     "3",
     "17",
@@ -388,7 +388,7 @@
    "why": "WT = 0、3、6，平均 3；FCFS 的表現全看到達順序。"
   },
   {
-   "q": "P1(0,7)、P2(2,4)、P3(4,1)、P4(5,4)，non-preemptive SJF 的平均 waiting time？",
+   "q": "P1(0,7)、P2(2,4)、P3(4,1)、P4(5,4)（括號內為 arrival time、CPU burst），non-preemptive SJF 的平均 waiting time？",
    "opts": [
     "4",
     "3",
@@ -399,7 +399,7 @@
    "why": "P1 0–7、P3 7–8、P2 8–12、P4 12–16；WT = 0、6、3、7。"
   },
   {
-   "q": "同一組用 preemptive SJF，平均 waiting time？",
+   "q": "P1(0,7)、P2(2,4)、P3(4,1)、P4(5,4)（括號內為 arrival time、CPU burst），preemptive SJF（SRTF）的平均 waiting time？",
    "opts": [
     "3",
     "4",
@@ -418,7 +418,7 @@
     "12"
    ],
    "ans": "6",
-   "why": "τ' = 0.5×4 + 0.5×8 = 6，跟影片例子一樣。"
+   "why": "τ' = 0.5×4 + 0.5×8 = 6。"
   },
   {
    "q": "Response time 的定義是？",

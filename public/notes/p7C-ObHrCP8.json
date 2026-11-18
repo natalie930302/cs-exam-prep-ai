@@ -338,7 +338,7 @@
    "why": "2³² ÷ 2¹² = 2²⁰。"
   },
   {
-   "q": "同上，physical address 36 bits，frame number 有幾個 bit？",
+   "q": "Logical address 32 bits、page 4KB、physical address 36 bits，frame number 有幾個 bit？",
    "opts": [
     "20",
     "24",
@@ -349,7 +349,7 @@
    "why": "Frame number 看 physical：36 − 12 = 24。"
   },
   {
-   "q": "同上，每個 entry 4 bytes，page table 有多大？",
+   "q": "Logical address 32 bits、page 4KB（one-level page table），每個 entry 4 bytes，page table 有多大？",
    "opts": [
     "4 KB",
     "1 MB",

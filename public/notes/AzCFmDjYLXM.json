@@ -153,7 +153,7 @@
  ],
  "quiz": [
   {
-   "q": "依本課的分法，merge sort 把 9 個數第一次 split，左邊有幾個？",
+   "q": "merge sort 把 n 個數切成前 ⌈n/2⌉ 個和後 ⌊n/2⌋ 個。9 個數第一次 split，左邊有幾個？",
    "opts": [
     "5",
     "4",
@@ -194,10 +194,10 @@
     "O(log n)"
    ],
    "ans": "O(n²)",
-   "why": "老師提到 bubble 和 insertion sort 都是 O(n²)。"
+   "why": "bubble sort 不論輸入都比 n(n − 1)/2 次，是 O(n²)；insertion sort 的 worst case 也是 O(n²)。"
   },
   {
-   "q": "9 個數的 splitting tree 有幾片葉子、幾個 internal vertex？",
+   "q": "merge sort 把 9 個數一路對半切到只剩單一元素，畫成 splitting tree（每次切成兩份），有幾片葉子、幾個 internal vertex？",
    "opts": [
     "9 片葉子、8 個 internal",
     "9 片葉子、9 個 internal",

@@ -710,7 +710,7 @@
    "why": "c 是程式碼本身等固定空間，S_P 隨輸入大小改變，才是分析重點。"
   },
   {
-   "q": "用 count 或表格法計算「加總 n 個數字」的程式，課堂得到的 program step 是？",
+   "q": "依課本的 program step 計數，下列程式共幾個 step？ float sum(float list[], int n) { float tempsum = 0; for (int i = 0; i < n; i++) tempsum += list[i]; return tempsum; }",
    "opts": [
     "n",
     "2n+3",

@@ -258,7 +258,7 @@
    "why": "Kruskal 挑全圖最小且不成 cycle 的邊；Prim 一直維持一棵樹。"
   },
   {
-   "q": "edge rejection 方法一每次刪哪條邊？",
+   "q": "用 edge rejection（刪邊）求 MST 的方法一，每次刪哪條邊？",
    "opts": [
     "某個 cycle 裡 cost 最高的邊",
     "整張圖目前 cost 最小、不在 cycle 上的邊",
@@ -269,7 +269,7 @@
    "why": "cycle 中最貴的邊一定不必出現在 MST（cycle property）。"
   },
   {
-   "q": "edge rejection 方法二（由大到小）什麼時候可以刪一條邊？",
+   "q": "用 edge rejection 方法二（依 cost 由大到小逐條檢查）求 MST，什麼時候可以刪一條邊？",
    "opts": [
     "刪掉後圖仍然連通",
     "它的 cost 比平均大",

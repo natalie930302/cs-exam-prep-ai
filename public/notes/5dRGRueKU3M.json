@@ -344,7 +344,7 @@
    "why": "fib(5)、fib(3)、fib(1)、fib(2)、fib(0)、fib(4)：n + 1 = 6 次，O(n)。"
   },
   {
-   "q": "影片對純遞迴 Fibonacci 寫出的遞迴關係與上界是？",
+   "q": "分析純遞迴 Fibonacci（fib(n) = fib(n−2) + fib(n−1)）時，若把 T(n−2) 放大成 T(n−1)，得到的遞迴關係與上界是？",
    "opts": [
     "T(n) = 2T(n−1) + 1，O(2ⁿ)",
     "T(n) = T(n−1) + 1，O(n)",

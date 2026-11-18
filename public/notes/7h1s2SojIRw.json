@@ -355,7 +355,7 @@
  ],
  "quiz": [
   {
-   "q": "依影片的 partition（pivot = 第一個，i 找 > pivot、j 找 ≤ pivot），10 16 8 12 15 6 3 9 5 做一次 partition 後是？",
+   "q": "Quick sort 的 partition：pivot = 第一個元素，陣列尾端放 ∞；i 從左往右找 > pivot、j 從右往左找 ≤ pivot，i < j 就交換，交錯後 pivot 與 A[j] 交換。10 16 8 12 15 6 3 9 5 做一次 partition 後是？",
    "opts": [
     "6 5 8 9 3 10 15 12 16",
     "5 8 6 9 3 10 16 12 15",
@@ -366,7 +366,7 @@
    "why": "依序交換 16↔5、12↔9、15↔3；i、j 交錯後 pivot 10 和 A[j] = 6 交換。兩邊不一定排好。"
   },
   {
-   "q": "同一個例子，第一次 i、j 交換的是哪兩個數？",
+   "q": "Quick sort 的 partition（pivot = 第一個元素，尾端放 ∞；i 從左往右找 > pivot、j 從右往左找 ≤ pivot）對 10 16 8 12 15 6 3 9 5，第一次 i、j 交換的是哪兩個數？",
    "opts": [
     "16 和 5",
     "16 和 9",
@@ -377,7 +377,7 @@
    "why": "i 從 pivot 往右，第一個 > 10 的是 16；j 從 ∞ 往左，第一個 ≤ 10 的是 5。"
   },
   {
-   "q": "partition 什麼時候停下並把 pivot 換到 A[j]？",
+   "q": "Quick sort 的 partition（i 從左找 > pivot、j 從右找 ≤ pivot，找到就交換）什麼時候停下並把 pivot 換到 A[j]？",
    "opts": [
     "i 和 j 交錯（i > j）時",
     "i 走到 ∞ 時",
@@ -388,7 +388,7 @@
    "why": "while (i < j) 不成立就跳出，swap(A[l], A[j])，j 就是 pivot 的排序位置。"
   },
   {
-   "q": "陣列尾端放 ∞ 的用途是？",
+   "q": "Quick sort 的 partition（i 從左往右找 > pivot）中，陣列尾端放 ∞ 的用途是？",
    "opts": [
     "當 end-of-list 標記，讓 i 一定會停下",
     "讓 pivot 一定選到最大值，避免 worst case",
@@ -410,7 +410,7 @@
    "why": "16 右邊有 12、13、14 比它小，所以不在排序位置。4、6、7、10 左邊都較小、右邊都較大；影片拿 10 當例子。"
   },
   {
-   "q": "影片的 QuickSort(l, h) 中，partition 回傳 j 後，接下來的兩個遞迴呼叫是？",
+   "q": "QuickSort(l, h) 中 A[h] 是右側的 ∞ 哨兵（h 是區間之後一格），partition 回傳 pivot 的位置 j 後，接下來的兩個遞迴呼叫是？",
    "opts": [
     "QuickSort(l, j) 與 QuickSort(j + 1, h)",
     "QuickSort(l, j − 1) 與 QuickSort(j, h)",

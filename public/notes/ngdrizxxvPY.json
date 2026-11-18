@@ -317,7 +317,7 @@
    "why": "內容一樣時共用，寫入才複製那一頁。"
   },
   {
-   "q": "COW 例子中 parent 新建變數 Test1 在 page C，結果是？",
+   "q": "fork 後 parent 與 child 以 copy-on-write 共用 page A、B、C；接著 parent 寫入 page C（新建變數 Test1），結果是？",
    "opts": [
     "只有 page C 被複製一份",
     "A、B、C 全部被複製一份",

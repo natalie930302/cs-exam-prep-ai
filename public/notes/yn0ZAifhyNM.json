@@ -604,7 +604,7 @@
    "why": "要先讓原本 x 右邊那個 node 的 llink 改指 p，最後才改 x->rlink。"
   },
   {
-   "q": "插入的四行中，哪種調整順序會出錯？",
+   "q": "把 p 插在 doubly linked list 的 x 後面：① p->llink = x；② p->rlink = x->rlink；③ x->rlink->llink = p；④ x->rlink = p。哪種調整順序會出錯？",
    "opts": [
     "① 和 ② 對調",
     "把 x->rlink = p 移到最前面",
@@ -648,7 +648,7 @@
    "why": "讓左邊的 rlink 越過 x 指到右邊，右邊的 llink 越過 x 指到左邊。"
   },
   {
-   "q": "m×n 的 sparse matrix 用 linked list 表示，黃色 head node 有幾個？",
+   "q": "m×n 的 sparse matrix 用 Horowitz 課本的 linked list 表示，head node（不含總 head node）有幾個？",
    "opts": [
     "m + n",
     "max{m, n}",

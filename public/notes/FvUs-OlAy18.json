@@ -993,7 +993,7 @@
  ],
  "quiz": [
   {
-   "q": "找 s 的 component 的 procedure，每一輪要找哪一種 edge (u, v)？",
+   "q": "找 s 所在 connected component 的通用做法：集合 R 一開始只有 s，每一輪找一條 edge (u, v) 並把 v 加進 R。要找哪一種 edge？",
    "opts": [
     "u 在 R 裡、v 不在 R 裡",
     "u、v 都在 R 裡",
@@ -1059,7 +1059,7 @@
    "why": "直接看第 u row、第 v column 那一格。"
   },
   {
-   "q": "依影片，課本的 BFS 實作（每層各存一個 L[i]）中，L[i] 可以用什麼實作？",
+   "q": "課本的 BFS 實作中，每一層各存一個 L[i]（第 i 層的點）。L[i] 可以用什麼實作？",
    "opts": [
     "queue 或 stack 都可以",
     "只能用 queue",

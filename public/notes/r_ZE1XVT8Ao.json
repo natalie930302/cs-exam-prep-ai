@@ -404,7 +404,7 @@
    "why": "directory 記錄資料位置，只通知相關的 cache，所以適合大型系統。"
   },
   {
-   "q": "只靠 compiler 與 OS 的一致性做法，影片稱為？",
+   "q": "不靠硬體、只靠 compiler 與 OS 維持 cache 一致性的做法，通常稱為？",
    "opts": [
     "cache coherence scheme（軟體）",
     "cache coherency protocol（硬體）",

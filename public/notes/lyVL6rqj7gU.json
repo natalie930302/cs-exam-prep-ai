@@ -318,7 +318,7 @@
    "why": "老師逐一檢查：reflexive（自己跟自己）、symmetric（路徑反過來走）、transitive（兩段路徑接起來）都成立。"
   },
   {
-   "q": "為什麼不會有一條邊一端在 V₁、另一端在 V₂？",
+   "q": "undirected graph 的端點依「兩點之間有 path」這個 equivalence relation 分成 classes V₁, V₂, …。為什麼不會有一條邊一端在 V₁、另一端在 V₂？",
    "opts": [
     "有這條邊，兩邊的點就有路徑相通，會在同一個 equivalence class",
     "因為 graph 是 directed，邊只能從 V₁ 指向 V₁",
@@ -329,7 +329,7 @@
    "why": "這條邊會像橋一樣把兩塊接通，和「它們在不同 class」矛盾。"
   },
   {
-   "q": "component Gᵢ 指的是？",
+   "q": "undirected graph G 的端點依「兩點之間有 path」分成 equivalence classes V₁, V₂, …。component Gᵢ 指的是？",
    "opts": [
     "(Vᵢ, Eᵢ)：一個 equivalence class 的端點，加上兩端都在裡面的邊",
     "任何一條 path 上的端點與邊",

@@ -201,7 +201,7 @@
    "why": "cut 是 V 的 partition，而且要把 source 和 sink 分開。"
   },
   {
-   "q": "例子 S = {s,a,b,d}、T = {c,t}：流過去 2 + 4 + 3、流回來 1。val(f) 是？",
+   "q": "某 flow 與 cut S = {s,a,b,d}、T = {c,t}：從 S 指到 T 的邊 flow 是 2、4、3，從 T 指回 S 的邊 flow 合計 1。val(f) 是？",
    "opts": [
     "8",
     "10",
@@ -223,7 +223,7 @@
    "why": "證明是加上一堆 outflow − inflow = 0 再整理，只用到流量守恆。"
   },
   {
-   "q": "證明中為什麼可以「多扣掉 s 的 inflow」？",
+   "q": "證明 val(f) = Σf(S→T) − Σf(T→S) 時，從 val(f) = s 的 outflow 出發，把 S 中其他點的 (outflow − inflow) = 0 加進來。為什麼還可以「多扣掉 s 的 inflow」？",
    "opts": [
     "因為 source 的 inflow = 0",
     "因為 s 也滿足 flow conservation",

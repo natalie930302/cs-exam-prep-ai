@@ -195,7 +195,7 @@
    "why": "user mode 程式需要資源時，經 system call 暫時進入 kernel mode。"
   },
   {
-   "q": "複製檔案的例子中，「在螢幕上顯示提示」為什麼需要 system call？",
+   "q": "複製檔案的程式要先在螢幕上顯示提示（請使用者輸入檔名），為什麼連這一步也需要 system call？",
    "opts": [
     "要存取 monitor 這個 output device（hardware）",
     "因為要先建立一個新檔案來存放提示文字",

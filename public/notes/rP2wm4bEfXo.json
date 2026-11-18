@@ -1091,7 +1091,7 @@
    "why": "worst case 表示「最差也不過如此」，比較公平；average case 需要 input 分布，實務上只能用 benchmark 平均。"
   },
   {
-   "q": "依 Definition 3，演算法 efficient 的意思是？",
+   "q": "依 Kleinberg & Tardos 課本最後採用的定義（Definition 3），演算法 efficient 的意思是？",
    "opts": [
     "在真實 input 上跑得快",
     "比 brute force 快",

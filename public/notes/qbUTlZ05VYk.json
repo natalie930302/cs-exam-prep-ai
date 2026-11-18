@@ -474,7 +474,7 @@
    "why": "guest kernel 實際 run 在 user space；靠 interrupt 攔截再執行一次，所以比較慢。"
   },
   {
-   "q": "下列何者「不是」課堂提到的 VM 好處？",
+   "q": "下列何者「不是」virtual machine 的好處？",
    "opts": [
     "讓程式執行得比實體機器更快",
     "protection（isolation）",

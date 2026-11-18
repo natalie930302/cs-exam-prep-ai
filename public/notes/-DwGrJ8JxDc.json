@@ -976,7 +976,7 @@
    "why": "extended Euclid 給出 xb + yp = gcd(b, p)；gcd = 1 時 x 就是反元素。"
   },
   {
-   "q": "base b = 2⁸、所有 digits 都是偶數時，K mod 2³² 會怎樣？",
+   "q": "rolling hash 中 K 是一串 digits 以 base b 表示的值。b = 2⁸、所有 digits 都是偶數時，K mod 2³² 會怎樣？",
    "opts": [
     "一定是偶數，一半的 outputs 用不到",
     "仍然均勻分布，因為 b 是 2 的次方",
@@ -987,7 +987,7 @@
    "why": "base 是偶數，末位 digit 偶數 → K 偶數；mod 2³² 保留最低位元，仍是偶數。"
   },
   {
-   "q": "MIT Rec 9b 認為「好的 hash function」最關鍵的性質是？",
+   "q": "設計 hash function 時，最關鍵的性質是？",
    "opts": [
     "distribute：輸出分布均勻，input 的規律不會留在 output",
     "fast：計算越快越好，即使輸出有規律也可以接受",

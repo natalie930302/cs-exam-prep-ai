@@ -245,7 +245,7 @@
    "why": "I1 在 T4 寫結果到 memory，同時 I4 在 T4 要從 memory 取指令，兩者搶同一個 memory。"
   },
   {
-   "q": "承上題，若讓 I4 等到 memory 沒人寫結果時才 fetch，四個指令總共要幾個 cycle？",
+   "q": "四階段 pipeline（FI 讀 memory 取指令、DI、EI、WR 把結果寫回同一個 memory），I1～I4 依序每個 cycle 進一個。若讓 fetch 等到 memory 沒人寫結果時才進行，四個指令總共要幾個 cycle？",
    "opts": [
     "10",
     "11",

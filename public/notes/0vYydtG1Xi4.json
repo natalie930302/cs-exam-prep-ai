@@ -409,7 +409,7 @@
    "why": "直接給位置（座標）就讀，不需要 index。"
   },
   {
-   "q": "General-graph directory 中刪掉 bin→g2 的 link 後，g2 與 t1 互相參照。怎麼回收？",
+   "q": "General-graph directory 中刪掉 bin→g2 的 link 後，g2 與 t1 互相參照、但已無法從 root 走到。怎麼回收？",
    "opts": [
     "Garbage collection：從 root 標記走得到的，刪掉沒標記的",
     "Reference counting：等 g2、t1 的 count 變 0 時自動刪除",
@@ -431,7 +431,7 @@
    "why": "所以會造成 cycle 的 link 直接拒絕。"
   },
   {
-   "q": "Traverse 到標記 m 的 usr 目錄時，OS 會去查什麼？",
+   "q": "Traverse 路徑時遇到被標記為 mount point 的目錄（例如 /usr），OS 會去查什麼？",
    "opts": [
     "Mount table",
     "Open-file table",

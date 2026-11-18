@@ -385,7 +385,7 @@
    "why": "reader 把 lock 一路傳給後來的 reader。"
   },
   {
-   "q": "readcount 為什麼要用 mutex 保護？",
+   "q": "First readers-writers 解法中，readcount 為什麼要用 mutex 保護？",
    "opts": [
     "它是 reader 之間共享、會被同時 ++/--",
     "為了擋 writer",

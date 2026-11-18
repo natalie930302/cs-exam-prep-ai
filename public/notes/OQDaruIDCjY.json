@@ -1348,7 +1348,7 @@
    "why": "剛好 n − 1 條是 tree，少於就是 forest；DAG 則可以很 dense。"
   },
   {
-   "q": "老師證明「DAG 一定有沒有 incoming edge 的點」時，沿 incoming edge 往回走幾步？",
+   "q": "證明「DAG 一定有沒有 incoming edge 的點」（反證：假設 n 個點每個都有 incoming edge）時，從任一點沿 incoming edge 往回走，走多少步就能得到矛盾？",
    "opts": [
     "收集 n + 1 個點（走 n 步），必有重複點形成 cycle",
     "走 n − 1 步一定會回到起點，起點與終點就形成 cycle",

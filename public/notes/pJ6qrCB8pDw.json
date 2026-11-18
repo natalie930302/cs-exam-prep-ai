@@ -222,7 +222,7 @@
    "why": "Page number 就是 page table 的 index，直接跳過去。"
   },
   {
-   "q": "P5 在 frame 21，page size 2048 bytes，offset 3（以 byte 計），physical address 是？",
+   "q": "Page 5（P5）放在 frame 21，page size 2048 bytes，offset 3（以 byte 計），physical address 是？",
    "opts": [
     "21 + 3 = 24",
     "5 × 2048 + 21 = 10261",

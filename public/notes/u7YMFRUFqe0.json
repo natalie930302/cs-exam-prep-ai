@@ -394,7 +394,7 @@
    "why": "[4, -1, 2, 1] = 6。"
   },
   {
-   "q": "分治法的答案是哪三者的最大值？",
+   "q": "用分治法解 maximum subarray，答案是哪三者的最大值？",
    "opts": [
     "左半最大、右半最大、跨中點的 cross sum",
     "左半最大、右半最大、整個陣列的 total sum",
@@ -405,7 +405,7 @@
    "why": "最大子陣列只可能完全在左、完全在右、或跨過中點。"
   },
   {
-   "q": "[-2, 1, -3] 的 cross sum（pivot = 1）是？",
+   "q": "Maximum subarray 分治法：[-2, 1, -3] 以中間的 1 為 pivot，cross sum（左段以 pivot 結尾、右段從 pivot 右邊開始，兩段都不可空）是？",
    "opts": [
     "-2",
     "1",
@@ -416,7 +416,7 @@
    "why": "left subsum = 1（1 或 1 − 2 取大），right subsum = -3，相加 -2。"
   },
   {
-   "q": "Greedy 版每一步 current 的更新式是？",
+   "q": "Maximum subarray 的 greedy（Kadane）版，掃到元素 x 時 current（以 x 結尾的最大和）的更新式是？",
    "opts": [
     "current = max(current + x, x)",
     "current = current + x",

@@ -241,7 +241,7 @@
    "why": "最大的 flow value 剛好等於最小的 cut capacity；一般的 flow 只是 ≤。"
   },
   {
-   "q": "證明中 S 是怎麼定義的？",
+   "q": "證明 Max-Flow Min-Cut 時，對一個 maximum flow F 定義 cut (S, T = V − S)。S 是怎麼定義的？",
    "opts": [
     "能從 s 經由 incomplete f-augmenting path 到達的端點",
     "能從 s 只經由 saturated edge（滿載邊）走到的所有端點",
@@ -252,7 +252,7 @@
    "why": "S = { v : 存在從 s 到 v 的 incomplete f-augmenting path }，T = V − S。"
   },
   {
-   "q": "在 F2 上（(s,a) 5/5、(s,b) 2/4、(s,c) 3/3；b 除了 (s,b) 之外只有 (b,d) 2/2 這條邊），S 是？",
+   "q": "某 flow 中 (s,a) 5/5、(s,b) 2/4、(s,c) 3/3，而 b 除了 (s,b) 之外只有 (b,d) 2/2 這條邊。令 S = 從 s 經 incomplete f-augmenting path 能到達的端點，S 是？",
    "opts": [
     "{s, b}",
     "{s, a, b}",
@@ -263,7 +263,7 @@
    "why": "只有 (s,b) 沒滿可以走；從 b 出去的 (b,d) 也滿了。"
   },
   {
-   "q": "為什麼 sink t 一定在 T？",
+   "q": "證明 Max-Flow Min-Cut 時，S = 從 s 經 incomplete f-augmenting path 能到達的端點、T = V − S。若 F 是 maximum flow，為什麼 sink t 一定在 T？",
    "opts": [
     "否則有 s 到 t 的 f-augmenting path，F 還能增大，矛盾",
     "因為 t 沒有 outflow",
@@ -274,7 +274,7 @@
    "why": "t 在 S 代表有一條完整的 f-augmenting path，跟 F 是 maximum flow 矛盾。"
   },
   {
-   "q": "證明中，從 S 指到 T 的 forward edge (x, y) 的 flow 一定是？",
+   "q": "證明 Max-Flow Min-Cut 時，S = 從 s 經 incomplete f-augmenting path 能到達的端點、T = V − S。從 S 指到 T 的邊 (x, y)，flow 一定是？",
    "opts": [
     "等於 c(x, y)",
     "等於 0",

@@ -291,7 +291,7 @@
    "why": "min(5−4, 6−1, 1, 5−2) = min(1, 5, 1, 3) = 1；逆向邊看的是 flow 1，不是 capacity 7。"
   },
   {
-   "q": "沿 s-a-d-c-t 加 1 之後，(c, d) 的 flow 變成？",
+   "q": "f-augmenting path s-a-d-c-t 中，(c, d) 是 backward edge（原本 flow 1、capacity 7）。沿這條 path 增加 1 之後，(c, d) 的 flow 變成？",
    "opts": [
     "0",
     "2",
@@ -302,7 +302,7 @@
    "why": "在反方向加 1 等於原方向扣 1：1 − 1 = 0。"
   },
   {
-   "q": "為什麼 F2（value 10）一定是 maximum flow？",
+   "q": "network 的 capacity：(s,a) 5、(s,b) 4、(s,c) 3、(a,d) 6、(a,t) 3、(b,d) 2、(c,d) 7、(c,t) 5、(d,t) 4。某 flow F2 的 value 是 10，為什麼 F2 一定是 maximum flow？",
    "opts": [
     "因為 cut {s,b} 的 capacity 也是 10",
     "因為 residual graph 中還有 s→t 的 path",
@@ -310,7 +310,7 @@
     "因為找到兩條 path"
    ],
    "ans": "因為 cut {s,b} 的 capacity 也是 10",
-   "why": "任何 flow ≤ 任何 cut capacity；val(F2) 已經等於 10，不可能再大。"
+   "why": "cut S = {s,b} 的 capacity 是 (s,a) 5 + (s,c) 3 + (b,d) 2 = 10；任何 flow ≤ 任何 cut capacity，val(F2) 已經等於 10，不可能再大。"
   }
  ]
 }

@@ -880,7 +880,7 @@
  ],
  "quiz": [
   {
-   "q": "Bellman-Ford 表中 OPT(4, b) = −2、OPT(4, d) = 2、OPT(4, e) = 0，b→d = −1、b→e = −2，OPT(5, b) = ?",
+   "q": "Bellman-Ford（OPT(i, v) = v 最多用 i 條邊到終點的最短距離）表中 OPT(4, b) = −2、OPT(4, d) = 2、OPT(4, e) = 0；b 只有 b→d = −1、b→e = −2 兩條出邊。OPT(5, b) = ?",
    "opts": [
     "1",
     "−2",
@@ -924,7 +924,7 @@
    "why": "第 n 輪值還變小，表示剛好 n 條 edge 的路徑更好；鴿籠原理說它含 cycle，且必須是負的。"
   },
   {
-   "q": "要抓出圖中所有 negative cycle，老師的做法是？",
+   "q": "要用 Bellman-Ford 抓出圖中所有 negative cycle，可以怎麼做？",
    "opts": [
     "對每個點各跑一次 Dijkstra，檢查哪些點回到自己的最短距離會變成負無限大",
     "加一個新點 t，每個點都連一條 weight 0 的 edge 到 t，再跑 Bellman-Ford",
@@ -935,7 +935,7 @@
    "why": "任何 negative cycle 都能 reach 到 t，所以算各點到 t 的最短路徑一定抓得到。"
   },
   {
-   "q": "本講義 TSP 的 DP 遞迴式是？",
+   "q": "TSP 的 DP 若定義 OPT(S, u, v) = 從 u 出發、走過 S 中每個點恰一次、在 v 結束的最短路徑長，遞迴式是？",
    "opts": [
     "OPT(S, u, v) = min_w { c(u, w) + OPT(S − {u}, w, v) }",
     "OPT(S, u, v) = max_w { c(u, w) + OPT(S, w, v) }",

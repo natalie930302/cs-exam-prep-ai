@@ -240,7 +240,7 @@
    "why": "最小化 −profit 等於最大化 profit。"
   },
   {
-   "q": "影片中 cost 和 upper bound 的差別是？",
+   "q": "0/1 knapsack 用 LC branch and bound（profit 取負號）時，節點的 cost 和 upper 的差別是？",
    "opts": [
     "cost 允許放物品的一部分（分數），upper 不允許",
     "cost 不取負號",
@@ -262,7 +262,7 @@
    "why": "放 1、2、3（32），再放物品 4 的 3/9（+6）。"
   },
   {
-   "q": "LC branch and bound 下一個展開哪個節點？",
+   "q": "0/1 knapsack 的 LC branch and bound 下一個展開哪個節點？",
    "opts": [
     "cost 最小的活節點",
     "最早產生的節點",
@@ -273,7 +273,7 @@
    "why": "Least cost。"
   },
   {
-   "q": "upper 更新成 −38 後，cost = −32 的節點會怎樣？",
+   "q": "0/1 knapsack 的 LC branch and bound（profit 取負號、求最小）中，upper 更新成 −38 後，cost = −32 的節點會怎樣？",
    "opts": [
     "被殺掉，因為 −32 > −38",
     "被展開，因為 −32 比 0 小",

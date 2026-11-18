@@ -264,7 +264,7 @@
    "why": "每個 component 是 tree，|Vi| = |Ei| + 1，加總得 |V| = |E| + r。"
   },
   {
-   "q": "(c) ⇒ (d) 中，若 connected 的 T 有 cycle，可推出？",
+   "q": "證明「T connected 且 |V| = |E| + 1 ⇒ T 沒有 cycle」時，若 connected 的 T 有 cycle，可推出？",
    "opts": [
     "|E| ≥ |V|",
     "|E| = |V| − 1",
@@ -286,7 +286,7 @@
    "why": "唯一 path P 加上新邊形成一個 cycle；若有第二個，就會得到第二條 path，矛盾。"
   },
   {
-   "q": "四個敘述的證明順序是？",
+   "q": "undirected simple graph T 的四個敘述：(a) T 是 tree；(b) 沒有 cycle 且 |V| = |E| + 1；(c) connected 且 |V| = |E| + 1；(d) 沒有 cycle，且加上任一條原本沒有的邊剛好產生一個 cycle。下列哪一種證明安排足以證明四者等價？",
    "opts": [
     "a ⇒ b ⇒ c ⇒ d ⇒ a",
     "a ⇔ b、c ⇔ d 分開證",

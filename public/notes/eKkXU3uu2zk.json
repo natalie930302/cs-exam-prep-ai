@@ -726,7 +726,7 @@
  ],
  "quiz": [
   {
-   "q": "4 個矩陣的程式裡，m、s 為什麼開 5×5？",
+   "q": "Matrix chain multiplication 的 C 程式（4 個矩陣 A1…A4，m[i][j] 存最小成本、s[i][j] 存切點）中，m、s 為什麼開 5×5？",
    "opts": [
     "讓索引 1…4 對應 A1…A4",
     "因為有 5 個矩陣（含結果矩陣），每個佔一列",
@@ -737,7 +737,7 @@
    "why": "C 陣列從 0 開始，開 5 才有索引 4；第 0 列、第 0 行用不到。"
   },
   {
-   "q": "最外層迴圈變數 d 代表什麼？",
+   "q": "Matrix chain multiplication 的 bottom-up DP 程式有三層迴圈 d、i、k，最外層迴圈變數 d 代表什麼？",
    "opts": [
     "j − i，也就是第幾條對角線",
     "矩陣的維度",
@@ -748,7 +748,7 @@
    "why": "d = 1、2、3 依序填三條對角線。"
   },
   {
-   "q": "程式裡 j 怎麼算？",
+   "q": "Matrix chain multiplication 的 bottom-up DP 程式中，外層 d 依序處理各條對角線、中層 i 是起點，j 怎麼算？",
    "opts": [
     "j = i + d",
     "j = d − i",
@@ -759,7 +759,7 @@
    "why": "同一條對角線上 j − i 固定是 d。"
   },
   {
-   "q": "計算 m[1][3] 時，最內層 k 會取哪些值？",
+   "q": "Matrix chain multiplication 的 DP 計算 m[1][3]（A1A2A3 的最小成本）時，最內層切點 k 會取哪些值？",
    "opts": [
     "1、2",
     "1、2、3",
@@ -770,7 +770,7 @@
    "why": "k 從 i 到 j − 1。"
   },
   {
-   "q": "s[i][j] 什麼時候被寫入？",
+   "q": "Matrix chain multiplication 的 DP 程式中，對每個 k 算 q = m[i][k] + m[k+1][j] + p[i−1]·p[k]·p[j]。s[i][j] 什麼時候被寫入？",
    "opts": [
     "算出的 q 比目前 min 小時",
     "每次迴圈都寫，最後一次為準",

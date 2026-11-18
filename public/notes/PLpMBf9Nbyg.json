@@ -241,7 +241,7 @@
    "why": "這是 Remark 1：while 迴圈只在沒有 unmatched 且 untested 的 x 時才停。"
   },
   {
-   "q": "正確性證明中，從 B-matched、A-unmatched 的 x 走 B A B A 的 path，為什麼不能停在 B-edge？",
+   "q": "證明 Hungarian algorithm 得到 maximum matching：A 是演算法停下時的 matching、B 是任一 matching。從一個 B-matched、A-unmatched 的 x 出發，交替走 B-edge、A-edge（B A B A …），為什麼這條 path 不能停在 B-edge？",
    "opts": [
     "那樣它對 A 是 augmenting path，與演算法停止狀態矛盾",
     "因為 B-edge 不在原本的圖裡，path 只能停在 A-edge",
@@ -252,7 +252,7 @@
    "why": "起點 A 沒配、終點 y 也 A 沒配，翻過來 A 就變大。"
   },
   {
-   "q": "證明裡的對應「B 有 A 沒有的 x → A 有 B 沒有的 x」是一對一，再用什麼原理得到 |A| ≥ |B|？",
+   "q": "證明 Hungarian algorithm 停下時的 matching A 不小於任一 matching B：對應「B 有配到、A 沒配到的 x → A 有配到、B 沒配到的 x」是一對一，再用什麼原理得到 |A| ≥ |B|？",
    "opts": [
     "鴿籠原理（pigeonhole principle）",
     "數學歸納法（mathematical induction）",

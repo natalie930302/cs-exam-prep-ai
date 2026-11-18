@@ -761,7 +761,7 @@
    "why": "每個變數有 true/false 兩種值，總共 2^n 種組合，每種都要走訪一次 tree 求值。"
   },
   {
-   "q": "在 PostOrderEval 中，¬（not）節點的 value 怎麼算？",
+   "q": "Horowitz 課本把布林式畫成 tree、用 PostOrderEval 求值，其中 ¬（not）節點的 value 怎麼算？",
    "opts": [
     "x->value = !x->rightChild->value",
     "x->value = !x->leftChild->value",

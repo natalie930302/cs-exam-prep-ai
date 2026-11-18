@@ -375,7 +375,7 @@
    "why": "最少色數 = chromatic number，對應 m-coloring optimization problem。"
   },
   {
-   "q": "4 個頂點、3 種顏色，不加條件的狀態空間樹共有幾個節點？",
+   "q": "Graph coloring 回溯：4 個頂點、3 種顏色，不加條件的狀態空間樹共有幾個節點？",
    "opts": [
     "121",
     "81",

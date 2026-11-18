@@ -346,7 +346,7 @@
    "why": "影片說它也是 detection 是錯誤用語；detection 用 Request 矩陣、不需要 Max。"
   },
   {
-   "q": "影片例子 Total (10,5,7)，ΣAllocation (7,2,5)，Available？",
+   "q": "Banker：資源總數 (10,5,7)，ΣAllocation (7,2,5)，Available？",
    "opts": [
     "(3,3,2)",
     "(7,2,5)",
@@ -379,7 +379,7 @@
    "why": "每一種資源都要 Need ≤ Work。"
   },
   {
-   "q": "P2 做完後 Work 怎麼更新？",
+   "q": "Banker safety 檢查：Work = (3,3,2)，P2 的 Allocation (2,0,0)、Need (1,2,2)。P2 可以做完，做完後 Work 怎麼更新？",
    "opts": [
     "Work + Allocation(P2) = (5,3,2)",
     "Work + Need(P2) = (4,5,4)",
@@ -390,7 +390,7 @@
    "why": "它做完會把全部持有的資源還回來，淨增加 Allocation。"
   },
   {
-   "q": "影片得到的 safe sequence？",
+   "q": "Banker：Available (3,3,2)。Allocation／Need：P1 (0,1,0)／(7,4,3)、P2 (2,0,0)／(1,2,2)、P3 (3,0,2)／(6,0,0)、P4 (2,1,1)／(2,1,1)、P5 (0,0,2)／(5,3,1)。下列哪一個是 safe sequence？",
    "opts": [
     "P2 → P4 → P5 → P1 → P3",
     "P1 → P2 → P3 → P4 → P5",
@@ -398,7 +398,7 @@
     "不存在（unsafe）"
    ],
    "ans": "P2 → P4 → P5 → P1 → P3",
-   "why": "安全序列不唯一，但這個是影片的答案。"
+   "why": "Work (3,3,2) → P2 做完 (5,3,2) → P4 (7,4,3) → P5 (7,4,5) → P1 (7,5,5) → P3 (10,5,7)。一開始 P1、P3 都不夠；safe sequence 不唯一。"
   },
   {
    "q": "Unsafe state 代表？",

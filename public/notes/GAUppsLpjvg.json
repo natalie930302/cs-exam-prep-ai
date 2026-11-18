@@ -152,7 +152,7 @@
    "why": "每道指令平均 stall 0.3 cycle，CPI = 1 + 0.3 = 1.3。"
   },
   {
-   "q": "影片說初始填充 pipeline 的 cycle 通常可以忽略，原因是？",
+   "q": "計算 pipeline 穩定狀態的 CPI 時，一開始填滿 pipeline 的那幾個 cycle 通常可以忽略，原因是？",
    "opts": [
     "填充時硬體會自動 forwarding，不產生延遲",
     "填充的 cycle 由編譯器排程掉，不計入 CPI",

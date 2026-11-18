@@ -301,7 +301,7 @@
    "why": "x R x 正是反身性。"
   },
   {
-   "q": "已知 x R y，證明 [x] ⊆ [y] 時，由 w R x 推到 w R y 用的是？",
+   "q": "R 是 equivalence relation、已知 x R y，證明 [x] ⊆ [y] 時，由 w R x 推到 w R y 用的是？",
    "opts": [
     "antisymmetric",
     "transitive",

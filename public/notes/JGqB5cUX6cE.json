@@ -169,7 +169,7 @@
  ],
  "quiz": [
   {
-   "q": "證明 maximum matching ≤ |X| − δ 時，關鍵是哪個 subset？",
+   "q": "bipartite graph G = (X ∪ Y, E) 的 deficiency δ = max_{A⊆X} (|A| − |R(A)|)（R(A) 是 A 的鄰點集合）。證明 maximum matching ≤ |X| − δ 時，關鍵是哪個 subset？",
    "opts": [
     "達到最大值的 A₀：|A₀| − |R(A₀)| = δ",
     "A = ∅：|∅| − |R(∅)| = 0",
@@ -180,7 +180,7 @@
    "why": "光 A₀ 就有 δ 個人一定配不到。"
   },
   {
-   "q": "新圖 G* 在 Y 那邊加了幾個新點？",
+   "q": "bipartite graph G = (X ∪ Y, E) 的 deficiency δ = max_{A⊆X} (|A| − |R(A)|)（R(A) 是 A 的鄰點集合）。證明 maximum matching = |X| − δ 時構造新圖 G*：在 Y 那邊加一組新點 D，並把 X 的每個點連到 D 的每個點。D 要有幾個點？",
    "opts": [
     "δ 個",
     "|X| 個",
@@ -191,7 +191,7 @@
    "why": "|D| = δ，再把 X 的每個點連到 D 的每個點。"
   },
   {
-   "q": "對非空的 A ⊆ X，|R*(A)| 等於？",
+   "q": "bipartite graph G = (X ∪ Y, E) 的 deficiency δ = max_{A⊆X} (|A| − |R(A)|)（R(A) 是 A 的鄰點集合）。構造 G*：在 Y 那邊加 δ 個新點 D，並把 X 的每個點連到 D 的每個點（這些新邊記為 K）。對非空的 A ⊆ X，G* 中 A 的鄰點集合 R*(A) 的大小等於？",
    "opts": [
     "|R(A)| + δ",
     "|R(A)|",
@@ -202,7 +202,7 @@
    "why": "R*(A) = R(A) ∪ D，兩者不相交，|D| = δ。"
   },
   {
-   "q": "G* 的 complete matching M* 裡，屬於 K 的邊為什麼剛好 δ 條？",
+   "q": "bipartite graph G = (X ∪ Y, E) 的 deficiency δ = max_{A⊆X} (|A| − |R(A)|)（R(A) 是 A 的鄰點集合）。構造 G*：在 Y 那邊加 δ 個新點 D，並把 X 的每個點連到 D 的每個點（這些新邊記為 K）。G* 的 complete matching M* 裡，屬於 K 的邊為什麼剛好 δ 條？",
    "opts": [
     "最多 δ（D 只有 δ 點），也不能少於 δ（否則超過 |X| − δ 的上界）",
     "因為 K 只有 δ 條邊，全部都會被選進 M*",

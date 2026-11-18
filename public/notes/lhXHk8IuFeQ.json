@@ -778,7 +778,7 @@
    "why": "*x = *y 複製所有欄位（包括 link），兩個 pointer 本身仍是不同位址。"
   },
   {
-   "q": "Insert50(x) 若把兩行寫反：先 x->link = t; 再 t->link = x->link;，結果？",
+   "q": "要把新 node t 插在 node x 後面，正確是 t->link = x->link; x->link = t;。若把兩行寫反：先 x->link = t; 再 t->link = x->link;，結果？",
    "opts": [
     "t->link 指向自己，原本 x 後面的 node 遺失",
     "結果一樣正確，兩行順序可以互換",
@@ -786,7 +786,7 @@
     "程式編譯錯誤，因為 t 還沒初始化"
    ],
    "ans": "t->link 指向自己，原本 x 後面的 node 遺失",
-   "why": "x->link 已被改成 t，再讀 x->link 拿到的是 t 自己；20 的位址沒人記得了。"
+   "why": "x->link 已被改成 t，再讀 x->link 拿到的是 t 自己；原本 x 後面那個 node 的位址沒人記得了。"
   },
   {
    "q": "刪除 linked list 的第一個 node（first 指向它），指標該怎麼改？",

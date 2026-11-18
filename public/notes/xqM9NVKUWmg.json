@@ -1222,7 +1222,7 @@
    "why": "要刻意留一格空的；rear 再往前一格就碰到 front 時就是 full。front == rear 是 empty 的條件。"
   },
   {
-   "q": "6 格 circular queue（index 0～5），初始 front = rear = 0；加入 J1～J5 後再刪除 J1～J4，再加入 J6～J9。此時 front、rear 分別是？",
+   "q": "6 格 circular queue（index 0～5，front 指向第一個元素的前一格、rear 指向最後一個元素），初始 front = rear = 0；加入 J1～J5 後再刪除 J1～J4，再加入 J6～J9。此時 front、rear 分別是？",
    "opts": [
     "front = 4, rear = 3",
     "front = 4, rear = 4",

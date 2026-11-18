@@ -1735,7 +1735,7 @@
    "why": "8、9、0 都被佔了，i = 3：(8 + 3) mod 10 = 1。"
   },
   {
-   "q": "同一張表改用 quadratic probing（f(i) = i²），依序 insert 89, 18, 49, 58, 69。69 會放在哪？",
+   "q": "10 個 bucket、h(k) = k mod 10，用 quadratic probing（f(i) = i²）依序 insert 89, 18, 49, 58, 69。69 會放在哪？",
    "opts": [
     "bucket 1",
     "bucket 2",
@@ -1768,7 +1768,7 @@
    "why": "除以 2ⁱ 的餘數就是最後 i 個 bit，例如 A1、B1、C1 最後一個 bit 都是 1，mod 2 全擠在同一個 bucket。"
   },
   {
-   "q": "Dynamic hashing 的 trie（bucket 最多 2 筆）中，insert C1 = 110001 造成 split 後，哪一個 key 會和 C1 在同一個 bucket？",
+   "q": "Dynamic hashing 用 trie 當 hash function：從 key 最右邊的 bit 往左逐層分支，每個 bucket 最多 2 筆。A1 = 100001、B1 = 101001 原本在同一個 bucket，insert C1 = 110001 造成 split（一路分到兩兩分開為止）後，哪一個 key 會和 C1 在同一個 bucket？",
    "opts": [
     "A1（100001）",
     "B1（101001）",

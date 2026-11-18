@@ -1317,7 +1317,7 @@
    "why": "搜尋到 leaf 發現沒有對應的 child 就停止，所以實際比較次數是 fail node 的 level 減 1。"
   },
   {
-   "q": "do、if、while 三個字、p 與 q 都是 1/7 時，哪一棵 BST 的 cost 最小？",
+   "q": "Optimal BST：keys do < if < while，成功機率 p 與失敗機率 q 全都是 1/7。五種可能的 BST 中哪一棵 cost 最小？",
    "opts": [
     "if 當 root 的平衡樹，13/7",
     "while 當 root 往左斜，15/7",
@@ -1328,7 +1328,7 @@
    "why": "平衡的 tree b 是 13/7，其他四棵都是 15/7。"
   },
   {
-   "q": "p = (0.5, 0.1, 0.05)、q = (0.15, 0.1, 0.05, 0.05) 時，optimal BST 是哪一棵？",
+   "q": "Optimal BST：keys do < if < while，p = (0.5, 0.1, 0.05)、q = (0.15, 0.1, 0.05, 0.05)，optimal BST 是哪一棵？",
    "opts": [
     "do → if → while 的右斜樹（cost 1.5）",
     "if 當 root 的平衡樹（cost 1.9）",
@@ -1350,7 +1350,7 @@
    "why": "選 ak 當 root 後，子樹每點都深一層，等於多加一次 wij；wij 與 k 無關，只需對 c(i,k−1) + c(k,j) 取最小。"
   },
   {
-   "q": "(do, if, return, while)、p = 3 3 1 1、q = 2 3 1 1 1，w01 與 c01 各是多少？",
+   "q": "Optimal BST：keys (do, if, return, while)，p = 3 3 1 1、q = 2 3 1 1 1，w01 與 c01 各是多少？",
    "opts": [
     "w01 = 8，c01 = 8",
     "w01 = 5，c01 = 8",
@@ -1361,7 +1361,7 @@
    "why": "w01 = q0 + p1 + q1 = 2 + 3 + 3 = 8；c01 = w01 + c00 + c11 = 8 + 0 + 0。"
   },
   {
-   "q": "同一例子中，最後的 optimal BST 的 root 是哪個字？",
+   "q": "Optimal BST：keys (do, if, return, while)，p = 3 3 1 1、q = 2 3 1 1 1，最後的 optimal BST 的 root 是哪個字？",
    "opts": [
     "if",
     "do",

@@ -1345,7 +1345,7 @@
    "why": "row major：第 i 列前面已經放了 i 個完整的列，每列 u2 個。"
   },
   {
-   "q": "依老師的定義（1-based、無相同區塊記 0），P = ababaca 的 fail function 是？",
+   "q": "依 1-based、沒有相同前後綴時記 0 的定義，P = ababaca 的 fail function 是？",
    "opts": [
     "0 0 1 2 3 0 1",
     "0 1 2 3 0 1 0",
@@ -1356,7 +1356,7 @@
    "why": "例如第 5 個 a 往前看 aba 等於開頭 aba → 3；c 找不到 → 0。−1 −1 0 1 2 −1 0 是 Horowitz 0-based 寫法。"
   },
   {
-   "q": "KMP 比對時，在 T 的 i 和 P 的 j 不 match（j > 1），下一個拿 P 的哪個字元跟 T[i] 比？",
+   "q": "KMP（1-based，f(j) 為 P[1..j] 最長相同前後綴的長度）比對時，在 T 的 i 和 P 的 j 不 match（j > 1），下一個拿 P 的哪個字元跟 T[i] 比？",
    "opts": [
     "P[1]",
     "P[j − 1]",

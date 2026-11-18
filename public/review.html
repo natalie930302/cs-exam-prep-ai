@@ -67,7 +67,7 @@
 <script src="video-order.js?v=20261008m"></script>
 <script src="chapter-core.js?v=20261118a"></script>
 <script src="md.js?v=20261118b"></script>
-<script src="recall.js?v=20261118c"></script>
+<script src="recall.js?v=20261118d"></script>
 <script>
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function(){});
 (async function(){
@@ -153,6 +153,19 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').cat
     // most overdue first, then mixed across subjects
     .sort(function(a, b){ return (srs[a.id].d - srs[b.id].d) || (Math.random() - .5); });
   const wrong = wrongQuizDue();
+  // A question reworded since it was answered (e.g. its data written into it)
+  // is shown in today's wording; matched by its text, else by the same answer
+  // and options. The history keeps the old text as the question's key.
+  const notesBy = {};
+  await Promise.all(Array.from(new Set(wrong.map(function(r){ return r.vid; }).filter(Boolean))).map(function(v){
+    return fetch('/notes/' + encodeURIComponent(v) + '.json').then(function(r){ return r.ok ? r.json() : null; }).then(function(j){ notesBy[v] = j; }).catch(function(){});
+  }));
+  const optKey = function(o){ return o.slice().sort().join(' | '); };
+  wrong.forEach(function(r){
+    const qs = (notesBy[r.vid] || {}).quiz || [];
+    const cur = qs.find(function(q){ return q.q === r.q; }) || qs.find(function(q){ return q.ans === r.ans && Array.isArray(q.opts) && optKey(q.opts) === optKey(r.opts); });
+    if (cur && cur.opts.indexOf(cur.ans) >= 0) { r.histQ = r.q; r.q = cur.q; r.opts = cur.opts.slice(); r.ans = cur.ans; r.why = cur.why || r.why; }
+  });
   const items = cards.concat(wrong.map(function(r){ return {mcq: r}; }));
   // mix subjects and kinds: interleaving helps more than one topic in a row
   for (let i = items.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = items[i]; items[i] = items[j]; items[j] = t; }
@@ -162,7 +175,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').cat
   // a quiz answer redone here goes into the same history as in the study room
   function onMcq(r, pick, ok){
     let h; try { h = JSON.parse(localStorage.getItem('qz-history') || '[]'); } catch (e) { h = []; }
-    h.push({vid: r.vid, label: r.label, subj: r.subj, ch: r.ch, at: r.at, q: r.q, opts: r.opts, pick: pick, ans: r.ans, ok: ok, why: r.why || '', ts: Date.now()});
+    h.push({vid: r.vid, label: r.label, subj: r.subj, ch: r.ch, at: r.at, q: r.histQ || r.q, opts: r.opts, pick: pick, ans: r.ans, ok: ok, why: r.why || '', ts: Date.now()});
     try { localStorage.setItem('qz-history', JSON.stringify(h.slice(-3000))); } catch (e) {}
   }
   function start(sel){

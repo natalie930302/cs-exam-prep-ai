@@ -1933,7 +1933,7 @@
    "why": "要問每棵樹的 root，樹最多 ⌊log₂n⌋ + 1 棵。"
   },
   {
-   "q": "14 個 node（B₃ + B₂ + B₁），max 在 B₂ 的 root。removeMax 後 forest 是？",
+   "q": "Binomial heap 有 14 個 node（B₃ + B₂ + B₁），max 在 B₂ 的 root。removeMax 後 forest 是？",
    "opts": [
     "B₃、B₂、B₀",
     "B₃、B₁、B₀",

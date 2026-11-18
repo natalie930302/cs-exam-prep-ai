@@ -454,7 +454,7 @@
    "why": "2 個 set，都 mod 2 = 0：0 M、8 M、0 H、6 M（換 8）、8 M（換 0）。"
   },
   {
-   "q": "同上序列，direct-mapped 與 fully associative 的 miss 次數分別是？",
+   "q": "4 個 block 的 cache，依序存取 block 0, 8, 0, 6, 8。direct-mapped 與 fully associative（LRU）的 miss 次數分別是？",
    "opts": [
     "5 與 3",
     "4 與 2",

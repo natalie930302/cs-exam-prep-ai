@@ -1304,7 +1304,7 @@
    "why": "順序不重要，只需快速取出和放回。"
   },
   {
-   "q": "若 line 6 用掃 preference list 的方式，Gale-Shapley 的 running time 是？",
+   "q": "Gale-Shapley 中判斷「w 比較喜歡 m 還是目前的 m′」若不用 Ranking 陣列、改成每次掃 w 的 preference list，整體 running time 是？",
    "opts": [
     "O(n³)",
     "O(n²)",

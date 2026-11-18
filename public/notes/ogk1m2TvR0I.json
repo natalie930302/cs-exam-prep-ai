@@ -227,7 +227,7 @@
    "why": "bipartite → cycle 長度偶數；沒有長度 2；有 4-cycle。"
   },
   {
-   "q": "依本課的定義，一棵有 6 個 vertices 的樹（5 條邊）的 girth 是？",
+   "q": "若約定「沒有 cycle 的圖，girth 定義為它的邊數」，一棵有 6 個 vertices（5 條邊）的樹 girth 是？",
    "opts": [
     "0",
     "5",
@@ -235,10 +235,10 @@
     "∞"
    ],
    "ans": "5",
-   "why": "沒有 cycle 時，本課把 girth 定義為全部邊數。"
+   "why": "依這個約定 girth = 全部邊數 = 5（另一種常見約定是 ∞）。"
   },
   {
-   "q": "為什麼要把 Euler 公式裡的 r 消掉？",
+   "q": "推導判斷 planar 用的 edge–vertex inequality 時，為什麼要把 Euler 公式 v − e + r = 2 裡的 r 消掉？",
    "opts": [
     "因為 r 永遠是 2，把它代進去後公式就能化簡成只含 v 與 e 的形式",
     "因為要判斷是否 planar 時，圖可能畫不出 embedding，數不了 r",

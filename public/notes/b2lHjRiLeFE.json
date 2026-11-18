@@ -208,7 +208,7 @@
    "why": "Banker 用 Need = Max − Allocation（假設最壞）；detection 用已經 given 的 Request。"
   },
   {
-   "q": "恐龍書 detection 例（Available (0,0,0)）中，P2 的 Request 改為 (0,0,1) 後？",
+   "q": "Deadlock detection：Available (0,0,0)；Allocation P0 (0,1,0)、P1 (2,0,0)、P2 (3,0,3)、P3 (2,1,1)、P4 (0,0,2)；Request P0 (0,0,0)、P1 (2,0,2)、P2 (0,0,1)、P3 (1,0,0)、P4 (0,0,2)。結果？",
    "opts": [
     "P1、P2、P3、P4 deadlock",
     "沒有 deadlock，所有 process 都能完成",

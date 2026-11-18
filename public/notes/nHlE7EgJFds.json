@@ -372,7 +372,7 @@
    "why": "例：(1,1,1) ∈ C(A) 但 ∉ C(R)。"
   },
   {
-   "q": "上面的 A，left null space 的 basis 是？",
+   "q": "A = [1 2 3 1; 1 1 2 1; 1 2 3 1]，left null space N(Aᵀ) 的 basis 是？",
    "opts": [
     "(−1, 0, 1)",
     "(1, 1, 1)",

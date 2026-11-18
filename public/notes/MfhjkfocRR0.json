@@ -243,7 +243,7 @@
  ],
  "quiz": [
   {
-   "q": "影片中 hash function 的作用是什麼？",
+   "q": "Hash table 中 hash function 的作用是什麼？",
    "opts": [
     "把 key 轉成陣列的 index",
     "把 value 加密",
@@ -276,18 +276,18 @@
    "why": "影片中第二個人也 hash 到 3，而 [3] 已經有 Paul，這就是 collision。"
   },
   {
-   "q": "影片用哪種方法處理 collision？",
+   "q": "Hash table 在每個 index 接一條 linked list，碰撞的資料都接在同一格的串列上。這種處理 collision 的方法叫？",
    "opts": [
-    "chaining：每個 index 接一條 linked list",
-    "linear probing：往下一格找，直到找到空的 index",
-    "直接覆蓋舊資料",
-    "把表放大一倍後 rehash"
+    "chaining（separate chaining）",
+    "linear probing",
+    "double hashing",
+    "rehashing"
    ],
-   "ans": "chaining：每個 index 接一條 linked list",
-   "why": "老師在每個 index 拉出 linked list，碰撞的資料都接在同一格的串列上。"
+   "ans": "chaining（separate chaining）",
+   "why": "每個 index 掛一條串列是 chaining；linear probing、double hashing 是在表裡找別的空格（open addressing），rehashing 是把表放大重算。"
   },
   {
-   "q": "查詢某人時 hash 得到 1，接下來要做什麼？",
+   "q": "用 chaining 處理 collision 的 hash table，查詢某 key 時 hash 得到 1，接下來要做什麼？",
    "opts": [
     "只看 index 1，沿著它的串列找",
     "從 index 0 開始一格一格找",
