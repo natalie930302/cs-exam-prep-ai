@@ -975,3 +975,11 @@ body:not(.st-booting) .st-top, body:not(.st-booting) .st-main { animation: m-in 
 /* 「▶ 看這段影片」：三角形和文字對齊 */
 .st-handout .ho-video { display: inline-flex; align-items: center; gap: var(--sp-1); }
 @media (max-width: 640px) { .st-handout .ho-tools .ho-time { flex: 1 0 100%; } }
+/* 2026-11-19d：講義每一節：分隔線到標題、標題到下一條線，收合時上下一樣 16；打開時內容下面也留 16 */
+.st-handout details.ho-sec > summary h3 { margin: 0 !important; padding: var(--sp-4) 0 !important; border-top: 1px solid var(--bd); }
+.st-handout details.ho-sec[open] { padding-bottom: var(--sp-4); }
+.st-handout details.ho-sec[open] > summary h3 { padding-bottom: var(--sp-3) !important; }
+.st-handout details.ho-sec > :last-child { margin-bottom: 0; }
+/* 「看這段影片」的三角形：12px，和文字置中 */
+.st-handout .ho-video { line-height: 1; }
+.st-handout .ho-video .ho-play { flex: 0 0 auto; display: block; }

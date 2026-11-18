@@ -3764,10 +3764,6 @@ body#appRoot .ch-hrs b { color: var(--tx); }
 body#appRoot .ch-pbar { height: 4px; border-radius: 2px; background: var(--surf2); overflow: hidden; margin: var(--sp-2) 0 0 28px; }
 body#appRoot .ch-pbar i { display: block; height: 100%; background: var(--ch-color); border-radius: 2px; transition: width .28s var(--ease); }
 body#appRoot .ch-row-done .ch-pbar { display: none; }
-/* 速記卡與自我檢查：進度卡裡這一科的一個動作 */
-body#appRoot .subject-overview-card .sp-review-link { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); height: var(--h-btn); margin-top: var(--sp-4); border: var(--line) !important; border-radius: var(--r-ctl) !important; background: var(--surf); color: var(--tx); font-size: 13px; font-weight: 700; text-decoration: none; transition: border-color .16s; }
-body#appRoot .subject-overview-card .sp-review-link svg { color: var(--subj, var(--ac)); }
-@media (hover: hover) { body#appRoot .subject-overview-card .sp-review-link:hover { border-color: color-mix(in srgb, var(--ac) 45%, var(--bd)); } }
 body#appRoot .subject-overview-card { flex-wrap: wrap !important; }
 body#appRoot .subject-overview-card .sp-review-link { flex: 1 0 100%; width: 100%; box-sizing: border-box; }
 body#appRoot .ch-pbar[hidden] { display: none; }
@@ -3786,26 +3782,10 @@ body#appRoot .global-search-item small { display: block; overflow: hidden; text-
 body#appRoot .gs-close { display: none; }
 @media (max-width: 640px) { body#appRoot .gs-close { display: inline-flex; align-items: center; height: var(--h-btn); padding: 0 var(--sp-2); border: 0; background: none; font: inherit; font-size: 14px; font-weight: 700; color: var(--ac); cursor: pointer; flex: 0 0 auto; } }
 
-/* 「今天」：日曆最上面三個下一步（複習、讀講義、看影片），左邊科目色條 */
-body#appRoot .today-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--sp-2); margin: 0 0 var(--sp-5); }
-@media (max-width: 640px) { body#appRoot .today-strip { margin-bottom: var(--sp-4); } }
-body#appRoot .today-act { position: relative; display: grid; gap: 2px; padding: var(--sp-3) var(--sp-4) var(--sp-3) 20px !important; background: var(--surf) !important; border: var(--line) !important; border-radius: var(--r-card) !important; text-decoration: none; color: var(--tx); min-width: 0; transition: border-color .16s; }
-body#appRoot .today-act::before { content: ""; position: absolute; left: 8px; top: 12px; bottom: 12px; width: 3px; border-radius: 2px; background: var(--c); }
-body#appRoot .today-act .today-k { font-size: 12px; font-weight: 700; color: var(--mt); }
-body#appRoot .today-act b { font-size: 14px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-body#appRoot .today-act small { font-size: 12px; color: var(--mt); }
-@media (hover: hover) { body#appRoot .today-act:hover { border-color: color-mix(in srgb, var(--c) 50%, var(--bd)); } }
-@media (max-width: 640px) { body#appRoot .today-strip { grid-template-columns: minmax(0, 1fr); } }
 body#appRoot .task-toast { box-shadow: var(--sh-float) !important; }
-body#appRoot .today-strip .today-act { border: 1px solid var(--bd) !important; }
 /* 手機：三件事放在同一張卡裡，一行一件，不佔太高 */
 @media (max-width: 640px) {
-  body#appRoot .today-strip { gap: 0 !important; background: var(--surf); border: 1px solid var(--bd); border-radius: var(--r-card); overflow: hidden; }
-  body#appRoot .today-strip .today-act { border: 0 !important; border-radius: 0 !important; padding: var(--sp-2) var(--sp-4) var(--sp-2) 20px !important; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--sp-2); align-items: baseline; }
-  body#appRoot .today-strip .today-act + .today-act { border-top: 1px solid var(--bd) !important; }
-  body#appRoot .today-strip .today-act::before { top: 10px; bottom: 10px; }
-  body#appRoot .today-strip .today-act small { grid-column: 2; }
-}
+          }
 /* 2026-11-19b：沒有距離的地方補上規則裡的距離 */
 /* details 的內容不吃 flex gap：用 margin 隔開 */
 body#appRoot .ch-opt-group > .ch-mat + .ch-mat { margin-top: var(--sp-2) !important; }
@@ -3820,7 +3800,24 @@ body#appRoot #sec-schedule .cal-nav { padding: var(--sp-1) !important; gap: var(
 }
 /* 2026-11-19c：按鈕不固定高度（文字換行時上下仍有內距）；圖示和文字垂直置中 */
 body#appRoot :is(.ch-study-link, .sp-review-link) { height: auto !important; min-height: var(--h-btn) !important; padding: var(--sp-2) var(--sp-4) !important; line-height: 1.3 !important; display: flex !important; align-items: center !important; justify-content: center !important; gap: var(--sp-2) !important; text-align: center; box-sizing: border-box; }
-body#appRoot :is(.ch-study-link, .sp-review-link, .today-act, .calday-list a) svg { flex: 0 0 auto; display: block; }
+body#appRoot :is(.ch-study-link, .sp-review-link, .calday-list a) svg { flex: 0 0 auto; display: block; }
 /* 章節列的進度條：跟標題同一條左緣，跟下面的按鈕隔 16 */
 body#appRoot .ch-pbar { margin: var(--sp-2) 0 0 !important; }
 body#appRoot .ch-row:not(.collapsed) .ch-body { margin-top: var(--sp-4) !important; }
+/* 2026-11-19d */
+/* 有圖示的按鈕：行高 1，文字框就是字的大小，圖示和字用同一個中心對齊（iPhone 也一樣） */
+body#appRoot :is(.ch-study-link, .sp-review-link) { line-height: 1 !important; padding-top: 12px !important; padding-bottom: 12px !important; }
+body#appRoot :is(.ch-study-link, .sp-review-link) svg { width: 16px; height: 16px; }
+/* 速記卡與自我檢查：跟章節裡的按鈕同一種樣子，撐滿卡片寬度 */
+body#appRoot .subject-overview-card .sp-review-link { flex: 1 0 100%; width: 100% !important; margin-top: var(--sp-4) !important; }
+/* 「其他老師的影片」前面的箭頭：跟講義同一種 chevron */
+body#appRoot .ch-opt-group > summary { display: flex !important; align-items: center; gap: var(--sp-2); }
+body#appRoot .ch-opt-group > summary::before { content: "" !important; flex: 0 0 auto; width: 7px; height: 7px; margin: 0 4px 0 6px; border-right: 2px solid var(--mt2); border-bottom: 2px solid var(--mt2); transform: rotate(-45deg); transition: transform .16s ease; }
+body#appRoot .ch-opt-group[open] > summary::before { content: "" !important; transform: rotate(45deg) translate(-2px, -2px); }
+/* 手機日曆的點：只有圓點，字完全藏起來 */
+@media (max-width: 640px) {
+  body#appRoot #sec-schedule .cal-cell .cal-tag { color: transparent !important; text-indent: 100% !important; white-space: nowrap !important; overflow: hidden !important; line-height: 0 !important; font-size: 0 !important; display: block !important; flex: 0 0 auto; }
+}
+/* 章節列：標題區下面不留邊距，進度條和標題資訊隔 8，展開或收合都一樣 */
+body#appRoot #main #sec-subjects .sp .ch-head, body#appRoot .ch-row .ch-head { margin-bottom: 0 !important; }
+body#appRoot .ch-pbar { margin-top: var(--sp-2) !important; }

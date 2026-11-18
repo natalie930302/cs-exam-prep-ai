@@ -1389,15 +1389,12 @@
   let handoutCards = null;
   loadHandoutIndex().then(function(have){ return have[chId] && have[chId].cards ? loadCards(chId) : []; })
     .then(function(c){ handoutCards = c; if (currentTab === 'quiz') renderQuiz(); });
-  const HO_SIZES = [14, 15, 16, 18, 20];
-  function hoSize(){ const v = Number(store.get('ho-size')); return HO_SIZES.indexOf(v) >= 0 ? v : 16; }
   function fmtAt(t){ t = Math.floor(t); const h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, s = t % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0'); }
   function renderHandout(){
     const el = $('handoutBody');
     if (!handoutMd || el.dataset.loaded) return;
     if (!handoutLinks || !handoutCards) { setTimeout(renderHandout, 150); return; }
     el.dataset.loaded = '1';
-    el.style.fontSize = hoSize() + 'px';
     el.innerHTML = mdToHtml(handoutMd);
     // every ## becomes a section that can fold, listed in a contents box
     const secs = [], raw = mdSections(handoutMd);
@@ -1414,7 +1411,7 @@
         a.className = 'ho-video';
         a.href = videoRoomUrl(subject.id, chIndex, link.v) + '&at=' + link.t;
         // an SVG triangle (the ▶ character turns into an emoji on phones and sits off the text line)
-        a.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1l7 4-7 4z" fill="currentColor"/></svg><span>看這段影片（' + fmtAt(link.t) + '）</span>';
+        a.innerHTML = '<svg class="ho-play" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5l7.5 4.5-7.5 4.5z" fill="currentColor"/></svg><span>看這段影片（' + fmtAt(link.t) + '）</span>';
         a.title = link.label + '：' + link.sec;
         sum.after(a);
       }
@@ -1433,8 +1430,7 @@
     const tools = document.createElement('div');
     tools.className = 'ho-tools';
     tools.innerHTML = '<span class="ho-time">' + (total ? '約 ' + total + ' 分鐘讀完' : '') + '<span class="ho-checked"></span></span>'
-      + '<span class="ho-size"><span class="ho-size-l">字級</span><button type="button" data-d="-1" aria-label="字小一點">小</button><button type="button" data-d="1" aria-label="字大一點">大</button></span>'
-      + '<button type="button" class="ho-fold">全部收合</button>';
+      ;
     const toc = document.createElement('nav');
     toc.className = 'ho-toc';
     toc.innerHTML = '<div class="ho-toc-hd">目錄</div><ol>' + secs.map(function(x, i){ return '<li><a href="#" data-i="' + i + '">' + mdEsc(x.title) + '</a></li>'; }).join('') + '</ol>';
@@ -1493,16 +1489,6 @@
     }
     function goSec(i, instant){ secs[i].det.open = true; secs[i].det.scrollIntoView({behavior: instant ? 'auto' : 'smooth', block: 'start'}); }
     toc.onclick = function(e){ const a = e.target.closest('a[data-i]'); if (!a) return; e.preventDefault(); goSec(Number(a.dataset.i)); };
-    tools.querySelector('.ho-fold').onclick = function(){
-      const anyOpen = secs.some(function(x){ return x.det.open; });
-      secs.forEach(function(x){ x.det.open = !anyOpen; });
-      this.textContent = anyOpen ? '全部展開' : '全部收合';
-    };
-    tools.querySelector('.ho-size').onclick = function(e){
-      const b = e.target.closest('button'); if (!b) return;
-      const k = Math.max(0, Math.min(HO_SIZES.length - 1, HO_SIZES.indexOf(hoSize()) + Number(b.dataset.d)));
-      store.set('ho-size', HO_SIZES[k]); el.style.fontSize = HO_SIZES[k] + 'px';
-    };
     // where the reader is: the last section scrolled into view is remembered
     // (and how far that is in minutes, so the calendar shortens the reading)
     if ('IntersectionObserver' in window) {

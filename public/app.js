@@ -595,22 +595,14 @@ function fmtMin(m){ m = Math.round(m); const h = Math.floor(m/60), r = m%60; ret
 function renderCalDayDetail(iso){
   return renderCalDayDetailInner(iso);
 }
-// 「今天」: the next three things to do, each one tap away — today's review,
-// the handout to read, the video to watch (from where it was left off)
-function todayStripHtml(){
-  const iso = isoDate(new Date());
-  const items = dayPlan().get(iso) || [];
-  const n = typeof srsDue === 'function' ? reviewDueCount() : 0;
-  const parts = [];
-  if(n) parts.push({href: '/review.html', k: '複習', t: '今日複習 '+n+' 題', s: '約 '+Math.max(1, Math.round(n*0.75))+' 分鐘', c: 'var(--ac)'});
-  const ho = items.find(function(x){ return x.kind === 'handout'; });
-  if(ho) parts.push({href: ho.href, k: '讀講義', t: ho.title.replace(/^讀講義：/, ''), s: '約 '+fmtMin(ho.take), c: 'var('+(SUBJ_COLOR_VAR[ho.subj] || '--ac2')+')'});
-  const v = items.find(function(x){ return x.kind !== 'handout'; });
-  if(v) parts.push({href: v.href, k: '看影片', t: v.title, s: v.cont ? '從 '+fmtMin(v.from)+' 處接著看' : (v.dur || ''), c: 'var('+(SUBJ_COLOR_VAR[v.subj] || '--ac2')+')'});
-  if(!parts.length) return '';
-  return '<div class="today-strip" aria-label="今天">'+parts.map(function(p){
-    return '<a class="today-act" href="'+p.href+'" style="--c:'+p.c+'"><span class="today-k">'+p.k+'</span><b>'+escapeHtml(p.t)+'</b><small>'+escapeHtml(p.s)+'</small></a>';
-  }).join('')+'</div>';
+// today's 今日複習 (cards due + quiz answers still wrong) as the first task of the day
+function reviewItemHtml(iso){
+  if(iso !== isoDate(new Date()) || typeof srsDue !== 'function') return '';
+  const n = reviewDueCount();
+  if(!n) return '';
+  return '<li><a href="/review.html"><span class="calday-ch" style="color:var(--ac)">今日複習</span>'
+    +'<span class="calday-title">複習 '+n+' 題</span>'
+    +'<span class="calday-meta">自我檢查卡與影片答錯的題・約 '+Math.max(1, Math.round(n*0.75))+' 分鐘</span></a></li>';
 }
 // due cards of chapters that still have cards (as review.html counts them)
 function reviewDueCount(){
@@ -634,7 +626,7 @@ function renderCalDayDetailInner(iso){
   const total = items.reduce(function(a, x){ return a + x.take; }, 0);
   const h = dayPlanHeadline(items);
   return head+'<span>'+escapeHtml(h.subj)+'・'+escapeHtml(h.ch)+(h.more ? ' 等' : '')+'・'+dayCountText(items)+'・約 '+fmtMin(total)+'</span></div>'
-    +'<ol class="calday-list">'+items.map(function(x){
+    +'<ol class="calday-list">'+reviewItemHtml(iso)+items.map(function(x){
       const part = x.cont || x.more
         ? '<span class="calday-part">'+(x.cont ? '從 '+fmtMin(x.from)+' 處接著看' : '從頭看')+(x.more ? '到 '+fmtMin(x.from + x.take)+' 處，剩下的下一個讀書日接著看' : '到結束')+'</span>' : '';
       return '<li><a href="'+x.href+'"><span class="calday-ch" style="color:var('+(SUBJ_COLOR_VAR[x.subj] || '--ac2')+')">'+escapeHtml(x.subj)+' 第'+(x.ci+1)+'章・'+(x.kind === 'handout' ? '先讀講義' : '第 '+(x.vi+1)+'/'+x.vn+' 支')+'</span>'
@@ -719,8 +711,7 @@ function renderCalMonthView(container){
   const dowRowHtml = dowLabels.map(function(l){ return '<div class="cal-dow">'+l+'</div>'; }).join('');
 
   container.innerHTML =
-    todayStripHtml()
-    +'<div class="cal-wrap">'
+    '<div class="cal-wrap">'
     +'<div class="cal-head">'
       +'<div class="cal-title">'+y+'年'+(m+1)+'月</div>'
       +'<div class="cal-nav">'
@@ -971,7 +962,7 @@ async function init(){
       +'</div>'
       +'</div>'
       // every chapter's 重點整理 on one page and each chapter's 自我檢查, for review
-      +'<a class="sp-review-link" href="/review.html?s='+s.id+'">'+svgIcon('clipboard',14)+'速記卡與自我檢查</a>'
+      +'<a class="ch-study-link ch-lesson-link sp-review-link" style="--ch-color:'+s.color+'" href="/review.html?s='+s.id+'">'+svgIcon('clipboard',14)+'速記卡與自我檢查</a>'
       +'</div>'
       // the series list sits on its own row below; the progress card above is
       // small enough to share the header row with the title and subject tabs
