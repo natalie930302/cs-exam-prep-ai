@@ -1420,7 +1420,7 @@
       if (cards.length) {
         const box = document.createElement('div');
         box.className = 'ho-check';
-        box.innerHTML = '<div class="ho-check-hd">自我檢查・' + cards.length + ' 題<span>先自己想，再看答案</span></div>';
+        box.innerHTML = '<div class="ho-check-hd">這節的題目・' + cards.length + ' 題<span>先自己想，再看答案</span></div>';
         cards.forEach(function(k){ box.appendChild(recallCard(k, function(){ renderCheckCount(); })); });
         det.appendChild(box);
       }
@@ -1442,7 +1442,7 @@
     // how many of the chapter's cards have been answered at least once
     function renderCheckCount(){
       const s = srsLoad(), n = handoutCards.filter(function(k){ return s[k.id] && s[k.id].d; }).length;
-      tools.querySelector('.ho-checked').textContent = handoutCards.length ? '・自我檢查答過 ' + n + '／' + handoutCards.length + ' 題' : '';
+      tools.querySelector('.ho-checked').textContent = handoutCards.length ? '・講義題目答過 ' + n + '／' + handoutCards.length + ' 題' : '';
     }
     const first = el.querySelector('h2');
     (first ? first.nextElementSibling || first : el.firstChild).before(tools);
@@ -1510,7 +1510,7 @@
     const end = document.createElement('div');
     end.className = 'ho-end';
     end.innerHTML = '<label class="ho-done"><input type="checkbox"' + (done.has(tid) ? ' checked' : '') + '> 讀完了</label>'
-      + (handoutCards.length ? '<button type="button" class="ho-quiz">' + handoutCards.length + ' 題自我檢查一次練完 →</button>' : '')
+      + (handoutCards.length ? '<button type="button" class="ho-quiz">練這章的講義題目（' + handoutCards.length + ' 題）→</button>' : '')
       + '<button type="button" class="ho-videos">開始看影片 →</button>';
     mainCol.appendChild(end);
     end.querySelector('input').onchange = function(e){
@@ -1664,7 +1664,7 @@
     const s = srsLoad(), today = srsDay();
     const seen = handoutCards.filter(function(k){ return s[k.id] && s[k.id].d; });
     const weak = handoutCards.filter(function(k){ const e = s[k.id]; return !e || !e.d || e.d <= today || e.g !== 'good'; });
-    box.innerHTML = '<div class="st-recall-hd"><b>講義自我檢查</b><span>這章 ' + handoutCards.length + ' 題・答過 ' + seen.length + ' 題</span></div>'
+    box.innerHTML = '<div class="st-recall-hd"><b>講義題目</b><span>這章 ' + handoutCards.length + ' 題・答過 ' + seen.length + ' 題</span></div>'
       + '<div class="st-recall-btns"><button type="button" class="st-btn st-btn-watch" data-k="all">從頭練一次（' + handoutCards.length + ' 題）</button>'
       + (weak.length && weak.length < handoutCards.length ? '<button type="button" class="st-btn" data-k="weak">只練還不熟的（' + weak.length + ' 題）</button>' : '')
       + '</div>';
@@ -1701,14 +1701,14 @@
     const all = chapterHistory();
     const rb = recallBox();
     if (!all.length) {
-      el.innerHTML = '<div class="st-nonotes">還沒有影片小測驗的作答紀錄。看影片時，每講完一段會暫停出一題小挑戰，影片結束時也會出題；答過的題目都會記在這裡。</div>';
+      el.innerHTML = '<div class="st-qh-sec">影片題目<span>看影片時跳出來的選擇題</span></div><div class="st-nonotes">還沒有作答紀錄。看影片時，每講完一段會暫停出一題小挑戰，影片結束時也會出題；答過的題目都會記在這裡。</div>';
       if (prBox) el.insertBefore(prBox, el.firstChild);
       if (rb) el.insertBefore(rb, el.firstChild);
       return;
     }
     const right = all.filter(function(r){ return r.ok; }).length;
     const rows = (quizFilter === 'wrong' ? all.filter(function(r){ return !r.ok; }) : all).slice().reverse();
-    el.innerHTML = '<div class="st-qh">'
+    el.innerHTML = '<div class="st-qh-sec">影片題目<span>看影片時跳出來的選擇題</span></div><div class="st-qh">'
       + '<div class="st-qh-top"><span>這章答過 <b>' + all.length + '</b> 題・答對 <b>' + right + '</b> 題（' + Math.round(right / all.length * 100) + '%）</span>'
       + (stillWrong().length ? '<button class="st-btn st-btn-watch st-qh-redo">重做答錯的 ' + stillWrong().length + ' 題</button>' : '')
       + '<span class="st-qh-filter"><button data-f="all"' + (quizFilter === 'all' ? ' class="on"' : '') + '>全部</button><button data-f="wrong"' + (quizFilter === 'wrong' ? ' class="on"' : '') + '>答錯的</button></span></div>'
@@ -1762,5 +1762,21 @@
     const tab = askedTab || store.get('study-tab');
     const usable = tab && $('panel-' + tab) && !((tab === 'lab' || tab === 'full') && !hasStage);
     setTab(usable ? tab : 'videos');
+    // opened for a tab (講義, 小測驗…) from a chapter card or search: go to the
+    // tabs; opened for the videos: stay at the top with the player
+    if (askedTab && askedTab !== 'videos' && usable && !params.get('sec')) {
+      // the player and the stage grow as they load: keep the tabs at the top
+      // until the layout settles (or the reader scrolls)
+      const toTabs = function(){
+        const t = document.querySelector('.st-tabs'), top = document.querySelector('.st-top');
+        const fixedTop = top && /sticky|fixed/.test(getComputedStyle(top).position) ? top.offsetHeight : 0;
+        window.scrollTo({top: Math.max(0, t.getBoundingClientRect().top + window.scrollY - fixedTop - 8), behavior: 'auto'});
+      };
+      let n = 0, moved = false;
+      const stop = function(){ moved = true; };
+      window.addEventListener('wheel', stop, {once: true, passive: true});
+      window.addEventListener('touchstart', stop, {once: true, passive: true});
+      (function again(){ if (moved) return; toTabs(); if (++n < 12) setTimeout(again, 250); })();
+    }
   })();
 })();

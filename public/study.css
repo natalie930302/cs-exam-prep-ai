@@ -986,3 +986,7 @@ body:not(.st-booting) .st-top, body:not(.st-booting) .st-main { animation: m-in 
 /* 「看這段影片」三角形（12px、字 13px）：同樣對齊中文字的視覺中心 */
 .st-handout .ho-video { display: inline-block !important; line-height: 1.6 !important; }
 .st-handout .ho-video .ho-play { display: inline-block !important; vertical-align: -0.08em; margin-right: 4px; }
+/* 小測驗分頁：講義題目、計算練習、影片題目三段，各有標題 */
+.st-qh-sec { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2); font-size: 14px; font-weight: 700; margin: var(--sp-5) 0 var(--sp-2); }
+.st-qh-sec span { font-size: 12px; font-weight: 400; color: var(--mt2); }
+#panel-quiz > .st-qh-sec:first-child { margin-top: 0; }

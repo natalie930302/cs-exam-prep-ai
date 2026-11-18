@@ -9,10 +9,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap">
 <link rel="stylesheet" href="theme.css?v=20261119b">
-<link rel="stylesheet" href="study.css?v=20261119d">
+<link rel="stylesheet" href="study.css?v=20261119e">
 <style>
   /* 複習: 今日複習 (cards due + quiz answers still wrong), 速記卡 (each
-     chapter's 重點整理 on one page) and one chapter's 自我檢查 round */
+     chapter's 重點整理 on one page) and one chapter's questions (now redirects to the study room's 小測驗 tab) */
   body { background: var(--bg); }
   .rv { max-width: 860px; margin: 0 auto; padding: 16px; opacity: 0; transition: opacity .22s ease; }
   .rv.ready { opacity: 1; }
@@ -81,26 +81,16 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').cat
   const subjOf = function(id){ return SUBJECTS.find(function(s){ return s.id === id; }); };
   const subject = subjOf((chParam || '').split('-')[0]) || subjOf(sParam) || SUBJECTS[0];
   document.documentElement.style.setProperty('--subj', mode === 'due' ? 'var(--ac)' : subject.color);
-  $('modes').innerHTML = '<a href="/review.html"' + (mode === 'due' ? ' class="on"' : '') + '>今日複習</a>'
-    + '<a href="/review.html?s=' + subject.id + '"' + (mode === 'sheet' ? ' class="on"' : '') + '>速記卡</a>'
-    + (mode === 'chapter' ? '<a class="on" href="' + location.pathname + location.search + '">這章自我檢查</a>' : '');
+  // 今日複習 and 速記卡 are separate pages (no tabs between them)
+  $('modes').style.display = 'none';
   function chUrl(ch){ const p = ch.split('-'); return videoRoomUrl(p[0], Number(p[1]) - 1) + '?t=handout'; }
+  // a chapter's 講義題目 live in the study room's 小測驗 tab
+  function quizUrl(ch){ const p = ch.split('-'); return videoRoomUrl(p[0], Number(p[1]) - 1) + '?t=quiz'; }
   function ready(){ $('rv').classList.add('ready'); }
   function cardCount(ch){ return (have[ch] || {}).cards || 0; }
 
-  // ── one chapter's 自我檢查 ──
-  if (mode === 'chapter') {
-    const n = Number(chParam.split('-')[1]), c = subject.chapters[n - 1];
-    document.title = subject.name + ' 第' + n + '章 自我檢查';
-    $('title').textContent = subject.name + ' 第' + n + '章 自我檢查';
-    $('back').href = chUrl(chParam); $('back').textContent = '← 講義';
-    const cards = await loadCards(chParam);
-    if (!cards.length) { list.innerHTML = '<p class="rv-empty">這章還沒有自我檢查題。</p>'; ready(); return; }
-    list.innerHTML = '<p class="rv-empty">' + mdEsc(c ? c.t : '') + '・' + cards.length + ' 題。先自己回答（寫下來或說出來），再看答案，照實按記得／模糊／忘了。</p><div id="sess"></div>';
-    recallSession($('sess'), cards, {endButtons: '<a href="' + chUrl(chParam) + '">回講義</a><a href="/review.html">今日複習</a>'});
-    ready();
-    return;
-  }
+  // old links to one chapter's questions: they are in the study room now
+  if (mode === 'chapter') { location.replace(quizUrl(chParam)); return; }
 
   // ── 速記卡: every chapter's "## 重點整理" ──
   if (mode === 'sheet') {
@@ -123,7 +113,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').cat
       if (!parts[i]) return '';
       const ch = subject.id + '-' + (i + 1), k = cardCount(ch);
       return '<section class="rv-ch"><div class="rv-ch-hd"><h2><a href="' + chUrl(ch) + '">第' + (i + 1) + '章 ' + mdEsc(c.t) + '</a></h2>'
-        + (k ? '<a class="rv-btn" href="/review.html?ch=' + ch + '">練這章 ' + k + ' 題</a>' : '') + '</div>'
+        + (k ? '<a class="rv-btn" href="' + quizUrl(ch) + '">講義題目 ' + k + ' 題</a>' : '') + '</div>'
         + '<div class="st-handout">' + mdToHtml(parts[i]) + '</div></section>';
     }).join('') || '<p class="rv-empty">這科還沒有講義。</p>';
     ready();
@@ -218,19 +208,19 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').cat
   if (items.length) {
     html += '<div class="rv-due"><div class="rv-due-big">今天要複習 ' + items.length + ' 題・約 ' + mins + ' 分鐘</div>'
       + '<div class="rv-subjs">' + SUBJECTS.filter(function(s){ return perSubj[s.id]; }).map(function(s){ return '<span style="background:' + s.color + '">' + s.name + ' ' + perSubj[s.id] + '</span>'; }).join('') + '</div>'
-      + '<div class="rv-due-sub">' + (cards.length ? '講義自我檢查卡 ' + cards.length + ' 張' : '') + (cards.length && wrong.length ? '、' : '') + (wrong.length ? '影片小測驗答錯、還沒重做對的 ' + wrong.length + ' 題' : '') + '。各科混在一起出，比一科一科練更記得住。</div>'
+      + '<div class="rv-due-sub">' + (cards.length ? '講義題目 ' + cards.length + ' 題' : '') + (cards.length && wrong.length ? '、' : '') + (wrong.length ? '影片小測驗答錯、還沒重做對的 ' + wrong.length + ' 題' : '') + '。各科混在一起出，比一科一科練更記得住。</div>'
       + '<div class="rv-due-btns">' + (items.length > 40 ? '<button class="rv-btn main" data-n="30">先練 30 題</button><button class="rv-btn" data-n="all">全部 ' + items.length + ' 題</button>' : '<button class="rv-btn main" data-n="all">開始複習</button>') + '</div></div>';
   } else {
     html += '<div class="rv-due"><div class="rv-due-big">今天沒有要複習的</div><div class="rv-due-sub">'
-      + (nextDays.length ? '接下來：' + nextDays.map(function(d){ return srsDate(d) + ' ' + ahead[d] + ' 張'; }).join('、') + '。' : '讀講義時回答每節後面的自我檢查，答過的卡片會照記得的程度排進這裡。')
+      + (nextDays.length ? '接下來：' + nextDays.map(function(d){ return srsDate(d) + ' ' + ahead[d] + ' 題'; }).join('、') + '。' : '讀講義時回答每節後面的題目，答過的題目會照記得的程度排進這裡。')
       + '</div></div>';
   }
   if (fresh.length) {
-    html += '<div class="rv-sec-hd">讀過講義、還沒做自我檢查的章</div><div class="rv-list">' + fresh.map(function(x){
-      return '<div class="rv-row"><b>' + x.s.name + '・第' + (x.i + 1) + '章 ' + mdEsc(x.c.t) + '</b><small>' + cardCount(x.ch) + ' 題</small><a class="rv-btn" href="/review.html?ch=' + x.ch + '">開始</a></div>';
+    html += '<div class="rv-sec-hd">讀過講義、還沒做講義題目的章</div><div class="rv-list">' + fresh.map(function(x){
+      return '<div class="rv-row"><b>' + x.s.name + '・第' + (x.i + 1) + '章 ' + mdEsc(x.c.t) + '</b><small>' + cardCount(x.ch) + ' 題</small><a class="rv-btn" href="' + quizUrl(x.ch) + '">開始</a></div>';
     }).join('') + '</div>';
   }
-  html += '<p class="rv-how">怎麼排的：卡片按「記得」，下次再出現的間隔一次比一次長（2、4、8、16、32、64 天；第一次就記得從 4 天開始）；「模糊」退一格，較快再出現；「忘了」明天再來，這一輪最後也會再問一次。影片小測驗答錯的題，隔天起出現在這裡，答對就不再出現。</p>';
+  html += '<p class="rv-how">怎麼排的：講義題目按「記得」，下次再出現的間隔一次比一次長（2、4、8、16、32、64 天；第一次就記得從 4 天開始）；「模糊」退一格，較快再出現；「忘了」明天再來，這一輪最後也會再問一次。影片小測驗答錯的題，隔天起出現在這裡，答對就不再出現。</p>';
   list.innerHTML = html;
   list.querySelectorAll('[data-n]').forEach(function(b){
     b.onclick = function(){ start(b.dataset.n === 'all' ? items : items.slice(0, Number(b.dataset.n))); };

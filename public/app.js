@@ -57,7 +57,7 @@ function checkLinkHtml(subjectId, idx){
   if(!n || typeof srsLoad !== 'function') return '';
   const s = srsLoad(), prefix = ch+':';
   const seen = Object.keys(s).filter(function(id){ return id.indexOf(prefix) === 0 && s[id].d; }).length;
-  return '<a class="ch-study-link ch-lesson-link" href="/review.html?ch='+ch+'">'+svgIcon('clipboard',14)+'自我檢查 '+n+' 題'+(seen ? '・答過 '+Math.min(seen, n) : '')+'</a>';
+  return '<a class="ch-study-link ch-lesson-link" href="'+studyRoomUrl(subjectId, idx)+'?t=quiz">'+svgIcon('clipboard',14)+'小測驗：講義題目 '+n+' 題'+(seen ? '・答過 '+Math.min(seen, n) : '')+'</a>';
 }
 // Subject overview uses one canonical YouTube playlist link per adopted
 // course. Individual watch links stay inside chapter tasks below.
@@ -602,7 +602,7 @@ function reviewItemHtml(iso){
   if(!n) return '';
   return '<li><a href="/review.html"><span class="calday-ch" style="color:var(--ac)">今日複習</span>'
     +'<span class="calday-title">複習 '+n+' 題</span>'
-    +'<span class="calday-meta">自我檢查卡與影片答錯的題・約 '+Math.max(1, Math.round(n*0.75))+' 分鐘</span></a></li>';
+    +'<span class="calday-meta">講義題目與影片答錯的題・約 '+Math.max(1, Math.round(n*0.75))+' 分鐘</span></a></li>';
 }
 // due cards of chapters that still have cards (as review.html counts them)
 function reviewDueCount(){
@@ -962,7 +962,7 @@ async function init(){
       +'</div>'
       +'</div>'
       // every chapter's 重點整理 on one page and each chapter's 自我檢查, for review
-      +'<a class="ch-study-link ch-lesson-link sp-review-link" style="--ch-color:'+s.color+'" href="/review.html?s='+s.id+'">'+svgIcon('clipboard',14)+'速記卡與自我檢查</a>'
+      +'<a class="ch-study-link ch-lesson-link sp-review-link" style="--ch-color:'+s.color+'" href="/review.html?s='+s.id+'">'+svgIcon('clipboard',14)+'速記卡：每章重點一頁看完</a>'
       +'</div>'
       // the series list sits on its own row below; the progress card above is
       // small enough to share the header row with the title and subject tabs
@@ -1121,11 +1121,11 @@ function renderGlobalSearch(query){
       }).filter(Boolean);
       const cards = (j.cards||[]).map(function(k){
         const p = chName(k.ch); if(!p.subj) return null;
-        return {kind: '自我檢查', subj: p.subj, title: k.q, detail: '第'+(p.idx+1)+'章・'+k.sec, href: '/review.html?ch='+k.ch};
+        return {kind: '講義題目', subj: p.subj, title: k.q, detail: '第'+(p.idx+1)+'章・'+k.sec, href: studyRoomUrl(p.subj.id, p.idx)+'?t=quiz'};
       }).filter(Boolean);
       const total = matches.length + handouts.length + cards.length + hits.length;
       if(announcement) announcement.textContent = total ? '找到 '+total+' 筆結果' : '找不到符合的結果';
-      out.innerHTML = total ? renderSearchGroups([['章節', chs], ['講義', handouts], ['自我檢查題', cards], ['影片', vids], ['筆記與字幕', hits.slice(0, 12)]])
+      out.innerHTML = total ? renderSearchGroups([['章節', chs], ['講義', handouts], ['講義題目', cards], ['影片', vids], ['筆記與字幕', hits.slice(0, 12)]])
         : '<div class="global-search-empty">找不到符合的章節、講義、影片或內容</div>';
       globalSearchActive = 0;
     }catch(e){ if(!matches.length) out.innerHTML = '<div class="global-search-empty">找不到符合的章節或影片</div>'; }
