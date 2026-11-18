@@ -806,3 +806,26 @@ body:not(.st-booting) .st-top, body:not(.st-booting) .st-main { animation: m-in 
 .st-handout .ho-meta { border-left-color: #e2a33b; }
 .st-handout .ho-idea { border-left-color: #8bc34a; }
 @media (max-width: 640px) { .st-handout { font-size: 15px; } .st-handout h2 { font-size: 18px; } }
+/* 2026-11-18: handout tools — contents, folding sections, resume, font size, video links, end bar */
+.st-handout .ho-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 13px; color: var(--mt2); }
+.st-handout .ho-tools .ho-time { flex: 1; }
+.st-handout .ho-tools button, .st-handout .ho-end button { font: inherit; font-size: 13px; color: var(--tx); background: var(--surf); border: 1px solid var(--bd); border-radius: 10px; padding: 4px 12px; cursor: pointer; transition: border-color .16s, background .16s; }
+.st-handout .ho-size { display: inline-flex; gap: 4px; }
+@media (hover: hover) { .st-handout .ho-tools button:hover, .st-handout .ho-end button:hover { border-color: color-mix(in srgb, var(--subj) 45%, var(--bd)); } }
+.st-handout .ho-resume { display: block; width: 100%; text-align: left; font: inherit; font-size: 14px; font-weight: 700; color: color-mix(in srgb, var(--subj) 75%, var(--tx)); background: color-mix(in srgb, var(--subj) 10%, var(--surf)); border: 1px solid color-mix(in srgb, var(--subj) 35%, transparent); border-radius: 10px; padding: 8px 16px; margin: 0 0 12px; cursor: pointer; }
+.st-handout .ho-toc { background: var(--surf2); border-radius: 14px; padding: 12px 16px; margin: 0 0 16px; font-size: 14px; line-height: 1.6; }
+.st-handout .ho-toc-hd { font-weight: 700; margin-bottom: 4px; }
+.st-handout .ho-toc ol { margin: 0; padding-left: 24px; columns: 2 260px; column-gap: 24px; }
+.st-handout .ho-toc a { color: var(--tx); text-decoration: none; }
+@media (hover: hover) { .st-handout .ho-toc a:hover { color: color-mix(in srgb, var(--subj) 75%, var(--tx)); text-decoration: underline; } }
+.st-handout details.ho-sec > summary { list-style: none; cursor: pointer; }
+.st-handout details.ho-sec > summary::-webkit-details-marker { display: none; }
+.st-handout details.ho-sec > summary h3::before { content: '▾ '; color: var(--mt2); font-size: 14px; }
+.st-handout details.ho-sec:not([open]) > summary h3::before { content: '▸ '; }
+.st-handout details.ho-sec:not([open]) > summary h3 { margin-bottom: 0; }
+.st-handout .ho-video { display: inline-block; font-size: 13px; font-weight: 700; color: color-mix(in srgb, var(--subj) 75%, var(--tx)); text-decoration: none; margin: 0 0 12px; }
+@media (hover: hover) { .st-handout .ho-video:hover { text-decoration: underline; } }
+.st-handout .ho-tag { color: #b5761b; font-size: .85em; }
+.st-handout .ho-end { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 32px 0 0; padding-top: 16px; border-top: 1px solid var(--bd); }
+.st-handout .ho-done { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; margin-right: auto; cursor: pointer; }
+.st-handout .ho-done input { width: 18px; height: 18px; accent-color: var(--subj); }

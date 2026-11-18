@@ -92,7 +92,7 @@ async function fetchSettings(){
 }
 async function fetchDoneTasks(){
   try{
-    const r = await fetch('/api/tasks/done');
+    const [r] = await Promise.all([fetch('/api/tasks/done'), loadHandoutIndex()]);
     DONE_TASK_IDS = expandQueueDoneIds((await r.json()).done || []);
   }catch(e){
     DONE_TASK_IDS = [];
@@ -519,6 +519,14 @@ function foundationVideoQueue(){
     SUBJECTS.forEach(function(sub){
       sub.chapters.forEach(function(c, ci){
         if(c.wk !== wk) return;
+        // the chapter's 講義 comes first: read it before the videos
+        const ho = HANDOUTS[sub.id + '-' + (ci + 1)];
+        if(ho && !done.has(handoutTaskId(sub.id, ci))){
+          let hpos = 0;
+          try{ hpos = Number(localStorage.getItem('ho-read-min-' + sub.id + '-' + (ci + 1))) || 0; }catch(e){}
+          out.push({kind:'handout', subj:sub.name, subjId:sub.id, ci:ci, ch:c.t, title:'讀講義：'+c.t, series:'講義', dur:'約 '+ho.min+' 分',
+            start:0, min:Math.max(1, ho.min - Math.min(hpos, ho.min - 1)), href:studyRoomUrl(sub.id, ci)+'?t=handout', wk:wk});
+        }
         scheduledMaterials(sub.id, c).forEach(function(m, vi, all){
           if(done.has(chapterMaterialTaskId(sub.id, c, m))) return;
           // a video listed in two chapters is scheduled once (where it first appears)
@@ -567,6 +575,11 @@ function dayPlanHeadline(items){
   items.forEach(function(x){ const k = x.subj+'|'+x.ci; if(chs.indexOf(k) < 0) chs.push(k); });
   return {subj:a.subj, ch:'第'+(a.ci+1)+'章 '+a.ch, more:chs.length - 1};
 }
+// "3 支" / "講義 + 2 支": a day's items, with the handout reading named apart
+function dayCountText(items, short){
+  const ho = items.filter(function(x){ return x.kind === 'handout'; }).length, v = items.length - ho;
+  return (ho ? '講義' + (v ? ' + ' : '') : '') + (v ? (short ? '' : '共 ') + v + ' 支' : '');
+}
 function fmtMin(m){ m = Math.round(m); const h = Math.floor(m/60), r = m%60; return h ? h+' 小時'+(r ? ' '+r+' 分' : '') : r+' 分'; }
 function renderCalDayDetail(iso){
   const p = iso.split('-');
@@ -585,11 +598,11 @@ function renderCalDayDetail(iso){
   }
   const total = items.reduce(function(a, x){ return a + x.take; }, 0);
   const h = dayPlanHeadline(items);
-  return head+'<span>'+escapeHtml(h.subj)+'・'+escapeHtml(h.ch)+(h.more ? ' 等' : '')+'・共 '+items.length+' 支・約 '+fmtMin(total)+'</span></div>'
+  return head+'<span>'+escapeHtml(h.subj)+'・'+escapeHtml(h.ch)+(h.more ? ' 等' : '')+'・'+dayCountText(items)+'・約 '+fmtMin(total)+'</span></div>'
     +'<ol class="calday-list">'+items.map(function(x){
       const part = x.cont || x.more
         ? '<span class="calday-part">'+(x.cont ? '從 '+fmtMin(x.from)+' 處接著看' : '從頭看')+(x.more ? '到 '+fmtMin(x.from + x.take)+' 處，剩下的下一個讀書日接著看' : '到結束')+'</span>' : '';
-      return '<li><a href="'+x.href+'"><span class="calday-ch" style="color:var('+(SUBJ_COLOR_VAR[x.subj] || '--ac2')+')">'+escapeHtml(x.subj)+' 第'+(x.ci+1)+'章・第 '+(x.vi+1)+'/'+x.vn+' 支</span>'
+      return '<li><a href="'+x.href+'"><span class="calday-ch" style="color:var('+(SUBJ_COLOR_VAR[x.subj] || '--ac2')+')">'+escapeHtml(x.subj)+' 第'+(x.ci+1)+'章・'+(x.kind === 'handout' ? '先讀講義' : '第 '+(x.vi+1)+'/'+x.vn+' 支')+'</span>'
         +'<span class="calday-title">'+escapeHtml(x.title)+'</span>'
         +'<span class="calday-meta">'+(x.series ? escapeHtml(x.series)+'・' : '')+escapeHtml(x.dur || '')+'</span>'+part+'</a></li>';
     }).join('')+'</ol>';
@@ -627,7 +640,7 @@ function buildCalMonthCells(y, m, ctx){
           colorVar = SUBJ_COLOR_VAR[h.subj] || '--ac2';
           tagHtml = '<div class="cal-tag" style="background:var('+colorVar+');color:#fff;">'+escapeHtml(h.subj)+'</div>'
             +'<div class="cal-what">'+escapeHtml(h.ch)+(h.more ? ' 等' : '')+'</div>'
-            +'<div class="cal-howmuch">'+items.length+' 支・'+fmtMin(mins)+'</div>';
+            +'<div class="cal-howmuch">'+dayCountText(items, true)+'・'+fmtMin(mins)+'</div>';
         }
         else if(info.phase === 'foundation' && d < today0){ label = null; }
         else if(info.phase === 'foundation'){ label = '歷屆試題'; colorVar = '--ac2'; } else if(info.phase === 'drilling'){
@@ -921,6 +934,8 @@ async function init(){
       // the series list sits on its own row below; the progress card above is
       // small enough to share the header row with the title and subject tabs
       +'<div class="rec-row sp-rec-row">'+booksHtml+videosHtml+'</div>'
+      // every chapter's 重點整理 on one page, for the last round of review
+      +'<a class="ch-study-link ch-lesson-link sp-review-link" style="--ch-color:'+s.color+'" href="/review.html?s='+s.id+'">'+svgIcon('clipboard',14)+s.name+' 速記卡：每章重點整理一頁看完</a>'
       +'<div class="filter-bar"><div class="filter-chips" data-chfilter>'
         +'<button class="filter-chip ui-btn active" type="button" data-pri="all" aria-pressed="true">全部</button>'
         +'<button class="filter-chip ui-btn" type="button" data-pri="must" aria-pressed="false">必考</button>'

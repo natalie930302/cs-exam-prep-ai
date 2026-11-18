@@ -175,6 +175,15 @@ const MAIN_TEACHERS = {
   os:[['清大OCW 周志遠']],
   ca:[['清大 黃婷婷']]
 };
+// The chapters that have a 講義 and its reading time: {"ds-1": {"min": 40}, …}
+// (public/handouts/index.json, written by tools/handout-index.mjs).
+var HANDOUTS = {};
+function loadHandoutIndex(){
+  return fetch('/handouts/index.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : {}; })
+    .then(function(j){ HANDOUTS = j || {}; return HANDOUTS; }).catch(function(){ return HANDOUTS; });
+}
+// Reading a chapter's handout is its own task, checked off at the handout's end.
+function handoutTaskId(subjectId, idx){ return 'ho-' + subjectId + '-' + (idx + 1); }
 // The chapter's videos that count: on the calendar, in progress and in "done".
 function scheduledMaterials(subjectId, c){
   const all = chapterDisplayMaterials(c);

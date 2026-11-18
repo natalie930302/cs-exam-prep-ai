@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="only light">
+<title>速記卡</title>
+<link rel="icon" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="theme.css?v=20261007e">
+<link rel="stylesheet" href="study.css?v=20261118a">
+<style>
+  /* 速記卡: every chapter's 重點整理 of one subject on a single page */
+  .rv { max-width: 860px; margin: 0 auto; padding: 16px; }
+  @media (min-width: 640px) { .rv { padding: 24px 32px; } }
+  .rv-top { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .rv-top a { color: var(--mt2); text-decoration: none; font-size: 14px; }
+  .rv-top h1 { font-size: 24px; line-height: 1.3; font-weight: 900; margin: 0; }
+  .rv-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .rv-tabs a { font-size: 13px; font-weight: 700; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--bd); color: var(--tx); text-decoration: none; background: var(--surf); }
+  .rv-tabs a.on { background: var(--subj); border-color: var(--subj); color: #fff; }
+  .rv-ch { background: var(--surf); border: 1px solid var(--bd); border-radius: 20px; padding: 16px; margin-bottom: 16px; }
+  .rv-ch h2 { font-size: 18px; line-height: 1.3; margin: 0 0 8px; }
+  .rv-ch h2 a { color: inherit; text-decoration: none; }
+  .rv-ch .st-handout { font-size: 15px; }
+  .rv-ch .st-handout h3 { border-top: 0; padding-top: 0; margin-top: 12px; }
+  .rv-empty { color: var(--mt2); font-size: 14px; }
+  @media print { .rv-top a, .rv-tabs { display: none; } .rv-ch { break-inside: avoid; border: 0; padding: 0; } }
+</style>
+</head>
+<body>
+<main class="rv">
+  <div class="rv-top"><a id="back" href="/subjects">← 六科</a><h1 id="title">速記卡</h1></div>
+  <nav class="rv-tabs" id="tabs"></nav>
+  <div id="list"><p class="rv-empty">載入中…</p></div>
+</main>
+<script src="data.js?v=20261118a"></script>
+<script src="video-order.js?v=20261118a"></script>
+<script src="chapter-core.js?v=20261118a"></script>
+<script src="md.js?v=20261118a"></script>
+<script>
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function(){});
+(async function(){
+  const id = new URLSearchParams(location.search).get('s') || 'ds';
+  const subject = SUBJECTS.find(function(s){ return s.id === id; }) || SUBJECTS[0];
+  document.documentElement.style.setProperty('--subj', subject.color);
+  document.title = subject.name + ' 速記卡';
+  document.getElementById('title').textContent = subject.name + ' 速記卡';
+  document.getElementById('back').href = '/subjects/' + subject.id;
+  document.getElementById('tabs').innerHTML = SUBJECTS.map(function(s){
+    return '<a href="?s=' + s.id + '"' + (s.id === subject.id ? ' class="on"' : '') + '>' + s.name + '</a>';
+  }).join('');
+  const have = await loadHandoutIndex();
+  // each chapter's "## 重點整理" section, in chapter order
+  const parts = await Promise.all(subject.chapters.map(function(c, i){
+    const ch = subject.id + '-' + (i + 1);
+    if (!have[ch]) return Promise.resolve(null);
+    return fetch('/handouts/' + ch + '.md').then(function(r){ return r.ok ? r.text() : ''; }).then(function(md){
+      const m = md.replace(/\r/g, '').match(/^## 重點整理[^\n]*\n([\s\S]*?)(?=^## |(?![\s\S]))/m);
+      return m ? m[1] : null;
+    }).catch(function(){ return null; });
+  }));
+  document.getElementById('list').innerHTML = subject.chapters.map(function(c, i){
+    if (!parts[i]) return '';
+    return '<section class="rv-ch"><h2><a href="' + videoRoomUrl(subject.id, i) + '?t=handout">第' + (i + 1) + '章 ' + mdEsc(c.t) + '</a></h2>'
+      + '<div class="st-handout">' + mdToHtml(parts[i]) + '</div></section>';
+  }).join('') || '<p class="rv-empty">這科還沒有講義。</p>';
+})();
+</script>
+</body>
+</html>

@@ -1342,75 +1342,108 @@
   // headings, paragraphs, lists, bold, code, fenced blocks, tables, callouts.
   let handoutMd = null;
   // handouts/index.json lists the chapters that have one (tools/handout-index.mjs)
-  fetch('/handouts/index.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : []; }).then(function(have){
-    return have.indexOf(chId) < 0 ? null : fetch('/handouts/' + chId + '.md', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.text() : null; });
+  loadHandoutIndex().then(function(have){
+    return !have || !have[chId] ? null : fetch('/handouts/' + chId + '.md', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.text() : null; });
   }).then(function(t){
     if (!t || !/^#\s/.test(t)) { if (currentTab === 'handout') setTab('videos'); return; }
     handoutMd = t;
     $('handoutTab').hidden = false;
     if (currentTab === 'handout') renderHandout();
   }).catch(function(){ if (currentTab === 'handout') setTab('videos'); });
-  function mdEsc(x){ return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-  function mdInline(x){
-    const codes = [];
-    x = mdEsc(x).replace(/`([^`]+)`/g, function(m, c){ codes.push(c); return '\u0000' + (codes.length - 1) + '\u0000'; });
-    x = x.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-    return x.replace(/\u0000(\d+)\u0000/g, function(m, i){ return '<code>' + codes[i] + '</code>'; });
-  }
-  function mdToHtml(md){
-    const lines = md.replace(/\r/g, '').split('\n'), out = [];
-    let i = 0;
-    const isBlockStart = function(l){ return /^(#{1,3}\s|```|>|\s*[-*]\s|\s*\d+\.\s|\|)/.test(l); };
-    while (i < lines.length) {
-      const l = lines[i];
-      if (!l.trim()) { i++; continue; }
-      let m;
-      if ((m = l.match(/^(#{1,3})\s+(.*)$/))) { const n = m[1].length; out.push('<h' + (n + 1) + '>' + mdInline(m[2]) + '</h' + (n + 1) + '>'); i++; continue; }
-      if (/^```/.test(l)) {
-        const buf = []; i++;
-        while (i < lines.length && !/^```/.test(lines[i])) buf.push(lines[i++]);
-        i++;
-        out.push('<pre><code>' + mdEsc(buf.join('\n')) + '</code></pre>'); continue;
-      }
-      if (/^>/.test(l)) {
-        const buf = [];
-        while (i < lines.length && /^>/.test(lines[i])) buf.push(lines[i++].replace(/^>\s?/, ''));
-        const kind = (buf[0].match(/^\*\*(重點|例題|陷阱|比喻|觀念)\*\*/) || [])[1];
-        out.push('<div class="ho-call' + (kind ? ' ho-' + {'重點': 'key', '例題': 'ex', '陷阱': 'trap', '比喻': 'meta', '觀念': 'idea'}[kind] : '') + '">' + mdToHtml(buf.join('\n')) + '</div>'); continue;
-      }
-      if (/^\|/.test(l)) {
-        const rows = [];
-        while (i < lines.length && /^\|/.test(lines[i])) rows.push(lines[i++]);
-        const cells = function(r){ return r.replace(/^\||\|\s*$/g, '').split('|').map(function(c){ return c.trim(); }); };
-        const body = rows.filter(function(r){ return !/^\|[\s:|-]+\|?\s*$/.test(r); });
-        out.push('<div class="ho-table"><table>' + body.map(function(r, ri){
-          const tag = ri === 0 && rows.length > 1 && /^\|[\s:|-]+\|?\s*$/.test(rows[1]) ? 'th' : 'td';
-          return '<tr>' + cells(r).map(function(c){ return '<' + tag + '>' + mdInline(c) + '</' + tag + '>'; }).join('') + '</tr>';
-        }).join('') + '</table></div>'); continue;
-      }
-      if (/^\s*([-*]|\d+\.)\s/.test(l)) {
-        const ordered = /^\s*\d+\./.test(l), items = [];
-        while (i < lines.length && /^\s*([-*]|\d+\.)\s|^\s{2,}\S/.test(lines[i])) {
-          const li = lines[i++];
-          if (/^\s{2,}/.test(li) && items.length) items[items.length - 1].sub.push(li.replace(/^\s{2}/, ''));
-          else items.push({text: li.replace(/^\s*([-*]|\d+\.)\s+/, ''), sub: []});
-        }
-        out.push('<' + (ordered ? 'ol' : 'ul') + '>' + items.map(function(it){
-          return '<li>' + mdInline(it.text) + (it.sub.length ? mdToHtml(it.sub.join('\n')) : '') + '</li>';
-        }).join('') + '</' + (ordered ? 'ol' : 'ul') + '>'); continue;
-      }
-      const buf = [];
-      while (i < lines.length && lines[i].trim() && !isBlockStart(lines[i])) buf.push(lines[i++]);
-      if (!buf.length) buf.push(lines[i++]);
-      out.push('<p>' + mdInline(buf.join('\n')).replace(/\n/g, '<br>') + '</p>');
-    }
-    return out.join('');
-  }
+  // sw.js keeps the handouts (and this page) for reading without a connection
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function(){});
+  // links.json: each ## section → where the main teacher's videos teach it
+  let handoutLinks = null;
+  fetch('/handouts/links.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(j){ handoutLinks = (j && j[chId]) || {}; }).catch(function(){ handoutLinks = {}; });
+  const HO_SIZES = [14, 15, 16, 18, 20];
+  function hoSize(){ const v = Number(store.get('ho-size')); return HO_SIZES.indexOf(v) >= 0 ? v : 16; }
+  function fmtAt(t){ t = Math.floor(t); const h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, s = t % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0'); }
   function renderHandout(){
     const el = $('handoutBody');
     if (!handoutMd || el.dataset.loaded) return;
+    if (!handoutLinks) { setTimeout(renderHandout, 150); return; }
     el.dataset.loaded = '1';
+    el.style.fontSize = hoSize() + 'px';
     el.innerHTML = mdToHtml(handoutMd);
+    // every ## becomes a section that can fold, listed in a contents box
+    const secs = [];
+    Array.from(el.querySelectorAll('h3')).forEach(function(h, i){
+      const det = document.createElement('details');
+      det.className = 'ho-sec'; det.open = true; det.dataset.i = i;
+      const sum = document.createElement('summary');
+      h.parentNode.insertBefore(det, h);
+      sum.appendChild(h); det.appendChild(sum);
+      while (det.nextSibling && det.nextSibling.tagName !== 'H3') det.appendChild(det.nextSibling);
+      const title = h.textContent, link = handoutLinks[title];
+      if (link) {
+        const a = document.createElement('a');
+        a.className = 'ho-video';
+        a.href = videoRoomUrl(subject.id, chIndex, link.v) + '&at=' + link.t;
+        a.textContent = '▶ 看這段影片（' + fmtAt(link.t) + '）';
+        a.title = link.label + '：' + link.sec;
+        sum.after(a);
+      }
+      secs.push({det: det, title: title});
+    });
+    const total = (HANDOUTS[chId] || {}).min || 0;
+    const tools = document.createElement('div');
+    tools.className = 'ho-tools';
+    tools.innerHTML = '<span class="ho-time">' + (total ? '約 ' + total + ' 分鐘讀完' : '') + '</span>'
+      + '<span class="ho-size"><button type="button" data-d="-1" aria-label="字小一點">A−</button><button type="button" data-d="1" aria-label="字大一點">A＋</button></span>'
+      + '<button type="button" class="ho-fold">全部收合</button>';
+    const toc = document.createElement('nav');
+    toc.className = 'ho-toc';
+    toc.innerHTML = '<div class="ho-toc-hd">目錄</div><ol>' + secs.map(function(x, i){ return '<li><a href="#" data-i="' + i + '">' + mdEsc(x.title) + '</a></li>'; }).join('') + '</ol>';
+    const first = el.querySelector('h2');
+    (first ? first.nextElementSibling || first : el.firstChild).before(tools);
+    tools.after(toc);
+    const lastI = Number(store.get('ho-pos-' + chId));
+    if (lastI > 0 && secs[lastI]) {
+      const r = document.createElement('button');
+      r.type = 'button'; r.className = 'ho-resume';
+      r.textContent = '接著讀：' + secs[lastI].title;
+      r.onclick = function(){ goSec(lastI); r.remove(); };
+      tools.after(r);
+    }
+    function goSec(i){ secs[i].det.open = true; secs[i].det.scrollIntoView({behavior: 'smooth', block: 'start'}); }
+    toc.onclick = function(e){ const a = e.target.closest('a[data-i]'); if (!a) return; e.preventDefault(); goSec(Number(a.dataset.i)); };
+    tools.querySelector('.ho-fold').onclick = function(){
+      const anyOpen = secs.some(function(x){ return x.det.open; });
+      secs.forEach(function(x){ x.det.open = !anyOpen; });
+      this.textContent = anyOpen ? '全部展開' : '全部收合';
+    };
+    tools.querySelector('.ho-size').onclick = function(e){
+      const b = e.target.closest('button'); if (!b) return;
+      const k = Math.max(0, Math.min(HO_SIZES.length - 1, HO_SIZES.indexOf(hoSize()) + Number(b.dataset.d)));
+      store.set('ho-size', HO_SIZES[k]); el.style.fontSize = HO_SIZES[k] + 'px';
+    };
+    // where the reader is: the last section scrolled into view is remembered
+    // (and how far that is in minutes, so the calendar shortens the reading)
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver(function(es){
+        es.forEach(function(en){
+          if (!en.isIntersecting) return;
+          const i = Number(en.target.dataset.i);
+          if (i > (Number(store.get('ho-pos-' + chId)) || 0)) {
+            store.set('ho-pos-' + chId, i);
+            if (total) store.set('ho-read-min-' + chId, Math.round(total * i / secs.length));
+          }
+        });
+      }, {rootMargin: '0px 0px -70% 0px'});
+      secs.forEach(function(x){ io.observe(x.det); });
+    }
+    // the end: mark it read (the calendar then moves on to the videos), then the quiz
+    const tid = handoutTaskId(subject.id, chIndex);
+    const end = document.createElement('div');
+    end.className = 'ho-end';
+    end.innerHTML = '<label class="ho-done"><input type="checkbox"' + (done.has(tid) ? ' checked' : '') + '> 讀完了</label>'
+      + '<button type="button" class="ho-quiz">做這章的小測驗 →</button>'
+      + '<button type="button" class="ho-videos">開始看影片 →</button>';
+    el.appendChild(end);
+    end.querySelector('input').onchange = function(e){ setTask(tid, e.target.checked); };
+    end.querySelector('.ho-quiz').onclick = function(){ setTab('quiz'); window.scrollTo({top: $('panel-quiz').getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth'}); };
+    end.querySelector('.ho-videos').onclick = function(){ setTab('videos'); window.scrollTo({top: 0, behavior: 'smooth'}); };
   }
 
   function renderLab(){
