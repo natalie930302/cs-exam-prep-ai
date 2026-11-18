@@ -186,16 +186,6 @@ for (const w of [375, 1366]) {
   }
 }
 ok('懸浮按鈕檢查完');
-// 計算練習：小測驗分頁最上面要出現一題（題目來自這章動畫的出題程式）
-for (const p of ['/study/os/7?t=quiz', '/study/ds/3?t=quiz']) {
-  await open(p, 1366, 1000);
-  const r = JSON.parse(await evaluate(`(async () => {
-    for (let i = 0; i < 80 && !document.querySelector('.st-pr .st-qz-opts button'); i++) await new Promise((r) => setTimeout(r, 250));
-    return JSON.stringify({ n: document.querySelectorAll('.st-pr .st-qz-opts button').length });
-  })()`));
-  if (r.n < 2) fail('計算練習 ' + p, '20 秒內沒有出題');
-}
-ok('計算練習會出題');
 
 // ───────────────────────── 3. 動畫 ─────────────────────────
 const all = readdirSync(join(PUB, 'lab/chapters')).filter((f) => f !== '_kit.js' && f.endsWith('.js')).map((f) => f.slice(0, -3));

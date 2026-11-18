@@ -1697,12 +1697,11 @@
   function renderQuiz(){
     const el = $('panel-quiz');
     if (recallRunning) return;
-    if (labUrl && !prFrame) practiceNext();
+    // (計算練習 removed 2026-11-19: the tab has only 講義題目 and 影片題目)
     const all = chapterHistory();
     const rb = recallBox();
     if (!all.length) {
       el.innerHTML = '<div class="st-qh-sec">影片題目<span>看影片時跳出來的選擇題</span></div><div class="st-nonotes">還沒有作答紀錄。看影片時，每講完一段會暫停出一題小挑戰，影片結束時也會出題；答過的題目都會記在這裡。</div>';
-      if (prBox) el.insertBefore(prBox, el.firstChild);
       if (rb) el.insertBefore(rb, el.firstChild);
       return;
     }
@@ -1721,7 +1720,6 @@
             + '</div>';
         }).join('') : '<div class="st-nonotes">沒有答錯的題目。</div>')
       + '</div>';
-    if (prBox) el.insertBefore(prBox, el.firstChild);
     if (rb) el.insertBefore(rb, el.firstChild);
     el.querySelectorAll('.st-qh-filter button').forEach(function(b){ b.onclick = function(){ quizFilter = b.dataset.f; renderQuiz(); }; });
     const redo = el.querySelector('.st-qh-redo'); if (redo) redo.onclick = redoWrong;
