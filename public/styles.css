@@ -3716,20 +3716,9 @@ body#appRoot .fab-nav .fab-badge[hidden] { display: none; }
 
 /* ══ 2026-11-19 設計規則（theme.css 的 --sp-*／--r-*／--sh-*；見 docs 討論頁）══ */
 
-/* 懸浮鈕：平板與電腦的內容讓出它的寬度，任何東西都不會被它蓋住 */
-@media (min-width: 641px) {
-  body#appRoot #main > .sec, body#appRoot #main > #sec-subjects { padding-right: 98px !important; }
-  body#appRoot .sec > .sh { padding-right: 0 !important; }
-  body#appRoot #main #sec-subjects.on > .stabs { width: 100% !important; }
-}
-@media (min-width: 1100px) { body#appRoot #main > .sec, body#appRoot #main > #sec-subjects { padding-right: 90px !important; } }
-/* 手機：直排懸浮鈕維持在右上；日曆格子讓出它那一欄；往下捲時先收起，往上捲再出現（app.js） */
-@media (max-width: 640px) {
-  body#appRoot #sec-schedule .cal-grid { width: calc(100% - 52px) !important; max-width: calc(100% - 52px) !important; }
-  body#appRoot #sec-schedule .cal-head .cal-nav { margin-right: 52px !important; }
-  body#appRoot .fab-nav { transition: translate .22s var(--ease), opacity .22s ease; }
-  body#appRoot.fab-away .fab-nav { translate: calc(100% + 24px) 0; opacity: 0; pointer-events: none; }
-}
+/* 懸浮鈕一直浮在最上層；內容照原本的寬度排，不為它讓位（使用者 2026-11-19） */
+@media (max-width: 759px) { body#appRoot #sec-schedule .cal-head .cal-nav { margin-right: 0 !important; } }
+@media (max-width: 999px) { body#appRoot #main #sec-subjects.on > .stabs { width: 100% !important; } }
 body#appRoot .fab-nav { box-shadow: var(--sh-float) !important; }
 
 /* 月份切換：一組分段按鈕（不再是外框裡三顆有框的按鈕） */
@@ -3799,13 +3788,14 @@ body#appRoot .gs-close { display: none; }
 
 /* 「今天」：日曆最上面三個下一步（複習、讀講義、看影片），左邊科目色條 */
 body#appRoot .today-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--sp-2); margin: 0 0 var(--sp-5); }
+@media (max-width: 640px) { body#appRoot .today-strip { margin-bottom: var(--sp-4); } }
 body#appRoot .today-act { position: relative; display: grid; gap: 2px; padding: var(--sp-3) var(--sp-4) var(--sp-3) 20px !important; background: var(--surf) !important; border: var(--line) !important; border-radius: var(--r-card) !important; text-decoration: none; color: var(--tx); min-width: 0; transition: border-color .16s; }
 body#appRoot .today-act::before { content: ""; position: absolute; left: 8px; top: 12px; bottom: 12px; width: 3px; border-radius: 2px; background: var(--c); }
 body#appRoot .today-act .today-k { font-size: 12px; font-weight: 700; color: var(--mt); }
 body#appRoot .today-act b { font-size: 14px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 body#appRoot .today-act small { font-size: 12px; color: var(--mt); }
 @media (hover: hover) { body#appRoot .today-act:hover { border-color: color-mix(in srgb, var(--c) 50%, var(--bd)); } }
-@media (max-width: 640px) { body#appRoot .today-strip { margin: 0 52px var(--sp-4) 0; grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { body#appRoot .today-strip { grid-template-columns: minmax(0, 1fr); } }
 body#appRoot .task-toast { box-shadow: var(--sh-float) !important; }
 body#appRoot .today-strip .today-act { border: 1px solid var(--bd) !important; }
 /* 手機：三件事放在同一張卡裡，一行一件，不佔太高 */
@@ -3816,3 +3806,21 @@ body#appRoot .today-strip .today-act { border: 1px solid var(--bd) !important; }
   body#appRoot .today-strip .today-act::before { top: 10px; bottom: 10px; }
   body#appRoot .today-strip .today-act small { grid-column: 2; }
 }
+/* 2026-11-19b：沒有距離的地方補上規則裡的距離 */
+/* details 的內容不吃 flex gap：用 margin 隔開 */
+body#appRoot .ch-opt-group > .ch-mat + .ch-mat { margin-top: var(--sp-2) !important; }
+body#appRoot #sec-schedule .cal-nav { padding: var(--sp-1) !important; gap: var(--sp-1) !important; }
+@media (max-width: 640px) { body#appRoot #sec-schedule .cal-grid { gap: var(--sp-1) !important; } }
+/* 日曆格（平板、電腦）：日期 → 科目標籤 → 章名 8，章名 → 時數 4（同一件事） */
+@media (min-width: 641px) {
+  body#appRoot #sec-schedule .cal-cell .cal-daynum { margin: 0 !important; }
+  body#appRoot #sec-schedule .cal-cell .cal-tag { margin: var(--sp-2) 0 0 !important; display: block !important; width: fit-content; }
+  body#appRoot #sec-schedule .cal-cell .cal-what { margin: var(--sp-2) 0 0 !important; }
+  body#appRoot #sec-schedule .cal-cell .cal-howmuch { margin: var(--sp-1) 0 0 !important; }
+}
+/* 2026-11-19c：按鈕不固定高度（文字換行時上下仍有內距）；圖示和文字垂直置中 */
+body#appRoot :is(.ch-study-link, .sp-review-link) { height: auto !important; min-height: var(--h-btn) !important; padding: var(--sp-2) var(--sp-4) !important; line-height: 1.3 !important; display: flex !important; align-items: center !important; justify-content: center !important; gap: var(--sp-2) !important; text-align: center; box-sizing: border-box; }
+body#appRoot :is(.ch-study-link, .sp-review-link, .today-act, .calday-list a) svg { flex: 0 0 auto; display: block; }
+/* 章節列的進度條：跟標題同一條左緣，跟下面的按鈕隔 16 */
+body#appRoot .ch-pbar { margin: var(--sp-2) 0 0 !important; }
+body#appRoot .ch-row:not(.collapsed) .ch-body { margin-top: var(--sp-4) !important; }

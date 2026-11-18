@@ -901,11 +901,11 @@ body:not(.st-booting) .st-top, body:not(.st-booting) .st-main { animation: m-in 
 @media (hover: hover) { .rc-src-link:hover { text-decoration: underline; } }
 
 /* ══ 2026-11-19 設計規則（theme.css 的 --sp-*／--r-*／--sh-*）══ */
-/* 手機／平板：影片在最上面，切換列與段落時間軸在影片正下方（跟電腦版同一個順序） */
+/* 手機／平板：切換列與段落時間軸放在影片上面（使用者 2026-11-19 確認） */
 @media (max-width: 900px) {
-  .st-player-wrap { order: 0 !important; }
-  .st-now { order: 1 !important; margin: 0 !important; }
-  .st-timeline { order: 2 !important; margin: 0 !important; }
+  .st-now { order: 0 !important; margin: 0 !important; }
+  .st-timeline { order: 1 !important; margin: 0 !important; }
+  .st-player-wrap { order: 2 !important; }
 }
 /* 講解裡的關鍵詞：粗體＋科目色底線，不再一格一格的色塊（解釋看下面的名詞卡） */
 .st-term-w { background: none !important; padding: 0 !important; border-radius: 0 !important; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--subj) 55%, transparent); text-decoration-thickness: 2px; text-underline-offset: 4px; }
@@ -963,3 +963,15 @@ body:not(.st-booting) .st-top, body:not(.st-booting) .st-main { animation: m-in 
   .st-terms { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important; overflow: visible !important; }
   .st-terms .st-tcard { flex: none !important; }
 }
+/* 選項之間 8（同組兄弟） */
+.st-qz-opts { gap: var(--sp-2) !important; }
+/* 講義每一節的收合箭頭：清楚的 chevron，和標題垂直置中 */
+.st-handout details.ho-sec > summary h3 { display: flex; align-items: center; gap: var(--sp-2); }
+.st-handout details.ho-sec > summary h3::before { content: "" !important; flex: 0 0 auto; width: 8px; height: 8px; margin: 0 4px 0 2px; border-right: 2px solid var(--mt2); border-bottom: 2px solid var(--mt2); transform: rotate(45deg) translate(-2px, -2px); transition: transform .16s ease; }
+.st-handout details.ho-sec:not([open]) > summary h3::before { content: "" !important; transform: rotate(-45deg); }
+/* 字級：「字級」兩個字＋小／大 */
+.st-handout .ho-size { align-items: center; }
+.st-handout .ho-size-l { font-size: 13px; color: var(--mt2); margin-right: var(--sp-1); }
+/* 「▶ 看這段影片」：三角形和文字對齊 */
+.st-handout .ho-video { display: inline-flex; align-items: center; gap: var(--sp-1); }
+@media (max-width: 640px) { .st-handout .ho-tools .ho-time { flex: 1 0 100%; } }

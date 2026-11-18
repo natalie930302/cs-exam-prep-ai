@@ -1181,18 +1181,6 @@ function goSearchChapter(subjectName,index){
   const row=document.querySelectorAll('#sp-'+s.id+' .ch-row')[index];if(row){row.classList.remove('collapsed');const h=row.querySelector('[data-chtoggle]');if(h)h.setAttribute('aria-expanded','true');row.scrollIntoView({block:'start'});}
   writeRoute(subjectsRoute(), true);
 }
-// phone: the floating buttons step aside while scrolling down (so they never
-// sit on the content being read) and come back on any scroll up
-(function(){
-  let lastY = 0;
-  window.addEventListener('scroll', function(){
-    const y = window.scrollY;
-    const b = document.body.classList;
-    if(window.innerWidth > 640 || y <= 120 || y < lastY - 4) b.remove('fab-away');
-    else if(y > lastY + 4) b.add('fab-away');
-    lastY = y;
-  }, {passive: true});
-})();
 document.addEventListener('DOMContentLoaded', function(){
   // how many are due today, on the 今日複習 button
   const rb = document.getElementById('fabReviewBadge');

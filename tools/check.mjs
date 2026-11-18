@@ -176,8 +176,6 @@ for (const w of [375, 1366]) {
       const a = f.getBoundingClientRect().top;
       const max = document.scrollingElement.scrollHeight - innerHeight;
       scrollTo(0, max); await new Promise((r) => setTimeout(r, 400));
-      // 手機往下捲時懸浮鈕會先讓開（app.js fab-away），往上捲一點就回來：回來後再檢查
-      scrollTo(0, max - 40); await new Promise((r) => setTimeout(r, 500));
       const b = f.getBoundingClientRect();
       const hit = document.elementFromPoint(b.left + b.width / 2, b.top + Math.min(20, b.height / 2));
       return JSON.stringify({ a, b: b.top, scrolled: scrollY, onTop: !!hit && f.contains(hit) });

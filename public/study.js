@@ -767,7 +767,7 @@
     const q = quoteAt(st.t, end);
     if (q) addCardTerms(q.zh + ' ' + q.en);
     $('walkQuote').innerHTML = q && q.zh ? '<b>老師這句（' + fmt(st.t) + '）</b><span class="zh">' + esc(q.zh) + '</span>' + (q.en ? '<span class="en">' + esc(q.en) + '</span>' : '') : '';
-    $('walkHear').textContent = '▶ 聽老師講這句';
+    $('walkHear').innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1l7 4-7 4z" fill="currentColor"/></svg>聽老師講這句';
     $('walkHear').onclick = function(){ exitWalk(Math.max(0, st.t - 0.5)); };
     $('walkPrev').disabled = wi === 0;
     $('walkNext').textContent = wi < wSteps.length - 1 ? '下一步 ›' : '這支講完了';
@@ -913,7 +913,7 @@
     lsPlaying = false; lsSeq++; clearTimeout(lsTimer);
     if (synth && (synth.speaking || synth.pending)) synth.cancel();
     if (lsAudio) lsAudio.pause();
-    $('lsPlay').textContent = '▶ 播放';
+    $('lsPlay').innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1l7 4-7 4z" fill="currentColor"/></svg>播放';
   }
   function lsGo(i){
     const was = lsPlaying;
@@ -1413,7 +1413,8 @@
         const a = document.createElement('a');
         a.className = 'ho-video';
         a.href = videoRoomUrl(subject.id, chIndex, link.v) + '&at=' + link.t;
-        a.textContent = '▶ 看這段影片（' + fmtAt(link.t) + '）';
+        // an SVG triangle (the ▶ character turns into an emoji on phones and sits off the text line)
+        a.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1l7 4-7 4z" fill="currentColor"/></svg><span>看這段影片（' + fmtAt(link.t) + '）</span>';
         a.title = link.label + '：' + link.sec;
         sum.after(a);
       }
@@ -1432,7 +1433,7 @@
     const tools = document.createElement('div');
     tools.className = 'ho-tools';
     tools.innerHTML = '<span class="ho-time">' + (total ? '約 ' + total + ' 分鐘讀完' : '') + '<span class="ho-checked"></span></span>'
-      + '<span class="ho-size"><button type="button" data-d="-1" aria-label="字小一點">A−</button><button type="button" data-d="1" aria-label="字大一點">A＋</button></span>'
+      + '<span class="ho-size"><span class="ho-size-l">字級</span><button type="button" data-d="-1" aria-label="字小一點">小</button><button type="button" data-d="1" aria-label="字大一點">大</button></span>'
       + '<button type="button" class="ho-fold">全部收合</button>';
     const toc = document.createElement('nav');
     toc.className = 'ho-toc';
