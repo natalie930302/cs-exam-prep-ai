@@ -171,7 +171,7 @@
    "why": "路上不在 M 的邊比在 M 的邊多一條。"
   },
   {
-   "q": "在 A–a、B–b、C–c、D–d 的 matching 下，哪一條是 augmenting path？",
+   "q": "派對例子中 E 喜歡 b、c、d，B 喜歡 b、c、h。在 A–a、B–b、C–c、D–d 的 matching 下，哪一條是 augmenting path？",
    "opts": [
     "E–b–B–h",
     "E–b–B",

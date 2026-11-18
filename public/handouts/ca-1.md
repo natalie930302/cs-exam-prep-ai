@@ -288,7 +288,7 @@ General purpose、以機械加電子做成。特色是 **instruction 與 data �
 
 回到 NMOS 剖面：gate 加電壓 → 形成 channel → source 到 drain 有電流，開關打開。開與關就是讓電從 source 走到 drain，**這段距離越短，開關越快**。能做到多短取決於製程技術（technology），這個最短距離叫 **feature size**，也叫 **line width**，就是 source 到 drain 的長度。
 
-- 技術一進步 feature size 就一直縮小，從最早的 100 micron 一路往下；晶圓代工廠已能量產 28 奈米製程。
+- 技術一進步 feature size 就一直縮小，從 1970 年代初的約 10 micron（10 µm）一路往下；晶圓代工廠已能量產 28 奈米製程。
 - 換算：1 micron（µm）= 1000 奈米（nm），所以 28 nm = **0.028 µm**。
 - 有多小？一根頭髮約 100 µm，100 ÷ 0.028 ≈ 3,571，比頭髮細三千多倍。Transistor 做得這麼小，一顆 chip 就能放非常多個；畫成圖（橫軸時間、縱軸一顆 microprocessor 內的 transistor 數）是一路往上的曲線。
 
@@ -475,8 +475,10 @@ ISA 定義這顆 processor 要能執行哪些 instruction，是 hardware 與 sof
 >
 > | 飛機 | 載客數 | 航程（英里） | 時速（mph） | 載客數 × 時速 |
 > |---|---|---|---|---|
-> | Concorde（協和號） | 132 | 4000 | 1350 | 178,200 |
+> | Boeing 777 | 375 | 4630 | 610 | 228,750 |
 > | Boeing 747 | 470 | 4150 | 610 | 286,700 |
+> | Concorde（協和號） | 132 | 4000 | 1350 | 178,200 |
+> | Douglas DC-8-50 | 146 | 8720 | 544 | 79,424 |
 >
 > 看載客量（passenger capacity）→ 747 最好；看不加油能飛多遠（cruising range）→ 表中的 Douglas DC-8 最好；看速度 → Concorde 最快。把人數與速度一起看（人數 × 速度，代表單位時間把多少人送多遠）→ 747 反而贏。答案取決於用什麼標準，電腦也一樣。
 
@@ -654,7 +656,7 @@ Loader 載入程式的步驟：
 | CPI | 1.38 | 1.79 | 1.66 | 1.46 |
 
 - Performance 最高的是 O3（2.41），但與 O1、O2 差不多。
-- Clock period 相同時，執行時間 = cycle 數 × period，cycle 越少越好。不優化的時間放分子、O3 的放分母：158,615 / 65,747 ≈ 2.41，正是 O3 的 relative performance。
+- Clock period 相同時，執行時間 = cycle 數 × period，cycle 越少越好。不最佳化的時間放分子、O3 的放分母：158,615 / 65,747 ≈ 2.41，正是 O3 的 relative performance。
 - O1 的 instruction count 最少，能說 O1 最快嗎？不能：O1 的 CPI 最高（1.79），compiler 可能產生比較複雜的指令。
 - IC × CPI 才是 cycle 數：O1 約 67,000（百萬），O3 約 65,700，O3 反而最快。
 
@@ -667,9 +669,9 @@ Loader 載入程式的步驟：
 | Bubble sort | 1.00 | 2.37 | 2.38 | 2.41 | 0.12 | 2.13 |
 | Quicksort | 1.00 | 1.50 | 1.50 | 1.91 | 0.05 | 0.29 |
 
-- Java 有兩種執行方式：interpreter（不優化）與 just-in-time（JIT）編譯。C 的 optimization 與 Java 的差很多。
-- 同樣是 O1，bubble sort 快 2.37 倍，quicksort 只快 1.5 倍；Java 的改善也較少，quicksort 時 Java 甚至比 C 不優化還差。不同程式即使用同樣的最佳化、不同語言，結果都不一樣。
-- 最重要的比較：在 C 不優化時，**quicksort 比 bubble sort 快 2,468 倍**（約兩千五）。Compiler 再厲害也只改善 1.5 倍、2 倍多；換一個好 algorithm 卻快兩千多倍。
+- Java 有兩種執行方式：interpreter（不最佳化）與 just-in-time（JIT）編譯。C 的 optimization 與 Java 的差很多。
+- 同樣是 O1，bubble sort 快 2.37 倍，quicksort 只快 1.5 倍；Java 的改善也較少，quicksort 時 Java 甚至比 C 不最佳化還差。不同程式即使用同樣的最佳化、不同語言，結果都不一樣。
+- 最重要的比較：在 C 不最佳化時，**quicksort 比 bubble sort 快 2,468 倍**（約兩千五）。Compiler 再厲害也只改善 1.5 倍、2 倍多；換一個好 algorithm 卻快兩千多倍。
 
 > **重點** 越上層的 optimization 改善越大：先把 algorithm 寫好，再用下層方法加速。三個教訓：IC、CPI 不能單獨當效能指標；compiler 最佳化的效果對 algorithm 很敏感；爛程式會差非常遠。
 
@@ -777,7 +779,7 @@ x86 是 CISC，理解它最重要的一句話：**一路演進，同時向後相
 - Operand 可以直接在 memory；MIPS 則是 **load-store machine**，運算的東西要先在 register 或是 immediate。
 - Memory 定址方法很多：base + displacement，還有 index × scale。每個指令都可能去 memory 拿資料，可能很久。
 - Encoding：MIPS、ARM 每個指令都是 32 bits，每次 fetch 32 bits 再 decode 就好；x86 長度從 **1 byte 到 15 bytes**都有，光是「下一個指令多長」就要先看前面幾個 bits 才知道，每次 fetch 的大小也不一樣。
-- 實作：為了相容全部都要支援，但 compiler 盡量產生簡單的指令，簡單的直接用硬體一對一做；複雜的指令拆成很多小的 **micro-operation** 湊起來執行。硬體只處理小而簡單的 micro-operation，好優化、好加速，其實就是 RISC 的概念，效能也與 RISC 差不多。
+- 實作：為了相容全部都要支援，但 compiler 盡量產生簡單的指令，簡單的直接用硬體一對一做；複雜的指令拆成很多小的 **micro-operation** 湊起來執行。硬體只處理小而簡單的 micro-operation，好最佳化、好加速，其實就是 RISC 的概念，效能也與 RISC 差不多。
 
 ## Fallacy 與 pitfall
 
@@ -798,7 +800,7 @@ MIPS 指令集長這樣是有原因的：
 3. **Make the common case fast**：常數很常用，所以設計 I-type，把常數直接放在指令裡，不用去 memory 拿。
 4. **Good design demands good compromises**：最好只有一種 format，但 R、I、J 還是稍有不同，這就是折衷。
 
-MIPS 是典型的 RISC，x86 是 CISC。將來做設計一定要先 **profiling**，找出最常用的指令來優化：依 Amdahl's law，佔的比例高，優化才有用。
+MIPS 是典型的 RISC，x86 是 CISC。將來做設計一定要先 **profiling**，找出最常用的指令來最佳化：依 Amdahl's law，佔的比例高，最佳化才有用。
 
 ## 從 ISA 到硬體：ALU 要做哪些運算
 
@@ -2541,8 +2543,8 @@ double 的算法完全一樣：exponent 11 bits，正常數用 1～2046，扣 bi
 
 換成十進位位數：乘上 log₁₀2 ≈ 0.3。
 
-- single：23 × 0.3 ≈ 6.9 → 大約 **6～7 位**十進位有效數字（一般說「約 6 位」）。
-- double：52 × 0.3 ≈ 15.7 → 大約 **16 位**。
+- single：23 × 0.301 ≈ 6.9 → 大約 **6～7 位**十進位有效數字（一般說「約 6 位」）。
+- double：52 × 0.301 ≈ 15.7 → 大約 **16 位**。
 
 ## 特殊值：exponent 全 0 與全 1
 

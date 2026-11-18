@@ -420,7 +420,7 @@
  ],
  "quiz": [
   {
-   "q": "jump 的目標地址如何組成？",
+   "q": "jump 的目標位址如何組成？",
    "opts": [
     "{PC+4[31:28], address[25:0], 00}",
     "PC + 4 + sign-extend(address) × 4",

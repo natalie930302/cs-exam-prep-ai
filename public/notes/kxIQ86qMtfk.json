@@ -1778,7 +1778,7 @@
     "Bipartite matching"
    ],
    "ans": "Independent set",
-   "why": "前三個可以有效率解（greedy、DP、network flow）；competitive facility location 則是 PSPACE-complete。"
+   "why": "Interval scheduling（greedy）、weighted interval scheduling（DP）、bipartite matching（network flow）都能有效率地解；independent set 是 NP-complete。"
   }
  ]
 }

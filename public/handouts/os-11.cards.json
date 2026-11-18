@@ -1,0 +1,12 @@
+{"cards":[
+  {"sec":"Virtual machine 與 hypervisor","q":"virtual machine、hypervisor（VMM）、host、guest 各是什麼？","a":"VM：軟體模擬的電腦，可裝自己的 OS 和應用程式。\nhypervisor（= virtual machine monitor）：建立與管理 VM 的軟體。\nhost：實體電腦；guest：跑在上面的虛擬電腦。"},
+  {"sec":"Virtual machine 與 hypervisor","q":"hypervisor 怎麼讓一台電腦變成多台？某台 server 要停機維修時，VM 怎麼處理？","a":"把實體的 memory 和 CPU 時間切成好幾份分給各 VM，每台 guest OS 都以為自己是獨立電腦。\n先把 VM **migrate** 到另一台 server 再維修：VM 不綁定特定實體硬體。"},
+  {"sec":"Type 1 與 Type 2 hypervisor","q":"Type 1 和 Type 2 hypervisor 差在哪？host 要不要先裝 OS？","a":"Type 1（bare-metal）直接跑在硬體上，hypervisor 本身就扮演 host 的 OS，不用先裝 OS。\nType 2（hosted）跑在已裝好的 host OS 上，像一般應用程式，host 一定要先裝 OS。"},
+  {"sec":"Type 1 與 Type 2 hypervisor","q":"VMware ESXi、Xen、VirtualBox、VMware Workstation 各屬於哪一型？","a":"Type 1：VMware ESXi、Xen（資料中心 server）。\nType 2：VirtualBox、VMware Workstation（個人電腦、筆電）。"},
+  {"sec":"Type 1 與 Type 2 hypervisor","q":"為什麼 Type 1 通常效能較好、攻擊面較小？","a":"中間少了一層 host OS：hypervisor 直接管硬體、分資源，沒有額外的 OS 吃資源，也沒有 host OS 的漏洞可以被利用。"},
+  {"sec":"Hypervisor 的優點與缺點","q":"判斷對錯並說明：Type 1 hypervisor 的缺點是 host OS 一當機，上面所有 VM 都會一起倒。","a":"**錯**。Type 1 底下沒有 host OS；「依賴 host OS」造成的不安全、不可靠、要跟 host OS 分資源，都是 **Type 2** 的問題。"},
+  {"sec":"Hypervisor 的優點與缺點","q":"不需要 hypervisor 的替代方案 container 和 VM 差在哪？","a":"VM：每台 guest 一整套 OS，由 hypervisor 切硬體資源。\ncontainer：多個程式共用 host 的同一個 kernel，不必每個都裝 OS，比較輕量。"},
+  {"sec":"作業系統的保護與安全","q":"protection 和 security 差在哪？","a":"protection：系統**內部**的機制，控制 process／user 能存取哪些資源、做哪些操作。\nsecurity：防範系統**外部**的威脅（未經授權的存取、惡意破壞），要先有 protection，再加上認證等手段。"},
+  {"sec":"作業系統的保護與安全","q":"OS 用哪些機制分別保護 CPU、記憶體，以及特權指令？","a":"CPU：timer 定時中斷，防止 process 霸佔 CPU。\n記憶體：base／limit register、page table 與 valid bit，越界就 trap。\n特權指令：dual mode，只能在 kernel mode 執行，user program 要用 system call。"},
+  {"sec":"作業系統的保護與安全","q":"什麼是最小權限原則？UNIX 怎麼簡化 access-control list？","a":"每個 user、process 只給完成工作所需的最少權限，出事時損害最小。\nUNIX 把 ACL 簡化成 owner／group／others 各一組 rwx 三個 bit。"}
+]}

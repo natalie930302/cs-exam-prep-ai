@@ -214,7 +214,7 @@
  ],
  "quiz": [
   {
-   "q": "test(3) 會印出幾個數字、呼叫 test 幾次？",
+   "q": "void test(int n) { if (n > 0) { printf(\"%d\", n); test(n − 1); } }。test(3) 會印出幾個數字、呼叫 test 幾次？",
    "opts": [
     "印 3 個、呼叫 4 次",
     "印 3 個、呼叫 3 次",

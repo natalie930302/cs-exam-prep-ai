@@ -268,7 +268,7 @@
    "why": "取 A＝tree 上的 x，R(A)＝tree 上的 y，|R(A)| = |A| − 1。"
   },
   {
-   "q": "派對例子的 deficiency δ(G) 是多少？",
+   "q": "派對例子有 8 個女生（X），其中 B、D、E、F、H 喜歡的男生合起來只有 b、c、d、h；maximum matching 是 7。deficiency δ(G) 是多少？",
    "opts": [
     "1",
     "0",

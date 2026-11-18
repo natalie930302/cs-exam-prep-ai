@@ -103,7 +103,7 @@ Tree 的終止情形：一個 node 只有自己、下面沒有任何 subtree（�
 | 慣例 | root | B、C、D | E～J | K、L、M |
 |---|---|---|---|---|
 | root 為 level 0（像 C 語言從 0 數） | 0 | 1 | 2 | 3 |
-| root 為 level 1（洪逸／Horowitz 課本，考試用這個） | 1 | 2 | 3 | 4 |
+| root 為 level 1（Horowitz 課本，考試用這個） | 1 | 2 | 3 | 4 |
 
 level 也常叫 **depth（深度）**：root 最淺，越往下越深。
 
@@ -115,7 +115,7 @@ level 也常叫 **depth（深度）**：root 最淺，越往下越深。
 
 不是 root、又還沒長到末梢、像長在樹幹和枝枒上的 node，叫 **internal node**。所以 node 可分 root、leaf、internal 三種。
 
-> **陷阱** 定義因書而異：多數課本（含洪逸／Horowitz）把「degree ≠ 0 的 node」都叫 nonterminal／internal，所以有小孩的 root 也算 internal。另外，在 extended binary tree 中 external node 指補上的空節點方塊，與 leaf 意義不同，注意題目語境。
+> **陷阱** 定義因書而異：多數課本（含 Horowitz）把「degree ≠ 0 的 node」都叫 nonterminal／internal，所以有小孩的 root 也算 internal。另外，在 extended binary tree 中 external node 指補上的空節點方塊，與 leaf 意義不同，注意題目語境。
 
 > **陷阱** H 底下還掛著 M，所以 H 是 internal node，不是 leaf。**只要有小孩，就不是葉子。**
 
@@ -452,7 +452,7 @@ h = 2 最多（7 個）        h = 2 最少（3 個，以下都算單傳）
 換成課本慣例：n 個 node 的 complete binary tree，深度為 **⌈log₂(n+1)⌉**。
 
 問：五層的樹，高度是 5 還是 4？
-答：不同的書說法不一樣，沒有完全公定的定義。若 root 是第 0 層，往下第 1、2、3、4 層，最深那層的編號就是高度，所以是 4；考試用的洪逸／Horowitz 課本 root 是 level 1，同一棵樹 depth 是 5。寫題目前先確認它用哪一種定義。課本版 2^k − 1 和 2^(h+1) − 1 其實是同一件事。
+答：不同的書說法不一樣，沒有完全公定的定義。若 root 是第 0 層，往下第 1、2、3、4 層，最深那層的編號就是高度，所以是 4；考試用的 Horowitz 課本 root 是 level 1，同一棵樹 depth 是 5。寫題目前先確認它用哪一種定義。課本版 2^k − 1 和 2^(h+1) − 1 其實是同一件事。
 
 ### 為什麼在意樹高
 
@@ -532,7 +532,7 @@ full 和 complete 是**不一樣**的兩個名詞。
 
 例：level 1 到 level 4 全滿，2⁴ − 1 = 15 個 node。
 
-> **陷阱** 有些英文教材把 full binary tree 定義成「每個 node 有 0 或 2 個孩子」，和課本（洪逸／Horowitz）的定義不同，注意題目語境。
+> **陷阱** 有些英文教材把 full binary tree 定義成「每個 node 有 0 或 2 個孩子」，和課本（Horowitz）的定義不同，注意題目語境。
 
 ### 層序編號與 path code
 
@@ -693,7 +693,7 @@ full binary tree 用 node 存，pointer 大多用得到；skewed tree 用 node �
 
 ### 實務經驗：node 四散 vs 壓進 vector
 
-一個 MPEG-2 decoder（當年 Video CD 的格式）的期末作業：影像部分大致等於每秒做 30 次 JPEG 解碼，做不到播放就會卡。解碼要一直在 Huffman tree 上從 root 走到 leaf。若 node 四散在記憶體各處、用指標連起來，就用不到 cache，像一直要跑去很遠的倉庫搬東西，速度不夠：別人一秒解 30 張，自己一秒解 1 張，播放嚴重延遲。
+一個 MPEG-2 decoder（DVD 用的影像格式）的期末作業：影像部分大致等於每秒做 30 次 JPEG 解碼，做不到播放就會卡。解碼要一直在 Huffman tree 上從 root 走到 leaf。若 node 四散在記憶體各處、用指標連起來，就用不到 cache，像一直要跑去很遠的倉庫搬東西，速度不夠：別人一秒解 30 張，自己一秒解 1 張，播放嚴重延遲。
 
 解法就是前面的做法：把 full binary tree 壓進 vector，讓 node 在記憶體裡靠在一起，而且找小孩只要 ×2、×2+1 這種簡單計算。full binary tree、vector、path code 這組關係，之後學 Huffman tree 或 JPEG 時用得到。
 

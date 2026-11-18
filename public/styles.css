@@ -3709,3 +3709,14 @@ body#appRoot .ch-opt-group[open] > summary::before { content: '▾ '; }
 body#appRoot .ch-opt-group > .ch-mat.ch-video { padding: 12px 16px !important; border-radius: var(--cell-r) !important; opacity: .8; }
 /* 2026-11-18: the subject's 速記卡 link sits under the course list */
 body#appRoot .sp-review-link { display: inline-flex; margin: 0 0 16px; }
+
+/* 2026-11-18b: 今日複習 link on top of today's list (review.html) */
+.calday-review { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0 0 12px; padding: 12px 16px; border-radius: 14px; text-decoration: none; color: var(--tx); background: color-mix(in srgb, var(--ac) 10%, var(--surf)); border: 1px solid color-mix(in srgb, var(--ac) 35%, var(--bd)); transition: border-color .16s; animation: m-in .22s ease both; }
+.calday-review svg { color: var(--ac); flex: 0 0 auto; }
+.calday-review b { font-size: 14px; }
+.calday-review span { font-size: 13px; color: var(--mt2); }
+@media (hover: hover) { .calday-review:hover { border-color: var(--ac); } }
+/* 今日複習 in the floating buttons: a link, with the number due as a badge */
+body#appRoot .fab-nav a.fab-btn { position: relative; text-decoration: none; }
+body#appRoot .fab-nav .fab-badge { position: absolute; top: 0; right: -2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--red); color: #fff; font-size: 11px; font-weight: 700; line-height: 16px; text-align: center; box-sizing: border-box; pointer-events: none; }
+body#appRoot .fab-nav .fab-badge[hidden] { display: none; }

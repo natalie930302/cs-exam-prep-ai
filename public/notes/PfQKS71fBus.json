@@ -176,7 +176,7 @@
  ],
  "quiz": [
   {
-   "q": "從 F 用 modified BFS 長 alternating tree（當時 M = A–a、B–h、C–c、D–d、E–b），找到的 augmenting path 是？",
+   "q": "派對的喜歡清單：A: a e f g h、B: b c h、C: c e f g、D: d h、E: b c d、F: b d、G: a b c d、H: b c d。當 M = A–a、B–h、C–c、D–d、E–b 時，從 F 用 modified BFS（照字母順序）長 alternating tree，找到的 augmenting path 是？",
    "opts": [
     "F–b–E–c–C–e",
     "F–d–D–h",
@@ -198,7 +198,7 @@
    "why": "它上面的 alternating path 都不能 augment；它的 root 叫 Hungarian acorn。"
   },
   {
-   "q": "從 H 長出的 Hungarian tree 上，女生和男生各有幾個？",
+   "q": "同上題的喜歡清單，Hungarian algorithm 最後從 H 長出的 Hungarian tree 上，女生和男生各有幾個？",
    "opts": [
     "女生 5、男生 4",
     "女生 4、男生 4",
@@ -209,7 +209,7 @@
    "why": "B、D、E、F、H 只喜歡 b、c、d、h，所以不可能全部配到。"
   },
   {
-   "q": "派對例子的 maximum matching size 是多少？",
+   "q": "同上題的喜歡清單，maximum matching size 是多少？",
    "opts": [
     "7",
     "8",

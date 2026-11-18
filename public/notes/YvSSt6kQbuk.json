@@ -503,7 +503,7 @@
     "R[rd] ← MEM[R[rs]]"
    ],
    "ans": "R[rt] ← MEM[R[rs] + SignExt(imm16)]",
-   "why": "地址是 base（rs）+ sign-extended offset，讀出的資料放到 rt；第三個選項是 sw。"
+   "why": "位址是 base（rs）+ sign-extended offset，讀出的資料放到 rt；第三個選項是 sw。"
   },
   {
    "q": "4-bit 的 1011 sign-extend 到 8 bits 是？",

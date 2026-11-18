@@ -17,6 +17,7 @@ import { tmpdir, homedir } from 'node:os';
 import { join, dirname } from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { lintHandout, allHandouts } from './handout-lint.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PUB = join(ROOT, 'public');
@@ -64,6 +65,21 @@ console.log('資料');
     if (r.status !== 0) { bad++; fail('lab/chapters/' + f, '語法錯誤：' + r.stderr.split('\n').find((l) => /Error/.test(l))); }
   }
   if (!bad) ok('動畫章節語法正確');
+  // 講義與自我檢查卡：格式（tools/handout-lint.mjs）、index.json 是最新的
+  const hs = allHandouts();
+  const lint = hs.flatMap(lintHandout);
+  lint.forEach((x) => fail('講義', x));
+  const hix = JSON.parse(readFileSync(join(PUB, 'handouts/index.json'), 'utf8'));
+  let cards = 0;
+  for (const ch of hs) {
+    const cf = join(PUB, 'handouts', ch + '.cards.json');
+    let n = 0;
+    try { n = existsSync(cf) ? (JSON.parse(readFileSync(cf, 'utf8')).cards || []).length : 0; } catch (e) { continue; } // lint 已回報
+    cards += n;
+    if (!hix[ch]) fail('handouts/index.json', ch + ' 沒有列在索引裡（node tools/handout-index.mjs）');
+    else if ((hix[ch].cards || 0) !== n) fail('handouts/index.json', ch + ' 的卡片數不對（索引 ' + (hix[ch].cards || 0) + '，實際 ' + n + '；node tools/handout-index.mjs）');
+  }
+  if (!lint.length) ok(hs.length + ' 份講義、' + cards + ' 張自我檢查卡格式正確');
 }
 
 // ───────────────────────── 伺服器、瀏覽器 ─────────────────────────
@@ -124,7 +140,7 @@ const external = (l) => /youtube|ytimg|googleapis|gstatic|doubleclick|ERR_INTERN
 
 // ───────────────────────── 2. 頁面 ─────────────────────────
 console.log('頁面');
-const PAGES = ['/calendar', '/calendar/2026-10-20', '/subjects', '/subjects/ds/4', '/study/ds/4', '/study/ds/4?t=full', '/study/ds/4?t=quiz', '/study/ds/4?t=goals', '/study/os/1?t=lab'];
+const PAGES = ['/calendar', '/calendar/2026-10-20', '/subjects', '/subjects/ds/4', '/study/ds/4', '/study/ds/4?t=handout', '/study/ds/4?t=full', '/study/ds/4?t=quiz', '/study/ds/4?t=goals', '/study/os/1?t=lab', '/review.html', '/review.html?s=os', '/review.html?ch=ds-4'];
 for (const w of [375, 1366]) {
   for (const p of PAGES) {
     await open(p, w, 2000);

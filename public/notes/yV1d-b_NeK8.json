@@ -251,7 +251,7 @@
    "why": "cost 像 fractional knapsack 把背包填滿；upper 只算整個放得下的。"
   },
   {
-   "q": "root 的 cost 是多少？",
+   "q": "例題 4 個物品 profit 10、10、12、18，weight 2、4、6、9，m = 15。root 的 cost 是多少？",
    "opts": [
     "−38",
     "−32",
@@ -284,7 +284,7 @@
    "why": "cost 比 upper 大（以負數看，表示 profit 較小），不可能更好。"
   },
   {
-   "q": "最佳解是？",
+   "q": "例題 4 個物品 profit 10、10、12、18，weight 2、4、6、9，m = 15。最佳解是？",
    "opts": [
     "x = (1, 1, 0, 1)，profit 38",
     "x = (1, 1, 1, 0)，profit 32",

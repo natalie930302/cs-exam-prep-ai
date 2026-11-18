@@ -9,7 +9,7 @@
 - 手算 partition 與 quick sort 的遞迴，說明最好 O(n log n)、最壞 O(n²)（已排序且選第一個當 pivot），以及 random、三數取中等 pivot 選法
 - 用 heap 排序：建 heap（逐一 insert 或 heapify）再一直刪根，放回空出的格子
 - 用 decision tree 證明搜尋的 Ω(log n) 與比較排序的 Ω(n log n)（log n! = Ω(n log n)）
-- 手算 counting sort（含 pos[] 的算法與穩定放置）、LSD／MSD radix sort，說明每回合要 stable、何時是線性時間
+- 手算 counting sort（含 pos[] 的計算與穩定放置）、LSD／MSD radix sort，說明每回合要 stable、何時是線性時間
 - 背出各排序的複雜度與性質總表；說明 external sort 的 run、block 合併與合併順序
 
 ## 為什麼要排序：record、key 與搜尋
@@ -1622,7 +1622,7 @@ n 個元素，每個最多往上爬 log n，建 heap 是 O(n log n)。
 | counting sort | 線性（條件見後） | — | 不屬於 comparison sort |
 | radix sort | 線性（條件見後） | — | 不屬於 comparison sort |
 
-- 排序最好能做到多快？線性 Θ(n)。理由：輸出就是 n 格的陣列，光把 n 個元素寫出來就要 n 步，所以任何排序至少 Θ(n)。
+- 排序最好能做到多快？線性 Θ(n)。理由：輸出就是 n 格的陣列，光把 n 個元素寫出來就要 n 步，所以任何排序至少 Ω(n)。
 - heap 的一次 insert 或 extract 是 O(h)，h 是樹高 = log n。n 個都 insert 進去再一個一個 extract，n × log n = O(n log n)。
 - in-place 的 heap sort：heap 直接建在原陣列裡（bottom-up 建 heap O(n)，或在原陣列前段逐一 insert 也行），再反覆把 root 換到陣列尾端；兩種建法的總時間都是 O(n log n)。
 
@@ -2496,7 +2496,7 @@ external sort 不是只能用上面單機的 merge 方法——那個解法的�
 - heapify：由右往左（從第 ⌊n/2⌋ 格開始）每個節點往下調；兩種建法結果可能不同，題目說 heap sort／bottom-up 用 heapify
 - heap sort：in-place、不 stable（用原位置當 secondary key 可 stable 但要額外空間）、難寫、實務上沒那麼快
 - priority queue：刪 priority 最高者；陣列總有一個操作 O(n)，heap 的 insert／delete 都 O(log n)；小優先用 min heap、大優先用 max heap
-- 任何排序至少 Θ(n)（要輸出 n 個元素）
+- 任何排序至少 Ω(n)（要輸出 n 個元素）
 - insertion O(n²) in-place；merge O(n log n) 非 in-place；heap O(n log n) in-place
 - comparison model：只能比較（yes/no），只算比較次數；merge、heap、quick、insertion、selection、BST 都在其中
 - Python 自訂物件可比較：定義 __lt__ __le__ __gt__ __ge__ __eq__ __ne__（__cmp__ 只在 Python 2）

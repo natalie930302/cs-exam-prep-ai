@@ -194,7 +194,7 @@
  ],
  "quiz": [
   {
-   "q": "Case 2 中，兩個 component 的 region 數 r₁ + r₂ 等於？",
+   "q": "證明 Euler 公式時，拿掉一條橋讓圖分成兩個 component。若原圖有 r 個 regions，兩個 component 的 region 數 r₁ + r₂ 等於？",
    "opts": [
     "r",
     "r − 1",

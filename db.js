@@ -31,7 +31,8 @@ const ready = client.batch([
 ], 'write');
 async function run(sql, args = []) { await ready; return client.execute({ sql, args }); }
 
-const CLIENT_KEY = /^(qz-history|qz-asked-[\w-]+|yt-pos-[\w-]+)$/;
+// (the 講義 reading position ho-pos-/ho-read-min- and the review schedule srs since 2026-11-18)
+const CLIENT_KEY = /^(qz-history|qz-asked-[\w-]+|yt-pos-[\w-]+|ho-pos-[\w-]+|ho-read-min-[\w-]+|srs)$/;
 async function getClientState() {
   const out = {};
   for (const r of (await run('SELECT key, value FROM client_state')).rows) out[r.key] = r.value;
@@ -53,6 +54,10 @@ async function resetProgress() {
     'DELETE FROM client_state',
     { sql: "INSERT INTO settings(key, value) VALUES ('state_reset', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", args: [String(Date.now())] },
   ], 'write');
+}
+async function getClientValue(key) {
+  const r = (await run('SELECT value FROM client_state WHERE key = ?', [key])).rows[0];
+  return r ? r.value : null;
 }
 async function setClientState(key, value) {
   if (!CLIENT_KEY.test(key)) return false;
@@ -87,4 +92,4 @@ async function setTaskDone(taskId, done) {
   else await run('DELETE FROM task_done WHERE task_id = ?', [taskId]);
 }
 
-module.exports = { client, getClientState, getReset, resetProgress, setClientState, getStartDate, setStartDate, getDoneTaskIds, toggleTask, setTaskDone };
+module.exports = { client, getClientState, getClientValue, getReset, resetProgress, setClientState, getStartDate, setStartDate, getDoneTaskIds, toggleTask, setTaskDone };

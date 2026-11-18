@@ -295,7 +295,7 @@
    "why": "balanced 保證 level h − 1 以上沒有缺葉子的地方、complete 保證那幾層都長滿，再多至少一個 level h 的葉子。"
   },
   {
-   "q": "老師例子的 preorder 前五個是？",
+   "q": "一棵 binary tree：root r 的左 child 是 a，a 的左 child 是 c，c 的左 child 是 f，f 的左 child 是 j，j 的左右 child 是 p、q。preorder 的前五個是？",
    "opts": [
     "r a c f j",
     "p j q f c",
@@ -306,7 +306,7 @@
    "why": "preorder 先 root 再一路往左：r、a、c、f、j。"
   },
   {
-   "q": "老師例子的 postorder 最後一個是？",
+   "q": "一棵 binary tree 的 root 是 r，postorder 走訪的最後一個是？",
    "opts": [
     "r",
     "u",
@@ -328,7 +328,7 @@
    "why": "inorder 把 root 放在中間處理。"
   },
   {
-   "q": "老師例子的 inorder 中，r 排在第幾個？",
+   "q": "一棵 binary tree 共 19 個點，root r 的左 subtree 有 9 個點。inorder 中 r 排在第幾個？",
    "opts": [
     "第 10 個",
     "第 1 個",

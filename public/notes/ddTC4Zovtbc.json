@@ -290,7 +290,7 @@
    "why": "完成時才 push，最後 pop 的順序就是拓撲序。"
   },
   {
-   "q": "影片第一個例子 pop stack 得到的順序是？",
+   "q": "影片第一個例子（邊 A→C、B→C、B→D、C→E、D→F、E→H、E→F、F→G；DFS 依序從 E、B、A 出發，E 先走 H 再走 F，B 先走 C 再走 D），pop stack 得到的順序是？",
    "opts": [
     "A B D C E F G H",
     "E H F G B C D A",

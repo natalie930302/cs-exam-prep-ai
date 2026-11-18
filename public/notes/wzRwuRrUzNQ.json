@@ -303,7 +303,7 @@
    "why": "Multiprogramming 讓一個 job 等 I/O 時 CPU 去跑別的 job；time sharing 快速切換，提供互動與短 response time。"
   },
   {
-   "q": "Batch system 中，決定使用者執行順序的是？",
+   "q": "課堂描述的早期 batch system 中，決定使用者執行順序的是？",
    "opts": [
     "operator（人）",
     "CPU scheduler",

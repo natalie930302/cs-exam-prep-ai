@@ -1,4 +1,4 @@
-// Offline reading of the 講義: the handouts and the pages that show them are
+// Offline reading of the 講義 (and their 自我檢查卡): the handouts and the pages that show them are
 // kept in a cache. Network first, so a deploy shows up at once; the cached
 // copy is only used when the network fails (no signal on the bus).
 // Everything else (videos, /api, other sites) goes straight to the network.
@@ -19,6 +19,9 @@ self.addEventListener('activate', function(e){
       for (const ch of Object.keys(index)) {
         const m = await fetch('/handouts/' + ch + '.md');
         if (m.ok && isData(m)) await cache.put('/handouts/' + ch + '.md', m);
+        if (!index[ch].cards) continue;
+        const c = await fetch('/handouts/' + ch + '.cards.json');
+        if (c.ok && isData(c)) await cache.put('/handouts/' + ch + '.cards.json', c);
       }
       const l = await fetch('/handouts/links.json');
       if (l.ok && isData(l)) await cache.put('/handouts/links.json', l);

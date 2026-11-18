@@ -233,7 +233,7 @@
    "why": "2ᵏ⁻¹ 對 × (2ʰ⁻ᵏ⁺¹ − 1) 次。"
   },
   {
-   "q": "例題中 path A D C B F 的 weight 是？",
+   "q": "例題中 A–D、D–C、C–B、B–F 的 weight 依序是 7、2、5、8。path A D C B F 的 weight 是？",
    "opts": [
     "22",
     "12",

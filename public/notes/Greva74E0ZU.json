@@ -231,7 +231,7 @@
    "why": "MST 比的是整棵樹邊的 weight 總和。"
   },
   {
-   "q": "老師例子中，Dijkstra 得到的 tree（T1）weight 是多少？",
+   "q": "無向圖的邊與 weight：A–B 3、A–C 9、A–D 7、B–C 5、B–E 6、B–F 8、C–D 2、C–E 4、D–F 5、E–F 1。從 A 跑 Dijkstra，predecessor 邊組成的 tree（T1）weight 是多少？",
    "opts": [
     "22",
     "15",
@@ -264,7 +264,7 @@
    "why": "一端在內一端在外，加進去不會有 cycle，T 一直是 tree。"
   },
   {
-   "q": "老師的圖從 A 跑 Prim，第二條加入的 edge 是？",
+   "q": "同第 2 題的圖從 A 跑 Prim，第二條加入的 edge 是？",
    "opts": [
     "BC",
     "AC",
@@ -275,7 +275,7 @@
    "why": "T = {A, B} 時候選 AC 9、AD 7、BC 5、BE 6、BF 8，最小是 BC。"
   },
   {
-   "q": "Prim 在老師的圖上得到的 total weight 是？",
+   "q": "同第 2 題的圖，Prim 得到的 total weight 是？",
    "opts": [
     "15",
     "22",

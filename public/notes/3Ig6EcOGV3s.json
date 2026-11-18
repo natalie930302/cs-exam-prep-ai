@@ -472,7 +472,7 @@
     "ALU 不用比較，RegDst 無意義"
    ],
    "ans": "RegWrite = 0，選誰都不會寫入",
-   "why": "不寫 register file，寫入地址選 rt 或 rd 都沒影響。"
+   "why": "不寫 register file，寫入位址選 rt 或 rd 都沒影響。"
   },
   {
    "q": "ALUOp = 01 時，ALU control 輸出？",

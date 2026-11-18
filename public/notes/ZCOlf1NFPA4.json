@@ -252,7 +252,7 @@
    "why": "S = { v : 存在從 s 到 v 的 incomplete f-augmenting path }，T = V − S。"
   },
   {
-   "q": "在 F2 上（(s,a) 5/5、(s,b) 2/4、(s,c) 3/3、(b,d) 2/2），S 是？",
+   "q": "在 F2 上（(s,a) 5/5、(s,b) 2/4、(s,c) 3/3；b 除了 (s,b) 之外只有 (b,d) 2/2 這條邊），S 是？",
    "opts": [
     "{s, b}",
     "{s, a, b}",

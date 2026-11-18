@@ -28,7 +28,7 @@ function mdToHtml(md){
     if (/^>/.test(l)) {
       const buf = [];
       while (i < lines.length && /^>/.test(lines[i])) buf.push(lines[i++].replace(/^>\s?/, ''));
-      const kind = (buf[0].match(/^\*\*(重點|例題|陷阱|比喻|觀念)\*\*/) || [])[1];
+      const kind = (buf[0].match(/^\*\*(重點|例題|陷阱|比喻|觀念)(?:（[^）]*）)?\*\*/) || [])[1];
       out.push('<div class="ho-call' + (kind ? ' ho-' + {'重點': 'key', '例題': 'ex', '陷阱': 'trap', '比喻': 'meta', '觀念': 'idea'}[kind] : '') + '">' + mdToHtml(buf.join('\n')) + '</div>'); continue;
     }
     if (/^\|/.test(l)) {
@@ -58,4 +58,17 @@ function mdToHtml(md){
     out.push('<p>' + mdInline(buf.join('\n')).replace(/\n/g, '<br>') + '</p>');
   }
   return out.join('');
+}
+// The raw text of every "## " heading, in the order they render (headings
+// inside code blocks are not headings). Files keyed by section (links.json,
+// *.cards.json) use this raw text, not the rendered one.
+function mdSections(md){
+  let fence = false;
+  const out = [];
+  md.replace(/\r/g, '').split('\n').forEach(function(l){
+    if (/^\s*```/.test(l)) { fence = !fence; return; }
+    const m = !fence && l.match(/^##\s+(.*)$/);
+    if (m) out.push(m[1].trim());
+  });
+  return out;
 }

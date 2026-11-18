@@ -186,7 +186,7 @@ cp | K1 | cp | K2 | cp | K3 | cp
 B-tree = **加上規則的 m-way search tree**。order（階數）m 就是一個 node 最多幾個 child，所以 order m 的 B-tree 也是一棵 m-way search tree。
 
 1. **每個 node 至少半滿**：非 root 的 internal node 至少要有 **⌈m/2⌉** 個 child。注意是 ceiling（無條件進位），不是 floor，例如 ⌈5/2⌉ = 3。degree 10 的話，非 root 的 internal node 隨時都要至少 5 個 child。
-2. **root 例外**：規則一套不到 root 上——第一個 key 插進去時 root 只有 1 個 key，馬上違規。所以 root 至少 **2 個 child** 就好，也就是 root 可以只有 1 個 key（整棵樹只有 root 一個 node 時除外）。
+2. **root 例外**：規則一套不到 root 上——第一個 key 插進去時 root 只有 1 個 key，馬上違規。所以 root 至少 **2 個 child** 就好（整棵樹只有 root 一個 node 時除外，那時 root 沒有 child），也就是 root 可以只有 1 個 key。
 3. **所有 leaf 都在同一層**，所以每次搜尋走的層數都一樣。
 4. **建法是 bottom-up**：key 一律先進 leaf，滿了就 split 往上送，樹是從 root 那端長高的。
 
@@ -604,6 +604,8 @@ leaf：所有 key，每個都有 record pointer，串成 linked list
 
 1. **record pointer 只從 leaf 出來**：上層（非 leaf）node 只剩 key 和 child pointer，不放 record pointer。
 2. **上層的每個 key 在 leaf 都要有一份副本（copy）**：15 在上層，所以 leaf 裡也放一個 15，帶著 record pointer，跟 20 在一起；30 下到 leaf，跟 35 在一起；40 下到 leaf，跟 50、60 在一起（三個都有 record pointer）；70 也下到 leaf，跟 80 在一起。結果：樹裡的每個 key 一定都會出現在 leaf。
+
+> **陷阱** 這是「由 B-tree 改成 B+ tree」時的說法。另一種常見寫法（後面 order 2 的例子）把上層的 key 只當「路標」（separator）：它不一定是真的資料，刪除資料後也可以留在上層，所以上層的 key 不一定出現在 leaf。考題沒說時，記住：**真正的資料一定在 leaf**，上層只負責指路。
 3. **leaf 在同一層，像 linked list 一樣串起來**，可以從左一路走到右。
 
 ### dense index 與 sparse index

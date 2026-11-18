@@ -231,7 +231,7 @@
     "tape"
    ],
    "ans": "DRAM",
-   "why": "DRAM 只要一個 transistor，便宜、省電，適合大容量。"
+   "why": "DRAM 每個 bit 只要一個 transistor 加一個 capacitor，便宜、密度高，適合大容量；SRAM 較快但貴，用在 cache。"
   },
   {
    "q": "下列哪一個是 volatile？",

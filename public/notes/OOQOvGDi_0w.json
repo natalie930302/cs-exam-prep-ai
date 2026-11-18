@@ -239,7 +239,7 @@
  ],
  "quiz": [
   {
-   "q": "在 A–J 的例子中，用 DFS（字母順序、從 A 開始）加入端點的順序是？",
+   "q": "connected graph 的邊為 A–B、A–C、A–D、B–D、B–E、E–F、E–H、C–G、G–I、G–J。用 DFS（字母順序、從 A 開始）加入端點的順序是？",
    "opts": [
     "A B D E F H C G I J",
     "A B C D E G F H I J",

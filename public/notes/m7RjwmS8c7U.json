@@ -216,7 +216,7 @@
    "why": "定義：directed tree 有一個 root，每條邊都 directed away from the root；畫圖時才省略箭頭。"
   },
   {
-   "q": "在老師的例子中，E 的 ancestors 是？",
+   "q": "rooted tree 的 root 是 A，從 root 到 E 的 path 是 A → B → C → E。E 的 ancestors 是？",
    "opts": [
     "C、B、A",
     "D、C、B",
@@ -238,7 +238,7 @@
    "why": "葉子不一定在最底層（例如 F 在 level 1）；沒有 children 就是葉子。"
   },
   {
-   "q": "老師例子的 height 是多少？",
+   "q": "一棵 rooted tree：root A 在 level 0；B、F、G 在 level 1；C、H、I、J 在 level 2；D、E、K、L、N 在 level 3。它的 height 是多少？",
    "opts": [
     "3",
     "4",

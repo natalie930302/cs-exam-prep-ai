@@ -130,7 +130,7 @@ process 一被 create，OS 就幫它 allocate 一張 **PCB**，記錄控制、�
 ## Context switch
 **Context switch** 是專有名詞：把 CPU 上正在跑的 process 換成另一個 process。CPU 能被 share，全靠它。
 
-什麼時候會換？一定是有 **interrupt**（例如有人按了 keyboard、timer 到了），或程式自己呼叫了 **system call**（例如 printf，請 OS 幫忙；OS 也是一支程式，所以要換過去）。不然 CPU 就一條一條讀同一個 process 的指令，它會永遠佔著 CPU。
+什麼時候會換？一定是有 **interrupt**（例如有人按了 keyboard、timer 到了），或程式自己呼叫了 **system call**（例如 printf，請 OS 幫忙；CPU 先交給 OS 處理，OS 可能決定換另一個 process 上來，例如這個 process 要等 I/O）。不然 CPU 就一條一條讀同一個 process 的指令，它會永遠佔著 CPU。
 
 ```
 P0（執行中）        OS                          P1
@@ -146,7 +146,7 @@ P0 從上次停下的地方繼續 <──
 步驟：
 1. P0 被打斷後只能 idle，等 OS 再讓它執行。
 2. OS 把 CPU 裡的 state（PC、register）全部存進 P0 的 PCB。
-3. 從 P1 的 PCB 把它的 state load 進來（P1 可能是 OS，也可能是別的 user 的 process）。
+3. 從 P1 的 PCB 把它的 state load 進來（P1 是 scheduler 選出的另一個 process，可能是別的 user 的）。
 4. switch 完成，P1 才從它的 program counter 開始 fetch 指令。
 5. 要換回 P0 就反過來：P1 的 state 存進 PCB1，再 load PCB0。上圖總共 switch 了兩次。
 
@@ -212,7 +212,7 @@ OS 通常為不同 event 準備專門的 queue。
 | | Long-term（job scheduler） | Short-term（CPU scheduler） | Mid-term |
 |---|---|---|---|
 | 管哪一段 | disk → memory：哪個新程式可以被載入 | memory → CPU：ready 的 process 誰先上 CPU | memory → disk（swap out）與 disk → memory（swap in） |
-| 頻率 | 低：幾秒甚至幾分鐘一次，要有人 launch 新程式才需要決定（人的動作很慢） | 非常高：每幾 ms（大約 100 ms 或更短）一次，timer、system call、I/O interrupt 都會叫醒它 | 依需要 |
+| 頻率 | 低：幾秒甚至幾分鐘一次，要有人 launch 新程式才需要決定（人的動作很慢） | 非常高：至少每 100 ms 左右就一次（常常更頻繁），timer、system call、I/O interrupt 都會叫醒它 | 依需要 |
 | 任務 | 控制 **degree of multiprogramming**，挑好的 CPU／I/O mix | 一定要 **efficient**，顧 waiting time 與 fairness | **swapping**：控制 degree、improve process mix、free 出 memory |
 
 ### Long-term scheduler 與 degree of multiprogramming
@@ -267,7 +267,7 @@ parent 和 child 是兩支不同的程式，但有關聯。每個面向選哪一
    - concurrent：當成兩支普通程式，scheduler 決定誰先
    - parent 等 children terminate：child 優先。parent 一生完就進 waiting queue（注意它不是在做 I/O，也不是 sleep）
 3. **Address space（memory content：code、data、heap、stack）**
-   - duplicate：把 parent 的內容整份複製給 child，連 PC 都一樣（parent 在第 3 行生 child，child 也從第 3 行開始）。看起來、跑起來都一樣，但 memory address 不同，本質上是兩支程式。
+   - duplicate：把 parent 的內容整份複製給 child，連 PC 都一樣（parent 在第 3 行生 child，child 也從第 3 行開始）。看起來、跑起來都一樣，連 virtual address 都一樣，但背後是各自獨立的 physical memory（改了自己的變數不會影響對方），本質上是兩支程式。
    - load new program：create 時直接 load 新 program 進 child 的 code section，PC 重設。
 
 ### fork()
@@ -617,8 +617,8 @@ marshalling 時就把這些轉換處理好。另一個麻煩是 **pointer**：po
 - 五狀態：new → ready → running → terminated；running → waiting（I/O、sleep、wait）→ ready；running → ready（interrupt／timer）。scheduler 只從 ready queue 選。
 - PCB：pointer、state、PC、registers、scheduling、memory（base／limit）、I/O、accounting；存在 kernel space；queue 串的是 PCB。
 - Context switch：存舊 process 的 state 到它的 PCB、從新 process 的 PCB load；期間兩者都 idle，是 overhead；加速靠快 memory、特殊指令、多組 register set。
-- Thread 共用 code、data、OS resource（heap）；各自有 thread ID、PC、registers、stack。
-- Long-term：disk → memory，控制 degree of multiprogramming、CPU／I/O mix，頻率低（現代淡化）。Short-term：memory → CPU，每幾 ms 一次，要快（演算法 10 ms／每 100 ms = 10% overhead）。Mid-term：swap out／in，避免 thrashing、改善 mix。
+- Thread 共用 code、data、heap、OS resource（例如 open 的 file）；各自有 thread ID、PC、registers、stack。
+- Long-term：disk → memory，控制 degree of multiprogramming、CPU／I/O mix，頻率低（現代淡化）。Short-term：memory → CPU，頻率非常高（至少約每 100 ms 一次），要快（演算法 10 ms／每 100 ms = 10% overhead）。Mid-term：swap out／in，避免 thrashing、改善 mix。
 - Degree 太低 CPU idle；太高 thrashing。
 - fork：duplicate、concurrent；child 回傳 0，parent 拿到 child PID。exec：換內容、PID 不變、不建新 process。wait：parent 等 child。
 - n 個 fork → 2ⁿ 個 process。

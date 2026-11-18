@@ -231,7 +231,7 @@ Disk 不喜歡 random access，因為讀寫頭要一直移動。所以上層要 
 
 現在軟體很有彈性，partition 不一定對到一顆硬碟：
 
-- 可以是好幾顆 disk 組成（group of multiple disks）。例如每顆只有 2T，五顆串起來：2T × 5 = 10T 的 partition，甚至可以透過網路串，變成分散式的概念。
+- 可以是好幾顆 disk 組成（group of multiple disks）。例如每顆只有 2T，五顆串起來（像 RAID）：2T × 5 = 10T，甚至可以透過網路串，變成分散式的概念。課本（Silberschatz）的用詞是：跨多顆 disk 的是 **volume**；partition 通常指一顆 disk 上切出的一塊。
 - 也可以只切一顆硬碟的一部分。
 - 但受硬體限制：像 floppy、CD-ROM 就是一整個，沒辦法再切。
 
@@ -556,7 +556,7 @@ block ：1 KB、甚至 4 KB
 4 KB block = 4096 / 512 = 8 個 sector
 
 block 0      block 1      ...
-[s0 s1 s2 s3][s4 s5 s6 s7] ...   ← 這張圖的 block 0 對到 4 個 sector
+[s0 s1 s2 s3][s4 s5 s6 s7] ...   ← 這張圖畫的是 2 KB block：一個 block 對到 4 個 sector
 ```
 
 Block 不可能比 sector 小：sector 已經是實體上最小的單位，logical 的單位只能建在它上面。block 和 sector 之間還有一層轉換，mapping 不一定一對一；但 file system 管到最後，碰得到的只有以 block 為單位的東西，所以這章講的都是 block。
@@ -1283,7 +1283,7 @@ access time = seek time + rotation time + transfer time
 
 > **例題** 7200 RPM 的 rotation time：
 > 一圈 = 60 秒 ÷ 7200 = 1/120 秒 ≈ 8.33 ms。
-> 平均要等半圈 = 8.33 ÷ 2 ≈ 4.17 ms（課本常用的算法）。
+> 平均要等半圈 = 8.33 ÷ 2 ≈ 4.17 ms（課本常用的估法）。
 
 > **例題** transfer time 與 bandwidth（示意）：讀 4 KB，bandwidth 100 MB/s → 4 KB ÷ 100 MB/s ≈ 4096 ÷ 100,000,000 s ≈ 0.04 ms。反推：若 8 MB 花 0.1 s 傳完，bandwidth = 8 MB ÷ 0.1 s = 80 MB/s。
 
@@ -1313,7 +1313,7 @@ access time = seek time + rotation time + transfer time
 - 副檔名對 OS 只是 hint（選開啟程式用），不決定內容格式
 - 三種 access：sequential（API 不給 position，read 後 position 隱含前進，reset/rewind）、direct/random（API 帶 position）、index（給 key 查 index table）
 - 硬碟循序讀寫遠快於 random；上層要支援 random access 通常需要 memory cache
-- Partition 是 raw；format（建立 file system）後才是 volume；partition 可跨多顆 disk（5 × 2T = 10T），floppy、CD-ROM 不能切
+- Partition 是 raw；format（建立 file system）後才是 volume；volume 可跨多顆 disk（5 × 2T = 10T，課本用詞；partition 通常在一顆 disk 內），floppy、CD-ROM 不能切
 - Database、swap space 可直接用 raw partition
 - Directory 本意：檔名 → unique ID 的 mapping；資訊必須 persistent 寫回硬碟
 - Directory operation：create、delete、rename、list；list 常是現代 FS 的 bottleneck；search 可用 tree 或 hash

@@ -541,7 +541,7 @@
    "why": "用 duplicate 的硬體換時間，delay 由 2n 變 n。"
   },
   {
-   "q": "8-bit saturating 加法：200 + 100 = ?",
+   "q": "8-bit unsigned saturating 加法：200 + 100 = ?",
    "opts": [
     "255",
     "44",

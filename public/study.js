@@ -210,12 +210,22 @@
     }
     return notesCache[id];
   }
+  // throws when the server did not save it (offline, signed out): callers say so
   async function setTask(id, value){
-    await fetch('/api/tasks/' + encodeURIComponent(id) + '/set', {
+    const r = await fetch('/api/tasks/' + encodeURIComponent(id) + '/set', {
       method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({done: value})
     });
+    if (!r.ok || /text\/html/.test(r.headers.get('content-type') || '')) throw new Error('not saved');
     if (value) done.add(id); else done.delete(id);
   }
+  let toastTimer = null;
+  function toast(msg){
+    let el = $('stToast');
+    if (!el) { el = document.createElement('div'); el.id = 'stToast'; el.className = 'st-toast'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2600);
+  }
+  const NOT_SAVED = '沒有存到：請確認網路連線後再按一次';
 
   // ── Goals & tasks: concrete, countable, with what is left ──
   function secsLeft(list){ return list.reduce(function(a, m){ return a + durToSec(m.dur); }, 0); }
@@ -266,7 +276,7 @@
         return check('kp-' + chKey + '-' + stableTaskKey(t), esc(t)) .replace('</li>', where + '</li>');
       }).join('');
     $('goals').querySelectorAll('.st-check').forEach(function(b){
-      b.onclick = async function(){ await setTask(b.dataset.task, !done.has(b.dataset.task)); renderGoals(); };
+      b.onclick = async function(){ try { await setTask(b.dataset.task, !done.has(b.dataset.task)); } catch (e) { toast(NOT_SAVED); } renderGoals(); };
     });
     $('goals').querySelectorAll('.st-where-b').forEach(function(b){
       b.onclick = function(){
@@ -407,6 +417,9 @@
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || (e.target && e.target.isContentEditable)) return;
     if (e.ctrlKey || e.metaKey || e.altKey || !playerReady || !current || lsOn) return;
     if (document.querySelector('.st-ask')) return;
+    // a 自我檢查 round on screen uses space and 1–3 itself
+    const rc = document.querySelector('.rc-session .rc-big');
+    if (rc && rc.offsetParent) return;
     const t = player.getCurrentTime ? player.getCurrentTime() : 0;
     if (e.key === ' ' || e.key === 'k') {
       e.preventDefault();
@@ -424,13 +437,13 @@
 
   async function markWatched(id, value){
     const wasDone = chapterVideosDone(subject.id, chapter, done);
-    await setTask(vidTask(id), value);
+    try { await setTask(vidTask(id), value); } catch (e) { toast(NOT_SAVED); renderWatchBtn(); return; }
     if (value && !wasDone && chapterVideosDone(subject.id, chapter, done)) {
       const p = subjectVideoProgress(subject, done);
       celebrate(chapter.t + ' 完成！', subject.name + ' 已看 ' + p.done + '/' + p.total + ' 支', subject.color);
     }
     // The week's queue task follows the per-video marks (all videos = done).
-    if (chapter.wk) await syncFoundationWeekTasks(chapter.wk, Array.from(done));
+    if (chapter.wk) await syncFoundationWeekTasks(chapter.wk, Array.from(done)).catch(function(){});
     renderWatchBtn(); renderVideoList(); renderGoals();
   }
 
@@ -1356,18 +1369,22 @@
   let handoutLinks = null;
   fetch('/handouts/links.json', {cache: 'no-cache'}).then(function(r){ return r.ok ? r.json() : null; })
     .then(function(j){ handoutLinks = (j && j[chId]) || {}; }).catch(function(){ handoutLinks = {}; });
+  // the chapter's 自我檢查卡 (recall.js): under each section, and in the quiz tab
+  let handoutCards = null;
+  loadHandoutIndex().then(function(have){ return have[chId] && have[chId].cards ? loadCards(chId) : []; })
+    .then(function(c){ handoutCards = c; if (currentTab === 'quiz') renderQuiz(); });
   const HO_SIZES = [14, 15, 16, 18, 20];
   function hoSize(){ const v = Number(store.get('ho-size')); return HO_SIZES.indexOf(v) >= 0 ? v : 16; }
   function fmtAt(t){ t = Math.floor(t); const h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, s = t % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0'); }
   function renderHandout(){
     const el = $('handoutBody');
     if (!handoutMd || el.dataset.loaded) return;
-    if (!handoutLinks) { setTimeout(renderHandout, 150); return; }
+    if (!handoutLinks || !handoutCards) { setTimeout(renderHandout, 150); return; }
     el.dataset.loaded = '1';
     el.style.fontSize = hoSize() + 'px';
     el.innerHTML = mdToHtml(handoutMd);
     // every ## becomes a section that can fold, listed in a contents box
-    const secs = [];
+    const secs = [], raw = mdSections(handoutMd);
     Array.from(el.querySelectorAll('h3')).forEach(function(h, i){
       const det = document.createElement('details');
       det.className = 'ho-sec'; det.open = true; det.dataset.i = i;
@@ -1375,7 +1392,7 @@
       h.parentNode.insertBefore(det, h);
       sum.appendChild(h); det.appendChild(sum);
       while (det.nextSibling && det.nextSibling.tagName !== 'H3') det.appendChild(det.nextSibling);
-      const title = h.textContent, link = handoutLinks[title];
+      const title = raw[i] || h.textContent, link = handoutLinks[title];
       if (link) {
         const a = document.createElement('a');
         a.className = 'ho-video';
@@ -1384,17 +1401,36 @@
         a.title = link.label + '：' + link.sec;
         sum.after(a);
       }
-      secs.push({det: det, title: title});
+      // 自我檢查: answer from memory before moving on
+      const cards = handoutCards.filter(function(k){ return k.sec === title; });
+      if (cards.length) {
+        const box = document.createElement('div');
+        box.className = 'ho-check';
+        box.innerHTML = '<div class="ho-check-hd">自我檢查・' + cards.length + ' 題<span>先自己想，再看答案</span></div>';
+        cards.forEach(function(k){ box.appendChild(recallCard(k, function(){ renderCheckCount(); })); });
+        det.appendChild(box);
+      }
+      secs.push({det: det, title: h.textContent});
     });
     const total = (HANDOUTS[chId] || {}).min || 0;
     const tools = document.createElement('div');
     tools.className = 'ho-tools';
-    tools.innerHTML = '<span class="ho-time">' + (total ? '約 ' + total + ' 分鐘讀完' : '') + '</span>'
+    tools.innerHTML = '<span class="ho-time">' + (total ? '約 ' + total + ' 分鐘讀完' : '') + '<span class="ho-checked"></span></span>'
       + '<span class="ho-size"><button type="button" data-d="-1" aria-label="字小一點">A−</button><button type="button" data-d="1" aria-label="字大一點">A＋</button></span>'
       + '<button type="button" class="ho-fold">全部收合</button>';
     const toc = document.createElement('nav');
     toc.className = 'ho-toc';
     toc.innerHTML = '<div class="ho-toc-hd">目錄</div><ol>' + secs.map(function(x, i){ return '<li><a href="#" data-i="' + i + '">' + mdEsc(x.title) + '</a></li>'; }).join('') + '</ol>';
+    // sections already read are ticked in the contents
+    function markRead(){
+      const pos = Number(store.get('ho-pos-' + chId)) || 0;
+      toc.querySelectorAll('li').forEach(function(li, i){ li.classList.toggle('read', done.has(handoutTaskId(subject.id, chIndex)) || i < pos); });
+    }
+    // how many of the chapter's cards have been answered at least once
+    function renderCheckCount(){
+      const s = srsLoad(), n = handoutCards.filter(function(k){ return s[k.id] && s[k.id].d; }).length;
+      tools.querySelector('.ho-checked').textContent = handoutCards.length ? '・自我檢查答過 ' + n + '／' + handoutCards.length + ' 題' : '';
+    }
     const first = el.querySelector('h2');
     (first ? first.nextElementSibling || first : el.firstChild).before(tools);
     tools.after(toc);
@@ -1406,6 +1442,8 @@
       r.onclick = function(){ goSec(lastI); r.remove(); };
       tools.after(r);
     }
+    markRead();
+    renderCheckCount();
     function goSec(i){ secs[i].det.open = true; secs[i].det.scrollIntoView({behavior: 'smooth', block: 'start'}); }
     toc.onclick = function(e){ const a = e.target.closest('a[data-i]'); if (!a) return; e.preventDefault(); goSec(Number(a.dataset.i)); };
     tools.querySelector('.ho-fold').onclick = function(){
@@ -1428,6 +1466,7 @@
           if (i > (Number(store.get('ho-pos-' + chId)) || 0)) {
             store.set('ho-pos-' + chId, i);
             if (total) store.set('ho-read-min-' + chId, Math.round(total * i / secs.length));
+            markRead();
           }
         });
       }, {rootMargin: '0px 0px -70% 0px'});
@@ -1438,11 +1477,15 @@
     const end = document.createElement('div');
     end.className = 'ho-end';
     end.innerHTML = '<label class="ho-done"><input type="checkbox"' + (done.has(tid) ? ' checked' : '') + '> 讀完了</label>'
-      + '<button type="button" class="ho-quiz">做這章的小測驗 →</button>'
+      + (handoutCards.length ? '<button type="button" class="ho-quiz">' + handoutCards.length + ' 題自我檢查一次練完 →</button>' : '')
       + '<button type="button" class="ho-videos">開始看影片 →</button>';
     el.appendChild(end);
-    end.querySelector('input').onchange = function(e){ setTask(tid, e.target.checked); };
-    end.querySelector('.ho-quiz').onclick = function(){ setTab('quiz'); window.scrollTo({top: $('panel-quiz').getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth'}); };
+    end.querySelector('input').onchange = function(e){
+      const box = e.target;
+      setTask(tid, box.checked).then(markRead, function(){ box.checked = !box.checked; toast(NOT_SAVED); });
+    };
+    const qb = end.querySelector('.ho-quiz');
+    if (qb) qb.onclick = function(){ setTab('quiz'); startRecall(handoutCards); window.scrollTo({top: $('panel-quiz').getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth'}); };
     end.querySelector('.ho-videos').onclick = function(){ setTab('videos'); window.scrollTo({top: 0, behavior: 'smooth'}); };
   }
 
@@ -1578,13 +1621,55 @@
     });
     if (first && currentTab === 'quiz') renderQuiz();
   }
+  // 講義自我檢查 in the quiz tab: the chapter's cards as one practice round
+  // (all of them, or only the ones due / not yet remembered)
+  let recallRunning = false;
+  function recallBox(){
+    const box = document.createElement('div');
+    box.className = 'st-recall';
+    if (!handoutCards || !handoutCards.length) return null;
+    const s = srsLoad(), today = srsDay();
+    const seen = handoutCards.filter(function(k){ return s[k.id] && s[k.id].d; });
+    const weak = handoutCards.filter(function(k){ const e = s[k.id]; return !e || !e.d || e.d <= today || e.g !== 'good'; });
+    box.innerHTML = '<div class="st-recall-hd"><b>講義自我檢查</b><span>這章 ' + handoutCards.length + ' 題・答過 ' + seen.length + ' 題</span></div>'
+      + '<div class="st-recall-btns"><button type="button" class="st-btn st-btn-watch" data-k="all">從頭練一次（' + handoutCards.length + ' 題）</button>'
+      + (weak.length && weak.length < handoutCards.length ? '<button type="button" class="st-btn" data-k="weak">只練還不熟的（' + weak.length + ' 題）</button>' : '')
+      + '</div>';
+    box.onclick = function(e){
+      const b = e.target.closest('button[data-k]'); if (!b) return;
+      startRecall(b.dataset.k === 'all' ? handoutCards : weak);
+    };
+    return box;
+  }
+  function startRecall(cards){
+    if (!cards || !cards.length) return;
+    const el = $('panel-quiz');
+    recallRunning = true;
+    el.innerHTML = '';
+    const host = document.createElement('div');
+    el.appendChild(host);
+    recallSession(host, cards, {
+      endButtons: '<button type="button" class="rc-back">回到小測驗</button>',
+      // (onStart runs again for a 「再練忘了的」 round)
+      onStart: function(){ recallRunning = true; },
+      onEnd: function(t, box){
+        recallRunning = false;
+        // the handout shows each card's state: drawn again next time it is opened
+        const hb = $('handoutBody'); if (hb.dataset.loaded) { delete hb.dataset.loaded; hb.innerHTML = ''; }
+        box.querySelector('.rc-back').onclick = function(){ renderQuiz(); };
+      }
+    });
+  }
   function renderQuiz(){
     const el = $('panel-quiz');
+    if (recallRunning) return;
     if (labUrl && !prFrame) practiceNext();
     const all = chapterHistory();
+    const rb = recallBox();
     if (!all.length) {
-      el.innerHTML = '<div class="st-nonotes">還沒有作答紀錄。看影片時，每講完一段會暫停出一題小挑戰，影片結束時也會出題；答過的題目都會記在這裡。</div>';
+      el.innerHTML = '<div class="st-nonotes">還沒有影片小測驗的作答紀錄。看影片時，每講完一段會暫停出一題小挑戰，影片結束時也會出題；答過的題目都會記在這裡。</div>';
       if (prBox) el.insertBefore(prBox, el.firstChild);
+      if (rb) el.insertBefore(rb, el.firstChild);
       return;
     }
     const right = all.filter(function(r){ return r.ok; }).length;
@@ -1603,6 +1688,7 @@
         }).join('') : '<div class="st-nonotes">沒有答錯的題目。</div>')
       + '</div>';
     if (prBox) el.insertBefore(prBox, el.firstChild);
+    if (rb) el.insertBefore(rb, el.firstChild);
     el.querySelectorAll('.st-qh-filter button').forEach(function(b){ b.onclick = function(){ quizFilter = b.dataset.f; renderQuiz(); }; });
     const redo = el.querySelector('.st-qh-redo'); if (redo) redo.onclick = redoWrong;
     el.querySelectorAll('.st-qh-src').forEach(function(b){

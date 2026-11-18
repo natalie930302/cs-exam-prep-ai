@@ -542,7 +542,7 @@ graph = {
 ```
 
 - 第 B 列、第 A 欄回答「B 和 A 相鄰嗎」，有邊填 1；無向圖雙向都算，所以 (A, B) 也是 1，整張表左右對稱。
-- 對角線（A 對 A）填什麼？看演算法需要：大多填 1，有時填 0 比較方便。這跟 simple graph「對角線是 0」不衝突：沒有 self-loop 是圖本身的性質，對角線填幾是實作上的約定。
+- 對角線（A 對 A）填什麼？標準的 adjacency matrix 填 0（simple graph 沒有 self-loop）；有些演算法為了方便會把對角線填 1（例如算「走 0 或 1 步可到」的 reachability）。沒有 self-loop 是圖本身的性質，對角線填幾是實作上的約定，考試沒特別說就填 0。
 - 表裡有幾個 1？每條邊給兩個 1（(u, v) 一個、(v, u) 一個），6 條邊就是 12 個，再加上對角線。這其實是換個方式問表格總共幾格：V 列 × V 欄 = V² 格，這裡是 25。
 
 ### Bit 對 word
@@ -556,7 +556,7 @@ matrix 每格只要 **1 個 bit**，共 V² 個 bit；list 卻是 V + E 個 **wo
 用同一張小圖、兩種存法並排，逐題比較：
 
 1. **給一條 edge (2, 3)，問它在不在圖裡**：matrix 直接看第 2 列第 3 行那一格，O(1)；list 得沿著 2 後面那串一個一個看，看到 3 才知道，串列長就慢。**matrix 贏。**
-2. **問 node 3 的 degree**：matrix 要把第 3 列整排 n 格看完、把 1 加起來，O(n)，省不掉；list 只要數 3 後面那串（這張小圖裡有 3 個，degree 就是 3），串列長度就是 degree，通常比 n 小。**list 贏。**
+2. **問 node 3 的 degree**：matrix 要把第 3 列整排 n 格看完、把 1 加起來，O(n)，省不掉；list 只要數 3 後面那串（以前面 8 點圖為例，3 後面有 5 個，degree 就是 5），串列長度就是 degree，通常比 n 小。**list 贏。**
 3. **把整張圖畫出來（traverse 整張圖）**：list 先掃點的陣列，再把每串掃一遍，所有 edge 就出來了，O(n + m)；matrix 不管有沒有邊每格都得確認，至少看半張表，O(n²)。**list 贏。**
 4. **存一張 sparse graph**：list 只存真的存在的 edge，空間跟 edge 數成正比，越稀疏越省；matrix 不管稀疏還是密集都得開 n² 的表格。**list 贏。** 若很 dense，matrix 反而小贏一點，因為 list 除了點陣列還有總長 2m 的串列（每條 edge 兩端各記一次）；不過兩者 order 差不多。這跟上面 bit 對 word 是同一個道理：邊一多，list 的指標開銷就顯出來了。
 5. **加一條或刪一條 edge**：matrix 直接把那格和對稱那格的 0、1 翻過來，insert、delete 都很快；list 的 insert 接一個新節點上去就好，delete 卻得先在串列裡找到它，比較久。**matrix 較容易。**
@@ -1948,7 +1948,7 @@ function dfs(at):
 
 到這裡 DFS 用了兩次：單純走訪一張圖，以及找 connected component。再加工一點，它還能：
 
-- 求 minimum spanning tree
+- 求 spanning tree（沒有權重時任何一棵 spanning tree 都是 minimum；有權重的 MST 要用 Prim、Kruskal，在貪婪演算法那章）
 - 偵測並找出 cycle
 - 檢查圖是不是 bipartite
 - 找 strongly connected component（SCC）
@@ -2334,7 +2334,7 @@ D: C, E, F        E: D             F: C, D            G: A, C
 這些非 tree 的邊 DFS 都沒有走，只是看了一眼。在乎它們，是因為像找 cycle 這種演算法要用。
 
 問：BFS 也有這四種邊嗎？
-答：沒有。tree、forward、back、cross 這套名詞是 DFS 專用的。
+答：這套四分法是為 DFS 設計的；BFS 通常只分 tree edge 和 non-tree edge。無向圖 BFS 的 non-tree edge 只連同層或相鄰兩層，前面也把它叫 cross edge，不會出現 forward 或 back edge 的分法。
 
 > **陷阱** 無向圖裡，從 v 回頭看到 parent 的那條邊就是 tree edge 本身，不能當成 back edge 算進去。
 
@@ -2847,7 +2847,7 @@ R = Rʳᵉᵛ = V  →  strongly connected
 證明（分 case）：
 
 1. **s、t mutually reachable**：跟 s 可去可回的點，靠遞移性透過 s 轉一下，也跟 t 可去可回；反之亦然。兩邊收到的是同一群點，是同一個 SCC。
-2. **s、t 不是 mutually reachable**（例如 a 走不回 x）：兩者的 SCC 一定不同。反證：假如有共同點 w，則 s、w 可去可回，w、t 可去可回，遞移得 s、t 可去可回，矛盾。所以沒有交集。
+2. **s、t 不是 mutually reachable**（例如 t 走不回 s）：兩者的 SCC 一定不同。反證：假如有共同點 w，則 s、w 可去可回，w、t 可去可回，遞移得 s、t 可去可回，矛盾。所以沒有交集。
 
 因此 SCC 會把所有點切成互不重疊的幾塊，剛好是一個 **partition**。
 
@@ -3634,7 +3634,7 @@ BFS、DFS 不只能在畫好的圖上跑。很多看起來不像圖的問題，�
 
 ### 怎麼算出直徑：就是 BFS
 
-目前已知最好的算法：從解好的狀態開始，一層一層把圖建出來，建完就知道直徑。一層一層往外走，正是 **breadth-first search**。3×3×3 加了很多加速技巧，本質還是 BFS。
+目前已知最好的方法：從解好的狀態開始，一層一層把圖建出來，建完就知道直徑。一層一層往外走，正是 **breadth-first search**。3×3×3 加了很多加速技巧，本質還是 BFS。
 
 難在中間：每一層的狀態數先是指數成長，到最後幾層才變少，要越過中間這個高峰（駝峰）非常難。2×2×2 每一層的狀態數如下（固定一個 cubelet、只算轉得到的 3,674,160 個狀態），可以清楚看到這個駝峰：
 
@@ -3810,7 +3810,7 @@ def neighbors(config, moves):          # moves：6 個 permutation
 
 π 的 **inverse** 寫成 π⁻¹，是另一組箭頭，作用是把 π 做的事還原：把 C D A E B 丟進 π⁻¹，要拿回 A B C D E。
 
-算法：**把位置和值兩列上下對調，再照新的上排排序**，每一對不拆開。
+做法：**把位置和值兩列上下對調，再照新的上排排序**，每一對不拆開。
 
 ```
 步驟 1：原本（位置 → 值）      1→3  2→4  3→1  4→5  5→2
@@ -3966,7 +3966,7 @@ spawning pool 本身不生 zergling，生的是 hatchery；它只是「在那裡
   edge：1H 6D 1O ──(約 9~10)──> 2H 5D 1O
 ```
 
-照整數秒的算法，蓋 hatchery 其實要等 10 秒；下面的討論把它記成約 9 秒，數字不影響觀念。蓋 hatchery 用掉一隻 drone，所以 drone 從 6 變 5。可以看到每條 edge 的權重都不一樣。
+照整數秒計算，蓋 hatchery 其實要等 10 秒；下面的討論把它記成約 9 秒，數字不影響觀念。蓋 hatchery 用掉一隻 drone，所以 drone 從 6 變 5。可以看到每條 edge 的權重都不一樣。
 
 ## 用 Dijkstra 的距離檢查騷擾
 
@@ -4140,7 +4140,7 @@ non-tree edge：
 - 邊的分類：tree（走過去的）、forward（未走、指向後代）、back（指向祖先，含自迴圈）、cross（兩端無祖先關係，可跨樹也可在同一棵樹的兩子樹間）。
 - 判斷 u→v：DFS 有走 → tree；否則 u 是 v 祖先 → forward；v 是 u 祖先 → back；其他 → cross。
 - 用顏色／時間判斷：v white → tree；v gray（在堆疊上）→ back；v black 且 d[u] < d[v] → forward；v black 且 d[u] > d[v] → cross。
-- 無向圖 DFS 只有 tree edge 與 back edge（無 forward、無 cross）；回頭看到 parent 的那條是 tree edge 本身。tree/forward/back/cross 是 DFS 專用名詞，BFS 沒有。
+- 無向圖 DFS 只有 tree edge 與 back edge（無 forward、無 cross）；回頭看到 parent 的那條是 tree edge 本身。tree/forward/back/cross 四分法是為 DFS 設計的；無向圖 BFS 的非樹邊只連同層或相鄰層（也叫 cross edge）。
 - 定理：G 有 cycle ⇔ 外層版 DFS 出現 back edge（有向、無向皆成立，與起點與順序無關）；線性時間判斷，back edge 加 tree path 就是那個 cycle。
 - ⇒ 的證明：取 v₀ 為 cycle 上第一個被拜訪的點 → v₀ 開始、vₖ 開始、vₖ 結束、v₀ 結束（balanced parentheses）→ vₖ→v₀ 時 v₀ 在堆疊上 → back edge。
 - 有 back edge 就排不出 topological order；只有 DAG 能做 topological sort；第一個 finish 的點是最後修的課。

@@ -190,7 +190,7 @@
    "why": "老師用 induction on number of vertices，basis 是 1 個端點。"
   },
   {
-   "q": "induction step 中，拿掉 k + 1 個端點的 tree 的一條邊後，|E1| + |E2| 等於？",
+   "q": "induction step 中，從有 k + 1 個端點的 tree 拿掉一條邊、分成 T1、T2 後，|E1| + |E2| 等於？",
    "opts": [
     "|E| − 1",
     "|E|",

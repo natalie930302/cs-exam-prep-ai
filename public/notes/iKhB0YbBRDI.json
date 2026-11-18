@@ -1148,7 +1148,7 @@
    "why": "Prim 只在乎 v 用多便宜的 edge 黏上目前的樹，不累加從 source 來的距離；Dijkstra 才用 d[u] + w(u,v)。"
   },
   {
-   "q": "老師的 reverse-delete demo 中，哪一條 edge 拔了之後必須恢復？",
+   "q": "老師的 reverse-delete demo（邊 AD 5、CE 5、DF 6、AB 7、BE 7、BC 8、EF 8、BD 9、EG 9、FG 11、DE 15，從最貴的開始拔：DE、FG、BD、EG…）中，哪一條 edge 拔了之後必須恢復？",
    "opts": [
     "EG 9：拔了 G 變孤兒",
     "DE 15：最貴的一定要留",

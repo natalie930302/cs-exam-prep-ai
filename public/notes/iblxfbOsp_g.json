@@ -538,7 +538,7 @@
     "RegDst，lw 設 0"
    ],
    "ans": "ALUSrc，lw 設 1",
-   "why": "ALUSrc = 1 選 sign-extended offset，lw／sw 用來算地址；R-type 與 beq 設 0。"
+   "why": "ALUSrc = 1 選 sign-extended offset，lw／sw 用來算位址；R-type 與 beq 設 0。"
   },
   {
    "q": "R-type 指令的 MemtoReg 應設為？",

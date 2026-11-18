@@ -10,7 +10,7 @@ Processor 越來越快，DRAM 卻跟不上，兩者的差距越拉越大。memor
 - 手動追蹤 direct-mapped、set associative、fully associative cache 的 hit/miss 與內容
 - 說明 block size 的好處與代價、read/write 的 hit 與 miss 怎麼處理
 - 比較 write-through（加 write buffer）與 write-back（加 dirty bit），以及 write miss 的兩種策略
-- 算三種 memory 組織的 miss penalty、cache 對 CPI 的影響、AMAT（含多層 cache 的兩種算法）
+- 算三種 memory 組織的 miss penalty、cache 對 CPI 的影響、AMAT（含多層 cache 的兩種算式）
 - 說明 replacement（LRU、random）與 associativity 的代價
 - 說出 virtual memory 的 page、frame、page fault 與 address translation 的基本概念
 
@@ -661,7 +661,7 @@ Intrinsity FastMATH 是一顆商用 embedded processor（嵌入式處理器）�
 - 16 words = 64 bytes；256 × 64 bytes = **16 KiB**。（前面一個 word 一個 block 的例子其實很極端。）
 - D-cache 可以設成 write-through，也可以設成 write-back。
 
-Miss rate（課本的 SPEC 測試數據）：
+Miss rate（課本的 SPEC 測試資料）：
 
 | | miss rate | 原因 |
 |---|---|---|
@@ -1434,7 +1434,7 @@ Page table 怎麼做 translation？跟 cache 一樣，先找出 block 的編號�
 - Page size 4K = 2¹² byte，所以位址**最低 12 個 bit 是 page offset**（page 裡第幾個 byte）。
 - 32-bit 的 virtual address 去掉 12 bit offset，**前 20 個 bit 是 virtual page number**（第幾個 page）。
 - 拿 virtual page number 查 page table，得到 **physical frame number**；physical memory 有多少個 frame，就用幾個 bit 表示，例如 18 bit。
-- 一個 page 是整塊搬到一個 frame，裡面的位址分佈一模一樣：在 page 裡是第三個 element，到 frame 裡也是第三個。所以 **page offset 直接照搬**。
+- 一個 page 是整塊搬到一個 frame，裡面的位址分布一模一樣：在 page 裡是第三個 element，到 frame 裡也是第三個。所以 **page offset 直接照搬**。
 - **Physical address = physical frame number 接上同樣的 page offset**。
 
 ```

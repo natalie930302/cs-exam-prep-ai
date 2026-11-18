@@ -571,7 +571,7 @@ N = 3233
 
 有一題要找的路徑，是讓路徑上**權重的乘積**最小，而不是和。可是學過的最短路徑演算法，都是讓權重「加起來」最小。
 
-一個字：**log**。因為 `log(a × b) = log a + log b`，每條邊的權重取 log，乘積就變成和，直接丟給 Dijkstra。
+一個字：**log**。因為 `log(a × b) = log a + log b`，每條邊的權重取 log，乘積就變成和，直接丟給 Dijkstra（權重都 ≥ 1 時取 log 後才不會出現負數；有小於 1 的權重會變成負邊，要改用 Bellman-Ford）。
 
 也可以去改 Dijkstra 或 Bellman-Ford 的 relax 步驟，讓它直接算乘積。行得通，但要**重新證明正確性**，程式也麻煩。用 reduction，原本的程式一行都不用改。
 
@@ -1064,7 +1064,7 @@ SAT ∈ P  ⇔  P = NP
 | 1971 | Stephen Cook | 證明史上第一個 NP-complete 問題：SAT（布林公式的可滿足性） |
 | 1972 | Richard Karp | 一口氣發表 **21 個** NP-complete 問題 |
 
-所以一開始就有 1 + 21 = **22 個** NPC 問題。那個年代，只要找到一個新問題並證明它是 NP-complete，就能寫一篇論文。
+Karp 的 21 個是從 SAT 出發一路 reduce 出來的，清單本身就包含 SAT，所以一開始一共是 **21 個**（不是 1 + 21 = 22）。那個年代，只要找到一個新問題並證明它是 NP-complete，就能寫一篇論文。
 
 還有一本很有名、到現在都很常被引用的書：Garey 和 Johnson 的《Computers and Intractability》（1979），等於是一本 **NP-complete 問題的字典**。遇到新問題就翻字典，看它是不是 NP-complete：
 
@@ -1693,7 +1693,7 @@ reduction 也能證明一個遊戲很難，例如證明 **Tetris（俄羅斯方�
 |                        +------------------+----------------+
 |                                           |
 +-------------------------------------------+
-      NP-hard = the whole right box (NP-complete + not in NP)
+      NP-hard = 右邊整個框（NP-complete ＋ 不在 NP 裡的部分）
 ```
 
 | 類別 | 意思 |
@@ -1764,7 +1764,7 @@ reduction 也能證明一個遊戲很難，例如證明 **Tetris（俄羅斯方�
 - P：poly time solve；NP：poly time verify（non-deterministic polynomial，不是 non-polynomial）。
 - Tractable = polynomial time solvable；intractable 相反。
 - Cook–Levin 定理：SAT 是 NP-complete（從 first principles 證）；推論 SAT ∈ P ⇔ P = NP。
-- Cook 1971 第一個 NPC（SAT）；Karp 1972 再加 21 個 ⇒ 一開始 22 個；Garey & Johnson（1979）是 NPC 字典。
+- Cook 1971 第一個 NPC（SAT）；Karp 1972 列出 21 個（含 SAT，不是 22 個）；Garey & Johnson（1979）是 NPC 字典。
 - 問題是 NPC ⇒ 改找 heuristic 或 approximation algorithm。
 - 證了 SAT ≤p L 只得 L 是 NP-hard；再證 L ∈ NP 才是 NPC；reduction 有遞移性，可從籃子裡任一 NPC 歸約。
 - CIRCUIT-SAT：AND/OR/NOT 組合電路，能否設 input 讓 output = 1；CLRS 先證它 NPC 再歸約到 SAT。

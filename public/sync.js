@@ -1,22 +1,29 @@
 // Study-room state that the pages keep in localStorage — quiz answer history
-// (qz-history), which quizzes a video already asked (qz-asked-<id>) and where
-// each video was left off (yt-pos-<id>) — is mirrored to the server, so it
-// survives clearing the browser and is the same on phone and computer.
+// (qz-history), which quizzes a video already asked (qz-asked-<id>), where
+// each video was left off (yt-pos-<id>), how far each 講義 was read
+// (ho-pos-<ch>, ho-read-min-<ch>) and the 自我檢查卡 review schedule (srs,
+// recall.js) — is mirrored to the server, so it survives clearing the browser
+// and is the same on phone and computer.
 //
 // On load (before the page scripts run) the server copy is merged in; after
 // that every write to one of these keys is sent to the server as well.
 (function () {
-  const KEY = /^(qz-history|qz-asked-[\w-]+|yt-pos-[\w-]+)$/;
+  const KEY = /^(qz-history|qz-asked-[\w-]+|yt-pos-[\w-]+|ho-pos-[\w-]+|ho-read-min-[\w-]+|srs)$/;
   const ls = window.localStorage;
   if (!ls) return;
   const rawSet = Storage.prototype.setItem, rawRemove = Storage.prototype.removeItem;
   const parse = function (v, d) { try { return JSON.parse(v); } catch (e) { return d; } };
 
-  function put(key, value) {
+  // `leaving`: the page is closing. Only then is keepalive used (it lets the
+  // request outlive the page), and only for small bodies: browsers refuse a
+  // keepalive request over 64 KB, and the answer history and the review
+  // schedule grow past that.
+  function put(key, value, leaving) {
     try {
+      const body = JSON.stringify({value: value});
       fetch('/api/state/' + encodeURIComponent(key), {
         method: 'PUT', headers: {'Content-Type': 'application/json', 'X-Sync-Reset': ls.getItem('sync-reset') || ''},
-        body: JSON.stringify({value: value}), keepalive: true,
+        body: body, keepalive: !!leaving && body.length < 60000,
       }).catch(function () {});
     } catch (e) {}
   }
@@ -59,10 +66,15 @@
         });
         all.sort(function (a, b) { return a.ts - b.ts; });
         merged = JSON.stringify(all.slice(-3000));
+      } else if (k === 'srs') {
+        // per card, the most recent grade wins
+        const a = parse(s, {}) || {}, b = parse(l, {}) || {}, m = {};
+        [a, b].forEach(function (x) { Object.keys(x).forEach(function (id) { if (x[id] && (!m[id] || (x[id].ts || 0) > (m[id].ts || 0))) m[id] = x[id]; }); });
+        merged = JSON.stringify(m);
       } else if (/^qz-asked-/.test(k)) {
         merged = JSON.stringify(Array.from(new Set(parse(s, []).concat(parse(l, [])))));
       } else {
-        // resume position: whichever is further along
+        // resume position / reading position: whichever is further along
         merged = String(Math.max(Number(s) || 0, Number(l) || 0));
       }
       if (merged !== l) rawSet.call(ls, k, merged);
@@ -77,16 +89,22 @@
   Storage.prototype.setItem = function (k, v) {
     rawSet.call(this, k, v);
     if (this !== ls || !KEY.test(k)) return;
-    if (/^yt-pos-/.test(k)) {
+    if (/^(yt-pos-|ho-|srs$)/.test(k)) {
+      // frequent writes (a playing video, scrolling, grading one card after
+      // another) go out together after a pause
       clearTimeout(timers[k]);
-      timers[k] = setTimeout(function () { put(k, ls.getItem(k)); }, 5000);
+      timers[k] = setTimeout(function () { delete timers[k]; put(k, ls.getItem(k)); }, /^yt-pos-/.test(k) ? 5000 : 1500);
     } else put(k, String(v));
   };
   Storage.prototype.removeItem = function (k) {
     rawRemove.call(this, k);
     if (this === ls && KEY.test(k)) put(k, null);
   };
-  window.addEventListener('pagehide', function () {
-    Object.keys(timers).forEach(function (k) { clearTimeout(timers[k]); put(k, ls.getItem(k)); });
-  });
+  // waiting writes go out as soon as the page is hidden (switching apps on a
+  // phone often never fires pagehide), and again on pagehide
+  function flush(leaving) {
+    Object.keys(timers).forEach(function (k) { clearTimeout(timers[k]); delete timers[k]; put(k, ls.getItem(k), leaving); });
+  }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flush(false); });
+  window.addEventListener('pagehide', function () { flush(true); });
 })();

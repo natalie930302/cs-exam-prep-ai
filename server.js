@@ -112,12 +112,39 @@ app.post('/api/tasks/:id/set', route(async (req, res) => {
 }));
 
 // ── Study-room state kept in the browser, mirrored here (see db.js) ──
+function mergeState(key, stored, incoming) {
+  const parse = (v, d) => { try { const x = JSON.parse(v); return x == null ? d : x; } catch (e) { return d; } };
+  if (key === 'srs') {
+    // per card, the most recent grade wins
+    const a = parse(stored, {}), b = parse(incoming, {}), m = {};
+    for (const x of [a, b]) {
+      if (!x || typeof x !== 'object' || Array.isArray(x)) continue;
+      for (const id of Object.keys(x)) if (x[id] && (!m[id] || (x[id].ts || 0) > (m[id].ts || 0))) m[id] = x[id];
+    }
+    return JSON.stringify(m);
+  }
+  // qz-history: every answer from both, once, in time order (as sync.js does)
+  const seen = new Set(), all = [];
+  for (const r of [].concat(parse(stored, []), parse(incoming, []))) {
+    if (!r || typeof r !== 'object') continue;
+    const id = r.ts + '|' + r.vid + '|' + r.q;
+    if (!seen.has(id)) { seen.add(id); all.push(r); }
+  }
+  all.sort((x, y) => x.ts - y.ts);
+  return JSON.stringify(all.slice(-3000));
+}
 app.get('/api/state', route(async (req, res) => res.json(await db.getClientState())));
 app.put('/api/state/:key', route(async (req, res) => {
   // a page opened before progress was cleared must not write its old copy back
   const reset = await db.getReset();
   if (reset && req.get('X-Sync-Reset') !== reset) return res.status(409).json({ ok: false, reset });
-  const ok = await db.setClientState(req.params.key, req.body ? req.body.value : null);
+  let value = req.body ? req.body.value : null;
+  // the review schedule and the answer history are merged with what is stored,
+  // not replaced: another device may have written since this page loaded
+  if (value != null && (req.params.key === 'srs' || req.params.key === 'qz-history')) {
+    value = mergeState(req.params.key, await db.getClientValue(req.params.key), String(value));
+  }
+  const ok = await db.setClientState(req.params.key, value);
   res.status(ok ? 200 : 400).json({ ok });
 }));
 

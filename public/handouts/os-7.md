@@ -148,7 +148,7 @@ load-time binding 是在把 disk image 載入記憶體時做的；swapping 則�
 
 - 安裝作業系統時會問要切多少給 swap space，這蠻重要的：**out of memory 其實是連 swap space 都用完了**，不只是實體記憶體滿。
 - swap space 放的是記憶體內容，不是使用者的檔案，不歸 file system 管，由 OS 直接管理；在建檔案系統之前就先切出來了。
-- 為什麼要 swapping？要 free out memory。很多記憶體是 run time 動態配置的，會一直長；有些 process 比較重要，想讓它先跑，不重要的一直佔著記憶體也不好，就先 swap 出去（這就是 midterm scheduling）。
+- 為什麼要 swapping？要 free out memory。很多記憶體是 run time 動態配置的，會一直長；有些 process 比較重要，想讓它先跑，不重要的一直佔著記憶體也不好，就先 swap 出去（這就是 mid-term scheduling，課本稱 medium-term scheduler）。
 - swap 不一定以整個 process 為單位，下一章會看到可以小到一個 4KB 的 page，非常 fine grained。
 
 ### Swapping 要配合 execution-time binding
@@ -377,7 +377,7 @@ EMAT = hit rate × (TLB 時間 + memory 時間)
 > - miss：TLB 一樣要先查 20 ns（查了才知道沒中），再讀 page table 100、讀資料 100 = **220 ns**。
 > - hit rate 70%：0.7 × 120 + 0.3 × 220 = 84 + 66 = **150 ns**。
 > - hit rate 98%：0.98 × 120 + 0.02 × 220 = 117.6 + 4.4 = **122 ns**。
-> - 沒有 TLB：每次兩次存取 = **200 ns**。98% 的 hit rate 快了將近一倍；就算只有 70%，150 ns 也比 200 ns 少了 25% 的時間。
+> - 沒有 TLB：每次兩次存取 = **200 ns**。98% 的 hit rate 少了約四成的時間（122 vs 200），已經很接近只讀一次 memory 的 100 ns；就算只有 70%，150 ns 也比 200 ns 少了 25% 的時間。
 
 > **陷阱** miss 的時間要記得加上查 TLB 的 20 ns：是 220，不是 200。
 

@@ -156,7 +156,7 @@ v − e + r = 2
 
 ### girth 與 region 的 degree
 
-- **girth**：最短 cycle 的長度。沒有 cycle 時，這裡約定 girth = 全部邊數（為了下面的不等式；很多書直接說是 ∞）。例：6 點 5 邊沒有 cycle ⇒ girth 5；最短 cycle 長 4 ⇒ girth 4。
+- **girth**：最短 cycle 的長度。例：最短 cycle 長 4 ⇒ girth 4。沒有 cycle 的圖，標準定義 girth = ∞（考試照這個答）；有一種講法為了讓下面的不等式也能套，改約定成「全部邊數」，那只是方便用的約定。
 - K₅：最短 cycle 是三角形（simple graph 沒有長度 2 的 cycle）⇒ girth 3。K₃,₃：二分圖的 cycle 長度必為偶數，又沒有長度 2 ⇒ girth 4。
 - **region 的 degree** deg(R)：繞 R 的邊界走一圈的最短 closed walk 的邊數。伸進 region 的「懸空」邊會被走兩次，要算兩次。
 

@@ -140,8 +140,9 @@ EAT = (1 − p) × ma + p × page fault time
 
 > **陷阱** 8.2 是微秒（µs），不是毫秒（ms）。10% 的條件算出來是四十萬分之一，比萬分之一小得多。數字不必背，記住 page fault rate 要極低。
 
-> **例題** 記憶體存取 100 ms，page fault overhead（發生 fault 時多走 step 2～6 的時間）10 ms，10 次有 1 次 fault，p = 0.1。
+> **例題** 記憶體存取 100 ms，page fault overhead 10 ms（直接當成公式裡的 page fault time），10 次有 1 次 fault，p = 0.1。
 > EAT = (1 − 0.1) × 100 + 0.1 × 10 = 90 + 1 = **91 ms**。
+> 如果題目說明 10 ms 是發生 fault 時在原本的存取之外「多」花的時間（多走 step 2～6），fault 那次就是 100 + 10 = 110 ms，EAT = 0.9 × 100 + 0.1 × 110 = **101 ms**。看清楚題目給的是哪一種。
 > 這組數字只是練習代公式；真實的 page fault 要讀硬碟，比記憶體存取慢非常多。題目可能混著給 ms、µs、ns，先換成同一個單位再算。
 
 為什麼有 virtual memory，電腦卻不覺得慢？跟 TLB 一樣，靠 **locality**：程式短時間總用附近的資料。一次 fault 就搬進一整個 page（通常 4KB，也有 8KB，Intel Pentium 甚至能選 4MB），而每次存取只讀 1 到 4 個 byte；像 for loop 一直讀同一個 array，搬進一頁之後，接下來在這頁裡都不會再 fault。從使用者角度，一般人大概容忍慢 10%，反推回去，page fault rate 要比 TLB miss rate 低得多。但程式跳來跳去、或同時開一堆程式、記憶體不夠，fault 就變多，電腦越來越慢。這也是大家建議裝 SSD 的原因：swap space 在 SSD 上，page fault 處理快很多，整台電腦就變快。

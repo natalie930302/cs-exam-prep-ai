@@ -1161,7 +1161,7 @@ insert 和 remove largest 各要花多少力氣？
 | 實作 | insert | remove largest（或 smallest） |
 |---|---|---|
 | 無序陣列 | O(1) | O(n) |
-| 有序陣列 | O(n) | 刪除快（不必找） |
+| 有序陣列 | O(n) | O(1)（最大的在尾端，直接拿） |
 | 無序 linked list | O(1) | O(n) |
 | 由大到小排好的 linked list | O(n) | O(1) |
 | 沒限制形狀的 max tree | O(h) | O(h) |
@@ -1270,7 +1270,7 @@ in 在中間、post 在後面，**prefix** 就是 operator 寫在最前面。照
 |---|---|---|---|
 | prefix | pre-order：自己、左、右 | × 3 + 5 7 | 像函式呼叫 |
 | infix | in-order：左、自己、右 | 3 × (5 + 7) | 像四則運算 |
-| postfix | post-order：左、右、自己 | 3 5 7 + × | 像電腦實際的算法 |
+| postfix | post-order：左、右、自己 | 3 5 7 + × | 像電腦實際的計算方式 |
 
 ### 三種 traversal 的用途
 

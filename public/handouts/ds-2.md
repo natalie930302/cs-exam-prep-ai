@@ -800,7 +800,7 @@ double pointer + array of pointers + array of arrays，合起來就是一個 2D 
 
 可以把 A 想成「前面有一排指標陣列的 array of arrays」，存取規則和 double pointer 一樣。
 
-> **陷阱** 常聽到「二維陣列要用雙重指標、三維要三重指標，幾維就幾層」，這只對「指標陣列＋各列分別配置」的結構成立。真正宣告的 `int A[3][4]`，A 的型別是 `int (*)[4]`（指向 4 個 int 的陣列的指標），**不是** `int **`；記憶體裡也沒有真的那排指標。所以不能把 A 傳給 `int **` 參數，而 `A + 1` 跳 8 bytes 正是這個型別造成的。
+> **陷阱** 常聽到「二維陣列要用雙重指標、三維要三重指標，幾維就幾層」，這只對「指標陣列＋各列分別配置」的結構成立。真正宣告的 `int A[3][4]`，A 在運算式裡會轉成 `int (*)[4]`（指向 4 個 int 的陣列的指標），**不是** `int **`；記憶體裡也沒有真的那排指標。所以不能把 A 傳給 `int **` 參數，而 `A + 1` 跳 8 bytes 正是這個型別造成的。
 
 ## 下三角矩陣與對稱矩陣
 
@@ -5516,7 +5516,7 @@ head                     tail
 - 多維 row-major A[i][j][k][l] = L0 + (i·u2u3u4 + j·u3u4 + k·u4 + l) × w，最後一項是 l
 - C／C++ row-major；Fortran、MATLAB column-major；兩種公式都是 2 加 2 乘，效率相同
 - 2D 實作：one block vs array of arrays（多一排指標、配置多次、get 兩層，但好寫）
-- *(*(p + i) + j) = p[i][j]；靜態 int A[3][4] 的 A 型別是 int (*)[4] 不是 int **，A + 1 跳一整列
+- `*(*(p + i) + j) = p[i][j]`；靜態 `int A[3][4]` 的 A 在運算式裡轉成 `int (*)[4]`，不是 `int **`，A + 1 跳一整列
 - 下三角矩陣存 n(n + 1)/2 格；1-indexed 第 i row 第 j 個在 i(i − 1)/2 + j；對稱矩陣只存一半
 - row-major 陣列內層迴圈跑最後一個索引（row sum）較快：連續存取 cache hit 多；column sum 約慢一倍
 - vector（ADT）= 支援 index access 的家族：at、set、insert、erase；不等於 STL vector

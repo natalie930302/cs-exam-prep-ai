@@ -72,7 +72,7 @@ polling 佔 CPU 的比例     = 每秒花在 polling 的 cycles ÷ clock rate
 
 > **例題（示意）** 某裝置每秒要 poll 30 次，每次 poll 花 400 個 cycle，處理器 clock rate 500 MHz。
 > 每秒花在 polling 的 cycles = 30 × 400 = 12,000 cycles
-> 佔 CPU 比例 = 12,000 ÷ 500 × 10⁶ = 0.0024%
+> 佔 CPU 比例 = 12,000 ÷ (500 × 10⁶) = 0.000024 = 0.0024%
 > 這種慢速裝置的負擔很小；裝置越快、每秒要 poll 的次數越多，負擔就越大，而且裝置閒著時也照樣要 poll。
 
 ## Interrupt-initiated I/O：裝置好了才叫 CPU
@@ -265,7 +265,7 @@ system bus 由三種 bus 組成：
 
 ### 優缺點
 
-- 優點：daisy chain 的缺點（不公平、慢、最低優先權可能一直等）這裡都沒有。因為每台有 ID，master 能決定從哪個 ID 問起。例如上次服務了 D2，這次從 ID 3 開始問，D3 就先被服務，不會無限期等待。
+- 優點：daisy chain 的不公平（最低優先權可能一直等）這裡沒有。因為每台有 ID，master 能決定從哪個 ID 問起。例如上次服務了 D2，這次從 ID 3 開始問，D3 就先被服務，不會無限期等待。
 - 缺點一：要多幾條 poll lines；daisy chain 只要一條 grant 線。
 - 缺點二：master 一台一台 poll 也要時間，所以跟 daisy chain 的 grant 一樣有延遲。
 

@@ -782,7 +782,7 @@
  ],
  "quiz": [
   {
-   "q": "單一目標 t 的 Dijkstra 優化是什麼？",
+   "q": "只要求單一目標 t 時，Dijkstra 可以怎麼加速？",
    "opts": [
     "Extract-Min 取出 t 時就停",
     "第一次 relax 到 t 時就立刻停",

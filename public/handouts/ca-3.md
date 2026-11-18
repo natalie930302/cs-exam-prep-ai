@@ -1265,7 +1265,7 @@ single cycle 的 datapath 從頭到尾只有一個 stage。要拿它當 pipeline
 
 > **例題** 問：lw、sw 在 EX 時 ALU 在做什麼？答：在算 memory 位址（address calculation）：rs + sign-extended offset。
 
-- 各指令用到的 stage 數：sw 到第四個 stage（MEM）就結束；lw 要寫回，需要五個 stage；R-type 不用 MEM，若讓它第四個 stage 就寫回（IF、ID、EX、WB），因為結果已經算完。
+- 各指令用到的 stage 數：sw 到第四個 stage（MEM）就結束；lw 要寫回，需要五個 stage；R-type 不用 MEM，結果在 EX 就算完了，看起來可以讓它第四個 stage 就寫回（IF、ID、EX、WB）；但這樣會出問題，見下面的 structural hazard。
 - 分好 stage 之後，要把 resource 跟 stage 對起來：resource 共享，但**任何時間每個 resource 只能給一個指令用**，不能搶。
 
 ## Pipeline register：把每個 stage 切乾淨

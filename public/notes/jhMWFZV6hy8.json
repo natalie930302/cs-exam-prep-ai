@@ -392,7 +392,7 @@
    "why": "$zero 永遠是 0，加 0 等於原封不動搬過去。"
   },
   {
-   "q": "關於 alignment，MIPS 的 word 可以放在哪個地址開始？",
+   "q": "關於 alignment，MIPS 的 word 可以放在哪個位址開始？",
    "opts": [
     "8",
     "6",

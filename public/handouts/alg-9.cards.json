@@ -1,0 +1,125 @@
+{"cards":[
+  {"sec":"有沒有比 polynomial 更久的問題","q":"輸入大小從 n = 10 加倍到 n = 20，n² 的演算法和 2ⁿ 的演算法步數各變成多少？差在哪？","a":"n²：100 → 400，只乘上常數 2² = 4。\n2ⁿ：1024 → 1,048,576，等於原本的平方（2²ⁿ = (2ⁿ)²）。\n多項式加倍只乘常數；指數加倍直接平方。"},
+  {"sec":"有沒有比 polynomial 更久的問題","q":"判斷對錯並說明：TSP、SAT 這些問題已經被證明不存在 polynomial time 演算法。","a":"**錯**。目前只知道「沒人找到」polynomial 解，也沒人證明它不存在；這就是 P vs NP（千禧年大獎 7 題之一）還沒解決的原因。"},
+
+  {"sec":"難度軸：P、EXP、R","q":"P、EXP、R 各是什麼？三者的包含關係是什麼？","a":"P：多項式時間 O(n^c) 可解。\nEXP：2^(n^c) 時間可解（2ⁿ、2^(n²) 都算）。\nR：有限時間內可解，也就是 decidable。\nP ⊆ EXP ⊆ R。"},
+  {"sec":"難度軸：P、EXP、R","q":"把下列問題放上難度軸：負權環偵測、n × n 西洋棋、Tetris（方塊事先告知）、停機問題。","a":"負權環偵測：P（Bellman-Ford O(VE)）。\nn × n 西洋棋：EXP，已證明不在 P。\nTetris：NP（在 EXP 裡，是否在 P 未知）。\n停機問題：不在 R（undecidable）。"},
+  {"sec":"難度軸：P、EXP、R","q":"判斷對錯並說明：停機問題 undecidable，表示任何一支程式會不會停都判斷不出來。","a":"**錯**。很多特例很好判斷（空程式會停、沒有 break 的 while True 不會停）。\nundecidable 是指**沒有一個演算法能在有限時間內對所有輸入都判斷正確**。"},
+
+  {"sec":"為什麼大部分問題都不可計算","q":"為什麼絕大多數決策問題沒有程式能解？","a":"程式是有限長的 bit 串，對應到自然數，是 countable。\n決策問題是「自然數 → {0, 1}」的函數，等於一條無限長的 bit 串，對應到實數，是 uncountable。\n問題比程式多太多，一支程式只解一個問題，程式不夠分。"},
+  {"sec":"為什麼大部分問題都不可計算","q":"一支程式存成 bit 串 11010₂，它對應哪個自然數？這說明了什麼？","a":"16 + 8 + 2 = **26**。\n每支程式都是有限 bit 串，都能對應到一個自然數，所以程式的數量是 countable。"},
+
+  {"sec":"Decision 版與 optimization 版","q":"為什麼證 NP-complete 時只看 decision 版？decision 版一定要多給什麼？","a":"optimization 版至少和 decision 版一樣難，證明 decision 版很難就連帶證明 optimization 版很難。\ndecision 版一定要給 **bound**（例如「cost ≤ k 的 spanning tree 存在嗎？」），不然沒辦法回答 yes／no。"},
+  {"sec":"Decision 版與 optimization 版","q":"圖的邊與 cost：A–C 1、A–B 2、B–C 3、C–D 4、B–D 5。MST decision 版問「有沒有 cost ≤ k 的 spanning tree」，k = 7 和 k = 6 各答什麼？","a":"Kruskal：A–C 1 取、A–B 2 取、B–C 3 跳過（成環）、C–D 4 取 → MST cost = 1 + 2 + 4 = 7。\nk = 7：**YES**；k = 6：**NO**（最小就是 7）。"},
+  {"sec":"Decision 版與 optimization 版","q":"4 個城市距離：AB 2、AC 4、AD 3、BC 3、BD 5、CD 2。TSP decision 版 bound B = 11 和 B = 9 各答什麼？","a":"三種不同的環：A→B→C→D→A = 2+3+2+3 = 10；A→B→D→C→A = 2+5+2+4 = 13；A→C→B→D→A = 4+3+5+3 = 15。\n最短 10。B = 11：**YES**；B = 9：**NO**。"},
+  {"sec":"Decision 版與 optimization 版","q":"只有 decision 版的程式時，怎麼求出最佳值？cost 是 1～1000 的整數時大約要問幾次？","a":"對 bound 做 binary search：問「有沒有 cost ≤ k 的解」，YES 就往下砍半、NO 就往上，收斂到的 k 就是最佳值。\n大約 ⌈log₂ 1000⌉ = **10** 次。decision 是 polynomial time，最佳值也就能 polynomial time 求出。"},
+
+  {"sec":"Class P 與 class NP 的定義","q":"class P 與 class NP 的定義差在哪？","a":"P：deterministic TM 上能在 polynomial time **solve**（找出答案）的 decision problem。\nNP：nondeterministic TM 上 polynomial time 可決定；等價地，給一個解能在 polynomial time **verify** 它對不對。"},
+  {"sec":"Class P 與 class NP 的定義","q":"判斷對錯並說明：0/1 knapsack 有 O(nW) 的 DP，所以 knapsack ∈ P。","a":"**錯**。W 是一個數值，輸入只用約 log W 個 bit 表示，O(nW) 對輸入長度是指數，叫 pseudo-polynomial，不算 polynomial。\nknapsack 是 NP-complete，目前不知道它在不在 P。"},
+
+  {"sec":"研究框架與 non-deterministic 演算法","q":"NSearch 用 j = choice() 直接得到 key 的位置，整個演算法的時間是多少？為什麼？","a":"**O(1)**。choice()、success()、failure() 這些 non-deterministic 敘述都假設花 O(1)，演算法沒有迴圈。\nchoice 怎麼做到的不知道，這就是 non-deterministic 的部分。"},
+  {"sec":"研究框架與 non-deterministic 演算法","q":"用「deterministic／non-deterministic」的直覺說明為什麼 P ⊆ NP。","a":"P 是 deterministic polynomial 演算法，NP 是 non-deterministic polynomial 演算法；deterministic 是 non-deterministic 的特例（不用猜也能照算）。\n例如 n log n 排序在 merge sort 出現前對我們是「不知道怎麼做」，找到後就搬進 P。正式定義和人知不知道解法無關。"},
+
+  {"sec":"Lucky 演算法：每次都猜對","q":"lucky（nondeterministic）演算法怎麼運作？它跟 DP 的「猜」有什麼不同？","a":"遇到岔路就猜一個，所有可能的執行過程長成一棵樹；只要有任何一條路通到 YES，猜測就**保證**走到 YES；全部是 NO 才輸出 NO。\nDP 不知道哪個對，每個選項都試；lucky 演算法只試一個，因為它每次都猜對。它不是隨機。"},
+  {"sec":"Lucky 演算法：每次都猜對","q":"「Tetris 能不能活下來」在 NP。那「Tetris 我會不會死」也在 NP 嗎？","a":"一般認為**不在**（只是沒人證明）。NP 只對 YES 方向幸運：問「會不會死」時 lucky 演算法會去找任何一種死法，意思完全變了。\n一個問題和它的補集不對稱，設定 decision problem 時 YES/NO 方向要設對。"},
+
+  {"sec":"Verifier 與 certificate：NP 的實用定義","q":"NP 的 verifier 定義有哪些要求？","a":"verifier 吃（題目的輸入, 一份 certificate／proof），判斷這份證明對不對。\n① verifier 本身要在 polynomial time 跑完；② certificate 的長度要是輸入大小的多項式；③ 答案是 YES 時一定存在能讓 verifier 接受的 certificate。找證明花多久都沒關係。"},
+  {"sec":"Verifier 與 certificate：NP 的實用定義","q":"證明 TSP decision 版 ∈ NP：certificate 是什麼？verifier 檢查什麼？","a":"certificate：一條 tour（城市的順序），例如 ⟨A, B, C, D, A⟩。\n檢查：起點終點相同；每個城市恰好出現一次；沿路距離加總 ≤ B。全部 linear time → TSP ∈ NP。\n不需要檢查它是不是最短。"},
+
+  {"sec":"P ⊆ NP，那 P = NP 嗎？","q":"P 和 NP 的關係中，哪些已經證明、哪些未知？","a":"已證明：**P ⊆ NP**（能 poly time 解就能 poly time 驗證）。\n未知：P = NP 還是 P ⊊ NP。歷史上有問題被找到 poly 解而確定在 P，例如質數判定 2002 年由 AKS 證明 ∈ P。"},
+
+  {"sec":"P = NP？：運氣造不出來","q":"P ≠ NP 的直覺說法是什麼？","a":"「you can't engineer luck」：運氣（每次都猜對）沒辦法用普通電腦造出來。\n另一種說法：產生一份證明可能比檢查一份證明難得多，就像證定理很難、檢查寫好的證明很簡單。"},
+
+  {"sec":"常識論證：如果 NP 問題能快速解，就能冒充銀行","q":"factoring 的 verifier 怎麼寫？N = 391 時，猜 p = 19 和 p = 17 各得到什麼？","a":"verifier：做長除法算 N mod p（多項式時間），餘數 0 就接受。\n391 mod 19 = 11 ≠ 0，猜錯。\n391 mod 17 = 0，猜中，391 = 17 × 23。"},
+  {"sec":"常識論證：如果 NP 問題能快速解，就能冒充銀行","q":"「能 poly time 解 NP 問題就能冒充銀行」這個論證說明了什麼？它是證明嗎？","a":"RSA 公開 N = p × q，找出 p 就是 factoring，而 factoring ∈ NP。若能 poly time 解 NP 問題就能破解 RSA；金融系統還正常，代表沒人做到。\n這是**常識論證，不是數學證明**；而且一般認為 factoring 不是 NP-complete。"},
+
+  {"sec":"Reduction：把 A 轉成已經會解的 B","q":"手上只有 Dijkstra，怎麼解無權重最短路徑？權重全設成 0 可以嗎？","a":"把每條邊權重設成 1（或任何相同的正數），「最短」就變成「邊數最少」。\n全設 0 不行：每條路長度都是 0，分不出哪條比較短。"},
+  {"sec":"Reduction：把 A 轉成已經會解的 B","q":"想找「路徑上權重乘積最小」的路，怎麼用現成的最短路徑演算法？","a":"每條邊權重取 log：log(a × b) = log a + log b，乘積最小就變成和最小。\n權重都 ≥ 1 時取 log 後非負，可用 Dijkstra；有小於 1 的權重會出現負邊，要用 Bellman-Ford。"},
+  {"sec":"Reduction：把 A 轉成已經會解的 B","q":"bipartite matching 怎麼 reduce 到 network flow？","a":"原圖的邊改成由左指向右，加 source s 連到每個左邊點、每個右邊點連到 sink t，所有 capacity 設 1。\n跑 Ford-Fulkerson 求 max flow，有 flow 的左右邊就是配對。轉換是 linear time。"},
+
+  {"sec":"借 B 的演算法解 A：yes 要對 yes","q":"用 reduction 借 B 的演算法解 A，需要哪兩個條件，A 才會是 polynomial time 可解？","a":"① 把 A 的 instance α 轉成 B 的 instance β 要 polynomial time（B 本身也 poly 可解，兩個 polynomial 相加仍是 polynomial）。\n② α 答 yes ⇔ β 答 yes，B 的答案才能直接當 A 的答案。"},
+
+  {"sec":"X ≤p Y 的正式定義：可去可回","q":"證明 X ≤p Y 要做哪三件事？X ≤p Y 代表誰比較難？","a":"① 轉換 f 是 polynomial time；② x 在 X 是 yes ⇒ f(x) 在 Y 是 yes；③ f(x) 在 Y 是 yes ⇒ x 在 X 是 yes。\n**Y 至少和 X 一樣難**（能解 Y 就能解 X）。"},
+  {"sec":"X ≤p Y 的正式定義：可去可回","q":"判斷對錯並說明：polynomial time reduction 的轉換 f 必須是一對一函數。","a":"**錯**。不必真的一對一，只要「x 是 yes ⇔ f(x) 是 yes」成立、而且 f 是 polynomial time 就夠了。"},
+
+  {"sec":"Reduction 不能讓輸入爆炸","q":"把一個 3CNF 式子轉成圖，每多一個子句頂點數就 × 3。10 個子句會有幾個頂點？這個 reduction 能證明什麼嗎？","a":"3¹⁰ = **59,049** 個頂點，一般是 3ⁿ，指數大小。\n不能：reduction 不只要 polynomial time，產生的輸入也要是 polynomial 大小，否則推不出原問題能在多項式時間解。"},
+
+  {"sec":"Reduction 的三種用法：方向不能放錯","q":"要證「新問題 Y 很難」，reduction 要寫成 X ≤p Y 還是 Y ≤p X（X 是已知難題）？放反會怎樣？","a":"**X ≤p Y**：已知難題放左邊、新問題放右邊。\n放反（Y ≤p X）只說明 Y 不比難題難，沒有任何資訊，例如排序也能 reduce 到 CIRCUIT-SAT。"},
+  {"sec":"Reduction 的三種用法：方向不能放錯","q":"reduction 的三種用法各是什麼？","a":"Case 1 解題：新問題 ≤p 已知有好演算法的問題（如 bipartite matching ≤p network flow）。\nCase 2 證難：已知難題 ≤p 新問題（如 HC ≤p TSP）。\nCase 3 證一樣難：X ≤p Y 且 Y ≤p X，polynomially equivalent。"},
+
+  {"sec":"用反證法證明 B 很難","q":"已知 A 是 NP-complete、A ≤p B。用反證法說明 B 有 polynomial 解會推出什麼？","a":"假設 B 有 poly 解，A 的任何 instance 先 poly time 轉成 B 再解，A 也有 poly 解。\nA 是 NPC，所以推出 **P = NP**。「A 沒有 poly 解」其實建立在 P ≠ NP 的假設上。"},
+
+  {"sec":"Base problem：SAT 與 state space tree","q":"F = (x1 ∨ x2) ∧ (¬x1 ∨ x3) ∧ (¬x2 ∨ ¬x3)。列舉 8 種賦值，哪些 (x1, x2, x3) 讓 F 為真？","a":"只有 **(0, 1, 0)** 和 **(1, 0, 1)**。\n例：(0, 1, 0)：C1 = 0∨1 = 1，C2 = 1∨0 = 1，C3 = 0∨1 = 1。\n其他 6 組都有某個子句全假。n 個變數要試 2ⁿ 種。"},
+  {"sec":"Base problem：SAT 與 state space tree","q":"SAT 的 CNF 格式是什麼？4 個變數的 SAT 畫成 state space tree 有幾個 leaf？","a":"CNF：子句之間用 AND（∧），子句內用 OR（∨）連 literal；每個子句都要為真。\n每層決定一個變數 0 或 1，4 個變數有 2⁴ = **16** 個 leaf。"},
+
+  {"sec":"0/1 knapsack 用的是同一棵樹","q":"為什麼說 SAT 和 0/1 knapsack 用的是同一棵 state space tree？","a":"兩者的解都是 (x1, …, xn)，每個 xi 是 0 或 1（變數真假／物品放不放），n 個就有 2ⁿ 個 leaf。\n只要能 polynomial time 處理這棵樹，兩個問題都能解；正式把它們連起來的方法是 reduction。"},
+
+  {"sec":"SAT ∝ L：被 SAT 歸約到的都是 NP-hard","q":"SAT ∝ L1、L1 ∝ L2，能推出 L2 是什麼？為什麼？","a":"L2 是 **NP-hard**。reduction 有遞移性：SAT 經 L1 轉到 L2，兩次 poly 轉換接起來還是 poly。\n所以從任何已知的 NP-hard 問題轉過來都可以，不必每次都從 SAT。"},
+
+  {"sec":"NP-hard ∩ NP = NP-complete","q":"自己的新問題 L 要研究成 NP-complete，要做哪兩件事？只做到其中一件是什麼？","a":"① 證明 SAT（或任何已知 NPC）reduce 到 L → L 是 NP-hard。\n② 證明 L ∈ NP（有 polynomial time verifier）。\n只做 ① 只是 NP-hard；兩件都做才是 NP-complete = NP ∩ NP-hard。"},
+
+  {"sec":"NP-complete 的正式定義","q":"寫出 NP-complete 的正式定義。","a":"decision problem L 是 NP-complete ⇔\n① L ∈ NP；\n② NP 裡每一個 L′ 都滿足 L′ ≤p L。\n只滿足 ② 的叫 NP-hard。"},
+  {"sec":"NP-complete 的正式定義","q":"史上第一個 NP-complete 問題為什麼特別難證？之後的問題怎麼證？","a":"第一個沒有已知的 NPC 可以 reduce，只能照定義證「**每一個** NP 問題」都能 poly reduce 過來（Cook 用通用表示法一次處理）。\n之後只要從已知 NPC 問題 reduce 到新問題，再證新問題 ∈ NP。"},
+
+  {"sec":"難度軸上的 NP-hard 與 NP-complete","q":"判斷對錯並說明：NP-hard 的問題一定在 NP 裡。","a":"**錯**。NP-hard 是「至少和 NP 裡每個問題一樣難」，可以更右邊、更難，不一定在 NP。\n同時在 NP 裡又是 NP-hard 的，才是 NP-complete，剛好落在 NP 的刻度上。"},
+
+  {"sec":"EXP-complete：chess 為什麼不在 P","q":"為什麼已經能確定 n × n chess 不在 P？","a":"chess 是 **EXP-complete**（EXP 裡最難的）。\nP ≠ EXP 已被證明，EXP 的最右端一定在 P 外面，所以 chess ∉ P。"},
+  {"sec":"EXP-complete：chess 為什麼不在 P","q":"把指數演算法的 2^(cn) 中常數 c 改小，能讓它變得可以 scale 嗎？","a":"**不能**。c 變小只是跑快一點、看深一點，n 變大時仍然爆炸。\n只有 P 以內的問題，輸入變大時才跑得動。"},
+
+  {"sec":"NP-hard 是一大片：連不可判定的都算","q":"停機問題是 NP-hard 嗎？在 NP 裡嗎？這說明了 NP-hard 的什麼特性？","a":"是 NP-hard，但**不在 NP**，連 decidable 都不是。\nNP-hard 範圍很廣，說一個問題是 NP-hard 只表示它至少和 NP 一樣難，對它到底多難說得很少。"},
+
+  {"sec":"NP-complete：一題有解，全部有解","q":"為什麼說 NP-complete 問題「一題有解，全部有解」？","a":"每一個 NP 問題都能 polynomial time reduce 到任何一個 NPC 問題。\n只要有一個 NPC 問題有 polynomial 演算法，所有 NP 問題都能先轉過去再解，全部都變成 polynomial time 可解。"},
+
+  {"sec":"NPC 有 poly 解 ⇒ P = NP：P vs NP 的兩種結局","q":"證明：若某個 NP-complete 問題 Y 有 polynomial 演算法，則 P = NP。","a":"Y ∈ P。對任何 X ∈ NP，有 X ≤p Y：先 poly time 轉換、再用 Y 的 poly 演算法解，所以 X ∈ P，得 NP ⊆ P。\n又 P ⊆ NP，所以 **P = NP**。"},
+  {"sec":"NPC 有 poly 解 ⇒ P = NP：P vs NP 的兩種結局","q":"正式的 Cook–Levin 定理說的是什麼？「SAT ∈ P ⇔ P = NP」是定理本身嗎？","a":"Cook–Levin 定理：**SAT 是 NP-complete**。\n「SAT ∈ P ⇔ P = NP」是它的推論，不是定理本身。"},
+
+  {"sec":"第一個 NP-complete 問題從哪來","q":"Cook 和 Karp 在 NP-complete 史上各做了什麼？","a":"Cook（1971）：從 NP 的定義直接證明第一個 NPC 問題 SAT（Cook–Levin 定理，不靠 reduction）。\nKarp（1972）：從 SAT 出發用 reduction 一口氣列出 21 個 NPC 問題（這 21 個的清單本身就含 SAT）。"},
+  {"sec":"第一個 NP-complete 問題從哪來","q":"電路 g1 = x1 ∧ x2、g2 = ¬x1、output = g1 ∧ g2。這個 CIRCUIT-SAT instance 可滿足嗎？","a":"**不可滿足**。output = 1 需要 g1 = 1（x1 = 1）且 g2 = 1（x1 = 0），互相矛盾。\n4 種輸入代進去 output 都是 0。"},
+
+  {"sec":"SAT、CNF 與 k-SAT","q":"2SAT 和 3SAT 的難度各是什麼？","a":"2SAT ∈ P，線性時間就能解。\n3SAT 是 NP-complete；k > 3 的 k-SAT 都能 poly reduce 到 3SAT。k 從 2 變 3，難度從很簡單跳到 NP 裡最難。"},
+  {"sec":"SAT、CNF 與 k-SAT","q":"2SAT：(x1 ∨ x2) ∧ (¬x1 ∨ x2) ∧ (x1 ∨ ¬x2)。找出滿足的賦值。若再加上子句 (¬x1 ∨ ¬x2) 呢？","a":"前兩個子句：x1 不管真假都需要 x2 = 1；第三個子句在 x2 = 1 時需要 x1 = 1。唯一解 **x1 = x2 = 1**。\n加上 (¬x1 ∨ ¬x2) 後，x1 = x2 = 1 讓它為假，而唯一解只有這組 → **不可滿足**。"},
+  {"sec":"SAT、CNF 與 k-SAT","q":"SAT 用暴力法試所有賦值要多久？大約多少變數就跑不動？","a":"n 個變數要試 2ⁿ 組，指數時間。\n大約 20 個變數暴力法就跑不動；實用的 SAT solver 靠化簡與聰明搜尋，可處理上千到上萬個變數，但仍不是多項式。"},
+
+  {"sec":"為什麼每個 NP 問題都能轉成 3SAT","q":"說明任何 NP 問題都能 reduce 到 3SAT 的想法。","a":"拿問題的 polynomial time verifier，寫成 AND/OR/NOT 電路：題目輸入**寫死**在電路裡，proof 的 bits 當變數。\n電路轉成布林式再轉 3CNF 丟給 3SAT；可滿足時得到的賦值就是 proof。verifier 是 poly time，所以電路大小也是 poly。"},
+
+  {"sec":"Factoring 不是最難的；NPC 全部綁在一起","q":"判斷對錯並說明：factoring 不是 NP 問題。","a":"**錯**。factoring ∈ NP（verifier 只要做一次長除法檢查 N mod p = 0）。\n只是一般認為它**不是 NP-complete**（目前未知）。"},
+
+  {"sec":"NP-complete 問題動物園","q":"列出至少五個 NP-complete 問題，並指出一個看起來很像、卻在 P 的版本。","a":"NPC：TSP（decision 版）、SAT、3SAT、3-coloring、knapsack、n 個字串的 LCS、數獨、踩地雷。\n在 P 的對照：兩個字串的 LCS（DP）、2SAT、2D 平面最短路徑。"},
+
+  {"sec":"NPC 是解題地圖上的地雷","q":"解題時用 reduction 一路轉換，轉到「要用 polynomial time 解 knapsack」代表什麼？該怎麼辦？","a":"走到 NP-complete 問題，等於踩到地雷：全世界都還解不出來，這條路很難得到有效率的解。\n應該立刻回頭換一條 reduction 路線，往會解的問題（最短路徑、DP、BFS／DFS…）走。"},
+
+  {"sec":"證明 NP-complete 的兩個步驟","q":"證明新問題 L 是 NP-complete 的兩個步驟是什麼？","a":"① L ∈ NP：L 的 certificate 能在 polynomial time 驗證。\n② 選一個已知 NPC 的 L′，證明 **L′ ≤p L**（方向不能反）。\nL、L′ 都用 decision 版。只做 ② 只證到 NP-hard。"},
+  {"sec":"證明 NP-complete 的兩個步驟","q":"判斷對錯並說明：要證 L 是 NP-complete，把 L reduce 到 SAT（L ≤p SAT）就證明了 L 很難。","a":"**錯**。L ≤p SAT 只表示 L 不比 SAT 難，L 可能很簡單（任何 NP 問題都能 reduce 到 SAT）。\n要證 L 很難，必須是 SAT（已知 NPC）≤p L。"},
+
+  {"sec":"Hamiltonian cycle 問題","q":"Hamiltonian cycle 問題是什麼？它跟 TSP 的關係？","a":"給一張無向圖 G，問能不能只用 G 的 edge，從某點出發經過每個點恰好一次再回到起點。它是 NP-complete。\nTSP 是在 complete graph 上找總長 ≤ B 的這種環；HC 常被拿來證 TSP 是 NPC。"},
+  {"sec":"Hamiltonian cycle 問題","q":"K₃,₃ 和 K₂,₄ 這兩個完全二分圖，哪一個有 Hamiltonian cycle？","a":"二分圖上的 cycle 左右交替，左右用到的點數一定相等。\nK₃,₃：左右各 3，有（a1 b1 a2 b2 a3 b3 a1）。\nK₂,₄：左 2 右 4 不等，**沒有**。"},
+
+  {"sec":"目標：HC ≤p TSP","q":"為了證 TSP 很難，要建的是 HC ≤p TSP 還是 TSP ≤p HC？這個 reduction 要證哪幾件事？","a":"**HC ≤p TSP**：已知難的 HC 放左邊、要證難的 TSP 放右邊。\n要證：轉換 f 是 polynomial time；G 有 HC ⇒ TSP 有總長 ≤ B 的 tour；TSP 有總長 ≤ B 的 tour ⇒ G 有 HC。"},
+
+  {"sec":"轉換 f：有邊 cost 1、沒邊 cost 2、bound = n","q":"HC ≤p TSP 的轉換 f 怎麼造 TSP instance？時間多少？","a":"G 的 n 個點 → n 個 city，建 complete graph：G 上有的邊 cost 1，沒有的邊 cost 2；bound B = n。\n共 n(n − 1)/2 條邊，每條查一次 G 有沒有 → O(V²)，polynomial time。"},
+  {"sec":"轉換 f：有邊 cost 1、沒邊 cost 2、bound = n","q":"G 有 4 個點 a、b、c、d，邊 a–b、b–c、c–d、d–a、a–c。用 HC ≤p TSP 的轉換造出 TSP，哪些邊 cost 2？tour a→b→c→d→a 和 a→c→b→d→a 總長各是多少？","a":"K₄ 有 6 條邊，G 有 5 條，只有 **b–d** 是 cost 2；bound = 4。\na→b→c→d→a：1+1+1+1 = **4** ≤ 4（就是 G 的 HC）。\na→c→b→d→a：1+1+2+1 = **5** > 4。"},
+
+  {"sec":"正方向：HC yes ⇒ TSP yes","q":"在 HC ≤p TSP 中證明「G 有 Hamiltonian cycle ⇒ TSP 答 yes」。","a":"把 G 的 Hamiltonian cycle 原封不動搬到 TSP 的圖上：每點恰一次、回到起點，n 條邊都是 G 原有的邊，cost 都是 1。\n總長 = n ≤ B = n，TSP 答 yes。"},
+
+  {"sec":"反方向：TSP yes ⇒ HC yes","q":"在 HC ≤p TSP 中證明「TSP 有總長 ≤ n 的 tour ⇒ G 有 Hamiltonian cycle」。G 是 path a–b–c–d（沒有 HC）時，TSP 最短 tour 是多少？","a":"tour 有 n 條邊、每條 cost ≥ 1，總長 ≤ n，只要用到一條 cost 2 就至少 n + 1，所以每條都是 cost 1，全是 G 的邊 → 就是 G 的 HC。\npath a–b–c–d：任何 tour 至少要用一條 cost 2，最短如 a→b→c→d→a = 1+1+1+2 = **5** > 4，TSP 答 no，與 G 沒有 HC 一致。"},
+
+  {"sec":"實務證法：TSP 是 NP-complete","q":"為什麼實務上證 NPC 不必對「所有」NP 問題各寫一個 reduction？","a":"所有 NP 問題都已經 ≤p 某個已知 NPC 問題 L′；再證 L′ ≤p L，由遞移性所有 NP 問題都 ≤p L。\n所以只要 L ∈ NP 加上一個 L′ ≤p L（例如 TSP：TSP ∈ NP ＋ HC ≤p TSP）。"},
+
+  {"sec":"Complete graph 與 clique","q":"6 個點和 10 個點的 complete graph 各有幾條邊？什麼是 clique？","a":"n(n − 1)/2：K₆ 有 **15** 條，K₁₀ 有 **45** 條。\nclique：本身是 complete graph 的 subgraph（裡面的點兩兩相連）。"},
+  {"sec":"Complete graph 與 clique","q":"圖的邊：1–2、1–3、2–3、2–4、3–4、4–5。最大的 clique 是多大？有 size 4 的 clique 嗎？","a":"最大 size **3**：{1, 2, 3} 和 {2, 3, 4}。\n沒有 size 4：{1, 2, 3, 4} 缺 1–4；5 只連到 4。"},
+
+  {"sec":"Clique decision problem","q":"clique decision problem（CDP）和找最大 clique 有什麼差別？證明 CDP 很難有什麼用？","a":"CDP：給 G 和 k，問 G 有沒有 size k 的 clique（答 yes／no），是 decision 版；找最大 clique 是 optimization 版。\noptimization 版至少和 decision 版一樣難，CDP 是 NP-hard，找最大 clique 也是 NP-hard。"},
+
+  {"sec":"證明 NP-hard 的程序","q":"證明 L2 是 NP-hard 的一般程序是什麼？","a":"找一個已知 NP-hard 的 L1，證明 **L1 ∝ L2**：把 L1 的任一 instance 在 polynomial time 內轉成 L2 的 instance，且答案一致。\n這樣 L2 若能 poly time 解，L1 也能，所以 L2 至少和 L1 一樣難。"},
+
+  {"sec":"SAT ∝ CDP 的建構","q":"SAT ∝ CDP 的建構中，頂點和邊怎麼定？k 設多少？","a":"每個子句裡的每個 literal 一個頂點 ⟨a, i⟩（i 是子句編號，同一變數在不同子句是不同頂點）。\n⟨a, i⟩–⟨b, j⟩ 有邊 ⇔ i ≠ j（不同子句）且 b ≠ ā（不互相矛盾）。\nk = 子句數。"},
+  {"sec":"SAT ∝ CDP 的建構","q":"F = (x1 ∨ ¬x2) ∧ (x2 ∨ x3) ∧ (¬x1 ∨ ¬x3)。照 SAT ∝ CDP 建圖，共幾個頂點、幾條邊？列出所有 size 3 的 clique。","a":"6 個頂點、**9** 條邊（不同子句的 12 對中，扣掉 ¬x2–x2、x1–¬x1、x3–¬x3 三對）。\nsize 3 clique 有兩個：\n{⟨x1,1⟩, ⟨x2,2⟩, ⟨¬x3,3⟩}\n{⟨¬x2,1⟩, ⟨x3,2⟩, ⟨¬x1,3⟩}"},
+
+  {"sec":"k-clique ⇔ 公式可滿足","q":"承上，F = (x1 ∨ ¬x2) ∧ (x2 ∨ x3) ∧ (¬x1 ∨ ¬x3) 的兩個 size 3 clique 各對應什麼賦值？","a":"把選到的 literal 設為真：\n{x1, x2, ¬x3} → x1 = 1、x2 = 1、x3 = 0。\n{¬x2, x3, ¬x1} → x1 = 0、x2 = 0、x3 = 1。\n代回去三個子句都為真。"},
+  {"sec":"k-clique ⇔ 公式可滿足","q":"為什麼 SAT ∝ CDP 中「圖有 size k 的 clique ⇔ 公式可滿足」？","a":"⇒：同子句不相連，所以 clique 每個子句剛好取一個頂點；互相矛盾的不相連，所以把它們全設為真不衝突，每個子句都為真。\n⇐：每個子句挑一個為真的 literal，它們分屬不同子句、不互相矛盾，兩兩有邊，成為 size k 的 clique。"},
+
+  {"sec":"用 reduction 證明困難：3-Partition → Tetris","q":"3-Partition：2, 3, 7, 1, 5, 6 能分成兩組（每組三個）和相等嗎？1, 1, 1, 2, 2, 5 呢？","a":"第一組：總和 24，每組 12 → (2, 3, 7)、(1, 5, 6)，**yes**。\n第二組：總和 12，每組 6；含 5 的那組另兩個數至少 1 + 1，和至少 7 > 6，**no**。"},
+
+  {"sec":"四個類別總整理：P、NP、NP-complete、NP-hard","q":"假設 P ≠ NP，P、NP、NP-complete、NP-hard 四者的關係是什麼？","a":"P ⊊ NP；NP-complete = NP ∩ NP-hard，在 NP 裡但和 P 不相交；NP-hard 最廣，包含 NPC，也包含不在 NP 的問題（例如停機問題）。"},
+  {"sec":"四個類別總整理：P、NP、NP-complete、NP-hard","q":"判斷對錯並說明：「NP-hard 就是所有沒有 polynomial 演算法的問題。」","a":"**錯**。NP-hard 的定義是「所有 NP 問題都能 polynomial time reduce 到它」，跟有沒有快的演算法無關。\n而且「NPC 沒有 poly 演算法」本身也還沒被證明（等價於 P ≠ NP）。"}
+]}

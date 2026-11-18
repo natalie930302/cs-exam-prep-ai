@@ -1029,12 +1029,12 @@
   {
    "q": "把 43, 46, 48, 49 依序插入空的 BST，結果是？",
    "opts": [
-    "退化成一條 list，h = n",
+    "退化成一條 list，h = Θ(n)",
     "完全平衡，h = log n",
     "root 是 49，往左長成一條 list",
     "會自動旋轉成平衡，h = log n"
    ],
-   "ans": "退化成一條 list，h = n",
+   "ans": "退化成一條 list，h = Θ(n)",
    "why": "每個新 key 都比前面大，一直接在右邊；需要 balanced BST 才能保證 O(log n)。"
   },
   {

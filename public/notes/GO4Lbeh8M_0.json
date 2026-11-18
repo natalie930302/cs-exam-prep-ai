@@ -287,7 +287,7 @@
  ],
  "quiz": [
   {
-   "q": "programmer 呼叫 pthread_create 建立的是哪一種 thread？",
+   "q": "依恐龍書的分類，programmer 呼叫 pthread_create 建立的是哪一種 thread？",
    "opts": [
     "user thread",
     "kernel thread",

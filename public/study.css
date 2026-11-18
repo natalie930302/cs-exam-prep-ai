@@ -829,3 +829,73 @@ body:not(.st-booting) .st-top, body:not(.st-booting) .st-main { animation: m-in 
 .st-handout .ho-end { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 32px 0 0; padding-top: 16px; border-top: 1px solid var(--bd); }
 .st-handout .ho-done { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; margin-right: auto; cursor: pointer; }
 .st-handout .ho-done input { width: 18px; height: 18px; accent-color: var(--subj); }
+
+/* 2026-11-18b: 自我檢查卡 (recall.js) — under each handout section, as a
+   practice round in the quiz tab and on /review.html; save-failed toast */
+.rc-card { background: var(--surf); border: 1px solid var(--bd); border-radius: 14px; padding: 12px 16px; display: grid; gap: 8px; font-size: 14px; line-height: 1.6; animation: m-in .22s ease both; }
+.rc-q { font-weight: 700; }
+.rc-a { border-left: 3px solid var(--subj, var(--ac)); background: var(--surf2); border-radius: 10px; padding: 8px 12px; line-height: 1.85; animation: m-in .22s ease both; }
+.rc-a[hidden], .rc-grade[hidden], .rc-row[hidden], .rc-show[hidden] { display: none; }
+.rc-a code, .rc-q code { font-family: ui-monospace, Consolas, monospace; font-size: .92em; background: var(--surf2); border-radius: 6px; padding: 1px 6px; }
+.rc-a code { background: var(--surf); }
+.rc-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.rc-state { font-size: 12px; color: var(--mt2); }
+.rc-state[data-g="good"] { color: color-mix(in srgb, var(--grn) 75%, var(--tx)); }
+.rc-state[data-g="meh"] { color: #b5761b; }
+.rc-state[data-g="bad"] { color: var(--red); }
+.rc-grade { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: var(--mt2); }
+.rc-card button, .rc-session button, .st-recall button.rc-back { font: inherit; font-size: 13px; color: var(--tx); background: var(--surf); border: 1px solid var(--bd); border-radius: 10px; padding: 4px 12px; cursor: pointer; transition: border-color .16s, background .16s; }
+.rc-card button:active, .rc-session button:active { transform: scale(.97); }
+@media (hover: hover) { .rc-card button:hover, .rc-session button:hover { border-color: color-mix(in srgb, var(--subj, var(--ac)) 45%, var(--bd)); } }
+.rc-grade button[data-g="bad"] { border-color: color-mix(in srgb, var(--red) 40%, var(--bd)); }
+.rc-grade button[data-g="meh"] { border-color: color-mix(in srgb, #e2a33b 50%, var(--bd)); }
+.rc-grade button[data-g="good"] { border-color: color-mix(in srgb, var(--grn) 50%, var(--bd)); }
+.rc-card kbd { font-family: ui-monospace, Consolas, monospace; font-size: 11px; color: var(--mt2); margin-left: 6px; }
+@media (hover: none) { .rc-card kbd { display: none; } }
+.rc-try { font: inherit; font-size: 14px; line-height: 1.6; color: var(--tx); background: var(--bg); border: 1px solid var(--bd); border-radius: 10px; padding: 8px 12px; resize: vertical; min-height: 44px; width: 100%; box-sizing: border-box; }
+.rc-try:focus { outline: none; border-color: color-mix(in srgb, var(--subj, var(--ac)) 55%, var(--bd)); }
+/* inside the handout: the section's cards after its text */
+.st-handout .ho-check { display: grid; gap: 8px; margin: 16px 0 12px; padding: 12px; border-radius: 14px; background: color-mix(in srgb, var(--subj, var(--ac)) 7%, var(--surf2)); }
+.st-handout .ho-check-hd { font-size: 14px; font-weight: 700; line-height: 1.3; display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.st-handout .ho-check-hd span { font-size: 12px; font-weight: 400; color: var(--mt2); }
+.st-handout .rc-card { font-size: 15px; }
+.st-handout .ho-toc li.read { color: var(--mt2); }
+.st-handout .ho-toc li.read a { color: var(--mt2); }
+.st-handout .ho-toc li.read::marker { content: '✓  '; color: var(--grn); }
+/* a practice round: one big card at a time */
+.rc-session { display: grid; gap: 12px; max-width: 820px; }
+.rc-top { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--mt2); }
+.rc-count { font-weight: 700; color: var(--tx); font-variant-numeric: tabular-nums; }
+.rc-src { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rc-bar { height: 4px; border-radius: 4px; background: var(--surf2); overflow: hidden; }
+.rc-bar i { display: block; height: 100%; background: var(--subj, var(--ac)); transition: width .28s var(--ease); }
+.rc-big { padding: 16px; border-radius: 20px; font-size: 16px; gap: 12px; }
+.rc-big .rc-q { font-size: 18px; line-height: 1.6; }
+.rc-big .rc-grade button, .rc-big .rc-show, .rc-big .rc-next { font-size: 14px; padding: 8px 16px; }
+.rc-opts { display: grid; gap: 8px; }
+.rc-opts button { text-align: left; display: flex; gap: 12px; align-items: baseline; padding: 8px 12px !important; font-size: 14px !important; line-height: 1.6; }
+.rc-opts button b { flex: 0 0 auto; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--surf2); color: var(--mt2); font-size: 12px; }
+.rc-opts button:disabled { cursor: default; opacity: 1; }
+.rc-opts button[data-g="good"] { border-color: var(--grn); background: color-mix(in srgb, var(--grn) 12%, var(--surf)); }
+.rc-opts button[data-g="bad"] { border-color: var(--red); background: color-mix(in srgb, var(--red) 10%, var(--surf)); }
+.rc-sum { background: var(--surf); border: 1px solid var(--bd); border-radius: 20px; padding: 16px; display: grid; gap: 12px; animation: m-in .22s ease both; }
+.rc-sum-hd { font-size: 18px; font-weight: 700; line-height: 1.3; }
+.rc-sum-row { display: flex; flex-wrap: wrap; gap: 8px; font-size: 14px; }
+.rc-sum-row span { padding: 4px 12px; border-radius: 999px; background: var(--surf2); font-weight: 700; }
+.rc-sum-row span[data-g="good"] { color: color-mix(in srgb, var(--grn) 75%, var(--tx)); }
+.rc-sum-row span[data-g="meh"] { color: #b5761b; }
+.rc-sum-row span[data-g="bad"] { color: var(--red); }
+.rc-sum-note { font-size: 13px; color: var(--mt2); line-height: 1.6; }
+.rc-sum-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.rc-sum-btns a { font-size: 13px; color: var(--tx); text-decoration: none; background: var(--surf); border: 1px solid var(--bd); border-radius: 10px; padding: 4px 12px; transition: border-color .16s; }
+@media (hover: hover) { .rc-sum-btns a:hover { border-color: color-mix(in srgb, var(--subj, var(--ac)) 45%, var(--bd)); } }
+/* the quiz tab's 講義自我檢查 box */
+.st-recall { background: color-mix(in srgb, var(--subj) 8%, var(--surf)); border: 1px solid color-mix(in srgb, var(--subj) 30%, var(--bd)); border-radius: 14px; padding: 12px 16px; display: grid; gap: 8px; margin-bottom: 16px; animation: m-in .22s ease both; }
+.st-recall-hd { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; font-size: 14px; }
+.st-recall-hd span { font-size: 13px; color: var(--mt2); }
+.st-recall-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+#panel-quiz > .st-recall + .st-qh, #panel-quiz > .st-recall + .st-nonotes { margin-top: 0; }
+.st-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 50; max-width: calc(100vw - 32px); background: var(--tx); color: var(--surf); font-size: 14px; line-height: 1.6; padding: 8px 16px; border-radius: 10px; box-shadow: var(--shadow); opacity: 0; pointer-events: none; transition: opacity .2s; }
+.st-toast.show { opacity: 1; }
+.rc-src-link { font-size: 13px; color: color-mix(in srgb, var(--subj, var(--ac)) 75%, var(--tx)); text-decoration: none; }
+@media (hover: hover) { .rc-src-link:hover { text-decoration: underline; } }

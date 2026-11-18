@@ -216,7 +216,7 @@
    "why": "Kruskal 從小到大考慮，只要不形成 cycle 就加。"
   },
   {
-   "q": "老師的圖跑 Kruskal 時，哪條 edge 被拒絕？",
+   "q": "無向圖的邊與 weight：A–B 3、A–C 9、A–D 7、B–C 5、B–E 6、B–F 8、C–D 2、C–E 4、D–F 5、E–F 1。依 weight 由小到大跑 Kruskal，下列哪條 edge 會因為形成 cycle 而不被選？",
    "opts": [
     "DF",
     "BC",
@@ -227,7 +227,7 @@
    "why": "D、F 已透過 D C E F 連通，加 DF 會形成 cycle。"
   },
   {
-   "q": "Kruskal 在老師的圖上得到的 total weight 是？",
+   "q": "同上題的圖，Kruskal 得到的 total weight 是？",
    "opts": [
     "15",
     "16",

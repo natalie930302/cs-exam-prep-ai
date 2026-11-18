@@ -536,7 +536,7 @@ c·Nᵈ 數的是 **primitive computational step**（基本計算步驟）。什
 | 30 | < 1 秒 | < 1 秒 | < 1 秒 | < 1 秒 | < 1 秒 | 約 18 分 | 約 8×10¹⁸ 年 |
 | 50 | < 1 秒 | < 1 秒 | < 1 秒 | < 1 秒 | 約 11 分 | 約 36 年 | very long |
 | 100 | < 1 秒 | < 1 秒 | < 1 秒 | 1 秒 | 約 12,900 年 | 約 4×10¹⁶ 年 | very long |
-| 1,000 | < 1 秒 | < 1 秒 | 1 秒 | 約 18 分 | very long | very long | very long |
+| 1,000 | < 1 秒 | < 1 秒 | 1 秒 | 約 17 分 | very long | very long | very long |
 | 100,000 | < 1 秒 | 約 2 秒 | 約 3 小時 | 約 32 年 | very long | very long | very long |
 | 1,000,000 | 1 秒 | 約 20 秒 | 約 12 天 | 約 31,710 年 | very long | very long | very long |
 

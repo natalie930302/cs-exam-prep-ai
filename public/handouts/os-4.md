@@ -510,7 +510,7 @@ EDF 的結論：只要 CPU 總使用率 ≤ 100%（不計 context switch 成本�
 - 一樣看 global priority，最高的先；priority 相同的放同一個 queue，用 RR 輪流。
 
 ### Linux（2.6 版）
-- priority 0～140，**數字越小越優先**（跟 Solaris、Windows 相反）。
+- priority 0～140（課本的寫法；實際 kernel 是 0～139，共 140 級），**數字越小越優先**（跟 Solaris、Windows 相反）。
   - 0～99：real-time task，priority 固定。
   - 100～140：一般使用者 task（nice 值），執行時依互動程度調整。
 - 每個 priority 也對應一個 quantum，但**跟 Solaris 相反：priority 越高，quantum 越長**（最高約 200 ms，最低約 10 ms）。

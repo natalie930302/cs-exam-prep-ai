@@ -246,7 +246,7 @@
    "why": "2 bits 只有 4 種組合；3 bits 有 8 種，夠表示 5 個。"
   },
   {
-   "q": "Fixed size code 版本（訊息 + 表格）共多少 bits？",
+   "q": "20 個字元的訊息只用 A～E 5 種字母。Fixed size code 版本（訊息 + 表格：每個字母存 8-bit ASCII 與它的 code）共多少 bits？",
    "opts": [
     "115",
     "60",

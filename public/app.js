@@ -48,7 +48,16 @@ function chapterStudyHtml(subjectId, idx){
   const room = studyRoomUrl(subjectId, idx);
   return '<div class="ch-study-row"><a class="ch-study-link" href="'+room+'">'+svgIcon('film',14)+'進入學習空間：邊看影片邊學</a>'
     +'<a class="ch-study-link ch-lesson-link" href="'+room+'?t=handout">'+svgIcon('book-open',14)+'講義：看影片前先讀</a>'
+    +checkLinkHtml(subjectId, idx)
     +'</div>';
+}
+// the chapter's 自我檢查卡 (review.html?ch=…), with how many were answered
+function checkLinkHtml(subjectId, idx){
+  const ch = subjectId+'-'+(idx+1), n = (HANDOUTS[ch] || {}).cards;
+  if(!n || typeof srsLoad !== 'function') return '';
+  const s = srsLoad(), prefix = ch+':';
+  const seen = Object.keys(s).filter(function(id){ return id.indexOf(prefix) === 0 && s[id].d; }).length;
+  return '<a class="ch-study-link ch-lesson-link" href="/review.html?ch='+ch+'">'+svgIcon('clipboard',14)+'自我檢查 '+n+' 題'+(seen ? '・答過 '+Math.min(seen, n) : '')+'</a>';
 }
 // Subject overview uses one canonical YouTube playlist link per adopted
 // course. Individual watch links stay inside chapter tasks below.
@@ -581,7 +590,22 @@ function dayCountText(items, short){
   return (ho ? '講義' + (v ? ' + ' : '') : '') + (v ? (short ? '' : '共 ') + v + ' 支' : '');
 }
 function fmtMin(m){ m = Math.round(m); const h = Math.floor(m/60), r = m%60; return h ? h+' 小時'+(r ? ' '+r+' 分' : '') : r+' 分'; }
+// 今日複習 (review.html): cards due today plus video-quiz answers still wrong;
+// shown on top of today's list only when there is something to review.
+function reviewBanner(iso){
+  if(iso !== isoDate(new Date()) || typeof srsDue !== 'function') return '';
+  const n = reviewDueCount();
+  if(!n) return '';
+  return '<a class="calday-review" href="/review.html">'+svgIcon('clipboard',14)+'<b>今日複習 '+n+' 題</b><span>先花幾分鐘把該複習的卡片與錯題做完</span></a>';
+}
 function renderCalDayDetail(iso){
+  return reviewBanner(iso) + renderCalDayDetailInner(iso);
+}
+// due cards of chapters that still have cards (as review.html counts them)
+function reviewDueCount(){
+  return srsDue().filter(function(id){ return (HANDOUTS[id.split(':')[0]] || {}).cards; }).length + wrongQuizDue().length;
+}
+function renderCalDayDetailInner(iso){
   const p = iso.split('-');
   const d = new Date(Number(p[0]), Number(p[1])-1, Number(p[2]));
   const info = dayInfo(d);
@@ -935,7 +959,7 @@ async function init(){
       // small enough to share the header row with the title and subject tabs
       +'<div class="rec-row sp-rec-row">'+booksHtml+videosHtml+'</div>'
       // every chapter's 重點整理 on one page, for the last round of review
-      +'<a class="ch-study-link ch-lesson-link sp-review-link" style="--ch-color:'+s.color+'" href="/review.html?s='+s.id+'">'+svgIcon('clipboard',14)+s.name+' 速記卡：每章重點整理一頁看完</a>'
+      +'<a class="ch-study-link ch-lesson-link sp-review-link" style="--ch-color:'+s.color+'" href="/review.html?s='+s.id+'">'+svgIcon('clipboard',14)+s.name+' 速記卡與自我檢查：每章重點一頁看完、逐章練題</a>'
       +'<div class="filter-bar"><div class="filter-chips" data-chfilter>'
         +'<button class="filter-chip ui-btn active" type="button" data-pri="all" aria-pressed="true">全部</button>'
         +'<button class="filter-chip ui-btn" type="button" data-pri="must" aria-pressed="false">必考</button>'
@@ -1118,6 +1142,12 @@ function goSearchChapter(subjectName,index){
   writeRoute(subjectsRoute(), true);
 }
 document.addEventListener('DOMContentLoaded', function(){
+  // how many are due today, on the 今日複習 button
+  const rb = document.getElementById('fabReviewBadge');
+  if(rb && typeof srsDue === 'function') loadHandoutIndex().then(function(){
+    const n = reviewDueCount();
+    if(n){ rb.textContent = n > 99 ? '99+' : String(n); rb.hidden = false; rb.parentNode.setAttribute('aria-label', '今日複習（' + n + ' 題）'); }
+  });
   const globalInput = document.getElementById('globalSearchInput');
   if(globalInput) globalInput.addEventListener('input',function(){renderGlobalSearch(this.value);});
   if(globalInput) globalInput.addEventListener('keydown',function(e){

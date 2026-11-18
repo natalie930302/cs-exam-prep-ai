@@ -283,7 +283,7 @@
    "why": "從右邊 scan，碰到運算子就和它後面兩個數運算；reverse Polish 才是從左到右。"
   },
   {
-   "q": "t + (u * v) / (w + x − y ↑ z) 這棵 tree 的 postorder（reverse Polish）是？",
+   "q": "t + (u * v) / (w + (x − y ↑ z)) 的 expression tree，postorder（reverse Polish）是？",
    "opts": [
     "t u v * w x y z ↑ − + / +",
     "+ t / * u v + w − x ↑ y z",

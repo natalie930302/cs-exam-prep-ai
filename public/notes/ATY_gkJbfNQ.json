@@ -270,7 +270,7 @@
    "why": "D 連到 A 一條、B 兩條、C 三條，共 6。"
   },
   {
-   "q": "照字母順序從 A 出發，第一次 get stuck 時走出的 circuit 是？",
+   "q": "上題的圖照字母順序從 A 出發，第一次 get stuck 時走出的 circuit 是？",
    "opts": [
     "A B D C D A",
     "A B A C D A",
@@ -281,7 +281,7 @@
    "why": "A→B，B→A（A 優先），A→C，C→D，D→A，A 的邊用完。"
   },
   {
-   "q": "最後得到的 Euler circuit 是？",
+   "q": "上題的圖，最後得到的 Euler circuit 是？",
    "opts": [
     "C D A B D B A C D C",
     "A B C D A",

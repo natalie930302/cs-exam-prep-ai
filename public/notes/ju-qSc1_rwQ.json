@@ -278,7 +278,7 @@
  ],
  "quiz": [
   {
-   "q": "cut S = {s, a, b}、T = {c, d, t} 的 capacity 是？（c(s,c)=3、c(a,d)=6、c(a,t)=3、c(b,d)=2）",
+   "q": "cut S = {s, a, b}、T = {c, d, t} 的 capacity 是？（從 S 指到 T 的邊：c(s,c)=3、c(a,d)=6、c(a,t)=3、c(b,d)=2）",
    "opts": [
     "14",
     "10",

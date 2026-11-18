@@ -214,7 +214,7 @@ request edge 和 assignment edge 都是已經發生的事，可是 worst case �
 **代價**：系統拆開來看，資源種類比想像多很多，process 也常常幾千個，n 不會小；跑一次找圈，最好的演算法也要 n² 等級，很花時間。除非真的很怕 deadlock，系統不一定願意付這個代價。
 
 ### Safe、unsafe 與 deadlock
-多個 instance 不好畫圖，改用 **Banker's algorithm（銀行家演算法）**，計算量大約也是 n²。把系統所有可能的狀態分成兩區：
+多個 instance 不好畫圖，改用 **Banker's algorithm（銀行家演算法）**，safety algorithm 的計算量是 m × n² 等級（n 個 process、m 種資源）。把系統所有可能的狀態分成兩區：
 
 - **Safe state**：絕對不可能發生 deadlock。
 - **Unsafe state**：最壞情況下**有可能** deadlock。真正的 deadlock 只是 unsafe 裡面的一小塊。

@@ -240,7 +240,7 @@
    "why": "若 > 0，incomplete path 可以延伸到 T 裡的端點，矛盾；flow 是非負整數，所以只能是 0。"
   },
   {
-   "q": "老師的例子用 Edmonds–Karp 跑完，max flow 和 min cut 是？",
+   "q": "network 的 capacity：(s,a) 5、(s,b) 4、(s,c) 3、(a,d) 6、(a,t) 3、(b,d) 2、(c,d) 7、(c,t) 5、(d,t) 4。用 Edmonds–Karp 跑完，max flow 和 min cut capacity 是？",
    "opts": [
     "10 和 10",
     "8 和 10",

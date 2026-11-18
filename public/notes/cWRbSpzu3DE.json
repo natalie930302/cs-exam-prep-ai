@@ -495,7 +495,7 @@
     "看兩個 bit 決定加或減"
    ],
    "ans": "Multiplier0 = 1 就 Product += Multiplicand；Multiplicand 左移、Multiplier 右移",
-   "why": "這是照紙筆算法直接搬過去的版本，需要 64-bit 的 Multiplicand 與 ALU。"
+   "why": "這是照紙筆計算直接搬過去的版本，需要 64-bit 的 Multiplicand 與 ALU。"
   },
   {
    "q": "改良版乘法器的關鍵改變是？",

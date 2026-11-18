@@ -556,7 +556,7 @@ edge 上可以加一個數字，叫 **weight**，表示這條邊多遠、多貴�
 
 - **vertex** 是交叉路口（intersection）；
 - 一條路被路口切成很多 **road segment**（路段），每一段是一條 **edge**；
-- 道路通常雙向，去也會過、回也會過，所以 road network 是**有向圖**，雙向道就是兩條方向相反的邊；
+- 道路有單行道，也有去回都能走的雙向道，所以 road network 用**有向圖**表示，雙向道就是兩條方向相反的邊；
 - 路段的 cost 是實際距離（physical distance）。
 
 給起點 S、終點 D，找一組路段把 S 接到 D 且距離總和最小，就是 **shortest path**。例如路線 S → B → A → C → D 的距離總和 8 是所有走法中最短的。

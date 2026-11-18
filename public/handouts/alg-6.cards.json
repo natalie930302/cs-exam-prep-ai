@@ -1,0 +1,176 @@
+{"cards":[
+  {"sec":"解題心法：CAR","q":"解題心法 CAR 的三個字母各代表什麼？","a":"**C**riticality：抓重點，先丟掉不重要的細節。\n**A**bstraction：用乾淨的形式表示（例如畫成 graph），先想 high level 再想 implementation。\n**R**estriction：先把瑣碎限制放一邊解簡化版，再延伸回去。"},
+
+  {"sec":"Graph 的起源：Euler 與七橋問題","q":"七橋問題為什麼不可能「每座橋剛好走一次並回到起點」？","a":"每經過一塊陸地要用掉一進一出兩座橋，所以每個點的 degree 必須是偶數。\n七橋問題四塊陸地的 degree 是 5、3、3、3，全是奇數，所以不可能。"},
+  {"sec":"Graph 的起源：Euler 與七橋問題","q":"一張連通的無向圖，各點 degree 為 2、2、3、3、4。能不能每條邊剛好走一次並回到起點？不要求回到起點呢？","a":"回到起點：不行，有兩個奇數 degree 的點。\n不回起點：可以，奇數點剛好兩個，從其中一個奇數點出發、在另一個結束。"},
+
+  {"sec":"Graph 的定義","q":"undirected edge 和 directed edge 的寫法差在哪？為什麼有向邊不能用大括號？","a":"無向邊寫 {u, v}（無序對，{u, v} = {v, u}）；有向邊寫 (u, v)（有序對，起點在前，(u, v) ≠ (v, u)）。\n大括號是集合、沒有順序，用在有向邊就等於說兩點沒有先後，數學上是錯的。"},
+  {"sec":"Graph 的定義","q":"有向圖中只有一條邊 u → v。u 和 v 誰是誰的鄰居？","a":"v 是 u 的鄰居（u 一步走得到 v）。\nu **不是** v 的鄰居，因為 v 沒有邊走到 u。"},
+
+  {"sec":"Graph 可以表示什麼","q":"什麼樣的問題適合 model 成 graph？以「倫敦地鐵圖」說明好的抽象化。","a":"只要有一群分開的物件、而你關心的是它們之間的關係，就能畫成 graph（物件是 vertex、關係是 edge）。\n地鐵圖不管實際距離，只保留「哪兩站直接相鄰」，只留下在乎的資訊就是好的抽象化。"},
+
+  {"sec":"Graph search 與它的應用","q":"graph search 要解的探索問題有哪幾種？舉兩個應用。","a":"找 s 到 t 的一條路、找從 s 出發的路徑、找 s 走得到的所有頂點、走遍所有頂點或邊。\n應用例：web crawling（跟著連結走）、garbage collection（找走得到的資料）、社群網路找朋友的朋友、魔術方塊求解。"},
+
+  {"sec":"Path、cycle、connected 與 distance","q":"path、simple path、cycle 的定義各是什麼？","a":"path：一串點 v₁…vₖ，連續兩點之間一定有 edge。\nsimple path：path 上的點全都不重複。\ncycle：終點就是起點，頭尾接成一圈。"},
+  {"sec":"Path、cycle、connected 與 distance","q":"兩點的 distance 怎麼定義？兩點之間沒有任何 path 時 distance 是多少？","a":"所有走法裡**最少經過幾條 edge**。\n完全沒有 path 時 distance 是 ∞。"},
+
+  {"sec":"Tree 與 rooted tree","q":"n 個點的無向圖，「connected」「沒有 cycle」「剛好 n − 1 條 edge」三個條件有什麼關係？","a":"任兩個成立就推得第三個，三個都成立就是 tree。\n所以 tree 是最省 edge 的 connected graph：剪掉任一條就斷開，任兩點之間 path 唯一。"},
+  {"sec":"Tree 與 rooted tree","q":"判斷對錯並說明：一個 10 個點、7 條 edge、沒有 cycle 的無向圖，一定剛好分成 3 塊。","a":"**對**。沒有 cycle 的圖是 forest，每一塊是一棵 tree，k 塊 tree 共有 n − k 條 edge。\n10 − k = 7，所以 k = 3。"},
+
+  {"sec":"Connected component 與 degree","q":"handshaking lemma 是什麼？為什麼成立？","a":"所有頂點的 degree 加總 = 2|E|。\n每條 edge 讓兩個端點的 degree 各加 1，被數了兩次。注意是「邊數」的兩倍，不是點數。"},
+  {"sec":"Connected component 與 degree","q":"有沒有一張無向圖有 5 個點、每個點 degree 都是 3？","a":"**沒有**。degree 總和會是 5 × 3 = 15，但由 handshaking lemma 總和必須是 2|E|，一定是偶數。\n（推論：奇數 degree 的點一定有偶數個。）"},
+
+  {"sec":"有向圖：in-degree 與 out-degree","q":"有向圖的 handshaking lemma 怎麼寫？有向圖 A→B、A→C、B→C、C→D，各點的 in／out-degree 是多少？","a":"Σ out-degree = Σ in-degree = |E|（每條邊貢獻一個 out、一個 in）。\nA：out 2、in 0；B：out 1、in 1；C：out 1、in 2；D：out 0、in 1。兩邊加總都是 4 = |E|。"},
+
+  {"sec":"圖怎麼存進電腦","q":"adjacency matrix 和 adjacency list 的空間各是多少？無向圖 n = 6、m = 8 時各要幾格？","a":"matrix：Θ(n²)，這裡 6 × 6 = **36** 格。\nlist：vertex array n 格 + 每條邊在兩端各記一次 2m 格 = n + 2m = 6 + 16 = **22** 格，Θ(n + m)。（有向圖每條邊只記一次，n + m。）"},
+  {"sec":"圖怎麼存進電腦","q":"比較 adjacency matrix 與 adjacency list：查一條 edge 在不在、列出一個點的所有鄰居，各要多少時間？","a":"查 edge：matrix 直接看那格 O(1)；list 要沿串列找，O(degree)，worst case O(n)。\n列鄰居／求 degree：matrix 要掃整個 row Θ(n)；list 只要走那條串列 O(degree)。"},
+  {"sec":"圖怎麼存進電腦","q":"為什麼很 dense 的圖用 adjacency matrix 可能比 adjacency list 還省空間？","a":"matrix 每格只要 1 個 bit，共 V² 個 bit；list 的每個節點都要存指標，是 V + E 個 word（一個 word 32 或 64 bit）。\n邊數接近 V² 時，list 的指標開銷反而比 matrix 大。"},
+  {"sec":"圖怎麼存進電腦","q":"什麼是 implicit graph？什麼時候要用？","a":"Adj(u) 不事先存好，而是一個函式：需要時才算出 u 的鄰居。\n用在圖大到存不下的情況，例如魔術方塊的狀態圖，只在搜尋時產生需要的那一小塊。"},
+
+  {"sec":"s-t connectivity","q":"什麼是 s-t connectivity problem？用什麼方法解？","a":"給圖 G 和兩點 s、t，問 s 到 t 有沒有 path。\n從 s 做一次 BFS 或 DFS，看 t 有沒有被走到（例如老鼠走迷宮：格子是 node、沒牆的相鄰格連 edge）。"},
+
+  {"sec":"Traversal 的兩個動作：visit 與 explore","q":"traversal 裡的 visit 和 explore 各是什麼？BFS 和 DFS 的差別在哪？","a":"visit：走到某個頂點上；explore：站在一個頂點，把它所有相鄰頂點都拜訪一遍。\n兩者都只用這兩個動作，差別只在**下一個要探索誰**：BFS 把一個點探索完才換下一個；DFS 一拜訪到新點就暫停目前的點、先去探索新點。"},
+  {"sec":"Traversal 的兩個動作：visit 與 explore","q":"在 binary tree 上，BFS 和 DFS（先左後右）分別相當於哪一種 tree traversal？","a":"BFS ≈ **level order**（一層一層、每層由左到右）。\nDFS ≈ **pre-order**（先根、再左、再右）。"},
+
+  {"sec":"BFS：像水波一圈一圈往外擴散","q":"無向圖 edge：1–2、1–3、2–4、3–4、3–5、4–6、5–6、6–7。從 1 做 BFS（鄰居編號小的先），寫出每一層。","a":"L0 = {1}\nL1 = {2, 3}\nL2 = {4, 5}（4 由 2 發現、5 由 3 發現）\nL3 = {6}（由 4 發現）\nL4 = {7}"},
+  {"sec":"BFS：像水波一圈一圈往外擴散","q":"BFS 的 layer 編號代表什麼？為什麼一個點不會被放到比最短距離更深的層？","a":"layer = 從起點到這個點最少要經過幾條 edge（distance）。\n每個點在**最早被 reach 的那一刻**就被 label，之後再看到就 skip；BFS 先把 k 步到得了的點找完才往 k + 1 步走。"},
+  {"sec":"BFS：像水波一圈一圈往外擴散","q":"判斷對錯並說明：無向圖的 BFS 中，每一條 edge 兩端的 layer 一定剛好差 1。","a":"**錯**。性質是 |i − j| ≤ 1：可以差 1，也可以差 0（同一層）。\n證明：x 在 Lᵢ 時，x 的鄰居不是在 Lᵢ₊₁ 第一次被 reach，就是更早已被看過，所以最深只到 i + 1。"},
+
+  {"sec":"用 queue 實作 BFS","q":"為什麼 BFS 用 queue？寫出 BFS 必須遵守的兩條規則。","a":"新拜訪的點排到後面、要探索時從前面拿，先進先出（FIFO），所以是 queue。\n規則一：探索一個點時要把它所有未拜訪的鄰居都拜訪完，才換下一個點。\n規則二：下一個要探索的點只能從 queue 前端取。"},
+  {"sec":"用 queue 實作 BFS","q":"無向圖 edge：1–2、1–3、2–4、3–4、3–5、4–6、5–6、6–7。從 1 出發，「1 3 2 5 4 6 7」是合法的 BFS 嗎？","a":"**合法**。探索 1 拜訪 3、2（queue 3 2）→ 探索 3 拜訪 5、4（queue 2 5 4）→ 探索 2，4 已拜訪 → 探索 5 拜訪 6 → 探索 4，沒有新點 → 探索 6 拜訪 7。\n起點、鄰居順序可以任選，只要探索順序跟 queue 一致。"},
+  {"sec":"用 queue 實作 BFS","q":"同一張圖（1–2、1–3、2–4、3–4、3–5、4–6、5–6、6–7），從 1 出發，「1 2 3 4 6 5 7」是合法的 BFS 嗎？","a":"**不合法**。探索 1 得 2、3；探索 2 得 4（queue 3 4）。下一個一定探索 3，會拜訪 5，所以 5 必須出現在 6 前面。\n6 是 4 的鄰居，要等 3 探索完才輪到 4。"},
+  {"sec":"用 queue 實作 BFS","q":"無向圖的 BFS spanning tree 中，非樹邊有什麼特性？會不會出現 back edge？","a":"非樹邊兩端在同一層或相鄰兩層，BFS 裡叫 cross edge。\n不會有 back edge：連到更上面好幾層的祖先，那個點早就該在更前面的層被發現。"},
+
+  {"sec":"BFS 寫成程式","q":"frontier 版 BFS 中，判斷「v 看過沒」為什麼要用 level 而不能用 parent？","a":"起點的 parent 是 None。若用「parent[v] 是 None」判斷沒看過，起點會被當成沒看過、又被加進去。\n應該問 v 在不在 level（或 seen）裡。"},
+  {"sec":"BFS 寫成程式","q":"queue 版 BFS 的 seen 為什麼要用 hash table（dict／set）而不是 list？","a":"每看到一條邊就要查一次「看過沒」。hash table 平均 O(1)；用 list 每次要從頭找，O(V)，總時間就不再是線性。"},
+  {"sec":"BFS 寫成程式","q":"為什麼 BFS 用 adjacency list 是 O(V + E)、用 adjacency matrix 是 O(V²)？","a":"list：每個點只進 queue 一次、掃一次自己的串列，串列總長 Σ|Adj[v]| = 2E（有向圖 E），加上 V 個點 → O(V + E)。\nmatrix：每個點列鄰居都要掃整個 row V 格，V 個點 → O(V²)。"},
+
+  {"sec":"Parent 指標：BFS 送你的最短路徑","q":"怎麼用 BFS 的 parent 指標找出 s 到 v 的最短路徑？最短路徑唯一嗎？","a":"從 v 沿 parent 一路走回 s，再把這條路反過來讀，就是一條邊數最少的路徑，長度 = level[v]。\n不一定唯一，parent 只記其中一條（每個點只記一個 parent）。"},
+  {"sec":"Parent 指標：BFS 送你的最短路徑","q":"BFS 算距離時，處理 B 看到已經在 seen 裡的鄰居 A，能不能把 d(A) 改成 d(B) + 1？","a":"**不能**。有笑臉（在 seen 裡）的點距離已經算好，絕對不能更新。\n例如把起點 A 改成 2，後面全部錯。這是 BFS 保證最短的關鍵。"},
+
+  {"sec":"Connected component","q":"connected component 的定義為什麼要強調 maximal？","a":"component 是一群兩兩之間都有 path 的點，而且要長到再加任何點都不再連通為止。\n例如 1～8 一整塊時，只拿 1～5 雖然兩兩連通，但不是 component。"},
+  {"sec":"Connected component","q":"「R = {s}，反覆找一端在 R、一端不在 R 的 edge 把另一端加入」為什麼結束時不會漏掉 s 的 component 裡的點？","a":"反證：設 w 在 R 外但 s 到 w 有 path。沿 path 走，第一個跑出 R 的點 b，它前一點 a 在 R 裡，(a, b) 正是一端在 R、一端在外的 edge，procedure 不可能停下，矛盾。"},
+  {"sec":"Connected component","q":"小畫家的油漆桶（flood fill）怎麼用 graph 演算法做？","a":"每個 pixel 是 node，相鄰且同色的 pixel 之間建 edge。\n從點下去的 pixel 做 BFS（或 DFS），走得到的就是同色相連的那塊 connected component，全部換色。"},
+
+  {"sec":"DFS：用 stack 一路往深處走","q":"DFS 為什麼用 stack？stack 裡放的是什麼點？","a":"一拜訪到新點，目前的點就暫停、放進 stack；走到死路就從 stack 頂端拿回最近暫停的點繼續，後進先出（LIFO）。\nstack 裡放的是「被暫停、還有可能有鄰居沒看完」的點。"},
+  {"sec":"DFS：用 stack 一路往深處走","q":"無向圖 edge：1–2、1–3、2–4、3–4、3–5、4–6、5–6、6–7。從 1 出發，「1 3 5 6 4 2 7」是合法的 DFS 嗎？","a":"**合法**。1 → 3 → 5 → 6 → 4 → 2；2 沒有新鄰居，退回 4、再退回 6，6 還有 7 → 7。\n每一步都沿邊走，而且只在目前的點沒有新鄰居時才退回。"},
+  {"sec":"DFS：用 stack 一路往深處走","q":"同一張圖（1–2、1–3、2–4、3–4、3–5、4–6、5–6、6–7），「1 2 4 6 3 5 7」是合法的 DFS 嗎？","a":"**不合法**。走到 6 時，6 還有未拜訪的鄰居 5、7，必須往其中一個走；3 不是 6 的鄰居，DFS 不能跳過去。"},
+
+  {"sec":"BFS 與 DFS 的時間","q":"有人說「BFS、DFS 每個點只拜訪一次，所以是 O(n)」。錯在哪？正確答案是什麼？","a":"只算了頂點，沒算邊：探索每個點都要掃它的鄰居，加起來等於把每條邊檢查過。\nadjacency list：O(V + E)；adjacency matrix：O(V²)。"},
+
+  {"sec":"DFS 的想法：一路往深處走，走不下去才回頭","q":"DFS 的規則用一句話怎麼說？跟 BFS 比，各擅長什麼？","a":"有路（有邊連到沒去過的點）就往深處走，撞到死路才 backtrack 回到上一個還有路的地方。\nBFS 擅長從 s 出發的最短路徑；DFS 常用來探索整張圖、找 cycle、做 topological sort。"},
+
+  {"sec":"DFS(u) 的遞迴寫法","q":"遞迴版 DFS 的核心三步是什麼？「回頭」在程式哪裡發生？","a":"檢查（來過就不再進）、標記 visited、對每個鄰居遞迴。\n回頭不用另外寫：遞迴函式 return 就自動回到上一個分岔點。"},
+  {"sec":"DFS(u) 的遞迴寫法","q":"dfs(at) 版本裡 `if visited[at]: return` 這行拿掉會怎樣？","a":"只要圖上有 cycle（無向圖一條邊兩端就會互相呼叫），就會一直繞圈、無窮遞迴。\n這行 base case 保證每個點只被處理一次。"},
+
+  {"sec":"例題一：從節點 0 出發走一遍","q":"無向圖 edge：1–2、1–3、2–4、3–4、3–5、4–6、5–6、6–7。從 1 做遞迴 DFS（鄰居編號小的先），計數器每次發現或結束都加 1，寫出各點的 d／f。","a":"走法：1 → 2 → 4 → 3 → 5 → 6 → 7，再一路退回。\nd：1=1、2=2、4=3、3=4、5=5、6=6、7=7\nf：7=8、6=9、5=10、3=11、4=12、2=13、1=14"},
+  {"sec":"例題一：從節點 0 出發走一遍","q":"CLRS 的 DFS 用 white、gray、black 三色，各代表什麼？","a":"white：還沒碰過。\ngray：拜訪中，還在遞迴堆疊上、沒退出。\nblack：已經結束（鄰居都處理完）。"},
+
+  {"sec":"例題二：鄰居編號小的先走，1 2 3 5 4 6 7 8","q":"在無向圖上跑完 DFS，每條（走得到的）edge 會被檢查幾次？為什麼？","a":"**兩次**。無向邊出現在兩個端點的鄰居串列裡，兩端各看它一次（一次可能是走過去，另一次發現對方已 explored 就 skip）。\n所以總時間跟邊數成正比。"},
+  {"sec":"例題二：鄰居編號小的先走，1 2 3 5 4 6 7 8","q":"手跑 DFS 時，dead end 之後要回到哪一個點？用遞迴怎麼看出來？","a":"回到呼叫自己的那一個點（DFS tree 上的 parent），也就是 call stack 頂端下一層。\n例：從 5 走到 4，4 沒有新鄰居，return 回 5，5 再試剩下的鄰居。"},
+
+  {"sec":"DFS tree：tree edge 與 non-tree edge","q":"無向圖的 DFS tree 中，non-tree edge 有什麼性質？","a":"任一條 non-tree edge (x, y)，一端一定是另一端的 ancestor（祖先），不會連兩個沒有祖孫關係的點。\n證明：設 x 先被 explore，x 檢查 (x, y) 時 y 已 explored，所以 y 是在 DFS(x) 執行期間被 explore 的，落在 x 的子樹裡。"},
+  {"sec":"DFS tree：tree edge 與 non-tree edge","q":"比較 BFS tree 和 DFS tree 的形狀，以及它們的 non-tree edge 連的是誰。","a":"BFS tree 寬而淺（矮胖），non-tree edge 連同層（兄弟）或相鄰層（叔姪），不連父母。\nDFS tree 細而長（瘦長），non-tree edge 連祖先與子孫。"},
+
+  {"sec":"實作需要的 data structure：queue 與 stack","q":"queue 和 stack 各要幾個 pointer？為什麼常用 linked list 實作？","a":"queue：front（拿）和 rear（放）兩個，FIFO；stack：只要 top 一個，LIFO。\nlinked list 長度可變，不知道會進多少資料時能動態長大縮小。"},
+
+  {"sec":"實作 BFS：L[i]、Discovered 與 T","q":"判斷對錯並說明：BFS 一定要用 queue。","a":"**不完全對**。每一層 L[i] 分開存的版本，每層用 queue 或 stack 都行，層數不變，只會改變誰當 parent。\n只有把所有點放在同一條 list 時，才一定要用 queue 保證一層處理完才輪到下一層。"},
+  {"sec":"實作 BFS：L[i]、Discovered 與 T","q":"L[i] 版 BFS 中 Discovered 陣列和集合 T 各做什麼？","a":"Discovered[v]：v 有沒有被看到過，第一次看到才設 true 並放進下一層，避免重複。\nT：收集 tree edge，第一次發現 v 時把 (u, v) 加進 T，最後 T 就是 BFS tree。"},
+
+  {"sec":"實作 DFS：recursive 或明著用 stack","q":"iterative DFS（pop 出 u、沒 explore 過就 explore 並 push 所有鄰居）為什麼 pop 出來時一定要先檢查？","a":"同一個點可能被不同鄰居 push 好幾次，pop 出來時可能已經 explore 過了，要跳過。\n另外：鄰居依小到大 push 時，大的先被 pop；想得到跟遞迴版（小的先走）一樣的順序，要由大到小 push。"},
+  {"sec":"實作 DFS：recursive 或明著用 stack","q":"implicit stack 和 explicit stack 指什麼？","a":"遞迴版 DFS 用系統的 call stack，不用自己管，叫 implicit。\nwhile 迴圈版要自己宣告一個 stack，叫 explicit。兩者時間都是 adjacency list O(n + m)、matrix O(n²)。"},
+
+  {"sec":"用 DFS 幫每個 connected component 編號","q":"findComponents 怎麼算出每個點屬於第幾個 component？時間多少？","a":"依編號掃每個點：還沒拜訪過就 count++，再從它做 DFS，走到的點都記 components[v] = count；拜訪過的就跳過。\n最後 count 就是 component 數。每個點、每條邊只處理常數次，O(V + E)。"},
+  {"sec":"用 DFS 幫每個 connected component 編號","q":"無向圖點 0～7，edge：0–1、1–2、3–4、5–6、6–7、7–5。跑 findComponents（count 先加再 DFS），每個點的 id 是多少？共幾塊？","a":"從 0：{0, 1, 2} → id 1\n從 3：{3, 4} → id 2\n從 5：{5, 6, 7} → id 3\n共 **3** 塊。"},
+
+  {"sec":"DFS 的其他用途","q":"列出至少四個以 DFS 為基礎的經典圖論應用。","a":"cycle detection、topological sort、找 SCC（Kosaraju）、找 articulation point／bridge、bipartite 檢查、數 connected component、在 flow network 找 augmenting path。"},
+
+  {"sec":"寫成程式：dict 版 adjacency list 與遞迴 DFS","q":"遞迴 DFS 若只在呼叫鄰居前標記（`if n not in visited: visited[n] = True; DFS_visit(n)`），卻沒標記起點，會出什麼問題？","a":"起點從來沒被標記，走到一個指回起點的邊（例如 A → B → C → A）時會以為 A 沒去過，又走回 A 再繞一次。\n修法：一進 DFS_visit 先標記自己，或在 DFS 裡先設 parent[s] = None。"},
+  {"sec":"寫成程式：dict 版 adjacency list 與遞迴 DFS","q":"用 parent 字典記錄 DFS 時，判斷「n 拜訪過沒」為什麼要寫 `n in parent`，不能寫 `parent[n] is None`？","a":"起點的 parent 就是 None，用 `parent[n] is None` 會把起點當成沒去過。\n只要在字典裡就算拜訪過，value 才是「從誰走來」。"},
+
+  {"sec":"DFS-visit 與外層 DFS","q":"為什麼除了 DFS-visit 還要一個外層 DFS 迴圈？","a":"DFS-visit(s) 只拜訪 s 走得到的點。圖不連通，或有向圖不是 strongly connected 時，一次走不完。\n外層對每個還沒看過的頂點各開一次搜尋，得到一片 DFS forest，確保每個點都被拜訪。"},
+  {"sec":"DFS-visit 與外層 DFS","q":"判斷對錯並說明：在有向圖上跑外層 DFS，得到的 DFS forest 中每一棵樹就是一個 SCC。","a":"**錯**。例如 a → b、b → e、e → d、d → b：從 a 出發一棵樹含 a、b、e、d，但 b 回不到 a，SCC 是 {b, d, e} 和 {a}。\n只有無向圖上每棵樹才剛好是一個 connected component；找 SCC 要用 Kosaraju。"},
+
+  {"sec":"DFS 的時間：Θ(V + E)","q":"為什麼 DFS 是 Θ(V + E)？DFS 能不能拿來求最短路徑？","a":"外層迴圈 O(V)；每個頂點最多呼叫一次 DFS-visit，裡面掃它的出邊 |Adj[v]|，加總 Σ|Adj[v]| = E（無向 2E）。\n不能：DFS 不保證最短，例如有 a → d 一步可到，DFS 卻可能走 a → b → e → d。最短路徑（無權重）用 BFS。"},
+
+  {"sec":"例題：A～G 的 DFS 與 DFS tree","q":"為什麼 DFS 走過的邊叫 tree edge？","a":"每個被發現的點都有一個 parent 指標（從誰走來），每個點只有一個 parent，連起來就是一棵（或一片 forest）以起點為根的樹。\n走過的邊正是這些 parent 指標，所以叫 tree edge。"},
+
+  {"sec":"邊的分類：tree、forward、back、cross","q":"有向圖 DFS 的四種邊 tree、forward、back、cross 各怎麼定義？","a":"tree：DFS 走過去、發現新點的邊。\nforward：沒走，從祖先指向後代。\nback：指回祖先（含自迴圈）。\ncross：兩端沒有祖先關係（可跨樹，也可在同一棵樹的兩個子樹間）。"},
+  {"sec":"邊的分類：tree、forward、back、cross","q":"有向圖 a→b、a→c、b→c、b→d、c→a、d→c，從 a 做 DFS（鄰居依字母序）。把每條邊分類。","a":"走法 a → b → c，c 結束；b → d，d 結束。d：a=1、b=2、c=3、d=5。\na→b、b→c、b→d：tree\nc→a：back（a 是灰色，在堆疊上）\nd→c：cross（c 已黑，d[d] = 5 > d[c] = 3）\na→c：forward（c 已黑，d[a] = 1 < d[c] = 3）"},
+  {"sec":"邊的分類：tree、forward、back、cross","q":"DFS 看到 u → v 時，怎麼用 v 的顏色和 discovery time 判斷邊的種類？","a":"v white → tree edge\nv gray（還在遞迴堆疊上）→ back edge\nv black 且 d[u] < d[v] → forward edge\nv black 且 d[u] > d[v] → cross edge"},
+
+  {"sec":"無向圖的 DFS 只有 tree edge 和 back edge","q":"為什麼無向圖的 DFS 不會出現 cross edge？","a":"假設 x、y 有邊、在不同子樹。DFS 停在 x 時就會看到 x–y，若 y 還沒去過就直接走過去，變成 tree edge。\n所以非樹邊兩端一定有祖孫關係。"},
+  {"sec":"無向圖的 DFS 只有 tree edge 和 back edge","q":"為什麼無向圖的 DFS 不會出現 forward edge？","a":"若 s 是 b 的祖先且有邊 s–b，DFS 停在 b 時就會先看到 b–s，此時 s 還在堆疊上，所以被分成 back edge。\n輪不到 s 回頭時再把它當成往後代的 forward edge。"},
+
+  {"sec":"Cycle detection：有 cycle ⇔ 有 back edge","q":"cycle detection 的定理是什麼？怎麼用？","a":"G 有 cycle ⇔ 外層版 DFS 出現 back edge（有向、無向都成立，與起點和鄰居順序無關）。\n跑一次 DFS，Θ(V + E) 就能判斷；找到 back edge u → p，再沿 tree edges 從 p 走到 u，就得到那個 cycle。"},
+  {"sec":"Cycle detection：有 cycle ⇔ 有 back edge","q":"證明「有 cycle 就一定有 back edge」時，v₀ 要怎麼選？為什麼 vₖ → v₀ 是 back edge？","a":"選 v₀ 為 cycle 上**第一個被 DFS 碰到的點**。\n環上其他點都從 v₀ 走得到，會在 v₀ 結束前被拜訪且結束（括號配對：v₀ 開始、vₖ 開始、vₖ 結束、v₀ 結束）。所以 vₖ 看 vₖ → v₀ 時 v₀ 還在堆疊上，是祖先 → back edge。"},
+
+  {"sec":"Articulation point 與 biconnected","q":"什麼是 articulation point？什麼叫 biconnected？","a":"在連通圖中拿掉某頂點（連同它的邊）會讓圖斷成多個 component，這個點就是 articulation point。\n沒有 articulation point 的連通圖叫 biconnected。"},
+  {"sec":"Articulation point 與 biconnected","q":"怎麼消除一個 articulation point？","a":"找出拿掉它之後分開的兩塊，在兩塊之間補一條邊。\n例：拿掉 3 會分成 {1, 2, 4} 和 {5, 6}，加 4–5 後再拿掉 3 仍連通。"},
+
+  {"sec":"找 articulation point 的四個步驟","q":"lowest number L[v] 怎麼定義？遞迴時怎麼算？","a":"從 v 沿 tree edge 往下走（可走 0 步），最後最多走**一條** back edge，能碰到的最小 discovery time d。\n退回時算：L[v] = min(d[v]，v 的每條 back edge (v, w) 的 d[w]，每個 child c 的 L[c])；u–parent 那條 tree edge 要排除。"},
+  {"sec":"找 articulation point 的四個步驟","q":"判斷 articulation point 的條件是什麼？root 為什麼要另外判斷？","a":"非 root 的 u：存在 child v 使 **L[v] ≥ d[u]**（是 ≥ 不是 >），表示 v 那支最多繞回 u，拿掉 u 就斷。\nroot 沒有更上面的點，上式永遠成立，所以改看：root 在 DFS tree 中有 ≥ 2 個 child 才是。"},
+  {"sec":"找 articulation point 的四個步驟","q":"無向圖 edge：1–2、2–3、3–1、3–4、4–5、5–6、6–4、5–7。從 1 做 DFS（鄰居編號小的先），求 d、L，並找出所有 articulation point。","a":"DFS：1 → 2 → 3 → 4 → 5 → 6，回 5 → 7；back edge 3–1、6–4。\nd：1～7 依序是 1～7。\nL：1=1、2=1、3=1、4=4、5=4、6=4、7=7。\n(3, 4)：4 ≥ 3 → 3 是；(4, 5)：4 ≥ 4 → 4 是；(5, 7)：7 ≥ 5 → 5 是；root 1 只有一個 child，不是。答案 **3、4、5**。"},
+
+  {"sec":"Bipartite graph（二分圖）","q":"bipartite graph 的定義是什麼？和 two coloring 有什麼關係？","a":"點可分成 X、Y 兩組，每條 edge 一端在 X、一端在 Y，同組之間沒有 edge。\nbipartite ⇔ 能用兩種顏色塗完，使每條 edge 兩端不同色（two colorable）。"},
+  {"sec":"Bipartite graph（二分圖）","q":"為什麼有 odd cycle 的圖一定不是 bipartite？","a":"沿著 cycle 紅藍交替塗，走奇數條邊回到起點時，起點要塗的顏色跟一開始相反，一定撞色。\n例：三角形怎麼塗都有一條邊兩端同色。"},
+
+  {"sec":"用 BFS 一層一層交替塗色","q":"無向圖 edge：1–2、1–3、1–5、2–4、3–4、4–5。用 BFS 從 1 塗色，是不是 bipartite？","a":"L0 = {1} 紅；L1 = {2, 3, 5} 藍；L2 = {4} 紅。\n每條邊都連一紅一藍，沒有同層 edge → **是 bipartite**，X = {1, 4}、Y = {2, 3, 5}。"},
+  {"sec":"用 BFS 一層一層交替塗色","q":"用 BFS 測 bipartite，失敗的訊號是什麼？圖不 connected 時怎麼辦？時間多少？","a":"有一條 edge 兩端已塗同色，也就是兩端在 BFS 的**同一層**。\n不 connected 時各 component 分開做（外層迴圈對每個未塗色的點開一次 BFS）。時間 O(n + m)。"},
+
+  {"sec":"為什麼對：同層 edge 一定造出 odd cycle","q":"BFS 中有一條 edge 連同一層 Lj 的 x、y，它們的最低共同祖先 z 在 Li。這會形成多長的 cycle？為什麼一定是奇數？","a":"x–y 一條，y 往上到 z 有 j − i 條，z 往下到 x 又 j − i 條，共 **1 + 2(j − i)** 條。\n2(j − i) 是偶數，加 1 一定是奇數 → 有 odd cycle → 不是 bipartite。"},
+  {"sec":"為什麼對：同層 edge 一定造出 odd cycle","q":"下列哪一種一定不是 bipartite：(a) 5 條邊的 cycle (b) tree (c) 4 條邊的 cycle (d) 沒有 edge 的圖？","a":"**(a)**。5-cycle 是 odd cycle；tree、偶數 cycle、空圖都能塗兩色。"},
+
+  {"sec":"延伸：k-coloring 與光罩多次曝光","q":"2-coloring、3-coloring 判定的難度各是多少？planar graph 呢？","a":"2 色：用 BFS 分層塗色，linear time。\n3 色：NP-complete，沒有已知的有效率解法。\nplanar graph：四色定理保證一定能塗成四色。"},
+
+  {"sec":"有向圖的 connectivity","q":"有向圖中 u、v mutually reachable（strongly connected）是什麼意思？為什麼它有遞移性？","a":"有 u 到 v 的 path，**同時**也有 v 到 u 的 path。\n若 u、v 互相可達且 v、w 互相可達，則 u 經 v 到 w、w 經 v 回 u，所以 u、w 也互相可達。"},
+  {"sec":"有向圖的 connectivity","q":"判斷對錯並說明：SCC 只要是「任兩點互相可達」的一群點就行。","a":"**錯**。SCC 還要 **maximal**：長到再加任何點都會破壞互相可達。\n例如一個大 cycle 裡的一小段 {s, b, c}，若還能加 d 仍互相可達，{s, b, c} 就不是 SCC。maximal 也不同於 maximum（全部裡最大的那個）。"},
+
+  {"sec":"Linear time 判定 strongly connected：兩次 BFS","q":"怎麼在 O(n + m) 判斷一張有向圖是不是 strongly connected？","a":"任選 s：在 G 上從 s 做 BFS 得 R（s 到得了誰）；建反向圖 Gʳᵉᵛ，從 s 再做 BFS 得 Rʳᵉᵛ（誰走得回 s）。\nR = Rʳᵉᵛ = V 才是 strongly connected（任兩點都能經 s 互達）。BFS 換成 DFS 也可以。"},
+  {"sec":"Linear time 判定 strongly connected：兩次 BFS","q":"有向圖 s→a、a→b、b→s、b→c。用兩次 BFS 從 s 判斷是否 strongly connected，並說出 R ∩ Rʳᵉᵛ 是什麼。","a":"G 上：R = {s, a, b, c}。\nGʳᵉᵛ 的邊 a→s、b→a、s→b、c→b，從 s：s → b → a，Rʳᵉᵛ = {s, a, b}（c 走不回 s）。\nRʳᵉᵛ ≠ V → **不是** strongly connected。R ∩ Rʳᵉᵛ = {s, a, b} 是包含 s 的那個 SCC。"},
+
+  {"sec":"把 SCC 縮成一點，就得到 DAG","q":"為什麼把每個 SCC 縮成一點後，得到的圖一定是 DAG？","a":"若縮完後 SCC 之間還有 cycle（如 A → B → C → A），A、B、C 的點就彼此可去可回，應該併成同一個 SCC，與它們是不同的 maximal SCC 矛盾。"},
+
+  {"sec":"Theorem：兩個 SCC 不是相同就是 disjoint","q":"為什麼兩個 SCC 不可能部分重疊？","a":"假設 s 的 SCC 和 t 的 SCC 有共同點 w：s、w 互相可達，w、t 互相可達，由遞移性 s、t 互相可達，兩者是同一個 SCC。\n所以 SCC 把所有點切成互不重疊的 partition。"},
+
+  {"sec":"DAG：有方向、沒有 cycle 的圖","q":"沒有 cycle 的無向圖最多幾條 edge？5 個點的 DAG 最多幾條 edge？","a":"無 cycle 無向圖最多 n − 1 條（剛好是 tree）。\nDAG 可以很 dense：所有點編號、每對都畫「小 → 大」，最多 C(5, 2) = **10** 條，仍沒有 cycle。"},
+  {"sec":"DAG：有方向、沒有 cycle 的圖","q":"DAG 適合表示哪類問題？依存關係出現 cycle 會怎樣？","a":"表示 dependency／precedence（先後限制），例如修課的先修、CPU 指令的 data dependency、build 的套件依賴。\n依存關係繞成 cycle 時大家互相等待，就是 deadlock。"},
+
+  {"sec":"Topological ordering（拓撲排序）","q":"topological ordering 的定義是什麼？為什麼有 cycle 的圖排不出來？","a":"把所有點排成 v₁…vₙ，每條 edge vᵢ → vⱼ 都滿足 i < j（所有 edge 由左往右）。\n有 cycle 時，照任何順序排，cycle 繞回起點那一段一定有一條 edge 往左指，違反定義。"},
+  {"sec":"Topological ordering（拓撲排序）","q":"DAG edge：A→C、B→C、B→D、C→E、D→F、E→F、F→G。「B A D C E F G」和「A C B D E F G」是不是合法的 topological order？","a":"「B A D C E F G」：**合法**，每條邊起點都排在終點前面。\n「A C B D E F G」：**不合法**，B → C 卻把 C 排在 B 前面。\n檢查要逐條 edge 看，答案通常不唯一。"},
+
+  {"sec":"DAG 一定有 topological ordering","q":"為什麼每個 DAG 至少有一個沒有 incoming edge 的點？","a":"反證：若每點都有 incoming edge，從任一點沿 incoming edge 一直往回走，走到 n + 1 個點時，由鴿籠原理一定有點重複，兩次出現之間那段就是 cycle，與 DAG 矛盾。"},
+  {"sec":"DAG 一定有 topological ordering","q":"怎麼用歸納法證明 DAG 一定有 topological order？這個證明對應什麼演算法？","a":"挑一個沒有 incoming edge 的點 v 放第一；G − v 仍是 DAG，由歸納假設有 topological order，接在 v 後面即可（v 的邊都指向後面）。\n對應演算法：反覆找 in-degree 0 的點、編號、刪掉。naive 每輪重掃是 O(n²)。"},
+
+  {"sec":"線性時間做法：in-degree ＋ set S（Kahn's algorithm）","q":"Kahn's algorithm 怎麼做到 O(n + m)？","a":"先掃一次所有邊算出 in-degree，in-degree 0 的點放進 S。\n每輪從 S 取一點編號，把它出邊指到的點 in-degree − 1，歸零就放進 S。每點進出 S 一次、每條邊扣一次 → O(n + m)，不必每輪重掃整張圖。"},
+  {"sec":"線性時間做法：in-degree ＋ set S（Kahn's algorithm）","q":"DAG：A→B、A→C、B→D、C→D、C→F、D→E。用 Kahn's algorithm（S 用 queue，初始依字母序）求 topological order。","a":"in-degree：A0 B1 C1 D2 E1 F1，S = [A]。\n取 A → B、C 歸零，S = [B, C]；取 B → D 變 1；取 C → D 歸零、F 歸零，S = [D, F]；取 D → E 歸零；取 F；取 E。\n結果：**A B C D F E**。"},
+  {"sec":"線性時間做法：in-degree ＋ set S（Kahn's algorithm）","q":"Kahn's algorithm 的 set S 要用 queue 還是 stack？選哪個會影響什麼？","a":"兩個都可以，S 只是裝「目前 in-degree 為 0」的點的 container。\n選不同的 container 只會改變從 S 取點的先後，得到不同但都合法的 topological order；時間都是 O(n + m)。"},
+
+  {"sec":"用 DFS 做 topological sort：finishing time 反過來","q":"DAG：A→B、A→C、B→D、C→D、C→F、D→E。用 DFS（外層與鄰居都依字母序）做 topological sort，寫出 finish 順序和答案。","a":"A → B → D → E；E、D、B 依序結束；A → C，D 已拜訪，C → F，F 結束、C 結束、A 結束。\nfinish 順序：E D B F C A\n反過來：**A C F B D E**"},
+  {"sec":"用 DFS 做 topological sort：finishing time 反過來","q":"DFS 做 topological sort 時，要反過來的是哪一個順序？常見錯誤是什麼？","a":"要反過來的是 **finish（遞迴結束）** 的順序，不是開始拜訪的順序。\n用 stack 寫時，點要等所有鄰居都探索完才 push，不是一拜訪就 push。"},
+  {"sec":"用 DFS 做 topological sort：finishing time 反過來","q":"為什麼在 DAG 上，對每條邊 u → v，v 一定比 u 先 finish？","a":"DAG 沒有 back edge。\nu 先開始：v 從 u 走得到，會在 u 的遞迴裡被拜訪並先結束。\nv 先開始：v 走不到 u（否則加上 u → v 成 cycle），v 結束時 u 還沒開始。\n所以 finish 反過來後 u 一定排在 v 前面。"},
+
+  {"sec":"Kosaraju 演算法：找 strongly connected components","q":"Kosaraju 演算法的步驟是什麼？時間多少？","a":"1. 在原圖做 DFS（外層走遍所有點），每個點完成時 push 進 stack。\n2. 把圖反向（transpose）。\n3. visited 清空，照 stack pop 的順序（完成時間由晚到早）在反向圖上 DFS，每次從未拜訪點出發走到的點就是一個 SCC。\n時間 O(V + E)。"},
+  {"sec":"Kosaraju 演算法：找 strongly connected components","q":"有向圖 1→2、2→3、3→1、3→4、4→5、5→4、5→6。用 Kosaraju（第一遍從 1 開始、鄰居編號小的先）找出 SCC。","a":"第一遍：1 → 2 → 3 → 4 → 5 → 6，完成順序 6、5、4、3、2、1，stack 頂端是 1。\n反向圖：1→3、2→1、3→2、4→3、4→5、5→4、6→5。\n第二遍：pop 1 → {1, 3, 2}；pop 4 → 4→3 已收，走 5 → {4, 5}；pop 6 → {6}。\nSCC：**{1, 2, 3}、{4, 5}、{6}**。"},
+  {"sec":"Kosaraju 演算法：找 strongly connected components","q":"Kosaraju 第二遍為什麼一定要在反向圖上、照完成時間由晚到早做？","a":"第一遍最晚完成的點落在縮點 DAG 的「源頭」SCC。反向後，源頭 SCC 原本往外的邊都變成指向它，從它出發走不出去，DFS 只收得到自己那一群。\n若在原圖上做，或順序錯了，DFS 會跨進別的 SCC，把好幾個 SCC 收成一個。"},
+
+  {"sec":"應用一：魔術方塊的 configuration graph","q":"2×2×2 魔術方塊的 configuration graph 有幾個頂點？怎麼算？","a":"8 個 cubelet 排列 8!、每塊 3 種方向 3⁸：8! × 3⁸ = 264,539,520。\n除以 24（整體轉向的對稱，等於固定一塊 → 7! × 3⁷）再除以 3（只靠轉動只到得了 1/3）→ 7! × 3⁶ = **3,674,160**。"},
+  {"sec":"應用一：魔術方塊的 configuration graph","q":"什麼是 God's number？怎麼求？","a":"configuration graph 的 diameter：從最壞的狀態用最佳解法要幾步。2×2×2 是 11（半圈算一步；只准 90° 是 14），3×3×3 是 20。\n求法：從解好的狀態做 BFS 一層一層建圖，最外層的層數就是。n×n×n 的 diameter 是 Θ(n² / log n)。"},
+
+  {"sec":"魔術方塊在程式裡怎麼存","q":"2×2×2 魔術方塊的一個 configuration 在程式裡怎麼存？最多有幾種陣列？","a":"24 張 plastic face（8 cubelet × 3 面）貼到 24 個 wireframe 位置，存成 24 格陣列：第 i 格是貼在第 i 個位置的 plastic face。\n最多 24! ≈ 6.2 × 10²³ 種，但包含拆散 cubelet 的放法，只是上界。"},
+  {"sec":"魔術方塊在程式裡怎麼存","q":"為什麼固定（anchor）一個 cubelet 後只剩 6 種 move？","a":"固定一塊可以消除整顆方塊換方向的對稱（例如前面順時針等於後面逆時針換個角度看）。\n固定那塊不能動，只能轉不含它的三面，每面順、逆時針 2 種，共 6 種（只計 90° 轉）。"},
+
+  {"sec":"move 也是 permutation","q":"在魔術方塊程式裡，configuration 和 move 分別是什麼樣的 permutation？怎麼算出一個狀態的鄰居？","a":"configuration：哪張面在哪個位置；move：把哪一格搬到哪一格（同一種 move 不管目前狀態，搬法都一樣）。\n鄰居 = 把目前 configuration 套上每一種 move 得到的新陣列。"},
+
+  {"sec":"permutation 的 inverse","q":"π = 2 5 4 1 3（輸出第 i 個 = 輸入第 π(i) 個）。π 把 A B C D E 變成什麼？π⁻¹ 是多少？","a":"π(A B C D E) = **B E D A C**。\n位置與值對調：π(1)=2 → π⁻¹(2)=1；π(2)=5 → π⁻¹(5)=2；π(3)=4 → π⁻¹(4)=3；π(4)=1 → π⁻¹(1)=4；π(5)=3 → π⁻¹(3)=5。\nπ⁻¹ = **4 1 5 3 2**。"},
+  {"sec":"permutation 的 inverse","q":"判斷對錯並說明：π⁻¹ 就是把 π 的數字倒過來寫。","a":"**錯**。π⁻¹ 要把位置和值對調：π(i) = j 就有 π⁻¹(j) = i，再照新位置排好。\n例：π = 3 4 1 5 2，倒過來是 2 5 1 4 3，但 π⁻¹ = 3 5 1 2 4。"},
+
+  {"sec":"應用二：玩具版 StarCraft","q":"玩具 StarCraft 的騷擾規則中，第 n 波需要總戰力 6·log₂(1 + n)。第 1 波若 zergling 有攻擊、防禦兩種升級（每隻戰力 2），至少要派幾隻？只有防禦（1.2）呢？","a":"第 1 波需要 6·log₂2 = 6。\n兩種升級：6 ÷ 2 = **3 隻**。\n只有防禦：6 ÷ 1.2 = **5 隻**。"},
+
+  {"sec":"把 StarCraft 建成一張圖","q":"玩具 StarCraft 的狀態圖，狀態裡記不記錢和時間，會影響該用什麼演算法？","a":"記時間＋錢：每條 edge 都是「過了 1 秒」，權重相同 → BFS，但圖很大。\n都不記：edge 是一個動作，權重是存夠錢要等的秒數，各不相同 → Dijkstra，圖小很多。"},
+  {"sec":"把 StarCraft 建成一張圖","q":"8 隻 drone（每隻每秒採 8 礦物），錢從 0 開始。生一隻 overlord（100）和蓋 spawning pool（200）的 edge 權重各是幾秒（整數秒）？","a":"每秒採 8 × 8 = 64。\noverlord：1 秒 64 < 100，2 秒 128 ≥ 100 → **2 秒**。\nspawning pool：3 秒 192 < 200，4 秒 256 ≥ 200 → **4 秒**。"},
+
+  {"sec":"用 Dijkstra 的距離檢查騷擾","q":"時間不記在狀態裡，玩具 StarCraft 怎麼確保每 120 秒準時騷擾？為什麼可以這樣做？","a":"Dijkstra 取出一個狀態時，它的最短距離（最快到達的秒數 t）已經確定。產生鄰居時檢查 t 到 t + w 有沒有跨過 120 的倍數：跨過就要求戰力足夠（不夠這條 edge 不存在），夠就扣掉派出的 zergling。\n只能用已確定的距離；暫時的估計值之後還會變，不能拿來判斷。"},
+
+  {"sec":"回顧：BFS、DFS 與延伸演算法","q":"遇到一個圖論應用題，該用 BFS、DFS 還是 Dijkstra？","a":"先定義頂點（狀態）和 edge（動作），圖太大就用 implicit graph。\n無權重最短路徑、分層、bipartite → BFS。\n結構資訊（cycle、topological sort、SCC、articulation point）→ DFS。\nedge 權重不同的最短路徑 → Dijkstra。用 adjacency list 時 BFS／DFS 及延伸都是 O(V + E)。"}
+]}
