@@ -3821,3 +3821,8 @@ body#appRoot .ch-opt-group[open] > summary::before { content: "" !important; tra
 /* 章節列：標題區下面不留邊距，進度條和標題資訊隔 8，展開或收合都一樣 */
 body#appRoot #main #sec-subjects .sp .ch-head, body#appRoot .ch-row .ch-head { margin-bottom: 0 !important; }
 body#appRoot .ch-pbar { margin-top: var(--sp-2) !important; }
+/* 2026-11-19e：圖示對齊中文字的視覺中心（基線上方 0.38 個字高），不靠行高：
+   iPhone 與 Windows 計算字型上下空間的方式不同，用行高置中在 iPhone 會偏。
+   圖示 16px（字 13px）：底邊放在基線下方 0.22em，中心就落在基線上方 0.38em */
+body#appRoot :is(.ch-study-link, .sp-review-link) { display: block !important; text-align: center !important; line-height: 20px !important; padding: 8px 16px !important; }
+body#appRoot :is(.ch-study-link, .sp-review-link) svg { display: inline-block !important; vertical-align: -0.22em; margin-right: 8px; }

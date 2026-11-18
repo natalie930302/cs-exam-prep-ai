@@ -983,3 +983,6 @@ body:not(.st-booting) .st-top, body:not(.st-booting) .st-main { animation: m-in 
 /* 「看這段影片」的三角形：12px，和文字置中 */
 .st-handout .ho-video { line-height: 1; }
 .st-handout .ho-video .ho-play { flex: 0 0 auto; display: block; }
+/* 「看這段影片」三角形（12px、字 13px）：同樣對齊中文字的視覺中心 */
+.st-handout .ho-video { display: inline-block !important; line-height: 1.6 !important; }
+.st-handout .ho-video .ho-play { display: inline-block !important; vertical-align: -0.08em; margin-right: 4px; }
